@@ -42,6 +42,7 @@ fn the_catalog_has_the_base_system() {
             "history",
             "jobs",
             "memory_search",
+            "packages",
             "read",
             "remember",
             "send_message",

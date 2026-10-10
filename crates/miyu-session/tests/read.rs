@@ -148,6 +148,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             "grep",
             "history",
             "jobs",
+            "packages",
             "read",
             "send_message",
             "session_usage",

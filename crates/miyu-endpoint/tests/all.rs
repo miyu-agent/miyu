@@ -79,6 +79,7 @@ mod packages_preview;
 mod packages_programs;
 mod packages_purge;
 mod packages_push;
+mod packages_tool;
 mod peers;
 mod permission;
 mod persona_appearance;

@@ -303,6 +303,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("todos", "待办清单", true, true),
             ("history", "翻查本会话", true, true),
             ("usage", "用量", true, true),
+            ("packages", "软件包", true, true),
             ("memory", "人格记忆", true, true),
             ("roleplay", "人设遵循提醒", false, true),
             ("goal", "长期目标", true, false),
