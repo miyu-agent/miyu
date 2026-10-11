@@ -13,6 +13,7 @@ mod embed_replace;
 mod end_turn;
 mod forward;
 mod goal;
+mod goal_push;
 mod goal_rounds;
 mod goal_tool;
 mod group;

@@ -237,6 +237,7 @@ async fn the_output_while_running_is_pushed_but_not_stored() {
                     }
                 }
             }
+            Pushed::Goal { .. } => {}
         }
     }
     assert_eq!(seen, ["progress one ", "progress two", "result pushed"]);

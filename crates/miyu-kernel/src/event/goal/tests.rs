@@ -1,6 +1,7 @@
 //! 长期目标的五种事件（施工 X-6）：图纸上的写法读写一字不差，不写的格子不写；不认识的结局原样留着。
 
 use crate::event::{Body, Event};
+use crate::id::CommandId;
 
 /// 一条事件的日志行读进来、再写出去。
 fn round_trip(line: &str) -> Event {
@@ -45,4 +46,17 @@ fn an_unknown_outcome_is_kept_as_it_was() {
         panic!("是 goal.ended");
     };
     assert_eq!(ended.outcome.as_str(), "abandoned");
+}
+
+/// 续轮消息的命令编号（施工 X-8 补）：造的和认的是同一个写法，别的写法认不出。
+#[test]
+fn the_round_command_id_reads_back() {
+    let made = crate::event::round_command(3, 1_760_000_000_123);
+    assert_eq!(made, "goal-3-1760000000123");
+    let id = CommandId::parse(&made).expect("合写法");
+    assert_eq!(crate::event::round_of(&id), Some(3));
+    for other in ["cmd-1", "goal-x-1", "goal-3", "goal-3-x", "goal--1"] {
+        let id = CommandId::parse(other).expect("合写法");
+        assert_eq!(crate::event::round_of(&id), None, "{other}");
+    }
 }

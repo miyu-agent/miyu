@@ -5,12 +5,13 @@
 //! （[`GoalRun::note`]）。
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Body, Event, GoalOutcome};
+use miyu_kernel::event::{Body, Event, GoalOutcome, round_command};
 use miyu_kernel::id::{CommandId, ModuleId, Seq, TurnId};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::session::{Command, GoalChange, Input, Received};
 
 use super::Actor;
+use crate::Pushed;
 use crate::TARGET;
 use crate::goal::{Goal, GoalState};
 
@@ -30,6 +31,8 @@ pub(super) struct GoalRun {
     turn: Option<(TurnId, bool)>,
     /// 上一次发的时候目标在第几轮：同一轮不发两次（被拒了、没开起来的不再发）。
     sent_at: Option<u32>,
+    /// 上一次推给头的样子（施工 X-8 补）：变了才推。
+    pushed: Option<Goal>,
 }
 
 impl GoalRun {
@@ -104,7 +107,8 @@ impl Actor {
         self.goal_run.sent_at = Some(goal.round);
         let at = self.clock.now();
         let next = goal.round.saturating_add(1);
-        let id = CommandId::parse(&format!("goal-{next}-{}", at.unix_millis())).ok()?;
+        // 编号照协议的约定写（施工 X-8 补）：头照它知道这是第几轮。
+        let id = CommandId::parse(&round_command(next, at.unix_millis())).ok()?;
         let by = By::Module(Module {
             id: ModuleId::parse(MODULE).ok()?,
         });
@@ -129,6 +133,22 @@ impl Actor {
             at,
             command,
         }))
+    }
+
+    /// 送完一批以后（施工 X-8 补）：头上看到的目标和上一次推的不一样，推一份（[`Pushed::Goal`]）。轮数、花的、等不等人都算。
+    pub(super) fn push_goal(&mut self) {
+        let goal = self
+            .counted()
+            .goals
+            .now()
+            .cloned()
+            .map(|goal| self.goal_run.shown(goal));
+        if goal == self.goal_run.pushed {
+            return;
+        }
+        self.goal_run.pushed.clone_from(&goal);
+        let at = self.clock.now();
+        self.push(Pushed::Goal { at, goal });
     }
 
     /// 第 `round` 轮的续轮消息：完整版发过了的发短版；谁设的照目标填（施工 X-8 上）。读不了资源的记一行、不发。

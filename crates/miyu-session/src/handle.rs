@@ -452,16 +452,20 @@ impl Handle {
 }
 
 /// 推给订阅者的一份。
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "一份份装在 Arc 里共享（施工 O-3 外部身份多了两格，瞬时事件变大）：大小不碍事"
-)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Pushed {
     /// 落了盘的几条事件，照先后。
     Events(Vec<Event>),
     /// 一条瞬时事件：不落盘（`03-事件模型.md` 第五节）。
     Transient(Transient),
+    /// 长期目标的样子变了（施工 X-8 补，`actor/goal.rs`）：这一刻的整份，同会话状态的 `goal`；没有目标的是没有。事件流照它
+    /// 推 `goal.changed`，视图流照会话状态推。
+    Goal {
+        /// 变了的那一刻。
+        at: miyu_kernel::time::Timestamp,
+        /// 现在的样子。
+        goal: Option<crate::goal::Goal>,
+    },
 }
 
 /// 会话停了：写不进去、出了 bug、有计划地停下了，或者没人拿着了。

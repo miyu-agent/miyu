@@ -6,6 +6,7 @@ use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
 
+use crate::id::CommandId;
 use crate::text_enum::text_enum;
 
 /// `goal.set`：设一个目标。`by` 是设的人，或者她自己（`goal` 工具那次调用）。
@@ -60,3 +61,17 @@ text_enum!(
 
 #[cfg(test)]
 mod tests;
+
+/// 续轮消息的命令编号（施工 X-8 补，`protocol.md`「`message.user`」的约定）：`goal-<第几轮>-<毫秒>`。续轮那条 `message.user`
+/// 的 `cause` 就是它，头照它知道这是第几轮，不用翻提示词。会话层照它造（[`round_command`]），视图投影照它读（[`round_of`]）。
+pub fn round_command(round: u32, unix_millis: i64) -> String {
+    format!("goal-{round}-{unix_millis}")
+}
+
+/// 照命令编号认续轮的第几轮：不是 [`round_command`] 的写法的没有。
+pub fn round_of(cause: &CommandId) -> Option<u32> {
+    let rest = cause.as_str().strip_prefix("goal-")?;
+    let (round, millis) = rest.split_once('-')?;
+    millis.parse::<i64>().ok()?;
+    round.parse().ok()
+}

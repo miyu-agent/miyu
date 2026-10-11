@@ -2,12 +2,22 @@
 //! 它就被听到了：前面那段收起，它挪到末尾，接着的步另起一段。被退回的不画。一次听到的几句照先后挨着排，一句一条。
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Event, MessageUser, MessageWithdrawn, Permission};
+use miyu_kernel::event::{Event, MessageUser, MessageWithdrawn, Permission, round_of};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 
 use super::Projector;
 use crate::entry::{Attachment, Body, Entry, EntryId, User};
+
+/// 长期目标的续轮是第几轮（施工 X-8 补）：模块 `goal` 发的、命令编号照约定写的才有。
+fn round(event: &Event) -> Option<u32> {
+    match &event.by {
+        By::Module(module) if module.id.as_str() == "goal" => {
+            event.cause.as_ref().and_then(round_of)
+        }
+        _ => None,
+    }
+}
 
 /// 权限级别写成字：`workspace`、`full`，只读的是 `read_only`。
 pub(super) fn level(permission: &Permission) -> String {
@@ -32,6 +42,7 @@ impl Projector {
             level: self.level.clone(),
             queued,
             withdrawn: false,
+            round: round(event),
         };
         if queued {
             self.queued.insert(event.seq, id.clone());

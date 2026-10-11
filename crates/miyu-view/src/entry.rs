@@ -77,6 +77,9 @@ pub struct User {
     /// 排着的被退回了：不画。
     #[serde(skip_serializing_if = "is_false")]
     pub withdrawn: bool,
+    /// 长期目标的续轮是第几轮（施工 X-8 补）：`from` 是模块 `goal` 的，照那条消息的命令编号（`goal-<第几轮>-<毫秒>`）读。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub round: Option<u32>,
 }
 
 /// 一件附件。
