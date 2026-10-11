@@ -346,6 +346,8 @@ impl Core {
             true => {
                 crate::provide::restore(self, id);
                 self.extensions.launch(self, id, manifest);
+                // 它带的 MCP 服务跟着起（施工 X-3 下）。
+                self.start_services(id, manifest);
             }
             false => self.extensions.hold(id, Reason::NeedsApproval),
         }
@@ -364,6 +366,8 @@ impl Core {
         crate::system_accounts::prepare(self);
         for id in old.keys().filter(|id| !new.contains_key(*id)) {
             self.extensions.halt(id).await;
+            // 它带的 MCP 服务也停下（施工 X-3 下）；工具和它自己的一起记成随包卸掉。
+            self.mcp.halt(self, id).await;
             let removed = self
                 .tools
                 .replace(|catalog| Ok::<_, miyu_tool::CatalogError>(catalog.removing(id)));
@@ -375,7 +379,10 @@ impl Core {
         for (id, manifest) in new {
             match old.get(id) {
                 Some(previous) if previous == manifest => continue,
-                Some(_) => self.extensions.halt(id).await,
+                Some(previous) => {
+                    self.extensions.halt(id).await;
+                    self.stop_services(id, previous).await;
+                }
                 None => {}
             }
             self.start_one(id, manifest, &switches);

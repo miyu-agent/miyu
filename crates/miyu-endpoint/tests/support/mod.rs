@@ -1,14 +1,18 @@
 //! 几个测试共用的：临时的数据根、造一份核心、连核心的客户端（内存管道上，或者真的套接字上）、等磁盘上的日志。
 
 #![allow(dead_code, reason = "几个测试各用其中一部分")]
+mod checks;
 pub mod deleting;
 pub mod extensions;
 pub mod login;
+pub mod mcp;
 pub mod memories;
 pub mod packaged;
 pub mod providers;
 mod pushes;
 pub mod venues;
+#[allow(unused_imports, reason = "几个测试各用其中一部分")]
+pub use checks::*;
 #[allow(unused_imports, reason = "几个测试各用其中一部分")]
 pub use pushes::*;
 use std::path::{Path, PathBuf};
@@ -462,34 +466,6 @@ impl Client {
             .unwrap_or_else(|| panic!("应该造出会话：{reply}"))
             .to_string()
     }
-}
-
-/// 等到 `done` 成立，最多六十秒。
-pub async fn until(what: &str, done: impl Fn() -> bool) {
-    let waited = tokio::time::timeout(Duration::from_secs(60), async {
-        while !done() {
-            tokio::time::sleep(Duration::from_millis(5)).await;
-        }
-    })
-    .await;
-    assert!(waited.is_ok(), "六十秒内没等到{what}");
-}
-
-/// 回应里的原因码；不是拒绝的是 `None`。
-/// 订阅的回应去掉「当前的」几格（施工 9-6 上：`usage`、`permission`、`jobs`；施工 9-7 上：`workspace`）：只看限额、模型、补发
-/// 这些的测试用，这几格另有 `tests/subscribe_now.rs`、`tests/limits.rs`、`tests/workspace_property.rs` 守着。
-pub fn apart_from_now(result: &Value) -> Value {
-    let mut result = result.clone();
-    if let Some(fields) = result.as_object_mut() {
-        for key in ["usage", "permission", "jobs", "workspace"] {
-            fields.remove(key);
-        }
-    }
-    result
-}
-
-pub fn reason(reply: &Value) -> Option<&str> {
-    reply["error"]["data"]["reason"].as_str()
 }
 
 /// 起名用的纳秒数：Windows 上进程号复用得快，前一个测试进程留下的、核心开着文件删不掉的目录会撞名（2026-10-01 CI 撞见）。

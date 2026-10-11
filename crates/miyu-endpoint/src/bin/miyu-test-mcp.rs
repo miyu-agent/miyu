@@ -6,6 +6,8 @@
 //! - `legacy`：演旧时代（`server/discover` 回「没有这个方法」，等 `initialize` 握手）；不写的是新时代；
 //! - `record:<路径>`：收到的每一行原样追加进这个文件，读到头了再记一行 `eof`；
 //! - `changed`：第一次列完以后说一次工具变了，再列时多一件 `later`；
+//! - `ttl:<毫秒>`：列的结果带 `ttlMs`（新时代），再列时多一件 `later`；
+//! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
 //! - `exit:<数>`：一起来就以这个退出码退出（演起不来、一直崩）；
 //! - `stray:<字>`：一起来先往标准错误写一行。
 //!
@@ -43,6 +45,7 @@ fn main() {
     let mut legacy = false;
     let mut record: Option<File> = None;
     let mut changed = false;
+    let mut ttl: Option<u64> = None;
     for arg in std::env::args().skip(1) {
         if arg == "legacy" {
             legacy = true;
@@ -55,6 +58,12 @@ fn main() {
             record = Some(file);
         } else if arg == "changed" {
             changed = true;
+        } else if let Some(ms) = arg.strip_prefix("ttl:") {
+            ttl = Some(ms.parse().expect("毫秒是数"));
+        } else if let Some(path) = arg.strip_prefix("exit-if:") {
+            if std::path::Path::new(path).exists() {
+                std::process::exit(3);
+            }
         } else if let Some(code) = arg.strip_prefix("exit:") {
             std::process::exit(code.parse().expect("退出码是数"));
         } else if let Some(text) = arg.strip_prefix("stray:") {
@@ -92,10 +101,15 @@ fn main() {
             "tools/list" => {
                 lists += 1;
                 let mut names: Vec<&str> = TOOLS.to_vec();
-                if changed && lists > 1 {
+                if (changed || ttl.is_some()) && lists > 1 {
                     names.push("later");
                 }
-                Ok(json!({"tools": names.iter().map(|name| tool(name)).collect::<Vec<_>>()}))
+                let mut result =
+                    json!({"tools": names.iter().map(|name| tool(name)).collect::<Vec<_>>()});
+                if let Some(ttl) = ttl {
+                    result["ttlMs"] = json!(ttl);
+                }
+                Ok(result)
             }
             "tools/call" => match call(&message["params"]) {
                 Some(result) => result,

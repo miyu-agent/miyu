@@ -12,7 +12,7 @@ use tokio::time::Instant;
 use miyu_mcp::{Client, Failed, Hello, Waits};
 
 use super::launch::{self, Plan};
-use super::{Shared, TARGET, spec};
+use super::{Shared, TARGET, cache, spec};
 use crate::Core;
 use crate::extensions::{Reason, State, Timing};
 
@@ -40,8 +40,13 @@ pub(super) async fn run(
     timing: Timing,
 ) {
     let mut failures = 0;
+    // 照哪个时代说：先照缓存记着的，连上一次以后照认出来的（施工 X-3 下）。
+    let mut known = plan.known.clone();
     loop {
-        let ended = once(&core, &plan, &shared, &mut asked, &timing, failures).await;
+        let ended = once(
+            &core, &plan, &shared, &mut asked, &timing, failures, &mut known,
+        )
+        .await;
         let Some(owner) = core.upgrade() else {
             return;
         };
@@ -86,6 +91,7 @@ async fn once(
     asked: &mut watch::Receiver<bool>,
     timing: &Timing,
     failures: u32,
+    known: &mut Option<miyu_mcp::Era>,
 ) -> Ended {
     let service = plan.server.name.as_str();
     let mut child = match launch::spawn(plan).await {
@@ -107,7 +113,7 @@ async fn once(
         // 两头都接了管道，不会没有。
         return Ended::Stop(Reason::CannotStart);
     };
-    let connecting = Client::connect(output, input, hello(), None, Waits::default());
+    let connecting = Client::connect(output, input, hello(), known.clone(), Waits::default());
     let client = tokio::select! {
         connected = connecting => connected,
         _ = asked.changed() => {
@@ -126,6 +132,7 @@ async fn once(
             };
         }
     };
+    *known = Some(client.era().clone());
     let mut changes = client.changes();
     if !list(core, plan, shared, &client).await {
         drop(client);
@@ -147,6 +154,12 @@ async fn once(
             _ = asked.changed() => break true,
             changed = changes.changed() => {
                 if changed.is_err() || !list(core, plan, shared, &client).await {
+                    break false;
+                }
+            }
+            // 目录过期以后有人要用它（施工 X-3 下，`ttlMs`）。
+            () = shared.relist.notified() => {
+                if !list(core, plan, shared, &client).await {
                     break false;
                 }
             }
@@ -180,6 +193,8 @@ async fn list(core: &Weak<Core>, plan: &Plan, shared: &Arc<Shared>, client: &Cli
         return false;
     };
     spec::register(&owner, &shared.package, &plan.server, &listed.tools, shared);
+    shared.listed(listed.fresh_for);
+    cache::write(&owner, &plan.server, client.era(), &listed.tools);
     true
 }
 

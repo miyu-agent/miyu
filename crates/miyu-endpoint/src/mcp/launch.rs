@@ -38,6 +38,8 @@ pub(super) struct Plan {
     pub(super) dir: PathBuf,
     /// 标准错误接到哪个文件。
     pub(super) log: PathBuf,
+    /// 缓存记着的时代（施工 X-3 下）：连的时候照它直接说；没有的先探。
+    pub(super) known: Option<miyu_mcp::Era>,
 }
 
 /// 包 `package`（包目录 `dir`）带的服务 `server` 怎么起：引用的密钥、环境变量照这一刻的配置取，取不到的那一个不设、记一行
@@ -64,14 +66,20 @@ pub(super) fn plan(core: &Core, package: &str, server: &McpServer, dir: &Path) -
         program: program(first, dir),
         args: rest.to_vec(),
         env,
-        dir: core.root.state().join("mcp").join(&server.name),
+        dir: work_dir(core, &server.name),
         log: core
             .root
             .state()
             .join("logs")
             .join(format!("mcp-{}.stderr", server.name)),
         server: server.clone(),
+        known: None,
     }
+}
+
+/// 服务 `service` 的工作目录：`state/mcp/<服务名>/`。
+pub(super) fn work_dir(core: &Core, service: &str) -> PathBuf {
+    core.root.state().join("mcp").join(service)
 }
 
 /// 命令第一项 `first` 指的程序：绝对路径的照它；带路径分隔符的照包目录 `dir` 算；只有名字的先找包目录的 `bin/`（包自己带的

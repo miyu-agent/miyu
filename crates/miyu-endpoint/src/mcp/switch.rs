@@ -20,7 +20,7 @@ pub(crate) async fn turn_on(
     let (mut switches, version) = read_switches(core);
     switches.on.insert(id.to_string(), true);
     write_switches(core, id, &switches, version.as_deref())?;
-    core.mcp.launch(core, id, manifest);
+    core.start_services(id, manifest);
     core.extensions.notify(id);
     Ok(())
 }
@@ -35,8 +35,7 @@ pub(crate) async fn turn_off(
     let (mut switches, version) = read_switches(core);
     switches.on.insert(id.to_string(), false);
     write_switches(core, id, &switches, version.as_deref())?;
-    core.mcp.halt(core, id).await;
-    withdraw(core, id, manifest);
+    core.stop_services(id, manifest).await;
     core.extensions.notify(id);
     Ok(())
 }

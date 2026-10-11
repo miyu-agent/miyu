@@ -111,6 +111,8 @@ impl Tool for McpTool {
 
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         Box::pin(async move {
+            // 目录过期的叫看管的任务再列一次（施工 X-3 下，`ttlMs`）：这一次照旧调。
+            self.shared.touch();
             let Some(client) = self.shared.client() else {
                 return self.unavailable();
             };

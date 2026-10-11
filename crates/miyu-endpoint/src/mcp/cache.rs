@@ -1,0 +1,119 @@
+//! 目录缓存（施工 X-3 下，`mcp.md`「怎么走」第一条第 4 条、第三条第 1 条）：列完的写进 `state/mcp/<服务名>.json`，记着起它的
+//! 命令、环境变量的写法、认出来的时代、每件工具的原文；一样的不写。核心起来、开服务时，命令和环境变量的写法没变的照它先登记
+//! （服务还没好时调到的说暂时不可用），连的时候照记着的时代直接说。派生的数据：读不成、写不成的记一行 `WARN`，等服务自己列。
+
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use miyu_config::package::{EnvValue, McpServer};
+use miyu_mcp::{Era, Tool};
+use miyu_store::generated;
+
+use super::TARGET;
+use crate::Core;
+
+/// 缓存的写法。
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct Cached {
+    /// 起它的命令，原样。
+    command: Vec<String>,
+    /// 环境变量的写法：`名字=字` 或者 `名字={ secret = … }` 这样的引用，不是取出来的值。
+    env: Vec<String>,
+    /// 认出来的时代和版本。
+    era: Era,
+    /// 每件工具的原文。
+    tools: Vec<Value>,
+}
+
+/// 服务 `service` 的缓存在哪。
+pub(super) fn path(core: &Core, service: &str) -> PathBuf {
+    core.root
+        .state()
+        .join("mcp")
+        .join(format!("{service}.json"))
+}
+
+/// 环境变量的写法：引用的照引用写，不取值。
+fn env_spec(server: &McpServer) -> Vec<String> {
+    server
+        .env
+        .iter()
+        .map(|(name, value)| match value {
+            EnvValue::Text(text) => format!("{name}={text}"),
+            EnvValue::Reference(reference) => format!("{name}={}", reference.toml()),
+        })
+        .collect()
+}
+
+/// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`。
+pub(super) fn write(core: &Core, server: &McpServer, era: &Era, tools: &[Tool]) {
+    let cached = Cached {
+        command: server.command.clone(),
+        env: env_spec(server),
+        era: era.clone(),
+        tools: tools.iter().map(|tool| tool.raw.clone()).collect(),
+    };
+    let path = path(core, &server.name);
+    let written = serde_json::to_vec_pretty(&cached)
+        .map_err(std::io::Error::other)
+        .and_then(|bytes| generated::write(&path, &bytes));
+    if let Err(error) = written {
+        tracing::warn!(target: TARGET, service = server.name.as_str(), file = %path.display(), error = %error, "mcp tools not cached");
+    }
+}
+
+/// 服务 `server` 的缓存：命令、环境变量的写法和它记着的一样才算，交回时代和工具（读不成的那一件不要）。没有的、对不上的
+/// 没有；读不成的记一行。
+pub(super) fn read(core: &Core, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
+    read_at(&path(core, &server.name), server)
+}
+
+/// 同 [`read`]，缓存在 `path`。
+fn read_at(path: &Path, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return None,
+        Err(error) => {
+            tracing::warn!(target: TARGET, service = server.name.as_str(), file = %path.display(), error = %error, "mcp tools cache unreadable");
+            return None;
+        }
+    };
+    let cached = match serde_json::from_slice::<Cached>(&bytes) {
+        Ok(cached) => cached,
+        Err(error) => {
+            tracing::warn!(target: TARGET, service = server.name.as_str(), file = %path.display(), error = %error, "mcp tools cache unreadable");
+            return None;
+        }
+    };
+    if cached.command != server.command || cached.env != env_spec(server) {
+        tracing::info!(target: TARGET, service = server.name.as_str(), "mcp tools cache outdated");
+        return None;
+    }
+    let tools = cached
+        .tools
+        .iter()
+        .filter_map(|raw| Tool::read(raw).ok())
+        .collect();
+    Some((cached.era, tools))
+}
+
+/// 卸包时清掉服务 `service` 的缓存和工作目录（施工 X-3 下：卸就是清干净）。本来就没有的不算错，删不成的记一行。
+pub(crate) fn forget(core: &Core, service: &str) {
+    let cache = path(core, service);
+    if let Err(error) = std::fs::remove_file(&cache)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        tracing::warn!(target: TARGET, service, file = %cache.display(), error = %error, "mcp tools cache not removed");
+    }
+    let dir = super::launch::work_dir(core, service);
+    if let Err(error) = std::fs::remove_dir_all(&dir)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        tracing::warn!(target: TARGET, service, dir = %dir.display(), error = %error, "mcp dir not removed");
+    }
+}
+
+#[cfg(test)]
+mod tests;

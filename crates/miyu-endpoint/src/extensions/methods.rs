@@ -83,6 +83,8 @@ pub(crate) async fn turn_on(
     write(core, id, &switches, version.as_deref())?;
     crate::provide::restore(core, id);
     core.extensions.launch(core, id, manifest);
+    // 它带的 MCP 服务跟着起（施工 X-3 下）。
+    core.start_services(id, manifest);
     core.extensions.notify(id);
     Ok(one(core, id, manifest, &switches, peer))
 }
@@ -105,6 +107,8 @@ pub(crate) async fn turn_off(core: &Arc<Core>, peer: Peer, id: &str) -> Result<V
     write(core, id, &switches, version.as_deref())?;
     core.extensions.halt(id).await;
     crate::provide::withdraw(core, id);
+    // 它带的 MCP 服务跟着停、工具出目录（施工 X-3 下）。
+    core.stop_services(id, manifest).await;
     core.extensions.notify(id);
     Ok(one(core, id, manifest, &switches, peer))
 }

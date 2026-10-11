@@ -203,6 +203,18 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let state = packages(core).state_dir(&id);
     // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H）：它的配置项照清单列的删，状态目录整个删。
     let keys = setting_keys(one);
+    // 它带的 MCP 服务的缓存、工作目录也清掉（施工 X-3 下）：它们不在包的状态目录里。
+    let services: Vec<String> = one
+        .read
+        .as_ref()
+        .map(|manifest| {
+            manifest
+                .mcp
+                .iter()
+                .map(|server| server.name.clone())
+                .collect()
+        })
+        .unwrap_or_default();
     let layer = one.layer;
     // 先停下用着它的、再删文件（施工 F-5 补）：Windows 上开着的文件删不掉。删不成的照原来的清单换回来。
     let all = refs(&found);
@@ -229,6 +241,9 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     crate::config::forget::forget(core, &keys);
     if let Err(refusal) = blocking(move || remove_dir_if_there(&state)).await {
         tracing::warn!(target: TARGET, package = removed.as_str(), reason = refusal.reason, "package state not removed");
+    }
+    for service in &services {
+        crate::mcp::forget(core, service);
     }
     tracing::info!(target: TARGET, package = removed.as_str(), "package removed");
     Ok(json!({"package": removed, "removed": true}))
