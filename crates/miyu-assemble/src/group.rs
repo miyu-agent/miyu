@@ -174,7 +174,7 @@ fn marker(item: &Media, number: Option<usize>) -> String {
 }
 
 /// 不在群里的一条场所消息、没有内容块的（施工 O-13 补）：带的东西的记号一个文本块，空一格隔开；带的东西也没有的，没有。
-/// 不标第几个、语音不接那一句（施工 O-33：`fetch_media` 只给群，私聊没有群会话的字），只多大小。
+/// 不标第几个、语音不接那一句，只多大小：这是 O-35 以前造的私聊会话的写法，O-35 起造的照 `private.rs` 写。
 pub(crate) fn bare(venue: &VenueMessage) -> Option<Block> {
     let markers = markers(&venue.media, None);
     (!markers.is_empty()).then(|| {

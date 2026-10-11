@@ -66,7 +66,7 @@ fn a_group_made_before_the_voice_note_has_none_and_writes_none() {
         ..tokyo()
     };
     assert_eq!(older.texts().unwrap().voice, None);
-    let bytes = String::from_utf8(engineer().with_group(NOTE, older).to_bytes()).unwrap();
+    let bytes = serde_json::to_string(&engineer().with_group(NOTE, older).group).unwrap();
     assert!(!bytes.contains("\"voice\""), "{bytes}");
     let made = engineer().with_group(NOTE, tokyo());
     assert_eq!(Snapshot::from_bytes(&made.to_bytes()).unwrap(), made);

@@ -336,6 +336,7 @@ impl ResourceRoot {
                 question: core(&["vision", "question.txt"])?,
             }),
             forward: Some(self.forward()?),
+            private_media: Some(self.private_media()?),
         })
     }
 

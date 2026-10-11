@@ -65,6 +65,9 @@ struct MediaParams {
     /// 多少字节（施工 O-33）：非负整数，不是的整条 `bad_params`。
     #[serde(default)]
     size: Option<u64>,
+    /// 原图已经当图片块交进来了（施工 O-35）：只在 `venue.media` 里有意义，转发里的写了整条 `bad_params`。
+    #[serde(default)]
+    shown: bool,
 }
 
 /// 一个合并转发（施工 O-34）。
@@ -151,6 +154,7 @@ impl MediaParams {
             id: platform_id(self.id)?,
             name: self.name.map(|name| words(name, MEDIA_NAME)).transpose()?,
             size: self.size,
+            shown: self.shown,
         })
     }
 }
@@ -177,7 +181,7 @@ impl Tally {
 
 /// 第 `depth` 层的几个转发（施工 O-34）：不是空的列表，不超过 [`FORWARD_DEPTH`] 层；每个 1 到 [`FORWARD_NODES`] 条、`more`
 /// 写了就大于 0；每条的名字同发的人的名字，正文最多 [`FORWARD_TEXT`] 字节（换行这些照收，渲染时转义），带的东西同
-/// `media`。条数、字节数记进 `tally`。
+/// `media`、不能写 `shown`（施工 O-35）。条数、字节数记进 `tally`。
 fn forwarded(
     forwards: Vec<ForwardParams>,
     depth: usize,
@@ -199,7 +203,8 @@ fn forwarded(
                 .nodes
                 .into_iter()
                 .map(|node| {
-                    if node.text.len() > FORWARD_TEXT {
+                    // 转发里的东西没有当原图交进来的（施工 O-35）：写了 `shown` 的是写错了。
+                    if node.text.len() > FORWARD_TEXT || node.media.iter().any(|item| item.shown) {
                         return Err(Refusal::BAD_PARAMS);
                     }
                     let name = words(node.name, NAME)?;

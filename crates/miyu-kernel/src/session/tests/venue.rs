@@ -1,6 +1,6 @@
 //! 场所的消息和桥记的事件（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 2、3 条）：旁听的消息只记下，不开回合，回合
 //! 进行中也不排进这一轮、说完了不接着开；`Append` 记的事件不带回合编号、不开回合，回合中途照记。只有合并转发的照旧
-//! 拒（施工 O-34）。
+//! 拒（施工 O-34）；带的东西全是交了原图的、又没有内容块的也拒（施工 O-35）。
 
 use super::executor::*;
 use super::*;
@@ -17,6 +17,7 @@ fn venue(msg: &str, ambient: bool) -> VenueMessage {
             id: "f1".to_string(),
             name: Some("报告.pdf".to_string()),
             size: Some(1_200_000),
+            shown: false,
         }],
         ambient,
         ..VenueMessage::default()
@@ -216,4 +217,38 @@ fn a_message_with_only_a_forward_is_empty() {
         session.handle(bare(1, only)),
         [rejected(id(1), Reason::EmptyMessage)]
     );
+}
+
+/// 带的东西全是交了原图的（`shown`）、又没有内容块的拒（施工 O-35）：交了原图的不算内容，原图该在内容块里；O-35 起造的私聊会话
+/// 写记号时跳过它们，这样一条渲染出来是一条没有块的 user。还有一样没交原图的照收；`shown` 不写的老事件字节不变。
+#[test]
+fn a_message_whose_media_are_all_shown_needs_blocks() {
+    let mut session = session();
+    let shown = |msg: &str, also_file: bool| {
+        let mut venue = venue(msg, true);
+        venue.media[0].shown = true;
+        if also_file {
+            venue.media.push(Media {
+                shown: false,
+                ..venue.media[0].clone()
+            });
+        }
+        venue
+    };
+    assert_eq!(
+        session.handle(bare(1, shown("8830", false))),
+        [rejected(id(1), Reason::EmptyMessage)]
+    );
+    assert_eq!(
+        appended_events(&session.handle(bare(2, shown("8831", true)))).len(),
+        1
+    );
+    let kept = appended_events(&session.handle(said(3, "看图", shown("8832", false))));
+    assert_eq!(kept.len(), 1, "有内容块的照收：{kept:?}");
+    let written = serde_json::to_string(&venue("8833", true)).unwrap();
+    assert!(!written.contains("shown"), "{written}");
+    let line = serde_json::to_string(&shown("8834", false)).unwrap();
+    assert!(line.contains(r#""shown":true"#), "{line}");
+    let read: VenueMessage = serde_json::from_str(&line).unwrap();
+    assert!(read.media[0].shown);
 }

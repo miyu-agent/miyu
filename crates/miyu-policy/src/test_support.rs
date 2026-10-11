@@ -223,6 +223,9 @@ pub(crate) fn core() -> CoreTexts {
                 .to_string(),
             more: include_str!("../../../resources/core/venues/forward/more.txt").to_string(),
         }),
+        private_media: Some(crate::PrivateMediaTexts {
+            voice: include_str!("../../../resources/core/venues/voice.txt").to_string(),
+        }),
     }
 }
 

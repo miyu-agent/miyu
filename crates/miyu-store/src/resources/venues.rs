@@ -1,7 +1,7 @@
 //! 场所会话用的几份（施工 O-13 中、下，O-33，O-34；O-34 从 `resources.rs` 拆出来，那边超了行数）：群会话的格式说明、群会话
-//! 钉下的字，合并转发那几行的三句，都在 `core/venues/` 下。
+//! 钉下的字，合并转发那几行的三句，私聊记号的语音那一句（施工 O-35），都在 `core/venues/` 下。
 
-use miyu_policy::{ForwardTexts, GroupChat, GroupRecent};
+use miyu_policy::{ForwardTexts, GroupChat, GroupRecent, PrivateMediaTexts};
 
 use super::{ResourceRoot, SourceError};
 
@@ -46,6 +46,18 @@ impl ResourceRoot {
             label: self.read(&["core", "venues", "forward", "label.txt"])?,
             numbered: self.read(&["core", "venues", "forward", "numbered.txt"])?,
             more: self.read(&["core", "venues", "forward", "more.txt"])?,
+        })
+    }
+
+    /// 私聊里带的东西的记号要用的（施工 O-35）：语音那一句照 `core/venues/voice.txt` 的原文（同群会话钉下的那一份）。造会话时
+    /// 冻结进快照的 `core.private_media`。
+    ///
+    /// # Errors
+    ///
+    /// 读不了这份文件，写明是哪一份。
+    pub fn private_media(&self) -> Result<PrivateMediaTexts, SourceError> {
+        Ok(PrivateMediaTexts {
+            voice: self.read(&["core", "venues", "voice.txt"])?,
         })
     }
 }

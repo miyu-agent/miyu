@@ -127,6 +127,7 @@ mod venue_forwards;
 mod venue_judge;
 mod venue_records;
 mod venue_sessions;
+mod venue_shown;
 mod venues;
 mod view_detail;
 mod view_entries;

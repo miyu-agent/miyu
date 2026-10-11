@@ -231,6 +231,13 @@ fn the_core_texts_are_read_and_the_persona_texts_are_as_given() {
         include_str!("../../../../resources/core/venues/forward/more.txt")
     );
     assert_eq!(repo().forward().unwrap(), forward);
+    // 私聊记号的语音那一句（施工 O-35）：同群会话钉下的那一份文件，和 `private_media()` 读的一样。
+    let private = sources.core.private_media.expect("出厂的有私聊记号的字");
+    assert_eq!(
+        private.voice,
+        include_str!("../../../../resources/core/venues/voice.txt")
+    );
+    assert_eq!(repo().private_media().unwrap(), private);
     // 文本文件照字放进消息的三句（施工 3-9 三补）：每一格是它自己那份文件。
     let drivers = sources.core.drivers;
     let text = drivers.text_file.expect("出厂的有文本文件的三句");

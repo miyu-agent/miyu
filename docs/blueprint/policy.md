@@ -23,6 +23,7 @@
 | `crates/miyu-policy/src/recap.rs` | 回顾的字 `RecapTexts`、数 `RecapNumbers` 和出厂的数 `RECAP`，交给组装器的样子（施工 3-8 四补） |
 | `crates/miyu-policy/src/vision.rs` | 替看不了图的模型看图的字（施工 8-17）：转述请求的两份 `VisionTexts`、图的位置的三句标签 `ImageDescriptionTexts`，交给组装器、驱动的样子 |
 | `crates/miyu-policy/src/forward.rs`（施工 O-34） | 合并转发那几行的三句 `ForwardTexts`（`core.forward`），交给组装器时两份照模板读 |
+| `crates/miyu-policy/src/private_media.rs`（施工 O-35） | 私聊记号的语音那一句 `PrivateMediaTexts`（`core.private_media`），交给组装器时去掉行尾空白 |
 | `crates/miyu-policy/src/title.rs` | 起标题的字 `TitleTexts`、数 `TitleNumbers` 和出厂的数 `TITLE`，交给组装器、内核的样子（施工 3-8 五补） |
 | `crates/miyu-policy/src/jobs.rs` | 回报的写法、任务用的数；子会话回报的正文怎么截（`reports()`，施工 3-8 五补从 `snapshot.rs` 挪来，那边放不下了） |
 | `crates/miyu-policy/src/memory.rs` | 记忆的范围 `MemoryScope`，快照的 `memory` 怎么写（`with_memory`）、怎么读（`memory_scope`，施工 R-3 下） |
@@ -71,6 +72,7 @@
 | `title` | `instruction` | `title/instruction.txt`（施工 3-8 五补，起标题的请求，`kernel/request.md`「起标题的请求」）；标签、截断的记号借 `recap` 的。以前造的快照里没有，读成没有、不写：不起标题 |
 | `vision` | `instruction`、`question` | `vision/` 下的同名文件（施工 8-17，转述一张图的请求，`kernel/request.md`「替它看的图」）。以前造的快照里没有，读成没有、不写：不转述 |
 | `forward` | `label`、`numbered`、`more` | `venues/forward/` 下的同名文件（施工 O-34，`kernel/request.md`「合并转发」）：放在 `core` 这一层、不放进群会话的 `group`，因为私聊会话的快照没有 `group`、私聊里的转发也要写（2026-10-11 主会话、核心定）。交给组装器时去掉行尾空白；`numbered` 的字段只能是 `number`、`more` 的只能是 `count`，试换不过的造不出策略（`BuildError::Texts`，`which` 是 `forward`）。以前造的快照里没有，读成没有、不写：收到转发不写那几行，只看得到正文里的占位 |
+| `private_media` | `voice` | `venues/voice.txt`（施工 O-35，同群会话 `group.voice` 的那一份，`kernel/request.md`「群里的一行」私聊那一条）：放在 `core` 这一层，私聊会话的快照没有 `group`（同 `forward`）。交给组装器时去掉行尾空白。它也是「O-35 起造的会话」的标志：以前造的快照里没有，读成没有、不写，私聊照以前渲染、一个字节不变 |
 
 **函数**：
 
@@ -214,6 +216,7 @@
 | `crates/miyu-policy/src/snapshot/tests/recap.rs`（施工 3-8 四补） | 回顾进快照：出厂的快照带着五份字和两个数，造出的组装器回顾得出来；字、数少一样都不回顾；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不回顾 |
 | `crates/miyu-policy/src/snapshot/tests/vision.rs`（施工 8-17） | 替看图进快照：出厂的快照带着两份字和三句标签，造出的组装器交得出转述的请求、驱动写得出带标签的转述；以前造的快照没有这两格，读进来再写出去一字不差，不转述、照旧写占位 |
 | `crates/miyu-policy/src/forward/tests.rs`（施工 O-34） | 出厂的三句交给组装器时去掉行尾换行、两份照模板换得出；快照字节读得回来；以前造的没有这一格，读成没有、读进来再写出去一个字节不变、照样造得出策略；模板没配上括号、字段名不对的造不出策略 |
+| `crates/miyu-policy/src/private_media/tests.rs`（施工 O-35） | 出厂的语音那一句交给组装器时去掉行尾换行；快照字节读得回来；以前造的没有这一格，读成没有、读进来再写出去一个字节不变、照样造得出策略 |
 | `crates/miyu-policy/src/snapshot/tests/title.rs`（施工 3-8 五补） | 起标题进快照：出厂的快照带着指令和三个数，造出的组装器起得出标题、内核拿到 `tries`、`chars`；字、数少一样都不起，没有回顾的标签的组装器也不起；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不起 |
 | `crates/miyu-policy/src/snapshot/tests/jobs.rs`（施工 3-8 五补从 `tests.rs` 挪出来） | 子会话回报的正文怎么截：出厂的 30000 和截在中间的那一行；以前造的快照没有，读成出厂的数、空的那一行，读写一字不差；快照里的数照快照的 |
 | `crates/miyu-policy/src/peers/tests.rs`（施工 C-2、C-6） | 空了的通知（C-6）：出厂的快照多两个数、通知的五份字（平铺在 `core.peers` 里），作废那一句照快照的小时数换；通知的字坏了照名字报；C-2 时造的快照没有这几格，数照出厂的、通知不出、读回写出一字不差。别的会话发来的话进快照：出厂的快照带着三个数（排在最后）和两份标签，造出的策略照出厂的数、组装器渲染出带短编号的标签；快照里的数照快照的；标签坏了照名字报；以前造的快照没有这两格，读进来再写出去一字不差，照出厂的数防刷屏，那种话和人的话一字不差 |

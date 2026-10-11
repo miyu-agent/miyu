@@ -19,7 +19,7 @@ use miyu_kernel::origin::By;
 use miyu_kernel::request::Message;
 
 use crate::texts::Texts;
-use crate::{group, harness, jobs, peers};
+use crate::{group, harness, jobs, peers, private};
 
 mod opening;
 
@@ -150,7 +150,8 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
 }
 
 /// 人这边的一条消息 `event`（内容 `message`，块是 `blocks`）渲染成的块（主请求和回顾的请求共用）：群会话里群里的人说的
-/// 是一行一条（施工 O-13 中，`group.rs`），私聊的场所消息后面接合并转发那几行（施工 O-34），别的照谁发的（[`said`]）。
+/// 是一行一条（施工 O-13 中，`group.rs`），私聊的场所消息正文后面接记号那一行（施工 O-35，`private.rs`）、合并转发那几行
+/// （施工 O-34），别的照谁发的（[`said`]）。
 pub(crate) fn spoken(
     history: &History,
     event: &Event,
@@ -161,14 +162,24 @@ pub(crate) fn spoken(
     let forward = texts.forward.as_ref();
     match (&message.venue, &texts.group) {
         (Some(venue), Some(chat)) => group::line(event.at, &event.by, venue, blocks, chat, forward),
-        // 不在群里的（私聊）：只有带的东西的写成记号（施工 O-13 补），不然她看到的是空的；合并转发那几行接在正文后面，单独
-        // 一块、不缩进（施工 O-34），快照里没有那几句的不写。
+        // 不在群里的（私聊）：O-35 起造的，带了东西的那条在正文的块后面单独一块写 `[msg=…]` 和记号（施工 O-35，`private.rs`）；
+        // 以前造的，只有带的东西的写成记号（施工 O-13 补），不然她看到的是空的。合并转发那几行接在最后，单独一块、不缩进（施工
+        // O-34），快照里没有那几句的不写。
         (Some(venue), None) => {
-            let mut out = if blocks.is_empty() {
+            let media = texts.private_media.as_ref();
+            let mut out = if blocks.is_empty() && media.is_none() {
                 group::bare(venue).into_iter().collect()
             } else {
                 said(history, &event.by, blocks, texts)
             };
+            if let Some(media) = media {
+                // 记号那一行接在正文的块后面、图片块前面：没有这一行的（没带东西、全交了原图）和以前一个字节不差。
+                let at = out
+                    .iter()
+                    .take_while(|block| matches!(block, Block::Text(_)))
+                    .count();
+                out.splice(at..at, private::line(venue, media));
+            }
             let forwards =
                 forward.and_then(|forward| group::forwarded(&venue.forwards, 0, forward));
             out.extend(forwards.map(|text| Block::Text(Text { text })));

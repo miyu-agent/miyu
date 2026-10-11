@@ -20,6 +20,7 @@ pub mod group;
 mod harness;
 mod jobs;
 mod peers;
+mod private;
 mod recap;
 mod render;
 mod size;
@@ -33,8 +34,8 @@ mod vision;
 mod test_support;
 
 pub use texts::{
-    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap,
-    RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
+    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts,
+    PrivateMedia, Recap, RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
 };
 
 use miyu_kernel::assemble::{Assembler, Spoken};

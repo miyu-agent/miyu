@@ -81,6 +81,7 @@ pub(super) fn texts() -> Texts {
         vision: Some(vision()),
         group: None,
         forward: None,
+        private_media: None,
     }
 }
 

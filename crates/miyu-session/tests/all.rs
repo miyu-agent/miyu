@@ -48,6 +48,7 @@ mod once_pools;
 mod once_shared;
 mod outside_sandbox;
 mod prepare;
+mod private_media;
 mod questions;
 mod read;
 mod rebuild;

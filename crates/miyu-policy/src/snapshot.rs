@@ -21,6 +21,7 @@ use crate::pause::PauseNumbers;
 use crate::peers::{PeerNumbers, PeerTexts};
 use crate::persona::Demo;
 use crate::preset::PresetPin;
+use crate::private_media::PrivateMediaTexts;
 use crate::rebuild::{RebuildNumbers, RebuildTexts};
 use crate::recap::{RecapNumbers, RecapTexts};
 use crate::shorten::{ShortenNumbers, ShortenTexts};
@@ -142,6 +143,10 @@ pub struct CoreTexts {
     /// 没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub forward: Option<ForwardTexts>,
+    /// 私聊里带的东西的记号要用的字（`venues/voice.txt`，施工 O-35，`private_media.rs`）。以前造的快照里没有，读成没有：私聊照
+    /// 以前渲染；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub private_media: Option<PrivateMediaTexts>,
 }
 
 /// 压缩的几句（施工 6-2 上）。
@@ -333,6 +338,7 @@ impl Snapshot {
             title: self.title(),
             vision: self.vision(),
             forward: self.forward()?,
+            private_media: self.private_media(),
             group: self.group.as_ref().map(GroupChat::texts).transpose()?,
         };
         let (face, rules) = tools::split(&self.tools)?;

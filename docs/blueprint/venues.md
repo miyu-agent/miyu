@@ -32,6 +32,7 @@
 | `crates/miyu-endpoint/tests/note.rs` | 空闲时记下、不带回合编号、不开回合，下一轮的请求里排在触发前面；正在跑一轮时带回合编号；空的、太多的、写错的什么都不记；同一个编号再发只算一次（施工 O-14 补） |
 | `crates/miyu-endpoint/tests/venue_records.rs` | `venue` 原样记下、旁听的不开回合、写错的什么都不记；`events.append` 收的三类、回应带序号、不带回合编号，拒的几种；扩展只能写自己的包那一段（`system_account.rs`）（施工 O-13 上）；带的东西的 `size` 原样记，负的、小数、字、多写 `duration` 的拒（施工 O-33） |
 | `crates/miyu-endpoint/tests/venue_forwards.rs`（施工 O-34） | `venue.forwards` 原样记下，只有转发、正文空的照旧 `empty_message`、什么都不记；套 4 层、一个转发 101 条、正文超过 4096 字节、名字超长或带换行或空白、空列表、`more` 写 0 或负的、空的 `nodes`、多写格、带的东西写错的 `bad_params`、不带 `data.limit`；整条消息 101 条、名字和正文超过 16 KiB 的 `bad_params`、`data.limit` 说是哪一样，正好 100 条、正好 16 KiB 的收；都什么都不记 |
+| `crates/miyu-endpoint/tests/venue_shown.rs`（施工 O-35） | `venue.media` 的 `shown` 是真的原样记、假的不写；带的东西全是交了原图的、正文空、没有附件的 `empty_message`；转发里写了 `shown`、写的不是真假的 `bad_params`；都什么都不记 |
 | `crates/miyu-endpoint/src/system_accounts.rs` | 系统账号（施工 O-4 下，`packages.md`「`[process]`」）：这次起来认的有哪些、连接是谁、记忆照谁算；起来时建它们的家目录 |
 | `crates/miyu-endpoint/src/list.rs` | 列会话、推会话列表时跳过场所会话 |
 
@@ -115,7 +116,7 @@
 | `name` | 字，最多 64 个字符，可以不写 | 发的人此刻在这个场所里叫什么（群名片，没有的用昵称）；名字会变，每条各记各的 |
 | `mentions` | 平台身份的列表，可以不写 | @ 了谁；@ 了谁的名字桥写在正文里 |
 | `mentions_me`、`mentions_all` | 布尔，不写是假 | @ 了她；@ 了全体成员（不算 @ 她） |
-| `media` | 列表，可以不写 | 带的东西，每项 `{kind, id, name?, size?}`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`，`id` 平台的编号（懒下载，不进内容块），`name` 文件名、表情的字（最多 200 个字符），`size` 多少字节（非负整数，平台说了的才写；施工 O-33，群里的一行照它写大小，`kernel/request.md`「群里的一行」）。不收时长：平台的段里没有（2026-10-11 主会话、核心定，不为以后写） |
+| `media` | 列表，可以不写 | 带的东西，每项 `{kind, id, name?, size?}`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`，`id` 平台的编号（懒下载，不进内容块），`name` 文件名、表情的字（最多 200 个字符），`size` 多少字节（非负整数，平台说了的才写；施工 O-33，群里的一行照它写大小，`kernel/request.md`「群里的一行」），`shown` 真假（可以不写，不写是假；施工 O-35，2026-10-11 核心审过）：这一样的原图已经当附件交进来了，O-35 起造的私聊会话写记号时跳过它、编号照旧连着数；它不算内容（全是交了原图的、正文空、没有附件的 `empty_message`）。假的不记，以前记的没有，字节不变。转发里的 `media` 不能写 `shown`（写了 `bad_params`）；群里的一行这一步不看它（桥只给私聊填）。不收时长：平台的段里没有（2026-10-11 主会话、核心定，不为以后写） |
 | `forwards` | 列表，可以不写 | 合并转发的内容（施工 O-34，2026-10-11 核心审形状时定）：照正文里转发的先后，每项 `{nodes, more?}`。`nodes` 1 到 100 条，每条 `{name, text, media?, forwards?}`：`name` 转发里那个人当时的名字（同上面的 `name`：去掉前后空白不空，最多 64 个字符，没有控制字符），`text` 那一条的正文（最多 4096 字节，可以是空的，换行照收、渲染时转义），`media` 同上面的 `media`（只写记号，`fetch_media` 取不了），`forwards` 套在里面的转发（同样的形状）；`more` 桥没放进来的条数，只在大于 0 时写。套的层数最多 3（`venue.forwards` 是第一层）。整条消息另有上限：所有转发（连套在里面的）合起来最多 100 条、`name` 和 `text` 合起来最多 16 KiB，超了的 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`；单层的不合不带 `data.limit`。写了空列表的、`more` 写 0 的 `bad_params`（没有转发就不写这一格）。核心不拿正文里 `[forward]` 的个数对转发的条数（人也打得出这几个字）。转发不算内容：带转发的消息正文里要有占位（桥写 `[forward]`），只有转发、没有字也没带东西的照旧 `empty_message`（2026-10-11 核心审时定：O-34 以前造的私聊会话不写转发那几行，这样一条渲染出来是没有块的 user）。怎么渲染见 `kernel/request.md`「合并转发」 |
 | `ambient` | 布尔，不写是假 | 旁听：只记下，不开回合，回合进行中也不排进这一轮 |
 | `asleep` | 布尔，不写是假 | 睡着时收到的（桥照样带 `ambient`）；群聊近况不收它（O-13 下） |

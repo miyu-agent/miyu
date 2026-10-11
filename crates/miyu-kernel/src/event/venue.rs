@@ -60,6 +60,11 @@ pub struct Media {
     /// 没有，照旧不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    /// 原图已经当图片块交进来了（施工 O-35，`docs/blueprint/venues.md`「场所的格」）：桥照它交了的那几样写真。O-35 起造的私聊
+    /// 会话写记号时跳过它们，编号照旧连着数（和 `fetch_media` 的 `index` 对得上）；它们不算内容（原图在内容块里，
+    /// `session/send.rs`）。假的不写，以前记的没有，字节不变。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub shown: bool,
 }
 
 /// 一个合并转发（施工 O-34）：桥放进来的几条，和没放进来的条数。

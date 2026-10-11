@@ -68,6 +68,7 @@ fn texts() -> Texts {
         vision: None,
         group: None,
         forward: None,
+        private_media: None,
     }
 }
 

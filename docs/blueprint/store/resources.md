@@ -9,7 +9,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-store/src/resources.rs` | 找资源目录；读出一个人格要用的原文、子会话的场所说明 |
-| `crates/miyu-store/src/resources/venues.rs`（施工 O-34 从 `resources.rs` 拆出来） | 场所会话用的几份：群会话的格式说明、群会话钉下的字（`group_note`、`group_chat`），合并转发那几行的三句（`forward`） |
+| `crates/miyu-store/src/resources/venues.rs`（施工 O-34 从 `resources.rs` 拆出来） | 场所会话用的几份：群会话的格式说明、群会话钉下的字（`group_note`、`group_chat`），合并转发那几行的三句（`forward`），私聊记号的语音那一句（`private_media`，施工 O-35） |
 | `crates/miyu-store/src/human.rs` | 读给人看的字；照说法换成一句话；换进去的字段把控制字符换成 `�`；配置那一格照 `Words` 交给配置清单（施工 8-1） |
 | `crates/miyu-store/src/env.rs` | 找资源目录要看的 `MIYU_RESOURCES`、程序的位置（`store.md`） |
 | `resources/` | 源码树里的资源目录，开发时 `MIYU_RESOURCES` 指到它 |
@@ -24,6 +24,7 @@
 | `ResourceRoot::sources(人格)` | 读出这个人格要用的原文，交给 `miyu-policy` 拼策略快照（`policy.md`） |
 | `ResourceRoot::subagent_venue()` | 读出子会话的场所说明 `core/jobs/subagent-venue.txt`，造子会话时接在人设后面（施工 7-5）；读不了的写明是哪一份 |
 | `ResourceRoot::group_note()`、`group_chat(时区)` | 群会话的两份（施工 O-13 中）：格式说明 `core/venues/group.txt` 的原文；`GroupChat`，时区照交进来的，空的一条写什么照 `core/venues/no-text.txt` 的原文，群聊近况（施工 O-13 下）的块头、缺口提示照 `recent-open.txt`、`recent-omitted.txt` 的原文，预算是出厂的，语音那一句（施工 O-33）照 `voice.txt` 的原文。读不了的写明是哪一份 |
+| `ResourceRoot::private_media()`（施工 O-35） | 私聊里带的东西的记号要用的：语音那一句照 `core/venues/voice.txt` 的原文（同群会话钉下的那一份）；造会话时读进 `CoreTexts.private_media`。读不了的写明是哪一份 |
 | `ResourceRoot::forward()`（施工 O-34） | 合并转发那几行的三句：`core/venues/forward/` 下 `label.txt`、`numbered.txt`、`more.txt` 的原文；造会话时读进 `CoreTexts.forward`，判官看的记录在快照里没有群会话的字时也照它。读不了的写明是哪一份 |
 | `ResourceRoot::catalog_snapshot()` | models.dev 目录的快照在哪（`models/models-dev.json`，旁边是 `models-dev.meta.json`，施工 8-7）：约 5 MB，核心写了 `ready` 以后在后台读，读不了的照样起来（`models.md`「怎么走」第二条） |
 | `ResourceRoot::vendors()` | 认原厂的表的原文（`models/vendors.toml`，施工 8-7），怎么读由核心定 |
@@ -76,7 +77,7 @@
 |---|---|---|
 | `core/` 下的 `.txt`（两份 `*-rule.txt`、`style-lock.txt`、`jobs/subagent-venue.txt`、`venues/` 下的除外）、`personas/<人格>/prompts/persona.md` | `ResourceRoot::sources` | 造会话时，拼进策略快照；`facts/reminder-*.txt` 只拼进快照的 `reminder`，不另存（施工 P-1 补） |
 | `core/jobs/subagent-venue.txt` | `ResourceRoot::subagent_venue` | 造子会话时，接进 system（施工 7-5） |
-| `core/venues/group.txt`、`core/venues/no-text.txt`、`recent-open.txt`、`recent-omitted.txt`、`voice.txt` | `ResourceRoot::group_note`、`group_chat` | 造群会话时：第一份接进 system，别的记进快照的 `group`（施工 O-13 中、下；`voice.txt` 施工 O-33） |
+| `core/venues/group.txt`、`core/venues/no-text.txt`、`recent-open.txt`、`recent-omitted.txt`、`voice.txt` | `ResourceRoot::group_note`、`group_chat`；`voice.txt` 另经 `ResourceRoot::private_media`（`sources_with` 也读） | 造群会话时：第一份接进 system，别的记进快照的 `group`（施工 O-13 中、下；`voice.txt` 施工 O-33）；`voice.txt` 造会话时另记进快照的 `core.private_media`（施工 O-35） |
 | `core/venues/forward/label.txt`、`numbered.txt`、`more.txt` | `ResourceRoot::forward`（`sources_with` 也读） | 造会话时记进快照的 `core.forward`（施工 O-34） |
 | `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/style-lock.txt` | `ResourceRoot::core_lines` | 造会话时，接在 system 最后（施工 2-7 补，`policy.md` 的 `with_core_lines`）；风格锁再接在它们后面，只有带角色扮演提示的人格（施工 P-1 补，`with_style_lock`） |
 | `core/human/`、`software/<软件包>/human/` | `Human::load` | `miyu ask` 起来时读一次，印每一步用（`cli/ask.md`）；核心起来时照系统的语言读一次，生成配置的 Schema 和参考文件（施工 8-1，`config.md`） |
@@ -211,7 +212,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-store/src/resources/tests.rs` | `MIYU_RESOURCES` 优先、开头的 `~` 照家目录接、要是绝对路径、要是目录；程序旁边的 `resources/`、上一级的 `share/miyu/`；都没有时写明找过哪两处、不知道程序在哪；读出软件工程师的人设和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；切了级别以后的权限那一份也是，施工 2-7 补）；人设文件缺了写明是哪一份；不合写法的编号拒绝；子会话的场所说明是它自己那份文件，没有的写明是哪一份（施工 7-5）；核心的几行是它们那两份文件，没有的写明是哪一份（施工 2-7 补）；合并转发那几行的三句各是各的文件、`forward()` 和随核心附带的字读的一样（施工 O-34） |
+| `crates/miyu-store/src/resources/tests.rs` | `MIYU_RESOURCES` 优先、开头的 `~` 照家目录接、要是绝对路径、要是目录；程序旁边的 `resources/`、上一级的 `share/miyu/`；都没有时写明找过哪两处、不知道程序在哪；读出软件工程师的人设和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；切了级别以后的权限那一份也是，施工 2-7 补）；人设文件缺了写明是哪一份；不合写法的编号拒绝；子会话的场所说明是它自己那份文件，没有的写明是哪一份（施工 7-5）；核心的几行是它们那两份文件，没有的写明是哪一份（施工 2-7 补）；合并转发那几行的三句各是各的文件、`forward()` 和随核心附带的字读的一样（施工 O-34）；私聊记号的语音那一句是 `voice.txt`、`private_media()` 和随核心附带的字读的一样（施工 O-35） |
 | `crates/miyu-store/tests/human.rs` | 内核给模型的每一句（`core/tool-results/`、`core/permissions/`）两种语言都有给人看的一句，要的字段不多于给模型的；照语言换成字，没有的语言照英文，没有这一句、少了字段的换不出；工具的显示名、后面跟的参数、符号、下面那一块，`block` 写别的读不懂；控制字符换掉、引号反斜杠照原样；什么都没有不算错，只有英文的照英文，读不懂的写明是哪一份、哪一句；配置那一格照 `Words` 交出去、句子的编号加 `core/`、写错了说是哪一份（施工 8-1）；中文、日文没写 `X/one` 的，退到 `X` 的字，英文自己写的不一样；每种语言的 `said_entries()` 都交得出清单上每一句的 `/one`；软件包自己写了 `X/one` 的，补的规矩不盖掉它（施工 4-5 再补） |
 | `crates/miyu-store/tests/human_languages.rs`（施工 4-5 补；4-5 再补加了单数的门禁） | 内核和每个软件包都有中文、英文、日文三份，说法的键、每一句要的字段、工具的样子（显示名以外）、配置那一格的项和选项、页、组（施工 8-1）都和英文那一份一样（没写 `X/one` 的按 `Human::load` 的规矩补齐了再比）；每件工具都有显示名，配置的名字、说明都不空；日文照语言换得出（找不到的语言会退回英文，所以直接查文件）；门禁：英文 `{count}`、`{total}` 后面紧跟着词的每一句，都有 `/one` 那一句对着 |
 | `crates/miyu-store/tests/snapshot.rs` | 从源码树的资源目录拼出软件工程师的快照 |

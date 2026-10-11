@@ -56,6 +56,16 @@ pub struct Texts {
     /// 合并转发那几行的字（施工 O-34，`group/forward.rs`）：群里的接在那一行下面，私聊的接在正文后面。以前造的快照里没有，
     /// 是没有：收到转发也不写这几行，只看得到正文里桥写的占位，和 O-34 以前一样。
     pub forward: Option<ForwardTexts>,
+    /// 私聊里带的东西的记号要用的（施工 O-35，`private.rs`）：有它的是 O-35 起造的会话，私聊里带了东西的那条写出 `[msg=…]` 和
+    /// 记号那一行。以前造的快照里没有，是没有：私聊照以前渲染。
+    pub private_media: Option<PrivateMedia>,
+}
+
+/// 私聊里带的东西的记号要用的（施工 O-35，`docs/blueprint/kernel/request.md`「群里的一行」私聊那一条）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrivateMedia {
+    /// 语音后面接的那一句（`core/venues/voice.txt`，同群会话的 `voice`），不带行尾的换行。
+    pub voice: String,
 }
 
 /// 合并转发那几行的三句（施工 O-34，`docs/blueprint/kernel/request.md`「合并转发」），都不带行尾的换行；缩进由代码加。

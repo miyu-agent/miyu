@@ -10,8 +10,8 @@ use miyu_kernel::request::Message;
 use miyu_kernel::template::Template;
 
 use crate::texts::{
-    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap,
-    RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
+    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts,
+    PrivateMedia, Recap, RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
 };
 
 pub(crate) const KERNEL: &str = r#"{"kind":"kernel"}"#;
@@ -62,6 +62,7 @@ pub(crate) fn texts() -> Texts {
         vision: Some(vision_texts()),
         group: None,
         forward: None,
+        private_media: None,
     }
 }
 
@@ -87,6 +88,16 @@ pub(crate) fn forward_texts() -> ForwardTexts {
 pub(crate) fn with_forward(texts: Texts) -> Texts {
     Texts {
         forward: Some(forward_texts()),
+        ..texts
+    }
+}
+
+/// O-35 起造的会话：同 `texts`，带着私聊记号的字，语音那一句写 `<voice>`。
+pub(crate) fn with_private_media(texts: Texts) -> Texts {
+    Texts {
+        private_media: Some(PrivateMedia {
+            voice: "<voice>".to_string(),
+        }),
         ..texts
     }
 }
