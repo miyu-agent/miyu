@@ -4161,6 +4161,32 @@ Saved since the summary:
 Older related memories:
 ```
 
+### system 第 4 块的头一行（知识库那一块前面）
+
+#### `core/skills/open.txt`
+
+- 什么时候加进来：工具面上有 `read`、找得到至少一个技能的会话（施工 X-10 上；每次请求都带）
+- token：13（2026-10-12 照开发端点量）
+- 为什么加：她知道下面是技能、照着做之前先读那份文件（`skills.md`「技能」第 2、3 条）
+- 指纹：`fa146d08`
+
+```text
+Skills you can use (read the file before following one):
+```
+
+### system 第 4 块，一个技能一行
+
+#### `core/skills/line.txt`
+
+- 什么时候加进来：同上（字段按 `pdf-processing`、一句 90 个字符的说明、数据根里的绝对路径填）
+- token：44（2026-10-12 量，路径占一半多）
+- 为什么加：名字、说明照 `SKILL.md` 的开头，作者写的，转义；路径是她 `read` 要的
+- 指纹：`ebc88bc7`
+
+```text
+- {name}: {description} ({path})
+```
+
 ### system 第 4 块的头一行
 
 #### `software/knowledge/list/open.txt`

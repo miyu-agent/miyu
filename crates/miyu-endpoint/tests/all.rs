@@ -122,6 +122,7 @@ mod revert;
 mod secrets;
 mod sessions;
 mod sessions_changed;
+mod skills;
 mod socket;
 mod spawn;
 mod spawn_choice;

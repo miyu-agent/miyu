@@ -17,6 +17,8 @@ miyu-kernel = { path = "../miyu-kernel" }
 miyu-config = { path = "../miyu-config" }
 # 读人格的 `persona.toml`（施工 P-1 上），和配置同一个读法。
 toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
+# 读技能 `SKILL.md` 开头的 YAML（施工 X-10 上，`skills.md`「技能」第 1 条：公开的 Agent Skills 格式）。
+yaml-rust2 = { version = "0.13", default-features = false }
 # 快照写成规范的 JSON、读回来。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }

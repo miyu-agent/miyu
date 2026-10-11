@@ -206,6 +206,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
             _ => old.foreground,
         },
         knowledge: listing,
+        skills: old.skills.clone(),
     };
     let new = match build(&refresh.resources, parts) {
         Ok(new) => new,

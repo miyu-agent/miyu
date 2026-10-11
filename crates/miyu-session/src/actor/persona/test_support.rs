@@ -124,6 +124,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         foreground: false,
 
         knowledge: None,
+        skills: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

@@ -29,6 +29,7 @@ mod private_media;
 mod rebuild;
 mod recap;
 mod shorten;
+pub mod skill;
 mod snapshot;
 mod text_file;
 mod title;

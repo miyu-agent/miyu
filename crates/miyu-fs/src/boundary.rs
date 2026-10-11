@@ -1,7 +1,8 @@
 //! 边界表（`11-权限与沙盒.md` 第四节，施工 4-3 上）：一个真实的位置落在哪一片。
 //!
-//! 几片重叠时照这个先后，先对上的算：工作区（里面会在沙盒外被执行的那几样只能读）、数据根、加进来的目录（照工作区
-//! 算，施工 5-10 上）、临时目录、系统和工具链目录、边界以外。
+//! 几片重叠时照这个先后，先对上的算：工作区（里面会在沙盒外被执行的那几样只能读）、数据根里单独放开只读的几个目录
+//! （开着的技能文件夹，施工 X-10 上）、数据根、加进来的目录（照工作区算，施工 5-10 上）、临时目录、系统和工具链目录、
+//! 边界以外。
 
 use std::path::{Component, Path, PathBuf};
 
@@ -14,6 +15,8 @@ pub enum Zone {
     Readable,
     /// 谁都不能碰：Miyu 的数据根。
     Forbidden,
+    /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。
+    Shelf,
     /// 边界以外：要碰就得问人。
     Outside,
 }
@@ -31,6 +34,8 @@ pub struct Places {
     pub temp: PathBuf,
     /// 只能读的：系统目录、工具链目录。
     pub readable: Vec<PathBuf>,
+    /// 数据根里单独放开只读的目录（施工 X-10 上）：开着的技能文件夹。
+    pub shelves: Vec<PathBuf>,
 }
 
 /// 系统目录的第一版清单（11 第四节）。
@@ -78,6 +83,7 @@ impl Places {
             data_root,
             temp: std::env::temp_dir(),
             readable,
+            shelves: Vec::new(),
         }
     }
 }
@@ -107,6 +113,7 @@ pub struct Boundary {
     data_root: Option<PathBuf>,
     temp: Option<PathBuf>,
     readable: Vec<PathBuf>,
+    shelves: Vec<PathBuf>,
 }
 
 impl Boundary {
@@ -118,6 +125,7 @@ impl Boundary {
             data_root: real(&places.data_root),
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
+            shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
         }
     }
 
@@ -127,6 +135,9 @@ impl Boundary {
             && let Ok(inside) = path.strip_prefix(workspace)
         {
             return like_workspace(inside);
+        }
+        if self.shelves.iter().any(|dir| within(path, dir)) {
+            return Zone::Shelf;
         }
         if self
             .data_root

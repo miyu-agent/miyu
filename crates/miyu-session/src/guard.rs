@@ -30,8 +30,10 @@ use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
 use crate::lettering::Lettering;
 
+mod asking;
 mod confined;
 
+use asking::{Asked, ask, granted};
 pub(crate) use confined::Confined;
 
 /// 权限策略：一个会话一份。
@@ -99,13 +101,6 @@ enum Mark {
     ReadOnly,
 }
 
-/// 要问人的一条路径：真实的位置、是不是写、在哪一片。
-struct Asked {
-    real: PathBuf,
-    write: bool,
-    zone: Zone,
-}
-
 impl Guard {
     /// 照目录 `catalog` 找工具，数据根是 `data_root`，家目录是 `home`，拒绝时的话照 `lettering`，这台机器上的沙盒能不能用
     /// 是 `sandboxed`，会话在 `place`（施工 O-31 前），只碰得到自己工作区的有 `confined`（施工 5-12）。
@@ -131,6 +126,13 @@ impl Guard {
             place,
             confined,
         }
+    }
+
+    /// 数据根里单独放开只读的目录（施工 X-10 上，开着的技能文件夹）：能读，写一律拒；只碰得到自己工作区的会话也能读。
+    #[must_use]
+    pub(crate) fn with_shelves(mut self, shelves: Vec<PathBuf>) -> Guard {
+        self.places.shelves = shelves;
+        self
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
@@ -254,13 +256,14 @@ impl Guard {
                     );
                 }
             };
-            // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12）。
+            let zone = boundary.zone(&real);
+            // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12），读放开只读的技能文件夹除外（施工 X-10 上）。
             if let Some(confined) = &self.confined
                 && !confined::inside(&real, &cwd, &places.dirs)
+                && !(zone == Zone::Shelf && !target.write)
             {
                 return deny(confined.outside(&target.path));
             }
-            let zone = boundary.zone(&real);
             match mark(level, zone, target.write) {
                 Mark::Allow => {}
                 Mark::Ask => asked.push(Asked {
@@ -311,7 +314,7 @@ pub(crate) fn effective(permission: &Permission) -> Effective {
 /// 一条路径照级别判（11 第二节的判法表）：读哪儿都放行，数据根除外（施工 5-4 上，原来边界以外的读要问人）。
 fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
     match (zone, level, write) {
-        (Zone::Forbidden, _, _) => Mark::Forbidden,
+        (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
         (_, Effective::Full, _) | (_, _, false) => Mark::Allow,
         (_, Effective::ReadOnly, true) => Mark::ReadOnly,
         (Zone::Writable, Effective::Workspace, true) => Mark::Allow,
@@ -393,43 +396,6 @@ fn described(name: &str, access: &Access, asking: &[(&'static str, String)]) -> 
     raw(&detail)
 }
 
-/// 要问人：提的放行规则列出放行的范围（`scope`），给头看的说明列出每一条。
-fn ask(name: &str, access: Access, asked: &[Asked], home: Option<&Path>) -> Verdict {
-    let dirs = |write: bool| -> Vec<String> {
-        let mut dirs: Vec<String> = asked
-            .iter()
-            .filter(|asked| asked.write == write)
-            .map(|asked| text(&scope(&asked.real, home)))
-            .collect();
-        dirs.sort();
-        dirs.dedup();
-        dirs
-    };
-    let mut rule = json!({ "tool": name });
-    for (key, write) in [("read", false), ("write", true)] {
-        let listed = dirs(write);
-        if !listed.is_empty() {
-            rule[key] = json!(listed);
-        }
-    }
-    let paths: Vec<Value> = asked
-        .iter()
-        .map(|asked| {
-            json!({
-                "path": text(&asked.real),
-                "write": asked.write,
-                "zone": if asked.zone == Zone::Outside { "outside" } else { "read_only" },
-            })
-        })
-        .collect();
-    Verdict::Ask {
-        module: module(),
-        access,
-        rule: Some(raw(&rule)),
-        detail: Some(raw(&json!({ "tool": name, "paths": paths }))),
-    }
-}
-
 /// 拒绝，写给她这一句，连同给人看的说法。
 fn deny(worded: Worded) -> Verdict {
     Verdict::Deny {
@@ -446,43 +412,6 @@ fn deny(worded: Worded) -> Verdict {
 /// 实际不会：`permissions` 合模块编号的写法。
 fn module() -> ModuleId {
     ModuleId::parse("permissions").expect("permissions 合模块编号的写法")
-}
-
-/// 放行的范围（`11-权限与沙盒.md` 第二节「放行规则管多大」）：是目录的就是它自己，别的是它所在的目录，连同下面的；那个目录
-/// 是家目录本身、或者更上面的，只放这一条本身：家目录里有钥匙（施工 D-1）。`real`、`home` 都是真实的位置。
-fn scope(real: &Path, home: Option<&Path>) -> PathBuf {
-    let directory = if real.is_dir() {
-        real.to_path_buf()
-    } else {
-        real.parent()
-            .map_or_else(|| real.to_path_buf(), Path::to_path_buf)
-    };
-    match home {
-        Some(home) if home.starts_with(&directory) => real.to_path_buf(),
-        _ => directory,
-    }
-}
-
-/// 要问人的一条落在放行过的规则里没有（施工 D-1）：规则里照是读是写（`read`、`write`）列着放行的范围，这一条是其中一个
-/// 本身、或者在它下面。按路径的段比（`Path::starts_with`），`/a/b` 不放行 `/a/bc`。读不懂的规则不算。
-fn granted(grants: &[RawJson], asked: &Asked) -> bool {
-    let key = if asked.write { "write" } else { "read" };
-    grants.iter().any(|rule| {
-        serde_json::from_str::<Value>(rule.get())
-            .ok()
-            .and_then(|rule| rule.get(key).and_then(Value::as_array).cloned())
-            .is_some_and(|scopes| {
-                scopes
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .any(|scope| asked.real.starts_with(scope))
-            })
-    })
-}
-
-/// 路径写成字。
-fn text(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
 }
 
 /// 自己拼的 JSON，写成原样的 JSON。

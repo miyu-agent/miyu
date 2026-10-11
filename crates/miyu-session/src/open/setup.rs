@@ -102,6 +102,9 @@ pub struct Create<'a> {
     /// 核心一份的知识库（施工 K-1 下，`knowledge.md`「怎么走」第六条）：照记忆的账号、人格查；没交的（测试里造的）查不了，
     /// 工具面上没有两件。
     pub knowledge: Option<Arc<miyu_store::knowledge::Knowledge>>,
+    /// 装了的软件包（施工 X-10 上，`skills.md`「技能」第 2、3 条）：照它和属主家目录里的找技能，列进 system，文件夹放开只读。
+    /// 没交的（测试里自己造的）不找技能。
+    pub installed: Option<Arc<Vec<miyu_store::packages::Found>>>,
     /// 核心一份的记忆（施工 R-2 上、R-3 中，`memory.md`）：主会话每落一批，把结束了的人开的回合放进这个人格的回合库；三件
     /// 工具的端口照它造。没有的（测试里自己造的）不放、三件工具说记忆没开。
     pub memory: Option<Arc<crate::Memory>>,
@@ -180,6 +183,8 @@ pub struct Load<'a> {
     pub configs: Configs,
     /// 同 [`Create::knowledge`]。
     pub knowledge: Option<Arc<miyu_store::knowledge::Knowledge>>,
+    /// 同 [`Create::installed`]：载入时只照它放开技能的文件夹，列出来的那一块照快照。
+    pub installed: Option<Arc<Vec<miyu_store::packages::Found>>>,
     /// 同 [`Create::memory`]：载入时照整份事件补上回合库落下的。
     pub memory: Option<Arc<crate::Memory>>,
     /// 同 [`Create::presets`]。

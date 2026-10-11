@@ -95,6 +95,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         group: None,
         foreground: false,
         knowledge: None,
+        skills: None,
     }
 }
 
@@ -164,6 +165,17 @@ impl Snapshot {
             ..snapshot.clone()
         };
         rest(self) == rest(new)
+    }
+
+    /// 带上她用得上的技能那一块（施工 X-10 上，`skills.md`「技能」第 2 条）：system 第 4 块（26 第四节）的前一半，在
+    /// [`Snapshot::with_core_lines`] 以后、[`Snapshot::with_knowledge`] 以前调；记进快照。没有的 system 一字不变。
+    #[must_use]
+    pub fn with_skills(mut self, block: Option<String>) -> Snapshot {
+        if let Some(block) = &block {
+            self.system = system(&[&self.system, block]);
+        }
+        self.skills = block;
+        self
     }
 
     /// 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（26 第四节），在

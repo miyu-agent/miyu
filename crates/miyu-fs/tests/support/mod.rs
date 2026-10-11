@@ -67,6 +67,7 @@ impl Site {
             ("work/sub/.git/hooks/x", "#!/bin/sh"),
             ("data/run/token", "token"),
             ("data/home/admin/workspace/w.txt", "w"),
+            ("data/home/admin/skills/notes/SKILL.md", "---"),
             ("tmp/t.txt", "t"),
             ("sys/lib.txt", "lib"),
             ("work-other/x.txt", "x"),
@@ -94,6 +95,7 @@ impl Site {
             data_root: self.at("data"),
             temp: self.at("tmp"),
             readable: vec![self.at("sys"), self.at("home/.cargo")],
+            shelves: Vec::new(),
         }
     }
 

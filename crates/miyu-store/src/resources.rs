@@ -477,9 +477,11 @@ impl ResourceRoot {
 }
 
 mod goal;
+mod skills;
 mod venues;
 
 pub use goal::GoalRounds;
+pub use skills::SkillTexts;
 
 #[cfg(test)]
 mod tests;

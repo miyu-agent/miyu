@@ -45,6 +45,7 @@ pub mod recall;
 pub mod resources;
 pub mod root;
 pub mod secrets;
+pub mod skills;
 pub mod sqlite;
 pub mod trash;
 pub mod usage;

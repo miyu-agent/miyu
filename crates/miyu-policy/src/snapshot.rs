@@ -95,6 +95,10 @@ pub struct Snapshot {
     /// 没有知识库那两件工具的没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub knowledge: Option<String>,
+    /// 她用得上的技能那一块拼好的原文（施工 X-10 上，`compose.rs`）：system 第 4 块里排在知识库前面，造会话时钉下，会话中途
+    /// 不改。没有技能、工具面上没有 `read` 的没有：不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skills: Option<String>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。

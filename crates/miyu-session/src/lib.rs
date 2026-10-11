@@ -53,6 +53,7 @@ mod sandbox;
 mod sessions;
 pub mod settings;
 mod shown;
+mod skills;
 mod snapshot;
 mod spawn;
 mod store;

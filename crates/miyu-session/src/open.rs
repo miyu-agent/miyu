@@ -33,6 +33,7 @@ use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
 use crate::report::{Reporter, Upstream};
+use crate::skills;
 use crate::snapshot::{Parts, build, tooled};
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
@@ -88,6 +89,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         configs,
         model,
         knowledge,
+        installed: packages_installed,
         memory,
         preset,
         presets,
@@ -125,6 +127,15 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         None => Vec::new(),
     };
     let knows = !listed.is_empty();
+    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上）：列进 system，文件夹放开只读。
+    let found = match packages_installed {
+        Some(installed) => {
+            let (root, owner) = (root.clone(), owner.clone());
+            blocking(move || skills::find(&installed, &root, &owner)).await
+        }
+        None => Vec::new(),
+    };
+    let shelves_open = skills::shelves(&found);
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
     let offers = Offers::of(&config.current().resolved.values(), personas.ids());
@@ -174,6 +185,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
+        let skilled = skills::listing(&resources, &face, &found).map_err(CreateError::Shipped)?;
         let parts = Parts {
             name: name.clone(),
             texts: persona_texts,
@@ -191,6 +203,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .transpose()
                 .map_err(CreateError::Shipped)?
                 .flatten(),
+            skills: skilled,
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;
@@ -293,7 +306,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         home.map(Path::to_path_buf),
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
-    );
+    )
+    .with_shelves(shelves_open);
     let who = Who {
         owner: owner.clone(),
         venue: venue.clone(),

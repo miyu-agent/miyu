@@ -52,6 +52,7 @@ fn setup_with(
         foreground: false,
 
         knowledge: None,
+        skills: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {
@@ -84,6 +85,23 @@ fn an_unchanged_persona_is_the_same_and_a_changed_one_swaps() {
         refresh.blobs.get(&hash).expect("新快照存进了 blob"),
         snapshot.to_bytes()
     );
+}
+
+/// 换人格（施工 X-10 上）：技能那一块照旧快照钉下的，不重新找。
+#[test]
+fn a_swap_keeps_the_skills_it_was_made_with() {
+    let (_scratch, root, mut refresh) = setup("skills-swap", "You are Miyu.\n");
+    let block = "Skills you can use (read the file before following one):\n- notes: Take notes. (/s/notes/SKILL.md)";
+    refresh.snapshot = refresh
+        .snapshot
+        .clone()
+        .with_skills(Some(block.to_string()));
+    write(&root, "persona.md", "You are Miyu, softly.\n");
+    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+        panic!("改了要换");
+    };
+    assert_eq!(snapshot.skills.as_deref(), Some(block));
+    assert!(snapshot.system.contains(block), "{}", snapshot.system);
 }
 
 /// 群会话换人格（施工 O-13 中）：新快照照样在人设后面接着格式说明，时区照旧快照钉下的。

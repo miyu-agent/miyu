@@ -38,6 +38,7 @@ use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
 use crate::report::{Reporter, Upstream, wake_children};
+use crate::skills;
 use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
@@ -87,6 +88,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         usage,
         configs,
         knowledge,
+        installed,
         memory,
         presets,
         owner_is_admin,
@@ -308,13 +310,22 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
     let confined = place.1.is_some();
+    // 技能的文件夹照这一刻找到的放开只读（施工 X-10 上）；列出来的那一块照快照。
+    let shelves_open = match installed {
+        Some(installed) => {
+            let (root, owner) = (root.clone(), owner.clone());
+            blocking(move || skills::shelves(&skills::find(&installed, &root, &owner))).await
+        }
+        None => Vec::new(),
+    };
     let guard = Guard::new(
         tools.clone(),
         root.path().to_path_buf(),
         home.map(Path::to_path_buf),
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
-    );
+    )
+    .with_shelves(shelves_open);
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {

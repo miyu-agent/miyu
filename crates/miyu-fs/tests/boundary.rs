@@ -146,6 +146,27 @@ fn temp_is_writable_system_and_toolchains_read_only_the_rest_outside() {
 }
 
 #[test]
+fn a_shelf_in_the_data_root_is_its_own_zone() {
+    let site = Site::new();
+    let boundary = Boundary::new(&Places {
+        shelves: vec![site.at("data/home/admin/skills/notes"), site.at("nowhere")],
+        ..site.places()
+    });
+    let skill = site.real("data/home/admin/skills/notes/SKILL.md");
+    assert_eq!(boundary.zone(&skill), Zone::Shelf);
+    assert_eq!(
+        boundary.zone(&site.real("data/home/admin/skills/notes")),
+        Zone::Shelf
+    );
+    // 旁边的照旧谁都不能碰。
+    assert_eq!(
+        boundary.zone(&site.real("data/home/admin/skills")),
+        Zone::Forbidden
+    );
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+}
+
+#[test]
 fn a_place_that_does_not_exist_is_left_out() {
     let site = Site::new();
     let boundary = Boundary::new(&Places {
