@@ -125,6 +125,12 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
             | Body::MetaChanged(_)
             // 封存是给人和桥看的（施工 C-8 下）：封存以后不再请求。
             | Body::SessionSealed(_)
+            // 长期目标的几条只给人看、给续轮算（施工 X-6）：她照续轮消息知道目标（施工 X-8）。
+            | Body::GoalSet(_)
+            | Body::GoalChanged(_)
+            | Body::GoalPaused(_)
+            | Body::GoalResumed(_)
+            | Body::GoalEnded(_)
             // 换工作区不进上下文：下一轮开始时变了的环境照旧注成一块事实（施工 9-7 上）。
             | Body::WorkspaceChanged(_)
             | Body::SessionRecapped(_)

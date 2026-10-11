@@ -11,6 +11,7 @@ mod delete;
 mod embed;
 mod embed_replace;
 mod forward;
+mod goal;
 mod group;
 mod guard;
 mod guard_confined;

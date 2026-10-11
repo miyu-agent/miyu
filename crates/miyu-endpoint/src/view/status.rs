@@ -1,10 +1,10 @@
 //! 会话状态（施工 9-8 补上，`docs/blueprint/view.md`「会话状态」）：投影算得出的那一半（在跑没跑、在等什么、正在做什么、
-//! 上下文用了多少、速度、冷却、任务表），拼上向会话要的（用量、模型、权限、待办、工作区）和订阅时定下的（人格、预设）。
+//! 上下文用了多少、速度、冷却、任务表），拼上向会话要的（用量、模型、权限、待办、工作区、长期目标）和订阅时定下的（人格、预设）。
 //! 视图流订阅的回应带一份，之后变了推整份 `view.status`。
 
 use serde_json::{Value, json};
 
-use miyu_session::{Current, Handle};
+use miyu_session::{Current, Goal, Handle};
 use miyu_view::Status;
 
 use crate::Core;
@@ -43,6 +43,9 @@ pub(crate) fn whole(
         status["usage"] = crate::usage::tallied(core, &current.tally);
         status["permission"] = json!(current.permission);
         status["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
+        if let Some(goal) = &current.goal {
+            status["goal"] = goal_of(core, goal);
+        }
     }
     if let Some(persona) = &fixed.persona {
         status["persona"] = persona.clone();
@@ -52,3 +55,25 @@ pub(crate) fn whole(
     }
     status
 }
+
+/// 会话状态的 `goal` 那一格（施工 X-6，`docs/blueprint/view.md`「会话状态」）：原文、上限（不限的不写）、状态、卡在哪（卡住的
+/// 才有）、第几轮、设下的时刻、花了多少（写法同会话状态的 `usage`）。
+fn goal_of(core: &Core, goal: &Goal) -> Value {
+    let mut shown = json!({
+        "text": goal.text,
+        "state": goal.state.as_str(),
+        "round": goal.round,
+        "since": goal.since,
+        "usage": crate::usage::tallied(core, &goal.spent),
+    });
+    if let Some(limit) = goal.limit {
+        shown["limit"] = json!(limit.get());
+    }
+    if let Some(reason) = &goal.reason {
+        shown["reason"] = json!(reason);
+    }
+    shown
+}
+
+#[cfg(test)]
+mod tests;

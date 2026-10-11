@@ -23,6 +23,8 @@ pub struct Current {
     pub dirs: Vec<String>,
     /// 这个会话累计的。
     pub tally: Tally,
+    /// 长期目标现在的样子（施工 X-6）：没设过、清掉了的没有。
+    pub goal: Option<crate::goal::Goal>,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

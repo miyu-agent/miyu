@@ -14,6 +14,7 @@ use crate::time::Timestamp;
 mod context;
 mod cost;
 mod effect;
+mod goal;
 mod image;
 mod job;
 mod message;
@@ -35,6 +36,7 @@ pub use effect::{
     Effect, FileChanged, FileRead, FileTrashed, JobKind, JobMessaged, JobStarted, PeerWatch, Todo,
     TodoStatus, TodoWritten,
 };
+pub use goal::{GoalChanged, GoalEnded, GoalOutcome, GoalPaused, GoalResumed, GoalSet};
 pub use image::ImageDescribed;
 pub use job::{ChildReason, ChildReported, JobReason, JobReported};
 pub use message::{MessageAssistant, MessageUser, MessageWithdrawn};
@@ -193,6 +195,16 @@ bodies! {
     VenueRecalled = "venue.recalled",
     /// 她的一句话实际发到了平台上（施工 O-13 上，桥经 `events.append` 记）。
     VenueDelivered = "venue.delivered",
+    /// 设了一个长期目标（施工 X-6）。
+    GoalSet = "goal.set",
+    /// 改了长期目标的原文或上限（施工 X-6）。
+    GoalChanged = "goal.changed",
+    /// 长期目标停下（施工 X-6）。
+    GoalPaused = "goal.paused",
+    /// 长期目标接着跑（施工 X-6）。
+    GoalResumed = "goal.resumed",
+    /// 长期目标结束了（施工 X-6）。
+    GoalEnded = "goal.ended",
 }
 
 impl Event {

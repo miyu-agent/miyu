@@ -99,6 +99,15 @@
 - 不进她的上下文（渲染时不出）：下一轮开始时，变了的环境照旧注成一块事实。
 - 会话的工作目录、加进来的目录照日志里最后一条带它们的算：工作目录照 `session.workspace_changed`、`turn.started`、`session.created` 里最后一条带 `cwd` 的，加进来的目录照最后一条写了 `dirs` 的 `session.workspace_changed` 或者 `turn.started`。会话列表的 `cwd` 照同一个认法（`store/index.md`）。
 
+**长期目标**（施工 X-6，`goal.md`）：五种都不进她的上下文，她照续轮消息知道目标（施工 X-8）。前后对不对由账本查（`kernel/history.md`）；现在的样子由会话层照日志算（`miyu-session` 的 `goal.rs`）。
+
+| 种类 | `body` |
+|---|---|
+| `goal.set` | `text`（目标的原文，不能是空白）、`limit`（轮数上限，1 起的整数，不写的不限） |
+| `goal.changed` | 改完的整份：`text`、`limit`（不写的是不限了） |
+| `goal.paused`、`goal.resumed` | `{}` |
+| `goal.ended` | `outcome`（`completed`、`blocked`、`cleared`，不认识的原样留着、也算结束了）、`reason`（卡在哪，卡住的才写） |
+
 **`session.sealed`**：分叉出来的会话跑满了 `forked.seal_after` 轮，封存了（施工 C-8 下，`session/fork.md`「封存」）。`body` 是 `{}`。`by` 是内核，`cause` 同它前面那条 `turn.ended`，不带 `turn`：和那一轮的结束同一批追加，崩了载入时收尾的那一轮也是。之后不再开一轮（账本查，`kernel/history.md`）；不进上下文。
 
 **`session.recapped`**：一句回顾（施工 3-8 四补，`kernel/session.md`「回顾」）。头要的（`protocol.md` 的 `session.recap`），推给所有订阅着的头；不进她的上下文（渲染时不出，`kernel/request.md`「组装」），`history` 也不列。`by` 是内核，`cause` 是要它的那个命令（在路上又来的几个并进去，照第一个），不带 `turn`。

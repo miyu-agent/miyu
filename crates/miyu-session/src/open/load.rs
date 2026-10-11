@@ -28,6 +28,7 @@ use crate::clock::Clock;
 use crate::config::Turning;
 use crate::current::Tally;
 use crate::effects;
+use crate::goal::Goals;
 use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
@@ -253,8 +254,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     };
     let roster = Roster::from_events(&events);
     let sent = last_sent(&events);
-    // 累计的用量和计数（施工 9-6 上）：订阅的回应照它答，之后每落一批盘加上这一批。
+    // 累计的用量和计数（施工 9-6 上）、长期目标（施工 X-6）：订阅的回应照它答，之后每落一批盘加上这一批。
     let tally = Tally::of(&events);
+    let goals = Goals::of(&events);
     let scanned = scanning.elapsed();
     let replaying = Instant::now();
     let placed = environment.clone();
@@ -344,7 +346,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         clock,
         config,
     );
-    actor.count_from(tally);
+    actor.count_from(tally, goals);
     let busy = actor.busy();
     let watched = actor.watched();
     let shown = actor.shown();

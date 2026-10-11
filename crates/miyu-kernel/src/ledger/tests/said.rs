@@ -5,6 +5,7 @@
 //! 底子是一个子会话（父会话 `P`）：第 3 轮派了子代理（会话 `A`），回合结束，闲着。
 
 use super::*;
+use crate::block::Block;
 use crate::id::{ContentHash, SessionId};
 
 /// 父会话。

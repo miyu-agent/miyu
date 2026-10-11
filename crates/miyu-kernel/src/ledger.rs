@@ -11,22 +11,25 @@
 
 use std::collections::BTreeSet;
 
-use crate::block::Block;
 use crate::event::{Body, CompactTrigger, ContextCompacted, Event};
 use crate::id::{CallId, Seq, TurnId};
 use crate::origin::By;
 
 mod error;
+mod goal;
 mod jobs;
 mod peers;
 mod seal;
+mod shape;
 mod triggers;
 mod undo;
 
+use goal::Goals;
 use jobs::Jobs;
 use peers::Peers;
 pub(crate) use peers::digest;
 use seal::Sealing;
+use shape::{check_call_ids, in_turn_only, tool_call_id};
 use triggers::Triggers;
 
 pub use error::LedgerError;
@@ -73,6 +76,8 @@ pub struct Ledger {
     triggers: Triggers,
     /// 封存了没有（施工 C-8 下，`ledger/seal.rs`）。
     sealing: Sealing,
+    /// 长期目标在不在、停没停（施工 X-6，`ledger/goal.rs`）。
+    goals: Goals,
 }
 
 impl Default for Ledger {
@@ -93,6 +98,7 @@ impl Default for Ledger {
             peers: Peers::default(),
             triggers: Triggers::default(),
             sealing: Sealing::default(),
+            goals: Goals::default(),
         }
     }
 }
@@ -203,6 +209,7 @@ impl Ledger {
         }
         self.check_turn(event)?;
         self.sealing.check(self.open, event)?;
+        self.goals.check(event)?;
         match &event.body {
             Body::TurnJoined(joined) => self.triggers.check_joined(joined),
             Body::SessionCreated(created) => jobs::check_created(created),
@@ -381,6 +388,7 @@ impl Ledger {
         self.peers.record(event, peer);
         self.triggers.record(event);
         self.sealing.record(event);
+        self.goals.record(event);
         match &event.body {
             Body::TurnStarted(_) => {
                 let turn = TurnId::new(event.seq);
@@ -445,51 +453,11 @@ impl Ledger {
     }
 }
 
-/// 只在回合里发生的种类：模型的回复、工具的结果、请人确认和人的决定、问人和人的回答、
-/// 撤回排着队的消息、回合结束、暂停自动压缩、压缩。压缩跟着它所在的回合撤（施工 6-9）：不在回合里的压缩没有哪一轮撤得掉，
-/// 它替代掉的回合也就撤不了。
-fn in_turn_only(body: &Body) -> bool {
-    matches!(
-        body,
-        Body::MessageAssistant(_)
-            | Body::TurnJoined(_)
-            | Body::ToolResult(_)
-            | Body::ApprovalRequested(_)
-            | Body::ApprovalDecided(_)
-            | Body::QuestionAsked(_)
-            | Body::QuestionAnswered(_)
-            | Body::MessageWithdrawn(_)
-            | Body::TurnEnded(_)
-            | Body::CompactionPaused(_)
-            | Body::ContextCompacted(_)
-    )
-}
-
 /// 一次还算数的压缩：在哪一轮、替代到哪。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Compaction {
     turn: TurnId,
     upto: Seq,
-}
-
-/// 块是工具调用的话，它的调用编号。
-fn tool_call_id(block: &Block) -> Option<CallId> {
-    match block {
-        Block::ToolCall(call) => Some(call.call_id),
-        _ => None,
-    }
-}
-
-/// 助手消息里第 k 个工具调用，编号是 `call_<这一条的序号>_<k>`（`03-事件模型.md` 第二节）。
-fn check_call_ids(seq: Seq, blocks: &[Block]) -> Result<(), String> {
-    for (index, call) in (1..).zip(blocks.iter().filter_map(tool_call_id)) {
-        if CallId::new(seq, index) != Some(call) {
-            return Err(format!(
-                "tool call {index} should have id call_{seq}_{index}, got {call}"
-            ));
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]

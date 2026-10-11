@@ -8,6 +8,7 @@ use miyu_kernel::origin::Model;
 use miyu_kernel::session::ContextLimits;
 
 use crate::current::Tally;
+use crate::goal::Goals;
 use crate::port::ModelPort;
 use crate::route::NONE;
 
@@ -22,6 +23,8 @@ pub struct Shown {
     pub todos: Vec<Todo>,
     /// 这个会话累计的（施工 9-6 上）：造会话时是空的，载入时照整份日志算，之后每落一批盘加上这一批。
     pub tally: Tally,
+    /// 长期目标现在的样子（施工 X-6）：喂法同 `tally`。
+    pub goals: Goals,
 }
 
 impl Shown {
@@ -32,6 +35,7 @@ impl Shown {
             next,
             todos,
             tally: Tally::default(),
+            goals: Goals::default(),
         }
     }
 }
