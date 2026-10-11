@@ -264,3 +264,49 @@ fn every_problem_code_is_said_in_three_languages() {
         }
     }
 }
+
+/// 包里的程序在哪（施工 F-8 上再补）：先找包文件夹的 `bin/`，再找主程序旁边的；包文件夹是相对路径的不找 `bin/`；都没有的
+/// 是没有。只看在不在：空文件就够。
+#[test]
+fn a_program_is_found_in_the_package_bin_then_beside_main() {
+    let places = Places::new();
+    places.write(Layer::Home, "own/package.toml", &ui("own"));
+    let file = |name: &str| format!("{name}{}", std::env::consts::EXE_SUFFIX);
+    let beside = places.scratch.path().join("usr/bin");
+    fs::create_dir_all(&beside).unwrap();
+    let main = beside.join(file("miyu"));
+    fs::write(&main, "").unwrap();
+    let found = places.packages.read();
+    let own = found.iter().find(|one| one.id == "own").unwrap();
+    assert_eq!(own.program("miyu-own", &main), None, "哪儿都没有");
+
+    fs::write(beside.join(file("miyu-own")), "").unwrap();
+    let real = fs::canonicalize(&beside).unwrap();
+    assert_eq!(
+        own.program("miyu-own", &main),
+        Some(real.join(file("miyu-own"))),
+        "只有主程序旁边有的照旁边的"
+    );
+
+    let bin = own.files_dir().join(BIN);
+    fs::create_dir_all(&bin).unwrap();
+    fs::write(bin.join(file("miyu-own")), "").unwrap();
+    assert_eq!(
+        own.program("miyu-own", &main),
+        Some(bin.join(file("miyu-own"))),
+        "包自己带的先"
+    );
+    // 相对的包文件夹不找 `bin/`：拼一个从当前目录走得到同一个 `bin/` 的相对路径，照样不认。
+    #[cfg(unix)]
+    {
+        let cwd = std::env::current_dir().unwrap();
+        let up: PathBuf = cwd.components().skip(1).map(|_| "..").collect();
+        let relative = up.join(own.files_dir().strip_prefix("/").unwrap());
+        assert!(relative.join(BIN).join(file("miyu-own")).is_file());
+        assert_eq!(
+            locate("miyu-own", &relative, &main),
+            Some(real.join(file("miyu-own"))),
+            "相对的包文件夹不找 bin/"
+        );
+    }
+}

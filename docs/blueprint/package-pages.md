@@ -31,7 +31,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 `status`：
 
-1. `program_missing`：要程序的包（扩展、界面、小程序），程序不在 `miyu` 旁边（找法同 `packages.md`「转交」）。
+1. `program_missing`：要程序的包（扩展、界面、小程序），程序不在包文件夹的 `bin/`、也不在 `miyu` 旁边（找法同 `packages.md`「转交」，施工 F-8 上再补）。
 2. `off`：关着。扩展的开关关着；出厂的包卸掉了（`removed: true`）。
 3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。
 4. `ready`：别的。内置包装着，小程序、界面的程序在。

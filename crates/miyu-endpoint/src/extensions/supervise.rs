@@ -21,6 +21,11 @@ use crate::connection::serve_spawned;
 /// 连续失败几次停下。
 pub(super) const TRIES: u32 = 5;
 
+/// 程序正被别的进程开着写（Linux 回「Text file busy」）时，拉起最多试几次、每次隔多久（施工 F-8 上再补）：包带的程序是装的
+/// 时候拷进来的，拷的那一刻核心正好起别的子进程的话，子进程在换成自己的程序以前也攥着写它的句柄。一会儿就放开，等等就好。
+const BUSY_TRIES: u32 = 20;
+const BUSY_WAIT: Duration = Duration::from_millis(50);
+
 /// Windows 上不弹控制台窗口：核心多半是没有控制台的后台进程，起控制台程序会新开一个窗口。
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -122,7 +127,7 @@ pub(super) async fn run(
         let Some(owner) = core.upgrade() else {
             return;
         };
-        let mut child = match spawn(&plan) {
+        let mut child = match spawn_settled(&plan).await {
             Ok(child) => child,
             Err(error) => {
                 tracing::warn!(target: TARGET, package = id, error = %error, "extension not started");
@@ -220,6 +225,22 @@ impl Watched<'_> {
                 }
                 _ = asked.changed() => return (true, ready_at),
             }
+        }
+    }
+}
+
+/// 拉起（[`spawn`]）；程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次。别的错误照旧交回。
+async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
+    let mut tries = 1;
+    loop {
+        match spawn(plan) {
+            Err(error)
+                if error.kind() == io::ErrorKind::ExecutableFileBusy && tries < BUSY_TRIES =>
+            {
+                tries += 1;
+                tokio::time::sleep(BUSY_WAIT).await;
+            }
+            done => return done,
         }
     }
 }

@@ -1,6 +1,6 @@
 //! `miyu web`（`docs/blueprint/web-module.md`「怎么走」第十一条第 1 款，施工 W-9）：主程序里不放网页的代码，照清单找网页
-//! 软件（施工 9-3：子命令是 `web` 的那个包的程序，出厂那一份是 `miyu-web`），只找主程序真实位置旁边的（Windows 上加
-//! `.exe`），把参数原样交给它的 `open`，等它退出，退出码照它的。没装的说怎么装，退出码 1。
+//! 软件（施工 9-3：子命令是 `web` 的那个包的程序，出厂那一份是 `miyu-web`），找包文件夹的 `bin/`、主程序真实位置旁边的
+//! （Windows 上加 `.exe`，施工 F-8 上再补），把参数原样交给它的 `open`，等它退出，退出码照它的。没装的说怎么装，退出码 1。
 
 #[cfg(test)]
 mod tests;
@@ -68,38 +68,44 @@ impl Web {
 /// 跑一次 `miyu web`：照管理员 `admin` 那两层的清单找网页软件。
 pub fn web(args: Web, admin: &AccountId) -> ExitCode {
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
-    let program = program(&Env::current(), admin);
+    let (program, dir) = program(&Env::current(), admin);
     ExitCode::from(web_on(
         &args,
         &main,
+        &dir,
         &program,
         language::current(),
         &mut io::stderr(),
     ))
 }
 
-/// 网页软件的程序名：两层清单里子命令是 `web` 的那一份的（施工 9-3）；没有的照出厂的 [`PROGRAM`]。
-fn program(env: &Env, admin: &AccountId) -> String {
+/// 网页软件的程序名和包文件夹：两层清单里子命令是 `web` 的那一份的（施工 9-3）；没有的照出厂的 [`PROGRAM`]，包文件夹是空的。
+fn program(env: &Env, admin: &AccountId) -> (String, PathBuf) {
+    let fallback = || (PROGRAM.to_string(), PathBuf::new());
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
-        return PROGRAM.to_string();
+        return fallback();
     };
     Packages::new(&resources, &root, admin)
         .read()
         .into_iter()
-        .filter_map(|found| found.read.ok()?.command)
-        .find(|command| command.name == "web")
-        .map_or_else(|| PROGRAM.to_string(), |command| command.program)
+        .find_map(|found| {
+            let dir = found.files_dir();
+            let command = found.read.ok()?.command?;
+            (command.name == "web").then_some((command.program, dir))
+        })
+        .unwrap_or_else(fallback)
 }
 
-/// 同 [`web`]：主程序在 `main`，网页软件叫 `program`，没装时照 `language` 说在 `err` 上。交回退出码。
+/// 同 [`web`]：主程序在 `main`，网页软件叫 `program`、包文件夹在 `dir`，没装时照 `language` 说在 `err` 上。交回退出码。
 pub fn web_on(
     args: &Web,
     main: &Path,
+    dir: &Path,
     program: &str,
     language: Language,
     err: &mut dyn Write,
 ) -> u8 {
-    let Some(program) = locate(program, main) else {
+    let Some(program) = locate(program, dir, main) else {
         if writeln!(err, "{}", not_installed(language)).is_err() {
             // 标准错误关了：没有别处可说。
         }

@@ -38,6 +38,7 @@ fn a_missing_web_ui_says_how_to_install() {
         web_on(
             &Web::default(),
             &main,
+            Path::new(""),
             "miyu-web",
             Language::Chinese,
             &mut err
@@ -52,6 +53,7 @@ fn a_missing_web_ui_says_how_to_install() {
         web_on(
             &Web::default(),
             &main,
+            Path::new(""),
             "miyu-web",
             Language::English,
             &mut err
@@ -88,7 +90,14 @@ fn an_installed_web_ui_gets_the_args_and_decides_the_exit_code() {
     };
     let mut err = Vec::new();
     assert_eq!(
-        web_on(&args, &main, "miyu-web", Language::Chinese, &mut err),
+        web_on(
+            &args,
+            &main,
+            Path::new(""),
+            "miyu-web",
+            Language::Chinese,
+            &mut err
+        ),
         7,
         "照它的退出码"
     );

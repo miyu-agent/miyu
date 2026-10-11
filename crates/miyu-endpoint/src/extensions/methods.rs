@@ -73,7 +73,7 @@ pub(crate) async fn turn_on(
     approve: Option<&[String]>,
 ) -> Result<Value, Refusal> {
     let manifest = &extension(core, id)?;
-    if crate::packages::status::program_missing(manifest) {
+    if crate::packages::program_missing(core, id, manifest) {
         return Err(Refusal::PROGRAM_MISSING);
     }
     let _one_at_a_time = core.extensions.ops.lock().await;

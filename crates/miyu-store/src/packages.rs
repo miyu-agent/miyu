@@ -27,6 +27,9 @@ pub mod migrate;
 /// 清单在包文件夹里的名字（施工 F-8 上）。
 pub const MANIFEST: &str = "package.toml";
 
+/// 包带的程序放在包文件夹里的这个子目录（施工 F-8 上再补，设计 `31-软件包.md` 第二节）。
+pub const BIN: &str = "bin";
+
 /// 一层：清单从哪来。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Layer {
@@ -66,6 +69,11 @@ impl Found {
         self.path
             .parent()
             .map_or_else(PathBuf::new, Path::to_path_buf)
+    }
+
+    /// 这个包的程序 `program` 在哪：见 [`locate`]。
+    pub fn program(&self, program: &str, main: &Path) -> Option<PathBuf> {
+        locate(program, &self.files_dir(), main)
     }
 }
 
@@ -212,11 +220,17 @@ fn declares_account(found: &Found) -> bool {
     })
 }
 
-/// 包里的程序 `program` 在哪（施工 9-2，`packages.md`「转交」）：主程序 `main` 真实位置旁边的（Windows 加 `.exe`，和
-/// `miyu web` 找 `miyu-web` 一个办法）；没有的是没有。不找 `PATH`：别的程序冒充不了（2026-10-01 项目主人定，第二节「拆 M9
-/// 时另带四样」第 4 条）。
-pub fn locate(program: &str, main: &Path) -> Option<PathBuf> {
+/// 包里的程序 `program` 在哪（施工 9-2，`packages.md`「转交」）：先找包文件夹 `dir` 里的 `bin/`（施工 F-8 上再补：别人做的包
+/// 自己带程序，装的时候随包拷进来），再找主程序 `main` 真实位置旁边的（随 Miyu 装的那几个；和 `miyu web` 找 `miyu-web` 一个
+/// 办法）；Windows 加 `.exe`。都没有的是没有。不找 `PATH`：别的程序冒充不了（2026-10-01 项目主人定，第二节「拆 M9 时另带四样」
+/// 第 4 条）。
+pub fn locate(program: &str, dir: &Path, main: &Path) -> Option<PathBuf> {
     let file = format!("{program}{}", std::env::consts::EXE_SUFFIX);
+    // 相对的不认：那是照当前目录找，谁在当前目录放一个 `bin/` 都能冒充。
+    let own = dir.join(BIN).join(&file);
+    if dir.is_absolute() && own.is_file() {
+        return Some(own);
+    }
     let real = std::fs::canonicalize(main).unwrap_or_else(|_| main.to_path_buf());
     real.parent()
         .map(|dir| dir.join(&file))

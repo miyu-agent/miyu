@@ -9,7 +9,7 @@
 
 use miyu_session::{EMBED_IDLE, EmbedSetup};
 use miyu_store::env::Env;
-use miyu_store::packages::{Found, locate};
+use miyu_store::packages::Found;
 
 use crate::TARGET;
 
@@ -67,7 +67,7 @@ pub fn find(env: &Env, found: &[&Found]) -> Result<EmbedSetup, Missing> {
         program: env
             .exe
             .as_deref()
-            .and_then(|exe| locate(&worker.program, exe)),
+            .and_then(|exe| package.program(&worker.program, exe)),
         manifest: dir.join(MODEL),
         dir,
         idle: EMBED_IDLE,

@@ -330,7 +330,7 @@ impl Core {
             return;
         }
         // 程序不在的当没装（施工 F-6 上）：不照缓存登记它的工具，记成停下。
-        if crate::packages::absent(manifest) {
+        if crate::packages::program_missing(self, id, manifest) {
             self.extensions.hold(id, Reason::NotInstalled);
             return;
         }
@@ -442,10 +442,11 @@ fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, R
         return Err(Reason::ProtocolMismatch);
     }
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
+    let dir = crate::packages::dir_of(core, id);
     let program = manifest
         .command
         .as_ref()
-        .and_then(|command| locate(&command.program, &main))
+        .and_then(|command| locate(&command.program, &dir, &main))
         .ok_or(Reason::NotInstalled)?;
     let args = manifest
         .process

@@ -2,6 +2,7 @@
 //! 种类定。扩展开关进程（同 `extension.enable`、`extension.disable`）；出厂的、不是必需的内置包关是卸掉（在家目录记一笔）、
 //! 开是装回来；必需的、界面、小程序没有开关。回应同 `package.list` 的一项。
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -42,14 +43,14 @@ enum Switch {
 }
 
 /// 包 `id` 现在的清单、是不是卸掉了的出厂包；没有的 `unknown_package`。
-fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, bool), Refusal> {
+fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, PathBuf, bool), Refusal> {
     if let Some(found) = core.packages().iter().find(|found| found.id == id) {
         let manifest = found
             .read
             .as_ref()
             .map_err(|_| Refusal::UNKNOWN_PACKAGE)?
             .clone();
-        return Ok((manifest, found.layer, false));
+        return Ok((manifest, found.layer, found.files_dir(), false));
     }
     let removed = packages(core).read_removed();
     let found = removed
@@ -61,7 +62,7 @@ fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, bool), Refusal> {
         .as_ref()
         .map_err(|_| Refusal::UNKNOWN_PACKAGE)?
         .clone();
-    Ok((manifest, found.layer, true))
+    Ok((manifest, found.layer, found.files_dir(), true))
 }
 
 /// 这个包的开关怎么做：必需的 `package_required`，没有开关的 `not_switchable`。
@@ -84,9 +85,9 @@ pub(crate) async fn enable(
     peer: Peer,
     params: EnableParams,
 ) -> Result<Value, Refusal> {
-    let (manifest, layer, removed) = find(core, &params.package)?;
+    let (manifest, layer, dir, removed) = find(core, &params.package)?;
     let how = switch(&manifest, layer)?;
-    if crate::packages::status::program_missing(&manifest) {
+    if crate::packages::status::program_missing(&dir, &manifest) {
         return Err(Refusal::PROGRAM_MISSING);
     }
     if removed {
@@ -104,7 +105,7 @@ pub(crate) async fn disable(
     peer: Peer,
     params: DisableParams,
 ) -> Result<Value, Refusal> {
-    let (manifest, layer, removed) = find(core, &params.package)?;
+    let (manifest, layer, _, removed) = find(core, &params.package)?;
     let how = switch(&manifest, layer)?;
     if !removed {
         match how {

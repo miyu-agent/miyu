@@ -125,7 +125,9 @@ pub fn forward(
         (first, args[2..].to_vec())
     };
     let one = added.iter().find(|one| one.name == name)?;
-    let Some(program) = locate(&one.program, main) else {
+    // 包文件夹就是清单所在的那一层（施工 F-8 上再补：程序先找它的 `bin/`）。
+    let dir = one.manifest.parent().unwrap_or(Path::new(""));
+    let Some(program) = locate(&one.program, dir, main) else {
         say(err, &not_installed(one, language));
         return Some(1);
     };
@@ -137,11 +139,11 @@ fn not_installed(one: &Added, language: Language) -> String {
     let manifest = one.manifest.display();
     match language {
         Language::Chinese => format!(
-            "没找到 {}：清单 {manifest} 说 miyu {} 由它跑，miyu 旁边没有。装上这个包的程序再试。",
+            "没找到 {}：清单 {manifest} 说 miyu {} 由它跑。重装这个软件包再试。",
             one.program, one.name
         ),
         Language::English => format!(
-            "{} not found: {manifest} says miyu {} runs it, but it is not next to miyu. Install the package's program and try again.",
+            "{} not found: {manifest} says miyu {} runs it. Reinstall the package and try again.",
             one.program, one.name
         ),
     }

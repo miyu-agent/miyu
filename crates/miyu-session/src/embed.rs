@@ -38,7 +38,7 @@ const TRIES: u32 = 3;
 /// 模型清单的内容也一样的，换的时候算同一个（施工 R-5 四补）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EmbedSetup {
-    /// `miyu-embed` 在哪（照小程序清单的 `program`，在主程序真实位置的旁边找）；没找到的是空的。
+    /// `miyu-embed` 在哪（照小程序清单的 `program`，先找包文件夹的 `bin/`、再找主程序真实位置的旁边）；没找到的是空的。
     pub program: Option<PathBuf>,
     /// 模型清单的文件：包目录里的 `model.toml`。
     pub manifest: PathBuf,

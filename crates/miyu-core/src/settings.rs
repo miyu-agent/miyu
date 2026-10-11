@@ -83,9 +83,7 @@ impl Packaged {
     /// 照两层清单拼：编号撞了核心自己的模块的，那一份改报 `settings_taken`（[`miyu_endpoint::packages::settle`]）。程序不在
     /// `miyu` 旁边的扩展、小程序当没装，配置项不进（施工 F-6 上）。
     pub fn of(found: &mut [Found]) -> Packaged {
-        Packaged::with(found, &|manifest| {
-            !miyu_endpoint::packages::absent(manifest)
-        })
+        Packaged::with(found, &|one| !miyu_endpoint::packages::absent(one))
     }
 
     /// 照发行包的样子拼：程序都在 `miyu` 旁边（施工 F-6 上）。生成配置的样本、测出厂的清单用：不照跑的这台机器。
@@ -94,7 +92,7 @@ impl Packaged {
     }
 
     /// 同 [`Packaged::of`]，程序在不在照 `present` 认。
-    fn with(found: &mut [Found], present: &dyn Fn(&Manifest) -> bool) -> Packaged {
+    fn with(found: &mut [Found], present: &dyn Fn(&Found) -> bool) -> Packaged {
         let items = miyu_endpoint::packages::settle_with(found, &items(), present);
         let manifests = manifests(found);
         let absent = OWNED

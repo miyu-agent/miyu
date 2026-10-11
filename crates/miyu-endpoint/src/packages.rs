@@ -31,6 +31,20 @@ use crate::personas::pick;
 use crate::refusal::Refusal;
 pub use status::absent;
 
+/// 编号 `id` 的包文件夹：核心手里这时的清单里的（`Found::files_dir`）。没有的交回空路径，照它找不到包自己带的程序（施工
+/// F-8 上再补：程序先找包文件夹的 `bin/`）。
+pub(crate) fn dir_of(core: &Core, id: &str) -> std::path::PathBuf {
+    core.packages()
+        .iter()
+        .find(|one| one.id == id)
+        .map_or_else(std::path::PathBuf::new, Found::files_dir)
+}
+
+/// 核心手里的包 `id` 要程序、程序不在（[`status::program_missing`]）。
+pub(crate) fn program_missing(core: &Core, id: &str, manifest: &Manifest) -> bool {
+    status::program_missing(&dir_of(core, id), manifest)
+}
+
 /// 核心说的协议主版本。
 const PROTOCOL: u32 = 1;
 
@@ -134,7 +148,7 @@ fn listed(
         Ok(manifest) => {
             fill(&mut item, &found.id, manifest, language);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
-            item["status"] = json!(status::status(core, &found.id, manifest, removed));
+            item["status"] = json!(status::status(core, found, manifest, removed));
             let shipped = found.layer == miyu_store::packages::Layer::Shipped;
             if let Some(on) = status::enabled(core, &found.id, manifest, shipped, removed) {
                 item["enabled"] = json!(on);
@@ -262,7 +276,7 @@ pub(crate) fn mismatch(manifest: &Manifest) -> Option<String> {
 /// 是核心自己的某个模块（`core_items` 里键的第一段，「软件包」那一页的不算）的，那一份改报 `settings_taken`、一项都不收。
 /// 核心起来时调一次：拼出来的项一直用到退出（`miyu_config::package::settings::items`）。
 pub fn settle(found: &mut [Found], core_items: &[Item]) -> Vec<Item> {
-    settle_with(found, core_items, &|manifest| !absent(manifest))
+    settle_with(found, core_items, &|one| !absent(one))
 }
 
 /// 同 [`settle`]，程序在不在照 `present` 认：生成配置的样本、测出厂的清单时照发行包的样子算，程序都在 `miyu` 旁边（施工
@@ -270,7 +284,7 @@ pub fn settle(found: &mut [Found], core_items: &[Item]) -> Vec<Item> {
 pub fn settle_with(
     found: &mut [Found],
     core_items: &[Item],
-    present: &dyn Fn(&Manifest) -> bool,
+    present: &dyn Fn(&Found) -> bool,
 ) -> Vec<Item> {
     let modules: BTreeSet<&str> = core_items
         .iter()
@@ -299,7 +313,7 @@ pub fn settle_with(
             continue;
         }
         // 程序不在的扩展、小程序当没装，配置项不进（施工 F-6 上，`package-pages.md`「程序不在就当没装」）。
-        if !present(manifest) {
+        if !present(one) {
             continue;
         }
         // 一律在「软件包」那一页、这个包那一组（施工 F-6 上：「接入」页去掉了）。
@@ -351,7 +365,7 @@ pub fn features(found: &[Found]) -> Features {
             .iter()
             .filter_map(|one| one.read.as_ref().ok().map(|manifest| (one, manifest)))
             // 程序不在的扩展当没装，它的功能不算（施工 F-6 上）。
-            .filter(|(_, manifest)| !absent(manifest))
+            .filter(|(one, _)| !absent(one))
             .flat_map(|(one, manifest)| {
                 manifest
                     .features_of(&one.id)

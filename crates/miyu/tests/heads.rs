@@ -210,7 +210,7 @@ async fn the_shipped_terminal_without_its_program_says_where_it_should_be() {
     assert_eq!(plain.status.code(), Some(1), "{}", said(&plain));
     assert!(
         said(&plain).starts_with(
-            "tui 这个界面的程序 miyu-tui 不在 miyu 旁边（ui.head 指着它）。把它放到 miyu 旁边，或者 miyu config set ui.head <编号> 换成装了的界面"
+            "没找到 tui 这个界面的程序 miyu-tui（ui.head 指着它）。重装它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面"
         ),
         "{}",
         said(&plain)

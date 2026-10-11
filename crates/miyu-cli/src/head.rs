@@ -1,6 +1,6 @@
 //! 打开默认的界面（施工 9-3，`docs/blueprint/cli/main.md`「怎么走」第 3 条，`packages.md`「入口」）：直接敲 `miyu`、`miyu
 //! config` 时，连上核心（没在跑就拉起，界面本来就要它）问 `config.get` 拿 `ui.head`，照清单找这个编号的界面包，程序照
-//! 9-2 的找法（只找 `miyu` 旁边的），换成它。`miyu config` 带 `--page config`，界面的清单 `[ui] opens` 里没有这一页的不拉起。
+//! 9-2 的找法（包文件夹的 `bin/`、`miyu` 旁边的，施工 F-8 上再补），换成它。`miyu config` 带 `--page config`，界面的清单 `[ui] opens` 里没有这一页的不拉起。
 //! 只在标准输入、标准输出都是终端时才走到这里（主程序先看）。
 
 #[cfg(test)]
@@ -17,7 +17,7 @@ use miyu_config::package::{Manifest, PackageKind};
 use miyu_ipc::connect_or_start;
 use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
-use miyu_store::packages::{Found, Packages, locate};
+use miyu_store::packages::{Found, Packages};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -119,17 +119,17 @@ enum Plan {
     NoPage,
     /// 没有这个界面：没有清单、不是界面、没有子命令。
     Missing,
-    /// 有清单，程序不在 `miyu` 旁边：程序名（9-3 补：出厂带了终端的清单，程序随 M9）。
+    /// 有清单，程序不在包文件夹的 `bin/`、也不在 `miyu` 旁边：程序名（9-3 补：出厂带了终端的清单，程序随 M9）。
     NoProgram(String),
 }
 
 /// 编号是 `head` 的界面包怎么开：要 `page` 那一页的带 `--page <页>`，清单里没认这一页的不开。
 fn plan(head: &str, page: Option<&str>, found: &[Found], main: &Path) -> Plan {
-    let Some(manifest) = found
+    let Some((one, manifest)) = found
         .iter()
         .find(|one| one.id == head)
-        .and_then(|one| one.read.as_ref().ok())
-        .filter(|manifest| manifest.kind == PackageKind::Ui)
+        .and_then(|one| Some((one, one.read.as_ref().ok()?)))
+        .filter(|(_, manifest)| manifest.kind == PackageKind::Ui)
     else {
         return Plan::Missing;
     };
@@ -141,7 +141,7 @@ fn plan(head: &str, page: Option<&str>, found: &[Found], main: &Path) -> Plan {
     let Some(command) = manifest.command.as_ref() else {
         return Plan::Missing;
     };
-    let Some(program) = locate(&command.program, main) else {
+    let Some(program) = one.program(&command.program, main) else {
         return Plan::NoProgram(command.program.clone());
     };
     let args = page.map_or_else(Vec::new, |page| {
@@ -158,7 +158,7 @@ fn opens(manifest: &Manifest, page: &str) -> bool {
         .is_some_and(|ui| ui.opens.iter().any(|one| one == page))
 }
 
-/// 装了的界面：读成了的、`kind = "ui"`、有子命令、程序在 `miyu`（`main`）旁边的，照编号排。只有清单、程序还不在的不算：
+/// 装了的界面：读成了的、`kind = "ui"`、有子命令、程序在包文件夹的 `bin/` 或 `miyu`（`main`）旁边的，照编号排。只有清单、程序还不在的不算：
 /// 列出来也打不开（9-3 补）。
 fn installed(found: &[Found], main: &Path) -> Vec<String> {
     found
@@ -169,14 +169,14 @@ fn installed(found: &[Found], main: &Path) -> Vec<String> {
                     && manifest
                         .command
                         .as_ref()
-                        .is_some_and(|command| locate(&command.program, main).is_some())
+                        .is_some_and(|command| one.program(&command.program, main).is_some())
             })
         })
         .map(|one| one.id.clone())
         .collect()
 }
 
-/// 打不开 `head`：为什么（没有这个界面；有清单、程序 `program` 不在 `miyu` 旁边），怎么办，装了的有哪几个。
+/// 打不开 `head`：为什么（没有这个界面；有清单、程序 `program` 没找到），怎么办，装了的有哪几个。
 fn unavailable(
     head: &str,
     program: Option<&str>,
@@ -189,18 +189,16 @@ fn unavailable(
             "装上它的软件包",
         ),
         (Language::Chinese, Some(program)) => (
-            format!("{head} 这个界面的程序 {program} 不在 miyu 旁边（ui.head 指着它）。"),
-            "把它放到 miyu 旁边",
+            format!("没找到 {head} 这个界面的程序 {program}（ui.head 指着它）。"),
+            "重装它的软件包",
         ),
         (Language::English, None) => (
             format!("The {head} interface is not installed (ui.head names it). "),
             "Install its package",
         ),
         (Language::English, Some(program)) => (
-            format!(
-                "The {head} interface's program {program} is not next to miyu (ui.head names it). "
-            ),
-            "Put it next to miyu",
+            format!("The {head} interface's program {program} was not found (ui.head names it). "),
+            "Reinstall its package",
         ),
     };
     let next = match (language, installed.is_empty()) {

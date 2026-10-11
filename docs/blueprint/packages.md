@@ -32,7 +32,7 @@
 
 ### 对外的样子
 
-**在哪**：一个文件夹就是一个包（施工 F-8 上，设计 `31-软件包.md` 第二节）：出厂的放资源目录的 `packages/<编号>/`，管理员自己装的放 `home/<管理员>/packages/<编号>/`（`07-存储.md` 第二节），清单是文件夹里的 `package.toml`，包自己的文件放在同一个文件夹里（照 `miyu_store::packages::Found::files_dir` 算，用的一方不自己拼）。编号就是文件夹名，写法同人格的编号（小写字母开头，小写字母、数字、`-`、`_`，最多 64 个），不合写法的、文件夹里没有 `package.toml` 的不算。包自己在这台机器上的状态放 `<数据根>/state/packages/<编号>/`，包自己建、自己用。
+**在哪**：一个文件夹就是一个包（施工 F-8 上，设计 `31-软件包.md` 第二节）：出厂的放资源目录的 `packages/<编号>/`，管理员自己装的放 `home/<管理员>/packages/<编号>/`（`07-存储.md` 第二节），清单是文件夹里的 `package.toml`，包自己的文件放在同一个文件夹里（照 `miyu_store::packages::Found::files_dir` 算，用的一方不自己拼）。包带的程序（扩展、小程序、界面）放在文件夹里的 `bin/` 下（施工 F-8 上再补，设计 `31-软件包.md` 第二节），名字照清单写的程序名，Windows 上加 `.exe`；装的时候随包拷进来，本地库记它的哈希。编号就是文件夹名，写法同人格的编号（小写字母开头，小写字母、数字、`-`、`_`，最多 64 个），不合写法的、文件夹里没有 `package.toml` 的不算。包自己在这台机器上的状态放 `<数据根>/state/packages/<编号>/`，包自己建、自己用。
 
 **以前的写法**（`packages/<编号>.toml` 加同名目录）：核心起来读清单时，家目录那一层照它认出来，挪成 `<编号>/package.toml`，记一行运行日志 `INFO package moved`；文件夹里已经有一份 `package.toml` 的不覆盖，两份都留着，记 `WARN package not moved`（设计 31 第七节第 2 条）。写了 `[package] kind` 的清单（施工 F-8 上补以前）同时改成照表认的：去掉 `kind` 那一行，还没有对应的程序表的在末尾补一张空的（`miyu_config::package::without_kind`），记 `INFO package rewritten`；写的种类认不出的原样不动，读的时候报 `unknown_key`。资源目录在仓库里改好了，不改。
 
@@ -183,9 +183,9 @@ program = "miyu-embed"
 2. **读一份**：照「格式」查，报第一处；必写的少了报在表头那一行（缺 `[package]` 的整份，没有行号）。
 3. **`package.list`**：照起来时读到的答，名字照这个连接的语言挑。
 4. **`miyu check`**：照磁盘上现在的读，改了马上查得出。
-5. **转交**（施工 9-2，`cli/main.md`「怎么走」第 0 条）：`miyu <名字> …` 不是内置的子命令，照磁盘读两层的清单，`[command]` 的名字是它的那一个包：程序只找 `miyu` 真实位置旁边的（`miyu_store::packages::locate`；不找 `PATH`，别的程序冒充不了，2026-10-01 项目主人定），参数、环境、标准输入输出原样，Unix 上换成它，Windows 上起它、等它，退出码照它的；`miyu help <名字>` 转成 `--help`。没找到程序说没装、退出码 1。撞了内置子命令的：内置的优先，不转交，帮助页不列；装包时拦随装包那一步。`miyu -h` 多一节「软件包加的命令」。
+5. **转交**（施工 9-2，`cli/main.md`「怎么走」第 0 条）：`miyu <名字> …` 不是内置的子命令，照磁盘读两层的清单，`[command]` 的名字是它的那一个包：程序先找这个包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的（`miyu_store::packages::locate`，施工 F-8 上再补：别人做的包自己带程序，随 Miyu 装的那几个在 `miyu` 旁边；包文件夹是相对路径的不找 `bin/`；不找 `PATH`，别的程序冒充不了，2026-10-01 项目主人定），参数、环境、标准输入输出原样，Unix 上换成它，Windows 上起它、等它，退出码照它的；`miyu help <名字>` 转成 `--help`。没找到程序说没装、退出码 1。撞了内置子命令的：内置的优先，不转交，帮助页不列；装包时拦随装包那一步。`miyu -h` 多一节「软件包加的命令」。
 6. **跑包的检查**（施工 9-2，`crates/miyu-endpoint/src/check/run.rs`）：核心的 `check` 不写文件时，照起来时读到的清单，有 `[check]` 的每个包跑 `<程序> <args…>`（程序同第 5 条找），标准输入是空的、标准错误不要、环境照核心的，最多等 30 秒、收 1 MiB。标准输出一行一个 JSON：`kind`、`file`、`level`（`error`、`warning`）、`message` 必有，`line`、`column`（正整数）、`code`、`key`、`rule`、`source` 有的才收，别的格不收，接在核心自己查的后面，照包的编号的先后。退出码 0、1 是正常的；别的、被信号杀掉的、跑不起来的、到时没完的报一条警告 `check_failed`；程序没找到的报 `check_unavailable`；有看不懂的行的报 `check_output`（几行），都写清单的位置。写了文件的照旧只认核心自己认得出的。
-7. **入口**（施工 9-3，`cli/main.md`「怎么走」第 3 条）：不带子命令的 `miyu`、不带子命令的 `miyu config` 在终端里时照配置 `ui.head` 找界面包拉起，`miyu config` 带 `--page config`，要清单的 `[ui] opens` 认 `config` 这一页；`miyu web` 照子命令是 `web` 的那一份找网页软件。程序都只找 `miyu` 旁边的。
+7. **入口**（施工 9-3，`cli/main.md`「怎么走」第 3 条）：不带子命令的 `miyu`、不带子命令的 `miyu config` 在终端里时照配置 `ui.head` 找界面包拉起，`miyu config` 带 `--page config`，要清单的 `[ui] opens` 认 `config` 这一页；`miyu web` 照子命令是 `web` 的那一份找网页软件。程序照第 5 条找。
 
 ### 吉祥物包（施工 F-7，2026-10-11 项目主人定，终端界面的会话转来）
 
@@ -276,6 +276,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 | `crates/miyu-endpoint/tests/packages_push.rs`（施工 F-8 三补） | 订阅的回应是整份列表；别的连接装上、卸掉家目录里的、卸掉和装回出厂的，各推变了的那一项，照这个连接的语言，卸没了的是 `null`；取消了不推；没握手、带 `after` 的拒 |
 | `crates/miyu-endpoint/tests/packages_purge.rs`（施工 F-8 中下补） | 真核心卸掉家目录里装的、出厂的包：系统配置、个人设置里它的项删了、空了的表头也删了，别的项和注释不动；状态目录删了 |
 | `crates/miyu-endpoint/tests/packages_install.rs`（施工 F-5 上） | 装一份清单、同名目录一起拷、列表和预设的功能当场有；升级换掉、升级撞了放回原来的、不留暂存；写错的、和出厂撞了的、和别的包撞了的不装；卸家目录的删掉；卸出厂的记一笔、列表里标卸掉、装得回来；必需的、没装的不能卸 |
+| `crates/miyu-store/src/packages/tests.rs` 的 `a_program_is_found_in_the_package_bin_then_beside_main`、`crates/miyu-cli/src/head/tests.rs` 的 `a_head_runs_the_program_its_package_brings`、`crates/miyu/tests/packages.rs` 的 `a_package_command_runs_the_program_in_its_bin`、`crates/miyu-endpoint/tests/packages_programs.rs`（施工 F-8 上再补） | 程序先找包文件夹的 `bin/`、再找主程序旁边的，相对的包文件夹不找 `bin/`；界面、转交的子命令照包里带的跑；真核心装上一个自己带程序的扩展：拉起、列表里在跑、预设里它的功能算装了、装上的文件里有它的程序；程序还被开着写的（Linux）等放开再拉起 |
 | `crates/miyu-endpoint/tests/packages.rs` | `package.list` 的每一格、照语言挑；施工 F-1 的几格（必需、功能、平台接入、依赖、小程序）；没编进来的内置包报 `not_built_in`、只认读成了的内置包算装了（施工 F-2）；写错的、同编号、撞名、协议版本对不上、`process` 和 `check`；起来时读一次；`check` 查清单、写了文件的认得出、别的文件认不出。只断言出厂的网页和测试自己放的几份，家目录里的编号、子命令名避开出厂会有的（施工 9-1 补：终端界面要出厂 `tui`）；家目录里以前的写法读时挪成新的（施工 F-8 上） |
 
 ### 起草时定的
@@ -290,6 +291,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 - 施工 F-1（2026-10-09 主会话）：每种包能写哪几张表列成一张表（`PackageKind::tables`），写错了统一报 `wrong_kind`，比一张张写判断好查；内置包、小程序先收得紧，要用了再放开。没写 `[features]` 的整个包算一个功能，写了空表的一个都没有：别人的扩展不写也有一个开关，只接平台、不带工具的写空表就不列。`package.list` 的功能不列工具：头画预设页用 `preset.get`（F-3），这里只给人看装了什么。依赖分两种照 Debian 的 Depends、Recommends。功能编号、平台名、依赖的包编号都照包编号的写法（`miyu_config::secret::valid_name`）。
 - 施工 F-4（2026-10-09 主会话）：没装的内置包，核心替它声明的配置项照样登记、只是不画：从配置清单里拿掉会让写过它们的配置文件多出「不认识的键」的警告，包装回来又得重新写。别人做的包卸了以后它的键照旧报不认识：核心不知道它曾经有过。
 - 施工 F-8 中下补（2026-10-11 主会话）：卸掉时只删管理员自己的个人设置：别的账号的个人设置在他们的家目录里，多用户的规矩（`06-多用户与身份.md`）定了谁能动别人的设置再说；删不掉的那几项照旧报不认识，不会出错。
+- 施工 F-8 上再补（2026-10-11 主会话）：包带的程序放包文件夹的 `bin/`，先找它、再找 `miyu` 旁边的：设计 31 第二节的图里就是这样放的，原来只找 `miyu` 旁边的，别人做的扩展用 `miyu pkg install` 装上也起不来。两层一个找法：出厂的包文件夹里一般没有 `bin/`（程序归系统的包管理，装在 `miyu` 旁边），照旧找到旁边的。没有改成「家目录的只找 `bin/`」：在 `miyu` 旁边放程序、家目录里放清单的开发办法照旧能用。
 - 施工 F-2（2026-10-09 主会话）：编进来的内置包那张表放在 `miyu-core`：只有它知道 cargo 开关开了哪几个。`miyu check` 不查 `not_built_in`：查清单时不知道是哪一份核心在跑，起来时的运行日志和 `package.list` 已经说了。必需的没装照样起来：工具全没有也能聊天，比起不来好查。联网的清单先不写功能：网络搜索、抓取网页两件工具还没有，写了功能预设里就多两个空开关。
 
 ### 还没有的

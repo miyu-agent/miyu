@@ -66,6 +66,29 @@ fn a_package_command_runs_its_program_with_the_same_arguments() {
     assert!(home.core_log().is_empty(), "核心没起来过");
 }
 
+/// 包自己带程序（施工 F-8 上再补）：放在包文件夹的 `bin/` 里的，`miyu` 旁边没有也照它跑。这里放的是指向 `miyu` 的链接
+/// （Windows 上拷一份），名字只有这个包用。
+#[test]
+fn a_package_command_runs_the_program_in_its_bin() {
+    let home = Home::new();
+    let program = format!("miyu-own-{}", std::process::id());
+    install(&home, "own", &manifest("own", &program, "Own it"));
+    let bin = home.root.path().join("home/admin/packages/own/bin");
+    std::fs::create_dir_all(&bin).expect("建得了目录");
+    let target = bin.join(format!("{program}{}", std::env::consts::EXE_SUFFIX));
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(MIYU, &target).expect("链得上");
+    #[cfg(not(unix))]
+    std::fs::copy(MIYU, &target).expect("拷得了");
+    let version = miyu(&home, "C", &["own", "--version"]);
+    assert_eq!(version.status.code(), Some(0), "{}", text(&version.stderr));
+    assert!(
+        text(&version.stdout).starts_with("miyu "),
+        "跑的是包里的那一个：{}",
+        text(&version.stdout)
+    );
+}
+
 #[test]
 fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
     let home = Home::new();

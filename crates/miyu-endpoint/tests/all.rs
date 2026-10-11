@@ -76,6 +76,7 @@ mod packages_install;
 mod packages_live;
 mod packages_local;
 mod packages_preview;
+mod packages_programs;
 mod packages_purge;
 mod packages_push;
 mod peers;

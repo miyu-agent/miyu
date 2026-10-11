@@ -117,10 +117,30 @@ fn a_head_whose_program_is_missing_says_so() {
     let installed = ["web".to_string()];
     assert_eq!(
         unavailable("tui", Some("miyu-tui"), &installed, Language::Chinese),
-        "tui 这个界面的程序 miyu-tui 不在 miyu 旁边（ui.head 指着它）。把它放到 miyu 旁边，或者 miyu config set ui.head <编号> 换成装了的界面：web。"
+        "没找到 tui 这个界面的程序 miyu-tui（ui.head 指着它）。重装它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面：web。"
     );
     assert_eq!(
         unavailable("tui", Some("miyu-tui"), &installed, Language::English),
-        "The tui interface's program miyu-tui is not next to miyu (ui.head names it). Put it next to miyu, or switch with miyu config set ui.head <id> to one that is installed: web."
+        "The tui interface's program miyu-tui was not found (ui.head names it). Reinstall its package, or switch with miyu config set ui.head <id> to one that is installed: web."
     );
+}
+
+/// 界面包自己带程序（施工 F-8 上再补）：照包文件夹的 `bin/` 拉起，`miyu` 旁边没有也算装了。
+#[test]
+fn a_head_runs_the_program_its_package_brings() {
+    let (dir, main) = beside("own", &[]);
+    let package = dir.join("packages/own");
+    let bin = package.join("bin");
+    std::fs::create_dir_all(&bin).expect("建得了");
+    let program = bin.join(format!("miyu-own{}", std::env::consts::EXE_SUFFIX));
+    std::fs::write(&program, "").expect("写得进");
+    let mut own = ui("own", "miyu-own", &[]);
+    own.path = package.join("package.toml");
+    let found = [own];
+    assert_eq!(
+        plan("own", None, &found, &main),
+        Plan::Run(program, Vec::new())
+    );
+    assert_eq!(installed(&found, &main), ["own"]);
+    std::fs::remove_dir_all(&dir).expect("删得掉");
 }

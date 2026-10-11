@@ -1,7 +1,7 @@
 //! 软件包的状态、开关、后台页（施工 F-6 上，`docs/blueprint/package-pages.md`，设计 `30-插件框架.md` 第十三节）：`package.list`
 //! 每一项多的 `status`、`enabled`、`page` 照这里算；程序不在的扩展、小程序当没装（配置项、功能都不算），也照这里认。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use miyu_config::package::{Manifest, Mascot, PackageKind};
 use miyu_store::packages::{Found, locate};
@@ -24,20 +24,23 @@ fn program(manifest: &Manifest) -> Option<&str> {
     }
 }
 
-/// 主程序在哪：包的程序只找它旁边的（`packages.md`「转交」）。测试里是测试程序自己。
+/// 主程序在哪：包的程序找它旁边的（`packages.md`「转交」）。测试里是测试程序自己。
 fn main_program() -> PathBuf {
     std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"))
 }
 
-/// 要程序的包，程序不在 `miyu` 旁边。
-pub(crate) fn program_missing(manifest: &Manifest) -> bool {
-    program(manifest).is_some_and(|program| locate(program, &main_program()).is_none())
+/// 要程序的包，程序不在包目录 `dir` 的 `bin/` 里、也不在 `miyu` 旁边（`miyu_store::packages::locate`，施工 F-8 上再补）。
+pub(crate) fn program_missing(dir: &Path, manifest: &Manifest) -> bool {
+    program(manifest).is_some_and(|program| locate(program, dir, &main_program()).is_none())
 }
 
-/// 当没装（`package-pages.md`「程序不在就当没装」）：核心拉起的那两种（扩展、小程序）程序不在。界面不算：它不是核心拉起的，
-/// 连得上核心的界面自己就是程序在的证明（终端的会话 2026-10-10 提：开发时界面的程序不在 `miyu` 旁边）。
-pub fn absent(manifest: &Manifest) -> bool {
-    matches!(manifest.kind, PackageKind::Process | PackageKind::Worker) && program_missing(manifest)
+/// 当没装（`package-pages.md`「程序不在就当没装」）：读成了的、核心拉起的那两种（扩展、小程序），程序不在。界面不算：它不是
+/// 核心拉起的，连得上核心的界面自己就是程序在的证明（终端的会话 2026-10-10 提：开发时界面的程序不在 `miyu` 旁边）。
+pub fn absent(found: &Found) -> bool {
+    found.read.as_ref().is_ok_and(|manifest| {
+        matches!(manifest.kind, PackageKind::Process | PackageKind::Worker)
+            && program_missing(&found.files_dir(), manifest)
+    })
 }
 
 /// 有没有后台页：清单写了 `[page]`，包目录里那个子目录下有 `index.html`。
@@ -72,8 +75,14 @@ pub(crate) fn mascot_problem(found: &Found, mascot: &Mascot) -> Option<&'static 
 }
 
 /// `status`：`program_missing`、`off`、`running`、`starting`、`stopped`、`ready` 之一。`removed` 是出厂的包卸掉了。
-pub(crate) fn status(core: &Core, id: &str, manifest: &Manifest, removed: bool) -> &'static str {
-    if program_missing(manifest) {
+pub(crate) fn status(
+    core: &Core,
+    found: &Found,
+    manifest: &Manifest,
+    removed: bool,
+) -> &'static str {
+    let id = found.id.as_str();
+    if program_missing(&found.files_dir(), manifest) {
         return "program_missing";
     }
     if removed {

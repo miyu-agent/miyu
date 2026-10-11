@@ -614,7 +614,7 @@
 
 - 参数 `{"package"}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。
 - 扩展：同 `extension.enable`、`extension.disable`。出厂的、不是必需的内置包：关是卸掉（同 `package.remove`，在家目录记一笔），开是装回来（同 `package.install {"package"}`）。卸掉了的出厂扩展，开时先装回来再开。关着的再关、开着的再开，什么都不动。
-- 拒绝：没有的 `unknown_package`；必需的 `package_required`；界面、小程序 `not_switchable`；程序不在 `miyu` 旁边的开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
+- 拒绝：没有的 `unknown_package`；必需的 `package_required`；界面、小程序 `not_switchable`；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
 
 **`package.file`、`package.methods`、`package.call`**（施工 F-6 中，`package-pages.md`）
 
@@ -1088,7 +1088,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
 | `package_invalid`、`package_exists`、`package_required` | -32010 | `package.install`、`package.remove`：清单写错了、和别的包撞了；和出厂的同编号；卸必需的（施工 F-5 上，`packages.md`「装卸」） |
-| `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序不在 `miyu` 旁边，当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（必需的照旧回 `package_required`）（施工 F-6 上，`package-pages.md`） |
+| `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（必需的照旧回 `package_required`）（施工 F-6 上，`package-pages.md`） |
 | `no_page`、`not_found`、`program_not_running`、`unregistered`、`method_failed`、`method_timeout` | -32010 | `package.file`：没有后台页；后台页里没有这份文件。`package.call`：程序没连着；没登记这个方法（`data.method`）；程序回了错（`data.message`、`data.code`）；到时限没回（施工 F-6 中，`package-pages.md`） |
 | `avatar_not_image`、`avatar_too_big` | -32010 | `persona.set` 的 `avatar`：不是 PNG、JPEG、WebP；超过 1 MiB 或 1024 像素，`data` 带量到的和上限（施工 P-5，`personas.md`「头像」） |
 | `background_not_image`、`background_too_big` | -32010 | `persona.set` 的 `background`：不是 PNG、JPEG、WebP；超过 5 MiB 或 4096 像素，`data` 同头像的（施工 P-6，`personas.md`「主题色、背景图」） |

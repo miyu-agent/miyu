@@ -31,8 +31,10 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str) -> Vec<Value> {
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
     // 程序不在的扩展当没装（施工 F-6 上）：它的功能照「写了没装」列。
-    for (package, manifest) in crate::packages::manifests(&found_packages)
-        .filter(|(_, manifest)| !crate::packages::absent(manifest))
+    for (package, manifest) in found_packages
+        .iter()
+        .filter(|one| !crate::packages::absent(one))
+        .filter_map(|one| Some((one.id.as_str(), one.read.as_ref().ok()?)))
     {
         packages.insert(package);
         for feature in manifest.features_of(package) {
