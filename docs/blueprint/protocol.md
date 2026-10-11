@@ -29,12 +29,13 @@
 | `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补），再推 `event`、`resync`；换掉一个订阅时等它写完 |
 | `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
+| `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
 | `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`，掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
 | `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`images`，施工 8-20） |
 | `crates/miyu-endpoint/src/attach/kind.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型 |
 | `crates/miyu-endpoint/src/uploads.rs` | `blob.open`、`blob.write`、`blob.close`：跟着连接走的上传表，60 秒不写、连接断了都作废（施工 W-5） |
-| `crates/miyu-endpoint/src/refusal.rs`、`refusal/` | 拒绝：错误码、原因码、中英文的话；改人格、预设的两种在 `refusal/edits.rs`，人碰记忆的几种在 `refusal/memory.rs`（施工 R-3 补；R-7 补多了整理的两种） |
+| `crates/miyu-endpoint/src/refusal.rs`、`refusal/` | 拒绝：错误码、原因码、中英文的话；改人格、预设的两种在 `refusal/edits.rs`，人碰记忆的几种在 `refusal/memory.rs`（施工 R-3 补；R-7 补多了整理的两种），知识库的两种在 `refusal/knowledge.rs`（施工 K-1 上） |
 | `crates/miyu-endpoint/src/settings.rs` | 端点的配置项：界面语言 `ui.language`，`auto` 照系统的语言算出 `zh`、`en`、`ja`（施工 8-1 声明，8-2 握手时用）；新会话开局只读 `permission.start_read_only`（施工 8-2） |
 | `crates/miyu-endpoint/src/config.rs`、`config/` | 配置服务：起来时读的几份配置、最终值，照目录找项目配置、认信不信任；`config.schema`、`config.get`、`config.check`（施工 8-2，`config.md`）；`config.set`、`config.trust`，住在核心家底的一把锁里（施工 8-3）；监视配置文件、推 `config.changed`（施工 8-4）；密钥文件也住在这里（施工 8-5） |
 | `crates/miyu-endpoint/src/secrets.rs`、`secrets/` | `secret.set`、`secret.delete`、`secret.list`：只能写、删、列名字，从不交出值；手改密钥文件被看到的、留痕（施工 8-5，`config.md` 第九条） |
@@ -169,6 +170,7 @@
 | `memory.list`、`memory.search`、`memory.remember`、`memory.update`、`memory.forget` | 人不经过她列、搜、记、改、忘和清空记忆（施工 R-3 补，`memory.md`「协议」） |
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
+| `kb.list`、`kb.search`、`kb.read` | 列知识库、搜、读一个文档的一页（施工 K-1 上，`knowledge.md`「对外的样子」） |
 | `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6） |
 | `command.catalog` | 列核心认的斜杠命令，给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补） |
 | `session.answer` | 回答一次确认（允许这一次、本会话都允许、拒绝），或者一组题（施工 D-1） |
@@ -677,6 +679,21 @@
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 
+**`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
+
+照管理员的账号（同 `memory.*`），账号下的全部知识库。不看知识库这个软件包装没装：文件是人的，人随时看得到。三个都是查询，按顺序答。`kb.` 开头的别的方法 `unknown_method`。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks"}…]}`，照编号排；读 `kb.toml` 出错的多一格 `error`（英文的一句为什么） |
+| `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前 |
+| `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页 |
+
+1. `kb.list`、`kb.search` 先照文件补要用的库（`knowledge.md`「怎么走」第三条），`documents`、`chunks` 是补完以后的数；跳过的文档记一行 `WARN knowledge document skipped`，不进回应。
+2. 一块：哪个库、哪个文档、第几块（从 0 起）、标题路径（`语法 > て形`，没有标题的是空字符串）、这一块的字（不带标题那一行）、文档改的时刻。几个库的照名次轮流合（`knowledge.md`「怎么走」第四条）。
+3. `kb.read` 照路径读目录里的文件，不读索引；一页 32 KiB，截在字的边界上，空文档是一页空的。
+4. 出错：参数写错、`query` 空白、`limit` 出了范围、编号不合写法（`knowledge.md`「对外的样子」）、`page` 是 0 或超过 `pages`：`bad_params`。没有这个库：`unknown_kb`。库里没有这个文档（不是文档的、不在库里的、`..` 跑出去的都算）：`unknown_document`。读不了目录、索引：`internal_error`，记一行 `WARN knowledge failed`。
+
 **`session.recap`**（施工 3-8 四补，`04-核心协议.md` 第九节，`kernel/session.md`「回顾」）
 
 | 参数 | 类型 | 说明 |
@@ -1181,6 +1198,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_memory` | -32010 | 没有这一条记忆，或者听众不合（施工 R-3 补） |
 | `memory_not_current` | -32010 | 那一条记忆已经改掉、作废、清掉了（施工 R-3 补） |
 | `memory_too_long` | -32010 | 一条记忆超过 120 字；`data.chars`、`data.limit`（施工 R-3 补） |
+| `unknown_kb` | -32010 | 账号下没有这个知识库（施工 K-1 上，`kb.*`） |
+| `unknown_document` | -32010 | 知识库里没有这个文档：不是文档的、不在库里的、路径跑出去的（施工 K-1 上，`kb.read`） |
 | `restoring` | -32010 | 撤销、恢复还没做完（正在读回更早的日志、正在改回文件）时来的命令、删会话。兜底：会话做完才接下一个命令，照常碰不到 |
 
 - 从 `empty_message` 起，除了 `dir_too_wide`、附件的四个和 `not_a_command`，十三个是内核拒命令时给的原因码（`kernel/session.md`）；施工 D-1 起加上 `session.answer` 的四个（`not_asking`、`no_rule`、`unexpected_reason`、`bad_answer`），十七个。
@@ -1199,6 +1218,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `INFO` | `disconnected` | 握过手的连接断了 |
 | `WARN` | `accept failed error=…` | 接不了连接 |
 | `WARN` | `memory failed error=…` | `memory.*`、`/remember` 写不进、读不了记忆日志（施工 R-3 补）；订阅记忆日志读不了（施工 R-12 上） |
+| `WARN` | `knowledge document skipped kb=… path=… why=…` | `kb.list`、`kb.search` 照文件补时跳过一个文档：太大、不是 UTF-8、读不了（施工 K-1 上） |
+| `WARN` | `knowledge failed error=…` | `kb.*` 读不了知识库的目录、索引（施工 K-1 上） |
 | `ERROR` | `connection task failed error=…` | 一个连接的任务崩了 |
 | `WARN` | `create failed error=…`、`load failed session=… error=…` | 造不成、载入不了 |
 | `WARN` | `lagged, resync session=…` | 掉了队 |
@@ -1357,6 +1378,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_memory` | 记忆不存在。 | Memory not found. |
 | `memory_not_current` | 记忆已失效。 | Memory no longer current. |
 | `memory_too_long` | 记忆过长。 | Memory too long. |
+| `unknown_kb` | 知识库不存在。 | Knowledge base not found. |
+| `unknown_document` | 文档不存在。 | Document not found. |
 | 别的 | 已拒绝。 | Refused. |
 
 ### 守着它的
@@ -1428,6 +1451,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/config_set.rs`（施工 8-3） | `config.set` 的回应、每一种拒绝、`expect`、版本、手改重读、全收或者全不收、写不成什么都没变、日志（`config.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_follow.rs`（施工 R-12 上） | 记忆日志的推送：带 `after` 的先补、再回应 `upto`、再推，推的是日志那一行原样（`body`、`by`、`cause`）；她在聊天里经工具记的照样推（`by` 是那次调用、出处是那个会话）；不写的只推之后的，另一个连接从中间补；会话那一间推的带 `session`，人格那一间的不串；再订阅换掉、取消了不推、没订阅的取消回 `{}`；写入堵着的连接掉队推 `resync`、回应一条不丢；`after` 写错、两样都写、没有的人格、没有记忆的会话、没装的照原因拒（挑哪些见 `memory.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_restore.rs`、`memory_turns.rs`（施工 R-12 下） | `memory.restore`：忘了的恢复以后照常列出、搜得到，同一个编号只算一次，本来就算数的不写，拒绝的几种；`memory.turns`：搜得到以前那一轮的会话、轮、时刻、字，`limit`，会话那一间的不串，写错的几种（细节见 `memory.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge.rs`（施工 K-1 上） | 「`kb.*`」：三个方法的回应一格一格对、`kb.toml` 写错的带 `error`、只搜一个；写错的几种 `bad_params`、`unknown_kb`、`unknown_document`、`kb.` 开头的别的方法 `unknown_method`（细节见 `knowledge.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/config_watch.rs`、`config_watch_log.rs`（施工 8-4） | 订阅配置、取消、参数不对；手改推 `config.changed`；`config.set` 先见推送后见回应；掉队推 `resync`；改了语言下一句照新的（`config.md`「守着它的」） |
 
 ### 出处

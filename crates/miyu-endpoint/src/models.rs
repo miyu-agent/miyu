@@ -295,3 +295,15 @@ fn now_millis() -> i64 {
             i64::try_from(since.as_millis()).unwrap_or(i64::MAX)
         })
 }
+
+/// 空的模型资料：没有档案、没有目录，读完了（核心起来时先用它，`Core::with_model_data` 换上真的；施工 K-1 上从 `lib.rs`
+/// 挪过来）。
+pub(crate) fn empty_data() -> Arc<ModelData> {
+    let data = ModelData::new(
+        miyu_models::profile::Profiles::default(),
+        miyu_models::matching::Vendors::default(),
+        None,
+    );
+    data.loaded(None, miyu_session::Observed::default());
+    Arc::new(data)
+}

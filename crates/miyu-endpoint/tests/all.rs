@@ -41,6 +41,7 @@ mod idle;
 mod index;
 mod job_output;
 mod job_stop;
+mod knowledge;
 mod limits;
 mod list;
 mod login;

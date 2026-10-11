@@ -40,6 +40,7 @@ mod from;
 mod hello;
 mod human;
 mod job_output;
+mod knowledge;
 mod list;
 mod listen;
 mod listing;
@@ -85,11 +86,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use miyu_kernel::id::AccountId;
-use miyu_models::matching::Vendors;
-use miyu_models::profile::Profiles;
 use miyu_policy::preset::MEMORY;
 use miyu_sandbox::{Availability, Unusable};
-use miyu_session::{Jobs, Memory, ModelData, Models, Observed, SandboxCache, SummaryTexts};
+use miyu_session::{Jobs, Memory, ModelData, Models, SandboxCache, SummaryTexts};
 use miyu_store::index::SessionIndex;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
@@ -141,6 +140,8 @@ pub struct Core {
     /// 记忆（施工 R-2 上、R-3 中，`memory.md`）：回合库的登记、记忆日志的登记，起来时各建一份空的，用到哪个人格的才开；
     /// 会话落盘时更新回合库、删会话时拿掉，三件工具经它记、忘、搜。
     memory: Arc<Memory>,
+    /// 知识库（施工 K-1 上，`knowledge.md`）：开过的库的索引留着，一个库一把补的锁。
+    knowledge: Arc<miyu_store::knowledge::Knowledge>,
     /// 执行器的任务表（施工 7-3）：所有会话的后台命令，核心里一张。
     jobs: Arc<Jobs>,
     /// 连着几个连接：`serve` 开始时加一，走的时候减一（施工 3-9 上）。
@@ -186,13 +187,6 @@ pub struct Core {
     package_changes: packages::changes::Changes,
 }
 
-/// 空的模型资料：没有档案、没有目录，读完了。
-fn empty_model_data() -> Arc<ModelData> {
-    let data = ModelData::new(Profiles::default(), Vendors::default(), None);
-    data.loaded(None, Observed::default());
-    Arc::new(data)
-}
-
 /// 连上以后最多等多久握手。
 const HELLO_WAIT: Duration = Duration::from_secs(10);
 
@@ -204,9 +198,7 @@ impl Core {
     pub(crate) fn tools(&self) -> Catalog {
         self.tools.current()
     }
-}
 
-impl Core {
     /// 一份家底：会话表是空的，会话用到时再载入；打开管理员的会话列表的索引（施工 3-8 七补），坏了的删掉重建。
     pub fn new(
         root: DataRoot,
@@ -226,7 +218,7 @@ impl Core {
         ]
         .concat();
         let mut config = Config::defaults(&root, &admin, items);
-        let model_data = empty_model_data();
+        let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
         let index = Arc::new(list::open_index(&root, &admin));
         let found = packages::load(&resources, &root, &admin);
@@ -245,6 +237,7 @@ impl Core {
             memory.give_extraction(extraction);
         }
         Core {
+            knowledge: Arc::new(miyu_store::knowledge::Knowledge::new(&root)),
             memory,
             index,
             system_indexes: std::sync::Mutex::default(),

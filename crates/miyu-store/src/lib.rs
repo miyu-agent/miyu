@@ -32,6 +32,7 @@ pub mod human;
 pub mod index;
 pub mod jobs;
 pub mod journal;
+pub mod knowledge;
 pub mod layers;
 pub mod log;
 pub mod logins;

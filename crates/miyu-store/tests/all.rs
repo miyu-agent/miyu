@@ -7,12 +7,14 @@ mod support;
 
 mod human;
 mod human_languages;
+mod knowledge;
 mod memory;
 mod memory_extracted;
 mod memory_follow;
 mod recall;
 mod recall_marks;
 mod recall_places;
+mod recall_stamps;
 mod recall_uses;
 mod recall_vectors;
 mod snapshot;

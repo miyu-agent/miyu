@@ -165,6 +165,7 @@ pub(crate) async fn call(
         "preset.get" => crate::presets::get(core, peer, params(request)?).await,
         "preset.set" => crate::presets::write::set(core, peer, params(request)?).await,
         "preset.delete" => crate::presets::write::delete(core, params(request)?).await,
+        kb if kb.starts_with("kb.") => crate::knowledge::call(core, kb, &request.params).await,
         method if memory::METHODS.contains(&method) => {
             memory::call(core, &request.method, &request.id, &request.params).await
         }

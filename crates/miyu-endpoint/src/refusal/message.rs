@@ -131,6 +131,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_memory" => ("记忆不存在。", "Memory not found."),
         "memory_not_current" => ("记忆已失效。", "Memory no longer current."),
         "memory_too_long" => ("记忆过长。", "Memory too long."),
+        "unknown_kb" => ("知识库不存在。", "Knowledge base not found."),
+        "unknown_document" => ("文档不存在。", "Document not found."),
         "unknown_job" => ("任务不存在或已结束。", "Job not found or finished."),
         "not_a_command" => ("不是后台命令。", "Not a background command."),
         "nothing_to_compact" => ("没有可压缩的内容。", "Nothing to compact."),

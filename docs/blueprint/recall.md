@@ -2,7 +2,7 @@
 
 ### 是什么
 
-一套按关键词、按向量找东西的底子，记忆（`memory.md`）、以后的知识库（`19-知识库.md`）共用：
+一套按关键词、按向量找东西的底子，记忆（`memory.md`）、知识库（`knowledge.md`）共用：
 
 - **关键词**：中文、日文按两个字一组切，交给 SQLite 的 FTS5，照 bm25 排。
 - **向量**：每一条的 embedding 存成 SQLite 里的二进制，查的时候逐条算相似度（R-5）。
@@ -13,7 +13,7 @@
 
 状态：图纸（2026-10-07 起草，照 `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第八、九节项目主人的拍板）。每一节标着由哪一步做，步子见 `memory.md`「施工步子」。做完一步，这一页照做好的样子改写那几节。
 
-做好了的：R-1 切词、检索库（第一、二条，「对外的样子」照做好的写；FTS5 那一列叫 `words`）。R-2（上）检索库多 `marks` 表（版本 2）、`apply`、`mark`、`forget`；R-2（下）`apply` 照到的位置不往回挪。R-3（上）多墓碑表 `buried`（版本 3）、`Edit::Bury`、`Unbury`、`bury`、`is_buried`。
+做好了的：R-1 切词、检索库（第一、二条，「对外的样子」照做好的写；FTS5 那一列叫 `words`）。R-2（上）检索库多 `marks` 表（版本 2）、`apply`、`mark`、`forget`；R-2（下）`apply` 照到的位置不往回挪。R-3（上）多墓碑表 `buried`（版本 3）、`Edit::Bury`、`Unbury`、`bury`、`is_buried`。K-1（上）多指纹表 `stamps`、`replace`、`drop_source`、`stamps`。
 
 ### 在哪
 
@@ -27,6 +27,7 @@
 | `crates/miyu-store/src/recall/vectors.rs` | 向量表：放、照模型列出缺的、读出来逐条算最像的（第三条第 1、2 款） | R-5 下 |
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
 | `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款） | R-13 下 |
+| `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源（`knowledge.md`「怎么走」第三条） | K-1 上 |
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
@@ -65,6 +66,9 @@
 | `mark(来源)` | R-2：这个来源照到了哪个序号，没照过的没有 |
 | `forget(来源)` | R-2：拿掉键以 `来源/` 开头的全部和它的照到哪 |
 | `bury(键)`、`is_buried(键)` | R-3 上：单埋一块墓碑（不碰照到哪，删会话时用）、这个键埋了没有。`Edit` 多 `Bury { key }`、`Unbury { key }`，在 `apply` 里一起写；撤销的那一轮照它判记忆的出处活不活，删掉的会话照会话的目录判（`memory.md` 第二条第 4 款，R-3 三补） |
+| `replace(来源, 几块, 时刻, 指纹)` | K-1 上：整份换掉一个来源，在一个事务里：拿掉键以 `来源#` 开头的（连同词、向量），照先后放进这几块（键 `来源#<第几块>`，从 0 起，时刻都一样），记下指纹（`knowledge.md`「怎么走」第三条第 2 款） |
+| `drop_source(来源)` | K-1 上：拿掉这个来源的块和指纹，没有的不要紧 |
+| `stamps() -> {来源: 指纹}` | K-1 上：记着的每个来源的指纹；指纹的写法由调的一方定，库不解读 |
 | `uses() -> {记忆编号: Used}` | R-4 下：回合库里记忆用到过的，照记忆分组：`Used { count, last }`，几次、最近一次（`memory.md` 第八条）。`Edit` 多 `Use { key, memory, at }`，在 `apply` 里一起写，同一个键、同一条记忆写过的不重复；`forget(来源)` 一起拿掉 |
 
 - 键是调的一方起的字符串（例如回合索引用 `会话编号/回合`），库不解读。
@@ -88,6 +92,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 - R-3 上加一张 `buried(key TEXT PRIMARY KEY)`：墓碑，版本加一成 3。
 - 向量表随 R-5 加，版本跟着加一：派生的，删掉重建，不写迁移。
 - R-13 下加一张 `places(source TEXT PRIMARY KEY, venue TEXT)`：回合库里场所会话在哪个场所（`place`、`places`），本机的会话不记；搜以前的对话照它挑（`memory.md` 第一条第 1 款、第九条）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上。
+- K-1 上加一张 `stamps(source TEXT PRIMARY KEY, stamp TEXT NOT NULL)`：知识库的索引里每个文档的指纹（`knowledge.md`「对外的样子」索引那一段）。来源和块的键照 `#` 分（`a.md` 是 `a.md.bak` 的前缀也不碍事）。同向量表不换版本，开库、重建以后补上。
 - R-4 下加一张 `uses(key TEXT, memory TEXT, at INTEGER, PRIMARY KEY (key, memory))`：回合库里记一条记忆用到过的每一次，键是 `会话/事件的序号`，`at` 是那一条事件的时刻（毫秒）。同向量表不换版本，每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上（`memory.md` 第八条）。
 
 ### 怎么走
@@ -182,6 +187,12 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 
 ### 守着它的
 
+K-1 上做好的：
+
+| 测试 | 守哪几条 |
+|---|---|
+| `crates/miyu-store/tests/recall_stamps.rs` | 「库的结构」的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），前缀相同的别的来源不动；列出指纹；拿掉一个来源连指纹一起 |
+
 R-5 四补做好的：
 
 | 测试 | 守哪几条 |
@@ -253,5 +264,5 @@ R-1 做好的：
 
 - 远程的一次发几句（批量）：现在一次一句，量出来慢了再说。
 - 第三条第 7 款，照字的哈希缓存向量：量出来是问题再加。
-- 知识库的切块、文件监视：知识库那条线。
+- 知识库的文件监视、照意思找：`knowledge.md`「施工步子」K-2、K-4。
 - `history` 改用全文索引：照 `tools/history.md`，慢了再做。
