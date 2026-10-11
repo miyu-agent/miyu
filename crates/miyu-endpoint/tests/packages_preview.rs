@@ -100,8 +100,8 @@ async fn installing_shows_what_comes_and_changes_nothing() {
         refused["error"]["data"]["reason"], "package_invalid",
         "和真装一样拒：{refused}"
     );
-    let web = folder(&home, "web", &pane("1"));
-    let refused = preview(&mut client, &web).await;
+    let shipped = folder(&home, "mermaid", &pane("1"));
+    let refused = preview(&mut client, &shipped).await;
     assert_eq!(
         refused["error"]["data"]["reason"], "package_exists",
         "{refused}"

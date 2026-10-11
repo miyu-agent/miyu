@@ -1,5 +1,6 @@
 //! 软件包列表的状态、开关、图标、后台页，程序不在就当没装（施工 F-6 上，`docs/blueprint/package-pages.md`）：真核心走一遍。
-//! 出厂的接入QQ、两个界面的程序不在测试程序旁边，是「程序不在」的样子；自己装的扩展用测试用的扩展，是「程序在」的样子。
+//! 程序一定不在的扩展、界面（测试自己装的）是「程序不在」的样子；自己装的扩展用测试用的扩展，是「程序在」的样子。两个界面的
+//! 出厂清单施工 S-5 搬走了，界面这一种照自己装的 `screen` 测。
 
 use std::sync::Arc;
 
@@ -21,6 +22,14 @@ fn ghost(home: &Home) {
     home.write(
         "home/alice/packages/ghost/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ghost\" }\n\n[command]\nname = \"ghost\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"G\" }\n\n[process]\n\n[features.haunt]\nname = { en = \"Haunt\" }\n\n[settings.port]\ntype = \"int\"\nlayers = [\"system\"]\nname = { en = \"Port\" }\n",
+    );
+}
+
+/// 一个程序一定不在的界面（施工 S-5：两个界面的清单不在核心仓库里了）：认 `config` 这一页，带一项配置。
+fn screen(home: &Home) {
+    home.write(
+        "home/alice/packages/screen/package.toml",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Screen\" }\n\n[command]\nname = \"screen\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"S\" }\n\n[ui]\nopens = [\"config\"]\n\n[settings.icons]\ntype = \"option\"\nchoices = [\"nerd\", \"plain\"]\ndefault = \"plain\"\nname = { en = \"Icons\" }\n",
     );
 }
 
@@ -61,6 +70,7 @@ async fn the_list_says_status_switch_icon_and_page() {
             .replace("name = \"relay\"", "name = \"bare\""),
     );
     ghost(&home);
+    screen(&home);
     let core = core(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
@@ -95,9 +105,9 @@ async fn the_list_says_status_switch_icon_and_page() {
         (json!("program_missing"), json!(false)),
         "{ghost}"
     );
-    let tui = entry(&mut client, "tui").await;
-    assert_eq!(tui["status"], "program_missing");
-    assert!(tui.get("enabled").is_none(), "界面没有开关：{tui}");
+    let screen = entry(&mut client, "screen").await;
+    assert_eq!(screen["status"], "program_missing");
+    assert!(screen.get("enabled").is_none(), "界面没有开关：{screen}");
     core.stop_extensions().await;
 }
 
@@ -161,14 +171,15 @@ async fn a_shipped_built_in_package_is_switched_off_by_removing_it() {
 async fn switches_that_do_not_apply_are_refused() {
     let home = Home::new();
     ghost(&home);
+    screen(&home);
     let core = core(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     for (method, id, reason) in [
         ("package.enable", "basesystem", "package_required"),
         ("package.disable", "basesystem", "package_required"),
-        ("package.enable", "tui", "not_switchable"),
-        ("package.disable", "web", "not_switchable"),
+        ("package.enable", "screen", "not_switchable"),
+        ("package.disable", "screen", "not_switchable"),
         ("package.enable", "ghost", "program_missing"),
         ("extension.enable", "ghost", "program_missing"),
         ("package.enable", "nothing", "unknown_package"),
@@ -190,6 +201,7 @@ async fn switches_that_do_not_apply_are_refused() {
 async fn a_package_whose_program_is_missing_counts_as_not_installed() {
     let home = Home::new();
     ghost(&home);
+    screen(&home);
     let core = core_with_settings(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
@@ -202,7 +214,7 @@ async fn a_package_whose_program_is_missing_counts_as_not_installed() {
         .collect();
     assert!(!keys.contains(&"ghost.port"), "{keys:?}");
     assert!(
-        keys.contains(&"tui.icons"),
+        keys.contains(&"screen.icons"),
         "界面的程序不在，配置项照旧在：{keys:?}"
     );
     let preset = client

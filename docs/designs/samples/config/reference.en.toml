@@ -226,43 +226,6 @@ default = "full"
 # Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
 # output =
 
-[tui]
-# Icons: Which icon set the terminal interface draws: Nerd Font glyphs, or plain characters for fonts without them.
-# Allowed: nerd or plain. Only in the system config or personal settings. Takes effect immediately.
-icons = "nerd"
-
-# Mascot: Which mascot to show. Leave unset for the built-in one.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Takes effect immediately.
-# mascot =
-
-# Show the mascot on the home screen: Show the mascot above the input box of an empty session. A persona's avatar shows regardless.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-mascot_home = true
-
-# Show the mascot in the sidebar: Show the mascot at the top of the sidebar. A persona's avatar shows regardless.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-mascot_sidebar = true
-
-# Expand commands: Show commands in full instead of a preview.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-timeline_expand_command = false
-
-# Expand edits: Show edit diffs in full instead of a preview.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-timeline_expand_edit = false
-
-# Expand thoughts: Show thoughts in full instead of a preview.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-timeline_expand_thought = false
-
-# Fold the timeline after a reply: Fold the finished steps into one line once the reply is done.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-timeline_fold = true
-
-# Limit timeline area height: Show only the latest lines of the running steps.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
-timeline_limit_live = true
-
 [ui]
 # Default interface: The interface plain miyu opens.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Takes effect after restart.
@@ -284,20 +247,3 @@ welcomed = false
 # Currency shown first: Amounts are added up per currency, never converted. This one is listed first, the others by code. Three capital letters such as USD or CNY.
 # Allowed: text of at most 3 characters. Only in the system config or personal settings. Takes effect immediately.
 currency = "USD"
-
-[web]
-# Idle seconds: Quit after this many seconds with no browser connected and no media being served.
-# Allowed: a whole number from 1 to 86400. Only in the system config. Takes effect after restart.
-idle_seconds = 600
-
-# Most media tickets: At most this many /media tickets; the one unused longest goes first.
-# Allowed: a whole number from 1 to 1000000. Only in the system config. Takes effect after restart.
-most_tickets = 4096
-
-# Web port: Which local port the web interface listens on.
-# Allowed: a whole number from 1 to 65535. Only in the system config. Takes effect after restart.
-port = 8300
-
-# Media ticket idle seconds: A /media ticket unused for this many seconds stops working.
-# Allowed: a whole number from 1 to 2592000. Only in the system config. Takes effect after restart.
-ticket_idle_seconds = 43200

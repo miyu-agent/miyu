@@ -144,7 +144,7 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
             .is_some_and(|said| said.contains("[ui], [process]")),
         "{reply}"
     );
-    let shipped = source(&home, "web", &manifest("网页", "xweb"));
+    let shipped = source(&home, "mermaid", &manifest("图", "xmermaid"));
     let reply = client
         .call("i2", "package.install", json!({"path": shipped}))
         .await;
@@ -155,7 +155,7 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
         .call("i3", "package.install", json!({"path": clash}))
         .await;
     assert_eq!(reason(&reply), Some("package_invalid"), "{reply}");
-    for left in ["xbad", "web", "xclash"] {
+    for left in ["xbad", "mermaid", "xclash"] {
         assert!(!mine(&home, left).exists(), "{left} 不留");
     }
     assert!(find(&list(&mut client).await, "xclash").is_none());

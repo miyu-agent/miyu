@@ -566,68 +566,6 @@
       },
       "type": "object"
     },
-    "tui": {
-      "properties": {
-        "icons": {
-          "default": "nerd",
-          "description": "终端界面用哪一套图标：Nerd Font 的图标，或者没装这种字体时用的普通字符。能写：nerd 或 plain。只能写在系统配置或个人设置里。立即生效。",
-          "enum": [
-            "nerd",
-            "plain"
-          ],
-          "title": "图标",
-          "type": "string"
-        },
-        "mascot": {
-          "description": "显示哪一只吉祥物；不设置就是内置的。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。立即生效。",
-          "title": "吉祥物",
-          "type": "string"
-        },
-        "mascot_home": {
-          "default": true,
-          "description": "在空会话的输入框上方显示吉祥物。人格设了头像的照样显示头像。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "首页显示吉祥物",
-          "type": "boolean"
-        },
-        "mascot_sidebar": {
-          "default": true,
-          "description": "在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "侧边栏显示吉祥物",
-          "type": "boolean"
-        },
-        "timeline_expand_command": {
-          "default": false,
-          "description": "命令默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开命令",
-          "type": "boolean"
-        },
-        "timeline_expand_edit": {
-          "default": false,
-          "description": "编辑的差异默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开编辑",
-          "type": "boolean"
-        },
-        "timeline_expand_thought": {
-          "default": false,
-          "description": "思考默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开思考",
-          "type": "boolean"
-        },
-        "timeline_fold": {
-          "default": true,
-          "description": "回复完成后，把这一段的步骤折叠为一行。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "回复完成后折叠时间线",
-          "type": "boolean"
-        },
-        "timeline_limit_live": {
-          "default": true,
-          "description": "进行中的步骤只显示最新的几行。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "限制时间线区域高度",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
     "ui": {
       "properties": {
         "head": {
@@ -670,43 +608,6 @@
           "minLength": 1,
           "title": "显示的币种",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "web": {
-      "properties": {
-        "idle_seconds": {
-          "default": 600,
-          "description": "没有浏览器连着、没有媒体在给，连续这么多秒就退出。能写：1 到 86400 之间的整数。只能写在系统配置里。重启后生效。",
-          "maximum": 86400,
-          "minimum": 1,
-          "title": "空闲多久退出（秒）",
-          "type": "integer"
-        },
-        "most_tickets": {
-          "default": 4096,
-          "description": "/media 的票据最多几张，满了丢最久没用的。能写：1 到 1000000 之间的整数。只能写在系统配置里。重启后生效。",
-          "maximum": 1000000,
-          "minimum": 1,
-          "title": "最多几张媒体票据",
-          "type": "integer"
-        },
-        "port": {
-          "default": 8300,
-          "description": "网页界面听本机的哪个端口。能写：1 到 65535 之间的整数。只能写在系统配置里。重启后生效。",
-          "maximum": 65535,
-          "minimum": 1,
-          "title": "网页的端口",
-          "type": "integer"
-        },
-        "ticket_idle_seconds": {
-          "default": 43200,
-          "description": "/media 的票据这么多秒没用过就作废。能写：1 到 2592000 之间的整数。只能写在系统配置里。重启后生效。",
-          "maximum": 2592000,
-          "minimum": 1,
-          "title": "媒体票据多久作废（秒）",
-          "type": "integer"
         }
       },
       "type": "object"

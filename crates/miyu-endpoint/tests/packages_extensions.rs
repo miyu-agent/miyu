@@ -317,12 +317,12 @@ async fn an_invalid_upgrade_brings_the_old_extension_back() {
     client.hello().await;
     until_state(&mut client, "xbad", |entry| entry["state"] == "running").await;
     lines(&path, 2).await;
-    // 子命令名撞了出厂的网页。
+    // 子命令名撞了出厂的接入QQ（施工 S-5：两个界面的清单搬走了）。
     let source = home.work.join("xbad");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::write(
         source.join("package.toml"),
-        good.replace("name = \"xbad\"", "name = \"web\""),
+        good.replace("name = \"xbad\"", "name = \"onebot\""),
     )
     .expect("写得进");
     let reply = client

@@ -13,6 +13,9 @@ serde_json = "1.0"
 # 登记簿的指纹：资源文件字节的 SHA-256（`docs/designs/26-提示词.md` 第十节）。版本和内核的一样。
 sha2 = { version = "0.11", default-features = false }
 
+# 读 heads.toml（施工 S-5）：和核心读配置用的是同一个。
+toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
+
 # `cargo xtask dev-home`（施工 8-6）：照核心的写法建数据根的骨架。
 miyu-store = { path = "../crates/miyu-store" }
 

@@ -57,8 +57,19 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
     let packages = listed(&home).await;
     let state = home.root.path().join("state").join("packages").join("term");
     assert_eq!(
-        only(&packages, &["term", "web"]),
+        only(&packages, &["mermaid", "term"]),
         [
+            json!({
+                "package": "mermaid",
+                "layer": "shipped",
+                "kind": "builtin",
+                "protocol": [1, 1],
+                "name": "画 mermaid 图",
+                "features": [],
+                "state": home.root.path().join("state").join("packages").join("mermaid").to_string_lossy(),
+                "status": "ready",
+                "enabled": true,
+            }),
             json!({
                 "package": "term",
                 "layer": "home",
@@ -70,19 +81,6 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
                 "command": {"name": "term", "program": "miyu-tui", "about": "打开终端界面"},
                 "opens": ["config"],
                 "state": state.to_string_lossy(),
-                "status": "program_missing",
-            }),
-            json!({
-                "package": "web",
-                "layer": "shipped",
-                "kind": "ui",
-                "protocol": [1, 1],
-                "name": "网页界面",
-                "summary": "在浏览器里和 AI 对话、改配置",
-                "command": {"name": "web", "program": "miyu-web", "about": "打开网页界面"},
-                "opens": [],
-                "pages_dir": "web/pages",
-                "state": home.root.path().join("state").join("packages").join("web").to_string_lossy(),
                 "status": "program_missing",
             }),
         ],
@@ -247,8 +245,9 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
 async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
     let home = Home::new();
     mine(&home, "bad", "[package]\n\n[ui]\n\n[process]\n");
-    mine(&home, "web", TERM);
-    mine(&home, "web2", &TERM.replace("\"term\"", "\"web\""));
+    mine(&home, "mermaid", TERM);
+    // 子命令撞了出厂的桥的 `onebot`（施工 S-5：两个界面的清单搬走了，借出厂的桥）。
+    mine(&home, "web2", &TERM.replace("\"term\"", "\"onebot\""));
     mine(
         &home,
         "later",
@@ -280,9 +279,9 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
             "problem": "一个包只带一个程序：[ui], [process] 只能留一张",
         })]
     );
-    let web = by_id("web");
-    assert_eq!(web.len(), 2, "出厂的照常，家目录里同编号的那一份报错");
-    assert_eq!(web[1]["code"], "duplicate", "{web:?}");
+    let mermaid = by_id("mermaid");
+    assert_eq!(mermaid.len(), 2, "出厂的照常，家目录里同编号的那一份报错");
+    assert_eq!(mermaid[1]["code"], "duplicate", "{mermaid:?}");
     assert_eq!(by_id("web2")[0]["code"], "command_taken");
     let later = &by_id("later")[0];
     assert_eq!(later["code"], "protocol_mismatch", "{later}");
@@ -310,7 +309,7 @@ async fn manifests_are_read_once_when_the_core_starts() {
         .iter()
         .filter_map(|package| package["package"].as_str())
         .collect();
-    assert!(ids.contains(&"web"), "{reply}");
+    assert!(ids.contains(&"mermaid"), "{reply}");
     assert!(!ids.contains(&"term"), "起来以后才放的，重启才认：{reply}");
     assert_eq!(only(&listed(&home).await, &["term"]).len(), 1);
 }

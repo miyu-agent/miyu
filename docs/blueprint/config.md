@@ -1186,43 +1186,6 @@ default = "full"
 # 能写：0 到 1000000 之间的数。只能写在系统配置或个人设置里。下一轮生效。
 # output =
 
-[tui]
-# 图标：终端界面用哪一套图标：Nerd Font 的图标，或者没装这种字体时用的普通字符。
-# 能写：nerd 或 plain。只能写在系统配置或个人设置里。立即生效。
-icons = "nerd"
-
-# 吉祥物：显示哪一只吉祥物；不设置就是内置的。
-# 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。立即生效。
-# mascot =
-
-# 首页显示吉祥物：在空会话的输入框上方显示吉祥物。人格设了头像的照样显示头像。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-mascot_home = true
-
-# 侧边栏显示吉祥物：在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-mascot_sidebar = true
-
-# 展开命令：命令默认显示全文，不只显示预览。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-timeline_expand_command = false
-
-# 展开编辑：编辑的差异默认显示全文，不只显示预览。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-timeline_expand_edit = false
-
-# 展开思考：思考默认显示全文，不只显示预览。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-timeline_expand_thought = false
-
-# 回复完成后折叠时间线：回复完成后，把这一段的步骤折叠为一行。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-timeline_fold = true
-
-# 限制时间线区域高度：进行中的步骤只显示最新的几行。
-# 能写：true 或 false。只能写在系统配置或个人设置里。立即生效。
-timeline_limit_live = true
-
 [ui]
 # 默认界面：直接敲 miyu 时打开哪个界面。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。重启后生效。
@@ -1244,26 +1207,9 @@ welcomed = false
 # 显示的币种：用量的金额照币种各加各的，不换算；这一种排在最前，别的照代码的字母先后。三个大写字母，例如 USD、CNY。
 # 能写：最多 3 个字的文字。只能写在系统配置或个人设置里。立即生效。
 currency = "USD"
-
-[web]
-# 空闲多久退出（秒）：没有浏览器连着、没有媒体在给，连续这么多秒就退出。
-# 能写：1 到 86400 之间的整数。只能写在系统配置里。重启后生效。
-idle_seconds = 600
-
-# 最多几张媒体票据：/media 的票据最多几张，满了丢最久没用的。
-# 能写：1 到 1000000 之间的整数。只能写在系统配置里。重启后生效。
-most_tickets = 4096
-
-# 网页的端口：网页界面听本机的哪个端口。
-# 能写：1 到 65535 之间的整数。只能写在系统配置里。重启后生效。
-port = 8300
-
-# 媒体票据多久作废（秒）：/media 的票据这么多秒没用过就作废。
-# 能写：1 到 2592000 之间的整数。只能写在系统配置里。重启后生效。
-ticket_idle_seconds = 43200
 ```
 
-样本 `docs/designs/samples/config/settings.schema.zh.json`（个人设置的 JSON Schema，中文：能放进个人设置的 `compaction.prepare`（6-11 上）、`models.chat`、`models.vision`、`pools.<id>.*`（8-8）、`models.catalog.*`（8-7）、`models.cooldown.*`（8-9）、`permission.start_read_only`、`persona.default`（P-1 上）、`preset.default`（P-2 上）、`providers.<id>.*`、`tui.*`（9-3 再补起，终端界面的清单声明的：图标、时间线、吉祥物）、`ui.language`、`ui.startup`）：
+样本 `docs/designs/samples/config/settings.schema.zh.json`（个人设置的 JSON Schema，中文，照核心仓库出厂的包生成：两个界面的清单施工 S-5 搬走了，`tui.*`、`web.*` 不在样本里，发版带上它们以后照它们的清单出现；能放进个人设置的 `compaction.prepare`（6-11 上）、`models.chat`、`models.vision`、`pools.<id>.*`（8-8）、`models.catalog.*`（8-7）、`models.cooldown.*`（8-9）、`permission.start_read_only`、`persona.default`（P-1 上）、`preset.default`（P-2 上）、`providers.<id>.*`、`ui.language`、`ui.startup`）：
 
 ```json
 {
@@ -1746,68 +1692,6 @@ ticket_idle_seconds = 43200
           }
         },
         "type": "object"
-      },
-      "type": "object"
-    },
-    "tui": {
-      "properties": {
-        "icons": {
-          "default": "nerd",
-          "description": "终端界面用哪一套图标：Nerd Font 的图标，或者没装这种字体时用的普通字符。能写：nerd 或 plain。只能写在系统配置或个人设置里。立即生效。",
-          "enum": [
-            "nerd",
-            "plain"
-          ],
-          "title": "图标",
-          "type": "string"
-        },
-        "mascot": {
-          "description": "显示哪一只吉祥物；不设置就是内置的。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。立即生效。",
-          "title": "吉祥物",
-          "type": "string"
-        },
-        "mascot_home": {
-          "default": true,
-          "description": "在空会话的输入框上方显示吉祥物。人格设了头像的照样显示头像。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "首页显示吉祥物",
-          "type": "boolean"
-        },
-        "mascot_sidebar": {
-          "default": true,
-          "description": "在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "侧边栏显示吉祥物",
-          "type": "boolean"
-        },
-        "timeline_expand_command": {
-          "default": false,
-          "description": "命令默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开命令",
-          "type": "boolean"
-        },
-        "timeline_expand_edit": {
-          "default": false,
-          "description": "编辑的差异默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开编辑",
-          "type": "boolean"
-        },
-        "timeline_expand_thought": {
-          "default": false,
-          "description": "思考默认显示全文，不只显示预览。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "展开思考",
-          "type": "boolean"
-        },
-        "timeline_fold": {
-          "default": true,
-          "description": "回复完成后，把这一段的步骤折叠为一行。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "回复完成后折叠时间线",
-          "type": "boolean"
-        },
-        "timeline_limit_live": {
-          "default": true,
-          "description": "进行中的步骤只显示最新的几行。能写：true 或 false。只能写在系统配置或个人设置里。立即生效。",
-          "title": "限制时间线区域高度",
-          "type": "boolean"
-        }
       },
       "type": "object"
     },

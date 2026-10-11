@@ -1,0 +1,11 @@
+# 两个界面（设计 `32-仓库拆分.md` 第六节，施工 S-5）：它们的代码和清单在各自的仓库里，核心仓库只记取哪一份。
+# 发版时照这里取：程序（三个平台各一份）放在 `miyu` 旁边，仓库里的 `package/` 文件夹放进资源目录的 `packages/<编号>/`。
+# 升级就是改 `rev`：界面那边打了标签以后写标签，没有的写完整的提交号。
+
+[tui]
+repo = "https://github.com/miyu-agent/miyu-tui"
+rev = "960362426789aaea2d34242711cfc6d301e45ca9"
+
+[web]
+repo = "https://github.com/miyu-agent/miyu-web"
+rev = "2d9af3b8fadc611f2911b26143acd67f1ca57fb5"

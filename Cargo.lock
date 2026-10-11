@@ -1951,46 +1951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "miyu-web"
-version = "0.0.0"
-dependencies = [
- "base64 0.22.1",
- "futures-util",
- "getrandom 0.4.3",
- "http-body-util",
- "hyper",
- "hyper-util",
- "miyu-client",
- "miyu-config",
- "miyu-ipc",
- "miyu-log",
- "miyu-store",
- "miyu-webserve",
- "serde",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "tracing",
-]
-
-[[package]]
-name = "miyu-webserve"
-version = "0.0.0"
-dependencies = [
- "futures-util",
- "http-body-util",
- "hyper",
- "hyper-util",
- "miyu-client",
- "miyu-ipc",
- "miyu-store",
- "serde_json",
- "tokio",
- "tokio-tungstenite",
- "tracing",
-]
-
-[[package]]
 name = "multiversion_no_op"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3681,6 +3641,7 @@ dependencies = [
  "miyu-store",
  "serde_json",
  "sha2",
+ "toml_edit",
 ]
 
 [[package]]

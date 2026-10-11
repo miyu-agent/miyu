@@ -108,7 +108,7 @@ fn install(home: &Home, id: &str, program: &str, opens: &str) {
     .expect("写得进");
 }
 
-/// 测试的界面用的编号：避开出厂会有的（出厂带着 `tui`，同编号认出厂的，9-3 补）。系统配置里 `ui.head` 指着它。
+/// 测试的界面用的编号：避开发版时出厂会带的 `tui`、`web`（同编号认出厂的，9-3 补）。系统配置里 `ui.head` 指着它。
 fn pointed(home: &Home) {
     home.system_config("[ui]\nhead = \"probe-head\"\n");
 }
@@ -186,11 +186,8 @@ async fn a_missing_head_names_the_installed_ones() {
     home.system_config("[ui]\nhead = \"nope\"\n");
     let plain = miyu(&home, &[]);
     assert_eq!(plain.status.code(), Some(1));
-    // 出厂的终端只有清单、程序随 M9，不算装了；网页的程序编没编出来看这一次构建（9-3 补）。
-    let installed = match beside("miyu-web") {
-        true => "other、web",
-        false => "other",
-    };
+    // 两个界面的清单不在核心仓库里（施工 S-5：发版时照 heads.toml 放进来），装了的只有测试自己装的。
+    let installed = "other";
     assert_eq!(
         said(&plain).trim_end(),
         format!(
@@ -202,28 +199,20 @@ async fn a_missing_head_names_the_installed_ones() {
 }
 
 #[tokio::test]
-async fn the_shipped_terminal_without_its_program_says_where_it_should_be() {
-    // 出厂的 ui.head 是 tui，出厂带着它的清单，程序 miyu-tui 随 M9（9-3 补）。
+async fn without_the_terminal_package_the_default_head_is_not_installed() {
+    // 出厂的 ui.head 是 tui；核心仓库编出来的没带它的清单（施工 S-5：两个界面的清单在各自的仓库里，发版时照 heads.toml
+    // 放进资源目录），说没装。
     let home = Home::new();
-    assert!(!beside("miyu-tui"), "这一次构建里没有终端的程序");
     let plain = miyu(&home, &[]);
     assert_eq!(plain.status.code(), Some(1), "{}", said(&plain));
     assert!(
         said(&plain).starts_with(
-            "没找到 tui 这个界面的程序 miyu-tui（ui.head 指着它）。重装它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面"
+            "没装 tui 这个界面（ui.head 指着它）。装上它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面"
         ),
         "{}",
         said(&plain)
     );
     home.kill_core().await;
-}
-
-/// `miyu` 真实位置旁边有没有 `program`。
-fn beside(program: &str) -> bool {
-    std::fs::canonicalize(MIYU)
-        .expect("主程序在")
-        .with_file_name(format!("{program}{}", std::env::consts::EXE_SUFFIX))
-        .is_file()
 }
 
 #[tokio::test]

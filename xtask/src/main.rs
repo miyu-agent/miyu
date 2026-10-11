@@ -10,6 +10,7 @@
 mod dev_home;
 mod drawing;
 mod files;
+mod heads;
 mod layers;
 mod ledger;
 mod licenses;
@@ -107,13 +108,15 @@ fn check() -> ExitCode {
     ];
     println!("\n── 文档：登记簿 {} 第十节 ──", ledger::PATH);
     println!(
-        "── 文档：{} 和资源、登记簿；蓝图里的样本块 ──",
-        prompts::PATH
+        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{} ──",
+        prompts::PATH,
+        heads::PATH
     );
     if let Some(docs) = outcomes.last_mut() {
         docs.problems.extend(ledger::check(&root));
         docs.problems.extend(prompts::check(&root));
         docs.problems.extend(samples::check(&root));
+        docs.problems.extend(heads::check(&root));
     }
     outcomes.extend(gates(&cargo, &root));
     println!(
