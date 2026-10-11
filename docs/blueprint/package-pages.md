@@ -52,14 +52,14 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 列表上的开关，头只管开、关，怎么做由核心照种类定：
 
-| 种类 | `enabled` | `package.enable` | `package.disable` |
-|---|---|---|---|
-| 扩展 | 开关开着 | 同 `extension.enable`（要批的能力照它的 `approve`、`needs_approval`） | 同 `extension.disable` |
-| 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在家目录记一笔） |
-| `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 |
-| 必需的、界面、小程序、吉祥物包 | 没有这一格 | `not_switchable` | `not_switchable` |
+| 种类 | `enabled` | `package.enable` | `package.disable` | `package.restart`（施工 X-4） |
+|---|---|---|---|---|
+| 扩展 | 开关开着 | 同 `extension.enable`（要批的能力照它的 `approve`、`needs_approval`） | 同 `extension.disable` | 同 `extension.restart`，再重启它带的 MCP 服务 |
+| 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在家目录记一笔） | `not_restartable` |
+| `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 | 重启它带的服务 |
+| 必需的、界面、小程序、吉祥物包 | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
 
-1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。
+1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`；必需的 `package_required`。
 3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
 

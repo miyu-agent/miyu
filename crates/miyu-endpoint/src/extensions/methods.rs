@@ -3,6 +3,7 @@
 //! 自己调不了（`connection.rs` 先拒）。要的能力还有没批的，`enable` 要带上 `approve` 批、`restart` 拒绝（施工 9-4 下上，
 //! `approval.rs`）。
 
+use std::path::Path;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -120,19 +121,28 @@ pub(crate) async fn restart(
     peer: Peer,
     params: PackageParams,
 ) -> Result<Value, Refusal> {
-    let manifest = &extension(core, &params.package)?;
+    restart_process(core, peer, &params.package).await
+}
+
+/// 重启扩展 `id` 的进程（`extension.restart`；施工 X-4 起 `package.restart` 也走这里，它另外重启带的 MCP 服务）。
+pub(crate) async fn restart_process(
+    core: &Arc<Core>,
+    peer: Peer,
+    id: &str,
+) -> Result<Value, Refusal> {
+    let manifest = &extension(core, id)?;
     let _one_at_a_time = core.extensions.ops.lock().await;
     let (switches, _) = read_switches(core);
-    if !on(&switches, &params.package, manifest) {
+    if !on(&switches, id, manifest) {
         return Err(Refusal::EXTENSION_OFF);
     }
-    let left = approval::unapproved(core, &params.package, manifest, &switches);
+    let left = approval::unapproved(core, id, manifest, &switches);
     if !left.is_empty() {
         return Err(needs_approval(&left));
     }
-    core.extensions.halt(&params.package).await;
-    core.extensions.launch(core, &params.package, manifest);
-    Ok(one(core, &params.package, manifest, &switches, peer))
+    core.extensions.halt(id).await;
+    core.extensions.launch(core, id, manifest);
+    Ok(one(core, id, manifest, &switches, peer))
 }
 
 /// 编号是 `id` 的 `process` 包的清单：没有、读不成的 `unknown_package`，是界面的 `not_an_extension`。
@@ -184,20 +194,7 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
         "state": status.state.as_str(),
         "failures": status.failures,
     });
-    match status.state {
-        State::Starting { pid: Some(pid) } | State::Running { pid } => item["pid"] = json!(pid),
-        State::Waiting { until } => {
-            let left = until.saturating_duration_since(tokio::time::Instant::now());
-            item["retry_in"] = json!(u64::try_from(left.as_millis()).unwrap_or(u64::MAX));
-        }
-        State::Stopped(reason) => {
-            item["reason"] = json!(reason.as_str());
-            if let Some(tail) = stderr::tail(&stderr::path(core, id)) {
-                item["stderr"] = json!(tail);
-            }
-        }
-        State::Starting { pid: None } | State::Off => {}
-    }
+    details(&mut item, status.state, &stderr::path(core, id));
     if let Some((listed, left)) = approval::shown(core, id, manifest, switches, peer.language) {
         item["capabilities"] = listed;
         if let Some(left) = left {
@@ -205,4 +202,23 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
         }
     }
     item
+}
+
+/// 一个进程这时的细节（施工 X-4 从 `one` 挪出来，软件包列表上的 MCP 服务也用）：在跑的带 `pid`，在等的带 `retry_in`（还差几毫秒），
+/// 停下的带 `reason` 和标准错误 `stderr_file` 的最后几行 `stderr`。
+pub(crate) fn details(item: &mut Value, state: State, stderr_file: &Path) {
+    match state {
+        State::Starting { pid: Some(pid) } | State::Running { pid } => item["pid"] = json!(pid),
+        State::Waiting { until } => {
+            let left = until.saturating_duration_since(tokio::time::Instant::now());
+            item["retry_in"] = json!(u64::try_from(left.as_millis()).unwrap_or(u64::MAX));
+        }
+        State::Stopped(reason) => {
+            item["reason"] = json!(reason.as_str());
+            if let Some(tail) = stderr::tail(stderr_file) {
+                item["stderr"] = json!(tail);
+            }
+        }
+        State::Starting { pid: None } | State::Off => {}
+    }
 }

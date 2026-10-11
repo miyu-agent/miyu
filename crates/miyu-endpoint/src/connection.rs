@@ -442,6 +442,7 @@ fn people_only(method: &str) -> bool {
                 | "package.remove"
                 | "package.enable"
                 | "package.disable"
+                | "package.restart"
                 | "package.file"
                 | "package.call"
                 | "config.set"

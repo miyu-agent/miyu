@@ -1,6 +1,7 @@
 //! 列表上的开关（施工 F-6 上，`docs/blueprint/package-pages.md`「开关」）：头只发 `package.enable`、`package.disable`，怎么做照
 //! 种类定。扩展开关进程（同 `extension.enable`、`extension.disable`）；出厂的、不是必需的内置包关是卸掉（在家目录记一笔）、
-//! 开是装回来；必需的、界面、小程序没有开关。回应同 `package.list` 的一项。
+//! 开是装回来；必需的、界面、小程序没有开关。`package.restart`（施工 X-4）重启扩展的进程和带的 MCP 服务、`bundle` 带的服务。
+//! 回应同 `package.list` 的一项。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use miyu_store::packages::Layer;
 use super::{listed, manage, packages};
 use crate::Core;
 use crate::config::methods::words;
-use crate::extensions::methods::{turn_off, turn_on};
+use crate::extensions::methods::{restart_process, turn_off, turn_on};
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
@@ -27,7 +28,7 @@ pub(crate) struct EnableParams {
     approve: Option<Vec<String>>,
 }
 
-/// `package.disable` 的参数。
+/// `package.disable`、`package.restart` 的参数。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DisableParams {
@@ -126,6 +127,28 @@ pub(crate) async fn disable(
         }
     }
     item(core, peer, &params.package)
+}
+
+/// `package.restart`（施工 X-4）：扩展同 `extension.restart`（关着的、要批的能力还有没批的照它拒），再重启它带的 MCP 服务；
+/// `bundle` 重启它带的服务。关着的 `package_off`；别的种类没有能重启的，`not_restartable`。
+pub(crate) async fn restart(
+    core: &Arc<Core>,
+    peer: Peer,
+    params: DisableParams,
+) -> Result<Value, Refusal> {
+    let (manifest, _, _, removed) = find(core, &params.package)?;
+    let id = params.package.as_str();
+    if !matches!(manifest.kind, PackageKind::Process | PackageKind::Bundle) {
+        return Err(Refusal::NOT_RESTARTABLE);
+    }
+    if removed || !crate::extensions::switched_on(core, id, &manifest) {
+        return Err(Refusal::PACKAGE_OFF);
+    }
+    if manifest.kind == PackageKind::Process {
+        restart_process(core, peer, id).await?;
+    }
+    core.restart_services(id, &manifest).await;
+    item(core, peer, id)
 }
 
 /// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）。

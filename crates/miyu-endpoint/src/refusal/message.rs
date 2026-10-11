@@ -57,6 +57,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Background over 5 MiB or 4096 pixels.",
         ),
         "not_switchable" => ("不能启用或停用。", "Cannot be enabled or disabled."),
+        "not_restartable" => ("不能重启。", "Cannot be restarted."),
+        "package_off" => ("软件包已停用。", "Package disabled."),
         "not_an_extension" => ("不是扩展。", "Not an extension."),
         "extension_off" => ("扩展已停用。", "Extension disabled."),
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),

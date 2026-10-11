@@ -28,6 +28,7 @@ pub(crate) async fn call(
         "package.check" => super::verify::check(core, params(request)?).await,
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,
+        "package.restart" => super::switch::restart(core, peer, params(request)?).await,
         "package.file" => crate::backstage::read(core, params(request)?).await,
         "package.methods" => crate::backstage::register(core, caller, params(request)?),
         _ => Err(Refusal::UNKNOWN_METHOD),

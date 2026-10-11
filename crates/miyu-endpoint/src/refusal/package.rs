@@ -28,6 +28,18 @@ impl Refusal {
         reason: "not_switchable",
         data: None,
     };
+    /// 重启关着的包（施工 X-4，`package.restart`）。
+    pub(crate) const PACKAGE_OFF: Refusal = Refusal {
+        code: REFUSED,
+        reason: "package_off",
+        data: None,
+    };
+    /// 这个包没有能重启的进程、服务（施工 X-4）：内置包、界面、小程序、吉祥物包。
+    pub(crate) const NOT_RESTARTABLE: Refusal = Refusal {
+        code: REFUSED,
+        reason: "not_restartable",
+        data: None,
+    };
     /// 这个包没有后台页（施工 F-6 中，`package-pages.md`「`package.file`」）。
     pub(crate) const NO_PAGE: Refusal = Refusal {
         code: REFUSED,

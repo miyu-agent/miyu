@@ -67,14 +67,18 @@ pub(super) fn plan(core: &Core, package: &str, server: &McpServer, dir: &Path) -
         args: rest.to_vec(),
         env,
         dir: work_dir(core, &server.name),
-        log: core
-            .root
-            .state()
-            .join("logs")
-            .join(format!("mcp-{}.stderr", server.name)),
+        log: stderr_file(core, &server.name),
         server: server.clone(),
         known: None,
     }
+}
+
+/// 服务 `service` 的标准错误的文件：`state/logs/mcp-<服务名>.stderr`（软件包列表上停下了的给最后几行，施工 X-4）。
+pub(crate) fn stderr_file(core: &Core, service: &str) -> PathBuf {
+    core.root
+        .state()
+        .join("logs")
+        .join(format!("mcp-{service}.stderr"))
 }
 
 /// 服务 `service` 的工作目录：`state/mcp/<服务名>/`。

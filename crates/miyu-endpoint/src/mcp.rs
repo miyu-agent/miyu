@@ -16,6 +16,7 @@ mod switch;
 mod tool;
 
 pub(crate) use cache::forget;
+pub(crate) use launch::stderr_file;
 pub(crate) use switch::{turn_off, turn_on};
 
 use std::collections::BTreeMap;
@@ -143,6 +144,18 @@ impl Servers {
             .any(|slot| slot.shared.get().state.busy())
     }
 
+    /// 包 `package` 的服务 `service` 这时的状态（施工 X-4，软件包列表上一个服务一格）：没起过的关着。
+    pub(crate) fn service(&self, package: &str, service: &str) -> Status {
+        let key = (package.to_string(), service.to_string());
+        self.slots().get(&key).map_or(
+            Status {
+                state: State::Off,
+                failures: 0,
+            },
+            |slot| slot.shared.get(),
+        )
+    }
+
     /// 包 `package` 的服务合起来在哪一步：有停下的算停下；都在跑的算在跑；别的（起着、退避着、还没起过）算起着。没有服务
     /// 的没有。
     pub(crate) fn state(&self, package: &str, manifest: &Manifest) -> Option<State> {
@@ -268,6 +281,15 @@ impl Core {
     pub(crate) fn start_services(self: &Arc<Self>, id: &str, manifest: &Manifest) {
         if !manifest.mcp.is_empty() {
             self.mcp.launch(self, id, manifest);
+        }
+    }
+
+    /// 重启包 `id` 带的服务（施工 X-4，`package.restart`）：请它们退出、等它们退出，再起，连续失败从零数；工具留在目录里，
+    /// 起好、列完照新的换。
+    pub(crate) async fn restart_services(self: &Arc<Self>, id: &str, manifest: &Manifest) {
+        if !manifest.mcp.is_empty() {
+            self.mcp.halt(self, id).await;
+            self.start_services(id, manifest);
         }
     }
 

@@ -46,6 +46,7 @@ mod list;
 mod login;
 mod mcp;
 mod mcp_cache;
+mod mcp_status;
 mod memory;
 mod memory_api;
 mod memory_clear;
