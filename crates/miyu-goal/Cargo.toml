@@ -1,0 +1,32 @@
+[package]
+name = "miyu-goal"
+description = "长期目标这个软件包：她用来看、设、结束长期目标的工具 goal（施工 X-8 上，docs/blueprint/goal.md）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+autotests = false
+
+[dependencies]
+# 工具的结果、给人看的说法、原因码。
+miyu-kernel = { path = "../miyu-kernel" }
+# 工具的接口、读字、目标的端口。
+miyu-tool = { path = "../miyu-tool" }
+# 她给的参数。
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+# 测试里的假调用。
+miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
+# 测试里跑工具的 future。
+tokio = { version = "1", features = ["macros", "rt"] }
+
+[lints]
+workspace = true
+
+# 集成测试并成一个程序（施工 0-3 三补）。
+[[test]]
+name = "all"
+path = "tests/all.rs"

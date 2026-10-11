@@ -15,10 +15,12 @@
 //! - [`SessionsPort`]：列会话、只读地开别的会话的日志（施工 C-3、C-4），`sessions`、`history` 用；[`find_session`]
 //!   认她写的会话编号；
 //! - [`UsagePort`]：查这个会话的用量、金额、上下文（施工 8-15），`session_usage` 用；
+//! - [`GoalPort`]：看、设、结束这个会话的长期目标（施工 X-8 上），`goal` 用；
 //! - [`picture`]：什么算一张图（施工 4-13 定，3-9 三补挪来）：`read` 读到的、人附上的，都照它认。
 
 mod agents;
 mod catalog;
+mod goals;
 mod jobs;
 pub mod load;
 mod log;
@@ -40,6 +42,9 @@ pub use agents::{
     AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
 };
 pub use catalog::{BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix};
+pub use goals::{
+    BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
+};
 pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
     RUN_IN_BACKGROUND, SHELL,

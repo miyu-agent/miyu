@@ -1,0 +1,4 @@
+{
+  "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked."}},"required":["action"]}
+}

@@ -36,6 +36,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
         reason: None,
         round: 3,
         since: Timestamp::parse("2026-10-12T01:00:04.000Z").expect("合写法"),
+        by_you: false,
         spent,
     };
     let shown = goal_of(&core, &goal);

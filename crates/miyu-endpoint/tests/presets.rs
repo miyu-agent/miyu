@@ -252,7 +252,11 @@ async fn presets_are_listed_and_read_by_layer() {
         "system/presets/dev.toml",
         "[preset]\nname = { zh = \"大家的开发\" }\n\n[tools]\ntrash = false\n",
     );
-    mine(&home, "dev", "[software]\nmemory = true\n");
+    mine(
+        &home,
+        "dev",
+        "[software]\nmemory = true\n\n[features]\nkb = true\n",
+    );
     mine(&home, "broken", "[colors]\n");
     let mut client = connected(configured(&home, &Script::new([]))).await;
     let listed = client.call("p1", "preset.list", json!({})).await;
@@ -304,11 +308,12 @@ async fn presets_are_listed_and_read_by_layer() {
             ("history", "翻查本会话", true, true),
             ("usage", "用量", true, true),
             ("packages", "软件包", true, true),
+            ("goal", "长期目标", true, true),
             ("memory", "人格记忆", true, true),
             ("roleplay", "人设遵循提醒", false, true),
-            ("goal", "长期目标", true, false),
+            ("kb", "kb", true, false),
         ],
-        "装了的照清单读的先后、名字照它的清单（施工 F-3 下）；写了没装的接在后面，名字照给人看的字；装了的包的编号（net）不另列"
+        "装了的照清单读的先后、名字照它的清单（施工 F-3 下）；写了没装的接在后面，名字照给人看的字，没有的照编号；装了的包的编号（net）不另列"
     );
     assert_eq!(
         got["features"]

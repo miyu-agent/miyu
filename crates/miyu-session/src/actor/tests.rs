@@ -167,6 +167,7 @@ async fn a_write_that_fails_stops_the_session() {
             agents: None,
             ledger: None,
             asks: false,
+            goals: false,
             memory: None,
             packages: None,
         },

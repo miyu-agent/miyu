@@ -1,0 +1,21 @@
+{
+  "tools": {
+    "goal": {
+      "name": "Goal",
+      "subject": "objective",
+      "icon": "◎"
+    }
+  },
+  "said": {
+    "goal/now": "Read the goal",
+    "goal/none": "No goal",
+    "goal/set": "Goal set: {objective}",
+    "goal/exists": "A goal is already set",
+    "goal/completed": "Goal complete",
+    "goal/blocked": "Goal blocked: {reason}",
+    "goal/too-early": "Round {round}, too early to mark blocked",
+    "goal/failed": "Goal not changed: {reason}",
+    "common/bad-args": "Bad arguments: {error}",
+    "common/off": "Goals are not available in this session"
+  }
+}

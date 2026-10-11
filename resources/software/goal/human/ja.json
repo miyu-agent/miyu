@@ -1,0 +1,21 @@
+{
+  "tools": {
+    "goal": {
+      "name": "長期目標",
+      "subject": "objective",
+      "icon": "◎"
+    }
+  },
+  "said": {
+    "goal/now": "目標を確認",
+    "goal/none": "目標なし",
+    "goal/set": "目標を設定：{objective}",
+    "goal/exists": "目標は設定済み",
+    "goal/completed": "目標を完了",
+    "goal/blocked": "目標が行き詰まり：{reason}",
+    "goal/too-early": "{round} ラウンド目、まだ行き詰まりにできません",
+    "goal/failed": "目標を変更できません：{reason}",
+    "common/bad-args": "引数が正しくない：{error}",
+    "common/off": "このセッションでは長期目標を使えません"
+  }
+}

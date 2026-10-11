@@ -222,6 +222,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         depth: created.depth.unwrap_or(1),
     });
     let asks = Agents::asks(&created.venue, tasked.as_ref(), attended);
+    let has_goals = Agents::lists_sessions(&created.venue, tasked.as_ref());
     // 能选的人格同池，照快照读回（施工 P-2 补）。
     let agents_personas = Agents::personas_in(&snapshot.tools);
     let agents = sessions.map(|port| {
@@ -337,6 +338,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             agents,
             ledger,
             asks,
+            goals: has_goals,
             memory: calls,
             packages,
         },

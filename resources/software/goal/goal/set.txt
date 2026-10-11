@@ -1,0 +1,1 @@
+Goal set. From now on a new round starts by itself whenever the session is idle.

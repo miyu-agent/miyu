@@ -1,5 +1,5 @@
 <goal_round>
-{round} — your standing objective, set by the user with `/goal`: {objective}
+{round} — your standing objective, {set_by}: {objective}
 Make one concrete step of progress now, or end the goal — both calls are complete as written:
 · done, verified against the workspace rather than earlier rounds' claims →
   goal {"action":"complete"}

@@ -244,7 +244,7 @@ async fn preset_get_lists_features_with_their_tools() {
     let home = Home::new();
     home.write(
         "home/alice/presets/nosh.toml",
-        "[preset]\nname = { en = \"No sh\" }\n\n[features]\nqq = false\n\n[tools]\nforget = false\n",
+        "[preset]\nname = { en = \"No sh\" }\n\n[features]\nqq = false\nkb = true\n\n[tools]\nforget = false\n",
     );
     let mut client = connected(configured(&home, &Script::new([]))).await;
     let dev = client
@@ -257,10 +257,9 @@ async fn preset_get_lists_features_with_their_tools() {
         "{dev}"
     );
     assert!(listed.contains(&("memory", false, true)));
-    assert_eq!(
-        listed.last(),
-        Some(&("goal", true, false)),
-        "写了没装的接在后面"
+    assert!(
+        listed.contains(&("goal", true, true)),
+        "长期目标装了（施工 X-8 上）"
     );
     let files = feature(&dev, "files");
     assert_eq!(
@@ -291,6 +290,16 @@ async fn preset_get_lists_features_with_their_tools() {
     );
     // 写在 [features] 里的：装了的照装了的列，没装的（程序不在的也是）照「写了没装」接在后面，都只列一遍。出厂的接入QQ 的功能 qq 在不在看测试程序旁边有没有 `miyu-onebot`（桥的测试会链一个过去），这里不比它装没装。
     assert_eq!(feature(&nosh, "qq")["on"], false);
+    let listed = switches(&nosh);
+    let kb = listed
+        .iter()
+        .position(|one| *one == ("kb", true, false))
+        .expect("写了没装的也列");
+    let roleplay = listed
+        .iter()
+        .position(|(id, _, _)| *id == "roleplay")
+        .expect("有人设遵循提醒");
+    assert!(kb > roleplay, "写了没装的接在后面：{listed:?}");
     assert_eq!(
         switches(&nosh)
             .iter()

@@ -326,6 +326,12 @@ pub(crate) enum Back {
     Woke { seen: Seq },
     /// 跑工具的任务送回来的（施工 4-2）。
     Tool(crate::tools::ToolBack),
+    /// 第 `call_id` 次调用交来的长期目标的事（施工 X-8 上，`tools/goals.rs`）：答了从 `reply` 送回去。
+    Goal {
+        call_id: miyu_kernel::id::CallId,
+        ask: miyu_tool::GoalAsk,
+        reply: tokio::sync::oneshot::Sender<crate::tools::GoalBack>,
+    },
     /// 一条后台命令结束了（施工 7-3）。
     Job(crate::jobs::Ended),
     /// 替它看图回来了（施工 8-17）：哪一张图，成了的替它看的模型和转述，没成的为什么。

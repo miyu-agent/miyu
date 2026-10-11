@@ -76,6 +76,7 @@ fn shell_comes_from_the_resources_and_names_its_shell() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     });
     assert!(targets.is_empty(), "执行命令不报路径");
@@ -103,6 +104,7 @@ fn shell_says_when_it_wants_out_and_what_to_show() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     };
     let out =
@@ -376,6 +378,7 @@ async fn the_output_is_pushed_to_the_heads_as_it_comes() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     };
     let done = tool("shell").run(call, progress).await;
@@ -484,6 +487,7 @@ async fn a_tilde_working_directory_means_home() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     };
     let done = tool("shell")

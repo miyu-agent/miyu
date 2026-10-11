@@ -71,6 +71,7 @@ fn edit_comes_from_the_resources_and_names_what_it_writes() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     });
     assert_eq!(targets.len(), 1);

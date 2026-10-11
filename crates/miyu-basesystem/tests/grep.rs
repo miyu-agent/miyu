@@ -76,6 +76,7 @@ fn grep_comes_from_the_resources() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     });
     assert_eq!(targets[0].path, "src");

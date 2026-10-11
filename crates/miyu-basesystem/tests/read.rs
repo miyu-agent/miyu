@@ -42,6 +42,7 @@ fn read_comes_from_the_resources_with_its_schema_as_written() {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     });
     assert_eq!(targets.len(), 1);

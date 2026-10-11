@@ -50,6 +50,8 @@ pub(crate) struct ToolKit {
     pub(crate) ledger: Option<Ledger>,
     /// 能不能问人（施工 D-2，[`Agents::asks`]）：能的每次调用给一个提问的端口。
     pub(crate) asks: bool,
+    /// 有没有长期目标（施工 X-8 上，[`Agents::lists_sessions`]）：本机的主会话每次调用给一个目标的端口。
+    pub(crate) goals: bool,
     /// 记忆（施工 R-3 中）：主会话、核心交了记忆的才有，每次调用照它造记忆的端口。
     pub(crate) memory: Option<crate::memory::Calls>,
     /// 看软件包的端口（施工 F-10 上）：协议端点交了的才有，每次调用原样带上。

@@ -2194,6 +2194,157 @@ Retired {id}.
 Nothing found.
 ```
 
+#### `software/goal/common/bad-args.txt`
+
+- 什么时候加进来：`goal` 的参数读不懂（字段按 ``missing field `objective` `` 填）
+- token：10（2026-10-12 量）
+- 为什么加：照记忆的 `common/bad-args.txt`，字节一样（施工 X-8 上）
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/goal/common/off.txt`
+
+- 什么时候加进来：这次调用没有目标的端口（工具面上有、端口却没有：测试）
+- token：9（2026-10-12 量）
+- 为什么加：说清楚，不当成别的错（施工 X-8 上）
+- 指纹：`a54da6d9`
+
+```text
+Goals are not available in this session.
+```
+
+#### `software/goal/goal/none.txt`
+
+- 什么时候加进来：`get` 时没有目标；结束时没有目标（内核拒 `no_goal`）
+- token：6（2026-10-12 量）
+- 为什么加：一句短话（施工 X-8 上）
+- 指纹：`b6ef8d75`
+
+```text
+No goal is set.
+```
+
+#### `software/goal/goal/now.txt`
+
+- 什么时候加进来：`get` 有目标：原文照转义填、状态填 `running` 这类、第几轮填「Round 3 of 10」或「Round 3」
+- token：15（模板本身）（2026-10-12 量）
+- 为什么加：看的就是会话状态的那几格，和续轮消息一个写法（施工 X-8 上）
+- 指纹：`32d4e3da`
+
+```text
+Objective: {objective}
+State: {state} · {round}
+```
+
+#### `software/goal/goal/reason.txt`
+
+- 什么时候加进来：`get` 的目标卡住了：接在上一行后面
+- token：7（模板本身）（2026-10-12 量）
+- 为什么加：卡住的说卡在哪（施工 X-8 上）
+- 指纹：`f8913503`
+
+```text
+Blocked: {reason}
+```
+
+#### `software/goal/goal/set.txt`
+
+- 什么时候加进来：`set` 成了
+- token：19（2026-10-12 量）
+- 为什么加：说清设了以后会怎样：闲着就自己开下一轮（施工 X-8 上）
+- 指纹：`9af285ec`
+
+```text
+Goal set. From now on a new round starts by itself whenever the session is idle.
+```
+
+#### `software/goal/goal/exists.txt`
+
+- 什么时候加进来：`set` 时已经有一个（内核拒 `goal_exists`）
+- token：26（2026-10-12 量）
+- 为什么加：改、停、清掉只走 `/goal`（`goal.md`「定了的」第 1 条）：告诉她只有人能改，免得她反复试（施工 X-8 上）
+- 指纹：`7bac7bdb`
+
+```text
+A goal is already set. Read it with action get. Only the user can change or clear it, with /goal.
+```
+
+#### `software/goal/goal/completed.txt`
+
+- 什么时候加进来：人开的那一轮里 `complete` 成了
+- token：5（2026-10-12 量）
+- 为什么加：人在场，不用收尾的说法（施工 X-8 上，旧版同样只在自动轮里收尾）
+- 指纹：`fee21d6b`
+
+```text
+Goal marked complete.
+```
+
+#### `software/goal/goal/blocked.txt`
+
+- 什么时候加进来：人开的那一轮里 `blocked` 成了
+- token：5（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`5a9b24d3`
+
+```text
+Goal marked blocked.
+```
+
+#### `software/goal/goal/too-early.txt`
+
+- 什么时候加进来：续轮开的那一轮里报卡住，目标开过的轮数不到 3（字段按 `1`、`3` 填）
+- token：28（2026-10-12 量）
+- 为什么加：报卡住要先做满 3 轮（`goal.md`「照旧版留下的」第 3 条）：不然第一轮遇到点麻烦就收工；规矩写在拒的结果里，不写进说明（施工 X-8 上）
+- 指纹：`48daffd8`
+
+```text
+Not marked blocked: this is round {round}, and blocked needs at least {least} goal rounds. Make another concrete step first.
+```
+
+#### `software/goal/goal/failed.txt`
+
+- 什么时候加进来：内核拒了别的原因（原文空白 `empty_message`、会话封存了这类），或者会话停了（`stopped`）
+- token：10（2026-10-12 量）
+- 为什么加：带上原因码（施工 X-8 上）
+- 指纹：`f0a056f3`
+
+```text
+The goal was not changed: {reason}.
+```
+
+#### `software/goal/goal/wrapup-completed.txt`
+
+- 什么时候加进来：续轮开的那一轮里 `complete` 成了（原文照转义填）
+- token：132（2026-10-12 量）
+- 为什么加：收尾：她接着在同一轮写给人，做了什么、怎么验的、产出在哪（施工 X-8 上）。旧版把这段塞进同一轮的下一步，这里写在调用的结果里，不另开一轮、不进 system；措辞照搬旧版（`26` 第六节）
+- 指纹：`881c2978`
+
+```text
+<goal_complete>
+Objective: {objective}
+The goal is marked complete and this autonomous run is ending. Write the closing message to the user now: state the outcome, summarize what was done and how it was verified, and point to the concrete results (files, commits, or other artifacts). Report only what earlier rounds and tool results in this session actually establish; when a detail is not in the session, say so instead of inventing it. Note anything the user should review or do next. Address the user directly. Do not call any more tools in this run; further work waits for the user's next instruction.
+</goal_complete>
+```
+
+#### `software/goal/goal/wrapup-blocked.txt`
+
+- 什么时候加进来：续轮开的那一轮里 `blocked` 成了（原文、原因照转义填）
+- token：129（2026-10-12 量）
+- 为什么加：同上，卡住的说做到哪、卡在哪、要人做什么
+- 指纹：`ba173caf`
+
+```text
+<goal_blocked>
+Objective: {objective}
+Blocked: {reason}
+The goal is marked blocked and this autonomous run is ending. Write the closing message to the user now: state what has been completed so far, describe the concrete blocking condition and what you tried, and say exactly what you need from the user to continue. Report only what earlier rounds and tool results in this session actually establish; when a detail is not in the session, say so instead of inventing it. Address the user directly. Do not call any more tools in this run; further work waits for the user's next instruction.
+</goal_blocked>
+```
+
 #### `software/onebot/tool-results/skipped.txt`
 
 - 什么时候加进来：`skip_reply` 答的那一句（施工 O-26）
@@ -2554,19 +2705,30 @@ The user's latest message, so you know what matters most:
 #### `core/goal/round-again.txt`
 
 - 什么时候加进来：之后的每一次续轮（施工 X-7）
-- token：113（同上，「Round 2 of 20」）
+- token：113（同上，「Round 2 of 20」，人设的）
 - 为什么加：短版自包含（目标原文、规矩、两条写好的结束调用）：压缩以后不指向丢掉的旧文（旧版实测，目标改过以后指向旧文案）
-- 指纹：`4286cd6e`
+- 指纹：`386604aa`
 
 ```text
 <goal_round>
-{round} — your standing objective, set by the user with `/goal`: {objective}
+{round} — your standing objective, {set_by}: {objective}
 Make one concrete step of progress now, or end the goal — both calls are complete as written:
 · done, verified against the workspace rather than earlier rounds' claims →
   goal {"action":"complete"}
 · blocked, incl. needing an answer from the user →
   goal {"action":"blocked","reason":"…"}
 </goal_round>
+```
+
+#### `core/goal/set-by-you.txt`
+
+- 什么时候加进来：她自己用 `goal` 工具设的目标（施工 X-8 上；`goal.set` 的 `by` 是一次工具调用）
+- token：10（2026-10-12 量）
+- 为什么加：她能自己开目标（`goal.md`「定了的」第 1 条，2026-10-11 项目主人定）：照搬「人设的」会让她以为是人交代的，说清是她自己设的
+- 指纹：`fbc00edd`
+
+```text
+which you set yourself with the goal tool
 ```
 
 ### 人附的文本文件的开头，人这边
@@ -3205,14 +3367,14 @@ Reply with OK.
 
 #### `core/goal/round.txt`
 
-- 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」
-- token：213（目标原文约 20 个字，「Round 1 of 20」，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面）
+- 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」、`{set_by}` 填谁设的（施工 X-8 上，下面两行）
+- token：213（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前）
 - 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
-- 指纹：`e3cb1ad7`
+- 指纹：`9ef51bfd`
 
 ```text
 <goal_round>
-Your standing objective, set by the user with `/goal`. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
+Your standing objective, {set_by}. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
 Objective: {objective}  ·  {round}
 
 Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports wake you. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
@@ -3221,6 +3383,19 @@ Make one concrete step of progress now. Never spend a round only reporting that 
 · blocked, incl. needing an answer from the user →
   goal {"action":"blocked","reason":"…"}
 </goal_round>
+```
+
+### 填进续轮消息的 `{set_by}`
+
+#### `core/goal/set-by-person.txt`
+
+- 什么时候加进来：人用 `/goal` 设的目标（施工 X-8 上）
+- token：9（2026-10-12 量）
+- 为什么加：续轮消息原来写死的那半句，挪出来好和下一行二选一，字不变
+- 指纹：`574f7625`
+
+```text
+set by the user with `/goal`
 ```
 
 ### tools 数组
@@ -3496,6 +3671,20 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Search your memories and your past conversations in other sessions.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"forgotten":{"type":"boolean","description":"Include retired memories."}},"required":["query"]}
+}
+```
+
+#### `software/goal/tools/goal.json`
+
+- 什么时候加进来：会话的工具面里有 `goal`：长期目标开着的本机主会话（群里、私聊、子代理都没有，每次请求都带）
+- token：171（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量）
+- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明
+- 指纹：`4636d80f`
+
+```json
+{
+  "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked."}},"required":["action"]}
 }
 ```
 

@@ -24,9 +24,9 @@ use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_tool::{
-    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, MEMORY_SEARCH, NotSpawned, Order,
-    REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, Spawned,
-    Spawning, TODOWRITE, is_subagent,
+    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, MEMORY_SEARCH, NotSpawned,
+    Order, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT,
+    Spawned, Spawning, TODOWRITE, is_subagent,
 };
 
 use crate::TARGET;
@@ -144,6 +144,8 @@ impl Agents {
             .filter(|spec| local || spec.name != SESSION_USAGE)
             .filter(|spec| asks || spec.name != ASK_USER)
             .filter(|spec| local || spec.name != TODOWRITE)
+            // 长期目标只给本机的主会话（施工 X-8 上，`goal.md`「定了的」第 4 条）：群里、私聊、子代理都没有。
+            .filter(|spec| lists || spec.name != GOAL)
             // 记忆的三件给记忆开着的会话（施工 R-3 中、下，`memory.md`「工具」）：本机的、场所的都给，挑法照谁在听（施工
             // R-13 下）；子会话的范围一律 `off`（17 第二节）。
             .filter(|spec| {

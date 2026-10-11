@@ -104,6 +104,7 @@ fn bare(args: Value) -> Call {
         questions: None,
         memory: None,
         packages: None,
+        goals: None,
         ids: None,
     }
 }

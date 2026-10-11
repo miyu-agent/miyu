@@ -96,6 +96,7 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
         questions: None,
         memory: port.map(|port| port as Arc<dyn MemoryPort>),
         packages: None,
+        goals: None,
         ids: None,
     };
     tool.run(call, Progress::new(|_| {})).await

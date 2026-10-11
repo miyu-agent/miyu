@@ -292,6 +292,7 @@ impl Site {
             questions: None,
             memory: None,
             packages: None,
+            goals: None,
             ids: None,
         }
     }

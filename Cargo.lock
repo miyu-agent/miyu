@@ -1583,6 +1583,7 @@ dependencies = [
  "miyu-config",
  "miyu-drivers",
  "miyu-endpoint",
+ "miyu-goal",
  "miyu-heap",
  "miyu-http",
  "miyu-ipc",
@@ -1671,6 +1672,17 @@ dependencies = [
  "rustix",
  "tracing",
  "trash",
+]
+
+[[package]]
+name = "miyu-goal"
+version = "0.0.0"
+dependencies = [
+ "miyu-kernel",
+ "miyu-tool",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1889,6 +1901,7 @@ dependencies = [
  "miyu-config",
  "miyu-drivers",
  "miyu-fs",
+ "miyu-goal",
  "miyu-heap",
  "miyu-http",
  "miyu-kernel",

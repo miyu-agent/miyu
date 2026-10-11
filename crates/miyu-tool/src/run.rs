@@ -16,8 +16,8 @@ use miyu_kernel::time::UtcOffset;
 use miyu_sandbox::Sandboxed;
 
 use crate::{
-    AgentPort, JobPort, Log, MemoryPort, MessagePort, PackagesPort, QuestionPort, SessionsPort,
-    Stop, UsagePort,
+    AgentPort, GoalPort, JobPort, Log, MemoryPort, MessagePort, PackagesPort, QuestionPort,
+    SessionsPort, Stop, UsagePort,
 };
 
 /// 一次调用交给工具的：修正过的参数、这一轮的工作目录、系统的家目录、Miyu 的数据根、她看过的文件、要不要关进
@@ -68,6 +68,9 @@ pub struct Call {
     /// 看软件包的端口（施工 F-10 上）：协议端点造会话、载入时交进来，只有 `packages` 用。测试里的假调用、核心没交的没有，
     /// `packages` 说现在看不了。
     pub packages: Option<Arc<dyn PackagesPort>>,
+    /// 长期目标的端口（施工 X-8 上）：执行器照这一次调用造一个，只给本机的主会话，只有 `goal` 用。别的会话、测试里的假调用
+    /// 没有，`goal` 说这个会话用不了。
+    pub goals: Option<Arc<dyn GoalPort>>,
     /// 这次调用是哪个会话的哪一次（施工 O-2 上）：提供者的工具照它发 `tool.call`。测试里的假调用、执行前的链报路径时没有。
     pub ids: Option<CallIds>,
 }

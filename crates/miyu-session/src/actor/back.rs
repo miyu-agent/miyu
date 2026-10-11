@@ -35,6 +35,12 @@ impl Actor {
         Some(match back {
             Back::Woke { seen } => Input::Woke { at, seen },
             Back::Tool(back) => return self.tools.back(at, back),
+            // `goal` 工具交来的（施工 X-8 上，`goal/asked.rs`）。
+            Back::Goal {
+                call_id,
+                ask,
+                reply,
+            } => return self.goal_asked(at, call_id, ask, reply),
             Back::Job(ended) => self.jobs.arrived(at, ended),
             // 抽取（施工 R-6 上，`extract.rs`）：不进内核。
             Back::ExtractDue { generation } => {

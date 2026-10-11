@@ -172,6 +172,7 @@ pub fn built_in() -> Vec<&'static str> {
     [
         Some(miyu_tool::BASESYSTEM),
         Some(miyu_memory::PACKAGE),
+        Some(miyu_goal::PACKAGE),
         Some(ROLEPLAY),
         cfg!(feature = "mermaid").then_some("mermaid"),
         cfg!(feature = "net").then_some("net"),
@@ -215,6 +216,11 @@ fn groups(resources: &ResourceRoot, found: &[Found]) -> Result<Vec<Builtin>, Str
     if installed(miyu_memory::PACKAGE) {
         let memory = miyu_memory::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_memory::PACKAGE, memory));
+    }
+    // 长期目标的工具（施工 X-8 上，`goal.md`）：工具面上只给本机的主会话。
+    if installed(miyu_goal::PACKAGE) {
+        let goal = miyu_goal::tools(resources.path()).map_err(|error| error.to_string())?;
+        groups.push((miyu_goal::PACKAGE, goal));
     }
     Ok(groups)
 }

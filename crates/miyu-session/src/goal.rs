@@ -5,6 +5,7 @@
 use std::num::NonZeroU32;
 
 use miyu_kernel::event::{Body, Event, GoalOutcome};
+use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
 use crate::current::Tally;
@@ -24,6 +25,8 @@ pub struct Goal {
     pub round: u32,
     /// 设下的时刻。
     pub since: Timestamp,
+    /// 她自己用 `goal` 工具设的（施工 X-8 上，`by` 是一次工具调用）：续轮消息照它说是谁设的。
+    pub by_you: bool,
     /// 花了多少：跑着时的请求，口径同会话累计。
     pub spent: Tally,
 }
@@ -92,6 +95,7 @@ impl Goals {
                 reason: None,
                 round: 0,
                 since: event.at,
+                by_you: matches!(event.by, By::Tool(_)),
                 spent: Tally::default(),
             });
             return;

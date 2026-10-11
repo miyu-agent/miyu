@@ -56,6 +56,7 @@ fn trash_comes_from_the_resources_and_names_what_it_writes() {
             questions: None,
             memory: None,
             packages: None,
+            goals: None,
             ids: None,
         });
         assert_eq!(targets.len(), 1, "{args}");
@@ -299,6 +300,7 @@ mod linux {
             questions: None,
             memory: None,
             packages: None,
+            goals: None,
             ids: None,
         };
         let done = tool("trash").run(call, Progress::new(|_| {})).await;

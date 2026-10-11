@@ -136,6 +136,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         lineage.as_ref().map(|lineage| &lineage.parent),
         attended,
     );
+    let goals = Agents::lists_sessions(&venue, lineage.as_ref().map(|lineage| &lineage.parent));
     let pools = Agents::pools_in(&face);
     let agents_personas = Agents::personas_in(&face);
     let child = lineage.is_some();
@@ -300,6 +301,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             agents,
             ledger,
             asks,
+            goals,
             memory: calls,
             packages,
         },

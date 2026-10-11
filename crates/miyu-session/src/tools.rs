@@ -43,9 +43,11 @@ use crate::sessions;
 use crate::usage::{Asked, Ledger};
 
 mod back;
+mod goals;
 mod kit;
 mod questions;
 
+pub(crate) use goals::GoalBack;
 pub(crate) use kit::ToolKit;
 
 /// 执行工具的端口：一个会话一份。
@@ -75,6 +77,8 @@ pub(crate) struct Tools {
     ledger: Option<Ledger>,
     /// 能不能问人（施工 D-2）。
     asks: bool,
+    /// 有没有长期目标（施工 X-8 上）：本机的主会话才有。
+    goals: bool,
     /// 记忆（施工 R-3 中）。
     memory: Option<crate::memory::Calls>,
     /// 看软件包的端口（施工 F-10 上）。
@@ -194,6 +198,7 @@ impl Tools {
             agents: kit.agents,
             ledger: kit.ledger,
             asks: kit.asks,
+            goals: kit.goals,
             memory: kit.memory,
             packages: kit.packages,
             running: BTreeMap::new(),
@@ -284,6 +289,7 @@ impl Tools {
             sessions,
             usage: crate::usage::for_call(self.ledger.as_ref(), usage),
             questions: questions::port(self.asks, call_id, &self.backs),
+            goals: goals::port(self.goals, call_id, &self.backs),
             memory: self
                 .memory
                 .as_ref()

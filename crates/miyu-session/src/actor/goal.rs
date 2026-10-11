@@ -131,29 +131,41 @@ impl Actor {
         }))
     }
 
-    /// 第 `round` 轮的续轮消息：完整版发过了的发短版。读不了资源的记一行、不发。
+    /// 第 `round` 轮的续轮消息：完整版发过了的发短版；谁设的照目标填（施工 X-8 上）。读不了资源的记一行、不发。
     fn round_text(&self, goal: &Goal, round: u32) -> Option<String> {
         let resources = &self.persona.as_ref()?.resources;
-        let (full, again) = match resources.goal_rounds() {
+        let texts = match resources.goal_rounds() {
             Ok(texts) => texts,
             Err(error) => {
                 tracing::warn!(target: TARGET, error = %error, "goal round text not read");
                 return None;
             }
         };
-        let template = if self.goal_run.full_sent { again } else { full };
+        let template = if self.goal_run.full_sent {
+            &texts.again
+        } else {
+            &texts.full
+        };
+        let set_by = if goal.by_you {
+            &texts.by_you
+        } else {
+            &texts.by_person
+        };
         let round = match goal.limit {
             Some(limit) => format!("Round {round} of {limit}"),
             None => format!("Round {round}"),
         };
         let objective = serde_json::to_string(&goal.text).ok()?;
+        // 原文最后换：她写的原文里带着占位的样子也不再换。
         Some(
             template
                 .replace("{round}", &round)
+                .replace("{set_by}", set_by)
                 .replace("{objective}", &objective),
         )
     }
 }
 
+mod asked;
 #[cfg(test)]
 mod tests;

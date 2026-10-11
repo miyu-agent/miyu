@@ -1,0 +1,21 @@
+{
+  "tools": {
+    "goal": {
+      "name": "长期目标",
+      "subject": "objective",
+      "icon": "◎"
+    }
+  },
+  "said": {
+    "goal/now": "查看目标",
+    "goal/none": "无目标",
+    "goal/set": "已设定目标：{objective}",
+    "goal/exists": "已有目标",
+    "goal/completed": "目标已完成",
+    "goal/blocked": "目标受阻：{reason}",
+    "goal/too-early": "第 {round} 轮，暂不能标记受阻",
+    "goal/failed": "目标未更改：{reason}",
+    "common/bad-args": "参数不对：{error}",
+    "common/off": "此会话不支持长期目标"
+  }
+}
