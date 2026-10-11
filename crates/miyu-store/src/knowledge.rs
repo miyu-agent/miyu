@@ -199,6 +199,21 @@ impl Knowledge {
         read::page(&dir, path, page)
     }
 
+    /// 库 `id` 给人看的名字和一句说明（`kb.toml`，施工 K-1 补：她的 system 里列出来）：没写名字的照编号，没写说明的空着；
+    /// `kb.toml` 写错的照没写用（`kb.list` 带的 `error` 照旧在那边报）。不补索引。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个库。
+    pub fn title(&self, account: &AccountId, id: &str) -> Result<(String, String), KnowledgeError> {
+        let dir = self.dir(account, id)?;
+        let (about, _) = catch_up::about(&dir);
+        Ok((
+            about.name.unwrap_or_else(|| id.to_string()),
+            about.description.unwrap_or_default(),
+        ))
+    }
+
     /// 账号下合写法的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）。目录不在的是空的。
     ///
     /// # Errors

@@ -50,6 +50,8 @@ fn setup_with(
         roleplay: true,
         group,
         foreground: false,
+
+        knowledge: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

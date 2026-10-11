@@ -25,6 +25,8 @@ pub(crate) struct Parts {
     pub(crate) group: Option<i32>,
     /// 后台运行关着（施工 T-1 上，[`crate::agents::Agents::foreground`]）。
     pub(crate) foreground: bool,
+    /// 她查得到的知识库那一块（施工 K-1 补，[`crate::knowledge::listing`]）：工具面上有知识库那两件的才有。
+    pub(crate) knowledge: Option<String>,
 }
 
 /// 工具目录 `catalog` 里有工具的功能（施工 O-18；施工 F-3 上起照装了的功能 `features` 认工具归哪个功能）：不照这次的预设筛，
@@ -63,6 +65,7 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     let lines = resources.core_lines()?;
     Ok(snapshot
         .with_core_lines(&lines)
+        .with_knowledge(parts.knowledge)
         .with_preset(parts.preset, &lines.preset_off, &parts.tooled)
         .with_style_lock(&lines.style_lock))
 }

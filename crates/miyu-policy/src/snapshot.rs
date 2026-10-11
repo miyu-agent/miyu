@@ -91,6 +91,10 @@ pub struct Snapshot {
     /// 定；开着的、以前造的不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub foreground: bool,
+    /// 她查得到的知识库那一块拼好的原文（施工 K-1 补，`compose.rs`）：system 第 4 块；回合开始时照它比，变了换快照。没有库、
+    /// 没有知识库那两件工具的没有：不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub knowledge: Option<String>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。

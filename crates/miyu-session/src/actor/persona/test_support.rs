@@ -122,6 +122,8 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         roleplay: true,
         group: None,
         foreground: false,
+
+        knowledge: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

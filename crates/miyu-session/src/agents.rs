@@ -49,7 +49,7 @@ pub(crate) struct Site<'a> {
 pub(crate) struct Holds {
     /// 记忆的范围：`off` 的不给记忆的三件。
     pub(crate) memory: MemoryScope,
-    /// 查得到至少一个知识库（[`crate::knowledge::Shelves::any`]）：查不到的不给 `kb_search`、`kb_read`（2026-10-12 项目主人定）。
+    /// 查得到至少一个知识库（[`crate::knowledge::Shelves::listed`] 不是空的）：查不到的不给 `kb_search`、`kb_read`（2026-10-12 项目主人定）。
     pub(crate) knowledge: bool,
 }
 

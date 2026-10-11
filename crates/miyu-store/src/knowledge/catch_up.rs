@@ -105,7 +105,7 @@ impl Knowledge {
 }
 
 /// 读 `kb.toml`：没有的照空的；读不出来的照空的、交回为什么。
-fn about(dir: &Path) -> (miyu_recall::kb::About, Option<String>) {
+pub(super) fn about(dir: &Path) -> (miyu_recall::kb::About, Option<String>) {
     match std::fs::read_to_string(dir.join("kb.toml")) {
         Ok(text) => match miyu_recall::kb::about(&text) {
             Ok(about) => (about, None),

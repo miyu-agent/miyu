@@ -2841,6 +2841,28 @@ Make one concrete step of progress now, or end the goal — both calls are compl
 which you set yourself with the goal tool
 ```
 
+#### `software/knowledge/list/named.txt`
+
+- 什么时候加进来：只写了名字的库（字段按 `world`、`世界观` 填）
+- token：6（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`26295849`
+
+```text
+- {id}: {name}
+```
+
+#### `software/knowledge/list/bare.txt`
+
+- 什么时候加进来：名字、说明都没写的库（字段按 `notes` 填）
+- token：3（2026-10-12 量）
+- 为什么加：同上：编号就是名字，不写两遍
+- 指纹：`2d1b4c97`
+
+```text
+- {id}
+```
+
 ### 人附的文本文件的开头，人这边
 
 #### `core/drivers/file-open.txt`
@@ -4137,6 +4159,45 @@ Saved since the summary:
 
 ```text
 Older related memories:
+```
+
+### system 第 4 块的头一行
+
+#### `software/knowledge/list/open.txt`
+
+- 什么时候加进来：工具面上有知识库那两件的会话（查得到至少一个库，施工 K-1 补；每次请求都带）
+- token：6（2026-10-12 照开发端点量）
+- 为什么加：她知道有哪些库、各管什么，才会在该查的时候去查：不列 7/20、列了 19/20（施工 K-1 补，`knowledge.md`「列出来的那一块」）
+- 指纹：`6aed4f5c`
+
+```text
+Knowledge bases you can search:
+```
+
+### system 第 4 块，一个库一行
+
+#### `software/knowledge/list/base.txt`
+
+- 什么时候加进来：同上，写了一句说明的库（字段按 `notes`、`日语笔记`、`学日语的笔记：语法、单词、例句` 填）
+- token：19（2026-10-12 量）
+- 为什么加：同上；说明就是 `kb.toml` 的 `description`，人写的，转义
+- 指纹：`6b56f2b0`
+
+```text
+- {id}: {name} — {description}
+```
+
+### 同上，最后一行
+
+#### `software/knowledge/list/more.txt`
+
+- 什么时候加进来：她查得到的超过 20 个（字段按 `3` 填）
+- token：6（2026-10-12 量）
+- 为什么加：免得库多了 system 一直涨：多的不列，`kb_search` 照样搜得到（施工 K-1 补）
+- 指纹：`deb9138e`
+
+```text
+- and {count} more
 ```
 
 ### 判官那一次请求的 system，不进主对话

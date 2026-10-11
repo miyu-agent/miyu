@@ -94,6 +94,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         preset: None,
         group: None,
         foreground: false,
+        knowledge: None,
     }
 }
 
@@ -163,6 +164,17 @@ impl Snapshot {
             ..snapshot.clone()
         };
         rest(self) == rest(new)
+    }
+
+    /// 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（26 第四节），在
+    /// [`Snapshot::with_core_lines`] 以后、[`Snapshot::with_preset`] 以前调；记进快照，回合开始照它比。没有的 system 一字不变。
+    #[must_use]
+    pub fn with_knowledge(mut self, block: Option<String>) -> Snapshot {
+        if let Some(block) = &block {
+            self.system = system(&[&self.system, block]);
+        }
+        self.knowledge = block;
+        self
     }
 
     /// 带上预设（施工 P-2 中，Y8）：记进快照；没开角色扮演的去掉角色扮演提示（人格的指纹照旧算原来的字，回合开始时不会

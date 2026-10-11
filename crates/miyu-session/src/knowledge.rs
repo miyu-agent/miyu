@@ -1,19 +1,33 @@
-//! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口。
+//! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
+//! 列出来的那一块（施工 K-1 补，「列出来的那一块」）。
 //!
 //! 查记忆的账号下的全部库（`memory_account`：人格住在谁家，无人格的照属主，系统账号的照管理员），人格的 `persona.toml` 写了
 //! `[knowledge] bases` 的只要列着的、在的那几个（19 N11）。照这一刻的目录和人格文件算：建了库、改了人格，下一次就照新的。
-//! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::any`] 再判一次。碰磁盘的在阻塞
+//! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::listed`] 再判一次。碰磁盘的在阻塞
 //! 线程里做。
 
 use std::sync::Arc;
 
 use miyu_kernel::id::AccountId;
+use miyu_policy::preset::KNOWLEDGE;
 use miyu_store::knowledge::{Knowledge, KnowledgeError, Skipped};
 use miyu_store::personas::{PersonaError, Personas};
+use miyu_store::resources::{ResourceRoot, SourceError};
+use miyu_tool::load::{self, say};
 use miyu_tool::{KB_HITS, KbHit, KbPage, KbRefused, KnowledgePort, Pending};
 
 use crate::TARGET;
 use crate::blocking::blocking;
+
+/// system 里最多列几个库（施工 K-1 补）：多的末尾一句说还有几个，`kb_search` 照样搜得到。免得库多了 system 一直涨。
+const LISTED: usize = 20;
+
+/// 她查得到的一个库，列出来的样子：编号、名字（没写的照编号）、一句说明（没写的空着）。
+pub(crate) struct Listed {
+    id: String,
+    name: String,
+    description: String,
+}
 
 /// 一个会话查知识库要的：核心一份的知识库、照哪个账号、哪个人格。
 pub(crate) struct Shelves {
@@ -72,16 +86,82 @@ impl Shelves {
         })
     }
 
-    /// 查得到至少一个库：工具面上给不给两件工具照它。读不了的当没有、记一行：下一个回合再判。
-    pub(crate) fn any(&self) -> bool {
-        match self.bases() {
-            Ok(bases) => !bases.is_empty(),
-            Err(error) => {
-                tracing::warn!(target: TARGET, error = error.as_str(), "knowledge unreadable");
-                false
-            }
-        }
+    /// 她这一刻查得到的库，带着名字、说明（施工 K-1 补），先后同 [`Shelves::bases`]。工具面上给不给两件工具照它是不是空的
+    /// （施工 K-1 下）。读不了的当一个都没有、记一行：下一个回合再判。
+    pub(crate) fn listed(&self) -> Vec<Listed> {
+        let listed = self.bases().and_then(|bases| {
+            bases
+                .into_iter()
+                .map(|id| {
+                    let (name, description) = self
+                        .knowledge
+                        .title(&self.account, &id)
+                        .map_err(|error| error.to_string())?;
+                    Ok(Listed {
+                        id,
+                        name,
+                        description,
+                    })
+                })
+                .collect::<Result<Vec<Listed>, String>>()
+        });
+        listed.unwrap_or_else(|error| {
+            tracing::warn!(target: TARGET, error = error.as_str(), "knowledge unreadable");
+            Vec::new()
+        })
     }
+}
+
+/// 她的 system 里列出来的那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：头一行，一个库一行（有说明的
+/// `- 编号: 名字 — 说明`，没说明的 `- 编号: 名字`，名字就是编号的 `- 编号`），最多 [`LISTED`] 个，多的末尾一句。字从资源目录
+/// 的 `software/knowledge/list/` 读，名字、说明照模板转义。一个都没有的没有这一块。
+///
+/// # Errors
+///
+/// 哪一份字读不出来、写法不对：安装坏了，照随核心附带的字读不出来报。
+pub(crate) fn listing(
+    resources: &ResourceRoot,
+    listed: &[Listed],
+) -> Result<Option<String>, SourceError> {
+    if listed.is_empty() {
+        return Ok(None);
+    }
+    let text = |name: &str, fields: &[&str]| {
+        load::text(resources.path(), KNOWLEDGE, "list", name, fields).map_err(|error| {
+            SourceError::Read {
+                path: error.file,
+                error: std::io::Error::new(std::io::ErrorKind::InvalidData, error.why),
+            }
+        })
+    };
+    let line = |template: &miyu_kernel::template::Template, fields: &[(&str, &str)]| {
+        say(template, fields).trim_end().to_string()
+    };
+    let (base, named, bare) = (
+        text("base", &["id", "name", "description"])?,
+        text("named", &["id", "name"])?,
+        text("bare", &["id"])?,
+    );
+    let mut lines = vec![line(&text("open", &[])?, &[])];
+    for one in listed.iter().take(LISTED) {
+        lines.push(match (one.name == one.id, one.description.is_empty()) {
+            (_, false) => line(
+                &base,
+                &[
+                    ("id", &one.id),
+                    ("name", &one.name),
+                    ("description", &one.description),
+                ],
+            ),
+            (false, true) => line(&named, &[("id", &one.id), ("name", &one.name)]),
+            (true, true) => line(&bare, &[("id", &one.id)]),
+        });
+    }
+    if listed.len() > LISTED {
+        let count = (listed.len() - LISTED).to_string();
+        lines.push(line(&text("more", &["count"])?, &[("count", &count)]));
+    }
+    Ok(Some(lines.join("\n")))
 }
 
 /// 交给两件工具的端口：一个会话一份，每次调用照这一刻算查得到哪几个。

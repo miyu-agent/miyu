@@ -28,7 +28,7 @@ use crate::guard::{Confined, Guard, Place};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
-use crate::knowledge::Shelves;
+use crate::knowledge::{Shelves, listing};
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -120,10 +120,11 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             personas.clone(),
         ))
     });
-    let knows = match shelves.clone() {
-        Some(shelves) => blocking(move || shelves.any()).await,
-        None => false,
+    let listed = match shelves.clone() {
+        Some(shelves) => blocking(move || shelves.listed()).await,
+        None => Vec::new(),
     };
+    let knows = !listed.is_empty();
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
     let offers = Offers::of(&config.current().resolved.values(), personas.ids());
@@ -158,6 +159,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let on_face = face.iter().any(|tool| tool.name == miyu_tool::GOAL);
     let pools = Agents::pools_in(&face);
     let agents_personas = Agents::personas_in(&face);
+    // 工具面上有知识库那两件的，system 里列出她查得到的库（施工 K-1 补）。
+    let shelved = face.iter().any(|tool| tool.name == miyu_tool::KB_SEARCH);
     let child = lineage.is_some();
     let count = face.len();
     let dir = root.session_dir(&owner, &id);
@@ -183,6 +186,11 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             roleplay,
             group: group.then(|| offset.minutes()),
             foreground,
+            knowledge: shelved
+                .then(|| listing(&resources, &listed))
+                .transpose()
+                .map_err(CreateError::Shipped)?
+                .flatten(),
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;

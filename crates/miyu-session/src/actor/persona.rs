@@ -137,10 +137,12 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
     let catalog = &now.catalog;
     // 知识库的两件照这一刻查不查得到、照现在的目录和预设该有哪几件（施工 K-1 下）；和快照里的不一样才算改了。预设找不回来的
     // 照旧。
-    let knows = refresh
+    let listed = refresh
         .knowledge
         .as_ref()
-        .is_some_and(|shelves| shelves.any());
+        .map(|shelves| shelves.listed())
+        .unwrap_or_default();
+    let knows = !listed.is_empty();
     let shelved = match &preset {
         Preset::Unknown => None,
         Preset::Nothing => Some(offered(refresh, values, catalog, None, knows)),
@@ -151,7 +153,20 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
     let flipped = shelved
         .as_ref()
         .is_some_and(|fresh| shelf_tools(fresh) != shelf_tools(&old.tools));
-    if same && !moved && !flipped && !matches!(preset, Preset::Changed(_)) {
+    // system 里列出来的那一块照这一刻该有的两件、查得到的库拼（施工 K-1 补）：和快照里的不一样才算改了（建了库、改了名字、
+    // 说明）。预设找不回来的照旧。
+    let listing = match &shelved {
+        Some(fresh) if !shelf_tools(fresh).is_empty() => {
+            match crate::knowledge::listing(&refresh.resources, &listed) {
+                Ok(block) => block,
+                Err(error) => return Seen::Kept(error.to_string()),
+            }
+        }
+        Some(_) => None,
+        None => old.knowledge.clone(),
+    };
+    let relisted = listing != old.knowledge;
+    if same && !moved && !flipped && !relisted && !matches!(preset, Preset::Changed(_)) {
         return Seen::Same;
     }
     let (face, pin) = match &preset {
@@ -190,6 +205,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
             Preset::Changed(chosen) => Agents::foreground(Some(&chosen.file)),
             _ => old.foreground,
         },
+        knowledge: listing,
     };
     let new = match build(&refresh.resources, parts) {
         Ok(new) => new,
@@ -200,7 +216,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
-    let edited = !same || matches!(preset, Preset::Changed(_));
+    let edited = !same || matches!(preset, Preset::Changed(_)) || relisted;
     if !edited && !old.swappable(&new) && new.tools == old.tools {
         return Seen::Same;
     }

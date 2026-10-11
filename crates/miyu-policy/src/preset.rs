@@ -21,6 +21,10 @@ const TOOL_CHARS: usize = 64;
 /// `miyu_memory::PACKAGE` 是同一个编号：包没写功能，整个包算一个。
 pub const MEMORY: &str = "memory";
 
+/// 知识库这个功能（施工 K-1 补，`10-自带软件.md` 第四节）：她的两件工具和 system 里列出的库。和 `miyu_knowledge::PACKAGE` 是
+/// 同一个编号：包没写功能，整个包算一个。资源目录里给她看的字也在 `software/knowledge/` 下。
+pub const KNOWLEDGE: &str = "knowledge";
+
 /// 人设遵循提醒这个功能（施工 P-2 中，原来叫角色扮演；施工 F-3 上起是功能的编号）：人格的提醒短语和风格锁。它没有工具。
 pub const ROLEPLAY: &str = "roleplay";
 
