@@ -42,7 +42,9 @@ fn main() {
             writeln!(file, "cwd:{}", cwd.display()).expect("写得进");
             record = Some(file);
         } else if let Some(text) = step.strip_prefix("err:") {
-            eprintln!("{text}");
+            // 整行一次写（test-ext 三补）：`eprintln!` 分两次写字和换行，核心退避时杀进程正好落在中间，Windows 上就少一个换行。
+            let line = format!("{text}\n");
+            io::stderr().write_all(line.as_bytes()).expect("写得进");
         } else if let Some(name) = step.strip_prefix("env:") {
             let value = std::env::var_os(name).unwrap_or_default();
             keep(&mut record, &format!("{name}={}", value.to_string_lossy()));
