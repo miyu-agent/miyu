@@ -1,6 +1,6 @@
 ## 施工单 X-4：MCP 的功能和状态
 
-状态：施工中（2026-10-11 主会话）。图纸 `mcp.md`「对外的样子」「怎么走」、`package-pages.md`「开关」、`protocol.md`。
+状态：合了（558b482b，三台 CI run 1827；2026-10-11 主会话）。图纸 `mcp.md`「对外的样子」「怎么走」、`package-pages.md`「开关」、`protocol.md`。
 
 ### 这一步做什么
 
