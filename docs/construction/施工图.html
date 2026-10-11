@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>414</b><span>/ 428 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>415</b><span>/ 428 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">8d6bd788</b><span>最近一步（O-37 回放校准）的提交</span></li>
+    <li><b class="mono">8f67f9f2</b><span>最近一步（C-8 下 跑完一轮封存）的提交</span></li>
   </ul>
 </header>
 
@@ -577,7 +577,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sC-6"><span class="n">C-6</span>空了告诉我<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sC-7"><span class="n">C-7</span>跨会话验收<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sC-8a"><span class="n">C-8 上</span>会话分叉<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">C-8 下</span>跑完一轮封存</span></li>
+        <li><a class="step done" href="#sC-8b"><span class="n">C-8 下</span>跑完一轮封存<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -14081,6 +14081,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/C-8-会话分叉（上）.md</code>、图纸 <code>docs/blueprint/session/fork.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sC-8b" aria-labelledby="h-sC8b">
+  <div class="sheet-head"><h2 id="h-sC8b"><span class="no">C-8 下</span>跑完一轮封存</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">支线跑完一轮就封存，不合回主线（通讯平台第八节）：分叉时写 seal_after，内核照日志数轮，跑满了记 session.sealed，之后改对话的命令拒。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">跑完一轮封存</span><span class="dir-note">C-8 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>session.fork 多 seal_after，写进子会话的 forked</li>
+              <li>内核照日志数轮：接着开的一轮不另算，照记下的几条开的、清空的另说</li>
+              <li>跑满了、这一轮结束、没有接着开的，同一批记 session.sealed</li>
+              <li>崩了载入时收尾的、重启太多次不再接着干的那一轮也封</li>
+              <li>封存了改对话的命令拒 session_sealed，回报照记不叫醒</li>
+              <li>封存了的没事了就退下，不等闲够</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">数轮照日志</span><span class="rl">载入和活着时一个算法，不另记一格</span></div>
+          <div class="tile new"><span class="nm">回报照收</span><span class="rl">交的一方不等回应，拒了只是丢了</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">C-8 下</dd></div>
+        <div><dt>名称</dt><dd>跑完一轮封存</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-11</dd></div>
+        <div><dt>提交</dt><dd class="mono">8f67f9f2</dd></div>
+        <div><dt>验收</dt><dd>内核场景十条、账本两条、端点两条、退下一条，变异 16 处报红（1 处等价），三台 CI（run 1821）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>跑完一轮推来 session.sealed，再发拒</span></li>
+        <li><span class="ok">✓</span><span>跑的时候发来的并进这一轮，跑完才封</span></li>
+        <li><span class="ok">✓</span><span>照记下的开的是新的一轮</span></li>
+        <li><span class="ok">✓</span><span>崩了载入时收尾的那一轮也封</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/C-8-跑完一轮封存（下）.md</code>、图纸 <code>docs/blueprint/session/fork.md</code>。</li>
       </ul>
     </div>
   </div>
