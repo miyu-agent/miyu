@@ -91,8 +91,8 @@ impl Backlog {
         }
     }
 
-    /// 补来的她的一句 `event`，字是 `text`，群里那一刻的样子是 `speaking`：说的时刻还在期限里的记下。没有回合编号的、时刻读不出
-    /// 的（照说不会）不记。
+    /// 补来的（或者补完以前推来的，施工 O-32 补）她的一句 `event`，字是 `text`，群里那一刻的样子是 `speaking`：说的时刻还在期限里
+    /// 的记下。没有回合编号的、时刻读不出的（照说不会）不记。
     pub(super) fn said(&mut self, event: &Value, text: String, speaking: Option<Speaking>) {
         let Some(turn) = event["turn"].as_u64() else {
             return;

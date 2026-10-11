@@ -286,7 +286,15 @@ impl Served {
     /// 等它起来时问的 `venue.sessions`（施工 O-32），照核心的样子回名下一个场所会话都没有：它等到回应才往下办推来的配置。最多等
     /// 六十秒。
     pub async fn listed(&mut self) {
-        let asked = within("桥列场所会话", async {
+        let asked = self.asked("venue.sessions").await;
+        let reply =
+            serde_json::json!({"jsonrpc": "2.0", "id": asked["id"], "result": {"sessions": []}});
+        self.send(&reply).await;
+    }
+
+    /// 等到它在标准输出上发了方法是 `method` 的请求（头一条），交回它：测试照核心的样子答（施工 O-32 补）。最多等六十秒。
+    pub async fn asked(&self, method: &str) -> Value {
+        within(&format!("桥问核心 {method}"), async {
             loop {
                 let found = self
                     .seen
@@ -294,17 +302,14 @@ impl Served {
                     .expect("没 panic")
                     .iter()
                     .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-                    .find(|one| one["method"] == "venue.sessions");
+                    .find(|one| one["method"] == method);
                 if let Some(found) = found {
                     return found;
                 }
                 tokio::time::sleep(Duration::from_millis(10)).await;
             }
         })
-        .await;
-        let reply =
-            serde_json::json!({"jsonrpc": "2.0", "id": asked["id"], "result": {"sessions": []}});
-        self.send(&reply).await;
+        .await
     }
 
     /// 等到它在标准输出上回了编号是 `id` 的那一条（施工 O-28 上），交回它。最多等六十秒。
@@ -385,6 +390,17 @@ pub async fn served_up(root: &DataRoot, listen: u16) -> Result<Served, Taken> {
 
 /// 同 [`served_up`]，握手交的配置是 `config`（里面的 `onebot.listen` 是 `listen`）。
 pub async fn served_with(root: &DataRoot, config: Value, listen: u16) -> Result<Served, Taken> {
+    let mut served = served_listening(root, config, listen).await?;
+    served.listed().await;
+    Ok(served)
+}
+
+/// 同 [`served_with`]，只是不答 `venue.sessions`：测试自己照核心的样子答（[`Served::asked`]，施工 O-32 补）。
+pub async fn served_listening(
+    root: &DataRoot,
+    config: Value,
+    listen: u16,
+) -> Result<Served, Taken> {
     let mut served = served(root, config).await;
     let pid = served.child.id().map(u64::from);
     let up = within("桥端口听上", async {
@@ -400,7 +416,6 @@ pub async fn served_with(root: &DataRoot, config: Value, listen: u16) -> Result<
     })
     .await;
     if up {
-        served.listed().await;
         return Ok(served);
     }
     let exited = served.child.wait_with_output().await.expect("等得到");

@@ -1,7 +1,7 @@
 //! 她的话发回去（施工 O-23，`onebot.md` 第一条「群里怎么叫她」第 1、9 条；O-25 上接上出站链，私聊的「怎么走」第 10 条也在
 //! 这里）：群会话推来的事件（订阅时从头补来的、之后推来的）走同一条路收进这个群的投影（`projection`）；补来的她的话交给补来的
-//! 那一段（`backlog`，施工 O-32：期限以内、没入队的由 `revive` 补发）；她新说的话（序号大于订阅时的 `upto`）先过出站链
-//! （`outbound`），丢了的记一行，过了的照纯文本拆段，一段一条入队（`sending`，O-25 中：先记
+//! 那一段（`backlog`，施工 O-32：期限以内、没入队的由 `revive` 补发），补完以前推来的新的也是（施工 O-32 补）；之后她新说的话
+//! 先过出站链（`outbound`），丢了的记一行，过了的照纯文本拆段，一段一条入队（`sending`，O-25 中：先记
 //! `ext.onebot.venues.queued` 再照先后交 NapCat，群里的成了记 `venue.delivered`），第一段带引用和 @。私聊里她的话也过出站链、
 //! 拆段、入队，不记 `venue.delivered`。这一轮她调过 `skip_reply` 的（施工 O-26，`quiet`）不过链、不入队，记一行
 //! `reply dropped why=skipped`。支线推来的（施工 O-36）由 `lanes.rs` 收进主线的投影，她在支线说的话也从这里照主线发。
@@ -52,8 +52,12 @@ impl Route {
             backlog.take(raw);
         }
         match speaking {
-            // 补来的不照常发：这一轮没说不说话的交给补来的那一段，期限以内、没入队的补完了补发（施工 O-32，`revive`）。
-            Some(speaking) if speaking.replayed => {
+            // 补来的不照常发：这一轮没说不说话的交给补来的那一段，期限以内、没入队的补完了补发（施工 O-32，`revive`）。补完以前
+            // 推来的新的也一样（施工 O-32 补）：核心带 `after` 订阅时回应以前就可能推来，起来时列出来的会话这时还不知道发到哪，
+            // 照常发就丢了；交给补来的那一段，补完了认出发到哪再照先后发。
+            Some(speaking)
+                if speaking.replayed || (self.backlogs.contains_key(session) && !quiet) =>
+            {
                 if let Some(backlog) = self.backlogs.get_mut(session)
                     && !quiet
                 {
@@ -113,6 +117,7 @@ impl Route {
         text: &str,
     ) -> Result<(), Gone> {
         let Some(peer) = self.peers.get(session).cloned() else {
+            unknown_peer(session, text);
             return Ok(());
         };
         let Some(venue) = Venue::parse(&peer.venue) else {
@@ -159,16 +164,19 @@ impl Route {
             self.quotes.insert(session.to_string(), quote);
         }
         if let Some(backlog) = self.backlogs.get_mut(session)
-            && backlog.replayed(event)
+            && event["seq"].as_u64().is_some()
         {
             // 补来的（桥起来时从头订阅，施工 O-32）：不照常发。这一轮入队了的照日志补回 `Spoken`，重启以后同一轮里照旧去重；她的话
-            // 交给补来的那一段，期限以内、没入队的补完了补发（`revive`）。
-            backlog.take(event);
-            if let Some((turn, text)) = queued_reply(event) {
-                self.spoken
-                    .entry(session.to_string())
-                    .or_default()
-                    .add(turn, text);
+            // 交给补来的那一段，期限以内、没入队的补完了补发（`revive`）。补完以前推来的新的（施工 O-32 补，同群里的 `heard`）
+            // 只把她的话交过去：这时还不知道发到哪。
+            if backlog.replayed(event) {
+                backlog.take(event);
+                if let Some((turn, text)) = queued_reply(event) {
+                    self.spoken
+                        .entry(session.to_string())
+                        .or_default()
+                        .add(turn, text);
+                }
             }
             if event["kind"] == "message.assistant" && !quiet {
                 backlog.said(event, reply_text(event), None);
@@ -183,6 +191,7 @@ impl Route {
             return Ok(());
         }
         let Some(peer) = self.peers.get(session).cloned() else {
+            unknown_peer(session, &reply_text(event));
             return Ok(());
         };
         let Some(venue) = Venue::parse(&peer.venue) else {
@@ -222,6 +231,13 @@ impl Route {
         }
         Ok(())
     }
+}
+
+/// 她在会话 `session` 说的一句 `text` 不知道发到哪（例如起来时列出来的会话日志里认不出机器人号、那个场所还没来过消息；补完以前
+/// 推来的照补发那条路，不走到这里，施工 O-32 补）：记一行 `reply dropped`（`why=unknown_peer`，不记原文），不悄悄丢。
+fn unknown_peer(session: &str, text: &str) {
+    let chars = text.chars().count();
+    tracing::warn!(target: TARGET, session, why = "unknown_peer", chars, "reply dropped");
 }
 
 /// 她在场所 `venue` 的一句 `text` 过出站链（情形 `ctx`，她回的那一条 `aim`，一段最多 `split_chars` 个字符）：丢了的记一行

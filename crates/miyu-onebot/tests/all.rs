@@ -46,6 +46,7 @@ mod reload;
 mod replaced_bridge;
 mod replayed;
 mod replies;
+mod revived;
 mod rules;
 mod segments;
 mod settings;
