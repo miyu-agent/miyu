@@ -1675,6 +1675,9 @@ dependencies = [
 [[package]]
 name = "miyu-heap"
 version = "0.0.0"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "miyu-http"

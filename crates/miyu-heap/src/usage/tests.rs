@@ -30,10 +30,11 @@ fn the_rollup_is_read_in_bytes() {
         parse_rollup(ROLLUP),
         Some(Usage {
             rss: 48_812 * 1024,
-            pss: 41_230 * 1024,
-            private: (6_512 + 30_300) * 1024,
-            anon: 29_900 * 1024,
-            swap: 128 * 1024,
+            pss: Some(41_230 * 1024),
+            private: Some((6_512 + 30_300) * 1024),
+            anon: Some(29_900 * 1024),
+            swap: Some(128 * 1024),
+            footprint: None,
         })
     );
 }
@@ -53,14 +54,29 @@ fn the_resident_size_comes_from_vmrss() {
 }
 
 #[test]
-fn this_process_is_measured_on_linux_only() {
+fn this_process_is_measured_on_linux_and_macos() {
     let usage = usage();
     let resident = resident();
     if cfg!(target_os = "linux") {
         let usage = usage.expect("Linux 上读得到 smaps_rollup");
+        assert!(usage.rss > 0, "{usage:?}");
+        assert!(usage.pss.is_some_and(|pss| pss > 0), "{usage:?}");
         assert!(
-            usage.rss > 0 && usage.pss > 0 && usage.private > 0,
+            usage.private.is_some_and(|private| private > 0),
             "{usage:?}"
+        );
+        assert_eq!(usage.footprint, None);
+        assert!(resident.is_some_and(|rss| rss > 0));
+    } else if cfg!(target_os = "macos") {
+        let usage = usage.expect("macOS 上问得到内核");
+        assert!(usage.rss > 0, "{usage:?}");
+        assert!(
+            usage.footprint.is_some_and(|footprint| footprint > 0),
+            "{usage:?}"
+        );
+        assert_eq!(
+            (usage.pss, usage.private, usage.anon, usage.swap),
+            (None, None, None, None)
         );
         assert!(resident.is_some_and(|rss| rss > 0));
     } else {

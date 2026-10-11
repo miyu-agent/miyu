@@ -1,5 +1,5 @@
 //! 核心自己记内存账（施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来就记一行，到点再记，涨得快的当场多记一行；
-//! 量不出来的平台不起、不写文件。
+//! 量不出来的平台（Windows）不起、不写文件。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,7 +46,7 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
         grew: u64::MAX,
     };
     let task = memlog::spawn(&core, &home.root.state().join("logs"), timing);
-    if !cfg!(target_os = "linux") {
+    if !cfg!(any(target_os = "linux", target_os = "macos")) {
         assert!(task.is_none(), "量不出来的平台不起");
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert!(lines(&home).is_empty());
@@ -56,7 +56,15 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
     assert_eq!(lines[0]["why"], "start", "{lines:?}");
     let first = &lines[0];
     assert!(first["rss"].as_u64().is_some_and(|rss| rss > 0), "{first}");
-    assert!(first["pss"].as_u64().is_some_and(|pss| pss > 0), "{first}");
+    let measured = if cfg!(target_os = "linux") {
+        "pss"
+    } else {
+        "footprint"
+    };
+    assert!(
+        first[measured].as_u64().is_some_and(|bytes| bytes > 0),
+        "{first}"
+    );
     assert_eq!(first["sessions"], 0);
     assert!(first["at"].as_str().is_some_and(|at| at.ends_with('Z')));
     assert_eq!(
@@ -71,7 +79,7 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
 
 #[tokio::test]
 async fn growing_fast_takes_one_more_sample() {
-    if !cfg!(target_os = "linux") {
+    if !cfg!(any(target_os = "linux", target_os = "macos")) {
         return;
     }
     let home = Home::new();

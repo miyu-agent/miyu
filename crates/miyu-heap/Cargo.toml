@@ -20,3 +20,7 @@ unused_result_ok = "deny"
 unwrap_used = "deny"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
+
+# macOS 上问内核自己占了多少内存（施工 V-4 补，`usage.rs`）：`proc_pid_rusage`。
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"

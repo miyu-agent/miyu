@@ -1,13 +1,13 @@
 //! 核心自己记内存账（`docs/designs/23-性能预算.md` F4，施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来时、之后每
-//! [`Timing::every`] 采一次自己的内存（RSS、PSS、私有的、匿名的、换出去的，glibc 的堆，载入着几个会话），一行一个 JSON 写进
+//! [`Timing::every`] 采一次自己的内存（RSS；Linux 上另有 PSS、私有的、匿名的、换出去的，macOS 上另有算在头上的；glibc 的堆；载入着几个会话），一行一个 JSON 写进
 //! `state/logs/memory.jsonl`；两次之间每 [`Timing::peek`] 看一眼 RSS，比上一次采的时候涨了 [`Timing::grew`] 的当场多采一次。
-//! 量不出来的平台（现在只有 Linux 量得出，23「后续再定」）不记。
+//! 量不出来的平台（Windows，23「后续再定」）不记。
 
 use std::path::Path;
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
-use serde_json::json;
+use serde_json::{Map, Value, json};
 
 use miyu_endpoint::Core;
 use miyu_heap::Stats;
@@ -77,7 +77,8 @@ pub fn due(since: Duration, was: u64, now: Option<u64>, timing: &Timing) -> Opti
         .map(|_| Why::Grew)
 }
 
-/// 一行（不带换行）：格照名字的字母先后，字节数都是整数。没有堆的统计的（不是 glibc）不写 `heap`。
+/// 一行（不带换行）：格照名字的字母先后，字节数都是整数。这个平台量不出的那几样不写（`Usage` 里没有的），没有堆的统计的
+/// （不是 glibc）不写 `heap`。
 pub fn line(
     at: Timestamp,
     why: Why,
@@ -85,25 +86,33 @@ pub fn line(
     heap: Option<&Stats>,
     sessions: usize,
 ) -> String {
-    let mut value = json!({
-        "anon": usage.anon,
-        "at": at,
-        "private": usage.private,
-        "pss": usage.pss,
-        "rss": usage.rss,
-        "sessions": sessions,
-        "swap": usage.swap,
-        "why": why.as_str(),
-    });
-    if let Some(heap) = heap {
-        value["heap"] = json!({
-            "arenas": heap.arenas,
-            "free": heap.free,
-            "mmapped": heap.mmapped,
-            "used": heap.used,
-        });
-    }
-    value.to_string()
+    let mut fields = Map::new();
+    let mut put = |key: &str, value: Option<Value>| {
+        if let Some(value) = value {
+            fields.insert(key.to_string(), value);
+        }
+    };
+    put("anon", usage.anon.map(Value::from));
+    put("at", Some(json!(at)));
+    put("footprint", usage.footprint.map(Value::from));
+    put(
+        "heap",
+        heap.map(|heap| {
+            json!({
+                "arenas": heap.arenas,
+                "free": heap.free,
+                "mmapped": heap.mmapped,
+                "used": heap.used,
+            })
+        }),
+    );
+    put("private", usage.private.map(Value::from));
+    put("pss", usage.pss.map(Value::from));
+    put("rss", Some(Value::from(usage.rss)));
+    put("sessions", Some(Value::from(sessions)));
+    put("swap", usage.swap.map(Value::from));
+    put("why", Some(Value::from(why.as_str())));
+    Value::Object(fields).to_string()
 }
 
 /// 起采样：量不出来的平台不起，交回没有。`logs` 是 `state/logs/`，打不开文件的记一行 `WARN`、不起。要在 tokio 的运行时里调。

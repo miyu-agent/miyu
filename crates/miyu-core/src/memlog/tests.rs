@@ -50,10 +50,11 @@ fn a_line_has_its_fields_in_order() {
     let at = Timestamp::parse("2026-10-11T05:32:08.270Z").expect("合写法");
     let usage = Usage {
         rss: 50,
-        pss: 40,
-        private: 30,
-        anon: 20,
-        swap: 0,
+        pss: Some(40),
+        private: Some(30),
+        anon: Some(20),
+        swap: Some(0),
+        footprint: None,
     };
     let heap = Stats {
         arenas: 9,
@@ -69,6 +70,16 @@ fn a_line_has_its_fields_in_order() {
         line(at, Why::Grew, &usage, None, 0),
         r#"{"anon":20,"at":"2026-10-11T05:32:08.270Z","private":30,"pss":40,"rss":50,"sessions":0,"swap":0,"why":"grew"}"#,
         "没有堆的统计不写 heap"
+    );
+    let mac = Usage {
+        rss: 50,
+        footprint: Some(45),
+        ..Usage::default()
+    };
+    assert_eq!(
+        line(at, Why::Tick, &mac, None, 1),
+        r#"{"at":"2026-10-11T05:32:08.270Z","footprint":45,"rss":50,"sessions":1,"why":"tick"}"#,
+        "macOS 上量得出的只有 rss 和 footprint，别的不写"
     );
     assert_eq!(Why::Tick.as_str(), "tick");
 }

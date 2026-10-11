@@ -324,7 +324,7 @@ async fn the_core_starts_its_memory_account() {
     assert!(reply.get("error").is_none(), "{reply}");
     home.until_stopped().await;
     let account = home.root.state().join("logs").join("memory.jsonl");
-    if !cfg!(target_os = "linux") {
+    if !cfg!(any(target_os = "linux", target_os = "macos")) {
         assert!(!account.exists(), "量不出来的平台不记");
         return;
     }
