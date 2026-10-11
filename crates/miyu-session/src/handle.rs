@@ -46,6 +46,8 @@ pub struct Handle {
     shown: Arc<Mutex<Shown>>,
     /// 这个会话的记忆放在哪一间（施工 R-3 补）：协议、`/remember` 照它找；范围 `off` 的、核心没交记忆的没有。造好以后不变。
     memory: Option<Room>,
+    /// 有没有长期目标（施工 X-8 下）：造会话、载入时工具面上有 `goal` 的才有，`/goal` 照它判；中途换了预设，下次载入照新的。
+    goals: bool,
 }
 
 /// 发给 actor 的。
@@ -158,6 +160,7 @@ impl Handle {
             watched,
             shown,
             memory: None,
+            goals: false,
         }
     }
 
@@ -171,6 +174,18 @@ impl Handle {
     /// 这个会话的记忆放在哪一间（施工 R-3 补，`memory.md`「协议」）：范围 `off` 的没有。
     pub fn memory_room(&self) -> Option<&Room> {
         self.memory.as_ref()
+    }
+
+    /// 带上这个会话有没有长期目标（施工 X-8 下）。
+    #[must_use]
+    pub(crate) fn with_goals(mut self, goals: bool) -> Handle {
+        self.goals = goals;
+        self
+    }
+
+    /// 这个会话有没有长期目标（施工 X-8 下）：工具面上有 `goal`（本机的主会话、长期目标装了、预设开着）。
+    pub fn goals(&self) -> bool {
+        self.goals
     }
 
     /// 有没有在跑的回合：核心看它决定能不能空闲退出（施工 3-9 上）。会话停了的，不算在跑。

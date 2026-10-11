@@ -1,5 +1,5 @@
 //! 长期目标的几条规矩（施工 X-6）：同一时刻至多一个没结束的；没有的改、停、接着跑、结束都拒；跑着的才停、停着的才接着跑；
-//! 原文不能是空白；结束了能再设一个。
+//! 原文不能是空白；结束了能再设一个。卡住的（施工 X-8 下）能接着跑、改、结束、再设，不能停。
 
 use super::*;
 
@@ -74,4 +74,31 @@ fn without_a_goal_nothing_else_goes_and_pausing_follows_the_state() {
         .append(&goal(15, "goal.ended", r#"{"outcome":"abandoned"}"#))
         .unwrap();
     refused(&mut ledger, &goal(16, "goal.paused", "{}"), "needs a goal");
+}
+
+#[test]
+fn a_blocked_goal_resumes_but_does_not_pause() {
+    let mut ledger = after(9);
+    ledger
+        .append(&goal(10, "goal.set", r#"{"text":"修绿"}"#))
+        .unwrap();
+    ledger
+        .append(&goal(
+            11,
+            "goal.ended",
+            r#"{"outcome":"blocked","reason":"缺 key"}"#,
+        ))
+        .unwrap();
+    assert_eq!(ledger.goal(), GoalStage::Blocked);
+    refused(&mut ledger, &goal(12, "goal.paused", "{}"), "is blocked");
+    ledger.append(&goal(12, "goal.resumed", "{}")).unwrap();
+    assert_eq!(ledger.goal(), GoalStage::Running);
+    ledger
+        .append(&goal(13, "goal.ended", r#"{"outcome":"blocked"}"#))
+        .unwrap();
+    // X-8 上的日志里卡住以后她再设过：照样收。
+    ledger
+        .append(&goal(14, "goal.set", r#"{"text":"别的"}"#))
+        .unwrap();
+    assert_eq!(ledger.goal(), GoalStage::Running);
 }

@@ -137,6 +137,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         attended,
     );
     let goals = Agents::lists_sessions(&venue, lineage.as_ref().map(|lineage| &lineage.parent));
+    let on_face = face.iter().any(|tool| tool.name == miyu_tool::GOAL);
     let pools = Agents::pools_in(&face);
     let agents_personas = Agents::personas_in(&face);
     let child = lineage.is_some();
@@ -339,7 +340,9 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     match answer.await {
         Ok(_) => {
             let ids = Ids { id, venue, owner };
-            Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown).with_memory(room))
+            Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)
+                .with_memory(room)
+                .with_goals(on_face))
         }
         Err(_) => {
             // 造会话那一条没落盘：只剩空的第一段的会话目录删掉；快照的 blob 留着，按内容存，别的会话可能也在用

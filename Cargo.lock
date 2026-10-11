@@ -1637,6 +1637,7 @@ dependencies = [
  "miyu-config",
  "miyu-drivers",
  "miyu-fs",
+ "miyu-goal",
  "miyu-http",
  "miyu-ipc",
  "miyu-kernel",

@@ -86,6 +86,8 @@ miyu-session = { path = "../miyu-session", features = ["testkit"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 # 测试里她照剧本调记忆的三件工具（施工 R-3 补）。
 miyu-memory = { path = "../miyu-memory" }
+# 测试里会话的工具面上有长期目标的工具（施工 X-8 下）。
+miyu-goal = { path = "../miyu-goal" }
 # 测试里的等待有时限。
 tokio = { version = "1", features = ["io-util", "macros", "rt", "sync", "time"] }
 

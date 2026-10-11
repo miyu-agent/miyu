@@ -109,7 +109,11 @@ impl Goals {
                 goal.limit = changed.limit;
             }
             Body::GoalPaused(_) => goal.state = GoalState::Paused,
-            Body::GoalResumed(_) => goal.state = GoalState::Running,
+            // 卡住的接着跑（施工 X-8 下）：原因不再给人看。
+            Body::GoalResumed(_) => {
+                goal.state = GoalState::Running;
+                goal.reason = None;
+            }
             Body::GoalEnded(ended) => match &ended.outcome {
                 GoalOutcome::Completed => goal.state = GoalState::Completed,
                 GoalOutcome::Blocked => {

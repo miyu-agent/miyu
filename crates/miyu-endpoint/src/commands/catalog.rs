@@ -67,6 +67,7 @@ fn summary_key(slash: Slash) -> &'static str {
         Slash::Workspace => "commands/summary/workspace",
         Slash::Remember => "commands/summary/remember",
         Slash::Dream => "commands/summary/dream",
+        Slash::Goal => "commands/summary/goal",
     }
 }
 
@@ -74,6 +75,7 @@ fn summary_key(slash: Slash) -> &'static str {
 fn argument_key(slash: Slash) -> &'static str {
     match slash {
         Slash::Workspace => "commands/argument/workspace",
+        Slash::Goal => "commands/argument/goal",
         _ => "commands/argument/remember",
     }
 }

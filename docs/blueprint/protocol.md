@@ -507,9 +507,9 @@
 | `as` | 对象，可以不写 | 代表通讯平台上的人，同 `session.send` 的 `as`：只给场所会话，场所会话也只收带它的 |
 | `cwd` | 字符串，可以不写 | 头所在的目录，绝对的或者 `~` 开头的：只用来接 `/workspace` 后面相对的路径（施工 9-7 下） |
 
-回应 `{"command": "clear"|"stop"|"workspace"|"remember"|"dream", "events": [...], "said": "<回执>"}`：`command` 是正名（别名换成了正名），`events` 是这一次追加的全部事件的序号、最后一条是记下的 `command.ran`，`said` 是回执那一句，照这个连接的语言（`ui.language`），头原样发给人。
+回应 `{"command": "clear"|"stop"|"workspace"|"remember"|"dream"|"goal", "events": [...], "said": "<回执>"}`：`command` 是正名（别名换成了正名），`events` 是这一次追加的全部事件的序号、最后一条是记下的 `command.ran`，`said` 是回执那一句，照这个连接的语言（`ui.language`），头原样发给人。
 
-1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）。认不出的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
+1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember`、`/goal` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）、`goal`（施工 X-8 下）。认不出的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
 2. 谁能用：本机的会话（本机的头就是管理员本人）；场所会话里主人对应表认出的本人（记成带 `via` 的本人）、对应表里有的外部身份（群里的主人，`account`）、`role` 是 `manager` 的。别人回 `command_not_allowed`。`/workspace` 动的是沙盒能写的地方，只有主人本人能用（本机的会话、对应表认出的本人、群里的主人），管理的人回 `owner_only`。先查参数、再找会话、再判身份。
 3. `/clear` 同 `session.clear`：内核拒的照原因回（`turn_running`、`nothing_to_clear`、`restoring`）。
 4. `/stop` 全停：打断这一轮，排着的照 `keep` 留着；没有回合在进行的照样往下走。再停掉这个会话派出去的后台命令和子代理（同 `job.stop`，停的人记成说命令的人）。
@@ -518,6 +518,7 @@
 7. 同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样。
 8. `/remember <话>`（施工 R-3 补，`memory.md`「协议」）：名字后面跟的字是那一条，类 `user`，记进这个会话那一间，`by` 是打命令的人，出处空，听众是这个人；回执说记下了那句话（`commands/remembered`：「记下了：用户喜欢猫」，那句话里的换行、制表换成空格），不露编号（施工 R-3 四补，2026-10-10 项目主人定）。不请求模型。场所会话、范围 `off`、人格记忆没装的（施工 R-10）回 `memory_unavailable`，`data.why` 是照连接语言说的为什么（施工 O-6 再补：没装人格记忆的「人格记忆未安装。」，先于别的，施工 R-10；没有人格的「没有人格的会话记忆不生效」，预设没开记忆的带上预设的名字，字在 `core/human/<语言>.json` 的 `commands/unavailable/…`，别的照拒绝的那一句）；空的 `bad_params`，超过 120 字的 `memory_too_long`。先判身份，再查这个会话有没有记忆，再查字。同一个 `id` 再发只记一次（记忆事件的 `cause`，`memory.*` 第 5 条）。
 9. `/dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.dream`（`memory.*` 第 6 条），拒绝照它的。回执照几样数说：「整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。」（`commands/dreamed`，摘要换了的 `commands/dreamed-summary`），什么都没交进去的「无需整理。」（`commands/dreamed-nothing`）。在后台答（「一个连接」第 1 条）：只有它，别的命令照旧按顺序答。同一个 `id` 再发照第 7 条只记一次 `command.ran`，整理照样再做一次（多半没有要整理的）。
+10. `/goal`（施工 X-8 下，`goal.md`）：交代、看、停、继续、改、清掉长期目标。`/goal` 看：回执是「原文 · 在哪一步 · 第几轮」（`commands/goal-is`：「把测试修绿 · 等待回复 · 第 1/3 轮」；在哪一步照会话状态的 `goal.state`，卡住的带原因「受阻：…」；有上限的写「第 1/3 轮」，不限的「第 1 轮」；原文、原因里的换行写成空格），没有目标的「无长期目标。」，什么都不记、只记 `command.ran`。`/goal <目标>` 设一个（同她的 `goal` 工具，当场算授权过，会话闲着就开续轮）；`/goal pause`、`/goal resume`、`/goal clear` 后面没字的才是子命令，带字的整句当目标；`/goal edit <目标>` 改原文。设、改都能在目标前面写 `--rounds N` 定轮数上限，`0` 是不限，改的时候不写的照原来的。`edit` 后面没字、`--rounds` 后面不是非负整数、只写了上限的回 `bad_params`。卡住的照停着办：`resume` 接着跑（轮数照数），`edit` 改，`clear` 清掉；再设拒 `goal_exists`，停拒 `goal_paused`。改了的记对应的 `goal.*`（`by` 是打命令的人），回执「已设定长期目标：…」「已暂停长期目标。」「已继续长期目标。」「已修改长期目标：…」「已清除长期目标。」；内核拒的照原因回（`goal_exists`、`no_goal`、`goal_paused`、`goal_running`、`empty_message`）。这个会话没有长期目标的回 `goal_unavailable`（工具面上没有 `goal`：群里、私聊、子代理的会话，长期目标没装、预设关了的；照造会话、载入时的工具面判），`data.why` 说具体：没装的「长期目标未安装。」，本机主会话预设关了的「预设「…」未启用长期目标。」，别的照拒绝的那一句。
 
 **`command.catalog`**（施工 O-6 补，网页的会话要的，终端也用）
 
@@ -528,7 +529,7 @@
 回应 `{"commands": [{"name": "clear", "aliases": ["reset"], "summary": "清空上下文"}, {"name": "workspace", "aliases": [], "summary": "切换工作区", "argument": "<路径>"}, …]}`：照名字排；`summary`、`argument` 照这个连接的语言，字在 `core/human/<语言>.json` 的 `commands/summary/<名字>`、`commands/argument/<名字>`；名字后面要跟字的（`workspace`、`remember`）才有 `argument`。
 
 1. 不写 `session`：列核心认的全部（头还没造会话、`/help` 列全部时用）。
-2. 写了：只列这个连接在这个会话里打了不会被拒的，和 `command.run` 第 2、8 条同一份判法（谁能用；`/workspace` 只给主人本人；`/remember`、`/dream` 要这个会话开着记忆）。用不了的不列（2026-10-09 项目主人定）：人打了菜单里没有的命令，头照样交给 `command.run`，照拒绝的 `data.why` 说为什么，不自己说「没有这个命令」。
+2. 写了：只列这个连接在这个会话里打了不会被拒的，和 `command.run` 第 2、8、10 条同一份判法（谁能用；`/workspace` 只给主人本人；`/remember`、`/dream` 要这个会话开着记忆；`/goal` 要这个会话有长期目标）。用不了的不列（2026-10-09 项目主人定）：人打了菜单里没有的命令，头照样交给 `command.run`，照拒绝的 `data.why` 说为什么，不自己说「没有这个命令」。
 3. 不推送：头换会话、打开命令菜单时问一次。头自己的命令（`help`、`theme` 这些）、软件包登记的同名命令由头自己拼、自己去重；核心这份里没有只有头懂的命令。
 
 **`check`**（施工 8-30，`cli/check.md`）
@@ -1175,7 +1176,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
 | `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
 | `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |
-| `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | -32010 | 改长期目标不合现在的样子（施工 X-7，`goal.md`）：已经有一个没结束的再设；没有的改、停、接着跑、结束；停着的再停；跑着的接着跑。`/goal` 随 X-8 |
+| `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | -32010 | 改长期目标不合现在的样子（施工 X-7，`goal.md`）：已经有一个没完成的（跑着、停着、卡住）再设；没有的改、停、接着跑、结束；停着、卡住的再停；跑着的接着跑。`/goal` 回它们（`command.run` 第 10 条，施工 X-8 下） |
+| `goal_unavailable` | -32010 | `/goal`：这个会话没有长期目标（`command.run` 第 10 条，施工 X-8 下） |
 | `no_rule` | -32010 | `session.answer` 选了本会话都允许，请求却没提放行规则（施工 D-1） |
 | `unexpected_reason` | -32010 | `session.answer` 允许却带了理由（施工 D-1） |
 | `bad_answer` | -32010 | `session.answer` 的回答和题目对不上：条数不对、选了题目里没有的、单选的选了几项、选重了（施工 D-1） |
@@ -1356,6 +1358,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `no_goal` | 没有长期目标。 | No goal. |
 | `goal_paused` | 长期目标已暂停。 | Goal paused. |
 | `goal_running` | 长期目标正在进行。 | Goal running. |
+| `goal_unavailable` | 此会话不支持长期目标。 | Goals are not available in this session. |
 | `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
 | `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
 | `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |
@@ -1423,6 +1426,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/recap.rs`（施工 3-8 四补） | 协议上要回顾：回应是那一句、照到的、不是交回的；推送里先有回顾的 `model.called`、`session.recapped`，都不带回合编号、`cause` 是这一条，再是回应，别的头也收到；请求是一条 user、没有 system 和工具面；没有新内容再要一次交回上一句、不请求；有回合在进行时照收、照到的是这一轮那句话；没有能回顾的、没写成的两种拒绝，中文、英文，没写成的不再来；会话编号不对、没写、不是字符串的参数不对，没有的会话找不到 |
 | `crates/miyu-endpoint/tests/title.rs`（施工 3-8 五补） | 自动起标题：第一轮答完，订阅着的头收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；请求是一条 user、没有 system 和工具面，只喂第一轮；`session.list` 带上标题，核心重启以后照样；第二轮不再起；人先起过名的不起 |
 | `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |
+| `crates/miyu-endpoint/tests/goal_command.rs`、`src/commands/goal/tests.rs`（施工 X-8 下） | `command.run` 第 10 条：设了就开续轮，看、停、改、继续、清掉各一句回执，`goal.*` 的 `by` 是打命令的人，执行了的记 `command.ran`、被拒的不记；没写上限的改照原来的；卡住的再设、停拒，改了上限能接着跑；工具面上没有、预设关了（带预设的名字）、通讯平台的会话 `goal_unavailable`，命令菜单不列；子命令只在后面没字时认，`--rounds` 的几种写法 |
 | `crates/miyu-endpoint/tests/workspace_command.rs`（施工 9-7 下） | `/workspace <路径>` 同 `set_workspace` 只换工作目录、加进来的目录照旧，回执是中文那一句，一样的不记换；相对的照 `cwd` 接、没带的照会话的接，路径里的空白照留，`cwd` 不是绝对的参数不对；不带路径的只说现在在哪；不在的、文件、数据根里的照原因拒绝、什么都不记；`~` 太宽退回账号的默认工作区、回执说一声；场所里管理的人 `owner_only`，主人能换 |
 | `crates/miyu-endpoint/tests/clear.rs` | 协议上清空（施工 6-8 补）：回应是那一轮的开头、订阅的推送里是那一批三条、不请求模型；下一次请求里没有清空以前的；撤掉那一轮回应里撤掉了一次压缩、没有 `said`，再问看得到了；有回合在进行、本来就空的两种拒绝，中文、英文；会话编号不对、没写的参数不对 |
 | `crates/miyu-endpoint/src/sessions/tests.rs` | 父会话不在会话表里的不再造子会话、什么都没建（施工 3-8 三补） |

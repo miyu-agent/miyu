@@ -17,6 +17,7 @@ use crate::origin::By;
 
 mod error;
 mod goal;
+pub use goal::GoalStage;
 mod jobs;
 mod peers;
 mod seal;
@@ -24,7 +25,6 @@ mod shape;
 mod triggers;
 mod undo;
 
-use goal::Goals;
 use jobs::Jobs;
 use peers::Peers;
 pub(crate) use peers::digest;
@@ -77,7 +77,7 @@ pub struct Ledger {
     /// 封存了没有（施工 C-8 下，`ledger/seal.rs`）。
     sealing: Sealing,
     /// 长期目标在不在、停没停（施工 X-6，`ledger/goal.rs`）。
-    goals: Goals,
+    goals: GoalStage,
 }
 
 impl Default for Ledger {
@@ -98,7 +98,7 @@ impl Default for Ledger {
             peers: Peers::default(),
             triggers: Triggers::default(),
             sealing: Sealing::default(),
-            goals: Goals::default(),
+            goals: GoalStage::default(),
         }
     }
 }

@@ -225,6 +225,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let has_goals = Agents::lists_sessions(&created.venue, tasked.as_ref());
     // 能选的人格同池，照快照读回（施工 P-2 补）。
     let agents_personas = Agents::personas_in(&snapshot.tools);
+    let on_face = snapshot
+        .tools
+        .iter()
+        .any(|tool| tool.name == miyu_tool::GOAL);
     let agents = sessions.map(|port| {
         Arc::new(Agents {
             port,
@@ -386,7 +390,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     }
     actor::spawn(actor, first, span);
     let ids = Ids { id, venue, owner };
-    let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown).with_memory(room);
+    let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
+        .with_memory(room)
+        .with_goals(on_face);
     Ok((handle, placed))
 }
 

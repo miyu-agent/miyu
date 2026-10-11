@@ -97,3 +97,17 @@ fn clearing_forgets_the_goal_and_a_new_one_starts_afresh() {
     assert_eq!(Goals::of(&events).now(), None, "清掉的不再给人看");
     assert_eq!(Goals::of(&events[..2]).now(), None, "没设过的没有");
 }
+
+/// 卡住的接着跑（施工 X-8 下）：原因不再给人看，轮数接着数。
+#[test]
+fn a_blocked_goal_resumes_without_its_reason() {
+    let mut events = story();
+    events.push(event(19, "goal.resumed", "{}"));
+    events.push(started(20));
+    let goals = Goals::of(&events);
+    let goal = goals.now().expect("接着跑");
+    assert_eq!(
+        (goal.state, goal.reason.as_deref(), goal.round),
+        (GoalState::Running, None, 4)
+    );
+}

@@ -5,7 +5,8 @@
 //! 不撤回、不接着开），再停掉她派出去的后台命令和子代理。终端、网页、通讯平台用同一套名字。施工 9-7 下加 `/workspace`
 //! （`workspace.rs`）：换会话在哪个目录干活，只有主人本人能用。`/remember <话>` 直接记一条记忆（施工 R-3 补，`memory.md`
 //! 「协议」）：不经过模型，只在本机的会话里。`/dream` 现在就整理记忆（施工 R-7 补，`memory.md` 第七条第 9 款）：先抽这一段、
-//! 再合，回执报几样数；要等模型，在后台答（[`answered_later`]）。
+//! 再合，回执报几样数；要等模型，在后台答（[`answered_later`]）。`/goal` 交代、看、停、继续、改、清掉长期目标（施工 X-8 下，
+//! `goal.rs`）：只在有长期目标的会话里（本机的主会话、长期目标装了、预设开着）。
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
 
@@ -51,13 +52,15 @@ enum Slash {
     Workspace,
     Remember,
     Dream,
+    Goal,
 }
 
 impl Slash {
     /// 认得的全部，照名字排（施工 O-6 补：`command.catalog` 照它列）。
-    const ALL: [Slash; 5] = [
+    const ALL: [Slash; 6] = [
         Slash::Clear,
         Slash::Dream,
+        Slash::Goal,
         Slash::Remember,
         Slash::Stop,
         Slash::Workspace,
@@ -74,13 +77,13 @@ impl Slash {
     fn aliases(self) -> &'static [&'static str] {
         match self {
             Slash::Clear => &["reset"],
-            Slash::Stop | Slash::Workspace | Slash::Remember | Slash::Dream => &[],
+            Slash::Stop | Slash::Workspace | Slash::Remember | Slash::Dream | Slash::Goal => &[],
         }
     }
 
     /// 名字后面要跟字（施工 O-6 补：`command.catalog` 照它给参数提示）。
     fn takes_text(self) -> bool {
-        matches!(self, Slash::Workspace | Slash::Remember)
+        matches!(self, Slash::Workspace | Slash::Remember | Slash::Goal)
     }
 
     /// 在后台答（施工 R-7 补）：要等模型的只有 `/dream`，几秒到十几秒；别的照旧按顺序答。
@@ -96,6 +99,7 @@ impl Slash {
             Slash::Workspace => "workspace",
             Slash::Remember => "remember",
             Slash::Dream => "dream",
+            Slash::Goal => "goal",
         }
     }
 }
@@ -197,6 +201,11 @@ pub(crate) async fn run(
             }
         }
         Slash::Dream => dreamed(memory::dream::in_session(core, &session, &handle).await?),
+        Slash::Goal => {
+            let (changed, said) = goal::run(core, peer, (&session, &handle), id, &by, rest).await?;
+            events.extend(changed);
+            said
+        }
     };
     let note = Command::Ran {
         text: params.text,
@@ -229,7 +238,7 @@ fn dreamed(dreamed: miyu_session::Dreamed) -> Said {
 }
 
 /// 原文的头一个词是命令名：开头的空白不算，`/` 开头，名字紧跟着 `/`、到空白为止。交回命令和后面跟的字（去掉前后空白；
-/// 只有 `/workspace` 用它）。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
+/// `/workspace`、`/remember`、`/goal` 用它）。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
 fn parse(text: &str) -> Result<(Slash, &str), Refusal> {
     let after = text
         .trim_start()
@@ -241,7 +250,8 @@ fn parse(text: &str) -> Result<(Slash, &str), Refusal> {
 }
 
 /// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先判身份
-/// （[`may_run`]）；`/workspace` 动的是沙盒能写的地方，管理的人不行、只有主人本人；`/remember`、`/dream` 要这个会话开着记忆。
+/// （[`may_run`]）；`/workspace` 动的是沙盒能写的地方，管理的人不行、只有主人本人；`/remember`、`/dream` 要这个会话开着记忆；
+/// `/goal` 要这个会话有长期目标（施工 X-8 下，[`Handle::goals`]）。
 fn allowed(core: &Core, slash: Slash, handle: &Handle, by: &By) -> Result<(), Refusal> {
     if !may_run(by) {
         return Err(Refusal::COMMAND_NOT_ALLOWED);
@@ -251,6 +261,9 @@ fn allowed(core: &Core, slash: Slash, handle: &Handle, by: &By) -> Result<(), Re
     }
     if matches!(slash, Slash::Remember | Slash::Dream) && !memory::remembers(core, handle) {
         return Err(Refusal::MEMORY_UNAVAILABLE);
+    }
+    if slash == Slash::Goal && !handle.goals() {
+        return Err(Refusal::GOAL_UNAVAILABLE);
     }
     Ok(())
 }
@@ -314,6 +327,7 @@ async fn words(core: &Core, peer: &Peer, said: &Said) -> String {
 }
 
 mod catalog;
+mod goal;
 #[cfg(test)]
 mod tests;
 mod why;

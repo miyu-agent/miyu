@@ -151,6 +151,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "no_goal" => ("没有长期目标。", "No goal."),
         "goal_paused" => ("长期目标已暂停。", "Goal paused."),
         "goal_running" => ("长期目标正在进行。", "Goal running."),
+        "goal_unavailable" => (
+            "此会话不支持长期目标。",
+            "Goals are not available in this session.",
+        ),
         // 施工 D-1：`session.answer` 碰得到的四个（`unknown_decision` 协议上碰不到，`protocol.md`「出错」）。
         "not_asking" => ("不在等待回答。", "Not waiting for an answer."),
         "no_rule" => ("只能允许本次或拒绝。", "Only allow once or deny."),

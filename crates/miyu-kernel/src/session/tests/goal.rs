@@ -1,5 +1,5 @@
 //! 改长期目标的命令（施工 X-7，`session/goal.rs`）：五种各记对应的那一条 `goal.*`，落了盘回应；不合的当场拒：已经有一个没
-//! 结束的再设、没有的改停接着跑结束、停着的再停、跑着的接着跑、原文空白。
+//! 结束的再设、没有的改停接着跑结束、停着的再停、跑着的接着跑、原文空白。卡住的照停着办（施工 X-8 下）。
 
 use std::num::NonZeroU32;
 
@@ -74,8 +74,22 @@ fn each_change_records_its_event_and_wrong_ones_are_refused() {
             ),
             "goal.ended",
         ),
-        (goal(11, GoalChange::Resume), "no_goal"),
-        (goal(12, set("下一个")), "goal.set"),
+        // 卡住的照停着办（施工 X-8 下）：还算没完成，再设拒、停拒，接着跑收。
+        (goal(11, set("下一个")), "goal_exists"),
+        (goal(12, GoalChange::Pause), "goal_paused"),
+        (goal(13, GoalChange::Resume), "goal.resumed"),
+        (
+            goal(
+                14,
+                GoalChange::End {
+                    outcome: GoalOutcome::Cleared,
+                    reason: None,
+                },
+            ),
+            "goal.ended",
+        ),
+        (goal(15, GoalChange::Resume), "no_goal"),
+        (goal(16, set("下一个")), "goal.set"),
     ];
     for (input, wanted) in steps {
         assert_eq!(kind_or_reason(&mut s, input), wanted);
