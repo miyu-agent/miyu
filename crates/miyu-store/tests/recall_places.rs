@@ -1,0 +1,41 @@
+//! 回合库里哪个会话在哪个场所（施工 R-13 下，`docs/blueprint/recall.md`「库的结构」、`memory.md` 第一条第 1 款）：记一次、再记
+//! 换成新的；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的。
+
+use std::path::PathBuf;
+
+use miyu_store::recall::RecallIndex;
+
+use crate::support::*;
+
+fn place(scratch: &Scratch) -> PathBuf {
+    root_in(scratch)
+        .index(&admin())
+        .join("recall")
+        .join("turns-places.db")
+}
+
+#[test]
+fn a_session_is_placed_once_and_goes_with_its_source() {
+    let scratch = Scratch::new("recall-places");
+    let (index, _) = RecallIndex::open(&place(&scratch));
+    assert!(index.places().expect("读得了").is_empty());
+    index.place("s1", "qq:group:1").expect("写得进");
+    index.place("s2", "qq:group:2").expect("写得进");
+    index.place("s2", "qq:group:2").expect("再记一次不碍事");
+    let places = index.places().expect("读得了");
+    assert_eq!(places.get("s1").map(String::as_str), Some("qq:group:1"));
+    assert_eq!(places.get("s2").map(String::as_str), Some("qq:group:2"));
+    assert_eq!(places.len(), 2);
+
+    index.forget("s1").expect("拿得掉");
+    assert!(
+        !index.places().expect("读得了").contains_key("s1"),
+        "删会话跟着拿掉"
+    );
+
+    drop(index);
+    let (index, _) = RecallIndex::open(&place(&scratch));
+    assert_eq!(index.places().expect("读得了").len(), 1, "重开还在");
+    index.reset().expect("建得成");
+    assert!(index.places().expect("读得了").is_empty(), "重建是空的");
+}

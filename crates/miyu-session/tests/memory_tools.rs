@@ -8,6 +8,7 @@ use miyu_kernel::id::{SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::request::Request;
 use miyu_kernel::session::Command;
+use miyu_policy::memory::MemoryScope;
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Handle, Lineage};
 use miyu_store::recall::Room;
@@ -91,7 +92,7 @@ fn last_turn(log: &[Event]) -> TurnId {
 }
 
 #[tokio::test]
-async fn only_a_local_main_session_has_the_three() {
+async fn a_main_session_with_memory_has_the_three_wherever_it_is() {
     let home = Home::new();
     let memory = ["forget", "memory_search", "remember"];
     let parent = SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d99").expect("合写法");
@@ -104,9 +105,17 @@ async fn only_a_local_main_session_has_the_three() {
             },
             false,
         ),
+        // 场所会话也有（施工 R-13 下）：挑法照谁在听。
         (
             Lines {
                 venue: VenueId::parse("qq:group:123456").expect("合写法"),
+                ..Lines::default()
+            },
+            true,
+        ),
+        (
+            Lines {
+                memory: MemoryScope::Off,
                 ..Lines::default()
             },
             false,

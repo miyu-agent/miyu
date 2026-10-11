@@ -306,3 +306,50 @@ async fn in_a_group_what_she_extracts_says_who_spoke_and_stays_in_that_group() {
     assert!(texts(&elsewhere).is_empty(), "别的群里冒不出来");
     stop(&handle).await;
 }
+
+/// 以前的对话照谁在听挑（施工 R-13 下）：两个群各说一轮，一群里只搜得到一群的，主人那边两个都有。
+#[tokio::test]
+async fn past_turns_from_a_place_stay_in_that_place() {
+    let home = Home::new();
+    let mut sessions = Vec::new();
+    for n in [1, 2] {
+        let script = Script::new([Play::Says("好。")]);
+        let lines = Lines {
+            venue: place(n),
+            group: true,
+            memory_account: admin(),
+            ..Lines::default()
+        };
+        let handle = home
+            .create_full(&script, &catalog(&home), Opening::default(), lines)
+            .await;
+        let mut pushes = watch(&handle).await;
+        within(
+            "回应",
+            handle.command(
+                id("cmd-1"),
+                member(),
+                heard(&format!("我在{n}群学日语"), "8801", false),
+            ),
+        )
+        .await
+        .expect("会话在跑");
+        until_turn_ends(&mut pushes).await;
+        sessions.push(handle.id().clone());
+        stop(&handle).await;
+    }
+    let found = |listener: Listener| {
+        let mut sessions: Vec<String> = Keeper::new(&home.memory, room(), listener)
+            .turns("日语", 10, None, None)
+            .expect("搜得了")
+            .into_iter()
+            .map(|turn| turn.session.to_string())
+            .collect();
+        sessions.sort();
+        sessions
+    };
+    assert_eq!(found(Listener::Place(place(1))), [sessions[0].to_string()]);
+    let mut both: Vec<String> = sessions.iter().map(ToString::to_string).collect();
+    both.sort();
+    assert_eq!(found(owner()), both, "主人那边全部");
+}

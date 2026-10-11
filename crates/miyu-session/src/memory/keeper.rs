@@ -6,7 +6,6 @@
 //!   不让人知道有。
 //! - 出处活不活照回合库的墓碑（第二条第 4 款）：一处都没有（人记的）的算活；有的，活着一处就算。
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_kernel::id::{CommandId, ModuleId, Seq, SessionId, TurnId};
@@ -18,7 +17,7 @@ use miyu_recall::{
 };
 use miyu_store::memory::{MemoryLog, Report};
 use miyu_store::recall::{Opened, Room};
-use miyu_tool::{FoundTurn, Refused, Remember};
+use miyu_tool::{Refused, Remember};
 
 use crate::TARGET;
 
@@ -294,60 +293,6 @@ impl Keeper {
             .collect())
     }
 
-    /// 搜这一间的以前的对话（回合索引），最多 `limit` 段；`skip` 这个会话自己的不算（她看得见；人经协议搜的不跳过，施工
-    /// R-12 下）。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。
-    ///
-    /// # Errors
-    ///
-    /// 回合库读不了。
-    pub fn turns(
-        &self,
-        query: &str,
-        limit: usize,
-        skip: Option<&SessionId>,
-        near: Option<&Query>,
-    ) -> Result<Vec<FoundTurn>, String> {
-        let (turns, _) = self.memory.turns.turns(&self.room);
-        let own = skip.map(|skip| format!("{skip}/"));
-        let wide = limit.saturating_mul(4);
-        let hits = turns
-            .search(query, wide)
-            .map_err(|error| error.to_string())?;
-        let close = match near {
-            Some(near) => turns
-                .nearest(&near.model, &near.vector, wide)
-                .map_err(|error| error.to_string())?,
-            None => Vec::new(),
-        };
-        let keys: Vec<String> = hits.iter().map(|hit| hit.key.clone()).collect();
-        let similar: Vec<(String, f32)> = close
-            .iter()
-            .map(|hit| (hit.key.clone(), hit.similar))
-            .collect();
-        // 合完照键找回字和时刻：两路交回的是同一条的同一份。
-        let mut found: BTreeMap<String, (String, Timestamp)> = close
-            .into_iter()
-            .map(|hit| (hit.key, (hit.text, hit.at)))
-            .collect();
-        found.extend(hits.into_iter().map(|hit| (hit.key, (hit.text, hit.at))));
-        Ok(fuse(&keys, &similar)
-            .into_iter()
-            .filter(|key| own.as_ref().is_none_or(|own| !key.starts_with(own)))
-            .filter_map(|key| {
-                let (text, at) = found.remove(&key)?;
-                let (session, turn) = key.split_once('/')?;
-                let turn = turn.parse().ok().and_then(miyu_kernel::id::Seq::new)?;
-                Some(FoundTurn {
-                    session: SessionId::parse(session).ok()?,
-                    turn: TurnId::new(turn),
-                    at,
-                    text,
-                })
-            })
-            .take(limit)
-            .collect())
-    }
-
     /// 照意思找的那一路照 `using` 在后台补这一间缺的向量（施工 R-5 下，`vectors.rs`）：搜的时候起。没接向量的、`off` 的什么
     /// 都不做。
     pub fn fill(&self, using: &Using) {
@@ -429,6 +374,11 @@ impl Keeper {
     /// 这一条在这一次冒不冒得出来（[`Listener`]）。
     pub(super) fn hears(&self, entry: &Entry) -> bool {
         self.listener.hears(entry)
+    }
+
+    /// 在场所 `venue`（本机的没有）开的那几轮，这一次搜不搜得到（以前的对话，施工 R-13 下，[`Listener`]）。
+    pub(super) fn hears_place(&self, venue: Option<&str>) -> bool {
+        self.listener.hears_place(venue)
     }
 
     /// 这一次是不是主人那边（摘要那一行只在这里交，施工 R-13 上）。

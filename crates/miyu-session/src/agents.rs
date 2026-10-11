@@ -144,10 +144,10 @@ impl Agents {
             .filter(|spec| local || spec.name != SESSION_USAGE)
             .filter(|spec| asks || spec.name != ASK_USER)
             .filter(|spec| local || spec.name != TODOWRITE)
-            // 记忆的三件只给本机、记忆开着的会话（施工 R-3 中、下，`memory.md`「工具」）：子会话的范围一律 `off`（17 第二节），
-            // 群随 O 线。
+            // 记忆的三件给记忆开着的会话（施工 R-3 中、下，`memory.md`「工具」）：本机的、场所的都给，挑法照谁在听（施工
+            // R-13 下）；子会话的范围一律 `off`（17 第二节）。
             .filter(|spec| {
-                (local && memory != MemoryScope::Off)
+                memory != MemoryScope::Off
                     || ![REMEMBER, FORGET, MEMORY_SEARCH].contains(&spec.name.as_str())
             })
             // 提供者的工具照它给哪种会话挑（施工 O-2 上）。

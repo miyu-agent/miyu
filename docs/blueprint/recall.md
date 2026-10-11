@@ -26,6 +26,7 @@
 | `crates/miyu-store/src/recall.rs` | 一个检索库：开（坏了删掉重建）、放进一条、拿掉一条、照关键词找（R-1）；一批和照到哪一起写、拿掉一个来源（R-2 上） | R-1 |
 | `crates/miyu-store/src/recall/vectors.rs` | 向量表：放、照模型列出缺的、读出来逐条算最像的（第三条第 1、2 款） | R-5 下 |
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
+| `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款） | R-13 下 |
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
@@ -86,6 +87,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 - R-2 加一张 `marks(source TEXT PRIMARY KEY, upto INTEGER NOT NULL)`：每个来源（例如一个会话）照到了哪个序号，版本加一成 2。
 - R-3 上加一张 `buried(key TEXT PRIMARY KEY)`：墓碑，版本加一成 3。
 - 向量表随 R-5 加，版本跟着加一：派生的，删掉重建，不写迁移。
+- R-13 下加一张 `places(source TEXT PRIMARY KEY, venue TEXT)`：回合库里场所会话在哪个场所（`place`、`places`），本机的会话不记；搜以前的对话照它挑（`memory.md` 第一条第 1 款、第九条）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上。
 - R-4 下加一张 `uses(key TEXT, memory TEXT, at INTEGER, PRIMARY KEY (key, memory))`：回合库里记一条记忆用到过的每一次，键是 `会话/事件的序号`，`at` 是那一条事件的时刻（毫秒）。同向量表不换版本，每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上（`memory.md` 第八条）。
 
 ### 怎么走
@@ -211,6 +213,7 @@ R-5 下做好的：
 | `crates/miyu-recall/src/vector/tests.rs`、`fuse/tests.rs` | 第三条第 1、3 款：写成字节读回一位不差、小端、长度不对的读不出、点积、维数对不上算 0；只有一路的照它的先后、两路都有的在前、只有向量一路找到的过下限、关键词也找到的不看下限、名次照原来的先后数、分一样的照先来后到 |
 | `crates/miyu-store/tests/recall_vectors.rs` | 第三条第 1、2 款：缺的照模型列、从哪一行往后列、最多几条；最像的在前、带着字和时刻、别的模型的不算；条目拿掉、换了字、整个来源拿掉、一批里拿掉的，向量跟着没；条目没了的不放；以前的库（没有这张表）照样开、不重建、补上表 |
 | `crates/miyu-store/tests/recall_uses.rs`（R-4 下） | 「库的结构」的 `uses`：一条事件带上一条记忆再写不重复；照记忆分组数次数、最近一次是最晚的那一条；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
+| `crates/miyu-store/tests/recall_places.rs`（R-13 下） | 「库的结构」的 `places`：记一次、再记不碍事；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
 | `crates/miyu-session/tests/memory_vectors.rs` | 第三条第 4 到 6 款，真的 `miyu-embed`、手造的小模型（R-5 三补改成摆成包目录）：一条和问句一个字都不重合的记忆，第一次只走关键词找不到，后台补上向量以后照意思找得到；以前的对话也一样；补的是头一个要的也补齐（等那一次核对，R-5 五补）；她 `remember` 了的不搜就补上，下一轮头一次搜就照意思找得到（R-5 五补）；`off` 的不补、不拉起小程序，关键词照旧找得到 |
 | `crates/miyu-endpoint/tests/memory_meaning.rs` | 第三条第 4 款：真核心接上本机 embedding，`memory.search` 第一次只走关键词，补齐以后照意思找得到 |
 

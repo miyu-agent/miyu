@@ -66,7 +66,7 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
         ..Lines::default()
     };
     said(&home, own, "我在学 Rust").await;
-    // 场所会话（群里）的先不进回合库（施工 R-2 再补）：回合库的条目还没有听众。
+    // 场所会话（群里）的也补（施工 R-13 下）：回合库记下它在哪个场所。
     let venue = Lines {
         venue: miyu_kernel::id::VenueId::parse("qq:group:5550").expect("合写法"),
         ..Lines::default()
@@ -92,7 +92,8 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
     loop {
         let cats = found(&memory, &persona(), "养了");
         let hikes = found(&memory, &persona(), "爬山");
-        if cats.len() == 1 && hikes.len() == 1 {
+        let group = found(&memory, &persona(), "团子");
+        if cats.len() == 1 && hikes.len() == 1 && group.len() == 1 {
             assert!(cats[0].starts_with(&format!("{}/", cat.id())), "{cats:?}");
             assert!(
                 hikes[0].starts_with(&format!("{}/", hike.id())),
@@ -103,7 +104,14 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
         assert!(Instant::now() < deadline, "等不到补齐：{cats:?} {hikes:?}");
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    for words in ["樱花", "显卡", "Rust", "团子"] {
+    let (index, _) = memory.turns.turns(&persona());
+    let places = index.places().expect("读得了");
+    assert_eq!(
+        places.values().map(String::as_str).collect::<Vec<_>>(),
+        ["qq:group:5550"],
+        "群会话记下它在哪个场所，本机的不记"
+    );
+    for words in ["樱花", "显卡", "Rust"] {
         assert!(
             found(&memory, &persona(), words).is_empty(),
             "{words} 不该补进人格那一间"

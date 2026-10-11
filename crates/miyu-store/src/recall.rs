@@ -25,6 +25,7 @@ pub use indexes::{Opener, RecallIndexes};
 pub use room::Room;
 
 mod indexes;
+mod places;
 mod room;
 mod uses;
 mod vectors;
@@ -40,7 +41,8 @@ const VERSION: i64 = 3;
 /// 序号（施工 R-2 上，版本 2）。`buried` 是墓碑：撤销了的回合、删掉了的会话，记忆的出处照它判活不活（施工 R-3 上，版本 3）。
 /// `vectors` 是每一条照模型的向量（施工 R-5 下，`vectors.rs`）：不换版本，每次开库、重建以后照 `vectors::ADD` 补上这张表，
 /// 以前的库也就有了。换版本就要删掉重建，删掉的会话那几块墓碑是删会话时写的，重建补不回来。`uses` 是回合库里记忆用到过的
-/// 每一次（施工 R-4 下，`uses.rs`），同向量表照 `uses::ADD` 补上。
+/// 每一次（施工 R-4 下，`uses.rs`），同向量表照 `uses::ADD` 补上。`places` 是回合库里哪个会话在哪个场所（施工 R-13 下，
+/// `places.rs`），同样补上。
 const SCHEMA: &str = "CREATE TABLE buried (
     key TEXT PRIMARY KEY NOT NULL
 ) WITHOUT ROWID;
@@ -302,6 +304,7 @@ impl RecallIndex {
                 "DELETE FROM uses WHERE substr(key, 1, ?2) = ?1",
                 params![prefix, length],
             )?;
+            tx.execute("DELETE FROM places WHERE source = ?1", [source])?;
             tx.execute("DELETE FROM marks WHERE source = ?1", [source])?;
             Ok(())
         })
@@ -434,8 +437,9 @@ fn id_of(tx: &Transaction<'_>, key: &str) -> Result<Option<i64>, DbError> {
         .optional()?)
 }
 
-/// 开库、重建以后补上不换版本加的几张表：向量（施工 R-5 下）、用到（施工 R-4 下）。
+/// 开库、重建以后补上不换版本加的几张表：向量（施工 R-5 下）、用到（施工 R-4 下）、场所（施工 R-13 下）。
 fn add(db: &Connection) -> rusqlite::Result<()> {
     db.execute_batch(vectors::ADD)?;
-    db.execute_batch(uses::ADD)
+    db.execute_batch(uses::ADD)?;
+    db.execute_batch(places::ADD)
 }

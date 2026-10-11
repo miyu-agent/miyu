@@ -11,6 +11,7 @@ mod follow;
 mod keeper;
 mod listener;
 mod merge;
+mod past;
 mod port;
 mod recall;
 mod restore;
@@ -158,8 +159,8 @@ impl Memory {
 /// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在记忆账号 `account` 的那一间，只在这个会话里的在会话自己的目录
 /// 里（属主 `owner` 的）。听众照属主，不照记忆账号：出厂人格的记忆归属主，系统账号开的会话归管理员，听的人还是属主。
 ///
-/// 回合索引只接本机（`venue` 是 `local`）的会话（施工 R-2 再补，`memory.md` 第一条第 1 款）：回合库的条目还没有听众（第九条，
-/// 随 O 线），群里的回合进了库，本机会话里就搜得到群里别人说的话。场所会话以前进了库的（施工 O-4 下起），载入时拿掉。
+/// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）：搜以前的对话照谁在听挑，
+/// 一个场所里只搜得到这个场所的（第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
 #[expect(
     clippy::too_many_arguments,
     reason = "接上记忆要的几样各是一样，拼成一个结构体只为过这一条"
@@ -182,29 +183,12 @@ pub(crate) fn connect(
     let Some(memory) = memory else {
         return (None, None);
     };
-    let turns = if venue.as_str() == LOCAL {
-        Turns::connect(&memory.turns, &room, session, events)
-    } else {
-        if !events.is_empty() {
-            leave(&memory.turns, &room, session);
-        }
-        None
-    };
-    let local = venue.as_str() == LOCAL;
+    let turns = Turns::connect(&memory.turns, &room, session, venue, events);
     let listener = Listener::of(account, owner, venue);
     (
         turns,
-        Some(Calls::new(memory, room, listener, owner, session, local)),
+        Some(Calls::new(memory, room, listener, owner, session)),
     )
-}
-
-/// 场所会话 `session` 以前进了 `room` 那一间回合库的（施工 O-4 下到 R-2 再补之间）拿掉：只拿掉、不埋墓碑，会话还在。拿不掉的
-/// 记一行 `WARN memory index not updated`，下次载入再拿。
-fn leave(recall: &RecallIndexes, room: &Room, session: &SessionId) {
-    let (index, _) = recall.turns(room);
-    if let Err(error) = index.forget(session.as_str()) {
-        tracing::warn!(target: TARGET, session = session.as_str(), error = %error, "memory index not updated");
-    }
 }
 
 /// 会话的记忆的范围：子会话（`child`）不管交的、快照里的是什么都是 `off`（17 第二节，以前造的子会话快照里没有这一格）；
@@ -230,10 +214,14 @@ pub(crate) struct Turns {
     feed: TurnFeed,
     /// 用到了哪几条，增量算（施工 R-4 下）。
     uses: UseFeed,
+    /// 场所会话在哪个场所（施工 R-13 下）：本机的没有。回合库里记一次（`places`），搜以前的对话照它挑。
+    venue: Option<VenueId>,
+    /// 记过场所了（这一回）。
+    placed: OnceLock<()>,
 }
 
 impl Turns {
-    /// 接上会话 `session` 的回合索引，放在 `room` 那一间。在阻塞线程里调。
+    /// 接上会话 `session`（在场所 `venue`）的回合索引，放在 `room` 那一间。在阻塞线程里调。
     ///
     /// `events` 是载入时读到的整份事件：照它铺回 `TurnFeed`，照回合库记着的照到哪以后的补上（一条都没照过的整份补）；
     /// 新造的会话是空的，这时不开库。
@@ -241,6 +229,7 @@ impl Turns {
         recall: &Arc<RecallIndexes>,
         room: &Room,
         session: &SessionId,
+        venue: &VenueId,
         events: &[Event],
     ) -> Option<Turns> {
         let mut turns = Turns {
@@ -250,6 +239,8 @@ impl Turns {
             index: OnceLock::new(),
             feed: TurnFeed::default(),
             uses: UseFeed::new(MODULE, miyu_tool::MEMORY_SEARCH),
+            venue: (venue.as_str() != LOCAL).then(|| venue.clone()),
+            placed: OnceLock::new(),
         };
         let Some(last) = events.last() else {
             return Some(turns);
@@ -268,6 +259,18 @@ impl Turns {
             turns.write(changes, &used, last, || Ok(events.to_vec()));
         }
         Some(turns)
+    }
+
+    /// 场所会话在回合库里记下它在哪个场所（施工 R-13 下）：这一回记一次；本机的不记。记不进的记一行，下一回再记。
+    fn place(&self) {
+        let Some(venue) = &self.venue else {
+            return;
+        };
+        self.placed.get_or_init(|| {
+            if let Err(error) = self.index().place(self.session.as_str(), venue.as_str()) {
+                tracing::warn!(target: TARGET, error = %error, "memory index not updated");
+            }
+        });
     }
 
     /// 这个会话的回合库：第一次用时照登记开（这一回第一次开的，登记记一行，[`Memory::new`]）。
@@ -358,6 +361,7 @@ impl Turns {
                 }
             }
         }
+        self.place();
         if let Err(error) = self
             .index()
             .apply(&self.session.to_string(), &edits, last.seq)

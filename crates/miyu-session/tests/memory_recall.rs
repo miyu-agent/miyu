@@ -165,16 +165,17 @@ async fn nothing_is_brought_unless_it_is_sure() {
     );
 }
 
+/// 场所会话里也联想（施工 R-13 下）：主人自己的 QQ 私聊（属主就是记忆归的那个账号）是主人那边，照样想起来。场所里只冒出在
+/// 那里说过的，和列、搜同一个判法（`Keeper` 的 `shown`，`memory_listener` 测）。
 #[tokio::test]
-async fn not_in_a_venue_session() {
+async fn in_the_owners_own_private_chat_too() {
     let lines = Lines {
         venue: VenueId::parse("qq:private:10001").expect("合写法"),
         ..Lines::default()
     };
-    assert_eq!(
-        recalled_after(|home| meaning(home, &table("-1.0")), lines).await,
-        0,
-        "场所会话不联想：主人的事不往外带"
+    assert!(
+        recalled_after(|home| meaning(home, &table("-1.0")), lines).await > 0,
+        "主人自己的私聊里照样联想"
     );
 }
 

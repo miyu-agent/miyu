@@ -17,7 +17,6 @@ use miyu_store::recall::{RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use crate::TARGET;
-use crate::agents::LOCAL;
 use crate::open::current_policy;
 
 use super::{Turns, scope};
@@ -72,13 +71,10 @@ fn one(
     let bytes = blobs.get(hash).map_err(|error| error.to_string())?;
     let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
     let scope = scope(created.parent.is_some(), true, snapshot.memory_scope());
-    // 场所会话的回合先不进回合库（施工 R-2 再补，和载入时一样判，`memory.rs` 的 `connect`）。
-    if scope != MemoryScope::Persona
-        || snapshot.persona.as_deref() != Some(persona)
-        || created.venue.as_str() != LOCAL
-    {
+    // 场所会话的回合也补（施工 R-13 下，同载入时，`memory.rs` 的 `connect`）：回合库记下它在哪个场所。
+    if scope != MemoryScope::Persona || snapshot.persona.as_deref() != Some(persona) {
         return Ok(false);
     }
-    Turns::connect(recall, room, session, &events);
+    Turns::connect(recall, room, session, &created.venue, &events);
     Ok(true)
 }

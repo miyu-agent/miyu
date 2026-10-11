@@ -34,6 +34,14 @@ impl Listener {
         }
     }
 
+    /// 在场所 `venue`（本机的没有）开的那几轮，这里搜不搜得到（以前的对话，施工 R-13 下）：主人那边全部；场所里只有在这个场所的。
+    pub(super) fn hears_place(&self, venue: Option<&str>) -> bool {
+        match self {
+            Listener::Owner(_) => true,
+            Listener::Place(place) => venue == Some(place.as_str()),
+        }
+    }
+
     /// 记下时写什么：听众、在哪个场所说的。主人那边的听众是主人、没有场所；场所里的听众空着、场所是这里。
     pub(super) fn heard(&self) -> (Vec<By>, Option<VenueId>) {
         match self {

@@ -141,10 +141,10 @@ async fn a_child_session_is_not_indexed() {
     assert!(found(&home, "樱花").is_empty());
 }
 
-/// 场所会话（群里）的回合先不进回合库（施工 R-2 再补，`memory.md` 第一条第 1 款）：回合库的条目还没有听众（第九条，随 O
-/// 线），进了库，本机会话里 `memory_search` 就搜得到群里别人说的话。这一步以前进了库的（施工 O-4 下起），载入时拿掉。
+/// 场所会话（群里）的回合也进回合库，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）：搜以前的对话照谁在听
+/// 挑（第九条）。载入时照常补上、不再拿掉（原来施工 R-2 再补拿掉）。
 #[tokio::test]
-async fn a_venue_session_is_not_indexed_and_what_got_in_is_taken_out() {
+async fn a_venue_session_is_indexed_with_where_it_is() {
     let home = Home::new();
     let script = Script::new([Play::Says("好的，团子很可爱。")]);
     let lines = Lines {
@@ -166,19 +166,22 @@ async fn a_venue_session_is_not_indexed_and_what_got_in_is_taken_out() {
     .await
     .expect("会话在跑");
     until_turn_ends(&mut pushes).await;
-    assert!(found(&home, "团子").is_empty(), "群里的不进");
     let session = handle.id().clone();
     stop(&handle).await;
-
-    // 这一步以前进了库的：照回合库的写法放一条进去，载入时拿掉。
+    assert_eq!(found(&home, "团子").len(), 1, "群里的进");
     let (index, _) = home
         .recall
         .turns(&Room::persona(&alice_account(), "engineer"));
-    index
-        .put(&format!("{session}/3"), "我家猫叫团子", now())
-        .expect("放得进");
-    assert_eq!(found(&home, "团子").len(), 1);
+    assert_eq!(
+        index
+            .places()
+            .expect("读得了")
+            .get(session.as_str())
+            .map(String::as_str),
+        Some("qq:group:5550"),
+        "记下它在哪个场所"
+    );
     let handle = home.load(&session, &Script::new([])).await;
-    assert!(found(&home, "团子").is_empty(), "载入时拿掉");
     stop(&handle).await;
+    assert_eq!(found(&home, "团子").len(), 1, "载入时不拿掉");
 }

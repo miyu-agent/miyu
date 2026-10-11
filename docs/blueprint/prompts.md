@@ -3419,7 +3419,7 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 #### `software/memory/tools/remember.json`
 
-- 什么时候加进来：会话的工具面里有 `remember`：本机的主会话有，子会话、群没有（每次请求都带）
+- 什么时候加进来：会话的工具面里有 `remember`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
 - token：149（2026-10-07 照开发端点量，十八件一起时的边际份量）
 - 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条
 - 指纹：`8960cbcd`
@@ -3433,7 +3433,7 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 #### `software/memory/tools/forget.json`
 
-- 什么时候加进来：会话的工具面里有 `forget`：本机的主会话有，子会话、群没有（每次请求都带）
+- 什么时候加进来：会话的工具面里有 `forget`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
 - token：66（2026-10-07 照开发端点量，十八件一起时的边际份量）
 - 为什么加：作废一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。一句：错了的、人要她忘的
 - 指纹：`e27e88a6`
@@ -3447,7 +3447,7 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 #### `software/memory/tools/memory_search.json`
 
-- 什么时候加进来：会话的工具面里有 `memory_search`：本机的主会话有，子会话、群没有（每次请求都带）
+- 什么时候加进来：会话的工具面里有 `memory_search`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
 - token：70（2026-10-07 照开发端点量，十八件一起时的边际份量）
 - 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起
 - 指纹：`a8acd902`
