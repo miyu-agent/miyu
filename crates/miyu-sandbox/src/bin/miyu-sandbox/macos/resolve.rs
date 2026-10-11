@@ -18,6 +18,8 @@ pub(crate) struct Resolved {
     pub(crate) write: Vec<PathBuf>,
     /// 藏起来的：换过的和原样不一样时两样都写，原样的那一条挡住链接本身，不然删了链接、换一个，就绕过去了。
     pub(crate) hidden: Vec<PathBuf>,
+    /// 只准读的（施工 5-12 再补）：只用换过的，同能写的；没写的整盘能读。
+    pub(crate) read: Option<Vec<PathBuf>>,
 }
 
 /// 查、换规格里的每一条路径。同一样里重复的只写一次。
@@ -35,6 +37,13 @@ pub(crate) fn resolve(spec: &Spec) -> Result<Resolved, String> {
         let real = real(&given);
         push(&mut resolved.hidden, given);
         push(&mut resolved.hidden, real);
+    }
+    if let Some(read) = &spec.read {
+        let mut list = Vec::new();
+        for path in read {
+            push(&mut list, real(&checked(path)?));
+        }
+        resolved.read = Some(list);
     }
     Ok(resolved)
 }

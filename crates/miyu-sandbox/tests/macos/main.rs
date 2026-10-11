@@ -13,6 +13,7 @@ mod compat;
 mod files;
 mod network;
 mod probe;
+mod reads;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};

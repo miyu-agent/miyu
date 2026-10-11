@@ -91,3 +91,18 @@ fn relative_dotted_and_nul_paths_cannot_be_confined() {
         assert_eq!(as_hidden, said, "藏起来的：{given}");
     }
 }
+
+/// 只准读的（施工 5-12 再补）：同能写的，只用换过的、重复的只写一次；没写的还是没有，写了空的是空的。
+#[test]
+fn a_read_list_is_resolved_like_the_writable_ones() {
+    let dir = Dir::new();
+    let given = dir.path.join("link/file");
+    let real = dir.real.join("real/file");
+    let json = serde_json::json!({ "write": [], "hidden": [], "read": [&given, &real] });
+    let resolved = resolve(&Spec::from_json(&json.to_string()).expect("读得懂")).expect("换得了");
+    assert_eq!(resolved.read, Some(vec![real]));
+    assert_eq!(resolve(&spec(&[], &[])).expect("换得了").read, None);
+    let empty = serde_json::json!({ "read": [] });
+    let resolved = resolve(&Spec::from_json(&empty.to_string()).expect("读得懂")).expect("换得了");
+    assert_eq!(resolved.read, Some(Vec::new()));
+}

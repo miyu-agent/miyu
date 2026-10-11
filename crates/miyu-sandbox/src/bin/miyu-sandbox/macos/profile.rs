@@ -21,6 +21,12 @@ mod tests;
 /// 配置的底子：不看规格，每条命令都一样（`base.sb`，蓝图里的样本）。
 pub(crate) const BASE: &str = include_str!("base.sb");
 
+/// 规格没写只准读哪些的：整盘能读（`read-all.sb`），接在底子后面。
+pub(crate) const READ_ALL: &str = include_str!("read-all.sb");
+
+/// 规格写了只准读哪些的（施工 5-12 再补）：整盘只看得到元数据（`read-listed.sb`），接在底子后面。
+pub(crate) const READ_LISTED: &str = include_str!("read-listed.sb");
+
 /// 一份配置：交给系统的字，和字里 `(param "…")` 说的是哪条路径，照写进去的先后。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Profile {
@@ -33,6 +39,8 @@ pub(crate) struct Profile {
 /// 规格里的哪一样。先后就是一样深时的先后：越严的越后，写在后面的压过前面的。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Kind {
+    /// 只准读（施工 5-12 再补）：读、列、执行。
+    Read,
     /// 能读能写。
     Write,
     /// 藏起来：读写都不行。
@@ -43,6 +51,7 @@ impl Kind {
     /// 参数名字的开头。
     fn prefix(self) -> &'static str {
         match self {
+            Kind::Read => "READ",
             Kind::Write => "WRITE",
             Kind::Hidden => "HIDDEN",
         }
@@ -54,6 +63,9 @@ impl Kind {
     fn rules(self, name: &str) -> String {
         let socket = format!("(remote unix-socket (subpath (param \"{name}\")))");
         match self {
+            Kind::Read => format!(
+                "(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec (subpath (param \"{name}\")))\n"
+            ),
             Kind::Write => format!(
                 "(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec file-write* (subpath (param \"{name}\")))\n(allow network-outbound {socket})\n"
             ),
@@ -64,25 +76,34 @@ impl Kind {
     }
 }
 
-/// 整份配置：底子，接着照规格生成的。
+/// 整份配置：底子，读整盘还是只读名单里的，接着照规格生成的。
 pub(crate) fn build(paths: &Resolved) -> Profile {
     let rules = rules(paths);
+    let reads = match paths.read {
+        None => READ_ALL,
+        Some(_) => READ_LISTED,
+    };
     Profile {
-        text: format!("{BASE}{}", rules.text),
+        text: format!("{BASE}{reads}{}", rules.text),
         params: rules.params,
     }
 }
 
 /// 照规格生成的那一段：接在底子后面（样本 `docs/designs/samples/sandbox/macos.sb` 就是它）。
 pub(crate) fn rules(paths: &Resolved) -> Profile {
-    let mut entries: Vec<(usize, Kind, &Path)> =
-        [(Kind::Write, &paths.write), (Kind::Hidden, &paths.hidden)]
-            .into_iter()
-            .flat_map(|(kind, list)| {
-                list.iter()
-                    .map(move |path| (depth(path), kind, path.as_path()))
-            })
-            .collect();
+    let none = Vec::new();
+    let read = paths.read.as_ref().unwrap_or(&none);
+    let mut entries: Vec<(usize, Kind, &Path)> = [
+        (Kind::Read, read),
+        (Kind::Write, &paths.write),
+        (Kind::Hidden, &paths.hidden),
+    ]
+    .into_iter()
+    .flat_map(|(kind, list)| {
+        list.iter()
+            .map(move |path| (depth(path), kind, path.as_path()))
+    })
+    .collect();
     entries.sort_by(|a, b| {
         (a.0, a.1)
             .cmp(&(b.0, b.1))
@@ -90,7 +111,7 @@ pub(crate) fn rules(paths: &Resolved) -> Profile {
     });
     let mut text = String::new();
     let mut params = Vec::new();
-    let mut counts = [0_usize; 2];
+    let mut counts = [0_usize; 3];
     for (_, kind, path) in entries {
         let count = &mut counts[kind as usize];
         let name = format!("{}_{count}", kind.prefix());

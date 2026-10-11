@@ -80,8 +80,8 @@
 (deny network-outbound (remote unix-socket))
 (allow network-outbound (remote unix-socket (literal "/private/var/run/mDNSResponder")))
 
-; 读整盘放开：读、看元数据、执行、把文件映射成可执行的。藏起来的由照规格生成的规则拦。
-(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec)
+; 读照规格：没写只准读哪些的，底子后面接 read-all.sb（整盘能读）；写了的接 read-listed.sb（整盘只看得到元数据），
+; 名单里的由照规格生成的规则放开。
 
 ; 写：只放行规格里能写的（照规格生成的规则），和几样设备：空设备、自己的文件描述符、终端。
 (allow file-write-data

@@ -53,7 +53,7 @@
 
 读的时候，认不得的格（包括原来的 `readonly`、`network`）、类型不对的，都当规格写坏了：助手不懂的限制，不能悄悄跳过。两格不写都是空的。
 
-**只准读名单里的**（`read`，施工 5-12 下，外部身份的会话，`11-权限与沙盒.md` 第三节）：写了的，除了它列的和 `write` 的，别处都读不到、列不出、执行不了，`hidden` 不再另算；不写的照旧整盘能读。现在只有 Linux 照它收紧（Landlock：根目录不再整个放列目录、执行，名单里的每一条放读、列目录、执行）；别的平台（`miyu_sandbox::CONFINES_READS` 是假的）助手收到写了它的规格说 `cannot confine: reads cannot be confined on this platform`、退出 125、不跑，宁可不跑也不漏读。
+**只准读名单里的**（`read`，施工 5-12 下，外部身份的会话，`11-权限与沙盒.md` 第三节）：写了的，除了它列的和 `write` 的，别处都读不到、列不出、执行不了，`hidden` 不再另算；不写的照旧整盘能读。Linux 照它收紧（Landlock：根目录不再整个放列目录、执行，名单里的每一条放读、列目录、执行）；macOS 也照它收紧（施工 5-12 再补，Seatbelt：底子后面不再接整盘能读的那一段，名单里的每一条放读、列目录、执行，元数据整盘看得到，同 Landlock 不管 `stat`；`sandbox/macos.md`）。Windows 的沙盒还没有（5-9 停着，`miyu_sandbox::CONFINES_READS` 是假的）：助手收到写了它的规格说 `cannot confine: reads cannot be confined on this platform`、退出 125、不跑，宁可不跑也不漏读；外部身份的会话在 Windows 上照旧没有命令。
 
 **助手的命令行**：
 
@@ -124,4 +124,5 @@
 ### 还没有的
 
 - Windows 上以沙盒用户的身份起命令、受限令牌（5-9；沙盒用户由 `miyu sandbox setup` 装，5-8，`sandbox/windows.md`）。
+- Windows 上的「只准读名单里的」（2026-10-11 主会话评估，施工 5-12 再补时）：做得到，用 AppContainer：容器进程只读得到访问控制里给了「所有应用包」或者给了这个容器的对象，系统目录本来就给了「所有应用包」读，用户的文件没给，名单里的（工作区、`.tmp`）照规格给这个容器加一条读写的访问控制。它是 Windows 沙盒的一部分，随 5-9 一起做；之前外部身份的会话在 Windows 上照旧拒命令。
 - Windows 上主程序的真实位置（`std::fs::canonicalize`）带 `\\?\` 的前缀，日志里助手的路径跟着带：5-9 起看要不要去掉。

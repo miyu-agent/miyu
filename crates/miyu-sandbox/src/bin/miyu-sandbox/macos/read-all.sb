@@ -1,0 +1,2 @@
+; 读整盘放开（规格没写只准读哪些）：读、看元数据、执行、把文件映射成可执行的。藏起来的由照规格生成的规则拦。
+(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec)

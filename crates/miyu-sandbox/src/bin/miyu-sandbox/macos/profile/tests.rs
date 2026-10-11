@@ -18,6 +18,7 @@ fn paths(write: &[&str], hidden: &[&str]) -> Resolved {
     Resolved {
         write: owned(write),
         hidden: owned(hidden),
+        read: None,
     }
 }
 
@@ -46,6 +47,7 @@ fn the_example_gives_the_sample_rules_and_parameters() {
     let rules = rules(&Resolved {
         write: example.write,
         hidden: example.hidden,
+        read: None,
     });
     assert_eq!(rules.text, sample("macos.sb"));
     let expected: Vec<(String, PathBuf)> = [
@@ -139,7 +141,7 @@ fn the_whole_profile_is_the_base_then_the_rules() {
     let spec = paths(&["/w"], &["/h"]);
     let whole = build(&spec);
     let rules = rules(&spec);
-    assert_eq!(whole.text, format!("{BASE}{}", rules.text));
+    assert_eq!(whole.text, format!("{BASE}{READ_ALL}{}", rules.text));
     assert_eq!(whole.params, rules.params);
     assert!(BASE.starts_with("; "), "底子是那份文件");
     assert!(BASE.contains("\n(deny default)\n"), "没写到的一律不许");
@@ -148,6 +150,50 @@ fn the_whole_profile_is_the_base_then_the_rules() {
 #[test]
 fn an_empty_spec_gives_only_the_base() {
     let empty = build(&paths(&[], &[]));
-    assert_eq!(empty.text, BASE);
+    assert_eq!(empty.text, format!("{BASE}{READ_ALL}"));
     assert!(empty.params.is_empty());
+}
+
+/// 只准读名单里的（施工 5-12 再补）：底子后面接整盘只看元数据的那一段，不接整盘能读的；名单里的每一条放开读、列、执行，
+/// 照深浅和能写的、藏起来的排在一起，一样深的排在最前（最松的）。
+#[test]
+fn a_read_list_replaces_reading_everything() {
+    let listed = Resolved {
+        read: Some(vec![PathBuf::from("/usr"), PathBuf::from("/w/sub")]),
+        ..paths(&["/w"], &["/w/sub/h"])
+    };
+    let whole = build(&listed);
+    let rules = rules(&listed);
+    assert_eq!(whole.text, format!("{BASE}{READ_LISTED}{}", rules.text));
+    assert!(!whole.text.contains(READ_ALL), "不再整盘能读");
+    assert_eq!(
+        names(&rules),
+        [
+            "READ_0", "WRITE_0", "READ_1", "HIDDEN_0", "KEEP_0", "KEEP_1", "KEEP_2"
+        ]
+    );
+    assert_eq!(
+        rules.text.lines().next(),
+        Some(
+            r#"(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec (subpath (param "READ_0")))"#
+        )
+    );
+    assert!(
+        BASE.lines()
+            .all(|line| !line.starts_with("(allow file-read*")),
+        "底子自己不放开读"
+    );
+}
+
+/// 一样深的：只准读的排在能写的前面，能写的排在藏起来的前面，写在后面的压过前面的。
+#[test]
+fn at_the_same_depth_read_comes_before_write_and_hidden() {
+    let listed = Resolved {
+        read: Some(vec![PathBuf::from("/a")]),
+        ..paths(&["/b"], &["/c"])
+    };
+    assert_eq!(
+        names(&rules(&listed))[..3],
+        ["READ_0", "WRITE_0", "HIDDEN_0"]
+    );
 }

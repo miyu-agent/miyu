@@ -1,0 +1,6 @@
+; 只准读名单里的（规格写了 read，外部身份的会话）：元数据整盘看得到，同 Linux 的 Landlock（它不管 stat）；读内容、
+; 列目录、执行、映射成可执行的，只放行名单里的和能写的，由照规格生成的规则放开。藏起来的连元数据也看不到。
+(allow file-read-metadata file-test-existence)
+; 根目录这一层能列（只这一层，不往下）：macOS 的 /bin/sh 起来先读 / 的内容，读不了就自己 abort（施工 5-12 再补在 CI 的
+; macOS 26 上量的）。列出来的只是 /System、/Users 这些顶层的名字。
+(allow file-read* (literal "/"))

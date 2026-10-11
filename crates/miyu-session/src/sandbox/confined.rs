@@ -16,6 +16,19 @@ use miyu_sandbox::{Sandboxed, Spec};
 use super::{Sandbox, real};
 use crate::guard::{Effective, effective};
 
+/// 程序起来要读、又不在系统目录里的几处（施工 5-12 再补）。macOS：`/bin/sh` 照 `/private/var/select/sh` 挑用哪个 shell，
+/// 时区照 `/etc/localtime` 指到的 `/private/var/db/timezone`，旧版系统的动态库缓存在 `/private/var/db/dyld`。
+#[cfg(target_os = "macos")]
+const PROGRAM_EXTRAS: &[&str] = &[
+    "/private/var/select",
+    "/private/var/db/timezone",
+    "/private/var/db/dyld",
+];
+
+/// 别的平台：系统目录、`/dev`、`/proc/self` 就够了。
+#[cfg(not(target_os = "macos"))]
+const PROGRAM_EXTRAS: &[&str] = &[];
+
 impl Sandbox {
     /// 外部身份的会话一次调用的沙盒。
     ///
@@ -39,6 +52,7 @@ impl Sandbox {
         own.push(temp.clone());
         let mut read = system_dirs();
         read.extend([PathBuf::from("/dev"), PathBuf::from("/proc/self")]);
+        read.extend(PROGRAM_EXTRAS.iter().map(PathBuf::from));
         read.extend(own.iter().cloned());
         let write = match effective(permission) {
             Effective::ReadOnly => Vec::new(),

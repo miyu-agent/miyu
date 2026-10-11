@@ -218,7 +218,7 @@ fn the_probe_says_this_platform_in_one_line() {
 
 /// 关不住读的平台（施工 5-12 下）：写了只准读一部分的规格，助手不跑，宁可不跑也不漏读。
 #[test]
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn a_read_list_is_refused_where_reads_cannot_be_confined() {
     let spec = Spec {
         write: Vec::new(),
