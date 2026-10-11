@@ -1,6 +1,6 @@
 //! `goal` 工具交来的事（施工 X-8 上，`docs/blueprint/tools/goal.md`，`tools/goals.rs`）：看的照会话状态当场答；设、报完成、
 //! 报卡住交内核 `Goal` 命令，`by` 是这次调用，记下等它的回应、把等的口子交回工具。续轮开的那一轮里报卡住，目标开过的轮数
-//! 不到 [`BLOCKED_AFTER`] 的当场拒（`goal.md`「照旧版留下的」第 3 条：人开的那一轮不管，人说停就停）。
+//! 不到 [`BLOCKED_AFTER`] 的当场拒（`goal.md`「照旧版留下的」第 3 条：人开的那一轮、人插过话的这一次运行不管，人说停就停）。
 
 use tokio::sync::oneshot;
 
@@ -43,7 +43,11 @@ impl Actor {
                 reason: None,
             },
             GoalAsk::Blocked { reason } => {
-                if let Some(goal) = now.as_ref().filter(|goal| too_early(goal, seen.in_round)) {
+                let heard = self.goal_run.heard;
+                if let Some(goal) = now
+                    .as_ref()
+                    .filter(|goal| too_early(goal, seen.in_round, heard))
+                {
                     let refused = GoalRefused::TooEarly { round: goal.round };
                     answer(reply, GoalBack::Answered(Err(refused)));
                     return None;
@@ -68,9 +72,10 @@ impl Actor {
     }
 }
 
-/// 续轮开的那一轮里、跑着的目标开过的轮数不到 [`BLOCKED_AFTER`]：报卡住太早。
-fn too_early(goal: &Goal, in_round: bool) -> bool {
-    in_round && goal.state == GoalState::Running && goal.round < BLOCKED_AFTER
+/// 续轮开的那一轮里、跑着的目标开过的轮数不到 [`BLOCKED_AFTER`]、这一次运行里人没插过话（施工 X-9：人答了「照实报卡住」，
+/// 她不该再凑轮数）：报卡住太早。
+fn too_early(goal: &Goal, in_round: bool, heard: bool) -> bool {
+    in_round && !heard && goal.state == GoalState::Running && goal.round < BLOCKED_AFTER
 }
 
 /// 给她看的样子。

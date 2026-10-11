@@ -27,7 +27,7 @@
 ```json
 {
   "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked."}},"required":["action"]}
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
 }
 ```
 
@@ -36,7 +36,7 @@
 | `action` | 是 | `get`、`set`、`complete`、`blocked`；别的是参数不对 |
 | `objective` | `set` 时 | 目标原文 |
 | `max_rounds` | 否 | `set` 时的轮数上限，正整数；不写的不限 |
-| `reason` | `blocked` 时 | 卡在哪 |
+| `reason` | `blocked` 时 | 卡在哪，一句话（施工 X-9：排查过程写在收尾里，原因进头上的状态） |
 
 - 别的参数不认，也不报错；一条路径都不报，不报效果。
 - **谁有**：长期目标开着的本机主会话；群里、私聊、子代理都没有（`session/tools.md`「工具面」），执行器也只给它们端口。
@@ -48,7 +48,7 @@
 | `get` | `Objective: <原文>`、`State: <running 这类> · Round 3 of 10`（不限的 `Round 3`），卡住的再一行 `Blocked: <原因>`（`now.txt`、`reason.txt`）；没有目标 `No goal is set.`（`none.txt`） | — |
 | `set` | `Goal set. From now on a new round starts by itself whenever the session is idle.`（`set.txt`）：当场算授权过（`goal.md`「在新的架构里怎么放」第 3 条） | 已经有一个：说只有人能用 `/goal` 改、清掉（`exists.txt`） |
 | `complete` | 续轮开的那一轮里：收尾（`wrapup-completed.txt`）；人开的那一轮：`Goal marked complete.`（`completed.txt`） | 没有目标：`none.txt` |
-| `blocked` | 续轮开的那一轮里：收尾，带上原因（`wrapup-blocked.txt`）；人开的那一轮：`Goal marked blocked.`（`blocked.txt`） | 续轮开的那一轮里、目标开过的轮数不到 3：说这是第几轮、至少几轮（`too-early.txt`）；没有目标：`none.txt` |
+| `blocked` | 续轮开的那一轮里：收尾，带上原因（`wrapup-blocked.txt`）；人开的那一轮：`Goal marked blocked.`（`blocked.txt`） | 续轮开的那一轮里、目标开过的轮数不到 3、这一次运行里人没插过话（施工 X-9）：说这是第几轮、至少几轮（`too-early.txt`）；没有目标：`none.txt` |
 
 - 原文、原因照模板的转义换进去（引号、换行写成转义，`08-上下文投影.md` 第五节）。
 - 内核拒的别的原因（原文空白、会话封存了这类）、会话停了：`The goal was not changed: <原因码>.`（`failed.txt`，停了的写 `stopped`）。
@@ -58,7 +58,7 @@
 
 1. 读参数：读不成的（少了格、动作不认识、上限是 0），交回参数不对的那一句，不交端口。
 2. 没有端口的（这个会话没有长期目标）：说这个会话用不了。
-3. 交端口：会话层的 actor 看这一次调用还在跑、没叫它停过，才办。`get` 照会话状态当场答（会话状态的 `goal`，`view.md`）；`blocked` 在续轮开的那一轮里、目标跑着、开过的轮数不到 3 的当场拒；别的交内核 `Goal` 命令（编号 `goal-<调用编号>`，`by` 是这次调用），内核照现在的目标判，拒的原因原样交回来。
+3. 交端口：会话层的 actor 看这一次调用还在跑、没叫它停过，才办。`get` 照会话状态当场答（会话状态的 `goal`，`view.md`）；`blocked` 在续轮开的那一轮里、目标跑着、开过的轮数不到 3、这一次运行里人没插过话（说过话、答过她的题；设下、接着跑时重新算，施工 X-9）的当场拒；别的交内核 `Goal` 命令（编号 `goal-<调用编号>`，`by` 是这次调用），内核照现在的目标判，拒的原因原样交回来。
 4. 内核接受了的落了盘才交回；交回的是改之前的目标、这次调用在不在续轮开的那一轮里，结果照它写。
 
 ### 给人看的字

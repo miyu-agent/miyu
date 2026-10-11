@@ -33,6 +33,8 @@ pub(super) struct GoalRun {
     sent_at: Option<u32>,
     /// 上一次推给头的样子（施工 X-8 补）：变了才推。
     pushed: Option<Goal>,
+    /// 这一次运行里人插过话（施工 X-9）：说过话、答过她的题。报卡住不再受三轮下限（人说停随时停）；设下、接着跑时重新算。
+    heard: bool,
 }
 
 impl GoalRun {
@@ -44,10 +46,15 @@ impl GoalRun {
                     self.waiting = false;
                     self.full_sent = false;
                     self.sent_at = None;
+                    self.heard = false;
                 }
                 Body::GoalChanged(_) => self.full_sent = false,
                 Body::MessageUser(_) if is_ours(&event.by) => self.ours = Some(event.seq),
-                Body::MessageUser(_) if matches!(event.by, By::Person(_)) => self.waiting = false,
+                Body::MessageUser(_) if matches!(event.by, By::Person(_)) => {
+                    self.waiting = false;
+                    self.heard = true;
+                }
+                Body::QuestionAnswered(_) if matches!(event.by, By::Person(_)) => self.heard = true,
                 Body::TurnStarted(started) => {
                     let ours = started.trigger.is_some() && started.trigger == self.ours;
                     self.turn = ours.then(|| (TurnId::new(event.seq), false));

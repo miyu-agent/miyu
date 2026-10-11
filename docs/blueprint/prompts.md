@@ -3809,14 +3809,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/goal/tools/goal.json`
 
 - 什么时候加进来：会话的工具面里有 `goal`：长期目标开着的本机主会话（群里、私聊、子代理都没有，每次请求都带）
-- token：171（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量）
-- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明
-- 指纹：`4636d80f`
+- token：171 → 174（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量；X-9 给 `reason` 加「One sentence.」+3）
+- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明。施工 X-9 真跑看到卡住的原因写成了整份排查过程（六百多字），头上原样显示：`reason` 加一句「One sentence.」，排查过程写在收尾里
+- 指纹：`bf620b7f`
 
 ```json
 {
   "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked."}},"required":["action"]}
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
 }
 ```
 

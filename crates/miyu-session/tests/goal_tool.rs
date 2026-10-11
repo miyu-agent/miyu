@@ -311,3 +311,81 @@ async fn only_a_local_main_session_has_it() {
         assert!(names.contains(&"read"), "别的工具照给");
     }
 }
+
+/// 人插过话（施工 X-9，真跑看到的：人答了「照实报卡住」，她又凑了两轮）：续轮第 1 轮她问人、人答了，同一轮报卡住就收。
+#[tokio::test]
+async fn blocked_after_the_person_answered_skips_the_three_rounds() {
+    use miyu_kernel::event::{Choice, Question, Response};
+    use miyu_kernel::session::Answer;
+
+    let home = Home::new();
+    let question = Question {
+        header: None,
+        question: "密钥在哪？".to_string(),
+        options: vec![
+            Choice {
+                label: "没有".to_string(),
+                description: None,
+                preview: None,
+            },
+            Choice {
+                label: "我去找".to_string(),
+                description: None,
+                preview: None,
+            },
+        ],
+        multiple: false,
+    };
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let mut tools = miyu_goal::tools(&resources).expect("读得出");
+    tools.push(Fake::new("ask", Access::Read, Act::Asks(vec![question])) as Arc<dyn Tool>);
+    let catalog = Catalog::new(tools).expect("合写法");
+    let models = script([
+        Play::calls(&[("ask", "{}")]),
+        Play::calls(&[("goal", r#"{"action":"blocked","reason":"没有密钥"}"#)]),
+        Play::Says("卡在没有密钥。"),
+    ]);
+    let handle = home.create_with(&models, &catalog).await;
+    let session = handle.id().clone();
+    let change = GoalChange::Set {
+        text: "拿真密钥请求 endpoint".to_string(),
+        limit: None,
+    };
+    ask(&handle, "g1", Command::Goal(change))
+        .await
+        .expect("会话在跑");
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    let call_id = loop {
+        let asked = home
+            .log(&session)
+            .into_iter()
+            .find_map(|event| match event.body {
+                Body::QuestionAsked(asked) => Some(asked.call_id),
+                _ => None,
+            });
+        if let Some(call_id) = asked {
+            break call_id;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "六十秒内没问");
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    };
+    let answers = vec![Response {
+        picked: vec!["没有".to_string()],
+        text: None,
+        notes: Some("照实报卡住就行".to_string()),
+    }];
+    let answer = Command::Answer {
+        call_id,
+        answer: Answer::Questions(answers),
+    };
+    ask(&handle, "a1", answer).await.expect("会话在跑");
+    let goal = until_goal(&handle, |goal| goal.state == GoalState::Blocked).await;
+    assert_eq!(goal.round, 1, "第 1 轮就收了");
+    let results = results(&home, &session);
+    assert!(
+        results
+            .iter()
+            .any(|(ok, text)| *ok && text.starts_with("<goal_blocked>")),
+        "{results:?}"
+    );
+}
