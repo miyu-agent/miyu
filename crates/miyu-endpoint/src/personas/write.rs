@@ -23,6 +23,7 @@ use miyu_store::layers::valid;
 use miyu_store::personas::{Edits, Found, PERSONA_MD, Personas, REMINDERS_MD};
 use miyu_store::trash;
 
+use super::appearance;
 use super::picture::{Picture, PictureParams};
 use super::{TARGET, describe, personas, told};
 use crate::Core;
@@ -30,7 +31,7 @@ use crate::config::methods::words;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::sessions::now;
-use crate::toml_changes::{ChangeParams, Wanted, check_expect, edited, wanted, without};
+use crate::toml_changes::{ChangeParams, Wanted, check_expect, edited, wanted_as, without};
 
 /// 提示词的名字到人格目录里的位置。
 fn prompt_file(name: &str) -> Option<&'static str> {
@@ -60,40 +61,13 @@ pub(crate) struct SetParams {
     background: Option<PictureParams>,
     /// 主题色（施工 P-6）：`#rrggbb`（大小写都认，写成小写），或者 `{"unset": true}` 删掉家目录那一层的。
     #[serde(default)]
-    seed: Option<SeedParams>,
-}
-
-/// `persona.set` 的 `seed`：一个颜色，或者删掉。
-#[derive(Debug, Deserialize)]
-#[serde(untagged, deny_unknown_fields)]
-enum SeedParams {
-    /// `#rrggbb`。
-    Color(String),
-    /// `{"unset": true}`。
-    Unset {
-        /// 只能是 `true`。
-        unset: bool,
-    },
-}
-
-/// 主题色在 `persona.toml` 里的键。
-const SEED: &str = "appearance.seed";
-
-/// 查 `seed`，改成 `appearance.seed` 那一项：颜色不是 `#rrggbb`、`unset` 不是 `true`、`changes` 里也改了这一项的 `bad_params`。
-fn seed(params: Option<SeedParams>, wanted: &mut Vec<Wanted>) -> Result<(), Refusal> {
-    let Some(params) = params else {
-        return Ok(());
-    };
-    let color = match params {
-        SeedParams::Color(text) => Some(persona::color(&text).ok_or(Refusal::BAD_PARAMS)?),
-        SeedParams::Unset { unset: true } => None,
-        SeedParams::Unset { unset: false } => return Err(Refusal::BAD_PARAMS),
-    };
-    if wanted.iter().any(|want| want.key() == SEED) {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    wanted.push(Wanted::text(SEED, color.as_deref()));
-    Ok(())
+    seed: Option<appearance::SeedParams>,
+    /// 背景图露出多少（施工 P-7）：0 到 100 的整数，或者 `{"unset": true}`。
+    #[serde(default)]
+    background_opacity: Option<appearance::NumberParams<i64>>,
+    /// 背景图的焦点（施工 P-7）：`[x, y]`，各 0 到 100 的整数，或者 `{"unset": true}`。
+    #[serde(default)]
+    background_focus: Option<appearance::NumberParams<Vec<i64>>>,
 }
 
 /// `prompts` 的一份：`text`、`unset`、`pairs`（只给示范对话）正好写一个；`expect` 是 `persona.read` 给的版本，`null` 是
@@ -145,13 +119,20 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         && params.prompts.is_empty()
         && params.avatar.is_none()
         && params.background.is_none()
-        && params.seed.is_none();
+        && params.seed.is_none()
+        && params.background_opacity.is_none()
+        && params.background_focus.is_none();
     if empty || params.persona.as_deref().is_some_and(|id| !valid(id)) {
         return Err(Refusal::BAD_PARAMS);
     }
     let said = words(core, peer.language).ok();
-    let mut wanted = wanted(params.changes)?;
-    seed(params.seed, &mut wanted)?;
+    let mut wanted = wanted_as(params.changes, true)?;
+    appearance::seed(params.seed, &mut wanted)?;
+    appearance::backdrop(
+        params.background_opacity,
+        params.background_focus,
+        &mut wanted,
+    )?;
     let prompts = prompts(params.prompts, said.as_ref())?;
     let writes =
         wanted.iter().any(Wanted::writes) || prompts.iter().any(|prompt| prompt.text.is_some());

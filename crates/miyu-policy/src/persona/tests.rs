@@ -93,12 +93,16 @@ fn an_upper_layer_replaces_what_it_writes() {
         summary: phrases(&[("en", "Helps.")]),
         memory: None,
         seed: None,
+        background_opacity: None,
+        background_focus: None,
     };
     let mine = PersonaFile {
         name: one("我的工程师"),
         summary: None,
         memory: None,
         seed: None,
+        background_opacity: None,
+        background_focus: None,
     };
     let merged = mine.over(shipped);
     assert_eq!(merged.name, one("我的工程师"), "写了的整格换掉");
@@ -318,6 +322,31 @@ fn each_mistake_carries_its_code_and_where() {
             Code::BadSeed,
             Some("appearance.seed"),
         ),
+        (
+            "[appearance]\nbackground_opacity = 101\n",
+            Code::BadBackgroundOpacity,
+            Some("appearance.background_opacity"),
+        ),
+        (
+            "[appearance]\nbackground_opacity = \"20\"\n",
+            Code::BadBackgroundOpacity,
+            Some("appearance.background_opacity"),
+        ),
+        (
+            "[appearance]\nbackground_focus = [50]\n",
+            Code::BadBackgroundFocus,
+            Some("appearance.background_focus"),
+        ),
+        (
+            "[appearance]\nbackground_focus = [50, -1]\n",
+            Code::BadBackgroundFocus,
+            Some("appearance.background_focus"),
+        ),
+        (
+            "[appearance]\nbackground_focus = [1, 2, 3]\n",
+            Code::BadBackgroundFocus,
+            Some("appearance.background_focus"),
+        ),
         ("persona = 3\n", Code::NotATable, Some("persona")),
         (
             "[persona]\nvoice = 1\n",
@@ -425,5 +454,29 @@ fn a_base_written_by_p3_is_read_as_unwritten() {
     assert!(
         read_toml("[memory]\nbase = \"none\"\n").is_err(),
         "别的表里照旧不认"
+    );
+}
+
+/// 背景图露出多少、焦点（施工 P-7）：读成数，上一层写了的盖下面的、没写的沿用；0、100 两头都收。
+#[test]
+fn background_opacity_and_focus_are_read_and_layered() {
+    let lower =
+        read_toml("[appearance]\nbackground_opacity = 20\nbackground_focus = [30, 70]\n").unwrap();
+    assert_eq!(lower.background_opacity, Some(20));
+    assert_eq!(lower.background_focus, Some([30, 70]));
+    let upper = read_toml("[appearance]\nbackground_opacity = 0\n").unwrap();
+    let both = upper.over(lower);
+    assert_eq!(both.background_opacity, Some(0), "上一层的盖下面的");
+    assert_eq!(both.background_focus, Some([30, 70]), "没写的沿用下面的");
+    let edges =
+        read_toml("[appearance]\nbackground_opacity = 100\nbackground_focus = [0, 100]\n").unwrap();
+    assert_eq!(
+        (edges.background_opacity, edges.background_focus),
+        (Some(100), Some([0, 100]))
+    );
+    assert_eq!(
+        read_toml("").unwrap().background_focus,
+        None,
+        "没写的是没有"
     );
 }

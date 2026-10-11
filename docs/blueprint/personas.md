@@ -123,6 +123,10 @@ assistant: 8640
    - `persona.set` 多一格 `seed`：`"#rrggbb"` 写进管理员家目录那一层，`{"unset": true}` 删掉那一层的，回到下面那一层的。只改主题色的可以不写 `changes`、`prompts`，新建时也可以只写它。写错的、`changes` 里同时改 `appearance.seed` 的 `bad_params`。`changes` 照样能改 `appearance.seed`，值写错的照文件写错算 `persona_invalid`。
    - 文件里写错（不是 `#rrggbb`）是 `persona_invalid`，`problem` 的 `code` 是 `bad_seed`；`[appearance]` 里多了别的键是 `unknown_key`。
    - `persona.list` 的每一格、`persona.get` 多一格 `seed`，没有的是 `null`。
+2. **背景图露出多少、焦点**（施工 P-7，2026-10-11 项目主人定、网页转来）：`[appearance] background_opacity` 是 0 到 100 的整数（百分比，背景图露出多少），`background_focus` 是 `[x, y]` 两个 0 到 100 的整数（百分比，同 CSS 的 `background-position`：背景图不裁，窗口变宽变窄都尽量露着这一处）。一个人格各一份，照逐项盖的规矩叠。没写的是没有，头照自己的默认画（网页露 20、焦点居中），核心不填默认值。
+   - `persona.set` 多两格 `background_opacity`、`background_focus`：值写进管理员家目录那一层，`{"unset": true}` 删掉那一层的。只改它们的可以不写 `changes`、`prompts`，新建时也可以只写它们。写错的（不是 0 到 100 的整数、焦点不是两个数）、`changes` 里同时改了同一项的 `bad_params`。`changes` 也能改 `appearance.background_opacity`、`appearance.background_focus`（焦点照两个数的数组写）。
+   - 文件里写错是 `persona_invalid`，`problem` 的 `code` 是 `bad_background_opacity`、`bad_background_focus`。
+   - `persona.list` 的每一格、`persona.get` 多这两格，没有的是 `null`。
 2. **背景图**：同头像的第 1 到 7 条，换成这几处：
    - 文件名 `background.png`、`background.jpg`、`background.webp`；`persona.set` 的 `background`；读 `persona.background {"persona"}`，回应 `{"background": <版本>, "media_type", "data"}`；`persona.list`、`persona.get` 的 `background` 是版本。
    - 最大 5 MiB，宽、高都不超过 4096。5 MiB 是 `blob.put` 收图的上限：再大的传不上来。网页传之前缩到长边 2560。

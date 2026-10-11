@@ -359,6 +359,8 @@
     "persona-problems/empty_phrase": "{detail} には空でない一文を書きます",
     "persona-problems/bad_memory_scope": "{detail} は persona か session のどちらかです",
     "persona-problems/bad_seed": "{detail} は #rrggbb の形の色です",
+    "persona-problems/bad_background_opacity": "{detail} は 0 から 100 の整数です",
+    "persona-problems/bad_background_focus": "{detail} は [x, y] の形で、どちらも 0 から 100 の整数です",
     "persona-problems/first_line": "最初の行は user: で始めます",
     "persona-problems/take_turns": "user と assistant は交互に書きます",
     "persona-problems/last_line": "最後の行は assistant のものにします",

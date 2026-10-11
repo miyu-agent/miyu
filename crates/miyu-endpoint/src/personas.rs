@@ -17,6 +17,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::settings::PersonaSettings;
 
+mod appearance;
 pub(crate) mod picture;
 pub(crate) mod write;
 
@@ -167,6 +168,8 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
                 "avatar": picture::version(&found, Picture::Avatar),
                 "background": picture::version(&found, Picture::Background),
                 "seed": found.file.seed,
+                "background_opacity": found.file.background_opacity,
+                "background_focus": found.file.background_focus,
             }),
             Err(error) => listed_problem(&id, &error, said.as_ref()),
         })
@@ -207,6 +210,8 @@ fn describe(found: &Found, language: &str) -> Value {
         "avatar": picture::version(found, Picture::Avatar),
         "background": picture::version(found, Picture::Background),
         "seed": found.file.seed,
+        "background_opacity": found.file.background_opacity,
+        "background_focus": found.file.background_focus,
         "remove": remove(&found.layers),
     })
 }

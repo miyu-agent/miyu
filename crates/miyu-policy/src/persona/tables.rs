@@ -44,11 +44,20 @@ pub(super) fn read_memory(
     Ok(scope)
 }
 
-/// `[appearance]`：只有 `seed`，`#` 加六位十六进制，交回小写的。
+/// `[appearance]` 读出来的几样：没写的是没有。
+#[derive(Debug, Default)]
+pub(super) struct Appearance {
+    pub(super) seed: Option<String>,
+    pub(super) background_opacity: Option<u8>,
+    pub(super) background_focus: Option<[u8; 2]>,
+}
+
+/// `[appearance]`：`seed`（`#` 加六位十六进制，交回小写的），`background_opacity`（0 到 100 的整数），`background_focus`
+/// （两个 0 到 100 的整数，施工 P-7）。别的键 `unknown_key`。
 pub(super) fn read_appearance(
     item: &Item,
     at: &dyn Fn(&Item) -> Option<usize>,
-) -> Result<Option<String>, Problem> {
+) -> Result<Appearance, Problem> {
     let Some(table) = item.as_table_like() else {
         return Err(problem(
             at(item),
@@ -57,27 +66,69 @@ pub(super) fn read_appearance(
             "appearance must be a table".to_string(),
         ));
     };
-    let mut seed = None;
+    let mut appearance = Appearance::default();
     for (key, item) in table.iter() {
-        if key != "seed" {
-            return Err(problem(
-                at(item),
-                Code::UnknownKey,
-                &format!("appearance.{key}"),
-                format!("unknown key appearance.{key}"),
-            ));
+        match key {
+            "seed" => {
+                let Some(color) = item.as_str().and_then(color) else {
+                    return Err(problem(
+                        at(item),
+                        Code::BadSeed,
+                        "appearance.seed",
+                        "appearance.seed must be a color like #3368c0".to_string(),
+                    ));
+                };
+                appearance.seed = Some(color);
+            }
+            "background_opacity" => {
+                let Some(percent) = item.as_integer().and_then(percent) else {
+                    return Err(problem(
+                        at(item),
+                        Code::BadBackgroundOpacity,
+                        "appearance.background_opacity",
+                        "appearance.background_opacity must be a whole number from 0 to 100"
+                            .to_string(),
+                    ));
+                };
+                appearance.background_opacity = Some(percent);
+            }
+            "background_focus" => {
+                let focus = item.as_array().and_then(|array| {
+                    let mut numbers = array
+                        .iter()
+                        .map(|value| value.as_integer().and_then(percent));
+                    match (numbers.next(), numbers.next(), numbers.next()) {
+                        (Some(Some(x)), Some(Some(y)), None) => Some([x, y]),
+                        _ => None,
+                    }
+                });
+                let Some(focus) = focus else {
+                    return Err(problem(
+                        at(item),
+                        Code::BadBackgroundFocus,
+                        "appearance.background_focus",
+                        "appearance.background_focus must be [x, y], each from 0 to 100"
+                            .to_string(),
+                    ));
+                };
+                appearance.background_focus = Some(focus);
+            }
+            _ => {
+                return Err(problem(
+                    at(item),
+                    Code::UnknownKey,
+                    &format!("appearance.{key}"),
+                    format!("unknown key appearance.{key}"),
+                ));
+            }
         }
-        let Some(color) = item.as_str().and_then(color) else {
-            return Err(problem(
-                at(item),
-                Code::BadSeed,
-                "appearance.seed",
-                "appearance.seed must be a color like #3368c0".to_string(),
-            ));
-        };
-        seed = Some(color);
     }
-    Ok(seed)
+    Ok(appearance)
+}
+
+/// 0 到 100 的百分比；别的没有。
+pub fn percent(number: i64) -> Option<u8> {
+    u8::try_from(number).ok().filter(|percent| *percent <= 100)
 }
 
 /// `#rrggbb` 的颜色，大小写都认，交回小写的；别的写法没有（施工 P-6：头照它比对，一律小写）。

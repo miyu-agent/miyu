@@ -12,7 +12,7 @@ use toml_edit::{Document, Item};
 use crate::memory::MemoryScope;
 
 mod tables;
-pub use tables::color;
+pub use tables::{color, percent};
 use tables::{read_appearance, read_memory};
 
 /// `persona.toml` 在人格目录里的名字。
@@ -37,6 +37,11 @@ pub struct PersonaFile {
     pub memory: Option<MemoryScope>,
     /// 主题色（`[appearance] seed`，施工 P-6）：`#rrggbb`，读进来一律小写；没写的是没有，头从头像取色。
     pub seed: Option<String>,
+    /// 背景图露出多少（`[appearance] background_opacity`，施工 P-7）：0 到 100 的百分比；没写的是没有，头照自己的默认画。
+    pub background_opacity: Option<u8>,
+    /// 背景图的焦点（`[appearance] background_focus`，施工 P-7）：`[x, y]`，各 0 到 100 的百分比（同 CSS 的
+    /// `background-position`）；背景图不裁，窗口变宽变窄都尽量露着这一处。没写的是没有，头照居中画。
+    pub background_focus: Option<[u8; 2]>,
 }
 
 impl PersonaFile {
@@ -47,6 +52,8 @@ impl PersonaFile {
         lower.summary = self.summary.or(lower.summary);
         lower.memory = self.memory.or(lower.memory);
         lower.seed = self.seed.or(lower.seed);
+        lower.background_opacity = self.background_opacity.or(lower.background_opacity);
+        lower.background_focus = self.background_focus.or(lower.background_focus);
         lower
     }
 }
@@ -118,6 +125,10 @@ pub enum Code {
     BadMemoryScope,
     /// `[appearance]` 的 `seed` 不是 `#rrggbb`（施工 P-6）。
     BadSeed,
+    /// `[appearance]` 的 `background_opacity` 不是 0 到 100 的整数（施工 P-7）。
+    BadBackgroundOpacity,
+    /// `[appearance]` 的 `background_focus` 不是两个 0 到 100 的整数（施工 P-7）。
+    BadBackgroundFocus,
     /// 示范对话第一行不是人说的。
     FirstLine,
     /// 示范对话没有一问一答交替。
@@ -141,6 +152,8 @@ impl Code {
             Code::EmptyPhrase => "empty_phrase",
             Code::BadMemoryScope => "bad_memory_scope",
             Code::BadSeed => "bad_seed",
+            Code::BadBackgroundOpacity => "bad_background_opacity",
+            Code::BadBackgroundFocus => "bad_background_focus",
             Code::FirstLine => "first_line",
             Code::TakeTurns => "take_turns",
             Code::LastLine => "last_line",
@@ -198,7 +211,10 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
             continue;
         }
         if key == "appearance" {
-            file.seed = read_appearance(item, &at)?;
+            let appearance = read_appearance(item, &at)?;
+            file.seed = appearance.seed;
+            file.background_opacity = appearance.background_opacity;
+            file.background_focus = appearance.background_focus;
             continue;
         }
         if key != "persona" {

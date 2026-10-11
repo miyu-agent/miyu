@@ -46,9 +46,17 @@ impl Wanted {
 
     /// 代码定的一项（施工 P-6：`persona.set` 的 `seed` 改的是 `appearance.seed`）：写一个字或者删掉，不比 `expect`。
     pub(crate) fn text(key: &str, value: Option<&str>) -> Wanted {
+        Wanted::value(
+            key,
+            value.map(|value| Value::Text(value.to_string().into())),
+        )
+    }
+
+    /// 代码定的一项，值照交来的（施工 P-7：背景图露出多少是整数、焦点是两个整数的列表）：写或者删掉，不比 `expect`。
+    pub(crate) fn value(key: &str, value: Option<Value>) -> Wanted {
         Wanted {
             key: key.to_string(),
-            value: value.map(|value| Value::Text(value.to_string().into())),
+            value,
             expect: None,
         }
     }
@@ -57,6 +65,12 @@ impl Wanted {
 /// 查参数：同一个键不写两次，`value`、`unset` 正好一个，值是字、开关、数，`expect` 是 `{"value": …}` 或 `{}`。空的由调用的
 /// 一方判。
 pub(crate) fn wanted(changes: Vec<ChangeParams>) -> Result<Vec<Wanted>, Refusal> {
+    wanted_as(changes, false)
+}
+
+/// 同 [`wanted`]，`lists` 是真的也收字、开关、数的数组（施工 P-7：人格的背景图焦点是两个整数）。预设照旧不收：它的项没有
+/// 数组。
+pub(crate) fn wanted_as(changes: Vec<ChangeParams>, lists: bool) -> Result<Vec<Wanted>, Refusal> {
     let mut keys = BTreeSet::new();
     changes
         .into_iter()
@@ -65,7 +79,7 @@ pub(crate) fn wanted(changes: Vec<ChangeParams>) -> Result<Vec<Wanted>, Refusal>
                 return Err(Refusal::BAD_PARAMS);
             }
             let value = match (change.value, change.unset) {
-                (Some(value), None) => Some(plain::from_json(&value).ok_or(Refusal::BAD_PARAMS)?),
+                (Some(value), None) => Some(value_of(&value, lists).ok_or(Refusal::BAD_PARAMS)?),
                 (None, Some(true)) => None,
                 _ => return Err(Refusal::BAD_PARAMS),
             };
@@ -132,4 +146,16 @@ pub(crate) fn edited(
             .map_err(|blocked| invalid(format!("{file}: cannot write {}", blocked.0)))?;
     }
     Ok(edited)
+}
+
+/// 交来的一个值：字、开关、数；`lists` 是真的另收它们的数组（施工 P-7：人格的背景图焦点是两个整数）。别的写法没有。
+fn value_of(json: &Json, lists: bool) -> Option<Value> {
+    match json {
+        Json::Array(items) if lists => items
+            .iter()
+            .map(plain::from_json)
+            .collect::<Option<Vec<_>>>()
+            .map(Value::List),
+        other => plain::from_json(other),
+    }
 }

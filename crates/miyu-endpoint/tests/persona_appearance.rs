@@ -247,3 +247,93 @@ async fn wrong_backgrounds_are_refused_and_nothing_is_written() {
         .await;
     assert_eq!(none["error"]["data"]["reason"], "unknown_persona", "{none}");
 }
+
+/// 背景图露出多少、焦点（施工 P-7）：`persona.set` 写进家目录那一层的 `[appearance]`，`persona.get`、`persona.list` 带着，
+/// 没写的是 `null`；`unset` 回到下面那一层的；`changes` 也认这两项（焦点是两个数的数组）；写错的、和 `changes` 撞了的拒，
+/// 什么都不写。
+#[tokio::test]
+async fn background_opacity_and_focus_are_set_listed_and_unset() {
+    let home = Home::new();
+    base(&home, &png(64, 64));
+    let mut client = connected(&home).await;
+    let got = client
+        .call("g", "persona.get", json!({"persona": "base"}))
+        .await;
+    assert_eq!(
+        (
+            got["result"]["background_opacity"].clone(),
+            got["result"]["background_focus"].clone()
+        ),
+        (Value::Null, Value::Null),
+        "没写的是 null：{got}"
+    );
+    let changed = set(
+        &mut client,
+        json!({"persona": "base", "background_opacity": 35, "background_focus": [20, 80]}),
+    )
+    .await;
+    assert_eq!(changed["result"]["background_opacity"], 35, "{changed}");
+    assert_eq!(changed["result"]["background_focus"], json!([20, 80]));
+    assert_eq!(
+        mine(&home).as_deref(),
+        Some("[appearance]\nbackground_opacity = 35\nbackground_focus = [20, 80]\n")
+    );
+    let listed = client.call("l", "persona.list", json!({})).await;
+    let row = listed["result"]["personas"]
+        .as_array()
+        .expect("有")
+        .iter()
+        .find(|row| row["persona"] == "base")
+        .cloned()
+        .expect("列出来了");
+    assert_eq!(
+        (
+            row["background_opacity"].clone(),
+            row["background_focus"].clone()
+        ),
+        (json!(35), json!([20, 80])),
+        "{listed}"
+    );
+    let via_changes = set(
+        &mut client,
+        json!({"persona": "base", "changes": [
+            {"key": "appearance.background_opacity", "value": 50},
+            {"key": "appearance.background_focus", "value": [10, 90]},
+        ]}),
+    )
+    .await;
+    assert_eq!(
+        (
+            via_changes["result"]["background_opacity"].clone(),
+            via_changes["result"]["background_focus"].clone()
+        ),
+        (json!(50), json!([10, 90])),
+        "{via_changes}"
+    );
+    let unset = set(
+        &mut client,
+        json!({"persona": "base", "background_opacity": {"unset": true}, "background_focus": {"unset": true}}),
+    )
+    .await;
+    assert_eq!(
+        (
+            unset["result"]["background_opacity"].clone(),
+            unset["result"]["background_focus"].clone()
+        ),
+        (Value::Null, Value::Null),
+        "{unset}"
+    );
+    let before = mine(&home);
+    for wrong in [
+        json!({"persona": "base", "background_opacity": 101}),
+        json!({"persona": "base", "background_opacity": "20"}),
+        json!({"persona": "base", "background_focus": [50]}),
+        json!({"persona": "base", "background_focus": [50, 101]}),
+        json!({"persona": "base", "background_opacity": {"unset": false}}),
+        json!({"persona": "base", "background_opacity": 20, "changes": [{"key": "appearance.background_opacity", "value": 30}]}),
+    ] {
+        let reply = set(&mut client, wrong.clone()).await;
+        assert_eq!(reason(&reply), Some("bad_params"), "{wrong}：{reply}");
+    }
+    assert_eq!(mine(&home), before, "什么都没写");
+}

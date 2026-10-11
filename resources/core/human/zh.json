@@ -359,6 +359,8 @@
     "persona-problems/empty_phrase": "{detail} 要写一句不空的话",
     "persona-problems/bad_memory_scope": "{detail} 只能是 persona 或 session",
     "persona-problems/bad_seed": "{detail} 要写成 #rrggbb 这样的颜色",
+    "persona-problems/bad_background_opacity": "{detail} 要写成 0 到 100 的整数",
+    "persona-problems/bad_background_focus": "{detail} 要写成 [x, y]，两个都是 0 到 100 的整数",
     "persona-problems/first_line": "第一行要以 user: 开头",
     "persona-problems/take_turns": "user 和 assistant 要一问一答交替",
     "persona-problems/last_line": "最后一句要是 assistant 的",

@@ -359,6 +359,8 @@
     "persona-problems/empty_phrase": "{detail} must be text that is not empty",
     "persona-problems/bad_memory_scope": "{detail} must be persona or session",
     "persona-problems/bad_seed": "{detail} must be a color like #rrggbb",
+    "persona-problems/bad_background_opacity": "{detail} must be a whole number from 0 to 100",
+    "persona-problems/bad_background_focus": "{detail} must be [x, y], each a whole number from 0 to 100",
     "persona-problems/first_line": "The first line must start with user:",
     "persona-problems/take_turns": "user and assistant must take turns",
     "persona-problems/last_line": "The last line must be the assistant's",

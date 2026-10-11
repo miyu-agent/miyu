@@ -543,7 +543,7 @@
 
 **`persona.list`**（施工 P-1 上，`personas.md`「怎么走」第 7 条）
 
-没有参数。回应 `{"personas": [...]}`，照编号排，一个人格一格：`persona` 编号，`avatar` 头像的版本（没有的 `null`，施工 P-5），`background` 背景图的版本、`seed` 主题色（小写的 `#rrggbb`），没有的 `null`（施工 P-6），`name`、`summary` 一句字（施工 P-3 补：写成一句的就是它；以前写成语言表的、出厂的几个照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；说明写成空的字的也是 `null`，施工 P-3 再补）。来自哪几层不给（施工 P-3 补，2026-10-08 项目主人：人看的是名字）。文件写错的只有 `persona`、`problem` 和知道第几行的 `line`：`problem` 照这个连接的语言说哪里写错了，同 `persona.*` 里 `persona_invalid` 的 `data.message`、`data.line`（施工 P-3 再补：原来是给排查看的英文原话，项目主人看不懂）。
+没有参数。回应 `{"personas": [...]}`，照编号排，一个人格一格：`persona` 编号，`avatar` 头像的版本（没有的 `null`，施工 P-5），`background` 背景图的版本、`seed` 主题色（小写的 `#rrggbb`），没有的 `null`（施工 P-6），`background_opacity` 背景图露出多少（0 到 100）、`background_focus` 焦点（`[x, y]`，各 0 到 100），没有的 `null`（施工 P-7），`name`、`summary` 一句字（施工 P-3 补：写成一句的就是它；以前写成语言表的、出厂的几个照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；说明写成空的字的也是 `null`，施工 P-3 再补）。来自哪几层不给（施工 P-3 补，2026-10-08 项目主人：人看的是名字）。文件写错的只有 `persona`、`problem` 和知道第几行的 `line`：`problem` 照这个连接的语言说哪里写错了，同 `persona.*` 里 `persona_invalid` 的 `data.message`、`data.line`（施工 P-3 再补：原来是给排查看的英文原话，项目主人看不懂）。
 
 **`preset.list`**（施工 P-2 上，`presets.md`「协议」）
 
@@ -587,8 +587,10 @@
 | `avatar` | 对象，可以不写 | 头像（施工 P-5，`personas.md`「头像」）：`{"blob": <内容哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `"expect": "<版本>" \| null` |
 | `background` | 对象，可以不写 | 背景图（施工 P-6，`personas.md`「主题色、背景图」），写法同 `avatar` |
 | `seed` | 字符串或对象，可以不写 | 主题色（施工 P-6）：`"#rrggbb"`（大小写都认，写成小写）写进你那一层的 `[appearance] seed`，`{"unset": true}` 删掉你那一层的；写错的、`changes` 里也改了 `appearance.seed` 的 `bad_params` |
+| `background_opacity` | 整数或对象，可以不写 | 背景图露出多少（施工 P-7）：0 到 100，写进你那一层的 `[appearance] background_opacity`，`{"unset": true}` 删掉你那一层的；写错的、`changes` 里也改了这一项的 `bad_params` |
+| `background_focus` | 数组或对象，可以不写 | 背景图的焦点（施工 P-7）：`[x, y]`，各 0 到 100（同 CSS 的 `background-position`），写进 `[appearance] background_focus`；`unset`、写错同上 |
 
-`changes`、`prompts`、`avatar`、`background`、`seed` 至少写一样（只写 `avatar`、`background` 的要写 `persona`；只写 `seed` 的可以新建）。回应同 `persona.get`：改完叠好的样子（带着编号）。只写管理员家目录那一层：改出厂的、系统区的就是建同名覆盖，提示词整份换你那一层的那一份，`unset` 删掉你那一层的、回到下面的；空的字（`{"text": ""}`）就是这一段是空的（空的人设不进 system，空的角色扮演提示等于没有）。
+`changes`、`prompts`、`avatar`、`background`、`seed`、`background_opacity`、`background_focus` 至少写一样（只写 `avatar`、`background` 的要写 `persona`；只写 `seed`、`background_opacity`、`background_focus` 的可以新建）。回应同 `persona.get`：改完叠好的样子（带着编号）。只写管理员家目录那一层：改出厂的、系统区的就是建同名覆盖，提示词整份换你那一层的那一份，`unset` 删掉你那一层的、回到下面的；空的字（`{"text": ""}`）就是这一段是空的（空的人设不进 system，空的角色扮演提示等于没有）。
 
 1. 几样一起查：`persona.toml` 改完的一份、示范对话、连同叠好以后；有错什么都不写，`persona_invalid`，`data.problem` 是头一处（写法同 `persona.get`），`data.message`、`data.line` 照连接的语言说（施工 P-3 补）。和你那一层现在一样的不写，一样都没变的什么都不写。
 2. `pairs`（施工 P-3 补：界面里一对一对地编，格式留在核心）：核心写成 `user:` / `assistant:` 开头、对与对之间空一行的写法；一句里的空行去掉；空的 `pairs` 等于删掉。每一句去掉前后空白不能是空的（`bad_params`）；一句里有一行看起来像 `user:`、`assistant:` 开头、写了读不回原样的，`persona_invalid`（`data.message` 说是第几对）。
@@ -641,7 +643,7 @@
 |---|---|---|
 | `persona` | 字符串，必写 | 人格的编号 |
 
-回应 `{"persona", "name", "summary", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头从头像取色）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
+回应 `{"persona", "name", "summary", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "background_opacity", "background_focus", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头从头像取色；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 
