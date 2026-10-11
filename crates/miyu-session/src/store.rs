@@ -73,6 +73,9 @@ pub(crate) struct Indexed {
     usage: Option<(Arc<UsageIndex>, Who)>,
     /// 回合索引（施工 R-2 上）：主会话、核心交了登记的才有。
     turns: Option<Turns>,
+    /// 分叉出来的会话的底子（施工 C-8 上）：父会话的日志里到分叉点为止的事件。读回日志时接在自己的前面，撤销读回到分叉点
+    /// 以前的也接得上。
+    base: Option<Arc<Vec<Event>>>,
 }
 
 impl Indexed {
@@ -91,7 +94,25 @@ impl Indexed {
             index,
             usage,
             turns,
+            base: None,
         }
+    }
+
+    /// 同一个，读回日志时先接上底子 `base`（施工 C-8 上）。
+    #[must_use]
+    pub(crate) fn on_base(mut self, base: Arc<Vec<Event>>) -> Indexed {
+        self.base = Some(base);
+        self
+    }
+
+    /// 底子里第 `from` 条起的。
+    fn base_from(&self, from: Seq) -> Vec<Event> {
+        self.base
+            .iter()
+            .flat_map(|base| base.iter())
+            .filter(|event| event.seq >= from)
+            .cloned()
+            .collect()
     }
 }
 
@@ -123,11 +144,15 @@ impl Store for Indexed {
     }
 
     fn events(&self) -> Result<Vec<Event>, String> {
-        self.log.events()
+        let mut events = self.base_from(Seq::FIRST);
+        events.extend(self.log.events()?);
+        Ok(events)
     }
 
     fn events_from(&self, from: Seq) -> Result<Vec<Event>, String> {
-        self.log.events_from(from)
+        let mut events = self.base_from(from);
+        events.extend(self.log.events_from(from)?);
+        Ok(events)
     }
 
     fn dir(&self) -> Option<PathBuf> {
@@ -143,3 +168,6 @@ impl ReadLog for LogDir {
         read_segments(&self.0, each).map_err(|error| error.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests;

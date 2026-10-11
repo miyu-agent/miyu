@@ -283,6 +283,7 @@ impl Snapshot {
             model: None,
             persona: self.persona.clone(),
             preset: None,
+            forked: None,
         }
     }
 

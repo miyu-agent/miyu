@@ -148,7 +148,8 @@ fn walk(
         return Err(OpenError::Missing(dir.to_path_buf()));
     }
     let (start, mut offset, mut next) = match from {
-        None => (0, 0, Seq::FIRST),
+        // 从第一段读起：第一条照第一段的名字（分叉出来的会话接着分叉点往下数，施工 C-8 上），不是 1。
+        None => (0, 0, Seq::new(segments[0].0).unwrap_or(Seq::FIRST)),
         Some(mark) => match segments
             .iter()
             .position(|(first, _)| *first == mark.segment)

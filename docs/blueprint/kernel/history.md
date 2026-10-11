@@ -94,7 +94,8 @@
 |---|---|
 | 序号是下一个 | seq should be <下一个> |
 | 第 1 条是 `session.created` | the first event should be session.created |
-| `session.created` 只能是第 1 条 | session.created can only be the first event |
+| `session.created` 只能是第 1 条；分叉出来的会话（施工 C-8 上）日志从分叉点的下一条起，第一条照样是 `session.created`，写着分叉点 | session.created can only be the first event |
+| 分叉出来的会话的第一条正好是它写的分叉点的下一条，没分叉的是第 1 条（施工 C-8 上） | a forked session starts right after its fork point |
 | `turn.started` 的 `turn` 是它自己的序号 | turn.started should have its own seq as turn |
 | `turn.started` 时没有别的回合在进行 | turn <编号> has not ended |
 | `turn.started` 有 `trigger` 的，`trigger` 在它之前；没有的不查（手动压缩单开的那一轮，施工 6-8） | trigger should be an event before the turn started |

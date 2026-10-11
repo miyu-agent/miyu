@@ -10,6 +10,7 @@ const MEMBER: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:20017",
 const BRIDGE: &str = r#"{"kind":"module","id":"onebot"}"#;
 const OWN: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
 const BRANCH: &str = "0192f3a0-1111-7abc-8def-001122334455";
+const OTHER: &str = "0192f3a0-2222-7abc-8def-001122334455";
 
 /// 小林旁听的一句：平台的格另加 `fields`（JSON 对象里的几格，前面带逗号）。不带回合编号。
 fn ambient(log: &mut Log, text: &str, msg: &str, fields: &str) -> u64 {
@@ -310,5 +311,26 @@ fn overheard_forwards_follow_their_line_and_count_against_the_budget() {
         [format!(
             "user: <recent>\n<omitted 1>\n{block} | [15:00] 小林 [msg=8899]: 看看"
         )]
+    );
+}
+
+/// 分叉出来的支线（施工 C-8 上）：继承来的历史里主线替她发出去的话（`line` 是分叉来源）也是自己这条线的，不再渲染成
+/// `[you]` 行，不然支线的前缀和主线的不一样；别的线的照旧是 `[you]` 行。
+#[test]
+fn in_a_fork_the_parent_line_is_her_own_line_too() {
+    let mut log = Log::new();
+    log.owned_by(BRANCH);
+    log.forked_from(OWN);
+    opens(&mut log, "在吗", "8801");
+    answered(&mut log, "在");
+    let delivered = |line: &str, msg: &str| {
+        format!(r#"{{"line":"{line}","turn":3,"to":["qq:20017"],"msg":"{msg}","text":"在"}}"#)
+    };
+    log.detached(BRIDGE, "venue.delivered", &delivered(OWN, "8802"));
+    log.detached(BRIDGE, "venue.delivered", &delivered(OTHER, "8803"));
+    opens(&mut log, "好", "8805");
+    assert_eq!(
+        in_group(&log).last().map(String::as_str),
+        Some("user: <recent>\n[15:00] [you] [msg=8803]: 在\n | [15:00] 小林 [msg=8805]: 好")
     );
 }

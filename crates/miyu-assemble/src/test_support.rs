@@ -252,6 +252,12 @@ impl Log {
         self.history = std::mem::take(&mut self.history).owned_by(id);
     }
 
+    /// 这个会话是从会话 `id` 分叉出来的（施工 C-8 上）：有效历史记下分叉来源。
+    pub(crate) fn forked_from(&mut self, id: &str) {
+        let id = miyu_kernel::id::SessionId::parse(id).expect("会话编号合写法");
+        self.history = std::mem::take(&mut self.history).forked_from(id);
+    }
+
     /// 到现在为止的有效历史。
     pub(crate) fn history(&self) -> &History {
         &self.history

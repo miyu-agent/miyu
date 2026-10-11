@@ -68,6 +68,14 @@ impl Triggers {
 }
 
 impl Ledger {
+    /// 分叉出来的会话（施工 C-8 上）：父会话到分叉点为止旁听记下的、当过触发的照样算，支线能照继承来的那几条开一轮
+    /// （`session.respond` 的 `to` 写它们在父会话里的序号），已经当过触发的照样不能再当。
+    #[must_use]
+    pub fn heard_from(mut self, parent: &Ledger) -> Ledger {
+        self.triggers = parent.triggers.clone();
+        self
+    }
+
     /// 第 `seq` 条是这个会话里旁听的 `message.user`（施工 O-14 上）。
     pub fn overheard(&self, seq: Seq) -> bool {
         self.triggers.overheard.contains(&seq)

@@ -11,11 +11,13 @@ mod action;
 mod approval;
 mod aside;
 mod asked;
+mod blank;
 mod breaker;
 mod call;
 mod clear;
 mod compaction;
 mod configure;
+mod fork;
 mod grants;
 mod input;
 mod interrupt;
@@ -59,6 +61,7 @@ mod workspace;
 
 pub use action::{Action, Outcome, Reason};
 pub use configure::Replaced;
+pub use fork::{ForkPlan, fork_plan};
 pub use input::{
     Answer, Appended, Command, ExtEvent, Injection, Input, Limits, Queued, Received, Reread,
     Verdict,
@@ -170,39 +173,9 @@ impl Session {
         policy: Policy,
         environment: Environment,
     ) -> (Session, Vec<Action>) {
-        let mut session = Session {
-            ledger: Ledger::for_session(session.clone()),
-            history: History::default().owned_by(session.clone()),
-            id: session,
-            unstored: Vec::new(),
-            stored: None,
-            waiting: Vec::new(),
-            recent: Recent::default(),
-            policy: policy::Held::new(policy),
-            environment,
-            permission: created.permission.clone(),
-            effective: created.permission.clone(),
-            turn: None,
-            last_request: None,
-            closing: Vec::new(),
-            restoring: None,
-            reading: None,
-            limits: None,
-            oneshot: created.oneshot,
-            watched: false,
-            deferred: Vec::new(),
-            restarting: false,
-            duty: report::Duty::default(),
-            meta: meta::Meta::default(),
-            recapping: None,
-            naming: title::Naming::default(),
-            titling: None,
-            prepare: prepare::Prepare::default(),
-            reference: configure::Reference::default(),
-            sight: sight::Sight::default(),
-            grants: grants::Grants::default(),
-            told_todos: Vec::new(),
-        };
+        let ledger = Ledger::for_session(session.clone());
+        let history = History::default().owned_by(session.clone());
+        let mut session = Session::blank(session, ledger, history, &created, policy, environment);
         let event = session.record(at, by, Some(id.clone()), Body::SessionCreated(created));
         session.accept(id, vec![event.seq]);
         (session, vec![Action::Append(vec![event])])

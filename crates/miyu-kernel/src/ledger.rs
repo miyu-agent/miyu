@@ -10,13 +10,13 @@
 //! `ledger/peers.rs`（施工 C-1），最近收下的别的会话的话也在那里（施工 C-2）。
 
 use std::collections::BTreeSet;
-use std::fmt;
 
 use crate::block::Block;
 use crate::event::{Body, CompactTrigger, ContextCompacted, Event};
 use crate::id::{CallId, Seq, TurnId};
 use crate::origin::By;
 
+mod error;
 mod jobs;
 mod peers;
 mod triggers;
@@ -26,6 +26,8 @@ use jobs::Jobs;
 use peers::Peers;
 pub(crate) use peers::digest;
 use triggers::Triggers;
+
+pub use error::LedgerError;
 use undo::Undone;
 
 /// 一个会话的日志的账本。
@@ -36,6 +38,8 @@ use undo::Undone;
 pub struct Ledger {
     /// 下一条事件该是几号。
     next: Seq,
+    /// 第一条该是几号（施工 C-8 上）：`session.created` 只能在这里。主会话、子代理是 1；分叉出来的是分叉点的下一个。
+    first: Seq,
     /// 正在进行的回合。一个会话同一时刻最多只有一个（不变量 4）。
     open: Option<TurnId>,
     /// 上一条回复（`message.assistant`）的序号。后一次请求一定看过它，
@@ -71,6 +75,7 @@ impl Default for Ledger {
     fn default() -> Self {
         Ledger {
             next: Seq::FIRST,
+            first: Seq::FIRST,
             open: None,
             last_reply: None,
             pending: BTreeSet::new(),
@@ -88,6 +93,15 @@ impl Default for Ledger {
 }
 
 impl Ledger {
+    /// 分叉出来的会话（施工 C-8 上，`session/fork.md`）：日志从 `first` 开始，第一条照样是 `session.created`，它写的分叉点要
+    /// 正好是 `first` 的前一个。之前的序号是父会话的，只进历史，不过账本。
+    #[must_use]
+    pub fn starting_at(mut self, first: Seq) -> Ledger {
+        self.next = first;
+        self.first = first;
+        self
+    }
+
     /// 下一条事件该是几号。追加的一方照这个号给事件编序号。
     pub fn next_seq(&self) -> Seq {
         self.next
@@ -170,11 +184,17 @@ impl Ledger {
             return Err(format!("seq should be {}", self.next));
         }
         let created = matches!(event.body, Body::SessionCreated(_));
-        if seq == Seq::FIRST && !created {
+        if seq == self.first && !created {
             return Err("the first event should be session.created".to_string());
         }
-        if seq != Seq::FIRST && created {
+        if seq != self.first && created {
             return Err("session.created can only be the first event".to_string());
+        }
+        if let Body::SessionCreated(created) = &event.body {
+            let upto = created.forked.as_ref().map(|forked| forked.upto);
+            if upto.map_or(seq != Seq::FIRST, |upto| upto.next() != seq) {
+                return Err("a forked session starts right after its fork point".to_string());
+            }
         }
         self.check_turn(event)?;
         match &event.body {
@@ -464,25 +484,6 @@ fn check_call_ids(seq: Seq, blocks: &[Block]) -> Result<(), String> {
     }
     Ok(())
 }
-
-/// 一条事件违反了追加的规矩：它是第几条，违反了哪一条。
-///
-/// 报错是中文，给查问题的人看。违反规矩只会是内核自己的 bug，或者坏了的日志文件。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LedgerError {
-    /// 那条事件写着的序号。
-    pub seq: Seq,
-    /// 违反了哪一条规矩。
-    pub why: String,
-}
-
-impl fmt::Display for LedgerError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "event {} cannot be appended: {}", self.seq, self.why)
-    }
-}
-
-impl std::error::Error for LedgerError {}
 
 #[cfg(test)]
 mod tests;

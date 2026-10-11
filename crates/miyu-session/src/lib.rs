@@ -72,7 +72,8 @@ pub use memory::{
     NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, Using, Vectors,
 };
 pub use open::{
-    Create, CreateError, Load, LoadError, PresetPlaces, Workplace, create, load, load_placed,
+    Create, CreateError, Fork, ForkError, Load, LoadError, PresetPlaces, Workplace, create, fork,
+    load, load_placed,
 };
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{

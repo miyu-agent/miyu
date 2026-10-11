@@ -135,6 +135,7 @@
 | `venue.session` | 找回或者造一个通讯平台场所的主线会话：收到一条消息时找它（施工 O-3，`venues.md`） |
 | `venue.sessions` | 列出系统账号名下的场所会话和终端管理员在这个平台的私聊，一个场所一个：桥起来时照它订阅（施工 O-32 前，`venues.md`「列场所会话」） |
 | `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」） |
+| `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
 | `session.note` | 只记几块事实，不开回合（施工 O-14 补，`venues.md`「记几块事实」） |
 | `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下） |
 | `venue.binding` | 问一个平台身份在主人对应表里对着哪个本机账号，只给系统账号的连接（施工 O-31 前，`venues.md`「问对应表」） |
@@ -230,6 +231,13 @@
 4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（它的 `cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。
 5. `memory` 不是这三种字符串之一（大小写也算）：`bad_params`，什么都不造（施工 R-3 下）。`model` 不是字符串：`bad_params`。解析不出（写法不对、没有这家供应商、没有这个池、池里一个成员都认不出）：`unknown_model`，什么都不造（施工 8-8，`models.md`「协议」）。先解析再找同一个命令编号造过的。
 6. 人格的编号不合写法（小写英文字母开头，只有小写字母、数字、`-`、`_`，最长 64 字节）：`bad_params`。三层（出厂、系统区、管理员家目录，`personas.md`）都没有这个人格：`unknown_persona`，默认人格指着没有的也一样，不悄悄换。人格的文件写错了：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）。预设照同样的规矩，先于人格找（施工 P-2 上，`presets.md`）：编号不合写法 `bad_params`，三层都没有（默认预设指着没有的也一样，Y12）`unknown_preset`，文件写错 `preset_invalid`（`data.problem` 写明哪一层、哪个文件第几行），都不造。人格的文件、随核心附带的 `core/` 下的字读不了（安装坏了）：`internal_error`（施工 4-9 再补三上）。别的造不成（策略造不出来、磁盘上建不成、`session.created` 没落盘）：`internal_error`，原因记进运行日志。
+
+**`session.fork`**（施工 C-8 上，`session/fork.md`）
+
+- 参数 `{"session"}`：父会话，得是主会话。回应 `{"session": <子会话编号>, "upto": <分叉点的序号>}`。
+- 分叉点由核心定：父会话在跑一轮的，是这一轮 `turn.started` 之前那一条；闲着的是最后一条。子会话的属主、场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的；它的日志从 `upto + 1` 起，第一条 `session.created` 带 `forked: {from, upto}`、`parent`、`depth`。
+- 子会话照普通会话用：`session.send`、`session.respond`（`to` 可以是分叉点以前在父会话里旁听记下、还没当过触发的序号）、订阅。记成谁同 `events.append`。
+- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对的 `bad_params`。
 
 **`session.list`**
 

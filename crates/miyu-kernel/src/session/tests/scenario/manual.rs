@@ -425,3 +425,71 @@ fn compacting_and_clearing_after_a_model_change_do_not_resolve_again() {
     stage.say("再来");
     assert_eq!(stage.asked_models(), [None, Some("b/n".to_string())]);
 }
+
+/// 父会话压缩过以后分叉（施工 C-8 上）：支线的有效历史照父会话的检查点算，和父会话接着说同一句时一样，压缩替代掉的那几条
+/// 不进来。
+#[test]
+fn a_fork_after_a_compaction_starts_from_the_parent_checkpoint() {
+    use crate::event::Forked;
+    let mut stage = manual(None);
+    after_one_turn(&mut stage);
+    stage.model([Line::says("S1")]);
+    stage.request_compaction(None);
+    assert_eq!(compactions(&stage).len(), 1, "压了一次");
+    let base: Vec<Event> = stage.log().to_vec();
+    let upto = base.last().unwrap().seq;
+    let mut created: SessionCreated = serde_json::from_str(CREATED).unwrap();
+    created.parent = Some(session_id());
+    created.depth = Some(1);
+    created.forked = Some(Forked {
+        from: session_id(),
+        upto,
+    });
+    let child_id = SessionId::parse(crate::testkit::CHILD_SESSION).unwrap();
+    let (child, actions) = Session::fork(
+        child_id.clone(),
+        &base,
+        id(100),
+        alice(),
+        at(30),
+        created,
+        policy(),
+        environment("~/src/miyu"),
+    )
+    .unwrap();
+    // 载入的那一条路照样照父会话的检查点算（重启核心以后支线再载入）。
+    let own = appended_events(&actions);
+    let (loaded, _) = Session::load_forked(
+        child_id,
+        &base,
+        own,
+        at(40),
+        policy(),
+        environment("~/src/miyu"),
+    )
+    .unwrap();
+    assert_eq!(
+        loaded.history.checkpoint().map(|event| event.seq),
+        child.history.checkpoint().map(|event| event.seq),
+        "载入的检查点和造的时候一样"
+    );
+    let checkpoint = child.history.checkpoint().map(|event| event.seq);
+    assert_eq!(
+        checkpoint,
+        stage
+            .log()
+            .iter()
+            .find(|event| matches!(event.body, Body::ContextCompacted(_)))
+            .map(|event| event.seq),
+        "支线的检查点就是父会话那一次压缩"
+    );
+    let replaced = compactions(&stage)[0].upto;
+    assert!(
+        child
+            .history
+            .events()
+            .iter()
+            .all(|event| event.seq > replaced),
+        "压缩替代掉的不进来"
+    );
+}

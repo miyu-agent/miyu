@@ -35,6 +35,7 @@ mod connection;
 mod diffs;
 pub mod extensions;
 mod files;
+mod forking;
 mod from;
 mod hello;
 mod human;

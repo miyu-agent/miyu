@@ -178,6 +178,7 @@ pub(crate) async fn call(
         "session.respond" => {
             crate::responding::respond(core, caller, request, params(request)?).await
         }
+        "session.fork" => crate::forking::fork(core, caller, request, params(request)?).await,
         "session.note" => crate::responding::note(core, caller, request, params(request)?).await,
         "venue.records" => venues::records(core, params(request)?).await,
         "venue.binding" => venues::binding(core, &caller.account, params(request)?),

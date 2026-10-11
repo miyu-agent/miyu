@@ -38,10 +38,12 @@ use crate::tools::ToolKit;
 use crate::usage::Ledger;
 
 mod error;
+mod fork;
 mod load;
 mod setup;
 
 pub use error::{CreateError, LoadError};
+pub use fork::{Fork, ForkError, fork};
 pub(crate) use load::current_policy;
 pub use load::{load, load_placed};
 pub use setup::{Create, Load, PresetPlaces, Workplace};

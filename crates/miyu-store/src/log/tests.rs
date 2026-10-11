@@ -379,3 +379,29 @@ fn appending_out_of_order_is_refused() {
     );
     assert_eq!(log.next_seq(), Seq::FIRST, "什么都没写");
 }
+
+/// 分叉出来的会话的日志（施工 C-8 上）：从第 `first` 条开始，第一段照它起名；打开、只读地读都从它接着数；没写进去就收拾的
+/// 照样删得掉。
+#[test]
+fn a_log_can_start_after_one() {
+    let scratch = Scratch::new();
+    let dir = dir(&scratch);
+    let mut log = SessionLog::create_at(&dir, SEGMENT_LIMIT, Seq::new(9).unwrap()).unwrap();
+    assert_eq!(log.next_seq().get(), 9);
+    assert!(
+        log.append(&said_range(1, 1)).is_err(),
+        "接不上第 9 条的不写"
+    );
+    log.append(&said_range(9, 11)).unwrap();
+    assert_eq!(segment_names(&dir), ["000000000009.jsonl"]);
+    drop(log);
+    let (reopened, events) = SessionLog::open(&dir, SEGMENT_LIMIT).unwrap();
+    assert_eq!(events, said_range(9, 11));
+    assert_eq!(reopened.next_seq().get(), 12);
+    assert_eq!(read_events(&dir).unwrap(), said_range(9, 11));
+
+    let empty = scratch.path().join("empty-fork");
+    drop(SessionLog::create_at(&empty, SEGMENT_LIMIT, Seq::new(5).unwrap()).unwrap());
+    assert!(abandon(&empty).unwrap(), "只有一段空的第一段，照样收拾掉");
+    assert!(!empty.exists());
+}

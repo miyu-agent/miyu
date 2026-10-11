@@ -94,7 +94,7 @@ fn one(
                 &mark,
             ))
         }
-        Body::VenueDelivered(delivered) if history.own() != Some(&delivered.line) => {
+        Body::VenueDelivered(delivered) if !history.is_own(&delivered.line) => {
             Some(you(event, delivered, texts))
         }
         _ => None,

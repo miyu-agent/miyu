@@ -41,6 +41,8 @@ pub struct History {
     /// 这个会话自己的编号（施工 O-13 下）：内核造会话、载入、撤销后重建时设上，组装器照它认出别的线替她发进群里的话。
     /// 测试里自己拼的、`history` 读的没有。
     own: Option<SessionId>,
+    /// 分叉来源（施工 C-8 上）：底子里那个会话自己的回复也算这个会话的线，群聊近况不把它们再渲染成 `[you]` 行。
+    forked_from: Option<SessionId>,
 }
 
 impl History {
@@ -66,9 +68,21 @@ impl History {
         self
     }
 
+    /// 记下这个会话是从会话 `id` 分叉出来的（施工 C-8 上）。
+    #[must_use]
+    pub fn forked_from(mut self, id: SessionId) -> History {
+        self.forked_from = Some(id);
+        self
+    }
+
     /// 这个会话自己的编号；没设的没有（[`History::owned_by`]）。
     pub fn own(&self) -> Option<&SessionId> {
         self.own.as_ref()
+    }
+
+    /// 线 `line` 是不是这个会话自己的：它自己，或者它分叉的来源（施工 C-8 上）。没设编号的（测试里自己拼的）都不是。
+    pub fn is_own(&self, line: &SessionId) -> bool {
+        self.own.as_ref() == Some(line) || self.forked_from.as_ref() == Some(line)
     }
 
     /// 重读的文件 `blob` 的原文；没交进来的没有（施工 6-5）。
@@ -156,6 +170,7 @@ impl History {
             jobs: self.jobs.clone(),
             todos: self.todos.clone(),
             own: self.own.clone(),
+            forked_from: self.forked_from.clone(),
         }
     }
 
@@ -176,6 +191,7 @@ impl History {
             jobs: self.jobs.clone(),
             todos: self.todos.clone(),
             own: self.own.clone(),
+            forked_from: self.forked_from.clone(),
         }
     }
 

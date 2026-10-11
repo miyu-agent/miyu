@@ -56,14 +56,23 @@ impl SessionLog {
     ///
     /// 建不了目录；第一段已经有了（不覆盖）。
     pub fn create(dir: &Path, limit: u64) -> io::Result<SessionLog> {
+        SessionLog::create_at(dir, limit, Seq::FIRST)
+    }
+
+    /// 同 [`SessionLog::create`]，第一条是 `first` 号（施工 C-8 上：分叉出来的会话接着分叉点往下数）：第一段照它起名。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`SessionLog::create`]。
+    pub fn create_at(dir: &Path, limit: u64, first: Seq) -> io::Result<SessionLog> {
         create_dir(dir)?;
-        let file = new_segment(dir, Seq::FIRST)?;
+        let file = new_segment(dir, first)?;
         Ok(SessionLog {
             dir: dir.to_path_buf(),
             file,
-            segment: Seq::FIRST.get(),
+            segment: first.get(),
             size: 0,
-            next: Seq::FIRST,
+            next: first,
             limit,
         })
     }
@@ -126,24 +135,27 @@ impl SessionLog {
     }
 }
 
-/// 造会话没成（`session.created` 没落盘）时收拾会话目录：里面只有一段空的第一段，才连目录一起删掉，交回删了
-/// 没有；有别的东西的，一个字节不动（施工 4-9 再补四下）。
+/// 造会话没成（`session.created` 没落盘）时收拾会话目录：里面只有一段空的第一段（分叉出来的第一段照分叉点起名，施工 C-8
+/// 上），才连目录一起删掉，交回删了没有；有别的东西的，一个字节不动（施工 4-9 再补四下）。
 ///
 /// # Errors
 ///
 /// 读不了目录、删不掉。
 pub fn abandon(dir: &Path) -> io::Result<bool> {
     let entries = fs::read_dir(dir)?.collect::<io::Result<Vec<_>>>()?;
-    let first = dir.join(segment_name(Seq::FIRST));
     let [only] = entries.as_slice() else {
         return Ok(false);
     };
-    let empty_first =
-        only.path() == first && only.file_type()?.is_file() && only.metadata()?.len() == 0;
+    let named = only
+        .file_name()
+        .to_str()
+        .and_then(|name| name.strip_suffix(".jsonl"))
+        .is_some_and(|stem| stem.len() == 12 && stem.bytes().all(|byte| byte.is_ascii_digit()));
+    let empty_first = named && only.file_type()?.is_file() && only.metadata()?.len() == 0;
     if !empty_first {
         return Ok(false);
     }
-    fs::remove_file(&first)?;
+    fs::remove_file(only.path())?;
     fs::remove_dir(dir)?;
     Ok(true)
 }

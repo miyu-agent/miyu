@@ -14,7 +14,7 @@ use miyu_kernel::origin::Model;
 use miyu_kernel::session::{Input, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
-use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
+use miyu_store::log::{SEGMENT_LIMIT, SessionLog, read_events};
 use miyu_store::usage::Who;
 use miyu_tool::Log;
 
@@ -98,9 +98,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (table, jobs_dir) = (Arc::clone(jobs), dir.clone());
     let (owner_of, id_of) = (owner.clone(), id.clone());
     let place_resources = shipped.clone();
+    let (parents, parent_owner) = (root.clone(), owner.clone());
     let (
         log,
-        events,
+        (events, base),
         (created, command),
         (snapshot, pools),
         policy,
@@ -123,6 +124,19 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 ..
             }) => (created.clone(), cause.clone()),
             _ => return Err(LoadError::NotCreated),
+        };
+        // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。
+        let base = match &created.forked {
+            Some(forked) => {
+                let parent_dir = parents.session_dir(&parent_owner, &forked.from);
+                let parent_log = read_events(&parent_dir).map_err(LoadError::Log)?;
+                let base: Vec<Event> = parent_log
+                    .into_iter()
+                    .take_while(|event| event.seq <= forked.upto)
+                    .collect();
+                Some(Arc::new(base))
+            }
+            None => None,
         };
         let bytes = store
             .get(current_policy(&events).unwrap_or(&created.policy))
@@ -154,7 +168,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let remembered = remembered(&events);
         Ok((
             log,
-            events,
+            (events, base),
             (created, command),
             (snapshot, pools),
             policy,
@@ -184,22 +198,29 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (turns, calls) = wired;
     let attended = snapshot.attended;
     let room = calls.as_ref().map(|calls| calls.room().clone());
-    let upstream = Upstream::of(
-        sessions.as_ref(),
-        created.parent.as_ref(),
-        command.as_ref(),
-        &id,
-    );
+    // 分叉出来的不是任务，不交回报（施工 C-8 上）。
+    let upstream = match created.forked {
+        Some(_) => None,
+        None => Upstream::of(
+            sessions.as_ref(),
+            created.parent.as_ref(),
+            command.as_ref(),
+            &id,
+        ),
+    };
     let port = sessions.clone();
     let who = Who::of(&created);
     let venue = created.venue.clone();
+    // 分叉出来的有父会话，可它不是派出去做事的（施工 C-8 上）：子代理那一套（换快照时接的子代理说明、派子代理的层数、问不
+    // 问人）照主会话办，快照和父会话的一样，请求的前缀才对得上。
+    let tasked = created.parent.clone().filter(|_| created.forked.is_none());
     // 换预设时重新筛工具面要的（施工 P-2 下）：场所、父会话和第几层，照 `session.created`。
     let refresh_venue = created.venue.clone();
-    let refresh_lineage = created.parent.clone().map(|parent| Lineage {
+    let refresh_lineage = tasked.clone().map(|parent| Lineage {
         parent,
         depth: created.depth.unwrap_or(1),
     });
-    let asks = Agents::asks(&created.venue, created.parent.as_ref(), attended);
+    let asks = Agents::asks(&created.venue, tasked.as_ref(), attended);
     // 能选的人格同池，照快照读回（施工 P-2 补）。
     let agents_personas = Agents::personas_in(&snapshot.tools);
     let agents = sessions.map(|port| {
@@ -208,8 +229,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             session: id.clone(),
             owner: owner.clone(),
             venue: created.venue,
-            depth: created.depth.unwrap_or(0),
-            parent: created.parent.clone(),
+            depth: tasked.as_ref().map_or(0, |_| created.depth.unwrap_or(0)),
+            parent: tasked.clone(),
             attended,
             reports: policy.reports.clone(),
             pools,
@@ -226,7 +247,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let count = events.len();
     let scanning = Instant::now();
     // 她看过的文件（施工 4-6 上）、派出去的任务（施工 7-4）、最近发给了谁（施工 8-8）从日志里重建：内核收走日志之前。
-    let seen = effects::seen_in(&events);
+    let seen = match &base {
+        Some(base) => effects::seen_in(&[base.as_slice(), events.as_slice()].concat()),
+        None => effects::seen_in(&events),
+    };
     let roster = Roster::from_events(&events);
     let sent = last_sent(&events);
     // 累计的用量和计数（施工 9-6 上）：订阅的回应照它答，之后每落一批盘加上这一批。
@@ -234,8 +258,13 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let scanned = scanning.elapsed();
     let replaying = Instant::now();
     let placed = environment.clone();
-    let (mut session, first) = Session::load(id.clone(), events, clock.now(), policy, environment)
-        .map_err(LoadError::Kernel)?;
+    let (mut session, first) = match &base {
+        Some(base) => {
+            Session::load_forked(id.clone(), base, events, clock.now(), policy, environment)
+        }
+        None => Session::load(id.clone(), events, clock.now(), policy, environment),
+    }
+    .map_err(LoadError::Kernel)?;
     let replayed = replaying.elapsed();
     // 路由照内核从日志算的引用造（施工 8-10）：换过模型的是换过以后的。
     let model = models.port(ForSession {
@@ -280,13 +309,13 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
     let mut actor = Actor::new(
         session,
-        Box::new(Indexed::new(
-            log,
-            &id,
-            index,
-            usage.map(|usage| (usage, who)),
-            turns,
-        )),
+        Box::new({
+            let indexed = Indexed::new(log, &id, index, usage.map(|usage| (usage, who)), turns);
+            match base {
+                Some(base) => indexed.on_base(base),
+                None => indexed,
+            }
+        }),
         model,
         ToolKit {
             session: id.clone(),
@@ -327,7 +356,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         resources: shipped,
         blobs: stored,
         snapshot,
-        child: created.parent.is_some(),
+        child: tasked.is_some(),
         presets,
         tools: tools.clone(),
         // 快照是以前拼的，照的目录不知道是哪一代：第一个回合照现在的对一次（施工 O-2 中）。
@@ -385,7 +414,7 @@ fn millis(took: Duration) -> f64 {
 /// 日志里最后一次记下的工作目录、加进来的目录（施工 4-9 再补三上、5-10 上、9-7 上；V-2 三补从会话表挪来）：工作目录照列会话的
 /// 同一个认法（`miyu_store::index::cwd`：最后一条带 `cwd` 的 `turn.started`、换工作区，没有就照 `session.created`）；加进来的
 /// 目录照最后一条 `turn.started` 的，换工作区写了的照它，都没有的是空的。
-fn remembered(events: &[Event]) -> (Option<String>, Vec<String>) {
+pub(super) fn remembered(events: &[Event]) -> (Option<String>, Vec<String>) {
     let cwd = events
         .iter()
         .rev()

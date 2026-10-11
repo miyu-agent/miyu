@@ -44,6 +44,19 @@ pub struct SessionCreated {
     /// 请求。以前的日志没有这一格，照没有读。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
+    /// 从哪个会话的第几条分叉出来的（施工 C-8 上，`session/fork.md`）：历史引用那个会话到 `upto` 为止的有效历史，这一条的
+    /// 序号是 `upto` 的下一个。不是分叉出来的不写；以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forked: Option<Forked>,
+}
+
+/// 分叉的来源（施工 C-8 上）：父会话、分叉点。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Forked {
+    /// 从哪个会话分叉。
+    pub from: SessionId,
+    /// 那个会话的第几条为止（含）。
+    pub upto: Seq,
 }
 
 /// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型，也可以一起换。
