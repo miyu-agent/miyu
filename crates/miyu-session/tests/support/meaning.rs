@@ -41,6 +41,7 @@ pub fn save(home: &Home, text: &str) {
         audience: vec![alice()],
         replaces: None,
         about: None,
+        venue: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

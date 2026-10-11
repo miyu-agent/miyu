@@ -182,9 +182,9 @@ async fn a_child_is_off_whatever_it_was_given() {
     assert!(snapshot(&home, main.id()).memory.is_some(), "新造的写明");
 }
 
-/// 记忆放在记忆账号的那一间，听众照会话的属主（施工 R-3 下：两样分开）。
+/// 记忆放在记忆账号的那一间（施工 R-3 下）；属主不是记忆归的那个账号的，照这个场所记（施工 R-13 上，`Listener`）。
 #[tokio::test]
-async fn the_room_follows_the_memory_account_and_the_hearer_is_the_owner() {
+async fn the_room_follows_the_memory_account_and_a_stranger_owner_is_a_place() {
     let home = Home::new();
     let admin = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
     let remember = Play::calls(&[("remember", r#"{"class":"user","text":"用户爱喝茶"}"#)]);
@@ -202,7 +202,12 @@ async fn the_room_follows_the_memory_account_and_the_hearer_is_the_owner() {
     let entry = log
         .book(|book| book.all().next().cloned())
         .expect("记在记忆账号那一间");
-    assert_eq!(entry.audience, [alice()], "听众是属主");
+    assert!(entry.audience.is_empty(), "{:?}", entry.audience);
+    assert_eq!(
+        entry.venue.as_ref().map(|venue| venue.as_str()),
+        Some("local"),
+        "照这个场所记"
+    );
     let (own, _) = home.logs.open(&persona()).expect("开得了");
     assert_eq!(own.book(|book| book.all().count()), 0, "属主那一间没有");
     assert_eq!(

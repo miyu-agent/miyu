@@ -249,10 +249,10 @@ async fn undoing_the_turn_hides_it_and_forgetting_retires_it() {
 }
 
 #[tokio::test]
-async fn replaced_ones_others_and_her_own_session_stay_out() {
+async fn replaced_ones_and_her_own_session_stay_out_and_other_places_come_in() {
     use miyu_recall::{MemoryEvent, Saved};
     let home = Home::new();
-    // 一条听众是别人的（比如别人私聊里说的）：她在这里搜不到，也改不了。
+    // 一条在群里说的（施工 R-13 上）：一个大脑，主人这边搜得到、改得了。
     let (memories, _) = home
         .logs
         .open(&Room::persona(&alice_account(), "engineer"))
@@ -262,9 +262,10 @@ async fn replaced_ones_others_and_her_own_session_stay_out() {
         class: "user".into(),
         text: "bob 的猫叫团子".into(),
         sources: Vec::new(),
-        audience: vec![someone.clone()],
+        audience: Vec::new(),
         replaces: None,
         about: None,
+        venue: Some(VenueId::parse("qq:group:1").expect("合写法")),
     };
     memories
         .append(now(), someone, None, &MemoryEvent::Saved(private))
@@ -312,15 +313,25 @@ async fn replaced_ones_others_and_her_own_session_stay_out() {
         "Saved as m3, replacing m2."
     );
     let found = last_result(&chat(&home, &handle, 3, "猫叫什么").await);
-    assert!(
-        found.starts_with("m3 user ") && found.ends_with(": 用户的猫叫小白"),
-        "只有改过的那一条，没有别人的、没有这个会话自己的对话：{found}"
+    let mut lines: Vec<&str> = found.lines().collect();
+    lines.sort_unstable();
+    assert_eq!(
+        lines.len(),
+        2,
+        "改过的那一条和群里说的，没有改掉的、没有这个会话自己的对话：{found}"
     );
-    assert_eq!(found.lines().count(), 1, "{found}");
+    assert!(
+        lines[0].starts_with("m1 user ") && lines[0].ends_with(": bob 的猫叫团子"),
+        "{found}"
+    );
+    assert!(
+        lines[1].starts_with("m3 user ") && lines[1].ends_with(": 用户的猫叫小白"),
+        "{found}"
+    );
     assert_eq!(
         last_result(&chat(&home, &handle, 4, "改 bob 的").await),
-        "There is no memory m1.",
-        "听众不合的当没有"
+        "Saved as m4, replacing m1.",
+        "群里说的主人这边改得了"
     );
     assert_eq!(
         last_result(&chat(&home, &handle, 5, "忘掉").await),
@@ -332,8 +343,8 @@ async fn replaced_ones_others_and_her_own_session_stay_out() {
     );
     assert_eq!(
         last_result(&chat(&home, &handle, 7, "忘掉 bob 的").await),
-        "There is no memory m1.",
-        "听众不合的作废不了"
+        "m1 was already replaced or retired.",
+        "改掉了的作废不了"
     );
     assert_eq!(
         last_result(&chat(&home, &handle, 8, "再改").await),

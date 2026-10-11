@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{EmbedSetup, Embedder, Keeper, Turn, Using, Vectors};
+use miyu_session::{EmbedSetup, Embedder, Keeper, Listener, Turn, Using, Vectors};
 
 use crate::support::meaning::*;
 use crate::support::package::{program, tiny_package};
@@ -188,7 +188,7 @@ async fn the_fill_waits_while_the_files_are_checked() {
     let home = Home::new();
     meaning(&home);
     save(&home, "我的猫");
-    Keeper::new(&home.memory, persona(), vec![alice()]).fill(&using(&home));
+    Keeper::new(&home.memory, persona(), Listener::Owner(alice())).fill(&using(&home));
     filled(&home, MODEL, true, "m1").await;
 }
 
@@ -240,7 +240,7 @@ async fn measure_meaning_with_the_real_model() {
         ("我周末做什么", "Rust"),
         ("我有什么过敏", "花粉"),
     ];
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let vectors = keeper.vectors().expect("接上了").clone();
     let using = using(&home);
     let started = std::time::Instant::now();

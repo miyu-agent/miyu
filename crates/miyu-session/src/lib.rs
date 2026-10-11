@@ -68,8 +68,8 @@ pub use embed::{EmbedSetup, Embedder, IDLE as EMBED_IDLE, Unavailable};
 pub use handle::{Ended, Handle, Pushed, Retire, Stopped, Subscription};
 pub use jobs::{Jobs, Peek, Unreadable, peek};
 pub use memory::{
-    Dreamed, EMBED_LOCAL, ExtractTexts, Extraction, Filter, Following, Keeper, Memory, MergeTexts,
-    NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, Using, Vectors,
+    Dreamed, EMBED_LOCAL, ExtractTexts, Extraction, Filter, Following, Keeper, Listener, Memory,
+    MergeTexts, NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, Using, Vectors,
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, Load, LoadError, PresetPlaces, Workplace, create, fork,

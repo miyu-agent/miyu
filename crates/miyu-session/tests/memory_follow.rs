@@ -1,15 +1,15 @@
-//! 跟着看一间的记忆日志（施工 R-12 上，`docs/blueprint/memory.md`「协议」的流 `memory`）：照听众挑，听不到的那一条和作废它的
-//! 不给，整间的（抽到哪、合并、摘要、清空）照给；补的和之后的一个挑法；清掉的哪里都不出来：补的时候清掉的那几条、清空以前的
+//! 跟着看一间的记忆日志（施工 R-12 上，`docs/blueprint/memory.md`「协议」的流 `memory`）：照谁在听挑（施工 R-13 上：场所里只冒出
+//! 在这个场所说过的），冒不出来的那一条和作废它的不给，整间的（抽到哪、合并、摘要、清空）照给；补的和之后的一个挑法；清掉的哪里都不出来：补的时候清掉的那几条、清空以前的
 //! 摘要不给，出处全死了的也不给；攒满了算掉队、不再交。
 
 use std::sync::atomic::Ordering;
 
-use miyu_kernel::id::{Seq, SessionId, TurnId};
+use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_recall::{
     Cleared, MemoryEvent, MemoryId, Merged, Restored, Retired, Saved, Source, Summary,
 };
-use miyu_session::Keeper;
+use miyu_session::{Keeper, Listener};
 
 use crate::support::meaning::{persona, save};
 use crate::support::*;
@@ -19,6 +19,27 @@ fn append(home: &Home, by: By, event: MemoryEvent) {
     log.append(now(), by, None, &event).expect("记得下");
 }
 
+fn place(n: u32) -> VenueId {
+    VenueId::parse(&format!("qq:group:{n}")).expect("合写法")
+}
+
+/// 在群 `n` 里说的一条（施工 R-13 上：照场所冒出来）。
+fn said_in(home: &Home, n: u32, text: &str) {
+    append(
+        home,
+        alice(),
+        MemoryEvent::Saved(Saved {
+            class: "user".into(),
+            text: text.into(),
+            sources: Vec::new(),
+            audience: Vec::new(),
+            replaces: None,
+            about: None,
+            venue: Some(place(n)),
+        }),
+    );
+}
+
 fn seqs(events: &[miyu_kernel::event::Event]) -> Vec<u64> {
     events.iter().map(|event| event.seq.get()).collect()
 }
@@ -26,22 +47,11 @@ fn seqs(events: &[miyu_kernel::event::Event]) -> Vec<u64> {
 #[tokio::test]
 async fn only_what_the_hearer_may_hear_and_the_whole_room() {
     let home = Home::new();
-    save(&home, "用户养了一只猫");
+    said_in(&home, 1, "小林养了一只猫");
+    said_in(&home, 2, "只有群里那个人听得到的");
     append(
         &home,
-        stranger(),
-        MemoryEvent::Saved(Saved {
-            class: "user".into(),
-            text: "只有群里那个人听得到的".into(),
-            sources: Vec::new(),
-            audience: vec![stranger()],
-            replaces: None,
-            about: None,
-        }),
-    );
-    append(
-        &home,
-        stranger(),
+        alice(),
         MemoryEvent::Retired(Retired {
             id: MemoryId::parse("m2").expect("合写法"),
             why: "不要了".into(),
@@ -57,28 +67,17 @@ async fn only_what_the_hearer_may_hear_and_the_whole_room() {
         })
     };
     append(&home, alice(), merged());
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Place(place(1)));
     let mut following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
         [1, 4],
-        "听不到的那一条和作废它的不补，整间的照补"
+        "这里冒不出来的那一条和作废它的不补，整间的照补"
     );
     assert_eq!(following.upto, 4);
 
-    save(&home, "用户住在杭州");
-    append(
-        &home,
-        stranger(),
-        MemoryEvent::Saved(Saved {
-            class: "user".into(),
-            text: "又一条听不到的".into(),
-            sources: Vec::new(),
-            audience: vec![stranger()],
-            replaces: None,
-            about: None,
-        }),
-    );
+    said_in(&home, 1, "小林住在杭州");
+    said_in(&home, 2, "又一条听不到的");
     append(&home, alice(), merged());
     let mut live = Vec::new();
     while let Ok(event) = following.live.try_recv() {
@@ -91,7 +90,7 @@ async fn only_what_the_hearer_may_hear_and_the_whole_room() {
 #[tokio::test]
 async fn a_full_queue_is_a_lag_and_stops() {
     let home = Home::new();
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let mut following = keeper.follow(None, 1).expect("跟得上");
     for text in ["一", "二", "三"] {
         save(&home, text);
@@ -123,7 +122,7 @@ async fn what_was_cleared_is_not_filled_in() {
     append(&home, alice(), cleared(None));
     save(&home, "用户住在杭州");
     append(&home, alice(), summary("用户住在杭州", 4));
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     for after in [0, 1] {
         let following = keeper.follow(Some(after), 8).expect("跟得上");
         assert_eq!(
@@ -161,6 +160,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
             audience: vec![alice()],
             replaces: None,
             about: None,
+            venue: None,
         })
     };
     append(&home, alice(), from(&cleared_one));
@@ -175,7 +175,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
         }),
     );
     append(&home, alice(), cleared(Some(cleared_one)));
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
@@ -202,6 +202,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
             audience: vec![alice()],
             replaces: None,
             about: None,
+            venue: None,
         }),
     );
     save(&home, "人记的");
@@ -213,7 +214,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
             why: "不对".into(),
         }),
     );
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
@@ -226,19 +227,8 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
 #[tokio::test]
 async fn a_restoration_is_heard_like_a_retirement() {
     let home = Home::new();
-    save(&home, "用户养了一只猫");
-    append(
-        &home,
-        stranger(),
-        MemoryEvent::Saved(Saved {
-            class: "user".into(),
-            text: "只有群里那个人听得到的".into(),
-            sources: Vec::new(),
-            audience: vec![stranger()],
-            replaces: None,
-            about: None,
-        }),
-    );
+    said_in(&home, 1, "小林养了一只猫");
+    said_in(&home, 2, "只有群里那个人听得到的");
     for n in [1, 2] {
         let id = MemoryId::parse(&format!("m{n}")).expect("合写法");
         append(
@@ -251,11 +241,11 @@ async fn a_restoration_is_heard_like_a_retirement() {
         );
         append(&home, alice(), MemoryEvent::Restored(Restored { id }));
     }
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Place(place(1)));
     let following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
         [1, 3, 4],
-        "听不到的那一条的作废、恢复不补"
+        "这里冒不出来的那一条的作废、恢复不补"
     );
 }

@@ -10,11 +10,11 @@
 
 pub(crate) mod dream;
 mod params;
+mod shown;
 #[cfg(test)]
 mod tests;
 mod turns;
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
@@ -22,11 +22,12 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::origin::By;
-use miyu_recall::{CLASSES, Entry, MemoryId};
+use miyu_recall::{CLASSES, MemoryId};
 use miyu_session::{
-    ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Memory, Stamp, Turn, Using, Vectors,
+    ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Memory, Stamp, Turn,
+    Using, Vectors,
 };
-use miyu_store::recall::{Room, Used};
+use miyu_store::recall::Room;
 use miyu_tool::{Refused, Remember, TEXT_CHARS};
 
 use crate::Core;
@@ -36,6 +37,7 @@ use crate::refusal::Refusal;
 use crate::sessions::{admin, now};
 
 use params::{Forget, List, Restore, Search, Update, Where};
+use shown::shown_all;
 
 impl Core {
     /// 同一份家底，接上照意思找的那一路（施工 R-5 下、补，`recall.md` 第四条）：本机的照 `local` 算（没装内置语义模型的是
@@ -269,7 +271,7 @@ async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
             let account = personas::memory_account(Some(&found), &core.admin);
             let room = Room::persona(&account, &found.id);
-            Ok(Keeper::new(&memory(core)?, room, vec![hearer]))
+            Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
         (None, Some(session), None) => {
             let session = session_id(&session)?;
@@ -316,7 +318,11 @@ pub(crate) fn remembers(core: &Core, handle: &Handle) -> bool {
 /// 会话 `handle` 用的那一间，听众是 `hearer`：本机的、记忆开着的才有。
 fn keeper_of(core: &Core, handle: &Handle, hearer: By) -> Result<Keeper, Refusal> {
     let room = room(handle).ok_or(Refusal::MEMORY_UNAVAILABLE)?;
-    Ok(Keeper::new(&memory(core)?, room.clone(), vec![hearer]))
+    Ok(Keeper::new(
+        &memory(core)?,
+        room.clone(),
+        Listener::Owner(hearer),
+    ))
 }
 
 /// 会话 `handle` 用的那一间：本机的、记忆开着的才有。
@@ -363,37 +369,6 @@ fn memory(core: &Core) -> Result<Arc<miyu_session::Memory>, Refusal> {
     core.memory_for(&core.admin)
         .filter(|memory| memory.installed())
         .ok_or(Refusal::MEMORY_UNAVAILABLE)
-}
-
-/// 几条在回应里的样子，带上用到几次、最近一次（施工 R-4 下）。
-fn shown_all(found: &[Entry], used: &BTreeMap<String, Used>) -> Vec<Value> {
-    found
-        .iter()
-        .map(|entry| {
-            let mut value = shown(entry);
-            let used = used.get(&entry.id.to_string());
-            value["used"] = json!(used.map_or(0, |used| used.count));
-            value["used_at"] = json!(used.map(|used| used.last.to_string()));
-            value
-        })
-        .collect()
-}
-
-/// 一条在回应里的样子。
-fn shown(entry: &Entry) -> Value {
-    let by = serde_json::to_value(&entry.by)
-        .ok()
-        .and_then(|by| by.get("kind").cloned())
-        .unwrap_or(Value::Null);
-    json!({
-        "id": entry.id.to_string(),
-        "class": entry.class,
-        "text": entry.text,
-        "at": entry.at.to_string(),
-        "by": by,
-        "sources": entry.sources,
-        "retired": entry.retired,
-    })
 }
 
 /// 正文：去掉前后空白，空的参数不对，超过 [`TEXT_CHARS`] 个字的太长。

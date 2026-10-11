@@ -23,6 +23,7 @@ fn saved(text: &str) -> MemoryEvent {
         audience: vec![person()],
         replaces: None,
         about: None,
+        venue: None,
     })
 }
 

@@ -36,6 +36,7 @@ fn entry(n: u64, text: &str) -> Entry {
         ))],
         about: None,
         replaces: None,
+        venue: None,
         // UTC 的 10 月 7 日 20 点：东九区是 8 日。
         at: Timestamp::parse("2026-10-07T20:00:00.000Z").unwrap(),
         by: By::Kernel,

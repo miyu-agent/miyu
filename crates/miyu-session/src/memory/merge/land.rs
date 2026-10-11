@@ -98,6 +98,7 @@ impl Keeper {
                 audience: old.audience,
                 replaces: Some(one.id),
                 about: old.about,
+                venue: old.venue,
             };
             self.append(&log, stamp(), &MemoryEvent::Saved(saved))?;
             revised += 1;

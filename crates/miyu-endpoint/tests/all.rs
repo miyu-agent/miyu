@@ -58,6 +58,7 @@ mod memory_restore;
 mod memory_scope;
 mod memory_turns;
 mod memory_used;
+mod memory_venue;
 mod messages;
 mod meta;
 mod model_call;

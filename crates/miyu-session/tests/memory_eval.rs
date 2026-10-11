@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_recall::associate::{Thresholds, pick};
-use miyu_session::{EmbedSetup, Embedder, Keeper, Stamp, Turn, Using, Vectors};
+use miyu_session::{EmbedSetup, Embedder, Keeper, Listener, Stamp, Turn, Using, Vectors};
 use miyu_tool::Remember;
 
 use crate::support::eval::{
@@ -319,7 +319,7 @@ fn real_package(dir: &Path, files: &Path) -> EmbedSetup {
 async fn measure_the_eval_set() {
     let set = shipped();
     let home = Home::new();
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let mut keys = BTreeMap::new();
     for memory in &set.memories {
         let stamp = Stamp {

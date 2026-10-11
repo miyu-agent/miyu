@@ -10,7 +10,7 @@ use std::time::Duration;
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_kernel::time::UtcOffset;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Dreamed, Keeper, NotDreamed, Turn};
+use miyu_session::{Dreamed, Keeper, Listener, NotDreamed, Turn};
 
 use crate::support::extracting::*;
 use crate::support::meaning::{catalog, chat, persona, save};
@@ -22,7 +22,7 @@ fn says(n: usize) -> Script {
 
 /// 这一间的整理记忆的一方：照场地这时的配置、属主 alice、东九区。
 async fn dream(home: &Home) -> Result<Dreamed, NotDreamed> {
-    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     // 场地的配置是不变的那一种：最终值照它合出来的（带着 `memory.organizer`）。
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
@@ -70,7 +70,7 @@ async fn a_dream_in_a_session_extracts_now_and_merges_now() {
     let dreamed = handle.dream().await.expect("会话在跑").expect("整理了");
     assert_eq!(server.received().len(), 2, "抽了一次、合了一次");
     assert!(asked(&server, 0).starts_with("Find what is worth remembering"));
-    assert!(asked(&server, 1).starts_with("Below are the memories"));
+    assert!(asked(&server, 1).starts_with("Below are your memories"));
     assert_eq!(
         dreamed,
         Dreamed {

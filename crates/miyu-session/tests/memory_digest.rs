@@ -44,6 +44,7 @@ fn save(home: &Home, text: &str, by: By, replaces: Option<MemoryId>) -> MemoryId
             audience: vec![alice()],
             replaces,
             about: None,
+            venue: None,
         }),
     )
 }
@@ -137,7 +138,7 @@ async fn with_a_summary_the_block_is_the_summary_and_what_came_after() {
     assert_eq!(
         block,
         format!(
-            "<memories>\nAbout the user: 用户养猫，住在东京。\n{}\n{}\n</memories>\n",
+            "<memories>\nWhat I know: 用户养猫，住在东京。\n{}\n{}\n</memories>\n",
             line(go, "用户周末写 Rust 和 Go"),
             line(tokyo, "用户搬到了东京")
         ),
@@ -154,7 +155,7 @@ async fn only_the_summary_when_nothing_came_after() {
     let (block, refs) = first_block(&home).await;
     assert_eq!(
         block,
-        "<memories>\nAbout the user: 用户养猫，住在东京。\n</memories>\n"
+        "<memories>\nWhat I know: 用户养猫，住在东京。\n</memories>\n"
     );
     assert!(refs.is_empty());
 }
@@ -175,7 +176,7 @@ async fn a_full_block_cuts_what_came_after_and_says_how_many() {
     }
     let (block, refs) = first_block(&home).await;
     assert!(block.len() <= 3000, "{}", block.len());
-    assert!(block.starts_with("<memories>\nAbout the user: "), "{block}");
+    assert!(block.starts_with("<memories>\nWhat I know: "), "{block}");
     assert!(
         block.ends_with(&format!(
             "…and {} more; memory_search finds them.\n</memories>\n",
@@ -204,7 +205,7 @@ async fn once_something_it_covered_is_forgotten_the_summary_is_not_given() {
         }),
     );
     let (block, refs) = first_block(&home).await;
-    assert!(!block.contains("About the user"), "摘要不算了：{block}");
+    assert!(!block.contains("What I know"), "摘要不算了：{block}");
     assert!(!block.contains("大阪"), "忘了就是忘了：{block}");
     assert_eq!(refs, [revised.to_string()], "照只列条目");
 }

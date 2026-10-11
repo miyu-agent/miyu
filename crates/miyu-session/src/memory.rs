@@ -9,6 +9,7 @@ mod backfill;
 mod extract;
 mod follow;
 mod keeper;
+mod listener;
 mod merge;
 mod port;
 mod recall;
@@ -18,9 +19,10 @@ mod used;
 mod vectors;
 
 pub use extract::{ExtractTexts, Extraction};
-pub(crate) use extract::{Extractor, Job, plan};
+pub(crate) use extract::{Extractor, Job, Voices, plan};
 pub use follow::Following;
 pub use keeper::{Filter, Keeper, Stamp};
+pub use listener::Listener;
 pub use merge::{Dreamed, MergeTexts, NotDreamed};
 
 /// 记忆模块的编号：注入、抽取记下的 `by` 都是它（施工 R-4 上、R-6 上）。
@@ -189,7 +191,11 @@ pub(crate) fn connect(
         None
     };
     let local = venue.as_str() == LOCAL;
-    (turns, Some(Calls::new(memory, room, owner, session, local)))
+    let listener = Listener::of(account, owner, venue);
+    (
+        turns,
+        Some(Calls::new(memory, room, listener, owner, session, local)),
+    )
 }
 
 /// 场所会话 `session` 以前进了 `room` 那一间回合库的（施工 O-4 下到 R-2 再补之间）拿掉：只拿掉、不埋墓碑，会话还在。拿不掉的

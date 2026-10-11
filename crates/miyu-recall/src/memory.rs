@@ -16,7 +16,7 @@ use std::fmt;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{CommandId, EventKind, Seq, SessionId, TurnId};
+use miyu_kernel::id::{CommandId, EventKind, Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
@@ -111,6 +111,10 @@ pub struct Saved {
     /// 说的是哪天的事，写法自由；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub about: Option<String>,
+    /// 在哪个场所说的（施工 R-13 上，`memory.md` 第九条）：场所里记的是那个场所，只在那个场所和主人那边冒出来；主人那边记的、
+    /// 以前记的没有，不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub venue: Option<VenueId>,
 }
 
 /// `ext.memory.retired` 的 `body`：作废一条。
@@ -272,6 +276,8 @@ pub struct Entry {
     pub about: Option<String>,
     /// 它改的是哪一条（施工 R-7 上：合并照它认出自己改出来的那几条）；新记的没有。
     pub replaces: Option<MemoryId>,
+    /// 在哪个场所说的（施工 R-13 上）；主人那边记的、以前记的没有。
+    pub venue: Option<VenueId>,
     /// 记下的时刻。
     pub at: Timestamp,
     /// 谁记的。
@@ -392,6 +398,7 @@ impl MemoryBook {
                         sources: saved.sources,
                         audience: saved.audience,
                         about: saved.about,
+                        venue: saved.venue,
                         replaces: saved.replaces,
                         at: event.at,
                         by: event.by.clone(),

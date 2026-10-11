@@ -19,11 +19,20 @@ use tokio::sync::oneshot;
 
 use super::back::answer_back;
 use super::{Actor, answer};
-use crate::memory::{Dreamed, Job, NotDreamed, plan};
+use crate::memory::{Dreamed, Job, NotDreamed, Voices, plan};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 
 impl Actor {
+    /// 群会话的群聊近况预算（施工 R-13 上，`memory.md` 第六条第 4 款）：抽取照它每一轮只带她当时看到的那几句；不是群会话的
+    /// 没有。快照里群聊近况没有字的（O-13 中造的群会话）不限。
+    fn group_budget(&self) -> Option<usize> {
+        let group = self.persona.as_ref()?.snapshot.group.as_ref()?;
+        Some(group.recent.as_ref().map_or(usize::MAX, |recent| {
+            usize::try_from(recent.budget).unwrap_or(usize::MAX)
+        }))
+    }
+
     /// 刚从忙到闲：抽取开着的上一个闹钟。
     pub(super) fn extract_when_idle(&self) {
         let Some((calls, _)) = self.tools.memory() else {
@@ -114,10 +123,18 @@ impl Actor {
         }
         let spoken = self.session.spoken_in(&history, after);
         let called = history.called_since(after);
+        let voices = Voices::of(history.events(), self.group_budget());
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
         let min_turns = usize::try_from(settings.extract_turns).unwrap_or(1);
-        let plan = plan(&spoken, &called, min_turns, offset, &extraction.texts);
+        let plan = plan(
+            &spoken,
+            &called,
+            min_turns,
+            offset,
+            &extraction.texts,
+            &voices,
+        );
         let job = Job {
             offset,
             dream: None,
@@ -214,7 +231,8 @@ impl Actor {
         }
         let spoken = self.session.spoken_in(&history, after);
         let called = history.called_since(after);
-        let plan = plan(&spoken, &called, 1, offset, &extraction.texts);
+        let voices = Voices::of(history.events(), self.group_budget());
+        let plan = plan(&spoken, &called, 1, offset, &extraction.texts, &voices);
         let job = Job {
             offset,
             dream: Some(reply),

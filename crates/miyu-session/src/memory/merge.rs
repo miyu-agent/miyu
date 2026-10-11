@@ -146,7 +146,7 @@ impl Keeper {
             return Err(NotDreamed::Off);
         };
         MergeJob {
-            keeper: self.clone(),
+            keeper: self.as_owner(),
             extraction,
             config,
             owner,

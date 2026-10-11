@@ -43,7 +43,7 @@ async fn two_turns_and_a_pause_are_extracted_into_memories() {
             "{text}"
         );
     }
-    assert!(text.contains("User: 我养了一只猫") && text.contains("Assistant: 好。"));
+    assert!(text.contains("Owner: 我养了一只猫") && text.contains("You: 好。"));
     let body: serde_json::Value = serde_json::from_slice(&server.received()[0].body).expect("JSON");
     assert_eq!(body["model"], "m");
     assert_eq!(

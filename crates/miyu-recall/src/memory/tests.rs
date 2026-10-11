@@ -9,6 +9,7 @@ use super::*;
 
 mod merged;
 mod restored;
+mod venue;
 
 fn seq(n: u64) -> Seq {
     Seq::new(n).expect("序号从 1 起")
@@ -42,6 +43,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         audience: vec![admin()],
         replaces,
         about: None,
+        venue: None,
     }
 }
 

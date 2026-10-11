@@ -155,10 +155,11 @@ impl Job {
         blocking(move || keeper.fill(&using)).await;
     }
 
-    /// 照这一次的几样合并（施工 R-7 上，`merge.rs`）：定时的看一眼够不够、在后台合，人叫的现在就合。
+    /// 照这一次的几样合并（施工 R-7 上，`merge.rs`）：定时的看一眼够不够、在后台合，人叫的现在就合。照主人那边合（施工
+    /// R-13 上）：一个大脑一份摘要，场所会话里抽完起的也照全部合。
     fn merge_job(&self) -> MergeJob {
         MergeJob {
-            keeper: self.keeper.clone(),
+            keeper: self.keeper.as_owner(),
             extraction: self.extraction.clone(),
             config: Arc::clone(&self.config),
             owner: self.owner.clone(),

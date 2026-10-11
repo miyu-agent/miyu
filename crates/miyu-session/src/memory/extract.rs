@@ -3,7 +3,8 @@
 //! 从哪来在 `actor/extract.rs`。
 //!
 //! - **这一段**：会话那一层照日志拼的历史（留着一切的那一份），交给会话的组装器渲染（`Session::spoken_in`），所以压缩过的也
-//!   在。人的话接在它触发的那一轮上；还没答的那一句不算进来，等下次。
+//!   在。人的话接在它触发的那一轮上；还没答的那一句不算进来，等下次。每一句标出谁说的，群里每一轮只带她当时看到的那几句
+//!   （施工 R-13 上，`extract/voices.rs`）。
 //! - **拼法**（单发）：指令在前，后面是这一段的几轮，一轮一块（编号、日期、人的话、她的回答），一条 user，不带 system、
 //!   工具面。最多 [`ROOM`] 字节：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮；一轮自己就放不下的留头尾、截中间，
 //!   照样抽，`upto` 照样往前走，不卡在一轮上。
@@ -20,7 +21,7 @@ use miyu_config::Value;
 use miyu_config::secret::Reference;
 use miyu_kernel::assemble::Spoken;
 use miyu_kernel::id::{Seq, TurnId};
-use miyu_kernel::template::Template;
+use miyu_kernel::template::{Template, escape};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::redact::KeyShapes;
 use miyu_store::blob::Blobs;
@@ -52,14 +53,15 @@ pub struct ExtractTexts {
     instruction: Template,
     open: Template,
     close: Template,
-    user: Template,
+    owner: Template,
+    person: Template,
     assistant: Template,
     excerpted: Template,
 }
 
 impl ExtractTexts {
     /// 从资源目录 `resources` 读：`extract/instruction.txt`、`turn-open.txt`（`{turn}`、`{date}`）、`turn-close.txt`、
-    /// `user.txt`、`assistant.txt`（`{text}`）、`excerpted.txt`。
+    /// `owner.txt`、`assistant.txt`（`{text}`）、`person.txt`（`{name}`、`{text}`）、`excerpted.txt`。
     ///
     /// # Errors
     ///
@@ -71,7 +73,8 @@ impl ExtractTexts {
             instruction: text("instruction", &[])?,
             open: text("turn-open", &["turn", "date"])?,
             close: text("turn-close", &[])?,
-            user: text("user", &["text"])?,
+            owner: text("owner", &["text"])?,
+            person: text("person", &["name", "text"])?,
             assistant: text("assistant", &["text"])?,
             excerpted: text("excerpted", &[])?,
         })
@@ -194,33 +197,60 @@ impl Extractor {
     }
 }
 
-/// 一轮：编号、她回答的时刻、人这边的几句、她的回答、她那一条的序号。
+/// 一轮：编号、她回答的时刻、人这边的几句（谁说的、字）、她的回答、她那一条的序号。
 struct Exchange {
     turn: TurnId,
     at: Timestamp,
-    said: Vec<String>,
+    said: Vec<(Voice, String)>,
     answer: String,
     seq: Seq,
 }
 
-/// 把几段话接成几轮：人的话接在它后面那一轮她的回答上；最后还没答的那几句不算。
-fn exchanges(spoken: &[Spoken]) -> Vec<Exchange> {
+/// 把几段话接成几轮：人的话接在它后面那一轮她的回答上；最后还没答的那几句不算；不是人说的不进（`voices`）。群会话的每一轮
+/// 只留离它最近、装得进预算的那几句，一句都装不下的也留最后那一句。
+fn exchanges(spoken: &[Spoken], voices: &Voices) -> Vec<Exchange> {
     let mut said = Vec::new();
     let mut exchanges = Vec::new();
     for one in spoken {
         match (one.assistant, one.turn) {
-            (true, Some(turn)) => exchanges.push(Exchange {
-                turn,
-                at: one.at,
-                said: std::mem::take(&mut said),
-                answer: one.text.clone(),
-                seq: one.seq,
-            }),
+            (true, Some(turn)) => {
+                let mut said = std::mem::take(&mut said);
+                if let Some(budget) = voices.budget {
+                    said = within(said, budget);
+                }
+                exchanges.push(Exchange {
+                    turn,
+                    at: one.at,
+                    said,
+                    answer: one.text.clone(),
+                    seq: one.seq,
+                });
+            }
             (true, None) => {}
-            (false, _) => said.push(one.text.clone()),
+            (false, _) => {
+                if let Some(voice) = voices.said.get(&one.seq) {
+                    said.push((voice.clone(), one.text.clone()));
+                }
+            }
         }
     }
     exchanges
+}
+
+/// 从最新往前装，装不下就停（同群聊近况，`miyu-assemble` 的 `group/recent.rs`）；至少留最后那一句。
+fn within(said: Vec<(Voice, String)>, budget: usize) -> Vec<(Voice, String)> {
+    let mut used = 0;
+    let keep = said
+        .iter()
+        .rev()
+        .take_while(|(_, text)| {
+            used += text.len() + 1;
+            used <= budget
+        })
+        .count()
+        .max(1);
+    let skip = said.len().saturating_sub(keep);
+    said.into_iter().skip(skip).collect()
 }
 
 /// 这一段怎么办。
@@ -246,15 +276,17 @@ pub(crate) enum Plan {
     },
 }
 
-/// 照这一段 `spoken`（她在里面调过的工具 `called`）定怎么办：答了的轮数至少 `min_turns`；日期照会话的时区 `offset`。
+/// 照这一段 `spoken`（她在里面调过的工具 `called`，每一句是谁说的 `voices`）定怎么办：答了的轮数至少 `min_turns`；日期照
+/// 会话的时区 `offset`。
 pub(crate) fn plan(
     spoken: &[Spoken],
     called: &BTreeSet<String>,
     min_turns: usize,
     offset: UtcOffset,
     texts: &ExtractTexts,
+    voices: &Voices,
 ) -> Plan {
-    let exchanges = exchanges(spoken);
+    let exchanges = exchanges(spoken, voices);
     let Some(last) = exchanges.last().map(|exchange| exchange.seq) else {
         return Plan::Wait;
     };
@@ -305,12 +337,12 @@ fn render(exchange: &Exchange, offset: UtcOffset, texts: &ExtractTexts) -> Strin
             ("date", &exchange.at.local_date(offset)),
         ],
     )];
-    lines.extend(
-        exchange
-            .said
-            .iter()
-            .map(|text| say(&texts.user, &[("text", text)])),
-    );
+    lines.extend(exchange.said.iter().map(|(voice, text)| match voice {
+        Voice::Owner => say(&texts.owner, &[("text", text)]),
+        Voice::Named(name) => say(&texts.person, &[("name", name), ("text", text)]),
+        // 群里那一行本来就带着名字和记号：只照模板的规矩转义成一行，伪造不了一轮的尾巴。
+        Voice::Line => escape(text),
+    }));
     lines.push(say(&texts.assistant, &[("text", &exchange.answer)]));
     lines.push(say(&texts.close, &[]));
     lines.join("\n")
@@ -357,8 +389,10 @@ pub(super) fn secrets(config: &Turn) -> Vec<String> {
 }
 
 mod job;
+mod voices;
 
 pub(crate) use job::Job;
+pub(crate) use voices::{Voice, Voices};
 
 #[cfg(test)]
 mod tests;

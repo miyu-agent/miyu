@@ -97,11 +97,11 @@ async fn a_reopened_session_goes_on_from_where_it_was_extracted() {
     requested(&server, 2).await;
     let text = asked(&server, 1);
     assert!(
-        text.contains("User: 三") && text.contains("User: 四"),
+        text.contains("Owner: 三") && text.contains("Owner: 四"),
         "{text}"
     );
     assert!(
-        !text.contains("User: 一") && !text.contains("User: 二"),
+        !text.contains("Owner: 一") && !text.contains("Owner: 二"),
         "抽过的不重抽"
     );
     marked_past(&home, &session, first).await;
@@ -130,10 +130,12 @@ async fn what_does_not_fit_is_extracted_right_after() {
     requested(&server, 2).await;
     let (first, second) = (asked(&server, 0), asked(&server, 1));
     assert!(
-        first.contains("User: 一") && first.contains("User: 二") && !first.contains("User: 三")
+        first.contains("Owner: 一") && first.contains("Owner: 二") && !first.contains("Owner: 三")
     );
     assert!(
-        second.contains("User: 三") && second.contains("User: 四") && !second.contains("User: 二")
+        second.contains("Owner: 三")
+            && second.contains("Owner: 四")
+            && !second.contains("Owner: 二")
     );
     stop(&handle).await;
 }
@@ -168,7 +170,7 @@ async fn three_failures_on_the_same_slice_let_it_go() {
     requested(&server, 4).await;
     let text = asked(&server, 3);
     assert!(
-        text.contains("User: 五") && !text.contains("User: 四"),
+        text.contains("Owner: 五") && !text.contains("Owner: 四"),
         "{text}"
     );
     stop(&handle).await;

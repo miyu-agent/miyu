@@ -11,7 +11,7 @@ use miyu_kernel::event::{Body, ContextInjected, Event};
 use miyu_kernel::id::VenueId;
 use miyu_recall::associate::Thresholds;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Embedder, Keeper, RecallTexts, Turn, Using, Vectors};
+use miyu_session::{Embedder, Keeper, Listener, RecallTexts, Turn, Using, Vectors};
 
 use crate::support::meaning::{catalog, chat, filled, model_data, persona, save};
 use crate::support::package::tiny_package;
@@ -60,7 +60,7 @@ async fn remember(home: &Home, short: usize, long: usize) {
         )),
         owner: alice_account(),
     };
-    Keeper::new(&home.memory, persona(), vec![alice()]).fill(&using);
+    Keeper::new(&home.memory, persona(), Listener::Owner(alice())).fill(&using);
     for n in 1..=short + long {
         filled(home, MODEL, true, &format!("m{n}")).await;
     }

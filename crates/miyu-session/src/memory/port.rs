@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use miyu_kernel::facts::Present;
 use miyu_kernel::id::{AccountId, CallId, SessionId, TurnId};
-use miyu_kernel::origin::{By, Person, Tool};
+use miyu_kernel::origin::{By, Tool};
 use miyu_kernel::session::Injection;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::{MemoryId, Source};
@@ -18,7 +18,7 @@ use miyu_tool::{FoundMemory, MEMORIES, MemoryPort, Pending, Refused, Remember, S
 use crate::blocking::blocking;
 use crate::config::TurnConfig;
 
-use super::{Extractor, Keeper, Memory, Query, Stamp, Using};
+use super::{Extractor, Keeper, Listener, Memory, Query, Stamp, Using};
 
 /// 一个主会话的记忆：每次调用照它造端口。
 #[derive(Clone)]
@@ -34,17 +34,18 @@ pub(crate) struct Calls {
 }
 
 impl Calls {
-    /// 会话 `session`（属主 `owner`）的记忆，放在 `room` 那一间；听众是属主（本机的会话）。`local` 是本机的会话（不是场所的）。
+    /// 会话 `session`（属主 `owner`）的记忆，放在 `room` 那一间，`listener` 在听（施工 R-13 上：照属主和记忆账号定，
+    /// [`Listener::of`]）。`local` 是本机的会话（不是场所的）。
     pub(crate) fn new(
         memory: &Arc<Memory>,
         room: Room,
+        listener: Listener,
         owner: &AccountId,
         session: &SessionId,
         local: bool,
     ) -> Calls {
-        let hearers = vec![By::Person(Person::new(owner.clone()))];
         Calls {
-            keeper: Keeper::new(memory, room, hearers),
+            keeper: Keeper::new(memory, room, listener),
             session: session.clone(),
             owner: owner.clone(),
             extractor: Arc::default(),

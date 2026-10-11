@@ -2,14 +2,15 @@
 //! 都在这里。她的三件工具（`port.rs`）和协议（端点的 `memory.*`、`/remember`）都调它，只是 `by`、出处、听众不一样。碰记忆日志
 //! 和检索库，调的一方放在阻塞线程里。
 //!
-//! - 听众：一条记忆的听众里有这次会被谁看到的每一个人，才算合（17 L6）；不合的当没有，不让人知道有。
+//! - 谁在听（施工 R-13 上，[`Listener`]）：主人那边全部冒得出来；一个场所里只有在这个场所说过的（17 L6）。冒不出来的当没有，
+//!   不让人知道有。
 //! - 出处活不活照回合库的墓碑（第二条第 4 款）：一处都没有（人记的）的算活；有的，活着一处就算。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_kernel::id::{CommandId, ModuleId, Seq, SessionId, TurnId};
-use miyu_kernel::origin::{By, Module};
+use miyu_kernel::origin::{By, Module, Person};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::extract::Candidate;
 use miyu_recall::{
@@ -22,6 +23,7 @@ use miyu_tool::{FoundTurn, Refused, Remember};
 use crate::TARGET;
 
 use super::Memory;
+use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
 /// 一间记忆，连同这次会被谁看到（听众）。可以复制：每次调用照它做。
@@ -29,7 +31,7 @@ use super::vectors::{Query, Target, Using, Vectors};
 pub struct Keeper {
     pub(super) memory: Arc<Memory>,
     room: Room,
-    hearers: Vec<By>,
+    listener: Listener,
 }
 
 /// 谁、什么时候、经哪条命令写的。
@@ -58,12 +60,12 @@ pub struct Filter {
 }
 
 impl Keeper {
-    /// 记忆 `memory` 里的 `room` 那一间，这次会被 `hearers` 看到。
-    pub fn new(memory: &Arc<Memory>, room: Room, hearers: Vec<By>) -> Keeper {
+    /// 记忆 `memory` 里的 `room` 那一间，这次是 `listener` 在听。
+    pub fn new(memory: &Arc<Memory>, room: Room, listener: Listener) -> Keeper {
         Keeper {
             memory: Arc::clone(memory),
             room,
-            hearers,
+            listener,
         }
     }
 
@@ -88,13 +90,15 @@ impl Keeper {
         if let Some(old) = remember.replaces {
             self.current(&log, old)?;
         }
+        let (audience, venue) = self.listener.heard();
         let saved = Saved {
             class: remember.class,
             text: remember.text,
             sources,
-            audience: self.hearers.clone(),
+            audience,
             replaces: remember.replaces,
             about: None,
+            venue,
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -142,6 +146,7 @@ impl Keeper {
             let Some(turn) = Seq::new(candidate.turn).map(TurnId::new) else {
                 continue;
             };
+            let (audience, venue) = self.listener.heard();
             let saved = Saved {
                 class: candidate.class,
                 text: candidate.text,
@@ -149,9 +154,10 @@ impl Keeper {
                     session: session.clone(),
                     turn,
                 }],
-                audience: self.hearers.clone(),
+                audience,
                 replaces: None,
                 about: candidate.about,
+                venue,
             };
             let stamp = Stamp {
                 at,
@@ -420,14 +426,26 @@ impl Keeper {
         Ok((appended.id, appended.cleared))
     }
 
-    /// 这次会被谁看到的人，都在这一条的听众里。
+    /// 这一条在这一次冒不冒得出来（[`Listener`]）。
     pub(super) fn hears(&self, entry: &Entry) -> bool {
-        self.hearers.iter().all(|hearer| {
-            entry
-                .audience
-                .iter()
-                .any(|heard| same_person(hearer, heard))
-        })
+        self.listener.hears(entry)
+    }
+
+    /// 这一次是不是主人那边（摘要那一行只在这里交，施工 R-13 上）。
+    pub(super) fn owner_listens(&self) -> bool {
+        self.listener.is_owner()
+    }
+
+    /// 同一间、主人那边在听的一份（施工 R-13 上）：合并照全部合，不管是哪个会话抽完以后起的。
+    pub(crate) fn as_owner(&self) -> Keeper {
+        let account = match &self.room {
+            Room::Persona { account, .. } | Room::Session { account, .. } => account,
+        };
+        Keeper {
+            memory: Arc::clone(&self.memory),
+            room: self.room.clone(),
+            listener: Listener::Owner(By::Person(Person::new(account.clone()))),
+        }
     }
 
     /// 出处还活着：一处都没有的算活；有的，活着一处就算。回合库读不了的当活的：宁可多想起来，不吞掉人说过的。
@@ -476,15 +494,5 @@ fn log_report(room: &Room, report: &Report) {
     }
     if report.filled > 0 {
         tracing::info!(target: TARGET, room, filled = report.filled, "memory log index caught up");
-    }
-}
-
-/// 是不是同一个人：有账号的人照账号比（主人在平台私聊里说的带着 `via`，还是这个账号本人，施工 O-3），平台上的人照平台身份
-/// 比；别的「谁」不是人，照原样比。
-fn same_person(a: &By, b: &By) -> bool {
-    match (a, b) {
-        (By::Person(a), By::Person(b)) => a.account == b.account,
-        (By::External(a), By::External(b)) => a.id == b.id,
-        _ => a == b,
     }
 }

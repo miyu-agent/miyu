@@ -121,7 +121,7 @@ async fn enough_sessions_merge_after_extraction_and_land_as_events() {
     requested(&server, 2).await;
     until_merged(&home).await;
     let text = asked(&server, 1);
-    assert!(text.starts_with("Below are the memories"), "{text}");
+    assert!(text.starts_with("Below are your memories"), "{text}");
     assert!(text.contains("Current summary: none yet."), "{text}");
     assert!(
         text.contains("Saved since the summary:\nm1 user ") && text.contains("m2 user "),
@@ -185,7 +185,7 @@ async fn too_few_sessions_wait_and_a_merge_does_not_repeat_before_its_time() {
     chat(&home, &second, 2, "很多年了").await;
     requested(&server, 3).await;
     until_merged(&home).await;
-    assert!(asked(&server, 2).starts_with("Below are the memories"));
+    assert!(asked(&server, 2).starts_with("Below are your memories"));
     let third = session(&home, 2).await;
     chat(&home, &third, 1, "我周末写 Rust").await;
     chat(&home, &third, 2, "写编译器").await;
@@ -198,7 +198,7 @@ async fn too_few_sessions_wait_and_a_merge_does_not_repeat_before_its_time() {
 }
 
 #[tokio::test]
-async fn related_old_memories_come_along_and_hidden_ones_do_not() {
+async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not() {
     let server = Server::start(vec![
         every_turn("团子三岁了"),
         merged(serde_json::json!({})),
@@ -228,16 +228,17 @@ async fn related_old_memories_come_along_and_hidden_ones_do_not() {
     });
     log.append(long_ago, alice(), None, &retired)
         .expect("记得下");
-    let bob: By = serde_json::from_str(r#"{"kind":"person","account":"bob"}"#).expect("合写法");
-    let hidden = Saved {
+    // 在群里说的（施工 R-13 上）：一个大脑，合并照全部合，它也跟着交。
+    let elsewhere = Saved {
         class: "user".into(),
         text: "团子是 bob 的猫".into(),
         sources: Vec::new(),
-        audience: vec![bob.clone()],
+        audience: Vec::new(),
         replaces: None,
         about: None,
+        venue: Some(miyu_kernel::id::VenueId::parse("qq:group:1").expect("合写法")),
     };
-    log.append(long_ago, bob, None, &MemoryEvent::Saved(hidden))
+    log.append(long_ago, alice(), None, &MemoryEvent::Saved(elsewhere))
         .expect("记得下");
     let handle = session(&home, 2).await;
     chat(&home, &handle, 1, "团子三岁了").await;
@@ -250,7 +251,7 @@ async fn related_old_memories_come_along_and_hidden_ones_do_not() {
         "相关的旧记忆跟着交：{text}"
     );
     assert!(!text.contains("已经不算了"), "作废的不交：{text}");
-    assert!(!text.contains("bob"), "听众不合的不交：{text}");
+    assert!(text.contains("bob"), "群里说的也交：{text}");
     stop(&handle).await;
 }
 
@@ -385,6 +386,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         audience: vec![alice()],
         replaces: None,
         about: None,
+        venue: None,
     };
     log.append(
         Timestamp::parse("2026-10-01T00:00:00.000Z").expect("合写法"),

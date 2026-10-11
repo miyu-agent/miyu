@@ -42,6 +42,7 @@ fn save(
         audience: vec![audience.clone()],
         replaces,
         about: None,
+        venue: None,
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))
         .expect("记得下")
@@ -197,7 +198,7 @@ async fn nothing_for_an_off_session_or_an_empty_room() {
 }
 
 #[tokio::test]
-async fn only_what_counts_and_what_they_may_hear() {
+async fn only_what_counts_and_from_everyone() {
     let home = Home::new();
     let bob: By = serde_json::from_str(r#"{"kind":"person","account":"bob"}"#).expect("合写法");
     save(&home, "user", "bob 的猫叫团子", bob, None);
@@ -219,7 +220,11 @@ async fn only_what_counts_and_what_they_may_hear() {
         block.contains(": 用户用 N 卡 型号 4090\n"),
         "正文的换行换成空格：{block}"
     );
-    for left_out in ["团子", "A 卡", "北京"] {
+    assert!(
+        block.contains("bob 的猫叫团子"),
+        "一个大脑：别人说的主人那边也想得起（施工 R-13 上）：{block}"
+    );
+    for left_out in ["A 卡", "北京"] {
         assert!(!block.contains(left_out), "{left_out} 不该进：{block}");
     }
     stop(&handle).await;
