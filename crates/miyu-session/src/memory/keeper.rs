@@ -288,21 +288,21 @@ impl Keeper {
             .collect())
     }
 
-    /// 搜这一间的以前的对话（回合索引），最多 `limit` 段；`skip` 这个会话自己的不算（她看得见）。照关键词找；有问句的向量
-    /// `near` 的（施工 R-5 下）再照意思找，两路照名次合。
+    /// 搜这一间的以前的对话（回合索引），最多 `limit` 段；`skip` 这个会话自己的不算（她看得见；人经协议搜的不跳过，施工
+    /// R-12 下）。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。
     ///
     /// # Errors
     ///
     /// 回合库读不了。
-    pub(crate) fn turns(
+    pub fn turns(
         &self,
         query: &str,
         limit: usize,
-        skip: &SessionId,
+        skip: Option<&SessionId>,
         near: Option<&Query>,
     ) -> Result<Vec<FoundTurn>, String> {
         let (turns, _) = self.memory.turns.turns(&self.room);
-        let own = format!("{skip}/");
+        let own = skip.map(|skip| format!("{skip}/"));
         let wide = limit.saturating_mul(4);
         let hits = turns
             .search(query, wide)
@@ -326,7 +326,7 @@ impl Keeper {
         found.extend(hits.into_iter().map(|hit| (hit.key, (hit.text, hit.at))));
         Ok(fuse(&keys, &similar)
             .into_iter()
-            .filter(|key| !key.starts_with(&own))
+            .filter(|key| own.as_ref().is_none_or(|own| !key.starts_with(own)))
             .filter_map(|key| {
                 let (text, at) = found.remove(&key)?;
                 let (session, turn) = key.split_once('/')?;
@@ -441,7 +441,7 @@ impl Keeper {
 }
 
 /// 这条命令做过的（`stamp.cause`）：那一条的编号、清掉几条。先看它，再查参数：改一条、作废一条重发时，那一条已经不算了。
-fn done(log: &MemoryLog, stamp: &Stamp) -> Option<(MemoryId, usize)> {
+pub(super) fn done(log: &MemoryLog, stamp: &Stamp) -> Option<(MemoryId, usize)> {
     let cause = stamp.cause.as_ref()?;
     log.book(|book| book.done(cause))
 }

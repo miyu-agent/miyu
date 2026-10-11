@@ -1,6 +1,7 @@
 //! 人经协议碰记忆（施工 R-3 补，`docs/blueprint/memory.md`「协议」、第二条、第九条；`protocol.md` 的 `memory.*`）：列、搜、
-//! 记、改、忘和清空。怎么记、怎么挑在会话那一层的 [`Keeper`]，她的工具也用它；这里只管找哪一间、读参数、写回应。现在就整理
-//! （`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`。
+//! 记、改、忘和清空，恢复作废的（施工 R-12 下）。怎么记、怎么挑在会话那一层的 [`Keeper`]，她的工具也用它；这里只管找哪一间、
+//! 读参数、写回应。现在就整理（`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`，搜以前的对话（`memory.turns`，
+//! 施工 R-12 下）在 `memory/turns.rs`。
 //!
 //! - 哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的
 //!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（不带人格记忆不生效）。
@@ -11,6 +12,7 @@ pub(crate) mod dream;
 mod params;
 #[cfg(test)]
 mod tests;
+mod turns;
 
 use std::sync::Arc;
 
@@ -32,7 +34,7 @@ use crate::personas;
 use crate::refusal::Refusal;
 use crate::sessions::{admin, now};
 
-use params::{Forget, List, Search, Update, Where};
+use params::{Forget, List, Restore, Search, Update, Where};
 
 impl Core {
     /// 同一份家底，接上照意思找的那一路（施工 R-5 下、补，`recall.md` 第四条）：本机的照 `local` 算（没装内置语义模型的是
@@ -60,7 +62,18 @@ const SEARCH: usize = 10;
 /// `limit` 最多写几。
 const LIMIT: usize = 500;
 
-/// 照方法名办一条 `memory.*`，命令编号是 `id`；不是这五个的没有这个方法。
+/// 按顺序答的 `memory.*`（`methods.rs` 照它转过来）；`memory.dream` 在后台答，另走。
+pub(crate) const METHODS: [&str; 7] = [
+    "memory.list",
+    "memory.search",
+    "memory.turns",
+    "memory.remember",
+    "memory.update",
+    "memory.forget",
+    "memory.restore",
+];
+
+/// 照方法名办一条 `memory.*`，命令编号是 `id`；不是 [`METHODS`] 里的没有这个方法。
 pub(crate) async fn call(
     core: &Arc<Core>,
     method: &str,
@@ -73,9 +86,11 @@ pub(crate) async fn call(
     match method {
         "memory.list" => list(core, read(params)?).await,
         "memory.search" => search(core, read(params)?).await,
+        "memory.turns" => turns::turns(core, read(params)?).await,
         "memory.remember" => remember(core, stamp(core, id), read(params)?).await,
         "memory.update" => update(core, stamp(core, id), read(params)?).await,
         "memory.forget" => forget(core, stamp(core, id), read(params)?).await,
+        "memory.restore" => restore(core, stamp(core, id), read(params)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -217,6 +232,14 @@ async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value,
         }
         _ => Err(Refusal::BAD_PARAMS),
     }
+}
+
+/// 恢复作废的一条（施工 R-12 下）：本来就算数的什么都不写，也回 `{}`。
+async fn restore(core: &Arc<Core>, stamp: Stamp, params: Restore) -> Result<Value, Refusal> {
+    let id = memory_id(&params.id)?;
+    let keeper = find(core, params.at).await?;
+    blocking(move || keeper.restore(stamp, id)).await?;
+    Ok(json!({}))
 }
 
 /// 人经协议写的：此刻、管理员、这条命令的编号。

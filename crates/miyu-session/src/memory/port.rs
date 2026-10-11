@@ -206,7 +206,7 @@ impl Inner {
                 retired: entry.retired.is_some(),
             })
             .collect();
-        let turns = keeper.turns(query, TURNS, &self.calls.session, near)?;
+        let turns = keeper.turns(query, TURNS, Some(&self.calls.session), near)?;
         Ok(Searched { memories, turns })
     }
 }

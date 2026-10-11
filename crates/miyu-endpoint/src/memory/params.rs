@@ -44,6 +44,16 @@ pub(super) struct Search {
     pub(super) limit: Option<usize>,
 }
 
+/// `memory.turns`（施工 R-12 下）。
+#[derive(Debug, Deserialize)]
+pub(super) struct Turns {
+    #[serde(flatten)]
+    pub(super) at: Where,
+    pub(super) query: String,
+    #[serde(default)]
+    pub(super) limit: Option<usize>,
+}
+
 /// `memory.remember`。
 #[derive(Debug, Deserialize)]
 pub(super) struct Remember {
@@ -73,4 +83,12 @@ pub(super) struct Forget {
     pub(super) why: Option<String>,
     #[serde(default)]
     pub(super) clear: Option<String>,
+}
+
+/// `memory.restore`（施工 R-12 下）。
+#[derive(Debug, Deserialize)]
+pub(super) struct Restore {
+    #[serde(flatten)]
+    pub(super) at: Where,
+    pub(super) id: String,
 }

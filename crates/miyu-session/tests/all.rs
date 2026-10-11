@@ -37,6 +37,7 @@ mod memory_installed;
 mod memory_merge;
 mod memory_recall;
 mod memory_remote;
+mod memory_restore;
 mod memory_scope;
 mod memory_summary;
 mod memory_tools;

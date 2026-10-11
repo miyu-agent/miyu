@@ -33,6 +33,8 @@ const EXTRACTED: &str = "ext.memory.extracted";
 const SUMMARY: &str = "ext.memory.summary";
 /// 合到哪（施工 R-7 上）。
 const MERGED: &str = "ext.memory.merged";
+/// 恢复作废的（施工 R-12 下）。
+const RESTORED: &str = "ext.memory.restored";
 
 /// 出厂认识的四类（2026-10-07 项目主人定）：关于你、你要她怎样、经历、长期有效的事实。日志里别的类原样留着、照常列出；
 /// 她经工具记的照这张名单查（R-3 中）。
@@ -120,6 +122,13 @@ pub struct Retired {
     pub why: String,
 }
 
+/// `ext.memory.restored` 的 `body`：作废了的那一条不算作废了（施工 R-12 下，`memory.md` 第二条第 6 款）：人恢复误删的。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Restored {
+    /// 恢复哪一条。
+    pub id: MemoryId,
+}
+
 /// `ext.memory.cleared` 的 `body`：人清空了（施工 R-3 补，`memory.md` 第二条第 5 款）。那以前的、合条件的都清掉，原文还在
 /// 日志里。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -196,6 +205,8 @@ pub enum MemoryEvent {
     Summary(Summary),
     /// 一次合并做完了（施工 R-7 上）。
     Merged(Merged),
+    /// 恢复作废的（施工 R-12 下）。
+    Restored(Restored),
 }
 
 /// 写成记忆日志里的一条事件：第 `seq` 条，时刻 `at`，`by` 写它的那一方。
@@ -211,6 +222,7 @@ pub fn to_event(seq: Seq, at: Timestamp, by: By, event: &MemoryEvent) -> Result<
         MemoryEvent::Extracted(extracted) => (EXTRACTED, serde_json::to_string(extracted)),
         MemoryEvent::Summary(summary) => (SUMMARY, serde_json::to_string(summary)),
         MemoryEvent::Merged(merged) => (MERGED, serde_json::to_string(merged)),
+        MemoryEvent::Restored(restored) => (RESTORED, serde_json::to_string(restored)),
     };
     let json = json.map_err(|error| error.to_string())?;
     let body: RawJson = serde_json::from_str(&json).map_err(|error| error.to_string())?;
@@ -237,6 +249,7 @@ pub fn from_event(event: &Event) -> Option<Result<MemoryEvent, String>> {
         EXTRACTED => serde_json::from_str(body.get()).map(MemoryEvent::Extracted),
         SUMMARY => serde_json::from_str(body.get()).map(MemoryEvent::Summary),
         MERGED => serde_json::from_str(body.get()).map(MemoryEvent::Merged),
+        RESTORED => serde_json::from_str(body.get()).map(MemoryEvent::Restored),
         _ => return None,
     };
     Some(read.map_err(|error| format!("body of {kind} not readable: {error}")))
@@ -393,6 +406,14 @@ impl MemoryBook {
                 self.touch(retired.id);
                 if let Some(entry) = self.entries.get_mut(&retired.id) {
                     entry.retired = Some(retired.why);
+                }
+                Ok(Some(0))
+            }
+            // 同作废：摘要合进去的那一条变了，摘要就不算了（第七条第 8 款）。
+            Some(Ok(MemoryEvent::Restored(restored))) => {
+                self.touch(restored.id);
+                if let Some(entry) = self.entries.get_mut(&restored.id) {
+                    entry.retired = None;
                 }
                 Ok(Some(0))
             }

@@ -220,8 +220,10 @@ impl MemoryLog {
                 }],
                 seq,
             ),
-            // 作废的不用改记忆库：搜得到，挑不挑是用的一方照底账判；抽到哪、合并的摘要和记号不是一条记忆（施工 R-6 上、R-7 上）。
+            // 作废的不用改记忆库：搜得到，挑不挑是用的一方照底账判，恢复的也是（施工 R-12 下）；抽到哪、合并的摘要和记号不是
+            // 一条记忆（施工 R-6 上、R-7 上）。
             MemoryEvent::Retired(_)
+            | MemoryEvent::Restored(_)
             | MemoryEvent::Extracted(_)
             | MemoryEvent::Summary(_)
             | MemoryEvent::Merged(_) => Ok(()),

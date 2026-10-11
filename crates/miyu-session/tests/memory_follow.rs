@@ -4,23 +4,15 @@
 
 use std::sync::atomic::Ordering;
 
-use miyu_kernel::id::{ExternalId, Seq, SessionId, TurnId, VenueId};
-use miyu_kernel::origin::{By, External};
-use miyu_recall::{Cleared, MemoryEvent, MemoryId, Merged, Retired, Saved, Source, Summary};
+use miyu_kernel::id::{Seq, SessionId, TurnId};
+use miyu_kernel::origin::By;
+use miyu_recall::{
+    Cleared, MemoryEvent, MemoryId, Merged, Restored, Retired, Saved, Source, Summary,
+};
 use miyu_session::Keeper;
 
 use crate::support::meaning::{persona, save};
 use crate::support::*;
-
-/// 群里的一个人：alice 听不到只给他的。
-fn stranger() -> By {
-    By::External(External {
-        venue: VenueId::parse("qq:group:1").expect("合写法"),
-        id: ExternalId::parse("qq:10001").expect("合写法"),
-        account: None,
-        role: None,
-    })
-}
 
 fn append(home: &Home, by: By, event: MemoryEvent) {
     let (log, _) = home.logs.open(&persona()).expect("开得了");
@@ -227,5 +219,43 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
         seqs(&following.filled),
         [2],
         "出处全死了的那一条和作废它的当它不在"
+    );
+}
+
+/// 恢复的说的是一条（施工 R-12 下）：挑法同作废，听不到的那一条的恢复不给。
+#[tokio::test]
+async fn a_restoration_is_heard_like_a_retirement() {
+    let home = Home::new();
+    save(&home, "用户养了一只猫");
+    append(
+        &home,
+        stranger(),
+        MemoryEvent::Saved(Saved {
+            class: "user".into(),
+            text: "只有群里那个人听得到的".into(),
+            sources: Vec::new(),
+            audience: vec![stranger()],
+            replaces: None,
+            about: None,
+        }),
+    );
+    for n in [1, 2] {
+        let id = MemoryId::parse(&format!("m{n}")).expect("合写法");
+        append(
+            &home,
+            alice(),
+            MemoryEvent::Retired(Retired {
+                id,
+                why: "错了".into(),
+            }),
+        );
+        append(&home, alice(), MemoryEvent::Restored(Restored { id }));
+    }
+    let keeper = Keeper::new(&home.memory, persona(), vec![alice()]);
+    let following = keeper.follow(Some(0), 8).expect("跟得上");
+    assert_eq!(
+        seqs(&following.filled),
+        [1, 3, 4],
+        "听不到的那一条的作废、恢复不补"
     );
 }

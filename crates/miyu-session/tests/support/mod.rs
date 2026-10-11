@@ -382,6 +382,16 @@ pub fn alice() -> By {
     By::Person(Person::new(alice_account()))
 }
 
+/// 群里的一个人：alice 听不到只给他的（记忆的听众，`memory.md` 第九条）。
+pub fn stranger() -> By {
+    By::External(miyu_kernel::origin::External {
+        venue: VenueId::parse("qq:group:1").expect("合写法"),
+        id: miyu_kernel::id::ExternalId::parse("qq:10001").expect("合写法"),
+        account: None,
+        role: None,
+    })
+}
+
 pub fn environment() -> Environment {
     Environment {
         offset: UtcOffset::from_minutes(540).expect("东九区在范围里"),

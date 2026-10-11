@@ -25,8 +25,8 @@ pub mod vector;
 
 pub use fuse::{FLOOR, fuse};
 pub use memory::{
-    CLASSES, Cleared, Entry, Extracted, MemoryBook, MemoryEvent, MemoryId, Merged, Retired, Saved,
-    Skipped, Source, Summary, from_event, to_event,
+    CLASSES, Cleared, Entry, Extracted, MemoryBook, MemoryEvent, MemoryId, Merged, Restored,
+    Retired, Saved, Skipped, Source, Summary, from_event, to_event,
 };
 pub use terms::{MAX_QUERY_TERMS, index_terms, query};
 pub use turns::{Change, TurnFeed, TurnItem, key, replay};

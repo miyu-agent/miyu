@@ -11,6 +11,7 @@ mod keeper;
 mod merge;
 mod port;
 mod recall;
+mod restore;
 mod summary;
 mod vectors;
 
