@@ -2363,7 +2363,7 @@ QQ did not answer in time; it may or may not have happened.
 
 - 什么时候加进来：`fetch_media` 把视频、文件（存不成图的图）写进了工作区，`path` 是相对工作区的 `qq-files/<名字>`（施工 O-33 改的，「施工时定的」第 204 条）
 - token：16（2026-10-11，`path` 填 `qq-files/8816-1-排班.pdf`；改相对路径以前填绝对路径量的是 33）
-- 为什么加：她拿路径再 `read`（视频以后 `shell` 调 ffmpeg）
+- 为什么加：她拿路径再 `read`（视频她用 `shell` 调 ffmpeg 抽帧再 `read`）
 - 指纹：`b0a83124`
 
 ```text

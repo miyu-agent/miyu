@@ -509,7 +509,7 @@ O-25 中（2026-10-09；施工单「要定的」六条照推荐定：排着的 6
    2. 照「群消息」第 2 条现认段（桥重启了也认得），和交给核心的 `venue.media` 一样洗过（第 6 条），取第 `index` 样：没有的（`index` 写错的当 0）答 `no-item {count}`（那一条有几样）；取不了的（语音、小黄脸、`mface`）答 `not-fetchable`。
    3. 照第 2 条取（`get_image`、`get_file` 等 `fetch_seconds`，出厂 120 秒：大的视频 NapCat 要先下完），照第 5 条拿到字节。NapCat 回失败的答 `failed {detail}`（它说的，同「平台工具（一）」）；回了但哪儿都拿不到的答 `unfetched {detail}`（每一样为什么，截到 200 个字符）。
    4. 图：存成 blob（名字同第 3 条），答一块图片块 `{type: "image", blob, name, media_type, width, height}`（照 `blob.close` 的回应），`error` 是假。核心照调用它的会话属主拷 blob（核心 O-2 三补，`providers.md`）。存不成图的（太大、不是图）照文件存。
-   5. 视频、文件（和存不成图的图）：照第 5 条写进工作区，答 `saved {path}`（相对工作区的路径，用 `/` 隔开，例如 `qq-files/602-1-排班.pdf`；她 `read` 照工作区解析相对路径），她再 `read`（视频以后用 `shell` 调 ffmpeg）。写不了的答 `not-saved {detail}`。文件名的名字那一段照段的 `name`，没有的照 NapCat 回的 `file_name`，再没有的照编号。
+   5. 视频、文件（和存不成图的图）：照第 5 条写进工作区，答 `saved {path}`（相对工作区的路径，用 `/` 隔开，例如 `qq-files/602-1-排班.pdf`；她 `read` 照工作区解析相对路径），她再 `read`；视频她自己用 `shell` 调 ffmpeg 抽帧进工作区再 `read`，不另做工具（群会话的 `shell` 在沙盒里，读只准系统目录和工作区，核心 5-12 上下；macOS、Windows 等核心 5-12 再补，现在一律拒）。2026-10-11 拿开发端点（`kimi-k3`）真跑过：她没靠提示照 `fetch_media`、`ffprobe`、抽帧、`read` 几张帧的顺序做，答对了视频内容。写不了的答 `not-saved {detail}`。文件名的名字那一段照段的 `name`，没有的照 NapCat 回的 `file_name`，再没有的照编号。
    6. 不设大小上限（2026-10-11 项目主人定）：整个读进内存再写（「施工时定的」第 199 条）。
 5. **拿到字节、写进工作区**（`media.rs`）：
    - 照先后试：回应里 `http`、`https` 的地址（`miyu-http` 的 GET 客户端：连接 10 秒，整个照这一次等多久；回环地址不走代理，别的照环境变量；地址只认这两种协议，2026-10-11 主会话定：很多人的 NapCat 跑在 Docker 里，本机路径读不到）；`file`、`url` 里的本机绝对路径（`file://` 开头的去掉这一段；要是普通文件）；`base64`（`base64://` 开头的去掉这一段）。都不行的交回每一样为什么。
