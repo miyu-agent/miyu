@@ -300,6 +300,14 @@ pub enum Reason {
     AlreadyAnswered,
     /// 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收。
     Sealed,
+    /// 已经有一个没结束的长期目标，再设（施工 X-7，`goal.rs`）。
+    GoalExists,
+    /// 没有长期目标，改、停、接着跑、结束（施工 X-7）。
+    NoGoal,
+    /// 长期目标停着，再停（施工 X-7）。
+    GoalPaused,
+    /// 长期目标跑着，接着跑（施工 X-7）。
+    GoalRunning,
 }
 
 impl Reason {
@@ -332,6 +340,10 @@ impl Reason {
             Reason::NotAmbient => "not_ambient",
             Reason::AlreadyAnswered => "already_answered",
             Reason::Sealed => "session_sealed",
+            Reason::GoalExists => "goal_exists",
+            Reason::NoGoal => "no_goal",
+            Reason::GoalPaused => "goal_paused",
+            Reason::GoalRunning => "goal_running",
         }
     }
 }

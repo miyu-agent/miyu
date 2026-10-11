@@ -1158,6 +1158,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
 | `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
 | `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |
+| `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | -32010 | 改长期目标不合现在的样子（施工 X-7，`goal.md`）：已经有一个没结束的再设；没有的改、停、接着跑、结束；停着的再停；跑着的接着跑。`/goal` 随 X-8 |
 | `no_rule` | -32010 | `session.answer` 选了本会话都允许，请求却没提放行规则（施工 D-1） |
 | `unexpected_reason` | -32010 | `session.answer` 允许却带了理由（施工 D-1） |
 | `bad_answer` | -32010 | `session.answer` 的回答和题目对不上：条数不对、选了题目里没有的、单选的选了几项、选重了（施工 D-1） |
@@ -1330,6 +1331,10 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `bad_tool` | 工具规格有误。 | Invalid tool spec. |
 | `already_answered` | 已回复。 | Already answered. |
 | `session_sealed` | 会话已封存。 | Session sealed. |
+| `goal_exists` | 已有一个长期目标。 | A goal is already set. |
+| `no_goal` | 没有长期目标。 | No goal. |
+| `goal_paused` | 长期目标已暂停。 | Goal paused. |
+| `goal_running` | 长期目标正在进行。 | Goal running. |
 | `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
 | `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
 | `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |

@@ -5,7 +5,7 @@
 use super::*;
 use crate::event::{VenueMessage, VenueRecalled};
 use crate::id::ExternalId;
-use crate::session::{Appended, ExtEvent};
+use crate::session::{Appended, ExtEvent, GoalChange};
 
 /// 改一次：标题改成一个、去掉、不改，置顶、取消、不改，随便配；两格都不改的也有（接受，什么都不记）。
 /// 随机数照种子 `seed` 另起一串。
@@ -21,6 +21,34 @@ pub(super) fn some_meta(seed: u64, next_id: &mut u64) -> Input {
             title: title.map(str::to_string),
             pinned,
         },
+    })
+}
+
+/// 改长期目标（施工 X-7）：照改标题的办法，每一例最后另送一次，另用一串随机数；设、改、停、接着跑、结束随便挑，没有目标的
+/// 改、停、结束拒，有的再设拒，照看守的规矩一样查每个命令恰好回应一次。什么时候来都收，回合进行中的带上回合。
+pub(super) fn some_goal(seed: u64, next_id: &mut u64) -> Input {
+    let mut rng = Rng(seed ^ 0x6A01_0000);
+    let change = match rng.below(5) {
+        0 => GoalChange::Set {
+            text: "修绿".to_string(),
+            limit: std::num::NonZeroU32::new(3),
+        },
+        1 => GoalChange::Change {
+            text: "修绿再写文档".to_string(),
+            limit: None,
+        },
+        2 => GoalChange::Pause,
+        3 => GoalChange::Resume,
+        _ => GoalChange::End {
+            outcome: crate::event::GoalOutcome::Completed,
+            reason: None,
+        },
+    };
+    Input::Command(Received {
+        id: id(next_command(next_id)),
+        by: alice(),
+        at: at(33),
+        command: Command::Goal(change),
     })
 }
 

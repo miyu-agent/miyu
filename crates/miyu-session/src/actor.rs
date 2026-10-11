@@ -35,6 +35,7 @@ use crate::tools::{Dispatch, ToolKit, Tools};
 
 mod back;
 mod extract;
+mod goal;
 mod halt;
 mod life;
 mod listing;
@@ -110,6 +111,8 @@ pub(crate) struct Actor {
     shown: Arc<Mutex<Shown>>,
     /// 人格的文件改了，下一个回合换上（施工 P-1 再补，`persona.rs`）：造会话、载入时交，测试里造的没有。
     persona: Option<persona::Refresh>,
+    /// 长期目标的续轮账（施工 X-7，`goal.rs`）：授权、等人开口只在内存里。
+    goal_run: goal::GoalRun,
     /// 最后一次有动静：收件箱、执行器送回来一封（会话表问退不退的不算），空闲够不够照它算（施工 V-2 再补，`life.rs`）。
     quiet: Instant,
 }
@@ -179,6 +182,7 @@ impl Actor {
             handed,
             shown,
             persona: None,
+            goal_run: goal::GoalRun::default(),
             quiet: Instant::now(),
         }
     }
@@ -214,6 +218,14 @@ impl Actor {
             return;
         }
         loop {
+            // 长期目标的续轮（施工 X-7，`goal.rs`）：每办完一封都回到这里看一眼，收件箱空了才开（人优先）。只在 `drain` 收尾时看
+            // 不够：收件箱里正好有一封只要答一下的信（头要会话状态）时不开，办那一封又不经过 `drain`，续轮就卡住了。
+            if let Some(input) = self.goal_round() {
+                if self.drain(VecDeque::from([input])).await.is_err() {
+                    return;
+                }
+                continue;
+            }
             let input = tokio::select! {
                 biased;
                 Some(back) = self.back.recv() => match self.back(back) {

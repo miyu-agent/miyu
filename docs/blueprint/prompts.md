@@ -2551,6 +2551,24 @@ The tool returned only images or files. They are in the next message.
 The user's latest message, so you know what matters most:
 ```
 
+#### `core/goal/round-again.txt`
+
+- 什么时候加进来：之后的每一次续轮（施工 X-7）
+- token：113（同上，「Round 2 of 20」）
+- 为什么加：短版自包含（目标原文、规矩、两条写好的结束调用）：压缩以后不指向丢掉的旧文（旧版实测，目标改过以后指向旧文案）
+- 指纹：`4286cd6e`
+
+```text
+<goal_round>
+{round} — your standing objective, set by the user with `/goal`: {objective}
+Make one concrete step of progress now, or end the goal — both calls are complete as written:
+· done, verified against the workspace rather than earlier rounds' claims →
+  goal {"action":"complete"}
+· blocked, incl. needing an answer from the user →
+  goal {"action":"blocked","reason":"…"}
+</goal_round>
+```
+
 ### 人附的文本文件的开头，人这边
 
 #### `core/drivers/file-open.txt`
@@ -3181,6 +3199,28 @@ Reply with OK.
 
 ```text
 <turn-ended reason="restarted">A planned restart of Miyu stopped this turn.</turn-ended>
+```
+
+### 人这边：一条 `message.user`（`by` 是模块 `goal`），续轮开的那一轮的触发
+
+#### `core/goal/round.txt`
+
+- 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」
+- token：213（目标原文约 20 个字，「Round 1 of 20」，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面）
+- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
+- 指纹：`e3cb1ad7`
+
+```text
+<goal_round>
+Your standing objective, set by the user with `/goal`. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
+Objective: {objective}  ·  {round}
+
+Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports wake you. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
+· done, verified against the workspace rather than earlier rounds' claims →
+  goal {"action":"complete"}
+· blocked, incl. needing an answer from the user →
+  goal {"action":"blocked","reason":"…"}
+</goal_round>
 ```
 
 ### tools 数组

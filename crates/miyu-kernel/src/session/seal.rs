@@ -99,6 +99,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::Unrevert
         | Command::Redo { .. }
         | Command::Compact { .. }
-        | Command::Clear => false,
+        | Command::Clear
+        | Command::Goal(_) => false,
     }
 }

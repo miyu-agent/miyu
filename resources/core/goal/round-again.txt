@@ -1,0 +1,8 @@
+<goal_round>
+{round} — your standing objective, set by the user with `/goal`: {objective}
+Make one concrete step of progress now, or end the goal — both calls are complete as written:
+· done, verified against the workspace rather than earlier rounds' claims →
+  goal {"action":"complete"}
+· blocked, incl. needing an answer from the user →
+  goal {"action":"blocked","reason":"…"}
+</goal_round>

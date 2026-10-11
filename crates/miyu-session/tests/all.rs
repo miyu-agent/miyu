@@ -12,6 +12,7 @@ mod embed;
 mod embed_replace;
 mod forward;
 mod goal;
+mod goal_rounds;
 mod group;
 mod guard;
 mod guard_confined;

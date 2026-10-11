@@ -39,6 +39,8 @@ pub enum GoalState {
     Completed,
     /// 她报卡住了，或者到了轮数上限。
     Blocked,
+    /// 跑着，在等人开口：续轮开的一轮没调工具（施工 X-7，这次运行里的事，日志里没有：会话 actor 给头看时盖上）。
+    Waiting,
 }
 
 impl GoalState {
@@ -49,6 +51,7 @@ impl GoalState {
             GoalState::Paused => "paused",
             GoalState::Completed => "completed",
             GoalState::Blocked => "blocked",
+            GoalState::Waiting => "waiting",
         }
     }
 }

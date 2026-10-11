@@ -145,6 +145,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "bad_tool" => ("工具规格有误。", "Invalid tool spec."),
         "already_answered" => ("已回复。", "Already answered."),
         "session_sealed" => ("会话已封存。", "Session sealed."),
+        "goal_exists" => ("已有一个长期目标。", "A goal is already set."),
+        "no_goal" => ("没有长期目标。", "No goal."),
+        "goal_paused" => ("长期目标已暂停。", "Goal paused."),
+        "goal_running" => ("长期目标正在进行。", "Goal running."),
         // 施工 D-1：`session.answer` 碰得到的四个（`unknown_decision` 协议上碰不到，`protocol.md`「出错」）。
         "not_asking" => ("不在等待回答。", "Not waiting for an answer."),
         "no_rule" => ("只能允许本次或拒绝。", "Only allow once or deny."),

@@ -15,6 +15,7 @@ mod difference;
 mod dirs;
 mod executor;
 mod fork;
+mod goal;
 mod grants;
 mod idle;
 mod interrupt;

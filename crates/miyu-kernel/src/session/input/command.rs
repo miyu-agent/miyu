@@ -126,6 +126,39 @@ pub enum Command {
         /// 它最近结束的那一轮最后一条有字的回复的第一行，被等的那一边截好的；一个字都没说的没有。
         status: Option<String>,
     },
+    /// 改长期目标（施工 X-7，`docs/blueprint/goal.md`，`session/goal.rs`）：`/goal` 命令、`goal` 工具、到了轮数上限都走它。
+    /// 合的记一条 `goal.*`，不合的拒。
+    Goal(GoalChange),
+}
+
+/// 长期目标怎么改（施工 X-7）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GoalChange {
+    /// 设一个：原文、轮数上限（不写的不限）。
+    Set {
+        /// 原文。
+        text: String,
+        /// 轮数上限。
+        limit: Option<std::num::NonZeroU32>,
+    },
+    /// 改原文、上限：写改完的整份。
+    Change {
+        /// 改完的原文。
+        text: String,
+        /// 改完的上限；不限的没有。
+        limit: Option<std::num::NonZeroU32>,
+    },
+    /// 停下。
+    Pause,
+    /// 接着跑。
+    Resume,
+    /// 结束：结局、卡在哪。
+    End {
+        /// 结局。
+        outcome: crate::event::GoalOutcome,
+        /// 卡在哪：卡住的才写。
+        reason: Option<String>,
+    },
 }
 
 /// 一次回答：回答确认的，或者回答一组题的。

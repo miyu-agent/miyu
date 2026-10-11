@@ -46,6 +46,8 @@ kinds! {
     SetMeta,
     /// 换工作区（施工 9-7 上）。
     SetWorkspace,
+    /// 改长期目标（施工 X-7）。
+    Goal,
     /// 记下用了一个斜杠命令（施工 O-6）。
     Ran,
     /// 换模型（施工 8-10）。
@@ -140,6 +142,7 @@ impl InputKind {
                 Command::SetPermission { .. } => InputKind::SetPermission,
                 Command::SetMeta { .. } => InputKind::SetMeta,
                 Command::SetWorkspace { .. } => InputKind::SetWorkspace,
+                Command::Goal(_) => InputKind::Goal,
                 Command::Ran { .. } => InputKind::Ran,
                 Command::Append { .. } => InputKind::Appended,
                 Command::Configure { .. } => InputKind::Configure,

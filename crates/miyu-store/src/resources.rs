@@ -188,6 +188,19 @@ impl ResourceRoot {
         })
     }
 
+    /// 长期目标的续轮消息（施工 X-7，`26-提示词.md` 第十节）：第一轮的完整版 `core/goal/round.txt`、之后每轮的短版
+    /// `core/goal/round-again.txt`，`{objective}`、`{round}` 由会话层填。每开一轮读一次：改了文件下一轮就照新的。
+    ///
+    /// # Errors
+    ///
+    /// 读不了其中一份，写明是哪一份。
+    pub fn goal_rounds(&self) -> Result<(String, String), SourceError> {
+        Ok((
+            self.read(&["core", "goal", "round.txt"])?,
+            self.read(&["core", "goal", "round-again.txt"])?,
+        ))
+    }
+
     /// 随核心附带的字（施工 P-1 上起，造会话时和几层叠好的人格的字拼成 [`Sources`]）。
     ///
     /// # Errors

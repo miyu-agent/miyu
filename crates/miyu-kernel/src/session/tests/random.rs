@@ -88,7 +88,8 @@ use compacting::{random_policy, some_clear, some_compact, some_limits, some_over
 use endings::some_ending;
 use kinds::InputKind;
 use naming::{
-    some_appended, some_meta, some_note, some_overheard, some_ran, some_respond, some_workspace,
+    some_appended, some_goal, some_meta, some_note, some_overheard, some_ran, some_respond,
+    some_workspace,
 };
 use paths::{EXPECTED_PATHS, LONG_PATHS};
 use recapping::{finish_recap, some_recap};
@@ -430,6 +431,7 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         watch.feed(&mut session, some_meta(seed, &mut next_id));
         watch.feed(&mut session, some_ran(&mut next_id));
         watch.feed(&mut session, some_workspace(seed, &mut next_id));
+        watch.feed(&mut session, some_goal(seed, &mut next_id));
         watch.feed(&mut session, some_overheard(&mut next_id));
         let overheard = watch.last();
         watch.feed(&mut session, some_respond(seed, overheard, &mut next_id));

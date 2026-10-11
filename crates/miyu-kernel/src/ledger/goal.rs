@@ -1,6 +1,7 @@
 //! 长期目标的几条规矩（施工 X-6，`docs/blueprint/goal.md`）：同一时刻至多一个没结束的目标；没有目标的改不了、停不了、接着跑
 //! 不了、结束不了；跑着的才停得了，停着的才接着跑得了；原文不能是空白。
 
+use super::Ledger;
 use crate::event::{Body, Event};
 
 /// 现在的目标：没有、跑着、停着。结束了的算没有。
@@ -10,6 +11,17 @@ pub(super) enum Goals {
     None,
     Running,
     Paused,
+}
+
+impl Ledger {
+    /// 现在的长期目标（施工 X-7）：没有、结束了的是 `None`，跑着的 `Some(true)`，停着的 `Some(false)`。
+    pub fn goal_running(&self) -> Option<bool> {
+        match self.goals {
+            Goals::None => None,
+            Goals::Running => Some(true),
+            Goals::Paused => Some(false),
+        }
+    }
 }
 
 impl Goals {

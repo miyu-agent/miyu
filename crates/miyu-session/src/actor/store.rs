@@ -24,7 +24,11 @@ impl Actor {
             cwd: self.session.cwd().to_string(),
             dirs: self.session.dirs().to_vec(),
             tally: counted.tally.clone(),
-            goal: counted.goals.now().cloned(),
+            goal: counted
+                .goals
+                .now()
+                .cloned()
+                .map(|goal| self.goal_run.shown(goal)),
         }
     }
 
@@ -36,7 +40,7 @@ impl Actor {
     }
 
     /// 给头看的那一份，拿着锁。
-    fn counted(&self) -> std::sync::MutexGuard<'_, crate::shown::Shown> {
+    pub(super) fn counted(&self) -> std::sync::MutexGuard<'_, crate::shown::Shown> {
         self.shown
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -58,6 +62,7 @@ impl Actor {
             counted.tally.add(&events);
             counted.goals.add(&events);
         }
+        self.goal_run.note(&events);
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let written = tokio::task::spawn_blocking(move || {

@@ -167,6 +167,7 @@
 | `not_ambient` | `NotAmbient` | `Respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；拒绝的 `about` 是那几条（施工 O-14 上） |
 | `already_answered` | `AlreadyAnswered` | `Respond` 的 `to` 里有已经当过触发的（撤掉的回合当过的也算）；拒绝的 `about` 是那几条（施工 O-14 上） |
 | `session_sealed` | `Sealed` | 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收；改标题置顶、打断、回答、回顾、回报、空了的通知照收 |
+| `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | `GoalExists`、`NoGoal`、`GoalPaused`、`GoalRunning` | 改长期目标的命令 `Goal`（施工 X-7，`goal.rs`）：已经有一个没结束的再设；没有的改、停、接着跑、结束；停着的再停；跑着的接着跑。原文空白的照 `empty_message` |
 | `unknown_watch` | `UnknownWatch` | 空了的通知：这边不在等它（没订过、订它的那一轮撤掉了、已经收到过、作废了），或者发命令的不是一个会话（施工 C-6） |
 
 **策略**（`Policy`）：造会话、载入时由执行器照策略快照造好交进来，会话里不再变。

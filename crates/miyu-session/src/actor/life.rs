@@ -80,5 +80,6 @@ impl Actor {
             || !self.watches.is_empty()
             || !self.inbox.is_empty()
             || !self.back.is_empty()
+            || super::goal::GoalRun::keeps(self.counted().goals.now())
     }
 }

@@ -258,6 +258,8 @@ impl Session {
             session.duty.not_resumed();
         }
         events.extend(recovered);
+        // 长期目标照日志还跑着的，记成停着（施工 X-7）：核心重启以后不自己接着跑。
+        events.extend(session.pause_goal_on_load(at));
         if events.is_empty() {
             actions.extend(session.report_up());
         } else {

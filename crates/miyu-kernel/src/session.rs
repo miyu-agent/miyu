@@ -18,6 +18,7 @@ mod clear;
 mod compaction;
 mod configure;
 mod fork;
+mod goal;
 mod grants;
 mod input;
 mod interrupt;
@@ -64,8 +65,8 @@ pub use action::{Action, Outcome, Reason};
 pub use configure::Replaced;
 pub use fork::{ForkPlan, fork_plan};
 pub use input::{
-    Answer, Appended, Command, ExtEvent, Injection, Input, Limits, Queued, Received, Reread,
-    Verdict,
+    Answer, Appended, Command, ExtEvent, GoalChange, Injection, Input, Limits, Queued, Received,
+    Reread, Verdict,
 };
 pub use limits::ContextLimits;
 pub use load::LoadError;
@@ -405,6 +406,7 @@ impl Session {
             Command::Recap => self.recap(id),
             Command::Report(reported) => self.report(id, by, at, reported),
             Command::PeerIdle { status } => self.peer_idle(id, by, at, status),
+            Command::Goal(change) => self.goal(id, by, at, change),
         }
     }
 
