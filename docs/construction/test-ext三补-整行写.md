@@ -1,6 +1,6 @@
 ## 施工单 test-ext 三补：测试扩展整行写标准错误
 
-状态：施工中（2026-10-12 主会话）。记忆的会话报的偶发红：CI run 1873，Windows 上 `extensions::one_that_never_says_hello_fails_too` 读到 `up\nup\nupup\nup\n`。
+状态：合了（bb4882e5，三台 CI run 1878；2026-10-12 主会话）。记忆的会话报的偶发红：CI run 1873，Windows 上 `extensions::one_that_never_says_hello_fails_too` 读到 `up\nup\nupup\nup\n`。
 
 ### 目的
 
