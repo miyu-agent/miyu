@@ -1,5 +1,6 @@
 //! 场所的事件（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 2 条）：`message.user` 的 `venue` 格，桥记的 `venue.recalled`、
-//! `venue.delivered`。内核不解读平台的编号，原样记；群聊近况怎么渲染它们在组装那一层（O-13 下）。
+//! `venue.delivered`。内核不解读平台的编号，原样记；群聊近况怎么渲染它们在组装那一层（O-13 下）。合并转发的内容（施工 O-34）
+//! 也原样记在 `venue.forwards` 里，怎么写成几行在组装那一层（`miyu-assemble` 的 `forward.rs`）。
 
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +31,10 @@ pub struct VenueMessage {
     /// 带的图、文件、语音、视频、表情：只记编号，要看时再由桥去取，不进内容块。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub media: Vec<Media>,
+    /// 合并转发的内容（施工 O-34，`docs/blueprint/venues.md`「场所的格」）：照正文里转发的先后，桥取出来的。没有的不写，以前记的
+    /// 没有，字节不变。写法、上限由收的一方查（`miyu-endpoint` 的 `venues/message.rs`），这里原样记。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forwards: Vec<Forward>,
     /// 旁听：不冲她来的，只记下。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub ambient: bool,
@@ -55,6 +60,31 @@ pub struct Media {
     /// 没有，照旧不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+}
+
+/// 一个合并转发（施工 O-34）：桥放进来的几条，和没放进来的条数。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Forward {
+    /// 放进来的几条，照转发里的先后。
+    pub nodes: Vec<ForwardNode>,
+    /// 桥没放进来的条数：只在大于 0 时有（写 0 的收的一方拒）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub more: Option<u64>,
+}
+
+/// 合并转发里的一条（施工 O-34）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ForwardNode {
+    /// 转发里那个人当时的名字（桥照节点的发的人取：群名片、昵称）。不可信，渲染时照模板的规矩转义。
+    pub name: String,
+    /// 那一条的正文，可以是空的（只带了东西的）。不可信，渲染时转义成一行。
+    pub text: String,
+    /// 带的东西，写法同 [`VenueMessage::media`]：这一步只写记号，不能用平台工具取。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub media: Vec<Media>,
+    /// 套在这一条里的合并转发，同样的形状。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forwards: Vec<Forward>,
 }
 
 text_enum!(

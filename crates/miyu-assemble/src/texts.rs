@@ -53,6 +53,20 @@ pub struct Texts {
     pub vision: Option<Vision>,
     /// 群会话的一行要用的（施工 O-13 中，`group.rs`）。私聊、本机的会话没有：人的话照原样渲染。
     pub group: Option<GroupChat>,
+    /// 合并转发那几行的字（施工 O-34，`group/forward.rs`）：群里的接在那一行下面，私聊的接在正文后面。以前造的快照里没有，
+    /// 是没有：收到转发也不写这几行，只看得到正文里桥写的占位，和 O-34 以前一样。
+    pub forward: Option<ForwardTexts>,
+}
+
+/// 合并转发那几行的三句（施工 O-34，`docs/blueprint/kernel/request.md`「合并转发」），都不带行尾的换行；缩进由代码加。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForwardTexts {
+    /// 一条消息只有一个转发时的头一行（`core/venues/forward/label.txt`）。
+    pub label: String,
+    /// 不止一个时每个的头一行（`numbered.txt`）：字段 `number` 是第几个，从 1 数。
+    pub numbered: Template,
+    /// 没放进来的条数那一行（`more.txt`）：字段 `count`。
+    pub more: Template,
 }
 
 /// 群里的一行要用的（施工 O-13 中）：会话的时区，和正文、带的东西都没有时写的那一句；语音的那一句（施工 O-33）。

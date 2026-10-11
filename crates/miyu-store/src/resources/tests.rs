@@ -216,6 +216,21 @@ fn the_core_texts_are_read_and_the_persona_texts_are_as_given() {
         vision.question,
         include_str!("../../../../resources/core/vision/question.txt")
     );
+    // 合并转发那几行的三句（施工 O-34）：每一格是它自己那份文件，和 `forward()` 读的一样。
+    let forward = sources.core.forward.expect("出厂的有合并转发的字");
+    assert_eq!(
+        forward.label,
+        include_str!("../../../../resources/core/venues/forward/label.txt")
+    );
+    assert_eq!(
+        forward.numbered,
+        include_str!("../../../../resources/core/venues/forward/numbered.txt")
+    );
+    assert_eq!(
+        forward.more,
+        include_str!("../../../../resources/core/venues/forward/more.txt")
+    );
+    assert_eq!(repo().forward().unwrap(), forward);
     // 文本文件照字放进消息的三句（施工 3-9 三补）：每一格是它自己那份文件。
     let drivers = sources.core.drivers;
     let text = drivers.text_file.expect("出厂的有文本文件的三句");

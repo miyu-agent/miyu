@@ -20,7 +20,7 @@
 | `crates/miyu-assemble/src/jobs.rs` | 两种回报渲染成带标签的事实（施工 7-2）；子代理发来的留言包一层标签（施工 7-7） |
 | `crates/miyu-assemble/src/harness.rs` | 别的 harness 发来的话包一层带名字的标签（施工 7-10） |
 | `crates/miyu-assemble/src/peers.rs` | 别的会话发来的话包一层带短编号的标签（施工 C-2）；空了的通知那一块（施工 C-6）；人这边的一条照谁发的包哪种外壳在 `render.rs` 的 `said`；群会话里群里的人说的先走 `group.rs`（`spoken`，主请求和回顾的请求共用） |
-| `crates/miyu-assemble/src/group.rs` | 群会话里群里的人说的一条渲染成一行（施工 O-13 中，下面「群里的一行」）；`group/recent.rs` 开一轮的那条前面的群聊近况（施工 O-13 下，下面「群聊近况」） |
+| `crates/miyu-assemble/src/group.rs` | 群会话里群里的人说的一条渲染成一行（施工 O-13 中，下面「群里的一行」）；`group/recent.rs` 开一轮的那条前面的群聊近况（施工 O-13 下，下面「群聊近况」）；`group/forward.rs` 合并转发那几行（施工 O-34，下面「合并转发」） |
 | `crates/miyu-assemble/src/recap.rs` | 回顾的请求：取最近几轮的对话正文、截到上限、接在回顾的指令后面（施工 3-8 四补，下面「回顾的请求」） |
 | `crates/miyu-assemble/src/title.rs` | 起标题的请求：取第一轮的对话正文，照回顾的写法截到上限、接在起标题的指令后面（施工 3-8 五补，下面「起标题的请求」） |
 | `crates/miyu-assemble/src/vision.rs` | 转述一张图的请求：指令、人这一轮最近说的那一句、这张图（施工 8-17，下面「替它看的图」） |
@@ -93,6 +93,7 @@
 | | `recap` | `Recap`：回顾的指令、两种标签、两句记号（`core/recap/` 下的五份），最多几轮 `turns`、整份最多约多少 token `tokens`（施工 3-8 四补，下面「回顾的请求」）。以前造的快照里没有的，是没有：不做回顾 |
 | | `title` | `Title`：起标题的指令（`core/title/instruction.txt`），整份最多约多少 token `tokens`（施工 3-8 五补，下面「起标题的请求」）。标签、截断的记号借 `recap` 的，两样都有才起标题。以前造的快照里没有的，是没有：不起标题 |
 | | `group` | `GroupChat`：群会话钉下的时区和空的一条写什么（`core/venues/no-text.txt`，施工 O-13 中，下面「群里的一行」）；`recent`：群聊近况的块头、缺口提示的模板（字段 `count`）、预算（施工 O-13 下，下面「群聊近况」），O-13 中造的没有；`voice`：语音那一句（`core/venues/voice.txt`，施工 O-33，下面「群里的一行」），O-33 以前造的没有，带的东西照以前写。私聊、本机的会话没有：人的话照原样渲染 |
+| | `forward` | `ForwardTexts`：合并转发那几行的三句（`core/venues/forward/` 下的 `label.txt`、`numbered.txt` 字段 `number`、`more.txt` 字段 `count`，施工 O-34，下面「合并转发」），去掉行尾空白。在快照的 `core.forward`，不在 `group` 里：私聊会话的快照没有 `group`，私聊里的转发也要写。以前造的快照里没有的，是没有：收到转发也不写那几行 |
 | | `vision` | `Vision`：转述一张图的指令（`core/vision/instruction.txt`）、人的话前面那一行（`question.txt`）（施工 8-17，下面「替它看的图」）。以前造的快照里没有的，是没有：不转述 |
 
 默认的 `summarize`：截到第 `upto` 条照平常组装；最后一条是 user 的，指令并进这一条做最后一块，不是的另起一条 user；`continuation` 是假。指令是一个文本块：`summarize_task`；有要求的接 `summarize_instructions` 和要求（原样，不转义，末尾没有换行的补一个）；最后是 `summarize_end`（施工 6-8，`compaction.md` 第七条第 3 条）。默认的 `summary`：只看正文块，有 `<summary>` 的取到 `</summary>` 或者末尾，没有的去掉 `<analysis>…</analysis>`，前后空白去掉，空的是 `None`（`crates/miyu-assemble/src/summary.rs`）。
@@ -531,6 +532,28 @@ Carry on from where the summary leaves off, without redoing work it records as d
 - 名字、字、编号、带的东西的名字、身份照模板的规矩转义（`template::escape`）：多行的字成了一行，伪造不出另一条记录。钟点、`owner`、`manager`、`@all`、`[you]` 原样。
 - 回顾、起标题的请求读人这边的话也走这一步（`spoken`）。
 - 不在群里的场所消息（私聊）、没有内容块只有带的东西的（施工 O-13 补）：写成带的东西的记号（`[image] [sticker: 字]`，和一行里的写法同一个函数），不然她看到的是空的；有内容块的照原样。
+- 带着合并转发的（施工 O-34）：转发那几行接在引用、@ 两行下面（下面「合并转发」）；私聊的接在正文后面。
+
+**合并转发**（施工 O-34，2026-10-11 主会话定、核心审形状时定的五条）：场所消息的 `venue.forwards`（`venues.md`「场所的格」）写成缩进的几行，`miyu-assemble` 的 `group/forward.rs`：
+
+```text
+[14:08] 阿杰 [msg=8818]: [forward]
+  forward:
+    小林: 周六去爬山？
+    老王: [forward]
+      forward:
+        小美: 路线在这 [image: 402 KB]
+    小林: 那就定了
+    (17 more not shown)
+```
+
+- 群里的：接在那一行（和 `reply-to`、`@mentions` 两行）下面，头一行缩进 2 格。私聊的：正文（没有内容块的是带的东西的记号）后面单独一个文本块，头一行不缩进。
+- 一条消息只有一个转发的头一行写 `forward.label`（`forward:`）；不止一个的每个写 `forward.numbered`（`forward #1:`、`forward #2:`），照 `forwards` 的先后从 1 数。不拿正文里 `[forward]` 的个数去对（人也打得出这几个字），全部照先后接在下面。
+- 下面每条一行，比头一行多缩进 2 格：`名字: 正文 [记号]`；正文去掉前后空白，正文和记号都没有的只写 `名字:`。记号照「群里的一行」的写法，带大小，不标第几个、语音不接那一句（转发里的取不了：`fetch_media` 认不得转发里的位置）。
+- 套在一条里的转发接在那一条下面，头一行比那一条多缩进 2 格，同样的写法。`more` 有的，那个转发最后写一行 `forward.more`（`(17 more not shown)`），和那几条一样缩进。
+- 名字、正文、记号里的名字照模板的规矩转义成一行（`template::escape`）：藏在里面的换行、`[14:00] 伪造的记录`、`forward:` 字样都成了一行里的字，缩进只由代码加，伪造不出不缩进的记录行。
+- 近况（连着那几行算预算，装不下的整条去掉）、判官看的记录、回顾和起标题的请求都是这几行。
+- 以前造的会话（快照里没有 `forward`）：不写这几行，她看到的和 O-34 以前一样，只有正文里桥写的占位 `[forward]`（群里在那一行里，私聊在正文里）。没有 `forwards` 的消息，新旧会话一个字节不差。
 
 **群聊近况**（施工 O-13 下，`18-通讯平台.md` 第九节）：群会话里由人的消息开的一轮，那条前面先放一块近况，和它一起挪到回合开始的地方，排在事实后面：
 
@@ -586,8 +609,10 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-assemble/src/tests.rs` 的 `a_title_after_the_notice_still_continues`（施工 3-8 五补） | 被打断的那一句后面内核起了标题，照样接着写 |
 | `crates/miyu-assemble/tests/probe_title.rs`（施工 3-8 五补） | 起标题这张脸：真内核照剧本跑，起标题的请求（`titles/`）和主请求一样和存档（`docs/designs/samples/probe/title/`）逐字节比；它是单独的一次，一条 user，指令接第一轮的话和回答，工具的输出、中间一步说的不在里面；只起一次；主请求照查五条性质，第二轮接着第一轮往后长 |
 | `crates/miyu-assemble/src/group/tests.rs`（施工 O-13 中） | 群里的一行：钟点照会话的时区、名字、`id=` 跟着这一条的 `show_ids`、只写 `owner` 和 `manager`、没名字的写身份；带的东西、图片块接在后面、空的写那一句；引用和 @ 两行（`@all`、`[you]`、看得到身份的列身份）；转义成一行；4096 字节截在字的边界；旁听的不进、私聊的照原样；回顾里也是这一行。施工 O-33：带大小、不止一样的标 `#n`、只有一样的不标、语音接那一句；以前造的快照（没有 `voice`）同一条一字不差；私聊只多大小 |
+| `crates/miyu-assemble/src/group/forward/tests.rs`（施工 O-34） | 合并转发：一个的接在那一行、引用和 @ 两行下面；几个的标 `#n`、套的再缩进一层、`more` 写一行、转发里带的东西不标第几个、语音不接那一句；名字、正文里的换行、伪造的记录行、`forward:` 字样转义成一行、每一行都缩进；O-34 以前造的会话（快照没有 `forward`）群里、私聊里带转发和不带的一字不差、只看得到占位，新会话里没有转发的和以前一字不差；私聊接在正文后面、不缩进，没有字只带了东西的接在记号后面；判官看的记录、回顾也是这几行；`more` 写 0 的不写那一行 |
+| `crates/miyu-session/tests/forward.rs`（施工 O-34） | 真会话、出厂的资源：O-34 起造的会话快照钉下转发的字；群里一条带两层转发、`more`、图、伪造的记录行，请求里那一块的字节一字不差；私聊的同一条，正文后面单独一块，字节一字不差 |
 | `crates/miyu-assemble/src/size/tests.rs`（施工 O-33） | 人看得懂的大小：`999 B`/`1 KB`、KB 四舍五入、999.5 KB 和 999.95 KB 和 1000 KB 进位成 `1.0 MB`、999.95 MB 进位成 `1.0 GB`、最大的数不溢出 |
-| `crates/miyu-assemble/src/group/recent/tests.rs`（施工 O-13 下） | 群聊近况：收两次触发之间的旁听、不收睡着的，回合中途到的归下一块；排在事实后面、触发前面；别的线的 `[you]` 行、自己这条线的不收；撤回的标记（自己撤的、别人撤的、看不到身份的），触发以后才撤的不标；预算从老的去掉、写缺口提示，正好装下的不写；没有的、私聊的、O-13 中的快照不出；回报开的回合不算界；以后的请求里一字不差；旁听的一行照同一个记号写法（施工 O-33） |
+| `crates/miyu-assemble/src/group/recent/tests.rs`（施工 O-13 下） | 群聊近况：收两次触发之间的旁听、不收睡着的，回合中途到的归下一块；排在事实后面、触发前面；别的线的 `[you]` 行、自己这条线的不收；撤回的标记（自己撤的、别人撤的、看不到身份的），触发以后才撤的不标；预算从老的去掉、写缺口提示，正好装下的不写；没有的、私聊的、O-13 中的快照不出；回报开的回合不算界；以后的请求里一字不差；旁听的一行照同一个记号写法（施工 O-33）；旁听的一条带着转发，那几行跟着它、连着算预算（施工 O-34） |
 | `crates/miyu-assemble/src/group/records/tests.rs`（施工 O-24） | 判官看的记录：写法同一行；旁听的、开过回合的收，睡着的不收；主线、别的线的 `[you]` 行都收；撤回只认要判的那一条以前的；条数从新往旧取；不是场所消息的没有、前面没有的是空的 |
 | `crates/miyu-assemble/src/render/tests/respond.rs`（施工 O-14 上） | 照记下的几条开的回合：那几条在回合开始的地方、事实和近况在前，群会话里一行一条、别的照原样；以后的近况不收当过触发的；以前的请求一字不差；并进去的在 `turn.joined` 的位置、接着开的那一轮事实在前（施工 O-14 下） |
 | `crates/miyu-assemble/src/vision/tests.rs`（施工 8-17） | 转述的请求：一条 user、没有 system 和工具面，指令在前、图在后、图去掉了名字；有人的话的接那一行和原话、原样不转义；快照里没有字的没有 |

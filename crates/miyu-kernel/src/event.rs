@@ -56,7 +56,9 @@ pub use transient::{
     TransientBody,
 };
 pub use turn::{EndReason, TurnEnded, TurnJoined, TurnReverted, TurnStarted, TurnUnreverted};
-pub use venue::{Media, MediaKind, VenueDelivered, VenueMessage, VenueRecalled};
+pub use venue::{
+    Forward, ForwardNode, Media, MediaKind, VenueDelivered, VenueMessage, VenueRecalled,
+};
 
 /// 一条事件：已经发生的一件事。追加进日志以后不改、不删；撤销和压缩也是追加一条新事件
 /// （`03-事件模型.md` 第一节）。

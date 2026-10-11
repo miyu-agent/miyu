@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use miyu_kernel::event::Body;
 use miyu_kernel::history::History;
 use miyu_kernel::id::{Seq, SessionId};
-use miyu_policy::{GroupChat, Snapshot};
+use miyu_policy::{ForwardTexts, GroupChat, Snapshot};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{OpenError, read_events};
 
@@ -54,38 +54,52 @@ pub(crate) async fn records(core: &Core, params: RecordsParams) -> Result<Value,
                 return Err(Refusal::BROKEN);
             }
         };
-        // 群会话照快照里钉下的；没有的照核心这时的时区和出厂的字。
+        // 群会话照快照里钉下的；没有的照核心这时的时区和出厂的字。合并转发那几行的字（施工 O-34）同样：群会话照快照的
+        // `core.forward`，O-34 以前造的没有就不写（和她看到的一样）；快照里没有群会话的字的照这时的。
         let pinned = match events.first().map(|event| &event.body) {
             Some(Body::SessionCreated(created)) => blobs
                 .get(&created.policy)
                 .ok()
                 .and_then(|bytes| Snapshot::from_bytes(&bytes).ok())
-                .and_then(|snapshot| snapshot.group),
+                .and_then(|snapshot| snapshot.group.map(|group| (group, snapshot.core.forward))),
             _ => None,
         };
-        let chat = pick(pinned, || {
-            resources.group_chat(offset).map_err(|error| {
-                tracing::warn!(target: "miyu::endpoint", error = %error, "group texts not read");
-                Refusal::INTERNAL
-            })
+        let unread = |error| {
+            tracing::warn!(target: "miyu::endpoint", error = %error, "group texts not read");
+            Refusal::INTERNAL
+        };
+        let (chat, forward) = pick(pinned, || {
+            Ok((
+                resources.group_chat(offset).map_err(unread)?,
+                Some(resources.forward().map_err(unread)?),
+            ))
         })?;
         let texts = chat.texts().map_err(|_| Refusal::INTERNAL)?;
+        let forward = forward
+            .as_ref()
+            .map(ForwardTexts::texts)
+            .transpose()
+            .map_err(|_| Refusal::INTERNAL)?;
         let mut history = History::whole();
         for event in events {
             history.append(event);
         }
-        miyu_assemble::group::records(&history, msg, count, &texts).ok_or(Refusal::BAD_PARAMS)
+        miyu_assemble::group::records(&history, msg, count, &texts, forward.as_ref())
+            .ok_or(Refusal::BAD_PARAMS)
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;
     Ok(json!({"records": rendered.records, "current": rendered.current}))
 }
 
+/// 群会话钉下的字和转发那几行的字（施工 O-34）。
+type Pinned = (GroupChat, Option<ForwardTexts>);
+
 /// 渲染照哪一份：群会话快照里钉下的（`pinned`），没有的照这时的（`now`）。
 fn pick(
-    pinned: Option<GroupChat>,
-    now: impl FnOnce() -> Result<GroupChat, Refusal>,
-) -> Result<GroupChat, Refusal> {
+    pinned: Option<Pinned>,
+    now: impl FnOnce() -> Result<Pinned, Refusal>,
+) -> Result<Pinned, Refusal> {
     match pinned {
         Some(chat) => Ok(chat),
         None => now(),

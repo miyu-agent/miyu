@@ -395,6 +395,17 @@ impl Refusal {
         Refusal::with("needs_approval", "capabilities", capabilities)
     }
 
+    /// 参数不对，`data.limit` 说超了哪一样上限（施工 O-34：场所消息里的合并转发合起来的条数 `forward_nodes`、字节数
+    /// `forward_bytes`）。
+    pub(crate) fn bad_params_about(limit: &str) -> Refusal {
+        let mut data = serde_json::Map::new();
+        data.insert("limit".to_string(), serde_json::json!(limit));
+        Refusal {
+            data: Some(data),
+            ..Refusal::BAD_PARAMS
+        }
+    }
+
     /// Miyu 的拒绝，`data` 里除了 `reason` 多一格 `field`。
     fn with(reason: &'static str, field: &str, value: serde_json::Value) -> Refusal {
         let mut data = serde_json::Map::new();

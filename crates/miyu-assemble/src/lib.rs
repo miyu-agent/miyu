@@ -33,8 +33,8 @@ mod vision;
 mod test_support;
 
 pub use texts::{
-    GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap, RestoredWrap,
-    Texts, Title, TurnEndedTexts, Vision,
+    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap,
+    RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
 };
 
 use miyu_kernel::assemble::{Assembler, Spoken};

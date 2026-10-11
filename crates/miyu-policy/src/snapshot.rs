@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::drivers::DriverPlaceholders;
 use crate::facts::FactTexts;
+use crate::forward::ForwardTexts;
 use crate::group::GroupChat;
 use crate::harness::HarnessTexts;
 use crate::jobs::{JobNumbers, JobTexts};
@@ -137,6 +138,10 @@ pub struct CoreTexts {
     /// 转述一张图的字（`vision/`，施工 8-17）。以前造的快照里没有，读成没有：不转述；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vision: Option<VisionTexts>,
+    /// 合并转发那几行的字（`venues/forward/`，施工 O-34，`forward.rs`）。以前造的快照里没有，读成没有：收到转发也不写那几行；
+    /// 没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forward: Option<ForwardTexts>,
 }
 
 /// 压缩的几句（施工 6-2 上）。
@@ -327,6 +332,7 @@ impl Snapshot {
             recap: self.recap(),
             title: self.title(),
             vision: self.vision(),
+            forward: self.forward()?,
             group: self.group.as_ref().map(GroupChat::texts).transpose()?,
         };
         let (face, rules) = tools::split(&self.tools)?;

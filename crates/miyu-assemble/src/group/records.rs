@@ -11,7 +11,7 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 
 use super::{recall_mark, record, you};
-use crate::texts::GroupChat;
+use crate::texts::{ForwardTexts, GroupChat};
 
 /// 判官看的两样：之前的记录（一行一条，每行以换行结尾，没有的是空的）和要判的那一条。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,8 +22,15 @@ pub struct Records {
     pub current: String,
 }
 
-/// 第 `msg` 条之前至多 `count` 条群里的话，和第 `msg` 条那一行；它不是带 `venue` 的 `message.user` 的，没有。
-pub fn records(history: &History, msg: Seq, count: usize, texts: &GroupChat) -> Option<Records> {
+/// 第 `msg` 条之前至多 `count` 条群里的话，和第 `msg` 条那一行；它不是带 `venue` 的 `message.user` 的，没有。合并转发照
+/// `forward` 写在那一条下面（施工 O-34，和她看到的一样；没有那几句的字的不写）。
+pub fn records(
+    history: &History,
+    msg: Seq,
+    count: usize,
+    texts: &GroupChat,
+    forward: Option<&ForwardTexts>,
+) -> Option<Records> {
     let events = history.events();
     let at = events.binary_search_by_key(&msg, |event| event.seq).ok()?;
     let judged = &events[at];
@@ -53,7 +60,7 @@ pub fn records(history: &History, msg: Seq, count: usize, texts: &GroupChat) -> 
                     &event.by,
                     venue,
                     &said.blocks,
-                    texts,
+                    (texts, forward),
                     &mark,
                 ))
             }
@@ -68,7 +75,14 @@ pub fn records(history: &History, msg: Seq, count: usize, texts: &GroupChat) -> 
     }
     Some(Records {
         records: kept,
-        current: record(judged.at, &judged.by, venue, &message.blocks, texts, ""),
+        current: record(
+            judged.at,
+            &judged.by,
+            venue,
+            &message.blocks,
+            (texts, forward),
+            "",
+        ),
     })
 }
 

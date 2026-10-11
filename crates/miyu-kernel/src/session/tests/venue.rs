@@ -1,9 +1,10 @@
 //! 场所的消息和桥记的事件（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 2、3 条）：旁听的消息只记下，不开回合，回合
-//! 进行中也不排进这一轮、说完了不接着开；`Append` 记的事件不带回合编号、不开回合，回合中途照记。
+//! 进行中也不排进这一轮、说完了不接着开；`Append` 记的事件不带回合编号、不开回合，回合中途照记。只有合并转发的照旧
+//! 拒（施工 O-34）。
 
 use super::executor::*;
 use super::*;
-use crate::event::{Media, MediaKind, VenueMessage, VenueRecalled};
+use crate::event::{Forward, ForwardNode, Media, MediaKind, VenueMessage, VenueRecalled};
 use crate::session::{Appended, ExtEvent};
 
 /// 一条场所的消息：平台编号 `msg`，旁听的照 `ambient`。
@@ -190,5 +191,29 @@ fn a_message_with_only_media_is_kept_and_nothing_at_all_is_not() {
     assert_eq!(
         session.handle(bare(3, nothing)),
         [rejected(id(3), Reason::EmptyMessage)]
+    );
+}
+
+/// 只有合并转发、没有字也没带东西的消息照旧拒（施工 O-34，核心审时定）：转发不算内容。O-34 以前造的私聊会话没有转发那几行的
+/// 字，这样一条渲染出来是一条没有块的 user，供应商回 400；带转发的消息正文里要有占位（桥写 `[forward]`）。
+#[test]
+fn a_message_with_only_a_forward_is_empty() {
+    let mut session = session();
+    let only = VenueMessage {
+        media: Vec::new(),
+        forwards: vec![Forward {
+            nodes: vec![ForwardNode {
+                name: "小林".to_string(),
+                text: "周六见".to_string(),
+                media: Vec::new(),
+                forwards: Vec::new(),
+            }],
+            more: None,
+        }],
+        ..venue("8820", true)
+    };
+    assert_eq!(
+        session.handle(bare(1, only)),
+        [rejected(id(1), Reason::EmptyMessage)]
     );
 }

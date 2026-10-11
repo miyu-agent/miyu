@@ -31,7 +31,10 @@ pub(super) fn opening(
         .group
         .as_ref()
         .zip(opened.window(event.seq))
-        .and_then(|(chat, after)| group::recent(history, after, event.seq, &opened.answered, chat));
+        .and_then(|(chat, after)| {
+            let texts = (chat, texts.forward.as_ref());
+            group::recent(history, after, event.seq, &opened.answered, texts)
+        });
     transcript.add(
         trigger,
         Place::Lead(trigger),

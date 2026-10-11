@@ -11,17 +11,16 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 
 use super::{recall_mark, record, you};
-use crate::texts::GroupChat;
+use crate::texts::{ForwardTexts, GroupChat};
 
 /// 第 `before` 条开始一轮，上一个由人的消息开的回合从第 `after` 条开始（没有的是没有）：这一块近况，当过触发的
-/// （`answered`）不收。一条都没有、快照里没有近况的字的，
-/// 没有。
+/// （`answered`）不收。一条都没有、快照里没有近况的字的，没有。转发照 `forward` 写在那一条下面（施工 O-34），连着算预算。
 pub(crate) fn recent(
     history: &History,
     after: Option<Seq>,
     before: Seq,
     answered: &BTreeSet<Seq>,
-    texts: &GroupChat,
+    (texts, forward): (&GroupChat, Option<&ForwardTexts>),
 ) -> Option<String> {
     let words = texts.recent.as_ref()?;
     // 撤回的只认这一条以前记下的：之后才撤的，已经发过的这一块不改。
@@ -39,7 +38,7 @@ pub(crate) fn recent(
         .iter()
         .filter(|event| after.is_none_or(|after| event.seq > after) && event.seq < before)
         .filter(|event| !answered.contains(&event.seq))
-        .filter_map(|event| one(history, event, &recalled, texts))
+        .filter_map(|event| one(history, event, &recalled, (texts, forward)))
         .collect();
     // 从最新往前装，装不下就停。
     let mut kept = VecDeque::new();
@@ -74,7 +73,7 @@ fn one(
     history: &History,
     event: &Event,
     recalled: &BTreeMap<&str, &ExternalId>,
-    texts: &GroupChat,
+    (texts, forward): (&GroupChat, Option<&ForwardTexts>),
 ) -> Option<String> {
     match &event.body {
         Body::MessageUser(message) => {
@@ -91,7 +90,7 @@ fn one(
                 &event.by,
                 venue,
                 &message.blocks,
-                texts,
+                (texts, forward),
                 &mark,
             ))
         }

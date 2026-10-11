@@ -1,6 +1,7 @@
 //! 群聊近况（施工 O-13 下）：收两次触发之间的旁听、不收睡着的；回合中途到的归下一块；排在事实后面、触发前面；别的线的
 //! `[you]` 行，自己这条线的不收；撤回的标记，触发以后才撤的不标；预算装不下的从老的去掉、写缺口提示；没有的不出；私聊、
-//! 没有近况的字的不出；回报开的回合不算界；以后的请求里那一块一字不差。日志的时刻都是 `2026-09-25T07:00Z`，东八区是 15:00。
+//! 没有近况的字的不出；回报开的回合不算界；以后的请求里那一块一字不差；转发那几行跟着那一条、一起算预算（施工 O-34）。
+//! 日志的时刻都是 `2026-09-25T07:00Z`，东八区是 15:00。
 
 use crate::render::render;
 use crate::test_support::*;
@@ -278,5 +279,36 @@ fn overheard_media_carry_their_number_and_size() {
         [
             "user: <recent>\n[15:00] 小林 [msg=8895]: [image #1: 2 KB] [image #2: 1.0 MB]\n | [15:00] 小林 [msg=8896]: 看看"
         ]
+    );
+}
+
+/// 施工 O-34：旁听的一条带着转发，那几行跟在它下面；连着那几行一起算预算，装不下的整条去掉、不截一半。
+#[test]
+fn overheard_forwards_follow_their_line_and_count_against_the_budget() {
+    let mut log = Log::new();
+    ambient(&mut log, "早", "8897", "");
+    ambient(
+        &mut log,
+        "[forward]",
+        "8898",
+        r#","forwards":[{"nodes":[{"name":"阿杰","text":"今天谁值班"}],"more":3}]"#,
+    );
+    opens(&mut log, "看看", "8899");
+    let block = "[15:00] 小林 [msg=8898]: [forward]\n  forward:\n    阿杰: 今天谁值班\n    (3 more not shown)\n";
+    assert_eq!(
+        shape(&render(log.history(), &with_forward(group_texts(480)))),
+        [format!(
+            "user: <recent>\n[15:00] 小林 [msg=8897]: 早\n{block} | [15:00] 小林 [msg=8899]: 看看"
+        )]
+    );
+    // 预算正好装下带转发的那一条：早的那一条去掉，转发那几行一行不少。
+    assert_eq!(
+        shape(&render(
+            log.history(),
+            &with_forward(group_texts_within(480, block.len()))
+        )),
+        [format!(
+            "user: <recent>\n<omitted 1>\n{block} | [15:00] 小林 [msg=8899]: 看看"
+        )]
     );
 }

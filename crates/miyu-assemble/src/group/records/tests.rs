@@ -71,7 +71,7 @@ fn chatted() -> (Log, Seq) {
 #[test]
 fn records_read_like_her_lines_and_end_before_the_message() {
     let (log, msg) = chatted();
-    let got = records(log.history(), msg, 20, &chat()).expect("是场所消息");
+    let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
     assert_eq!(
         got.records,
         concat!(
@@ -87,7 +87,7 @@ fn records_read_like_her_lines_and_end_before_the_message() {
 #[test]
 fn the_count_keeps_the_newest() {
     let (log, msg) = chatted();
-    let got = records(log.history(), msg, 2, &chat()).expect("是场所消息");
+    let got = records(log.history(), msg, 2, &chat(), None).expect("是场所消息");
     assert_eq!(
         got.records,
         "[15:00] [you] [msg=8804]: 我来\n[15:00] 小林 [msg=8805]: @Miyu 在吗\n  @mentions: [you]\n"
@@ -98,8 +98,8 @@ fn the_count_keeps_the_newest() {
 fn only_a_venue_message_can_be_judged() {
     let (mut log, _) = chatted();
     let plain = log.say("不是场所的");
-    assert!(records(log.history(), Seq::new(plain).unwrap(), 20, &chat()).is_none());
-    assert!(records(log.history(), Seq::new(1).unwrap(), 20, &chat()).is_none());
+    assert!(records(log.history(), Seq::new(plain).unwrap(), 20, &chat(), None).is_none());
+    assert!(records(log.history(), Seq::new(1).unwrap(), 20, &chat(), None).is_none());
     // 前面一条都没有的：记录是空的。
     let mut fresh = Log::new();
     let first = said(
@@ -107,6 +107,7 @@ fn only_a_venue_message_can_be_judged() {
         "第一句",
         r#"{"msg":"9000","name":"小林","ambient":true}"#,
     );
-    let got = records(fresh.history(), Seq::new(first).unwrap(), 20, &chat()).expect("是场所消息");
+    let got =
+        records(fresh.history(), Seq::new(first).unwrap(), 20, &chat(), None).expect("是场所消息");
     assert_eq!(got.records, "");
 }

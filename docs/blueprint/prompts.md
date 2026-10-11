@@ -2831,6 +2831,45 @@ Group messages look like [HH:MM] name (id=..., role) [msg=...]: text, with optio
 (not playable yet)
 ```
 
+### 人这边：群里一行下面、私聊正文后面，合并转发那几行的头一行
+
+#### `core/venues/forward/label.txt`
+
+- 什么时候加进来：一条场所消息带着一个合并转发（`venue.forwards`，施工 O-34）；O-34 起造的会话才有（快照的 `core.forward`），以前造的一个字节不变
+- token：2（2026-10-11，接在 `hi` 和一个换行后面；整块里头一行连换行、缩进多 3）
+- 为什么加：转发里的话缩进写在发转发的人那一行下面，没有头一行她分不清下面几行是转发里的、还是那个人接着说的（2026-10-11 主会话、核心审形状时定）。英文短句，同 `reply-to:` 的写法
+- 指纹：`a7fc9e59`
+
+```text
+forward:
+```
+
+### 人这边：同上，一条消息不止一个转发时每个的头一行
+
+#### `core/venues/forward/numbered.txt`
+
+- 什么时候加进来：一条场所消息带着不止一个合并转发（施工 O-34），字段 `number` 从 1 数；同上
+- token：4（`number` 填 2，同上）
+- 为什么加：几个转发挨着写，不标号她分不清哪几行是哪一个的（同上）
+- 指纹：`549108a9`
+
+```text
+forward #{number}:
+```
+
+### 人这边：同上，一个转发的最后一行
+
+#### `core/venues/forward/more.txt`
+
+- 什么时候加进来：桥没把一个转发的全部条数放进来（`more` 大于 0，施工 O-34），字段 `count`；同上
+- token：6（`count` 填 12，同上）
+- 为什么加：一个转发能有几百条，桥只放前 20 条：不说她会当转发里只有这几句（同上）
+- 指纹：`d14c5dc0`
+
+```text
+({count} more not shown)
+```
+
 ### 回顾那一次请求，不进主对话
 
 #### `core/recap/instruction.txt`

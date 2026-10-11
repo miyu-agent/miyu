@@ -10,8 +10,8 @@ use miyu_kernel::request::Message;
 use miyu_kernel::template::Template;
 
 use crate::texts::{
-    GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap, RestoredWrap,
-    Texts, Title, TurnEndedTexts, Vision,
+    ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts, Recap,
+    RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
 };
 
 pub(crate) const KERNEL: &str = r#"{"kind":"kernel"}"#;
@@ -61,6 +61,33 @@ pub(crate) fn texts() -> Texts {
         title: Some(title_texts()),
         vision: Some(vision_texts()),
         group: None,
+        forward: None,
+    }
+}
+
+/// 出厂的合并转发那几行的字（施工 O-34）：照资源文件的原文去掉行尾换行，测出来的就是她看到的样子。
+pub(crate) fn forward_texts() -> ForwardTexts {
+    let read = |text: &str| text.trim_end().to_string();
+    ForwardTexts {
+        label: read(include_str!(
+            "../../../resources/core/venues/forward/label.txt"
+        )),
+        numbered: Template::parse(&read(include_str!(
+            "../../../resources/core/venues/forward/numbered.txt"
+        )))
+        .expect("模板合写法"),
+        more: Template::parse(&read(include_str!(
+            "../../../resources/core/venues/forward/more.txt"
+        )))
+        .expect("模板合写法"),
+    }
+}
+
+/// O-34 起造的会话：同 `texts`，带着出厂的合并转发那几行的字。
+pub(crate) fn with_forward(texts: Texts) -> Texts {
+    Texts {
+        forward: Some(forward_texts()),
+        ..texts
     }
 }
 

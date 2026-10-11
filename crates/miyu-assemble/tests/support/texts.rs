@@ -80,6 +80,7 @@ pub(super) fn texts() -> Texts {
         title: Some(title()),
         vision: Some(vision()),
         group: None,
+        forward: None,
     }
 }
 

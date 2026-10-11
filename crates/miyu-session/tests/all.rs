@@ -10,6 +10,7 @@ mod backlog;
 mod delete;
 mod embed;
 mod embed_replace;
+mod forward;
 mod group;
 mod guard;
 mod guard_confined;

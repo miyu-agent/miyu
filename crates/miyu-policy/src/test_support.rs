@@ -217,6 +217,12 @@ pub(crate) fn core() -> CoreTexts {
             instruction: include_str!("../../../resources/core/vision/instruction.txt").to_string(),
             question: include_str!("../../../resources/core/vision/question.txt").to_string(),
         }),
+        forward: Some(crate::ForwardTexts {
+            label: include_str!("../../../resources/core/venues/forward/label.txt").to_string(),
+            numbered: include_str!("../../../resources/core/venues/forward/numbered.txt")
+                .to_string(),
+            more: include_str!("../../../resources/core/venues/forward/more.txt").to_string(),
+        }),
     }
 }
 

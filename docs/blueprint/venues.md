@@ -21,7 +21,7 @@
 | `crates/miyu-store/src/index.rs`、`index/row.rs` | 索引一行多 `venue`，版本 3 |
 | `crates/miyu-endpoint/src/venues.rs` | `venue.session`：照场所加属主找回或者造；`as` 怎么认、记成谁（照会话的属主比，施工 O-4 下）；`venue.binding`：问一个平台身份在对应表里对着谁（施工 O-31 前） |
 | `crates/miyu-endpoint/src/venues/sessions.rs`（施工 O-32 前） | `venue.sessions`：列出系统账号名下的场所会话和终端管理员在这个平台的私聊，每个场所一个 |
-| `crates/miyu-endpoint/src/venues/message.rs`、`crates/miyu-kernel/src/event/venue.rs` | `session.send` 的 `venue` 怎么查、记成什么（施工 O-13 上） |
+| `crates/miyu-endpoint/src/venues/message.rs`、`crates/miyu-kernel/src/event/venue.rs` | `session.send` 的 `venue` 怎么查、记成什么（施工 O-13 上）；合并转发 `forwards` 的写法和上限（施工 O-34） |
 | `crates/miyu-endpoint/src/appending.rs` | `events.append`：种类、大小、格怎么查，记成谁（施工 O-13 上） |
 | `crates/miyu-endpoint/tests/venue_binding.rs`（施工 O-31 前） | `venue.binding`：系统账号的扩展问对着管理员的、没写的、对着不存在的账号的；写错的、多写格的、一次问几个的 `bad_params`；本机的头 `no_system_account`；只读 |
 | `crates/miyu-endpoint/tests/venue_sessions.rs`（施工 O-32 前） | `venue.sessions`（两、三份核心先后起在同一个数据根上）：列得出、从新到旧；终端管理员这个平台的私聊列得出；删了的、别的平台的、系统账号自己造的本机会话不列；从回收处拿回来的旧的、属主换过的旧的不列；对应表里没有这个平台的身份了，管理员名下的不列；多写格的 `bad_params`；本机的头 `no_system_account` |
@@ -31,6 +31,7 @@
 | `crates/miyu-endpoint/tests/respond.rs` | 照旁听的几条开一轮、`triggers` 排好去重、事实接在后面；写错的什么都不记；`not_ambient`、`already_answered` 带上是哪几条；同一个编号再发只算一次（施工 O-14 上） |
 | `crates/miyu-endpoint/tests/note.rs` | 空闲时记下、不带回合编号、不开回合，下一轮的请求里排在触发前面；正在跑一轮时带回合编号；空的、太多的、写错的什么都不记；同一个编号再发只算一次（施工 O-14 补） |
 | `crates/miyu-endpoint/tests/venue_records.rs` | `venue` 原样记下、旁听的不开回合、写错的什么都不记；`events.append` 收的三类、回应带序号、不带回合编号，拒的几种；扩展只能写自己的包那一段（`system_account.rs`）（施工 O-13 上）；带的东西的 `size` 原样记，负的、小数、字、多写 `duration` 的拒（施工 O-33） |
+| `crates/miyu-endpoint/tests/venue_forwards.rs`（施工 O-34） | `venue.forwards` 原样记下，只有转发、正文空的照旧 `empty_message`、什么都不记；套 4 层、一个转发 101 条、正文超过 4096 字节、名字超长或带换行或空白、空列表、`more` 写 0 或负的、空的 `nodes`、多写格、带的东西写错的 `bad_params`、不带 `data.limit`；整条消息 101 条、名字和正文超过 16 KiB 的 `bad_params`、`data.limit` 说是哪一样，正好 100 条、正好 16 KiB 的收；都什么都不记 |
 | `crates/miyu-endpoint/src/system_accounts.rs` | 系统账号（施工 O-4 下，`packages.md`「`[process]`」）：这次起来认的有哪些、连接是谁、记忆照谁算；起来时建它们的家目录 |
 | `crates/miyu-endpoint/src/list.rs` | 列会话、推会话列表时跳过场所会话 |
 
@@ -115,6 +116,7 @@
 | `mentions` | 平台身份的列表，可以不写 | @ 了谁；@ 了谁的名字桥写在正文里 |
 | `mentions_me`、`mentions_all` | 布尔，不写是假 | @ 了她；@ 了全体成员（不算 @ 她） |
 | `media` | 列表，可以不写 | 带的东西，每项 `{kind, id, name?, size?}`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`，`id` 平台的编号（懒下载，不进内容块），`name` 文件名、表情的字（最多 200 个字符），`size` 多少字节（非负整数，平台说了的才写；施工 O-33，群里的一行照它写大小，`kernel/request.md`「群里的一行」）。不收时长：平台的段里没有（2026-10-11 主会话、核心定，不为以后写） |
+| `forwards` | 列表，可以不写 | 合并转发的内容（施工 O-34，2026-10-11 核心审形状时定）：照正文里转发的先后，每项 `{nodes, more?}`。`nodes` 1 到 100 条，每条 `{name, text, media?, forwards?}`：`name` 转发里那个人当时的名字（同上面的 `name`：去掉前后空白不空，最多 64 个字符，没有控制字符），`text` 那一条的正文（最多 4096 字节，可以是空的，换行照收、渲染时转义），`media` 同上面的 `media`（只写记号，`fetch_media` 取不了），`forwards` 套在里面的转发（同样的形状）；`more` 桥没放进来的条数，只在大于 0 时写。套的层数最多 3（`venue.forwards` 是第一层）。整条消息另有上限：所有转发（连套在里面的）合起来最多 100 条、`name` 和 `text` 合起来最多 16 KiB，超了的 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`；单层的不合不带 `data.limit`。写了空列表的、`more` 写 0 的 `bad_params`（没有转发就不写这一格）。核心不拿正文里 `[forward]` 的个数对转发的条数（人也打得出这几个字）。转发不算内容：带转发的消息正文里要有占位（桥写 `[forward]`），只有转发、没有字也没带东西的照旧 `empty_message`（2026-10-11 核心审时定：O-34 以前造的私聊会话不写转发那几行，这样一条渲染出来是没有块的 user）。怎么渲染见 `kernel/request.md`「合并转发」 |
 | `ambient` | 布尔，不写是假 | 旁听：只记下，不开回合，回合进行中也不排进这一轮 |
 | `asleep` | 布尔，不写是假 | 睡着时收到的（桥照样带 `ambient`）；群聊近况不收它（O-13 下） |
 | `show_ids` | 布尔，不写是假 | 渲染这一条时写不写发的人的平台身份（施工 O-13 中）：桥照这时的场所规则每条带上，规则改了从下一条起照新的 |
@@ -125,7 +127,7 @@
 
 1. `msg` 是要判的那一条，必须是这个会话里带 `venue` 的 `message.user`；`count` 1 到 100。写错的、`msg` 不对的 `bad_params`；没有这个会话的 `session_not_found`。
 2. `current` 是那一条的一行；`records` 是它之前的群里的话，一行一条（每行以换行结尾，没有的是空的），照日志的先后，从新往旧取 `count` 条：场所的 `message.user`（旁听的、开过回合的都收，睡着时收到的不收），`venue.delivered` 写成 `[you]` 行（判官看不到她的回复，主线的也收）；`msg` 以前记下的撤回照样标。
-3. 写法和她看到的一行同一个函数（`miyu_assemble::group::records`），照会话快照里钉下的时区和字；快照里没有的（私聊）照核心这时的时区和出厂的字。照会话日志读（同 `view.page`，不载入会话），撤掉的、撤回的不算，压缩换出去的照样算。
+3. 写法和她看到的一行同一个函数（`miyu_assemble::group::records`），照会话快照里钉下的时区和字；快照里没有的（私聊）照核心这时的时区和出厂的字。合并转发那几行（施工 O-34）同样写在那一条下面：群会话照快照的 `core.forward`，O-34 以前造的没有就不写（和她看到的一样）；快照里没有群会话的字的照这时的。照会话日志读（同 `view.page`，不载入会话），撤掉的、撤回的不算，压缩换出去的照样算。
 4. 判官带人格（2026-10-09 项目主人定，出厂开，能按场所关）：桥照订阅回应里的 `persona` 用 `persona.read {persona, prompt: "persona"}` 读现在文件里的那一份，开关是群聊内核的出厂参数 `judge.persona`（通讯平台的会话 O-23 补）；`venue.records` 不管人格，形状不变。
 
 **照记下的几条开一轮**（施工 O-14 上，chat.md 第七条第 3 条第 1 项，形状 2026-10-09 和通讯平台的会话对过）：`session.respond {session, to, facts}`，回应 `{"events": [...]}`（`turn.started` 和事实的序号，同 `session.send`）。

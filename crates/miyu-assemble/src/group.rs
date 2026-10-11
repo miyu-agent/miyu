@@ -10,6 +10,9 @@
 //! 一条里不止一样的照先后从 1 数、每样标 `#n`（和 `fetch_media` 的 `index` 一个数法），语音后面接那一句；以前造的不标、
 //! 不接，前缀一个字节不变。
 //!
+//! 合并转发（施工 O-34）：`venue.forwards` 在引用、@ 那两行下面缩进写（`forward.rs`）；快照里没有那几句的（O-34 以前造的）
+//! 不写，只看得到正文里桥写的占位。
+//!
 //! 开一轮的那条前面的群聊近况在 `recent.rs`（施工 O-13 下）：两次触发之间的旁听、别的线替她发的话，一行一条。
 
 use miyu_kernel::block::{Block, Text};
@@ -20,36 +23,38 @@ use miyu_kernel::template::escape;
 use miyu_kernel::time::Timestamp;
 
 use crate::size::readable;
-use crate::texts::GroupChat;
+use crate::texts::{ForwardTexts, GroupChat};
 
 /// 正文最多留多少字节（照旧版）：超了的在字的边界上截掉后面的。
 const TEXT_LIMIT: usize = 4096;
 
-/// 群里的人在 `at` 说的一条：`by` 是谁，`venue` 是平台的格，`blocks` 是内容块。交回这一行，后面接着字以外的块。
+/// 群里的人在 `at` 说的一条：`by` 是谁，`venue` 是平台的格，`blocks` 是内容块，`forward` 是转发那几行的字（快照里没有的
+/// 是没有）。交回这一行，后面接着字以外的块。
 pub(crate) fn line(
     at: Timestamp,
     by: &By,
     venue: &VenueMessage,
     blocks: Vec<Block>,
     texts: &GroupChat,
+    forward: Option<&ForwardTexts>,
 ) -> Vec<Block> {
     let (words, rest): (Vec<Block>, Vec<Block>) = blocks
         .into_iter()
         .partition(|block| matches!(block, Block::Text(_)));
-    let line = record(at, by, venue, &words, texts, "");
+    let line = record(at, by, venue, &words, (texts, forward), "");
     let mut out = vec![Block::Text(Text { text: line })];
     out.extend(rest);
     out
 }
 
-/// 一条的字：`[时刻] 发的人 [msg=编号]<mark>: 内容`，下面可选缩进的两行。`mark` 是编号后面的可信记号（撤回的，`recent.rs`），
-/// 没有的是空的。`words` 里只看文本块。
+/// 一条的字：`[时刻] 发的人 [msg=编号]<mark>: 内容`，下面可选缩进的两行，再下面是转发那几行（有那几句的字才写）。`mark` 是
+/// 编号后面的可信记号（撤回的，`recent.rs`），没有的是空的。`words` 里只看文本块。
 fn record(
     at: Timestamp,
     by: &By,
     venue: &VenueMessage,
     words: &[Block],
-    texts: &GroupChat,
+    (texts, forward): (&GroupChat, Option<&ForwardTexts>),
     mark: &str,
 ) -> String {
     let mut line = format!(
@@ -66,6 +71,10 @@ fn record(
     if let Some(mentions) = mentions(venue) {
         line.push_str("\n  @mentions: ");
         line.push_str(&mentions);
+    }
+    if let Some(block) = forward.and_then(|forward| forward::block(&venue.forwards, 2, forward)) {
+        line.push('\n');
+        line.push_str(&block);
     }
     line
 }
@@ -127,7 +136,7 @@ fn content(words: &[Block], media: &[Media], texts: &GroupChat) -> String {
 
 /// 一条带的东西的记号，照先后。`voice` 是语音那一句：有它的（O-33 起造的群会话）不止一样的标第几个、语音接这一句；
 /// 没有的照以前写。
-fn markers(media: &[Media], voice: Option<&str>) -> Vec<String> {
+pub(crate) fn markers(media: &[Media], voice: Option<&str>) -> Vec<String> {
     let numbered = voice.is_some() && media.len() > 1;
     media
         .iter()
@@ -233,8 +242,11 @@ fn you(event: &Event, delivered: &VenueDelivered, texts: &GroupChat) -> String {
     )
 }
 
+mod forward;
 mod recent;
 mod records;
+
+pub(crate) use forward::block as forwarded;
 
 pub(crate) use recent::recent;
 pub use records::{Records, records};

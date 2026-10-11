@@ -22,6 +22,7 @@
 | `crates/miyu-policy/src/attached_path.rs` | 看不了的附件带上原来的路径的两句（施工 3-9 五补） |
 | `crates/miyu-policy/src/recap.rs` | 回顾的字 `RecapTexts`、数 `RecapNumbers` 和出厂的数 `RECAP`，交给组装器的样子（施工 3-8 四补） |
 | `crates/miyu-policy/src/vision.rs` | 替看不了图的模型看图的字（施工 8-17）：转述请求的两份 `VisionTexts`、图的位置的三句标签 `ImageDescriptionTexts`，交给组装器、驱动的样子 |
+| `crates/miyu-policy/src/forward.rs`（施工 O-34） | 合并转发那几行的三句 `ForwardTexts`（`core.forward`），交给组装器时两份照模板读 |
 | `crates/miyu-policy/src/title.rs` | 起标题的字 `TitleTexts`、数 `TitleNumbers` 和出厂的数 `TITLE`，交给组装器、内核的样子（施工 3-8 五补） |
 | `crates/miyu-policy/src/jobs.rs` | 回报的写法、任务用的数；子会话回报的正文怎么截（`reports()`，施工 3-8 五补从 `snapshot.rs` 挪来，那边放不下了） |
 | `crates/miyu-policy/src/memory.rs` | 记忆的范围 `MemoryScope`，快照的 `memory` 怎么写（`with_memory`）、怎么读（`memory_scope`，施工 R-3 下） |
@@ -69,6 +70,7 @@
 | `recap` | `instruction`、`user`、`assistant`、`omitted`、`excerpted` | `recap/` 下的同名文件（施工 3-8 四补，回顾的请求，`kernel/request.md`「回顾的请求」）。以前造的快照里没有，读成没有、不写：不做回顾 |
 | `title` | `instruction` | `title/instruction.txt`（施工 3-8 五补，起标题的请求，`kernel/request.md`「起标题的请求」）；标签、截断的记号借 `recap` 的。以前造的快照里没有，读成没有、不写：不起标题 |
 | `vision` | `instruction`、`question` | `vision/` 下的同名文件（施工 8-17，转述一张图的请求，`kernel/request.md`「替它看的图」）。以前造的快照里没有，读成没有、不写：不转述 |
+| `forward` | `label`、`numbered`、`more` | `venues/forward/` 下的同名文件（施工 O-34，`kernel/request.md`「合并转发」）：放在 `core` 这一层、不放进群会话的 `group`，因为私聊会话的快照没有 `group`、私聊里的转发也要写（2026-10-11 主会话、核心定）。交给组装器时去掉行尾空白；`numbered` 的字段只能是 `number`、`more` 的只能是 `count`，试换不过的造不出策略（`BuildError::Texts`，`which` 是 `forward`）。以前造的快照里没有，读成没有、不写：收到转发不写那几行，只看得到正文里的占位 |
 
 **函数**：
 
@@ -211,6 +213,7 @@
 | `crates/miyu-policy/src/tools/choice/tests.rs` | 拼：一个都没有的拿掉这个参数、和资源去掉它一字不差；有的插 `enum`、说明一行一个、没写说明的只写名字；别的字节不动；读回的和拼进去的一样，没有这一格、写坏的是空的（施工 8-8 补） |
 | `crates/miyu-policy/src/snapshot/tests/recap.rs`（施工 3-8 四补） | 回顾进快照：出厂的快照带着五份字和两个数，造出的组装器回顾得出来；字、数少一样都不回顾；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不回顾 |
 | `crates/miyu-policy/src/snapshot/tests/vision.rs`（施工 8-17） | 替看图进快照：出厂的快照带着两份字和三句标签，造出的组装器交得出转述的请求、驱动写得出带标签的转述；以前造的快照没有这两格，读进来再写出去一字不差，不转述、照旧写占位 |
+| `crates/miyu-policy/src/forward/tests.rs`（施工 O-34） | 出厂的三句交给组装器时去掉行尾换行、两份照模板换得出；快照字节读得回来；以前造的没有这一格，读成没有、读进来再写出去一个字节不变、照样造得出策略；模板没配上括号、字段名不对的造不出策略 |
 | `crates/miyu-policy/src/snapshot/tests/title.rs`（施工 3-8 五补） | 起标题进快照：出厂的快照带着指令和三个数，造出的组装器起得出标题、内核拿到 `tries`、`chars`；字、数少一样都不起，没有回顾的标签的组装器也不起；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不起 |
 | `crates/miyu-policy/src/snapshot/tests/jobs.rs`（施工 3-8 五补从 `tests.rs` 挪出来） | 子会话回报的正文怎么截：出厂的 30000 和截在中间的那一行；以前造的快照没有，读成出厂的数、空的那一行，读写一字不差；快照里的数照快照的 |
 | `crates/miyu-policy/src/peers/tests.rs`（施工 C-2、C-6） | 空了的通知（C-6）：出厂的快照多两个数、通知的五份字（平铺在 `core.peers` 里），作废那一句照快照的小时数换；通知的字坏了照名字报；C-2 时造的快照没有这几格，数照出厂的、通知不出、读回写出一字不差。别的会话发来的话进快照：出厂的快照带着三个数（排在最后）和两份标签，造出的策略照出厂的数、组装器渲染出带短编号的标签；快照里的数照快照的；标签坏了照名字报；以前造的快照没有这两格，读进来再写出去一字不差，照出厂的数防刷屏，那种话和人的话一字不差 |
@@ -218,7 +221,7 @@
 | `crates/miyu-policy/src/jobs/tests.rs` | 人停的那一句：出厂的快照带着、交给组装器；以前造的快照没有，读成空的，读回来一字不差（施工 7-2 补） |
 | `crates/miyu-policy/src/guard/tests.rs` | 三句带路径和原因、转义；说法；坏的说是哪一类；缺了 `permissions` 的快照读成空的 |
 | `crates/miyu-store/tests/snapshot.rs` | 从源码树的资源拼出快照，存成 blob，哈希就是快照的哈希；取回来一样；两份策略跑同一个剧本，每一次请求逐字节一样 |
-| `crates/miyu-store/src/resources/tests.rs` | 读出软件工程师的一句和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；回顾的五份各是各的文件，施工 3-8 四补；切了级别以后的权限那一份也是，施工 2-7 补；起标题的指令，施工 3-8 五补）；没有的人格说是哪个文件，坏编号被拒 |
+| `crates/miyu-store/src/resources/tests.rs` | 读出软件工程师的一句和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；回顾的五份各是各的文件，施工 3-8 四补；切了级别以后的权限那一份也是，施工 2-7 补；起标题的指令，施工 3-8 五补；合并转发那几行的三句各是各的文件，施工 O-34）；没有的人格说是哪个文件，坏编号被拒 |
 | `crates/miyu-session/tests/actor.rs` | 造会话先存快照：`session.created` 记的哈希取得出快照 |
 | `crates/miyu-endpoint/tests/tools.rs` | 协议上造的会话，工具面照核心的目录存进快照；换一份核心以后载入，照新核心的目录执行 |
 | `crates/miyu-endpoint/tests/endpoint.rs` | 不能输入的头造的会话，快照里没人能确认 |
