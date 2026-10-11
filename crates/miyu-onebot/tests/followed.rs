@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
 use crate::support::group::*;
-use crate::support::spawning::{bridge_up, cli, extension, text};
+use crate::support::spawning::{bridge_up, cli, forget_status, text};
 use crate::support::speaking::{Line, Lines};
 use crate::support::*;
 
@@ -113,35 +113,27 @@ fn queued(home: &Home, venue: &str) -> Vec<Value> {
         .collect()
 }
 
-/// 桥的进程号。
-async fn pid(home: &Home) -> Option<u64> {
-    extension(&home.root).await["pid"].as_u64()
-}
-
-/// 照 `args`（`restart`、`start`）办，等换了进程号的桥听上（上一个是 `before`），假 NapCat 再连上。
-async fn up_again(home: &Home, listen: u16, args: &[&str], before: Option<u64>) -> Answering {
+/// 照 `args`（`restart`、`start`）办，等新桥听上，假 NapCat 再连上。
+async fn up_again(home: &Home, listen: u16, args: &[&str]) -> Answering {
     let done = cli(&home.root, args).await;
     assert_eq!(done.status.code(), Some(0), "{}", text(&done.stderr));
-    bridge_up(&home.root, listen, before)
-        .await
-        .expect("桥重新起来");
+    bridge_up(&home.root, listen).await.expect("桥重新起来");
     admin_napcat(listen).await.answering(MEMBERS)
 }
 
-/// 重启桥（假 NapCat 先断开），再连上。
+/// 重启桥（假 NapCat 先断开，旧的状态文件清掉），再连上。
 async fn restarted(home: &Home, listen: u16, napcat: Answering) -> Answering {
     drop(napcat);
-    let before = pid(home).await;
-    up_again(home, listen, &["restart"], before).await
+    forget_status(&home.root).await;
+    up_again(home, listen, &["restart"]).await
 }
 
-/// 停下桥（假 NapCat 先断开）：交回停下以前的进程号。
-async fn stopped_bridge(home: &Home, napcat: Answering) -> Option<u64> {
+/// 停下桥（假 NapCat 先断开，旧的状态文件清掉）。
+async fn stopped_bridge(home: &Home, napcat: Answering) {
     drop(napcat);
-    let before = pid(home).await;
+    forget_status(&home.root).await;
     let stopped = cli(&home.root, &["stop"]).await;
     assert_eq!(stopped.status.code(), Some(0), "{}", text(&stopped.stderr));
-    before
 }
 
 #[tokio::test]
@@ -200,14 +192,14 @@ async fn words_said_while_the_bridge_was_off_are_sent_while_still_fresh() {
     admin_calls(&napcat, 1);
     assert_eq!(next_words(&mut napcat).await, "开头。");
     until_count(&home, &group_venue(), "venue.delivered", 1).await;
-    let before = stopped_bridge(&home, napcat).await;
+    stopped_bridge(&home, napcat).await;
     // 桥停着：她说了一句，过了期限；又说了一句，还在期限以内。
     stale.send(()).expect("她在等");
     until_count(&home, &group_venue(), "message.assistant", 2).await;
     tokio::time::sleep(Duration::from_secs(EXPIRE + 1)).await;
     fresh.send(()).expect("她在等");
     until_count(&home, &group_venue(), "message.assistant", 3).await;
-    let mut napcat = up_again(&home, listen, &["start"], before).await;
+    let mut napcat = up_again(&home, listen, &["start"]).await;
     assert_eq!(next_words(&mut napcat).await, "刚说的一句。", "补发");
     last.send(()).expect("她在等");
     assert_eq!(next_words(&mut napcat).await, "收尾。", "过了期限的不补");
@@ -236,10 +228,10 @@ async fn a_whitelisted_private_chat_is_followed_and_caught_up_after_a_restart() 
         started_ranked(Arc::new(lines), "", &whitelist(), (MEMBERS, &[])).await;
     napcat.send(private_frame(JIE, 1, json!([plain("在吗")])));
     assert_eq!(private_reply(&mut napcat).await, "在的。");
-    let before = stopped_bridge(&home, napcat).await;
+    stopped_bridge(&home, napcat).await;
     away.send(()).expect("她在等");
     until_count(&home, &private_venue(), "message.assistant", 2).await;
-    let mut napcat = up_again(&home, listen, &["start"], before).await;
+    let mut napcat = up_again(&home, listen, &["start"]).await;
     assert_eq!(private_reply(&mut napcat).await, "停着时说的。", "补发");
     after.send(()).expect("她在等");
     assert_eq!(
@@ -350,11 +342,11 @@ async fn a_turn_she_kept_quiet_in_is_not_caught_up() {
     let (home, mut napcat, listen) = started_by(Arc::new(lines), RULES, MEMBERS).await;
     admin_calls(&napcat, 1);
     assert_eq!(next_words(&mut napcat).await, "开头。");
-    let before = stopped_bridge(&home, napcat).await;
+    stopped_bridge(&home, napcat).await;
     // 桥停着：她这一轮调了 `skip_reply`，说的都不补。
     quiet.send(()).expect("她在等");
     until_count(&home, &group_venue(), "turn.ended", 1).await;
-    let mut napcat = up_again(&home, listen, &["start"], before).await;
+    let mut napcat = up_again(&home, listen, &["start"]).await;
     admin_calls(&napcat, 2);
     assert_eq!(next_words(&mut napcat).await, "下一轮。");
     assert!(napcat.pending().is_none());
@@ -386,7 +378,7 @@ async fn the_admins_private_chat_is_followed_and_caught_up_after_a_restart() {
             .count()
             >= n
     };
-    let before = stopped_bridge(&home, napcat).await;
+    stopped_bridge(&home, napcat).await;
     // 桥停着：她说了一句，还在期限以内。
     away.send(()).expect("她在等");
     within("她在桥停着时说了", async {
@@ -395,7 +387,7 @@ async fn the_admins_private_chat_is_followed_and_caught_up_after_a_restart() {
         }
     })
     .await;
-    let mut napcat = up_again(&home, listen, &["start"], before).await;
+    let mut napcat = up_again(&home, listen, &["start"]).await;
     assert_eq!(
         reply_to(&mut napcat, ADMIN).await,
         "停着时说的一句。",

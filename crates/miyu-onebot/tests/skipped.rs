@@ -222,7 +222,7 @@ async fn refused_tools_are_logged_and_the_bridge_goes_on() {
         let home = Home::spawning_edited(Arc::clone(&models), &ports_config(listen), unacceptable);
         let started = cli(&home.root, &["start"]).await;
         assert_eq!(started.status.code(), Some(0), "{}", text(&started.stderr));
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;

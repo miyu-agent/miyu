@@ -177,16 +177,47 @@ pub async fn until_port(port: u16, open: bool) {
     }
 }
 
-/// 等核心拉起的桥端口听上：`extension.status` 说在跑、状态文件的进程号是它的（端口绑上了才写）。`before` 是上一个桥的
-/// 进程号的，等的是换了进程号的那一个（被杀、重启以后核心拉起的新的）。交回它的进程号。桥停下了、标准错误说的是 `listen`
-/// 被占了：[`Taken`]（`ports.rs`）；别的原因停下的当失败。
-pub async fn bridge_up(root: &DataRoot, listen: u16, before: Option<u64>) -> Result<u64, Taken> {
+/// 核心那一项 `one` 和状态文件 `file`（读不到的是 `None`）合起来，是不是桥端口听上了：核心说在跑，状态文件在，里头的进程号
+/// 是核心说的那个。
+///
+/// 不比上一个桥的进程号：Windows 回收进程号快，新桥常拿到和停掉的那个一样的号（CI run 1840）；桥的状态文件又是变了才写，
+/// 新桥的内容和旧的一模一样时不重写。所以换桥以前先清掉旧的（[`forget_status`]），文件在就是新桥写的。
+pub fn is_up(one: &Value, file: Option<&Value>) -> bool {
+    let pid = one["pid"].as_u64();
+    one["state"] == "running"
+        && pid.is_some()
+        && file.is_some_and(|file| file["pid"].as_u64() == pid)
+}
+
+/// 换桥（`restart`、`stop` 再 `start`、杀掉等核心拉起）以前，清掉旧桥留下的状态文件，好让 [`bridge_up`] 认新桥（原因见
+/// [`is_up`]）。
+///
+/// 假 NapCat 连着的要先放掉：旧桥因为 NapCat 断开会再写一次状态文件，删在它前面会被写回去。这里等到文件里 NapCat 显示没连着
+/// （或者文件不在）再删，最多六十秒。
+///
+/// # Panics
+///
+/// 等不到 NapCat 断开；文件删不掉（不在不算）。
+pub async fn forget_status(root: &DataRoot) {
+    within("状态文件说 NapCat 断开", async {
+        while status_file::read(root).is_some_and(|file| file["napcat"]["connected"] == true) {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await;
+    match std::fs::remove_file(status_file::path(root)) {
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+            panic!("删不掉状态文件：{error}")
+        }
+        _ => {}
+    }
+}
+
+/// 等核心拉起的桥端口听上（[`is_up`]；端口绑上了才写状态文件）。换桥的调用处先 [`forget_status`]。交回它的进程号。桥停下了、
+/// 标准错误说的是 `listen` 被占了：[`Taken`]（`ports.rs`）；别的原因停下的当失败。
+pub async fn bridge_up(root: &DataRoot, listen: u16) -> Result<u64, Taken> {
     let one = until_extension(root, |one| {
-        let pid = one["pid"].as_u64();
-        one["state"] == "stopped"
-            || (one["state"] == "running"
-                && pid != before
-                && status_file::read(root).is_some_and(|file| file["pid"].as_u64() == pid))
+        one["state"] == "stopped" || is_up(one, status_file::read(root).as_ref())
     })
     .await;
     if one["state"] == "stopped" {

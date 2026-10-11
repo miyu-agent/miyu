@@ -12,7 +12,7 @@ use miyu_onebot::serve::Notice;
 use miyu_session::testkit::{Play, Script};
 
 use crate::support::group::*;
-use crate::support::spawning::{bridge_up, cli, extension, text};
+use crate::support::spawning::{bridge_up, cli, forget_status, text};
 use crate::support::speaking::{Line, Lines};
 use crate::support::*;
 
@@ -180,7 +180,7 @@ async fn after_a_restart_what_was_queued_is_not_resent_but_still_counts() {
     first.send(()).expect("她在等");
     until_count(&home, QUEUED, 1).await;
     // 桥重启：排着的那一句丢了，不补发。
-    let before = extension(&home.root).await["pid"].as_u64();
+    forget_status(&home.root).await;
     let restarted = cli(&home.root, &["restart"]).await;
     assert_eq!(
         restarted.status.code(),
@@ -188,9 +188,7 @@ async fn after_a_restart_what_was_queued_is_not_resent_but_still_counts() {
         "{}",
         text(&restarted.stderr)
     );
-    bridge_up(&home.root, listen, before)
-        .await
-        .expect("桥重新起来");
+    bridge_up(&home.root, listen).await.expect("桥重新起来");
     let mut napcat = admin_napcat(listen).await.answering(MEMBERS);
     // 桥起来就从头订阅了这个群（施工 O-32，「群里怎么叫她」第 1 条），投影照日志重建好了：入队过的第一句不补发。小林说一句，
     // 判完了再放她接着说。

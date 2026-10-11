@@ -159,7 +159,7 @@ async fn the_page_reaches_the_bridge_through_the_core() {
         let home = Home::spawning(&script, &ports_config(listen));
         let started = cli(&home.root, &["start"]).await;
         assert_eq!(started.status.code(), Some(0), "{}", text(&started.stderr));
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;

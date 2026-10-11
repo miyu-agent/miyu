@@ -240,7 +240,7 @@ async fn up(
         }
         let started = cli(&home.root, &["start"]).await;
         assert_eq!(started.status.code(), Some(0), "{}", text(&started.stderr));
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;

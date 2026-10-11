@@ -151,7 +151,7 @@ async fn start_lets_the_core_run_the_bridge_and_stop_closes_it() {
             started.ends_with(&format!("\n{}\n", zh(&Report::Page))),
             "起好了说设置在哪：{started}"
         );
-        let pid = bridge_up(&home.root, listen, None).await?;
+        let pid = bridge_up(&home.root, listen).await?;
         Ok((home, listen, pid))
     })
     .await;
@@ -202,9 +202,10 @@ async fn a_killed_bridge_is_started_again_and_napcat_comes_back() {
     let (home, listen) = on_free_port(async |listen| {
         let home = home(&script, listen);
         ok(&home.root, &["start"]).await;
-        let first = bridge_up(&home.root, listen, None).await?;
+        let first = bridge_up(&home.root, listen).await?;
+        forget_status(&home.root).await;
         kill(first);
-        bridge_up(&home.root, listen, Some(first)).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;
@@ -264,7 +265,9 @@ async fn restarting_an_extension_that_is_off_is_refused_in_the_cores_words() {
         );
         // 开了再重启：换一个新进程。
         ok(&home.root, &["start"]).await;
-        let first = bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
+        // 新桥可能拿到同一个进程号：认它靠旧的状态文件先清掉（`forget_status`）。
+        forget_status(&home.root).await;
         let restarted = ok(&home.root, &["restart"]).await;
         assert!(
             restarted.starts_with(&format!("{}\n", zh(&Report::Restarted))),
@@ -274,7 +277,7 @@ async fn restarting_an_extension_that_is_off_is_refused_in_the_cores_words() {
             !restarted.contains(&zh(&Report::Page)),
             "重启不说设置在哪：{restarted}"
         );
-        bridge_up(&home.root, listen, Some(first)).await?;
+        bridge_up(&home.root, listen).await?;
         Ok(home)
     })
     .await;
@@ -290,7 +293,7 @@ async fn the_running_bridge_takes_changes_from_the_core_without_a_restart() {
     let (home, listen) = on_free_port(async |listen| {
         let home = home(&script, listen);
         ok(&home.root, &["start"]).await;
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;
@@ -343,7 +346,7 @@ async fn a_strangers_private_chat_is_still_not_taken_when_the_core_runs_the_brid
     let (home, listen) = on_free_port(async |listen| {
         let home = home(&script, listen);
         ok(&home.root, &["start"]).await;
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;

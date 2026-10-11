@@ -43,6 +43,7 @@ mod queue_waits;
 mod reactions;
 mod receipts;
 mod reload;
+mod replaced_bridge;
 mod replayed;
 mod replies;
 mod rules;

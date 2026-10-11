@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use miyu_session::testkit::{Play, Script};
 
 use crate::support::group::*;
-use crate::support::spawning::{bridge_up, cli, extension, text};
+use crate::support::spawning::{bridge_up, cli, forget_status, text};
 use crate::support::*;
 
 /// 限流是一小时一轮的群。
@@ -171,8 +171,8 @@ async fn the_rate_limit_holds_and_survives_a_restart() {
     );
 
     // 桥重启：照日志重建。
-    let before = extension(&home.root).await["pid"].as_u64();
     drop(napcat);
+    forget_status(&home.root).await;
     let restarted = cli(&home.root, &["restart"]).await;
     assert_eq!(
         restarted.status.code(),
@@ -180,9 +180,7 @@ async fn the_rate_limit_holds_and_survives_a_restart() {
         "{}",
         text(&restarted.stderr)
     );
-    bridge_up(&home.root, listen, before)
-        .await
-        .expect("桥重新起来");
+    bridge_up(&home.root, listen).await.expect("桥重新起来");
     let mut napcat = admin_napcat(listen).await.answering(MEMBERS);
     // 6：小林冲她来：限流照旧满、这一回提示过了，只记下。7：终端管理员引用她以前的「一」：照样认得，回。
     napcat.send(group_frame(

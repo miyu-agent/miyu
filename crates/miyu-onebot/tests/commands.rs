@@ -240,7 +240,7 @@ async fn the_run_log_names_the_command_and_the_reason_but_not_the_words() {
         let home = Home::spawning(&script, &ports_config(listen));
         let started = cli(&home.root, &["start"]).await;
         assert_eq!(started.status.code(), Some(0), "{}", text(&started.stderr));
-        bridge_up(&home.root, listen, None).await?;
+        bridge_up(&home.root, listen).await?;
         Ok((home, listen))
     })
     .await;
