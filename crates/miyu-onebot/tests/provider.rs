@@ -80,6 +80,7 @@ async fn the_bridge_provides_first_and_answers_the_cores_requests() {
         json!({"jsonrpc": "2.0", "id": "core-1", "result": {
             "blocks": [{"type": "text", "text": shipped("tool-results/skipped.txt")}],
             "error": false,
+            "end_turn": true,
         }})
     );
     let unknown = shipped("tool-results/unknown.txt").replace("{name}", "kick");

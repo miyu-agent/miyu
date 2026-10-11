@@ -2457,13 +2457,13 @@ Nothing found.
 
 #### `software/onebot/tool-results/skipped.txt`
 
-- 什么时候加进来：`skip_reply` 答的那一句（施工 O-26）
-- token：14（2026-10-09 量）
-- 为什么加：告诉她这一轮写的都不会发出去：调了以后还在说的，知道是白说
-- 指纹：`d7059f8b`
+- 什么时候加进来：`skip_reply` 答的那一句（施工 O-26；O-38 改）
+- token：11（2026-10-12 量；O-26 那一句 14）
+- 为什么加：告诉她这一条回复里写的没发。O-38 起调了这一轮就结束（桥带 `end_turn`），这一句只在以后的轮次照历史看到，改成说已经发生的事：原来的「这一轮写的都不会发出去」放在历史里像在说正在跑的那一轮（`onebot.md` 施工时定的第 239 条）
+- 指纹：`46eb168d`
 
 ```text
-Skipped: nothing you write in this turn will be sent.
+Skipped: nothing in this reply was sent.
 ```
 
 #### `software/onebot/tool-results/unknown.txt`

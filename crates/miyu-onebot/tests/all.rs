@@ -50,6 +50,7 @@ mod revived;
 mod rules;
 mod segments;
 mod settings;
+mod skip_ends;
 mod skipped;
 mod spawned;
 mod status_file;

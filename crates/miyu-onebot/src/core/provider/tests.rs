@@ -84,6 +84,7 @@ fn a_tool_call_is_answered_under_its_own_id() {
         json!({"jsonrpc": "2.0", "id": "core-7", "result": {
             "blocks": [{"type": "text", "text": shipped("tool-results/skipped.txt")}],
             "error": false,
+            "end_turn": true,
         }})
     );
     let unknown = shipped("tool-results/unknown.txt").replace("{name}", "kick");

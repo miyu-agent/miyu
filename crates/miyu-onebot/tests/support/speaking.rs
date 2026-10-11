@@ -2,8 +2,8 @@
 //!
 //! - 一次回复里可以既说一句、又调一件工具（[`Line::calls`]）：内核答完工具再请求一次，同一回合里她就说了两句，测得到去重。
 //!   调的是不存在的 [`NO_TOOL`]：内核当场答「没有这件工具」，接着请求（`02-内核.md`），什么都不用装。也可以调桥提供的
-//!   `skip_reply`（[`Line::skips`]，施工 O-26）：核心反向调桥，桥答完接着请求。别的工具、参数照给的调（[`Line::uses`]，施工
-//!   O-31：撤回、禁言、戳一戳）。
+//!   `skip_reply`（[`Line::skips`]，施工 O-26）：核心反向调桥，桥答完这一轮就结束了（施工 O-38）。别的工具、参数照给的调
+//!   （[`Line::uses`]，施工 O-31：撤回、禁言、戳一戳）；同一次回复里再多调一件（[`Line::and`]，施工 O-38）。
 //! - 可以等测试放行再说（[`Line::released_by`]）：引用、@ 看「她回的那条之后群里来了几条」「过了多久」，先压着，群里说完了、
 //!   等够了再放；去重看「这一回合已经发出去的」（O-25 中起照入队算，桥入队记成了就算上，`onebot.md`「施工时定的」第 112 条）。
 //!   不靠谁快。
@@ -36,8 +36,8 @@ pub const SKIP_ARGS: &str = r#"{"reason":"not for me"}"#;
 pub struct Line {
     /// 说的字。
     text: &'static str,
-    /// 说完接着调的工具和参数：没有的这一轮就完了。
-    call: Option<(&'static str, &'static str)>,
+    /// 说完接着调的几件工具和参数，照先后：没有的这一轮就完了。
+    calls: Vec<(&'static str, &'static str)>,
     /// 等它放行再说；放行的一头放下了也照说，不卡住。
     release: Option<oneshot::Receiver<()>>,
 }
@@ -47,7 +47,7 @@ impl Line {
     pub fn says(text: &'static str) -> Line {
         Line {
             text,
-            call: None,
+            calls: Vec::new(),
             release: None,
         }
     }
@@ -55,15 +55,15 @@ impl Line {
     /// 说一句，同一次回复里调一件不存在的工具：这一轮接着往下走。
     pub fn calls(text: &'static str) -> Line {
         Line {
-            call: Some((NO_TOOL, "{}")),
+            calls: vec![(NO_TOOL, "{}")],
             ..Line::says(text)
         }
     }
 
-    /// 说一句，同一次回复里调 [`SKIP_REPLY`]（施工 O-26）：这一轮接着往下走，她说的都不该发。
+    /// 说一句，同一次回复里调 [`SKIP_REPLY`]（施工 O-26）：她说的都不该发，桥答完这一轮就结束了（施工 O-38）。
     pub fn skips(text: &'static str) -> Line {
         Line {
-            call: Some((SKIP_REPLY, SKIP_ARGS)),
+            calls: vec![(SKIP_REPLY, SKIP_ARGS)],
             ..Line::says(text)
         }
     }
@@ -71,9 +71,15 @@ impl Line {
     /// 说一句，同一次回复里调工具 `name`，参数是 `args`（施工 O-31）：这一轮接着往下走。
     pub fn uses(text: &'static str, name: &'static str, args: &'static str) -> Line {
         Line {
-            call: Some((name, args)),
+            calls: vec![(name, args)],
             ..Line::says(text)
         }
+    }
+
+    /// 同一句，同一次回复里再多调一件工具 `name`，参数是 `args`（施工 O-38：同一步几件一起跑）。
+    pub fn and(mut self, name: &'static str, args: &'static str) -> Line {
+        self.calls.push((name, args));
+        self
     }
 
     /// 同一句，等 `release` 放行了再说。
@@ -163,16 +169,16 @@ impl ModelPort for Lines {
                 },
             ];
             let mut ends = vec![Delta::End { index: 0 }];
-            if let Some((name, args)) = line.call {
+            for (index, (name, args)) in (1..).zip(line.calls) {
                 let kind = Kind::ToolCall {
                     name: name.to_string(),
                 };
-                deltas.push(Delta::Start { index: 1, kind });
+                deltas.push(Delta::Start { index, kind });
                 deltas.push(Delta::Text {
-                    index: 1,
+                    index,
                     text: args.to_string(),
                 });
-                ends.push(Delta::End { index: 1 });
+                ends.push(Delta::End { index });
             }
             // 几块都等流完了才一起收，和驱动一样。
             for delta in deltas.into_iter().chain(ends) {

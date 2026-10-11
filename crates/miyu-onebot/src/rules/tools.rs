@@ -126,10 +126,13 @@ impl Tools {
     }
 
     /// 读的一头当场答的 `tool.call` 的结果（`tool.call` 回应的 `result`，「提供者和不说话」第 2、3 条）：`skip_reply` 答出厂的
-    /// 那一句，不算出错；不认识的答 `unknown.txt` 填上那个名字，算出错。
+    /// 那一句，不算出错，带 `end_turn: true`（施工 O-38，施工时定的第 238 条：核心这一步齐了不再请求，这一轮里又叫她的走新的
+    /// 一轮）；不认识的答 `unknown.txt` 填上那个名字，算出错。
     pub(crate) fn call(&self, tool: &str) -> Value {
         if tool == SKIP_REPLY {
-            return result(&self.skipped, false);
+            let mut answer = result(&self.skipped, false);
+            answer["end_turn"] = Value::Bool(true);
+            return answer;
         }
         // 起来时试换过 `name`：换得出。
         result(&load::say(&self.unknown, &[("name", tool)]), true)

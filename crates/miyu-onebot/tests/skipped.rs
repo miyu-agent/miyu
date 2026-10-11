@@ -1,7 +1,7 @@
 //! 提供者和「不说话」（施工 O-26，`onebot.md` 第一条「提供者和不说话」；18 第七节 Q5）：真核心拉起真桥、假 NapCat、她照台词说
 //! （`support/speaking.rs`）。桥起来时登记 `skip_reply`，群会话、私聊会话的工具面里有它，本机的会话没有。她在一条回复里调了它，
-//! 这一条的字和这一轮以后说的都不发，模型替身收到桥答的那一句；下一轮照常；这一轮调用以前发出去的照旧。核心不收桥的工具，
-//! 运行日志记一行 `ERROR`，话照说。
+//! 这一条的字不发，桥答的那一句带 `end_turn`，这一轮就结束了、不再请求（施工 O-38）；下一轮照常，请求里有桥答的那一句；这一轮
+//! 调用以前发出去的照旧。核心不收桥的工具，运行日志记一行 `ERROR`，话照说。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -70,14 +70,15 @@ fn offers_skip(request: &Request) -> bool {
     request.tools.iter().any(|tool| tool.name == SKIP_REPLY)
 }
 
-/// 事件里的工具结果：（字，状态），照先后。
-fn results(events: &[Value]) -> Vec<(Value, Value)> {
+/// 事件里的工具结果：（字，状态，要不要结束这一轮），照先后。
+fn results(events: &[Value]) -> Vec<(Value, Value, Value)> {
     of_kind(events, "tool.result")
         .iter()
         .map(|one| {
             (
                 one["body"]["blocks"][0]["text"].clone(),
                 one["body"]["status"].clone(),
+                one["body"]["end_turn"].clone(),
             )
         })
         .collect()
@@ -90,31 +91,30 @@ fn skipped_lines(home: &Home) -> usize {
 
 #[tokio::test]
 async fn a_skipped_turn_sends_nothing_and_the_next_turn_speaks() {
-    let lines = Lines::new([
-        Line::skips("这句不是冲我来的吧。"),
-        Line::says("还是别说了。"),
-        Line::says("在。"),
-    ]);
+    let lines = Lines::new([Line::skips("这句不是冲我来的吧。"), Line::says("在。")]);
     let (home, mut napcat, _) = started_by(Arc::new(lines.clone()), RULES, MEMBERS).await;
     admin_calls(&napcat, GROUP, 1);
     let events = until_count(&home, GROUP, "turn.ended", 1).await;
-    // 调用块记在她的回复里；桥答的那一句交给了她，不算出错。
+    // 调用块记在她的回复里；桥答的那一句交给了她，不算出错，要结束这一轮（施工 O-38）。
     let assistant = of_kind(&events, "message.assistant");
-    assert_eq!(assistant[0]["body"]["blocks"][1]["name"], SKIP_REPLY);
+    let call = &assistant[0]["body"]["blocks"][1];
+    assert_eq!(call["name"], SKIP_REPLY);
     assert_eq!(
         results(&events),
-        [(json!(skipped()), json!("ok"))],
+        [(json!(skipped()), json!("ok"), json!(true))],
         "{events:#?}"
     );
-    let requests = lines.requests();
-    assert_eq!(requests.len(), 2, "调完接着请求一次");
-    assert!(offers_skip(&requests[0]), "群会话的工具面里有它");
-    assert!(
-        format!("{:?}", requests[1]).contains(skipped().trim()),
-        "她下一次请求里有那一句：{:?}",
-        requests[1]
+    let ended = &of_kind(&events, "turn.ended")[0];
+    assert_eq!(ended["body"]["reason"], "completed", "{ended}");
+    assert_eq!(
+        ended["by"],
+        json!({"kind": "tool", "call_id": call["call_id"]}),
+        "{ended}"
     );
-    // 下一轮照常发：群里收到的头一条就是它，前一轮的两句都没发、没入队。
+    let requests = lines.requests();
+    assert_eq!(requests.len(), 1, "调了就不再请求");
+    assert!(offers_skip(&requests[0]), "群会话的工具面里有它");
+    // 下一轮照常发：群里收到的头一条就是它，前一轮的那句没发、没入队；她的请求里照历史有桥答的那一句。
     admin_calls(&napcat, GROUP, 2);
     assert_eq!(napcat.group_message(GROUP).await, [words("在。")]);
     let events = until_count(&home, GROUP, "venue.delivered", 1).await;
@@ -123,8 +123,13 @@ async fn a_skipped_turn_sends_nothing_and_the_next_turn_speaks() {
         .map(|one| one["body"]["text"].clone())
         .collect();
     assert_eq!(queued, ["在。"], "{events:#?}");
+    assert!(
+        format!("{:?}", lines.requests()[1]).contains(skipped().trim()),
+        "她下一次请求里有那一句：{:?}",
+        lines.requests()[1]
+    );
     assert!(napcat.pending().is_none(), "别的都没发");
-    assert_eq!(skipped_lines(&home), 2, "一条一行：{}", run_log(&home.root));
+    assert_eq!(skipped_lines(&home), 1, "一条一行：{}", run_log(&home.root));
     assert!(
         !run_log(&home.root).contains("这句不是"),
         "原文不进运行日志"
@@ -134,18 +139,15 @@ async fn a_skipped_turn_sends_nothing_and_the_next_turn_speaks() {
 
 #[tokio::test]
 async fn words_sent_before_the_call_stay_sent() {
-    let lines = Lines::new([
-        Line::calls("我先看看。"),
-        Line::skips("其实不用回。"),
-        Line::says("算了。"),
-    ]);
-    let (home, mut napcat, _) = started_by(Arc::new(lines), RULES, MEMBERS).await;
+    let lines = Lines::new([Line::calls("我先看看。"), Line::skips("其实不用回。")]);
+    let (home, mut napcat, _) = started_by(Arc::new(lines.clone()), RULES, MEMBERS).await;
     admin_calls(&napcat, GROUP, 1);
     assert_eq!(napcat.group_message(GROUP).await, [words("我先看看。")]);
     until_count(&home, GROUP, "turn.ended", 1).await;
-    // 调用以后的两条都过完了才看：等运行日志记下两行。
+    assert_eq!(lines.requests().len(), 2, "调了以后不再请求");
+    // 调用的那一条过完了才看：等运行日志记下一行。
     let deadline = tokio::time::Instant::now() + WAIT;
-    while skipped_lines(&home) < 2 {
+    while skipped_lines(&home) < 1 {
         assert!(
             tokio::time::Instant::now() < deadline,
             "{}",
@@ -167,7 +169,6 @@ async fn words_sent_before_the_call_stay_sent() {
 async fn a_private_turn_can_be_skipped_and_local_sessions_never_see_the_tool() {
     let lines = Lines::new([
         Line::skips("嗯。"),
-        Line::says("不发。"),
         Line::says("好的。"),
         Line::says("本机。"),
     ]);
@@ -175,13 +176,14 @@ async fn a_private_turn_can_be_skipped_and_local_sessions_never_see_the_tool() {
     napcat.send(private_frame(ADMIN, 51, json!([plain("在吗")])));
     // 这一轮完了再说下一句：还在跑的时候来的，核心会并进这一轮。
     until_private_turns(&home, 1).await;
+    assert_eq!(lines.requests().len(), 1, "调了就不再请求（施工 O-38）");
     napcat.send(private_frame(ADMIN, 52, json!([plain("再说一句")])));
     let sent = napcat.action().await;
     assert_eq!(sent["action"], "send_private_msg", "{sent}");
     assert_eq!(
         sent["params"]["message"],
         json!([words("好的。")]),
-        "调了的那一轮两句都没发，下一轮照常"
+        "调了的那一轮没发，下一轮照常"
     );
     let requests = lines.requests();
     assert!(offers_skip(&requests[0]), "私聊的工具面里有它");
@@ -204,11 +206,11 @@ async fn a_private_turn_can_be_skipped_and_local_sessions_never_see_the_tool() {
     )
     .await
     .expect("发得进");
-    until_requests(&lines, 4).await;
+    until_requests(&lines, 3).await;
     assert!(
-        !offers_skip(&lines.requests()[3]),
+        !offers_skip(&lines.requests()[2]),
         "本机的会话没有：{:?}",
-        lines.requests()[3].tools
+        lines.requests()[2].tools
     );
     assert!(napcat.pending().is_none(), "别的都没发");
     stopped(home).await;
