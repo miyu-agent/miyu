@@ -33,9 +33,6 @@ const HUMAN: &str = "human";
 /// 资源目录最上一层的这个目录放模型资料，是数据，不发给模型，不登记（施工 6-3 上）。
 const DATA: &str = "models";
 
-/// 资源目录最上一层的这个目录放网页软件的设置（`web.json`）和页面，给浏览器的，不发给模型，不登记（施工 W-9，`web-ui.md`）。
-const WEB: &str = "web";
-
 /// 资源目录最上一层的这个目录放软件包（施工 9-1 上，F-8 上起一个文件夹一个包，`packages.md`）：给人看的名字、说明和程序名，不发给模型，不登记。
 const PACKAGES: &str = "packages";
 
@@ -118,12 +115,11 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
         let name = entry.file_name().to_string_lossy().into_owned();
         let path = format!("{prefix}{name}");
         if entry.file_type().map_err(unreadable)?.is_dir() {
-            // 给人看的字、模型资料、mermaid 的 style.json、net 的 link_preview.json、网页软件的都不发给模型，不进登记簿（26
-            // 第十节，施工 4-5 上、6-3 上、W-4、W-7、W-9）。QQ 桥原来 WebUI 的页面 `software/onebot/web/` 随施工 O-28 下去掉，
-            // 豁免一起去掉。
+            // 给人看的字、模型资料、mermaid 的 style.json、net 的 link_preview.json 都不发给模型，不进登记簿（26 第十节，施工
+            // 4-5 上、6-3 上、W-4、W-7）。QQ 桥原来 WebUI 的页面 `software/onebot/web/` 随施工 O-28 下去掉，网页软件的 `web/` 随施工
+            // S-5 搬出核心仓库，豁免都一起去掉（施工 T-13）。
             if name == HUMAN
-                || (prefix.is_empty()
-                    && (name == DATA || name == WEB || name == PACKAGES || name == PRESETS))
+                || (prefix.is_empty() && (name == DATA || name == PACKAGES || name == PRESETS))
                 || (prefix == SOFTWARE_DIR && DATA_PACKAGES.contains(&name.as_str()))
             {
                 continue;
@@ -279,11 +275,11 @@ mod tests {
         let walked = walk(&dir, "", &mut found);
         std::fs::remove_dir_all(&dir).unwrap();
         walked.unwrap();
-        // 给人看的字、最上一层的模型资料、网页软件、软件包清单和出厂的预设、software/mermaid/、software/net/、人格目录的 persona.toml、
+        // 给人看的字、最上一层的模型资料、软件包清单和出厂的预设、software/mermaid/、software/net/、人格目录的 persona.toml、
         // 群聊内核的出厂参数 software/onebot/defaults.toml、违规词表 moderation.txt、出厂的场所规则 venues.d/50-defaults.toml、桥自己的数
         // software/onebot/bridge.json、视图投影的工具分类 core/view.json 不登记，别的照查（别处叫 models、web、mermaid、net 的目录、别处的
         // defaults.toml、moderation.txt 和 bridge.json、别的包的 web/、venues.d/ 里别的文件、onebot 包里别的文件照查：只有正好这几处才豁免；
-        // QQ 桥原来 WebUI 的页面 software/onebot/web/ 随施工 O-28 下去掉豁免，再放进来照查）。
+        // QQ 桥原来 WebUI 的页面 software/onebot/web/ 随施工 O-28 下、最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。
         assert_eq!(
             found.keys().collect::<Vec<_>>(),
             [
@@ -308,6 +304,8 @@ mod tests {
                 "software/x/net/not_special_here.json",
                 "software/x/tools/t.json",
                 "software/x/web/page.js",
+                "web/pages/index.html",
+                "web/web.json",
             ]
         );
     }
