@@ -148,6 +148,7 @@ fn stopping_comes_before_restoring_files() {
             }),
         ],
         stopped: false,
+        end_turn: false,
     });
     let actions = logged.handle(stored(logged.last()));
     let (seen, _) = calls(&actions).remove(0);

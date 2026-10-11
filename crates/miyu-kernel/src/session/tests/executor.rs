@@ -184,6 +184,7 @@ pub(super) fn done(call_id: CallId, text: &str) -> Input {
         human: None,
         effects: Vec::new(),
         stopped: false,
+        end_turn: false,
     }
 }
 

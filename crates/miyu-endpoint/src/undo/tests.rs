@@ -31,6 +31,7 @@ fn result(status: ToolStatus, key: Option<&str>) -> ToolResult {
         duration_ms: None,
         human: key.map(|key| Said::new(format!("core/tool-results/{key}"))),
         effects: Vec::new(),
+        end_turn: false,
     }
 }
 
@@ -165,6 +166,7 @@ fn tool_result(seq: u64, effects: Vec<Effect>) -> Event {
             duration_ms: None,
             human: None,
             effects,
+            end_turn: false,
         }),
     }
 }

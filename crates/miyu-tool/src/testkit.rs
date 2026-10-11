@@ -27,6 +27,8 @@ pub enum Act {
     Echo,
     /// 回一句出错。
     Fails(&'static str),
+    /// 回一句成功 `ended`，要结束这一轮（施工 4-14）。
+    Ends,
     /// 先推这几段输出，再回一句成功 `pushed`。
     Pushes(&'static [&'static str]),
     /// 停住不回，等被叫停（丢掉）。不看旗。
@@ -231,6 +233,7 @@ impl Tool for Fake {
             let done = match act {
                 Act::Echo => Done::ok(format!("cwd={} args={}", call.cwd, call.args)),
                 Act::Fails(text) => Done::error(text),
+                Act::Ends => Done::ok("ended").ending(),
                 Act::Pushes(pieces) => {
                     for piece in pieces {
                         progress.push(*piece);

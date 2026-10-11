@@ -41,6 +41,8 @@ impl Session {
         };
         let cause = turn.cause.clone();
         let stage = std::mem::replace(&mut turn.stage, Stage::Settling);
+        // 这一步已经有工具要结束这一轮（施工 4-14）：照走完了收，再起来时不接着干。
+        let ending = matches!(&stage, Stage::Tools(step) if step.ending.is_some());
         let unfinished: Vec<CallId> = match stage {
             Stage::Asking(call) => {
                 stops.push(Action::CancelModel { seen: call.seen });
@@ -79,7 +81,11 @@ impl Session {
                 text.clone(),
             ));
         }
-        events.push(self.end_turn(at, By::Kernel, cause, EndReason::Restarted));
+        let reason = match ending {
+            true => EndReason::Completed,
+            false => EndReason::Restarted,
+        };
+        events.push(self.end_turn(at, By::Kernel, cause, reason));
         let mut actions = vec![Action::Append(events)];
         actions.extend(stops);
         actions

@@ -238,6 +238,7 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
                 effects: watch.some_effects(),
                 // 没叫它停却停了的：在跑的偶尔这样交回，内核照已取消记（施工 4-9 再补一）。
                 stopped: watch.running.contains(&call_id) && rng.below(4) == 0,
+                end_turn: false,
             }
         }
         26 if !watch.calm || rng.below(10) == 0 => some_interrupt(rng, watch.seed, next_id),

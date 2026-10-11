@@ -59,6 +59,9 @@ struct Answer {
     blocks: Vec<Block>,
     #[serde(default)]
     error: bool,
+    /// 要结束这一轮（施工 4-14，`protocol.md` 的 `tool.call`）：通讯平台的 `skip_reply` 这类。出错的不算。
+    #[serde(default)]
+    end_turn: bool,
 }
 
 impl RemoteTool {
@@ -114,6 +117,7 @@ impl RemoteTool {
                 Ok(answer) => Done {
                     error: answer.error,
                     blocks: answer.blocks,
+                    end_turn: answer.end_turn && !answer.error,
                     ..Done::ok("")
                 },
                 Err(_) => failed(result.to_string()),

@@ -141,7 +141,8 @@ fn field(line: &str, name: &str) -> Option<String> {
     Some(value.to_string())
 }
 
-/// 答编号是 `id`、工具是 `tool` 的那一次 `tool.call`（施工 O-2 上）；`silent` 不答，等核心超时、发 `tool.cancel`（施工 O-2 下）。
+/// 答编号是 `id`、工具是 `tool` 的那一次 `tool.call`（施工 O-2 上）；`silent` 不答，等核心超时、发 `tool.cancel`（施工 O-2 下）；
+/// `skip`、`skip_error` 带 `end_turn`（施工 4-14）。
 fn served(id: &str, tool: &str) -> Option<String> {
     Some(match tool {
         "silent" => return None,
@@ -151,6 +152,13 @@ fn served(id: &str, tool: &str) -> Option<String> {
         "garbled" => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"nothing":1}}}}"#),
         "oops" => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"oops"}}],"error":true}}}}"#
+        ),
+        // 要结束这一轮的（施工 4-14）：通讯平台的 `skip_reply` 那样；出错的照样带上，核心不认。
+        "skip" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"skipped"}}],"end_turn":true}}}}"#
+        ),
+        "skip_error" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"failed"}}],"error":true,"end_turn":true}}}}"#
         ),
         _ => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"served {tool}"}}]}}}}"#

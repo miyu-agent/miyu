@@ -31,6 +31,7 @@ fn wrote(call_id: CallId, written: TodoWritten) -> Input {
         human: None,
         effects: vec![Effect::TodoWritten(written)],
         stopped: false,
+        end_turn: false,
     }
 }
 

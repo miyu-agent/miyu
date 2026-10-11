@@ -10,6 +10,7 @@ mod backlog;
 mod delete;
 mod embed;
 mod embed_replace;
+mod end_turn;
 mod forward;
 mod goal;
 mod goal_rounds;

@@ -125,6 +125,8 @@ pub enum Input {
         effects: Vec<Effect>,
         /// 叫它停以后停在了改之前，什么都没改（施工 4-9 再补一）：记成已取消，那一句内核写。
         stopped: bool,
+        /// 工具要结束这一轮（施工 4-14）：成功的才认。
+        end_turn: bool,
     },
     /// 工具执行中的一段输出，只推给头（`03-事件模型.md` 第五节）。
     ToolProgress {

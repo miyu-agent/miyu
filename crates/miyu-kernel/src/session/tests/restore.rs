@@ -30,6 +30,7 @@ pub(super) fn changed(call_id: CallId) -> Input {
             after: hash("B"),
         })],
         stopped: false,
+        end_turn: false,
     }
 }
 

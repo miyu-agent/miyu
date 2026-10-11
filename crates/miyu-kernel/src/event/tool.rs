@@ -34,6 +34,10 @@ pub struct ToolResult {
     /// 没有的（内核自己写的结果、老日志）没有这一格。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub effects: Vec<Effect>,
+    /// 这一次调用要结束这一轮（施工 4-14）：这一步几件工具的结果都到了，内核不再请求模型，照常记 `turn.ended`
+    /// （`completed`）。只有成功的结果带它，只在要的时候写；老日志、别的结果没有这一格。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub end_turn: bool,
 }
 
 /// 给人看的说法（`03-事件模型.md` 第三节，施工 4-5 上）：用的是哪一句、换进去的字段。字放在资源目录的

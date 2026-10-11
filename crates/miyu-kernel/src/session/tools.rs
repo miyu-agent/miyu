@@ -123,6 +123,7 @@ impl Session {
             reply,
             calls: pending,
             awaiting: Vec::new(),
+            ending: None,
         };
         let finished = step.finished();
         if let Some(turn) = self.turn.as_mut() {
@@ -209,6 +210,10 @@ impl Session {
             return Vec::new();
         };
         call.state = State::Done;
+        // 要结束这一轮（施工 4-14）：记下头一件，这一步齐了再结束，同一步别的照常跑完。
+        if result.end_turn && result.status == ToolStatus::Ok && step.ending.is_none() {
+            step.ending = Some(call_id);
+        }
         // 后台运行关着的会话（施工 T-1 下）：派的子代理记成前台的，这一步等它；给前台子代理留了言的，这一步等它再报。
         for effect in &mut result.effects {
             match effect {
@@ -377,6 +382,7 @@ impl Session {
             duration_ms: None,
             human: worded.said,
             effects: Vec::new(),
+            end_turn: false,
         };
         self.record(at, by, cause, Body::ToolResult(result))
     }
@@ -416,12 +422,21 @@ impl Session {
         events
     }
 
-    /// 这一步齐了：到了步数上限，结束回合；不然这一轮里切过级别的先把事实查一遍，等追加过的
-    /// 事件都落了盘，请求下一次。
+    /// 这一步齐了：有工具要结束这一轮的（施工 4-14）、到了步数上限的，结束回合；不然这一轮里切过级别的先把事实查一遍，等
+    /// 追加过的事件都落了盘，请求下一次。
     pub(super) fn finish_step(&mut self, at: Timestamp, cause: Option<CommandId>) -> Vec<Event> {
         let Some(turn) = self.turn.as_mut() else {
             return Vec::new();
         };
+        // 有工具要结束这一轮（施工 4-14）：不再请求模型，`by` 是要结束的那一次调用。
+        if let Stage::Tools(Step {
+            ending: Some(call_id),
+            ..
+        }) = &turn.stage
+        {
+            let by = By::Tool(Tool { call_id: *call_id });
+            return self.finish_turn(at, by, cause, EndReason::Completed);
+        }
         if self
             .policy
             .step_limit

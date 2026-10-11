@@ -62,6 +62,7 @@ impl Tools {
                     human: done.human,
                     effects,
                     stopped: done.stopped,
+                    end_turn: done.end_turn,
                 })
             }
             ToolBack::Crashed { call_id } => {
@@ -84,6 +85,7 @@ impl Tools {
                     human: worded.said,
                     effects: Vec::new(),
                     stopped: false,
+                    end_turn: false,
                 })
             }
         }

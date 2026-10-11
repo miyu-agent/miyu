@@ -76,6 +76,7 @@ pub(super) fn some_notice(rng: &mut Rng, watch: &Watch, ids: &mut u64) -> Option
                 session,
             })],
             stopped: false,
+            end_turn: false,
         });
     }
     if rng.below(6) != 0 {

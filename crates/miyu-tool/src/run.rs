@@ -119,6 +119,8 @@ pub struct Done {
     pub stopped: bool,
     /// 交回的图片（施工 4-13）：执行器存成 blob，换成图片块，照先后接在 `blocks` 后面。
     pub images: Vec<Picture>,
+    /// 要结束这一轮（施工 4-14）：这一步几件工具的结果都到了，内核不再请求模型，照常记 `turn.ended`。出错的、停了的不算。
+    pub end_turn: bool,
 }
 
 /// 工具交回的一张图片：字节本身，和量好的媒体类型、宽高（`03-事件模型.md` 第四节：量不出尺寸的不当图片）。
@@ -195,6 +197,7 @@ impl Done {
             effects: Vec::new(),
             stopped: false,
             images: Vec::new(),
+            end_turn: false,
         }
     }
 
@@ -207,6 +210,7 @@ impl Done {
             effects: Vec::new(),
             stopped: true,
             images: Vec::new(),
+            end_turn: false,
         }
     }
 
@@ -219,6 +223,7 @@ impl Done {
             effects: Vec::new(),
             stopped: false,
             images: Vec::new(),
+            end_turn: false,
         }
     }
 
@@ -240,6 +245,13 @@ impl Done {
     #[must_use]
     pub fn image(mut self, picture: Picture) -> Done {
         self.images.push(picture);
+        self
+    }
+
+    /// 要结束这一轮（施工 4-14）。
+    #[must_use]
+    pub fn ending(mut self) -> Done {
+        self.end_turn = true;
         self
     }
 }

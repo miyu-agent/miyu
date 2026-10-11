@@ -277,6 +277,7 @@ impl Stage {
             human: None,
             effects: Vec::new(),
             stopped: false,
+            end_turn: false,
         }
     }
 
@@ -291,6 +292,7 @@ impl Stage {
             human: None,
             effects: Vec::new(),
             stopped: true,
+            end_turn: false,
         }
     }
 }

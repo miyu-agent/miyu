@@ -18,6 +18,8 @@ pub(super) struct Step {
     pub(super) calls: Vec<Pending>,
     /// 这一步派出去、还没报回来的前台子代理（施工 T-1 下）：都报回来这一步才齐。
     pub(super) awaiting: Vec<JobId>,
+    /// 要结束这一轮的那一次调用（施工 4-14）：头一件交回 `end_turn` 的。这一步齐了不再请求模型。
+    pub(super) ending: Option<CallId>,
 }
 
 /// 一个要跑的调用。

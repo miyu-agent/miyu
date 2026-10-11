@@ -280,6 +280,7 @@ impl Session {
                 human,
                 effects,
                 stopped,
+                end_turn,
             } => self.tool_done(
                 at,
                 ToolResult {
@@ -295,6 +296,7 @@ impl Session {
                     duration_ms,
                     human,
                     effects,
+                    end_turn: end_turn && !stopped && !error,
                 },
             ),
             Input::ToolProgress { at, call_id, text } => self.tool_progress(at, call_id, text),

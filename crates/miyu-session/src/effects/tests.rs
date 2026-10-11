@@ -174,6 +174,7 @@ fn result(seq: u64, effects: Vec<Effect>) -> Event {
             duration_ms: None,
             human: None,
             effects,
+            end_turn: false,
         }),
     }
 }

@@ -319,6 +319,7 @@ impl Tools {
                 human: worded.said,
                 effects: Vec::new(),
                 stopped: false,
+                end_turn: false,
             });
         };
         tracing::info!(target: TARGET, call = call_text.as_str(), tool = name.as_str(), "running");
