@@ -18,5 +18,9 @@
   "binding_seconds": 60,
   "message_images": 4,
   "fetch_per_turn": 4,
-  "fetch_seconds": 120
+  "fetch_seconds": 120,
+  "message_forwards": 4,
+  "forward_depth": 2,
+  "forward_nodes": 20,
+  "forward_chars": 500
 }

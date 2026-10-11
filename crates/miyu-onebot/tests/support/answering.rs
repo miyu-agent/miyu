@@ -7,7 +7,8 @@
 //! 问群成员照给的身份回 `role`（[`NapCat::ranked`]，没给的是 `member`）；`set_group_ban`、`group_poke`、`friend_poke` 回成了、
 //! 不占编号，交出来和发消息的放一处（[`Answering::action`]）；撤回编号是 [`UNRECALLABLE`] 的回失败（[`unrecallable`]）。取东西
 //! （施工 O-33）：`get_msg` 照放进去的消息回（[`Answering::stock_message`]），`get_image`、`get_file` 照放进去的回应回
-//! （[`Answering::stock_file`]），没放的回失败；不占编号，问过的记下（[`Answering::fetched`]）。
+//! （[`Answering::stock_file`]），没放的回失败；不占编号，问过的记下（[`Answering::fetched`]）。合并转发（施工 O-34）：
+//! `get_forward_msg` 照放进去的回（[`Answering::stock_forward`]），同取东西。
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -48,8 +49,8 @@ pub fn unrecallable() -> String {
 /// 照 NapCat 的样子回、不占发出去的编号的平台动作（施工 O-31）。
 const PLATFORM: [&str; 3] = ["set_group_ban", "group_poke", "friend_poke"];
 
-/// 取东西的动作（施工 O-33）：照放进去的回，不占编号、不交给 [`Answering::action`]。
-const FETCHING: [&str; 3] = ["get_msg", "get_image", "get_file"];
+/// 取东西的动作（施工 O-33；`get_forward_msg` 施工 O-34）：照放进去的回，不占编号、不交给 [`Answering::action`]。
+const FETCHING: [&str; 4] = ["get_msg", "get_image", "get_file", "get_forward_msg"];
 
 /// 放进去的消息、东西（施工 O-33）和问过的。
 #[derive(Default)]
@@ -58,6 +59,8 @@ struct Stock {
     messages: HashMap<String, Value>,
     /// `get_image`、`get_file` 的 `file` → 回应的 `data`，或者回失败时说的。
     files: HashMap<String, Result<Value, String>>,
+    /// `get_forward_msg` 的 `id` → 回应的 `data`（施工 O-34）。
+    forwards: HashMap<String, Value>,
     /// 问过的：动作和 `message_id` 或 `file`，照先后。
     asked: Vec<(String, String)>,
 }
@@ -206,6 +209,7 @@ fn fetched(action: &Value, stock: &Mutex<Stock>) -> Value {
             .to_string()
             .trim_matches('"')
             .to_string(),
+        "get_forward_msg" => params["id"].as_str().unwrap_or_default().to_string(),
         _ => params["file"].as_str().unwrap_or_default().to_string(),
     };
     let mut stock = stock.lock().expect("没 panic");
@@ -216,6 +220,11 @@ fn fetched(action: &Value, stock: &Mutex<Stock>) -> Value {
             .get(&key)
             .cloned()
             .ok_or_else(|| "消息不存在".to_string()),
+        "get_forward_msg" => stock
+            .forwards
+            .get(&key)
+            .cloned()
+            .ok_or_else(|| "消息已过期或者为内层消息，无法获取转发消息".to_string()),
         _ => stock
             .files
             .get(&key)
@@ -368,7 +377,15 @@ impl Answering {
             .insert(file.to_string(), data.map_err(str::to_string));
     }
 
-    /// 桥取过的：动作和 `message_id` 或 `file`，照先后（施工 O-33）。
+    /// 放进去一个合并转发（施工 O-34）：`get_forward_msg` 问 `id` 是它的回 `{messages}`，`messages` 是里面的消息。
+    pub fn stock_forward(&self, id: &str, messages: Value) {
+        let mut stock = self.stock.lock().expect("没 panic");
+        stock
+            .forwards
+            .insert(id.to_string(), json!({ "messages": messages }));
+    }
+
+    /// 桥取过的：动作和 `message_id`、`file` 或 `id`，照先后（施工 O-33）。
     pub fn fetched(&self) -> Vec<(String, String)> {
         self.stock.lock().expect("没 panic").asked.clone()
     }

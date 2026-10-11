@@ -136,7 +136,7 @@ impl NapCat {
         .await;
     }
 
-    /// 下一个不是 `get_version_info`、取东西（`get_msg`、`get_image`、`get_file`，施工 O-33：回失败）的动作，回它成了；
+    /// 下一个不是 `get_version_info`、取东西（`get_msg`、`get_image`、`get_file`，施工 O-33；`get_forward_msg`，施工 O-34：回失败）的动作，回它成了；
     /// `get_version_info` 照 NapCat 的样子回。最多等六十秒。
     pub async fn action(&mut self) -> Value {
         loop {
@@ -150,7 +150,7 @@ impl NapCat {
             let action: Value = serde_json::from_str(&text).expect("是 JSON");
             let kind = action["action"].as_str().unwrap_or_default();
             // 取东西（施工 O-33）：这个假 NapCat 什么都没存，回失败、不交出去。
-            let fetching = ["get_msg", "get_image", "get_file"].contains(&kind);
+            let fetching = ["get_msg", "get_image", "get_file", "get_forward_msg"].contains(&kind);
             let data = match kind {
                 "get_version_info" => json!({
                     "app_name": "NapCat.Onebot",

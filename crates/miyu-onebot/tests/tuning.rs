@@ -1,6 +1,7 @@
 //! 桥自己的数（施工 O-8，`onebot.md`「施工时定的」第 15 条）：出厂的 `bridge.json` 读得出来，数和图纸写的一样；队列写 0、
 //! 判官的并发写 0（施工 O-23 下）、排着的过期写 0（施工 O-25 中）、多出不认识的格（施工 O-28 下去掉的 `web` 也是）、少了一格
-//! （施工 O-25 下的贴表情两格也是，施工 O-33 的取东西三格也是）、读不了的，读不进来，说是哪个文件。
+//! （施工 O-25 下的贴表情两格也是，施工 O-33 的取东西三格也是，施工 O-34 的合并转发四格也是）、读不了的，读不进来，说是
+//! 哪个文件。
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -55,6 +56,16 @@ fn the_shipped_numbers_are_the_blueprints() {
     assert_eq!(tuning.message_images, 4);
     assert_eq!(tuning.fetch_per_turn, 4);
     assert_eq!(tuning.fetch(), Duration::from_secs(120));
+    // 合并转发：一条展开 4 个、套两层、一个放 20 条、每条 500 个字符（施工 O-34）。
+    assert_eq!(
+        (
+            tuning.message_forwards,
+            tuning.forward_depth,
+            tuning.forward_nodes,
+            tuning.forward_chars
+        ),
+        (4, 2, 20, 500)
+    );
 }
 
 #[test]
@@ -153,6 +164,10 @@ fn a_bad_file_is_not_read_and_named() {
         (
             "fetch-wait-missing",
             good.replace("\"fetch_seconds\": 120", "\"d\": 1"),
+        ),
+        (
+            "forwards-missing",
+            good.replace("\"forward_nodes\": 20", "\"e\": 1"),
         ),
         (
             "images-negative",

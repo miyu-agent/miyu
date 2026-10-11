@@ -27,7 +27,8 @@
 | `crates/miyu-onebot/src/listen.rs` | NapCat 反连进来的那一下：路径、令牌（和桥手里最新的比，O-20）、升级 |
 | `crates/miyu-onebot/src/listen/connection.rs`、`listen/bots.rs` | 一条 NapCat 的连接：回应、消息（私聊、群，O-22）和撤回（O-22）、别的事件各交给谁，连上就问 `get_version_info`（回的实现、版本记在这条连接上，后台页的 `status`、状态文件用）；一个机器人号一条连接，新的顶掉旧的；号认出来了（`X-Self-ID` 或第一条事件）告诉跟核心的那一头（`Event::Connected`，O-25 中：这个号排着的照先后发） |
 | `crates/miyu-onebot/src/onebot.rs`、`onebot/text.rs`、`onebot/calls.rs` | OneBot v11 的事件和动作：认一帧（私聊、群消息带上事件的 `time`、发的人的名字和认出来的段，撤回，O-22；她被禁言、解禁的 `group_ban`，O-25 中；好友请求、群邀请，O-27）、读出私聊的文字、写 `send_private_msg`、`send_group_msg`（O-22；O-25 上第一段能带引用和 @：`Lead`）、`delete_msg`（O-25 上）、`set_msg_emoji_like`（O-25 下）、`set_friend_add_request`（O-27）、调用和回应按 `echo` 配对；平台的名字 `qq`（`PLATFORM`）只写在 `onebot.rs`。几个小函数照它拼编号：`venue(种类, 号) -> Result<Venue, FormatError>`（O-22）、`private_venue(号) -> Result<VenueId, FormatError>`、`person(号) -> Result<ExternalId, FormatError>` 经群聊内核拼（`Venue::new`、`miyu_chat::person`），`command_id(机器人的号, 消息编号, 时刻) -> String`（第 7、8 条）；反过来认的两个（O-32）：`bot_of(命令编号) -> Option<i64>`（`qq:<机器人的号>:…` 的第二段）、`to_of(&Venue) -> Option<To>`（场所发到哪） |
-| `crates/miyu-onebot/src/onebot/segments.rs`（O-22） | 认消息段：正文（字、@、占位）、引用、@全体、带的东西（「群消息」第 2 条） |
+| `crates/miyu-onebot/src/onebot/segments.rs`（O-22） | 认消息段：正文（字、@、占位）、引用、@全体、带的东西（「群消息」第 2 条）；合并转发的编号和内联的消息（O-34） |
+| `crates/miyu-onebot/src/onebot/forwards.rs`（O-34） | 合并转发里的消息：`get_forward_msg {id}`、回应的 `data.messages`；一条（节点）是谁发的、段是哪些（NapCat 回的完整消息和发合并转发那种 `node` 写法都认） |
 | `crates/miyu-onebot/src/onebot/members.rs`（O-22） | 群成员的名字缓存：按群、按号记一阵；`get_group_member_info` 的参数和回应里的名字（「群消息」第 5 条）；O-31 多记身份（群主、管理员，「平台工具（一）」第 7 条） |
 | `crates/miyu-onebot/src/core.rs`、`core/route.rs` | 跟核心的那一头：在给的管道上（`Pipe`：程序里是标准输入输出，O-18；测试里是内存里的管道）握手、不带凭据，取握手回应的 `config`（O-20）、桥自己的 `account`（第 7 条），私聊带 `as`、`venue` 的 `session.send`（O-22 带 `venue`）、她的回复发回去；推来的 `extension.config` 交给 `serve.rs`（O-20），`onebot.whitelist` 自己记一份（O-23），换了的私聊找过的会话都忘掉（O-27）；`core.rs` 交出留着的一个会话的推送（O-23，「群里怎么叫她」第 3 条）；`core.rs` 读的一头读到核心发来的请求交给 `core/provider.rs` 当场答（O-26，「提供者和不说话」第 2 条） |
 | `crates/miyu-onebot/src/core/provider.rs`（O-26） | 桥当提供者：起来时经并着发的调用口发 `provide`，写出去就交回等回应、记运行日志的那一段；核心发来的请求（`tool.call`、别的方法）的回应，`tool.cancel` 记一行调试日志（「提供者和不说话」第 1、2 条）；`method.call` 交给 `core/methods.rs` 答（O-28 上） |
@@ -52,6 +53,7 @@
 | `crates/miyu-onebot/src/core/route/projection/origin.rs`（O-31） | 投影交给平台工具的两样（纯逻辑）：叫她做的那条连同引用、@，某人是不是终端管理员（「平台工具（一）」第 3、4 条） |
 | `crates/miyu-onebot/src/core/route/acting.rs`（O-31） | 平台工具（一）的那一头：核心转来的 `tool.call` 收投影、交 `platform.rs` 定，不做的当场答；做的另起任务问身份、调 NapCat、答核心（「平台工具（一）」第 2、5、6 条） |
 | `crates/miyu-onebot/src/core/route/pictures.rs`（O-33） | 冲她来的那条给原图：群里冲她来的、私聊收下的，这一条和它引用的那一条（`get_msg` 现认段）里的图取来、存成 blob，`session.send` 的 `attachments` 带上（「平台工具（二）」第 3 条） |
+| `crates/miyu-onebot/src/core/route/forwards.rs`（O-34） | 合并转发的展开：群消息、私聊交 `session.send` 以前，照内联的或者 `get_forward_msg` 取出来，照限额和核心的整条上限写进场所的格的 `forwards`（「群消息」第 2 条） |
 | `crates/miyu-onebot/src/core/route/fetching.rs`（O-33） | `fetch_media` 的那一头：读参数、数一轮几次（纯逻辑）；找到会话发到哪，另起任务 `get_msg` 认段、取、图存成 blob 交回图片块，视频、文件写进 `qq-files/` 回路径（「平台工具（二）」第 4 到 7 条） |
 | `crates/miyu-onebot/src/core/blobs.rs`（O-33） | 取来的字节经 `blob.open`、`blob.write`、`blob.close` 分块存成 blob（「平台工具（二）」第 3、4 条） |
 | `crates/miyu-onebot/src/media.rs`（O-33） | 取到手、存下来：照 url、本机路径、base64 的先后拿字节（url 经 `miyu-http`）；视频、文件存进工作区的 `qq-files/`：洗文件名、先写临时文件再改名、不跟链接走（「平台工具（二）」第 5 条） |
@@ -120,6 +122,10 @@
 | `message_images` | 4 | 冲她来的那条、它引用的那条各最多带几张原图（O-33，「平台工具（二）」第 3 条；照旧 Miyu 的实测）。0 是不带 |
 | `fetch_per_turn` | 4 | `fetch_media` 一轮最多取几次（O-33，「平台工具（二）」第 4 条；照旧 Miyu 的配额）。0 是一次都不给 |
 | `fetch_seconds` | 120 | `fetch_media` 等 NapCat 回 `get_image`、`get_file`，下载，各最多几秒（O-33）：大的视频 NapCat 要先下完才回 |
+| `message_forwards` | 4 | 一条消息（转发里的一条也算一条）最多展开几个合并转发（O-34），多的只留占位 |
+| `forward_depth` | 2 | 合并转发最多套几层（O-34）：消息里的是第一层，再深的只留占位 |
+| `forward_nodes` | 20 | 一个合并转发最多放几条（O-34），多的记进 `more`：一个转发能有几百条，20 条够看出在聊什么 |
+| `forward_chars` | 500 | 合并转发里每条正文最多几个字符（O-34），多的截掉；截完再夹到核心的 4096 字节 |
 
 多一格、少一格、队列写 0、判官的并发写 0、排着的过期写 0、读不了：起不来（「出错」）。
 
@@ -237,7 +243,7 @@ NapCat 那边要配成「反向 WebSocket」（NapCat 的网络配置里叫「We
 6. **`/stop` 打断这一轮**：桥不等她的回话（第 8 条、这一段都只等核心的回应），不会卡住；她这一轮没说出字的，照第 10 条不发空的。
 7. **群里的回执撤回**（O-25 上，18 第十节「命令回执带着 3 秒后撤回入队」）：群里发回去的那一句（第 2 条的回执、第 4 条被拒的那一句，「群消息」第 7 条；和别的一样入队、排着，O-25 中）NapCat 回了编号的，等 `bridge.json` 的 `receipt_recall_seconds`（出厂 3 秒），经收进这个群的那个机器人号那时的连接调 `delete_msg {message_id}` 撤回。撤成了记 `INFO receipt recalled venue=… message=<回执的编号>`；没连着、失败、发的时候 NapCat 回的里没有编号的记 `WARN receipt not recalled venue=… …`。发命令的那条消息不撤；私聊的回执不撤；限流的提示（「群里怎么叫她」第 7 条）不是回执，不撤。不过出站链：回执是核心写的，不是她的话（「施工时定的」第 114 条）。
 
-8. **发进去**：不是命令的（上面「斜杠命令」第 3 条）`session.send {session, text, as: {external: "qq:<user_id>"}}`（`as.external` 和第 7 条的 `peer` 是同一个，照第 7 条拼），请求的 `id`（命令编号）是 `qq:<机器人的号>:<message_id>:<time>`（`chat.md` 第七条第 1 条）：断线重连、平台重发，核心都只收一次（`venues.md`）。`time` 是事件里平台给的时刻，整数秒，写成整数的字符串也认（和号一样）；加上它，NapCat 重置本地库以后消息编号重号，新消息也不会被当成重发吞掉。没带 `time`、读不出来的照 `0` 拼，消息照送（「施工时定的」第 20 条）。回的是重了，当成功。O-22 起带上场所的格 `venue`（`venues.md`「场所的格」）：`msg`、`name`、`reply_to`、`media`、`show_ids` 照「群消息」第 2、6 条认、洗，`show_ids` 照这个私聊套出来的场所规则；不写 `ambient`、`asleep`（私聊每一条都开回合，第 7 条不接的陌生人照旧不接）。正文照旧只取 `text` 段（第 6 条），去掉首尾空白是空的照旧不送，只有图的私聊也是（「施工时定的」第 67 条）。`command.run` 不带 `venue`（它不收这一格）。
+8. **发进去**：不是命令的（上面「斜杠命令」第 3 条）`session.send {session, text, as: {external: "qq:<user_id>"}}`（`as.external` 和第 7 条的 `peer` 是同一个，照第 7 条拼），请求的 `id`（命令编号）是 `qq:<机器人的号>:<message_id>:<time>`（`chat.md` 第七条第 1 条）：断线重连、平台重发，核心都只收一次（`venues.md`）。`time` 是事件里平台给的时刻，整数秒，写成整数的字符串也认（和号一样）；加上它，NapCat 重置本地库以后消息编号重号，新消息也不会被当成重发吞掉。没带 `time`、读不出来的照 `0` 拼，消息照送（「施工时定的」第 20 条）。回的是重了，当成功。O-22 起带上场所的格 `venue`（`venues.md`「场所的格」）：`msg`、`name`、`reply_to`、`media`、`show_ids` 照「群消息」第 2、6 条认、洗，`show_ids` 照这个私聊套出来的场所规则；不写 `ambient`、`asleep`（私聊每一条都开回合，第 7 条不接的陌生人照旧不接）。正文照旧只取 `text` 段（第 6 条），去掉首尾空白是空的照旧不送，只有图的私聊也是（「施工时定的」第 67 条）。合并转发（O-34）：正文后面每个转发空一格接一个占位 `[forward]`（同群消息正文里的写法；QQ 的合并转发是单独的一条），`forwards` 照「群消息」第 6 条展开，只有转发的私聊也送。`command.run` 不带 `venue`（它不收这一格）。
 9. **订阅**：找回一个私聊的会话以后订阅它的事件流（群的从头订阅，O-23，「群里怎么叫她」第 1 条），不写 `after`：只要订阅以后的新事件，桥重启不会把以前的回复再发一遍。O-32 起桥起来时（每次连上核心、握手以后）列出来的私聊（`venues.md`「列场所会话」：系统账号名下的，和终端管理员在 QQ 的私聊）照第 7 条认：白名单成员的、终端管理员的（问核心的 `venue.binding`，问到的同「平台工具（一）」第 3 条记 `binding_seconds`；核心拒了的记一行 `WARN binding not asked id=…`、不接）接，陌生人的、从白名单里删了的不接；接的从头订阅一次（`after: 0`）：补来的不照常发，认出发到哪，期限以内、没入队的补发（「出站队列」第 6 条），这一轮入队了的照日志补回 `Spoken`（第 10 条：重启以后同一轮里照旧去重）；「场所 → 会话」不记，下一条照第 7 条再找（找回同一个，再订阅一次不重）。
 10. **发回去**：事件流里每来一条 `message.assistant`，取它的 `text` 块依次接起来（思考、工具调用不发）；这一轮她调过 `skip_reply` 的不发（O-26，「提供者和不说话」第 3 条），先过出站链（O-25 上，同「群里怎么叫她」第 9 条：`target` 两样都是假；`sent` 是桥这一轮自己入队了的那几段，入队记成了就算上，内存里一个会话一份，换回合就清，桥重启就丢，「施工时定的」第 113 条），丢了的记一行、不发；过了的照 `plain` 转成纯文本、`split` 照这个私聊套出来的 `Params::split_chars` 拆开，一段一条入队（「出站队列」，O-25 中），照先后 `send_private_msg {user_id, message: [{type: "text", data: {text}}]}` 发回那个私聊（拆出来是空的不发）。哪条连接：这个会话是哪个机器人号收进来的，就用那个号现在的连接；没连着的排着，连上了发（「出站队列」第 3 条）。私聊不记 `venue.delivered`。
 11. **断开**：NapCat 断了，等它自己重连，桥不退。标准输入读到头（核心请它退出，或者核心不在了）、标准输出写不进：桥停下，退出码 0，不说话，运行日志记一行 `INFO core closed, stopping`；读到头 5 秒内退出（核心等 5 秒，没退的杀掉）。崩了以后由核心退避重启（O-18，「施工时定的」第 5、21 条）。跟核心的那一头崩了、发回话的任务崩了（都是 bug），说一句带原话、退出码 1，运行日志记一行 `ERROR`。Ctrl+C、SIGTERM 也是好好停下，退出码 0。
@@ -259,7 +265,7 @@ NapCat 那边要配成「反向 WebSocket」（NapCat 的网络配置里叫「We
    | `record` | `voice` |
    | `video` | `video` |
    | `file` | `file`，`name` 取 `name`、`file_name`、`file` 里头一个有的 |
-   | `forward`（合并转发） | 正文里写占位 `[forward]`，不展开 |
+   | `forward`（合并转发） | 正文里写占位 `[forward]`；O-34 起交以前展开，写进场所的格的 `forwards`（第 6 条） |
    | `json`、`xml`（卡片） | 正文里写占位 `[card]` |
    | 别的（`poke`、`dice`、`rps`、`markdown`……） | 不记 |
 
@@ -276,6 +282,7 @@ NapCat 那边要配成「反向 WebSocket」（NapCat 的网络配置里叫「We
    - `ambient`：一律真。
    - `asleep`：此刻落在这个群的 `sleep` 规则里的真。照群聊内核的回合闸问（`gate()`，只交睡眠：闸说推迟就是睡着），时区照本机此刻的偏移（「施工时定的」第 65 条）。
    - `show_ids`：规则的 `show_ids` 是真的才写。
+   - `forwards`（O-34，2026-10-11；施工单「要定的」三条照推荐定：一个转发放 20 条、套两层、转发里的图和文件只写记号）：正文里的每个合并转发照先后展开（`route/forwards.rs`）。段里内联了消息的（NapCat 开了解析合并转发，套在里面的也内联）照它；没有的经收进这条消息的那个机器人号现在的连接调 `get_forward_msg {id}`（等一次 `call_timeout_seconds`），回应的 `data.messages` 是里面的消息。每条照同一套认段：字照原样接，@ 写成 `@名字`（群里照群成员的缓存，不另问；没有的、私聊的写号），带的东西同 `media` 的洗法（只写记号，`fetch_media` 取不了）；`name` 照节点的发的人（`sender` 的群名片、昵称，同 `name` 的洗法），都没有的写号，号也没有的这一条不放、算进 `more`；`text` 截到 `forward_chars` 个字符，再夹到核心的 4096 字节（截在字的边界上：`forward_chars` 调大了、全是 4 字节的字也不超，核心审时建议）；里面又是 `forward` 的照层数往下取。限额照 `bridge.json`：一条消息最多展开 `message_forwards` 个，多的只留占位；套 `forward_depth` 层，再深的只留占位、不调；一个转发最多放 `forward_nodes` 条，多的记进 `more`。另照核心的整条上限（所有转发合起来 100 条，名字和正文 16 KiB，`venues.md`「场所的格」）一条条放，放不下的算进 `more`；一条都放不进的转发不交。取不到的（没有编号、没连着、NapCat 回失败、等不到、回的不是消息的数组）只留占位，记一行 `WARN forward not expanded venue=… message=… why=…`（`why` 是 `no-id`、`unreachable`、`failed`、`unanswered`、`unreadable`、`skipped`），这一条后面要调的不再调（`skipped`，同第 5 条 @ 的名字）。找到了会话才展开（同冲她来的那条的图），陌生人的私聊不调。
 
    冲她来的（第 4 条的「冲她来」：@ 她、引用她、关键词开头）交以前取这一条和它引用的那一条的图，`attachments` 带上（O-33，「平台工具（二）」第 3 条）。
 
@@ -681,7 +688,7 @@ O-25 中（2026-10-09；施工单「要定的」六条照推荐定：排着的 6
 - 思考、工具调用不发回去；空的回复不发。（`replies.rs`，下面一条同）
 - 桥重启以后，以前的回复不再发一遍。
 - 调用等了给的时限（测试给 3 秒，和出厂的不一样）还等不到算失败，到时以前还在等；连接断了在等的算失败；同时在等的几个照 `echo` 各拿各的。（`calls.rs`，钟停住，照停住的钟算）
-- 出厂的 `bridge.json` 读得进、数和上面的表一样（O-21 多 `rules_check_millis`，O-23 下多判官的两格，O-23 补多 `judge_persona_seconds`，O-25 上多 `receipt_recall_seconds`，O-25 中多 `queue_expire_seconds`，O-28 下去掉 `web`：再写它是多一格，O-31 多 `binding_seconds`，O-33 多 `message_images`、`fetch_per_turn`、`fetch_seconds`）；队列写 0、判官的并发写 0、排着的过期写 0、多一格、少一格、不是 JSON、没有文件，都读不进来，说是哪个文件。（`tuning.rs`）
+- 出厂的 `bridge.json` 读得进、数和上面的表一样（O-21 多 `rules_check_millis`，O-23 下多判官的两格，O-23 补多 `judge_persona_seconds`，O-25 上多 `receipt_recall_seconds`，O-25 中多 `queue_expire_seconds`，O-28 下去掉 `web`：再写它是多一格，O-31 多 `binding_seconds`，O-33 多 `message_images`、`fetch_per_turn`、`fetch_seconds`，O-34 多合并转发的四格）；队列写 0、判官的并发写 0、排着的过期写 0、多一格、少一格、不是 JSON、没有文件，都读不进来，说是哪个文件。（`tuning.rs`）
 - 三种语言里桥说的每一句都换得出来（O-21 多 `failure/factory`、`venue/`、`problem/` 开头的，O-23 多 `group/rate-limited`，O-28 补多 `web/no-miyu`）；中文照上面的表、字段换进去；日文和英文一字不差；换语言照新的说；握手以前照系统的语言（`zh`、`ja` 开头的照它，别的英文）。（`texts.rs`）
 - 文字怎么读出来：别的段跳过；CQ 码去掉，`&amp;` 最后换。（`text.rs`）
 - 编号：场所、平台上的人和群聊内核拼的一样（`qq:private:<号>`、`qq:<号>`，解得回原样）；命令编号带时刻，同一个消息编号、时刻不同的两条编号不同；`time` 是整数、写成整数的字符串都认，没带、读不出（`null`、不是数的字、小数）的是 `0`。O-32 多认回来的两样：命令编号的机器人号（加了后缀的也认；自己编的、别的平台的、号不是数的不认），场所发到哪（别的平台、号不是整数的不认）。（`ids.rs`）
@@ -694,6 +701,7 @@ O-25 中（2026-10-09；施工单「要定的」六条照推荐定：排着的 6
 - 群消息（O-22，真核心拉起真桥、假 NapCat，`group.rs`；起核心和桥、读群会话的事件 O-23 挪进 `support/group.rs` 共用）：群消息记进 `qq:group:<群号>` 那个会话，属主是系统账号 `onebot`，`by` 是外部身份、`ambient` 真，不开回合、不请求模型；名字取群名片、没有的取昵称；@ 她记 `mentions_me`、@ 别人进 `mentions`、正文里写成 `@名字`（发过言的照缓存、没发过的问 NapCat、问不到的写号），@全体记 `mentions_all`、正文里不写；引用记 `reply_to`；图、表情包、小黄脸、商城表情、语音、视频、文件各自记对，合并转发、卡片在正文里写占位；规则的 `show_ids` 照写；`managers` 里的人报 `manager`，群里的终端管理员带 `account`；机器人自己发的不记；规则里睡觉时间盖住此刻的群 `asleep` 真；规则写了不存在的人格的群什么都不记，连发两条运行日志只一行；群里的 `/stop`、`/clear` 终端管理员、管理的人能用，回执发回群里，别人照核心那一句被拒、什么都不记，认不出的 `/xxx` 记成旁听；撤回记 `venue.recalled`（撤的人是 `operator_id`）。只有一张图、只有一个表情的群消息记得进：没有内容块、`venue.media` 对、运行日志没有 `message refused`（核心 O-13 补以后补，`a_message_with_only_an_image_or_a_sticker_is_recorded`）。
 - 私聊带上场所的格（O-22，`private.rs`）：`msg`、`name`、`reply_to`、`media`、`show_ids`（照私聊的规则），没有 `ambient`；照旧来回；私聊的撤回记 `venue.recalled`。
 - 认段（O-22，`segments.rs`）：每一种段记成什么；编号取哪一格、整数也认；几段引用只认第一段；@ 同一个人两次只进一次；CQ 字符串只读字。认帧（`frames.rs`）：群消息、私聊带上名字（群名片、昵称、空白的群名片）；机器人自己发的不认；两种撤回认出撤的人；缺了号的不认。
+- 合并转发（O-34，真核心拉起真桥、假 NapCat 答 `get_forward_msg`，`forwards.rs`）：群里一条转发调 `get_forward_msg` 取、内联的不调，套两层、第三层只留占位（正文里的 `[forward]` 照旧），记进 `venue.forwards`，她的近况里那一行下面缩进写（名字、正文、记号、套的那一层）；25 条的放 20 条、`more` 是 5，600 个字的截到 500，一条五个转发只展开四个、正文五个占位，几个的标 `#1` `#2`、`(5 more not shown)`；四个转发每个头一条套 30 条的转发：放到 100 条为止，每条 900 字节的放到 16 KiB 为止，算进 `more`，消息照记、没有 `message refused`；取不到的（没放的编号）只留占位、没有 `forwards`，第二个不再调，三行 `forward not expanded`（`failed`、`skipped`、`no-id`）；名字里的换行去掉、正文里的换行和伪造的记录行、`forward:` 字样在她的请求里转义成一行，没名字的写号，号也没有的不放、算进 `more`；终端管理员的私聊只有一个转发也送，正文是占位，那几行接在后面。认段（`tests/segments.rs`）：转发的编号（整数写成字）和内联的消息记下、没编号的也记、正文照旧占位。节点怎么读（`src/onebot/forwards/tests.rs`）：完整消息、`node` 写法、CQ 字符串；群名片空白的照昵称；动作和回应。正文怎么截（`src/core/route/forwards/tests.rs`）：照字符数截，再夹到 4096 字节、截在字的边界上，`forward_chars` 调到 2000、全是 4 字节的字也正好 4096 字节。
 - 群成员的名字缓存（O-22，`members.rs`）：记下的取得到，过了 `member_names_seconds` 的取不到；按群分开；`get_group_member_info` 回的群名片空白的取昵称。
 - 场所的格的洗法（O-22，`src/core/route/fields/tests.rs`）：只写有的、真的格；名字去掉控制字符、截到 64 个字符（带的东西的 200），空白的不写；引用、带的东西的编号不合的那一格、那一样不记，消息照记。场所规则套到这一条上（`src/core/route/applied/tests.rs`）：人格、预设、工作区照规则带、没设的不带；`managers` 里有的是管理的人（别的平台的同一个号不算）；`show_ids`；睡觉时间盖住此刻的睡着，没盖住、`off`、没设的醒着。
 - 群里叫她（O-23，真核心拉起真桥、假 NapCat、模型替身，`called.rs`）：终端管理员 @ 她、叫她的名字（触发词开头）、引用她发过的消息，各开一轮（`turn.started` 的 `cause` 是消息的命令编号加 `/respond`、`triggers` 是那一条），她的回话转成纯文本发回群里，记 `venue.delivered`（线是这个群的会话、回合、回的人是终端管理员、NapCat 回的编号、那一段字）；每一条都记一笔判断，`cause` 是消息的命令编号加 `/decided`，没条件的、终端管理员 @ 她的 `body` 和图纸一字不差；别人的 @ 走 `judge`，照剧本回的核心没有一次性入口、回 `no_model`，判不了、再问一次，只记下（`judge` 是 `{mode: reply, tries: 2, millis, unjudged: refused, detail: no_model}`、结论 `record`，O-23 下），不开回合、不回；睡觉时间里别人冲她来只记下（`record_only`、`asleep`），终端管理员照回；终端管理员连发两条，正在跑的一轮并进去（`turn.joined`），只开一轮；同一条消息平台重发不再判；原文不进运行日志。
@@ -1114,6 +1122,20 @@ O-25 中（2026-10-09；施工单「要定的」六条照推荐定：排着的 6
 | # | 定了什么 | 为什么 | 没选 |
 |---|---|---|---|
 | 205 | 测试夹具里正向的等待（`support::within`：等一件事发生，等不到判失败）最多等六十秒（`group::WAIT`），原来十秒；反向的等待（断言什么都没发生）照旧短 | 仓库的规矩（核心的 test-waits 补，endpoint、session 的夹具都是六十秒）；`followed` 那条要真重启核心两次，整套测试一起跑、机器压满时冷启动加桥重连超过十秒，偶发红过一次；平常一下就到，放长不拖慢 | 只给那一条放长；改成重试 |
+
+**施工时定的**（O-34，2026-10-11；施工单「要定的」三条照推荐定：一个转发放 20 条、套两层、转发里的图和文件只写记号；核心那一半的写法 2026-10-11 核心审形状时定，见 `kernel/request.md`「合并转发」）
+
+| # | 定了什么 | 为什么 | 没选 |
+|---|---|---|---|
+| 206 | NapCat 的写法：`forward` 段是 `data.id`（这条消息的编号），开了解析合并转发的另带 `data.content`（里面的消息，套在里面的也内联）；`get_forward_msg {id}` 回 `{messages: [...]}`，每条是一条完整的消息（`sender` 的 `user_id`、`nickname`、`card`，`message` 段数组，`time`）；也认发合并转发那种 `{type: "node", data: {user_id, nickname, content}}` | 照 NapCat 主线源码核过（`GetForwardMsg.ts`、`api/msg.ts` 的 `multiForwardMsgElement`）：内层的转发 `get_forward_msg` 取不到（源码说「为内层消息」），所以内联的先用；旧 Miyu、MaiBot 适配器几处位置都试，`node` 写法是它们见过的 | 只认一种写法；内层的也调 `get_forward_msg` |
+| 207 | 找到会话才展开（同冲她来的那条的图，O-33）；跟核心的那一头等着取完再交 | 陌生人的私聊不接，不该为它调 NapCat；交的时候就要有 `forwards`，事件记下了不再改 | 先记下、展开了再补一条事件 |
+| 208 | 一条消息里有一个转发调不成（没连着、失败、等不到、回的不是消息的数组），后面要调的不再调，只留占位（`why=skipped`） | 同第 59 条：跟核心的那一头一条条照先后办，NapCat 一卡，一条四个转发就要等四个时限 | 每个都调 |
+| 209 | 桥照核心的整条上限（100 条、名字和正文 16 KiB）一条条放，放不下的算进 `more`；一条都放不进的转发不交 | 超了核心整条 `bad_params`、什么都不记，这条消息就丢了；桥的限额（4 个、每个 20 条、套两层）合起来能超过 100 条 | 超了就整个不交 `forwards`；把桥的限额压到合起来不超 |
+| 210 | 转发里一条的名字照 `sender` 的群名片、昵称，没有的照节点自己的；都没有的写号，号也没有的这一条不放、算进 `more` | 核心要名字不空；号是平台给的、认得出是谁 | 写一个「未知」之类的字（给模型看的字，要登记）；整个转发不交 |
+| 211 | 转发里的 @：群里照群成员的缓存写名字，不另问 NapCat；缓存里没有的、私聊里的写号 | 一个转发 20 条、每条都可能 @，照第 5 条去问，一条消息要等很多个时限 | 照第 5 条问 NapCat；写 `[@]` |
+| 212 | 私聊的正文照旧只取 `text` 段，每个转发空一格接一个占位 `[forward]` | QQ 的合并转发是单独的一条，不和字混着发，接在后面不错位；O-34 以前造的会话只看得到这个占位，同群里；照段的先后拼会把 `[card]` 这些也带进私聊，那是另一回事 | 私聊正文照段的先后拼 |
+| 213 | 「一条消息最多 4 个转发」对转发里的一条也一样算：每条里最多展开 4 个 | 一条（节点）就是一条消息，规矩一样，少一个数 | 里层另设一个数 |
+| 214 | 转发里没字、也没带东西的一条照放，核心写 `名字:` | 她看得出有人说了一条看不懂的（卡片以外的段，戳一戳这些），不另判 | 不放、算进 `more` |
 
 ### 二、设置和状态（O-28 下）
 

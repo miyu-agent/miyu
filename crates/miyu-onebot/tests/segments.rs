@@ -1,9 +1,10 @@
 //! 认消息段（施工 O-22，`onebot.md` 第一条「群消息」第 2 条）：每一种段记成什么；带的东西的编号取哪一格、整数也认；几段引用
-//! 只认第一段；@ 同一个人两次只算一次；CQ 字符串只读字。大小照 `file_size`（字、整数都认），怎么取照段（施工 O-33）。
+//! 只认第一段；@ 同一个人两次只算一次；CQ 字符串只读字。大小照 `file_size`（字、整数都认），怎么取照段（施工 O-33）。合并转发
+//! 照旧写占位，另记下编号和内联的消息（施工 O-34）。
 
 use serde_json::{Value, json};
 
-use miyu_onebot::onebot::{Fetch, Media, MediaKind, Piece, Segments, segments};
+use miyu_onebot::onebot::{Fetch, Forwarded, Media, MediaKind, Piece, Segments, segments};
 
 /// 一样带的东西：没有大小；怎么取照种类（图 `get_image`，视频、文件 `get_file`，别的取不了）。
 fn media(kind: MediaKind, id: &str, name: Option<&str>) -> Media {
@@ -71,6 +72,10 @@ fn text_at_reply_and_placeholders_make_the_body() {
             reply_to: Some("41".to_string()),
             mentions_all: true,
             media: Vec::new(),
+            forwards: vec![Forwarded {
+                id: Some("fw".to_string()),
+                content: None,
+            }],
         },
         "几段引用只认第一段，@全体不进正文，认不出号的 @、戳一戳、骰子不记"
     );
@@ -226,4 +231,30 @@ fn sizes_and_how_to_fetch_are_read() {
             "{size}"
         );
     }
+}
+
+/// 施工 O-34：合并转发正文里照旧写占位，另记下编号和段里内联的消息（NapCat 开了解析合并转发的才有）；编号是整数的写成字。
+#[test]
+fn a_forward_keeps_its_id_and_inline_content() {
+    let inline = json!([{"sender": {"user_id": 1, "nickname": "阿杰"}, "message": [{"type": "text", "data": {"text": "嗯"}}]}]);
+    let read = segments(&json!([
+        {"type": "forward", "data": {"id": "7495", "content": inline}},
+        {"type": "forward", "data": {"id": 42}},
+        {"type": "forward", "data": {}},
+    ]));
+    assert_eq!(read.pieces, vec![words("[forward]"); 3]);
+    assert_eq!(
+        read.forwards,
+        [
+            Forwarded {
+                id: Some("7495".to_string()),
+                content: inline.as_array().cloned(),
+            },
+            Forwarded {
+                id: Some("42".to_string()),
+                content: None,
+            },
+            Forwarded::default(),
+        ]
+    );
 }

@@ -62,6 +62,14 @@ pub struct Tuning {
     pub fetch_per_turn: usize,
     /// `fetch_media` 等 NapCat 回 `get_image`、`get_file`，下载，各最多几秒（施工 O-33）：大的视频 NapCat 要先下完才回。
     pub fetch_seconds: u64,
+    /// 一条消息最多展开几个合并转发（施工 O-34，`onebot.md`「群消息」第 2 条），多的只留占位。0 是一个都不展开。
+    pub message_forwards: usize,
+    /// 合并转发最多套几层（施工 O-34）：消息里的是第一层，再深的只留占位。0 是一个都不展开。
+    pub forward_depth: usize,
+    /// 一个合并转发最多放几条（施工 O-34），多的记进 `more`：一个转发能有几百条，全放进来上下文撑不住。0 是一条都不放。
+    pub forward_nodes: usize,
+    /// 合并转发里每条正文最多几个字符（施工 O-34），多的截掉。
+    pub forward_chars: usize,
 }
 
 impl Tuning {

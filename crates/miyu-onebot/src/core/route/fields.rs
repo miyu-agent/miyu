@@ -7,7 +7,7 @@
 use miyu_kernel::id::ExternalId;
 use serde_json::{Map, Value, json};
 
-use crate::onebot::Posted;
+use crate::onebot::{Media, Posted};
 
 /// 平台的编号最长几个字符（`venues.md`「场所的格」的 `msg`、`reply_to`，带的东西的 `id`）。
 const ID: usize = 128;
@@ -45,8 +45,27 @@ pub(super) fn fields(posted: &Posted, mentions: &[ExternalId], flags: Flags) -> 
     if !mentions.is_empty() {
         venue.insert("mentions".into(), json!(mentions));
     }
-    let media: Vec<Value> = segments
-        .media
+    let media = media(&segments.media);
+    if !media.is_empty() {
+        venue.insert("media".into(), Value::Array(media));
+    }
+    for (key, on) in [
+        ("mentions_me", flags.mentions_me),
+        ("mentions_all", segments.mentions_all),
+        ("ambient", flags.ambient),
+        ("asleep", flags.asleep),
+        ("show_ids", flags.show_ids),
+    ] {
+        if on {
+            venue.insert(key.into(), json!(true));
+        }
+    }
+    Value::Object(venue)
+}
+
+/// 带的东西写成场所的格的 `media`（转发里的一条也照它，施工 O-34）：编号不合写法的那一样不记，名字洗过，有大小的写 `size`。
+pub(super) fn media(media: &[Media]) -> Vec<Value> {
+    media
         .iter()
         .filter(|media| fits(&media.id))
         .map(|media| {
@@ -63,22 +82,7 @@ pub(super) fn fields(posted: &Posted, mentions: &[ExternalId], flags: Flags) -> 
             }
             one
         })
-        .collect();
-    if !media.is_empty() {
-        venue.insert("media".into(), Value::Array(media));
-    }
-    for (key, on) in [
-        ("mentions_me", flags.mentions_me),
-        ("mentions_all", segments.mentions_all),
-        ("ambient", flags.ambient),
-        ("asleep", flags.asleep),
-        ("show_ids", flags.show_ids),
-    ] {
-        if on {
-            venue.insert(key.into(), json!(true));
-        }
-    }
-    Value::Object(venue)
+        .collect()
 }
 
 /// 洗一个名字：去掉控制字符，截到 `most` 个字符（不截断一个字）；去掉首尾空白是空的交回空的。

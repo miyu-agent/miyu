@@ -47,6 +47,7 @@ mod decide;
 mod discipline;
 mod fetching;
 mod fields;
+mod forwards;
 mod group;
 mod judged;
 mod judges;
@@ -95,6 +96,8 @@ use backlog::Backlog;
 use bindings::Bindings;
 pub(crate) use fetching::Fetching;
 use fields::{Flags, fields};
+pub(crate) use forwards::Forwarding;
+use forwards::{Forwards, with_placeholders};
 use judges::Judges;
 use outbound::Spoken;
 pub(crate) use persona::Personas;
@@ -130,6 +133,8 @@ struct Message {
     place: Place,
     /// 交以前要取的图（施工 O-33，`pictures`）：群里冲她来的、私聊收下的才有。
     pictures: Option<Pictures>,
+    /// 交以前要展开的合并转发（施工 O-34，`forwards`）：没有转发的是空的。
+    forwards: Option<Forwards>,
 }
 
 /// 拿着跟核心的连接的那一个。
@@ -183,6 +188,8 @@ pub(crate) struct Route {
     fetching: Fetching,
     /// 群会话编号 → 这一轮的回合编号和 `fetch_media` 取了几次（施工 O-33，`fetching`）。
     fetches: HashMap<String, (Option<u64>, usize)>,
+    /// 展开合并转发的几个数（施工 O-34，`forwards`）。
+    forwarding: Forwarding,
     /// 推来的配置变化交给 `serve`（施工 O-20）。
     configured: mpsc::UnboundedSender<Map<String, Value>>,
 }
@@ -192,13 +199,13 @@ impl Route {
     /// 说，问判官照全局的名额 `slots` 排队（施工 O-23 下）、判官带的人格原文照 `personas` 记（施工 O-23 补），群里的命令回执
     /// `recall` 以后撤回（施工 O-25 上），出站排着的过了 `expire` 作废（施工 O-25 中），表情照 `reactions` 贴、摘（施工 O-25 下），
     /// 推来的配置变化交给 `configured`。白名单成员照握手交来的配置（`core.config`）。问到的「是不是终端管理员」记 `binding`（施工
-    /// O-31）。取图、视频、文件照 `fetching`（施工 O-33）。
+    /// O-31）。取图、视频、文件照 `fetching`（施工 O-33），合并转发照 `forwarding` 展开（施工 O-34）。
     pub(crate) fn new(
         core: Core,
         bots: Arc<Bots>,
         rules: Venues,
         members: Members,
-        (texts, slots, personas, recall, expire, reactions, binding, fetching): (
+        (texts, slots, personas, recall, expire, reactions, binding, fetching, forwarding): (
             Texts,
             Slots,
             Personas,
@@ -207,6 +214,7 @@ impl Route {
             Reactions,
             Duration,
             Fetching,
+            Forwarding,
         ),
         configured: mpsc::UnboundedSender<Map<String, Value>>,
     ) -> Route {
@@ -238,6 +246,7 @@ impl Route {
             backlogs: HashMap::new(),
             fetching,
             fetches: HashMap::new(),
+            forwarding,
             configured,
         }
     }
@@ -332,9 +341,11 @@ impl Route {
                 return Ok(());
             }
         };
-        // 只有图、引用的私聊照取图（施工 O-33）：取不到图、又没有字的不送（`submit`）。
+        // 只有图、引用的私聊照取图（施工 O-33）：取不到图、又没有字的不送（`submit`）。合并转发照群消息的写法在正文后面写占位、
+        // 交以前展开（施工 O-34），只有转发的也送。
         let pictures = Pictures::of(posted.bot, posted.message_id, &posted.segments);
-        if posted.text.trim().is_empty() && !pictures.any() {
+        let text = with_placeholders(&posted.text, posted.segments.forwards.len());
+        if text.trim().is_empty() && !pictures.any() {
             tracing::debug!(target: TARGET, venue = %venue.id(), message = posted.message_id, "nothing to send");
             return Ok(());
         }
@@ -349,20 +360,25 @@ impl Route {
         let message = Message {
             id: command_id(posted.bot, posted.message_id, posted.time),
             number: posted.message_id,
-            text: posted.text.clone(),
+            text,
             acting: json!({"external": external}),
             fields: fields(&posted, &[], flags),
             place: Place::private(&venue, &external, (posted.bot, posted.user), listed),
             pictures: Some(pictures),
+            forwards: Forwards::of(posted.bot, None, posted.message_id, &posted.segments),
         };
         self.submit(message).await.map(|_| ())
     }
 
     /// 交一条消息：`/` 开头的先当斜杠命令交（「斜杠命令」），办完了的不再发；别的照 `session.send` 发（第 8 条，「群消息」
-    /// 第 6 条），交回会话编号和回应（接受的、拒绝的都原样：群的照它判，施工 O-23）。要带图的（施工 O-33）先找到会话（不接的
-    /// 不去取），取了图带上；私聊没有字、图又一张都没取到的不送。命令办完了的、不接的、找不到会话的、不送的是空的。
-    async fn submit(&mut self, message: Message) -> Result<Option<(String, Value)>, Gone> {
+    /// 第 6 条），交回会话编号和回应（接受的、拒绝的都原样：群的照它判，施工 O-23）。要带图的（施工 O-33）、要展开转发的（施工
+    /// O-34）先找到会话（不接的不去取），取了图带上、展开的转发写进场所的格；私聊没有字、图又一张都没取到的不送。命令办完了的、
+    /// 不接的、找不到会话的、不送的是空的。
+    async fn submit(&mut self, mut message: Message) -> Result<Option<(String, Value)>, Gone> {
         if command::looks_like(&message.text) && self.command(&message).await? {
+            return Ok(None);
+        }
+        if !self.expanded(&mut message).await? {
             return Ok(None);
         }
         let mut attachments = Vec::new();

@@ -8,6 +8,8 @@
 //!    交以前取这一条和它引用的那一条的图，`attachments` 带上（施工 O-33，`pictures`）。
 //! 5. 照私聊的办法交（`Route::submit`）：`/` 开头的先当斜杠命令，回执发回群里；别的 `session.send` 带场所的格。
 //! 6. 核心记下了（回应交回序号）的交给 `called` 判（施工 O-23）。
+//!
+//! 带合并转发的（施工 O-34）：正文里照旧是占位，交以前展开、写进场所的格（`forwards`）。
 
 use std::time::Instant;
 
@@ -16,6 +18,7 @@ use serde_json::json;
 
 use super::called::Heard;
 use super::fields::{Flags, fields};
+use super::forwards::Forwards;
 use super::pictures::Pictures;
 use super::session::Place;
 use super::{Message, Route, applied};
@@ -87,6 +90,7 @@ impl Route {
             text,
             pictures: calls_her
                 .then(|| Pictures::of(posted.bot, posted.message_id, &posted.segments)),
+            forwards: Forwards::of(posted.bot, Some(group), posted.message_id, &posted.segments),
         };
         let heard = Heard {
             id: message.id.clone(),

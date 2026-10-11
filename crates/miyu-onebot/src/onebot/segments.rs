@@ -3,14 +3,16 @@
 //!
 //! 只认、不洗：名字、编号合不合核心的写法（长短、控制字符）由交给核心的一方照 `venues.md`「场所的格」洗
 //! （`core/route/fields.rs`）。不下载，带的东西只记平台的编号、大小和怎么取（懒下载，18 第五节；取的一方在
-//! `core/route/pictures.rs`、`fetching.rs`，施工 O-33）。
+//! `core/route/pictures.rs`、`fetching.rs`，施工 O-33）。合并转发正文里照旧写占位，另记下它的编号和段里内联的消息，交给
+//! 展开的一方（`core/route/forwards.rs`，施工 O-34）。
 
 use serde_json::Value;
 
 use super::{number, text_of};
 
-/// 合并转发的占位：照核心渲染带的东西的写法 `[种类]`（「施工时定的」第 61 条），不展开。
-const FORWARD: &str = "[forward]";
+/// 合并转发的占位：照核心渲染带的东西的写法 `[种类]`（「施工时定的」第 61 条）。展开的内容另交（施工 O-34），占位照旧写：
+/// O-34 以前造的会话只看得到它。
+pub const FORWARD: &str = "[forward]";
 
 /// 卡片（`json`、`xml` 段）的占位，同 [`FORWARD`]。
 const CARD: &str = "[card]";
@@ -33,6 +35,17 @@ pub struct Segments {
     pub mentions_all: bool,
     /// 带的东西，照段的先后。
     pub media: Vec<Media>,
+    /// 合并转发，照段的先后（施工 O-34）：正文里各有一个占位。
+    pub forwards: Vec<Forwarded>,
+}
+
+/// 一段合并转发（施工 O-34，`onebot.md`「群消息」第 2 条）：NapCat 的 `forward` 段。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Forwarded {
+    /// `data.id`：交 `get_forward_msg` 取里面的消息；没有的、空的是空的。
+    pub id: Option<String>,
+    /// `data.content`：NapCat 开了解析合并转发的，里面的消息直接内联在段里（套在里面的同样内联），是消息的数组；没有的是空的。
+    pub content: Option<Vec<Value>>,
 }
 
 /// 正文的一块。
@@ -129,7 +142,13 @@ impl Segments {
                     self.reply_to = id(&data["id"]);
                 }
             }
-            "forward" => self.pieces.push(Piece::Text(FORWARD.to_string())),
+            "forward" => {
+                self.pieces.push(Piece::Text(FORWARD.to_string()));
+                self.forwards.push(Forwarded {
+                    id: id(&data["id"]),
+                    content: data["content"].as_array().cloned(),
+                });
+            }
             "json" | "xml" => self.pieces.push(Piece::Text(CARD.to_string())),
             _ => self.media.extend(media(kind, data)),
         }
