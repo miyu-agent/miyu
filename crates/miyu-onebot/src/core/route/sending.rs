@@ -47,9 +47,11 @@ const HEAD: usize = 30;
 /// 要说出去的一段是什么（第 1 条）。
 #[derive(Debug, Clone)]
 pub(super) enum What {
-    /// 她的话：回合编号、这一轮回的人（群里的成了记 `venue.delivered`）。
+    /// 她的话：哪条线、回合编号、这一轮回的人（群里的成了记 `venue.delivered`）。
     Reply {
-        /// 回合编号。
+        /// 她在哪条线说的：那条线的会话编号（主线、私聊是这个会话自己；支线是子会话，施工 O-36）。
+        line: String,
+        /// 回合编号（那条线的）。
         turn: u64,
         /// 这一轮回的人；私聊的是空的。
         to: Vec<ExternalId>,
@@ -118,13 +120,13 @@ impl Route {
             tracing::warn!(target: TARGET, venue = %peer.venue, chars, "clock not readable, reply dropped");
             return Ok(());
         };
-        let body = queued_body(session, &piece);
+        let body = queued_body(&piece);
         let Some(queued) = self.append(session, id, QUEUED, body).await? else {
             return Ok(());
         };
-        if let What::Reply { turn, .. } = &piece.what {
+        if let What::Reply { line, turn, .. } = &piece.what {
             match (peer.to, self.groups.get_mut(session)) {
-                (To::Group(_), Some(group)) => group.queued(*turn, &piece.text),
+                (To::Group(_), Some(group)) => group.queued(line, *turn, &piece.text),
                 (To::Group(_), None) => {}
                 (To::Private(_), _) => self
                     .spoken
@@ -255,8 +257,8 @@ impl Route {
             return Ok(());
         }
         match (item.piece.what, msg) {
-            (What::Reply { turn, to }, Some(msg)) => {
-                let body = json!({"line": session, "turn": turn, "to": to, "msg": msg.to_string(), "text": item.piece.text, "images": []});
+            (What::Reply { line, turn, to }, Some(msg)) => {
+                let body = json!({"line": line, "turn": turn, "to": to, "msg": msg.to_string(), "text": item.piece.text, "images": []});
                 self.append(&session, None, DELIVERED, body).await.map(drop)
             }
             (What::Reply { .. }, None) => {
@@ -295,9 +297,9 @@ impl Route {
         }
         self.append(session, None, FAILED, body).await?;
         match item.piece.what {
-            What::Reply { .. } => {
+            What::Reply { ref line, .. } => {
                 let detail = detail.unwrap_or_default();
-                self.undelivered(session, &venue, item, (why, &detail))
+                self.undelivered((session, line), &venue, item, (why, &detail))
                     .await
             }
             What::Notice(_) | What::Receipt => Ok(()),
@@ -305,15 +307,15 @@ impl Route {
     }
 
     /// 她的一段 `item` 没发出去（为什么 `why`、NapCat 说的 `detail`，没有的是空的）：照退信的模板写一块，经核心的 `session.note`
-    /// 记进会话 `session`，命令编号是入队那一条的序号加 `/note`（「退信」第 2、3 条）。`venue` 只记运行日志。核心拒了的（照说
-    /// 不会）记一行，不再试。
+    /// 记进她说它的那条线 `line`，命令编号是入队那一条的序号加 `/note`（「退信」第 2、3 条）；那条线是支线、已经封存了的
+    /// （`session_sealed`）改记进会话 `session`（主线，施工 O-36）。`venue` 只记运行日志。核心拒了的（照说不会）记一行，不再试。
     ///
     /// # Errors
     ///
     /// 写不出去、等的时候核心断开。
     async fn undelivered(
         &mut self,
-        session: &str,
+        (session, line): (&str, &str),
         venue: &str,
         item: &Item,
         (why, detail): (&str, &str),
@@ -329,8 +331,13 @@ impl Route {
             }
         };
         let id = format!("{}/note", item.queued);
-        let params = json!({"session": session, "facts": [{"kind": UNDELIVERED, "text": text}]});
-        let reply = self.core.call_as(&id, "session.note", params).await?;
+        let facts = json!([{"kind": UNDELIVERED, "text": text}]);
+        let params = json!({"session": line, "facts": facts});
+        let mut reply = self.core.call_as(&id, "session.note", params).await?;
+        if line != session && reason(&reply) == Some("session_sealed") {
+            let params = json!({"session": session, "facts": facts});
+            reply = self.core.call_as(&id, "session.note", params).await?;
+        }
         match reason(&reply) {
             None => tracing::info!(target: TARGET, venue, why, "undelivered noted"),
             Some(reason) => tracing::warn!(target: TARGET, venue, reason, "note refused"),
@@ -339,11 +346,12 @@ impl Route {
     }
 }
 
-/// 入队那一条的 `body`（第 2 条）：`{kind, text}`，她的话另带 `line`（会话 `session`，主线）、`turn`，提示另带 `reason`。
-fn queued_body(session: &str, piece: &Piece) -> Value {
+/// 入队那一条的 `body`（第 2 条）：`{kind, text}`，她的话另带 `line`（她说它的那条线，主线或者支线，施工 O-36）、`turn`，提示
+/// 另带 `reason`。
+fn queued_body(piece: &Piece) -> Value {
     match &piece.what {
-        What::Reply { turn, .. } => {
-            json!({"kind": REPLY, "text": piece.text, "line": session, "turn": turn})
+        What::Reply { line, turn, .. } => {
+            json!({"kind": REPLY, "text": piece.text, "line": line, "turn": turn})
         }
         What::Notice(reason) => json!({"kind": NOTICE, "reason": reason, "text": piece.text}),
         What::Receipt => json!({"kind": RECEIPT, "text": piece.text}),

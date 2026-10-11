@@ -1,7 +1,7 @@
 //! 叫她（施工 O-23，`onebot.md` 第一条「群里怎么叫她」第 3 到 8、10、11、14 条）：一条群消息记下以后，先把这个会话留着没办的
 //! 推送收进投影（核心先推、后回应：核心记下的这一条、刚开的回合都在里面），再照场所规则、投影、桥内存里在判的、这一条填好交
 //! `decide`。要问判官的交给 `judges`（O-23 下），判官回来再记判断（`judged.rs`）；别的当场记一笔判断
-//! （`ext.onebot.chat.decided`），然后开一轮（`session.respond`）或者回一句提示。
+//! （`ext.onebot.chat.decided`），然后照分派开一轮（`lanes`，施工 O-36）或者回一句提示。
 //!
 //! - 发的人是谁：终端管理员照核心记下的 `by`（投影），白名单成员照握手交来的 `onebot.whitelist`，别的是别人（第 3 条）。
 //! - 重发的（序号在收留着的推送以前就在投影里了）不再判（第 8 条）。
@@ -134,8 +134,8 @@ impl Route {
             .await?;
         match finale {
             Finale::Reply => {
-                // 开了一轮、并进一轮的贴表情（施工 O-25 下，「贴表情」第 1 条）。
-                if self.respond(session, &decision.msgs, tag).await? {
+                // 照分派开一轮、并进一轮（施工 O-36，`lanes`），成了的贴表情（施工 O-25 下，「贴表情」第 1 条）。
+                if self.dispatched(session, &decision.msgs, tag).await? {
                     self.react(session, decision);
                 }
                 Ok(())
@@ -295,29 +295,6 @@ impl Route {
             params: applied.params,
             clock,
         })
-    }
-
-    /// 照记下的几条 `msgs` 开一轮（第 7 条）：`session.respond {session, to: msgs}`，命令编号照最后一条的 `tag`；正在跑一轮的
-    /// 核心并进去。交回成没成（施工 O-25 下：成了的贴表情）。核心说已经当过触发、不是旁听的不再开，记一行。
-    async fn respond(&mut self, session: &str, msgs: &[u64], tag: &Tag) -> Result<bool, Gone> {
-        let id = format!("{}/respond", tag.id);
-        let params = json!({"session": session, "to": msgs});
-        let reply = self.core.call_as(&id, "session.respond", params).await?;
-        let (venue, number) = (&tag.venue, tag.number);
-        match reason(&reply) {
-            None => {
-                tracing::info!(target: TARGET, venue = %venue, message = number, "respond asked");
-                return Ok(true);
-            }
-            Some(reason @ ("already_answered" | "not_ambient")) => {
-                let messages = &reply["error"]["data"]["messages"];
-                tracing::info!(target: TARGET, venue = %venue, message = number, reason, messages = %messages, "respond refused");
-            }
-            Some(reason) => {
-                tracing::warn!(target: TARGET, venue = %venue, message = number, reason, "respond refused");
-            }
-        }
-        Ok(false)
     }
 
     /// 往会话 `session` 记一条 `kind` 的事件（`events.append`）：命令编号是 `id`，空的自己编。交回记成的序号（施工 O-25 中：

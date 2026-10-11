@@ -330,7 +330,7 @@ Rust 这一边：
 | `Supersede::{None, Inherit { msg, conditions }, Rejudge { cancel, msgs, conditions }}`、`supersede(&facts, &conditions, &pendings, clock, window) -> Supersede` | 顶替：没有顶替；接过去，不再判；取消在判的那一条、几条一起重判。`conditions` 是合起来的条件（交进来的是这一条自己成立的）。编号都是序号（`Seq`），窗口是毫秒数，从第八条的 `Params::supersede_window` 拿（施工 O-15） |
 | `Line::{Idle, Busy { targets }}` | 一条线（主线或者一条支线）：闲着，或者正在回哪几个人（`ExternalId` 的列表） |
 | `Lines { main, lanes, parallel }` | 这个场所的主线、正在跑的支线、最多几条支线（场所规则的 `parallel`） |
-| `Dispatch::{StartMain, JoinMain, JoinLane(index), Fork, Queue}`、`dispatch(&sender, &lines) -> Dispatch` | 分派：主线开一轮、并进主线这一轮、并进第几条支线、分叉一条支线、排到主线下一轮 |
+| `Dispatch::{StartMain, JoinMain, JoinLane(index), Fork, Queue}`、`dispatch(&sender, &lines) -> Dispatch` | 分派：主线开一轮、并进主线这一轮、并进第几条支线、分叉一条支线、都不行的也并进主线这一轮（O-36 改，原来写「排到主线下一轮」） |
 
 **怎么走**
 
@@ -343,9 +343,9 @@ Rust 这一边：
    2. 主线这一轮回的人里有这个人：`JoinMain`，下一步听到（人家回得慢、催一句「??」，不该换来两条回复，旧版 09-26）。
    3. 有一条支线在回这个人：`JoinLane(那一条的位置)`；几条都在回他的，取第一条。
    4. 支线比 `parallel` 少：`Fork`，分叉一条支线回他。
-   5. 都不行：`Queue`，排到主线下一轮，这一轮要回的人都列在 `reply-to` 里。
+   5. 都不行：`Queue`，并进主线这一轮：桥照 `JoinMain` 办，核心在下一步的边界并进来，那一轮没再请求就结束的核心自己接着开一轮（O-36 改，`onebot.md`「群里怎么叫她」第 7 条；原来写「排到主线下一轮，这一轮要回的人都列在 `reply-to` 里」，核心没有这一种）。
 6. **私聊**：`parallel` 出厂是 0，只有一个人，走不到 `Fork`。
-7. **不在这里的**：贴不贴表情、取消在判的那次判官请求、分叉以后支线怎么开、「另一条线正在回」那句事实（18 第八节「要守的三条」第 2 条：开轮时经 `session.respond` 的 `facts` 交；「你已经回过」不标）随桥和核心的那几步；`reply-to` 那块标记 O-30 实测以后先不写；`/stop` 停掉支线随第二批。
+7. **不在这里的**：贴不贴表情、取消在判的那次判官请求随桥和核心的那几步；分叉以后支线怎么开、「另一条线正在回」那句事实见 `onebot.md`「群里怎么叫她」第 7 条（O-36）；`reply-to` 那块标记 O-30 实测以后先不写；`/stop` 停掉支线随第二批。
 
 **守着它的**（`crates/miyu-chat/src/chatty/supersede/tests.rs`、`chatty/dispatch/tests.rs`，O-9）
 
@@ -503,7 +503,7 @@ Rust 这一边：
 | 平台上的一条消息 | 平台给的编号，原样记进 `message.user` 的场所那几格（下面第 2 条），引用、撤回、贴表情时用 | 桥 |
 | 命令编号（去重） | `<平台>:<机器人的号>:<平台消息编号>:<平台给的时刻>` | 桥；加上时刻，是防 NapCat 重置本地库以后消息编号重号，把新消息当成重发的吞掉（自查第 17 条，待真机查实） |
 
-- **场所的消息只记在主线会话里**：支线要接这个人后来说的话（分派里的「并进支线」），桥把那条抄一份经 `session.send` 发进支线；主线那一份才算数，聊天记录、记忆、序号都只认主线的。支线短命，抄的那一份随支线封存。抄的那一份：命令编号另拼（原编号后面加 `/branch`），不然会被当成同一条去重吞掉；`by` 照原来的人；`venue` 格照抄，但不带 `ambient`（它在支线里就是触发）。支线是带 `parent` 的子会话，回合索引、记忆只收主会话，抄的那份不会进记忆，也不会重复进搜索。撤回只认主线那一份：主线记 `venue.recalled`，支线只跑一轮，不追着改。
+- **场所的消息只记在主线会话里**：支线要接这个人后来说的话（分派里的「并进支线」），桥把那条抄一份经 `session.send` 发进支线；主线那一份才算数，聊天记录、记忆、序号都只认主线的。支线短命，抄的那一份随支线封存。抄的那一份：命令编号另拼（原编号后面加 `/branch`），不然会被当成同一条去重吞掉；`by` 照原来的人；`venue` 格照抄，带上 `ambient`，再用 `session.respond` 开轮或者并进（O-36 改，原来写「不带 `ambient`，它在支线里就是触发」：`respond` 的 `to` 不是旁听的会被拒 `not_ambient`，事实又只能经 `respond` 交进去；`session/fork.md`「开一轮」）。支线是带 `parent` 的子会话，回合索引、记忆只收主会话，抄的那份不会进记忆，也不会重复进搜索。撤回只认主线那一份：主线记 `venue.recalled`，支线只跑一轮，不追着改。
 - 群聊内核里的消息用序号，不用平台的编号：序号在一个会话里唯一、回放时不变；平台的编号只在一个账号里唯一，还可能重号。抽样的种子随之改成 `SHA-256(场所编号 + "\n" + 序号的十进制)`：日志还没有落地的旧数据，现在改不影响回放。
 
 **2. 事件**
@@ -538,7 +538,7 @@ Rust 这一边：
 | 发的人是谁 `Standing` | `message.user` 的 `by`、系统配置 | 私聊里 `person` 带 `via`、群里 `external` 带 `account`：终端管理员；编号在 `onebot.whitelist` 里：白名单成员；别的：别人 |
 | 算分 `Reply` | `venue.delivered` | 一轮一笔：同一条线、同一轮的几条并成一笔，时刻取第一条，回的人取并集 |
 | 顶替 `Pending` | `ext.onebot.chat.decided`、`turn.started.triggers`、`turn.joined.triggers`、`turn.ended` | 判过要回、她还没回完的：`Committed`，从判断记下起，到收了它的那一轮（`triggers` 里有它）`turn.ended` 为止，还没进哪一轮的照旧算。前提是桥先记 `ext.onebot.chat.decided`、再 `session.respond`，桥保证这个先后。O-23 下改（2026-10-09 主会话定）：原来写的「还没进哪一轮 `triggers`」，照字面 `Committed` 只存在一瞬（桥记了判断紧接着 `session.respond`，核心当场记 `turn.started` 或 `turn.joined`），`Inherit` 走不到。`Judging` 只在桥的内存里，桥重启就丢，丢了不补判（窗口只有 7 秒） |
-| 分派 `Lines` | `turn.started`、`turn.ended`、分叉出的子会话 | 主线开着的那一轮，回的人是它 `triggers` 的发的人；支线同理 |
+| 分派 `Lines` | `turn.started`、`turn.ended`、分叉出的子会话 | 主线开着的那一轮，回的人是它 `triggers` 的发的人；支线照桥订阅的子会话推来的 `turn.*`、`session.sealed`，触发换回主线序号（O-36，`onebot.md`「群里怎么叫她」第 2 条「支线」） |
 | 出站 `Sent` | `ext.onebot.venues.queued` | 这一轮入队了的她的话（`kind` 是 `reply`，照 `turn` 认是哪一轮）的正文；桥入队记成了就先算上，日志推来的同一段不重复算（O-25 中，原来照 `venue.delivered`）。图的哈希随她的图那一步 |
 | 出站 `Since` | `message.user`、`message.assistant`、`venue.delivered` | 她回的那条之后别人的消息条数、过了多久、最后一条是不是她的 |
 

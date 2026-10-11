@@ -5,7 +5,7 @@ use serde_json::json;
 
 use super::super::platform::{Origin, Quote};
 use super::Projection;
-use super::tests::{ended, event, joined, qq, started, take_all};
+use super::tests::{LINE, ended, event, joined, qq, started, take_all};
 
 /// 号是 `user` 的人说的第 `seq` 条：引用 `reply_to`、@ 了 `mentions`；`admin` 的带 `account`。
 fn quoting(
@@ -46,7 +46,7 @@ fn delivered(seq: u64, msg: &str) -> miyu_kernel::event::Event {
 
 #[test]
 fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![
@@ -55,10 +55,10 @@ fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
             quoting(3, 20002, Some("1"), &[20003], false),
         ],
     );
-    assert_eq!(projection.origin(), None, "主线不在跑");
+    assert_eq!(projection.origin(LINE), None, "主线不在跑");
     take_all(&mut projection, vec![started(4, 0, &[3])]);
     assert_eq!(
-        projection.origin(),
+        projection.origin(LINE),
         Some(Origin {
             sender: qq(20002),
             quote: Some(Quote {
@@ -78,7 +78,7 @@ fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
         ],
     );
     assert_eq!(
-        projection.origin(),
+        projection.origin(LINE),
         Some(Origin {
             sender: qq(20003),
             quote: Some(Quote {
@@ -90,7 +90,7 @@ fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
         })
     );
     take_all(&mut projection, vec![ended(7, 4)]);
-    assert_eq!(projection.origin(), None, "这一轮完了");
+    assert_eq!(projection.origin(LINE), None, "这一轮完了");
     // 引用桥不认识的：不知道是谁的。
     take_all(
         &mut projection,
@@ -99,7 +99,7 @@ fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
             started(9, 0, &[8]),
         ],
     );
-    let quote = projection.origin().and_then(|origin| origin.quote);
+    let quote = projection.origin(LINE).and_then(|origin| origin.quote);
     assert_eq!(
         quote,
         Some(Quote {
@@ -112,7 +112,7 @@ fn the_origin_is_the_message_she_answers_with_its_quote_and_mentions() {
 
 #[test]
 fn the_terminal_admin_is_known_by_what_he_said_here() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![

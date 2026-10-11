@@ -114,7 +114,8 @@ struct Job {
 
 impl Route {
     /// 核心转来的一次 `fetch_media`（「平台工具（二）」第 4 条）：不认识的会话答 `unreachable`；这一轮取满了的答 `too-many`（群照
-    /// 投影里主线这一轮，私聊照推来的事件的回合，施工 O-35）；参数不对的答 `not-found`；别的交给任务。
+    /// 投影里调用所在那条线这一轮（施工 O-36：支线的照支线），私聊照推来的事件的回合，施工 O-35）；参数不对的答 `not-found`；别的
+    /// 交给任务。
     ///
     /// # Errors
     ///
@@ -122,7 +123,9 @@ impl Route {
     pub(super) async fn fetch_called(&mut self, pushed: &Value) -> Result<(), Gone> {
         let params = &pushed["params"];
         let (id, tool) = (&pushed["id"], params["tool"].as_str().unwrap_or_default());
-        let session = params["session"].as_str().unwrap_or_default().to_string();
+        // 调用所在那条线是支线的，照主线找发到哪，次数照支线的回合数、记在支线上（施工 O-36）。
+        let line = params["session"].as_str().unwrap_or_default().to_string();
+        let session = self.main_of(&line);
         let answerer = self.core.answerer();
         self.gather(&session).await?;
         let Some(peer) = self.peers.get(&session).cloned() else {
@@ -131,11 +134,11 @@ impl Route {
             return Ok(());
         };
         let turn = match self.groups.get(&session) {
-            Some(group) => group.turn(),
-            None => self.fetches.get(&session).and_then(|(turn, _)| *turn),
+            Some(group) => group.turn(&line),
+            None => self.fetches.get(&line).and_then(|(turn, _)| *turn),
         };
         let limit = self.fetching.per_turn;
-        let Some(count) = counted(self.fetches.get(&session).copied(), turn, limit) else {
+        let Some(count) = counted(self.fetches.get(&line).copied(), turn, limit) else {
             tracing::info!(target: TARGET, venue = %peer.venue, tool, why = "too-many", "platform tool refused");
             let limit = limit.to_string();
             answerer.answer(
@@ -144,7 +147,7 @@ impl Route {
             );
             return Ok(());
         };
-        self.fetches.insert(session, count);
+        self.fetches.insert(line, count);
         let wanted = match wanted(&params["args"]) {
             Ok(wanted) => wanted,
             Err(why) => {

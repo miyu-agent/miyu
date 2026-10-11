@@ -105,7 +105,7 @@ impl Route {
     pub(super) async fn replay(&mut self, session: &str, upto: u64) -> Result<(), Gone> {
         let since = applied::clock().map_or(i64::MAX, |clock| self.waiting.since(clock.now));
         self.backlogs
-            .insert(session.to_string(), Backlog::new(upto, since));
+            .insert(session.to_string(), Backlog::new(session, upto, since));
         self.gather(session).await?;
         match self.backlogs.remove(session) {
             Some(backlog) => self.resend(session, backlog).await,
@@ -156,6 +156,7 @@ impl Route {
             let chars = said.text.chars().count();
             tracing::info!(target: TARGET, venue = %peer.venue, chars, "reply resent");
             let what = What::Reply {
+                line: session.to_string(),
                 turn: said.turn,
                 to,
             };

@@ -16,8 +16,11 @@
 //!   出站链要的（「群里怎么叫她」第 2、9 条）：她回的那一条（这一轮触发里最后一条，并进来的换成并进来的最后一条），那之后
 //!   别人说了几条，群里最后一条是不是她的，这一轮已经发出去的：O-25 中照入队的（`ext.onebot.venues.queued` 里 `kind` 是
 //!   `reply` 的正文），桥入队记成了先算进来（[`Projection::queued`]），日志推来的同一段不重复算（「施工时定的」第 112 条）。
-//! - 叫她做的那条（施工 O-31，「平台工具（一）」第 3 条）：人说的话另记引用、@ 了谁；主线这一轮她回的那一条交给平台工具
-//!   （`origin.rs` 的 `Projection::origin`），引用的是她的、是谁的照这里认。
+//! - 叫她做的那条（施工 O-31，「平台工具（一）」第 3 条）：人说的话另记引用、@ 了谁；调用所在那条线这一轮她回的那一条交给平台
+//!   工具（`origin.rs` 的 `Projection::origin`），引用的是她的、是谁的照这里认。
+//! - 支线（施工 O-36，「群里怎么叫她」第 2 条「支线」）：每条线（主线、每条支线）的这一轮、并进来的、入队了的各一份（`track.rs`），
+//!   照 `(line, turn)` 认：支线的回合编号照子会话自己的序号数，会和主线的撞上。支线推来的事件换回主线序号收进来、分派要的
+//!   `Lines`、抄进支线用的人话在 `lanes.rs`。
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -29,6 +32,9 @@ use miyu_kernel::time::Timestamp;
 use serde_json::Value;
 
 use super::body::kind_of;
+pub(super) use lanes::{Carry, Seen};
+use lanes::{Kept, Lane};
+use track::Track;
 
 /// 提示记成的事件（「群里怎么叫她」第 7 条）：出站队列的入队（`chat.md` 第七条第 2 条）。
 pub(super) const QUEUED: &str = "ext.onebot.venues.queued";
@@ -73,8 +79,8 @@ struct Speaker {
 struct Committed {
     /// 顶替看的样子：`status` 是 `Committed`。
     pending: Pending,
-    /// 收了它的那一轮的回合编号；还没进哪一轮的是空的。
-    turn: Option<u64>,
+    /// 收了它的那一轮：那条线的会话编号和回合编号（O-36）；还没进哪一轮的是空的。
+    turn: Option<(String, u64)>,
 }
 
 /// 开过的一个回合。
@@ -84,18 +90,6 @@ struct Turn {
     at: Timestamp,
     /// 触发它的那几条的发的人，照先后；没有 `triggers` 的（回报、后台命令、定时）是空的。
     by: Vec<Speaker>,
-}
-
-/// 主线正在跑的那一轮。
-#[derive(Debug, Clone)]
-struct Running {
-    /// 回合编号（开始的那一条的序号）。
-    turn: u64,
-    /// 这一轮回的人：`triggers`、`turn.joined.triggers` 的发的人，不重。
-    to: Vec<ExternalId>,
-    /// 她这时在回的那一条的序号（O-25 上）：`triggers` 的最后一条，并进来的换成 `turn.joined.triggers` 的最后一条（和核心记
-    /// `tool.call` 的 `by` 一个取法）；没有触发的是空的。
-    aim: Option<u64>,
 }
 
 /// 她回的那一条（O-25 上，「群里怎么叫她」第 9 条）：引用它、@ 发它的人，从它记下起算过了多久。
@@ -112,7 +106,9 @@ pub(super) struct Aim {
 /// 她新说的一段话：哪一轮、这一轮回的是谁，和出站链要的这一刻群里的样子（「群里怎么叫她」第 9 条）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Speaking {
-    /// 回合编号。
+    /// 她在哪条线说的：那条线的会话编号（主线或者支线，O-36）。
+    pub(super) line: String,
+    /// 回合编号（那条线的）。
     pub(super) turn: u64,
     /// 这一轮回的人；主线这时不在跑这一轮的（照说不会）是空的。
     pub(super) to: Vec<ExternalId>,
@@ -128,18 +124,11 @@ pub(super) struct Speaking {
     pub(super) replayed: bool,
 }
 
-/// 一轮发出去的（O-25 上）：去重只看这一回合。
-#[derive(Debug, Default)]
-struct Round {
-    /// 回合编号：换了回合就清。
-    turn: u64,
-    /// 这一轮入队了的她的话的正文，照先后，一样的只记一次（O-25 中）。
-    texts: Vec<String>,
-}
-
 /// 一个群的投影。
 #[derive(Debug, Default)]
 pub(super) struct Projection {
+    /// 这个群的会话编号：主线（O-36：认 `(line, turn)` 是不是主线的）。
+    session: String,
     /// 订阅时补到哪（`subscribe` 回应的 `upto`）：不晚于它的是从前的，她的话不再发。
     upto: u64,
     /// 收过的最后一条：重的、更早的不收。
@@ -148,8 +137,12 @@ pub(super) struct Projection {
     said: BTreeMap<u64, Speaker>,
     /// 开过的回合，照先后。
     turns: Vec<Turn>,
-    /// 主线正在跑的那一轮。
-    running: Option<Running>,
+    /// 主线这一轮（O-36 起和支线一样放一份 [`Track`]）。
+    main: Track,
+    /// 正在跑的支线，照分叉的先后（O-36）。
+    lanes: Vec<Lane>,
+    /// 抄进支线用的人话：主线序号 → 抄的参数（O-36，`lanes.rs`）。
+    kept: BTreeMap<u64, Kept>,
     /// 她的回复，一轮一笔，照先后。
     replies: Vec<Reply>,
     /// （线，回合）→ [`Projection::replies`] 里的位置：同一轮的几条并成一笔。
@@ -160,24 +153,21 @@ pub(super) struct Projection {
     /// `venue.delivered`：发出去到平台回执之间进来的人话在日志里排在回执前面，可群里她那一段在前（CI 的 macOS 上撞出来的）。
     /// 这个群的日志里没有那一轮她说的话的（主线发来的）照回执的序号。
     own: u64,
-    /// 她最后说的一段：（回合编号，`message.assistant` 的序号）。回执照回合认它。
+    /// 她在主线最后说的一段：（回合编号，`message.assistant` 的序号）。主线的回执照回合认它（支线的不认，O-36）。
     spoke: Option<(u64, u64)>,
-    /// 最近一轮发出去的（O-25 上）。
-    round: Round,
     /// 限流提示过的时刻。
     notices: Vec<Timestamp>,
     /// 她被禁言到什么时候（O-25 中）：最后一条 `muted` 的 `until`；解禁了、没禁过的是空的。
     muted: Option<Timestamp>,
     /// 判过要回、她还没回完的，照先后（O-23 下）。
     committed: Vec<Committed>,
-    /// 并进一轮的那几条：`turn.joined` 的序号 → 它的 `triggers`（O-23 下）。核心接着开的一轮照它找回触发的人。
-    joined: HashMap<u64, Vec<Seq>>,
 }
 
 impl Projection {
-    /// 订阅的回应说补到 `upto`：从这里起收。
-    pub(super) fn new(upto: u64) -> Projection {
+    /// 群会话 `session`（主线），订阅的回应说补到 `upto`：从这里起收。
+    pub(super) fn new(session: &str, upto: u64) -> Projection {
         Projection {
+            session: session.to_string(),
             upto,
             ..Projection::default()
         }
@@ -216,40 +206,23 @@ impl Projection {
                             .unwrap_or_default(),
                     };
                     self.said.insert(seq, speaker);
+                    self.keep(seq, event);
                 }
             }
             Body::TurnStarted(started) => {
-                let triggers = match (started.triggers.is_empty(), started.trigger) {
-                    (true, Some(trigger)) => {
-                        self.joined.get(&trigger.get()).cloned().unwrap_or_default()
-                    }
-                    _ => started.triggers.clone(),
-                };
-                let by = self.speakers(&triggers);
-                let mut to = Vec::new();
-                add(&mut to, by.iter().map(|speaker| &speaker.id));
-                self.turns.push(Turn { at: event.at, by });
-                let aim = triggers.last().map(|seq| seq.get());
-                self.running = turn.map(|turn| Running { turn, to, aim });
-                self.taken(&triggers, turn);
+                let triggers = self
+                    .main
+                    .triggers(started.triggers.clone(), started.trigger);
+                let line = self.session.clone();
+                self.started(&line, &triggers, turn, event.at);
             }
             Body::TurnJoined(joined) => {
-                self.joined.insert(seq, joined.triggers.clone());
-                let by = self.speakers(&joined.triggers);
-                if let Some(running) = self.running.as_mut()
-                    && Some(running.turn) == turn
-                {
-                    add(&mut running.to, by.iter().map(|speaker| &speaker.id));
-                    if let Some(last) = joined.triggers.last() {
-                        running.aim = Some(last.get());
-                    }
-                }
-                self.taken(&joined.triggers, turn);
+                let line = self.session.clone();
+                self.joined(&line, seq, &joined.triggers, turn);
             }
             Body::TurnEnded(_) => {
-                self.running = None;
-                self.committed
-                    .retain(|committed| committed.turn.is_none() || committed.turn != turn);
+                let line = self.session.clone();
+                self.ended(&line, turn);
             }
             Body::VenueDelivered(delivered) => {
                 let round = (
@@ -267,8 +240,9 @@ impl Projection {
                     }
                 }
                 self.mine.insert(delivered.msg.clone());
+                let main = delivered.line.as_str() == self.session;
                 let said = match self.spoke {
-                    Some((turn, said)) if turn == delivered.turn.started().get() => said,
+                    Some((turn, said)) if main && turn == delivered.turn.started().get() => said,
                     _ => seq,
                 };
                 self.own = self.own.max(said);
@@ -276,7 +250,7 @@ impl Projection {
             Body::MessageAssistant(_) => {
                 let turn = turn?;
                 self.spoke = Some((turn, seq));
-                return Some(self.speaking(turn, seq <= self.upto));
+                return Some(self.speaking(&self.session, turn, seq <= self.upto));
             }
             Body::Unknown { kind, body } if kind.as_str() == QUEUED => {
                 let body: Value = serde_json::from_str(body.get()).unwrap_or_default();
@@ -286,7 +260,9 @@ impl Projection {
                 if body["kind"] == REPLY
                     && let (Some(turn), Some(text)) = (body["turn"].as_u64(), body["text"].as_str())
                 {
-                    self.queued(turn, text);
+                    // 以前的日志、私聊没有支线：没写 `line` 的照主线（O-36）。
+                    let line = body["line"].as_str().unwrap_or(&self.session).to_string();
+                    self.queued(&line, turn, text);
                 }
             }
             Body::Unknown { kind, body } if kind.as_str() == MUTED => {
@@ -308,9 +284,12 @@ impl Projection {
         None
     }
 
-    /// 她在回合编号是 `turn` 的那一轮说了一段（`replayed` 的是订阅补来的）：交出这一刻群里的样子（第 9 条）。
-    fn speaking(&self, turn: u64, replayed: bool) -> Speaking {
-        let running = self.running.as_ref().filter(|running| running.turn == turn);
+    /// 她在线 `line` 回合编号是 `turn` 的那一轮说了一段（`replayed` 的是订阅补来的）：交出这一刻群里的样子（第 9 条）。
+    fn speaking(&self, line: &str, turn: u64, replayed: bool) -> Speaking {
+        let track = self.track(line);
+        let running = track
+            .and_then(|track| track.running.as_ref())
+            .filter(|running| running.turn == turn);
         let to = running
             .map(|running| running.to.clone())
             .unwrap_or_default();
@@ -322,12 +301,8 @@ impl Projection {
             later.filter(|(_, speaker)| speaker.id != aimed.id).count() as u64
         });
         let last_said = self.said.last_key_value().map_or(0, |(seq, _)| *seq);
-        let sent = if self.round.turn == turn {
-            self.round.texts.clone()
-        } else {
-            Vec::new()
-        };
         Speaking {
+            line: line.to_string(),
             turn,
             to,
             aim: aimed.map(|(_, aimed)| Aim {
@@ -337,25 +312,8 @@ impl Projection {
             }),
             others,
             last_is_own: self.own > last_said,
-            sent,
+            sent: track.map(|track| track.sent(turn)).unwrap_or_default(),
             replayed,
-        }
-    }
-
-    /// 回合编号是 `turn` 的那一轮入队了她的一段 `text`（O-25 中）：桥入队记成了先算上，日志推来的同一段照正文认，这一轮已经有
-    /// 一样的不再加（「施工时定的」第 112 条）；换了回合的从这一轮重新记；晚到的、更早一轮的不算。
-    pub(super) fn queued(&mut self, turn: u64, text: &str) {
-        if turn < self.round.turn {
-            return;
-        }
-        if turn > self.round.turn {
-            self.round = Round {
-                turn,
-                texts: Vec::new(),
-            };
-        }
-        if !self.round.texts.iter().any(|one| one == text) {
-            self.round.texts.push(text.to_string());
         }
     }
 
@@ -458,17 +416,6 @@ impl Projection {
         })
     }
 
-    /// 那几条（`triggers`）进了回合编号是 `turn` 的那一轮：收了它们的判过要回的，记下是哪一轮。
-    fn taken(&mut self, triggers: &[Seq], turn: Option<u64>) {
-        for committed in &mut self.committed {
-            let pending = &committed.pending;
-            let mine = |seq: &Seq| *seq == pending.msg || pending.absorbed.contains(seq);
-            if committed.turn.is_none() && triggers.iter().any(mine) {
-                committed.turn = turn;
-            }
-        }
-    }
-
     /// 那几条的发的人，照先后；没收过的（照说不会）不算。
     fn speakers(&self, triggers: &[Seq]) -> Vec<Speaker> {
         triggers
@@ -487,8 +434,12 @@ fn add<'a>(to: &mut Vec<ExternalId>, more: impl IntoIterator<Item = &'a External
     }
 }
 
+mod lanes;
 mod origin;
+mod track;
 
+#[cfg(test)]
+mod lanes_tests;
 #[cfg(test)]
 mod muted_tests;
 #[cfg(test)]

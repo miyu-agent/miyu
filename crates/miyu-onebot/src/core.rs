@@ -188,10 +188,16 @@ impl Core {
     /// 留着的推送里会话 `session` 的事件（`event`），照先后取出来；别的照旧留着，先后不变（施工 O-23，`onebot.md` 第一条
     /// 「群里怎么叫她」第 3 条）。核心先推、后回应：一条命令记下的事件，回应到了就都在留着的里面，判一条群消息以前先收它们。
     pub(crate) fn take_events(&mut self, session: &str) -> Vec<Value> {
+        self.take_events_of(|one| one == session)
+    }
+
+    /// 同 [`Core::take_events`]，会话编号合 `wanted` 的都取（施工 O-36：一个群的主线连同它的几条支线，照推来的先后）。
+    pub(crate) fn take_events_of(&mut self, wanted: impl Fn(&str) -> bool) -> Vec<Value> {
         let (taken, kept): (VecDeque<Value>, VecDeque<Value>) = std::mem::take(&mut self.held)
             .into_iter()
             .partition(|message| {
-                message["method"] == "event" && message["params"]["session"] == session
+                message["method"] == "event"
+                    && message["params"]["session"].as_str().is_some_and(&wanted)
             });
         self.held = kept;
         taken.into()

@@ -236,7 +236,7 @@ impl Route {
             .subscribed(session, reply["result"]["persona"].as_str());
         self.groups
             .entry(session.to_string())
-            .or_insert_with(|| Projection::new(upto))
+            .or_insert_with(|| Projection::new(session, upto))
             .caught_up(upto);
         self.replay(session, upto).await?;
         Ok(true)

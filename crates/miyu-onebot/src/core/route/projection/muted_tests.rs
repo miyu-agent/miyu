@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 
-use super::tests::{at, event, take_all};
+use super::tests::{LINE, at, event, take_all};
 use super::{MUTED, Projection, UNMUTED};
 
 /// 第 `seq` 条：桥记的禁言、解禁，`body` 照给的。
@@ -22,7 +22,7 @@ fn noted(seq: u64, kind: &str, body: Value) -> miyu_kernel::event::Event {
 #[test]
 fn muted_until_the_time_or_the_lift() {
     for upto in [0, 9] {
-        let mut projection = Projection::new(upto);
+        let mut projection = Projection::new(LINE, upto);
         assert_eq!(projection.muted(at(0)), None, "没禁过");
         take_all(
             &mut projection,

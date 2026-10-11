@@ -7,7 +7,7 @@
 //! | 出厂参数 | `defaults.toml` | 没有：要改写场所规则 |
 //! | 违规词表 | `moderation.txt` | `modules/onebot/moderation.txt`，在的话整份替换出厂的 |
 //! | 判官的说明（施工 O-23 下） | `judge/*.txt` 十三份 | 没有：给模型看的字随包走 |
-//! | 给她看的事实的模板（施工 O-25 下） | `facts/undelivered.txt` | 没有：同上 |
+//! | 给她看的事实的模板（施工 O-25 下，O-36 多一份） | `facts/undelivered.txt`、`facts/another-line.txt` | 没有：同上 |
 //! | 桥的工具（施工 O-26，O-31 加平台工具） | `tools/*.json` 的说明，`tool-results/` 答的话 | 没有：同上 |
 //!
 //! - 出厂的起来时读一次、单独查一次（[`Factory::load`]）：有一条问题就是打包的错，桥起不来；之后放在内存里，跑着不再读
@@ -62,8 +62,9 @@ pub struct Factory {
     keywords: Vec<String>,
     /// 判官的说明（施工 O-23 下）：查过的十三份，问判官的任务各拿一份引用。
     judge: Arc<JudgeTexts>,
-    /// 退信的模板（施工 O-25 下，`onebot.md`「退信」第 3 条）：查过字段。
-    undelivered: Template,
+    /// 给她看的事实的模板：退信（施工 O-25 下，`onebot.md`「退信」第 3 条）、另一条线正在回（施工 O-36，「群里怎么叫她」第 7 条），
+    /// 查过字段。
+    facts: facts::Facts,
     /// 桥的工具（施工 O-26，`onebot.md`「提供者和不说话」）：说明、答的两句，查过字段。
     tools: Arc<Tools>,
 }
@@ -71,8 +72,8 @@ pub struct Factory {
 impl Factory {
     /// 读资源目录 `resources` 里的出厂数据：规则文件单独过一遍 [`Rules::parse`]（合上系统的以后，被同名替换的那一份不读，
     /// 单独过才查得全），出厂参数过 [`Params::read`]，违规词表过 [`Moderation::parse_keywords`]，判官的说明过
-    /// [`JudgeTexts::new`]（施工 O-23 下），退信的模板过 [`Template::parse`]、只认三个字段（施工 O-25 下），桥的工具的说明、
-    /// 答的两句照 `miyu_tool::load` 读、查过字段（施工 O-26）。
+    /// [`JudgeTexts::new`]（施工 O-23 下），退信的模板过 [`Template::parse`]、只认三个字段（施工 O-25 下；O-36 多「另一条线
+    /// 正在回」，只认 `msg`、`aim`），桥的工具的说明、答的两句照 `miyu_tool::load` 读、查过字段（施工 O-26）。
     ///
     /// # Errors
     ///
@@ -104,10 +105,10 @@ impl Factory {
         let keywords = required(&dir.join(MODERATION), MODERATION, &mut problems)
             .map(|text| Moderation::parse_keywords(&text));
         let judge = judge::texts(&dir, &mut problems);
-        let undelivered = facts::undelivered(&dir, &mut problems);
+        let facts = facts::load(&dir, &mut problems);
         let tools = tools::load(resources.path(), &mut problems);
-        match (params, keywords, judge, undelivered, tools) {
-            (Some(params), Some(keywords), Some(judge), Some(undelivered), Some(tools))
+        match (params, keywords, judge, facts, tools) {
+            (Some(params), Some(keywords), Some(judge), Some(facts), Some(tools))
                 if problems.is_empty() =>
             {
                 Ok(Factory {
@@ -115,7 +116,7 @@ impl Factory {
                     params,
                     keywords,
                     judge: Arc::new(judge),
-                    undelivered,
+                    facts,
                     tools: Arc::new(tools),
                 })
             }
@@ -270,7 +271,12 @@ impl Venues {
 
     /// 退信的模板（施工 O-25 下）：出厂的，跑着不再读。
     pub fn undelivered(&self) -> &Template {
-        &self.factory.undelivered
+        &self.factory.facts.undelivered
+    }
+
+    /// 「另一条线正在回」的模板（施工 O-36）：出厂的，跑着不再读。
+    pub fn another_line(&self) -> &Template {
+        &self.factory.facts.another_line
     }
 
     /// 这一刻 `now` 该用的那一份：离上一次看不到 `every` 的照手里的；到了，看一眼系统的两处，和上一次的一样照手里的，

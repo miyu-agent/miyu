@@ -15,7 +15,6 @@ use serde_json::Value;
 
 use super::fields::{NAME, clean};
 use super::platform::{Caller, Order, Origin, Plan, Quote, Scene, Why, duration, plan};
-use super::projection::Projection;
 use super::{Peer, Route};
 use crate::TARGET;
 use crate::core::{Answerer, Gone, reason};
@@ -80,7 +79,9 @@ impl Route {
         if tool == FETCH_MEDIA {
             return self.fetch_called(pushed).await;
         }
-        let session = params["session"].as_str().unwrap_or_default().to_string();
+        // 调用所在那条线（`line`）是支线的，照主线找投影、发到哪（施工 O-36）。
+        let line = params["session"].as_str().unwrap_or_default().to_string();
+        let session = self.main_of(&line);
         let answerer = self.core.answerer();
         self.gather(&session).await?;
         let Some(peer) = self.peers.get(&session).cloned() else {
@@ -90,10 +91,10 @@ impl Route {
         };
         let caller = Caller::read(params);
         if matches!(peer.to, To::Group(_)) {
-            self.ask_bindings(&session, &caller).await?;
+            self.ask_bindings((&session, &line), &caller).await?;
         }
         let decided = Order::read(tool, &params["args"])
-            .and_then(|order| self.decide(&session, &peer, order, &caller));
+            .and_then(|order| self.decide((&session, &line), &peer, order, &caller));
         let Some(decided) = decided else {
             answerer.answer(id, self.tools.call(tool));
             return Ok(());
@@ -129,8 +130,14 @@ impl Route {
     }
 
     /// 会话 `session`（发到 `peer`）里 `caller` 叫她做的 `order` 做不做、对谁做（「平台工具（一）」第 3、4 条）：群里叫她做的
-    /// 那条照投影，私聊照最近一条的引用。私聊里的禁言是空的。
-    fn decide(&self, session: &str, peer: &Peer, order: Order, caller: &Caller) -> Option<Plan> {
+    /// 那条照投影里调用所在那条线 `line`（主线或者支线，施工 O-36），私聊照最近一条的引用。私聊里的禁言是空的。
+    fn decide(
+        &self,
+        (session, line): (&str, &str),
+        peer: &Peer,
+        order: Order,
+        caller: &Caller,
+    ) -> Option<Plan> {
         let me = person(peer.bot).ok()?;
         match peer.to {
             To::Group(_) => {
@@ -151,7 +158,7 @@ impl Route {
                     whitelist: &self.whitelist,
                     admin: &admin,
                 };
-                let origin = projection.and_then(Projection::origin);
+                let origin = projection.and_then(|one| one.origin(line));
                 Some(plan(order, caller, origin.as_ref(), &scene))
             }
             To::Private(_) if matches!(order, Order::Mute(_)) => None,
@@ -179,15 +186,22 @@ impl Route {
         }
     }
 
-    /// 群会话 `session` 里叫的人 `caller` 和叫她做的那条牵涉的人（发它的人、引用的那一条的发的人、@ 的人），没记着是不是终端
-    /// 管理员的问核心的 `venue.binding`，问到的记下（「平台工具（一）」第 3 条）。核心拒了的（照说不会：桥是系统账号）记一行
+    /// 群会话 `session` 里叫的人 `caller` 和叫她做的那条（调用所在那条线 `line` 的，施工 O-36）牵涉的人（发它的人、引用的那一条
+    /// 的发的人、@ 的人），没记着是不是终端管理员的问核心的 `venue.binding`，问到的记下（「平台工具（一）」第 3 条）。核心拒了的（照说不会：桥是系统账号）记一行
     /// `WARN binding not asked`、不记，这一次照投影兜底。
     ///
     /// # Errors
     ///
     /// 写不出去、等的时候核心断开。
-    async fn ask_bindings(&mut self, session: &str, caller: &Caller) -> Result<(), Gone> {
-        let origin = self.groups.get(session).and_then(Projection::origin);
+    async fn ask_bindings(
+        &mut self,
+        (session, line): (&str, &str),
+        caller: &Caller,
+    ) -> Result<(), Gone> {
+        let origin = self
+            .groups
+            .get(session)
+            .and_then(|group| group.origin(line));
         let mut people: Vec<ExternalId> = caller.id.iter().cloned().collect();
         if let Some(origin) = origin {
             people.push(origin.sender);

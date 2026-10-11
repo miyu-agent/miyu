@@ -31,6 +31,8 @@
 //! - 不说话（施工 O-26，「提供者和不说话」）：她的回复里有 `skip_reply` 的调用块，这一轮的字都不发（`quiet` 认，`speak` 不发）。
 //! - 平台工具（一）（施工 O-31，「平台工具（一）」）：读的一头交来的撤回、禁言、戳一戳的 `tool.call`，做不做、对谁做照 `platform`
 //!   定，`acting` 收投影、调 NapCat、答核心。
+//! - 支线（施工 O-36，「群里怎么叫她」第 6、7 条）：判下来要回的照群聊内核分派（`lanes`），主线忙的分叉一条支线回；支线推来的
+//!   事件收进主线的投影（`projection` 的 `lanes`），她在支线说的话照主线发。私聊在 `private`。
 //! - 核心推来的 `extension.config`（施工 O-20）：`keys` 原样交给 `serve`，它换上手里的配置、端口变了另起一个任务换（`running::rebind`）
 //!   （「施工时定的」第 45 条）：这里够不着监听。白名单成员 `onebot.whitelist` 这里记一份（施工 O-23）；换了的，私聊找过的
 //!   会话都忘掉，下一条照新的白名单再找（施工 O-27）。
@@ -51,12 +53,14 @@ mod forwards;
 mod group;
 mod judged;
 mod judges;
+mod lanes;
 mod muted;
 mod names;
 mod outbound;
 mod persona;
 mod pictures;
 mod platform;
+mod private;
 mod projection;
 mod queue;
 mod quiet;
@@ -77,16 +81,16 @@ use std::time::{Duration, Instant};
 
 use futures_util::StreamExt;
 use futures_util::stream::FuturesOrdered;
-use miyu_chat::{Venue, VenueKind};
+use miyu_chat::Venue;
 use miyu_kernel::id::{ExternalId, VenueId};
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 use tokio::sync::mpsc;
 use tokio::task::{JoinError, JoinHandle, JoinSet};
 
 use crate::TARGET;
 use crate::core::{Core, Gone, reason};
 use crate::listen::bots::Bots;
-use crate::onebot::{Event, Members, Posted, To, command_id, person, venue};
+use crate::onebot::{Event, Members, To};
 use crate::rules::{Applied, Tools, Venues};
 use crate::serve::Failure;
 use crate::settings::{whitelist, whitelist_key};
@@ -95,9 +99,8 @@ pub(crate) use ask::Slots;
 use backlog::Backlog;
 use bindings::Bindings;
 pub(crate) use fetching::Fetching;
-use fields::{Flags, fields};
 pub(crate) use forwards::Forwarding;
-use forwards::{Forwards, with_placeholders};
+use forwards::Forwards;
 use judges::Judges;
 use outbound::Spoken;
 pub(crate) use persona::Personas;
@@ -330,46 +333,6 @@ impl Route {
         self.whitelist.iter().any(|one| one == who.as_str())
     }
 
-    /// 一条私聊（第 6 到 8 条，中间是「斜杠命令」）。
-    async fn private(&mut self, posted: Posted) -> Result<(), Gone> {
-        let made = venue(VenueKind::Private, posted.user)
-            .and_then(|venue| Ok((venue, person(posted.user)?)));
-        let (venue, external) = match made {
-            Ok(made) => made,
-            Err(error) => {
-                tracing::warn!(target: TARGET, user = posted.user, message = posted.message_id, error = %error, "venue not made, message dropped");
-                return Ok(());
-            }
-        };
-        // 只有图、引用的私聊照取图（施工 O-33）；带了东西的、没有字也送（施工 O-35：她看得到记号、能取）。合并转发照群消息的写法
-        // 在正文后面写占位、交以前展开（施工 O-34），只有转发的也送。
-        let pictures = Pictures::of(posted.bot, posted.message_id, &posted.segments);
-        let text = with_placeholders(&posted.text, posted.segments.forwards.len());
-        if text.trim().is_empty() && pictures.own.is_empty() && !pictures.any() {
-            tracing::debug!(target: TARGET, venue = %venue.id(), message = posted.message_id, "nothing to send");
-            return Ok(());
-        }
-        // 私聊每一条都开回合：不写 `ambient`、`asleep`（「施工时定的」第 68 条）。
-        let applied = self.applied(&venue);
-        let flags = Flags {
-            show_ids: applied::show_ids(&applied),
-            ..Flags::default()
-        };
-        // 白名单成员的私聊会话归系统账号、照场所规则造（施工 O-27，同群）。
-        let listed = self.whitelisted(&external).then_some(&applied);
-        let message = Message {
-            id: command_id(posted.bot, posted.message_id, posted.time),
-            number: posted.message_id,
-            text,
-            acting: json!({"external": external}),
-            fields: fields(&posted, &[], flags),
-            place: Place::private(&venue, &external, (posted.bot, posted.user), listed),
-            pictures: Some(pictures),
-            forwards: Forwards::of(posted.bot, None, posted.message_id, &posted.segments),
-        };
-        self.submit(message).await.map(|_| ())
-    }
-
     /// 交一条消息：`/` 开头的先当斜杠命令交（「斜杠命令」），办完了的不再发；别的照 `session.send` 发（第 8 条，「群消息」
     /// 第 6 条），交回会话编号和回应（接受的、拒绝的都原样：群的照它判，施工 O-23）。要带图的（施工 O-33）、要展开转发的（施工
     /// O-34）先找到会话（不接的不去取），取了图带上、展开的转发写进场所的格；私聊没有字、没带东西、图又一张都没取到的不送。命令办完了的、
@@ -450,6 +413,11 @@ impl Route {
         let Some(session) = params["session"].as_str() else {
             return Ok(());
         };
+        // 支线推来的走支线那条路，不当成私聊（施工 O-36，`lanes`）。
+        if let Some(main) = self.main_of_lane(session) {
+            let lane = session.to_string();
+            return self.lane_heard(&main, &lane, &pushed).await;
+        }
         let group = self.groups.get(session).map(Projection::last);
         match (pushed["method"].as_str(), group) {
             (Some("event"), Some(_)) => {

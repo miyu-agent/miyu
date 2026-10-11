@@ -270,8 +270,26 @@ pub async fn respond(home: &Home, venue: &str, id: &str, to: &[Value]) {
     assert!(reply.get("error").is_none(), "{reply}");
 }
 
-/// 系统账号 `onebot` 名下、场所是 `venue` 的那个会话：编号和事件（写成 JSON）；还没有的是空的。
+/// 系统账号 `onebot` 名下、场所是 `venue` 的那个会话（主线）：编号和事件（写成 JSON）；还没有的是空的。分叉出来的支线（施工
+/// O-36：`session.created` 带 `forked`，场所照主线的）不算。
 pub fn venue_session(root: &DataRoot, venue: &str) -> Option<(String, Vec<Value>)> {
+    venue_sessions(root, venue)
+        .into_iter()
+        .find(|(_, events)| events[0]["body"]["forked"].is_null())
+}
+
+/// 系统账号 `onebot` 名下、场所是 `venue` 的分叉出来的支线（施工 O-36），照分叉的先后：编号和事件。
+pub fn lane_sessions(root: &DataRoot, venue: &str) -> Vec<(String, Vec<Value>)> {
+    let mut lanes: Vec<_> = venue_sessions(root, venue)
+        .into_iter()
+        .filter(|(_, events)| !events[0]["body"]["forked"].is_null())
+        .collect();
+    lanes.sort_by_key(|(_, events)| events[0]["at"].as_str().unwrap_or_default().to_string());
+    lanes
+}
+
+/// 系统账号 `onebot` 名下、场所是 `venue` 的会话（主线、支线都算）：编号和事件。
+fn venue_sessions(root: &DataRoot, venue: &str) -> Vec<(String, Vec<Value>)> {
     let system = AccountId::parse("onebot").expect("合写法");
     root.sessions(&system)
         .unwrap_or_default()
@@ -284,11 +302,12 @@ pub fn venue_session(root: &DataRoot, venue: &str) -> Option<(String, Vec<Value>
                 .collect();
             (session.as_str().to_string(), events)
         })
-        .find(|(_, events)| {
+        .filter(|(_, events)| {
             events
                 .first()
                 .is_some_and(|first| first["body"]["venue"] == venue)
         })
+        .collect()
 }
 
 /// 场所是 `venue` 的那个会话的事件；还没有的是空的。

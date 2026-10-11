@@ -1,6 +1,7 @@
 //! 贴表情（施工 O-25 下，`onebot.md` 第一条「贴表情」）：贴着的几条照推来的 `turn.started`、`turn.joined` 记下进了哪一轮，那一轮
 //! 的 `venue.delivered`、`turn.ended` 发摘的信号，别的轮、别的会话、没进哪一轮的不发，同一条只发一次；贴、等、摘的任务：信号来了
-//! 或者到了时候摘一次，经那时的连接，贴不上的不摘，信号的一头放下了（桥在停）不摘。钟是停住的（`start_paused`）。
+//! 或者到了时候摘一次，经那时的连接，贴不上的不摘，信号的一头放下了（桥在停）不摘。钟是停住的（`start_paused`）。支线（施工
+//! O-36）照 `(line, turn)` 认，回合编号撞上了也不串。
 
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
@@ -100,6 +101,46 @@ fn the_first_piece_of_the_turn_that_took_it_signals() {
     reactions.seen(ONE, &delivered(13, 10));
     reactions.seen(ONE, &ended(14, 10));
     assert_eq!(signalled(&mut off), None, "只发一次");
+}
+
+/// 线 `line` 第 `turn` 轮发出去的一段（施工 O-36：支线的也记在主线的日志里）。
+fn delivered_on(seq: u64, line: &str, turn: u64) -> Event {
+    let mut event = delivered(seq, turn);
+    if let miyu_kernel::event::Body::VenueDelivered(delivered) = &mut event.body {
+        delivered.line = miyu_kernel::id::SessionId::parse(line).expect("合写法");
+    }
+    event
+}
+
+#[test]
+fn a_lane_turn_with_the_same_number_does_not_signal_the_main_line() {
+    // 施工 O-36：支线的回合编号照子会话自己的序号数，会和主线的撞上。
+    let mut reactions = Reactions::new("289".to_string(), AFTER);
+    let mut main = reactions.hold(ONE, 5);
+    let mut lane = reactions.hold(ONE, 6);
+    reactions.seen(ONE, &started(10, &[5]));
+    reactions.taken(ONE, TWO, &[6], 10);
+    reactions.done(ONE, TWO, 10);
+    assert_eq!(
+        signalled(&mut main),
+        Some(false),
+        "支线第 10 轮完了，主线第 10 轮的不摘"
+    );
+    assert_eq!(signalled(&mut lane), Some(true));
+    let mut later = reactions.hold(ONE, 7);
+    reactions.taken(ONE, TWO, &[7], 12);
+    reactions.seen(ONE, &delivered(11, 12));
+    assert_eq!(
+        signalled(&mut later),
+        Some(false),
+        "主线第 12 轮说的不摘支线第 12 轮的"
+    );
+    reactions.seen(ONE, &delivered_on(12, TWO, 12));
+    assert_eq!(signalled(&mut later), Some(true));
+    reactions.seen(ONE, &delivered_on(13, TWO, 10));
+    assert_eq!(signalled(&mut main), Some(false));
+    reactions.seen(ONE, &delivered(14, 10));
+    assert_eq!(signalled(&mut main), Some(true));
 }
 
 #[test]

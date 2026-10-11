@@ -4,7 +4,7 @@
 
 use serde_json::json;
 
-use super::tests::{assistant, at, ended, event, joined, qq, said_at, started, take_all};
+use super::tests::{LINE, assistant, at, ended, event, joined, qq, said_at, started, take_all};
 use super::{Aim, Projection, QUEUED};
 
 /// 第 `turn` 轮入队了的她的一段 `text`（O-25 中）。
@@ -35,7 +35,7 @@ fn delivered(seq: u64, turn: u64, text: &str) -> miyu_kernel::event::Event {
 
 #[test]
 fn she_answers_the_last_trigger_and_counts_the_others_after_it() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -67,7 +67,7 @@ fn she_answers_the_last_trigger_and_counts_the_others_after_it() {
 
 #[test]
 fn whether_the_last_one_is_hers() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -89,7 +89,7 @@ fn whether_the_last_one_is_hers() {
 #[test]
 fn a_message_arriving_before_her_receipt_is_still_later_than_hers() {
     for upto in [0, 6] {
-        let mut projection = Projection::new(upto);
+        let mut projection = Projection::new(LINE, upto);
         let spoken = take_all(
             &mut projection,
             vec![
@@ -115,7 +115,7 @@ fn a_message_arriving_before_her_receipt_is_still_later_than_hers() {
 /// 主线发来的（`line` 是主线，这个群的日志里没有那一轮她说的话）照记回执的序号；晚到的这个群的回执不把它往前拉。
 #[test]
 fn a_main_line_delivery_counts_from_its_receipt() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -144,7 +144,7 @@ fn a_main_line_delivery_counts_from_its_receipt() {
 
 #[test]
 fn what_was_sent_this_turn() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -179,9 +179,9 @@ fn what_was_sent_this_turn() {
 /// 换了回合就清。
 #[test]
 fn the_bridge_counts_first_and_the_log_does_not_count_twice() {
-    let mut projection = Projection::new(0);
-    projection.queued(2, "一");
-    projection.queued(2, "二");
+    let mut projection = Projection::new(LINE, 0);
+    projection.queued(LINE, 2, "一");
+    projection.queued(LINE, 2, "二");
     let spoken = take_all(
         &mut projection,
         vec![
@@ -192,8 +192,8 @@ fn the_bridge_counts_first_and_the_log_does_not_count_twice() {
         ],
     );
     assert_eq!(spoken[0].sent, ["一", "二", "三"]);
-    projection.queued(1, "上一轮晚算的");
-    projection.queued(9, "四");
+    projection.queued(LINE, 1, "上一轮晚算的");
+    projection.queued(LINE, 9, "四");
     let spoken = take_all(&mut projection, vec![assistant(10, 9)]);
     assert_eq!(spoken[0].sent, ["四"], "换了回合就清，上一轮的不算");
 }

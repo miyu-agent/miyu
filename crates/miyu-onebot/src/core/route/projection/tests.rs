@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use super::{DECIDED, Projection, Speaking};
 
 /// 一条主线的会话编号。
-const LINE: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
+pub(super) const LINE: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
 
 /// 第 `seconds` 秒的时刻。
 pub(super) fn at(seconds: i64) -> Timestamp {
@@ -58,7 +58,7 @@ pub(super) fn said_at(seq: u64, seconds: i64, user: i64) -> Event {
 }
 
 /// 一笔判断：判的是 `msgs`，结论 `outcome`，条件只有冲她来（另带一个认不出的种类，读的时候不要）。
-fn decided(seq: u64, msgs: &[u64], outcome: &str) -> Event {
+pub(super) fn decided(seq: u64, msgs: &[u64], outcome: &str) -> Event {
     let conditions = json!([{"kind": "direct", "bonus": 0.3}, {"kind": "inherited", "bonus": 1.0}]);
     let body = json!({"msgs": msgs, "standing": "member", "inbound": "pass", "conditions": conditions, "outcome": outcome});
     ext(seq, 0, DECIDED, body)
@@ -83,7 +83,7 @@ fn committed(msg: u64, absorbed: &[u64], seconds: i64) -> Pending {
 }
 
 /// 投影里判过要回、她还没回完的。
-fn pendings(projection: &Projection) -> Vec<Pending> {
+pub(super) fn pendings(projection: &Projection) -> Vec<Pending> {
     projection.committed().cloned().collect()
 }
 
@@ -169,7 +169,7 @@ fn turns_to(spoken: &[Speaking]) -> Vec<(u64, Vec<ExternalId>)> {
 
 #[test]
 fn who_said_it_and_whether_the_admin_did() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![user(1, 10001, true), user(2, 20002, false)],
@@ -183,7 +183,7 @@ fn who_said_it_and_whether_the_admin_did() {
 
 #[test]
 fn turns_only_admins_or_whitelisted_started_are_left_out() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![
@@ -213,7 +213,7 @@ fn turns_only_admins_or_whitelisted_started_are_left_out() {
 
 #[test]
 fn the_running_turn_answers_its_triggers_and_whoever_joined() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -238,7 +238,7 @@ fn the_running_turn_answers_its_triggers_and_whoever_joined() {
 #[test]
 fn a_turn_opened_for_what_joined_answers_whoever_joined() {
     // 并进第 3 轮的那一条，第 3 轮没再请求就结束了：核心接着开第 6 轮，`trigger` 指向那条 `turn.joined`、没有 `triggers`。
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let opened = event(
         6,
         5,
@@ -283,7 +283,7 @@ fn a_turn_opened_for_what_joined_answers_whoever_joined() {
 
 #[test]
 fn her_replies_are_one_per_turn_and_her_ids_are_kept() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![
@@ -312,7 +312,7 @@ fn her_replies_are_one_per_turn_and_her_ids_are_kept() {
 
 #[test]
 fn notices_are_the_rate_limit_notices_only() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     let queued = "ext.onebot.venues.queued";
     take_all(
         &mut projection,
@@ -349,7 +349,7 @@ fn notices_are_the_rate_limit_notices_only() {
 
 #[test]
 fn history_is_not_spoken_and_old_or_repeated_events_are_skipped() {
-    let mut projection = Projection::new(5);
+    let mut projection = Projection::new(LINE, 5);
     let spoken = take_all(
         &mut projection,
         vec![
@@ -378,7 +378,7 @@ fn history_is_not_spoken_and_old_or_repeated_events_are_skipped() {
 
 #[test]
 fn what_she_said_before_upto_comes_out_marked_as_replayed() {
-    let mut projection = Projection::new(3);
+    let mut projection = Projection::new(LINE, 3);
     let taken: Vec<Option<bool>> = [
         user(1, 20002, false),
         started(2, 0, &[1]),
@@ -397,7 +397,7 @@ fn what_she_said_before_upto_comes_out_marked_as_replayed() {
 
 #[test]
 fn what_she_was_asked_to_answer_stays_until_that_turn_ends() {
-    let mut projection = Projection::new(0);
+    let mut projection = Projection::new(LINE, 0);
     take_all(
         &mut projection,
         vec![

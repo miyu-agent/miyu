@@ -6,7 +6,8 @@
 //!   `qq:<机器人的号>:…`，施工单「要定的」第 3 条）。认不出的等那个场所来一条消息。
 //! - 补发哪几句：补来的她的话（这一轮说了不说话的不算，调的一方认），说的时刻晚于 `since`：还在出站队列的期限里（施工单
 //!   「要定的」第 1 条）。照同一个回合入队了的正文比（`ext.onebot.venues.queued` 里 `kind` 是 `reply` 的，同 O-25 中的去重，
-//!   「要定的」第 2 条）：出站链照这一回合入队了的去重，拆出来的每一段入队过的不再发。
+//!   「要定的」第 2 条）：出站链照这一回合入队了的去重，拆出来的每一段入队过的不再发。别的线（支线，施工 O-36）的入队也记在
+//!   主线的日志里，回合编号会和主线的撞上，照 `line` 认、不算。
 //!
 //! 只在订阅到补完的这一会儿有（`Route` 的 `backlogs`）：补完了交给 `revive` 补发，丢掉。
 
@@ -23,6 +24,8 @@ use crate::onebot::{To, bot_of, to_of};
 /// 订阅补来的那一段。
 #[derive(Debug, Default)]
 pub(super) struct Backlog {
+    /// 这个会话的编号：入队的 `line` 不是它的（支线的，施工 O-36）不算这个会话的回合。
+    line: String,
     /// 补到哪（`subscribe` 回应的 `upto`）：序号不大于它的是补来的。
     upto: u64,
     /// 说的时刻晚于它（毫秒）的还在期限里。
@@ -49,9 +52,10 @@ pub(super) struct Said {
 }
 
 impl Backlog {
-    /// 补到 `upto`，说的时刻晚于 `since`（毫秒）的还在期限里。
-    pub(super) fn new(upto: u64, since: i64) -> Backlog {
+    /// 会话 `line` 补到 `upto`，说的时刻晚于 `since`（毫秒）的还在期限里。
+    pub(super) fn new(line: &str, upto: u64, since: i64) -> Backlog {
         Backlog {
+            line: line.to_string(),
             upto,
             since,
             ..Backlog::default()
@@ -77,7 +81,10 @@ impl Backlog {
                 }
             }
             _ => {
-                if let Some((turn, text)) = queued_reply(event) {
+                let other = event["body"]["line"]
+                    .as_str()
+                    .is_some_and(|line| line != self.line);
+                if let Some((turn, text)) = queued_reply(event).filter(|_| !other) {
                     self.queued.entry(turn).or_default().push(text);
                 }
             }

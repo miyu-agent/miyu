@@ -4,7 +4,7 @@
 //! （`outbound`），丢了的记一行，过了的照纯文本拆段，一段一条入队（`sending`，O-25 中：先记
 //! `ext.onebot.venues.queued` 再照先后交 NapCat，群里的成了记 `venue.delivered`），第一段带引用和 @。私聊里她的话也过出站链、
 //! 拆段、入队，不记 `venue.delivered`。这一轮她调过 `skip_reply` 的（施工 O-26，`quiet`）不过链、不入队，记一行
-//! `reply dropped why=skipped`。
+//! `reply dropped why=skipped`。支线推来的（施工 O-36）由 `lanes.rs` 收进主线的投影，她在支线说的话也从这里照主线发。
 
 use miyu_chat::{OutCtx, Venue};
 use miyu_kernel::event::Event;
@@ -71,28 +71,47 @@ impl Route {
     }
 
     /// 会话 `session` 这一轮不说话了，她说的 `text` 不发：记一行 `reply dropped`（`why=skipped`，不记原文，施工 O-26）。
-    fn hushed(&self, session: &str, text: &str) {
+    pub(super) fn hushed(&self, session: &str, text: &str) {
         if let Some(peer) = self.peers.get(session) {
             let chars = text.chars().count();
             tracing::info!(target: TARGET, venue = %peer.venue, why = "skipped", chars, "reply dropped");
         }
     }
 
-    /// 把会话 `session` 留着没办的推送照先后收进投影（第 3 条：判以前；第 1 条：订阅以后）。
+    /// 把群会话 `session` 留着没办的推送照先后收进投影（第 3 条：判以前；第 1 条：订阅以后），它的几条支线推来的也一起（施工
+    /// O-36，`lanes.rs`）。
     ///
     /// # Errors
     ///
     /// 同 [`Route::heard`]。
     pub(super) async fn catch_up(&mut self, session: &str) -> Result<(), Gone> {
-        for pushed in self.core.take_events(session) {
-            self.heard(session, &pushed).await?;
+        let lanes = self
+            .groups
+            .get(session)
+            .map(|group| group.lanes())
+            .unwrap_or_default();
+        let wanted = |one: &str| one == session || lanes.iter().any(|lane| lane == one);
+        for pushed in self.core.take_events_of(wanted) {
+            match pushed["params"]["session"].as_str() {
+                Some(one) if one == session => self.heard(session, &pushed).await?,
+                Some(lane) => {
+                    let lane = lane.to_string();
+                    self.lane_heard(session, &lane, &pushed).await?;
+                }
+                None => {}
+            }
         }
         Ok(())
     }
 
-    /// 她在群会话 `session` 里新说的一段话 `text`（第 9 条）：过出站链（情形照投影交出的 `speaking`、本机此刻、这个群此刻的
-    /// 参数），过了的一段一条入队。本机的钟读不出的（照说不会）记一行、不发。
-    async fn speak(&mut self, session: &str, speaking: Speaking, text: &str) -> Result<(), Gone> {
+    /// 她在群会话 `session` 里（主线或者它的一条支线，照 `speaking` 的 `line`，施工 O-36）新说的一段话 `text`（第 9 条）：过出站链
+    /// （情形照投影交出的 `speaking`、本机此刻、这个群此刻的参数），过了的一段一条入队。本机的钟读不出的（照说不会）记一行、不发。
+    pub(super) async fn speak(
+        &mut self,
+        session: &str,
+        speaking: Speaking,
+        text: &str,
+    ) -> Result<(), Gone> {
         let Some(peer) = self.peers.get(session).cloned() else {
             return Ok(());
         };
@@ -110,6 +129,7 @@ impl Route {
             return Ok(());
         };
         let what = What::Reply {
+            line: speaking.line,
             turn: speaking.turn,
             to: speaking.to,
         };
@@ -177,6 +197,7 @@ impl Route {
             return Ok(());
         };
         let what = What::Reply {
+            line: session.to_string(),
             turn,
             to: Vec::new(),
         };

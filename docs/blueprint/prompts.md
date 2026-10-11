@@ -3937,3 +3937,16 @@ reason is one short sentence: who the message is for, whether the bot is the exp
 ```text
 <undelivered why="{why}" detail="{detail}">Your message starting "{text}" was not sent; the chat never saw it.</undelivered>
 ```
+
+### 事实（`kind` 是 `another-line`），桥经核心的 `session.respond` 的 `facts` 交
+
+#### `software/onebot/facts/another-line.txt`
+
+- 什么时候加进来：群里开轮时交给别的线、还在回的消息一条一块：主线开轮带每条支线在回的，分叉带主线这一轮在回的（`onebot.md`「群里怎么叫她」第 7 条，施工 O-36）
+- token：33（`msg` 填 `1708423305`、`aim` 填 `1708423307`；只有前一句的原句 21）
+- 为什么加：支线和主线的前缀逐字节相同，她看得到别的线正在回的那一条，不标会两边都回它（18 第八节「要守的三条」第 2 条：什么都不标，支线回 B 时 15 次里 12 到 15 次也回了 A）；末尾点明这条线回哪一条，重复回 A、`skip` 都是 0/30（施工 O-36 在真实位置量）
+- 指纹：`a5c936ff`
+
+```text
+<another-line>Another line is already replying to msg={msg}. You are replying to msg={aim}.</another-line>
+```

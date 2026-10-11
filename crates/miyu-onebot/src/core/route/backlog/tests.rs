@@ -1,10 +1,13 @@
 //! 订阅补来的（施工 O-32）：场所照 `session.created`、机器人号照最近一条人话的命令编号；补来的只是序号不大于 `upto` 的；期限
-//! 以内的她的话才记；这一回合入队过的段不再发，留下的算进去。
+//! 以内的她的话才记；这一回合入队过的段不再发，留下的算进去；别的线（支线，施工 O-36）入队的不算。
 
 use serde_json::{Value, json};
 
 use super::{Backlog, Said};
 use crate::onebot::To;
+
+/// 这个会话（主线）的编号。
+const LINE: &str = "l";
 
 /// 第 `seconds` 秒的时刻，写成日志里的样子。
 fn at(seconds: i64) -> String {
@@ -29,7 +32,12 @@ fn event(seq: u64, seconds: i64, kind: &str, body: Value, more: Value) -> Value 
 
 /// 入队了她在回合 `turn` 的一段 `text`。
 fn queued(seq: u64, turn: u64, text: &str) -> Value {
-    let body = json!({"kind": "reply", "text": text, "line": "l", "turn": turn});
+    queued_on(LINE, seq, turn, text)
+}
+
+/// 入队了她在线 `line` 回合 `turn` 的一段 `text`。
+fn queued_on(line: &str, seq: u64, turn: u64, text: &str) -> Value {
+    let body = json!({"kind": "reply", "text": text, "line": line, "turn": turn});
     event(seq, 0, "ext.onebot.venues.queued", body, json!({}))
 }
 
@@ -52,7 +60,7 @@ fn assistant(seq: u64, seconds: i64, turn: u64) -> Value {
 
 #[test]
 fn the_peer_comes_from_the_venue_and_the_last_message() {
-    let mut backlog = Backlog::new(9, 0);
+    let mut backlog = Backlog::new(LINE, 9, 0);
     assert_eq!(backlog.peer(), None);
     let created = json!({"venue": "qq:group:668"});
     backlog.take(&event(1, 0, "session.created", created, json!({})));
@@ -74,7 +82,7 @@ fn the_peer_comes_from_the_venue_and_the_last_message() {
         (30004, To::Group(668), "qq:group:668")
     );
 
-    let mut private = Backlog::new(9, 0);
+    let mut private = Backlog::new(LINE, 9, 0);
     let created = json!({"venue": "qq:private:20003"});
     private.take(&event(1, 0, "session.created", created, json!({})));
     private.take(&user(2, 30003));
@@ -82,7 +90,7 @@ fn the_peer_comes_from_the_venue_and_the_last_message() {
         private.peer().map(|(bot, to, _)| (bot, to)),
         Some((30003, To::Private(20003)))
     );
-    let mut other = Backlog::new(9, 0);
+    let mut other = Backlog::new(LINE, 9, 0);
     let created = json!({"venue": "tg:group:1"});
     other.take(&event(1, 0, "session.created", created, json!({})));
     other.take(&user(2, 30003));
@@ -91,7 +99,7 @@ fn the_peer_comes_from_the_venue_and_the_last_message() {
 
 #[test]
 fn only_events_up_to_upto_are_replayed() {
-    let backlog = Backlog::new(5, 0);
+    let backlog = Backlog::new(LINE, 5, 0);
     assert!(backlog.replayed(&assistant(5, 0, 1)), "正好是 upto 的也是");
     assert!(!backlog.replayed(&assistant(6, 0, 1)));
     assert!(
@@ -102,7 +110,7 @@ fn only_events_up_to_upto_are_replayed() {
 
 #[test]
 fn only_words_said_within_the_deadline_are_kept() {
-    let mut backlog = Backlog::new(9, millis(10));
+    let mut backlog = Backlog::new(LINE, 9, millis(10));
     backlog.said(&assistant(1, 10, 2), "正好压线".to_string(), None);
     backlog.said(&assistant(2, 11, 2), "还在期限里".to_string(), None);
     let mut turnless = assistant(3, 12, 2);
@@ -124,7 +132,7 @@ fn only_words_said_within_the_deadline_are_kept() {
 
 #[test]
 fn pieces_queued_in_the_same_turn_are_not_sent_again() {
-    let mut backlog = Backlog::new(9, 0);
+    let mut backlog = Backlog::new(LINE, 9, 0);
     backlog.take(&queued(1, 2, "第一段"));
     backlog.take(&queued(2, 3, "别的回合的"));
     let notice = json!({"kind": "notice", "reason": "rate_limited", "text": "第二段"});
@@ -144,4 +152,17 @@ fn pieces_queued_in_the_same_turn_are_not_sent_again() {
         "补发了的算进去：同一回合后面一样的不再发"
     );
     assert_eq!(backlog.unsent(4, vec!["新的".to_string()]), ["新的"]);
+}
+
+#[test]
+fn pieces_queued_on_another_line_do_not_count_for_this_one() {
+    let mut backlog = Backlog::new(LINE, 9, 0);
+    backlog.take(&queued_on("lane", 1, 2, "支线的"));
+    let old = json!({"kind": "reply", "text": "以前的", "turn": 2});
+    backlog.take(&event(2, 0, "ext.onebot.venues.queued", old, json!({})));
+    assert_eq!(
+        backlog.sent(2),
+        ["以前的"],
+        "支线的回合编号撞上了也不算；没写 line 的照这个会话"
+    );
 }

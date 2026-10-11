@@ -8,6 +8,7 @@
 //!   第 65 条）。
 //! - 进站链要的（施工 O-23，「群里怎么叫她」第 4、5 条）：限流、睡眠、能不能叫她、触发词，此刻（本机的钟和时区）。
 //! - 线路规程（施工 O-23 下，第 10 条）：`discipline` 的写法，没设的是空的。
+//! - 最多几条支线（施工 O-36，第 6 条）：`parallel`，没设的是 0。
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -108,6 +109,14 @@ pub(super) fn keywords(applied: &Applied) -> Vec<String> {
 /// 规则的线路规程 `discipline`（施工 O-23 下）：没设的是空的。
 pub(super) fn discipline(applied: &Applied) -> Option<&str> {
     text(applied, "discipline")
+}
+
+/// 规则的 `parallel`（施工 O-36，「群里怎么叫她」第 6 条）：最多几条支线；没设的是 0（串行）。群聊内核查过是 0 到 3 的整数。
+pub(super) fn parallel(applied: &Applied) -> u8 {
+    match entry(applied, "parallel") {
+        Some(Value::Int(count)) => u8::try_from(*count).unwrap_or(0),
+        _ => 0,
+    }
 }
 
 /// 此刻：本机的钟，时区照本机此刻的偏移（「施工时定的」第 65 条）。钟读不出（早于 1970 年、晚于 9999 年）的是空的。

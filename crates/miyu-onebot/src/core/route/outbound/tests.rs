@@ -41,6 +41,7 @@ fn aim() -> Aim {
 /// 她回 [`aim`] 的时候：之后别人说了 `others` 条。
 fn speaking(others: u64) -> Speaking {
     Speaking {
+        line: "l".to_string(),
         turn: 3,
         to: Vec::new(),
         aim: Some(aim()),

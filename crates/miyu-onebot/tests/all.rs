@@ -23,6 +23,7 @@ mod group;
 mod ids;
 mod judged;
 mod judged_persona;
+mod lanes;
 mod linking;
 mod listen;
 mod logs;

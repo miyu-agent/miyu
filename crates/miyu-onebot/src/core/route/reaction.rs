@@ -4,8 +4,9 @@
 //!
 //! - 什么时候贴（[`Route::react`]）：`called.rs` 判下来要回、`session.respond` 成了以后（「施工时定的」第 133 条），主触发是冲她来、
 //!   续聊的；贴在判的几条里最后一条上（和引用同一条）。顶替接过去的，前一条贴着的摘掉（第 134 条）。
-//! - 贴着的几条（[`Reactions`]）：会话、序号 → 进了哪一轮、摘的信号。推来的事件（[`Reactions::seen`]）：`turn.started`、
-//!   `turn.joined` 记下进了哪一轮，那一轮的 `venue.delivered`、`turn.ended` 发摘的信号。
+//! - 贴着的几条（[`Reactions`]）：会话、序号 → 进了哪条线的哪一轮、摘的信号。推来的事件（[`Reactions::seen`]）：`turn.started`、
+//!   `turn.joined` 记下进了哪一轮，那一轮的 `venue.delivered`、`turn.ended` 发摘的信号。支线（施工 O-36）推来的由 `lanes.rs`
+//!   换回主线序号交进来（[`Reactions::taken`]、[`Reactions::done`]）：照 `(line, turn)` 认，两条线的回合编号撞上也不串。
 //! - 贴、等、摘是一个另起的任务（[`mark`]，放进 `Route` 的 `chores`）：三种摘法谁先到算谁，放在一个任务里自己就只摘一次
 //!   （第 131 条）。不入出站队列、不记事件：贴、摘没成的记一行运行日志就算了；桥停下时贴着的不摘（施工单「要定的」第 3 条）。
 
@@ -36,8 +37,8 @@ pub(crate) struct Reactions {
 
 /// 贴着的一条。
 struct Held {
-    /// 收了它的那一轮的回合编号；还没进哪一轮的是空的。
-    turn: Option<u64>,
+    /// 收了它的那一轮：那条线的会话编号、回合编号（施工 O-36）；还没进哪一轮的是空的。
+    turn: Option<(String, u64)>,
     /// 摘的信号：发给贴它的那个任务。
     off: oneshot::Sender<()>,
 }
@@ -81,40 +82,45 @@ impl Reactions {
         }
     }
 
-    /// 会话 `session` 推来的一条事件：`turn.started`、`turn.joined` 的触发里有贴着的，记下进了哪一轮（先进的那一轮算）；那一轮
-    /// 发出去一段（`venue.delivered`）、结束了（`turn.ended`），摘它收了的那几条。
+    /// 群会话 `session`（主线）推来的一条事件：`turn.started`、`turn.joined` 的触发里有贴着的，记下进了主线的哪一轮（先进的那一轮
+    /// 算）；那条线的那一轮发出去一段（`venue.delivered`，照它的 `line`）、主线那一轮结束了（`turn.ended`），摘它收了的那几条。
     pub(super) fn seen(&mut self, session: &str, event: &Event) {
         let turn = event.turn.map(|turn| turn.started().get());
+        let seqs = |triggers: &[Seq]| triggers.iter().map(|seq| seq.get()).collect::<Vec<_>>();
         match (&event.body, turn) {
             (Body::TurnStarted(started), Some(turn)) => {
-                self.taken(session, &started.triggers, turn)
+                self.taken(session, session, &seqs(&started.triggers), turn);
             }
-            (Body::TurnJoined(joined), Some(turn)) => self.taken(session, &joined.triggers, turn),
+            (Body::TurnJoined(joined), Some(turn)) => {
+                self.taken(session, session, &seqs(&joined.triggers), turn);
+            }
             (Body::VenueDelivered(delivered), _) => {
-                self.done(session, delivered.turn.started().get())
+                let line = delivered.line.as_str();
+                self.done(session, line, delivered.turn.started().get());
             }
-            (Body::TurnEnded(_), Some(turn)) => self.done(session, turn),
+            (Body::TurnEnded(_), Some(turn)) => self.done(session, session, turn),
             _ => {}
         }
     }
 
-    /// 那几条（`triggers`）进了回合编号是 `turn` 的那一轮。
-    fn taken(&mut self, session: &str, triggers: &[Seq], turn: u64) {
-        for seq in triggers {
-            if let Some(held) = self.held.get_mut(&(session.to_string(), seq.get()))
+    /// 群会话 `session` 里那几条（`msgs`，主线序号）进了线 `line`（主线或者支线）回合编号是 `turn` 的那一轮。
+    pub(super) fn taken(&mut self, session: &str, line: &str, msgs: &[u64], turn: u64) {
+        for msg in msgs {
+            if let Some(held) = self.held.get_mut(&(session.to_string(), *msg))
                 && held.turn.is_none()
             {
-                held.turn = Some(turn);
+                held.turn = Some((line.to_string(), turn));
             }
         }
     }
 
-    /// 回合编号是 `turn` 的那一轮发出去了、完了：摘它收了的那几条。
-    fn done(&mut self, session: &str, turn: u64) {
+    /// 群会话 `session` 里线 `line` 回合编号是 `turn` 的那一轮发出去了、完了：摘它收了的那几条。
+    pub(super) fn done(&mut self, session: &str, line: &str, turn: u64) {
+        let key = Some((line.to_string(), turn));
         let taken: Vec<u64> = self
             .held
             .iter()
-            .filter(|((one, _), held)| one == session && held.turn == Some(turn))
+            .filter(|((one, _), held)| one == session && held.turn == key)
             .map(|((_, msg), _)| *msg)
             .collect();
         for msg in taken {
