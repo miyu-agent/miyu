@@ -14,6 +14,7 @@ mod params;
 mod tests;
 mod turns;
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
@@ -25,7 +26,7 @@ use miyu_recall::{CLASSES, Entry, MemoryId};
 use miyu_session::{
     ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Memory, Stamp, Turn, Using, Vectors,
 };
-use miyu_store::recall::Room;
+use miyu_store::recall::{Room, Used};
 use miyu_tool::{Refused, Remember, TEXT_CHARS};
 
 use crate::Core;
@@ -137,8 +138,12 @@ async fn list(core: &Arc<Core>, params: List) -> Result<Value, Refusal> {
         limit: limit(params.limit, LIST)?,
     };
     let keeper = find(core, params.at).await?;
-    let found = blocking(move || keeper.list(&filter).map_err(Refused::Failed)).await?;
-    Ok(json!({"memories": found.iter().map(shown).collect::<Vec<Value>>()}))
+    let (found, used) = blocking(move || {
+        let found = keeper.list(&filter).map_err(Refused::Failed)?;
+        Ok((found, keeper.used().map_err(Refused::Failed)?))
+    })
+    .await?;
+    Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
 async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
@@ -156,10 +161,11 @@ async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
         None => None,
     };
     let searched = keeper.clone();
-    let found = blocking(move || {
-        searched
+    let (found, used) = blocking(move || {
+        let found = searched
             .search(&query, forgotten, limit, near.as_ref())
-            .map_err(Refused::Failed)
+            .map_err(Refused::Failed)?;
+        Ok((found, searched.used().map_err(Refused::Failed)?))
     })
     .await?;
     if keeper.vectors().is_some() {
@@ -169,7 +175,7 @@ async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
         })
         .await?;
     }
-    Ok(json!({"memories": found.iter().map(shown).collect::<Vec<Value>>()}))
+    Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
 async fn remember(
@@ -357,6 +363,20 @@ fn memory(core: &Core) -> Result<Arc<miyu_session::Memory>, Refusal> {
     core.memory_for(&core.admin)
         .filter(|memory| memory.installed())
         .ok_or(Refusal::MEMORY_UNAVAILABLE)
+}
+
+/// 几条在回应里的样子，带上用到几次、最近一次（施工 R-4 下）。
+fn shown_all(found: &[Entry], used: &BTreeMap<String, Used>) -> Vec<Value> {
+    found
+        .iter()
+        .map(|entry| {
+            let mut value = shown(entry);
+            let used = used.get(&entry.id.to_string());
+            value["used"] = json!(used.map_or(0, |used| used.count));
+            value["used_at"] = json!(used.map(|used| used.last.to_string()));
+            value
+        })
+        .collect()
 }
 
 /// 一条在回应里的样子。

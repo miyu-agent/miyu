@@ -26,8 +26,10 @@ pub use room::Room;
 
 mod indexes;
 mod room;
+mod uses;
 mod vectors;
 
+pub use uses::Used;
 pub use vectors::Near;
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建，不写迁移。
@@ -37,7 +39,8 @@ const VERSION: i64 = 3;
 /// 让它能照 rowid 删（SQLite 3.43 起，`bundled` 带的是 3.53）。`at` 是毫秒，给以后的排名用。`marks` 是每个来源照到了哪个
 /// 序号（施工 R-2 上，版本 2）。`buried` 是墓碑：撤销了的回合、删掉了的会话，记忆的出处照它判活不活（施工 R-3 上，版本 3）。
 /// `vectors` 是每一条照模型的向量（施工 R-5 下，`vectors.rs`）：不换版本，每次开库、重建以后照 `vectors::ADD` 补上这张表，
-/// 以前的库也就有了。换版本就要删掉重建，删掉的会话那几块墓碑是删会话时写的，重建补不回来。
+/// 以前的库也就有了。换版本就要删掉重建，删掉的会话那几块墓碑是删会话时写的，重建补不回来。`uses` 是回合库里记忆用到过的
+/// 每一次（施工 R-4 下，`uses.rs`），同向量表照 `uses::ADD` 补上。
 const SCHEMA: &str = "CREATE TABLE buried (
     key TEXT PRIMARY KEY NOT NULL
 ) WITHOUT ROWID;
@@ -89,6 +92,15 @@ pub enum Edit {
         /// 键。
         key: String,
     },
+    /// 记一次用到（施工 R-4 下，`uses.rs`）：同一个键、同一条记忆写过的不重复。
+    Use {
+        /// 键：`会话/事件的序号`。
+        key: String,
+        /// 哪一条记忆的编号。
+        memory: String,
+        /// 那一条事件的时刻。
+        at: Timestamp,
+    },
 }
 
 /// 找到的一条。
@@ -109,8 +121,8 @@ impl RecallIndex {
     /// `-shm` 删掉，建一份空的，调的一方照真相补。删了重建也打不开的，这一回用不了（[`Opened::Unusable`]）。
     pub fn open(path: &Path) -> (RecallIndex, Opened) {
         let (db, opened) = sqlite::open(path, SCHEMA, VERSION);
-        // 以前的库（同一个版本、没有向量表）补上这张表；补不上的这一回用不了。
-        let (db, opened) = match db.map(|db| db.execute_batch(vectors::ADD).map(|()| db)) {
+        // 以前的库（同一个版本、没有向量表、用到的表）补上这两张表；补不上的这一回用不了。
+        let (db, opened) = match db.map(|db| add(&db).map(|()| db)) {
             Some(Ok(db)) => (Some(db), opened),
             Some(Err(error)) => (None, Opened::Unusable(error.into())),
             None => (None, opened),
@@ -132,7 +144,7 @@ impl RecallIndex {
         drop(db.take());
         remove(&self.path)?;
         let fresh = connect(&self.path, SCHEMA, VERSION)?.0;
-        fresh.execute_batch(vectors::ADD)?;
+        add(&fresh)?;
         *db = Some(fresh);
         Ok(())
     }
@@ -194,6 +206,12 @@ impl RecallIndex {
                     }
                     Edit::Unbury { key } => {
                         tx.execute("DELETE FROM buried WHERE key = ?1", [key])?;
+                    }
+                    Edit::Use { key, memory, at } => {
+                        tx.execute(
+                            "INSERT OR IGNORE INTO uses (key, memory, at) VALUES (?1, ?2, ?3)",
+                            params![key, memory, at.unix_millis()],
+                        )?;
                     }
                 }
             }
@@ -278,6 +296,10 @@ impl RecallIndex {
             )?;
             tx.execute(
                 "DELETE FROM vectors WHERE substr(key, 1, ?2) = ?1",
+                params![prefix, length],
+            )?;
+            tx.execute(
+                "DELETE FROM uses WHERE substr(key, 1, ?2) = ?1",
                 params![prefix, length],
             )?;
             tx.execute("DELETE FROM marks WHERE source = ?1", [source])?;
@@ -410,4 +432,10 @@ fn id_of(tx: &Transaction<'_>, key: &str) -> Result<Option<i64>, DbError> {
             row.get(0)
         })
         .optional()?)
+}
+
+/// 开库、重建以后补上不换版本加的几张表：向量（施工 R-5 下）、用到（施工 R-4 下）。
+fn add(db: &Connection) -> rusqlite::Result<()> {
+    db.execute_batch(vectors::ADD)?;
+    db.execute_batch(uses::ADD)
 }

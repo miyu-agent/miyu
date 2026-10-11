@@ -21,6 +21,7 @@ pub mod merge;
 pub mod redact;
 mod terms;
 mod turns;
+pub mod uses;
 pub mod vector;
 
 pub use fuse::{FLOOR, fuse};

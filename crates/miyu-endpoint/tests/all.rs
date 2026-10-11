@@ -57,6 +57,7 @@ mod memory_meaning;
 mod memory_restore;
 mod memory_scope;
 mod memory_turns;
+mod memory_used;
 mod messages;
 mod meta;
 mod model_call;

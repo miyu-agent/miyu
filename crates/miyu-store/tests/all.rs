@@ -12,6 +12,7 @@ mod memory_extracted;
 mod memory_follow;
 mod recall;
 mod recall_marks;
+mod recall_uses;
 mod recall_vectors;
 mod snapshot;
 mod usage;

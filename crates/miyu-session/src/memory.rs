@@ -1,6 +1,7 @@
 //! 回合索引（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条）：主会话每落一批，把结束了的人开的回合放进这个人格的
 //! 回合库，撤销的拿掉、恢复的读回，载入时照整份事件补上落下的。撤销的每一轮另埋一块墓碑、恢复的揭掉，记忆的出处照它判
-//! 活不活（施工 R-3 上，第二条第 4 款）。怎么算是纯逻辑（`miyu_recall::TurnFeed`），这里只管接线和写库。
+//! 活不活（施工 R-3 上，第二条第 4 款）。记忆用到过的每一次（施工 R-4 下，第八条）跟着同一条路写进同一个回合库：照到的位置
+//! 一份，载入、补齐旧会话一起补。怎么算是纯逻辑（`miyu_recall::TurnFeed`、`miyu_recall::uses`），这里只管接线和写库。
 //!
 //! 回合库是派生的：更新失败记一行 `WARN memory index not updated`，会话照常；照到的位置没往前挪，下次载入照日志补。
 
@@ -13,6 +14,7 @@ mod port;
 mod recall;
 mod restore;
 mod summary;
+mod used;
 mod vectors;
 
 pub use extract::{ExtractTexts, Extraction};
@@ -34,6 +36,7 @@ use std::sync::{Arc, OnceLock};
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{AccountId, SessionId, VenueId};
 use miyu_policy::memory::MemoryScope;
+use miyu_recall::uses::{Use, UseFeed};
 use miyu_recall::{Change, TurnFeed, key, replay};
 use miyu_store::memory::MemoryLogs;
 use miyu_store::recall::{Edit, Opened, RecallIndex, RecallIndexes, Room};
@@ -219,6 +222,8 @@ pub(crate) struct Turns {
     index: OnceLock<Arc<RecallIndex>>,
     /// 增量算。
     feed: TurnFeed,
+    /// 用到了哪几条，增量算（施工 R-4 下）。
+    uses: UseFeed,
 }
 
 impl Turns {
@@ -238,6 +243,7 @@ impl Turns {
             room: room.clone(),
             index: OnceLock::new(),
             feed: TurnFeed::default(),
+            uses: UseFeed::new(MODULE, miyu_tool::MEMORY_SEARCH),
         };
         let Some(last) = events.last() else {
             return Some(turns);
@@ -251,8 +257,9 @@ impl Turns {
             });
         let (feed, changes) = TurnFeed::primed(events, mark);
         turns.feed = feed;
+        let used = turns.uses.prime(events, mark);
         if mark.is_none_or(|mark| mark < last.seq) {
-            turns.write(changes, last, || Ok(events.to_vec()));
+            turns.write(changes, &used, last, || Ok(events.to_vec()));
         }
         Some(turns)
     }
@@ -262,8 +269,8 @@ impl Turns {
         self.index.get_or_init(|| self.recall.turns(&self.room).0)
     }
 
-    /// 一批事件落了盘：交给 `TurnFeed`，照它交回的改回合库，连同照到了这一批的最后一条。恢复的那几轮要读整份日志
-    /// （`read`，很少见）。
+    /// 一批事件落了盘：交给 `TurnFeed`、`UseFeed`，照它们交回的改回合库，连同照到了这一批的最后一条。恢复的那几轮要读
+    /// 整份日志（`read`，很少见）。
     pub(crate) fn advance(
         &mut self,
         events: &[Event],
@@ -276,17 +283,30 @@ impl Turns {
             .iter()
             .flat_map(|event| self.feed.see(event))
             .collect();
-        self.write(changes, last, read);
+        let used: Vec<Use> = events
+            .iter()
+            .flat_map(|event| self.uses.see(event))
+            .collect();
+        self.write(changes, &used, last, read);
     }
 
-    /// 把改动写进回合库，照到 `last`。
+    /// 把改动、用到的写进回合库，照到 `last`。
     fn write(
         &self,
         changes: Vec<Change>,
+        used: &[Use],
         last: &Event,
         read: impl FnOnce() -> Result<Vec<Event>, String>,
     ) {
-        let mut edits = Vec::new();
+        // 用到的一次一行，键是 `会话/事件的序号`：删会话时照来源一起拿掉。
+        let mut edits: Vec<Edit> = used
+            .iter()
+            .map(|used| Edit::Use {
+                key: format!("{}/{}", self.session, used.seq.get()),
+                memory: used.memory.to_string(),
+                at: used.at,
+            })
+            .collect();
         let mut lost = Vec::new();
         for change in changes {
             match change {

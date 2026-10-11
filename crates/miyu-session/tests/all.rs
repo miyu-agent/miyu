@@ -41,6 +41,7 @@ mod memory_restore;
 mod memory_scope;
 mod memory_summary;
 mod memory_tools;
+mod memory_uses;
 mod memory_vectors;
 mod messages;
 mod messages_peer;
