@@ -1,6 +1,6 @@
 ## 施工单 V-4 补：macOS 也记内存账
 
-状态：写好了，等门禁和三台 CI（2026-10-11 主会话）。V-4 只在 Linux 上记（23「后续再定」：macOS、Windows 怎么量还没定）；`AGENTS.md` 要 Linux、macOS（M 系列）都能用，这一步把 macOS 接上。
+状态：合了（2026-10-11，15957723，run 1768；变基到 O-34 以后本地八项重跑过）。V-4 只在 Linux 上记（23「后续再定」：macOS、Windows 怎么量还没定）；`AGENTS.md` 要 Linux、macOS（M 系列）都能用，这一步把 macOS 接上。
 
 ### 这一步做什么
 
