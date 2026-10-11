@@ -19,12 +19,14 @@ use crate::origin::By;
 mod error;
 mod jobs;
 mod peers;
+mod seal;
 mod triggers;
 mod undo;
 
 use jobs::Jobs;
 use peers::Peers;
 pub(crate) use peers::digest;
+use seal::Sealing;
 use triggers::Triggers;
 
 pub use error::LedgerError;
@@ -69,6 +71,8 @@ pub struct Ledger {
     peers: Peers,
     /// 旁听记下的、当过触发的（施工 O-14 上，`ledger/triggers.rs`）。
     triggers: Triggers,
+    /// 封存了没有（施工 C-8 下，`ledger/seal.rs`）。
+    sealing: Sealing,
 }
 
 impl Default for Ledger {
@@ -88,6 +92,7 @@ impl Default for Ledger {
             jobs: Jobs::default(),
             peers: Peers::default(),
             triggers: Triggers::default(),
+            sealing: Sealing::default(),
         }
     }
 }
@@ -197,6 +202,7 @@ impl Ledger {
             }
         }
         self.check_turn(event)?;
+        self.sealing.check(self.open, event)?;
         match &event.body {
             Body::TurnJoined(joined) => self.triggers.check_joined(joined),
             Body::SessionCreated(created) => jobs::check_created(created),
@@ -374,6 +380,7 @@ impl Ledger {
         };
         self.peers.record(event, peer);
         self.triggers.record(event);
+        self.sealing.record(event);
         match &event.body {
             Body::TurnStarted(_) => {
                 let turn = TurnId::new(event.seq);

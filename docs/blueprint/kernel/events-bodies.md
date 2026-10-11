@@ -8,7 +8,7 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`command.ran`（施工 O-6）；权限 `Permission`、级别 `Level` |
+| `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）；权限 `Permission`、级别 `Level` |
 | `crates/miyu-kernel/src/event/turn.rs` | `turn.joined`（施工 O-14 下）、`turn.started`、`turn.ended`（`EndReason`）、`turn.reverted`、`turn.unreverted` |
 | `crates/miyu-kernel/src/event/restore.rs` | `files.restored`（`Restored`、`RestoreAction`、`RestoreOutcome`） |
 | `crates/miyu-kernel/src/event/message.rs` | `message.user`、`message.assistant`、`message.withdrawn` |
@@ -51,6 +51,7 @@
 | `model` | 字符串 | 可以没有 | 会话用哪个模型（施工 8-8，`models.md`「事件」）：造会话时解析好的引用，模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8 造的可能是挡位换成的那时的值）。协议造的照 `session.create` 的 `model`，没写的照那时的 `models.chat`；子会话照 `subagent` 的 `pool`（`@<池>`，施工 8-8 补；8-8 是 `tier`），没写的照父会话那时的。那时连 `models.chat` 都没配的不写。内核只记不解读 |
 | `persona` | 字符串 | 可以没有 | 会话用哪个人格的编号（施工 P-1 下，`personas.md`）：造会话时钉上，之后不换（`16-人格与预设.md` Y5）。头照它显示用的是谁，拼请求照快照、不看它；以前的日志没有这一格 |
 | `preset` | 字符串 | 可以没有 | 会话用哪个预设的编号（施工 P-2 上，`presets.md`）：造会话时钉上，之后不换（Y5）；子会话照父会话的。头照它显示；这一步预设还不改变请求。以前的日志没有这一格 |
+| `forked` | `{from, upto, seal_after?}` | 可以没有 | 分叉出来的（施工 C-8 上，`session/fork.md`）：从哪个会话（`from`）的第几条为止（`upto`，含）分叉，这一条的序号是 `upto` 的下一个；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，不封存的不写。不是分叉出来的不写 |
 
 子会话不写 `oneshot`：`--continue`、`miyu undo` 找「最近一次 `miyu ask` 开的」不会找到它（`agents.md`）。以前的日志没有 `parent`、`depth`、`model` 几格，原样一个字节不变；没有 `model` 的，路由照载入那一刻的 `models.chat`（`models.md`「怎么走」第一条第 7 条）。样本两条都带 `model`（施工 8-8）。
 
@@ -97,6 +98,8 @@
 - 工作区是会话的属性：只有人明确换才有它（`protocol.md` 的 `session.set_workspace`），头每句话报的目录不再换工作区。`by` 是换的人，`cause` 是那个命令；回合进行中换的带上这个回合。
 - 不进她的上下文（渲染时不出）：下一轮开始时，变了的环境照旧注成一块事实。
 - 会话的工作目录、加进来的目录照日志里最后一条带它们的算：工作目录照 `session.workspace_changed`、`turn.started`、`session.created` 里最后一条带 `cwd` 的，加进来的目录照最后一条写了 `dirs` 的 `session.workspace_changed` 或者 `turn.started`。会话列表的 `cwd` 照同一个认法（`store/index.md`）。
+
+**`session.sealed`**：分叉出来的会话跑满了 `forked.seal_after` 轮，封存了（施工 C-8 下，`session/fork.md`「封存」）。`body` 是 `{}`。`by` 是内核，`cause` 同它前面那条 `turn.ended`，不带 `turn`：和那一轮的结束同一批追加，崩了载入时收尾的那一轮也是。之后不再开一轮（账本查，`kernel/history.md`）；不进上下文。
 
 **`session.recapped`**：一句回顾（施工 3-8 四补，`kernel/session.md`「回顾」）。头要的（`protocol.md` 的 `session.recap`），推给所有订阅着的头；不进她的上下文（渲染时不出，`kernel/request.md`「组装」），`history` 也不列。`by` 是内核，`cause` 是要它的那个命令（在路上又来的几个并进去，照第一个），不带 `turn`。
 

@@ -19,6 +19,7 @@ use super::meta::Meta;
 use super::policy::Policy;
 use super::recent::Recent;
 use super::report::Duty;
+use super::seal::Rounds;
 use super::sight::Sight;
 use super::title::Naming;
 use super::turn::Stage;
@@ -164,6 +165,7 @@ impl Session {
         let mut reference = Reference::default();
         let mut sight = Sight::default();
         let mut grants = Grants::default();
+        let mut rounds = Rounds::default();
         for event in &events {
             // 向上回报照活着时的算（施工 7-6）：活着时落了盘就报，接着开的一轮和结束在同一批里，那时不该报。
             if !matches!(event.body, Body::TurnStarted(_)) && duty.due(&ledger) {
@@ -176,6 +178,7 @@ impl Session {
             reference.note(event);
             sight.note(event);
             grants.note(event);
+            rounds.note(event);
             replay.note(event, queued, jobs::waking(&ledger, event));
         }
         if duty.due(&ledger) {
@@ -240,6 +243,7 @@ impl Session {
             reference,
             sight,
             grants,
+            rounds,
             told_todos: Vec::new(),
         };
         // 头订阅时从回应里拿当前的待办（施工 D-3）：当已经告诉过它这一份，变了再推。
@@ -283,7 +287,9 @@ impl Session {
                     )
                 })
                 .collect();
-            events.push(self.end_turn(at, By::Kernel, cause, EndReason::Aborted));
+            events.push(self.end_turn(at, By::Kernel, cause.clone(), EndReason::Aborted));
+            // 跑满了轮数的，崩了以后收尾的这一轮也封存（施工 C-8 下）。
+            events.extend(self.seal_if_done(at, cause));
             return events;
         }
         match replay.ended {
@@ -299,7 +305,11 @@ impl Session {
                 };
                 self.open_turn(at, trigger, cause)
             }
-            _ => Vec::new(),
+            // 被有计划的重启打断、不再接着干的那一轮也算跑完了：跑满了轮数的封存（施工 C-8 下）。
+            ended => self
+                .seal_if_done(at, ended.and_then(|ended| ended.cause))
+                .into_iter()
+                .collect(),
         }
     }
 }

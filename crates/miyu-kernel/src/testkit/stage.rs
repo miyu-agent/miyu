@@ -24,6 +24,8 @@ pub struct Stage {
     pub(super) session: Session,
     /// 会话的编号（[`super::SESSION`]、子会话是 [`super::CHILD_SESSION`]）：重启、崩了再载入时照它载入。
     pub(super) id: SessionId,
+    /// 分叉出来的替身的底子：父会话「磁盘」上到分叉点为止的（施工 C-8 下，`opening.rs`）。崩了照它载入。
+    pub(super) base: Option<Vec<Event>>,
     /// 造策略的办法：重启、崩了再载入时各造一份（策略里有组装器，不能复制）。
     pub(super) policy: Box<dyn Fn() -> Policy>,
     pub(super) environment: Environment,
@@ -450,14 +452,9 @@ impl Stage {
         self.held_tools.clear();
         self.held_wake = None;
         let at = self.tick();
-        let (session, actions) = Session::load(
-            self.id.clone(),
-            self.log.clone(),
-            at,
-            (self.policy)(),
-            self.environment.clone(),
-        )
-        .unwrap_or_else(|e| panic!("替身的「磁盘」载入不了：{e}"));
+        let (session, actions) = self
+            .load(at)
+            .unwrap_or_else(|e| panic!("替身的「磁盘」载入不了：{e}"));
         self.session = session;
         if let Some(limits) = self.limits.clone() {
             self.session.handle(Input::Limits(limits));

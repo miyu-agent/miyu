@@ -1,16 +1,17 @@
 //! 闲够了的会话退下（施工 V-2 再补，`docs/blueprint/session/actor.md`「退下」）：会话表问，actor 照自己的账答。别的都空着、
 //! 闲得不够的答还差多久；有头看着、有派出去还没回报的、有会话等它空下来、它在等别的会话、记忆的闹钟上着的答还有事；什么都
-//! 没有、闲够了的退下，之后再交命令是「会话停了」，载入回来接着用。
+//! 没有、闲够了的退下，之后再交命令是「会话停了」，载入回来接着用。封存了的支线（施工 C-8 下）没事了就退，不等闲够。
 
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_http::testkit::Server;
 use miyu_kernel::event::Body;
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Handle, Retire, Stopped};
+use miyu_session::{Fork, Handle, Retire, Stopped, new_id};
 use miyu_tool::testkit::{Act, Fake, Held};
 use miyu_tool::{Catalog, Exit, Tool};
 
@@ -196,4 +197,35 @@ async fn a_request_still_on_its_way_keeps_it() {
     let handle = home.create(&Script::new([Play::Says("在。")])).await;
     talk(&handle, "m1", "在吗").await;
     kept(&handle, 10).await;
+}
+
+#[tokio::test]
+async fn a_sealed_branch_retires_without_waiting_to_be_idle_long_enough() {
+    let home = Home::new();
+    let models = script([Play::Says("在。"), Play::Says("支线。")]);
+    let parent = home.create(&models).await;
+    talk(&parent, "m1", "在吗").await;
+    let child = new_id(now());
+    miyu_session::fork(Fork {
+        root: &home.root,
+        owner: &alice_account(),
+        parent: parent.id(),
+        id: child.clone(),
+        cause: CommandId::parse("f1").expect("合写法"),
+        by: alice(),
+        at: now(),
+        index: None,
+        seal_after: NonZeroU32::new(1),
+    })
+    .await
+    .expect("分叉得了");
+    let branch = home.load(&child, &models).await;
+    talk(&branch, "m2", "再来").await;
+    assert!(
+        home.log(&child)
+            .iter()
+            .any(|event| matches!(event.body, Body::SessionSealed(_))),
+        "跑完一轮封存了"
+    );
+    assert_eq!(settled(&branch).await, Retire::Retired, "不等闲够 {LONG:?}");
 }

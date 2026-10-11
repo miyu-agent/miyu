@@ -1,8 +1,10 @@
 //! `session.fork {session}`（施工 C-8 上，`docs/blueprint/session/fork.md`）：从会话 `session` 分叉出一个子会话，历史引用它到
 //! 分叉点为止的有效历史。分叉点由核心定：父会话在跑一轮的，取这一轮 `turn.started` 之前那一条；闲着的取最后一条。子会话的
 //! 属主、场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的。回应 `{session, upto}`。记成谁同 `events.append`。
-//! 父会话不是主会话的（子代理、分叉出来的）`bad_params`；没有的 `not_found`。
+//! 父会话不是主会话的（子代理、分叉出来的）`bad_params`；没有的 `not_found`。`seal_after`（施工 C-8 下）写进子会话的 `forked`：
+//! 跑满这几轮封存，内核数、内核封。
 
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -27,6 +29,8 @@ const TARGET: &str = "miyu::endpoint";
 #[serde(deny_unknown_fields)]
 pub(crate) struct ForkParams {
     session: String,
+    /// 跑完几轮封存（施工 C-8 下）：1 起，`0` 读不进来就是 `bad_params`。
+    seal_after: Option<NonZeroU32>,
 }
 
 /// `session.fork`：见模块的说明。
@@ -52,6 +56,7 @@ pub(crate) async fn fork(
         by,
         at,
         index: Some(Arc::clone(&core.index)),
+        seal_after: params.seal_after,
     })
     .await
     .map_err(|error| refused(&parent, &error))?;

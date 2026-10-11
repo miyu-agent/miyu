@@ -47,10 +47,12 @@ pub(crate) fn spawn(actor: Actor, first: Vec<Action>, span: tracing::Span) {
 }
 
 impl Actor {
-    /// 会话表问闲够 `idle` 了没有：照自己的账答，答了「退下了」的交回 [`Mail::Retired`]，actor 退出。
+    /// 会话表问闲够 `idle` 了没有：照自己的账答，答了「退下了」的交回 [`Mail::Retired`]，actor 退出。封存了的（施工 C-8 下）
+    /// 没事了就退，不等闲够：不会再开轮。
     pub(super) fn retire(&mut self, idle: Duration, reply: oneshot::Sender<Retire>) -> Mail {
         let answer = match self.occupied() {
             true => Retire::Kept,
+            false if self.session.sealed() => Retire::Retired,
             false => match idle.checked_sub(self.quiet.elapsed()) {
                 Some(left) if !left.is_zero() => Retire::Later(left),
                 _ => Retire::Retired,

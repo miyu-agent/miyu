@@ -298,6 +298,8 @@ pub enum Reason {
     NotAmbient,
     /// 照记下的几条开一轮（施工 O-14 上）：有的已经当过触发。拒绝带上是哪几条。
     AlreadyAnswered,
+    /// 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收。
+    Sealed,
 }
 
 impl Reason {
@@ -329,6 +331,7 @@ impl Reason {
             Reason::UnknownWatch => "unknown_watch",
             Reason::NotAmbient => "not_ambient",
             Reason::AlreadyAnswered => "already_answered",
+            Reason::Sealed => "session_sealed",
         }
     }
 }

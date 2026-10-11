@@ -166,6 +166,7 @@
 | `inbox_full` | `InboxFull` | 别的会话发来的话：还没听到的别的会话的话已经够数了（施工 C-2） |
 | `not_ambient` | `NotAmbient` | `Respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；拒绝的 `about` 是那几条（施工 O-14 上） |
 | `already_answered` | `AlreadyAnswered` | `Respond` 的 `to` 里有已经当过触发的（撤掉的回合当过的也算）；拒绝的 `about` 是那几条（施工 O-14 上） |
+| `session_sealed` | `Sealed` | 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收；改标题置顶、打断、回答、回顾、回报、空了的通知照收 |
 | `unknown_watch` | `UnknownWatch` | 空了的通知：这边不在等它（没订过、订它的那一轮撤掉了、已经收到过、作废了），或者发命令的不是一个会话（施工 C-6） |
 
 **策略**（`Policy`）：造会话、载入时由执行器照策略快照造好交进来，会话里不再变。

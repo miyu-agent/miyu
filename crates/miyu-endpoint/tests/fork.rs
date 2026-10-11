@@ -2,7 +2,10 @@
 //! 和主线接着说同一句，两边的请求 system、工具面一样，消息前面那一段逐字节一样；主线在跑一轮时分叉，分叉点在这一轮之前；
 //! 支线照继承来的旁听消息开一轮（不用再抄）；主线记过她发出去的话以后分叉，支线、主线回同一条，请求前面那一段一样；重启
 //! 核心以后支线照样载入；再分叉、没有的会话拒。主线的话不在支线里渲染成 `[you]` 行由 `miyu-assemble` 的群聊近况测试守。
+//! 跑完一轮封存（施工 C-8 下）：订阅着的收到 `session.sealed`，再发、再照记下的开一轮拒 `session_sealed`；`seal_after` 写 0 的
+//! `bad_params`。接着开的一轮算同一轮由内核的场景测试守。
 
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
@@ -282,4 +285,92 @@ async fn only_a_main_session_that_exists_can_be_forked() {
         .call("f4", "session.fork", json!({"session": "nope"}))
         .await;
     assert_eq!(reason(&garbled), Some("bad_params"));
+}
+
+#[tokio::test]
+async fn a_branch_is_sealed_after_its_round_and_refuses_more() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("好。"), Play::Says("支线。")]);
+    let core = home.core(&script);
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "你好").await;
+    home.until_turns(&session, 1).await;
+    let zero = client
+        .call(
+            "f0",
+            "session.fork",
+            json!({"session": session, "seal_after": 0}),
+        )
+        .await;
+    assert_eq!(reason(&zero), Some("bad_params"), "{zero}");
+    let reply = client
+        .call(
+            "f1",
+            "session.fork",
+            json!({"session": session, "seal_after": 1}),
+        )
+        .await;
+    let child = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .to_string();
+    let Body::SessionCreated(created) = &home.log(&child)[0].body else {
+        panic!("第一条是 session.created");
+    };
+    let forked = created.forked.as_ref().expect("写着从哪分叉");
+    assert_eq!(forked.seal_after, NonZeroU32::new(1));
+    let mut watcher = Client::connect(Arc::clone(&core));
+    watcher.hello().await;
+    watcher.subscribe("w1", &child).await;
+    client.say("s2", &child, "再来").await;
+    watcher.until_turn_ends(&child).await;
+    let sealed = watcher.next().await.expect("没断开");
+    assert_eq!(
+        sealed["params"]["event"]["kind"],
+        json!("session.sealed"),
+        "{sealed}"
+    );
+    let again = client
+        .call(
+            "s3",
+            "session.send",
+            json!({"session": child, "text": "还在吗"}),
+        )
+        .await;
+    assert_eq!(reason(&again), Some("session_sealed"), "{again}");
+}
+
+#[tokio::test]
+async fn a_sealed_branch_does_not_answer_another_message() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("回 A。")]);
+    let (mut client, session, seqs) =
+        overheard(&home, &script, private(), &["A 的话", "B 的话"]).await;
+    let reply = client
+        .call(
+            "f1",
+            "session.fork",
+            json!({"session": session, "seal_after": 1}),
+        )
+        .await;
+    let child = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .to_string();
+    client
+        .call("r1", "session.respond", respond(&child, json!([seqs[0]])))
+        .await;
+    home.until_turns(&child, 1).await;
+    until("封存了", || {
+        home.log(&child)
+            .iter()
+            .any(|event| matches!(event.body, Body::SessionSealed(_)))
+    })
+    .await;
+    let again = client
+        .call("r2", "session.respond", respond(&child, json!([seqs[1]])))
+        .await;
+    assert_eq!(reason(&again), Some("session_sealed"), "{again}");
 }

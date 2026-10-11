@@ -20,6 +20,7 @@ fn forked_created(upto: u64) -> SessionCreated {
     created.forked = Some(Forked {
         from: session_id(),
         upto: seq(upto),
+        seal_after: None,
     });
     created
 }
@@ -213,6 +214,7 @@ fn a_main_session_still_starts_at_one() {
         body.forked = Some(Forked {
             from: session_id(),
             upto: seq(2),
+            seal_after: None,
         });
     }
     assert!(forked.append(&created).is_ok());
@@ -250,6 +252,7 @@ fn a_fork_hears_what_the_parent_overheard() {
         Forked {
             from: session_id(),
             upto: parent.log.last().unwrap().seq,
+            seal_after: None,
         },
     )
     .unwrap();

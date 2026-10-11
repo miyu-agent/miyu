@@ -444,6 +444,7 @@ fn a_fork_after_a_compaction_starts_from_the_parent_checkpoint() {
     created.forked = Some(Forked {
         from: session_id(),
         upto,
+        seal_after: None,
     });
     let child_id = SessionId::parse(crate::testkit::CHILD_SESSION).unwrap();
     let (child, actions) = Session::fork(

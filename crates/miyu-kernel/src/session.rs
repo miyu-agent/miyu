@@ -47,6 +47,7 @@ mod restart;
 mod restore;
 mod retry;
 mod revert;
+mod seal;
 mod send;
 mod shorten;
 mod sight;
@@ -151,6 +152,8 @@ pub struct Session {
     sight: sight::Sight,
     /// 本会话放行过的规则（施工 D-1，`grants.rs`）：每追加一条记一次，交给链。
     grants: grants::Grants,
+    /// 跑了几轮、跑满几轮封存（施工 C-8 下，`seal.rs`）：每追加一条记一次。
+    rounds: seal::Rounds,
     /// 上次告诉头的待办（施工 D-3，`todos.rs`）：变了才推 `todos.changed`。只在内存里。
     told_todos: Vec<crate::event::Todo>,
 }
@@ -365,6 +368,9 @@ impl Session {
         // 读回日志、改回文件的时候不接命令：会话 actor 做完才接下一个，这是兜底（施工 4-7 上、6-9）。
         if self.restoring.is_some() || self.reading.is_some() {
             return vec![rejected(id, Reason::Restoring)];
+        }
+        if self.ledger.sealed() && !seal::taken_when_sealed(&command) {
+            return vec![rejected(id, Reason::Sealed)];
         }
         match command {
             Command::Send {

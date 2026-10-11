@@ -234,10 +234,11 @@
 
 **`session.fork`**（施工 C-8 上，`session/fork.md`）
 
-- 参数 `{"session"}`：父会话，得是主会话。回应 `{"session": <子会话编号>, "upto": <分叉点的序号>}`。
-- 分叉点由核心定：父会话在跑一轮的，是这一轮 `turn.started` 之前那一条；闲着的是最后一条。子会话的属主、场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的；它的日志从 `upto + 1` 起，第一条 `session.created` 带 `forked: {from, upto}`、`parent`、`depth`。
+- 参数 `{"session", "seal_after"?}`：父会话，得是主会话；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，支线写 `1`，不写的不封存。回应 `{"session": <子会话编号>, "upto": <分叉点的序号>}`。
+- 分叉点由核心定：父会话在跑一轮的，是这一轮 `turn.started` 之前那一条；闲着的是最后一条。子会话的属主、场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的；它的日志从 `upto + 1` 起，第一条 `session.created` 带 `forked: {from, upto, seal_after?}`、`parent`、`depth`。
+- 封存（施工 C-8 下）：跑满 `seal_after` 轮、这一轮结束、没有接着开的，记一条 `session.sealed`，订阅着的照常收到。跑的时候发来的、并进来的、被有计划的重启打断以后接着干的，算同一轮。封存以后 `session.send`、`session.respond`、`session.note`、`events.append`、`session.redo`、`session.compact`、`session.clear`、`session.revert`、`session.unrevert`、`session.configure`、`session.set_permission`、`session.set_workspace`、斜杠命令拒 `session_sealed`；改标题置顶、打断、回答、回顾照常。封存了的没人订阅、没事了就从内存里卸下，日志留在磁盘上。
 - 子会话照普通会话用：`session.send`、`session.respond`（`to` 可以是分叉点以前在父会话里旁听记下、还没当过触发的序号）、订阅。记成谁同 `events.append`。
-- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对的 `bad_params`。
+- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对、`seal_after` 不是 1 起的整数的 `bad_params`。
 
 **`session.list`**
 
@@ -1148,6 +1149,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）之一（施工 O-2 上） |
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
 | `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
+| `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |
 | `no_rule` | -32010 | `session.answer` 选了本会话都允许，请求却没提放行规则（施工 D-1） |
 | `unexpected_reason` | -32010 | `session.answer` 允许却带了理由（施工 D-1） |
 | `bad_answer` | -32010 | `session.answer` 的回答和题目对不上：条数不对、选了题目里没有的、单选的选了几项、选重了（施工 D-1） |
@@ -1317,6 +1319,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_provider` | 仅扩展可提供工具。 | Only extensions can provide tools. |
 | `bad_tool` | 工具规格有误。 | Invalid tool spec. |
 | `already_answered` | 已回复。 | Already answered. |
+| `session_sealed` | 会话已封存。 | Session sealed. |
 | `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
 | `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
 | `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |

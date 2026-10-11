@@ -5,6 +5,7 @@
 mod asking;
 mod joining;
 mod noting;
+mod sealing;
 
 use super::load::{Logged, load};
 use super::*;

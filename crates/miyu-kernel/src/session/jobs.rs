@@ -264,6 +264,7 @@ impl Session {
     /// 命令结束先放着，子会话的回报照别的命令拒绝。
     fn can_wake(&self) -> bool {
         !self.unwatched()
+            && !self.ledger.sealed()
             && !self.restarting
             && self.ledger.last_reverted().is_none()
             && self.restoring.is_none()

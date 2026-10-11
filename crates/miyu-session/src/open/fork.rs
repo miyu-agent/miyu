@@ -4,6 +4,7 @@
 
 use std::fmt;
 use std::io;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
@@ -40,6 +41,8 @@ pub struct Fork<'a> {
     pub at: Timestamp,
     /// 会话列表的索引：子会话的第一条照样记进去（同造会话）。没有的不记。
     pub index: Option<Arc<SessionIndex>>,
+    /// 跑完几轮封存（施工 C-8 下）：写进 `forked`。不封存的没有。
+    pub seal_after: Option<NonZeroU32>,
 }
 
 /// 分叉不成。
@@ -92,6 +95,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         by,
         at,
         index,
+        seal_after,
     } = setup;
     let parent_dir = root.session_dir(owner, parent);
     let child_dir = root.session_dir(owner, &id);
@@ -131,6 +135,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             forked: Some(Forked {
                 from: parent,
                 upto: plan.upto,
+                seal_after,
             }),
         };
         // 这一份内核会话只用来查底子、写第一条：环境照记下的，时区不进第一条。

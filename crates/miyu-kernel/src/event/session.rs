@@ -1,5 +1,7 @@
 //! 会话的事件（`docs/designs/03-事件模型.md` 第三节「会话与回合的事件怎么写」）。
 
+use std::num::NonZeroU32;
+
 use serde::{Deserialize, Serialize};
 
 use crate::id::{AccountId, ContentHash, Seq, SessionId, VenueId};
@@ -57,7 +59,14 @@ pub struct Forked {
     pub from: SessionId,
     /// 那个会话的第几条为止（含）。
     pub upto: Seq,
+    /// 跑完几轮封存（施工 C-8 下）：接着开的一轮不另算。不封存的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seal_after: Option<NonZeroU32>,
 }
+
+/// `session.sealed`：分叉出来的会话跑满了 `seal_after` 轮，封存了（施工 C-8 下）。之后不再开轮，改对话的命令都拒。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SessionSealed {}
 
 /// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型，也可以一起换。
 /// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。

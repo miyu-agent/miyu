@@ -38,9 +38,10 @@ impl Session {
                 .chain(report)
                 .max_by_key(|(seq, _)| *seq)
         });
-        let mut events = vec![self.end_turn(at, by, cause, reason)];
-        if let Some((trigger, cause)) = next {
-            events.extend(self.open_turn(at, trigger, cause));
+        let mut events = vec![self.end_turn(at, by, cause.clone(), reason)];
+        match next {
+            Some((trigger, cause)) => events.extend(self.open_turn(at, trigger, cause)),
+            None => events.extend(self.seal_if_done(at, cause)),
         }
         events
     }

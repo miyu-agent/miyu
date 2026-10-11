@@ -6,7 +6,7 @@
 
 第一个用它的是通讯平台的支线（`18-通讯平台.md` 第八节、第十六节，Q24，2026-10-07 项目主人定）：主线忙时分叉一条支线回另一个人，跑完一轮就封存，不合回主线。以后终端里「从这里试另一条路」、fork 式摘要（`09-压缩.md`）也走它，这一页先只定支线要的。
 
-状态：定稿（2026-10-11 主会话起草，接入QQ 的会话同一天过目同意、补了四处）。C-8 上（分叉、载入）做了；C-8 下（封存）照它施工。
+状态：定稿（2026-10-11 主会话起草，接入QQ 的会话同一天过目同意、补了四处）。C-8 上（分叉、载入）、C-8 下（封存）做了。
 
 ### 对外的样子
 
@@ -14,7 +14,7 @@
 
 - `session`：父会话，得是主会话（子代理、分叉出来的再分叉 `bad_params`）；没有的 `session_not_found`。记成谁同 `events.append`（核心拉起的扩展是那个包，别的是管理员）。
 - 分叉点由核心定，回应里交回（`upto`）：父会话这时在跑一轮的，是这一轮 `turn.started` 之前的那一条（触发这一轮的那条消息在分叉点以内，支线看得到它）；闲着的，是日志的最后一条。只照落了盘的日志算。
-- `seal_after`（C-8 下）：跑完几轮就封存，支线写 `1`；不写的不封存（留给以后终端里的分叉）。接着开的一轮（这一轮并进来的几条没再请求就结束，内核接着开的）算同一轮的延续。
+- `seal_after`（C-8 下）：跑完几轮就封存，支线写 `1`；不写的不封存（留给以后终端里的分叉）；`0`、不是整数的 `bad_params`。写进子会话 `session.created` 的 `forked`，载入时照它接着数。接着开的一轮（这一轮里排队的、并进来的几条没再请求就结束，内核接着开的；被有计划的重启打断以后接着干的）算同一轮的延续。
 - 以后终端里「从这里试另一条路」要的「从指定的序号分叉」随那一步加（项目主人题，先不做界面）。
 
 **子会话照什么来**
@@ -37,7 +37,7 @@
 
 **订阅**：子会话是普通会话；`subscribe` 带 `after: upto` 补的只有子会话自己的事件，不重放继承来的那一段。
 
-**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）以后，记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订），之后的 `session.send`、`session.respond` 拒 `session_sealed`；这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（`chat.md` 分派的「并进支线」）。封存了的会话从内存里卸下，日志留在磁盘上。
+**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（`chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；日志留在磁盘上，再用到照常载入，载入的认得封存。
 
 **推送**：子会话是普通会话，订阅它的连接照常收到它的事件（桥照它发群消息、记 `venue.delivered`）。
 
@@ -57,6 +57,8 @@
 | `crates/miyu-session/src/open/fork.rs` | 照父会话落了盘的日志写子会话的第一条（经索引，会话列表有这一行） |
 | `crates/miyu-session/src/open/load.rs`、`store.rs` | 载入时认 `forked`、读父会话的日志当底子；读回日志（撤销读回到分叉点以前）接上底子；子代理那一套照主会话办 |
 | `crates/miyu-endpoint/src/forking.rs` | 协议方法 `session.fork` |
+| `crates/miyu-kernel/src/session/seal.rs`、`ledger/seal.rs`（C-8 下） | 数轮、封存、封存了收哪些命令；账本的封存规矩 |
+| `crates/miyu-session/src/actor/life.rs` 的 `retire`（C-8 下） | 封存了的没事了就退下，不等闲够 |
 
 ### 怎么走
 
@@ -74,7 +76,8 @@
 | 父会话是子代理、分叉出来的 | `bad_params` |
 | 会话编号写法不对 | `bad_params` |
 | 父会话本身是封存了的 | 照样能分叉（历史在） |
-| 子会话封存了还发（C-8 下） | `session_sealed` |
+| 子会话封存了还发、还照记下的开一轮、还改对话（C-8 下） | `session_sealed` |
+| `seal_after` 写 0、不是整数 | `bad_params` |
 | 父会话的日志后来读不出（磁盘坏了） | 子会话载入不成，照会话载入失败办 |
 
 ### 守着它的
@@ -84,7 +87,10 @@
 | `crates/miyu-kernel/src/session/tests/fork.rs` | 接着分叉点往下数、看得到父会话的历史、接着说和父会话接着说的有效历史一样；载入的和活着的一样；分叉点写错、没写 `forked`、序号接不上的拒；停在一轮当中的拒；没分叉的第一条只能是第 1 条；分叉点在跑着的那一轮之前；继承旁听 |
 | `crates/miyu-store/src/log/tests.rs` 的 `a_log_can_start_after_one` | 从第 N 条开始的日志：第一段的名字、打开、只读地读、没写进去就收拾 |
 | `crates/miyu-assemble/src/group/recent/tests.rs` 的 `in_a_fork_the_parent_line_is_her_own_line_too` | 分叉来源的话不是 `[you]` 行，别的线的照旧是 |
-| `crates/miyu-endpoint/tests/fork.rs` | 真核心：主线说完一轮分叉，两边接着说同一句请求前缀逐字节一样，重启以后支线照样载入；主线在跑一轮时分叉在它之前，支线照继承来的旁听开一轮、带桥的事实；主线记过她发出去的话以后两边回同一条前缀一样；再分叉、没有的、写法不对的拒 |
+| `crates/miyu-endpoint/tests/fork.rs` | 真核心：主线说完一轮分叉，两边接着说同一句请求前缀逐字节一样，重启以后支线照样载入；主线在跑一轮时分叉在它之前，支线照继承来的旁听开一轮、带桥的事实；主线记过她发出去的话以后两边回同一条前缀一样；再分叉、没有的、写法不对的拒；跑完一轮推来 `session.sealed`，再发、再照记下的开一轮拒 `session_sealed`，`seal_after` 写 0 的拒（C-8 下） |
+| `crates/miyu-kernel/src/session/tests/scenario/seal.rs`、`respond/sealing.rs`（C-8 下） | 跑完一轮封存；两轮的等第二轮；不写的不封；跑的时候发来的、重启以后接着干的算同一轮，照记下的几条开的、清空单开的不算；崩了载入时收尾的、重启太多次不再接着干的那一轮也封；载入接着数；封存以后拒发、改标题照常、后台命令结束只记下 |
+| `crates/miyu-kernel/src/ledger/tests/seal.rs`（C-8 下） | 封存只在两轮之间、只记一次；封存以后不再开一轮 |
+| `crates/miyu-session/tests/retire.rs` 的 `a_sealed_branch_retires_without_waiting_to_be_idle_long_enough`（C-8 下） | 封存了的支线没事了就退下 |
 
 ### 施工拆分
 

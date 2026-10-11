@@ -49,6 +49,7 @@ impl Session {
             reference: super::configure::Reference::default(),
             sight: super::sight::Sight::default(),
             grants: super::grants::Grants::default(),
+            rounds: super::seal::Rounds::default(),
             told_todos: Vec::new(),
         }
     }

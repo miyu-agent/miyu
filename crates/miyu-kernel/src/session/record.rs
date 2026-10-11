@@ -69,6 +69,7 @@ impl Session {
         self.reference.note(event);
         self.sight.note(event);
         self.grants.note(event);
+        self.rounds.note(event);
         self.history.append(event.clone());
         self.unstored.push(event.clone());
         Ok(())

@@ -47,7 +47,7 @@ pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, 
 pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
 pub use session::{
     CommandRan, Forked, Level, MetaChanged, Permission, PolicyChanged, SessionCreated,
-    SessionRecapped, WorkspaceChanged,
+    SessionRecapped, SessionSealed, WorkspaceChanged,
 };
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, ToolResult, ToolStatus};
 pub use transient::{
@@ -141,6 +141,8 @@ bodies! {
     WorkspaceChanged = "session.workspace_changed",
     /// 一句回顾（施工 3-8 四补）。
     SessionRecapped = "session.recapped",
+    /// 跑满了轮数，封存了（施工 C-8 下）。
+    SessionSealed = "session.sealed",
     /// 人用了一个斜杠命令（施工 O-6）。
     CommandRan = "command.ran",
     /// 回合开始。

@@ -35,6 +35,7 @@ mod reports;
 mod reports_undo;
 mod retrying;
 mod said;
+mod seal;
 mod session_fact;
 mod shorten;
 mod spans;

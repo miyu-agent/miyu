@@ -46,6 +46,7 @@
 | `session.workspace_changed` | 换了会话在哪个目录干活（施工 9-7 上，`kernel/session.md`「换工作区」） | 换的人 | 回合进行中换的带上 | `session.workspace_changed.jsonl` |
 | `session.meta_changed` | 改了标题、置顶；内核自己起的标题也是它（施工 3-8 五补，`kernel/session.md`「起标题」） | 改的人；内核起的是内核 | 人在回合进行中改的带上；内核起的不带（它不属于哪一轮） | `session.meta_changed.jsonl`；内核起的样子见探针存档 `docs/designs/samples/probe/title/log.jsonl` |
 | `session.recapped` | 一句回顾（施工 3-8 四补，`kernel/session.md`「回顾」）：推给头，不进上下文 | 内核 | 不带：它不属于哪一轮，撤哪一轮都不会跟着拿走（和回报一样） | `session.recapped.jsonl` |
+| `session.sealed` | 分叉出来的会话跑满了轮数，封存了（施工 C-8 下，`session/fork.md`「封存」）：不进上下文 | 内核 | 不带：和那一轮的 `turn.ended` 同一批，排在它后面 | `session.sealed.jsonl` |
 | `command.ran` | 人用了一个斜杠命令（施工 O-6，`kernel/session.md`「斜杠命令」）：不进上下文 | 说命令的人 | 回合进行中记的带上 | `command.ran.jsonl` |
 | `turn.started` | 回合开始 | 内核 | 它自己的序号 | `turn.started.jsonl` |
 | `turn.ended` | 回合结束 | 内核；被打断的，是打断的人 | 必带 | `turn.ended.jsonl` |

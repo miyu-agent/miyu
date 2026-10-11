@@ -10,6 +10,7 @@ mod manual;
 mod model;
 mod peers;
 mod said;
+mod seal;
 mod triggers;
 mod undo;
 

@@ -142,6 +142,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "not_a_provider" => ("仅扩展可提供工具。", "Only extensions can provide tools."),
         "bad_tool" => ("工具规格有误。", "Invalid tool spec."),
         "already_answered" => ("已回复。", "Already answered."),
+        "session_sealed" => ("会话已封存。", "Session sealed."),
         // 施工 D-1：`session.answer` 碰得到的四个（`unknown_decision` 协议上碰不到，`protocol.md`「出错」）。
         "not_asking" => ("不在等待回答。", "Not waiting for an answer."),
         "no_rule" => ("只能允许本次或拒绝。", "Only allow once or deny."),
