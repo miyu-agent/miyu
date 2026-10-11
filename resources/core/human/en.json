@@ -421,6 +421,7 @@
     "package-problems/bad_icon": "{detail} must be a Lucide icon name: a lowercase letter, then lowercase letters, digits and -",
     "package-problems/bad_page_dir": "{detail} must be a relative directory inside the package directory, without .. or a leading /",
     "package-problems/bad_mascot_model": "{detail} must be a relative path inside the package directory, without .. or a leading /",
+    "package-problems/bad_mcp": "Badly written MCP server: {detail}",
     "package-problems/page_missing": "{detail} has no index.html",
     "package-problems/mascot_missing": "{detail} is not in the package directory",
     "package-problems/mascot_too_big": "{detail} is over 256 KiB",

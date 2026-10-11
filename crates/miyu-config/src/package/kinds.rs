@@ -1,6 +1,6 @@
 //! 包带了什么照表认（施工 F-8 上补，设计 `31-软件包.md` 第二节第 1、2 条）：清单不写种类。程序表 `[ui]`、`[process]`、
-//! `[builtin]`、`[worker]` 至多一张，有哪一张就是哪一种；没有程序表、有 `[mascot]` 的是吉祥物包；都没有的少了。哪种包能写
-//! 哪几张表照 [`tables`]，吉祥物哪一种都能带。
+//! `[builtin]`、`[worker]` 至多一张，有哪一张就是哪一种；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2）；
+//! 再没有、有 `[mascot]` 的是吉祥物包；都没有的少了。哪种包能写哪几张表照 [`tables`]，吉祥物哪一种都能带。
 
 use toml_edit::Table;
 
@@ -22,12 +22,13 @@ pub(super) fn of(reader: &Reader<'_>, root: &Table) -> Result<PackageKind, Probl
         .collect();
     match found.as_slice() {
         [(_, kind)] => Ok(*kind),
+        [] if root.contains_key("mcp") => Ok(PackageKind::Bundle),
         [] if root.contains_key("mascot") => Ok(PackageKind::Mascot),
         [] => Err(reader.problem(
             None,
             Code::MissingKey,
-            "[ui] / [process] / [builtin] / [worker] / [mascot]",
-            "a package carries a program ([ui], [process], [builtin] or [worker]) or a [mascot]"
+            "[ui] / [process] / [builtin] / [worker] / [[mcp]] / [mascot]",
+            "a package carries a program ([ui], [process], [builtin] or [worker]), MCP servers ([[mcp]]) or a [mascot]"
                 .to_string(),
         )),
         [(first, _), (second, _), ..] => Err(reader.problem(
@@ -64,6 +65,7 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
             "recommends",
             "page",
             "mascot",
+            "mcp",
         ],
         PackageKind::Builtin => &[
             "package",
@@ -76,5 +78,6 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
         ],
         PackageKind::Worker => &["package", "worker", "mascot"],
         PackageKind::Mascot => &["package", "mascot"],
+        PackageKind::Bundle => &["package", "mcp", "mascot"],
     }
 }

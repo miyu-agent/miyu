@@ -7,6 +7,7 @@ fn feature(id: &str, package: &str, tools: &[&str]) -> Feature {
         id: id.to_string(),
         package: package.to_string(),
         tools: tools.iter().map(ToString::to_string).collect(),
+        service: None,
     }
 }
 
@@ -81,4 +82,41 @@ fn a_feature_id_is_not_read_as_a_package_of_the_same_name() {
         .into_iter()
         .collect();
     assert_eq!(read, ["files"]);
+}
+
+/// MCP 服务的工具（施工 X-2）：照名字的前缀 `mcp__<服务名>__` 归那个服务的功能；包自己的工具照旧照包自己的功能算，MCP 服务的
+/// 功能不算在「只有一个功能」里。
+#[test]
+fn an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own() {
+    let server = |name: &str| Feature {
+        id: format!("mcp-{name}"),
+        package: "relay".to_string(),
+        tools: Vec::new(),
+        service: Some(name.to_string()),
+    };
+    let features = Features::new(vec![
+        feature("relay", "relay", &[]),
+        server("github"),
+        server("git"),
+    ]);
+    assert_eq!(
+        features.of_tool("relay", "mcp__github__create_issue"),
+        Some("mcp-github")
+    );
+    assert_eq!(features.of_tool("relay", "mcp__git__log"), Some("mcp-git"));
+    assert_eq!(
+        features.of_tool("relay", "relay_send"),
+        Some("relay"),
+        "包自己只有一个功能，自己的工具都归它"
+    );
+    assert_eq!(
+        features.of_tool("relay", "mcp__gitlab__x"),
+        Some("relay"),
+        "没有这个服务的照包自己的算"
+    );
+    assert_eq!(
+        features.of_tool("other", "mcp__github__create_issue"),
+        None,
+        "别的包的不算"
+    );
 }

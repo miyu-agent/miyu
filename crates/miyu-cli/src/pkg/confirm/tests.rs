@@ -33,6 +33,16 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         ],
         "没有的那一行不印"
     );
+    // 只带 MCP 服务的（施工 X-2）：没有程序那一项，列出每个服务。
+    let bundle = json!({"package": "gh", "mcp": ["github", "fetch"], "files": 1, "size": 9});
+    assert_eq!(
+        plan(&bundle, Doing::Install, &Language::Chinese),
+        [
+            "将安装 gh",
+            "包含：MCP 服务 github、MCP 服务 fetch",
+            "大小：9 B，1 个文件"
+        ]
+    );
     let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true});
     assert_eq!(
         plan(&back, Doing::Restore, &Language::Chinese),

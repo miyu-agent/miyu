@@ -73,9 +73,12 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
     match manifest.kind {
         PackageKind::Process => Ok(Switch::Extension),
         PackageKind::Builtin if layer == Layer::Shipped => Ok(Switch::Shipped),
-        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => {
-            Err(Refusal::NOT_SWITCHABLE)
-        }
+        // `bundle` 的开关随施工 X-3（起它带的 MCP 服务）。
+        PackageKind::Builtin
+        | PackageKind::Ui
+        | PackageKind::Worker
+        | PackageKind::Mascot
+        | PackageKind::Bundle => Err(Refusal::NOT_SWITCHABLE),
     }
 }
 

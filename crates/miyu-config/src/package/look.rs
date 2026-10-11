@@ -69,14 +69,15 @@ pub(super) fn mascot(
         })
 }
 
-/// `[package] protocol`：带程序的必写；只带吉祥物的只有数据、不说协议，写了报 `wrong_kind`（施工 F-7）。
+/// `[package] protocol`：带程序的必写；只带吉祥物的只有数据、不说协议，写了报 `wrong_kind`（施工 F-7）；`bundle` 同样（施工
+/// X-2：带的 MCP 服务说的是 MCP，不是 Miyu 的协议）。
 pub(super) fn protocol(
     reader: &Reader<'_>,
     kind: PackageKind,
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<Option<[u32; 2]>, Problem> {
-    if kind == PackageKind::Mascot {
+    if matches!(kind, PackageKind::Mascot | PackageKind::Bundle) {
         return match table.get("protocol") {
             None => Ok(None),
             Some(item) => Err(reader.problem(

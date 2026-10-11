@@ -72,6 +72,7 @@ pub(super) fn installed() -> Features {
                 id: id.to_string(),
                 package: id.to_string(),
                 tools: Vec::new(),
+                service: None,
             })
             .collect(),
     )

@@ -310,3 +310,27 @@ fn a_program_is_found_in_the_package_bin_then_beside_main() {
         );
     }
 }
+
+/// 两个包带了同名的 MCP 服务（施工 X-2）：功能编号 `mcp-<服务名>` 撞了，照功能编号撞了报，后到的整份不收、报在那一段。
+#[test]
+fn an_mcp_server_name_is_taken_by_whoever_is_read_first() {
+    let places = Places::new();
+    let bundle = "[package]\nname = { en = \"G\" }\n\n[[mcp]]\nname = \"github\"\ncommand = [\"npx\", \"server-github\"]\n";
+    places.write(Layer::Home, "alpha/package.toml", bundle);
+    places.write(Layer::Home, "beta/package.toml", bundle);
+    let found = places.packages.read();
+    assert_eq!(
+        brief(&found),
+        [
+            ("alpha".to_string(), Layer::Home, None),
+            ("beta".to_string(), Layer::Home, Some(Code::FeatureTaken)),
+        ]
+    );
+    let Err(Issue::Wrong(problem)) = &found[1].read else {
+        panic!("撞了");
+    };
+    assert_eq!(
+        (problem.detail.as_str(), problem.line),
+        ("mcp-github", Some(4))
+    );
+}

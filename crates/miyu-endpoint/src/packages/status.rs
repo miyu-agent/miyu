@@ -9,7 +9,8 @@ use miyu_store::packages::{Found, locate};
 use crate::Core;
 use crate::extensions::State;
 
-/// 包的程序叫什么：扩展、界面照 `[command]`，小程序照 `[worker]`；内置包、吉祥物包没有程序。
+/// 包的程序叫什么：扩展、界面照 `[command]`，小程序照 `[worker]`；内置包、吉祥物包、`bundle` 没有程序（`bundle` 带的 MCP
+/// 服务照它自己的命令起，施工 X-3）。
 fn program(manifest: &Manifest) -> Option<&str> {
     match manifest.kind {
         PackageKind::Process | PackageKind::Ui => manifest
@@ -20,7 +21,7 @@ fn program(manifest: &Manifest) -> Option<&str> {
             .worker
             .as_ref()
             .map(|worker| worker.program.as_str()),
-        PackageKind::Builtin | PackageKind::Mascot => None,
+        PackageKind::Builtin | PackageKind::Mascot | PackageKind::Bundle => None,
     }
 }
 
@@ -121,7 +122,12 @@ pub(crate) fn enabled(
             Some(!removed && crate::extensions::switched_on(core, id, manifest))
         }
         PackageKind::Builtin if shipped && !manifest.required => Some(!removed),
-        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => None,
+        // `bundle` 的开关随施工 X-3（起它带的 MCP 服务）。
+        PackageKind::Builtin
+        | PackageKind::Ui
+        | PackageKind::Worker
+        | PackageKind::Mascot
+        | PackageKind::Bundle => None,
     }
 }
 

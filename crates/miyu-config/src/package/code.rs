@@ -87,6 +87,8 @@ pub enum Code {
     BadPageDir,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
     BadMascotModel,
+    /// `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了。
+    BadMcp,
 }
 
 impl Code {
@@ -135,11 +137,12 @@ impl Code {
             Code::BadIcon => "bad_icon",
             Code::BadPageDir => "bad_page_dir",
             Code::BadMascotModel => "bad_mascot_model",
+            Code::BadMcp => "bad_mcp",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 42] = [
+    pub const ALL: [Code; 43] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -182,5 +185,6 @@ impl Code {
         Code::BadIcon,
         Code::BadPageDir,
         Code::BadMascotModel,
+        Code::BadMcp,
     ];
 }

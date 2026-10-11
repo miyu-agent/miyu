@@ -24,13 +24,16 @@ pub struct Feature {
     pub tools: Vec<String>,
     /// 编号写在第几行：两个包撞了，报在这一行。照包算的那一个没有。
     pub line: Option<usize>,
+    /// 是哪个 MCP 服务的（施工 X-2）：它的工具照名字的前缀 `mcp__<服务名>__` 归它；包自己的功能没有。
+    pub service: Option<String>,
 }
 
 impl Manifest {
     /// 这个包带的功能，`id` 是包的编号：写了 `[features]` 的照写的（空表就是一个都没有）；没写的内置包、扩展包整个算一个，
-    /// 编号、名字、说明照包的；界面、小程序、吉祥物没有。
+    /// 编号、名字、说明照包的；界面、小程序、吉祥物、`bundle` 自己没有。接着每个 MCP 服务一个（施工 X-2）：编号 `mcp-<服务名>`，
+    /// 名字是服务名。
     pub fn features_of(&self, id: &str) -> Vec<Feature> {
-        match (&self.features, self.kind) {
+        let mut features = match (&self.features, self.kind) {
             (Some(features), _) => features.clone(),
             (None, PackageKind::Builtin | PackageKind::Process) => vec![Feature {
                 id: id.to_string(),
@@ -38,9 +41,22 @@ impl Manifest {
                 summary: self.summary.clone(),
                 tools: Vec::new(),
                 line: None,
+                service: None,
             }],
-            (None, PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot) => Vec::new(),
-        }
+            (
+                None,
+                PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot | PackageKind::Bundle,
+            ) => Vec::new(),
+        };
+        features.extend(self.mcp.iter().map(|server| Feature {
+            id: server.feature_id(),
+            name: Phrases::from([("en".to_string(), server.name.clone())]),
+            summary: Phrases::new(),
+            tools: Vec::new(),
+            line: server.line,
+            service: Some(server.name.clone()),
+        }));
+        features
     }
 }
 
@@ -126,6 +142,7 @@ fn one(
         summary,
         tools,
         line: at.span().map(|span| line_of(reader.text, span.start)),
+        service: None,
     })
 }
 

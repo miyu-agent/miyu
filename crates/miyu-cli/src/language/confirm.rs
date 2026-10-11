@@ -41,7 +41,7 @@ impl Language {
         word.to_string()
     }
 
-    /// 带的另几样：子命令、后台页、吉祥物、接的平台、系统账号、几个配置项。
+    /// 带的另几样：子命令、后台页、吉祥物、接的平台、系统账号、几个配置项、MCP 服务（施工 X-2）。
     pub(crate) fn carried(&self, what: Carried<'_>) -> String {
         match (self, what) {
             (Language::Chinese, Carried::Command(name)) => format!("命令 miyu {name}"),
@@ -50,6 +50,7 @@ impl Language {
             (Language::Chinese, Carried::Connection(platform)) => format!("接入 {platform}"),
             (Language::Chinese, Carried::SystemAccount) => "系统账号".to_string(),
             (Language::Chinese, Carried::Settings(n)) => format!("{n} 项设置"),
+            (Language::Chinese, Carried::Mcp(name)) => format!("MCP 服务 {name}"),
             (Language::English, Carried::Command(name)) => format!("command miyu {name}"),
             (Language::English, Carried::Page) => "admin page".to_string(),
             (Language::English, Carried::Mascot) => "mascot".to_string(),
@@ -57,6 +58,7 @@ impl Language {
             (Language::English, Carried::SystemAccount) => "system account".to_string(),
             (Language::English, Carried::Settings(1)) => "1 setting".to_string(),
             (Language::English, Carried::Settings(n)) => format!("{n} settings"),
+            (Language::English, Carried::Mcp(name)) => format!("MCP server {name}"),
         }
     }
 
@@ -142,6 +144,8 @@ pub(crate) enum Carried<'a> {
     Connection(&'a str),
     SystemAccount,
     Settings(u64),
+    /// 带的 MCP 服务（施工 X-2）：装上以后会在这台机器上跑它的命令。
+    Mcp(&'a str),
 }
 
 /// 一行开头的词。

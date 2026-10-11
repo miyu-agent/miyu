@@ -194,3 +194,23 @@ async fn restoring_a_shipped_package_shows_it() {
         "没卸过的：{unknown}"
     );
 }
+
+/// 只带 MCP 服务的包（施工 X-2）：看一眼的那一份列出服务名，没有程序那一格。
+#[tokio::test]
+async fn a_bundle_preview_names_its_mcp_servers() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let bundle = folder(
+        &home,
+        "xgh",
+        "[package]\nname = { en = \"G\" }\n\n[[mcp]]\nname = \"xgithub\"\ncommand = [\"npx\", \"server-github\"]\n\n[[mcp]]\nname = \"xfetch\"\ncommand = [\"uvx\", \"mcp-server-fetch\"]\n",
+    );
+    let shown = preview(&mut client, &bundle).await;
+    assert_eq!(
+        shown["result"]["mcp"],
+        json!(["xgithub", "xfetch"]),
+        "{shown}"
+    );
+    assert!(shown["result"].get("program").is_none(), "{shown}");
+}

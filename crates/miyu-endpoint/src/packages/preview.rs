@@ -89,8 +89,17 @@ fn carries(core: &Core, peer: Peer, id: &str, manifest: &Manifest) -> Map<String
     if let Some(version) = &manifest.version {
         answer.insert("version".into(), json!(version));
     }
-    if manifest.kind != PackageKind::Mascot {
+    if !matches!(manifest.kind, PackageKind::Mascot | PackageKind::Bundle) {
         answer.insert("program".into(), json!(manifest.kind.as_str()));
+    }
+    // 带的 MCP 服务（施工 X-2）：装上以后会在这台机器上跑它们的命令，装之前给人看名字。
+    if !manifest.mcp.is_empty() {
+        let names: Vec<&str> = manifest
+            .mcp
+            .iter()
+            .map(|server| server.name.as_str())
+            .collect();
+        answer.insert("mcp".into(), json!(names));
     }
     if let Some(command) = &manifest.command {
         answer.insert("command".into(), json!(command.name));

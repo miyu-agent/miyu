@@ -223,7 +223,10 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if manifest.required {
         item["required"] = json!(true);
     }
-    if matches!(manifest.kind, PackageKind::Builtin | PackageKind::Process) {
+    if matches!(
+        manifest.kind,
+        PackageKind::Builtin | PackageKind::Process | PackageKind::Bundle
+    ) {
         let features: Vec<Value> = manifest
             .features_of(id)
             .iter()
@@ -256,6 +259,17 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     }
     if let Some(mascot) = &manifest.mascot {
         item["mascot"] = json!({"model": mascot.model});
+    }
+    // 带的 MCP 服务（施工 X-2）：名字、拉起它的命令（人看得到会在这台机器上跑什么）、给哪种会话；环境变量不列（可能引用密钥）。
+    if !manifest.mcp.is_empty() {
+        let servers: Vec<Value> = manifest
+            .mcp
+            .iter()
+            .map(|server| {
+                json!({"name": server.name, "command": server.command, "venues": server.venues})
+            })
+            .collect();
+        item["mcp"] = json!(servers);
     }
 }
 
@@ -374,6 +388,7 @@ pub fn features(found: &[Found]) -> Features {
                         id: feature.id,
                         package: one.id.clone(),
                         tools: feature.tools,
+                        service: feature.service,
                     })
             })
             .collect(),

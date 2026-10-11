@@ -397,3 +397,40 @@ fn an_old_layout_in_the_home_is_moved_when_read() {
     let text = std::fs::read_to_string(dir.join("term/package.toml")).expect("在");
     assert!(!text.contains("kind"), "{text}");
 }
+
+/// 只带 MCP 服务的包（施工 X-2）：种类是 `bundle`，不说协议；一个服务一个功能 `mcp-<服务名>`，名字是服务名；`mcp` 列出名字、
+/// 拉起的命令、给哪种会话，不列环境变量；装之前看一眼的那一份列出服务名、没有程序那一格。
+#[tokio::test]
+async fn a_bundle_lists_its_mcp_servers_as_features() {
+    let home = Home::new();
+    mine(
+        &home,
+        "xgh",
+        r#"[package]
+name = { en = "GitHub tools", zh = "GitHub 工具" }
+
+[[mcp]]
+name = "xgithub"
+command = ["npx", "-y", "server-github"]
+env = { TOKEN = { secret = "github" } }
+venues = ["local", "group"]
+"#,
+    );
+    let packages = listed(&home).await;
+    let mine = packages
+        .iter()
+        .find(|one| one["package"] == "xgh")
+        .cloned()
+        .expect("列得出");
+    assert_eq!(mine["kind"], "bundle", "{mine}");
+    assert!(mine.get("protocol").is_none(), "{mine}");
+    assert_eq!(
+        mine["features"],
+        json!([{"id": "mcp-xgithub", "name": "xgithub"}])
+    );
+    assert_eq!(
+        mine["mcp"],
+        json!([{"name": "xgithub", "command": ["npx", "-y", "server-github"], "venues": ["local", "group"]}])
+    );
+    assert!(!mine.to_string().contains("TOKEN"), "环境变量不列：{mine}");
+}

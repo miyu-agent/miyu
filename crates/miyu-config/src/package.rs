@@ -14,6 +14,7 @@ mod features;
 mod kinds;
 mod links;
 mod look;
+mod mcp;
 mod reader;
 pub mod settings;
 mod upgrade;
@@ -22,6 +23,7 @@ pub use capability::Capability;
 pub use code::Code;
 pub use features::Feature;
 pub use links::{Connection, Worker};
+pub use mcp::{EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT};
 pub use settings::{Setting, SettingKind};
 pub use upgrade::without_kind;
 
@@ -68,6 +70,8 @@ pub struct Manifest {
     pub page: Option<String>,
     /// 吉祥物（`kind = "mascot"`，施工 F-7）：模型文件在包目录里的相对路径。
     pub mascot: Option<Mascot>,
+    /// 带的 MCP 服务（施工 X-2，`[[mcp]]`）：照写的先后；没有的是空的。只有扩展包、`bundle` 能写。
+    pub mcp: Vec<McpServer>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -90,6 +94,9 @@ pub enum PackageKind {
     Worker,
     /// 吉祥物（施工 F-7）：只有数据，终端照它画；不说协议、不跑程序、没有开关和配置项。
     Mascot,
+    /// 一组东西、不带程序（施工 X-2，设计 `31-软件包.md` 第二节第 1 条）：现在是 MCP 服务（`[[mcp]]`），以后还有技能、脚本。
+    /// 不说协议；开关同扩展，默认关着。
+    Bundle,
 }
 
 impl PackageKind {
@@ -101,6 +108,7 @@ impl PackageKind {
             PackageKind::Builtin => "builtin",
             PackageKind::Worker => "worker",
             PackageKind::Mascot => "mascot",
+            PackageKind::Bundle => "bundle",
         }
     }
 }
@@ -190,7 +198,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 14] = [
+const TABLES: [&str; 15] = [
     "package",
     "builtin",
     "command",
@@ -205,6 +213,7 @@ const TABLES: [&str; 14] = [
     "worker",
     "page",
     "mascot",
+    "mcp",
 ];
 
 /// 读一份清单。
@@ -230,7 +239,8 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        if !item.is_table_like() {
+        // `[[mcp]]` 是一串表（施工 X-2）：写成别的样子的由 `mcp.rs` 报。
+        if !item.is_table_like() && !(key == "mcp" && item.is_array_of_tables()) {
             return Err(reader.problem(
                 Some(item),
                 Code::NotATable,
@@ -309,6 +319,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(table) => Some(look::mascot(&reader, table, &root["mascot"])?),
         None => None,
     };
+    let mcp = match root.get("mcp") {
+        Some(node) => mcp::read(&reader, node)?,
+        None => Vec::new(),
+    };
     Ok(Manifest {
         kind,
         version: head.version,
@@ -329,6 +343,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         icon: head.icon,
         page,
         mascot,
+        mcp,
     })
 }
 

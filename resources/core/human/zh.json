@@ -421,6 +421,7 @@
     "package-problems/bad_icon": "{detail} 要写 Lucide 的图标名：小写字母开头，只有小写字母、数字、-",
     "package-problems/bad_page_dir": "{detail} 要写包目录里的相对目录，不能有 .. 和开头的 /",
     "package-problems/bad_mascot_model": "{detail} 要写包目录里的相对路径，不能有 .. 和开头的 /",
+    "package-problems/bad_mcp": "MCP 服务的写法不对：{detail}",
     "package-problems/page_missing": "{detail} 里没有 index.html",
     "package-problems/mascot_missing": "包目录里没有 {detail}",
     "package-problems/mascot_too_big": "{detail} 超过 256 KiB",
