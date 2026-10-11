@@ -33,7 +33,7 @@ pub(crate) const MUTE: &str = "mute";
 /// 戳一戳（施工 O-31）。
 pub(crate) const POKE: &str = "poke";
 
-/// 取图、视频、文件（施工 O-33，「平台工具（二）」）：这一步只给群。
+/// 取图、视频、文件（施工 O-33，「平台工具（二）」）：私聊、群都给（施工 O-35 起私聊也给）。
 pub(crate) const FETCH_MEDIA: &str = "fetch_media";
 
 /// 私聊、群都给。
@@ -42,14 +42,14 @@ const VENUES: &[&str] = &["private", "group"];
 /// 桥答得了的工具：名字、访问类别、给哪种会话（`providers.md` 的 `venues`）。`skip_reply` 只读：不碰主机、不往外发（O-26
 /// 施工单「要定的」第 4 条）；平台工具（一）在平台上留下后果，是在场所里做的事（`venue`）：权限策略在场所会话里放行、本机的
 /// 会话里拒绝，谁能叫、能动谁由桥自己挡（`providers.md`「在场所里做的事」，「施工时定的」第 177 条）。本机的会话都没有。
-/// `fetch_media` 也是在场所里做的事（施工 O-33：去平台取东西、写进这个会话自己的工作区），这一步只给群（私聊里她看不到消息
-/// 编号，2026-10-11 主会话定）。
+/// `fetch_media` 也是在场所里做的事（施工 O-33：去平台取东西、写进这个会话自己的工作区）；O-33 只给群，O-35 起私聊里带了东西
+/// 的那条也写出消息编号，私聊也给。
 const TOOLS: [(&str, Access, &[&str]); 5] = [
     (SKIP_REPLY, Access::Read, VENUES),
     (RECALL, Access::Venue, VENUES),
     (MUTE, Access::Venue, &["group"]),
     (POKE, Access::Venue, VENUES),
-    (FETCH_MEDIA, Access::Venue, &["group"]),
+    (FETCH_MEDIA, Access::Venue, VENUES),
 ];
 
 /// 答的那几句在 `software/onebot/` 下的哪个目录里（照核心的 `core/tool-results/`）。

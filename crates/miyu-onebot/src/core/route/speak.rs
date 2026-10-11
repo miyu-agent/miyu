@@ -124,6 +124,13 @@ impl Route {
     /// 同 [`Route::heard`]。
     pub(super) async fn say_privately(&mut self, session: &str, event: &Value) -> Result<(), Gone> {
         let quiet = self.quiet.heard(session, event);
+        // `fetch_media` 照回合数一轮取了几次（施工 O-35）：私聊没有投影，推来的事件换了回合就从头数。
+        if let Some(turn) = event["turn"].as_u64() {
+            let kept = self.fetches.entry(session.to_string()).or_default();
+            if kept.0 != Some(turn) {
+                *kept = (Some(turn), 0);
+            }
+        }
         if event["kind"] == "message.user" {
             // 平台工具（一）照它找私聊里叫她做的那条引用的是哪一条（施工 O-31，`acting`）。
             let quote = event["body"]["venue"]["reply_to"]

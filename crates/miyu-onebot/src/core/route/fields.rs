@@ -3,6 +3,7 @@
 //!
 //! 照核心的写法洗：核心收到写错的格整条 `bad_params`、什么都不记，一个怪名字、一个长编号不能让整条消息丢了（「施工时定的」
 //! 第 63 条）。名字去掉控制字符、截到上限，空白的不写；引用、带的东西的编号不合的那一格、那一样不记。假的、空的格不写。
+//! 私聊里当原图交进来的那几样记 `shown`（施工 O-35，[`shown`]）。
 
 use miyu_kernel::id::ExternalId;
 use serde_json::{Map, Value, json};
@@ -83,6 +84,19 @@ pub(super) fn media(media: &[Media]) -> Vec<Value> {
             one
         })
         .collect()
+}
+
+/// 交了原图的那几样（施工 O-35，`venues.md`「场所的格」的 `shown`）：场所的格 `venue` 的 `media` 里第 `numbers` 个（从 1 数，和
+/// `msg-<编号>-<第几个>` 一个数法）记 `shown: true`。没有那一样的不动。
+pub(super) fn shown(venue: &mut Value, numbers: &[usize]) {
+    let Some(media) = venue.get_mut("media").and_then(Value::as_array_mut) else {
+        return;
+    };
+    for number in numbers {
+        if let Some(item) = number.checked_sub(1).and_then(|at| media.get_mut(at)) {
+            item["shown"] = json!(true);
+        }
+    }
 }
 
 /// 洗一个名字：去掉控制字符，截到 `most` 个字符（不截断一个字）；去掉首尾空白是空的交回空的。

@@ -2,8 +2,10 @@
 //! 桥才去 QQ 取那一条里的第几样。读的一头照推送交到这里（同平台工具（一），`acting.rs`）；这里认参数、数这一轮取了几次、找到
 //! 会话发到哪，另起一个任务（`chores`）去取，跟核心的那一头不等 QQ。
 //!
-//! 任务里：`get_msg` 现认那一条的段（桥重启了也认得；同一套 `segments`，第几个和交给核心的 `venue.media` 一个数法），不是这个
-//! 群的当没有（她只看这个群的）；图存成 blob，作为工具结果的图片块交回（核心照调用它的会话属主拷 blob，核心 O-2 三补）；存不成图的（太大、
+//! 私聊也给（施工 O-35）：私聊里带了东西的那条，她也看得到 `[msg=…]` 和 `#n`。
+//!
+//! 任务里：`get_msg` 现认那一条的段（桥重启了也认得；同一套 `segments`，第几个和交给核心的 `venue.media` 一个数法），不在这个
+//! 会话里的当没有（[`owned`]：人打得出假的 `[msg=…]`，编号不能拿去看别处的消息）；图存成 blob，作为工具结果的图片块交回（核心照调用它的会话属主拷 blob，核心 O-2 三补）；存不成图的（太大、
 //! 不是图）和视频、文件一样写进这个会话工作区的 `qq-files/`，回路径。语音、小黄脸、`mface` 商城表情取不了。一轮最多取
 //! `fetch_per_turn` 次（`bridge.json`，出厂 4，照旧 Miyu），取没取到都算一次。不设大小上限。
 
@@ -111,8 +113,8 @@ struct Job {
 }
 
 impl Route {
-    /// 核心转来的一次 `fetch_media`（「平台工具（二）」第 4 条）：不认识的会话答 `unreachable`；私聊里调到的（`venues` 只给群，照说
-    /// 不会）照不认识的工具答；这一轮取满了的答 `too-many`；参数不对的答 `not-found`；别的交给任务。
+    /// 核心转来的一次 `fetch_media`（「平台工具（二）」第 4 条）：不认识的会话答 `unreachable`；这一轮取满了的答 `too-many`（群照
+    /// 投影里主线这一轮，私聊照推来的事件的回合，施工 O-35）；参数不对的答 `not-found`；别的交给任务。
     ///
     /// # Errors
     ///
@@ -128,11 +130,10 @@ impl Route {
             answerer.answer(id, self.tools.answer("unreachable", &[], true));
             return Ok(());
         };
-        if !matches!(peer.to, To::Group(_)) {
-            answerer.answer(id, self.tools.call(tool));
-            return Ok(());
-        }
-        let turn = self.groups.get(&session).and_then(|group| group.turn());
+        let turn = match self.groups.get(&session) {
+            Some(group) => group.turn(),
+            None => self.fetches.get(&session).and_then(|(turn, _)| *turn),
+        };
         let limit = self.fetching.per_turn;
         let Some(count) = counted(self.fetches.get(&session).copied(), turn, limit) else {
             tracing::info!(target: TARGET, venue = %peer.venue, tool, why = "too-many", "platform tool refused");
@@ -199,6 +200,20 @@ async fn run(job: Job) {
     job.answerer.answer(&job.id, answer);
 }
 
+/// `get_msg` 回的那一条 `data` 在不在会话 `to` 里（纯逻辑，施工 O-35 核对归属；群里的 O-33 起就查）：群里是这个群的
+/// （`group_id`），私聊里是这个人在私聊里发的（`message_type` 是 `private`、`user_id` 是他）。编号是她给的，人打得出假的
+/// `[msg=…]`：这个人在群里说的、别人的私聊、她自己发的都当没有。号写成整数的字也认（同 NapCat 别处）。
+pub(super) fn owned(data: &Value, to: To) -> bool {
+    let is = |key: &str, number: i64| {
+        data[key].as_i64() == Some(number)
+            || data[key].as_str() == Some(number.to_string().as_str())
+    };
+    match to {
+        To::Group(group) => is("group_id", group),
+        To::Private(user) => data["message_type"] == "private" && is("user_id", user),
+    }
+}
+
 /// 没做成的：答的那一句的名字和字段。
 type Undone = (&'static str, Vec<(&'static str, String)>);
 
@@ -207,19 +222,13 @@ async fn fetch(job: &Job) -> Option<Result<Value, Undone>> {
     let Some(link) = job.bots.get(job.peer.bot) else {
         return Some(Err(("unreachable", Vec::new())));
     };
-    let To::Group(group) = job.peer.to else {
-        return Some(Err(("not-found", Vec::new())));
-    };
     let msg = &job.wanted.msg;
     let data = match message(&link, msg).await {
         Ok(data) => data,
         Err(Missed::Failed(_)) => return Some(Err(("not-found", Vec::new()))),
         Err(missed) => return Some(Err(undone(missed))),
     };
-    // 不是这个群的当没有：编号是她给的，不能拿去看别处的消息。
-    let here = data["group_id"].as_i64() == Some(group)
-        || data["group_id"].as_str() == Some(group.to_string().as_str());
-    if !here {
+    if !owned(&data, job.peer.to) {
         return Some(Err(("not-found", Vec::new())));
     }
     let media = kept(&segments(&data["message"]).media);

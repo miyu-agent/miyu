@@ -62,7 +62,7 @@ pub(super) fn kept(media: &[Media]) -> Vec<Media> {
 
 impl Route {
     /// 取 `wanted` 里的图、存成 blob，交回 `attachments`（`blob.close` 的回应里的 `blob`、`name`、`media_type`），引用的那一条的在
-    /// 前。`venue` 只记运行日志。
+    /// 前；另交回这一条自己的图里交上了的是第几个（施工 O-35：私聊照它给 `venue.media` 记 `shown`）。`venue` 只记运行日志。
     ///
     /// # Errors
     ///
@@ -71,23 +71,27 @@ impl Route {
         &self,
         wanted: &Pictures,
         venue: &str,
-    ) -> Result<Vec<Value>, Gone> {
+    ) -> Result<(Vec<Value>, Vec<usize>), Gone> {
         let Some(link) = self.bots.get(wanted.bot) else {
             tracing::warn!(target: TARGET, venue, message = wanted.msg, why = "unreachable", "picture not fetched");
-            return Ok(Vec::new());
+            return Ok((Vec::new(), Vec::new()));
         };
         let mut lists = Vec::new();
         if let Some(quoted) = &wanted.quoted {
             match message(&link, quoted).await {
-                Ok(data) => lists.push((quoted.clone(), kept(&segments(&data["message"]).media))),
+                Ok(data) => lists.push((
+                    quoted.clone(),
+                    kept(&segments(&data["message"]).media),
+                    false,
+                )),
                 Err(missed) => {
                     tracing::warn!(target: TARGET, venue, message = quoted, why = missed.name(), "picture not fetched");
                 }
             }
         }
-        lists.push((wanted.msg.clone(), wanted.own.clone()));
-        let mut attachments = Vec::new();
-        for (msg, media) in lists {
+        lists.push((wanted.msg.clone(), wanted.own.clone(), true));
+        let (mut attachments, mut shown) = (Vec::new(), Vec::new());
+        for (msg, media, own) in lists {
             let picked: Vec<(usize, &Media)> = (1..)
                 .zip(&media)
                 .filter(|(_, item)| item.fetch == Some(Fetch::Image))
@@ -104,9 +108,14 @@ impl Route {
                     }
                 };
                 match stored {
-                    Ok(stored) if stored["kind"] == "image" => attachments.push(json!({
-                        "blob": stored["blob"], "name": stored["name"], "media_type": stored["media_type"],
-                    })),
+                    Ok(stored) if stored["kind"] == "image" => {
+                        attachments.push(json!({
+                            "blob": stored["blob"], "name": stored["name"], "media_type": stored["media_type"],
+                        }));
+                        if own {
+                            shown.push(index);
+                        }
+                    }
                     Ok(_) => {
                         tracing::warn!(target: TARGET, venue, message = msg, index, why = "not_an_image", "picture not fetched");
                     }
@@ -117,7 +126,7 @@ impl Route {
                 }
             }
         }
-        Ok(attachments)
+        Ok((attachments, shown))
     }
 
     /// 取一张图，等多久照一次 OneBot 调用（`call_timeout_seconds`）：交消息以前取，不能等太久。

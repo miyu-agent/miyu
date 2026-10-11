@@ -186,7 +186,7 @@ pub(crate) struct Route {
     backlogs: HashMap<String, Backlog>,
     /// 取东西的几个数（施工 O-33，`fetching`、`pictures`）。
     fetching: Fetching,
-    /// 群会话编号 → 这一轮的回合编号和 `fetch_media` 取了几次（施工 O-33，`fetching`）。
+    /// 会话编号 → 这一轮的回合编号和 `fetch_media` 取了几次（施工 O-33，`fetching`；私聊的回合编号照推来的事件记，施工 O-35）。
     fetches: HashMap<String, (Option<u64>, usize)>,
     /// 展开合并转发的几个数（施工 O-34，`forwards`）。
     forwarding: Forwarding,
@@ -341,11 +341,11 @@ impl Route {
                 return Ok(());
             }
         };
-        // 只有图、引用的私聊照取图（施工 O-33）：取不到图、又没有字的不送（`submit`）。合并转发照群消息的写法在正文后面写占位、
-        // 交以前展开（施工 O-34），只有转发的也送。
+        // 只有图、引用的私聊照取图（施工 O-33）；带了东西的、没有字也送（施工 O-35：她看得到记号、能取）。合并转发照群消息的写法
+        // 在正文后面写占位、交以前展开（施工 O-34），只有转发的也送。
         let pictures = Pictures::of(posted.bot, posted.message_id, &posted.segments);
         let text = with_placeholders(&posted.text, posted.segments.forwards.len());
-        if text.trim().is_empty() && !pictures.any() {
+        if text.trim().is_empty() && pictures.own.is_empty() && !pictures.any() {
             tracing::debug!(target: TARGET, venue = %venue.id(), message = posted.message_id, "nothing to send");
             return Ok(());
         }
@@ -372,7 +372,7 @@ impl Route {
 
     /// 交一条消息：`/` 开头的先当斜杠命令交（「斜杠命令」），办完了的不再发；别的照 `session.send` 发（第 8 条，「群消息」
     /// 第 6 条），交回会话编号和回应（接受的、拒绝的都原样：群的照它判，施工 O-23）。要带图的（施工 O-33）、要展开转发的（施工
-    /// O-34）先找到会话（不接的不去取），取了图带上、展开的转发写进场所的格；私聊没有字、图又一张都没取到的不送。命令办完了的、
+    /// O-34）先找到会话（不接的不去取），取了图带上、展开的转发写进场所的格；私聊没有字、没带东西、图又一张都没取到的不送。命令办完了的、
     /// 不接的、找不到会话的、不送的是空的。
     async fn submit(&mut self, mut message: Message) -> Result<Option<(String, Value)>, Gone> {
         if command::looks_like(&message.text) && self.command(&message).await? {
@@ -387,10 +387,15 @@ impl Route {
                 return Ok(None);
             }
             let venue = message.place.peer.venue.to_string();
-            attachments = self.pictures(pictures, &venue).await?;
+            let shown;
+            (attachments, shown) = self.pictures(pictures, &venue).await?;
+            // 私聊里交了原图的那几样记 `shown`（施工 O-35）；群里冲她来的这一步不记。
+            if message.place.private_chat() {
+                fields::shown(&mut message.fields, &shown);
+            }
         }
-        if message.place.private_chat() && message.text.trim().is_empty() && attachments.is_empty()
-        {
+        let bare = message.text.trim().is_empty() && message.fields.get("media").is_none();
+        if message.place.private_chat() && bare && attachments.is_empty() {
             tracing::debug!(target: TARGET, venue = %message.place.peer.venue, message = message.number, "nothing to send");
             return Ok(None);
         }

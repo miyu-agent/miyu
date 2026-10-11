@@ -34,6 +34,7 @@ mod page;
 mod pipe;
 mod platform;
 mod private;
+mod private_media;
 mod pronoun;
 mod provider;
 mod queue;

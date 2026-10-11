@@ -2207,8 +2207,8 @@ QQ did not answer in time; it may or may not have happened.
 
 #### `software/onebot/tool-results/saved.txt`
 
-- 什么时候加进来：`fetch_media` 把视频、文件（存不成图的图）写进了工作区，`path` 是落到的真实路径
-- token：33（`path` 填 `/home/me/.local/share/miyu/home/onebot/workspace/qq-files/8816-1-排班.pdf`）
+- 什么时候加进来：`fetch_media` 把视频、文件（存不成图的图）写进了工作区，`path` 是相对工作区的 `qq-files/<名字>`（施工 O-33 改的，「施工时定的」第 204 条）
+- token：16（2026-10-11，`path` 填 `qq-files/8816-1-排班.pdf`；改相对路径以前填绝对路径量的是 33）
 - 为什么加：她拿路径再 `read`（视频以后 `shell` 调 ffmpeg）
 - 指纹：`b0a83124`
 
@@ -2218,13 +2218,13 @@ Saved to {path}.
 
 #### `software/onebot/tool-results/not-found.txt`
 
-- 什么时候加进来：`fetch_media` 的 `msg` 不是整数、QQ 说没有这一条、那一条不在这个群
+- 什么时候加进来：`fetch_media` 的 `msg` 不是整数、QQ 说没有这一条、那一条不在这个会话（群里不是这个群的，私聊里不是这个人私聊的）
 - token：12
-- 为什么加：编号不对、过期了、别处的都照没有说：不让她拿编号看别的群
-- 指纹：`25ddb28b`
+- 为什么加：编号不对、过期了、别处的都照没有说：不让她拿编号看别的群、别人的私聊。O-35 把 `in this group` 换成 `in this chat`，私聊里也说得对，重量还是 12
+- 指纹：`b6d793bf`
 
 ```text
-Not found: no message with that msg in this group.
+Not found: no message with that msg in this chat.
 ```
 
 #### `software/onebot/tool-results/no-item.txt`
@@ -3363,14 +3363,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 #### `software/onebot/tools/fetch_media.json`
 
-- 什么时候加进来：群会话的工具面里有 `fetch_media`（施工 O-33；私聊、本机的会话没有）
-- token：114（2026-10-11，二十件一起的边际份量；第一稿 122）
-- 为什么加：按需看（2026-10-11 项目主人定）：群里的图、视频、文件她要看才去 QQ 取。说明一句说清取什么、图回来看、视频文件存进 `qq-files/`；`index` 写明是那一条里第几样、从 1 数（近况那一行的 `#n`，核心审时要的）
-- 指纹：`25552e26`
+- 什么时候加进来：群、私聊会话的工具面里有 `fetch_media`（施工 O-33 给群，O-35 给私聊；本机的会话没有）
+- token：114（2026-10-11，二十件一起的边际份量；第一稿 122；O-35 把 `group message` 换成 `QQ message`，重量还是 114）
+- 为什么加：按需看（2026-10-11 项目主人定）：群里、私聊里的图、视频、文件她要看才去 QQ 取。说明一句说清取什么、图回来看、视频文件存进 `qq-files/`；`index` 写明是那一条里第几样、从 1 数（近况那一行的 `#n`，核心审时要的）
+- 指纹：`ffe86481`
 
 ```json
 {
-  "description": "Fetch an image, video or file from a group message. Images come back to view; videos and files are saved to qq-files/ in your workspace.",
+  "description": "Fetch an image, video or file from a QQ message. Images come back to view; videos and files are saved to qq-files/ in your workspace.",
   "parameters": {"type":"object","properties":{"msg":{"type":"string","description":"The msg= id."},"index":{"type":"integer","description":"Which item in that message, from 1 (the #n); default 1."}},"required":["msg"]}
 }
 ```

@@ -47,7 +47,7 @@ fn asked(heard: Heard) -> Value {
 #[test]
 fn the_provide_params_follow_the_shipped_spec() {
     // 施工 O-31 起四件：`recall`、`poke` 给私聊和群，`mute` 只给群；三件平台工具是 `venue`（在场所里做的事），`skip_reply` 是
-    // `read`（`onebot.md` 施工时定的第 177 条）。施工 O-33 加 `fetch_media`：`venue`，只给群。
+    // `read`（`onebot.md` 施工时定的第 177 条）。施工 O-33 加 `fetch_media`：`venue`，只给群；施工 O-35 起私聊也给。
     let spec = |name: &str| -> Value {
         serde_json::from_str(&shipped(&format!("tools/{name}.json"))).expect("是 JSON")
     };
@@ -68,7 +68,7 @@ fn the_provide_params_follow_the_shipped_spec() {
             entry("recall", "venue", both.clone()),
             entry("mute", "venue", json!(["group"])),
             entry("poke", "venue", both),
-            entry("fetch_media", "venue", json!(["group"])),
+            entry("fetch_media", "venue", json!(["private", "group"])),
         ]})
     );
 }

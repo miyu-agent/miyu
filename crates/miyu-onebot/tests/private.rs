@@ -133,20 +133,14 @@ async fn a_strangers_private_chat_goes_nowhere() {
     bridge.stop().await.expect("停得下");
 }
 
-/// 只有图的私聊：施工 O-33 起去 QQ 取图、带上交；这个假 NapCat 取不到（回失败），没有字的照旧不送。
+/// 段的数组只取字；CQ 码只读字（第 6 条）：只有图的 CQ 码没有字、也认不出带的东西，不送。段的数组里只有图的私聊施工 O-35 起照送
+/// （带了东西，`private_media.rs`）。
 #[tokio::test]
-async fn segments_and_cq_strings_are_read_and_image_only_messages_are_not_sent() {
+async fn segments_and_cq_strings_are_read_and_bare_cq_images_are_not_sent() {
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
     let home = Home::new(&script);
     let bridge = bridge(&home).await;
     let mut napcat = admin_napcat(bridge.port).await;
-    napcat
-        .private(
-            ADMIN,
-            1,
-            json!([{"type": "image", "data": {"file": "a.png"}}]),
-        )
-        .await;
     napcat
         .private(
             ADMIN,

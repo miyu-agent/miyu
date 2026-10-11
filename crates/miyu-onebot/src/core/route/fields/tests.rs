@@ -1,9 +1,9 @@
 //! 场所的格照核心的写法洗（`onebot.md` 第一条「群消息」第 6 条，「施工时定的」第 63 条）：名字去掉控制字符、截到上限，空白
-//! 的不写；引用、带的东西的编号不合的那一格、那一样不记，消息照记；假的开关不写。
+//! 的不写；引用、带的东西的编号不合的那一格、那一样不记，消息照记；假的开关不写。交了原图的那几样记 `shown`（施工 O-35）。
 
 use serde_json::json;
 
-use super::{Flags, MEDIA_NAME, NAME, fields};
+use super::{Flags, MEDIA_NAME, NAME, fields, shown};
 use crate::onebot::{Fetch, Media, MediaKind, Posted, Segments, person};
 
 /// 一条消息：名字是 `name`，认出来的段是 `segments`。
@@ -154,4 +154,18 @@ fn ids_that_do_not_fit_are_left_out_and_the_message_is_kept() {
             .is_none(),
         "一样都不剩的不写"
     );
+}
+
+/// 交了原图的那几样记 `shown`（施工 O-35）：照第几个（从 1 数）找到 `media` 里那一样；没有那一样的、没有 `media` 的不动。
+#[test]
+fn shown_marks_the_items_by_their_number() {
+    let mut venue = json!({"msg": "9", "media": [{"kind": "image", "id": "a"}, {"kind": "file", "id": "b"}, {"kind": "image", "id": "c"}]});
+    shown(&mut venue, &[1, 3, 4, 0]);
+    assert_eq!(
+        venue["media"],
+        json!([{"kind": "image", "id": "a", "shown": true}, {"kind": "file", "id": "b"}, {"kind": "image", "id": "c", "shown": true}])
+    );
+    let mut bare = json!({"msg": "9"});
+    shown(&mut bare, &[1]);
+    assert_eq!(bare, json!({"msg": "9"}));
 }

@@ -5,7 +5,7 @@
 //!   旁听的不取；存成的 blob 拷进了会话属主（系统账号）名下。
 //! - `fetch_media`：取图交回图片块；取文件、视频写进工作区的 `qq-files/` 回路径；编号不对、别的群的、第几个不对、语音和小黄脸、
 //!   QQ 回失败、一轮第五次各回一句；同一个文件取两次换成新的；文件名里的 `../` 和开头的点洗掉；`qq-files` 不是真目录的不写。
-//! - 私聊：只有图的照交、带图；取不到图又没有字的不送；工具面里没有 `fetch_media`。
+//! - 私聊：只有图的照交、带图；工具面里有 `fetch_media`（施工 O-35，私聊的别的在 `private_media.rs`）。
 //!
 //! 她真的看得到：工具结果里的图片块，核心照调用它的会话属主拷 blob（核心 O-2 三补，2026-10-11 合进 main）：桥上传的存在管理员
 //! 名下，系统账号（群会话的属主）名下也要有（`fetch_media_brings_back_pictures_and_saves_files`）。O-2 三补以前的核心上这一条是红的。
@@ -80,6 +80,17 @@ async fn a_message_calling_her_brings_its_pictures_and_the_quoted_ones() {
     );
     assert!(text.contains("[msg=500]: 这张 [image: 2 KB]"), "{text}");
     assert!(has_blob(&home, "onebot", &picture), "拷进了会话属主名下");
+    // 群里交了原图的这一步不记 `shown`（施工 O-35 只给私聊填）。
+    let events = until_events(&home.root, &venue(), |events| {
+        !of_kind(events, "message.user").is_empty()
+    })
+    .await;
+    let said = of_kind(&events, "message.user");
+    let calling = said.last().expect("记下了");
+    assert!(
+        !calling["body"]["venue"].to_string().contains("shown"),
+        "{calling}"
+    );
     assert!(has_blob(&home, "onebot", &quoted));
     assert_eq!(
         napcat.fetched(),
@@ -260,10 +271,12 @@ async fn fetch_media_brings_back_pictures_and_saves_files() {
     stopped(home).await;
 }
 
+/// 私聊只有图的照交、带图（施工 O-33）；工具面里有 `fetch_media`（施工 O-35 起私聊也给）。取不到图、又没有字的照样送，见
+/// `private_media.rs`。
 #[tokio::test]
-async fn a_private_picture_comes_along_and_fetch_media_is_for_groups() {
+async fn a_private_picture_comes_along() {
     let picture = png(3, 3);
-    let lines = Lines::new([Line::says("嗯。"), Line::says("在。")]);
+    let lines = Lines::new([Line::says("嗯。")]);
     let (home, napcat) = up(&lines).await;
     napcat.stock_file("pv.jpg", Ok(json!({"base64": encoded(&picture)})));
     napcat.send(private_frame(ADMIN, 701, json!([image("pv.jpg", 77)])));
@@ -275,23 +288,8 @@ async fn a_private_picture_comes_along_and_fetch_media_is_for_groups() {
         .collect();
     assert_eq!(names, ["msg-701-1"]);
     assert!(
-        request.tools.iter().all(|tool| tool.name != "fetch_media"),
-        "私聊的工具面里没有 fetch_media"
-    );
-    // 取不到图、又没有字的不送；后面那一句照送。
-    napcat.send(private_frame(ADMIN, 702, json!([image("gone.jpg", 77)])));
-    napcat.send(private_frame(ADMIN, 703, json!([plain("在吗")])));
-    until_private_turns(&home, 2).await;
-    let said: Vec<String> = home
-        .said()
-        .iter()
-        .filter(|event| event["by"]["kind"] == "person")
-        .map(|event| event["cause"].as_str().unwrap_or_default().to_string())
-        .collect();
-    assert_eq!(said.len(), 2, "{said:?}");
-    assert!(
-        said.iter().all(|cause| !cause.contains(":702:")),
-        "{said:?}"
+        request.tools.iter().any(|tool| tool.name == "fetch_media"),
+        "私聊的工具面里有 fetch_media"
     );
     stopped(home).await;
 }
