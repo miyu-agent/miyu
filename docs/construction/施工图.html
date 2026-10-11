@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>405</b><span>/ 419 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>406</b><span>/ 420 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">5688d0dd</b><span>最近一步（X-2 清单里的 MCP）的提交</span></li>
+    <li><b class="mono">4d63e79c</b><span>最近一步（F-10 上 她看软件包）的提交</span></li>
   </ul>
 </header>
 
@@ -786,6 +786,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sF-8g"><span class="n">F-8 下补</span>装卸前问一句<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-8h"><span class="n">F-8 三补</span>软件包列表的推送<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-8i"><span class="n">F-8 上再补</span>包里带的程序<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sF-10a"><span class="n">F-10 上</span>她看软件包<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-1"><span class="n">S-1</span>给界面用的门面 miyu-client<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-5"><span class="n">S-5</span>核心仓库删掉两个界面<span class="st">✓</span></a></li>
       </ol>
@@ -22106,6 +22107,59 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/F-8上再补-包里带的程序.md</code>、图纸 <code>docs/blueprint/packages.md</code>「转交」、<code>extensions.md</code>「拉起」，设计 30 第六节第 1 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sF-10a" aria-labelledby="h-sF10a">
+  <div class="sheet-head"><h2 id="h-sF10a"><span class="no">F-10 上</span>她看软件包</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她能查这台机器上装了什么、一个包里有什么（设计 31 第六节第 1 条「查」）：只读，哪一级都不问。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">她看软件包</span><span class="dir-note">F-10 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>端口 PackagesPort：列出、看一个、看一个包文件夹，照协议那几样算</li>
+              <li>基础系统的新工具 packages，访问类别 read，新功能「软件包」</li>
+              <li>列出一个一行；看一个、看文件夹照原样交核心那一份 JSON</li>
+              <li>看文件夹报路径是读：数据根哪一级都不许</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">名字、说明照英文</span><span class="rl">给她看的字恒英文</span></div>
+          <div class="tile new"><span class="nm">不另编字</span><span class="rl">结构照协议那一份</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">F-10 上</dd></div>
+        <div><dt>名称</dt><dd>她看软件包</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-11</dd></div>
+        <div><dt>提交</dt><dd class="mono">4d63e79c</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 1784），magpie 端点量 token、真模型走一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>列出、看一个、看文件夹三种都对</span></li>
+        <li><span class="ok">✓</span><span>造会话、载入都交端口（变异 3 处报红）</span></li>
+        <li><span class="ok">✓</span><span>工具说明 85 token，十二句结果逐句量过</span></li>
+        <li><span class="ok">✓</span><span>真模型列出、看一个、看文件夹都答对</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/F-10上-看包.md</code>、图纸 <code>docs/blueprint/tools/packages.md</code>、<code>tools/interface.md</code>。</li>
       </ul>
     </div>
   </div>
