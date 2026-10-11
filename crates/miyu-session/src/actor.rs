@@ -399,6 +399,7 @@ impl Actor {
                         inherit: Inherit::of(&*self.model),
                         usage,
                         turn: self.session.turn_cause().map(|(turn, _)| turn),
+                        compacted: self.session.compacted_upto(),
                         asked,
                         config: Arc::clone(self.config.current()),
                     },

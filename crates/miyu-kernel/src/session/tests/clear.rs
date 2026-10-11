@@ -145,3 +145,13 @@ fn the_same_clear_sent_again_is_answered_again_and_not_redone() {
     );
     assert_eq!(session.handle(clear(3)), [accepted_reply(3, &[9])]);
 }
+
+#[test]
+fn what_a_clear_replaced_is_read_back() {
+    // 施工 R-13 补：她搜以前的对话只跳过这以后开的几轮（撤销了清空跟着回去，在会话那一层的 `memory_tools.rs` 测）。
+    let mut session = after_one_turn();
+    assert_eq!(session.compacted_upto(), None, "没清空、压缩过的没有");
+    session.handle(clear(3));
+    session.handle(stored(11));
+    assert_eq!(session.compacted_upto(), Some(seq(8)));
+}

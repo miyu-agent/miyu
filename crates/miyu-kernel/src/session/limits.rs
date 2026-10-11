@@ -1,11 +1,11 @@
 //! 给头看的限额（施工 6-3 补，`docs/blueprint/kernel/session.md` 的 `context_limits()`、`protocol.md` 的 `subscribe`）：
 //! 会话实际用的模型的窗口，和内核自己判到线用的那一条压缩线；推 `model.changed` 要的在跑的回合（施工 8-9）；这时的上下文
-//! 用量（施工 8-15，`context_used()`）。只读，不出动作。
+//! 用量（施工 8-15，`context_used()`）；还算数的最近一次压缩、清空替代到哪（施工 R-13 补，`compacted_upto()`）。只读，不出动作。
 
 use serde::Serialize;
 
 use super::Session;
-use crate::id::{CommandId, TurnId};
+use crate::id::{CommandId, Seq, TurnId};
 
 /// 给头看的限额：头照它画「用量 / 窗口」、算离压缩还有多少。写成 JSON 就是协议里 `subscribe` 回应的 `limits`：
 /// 没有的格不写，从不写 `null`（`protocol.md`）。
@@ -41,5 +41,12 @@ impl Session {
     /// `models.md`「瞬时事件」）。没有在跑的回合的没有。只读，不出动作。
     pub fn turn_cause(&self) -> Option<(TurnId, Option<CommandId>)> {
         self.turn.as_ref().map(|turn| (turn.id, turn.cause.clone()))
+    }
+
+    /// 还算数的最近一次压缩、清空替代到哪（施工 R-13 补）：这以后开的轮还原样在上下文里，以前的她只看得见摘要（清空的连摘要
+    /// 都没有）。没压缩、清空过的，或者都撤掉了的，没有。她用 `memory_search` 搜以前的对话只跳过这个会话这以后的几轮：执行器
+    /// 派这一次调用时向内核要一份（`memory.md`「工具」）。只读，不出动作。
+    pub fn compacted_upto(&self) -> Option<Seq> {
+        self.ledger.compacted()
     }
 }

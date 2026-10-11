@@ -1,6 +1,7 @@
 //! 记忆的三件工具接在会话上（施工 R-3 中，`docs/blueprint/memory.md`「工具」、第二条、第九条）：真记忆日志、真回合库，执行器
 //! 替身照剧本调工具，数据根在临时目录。只有本机的主会话工具面上有；她记下的出处是这一轮、`by` 是那次调用；别的会话搜得到
-//! 记下的和以前的对话；撤销那一轮，那一条跟着看不见、恢复又看得见；作废的只在带 `forgotten` 时出来。
+//! 记下的和以前的对话；撤销那一轮，那一条跟着看不见、恢复又看得见；作废的只在带 `forgotten` 时出来；这个会话清空以前的几轮
+//! 搜得到、还在上下文里的不算（施工 R-13 补）。
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
@@ -358,5 +359,59 @@ async fn replaced_ones_and_her_own_session_stay_out_and_other_places_come_in() {
     assert_eq!(
         last_result(&chat(&home, &handle, 8, "再改").await),
         "m3 was already replaced or retired."
+    );
+}
+
+#[tokio::test]
+async fn her_own_turns_cleared_away_are_found_and_those_still_in_context_are_not() {
+    // 施工 R-13 补：一直开着的会话（群会话就是）里，清空、压缩掉的那几轮她看不见了，搜得到；还在上下文里的照旧跳过。
+    let home = Home::new();
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("嗯。"),
+        Play::Says("记得了。"),
+        call("memory_search", serde_json::json!({"query":"橘猫"})),
+        Play::Says("好。"),
+        call("memory_search", serde_json::json!({"query":"橘猫"})),
+        Play::Says("好。"),
+    ]);
+    let handle = session(&home, &script, Lines::default()).await;
+    chat(&home, &handle, 1, "我家有一只橘猫").await;
+    chat(&home, &handle, 2, "橘猫叫团子").await;
+    ask(&handle, "clear", Command::Clear)
+        .await
+        .expect("会话在跑");
+    let log = until_logged(&home, handle.id(), |log| {
+        log.iter()
+            .filter(|event| matches!(event.body, Body::TurnEnded(_)))
+            .count()
+            >= 3
+    })
+    .await;
+    let cleared = last_turn(&log);
+    chat(&home, &handle, 4, "橘猫爱吃鱼").await;
+    let found = last_result(&chat(&home, &handle, 5, "橘猫呢").await);
+    assert!(
+        found.contains("我家有一只橘猫") && found.contains("橘猫叫团子"),
+        "清空以前的两轮搜得到：{found}"
+    );
+    assert!(
+        !found.contains("橘猫爱吃鱼"),
+        "清空以后的还在上下文里，不算：{found}"
+    );
+
+    ask(
+        &handle,
+        "undo",
+        Command::Revert {
+            turn: Some(cleared),
+        },
+    )
+    .await
+    .expect("会话在跑");
+    assert_eq!(
+        last_result(&chat(&home, &handle, 6, "橘猫呢").await),
+        "Nothing found.",
+        "撤销了清空：那两轮又在上下文里了"
     );
 }

@@ -21,7 +21,7 @@ use tracing::Instrument;
 use crate::lettering::Lettering;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Effect, Permission, Question, Response, Restored};
-use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, SessionId, TurnId};
+use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Input, Reread, Step, Subagent};
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -143,6 +143,9 @@ pub(crate) struct Dispatch {
     pub(crate) usage: Option<Asked>,
     /// 这一次调用在哪一轮（施工 R-3 中）：记忆的端口记下的出处是它。
     pub(crate) turn: Option<TurnId>,
+    /// 派出去那一刻还算数的最近一次压缩、清空替代到哪（施工 R-13 补，内核的 `Session::compacted_upto()`）：记忆的端口搜以前的
+    /// 对话只跳过这个会话这以后的几轮。
+    pub(crate) compacted: Option<Seq>,
     /// 是谁要她做的（施工 O-2 下）：交给提供者的工具。
     pub(crate) asked: Option<By>,
     /// 这一轮的配置（施工 R-5 补）：记忆的端口照它的 `models.embedding` 算向量。
@@ -243,6 +246,7 @@ impl Tools {
             inherit,
             usage,
             turn,
+            compacted,
             asked,
             config,
         } = dispatch;
@@ -283,7 +287,7 @@ impl Tools {
             memory: self
                 .memory
                 .as_ref()
-                .map(|memory| memory.port(turn, call_id, at, &config)),
+                .map(|memory| memory.port(turn, compacted, call_id, at, &config)),
             packages: self.packages.clone(),
             ids: Some(CallIds {
                 session: self.session.clone(),

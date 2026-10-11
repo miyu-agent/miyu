@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::id::{SessionId, TurnId};
+use miyu_kernel::id::{Seq, SessionId, TurnId};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::fuse;
 use miyu_tool::FoundTurn;
@@ -12,9 +12,10 @@ use super::Keeper;
 use super::vectors::Query;
 
 impl Keeper {
-    /// 搜这一间的以前的对话（回合索引），最多 `limit` 段；`skip` 这个会话自己的不算（她看得见；人经协议搜的不跳过，施工
-    /// R-12 下）；照谁在听挑（施工 R-13 下）：一个场所里只有会话在这个场所的。照关键词找；有问句的向量 `near` 的（施工 R-5 下）
-    /// 再照意思找，两路照名次合。
+    /// 搜这一间的以前的对话（回合索引），最多 `limit` 段；`seen` 是她这时看得见的：这个会话、还算数的最近一次压缩、清空替代
+    /// 到哪，这以后开的轮还在上下文里、不算，以前的照常搜得到；没压缩、清空过的整个会话都不算（施工 R-13 补：一直开着的群会话
+    /// 里清空掉的几轮原来搜不到）。人经协议搜的不跳过（施工 R-12 下）。照谁在听挑（施工 R-13 下）：一个场所里只有会话在这个
+    /// 场所的。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。
     ///
     /// # Errors
     ///
@@ -23,12 +24,12 @@ impl Keeper {
         &self,
         query: &str,
         limit: usize,
-        skip: Option<&SessionId>,
+        seen: Option<(&SessionId, Option<Seq>)>,
         near: Option<&Query>,
     ) -> Result<Vec<FoundTurn>, String> {
         let (turns, _) = self.memory.turns.turns(self.room());
         let places = turns.places().map_err(|error| error.to_string())?;
-        let own = skip.map(|skip| format!("{skip}/"));
+        let own = seen.map(|(session, after)| (format!("{session}/"), after));
         let wide = limit.saturating_mul(4);
         let hits = turns
             .search(query, wide)
@@ -52,7 +53,12 @@ impl Keeper {
         found.extend(hits.into_iter().map(|hit| (hit.key, (hit.text, hit.at))));
         Ok(fuse(&keys, &similar)
             .into_iter()
-            .filter(|key| own.as_ref().is_none_or(|own| !key.starts_with(own)))
+            .filter(|key| {
+                own.as_ref().is_none_or(|(own, after)| {
+                    key.strip_prefix(own.as_str())
+                        .is_none_or(|turn| replaced(turn, *after))
+                })
+            })
             .filter(|key| {
                 let source = key
                     .split_once('/')
@@ -73,4 +79,9 @@ impl Keeper {
             .take(limit)
             .collect())
     }
+}
+
+/// 这个会话的第 `turn` 轮（键的后一半）是不是已经被压缩、清空替代掉了：回合编号不大于 `after` 的是。没有 `after` 的都还在。
+fn replaced(turn: &str, after: Option<Seq>) -> bool {
+    after.is_some_and(|after| turn.parse::<u64>().is_ok_and(|turn| turn <= after.get()))
 }

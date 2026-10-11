@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use miyu_kernel::facts::Present;
-use miyu_kernel::id::{AccountId, CallId, SessionId, TurnId};
+use miyu_kernel::id::{AccountId, CallId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::{By, Tool};
 use miyu_kernel::session::Injection;
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -86,10 +86,12 @@ impl Calls {
     }
 
     /// 这一次调用的端口：第 `turn` 轮（没有在跑的回合的没有）、调用 `call_id`、派出去的时刻 `at`；照意思找照这一轮的配置
-    /// `config`（`models.embedding`，施工 R-5 补）。
+    /// `config`（`models.embedding`，施工 R-5 补）；搜以前的对话只跳过这个会话 `compacted`（还算数的最近一次压缩、清空替代到
+    /// 哪）以后的几轮（施工 R-13 补）。
     pub(crate) fn port(
         &self,
         turn: Option<TurnId>,
+        compacted: Option<Seq>,
         call_id: CallId,
         at: Timestamp,
         config: &TurnConfig,
@@ -101,6 +103,7 @@ impl Calls {
         Arc::new(Port(Arc::new(Inner {
             calls: self.clone(),
             turn,
+            compacted,
             call_id,
             at,
             using,
@@ -113,6 +116,7 @@ struct Port(Arc<Inner>);
 struct Inner {
     calls: Calls,
     turn: Option<TurnId>,
+    compacted: Option<Seq>,
     call_id: CallId,
     at: Timestamp,
     using: Using,
@@ -181,7 +185,7 @@ impl Inner {
         Ok(saved)
     }
 
-    /// 记下的最多 [`MEMORIES`] 条在前，别的会话里以前的对话最多 [`TURNS`] 段在后。
+    /// 记下的最多 [`MEMORIES`] 条在前，以前的对话最多 [`TURNS`] 段在后：这个会话还在上下文里的几轮不算（施工 R-13 补）。
     fn search(
         &self,
         query: &str,
@@ -200,7 +204,8 @@ impl Inner {
                 retired: entry.retired.is_some(),
             })
             .collect();
-        let turns = keeper.turns(query, TURNS, Some(&self.calls.session), near)?;
+        let seen = (&self.calls.session, self.compacted);
+        let turns = keeper.turns(query, TURNS, Some(seen), near)?;
         Ok(Searched { memories, turns })
     }
 }
