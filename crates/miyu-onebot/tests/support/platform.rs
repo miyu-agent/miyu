@@ -11,7 +11,8 @@ use super::group::*;
 use super::speaking::{Line, Lines};
 use super::*;
 
-/// 不抽样的群：别人的话只记下，终端管理员 @ 她开一轮。
+/// 不抽样、不让别人叫她（`allow = false`）的群：别人的话只记下，终端管理员 @ 她开一轮。别人叫她做的那一条由测试照判官点了头
+/// 的样子开（[`asks`]）：这里没配判官，判不了，冲她来的（引用她的）桥会自己开一轮（O-37），和测试开的撞上。
 pub const GROUP: i64 = 31;
 
 /// 普通成员。
@@ -35,10 +36,10 @@ pub const QQ_ADMIN: i64 = 40006;
 /// 终端管理员的小号：对应表里有（`support/mod.rs` 的系统配置），没在群里说过话（施工 O-31）。
 pub const ALT: i64 = 10007;
 
-/// 系统的场所规则：群都不抽样，[`MANAGER`] 是管理的人。
+/// 系统的场所规则：群都不抽样、不让别人叫她（[`GROUP`]），[`MANAGER`] 是管理的人。
 pub fn rules() -> String {
     format!(
-        "[[rule]]\nmatch = {{ kind = \"group\" }}\nchatty = {{ probability = 0 }}\nmanagers = [\"qq:{MANAGER}\"]\n"
+        "[[rule]]\nmatch = {{ kind = \"group\" }}\nchatty = {{ probability = 0 }}\nallow = false\nmanagers = [\"qq:{MANAGER}\"]\n"
     )
 }
 

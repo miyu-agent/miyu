@@ -101,6 +101,7 @@ impl Route {
             mentions_me: flags.mentions_me,
             mentions_others: !mentions.is_empty(),
             reply_to: posted.segments.reply_to.clone(),
+            wordless: posted.segments.wordless(),
             media: posted
                 .segments
                 .media

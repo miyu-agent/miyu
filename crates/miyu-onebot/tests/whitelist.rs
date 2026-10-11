@@ -197,7 +197,7 @@ async fn friend_requests_from_the_whitelist_are_approved_and_others_wait() {
 
 #[tokio::test]
 async fn the_whitelist_is_answered_while_she_sleeps_and_skips_the_judge() {
-    let script = Script::new([Play::Says("醒着呢"), Play::Says("来了")]);
+    let script = Script::new([Play::Says("醒着呢"), Play::Says("在的"), Play::Says("来了")]);
     let (home, mut napcat, _) = started(&script, &rules(), &whitelist(), MEMBERS).await;
     let sleepy = format!("qq:group:{SLEEPY}");
     // 睡觉时间：别人 @ 她只记下，白名单成员 @ 她照回、不问判官。
@@ -240,7 +240,8 @@ async fn the_whitelist_is_answered_while_she_sleeps_and_skips_the_judge() {
         "{listed}"
     );
     assert!(listed.get("judge").is_none(), "不问判官：{listed}");
-    // 醒着的群：别人 @ 她照旧问判官（剧本没有一次性入口，判不了、不回），白名单成员的直接回。
+    // 醒着的群：别人 @ 她照旧问判官（剧本没有一次性入口，判不了，冲她来的照回，O-37），白名单成员的直接回。等别人那一轮
+    // 完了再叫：两条挨着来，并不并进一轮看谁先到。
     let awake = format!("qq:group:{AWAKE}");
     napcat.send(group_frame(
         AWAKE,
@@ -249,6 +250,11 @@ async fn the_whitelist_is_answered_while_she_sleeps_and_skips_the_judge() {
         json!([at(BOT), plain(" 嗨")]),
         ("小林", "lin"),
     ));
+    assert_eq!(napcat.group_reply(AWAKE).await, "在的");
+    until_events(&home.root, &awake, |events| {
+        of_kind(events, "turn.ended").len() == 1
+    })
+    .await;
     napcat.send(group_frame(
         AWAKE,
         JIE,
@@ -263,8 +269,12 @@ async fn the_whitelist_is_answered_while_she_sleeps_and_skips_the_judge() {
     .await;
     let member = decided(&events, 3).expect("记了");
     assert_eq!(
-        (&member["route"], &member["outcome"]),
-        (&json!("judge"), &json!("record")),
+        (
+            &member["route"],
+            &member["judge"]["unjudged"],
+            &member["outcome"]
+        ),
+        (&json!("judge"), &json!("refused"), &json!("reply")),
         "{member}"
     );
     let listed = decided(&events, 4).expect("记了");

@@ -43,7 +43,7 @@ pub struct Facts {
     pub mentions_others: bool,
     /// 引用的是不是别人的消息：引用别人的不算续聊。
     pub quotes_other: bool,
-    /// 是不是只有表情，没有字：只有表情的不算刚说过话。
+    /// 是不是没有字（只带了东西、只有占位的都算，桥照它的正文认；O-37 以前只有都是表情的算）：没有字的不算刚说过话。
     pub textless: bool,
     /// 是不是只有图：只有图的不抽样。
     pub media_only: bool,

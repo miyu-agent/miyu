@@ -1,6 +1,7 @@
 //! 问判官（施工 O-23 下，`onebot.md` 第一条「群里怎么叫她」第 7、12、13 条）：真核心照开关拉起真桥，假 NapCat 发群消息，她的
 //! 回合照剧本说，判官那一次（`model.call`）发到本机回环上的假服务器（`support::judge`）。别人 @ 她，判官说回就回、说不回就
-//! 不回；抽样中了交判官；只有违规旗的只查违规，严重程度够了照回；判官回的读不出、等不到的照不回、记为什么，读不出的再问一次；
+//! 不回；抽样中了交判官；只有违规旗的只查违规，严重程度够了照回；判官回的读不出、等不到的记为什么，读不出的再问一次，冲她来
+//! 的照回（O-37；刚说过话的判不了只记下在 `replayed.rs`）；
 //! `ext.onebot.chat.decided` 的格都在；判官在判的时候，别人说的照样记进、判完。判官带人格在 `judged_persona.rs`（施工 O-23 补）。
 
 use std::time::Duration;
@@ -251,7 +252,7 @@ async fn others_calling_her_are_judged() {
 }
 
 #[tokio::test]
-async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
+async fn answers_that_cannot_be_read_or_come_too_late_are_unjudged() {
     let mut server = judge(vec![
         says("我觉得应该回"),
         says("还是应该回"),
@@ -260,9 +261,14 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
         slow(Duration::from_secs(3), yes("too late")),
     ])
     .await;
-    let script = Script::new([Play::Says("来了。"), Play::Says("嗯。")]);
+    let script = Script::new([
+        Play::Says("来了。"),
+        Play::Says("你好。"),
+        Play::Says("等等。"),
+        Play::Says("嗯。"),
+    ]);
     let (home, mut napcat, _) = started_judged(&script, &server, (&rules(), ""), "", MEMBERS).await;
-    // 1：两次都读不出：判不了，照不回算。
+    // 1：两次都读不出：判不了，冲她来的照回（O-37）。
     napcat.send(group_frame(
         GROUP,
         LIN,
@@ -270,7 +276,8 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
         json!([at(BOT), plain(" 在吗")]),
         ("小林", "lin"),
     ));
-    let events = until_decided(&home, GROUP, 1).await;
+    assert_eq!(napcat.group_reply(GROUP).await, "来了。");
+    let events = until_turns(&home, GROUP, 1).await;
     let unread = decided(&events, 1).expect("记了判断");
     assert_eq!(
         unread["judge"],
@@ -279,7 +286,7 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
         "{unread}"
     );
     assert!(unread.get("score").is_none(), "{unread}");
-    assert_eq!(unread["outcome"], "record");
+    assert_eq!(unread["outcome"], "reply");
     // 2：头一次少了几维，再问一次读出来了，回。
     napcat.send(group_frame(
         GROUP,
@@ -288,13 +295,13 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
         json!([at(BOT), plain(" 你好")]),
         ("阿杰", "jie"),
     ));
-    assert_eq!(napcat.group_reply(GROUP).await, "来了。");
+    assert_eq!(napcat.group_reply(GROUP).await, "你好。");
     let events = until_decided(&home, GROUP, 2).await;
     let retried = decided(&events, 2).expect("记了判断");
     assert_eq!(retried["judge"]["tries"], 2, "{retried}");
     assert_eq!(retried["judge"]["answer"]["reason"], "second try");
     assert_eq!(retried["outcome"], "reply");
-    // 3：判官一秒内没回：等不到，不重试，照不回算。
+    // 3：判官一秒内没回：等不到，不重试；冲她来的照回。
     napcat.send(group_frame(
         SLOW,
         LIN,
@@ -302,7 +309,8 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
         json!([at(BOT), plain(" 在吗")]),
         ("小林", "lin"),
     ));
-    let slow = until_decided(&home, SLOW, 3).await;
+    assert_eq!(napcat.group_reply(SLOW).await, "等等。");
+    let slow = until_turns(&home, SLOW, 1).await;
     let late = decided(&slow, 3).expect("记了判断");
     assert_eq!(
         (
@@ -310,7 +318,7 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
             &late["judge"]["unjudged"],
             &late["outcome"]
         ),
-        (&json!(1), &json!("timeout"), &json!("record")),
+        (&json!(1), &json!("timeout"), &json!("reply")),
         "{late}"
     );
     assert!(
@@ -323,7 +331,8 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
             .is_some_and(|millis| millis >= 1000),
         "{late}"
     );
-    // 晚到的回答丢掉：等假服务器把它回完，终端管理员再叫她一次，这一轮只有终端管理员的，判断只多终端管理员那一笔。
+    // 晚到的回答丢掉：等假服务器把它回完，终端管理员再叫她一次，这一轮只有终端管理员的，判断只多终端管理员那一笔，回合只有
+    // 判不了照回的那一轮和这一轮。
     server.wait_closed(5).await;
     napcat.send(group_frame(
         SLOW,
@@ -335,13 +344,14 @@ async fn answers_that_cannot_be_read_or_come_too_late_are_not_replied() {
     assert_eq!(napcat.group_reply(SLOW).await, "嗯。");
     let slow = until_decided(&home, SLOW, 4).await;
     let started = of_kind(&slow, "turn.started");
-    assert_eq!(started.len(), 1, "{slow:#?}");
-    assert_eq!(started[0]["cause"], cause(4, "respond"));
+    assert_eq!(started.len(), 2, "{slow:#?}");
+    assert_eq!(started[0]["cause"], cause(3, "respond"));
+    assert_eq!(started[1]["cause"], cause(4, "respond"));
     assert_eq!(of_kind(&slow, "ext.onebot.chat.decided").len(), 2);
     let log = run_log(&home.root);
     assert!(log.contains("not judged"), "{log}");
     assert!(log.contains("why=timeout"), "{log}");
-    assert_eq!(script.requests().len(), 2);
+    assert_eq!(script.requests().len(), 4);
     assert!(napcat.pending().is_none(), "别的什么都不发");
     stopped(home).await;
 }

@@ -281,7 +281,7 @@ fn at_skips_hand_made_entries_that_break_the_declaration() {
 
 #[test]
 fn every_item_lands_in_its_own_field() {
-    // 每一项写一个和别的都不一样的数：出厂有几项的数一样（两个 0.25、两个 0.15、两个 0.1、两个 15 秒），放错了格看不出来。
+    // 每一项写一个和别的都不一样的数：出厂有几项的数一样（两个 0.25、两个 0.15、两个 0.1、两个 30 秒），放错了格看不出来。
     let files = file(
         "[[rule]]\n\
          [rule.inbound]\nbase64_min_chars = 31\nbase64_max_chars = 4001\nbase64_printable = 801\n\

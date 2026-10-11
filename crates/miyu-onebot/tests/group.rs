@@ -41,8 +41,8 @@ const MEMBERS: &[Member] = &[
 const STOPPED: &str = "已全部停止。";
 const NOT_ALLOWED: &str = "仅终端管理员和群管理员可用。";
 
-/// 系统的场所规则：[`GROUP`] 写 `show_ids`、`managers`，[`SLEEPY`] 的睡觉时间盖住此刻（前后各一个小时，照本机的时区），
-/// [`BROKEN`] 写一个不存在的人格。
+/// 系统的场所规则：[`GROUP`] 写 `show_ids`、`managers`、不让别人叫她（这里只看怎么记：没配判官，别人 @ 她判不了，冲她来的
+/// 照回会开一轮，O-37），[`SLEEPY`] 的睡觉时间盖住此刻（前后各一个小时，照本机的时区），[`BROKEN`] 写一个不存在的人格。
 fn rules() -> String {
     let now = jiff::Zoned::now();
     let minute = i64::from(now.hour()) * 60 + i64::from(now.minute());
@@ -51,7 +51,7 @@ fn rules() -> String {
         format!("{:02}:{:02}", minute / 60, minute % 60)
     };
     format!(
-        "[[rule]]\nmatch = {{ kind = \"group\", group = [{GROUP}] }}\nshow_ids = true\nmanagers = [\"qq:{MANAGER}\"]\n\n\
+        "[[rule]]\nmatch = {{ kind = \"group\", group = [{GROUP}] }}\nshow_ids = true\nallow = false\nmanagers = [\"qq:{MANAGER}\"]\n\n\
          [[rule]]\nmatch = {{ kind = \"group\", group = [{SLEEPY}] }}\nsleep = \"{}-{}\"\n\n\
          [[rule]]\nmatch = {{ kind = \"group\", group = [{BROKEN}] }}\npersona = \"nobody-here\"\n",
         clock(minute - 60),

@@ -6,7 +6,7 @@
 
 use miyu_chat::{
     Chatty, Clock, Conditions, Ctx, Facts, File, Hit, Kind, Mode, Moderation, Params, Pending,
-    Rate, Said, Sleep, Source, Standing, Status, Why,
+    Rate, Reply, Said, Sleep, Source, Standing, Status, Why,
 };
 use miyu_kernel::id::{ExternalId, Seq, VenueId};
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -244,6 +244,38 @@ fn nothing_holding_is_recorded_and_others_go_to_the_judge() {
         chatty,
     );
     assert_eq!(admin.conclusion, Conclusion::Record);
+}
+
+#[test]
+fn the_factory_continuation_window_is_thirty_seconds() {
+    // 续聊的窗口 2026-10-11 回放以后从 15 秒改 30 秒（O-37）：她回了小林 20 秒以后小林接着说，照出厂的还算续聊；正好 30 秒
+    // 以前的不算（刚说过话的窗口也是 30 秒，一起没了）。
+    let params = params();
+    let after = |seconds: i64| {
+        let replies = [Reply {
+            at: ago(seconds),
+            to: vec![lin()],
+        }];
+        let decision = decide(&Case {
+            facts: facts(Standing::Member, false),
+            text: "接着说".to_string(),
+            ctx: ctx(&params),
+            replies: &replies,
+            clock: clock(),
+            chatty: &params.chatty,
+            discipline: Discipline::Chatty,
+            pendings: &[],
+            window: params.supersede_window,
+        });
+        let kinds: Vec<Kind> = decision
+            .passed
+            .map(|passed| passed.conditions.hits.iter().map(|hit| hit.kind).collect())
+            .unwrap_or_default();
+        kinds
+    };
+    assert_eq!(after(20), [Kind::Continuation, Kind::AfterSpeaking]);
+    assert_eq!(after(29), [Kind::Continuation, Kind::AfterSpeaking]);
+    assert_eq!(after(30), []);
 }
 
 #[test]

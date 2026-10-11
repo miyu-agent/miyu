@@ -48,6 +48,8 @@ pub(super) struct Heard {
     pub(super) mentions_others: bool,
     /// 引用的那一条的平台编号。
     pub(super) reply_to: Option<String>,
+    /// 没有字：正文只有空白和占位、没有 @（施工 O-37，`Segments::wordless`）。
+    pub(super) wordless: bool,
     /// 带的东西的种类，照先后。
     pub(super) media: Vec<MediaKind>,
 }
@@ -124,7 +126,7 @@ impl Route {
         judged: Option<Judged<'_>>,
         tag: &Tag,
     ) -> Result<(), Gone> {
-        let finale = finale(decision.conclusion, judged);
+        let finale = finale(decision, judged);
         tracing::info!(target: TARGET, venue = %tag.venue, message = tag.number, outcome = finale.name(), "chat decided");
         let decided = format!("{}/decided", tag.id);
         let written = body(decision, standing, judged);
@@ -246,7 +248,7 @@ impl Route {
             &heard.text,
             &keywords,
         );
-        // 只有带的东西、只有表情（「施工时定的」第 79 条）。
+        // 只有带的东西、没有字（「施工时定的」第 79 条；没有字 O-37 改：原来只有都是表情的算）。
         let media_only = heard.text.trim().is_empty() && !heard.media.is_empty();
         let facts = Facts {
             venue: heard.venue.id().clone(),
@@ -258,7 +260,7 @@ impl Route {
             },
             mentions_others: heard.mentions_others,
             quotes_other: heard.reply_to.is_some() && !quotes_me,
-            textless: media_only && heard.media.iter().all(|kind| *kind == MediaKind::Sticker),
+            textless: heard.wordless,
             media_only,
         };
         let ctx = Ctx {

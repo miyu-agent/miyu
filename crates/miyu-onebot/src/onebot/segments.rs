@@ -17,6 +17,9 @@ pub const FORWARD: &str = "[forward]";
 /// 卡片（`json`、`xml` 段）的占位，同 [`FORWARD`]。
 const CARD: &str = "[card]";
 
+/// 桥写进正文的占位：只有它们的消息没有字（[`Segments::wordless`]，施工 O-37）。
+const PLACEHOLDERS: [&str; 2] = [FORWARD, CARD];
+
 /// 带的东西的平台编号从这几格取，照先后，头一个有的：NapCat 的图、语音、视频、文件是 `file_id` 或 `file`，小黄脸是 `id`，
 /// 商城表情是 `emoji_id`。
 const IDS: [&str; 4] = ["file_id", "file", "id", "emoji_id"];
@@ -110,6 +113,17 @@ impl MediaKind {
 }
 
 impl Segments {
+    /// 没有字（施工 O-37，`onebot.md`「施工时定的」第 79 条）：正文的每一块都是空白或者占位（`[forward]`、`[card]`），没有 @；
+    /// 带没带东西、带的什么都不看。没有字的不算刚说过话（`core/route/called.rs` 填进 `Facts::textless`）。
+    ///
+    /// 占位照「一段字正好是它」认：人自己打的一段字正好是 `[card]` 的也当没有字，分不开，也很少见（「施工时定的」第 221 条）。
+    pub fn wordless(&self) -> bool {
+        self.pieces.iter().all(|piece| match piece {
+            Piece::Text(text) => text.trim().is_empty() || PLACEHOLDERS.contains(&text.as_str()),
+            Piece::At(_) => false,
+        })
+    }
+
     /// @ 了的号，照先后、不重。
     pub fn at(&self) -> Vec<i64> {
         let mut all = Vec::new();

@@ -1,6 +1,6 @@
 //! 群里叫她就回（施工 O-23，`onebot.md` 第一条「群里怎么叫她」）：真核心照开关拉起真桥，假 NapCat 发群消息，模型替身照剧本
 //! 说。终端管理员 @ 她、叫她的名字（触发词开头）、引用她的消息，各开一轮，她的回话转成纯文本发回群里、记 `venue.delivered`；别人的
-//! @ 要问判官，照剧本回的核心没有一次性入口、回 `no_model`，判不了、不回（O-23 下；判官说回、说不回的在 `judged.rs`）；没条件的只记下；每一条都记一笔 `ext.onebot.chat.decided`。睡觉时间里终端管理员照回、别人只记下；终端管理员连发两条，
+//! @ 要问判官，照剧本回的核心没有一次性入口、回 `no_model`，判不了，冲她来的照回（O-23 下；O-37 起照回，原来不回；判官说回、说不回的在 `judged.rs`）；没条件的只记下；每一条都记一笔 `ext.onebot.chat.decided`。睡觉时间里终端管理员照回、别人只记下；终端管理员连发两条，
 //! 正在跑的一轮并进去；同一条消息平台重发不再判。她的话拆成几段发，NapCat 回的先后和发的先后不一样，`venue.delivered` 也照
 //! 发的先后记。
 
@@ -66,14 +66,6 @@ fn decided(events: &[Value], message: i64) -> Option<Value> {
         .map(|event| event["body"].clone())
 }
 
-/// 等到群 `group` 里第 `message` 条消息的判断记下了：交回那时的全部事件。
-async fn until_decided(home: &Home, group: i64, message: i64) -> Vec<Value> {
-    until_events(&home.root, &venue(group), |events| {
-        decided(events, message).is_some()
-    })
-    .await
-}
-
 /// 平台编号是 `message` 的那一条人说的话的序号。
 fn seq_of(events: &[Value], message: i64) -> u64 {
     said(events)
@@ -98,6 +90,7 @@ async fn the_admin_calling_her_gets_an_answer_in_the_group() {
         Play::Says("在。"),
         Play::Says("叫我？"),
         Play::Says("**看到**了。"),
+        Play::Says("你好。"),
     ]);
     let (home, mut napcat, _) = started(&script, &rules(), "", MEMBERS).await;
     // 1：没条件的只记下。2：终端管理员 @ 她。
@@ -133,7 +126,7 @@ async fn the_admin_calling_her_gets_an_answer_in_the_group() {
     napcat.send(group_frame(GROUP, ADMIN, 4, quoting, ("终端管理员", "o")));
     assert_eq!(napcat.group_reply(GROUP).await, "看到了。", "转成纯文本");
     until_answered(&home, GROUP, 3, 3).await;
-    // 5：别人的 @：只记判断，不回。
+    // 5：别人的 @：判官判不了，冲她来的照回（O-37）。
     napcat.send(group_frame(
         GROUP,
         JIE,
@@ -141,7 +134,8 @@ async fn the_admin_calling_her_gets_an_answer_in_the_group() {
         json!([at(BOT), plain(" 你好")]),
         ("阿杰", "jie"),
     ));
-    let events = until_decided(&home, GROUP, 5).await;
+    assert_eq!(napcat.group_reply(GROUP).await, "你好。");
+    let events = until_answered(&home, GROUP, 4, 4).await;
 
     let (session, _) = venue_session(&home.root, &venue(GROUP)).expect("有会话");
     let seqs: Vec<u64> = (1..=5).map(|message| seq_of(&events, message)).collect();
@@ -175,11 +169,16 @@ async fn the_admin_calling_her_gets_an_answer_in_the_group() {
         json!({"mode": "reply", "tries": 2, "millis": other["judge"]["millis"], "unjudged": "refused", "detail": "no_model"}),
         "别人的 @ 要问判官，判不了的再问一次：{other}"
     );
-    assert_eq!(other["outcome"], "record", "判不了照不回算：{other}");
+    assert!(other.get("score").is_none(), "{other}");
+    assert_eq!(other["outcome"], "reply", "判不了、冲她来的照回：{other}");
 
     let started = of_kind(&events, "turn.started");
-    assert_eq!(started.len(), 3, "终端管理员叫了三次，开三轮：{started:#?}");
-    for (turn, message) in started.iter().zip([2, 3, 4]) {
+    assert_eq!(
+        started.len(),
+        4,
+        "终端管理员叫了三次、别人叫了一次，开四轮：{started:#?}"
+    );
+    for (turn, message) in started.iter().zip([2, 3, 4, 5]) {
         assert_eq!(turn["cause"], cause(message, "respond"), "{turn}");
         assert_eq!(
             turn["body"]["triggers"],
@@ -188,20 +187,21 @@ async fn the_admin_calling_her_gets_an_answer_in_the_group() {
         );
     }
     let delivered = of_kind(&events, "venue.delivered");
-    let texts = ["在。", "叫我？", "看到了。"];
-    assert_eq!(delivered.len(), 3, "{delivered:#?}");
+    let texts = ["在。", "叫我？", "看到了。", "你好。"];
+    let to = ["qq:10001", "qq:10001", "qq:10001", "qq:20003"];
+    assert_eq!(delivered.len(), 4, "{delivered:#?}");
     for (n, (one, turn)) in delivered.iter().zip(&started).enumerate() {
         assert_eq!(
             one["body"],
             json!({
-                "line": session, "turn": turn["seq"], "to": ["qq:10001"], "msg": (FIRST_SENT + n as i64).to_string(),
+                "line": session, "turn": turn["seq"], "to": [to[n]], "msg": (FIRST_SENT + n as i64).to_string(),
                 "text": texts[n],
             }),
             "{one}"
         );
     }
-    assert_eq!(script.requests().len(), 3, "别人的 @ 不开回合");
-    assert!(napcat.pending().is_none(), "别人的 @ 不回");
+    assert_eq!(script.requests().len(), 4);
+    assert!(napcat.pending().is_none(), "别的什么都不发");
     let log = run_log(&home.root);
     assert!(log.contains("chat decided"), "{log}");
     assert!(

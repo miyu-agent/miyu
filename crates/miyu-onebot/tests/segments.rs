@@ -1,6 +1,6 @@
 //! 认消息段（施工 O-22，`onebot.md` 第一条「群消息」第 2 条）：每一种段记成什么；带的东西的编号取哪一格、整数也认；几段引用
 //! 只认第一段；@ 同一个人两次只算一次；CQ 字符串只读字。大小照 `file_size`（字、整数都认），怎么取照段（施工 O-33）。合并转发
-//! 照旧写占位，另记下编号和内联的消息（施工 O-34）。
+//! 照旧写占位，另记下编号和内联的消息（施工 O-34）。只有占位、空白的没有字（施工 O-37）。
 
 use serde_json::{Value, json};
 
@@ -257,4 +257,32 @@ fn a_forward_keeps_its_id_and_inline_content() {
             Forwarded::default(),
         ]
     );
+}
+
+/// 施工 O-37：没有字的（只有空白、合并转发和卡片的占位，带没带东西都算）不算刚说过话；有一个字、有一个 @ 的不算没有字。
+#[test]
+fn only_placeholders_and_blanks_are_wordless() {
+    let wordless = |message: Value| segments(&message).wordless();
+    let image = json!({"type": "image", "data": {"file": "a.jpg"}});
+    let forward = json!({"type": "forward", "data": {"id": "fw"}});
+    let card = json!({"type": "json", "data": {"data": "{}"}});
+    for message in [
+        json!([image]),
+        json!([forward]),
+        json!([card]),
+        json!([forward, {"type": "text", "data": {"text": " \n"}}, card, image]),
+        json!([{"type": "face", "data": {"id": "14"}}]),
+        json!(""),
+        json!([]),
+    ] {
+        assert!(wordless(message.clone()), "{message}");
+    }
+    for message in [
+        json!([image, {"type": "text", "data": {"text": "看"}}]),
+        json!([forward, {"type": "text", "data": {"text": "[forward] 这个"}}]),
+        json!([{"type": "at", "data": {"qq": "20002"}}, image]),
+        json!("在吗"),
+    ] {
+        assert!(!wordless(message.clone()), "{message}");
+    }
 }

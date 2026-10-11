@@ -8,14 +8,15 @@ use miyu_config::problem::{At, Code};
 use crate::chatty::test_support::{self as chatty_support, OTHER, cents, facts, hits, mills};
 use crate::judge::test_support::REASON_CHARS;
 use crate::outbound::test_support as outbound_support;
-use crate::{Base64, Chatty, Judge, Judgement, Params, score};
+use crate::{Base64, Chatty, Judge, Judgement, Params, Window, score};
 
 use super::test_support::{
     DEFAULTS, bad, code_of, defaults, edited, file, line_of, missing, problems,
 };
 
 /// 照仓库里的出厂文件该读出来的：旧版的默认值。`Chatty`、`Outbound` 照测试里手写的那一份（`chatty`、`outbound` 的
-/// `test_support`），抽样那一格手写的是 0（别的测试不让抽样掺进来），出厂是 50。
+/// `test_support`），抽样那一格手写的是 0（别的测试不让抽样掺进来），出厂是 50；续聊的窗口手写的是旧版的 15 秒，出厂
+/// 2026-10-11 回放以后改成 30 秒（O-37）。
 fn factory() -> Params {
     Params {
         base64: Base64 {
@@ -25,6 +26,10 @@ fn factory() -> Params {
         },
         chatty: Chatty {
             probability: 50,
+            continuation: Window {
+                bonus: 0.1,
+                window: 30_000,
+            },
             ..chatty_support::chatty()
         },
         supersede_window: 7_000,
@@ -93,7 +98,7 @@ fn the_factory_chatty_scores_the_two_examples_like_the_hand_written_one() {
 fn durations_are_handed_out_in_milliseconds() {
     let read = |text: &str| Params::read(&file(text)).expect("读得出");
     let params = read(&edited(
-        "continuation_window = \"15s\"",
+        "continuation_window = \"30s\"",
         "continuation_window = \"2m\"",
     ));
     assert_eq!(params.chatty.continuation.window, 120_000);
@@ -340,7 +345,7 @@ fn the_ends_of_the_ranges_are_accepted() {
 fn a_zero_duration_is_not_a_duration() {
     for (from, to, key) in [
         (
-            "continuation_window = \"15s\"",
+            "continuation_window = \"30s\"",
             "continuation_window = \"0s\"",
             "chatty.continuation_window",
         ),

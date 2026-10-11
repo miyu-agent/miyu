@@ -3,6 +3,9 @@
 //! 名字照群聊内核的类型写成蛇形的字。纯逻辑。O-23 下从 `decide.rs` 挪出来，多 `discipline`、`supersede`、`judge`、`score`。
 //!
 //! 条件的写法读回来（[`kind_of`]）：投影照判断认判过要回的那几条（`projection.rs`，第 11 条）。
+//!
+//! 判不了照回的（O-37，[`finale`]）不另加格：`outcome` 是 `reply`、`judge` 里是 `unjudged`、没有 `score` 就是它（「施工时定的」
+//! 第 220 条）。
 
 use miyu_chat::{Flag, Kind, Mode, Outcome, Route, Score, Standing, Supersede, Unreadable, Why};
 use serde_json::{Value, json};
@@ -42,17 +45,32 @@ impl Finale {
     }
 }
 
-/// 最后怎么做：问判官的照分，回的回，别的（判不了的也是）只记下（18 第七节）。
-pub(super) fn finale(conclusion: Conclusion, judged: Option<Judged<'_>>) -> Finale {
-    match conclusion {
+/// 最后怎么做：问判官的照分，分够的回；判不了的（「群里怎么叫她」第 13 条）主触发是冲她来的照回，别的只记下（18 第七节；
+/// 冲她来的照回 O-37 改，2026-10-11 项目主人定，照旧版）。主触发照合起来的条件取（顶替重判的几条一起）。读出来了、可没算分
+/// 的（本机的钟读不出）不是判不了，只记下。
+pub(super) fn finale(decision: &Decision, judged: Option<Judged<'_>>) -> Finale {
+    match decision.conclusion {
         Conclusion::Reply => Finale::Reply,
         Conclusion::Record => Finale::Record,
         Conclusion::Notice(why) => Finale::Notice(why),
-        Conclusion::Judge(_) => match judged.and_then(|judged| judged.score) {
-            Some(score) if score.reply => Finale::Reply,
+        Conclusion::Judge(_) => match judged {
+            Some(Judged {
+                score: Some(score), ..
+            }) if score.reply => Finale::Reply,
+            Some(Judged { answer, .. }) if answer.result.is_err() && called(decision) => {
+                Finale::Reply
+            }
             _ => Finale::Record,
         },
     }
+}
+
+/// 主触发是冲她来（`chat.md` 第三条第 7 条）。
+fn called(decision: &Decision) -> bool {
+    decision
+        .passed
+        .as_ref()
+        .is_some_and(|passed| passed.conditions.primary() == Some(Kind::Direct))
 }
 
 /// `body`（第 7 条那张表）：发的人是 `standing`；问了判官的另有 `judged`。
@@ -60,7 +78,7 @@ pub(super) fn body(decision: &Decision, standing: Standing, judged: Option<Judge
     let mut body = json!({
         "msgs": decision.msgs,
         "standing": standing_name(standing),
-        "outcome": finale(decision.conclusion, judged).name(),
+        "outcome": finale(decision, judged).name(),
     });
     let (inbound, why) = match decision.verdict.outcome {
         Outcome::Pass => ("pass", None),

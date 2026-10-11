@@ -98,7 +98,7 @@ fn a_judged_one_writes_the_judge_and_every_part_of_the_score() {
             "outcome": "reply",
         })
     );
-    assert_eq!(finale(asked.conclusion, Some(judged)), Finale::Reply);
+    assert_eq!(finale(&asked, Some(judged)), Finale::Reply);
     let low = score(false);
     let declined = Judged {
         answer: &answer,
@@ -129,11 +129,18 @@ fn a_judged_one_writes_the_judge_and_every_part_of_the_score() {
 
 #[test]
 fn an_unjudged_one_says_why_and_is_only_recorded() {
-    let asked = decision(
+    // 只查违规的那一路只有违规旗（冲她来的判不了照回，在下一条）。
+    let mut asked = decision(
         Route::ModerationOnly,
         Conclusion::Judge(Mode::ModerationOnly),
         Supersede::None,
     );
+    if let Some(passed) = asked.passed.as_mut() {
+        passed.conditions.hits = vec![Hit {
+            kind: Kind::Moderation,
+            bonus: 0.0,
+        }];
+    }
     let cases = [
         (Unjudged::Queue, json!({"unjudged": "queue"})),
         (Unjudged::Timeout, json!({"unjudged": "timeout"})),
@@ -173,8 +180,92 @@ fn an_unjudged_one_says_why_and_is_only_recorded() {
         assert_eq!(written["judge"], wanted, "{written}");
         assert!(written.get("score").is_none(), "{written}");
         assert_eq!(written["outcome"], "record", "判不了照不回算");
-        assert_eq!(finale(asked.conclusion, Some(judged)), Finale::Record);
+        assert_eq!(finale(&asked, Some(judged)), Finale::Record);
     }
+}
+
+#[test]
+fn an_unjudged_call_to_her_is_answered_and_the_rest_only_recorded() {
+    // 判不了（O-37，2026-10-11 项目主人定）：主触发是冲她来的照回，别的照不回算。主触发照合起来的条件取，不看排在第一个的。
+    let with = |kinds: &[Kind]| {
+        let mut asked = decision(
+            Route::Judge,
+            Conclusion::Judge(Mode::Reply),
+            Supersede::None,
+        );
+        if let Some(passed) = asked.passed.as_mut() {
+            passed.conditions.hits = kinds
+                .iter()
+                .map(|kind| Hit {
+                    kind: *kind,
+                    bonus: 0.1,
+                })
+                .collect();
+        }
+        asked
+    };
+    let unjudged = [
+        Unjudged::Queue,
+        Unjudged::Timeout,
+        Unjudged::Refused("no_model".to_string()),
+        Unjudged::Unreadable(Unreadable::NoObject),
+    ];
+    for why in unjudged {
+        let answer = Answer {
+            tries: 2,
+            millis: 5,
+            model: None,
+            result: Err(why.clone()),
+        };
+        let judged = Judged {
+            answer: &answer,
+            score: None,
+        };
+        for kinds in [
+            &[Kind::Direct][..],
+            &[Kind::AfterSpeaking, Kind::Direct],
+            &[Kind::Direct, Kind::Moderation],
+        ] {
+            let written = body(&with(kinds), Standing::Member, Some(judged));
+            assert_eq!(written["outcome"], "reply", "{why:?} {kinds:?}：{written}");
+            assert!(written["judge"]["unjudged"].is_string(), "{written}");
+            assert!(written.get("score").is_none(), "{written}");
+        }
+        for kinds in [
+            &[Kind::Continuation][..],
+            &[Kind::AfterSpeaking],
+            &[Kind::Probability],
+            &[Kind::Continuation, Kind::AfterSpeaking, Kind::Moderation],
+        ] {
+            let written = body(&with(kinds), Standing::Member, Some(judged));
+            assert_eq!(written["outcome"], "record", "{why:?} {kinds:?}：{written}");
+        }
+    }
+    // 读出来了的照分，冲她来的分不够也不回。
+    let answer = Answer {
+        tries: 1,
+        millis: 5,
+        model: Some("judge/m".to_string()),
+        result: Ok(judgement(None)),
+    };
+    let low = score(false);
+    let declined = Judged {
+        answer: &answer,
+        score: Some(&low),
+    };
+    assert_eq!(
+        body(&with(&[Kind::Direct]), Standing::Member, Some(declined))["outcome"],
+        "record"
+    );
+    // 读出来了、可没算分（本机的钟读不出）的不是判不了：只记下。
+    let unscored = Judged {
+        answer: &answer,
+        score: None,
+    };
+    assert_eq!(
+        body(&with(&[Kind::Direct]), Standing::Member, Some(unscored))["outcome"],
+        "record"
+    );
 }
 
 #[test]
