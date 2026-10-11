@@ -15,7 +15,8 @@ use crate::layer::Sink;
 #[derive(Debug)]
 pub struct RotatingFile {
     dir: PathBuf,
-    name: String,
+    /// 正在写的那一份的文件名，例如 `core.log`。
+    file: String,
     limit: u64,
     keep: usize,
     state: Mutex<State>,
@@ -36,17 +37,26 @@ impl RotatingFile {
     ///
     /// 建不了目录、打不开文件。
     pub fn open(dir: &Path, name: &str, limit: u64, keep: usize) -> io::Result<RotatingFile> {
+        RotatingFile::open_file(dir, &format!("{name}.log"), limit, keep)
+    }
+
+    /// 同 [`RotatingFile::open`]，文件名照 `file` 原样（施工 V-4：内存的账是 `memory.jsonl`），换下的是 `<file>.1` 这些。
+    ///
+    /// # Errors
+    ///
+    /// 建不了目录、打不开文件。
+    pub fn open_file(dir: &Path, file: &str, limit: u64, keep: usize) -> io::Result<RotatingFile> {
         create_dir(dir)?;
-        let path = dir.join(format!("{name}.log"));
-        let file = options().append(true).open(&path)?;
-        let size = file.metadata()?.len();
+        let path = dir.join(file);
+        let opened = options().append(true).open(&path)?;
+        let size = opened.metadata()?.len();
         Ok(RotatingFile {
             dir: dir.to_path_buf(),
-            name: name.to_string(),
+            file: file.to_string(),
             limit,
             keep: keep.max(1),
             state: Mutex::new(State {
-                file: Some(file),
+                file: Some(opened),
                 size,
             }),
         })
@@ -60,8 +70,8 @@ impl RotatingFile {
     /// 第 `n` 份：0 是正在写的，1 是上一份。
     fn nth(&self, n: usize) -> PathBuf {
         match n {
-            0 => self.dir.join(format!("{}.log", self.name)),
-            n => self.dir.join(format!("{}.log.{n}", self.name)),
+            0 => self.dir.join(&self.file),
+            n => self.dir.join(format!("{}.{n}", self.file)),
         }
     }
 

@@ -31,13 +31,14 @@
 | `level(值)` | 读 `MIYU_LOG`：记到哪一级 `filter`，读不懂的原值 `unknown` |
 | `subscriber(写到哪, 级别, 家目录)` | 一个筛好、写成一行的订阅者；测试拿它接住日志 |
 | `utc_offset()` | 本机现在和 UTC 差多少：`+09:00` 这样 |
-| `RotatingFile` | 按大小轮换的文件：`open(目录, 名字, 上限, 留几份)`、`path()`、`flush()` |
+| `RotatingFile` | 按大小轮换的文件：`open(目录, 名字, 上限, 留几份)`（文件名是 `<名字>.log`）、`open_file(目录, 文件名, 上限, 留几份)`（文件名照原样，施工 V-4 内存的账用）、`path()`、`flush()` |
 | `LineLayer`、`Sink`、`Memory` | 写成一行的那一层；写一行的地方；测试用的、留在内存里的 |
 
 | 文件 | 是什么 |
 |---|---|
 | `<数据根>/state/logs/core.log` | 正在写的 |
 | `<数据根>/state/logs/core.log.1` … `core.log.5` | 以前的：`.1` 是上一份，`.5` 最老 |
+| `<数据根>/state/logs/memory.jsonl`、`memory.jsonl.1` | 核心自己记的内存账，不是运行日志：一行一个 JSON，满 1 MiB 换下、只留一份（施工 V-4，`heap.md`「自己记账」） |
 
 - `state/logs/` 没有就建（连同缺的上级），文件没有就建。Unix 上新建的目录 0700、文件 0600，只有本人能进、能读（`07-存储.md` 第二节；施工 4-9 再补四上：原来照系统默认的，一般是 0755、0644）；已经有的不改。Windows 上靠用户目录本身的访问控制。
 - 用到的环境变量：`MIYU_LOG`。

@@ -23,3 +23,17 @@ fn freed_small_blocks_are_given_back_where_glibc_is() {
         assert!(!released);
     }
 }
+
+#[test]
+fn heap_stats_are_there_where_glibc_is() {
+    let kept: Vec<Vec<u8>> = (0..1024).map(|n| vec![(n % 251) as u8; 1024]).collect();
+    let stats = super::stats();
+    if cfg!(all(target_os = "linux", target_env = "gnu")) {
+        let stats = stats.expect("glibc 上有");
+        assert!(stats.used >= 1024 * 1024, "分出去的一兆在用：{stats:?}");
+        assert!(stats.arenas >= stats.used, "{stats:?}");
+    } else {
+        assert_eq!(stats, None);
+    }
+    assert_eq!(kept.len(), 1024);
+}

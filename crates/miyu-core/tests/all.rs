@@ -10,6 +10,7 @@ mod config_words;
 mod embed_package;
 mod embedding_names;
 mod logos;
+mod memlog;
 mod packages;
 mod serve;
 mod settings;

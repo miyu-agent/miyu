@@ -45,8 +45,8 @@ pub(crate) fn purge(root: DataRoot, account: AccountId) -> JoinHandle<()> {
     })
 }
 
-/// 现在，到毫秒。读不出、出了范围的当 1970 年：那样什么都不满时限，一个都不删。
-fn now() -> Timestamp {
+/// 现在，到毫秒。读不出、出了范围的当 1970 年：那样什么都不满时限，一个都不删。内存的账也照它记时刻（施工 V-4）。
+pub(crate) fn now() -> Timestamp {
     let millis = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .ok()

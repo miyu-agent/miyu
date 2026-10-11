@@ -1,5 +1,5 @@
 //! 进程的堆（`docs/designs/23-性能预算.md` F3，施工 V-2 再补）：核心用系统的分配器；glibc 上调两个参数，空闲时把空着的还给
-//! 系统。
+//! 系统。另交出堆的统计、进程这时占了多少内存，给核心自己记账（F4，施工 V-4，[`usage`]）。
 //!
 //! glibc 释放的内存多半留在自己手里，不还给系统：核心空闲时模型目录读完剩下的、关掉的大会话放下的，进程的内存都不回落（V-2 中
 //! 量过：一万条事件的会话关掉以后核心还占 48 MB，空闲时 27 MB）。别的平台（macOS、Windows、musl）的分配器自己会还，这里
@@ -25,6 +25,26 @@ pub fn trim() -> bool {
     imp::trim()
 }
 
+/// 堆这时的样子，字节（施工 V-4）：glibc 的 `mallinfo2`，各个 arena 加起来。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Stats {
+    /// 各个 arena 从系统要来的（不算单独 mmap 的大块）。
+    pub arenas: u64,
+    /// 单独 mmap 的大块，放掉当场还。
+    pub mmapped: u64,
+    /// arena 里分出去、在用的。
+    pub used: u64,
+    /// arena 里空着的：碎片加顶上那一块，`trim` 还得回去的在这里面。
+    pub free: u64,
+}
+
+/// 堆这时的统计：glibc 上照 `mallinfo2`；别的平台没有。要走一遍各个 arena，在阻塞线程里调。
+pub fn stats() -> Option<Stats> {
+    imp::stats()
+}
+
+pub mod usage;
+
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 mod imp {
     use std::os::raw::c_int;
@@ -34,11 +54,28 @@ mod imp {
     /// glibc 的 `M_MMAP_THRESHOLD`（`malloc.h`）。
     const M_MMAP_THRESHOLD: c_int = -3;
 
-    // 声明 glibc 的两个函数：声明本身不调用，调用的两处各自写明为什么安全。
-    #[allow(unsafe_code, reason = "声明 glibc 的 mallopt、malloc_trim")]
+    /// glibc 的 `struct mallinfo2`（`malloc.h`，2.33 起）：十格，都是 `size_t`，照这个先后。
+    #[repr(C)]
+    #[allow(dead_code, reason = "照 malloc.h 占位：只读其中四格")]
+    struct Mallinfo2 {
+        arena: usize,
+        ordblks: usize,
+        smblks: usize,
+        hblks: usize,
+        hblkhd: usize,
+        usmblks: usize,
+        fsmblks: usize,
+        uordblks: usize,
+        fordblks: usize,
+        keepcost: usize,
+    }
+
+    // 声明 glibc 的三个函数：声明本身不调用，调用的三处各自写明为什么安全。
+    #[allow(unsafe_code, reason = "声明 glibc 的 mallopt、malloc_trim、mallinfo2")]
     unsafe extern "C" {
         fn mallopt(param: c_int, value: c_int) -> c_int;
         fn malloc_trim(pad: usize) -> c_int;
+        fn mallinfo2() -> Mallinfo2;
     }
 
     pub(super) fn tune(arenas: i32, mmap_from: i32) -> bool {
@@ -59,6 +96,20 @@ mod imp {
         let released = unsafe { malloc_trim(0) };
         released == 1
     }
+
+    pub(super) fn stats() -> Option<super::Stats> {
+        // SAFETY: `mallinfo2` 只读分配器自己的统计、照值交回一个结构，不碰调的一方的内存；glibc 自己加锁，哪个线程调都行。
+        // 结构照 `malloc.h` 写（上面的 `Mallinfo2`）。
+        #[allow(unsafe_code, reason = "调 glibc 的 mallinfo2，见上一行")]
+        let info = unsafe { mallinfo2() };
+        let bytes = |n: usize| u64::try_from(n).unwrap_or(u64::MAX);
+        Some(super::Stats {
+            arenas: bytes(info.arena),
+            mmapped: bytes(info.hblkhd),
+            used: bytes(info.uordblks),
+            free: bytes(info.fordblks),
+        })
+    }
 }
 
 #[cfg(not(all(target_os = "linux", target_env = "gnu")))]
@@ -69,6 +120,10 @@ mod imp {
 
     pub(super) fn trim() -> bool {
         false
+    }
+
+    pub(super) fn stats() -> Option<super::Stats> {
+        None
     }
 }
 

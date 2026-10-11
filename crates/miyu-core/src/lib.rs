@@ -13,12 +13,13 @@
 //!    分块上传留下的暂存（[`packages::clear_uploads`]，施工 W-5）；
 //! 6. 往标准输出写一行 `ready`：拉起它的头等着这一行；接着照开关拉起开着的扩展（施工 9-4 上）；在后台更新 models.dev 的
 //!    目录（施工 8-7；读目录、用出来的在第 4 步造好路由就在阻塞线程里开始了，读完再答要它的，施工 V-2 下）；在后台清一次
-//!    回收处（施工 3-8 三补，`trash.rs`）。
+//!    回收处（施工 3-8 三补，`trash.rs`）；开始自己记内存账（施工 V-4，[`memlog`]）。
 //!
 //! 之后 [`serve()`] 一个个接连接：没有连接、也没有在跑的回合，空闲够久了就退出；收到停的信号，先让在跑的
 //! 会话有计划地停下再退出。起不来的，把原因写成那一行（`error …`）交给头。
 
 pub mod embed;
+pub mod memlog;
 pub mod models;
 pub mod packages;
 mod sandbox;
@@ -317,6 +318,7 @@ async fn run(
         Err(error) => return failed("tools", error),
     };
     let trashed = root.clone();
+    let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
     let queries = packages::register(&resources, &root, &admin());
     let builtins = builtin_tools(&resources, &env);
@@ -358,6 +360,8 @@ async fn run(
     core.start_extensions();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
+    // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。
+    let _sampling = memlog::spawn(&core, &logs, memlog::Timing::default());
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
     let purging = trash::purge(trashed, admin());

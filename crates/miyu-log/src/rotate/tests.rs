@@ -123,3 +123,19 @@ fn existing_directories_and_files_keep_their_permissions() {
     assert_eq!(mode(&scratch.0), 0o755);
     assert_eq!(mode(&path), 0o644);
 }
+
+/// 文件名照原样的（施工 V-4：`memory.jsonl`）：换下的是 `<文件名>.1`，不加 `.log`。
+#[test]
+fn a_file_named_as_given_rotates_under_its_own_name() {
+    let scratch = Scratch::new();
+    let file = RotatingFile::open_file(&scratch.0, "memory.jsonl", 20, 1).unwrap();
+    for n in 0..5 {
+        file.write_line(&format!("line {n:04}"));
+    }
+    let dir = &scratch.0;
+    assert_eq!(file.path(), dir.join("memory.jsonl"));
+    assert_eq!(read(&dir.join("memory.jsonl")), "line 0004\n");
+    assert_eq!(read(&dir.join("memory.jsonl.1")), "line 0002\nline 0003\n");
+    assert!(!dir.join("memory.jsonl.2").exists(), "只留一份");
+    assert!(!dir.join("memory.jsonl.log").exists());
+}

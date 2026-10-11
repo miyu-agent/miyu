@@ -311,3 +311,26 @@ async fn the_core_empties_week_old_sessions_from_the_trash_when_it_starts() {
     let log = home.core_log();
     assert_eq!(count(&log, "trash purged removed=1"), 1, "{log}");
 }
+
+/// 起来就自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux 上 `state/logs/memory.jsonl` 有一行 `start`，带 RSS；量不
+/// 出来的平台不建这个文件。
+#[tokio::test]
+async fn the_core_starts_its_memory_account() {
+    let home = Home::new();
+    let (connection, token) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    let reply = hello(connection, &token).await;
+    assert!(reply.get("error").is_none(), "{reply}");
+    home.until_stopped().await;
+    let account = home.root.state().join("logs").join("memory.jsonl");
+    if !cfg!(target_os = "linux") {
+        assert!(!account.exists(), "量不出来的平台不记");
+        return;
+    }
+    let text = std::fs::read_to_string(&account).expect("记了");
+    let first: serde_json::Value =
+        serde_json::from_str(text.lines().next().expect("至少一行")).expect("一行一个 JSON");
+    assert_eq!(first["why"], "start", "{text}");
+    assert!(first["rss"].as_u64().is_some_and(|rss| rss > 0), "{text}");
+}
