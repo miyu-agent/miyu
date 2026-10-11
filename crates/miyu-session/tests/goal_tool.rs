@@ -262,7 +262,9 @@ async fn setting_another_is_refused_and_get_reads_the_current_one() {
         .expect("会话在跑");
     // 第 1 轮调了工具，上限 1：到了上限记卡住。
     until_goal(&handle, |goal| goal.state == GoalState::Blocked).await;
-    let results = results(&home, &session);
+    // 两件都只读、一起跑，结果先到先记（X-8 补：macOS 上 CI run 1882 两件倒过来到了）：排好再比。
+    let mut results = results(&home, &session);
+    results.sort();
     assert_eq!(
         results,
         [

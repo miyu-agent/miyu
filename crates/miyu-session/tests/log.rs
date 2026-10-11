@@ -169,7 +169,7 @@ async fn the_log_says_what_happened_and_nothing_that_was_said() {
                 Body::TurnStarted(_) => event.turn,
                 _ => None,
             }),
-            Pushed::Transient(_) => None,
+            Pushed::Transient(_) | Pushed::Goal { .. } => None,
         })
         .expect("开过这一轮");
     ask(&redo, "cmd-2", Command::Revert { turn: Some(turn) })

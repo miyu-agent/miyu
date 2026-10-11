@@ -13,7 +13,7 @@ fn persisted(pushed: &[std::sync::Arc<Pushed>]) -> Vec<Event> {
         .iter()
         .flat_map(|pushed| match &**pushed {
             Pushed::Events(events) => events.clone(),
-            Pushed::Transient(_) => Vec::new(),
+            Pushed::Transient(_) | Pushed::Goal { .. } => Vec::new(),
         })
         .collect()
 }

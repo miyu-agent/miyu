@@ -283,6 +283,7 @@ impl Actor {
         // 「空了告诉我」（施工 C-6）：先订、先把通知交出去，再写没有在跑的回合。
         self.after_batch();
         self.settle_busy();
+        self.push_goal();
         Ok(())
     }
 

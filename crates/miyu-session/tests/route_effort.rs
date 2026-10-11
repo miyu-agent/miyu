@@ -57,7 +57,7 @@ async fn turn(handle: &Handle, command: &str) -> Vec<ModelChanged> {
                 TransientBody::ModelChanged(changed) => Some((**changed).clone()),
                 _ => None,
             },
-            Pushed::Events(_) => None,
+            Pushed::Events(_) | Pushed::Goal { .. } => None,
         })
         .collect()
 }

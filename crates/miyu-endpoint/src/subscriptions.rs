@@ -24,6 +24,7 @@
 mod config;
 mod extension_config;
 mod later;
+mod lines;
 mod listed;
 mod memory;
 mod sessions;
@@ -44,6 +45,7 @@ use crate::Core;
 use config::ConfigForwarder;
 use extension_config::ExtensionConfigForwarder;
 pub(crate) use later::Later;
+use lines::{lines, notification, resync};
 use listed::{Listed, ListedForwarder};
 pub(crate) use memory::MemoryAt;
 use memory::MemoryForwarder;
@@ -112,6 +114,7 @@ impl Subscriptions {
     /// 换掉：旧的放完已经交给它的回应再退。
     pub(crate) fn add(
         &mut self,
+        core: &Arc<Core>,
         session: SessionId,
         subscription: Subscription,
         backlog: Vec<Event>,
@@ -120,6 +123,7 @@ impl Subscriptions {
         let (replies, waiting) = self.later.open(session.clone());
         let pushing = Arc::new(AtomicBool::new(true));
         let task = tokio::spawn(forward(
+            Arc::clone(core),
             session.clone(),
             subscription,
             backlog,
@@ -366,6 +370,7 @@ impl Drop for Subscriptions {
 /// 转发一个订阅：先补发 `backlog`，再转推送。推送停了（掉了队、会话停了），接着转这个会话的回应，直到连接不要它了；
 /// 交回订阅。
 async fn forward(
+    core: Arc<Core>,
     session: SessionId,
     mut subscription: Subscription,
     backlog: Vec<Event>,
@@ -374,7 +379,7 @@ async fn forward(
     pushing: Arc<AtomicBool>,
 ) -> Subscription {
     if replay(&session, backlog, &out).await {
-        relay(&session, &mut subscription, &mut replies, &out).await;
+        relay(&core, &session, &mut subscription, &mut replies, &out).await;
     }
     pushing.store(false, Ordering::Release);
     while let Some(reply) = replies.recv().await {
@@ -401,6 +406,7 @@ async fn replay(session: &SessionId, backlog: Vec<Event>, out: &mpsc::Sender<Str
 
 /// 转发的主循环：交回来的时候，这个订阅不再推了（连接不要它了的，也交回来）。
 async fn relay(
+    core: &Core,
     session: &SessionId,
     subscription: &mut Subscription,
     replies: &mut mpsc::UnboundedReceiver<String>,
@@ -416,7 +422,7 @@ async fn relay(
                 // 先放已经到了的推送；放着放着掉了队，这条回应也照样放出去再停。
                 let mut alive = true;
                 while let Some(next) = subscription.try_next() {
-                    if !deliver(session, next, out).await {
+                    if !deliver(core, session, next, out).await {
                         alive = false;
                         break;
                     }
@@ -426,7 +432,7 @@ async fn relay(
                 }
             }
             next = subscription.next() => {
-                if !deliver(session, next, out).await {
+                if !deliver(core, session, next, out).await {
                     return;
                 }
             }
@@ -437,13 +443,14 @@ async fn relay(
 /// 交一份推送出去。这个订阅不再往下了（掉了队、会话停了、连接断了），交回 `false`；掉队的、会话停了的先推一条
 /// `resync`。
 async fn deliver(
+    core: &Core,
     session: &SessionId,
     next: Result<Arc<Pushed>, Ended>,
     out: &mpsc::Sender<String>,
 ) -> bool {
     match next {
         Ok(pushed) => {
-            for line in lines(session, &pushed) {
+            for line in lines(core, session, &pushed) {
                 if out.send(line).await.is_err() {
                     return false;
                 }
@@ -466,31 +473,4 @@ async fn deliver(
             false
         }
     }
-}
-
-/// 一份推送写成 `event` 通知：一条事件一个，落了盘的、瞬时的都照 `03-事件模型.md` 的写法原样放进去。
-fn lines(session: &SessionId, pushed: &Pushed) -> Vec<String> {
-    match pushed {
-        Pushed::Events(events) => events
-            .iter()
-            .map(|event| notification(session, &event.to_line()))
-            .collect(),
-        Pushed::Transient(transient) => vec![notification(session, &transient.to_line())],
-    }
-}
-
-/// `event` 通知。事件已经是一行紧凑的 JSON，原样嵌进去，不再解一遍、写一遍。
-fn notification(session: &SessionId, event: &str) -> String {
-    format!(
-        r#"{{"jsonrpc":"2.0","method":"event","params":{{"session":"{}","event":{event}}}}}"#,
-        session.as_str()
-    )
-}
-
-/// `resync` 通知：这个订阅掉了队，或者会话停了，这个订阅停了。
-fn resync(session: &SessionId) -> String {
-    format!(
-        r#"{{"jsonrpc":"2.0","method":"resync","params":{{"session":"{}","stream":"events"}}}}"#,
-        session.as_str()
-    )
 }

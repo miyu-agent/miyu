@@ -65,7 +65,7 @@ fn changes(pushed: &[Arc<Pushed>]) -> Vec<ModelChanged> {
                 TransientBody::ModelChanged(changed) => Some((**changed).clone()),
                 _ => None,
             },
-            Pushed::Events(_) => None,
+            Pushed::Events(_) | Pushed::Goal { .. } => None,
         })
         .collect()
 }

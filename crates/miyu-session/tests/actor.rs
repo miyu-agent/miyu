@@ -20,7 +20,7 @@ use miyu_store::blob::Blobs;
 fn seqs(pushed: &Pushed) -> Vec<Seq> {
     match pushed {
         Pushed::Events(events) => events.iter().map(|event| event.seq).collect(),
-        Pushed::Transient(_) => Vec::new(),
+        Pushed::Transient(_) | Pushed::Goal { .. } => Vec::new(),
     }
 }
 

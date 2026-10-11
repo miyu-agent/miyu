@@ -434,7 +434,7 @@ impl Session {
         let closed = self.closed();
         actions.extend(closed.iter().map(|&turn| Action::RunTurnEndHooks { turn }));
         actions.extend(self.report_up());
-        actions.extend(self.title_up(&closed));
+        actions.extend(self.title_up(at, &closed));
         actions.extend(self.advance(at));
         actions
     }

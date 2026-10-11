@@ -58,7 +58,7 @@ pub(crate) fn whole(
 
 /// 会话状态的 `goal` 那一格（施工 X-6，`docs/blueprint/view.md`「会话状态」）：原文、上限（不限的不写）、状态、卡在哪（卡住的
 /// 才有）、第几轮、设下的时刻、花了多少（写法同会话状态的 `usage`）。
-fn goal_of(core: &Core, goal: &Goal) -> Value {
+pub(crate) fn goal_of(core: &Core, goal: &Goal) -> Value {
     let mut shown = json!({
         "text": goal.text,
         "state": goal.state.as_str(),

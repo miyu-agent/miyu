@@ -180,6 +180,8 @@ impl View {
                     }
                 }
                 Pushed::Transient(transient) => changes.extend(self.projector.transient(transient)),
+                // 视图流照会话状态推目标（施工 X-8 补）：变的时候总带着落了盘的事件，状态那一份跟着重算。
+                Pushed::Goal { .. } => {}
             }
         }
         flush(session, &mut changes, &mut lines);

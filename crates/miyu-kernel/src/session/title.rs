@@ -18,6 +18,7 @@ use super::aside::{Aside, Finished};
 use crate::block::Block;
 use crate::event::{Body, CallError, Cost, Event, MetaChanged, Purpose, Usage};
 use crate::id::{Seq, TurnId};
+use crate::origin::By;
 use crate::time::Timestamp;
 
 /// 起标题的账：从日志一条条算，活着时每追加一条记一次，载入时照日志再走一遍，算出来的一样。
@@ -31,6 +32,10 @@ pub(super) struct Naming {
     tries: u32,
     /// 最近一条有正文的回复在哪一轮。
     answered: Option<TurnId>,
+    /// 最近设下的长期目标的原文（施工 X-8 补）：人还没说过话、只有续轮的会话照它起标题。
+    goal: Option<String>,
+    /// 有过不是模块发的话（人、场所里的人、别的会话、别的 harness）。
+    spoke: bool,
 }
 
 impl Naming {
@@ -41,6 +46,8 @@ impl Naming {
             Body::MetaChanged(changed) if changed.title.is_some() => self.named = true,
             Body::ModelCalled(called) if called.purpose == Some(Purpose::Title) => self.tries += 1,
             Body::MessageAssistant(reply) if said(&reply.blocks) => self.answered = event.turn,
+            Body::GoalSet(set) => self.goal = Some(set.text.clone()),
+            Body::MessageUser(_) if !matches!(event.by, By::Module(_)) => self.spoke = true,
             _ => {}
         }
     }
@@ -48,6 +55,11 @@ impl Naming {
     /// 还要起：不是子会话，标题没动过，试过的不到 `tries` 次。
     fn wanted(&self, tries: u32) -> bool {
         !self.child && !self.named && self.tries < tries
+    }
+
+    /// 只有续轮的会话的目标原文（施工 X-8 补）：设过目标、还没有谁说过话。
+    fn goal_only(&self) -> Option<&str> {
+        self.goal.as_deref().filter(|_| !self.spoke)
     }
 }
 
@@ -62,7 +74,10 @@ fn said(blocks: &[Block]) -> bool {
 impl Session {
     /// 该起标题了就起（「落了盘」里，`turn.ended` 落了盘的回合是 `closed`）：照这一刻落了盘的有效历史组装，名字是照到的
     /// 那一条。组装不出来的（快照里没有起标题的字、有效历史里没有带正文的回答）不起，也不算试过。
-    pub(super) fn title_up(&mut self, closed: &[TurnId]) -> Option<Action> {
+    ///
+    /// 只有续轮的会话（施工 X-8 补：人在空会话里直接 `/goal`，她自己设了目标以后人还没说话的不算，那时已经有人的话）：不请求
+    /// 模型，拿目标原文当标题，`session.meta_changed`（`by` 内核）当场追加。有效历史里只有续轮消息，模型会照它的标签起名。
+    pub(super) fn title_up(&mut self, at: Timestamp, closed: &[TurnId]) -> Option<Action> {
         let titles = self.policy.titles?;
         let answered = self.naming.answered?;
         if self.titling.is_some()
@@ -72,6 +87,15 @@ impl Session {
             || !closed.contains(&answered)
         {
             return None;
+        }
+        if let Some(goal) = self.naming.goal_only().map(str::to_string) {
+            let changed = MetaChanged {
+                title: Some(shorten(goal.trim(), titles.chars)),
+                pinned: None,
+            };
+            self.meta.note(&changed);
+            let event = self.record_aside(at, None, Body::MetaChanged(changed));
+            return Some(Action::Append(vec![event]));
         }
         let history = self.history.until(self.stored?);
         let (request, upto) = self.policy.assembler.title(&history)?;

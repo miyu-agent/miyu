@@ -142,7 +142,7 @@ async fn events(
                 return Err(Refusal::STOPPED);
             };
             let current = subscription.current().cloned();
-            subscriptions.add(session, subscription, Vec::new(), out.clone());
+            subscriptions.add(core, session, subscription, Vec::new(), out.clone());
             current
         }
     };
@@ -248,6 +248,10 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     reply["jobs"] = json!(current.jobs);
     // 会话在哪个目录干活（施工 9-7 上）：之后照推过来的 `session.workspace_changed` 换。
     reply["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
+    // 长期目标（施工 X-8 补）：同会话状态的 `goal`，没有的不写；之后照推过来的 `goal.changed` 换。
+    if let Some(goal) = &current.goal {
+        reply["goal"] = crate::view::status::goal_of(core, goal);
+    }
 }
 
 /// 带 `after` 订阅（施工 3-8 六补）：总是换一个新的。原来有一个的，先等它把交给它的推送、回应都放完、拿回它的订阅，补的
@@ -273,7 +277,7 @@ async fn subscribe_after(
         Refusal::BROKEN
     })?;
     let current = subscription.current().cloned();
-    subscriptions.add(session.clone(), subscription, backlog, out.clone());
+    subscriptions.add(core, session.clone(), subscription, backlog, out.clone());
     Ok((upto, current))
 }
 
