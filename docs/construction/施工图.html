@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>406</b><span>/ 420 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>407</b><span>/ 421 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">4d63e79c</b><span>最近一步（F-10 上 她看软件包）的提交</span></li>
+    <li><b class="mono">7b3e9935</b><span>最近一步（X-3 上 MCP 接进核心）的提交</span></li>
   </ul>
 </header>
 
@@ -834,7 +834,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-1"><span class="n">X-1</span>MCP 的客户端<span class="st">✓</span></a></li>
         <li><span class="step done"><span class="n">图纸</span>MCP 适配器：四题定了<span class="st">✓</span></span></li>
         <li><a class="step done" href="#sX-2"><span class="n">X-2</span>清单里的 MCP<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">X-3</span>MCP 接进核心</span></li>
+        <li><a class="step done" href="#sX-3a"><span class="n">X-3 上</span>MCP 接进核心<span class="st">✓</span></a></li>
+        <li><span class="step"><span class="n">X-3 下</span>MCP 缓存、扩展包带的服务</span></li>
         <li><span class="step"><span class="n">X-4</span>MCP 的功能和预设</span></li>
         <li><span class="step"><span class="n">X-5</span>MCP 真服务走一遍</span></li>
       </ol>
@@ -23560,6 +23561,60 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/X-2-清单里的mcp.md</code>、图纸 <code>docs/blueprint/packages.md</code>「MCP 服务」、<code>mcp.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-3a" aria-labelledby="h-sX3a">
+  <div class="sheet-head"><h2 id="h-sX3a"><span class="no">X-3 上</span>MCP 接进核心</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">bundle 包带的 MCP 服务由核心起、列、登记，她在会话里直接调（mcp.md「怎么走」第二到第四条）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">MCP 接进核心</span><span class="dir-note">X-3 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>bundle 有了开关：和扩展同一份文件，没写的关着</li>
+              <li>起服务：命令照绝对路径、包目录、bin/、PATH 找，不进沙盒</li>
+              <li>工具名 mcp__服务名__工具名，只读的算 read、别的算 network</li>
+              <li>结果换块：图交成图，太长的截到 10 万字</li>
+              <li>退避着重启，连续 5 次停下；关了工具出目录</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">包自己的、服务的工具分开换</span><span class="rl">Catalog::replacing_service</span></div>
+          <div class="tile new"><span class="nm">服务回的错照原话交</span><span class="rl">不新加字，只加两句登记</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-3 上</dd></div>
+        <div><dt>名称</dt><dd>MCP 接进核心</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-11</dd></div>
+        <div><dt>提交</dt><dd class="mono">7b3e9935</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 1787），变异 18 处报红，真模型调了两件</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真起测试服务，新旧两个时代都通</span></li>
+        <li><span class="ok">✓</span><span>超时发取消、中途退出暂时不可用</span></li>
+        <li><span class="ok">✓</span><span>核心重启照开关起，关着的不起</span></li>
+        <li><span class="ok">✓</span><span>真模型调 echo、env 都对</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/X-3-MCP接进核心（上）.md</code>、图纸 <code>docs/blueprint/mcp.md</code>、<code>package-pages.md</code>「开关」。</li>
       </ul>
     </div>
   </div>
