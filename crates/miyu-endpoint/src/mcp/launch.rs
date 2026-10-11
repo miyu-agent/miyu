@@ -86,9 +86,26 @@ pub(super) fn work_dir(core: &Core, service: &str) -> PathBuf {
     core.root.state().join("mcp").join(service)
 }
 
+/// 只有名字的命令照这几种文件名找：Windows 上 `npx`、`uvx` 这类是 `.cmd`，`Command` 自己只认 `.exe`（施工 X-5）。找到的
+/// `.cmd`、`.bat` 照完整路径起，标准库经 `cmd.exe` 转、参数照它的规矩转义。别的平台只找名字本身。
+#[cfg(windows)]
+const SUFFIXES: &[&str] = &[".exe", ".cmd", ".bat"];
+#[cfg(not(windows))]
+const SUFFIXES: &[&str] = &[""];
+
 /// 命令第一项 `first` 指的程序：绝对路径的照它；带路径分隔符的照包目录 `dir` 算；只有名字的先找包目录的 `bin/`（包自己带的
-/// 程序放那里，施工 F-8 上再补），没有的交回名字本身，起的时候照 `PATH` 找（`npx`、`uvx` 这类）。
+/// 程序放那里，施工 F-8 上再补），再照 `PATH` 找（`npx`、`uvx` 这类）。别的平台照 `PATH` 找交给 `Command`（它查可执行权限），
+/// 交回名字本身；Windows 上它只认 `.exe`，自己照 [`SUFFIXES`] 找，找不到的交回名字本身，起的时候报找不到。
 pub(super) fn program(first: &str, dir: &Path) -> PathBuf {
+    let path_dirs: Vec<PathBuf> = match std::env::var_os("PATH") {
+        Some(path) if cfg!(windows) => std::env::split_paths(&path).collect(),
+        _ => Vec::new(),
+    };
+    find(first, dir, &path_dirs, SUFFIXES)
+}
+
+/// [`program`] 本身：`path_dirs` 是 `PATH` 里的目录，`suffixes` 是照着找的几种文件名后缀（测试里两种平台的都试）。
+fn find(first: &str, dir: &Path, path_dirs: &[PathBuf], suffixes: &[&str]) -> PathBuf {
     let path = Path::new(first);
     if path.is_absolute() {
         return path.to_path_buf();
@@ -96,11 +113,19 @@ pub(super) fn program(first: &str, dir: &Path) -> PathBuf {
     if first.contains('/') || first.contains(std::path::MAIN_SEPARATOR) {
         return dir.join(path);
     }
-    let bundled = dir
-        .join(BIN)
-        .join(format!("{first}{}", std::env::consts::EXE_SUFFIX));
-    if dir.is_absolute() && bundled.is_file() {
-        return bundled;
+    let bin = dir.join(BIN);
+    let places = dir
+        .is_absolute()
+        .then_some(bin.as_path())
+        .into_iter()
+        .chain(path_dirs.iter().map(PathBuf::as_path));
+    for place in places {
+        for suffix in suffixes {
+            let candidate = place.join(format!("{first}{suffix}"));
+            if candidate.is_file() {
+                return candidate;
+            }
+        }
     }
     path.to_path_buf()
 }

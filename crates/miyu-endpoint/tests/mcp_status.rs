@@ -234,3 +234,26 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
     );
     core.stop_extensions().await;
 }
+
+/// Windows 上 `npx`、`uvx` 这类是 `.cmd`（施工 X-5）：包的 `bin/` 里放一个 `.cmd` 转给测试用的服务，命令只写名字，照样起得来、
+/// 握得上手。
+#[cfg(windows)]
+#[tokio::test]
+async fn on_windows_a_cmd_wrapper_starts_the_service() {
+    let home = Home::new();
+    home.write(
+        "home/alice/packages/wrapped/package.toml",
+        "[package]\nname = { en = \"wrapped\" }\n\n[[mcp]]\nname = \"wrapped\"\ncommand = [\"probe\"]\n",
+    );
+    home.write(
+        "home/alice/packages/wrapped/bin/probe.cmd",
+        &format!("@\"{SERVER}\" %*\r\n"),
+    );
+    let core = core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    enable(&mut client, "wrapped").await;
+    let running = until_status(&mut client, "wrapped", "running").await;
+    assert!(running["mcp"][0]["pid"].is_u64(), "{running}");
+    core.stop_extensions().await;
+}
