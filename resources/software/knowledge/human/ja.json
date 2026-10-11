@@ -1,0 +1,25 @@
+{
+  "tools": {
+    "kb_search": {
+      "name": "ナレッジ検索",
+      "subject": "query",
+      "icon": "✱"
+    },
+    "kb_read": {
+      "name": "文書を読む",
+      "subject": "path",
+      "icon": "→"
+    }
+  },
+  "said": {
+    "kb_search/found": "{hits} 件見つかりました",
+    "kb_search/nothing": "見つかりません",
+    "kb_read/page": "{path} {page}/{pages} ページ",
+    "common/bad-args": "引数が正しくありません：{error}",
+    "common/off": "このセッションではナレッジベースを使えません",
+    "common/failed": "ナレッジベースを使えません：{error}",
+    "common/no-base": "ナレッジベース {kb} はありません",
+    "common/no-document": "{kb} に {path} はありません",
+    "common/no-page": "{page} ページはありません"
+  }
+}

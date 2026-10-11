@@ -63,6 +63,7 @@ fn setup_with(
         tools: Shelf::new(tools),
         venue: VenueId::parse("local").expect("场所合写法"),
         lineage: None,
+        knowledge: None,
     };
     (scratch, root, refresh)
 }

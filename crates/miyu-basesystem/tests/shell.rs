@@ -19,6 +19,32 @@ fn said(key: &str) -> Said {
     Said::new(format!("software/basesystem/{key}"))
 }
 
+/// 只带参数 `args` 的一次调用：别的格都空着（只问工具要报的东西，不真跑）。
+fn bare(args: serde_json::Value) -> Call {
+    Call {
+        args: args.to_string(),
+        cwd: String::new(),
+        home: None,
+        data_root: None,
+        seen: Default::default(),
+        stop: Default::default(),
+        sandbox: None,
+        log: None,
+        offset: miyu_kernel::time::UtcOffset::UTC,
+        agents: None,
+        messages: None,
+        jobs: None,
+        sessions: None,
+        usage: None,
+        questions: None,
+        memory: None,
+        knowledge: None,
+        packages: None,
+        goals: None,
+        ids: None,
+    }
+}
+
 /// 交回的字。
 fn text(done: &Done) -> String {
     done.blocks
@@ -58,27 +84,7 @@ fn shell_comes_from_the_resources_and_names_its_shell() {
     };
     assert!(spec.description.contains(shell), "{}", spec.description);
     assert!(!spec.description.contains('{'), "字段都换过了");
-    let targets = tool.targets(&Call {
-        args: json!({"command": "ls", "description": "Test"}).to_string(),
-        cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        packages: None,
-        goals: None,
-        ids: None,
-    });
+    let targets = tool.targets(&bare(json!({"command": "ls", "description": "Test"})));
     assert!(targets.is_empty(), "执行命令不报路径");
 }
 
@@ -86,27 +92,7 @@ fn shell_comes_from_the_resources_and_names_its_shell() {
 #[test]
 fn shell_says_when_it_wants_out_and_what_to_show() {
     let tool = tool("shell");
-    let call = |args: serde_json::Value| Call {
-        args: args.to_string(),
-        cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        packages: None,
-        goals: None,
-        ids: None,
-    };
+    let call = bare;
     let out =
         call(json!({"command": "touch ~/x", "description": "Touch", "outside_sandbox": true}));
     assert!(tool.outside_sandbox(&out));
@@ -377,6 +363,7 @@ async fn the_output_is_pushed_to_the_heads_as_it_comes() {
         usage: None,
         questions: None,
         memory: None,
+        knowledge: None,
         packages: None,
         goals: None,
         ids: None,
@@ -486,6 +473,7 @@ async fn a_tilde_working_directory_means_home() {
         usage: None,
         questions: None,
         memory: None,
+        knowledge: None,
         packages: None,
         goals: None,
         ids: None,

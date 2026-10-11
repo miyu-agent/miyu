@@ -2345,6 +2345,116 @@ The goal is marked blocked and this autonomous run is ending. Write the closing 
 </goal_blocked>
 ```
 
+#### `software/knowledge/common/bad-args.txt`
+
+- 什么时候加进来：两件的参数读不懂（字段按 ``missing field `path` at line 1 column 14`` 填）
+- token：19（2026-10-12 量）
+- 为什么加：照记忆的 `common/bad-args.txt`：说清哪里不对，她下一次改（施工 K-1 下）
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/knowledge/common/off.txt`
+
+- 什么时候加进来：这个会话没有知识库的端口（核心没交）
+- token：9（2026-10-12 量）
+- 为什么加：两件在工具面上、端口却没有时说清楚，不当成别的错（施工 K-1 下）
+- 指纹：`e26bc774`
+
+```text
+Knowledge bases are not available in this session.
+```
+
+#### `software/knowledge/common/failed.txt`
+
+- 什么时候加进来：知识库的目录、索引、人格的文件读不了（字段按 `disk full` 填）
+- token：11（2026-10-12 量）
+- 为什么加：不吞错误，如实说（施工 K-1 下）
+- 指纹：`1c9ccdd5`
+
+```text
+Knowledge bases are not available right now: {error}.
+```
+
+#### `software/knowledge/common/no-base.txt`
+
+- 什么时候加进来：没有这个库，连同人格没列的（字段按 `notes` 填）
+- token：7（2026-10-12 量）
+- 为什么加：说清是库不对；人格没列的也这么说，不让她知道有（施工 K-1 下，19 N11）
+- 指纹：`03d6a687`
+
+```text
+There is no knowledge base {kb}.
+```
+
+#### `software/knowledge/common/no-document.txt`
+
+- 什么时候加进来：`kb_read` 库里没有这个文档（字段按 `grammar.md`、`notes` 填）
+- token：9（2026-10-12 量）
+- 为什么加：说清是路径不对，她回去照 `kb_search` 给的写（施工 K-1 下）
+- 指纹：`bdc4ab24`
+
+```text
+There is no document {path} in {kb}.
+```
+
+#### `software/knowledge/common/no-page.txt`
+
+- 什么时候加进来：`kb_read` 没有这一页（字段按 `2` 填）
+- token：7（2026-10-12 量）
+- 为什么加：一句短话（施工 K-1 下）
+- 指纹：`bc556df8`
+
+```text
+There is no page {page}.
+```
+
+#### `software/knowledge/kb_search/hit.txt`
+
+- 什么时候加进来：`kb_search` 搜到的一块的头一行，有标题的（字段按 `notes`、`grammar.md`、`语法 › て形` 填）；下面接这一块的字原样
+- token：13（2026-10-12 量）
+- 为什么加：哪个库、哪个文档（她 `kb_read` 照它写）、哪一节（施工 K-1 下）
+- 指纹：`5fd856e2`
+
+```text
+[{kb}] {path}: {heading}
+```
+
+#### `software/knowledge/kb_search/plain.txt`
+
+- 什么时候加进来：同上，没有标题的那一块
+- token：6（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`db9f114c`
+
+```text
+[{kb}] {path}
+```
+
+#### `software/knowledge/kb_search/nothing.txt`
+
+- 什么时候加进来：`kb_search` 什么都没搜到
+- token：3（2026-10-12 量）
+- 为什么加：一句短话（施工 K-1 下）
+- 指纹：`1b14f4e8`
+
+```text
+Nothing found.
+```
+
+#### `software/knowledge/kb_read/more.txt`
+
+- 什么时候加进来：`kb_read` 不止一页的，接在那一页的字后面（字段按 `2`、`3` 填）
+- token：8（2026-10-12 量）
+- 为什么加：她知道还有几页、接着读第几页（施工 K-1 下）
+- 指纹：`3159296b`
+
+```text
+(Page {page} of {pages}.)
+```
+
 #### `software/onebot/tool-results/skipped.txt`
 
 - 什么时候加进来：`skip_reply` 答的那一句（施工 O-26）
@@ -3685,6 +3795,34 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
   "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked."}},"required":["action"]}
+}
+```
+
+#### `software/knowledge/tools/kb_search.json`
+
+- 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
+- token：75（2026-10-12 照开发端点量，二十一件一起时的边际份量）
+- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）
+- 指纹：`684f5684`
+
+```json
+{
+  "description": "Search your knowledge bases: notes and documents kept for you to look things up.",
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]}
+}
+```
+
+#### `software/knowledge/tools/kb_read.json`
+
+- 什么时候加进来：同上，`kb_read`
+- token：87（2026-10-12 量，同上）
+- 为什么加：搜到的一块不够时读整篇，分页（19 N4，施工 K-1 下）
+- 指纹：`691fd3de`
+
+```json
+{
+  "description": "Read a document from your knowledge bases, a page at a time.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]}
 }
 ```
 

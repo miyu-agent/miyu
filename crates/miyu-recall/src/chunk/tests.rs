@@ -13,12 +13,12 @@ fn markdown_is_cut_at_headings_with_their_path() {
     let chunks = markdown(source);
     assert_eq!(
         headings(&chunks),
-        ["", "语法", "语法 > て形", "语法 > た形", "单词"],
+        ["", "语法", "语法 › て形", "语法 › た形", "单词"],
         "空的一节不要"
     );
     assert_eq!(chunks[0].text, "开头的一段");
     assert_eq!(
-        chunks[2].text, "# 语法 > て形\n食べる → 食べて\n\n```\n# 不是标题\n```",
+        chunks[2].text, "# 语法 › て形\n食べる → 食べて\n\n```\n# 不是标题\n```",
         "标题路径写在头一行，代码块里的 # 不算标题"
     );
     assert_eq!(markdown(source), chunks, "同样的文档同样的块");
@@ -27,7 +27,7 @@ fn markdown_is_cut_at_headings_with_their_path() {
 #[test]
 fn a_heading_closes_its_deeper_siblings() {
     let chunks = markdown("# 甲\n\n### 甲三\n\n一\n\n## 乙二\n\n二\n\n# 丙\n\n三\n");
-    assert_eq!(headings(&chunks), ["甲 > 甲三", "甲 > 乙二", "丙"]);
+    assert_eq!(headings(&chunks), ["甲 › 甲三", "甲 › 乙二", "丙"]);
 }
 
 #[test]

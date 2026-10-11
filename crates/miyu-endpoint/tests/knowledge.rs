@@ -58,7 +58,7 @@ async fn list_search_and_read() {
     assert_eq!(hit["kb"], "notes", "{found}");
     assert_eq!(hit["path"], "grammar.md");
     assert_eq!(hit["chunk"], 0);
-    assert_eq!(hit["heading"], "语法 > て形");
+    assert_eq!(hit["heading"], "语法 › て形");
     assert_eq!(hit["text"], "食べる → 食べて");
     assert!(
         hit["at"].as_str().is_some_and(|at| at.ends_with('Z')),

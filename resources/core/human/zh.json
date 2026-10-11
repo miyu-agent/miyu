@@ -377,6 +377,7 @@
     "persona-problems/unknown_language": "{detail}：语言只能是 zh、en、ja",
     "persona-problems/empty_phrase": "{detail} 要写一句不空的话",
     "persona-problems/bad_memory_scope": "{detail} 只能是 persona 或 session",
+    "persona-problems/bad_knowledge_bases": "{detail} 要写成一列知识库的编号，例如 [\"notes\"]",
     "persona-problems/bad_seed": "{detail} 要写成 #rrggbb 这样的颜色",
     "persona-problems/bad_background_opacity": "{detail} 要写成 0 到 100 的整数",
     "persona-problems/bad_background_focus": "{detail} 要写成 [x, y]，两个都是 0 到 100 的整数",

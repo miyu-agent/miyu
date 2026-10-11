@@ -1588,6 +1588,7 @@ dependencies = [
  "miyu-http",
  "miyu-ipc",
  "miyu-kernel",
+ "miyu-knowledge",
  "miyu-log",
  "miyu-memory",
  "miyu-mermaid",
@@ -1727,6 +1728,17 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "miyu-knowledge"
+version = "0.0.0"
+dependencies = [
+ "miyu-kernel",
+ "miyu-tool",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1906,6 +1918,7 @@ dependencies = [
  "miyu-heap",
  "miyu-http",
  "miyu-kernel",
+ "miyu-knowledge",
  "miyu-log",
  "miyu-memory",
  "miyu-models",

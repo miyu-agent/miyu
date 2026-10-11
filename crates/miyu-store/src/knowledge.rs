@@ -140,23 +140,25 @@ impl Knowledge {
         Ok((bases, skipped))
     }
 
-    /// 照关键词搜：`only` 是只搜这一个库，没有的搜账号下全部；几个库的照名次轮流合（每个库的第一名在前，同名次照编号），
-    /// 最多 `limit` 块。搜之前照文件补。
+    /// 照关键词搜：`only` 是只搜这几个库（人经协议写了 `kb` 的一个，她的工具照人格收窄的几个，施工 K-1 下），没有的搜账号下
+    /// 全部；几个库的照名次轮流合（每个库的第一名在前，同名次照 `only` 的先后，全部的照编号），最多 `limit` 块。搜之前照文件补。
     ///
     /// # Errors
     ///
-    /// `only` 没有这个库；目录、索引读不了。
+    /// `only` 里有不在的库；目录、索引读不了。
     pub fn search(
         &self,
         account: &AccountId,
         query: &str,
-        only: Option<&str>,
+        only: Option<&[String]>,
         limit: usize,
     ) -> Result<(Vec<Hit>, Vec<Skipped>), KnowledgeError> {
         let ids = match only {
-            Some(id) => {
-                self.dir(account, id)?;
-                vec![id.to_string()]
+            Some(ids) => {
+                for id in ids {
+                    self.dir(account, id)?;
+                }
+                ids.to_vec()
             }
             None => self.ids(account)?,
         };
@@ -197,8 +199,12 @@ impl Knowledge {
         read::page(&dir, path, page)
     }
 
-    /// 账号下合写法的库的编号，照编号排。
-    fn ids(&self, account: &AccountId) -> Result<Vec<String>, KnowledgeError> {
+    /// 账号下合写法的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）。目录不在的是空的。
+    ///
+    /// # Errors
+    ///
+    /// 知识库的目录读不了。
+    pub fn ids(&self, account: &AccountId) -> Result<Vec<String>, KnowledgeError> {
         let top = self.top(account);
         let entries = match std::fs::read_dir(&top) {
             Ok(entries) => entries,

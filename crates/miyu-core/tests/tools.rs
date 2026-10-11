@@ -42,6 +42,8 @@ fn the_catalog_has_the_base_system() {
             "grep",
             "history",
             "jobs",
+            "kb_read",
+            "kb_search",
             "memory_search",
             "packages",
             "read",
@@ -75,12 +77,24 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         !names_without(&["goal"]).contains(&"goal".to_string()),
         "没装长期目标，没有 goal"
     );
+    let without_knowledge = names_without(&["knowledge"]);
+    for tool in ["kb_search", "kb_read"] {
+        assert!(
+            !without_knowledge.contains(&tool.to_string()),
+            "没装知识库，没有 {tool}"
+        );
+    }
     assert_eq!(
-        names_without(&["basesystem"]),
+        names_without(&["basesystem", "knowledge"]),
         ["forget", "goal", "memory_search", "remember"],
-        "没装基础系统，只有记忆的三件和长期目标的一件"
+        "没装基础系统、知识库，只有记忆的三件和长期目标的一件"
     );
-    assert!(names_without(&["basesystem", "memory", "goal"]).is_empty());
+    assert_eq!(
+        names_without(&["basesystem", "memory", "goal"]),
+        ["kb_read", "kb_search"],
+        "只装知识库（施工 K-1 下），只有它的两件"
+    );
+    assert!(names_without(&["basesystem", "memory", "goal", "knowledge"]).is_empty());
 }
 
 /// 写错了的清单不算装了（施工 F-2）：照读成了的认。

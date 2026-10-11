@@ -155,6 +155,7 @@ pub fn call(args: &str) -> Call {
         usage: None,
         questions: None,
         memory: None,
+        knowledge: None,
         packages: None,
         goals: None,
         ids: None,

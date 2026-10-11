@@ -58,6 +58,8 @@ miyu-basesystem = { path = "../miyu-basesystem" }
 miyu-memory = { path = "../miyu-memory" }
 # 测试里的工具目录带上长期目标的工具（施工 X-8 上）。
 miyu-goal = { path = "../miyu-goal" }
+# 测试里的工具目录带上知识库的两件（施工 K-1 下）。
+miyu-knowledge = { path = "../miyu-knowledge" }
 # 自己的集成测试用上剧本端口。
 miyu-session = { path = ".", features = ["testkit"] }
 # 测试里的假服务器：本机回环上的 HTTP/1.1（施工 3-7 下）。

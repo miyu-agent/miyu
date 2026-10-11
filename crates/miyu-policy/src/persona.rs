@@ -13,7 +13,7 @@ use crate::memory::MemoryScope;
 
 mod tables;
 pub use tables::{color, percent};
-use tables::{read_appearance, read_memory};
+use tables::{read_appearance, read_knowledge, read_memory};
 
 /// `persona.toml` 在人格目录里的名字。
 pub const TOML: &str = "persona.toml";
@@ -35,6 +35,9 @@ pub struct PersonaFile {
     pub summary: Option<Label>,
     /// 记忆的默认范围（`[memory] scope`，施工 R-3 下）：只能是 `persona`、`session`；没写的是没有，照 `persona` 算。
     pub memory: Option<MemoryScope>,
+    /// 她查得到哪几个知识库（`[knowledge] bases`，施工 K-1 下，19 N11）：列了的只查列着的、在的那几个，空的列表一个都不查；
+    /// 没写的是没有，查账号下的全部。
+    pub knowledge: Option<Vec<String>>,
     /// 主题色（`[appearance] seed`，施工 P-6）：`#rrggbb`，读进来一律小写；没写的是没有，头从头像取色。
     pub seed: Option<String>,
     /// 背景图露出多少（`[appearance] background_opacity`，施工 P-7）：0 到 100 的百分比；没写的是没有，头照自己的默认画。
@@ -51,6 +54,7 @@ impl PersonaFile {
         lower.name = self.name.or(lower.name);
         lower.summary = self.summary.or(lower.summary);
         lower.memory = self.memory.or(lower.memory);
+        lower.knowledge = self.knowledge.or(lower.knowledge);
         lower.seed = self.seed.or(lower.seed);
         lower.background_opacity = self.background_opacity.or(lower.background_opacity);
         lower.background_focus = self.background_focus.or(lower.background_focus);
@@ -123,6 +127,8 @@ pub enum Code {
     EmptyPhrase,
     /// `[memory]` 的 `scope` 不是 `persona`、`session`（施工 R-3 下加的读法）。
     BadMemoryScope,
+    /// `[knowledge]` 的 `bases` 不是一列知识库的编号（施工 K-1 下）。
+    BadKnowledgeBases,
     /// `[appearance]` 的 `seed` 不是 `#rrggbb`（施工 P-6）。
     BadSeed,
     /// `[appearance]` 的 `background_opacity` 不是 0 到 100 的整数（施工 P-7）。
@@ -151,6 +157,7 @@ impl Code {
             Code::UnknownLanguage => "unknown_language",
             Code::EmptyPhrase => "empty_phrase",
             Code::BadMemoryScope => "bad_memory_scope",
+            Code::BadKnowledgeBases => "bad_knowledge_bases",
             Code::BadSeed => "bad_seed",
             Code::BadBackgroundOpacity => "bad_background_opacity",
             Code::BadBackgroundFocus => "bad_background_focus",
@@ -162,7 +169,7 @@ impl Code {
     }
 
     /// 全部，照先后。
-    pub const ALL: [Code; 13] = [
+    pub const ALL: [Code; 14] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -171,6 +178,7 @@ impl Code {
         Code::UnknownLanguage,
         Code::EmptyPhrase,
         Code::BadMemoryScope,
+        Code::BadKnowledgeBases,
         Code::BadSeed,
         Code::FirstLine,
         Code::TakeTurns,
@@ -189,7 +197,8 @@ impl fmt::Display for Problem {
 }
 
 /// 读 `persona.toml`：`[persona]` 一张表，里面只有 `name`、`summary`，各是一张语言到一句话的表（`zh`、`en`、`ja`），话不能是
-/// 空的；`[memory]` 一张表，里面只有 `scope`（`persona` 或 `session`，施工 R-3 下）；`[appearance]` 一张表，里面只有 `seed`
+/// 空的；`[memory]` 一张表，里面只有 `scope`（`persona` 或 `session`，施工 R-3 下）；`[knowledge]` 一张表，里面只有 `bases`
+/// （一列知识库的编号，施工 K-1 下）；`[appearance]` 一张表，里面只有 `seed`
 /// （`#rrggbb`，大小写都认，施工 P-6）。整个文件、这几张表、每一格都可以没有。
 ///
 /// # Errors
@@ -208,6 +217,10 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
     for (key, item) in document.as_table().iter() {
         if key == "memory" {
             file.memory = read_memory(item, &at)?;
+            continue;
+        }
+        if key == "knowledge" {
+            file.knowledge = read_knowledge(item, &at)?;
             continue;
         }
         if key == "appearance" {

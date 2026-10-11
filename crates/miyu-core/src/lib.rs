@@ -173,6 +173,7 @@ pub fn built_in() -> Vec<&'static str> {
         Some(miyu_tool::BASESYSTEM),
         Some(miyu_memory::PACKAGE),
         Some(miyu_goal::PACKAGE),
+        Some(miyu_knowledge::PACKAGE),
         Some(ROLEPLAY),
         cfg!(feature = "mermaid").then_some("mermaid"),
         cfg!(feature = "net").then_some("net"),
@@ -221,6 +222,12 @@ fn groups(resources: &ResourceRoot, found: &[Found]) -> Result<Vec<Builtin>, Str
     if installed(miyu_goal::PACKAGE) {
         let goal = miyu_goal::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_goal::PACKAGE, goal));
+    }
+    // 知识库这个软件包的两件（施工 K-1 下，`knowledge.md`「她的工具」）：工具面上只给查得到至少一个库的会话。
+    if installed(miyu_knowledge::PACKAGE) {
+        let knowledge =
+            miyu_knowledge::tools(resources.path()).map_err(|error| error.to_string())?;
+        groups.push((miyu_knowledge::PACKAGE, knowledge));
     }
     Ok(groups)
 }

@@ -23,8 +23,9 @@ fn write(dir: &Path, name: &str, text: &str) {
 }
 
 fn hits(knowledge: &Knowledge, query: &str, only: Option<&str>) -> Vec<(String, String, usize)> {
+    let only = only.map(|kb| vec![kb.to_string()]);
     knowledge
-        .search(&admin(), query, only, 10)
+        .search(&admin(), query, only.as_deref(), 10)
         .expect("搜得了")
         .0
         .into_iter()
@@ -168,10 +169,26 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
             .all(|(kb, _, _)| kb == "b"),
         "只搜一个"
     );
-    assert!(matches!(
-        knowledge.search(&admin(), "团子", Some("nope"), 4),
-        Err(KnowledgeError::UnknownBase)
-    ));
+    // 照人格收窄的几个（施工 K-1 下）：同名次照给的先后，有一个不在的不搜。
+    let narrowed = ["b".to_string(), "a".to_string()];
+    let order: Vec<String> = knowledge
+        .search(&admin(), "团子", Some(&narrowed), 4)
+        .expect("搜得了")
+        .0
+        .into_iter()
+        .map(|hit| hit.kb)
+        .collect();
+    assert_eq!(order, ["b", "a", "b", "a"]);
+    for only in [
+        vec!["nope".to_string()],
+        vec!["a".to_string(), "nope".to_string()],
+    ] {
+        assert!(matches!(
+            knowledge.search(&admin(), "团子", Some(&only), 4),
+            Err(KnowledgeError::UnknownBase)
+        ));
+    }
+    assert_eq!(knowledge.ids(&admin()).expect("列得出"), ["a", "b"]);
     let hit = &found[0];
     assert_eq!(hit.heading, "");
     assert!(hit.text.contains("团子的事"));

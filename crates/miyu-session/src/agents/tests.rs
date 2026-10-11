@@ -56,7 +56,10 @@ fn names(venue: &str, group: bool) -> Vec<String> {
         None,
         &Offers::of(&Values::default(), Vec::new()),
         false,
-        MemoryScope::Off,
+        crate::agents::Holds {
+            memory: MemoryScope::Off,
+            knowledge: false,
+        },
         None,
     )
     .into_iter()

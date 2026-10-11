@@ -24,9 +24,9 @@ use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_tool::{
-    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, MEMORY_SEARCH, NotSpawned,
-    Order, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT,
-    Spawned, Spawning, TODOWRITE, is_subagent,
+    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_READ, KB_SEARCH,
+    MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE, SESSION_USAGE,
+    SESSIONS, SHELL, SUBAGENT, Spawned, Spawning, TODOWRITE, is_subagent,
 };
 
 use crate::TARGET;
@@ -42,6 +42,15 @@ pub(crate) const LOCAL: &str = "local";
 pub(crate) struct Site<'a> {
     pub(crate) venue: &'a VenueId,
     pub(crate) group: bool,
+}
+
+/// 会话有什么（施工 K-1 下从 `memory` 一格扩出来）：记忆的范围，查不查得到知识库。工具面照它给记忆的三件、知识库的两件。
+#[derive(Clone, Copy)]
+pub(crate) struct Holds {
+    /// 记忆的范围：`off` 的不给记忆的三件。
+    pub(crate) memory: MemoryScope,
+    /// 查得到至少一个知识库（[`crate::knowledge::Shelves::any`]）：查不到的不给 `kb_search`、`kb_read`（2026-10-12 项目主人定）。
+    pub(crate) knowledge: bool,
 }
 
 /// 一个会话派子代理要的：造子会话的端口，和子会话照抄的、会话里不变的几样。
@@ -127,7 +136,7 @@ impl Agents {
         lineage: Option<&Lineage>,
         offers: &Offers,
         attended: bool,
-        memory: MemoryScope,
+        holds: Holds,
         preset: Option<(&PresetFile, Option<&Features>)>,
     ) -> Vec<ToolEntry> {
         let venue = site.venue;
@@ -149,9 +158,12 @@ impl Agents {
             // 记忆的三件给记忆开着的会话（施工 R-3 中、下，`memory.md`「工具」）：本机的、场所的都给，挑法照谁在听（施工
             // R-13 下）；子会话的范围一律 `off`（17 第二节）。
             .filter(|spec| {
-                memory != MemoryScope::Off
+                holds.memory != MemoryScope::Off
                     || ![REMEMBER, FORGET, MEMORY_SEARCH].contains(&spec.name.as_str())
             })
+            // 知识库的两件给查得到至少一个库的会话（施工 K-1 下，`knowledge.md`「怎么走」第六条）：本机的、场所的、子会话都给，
+            // 还照预设。
+            .filter(|spec| holds.knowledge || ![KB_SEARCH, KB_READ].contains(&spec.name.as_str()))
             // 提供者的工具照它给哪种会话挑（施工 O-2 上）。
             .filter(|spec| {
                 tools

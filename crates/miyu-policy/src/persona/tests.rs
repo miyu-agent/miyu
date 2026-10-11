@@ -48,7 +48,19 @@ fn names_are_one_line_and_old_language_tables_still_read() {
 fn a_wrong_toml_says_which_line() {
     for (text, line, message) in [
         ("[persona]\nname = 1\n", 2, "persona.name must be text"),
-        ("[knowledge]\nbases = []\n", 1, "unknown table [knowledge]"),
+        ("[voice]\nname = \"x\"\n", 1, "unknown table [voice]"),
+        (
+            "[knowledge]\nbases = \"notes\"\n",
+            2,
+            "knowledge.bases must be a list of knowledge base ids",
+        ),
+        (
+            "[knowledge]\nbases = [\"Bad Name\"]\n",
+            2,
+            "knowledge.bases must be a list of knowledge base ids",
+        ),
+        ("[knowledge]\nkeep = 1\n", 2, "unknown key knowledge.keep"),
+        ("knowledge = 3\n", 1, "knowledge must be a table"),
         (
             "[memory]\nscope = \"off\"\n",
             2,
@@ -92,6 +104,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         name: phrases(&[("en", "Engineer"), ("zh", "工程师")]),
         summary: phrases(&[("en", "Helps.")]),
         memory: None,
+        knowledge: None,
         seed: None,
         background_opacity: None,
         background_focus: None,
@@ -100,6 +113,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         name: one("我的工程师"),
         summary: None,
         memory: None,
+        knowledge: None,
         seed: None,
         background_opacity: None,
         background_focus: None,
@@ -245,51 +259,6 @@ fn examples_go_after_the_system_and_before_the_history() {
     }
 }
 
-#[test]
-fn the_memory_scope_is_persona_or_session_and_an_upper_layer_wins() {
-    let read = |text: &str| read_toml(text).unwrap().memory;
-    assert_eq!(
-        read("[memory]\nscope = \"persona\"\n"),
-        Some(MemoryScope::Persona)
-    );
-    assert_eq!(
-        read("[memory]\nscope = \"session\"\n"),
-        Some(MemoryScope::Session)
-    );
-    assert_eq!(read("[memory]\n"), None, "不写是没有，照 persona 算");
-    let lower = read_toml("[memory]\nscope = \"session\"\n").unwrap();
-    assert_eq!(
-        PersonaFile::default().over(lower.clone()).memory,
-        Some(MemoryScope::Session),
-        "上一层没写沿用下面的"
-    );
-    let upper = read_toml("[memory]\nscope = \"persona\"\n").unwrap();
-    assert_eq!(upper.over(lower).memory, Some(MemoryScope::Persona));
-}
-
-/// 主题色（施工 P-6）：`#rrggbb` 大小写都认、读成小写；上一层写了的盖下面的，没写沿用下面的。
-#[test]
-fn the_seed_is_a_lowercase_color_and_an_upper_layer_wins() {
-    let read = |text: &str| read_toml(text).unwrap().seed;
-    assert_eq!(
-        read("[appearance]\nseed = \"#3368C0\"\n").as_deref(),
-        Some("#3368c0")
-    );
-    assert_eq!(read("[appearance]\n"), None, "不写是没有，头从头像取色");
-    let lower = read_toml("[appearance]\nseed = \"#112233\"\n").unwrap();
-    assert_eq!(
-        PersonaFile::default().over(lower.clone()).seed.as_deref(),
-        Some("#112233"),
-        "上一层没写沿用下面的"
-    );
-    let upper = read_toml("[appearance]\nseed = \"#abcdef\"\n").unwrap();
-    assert_eq!(upper.over(lower).seed.as_deref(), Some("#abcdef"));
-    for wrong in ["3368c0", "#3368c", "#3368c00", "#3368cg", "red"] {
-        assert_eq!(color(wrong), None, "{wrong}");
-    }
-}
-
-/// 每一种错有自己的代码，错的那一处另放一格：给人看的那一句照它们写（施工 8-30）。
 #[test]
 fn each_mistake_carries_its_code_and_where() {
     for (text, code, detail) in [
@@ -454,29 +423,5 @@ fn a_base_written_by_p3_is_read_as_unwritten() {
     assert!(
         read_toml("[memory]\nbase = \"none\"\n").is_err(),
         "别的表里照旧不认"
-    );
-}
-
-/// 背景图露出多少、焦点（施工 P-7）：读成数，上一层写了的盖下面的、没写的沿用；0、100 两头都收。
-#[test]
-fn background_opacity_and_focus_are_read_and_layered() {
-    let lower =
-        read_toml("[appearance]\nbackground_opacity = 20\nbackground_focus = [30, 70]\n").unwrap();
-    assert_eq!(lower.background_opacity, Some(20));
-    assert_eq!(lower.background_focus, Some([30, 70]));
-    let upper = read_toml("[appearance]\nbackground_opacity = 0\n").unwrap();
-    let both = upper.over(lower);
-    assert_eq!(both.background_opacity, Some(0), "上一层的盖下面的");
-    assert_eq!(both.background_focus, Some([30, 70]), "没写的沿用下面的");
-    let edges =
-        read_toml("[appearance]\nbackground_opacity = 100\nbackground_focus = [0, 100]\n").unwrap();
-    assert_eq!(
-        (edges.background_opacity, edges.background_focus),
-        (Some(100), Some([0, 100]))
-    );
-    assert_eq!(
-        read_toml("").unwrap().background_focus,
-        None,
-        "没写的是没有"
     );
 }

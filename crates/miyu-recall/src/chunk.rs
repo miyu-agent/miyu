@@ -19,7 +19,7 @@ const HEADING: usize = 300;
 /// 切出来的一块。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chunk {
-    /// 标题路径（`语法 > て形`）；没有标题的是空的。
+    /// 标题路径（`语法 › て形`）；没有标题的是空的。
     pub heading: String,
     /// 这一块的字：有标题的头一行是 `# <标题路径>`，接着正文。
     pub text: String,
@@ -82,7 +82,7 @@ fn section(path: &[(usize, String)], body: &[&str], chunks: &mut Vec<Chunk>) {
         .iter()
         .map(|(_, title)| title.as_str())
         .collect::<Vec<_>>()
-        .join(" > ");
+        .join(" › ");
     let head = if heading.is_empty() {
         String::new()
     } else {

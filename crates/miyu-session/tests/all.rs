@@ -28,6 +28,7 @@ mod history_speed;
 mod http;
 mod jobs;
 mod jobs_stop;
+mod knowledge_tools;
 mod limits;
 mod memory;
 mod memory_backfill;

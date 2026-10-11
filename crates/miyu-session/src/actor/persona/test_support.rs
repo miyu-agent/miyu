@@ -104,7 +104,10 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         None,
         &Offers::of(&Values::default(), Vec::new()),
         true,
-        scope,
+        crate::agents::Holds {
+            memory: scope,
+            knowledge: false,
+        },
         Some((&chosen.file, Some(&installed()))),
     );
     let parts = Parts {
@@ -135,6 +138,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         tools: Shelf::new(tools),
         venue,
         lineage: None,
+        knowledge: None,
     };
     (scratch, root, refresh)
 }

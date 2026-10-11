@@ -22,6 +22,7 @@ mod agents;
 mod catalog;
 mod goals;
 mod jobs;
+mod knowledge;
 pub mod load;
 mod log;
 mod memory;
@@ -49,6 +50,7 @@ pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
     RUN_IN_BACKGROUND, SHELL,
 };
+pub use knowledge::{KB_HITS, KB_READ, KB_SEARCH, KbHit, KbPage, KbRefused, KnowledgePort};
 pub use log::{Log, ReadLog};
 pub use memory::{
     FORGET, FoundMemory, FoundTurn, MEMORIES, MEMORY_SEARCH, MemoryPort, Pending, REMEMBER,

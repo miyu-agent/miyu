@@ -377,6 +377,7 @@
     "persona-problems/unknown_language": "{detail}：言語は zh、en、ja のどれかです",
     "persona-problems/empty_phrase": "{detail} には空でない一文を書きます",
     "persona-problems/bad_memory_scope": "{detail} は persona か session のどちらかです",
+    "persona-problems/bad_knowledge_bases": "{detail} はナレッジベースの ID のリストです（例：[\"notes\"]）",
     "persona-problems/bad_seed": "{detail} は #rrggbb の形の色です",
     "persona-problems/bad_background_opacity": "{detail} は 0 から 100 の整数です",
     "persona-problems/bad_background_focus": "{detail} は [x, y] の形で、どちらも 0 から 100 の整数です",

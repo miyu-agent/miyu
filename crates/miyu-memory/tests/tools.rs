@@ -95,6 +95,7 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
         usage: None,
         questions: None,
         memory: port.map(|port| port as Arc<dyn MemoryPort>),
+        knowledge: None,
         packages: None,
         goals: None,
         ids: None,

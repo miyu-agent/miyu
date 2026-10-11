@@ -5,7 +5,10 @@
 //! 快照里的原样），拼出来不一样、核心的字没变才换：存成 blob，策略交给内核放着，交回新快照的哈希。以前造的快照没有指纹的
 //! 不换；找不着、写错了的照旧用原来的，记一行运行日志。换的时候执行器手里取自快照的几份字（驱动的占位、替工具写的两句、
 //! 权限策略的几句）一起换成新快照的（施工 P-1 三补）：升级过的老会话也换得了；光是升级不换（核心的字变了、人格预设工具面
-//! 都没变的照旧），不为它断一次缓存。
+//! 都没变的照旧），不为它断一次缓存。知识库的两件照这一刻查不查得到给、拿掉（施工 K-1 下，`knowledge.md`「怎么走」第六条）：
+//! 建了第一个库下一个回合有，删光了下一个回合没有。
+
+use std::sync::Arc;
 
 use miyu_config::Values;
 use miyu_drivers::DriverTexts;
@@ -18,12 +21,13 @@ use miyu_policy::{GuardTexts, RunTexts, Snapshot, ToolEntry};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::ResourceRoot;
-use miyu_tool::{Catalog, Edition, Shelf};
+use miyu_tool::{Catalog, Edition, KB_READ, KB_SEARCH, Shelf};
 
 use super::Actor;
 use crate::TARGET;
-use crate::agents::{Agents, Offers, Site};
+use crate::agents::{Agents, Holds, Offers, Site};
 use crate::blocking::blocking;
+use crate::knowledge::Shelves;
 use crate::open::PresetPlaces;
 use crate::snapshot::{Parts, build, tooled};
 use crate::spawn::Lineage;
@@ -43,6 +47,8 @@ pub(crate) struct Refresh {
     pub(crate) seen: Option<Edition>,
     pub(crate) venue: VenueId,
     pub(crate) lineage: Option<Lineage>,
+    /// 这个会话的知识库（施工 K-1 下）：回合开始照它判查不查得到。没交的当查不到。
+    pub(crate) knowledge: Option<Arc<Shelves>>,
 }
 
 /// 看了一遍的结果。
@@ -128,21 +134,44 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         .as_ref()
         .is_none_or(|seen| seen.generation != now.generation)
         && !matches!(preset, Preset::Unknown);
-    if same && !moved && !matches!(preset, Preset::Changed(_)) {
+    let catalog = &now.catalog;
+    // 知识库的两件照这一刻查不查得到、照现在的目录和预设该有哪几件（施工 K-1 下）；和快照里的不一样才算改了。预设找不回来的
+    // 照旧。
+    let knows = refresh
+        .knowledge
+        .as_ref()
+        .is_some_and(|shelves| shelves.any());
+    let shelved = match &preset {
+        Preset::Unknown => None,
+        Preset::Nothing => Some(offered(refresh, values, catalog, None, knows)),
+        Preset::Same(chosen) | Preset::Changed(chosen) => {
+            Some(offered(refresh, values, catalog, Some(&chosen.file), knows))
+        }
+    };
+    let flipped = shelved
+        .as_ref()
+        .is_some_and(|fresh| shelf_tools(fresh) != shelf_tools(&old.tools));
+    if same && !moved && !flipped && !matches!(preset, Preset::Changed(_)) {
         return Seen::Same;
     }
-    let catalog = &now.catalog;
     let (face, pin) = match &preset {
         Preset::Changed(chosen) => (
-            refaced(refresh, values, catalog, &chosen.file),
+            refaced(refresh, values, catalog, &chosen.file, knows),
             Some(chosen.pin()),
         ),
         Preset::Same(chosen) if moved => (
-            followed(refresh, values, catalog, Some(&chosen.file)),
+            followed(refresh, values, catalog, Some(&chosen.file), knows),
             old.preset.clone(),
         ),
-        Preset::Nothing if moved => (followed(refresh, values, catalog, None), old.preset.clone()),
+        Preset::Nothing if moved => (
+            followed(refresh, values, catalog, None, knows),
+            old.preset.clone(),
+        ),
         _ => (old.tools.clone(), old.preset.clone()),
+    };
+    let face = match &shelved {
+        Some(fresh) => reshelved(face, fresh),
+        None => face,
     };
     let parts = Parts {
         name: old.persona.clone(),
@@ -253,6 +282,7 @@ fn offered(
     values: &Values,
     catalog: &Catalog,
     file: Option<&PresetFile>,
+    knows: bool,
 ) -> Vec<ToolEntry> {
     let old = &refresh.snapshot;
     Agents::face(
@@ -264,9 +294,32 @@ fn offered(
         refresh.lineage.as_ref(),
         &Offers::of(values, refresh.personas.ids()),
         old.attended,
-        old.memory_scope(),
+        Holds {
+            memory: old.memory_scope(),
+            knowledge: knows,
+        },
         file.map(|file| (file, features(refresh))),
     )
+}
+
+/// 工具面里知识库的几件，照名字排：比快照里的和这一刻该有的一样不一样。
+fn shelf_tools(face: &[ToolEntry]) -> Vec<&str> {
+    let mut names: Vec<&str> = face
+        .iter()
+        .map(|entry| entry.name.as_str())
+        .filter(|name| [KB_SEARCH, KB_READ].contains(name))
+        .collect();
+    names.sort_unstable();
+    names
+}
+
+/// 知识库的几件换成这一刻该有的 `fresh` 里的（施工 K-1 下）：查得到的照现在的目录、预设补上，查不到的拿掉；别的照旧。
+fn reshelved(face: Vec<ToolEntry>, fresh: &[ToolEntry]) -> Vec<ToolEntry> {
+    let shelf = |entry: &ToolEntry| [KB_SEARCH, KB_READ].contains(&entry.name.as_str());
+    face.into_iter()
+        .filter(|entry| !shelf(entry))
+        .chain(fresh.iter().filter(|entry| shelf(entry)).cloned())
+        .collect()
 }
 
 /// 预设改了，照新的预设 `file` 重新筛工具面（施工 P-2 下）：以前就有的那几件照旧快照里的原样（描述、`subagent` 能选的池都
@@ -276,9 +329,10 @@ fn refaced(
     values: &Values,
     catalog: &Catalog,
     file: &PresetFile,
+    knows: bool,
 ) -> Vec<ToolEntry> {
     let old = &refresh.snapshot;
-    offered(refresh, values, catalog, Some(file))
+    offered(refresh, values, catalog, Some(file), knows)
         .into_iter()
         .map(|entry| {
             if catalog.provided(&entry.name) {
@@ -307,8 +361,9 @@ fn followed(
     values: &Values,
     catalog: &Catalog,
     file: Option<&PresetFile>,
+    knows: bool,
 ) -> Vec<ToolEntry> {
-    let fresh = offered(refresh, values, catalog, file);
+    let fresh = offered(refresh, values, catalog, file, knows);
     let basis = refresh.seen.as_ref().map(|seen| &seen.catalog);
     let mut face = Vec::new();
     for kept in &refresh.snapshot.tools {

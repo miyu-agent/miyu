@@ -62,6 +62,8 @@ pub struct Home {
     pub recall: Arc<RecallIndexes>,
     /// 记忆日志的登记（施工 R-3 中）：三件工具经它记、忘、搜。
     pub logs: Arc<MemoryLogs>,
+    /// 核心一份的知识库（施工 K-1 下）：造的、载入的会话都照它查，和核心里一样。
+    pub knowledge: Arc<miyu_store::knowledge::Knowledge>,
 }
 
 impl Home {
@@ -104,6 +106,7 @@ impl Home {
             Some(SummaryTexts::load(&resources).expect("读得到摘要的字")),
         );
         Home {
+            knowledge: Arc::new(miyu_store::knowledge::Knowledge::new(&root)),
             recall: Arc::clone(&memory.turns),
             logs: Arc::clone(&memory.logs),
             memory,
@@ -188,6 +191,7 @@ impl Home {
             usage: Some(Arc::clone(&self.usage)),
             configs: self.configs.clone(),
             model: lines.model,
+            knowledge: Some(Arc::clone(&self.knowledge)),
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
             presets: None,
@@ -293,6 +297,7 @@ impl Home {
             index: Some(Arc::clone(&self.index)),
             usage: Some(Arc::clone(&self.usage)),
             configs: self.configs.clone(),
+            knowledge: Some(Arc::clone(&self.knowledge)),
             memory: Some(self.memory()),
             presets: None,
             owner_is_admin: true,

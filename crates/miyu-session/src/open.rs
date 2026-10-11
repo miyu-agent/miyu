@@ -20,7 +20,7 @@ use miyu_tool::{Log, Seen};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
-use crate::agents::{Agents, Offers, Site, job_in};
+use crate::agents::{Agents, Holds, Offers, Site, job_in};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
@@ -28,6 +28,7 @@ use crate::guard::{Confined, Guard, Place};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
+use crate::knowledge::Shelves;
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -86,6 +87,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         usage,
         configs,
         model,
+        knowledge,
         memory,
         preset,
         presets,
@@ -109,6 +111,19 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             .as_ref()
             .is_none_or(|chosen| chosen.file.opens(MEMORY));
     let scope = memory::scope(lineage.is_some(), opened, memory_scope);
+    // 知识库照记忆的账号、人格查（施工 K-1 下）；一个都查不到的工具面上没有两件，回合开始再判。
+    let shelves = knowledge.map(|knowledge| {
+        Arc::new(Shelves::new(
+            knowledge,
+            memory_account.clone(),
+            name.clone(),
+            personas.clone(),
+        ))
+    });
+    let knows = match shelves.clone() {
+        Some(shelves) => blocking(move || shelves.any()).await,
+        None => false,
+    };
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
     let offers = Offers::of(&config.current().resolved.values(), personas.ids());
@@ -123,7 +138,10 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         lineage.as_ref(),
         &offers,
         attended,
-        scope,
+        Holds {
+            memory: scope,
+            knowledge: knows,
+        },
         preset.as_ref().map(|chosen| (&chosen.file, features)),
     );
     let pin = preset.as_ref().map(Chosen::pin);
@@ -304,6 +322,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             asks,
             goals,
             memory: calls,
+            knowledge: shelves.clone(),
             packages,
         },
         jobs,
@@ -327,6 +346,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         seen: Some(edition.clone()),
         venue: venue.clone(),
         lineage: lineage.clone(),
+        knowledge: shelves,
     });
     let busy = actor.busy();
     let watched = actor.watched();

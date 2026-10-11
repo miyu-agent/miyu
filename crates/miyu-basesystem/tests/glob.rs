@@ -46,6 +46,7 @@ fn glob_comes_from_the_resources() {
             usage: None,
             questions: None,
             memory: None,
+            knowledge: None,
             packages: None,
             goals: None,
             ids: None,

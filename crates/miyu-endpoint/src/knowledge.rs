@@ -72,7 +72,8 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                 return Err(Refusal::BAD_PARAMS);
             }
             let (hits, skipped) = blocking(move || {
-                knowledge.search(&account, &search.query, search.kb.as_deref(), limit)
+                let only = search.kb.map(|kb| vec![kb]);
+                knowledge.search(&account, &search.query, only.as_deref(), limit)
             })
             .await?;
             report(&skipped);

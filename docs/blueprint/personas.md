@@ -49,12 +49,16 @@ summary = "My own persona."
 
 [memory]
 scope = "session"
+
+[knowledge]
+bases = ["notes"]
 ```
 
-两张表，都可以不写：
+三张表，都可以不写：
 
 - `[persona]` 里只有 `name`、`summary`（P-3 上那几个小时里写进去的 `base` 认出来当没写，下一次 `persona.set` 写这份文件时去掉，施工 P-3 再补）：各是一句字（施工 P-3 补，2026-10-08 项目主人定：名字只存一份、不分语言）。名字去掉前后空白不能是空的；说明可以是空的字，就是没有说明，盖住下面那一层的（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」），`*.get`、`*.list` 给 `null`，要回到下面那一层的照 `unset`。以前写成语言到一句话的表（`zh`、`en`、`ja`）的照样认，照连接的语言挑；出厂的几个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。
 - `[memory]` 里只有 `scope`：用这个人格的会话，记忆的默认范围，`persona`（跟着人格）或 `session`（只在这个会话里）；`off` 不能写在这里，不记是开会话时的事（施工 R-3 下，`memory.md`「范围」）。不写是 `persona`。上一层写了的盖下面的。
+- `[knowledge]` 里只有 `bases`（施工 K-1 下，`knowledge.md`「怎么走」第六条，19 N11）：用这个人格的会话只查得到列着的、在的那几个知识库，一列知识库的编号（写法同人格的编号）；写了空的列表一个都查不到。不写是查账号下的全部。上一层写了的整格换掉。写错的报 `bad_knowledge_bases`（不是一列、编号不合写法）。
 
 别的表、别的键、别的值报错，写明第几行：`unknown table [<表>]`、`unknown key <表>.<键>`、`memory must be a table`、`memory.scope must be persona or session`、`persona.name must be text`。声音、知识库随它们的软件包，到时候再加。
 
@@ -148,7 +152,7 @@ assistant: 8640
 |---|---|
 | `crates/miyu-endpoint/tests/persona_avatar.rs`（施工 P-5） | 头像换上、读回、删了回到下面那一层、版本对不上不动、不合规矩的拒绝且什么都不写、新建时带头像 |
 | `crates/miyu-endpoint/tests/persona_appearance.rs`（施工 P-6） | 主题色大写写成小写、列出来带着、删了回到下面那一层、写错的和重复改的拒绝且什么都不写、只写主题色能新建；背景图比头像的上限大也收、读回、版本对不上不动、删了回到下面那一层、不合规矩的拒绝（`data` 带量到的和上限）且一起改的主题色也不写 |
-| `crates/miyu-policy/src/persona/tests.rs` | `persona.toml` 三种语言、写错的九种写明第几行（`[memory]` 的三种在内，R-3 下）、P-3 上写的 `base` 当没写（施工 P-3 再补）、`[memory] scope` 两种、不写是没有、上一层盖下面的、读不成 TOML 也说第几行；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
+| `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的九种写明第几行（`[memory]` 的三种在内，R-3 下）、P-3 上写的 `base` 当没写（施工 P-3 再补）、`[memory] scope` 两种、不写是没有、上一层盖下面的、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
 | `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、来自哪一层；只有出厂、系统区的不住在谁家，空目录也算住在家里；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |

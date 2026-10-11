@@ -169,6 +169,7 @@ async fn a_write_that_fails_stops_the_session() {
             asks: false,
             goals: false,
             memory: None,
+            knowledge: None,
             packages: None,
         },
         crate::actor::JobKit {

@@ -122,7 +122,8 @@ async fn the_dev_preset_drops_memory_and_says_so() {
     assert_eq!(pin.id, "dev");
     // 施工 F-3 上起记的是功能的编号。出厂的接入QQ 的功能 qq 在不在看测试程序旁边有没有 `miyu-onebot`（桥的测试会链一个过去），这里不比它；装了、没开、没有工具的包快照照记，见下一条。
     let off: Vec<&String> = pin.off.iter().filter(|id| *id != "qq").collect();
-    assert_eq!(off, ["memory", "roleplay"]);
+    // 知识库（施工 K-1 下）在基础功能里关着。
+    assert_eq!(off, ["knowledge", "memory", "roleplay"]);
     // 开会话时要了记忆也没用：开不开归预设。
     let (session, _) = first_request(
         &home,

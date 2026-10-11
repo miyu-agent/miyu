@@ -33,6 +33,7 @@ use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
+use crate::knowledge::Shelves;
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -85,6 +86,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         index,
         usage,
         configs,
+        knowledge,
         memory,
         presets,
         owner_is_admin,
@@ -314,6 +316,22 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         (sandbox.is_some(), place.0, place.1),
     );
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
+    // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
+    let shelves = match knowledge {
+        Some(knowledge) => {
+            let (personas, persona, owner) =
+                (watching.clone(), snapshot.persona.clone(), owner.clone());
+            Some(
+                blocking(move || {
+                    let account =
+                        personas.memory_account(persona.as_deref().unwrap_or_default(), &owner);
+                    Arc::new(Shelves::new(knowledge, account, persona, personas))
+                })
+                .await,
+            )
+        }
+        None => None,
+    };
     let mut actor = Actor::new(
         session,
         Box::new({
@@ -344,6 +362,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             asks,
             goals: has_goals,
             memory: calls,
+            knowledge: shelves.clone(),
             packages,
         },
         jobs,
@@ -371,6 +390,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         seen: None,
         venue: refresh_venue,
         lineage: refresh_lineage,
+        knowledge: shelves,
     });
     span.in_scope(|| {
         tracing::info!(

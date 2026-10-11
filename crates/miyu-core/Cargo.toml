@@ -50,6 +50,8 @@ miyu-basesystem = { path = "../miyu-basesystem" }
 miyu-memory = { path = "../miyu-memory" }
 # 长期目标这个软件包的工具（施工 X-8 上）。
 miyu-goal = { path = "../miyu-goal" }
+# 知识库这个软件包的两件工具（施工 K-1 下）。
+miyu-knowledge = { path = "../miyu-knowledge" }
 # 工具目录：核心起来时登记，交给协议端点（施工 4-1）。
 miyu-tool = { path = "../miyu-tool" }
 # 模型资料的 JSON（施工 6-3 上）。

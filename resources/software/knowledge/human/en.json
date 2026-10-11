@@ -1,0 +1,25 @@
+{
+  "tools": {
+    "kb_search": {
+      "name": "Search knowledge",
+      "subject": "query",
+      "icon": "✱"
+    },
+    "kb_read": {
+      "name": "Read document",
+      "subject": "path",
+      "icon": "→"
+    }
+  },
+  "said": {
+    "kb_search/found": "Found {hits} passages",
+    "kb_search/nothing": "Nothing found",
+    "kb_read/page": "{path} page {page}/{pages}",
+    "common/bad-args": "Bad arguments: {error}",
+    "common/off": "No knowledge bases in this session",
+    "common/failed": "Knowledge bases unavailable: {error}",
+    "common/no-base": "No knowledge base {kb}",
+    "common/no-document": "No {path} in {kb}",
+    "common/no-page": "No page {page}"
+  }
+}
