@@ -159,7 +159,7 @@
 | `package.install`、`package.remove` | 装、卸软件包，当场生效（施工 F-5 上，`packages.md`「装卸」） |
 | `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
-| `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程，或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
+| `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
 | `package.file`、`package.call` | 读一个包的后台页里的文件（吉祥物包读它的模型文件，施工 F-7）；调它的程序登记的方法，核心反向发 `method.call`，在后台答（施工 F-6 中，`package-pages.md`） |
 | `package.methods` | 核心拉起的扩展登记它的后台页要调的方法（施工 F-6 中，`package-pages.md`） |
 | `extension.status`、`extension.enable`、`extension.disable`、`extension.restart` | 核心拉起的扩展：列状态、开、关、重启（施工 9-4 上，`extensions.md`） |
@@ -613,8 +613,8 @@
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 
 - 参数 `{"package"}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。
-- 扩展：同 `extension.enable`、`extension.disable`。出厂的、不是必需的内置包：关是卸掉（同 `package.remove`，在家目录记一笔），开是装回来（同 `package.install {"package"}`）。卸掉了的出厂扩展，开时先装回来再开。关着的再关、开着的再开，什么都不动。
-- 拒绝：没有的 `unknown_package`；必需的 `package_required`；界面、小程序 `not_switchable`；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
+- 扩展：同 `extension.enable`、`extension.disable`。`bundle`（施工 X-3 上）：开是起它带的 MCP 服务，关是停下、它们的工具出目录；开关和扩展记在同一份 `system/extensions.json`，没写的关着。出厂的、不是必需的内置包：关是卸掉（同 `package.remove`，在家目录记一笔），开是装回来（同 `package.install {"package"}`）。卸掉了的出厂扩展，开时先装回来再开。关着的再关、开着的再开，什么都不动。
+- 拒绝：没有的 `unknown_package`；必需的 `package_required`；界面、小程序、吉祥物包 `not_switchable`；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
 
 **`package.file`、`package.methods`、`package.call`**（施工 F-6 中，`package-pages.md`）
 

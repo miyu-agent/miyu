@@ -278,3 +278,95 @@ fn a_provider_registering_again_is_no_longer_gone() {
     let off = back.replacing("xbridge", Vec::new()).unwrap();
     assert!(!off.gone("echo_back"), "关掉的不算卸掉");
 }
+
+/// 包自己登记的和它的 MCP 服务的分开换（施工 X-3 上）：换包自己的不动服务的，换一个服务的不动包自己的、别的服务的；服务的
+/// 都算提供者登记的。
+#[test]
+fn a_package_and_its_mcp_services_are_replaced_apart() {
+    let catalog = Catalog::in_packages([("basesystem", vec![object("read")])]).unwrap();
+    let (served, skipped) = catalog.replacing_service(
+        "relay",
+        "web",
+        vec![object("mcp__web__fetch"), object("mcp__web__search")],
+    );
+    assert!(skipped.is_empty(), "{skipped:?}");
+    let (served, _) = served.replacing_service("relay", "files", vec![object("mcp__files__list")]);
+    assert!(served.provided("mcp__web__fetch"));
+    let own = served
+        .replacing("relay", vec![object("echo_back")])
+        .unwrap();
+    assert_eq!(
+        names(&own),
+        [
+            "echo_back",
+            "mcp__files__list",
+            "mcp__web__fetch",
+            "mcp__web__search",
+            "read"
+        ],
+        "换包自己的不动服务的"
+    );
+    let (again, _) = own.replacing_service("relay", "web", vec![object("mcp__web__fetch")]);
+    assert_eq!(
+        names(&again),
+        ["echo_back", "mcp__files__list", "mcp__web__fetch", "read"],
+        "换一个服务的不动包自己的、别的服务的"
+    );
+    let (off, _) = again.replacing_service("relay", "web", Vec::new());
+    assert_eq!(names(&off), ["echo_back", "mcp__files__list", "read"]);
+    let emptied = off.replacing("relay", Vec::new()).unwrap();
+    assert_eq!(names(&emptied), ["mcp__files__list", "read"]);
+}
+
+/// 一个服务的工具查不过的那一件不登记、别的照登记（施工 X-3 上，`mcp.md`「出错」）：撞了别的包的、写法不对的、参数不是
+/// 对象的，一并交回。
+#[test]
+fn a_service_tool_that_fails_is_skipped_and_the_rest_are_kept() {
+    let catalog = Catalog::in_packages([("basesystem", vec![object("read")])]).unwrap();
+    let (catalog, _) = catalog.replacing_service("other", "web", vec![object("mcp__web__fetch")]);
+    let (served, skipped) = catalog.replacing_service(
+        "relay",
+        "web",
+        vec![
+            object("mcp__web__fetch"),
+            object("mcp__web__bad name"),
+            tool("mcp__web__array", r#"{"type":"array"}"#),
+            object("mcp__web__search"),
+        ],
+    );
+    assert_eq!(
+        skipped
+            .iter()
+            .map(|error| (error.tool.as_str(), error.problem))
+            .collect::<Vec<_>>(),
+        [
+            ("mcp__web__fetch", Problem::Duplicate),
+            ("mcp__web__bad name", Problem::Name),
+            ("mcp__web__array", Problem::Parameters),
+        ]
+    );
+    assert_eq!(
+        names(&served),
+        ["mcp__web__fetch", "mcp__web__search", "read"]
+    );
+    assert_eq!(
+        served.package_of("mcp__web__fetch"),
+        Some("other"),
+        "别的包的照留"
+    );
+    assert_eq!(served.package_of("mcp__web__search"), Some("relay"));
+}
+
+/// 卸掉的包装回来、服务又登记了：它的那几件不再算随包卸掉的，别的服务的照旧算（施工 X-3 上）。
+#[test]
+fn a_service_registering_again_is_no_longer_gone() {
+    let catalog = Catalog::default();
+    let (catalog, _) = catalog.replacing_service("relay", "web", vec![object("mcp__web__fetch")]);
+    let (catalog, _) =
+        catalog.replacing_service("relay", "files", vec![object("mcp__files__list")]);
+    let removed = catalog.removing("relay");
+    assert!(removed.gone("mcp__web__fetch") && removed.gone("mcp__files__list"));
+    let (back, _) = removed.replacing_service("relay", "web", vec![object("mcp__web__fetch")]);
+    assert!(!back.gone("mcp__web__fetch"));
+    assert!(back.gone("mcp__files__list"), "别的服务的照旧算卸掉");
+}

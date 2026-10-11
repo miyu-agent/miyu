@@ -116,6 +116,10 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     let listed = listed(core, package);
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
     for tool in tools {
+        // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。
+        if tool.name.starts_with(miyu_tool::MCP_PREFIX) {
+            return Err(bad_tool(&tool.name, "name"));
+        }
         // 写了 `[features]` 的包登记的工具要归它列的某个功能（施工 T-2）：归不上的预设开关不了它。
         if listed
             .as_ref()

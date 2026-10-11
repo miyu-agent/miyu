@@ -621,6 +621,28 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 The tool "{name}" did not answer within {seconds} seconds. It may have been partly done.
 ```
 
+#### `core/mcp/not-shown.txt`
+
+- 什么时候加进来：MCP 服务回了声音、二进制的资源、收不了的图（不是那四种、解不开、超上限），一样一行（施工 X-3 上）
+- token：13（2026-10-11 主会话在 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 上量：接在 `hi` 和一个换行后面；`mime` 填 `audio/wav`、`bytes` 填 `48000` 是 14）
+- 为什么加：每样回来的都要让她知道有过，不然她以为服务什么都没给；写类型和大小，不写给不了的原因（`mcp.md`「怎么走」第四条第 3 款）
+- 指纹：`eb50bc30`
+
+```text
+[{mime}, {bytes} bytes, not shown]
+```
+
+#### `core/mcp/cut.txt`
+
+- 什么时候加进来：MCP 服务回的文字加起来超过 10 万个字符，截在后面（施工 X-3 上）
+- token：9（同上量；`cut` 填 `12345` 也是 9）
+- 为什么加：告诉她后面还有、截了多少，她才知道结果不全（同 Claude Code 给 MCP 结果设上限，`mcp.md`「怎么走」第四条第 4 款）
+- 指纹：`ba76a140`
+
+```text
+[{cut} more characters were cut]
+```
+
 #### `core/permissions/forbidden.txt`
 
 - 什么时候加进来：权限策略拒绝：要碰的路径在 Miyu 的数据根里

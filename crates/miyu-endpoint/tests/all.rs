@@ -43,6 +43,7 @@ mod job_stop;
 mod limits;
 mod list;
 mod login;
+mod mcp;
 mod memory;
 mod memory_api;
 mod memory_clear;

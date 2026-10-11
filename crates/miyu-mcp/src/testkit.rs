@@ -5,6 +5,7 @@
 //! `slow` 不回（等取消）；`ask` 先反过来问客户端要东西，等它回了再答；`pinged` 先反过来 `ping` 客户端，照它回没回成答；
 //! `input` 要补信息（新时代）；`die` 一收到就退出。别的名字回「不认识这件工具」（`-32602`）。
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use serde_json::{Value, json};
@@ -94,13 +95,19 @@ pub fn tools() -> Vec<Value> {
     .collect()
 }
 
-/// 演着的假服务：查它收到了什么。
+/// 演着的假服务：查它收到了什么、演完了没有。
 #[derive(Clone, Default)]
 pub struct Fake {
     received: Arc<Mutex<Vec<Value>>>,
+    ended: Arc<AtomicBool>,
 }
 
 impl Fake {
+    /// 演完了：客户端关了它的输入，或者剧本让它退出了。
+    pub fn ended(&self) -> bool {
+        self.ended.load(Ordering::SeqCst)
+    }
+
     /// 收到的每一条，照先后。
     pub fn received(&self) -> Vec<Value> {
         self.received
@@ -140,8 +147,14 @@ pub fn start(script: Script) -> (ReadHalf<DuplexStream>, WriteHalf<DuplexStream>
     (client_read, client_write, fake)
 }
 
-/// 一直演到客户端断开、或者剧本让它退出。
+/// 一直演到客户端断开、或者剧本让它退出；演完了记下。
 async fn serve(stream: DuplexStream, script: Script, fake: Fake) {
+    play(stream, script, &fake).await;
+    fake.ended.store(true, Ordering::SeqCst);
+}
+
+/// 照剧本演：收一条答一条。
+async fn play(stream: DuplexStream, script: Script, fake: &Fake) {
     let (reader, mut writer) = tokio::io::split(stream);
     let mut reader = BufReader::new(reader);
     let mut stage = Stage::default();

@@ -8,12 +8,13 @@
 mod approval;
 pub(crate) mod config;
 pub(crate) mod methods;
-mod stderr;
+pub(crate) mod stderr;
 mod supervise;
 
 pub(crate) use approval::described;
-pub(crate) use methods::{disable, enable, entry, restart, status};
+pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
 pub use supervise::Timing;
+pub(crate) use supervise::backoff;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -69,7 +70,7 @@ impl State {
     }
 
     /// 在干活、或者等着再干：核心不算空闲。
-    fn busy(self) -> bool {
+    pub(crate) fn busy(self) -> bool {
         matches!(
             self,
             State::Starting { .. } | State::Running { .. } | State::Waiting { .. }
@@ -175,6 +176,11 @@ impl Extensions {
             timing,
             changed: broadcast::channel(CHANGES).0,
         }
+    }
+
+    /// 开、关、重启一件件办：拿着它再读写开关（施工 X-3 上：`bundle` 的开关同一把锁）。
+    pub(crate) async fn one_at_a_time(&self) -> tokio::sync::MutexGuard<'_, ()> {
+        self.ops.lock().await
     }
 
     /// 收「谁变了」的一头（施工 9-4 补）。
@@ -321,6 +327,8 @@ impl Core {
         for (id, manifest) in processes(&packages) {
             self.start_one(id, manifest, &switches);
         }
+        // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）。
+        self.start_mcp();
     }
 
     /// 开着的拉起：程序不在的不拉起，记成停下（`not_installed`，施工 F-6 上）；要的能力还有没批的不拉起，记成停下
@@ -374,9 +382,10 @@ impl Core {
         }
     }
 
-    /// 请全部扩展退出，等它们退出（最多等到杀掉）：核心停的时候调。
+    /// 请全部扩展、MCP 服务（施工 X-3 上）退出，等它们退出（最多等到杀掉）：核心停的时候调。
     pub async fn stop_extensions(&self) {
         self.extensions.halt_all().await;
+        self.mcp.halt_all(self).await;
     }
 }
 
@@ -421,7 +430,7 @@ fn switches_path(core: &Core) -> PathBuf {
 }
 
 /// 读开关：读不成的当没有，记一行 `WARN`；交回它的版本（写回时用），读不成的也交回整份字节的版本，好盖掉它。
-fn read_switches(core: &Core) -> (Switches, Option<String>) {
+pub(crate) fn read_switches(core: &Core) -> (Switches, Option<String>) {
     let path = switches_path(core);
     match file::read(&path) {
         Ok(read) => (read.switches, read.version),

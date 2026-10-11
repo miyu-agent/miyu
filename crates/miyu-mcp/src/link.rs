@@ -59,7 +59,8 @@ impl Link {
             closed: watch::channel(false).0,
         });
         tokio::spawn(write(writer, lines, Arc::clone(&shared)));
-        tokio::spawn(read(reader, out.clone(), Arc::clone(&shared)));
+        // 读的一头只拿弱的：连接丢下了，写的一头随之收尾、关掉服务的标准输入（施工 X-3 上：核心停服务先关它的标准输入）。
+        tokio::spawn(read(reader, out.downgrade(), Arc::clone(&shared)));
         Link {
             out,
             shared,
@@ -169,7 +170,8 @@ impl Shared {
     }
 }
 
-/// 写的一头：一行行写进服务的标准输入。写不进去就断了。
+/// 写的一头：一行行写进服务的标准输入。写不进去就断了。连接丢下了（没有要写的了），关掉服务的标准输入：MCP 的 stdio 关法，
+/// 服务读到头自己退出。
 async fn write<W: AsyncWrite + Unpin>(
     mut writer: W,
     mut lines: mpsc::UnboundedReceiver<Vec<u8>>,
@@ -186,12 +188,16 @@ async fn write<W: AsyncWrite + Unpin>(
             return;
         }
     }
+    if let Err(error) = writer.shutdown().await {
+        tracing::debug!(target: TARGET, error = %error, "MCP server input not shut");
+    }
 }
 
-/// 读的一头：一行行认，回应交给在等的，服务的请求当场回，通知照种类办。读到头、太长、读不了就断了。
+/// 读的一头：一行行认，回应交给在等的，服务的请求当场回，通知照种类办。读到头、太长、读不了就断了；连接丢下了的，服务再问
+/// 什么也不回、断了。
 async fn read<R: AsyncRead + Unpin>(
     reader: R,
-    out: mpsc::UnboundedSender<Vec<u8>>,
+    out: mpsc::WeakUnboundedSender<Vec<u8>>,
     shared: Arc<Shared>,
 ) {
     let mut reader = BufReader::new(reader);
@@ -224,6 +230,9 @@ async fn read<R: AsyncRead + Unpin>(
                         tracing::info!(target: TARGET, method = method.as_str(), "MCP server request refused");
                         Err((METHOD_NOT_FOUND, "Method not found"))
                     }
+                };
+                let Some(out) = out.upgrade() else {
+                    break;
                 };
                 if out.send(wire::answer(&id, outcome)).is_err() {
                     break;

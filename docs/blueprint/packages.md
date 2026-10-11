@@ -202,7 +202,7 @@ timeout_ms = 600000                               # 可以不写：一次调用�
 1. 一段一个服务，照写的先后；同一个包里服务名不重（重了 `bad_mcp`）。扩展包和 `bundle` 能写，别的种类写了 `wrong_kind`。`bundle` 只能写 `[package]`、`[[mcp]]`、`[mascot]`，不说协议（写了 `protocol` 报 `wrong_kind`：带的服务说的是 MCP，不是 Miyu 的协议）。
 2. 一个服务一个功能（2026-10-11 项目主人照推荐定，`mcp.md`）：编号 `mcp-<服务名>`，名字是服务名，接在包自己的功能后面（`Manifest::features_of`）；`bundle` 自己不另算一个。两个包带了同名的服务，功能编号撞了，后读到的那一份报 `feature_taken`、整份不收、报在那一段。这个服务的工具名是 `mcp__<服务名>__<工具名>`（X-3 登记），照前缀归它的功能；包自己的工具照包自己的功能算，MCP 服务的功能不算在「只有一个功能」里（`miyu_policy::features::Features::of_tool`）。
 3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。
-4. 这一步只认清单：起服务、登记工具、开关（`bundle` 照扩展的办法开关，默认关着）随施工 X-3；这一步 `bundle` 的 `status` 是 `ready`、没有开关（`package.enable` 回 `not_switchable`）。
+4. 起服务、登记工具、开关随施工 X-3：`bundle` 照扩展的办法开关，开关记在同一份 `system/extensions.json`，没写的关着；`status` 照它带的服务合起来算，`enabled` 照开关（施工 X-3 上，`mcp.md`、`package-pages.md`「开关」）。扩展包带的服务随 X-3 下。
 
 ### 吉祥物包（施工 F-7，2026-10-11 项目主人定，终端界面的会话转来）
 

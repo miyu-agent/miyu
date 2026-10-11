@@ -129,3 +129,17 @@ async fn a_ping_from_the_server_is_answered() {
         .expect("答得上");
     assert_eq!(called.content, [Content::Text("pong".to_string())]);
 }
+
+/// 丢下客户端就关了服务的输入（施工 X-3 上）：核心停服务时先关它的标准输入、等它自己退出。服务的输出还开着也一样。
+#[tokio::test]
+async fn dropping_the_client_closes_the_server_input() {
+    let (client, fake) = connected(Script::modern()).await;
+    drop(client);
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !fake.ended() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("服务读到头、演完了");
+}

@@ -75,7 +75,8 @@ pub(crate) fn mascot_problem(found: &Found, mascot: &Mascot) -> Option<&'static 
     (!object).then_some("mascot_not_json")
 }
 
-/// `status`：`program_missing`、`off`、`running`、`starting`、`stopped`、`ready` 之一。`removed` 是出厂的包卸掉了。
+/// `status`：`program_missing`、`off`、`running`、`starting`、`stopped`、`ready` 之一。`removed` 是出厂的包卸掉了。`bundle`
+/// 开着的照它带的服务合起来算（[`crate::mcp::Servers::state`]）。
 pub(crate) fn status(
     core: &Core,
     found: &Found,
@@ -89,13 +90,17 @@ pub(crate) fn status(
     if removed {
         return "off";
     }
-    if manifest.kind != PackageKind::Process {
+    if !matches!(manifest.kind, PackageKind::Process | PackageKind::Bundle) {
         return "ready";
     }
     if !crate::extensions::switched_on(core, id, manifest) {
         return "off";
     }
-    of_state(core.extensions.status(id).state)
+    match manifest.kind {
+        // `bundle` 照它带的服务合起来算（施工 X-3 上）。
+        PackageKind::Bundle => of_state(core.mcp.state(id, manifest).unwrap_or(State::Off)),
+        _ => of_state(core.extensions.status(id).state),
+    }
 }
 
 /// 开着的扩展这时在哪一步，写成列表上的状态：退避中的等着再拉起，算启动中。
@@ -108,8 +113,8 @@ fn of_state(state: State) -> &'static str {
     }
 }
 
-/// `enabled`：有开关的才有（`package-pages.md`「开关」）。扩展照它的开关；出厂的、不是必需的内置包照有没有卸掉；必需的、
-/// 界面、小程序没有。`shipped` 是出厂的那一层。
+/// `enabled`：有开关的才有（`package-pages.md`「开关」）。扩展、`bundle`（施工 X-3 上）照它的开关；出厂的、不是必需的内置包
+/// 照有没有卸掉；必需的、界面、小程序、吉祥物包没有。`shipped` 是出厂的那一层。
 pub(crate) fn enabled(
     core: &Core,
     id: &str,
@@ -118,16 +123,11 @@ pub(crate) fn enabled(
     removed: bool,
 ) -> Option<bool> {
     match manifest.kind {
-        PackageKind::Process => {
+        PackageKind::Process | PackageKind::Bundle => {
             Some(!removed && crate::extensions::switched_on(core, id, manifest))
         }
         PackageKind::Builtin if shipped && !manifest.required => Some(!removed),
-        // `bundle` 的开关随施工 X-3（起它带的 MCP 服务）。
-        PackageKind::Builtin
-        | PackageKind::Ui
-        | PackageKind::Worker
-        | PackageKind::Mascot
-        | PackageKind::Bundle => None,
+        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => None,
     }
 }
 

@@ -83,6 +83,7 @@ impl Core {
         self.memory.set_installed(memory);
         self.follow_packages(&processes_of(before), &processes_of(now))
             .await;
+        self.follow_bundles(before, now).await;
         if let (Some(builtins), Some(vectors)) = (&self.builtins, self.memory.vectors()) {
             vectors.replace_local(builtins.embed(now)).await;
         }

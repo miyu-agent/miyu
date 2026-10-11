@@ -25,7 +25,7 @@ pub(super) fn path(core: &Core, id: &str) -> PathBuf {
 }
 
 /// 打开 `path` 接标准错误：目录没有的建，太大的先挪成 `.old`，追加。
-pub(super) fn open(path: &Path) -> io::Result<File> {
+pub(crate) fn open(path: &Path) -> io::Result<File> {
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;
     }

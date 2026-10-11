@@ -43,6 +43,7 @@ mod list;
 mod listen;
 mod listing;
 mod login;
+mod mcp;
 mod memory;
 mod meta;
 mod methods;
@@ -178,6 +179,8 @@ pub struct Core {
     builtins: Option<Arc<dyn builtins::Builtins>>,
     /// 扩展进程（施工 9-4 上，`extensions.rs`）：核心拉起的 `process` 包。
     extensions: extensions::Extensions,
+    /// MCP 服务（施工 X-3 上，`mcp.rs`）：`bundle` 包带的。
+    mcp: mcp::Servers,
     /// 软件包列表里哪个包变了（施工 F-8 三补，`packages/changes.rs`）。
     package_changes: packages::changes::Changes,
 }
@@ -275,6 +278,7 @@ impl Core {
             packaging: tokio::sync::Mutex::new(()),
             builtins: None,
             extensions: extensions::Extensions::new(extensions::Timing::default()),
+            mcp: mcp::Servers::new(extensions::Timing::default()),
             package_changes: packages::changes::Changes::default(),
         }
     }
@@ -371,10 +375,11 @@ impl Core {
         )
     }
 
-    /// 同一份家底，扩展进程等多久、退避多久照 `timing`（施工 9-4 上）：测试里设短的，不用真等。
+    /// 同一份家底，扩展进程、MCP 服务（施工 X-3 上）等多久、退避多久照 `timing`（施工 9-4 上）：测试里设短的，不用真等。
     #[must_use]
     pub fn with_extension_timing(mut self, timing: extensions::Timing) -> Core {
         self.extensions = extensions::Extensions::new(timing);
+        self.mcp = mcp::Servers::new(timing);
         self
     }
 
@@ -449,12 +454,13 @@ impl Core {
         self.connections.load(Ordering::Acquire)
     }
 
-    /// 空闲：没有连接，没有在跑的回合，也没有在跑的后台命令（施工 7-3），也没有开着、没停下的扩展（施工 9-4 上）。核心看它决定能不能空闲退出
-    /// （`12-进程形态与分发.md` 第二节、R1，施工 3-9 上）。
+    /// 空闲：没有连接，没有在跑的回合，也没有在跑的后台命令（施工 7-3），也没有开着、没停下的扩展（施工 9-4 上）、MCP 服务
+    /// （施工 X-3 上）。核心看它决定能不能空闲退出（`12-进程形态与分发.md` 第二节、R1，施工 3-9 上）。
     pub async fn idle(&self) -> bool {
         self.connections() == 0
             && !self.jobs.running()
             && !self.extensions.busy()
+            && !self.mcp.busy()
             && !self.sessions.busy().await
     }
 

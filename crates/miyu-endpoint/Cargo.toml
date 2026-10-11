@@ -15,6 +15,13 @@ path = "src/bin/miyu-test-extension.rs"
 test = false
 doc = false
 
+# 测试用的 MCP 服务（施工 X-3 上）：端点的测试把它写进 `bundle` 包的 `[[mcp]]`，让核心真起一个进程说 MCP。不随发行带出去。
+[[bin]]
+name = "miyu-test-mcp"
+path = "src/bin/miyu-test-mcp.rs"
+test = false
+doc = false
+
 [dependencies]
 # 时区：核心所在的机器现在的偏移，写进会话的环境。
 jiff = "0.2"
@@ -42,6 +49,8 @@ miyu-sandbox = { path = "../miyu-sandbox" }
 miyu-store = { path = "../miyu-store" }
 # 工具目录：造会话时交给它，照它存下工具面（施工 4-1）。
 miyu-tool = { path = "../miyu-tool" }
+# MCP 的客户端（施工 X-3 上）：起 `bundle` 包带的服务，认时代、列工具、调工具。
+miyu-mcp = { path = "../miyu-mcp" }
 # 视图投影（施工 9-8 中）：`view.page` 照它把一页日志算成条目。
 miyu-view = { path = "../miyu-view" }
 # 头报来的工作目录太不太宽（施工 4-3 下）。

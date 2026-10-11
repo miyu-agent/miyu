@@ -151,7 +151,12 @@ fn extension(core: &Core, id: &str) -> Result<Manifest, Refusal> {
 }
 
 /// 把改过的开关（开、关、批过的能力）整份写回：写不进的拒绝（`internal_error`），进程不动。`version` 是读的时候的版本。
-fn write(core: &Core, id: &str, switches: &Switches, version: Option<&str>) -> Result<(), Refusal> {
+pub(crate) fn write(
+    core: &Core,
+    id: &str,
+    switches: &Switches,
+    version: Option<&str>,
+) -> Result<(), Refusal> {
     file::write(&switches_path(core), switches, version).map_err(|error| {
         tracing::error!(target: TARGET, package = id, error = %error, "extension switch not written");
         Refusal::INTERNAL

@@ -106,7 +106,7 @@ pub(super) fn next(timing: &Timing, failures: u32, code: Option<i32>, stable: bo
 }
 
 /// 第 `failures` 次失败以后退避多久：第一次 `backoff`，之后每次翻倍，最多 `longest`。
-pub(super) fn backoff(timing: &Timing, failures: u32) -> Duration {
+pub(crate) fn backoff(timing: &Timing, failures: u32) -> Duration {
     let doubled = timing
         .backoff
         .saturating_mul(1 << failures.saturating_sub(1).min(16));

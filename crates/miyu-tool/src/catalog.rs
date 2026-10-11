@@ -30,6 +30,15 @@ pub struct Catalog {
 /// 基础系统的编号（`10-自带软件.md` 第三节）：只交一串工具的老写法，全算它。
 pub const BASESYSTEM: &str = "basesystem";
 
+/// MCP 服务的工具名的开头（施工 X-3 上，`docs/blueprint/mcp.md`「对外的样子」第 1 条）：`mcp__<服务名>__<工具名>`。包自己
+/// 登记的工具不许用它（`provide` 拦下）。
+pub const MCP_PREFIX: &str = "mcp__";
+
+/// 服务 `service` 的工具名的开头：`mcp__<服务名>__`。
+pub fn mcp_prefix(service: &str) -> String {
+    format!("{MCP_PREFIX}{service}__")
+}
+
 /// 一件工具登记不上：是哪一件，哪一条没过。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogError {
@@ -81,7 +90,8 @@ impl Catalog {
     }
 
     /// 换掉包 `package` 的工具（施工 O-2 上，提供者再登记一次）：交回新的一份，别的包的照留，原来这份不动；没有这个包的是
-    /// 加进来。查法同 [`Catalog::new`]，撞上别的包的也算重名。
+    /// 加进来。查法同 [`Catalog::new`]，撞上别的包的也算重名。它的 MCP 服务的工具不动（施工 X-3 上，
+    /// [`Catalog::replacing_service`]）。
     ///
     /// # Errors
     ///
@@ -92,7 +102,7 @@ impl Catalog {
         tools: Vec<Arc<dyn Tool>>,
     ) -> Result<Catalog, CatalogError> {
         let mut catalog = self.clone();
-        catalog.take_out(package);
+        catalog.take_out_where(package, |name| !name.starts_with(MCP_PREFIX));
         // 卸掉以后装回来、又登记了的（施工 F-5 补）：不再算随包卸掉的。
         catalog.gone.retain(|_, owner| owner != package);
         catalog.provided.insert(package.to_string());
@@ -100,6 +110,31 @@ impl Catalog {
             catalog.add(package, tool)?;
         }
         Ok(catalog)
+    }
+
+    /// 换掉包 `package` 的 MCP 服务 `service` 的工具（施工 X-3 上，`mcp.md`「怎么走」第三条）：交回新的一份，包自己的、别的
+    /// 服务的照留；算经提供者登记的（会话下一个回合照现在的换）。查法同 [`Catalog::new`]，但查不过的那一件不登记、别的照登记
+    /// （`mcp.md`「出错」）：一并交回没登记的几件。
+    pub fn replacing_service(
+        &self,
+        package: &str,
+        service: &str,
+        tools: Vec<Arc<dyn Tool>>,
+    ) -> (Catalog, Vec<CatalogError>) {
+        let prefix = mcp_prefix(service);
+        let mut catalog = self.clone();
+        catalog.take_out_where(package, |name| name.starts_with(&prefix));
+        catalog
+            .gone
+            .retain(|name, owner| owner != package || !name.starts_with(&prefix));
+        catalog.provided.insert(package.to_string());
+        let mut skipped = Vec::new();
+        for tool in tools {
+            if let Err(error) = catalog.add(package, tool) {
+                skipped.push(error);
+            }
+        }
+        (catalog, skipped)
     }
 
     /// 内置包 `package` 装上了（施工 F-5 中）：换上它的几件，不算经提供者登记的（会话照旧快照的原样留着它们）；以前随它卸掉
@@ -146,10 +181,15 @@ impl Catalog {
 
     /// 拿掉包 `package` 的工具和它们以前的名字。
     fn take_out(&mut self, package: &str) {
+        self.take_out_where(package, |_| true);
+    }
+
+    /// 拿掉包 `package` 里名字合 `which` 的工具和它们以前的名字。
+    fn take_out_where(&mut self, package: &str, which: impl Fn(&str) -> bool) {
         let names: Vec<String> = self
             .packages
             .iter()
-            .filter(|(_, owner)| *owner == package)
+            .filter(|(name, owner)| *owner == package && which(name))
             .map(|(name, _)| name.clone())
             .collect();
         for name in &names {

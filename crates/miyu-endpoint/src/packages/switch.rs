@@ -40,6 +40,8 @@ enum Switch {
     Extension,
     /// 出厂的、不是必需的内置包：卸掉、装回来。
     Shipped,
+    /// `bundle`：开关它带的 MCP 服务（施工 X-3 上）。
+    Bundle,
 }
 
 /// 包 `id` 现在的清单、是不是卸掉了的出厂包；没有的 `unknown_package`。
@@ -73,12 +75,10 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
     match manifest.kind {
         PackageKind::Process => Ok(Switch::Extension),
         PackageKind::Builtin if layer == Layer::Shipped => Ok(Switch::Shipped),
-        // `bundle` 的开关随施工 X-3（起它带的 MCP 服务）。
-        PackageKind::Builtin
-        | PackageKind::Ui
-        | PackageKind::Worker
-        | PackageKind::Mascot
-        | PackageKind::Bundle => Err(Refusal::NOT_SWITCHABLE),
+        PackageKind::Bundle => Ok(Switch::Bundle),
+        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => {
+            Err(Refusal::NOT_SWITCHABLE)
+        }
     }
 }
 
@@ -96,8 +96,12 @@ pub(crate) async fn enable(
     if removed {
         manage::bring_back(core, peer, &params.package).await?;
     }
-    if let Switch::Extension = how {
-        turn_on(core, peer, &params.package, params.approve.as_deref()).await?;
+    match how {
+        Switch::Extension => {
+            turn_on(core, peer, &params.package, params.approve.as_deref()).await?;
+        }
+        Switch::Bundle => crate::mcp::turn_on(core, &params.package, &manifest).await?,
+        Switch::Shipped => {}
     }
     item(core, peer, &params.package)
 }
@@ -118,6 +122,7 @@ pub(crate) async fn disable(
             Switch::Shipped => {
                 manage::remove_package(core, params.package.clone()).await?;
             }
+            Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
         }
     }
     item(core, peer, &params.package)
