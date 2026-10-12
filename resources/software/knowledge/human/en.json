@@ -48,6 +48,7 @@
     "common/ambiguous/one": "Text appears {count} time in {path}",
     "common/trash": "Could not trash {path}: {error}",
     "common/bad-id": "{kb} is not a usable knowledge base id",
-    "common/read-only": "{kb} is a mounted folder, read-only"
+    "common/read-only": "{kb} is a mounted folder, read-only",
+    "common/not-text": "{path} is not a text document"
   }
 }

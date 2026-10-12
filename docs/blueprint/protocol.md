@@ -687,12 +687,12 @@
 | 方法 | 参数 | 回应 |
 |---|---|---|
 | `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks"}…]}`，照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）。`kb.search` 跳过挂的目录用不了的库 |
-| `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前 |
-| `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页 |
+| `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的那一块多 `page`（施工 K-5） |
+| `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字，网页是换出来的字（施工 K-5） |
 
 1. `kb.list`、`kb.search` 先照文件补要用的库（`knowledge.md`「怎么走」第三条），`documents`、`chunks` 是补完以后的数；跳过的文档记一行 `WARN knowledge document skipped`，不进回应。
-2. 一块：哪个库、哪个文档、第几块（从 0 起）、标题路径（`语法 › て形`，没有标题的是空字符串）、这一块的字（不带标题那一行）、文档改的时刻。几个库的照名次轮流合（`knowledge.md`「怎么走」第四条）。
-3. `kb.read` 照路径读目录里的文件，不读索引；一页 32 KiB，截在字的边界上，空文档是一页空的。
+2. 一块：哪个库、哪个文档、第几块（从 0 起）、标题路径（`语法 › て形`，没有标题的是空字符串）、这一块的字（不带标题那一行）、文档改的时刻；PDF 的那一块多 `page`：第几页，从 1 起（施工 K-5），别的不写这一格。几个库的照名次轮流合（`knowledge.md`「怎么走」第四条）。
+3. `kb.read` 照路径读目录里的文件，不读索引；一页 32 KiB，截在字的边界上，空文档是一页空的。PDF 照它自己的页，`pages` 是 PDF 的页数；网页读换出来的字（施工 K-5，`knowledge.md`「怎么走」第五条）。抽不出来的（坏的 PDF、文件超过 64 MiB）：`internal_error`。
 4. 出错：参数写错、`query` 空白、`limit` 出了范围、编号不合写法（`knowledge.md`「对外的样子」）、`page` 是 0 或超过 `pages`：`bad_params`。没有这个库：`unknown_kb`。库里没有这个文档（不是文档的、不在库里的、`..` 跑出去的都算）：`unknown_document`。读不了目录、索引：`internal_error`，记一行 `WARN knowledge failed`。
 
 **`session.recap`**（施工 3-8 四补，`04-核心协议.md` 第九节，`kernel/session.md`「回顾」）

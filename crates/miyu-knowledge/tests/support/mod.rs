@@ -172,6 +172,7 @@ pub fn hit(kb: &str, path: &str, heading: &str, text: &str) -> KbHit {
         kb: kb.to_string(),
         path: path.to_string(),
         heading: heading.to_string(),
+        page: None,
         text: text.to_string(),
     }
 }

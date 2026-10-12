@@ -11,19 +11,19 @@ use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::chunk;
 
+use super::extract::{self, Kind};
 use super::{Base, Hit, Knowledge, KnowledgeError, Skipped};
 
-/// 一个文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。
+/// 一个文字的文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。PDF、网页抽出来的字
+/// 也照它封顶（施工 K-5）。
 pub(super) const BIGGEST: u64 = 4 * 1024 * 1024;
-
-/// 算文档的扩展名（小写比）。
-pub(super) const EXTENSIONS: [&str; 3] = ["md", "markdown", "txt"];
 
 /// 库里的一个文档。
 struct Document {
     /// 库里的相对路径，照 `/` 分：来源、键的前一半。
     source: String,
     path: PathBuf,
+    kind: Kind,
     size: u64,
     /// 改的时刻（毫秒）。
     modified: i64,
@@ -64,28 +64,33 @@ impl Knowledge {
                 path: document.source.clone(),
                 why,
             };
-            if document.size > BIGGEST {
-                skipped.push(skip(format!("larger than {BIGGEST} bytes")));
+            let biggest = document.kind.biggest();
+            if document.size > biggest {
+                skipped.push(skip(format!("larger than {biggest} bytes")));
                 continue;
             }
-            let text = match std::fs::read(&document.path).map(String::from_utf8) {
-                Ok(Ok(text)) => text,
-                Ok(Err(_)) => {
-                    skipped.push(skip("not UTF-8".to_string()));
-                    continue;
-                }
-                Err(error) => {
-                    skipped.push(skip(error.to_string()));
+            let pages = match std::fs::read(&document.path) {
+                Ok(bytes) => extract::pages(document.kind, bytes),
+                Err(error) => Err(error.to_string()),
+            };
+            let pages = match pages {
+                Ok(pages) => pages,
+                Err(why) => {
+                    skipped.push(skip(why));
                     continue;
                 }
             };
-            let chunks: Vec<String> = match markdown(&document.source) {
-                true => chunk::markdown(&text),
-                false => chunk::plain(&text),
+            if pages.iter().map(String::len).sum::<usize>() as u64 > BIGGEST {
+                skipped.push(skip(format!("text larger than {BIGGEST} bytes")));
+                continue;
             }
-            .into_iter()
-            .map(|chunk| chunk.text)
-            .collect();
+            let chunks = chunks(document.kind, &pages);
+            if document.kind == Kind::Pdf && chunks.is_empty() {
+                skipped.push(skip(
+                    "no text in the PDF (scanned or only pictures)".to_string(),
+                ));
+                continue;
+            }
             // 改的时刻读不出来的（很少见）照 1970 年记：只影响搜到时带的时刻。
             let at = Timestamp::from_unix_millis(document.modified)
                 .or_else(|| Timestamp::from_unix_millis(0))
@@ -138,7 +143,7 @@ pub(super) fn about(dir: &Path) -> (miyu_recall::kb::About, Option<String>) {
 }
 
 /// 列出 `entries`（一个目录读出来的）里的文档（子目录照样），接在 `out` 后面：以点开头的、链接不算，扩展名照
-/// [`EXTENSIONS`]。`base` 是文档的目录：相对路径照它算。读不了的子目录跳过，照 `skip`（相对路径、为什么）交回。
+/// [`Kind::of`]。`base` 是文档的目录：相对路径照它算。读不了的子目录跳过，照 `skip`（相对路径、为什么）交回。
 fn scan(
     base: &Path,
     entries: std::fs::ReadDir,
@@ -163,9 +168,9 @@ fn scan(
             }
             continue;
         }
-        if !kind.is_file() || !document(&name) {
+        let Some(document) = Kind::of(&name).filter(|_| kind.is_file()) else {
             continue;
-        }
+        };
         let Ok(metadata) = entry.metadata() else {
             continue;
         };
@@ -178,6 +183,7 @@ fn scan(
         out.push(Document {
             source: relative(base, &path),
             path,
+            kind: document,
             size: metadata.len(),
             modified,
         });
@@ -194,36 +200,52 @@ fn relative(base: &Path, path: &Path) -> String {
         .join("/")
 }
 
-/// 文件名是不是文档：扩展名照 [`EXTENSIONS`]（小写比）。
-pub(super) fn document(name: &str) -> bool {
-    name.rsplit_once('.').is_some_and(|(stem, extension)| {
-        !stem.is_empty() && EXTENSIONS.contains(&extension.to_ascii_lowercase().as_str())
-    })
+/// 抽出来的字切成块：Markdown、网页照标题切，纯文本照段落；PDF 一页一页照段落切，每块的头一行记着第几页（从 1 起，搜到的
+/// 时候 [`hit`] 拆出来）。
+fn chunks(kind: Kind, pages: &[String]) -> Vec<String> {
+    let texts = |chunks: Vec<chunk::Chunk>| chunks.into_iter().map(|chunk| chunk.text);
+    match kind {
+        Kind::Markdown | Kind::Html => pages
+            .iter()
+            .flat_map(|page| texts(chunk::markdown(page)))
+            .collect(),
+        Kind::Plain => pages
+            .iter()
+            .flat_map(|page| texts(chunk::plain(page)))
+            .collect(),
+        Kind::Pdf => pages
+            .iter()
+            .enumerate()
+            .flat_map(|(n, page)| {
+                texts(chunk::plain(page)).map(move |text| format!("{}\n{text}", n + 1))
+            })
+            .collect(),
+    }
 }
 
-/// 是不是 Markdown：照扩展名。
-fn markdown(source: &str) -> bool {
-    source.rsplit_once('.').is_some_and(|(_, extension)| {
-        matches!(extension.to_ascii_lowercase().as_str(), "md" | "markdown")
-    })
-}
-
-/// 索引里搜到的一条写成一块：键是 `<相对路径>#<第几块>`；Markdown 的头一行是标题路径（`# …`）。键不合写法的不要。
+/// 索引里搜到的一条写成一块：键是 `<相对路径>#<第几块>`；Markdown、网页的头一行是标题路径（`# …`），PDF 的头一行是第几页
+/// （施工 K-5）。键不合写法的、不是文档的不要。
 pub(super) fn hit(kb: &str, key: &str, text: &str, at: Timestamp) -> Option<Hit> {
     let (path, chunk) = key.rsplit_once('#')?;
     let chunk = chunk.parse().ok()?;
-    let (heading, text) = match (markdown(path), text.strip_prefix("# ")) {
-        (true, Some(rest)) => match rest.split_once('\n') {
-            Some((heading, text)) => (heading.to_string(), text.to_string()),
-            None => (rest.to_string(), String::new()),
+    let first = text.split_once('\n');
+    let (heading, page, text) = match (Kind::of(path)?, text.strip_prefix("# ")) {
+        (Kind::Markdown | Kind::Html, Some(rest)) => match rest.split_once('\n') {
+            Some((heading, text)) => (heading.to_string(), None, text.to_string()),
+            None => (rest.to_string(), None, String::new()),
         },
-        _ => (String::new(), text.to_string()),
+        (Kind::Pdf, _) => {
+            let (page, text) = first?;
+            (String::new(), Some(page.parse().ok()?), text.to_string())
+        }
+        _ => (String::new(), None, text.to_string()),
     };
     Some(Hit {
         kb: kb.to_string(),
         path: path.to_string(),
         chunk,
         heading,
+        page,
         text,
         at,
     })

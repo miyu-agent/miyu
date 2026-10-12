@@ -119,14 +119,19 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
 
 /// 一块在回应里的样子。
 fn shown(hit: &Hit) -> Value {
-    json!({
+    let mut shown = json!({
         "kb": hit.kb,
         "path": hit.path,
         "chunk": hit.chunk,
         "heading": hit.heading,
         "text": hit.text,
         "at": hit.at.to_string(),
-    })
+    });
+    // PDF 的那一块带第几页（施工 K-5），别的不写这一格。
+    if let Some(page) = hit.page {
+        shown["page"] = json!(page);
+    }
+    shown
 }
 
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。

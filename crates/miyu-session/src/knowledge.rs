@@ -312,6 +312,7 @@ fn search(
             kb: hit.kb,
             path: hit.path,
             heading: hit.heading,
+            page: hit.page,
             text: hit.text,
         })
         .collect();
@@ -357,6 +358,7 @@ fn refused(error: KnowledgeError, kb: String, path: String) -> KbRefused {
         KnowledgeError::Ambiguous(count) => KbRefused::Ambiguous(path, count),
         KnowledgeError::Trash(why) => KbRefused::Trash(path, why),
         KnowledgeError::ReadOnly => KbRefused::ReadOnly(kb),
+        KnowledgeError::NotText => KbRefused::NotText(path),
         error => failed(&error),
     }
 }
