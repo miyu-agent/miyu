@@ -356,6 +356,7 @@ fn refused(error: KnowledgeError, kb: String, path: String) -> KbRefused {
         KnowledgeError::NoMatch => KbRefused::NoMatch(path),
         KnowledgeError::Ambiguous(count) => KbRefused::Ambiguous(path, count),
         KnowledgeError::Trash(why) => KbRefused::Trash(path, why),
+        KnowledgeError::ReadOnly => KbRefused::ReadOnly(kb),
         error => failed(&error),
     }
 }

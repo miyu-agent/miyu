@@ -686,7 +686,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks"}…]}`，照编号排；读 `kb.toml` 出错的多一格 `error`（英文的一句为什么） |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks"}…]}`，照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）。`kb.search` 跳过挂的目录用不了的库 |
 | `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前 |
 | `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页 |
 
@@ -1456,7 +1456,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/config_set.rs`（施工 8-3） | `config.set` 的回应、每一种拒绝、`expect`、版本、手改重读、全收或者全不收、写不成什么都没变、日志（`config.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_follow.rs`（施工 R-12 上） | 记忆日志的推送：带 `after` 的先补、再回应 `upto`、再推，推的是日志那一行原样（`body`、`by`、`cause`）；她在聊天里经工具记的照样推（`by` 是那次调用、出处是那个会话）；不写的只推之后的，另一个连接从中间补；会话那一间推的带 `session`，人格那一间的不串；再订阅换掉、取消了不推、没订阅的取消回 `{}`；写入堵着的连接掉队推 `resync`、回应一条不丢；`after` 写错、两样都写、没有的人格、没有记忆的会话、没装的照原因拒（挑哪些见 `memory.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_restore.rs`、`memory_turns.rs`（施工 R-12 下） | `memory.restore`：忘了的恢复以后照常列出、搜得到，同一个编号只算一次，本来就算数的不写，拒绝的几种；`memory.turns`：搜得到以前那一轮的会话、轮、时刻、字，`limit`，会话那一间的不串，写错的几种（细节见 `memory.md`「守着它的」） |
-| `crates/miyu-endpoint/tests/knowledge.rs`（施工 K-1 上） | 「`kb.*`」：三个方法的回应一格一格对、`kb.toml` 写错的带 `error`、只搜一个；写错的几种 `bad_params`、`unknown_kb`、`unknown_document`、`kb.` 开头的别的方法 `unknown_method`（细节见 `knowledge.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge.rs`（施工 K-1 上） | 「`kb.*`」：三个方法的回应一格一格对、`kb.toml` 写错的带 `error`、挂的目录用不了的带 `error`、`kb.search` 跳过它（施工 K-4）、只搜一个；写错的几种 `bad_params`、`unknown_kb`、`unknown_document`、`kb.` 开头的别的方法 `unknown_method`（细节见 `knowledge.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/config_watch.rs`、`config_watch_log.rs`（施工 8-4） | 订阅配置、取消、参数不对；手改推 `config.changed`；`config.set` 先见推送后见回应；掉队推 `resync`；改了语言下一句照新的（`config.md`「守着它的」） |
 
 ### 出处

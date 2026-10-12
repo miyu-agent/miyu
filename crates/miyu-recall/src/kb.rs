@@ -1,5 +1,6 @@
 //! 一个知识库的 `kb.toml`（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」）：给人看的名字、一句话说这个库是什么。
-//! 两格都可以不写；别的格不认，读进来报错（调的一方照没有 `kb.toml` 的样子用，把为什么交给人看）。
+//! 几格都可以不写；别的格不认，读进来报错（调的一方照没有 `kb.toml` 的样子用，把为什么交给人看）。`mount` 是挂进来的现成
+//! 目录（施工 K-4）：写了的库，文档在那里，只读。
 
 use serde::Deserialize;
 
@@ -13,6 +14,9 @@ pub struct About {
     /// 一句话说这个库是什么；没写的空着。
     #[serde(default)]
     pub description: Option<String>,
+    /// 挂进来的目录（施工 K-4）：绝对路径，或者 `~/` 开头；路径照写的原样，换成真实位置是调的一方的事。没写的是自己的库。
+    #[serde(default)]
+    pub mount: Option<String>,
 }
 
 /// 读 `kb.toml` 的字。
@@ -36,7 +40,15 @@ mod tests {
             About {
                 name: Some("日语笔记".into()),
                 description: Some("学日语的笔记".into()),
+                mount: None,
             }
+        );
+        assert_eq!(
+            about("mount = \"~/notes\"\n")
+                .expect("合写法")
+                .mount
+                .as_deref(),
+            Some("~/notes")
         );
         assert!(about("title = \"错的格\"\n").is_err());
         assert!(about("name = 3\n").is_err());

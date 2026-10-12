@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 
 use super::catch_up::BIGGEST;
+use super::mount::Documents;
 use super::read::target;
 use super::{Knowledge, KnowledgeError};
 use crate::layers::valid;
@@ -152,9 +153,12 @@ impl Knowledge {
         target(Path::new(""), path).is_some()
     }
 
-    /// 库 `kb` 里 `path` 照写法该在哪：库得在，路径照读的那一套，库的目录照真实的位置。
+    /// 库 `kb` 里 `path` 照写法该在哪：库得在、不是挂进来的（施工 K-4，只读），路径照读的那一套，库的目录照真实的位置。
     fn target(&self, account: &AccountId, kb: &str, path: &str) -> Result<PathBuf, KnowledgeError> {
-        let dir = std::fs::canonicalize(self.dir(account, kb)?).map_err(io)?;
+        let Documents::Own(dir) = self.documents(account, kb)? else {
+            return Err(KnowledgeError::ReadOnly);
+        };
+        let dir = std::fs::canonicalize(dir).map_err(io)?;
         target(&dir, path).ok_or(KnowledgeError::UnknownDocument)
     }
 }

@@ -46,6 +46,7 @@
     "common/no-match": "{path} 里找不到要换的字",
     "common/ambiguous": "{path} 里要换的字有 {count} 处",
     "common/trash": "{path} 挪不进回收站：{error}",
-    "common/bad-id": "{kb} 不能当知识库的编号"
+    "common/bad-id": "{kb} 不能当知识库的编号",
+    "common/read-only": "{kb} 是挂进来的目录，只读"
   }
 }

@@ -322,3 +322,39 @@ fn the_meaning_side_lifts_a_lower_keyword_hit() {
     };
     assert_eq!(first(Some(near)), ["b.md"]);
 }
+
+/// 量尺（施工 K-4）：3000 篇、每篇 8 节的库头一次补、不变的重扫、改了一篇、搜一次各多久。断言结果，耗时打出来看。K-4 前
+/// 头一次补 5 秒上下（整份换掉照 `substr` 比，每篇扫一遍整张表），照键的范围删以后 0.6 秒上下（Linux、release）。
+#[test]
+#[ignore]
+fn measure_three_thousand_documents() {
+    let scratch = Scratch::new("kb-measure");
+    let root = root_in(&scratch);
+    let dir = kb(&root, "vault");
+    let paragraph =
+        "团子是一只橘猫，每天在窗台上晒太阳。The quick brown fox jumps over the lazy dog.\n\n";
+    for n in 0..3000 {
+        let mut text = format!("# 笔记 {n}\n\n");
+        for section in 0..8 {
+            text.push_str(&format!("## 小节 {section}\n\n{paragraph}{paragraph}"));
+        }
+        write(&dir, &format!("d{}/n{n}.md", n % 20), &text);
+    }
+    let knowledge = Knowledge::new(&root);
+    let started = std::time::Instant::now();
+    let (bases, _) = knowledge.list(&admin()).expect("补得了");
+    let first = started.elapsed();
+    assert_eq!((bases[0].documents, bases[0].chunks), (3000, 24000));
+    let started = std::time::Instant::now();
+    knowledge.list(&admin()).expect("补得了");
+    let again = started.elapsed();
+    write(&dir, "d0/n0.md", "# 改了\n\n新的内容\n");
+    let started = std::time::Instant::now();
+    let (bases, _) = knowledge.list(&admin()).expect("补得了");
+    let changed = started.elapsed();
+    assert_eq!(bases[0].chunks, 23993);
+    let started = std::time::Instant::now();
+    assert_eq!(hits(&knowledge, "橘猫", None).len(), 10);
+    let search = started.elapsed();
+    eprintln!("头一次 {first:?}，不变的重扫 {again:?}，改了一篇 {changed:?}，搜一次 {search:?}");
+}

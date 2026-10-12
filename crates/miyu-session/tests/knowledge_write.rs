@@ -283,3 +283,62 @@ async fn a_document_goes_to_the_trash_and_undo_brings_it_back() {
     .expect("会话在跑");
     assert_eq!(read(&file), "过时了\n", "撤销那一轮：从回收站移回来");
 }
+
+#[tokio::test]
+async fn a_mounted_folder_is_searched_and_read_but_never_written() {
+    // 施工 K-4：挂进来的照搜、照读；写的三件拒（只读，19 N7），挂的目录、库目录里什么都没动。
+    let home = Home::new();
+    let notes = home.home.join("notes");
+    std::fs::create_dir_all(&notes).expect("建得了");
+    std::fs::write(notes.join("a.md"), "团子是橘猫。\n").expect("写得进");
+    let dir = kb(&home).join("notes");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(
+        dir.join("kb.toml"),
+        format!("mount = '{}'\n", notes.display()),
+    )
+    .expect("写得进");
+    let edit = serde_json::json!({"kb": "notes", "path": "a.md", "old": "橘猫", "new": "白猫"});
+    let script = Script::new([
+        call("kb_search", serde_json::json!({"query": "橘猫"})),
+        call(
+            "kb_read",
+            serde_json::json!({"kb": "notes", "path": "a.md"}),
+        ),
+        call(
+            "kb_save",
+            serde_json::json!({"kb": "notes", "path": "b.md", "text": "x"}),
+        ),
+        call("kb_edit", edit),
+        call(
+            "kb_delete",
+            serde_json::json!({"kb": "notes", "path": "a.md"}),
+        ),
+        Play::Says("好。"),
+    ]);
+    let handle = session(&home, &script).await;
+    let log = chat(&home, &handle, 1, "看看笔记").await;
+    let results: Vec<String> = log
+        .iter()
+        .filter_map(|event| match &event.body {
+            Body::ToolResult(result) => match result.blocks.as_slice() {
+                [Block::Text(Text { text })] => Some(text.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let read_only = "notes is a mounted folder and read-only. Save to another knowledge base.";
+    assert_eq!(
+        results,
+        [
+            "[notes] a.md\n团子是橘猫。",
+            "团子是橘猫。\n",
+            read_only,
+            read_only,
+            read_only,
+        ]
+    );
+    assert_eq!(read(&notes.join("a.md")), "团子是橘猫。\n");
+    assert!(!notes.join("b.md").exists() && !dir.join("b.md").exists());
+}

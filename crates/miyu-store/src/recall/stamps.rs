@@ -8,7 +8,7 @@ use rusqlite::{Transaction, params};
 
 use miyu_kernel::time::Timestamp;
 
-use super::{DbError, RecallIndex, integer, put};
+use super::{DbError, RecallIndex, put};
 
 /// 以前的库（同一个版本号）开的时候补上这张表：照原样建，已经有的不动（同向量表）。
 pub(super) const ADD: &str = "CREATE TABLE IF NOT EXISTS stamps (
@@ -77,19 +77,20 @@ impl RecallIndex {
 
 /// 拿掉来源 `source` 的块（连同词、向量）和指纹。照 `#` 分：一个来源是另一个的前缀（`a.md`、`a.md.bak`）也不碍事。
 fn clear(tx: &Transaction<'_>, source: &str) -> Result<(), DbError> {
-    let prefix = format!("{source}#");
-    let length = integer(prefix.chars().count() as u64, "prefix")?;
+    // 照键的范围删（`#` 的下一个字符是 `$`）：走 `key` 上的索引。原来照 `substr` 比，每个来源都扫一遍整张表，三千篇的库头一次补
+    // 要 5 秒上下，改了以后 0.6 秒上下（施工 K-4 量的）。
+    let (from, to) = (format!("{source}#"), format!("{source}$"));
     tx.execute(
-        "DELETE FROM terms WHERE rowid IN (SELECT id FROM items WHERE substr(key, 1, ?2) = ?1)",
-        params![prefix, length],
+        "DELETE FROM terms WHERE rowid IN (SELECT id FROM items WHERE key >= ?1 AND key < ?2)",
+        params![from, to],
     )?;
     tx.execute(
-        "DELETE FROM items WHERE substr(key, 1, ?2) = ?1",
-        params![prefix, length],
+        "DELETE FROM items WHERE key >= ?1 AND key < ?2",
+        params![from, to],
     )?;
     tx.execute(
-        "DELETE FROM vectors WHERE substr(key, 1, ?2) = ?1",
-        params![prefix, length],
+        "DELETE FROM vectors WHERE key >= ?1 AND key < ?2",
+        params![from, to],
     )?;
     tx.execute("DELETE FROM stamps WHERE source = ?1", [source])?;
     Ok(())

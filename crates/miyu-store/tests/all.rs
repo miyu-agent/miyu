@@ -8,6 +8,7 @@ mod support;
 mod human;
 mod human_languages;
 mod knowledge;
+mod knowledge_mount;
 mod knowledge_write;
 mod memory;
 mod memory_extracted;

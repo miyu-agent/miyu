@@ -4,9 +4,12 @@
 //! - 列、搜之前先照文件补这个库（`knowledge/catch_up.rs`）：新的、变了的整份重切，没了的拿掉，没变的（指纹一样）不重读。
 //!   一个库一把锁：两个请求同时来，后来的等前面的补完。碰磁盘，调的一方放在阻塞线程里。
 //! - 读照路径直接读目录里的文件（`knowledge/read.rs`），不读索引。
+//! - 挂进来的库（施工 K-4，`knowledge/mount.rs`）：文档在 `kb.toml` 的 `mount` 那个目录里，只读；挂的目录用不了的列出来带
+//!   `error`、搜的时候跳过，索引不动。
 //! - 这一层不记运行日志：跳过的文档交回给调的一方记（[`Skipped`]）。
 
 mod catch_up;
+mod mount;
 mod read;
 mod write;
 
@@ -28,6 +31,8 @@ pub use write::Written;
 #[derive(Debug)]
 pub struct Knowledge {
     root: DataRoot,
+    /// 这台机器的家目录：挂的路径 `~/` 开头的照它接（施工 K-4）。
+    home: Option<PathBuf>,
     open: Mutex<BTreeMap<(AccountId, String), Arc<Shelf>>>,
 }
 
@@ -60,7 +65,7 @@ pub struct Base {
     pub documents: usize,
     /// 几块。
     pub chunks: usize,
-    /// `kb.toml` 读不出来的为什么（照没有 `kb.toml` 的样子用）。
+    /// `kb.toml` 读不出来的、挂的目录用不了的（施工 K-4）为什么。
     pub error: Option<String>,
 }
 
@@ -111,6 +116,10 @@ pub enum KnowledgeError {
     Ambiguous(usize),
     /// 挪不进回收站：为什么（施工 K-3）。
     Trash(String),
+    /// 挂进来的库只读（施工 K-4，19 N7）。
+    ReadOnly,
+    /// 挂的目录用不了：为什么（施工 K-4）。列出来的照它带 `error`，搜的时候跳过，读的当没有这个文档。
+    Unavailable(String),
     /// 索引读写不了。
     Db(DbError),
     /// 目录、文件读不了：为什么。
@@ -134,6 +143,8 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::NoMatch => write!(f, "text not found"),
             KnowledgeError::Ambiguous(count) => write!(f, "text found {count} times"),
             KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
+            KnowledgeError::ReadOnly => write!(f, "mounted folder is read-only"),
+            KnowledgeError::Unavailable(why) => write!(f, "{why}"),
             KnowledgeError::Db(error) => write!(f, "index: {error}"),
             KnowledgeError::Io(why) => write!(f, "{why}"),
         }
@@ -146,8 +157,15 @@ impl Knowledge {
     pub fn new(root: &DataRoot) -> Knowledge {
         Knowledge {
             root: root.clone(),
+            home: None,
             open: Mutex::new(BTreeMap::new()),
         }
+    }
+
+    /// 挂的路径 `~/` 开头的照这台机器的家目录 `home` 接（施工 K-4）；没交的那种挂不上（列出来带 `error`）。
+    #[must_use]
+    pub fn with_home(self, home: Option<PathBuf>) -> Knowledge {
+        Knowledge { home, ..self }
     }
 
     /// 账号 `account` 下的知识库，照编号排；每个先照文件补。目录不在的当一个都没有。
@@ -159,9 +177,16 @@ impl Knowledge {
         let mut bases = Vec::new();
         let mut skipped = Vec::new();
         for id in self.ids(account)? {
-            let (base, mut dropped) = self.catch_up(account, &id)?;
-            skipped.append(&mut dropped);
-            bases.push(base);
+            match self.catch_up(account, &id) {
+                Ok((base, mut dropped)) => {
+                    skipped.append(&mut dropped);
+                    bases.push(base);
+                }
+                Err(KnowledgeError::Unavailable(why)) => {
+                    bases.push(self.counted(account, &id, Some(why))?);
+                }
+                Err(error) => return Err(error),
+            }
         }
         Ok((bases, skipped))
     }
@@ -194,8 +219,11 @@ impl Knowledge {
         let mut skipped = Vec::new();
         let mut lists = Vec::new();
         for id in ids {
-            let (_, mut dropped) = self.catch_up(account, &id)?;
-            skipped.append(&mut dropped);
+            match self.catch_up(account, &id) {
+                Ok((_, mut dropped)) => skipped.append(&mut dropped),
+                Err(KnowledgeError::Unavailable(_)) => continue,
+                Err(error) => return Err(error),
+            }
             let shelf = self.shelf(account, &id);
             lists.push(fused(&shelf.index, &id, query, limit, near)?.into_iter());
         }
@@ -221,7 +249,10 @@ impl Knowledge {
         path: &str,
         page: usize,
     ) -> Result<Page, KnowledgeError> {
-        let dir = self.dir(account, kb)?;
+        let dir = match self.documents(account, kb)?.usable() {
+            Err(KnowledgeError::Unavailable(_)) => return Err(KnowledgeError::UnknownDocument),
+            dir => dir?,
+        };
         read::page(&dir, path, page)
     }
 

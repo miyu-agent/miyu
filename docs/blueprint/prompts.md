@@ -2664,6 +2664,17 @@ Could not move {path} to the trash: {error}.
 {kb} is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.
 ```
 
+#### `software/knowledge/common/read-only.txt`
+
+- 什么时候加进来：`kb_save`、`kb_edit`、`kb_delete` 写到挂进来的库（字段按 `notes` 填）
+- token：15（2026-10-12 量）
+- 为什么加：挂进来的只读（19 N7）：说清写到别的库里（施工 K-4）
+- 指纹：`27cc421f`
+
+```text
+{kb} is a mounted folder and read-only. Save to another knowledge base.
+```
+
 #### `software/onebot/tool-results/skipped.txt`
 
 - 什么时候加进来：`skip_reply` 答的那一句（施工 O-26；O-38 改）

@@ -247,3 +247,36 @@ async fn her_kb_search_finds_by_meaning_and_still_does_after_a_restart() {
         "载入的会话照意思找得到：{found:?}"
     );
 }
+
+#[tokio::test]
+async fn a_mounted_folder_follows_the_home_and_an_unplugged_one_is_skipped() {
+    // 施工 K-4：`~/` 照核心的家目录；挂的目录用不了的 `kb.list` 带 `error`、数照索引里的，`kb.search` 跳过它、不算出错。
+    let home = Home::new();
+    let notes = home.work.join("notes");
+    std::fs::create_dir_all(&notes).expect("建得了");
+    std::fs::write(notes.join("cat.md"), "团子是橘猫\n").expect("写得进");
+    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("kb.toml"), "mount = \"~/notes\"\n").expect("写得进");
+    let core = home.core_full(
+        &Script::new([]),
+        Catalog::default(),
+        Some(home.work.clone()),
+        TOKEN,
+    );
+    let mut client = Client::connect(Arc::new(core));
+    client.hello().await;
+    let search = json!({"query": "橘猫"});
+    let found = client.call("s1", "kb.search", search.clone()).await;
+    assert_eq!(found["result"]["hits"][0]["path"], "cat.md", "{found}");
+    std::fs::rename(&notes, home.work.join("unplugged")).expect("挪得走");
+    let listed = client.call("l1", "kb.list", json!({})).await;
+    let base = &listed["result"]["bases"][0];
+    assert!(base["error"].is_string(), "{listed}");
+    assert_eq!(
+        (&base["documents"], &base["chunks"]),
+        (&json!(1), &json!(1))
+    );
+    let skipped = client.call("s2", "kb.search", search).await;
+    assert_eq!(skipped["result"], json!({"hits": []}), "{skipped}");
+}

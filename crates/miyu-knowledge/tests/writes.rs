@@ -161,6 +161,13 @@ async fn writing_refusals_are_said_plainly() {
             "个人备忘 is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.",
         ),
         (
+            KbRefused::ReadOnly("notes".to_string()),
+            "kb_edit",
+            serde_json::json!({"kb": "notes", "path": "a.md", "old": "猫", "new": "狗"}),
+            "common/read-only",
+            "notes is a mounted folder and read-only. Save to another knowledge base.",
+        ),
+        (
             KbRefused::NoBase("secret".to_string()),
             "kb_delete",
             serde_json::json!({"kb": "secret", "path": "a.md"}),

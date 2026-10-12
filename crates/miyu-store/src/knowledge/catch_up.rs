@@ -1,6 +1,7 @@
 //! 照文件补一个知识库的索引（施工 K-1 上，`docs/blueprint/knowledge.md`「怎么走」第三条）：列出库里的文档，每个算指纹（大小、
 //! 改的时刻），和索引里记着的比；新的、变了的读出来切块、整份换（`RecallIndex::replace`），没了的拿掉。读不了、太大、不是
-//! UTF-8 的跳过（原来的块照留），交回给调的一方记。
+//! UTF-8 的跳过（原来的块照留），交回给调的一方记。挂进来的照挂的目录列（施工 K-4）；挂的目录用不了的不补、索引不动，交回
+//! [`KnowledgeError::Unavailable`]；里面读不了的子目录跳过、照跳过的文档记（挂进来的常有，macOS 上受保护的目录）。
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -35,17 +36,24 @@ impl Knowledge {
         account: &AccountId,
         id: &str,
     ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
-        let dir = self.dir(account, id)?;
+        let dir = self.documents(account, id)?.usable()?;
         let shelf = self.shelf(account, id);
         let _only_one = shelf
             .catching_up
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let (about, error) = about(&dir);
         let mut documents = Vec::new();
-        scan(&dir, &dir, &mut documents)?;
-        let stamps = shelf.index.stamps()?;
         let mut skipped = Vec::new();
+        let read =
+            std::fs::read_dir(&dir).map_err(|error| KnowledgeError::Io(error.to_string()))?;
+        scan(&dir, read, &mut documents, &mut |source, why| {
+            skipped.push(Skipped {
+                kb: id.to_string(),
+                path: source,
+                why,
+            });
+        });
+        let stamps = shelf.index.stamps()?;
         for document in &documents {
             let stamp = format!("{}:{}", document.size, document.modified);
             if stamps.get(&document.source) == Some(&stamp) {
@@ -91,15 +99,27 @@ impl Knowledge {
         {
             shelf.index.drop_source(source)?;
         }
-        let base = Base {
+        Ok((self.counted(account, id, None)?, skipped))
+    }
+
+    /// 库 `id` 列出来的样子：名字、说明照 `kb.toml`，数照索引里现有的；`unavailable` 是挂的目录用不了的为什么（施工 K-4），
+    /// 没有的照 `kb.toml` 读不读得出。
+    pub(super) fn counted(
+        &self,
+        account: &AccountId,
+        id: &str,
+        unavailable: Option<String>,
+    ) -> Result<Base, KnowledgeError> {
+        let (about, error) = about(&self.dir(account, id)?);
+        let shelf = self.shelf(account, id);
+        Ok(Base {
             id: id.to_string(),
             name: about.name.unwrap_or_else(|| id.to_string()),
             description: about.description.unwrap_or_default(),
             documents: shelf.index.stamps()?.len(),
             chunks: shelf.index.keys()?.len(),
-            error,
-        };
-        Ok((base, skipped))
+            error: unavailable.or(error),
+        })
     }
 }
 
@@ -117,10 +137,14 @@ pub(super) fn about(dir: &Path) -> (miyu_recall::kb::About, Option<String>) {
     }
 }
 
-/// 列出 `dir` 下的文档（子目录照样），接在 `out` 后面：以点开头的、链接不算，扩展名照 [`EXTENSIONS`]。`base` 是库的目录：
-/// 相对路径照它算。
-fn scan(base: &Path, dir: &Path, out: &mut Vec<Document>) -> Result<(), KnowledgeError> {
-    let entries = std::fs::read_dir(dir).map_err(|error| KnowledgeError::Io(error.to_string()))?;
+/// 列出 `entries`（一个目录读出来的）里的文档（子目录照样），接在 `out` 后面：以点开头的、链接不算，扩展名照
+/// [`EXTENSIONS`]。`base` 是文档的目录：相对路径照它算。读不了的子目录跳过，照 `skip`（相对路径、为什么）交回。
+fn scan(
+    base: &Path,
+    entries: std::fs::ReadDir,
+    out: &mut Vec<Document>,
+    skip: &mut dyn FnMut(String, String),
+) {
     let mut entries: Vec<_> = entries.flatten().collect();
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
@@ -133,7 +157,10 @@ fn scan(base: &Path, dir: &Path, out: &mut Vec<Document>) -> Result<(), Knowledg
         }
         let path = entry.path();
         if kind.is_dir() {
-            scan(base, &path, out)?;
+            match std::fs::read_dir(&path) {
+                Ok(inner) => scan(base, inner, out, skip),
+                Err(error) => skip(relative(base, &path), error.to_string()),
+            }
             continue;
         }
         if !kind.is_file() || !document(&name) {
@@ -148,22 +175,23 @@ fn scan(base: &Path, dir: &Path, out: &mut Vec<Document>) -> Result<(), Knowledg
             .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
             .and_then(|since| i64::try_from(since.as_millis()).ok())
             .unwrap_or(0);
-        let Ok(relative) = path.strip_prefix(base) else {
-            continue;
-        };
-        let source = relative
-            .components()
-            .map(|part| part.as_os_str().to_string_lossy().into_owned())
-            .collect::<Vec<_>>()
-            .join("/");
         out.push(Document {
-            source,
+            source: relative(base, &path),
             path,
             size: metadata.len(),
             modified,
         });
     }
-    Ok(())
+}
+
+/// `path` 在 `base` 里的相对路径，照 `/` 分。
+fn relative(base: &Path, path: &Path) -> String {
+    path.strip_prefix(base)
+        .unwrap_or(path)
+        .components()
+        .map(|part| part.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// 文件名是不是文档：扩展名照 [`EXTENSIONS`]（小写比）。

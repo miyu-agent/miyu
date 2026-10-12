@@ -240,7 +240,9 @@ impl Core {
             memory.give_extraction(extraction);
         }
         Core {
-            knowledge: Arc::new(miyu_store::knowledge::Knowledge::new(&root)),
+            knowledge: Arc::new(
+                miyu_store::knowledge::Knowledge::new(&root).with_home(home.clone()),
+            ),
             memory,
             index,
             system_indexes: std::sync::Mutex::default(),

@@ -37,6 +37,7 @@ pub(crate) struct All {
     ambiguous: Template,
     trash: Template,
     bad_id: Template,
+    read_only: Template,
 }
 
 impl Texts {
@@ -67,6 +68,7 @@ impl Texts {
             ambiguous: text("common", "ambiguous", &["count", "path"])?,
             trash: text("common", "trash", &["path", "error"])?,
             bad_id: text("common", "bad-id", &["kb"])?,
+            read_only: text("common", "read-only", &["kb"])?,
         })))
     }
 
@@ -133,6 +135,9 @@ impl Texts {
                 &[("path", path), ("error", error)],
             ),
             KbRefused::BadId(kb) => self.error(&self.0.bad_id, "common/bad-id", &[("kb", kb)]),
+            KbRefused::ReadOnly(kb) => {
+                self.error(&self.0.read_only, "common/read-only", &[("kb", kb)])
+            }
         }
     }
 }
