@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>442</b><span>/ 458 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>443</b><span>/ 458 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">a6634383</b><span>最近一步（X-12 上 脚本：读、找、跑）的提交</span></li>
+    <li><b class="mono">c3c6874c</b><span>最近一步（X-12 中 脚本：登记、开关）的提交</span></li>
   </ul>
 </header>
 
@@ -880,7 +880,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-11a"><span class="n">X-11 上</span>技能：预设开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-11b"><span class="n">X-11 下</span>技能：中途变了<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-12a"><span class="n">X-12 上</span>脚本：读、找、跑<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">X-12 中</span>脚本：登记、开关</span></li>
+        <li><a class="step done" href="#sX-12b"><span class="n">X-12 中</span>脚本：登记、开关<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">X-12 下</span>脚本：预算、查写法</span></li>
         <li><span class="step"><span class="n">X-13</span>出厂的技能、查写法</span></li>
       </ol>
@@ -25139,6 +25139,59 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>skills.md、tools/shell.md、26 第十节；施工单 X-12-脚本（上）.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-12b" aria-labelledby="h-sX12b">
+  <div class="sheet-head"><h2 id="h-sX12b"><span class="no">X-12 中</span>脚本：登记、开关</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">找到的脚本变成她工具面上的工具：每个脚本一个功能，预设里能逐个开关；装上带脚本的包当场有（skills.md「脚本」第 2 条，设计 30 第三节）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">脚本：登记、开关</span><span class="dir-note">X-12 中</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>工具目录整份换脚本（replacing_scripts）：撞了别的工具名字的不登记、交回，脚本的包算经提供者登记的</li>
+              <li>核心起来时、装卸包以后再找一遍，经内置包的端口 Builtins::script 造工具；家目录里的挂在 ~home 下</li>
+              <li>每个脚本一个功能 script-<工具名>，Feature 多一格 script，工具照它归</li>
+              <li>preset.get 接在包的功能后面、技能前面列出来，名字、说明挑这个连接的语言</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">家目录新放的下次生效</span><span class="rl">每轮都重找会让工具面变、掉前缀缓存；装卸包本来就换</span></div>
+          <div class="tile new"><span class="nm">撞名不登记</span><span class="rl">照 MCP 服务的做法，不让整份目录起不来</span></div>
+          <div class="tile new"><span class="nm">「装了没开」照常列</span><span class="rl">脚本有工具，同 MCP 服务的功能</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-12 中</dd></div>
+        <div><dt>名称</dt><dd>脚本：登记、开关</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">c3c6874c</dd></div>
+        <div><dt>验收</dt><dd>测试、变异 10 个、门禁八项、三台 CI（run 1917）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>工具目录：整份换、撞名交回、算经提供者登记、别的包不动</span></li>
+        <li><span class="ok">✓</span><span>功能：脚本的工具归它自己的功能，包自己的照旧</span></li>
+        <li><span class="ok">✓</span><span>端点：起来时登记、工具面里有、撞 read 的不登记；调它照跑命令的规矩；preset.get 列出来、预设关掉的没有；装包当场登记、[software] 关包跟着关</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>skills.md、presets.md 第 8 条、mcp.md；施工单 X-12-脚本登记（中）.md</li>
       </ul>
     </div>
   </div>
