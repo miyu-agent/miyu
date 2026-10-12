@@ -116,7 +116,12 @@ fn read(path: &std::path::Path) -> String {
 #[tokio::test]
 async fn with_no_base_only_save_is_given_and_saving_makes_the_first() {
     let home = Home::new();
+    // 施工 K-3 补（R-9 真跑查出来的）：编号写成中文的，说清编号怎么写，她下一次照着改；什么都不建。
     let script = Script::new([
+        call(
+            "kb_save",
+            serde_json::json!({"kb": "菜谱", "path": "pork.md", "text": "红烧肉炖一小时"}),
+        ),
         call(
             "kb_save",
             serde_json::json!({"kb": "recipes", "path": "pork.md", "text": "红烧肉炖一小时", "about": "家常菜"}),
@@ -125,9 +130,27 @@ async fn with_no_base_only_save_is_given_and_saving_makes_the_first() {
         Play::Says("嗯。"),
     ]);
     let handle = session(&home, &script).await;
+    let log = chat(&home, &handle, 1, "记一下红烧肉").await;
+    let results: Vec<String> = log
+        .iter()
+        .filter_map(|event| match &event.body {
+            Body::ToolResult(result) => match result.blocks.as_slice() {
+                [Block::Text(Text { text })] => Some(text.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
     assert_eq!(
-        last_result(&chat(&home, &handle, 1, "记一下红烧肉").await),
-        "Created knowledge base recipes and saved pork.md."
+        results,
+        [
+            "菜谱 is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.",
+            "Created knowledge base recipes and saved pork.md.",
+        ]
+    );
+    assert!(
+        !kb(&home).join("菜谱").exists(),
+        "编号写错的那一次什么都没建"
     );
     assert_eq!(read(&kb(&home).join("recipes/pork.md")), "红烧肉炖一小时\n");
     assert_eq!(
@@ -142,7 +165,7 @@ async fn with_no_base_only_save_is_given_and_saving_makes_the_first() {
         "一个库都没有：只有新建那一件"
     );
     assert_eq!(
-        names(&requests[2].1),
+        names(&requests[3].1),
         ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
         "有了库，下一个回合五件都有"
     );

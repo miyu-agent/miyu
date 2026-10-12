@@ -45,6 +45,7 @@
     "common/too-large": "{path} が大きすぎます",
     "common/no-match": "{path} に置き換える文字が見つかりません",
     "common/ambiguous": "{path} に置き換える文字が {count} か所あります",
-    "common/trash": "{path} をごみ箱に移せません：{error}"
+    "common/trash": "{path} をごみ箱に移せません：{error}",
+    "common/bad-id": "{kb} はナレッジベースの ID に使えません"
   }
 }

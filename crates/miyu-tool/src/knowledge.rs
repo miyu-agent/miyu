@@ -138,6 +138,8 @@ pub enum KbRefused {
     Ambiguous(String, usize),
     /// 挪不进回收站（施工 K-3）：哪一篇、为什么。
     Trash(String, String),
+    /// 要建的库编号不合写法（施工 K-3 补）：她写的编号。不说「没有这个库」：她是要建，得说清编号怎么写。
+    BadId(String),
     /// 读不了：为什么。
     Failed(String),
 }

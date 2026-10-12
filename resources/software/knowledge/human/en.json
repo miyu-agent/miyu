@@ -46,6 +46,7 @@
     "common/no-match": "Text not found in {path}",
     "common/ambiguous": "Text appears {count} times in {path}",
     "common/ambiguous/one": "Text appears {count} time in {path}",
-    "common/trash": "Could not trash {path}: {error}"
+    "common/trash": "Could not trash {path}: {error}",
+    "common/bad-id": "{kb} is not a usable knowledge base id"
   }
 }

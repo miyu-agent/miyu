@@ -154,6 +154,13 @@ async fn writing_refusals_are_said_plainly() {
             "Could not move a.md to the trash: no trash on this disk.",
         ),
         (
+            KbRefused::BadId("个人备忘".to_string()),
+            "kb_save",
+            serde_json::json!({"kb": "个人备忘", "path": "a.md", "text": "x"}),
+            "common/bad-id",
+            "个人备忘 is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.",
+        ),
+        (
             KbRefused::NoBase("secret".to_string()),
             "kb_delete",
             serde_json::json!({"kb": "secret", "path": "a.md"}),

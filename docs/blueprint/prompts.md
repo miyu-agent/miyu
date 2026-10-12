@@ -2587,6 +2587,17 @@ The text to replace appears {count} times in {path}. Include more around it.
 Could not move {path} to the trash: {error}.
 ```
 
+#### `software/knowledge/common/bad-id.txt`
+
+- 什么时候加进来：`kb_save` 要建的库编号不合写法（字段按 `个人备忘` 填）
+- token：24（2026-10-12 量）
+- 为什么加：说清编号怎么写：R-9 真跑时她把编号写成中文，听到「没有这个库」又试了两次才换（施工 K-3 补）
+- 指纹：`dc477708`
+
+```text
+{kb} is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.
+```
+
 #### `software/onebot/tool-results/skipped.txt`
 
 - 什么时候加进来：`skip_reply` 答的那一句（施工 O-26；O-38 改）

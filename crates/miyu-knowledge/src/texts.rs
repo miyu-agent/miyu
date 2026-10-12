@@ -36,6 +36,7 @@ pub(crate) struct All {
     no_match: Template,
     ambiguous: Template,
     trash: Template,
+    bad_id: Template,
 }
 
 impl Texts {
@@ -65,6 +66,7 @@ impl Texts {
             no_match: text("common", "no-match", &["path"])?,
             ambiguous: text("common", "ambiguous", &["count", "path"])?,
             trash: text("common", "trash", &["path", "error"])?,
+            bad_id: text("common", "bad-id", &["kb"])?,
         })))
     }
 
@@ -130,6 +132,7 @@ impl Texts {
                 "common/trash",
                 &[("path", path), ("error", error)],
             ),
+            KbRefused::BadId(kb) => self.error(&self.0.bad_id, "common/bad-id", &[("kb", kb)]),
         }
     }
 }
