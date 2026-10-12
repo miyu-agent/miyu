@@ -1,5 +1,6 @@
 //! 跑工具的任务送回来的，写成内核的输入（从 `tools.rs` 挪来，施工 D-2：那边要放提问的端口，过了 500 行）。
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use miyu_kernel::event::Effect;
@@ -20,6 +21,14 @@ impl Tools {
         for (job, child) in crate::agents::spawned_in(effects) {
             agents.stop_unclaimed(&job, child);
         }
+    }
+
+    /// 换上这一刻开着的技能文件夹（施工 X-11 下）：认用过的技能、沙盒都照新的。
+    pub(crate) fn set_shelves(&mut self, shelves: Vec<PathBuf>) {
+        if let Some(sandbox) = self.sandbox.as_mut() {
+            sandbox.set_shelves(shelves.clone());
+        }
+        self.shelves = shelves;
     }
 
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。

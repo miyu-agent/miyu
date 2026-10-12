@@ -67,6 +67,7 @@ fn setup_with(
         venue: VenueId::parse("local").expect("场所合写法"),
         lineage: None,
         knowledge: None,
+        skills: None,
     };
     (scratch, root, refresh)
 }

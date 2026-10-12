@@ -123,5 +123,9 @@ fn shown(path: &Path) -> String {
     }
 }
 
+mod watch;
+
+pub(crate) use watch::{Watch, tail};
+
 #[cfg(test)]
 mod tests;

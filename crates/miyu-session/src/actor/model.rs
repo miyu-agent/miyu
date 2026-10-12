@@ -145,8 +145,10 @@ impl Actor {
         let values = self.config.current().resolved.values();
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values).await;
+        let skills = self.skills_turn(&present).await;
         let config = Arc::clone(self.config.current());
-        let injected = hooks(self.tools.memory(), present, said, config).await;
+        let mut injected = hooks(self.tools.memory(), present, said, config).await;
+        injected.extend(skills);
         Input::TurnStartHooksDone {
             policy,
             prepare,

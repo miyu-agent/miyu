@@ -86,6 +86,7 @@ mod session_fact;
 mod session_usage;
 mod sessions;
 mod skills;
+mod skills_changed;
 mod spawn;
 mod stop;
 mod tools;

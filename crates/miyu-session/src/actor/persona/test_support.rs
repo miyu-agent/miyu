@@ -142,6 +142,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         venue,
         lineage: None,
         knowledge: None,
+        skills: None,
     };
     (scratch, root, refresh)
 }

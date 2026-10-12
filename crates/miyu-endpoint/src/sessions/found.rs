@@ -62,7 +62,7 @@ impl Open {
             index: core.index_for(&owner),
             usage: core.usage_for(&owner),
             knowledge: Some(Arc::clone(&core.knowledge)),
-            installed: Some(core.packages()),
+            installed: Some(crate::packages::installed(core)),
             memory: core.memory_for(&owner),
             presets: Some(crate::presets::places(core)),
             owner_is_admin: owner == core.admin,

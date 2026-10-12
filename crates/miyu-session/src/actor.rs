@@ -42,6 +42,7 @@ mod listing;
 mod mail;
 mod model;
 pub(crate) mod persona;
+mod skills;
 mod stop;
 mod store;
 mod watchers;

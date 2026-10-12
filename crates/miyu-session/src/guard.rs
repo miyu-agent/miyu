@@ -14,7 +14,7 @@
 //! 施工 O-31 前：在场所里做的事（访问类别 `venue`）只看会话在不在场所里（[`Place`]）：在的放行、不问，不在的拒绝。
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use serde_json::{Value, json};
 
@@ -56,6 +56,8 @@ pub(crate) struct Guard {
     place: Place,
     /// 只碰得到自己工作区的会话才有（施工 5-12，[`Confined`]）：文件类工具只放行工作区里的，命令一律拒。
     confined: Option<Confined>,
+    /// 开着的技能文件夹（施工 X-10 上），回合开始照这一刻的换（施工 X-11 下）：和在跑的调用共用这一份策略，所以上锁。
+    shelves: RwLock<Vec<PathBuf>>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -125,14 +127,23 @@ impl Guard {
             sandboxed,
             place,
             confined,
+            shelves: RwLock::default(),
         }
     }
 
     /// 数据根里单独放开只读的目录（施工 X-10 上，开着的技能文件夹）：能读，写一律拒；只碰得到自己工作区的会话也能读。
     #[must_use]
-    pub(crate) fn with_shelves(mut self, shelves: Vec<PathBuf>) -> Guard {
-        self.places.shelves = shelves;
+    pub(crate) fn with_shelves(self, shelves: Vec<PathBuf>) -> Guard {
+        self.set_shelves(shelves);
         self
+    }
+
+    /// 换上这一刻开着的技能文件夹（施工 X-11 下）：回合开始照它换，下一次判照新的。
+    pub(crate) fn set_shelves(&self, shelves: Vec<PathBuf>) {
+        *self
+            .shelves
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = shelves;
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
@@ -241,6 +252,11 @@ impl Guard {
         let places = Places {
             workspace: cwd.clone(),
             dirs,
+            shelves: self
+                .shelves
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone(),
             ..self.places.clone()
         };
         let boundary = Boundary::new(&places);

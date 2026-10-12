@@ -374,6 +374,16 @@ pub fn is_installed(found: &[Found], id: &str) -> bool {
     })
 }
 
+/// 交给会话的「这一刻装了的软件包」（施工 X-11 下，`miyu_session::Installed`）：拿着核心的弱引用，会话活在核心里面，拿强的
+/// 会绕成环；核心没了的交空的。
+pub(crate) fn installed(core: &std::sync::Arc<Core>) -> miyu_session::Installed {
+    let core = std::sync::Arc::downgrade(core);
+    std::sync::Arc::new(move || {
+        core.upgrade()
+            .map_or_else(|| std::sync::Arc::new(Vec::new()), |core| core.packages())
+    })
+}
+
 /// 装了的功能（施工 F-3 上，设计 30 第三节）：读成了的内置包、扩展包带的，照清单读的先后（包照编号，包里照写的先后）；
 /// 没写功能的包整个算一个（[`Manifest::features_of`]）。界面、小程序不带。预设照它开关、工具照它归。
 pub fn features(found: &[Found]) -> Features {

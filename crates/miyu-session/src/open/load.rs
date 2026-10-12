@@ -311,6 +311,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
     let confined = place.1.is_some();
     // 技能的文件夹照这一刻找到的、会话的预设开着的放开只读（施工 X-10 上、X-11 上）；列出来的那一块照快照。
+    let watch = installed.clone().map(|installed| skills::Watch {
+        installed,
+        root: root.clone(),
+        owner: owner.clone(),
+    });
     let shelves_open = match installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
@@ -321,7 +326,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                     .zip(places)
                     .and_then(|(id, presets)| presets.find(&id).ok())
                     .map(|found| found.file);
-                let found = skills::opened(skills::find(&installed, &root, &owner), file.as_ref());
+                let found =
+                    skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 skills::shelves(&found)
             })
             .await
@@ -413,6 +419,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         venue: refresh_venue,
         lineage: refresh_lineage,
         knowledge: shelves,
+        skills: watch,
     });
     span.in_scope(|| {
         tracing::info!(

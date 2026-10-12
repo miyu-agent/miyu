@@ -4187,6 +4187,45 @@ Skills you can use (read the file before following one):
 - {name}: {description} ({path})
 ```
 
+### 回合尾巴（`context.injected`，模块 `skills`），外壳头
+
+#### `core/skills/changed-open.txt`
+
+- 什么时候加进来：会话中途技能列表变了的那一轮（装卸、预设开关、家目录里放了新的，施工 X-11 下）；她看过的那一份没变的不带
+- token：6（2026-10-12 照开发端点量）
+- 为什么加：system 里那一块钉着不改（前缀缓存），新列表只能从尾巴给；标签说清是变了以后的那一份（`skills.md`「定了的」第 2 条）
+- 指纹：`92f08399`
+
+```text
+<skills-changed>
+```
+
+### 同上，外壳尾
+
+#### `core/skills/changed-close.txt`
+
+- 什么时候加进来：同上
+- token：6（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`96881316`
+
+```text
+</skills-changed>
+```
+
+### 同上，外壳里只有这一句
+
+#### `core/skills/none.txt`
+
+- 什么时候加进来：技能一个都没有了的那一轮
+- token：7（2026-10-12 量；连外壳整块 17）
+- 为什么加：不说的话 system 里那一份还在，她会照着去读已经没了的技能
+- 指纹：`e6decb57`
+
+```text
+No skills are available now.
+```
+
 ### system 第 4 块的头一行
 
 #### `software/knowledge/list/open.txt`

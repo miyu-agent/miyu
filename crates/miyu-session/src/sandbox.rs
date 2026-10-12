@@ -52,8 +52,13 @@ impl Sandbox {
     /// 开着的技能文件夹（施工 X-10 中，`skills.md`「技能」第 3 条）：规格里单独放开只读（外部身份的会话加进只准读的名单）。
     #[must_use]
     pub(crate) fn with_shelves(mut self, shelves: Vec<PathBuf>) -> Sandbox {
-        self.shelves = shelves;
+        self.set_shelves(shelves);
         self
+    }
+
+    /// 换上这一刻开着的技能文件夹（施工 X-11 下）：回合开始照它换。
+    pub(crate) fn set_shelves(&mut self, shelves: Vec<PathBuf>) {
+        self.shelves = shelves;
     }
 
     /// 照实际生效的那一级 `permission`、这一轮的工作目录 `cwd` 和加进来的目录 `dirs`（施工 5-10 上）写一次调用的沙盒：

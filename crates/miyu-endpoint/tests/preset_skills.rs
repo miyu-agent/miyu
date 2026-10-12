@@ -136,3 +136,97 @@ async fn a_session_lists_and_opens_only_the_skills_its_preset_turns_on() {
         .count();
     assert_eq!(denied, 2);
 }
+
+/// 会话中途改预设打开关着的技能（施工 X-11 下）：下一轮尾巴上交一份新的完整列表，文件夹当场放开只读；system 不改。
+#[tokio::test]
+async fn turning_a_skill_on_mid_session_brings_it_in_the_next_turn() {
+    let home = Home::new();
+    let skill = put(&home);
+    let skill = if cfg!(windows) {
+        skill.replace('\\', "/")
+    } else {
+        skill
+    };
+    let read = Fake::new("read", Access::Read, Act::Echo);
+    let tools = Catalog::new([Arc::clone(&read) as Arc<dyn Tool>]).expect("合写法");
+    let script = Script::new([
+        Play::Says("一。"),
+        Play::calls(&[("read", &json!({ "path": skill }).to_string())]),
+        Play::Says("二。"),
+    ]);
+    let mut client = Client::connect(configured_core(&home, &script, tools));
+    client.hello_without_input().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let reply = client
+        .call(
+            "c1",
+            "session.create",
+            json!({"cwd": work, "preset": "lean"}),
+        )
+        .await;
+    let session = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("没造出来：{reply}"))
+        .to_string();
+    client.say("s1", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    home.write(
+        "home/alice/presets/lean.toml",
+        "[preset]\nname = { en = \"Lean\" }\nunlisted = \"on\"\n",
+    );
+    client.say("s2", &session, "again").await;
+    home.until_turns(&session, 2).await;
+    assert_eq!(read.calls().len(), 1, "打开了的当场放开只读");
+    let requests = script.requests();
+    let tail = format!("{:?}", requests[1].1.messages);
+    assert!(tail.contains("<skills-changed>"), "{tail}");
+    assert!(tail.contains("- notes: Take notes."), "{tail}");
+    assert!(!requests[1].1.system.contains("- notes:"), "system 不改");
+}
+
+/// 会话中途装一个带技能的包（施工 X-11 下）：会话取的是这一刻装了的包，下一轮尾巴上就有它带的技能。包的程序不在也照样
+/// 装得上、清单读得成（施工 F-6 上：程序不在的只是功能不算），只带技能的包现在的清单格式还写不出来（X-13）。
+#[tokio::test]
+async fn a_package_installed_mid_session_brings_its_skills_in_the_next_turn() {
+    let home = Home::new();
+    let folder = home.work.join("kit");
+    std::fs::create_dir_all(folder.join("skills/notes")).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        "[package]\nprotocol = [1, 1]\nname = { zh = \"技能包\" }\n\n[command]\nname = \"kit\"\nprogram = \"miyu-kit-absent\"\nabout = { en = \"K\" }\n\n[process]\n",
+    )
+    .expect("写得进");
+    std::fs::write(
+        folder.join("skills/notes/SKILL.md"),
+        "---\nname: notes\ndescription: Take notes.\n---\n正文\n",
+    )
+    .expect("写得进");
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let read: Arc<dyn Tool> = Fake::new("read", Access::Read, Act::Echo);
+    let tools = Catalog::new([read]).expect("合写法");
+    let mut client = Client::connect(configured_core(&home, &script, tools));
+    client.hello().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let reply = client
+        .call(
+            "c1",
+            "session.create",
+            json!({"cwd": work, "preset": "full"}),
+        )
+        .await;
+    let session = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("没造出来：{reply}"))
+        .to_string();
+    client.say("s1", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    let installed = client
+        .call("i1", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "kit", "{installed}");
+    client.say("s2", &session, "again").await;
+    home.until_turns(&session, 2).await;
+    let requests = script.requests();
+    let tail = format!("{:?}", requests[1].1.messages);
+    assert!(tail.contains("- notes: Take notes."), "{tail}");
+}

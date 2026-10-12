@@ -49,6 +49,8 @@ pub(crate) struct Refresh {
     pub(crate) lineage: Option<Lineage>,
     /// 这个会话的知识库（施工 K-1 下）：回合开始照它判查不查得到。没交的当查不到。
     pub(crate) knowledge: Option<Arc<Shelves>>,
+    /// 回合开始再找一遍技能（施工 X-11 下，`crate::skills::Watch`）：没交装了的软件包的（测试里造的）不找。
+    pub(crate) skills: Option<crate::skills::Watch>,
 }
 
 /// 看了一遍的结果。

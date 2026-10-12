@@ -48,7 +48,7 @@ pub use error::{CreateError, LoadError};
 pub use fork::{Fork, ForkError, fork};
 pub(crate) use load::current_policy;
 pub use load::{load, load_placed};
-pub use setup::{Create, Load, PresetPlaces, Workplace};
+pub use setup::{Create, Installed, Load, PresetPlaces, Workplace};
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
 /// 造会话；`session.created` 落了盘，才交回 [`Handle`]。子会话（带着 [`Create::lineage`]）的 system 接上场所说明
@@ -129,12 +129,18 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let knows = !listed.is_empty();
     // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
     // 只读。
+    let watch = packages_installed.clone().map(|installed| skills::Watch {
+        installed,
+        root: root.clone(),
+        owner: owner.clone(),
+    });
     let (found, shelves_open) = match packages_installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
             let file = preset.as_ref().map(|chosen| chosen.file.clone());
             blocking(move || {
-                let found = skills::opened(skills::find(&installed, &root, &owner), file.as_ref());
+                let found =
+                    skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 let shelves = skills::shelves(&found);
                 (found, shelves)
             })
@@ -376,6 +382,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         venue: venue.clone(),
         lineage: lineage.clone(),
         knowledge: shelves,
+        skills: watch,
     });
     let busy = actor.busy();
     let watched = actor.watched();
