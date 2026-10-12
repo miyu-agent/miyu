@@ -104,8 +104,6 @@ pub struct KbHit {
     pub path: String,
     /// 标题路径（`语法 › て形`），没有标题的是空的。
     pub heading: String,
-    /// PDF 的第几页，从 1 起（施工 K-5）；别的文档没有。
-    pub page: Option<usize>,
     /// 这一块的字。
     pub text: String,
 }
@@ -144,8 +142,6 @@ pub enum KbRefused {
     BadId(String),
     /// 写到挂进来的库（施工 K-4，19 N7：只读）：哪个库。
     ReadOnly(String),
-    /// 写 PDF、网页（施工 K-5：只有文字的文档写得了）：哪一篇。
-    NotText(String),
     /// 读不了：为什么。
     Failed(String),
 }

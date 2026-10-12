@@ -34,10 +34,6 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 # 网页登录的密码哈希（施工 W-8，设计 06 U4）：argon2id，RustCrypto 的实现，MIT 或 Apache-2.0。盐由 getrandom 给。
 argon2 = { version = "0.6", default-features = false, features = ["alloc", "password-hash"] }
 getrandom = { version = "0.4", features = ["std"] }
-# 知识库认 PDF、网页（施工 K-5，`knowledge.md`「怎么走」第二条）：PDF 一页一页抽字（MIT，纯 Rust），网页换成文字（MIT，
-# 照 html5ever 解析，标题写成 Markdown 的 `#`）。
-pdf-extract = "0.12"
-html2text = "0.17"
 
 [dev-dependencies]
 # 测试里拿执行器替身跑一段真会话，写进日志、读回来、载入（施工 3-2）。

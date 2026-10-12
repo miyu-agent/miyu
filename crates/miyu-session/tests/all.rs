@@ -30,7 +30,6 @@ mod history_speed;
 mod http;
 mod jobs;
 mod jobs_stop;
-mod knowledge_formats;
 mod knowledge_meaning;
 mod knowledge_tools;
 mod knowledge_write;

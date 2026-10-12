@@ -9,7 +9,6 @@
 //! - 这一层不记运行日志：跳过的文档交回给调的一方记（[`Skipped`]）。
 
 mod catch_up;
-mod extract;
 mod mount;
 mod read;
 mod write;
@@ -81,8 +80,6 @@ pub struct Hit {
     pub chunk: usize,
     /// 标题路径，没有标题的是空的。
     pub heading: String,
-    /// PDF 的第几页，从 1 起（施工 K-5）；别的文档没有。
-    pub page: Option<usize>,
     /// 这一块的字（不带标题那一行）。
     pub text: String,
     /// 文档改的时刻。
@@ -121,8 +118,6 @@ pub enum KnowledgeError {
     Trash(String),
     /// 挂进来的库只读（施工 K-4，19 N7）。
     ReadOnly,
-    /// 不是文字的文档（PDF、网页）写不了（施工 K-5）。
-    NotText,
     /// 挂的目录用不了：为什么（施工 K-4）。列出来的照它带 `error`，搜的时候跳过，读的当没有这个文档。
     Unavailable(String),
     /// 索引读写不了。
@@ -149,7 +144,6 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::Ambiguous(count) => write!(f, "text found {count} times"),
             KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
             KnowledgeError::ReadOnly => write!(f, "mounted folder is read-only"),
-            KnowledgeError::NotText => write!(f, "only text documents can be written"),
             KnowledgeError::Unavailable(why) => write!(f, "{why}"),
             KnowledgeError::Db(error) => write!(f, "index: {error}"),
             KnowledgeError::Io(why) => write!(f, "{why}"),

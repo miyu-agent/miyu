@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, PoisonError};
 
-use miyu_tool::{KbHit, KbPage, KbRefused};
+use miyu_tool::{KbPage, KbRefused};
 
 use crate::support::*;
 
@@ -38,11 +38,6 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
                 "",
                 "东边的镇子靠海。\n<b>不转义</b>\n",
             ),
-            // PDF 的那一块说第几页（施工 K-5）。
-            KbHit {
-                page: Some(3),
-                ..hit("manuals", "cat.pdf", "", "每年十月打疫苗。")
-            },
         ],
         ..Fake::default()
     });
@@ -55,7 +50,7 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
     assert!(!done.error);
     assert_eq!(
         text(&done),
-        "[notes] grammar.md: 语法 › て形\n食べる → 食べて\n\n[world] towns/east.txt\n东边的镇子靠海。\n<b>不转义</b>\n\n[manuals] cat.pdf, page 3\n每年十月打疫苗。",
+        "[notes] grammar.md: 语法 › て形\n食べる → 食べて\n\n[world] towns/east.txt\n东边的镇子靠海。\n<b>不转义</b>",
         "字原样给，末尾的换行去掉"
     );
     assert_eq!(said(&done), "software/knowledge/kb_search/found");

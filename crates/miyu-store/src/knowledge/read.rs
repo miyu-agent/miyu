@@ -1,11 +1,11 @@
 //! 读一个知识库里的文档（施工 K-1 上，`docs/blueprint/knowledge.md`「怎么走」第五条）：照路径直接读目录里的文件（真相），
 //! 不读索引；一页 [`PAGE`] 字节，截在字的边界上。路径只认库里的相对路径：空的、绝对的、带 `.`、`..`、以点开头的一段、反斜杠、
-//! 冒号的不认，不是文档的（扩展名）不认。PDF 照它自己的页读（施工 K-5），网页读换出来的字，照 [`PAGE`] 分页。
+//! 冒号的不认，不是文档的（扩展名）不认。
 
 use std::path::{Path, PathBuf};
 
 use super::KnowledgeError;
-use super::extract::{self, Kind};
+use super::catch_up::document;
 
 /// 一页最多几个字节：一次交回去的字，约 8000 token 上下。
 const PAGE: usize = 32 * 1024;
@@ -21,27 +21,17 @@ pub struct Page {
     pub pages: usize,
 }
 
-/// 读库目录 `dir` 里的文档 `path` 的第 `page` 页：PDF 是它的第几页（抽出来的字），别的照 [`PAGE`] 分。
+/// 读库目录 `dir` 里的文档 `path` 的第 `page` 页。
 pub(super) fn page(dir: &Path, path: &str, page: usize) -> Result<Page, KnowledgeError> {
     let file = locate(dir, path).ok_or(KnowledgeError::UnknownDocument)?;
-    let kind = Kind::of(path).ok_or(KnowledgeError::UnknownDocument)?;
-    let bytes = match std::fs::read(&file) {
-        Ok(bytes) => bytes,
+    let text = match std::fs::read_to_string(&file) {
+        Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             return Err(KnowledgeError::UnknownDocument);
         }
         Err(error) => return Err(KnowledgeError::Io(error.to_string())),
     };
-    // 文字的照旧多大都读（分页读）；要抽的太大了不抽，同补的时候。
-    let biggest = kind.biggest();
-    if matches!(kind, Kind::Pdf | Kind::Html) && bytes.len() as u64 > biggest {
-        return Err(KnowledgeError::Io(format!("larger than {biggest} bytes")));
-    }
-    let texts = extract::pages(kind, bytes).map_err(KnowledgeError::Io)?;
-    let pages: Vec<&str> = match kind {
-        Kind::Pdf => texts.iter().map(String::as_str).collect(),
-        _ => texts.iter().flat_map(|text| split(text)).collect(),
-    };
+    let pages = split(&text);
     let Some(chosen) = page.checked_sub(1).and_then(|n| pages.get(n)) else {
         return Err(KnowledgeError::BadPage);
     };
@@ -67,7 +57,7 @@ pub(super) fn target(dir: &Path, path: &str) -> Option<PathBuf> {
         .iter()
         .all(|part| !part.is_empty() && !part.starts_with('.') && !part.contains(['\\', ':']));
     let name = parts.last()?;
-    if !good || Kind::of(name).is_none() {
+    if !good || !document(name) {
         return None;
     }
     Some(

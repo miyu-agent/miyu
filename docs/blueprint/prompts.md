@@ -2521,17 +2521,6 @@ There is no page {page}.
 [{kb}] {path}
 ```
 
-#### `software/knowledge/kb_search/page.txt`
-
-- 什么时候加进来：同上，PDF 的那一块（字段按 `manuals`、`cat.pdf`、`3` 填）
-- token：11（2026-10-12 量）
-- 为什么加：PDF 照页引用，她 `kb_read` 照这一页读（施工 K-5，19 N2）
-- 指纹：`675de5f2`
-
-```text
-[{kb}] {path}, page {page}
-```
-
 #### `software/knowledge/kb_search/nothing.txt`
 
 - 什么时候加进来：`kb_search` 什么都没搜到
@@ -2684,17 +2673,6 @@ Could not move {path} to the trash: {error}.
 
 ```text
 {kb} is a mounted folder and read-only. Save to another knowledge base.
-```
-
-#### `software/knowledge/common/not-text.txt`
-
-- 什么时候加进来：`kb_save`、`kb_edit` 写 PDF、网页（字段按 `cat.pdf` 填）
-- token：22（2026-10-12 量）
-- 为什么加：PDF、网页照原样存着，写进字会弄坏：说清哪几种能写（施工 K-5）
-- 指纹：`1021e518`
-
-```text
-{path} is not a text document. Only .md, .markdown and .txt can be written.
 ```
 
 #### `software/onebot/tool-results/skipped.txt`

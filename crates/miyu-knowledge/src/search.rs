@@ -63,18 +63,9 @@ impl Tool for Search {
             let passages: Vec<String> = hits
                 .iter()
                 .map(|hit| {
-                    let head = match (hit.page, hit.heading.is_empty()) {
-                        // PDF 的那一块说第几页（施工 K-5）。
-                        (Some(page), _) => line(
-                            &all.page,
-                            &[
-                                ("kb", &hit.kb),
-                                ("path", &hit.path),
-                                ("page", &page.to_string()),
-                            ],
-                        ),
-                        (None, true) => line(&all.plain, &[("kb", &hit.kb), ("path", &hit.path)]),
-                        (None, false) => line(
+                    let head = match hit.heading.is_empty() {
+                        true => line(&all.plain, &[("kb", &hit.kb), ("path", &hit.path)]),
+                        false => line(
                             &all.hit,
                             &[
                                 ("kb", &hit.kb),
