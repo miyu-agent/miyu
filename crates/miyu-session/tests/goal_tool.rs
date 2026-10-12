@@ -80,10 +80,18 @@ fn rounds(home: &Home, session: &SessionId) -> Vec<String> {
         .collect()
 }
 
-/// 日志里的工具结果：成没成、字，照先后。
-fn results(home: &Home, session: &SessionId) -> Vec<(bool, String)> {
-    home.log(session)
-        .into_iter()
+/// 日志里的工具结果：成没成、字，照先后。等到目标结束了、开了的回合都结束了才看：日志一批批落盘，比会话里目标的状态晚
+/// 一点（CI run 1898 的 Windows 上读早了，最后那件的结果还没落盘）。
+async fn results(home: &Home, session: &SessionId) -> Vec<(bool, String)> {
+    let log = until_logged(home, session, |log| {
+        let count = |kind: fn(&Body) -> bool| log.iter().filter(|event| kind(&event.body)).count();
+        log.iter()
+            .any(|event| matches!(event.body, Body::GoalEnded(_)))
+            && count(|body| matches!(body, Body::TurnStarted(_)))
+                == count(|body| matches!(body, Body::TurnEnded(_)))
+    })
+    .await;
+    log.into_iter()
         .filter_map(|event| match event.body {
             Body::ToolResult(result) => Some((
                 result.status == ToolStatus::Ok,
@@ -148,7 +156,7 @@ async fn she_sets_a_goal_and_blocked_waits_for_round_three() {
         "{}",
         sent[1]
     );
-    let results = results(&home, &session);
+    let results = results(&home, &session).await;
     assert_eq!(results.len(), 4, "{results:?}");
     assert_eq!(
         results[0],
@@ -194,7 +202,7 @@ async fn blocked_in_a_turn_the_person_started_skips_the_three_rounds() {
     let goal = until_goal(&handle, |goal| goal.state == GoalState::Blocked).await;
     assert_eq!(goal.round, 0);
     until_ended(&home, &session, 1).await;
-    let results = results(&home, &session);
+    let results = results(&home, &session).await;
     assert_eq!(
         results[1],
         (true, "Goal marked blocked.".to_string()),
@@ -229,7 +237,7 @@ async fn completing_in_a_round_carries_the_wrapup_and_ends_the_rounds() {
         "{}",
         sent[0]
     );
-    let results = results(&home, &session);
+    let results = results(&home, &session).await;
     assert!(
         results[0].0
             && results[0]
@@ -263,7 +271,7 @@ async fn setting_another_is_refused_and_get_reads_the_current_one() {
     // 第 1 轮调了工具，上限 1：到了上限记卡住。
     until_goal(&handle, |goal| goal.state == GoalState::Blocked).await;
     // 两件都只读、一起跑，结果先到先记（X-8 补：macOS 上 CI run 1882 两件倒过来到了）：排好再比。
-    let mut results = results(&home, &session);
+    let mut results = results(&home, &session).await;
     results.sort();
     assert_eq!(
         results,
@@ -381,7 +389,7 @@ async fn blocked_after_the_person_answered_skips_the_three_rounds() {
     ask(&handle, "a1", answer).await.expect("会话在跑");
     let goal = until_goal(&handle, |goal| goal.state == GoalState::Blocked).await;
     assert_eq!(goal.round, 1, "第 1 轮就收了");
-    let results = results(&home, &session);
+    let results = results(&home, &session).await;
     assert!(
         results
             .iter()
