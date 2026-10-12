@@ -9,3 +9,5 @@ unlisted = "off"
 basesystem = true
 net = true
 goal = true
+# 写技能、写包的两个技能（施工 P-8，2026-10-12 项目主人照推荐定）：不开的话她要写技能时看不到，只能在本机的目录里翻。
+authoring = true

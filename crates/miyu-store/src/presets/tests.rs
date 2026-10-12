@@ -212,7 +212,7 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["basesystem", "goal", "net"]
+        ["authoring", "basesystem", "goal", "net"]
     );
     // 出厂的名字照旧写三种语言：界面照连接的语言显示（施工 P-3 补）；不写说明（施工 P-4 下，2026-10-08 项目主人：「描述
     // 可以不要，没什么意义」）。

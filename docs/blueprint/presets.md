@@ -67,7 +67,7 @@ shell = false
 | 编号 | 名字 | 内容 |
 |---|---|---|
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
-| `dev` | 基础功能 | `unlisted = "off"`，开 `basesystem`、`net`、`goal` |
+| `dev` | 基础功能 | `unlisted = "off"`，开 `basesystem`、`net`、`goal`、`authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
 
 - 名字三种语言：全部功能、Everything、すべての機能；基础功能、Basics、基本機能。出厂的不写说明（施工 P-4 下，2026-10-08 项目主人：「`开发`改成`基础功能` 功能全开改成`全部功能`，然后描述可以不要，没什么意义」）。编号照旧 `full`、`dev`，只在核心和配置 `preset.default` 里用，界面上不露。
 

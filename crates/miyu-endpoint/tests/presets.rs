@@ -312,9 +312,9 @@ async fn presets_are_listed_and_read_by_layer() {
             ("knowledge", "知识库", false, true),
             ("memory", "人格记忆", true, true),
             ("roleplay", "人设遵循提醒", false, true),
-            // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言。
-            ("skill-package-creator", "写脚本和包", false, true),
-            ("skill-skill-creator", "写技能", false, true),
+            // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言；「基础功能」开着它（施工 P-8）。
+            ("skill-package-creator", "写脚本和包", true, true),
+            ("skill-skill-creator", "写技能", true, true),
             ("kb", "kb", true, false),
         ],
         "装了的照清单读的先后、名字照它的清单（施工 F-3 下）；写了没装的接在后面，名字照给人看的字，没有的照编号；装了的包的编号（net）不另列"
