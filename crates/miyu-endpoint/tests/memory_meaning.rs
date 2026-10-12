@@ -13,6 +13,7 @@ use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_session::EmbedSetup;
 use miyu_session::testkit::Script;
 
+use crate::support::embedding::remote;
 use crate::support::memories::texts;
 use crate::support::*;
 
@@ -53,39 +54,6 @@ fn local() -> EmbedSetup {
         dir: tiny(),
         idle: Duration::from_secs(600),
     }
-}
-
-/// 接上远程的核心：一家 `emb` 在假服务器上，key 照核心的环境变量取，`models.embedding` 指着它的 `text-emb`；没有本机的。
-fn remote(home: &Home, server: &Server) -> Arc<miyu_endpoint::Core> {
-    home.write(
-        "system/config.toml",
-        &format!(
-            "[persona]\ndefault = \"engineer\"\n\n[providers.emb]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"EMB_KEY\" }}\n\n[models]\nembedding = \"emb/text-emb\"\n",
-            server.base_url
-        ),
-    );
-    let items = [
-        miyu_endpoint::settings::UiSettings::ITEMS,
-        miyu_endpoint::settings::PersonaSettings::ITEMS,
-        miyu_models::settings::UseSettings::ITEMS,
-        miyu_models::settings::ProviderSettings::ITEMS,
-        miyu_models::settings::ModelSettings::ITEMS,
-    ]
-    .concat();
-    let config = miyu_endpoint::config::Config::load(
-        &home.root,
-        &alice(),
-        None,
-        items,
-        miyu_endpoint::config::Environment::of(&[("EMB_KEY", "sk-emb")]),
-    );
-    let data = providers::data(providers::profiles(json!({})));
-    let core = home
-        .core_full(&Script::new([]), miyu_tool::Catalog::default(), None, TOKEN)
-        .with_config(config)
-        .with_model_data(data)
-        .with_vectors(None);
-    Arc::new(core)
 }
 
 /// 记一条「我的猫」，搜「喝茶」：记下的时候就在后台补它的向量（施工 R-5 五补），补上以后照意思找得到。

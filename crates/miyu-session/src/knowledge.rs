@@ -4,7 +4,8 @@
 //! 查记忆的账号下的全部库（`memory_account`：人格住在谁家，无人格的照属主，系统账号的照管理员），人格的 `persona.toml` 写了
 //! `[knowledge] bases` 的只要列着的、在的那几个（19 N11）。照这一刻的目录和人格文件算：建了库、改了人格，下一次就照新的。
 //! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::listed`] 再判一次。碰磁盘的在阻塞
-//! 线程里做。
+//! 线程里做。搜的时候照意思找（施工 K-2，`knowledge.md`「怎么走」第四条）：同记忆，问句照这一轮的配置算向量，搜完在后台补
+//! 搜过的几个库缺的向量。
 
 mod write;
 
@@ -13,7 +14,7 @@ use std::sync::Arc;
 
 use miyu_kernel::id::AccountId;
 use miyu_policy::preset::KNOWLEDGE;
-use miyu_store::knowledge::{Knowledge, KnowledgeError, Skipped};
+use miyu_store::knowledge::{Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_tool::load::{self, say};
@@ -23,6 +24,8 @@ use miyu_tool::{
 
 use crate::TARGET;
 use crate::blocking::blocking;
+use crate::config::TurnConfig;
+use crate::memory::{Query, Using, Vectors};
 
 /// system 里最多列几个库（施工 K-1 补）：多的末尾一句说还有几个，`kb_search` 照样搜得到。免得库多了 system 一直涨。
 const LISTED: usize = 20;
@@ -34,32 +37,58 @@ pub(crate) struct Listed {
     description: String,
 }
 
-/// 一个会话查知识库要的：核心一份的知识库、照哪个账号、哪个人格；挪进回收站照哪个家目录（施工 K-3）。
+/// 造一个会话的 [`Shelves`] 要的（施工 K-2 起放进一格）：核心一份的知识库、人格和它的几层、会话的属主（远程算向量的花费记在
+/// 他名下）、这台机器的家目录（删的挪进它的回收站，施工 K-3）、核心一份的算向量的（施工 K-2，没有的只走关键词）。
+pub(crate) struct Shelving {
+    pub(crate) knowledge: Arc<Knowledge>,
+    pub(crate) persona: Option<String>,
+    pub(crate) personas: Personas,
+    pub(crate) owner: AccountId,
+    pub(crate) home: Option<PathBuf>,
+    pub(crate) vectors: Option<Arc<Vectors>>,
+}
+
+/// 一个会话查知识库要的：照哪个账号查，和 [`Shelving`] 的那几样。
 pub(crate) struct Shelves {
     knowledge: Arc<Knowledge>,
     account: AccountId,
     persona: Option<String>,
     personas: Personas,
+    owner: AccountId,
     home: Option<PathBuf>,
+    vectors: Option<Arc<Vectors>>,
 }
 
 impl Shelves {
-    /// 会话的知识库：照记忆的账号 `account`、人格 `persona`（几层是 `personas`）挑；删的挪进 `home`（这台机器的家目录，
-    /// Linux 照它找回收站）的回收站。
-    pub(crate) fn new(
-        knowledge: Arc<Knowledge>,
-        account: AccountId,
-        persona: Option<String>,
-        personas: Personas,
-        home: Option<PathBuf>,
-    ) -> Shelves {
+    /// 会话的知识库：照记忆的账号 `account` 查。
+    pub(crate) fn new(shelving: Shelving, account: AccountId) -> Shelves {
+        let Shelving {
+            knowledge,
+            persona,
+            personas,
+            owner,
+            home,
+            vectors,
+        } = shelving;
         Shelves {
             knowledge,
             account,
             persona,
             personas,
+            owner,
             home,
+            vectors,
         }
+    }
+
+    /// 载入的会话的知识库：记忆的账号照人格住在谁家算（`Personas::memory_account`，碰磁盘，在阻塞线程里）。
+    pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
+        blocking(move || {
+            let persona = shelving.persona.as_deref().unwrap_or_default();
+            let account = shelving.personas.memory_account(persona, &shelving.owner);
+            Arc::new(Shelves::new(shelving, account))
+        })
+        .await
     }
 
     /// 人格收窄成哪几个（`[knowledge] bases`）：没人格的、没写的、人格的文件没了的（会话照快照接着用）都是没有。
@@ -181,12 +210,26 @@ pub(crate) fn listing(
     Ok(Some(lines.join("\n")))
 }
 
-/// 交给两件工具的端口：一个会话一份，每次调用照这一刻算查得到哪几个。
-pub(crate) fn port(shelves: &Arc<Shelves>) -> Arc<dyn KnowledgePort> {
-    Arc::new(Port(Arc::clone(shelves)))
+/// 交给几件工具的端口：每次调用造一个，照这一刻算查得到哪几个；照意思找照这一轮的配置 `config`（`models.embedding`，
+/// 施工 K-2），远程的花费记在会话的属主名下。核心没交知识库的会话没有。
+pub(crate) fn port(
+    shelves: Option<&Arc<Shelves>>,
+    config: &TurnConfig,
+) -> Option<Arc<dyn KnowledgePort>> {
+    let shelves = shelves?;
+    Some(Arc::new(Port {
+        shelves: Arc::clone(shelves),
+        using: Using {
+            config: Arc::clone(config),
+            owner: shelves.owner.clone(),
+        },
+    }))
 }
 
-struct Port(Arc<Shelves>);
+struct Port {
+    shelves: Arc<Shelves>,
+    using: Using,
+}
 
 impl KnowledgePort for Port {
     fn search<'a>(
@@ -194,8 +237,18 @@ impl KnowledgePort for Port {
         query: String,
         kb: Option<String>,
     ) -> Pending<'a, Result<Vec<KbHit>, KbRefused>> {
-        let shelves = Arc::clone(&self.0);
-        Box::pin(async move { blocking(move || search(&shelves, &query, kb)).await })
+        let (shelves, using) = (Arc::clone(&self.shelves), self.using.clone());
+        Box::pin(async move {
+            let near = match &shelves.vectors {
+                Some(vectors) => vectors.query(&using, &query).await,
+                None => None,
+            };
+            let searching = Arc::clone(&shelves);
+            let (hits, searched) =
+                blocking(move || search(&searching, &query, kb, near.as_ref())).await?;
+            fill(&shelves, &using, searched);
+            Ok(hits)
+        })
     }
 
     fn read<'a>(
@@ -204,12 +257,12 @@ impl KnowledgePort for Port {
         path: String,
         page: usize,
     ) -> Pending<'a, Result<KbPage, KbRefused>> {
-        let shelves = Arc::clone(&self.0);
+        let shelves = Arc::clone(&self.shelves);
         Box::pin(async move { blocking(move || read(&shelves, kb, path, page)).await })
     }
 
     fn save<'a>(&'a self, save: KbSave) -> Pending<'a, Result<KbWritten, KbRefused>> {
-        let shelves = Arc::clone(&self.0);
+        let shelves = Arc::clone(&self.shelves);
         Box::pin(async move { blocking(move || write::save(&shelves, save)).await })
     }
 
@@ -220,30 +273,40 @@ impl KnowledgePort for Port {
         old: String,
         new: String,
     ) -> Pending<'a, Result<KbWritten, KbRefused>> {
-        let shelves = Arc::clone(&self.0);
+        let shelves = Arc::clone(&self.shelves);
         Box::pin(async move { blocking(move || write::edit(&shelves, kb, path, &old, &new)).await })
     }
 
     fn delete<'a>(&'a self, kb: String, path: String) -> Pending<'a, Result<KbTrashed, KbRefused>> {
-        let shelves = Arc::clone(&self.0);
+        let shelves = Arc::clone(&self.shelves);
         Box::pin(async move { blocking(move || write::delete(&shelves, kb, path)).await })
     }
 }
 
-/// 搜：写了 `kb` 的只搜它（她查不到的当没有），没写的搜她查得到的全部。
-fn search(shelves: &Shelves, query: &str, kb: Option<String>) -> Result<Vec<KbHit>, KbRefused> {
+/// 搜：写了 `kb` 的只搜它（她查不到的当没有），没写的搜她查得到的全部；有问句的向量 `near` 的两路合（施工 K-2）。交回搜到的
+/// 和搜过哪几个库。
+fn search(
+    shelves: &Shelves,
+    query: &str,
+    kb: Option<String>,
+    near: Option<&Query>,
+) -> Result<(Vec<KbHit>, Vec<String>), KbRefused> {
     let bases = shelves.bases().map_err(KbRefused::Failed)?;
     let only = match kb {
         Some(kb) if bases.contains(&kb) => vec![kb],
         Some(kb) => return Err(KbRefused::NoBase(kb)),
         None => bases,
     };
+    let meaning = near.map(|near| Meaning {
+        model: &near.model,
+        vector: &near.vector,
+    });
     let (hits, skipped) = shelves
         .knowledge
-        .search(&shelves.account, query, Some(&only), KB_HITS)
+        .search(&shelves.account, query, Some(&only), KB_HITS, meaning)
         .map_err(|error| failed(&error))?;
     report(&skipped);
-    Ok(hits
+    let hits = hits
         .into_iter()
         .map(|hit| KbHit {
             kb: hit.kb,
@@ -251,7 +314,19 @@ fn search(shelves: &Shelves, query: &str, kb: Option<String>) -> Result<Vec<KbHi
             heading: hit.heading,
             text: hit.text,
         })
-        .collect())
+        .collect();
+    Ok((hits, only))
+}
+
+/// 搜过的几个库在后台补缺的向量（施工 K-2，同记忆的「搜的时候补」）：一个库同一时刻只有一个在补，`off` 的不补。
+fn fill(shelves: &Shelves, using: &Using, searched: Vec<String>) {
+    let Some(vectors) = &shelves.vectors else {
+        return;
+    };
+    for id in searched {
+        let index = shelves.knowledge.index_of(&shelves.account, &id);
+        vectors.fill_knowledge(using, format!("kb {} {id}", shelves.account), index);
+    }
 }
 
 /// 读一页：库得是她查得到的。

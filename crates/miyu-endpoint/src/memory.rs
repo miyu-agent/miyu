@@ -333,7 +333,7 @@ fn room(handle: &Handle) -> Option<&Room> {
 }
 
 /// 照意思找的那一路照这时的配置（施工 R-5 下）：远程的用量记在管理员名下（M8 只有他，和 `model.call` 一样）。
-fn using(core: &Core) -> Using {
+pub(crate) fn using(core: &Core) -> Using {
     let config = core.config_now().borrow().clone();
     let resolved = config.resolved().clone();
     let source: Arc<dyn ConfigSource> = config;

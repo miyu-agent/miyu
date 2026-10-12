@@ -66,12 +66,14 @@ pub(crate) enum Target {
     Turns(Arc<RecallIndex>),
     /// 这一间的记忆库（在记忆日志里）。
     Memories(Arc<MemoryLog>),
+    /// 一个知识库的索引（施工 K-2，`knowledge.md`「怎么走」第四条）。
+    Knowledge(Arc<RecallIndex>),
 }
 
 impl Target {
     fn index(&self) -> &RecallIndex {
         match self {
-            Target::Turns(index) => index,
+            Target::Turns(index) | Target::Knowledge(index) => index,
             Target::Memories(log) => log.index(),
         }
     }
@@ -189,6 +191,12 @@ impl Vectors {
                 None
             }
         }
+    }
+
+    /// 照 `using` 在后台补一个知识库的索引 `index` 里缺的向量（施工 K-2，`knowledge.md`「怎么走」第四条）；`name` 是它的
+    /// 名字（`kb <账号> <编号>`：她的工具、人经协议补同一个库用同一个名字，同一时刻只有一个在补）。
+    pub fn fill_knowledge(self: &Arc<Self>, using: &Using, name: String, index: Arc<RecallIndex>) {
+        self.fill(using, name, Target::Knowledge(index));
     }
 
     /// 照 `using` 在后台补 `target` 里缺的向量（`off` 的不补）；`name` 是它的名字，同一个名字同一时刻只有一个在补。

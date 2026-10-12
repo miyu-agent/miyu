@@ -33,7 +33,7 @@ use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
-use crate::knowledge::Shelves;
+use crate::knowledge::{Shelves, Shelving};
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -88,6 +88,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         usage,
         configs,
         knowledge,
+        vectors,
         installed,
         memory,
         presets,
@@ -347,22 +348,17 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
-        Some(knowledge) => {
-            let (personas, persona, owner, home) = (
-                watching.clone(),
-                snapshot.persona.clone(),
-                owner.clone(),
-                home.map(Path::to_path_buf),
-            );
-            Some(
-                blocking(move || {
-                    let account =
-                        personas.memory_account(persona.as_deref().unwrap_or_default(), &owner);
-                    Arc::new(Shelves::new(knowledge, account, persona, personas, home))
-                })
-                .await,
-            )
-        }
+        Some(knowledge) => Some(
+            Shelves::loaded(Shelving {
+                knowledge,
+                persona: snapshot.persona.clone(),
+                personas: watching.clone(),
+                owner: owner.clone(),
+                home: home.map(Path::to_path_buf),
+                vectors,
+            })
+            .await,
+        ),
         None => None,
     };
     let mut actor = Actor::new(

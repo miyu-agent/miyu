@@ -304,7 +304,7 @@ impl Tools {
                 .memory
                 .as_ref()
                 .map(|memory| memory.port(turn, compacted, call_id, at, &config)),
-            knowledge: self.knowledge.as_ref().map(crate::knowledge::port),
+            knowledge: crate::knowledge::port(self.knowledge.as_ref(), &config),
             packages: self.packages.clone(),
             ids: Some(CallIds {
                 session: self.session.clone(),

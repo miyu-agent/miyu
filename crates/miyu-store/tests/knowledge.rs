@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use miyu_store::knowledge::{Knowledge, KnowledgeError};
+use miyu_store::knowledge::{Knowledge, KnowledgeError, Meaning};
 use miyu_store::root::DataRoot;
 
 use crate::support::*;
@@ -25,7 +25,7 @@ fn write(dir: &Path, name: &str, text: &str) {
 fn hits(knowledge: &Knowledge, query: &str, only: Option<&str>) -> Vec<(String, String, usize)> {
     let only = only.map(|kb| vec![kb.to_string()]);
     knowledge
-        .search(&admin(), query, only.as_deref(), 10)
+        .search(&admin(), query, only.as_deref(), 10, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -154,7 +154,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
     }
     let knowledge = Knowledge::new(&root);
     let found = knowledge
-        .search(&admin(), "团子", None, 4)
+        .search(&admin(), "团子", None, 4, None)
         .expect("搜得了")
         .0;
     let order: Vec<&str> = found.iter().map(|hit| hit.kb.as_str()).collect();
@@ -172,7 +172,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
     // 照人格收窄的几个（施工 K-1 下）：同名次照给的先后，有一个不在的不搜。
     let narrowed = ["b".to_string(), "a".to_string()];
     let order: Vec<String> = knowledge
-        .search(&admin(), "团子", Some(&narrowed), 4)
+        .search(&admin(), "团子", Some(&narrowed), 4, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -184,7 +184,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
         vec!["a".to_string(), "nope".to_string()],
     ] {
         assert!(matches!(
-            knowledge.search(&admin(), "团子", Some(&only), 4),
+            knowledge.search(&admin(), "团子", Some(&only), 4, None),
             Err(KnowledgeError::UnknownBase)
         ));
     }
@@ -253,4 +253,72 @@ fn a_document_is_read_page_by_page() {
         Err(KnowledgeError::UnknownBase)
     ));
     let _ = SystemTime::now() + Duration::from_secs(1);
+}
+
+#[test]
+fn with_a_query_vector_a_chunk_is_found_by_meaning() {
+    // 施工 K-2：关键词对不上、向量像的照意思找得到；没有问句向量的只走关键词；只有向量那一路、不够像的不要（下限 0.40）。
+    let scratch = Scratch::new("kb-meaning");
+    let root = root_in(&scratch);
+    let notes = kb(&root, "notes");
+    write(&notes, "cat.md", "团子的饭是鸡胸肉\n");
+    let knowledge = Knowledge::new(&root);
+    knowledge.list(&admin()).expect("补得了");
+    knowledge
+        .index_of(&admin(), "notes")
+        .put_vector("cat.md#0", "m", &[1.0, 0.0])
+        .expect("写得进");
+    let near = |vector: &'static [f32]| Meaning { model: "m", vector };
+    let search = |near: Option<Meaning<'_>>| {
+        knowledge
+            .search(&admin(), "猫吃什么", None, 5, near)
+            .expect("搜得了")
+            .0
+            .into_iter()
+            .map(|hit| (hit.kb, hit.path, hit.text))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        search(Some(near(&[1.0, 0.0]))),
+        [(
+            "notes".to_string(),
+            "cat.md".to_string(),
+            "团子的饭是鸡胸肉".to_string()
+        )]
+    );
+    assert!(search(None).is_empty(), "没有问句向量的只走关键词");
+    assert!(search(Some(near(&[0.0, 1.0]))).is_empty(), "不够像的不要");
+}
+
+#[test]
+fn the_meaning_side_lifts_a_lower_keyword_hit() {
+    // 施工 K-2：每个库两路各找 `limit` 的四倍再合，关键词排第二、照意思排第一的那块合起来排得过只有关键词排第一的。只各找
+    // `limit` 块的话关键词那一路只交第一名，它就上不来。
+    let scratch = Scratch::new("kb-wide");
+    let root = root_in(&scratch);
+    let notes = kb(&root, "notes");
+    write(&notes, "a.md", "团子团子团子\n");
+    write(&notes, "b.md", "团子是楼上的一只猫，每天在窗台上睡觉\n");
+    let knowledge = Knowledge::new(&root);
+    knowledge.list(&admin()).expect("补得了");
+    // a 没补上向量：照意思那一路只有 b。
+    knowledge
+        .index_of(&admin(), "notes")
+        .put_vector("b.md#0", "m", &[1.0, 0.0])
+        .expect("写得进");
+    let first = |near: Option<Meaning<'_>>| {
+        knowledge
+            .search(&admin(), "团子", None, 1, near)
+            .expect("搜得了")
+            .0
+            .into_iter()
+            .map(|hit| hit.path)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(first(None), ["a.md"], "只照关键词 a 在前");
+    let near = Meaning {
+        model: "m",
+        vector: &[1.0, 0.0],
+    };
+    assert_eq!(first(Some(near)), ["b.md"]);
 }

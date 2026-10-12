@@ -88,6 +88,8 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 miyu-memory = { path = "../miyu-memory" }
 # 测试里会话的工具面上有长期目标的工具（施工 X-8 下）。
 miyu-goal = { path = "../miyu-goal" }
+# 测试里她照剧本调知识库的工具（施工 K-2：会话里照意思找）。
+miyu-knowledge = { path = "../miyu-knowledge" }
 # 测试里的等待有时限。
 tokio = { version = "1", features = ["io-util", "macros", "rt", "sync", "time"] }
 

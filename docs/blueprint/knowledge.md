@@ -5,10 +5,10 @@
 你放给她查的文档（`19-知识库.md`）：一个知识库是一个目录，里面是文档，外加一份派生的索引（N1）。不是记忆（记忆是她自己从对话里记下的，`memory.md`）。三种来源：你自己的、挂进来的现成目录、软件包带来的（N1，后两种随 K-4、K-8）。
 
 - 知识库是账号级的图书馆：账号下的全部她都能查，人格可以收窄（N10、N11，2026-10-12 项目主人定）；群里、别人的私聊里也查得到（N12，同一天定：和记忆不一样，不照「谁在听」挡）。
-- 检索用记忆那一套底子（`recall.md`，N3、N8）：关键词一路先做（K-1 上），照意思那一路随 K-2。
+- 检索用记忆那一套底子（`recall.md`，N3、N8）：关键词一路（K-1 上）、照意思那一路（K-2），两路照名次合。
 - 仿 Linux：文档就是文件（19 第二节）。真相是目录里的文件，索引随时能删掉照文件重建（`07-存储.md` S1、S3）。
 
-状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）。
+状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）。
 
 ### 在哪
 
@@ -16,12 +16,13 @@
 |---|---|---|
 | `crates/miyu-recall/src/chunk.rs` | 切块（纯逻辑）：Markdown 照标题、纯文本照段落，每块封顶（「怎么走」第二条） | K-1 上 |
 | `crates/miyu-store/src/recall/stamps.rs` | 检索库里每个来源的指纹、整份换掉一个来源（「怎么走」第三条） | K-1 上 |
-| `crates/miyu-store/src/knowledge.rs` | 知识库：列出账号下的、读 `kb.toml`、开索引、照文件补、搜、读文档 | K-1 上 |
+| `crates/miyu-store/src/knowledge.rs` | 知识库：列出账号下的、读 `kb.toml`、开索引、照文件补、搜（K-2 起关键词、照意思两路合，`Meaning`、`index_of`）、读文档 | K-1 上 |
 | `crates/miyu-endpoint/src/knowledge.rs`、`refusal/knowledge.rs` | 协议 `kb.*`：读参数、在阻塞线程里调、写回应；`unknown_kb`、`unknown_document` | K-1 上 |
 | `crates/miyu-tool/src/knowledge.rs` | 两件工具的名字、最多给几块、知识库的端口 `KnowledgePort` 和它交回的几样；`Call` 多一格 `knowledge` | K-1 下 |
 | `crates/miyu-knowledge/` | 知识库这个软件包的五件工具 `kb_search`、`kb_read`（K-1 下）、`kb_save`、`kb_edit`、`kb_delete`（K-3）（第 3 层，同 `miyu-memory`）：读参数、照端口交回的写给她看的字、报效果 | K-1 下 |
 | `crates/miyu-store/src/knowledge/write.rs` | 她写知识库那一层：建库、新建、追加、照原文换一段、挪进回收站，交回改前改后的内容（第七条） | K-3 |
 | `crates/miyu-session/src/knowledge/write.rs` | 写哪几个、建得了建不了新库（第七条第 1 款） | K-3 |
+| `crates/miyu-session/src/memory/vectors.rs`（`fill_knowledge`） | 在后台补一个知识库的索引缺的向量（第四条，同记忆的回合库） | K-2 |
 | `crates/miyu-session/src/knowledge.rs` | 一个会话查哪几个库（记忆的账号、人格收窄）、给不给两件（`Shelves::listed` 是不是空的）、端口的实现；system 里列出来的那一块（`listing`，K-1 补） | K-1 下 |
 | `crates/miyu-policy/src/compose.rs`（`Snapshot::with_knowledge`）、`snapshot.rs`（`knowledge`） | 那一块拼进 system 第 4 块、记进快照（K-1 补） | K-1 补 |
 | `crates/miyu-session/src/agents.rs`（`Holds`）、`actor/persona.rs` | 工具面照查不查得到给两件；回合开始照这一刻再判，变了换快照（第六条） | K-1 下 |
@@ -107,12 +108,14 @@ Knowledge bases you can search:
 **三、照文件补**（K-1 上）：`kb.list`、`kb.search` 之前先补这个库（在阻塞线程里）：
 
 1. 列出库里的文档，每个算指纹（大小、改的时刻），和 `stamps` 里记着的比。
-2. 新的、变了的：读出来、切块，在一个事务里拿掉它原来的块、放进新的、记下新的指纹（`RecallIndex::replace`）。
-3. 没了的（`stamps` 里有、目录里没有）：拿掉它的块和指纹。
+2. 新的、变了的：读出来、切块，在一个事务里拿掉它原来的块（连同它们的向量，K-2：下一次搜完照新的补）、放进新的、记下新的指纹（`RecallIndex::replace`）。
+3. 没了的（`stamps` 里有、目录里没有）：拿掉它的块（连同向量）和指纹。
 4. 一个文档读不了、太大、不是 UTF-8：跳过它（原来的块照留），记一行 `WARN knowledge document skipped kb=… path=… why=…`，别的照补。
 5. 一个库同一时刻只有一个在补（库一把锁，核心一份登记）：两个请求同时来，后来的等前面的补完。
 
-**四、搜**（K-1 上）：照关键词（`recall.md` 第一条）在每个要搜的库里各找 `limit` 块；几个库的照名次轮流合（每个库的第一名在前，同名次照库的编号），取 `limit` 块。
+**四、搜**（K-1 上、K-2）：每个要搜的库里照关键词（`recall.md` 第一条）找 `limit` 的四倍；有问句的向量的（K-2，`recall.md` 第三条：问句照调的一方手里的配置算，`models.embedding` 是 `off` 的、本机的没装的、算不出的、1 秒等不到的没有）再照意思找同样多，两路照名次合（加权 RRF，只有照意思那一路找到的过 0.40 的下限），取 `limit` 块；几个库的再照名次轮流合（每个库的第一名在前，同名次照库的编号，收窄的照列的先后），取 `limit` 块。
+
+搜完在后台补搜过的几个库缺的向量（K-2，同记忆的「搜的时候补」，`Vectors::fill_knowledge`）：一个库一个名字（`kb <账号> <编号>`），她的工具、人经协议补同一个库同一时刻只有一个在补；远程的花费记在调的一方名下（会话的属主、人经协议是管理员）。没补上向量的块只有关键词那一路找得到；新写进来的、改过的块下一次搜完再补。
 
 **五、读**（K-1 上）：照路径直接读目录里的文件（真相），不读索引；一页 32 KiB。
 
@@ -141,7 +144,7 @@ Knowledge bases you can search:
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-recall/src/chunk/tests.rs`（K-1 上） | 第二条：Markdown 照标题切、标题路径照层级、代码块里的 `#` 不算；纯文本照段落；太长的照段落、照字再切，不超过 1200 字节、截在字的边界上；空白的不要；同样的文档同样的块 |
-| `crates/miyu-store/tests/recall_stamps.rs`（K-1 上） | `recall.md` 的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），别的来源不动；列出指纹；拿掉一个来源连指纹一起 |
+| `crates/miyu-store/tests/recall_stamps.rs`（K-1 上） | `recall.md` 的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），别的来源不动；列出指纹；拿掉一个来源连指纹一起；换掉、拿掉的连向量一起（K-2） |
 | `crates/miyu-store/tests/knowledge.rs`（K-1 上） | 第一、三、四、五条：列出合写法的库、`kb.toml` 读得出读不出；照文件补：新的放进去、变了的重切、没了的拿掉、没变的不重读；太大的、不是 UTF-8 的跳过；搜得到、几个库轮流合、只搜一个；读一页、分页、截在字的边界上；路径跑出去的、不是文档的读不到 |
 | `crates/miyu-endpoint/tests/knowledge.rs`（K-1 上） | 「协议」，真核心：`kb.list`、`kb.search`、`kb.read` 的回应一格一格对；写错的几种 `bad_params`，没有的库 `unknown_kb`，没有的文档 `unknown_document` |
 | `crates/miyu-knowledge/tests/tools.rs`、`writes.rs`、`budget.rs`（K-1 下、K-3；写的在 `writes.rs`，假端口在 `support/`） | 「她的工具」，假端口：查的两件是 `read`、写的三件是 `write`；写的三件说的话、报的效果（改前改后、回收站里的位置）、`append` 不写是新建，写的拒绝六种如实说、没写成的不报效果；搜到的一块一段、头一行逐字节对、字原样不转义；读一页、不止一页的末尾说第几页、不写是第一页；拒绝的四种两件都如实说、没有端口的、参数不对的；两份说明合计不超过 600 字节 |
@@ -149,6 +152,9 @@ Knowledge bases you can search:
 | `crates/miyu-store/tests/knowledge.rs` 的 `several_bases_take_turns_and_one_can_be_searched_alone`（K-1 下补） | 照收窄的几个搜：同名次照给的先后，有一个不在的不搜；`ids` 列出账号下的库 |
 | `crates/miyu-policy/src/persona/tests.rs`（K-1 下） | `[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（`personas.md`） |
 | `crates/miyu-core/tests/tools.rs`（K-1 下、K-3） | 出厂的工具目录有五件；没装知识库的没有，只装它的只有它的五件 |
+| `crates/miyu-store/tests/knowledge.rs` 的 `with_a_query_vector_a_chunk_is_found_by_meaning`、`the_meaning_side_lifts_a_lower_keyword_hit`（K-2） | 第四条：关键词对不上、向量像的照意思找得到；没有问句向量的只走关键词；只有向量那一路、不够像的不要；两路各找四倍，关键词排第二、照意思排第一的排得过只有关键词排第一的 |
+| `crates/miyu-session/tests/knowledge_meaning.rs`（K-2） | 第四条，真会话、远程的假 embedding：头一次只走关键词、搜完补上向量以后照意思找得到，问句、块都照远程的算；关键词对得上的头一次就找得到；`off` 的不问那一家、不补，那一家出错的照关键词找得到；记忆的账号和属主不是一个的，补记忆账号的库、花费记在属主名下 |
+| `crates/miyu-endpoint/tests/knowledge.rs` 的 `kb_search_finds_by_meaning_once_the_vectors_are_filled`、`her_kb_search_finds_by_meaning_and_still_does_after_a_restart`（K-2） | 第四条，真核心、远程的假 embedding：人经协议的 `kb.search` 补上向量以后照意思找得到；核心把算向量的交给造的会话（她搜完补上）、载入的会话（照意思找得到） |
 | `crates/miyu-store/tests/knowledge_write.rs`（K-3） | 第七条：建库带说明（转义）、已经有的不动、没说明的不写 `kb.toml`、编号不对的；新建、已经有的不写；接在后面补换行、没有就新建；照原文换一段、找不到、不止一处、没有的文档；路径跑出去的七种、没有的库、太大的什么都不写；挪进回收站、没有的文档；数据根的路上有链接的照真实的位置写（Unix） |
 | `crates/miyu-session/tests/knowledge_write.rs`（K-3） | 第七条，真会话、真目录：一个库都没有只有 `kb_save`、编号写成中文的说清怎么写、什么都不建（K-3 补）、写到没有的库就建它、下一个回合五件都有；接在后面、改、新建撞上已经有的，撤销改的那一轮文件改回去；人格收窄的写不了没列的、建不了新库、改不了没列的；挪进回收站、撤销移回来（只在 Linux 上跑） |
 
@@ -159,7 +165,7 @@ Knowledge bases you can search:
 
 ### 还没有的
 
-见「施工步子」后面几步：照意思找、挂进来的目录和监视、PDF 和 HTML、自动想起、管理（加、删、挂、重建）和命令行、软件包带来的库、关键词条目。
+见「施工步子」后面几步：挂进来的目录和监视、PDF 和 HTML、自动想起、管理（加、删、挂、重建）和命令行、软件包带来的库、关键词条目。
 
 - Markdown 第一个标题以前的那一节里，代码块被空行切开、某一块恰好以 `# ` 开头的，搜到时那一行会被当成标题路径（只影响显示，搜得到）。碰到了再改成每块都写标题那一行。
 - 跳过的文档每次补都记一行：人经协议、她的工具补的都记，量出来吵了再只记头一次。
@@ -172,7 +178,7 @@ Knowledge bases you can search:
 | K-1 下 | 她的两件工具 `kb_search`、`kb_read`；一个库都查不到的不给（N13）；人格收窄（N11）；知识库这个软件包（N10）。系统提示词里先不列能查的库，量了再定 |
 | K-1 补 | 系统提示词里列出她查得到的库：编号、名字、一句说明，放在 system 第 4 块；变了下一个回合换上（2026-10-12 项目主人看了 K-1 下的实测定） |
 | K-3 | 她操作知识库（N4、N14，2026-10-12 项目主人定提前到 K-1 补以后）：`kb_save`（新建、追加，写到没有的库就建它）、`kb_edit`、`kb_delete`（系统回收站），撤销得回来；不能删整个库 |
-| K-2 | 照意思找：向量一路、两路合并，和记忆同一套（N3） |
+| K-2 | 照意思找：向量一路、两路合并，和记忆同一套（N3）；搜完在后台补搜过的库缺的向量 |
 | K-4 | 挂进来的目录（只读，N7）；文件变了照监视补（不等下一次搜） |
 | K-5 | PDF（照页）、网页 HTML（去掉版式）（N2） |
 | K-6 | 自动想起：每个库一个开关，默认关（N5） |

@@ -28,7 +28,7 @@
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
 | `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款） | R-13 下 |
 | `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源（`knowledge.md`「怎么走」第三条） | K-1 上 |
-| `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程） | R-5 下 |
+| `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
 | `crates/miyu-embed/src/manifest.rs` | 小程序读清单的文件 | R-5 上 |
@@ -191,7 +191,7 @@ K-1 上做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-store/tests/recall_stamps.rs` | 「库的结构」的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），前缀相同的别的来源不动；列出指纹；拿掉一个来源连指纹一起 |
+| `crates/miyu-store/tests/recall_stamps.rs` | 「库的结构」的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），前缀相同的别的来源不动；列出指纹；拿掉一个来源连指纹一起；换掉、拿掉的连向量一起（施工 K-2） |
 
 R-5 四补做好的：
 
@@ -264,5 +264,5 @@ R-1 做好的：
 
 - 远程的一次发几句（批量）：现在一次一句，量出来慢了再说。
 - 第三条第 7 款，照字的哈希缓存向量：量出来是问题再加。
-- 知识库的文件监视、照意思找：`knowledge.md`「施工步子」K-2、K-4。
+- 知识库的文件监视：`knowledge.md`「施工步子」K-4。
 - `history` 改用全文索引：照 `tools/history.md`，慢了再做。

@@ -28,7 +28,7 @@ use crate::guard::{Confined, Guard, Place};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
-use crate::knowledge::{Shelves, listing};
+use crate::knowledge::{Shelves, Shelving, listing};
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -89,6 +89,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         configs,
         model,
         knowledge,
+        vectors,
         installed: packages_installed,
         memory,
         preset,
@@ -115,13 +116,15 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let scope = memory::scope(lineage.is_some(), opened, memory_scope);
     // 知识库照记忆的账号、人格查（施工 K-1 下）；一个都查不到的工具面上没有两件，回合开始再判。
     let shelves = knowledge.map(|knowledge| {
-        Arc::new(Shelves::new(
+        let shelving = Shelving {
             knowledge,
-            memory_account.clone(),
-            name.clone(),
-            personas.clone(),
-            home.map(Path::to_path_buf),
-        ))
+            persona: name.clone(),
+            personas: personas.clone(),
+            owner: owner.clone(),
+            home: home.map(Path::to_path_buf),
+            vectors,
+        };
+        Arc::new(Shelves::new(shelving, memory_account.clone()))
     });
     let listed = match shelves.clone() {
         Some(shelves) => blocking(move || shelves.listed()).await,

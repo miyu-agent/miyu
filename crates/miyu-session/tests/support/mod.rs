@@ -9,6 +9,7 @@ pub mod extracting;
 pub mod meaning;
 mod opening;
 pub mod package;
+pub mod remote_embedding;
 pub mod routing;
 mod scratch;
 pub mod table;
@@ -192,6 +193,7 @@ impl Home {
             configs: self.configs.clone(),
             model: lines.model,
             knowledge: Some(Arc::clone(&self.knowledge)),
+            vectors: self.memory.vectors().cloned(),
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
@@ -299,6 +301,7 @@ impl Home {
             usage: Some(Arc::clone(&self.usage)),
             configs: self.configs.clone(),
             knowledge: Some(Arc::clone(&self.knowledge)),
+            vectors: self.memory.vectors().cloned(),
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
             memory: Some(self.memory()),
             presets: None,

@@ -11,7 +11,6 @@ use miyu_kernel::time::Timestamp;
 use miyu_recall::chunk;
 
 use super::{Base, Hit, Knowledge, KnowledgeError, Skipped};
-use crate::recall;
 
 /// 一个文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。
 pub(super) const BIGGEST: u64 = 4 * 1024 * 1024;
@@ -182,15 +181,15 @@ fn markdown(source: &str) -> bool {
 }
 
 /// 索引里搜到的一条写成一块：键是 `<相对路径>#<第几块>`；Markdown 的头一行是标题路径（`# …`）。键不合写法的不要。
-pub(super) fn hit(kb: &str, hit: &recall::Hit) -> Option<Hit> {
-    let (path, chunk) = hit.key.rsplit_once('#')?;
+pub(super) fn hit(kb: &str, key: &str, text: &str, at: Timestamp) -> Option<Hit> {
+    let (path, chunk) = key.rsplit_once('#')?;
     let chunk = chunk.parse().ok()?;
-    let (heading, text) = match (markdown(path), hit.text.strip_prefix("# ")) {
+    let (heading, text) = match (markdown(path), text.strip_prefix("# ")) {
         (true, Some(rest)) => match rest.split_once('\n') {
             Some((heading, text)) => (heading.to_string(), text.to_string()),
             None => (rest.to_string(), String::new()),
         },
-        _ => (String::new(), hit.text.clone()),
+        _ => (String::new(), text.to_string()),
     };
     Some(Hit {
         kb: kb.to_string(),
@@ -198,6 +197,6 @@ pub(super) fn hit(kb: &str, hit: &recall::Hit) -> Option<Hit> {
         chunk,
         heading,
         text,
-        at: hit.at,
+        at,
     })
 }

@@ -31,11 +31,20 @@ pub struct Knowledge {
     open: Mutex<BTreeMap<(AccountId, String), Arc<Shelf>>>,
 }
 
-/// 一个库开着的索引和补的锁。
+/// 一个库开着的索引和补的锁。索引交得出去（施工 K-2）：会话在后台补它缺的向量。
 #[derive(Debug)]
 struct Shelf {
-    index: RecallIndex,
+    index: Arc<RecallIndex>,
     catching_up: Mutex<()>,
+}
+
+/// 照意思找要的问句的向量（施工 K-2，`recall.md` 第三条）：算它的模型、归一化过的向量。
+#[derive(Debug, Clone, Copy)]
+pub struct Meaning<'a> {
+    /// 算向量的模型（`local:<模型>`、`<供应商>/<模型>`）：向量表里照它找。
+    pub model: &'a str,
+    /// 问句的向量。
+    pub vector: &'a [f32],
 }
 
 /// 一个库：列出来的样子。
@@ -159,6 +168,8 @@ impl Knowledge {
 
     /// 照关键词搜：`only` 是只搜这几个库（人经协议写了 `kb` 的一个，她的工具照人格收窄的几个，施工 K-1 下），没有的搜账号下
     /// 全部；几个库的照名次轮流合（每个库的第一名在前，同名次照 `only` 的先后，全部的照编号），最多 `limit` 块。搜之前照文件补。
+    /// 有问句的向量 `near` 的（施工 K-2）：每个库照关键词、照意思各找 `limit` 的四倍，两路照名次合（`fuse`，只有照意思那一路
+    /// 找到的过下限），再轮流合；补向量是调的一方在后台做的（[`Knowledge::index_of`]），没补上的块只有关键词那一路找得到。
     ///
     /// # Errors
     ///
@@ -169,6 +180,7 @@ impl Knowledge {
         query: &str,
         only: Option<&[String]>,
         limit: usize,
+        near: Option<Meaning<'_>>,
     ) -> Result<(Vec<Hit>, Vec<Skipped>), KnowledgeError> {
         let ids = match only {
             Some(ids) => {
@@ -185,15 +197,12 @@ impl Knowledge {
             let (_, mut dropped) = self.catch_up(account, &id)?;
             skipped.append(&mut dropped);
             let shelf = self.shelf(account, &id);
-            let found = shelf.index.search(query, limit)?;
-            lists.push((id, found));
+            lists.push(fused(&shelf.index, &id, query, limit, near)?.into_iter());
         }
         let mut hits = Vec::new();
-        for rank in 0..limit {
-            for (id, found) in &lists {
-                if let Some(hit) = found.get(rank) {
-                    hits.extend(catch_up::hit(id, hit));
-                }
+        for _ in 0..limit {
+            for found in &mut lists {
+                hits.extend(found.next());
             }
         }
         hits.truncate(limit);
@@ -229,6 +238,12 @@ impl Knowledge {
             about.name.unwrap_or_else(|| id.to_string()),
             about.description.unwrap_or_default(),
         ))
+    }
+
+    /// 库 `id` 开着的索引（施工 K-2）：会话照它在后台补缺的向量（同记忆的回合库）。库在不在不查：没有的照样开一份空的。
+    #[must_use]
+    pub fn index_of(&self, account: &AccountId, id: &str) -> Arc<RecallIndex> {
+        Arc::clone(&self.shelf(account, id).index)
     }
 
     /// 账号下合写法的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）。目录不在的是空的。
@@ -278,7 +293,7 @@ impl Knowledge {
         let path = self.root.index(account).join("kb").join(format!("{id}.db"));
         let (index, _) = RecallIndex::open(&path);
         let shelf = Arc::new(Shelf {
-            index,
+            index: Arc::new(index),
             catching_up: Mutex::new(()),
         });
         open.insert(key, Arc::clone(&shelf));
@@ -288,4 +303,40 @@ impl Knowledge {
     fn lock(&self) -> MutexGuard<'_, BTreeMap<(AccountId, String), Arc<Shelf>>> {
         self.open.lock().unwrap_or_else(PoisonError::into_inner)
     }
+}
+
+/// 库 `kb` 里照关键词、照意思（有问句的向量的）各找 `limit` 的四倍，两路照名次合，取 `limit` 块（施工 K-2，同记忆的回合库
+/// 那一套，`memory/past.rs`）。
+fn fused(
+    index: &RecallIndex,
+    kb: &str,
+    query: &str,
+    limit: usize,
+    near: Option<Meaning<'_>>,
+) -> Result<Vec<Hit>, KnowledgeError> {
+    let wide = limit.saturating_mul(4);
+    let words = index.search(query, wide)?;
+    let close = match near {
+        Some(near) => index.nearest(near.model, near.vector, wide)?,
+        None => Vec::new(),
+    };
+    let keys: Vec<String> = words.iter().map(|hit| hit.key.clone()).collect();
+    let similar: Vec<(String, f32)> = close
+        .iter()
+        .map(|hit| (hit.key.clone(), hit.similar))
+        .collect();
+    // 合完照键找回字和时刻：两路交回的是同一块的同一份。
+    let mut found: BTreeMap<String, (String, Timestamp)> = close
+        .into_iter()
+        .map(|hit| (hit.key, (hit.text, hit.at)))
+        .collect();
+    found.extend(words.into_iter().map(|hit| (hit.key, (hit.text, hit.at))));
+    Ok(miyu_recall::fuse(&keys, &similar)
+        .into_iter()
+        .filter_map(|key| {
+            let (text, at) = found.remove(&key)?;
+            catch_up::hit(kb, &key, &text, at)
+        })
+        .take(limit)
+        .collect())
 }

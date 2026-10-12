@@ -1650,6 +1650,7 @@ dependencies = [
  "miyu-http",
  "miyu-ipc",
  "miyu-kernel",
+ "miyu-knowledge",
  "miyu-log",
  "miyu-mcp",
  "miyu-memory",

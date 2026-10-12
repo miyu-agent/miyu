@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use miyu_store::knowledge::{Hit, KnowledgeError, Skipped};
+use miyu_store::knowledge::{Hit, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
 
 use crate::Core;
@@ -71,12 +71,36 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             {
                 return Err(Refusal::BAD_PARAMS);
             }
-            let (hits, skipped) = blocking(move || {
+            // 照意思找（施工 K-2）：问句照这时的配置算向量，搜完在后台补搜过的几个库缺的向量；同她的 `kb_search`。
+            let using = crate::memory::using(core);
+            let vectors = core.memory.vectors();
+            let near = match &vectors {
+                Some(vectors) => vectors.query(&using, &search.query).await,
+                None => None,
+            };
+            let searching = Arc::clone(&knowledge);
+            let (hits, skipped, searched) = blocking(move || {
                 let only = search.kb.map(|kb| vec![kb]);
-                knowledge.search(&account, &search.query, only.as_deref(), limit)
+                let meaning = near.as_ref().map(|near| Meaning {
+                    model: &near.model,
+                    vector: &near.vector,
+                });
+                let (hits, skipped) =
+                    searching.search(&account, &search.query, only.as_deref(), limit, meaning)?;
+                let searched = match only {
+                    Some(only) => only,
+                    None => searching.ids(&account)?,
+                };
+                Ok((hits, skipped, searched))
             })
             .await?;
             report(&skipped);
+            if let Some(vectors) = vectors {
+                for id in searched {
+                    let index = knowledge.index_of(&core.admin, &id);
+                    vectors.fill_knowledge(&using, format!("kb {} {id}", core.admin), index);
+                }
+            }
             Ok(json!({ "hits": hits.iter().map(shown).collect::<Vec<Value>>() }))
         }
         "kb.read" => {

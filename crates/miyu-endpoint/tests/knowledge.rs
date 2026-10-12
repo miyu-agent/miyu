@@ -2,10 +2,15 @@
 //! 里的真目录。`kb.list`、`kb.search`、`kb.read` 的回应一格一格对；写错的几种 `bad_params`，没有的库 `unknown_kb`，没有的
 //! 文档 `unknown_document`。
 
+use std::sync::Arc;
+
 use serde_json::{Value, json};
 
-use miyu_session::testkit::Script;
+use miyu_kernel::event::Body;
+use miyu_session::testkit::{Play, Script};
+use miyu_tool::Catalog;
 
+use crate::support::embedding;
 use crate::support::*;
 
 fn shelf(home: &Home) {
@@ -145,4 +150,100 @@ async fn wrong_requests_are_refused() {
         .call("y", "kb.read", json!({"kb": "nope", "path": "a.md"}))
         .await;
     assert_eq!(reason(&reply), Some("unknown_kb"), "{reply}");
+}
+
+#[tokio::test]
+async fn kb_search_finds_by_meaning_once_the_vectors_are_filled() {
+    // 施工 K-2：问句照这时的配置算向量（远程的假服务器，什么都挺像），搜完在后台补搜过的库缺的向量；补上以后关键词对不上的
+    // 也找得到。
+    let server = miyu_http::testkit::Server::start(vec![embedding::vector(); 40]).await;
+    let home = Home::new();
+    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("cat.md"), "团子的饭是鸡胸肉\n").expect("写得进");
+    let mut client = Client::connect(embedding::remote(&home, &server));
+    client.hello().await;
+    let mut hits = Value::Null;
+    for n in 0..600 {
+        let reply = client
+            .call(&format!("s{n}"), "kb.search", json!({"query": "猫吃什么"}))
+            .await;
+        hits = reply["result"]["hits"].clone();
+        if hits.as_array().is_some_and(|hits| !hits.is_empty()) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert_eq!(hits[0]["text"], "团子的饭是鸡胸肉", "{hits}");
+    assert!(
+        server
+            .received()
+            .iter()
+            .any(|request| request.path == "/v1/embeddings")
+    );
+}
+
+/// 她的 `kb_search` 照 `query` 搜一次，接着说一句。
+fn searching(query: &str) -> [Play; 2] {
+    let args = json!({ "query": query }).to_string();
+    [Play::calls(&[("kb_search", &args)]), Play::Says("嗯。")]
+}
+
+/// 库 `notes` 的块都补上了远程的向量没有。
+fn filled(home: &Home) -> bool {
+    let knowledge = miyu_store::knowledge::Knowledge::new(&home.root);
+    let index = knowledge.index_of(&alice(), "notes");
+    index
+        .missing("emb/text-emb", 0, 10)
+        .is_ok_and(|missing| missing.is_empty())
+        && index.keys().is_ok_and(|keys| !keys.is_empty())
+}
+
+#[tokio::test]
+async fn her_kb_search_finds_by_meaning_and_still_does_after_a_restart() {
+    // 施工 K-2：核心把算向量的交给造的会话（搜完补上向量）和载入的会话（问句照意思找）。
+    let server = miyu_http::testkit::Server::start(vec![embedding::vector(); 40]).await;
+    let home = Home::new();
+    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("cat.md"), "团子的饭是鸡胸肉\n").expect("写得进");
+    let script = Script::new([searching("猫吃什么"), searching("猫吃什么")].concat());
+    let tools = || {
+        let tools = miyu_knowledge::tools(&default_resources()).expect("读得出");
+        Catalog::in_packages([(miyu_knowledge::PACKAGE, tools)]).expect("合写法")
+    };
+    let core = embedding::remote_with(&home, &server, &script, tools());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "猫吃什么").await;
+    home.until_turns(&session, 1).await;
+    for _ in 0..600 {
+        if filled(&home) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert!(filled(&home), "造的会话搜完补上了");
+    drop(client);
+    drop(core);
+    let again = embedding::remote_with(&home, &server, &script, tools());
+    let mut client = Client::connect(again);
+    client.hello().await;
+    client.say("s2", &session, "再找找").await;
+    home.until_turns(&session, 2).await;
+    let found = home
+        .log(&session)
+        .iter()
+        .rev()
+        .find_map(|event| match &event.body {
+            Body::ToolResult(result) => Some(format!("{:?}", result.blocks)),
+            _ => None,
+        });
+    assert!(
+        found
+            .as_deref()
+            .is_some_and(|found| found.contains("团子的饭是鸡胸肉")),
+        "载入的会话照意思找得到：{found:?}"
+    );
 }

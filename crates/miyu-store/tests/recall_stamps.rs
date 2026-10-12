@@ -49,3 +49,43 @@ fn a_source_is_replaced_whole_and_others_stay() {
     index.drop_source("a.md").expect("拿得掉");
     assert_eq!(keys(&index), ["a.md.bak#0", "b.md#0"]);
 }
+
+#[test]
+fn replacing_or_dropping_a_source_drops_its_vectors() {
+    // 施工 K-2：文档变了、没了，原来那几块的向量跟着拿掉（下一次搜完照新的补），别的来源的不动。
+    let scratch = Scratch::new("recall-stamps-vectors");
+    let (index, _) = RecallIndex::open(&place(&scratch));
+    let one = |text: &str| vec![text.to_string()];
+    index
+        .replace("a.md", &one("猫叫团子"), at(1), "10:1")
+        .expect("写得进");
+    index
+        .replace("b.md", &one("狗叫阿黄"), at(1), "20:1")
+        .expect("写得进");
+    for key in ["a.md#0", "b.md#0"] {
+        index.put_vector(key, "m", &[1.0, 0.0]).expect("写得进");
+    }
+    let missing = |index: &RecallIndex| -> Vec<String> {
+        index
+            .missing("m", 0, 10)
+            .expect("读得了")
+            .into_iter()
+            .map(|(_, key, _)| key)
+            .collect()
+    };
+    assert!(missing(&index).is_empty());
+    index
+        .replace("a.md", &one("猫叫团子"), at(2), "10:2")
+        .expect("写得进");
+    assert_eq!(missing(&index), ["a.md#0"], "换掉的那份要重新补");
+    index
+        .put_vector("a.md#0", "m", &[1.0, 0.0])
+        .expect("写得进");
+    index.drop_source("a.md").expect("拿得掉");
+    assert!(missing(&index).is_empty());
+    assert_eq!(
+        index.nearest("m", &[1.0, 0.0], 10).expect("找得了").len(),
+        1,
+        "只剩 b.md 的"
+    );
+}
