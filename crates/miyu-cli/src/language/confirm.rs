@@ -66,14 +66,24 @@ impl Language {
         }
     }
 
-    /// 一行的开头：包含、需要、一并删除、大小。
+    /// 读不成的一个：包文件夹里的路径和为什么（施工 X-13 补）。为什么是核心给的英文一句，同 `miyu check`。
+    pub(crate) fn skipped(&self, file: &str, why: &str) -> String {
+        match self {
+            Language::Chinese => format!("{file}（{why}）"),
+            Language::English => format!("{file} ({why})"),
+        }
+    }
+
+    /// 一行的开头：包含、读不成、需要、一并删除、大小。
     pub(crate) fn plan_label(&self, label: PlanLabel) -> &'static str {
         match (self, label) {
             (Language::Chinese, PlanLabel::Includes) => "包含：",
+            (Language::Chinese, PlanLabel::Skipped) => "读不成：",
             (Language::Chinese, PlanLabel::Needs) => "需要：",
             (Language::Chinese, PlanLabel::AlsoDeletes) => "一并删除：",
             (Language::Chinese, PlanLabel::Size) => "大小：",
             (Language::English, PlanLabel::Includes) => "Includes: ",
+            (Language::English, PlanLabel::Skipped) => "Cannot read: ",
             (Language::English, PlanLabel::Needs) => "Needs: ",
             (Language::English, PlanLabel::AlsoDeletes) => "Also deletes: ",
             (Language::English, PlanLabel::Size) => "Size: ",
@@ -160,6 +170,8 @@ pub(crate) enum Carried<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PlanLabel {
     Includes,
+    /// 读不成的技能、脚本（施工 X-13 补）。
+    Skipped,
     Needs,
     AlsoDeletes,
     Size,

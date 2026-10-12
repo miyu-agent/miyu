@@ -98,13 +98,24 @@ pub fn find(
     (skills, skipped)
 }
 
-/// 包文件夹 `dir` 带的技能的名字（施工 X-13 上，装之前给人看）：`skills/` 下开头读得成的，照名字排。
-pub fn carried(dir: &Path) -> Vec<String> {
-    folders(&dir.join("skills"))
-        .into_iter()
-        .filter_map(|(folder, name)| head(&folder.join(FILE), &name)?.ok())
-        .map(|head| head.name)
-        .collect()
+/// 包文件夹 `dir` 带的技能（施工 X-13 上，装之前给人看）：`skills/` 下开头读得成的名字，照名字排；读不成的另交回为什么
+/// （施工 X-13 补：不说的话她、人都看不出来少了一个）。
+pub fn carried(dir: &Path) -> (Vec<String>, Vec<Skipped>) {
+    let mut names = Vec::new();
+    let mut skipped = Vec::new();
+    for (folder, name) in folders(&dir.join("skills")) {
+        let file = folder.join(FILE);
+        match head(&file, &name) {
+            None => {}
+            Some(Ok(head)) => names.push(head.name),
+            Some(Err(why)) => skipped.push(Skipped {
+                path: file,
+                why,
+                by: None,
+            }),
+        }
+    }
+    (names, skipped)
 }
 
 /// 读文件夹名是 `name` 的那份 `SKILL.md`（`file`）的开头：没有这个文件的没有；读不了、写错了的交回为什么。

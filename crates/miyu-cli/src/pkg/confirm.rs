@@ -11,7 +11,8 @@ use crate::exit;
 use crate::language::{Carried, Doing, Language, PlanLabel};
 use crate::shown::{say, write};
 
-/// 看一眼的回应 `preview` 印成几行：哪个包（版本、换下哪一份）、包含什么、需要什么能力、一并删除什么、多大。没有的那一行不印。
+/// 看一眼的回应 `preview` 印成几行：哪个包（版本、换下哪一份）、包含什么、读不成的（施工 X-13 补）、需要什么能力、一并删除
+/// 什么、多大。没有的那一行不印。
 pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let separator = language.list_separator();
     let mut head = language.will(doing, preview["package"].as_str().unwrap_or_default());
@@ -33,6 +34,19 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         }
     };
     row(PlanLabel::Includes, included(preview, doing, language));
+    // 读不成、装上也用不了的技能、脚本（施工 X-13 补）：包文件夹里的路径和为什么（英文一句，同 `miyu check`）。
+    let skipped = preview["skipped"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|one| {
+            language.skipped(
+                one["file"].as_str().unwrap_or_default(),
+                one["why"].as_str().unwrap_or_default(),
+            )
+        })
+        .collect();
+    row(PlanLabel::Skipped, skipped);
     let needs = preview["capabilities"]
         .as_array()
         .into_iter()

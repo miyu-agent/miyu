@@ -313,6 +313,13 @@ async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
         "---\nname: take-notes\ndescription: Take notes.\n---\nbody\n",
     )
     .expect("写得进");
+    // 说明里有不加引号的「冒号加空格」：YAML 读不成（施工 X-13 补，真模型写包时撞上的）。
+    std::fs::create_dir_all(folder.join("skills/bad")).expect("建得了");
+    std::fs::write(
+        folder.join("skills/bad/SKILL.md"),
+        "---\nname: bad\ndescription: Notes: where they go.\n---\nbody\n",
+    )
+    .expect("写得进");
     let script = Script::new([Play::Says("一。")]);
     let core = core(&home, &script);
     let mut client = Client::connect(Arc::clone(&core));
@@ -333,6 +340,16 @@ async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
         ),
         (json!(["take-notes"]), json!(["dice"]), None),
         "{shown}"
+    );
+    let skipped = result["skipped"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{shown}"));
+    assert_eq!(skipped.len(), 1, "{shown}");
+    assert_eq!(skipped[0]["file"], "skills/bad/SKILL.md", "{shown}");
+    assert!(
+        skipped[0]["why"]
+            .as_str()
+            .is_some_and(|why| !why.is_empty())
     );
     let installed = client
         .call("i1", "package.install", json!({"path": folder}))

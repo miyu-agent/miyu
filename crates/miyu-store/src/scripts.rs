@@ -79,13 +79,22 @@ pub fn find(
     (scripts, skipped)
 }
 
-/// 包文件夹 `dir` 带的脚本的工具名（施工 X-13 上，装之前给人看）：`scripts/` 下开头读得成的，照文件名排。
-pub fn carried(dir: &Path) -> Vec<String> {
-    files(&dir.join("scripts"))
-        .into_iter()
-        .filter_map(|(file, name)| head(&file, &name).ok())
-        .map(|head| head.name)
-        .collect()
+/// 包文件夹 `dir` 带的脚本（施工 X-13 上，装之前给人看）：`scripts/` 下开头读得成的工具名，照文件名排；读不成的另交回为什么
+/// （施工 X-13 补）。
+pub fn carried(dir: &Path) -> (Vec<String>, Vec<Skipped>) {
+    let mut names = Vec::new();
+    let mut skipped = Vec::new();
+    for (file, name) in files(&dir.join("scripts")) {
+        match head(&file, &name) {
+            Ok(head) => names.push(head.name),
+            Err(why) => skipped.push(Skipped {
+                path: file,
+                why,
+                by: None,
+            }),
+        }
+    }
+    (names, skipped)
 }
 
 /// 读文件名是 `name` 的脚本 `file` 的开头：读不了、不是字、写错了的交回为什么。

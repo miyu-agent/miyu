@@ -137,7 +137,8 @@ fn nothing_anywhere_is_empty() {
     assert_eq!(Places::new().found(), (Vec::new(), Vec::new()));
 }
 
-/// 装之前给人看的（施工 X-13 上）：包文件夹 `scripts/` 下开头读得成的工具名，照文件名排；写错的、子文件夹、点开头的不算。
+/// 装之前给人看的（施工 X-13 上）：包文件夹 `scripts/` 下开头读得成的工具名，照文件名排；子文件夹、点开头的不算；写错的另
+/// 交回为什么（施工 X-13 补）。
 #[test]
 fn a_package_folder_says_which_scripts_it_carries() {
     let places = Places::new();
@@ -147,6 +148,14 @@ fn a_package_folder_says_which_scripts_it_carries() {
     places.write("kit/scripts/.hidden.sh", &script("Hidden."));
     places.write("kit/scripts/sub/inner.sh", &script("Inner."));
     let dir = places.scratch.path().join("kit");
-    assert_eq!(carried(&dir), ["b-dice", "weather"]);
-    assert!(carried(&places.scratch.path().join("nothing")).is_empty());
+    let (names, skipped) = carried(&dir);
+    assert_eq!(names, ["b-dice", "weather"]);
+    // 读不成的另交回为什么（施工 X-13 补）。
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert!(skipped[0].path.ends_with("kit/scripts/broken.sh"));
+    assert_eq!(skipped[0].why, "Description is missing or empty");
+    assert_eq!(
+        carried(&places.scratch.path().join("nothing")),
+        (Vec::new(), Vec::new())
+    );
 }

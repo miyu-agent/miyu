@@ -83,23 +83,40 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
 }
 
 /// 包文件夹里带的技能、脚本（施工 X-13 上）：清单里写不出它们，照文件夹找。脚本装上就是这台机器上跑得起来的工具，同 MCP
-/// 服务，装之前给人看名字。碰磁盘。
+/// 服务，装之前给人看名字。读不成的另列（施工 X-13 补）：包文件夹里的相对路径（`/` 分隔）和为什么。碰磁盘。
 struct Content {
     skills: Vec<String>,
     scripts: Vec<String>,
+    skipped: Vec<Value>,
 }
 
 impl Content {
     fn of(dir: &Path) -> Content {
+        let (skills, broken_skills) = miyu_store::skills::carried(dir);
+        let (scripts, broken_scripts) = miyu_store::scripts::carried(dir);
+        let skipped = broken_skills
+            .iter()
+            .chain(&broken_scripts)
+            .map(|one| {
+                let file = one.path.strip_prefix(dir).unwrap_or(&one.path);
+                let file = file
+                    .components()
+                    .map(|part| part.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/");
+                json!({"file": file, "why": one.why})
+            })
+            .collect();
         Content {
-            skills: miyu_store::skills::carried(dir),
-            scripts: miyu_store::scripts::carried(dir),
+            skills,
+            scripts,
+            skipped,
         }
     }
 }
 
 /// 一份清单带了什么：编号、版本（写了的）、程序（`ui`、`process`、`worker`、`builtin`，只带吉祥物的没有）、子命令名、后台页、
-/// 吉祥物、接哪个平台、系统账号、几个配置项、技能、脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
+/// 吉祥物、接哪个平台、系统账号、几个配置项、技能、脚本、读不成的技能和脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
 /// 样子）。没有的不写。
 fn carries(
     core: &Core,
@@ -152,6 +169,9 @@ fn carries(
     }
     if !content.scripts.is_empty() {
         answer.insert("scripts".into(), json!(content.scripts));
+    }
+    if !content.skipped.is_empty() {
+        answer.insert("skipped".into(), json!(content.skipped));
     }
     if let Some(listed) = crate::extensions::described(core, manifest, peer.language) {
         answer.insert("capabilities".into(), listed);

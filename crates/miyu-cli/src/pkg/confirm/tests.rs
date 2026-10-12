@@ -98,12 +98,14 @@ fn enter_or_yes_goes_on_and_anything_else_or_nothing_stops() {
 /// 只带技能、脚本的包（施工 X-13 上）：没有程序那一项，列出每个技能、脚本。
 #[test]
 fn skills_and_scripts_are_listed_by_name() {
-    let content = json!({"package": "notes", "skills": ["take-notes"], "scripts": ["dice"], "files": 3, "size": 9});
+    let content = json!({"package": "notes", "skills": ["take-notes"], "scripts": ["dice"], "files": 3, "size": 9,
+                         "skipped": [{"file": "skills/bad/SKILL.md", "why": "the head is not YAML"}]});
     assert_eq!(
         plan(&content, Doing::Install, &Language::Chinese),
         [
             "将安装 notes",
             "包含：技能 take-notes、脚本 dice",
+            "读不成：skills/bad/SKILL.md（the head is not YAML）",
             "大小：9 B，3 个文件"
         ]
     );
