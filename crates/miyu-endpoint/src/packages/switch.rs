@@ -45,6 +45,17 @@ enum Switch {
     Bundle,
 }
 
+/// 打开之前查一遍（施工 F-10 下下，她的 `package` 看一眼时）：有这个包、有开关、程序在，同 `package.enable` 头几步。交回
+/// 它现在的清单和包目录。
+pub(crate) fn switchable(core: &Core, id: &str) -> Result<(Manifest, PathBuf), Refusal> {
+    let (manifest, layer, dir, _) = find(core, id)?;
+    switch(&manifest, layer)?;
+    if crate::packages::status::program_missing(&dir, &manifest) {
+        return Err(Refusal::PROGRAM_MISSING);
+    }
+    Ok((manifest, dir))
+}
+
 /// 包 `id` 现在的清单、是不是卸掉了的出厂包；没有的 `unknown_package`。
 fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, PathBuf, bool), Refusal> {
     if let Some(found) = core.packages().iter().find(|found| found.id == id) {

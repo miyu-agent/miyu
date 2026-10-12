@@ -52,8 +52,16 @@ impl PackagesPort for Port {
         self.answered(format!("inspect {}", path.display()))
     }
 
-    fn install(&self, path: PathBuf) -> Looking<'_> {
-        self.answered(format!("install {}", path.display()))
+    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_> {
+        self.answered(format!("install {} {preset:?}", path.display()))
+    }
+
+    fn enabling(&self, package: String) -> Looking<'_> {
+        self.answered(format!("enabling {package}"))
+    }
+
+    fn enable(&self, package: String) -> Looking<'_> {
+        self.answered(format!("enable {package}"))
     }
 
     fn removing(&self, package: String) -> Looking<'_> {
@@ -145,9 +153,23 @@ async fn installing_and_removing_go_through_the_core() {
         human(done),
         said("package/removed").with("package", "kit"),
     );
+    let done = package(&port, json!({"enable": "kit"})).await;
+    assert_eq!(
+        text(&done),
+        "Turned on kit. Its tools come in on the next turn.\n"
+    );
+    check(
+        &mut checked,
+        human(done),
+        said("package/enabled").with("package", "kit"),
+    );
     assert_eq!(
         port.asked(),
-        [format!("install {path}"), "remove kit".to_string()]
+        [
+            format!("install {path} None"),
+            "remove kit".to_string(),
+            "enable kit".to_string()
+        ]
     );
     let refused = Port::new(Err(refusal("package_exists", None, None)));
     let done = package(&refused, json!({"install": path})).await;
@@ -172,9 +194,15 @@ async fn asking_shows_what_the_core_would_do() {
     assert_eq!(looked, Some(Ok(json!({"package": "kit", "files": 2}))));
     let looked = preview(&port, json!({"remove": "kit"})).await;
     assert!(matches!(looked, Some(Ok(_))));
+    let looked = preview(&port, json!({"enable": "kit"})).await;
+    assert!(matches!(looked, Some(Ok(_))));
     assert_eq!(
         port.asked(),
-        [format!("inspect {path}"), "removing kit".to_string()]
+        [
+            format!("inspect {path}"),
+            "removing kit".to_string(),
+            "enabling kit".to_string()
+        ]
     );
     let broken = Port::new(Err(refusal(
         "package_invalid",
@@ -199,9 +227,11 @@ async fn wrong_arguments_never_reach_the_core() {
     let relative = package(&port, json!({"install": "kit"})).await;
     assert_eq!(text(&relative), "path must be absolute.\n");
     let both = package(&port, json!({"install": absolute("a"), "remove": "a"})).await;
-    assert_eq!(text(&both), "Give install or remove, one of them.\n");
+    assert_eq!(text(&both), "Give one of install, remove or enable.\n");
+    let two = package(&port, json!({"remove": "a", "enable": "a"})).await;
+    assert_eq!(text(&two), "Give one of install, remove or enable.\n");
     let neither = package(&port, json!({})).await;
-    assert_eq!(text(&neither), "Give install or remove, one of them.\n");
+    assert_eq!(text(&neither), "Give one of install, remove or enable.\n");
     assert!(port.asked().is_empty());
     let none = Site::new()
         .done_with_packages("package", json!({"remove": "kit"}), None)
@@ -211,4 +241,29 @@ async fn wrong_arguments_never_reach_the_core() {
         text(&none),
         "Packages cannot be installed or removed here.\n"
     );
+}
+
+/// 装的时候带上会话用的预设（施工 F-10 下下）：核心照它在那一份预设里打开装上的包。
+#[tokio::test]
+async fn installing_names_the_sessions_preset() {
+    let port = Port::new(Ok(json!({"package": "kit"})));
+    let path = absolute("kit");
+    let mut call = Site::new().call_with_packages(
+        json!({"install": path}),
+        Some(Arc::clone(&port) as Arc<dyn PackagesPort>),
+    );
+    call.ids = Some(miyu_tool::CallIds {
+        session: miyu_kernel::id::SessionId::parse("01a12f08-e382-70dc-942b-5deddc48d4da")
+            .expect("合写法"),
+        owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
+        call: miyu_kernel::id::CallId::new(miyu_kernel::id::Seq::new(1).expect("合写法"), 1)
+            .expect("合写法"),
+        asked: None,
+        preset: Some("dev".to_string()),
+    });
+    let done = tool("package")
+        .run(call, miyu_tool::Progress::new(|_| {}))
+        .await;
+    assert!(!done.error);
+    assert_eq!(port.asked(), [format!("install {path} Some(\"dev\")")]);
 }

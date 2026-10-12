@@ -207,6 +207,7 @@
     "packages/failed": "パッケージを確認できませんでした",
     "package/installed": "{package} をインストールしました",
     "package/removed": "{package} を削除しました",
+    "package/enabled": "{package} をオンにしました",
     "package/failed": "インストールも削除もできませんでした"
   }
 }

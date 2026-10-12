@@ -61,4 +61,6 @@ pub(crate) struct ToolKit {
     pub(crate) packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
     /// 开着的技能文件夹（施工 X-10 中）：沙盒藏着数据根，照它单独放开只读。
     pub(crate) shelves: Vec<std::path::PathBuf>,
+    /// 会话用的预设的编号（施工 F-10 下下）：每次调用带上，她装的包在这一份预设里打开。
+    pub(crate) preset: Option<String>,
 }

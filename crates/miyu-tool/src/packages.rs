@@ -31,8 +31,15 @@ pub trait PackagesPort: Send + Sync {
     fn inspect(&self, path: PathBuf) -> Looking<'_>;
 
     /// 装包文件夹 `path`（绝对路径，施工 F-10 下）：同 `package.install {path}`，交回装上的那一项（同 `package.list` 的一项）。
-    /// 写错的、撞了的照协议拒。
-    fn install(&self, path: PathBuf) -> Looking<'_>;
+    /// 写错的、撞了的照协议拒。会话用的预设 `preset`（施工 F-10 下下）不开没列出来的软件、又没写这个包的，在那一份预设里
+    /// 打开它（16 第三节）。
+    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_>;
+
+    /// 打开之前看一眼（施工 F-10 下下）：装着的包 `package` 带了什么、要什么能力，同装之前看一眼的样子。
+    fn enabling(&self, package: String) -> Looking<'_>;
+
+    /// 打开装着的包 `package`（施工 F-10 下下）：同 `package.enable`，它要的能力一并批（问人的那一次就是批）。
+    fn enable(&self, package: String) -> Looking<'_>;
 
     /// 卸之前看一眼（施工 F-10 下）：同 `package.remove {package, preview: true}`。
     fn removing(&self, package: String) -> Looking<'_>;

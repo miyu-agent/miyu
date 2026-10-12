@@ -53,8 +53,16 @@ impl PackagesPort for Port {
         Box::pin(async move { inspected })
     }
 
-    fn install(&self, _path: PathBuf) -> Looking<'_> {
+    fn install(&self, _path: PathBuf, _preset: Option<String>) -> Looking<'_> {
         unreachable!("packages 不装")
+    }
+
+    fn enabling(&self, _package: String) -> Looking<'_> {
+        unreachable!("packages 不打开")
+    }
+
+    fn enable(&self, _package: String) -> Looking<'_> {
+        unreachable!("packages 不打开")
     }
 
     fn removing(&self, _package: String) -> Looking<'_> {

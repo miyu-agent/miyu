@@ -1,4 +1,4 @@
 {
-  "description": "Install a Miyu package from a folder, or remove an installed one. Check the folder with packages first.",
-  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."}}}
+  "description": "Install a Miyu package from a folder, remove one, or turn on an installed one. Check the folder with packages first.",
+  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
 }

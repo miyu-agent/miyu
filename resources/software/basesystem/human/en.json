@@ -226,6 +226,7 @@
     "packages/failed": "Could not look at packages",
     "package/installed": "Installed {package}",
     "package/removed": "Removed {package}",
+    "package/enabled": "Turned on {package}",
     "package/failed": "Could not install or remove"
   }
 }

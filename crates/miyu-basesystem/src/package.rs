@@ -1,5 +1,6 @@
-//! `package`（`docs/blueprint/tools/package.md`，施工 F-10 下，设计 `31-软件包.md` 第六节）：她装、卸软件包。`install` 装一个
-//! 包文件夹（绝对路径），`remove` 卸一个装了的包。访问类别 `install`：权限策略照级别判，完全放开直接做，工作区每次问人，
+//! `package`（`docs/blueprint/tools/package.md`，施工 F-10 下，设计 `31-软件包.md` 第六节）：她装、卸软件包，打开装着的。
+//! `install` 装一个包文件夹（绝对路径，装上以后在会话用的预设里打开，施工 F-10 下下），`remove` 卸一个装了的包，`enable` 打开
+//! 装着的扩展、带了 MCP 服务的包（要的能力一并批，施工 F-10 下下）。访问类别 `install`：权限策略照级别判，完全放开直接做，工作区每次问人，
 //! 只读拒绝；要问的先看一眼（[`Tool::preview`]，同 `package.install`、`package.remove` 带 `preview` 的），人看的卡片照它。
 //! 装的包文件夹报那个路径是读（同 `packages`）：只碰得到自己工作区的会话装不了外面的，数据根哪一级都不许。经
 //! [`Call::packages`] 交给核心；写错的清单、读不了的文件夹这些照 `packages` 那几句说。
@@ -29,6 +30,7 @@ pub(crate) struct Package {
 struct Texts {
     installed: Template,
     removed: Template,
+    enabled: Template,
     one: Template,
     refused: Template,
     unavailable: Template,
@@ -45,12 +47,15 @@ struct Args {
     install: Option<String>,
     #[serde(default)]
     remove: Option<String>,
+    #[serde(default)]
+    enable: Option<String>,
 }
 
 /// 要做的那一件。
 enum Doing {
     Install(PathBuf),
     Remove(String),
+    Enable(String),
 }
 
 impl Package {
@@ -63,6 +68,7 @@ impl Package {
             texts: Texts {
                 installed: own("installed", &["package"])?,
                 removed: own("removed", &["package"])?,
+                enabled: own("enabled", &["package"])?,
                 one: own("one", &[])?,
                 refused: own("refused", &["what", "reason"])?,
                 unavailable: own("unavailable", &[])?,
@@ -76,16 +82,20 @@ impl Package {
 }
 
 impl Texts {
-    /// 照参数认出要做的那一件：两个都写、都没写的，`install` 不是绝对路径的，说哪里不对。
+    /// 照参数认出要做的那一件：写了不止一个、一个都没写的，`install` 不是绝对路径的，说哪里不对。
     fn doing(&self, call: &Call) -> Result<Doing, String> {
         let args: Args = serde_json::from_str(&call.args).unwrap_or(Args {
             install: None,
             remove: None,
+            enable: None,
         });
-        match (args.install, args.remove) {
-            (Some(path), None) if Path::new(&path).is_absolute() => Ok(Doing::Install(path.into())),
-            (Some(_), None) => Err(say(&self.relative, &[])),
-            (None, Some(package)) => Ok(Doing::Remove(package)),
+        match (args.install, args.remove, args.enable) {
+            (Some(path), None, None) if Path::new(&path).is_absolute() => {
+                Ok(Doing::Install(path.into()))
+            }
+            (Some(_), None, None) => Err(say(&self.relative, &[])),
+            (None, Some(package), None) => Ok(Doing::Remove(package)),
+            (None, None, Some(package)) => Ok(Doing::Enable(package)),
             _ => Err(say(&self.one, &[])),
         }
     }
@@ -142,16 +152,18 @@ impl Tool for Package {
         }
     }
 
-    /// 问人的卡片上那几格：装哪个文件夹、卸哪个包。
+    /// 问人的卡片上那几格：装哪个文件夹、卸哪个包、打开哪个包。
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
         match self.texts.doing(call) {
             Ok(Doing::Install(path)) => vec![("install", path.to_string_lossy().into_owned())],
             Ok(Doing::Remove(package)) => vec![("remove", package)],
+            Ok(Doing::Enable(package)) => vec![("enable", package)],
             Err(_) => Vec::new(),
         }
     }
 
-    /// 问人之前看一眼：装的同 `package.install` 带 `preview`，卸的同 `package.remove` 带 `preview`。看不了的照拒绝交回她。
+    /// 问人之前看一眼：装的同 `package.install` 带 `preview`，卸的同 `package.remove` 带 `preview`，打开的看装着的那一份（带了
+    /// 什么、要什么能力）。看不了的照拒绝交回她。
     fn preview(&self, call: Call) -> Option<Previewing<'_>> {
         let doing = self.texts.doing(&call).ok()?;
         let port = call.packages?;
@@ -163,6 +175,7 @@ impl Tool for Package {
                     (port.inspect(path).await, what)
                 }
                 Doing::Remove(package) => (port.removing(package.clone()).await, package),
+                Doing::Enable(package) => (port.enabling(package.clone()).await, package),
             };
             looked.map_err(|refusal| Texts::failed(texts.refused(&refusal, &what)))
         }))
@@ -184,7 +197,8 @@ impl Tool for Package {
             match doing {
                 Doing::Install(path) => {
                     let what = path.to_string_lossy().into_owned();
-                    match port.install(path).await {
+                    let preset = call.ids.as_ref().and_then(|ids| ids.preset.clone());
+                    match port.install(path, preset).await {
                         Ok(entry) => {
                             let package = entry["package"].as_str().unwrap_or_default().to_string();
                             Done::ok(say(&texts.installed, &[("package", &package)]))
@@ -196,6 +210,11 @@ impl Tool for Package {
                 Doing::Remove(package) => match port.remove(package.clone()).await {
                     Ok(_) => Done::ok(say(&texts.removed, &[("package", &package)]))
                         .said(said("package/removed").with("package", &package)),
+                    Err(refusal) => Texts::failed(texts.refused(&refusal, &package)),
+                },
+                Doing::Enable(package) => match port.enable(package.clone()).await {
+                    Ok(_) => Done::ok(say(&texts.enabled, &[("package", &package)]))
+                        .said(said("package/enabled").with("package", &package)),
                     Err(refusal) => Texts::failed(texts.refused(&refusal, &package)),
                 },
             }

@@ -42,6 +42,7 @@ fn call_of(owner: &str, asked: Option<By>) -> miyu_tool::Call {
         owner: AccountId::parse(owner).expect("合写法"),
         call: CallId::new(Seq::new(7).expect("合写法"), 1).expect("合写法"),
         asked,
+        preset: None,
     });
     call
 }

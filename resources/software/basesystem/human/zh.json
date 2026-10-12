@@ -207,6 +207,7 @@
     "packages/failed": "没看成软件包",
     "package/installed": "装了 {package}",
     "package/removed": "卸了 {package}",
+    "package/enabled": "打开了 {package}",
     "package/failed": "没装成、没卸成"
   }
 }

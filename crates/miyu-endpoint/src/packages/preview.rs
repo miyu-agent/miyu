@@ -56,6 +56,19 @@ pub(crate) fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value,
     Ok(Value::Object(answer))
 }
 
+/// 打开装着的包之前看一眼（施工 F-10 下下，她的 `package` 问人的卡片）：带了什么、要什么能力，同装之前那一份。没有开关的、
+/// 程序不在的照 `package.enable` 拒。
+pub(crate) fn enabling(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
+    let (manifest, dir) = super::switch::switchable(core, id)?;
+    Ok(Value::Object(carries(
+        core,
+        peer,
+        id,
+        &manifest,
+        &Content::of(&dir),
+    )))
+}
+
 /// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（系统配置、个人设置里写了的键）、有没有状态目录。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
     let found = core.packages();

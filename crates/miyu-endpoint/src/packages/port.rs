@@ -11,6 +11,9 @@ use serde_json::{Value, json};
 use miyu_tool::{Looking, PackageRefusal, PackagesPort};
 
 use super::local::InfoParams;
+use miyu_policy::preset::Unlisted;
+
+use super::TARGET;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::{Locale, Refusal};
@@ -91,12 +94,42 @@ impl PackagesPort for Port {
         })
     }
 
-    fn install(&self, path: PathBuf) -> Looking<'_> {
+    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
             let params = serde_json::from_value(json!({ "path": path }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            super::manage::install(&core, english(), params)
+            let entry = super::manage::install(&core, english(), params)
+                .await
+                .map_err(refused)?;
+            if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
+                open_in(&core, &preset, package).await;
+            }
+            Ok(entry)
+        })
+    }
+
+    fn enabling(&self, package: String) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            super::preview::enabling(&core, english(), &package).map_err(refused)
+        })
+    }
+
+    fn enable(&self, package: String) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            let (manifest, _) = super::switch::switchable(&core, &package).map_err(refused)?;
+            // 要的能力一并批：问人的那一次就是批（工作区一级），完全放开的照级别直接做。
+            let approve: Vec<Value> = crate::extensions::described(&core, &manifest, "en")
+                .and_then(|listed| listed.as_array().cloned())
+                .unwrap_or_default()
+                .into_iter()
+                .map(|one| one["id"].clone())
+                .collect();
+            let params = serde_json::from_value(json!({ "package": package, "approve": approve }))
+                .map_err(|_| refused(Refusal::BAD_PARAMS))?;
+            super::switch::enable(&core, english(), params)
                 .await
                 .map_err(refused)
         })
@@ -108,6 +141,24 @@ impl PackagesPort for Port {
 
     fn remove(&self, package: String) -> Looking<'_> {
         Box::pin(async move { self.remove_or_look(package, false).await })
+    }
+}
+
+/// 在会话用的预设 `preset` 里打开她装的包 `package`（施工 F-10 下下，16 第三节）：预设不开没列出来的软件、也没写这个包的，往
+/// 家目录那一层的同名覆盖里写 `software.<编号> = true`；开着的、写过的（人关过的照人的）不动。写不成的记一行，装照样算成。
+async fn open_in(core: &Arc<Core>, preset: &str, package: &str) {
+    let Ok(found) = crate::presets::presets(core).find(preset) else {
+        return;
+    };
+    if found.file.unlisted() == Unlisted::On || found.file.software.contains_key(package) {
+        return;
+    }
+    let change = json!({ "preset": preset, "changes": [{ "key": format!("software.{package}"), "value": true }] });
+    let Ok(params) = serde_json::from_value(change) else {
+        return;
+    };
+    if let Err(refusal) = crate::presets::write::set(core, english(), params).await {
+        tracing::warn!(target: TARGET, preset, package, reason = refusal.reason, "package not opened in the preset");
     }
 }
 

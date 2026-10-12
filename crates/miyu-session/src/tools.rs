@@ -86,8 +86,9 @@ pub(crate) struct Tools {
     memory: Option<crate::memory::Calls>,
     /// 知识库（施工 K-1 下）。
     knowledge: Option<Arc<crate::knowledge::Shelves>>,
-    /// 看软件包的端口（施工 F-10 上）。
+    /// 看软件包的端口（施工 F-10 上）；会话用的预设（施工 F-10 下下）。
     packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    preset: Option<String>,
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
     backs: mpsc::UnboundedSender<Back>,
@@ -208,6 +209,7 @@ impl Tools {
             goals: kit.goals,
             memory: kit.memory,
             knowledge: kit.knowledge,
+            preset: kit.preset,
             packages: kit.packages,
             running: BTreeMap::new(),
             backs,
@@ -309,6 +311,7 @@ impl Tools {
                 owner: self.owner.clone(),
                 call: call_id,
                 asked,
+                preset: self.preset.clone(),
             }),
         };
         let call_text = call_id.to_string();

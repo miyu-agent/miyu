@@ -202,6 +202,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let config = Turning::start(configs, environment.cwd.clone()).await;
     let (turns, calls) = wired;
     let attended = snapshot.attended;
+    let preset_id = created.preset.clone();
     let room = calls.as_ref().map(|calls| calls.room().clone());
     // 分叉出来的不是任务，不交回报（施工 C-8 上）。
     let upstream = match created.forked {
@@ -396,6 +397,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             packages,
+            preset: preset_id,
         },
         jobs,
         guard,

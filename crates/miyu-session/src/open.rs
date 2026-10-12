@@ -275,6 +275,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             personas: agents_personas,
         })
     });
+    let preset_id = preset.clone();
     let created = SessionCreated {
         oneshot,
         cwd: Some(environment.cwd.clone()),
@@ -360,6 +361,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             packages,
+            preset: preset_id,
         },
         jobs,
         guard,

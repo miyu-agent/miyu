@@ -2009,13 +2009,24 @@ Removed {package}.
 
 #### `software/basesystem/package/one.txt`
 
-- 什么时候加进来：`package`：`install`、`remove` 都写了或都没写
-- token：10（2026-10-12 量）
+- 什么时候加进来：`package`：`install`、`remove`、`enable` 写了不止一个或一个都没写
+- token：10（2026-10-12 量，施工 F-10 下下改过）
 - 为什么加：参数写错不问核心（施工 F-10 下）
-- 指纹：`3f2df626`
+- 指纹：`d5f84fd8`
 
 ```text
-Give install or remove, one of them.
+Give one of install, remove or enable.
+```
+
+#### `software/basesystem/package/enabled.txt`
+
+- 什么时候加进来：`package` 打开了
+- token：16（2026-10-12 量）
+- 为什么加：打开了、下一回合才在她的工具面上（施工 F-10 下下）
+- 指纹：`56c50736`
+
+```text
+Turned on {package}. Its tools come in on the next turn.
 ```
 
 #### `software/basesystem/package/refused.txt`
@@ -4019,14 +4030,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/package.json`
 
 - 什么时候加进来：会话的工具面里有 `package`：功能「软件包」开着的（基础系统，每次请求都带）
-- token：86（2026-10-12 量）
-- 为什么加：她装、卸软件包（施工 F-10 下，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
-- 指纹：`cd00c4c6`
+- token：116（2026-10-12 量；施工 F-10 下上是 86，下下加 `enable` 一个参数多 30）
+- 为什么加：她装、卸软件包，打开装着的（施工 F-10 下，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
+- 指纹：`f9ae23eb`
 
 ```json
 {
-  "description": "Install a Miyu package from a folder, or remove an installed one. Check the folder with packages first.",
-  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."}}}
+  "description": "Install a Miyu package from a folder, remove one, or turn on an installed one. Check the folder with packages first.",
+  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
 }
 ```
 
