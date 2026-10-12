@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>438</b><span>/ 455 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>439</b><span>/ 455 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">2ef7054e</b><span>最近一步（X-10 中 技能：沙盒里读得到）的提交</span></li>
+    <li><b class="mono">6f9b6315</b><span>最近一步（X-10 下 技能：压缩后重建）的提交</span></li>
   </ul>
 </header>
 
@@ -876,7 +876,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-9"><span class="n">X-9</span>长期目标真模型走一遍<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-10a"><span class="n">X-10 上</span>技能：找、读、列<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-10b"><span class="n">X-10 中</span>技能：沙盒里读得到<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">X-10 下</span>技能：压缩后重建</span></li>
+        <li><a class="step done" href="#sX-10c"><span class="n">X-10 下</span>技能：压缩后重建<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">X-11</span>技能：开关和中途变了</span></li>
         <li><span class="step"><span class="n">X-12</span>脚本</span></li>
         <li><span class="step"><span class="n">X-13</span>出厂的技能、查写法</span></li>
@@ -24920,6 +24920,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>sandbox.md、sandbox/linux.md、sandbox/macos.md、session/tools.md 第 1a 条、skills.md、11 第四节；施工单 X-10-技能（中）.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-10c" aria-labelledby="h-sX10c">
+  <div class="sheet-head"><h2 id="h-sX10c"><span class="no">X-10 下</span>技能：压缩后重建</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">技能正文是她读进来的工具结果，压缩以后就不在了；照 Claude Code，压后把用过的技能重读回来，和重读的文件分开算（skills.md「技能」第 4 条，compaction.md 第九条第 3 条）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">技能：压缩后重建</span><span class="dir-note">X-10 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>file.read 效果多一格 skill：执行器认出读的是开着的技能文件夹里的 SKILL.md 就标上技能的名字，只比路径</li>
+              <li>技能文件夹造会话、载入时换成真实的位置，权限策略、沙盒、认技能用同一份</li>
+              <li>压后另算一组：最近用过的在前、尾巴里读过的跳过，不占文件的 5 个名额，候选接在文件后面</li>
+              <li>单个 5000、合计 25000 token，两组合起来照样不过压缩线的一半；写法同重读的文件，不加给模型的新字</li>
+              <li>重建的数多一组 skills，以前造的快照读成没有：技能照普通文件算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">标在效果里</span><span class="rl">设计 10 号本来这么写；落进日志、重放一样，内核不用另拿路径清单</span></div>
+          <div class="tile new"><span class="nm">单个上限取大的</span><span class="rl">两组以后分开调也不会把技能误报太大</span></div>
+          <div class="tile new"><span class="nm">协议形状改动</span><span class="rl">tool.result 的 file.read 效果多一格 skill，告诉两个头</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-10 下</dd></div>
+        <div><dt>名称</dt><dd>技能：压缩后重建</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">6f9b6315</dd></div>
+        <div><dt>验收</dt><dd>测试、变异 11 个、门禁八项、内核长跑随机、三台 CI（run 1905）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>内核：技能另成一组、不占文件的候选和名额；超了技能的合计进清单；上限取大的；以前的快照技能照普通文件算</span></li>
+        <li><span class="ok">✓</span><span>快照：出厂的带着 5000、25000，以前造的读成没有、写回去一字不差</span></li>
+        <li><span class="ok">✓</span><span>执行器：只标开着的技能文件夹里的 SKILL.md；经链接给的文件夹换成真实的位置</span></li>
+        <li><span class="ok">✓</span><span>真会话：五个文件占满名额，技能照样重读回来、排在最后，压完的请求里看得到正文</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>compaction.md 第九条、kernel/events-bodies.md、tools/interface.md、skills.md；施工单 X-10-技能（下）.md</li>
       </ul>
     </div>
   </div>
