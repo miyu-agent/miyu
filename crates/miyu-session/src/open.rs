@@ -128,14 +128,18 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     };
     let knows = !listed.is_empty();
     // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上）：列进 system，文件夹放开只读。
-    let found = match packages_installed {
+    let (found, shelves_open) = match packages_installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
-            blocking(move || skills::find(&installed, &root, &owner)).await
+            blocking(move || {
+                let found = skills::find(&installed, &root, &owner);
+                let shelves = skills::shelves(&found);
+                (found, shelves)
+            })
+            .await
         }
-        None => Vec::new(),
+        None => (Vec::new(), Vec::new()),
     };
-    let shelves_open = skills::shelves(&found);
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
     let offers = Offers::of(&config.current().resolved.values(), personas.ids());

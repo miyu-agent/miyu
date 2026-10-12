@@ -1,5 +1,5 @@
 //! 压后重建（`docs/blueprint/compaction.md` 第八、九条，施工 6-5）：检查点里代码写的几段（读过、改过的文件清单，
-//! 取回指路，太大没重读的），和最近读过、改过的几个文件的原文。
+//! 取回指路，太大没重读的），和最近读过、改过的几个文件的原文；用过的技能另算一组（施工 X-10 下）。
 //!
 //! 内核不碰磁盘：发摘要请求之前交出要重读的候选（[`Session::reread_paths`]），执行器读完、存成 blob 送回来，记在
 //! 那次摘要请求上；取到摘要以后照先后挑（[`Session::rebuild`]）。
@@ -69,23 +69,48 @@ impl Session {
     }
 
     /// 发第 `upto` 条的摘要请求之前，交给执行器重读的候选（第九条第 1 条）：被替代的那一段里读过、改过的文件，最近
-    /// 的在前、去重；尾巴里读过、改过的跳过；最多 [`Rebuild::candidates`] 个。重读不了的（策略里没有、窗口不够）没有。
+    /// 的在前、去重；尾巴里读过、改过的跳过；最多 [`Rebuild::candidates`] 个。用过的技能另算一组（施工 X-10 下）：不算
+    /// 在文件里，同样挑，接在文件后面。重读不了的（策略里没有、窗口不够）没有。
     pub(super) fn reread_paths(&self, upto: Seq) -> Vec<String> {
         let Some(rebuild) = self.rebuild_numbers() else {
             return Vec::new();
         };
         let tail: BTreeSet<String> = self.touched(|seq| seq > upto).into_iter().collect();
-        self.touched(|seq| seq <= upto)
-            .into_iter()
-            .filter(|path| !tail.contains(path))
-            .take(rebuild.candidates)
-            .collect()
+        let skills = self.skills_before(upto, &rebuild);
+        let pick = |paths: Vec<String>, other: &[String]| -> Vec<String> {
+            paths
+                .into_iter()
+                .filter(|path| !tail.contains(path) && !other.contains(path))
+                .take(rebuild.candidates)
+                .collect()
+        };
+        let mut paths = pick(self.touched(|seq| seq <= upto), &skills);
+        paths.extend(pick(skills, &[]));
+        paths
     }
 
-    /// 交给执行器的单个上限，字节。
+    /// 被替代的那一段里用过的技能（`skill` 标着的 `file.read`），最近用过的在前、去重；技能不另算的（以前造的快照）没有。
+    fn skills_before(&self, upto: Seq, rebuild: &Rebuild) -> Vec<String> {
+        if rebuild.skills.is_none() {
+            return Vec::new();
+        }
+        self.effect_paths(
+            |seq| seq <= upto,
+            |effect| match effect {
+                Effect::FileRead(read) if read.skill.is_some() => Some(&read.path),
+                _ => None,
+            },
+        )
+    }
+
+    /// 交给执行器的单个上限，字节：文件、技能（施工 X-10 下）两组的单个上限里大的那个。
     pub(super) fn reread_limit(&self) -> u64 {
         self.rebuild_numbers().map_or(0, |rebuild| {
-            rebuild.file_tokens.saturating_mul(BYTES_PER_TOKEN)
+            let skill = rebuild.skills.map_or(0, |skills| skills.tokens);
+            rebuild
+                .file_tokens
+                .max(skill)
+                .saturating_mul(BYTES_PER_TOKEN)
         })
     }
 
@@ -141,20 +166,38 @@ impl Session {
             &format!("{head}{uncovered}"),
         ));
         if let Some(((reread, rebuild), room)) = picked {
-            let mut total = 0u64;
+            let skills = self.skills_before(upto, &rebuild);
+            // 文件、技能各自的合计，两组合起来的不超过 `room`（施工 X-10 下）。
+            let (mut files, mut total, mut skill_total, mut all) = (0usize, 0u64, 0u64, 0u64);
             for (path, file) in paths.iter().zip(reread) {
                 let shown = self.shown(path);
+                let skill = rebuild.skills.filter(|_| skills.contains(path));
                 match file {
-                    _ if rebuilt.restored.len() == rebuild.files => break,
+                    _ if skill.is_none() && files == rebuild.files => {}
                     Reread::Read { blob, text } => {
                         let tokens = estimate::text(text);
-                        let fits = tokens <= rebuild.file_tokens
-                            && total.saturating_add(tokens) <= rebuild.total.min(room);
+                        let fits = match skill {
+                            Some(skill) => {
+                                tokens <= skill.tokens
+                                    && skill_total.saturating_add(tokens) <= skill.total
+                            }
+                            None => {
+                                tokens <= rebuild.file_tokens
+                                    && total.saturating_add(tokens) <= rebuild.total
+                            }
+                        } && all.saturating_add(tokens) <= room;
                         if !fits {
                             too_large.push(shown);
                             continue;
                         }
-                        total = total.saturating_add(tokens);
+                        all = all.saturating_add(tokens);
+                        match skill {
+                            Some(_) => skill_total = skill_total.saturating_add(tokens),
+                            None => {
+                                files += 1;
+                                total = total.saturating_add(tokens);
+                            }
+                        }
                         rebuilt.restored.push(RestoredFile {
                             path: shown,
                             blob: blob.clone(),
@@ -205,6 +248,19 @@ impl Session {
 
     /// 有效历史里、序号合 `keep` 的工具结果报过的读过、改过的文件，真实的位置，最近的在前、去重。
     fn touched(&self, keep: impl Fn(Seq) -> bool) -> Vec<String> {
+        self.effect_paths(keep, |effect| match effect {
+            Effect::FileRead(read) => Some(&read.path),
+            Effect::FileChanged(changed) => Some(&changed.path),
+            _ => None,
+        })
+    }
+
+    /// 有效历史里、序号合 `keep` 的工具结果报过的效果里，`pick` 挑出来的路径，最近的在前、去重。
+    fn effect_paths(
+        &self,
+        keep: impl Fn(Seq) -> bool,
+        pick: impl Fn(&Effect) -> Option<&String>,
+    ) -> Vec<String> {
         let mut seen = BTreeSet::new();
         let mut paths = Vec::new();
         for event in self.history.events().iter().rev() {
@@ -214,12 +270,7 @@ impl Session {
             if !keep(event.seq) {
                 continue;
             }
-            for effect in result.effects.iter().rev() {
-                let path = match effect {
-                    Effect::FileRead(read) => &read.path,
-                    Effect::FileChanged(changed) => &changed.path,
-                    _ => continue,
-                };
+            for path in result.effects.iter().rev().filter_map(&pick) {
                 if seen.insert(path.clone()) {
                     paths.push(path.clone());
                 }

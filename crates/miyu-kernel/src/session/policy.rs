@@ -118,6 +118,17 @@ pub struct Rebuild {
     pub min_window: u64,
     /// 交给执行器的候选最多几个：有读不到、太大的，挑满要留余地。出厂 10。
     pub candidates: usize,
+    /// 用过的技能另算一组（施工 X-10 下）：没有的（以前造的快照）技能的正文照普通文件算。
+    pub skills: Option<SkillRebuild>,
+}
+
+/// 压后重建里用过的技能那一组的数（`09-压缩.md` 第四节，施工 X-10 下）：和重读的文件分开算，最近用过的优先。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SkillRebuild {
+    /// 单个最多多少 token，超了只进清单。出厂 5000。
+    pub tokens: u64,
+    /// 合计最多多少 token。出厂 25000。
+    pub total: u64,
 }
 
 /// 压缩用的数（`compaction.md`「对外的样子」的策略数据）。数值是数据，放在策略快照里。

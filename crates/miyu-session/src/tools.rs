@@ -65,6 +65,8 @@ pub(crate) struct Tools {
     seen: Arc<Seen>,
     /// 给每次调用写沙盒的：这台机器上的沙盒能用才有（施工 5-4 上）。
     sandbox: Option<Sandbox>,
+    /// 开着的技能文件夹，真实的位置（施工 X-10 下）：工具交回的读了它的 `SKILL.md` 的，效果里标上是哪个技能。
+    shelves: Vec<PathBuf>,
     /// 这个会话日志的只读入口（施工 6-4）。
     log: Log,
     /// 会话现在的时区：头报上来换了跟着换（施工 6-4）。
@@ -183,7 +185,7 @@ impl Tools {
                 kit.data_root.clone(),
                 (kit.sandbox_cache, kit.confined),
             )
-            .with_shelves(kit.shelves)
+            .with_shelves(kit.shelves.clone())
         });
         Tools {
             session: kit.session,
@@ -195,6 +197,7 @@ impl Tools {
             blobs: kit.blobs,
             seen: Arc::new(kit.seen),
             sandbox,
+            shelves: kit.shelves,
             log: kit.log,
             offset: kit.offset,
             job_ids: kit.job_ids,

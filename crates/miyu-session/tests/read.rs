@@ -124,6 +124,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             path: real.to_string_lossy().into_owned(),
             lines: Some([1, 1]),
             hash: ContentHash::of(b"hello\n"),
+            skill: None,
         })]
     );
     assert!(data.effects.is_empty());

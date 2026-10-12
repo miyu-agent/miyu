@@ -39,6 +39,7 @@ fn rebuilding_with(tail: u64, total: u64, todos: bool) -> Stage {
                 total,
                 min_window: 100,
                 candidates: 3,
+                skills: None,
             }),
             pause: None,
             shorten: None,

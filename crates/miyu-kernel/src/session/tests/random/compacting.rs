@@ -30,6 +30,7 @@ pub(super) fn random_policy(attended: bool, isolate: bool) -> Policy {
             total: 30,
             min_window: 100,
             candidates: 3,
+            skills: None,
         }),
         pause: Some(crate::session::Pause {
             failures: 3,

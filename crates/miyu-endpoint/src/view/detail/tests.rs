@@ -20,6 +20,7 @@ fn a_trashed_file_has_no_diff_and_a_read_is_not_a_file() {
         path: "/home/me/a.txt".to_string(),
         lines: None,
         hash: ContentHash::of(b"a\n"),
+        skill: None,
     });
     assert_eq!(file(&blobs, &read), None);
 }

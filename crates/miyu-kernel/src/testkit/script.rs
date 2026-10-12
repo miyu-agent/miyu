@@ -164,6 +164,8 @@ pub enum Play {
         path: String,
         /// 内容。
         text: String,
+        /// 读的是技能的 `SKILL.md`：技能的名字（施工 X-10 下）。
+        skill: Option<String>,
     },
     /// 派出去一个任务（施工 7-2）：结果是这段字，报 `job.started`。
     Starts {
@@ -191,6 +193,16 @@ impl Play {
         Play::Read {
             path: path.to_string(),
             text: text.to_string(),
+            skill: None,
+        }
+    }
+
+    /// 读了技能 `skill` 的 `SKILL.md`，真实的位置是 `path`，内容是 `text`（施工 X-10 下）。
+    pub fn skill(path: &str, text: &str, skill: &str) -> Play {
+        Play::Read {
+            path: path.to_string(),
+            text: text.to_string(),
+            skill: Some(skill.to_string()),
         }
     }
 

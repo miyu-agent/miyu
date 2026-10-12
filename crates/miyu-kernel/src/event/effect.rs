@@ -52,6 +52,10 @@ pub struct FileRead {
     pub lines: Option<[u64; 2]>,
     /// 读的时候整份文件的内容哈希，读了一段的也是整份的：改之前照它核对。
     pub hash: ContentHash,
+    /// 读的是开着的技能的 `SKILL.md`：技能的名字（施工 X-10 下，`10-自带软件.md` 第五节「用过的技能」）。执行器照开着的技能
+    /// 文件夹认，压后照它重建（`compaction.md` 第九条）。别的文件没有，不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skill: Option<String>,
 }
 
 /// `file.changed`：改了一个文件。改前改后的内容都存成了 blob，这里是它们的哈希。

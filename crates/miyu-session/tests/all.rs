@@ -61,6 +61,7 @@ mod private_media;
 mod questions;
 mod read;
 mod rebuild;
+mod rebuild_skills;
 mod report_up;
 mod restore;
 mod retire;

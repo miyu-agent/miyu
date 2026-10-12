@@ -2,7 +2,7 @@
 //! 重读的文件那一块的头尾，和重读几个、多大的数。以前造的快照里没有，读成没有：那些会话不写那几段、不重读。
 
 use miyu_assemble::RestoredWrap;
-use miyu_kernel::session::{Notes, Rebuild};
+use miyu_kernel::session::{Notes, Rebuild, SkillRebuild};
 use miyu_kernel::template::Template;
 use serde::{Deserialize, Serialize};
 
@@ -41,15 +41,32 @@ pub struct RebuildNumbers {
     pub min_window: u64,
     /// 交给执行器的候选最多几个。
     pub candidates: usize,
+    /// 用过的技能另算一组（施工 X-10 下）。以前造的快照里没有，读成没有：技能的正文照普通文件算；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skills: Option<SkillNumbers>,
+}
+
+/// 用过的技能那一组的数（`09-压缩.md` 第四节）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillNumbers {
+    /// 单个最多多少 token。
+    pub tokens: u64,
+    /// 合计最多多少 token。
+    pub total: u64,
 }
 
 /// 出厂的数（`compaction.md` 第九条）：最多 5 个，单个 5000，合计 50000，窗口 32000 以下不重读；候选多给一倍留余地。
+/// 用过的技能另算，单个 5000、合计 25000（施工 X-10 下）。
 pub const REBUILD: RebuildNumbers = RebuildNumbers {
     files: 5,
     file_tokens: 5_000,
     total: 50_000,
     min_window: 32_000,
     candidates: 10,
+    skills: Some(SkillNumbers {
+        tokens: 5_000,
+        total: 25_000,
+    }),
 };
 
 impl RebuildNumbers {
@@ -61,6 +78,10 @@ impl RebuildNumbers {
             total: self.total,
             min_window: self.min_window,
             candidates: self.candidates,
+            skills: self.skills.map(|skills| SkillRebuild {
+                tokens: skills.tokens,
+                total: skills.total,
+            }),
         }
     }
 }

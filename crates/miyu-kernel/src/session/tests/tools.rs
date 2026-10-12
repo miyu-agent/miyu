@@ -70,6 +70,7 @@ fn a_step_runs_its_calls_then_asks_again() {
         path: "/home/me/src/miyu/a".to_string(),
         lines: Some([1, 1]),
         hash: ContentHash::of(b"a\n"),
+        skill: None,
     })];
     let mut with_said = done(call(6, 1), "a");
     if let Input::ToolDone {

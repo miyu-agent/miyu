@@ -22,6 +22,7 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
                 path: text(&path),
                 lines,
                 hash,
+                skill: None,
             }),
             miyu_tool::Effect::Changed {
                 path,
@@ -44,6 +45,33 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
         })
         .collect()
 }
+
+/// 读了开着的技能文件夹 `shelves`（真实的位置）里的 `SKILL.md` 的，`file.read` 标上技能的名字（文件夹的名字，施工 X-10 下，
+/// `10-自带软件.md` 第五节「用过的技能」）：压后照它重建。别的照原样。只比路径，不碰磁盘。
+pub(crate) fn skilled(effects: Vec<Effect>, shelves: &[PathBuf]) -> Vec<Effect> {
+    effects
+        .into_iter()
+        .map(|effect| match effect {
+            Effect::FileRead(mut read) => {
+                let path = Path::new(&read.path);
+                let skill = path
+                    .parent()
+                    .filter(|dir| {
+                        path.file_name() == Some(SKILL_FILE.as_ref())
+                            && shelves.iter().any(|shelf| shelf == dir)
+                    })
+                    .and_then(Path::file_name)
+                    .map(|name| name.to_string_lossy().into_owned());
+                read.skill = read.skill.or(skill);
+                Effect::FileRead(read)
+            }
+            other => other,
+        })
+        .collect()
+}
+
+/// 技能文件的名字。
+const SKILL_FILE: &str = "SKILL.md";
 
 /// 照内核的效果记下她看过的文件：读过的记读的时候整份的哈希，写过的记改后的。移进了回收站的，不在了。
 pub(crate) fn saw(seen: &mut Seen, effects: &[Effect]) {

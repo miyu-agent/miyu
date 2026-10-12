@@ -70,6 +70,7 @@ fn changed_contents_become_blobs_and_the_rest_pass_through() {
                 path: text.clone(),
                 lines: Some([1, 2]),
                 hash: ContentHash::of(b"old\n"),
+                skill: None,
             }),
             Effect::FileChanged(FileChanged {
                 path: text.clone(),
@@ -122,6 +123,7 @@ fn read(path: &str, content: &[u8]) -> Effect {
         path: path.to_string(),
         lines: None,
         hash: ContentHash::of(content),
+        skill: None,
     })
 }
 
@@ -221,4 +223,37 @@ fn a_started_job_passes_through_and_is_not_a_seen_file() {
     let mut seen = Seen::new();
     saw(&mut seen, &effects);
     assert!(seen.is_empty());
+}
+
+/// 读了开着的技能文件夹里的 `SKILL.md` 的标上技能的名字（施工 X-10 下）；同一个文件夹里的别的文件、别处的 `SKILL.md`、
+/// 别的效果不标；已经标了的照原样。
+#[test]
+fn reading_an_open_skill_file_marks_the_skill() {
+    let read = |path: &str, skill: Option<&str>| {
+        Effect::FileRead(FileRead {
+            path: path.to_string(),
+            lines: Some([1, 1]),
+            hash: ContentHash::of(b"x"),
+            skill: skill.map(str::to_string),
+        })
+    };
+    let shelves = [PathBuf::from("/d/skills/notes")];
+    let marked = skilled(
+        vec![
+            read("/d/skills/notes/SKILL.md", None),
+            read("/d/skills/notes/reference.md", None),
+            read("/w/SKILL.md", None),
+            read("/d/skills/other/SKILL.md", Some("other")),
+        ],
+        &shelves,
+    );
+    assert_eq!(
+        marked,
+        [
+            read("/d/skills/notes/SKILL.md", Some("notes")),
+            read("/d/skills/notes/reference.md", None),
+            read("/w/SKILL.md", None),
+            read("/d/skills/other/SKILL.md", Some("other")),
+        ]
+    );
 }

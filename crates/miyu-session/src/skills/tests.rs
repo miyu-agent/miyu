@@ -74,3 +74,23 @@ fn no_read_tool_or_no_skill_lists_nothing() {
     assert_eq!(listed(&[tool("shell")], &skills), None, "没有 read 读不了");
     assert_eq!(listed(&[tool(READ)], &[]), None);
 }
+
+/// 放开只读的文件夹换成真实的位置（施工 X-10 下）：经链接给的照它指到的地方，权限策略、沙盒、认用过的技能都照真实的位置比
+/// （macOS 上临时目录、数据根常在 `/var` 这个链接后面）。
+#[cfg(unix)]
+#[test]
+fn shelves_are_real_places() {
+    let base = std::env::temp_dir().join(format!("miyu-skills-shelves-{}", std::process::id()));
+    if base.exists() {
+        std::fs::remove_dir_all(&base).expect("删得了");
+    }
+    let real = base.join("real").join("notes");
+    std::fs::create_dir_all(&real).expect("建得了");
+    std::os::unix::fs::symlink(base.join("real"), base.join("link")).expect("建得了链接");
+    let mut via = skill("notes", "Take notes.");
+    via.dir = base.join("link").join("notes");
+    let found = shelves(&[via]);
+    let wanted = std::fs::canonicalize(&real).expect("在");
+    std::fs::remove_dir_all(&base).expect("删得了");
+    assert_eq!(found, [wanted]);
+}

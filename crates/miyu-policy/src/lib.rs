@@ -53,7 +53,7 @@ pub use pause::{PAUSE, PauseNumbers};
 pub use peers::{PEERS, PeerIdleTexts, PeerNumbers, PeerTexts};
 pub use preset::PresetPin;
 pub use private_media::PrivateMediaTexts;
-pub use rebuild::{REBUILD, RebuildNumbers, RebuildTexts};
+pub use rebuild::{REBUILD, RebuildNumbers, RebuildTexts, SkillNumbers};
 pub use recap::{RECAP, RecapNumbers, RecapTexts};
 pub use shorten::{SHORTEN, ShortenNumbers, ShortenTexts};
 pub use snapshot::{

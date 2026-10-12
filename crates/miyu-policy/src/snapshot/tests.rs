@@ -38,7 +38,7 @@ fn the_same_sources_give_the_same_bytes_and_they_read_back() {
     let text = crate::test_support::text_without_digest(&one);
     assert!(text.starts_with(r#"{"persona":"engineer","system":"You are a helpful software engineer.","core":{"checkpoint_open":"#), "{text}");
     assert!(
-        text.ends_with(r#""step_limit":null,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"line_percent":85,"margin_percent":5,"image":2000,"file":2000,"tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}},"jobs":{"report_chars":30000},"recap":{"turns":8,"tokens":8192},"title":{"tokens":1024,"chars":50,"tries":2},"peers":{"burst":5,"window":600,"unread":50,"watch_hours":12,"status_chars":200}}"#),
+        text.ends_with(r#""step_limit":null,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"line_percent":85,"margin_percent":5,"image":2000,"file":2000,"tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10,"skills":{"tokens":5000,"total":25000}},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}},"jobs":{"report_chars":30000},"recap":{"turns":8,"tokens":8192},"title":{"tokens":1024,"chars":50,"tries":2},"peers":{"burst":5,"window":600,"unread":50,"watch_hours":12,"status_chars":200}}"#),
         "{text}"
     );
     // 改一个字，哈希就变了。
@@ -181,7 +181,7 @@ fn the_tail_is_16000_and_older_snapshots_read_it_so() {
         .replace(RECAP_NUMBERS, "")
         .replace(TITLE_NUMBERS, "")
         .replace(PEER_NUMBERS, "");
-    let numbers = r#","tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}}}"#;
+    let numbers = r#","tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10,"skills":{"tokens":5000,"total":25000}},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}}}"#;
     assert!(text.ends_with(numbers), "{text}");
     let older = text.replace(numbers, "}}");
     let read = Snapshot::from_bytes(older.as_bytes()).unwrap();
@@ -237,12 +237,22 @@ fn rebuild_texts_and_numbers_go_in_and_older_snapshots_lack_them() {
         (5, 5_000, 50_000)
     );
     assert_eq!((rebuild.min_window, rebuild.candidates), (32_000, 10));
+    let skills = rebuild.skills.expect("用过的技能另算（施工 X-10 下）");
+    assert_eq!((skills.tokens, skills.total), (5_000, 25_000));
     let text = String::from_utf8(snapshot.to_bytes()).unwrap();
+    // X-10 下以前造的：重建的数里没有技能那一组，读成没有，技能照普通文件算；读进来再写出去一字不差。
+    let skills_json = r#","skills":{"tokens":5000,"total":25000}"#;
+    let before_skills = text.replacen(skills_json, "", 1);
+    assert_ne!(before_skills, text);
+    let read = Snapshot::from_bytes(before_skills.as_bytes()).unwrap();
+    let rebuild = read.policy().unwrap().compaction.unwrap().rebuild.unwrap();
+    assert!(rebuild.skills.is_none());
+    assert_eq!(read.to_bytes(), before_skills.as_bytes());
     let start = text.find(r#","rebuild":{"notes_files""#).unwrap();
     let close = r#""restored_close":"\n</file>\n"}"#;
     let end = start + text[start..].find(close).unwrap() + close.len();
     let older = text[..start].to_string() + &text[end..];
-    let older = older.replace(r#","rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10},"pause":{"failures":3,"turns":3,"refills":3}"#, "");
+    let older = older.replace(r#","rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10,"skills":{"tokens":5000,"total":25000}},"pause":{"failures":3,"turns":3,"refills":3}"#, "");
     let older = older.replace(
         r#","checkpoint_end":"Carry on from where the summary leaves off, without redoing work it records as done.\n</conversation-checkpoint>\n""#,
         "",

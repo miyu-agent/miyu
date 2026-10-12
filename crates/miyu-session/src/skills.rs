@@ -85,9 +85,13 @@ fn template(source: &str) -> Result<Template, String> {
     Ok(template)
 }
 
-/// 技能放开只读的文件夹：每个技能一个。
+/// 技能放开只读的文件夹：每个技能一个，换成真实的位置（换不成的照原样）：权限策略、沙盒、认用过的技能都照真实的位置比
+/// （施工 X-10 下）。碰磁盘，在阻塞线程里调。
 pub(crate) fn shelves(skills: &[Skill]) -> Vec<PathBuf> {
-    skills.iter().map(|skill| skill.dir.clone()).collect()
+    skills
+        .iter()
+        .map(|skill| std::fs::canonicalize(&skill.dir).unwrap_or_else(|_| skill.dir.clone()))
+        .collect()
 }
 
 /// 路径写给她看的样子：Windows 上反斜杠换成 `/`（转义会把反斜杠写成两个，她照抄就对不上；`/` 在 Windows 上一样认）。

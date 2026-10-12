@@ -43,6 +43,7 @@ impl Tools {
                     self.unclaimed(&effects);
                     return None;
                 };
+                let effects = effects::skilled(effects, &self.shelves);
                 effects::saw(Arc::make_mut(&mut self.seen), &effects);
                 let took_ms = millis(running.started.elapsed());
                 tracing::info!(

@@ -71,7 +71,9 @@ pub use input::{
 pub use limits::ContextLimits;
 pub use load::LoadError;
 pub use messages::Subagent;
-pub use policy::{Compaction, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, Titles};
+pub use policy::{
+    Compaction, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, SkillRebuild, Titles,
+};
 pub use report::Upward;
 pub use restore::{Expect, Step, StepAction};
 

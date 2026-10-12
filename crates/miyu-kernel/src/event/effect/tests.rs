@@ -32,6 +32,7 @@ fn the_three_kinds_round_trip() {
             path: "/home/me/src/lib.rs".to_string(),
             lines: Some([1, 37]),
             hash: hash(A),
+            skill: None,
         })
     );
     let changed = format!(
@@ -61,6 +62,7 @@ fn nothing_shown_has_no_lines_and_a_new_file_has_a_null_before() {
         path: "/e".to_string(),
         lines: None,
         hash: hash(EMPTY),
+        skill: None,
     });
     assert_eq!(
         serde_json::to_string(&empty).unwrap(),
@@ -177,4 +179,21 @@ fn broken_effects_are_errors() {
     ] {
         assert!(serde_json::from_str::<Effect>(json).is_err(), "{json}");
     }
+}
+
+/// 读的是技能的 `SKILL.md`（施工 X-10 下）：多一格 `skill`，照原样读回来；别的文件不写这一格（上面几条）。
+#[test]
+fn a_skill_read_carries_the_skill_name() {
+    let read = format!(
+        r#"{{"kind":"file.read","path":"/d/skills/notes/SKILL.md","lines":[1,9],"hash":"{A}","skill":"notes"}}"#
+    );
+    assert_eq!(
+        round_trip(&read),
+        Effect::FileRead(FileRead {
+            path: "/d/skills/notes/SKILL.md".to_string(),
+            lines: Some([1, 9]),
+            hash: hash(A),
+            skill: Some("notes".to_string()),
+        })
+    );
 }

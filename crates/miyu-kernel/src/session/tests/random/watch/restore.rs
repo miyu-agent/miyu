@@ -133,6 +133,7 @@ impl Watch {
             path: format!("/w/r{}.txt", n % 4),
             lines: Some([1, 2]),
             hash: ContentHash::of(b"read"),
+            skill: None,
         });
         let changed = |before| {
             Effect::FileChanged(FileChanged {

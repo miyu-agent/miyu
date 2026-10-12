@@ -218,13 +218,14 @@ impl Stage {
                 self.held_tools.push((call_id, *play));
                 Vec::new()
             }
-            Play::Read { path, text } => {
+            Play::Read { path, text, skill } => {
                 let mut done = self.done(call_id, false, &text);
                 if let Input::ToolDone { effects, .. } = &mut done {
                     effects.push(Effect::FileRead(FileRead {
                         path,
                         lines: Some([1, text.lines().count().max(1) as u64]),
                         hash: ContentHash::of(text.as_bytes()),
+                        skill,
                     }));
                 }
                 vec![done]

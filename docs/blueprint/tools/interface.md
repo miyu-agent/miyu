@@ -169,9 +169,10 @@
 #### 四、效果和她看过的
 
 1. 执行器照工具交回的先后，把效果换成内核的：`Read` → `file.read`；`Changed` → `file.changed`，改前（有的话）、改后各存一份 blob，记哈希；`Trashed` → `file.trashed`；`JobStarted` → `job.started`，照原样（施工 7-3）；`JobMessaged` → `job.messaged`，照原样（施工 7-7）。路径写成字。
-2. 照内核的效果记下她看过的：`file.read` 记读的时候整份的哈希；`file.changed` 记改后的哈希；`file.trashed` 从里面拿掉；不认识的种类不管。
-3. 新会话她看过的是空的；载入时照日志里每一条 `tool.result` 的效果照先后重建，现在还撤着的回合里的不算；撤销、恢复落了盘以后，照日志重算一遍。在跑的调用拿着的是交给它时的那一份。
-4. 谁用：`write`、`edit` 改一个已经在了的文件之前照它核对（`tools/write.md`）。
+2. 读了开着的技能文件夹（真实的位置）里的 `SKILL.md` 的，`file.read` 标上技能的名字（文件夹的名字，施工 X-10 下，`session/tools.md` 的 `Tools`、`crates/miyu-session/src/effects.rs` 的 `skilled`）：只比路径，不碰磁盘。
+3. 照内核的效果记下她看过的：`file.read` 记读的时候整份的哈希；`file.changed` 记改后的哈希；`file.trashed` 从里面拿掉；不认识的种类不管。
+4. 新会话她看过的是空的；载入时照日志里每一条 `tool.result` 的效果照先后重建，现在还撤着的回合里的不算；撤销、恢复落了盘以后，照日志重算一遍。在跑的调用拿着的是交给它时的那一份。
+5. 谁用：`write`、`edit` 改一个已经在了的文件之前照它核对（`tools/write.md`）。
 
 #### 五、给人看的说法
 

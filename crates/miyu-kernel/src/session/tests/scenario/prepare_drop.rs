@@ -176,6 +176,7 @@ fn rebuilding() -> Stage {
                 total: 30,
                 min_window: 100,
                 candidates: 3,
+                skills: None,
             }),
             pause: None,
             shorten: None,

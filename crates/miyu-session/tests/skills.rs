@@ -189,3 +189,46 @@ async fn a_loaded_session_keeps_its_list_and_still_reads_skills() {
         "列出来的那一块照快照"
     );
 }
+
+/// 她用真的 `read` 读技能（施工 X-10 下）：读 `SKILL.md` 的效果标上技能的名字（压后照它重建），读同一个文件夹里的参考资料
+/// 不标。
+#[tokio::test]
+async fn reading_the_skill_file_marks_the_skill_in_the_effect() {
+    let home = Home::new();
+    let skill = put(&home);
+    let reference = mine(&home, "skills").join("notes").join("reference.md");
+    std::fs::write(&reference, "参考\n").expect("写得进");
+    let reference = reference.to_string_lossy().into_owned();
+    let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let tools = Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来"))
+        .expect("合写法");
+    let read = |path: &str| serde_json::json!({ "file_path": path }).to_string();
+    let script = Script::new([
+        Play::calls(&[("read", read(&skill).as_str())]),
+        Play::calls(&[("read", read(&reference).as_str())]),
+        Play::Says("好。"),
+    ]);
+    let work = home.scratch.0.join("work");
+    std::fs::create_dir_all(&work).expect("建得了工作区");
+    let opening = Opening {
+        cwd: work.to_string_lossy().into_owned(),
+        ..Opening::default()
+    };
+    let handle = home
+        .create_full(&script, &tools, opening, Lines::default())
+        .await;
+    let log = turn(&home, &handle, "cmd-1").await;
+    let marks: Vec<Option<String>> = log
+        .iter()
+        .filter_map(|event| match &event.body {
+            Body::ToolResult(result) => Some(result.effects.clone()),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|effect| match effect {
+            miyu_kernel::event::Effect::FileRead(read) => Some(read.skill),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(marks, [Some("notes".to_string()), None], "{log:#?}");
+}

@@ -28,6 +28,7 @@ mod prepare_line;
 mod prepare_wait;
 mod present;
 mod rebuild;
+mod rebuild_skills;
 mod recap;
 mod redo;
 mod reminder;
