@@ -1,11 +1,14 @@
 //! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
-//! 列出来的那一块（施工 K-1 补，「列出来的那一块」）。
+//! 列出来的那一块（施工 K-1 补，「列出来的那一块」）；她写知识库在 `knowledge/write.rs`（施工 K-3，第七条）。
 //!
 //! 查记忆的账号下的全部库（`memory_account`：人格住在谁家，无人格的照属主，系统账号的照管理员），人格的 `persona.toml` 写了
 //! `[knowledge] bases` 的只要列着的、在的那几个（19 N11）。照这一刻的目录和人格文件算：建了库、改了人格，下一次就照新的。
 //! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::listed`] 再判一次。碰磁盘的在阻塞
 //! 线程里做。
 
+mod write;
+
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use miyu_kernel::id::AccountId;
@@ -14,7 +17,9 @@ use miyu_store::knowledge::{Knowledge, KnowledgeError, Skipped};
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_tool::load::{self, say};
-use miyu_tool::{KB_HITS, KbHit, KbPage, KbRefused, KnowledgePort, Pending};
+use miyu_tool::{
+    KB_HITS, KbHit, KbPage, KbRefused, KbSave, KbTrashed, KbWritten, KnowledgePort, Pending,
+};
 
 use crate::TARGET;
 use crate::blocking::blocking;
@@ -29,27 +34,47 @@ pub(crate) struct Listed {
     description: String,
 }
 
-/// 一个会话查知识库要的：核心一份的知识库、照哪个账号、哪个人格。
+/// 一个会话查知识库要的：核心一份的知识库、照哪个账号、哪个人格；挪进回收站照哪个家目录（施工 K-3）。
 pub(crate) struct Shelves {
     knowledge: Arc<Knowledge>,
     account: AccountId,
     persona: Option<String>,
     personas: Personas,
+    home: Option<PathBuf>,
 }
 
 impl Shelves {
-    /// 会话的知识库：照记忆的账号 `account`、人格 `persona`（几层是 `personas`）挑。
+    /// 会话的知识库：照记忆的账号 `account`、人格 `persona`（几层是 `personas`）挑；删的挪进 `home`（这台机器的家目录，
+    /// Linux 照它找回收站）的回收站。
     pub(crate) fn new(
         knowledge: Arc<Knowledge>,
         account: AccountId,
         persona: Option<String>,
         personas: Personas,
+        home: Option<PathBuf>,
     ) -> Shelves {
         Shelves {
             knowledge,
             account,
             persona,
             personas,
+            home,
+        }
+    }
+
+    /// 人格收窄成哪几个（`[knowledge] bases`）：没人格的、没写的、人格的文件没了的（会话照快照接着用）都是没有。
+    ///
+    /// # Errors
+    ///
+    /// 人格的文件读不了：为什么。
+    fn narrowing(&self) -> Result<Option<Vec<String>>, String> {
+        let Some(persona) = &self.persona else {
+            return Ok(None);
+        };
+        match self.personas.find(persona) {
+            Ok(found) => Ok(found.file.knowledge),
+            Err(PersonaError::NotFound(_)) => Ok(None),
+            Err(error) => Err(error.to_string()),
         }
     }
 
@@ -64,15 +89,7 @@ impl Shelves {
             .knowledge
             .ids(&self.account)
             .map_err(|error| error.to_string())?;
-        let Some(persona) = &self.persona else {
-            return Ok(ids);
-        };
-        let narrowed = match self.personas.find(persona) {
-            Ok(found) => found.file.knowledge,
-            Err(PersonaError::NotFound(_)) => None,
-            Err(error) => return Err(error.to_string()),
-        };
-        Ok(match narrowed {
+        Ok(match self.narrowing()? {
             Some(listed) => {
                 let mut kept: Vec<String> = Vec::new();
                 for id in listed {
@@ -190,6 +207,27 @@ impl KnowledgePort for Port {
         let shelves = Arc::clone(&self.0);
         Box::pin(async move { blocking(move || read(&shelves, kb, path, page)).await })
     }
+
+    fn save<'a>(&'a self, save: KbSave) -> Pending<'a, Result<KbWritten, KbRefused>> {
+        let shelves = Arc::clone(&self.0);
+        Box::pin(async move { blocking(move || write::save(&shelves, save)).await })
+    }
+
+    fn edit<'a>(
+        &'a self,
+        kb: String,
+        path: String,
+        old: String,
+        new: String,
+    ) -> Pending<'a, Result<KbWritten, KbRefused>> {
+        let shelves = Arc::clone(&self.0);
+        Box::pin(async move { blocking(move || write::edit(&shelves, kb, path, &old, &new)).await })
+    }
+
+    fn delete<'a>(&'a self, kb: String, path: String) -> Pending<'a, Result<KbTrashed, KbRefused>> {
+        let shelves = Arc::clone(&self.0);
+        Box::pin(async move { blocking(move || write::delete(&shelves, kb, path)).await })
+    }
 }
 
 /// 搜：写了 `kb` 的只搜它（她查不到的当没有），没写的搜她查得到的全部。
@@ -228,10 +266,22 @@ fn read(shelves: &Shelves, kb: String, path: String, page: usize) -> Result<KbPa
             page: found.page,
             pages: found.pages,
         }),
-        Err(KnowledgeError::UnknownBase) => Err(KbRefused::NoBase(kb)),
-        Err(KnowledgeError::UnknownDocument) => Err(KbRefused::NoDocument(kb, path)),
         Err(KnowledgeError::BadPage) => Err(KbRefused::NoPage(page)),
-        Err(error) => Err(failed(&error)),
+        Err(error) => Err(refused(error, kb, path)),
+    }
+}
+
+/// 知识库那一层的错写成她看的拒绝：库 `kb` 里的 `path` 那一篇。读不了、写不进的照实说，记一行。
+fn refused(error: KnowledgeError, kb: String, path: String) -> KbRefused {
+    match error {
+        KnowledgeError::UnknownBase => KbRefused::NoBase(kb),
+        KnowledgeError::UnknownDocument => KbRefused::NoDocument(kb, path),
+        KnowledgeError::Exists => KbRefused::Exists(kb, path),
+        KnowledgeError::TooLarge => KbRefused::TooLarge(path),
+        KnowledgeError::NoMatch => KbRefused::NoMatch(path),
+        KnowledgeError::Ambiguous(count) => KbRefused::Ambiguous(path, count),
+        KnowledgeError::Trash(why) => KbRefused::Trash(path, why),
+        error => failed(&error),
     }
 }
 

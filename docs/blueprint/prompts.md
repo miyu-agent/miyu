@@ -2477,6 +2477,116 @@ Nothing found.
 (Page {page} of {pages}.)
 ```
 
+#### `software/knowledge/kb_save/saved.txt`
+
+- 什么时候加进来：`kb_save` 新建了一篇（字段按 `notes`、`grammar.md` 填）
+- token：6（2026-10-12 量）
+- 为什么加：一句短话（施工 K-3）
+- 指纹：`aaf22b5f`
+
+```text
+Saved {path} in {kb}.
+```
+
+#### `software/knowledge/kb_save/appended.txt`
+
+- 什么时候加进来：`kb_save` 接在一篇后面
+- token：8（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`8ee9daf2`
+
+```text
+Appended to {path} in {kb}.
+```
+
+#### `software/knowledge/kb_save/created.txt`
+
+- 什么时候加进来：`kb_save` 建了库、写了一篇
+- token：9（2026-10-12 量）
+- 为什么加：她知道建了新库（施工 K-3）
+- 指纹：`21486876`
+
+```text
+Created knowledge base {kb} and saved {path}.
+```
+
+#### `software/knowledge/kb_edit/edited.txt`
+
+- 什么时候加进来：`kb_edit` 改好了
+- token：6（2026-10-12 量）
+- 为什么加：一句短话（施工 K-3）
+- 指纹：`5f8ea2ff`
+
+```text
+Edited {path} in {kb}.
+```
+
+#### `software/knowledge/kb_delete/trashed.txt`
+
+- 什么时候加进来：`kb_delete` 挪进了回收站
+- token：10（2026-10-12 量）
+- 为什么加：说清是挪进回收站、不是删没了（施工 K-3）
+- 指纹：`f3ddc2ea`
+
+```text
+Moved {path} in {kb} to the trash.
+```
+
+#### `software/knowledge/common/exists.txt`
+
+- 什么时候加进来：`kb_save` 新建的那一篇已经有了（字段按 `notes`、`grammar.md` 填）
+- token：16（2026-10-12 量）
+- 为什么加：不盖掉人写的：说清用 `append` 或 `kb_edit`（施工 K-3）
+- 指纹：`672c5b66`
+
+```text
+{path} already exists in {kb}. Use append, or kb_edit.
+```
+
+#### `software/knowledge/common/too-large.txt`
+
+- 什么时候加进来：写完超过 4 MiB（字段按 `grammar.md` 填）
+- token：8（2026-10-12 量）
+- 为什么加：一篇的上限同照文件补（施工 K-3）
+- 指纹：`fe90c96e`
+
+```text
+{path} would be too large.
+```
+
+#### `software/knowledge/common/no-match.txt`
+
+- 什么时候加进来：`kb_edit` 要换的原文找不到
+- token：10（2026-10-12 量）
+- 为什么加：同 `edit`：说清是原文对不上（施工 K-3）
+- 指纹：`d51ecbc2`
+
+```text
+The text to replace is not in {path}.
+```
+
+#### `software/knowledge/common/ambiguous.txt`
+
+- 什么时候加进来：`kb_edit` 要换的原文不止一处（字段按 `2` 填）
+- token：17（2026-10-12 量）
+- 为什么加：同 `edit`：多带上下文（施工 K-3）
+- 指纹：`05df7a5b`
+
+```text
+The text to replace appears {count} times in {path}. Include more around it.
+```
+
+#### `software/knowledge/common/trash.txt`
+
+- 什么时候加进来：`kb_delete` 挪不进回收站（字段按 `no trash on this disk` 填）
+- token：15（2026-10-12 量）
+- 为什么加：不吞错误，如实说（施工 K-3）
+- 指纹：`ae173d23`
+
+```text
+Could not move {path} to the trash: {error}.
+```
+
 #### `software/onebot/tool-results/skipped.txt`
 
 - 什么时候加进来：`skip_reply` 答的那一句（施工 O-26；O-38 改）
@@ -3867,6 +3977,48 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Read a document from your knowledge bases, a page at a time.",
   "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]}
+}
+```
+
+#### `software/knowledge/tools/kb_save.json`
+
+- 什么时候加进来：知识库这个包装着、预设开着的会话，一个库都没有也带（施工 K-3，2026-10-12 项目主人定；每次请求都带）
+- token：139（2026-10-12 照开发端点量，二十五件一起时的边际份量）
+- 为什么加：她把东西记进知识库：新建一篇、接在一篇后面，写到还没有的库就是建它（19 N14，施工 K-3）
+- 指纹：`f6b68ec7`
+
+```json
+{
+  "description": "Save text to your knowledge bases as a new document, or append to one. Saving to a knowledge base that doesn't exist yet creates it.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"text":{"type":"string"},"append":{"type":"boolean","description":"Add to the end of the document."},"about":{"type":"string","description":"What a new knowledge base is for, one sentence."}},"required":["kb","path","text"]}
+}
+```
+
+#### `software/knowledge/tools/kb_edit.json`
+
+- 什么时候加进来：同 `kb_search`：查得到至少一个库的会话（施工 K-3）
+- token：93（2026-10-12 量，同上）
+- 为什么加：照原文改一段（19 N14，施工 K-3；写法照 `edit`）
+- 指纹：`23e3e253`
+
+```json
+{
+  "description": "Replace text in a document in your knowledge bases. old must appear exactly once.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"old":{"type":"string"},"new":{"type":"string"}},"required":["kb","path","old","new"]}
+}
+```
+
+#### `software/knowledge/tools/kb_delete.json`
+
+- 什么时候加进来：同上
+- token：63（2026-10-12 量，同上）
+- 为什么加：整篇挪进系统回收站（19 N14，施工 K-3；照 `trash`，撤销得回来）
+- 指纹：`69e62328`
+
+```json
+{
+  "description": "Move a document in your knowledge bases to the trash.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"}},"required":["kb","path"]}
 }
 ```
 

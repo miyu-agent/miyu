@@ -1,4 +1,4 @@
-//! 两件工具输出里给她看的几句（`software/knowledge/<工具>/*.txt`，两件都要说的在 `software/knowledge/common/`），和给人看的
+//! 几件工具输出里给她看的几句（`software/knowledge/<工具>/*.txt`，两件都要说的在 `software/knowledge/common/`），和给人看的
 //! 说法的编号（`software/knowledge/<key>`，字在 `software/knowledge/human/<语言>.json`）。同记忆那个包的写法。
 
 use std::path::Path;
@@ -11,7 +11,7 @@ use miyu_tool::{Done, KbRefused};
 
 use crate::PACKAGE;
 
-/// 读好的几句，两件工具共用一份。
+/// 读好的几句，几件工具共用一份。
 #[derive(Clone)]
 pub(crate) struct Texts(Arc<All>);
 
@@ -26,6 +26,16 @@ pub(crate) struct All {
     pub(crate) plain: Template,
     pub(crate) nothing: Template,
     pub(crate) more: Template,
+    pub(crate) saved: Template,
+    pub(crate) appended: Template,
+    pub(crate) created: Template,
+    pub(crate) edited: Template,
+    pub(crate) trashed: Template,
+    exists: Template,
+    too_large: Template,
+    no_match: Template,
+    ambiguous: Template,
+    trash: Template,
 }
 
 impl Texts {
@@ -45,6 +55,16 @@ impl Texts {
             plain: text("kb_search", "plain", &["kb", "path"])?,
             nothing: text("kb_search", "nothing", &[])?,
             more: text("kb_read", "more", &["page", "pages"])?,
+            saved: text("kb_save", "saved", &["kb", "path"])?,
+            appended: text("kb_save", "appended", &["kb", "path"])?,
+            created: text("kb_save", "created", &["kb", "path"])?,
+            edited: text("kb_edit", "edited", &["kb", "path"])?,
+            trashed: text("kb_delete", "trashed", &["kb", "path"])?,
+            exists: text("common", "exists", &["kb", "path"])?,
+            too_large: text("common", "too-large", &["path"])?,
+            no_match: text("common", "no-match", &["path"])?,
+            ambiguous: text("common", "ambiguous", &["count", "path"])?,
+            trash: text("common", "trash", &["path", "error"])?,
         })))
     }
 
@@ -89,6 +109,27 @@ impl Texts {
             KbRefused::Failed(error) => {
                 self.error(&self.0.failed, "common/failed", &[("error", error)])
             }
+            KbRefused::Exists(kb, path) => self.error(
+                &self.0.exists,
+                "common/exists",
+                &[("kb", kb), ("path", path)],
+            ),
+            KbRefused::TooLarge(path) => {
+                self.error(&self.0.too_large, "common/too-large", &[("path", path)])
+            }
+            KbRefused::NoMatch(path) => {
+                self.error(&self.0.no_match, "common/no-match", &[("path", path)])
+            }
+            KbRefused::Ambiguous(path, count) => self.error(
+                &self.0.ambiguous,
+                "common/ambiguous",
+                &[("count", &count.to_string()), ("path", path)],
+            ),
+            KbRefused::Trash(path, error) => self.error(
+                &self.0.trash,
+                "common/trash",
+                &[("path", path), ("error", error)],
+            ),
         }
     }
 }

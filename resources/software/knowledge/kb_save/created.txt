@@ -1,0 +1,1 @@
+Created knowledge base {kb} and saved {path}.

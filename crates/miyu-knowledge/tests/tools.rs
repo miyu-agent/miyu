@@ -1,133 +1,29 @@
-//! 知识库的两件工具（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：参数，端口交回的几种，结果的句子逐字节比，
-//! 给人看的说法。端口是假的：真的在 `miyu-session` 里测。
+//! 知识库查的两件工具（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：参数，端口交回的几种，结果的句子逐字节比，
+//! 给人看的说法。端口是假的：真的在 `miyu-session` 里测。写的三件在 `writes.rs`（施工 K-3）。
 
-use std::path::Path;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, PoisonError};
 
-use miyu_kernel::block::Block;
-use miyu_kernel::time::UtcOffset;
-use miyu_tool::{
-    Call, Done, KbHit, KbPage, KbRefused, KnowledgePort, Pending, Progress, Stop, Tool,
-};
+use miyu_tool::{KbPage, KbRefused};
 
-/// 一个假端口：记下她要做的，照预先定好的交回。
-#[derive(Default)]
-struct Fake {
-    searched: Mutex<Vec<(String, Option<String>)>>,
-    read: Mutex<Vec<(String, String, usize)>>,
-    refuse: Option<KbRefused>,
-    hits: Vec<KbHit>,
-    page: Option<KbPage>,
-}
-
-impl KnowledgePort for Fake {
-    fn search<'a>(
-        &'a self,
-        query: String,
-        kb: Option<String>,
-    ) -> Pending<'a, Result<Vec<KbHit>, KbRefused>> {
-        self.searched
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push((query, kb));
-        let answer = self.refuse.clone().map_or(Ok(self.hits.clone()), Err);
-        Box::pin(async move { answer })
-    }
-
-    fn read<'a>(
-        &'a self,
-        kb: String,
-        path: String,
-        page: usize,
-    ) -> Pending<'a, Result<KbPage, KbRefused>> {
-        self.read
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push((kb, path, page));
-        let answer = match &self.refuse {
-            Some(refused) => Err(refused.clone()),
-            None => Ok(self.page.clone().expect("备了一页")),
-        };
-        Box::pin(async move { answer })
-    }
-}
-
-fn tools() -> Vec<Arc<dyn Tool>> {
-    miyu_knowledge::tools(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"))
-        .expect("读得出")
-}
-
-/// 用假端口 `port`（没有的是这个会话查不了知识库）调一次 `name`。
-async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> Done {
-    let tool = tools()
-        .into_iter()
-        .find(|tool| tool.spec().name == name)
-        .expect("有这件");
-    let call = Call {
-        args: args.to_string(),
-        cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Arc::default(),
-        stop: Stop::default(),
-        sandbox: None,
-        log: None,
-        offset: UtcOffset::from_minutes(0).expect("零时区"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: port.map(|port| port as Arc<dyn KnowledgePort>),
-        goals: None,
-        packages: None,
-        ids: None,
-    };
-    tool.run(call, Progress::new(|_| {})).await
-}
-
-fn text(done: &Done) -> String {
-    done.blocks
-        .iter()
-        .map(|block| match block {
-            Block::Text(text) => text.text.clone(),
-            other => panic!("只该有字：{other:?}"),
-        })
-        .collect()
-}
-
-fn said(done: &Done) -> String {
-    done.human
-        .as_ref()
-        .map(|said| said.key.clone())
-        .unwrap_or_default()
-}
-
-fn hit(kb: &str, path: &str, heading: &str, text: &str) -> KbHit {
-    KbHit {
-        kb: kb.to_string(),
-        path: path.to_string(),
-        heading: heading.to_string(),
-        text: text.to_string(),
-    }
-}
+use crate::support::*;
 
 #[tokio::test]
-async fn the_two_tools_are_there_and_only_read() {
+async fn the_five_tools_are_there_and_the_writers_write() {
     let names: Vec<String> = tools()
         .iter()
         .map(|tool| tool.spec().name.clone())
         .collect();
-    assert_eq!(names, ["kb_search", "kb_read"]);
+    assert_eq!(
+        names,
+        ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"]
+    );
     for tool in tools() {
-        assert_eq!(
-            tool.spec().access,
-            miyu_kernel::tool::Access::Read,
-            "{}",
-            tool.spec().name
-        );
+        let reads = ["kb_search", "kb_read"].contains(&tool.spec().name.as_str());
+        let access = match reads {
+            true => miyu_kernel::tool::Access::Read,
+            false => miyu_kernel::tool::Access::Write,
+        };
+        assert_eq!(tool.spec().access, access, "{}", tool.spec().name);
     }
 }
 

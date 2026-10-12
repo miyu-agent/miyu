@@ -44,6 +44,14 @@ pub(super) fn page(dir: &Path, path: &str, page: usize) -> Result<Page, Knowledg
 
 /// 库里的相对路径 `path` 对着的文件：合写法的、是文档、在库里、是个文件（不是链接）。
 fn locate(dir: &Path, path: &str) -> Option<PathBuf> {
+    let file = target(dir, path)?;
+    let metadata = std::fs::symlink_metadata(&file).ok()?;
+    metadata.is_file().then_some(file)
+}
+
+/// 库目录 `dir` 里的相对路径 `path` 照写法该在哪（不看在不在）：照 `/` 分，每一段不是空的、不以点开头、没有反斜杠和冒号，
+/// 最后一段是文档（扩展名）。不合的没有。读、写（施工 K-3）同一套。
+pub(super) fn target(dir: &Path, path: &str) -> Option<PathBuf> {
     let parts: Vec<&str> = path.split('/').collect();
     let good = parts
         .iter()
@@ -52,11 +60,11 @@ fn locate(dir: &Path, path: &str) -> Option<PathBuf> {
     if !good || !document(name) {
         return None;
     }
-    let file = parts
-        .iter()
-        .fold(dir.to_path_buf(), |path, part| path.join(part));
-    let metadata = std::fs::symlink_metadata(&file).ok()?;
-    metadata.is_file().then_some(file)
+    Some(
+        parts
+            .iter()
+            .fold(dir.to_path_buf(), |path, part| path.join(part)),
+    )
 }
 
 /// 照 [`PAGE`] 分页，截在字的边界上；空的是一页空的。

@@ -14,7 +14,7 @@ use super::{Base, Hit, Knowledge, KnowledgeError, Skipped};
 use crate::recall;
 
 /// 一个文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。
-const BIGGEST: u64 = 4 * 1024 * 1024;
+pub(super) const BIGGEST: u64 = 4 * 1024 * 1024;
 
 /// 算文档的扩展名（小写比）。
 pub(super) const EXTENSIONS: [&str; 3] = ["md", "markdown", "txt"];

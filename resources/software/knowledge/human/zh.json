@@ -9,6 +9,21 @@
       "name": "读文档",
       "subject": "path",
       "icon": "→"
+    },
+    "kb_save": {
+      "name": "记进知识库",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_edit": {
+      "name": "改知识库",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_delete": {
+      "name": "删知识库文档",
+      "subject": "path",
+      "icon": "←"
     }
   },
   "said": {
@@ -20,6 +35,16 @@
     "common/failed": "知识库现在用不了：{error}",
     "common/no-base": "没有知识库 {kb}",
     "common/no-document": "{kb} 里没有 {path}",
-    "common/no-page": "没有第 {page} 页"
+    "common/no-page": "没有第 {page} 页",
+    "kb_save/saved": "记进了 {kb} 的 {path}",
+    "kb_save/appended": "接在 {kb} 的 {path} 后面",
+    "kb_save/created": "建了知识库 {kb}，记进 {path}",
+    "kb_edit/edited": "改了 {kb} 的 {path}",
+    "kb_delete/trashed": "把 {kb} 的 {path} 挪进了回收站",
+    "common/exists": "{kb} 里已经有 {path}",
+    "common/too-large": "{path} 太大了",
+    "common/no-match": "{path} 里找不到要换的字",
+    "common/ambiguous": "{path} 里要换的字有 {count} 处",
+    "common/trash": "{path} 挪不进回收站：{error}"
   }
 }

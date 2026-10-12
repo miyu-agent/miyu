@@ -9,6 +9,21 @@
       "name": "Read document",
       "subject": "path",
       "icon": "→"
+    },
+    "kb_save": {
+      "name": "Save to knowledge",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_edit": {
+      "name": "Edit knowledge",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_delete": {
+      "name": "Delete document",
+      "subject": "path",
+      "icon": "←"
     }
   },
   "said": {
@@ -20,6 +35,17 @@
     "common/failed": "Knowledge bases unavailable: {error}",
     "common/no-base": "No knowledge base {kb}",
     "common/no-document": "No {path} in {kb}",
-    "common/no-page": "No page {page}"
+    "common/no-page": "No page {page}",
+    "kb_save/saved": "Saved {path} in {kb}",
+    "kb_save/appended": "Appended to {path} in {kb}",
+    "kb_save/created": "Created {kb}, saved {path}",
+    "kb_edit/edited": "Edited {path} in {kb}",
+    "kb_delete/trashed": "Moved {path} in {kb} to the trash",
+    "common/exists": "{path} already exists in {kb}",
+    "common/too-large": "{path} too large",
+    "common/no-match": "Text not found in {path}",
+    "common/ambiguous": "Text appears {count} times in {path}",
+    "common/ambiguous/one": "Text appears {count} time in {path}",
+    "common/trash": "Could not trash {path}: {error}"
   }
 }

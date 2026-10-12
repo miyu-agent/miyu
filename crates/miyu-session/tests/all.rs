@@ -30,6 +30,7 @@ mod http;
 mod jobs;
 mod jobs_stop;
 mod knowledge_tools;
+mod knowledge_write;
 mod limits;
 mod memory;
 mod memory_backfill;

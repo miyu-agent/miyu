@@ -24,9 +24,10 @@ use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_tool::{
-    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_READ, KB_SEARCH,
-    MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE, SESSION_USAGE,
-    SESSIONS, SHELL, SUBAGENT, Spawned, Spawning, TODOWRITE, is_subagent,
+    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
+    KB_READ, KB_SEARCH, MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND,
+    SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, Spawned, Spawning, TODOWRITE,
+    is_subagent,
 };
 
 use crate::TARGET;
@@ -161,9 +162,12 @@ impl Agents {
                 holds.memory != MemoryScope::Off
                     || ![REMEMBER, FORGET, MEMORY_SEARCH].contains(&spec.name.as_str())
             })
-            // 知识库的两件给查得到至少一个库的会话（施工 K-1 下，`knowledge.md`「怎么走」第六条）：本机的、场所的、子会话都给，
-            // 还照预设。
-            .filter(|spec| holds.knowledge || ![KB_SEARCH, KB_READ].contains(&spec.name.as_str()))
+            // 知识库的搜、读、改、删给查得到至少一个库的会话（施工 K-1 下、K-3，`knowledge.md`「怎么走」第六条）：本机的、
+            // 场所的、子会话都给，还照预设。新建那一件 `kb_save` 一个库都没有也给，好建第一个（施工 K-3，2026-10-12 项目主人定）。
+            .filter(|spec| {
+                holds.knowledge
+                    || ![KB_SEARCH, KB_READ, KB_EDIT, KB_DELETE].contains(&spec.name.as_str())
+            })
             // 提供者的工具照它给哪种会话挑（施工 O-2 上）。
             .filter(|spec| {
                 tools

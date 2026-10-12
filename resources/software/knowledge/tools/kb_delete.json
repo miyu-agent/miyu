@@ -1,0 +1,4 @@
+{
+  "description": "Move a document in your knowledge bases to the trash.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"}},"required":["kb","path"]}
+}

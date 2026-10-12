@@ -1,7 +1,10 @@
-//! 交给知识库的两件工具的端口（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：搜、读一页。
+//! 交给知识库的几件工具的端口（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：搜、读一页；写一篇、改一段、挪进
+//! 回收站（施工 K-3）。
 //!
 //! 工具只拿这个端口，不认识知识库的目录、索引、人格：执行器照这个会话造一个（实现在 `miyu-session`，查哪几个库照记忆的账号
 //! 和人格的收窄），碰磁盘的在阻塞线程里做。工具照它交回的写给她看的那几句。
+
+use std::path::PathBuf;
 
 use crate::Pending;
 
@@ -9,6 +12,14 @@ use crate::Pending;
 pub const KB_SEARCH: &str = "kb_search";
 /// 读知识库里一个文档的那件工具的名字。
 pub const KB_READ: &str = "kb_read";
+
+/// 新建、追加一篇的那件工具的名字（施工 K-3）：知识库这个包装着、预设开着就给，一个库都没有也给（好建第一个，2026-10-12
+/// 项目主人定）。
+pub const KB_SAVE: &str = "kb_save";
+/// 照原文改一段的那件工具的名字（施工 K-3）：同 `kb_search`，查得到至少一个库才给。
+pub const KB_EDIT: &str = "kb_edit";
+/// 把一篇挪进回收站的那件工具的名字（施工 K-3）：同上。
+pub const KB_DELETE: &str = "kb_delete";
 
 /// `kb_search` 最多给几块：一块最多 1200 字节（`miyu_recall::chunk::LIMIT`），五块六千字节上下，一次看得完（出厂值只在这一处，
 /// 以后要改再进配置）。
@@ -30,6 +41,58 @@ pub trait KnowledgePort: Send + Sync {
         path: String,
         page: usize,
     ) -> Pending<'a, Result<KbPage, KbRefused>>;
+
+    /// 写一篇（施工 K-3）：新建，或者 `append` 接在后面；库还没有的建这个库。
+    fn save<'a>(&'a self, save: KbSave) -> Pending<'a, Result<KbWritten, KbRefused>>;
+
+    /// 把库 `kb` 里 `path` 那一篇的 `old` 换成 `new`（施工 K-3）：`old` 得正好出现一次。
+    fn edit<'a>(
+        &'a self,
+        kb: String,
+        path: String,
+        old: String,
+        new: String,
+    ) -> Pending<'a, Result<KbWritten, KbRefused>>;
+
+    /// 把库 `kb` 里 `path` 那一篇挪进系统回收站（施工 K-3）。
+    fn delete<'a>(&'a self, kb: String, path: String) -> Pending<'a, Result<KbTrashed, KbRefused>>;
+}
+
+/// 写一篇要的（施工 K-3）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KbSave {
+    /// 哪个库：还没有的建它。
+    pub kb: String,
+    /// 库里的相对路径。
+    pub path: String,
+    /// 写进去的字。
+    pub text: String,
+    /// 接在这一篇后面（没有就新建）；不是的话新建，已经有了不写。
+    pub append: bool,
+    /// 建库时这个库是什么，一句：写进它的 `kb.toml`。库已经有了的不管。
+    pub about: Option<String>,
+}
+
+/// 写进去的一篇（施工 K-3）：工具照它报「改了文件」的效果，撤销时改回去。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KbWritten {
+    /// 文件在哪（绝对路径）。
+    pub path: PathBuf,
+    /// 改前的内容；新建的没有。
+    pub before: Option<Vec<u8>>,
+    /// 改后的内容。
+    pub after: Vec<u8>,
+    /// 这一次建了这个库。
+    pub created: bool,
+}
+
+/// 挪进回收站的一篇（施工 K-3）：工具照它报「挪进回收站」的效果，撤销时移回来。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KbTrashed {
+    /// 原来在哪（绝对路径）。
+    pub path: PathBuf,
+    /// 回收站里在哪，各平台自己的写法（同 `trash`）。
+    pub trash: String,
 }
 
 /// 搜到的一块。
@@ -65,6 +128,16 @@ pub enum KbRefused {
     NoDocument(String, String),
     /// 没有这一页。
     NoPage(usize),
+    /// 新建的那一篇已经有了：哪个库、哪一篇（施工 K-3）。
+    Exists(String, String),
+    /// 写完太大（施工 K-3）：哪一篇。
+    TooLarge(String),
+    /// 要换的原文找不到（施工 K-3）：哪一篇。
+    NoMatch(String),
+    /// 要换的原文不止一处（施工 K-3）：哪一篇、几处。
+    Ambiguous(String, usize),
+    /// 挪不进回收站（施工 K-3）：哪一篇、为什么。
+    Trash(String, String),
     /// 读不了：为什么。
     Failed(String),
 }

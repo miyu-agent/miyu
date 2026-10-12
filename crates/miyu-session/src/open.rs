@@ -120,6 +120,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             memory_account.clone(),
             name.clone(),
             personas.clone(),
+            home.map(Path::to_path_buf),
         ))
     });
     let listed = match shelves.clone() {

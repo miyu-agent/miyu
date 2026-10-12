@@ -8,6 +8,7 @@
 
 mod catch_up;
 mod read;
+mod write;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -21,6 +22,7 @@ use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
 pub use read::Page;
+pub use write::Written;
 
 /// 核心一份的知识库登记：开过的索引留着（一个库一个连接、一把补的锁）。
 #[derive(Debug)]
@@ -90,6 +92,16 @@ pub enum KnowledgeError {
     UnknownDocument,
     /// 没有这一页。
     BadPage,
+    /// 新建的那一篇已经有了（施工 K-3）。
+    Exists,
+    /// 写完超过一篇的上限（施工 K-3，同照文件补的 4 MiB）。
+    TooLarge,
+    /// 照原文换一段：原文在这一篇里找不到（施工 K-3）。
+    NoMatch,
+    /// 照原文换一段：原文不止一处，几处（施工 K-3）。
+    Ambiguous(usize),
+    /// 挪不进回收站：为什么（施工 K-3）。
+    Trash(String),
     /// 索引读写不了。
     Db(DbError),
     /// 目录、文件读不了：为什么。
@@ -108,6 +120,11 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::UnknownBase => write!(f, "unknown knowledge base"),
             KnowledgeError::UnknownDocument => write!(f, "unknown document"),
             KnowledgeError::BadPage => write!(f, "no such page"),
+            KnowledgeError::Exists => write!(f, "document already exists"),
+            KnowledgeError::TooLarge => write!(f, "document too large"),
+            KnowledgeError::NoMatch => write!(f, "text not found"),
+            KnowledgeError::Ambiguous(count) => write!(f, "text found {count} times"),
+            KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
             KnowledgeError::Db(error) => write!(f, "index: {error}"),
             KnowledgeError::Io(why) => write!(f, "{why}"),
         }

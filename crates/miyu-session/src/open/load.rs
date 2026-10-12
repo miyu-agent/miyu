@@ -346,13 +346,17 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
         Some(knowledge) => {
-            let (personas, persona, owner) =
-                (watching.clone(), snapshot.persona.clone(), owner.clone());
+            let (personas, persona, owner, home) = (
+                watching.clone(),
+                snapshot.persona.clone(),
+                owner.clone(),
+                home.map(Path::to_path_buf),
+            );
             Some(
                 blocking(move || {
                     let account =
                         personas.memory_account(persona.as_deref().unwrap_or_default(), &owner);
-                    Arc::new(Shelves::new(knowledge, account, persona, personas))
+                    Arc::new(Shelves::new(knowledge, account, persona, personas, home))
                 })
                 .await,
             )

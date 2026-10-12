@@ -1,0 +1,4 @@
+{
+  "description": "Replace text in a document in your knowledge bases. old must appear exactly once.",
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"old":{"type":"string"},"new":{"type":"string"}},"required":["kb","path","old","new"]}
+}

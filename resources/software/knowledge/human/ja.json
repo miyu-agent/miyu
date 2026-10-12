@@ -9,6 +9,21 @@
       "name": "文書を読む",
       "subject": "path",
       "icon": "→"
+    },
+    "kb_save": {
+      "name": "ナレッジに保存",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_edit": {
+      "name": "ナレッジを編集",
+      "subject": "path",
+      "icon": "←"
+    },
+    "kb_delete": {
+      "name": "文書を削除",
+      "subject": "path",
+      "icon": "←"
     }
   },
   "said": {
@@ -20,6 +35,16 @@
     "common/failed": "ナレッジベースを使えません：{error}",
     "common/no-base": "ナレッジベース {kb} はありません",
     "common/no-document": "{kb} に {path} はありません",
-    "common/no-page": "{page} ページはありません"
+    "common/no-page": "{page} ページはありません",
+    "kb_save/saved": "{kb} の {path} に保存しました",
+    "kb_save/appended": "{kb} の {path} に追記しました",
+    "kb_save/created": "ナレッジベース {kb} を作り、{path} に保存しました",
+    "kb_edit/edited": "{kb} の {path} を編集しました",
+    "kb_delete/trashed": "{kb} の {path} をごみ箱に移しました",
+    "common/exists": "{kb} にはもう {path} があります",
+    "common/too-large": "{path} が大きすぎます",
+    "common/no-match": "{path} に置き換える文字が見つかりません",
+    "common/ambiguous": "{path} に置き換える文字が {count} か所あります",
+    "common/trash": "{path} をごみ箱に移せません：{error}"
   }
 }

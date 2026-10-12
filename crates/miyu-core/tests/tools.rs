@@ -42,7 +42,10 @@ fn the_catalog_has_the_base_system() {
             "grep",
             "history",
             "jobs",
+            "kb_delete",
+            "kb_edit",
             "kb_read",
+            "kb_save",
             "kb_search",
             "memory_search",
             "packages",
@@ -78,7 +81,7 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         "没装长期目标，没有 goal"
     );
     let without_knowledge = names_without(&["knowledge"]);
-    for tool in ["kb_search", "kb_read"] {
+    for tool in ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"] {
         assert!(
             !without_knowledge.contains(&tool.to_string()),
             "没装知识库，没有 {tool}"
@@ -91,8 +94,8 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
     );
     assert_eq!(
         names_without(&["basesystem", "memory", "goal"]),
-        ["kb_read", "kb_search"],
-        "只装知识库（施工 K-1 下），只有它的两件"
+        ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
+        "只装知识库（施工 K-1 下、K-3），只有它的五件"
     );
     assert!(names_without(&["basesystem", "memory", "goal", "knowledge"]).is_empty());
 }

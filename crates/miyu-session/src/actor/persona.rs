@@ -21,7 +21,7 @@ use miyu_policy::{GuardTexts, RunTexts, Snapshot, ToolEntry};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::ResourceRoot;
-use miyu_tool::{Catalog, Edition, KB_READ, KB_SEARCH, Shelf};
+use miyu_tool::{Catalog, Edition, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE, KB_SEARCH, Shelf};
 
 use super::Actor;
 use crate::TARGET;
@@ -321,12 +321,15 @@ fn offered(
     )
 }
 
+/// 知识库的几件（施工 K-1 下两件，K-3 加了写的三件）。
+const KB_TOOLS: [&str; 5] = [KB_SEARCH, KB_READ, KB_SAVE, KB_EDIT, KB_DELETE];
+
 /// 工具面里知识库的几件，照名字排：比快照里的和这一刻该有的一样不一样。
 fn shelf_tools(face: &[ToolEntry]) -> Vec<&str> {
     let mut names: Vec<&str> = face
         .iter()
         .map(|entry| entry.name.as_str())
-        .filter(|name| [KB_SEARCH, KB_READ].contains(name))
+        .filter(|name| KB_TOOLS.contains(name))
         .collect();
     names.sort_unstable();
     names
@@ -334,7 +337,7 @@ fn shelf_tools(face: &[ToolEntry]) -> Vec<&str> {
 
 /// 知识库的几件换成这一刻该有的 `fresh` 里的（施工 K-1 下）：查得到的照现在的目录、预设补上，查不到的拿掉；别的照旧。
 fn reshelved(face: Vec<ToolEntry>, fresh: &[ToolEntry]) -> Vec<ToolEntry> {
-    let shelf = |entry: &ToolEntry| [KB_SEARCH, KB_READ].contains(&entry.name.as_str());
+    let shelf = |entry: &ToolEntry| KB_TOOLS.contains(&entry.name.as_str());
     face.into_iter()
         .filter(|entry| !shelf(entry))
         .chain(fresh.iter().filter(|entry| shelf(entry)).cloned())
