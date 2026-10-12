@@ -96,10 +96,11 @@ async fn a_child_session_does_its_task_and_is_listed_under_its_parent() {
     let read = |name: &str| std::fs::read_to_string(default_resources().join(name)).unwrap();
     let venue = read("core/jobs/subagent-venue.txt");
     let lines = read("core/permission-rule.txt") + &read("core/local-paths-rule.txt");
+    // 后面接着出厂技能那一段（施工 X-13 下）。
     assert!(
         snapshot
             .system
-            .ends_with(&format!("{}\n\n{}", venue.trim_end(), lines.trim_end())),
+            .contains(&format!("{}\n\n{}\n\n", venue.trim_end(), lines.trim_end())),
         "{}",
         snapshot.system
     );

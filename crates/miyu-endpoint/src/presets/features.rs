@@ -93,18 +93,19 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
         }
         listed.push(one);
     }
-    // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格，没写名字的照技能的名字；没有工具。
+    // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格挑这个连接的语言（施工 X-13 下），没写名字的照技能的
+    // 名字；没有工具。
     let mut skill_ids = BTreeSet::new();
     for skill in skills {
         let id = feature_id(&skill.head.name);
         let mut one = json!({
             "id": id,
-            "name": skill.head.display_name.as_ref().unwrap_or(&skill.head.name),
+            "name": pick(&skill.head.display_name, language).unwrap_or_else(|| skill.head.name.clone()),
             "on": file.opens_in(&id, skill.package.as_deref().unwrap_or_default()),
             "installed": true,
             "tools": [],
         });
-        if let Some(summary) = &skill.head.summary {
+        if let Some(summary) = pick(&skill.head.summary, language) {
             one["summary"] = json!(summary);
         }
         listed.push(one);

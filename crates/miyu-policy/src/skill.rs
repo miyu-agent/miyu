@@ -3,10 +3,13 @@
 //!
 //! - `name`：1 到 64 个字，只用小写字母、数字、`-`，不在头尾、不连着两个，和技能的文件夹同名；
 //! - `description`：给模型看的一句，不能空，超过 [`DESCRIPTION_CHARS`] 个字的截掉（格式的上限）；
-//! - `metadata` 里的 `display_name`、`summary`：给人看的名字、一句说明（双槽：给模型的和给人的分开）。
+//! - `metadata` 里的 `display_name`、`summary`：给人看的名字、一句说明（双槽：给模型的和给人的分开）；`_zh`、`_ja` 结尾的是那两种
+//!   语言的（施工 X-13 下）。
 //!
 //! 别的格子（`license`、`compatibility`、`allowed-tools`……）照格式认、不用。纯逻辑：进来的是文件夹的名字和文件里的字，出去的是
 //! 读好的样子，或者哪里不对。
+
+use std::collections::BTreeMap;
 
 use std::fmt;
 
@@ -34,10 +37,11 @@ pub struct SkillHead {
     pub name: String,
     /// 给模型看的一句：并成一行，截过的。
     pub description: String,
-    /// 给人看的名字；没写的没有。
-    pub display_name: Option<String>,
-    /// 给人看的一句说明；没写的没有。
-    pub summary: Option<String>,
+    /// 给人看的名字，照语言（施工 X-13 下）：`metadata` 的 `display_name` 算 `en`（也是别的语言没写时退回的那一份），
+    /// `display_name_zh`、`display_name_ja` 是另两种。格式的 `metadata` 只收字到字的表，不嵌套，语言写进键里。
+    pub display_name: BTreeMap<String, String>,
+    /// 给人看的一句说明，照语言：`summary`、`summary_zh`、`summary_ja`，同上。
+    pub summary: BTreeMap<String, String>,
 }
 
 /// 哪里不对。
@@ -114,9 +118,20 @@ pub fn read(dir: &str, text: &str) -> Result<SkillHead, SkillProblem> {
             .chars()
             .take(DESCRIPTION_CHARS)
             .collect(),
-        display_name: said(&metadata["display_name"]),
-        summary: said(&metadata["summary"]),
+        display_name: phrases(metadata, "display_name"),
+        summary: phrases(metadata, "summary"),
     })
+}
+
+/// `metadata` 里照语言写的一格：`<键>` 是 `en`，`<键>_zh`、`<键>_ja` 是另两种；没写的、空的不记。
+fn phrases(metadata: &Yaml, key: &str) -> BTreeMap<String, String> {
+    [("", "en"), ("_zh", "zh"), ("_ja", "ja")]
+        .into_iter()
+        .filter_map(|(suffix, language)| {
+            said(&metadata[format!("{key}{suffix}").as_str()])
+                .map(|text| (language.to_string(), text))
+        })
+        .collect()
 }
 
 /// 开头 `---` 和下一个 `---` 之间的字；没有的没有。文件开头的 BOM 不算，行尾的 `\r` 不算。

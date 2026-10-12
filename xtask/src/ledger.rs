@@ -33,8 +33,12 @@ const HUMAN: &str = "human";
 /// 资源目录最上一层的这个目录放模型资料，是数据，不发给模型，不登记（施工 6-3 上）。
 const DATA: &str = "models";
 
-/// 资源目录最上一层的这个目录放软件包（施工 9-1 上，F-8 上起一个文件夹一个包，`packages.md`）：给人看的名字、说明和程序名，不发给模型，不登记。
+/// 资源目录最上一层的这个目录放软件包（施工 9-1 上，F-8 上起一个文件夹一个包，`packages.md`）：清单是给人看的名字、说明和程序名，
+/// 不发给模型，不登记；包带的技能、脚本（施工 X-13 下）是给模型看的，照查（[`CARRIED`]）。
 const PACKAGES: &str = "packages";
+
+/// 包文件夹里给模型看的那几个子目录（施工 X-13 下）：技能的 `SKILL.md` 和参考资料，脚本的开头注释。
+const CARRIED: [&str; 2] = ["skills", "scripts"];
 
 /// 资源目录最上一层的这个目录放出厂的预设（施工 P-2 上，`presets.md`）：给人看的名字、说明和开关表，不发给模型，不登记。
 const PRESETS: &str = "presets";
@@ -118,8 +122,12 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
             // 给人看的字、模型资料、mermaid 的 style.json、net 的 link_preview.json 都不发给模型，不进登记簿（26 第十节，施工
             // 4-5 上、6-3 上、W-4、W-7）。QQ 桥原来 WebUI 的页面 `software/onebot/web/` 随施工 O-28 下去掉，网页软件的 `web/` 随施工
             // S-5 搬出核心仓库，豁免都一起去掉（施工 T-13）。
+            if prefix.is_empty() && name == PACKAGES {
+                carried(&entry.path(), &format!("{path}/"), files)?;
+                continue;
+            }
             if name == HUMAN
-                || (prefix.is_empty() && (name == DATA || name == PACKAGES || name == PRESETS))
+                || (prefix.is_empty() && (name == DATA || name == PRESETS))
                 || (prefix == SOFTWARE_DIR && DATA_PACKAGES.contains(&name.as_str()))
             {
                 continue;
@@ -132,6 +140,25 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
             && !CORE_DATA.contains(&path.as_str())
         {
             files.insert(path, std::fs::read(entry.path()).map_err(unreadable)?);
+        }
+    }
+    Ok(())
+}
+
+/// 出厂的软件包 `dir`（前缀 `prefix`）：每个包只查带的技能、脚本（[`CARRIED`]），清单这些不查。
+fn carried(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Result<(), String> {
+    let unreadable = |e: std::io::Error| format!("读不了 {}：{e}", dir.display());
+    for entry in std::fs::read_dir(dir).map_err(unreadable)? {
+        let entry = entry.map_err(unreadable)?;
+        if !entry.file_type().map_err(unreadable)?.is_dir() {
+            continue;
+        }
+        let package = entry.file_name().to_string_lossy().into_owned();
+        for sub in CARRIED {
+            let inner = entry.path().join(sub);
+            if inner.is_dir() {
+                walk(&inner, &format!("{prefix}{package}/{sub}/"), files)?;
+            }
         }
     }
     Ok(())
@@ -256,6 +283,10 @@ mod tests {
             ("software/onebot/venues.d/60-more.toml", "[[rule]]"),
             ("software/x/moderation.txt", "m"),
             ("packages/web/package.toml", "[package]"),
+            ("packages/kit/skills/notes/SKILL.md", "---"),
+            ("packages/kit/skills/notes/reference.md", "r"),
+            ("packages/kit/scripts/dice.py", "#!"),
+            ("packages/kit/page/index.html", "x"),
             ("core/packages/p.txt", "p"),
             ("presets/dev.toml", "[preset]"),
             ("core/presets/p.txt", "p"),
@@ -279,7 +310,8 @@ mod tests {
         // 群聊内核的出厂参数 software/onebot/defaults.toml、违规词表 moderation.txt、出厂的场所规则 venues.d/50-defaults.toml、桥自己的数
         // software/onebot/bridge.json、视图投影的工具分类 core/view.json 不登记，别的照查（别处叫 models、web、mermaid、net 的目录、别处的
         // defaults.toml、moderation.txt 和 bridge.json、别的包的 web/、venues.d/ 里别的文件、onebot 包里别的文件照查：只有正好这几处才豁免；
-        // QQ 桥原来 WebUI 的页面 software/onebot/web/ 随施工 O-28 下、最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。
+        // QQ 桥原来 WebUI 的页面 software/onebot/web/ 随施工 O-28 下、最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。软件包里
+        // 带的技能、脚本照查，清单、后台页这些不查（施工 X-13 下）。
         assert_eq!(
             found.keys().collect::<Vec<_>>(),
             [
@@ -289,6 +321,9 @@ mod tests {
                 "core/presets/p.txt",
                 "core/web/w.txt",
                 "core/x/view.json",
+                "packages/kit/scripts/dice.py",
+                "packages/kit/skills/notes/SKILL.md",
+                "packages/kit/skills/notes/reference.md",
                 "personas/x/prompts/persona.md",
                 "personas/x/prompts/persona.toml",
                 "software/onebot/judge/system.txt",

@@ -61,8 +61,9 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     home.until_turns(&session, 1).await;
     assert_eq!(read.calls().len(), 1, "造的会话读得到技能");
     let system = &first.requests()[0].1.system;
+    // 出厂包带的技能也列着（施工 X-13 下），照名字排：家目录里的这一个在前面。
     assert!(
-        system.ends_with(&format!("- notes: Take notes. ({skill})")),
+        system.contains(&format!("- notes: Take notes. ({skill})\n")),
         "{system}"
     );
     // 换一份核心，像重启过：会话从磁盘载入。
@@ -77,5 +78,10 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
         .into_iter()
         .map(|call| call.sandbox.expect("带着沙盒").spec.reveal.clone())
         .collect();
-    assert_eq!(reveals, [vec![folder.clone()], vec![folder]]);
+    // 出厂包带的技能文件夹也在里面（施工 X-13 下）。
+    assert_eq!(reveals.len(), 2);
+    assert!(
+        reveals.iter().all(|one| one.contains(&folder)),
+        "{reveals:?}"
+    );
 }

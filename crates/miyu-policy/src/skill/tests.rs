@@ -1,5 +1,7 @@
 //! 技能的开头（施工 X-10 上）：公开格式的几种写法读得出，写错的说哪里不对。
 
+use std::collections::BTreeMap;
+
 use super::*;
 
 fn skill(front: &str) -> String {
@@ -16,8 +18,8 @@ fn the_public_format_reads() {
         Ok(SkillHead {
             name: "pdf-processing".to_string(),
             description: "Extract PDF text, fill forms. Use when handling PDFs.".to_string(),
-            display_name: Some("PDF 处理".to_string()),
-            summary: Some("读 PDF、填表".to_string()),
+            display_name: BTreeMap::from([("en".to_string(), "PDF 处理".to_string())]),
+            summary: BTreeMap::from([("en".to_string(), "读 PDF、填表".to_string())]),
         })
     );
 }
@@ -50,7 +52,10 @@ fn long_descriptions_are_cut_to_the_format_limit() {
     let long = "字".repeat(DESCRIPTION_CHARS + 10);
     let head = read("a", &skill(&format!("name: a\ndescription: {long}\n"))).expect("读得出");
     assert_eq!(head.description.chars().count(), DESCRIPTION_CHARS);
-    assert_eq!((head.display_name, head.summary), (None, None));
+    assert_eq!(
+        (head.display_name, head.summary),
+        (BTreeMap::new(), BTreeMap::new())
+    );
 }
 
 #[test]
@@ -116,4 +121,24 @@ fn wrong_ones_say_what_is_wrong() {
 #[test]
 fn a_skill_is_the_feature_skill_dash_name() {
     assert_eq!(feature_id("pdf-processing"), "skill-pdf-processing");
+}
+
+/// 给人看的照语言（施工 X-13 下）：不带后缀的是 `en`，`_zh`、`_ja` 各是那一种；空的不记。
+#[test]
+fn names_for_people_come_in_each_language() {
+    let text = skill(
+        "name: a\ndescription: A.\nmetadata:\n  display_name: Write a skill\n  display_name_zh: 写技能\n  display_name_ja: \"\"\n  summary_zh: 照包的样子写\n",
+    );
+    let head = read("a", &text).expect("读得成");
+    assert_eq!(
+        head.display_name,
+        BTreeMap::from([
+            ("en".to_string(), "Write a skill".to_string()),
+            ("zh".to_string(), "写技能".to_string())
+        ])
+    );
+    assert_eq!(
+        head.summary,
+        BTreeMap::from([("zh".to_string(), "照包的样子写".to_string())])
+    );
 }

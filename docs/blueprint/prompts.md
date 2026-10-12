@@ -3039,6 +3039,88 @@ Make one concrete step of progress now, or end the goal — both calls are compl
 which you set yourself with the goal tool
 ```
 
+#### `packages/authoring/skills/package-creator/SKILL.md`
+
+- 什么时候加进来：同上，`skill-package-creator`
+- token：那一行 68；正文 741（2026-10-12 量）
+- 为什么加：同上：脚本的开头怎么写、参数和输出、沙盒，MCP 服务的写法，检查和装
+- 指纹：`951a813d`
+
+````text
+---
+name: package-creator
+description: "Write a Miyu package with scripts as new tools, or MCP servers. Use when asked to make a tool, a script or a package (写个工具、写脚本、做个包)."
+metadata:
+  display_name: Write a package
+  display_name_zh: 写脚本和包
+  summary: Turn scripts into tools in a package, check it, install it
+  summary_zh: 把脚本做成工具放进包里，检查后装上
+---
+
+# Write a package
+
+A package folder in the workspace, installed with the `package` tool, can carry skills (see skill-creator), scripts and MCP servers. Each script becomes one tool.
+
+## Layout
+
+```text
+<package-id>/
+├── package.toml
+└── scripts/
+    └── dice.py
+```
+
+```toml
+[package]
+name = { en = "Dice", zh = "掷骰子" }
+```
+
+The folder name is the package id. Do not write into the Miyu data folder: it is closed to file tools.
+
+## A script
+
+The tool name is the file name without its extension. The comment lines at the top describe it:
+
+```python
+#!/usr/bin/env python3
+# Description: Roll dice and return each face and the total.
+# Display name: Dice
+# 显示名称：掷骰子
+# Timeout: 30
+# Parameters:
+# {"type": "object", "properties": {"count": {"type": "integer"}, "sides": {"type": "integer"}}, "required": ["count", "sides"]}
+import json, os, random
+args = json.loads(os.environ["MIYU_ARGS_JSON"])
+faces = [random.randint(1, args["sides"]) for _ in range(args["count"])]
+print(json.dumps({"faces": faces, "total": sum(faces)}))
+```
+
+- `Description`: English, one or two short sentences; it is sent with every request.
+- `Parameters`: a JSON Schema object; it may span several comment lines. Leave it out for no parameters.
+- `Timeout`: seconds, 60 if left out. `Display name`, `显示名称`, `描述` are for people.
+- Arguments come as JSON in `MIYU_ARGS_JSON` and on standard input. Standard output is the result; a non-zero exit code is an error.
+- It runs like a command in the sandbox: it can write only in the workspace and `MIYU_SCRIPT_CACHE_DIR`. Use only what the machine already has (python3, sh); say in `Description` if it needs more.
+- Start with `#!`. Run it once with `shell` before packaging it.
+
+## MCP servers
+
+Add one `[[mcp]]` table per server:
+
+```toml
+[[mcp]]
+name = "files"
+command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/srv/notes"]
+```
+
+A package with MCP servers is installed off; the person turns it on in the package page.
+
+## Check and install
+
+1. `packages` with `path` set to the folder: lists the scripts it will add; anything under `skipped` will not load, fix it first.
+2. `package` with `install` set to the same folder. The person is asked first. New tools appear from the next turn.
+3. To change it, edit the files and install the folder again.
+````
+
 #### `software/knowledge/list/named.txt`
 
 - 什么时候加进来：只写了名字的库（字段按 `world`、`世界观` 填）
@@ -4479,6 +4561,82 @@ Skills you can use (read the file before following one):
 ```text
 No skills are available now.
 ```
+
+### 说明列进 system 第 4 块技能那一段（一行）；正文是她读的工具结果
+
+#### `packages/authoring/skills/skill-creator/SKILL.md`
+
+- 什么时候加进来：出厂包 `authoring` 装着、预设开着 `skill-skill-creator`、工具面上有 `read` 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
+- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算）；正文 667（2026-10-12 量）
+- 为什么加：出厂带两个技能（`skills.md`「定了的」第 5 条）：她自己写技能照包的样子写在工作区、`packages` 检查、`package` 装（设计 31 第六节第 2 条）；说明加引号那一条是 F-10 下上真模型写技能时撞上的
+- 指纹：`0b14cd5f`
+
+````text
+---
+name: skill-creator
+description: "Write a new Miyu skill or change one. Use when asked to make, write or improve a skill (写技能、做个技能)."
+metadata:
+  display_name: Write a skill
+  display_name_zh: 写技能
+  summary: Write a skill as a package, check it, install it
+  summary_zh: 照包的样子写一个技能，检查后装上
+---
+
+# Write a skill
+
+A skill is a folder with a `SKILL.md`: a short head that says when to use it, then a body that teaches one kind of task. You only see the name and description until you read the body, so the description decides when the skill gets used.
+
+## Where it goes
+
+Skills are installed as packages. Write the package in the workspace, then install it:
+
+```text
+<package-id>/
+├── package.toml
+└── skills/
+    └── <skill-name>/
+        └── SKILL.md      # plus any reference files the body points to
+```
+
+`package.toml` for a package that only carries skills and scripts has one table:
+
+```toml
+[package]
+name = { en = "Notes", zh = "笔记" }
+```
+
+The folder name is the package id: lowercase letters, digits, `-`, `_`, starting with a letter. Do not write into the Miyu data folder: it is closed to file tools.
+
+## The head
+
+```yaml
+---
+name: take-notes
+description: "Keep tidy notes in notes/. Use when asked to note, log or record something (记一下、做笔记)."
+metadata:
+  display_name: Take notes
+  display_name_zh: 记笔记
+  summary: Keeps notes in one place
+  summary_zh: 把笔记记在一个地方
+---
+```
+
+- `name`: 1 to 64 lowercase letters, digits and single `-`, the same as the folder.
+- `description`: English, what it does and when to use it, up to 1024 characters. A few words people really say may be in Chinese. Put it in double quotes: a bare `: ` inside breaks the YAML and the skill is skipped.
+- `metadata`: names and a one-line summary for people, `_zh` and `_ja` for other languages. Optional.
+
+## The body
+
+- One task per skill. Steps in order, short sentences, the commands or file formats to use.
+- Put long references in separate files next to `SKILL.md` and say when to read them.
+- Do not repeat what every task needs; write what is special to this one.
+
+## Check and install
+
+1. `packages` with `path` set to the package folder: it says whether it installs and lists the skills; anything under `skipped` will not load, fix it first.
+2. `package` with `install` set to the same folder. The person is asked before it is installed. The skill shows up from the next turn.
+3. To change it later, edit the files in the workspace and install the folder again: the same id replaces the old one.
+````
 
 ### system 第 4 块的头一行
 

@@ -1,0 +1,7 @@
+# 写技能、写包（施工 X-13 下，`docs/blueprint/skills.md`「定了的」第 5 条）：只带两个技能的出厂包，没有程序、没有开关；两个技能
+# 各算一个功能，预设里能关。她照它们在工作区里写包，用 `package` 装上（设计 31 第六节第 2 条）。给人看的字，不发给模型。
+
+[package]
+name = { en = "Authoring", zh = "写技能和包", ja = "スキルとパッケージの作成" }
+summary = { en = "How to write skills, scripts and packages", zh = "教她写技能、脚本和软件包", ja = "スキル・スクリプト・パッケージの書き方" }
+icon = "pencil"

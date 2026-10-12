@@ -26,8 +26,8 @@ fn skill(name: &str, description: &str) -> Skill {
         head: SkillHead {
             name: name.to_string(),
             description: description.to_string(),
-            display_name: None,
-            summary: None,
+            display_name: std::collections::BTreeMap::new(),
+            summary: std::collections::BTreeMap::new(),
         },
         file: dir.join("SKILL.md"),
         dir,

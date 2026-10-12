@@ -101,7 +101,7 @@ name = { en = "Greeting", zh = "问候语" }
        └── dice.py
    ```
 
-   - **技能**照公开的 Agent Skills 格式：`skills/<名字>/SKILL.md`，开头的 YAML 写 `name`（小写字母、数字、`-`，和文件夹同名）、`description`（给模型看，英文，说清是什么、什么时候用）；给人看的名字、一句说明写在 `metadata` 的 `display_name`、`summary` 里。AI 平时只看到名字和说明，用得上时自己读正文；文件夹里别的文件（参考资料、带的脚本）她也读得到，改不了。
+   - **技能**照公开的 Agent Skills 格式：`skills/<名字>/SKILL.md`，开头的 YAML 写 `name`（小写字母、数字、`-`，和文件夹同名）、`description`（给模型看，英文，说清是什么、什么时候用）；给人看的名字、一句说明写在 `metadata` 的 `display_name`、`summary` 里（英文），中文、日文另写 `display_name_zh`、`summary_zh`、`display_name_ja`、`summary_ja`。`description` 用双引号包起来：里面有「冒号加空格」的不加引号读不成。AI 平时只看到名字和说明，用得上时自己读正文；文件夹里别的文件（参考资料、带的脚本）她也读得到，改不了。
    - **脚本**一个文件一件工具，工具名照文件名（去掉扩展名，不合 `[A-Za-z0-9_-]` 的换成 `_`）。开头的注释写说明、参数：
 
      ```python
