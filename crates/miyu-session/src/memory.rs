@@ -36,7 +36,7 @@ pub use vectors::{LOCAL as EMBED_LOCAL, Query, Using, Vectors};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 
-use miyu_kernel::event::Event;
+use miyu_kernel::event::{Event, SessionCreated};
 use miyu_kernel::id::{AccountId, SessionId, VenueId};
 use miyu_policy::memory::MemoryScope;
 use miyu_recall::uses::{Use, UseFeed};
@@ -161,6 +161,7 @@ impl Memory {
 ///
 /// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）：搜以前的对话照谁在听挑，
 /// 一个场所里只搜得到这个场所的（第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
+/// `events` 是底子（分叉出来的支线才有，施工 R-13 三补）和这个会话自己的整份事件。
 #[expect(
     clippy::too_many_arguments,
     reason = "接上记忆要的几样各是一样，拼成一个结构体只为过这一条"
@@ -173,7 +174,7 @@ pub(crate) fn connect(
     persona: &str,
     session: &SessionId,
     venue: &VenueId,
-    events: &[Event],
+    events: (&[Event], &[Event]),
 ) -> (Option<Turns>, Option<Calls>) {
     let room = match scope {
         MemoryScope::Persona => Room::persona(account, persona),
@@ -183,7 +184,7 @@ pub(crate) fn connect(
     let Some(memory) = memory else {
         return (None, None);
     };
-    let turns = Turns::connect(&memory.turns, &room, session, venue, events);
+    let turns = Turns::connect(&memory.turns, &room, session, venue, events.0, events.1);
     let listener = Listener::of(account, owner, venue);
     (
         turns,
@@ -192,13 +193,19 @@ pub(crate) fn connect(
 }
 
 /// 会话的记忆的范围：子会话（`child`）不管交的、快照里的是什么都是 `off`（17 第二节，以前造的子会话快照里没有这一格）；
-/// 主会话照交的 `given`。
+/// 主会话照交的 `given`。分叉出来的支线不算子会话（[`subagent`]，施工 R-13 三补）。
 pub(crate) fn scope(child: bool, opened: bool, given: MemoryScope) -> MemoryScope {
     if child || !opened {
         MemoryScope::Off
     } else {
         given
     }
+}
+
+/// 会话是不是派出去的子代理：有父会话、不是分叉出来的（施工 R-13 三补）。分叉出来的支线（群里第二个人 @ 她时分的，C-8）照
+/// 父会话的记忆范围：群里她也照样记、照样想起（2026-10-11 项目主人定），支线也是。
+pub(crate) fn subagent(created: &SessionCreated) -> bool {
+    created.parent.is_some() && created.forked.is_none()
 }
 
 /// 一个会话的回合索引：它的回合库（用到才开）、增量的 `TurnFeed`。
@@ -224,12 +231,14 @@ impl Turns {
     /// 接上会话 `session`（在场所 `venue`）的回合索引，放在 `room` 那一间。在阻塞线程里调。
     ///
     /// `events` 是载入时读到的整份事件：照它铺回 `TurnFeed`，照回合库记着的照到哪以后的补上（一条都没照过的整份补）；
-    /// 新造的会话是空的，这时不开库。
+    /// 新造的会话是空的，这时不开库。分叉出来的支线另交底子 `base`（父会话到分叉点为止的，施工 R-13 三补）：只为认得那里
+    /// 还没回的人话，父会话的回合不在支线名下再记；别的会话是空的。
     pub(crate) fn connect(
         recall: &Arc<RecallIndexes>,
         room: &Room,
         session: &SessionId,
         venue: &VenueId,
+        base: &[Event],
         events: &[Event],
     ) -> Option<Turns> {
         let mut turns = Turns {
@@ -252,7 +261,7 @@ impl Turns {
                 tracing::warn!(target: TARGET, error = %error, "memory index not read");
                 None
             });
-        let (feed, changes) = TurnFeed::primed(events, mark);
+        let (feed, changes) = TurnFeed::primed_on(base, events, mark);
         turns.feed = feed;
         let used = turns.uses.prime(events, mark);
         if mark.is_none_or(|mark| mark < last.seq) {

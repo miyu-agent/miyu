@@ -155,9 +155,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             place(&created.venue, &place_resources, owner_is_admin).map_err(LoadError::Shipped)?;
         // 能选的池照快照读回（施工 8-8 补）：造会话时拼的那一份，不重拼。
         let pools = Agents::pools_in(&snapshot.tools);
-        // 快照里的范围已经照预设、有没有人格算过（施工 P-2 中、P-4 上），这里只再管子会话。
+        // 快照里的范围已经照预设、有没有人格算过（施工 P-2 中、P-4 上），这里只再管子会话；分叉出来的支线照父会话的
+        // （施工 R-13 三补）。
         let persona = snapshot.persona.as_deref().unwrap_or_default();
-        let scope = memory::scope(created.parent.is_some(), true, snapshot.memory_scope());
+        let scope = memory::scope(memory::subagent(&created), true, snapshot.memory_scope());
         let snapshotted = snapshotting.elapsed();
         let connecting = Instant::now();
         let turns = connect(
@@ -168,7 +169,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             persona,
             &id_of,
             &created.venue,
-            &events,
+            (base.as_deref().map_or(&[][..], Vec::as_slice), &events),
         );
         let remembered = remembered(&events);
         Ok((

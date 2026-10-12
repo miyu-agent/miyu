@@ -71,10 +71,21 @@ impl TurnFeed {
     /// 载入会话时：照整份事件 `events` 把状态铺回来，交回接着用的增量 `TurnFeed` 和照到 `after` 以后的改动（库里已经有了
     /// 前面的；`after` 是空的，库里一条都没照过，交回全部）。
     pub fn primed(events: &[Event], after: Option<Seq>) -> (TurnFeed, Vec<Change>) {
-        let mut feed = TurnFeed {
-            ended: Some(BTreeMap::new()),
-            ..TurnFeed::default()
-        };
+        TurnFeed::primed_on(&[], events, after)
+    }
+
+    /// 同 [`TurnFeed::primed`]，分叉出来的支线（施工 R-13 三补）：先看一遍底子 `base`（父会话到分叉点为止的），只为认得那里
+    /// 还没回的人话（支线那一轮的触发在底子里），底子里父会话的回合不交、不记；再照支线自己的 `events` 铺。
+    pub fn primed_on(
+        base: &[Event],
+        events: &[Event],
+        after: Option<Seq>,
+    ) -> (TurnFeed, Vec<Change>) {
+        let mut feed = TurnFeed::default();
+        for event in base {
+            feed.see(event);
+        }
+        feed.ended = Some(BTreeMap::new());
         let mut changes = Vec::new();
         for event in events {
             let seen = feed.see(event);

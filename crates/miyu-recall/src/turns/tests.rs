@@ -404,3 +404,26 @@ fn a_group_turn_opened_by_a_picture_alone_still_keeps_her_answer() {
         "只有图的那一句不占行"
     );
 }
+
+#[test]
+fn a_lane_hears_the_lines_from_its_base_but_puts_only_its_own_turns() {
+    // 施工 R-13 三补：分叉出来的支线，底子（父会话到分叉点为止）里有父会话的回合和还没回的人话；支线的回合照记下的几条
+    // 开，触发在底子里。底子里父会话的回合不再记一遍，支线自己的那一轮带着底子里那几句人话。
+    let base = [
+        said(2, ALICE, "早"),
+        started(3, Some(2)),
+        replied(4, 3, "早上好"),
+        ended(5, 3, "completed"),
+        said(6, BOB, "团子吃什么"),
+    ];
+    let own = [
+        responded(8, &[6]),
+        replied(9, 8, "猫粮加一点鸡胸肉"),
+        ended(10, 8, "completed"),
+    ];
+    let (_, changes) = TurnFeed::primed_on(&base, &own, None);
+    assert_eq!(
+        changes,
+        [Change::Put(item(8, "团子吃什么\n\n猫粮加一点鸡胸肉"))]
+    );
+}

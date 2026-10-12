@@ -19,7 +19,7 @@ use miyu_store::root::DataRoot;
 use crate::TARGET;
 use crate::open::current_policy;
 
-use super::{Turns, scope};
+use super::{Turns, scope, subagent};
 
 /// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。
 pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room) {
@@ -70,11 +70,20 @@ fn one(
     let hash = current_policy(&events).unwrap_or(&created.policy);
     let bytes = blobs.get(hash).map_err(|error| error.to_string())?;
     let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
-    let scope = scope(created.parent.is_some(), true, snapshot.memory_scope());
+    let scope = scope(subagent(created), true, snapshot.memory_scope());
     // 场所会话的回合也补（施工 R-13 下，同载入时，`memory.rs` 的 `connect`）：回合库记下它在哪个场所。
     if scope != MemoryScope::Persona || snapshot.persona.as_deref() != Some(persona) {
         return Ok(false);
     }
-    Turns::connect(recall, room, session, &created.venue, &events);
+    // 分叉出来的支线照载入时一样读底子（施工 R-13 三补）：父会话到分叉点为止的，认得那里还没回的人话。
+    let base = match &created.forked {
+        Some(forked) => read_events(&root.session_dir(account, &forked.from))
+            .map_err(|error| error.to_string())?
+            .into_iter()
+            .take_while(|event| event.seq <= forked.upto)
+            .collect(),
+        None => Vec::new(),
+    };
+    Turns::connect(recall, room, session, &created.venue, &base, &events);
     Ok(true)
 }
