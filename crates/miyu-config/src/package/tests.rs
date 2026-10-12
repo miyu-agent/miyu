@@ -146,7 +146,16 @@ fn every_package_field_is_checked() {
     assert_eq!(
         wrong(&nothing),
         (Code::MissingKey, None),
-        "程序、吉祥物都没带"
+        "写了 [command]、没有程序表"
+    );
+    // 程序、服务、吉祥物都没写的（施工 X-13 上）：只带技能、脚本的包，是 bundle。
+    let content = read("[package]\nname = { en = \"Notes\" }\n").expect("只写 [package] 的读得成");
+    assert_eq!(content.kind, PackageKind::Bundle);
+    assert_eq!(content.protocol, None);
+    assert_eq!(
+        wrong("[package]\nname = { en = \"Notes\" }\n\n[settings.x]\ntype = \"bool\"\n").0,
+        Code::WrongKind,
+        "不带程序的包没有配置项"
     );
     assert_eq!(
         wrong(&TUI.replace("[package]\n", "[package]\nkind = \"ui\"\n")),

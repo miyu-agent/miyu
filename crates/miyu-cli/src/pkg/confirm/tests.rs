@@ -94,3 +94,21 @@ fn enter_or_yes_goes_on_and_anything_else_or_nothing_stops() {
     assert_eq!(out, "\n继续卸载？[Y/n] \n");
     assert_eq!(err, "已取消：没有确认（不问用 --yes）\n");
 }
+
+/// 只带技能、脚本的包（施工 X-13 上）：没有程序那一项，列出每个技能、脚本。
+#[test]
+fn skills_and_scripts_are_listed_by_name() {
+    let content = json!({"package": "notes", "skills": ["take-notes"], "scripts": ["dice"], "files": 3, "size": 9});
+    assert_eq!(
+        plan(&content, Doing::Install, &Language::Chinese),
+        [
+            "将安装 notes",
+            "包含：技能 take-notes、脚本 dice",
+            "大小：9 B，3 个文件"
+        ]
+    );
+    assert_eq!(
+        plan(&content, Doing::Install, &Language::English)[1],
+        "Includes: skill take-notes, script dice"
+    );
+}

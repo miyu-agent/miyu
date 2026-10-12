@@ -49,26 +49,7 @@ pub fn find(
     );
     for (place, package) in places {
         for (file, name) in files(&place) {
-            let head = match std::fs::read(&file) {
-                Ok(bytes) => match String::from_utf8(bytes) {
-                    Ok(text) => script::read(&name, &text),
-                    Err(_) => {
-                        skipped.push(Skipped {
-                            path: file,
-                            why: "not text".to_string(),
-                        });
-                        continue;
-                    }
-                },
-                Err(error) => {
-                    skipped.push(Skipped {
-                        path: file,
-                        why: format!("not readable: {error}"),
-                    });
-                    continue;
-                }
-            };
-            match head {
+            match head(&file, &name) {
                 Ok(head) if scripts.iter().any(|found| found.head.name == head.name) => {
                     skipped.push(Skipped {
                         path: file,
@@ -80,15 +61,28 @@ pub fn find(
                     file,
                     package: package.clone(),
                 }),
-                Err(problem) => skipped.push(Skipped {
-                    path: file,
-                    why: problem.to_string(),
-                }),
+                Err(why) => skipped.push(Skipped { path: file, why }),
             }
         }
     }
     scripts.sort_by(|a, b| a.head.name.cmp(&b.head.name));
     (scripts, skipped)
+}
+
+/// 包文件夹 `dir` 带的脚本的工具名（施工 X-13 上，装之前给人看）：`scripts/` 下开头读得成的，照文件名排。
+pub fn carried(dir: &Path) -> Vec<String> {
+    files(&dir.join("scripts"))
+        .into_iter()
+        .filter_map(|(file, name)| head(&file, &name).ok())
+        .map(|head| head.name)
+        .collect()
+}
+
+/// 读文件名是 `name` 的脚本 `file` 的开头：读不了、不是字、写错了的交回为什么。
+fn head(file: &Path, name: &str) -> Result<ScriptHead, String> {
+    let bytes = std::fs::read(file).map_err(|error| format!("not readable: {error}"))?;
+    let text = String::from_utf8(bytes).map_err(|_| "not text".to_string())?;
+    script::read(name, &text).map_err(|problem| problem.to_string())
 }
 
 /// `place` 下面的文件和它的名字，照名字排；没有这个目录的是空的。子文件夹、点开头的不算。

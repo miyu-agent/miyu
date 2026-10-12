@@ -32,9 +32,9 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 `status`：
 
 1. `program_missing`：要程序的包（扩展、界面、小程序），程序不在包文件夹的 `bin/`、也不在 `miyu` 旁边（找法同 `packages.md`「转交」，施工 F-8 上再补）。
-2. `off`：关着。扩展、`bundle` 的开关关着；出厂的包卸掉了（`removed: true`）。
+2. `off`：关着。扩展、带了服务的 `bundle` 的开关关着；出厂的包卸掉了（`removed: true`）。
 3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。`bundle` 照它带的 MCP 服务合起来算（施工 X-3 上）：有停下的 `stopped`，都在跑的 `running`，别的 `starting`；每个服务的状态、停下的原因随 X-4 给头。
-4. `ready`：别的。内置包装着，小程序、界面的程序在。
+4. `ready`：别的。内置包装着，小程序、界面的程序在；只带技能、脚本的 `bundle`（施工 X-13 上，没有开关，技能、脚本照预设开关）。
 
 头照它写「运行中」「启动中」「已停止」「已停用」「已启用」「程序未安装」。
 
@@ -56,8 +56,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 |---|---|---|---|---|
 | 扩展 | 开关开着 | 同 `extension.enable`（要批的能力照它的 `approve`、`needs_approval`） | 同 `extension.disable` | 同 `extension.restart`，再重启它带的 MCP 服务 |
 | 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在家目录记一笔） | `not_restartable` |
-| `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 | 重启它带的服务 |
-| 必需的、界面、小程序、吉祥物包 | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
+| 带了 MCP 服务的 `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 | 重启它带的服务 |
+| 必需的、界面、小程序、吉祥物包，只带技能、脚本的 `bundle`（施工 X-13 上） | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`；必需的 `package_required`。

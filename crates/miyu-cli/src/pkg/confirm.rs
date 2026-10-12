@@ -61,7 +61,8 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
     rows
 }
 
-/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、系统账号、MCP 服务、几项设置（卸的时候设置算在「一并删除」里）。
+/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、系统账号、MCP 服务、技能、脚本、几项设置（卸的时候设置算在「一并
+/// 删除」里）。
 fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let mut items = Vec::new();
     if let Some(kind) = preview["program"].as_str() {
@@ -85,6 +86,12 @@ fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     }
     for name in strings(&preview["mcp"]) {
         carried(Carried::Mcp(name));
+    }
+    for name in strings(&preview["skills"]) {
+        carried(Carried::Skill(name));
+    }
+    for name in strings(&preview["scripts"]) {
+        carried(Carried::Script(name));
     }
     if let Some(n) = preview["settings"]
         .as_u64()

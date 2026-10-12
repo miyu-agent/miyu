@@ -24,11 +24,12 @@ pub(crate) async fn installing(
     path: &Path,
 ) -> Result<Value, Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
-    let files = tokio::task::spawn_blocking(move || local::scan(&folder))
-        .await
-        .map_err(|_| Refusal::INTERNAL)?
-        .map_err(|_| Refusal::PATH_UNREADABLE)?;
-    let mut answer = carries(core, peer, &id, &manifest);
+    let (files, content) =
+        tokio::task::spawn_blocking(move || (local::scan(&folder), Content::of(&folder)))
+            .await
+            .map_err(|_| Refusal::INTERNAL)?;
+    let files = files.map_err(|_| Refusal::PATH_UNREADABLE)?;
+    let mut answer = carries(core, peer, &id, &manifest, &content);
     let now = core.packages();
     if let Some(old) = now.iter().find(|one| one.id == id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
@@ -45,12 +46,12 @@ pub(crate) fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value,
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
     let shipped = Packages::shipped(&core.resources).read();
-    let manifest = shipped
+    let one = shipped
         .iter()
         .find(|one| one.id == id)
-        .and_then(|one| one.read.as_ref().ok())
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    let mut answer = carries(core, peer, id, manifest);
+    let manifest = one.read.as_ref().map_err(|_| Refusal::UNKNOWN_PACKAGE)?;
+    let mut answer = carries(core, peer, id, manifest, &Content::of(&one.files_dir()));
     answer.insert("restores".into(), json!(true));
     Ok(Value::Object(answer))
 }
@@ -81,9 +82,32 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
     Ok(Value::Object(answer))
 }
 
+/// 包文件夹里带的技能、脚本（施工 X-13 上）：清单里写不出它们，照文件夹找。脚本装上就是这台机器上跑得起来的工具，同 MCP
+/// 服务，装之前给人看名字。碰磁盘。
+struct Content {
+    skills: Vec<String>,
+    scripts: Vec<String>,
+}
+
+impl Content {
+    fn of(dir: &Path) -> Content {
+        Content {
+            skills: miyu_store::skills::carried(dir),
+            scripts: miyu_store::scripts::carried(dir),
+        }
+    }
+}
+
 /// 一份清单带了什么：编号、版本（写了的）、程序（`ui`、`process`、`worker`、`builtin`，只带吉祥物的没有）、子命令名、后台页、
-/// 吉祥物、接哪个平台、系统账号、几个配置项、声明的能力（照连接的语言说，`extension.status` 那一格的样子）。没有的不写。
-fn carries(core: &Core, peer: Peer, id: &str, manifest: &Manifest) -> Map<String, Value> {
+/// 吉祥物、接哪个平台、系统账号、几个配置项、技能、脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
+/// 样子）。没有的不写。
+fn carries(
+    core: &Core,
+    peer: Peer,
+    id: &str,
+    manifest: &Manifest,
+    content: &Content,
+) -> Map<String, Value> {
     let mut answer = Map::new();
     answer.insert("package".into(), json!(id));
     if let Some(version) = &manifest.version {
@@ -122,6 +146,12 @@ fn carries(core: &Core, peer: Peer, id: &str, manifest: &Manifest) -> Map<String
     }
     if !manifest.settings.is_empty() {
         answer.insert("settings".into(), json!(manifest.settings.len()));
+    }
+    if !content.skills.is_empty() {
+        answer.insert("skills".into(), json!(content.skills));
+    }
+    if !content.scripts.is_empty() {
+        answer.insert("scripts".into(), json!(content.scripts));
     }
     if let Some(listed) = crate::extensions::described(core, manifest, peer.language) {
         answer.insert("capabilities".into(), listed);

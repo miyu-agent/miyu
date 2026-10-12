@@ -35,7 +35,7 @@
 
 **以前的写法**（`packages/<编号>.toml` 加同名目录）：核心起来读清单时，家目录那一层照它认出来，挪成 `<编号>/package.toml`，记一行运行日志 `INFO package moved`；文件夹里已经有一份 `package.toml` 的不覆盖，两份都留着，记 `WARN package not moved`（设计 31 第七节第 2 条）。写了 `[package] kind` 的清单（施工 F-8 上补以前）同时改成照表认的：去掉 `kind` 那一行，还没有对应的程序表的在末尾补一张空的（`miyu_config::package::without_kind`），记 `INFO package rewritten`；写的种类认不出的原样不动，读的时候报 `unknown_key`。资源目录在仓库里改好了，不改。
 
-**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包；都没有的报 `missing_key`。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle` 或 `mascot`）。
+**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle` 或 `mascot`）。
 
 ```toml
 [package]
@@ -121,7 +121,7 @@ program = "miyu-embed"
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
 | `worker` | `[package]`、`[worker]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7） |
-| `bundle` | `[package]`、`[[mcp]]`、`[mascot]`（施工 X-2） |
+| `bundle` | `[package]`、`[[mcp]]`、`[mascot]`（施工 X-2）；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
 
 施工 F-6 上加的两格（`package-pages.md`「清单多的几格」）：`[package] icon` 是 Lucide 的图标名，哪种包都能写；`[page] dir` 是软件后台页在包目录里的子目录，入口是里面的 `index.html`，只有扩展、内置包能写。
 
@@ -201,8 +201,8 @@ timeout_ms = 600000                               # 可以不写：一次调用�
 
 1. 一段一个服务，照写的先后；同一个包里服务名不重（重了 `bad_mcp`）。扩展包和 `bundle` 能写，别的种类写了 `wrong_kind`。`bundle` 只能写 `[package]`、`[[mcp]]`、`[mascot]`，不说协议（写了 `protocol` 报 `wrong_kind`：带的服务说的是 MCP，不是 Miyu 的协议）。
 2. 一个服务一个功能（2026-10-11 项目主人照推荐定，`mcp.md`）：编号 `mcp-<服务名>`，名字是服务名，接在包自己的功能后面（`Manifest::features_of`）；`bundle` 自己不另算一个。两个包带了同名的服务，功能编号撞了，后读到的那一份报 `feature_taken`、整份不收、报在那一段。这个服务的工具名是 `mcp__<服务名>__<工具名>`（X-3 登记），照前缀归它的功能；包自己的工具照包自己的功能算，MCP 服务的功能不算在「只有一个功能」里（`miyu_policy::features::Features::of_tool`）。
-3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。
-4. 起服务、登记工具、开关随施工 X-3：`bundle` 照扩展的办法开关，开关记在同一份 `system/extensions.json`，没写的关着；`status` 照它带的服务合起来算，`enabled` 照开关（施工 X-3 上，`mcp.md`、`package-pages.md`「开关」）。扩展包带的服务跟着扩展起停（施工 X-3 下）；卸包时服务的缓存、工作目录一起删。
+3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。包文件夹里带的技能、脚本（施工 X-13 上）也列：看一眼多 `skills`（技能名）、`scripts`（工具名），开头读得成的才列；`miyu pkg install` 照它印「技能 <名字>」「脚本 <名字>」。
+4. 起服务、登记工具、开关随施工 X-3：带了服务的 `bundle` 照扩展的办法开关（只带技能、脚本的没有开关，施工 X-13 上），开关记在同一份 `system/extensions.json`，没写的关着；`status` 照它带的服务合起来算，`enabled` 照开关（施工 X-3 上，`mcp.md`、`package-pages.md`「开关」）。扩展包带的服务跟着扩展起停（施工 X-3 下）；卸包时服务的缓存、工作目录一起删。
 
 ### 吉祥物包（施工 F-7，2026-10-11 项目主人定，终端界面的会话转来）
 

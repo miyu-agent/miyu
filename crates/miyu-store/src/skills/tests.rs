@@ -145,3 +145,16 @@ fn nothing_anywhere_is_empty() {
     let places = Places::new();
     assert_eq!(places.found(), (Vec::new(), Vec::new()));
 }
+
+/// 装之前给人看的（施工 X-13 上）：包文件夹 `skills/` 下开头读得成的技能名，照名字排；写错的、没有 `SKILL.md` 的不算。
+#[test]
+fn a_package_folder_says_which_skills_it_carries() {
+    let places = Places::new();
+    places.write("kit/skills/notes/SKILL.md", &skill("notes", "Take notes."));
+    places.write("kit/skills/alpha/SKILL.md", &skill("alpha", "First."));
+    places.write("kit/skills/bad/SKILL.md", &skill("other", "Wrong name."));
+    places.write("kit/skills/empty/README.md", "nothing");
+    let dir = places.scratch.path().join("kit");
+    assert_eq!(carried(&dir), ["alpha", "notes"]);
+    assert!(carried(&places.scratch.path().join("nothing")).is_empty());
+}

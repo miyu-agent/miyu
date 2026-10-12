@@ -76,10 +76,13 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
     match manifest.kind {
         PackageKind::Process => Ok(Switch::Extension),
         PackageKind::Builtin if layer == Layer::Shipped => Ok(Switch::Shipped),
-        PackageKind::Bundle => Ok(Switch::Bundle),
-        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => {
-            Err(Refusal::NOT_SWITCHABLE)
-        }
+        // 只带技能、脚本的没有开关（施工 X-13 上）。
+        PackageKind::Bundle if crate::packages::status::runs(manifest) => Ok(Switch::Bundle),
+        PackageKind::Builtin
+        | PackageKind::Ui
+        | PackageKind::Worker
+        | PackageKind::Mascot
+        | PackageKind::Bundle => Err(Refusal::NOT_SWITCHABLE),
     }
 }
 
@@ -138,7 +141,7 @@ pub(crate) async fn restart(
 ) -> Result<Value, Refusal> {
     let (manifest, _, _, removed) = find(core, &params.package)?;
     let id = params.package.as_str();
-    if !matches!(manifest.kind, PackageKind::Process | PackageKind::Bundle) {
+    if !crate::packages::status::runs(&manifest) {
         return Err(Refusal::NOT_RESTARTABLE);
     }
     if removed || !crate::extensions::switched_on(core, id, &manifest) {

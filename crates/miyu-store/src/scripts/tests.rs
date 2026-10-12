@@ -129,3 +129,17 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
 fn nothing_anywhere_is_empty() {
     assert_eq!(Places::new().found(), (Vec::new(), Vec::new()));
 }
+
+/// 装之前给人看的（施工 X-13 上）：包文件夹 `scripts/` 下开头读得成的工具名，照文件名排；写错的、子文件夹、点开头的不算。
+#[test]
+fn a_package_folder_says_which_scripts_it_carries() {
+    let places = Places::new();
+    places.write("kit/scripts/weather.py", &script("Weather."));
+    places.write("kit/scripts/b-dice.sh", &script("Dice."));
+    places.write("kit/scripts/broken.sh", b"#!/bin/sh\necho hi\n");
+    places.write("kit/scripts/.hidden.sh", &script("Hidden."));
+    places.write("kit/scripts/sub/inner.sh", &script("Inner."));
+    let dir = places.scratch.path().join("kit");
+    assert_eq!(carried(&dir), ["b-dice", "weather"]);
+    assert!(carried(&places.scratch.path().join("nothing")).is_empty());
+}

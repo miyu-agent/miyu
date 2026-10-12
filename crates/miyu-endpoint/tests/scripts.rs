@@ -293,3 +293,93 @@ async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     assert!(messages[1].contains("read"), "{reply}");
     assert!(messages[2].contains("description"), "{reply}");
 }
+
+/// 只带技能、脚本的包（施工 X-13 上）：清单只写 `[package]`；装之前的预览列出它带的技能、脚本；装上以后没有开关（状态是
+/// 就绪），技能列进新会话的 system、脚本登记成工具。
+#[tokio::test]
+async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
+    let home = Home::new();
+    let folder = home.work.join("notes");
+    std::fs::create_dir_all(folder.join("scripts")).expect("建得了");
+    std::fs::create_dir_all(folder.join("skills/take-notes")).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        "[package]\nname = { zh = \"笔记\" }\n",
+    )
+    .expect("写得进");
+    std::fs::write(folder.join("scripts/dice.py"), echo("dice")).expect("写得进");
+    std::fs::write(
+        folder.join("skills/take-notes/SKILL.md"),
+        "---\nname: take-notes\ndescription: Take notes.\n---\nbody\n",
+    )
+    .expect("写得进");
+    let script = Script::new([Play::Says("一。")]);
+    let core = core(&home, &script);
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let shown = client
+        .call(
+            "p1",
+            "package.install",
+            json!({"path": folder, "preview": true}),
+        )
+        .await;
+    let result = &shown["result"];
+    assert_eq!(
+        (
+            result["skills"].clone(),
+            result["scripts"].clone(),
+            result.get("program").cloned()
+        ),
+        (json!(["take-notes"]), json!(["dice"]), None),
+        "{shown}"
+    );
+    let installed = client
+        .call("i1", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "notes", "{installed}");
+    let listed = client.call("l1", "package.list", json!({})).await;
+    let entry = listed["result"]["packages"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{listed}"))
+        .iter()
+        .find(|one| one["package"] == "notes")
+        .cloned()
+        .unwrap_or_else(|| panic!("{listed}"));
+    assert_eq!(entry["status"], "ready", "{entry}");
+    assert!(entry.get("enabled").is_none(), "没有开关：{entry}");
+    let switched = client
+        .call("e1", "package.enable", json!({"package": "notes"}))
+        .await;
+    assert_eq!(
+        switched["error"]["data"]["reason"], "not_switchable",
+        "{switched}"
+    );
+    let restarted = client
+        .call("r1", "package.restart", json!({"package": "notes"}))
+        .await;
+    assert_eq!(
+        restarted["error"]["data"]["reason"], "not_restartable",
+        "{restarted}"
+    );
+    let work = home.work.to_string_lossy().into_owned();
+    session(
+        &mut client,
+        &home,
+        "c1",
+        json!({"cwd": work, "preset": "full"}),
+    )
+    .await;
+    let (_, request) = &script.requests()[0];
+    let tools: Vec<&str> = request
+        .tools
+        .iter()
+        .map(|tool| tool.name.as_str())
+        .collect();
+    assert_eq!(tools, ["dice", "read"]);
+    assert!(
+        request.system.contains("- take-notes: Take notes."),
+        "{}",
+        request.system
+    );
+}

@@ -60,16 +60,10 @@ pub fn find(
     for (place, package) in places {
         for (dir, name) in folders(&place) {
             let file = dir.join(FILE);
-            let head = match std::fs::read_to_string(&file) {
-                Ok(text) => skill::read(&name, &text),
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
-                Err(error) => {
-                    skipped.push(Skipped {
-                        path: file,
-                        why: format!("not readable: {error}"),
-                    });
-                    continue;
-                }
+            let head = match head(&file, &name) {
+                None => continue,
+                Some(Ok(head)) => Ok(head),
+                Some(Err(why)) => Err(why),
             };
             match head {
                 Ok(head) if skills.iter().any(|found| found.head.name == head.name) => {
@@ -84,15 +78,30 @@ pub fn find(
                     dir,
                     package: package.clone(),
                 }),
-                Err(problem) => skipped.push(Skipped {
-                    path: file,
-                    why: problem.to_string(),
-                }),
+                Err(why) => skipped.push(Skipped { path: file, why }),
             }
         }
     }
     skills.sort_by(|a, b| a.head.name.cmp(&b.head.name));
     (skills, skipped)
+}
+
+/// 包文件夹 `dir` 带的技能的名字（施工 X-13 上，装之前给人看）：`skills/` 下开头读得成的，照名字排。
+pub fn carried(dir: &Path) -> Vec<String> {
+    folders(&dir.join("skills"))
+        .into_iter()
+        .filter_map(|(folder, name)| head(&folder.join(FILE), &name)?.ok())
+        .map(|head| head.name)
+        .collect()
+}
+
+/// 读文件夹名是 `name` 的那份 `SKILL.md`（`file`）的开头：没有这个文件的没有；读不了、写错了的交回为什么。
+fn head(file: &Path, name: &str) -> Option<Result<SkillHead, String>> {
+    match std::fs::read_to_string(file) {
+        Ok(text) => Some(skill::read(name, &text).map_err(|problem| problem.to_string())),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => Some(Err(format!("not readable: {error}"))),
+    }
 }
 
 /// `place` 下面的子文件夹和它的名字，照名字排；没有这个目录的是空的。点开头的不算。

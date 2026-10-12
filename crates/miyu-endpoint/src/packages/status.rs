@@ -9,6 +9,16 @@ use miyu_store::packages::{Found, locate};
 use crate::Core;
 use crate::extensions::State;
 
+/// 有开关、起得来停得下的（施工 X-13 上）：扩展，带了 MCP 服务的 `bundle`。只带技能、脚本的 `bundle` 没有要起的东西，
+/// 技能、脚本照预设开关（`skills.md`）。
+pub(crate) fn runs(manifest: &Manifest) -> bool {
+    match manifest.kind {
+        PackageKind::Process => true,
+        PackageKind::Bundle => !manifest.mcp.is_empty(),
+        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => false,
+    }
+}
+
 /// 包的程序叫什么：扩展、界面照 `[command]`，小程序照 `[worker]`；内置包、吉祥物包、`bundle` 没有程序（`bundle` 带的 MCP
 /// 服务照它自己的命令起，施工 X-3）。
 fn program(manifest: &Manifest) -> Option<&str> {
@@ -90,7 +100,7 @@ pub(crate) fn status(
     if removed {
         return "off";
     }
-    if !matches!(manifest.kind, PackageKind::Process | PackageKind::Bundle) {
+    if !runs(manifest) {
         return "ready";
     }
     if !crate::extensions::switched_on(core, id, manifest) {
@@ -113,8 +123,8 @@ fn of_state(state: State) -> &'static str {
     }
 }
 
-/// `enabled`：有开关的才有（`package-pages.md`「开关」）。扩展、`bundle`（施工 X-3 上）照它的开关；出厂的、不是必需的内置包
-/// 照有没有卸掉；必需的、界面、小程序、吉祥物包没有。`shipped` 是出厂的那一层。
+/// `enabled`：有开关的才有（`package-pages.md`「开关」）。扩展、带了服务的 `bundle`（施工 X-3 上，[`runs`]）照它的开关；
+/// 出厂的、不是必需的内置包照有没有卸掉；必需的、界面、小程序、吉祥物包、只带技能脚本的 `bundle` 没有。`shipped` 是出厂的那一层。
 pub(crate) fn enabled(
     core: &Core,
     id: &str,
@@ -122,13 +132,10 @@ pub(crate) fn enabled(
     shipped: bool,
     removed: bool,
 ) -> Option<bool> {
-    match manifest.kind {
-        PackageKind::Process | PackageKind::Bundle => {
-            Some(!removed && crate::extensions::switched_on(core, id, manifest))
-        }
-        PackageKind::Builtin if shipped && !manifest.required => Some(!removed),
-        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => None,
+    if runs(manifest) {
+        return Some(!removed && crate::extensions::switched_on(core, id, manifest));
     }
+    (manifest.kind == PackageKind::Builtin && shipped && !manifest.required).then_some(!removed)
 }
 
 #[cfg(test)]
