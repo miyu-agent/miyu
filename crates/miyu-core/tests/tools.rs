@@ -48,6 +48,7 @@ fn the_catalog_has_the_base_system() {
             "kb_save",
             "kb_search",
             "memory_search",
+            "package",
             "packages",
             "read",
             "remember",

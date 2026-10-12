@@ -14,6 +14,7 @@ mod grep;
 mod human;
 mod human_history;
 mod jobs;
+mod package;
 mod packages;
 mod read;
 mod read_image;

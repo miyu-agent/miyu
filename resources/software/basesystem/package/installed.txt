@@ -1,0 +1,1 @@
+Installed {package}. Its tools and skills come in on the next turn.

@@ -283,3 +283,8 @@ impl fmt::Debug for Progress {
 /// 跑着的一次调用：交回结局的 future。掐掉就是丢掉它，工具手里的东西随之收拾；「叫它停」另有 [`Call::stop`] 的旗
 /// （施工 4-9 再补一）。
 pub type Running<'a> = Pin<Box<dyn Future<Output = Done> + Send + 'a>>;
+
+/// 问人之前先看一眼（施工 F-10 下，[`crate::Tool::preview`]）：成了是放进确认请求说明 `preview` 的那一份，不成的是照拒绝
+/// 交给她的那一份（写给她的字、给人看的说法）。
+pub type Previewing<'a> =
+    Pin<Box<dyn Future<Output = Result<serde_json::Value, Done>> + Send + 'a>>;

@@ -206,7 +206,8 @@ impl Guard {
         {
             return deny(confined.no_commands());
         }
-        if tool.outside_sandbox(&call) {
+        // 改装了什么的（施工 F-10 下）照沙盒外跑的同一张表：报的路径照判，再照级别：工作区每次问人、只读拒绝。
+        if tool.outside_sandbox(&call) || access == Access::Install {
             beyond(
                 verdict,
                 level,

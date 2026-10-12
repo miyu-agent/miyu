@@ -29,6 +29,8 @@
 //! `cline-pass/deepseek-v4.1-flash` 整张重量：十六件合计 2761 个 token；不算 `packages` 的十五件是 2676，比施工 D-3 量的 2360
 //! 多 316（其间 D-4 给 `shell` 加 `outside_sandbox` 这些改过说明；施工 O-26 在 2026-10-09 量的十五件也是 2676，对得上）。照同一个办法预算改成 3037 个 token（实测加一成），
 //! 合 10400 字节（9448 字节合 2761 个 token）。
+//! 施工 F-10 下加了 `package`（332 字节，边际份量 86）：2026-10-12 主会话照同一个端点整张重量，十七件合计 2847 个 token、9780
+//! 字节，还在预算里，预算不改。
 
 use std::path::Path;
 
@@ -52,7 +54,7 @@ fn the_tool_face_stays_within_its_budget() {
             files += 1;
         }
     }
-    assert_eq!(files, 16, "基础系统现在是十六件");
+    assert_eq!(files, 17, "基础系统现在是十七件");
     assert!(
         total <= BUDGET,
         "工具面的几份说明一共 {total} 字节，超过预算 {BUDGET}：重新量 token，再改预算（10-自带软件.md 第九节）"

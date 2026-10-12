@@ -21,6 +21,7 @@ mod guard;
 mod guard_confined;
 mod guard_dirs;
 mod guard_grants;
+mod guard_install;
 mod guard_thread;
 mod guard_venue;
 mod history;

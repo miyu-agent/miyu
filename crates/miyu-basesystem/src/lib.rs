@@ -20,6 +20,7 @@ mod grep;
 mod history;
 mod jobs;
 mod load;
+mod package;
 mod packages;
 mod pattern;
 mod read;
@@ -81,5 +82,6 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
         Arc::new(ask_user::AskUser::load(resources, common.clone())?),
         Arc::new(todowrite::TodoWrite::load(resources, common)?),
         Arc::new(packages::Packages::load(resources)?),
+        Arc::new(package::Package::load(resources)?),
     ])
 }

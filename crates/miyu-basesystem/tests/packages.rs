@@ -52,6 +52,18 @@ impl PackagesPort for Port {
         let inspected = self.inspected.clone();
         Box::pin(async move { inspected })
     }
+
+    fn install(&self, _path: PathBuf) -> Looking<'_> {
+        unreachable!("packages 不装")
+    }
+
+    fn removing(&self, _package: String) -> Looking<'_> {
+        unreachable!("packages 不卸")
+    }
+
+    fn remove(&self, _package: String) -> Looking<'_> {
+        unreachable!("packages 不卸")
+    }
 }
 
 fn refusal(reason: &str, problem: Option<&str>, line: Option<u64>) -> PackageRefusal {

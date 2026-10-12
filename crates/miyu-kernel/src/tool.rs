@@ -30,15 +30,18 @@ text_enum!(
         /// 在通讯平台的场所里做的事（施工 O-31 前，`kernel/tools.md`）：撤回、禁言、戳一戳这些。只在场所会话里能用，
         /// 权限策略放行、不问人；本机的会话里拒绝。谁能叫、能动谁由提供者照 `by`、`owner` 自己挡（`providers.md`）。
         Venue = "venue",
+        /// 改这台机器上装了什么（施工 F-10 下，`docs/blueprint/tools/package.md`）：装、卸软件包，打开扩展。算写入；权限策略
+        /// 照级别判：完全放开放行，工作区每次问人，只读拒绝。
+        Install = "install",
     }
 );
 
 impl Access {
-    /// 要不要写入：写文件的，和不认识的，按最严的算。只读时内核拦下的就是这些
+    /// 要不要写入：写文件的、改装了什么的（施工 F-10 下），和不认识的，按最严的算。只读时内核拦下的就是这些
     /// （`02-内核.md` 第六节「权限级别怎么切」「确认怎么走」）。在场所里做的事（[`Access::Venue`]）不算：只读管的是这台机器，
     /// 只读开着她照样能在群里回话，同理。
     pub fn writes(&self) -> bool {
-        matches!(self, Access::Write | Access::Other(_))
+        matches!(self, Access::Write | Access::Install | Access::Other(_))
     }
 }
 

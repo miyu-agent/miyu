@@ -37,7 +37,7 @@
 | `name` | 工具名，模型照它调：只用 ASCII 字母、数字、`_`、`-`，1 到 64 个字节 |
 | `description` | 给模型看的说明，英文，原样进 tools 数组 |
 | `parameters` | 参数的 JSON Schema，原样进 tools 数组，一个字节不改（`RawJson`）；必须是 `{"type":"object",…}` |
-| `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）；不认识的原样留着，按最严的算 |
+| `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
 
 **接口** `Tool`（`Send + Sync`）：
 
@@ -47,6 +47,7 @@
 | `targets(&Call)` | 这次调用要碰的路径、是读是写；默认一条都没有 |
 | `run(Call, Progress)` | 执行一次调用，交回 `Running`：一个交回 `Done` 的 future |
 | `venues()` | 给哪种会话（`Venues`：本机的、私聊、群）：提供者的工具照它挑；核心自带的没有，照工具面自己的规矩挑（施工 O-2 上，`providers.md`） |
+| `preview(Call)` | 问人之前先看一眼（施工 F-10 下，`tools/package.md`）：权限策略要问人时，执行器带着端口调它；成了的整份放进确认请求的说明 `preview`，不成的不问、照拒绝交给她；默认不看 |
 | `formerly()` | 以前的名字：改过名的工具，改名以前造的会话快照里冻着旧名字，她照旧名字调；默认没有（施工 7-5 再补，`tools/subagent.md`「以前的名字」） |
 
 **一次调用交给工具的** `Call`：
@@ -131,7 +132,7 @@
 #### 二、一次调用
 
 1. 内核先查（`kernel/`）：工具面上没有这个名字的、参数不是 JSON 对象的，当场记出错的结果；只读时写文件的（访问类别是 `write` 和不认识的）当场拦下。别的照参数格式修正参数：被写成字符串的数组、对象、整数、数字、布尔还原回去，声明成字符串的一个字节不碰，什么都没写的当成 `{}`。
-2. 轮到的先过权限策略（`crates/miyu-session/src/guard.rs`）：目录里没有这件工具的放行（执行时报用不了）；照 `targets` 报的路径判；一条都不报的，照访问类别判。交给 `targets` 的 `Call` 里 `seen` 是空的：报路径只看参数。
+2. 轮到的先过权限策略（`crates/miyu-session/src/guard.rs`）：目录里没有这件工具的放行（执行时报用不了）；照 `targets` 报的路径判；一条都不报的，照访问类别判。交给 `targets` 的 `Call` 里 `seen` 是空的：报路径只看参数。要问人、工具要先看一眼的（`preview`，施工 F-10 下）：执行器带着端口看，成了的放进说明，看不了的换成拒绝（`crates/miyu-session/src/tools/preview.rs`）。
 3. 派出去（`crates/miyu-session/src/tools.rs`）：
    1. 造 `Call`：`args` 是修正过的参数；`cwd` 是回合开始时的工作目录；`home` 是核心起来时读的系统家目录；`data_root` 是数据根；`seen` 是这个会话她看过的文件，共享一份；`log` 照会话的目录造，`offset` 是会话现在的时区（施工 6-4）；`agents` 照这一轮的工作目录、加进来的目录、派出去那一刻的权限造（施工 7-5，会话表交进来了端口才有）；`messages` 照内核这一刻交的派出去的子代理造（施工 7-7，同上）；`sessions` 本机的主会话才造（施工 C-3，同上）；`usage` 派的是 `session_usage`、开着用量汇总的才造（施工 8-15）。
    2. 快照里有、核心的目录里没有这件（核心升级拿掉了，老会话照样调）：不派，当场交回出错的结果（下面「执行器替工具写的两句」），没有用时。

@@ -360,9 +360,15 @@ impl Actor {
                 // 判要碰磁盘（换真实的位置、造边界表）：在阻塞线程里判，不占跑异步任务的线程，慢盘上只让这个会话
                 // 自己等（施工 4-9 再补四下：原来当场在这里判）。
                 let guard = Arc::clone(&self.guard);
+                let (asked, looked) = ((name.clone(), args.clone()), cwd.clone());
                 let verdict =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
+                // 要问人的先看一眼（施工 F-10 下）：装包问人的卡片照看一眼的那一份。
+                let verdict = self
+                    .tools
+                    .previewed(&asked.0, asked.1, looked, verdict)
+                    .await;
                 Some(Input::ToolGuarded {
                     at: self.clock.now(),
                     call_id,

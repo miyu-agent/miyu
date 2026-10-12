@@ -15,7 +15,10 @@ use serde_json::Value;
 /// 看软件包的那件工具的名字。
 pub const PACKAGES: &str = "packages";
 
-/// 看装了的软件包、看一个包文件夹。
+/// 装、卸软件包的那件工具的名字（施工 F-10 下，`docs/blueprint/tools/package.md`）。
+pub const PACKAGE: &str = "package";
+
+/// 看装了的软件包、看一个包文件夹；装、卸（施工 F-10 下）。
 pub trait PackagesPort: Send + Sync {
     /// 装了的和卸掉了的出厂包：同 `package.list` 的 `packages`。
     fn list(&self) -> Looking<'_>;
@@ -26,6 +29,16 @@ pub trait PackagesPort: Send + Sync {
     /// 包文件夹 `path`（绝对路径）装上会是什么样：同 `package.install {path, preview: true}`。装不上的照真装那样拒（写错的
     /// 带上哪里不对、第几行）。
     fn inspect(&self, path: PathBuf) -> Looking<'_>;
+
+    /// 装包文件夹 `path`（绝对路径，施工 F-10 下）：同 `package.install {path}`，交回装上的那一项（同 `package.list` 的一项）。
+    /// 写错的、撞了的照协议拒。
+    fn install(&self, path: PathBuf) -> Looking<'_>;
+
+    /// 卸之前看一眼（施工 F-10 下）：同 `package.remove {package, preview: true}`。
+    fn removing(&self, package: String) -> Looking<'_>;
+
+    /// 卸包 `package`（施工 F-10 下）：同 `package.remove {package}`。
+    fn remove(&self, package: String) -> Looking<'_>;
 }
 
 /// 端口的 future：成了交回那一份，不成交回为什么。

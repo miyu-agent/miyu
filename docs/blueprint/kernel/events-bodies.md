@@ -288,7 +288,7 @@
 | `rule` | 原样的 JSON | 可以没有 | 提的放行规则：选本会话都允许、这个工作区以后都允许时，放行的就是它。没提的，只能选允许这一次或者拒绝 |
 | `detail` | 原样的 JSON | 可以没有 | 给头看的：为什么要问 |
 
-`rule`、`detail` 的写法由提问的模块定，内核原样记，不看里面（权限策略写的样子见 `session/guard.md` 第五条）。例如越过沙盒跑一条命令（施工 D-4）：`{"call_id":"…","access":"execute","detail":{"command":"touch ~/Downloads/x.txt","sandbox":false,"title":"Create a file","tool":"shell"}}`，没有 `rule`：只能选允许这一次或者拒绝。
+`rule`、`detail` 的写法由提问的模块定，内核原样记，不看里面（权限策略写的样子见 `session/guard.md` 第五条）。例如越过沙盒跑一条命令（施工 D-4）：`{"call_id":"…","access":"execute","detail":{"command":"touch ~/Downloads/x.txt","sandbox":false,"title":"Create a file","tool":"shell"}}`，没有 `rule`：只能选允许这一次或者拒绝。装包（施工 F-10 下，`tools/package.md`）：`{"call_id":"…","access":"install","detail":{"install":"/home/me/work/notes","preview":{"package":"notes","skills":["take-notes"],"scripts":["dice"],"files":3,"size":713},"tool":"package"}}`：`preview` 是装之前看一眼的那一份（同 `package.install` 带 `preview` 的回应；卸的是 `package.remove` 带 `preview` 的），头照命令行 `miyu pkg install` 那样列；也没有 `rule`。
 
 **`tool.approval_decided`**：人对一个请求的决定。
 

@@ -80,6 +80,7 @@ mod package_check;
 mod package_mascot;
 mod package_settings;
 mod package_switch;
+mod package_tool;
 mod packages;
 mod packages_config;
 mod packages_embed;

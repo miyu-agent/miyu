@@ -79,6 +79,11 @@
       "subject": "package",
       "icon": "≡"
     },
+    "package": {
+      "name": "パッケージのインストール",
+      "subject": "install",
+      "icon": "≡"
+    },
     "todowrite": {
       "name": "ToDo",
       "icon": "≡"
@@ -199,6 +204,9 @@
     "packages/listed": "パッケージを一覧しました",
     "packages/shown": "{package} を確認しました",
     "packages/inspected": "{path} を確認しました",
-    "packages/failed": "パッケージを確認できませんでした"
+    "packages/failed": "パッケージを確認できませんでした",
+    "package/installed": "{package} をインストールしました",
+    "package/removed": "{package} を削除しました",
+    "package/failed": "インストールも削除もできませんでした"
   }
 }

@@ -45,6 +45,7 @@ use crate::usage::{Asked, Ledger};
 mod back;
 mod goals;
 mod kit;
+mod preview;
 mod questions;
 
 pub(crate) use goals::GoalBack;

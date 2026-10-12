@@ -79,6 +79,11 @@
       "subject": "package",
       "icon": "≡"
     },
+    "package": {
+      "name": "装软件包",
+      "subject": "install",
+      "icon": "≡"
+    },
     "todowrite": {
       "name": "待办",
       "icon": "≡"
@@ -199,6 +204,9 @@
     "packages/listed": "列了软件包",
     "packages/shown": "看了 {package}",
     "packages/inspected": "检查了 {path}",
-    "packages/failed": "没看成软件包"
+    "packages/failed": "没看成软件包",
+    "package/installed": "装了 {package}",
+    "package/removed": "卸了 {package}",
+    "package/failed": "没装成、没卸成"
   }
 }

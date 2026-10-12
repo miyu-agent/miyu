@@ -79,6 +79,11 @@
       "subject": "package",
       "icon": "≡"
     },
+    "package": {
+      "name": "Install package",
+      "subject": "install",
+      "icon": "≡"
+    },
     "todowrite": {
       "name": "Todos",
       "icon": "≡"
@@ -218,6 +223,9 @@
     "packages/listed": "Listed the packages",
     "packages/shown": "Looked at {package}",
     "packages/inspected": "Checked {path}",
-    "packages/failed": "Could not look at packages"
+    "packages/failed": "Could not look at packages",
+    "package/installed": "Installed {package}",
+    "package/removed": "Removed {package}",
+    "package/failed": "Could not install or remove"
   }
 }

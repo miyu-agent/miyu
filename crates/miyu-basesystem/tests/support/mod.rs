@@ -241,6 +241,18 @@ impl Site {
         tool(name).run(call, Progress::new(|_| {})).await
     }
 
+    /// 在 `work/` 里的一次调用，软件包的端口是 `packages`（施工 F-10 下：`package` 问人之前看一眼用）。
+    pub fn call_with_packages(
+        &self,
+        args: serde_json::Value,
+        packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    ) -> Call {
+        Call {
+            packages,
+            ..self.call_for("work", args, Seen::new(), Stop::default())
+        }
+    }
+
     /// 在 `work/` 里调一次工具，提问的端口是 `questions`（施工 D-2：`ask_user` 经它问人）。
     pub async fn done_with_questions(
         &self,

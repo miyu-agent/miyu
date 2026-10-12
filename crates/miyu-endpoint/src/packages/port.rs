@@ -1,4 +1,5 @@
-//! 看软件包的端口（施工 F-10 上，`miyu_tool::PackagesPort`）：`packages` 这件工具经它看。照协议那几样回应算（`package.list`、
+//! 软件包的端口（施工 F-10 上，`miyu_tool::PackagesPort`）：`packages` 这件工具经它看，`package` 经它装、卸（施工 F-10 下，
+//! 同 `package.install`、`package.remove`，不查连接是不是本机的：权限策略照会话的级别问过人了）。照协议那几样回应算（`package.list`、
 //! `package.info`、`package.install` 带 `preview` 的），名字、说明、写错的那一句照英文：她看的字是英文。拿着核心的弱引用：
 //! 会话活在核心里面，拿强的会绕成环。
 
@@ -88,5 +89,38 @@ impl PackagesPort for Port {
                 .await
                 .map_err(refused)
         })
+    }
+
+    fn install(&self, path: PathBuf) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            let params = serde_json::from_value(json!({ "path": path }))
+                .map_err(|_| refused(Refusal::BAD_PARAMS))?;
+            super::manage::install(&core, english(), params)
+                .await
+                .map_err(refused)
+        })
+    }
+
+    fn removing(&self, package: String) -> Looking<'_> {
+        Box::pin(async move { self.remove_or_look(package, true).await })
+    }
+
+    fn remove(&self, package: String) -> Looking<'_> {
+        Box::pin(async move { self.remove_or_look(package, false).await })
+    }
+}
+
+impl Port {
+    /// 卸包 `package`，`preview` 的只看一眼（施工 F-10 下）：同 `package.remove`。
+    async fn remove_or_look(
+        &self,
+        package: String,
+        preview: bool,
+    ) -> Result<Value, PackageRefusal> {
+        let core = self.core()?;
+        let params = serde_json::from_value(json!({ "package": package, "preview": preview }))
+            .map_err(|_| refused(Refusal::BAD_PARAMS))?;
+        super::manage::remove(&core, params).await.map_err(refused)
     }
 }

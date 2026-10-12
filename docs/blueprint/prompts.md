@@ -1985,6 +1985,61 @@ path must be absolute.
 Packages cannot be looked at here.
 ```
 
+#### `software/basesystem/package/installed.txt`
+
+- 什么时候加进来：`package` 装上了
+- token：17（2026-10-12 量）
+- 为什么加：装上了、下一回合才在她的工具面上（设计 30 第九节）：不说她会当场去调新工具（施工 F-10 下）
+- 指纹：`a8168b29`
+
+```text
+Installed {package}. Its tools and skills come in on the next turn.
+```
+
+#### `software/basesystem/package/removed.txt`
+
+- 什么时候加进来：`package` 卸掉了
+- token：6（2026-10-12 量）
+- 为什么加：每次调用都要有结果（施工 F-10 下）
+- 指纹：`60bab91e`
+
+```text
+Removed {package}.
+```
+
+#### `software/basesystem/package/one.txt`
+
+- 什么时候加进来：`package`：`install`、`remove` 都写了或都没写
+- token：10（2026-10-12 量）
+- 为什么加：参数写错不问核心（施工 F-10 下）
+- 指纹：`3f2df626`
+
+```text
+Give install or remove, one of them.
+```
+
+#### `software/basesystem/package/refused.txt`
+
+- 什么时候加进来：`package`：别的拒绝（和出厂的撞名、读不了、必需的、核心正在停）
+- token：10（2026-10-12 量）
+- 为什么加：原因代码照协议原样，她认得；写错的清单、没有这个包、相对路径照 `packages` 那几句（施工 F-10 下）
+- 指纹：`dd4796b9`
+
+```text
+Could not change {what}: {reason}.
+```
+
+#### `software/basesystem/package/unavailable.txt`
+
+- 什么时候加进来：`package`：没有端口（核心没交）
+- token：10（2026-10-12 量）
+- 为什么加：每次调用都要有结果（施工 F-10 下）
+- 指纹：`e7a2df77`
+
+```text
+Packages cannot be installed or removed here.
+```
+
 #### `software/basesystem/ask_user/answer.txt`
 
 - 什么时候加进来：`ask_user` 答了：一道一行
@@ -3876,6 +3931,20 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "List installed Miyu packages, show one by id, or check a package folder before installing it.",
   "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."}}}
+}
+```
+
+#### `software/basesystem/tools/package.json`
+
+- 什么时候加进来：会话的工具面里有 `package`：功能「软件包」开着的（基础系统，每次请求都带）
+- token：86（2026-10-12 量）
+- 为什么加：她装、卸软件包（施工 F-10 下，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
+- 指纹：`cd00c4c6`
+
+```json
+{
+  "description": "Install a Miyu package from a folder, or remove an installed one. Check the folder with packages first.",
+  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."}}}
 }
 ```
 

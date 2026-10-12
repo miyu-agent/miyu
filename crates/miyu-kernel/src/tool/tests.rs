@@ -85,6 +85,7 @@ fn access_is_written_as_text_and_unknown_kinds_are_kept() {
         ("network", Access::Network),
         ("outbound", Access::Outbound),
         ("venue", Access::Venue),
+        ("install", Access::Install),
     ] {
         let json = format!("\"{text}\"");
         assert_eq!(serde_json::from_str::<Access>(&json).unwrap(), access);
@@ -104,13 +105,17 @@ fn writing_files_and_unknown_kinds_count_as_writing() {
         Access::Network,
         Access::Outbound,
         Access::Venue,
+        Access::Install,
         Access::Other("clipboard".to_string()),
     ]
     .iter()
     .map(Access::writes)
     .collect();
-    // 在场所里做的事（施工 O-31 前）不算写入：只读开着也照做，和在场所里回话一样。
-    assert_eq!(writes, [false, true, false, false, false, false, true]);
+    // 在场所里做的事（施工 O-31 前）不算写入：只读开着也照做，和在场所里回话一样。改装了什么的（施工 F-10 下）算。
+    assert_eq!(
+        writes,
+        [false, true, false, false, false, false, true, true]
+    );
 }
 
 /// 嵌套的格式：`edits` 是一组对象，`sizes` 是一组整数，`inner.deep.n` 在两层对象里。

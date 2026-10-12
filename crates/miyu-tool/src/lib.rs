@@ -62,9 +62,9 @@ pub use memory::{
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
 };
-pub use packages::{Looking, PACKAGES, PackageRefusal, PackagesPort};
+pub use packages::{Looking, PACKAGE, PACKAGES, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
-pub use run::{Call, CallIds, Done, Effect, Picture, Progress, Running, Seen, Target};
+pub use run::{Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, Target};
 pub use sessions::{Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session};
 pub use shelf::{Edition, Shelf};
 pub use stop::Stop;
@@ -125,6 +125,13 @@ pub trait Tool: Send + Sync {
     /// 它自己写的那几格。参数不对的交回空的。默认空。
     fn asking(&self, _call: &Call) -> Vec<(&'static str, String)> {
         Vec::new()
+    }
+
+    /// 问人之前先看一眼（施工 F-10 下，`docs/blueprint/tools/package.md`）：权限策略要问人时，执行器带着端口调它（只有端口，
+    /// 没有沙盒、日志这些）。成了的整份放进确认请求的说明，键 `preview`，人看到的就是日志里记下的；不成的不问，交回的那一份
+    /// 照拒绝交给她。默认不看。
+    fn preview(&self, _call: Call) -> Option<Previewing<'_>> {
+        None
     }
 
     /// 执行一次调用：执行器在它自己的任务里跑交回的 future，执行中的输出交给 `progress`。叫停有两种：

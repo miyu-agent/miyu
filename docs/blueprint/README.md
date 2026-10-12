@@ -55,6 +55,7 @@
 | `tools/sessions.md` | 列你别的主会话（施工 C-3，跨会话） |
 | `tools/session_usage.md` | 查这个会话的用量、金额、上下文（施工 8-15） |
 | `tools/packages.md` | 她看软件包：列出、看一个、装之前看一个包文件夹（施工 F-10 上） |
+| `tools/package.md` | 她装、卸软件包：访问类别 `install` 照级别问人，问人的卡片带看一眼的那一份（施工 F-10 下） |
 | `tools/ask_user.md` | 问人一组题、等回答（施工 D-2） |
 | `tools/todowrite.md` | 这个会话的待办清单，每次整份换（施工 D-3） |
 | `tools/goal.md` | 长期目标的工具：看、设、报完成、报卡住（施工 X-8 上） |

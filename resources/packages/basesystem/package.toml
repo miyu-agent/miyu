@@ -45,6 +45,6 @@ tools = ["session_usage"]
 
 [features.packages]
 name = { en = "Packages", zh = "软件包", ja = "パッケージ" }
-tools = ["packages"]
+tools = ["packages", "package"]
 
 [builtin]
