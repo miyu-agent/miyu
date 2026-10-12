@@ -14,6 +14,8 @@ pub struct Feature {
     pub tools: Vec<String>,
     /// 是哪个 MCP 服务的（施工 X-2）：工具名以 `mcp__<服务名>__` 开头的归它；包自己的功能没有。
     pub service: Option<String>,
+    /// 是哪个脚本的（施工 X-12 中，`skills.md`「脚本」）：叫这个名字的那一件工具归它；别的功能没有。
+    pub script: Option<String>,
 }
 
 /// 装了的功能，照清单读的先后（包照编号，包里照写的先后）。
@@ -38,9 +40,9 @@ impl Features {
         self.list.iter().any(|feature| feature.id == id)
     }
 
-    /// 包 `package` 里的工具 `tool` 归哪个功能：MCP 服务的工具（`mcp__<服务名>__…`）归那个服务的功能（施工 X-2）；别的照包
-    /// 自己的功能算（MCP 服务的不算在里面）：清单里写明了的照写的，包只有一个功能的归它；都不是的（没装的包、写了几个功能又
-    /// 没列它的）没有。
+    /// 包 `package` 里的工具 `tool` 归哪个功能：MCP 服务的工具（`mcp__<服务名>__…`）归那个服务的功能（施工 X-2），脚本的工具
+    /// 归那个脚本的功能（施工 X-12 中）；别的照包自己的功能算（MCP 服务的、脚本的不算在里面）：清单里写明了的照写的，包只有
+    /// 一个功能的归它；都不是的（没装的包、写了几个功能又没列它的）没有。
     pub fn of_tool(&self, package: &str, tool: &str) -> Option<&str> {
         let in_package = self
             .list
@@ -55,7 +57,14 @@ impl Features {
         }) {
             return Some(&service.id);
         }
-        let mut own = in_package.filter(|feature| feature.service.is_none());
+        if let Some(script) = in_package
+            .clone()
+            .find(|feature| feature.script.as_deref() == Some(tool))
+        {
+            return Some(&script.id);
+        }
+        let mut own =
+            in_package.filter(|feature| feature.service.is_none() && feature.script.is_none());
         if let Some(listed) = own
             .clone()
             .find(|feature| feature.tools.iter().any(|name| name == tool))

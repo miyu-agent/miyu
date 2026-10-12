@@ -51,6 +51,14 @@ impl Builtins for Kit {
     fn embed(&self, _: &[&Found]) -> Option<miyu_session::EmbedSetup> {
         None
     }
+
+    fn script(
+        &self,
+        _: &miyu_policy::script::ScriptHead,
+        _: std::path::PathBuf,
+    ) -> Result<std::sync::Arc<dyn miyu_tool::Tool>, String> {
+        Err("no scripts here".to_string())
+    }
 }
 
 /// 照起来时那样造核心：清单里装着 `xkit`，编进来的内置包有它和出厂的几个。

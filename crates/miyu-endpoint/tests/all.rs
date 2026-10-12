@@ -120,6 +120,7 @@ mod respond;
 mod restart;
 mod retire;
 mod revert;
+mod scripts;
 mod secrets;
 mod sessions;
 mod sessions_changed;

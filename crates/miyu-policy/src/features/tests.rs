@@ -8,6 +8,7 @@ fn feature(id: &str, package: &str, tools: &[&str]) -> Feature {
         package: package.to_string(),
         tools: tools.iter().map(ToString::to_string).collect(),
         service: None,
+        script: None,
     }
 }
 
@@ -93,6 +94,7 @@ fn an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own() {
         package: "relay".to_string(),
         tools: Vec::new(),
         service: Some(name.to_string()),
+        script: None,
     };
     let features = Features::new(vec![
         feature("relay", "relay", &[]),
@@ -119,4 +121,29 @@ fn an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own() {
         None,
         "别的包的不算"
     );
+}
+
+/// 脚本的工具（施工 X-12 中）：照名字归那个脚本的功能；包自己的工具照旧照包自己的功能算，脚本的功能不算在「只有一个功能」里。
+#[test]
+fn a_script_tool_belongs_to_its_script_and_the_package_keeps_its_own() {
+    let script = |name: &str| Feature {
+        id: format!("script-{name}"),
+        package: "tools".to_string(),
+        tools: Vec::new(),
+        service: None,
+        script: Some(name.to_string()),
+    };
+    let features = Features::new(vec![
+        feature("tools", "tools", &[]),
+        script("weather"),
+        script("bangumi"),
+    ]);
+    assert_eq!(features.of_tool("tools", "weather"), Some("script-weather"));
+    assert_eq!(features.of_tool("tools", "bangumi"), Some("script-bangumi"));
+    assert_eq!(
+        features.of_tool("tools", "own_tool"),
+        Some("tools"),
+        "包自己的工具照旧归它唯一的那个功能"
+    );
+    assert_eq!(features.of_tool("other", "weather"), None, "别的包的不算");
 }

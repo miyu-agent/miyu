@@ -1,12 +1,13 @@
 //! `preset.get` 的一个个功能（施工 F-3 下，设计 `30-插件框架.md` 第四节，`docs/blueprint/presets.md`「怎么走」第 8 条）：
-//! 装了的功能照清单读的先后，每个带开不开、下面的每件工具开不开；预设里写了、没装的接在后面。头照它一个功能一个开关画，
-//! 展开能逐件关。
+//! 装了的功能照清单读的先后，每个带开不开、下面的每件工具开不开；接着是登记上的脚本（施工 X-12 中）、用得上的技能（施工
+//! X-11 上），一个一个功能；预设里写了、没装的接在后面。头照它一个功能一个开关画，展开能逐件关。
 
 use std::collections::BTreeSet;
 
 use serde_json::{Value, json};
 
 use miyu_config::Words;
+use miyu_policy::script::feature_id as script_feature;
 use miyu_policy::skill::feature_id;
 use miyu_store::human::Human;
 use miyu_store::presets::Found;
@@ -28,7 +29,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
     let words = words(core, language).ok();
     let catalog = core.tools();
     let found_packages = core.packages();
-    let table = crate::packages::features(&found_packages);
+    let table = crate::scripts::features(core);
     let file = &found.file;
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
@@ -68,6 +69,29 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
             }
             listed.push(one);
         }
+    }
+    // 脚本各算一个功能（施工 X-12 中）：名字、说明照脚本写给人看的几格挑这个连接的语言，没写名字的照工具名；它自己那件工具
+    // 带着同一个名字，开不开照功能和 `[tools]`。
+    for script in core.scripts().iter() {
+        let id = script_feature(&script.head.name);
+        let on = file.opens_in(&id, crate::scripts::package(script));
+        let name =
+            pick(&script.head.display_name, language).unwrap_or_else(|| script.head.name.clone());
+        let mut one = json!({
+            "id": id,
+            "name": name,
+            "on": on,
+            "installed": true,
+            "tools": [{
+                "name": script.head.name,
+                "label": name,
+                "on": on && !file.tools_off.contains(&script.head.name),
+            }],
+        });
+        if let Some(summary) = pick(&script.head.summary, language) {
+            one["summary"] = json!(summary);
+        }
+        listed.push(one);
     }
     // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格，没写名字的照技能的名字；没有工具。
     let mut skill_ids = BTreeSet::new();

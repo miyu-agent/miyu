@@ -119,3 +119,9 @@ fn wrong_ones_say_what_is_wrong() {
         Err(ScriptProblem::NoName)
     );
 }
+
+/// 脚本算的功能的编号（施工 X-12 中）：`script-<工具名>`。
+#[test]
+fn a_script_is_the_feature_script_dash_name() {
+    assert_eq!(feature_id("get_weather"), "script-get_weather");
+}

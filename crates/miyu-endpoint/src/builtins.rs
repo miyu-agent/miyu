@@ -27,4 +27,15 @@ pub trait Builtins: Send + Sync {
     /// 照清单 `found` 拼本机的向量模型要的（施工 F-5 再补）：人格记忆装着、推荐的内置语义模型那个小程序包也装着才有。装卸时
     /// 端点交给 `Vectors::replace_local`，一样的不动。
     fn embed(&self, found: &[&Found]) -> Option<miyu_session::EmbedSetup>;
+
+    /// 一个脚本造成一件工具（施工 X-12 中，`miyu_basesystem::script`）：开头读好的 `head`、脚本文件 `file`。
+    ///
+    /// # Errors
+    ///
+    /// 给她看的字读不出来、参数不是 JSON：一句英文。
+    fn script(
+        &self,
+        head: &miyu_policy::script::ScriptHead,
+        file: std::path::PathBuf,
+    ) -> Result<Arc<dyn Tool>, String>;
 }

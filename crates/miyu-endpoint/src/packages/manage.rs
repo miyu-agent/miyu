@@ -66,6 +66,8 @@ impl Core {
             .packages
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
+        // 脚本照新的清单重找、重登记（施工 X-12 中）。
+        self.follow_scripts();
         if let Some(items) = items {
             crate::config::refit::refit(self, items);
         }

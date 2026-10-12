@@ -48,17 +48,13 @@ pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, 
 pub(crate) fn places(core: &Core) -> PresetPlaces {
     PresetPlaces {
         presets: presets(core),
-        features: crate::packages::features(&core.packages()),
+        features: crate::scripts::features(core),
     }
 }
 
 /// 找好的预设换成造会话要的：算好装了、没开的功能（施工 F-3 上）。
 pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
-    Chosen::new(
-        found.id,
-        found.file,
-        &crate::packages::features(&core.packages()),
-    )
+    Chosen::new(found.id, found.file, &crate::scripts::features(core))
 }
 
 /// 找预设出的错照协议说：编号不合写法的参数不对，哪一层都没有的 `unknown_preset`，写错了的 `preset_invalid`（`data.problem`

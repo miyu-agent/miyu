@@ -370,3 +370,37 @@ fn a_service_registering_again_is_no_longer_gone() {
     assert!(!back.gone("mcp__web__fetch"));
     assert!(back.gone("mcp__files__list"), "别的服务的照旧算卸掉");
 }
+
+/// 一件只读的假工具。
+fn fake(name: &str) -> Arc<dyn Tool> {
+    Fake::new(name, Access::Read, Act::Echo)
+}
+
+/// 换上这一刻的脚本（施工 X-12 中）：原来的脚本整份拿掉、换上新的；撞了别的工具的名字的不登记、交回，别的照登记；脚本的包
+/// 算经提供者登记的；别的包的工具不动。
+#[test]
+fn scripts_are_replaced_as_a_whole_and_clashes_are_skipped() {
+    let base = Catalog::in_packages([(BASESYSTEM, vec![fake("read")])]).expect("合写法");
+    let (first, skipped) = base.replacing_scripts(vec![
+        ("~home".to_string(), fake("weather")),
+        ("tools".to_string(), fake("read")),
+        ("tools".to_string(), fake("bangumi")),
+    ]);
+    assert_eq!(
+        skipped,
+        [CatalogError {
+            tool: "read".to_string(),
+            problem: Problem::Duplicate,
+        }]
+    );
+    let names: Vec<&str> = first.specs().map(|spec| spec.name.as_str()).collect();
+    assert_eq!(names, ["bangumi", "read", "weather"]);
+    assert_eq!(first.package_of("weather"), Some("~home"));
+    assert_eq!(first.package_of("read"), Some(BASESYSTEM));
+    assert!(first.provided("weather") && first.provided("bangumi"));
+    assert!(!first.provided("read"));
+    let (second, skipped) = first.replacing_scripts(vec![("~home".to_string(), fake("notes"))]);
+    assert!(skipped.is_empty());
+    let names: Vec<&str> = second.specs().map(|spec| spec.name.as_str()).collect();
+    assert_eq!(names, ["notes", "read"], "原来的脚本整份拿掉了");
+}

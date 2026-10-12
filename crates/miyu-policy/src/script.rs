@@ -23,6 +23,14 @@ pub const TIMEOUT: u64 = 60;
 /// 工具名最多几个字（工具目录的上限）。
 const NAME_CHARS: usize = 64;
 
+/// 脚本算的那个功能的编号的开头（施工 X-12 中）：`script-<工具名>`，同技能的 `skill-<名字>`。
+const FEATURE_PREFIX: &str = "script-";
+
+/// 工具名是 `name` 的脚本算的功能的编号（施工 X-12 中）：预设照它开关。
+pub fn feature_id(name: &str) -> String {
+    format!("{FEATURE_PREFIX}{name}")
+}
+
 /// 没写参数的：一个参数都没有。
 const NO_PARAMETERS: &str = r#"{"type":"object","properties":{}}"#;
 

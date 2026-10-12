@@ -322,6 +322,8 @@ impl Core {
     pub fn start_extensions(self: &Arc<Self>) {
         // 扩展以系统账号的身份连进来：先建它们的家目录（施工 O-4 下）。
         crate::system_accounts::prepare(self);
+        // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
+        self.follow_scripts();
         let (switches, _) = read_switches(self);
         let packages = self.packages();
         for (id, manifest) in processes(&packages) {

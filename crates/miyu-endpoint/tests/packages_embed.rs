@@ -52,6 +52,14 @@ impl Builtins for Port {
             idle: Duration::from_secs(600),
         })
     }
+
+    fn script(
+        &self,
+        _: &miyu_policy::script::ScriptHead,
+        _: std::path::PathBuf,
+    ) -> Result<std::sync::Arc<dyn miyu_tool::Tool>, String> {
+        Err("no scripts here".to_string())
+    }
 }
 
 /// 小程序包的清单。

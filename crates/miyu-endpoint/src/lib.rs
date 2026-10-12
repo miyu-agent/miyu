@@ -59,6 +59,7 @@ pub mod queries;
 mod refusal;
 mod responding;
 mod reverse;
+mod scripts;
 mod secrets;
 mod sessions;
 pub mod settings;
@@ -173,6 +174,8 @@ pub struct Core {
     venues: tokio::sync::Mutex<()>,
     /// 软件包清单（施工 9-1 上，`packages.rs`）：起来时读一次；装、卸以后当场换成重读的一份（施工 F-5 上）。
     packages: std::sync::RwLock<Arc<Vec<miyu_store::packages::Found>>>,
+    /// 登记上的脚本（施工 X-12 中，`scripts.rs`）。
+    scripts: scripts::Scripts,
     /// 这一份核心编进来的内置包（施工 F-2、F-5 上）：装卸以后重读清单时照它标没编进来的。没设的不标（测试里造的核心）。
     built_in: Option<Vec<&'static str>>,
     /// 装、卸一次只做一件（施工 F-5 上）。
@@ -268,6 +271,7 @@ impl Core {
             listing: listing::Listing::default(),
             venues: tokio::sync::Mutex::new(()),
             packages: std::sync::RwLock::new(Arc::new(found)),
+            scripts: scripts::Scripts::default(),
             built_in: None,
             packaging: tokio::sync::Mutex::new(()),
             builtins: None,

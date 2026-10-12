@@ -177,6 +177,7 @@ fn installed() -> Features {
         package: package.to_string(),
         tools: Vec::new(),
         service: None,
+        script: None,
     };
     Features::new(vec![
         feature("files", "basesystem"),

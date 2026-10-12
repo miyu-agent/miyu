@@ -16,6 +16,9 @@ use crate::packages::Found;
 use crate::root::DataRoot;
 use crate::skills::Skipped;
 
+/// 家目录里自己放的脚本登记工具时挂的包编号（施工 X-12 中）：包编号的写法里没有 `~`，撞不上真的包。
+pub const HOME_PACKAGE: &str = "~home";
+
 /// 一个找到的脚本。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Script {

@@ -52,6 +52,8 @@ miyu-memory = { path = "../miyu-memory" }
 miyu-goal = { path = "../miyu-goal" }
 # 知识库这个软件包的两件工具（施工 K-1 下）。
 miyu-knowledge = { path = "../miyu-knowledge" }
+# 脚本读好的开头（施工 X-12 中）：造脚本工具的端口照它造。
+miyu-policy = { path = "../miyu-policy" }
 # 工具目录：核心起来时登记，交给协议端点（施工 4-1）。
 miyu-tool = { path = "../miyu-tool" }
 # 模型资料的 JSON（施工 6-3 上）。

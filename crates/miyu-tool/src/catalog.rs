@@ -25,6 +25,8 @@ pub struct Catalog {
     /// 随包卸掉的工具（施工 F-5 中，[`Catalog::removing`]）：工具名到它原来的包。用过它的会话调到时报「已卸载」，不是
     /// 「暂时不可用」。包装回来就不算了。
     gone: BTreeMap<String, String>,
+    /// 脚本的工具（施工 X-12 中，[`Catalog::replacing_scripts`]）：下一次换的时候整份拿掉。
+    scripts: BTreeSet<String>,
 }
 
 /// 基础系统的编号（`10-自带软件.md` 第三节）：只交一串工具的老写法，全算它。
@@ -132,6 +134,32 @@ impl Catalog {
         for tool in tools {
             if let Err(error) = catalog.add(package, tool) {
                 skipped.push(error);
+            }
+        }
+        (catalog, skipped)
+    }
+
+    /// 换上这一刻的脚本（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：原来登记的脚本工具全拿掉，照 `scripts`（包的
+    /// 编号和一个脚本的工具，家目录里放的是 `~home`）一件件登记；查法同 [`Catalog::new`]，查不过的那一件不登记、别的照登记，
+    /// 一并交回没登记的（撞了别的工具的名字的这种）。脚本所在的包算经提供者登记的：会话下一个回合照现在的换。
+    pub fn replacing_scripts(
+        &self,
+        scripts: Vec<(String, Arc<dyn Tool>)>,
+    ) -> (Catalog, Vec<CatalogError>) {
+        let mut catalog = self.clone();
+        for name in std::mem::take(&mut catalog.scripts) {
+            catalog.tools.remove(&name);
+            catalog.packages.remove(&name);
+        }
+        let mut skipped = Vec::new();
+        for (package, tool) in scripts {
+            let name = tool.spec().name.clone();
+            match catalog.add(&package, tool) {
+                Ok(()) => {
+                    catalog.scripts.insert(name);
+                    catalog.provided.insert(package);
+                }
+                Err(error) => skipped.push(error),
             }
         }
         (catalog, skipped)

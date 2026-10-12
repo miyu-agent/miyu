@@ -31,7 +31,7 @@ MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP
 | `crates/miyu-endpoint/src/mcp/tool.rs` | 一件 MCP 工具（`Tool` 的实现）：照这时连着的客户端调，时限、暂时不可用、出错（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/content.rs` | 回来的内容换成结果块、截断（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/switch.rs` | `bundle` 的开关：和扩展同一份文件、同一把锁（施工 X-3 上） |
-| `crates/miyu-tool/src/catalog.rs` 的 `replacing_service` | 目录里一个服务的工具单独换，和包自己登记的互不冲掉（施工 X-3 上） |
+| `crates/miyu-tool/src/catalog.rs` 的 `replacing_service` | 目录里一个服务的工具单独换，和包自己登记的互不冲掉（施工 X-3 上）；脚本的整份换是同一个做法（`replacing_scripts`，施工 X-12 中，`skills.md`） |
 | `crates/miyu-endpoint/src/bin/miyu-test-mcp.rs` | 测试用的服务：真起进程走一遍，照参数演新旧时代、几件工具、记下收到的每一行（施工 X-3 上；不随发行带出去） |
 
 | `crates/miyu-endpoint/src/mcp/cache.rs` | 目录缓存 `state/mcp/<服务名>.json`：写、照命令和环境变量的写法认、卸包时清掉（施工 X-3 下） |

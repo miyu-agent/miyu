@@ -1,0 +1,245 @@
+//! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：真核心走一遍。核心起来时把管理员家目录里放的脚本
+//! 登记成工具，会话的工具面里有它；她调它照跑命令的规矩（这个核心没有能用的沙盒、没人能确认：拒绝，真跑在基础系统那边测）；每个脚本一个功能 `script-<名字>`，`preset.get` 列出来，预设关掉的会话里没有；
+//! 撞了别的工具名字的不登记；装上一个带脚本的包，当场登记上。
+
+use std::sync::Arc;
+
+use serde_json::{Value, json};
+
+use miyu_endpoint::Core;
+use miyu_endpoint::builtins::Builtins;
+use miyu_kernel::event::Body;
+use miyu_kernel::tool::Access;
+use miyu_session::testkit::{Play, Script};
+use miyu_store::packages::Found;
+use miyu_tool::testkit::{Act, Fake};
+use miyu_tool::{Catalog, Tool};
+
+use crate::support::venues::configured_core;
+use crate::support::*;
+
+/// 只会造脚本工具的端口：内置包的工具不动。
+struct Kit;
+
+impl Builtins for Kit {
+    fn tools(&self, _: &[Found]) -> Result<Vec<miyu_endpoint::builtins::Group>, String> {
+        Ok(Vec::new())
+    }
+
+    fn settings(&self, found: &mut [Found]) -> Vec<miyu_config::Item> {
+        let own = [
+            miyu_endpoint::settings::UiSettings::ITEMS,
+            miyu_endpoint::settings::PersonaSettings::ITEMS,
+            miyu_endpoint::settings::PresetSettings::ITEMS,
+            miyu_endpoint::settings::PermissionSettings::ITEMS,
+            miyu_endpoint::settings::EXTERNAL_BINDINGS,
+        ]
+        .concat();
+        let packaged = miyu_endpoint::packages::settle(found, &own);
+        own.into_iter().chain(packaged).collect()
+    }
+
+    fn embed(&self, _: &[&Found]) -> Option<miyu_session::EmbedSetup> {
+        None
+    }
+
+    fn script(
+        &self,
+        head: &miyu_policy::script::ScriptHead,
+        file: std::path::PathBuf,
+    ) -> Result<Arc<dyn Tool>, String> {
+        miyu_basesystem::script(&default_resources(), head, file).map_err(|error| error.to_string())
+    }
+}
+
+/// 一个 Python 脚本：把收到的参数原样印出来。
+fn echo(name: &str) -> String {
+    format!(
+        "#!/usr/bin/env python3\n# 显示名称：回声\n# Description: Echo {name}.\n# 描述：原样印出参数。\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"say\": {{\"type\": \"string\"}}}}}}\nimport os\nprint('{name}:' + os.environ['MIYU_ARGS_JSON'])\n"
+    )
+}
+
+/// 读系统配置、个人设置的核心，工具目录里有基础系统的 `read`，装着造脚本的端口；照起来时那样登记脚本。
+fn core(home: &Home, script: &Script) -> Arc<Core> {
+    let read: Arc<dyn Tool> = Fake::new("read", Access::Read, Act::Echo);
+    let core = configured_core(home, script, Catalog::new([read]).expect("合写法"));
+    let core = Arc::new(
+        Arc::into_inner(core)
+            .expect("只有这一份")
+            .with_builtins(Arc::new(Kit)),
+    );
+    core.start_extensions();
+    core
+}
+
+/// 照 `params` 造一个会话、说一句，交回会话编号。
+async fn session(client: &mut Client, home: &Home, id: &str, params: Value) -> String {
+    let reply = client.call(id, "session.create", params).await;
+    let session = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("没造出来：{reply}"))
+        .to_string();
+    client.say(&format!("{id}-say"), &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    session
+}
+
+fn feature<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
+    reply["result"]["features"]
+        .as_array()
+        .expect("是一个个功能")
+        .iter()
+        .find(|one| one["id"] == id)
+}
+
+#[tokio::test]
+async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
+    let home = Home::new();
+    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    // 撞了基础系统的 `read`：不登记。
+    home.write("home/alice/scripts/read.py", &echo("read"));
+    let script = Script::new([
+        Play::calls(&[("weather", r#"{"say":"晴"}"#)]),
+        Play::Says("好。"),
+    ]);
+    let core = core(&home, &script);
+    let names: Vec<String> = core
+        .scripts()
+        .iter()
+        .map(|one| one.head.name.clone())
+        .collect();
+    assert_eq!(names, ["weather"], "撞名的不登记");
+    let mut client = Client::connect(core);
+    client.hello_without_input().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let session = session(
+        &mut client,
+        &home,
+        "c1",
+        json!({"cwd": work, "preset": "full"}),
+    )
+    .await;
+    let tools: Vec<String> = script.requests()[0]
+        .1
+        .tools
+        .iter()
+        .map(|tool| tool.name.clone())
+        .collect();
+    assert_eq!(tools, ["read", "weather"]);
+    let result = home
+        .log(&session)
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ToolResult(result) => Some(format!("{:?}", result.blocks)),
+            _ => None,
+        })
+        .expect("有结果");
+    assert!(
+        result.contains("needs the user's approval, which no one can give here"),
+        "访问类别是执行：没有沙盒、没人能确认的拒绝：{result}"
+    );
+}
+
+#[tokio::test]
+async fn each_script_is_a_feature_the_preset_switches() {
+    let home = Home::new();
+    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write(
+        "home/alice/presets/lean.toml",
+        "[preset]\nname = { en = \"Lean\" }\nunlisted = \"on\"\n\n[features]\nscript-weather = false\n",
+    );
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let mut client = Client::connect(core(&home, &script));
+    client.hello().await;
+    let full = client
+        .call("g1", "preset.get", json!({"preset": "full"}))
+        .await;
+    assert_eq!(
+        feature(&full, "script-weather"),
+        Some(&json!({
+            "id": "script-weather",
+            "name": "回声",
+            "summary": "原样印出参数。",
+            "on": true,
+            "installed": true,
+            "tools": [{"name": "weather", "label": "回声", "on": true}],
+        }))
+    );
+    let lean = client
+        .call("g2", "preset.get", json!({"preset": "lean"}))
+        .await;
+    assert_eq!(
+        feature(&lean, "script-weather").map(|one| &one["on"]),
+        Some(&json!(false))
+    );
+    let work = home.work.to_string_lossy().into_owned();
+    session(
+        &mut client,
+        &home,
+        "c1",
+        json!({"cwd": work, "preset": "lean"}),
+    )
+    .await;
+    let tools: Vec<String> = script.requests()[0]
+        .1
+        .tools
+        .iter()
+        .map(|tool| tool.name.clone())
+        .collect();
+    assert_eq!(tools, ["read"], "预设关掉的没有");
+}
+
+#[tokio::test]
+async fn a_package_with_scripts_registers_them_when_installed() {
+    let home = Home::new();
+    let folder = home.work.join("kit");
+    std::fs::create_dir_all(folder.join("scripts")).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        "[package]\nprotocol = [1, 1]\nname = { zh = \"脚本包\" }\n\n[command]\nname = \"kit\"\nprogram = \"miyu-kit-absent\"\nabout = { en = \"K\" }\n\n[process]\n",
+    )
+    .expect("写得进");
+    std::fs::write(folder.join("scripts/bangumi.py"), echo("bangumi")).expect("写得进");
+    home.write(
+        "home/alice/presets/nokit.toml",
+        "[preset]\nname = { en = \"No kit\" }\nunlisted = \"on\"\n\n[software]\nkit = false\n",
+    );
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let core = core(&home, &script);
+    assert!(core.scripts().is_empty());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let installed = client
+        .call("i1", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "kit", "{installed}");
+    let scripts = core.scripts();
+    assert_eq!(scripts.len(), 1);
+    assert_eq!(scripts[0].package.as_deref(), Some("kit"));
+    let work = home.work.to_string_lossy().into_owned();
+    session(
+        &mut client,
+        &home,
+        "c1",
+        json!({"cwd": work, "preset": "full"}),
+    )
+    .await;
+    session(
+        &mut client,
+        &home,
+        "c2",
+        json!({"cwd": work, "preset": "nokit"}),
+    )
+    .await;
+    let faces: Vec<Vec<String>> = script
+        .requests()
+        .iter()
+        .map(|(_, request)| request.tools.iter().map(|tool| tool.name.clone()).collect())
+        .collect();
+    assert_eq!(faces[0], ["bangumi", "read"], "装上当场登记上");
+    assert_eq!(
+        faces[1],
+        ["read"],
+        "挂在包 kit 下：整个包关掉的，脚本跟着关"
+    );
+}

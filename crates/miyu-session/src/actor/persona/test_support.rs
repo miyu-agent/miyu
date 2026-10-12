@@ -73,6 +73,7 @@ pub(super) fn installed() -> Features {
                 package: id.to_string(),
                 tools: Vec::new(),
                 service: None,
+                script: None,
             })
             .collect(),
     )

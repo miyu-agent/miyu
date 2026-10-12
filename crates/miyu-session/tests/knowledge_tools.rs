@@ -353,6 +353,7 @@ async fn the_list_sits_before_the_preset_line_and_needs_the_two_tools() {
                 package: id.to_string(),
                 tools: Vec::new(),
                 service: None,
+                script: None,
             })
             .collect(),
     );

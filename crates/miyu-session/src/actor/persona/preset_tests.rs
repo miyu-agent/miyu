@@ -165,6 +165,7 @@ fn an_old_pin_written_with_package_ids_is_not_a_change() {
         package: package.to_string(),
         tools: Vec::new(),
         service: None,
+        script: None,
     };
     let features = Features::new(vec![
         feature("basesystem", "basesystem"),
@@ -195,6 +196,7 @@ fn a_feature_switched_off_takes_its_tools_away() {
         package: package.to_string(),
         tools: tools.iter().map(ToString::to_string).collect(),
         service: None,
+        script: None,
     };
     refresh.presets.as_mut().expect("有预设的几层").features = Features::new(vec![
         feature("files", "basesystem", &["read"]),
@@ -223,6 +225,7 @@ fn a_swap_leaves_reminders_out_when_they_are_not_installed() {
         package: id.to_string(),
         tools: Vec::new(),
         service: None,
+        script: None,
     };
     refresh.presets.as_mut().expect("有预设的几层").features =
         Features::new(vec![feature("basesystem"), feature("memory")]);

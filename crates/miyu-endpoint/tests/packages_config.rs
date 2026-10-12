@@ -42,6 +42,14 @@ impl Builtins for Port {
     fn embed(&self, _: &[&Found]) -> Option<miyu_session::EmbedSetup> {
         None
     }
+
+    fn script(
+        &self,
+        _: &miyu_policy::script::ScriptHead,
+        _: std::path::PathBuf,
+    ) -> Result<std::sync::Arc<dyn miyu_tool::Tool>, String> {
+        Err("no scripts here".to_string())
+    }
 }
 
 /// 一份手动拉起的扩展包的清单：带一项系统配置的整数 `port`。程序要在测试程序旁边（施工 F-6 上：程序不在的当没装，配置项不算）。

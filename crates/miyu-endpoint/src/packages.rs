@@ -402,6 +402,7 @@ pub fn features(found: &[Found]) -> Features {
                         package: one.id.clone(),
                         tools: feature.tools,
                         service: feature.service,
+                        script: None,
                     })
             })
             .collect(),

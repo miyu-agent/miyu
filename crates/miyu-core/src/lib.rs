@@ -267,6 +267,16 @@ impl miyu_endpoint::builtins::Builtins for BuiltinTools {
     fn embed(&self, found: &[&Found]) -> Option<miyu_session::EmbedSetup> {
         embed::find(&self.env, found).ok()
     }
+
+    /// 脚本照基础系统的造法（施工 X-12 中），给她看的字照资源目录。
+    fn script(
+        &self,
+        head: &miyu_policy::script::ScriptHead,
+        file: std::path::PathBuf,
+    ) -> Result<Arc<dyn miyu_tool::Tool>, String> {
+        miyu_basesystem::script(self.resources.path(), head, file)
+            .map_err(|error| error.to_string())
+    }
 }
 
 /// 核心这时读成了的清单（施工 F-5 补）：配置清单变了重写生成的文件时照它找包的配置项的字。核心没了的交回空的。
