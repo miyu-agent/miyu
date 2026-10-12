@@ -4,7 +4,8 @@
 //! - 装了的软件包（清单读成了的）的 `scripts/<文件>`；
 //! - 本机自己放的 `home/<账号>/scripts/<文件>`。
 //!
-//! 同一个工具名的自己放的赢；两个包撞了照包的编号留前一个。读不了的、不是字的、开头写错的跳过，交回给调的一方记。子文件夹、
+//! 同一个工具名的自己放的赢；两个包撞了照包的编号留前一个，后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、不是字的、
+//! 开头写错的跳过，交回给调的一方记。子文件夹、
 //! 点开头的不算。碰磁盘，调的一方放在阻塞线程里。
 
 use std::path::{Path, PathBuf};
@@ -50,18 +51,27 @@ pub fn find(
     for (place, package) in places {
         for (file, name) in files(&place) {
             match head(&file, &name) {
-                Ok(head) if scripts.iter().any(|found| found.head.name == head.name) => {
-                    skipped.push(Skipped {
+                Ok(head) => match scripts.iter().find(|found| found.head.name == head.name) {
+                    Some(winner) => skipped.push(Skipped {
                         path: file,
-                        why: format!("script {:?} is already provided elsewhere", head.name),
-                    });
-                }
-                Ok(head) => scripts.push(Script {
-                    head,
-                    file,
-                    package: package.clone(),
+                        why: format!(
+                            "script {:?} is already provided by {}",
+                            head.name,
+                            winner.file.display()
+                        ),
+                        by: Some(winner.file.clone()),
+                    }),
+                    None => scripts.push(Script {
+                        head,
+                        file,
+                        package: package.clone(),
+                    }),
+                },
+                Err(why) => skipped.push(Skipped {
+                    path: file,
+                    why,
+                    by: None,
                 }),
-                Err(why) => skipped.push(Skipped { path: file, why }),
             }
         }
     }

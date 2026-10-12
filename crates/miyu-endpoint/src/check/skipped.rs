@@ -1,6 +1,7 @@
 //! 跳过的脚本、技能（施工 X-12 下，`docs/blueprint/skills.md`「脚本」第 2 条）：照这一刻装了的包和管理员家目录再找一遍，
-//! 开头写错的、读不了的、说明加参数超了预算的、同名被压掉的，各一条警告，`message` 带上为什么（英文一句：给作者看的，同
-//! 编译器的报错）；找到了、却因为撞了别的工具的名字没登记上的脚本另报一条。
+//! 开头写错的、读不了的各一条警告，`message` 带上为什么（英文一句：给作者看的，同编译器的报错）；同名被盖住的说被谁盖住
+//! （`script_covered`、`skill_covered`，施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）；找到了、却因为撞了别的工具的名字
+//! 没登记上的脚本另报一条。
 
 use std::path::Path;
 
@@ -28,12 +29,24 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         let message = crate::packages::sentence(words, code, detail).unwrap_or_default();
         json!({"kind": kind, "file": shown(core, path), "code": code, "level": "warning", "message": message})
     };
-    let one =
-        |kind: &str, code: &str, skipped: &Skipped| warn(kind, code, &skipped.path, &skipped.why);
+    let one = |kind: &str, skipped: &Skipped| match &skipped.by {
+        Some(by) => warn(
+            kind,
+            &format!("{kind}_covered"),
+            &skipped.path,
+            &shown(core, by),
+        ),
+        None => warn(
+            kind,
+            &format!("{kind}_skipped"),
+            &skipped.path,
+            &skipped.why,
+        ),
+    };
     let registered = core.scripts();
     let mut problems: Vec<Value> = skipped_scripts
         .iter()
-        .map(|skipped| one("script", "script_skipped", skipped))
+        .map(|skipped| one("script", skipped))
         .collect();
     problems.extend(
         scripts
@@ -41,10 +54,6 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             .filter(|script| !registered.iter().any(|on| on.head.name == script.head.name))
             .map(|script| warn("script", "script_clashed", &script.file, &script.head.name)),
     );
-    problems.extend(
-        skipped_skills
-            .iter()
-            .map(|skipped| one("skill", "skill_skipped", skipped)),
-    );
+    problems.extend(skipped_skills.iter().map(|skipped| one("skill", skipped)));
     problems
 }

@@ -113,16 +113,23 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
         })
         .collect();
     assert_eq!(
-        why,
+        why[..2],
         [
             ("binary".to_string(), "not text"),
             ("broken".to_string(), "Description is missing or empty"),
-            (
-                "shared.sh".to_string(),
-                "script \"shared\" is already provided elsewhere"
-            ),
         ]
     );
+    assert_eq!(why[2].0, "shared.sh");
+    assert!(
+        why[2]
+            .1
+            .starts_with("script \"shared\" is already provided by "),
+        "{why:?}"
+    );
+    // 被谁盖住（施工 X-13 中）：自己放的那一份；别的跳过的没有。
+    let by = skipped[2].by.as_ref().expect("同名的记了被谁盖住");
+    assert!(by.ends_with("data/home/admin/scripts/shared"), "{by:?}");
+    assert!(skipped[..2].iter().all(|one| one.by.is_none()));
 }
 
 #[test]

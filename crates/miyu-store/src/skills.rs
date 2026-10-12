@@ -4,7 +4,8 @@
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；
 //! - 本机自己放的 `home/<账号>/skills/<名字>/SKILL.md`。
 //!
-//! 同名的自己放的赢；两个包撞了名字，照包的编号先后留前一个。读不了的、开头写错的跳过，交回给调的一方记（[`Skipped`]）。
+//! 同名的自己放的赢；两个包撞了名字，照包的编号先后留前一个；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
+//! 跳过，交回给调的一方记（[`Skipped`]）。
 //! 碰磁盘，调的一方放在阻塞线程里。
 
 use std::path::{Path, PathBuf};
@@ -38,6 +39,8 @@ pub struct Skipped {
     pub path: PathBuf,
     /// 为什么。
     pub why: String,
+    /// 同名被盖住的（施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）：盖住它的那一份（`SKILL.md`、脚本文件）。
+    pub by: Option<PathBuf>,
 }
 
 /// 找技能：装了的软件包 `packages` 里的，加数据根 `root` 里账号 `account` 自己放的。照名字排。
@@ -66,19 +69,28 @@ pub fn find(
                 Some(Err(why)) => Err(why),
             };
             match head {
-                Ok(head) if skills.iter().any(|found| found.head.name == head.name) => {
-                    skipped.push(Skipped {
+                Ok(head) => match skills.iter().find(|found| found.head.name == head.name) {
+                    Some(winner) => skipped.push(Skipped {
                         path: dir,
-                        why: format!("skill {:?} is already provided elsewhere", head.name),
-                    });
-                }
-                Ok(head) => skills.push(Skill {
-                    head,
-                    file,
-                    dir,
-                    package: package.clone(),
+                        why: format!(
+                            "skill {:?} is already provided by {}",
+                            head.name,
+                            winner.file.display()
+                        ),
+                        by: Some(winner.file.clone()),
+                    }),
+                    None => skills.push(Skill {
+                        head,
+                        file,
+                        dir,
+                        package: package.clone(),
+                    }),
+                },
+                Err(why) => skipped.push(Skipped {
+                    path: file,
+                    why,
+                    by: None,
                 }),
-                Err(why) => skipped.push(Skipped { path: file, why }),
             }
         }
     }

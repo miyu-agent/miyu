@@ -383,3 +383,57 @@ async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
         request.system
     );
 }
+
+/// 同名被盖住的（施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）：家目录里放的赢，装的包里同名的那一份 `check` 报
+/// `script_covered`、`skill_covered`，说被谁盖住。
+#[tokio::test]
+async fn check_says_which_file_covers_a_packaged_script_or_skill() {
+    let home = Home::new();
+    home.write("home/alice/scripts/dice.py", &echo("dice"));
+    home.write(
+        "home/alice/skills/notes/SKILL.md",
+        "---\nname: notes\ndescription: Mine.\n---\nbody\n",
+    );
+    let folder = home.work.join("kit");
+    std::fs::create_dir_all(folder.join("scripts")).expect("建得了");
+    std::fs::create_dir_all(folder.join("skills/notes")).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        "[package]\nname = { en = \"Kit\" }\n",
+    )
+    .expect("写得进");
+    std::fs::write(folder.join("scripts/dice.py"), echo("dice")).expect("写得进");
+    std::fs::write(
+        folder.join("skills/notes/SKILL.md"),
+        "---\nname: notes\ndescription: Theirs.\n---\nbody\n",
+    )
+    .expect("写得进");
+    let mut client = Client::connect(core(&home, &Script::new([])));
+    client.hello().await;
+    let installed = client
+        .call("i1", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "kit", "{installed}");
+    let reply = client.call("k1", "check", json!({})).await;
+    let problems: Vec<(String, String, String)> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .map(|one| {
+            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
+            (text("code"), text("file"), text("message"))
+        })
+        .collect();
+    assert_eq!(problems.len(), 2, "{reply}");
+    let (code, file, message) = &problems[0];
+    assert_eq!(code, "script_covered");
+    assert!(file.ends_with("kit/scripts/dice.py"), "{file}");
+    assert!(message.contains("home/alice/scripts/dice.py"), "{message}");
+    let (code, file, message) = &problems[1];
+    assert_eq!(code, "skill_covered");
+    assert!(file.ends_with("kit/skills/notes"), "{file}");
+    assert!(
+        message.contains("home/alice/skills/notes/SKILL.md"),
+        "{message}"
+    );
+}

@@ -116,7 +116,13 @@ fn skills_come_from_installed_packages_and_the_home_folder() {
             .path
             .ends_with("res/packages/tools/skills/shared")
     );
-    assert!(skipped[0].why.contains("already provided"));
+    assert!(skipped[0].why.contains("already provided by "));
+    // 被谁盖住（施工 X-13 中）：自己放的那一份 `SKILL.md`。
+    let by = skipped[0].by.as_ref().expect("同名的记了被谁盖住");
+    assert!(
+        by.ends_with("data/home/admin/skills/shared/SKILL.md"),
+        "{by:?}"
+    );
 }
 
 #[test]
