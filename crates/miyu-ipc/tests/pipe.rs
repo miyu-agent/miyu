@@ -78,3 +78,22 @@ async fn without_a_core_there_is_nothing_to_connect_to() {
     let error = connect(&home.root).await.expect_err("走了");
     assert!(matches!(error, ConnectError::NotRunning), "{error:?}");
 }
+
+/// 管道忙（第一个头占了等着的那个实例、核心还没去接，没开下一个）：再连的头歇着再试，核心过了 6 秒才接也照样连得上。
+/// CI 的 Windows 机器负载重时核心慢，原来最多等 5 秒，`miyu ask` 报「All pipe instances are busy」（施工 ipc 补，
+/// run 1938）。
+#[tokio::test]
+async fn a_busy_pipe_is_waited_out() {
+    let home = Home::new();
+    let mut opened = open(&home.root, &home.dirs()).expect("起得来");
+    let first = ClientOptions::new().open(pipe(&home)).expect("连得上");
+    let root = home.root.clone();
+    let second = tokio::spawn(async move { connect(&root).await });
+    tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+    let taken = within("接到第一个", opened.listener.accept())
+        .await
+        .expect("接得到");
+    let connected = within("第二个连上", second).await.expect("没 panic");
+    assert!(connected.is_ok(), "{:?}", connected.err());
+    drop((first, taken));
+}
