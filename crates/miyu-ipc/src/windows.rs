@@ -20,8 +20,9 @@ use crate::error::{ConnectError, OpenError};
 /// 管道忙的时候歇多久再连。
 const BUSY_PAUSE: Duration = Duration::from_millis(50);
 
-/// 管道忙最多再连几次：一共 5 秒。
-const BUSY_TRIES: u32 = 100;
+/// 管道忙最多再连几次：一共 30 秒。核心接走一个连接以后才开下一个实例，负载重时慢：原来 5 秒，CI 的 Windows 机器上
+/// 头报「All pipe instances are busy」（施工 ipc 补）。
+const BUSY_TRIES: u32 = 600;
 
 /// 连接的一头：核心接到的是服务端，头连上的是客户端。
 pub(crate) enum Stream {
