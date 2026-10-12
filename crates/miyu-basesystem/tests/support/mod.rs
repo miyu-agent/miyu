@@ -273,6 +273,22 @@ impl Site {
     }
 
     /// 在场地里的 `cwd` 这个工作目录里的一次调用，不关进沙盒。
+    /// 把场地里的脚本 `file` 当一件工具（施工 X-12 上），在 `work/` 里调一次，参数是 `args`。
+    pub async fn script(&self, file: &str, args: serde_json::Value) -> Done {
+        let path = self.0.join(file);
+        let text = std::fs::read_to_string(&path).expect("读得出");
+        let name = path
+            .file_name()
+            .expect("有名字")
+            .to_string_lossy()
+            .into_owned();
+        let head = miyu_policy::script::read(&name, &text).expect("开头写对了");
+        let tool =
+            miyu_basesystem::script(&resources(), &head, path).expect("资源目录里的字读得出来");
+        let call = self.call_for("work", args, Seen::new(), Stop::default());
+        tool.run(call, Progress::new(|_| {})).await
+    }
+
     fn call_for(&self, cwd: &str, args: serde_json::Value, seen: Seen, stop: Stop) -> Call {
         Call {
             args: args.to_string(),

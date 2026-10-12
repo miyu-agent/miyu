@@ -11,6 +11,7 @@ mod env;
 mod output;
 mod process;
 mod program;
+pub(crate) mod script;
 #[cfg(test)]
 mod tests;
 
@@ -49,15 +50,21 @@ pub(crate) struct Shell {
 /// 输出里给她看的几句：`software/basesystem/shell/*.txt`，和几件工具共用的。
 struct Texts {
     common: Common,
-    empty: Template,
-    exit: Template,
-    signal: Template,
+    results: Results,
     timed_out: Template,
-    omitted: Template,
-    truncated: Template,
     failed: Template,
     no_background: Template,
     started: Template,
+}
+
+/// 跑完了交回时的几句，`shell` 和脚本（施工 X-12 上，[`script`]）共用：没有输出、退出码、信号、省了多少、截了
+/// （`software/basesystem/shell/`）。
+struct Results {
+    empty: Template,
+    exit: Template,
+    signal: Template,
+    omitted: Template,
+    truncated: Template,
 }
 
 /// 她给的参数。
@@ -90,12 +97,8 @@ impl Shell {
             )?,
             texts: Texts {
                 common,
-                empty: text("empty", &[])?,
-                exit: text("exit", &["code"])?,
-                signal: text("signal", &["signal"])?,
+                results: Results::load(resources)?,
                 timed_out: text("timed-out", &["timeout", "max"])?,
-                omitted: text("omitted", &["count"])?,
-                truncated: text("truncated", &["total"])?,
                 failed: text("failed", &["shell", "error"])?,
                 no_background: text("no-background", &[])?,
                 started: text("started", &["job"])?,
@@ -148,32 +151,53 @@ impl Shell {
         }
     }
 
-    /// 跑完了：输出，加上它怎么结束的。
+    /// 跑完了：输出，加上它怎么结束的；到时被杀的照 `shell` 的那一句。
     fn finished(&self, finished: Finished, timeout: u64) -> Done {
+        self.texts.results.ended(finished, || {
+            let note = say(
+                &self.texts.timed_out,
+                &[("timeout", &timeout.to_string()), ("max", &MAX.to_string())],
+            );
+            (note, seconds(timeout))
+        })
+    }
+}
+
+impl Results {
+    /// 照资源目录 `resources` 里 `shell/` 下的字造。
+    fn load(resources: &Path) -> Result<Results, LoadError> {
+        let text = |name: &str, fields: &[&str]| load::text(resources, "shell", name, fields);
+        Ok(Results {
+            empty: text("empty", &[])?,
+            exit: text("exit", &["code"])?,
+            signal: text("signal", &["signal"])?,
+            omitted: text("omitted", &["count"])?,
+            truncated: text("truncated", &["total"])?,
+        })
+    }
+
+    /// 跑完了：输出，加上它怎么结束的。到时被杀的接 `timed_out` 交的那一句和给人看的秒数（`shell`、脚本各一句）。
+    fn ended(&self, finished: Finished, timed_out: impl FnOnce() -> (String, String)) -> Done {
         let Finished { ending, output } = finished;
         let body = self.body(&output);
         match ending {
             Ending::TimedOut => {
-                let note = say(
-                    &self.texts.timed_out,
-                    &[("timeout", &timeout.to_string()), ("max", &MAX.to_string())],
-                );
-                Done::error(body + &note)
-                    .said(said("shell/timed-out").with("seconds", seconds(timeout)))
+                let (note, seconds) = timed_out();
+                Done::error(body + &note).said(said("shell/timed-out").with("seconds", seconds))
             }
             Ending::Exited(status) => match status.code() {
                 Some(0) if output.is_empty() => {
-                    Done::ok(say(&self.texts.empty, &[])).said(said("shell/quiet"))
+                    Done::ok(say(&self.empty, &[])).said(said("shell/quiet"))
                 }
                 Some(0) => Done::ok(body).said(said_n("shell/done", "count", output.lines())),
                 Some(code) => {
                     let code = code.to_string();
-                    Done::error(body + &say(&self.texts.exit, &[("code", &code)]))
+                    Done::error(body + &say(&self.exit, &[("code", &code)]))
                         .said(said("shell/exited").with("code", code))
                 }
                 None => {
                     let signal = signal(status);
-                    Done::error(body + &say(&self.texts.signal, &[("signal", &signal)]))
+                    Done::error(body + &say(&self.signal, &[("signal", &signal)]))
                         .said(said("shell/signal").with("signal", signal))
                 }
             },
@@ -190,8 +214,8 @@ impl Shell {
                 omitted,
                 total,
             } => {
-                let omitted = say(&self.texts.omitted, &[("count", &omitted.to_string())]);
-                let truncated = say(&self.texts.truncated, &[("total", &total.to_string())]);
+                let omitted = say(&self.omitted, &[("count", &omitted.to_string())]);
+                let truncated = say(&self.truncated, &[("total", &total.to_string())]);
                 line(head) + &omitted + &line(tail) + &truncated
             }
         }
@@ -233,7 +257,7 @@ impl Tool for Shell {
                 Ok(command) => command,
                 Err(error) => return self.failed(&error),
             };
-            let started = match process::start(command, move |text| progress.push(text)) {
+            let started = match process::start(command, None, move |text| progress.push(text)) {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };

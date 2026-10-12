@@ -28,6 +28,7 @@ pub mod preset;
 mod private_media;
 mod rebuild;
 mod recap;
+pub mod script;
 mod shorten;
 pub mod skill;
 mod snapshot;

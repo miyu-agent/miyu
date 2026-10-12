@@ -1511,6 +1511,7 @@ dependencies = [
  "miyu-fs",
  "miyu-kernel",
  "miyu-log",
+ "miyu-policy",
  "miyu-sandbox",
  "miyu-store",
  "miyu-tool",

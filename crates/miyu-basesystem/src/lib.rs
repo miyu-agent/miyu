@@ -34,12 +34,28 @@ mod trash;
 mod walk;
 mod write;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use miyu_tool::Tool;
 
 pub use load::LoadError;
+
+/// 一个脚本当一件工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」）：开头读好的 `head`、脚本文件 `file`，给她看的几句
+/// 照资源目录 `resources` 里的字。
+///
+/// # Errors
+///
+/// 哪一份字读不出来、写法不对，说是哪一份。
+pub fn script(
+    resources: &Path,
+    head: &miyu_policy::script::ScriptHead,
+    file: PathBuf,
+) -> Result<Arc<dyn Tool>, LoadError> {
+    Ok(Arc::new(shell::script::Script::load(
+        resources, head, file,
+    )?))
+}
 
 /// 基础系统的每件工具：照资源目录 `resources` 里的字造好。
 ///

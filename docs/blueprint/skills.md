@@ -11,7 +11,7 @@
 - 从哪来：软件包里的 `skills/<名字>/SKILL.md`、`scripts/<文件>`；本机自己放的在家目录里，同名的自己放的赢（`31-软件包.md` 第五节）。自己做出来的在做出它的那个预设里打开（16 第三节）。
 - 技能的列表在 system 的「技能与知识库」那一段，排在核心和软件包的几行后面（`26-提示词.md` 第三节）；技能正文是她读进来的工具结果，压缩以后照「用过的技能」重建（`09-压缩.md` 第四节，`10-自带软件.md` 的 `file.read` 效果）。
 
-状态：图纸（2026-10-11 主会话写；项目主人 2026-10-10 定了技能要先过一遍设计，2026-10-11 照推荐定了下面「定了的」五条）。施工 X-10 上做完（2026-10-12）：找、读开头、列进 system、文件夹放开只读（文件工具）；X-10 中做完（同一天）：沙盒里的命令也读得到（规格的 `reveal`，Linux、macOS；Windows 的沙盒还没收紧）；X-10 下做完（同一天）：读了 `SKILL.md` 的效果标上技能，压后另算一组重读回来（`compaction.md` 第九条第 3 条）。X-11 上做完（同一天）：每个技能算一个功能 `skill-<名字>`，造会话、载入时照预设筛，`preset.get` 列出来能开关。X-11 下做完（同一天）：回合开始照这一刻再找一遍，放开的文件夹跟着换，列表变了的在尾巴交一份新的（`<skills-changed>`）。脚本还没有。
+状态：图纸（2026-10-11 主会话写；项目主人 2026-10-10 定了技能要先过一遍设计，2026-10-11 照推荐定了下面「定了的」五条）。施工 X-10 上做完（2026-10-12）：找、读开头、列进 system、文件夹放开只读（文件工具）；X-10 中做完（同一天）：沙盒里的命令也读得到（规格的 `reveal`，Linux、macOS；Windows 的沙盒还没收紧）；X-10 下做完（同一天）：读了 `SKILL.md` 的效果标上技能，压后另算一组重读回来（`compaction.md` 第九条第 3 条）。X-11 上做完（同一天）：每个技能算一个功能 `skill-<名字>`，造会话、载入时照预设筛，`preset.get` 列出来能开关。X-11 下做完（同一天）：回合开始照这一刻再找一遍，放开的文件夹跟着换，列表变了的在尾巴交一份新的（`<skills-changed>`）。X-12 上做完（同一天）：读脚本的开头注释、找脚本、脚本当一件工具怎么跑；还没登记进工具目录（X-12 中）。
 
 ### 代码（施工 X-10 上）
 
@@ -22,6 +22,9 @@
 | `crates/miyu-store/src/resources/skills.rs`、`resources/core/skills/open.txt`、`line.txt` | 列出来的那一块的两份字（26 第十节登记） |
 | `crates/miyu-session/src/skills.rs` | 造会话时找（跳过的记一行运行日志）、拼 system 里那一块（工具面上没有 `read` 的、一个技能都没有的不拼）；放开只读的文件夹 |
 | `crates/miyu-session/src/skills/watch.rs`、`crates/miyu-session/src/actor/skills.rs`、`resources/core/skills/changed-open.txt`、`changed-close.txt`、`none.txt` | 会话中途列表变了（施工 X-11 下）：回合开始再找一遍、换放开的文件夹、和她最后看到的比，变了交一块 `<skills-changed>`（`context.injected`，模块 `skills`） |
+| `crates/miyu-policy/src/script.rs` | 读脚本的开头注释（施工 X-12 上）：旧版的键（全角、半角冒号），`Parameters` 往下逐行拼成一份 JSON 为止，认、不用的键跳过；工具名照文件名 |
+| `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再照包的编号找装了的包的 `scripts/`；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
+| `crates/miyu-basesystem/src/shell/script.rs`、`resources/software/basesystem/script/` | 脚本当一件工具（施工 X-12 上）：照 `#!` 起（Windows 上照解释器的名字、扩展名找），参数交给 `MIYU_ARGS_JSON` 和标准输入，缓存目录 `MIYU_SCRIPT_CACHE_DIR`，`PYTHONUTF8=1`；起进程、看门、截输出、跑完了的几句和 `shell` 同一套 |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
 做法上定的（施工 X-10 上，主会话照推荐定）：
@@ -76,5 +79,7 @@
 | X-10 下 | 用过的技能压缩后重建：做完了（2026-10-12） |
 | X-11 上 | 技能：每个算一个功能 `skill-<名字>`、预设开关（造会话、载入时筛，`preset.get` 列出来）：做完了（2026-10-12） |
 | X-11 下 | 技能：会话中途列表变了（装卸、预设开关、家目录里放了新的），回合开始在尾巴追加一份新的完整列表，放开的文件夹跟着换：做完了（2026-10-12） |
-| X-12 | 脚本：读开头注释、登记成工具、跑、进沙盒 |
+| X-12 上 | 脚本：读开头注释、找、当一件工具怎么跑：做完了（2026-10-12） |
+| X-12 中 | 脚本：登记进工具目录（核心起来时、装卸包时）、各算一个功能 `script-<名字>`、预设开关、`preset.get` 列出来 |
+| X-12 下 | 脚本：单件超预算不收、`miyu check` 报、真模型走一遍 |
 | X-13 | 出厂的两个技能；`miyu check` 查技能、脚本的写法；清单认只带技能、脚本的包（现在报 `missing_key`，X-11 下查出来的） |

@@ -17,6 +17,7 @@ mod jobs;
 mod packages;
 mod read;
 mod read_image;
+mod script;
 mod send_message;
 mod session_usage;
 mod sessions;

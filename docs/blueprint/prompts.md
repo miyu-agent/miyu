@@ -1193,6 +1193,28 @@ Stopped after {timeout} ms because the command took too long. If it needs more t
 Could not run {shell}: {error}.
 ```
 
+#### `software/basesystem/script/timed-out.txt`
+
+- 什么时候加进来：脚本到了开头写的秒数、整组杀掉了（施工 X-12 上；字段按 `60` 填）
+- token：15（2026-10-12 照开发端点量）
+- 为什么加：说清是超时停的；脚本的超时是作者写死的，不像 `shell` 能叫她写大一点，所以不提 `timeout`
+- 指纹：`071c142f`
+
+```text
+Stopped after {seconds} s because the script took too long.
+```
+
+#### `software/basesystem/script/failed.txt`
+
+- 什么时候加进来：脚本起不来：解释器找不到、工作目录不在（施工 X-12 上；字段按 `bangumi`、`No such file or directory (os error 2)` 填）
+- token：18（2026-10-12 量，原因占一半）
+- 为什么加：带上脚本名和原因；跑完了的几句（没有输出、退出码、信号、截断）和 `shell` 共用
+- 指纹：`7d322df6`
+
+```text
+Could not run {name}: {error}.
+```
+
 #### `software/basesystem/shell/no-background.txt`
 
 - 什么时候加进来：写了 `run_in_background: true`，这次调用却没有任务端口（会话外面的调用，例如测试；会话里总有）

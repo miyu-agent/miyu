@@ -44,6 +44,7 @@ mod private_json;
 pub mod recall;
 pub mod resources;
 pub mod root;
+pub mod scripts;
 pub mod secrets;
 pub mod skills;
 pub mod sqlite;

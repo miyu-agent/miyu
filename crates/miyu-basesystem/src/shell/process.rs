@@ -1,5 +1,5 @@
-//! 起命令、读输出、等它结束（施工 4-8）：标准输入接空的，标准输出、标准错误接到同一根管道上，照写出来的先后；
-//! 到时、叫停时整组杀掉。
+//! 起命令、读输出、等它结束（施工 4-8）：标准输入接空的（脚本的参数另给一份，施工 X-12 上），标准输出、标准错误接到
+//! 同一根管道上，照写出来的先后；到时、叫停时整组杀掉。
 //!
 //! - Unix 上命令自成一个进程组，用 `rustix` 的安全接口 `kill(-pgid, SIGKILL)` 杀整组。命令退出以后，组里还在跑的
 //!   （`&` 放到后台的）也杀掉：命令做完了，它起的东西不留。后台命令（施工 7-3）照同一套起、同一套杀，见
@@ -11,7 +11,7 @@
 //! - 命令退出以后，管道最多再读 [`DRAIN`]：还有东西拿着管道的（Windows 上它放出去的孙进程），不等它。
 //! - 到时杀了以后最多再等 [`KILL_WAIT`]：还不结束的也算超时，不再等它（施工 4-9 再补二）。
 
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -78,21 +78,36 @@ pub(super) struct Spawned {
     pub(super) watch: Watch,
 }
 
-/// 起命令：标准输入接空的，标准输出、标准错误接到同一根管道上，自成一组（Unix 上组里有看门的，施工 7-8）。交回它的
-/// 进程、整组杀的时候认它的那个编号、管道读的一头、看门的。前台、后台（施工 7-3）都这样起。
+/// 起命令：标准输入接空的，有 `input` 的（脚本的参数，施工 X-12 上）接一根管道、写完就关；标准输出、标准错误接到同一根
+/// 管道上，自成一组（Unix 上组里有看门的，施工 7-8）。交回它的进程、整组杀的时候认它的那个编号、管道读的一头、看门的。
+/// 前台、后台（施工 7-3）都这样起。
 ///
 /// # Errors
 ///
 /// 管道建不起来，或者程序起不来（找不到、工作目录不在）。
-pub(super) fn spawn(mut command: Command) -> io::Result<Spawned> {
+pub(super) fn spawn(mut command: Command, input: Option<Vec<u8>>) -> io::Result<Spawned> {
     let (pipe, writer) = io::pipe()?;
+    let stdin = match input {
+        Some(_) => Stdio::piped(),
+        None => Stdio::null(),
+    };
     command
-        .stdin(Stdio::null())
+        .stdin(stdin)
         .stdout(writer.try_clone()?)
         .stderr(writer);
     let watch = alone(&mut command);
     // 父进程手里的写端在 `command` 里，这个函数一返回就跟着它关掉：留着的话，命令都退出了读的一头也读不到结尾。
-    let child = command.spawn()?;
+    let mut child = command.spawn()?;
+    // 另起一个线程写完就关：在这里写，它不读的话管道满了会卡住起它的这一头。
+    if let (Some(bytes), Some(mut stdin)) = (input, child.stdin.take()) {
+        thread::spawn(move || {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "不读标准输入的脚本早早关了管道，写不进也不要紧"
+            )]
+            let _ = stdin.write_all(&bytes);
+        });
+    }
     let group = Group(group_of(&watch, &child));
     Ok(Spawned {
         child,
@@ -124,6 +139,7 @@ fn group_of(_watch: &Watch, child: &Child) -> u32 {
 /// 同 [`spawn`]。
 pub(super) fn start(
     command: Command,
+    input: Option<Vec<u8>>,
     progress: impl Fn(String) + Send + 'static,
 ) -> io::Result<Started> {
     let Spawned {
@@ -131,7 +147,7 @@ pub(super) fn start(
         group,
         pipe,
         watch,
-    } = spawn(command)?;
+    } = spawn(command, input)?;
     let output = Arc::new(Mutex::new(Capture::default()));
     let (done, read) = mpsc::channel();
     let theirs = Arc::clone(&output);

@@ -32,7 +32,7 @@ pub(super) fn start(command: Command) -> io::Result<Background> {
         group,
         pipe,
         watch,
-    } = process::spawn(command)?;
+    } = process::spawn(command, None)?;
     Ok(Background {
         output: Box::new(Output {
             pipe,

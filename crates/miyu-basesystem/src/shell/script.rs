@@ -1,0 +1,226 @@
+//! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 2、3 条）：一个脚本一件工具，名字、说明、参数照开头注释
+//! （`miyu_policy::script`）。起进程、看门、截输出和 `shell` 同一套（[`super::process`]、[`super::Results`]）。
+//!
+//! - 照开头的 `#!` 起程序：`#!/usr/bin/env python3` 起 `/usr/bin/env`，参数是 `python3` 和脚本；没有 `#!` 的直接起脚本本身。
+//!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面那个）找，没有 `#!` 的照扩展名找（[`launcher`]）。
+//! - 参数是她给的那份 JSON，交给环境变量 `MIYU_ARGS_JSON`，也写进标准输入（同旧版）。
+//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
+//!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
+//!   白名单。
+//! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人。
+
+use std::ffi::OsString;
+use std::io::{self, BufRead};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use miyu_kernel::template::Template;
+use miyu_kernel::tool::Access;
+use miyu_policy::script::ScriptHead;
+use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
+
+use super::process::{self, Guard};
+use super::{Results, env, workdir};
+use crate::blocking::blocking;
+use crate::common::said;
+use crate::load::{self, LoadError, say};
+
+/// 参数交给脚本的环境变量（同旧版）。
+const ARGS: &str = "MIYU_ARGS_JSON";
+
+/// 能写缓存的目录交给脚本的环境变量（同旧版）。
+const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
+
+/// 一个脚本。
+pub(crate) struct Script {
+    spec: Spec,
+    file: PathBuf,
+    timeout: u64,
+    results: Results,
+    timed_out: Template,
+    failed: Template,
+}
+
+impl Script {
+    /// 照开头 `head`、脚本文件 `file` 造，给她看的几句从资源目录 `resources` 读：跑完了的同 `shell`，到时、起不来的另有
+    /// `software/basesystem/script/`。
+    ///
+    /// # Errors
+    ///
+    /// 参数不是 JSON（读开头时已经查过，不会）；资源目录里哪一句读不出来。
+    pub(crate) fn load(
+        resources: &Path,
+        head: &ScriptHead,
+        file: PathBuf,
+    ) -> Result<Script, LoadError> {
+        let parameters = serde_json::from_str(&head.parameters).map_err(|error| LoadError {
+            file: file.clone(),
+            why: error.to_string(),
+        })?;
+        let text = |name: &str, fields: &[&str]| load::text(resources, "script", name, fields);
+        Ok(Script {
+            spec: Spec {
+                name: head.name.clone(),
+                description: head.description.clone(),
+                parameters,
+                access: Access::Execute,
+            },
+            timeout: head.timeout,
+            results: Results::load(resources)?,
+            timed_out: text("timed-out", &["seconds"])?,
+            failed: text("failed", &["name", "error"])?,
+            file,
+        })
+    }
+
+    /// 起不来、等不了。
+    fn failed(&self, error: &io::Error) -> Done {
+        let error = error.to_string();
+        Done::error(say(
+            &self.failed,
+            &[("name", &self.spec.name), ("error", &error)],
+        ))
+        .said(said("shell/failed").with("error", error))
+    }
+
+    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起。
+    fn command(&self, call: &Call, cache: &Path) -> io::Result<std::process::Command> {
+        let first = first_line(&self.file)?;
+        let (program, args) = launcher(&self.file, &first, cfg!(windows));
+        let (program, args) = match call.sandbox.as_deref() {
+            None => (program, args),
+            Some(sandboxed) => miyu_sandbox::argv(sandboxed, Path::new(&program), &args)
+                .map(|(helper, args)| (helper.into_os_string(), args))
+                .map_err(io::Error::other)?,
+        };
+        let mut vars = env::passed(std::env::vars_os());
+        vars.push((ARGS.into(), call.args.clone().into()));
+        vars.push((CACHE.into(), cache.as_os_str().to_owned()));
+        // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。
+        vars.push(("PYTHONUTF8".into(), "1".into()));
+        let mut command = std::process::Command::new(program);
+        command
+            .args(args)
+            .current_dir(workdir(call))
+            .env_clear()
+            .envs(vars);
+        if let Some(sandboxed) = call.sandbox.as_deref() {
+            command.envs(sandboxed.env.iter().map(|(name, value)| (name, value)));
+        }
+        Ok(command)
+    }
+}
+
+impl Tool for Script {
+    fn spec(&self) -> &Spec {
+        &self.spec
+    }
+
+    fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
+        vec![
+            ("script", self.spec.name.clone()),
+            ("args", call.args.clone()),
+        ]
+    }
+
+    fn run(&self, call: Call, progress: Progress) -> Running<'_> {
+        Box::pin(async move {
+            let cache = std::env::temp_dir()
+                .join("miyu-scripts")
+                .join(&self.spec.name);
+            let command =
+                std::fs::create_dir_all(&cache).and_then(|()| self.command(&call, &cache));
+            let command = match command {
+                Ok(command) => command,
+                Err(error) => return self.failed(&error),
+            };
+            let input = Some(call.args.clone().into_bytes());
+            let started = match process::start(command, input, move |text| progress.push(text)) {
+                Ok(started) => started,
+                Err(error) => return self.failed(&error),
+            };
+            // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
+            let guard = Guard::new(started.group());
+            let wait = Duration::from_secs(self.timeout);
+            let finished = blocking(call.stop.clone(), move |_| started.wait(wait)).await;
+            guard.disarm();
+            let seconds = self.timeout.to_string();
+            match finished {
+                Ok(finished) => self.results.ended(finished, || {
+                    (
+                        say(&self.timed_out, &[("seconds", &seconds)]),
+                        seconds.clone(),
+                    )
+                }),
+                Err(error) => self.failed(&error),
+            }
+        })
+    }
+}
+
+/// 脚本的第一行（读不了的是空的那种就是空的）。
+fn first_line(file: &Path) -> io::Result<String> {
+    let mut line = String::new();
+    io::BufReader::new(std::fs::File::open(file)?).read_line(&mut line)?;
+    Ok(line.trim_end().to_string())
+}
+
+/// 起脚本 `file` 的程序和参数，第一行是 `first`。`windows` 是 Windows 上的找法。
+///
+/// - 有 `#!` 的：Unix 上照写的起（解释器、它后面那一个参数、脚本）；Windows 上取解释器的名字（`env` 的取它后面那个，
+///   `python3` 换成 `python`），照 `PATH` 找。
+/// - 没有的：Unix 上直接起脚本；Windows 上照扩展名：`.py` 的 `python`，`.ps1` 的 PowerShell（不读配置、不管执行策略），`.js` 的
+///   `node`，`.cmd`、`.bat` 的 `cmd /C`，别的直接起。
+pub(super) fn launcher(file: &Path, first: &str, windows: bool) -> (OsString, Vec<OsString>) {
+    let script = file.as_os_str().to_owned();
+    if let Some(rest) = first.strip_prefix("#!") {
+        let mut words = rest.split_whitespace();
+        if let Some(interpreter) = words.next() {
+            let extra: Vec<&str> = words.collect();
+            if !windows {
+                let mut args: Vec<OsString> = extra.iter().map(OsString::from).collect();
+                args.push(script);
+                return (interpreter.into(), args);
+            }
+            let name = Path::new(interpreter).file_name().map_or_else(
+                || interpreter.to_string(),
+                |name| name.to_string_lossy().into_owned(),
+            );
+            let (program, rest) = match (name.as_str(), extra.split_first()) {
+                ("env", Some((program, rest))) => (program.to_string(), rest.to_vec()),
+                _ => (name, extra),
+            };
+            // Windows 上的 Python 叫 `python`：`python3` 常常是应用商店的占位程序。
+            let program = if program == "python3" {
+                "python".to_string()
+            } else {
+                program
+            };
+            let mut args: Vec<OsString> = rest.iter().map(OsString::from).collect();
+            args.push(script);
+            return (program.into(), args);
+        }
+    }
+    if !windows {
+        return (script, Vec::new());
+    }
+    let extension = file
+        .extension()
+        .map(|extension| extension.to_string_lossy().to_ascii_lowercase());
+    let (program, before): (&str, &[&str]) = match extension.as_deref() {
+        Some("py") => ("python", &[]),
+        Some("ps1") => (
+            "powershell",
+            &["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"],
+        ),
+        Some("js") => ("node", &[]),
+        Some("cmd" | "bat") => ("cmd", &["/C"]),
+        _ => return (script, Vec::new()),
+    };
+    let mut args: Vec<OsString> = before.iter().map(OsString::from).collect();
+    args.push(script);
+    (program.into(), args)
+}
+
+#[cfg(test)]
+mod tests;
