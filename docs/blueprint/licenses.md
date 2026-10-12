@@ -53,6 +53,7 @@ GPL-3.0-or-later，见 `LICENSE`。
 
 ### 依赖记录
 
+- 施工 K-5 给 `miyu-extract`（新 crate，知识库抽字的小程序，核心照子进程拉起，不编进核心）加了 `pdf-extract` 0.12（MIT，PDF 一页一页抽字）、`html2text` 0.17（MIT，网页换成文字）：知识库认 PDF、网页（`knowledge.md`「怎么走」第二条）。两棵树一百个上下的包（`lopdf`、`adobe-cmap-parser`、`html5ever`、`markup5ever` 这些），都是 MIT、Apache-2.0、ISC、BSD 这几种，都在能用的名单里，门禁过了。试过的 `pdf_oxide` 最新版自己编不过，没用。
 - 施工 R-5 上给 `miyu-embed`（新 crate，本机 embedding 的小程序，`recall.md` 第四条）加了 `ort` 2.0.0-rc.13（MIT OR Apache-2.0，钉死版本，关掉默认功能只开 `std`、`download-binaries`、`tls-rustls`），它带进来的 `ort-sys`（MIT OR Apache-2.0）、`ndarray` 0.17、`matrixmultiply`、`num-complex`、`num-integer`、`rawpointer`（MIT 或 Apache-2.0）；`ort-sys` 编译时下预编好的 ONNX Runtime 用的 `ureq`、`ureq-proto`、`utf8-zero`（MIT OR Apache-2.0）、`lzma-rust2`（Apache-2.0）、`hmac-sha256`（ISC）、`socks`（MIT/Apache-2.0）、`byteorder`（Unlicense OR MIT）、`winapi` 和它的两个 `*-pc-windows-gnu`（MIT/Apache-2.0），`rustls` 那一串原来就有。分词加了 `unicode-general-category` 1.1（Apache-2.0，没有别的依赖）；`toml_edit` 多开 `serde`，带进来 `serde_spanned`（MIT OR Apache-2.0）。都在能用的名单里，门禁过了。
   - ONNX Runtime 本身（MIT，微软）由 `ort-sys` 编译时从 pyke 的地址下预编好的静态库，静态链接进 `miyu-embed`，主程序不带：编这个 crate 要联网，没网的机器设 `ORT_LIB_PATH` 指到自己放好的库（`ort-sys` 的 `build/vars.rs`）。ONNX Runtime 静态库里还有它自己的第三方代码（protobuf、abseil、Eigen 等，BSD、Apache-2.0、MPL-2.0 这几种，都能和 GPL-3.0 合在一起发），发行包带上 `miyu-embed` 时随它发 ONNX Runtime 的 `ThirdPartyNotices.txt`（随发布那一步）。
 - 施工 W-10 给 `miyu-web` 直接加了 `getrandom` 0.4（票据的 32 个随机字节）、`base64` 0.22（核心一块块给的内容是 base64）：两个本来就在依赖图里，和别的 crate 用的同一份，没给图里添新的第三方包。门禁过了。
@@ -74,6 +75,7 @@ GPL-3.0-or-later，见 `LICENSE`。
 | 文件 | 从哪来 | 许可证 | 怎么守 |
 |---|---|---|---|
 | `crates/miyu-embed/tests/fixtures/bge-vocab.txt` | bge-small-zh-v1.5 的词表（施工 R-5 上，分词的测试用） | MIT（FlagEmbedding 仓库的 `LICENSE`：模型卡写明 bge 模型照它发布，可免费商用） | 原文放在旁边的 `bge-vocab.LICENSE`。只在测试里，不随安装包发；模型文件本身不进仓库，放在 Release `models-bge-small-zh-v1.5`，同一份许可证跟着 |
+| `crates/miyu-extract/data/EquivalentUnifiedIdeograph.txt` | Unicode 16.0.0 的字符数据库（施工 K-5：中文 PDF 里部首的码位换回平常的字，`knowledge.md`「怎么走」第二条第 5 款），原样，编进 `miyu-extract` | Unicode License v3（`Unicode-3.0`，在能用的名单里） | 原文放在旁边的 `EquivalentUnifiedIdeograph.LICENSE`。换 Unicode 的版本时整份替换 |
 | `resources/models/models-dev.json` | models.dev 的 `api.json`（模型目录，施工 8-7） | MIT（models.dev 仓库的 `LICENSE`，2025 models.dev） | 原文放在旁边的 `models-dev.LICENSE`，跟着快照一起发。MIT 能和 GPL-3.0 合在一起发 |
 | 供应商图标（不随安装包发，核心拉到缓存目录，施工 8-31） | models.dev 的 `logos/<编号>.svg`；lobe-icons 的 `@lobehub/icons-static-svg`（钉住版本） | 两份都是 MIT（models.dev 仓库的 `LICENSE`；lobe-icons 仓库的 `LICENSE`） | 只拉、只缓存，不改不发；标志是各家的商标，归各自所有者（README 写一句）。资源里只有对照表 `resources/models/logos.json`，是我们写的 |
 

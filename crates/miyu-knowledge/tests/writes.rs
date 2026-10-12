@@ -168,6 +168,13 @@ async fn writing_refusals_are_said_plainly() {
             "notes is a mounted folder and read-only. Save to another knowledge base.",
         ),
         (
+            KbRefused::NotText("cat.pdf".to_string()),
+            "kb_save",
+            serde_json::json!({"kb": "notes", "path": "cat.pdf", "text": "x"}),
+            "common/not-text",
+            "cat.pdf is not a text document. Only .md, .markdown and .txt can be written.",
+        ),
+        (
             KbRefused::NoBase("secret".to_string()),
             "kb_delete",
             serde_json::json!({"kb": "secret", "path": "a.md"}),

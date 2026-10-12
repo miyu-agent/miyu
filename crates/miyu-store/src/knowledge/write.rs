@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 
 use super::catch_up::BIGGEST;
+use super::extract::Kind;
 use super::mount::Documents;
 use super::read::target;
 use super::{Knowledge, KnowledgeError};
@@ -66,7 +67,8 @@ impl Knowledge {
     ///
     /// # Errors
     ///
-    /// 没有这个库；路径不合写法、不是文档、有了却不是普通文件（[`KnowledgeError::UnknownDocument`]）；新建的已经有了；
+    /// 没有这个库；路径不合写法、不是文档、有了却不是普通文件（[`KnowledgeError::UnknownDocument`]）；PDF、网页
+    /// （[`KnowledgeError::NotText`]，施工 K-5）；新建的已经有了；
     /// 写完超过 4 MiB；读不了、写不进。
     pub fn save(
         &self,
@@ -77,6 +79,7 @@ impl Knowledge {
         append: bool,
     ) -> Result<Written, KnowledgeError> {
         let file = self.target(account, kb, path)?;
+        Knowledge::writable(path)?;
         let before = existing(&file)?;
         if before.is_some() && !append {
             return Err(KnowledgeError::Exists);
@@ -96,7 +99,8 @@ impl Knowledge {
     ///
     /// # Errors
     ///
-    /// 没有这个库、这一篇；`old` 找不到、不止一处；不是 UTF-8 的当读不了；写完超过 4 MiB；写不进。
+    /// 没有这个库、这一篇；PDF、网页（[`KnowledgeError::NotText`]，施工 K-5）；`old` 找不到、不止一处；不是 UTF-8 的当读不了；
+    /// 写完超过 4 MiB；写不进。
     pub fn edit(
         &self,
         account: &AccountId,
@@ -106,6 +110,7 @@ impl Knowledge {
         new: &str,
     ) -> Result<Written, KnowledgeError> {
         let file = self.target(account, kb, path)?;
+        Knowledge::writable(path)?;
         let before = existing(&file)?.ok_or(KnowledgeError::UnknownDocument)?;
         let text = std::str::from_utf8(&before)
             .map_err(|_| KnowledgeError::Io("not UTF-8".to_string()))?;
@@ -147,10 +152,18 @@ impl Knowledge {
         }
     }
 
-    /// `path` 合不合一篇文档的写法（库里的相对路径、扩展名，同读的那一套），不看在不在（施工 K-3：建库以前先看）。
-    #[must_use]
-    pub fn document(path: &str) -> bool {
-        target(Path::new(""), path).is_some()
+    /// `path` 是不是她写得了的一篇（库里的相对路径、扩展名，同读的那一套；只有文字的两种，施工 K-5），不看在不在（施工 K-3：
+    /// 建库以前先看）。
+    ///
+    /// # Errors
+    ///
+    /// 不合写法、不是文档（[`KnowledgeError::UnknownDocument`]）；PDF、网页（[`KnowledgeError::NotText`]）。
+    pub fn writable(path: &str) -> Result<(), KnowledgeError> {
+        target(Path::new(""), path).ok_or(KnowledgeError::UnknownDocument)?;
+        match Kind::of(path) {
+            Some(kind) if kind.writable() => Ok(()),
+            _ => Err(KnowledgeError::NotText),
+        }
     }
 
     /// 库 `kb` 里 `path` 照写法该在哪：库得在、不是挂进来的（施工 K-4，只读），路径照读的那一套，库的目录照真实的位置。

@@ -91,8 +91,5 @@ fn creatable(shelves: &Shelves, kb: &str, path: &str) -> Result<(), KbRefused> {
     if !valid(kb) {
         return Err(KbRefused::BadId(kb.to_string()));
     }
-    if !Knowledge::document(path) {
-        return Err(KbRefused::NoDocument(kb.to_string(), path.to_string()));
-    }
-    Ok(())
+    Knowledge::writable(path).map_err(|error| refused(error, kb.to_string(), path.to_string()))
 }

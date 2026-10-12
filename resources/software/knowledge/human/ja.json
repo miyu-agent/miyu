@@ -47,6 +47,7 @@
     "common/ambiguous": "{path} に置き換える文字が {count} か所あります",
     "common/trash": "{path} をごみ箱に移せません：{error}",
     "common/bad-id": "{kb} はナレッジベースの ID に使えません",
-    "common/read-only": "{kb} はマウントしたフォルダで、読み取り専用です"
+    "common/read-only": "{kb} はマウントしたフォルダで、読み取り専用です",
+    "common/not-text": "{path} はテキストの文書ではないので書けません"
   }
 }

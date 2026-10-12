@@ -20,7 +20,7 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
     let builds: &[&[&str]] = if render {
         &[&["miyu-perf"]]
     } else {
-        &[&["miyu", "miyu-sandbox"], &["miyu-perf"]]
+        &[&["miyu", "miyu-sandbox", "miyu-extract"], &["miyu-perf"]]
     };
     for packages in builds {
         let mut args = vec!["build", "--release"];

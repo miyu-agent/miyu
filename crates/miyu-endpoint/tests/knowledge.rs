@@ -280,3 +280,44 @@ async fn a_mounted_folder_follows_the_home_and_an_unplugged_one_is_skipped() {
     let skipped = client.call("s2", "kb.search", search).await;
     assert_eq!(skipped["result"], json!({"hits": []}), "{skipped}");
 }
+
+#[tokio::test]
+async fn a_pdf_hit_says_its_page_and_reads_by_page() {
+    // 施工 K-5：PDF 的那一块多一格 `page`，别的不写；`kb.read` 读 PDF 是它的第几页，`pages` 是 PDF 的页数。
+    let home = Home::new();
+    shelf(&home);
+    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    let pdf = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../miyu-extract/tests/fixtures/cat.pdf");
+    std::fs::copy(pdf, dir.join("cat.pdf")).expect("拷得了");
+    let core = home
+        .core_full(&Script::new([]), Catalog::default(), None, TOKEN)
+        .with_extractor(Some(extractor()));
+    let mut client = Client::connect(Arc::new(core));
+    client.hello().await;
+    let found = client
+        .call("s1", "kb.search", json!({"query": "October"}))
+        .await;
+    let hit = &found["result"]["hits"][0];
+    assert_eq!(
+        (&hit["path"], &hit["page"]),
+        (&json!("cat.pdf"), &json!(2)),
+        "{found}"
+    );
+    let plain = client
+        .call("s2", "kb.search", json!({"query": "食べて"}))
+        .await;
+    assert!(plain["result"]["hits"][0].get("page").is_none(), "{plain}");
+    let read = client
+        .call(
+            "r1",
+            "kb.read",
+            json!({"kb": "notes", "path": "cat.pdf", "page": 3}),
+        )
+        .await;
+    assert_eq!(
+        read["result"],
+        json!({"text": "第三页：体重 4.2 公斤。", "page": 3, "pages": 3}),
+        "{read}"
+    );
+}

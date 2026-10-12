@@ -1,0 +1,28 @@
+[package]
+name = "miyu-extract"
+description = "知识库抽字的小程序 miyu-extract：一次抽一份 PDF 或网页里的字，交回去就退（施工 K-5，docs/blueprint/knowledge.md 第二条）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+autotests = false
+
+[[bin]]
+name = "miyu-extract"
+path = "src/main.rs"
+
+[[test]]
+name = "all"
+path = "tests/all.rs"
+
+[dependencies]
+# PDF 一页一页抽字（MIT，纯 Rust）、网页换成文字（MIT，照 html5ever 解析，标题写成 Markdown 的 `#`）。放在这个小程序里，不编进
+# 核心：两个库里成堆的字符串指针表载入时要重定位，编进核心空闲时多 1.6 MB 上下的常驻（施工 K-5 量的，设计 23 的预算）。
+pdf-extract = "0.12"
+html2text = "0.17"
+# 抽出来的字照 JSON 交回去。
+serde_json = "1.0"
+
+[lints]
+workspace = true

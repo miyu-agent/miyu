@@ -37,6 +37,22 @@ use miyu_tool::Catalog;
 /// 本机令牌。
 pub const TOKEN: &str = "token-for-tests";
 
+/// cargo 编出来的抽字的小程序 `miyu-extract`（施工 K-5）：和测试程序所在的 `deps/` 同一层。
+pub fn extractor() -> PathBuf {
+    let exe = std::env::current_exe().expect("知道测试程序在哪");
+    let dir = exe
+        .parent()
+        .and_then(Path::parent)
+        .expect("在 target/<profile>/deps/ 里");
+    let program = dir.join(format!("miyu-extract{}", std::env::consts::EXE_SUFFIX));
+    assert!(
+        program.is_file(),
+        "{} 不在：先 cargo build -p miyu-extract（cargo test --workspace 会编它）",
+        program.display()
+    );
+    program
+}
+
 /// 源码树里出厂的资源目录。
 pub fn default_resources() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources")

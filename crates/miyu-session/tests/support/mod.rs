@@ -107,7 +107,9 @@ impl Home {
             Some(SummaryTexts::load(&resources).expect("读得到摘要的字")),
         );
         Home {
-            knowledge: Arc::new(miyu_store::knowledge::Knowledge::new(&root)),
+            knowledge: Arc::new(
+                miyu_store::knowledge::Knowledge::new(&root).with_extractor(extractor()),
+            ),
             recall: Arc::clone(&memory.turns),
             logs: Arc::clone(&memory.logs),
             memory,
@@ -473,4 +475,12 @@ pub async fn until_turn_ends(subscription: &mut Subscription) -> Vec<Arc<Pushed>
             return pushed;
         }
     }
+}
+
+/// cargo 编出来的抽字的小程序 `miyu-extract`（施工 K-5）：和测试程序所在的 `deps/` 同一层；没编的没有（要它的测试自己查）。
+pub fn extractor() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?.parent()?;
+    let program = dir.join(format!("miyu-extract{}", std::env::consts::EXE_SUFFIX));
+    program.is_file().then_some(program)
 }

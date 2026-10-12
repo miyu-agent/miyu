@@ -10,7 +10,7 @@
 
 | 文件 | 管什么 |
 |---|---|
-| `xtask/src/perf.rs` | `cargo xtask perf`：编 release 的 `miyu`、`miyu-sandbox`，再编量尺、跑它 |
+| `xtask/src/perf.rs` | `cargo xtask perf`：编 release 的 `miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5），再编量尺、跑它 |
 | `crates/miyu-perf/src/main.rs` | 照先后量一遍，写结果 |
 | `args.rs` | 参数 |
 | `budget.rs` | 预算照 23 第二节的表读，判超没超 |
@@ -59,7 +59,7 @@
    2. **热启动、每多一个会话**：造 `--sessions` 个小会话各说一句，重启核心。歇两秒量核心空闲的内存。再一个个新连上、握手、订阅（订阅时核心才载入它），记这一段。都订阅着、各再说一句，歇两秒量内存。
    3. **大会话**：造一个会话，一句一句说，直到说之前的事件数到了 `--events`，再说 `--tail` 轮。每一轮记说出去到模型收到请求、到推来 `turn.ended`。歇两秒量载着它的内存。断开连接，等 `--idle-wait` 秒（会话 actor 空闲 180 秒退出）再量一次。然后重启核心 `--reloads` 次：每次连上、握手、订阅大会话（从头读日志、重放），记这一段；再说一句，记到模型收到请求。最后一次歇两秒量内存。
    4. **追加并同步**：在进程里，大会话日志里的事件从第一条起，一条一条追加进 `target/perf/append/` 下的一份新日志，每条写一次、同步一次，走会话 actor 落盘用的同一个函数。
-   5. **二进制**：`miyu`、`miyu-sandbox` 的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
+   5. **二进制**：`miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5，知识库抽字的小程序，随主程序放在旁边）的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
 7. 内存读 `/proc/<进程号>/smaps_rollup` 的 `Pss`、`Anonymous`、`Rss`，核心和它拉起的子进程各一行，子进程照 `/proc/<进程号>/task/*/children` 找。只有 Linux 上读得到，别的平台写「不量」。
 8. 对照预算的表：
    - 预算照 23 第二节的表读，第一格是名字。只写了一个数的照 p50 比，写了分位的照那个分位比；内存照核心进程的 PSS 比。

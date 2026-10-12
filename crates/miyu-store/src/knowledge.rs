@@ -9,6 +9,7 @@
 //! - 这一层不记运行日志：跳过的文档交回给调的一方记（[`Skipped`]）。
 
 mod catch_up;
+mod extract;
 mod mount;
 mod read;
 mod write;
@@ -24,6 +25,7 @@ use crate::layers::valid;
 use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
+pub use extract::beside as extractor_beside;
 pub use read::Page;
 pub use write::Written;
 
@@ -33,6 +35,8 @@ pub struct Knowledge {
     root: DataRoot,
     /// 这台机器的家目录：挂的路径 `~/` 开头的照它接（施工 K-4）。
     home: Option<PathBuf>,
+    /// 抽字的小程序 `miyu-extract`（施工 K-5）：没有的不认 PDF、网页（补的时候跳过，读的时候读不了）。
+    extractor: Option<PathBuf>,
     open: Mutex<BTreeMap<(AccountId, String), Arc<Shelf>>>,
 }
 
@@ -80,6 +84,8 @@ pub struct Hit {
     pub chunk: usize,
     /// 标题路径，没有标题的是空的。
     pub heading: String,
+    /// PDF 的第几页，从 1 起（施工 K-5）；别的文档没有。
+    pub page: Option<usize>,
     /// 这一块的字（不带标题那一行）。
     pub text: String,
     /// 文档改的时刻。
@@ -118,6 +124,8 @@ pub enum KnowledgeError {
     Trash(String),
     /// 挂进来的库只读（施工 K-4，19 N7）。
     ReadOnly,
+    /// 不是文字的文档（PDF、网页）写不了（施工 K-5）。
+    NotText,
     /// 挂的目录用不了：为什么（施工 K-4）。列出来的照它带 `error`，搜的时候跳过，读的当没有这个文档。
     Unavailable(String),
     /// 索引读写不了。
@@ -144,6 +152,7 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::Ambiguous(count) => write!(f, "text found {count} times"),
             KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
             KnowledgeError::ReadOnly => write!(f, "mounted folder is read-only"),
+            KnowledgeError::NotText => write!(f, "only text documents can be written"),
             KnowledgeError::Unavailable(why) => write!(f, "{why}"),
             KnowledgeError::Db(error) => write!(f, "index: {error}"),
             KnowledgeError::Io(why) => write!(f, "{why}"),
@@ -158,6 +167,7 @@ impl Knowledge {
         Knowledge {
             root: root.clone(),
             home: None,
+            extractor: None,
             open: Mutex::new(BTreeMap::new()),
         }
     }
@@ -166,6 +176,12 @@ impl Knowledge {
     #[must_use]
     pub fn with_home(self, home: Option<PathBuf>) -> Knowledge {
         Knowledge { home, ..self }
+    }
+
+    /// PDF、网页照抽字的小程序 `extractor` 抽（施工 K-5，[`extractor_beside`] 找主程序旁边的那个）；没交的那种不认。
+    #[must_use]
+    pub fn with_extractor(self, extractor: Option<PathBuf>) -> Knowledge {
+        Knowledge { extractor, ..self }
     }
 
     /// 账号 `account` 下的知识库，照编号排；每个先照文件补。目录不在的当一个都没有。
@@ -253,7 +269,7 @@ impl Knowledge {
             Err(KnowledgeError::Unavailable(_)) => return Err(KnowledgeError::UnknownDocument),
             dir => dir?,
         };
-        read::page(&dir, path, page)
+        read::page(&dir, path, page, self.extractor.as_deref())
     }
 
     /// 库 `id` 给人看的名字和一句说明（`kb.toml`，施工 K-1 补：她的 system 里列出来）：没写名字的照编号，没写说明的空着；

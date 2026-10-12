@@ -2,17 +2,51 @@
 //! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。照管理员的
 //! 账号（和 `memory.*` 一样）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use miyu_store::knowledge::{Hit, KnowledgeError, Meaning, Skipped};
+use miyu_store::knowledge::{Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
+use miyu_store::root::DataRoot;
 
 use crate::Core;
 use crate::refusal::Refusal;
+
+/// 核心一份的知识库：`~/` 照家目录 `home` 接（施工 K-4），PDF、网页照抽字的小程序 `extractor` 抽（施工 K-5）。
+pub(crate) fn shelf(
+    root: &DataRoot,
+    home: Option<PathBuf>,
+    extractor: Option<PathBuf>,
+) -> Arc<Knowledge> {
+    Arc::new(
+        Knowledge::new(root)
+            .with_home(home)
+            .with_extractor(extractor),
+    )
+}
+
+/// 主程序真实位置旁边的抽字的小程序 `miyu-extract`（施工 K-5，`knowledge.md`「怎么走」第二条）：找不到的没有，那样的核心不认
+/// PDF、网页。
+pub(crate) fn extractor() -> Option<PathBuf> {
+    let exe = std::env::current_exe()
+        .and_then(std::fs::canonicalize)
+        .ok()?;
+    miyu_store::knowledge::extractor_beside(&exe)
+}
+
+impl Core {
+    /// 同一份家底，知识库抽 PDF、网页照 `extractor` 这个小程序（施工 K-5；测试里交 cargo 编出来的那个，核心自己照主程序旁边
+    /// 找）。
+    #[must_use]
+    pub fn with_extractor(mut self, extractor: Option<PathBuf>) -> Core {
+        self.knowledge = shelf(&self.root, self.home.clone(), extractor);
+        self
+    }
+}
 
 /// `kb.search` 不写 `limit` 时给几块。
 const SEARCH: usize = 10;
@@ -119,14 +153,19 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
 
 /// 一块在回应里的样子。
 fn shown(hit: &Hit) -> Value {
-    json!({
+    let mut shown = json!({
         "kb": hit.kb,
         "path": hit.path,
         "chunk": hit.chunk,
         "heading": hit.heading,
         "text": hit.text,
         "at": hit.at.to_string(),
-    })
+    });
+    // PDF 的那一块带第几页（施工 K-5），别的不写这一格。
+    if let Some(page) = hit.page {
+        shown["page"] = json!(page);
+    }
+    shown
 }
 
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。
