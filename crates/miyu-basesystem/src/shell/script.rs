@@ -7,7 +7,8 @@
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   白名单。
-//! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人。
+//! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
+//!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
 
 use std::ffi::OsString;
 use std::io::{self, BufRead};
@@ -89,9 +90,15 @@ impl Script {
         let (program, args) = launcher(&self.file, &first, cfg!(windows));
         let (program, args) = match call.sandbox.as_deref() {
             None => (program, args),
-            Some(sandboxed) => miyu_sandbox::argv(sandboxed, Path::new(&program), &args)
-                .map(|(helper, args)| (helper.into_os_string(), args))
-                .map_err(io::Error::other)?,
+            Some(sandboxed) => {
+                // 脚本可能在数据根里（家目录里放的、自己装的包带的），沙盒藏着那一片：单独放开它这一个文件只读，解释器才
+                // 读得到（施工 X-12 下）。旁边的照旧藏着。
+                let mut sandboxed = sandboxed.clone();
+                sandboxed.spec.reveal.push(self.file.clone());
+                miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
+                    .map(|(helper, args)| (helper.into_os_string(), args))
+                    .map_err(io::Error::other)?
+            }
         };
         let mut vars = env::passed(std::env::vars_os());
         vars.push((ARGS.into(), call.args.clone().into()));

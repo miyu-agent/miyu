@@ -1,6 +1,7 @@
 //! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`docs/blueprint/skills.md`「技能」第 3 条）：数据根照旧藏着，技能的
 //! 文件夹在规格里单独放开只读（本机的会话写进 `reveal`，外部身份的会话加进只准读的名单）。Unix 上有收紧手段的，真的经
-//! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。
+//! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。家目录里放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样
+//! 读得到它自己。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -157,4 +158,50 @@ async fn a_command_reads_the_skill_but_not_the_data_root() {
             .ends_with("照这样记。\n"),
         "没写进去"
     );
+}
+
+/// 脚本当工具（施工 X-12 下）：家目录里放的脚本在数据根里，经真助手跑照样读得到它自己这一个文件，旁边的数据根照旧读不到。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_script_in_the_data_root_runs_in_the_sandbox() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if probe.mechanisms.is_empty() {
+        return;
+    }
+    let home = Home::outside_temp();
+    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    std::fs::create_dir_all(&scripts).expect("建得了");
+    let marker = home.root.path().join("marker");
+    std::fs::write(&marker, "secret\n").expect("写得进");
+    let file = scripts.join("peek.sh");
+    let text = format!(
+        "#!/bin/sh\n# Description: Peek.\necho ran\ncat '{}' 2>/dev/null || echo blocked-data\n",
+        marker.display()
+    );
+    std::fs::write(&file, &text).expect("写得进");
+    let head = miyu_policy::script::read("peek.sh", &text).expect("开头写对了");
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let tool = miyu_basesystem::script(&resources, &head, file).expect("资源读得出来");
+    let tools = Catalog::new([tool]).expect("合写法");
+    let call = Play::calls(&[("peek", "{}")]);
+    let handle = session(&home, (&tools, call), &helper, ("local", true)).await;
+    let result = home
+        .log(handle.id())
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ToolResult(result) => Some(result),
+            _ => None,
+        })
+        .expect("有结果");
+    let output: String = result
+        .blocks
+        .iter()
+        .map(|block| match block {
+            miyu_kernel::block::Block::Text(text) => text.text.clone(),
+            other => panic!("只该有字：{other:?}"),
+        })
+        .collect();
+    assert_eq!(result.status, ToolStatus::Ok, "{output}");
+    assert_eq!(output, "ran\nblocked-data\n");
 }

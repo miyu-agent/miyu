@@ -5,7 +5,9 @@
 //! 人格的两份字、每一份预设（每一层各查各的，预设施工 P-2 上）、软件包清单（施工 9-1 上）。写了文件的照它在哪认是哪一种，
 //! 只查那一份；认不出的 `unknown_file`。
 //!
-//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
+//! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`）。
+//!
+//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
 //! 项目配置写成 `~/…`，出厂的人格写真的路径）、`code`、`level`、`message`（照这个连接的语言），有行列的带上。
 
 use std::path::{Path, PathBuf};
@@ -23,6 +25,7 @@ use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 use crate::Core;
 
 mod run;
+mod skipped;
 use crate::config::methods::{check_text, said_at, words};
 use crate::hello::Peer;
 use crate::personas::personas;
@@ -81,6 +84,8 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             );
             // 包自己的检查（施工 9-2）：照起来时读到的清单跑，接在核心自己查的后面。
             problems.extend(run::packages(core, &words).await);
+            // 跳过的脚本、技能（施工 X-12 下）。
+            problems.extend(skipped::skipped(core, &words).await);
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。
             for (path, drift) in crate::packages::verify::drifted(core).await {
                 let file = shown(core, &path);
