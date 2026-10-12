@@ -201,6 +201,17 @@ async fn a_planned_stop_records_restarted_before_it_kills() {
     let script = Script::new([Play::calls(&[("start", "{}")]), Play::Says("放出去了。")]);
     let handle = home.create_with(&script, &starting(&held)).await;
     talk(&handle, "cmd-1", "放一个").await;
+    // 输出是另一头读的：等它写进文件再停，不然机器忙时停下那一刻还没读到，数出来是 0（2026-10-12 记忆的会话跑门禁撞上过）。
+    let file = miyu_store::jobs::output_path(
+        &home.root.session_dir(&alice_account(), handle.id()),
+        &JobId::parse(&last_started(&home.log(handle.id()))).expect("合写法"),
+    );
+    within("输出写进文件", async {
+        while std::fs::read_to_string(&file).unwrap_or_default() != "half\n" {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await;
     let seen_at_kill = Arc::new(Mutex::new(None));
     let (root, seen) = (
         home.root.session_dir(&alice_account(), handle.id()),
