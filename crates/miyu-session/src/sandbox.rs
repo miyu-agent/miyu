@@ -1,6 +1,6 @@
 //! 一次调用带的沙盒（`docs/blueprint/session/tools.md` 第 1a 条，施工 5-4 上）：照派出去那一刻实际生效的那一级写
 //! 规格。完全放开不进沙盒；工作区能写这一轮的工作目录、临时目录，工具链的缓存用沙盒自己的一份（[`caches`]，施工 5-4
-//! 下）；只读哪儿都不能写；两级都藏数据根。
+//! 下）；只读哪儿都不能写；两级都藏数据根和别的程序的私密目录（施工 5-13）。
 
 mod caches;
 mod confined;
@@ -11,7 +11,7 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use miyu_fs::resolve;
+use miyu_fs::{private_dirs, resolve, within};
 use miyu_kernel::event::Permission;
 use miyu_sandbox::{Sandboxed, Spec};
 
@@ -111,16 +111,35 @@ impl Sandbox {
         } else {
             Vec::new()
         };
+        let hidden = self.hidden(data_root, &write);
         Ok(Some(Sandboxed {
             helper: self.helper.clone(),
             spec: Spec {
                 write,
-                hidden: vec![data_root],
+                hidden,
                 read: None,
                 reveal: self.shelves.iter().map(|dir| real(dir)).collect(),
             },
             env,
         }))
+    }
+}
+
+impl Sandbox {
+    /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节）。私密目录落在能写的 `write` 里面的
+    /// 不藏：人把工作区开在了那里、加进来的目录装着它，照人给的算（同权限策略的先后），Landlock 也挖不掉。
+    fn hidden(&self, data_root: PathBuf, write: &[PathBuf]) -> Vec<PathBuf> {
+        let mut hidden = vec![data_root];
+        let private = self.home.as_deref().map(private_dirs).unwrap_or_default();
+        for dir in private
+            .iter()
+            .filter_map(|dir| std::fs::canonicalize(dir).ok())
+        {
+            if !hidden.contains(&dir) && !write.iter().any(|base| within(&dir, base)) {
+                hidden.push(dir);
+            }
+        }
+        hidden
     }
 }
 
@@ -183,3 +202,6 @@ fn private_dir(dir: &Path, _owner_of: &Path) -> io::Result<()> {
 fn not_private(dir: &Path) -> io::Error {
     io::Error::other(format!("{} is not a private directory", dir.display()))
 }
+
+#[cfg(test)]
+mod tests;

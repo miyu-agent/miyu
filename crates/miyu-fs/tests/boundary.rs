@@ -233,3 +233,54 @@ fn this_machine_has_its_system_and_temp_dirs() {
     let system = std::fs::canonicalize(system).expect("系统目录在");
     assert_eq!(boundary.zone(&system), Zone::Readable);
 }
+
+#[test]
+fn private_dirs_are_their_own_zone_after_the_data_root_and_added_dirs() {
+    let site = Site::new();
+    let places = Places {
+        private: vec![
+            site.at("home/.ssh"),
+            site.at("data/run"),
+            site.at("work-other"),
+        ],
+        dirs: vec![site.at("work-other")],
+        ..site.places()
+    };
+    let boundary = Boundary::new(&places);
+    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Private);
+    assert_eq!(boundary.zone(&site.real("home/.ssh")), Zone::Private);
+    assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Outside);
+    assert_eq!(
+        boundary.zone(&site.real("data/run/token")),
+        Zone::Forbidden,
+        "数据根在前"
+    );
+    assert_eq!(
+        boundary.zone(&site.real("work-other/x.txt")),
+        Zone::Writable,
+        "人加进来的目录在前"
+    );
+}
+
+#[test]
+fn the_private_list_hangs_off_the_home() {
+    let home = PathBuf::from("/h");
+    let private = miyu_fs::private_dirs(&home);
+    for name in [".ssh", ".gnupg", ".claude", ".miyu"] {
+        assert!(private.contains(&home.join(name)), "{name}");
+    }
+    assert!(private.contains(&home.join(".config").join("gh")));
+    // 这个平台的浏览器配置、钥匙串也在。
+    let here = if cfg!(target_os = "macos") {
+        home.join("Library").join("Keychains")
+    } else if cfg!(windows) {
+        home.join("AppData").join("Roaming").join("GitHub CLI")
+    } else {
+        home.join(".mozilla")
+    };
+    assert!(private.contains(&here), "{}", here.display());
+    let places = Places::here(PathBuf::from("/w"), PathBuf::from("/d"), Some(&home));
+    assert_eq!(places.private, private, "照家目录拼上");
+    let nowhere = Places::here(PathBuf::from("/w"), PathBuf::from("/d"), None);
+    assert!(nowhere.private.is_empty(), "不知道家目录的没有");
+}

@@ -1,8 +1,8 @@
 //! 边界表（`11-权限与沙盒.md` 第四节，施工 4-3 上）：一个真实的位置落在哪一片。
 //!
 //! 几片重叠时照这个先后，先对上的算：工作区（里面会在沙盒外被执行的那几样只能读）、数据根里单独放开只读的几个目录
-//! （开着的技能文件夹，施工 X-10 上）、数据根、加进来的目录（照工作区算，施工 5-10 上）、临时目录、系统和工具链目录、
-//! 边界以外。
+//! （开着的技能文件夹，施工 X-10 上）、数据根、加进来的目录（照工作区算，施工 5-10 上）、别的程序的私密目录（施工 5-13）、
+//! 临时目录、系统和工具链目录、边界以外。
 
 use std::path::{Component, Path, PathBuf};
 
@@ -15,6 +15,9 @@ pub enum Zone {
     Readable,
     /// 谁都不能碰：Miyu 的数据根。
     Forbidden,
+    /// 别的程序的私密目录（施工 5-13，`11-权限与沙盒.md` 第四节）：钥匙、登录、浏览器配置、旧版 Miyu 的数据。文件工具读写都
+    /// 问人，完全放开不问；往下走目录的工具不进。
+    Private,
     /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。
     Shelf,
     /// 边界以外：要碰就得问人。
@@ -36,6 +39,8 @@ pub struct Places {
     pub readable: Vec<PathBuf>,
     /// 数据根里单独放开只读的目录（施工 X-10 上）：开着的技能文件夹。
     pub shelves: Vec<PathBuf>,
+    /// 别的程序的私密目录（施工 5-13，[`private_dirs`]）。
+    pub private: Vec<PathBuf>,
 }
 
 /// 系统目录的第一版清单（11 第四节）。
@@ -64,6 +69,58 @@ const SYSTEM: &[&str] = &[];
 /// 家目录下的工具链目录（11 第四节）。
 const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 
+/// 家目录下别的程序的私密目录，三个平台都有的（施工 5-13，11 第四节）：钥匙、登录、旧版 Miyu 的数据。
+const PRIVATE: &[&str] = &[".ssh", ".gnupg", ".claude", ".miyu", ".config/gh"];
+
+/// 浏览器的配置（施工 5-13）：Linux 上的。
+#[cfg(target_os = "linux")]
+const PRIVATE_HERE: &[&str] = &[
+    ".mozilla",
+    ".config/google-chrome",
+    ".config/chromium",
+    ".config/BraveSoftware",
+    ".config/microsoft-edge",
+];
+
+/// 浏览器的配置、钥匙串（施工 5-13）：macOS 上的。
+#[cfg(target_os = "macos")]
+const PRIVATE_HERE: &[&str] = &[
+    "Library/Application Support/Google/Chrome",
+    "Library/Application Support/Firefox",
+    "Library/Application Support/BraveSoftware",
+    "Library/Application Support/Microsoft Edge",
+    "Library/Safari",
+    "Library/Cookies",
+    "Library/Keychains",
+];
+
+/// 浏览器的配置、GitHub CLI 的登录（施工 5-13）：Windows 上的。
+#[cfg(windows)]
+const PRIVATE_HERE: &[&str] = &[
+    "AppData/Local/Google/Chrome/User Data",
+    "AppData/Roaming/Mozilla/Firefox",
+    "AppData/Local/Microsoft/Edge/User Data",
+    "AppData/Roaming/GitHub CLI",
+];
+
+/// 别的 Unix：只有三个平台都有的那几个。
+#[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
+const PRIVATE_HERE: &[&str] = &[];
+
+/// 家目录 `home` 下别的程序的私密目录（施工 5-13，11 第四节）：照原样拼，不管在不在，一段一段接上（Windows 上分隔符照
+/// 它自己的）。权限策略、沙盒、往下走目录的工具都照它。
+pub fn private_dirs(home: &Path) -> Vec<PathBuf> {
+    PRIVATE
+        .iter()
+        .chain(PRIVATE_HERE)
+        .map(|relative| {
+            relative
+                .split('/')
+                .fold(home.to_path_buf(), |dir, part| dir.join(part))
+        })
+        .collect()
+}
+
 impl Places {
     /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方。
     /// 家目录读不出来的，工具链目录只算环境变量指到的。
@@ -84,6 +141,7 @@ impl Places {
             temp: std::env::temp_dir(),
             readable,
             shelves: Vec::new(),
+            private: home.map(private_dirs).unwrap_or_default(),
         }
     }
 }
@@ -114,6 +172,7 @@ pub struct Boundary {
     temp: Option<PathBuf>,
     readable: Vec<PathBuf>,
     shelves: Vec<PathBuf>,
+    private: Vec<PathBuf>,
 }
 
 impl Boundary {
@@ -126,6 +185,7 @@ impl Boundary {
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
+            private: places.private.iter().filter_map(|dir| real(dir)).collect(),
         }
     }
 
@@ -149,6 +209,10 @@ impl Boundary {
         // 加进来的目录排在数据根后面：落进了数据根的（报来以后被换成了链接），数据根照样谁都不能碰。
         if let Some(inside) = self.dirs.iter().find_map(|dir| path.strip_prefix(dir).ok()) {
             return like_workspace(inside);
+        }
+        // 私密目录排在加进来的目录后面：人加进来的目录落在里面的，照人加的算（施工 5-13）。
+        if self.private.iter().any(|dir| within(path, dir)) {
+            return Zone::Private;
         }
         if self
             .temp

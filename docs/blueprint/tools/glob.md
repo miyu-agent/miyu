@@ -10,7 +10,7 @@
 |---|---|
 | `crates/miyu-basesystem/src/glob.rs` | 参数、搜哪个目录、要碰的路径、结果 |
 | `crates/miyu-basesystem/src/pattern.rs` | 模式的规矩；绝对路径的模式拆出目录。`grep` 的 `glob` 也照它 |
-| `crates/miyu-basesystem/src/walk.rs` | 往下走目录：忽略文件、版本库目录、链接、数据根、排序。`grep` 也照它 |
+| `crates/miyu-basesystem/src/walk.rs` | 往下走目录：忽略文件、版本库目录、链接、数据根、私密目录（施工 5-13）、排序。`grep` 也照它 |
 | `crates/miyu-basesystem/src/blocking.rs` | 在阻塞线程里干，叫停时举旗 |
 | `crates/miyu-basesystem/src/common.rs`、`common/shown.rs` | 几件共用的几句；路径怎么写 |
 | `resources/software/basesystem/tools/glob.json` | 说明和参数格式 |
@@ -80,6 +80,7 @@
 2. 隐藏文件照找。版本库自己的目录 `.git`、`.svn`、`.hg`、`.bzr`、`.jj`、`.sl` 不进（只看目录；搜的目录自己不算）。
 3. 不跟着链接走：链接到的目录不进，链接到的文件也不列，和 ripgrep 不加 `-L` 一样（本机实测过）。链接可能指到工作区外面，权限策略只判了要搜的那个目录（`session/guard.md`）。
 4. 数据根不进：要进的目录在数据根里（数据根自己也算）、又不在这一轮的工作目录里（工作目录自己也算）的，不进。搜的目录自己不查：它是报给权限策略的那一条。macOS、Windows 上比的时候不分大小写（`fs.md` 第一节第 6 条）。所以从数据根上面搜下来，连在数据根里的账号工作区也不进；工作目录就在账号工作区里时，从工作目录往下照样走。
+   - 别的程序的私密目录（施工 5-13，`miyu_fs::private_dirs`，这台机器上有的）也一样不进：读它们要问人（`session/guard.md`），从上面搜下来不该绕过去。搜的目录就在某个私密目录里的（问过了才走得到），那一个不挡。
 5. 读不了的目录（没有权限这类）跳过，别的照走。
 6. 只留普通文件。
 7. 按修改时间排，新的在前；读不出修改时间的当最早；时间一样的，照相对搜的目录的路径（用 `/` 连起来）排。
@@ -141,6 +142,7 @@ a.rs
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-basesystem/tests/glob.rs` | 从资源目录造、参数格式、报的路径（`undefined` 当没给、模式是绝对路径的报拆出来的目录）；只比文件名在任何一层、带 `/` 的比路径；时间一样照路径排；不在仓库里也遵守 `.gitignore`、`.ignore`；在仓库里上级的算、不在仓库里上级的不算；隐藏的照找、版本库目录不进；外面的写绝对路径、数据根不进；工作区在数据根里照样往下走；绝对路径的模式；多过 100 个；没找到不算出错、写错了算；搜的要是存在的目录 |
+| `crates/miyu-basesystem/tests/walk_private.rs` | `glob`、`grep` 从家目录搜下来不进私密目录、旁边的照列；搜的就是私密目录的照搜；工作区在私密目录里的照搜（施工 5-13） |
 | `crates/miyu-basesystem/src/pattern/tests.rs` | 模式的每一条规矩、写错了说哪里错、绝对路径的模式怎么拆（Windows 的前缀里的 `?`） |
 | `crates/miyu-basesystem/src/walk/tests.rs` | 丢掉这次调用，走目录就停 |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |

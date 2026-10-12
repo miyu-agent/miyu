@@ -28,9 +28,10 @@
 
 | 名字 | 是什么 |
 |---|---|
-| `Zone` | 一个真实的位置落在哪一片：`Writable` 能读能写、`Readable` 只能读、`Forbidden` 谁都不能碰、`Shelf` 数据根里单独放开只读（施工 X-10 上）、`Outside` 边界以外 |
-| `Places` | 造边界表要的几个地方，都是原样的路径：`workspace`、`dirs`（加进来的目录，一组（施工 5-10 上））、`data_root`、`temp`、`readable`（一组）、`shelves`（数据根里单独放开只读的，一组（施工 X-10 上）） |
-| `Places::here(workspace, data_root, home)` | 照这台机器补上临时目录、系统目录、工具链目录 |
+| `Zone` | 一个真实的位置落在哪一片：`Writable` 能读能写、`Readable` 只能读、`Forbidden` 谁都不能碰、`Shelf` 数据根里单独放开只读（施工 X-10 上）、`Private` 别的程序的私密目录（施工 5-13）、`Outside` 边界以外 |
+| `Places` | 造边界表要的几个地方，都是原样的路径：`workspace`、`dirs`（加进来的目录，一组（施工 5-10 上））、`data_root`、`temp`、`readable`（一组）、`shelves`（数据根里单独放开只读的，一组（施工 X-10 上））、`private`（别的程序的私密目录，一组（施工 5-13）） |
+| `Places::here(workspace, data_root, home)` | 照这台机器补上临时目录、系统目录、工具链目录、私密目录 |
+| `private_dirs(home)` | 家目录下别的程序的私密目录，照清单拼，不管在不在（施工 5-13）：权限策略、沙盒、往下走目录的工具都照它 |
 | `Boundary::new(&places)` | 边界表：每一片换成真实的位置 |
 | `Boundary::zone(path)` | 真实的位置 `path` 落在哪一片 |
 | `within(path, root)` | 真实的位置在不在目录 `root` 里 |
@@ -61,13 +62,15 @@
    | 2 | 单独放开只读的哪一个目录里（它自己也算）（施工 X-10 上） | 单独放开只读（`Shelf`）：数据根里开着的技能文件夹，能读，写不行 |
    | 3 | 数据根里（数据根自己也算） | 谁都不能碰 |
    | 4 | 加进来的哪一个目录里（它自己也算）（施工 5-10 上） | 照工作区：能读能写，`.git/hooks`、`.git/config` 只能读 |
-   | 5 | 临时目录里 | 能读能写 |
-   | 6 | 系统目录、工具链目录里 | 只能读 |
-   | 7 | 别的 | 边界以外 |
+   | 5 | 私密目录里（它自己也算）（施工 5-13） | 私密（`Private`）：文件工具读写都问人（`session/guard.md` 判法表） |
+   | 6 | 临时目录里 | 能读能写 |
+   | 7 | 系统目录、工具链目录里 | 只能读 |
+   | 8 | 别的 | 边界以外 |
 
    - 工作区排在数据根前面：工作区是数据根里的 `home/<账号>/workspace/` 时，那一片照工作区算，数据根别处照样不能碰。
    - 加进来的目录排在数据根后面：落进了数据根的（报来以后被换成了链接），数据根照样谁都不能碰。
    - 数据根排在临时目录前面：数据根可能在临时目录里（测试、`MIYU_HOME` 指到那里）。
+   - 私密目录排在数据根、加进来的目录后面：数据根就是 `~/.miyu` 的照数据根算；人加进来的目录落在私密目录里的，照人加的算。
 2. `Places::here` 照这台机器填：
 
    | 平台 | 系统目录 |
@@ -78,12 +81,13 @@
    | Windows | 环境变量 `SystemRoot`、`ProgramFiles`、`ProgramFiles(x86)` 指到的，没设的、空的不算 |
 
    - 工具链目录：家目录下的 `.cargo`、`.rustup`、`.npm`、`.gitconfig`（家目录读不出来的，这四样不算），加上环境变量 `CARGO_HOME`、`RUSTUP_HOME` 指到的地方（没设的、空的不算）。都只能读。
+   - 私密目录（施工 5-13，`private_dirs`）：家目录下的 `.ssh`、`.gnupg`、`.claude`、`.miyu`、`.config/gh`，加上这个平台的浏览器配置（Linux 的 `.mozilla`、`.config/` 下的几个浏览器；macOS 的 `Library/Application Support/` 下的几个浏览器、`Library/Safari`、`Library/Cookies`、`Library/Keychains`；Windows 的 `AppData` 下的几个浏览器、GitHub CLI）。清单照 `11-权限与沙盒.md` 第四节。家目录读不出来的没有。
    - 临时目录：标准库的 `temp_dir()`（Unix 上是 `TMPDIR`；没设的，macOS 上是系统给这个用户的临时目录（`confstr(_CS_DARWIN_USER_TEMP_DIR)`），别的是 `/tmp`；Windows 上照系统的 `GetTempPath2`，先看 `TMP`、`TEMP`）。
    - 工作区、数据根照交进来的。
 3. 造表时每一片都换成真实的位置；换不成的（不存在、读不了，例如这台机器上没有 `/lib32`）那一片不算。
 4. 交给 `zone` 的要是已经换成真实位置的路径。比的时候按路径一段一段比：`work-other` 不在 `work` 里。
 5. 大小写：
-   - 「是不是在数据根里」在 macOS、Windows 上不分大小写，免得换个大小写就绕过去；Linux 上分。
+   - 「是不是在数据根里」「是不是在私密目录里」在 macOS、Windows 上不分大小写，免得换个大小写就绕过去；Linux 上分。
    - 工作区里那一段的 `.git`、`hooks`、`config` 三个名字，在 macOS、Windows 上也不分大小写（`.GIT/HOOKS` 是同一处）。
    - 「是不是在工作区里」「临时目录」「只能读的那几个」照原样比：换了大小写的对不上，往后落；落到边界以外的，多问一次人，不多放行。
 6. `within(path, root)`：`root` 自己也算在里面；一段一段比；macOS、Windows 上每一段换成小写再比。往下走目录的工具照它跳过数据根（`tools/glob.md`）。
@@ -286,7 +290,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-fs/tests/boundary.rs` | 六片的先后、加进来的目录照工作区算、落进数据根的照样不能碰、不存在的不算（施工 5-10 上）、工作区里的 `.git/hooks`、`.git/config` 只能读（子仓库里的也算）、数据根在临时目录里也不能碰、工作区挪进数据根的照工作区算、一段一段比、不存在的那一片不算、macOS 和 Windows 上数据根不分大小写、`within`、这台机器的清单 |
+| `crates/miyu-fs/tests/boundary.rs` | 几片的先后、私密目录排在数据根和加进来的目录后面、清单照家目录拼（这个平台的那几条也在，不知道家目录的没有）（施工 5-13）、加进来的目录照工作区算、落进数据根的照样不能碰、不存在的不算（施工 5-10 上）、工作区里的 `.git/hooks`、`.git/config` 只能读（子仓库里的也算）、数据根在临时目录里也不能碰、工作区挪进数据根的照工作区算、一段一段比、不存在的那一片不算、macOS 和 Windows 上数据根不分大小写、`within`、这台机器的清单 |
 | `crates/miyu-fs/tests/resolve.rs` | 相对的照工作目录接、`.` 和走过存在的目录再 `..`、绝对的照原样、`~` 和 `~alice`、没有家目录、还不存在的照上级算、还不存在的 `..`（Unix 报错、Windows 照字面消掉）、链接照指向的地方算、指向不存在处的链接、Windows 两种分隔符；最后一段不跟链接：指向不存在处的、指到别处的链接交回链接本身，`.`、`..`、`~` 交回空的，`src/.` 是 `src` |
 | `crates/miyu-fs/tests/open.rs` | 普通文件打得开、目录和不存在的、最后一层是链接不跟（Unix、Windows）、路上有链接的不开（Unix（施工 5-10 下））、FIFO 不卡住、设备和套接字 |
 | `crates/miyu-fs/tests/wide.rs` | 太宽的四样；家目录读不出来时 |

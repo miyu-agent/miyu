@@ -328,11 +328,15 @@ pub(crate) fn effective(permission: &Permission) -> Effective {
     }
 }
 
-/// 一条路径照级别判（11 第二节的判法表）：读哪儿都放行，数据根除外（施工 5-4 上，原来边界以外的读要问人）。
+/// 一条路径照级别判（11 第二节的判法表）：读哪儿都放行，数据根除外（施工 5-4 上，原来边界以外的读要问人）；别的程序的私密
+/// 目录读写都问人，完全放开不问，只读时写照拒（施工 5-13）。
 fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
     match (zone, level, write) {
         (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
-        (_, Effective::Full, _) | (_, _, false) => Mark::Allow,
+        (_, Effective::Full, _) => Mark::Allow,
+        (Zone::Private, Effective::ReadOnly, true) => Mark::ReadOnly,
+        (Zone::Private, _, _) => Mark::Ask,
+        (_, _, false) => Mark::Allow,
         (_, Effective::ReadOnly, true) => Mark::ReadOnly,
         (Zone::Writable, Effective::Workspace, true) => Mark::Allow,
         (Zone::Readable | Zone::Outside, Effective::Workspace, true) => Mark::Ask,

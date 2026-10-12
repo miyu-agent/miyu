@@ -38,7 +38,7 @@
 | 格 | 是什么 |
 |---|---|
 | `write` | 能写的目录、文件 |
-| `hidden` | 读写都不行的，例如数据根：里面有本机令牌，读到就能冒充本人 |
+| `hidden` | 读写都不行的，例如数据根：里面有本机令牌，读到就能冒充本人；别的程序的私密目录（施工 5-13：钥匙、登录、浏览器配置、旧版 Miyu 的数据，清单见 `11-权限与沙盒.md` 第四节，这台机器上有的才写） |
 | `reveal` | 藏起来的里面单独放开只读的（施工 X-10 中）：开着的技能文件夹（`skills.md`「技能」第 3 条），读得到、列得出、执行得了，写不了；没有的不写，规格的字节和以前一样 |
 
 - 规格以外的都能读，不能写；`/dev/null` 总能写（2026-09-29 项目主人定，照 DeepSeek 的 dsh：整盘能读，只管写）。平常的命令要用的几样设备，各平台另放行，写在各自那一页（macOS 上还有 `/dev/zero`、`/dev/fd`、终端，`sandbox/macos.md`）。
@@ -116,6 +116,7 @@
 | `crates/miyu/tests/core.rs` | 起来时探一次：旁边有助手的记 `sandbox` 那一行，平台是这台机器的，有手段那一格；没有的记找不到 |
 | `crates/miyu-core/src/sandbox/tests.rs` | 旁边没有助手的、不知道主程序在哪的记 `helper not found`；助手跑不了的记原因；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和对应的原因（施工 5-4 上、下） |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的规格；Unix 上有收紧手段的，真的经助手跑 `shell`（`session/tools.md`，施工 5-4 上） |
+| `crates/miyu-session/tests/sandbox_private.rs` | 规格里藏的私密目录；真跑时私密目录里的读不到（`session/tools.md`，施工 5-13） |
 
 ### 出处
 

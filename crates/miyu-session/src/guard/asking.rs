@@ -44,7 +44,11 @@ pub(super) fn ask(name: &str, access: Access, asked: &[Asked], home: Option<&Pat
             json!({
                 "path": text(&asked.real),
                 "write": asked.write,
-                "zone": if asked.zone == Zone::Outside { "outside" } else { "read_only" },
+                "zone": match asked.zone {
+                    Zone::Outside => "outside",
+                    Zone::Private => "private",
+                    _ => "read_only",
+                },
             })
         })
         .collect();

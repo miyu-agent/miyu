@@ -30,6 +30,13 @@ fn every_cell_of_the_table() {
         (Zone::Outside, work, true, Mark::Ask),
         (Zone::Outside, read_only, false, Mark::Allow),
         (Zone::Outside, read_only, true, Mark::ReadOnly),
+        // 别的程序的私密目录：读写都问人，完全放开不问，只读的写照拒（施工 5-13）。
+        (Zone::Private, full, false, Mark::Allow),
+        (Zone::Private, full, true, Mark::Allow),
+        (Zone::Private, work, false, Mark::Ask),
+        (Zone::Private, work, true, Mark::Ask),
+        (Zone::Private, read_only, false, Mark::Ask),
+        (Zone::Private, read_only, true, Mark::ReadOnly),
     ];
     for (zone, level, write, expected) in cases {
         assert_eq!(

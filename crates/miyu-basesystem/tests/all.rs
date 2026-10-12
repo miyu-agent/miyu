@@ -28,4 +28,5 @@ mod stop;
 mod subagent;
 mod todowrite;
 mod trash;
+mod walk_private;
 mod write;

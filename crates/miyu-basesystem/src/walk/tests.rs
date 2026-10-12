@@ -26,6 +26,7 @@ fn open() -> Fence {
     Fence {
         data_root: None,
         workspace: None,
+        private: Vec::new(),
     }
 }
 

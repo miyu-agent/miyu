@@ -6,6 +6,8 @@
 //! - 隐藏文件照找；版本库自己的目录（[`VCS`]）不进；不跟着链接走。
 //! - Miyu 的数据根不进（[`Fence`]）：权限策略只核对搜的那个目录，从上面搜下来会走进去（`11-权限与沙盒.md` A9）。
 //!   这一轮的工作目录在数据根里面的（账号自己的工作区就在数据根里），照样进，和权限策略的先后一样。
+//! - 别的程序的私密目录也不进（施工 5-13，`miyu_fs::private_dirs`）：读它们要问人，从上面搜下来不该绕过去。搜的那个
+//!   目录就在里面的（问过了）、工作目录那一片照样进。
 //! - 按修改时间排，新的在前，时间一样的照路径排。
 
 use std::path::{Path, PathBuf};
@@ -13,7 +15,7 @@ use std::time::SystemTime;
 
 use ignore::WalkBuilder;
 
-use miyu_fs::{resolve, within};
+use miyu_fs::{private_dirs, resolve, within};
 use miyu_tool::{Call, Stop};
 
 /// 版本库自己的目录，不进（Claude Code 的名单）。
@@ -30,10 +32,12 @@ pub(crate) struct Found {
     modified: SystemTime,
 }
 
-/// 走目录时不进的地方：Miyu 的数据根，除了这一轮的工作目录那一片。
+/// 走目录时不进的地方：Miyu 的数据根、别的程序的私密目录（施工 5-13），除了这一轮的工作目录那一片。
 pub(crate) struct Fence {
     data_root: Option<PathBuf>,
     workspace: Option<PathBuf>,
+    /// 私密目录：真实的位置，这台机器上有的。
+    private: Vec<PathBuf>,
 }
 
 impl Fence {
@@ -45,14 +49,31 @@ impl Fence {
                 .as_deref()
                 .and_then(|dir| std::fs::canonicalize(dir).ok()),
             workspace: resolve(Path::new(&call.cwd), call.home.as_deref(), &call.cwd).ok(),
+            private: call
+                .home
+                .as_deref()
+                .map(private_dirs)
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|dir| std::fs::canonicalize(dir).ok())
+                .collect(),
         }
     }
 
-    /// 目录 `dir` 不进：在数据根里，又不在工作目录那一片里。
+    /// 从 `root` 往下走：搜的那个目录就在里面的私密目录不挡（问过了才走得到这里）。
+    fn from(mut self, root: &Path) -> Fence {
+        self.private.retain(|dir| !within(root, dir));
+        self
+    }
+
+    /// 目录 `dir` 不进：在数据根、私密目录里，又不在工作目录那一片里。
     fn keeps_out(&self, dir: &Path) -> bool {
-        self.data_root
-            .as_deref()
-            .is_some_and(|data_root| within(dir, data_root))
+        let fenced = self
+            .data_root
+            .iter()
+            .chain(&self.private)
+            .any(|fenced| within(dir, fenced));
+        fenced
             && !self
                 .workspace
                 .as_deref()
@@ -69,6 +90,7 @@ pub(crate) fn files(
     keep: impl Fn(&str) -> bool,
 ) -> Vec<Found> {
     let in_repo = root.ancestors().any(|dir| dir.join(".git").exists());
+    let fence = fence.from(root);
     let mut builder = WalkBuilder::new(root);
     builder
         .hidden(false)
