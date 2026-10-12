@@ -4,6 +4,9 @@
 //! - 只收人开的回合：`turn.started` 的 `trigger` 指的那条 `message.user` 是人（`person`、`external`）说的。别的 harness、
 //!   子代理、别的会话发来的话开的，回报叫醒的，重启以后接着干的，没有 `trigger` 的，都不收（旧版自己造的回合进了日记）。
 //! - 一条的字：触发的那句人话，空一行，她这一轮最后一条字不空的回复；`turn.ended` 时交出来，哪种原因都收。
+//! - 照记下的几条开的一轮（群里的 `session.respond`，`triggers`）：那几条人话一行一句都进，并进来的（`turn.joined`）接在
+//!   后面；她这一轮没开口的不收，那是旁听（施工 R-13 再补，2026-10-12 项目主人：「把回复的那次记录进去就行，无论是插话还是
+//!   直接触发」）。
 //! - [`TurnFeed`] 是增量的：会话每落一批，一条条交给它。它只记还没触发回合的人话和正在进行的那一轮，结束了的不记，长会话在
 //!   内存里不多背。所以 `turn.unreverted` 的那几轮它说不出字，交回 [`Change::Lost`]，执行器读整份日志交给 [`replay`]。
 
@@ -60,6 +63,8 @@ struct Open {
     at: Timestamp,
     said: String,
     reply: String,
+    /// 照记下的几条开的（群里的 `session.respond`）：她没开口的不收。
+    ambient: bool,
 }
 
 impl TurnFeed {
@@ -90,7 +95,10 @@ impl TurnFeed {
             }
             Body::TurnStarted(started) => {
                 let said = started.trigger.and_then(|trigger| {
-                    let said = self.said.remove(&trigger);
+                    let said = match started.triggers.is_empty() {
+                        true => self.said.remove(&trigger),
+                        false => self.take(&started.triggers),
+                    };
                     self.said.retain(|seq, _| *seq > trigger);
                     said
                 });
@@ -100,9 +108,26 @@ impl TurnFeed {
                         at: event.at,
                         said,
                         reply: String::new(),
+                        ambient: !started.triggers.is_empty(),
                     }),
                     _ => None,
                 };
+                Vec::new()
+            }
+            Body::TurnJoined(joined) => {
+                let more = self.take(&joined.triggers);
+                if let (Some(open), Some(more)) = (
+                    self.open
+                        .as_mut()
+                        .filter(|open| Some(open.turn) == event.turn),
+                    more,
+                ) {
+                    open.said = [open.said.as_str(), more.as_str()]
+                        .into_iter()
+                        .filter(|part| !part.is_empty())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                }
                 Vec::new()
             }
             Body::MessageAssistant(message) => {
@@ -122,6 +147,9 @@ impl TurnFeed {
                 let Some(open) = self.open.take_if(|open| Some(open.turn) == event.turn) else {
                     return Vec::new();
                 };
+                if open.ambient && open.reply.is_empty() {
+                    return Vec::new();
+                }
                 let text = [open.said, open.reply]
                     .into_iter()
                     .filter(|part| !part.is_empty())
@@ -159,6 +187,23 @@ impl TurnFeed {
             }
             _ => Vec::new(),
         }
+    }
+}
+
+impl TurnFeed {
+    /// 拿走记下的几句人话 `seqs`（照序号），有字的一行一句接起来（只带了图的那句没有字，同只有一句时）；一句都不是人话的
+    /// 没有。
+    fn take(&mut self, seqs: &[Seq]) -> Option<String> {
+        let said: Vec<String> = seqs
+            .iter()
+            .filter_map(|seq| self.said.remove(seq))
+            .collect();
+        (!said.is_empty()).then(|| {
+            said.into_iter()
+                .filter(|line| !line.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
     }
 }
 

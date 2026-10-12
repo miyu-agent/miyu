@@ -312,3 +312,95 @@ fn priming_through_an_undo_and_restore_gives_the_restore_and_the_item() {
         ]
     );
 }
+
+const BOB: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:10086"}"#;
+const CAROL: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:10087"}"#;
+
+/// 照记下的几条开的一轮（群里的 `session.respond`）：`trigger` 是最后一条。
+fn responded(seq: u64, triggers: &[u64]) -> Event {
+    let last = triggers.last().expect("至少一条");
+    line(
+        seq,
+        "turn.started",
+        Some(seq),
+        KERNEL,
+        &format!(r#"{{"trigger":{last},"triggers":{triggers:?}}}"#),
+    )
+}
+
+fn joined(seq: u64, turn: u64, triggers: &[u64]) -> Event {
+    line(
+        seq,
+        "turn.joined",
+        Some(turn),
+        KERNEL,
+        &format!(r#"{{"triggers":{triggers:?}}}"#),
+    )
+}
+
+#[test]
+fn a_group_turn_keeps_every_line_she_answered() {
+    // 施工 R-13 再补（2026-10-12 项目主人：「把回复的那次记录进去就行，无论是插话还是直接触发」）：照记下的几条开的一轮，
+    // 那几条都进，并进来的也进；她没开口的旁听不进。
+    let events = [
+        said(2, BOB, "阿杰下周六搬家"),
+        said(3, CAROL, "搬去哪"),
+        said(4, BOB, "张江"),
+        responded(5, &[2, 3]),
+        joined(6, 5, &[4]),
+        replied(7, 5, "张江离公司近"),
+        ended(8, 5, "completed"),
+        said(9, CAROL, "没人理我"),
+    ];
+    assert_eq!(
+        feed(&events),
+        [Change::Put(item(
+            5,
+            "阿杰下周六搬家\n搬去哪\n张江\n\n张江离公司近"
+        ))]
+    );
+    assert_eq!(
+        replay(&events),
+        [item(5, "阿杰下周六搬家\n搬去哪\n张江\n\n张江离公司近")]
+    );
+}
+
+#[test]
+fn a_group_turn_she_stayed_quiet_in_is_not_put() {
+    let events = [
+        said(2, BOB, "今天好热"),
+        responded(3, &[2]),
+        ended(4, 3, "completed"),
+    ];
+    assert_eq!(feed(&events), [], "她没回，就是旁听");
+}
+
+#[test]
+fn a_group_turn_opened_by_a_picture_alone_still_keeps_her_answer() {
+    let picture = line(
+        2,
+        "message.user",
+        None,
+        BOB,
+        r#"{"blocks":[{"type":"image","blob":"sha256:0000000000000000000000000000000000000000000000000000000000000000","media_type":"image/png","width":4,"height":4}]}"#,
+    );
+    let events = [
+        picture.clone(),
+        responded(3, &[2]),
+        replied(4, 3, "好可爱的猫"),
+        ended(5, 3, "completed"),
+    ];
+    assert_eq!(feed(&events), [Change::Put(item(3, "好可爱的猫"))]);
+    let events = [
+        picture,
+        said(3, CAROL, "我家的"),
+        responded(4, &[2, 3]),
+        replied(5, 4, "好可爱的猫"),
+        ended(6, 4, "completed"),
+    ];
+    assert_eq!(
+        feed(&events),
+        [Change::Put(item(4, "我家的\n\n好可爱的猫"))],
+        "只有图的那一句不占行"
+    );
+}
