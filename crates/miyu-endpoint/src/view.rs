@@ -15,6 +15,9 @@ pub(crate) mod tree;
 
 pub(crate) use detail::detail;
 
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -22,7 +25,9 @@ use miyu_kernel::event::Event;
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{OpenError, read_events};
+use miyu_store::packages::Found;
 use miyu_store::resources::ResourceRoot;
+use miyu_store::root::DataRoot;
 use miyu_view::{Projector, Texts};
 
 use crate::Core;
@@ -67,7 +72,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     // 要条目的：投影要的字照这个连接的语言读，改了多少行照属主的 blob 算。
     let view = match params.view {
         true => Some((
-            core.resources.clone(),
+            (core.resources.clone(), SkillPlaces::of(core)),
             peer.language,
             Blobs::new(core.root.blobs(&owner)),
         )),
@@ -77,7 +82,9 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     // 切页、算条目都在阻塞线程里：一页最多 1 MiB，投影是一条条喂的纯计算。
     tokio::task::spawn_blocking(move || {
         let view = match view {
-            Some((resources, language, blobs)) => Some((texts(&resources, language)?, blobs)),
+            Some(((resources, skills), language, blobs)) => {
+                Some((texts(&resources, language, &skills)?, blobs))
+            }
             None => None,
         };
         Ok(paged(&events, before, turns, view).0)
@@ -95,12 +102,42 @@ pub(crate) fn newest(events: &[Event], texts: Texts, blobs: Blobs) -> (Value, Pr
     )
 }
 
-/// 投影要的字：照资源目录读 `language` 一份、英文一份。读不成的记一行日志、回内部出错。
-pub(crate) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, Refusal> {
-    project::texts(resources, language).map_err(|project::Unreadable(why)| {
+/// 投影要的字：照资源目录读 `language` 一份、英文一份，技能的给人看的名字照 `skills` 挑（施工 9-8 四补）。读不成的记一行
+/// 日志、回内部出错。碰磁盘。
+pub(crate) fn texts(
+    resources: &ResourceRoot,
+    language: &str,
+    skills: &SkillPlaces,
+) -> Result<Texts, Refusal> {
+    let mut texts = project::texts(resources, language).map_err(|project::Unreadable(why)| {
         tracing::warn!(target: "miyu::endpoint", why = %why, "view words not read");
         Refusal::INTERNAL
-    })
+    })?;
+    texts.skills = skills.titles(language);
+    Ok(texts)
+}
+
+/// 找技能的地方（施工 9-8 四补）：这一刻装了的包、数据根、管理员，拿到阻塞线程里再找。
+#[derive(Clone)]
+pub(crate) struct SkillPlaces(Arc<Vec<Found>>, DataRoot, AccountId);
+
+impl SkillPlaces {
+    pub(crate) fn of(core: &Core) -> SkillPlaces {
+        SkillPlaces(core.packages(), core.root.clone(), core.admin.clone())
+    }
+
+    /// 技能的名字到给人看的名字，照语言 `language` 挑，没写的照名字。碰磁盘。
+    fn titles(&self, language: &str) -> BTreeMap<String, String> {
+        miyu_store::skills::find(&self.0, &self.1, &self.2)
+            .0
+            .into_iter()
+            .map(|skill| {
+                let title = crate::personas::pick(&skill.head.display_name, language)
+                    .unwrap_or_else(|| skill.head.name.clone());
+                (skill.head.name, title)
+            })
+            .collect()
+    }
 }
 
 /// 从 `events`（整份日志）切 `before` 之前的一页写成回应：`view` 有的交条目，连同喂过这一页的投影；没有的交事件。

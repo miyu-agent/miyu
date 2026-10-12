@@ -69,6 +69,8 @@ pub struct Texts {
     pub kinds: Kinds,
     /// 核心这台机器的家目录：对象里的路径在它底下的写成 `~/…`。
     pub home: Option<String>,
+    /// 技能的名字到给人看的名字（施工 9-8 四补）：照连接的语言挑好的；没有的照技能的名字。
+    pub skills: BTreeMap<String, String>,
 }
 
 /// 说法的编号，都在内核那一份的 `view/` 下面。

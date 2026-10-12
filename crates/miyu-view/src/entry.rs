@@ -12,6 +12,10 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 
+mod touched;
+
+pub use touched::{SkillUsed, TouchKind, Touched};
+
 pub use crate::id::EntryId;
 pub use crate::notice::Notice;
 
@@ -209,27 +213,9 @@ pub struct Tool {
     /// 改了哪些文件（施工 9-8 三补）：照结果的效果，换成真实位置以后的绝对路径，照先后；读的不算。没有的不写。
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<Touched>,
-}
-
-/// 一步改了的一个文件（施工 9-8 三补）。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Touched {
-    /// 换成真实位置以后的绝对路径。
-    pub path: String,
-    /// 改了还是移进了回收站。
-    pub action: TouchKind,
-}
-
-/// 文件怎么了。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TouchKind {
-    /// 新建：改之前没有这个文件（`file.changed` 没有 `before`）。
-    Created,
-    /// 覆盖、编辑已有的（`file.changed` 有 `before`）。
-    Changed,
-    /// 移进回收站（`file.trashed`）。
-    Trashed,
+    /// 读的是技能的 `SKILL.md`（施工 9-8 四补）：照结果的 `file.read` 效果。没有的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skill: Option<SkillUsed>,
 }
 
 /// 标题那一句，照连接的语言。

@@ -86,5 +86,6 @@ pub fn texts(language: &str) -> Texts {
         english: Box::new(ResourceWords::load("en")),
         kinds,
         home: Some("/home/alice".to_string()),
+        skills: std::collections::BTreeMap::from([("notes".to_string(), "Notes".to_string())]),
     }
 }

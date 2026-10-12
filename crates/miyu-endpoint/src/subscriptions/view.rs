@@ -160,8 +160,10 @@ impl View {
             return;
         }
         let resources = self.core.resources.clone();
+        let skills = crate::view::SkillPlaces::of(&self.core);
         let loaded =
-            tokio::task::spawn_blocking(move || crate::view::texts(&resources, language)).await;
+            tokio::task::spawn_blocking(move || crate::view::texts(&resources, language, &skills))
+                .await;
         if let Ok(Ok(texts)) = loaded {
             self.projector.retext(Arc::new(texts));
             self.language = language;

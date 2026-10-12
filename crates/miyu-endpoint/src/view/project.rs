@@ -69,6 +69,7 @@ pub(super) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, U
         english: Box::new(load("en")?),
         kinds,
         home: std::env::home_dir().map(|home| home.to_string_lossy().into_owned()),
+        skills: std::collections::BTreeMap::new(),
     })
 }
 

@@ -16,7 +16,8 @@ use miyu_kernel::time::Timestamp;
 
 use super::{Job, Projector};
 use crate::entry::{
-    Answered, Approval, Body, Diff, Entry, EntryId, Picture, Tool, ToolState, TouchKind, Touched,
+    Answered, Approval, Body, Diff, Entry, EntryId, Picture, SkillUsed, Tool, ToolState, TouchKind,
+    Touched,
 };
 use crate::estimate;
 use crate::notice::Notice;
@@ -78,6 +79,7 @@ impl Projector {
             approval: None,
             took_ms: None,
             files: Vec::new(),
+            skill: None,
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());
@@ -224,6 +226,18 @@ impl Projector {
                 _ => None,
             })
             .collect();
+        // 读的是技能的 `SKILL.md`（施工 9-8 四补）：名字照效果，给人看的名字照交进来的字。
+        let skill = result.effects.iter().find_map(|effect| match effect {
+            Effect::FileRead(read) => read.skill.as_ref().map(|name| SkillUsed {
+                name: name.clone(),
+                title: texts
+                    .skills
+                    .get(name)
+                    .cloned()
+                    .unwrap_or_else(|| name.clone()),
+            }),
+            _ => None,
+        });
         let mut job = None;
         for effect in &result.effects {
             if let Effect::JobStarted(started) = effect {
@@ -251,6 +265,7 @@ impl Projector {
                 tool.images = images;
                 tool.job = job;
                 tool.files = files;
+                tool.skill = skill;
                 if let Some(real) = real
                     && !state.failed()
                 {
