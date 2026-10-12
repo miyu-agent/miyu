@@ -23,6 +23,7 @@ fn the_sample_reads_and_writes_back_byte_for_byte() {
             write: paths(&["/home/me/project", "/tmp/miyu-sandbox"]),
             hidden: paths(&["/home/me/.miyu"]),
             read: None,
+            reveal: Vec::new(),
         }
     );
     assert_eq!(spec.to_json().expect("写得成") + "\n", sample);
@@ -55,4 +56,22 @@ fn unknown_fields_and_wrong_kinds_are_refused() {
     for bad in [r#"{"write":"/usr"}"#, r#"{"hidden":[1]}"#, "not json", ""] {
         assert!(Spec::from_json(bad).is_err(), "{bad}");
     }
+}
+
+/// 藏起来的里面单独放开只读的（施工 X-10 中）：没有的不写，规格的字节和以前一样；有的照原样读回来。
+#[test]
+fn revealed_paths_are_written_only_when_there_are_some() {
+    let mut spec = Spec::from_json(r#"{"write":[],"hidden":["/d"]}"#).expect("读得懂");
+    assert!(spec.reveal.is_empty());
+    assert_eq!(
+        spec.to_json().expect("写得成"),
+        r#"{"write":[],"hidden":["/d"]}"#
+    );
+    spec.reveal = paths(&["/d/home/a/skills/notes"]);
+    let json = spec.to_json().expect("写得成");
+    assert_eq!(
+        json,
+        r#"{"write":[],"hidden":["/d"],"reveal":["/d/home/a/skills/notes"]}"#
+    );
+    assert_eq!(Spec::from_json(&json).expect("读得懂"), spec);
 }

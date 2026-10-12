@@ -26,6 +26,8 @@ pub(crate) struct Sandbox {
     cache: Option<SandboxCache>,
     /// 外部身份的会话（施工 5-12 下）：读写都只限工作区（`confined.rs`）。
     confined: bool,
+    /// 开着的技能文件夹（施工 X-10 中）：数据根藏着，它们单独放开只读。
+    shelves: Vec<PathBuf>,
 }
 
 impl Sandbox {
@@ -43,7 +45,15 @@ impl Sandbox {
             data_root,
             cache,
             confined,
+            shelves: Vec::new(),
         }
+    }
+
+    /// 开着的技能文件夹（施工 X-10 中，`skills.md`「技能」第 3 条）：规格里单独放开只读（外部身份的会话加进只准读的名单）。
+    #[must_use]
+    pub(crate) fn with_shelves(mut self, shelves: Vec<PathBuf>) -> Sandbox {
+        self.shelves = shelves;
+        self
     }
 
     /// 照实际生效的那一级 `permission`、这一轮的工作目录 `cwd` 和加进来的目录 `dirs`（施工 5-10 上）写一次调用的沙盒：
@@ -102,6 +112,7 @@ impl Sandbox {
                 write,
                 hidden: vec![data_root],
                 read: None,
+                reveal: self.shelves.iter().map(|dir| real(dir)).collect(),
             },
             env,
         }))

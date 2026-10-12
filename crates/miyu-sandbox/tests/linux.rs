@@ -19,6 +19,7 @@ fn spec(write: &[&Path], hidden: &[&Path]) -> Spec {
         write: write.iter().map(|path| path.to_path_buf()).collect(),
         hidden: hidden.iter().map(|path| path.to_path_buf()).collect(),
         read: None,
+        reveal: Vec::new(),
     }
 }
 
@@ -182,6 +183,34 @@ fn a_writable_path_inside_a_hidden_one_stays_writable() {
         "hi\n",
         "工作区在数据根里照样能写：{out:?}"
     );
+    denied(&spec, &format!("cat '{}'", token.display()));
+}
+
+/// 藏起来的里面单独放开只读的（施工 X-10 中，开着的技能文件夹）：读得到、列得出，写不进；旁边的照旧藏着。
+#[test]
+fn a_revealed_path_inside_a_hidden_one_is_read_only() {
+    let _serial = serial();
+    let work = Dir::new();
+    let data = Dir::new();
+    let token = data.file("token", b"secret\n");
+    let skill = data.path().join("home/admin/skills/notes");
+    std::fs::create_dir_all(&skill).expect("建得了目录");
+    let file = skill.join("SKILL.md");
+    std::fs::write(&file, b"steps\n").expect("写得进");
+    let spec = Spec {
+        reveal: vec![skill.clone()],
+        ..spec(&[work.path()], &[data.path()])
+    };
+    if refused_without_landlock(&spec) {
+        return;
+    }
+    let out = run(
+        &spec,
+        &format!("cat '{}' && ls '{}'", file.display(), skill.display()),
+    );
+    assert_eq!(text(&out.stdout), "steps\nSKILL.md\n", "{out:?}");
+    denied(&spec, &format!("echo x >> '{}'", file.display()));
+    denied(&spec, &format!("touch '{}/new'", skill.display()));
     denied(&spec, &format!("cat '{}'", token.display()));
 }
 
@@ -380,6 +409,7 @@ fn a_read_list_keeps_everything_else_unreadable() {
         write: vec![work.path().to_path_buf()],
         hidden: Vec::new(),
         read: Some(read),
+        reveal: Vec::new(),
     };
     if refused_without_landlock(&spec) {
         return;

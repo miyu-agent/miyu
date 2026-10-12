@@ -50,6 +50,10 @@ pub(super) fn confine(spec: &Spec) -> Result<(), String> {
             }
         }
     }
+    // 藏起来的里面单独放开只读的（施工 X-10 中）：Landlock 的规则只放行、互相叠加，藏起来的那一片没放行，这里补上一块。
+    for path in &spec.reveal {
+        created = add_readable(created, path)?;
+    }
     let null = PathBuf::from("/dev/null");
     for path in spec.write.iter().chain([&null]) {
         created = add(created, path, AccessFs::from_all(LATEST))?;

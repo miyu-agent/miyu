@@ -325,7 +325,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
     )
-    .with_shelves(shelves_open);
+    .with_shelves(shelves_open.clone());
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
@@ -374,6 +374,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             goals: has_goals,
             memory: calls,
             knowledge: shelves.clone(),
+            shelves: shelves_open,
             packages,
         },
         jobs,

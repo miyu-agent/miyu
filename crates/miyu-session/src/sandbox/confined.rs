@@ -54,6 +54,8 @@ impl Sandbox {
         read.extend([PathBuf::from("/dev"), PathBuf::from("/proc/self")]);
         read.extend(PROGRAM_EXTRAS.iter().map(PathBuf::from));
         read.extend(own.iter().cloned());
+        // 开着的技能文件夹只读（施工 X-10 中）：在名单里就读得到，比藏起来的数据根深，压得过它。
+        read.extend(self.shelves.iter().map(|dir| real(dir)));
         let write = match effective(permission) {
             Effective::ReadOnly => Vec::new(),
             Effective::Workspace | Effective::Full => own,
@@ -64,6 +66,7 @@ impl Sandbox {
                 write,
                 hidden: vec![real(&self.data_root)],
                 read: Some(read),
+                reveal: Vec::new(),
             },
             env: vec![(OsString::from("TMPDIR"), temp.into_os_string())],
         })

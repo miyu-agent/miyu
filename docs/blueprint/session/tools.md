@@ -73,11 +73,12 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 **1a. 一次调用带的沙盒**（`crates/miyu-session/src/sandbox.rs`，施工 5-4 上；`sandbox.md`、`11-权限与沙盒.md` 第四节）
 
 1. 这台机器上的沙盒用不了（核心起来时没探到手段，`core.md`）：不带。执行命令在这之前已经问过人了（`session/guard.md`）。
-   - 外部身份的会话（施工 5-12 下，`sandbox/confined.rs`）先于下面几条：不看级别（完全放开也关进来），读只准名单里的（`read`：系统目录、`/dev`、`/proc/self`，macOS 上另有程序起来要读的 `/private/var/select`、`/private/var/db/timezone`、`/private/var/db/dyld`（施工 5-12 再补），这一轮的工作目录、加进来的目录、工作目录里的 `.tmp`），写这一轮的工作目录、加进来的目录、`.tmp`（只读的哪儿都不能写），`TMPDIR` 指到 `.tmp`，藏数据根，不给工具链的缓存。不给整个 `/proc`：同一个用户的进程的环境变量在 `/proc/<编号>/environ`，核心的环境里有各家的 key。只有关得住读的平台走到这里，别的平台权限策略拒命令（`session/guard.md`）。
+   - 外部身份的会话（施工 5-12 下，`sandbox/confined.rs`）先于下面几条：不看级别（完全放开也关进来），读只准名单里的（`read`：系统目录、`/dev`、`/proc/self`，macOS 上另有程序起来要读的 `/private/var/select`、`/private/var/db/timezone`、`/private/var/db/dyld`（施工 5-12 再补），这一轮的工作目录、加进来的目录、工作目录里的 `.tmp`），写这一轮的工作目录、加进来的目录、`.tmp`（只读的哪儿都不能写），`TMPDIR` 指到 `.tmp`，藏数据根，不给工具链的缓存；开着的技能文件夹加进只准读的名单（施工 X-10 中）。不给整个 `/proc`：同一个用户的进程的环境变量在 `/proc/<编号>/environ`，核心的环境里有各家的 key。只有关得住读的平台走到这里，别的平台权限策略拒命令（`session/guard.md`）。
 2. 实际生效的那一级（和权限策略同一个算法：只读开关开着是只读；级别不认识的按只读）：
    - 完全放开：不带。
    - 工作区：能写这一轮的工作目录、加进来的目录（施工 5-10 上）、临时目录；藏数据根。
    - 只读：哪儿都不能写（`/dev/null` 助手总放）；藏数据根。
+   - 两级都把开着的技能文件夹写进 `reveal`（施工 X-10 中，`skills.md`「技能」第 3 条）：造会话、载入时照这一刻找到的（`Sandbox::with_shelves`，和权限策略同一份），换成真实的位置。
 3. 工作目录、加进来的目录照权限策略的办法换成真实的位置（`~` 接家目录）；换不成的照原样。数据根、临时目录也换成真实的位置。
 4. 数据根落在临时目录里（测试、`MIYU_HOME` 指到那里）：藏起来的落在能写的里面，Linux 上挖不了洞，助手会拒绝。这时不放整个临时目录，改放沙盒自己的一个：数据根旁边的 `<数据根>-sandbox-tmp`，环境变量 `TMPDIR` 指过去（`Sandboxed.env`）。
    - 放在数据根旁边，不放在临时目录下面：测试的场地删掉时一起删，也不和别的用户在共用的临时目录里抢名字。

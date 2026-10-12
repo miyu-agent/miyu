@@ -103,6 +103,36 @@ fn a_workspace_inside_the_hidden_data_root_is_usable() {
     assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
 }
 
+/// 藏起来的里面单独放开只读的（施工 X-10 中，开着的技能文件夹）：读得到、列得出，写不进；旁边的照旧藏着。
+#[test]
+fn a_revealed_folder_inside_the_hidden_data_root_is_read_only() {
+    let base = Dir::new();
+    let root = real(base.path());
+    let data = root.join("data");
+    let skill = data.join("home/admin/skills/notes");
+    fs::create_dir_all(&skill).expect("建得了目录");
+    let file = skill.join("SKILL.md");
+    fs::write(&file, b"steps\n").expect("写得进");
+    let token = data.join("token");
+    fs::write(&token, b"secret\n").expect("写得进");
+    let work = root.join("work");
+    fs::create_dir(&work).expect("建得了目录");
+    let spec =
+        serde_json::json!({ "write": [&work], "hidden": [&data], "reveal": [&skill] }).to_string();
+    assert_eq!(ok(&run(&spec, &work, "/bin/cat", &[at(&file)])), "steps\n");
+    assert_eq!(
+        ok(&run(&spec, &work, "/bin/ls", &[at(&skill)])),
+        "SKILL.md\n"
+    );
+    denied(&sh(
+        &spec,
+        &work,
+        &format!("echo x >> '{}'", file.display()),
+    ));
+    denied(&run(&spec, &work, "/bin/cat", &[at(&token)]));
+    assert_eq!(fs::read(&file).expect("在"), b"steps\n");
+}
+
 #[test]
 fn directories_holding_the_spec_together_cannot_be_renamed_or_removed() {
     let base = Dir::new();

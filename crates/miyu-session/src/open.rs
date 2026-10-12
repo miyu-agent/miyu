@@ -307,7 +307,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
     )
-    .with_shelves(shelves_open);
+    .with_shelves(shelves_open.clone());
     let who = Who {
         owner: owner.clone(),
         venue: venue.clone(),
@@ -345,6 +345,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             goals,
             memory: calls,
             knowledge: shelves.clone(),
+            shelves: shelves_open,
             packages,
         },
         jobs,

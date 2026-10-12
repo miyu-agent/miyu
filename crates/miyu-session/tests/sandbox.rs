@@ -106,6 +106,7 @@ async fn each_level_gets_its_own_spec() {
                 write: vec![real(&work), real(&std::env::temp_dir())],
                 hidden: vec![data.clone()],
                 read: None,
+                reveal: Vec::new(),
             },
             env: Vec::new(),
         }),
@@ -117,6 +118,7 @@ async fn each_level_gets_its_own_spec() {
             write: Vec::new(),
             hidden: vec![data],
             read: None,
+            reveal: Vec::new(),
         },
         env: Vec::new(),
     };

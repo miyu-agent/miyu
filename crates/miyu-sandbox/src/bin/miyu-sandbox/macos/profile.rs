@@ -95,6 +95,7 @@ pub(crate) fn rules(paths: &Resolved) -> Profile {
     let read = paths.read.as_ref().unwrap_or(&none);
     let mut entries: Vec<(usize, Kind, &Path)> = [
         (Kind::Read, read),
+        (Kind::Read, &paths.reveal),
         (Kind::Write, &paths.write),
         (Kind::Hidden, &paths.hidden),
     ]

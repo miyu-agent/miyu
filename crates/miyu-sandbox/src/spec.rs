@@ -20,6 +20,10 @@ pub struct Spec {
     /// 照旧整盘能读。这台机器上关不住读的（[`crate::CONFINES_READS`] 是假的），助手收到写了它的规格不跑。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub read: Option<Vec<PathBuf>>,
+    /// 藏起来的里面单独放开只读的（施工 X-10 中，开着的技能文件夹）：读得到，写不了，`hidden` 照旧挡住它旁边的。没有的不写，
+    /// 规格的字节和以前一样。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reveal: Vec<PathBuf>,
 }
 
 impl Spec {

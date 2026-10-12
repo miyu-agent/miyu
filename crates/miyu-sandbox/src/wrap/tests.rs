@@ -11,6 +11,7 @@ fn the_command_goes_after_the_spec_and_the_dashes() {
             write: vec![PathBuf::from("/work")],
             hidden: Vec::new(),
             read: None,
+            reveal: Vec::new(),
         },
         env: Vec::new(),
     };

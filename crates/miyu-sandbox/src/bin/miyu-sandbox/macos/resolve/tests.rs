@@ -106,3 +106,15 @@ fn a_read_list_is_resolved_like_the_writable_ones() {
     let resolved = resolve(&Spec::from_json(&empty.to_string()).expect("读得懂")).expect("换得了");
     assert_eq!(resolved.read, Some(Vec::new()));
 }
+
+/// 藏起来的里面单独放开只读的（施工 X-10 中）：同只准读的，只用换过的、重复的只写一次；没写的是空的。
+#[test]
+fn revealed_paths_are_resolved_like_the_read_list() {
+    let dir = Dir::new();
+    let given = dir.path.join("link/skill");
+    let real = dir.real.join("real/skill");
+    let json = serde_json::json!({ "hidden": [&dir.path], "reveal": [&given, &real] });
+    let resolved = resolve(&Spec::from_json(&json.to_string()).expect("读得懂")).expect("换得了");
+    assert_eq!(resolved.reveal, [real]);
+    assert!(resolve(&spec(&[], &[])).expect("换得了").reveal.is_empty());
+}

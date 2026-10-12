@@ -6,7 +6,7 @@ macOS 上助手怎么收紧自己（`sandbox.md`「怎么走」第 4 条第 3 �
 
 - 整盘能读；只有规格的 `write` 里的能写，外加空设备、自己的文件描述符、终端这几样设备；一条能写的都没有，就只剩底子，全盘只读（只读这一级，`sandbox.md`）；
 - 规格写了 `read`（外部身份的会话，施工 5-12 再补）的不再整盘能读：只有名单里的、能写的读得到、列得出、执行得了，别处只看得到元数据（同 Linux 的 Landlock 不管 `stat`）；根目录这一层列得出（macOS 的 `/bin/sh` 起来先读 `/`，读不了就自己 abort，CI 上量的），只是顶层的名字；
-- `hidden` 里的读、写、看、执行都不行（默认是数据根：里面有本机令牌）；
+- `hidden` 里的读、写、看、执行都不行（默认是数据根：里面有本机令牌）；`reveal` 里的（藏起来的里面开着的技能文件夹，施工 X-10 中）照 `read` 的一条写，更深、排在后面，读得到、写不了；
 - 撑着规格的那几个目录删不掉、改不了名：Seatbelt 照路径管，改个名就绕过去了；
 - 能替命令到别处读写的系统服务不放行：打开别的程序、AppleEvents、launchd 的任务、偏好设置、钥匙串；Unix 套接字只连得上能写的地方的，Docker、ssh-agent 这类连不上。
 
@@ -43,13 +43,13 @@ macOS 上助手怎么收紧自己（`sandbox.md`「怎么走」第 4 条第 3 �
 
 | 哪一种 | 写法 |
 |---|---|
-| `read` 的一条（施工 5-12 再补） | `(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec (subpath (param "READ_<n>")))` |
+| `read`、`reveal` 的一条（施工 5-12 再补、X-10 中） | `(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec (subpath (param "READ_<n>")))` |
 | `write` 的一条 | `(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec file-write* (subpath (param "WRITE_<n>")))`，接着 `(allow network-outbound (remote unix-socket (subpath (param "WRITE_<n>"))))` |
 | `hidden` 的一条 | `(deny file-read* file-read-metadata file-write* file-test-existence file-map-executable process-exec (literal (param "HIDDEN_<n>")) (subpath (param "HIDDEN_<n>")))`，接着 `(deny network-outbound (remote unix-socket (subpath (param "HIDDEN_<n>"))))` |
 | 删不掉、改不了名的目录 | 每个一条 `(deny file-write-unlink (require-all (vnode-type DIRECTORY) (literal (param "KEEP_<n>"))))` |
 
 - `literal` 连同 `subpath` 一起写：藏起来的那一处自己也挡住，还不存在的也不许新建。
-- 只准读的、能写的、藏起来的照路径的深浅一起排，深的在后；一样深的，只准读的最前、藏起来的最后（越严的越后）。只准读的路径同能写的，只用换过的（`resolve.rs`）。
+- 只准读的、能写的、藏起来的照路径的深浅一起排，深的在后；一样深的，只准读的最前、藏起来的最后（越严的越后）。只准读的、放开只读的路径同能写的，只用换过的（`resolve.rs`）。
 - 能写的那一条也放行读：更深的能写的落在藏起来的里面（工作区退回了数据根里）时，要把读一起放开。
 
 ### 怎么走
@@ -305,6 +305,7 @@ macOS 上助手怎么收紧自己（`sandbox.md`「怎么走」第 4 条第 3 �
 | `crates/miyu-sandbox/tests/macos/`（只在 macOS 上编，真跑助手） | `files.rs`：整盘能读，规格外的写不了、建不了、删不了，空设备、标准输出写得了；藏起来的读不了、`stat` 不了、列不了、`test -e` 看不见、写不了、执行不了；工作区在数据根里照样能读能写，`pwd -P`、`realpath` 对，cargo 不说换不成；能写的那几片、藏起来的在能写的地方里的上级改不了名；规格写成 `/var/…` 照样挡；中文、带引号的路径；能写的地方里硬链接、符号链接、改名、删照常。`bypass.rs`：能读不能写的文件，硬链接、符号链接、改名、`fcntl` 改不了；`open`、`launchctl submit` 做不成，偏好设置、钥匙串写不进。`network.rs`：连得上沙盒外的 TCP 服务，听得了端口；Unix 套接字能写的地方连得上，别处、藏起来的连不上，`socketpair` 能用；解析得了名字，系统的 HTTPS（`nscurl`）下载得下来。`probe.rs`：探测报 `seatbelt`；套在不许再装沙盒的沙盒里，探测报空的，`run` 收紧不成、命令没跑、最后一行是助手那一句。`compat.rs`：照核心会写的规格跑得起 `/bin/sh`、`zsh`、`git`、`cargo`、`rustc`、`cc`。`child.rs`：测试程序自己当命令时做的那几件事，照环境变量做 |
 | `crates/miyu-sandbox/tests/macos/reads.rs`（施工 5-12 再补） | 只准读名单里的：名单外的文件读不到、目录列不出，名单里的照常读、能写的照常写，`/bin/sh`、`env`、`date` 照样跑，名单外的元数据看得到；藏起来的在名单里面照样读不到、看不见 |
 | `profile/tests.rs`、`resolve/tests.rs` 的 `read`（施工 5-12 再补） | 写了 `read` 的接 `read-listed.sb` 不接 `read-all.sb`，底子自己不放开读；只准读的一样深时排最前；只准读的路径同能写的换、去重 |
+| `profile/tests.rs`、`resolve/tests.rs`、`tests/macos/files.rs` 的 `reveal`（施工 X-10 中） | 放开只读的写成只准读的那一种，比藏起来的深、排在它后面，照旧接 `read-all.sb`；路径同只准读的换、去重；真跑：藏起来的数据根里放开的技能文件夹读得到、列得出、写不进，旁边的令牌照旧读不到 |
 | `crates/miyu-sandbox/tests/run.rs` | 各平台共用的那几条：macOS 上助手真收紧，照样对 |
 
 ### 出处

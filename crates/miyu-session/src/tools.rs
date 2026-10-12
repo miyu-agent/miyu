@@ -183,6 +183,7 @@ impl Tools {
                 kit.data_root.clone(),
                 (kit.sandbox_cache, kit.confined),
             )
+            .with_shelves(kit.shelves)
         });
         Tools {
             session: kit.session,

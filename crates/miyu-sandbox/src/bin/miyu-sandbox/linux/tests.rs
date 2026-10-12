@@ -9,6 +9,7 @@ fn spec(write: &[&str], hidden: &[&str]) -> Spec {
         write: paths(write),
         hidden: paths(hidden),
         read: None,
+        reveal: Vec::new(),
     }
 }
 

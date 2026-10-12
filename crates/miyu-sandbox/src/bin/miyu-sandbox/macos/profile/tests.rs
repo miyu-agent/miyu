@@ -19,6 +19,7 @@ fn paths(write: &[&str], hidden: &[&str]) -> Resolved {
         write: owned(write),
         hidden: owned(hidden),
         read: None,
+        reveal: Vec::new(),
     }
 }
 
@@ -48,6 +49,7 @@ fn the_example_gives_the_sample_rules_and_parameters() {
         write: example.write,
         hidden: example.hidden,
         read: None,
+        reveal: Vec::new(),
     });
     assert_eq!(rules.text, sample("macos.sb"));
     let expected: Vec<(String, PathBuf)> = [
@@ -195,5 +197,28 @@ fn at_the_same_depth_read_comes_before_write_and_hidden() {
     assert_eq!(
         names(&rules(&listed))[..3],
         ["READ_0", "WRITE_0", "HIDDEN_0"]
+    );
+}
+
+/// 藏起来的里面单独放开只读的（施工 X-10 中）：写成放开读的那一种，比藏起来的深，排在它后面压过它；照旧整盘能读。
+#[test]
+fn a_revealed_folder_inside_a_hidden_one_comes_after_it() {
+    let revealed = Resolved {
+        reveal: vec![PathBuf::from("/d/home/a/skills/notes")],
+        ..paths(&["/w"], &["/d"])
+    };
+    let rules = rules(&revealed);
+    assert_eq!(names(&rules)[..3], ["WRITE_0", "HIDDEN_0", "READ_0"]);
+    assert!(
+        rules.text.contains(
+            r#"(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec (subpath (param "READ_0")))"#
+        ),
+        "{}",
+        rules.text
+    );
+    assert_eq!(
+        build(&revealed).text,
+        format!("{BASE}{READ_ALL}{}", rules.text),
+        "照旧整盘能读"
     );
 }
