@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>450</b><span>/ 466 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>453</b><span>/ 469 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">1c80de97</b><span>最近一步（K-3 补 编号写错说清怎么写）的提交</span></li>
+    <li><b class="mono">11fc7ad0</b><span>最近一步（X-13 下 出厂的两个技能）的提交</span></li>
   </ul>
 </header>
 
@@ -819,6 +819,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sF-8h"><span class="n">F-8 三补</span>软件包列表的推送<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-8i"><span class="n">F-8 上再补</span>包里带的程序<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-10a"><span class="n">F-10 上</span>她看软件包<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sF-10b"><span class="n">F-10 下上</span>她装、卸软件包<span class="st">✓</span></a></li>
+        <li><span class="step"><span class="n">F-10 下下</span>打开她装的扩展</span></li>
         <li><a class="step done" href="#sS-1"><span class="n">S-1</span>给界面用的门面 miyu-client<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-5"><span class="n">S-5</span>核心仓库删掉两个界面<span class="st">✓</span></a></li>
       </ol>
@@ -886,7 +888,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-12c"><span class="n">X-12 下</span>脚本：报跳过的、走一遍<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-13a"><span class="n">X-13 上</span>只带技能脚本的包<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-13b"><span class="n">X-13 中</span>被谁盖住、作者说明<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">X-13 下</span>出厂的技能、她自己写</span></li>
+        <li><a class="step done" href="#sX-13p"><span class="n">X-13 补</span>预览报读不成的<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-13c"><span class="n">X-13 下</span>出厂的两个技能<span class="st">✓</span></a></li>
       </ol>
       <p class="later">技能和脚本照图纸 skills.md（2026-10-11 项目主人照推荐定了五条）。</p>
     </li>
@@ -23072,6 +23075,59 @@ a.step:hover{border-color:var(--primary)}
   </div>
 </section>
 
+<section class="sheet" id="sF-10b" aria-labelledby="h-sF10b">
+  <div class="sheet-head"><h2 id="h-sF10b"><span class="no">F-10 下上</span>她装、卸软件包</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她自己写的技能、脚本、扩展照包的样子写在工作区，用一件工具装上；问不问人照设计 31 第六节那张表：完全放开直接做，工作区每次问，只读不能做。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">她装、卸软件包</span><span class="dir-note">F-10 下上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>新的访问类别 install：算写入；权限策略照沙盒外跑命令那张表，报的路径照判，工作区每次问、不提规则</li>
+              <li>Tool::preview：要问人时执行器带着端口先看一眼，整份放进确认请求的 detail.preview，看不了的不问、照拒绝交给她</li>
+              <li>工具 package：install 装包文件夹、remove 卸包，经 PackagesPort 新加的 install、removing、remove</li>
+              <li>工具面十七件 2847 token、9780 字节，预算不改；登记簿六行</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">新访问类别</span><span class="rl">execute 在有沙盒的会话里不问人，装包要照 31 的表问</span></div>
+          <div class="tile new"><span class="nm">每次都问</span><span class="rl">装一次是一次，不给规则</span></div>
+          <div class="tile new"><span class="nm">卡片放预览</span><span class="rl">日志里留下人看到的那一份</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">F-10 下上</dd></div>
+        <div><dt>名称</dt><dd>她装、卸软件包</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">dd78b95d</dd></div>
+        <div><dt>验收</dt><dd>测试、变异 8 个、门禁八项、三台 CI（run 1944）、真模型装卸一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>会话层：完全放开不问、工作区问且不提规则、没人确认和只读拒、工作区里的文件夹照样问、数据根里的拒</span></li>
+        <li><span class="ok">✓</span><span>工具：经端口装卸、拒了的几种说法、看一眼装的看文件夹卸的看卸之前那一份</span></li>
+        <li><span class="ok">✓</span><span>端点：装卸各问一次带预览、完全放开不问、写错的清单不问当场拒</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>tools/package.md、kernel/events-bodies.md、tools/interface.md；施工单 F-10下上-装卸包.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <section class="sheet" id="sS-1" aria-labelledby="h-sS1">
   <div class="sheet-head"><h2 id="h-sS1"><span class="no">S-1</span>给界面用的门面 miyu-client</h2><span class="pill done">已完成</span></div>
   <p class="purpose">终端、网页拆成各自的仓库以后只依赖这一个 crate，照 git 依赖钉住核心的提交（设计 32，项目主人 2026-10-11 定拆、拆法交给主会话）。</p>
@@ -25543,6 +25599,108 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>skills.md、docs/authors/README.md；施工单 X-13-被谁盖住、作者说明（中）.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-13p" aria-labelledby="h-sX13p">
+  <div class="sheet-head"><h2 id="h-sX13p"><span class="no">X-13 补</span>预览报读不成的</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">F-10 下上真模型写包时查出来：description 里不加引号的「冒号加空格」让技能读不成，预览只列读得成的，她和人都看不出来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">预览报读不成的</span><span class="dir-note">X-13 补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>skills::carried、scripts::carried 多交回读不成的</li>
+              <li>看一眼的回应多 skipped：包文件夹里的相对路径、英文一句为什么</li>
+              <li>命令行印「读不成：路径（为什么）」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">改 X-13 上那一条</span><span class="rl">读不成的照样不装进工具面，但要说出来；不拦着装</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-13 补</dd></div>
+        <div><dt>名称</dt><dd>预览报读不成的</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">5d09a5cc</dd></div>
+        <div><dt>验收</dt><dd>测试、变异 5 个、门禁八项、三台 CI（run 1944）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>仓库：读不成的交回在哪、为什么</span></li>
+        <li><span class="ok">✓</span><span>端点：预览的 skipped 有说明写错的那个技能</span></li>
+        <li><span class="ok">✓</span><span>命令行：读不成那一行</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>packages.md；施工单 X-13补-预览报读不成的.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-13c" aria-labelledby="h-sX13c">
+  <div class="sheet-head"><h2 id="h-sX13c"><span class="no">X-13 下</span>出厂的两个技能</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她照包的样子写技能、脚本，用 package 装上；出厂带两个技能教她怎么写，平时只看到两行说明，用到才读正文（skills.md「定了的」第 5 条）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">出厂的两个技能</span><span class="dir-note">X-13 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>出厂包 authoring：skill-creator、package-creator</li>
+              <li>技能给人看的名字照语言：display_name 算英文，_zh、_ja 另两种</li>
+              <li>登记簿门禁扫到包带的技能、脚本；两行 56、68 token，正文 667、741</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">单独的出厂包</span><span class="rl">能整个卸掉，不放进基础系统</span></div>
+          <div class="tile new"><span class="nm">写脚本和写包合成一个</span><span class="rl">她的脚本只能装成包</span></div>
+          <div class="tile new"><span class="nm">说明一行英文带中文词</span><span class="rl">每次请求都带，越短越省</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-13 下</dd></div>
+        <div><dt>名称</dt><dd>出厂的两个技能</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">11fc7ad0</dd></div>
+        <div><dt>验收</dt><dd>测试、变异 4 个、门禁八项、三台 CI（run 1944）、真模型写技能装上再用</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>读开头：给人看的几格照语言读</span></li>
+        <li><span class="ok">✓</span><span>端点：功能表、system、放开的文件夹里都有两个技能</span></li>
+        <li><span class="ok">✓</span><span>真模型：先读 skill-creator，写好、检查、问人、装上，下一轮照新技能记笔记</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>skills.md、authors/README.md；施工单 X-13-出厂的两个技能（下）.md</li>
       </ul>
     </div>
   </div>
