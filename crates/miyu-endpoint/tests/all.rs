@@ -103,6 +103,7 @@ mod personas;
 mod preset_background;
 mod preset_face;
 mod preset_set;
+mod preset_skills;
 mod preset_swap;
 mod presets;
 mod providers;

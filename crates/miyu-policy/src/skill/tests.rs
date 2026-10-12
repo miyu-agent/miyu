@@ -111,3 +111,9 @@ fn wrong_ones_say_what_is_wrong() {
         Err(SkillProblem::BadName(long.clone()))
     );
 }
+
+/// 技能算的功能的编号（施工 X-11 上）：`skill-<名字>`。
+#[test]
+fn a_skill_is_the_feature_skill_dash_name() {
+    assert_eq!(feature_id("pdf-processing"), "skill-pdf-processing");
+}

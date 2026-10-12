@@ -99,7 +99,7 @@ shell = false
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
 7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开），写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是管理员用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
@@ -148,6 +148,7 @@ shell = false
 | `crates/miyu-policy/src/preset/tests.rs` | 软件开不开、单件留不留；没开的照编号、不重复；功能照 `[features]`、`[software]`、`unlisted` 的先后开不开，上层盖下层；写了 `[features]` 才进指纹；以前记包编号的快照算同一回事（施工 F-3 上） |
 | `crates/miyu-policy/src/features/tests.rs`（施工 F-3 上） | 工具归写明它的功能、只有一个功能的包工具都归它；装了的就是表里的；以前的包编号读成它的功能 |
 | `crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 F-3 上加的两条） | 以前的快照记包编号的不换、真改了的照换；`[features]` 关掉一个功能，工具没了、那一行写功能编号 |
+| `crates/miyu-endpoint/tests/preset_skills.rs`（施工 X-11 上） | `preset.get` 一个技能一个功能：名字、说明照技能给人看的两格，没写的照名字；基础功能里关着、全部功能里开着、写了关的关着；写过的不再当没装的另列；照预设造的会话只列、只放开开着的，载入以后照样 |
 | `crates/miyu-endpoint/tests/preset_face.rs` 的 `preset_get_lists_features_with_their_tools`、`preset_set.rs` 的 `a_feature_is_switched_by_its_id`（施工 F-3 下） | `preset.get` 照功能列、写了没装的接在后面、每件工具的显示名和开不开、单件关掉的；`preset.set` 写 `features.<编号>` |
 | `crates/miyu-endpoint/tests/preset_face.rs`（施工 F-3 上加的三条） | 真核心：`[features]` 关掉运行命令；没装人格记忆的范围 `off`、不进那一行；没装人设遵循提醒的没有提醒和风格锁 |
 | `crates/miyu-core/tests/tools.rs`（施工 F-3 上） | 出厂的每一件工具都归上一个功能 |

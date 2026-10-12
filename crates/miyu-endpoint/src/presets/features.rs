@@ -7,8 +7,10 @@ use std::collections::BTreeSet;
 use serde_json::{Value, json};
 
 use miyu_config::Words;
+use miyu_policy::skill::feature_id;
 use miyu_store::human::Human;
 use miyu_store::presets::Found;
+use miyu_store::skills::Skill;
 
 use crate::Core;
 use crate::config::methods::words;
@@ -22,7 +24,7 @@ use crate::personas::pick;
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
-pub(super) fn listed(core: &Core, found: &Found, language: &str) -> Vec<Value> {
+pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill]) -> Vec<Value> {
     let words = words(core, language).ok();
     let catalog = core.tools();
     let found_packages = core.packages();
@@ -67,11 +69,30 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str) -> Vec<Value> {
             listed.push(one);
         }
     }
+    // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格，没写名字的照技能的名字；没有工具。
+    let mut skill_ids = BTreeSet::new();
+    for skill in skills {
+        let id = feature_id(&skill.head.name);
+        let mut one = json!({
+            "id": id,
+            "name": skill.head.display_name.as_ref().unwrap_or(&skill.head.name),
+            "on": file.opens_in(&id, skill.package.as_deref().unwrap_or_default()),
+            "installed": true,
+            "tools": [],
+        });
+        if let Some(summary) = &skill.head.summary {
+            one["summary"] = json!(summary);
+        }
+        listed.push(one);
+        skill_ids.insert(id);
+    }
     let written: BTreeSet<&String> = file
         .features
         .keys()
         .chain(file.software.keys())
-        .filter(|id| !table.installed(id) && !packages.contains(id.as_str()))
+        .filter(|id| {
+            !table.installed(id) && !packages.contains(id.as_str()) && !skill_ids.contains(*id)
+        })
         .collect();
     for id in written {
         let name = words

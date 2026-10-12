@@ -127,12 +127,14 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         None => Vec::new(),
     };
     let knows = !listed.is_empty();
-    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上）：列进 system，文件夹放开只读。
+    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
+    // 只读。
     let (found, shelves_open) = match packages_installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
+            let file = preset.as_ref().map(|chosen| chosen.file.clone());
             blocking(move || {
-                let found = skills::find(&installed, &root, &owner);
+                let found = skills::opened(skills::find(&installed, &root, &owner), file.as_ref());
                 let shelves = skills::shelves(&found);
                 (found, shelves)
             })

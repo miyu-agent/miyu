@@ -61,7 +61,8 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;
-    Ok(describe(core, &found, peer.language))
+    let skills = super::skills(core).await;
+    Ok(describe(core, &found, peer.language, &skills))
 }
 
 /// 预设里撤掉了的几格的完整的键：P-3 补撤掉的「以谁为底」、P-4 上撤掉的默认人格。读的时候当没写，写的时候去掉。

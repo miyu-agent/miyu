@@ -310,11 +310,21 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
     let confined = place.1.is_some();
-    // 技能的文件夹照这一刻找到的放开只读（施工 X-10 上）；列出来的那一块照快照。
+    // 技能的文件夹照这一刻找到的、会话的预设开着的放开只读（施工 X-10 上、X-11 上）；列出来的那一块照快照。
     let shelves_open = match installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
-            blocking(move || skills::shelves(&skills::find(&installed, &root, &owner))).await
+            let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
+            let places = presets.as_ref().map(|places| places.presets.clone());
+            blocking(move || {
+                let file = wanted
+                    .zip(places)
+                    .and_then(|(id, presets)| presets.find(&id).ok())
+                    .map(|found| found.file);
+                let found = skills::opened(skills::find(&installed, &root, &owner), file.as_ref());
+                skills::shelves(&found)
+            })
+            .await
         }
         None => Vec::new(),
     };

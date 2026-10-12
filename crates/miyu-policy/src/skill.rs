@@ -18,6 +18,15 @@ pub const DESCRIPTION_CHARS: usize = 1024;
 /// 名字最多几个字。
 const NAME_CHARS: usize = 64;
 
+/// 技能算的那个功能的编号的开头（施工 X-11 上，设计 `30-插件框架.md` 第三节第 2 条）：`skill-<名字>`，同 MCP 服务的
+/// `mcp-<服务名>`。
+const FEATURE_PREFIX: &str = "skill-";
+
+/// 技能 `name` 算的功能的编号（施工 X-11 上）：预设照它开关。
+pub fn feature_id(name: &str) -> String {
+    format!("{FEATURE_PREFIX}{name}")
+}
+
 /// 读好的开头。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SkillHead {

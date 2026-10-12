@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 use miyu_kernel::template::Template;
 use miyu_policy::ToolEntry;
+use miyu_policy::preset::PresetFile;
+use miyu_policy::skill::feature_id;
 use miyu_store::packages::Found;
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_store::root::DataRoot;
@@ -33,6 +35,23 @@ pub(crate) fn find(installed: &[Found], root: &DataRoot, owner: &AccountId) -> V
         );
     }
     found
+}
+
+/// 会话的预设 `preset` 开着的技能（施工 X-11 上，`skills.md`「定了的」）：每个技能算一个功能 `skill-<名字>`，照预设的
+/// `[features]`、老写法 `[software]`（包带的认包的编号）、`unlisted` 判；没有预设的全开。
+pub(crate) fn opened(found: Vec<Skill>, preset: Option<&PresetFile>) -> Vec<Skill> {
+    let Some(preset) = preset else {
+        return found;
+    };
+    found
+        .into_iter()
+        .filter(|skill| {
+            preset.opens_in(
+                &feature_id(&skill.head.name),
+                skill.package.as_deref().unwrap_or_default(),
+            )
+        })
+        .collect()
 }
 
 /// 她的 system 里列出来的那一块（`skills.md`「技能」第 2 条）：头一行，一个技能一行（名字、说明、`SKILL.md` 的路径），字从
