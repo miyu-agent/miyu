@@ -383,6 +383,8 @@ async fn run(
     core.start_extensions();
     // 个人设置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了个人设置，当场起停。
     let _home_mcp = core.follow_home_mcp();
+    // 管理员家目录里的脚本跟着变（施工 X-12 补）：放进去、改了、删了，当场再登记一遍。
+    let _home_scripts = core.watch_scripts();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
     // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。

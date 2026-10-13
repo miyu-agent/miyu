@@ -25,7 +25,7 @@
 | `crates/miyu-policy/src/script.rs` | 读脚本的开头注释（施工 X-12 上）：旧版的键（全角、半角冒号），`Parameters` 往下逐行拼成一份 JSON 为止，认、不用的键跳过；工具名照文件名 |
 | `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再照包的编号找装了的包的 `scripts/`；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
 | `crates/miyu-basesystem/src/shell/script.rs`、`resources/software/basesystem/script/` | 脚本当一件工具（施工 X-12 上）：照 `#!` 起（Windows 上照解释器的名字、扩展名找），参数交给 `MIYU_ARGS_JSON` 和标准输入，缓存目录 `MIYU_SCRIPT_CACHE_DIR`，`PYTHONUTF8=1`；起进程、看门、截输出、跑完了的几句和 `shell` 同一套 |
-| `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
+| `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）、管理员家目录的 `scripts/` 里有文件变了（`Core::watch_scripts`，施工 X-12 补，2026-10-13 项目主人照推荐定：没有的先建上，点开头的、子文件夹里的不算，200 毫秒合并一次；再找一遍的一次一个）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
 | `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告 |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
@@ -89,4 +89,5 @@
 | X-13 上 | 清单认只带技能、脚本的包（只写 `[package]` 的是 `bundle`，没有开关）；装之前的预览列出包带的技能、脚本：做完了（2026-10-12） |
 | X-13 中 | `miyu check` 说清同名的被谁盖住（设计 31 第五节第 3 条）；给作者的说明补上技能、脚本：做完了（2026-10-12） |
 | X-13 补 | 装之前的预览报读不成的技能、脚本：做完了（2026-10-12） |
+| X-12 补 | 脚本：家目录里放进去、改了、删了的当场再登记，下一轮的工具面跟着变（原来要核心重启或者装卸包）：做完了（2026-10-13） |
 | X-13 下 | 出厂的两个技能：写技能的、写脚本和写包的。她自己写的照设计 31 第六节第 2、3 条：在工作区里照包的样子写好，用 F-10 下的 `package` 装；家目录里的不另开口子：做完了（2026-10-12） |
