@@ -156,7 +156,8 @@ impl Sessions {
                 untrusted,
             });
         }
-        let read_only = PermissionSettings::from(&resolved.values()).start_read_only;
+        let permission = PermissionSettings::from(&resolved.values());
+        let level = opening_level(&permission, who.venue.as_ref());
         let preset = presets::resolve(core, who.preset.as_deref()).await?;
         let persona = personas::resolve(core, persona).await?;
         let id = new_id(now());
@@ -181,8 +182,8 @@ impl Sessions {
             venue: who.venue.clone().unwrap_or_else(local),
             owner: who.owner.clone(),
             permission: Permission {
-                level: Level::Workspace,
-                read_only,
+                level,
+                read_only: permission.start_read_only,
             },
             attended: who.attended,
             oneshot: who.oneshot,
@@ -446,6 +447,14 @@ async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {
 }
 
 /// 本机这个场所。
+/// 新会话开局的级别（施工 8-32）：本机开的照 `permission.level`，场所会话照旧从工作区开局（外部身份另有限制）。
+fn opening_level(permission: &PermissionSettings, venue: Option<&VenueId>) -> Level {
+    match (permission.level.as_str(), venue) {
+        ("full", None) => Level::Full,
+        _ => Level::Workspace,
+    }
+}
+
 fn local() -> VenueId {
     VenueId::parse("local").unwrap_or_else(|e| unreachable!("「local」合场所的写法：{e}"))
 }

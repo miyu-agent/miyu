@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 
-use miyu_kernel::event::Body;
+use miyu_kernel::event::{Body, Level};
 use miyu_session::testkit::Script;
 use miyu_store::config_file::version;
 
@@ -136,6 +136,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
             "ui.head",
             "ui.welcomed",
             "permission.start_read_only",
+            "permission.level",
             "log.level"
         ]
     );
@@ -147,7 +148,10 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(switch["control"], "toggle");
     assert_eq!(switch["applies"], "new_session");
     assert!(switch.get("options").is_none());
-    assert_eq!(all["result"]["items"][5]["env"], "MIYU_LOG");
+    let level = &all["result"]["items"][5];
+    assert_eq!(level["control"], "select", "{level}");
+    assert_eq!(level["default"], "workspace", "{level}");
+    assert_eq!(all["result"]["items"][6]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
         json!([{"id":"general","name":"通用"},{"id":"advanced","name":"高级"}])
@@ -194,6 +198,7 @@ async fn get_says_every_value_and_where_it_came_from() {
         json!({
             "log.level": {"origin": {"file": "system/config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},
+            "permission.level": {"origin": {"layer": "default"}, "value": "workspace"},
             "ui.language": {"origin": {"file": "home/alice/settings.toml", "layer": "personal", "line": 4}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
             "ui.head": {"origin": {"layer": "default"}, "value": "tui"},
@@ -405,4 +410,27 @@ async fn a_session_starts_read_only_when_the_setting_says_so() {
     };
     assert!(!read_only(&plain), "默认不是");
     assert!(read_only(&strict), "个人设置打开了");
+}
+
+/// 新会话开局的级别照 `permission.level`（施工 8-32）：默认是工作区，个人设置写了 `full` 的从完全放开开局。
+#[tokio::test]
+async fn a_session_opens_at_the_configured_level() {
+    let home = Home::new();
+    let cwd = home.work.to_string_lossy().into_owned();
+    let mut client = Client::connect(home.core_configured(&script(), None, &[]));
+    hello(&mut client, None).await;
+    let plain = client.create("c1", &cwd).await;
+    home.write(
+        "home/alice/settings.toml",
+        "[permission]\nlevel = \"full\"\n",
+    );
+    let mut client = Client::connect(home.core_configured(&script(), None, &[]));
+    hello(&mut client, None).await;
+    let open = client.create("c2", &cwd).await;
+    let level = |session: &str| match &home.log(session)[0].body {
+        Body::SessionCreated(created) => created.permission.level.clone(),
+        other => panic!("第一条是 session.created：{other:?}"),
+    };
+    assert_eq!(level(&plain), Level::Workspace, "默认是工作区");
+    assert_eq!(level(&open), Level::Full, "个人设置写了 full");
 }

@@ -75,6 +75,14 @@
         "name": "默认预设",
         "description": "新会话默认用哪个预设。"
       },
+      "permission.level": {
+        "name": "新会话的权限级别",
+        "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。",
+        "options": {
+          "workspace": "工作区（沙盒）",
+          "full": "完全放开"
+        }
+      },
       "permission.start_read_only": {
         "name": "新会话开局只读",
         "description": "打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。"
