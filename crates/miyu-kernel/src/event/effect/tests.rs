@@ -33,6 +33,7 @@ fn the_three_kinds_round_trip() {
             lines: Some([1, 37]),
             hash: hash(A),
             skill: None,
+            display_name: Default::default(),
         })
     );
     let changed = format!(
@@ -63,6 +64,7 @@ fn nothing_shown_has_no_lines_and_a_new_file_has_a_null_before() {
         lines: None,
         hash: hash(EMPTY),
         skill: None,
+        display_name: Default::default(),
     });
     assert_eq!(
         serde_json::to_string(&empty).unwrap(),
@@ -194,6 +196,28 @@ fn a_skill_read_carries_the_skill_name() {
             lines: Some([1, 9]),
             hash: hash(A),
             skill: Some("notes".to_string()),
+            display_name: Default::default(),
+        })
+    );
+}
+
+/// 读技能的那一刻记下它给人看的名字（施工 9-8 五补）：多一格 `display_name`，照原样读回来；没写的不写这一格（上一条）。
+#[test]
+fn a_skill_read_can_carry_its_display_names() {
+    let read = format!(
+        r#"{{"kind":"file.read","path":"/d/skills/notes/SKILL.md","hash":"{A}","skill":"notes","display_name":{{"en":"Notes","zh":"记笔记"}}}}"#
+    );
+    assert_eq!(
+        round_trip(&read),
+        Effect::FileRead(FileRead {
+            path: "/d/skills/notes/SKILL.md".to_string(),
+            lines: None,
+            hash: hash(A),
+            skill: Some("notes".to_string()),
+            display_name: std::collections::BTreeMap::from([
+                ("en".to_string(), "Notes".to_string()),
+                ("zh".to_string(), "记笔记".to_string()),
+            ]),
         })
     );
 }

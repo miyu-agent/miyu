@@ -23,12 +23,13 @@ impl Tools {
         }
     }
 
-    /// 换上这一刻开着的技能文件夹（施工 X-11 下）：认用过的技能、沙盒都照新的。
-    pub(crate) fn set_shelves(&mut self, shelves: Vec<PathBuf>) {
+    /// 换上这一刻开着的技能文件夹和它们给人看的名字（施工 X-11 下、9-8 五补）：认用过的技能、沙盒都照新的。
+    pub(crate) fn set_shelves(&mut self, shelves: Vec<PathBuf>, names: crate::skills::Names) {
         if let Some(sandbox) = self.sandbox.as_mut() {
             sandbox.set_shelves(shelves.clone());
         }
         self.shelves = shelves;
+        self.names = names;
     }
 
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。
@@ -52,7 +53,7 @@ impl Tools {
                     self.unclaimed(&effects);
                     return None;
                 };
-                let effects = effects::skilled(effects, &self.shelves);
+                let effects = effects::skilled(effects, &self.shelves, &self.names);
                 effects::saw(Arc::make_mut(&mut self.seen), &effects);
                 let took_ms = millis(running.started.elapsed());
                 tracing::info!(

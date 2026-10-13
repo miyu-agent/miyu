@@ -21,6 +21,7 @@ fn a_trashed_file_has_no_diff_and_a_read_is_not_a_file() {
         lines: None,
         hash: ContentHash::of(b"a\n"),
         skill: None,
+        display_name: Default::default(),
     });
     assert_eq!(file(&blobs, &read), None);
 }

@@ -69,8 +69,19 @@ pub struct Texts {
     pub kinds: Kinds,
     /// 核心这台机器的家目录：对象里的路径在它底下的写成 `~/…`。
     pub home: Option<String>,
-    /// 技能的名字到给人看的名字（施工 9-8 四补）：照连接的语言挑好的；没有的照技能的名字。
+    /// 技能的名字到给人看的名字（施工 9-8 四补）：照连接的语言挑好的；没有的照技能的名字。读技能那一刻记下了显示名的
+    /// 照记下的（施工 9-8 五补），这一份只给以前的日志兜底。
     pub skills: BTreeMap<String, String>,
+    /// 连接的语言（施工 9-8 五补）：从记下的显示名里挑一种。
+    pub language: String,
+}
+
+/// 照语言 `language` 从一张显示名表里挑一个（施工 9-8 五补）：这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的没有。和
+/// 端点挑技能、包的名字一个规矩。
+pub(crate) fn pick(names: &BTreeMap<String, String>, language: &str) -> Option<String> {
+    [language, "en", "zh", "ja"]
+        .iter()
+        .find_map(|language| names.get(*language).cloned())
 }
 
 /// 说法的编号，都在内核那一份的 `view/` 下面。

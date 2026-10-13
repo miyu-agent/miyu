@@ -113,6 +113,18 @@ pub(crate) fn shelves(skills: &[Skill]) -> Vec<PathBuf> {
         .collect()
 }
 
+/// 开着的技能给人看的名字（施工 9-8 五补）：技能名到它 `SKILL.md` 的 `display_name`（照语言）。没写显示名的不在里面。
+pub(crate) type Names = BTreeMap<String, BTreeMap<String, String>>;
+
+/// 这几个开着的技能给人看的名字：读它们的 `SKILL.md` 时记进效果，历史照它写，卸了包、改了名字照旧。
+pub(crate) fn names(skills: &[Skill]) -> Names {
+    skills
+        .iter()
+        .filter(|skill| !skill.head.display_name.is_empty())
+        .map(|skill| (skill.head.name.clone(), skill.head.display_name.clone()))
+        .collect()
+}
+
 /// 路径写给她看的样子：Windows 上反斜杠换成 `/`（转义会把反斜杠写成两个，她照抄就对不上；`/` 在 Windows 上一样认）。
 fn shown(path: &Path) -> String {
     let text = path.to_string_lossy();

@@ -68,6 +68,8 @@ pub(crate) struct Tools {
     sandbox: Option<Sandbox>,
     /// 开着的技能文件夹，真实的位置（施工 X-10 下）：工具交回的读了它的 `SKILL.md` 的，效果里标上是哪个技能。
     shelves: Vec<PathBuf>,
+    /// 开着的技能给人看的名字（施工 9-8 五补）：标上技能的那一条效果一并记下。
+    names: crate::skills::Names,
     /// 这个会话日志的只读入口（施工 6-4）。
     log: Log,
     /// 会话现在的时区：头报上来换了跟着换（施工 6-4）。
@@ -200,6 +202,7 @@ impl Tools {
             seen: Arc::new(kit.seen),
             sandbox,
             shelves: kit.shelves,
+            names: kit.names,
             log: kit.log,
             offset: kit.offset,
             job_ids: kit.job_ids,

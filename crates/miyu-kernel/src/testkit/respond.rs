@@ -226,6 +226,7 @@ impl Stage {
                         lines: Some([1, text.lines().count().max(1) as u64]),
                         hash: ContentHash::of(text.as_bytes()),
                         skill,
+                        display_name: Default::default(),
                     }));
                 }
                 vec![done]

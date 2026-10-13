@@ -125,6 +125,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             lines: Some([1, 1]),
             hash: ContentHash::of(b"hello\n"),
             skill: None,
+            display_name: Default::default(),
         })]
     );
     assert!(data.effects.is_empty());

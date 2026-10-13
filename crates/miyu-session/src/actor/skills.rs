@@ -37,13 +37,13 @@ impl Actor {
                 pinned.as_deref(),
                 &present,
             )?;
-            Ok::<_, SourceError>((looked.shelves, tail))
+            Ok::<_, SourceError>((looked.shelves, looked.names, tail))
         })
         .await;
         match looked {
-            Ok((shelves, tail)) => {
+            Ok((shelves, names, tail)) => {
                 self.guard.set_shelves(shelves.clone());
-                self.tools.set_shelves(shelves);
+                self.tools.set_shelves(shelves, names);
                 tail
             }
             Err(error) => {

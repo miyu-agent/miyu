@@ -56,6 +56,10 @@ pub struct FileRead {
     /// 文件夹认，压后照它重建（`compaction.md` 第九条）。别的文件没有，不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub skill: Option<String>,
+    /// 读技能的那一刻，这个技能给人看的名字，照语言（`zh`、`en`……，同 `SKILL.md` 的 `display_name`；施工 9-8 五补）：头的
+    /// 时间线照它写「使用技能 · …」，卸了包、改了名字，历史照旧。没写显示名的技能、别的文件没有，不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub display_name: std::collections::BTreeMap<String, String>,
 }
 
 /// `file.changed`：改了一个文件。改前改后的内容都存成了 blob，这里是它们的哈希。

@@ -30,9 +30,11 @@ pub(crate) struct Watch {
     pub(crate) owner: AccountId,
 }
 
-/// 这一刻找到的：放开只读的文件夹（真实的位置）、列出来的那一块（工具面上没有 `read` 的、一个都没有的没有）。
+/// 这一刻找到的：放开只读的文件夹（真实的位置）、它们给人看的名字（施工 9-8 五补）、列出来的那一块（工具面上没有 `read`
+/// 的、一个都没有的没有）。
 pub(crate) struct Looked {
     pub(crate) shelves: Vec<PathBuf>,
+    pub(crate) names: super::Names,
     pub(crate) listing: Option<String>,
 }
 
@@ -51,6 +53,7 @@ impl Watch {
         let found = opened(find(&(self.installed)(), &self.root, &self.owner), preset);
         Ok(Looked {
             shelves: shelves(&found),
+            names: super::names(&found),
             listing: listing(resources, face, &found)?,
         })
     }

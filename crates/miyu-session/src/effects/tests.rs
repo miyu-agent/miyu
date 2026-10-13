@@ -71,6 +71,7 @@ fn changed_contents_become_blobs_and_the_rest_pass_through() {
                 lines: Some([1, 2]),
                 hash: ContentHash::of(b"old\n"),
                 skill: None,
+                display_name: Default::default(),
             }),
             Effect::FileChanged(FileChanged {
                 path: text.clone(),
@@ -124,6 +125,7 @@ fn read(path: &str, content: &[u8]) -> Effect {
         lines: None,
         hash: ContentHash::of(content),
         skill: None,
+        display_name: Default::default(),
     })
 }
 
@@ -235,6 +237,7 @@ fn reading_an_open_skill_file_marks_the_skill() {
             lines: Some([1, 1]),
             hash: ContentHash::of(b"x"),
             skill: skill.map(str::to_string),
+            display_name: Default::default(),
         })
     };
     let shelves = [PathBuf::from("/d/skills/notes")];
@@ -246,6 +249,7 @@ fn reading_an_open_skill_file_marks_the_skill() {
             read("/d/skills/other/SKILL.md", Some("other")),
         ],
         &shelves,
+        &Default::default(),
     );
     assert_eq!(
         marked,
@@ -254,6 +258,53 @@ fn reading_an_open_skill_file_marks_the_skill() {
             read("/d/skills/notes/reference.md", None),
             read("/w/SKILL.md", None),
             read("/d/skills/other/SKILL.md", Some("other")),
+        ]
+    );
+}
+
+/// 标上技能的那一条一并记下它给人看的名字（施工 9-8 五补）：照开着的技能的显示名；没写显示名的、不是技能的不记，字节同前。
+#[test]
+fn a_marked_skill_read_keeps_its_display_names() {
+    let read = |path: &str| {
+        Effect::FileRead(FileRead {
+            path: path.to_string(),
+            lines: Some([1, 1]),
+            hash: ContentHash::of(b"x"),
+            skill: None,
+            display_name: Default::default(),
+        })
+    };
+    let shelves = [
+        PathBuf::from("/d/skills/notes"),
+        PathBuf::from("/d/skills/plain"),
+    ];
+    let titles = std::collections::BTreeMap::from([
+        ("en".to_string(), "Notes".to_string()),
+        ("zh".to_string(), "记笔记".to_string()),
+    ]);
+    let names = crate::skills::Names::from([("notes".to_string(), titles.clone())]);
+    let marked = skilled(
+        vec![
+            read("/d/skills/notes/SKILL.md"),
+            read("/d/skills/plain/SKILL.md"),
+            read("/d/skills/notes/reference.md"),
+        ],
+        &shelves,
+        &names,
+    );
+    let shown: Vec<_> = marked
+        .iter()
+        .map(|effect| match effect {
+            Effect::FileRead(read) => (read.skill.clone(), read.display_name.clone()),
+            other => panic!("{other:?}"),
+        })
+        .collect();
+    assert_eq!(
+        shown,
+        [
+            (Some("notes".to_string()), titles),
+            (Some("plain".to_string()), Default::default()),
+            (None, Default::default()),
         ]
     );
 }

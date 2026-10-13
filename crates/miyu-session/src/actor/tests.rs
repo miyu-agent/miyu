@@ -173,6 +173,7 @@ async fn a_write_that_fails_stops_the_session() {
             packages: None,
             preset: None,
             shelves: Vec::new(),
+            names: Default::default(),
         },
         crate::actor::JobKit {
             table: Arc::new(crate::jobs::Jobs::new()),

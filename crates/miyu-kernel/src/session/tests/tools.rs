@@ -71,6 +71,7 @@ fn a_step_runs_its_calls_then_asks_again() {
         lines: Some([1, 1]),
         hash: ContentHash::of(b"a\n"),
         skill: None,
+        display_name: Default::default(),
     })];
     let mut with_said = done(call(6, 1), "a");
     if let Input::ToolDone {

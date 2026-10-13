@@ -226,14 +226,13 @@ impl Projector {
                 _ => None,
             })
             .collect();
-        // 读的是技能的 `SKILL.md`（施工 9-8 四补）：名字照效果，给人看的名字照交进来的字。
+        // 读的是技能的 `SKILL.md`（施工 9-8 四补）：名字照效果；给人看的名字照读的那一刻记下的（施工 9-8 五补），以前的日志
+        // 没记的照交进来的字，再没有的照名字。
         let skill = result.effects.iter().find_map(|effect| match effect {
             Effect::FileRead(read) => read.skill.as_ref().map(|name| SkillUsed {
                 name: name.clone(),
-                title: texts
-                    .skills
-                    .get(name)
-                    .cloned()
+                title: crate::words::pick(&read.display_name, &texts.language)
+                    .or_else(|| texts.skills.get(name).cloned())
                     .unwrap_or_else(|| name.clone()),
             }),
             _ => None,

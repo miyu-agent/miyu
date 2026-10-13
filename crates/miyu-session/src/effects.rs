@@ -23,6 +23,7 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
                 lines,
                 hash,
                 skill: None,
+                display_name: Default::default(),
             }),
             miyu_tool::Effect::Changed {
                 path,
@@ -47,8 +48,13 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
 }
 
 /// 读了开着的技能文件夹 `shelves`（真实的位置）里的 `SKILL.md` 的，`file.read` 标上技能的名字（文件夹的名字，施工 X-10 下，
-/// `10-自带软件.md` 第五节「用过的技能」）：压后照它重建。别的照原样。只比路径，不碰磁盘。
-pub(crate) fn skilled(effects: Vec<Effect>, shelves: &[PathBuf]) -> Vec<Effect> {
+/// `10-自带软件.md` 第五节「用过的技能」）：压后照它重建。它在 `names` 里有给人看的名字的，一并记下（施工 9-8 五补）：历史
+/// 照记下的写，卸了包、改了名字照旧。别的照原样。只比路径，不碰磁盘。
+pub(crate) fn skilled(
+    effects: Vec<Effect>,
+    shelves: &[PathBuf],
+    names: &crate::skills::Names,
+) -> Vec<Effect> {
     effects
         .into_iter()
         .map(|effect| match effect {
@@ -63,6 +69,11 @@ pub(crate) fn skilled(effects: Vec<Effect>, shelves: &[PathBuf]) -> Vec<Effect> 
                     .and_then(Path::file_name)
                     .map(|name| name.to_string_lossy().into_owned());
                 read.skill = read.skill.or(skill);
+                if read.display_name.is_empty()
+                    && let Some(names) = read.skill.as_ref().and_then(|skill| names.get(skill))
+                {
+                    read.display_name.clone_from(names);
+                }
                 Effect::FileRead(read)
             }
             other => other,

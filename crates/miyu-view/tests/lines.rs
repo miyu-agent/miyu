@@ -148,8 +148,9 @@ fn a_step_that_changed_files_lists_them() {
     );
 }
 
-/// 读的是技能的 `SKILL.md` 的一步带技能（施工 9-8 四补，网页写「使用技能 · 写技能」）：名字照效果，给人看的名字照交进来的字，
-/// 没有的照名字；别的读没有这一格。
+/// 读的是技能的 `SKILL.md` 的一步带技能（施工 9-8 四补，网页写「使用技能 · 写技能」）：名字照效果，给人看的名字照读的那一刻
+/// 记下的、照连接的语言挑（施工 9-8 五补：这种语言没写的照英文、中文的先后），没记的照交进来的字，再没有的照名字；别的读没有
+/// 这一格。
 #[test]
 fn a_step_that_read_a_skill_names_it() {
     const EMPTY: &str = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -157,14 +158,23 @@ fn a_step_that_read_a_skill_names_it() {
         format!(r#"{{"type":"tool_call","call_id":"call_4_{n}","name":"read","args":"{{}}"}}"#)
     };
     let asked = format!(
-        r#"{{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{{"kind":"model","endpoint":"e","model":"m"}},"cause":"cmd-1","body":{{"blocks":[{},{},{}],"seen":3}}}}"#,
+        r#"{{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{{"kind":"model","endpoint":"e","model":"m"}},"cause":"cmd-1","body":{{"blocks":[{},{},{},{},{}],"seen":3}}}}"#,
         call(1),
         call(2),
-        call(3)
+        call(3),
+        call(4),
+        call(5)
     );
     let result = |n: u64, skill: &str| {
         let effect = match skill {
             "" => format!(r#"{{"kind":"file.read","path":"/w/plain.md","hash":"{EMPTY}"}}"#),
+            // 记下了显示名的：卸了包、交进来的字里没有它，也照记下的。
+            "gone" => format!(
+                r#"{{"kind":"file.read","path":"/s/gone/SKILL.md","hash":"{EMPTY}","skill":"gone","display_name":{{"en":"Weather report","zh":"天气报告"}}}}"#
+            ),
+            "notes-zh" => format!(
+                r#"{{"kind":"file.read","path":"/s/notes/SKILL.md","hash":"{EMPTY}","skill":"notes","display_name":{{"zh":"记笔记"}}}}"#
+            ),
             name => format!(
                 r#"{{"kind":"file.read","path":"/s/{name}/SKILL.md","hash":"{EMPTY}","skill":"{name}"}}"#
             ),
@@ -175,7 +185,8 @@ fn a_step_that_read_a_skill_names_it() {
         )
     };
     let (a, b, c) = (result(1, "notes"), result(2, "other"), result(3, ""));
-    let entries = feed(&[CREATED, ASKED, STARTED, &asked, &a, &b, &c]);
+    let (d, e) = (result(4, "gone"), result(5, "notes-zh"));
+    let entries = feed(&[CREATED, ASKED, STARTED, &asked, &a, &b, &c, &d, &e]);
     let skills: Vec<serde_json::Value> = of_kind(&entries, "tool")
         .into_iter()
         .map(|entry| json(entry)["skill"].clone())
@@ -185,7 +196,9 @@ fn a_step_that_read_a_skill_names_it() {
         [
             serde_json::json!({"name": "notes", "title": "Notes"}),
             serde_json::json!({"name": "other", "title": "other"}),
-            serde_json::Value::Null
+            serde_json::Value::Null,
+            serde_json::json!({"name": "gone", "title": "Weather report"}),
+            serde_json::json!({"name": "notes", "title": "记笔记"}),
         ]
     );
 }

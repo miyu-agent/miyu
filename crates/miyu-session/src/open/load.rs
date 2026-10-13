@@ -319,7 +319,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         root: root.clone(),
         owner: owner.clone(),
     });
-    let shelves_open = match installed {
+    let (shelves_open, skill_names) = match installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
@@ -331,11 +331,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                     .map(|found| found.file);
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
-                skills::shelves(&found)
+                (skills::shelves(&found), skills::names(&found))
             })
             .await
         }
-        None => Vec::new(),
+        None => (Vec::new(), skills::Names::new()),
     };
     let guard = Guard::new(
         tools.clone(),
@@ -394,6 +394,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
+            names: skill_names,
             packages,
             preset: preset_id,
         },

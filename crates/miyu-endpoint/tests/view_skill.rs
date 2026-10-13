@@ -1,5 +1,6 @@
 //! 视图里读技能的那一步（施工 9-8 四补，网页写「使用技能 · 写技能」）：真核心的会话用真的 `read` 读家目录里技能的
-//! `SKILL.md`，`view.page` 要条目的那一步带 `skill`：名字照效果，给人看的名字照连接的语言挑（`display_name_zh`）。
+//! `SKILL.md`，`view.page` 要条目的那一步带 `skill`：名字照效果，给人看的名字照连接的语言挑（`display_name_zh`）。读的那一刻
+//! 把显示名记进效果（施工 9-8 五补）：技能删掉以后再翻，照旧是记下的名字。
 
 use std::sync::Arc;
 
@@ -41,5 +42,34 @@ async fn the_step_that_read_a_skill_carries_its_name_for_people() {
         tool["skill"],
         json!({"name": "notes", "title": "笔记"}),
         "{tool}"
+    );
+    // 记进了效果；技能没了，再翻照旧。
+    let effects = home
+        .log(&session)
+        .into_iter()
+        .find_map(|event| match event.body {
+            miyu_kernel::event::Body::ToolResult(result) => Some(result.effects),
+            _ => None,
+        })
+        .expect("有结果");
+    let recorded = serde_json::to_value(&effects).expect("写得成");
+    assert_eq!(
+        recorded[0]["display_name"],
+        json!({"en": "Notes", "zh": "笔记"}),
+        "{recorded}"
+    );
+    std::fs::remove_dir_all(home.root.path().join("home/alice/skills/notes")).expect("删得掉");
+    let again = client
+        .call("p2", "view.page", json!({"session": session, "view": true}))
+        .await;
+    let tool = again["result"]["entries"]
+        .as_array()
+        .and_then(|entries| entries.iter().find(|entry| entry["kind"] == "tool"))
+        .cloned()
+        .unwrap_or_else(|| panic!("有读的那一步：{again}"));
+    assert_eq!(
+        tool["skill"],
+        json!({"name": "notes", "title": "笔记"}),
+        "技能删了照旧：{tool}"
     );
 }

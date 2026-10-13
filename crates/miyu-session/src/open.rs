@@ -140,7 +140,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         root: root.clone(),
         owner: owner.clone(),
     });
-    let (found, shelves_open) = match packages_installed {
+    let (found, shelves_open, skill_names) = match packages_installed {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
             let file = preset.as_ref().map(|chosen| chosen.file.clone());
@@ -148,11 +148,12 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 let shelves = skills::shelves(&found);
-                (found, shelves)
+                let names = skills::names(&found);
+                (found, shelves, names)
             })
             .await
         }
-        None => (Vec::new(), Vec::new()),
+        None => (Vec::new(), Vec::new(), skills::Names::new()),
     };
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
@@ -366,6 +367,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
+            names: skill_names,
             packages,
             preset: preset_id,
         },

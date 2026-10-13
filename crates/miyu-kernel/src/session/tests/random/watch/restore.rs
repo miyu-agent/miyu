@@ -134,6 +134,7 @@ impl Watch {
             lines: Some([1, 2]),
             hash: ContentHash::of(b"read"),
             skill: None,
+            display_name: Default::default(),
         });
         let changed = |before| {
             Effect::FileChanged(FileChanged {
