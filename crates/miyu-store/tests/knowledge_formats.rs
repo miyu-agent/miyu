@@ -213,3 +213,18 @@ fn the_extractor_is_found_beside_the_main_program() {
         Some(program)
     );
 }
+
+#[test]
+fn the_listed_extensions_are_the_known_ones() {
+    // 施工 K-7 修：命令行照这张表说只收哪几种，得和认的一样。
+    for extension in miyu_store::knowledge::EXTENSIONS {
+        assert!(Knowledge::known(&format!("a.{extension}")), "{extension}");
+        assert!(
+            Knowledge::known(&format!("a.{}", extension.to_uppercase())),
+            "大写的也认：{extension}"
+        );
+    }
+    for name in ["a.docx", "a", ".md", "a.md.bak"] {
+        assert!(!Knowledge::known(name), "{name}");
+    }
+}

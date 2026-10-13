@@ -142,6 +142,12 @@ impl Knowledge {
         Ok((file, location))
     }
 
+    /// 文件名 `name` 是不是认的一种文档（扩展名在 [`super::EXTENSIONS`] 里，施工 K-7 修：命令行在传以前先看）。
+    #[must_use]
+    pub fn known(name: &str) -> bool {
+        Kind::of(name).is_some()
+    }
+
     /// `path` 合不合一篇文档的写法（库里的相对路径、扩展名，同读的那一套，什么格式都算），不看在不在（施工 K-7 上：人加、删
     /// 以前先看）。
     #[must_use]

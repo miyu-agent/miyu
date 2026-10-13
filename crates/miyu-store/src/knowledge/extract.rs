@@ -36,6 +36,9 @@ pub fn beside(exe: &Path) -> Option<PathBuf> {
     program.is_file().then_some(program)
 }
 
+/// 认的文档的扩展名（小写），同 `Kind::of`（施工 K-7 修：命令行在传以前先看，说清只收哪几种；测试查着两边一样）。
+pub const EXTENSIONS: [&str; 6] = ["md", "markdown", "txt", "pdf", "html", "htm"];
+
 /// 一个文档是哪一种：照扩展名（小写比）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Kind {

@@ -56,6 +56,8 @@ pub mod exit {
     pub const OK: u8 = 0;
     /// 出错了：核心、模型或工具出了问题。
     pub const ERROR: u8 = 1;
+    /// 参数写错了：多半由 clap 管，命令行自己查得出的也照它（施工 K-7 修：知识库的编号）。
+    pub const MISUSE: u8 = 2;
     /// 被打断了：按了 Ctrl+C；等子代理的时候不等了，到了 `--timeout`（施工 7-9）。
     pub const INTERRUPTED: u8 = 3;
     /// 有几步要人确认，这里不问，没做（`22-命令行.md` O3）。

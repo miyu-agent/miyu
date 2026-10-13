@@ -179,7 +179,8 @@ Examples:
 
 | clap 报的 | 中文 | 英文 |
 |---|---|---|
-| 缺了必写的：只有 `ask` 的要说的话是必写的 | `少了要说的话：miyu ask "…"` | `Missing what to say: miyu ask "…"` |
+| 缺了必写的：最外面那一层只有 `ask` 的要说的话是必写的 | `少了要说的话：miyu ask "…"` | `Missing what to say: miyu ask "…"` |
+| 嵌着的子命令缺了必写的（`miyu kb read notes`、`miyu memory edit m5`，施工 K-7 修：原来一律说成 `ask` 的那一句） | `少了参数：miyu <命令> <帮助页上这个子命令那一行的写法>`，例如 `少了参数：miyu kb read <库> <文档>`；帮助页上没有那一行的说到命令为止 | `Missing arguments: miyu kb read <kb> <document>` |
 | 成对的选项少了一个：只给提升过的自己用的 `--owner-home`、`--owner-sid`（`sandbox/windows.md`） | `少了 <选项>` | `Missing <选项>` |
 | 少了子命令：`miyu sandbox` 后面没写 | `<命令> 后面要写：<子命令> 或 <子命令>` | `<命令> needs one of: <子命令> or <子命令>` |
 | 嵌着的子命令写错：`miyu sandbox frob` | `<命令> 没有 <名字> 这个子命令` | `<命令> has no <名字> command` |
@@ -233,7 +234,7 @@ Examples:
 |---|---|
 | `crates/miyu/tests/commands.rs` | 不认识的子命令：中文、英文的那一句，退出码 2，不拉起核心、核心没起来过；只敲 `miyu`：退出码 2、说用 `miyu ask`；`-h`、`--help`、`help` 印那一页，中文、英文各和样本一样，退出码 0；`--version` 印 `miyu ` 开头；参数写错的几种，中文、英文各说那一句，退出码 2；主程序换了文件名，说的还是 `miyu`（施工 5-8） |
 | `crates/miyu-cli/src/help/tests.rs` | 每一页列的选项和程序真有的一一对得上（长短写法、值名），最宽 80 列，以一个换行结尾；值名照表换成页里的写法（`<编号>`、`<目录>`）（施工 5-10 上）、`<时长>`（施工 7-9） |
-| `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；成对的少了一个、少了子命令、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10） |
+| `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；成对的少了一个、少了子命令、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10）；嵌着的子命令少了必写的照帮助页说怎么写，有必写的子命令在帮助页上都有那一行（施工 K-7 修） |
 | `crates/miyu/tests/ask.rs` | 参数不对退出码 2（什么都不写、`--session` 和 `--continue` 一起写）；`miyu ask --help` 跟着界面语言；没有 key、核心没在跑的不拉起 |
 | `crates/miyu/tests/undo.rs` | `miyu undo --help`、`miyu rewind -h`、`miyu restore --help` 跟着界面语言；`undo`、`restore` 各接各的 |
 | `crates/miyu/tests/redo.rs` | `miyu redo --help`、`miyu help redo` 跟着界面语言，`redo` 印的是重做那一页、不是恢复那一页；没有 key、核心没在跑的不拉起（施工 4-7 再补） |

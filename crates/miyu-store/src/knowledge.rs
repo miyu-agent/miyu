@@ -27,7 +27,7 @@ use crate::layers::valid;
 use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
-pub use extract::beside as extractor_beside;
+pub use extract::{EXTENSIONS, beside as extractor_beside};
 pub use manage::BaseFields;
 pub use read::Page;
 pub use write::Written;

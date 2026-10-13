@@ -44,6 +44,18 @@ pub enum Page {
     Kb,
 }
 
+/// 有子命令的那几个命令照名字是哪一页（施工 K-7 修：少了参数时照它说子命令怎么写）；别的没有。
+pub(crate) fn page_named(name: &str) -> Option<Page> {
+    match name {
+        "memory" => Some(Page::Memory),
+        "kb" => Some(Page::Kb),
+        "pkg" => Some(Page::Pkg),
+        "config" => Some(Page::Config),
+        "sandbox" => Some(Page::Sandbox),
+        _ => None,
+    }
+}
+
 /// 这种语言的这一页，以一个换行结尾。
 pub fn page(language: Language, page: Page) -> &'static str {
     match (language, page) {

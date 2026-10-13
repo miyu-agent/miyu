@@ -231,3 +231,47 @@ async fn the_auto_switch_from_the_shell() {
     let both = Line::try_parse_from(["miyu", "kb", "edit", "world", "--auto", "--no-auto"]);
     assert!(both.is_err(), "两个一起写读不懂");
 }
+
+#[tokio::test]
+async fn what_the_core_would_refuse_is_said_plainly() {
+    // 施工 K-7 修（验收手册待定 2 到 4）：原来只说「参数错误。」。不认的格式在传以前就说清只收哪几种，一个都不传；库的编号写错
+    // 说清写法，退出码 2；页码出界说一共几页。
+    let home = Home::new(Arc::new(Script::new([])));
+    let cwd = outside(&home);
+    std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子是橘猫。\n").expect("写得进");
+    std::fs::write(cwd.join("report.docx"), "PK").expect("写得进");
+    assert_eq!(run(&home, &cwd, &["new", "notes"]).await.code, 0);
+
+    let docx = run(&home, &cwd, &["add", "notes", "cat.md", "report.docx"]).await;
+    assert_eq!(
+        (docx.code, docx.out.as_str(), docx.err.as_str()),
+        (
+            1,
+            "",
+            "只收 .md、.markdown、.txt、.pdf、.html、.htm：report.docx\n"
+        ),
+        "一个都不传"
+    );
+    assert_eq!(run(&home, &cwd, &[]).await.out, "notes  0 篇\n");
+
+    let rule = "库的编号要小写字母开头，只能有小写字母、数字、-、_，最多 64 个：日语\n";
+    let named = run(&home, &cwd, &["new", "日语"]).await;
+    assert_eq!((named.code, named.err.as_str()), (2, rule));
+    let searched = run(&home, &cwd, &["search", "团子", "--kb", "日语"]).await;
+    assert_eq!((searched.code, searched.err.as_str()), (2, rule));
+
+    // 一页 32 KiB：这一篇两页。
+    std::fs::write(cwd.join("long.md"), "一".repeat(12_000)).expect("写得进");
+    assert_eq!(run(&home, &cwd, &["add", "notes", "long.md"]).await.code, 0);
+    let page = run(&home, &cwd, &["read", "notes", "long.md", "--page", "9"]).await;
+    assert_eq!(
+        (page.code, page.err.as_str()),
+        (1, "没有第 9 页，一共 2 页。\n")
+    );
+    let missing = run(&home, &cwd, &["read", "notes", "dog.md", "--page", "2"]).await;
+    assert_eq!(
+        (missing.code, missing.err.as_str()),
+        (1, "文档不存在。\n"),
+        "别的错照原话"
+    );
+}

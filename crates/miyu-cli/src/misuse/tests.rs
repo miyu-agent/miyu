@@ -2,9 +2,10 @@
 
 use clap::{Args, Command};
 
-use super::{listed, misuse};
+use super::{listed, misuse, synopsis};
+use crate::help::Page;
 use crate::language::Language;
-use crate::{Ask, Sandbox, Undo};
+use crate::{Ask, Config, Kb, Memory, Pkg, Sandbox, Undo};
 
 /// 和主程序一样的几条子命令。
 fn miyu() -> Command {
@@ -12,6 +13,8 @@ fn miyu() -> Command {
         .subcommand(Ask::augment_args(Command::new("ask")))
         .subcommand(Undo::augment_args(Command::new("undo")))
         .subcommand(Sandbox::augment_args(Command::new("sandbox")))
+        .subcommand(Memory::augment_args(Command::new("memory")))
+        .subcommand(Kb::augment_args(Command::new("kb")))
 }
 
 /// 敲 `miyu <args>`：clap 报的错说成的那一句。
@@ -214,4 +217,57 @@ fn a_blank_from_has_its_sentence() {
         said(&["ask", "hi", "--from"], Language::Chinese),
         "--from 后面少了值"
     );
+}
+
+#[test]
+fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
+    // 施工 K-7 修（验收手册待定 1）：嵌着的子命令少了必写的，照这个命令的帮助页说它怎么写，同 `ask` 那一句；原来一律说成
+    // `ask` 的那一句。
+    let cases: [(&[&str], &str, &str); 3] = [
+        (
+            &["kb", "read", "notes"],
+            "少了参数：miyu kb read <库> <文档>",
+            "Missing arguments: miyu kb read <kb> <document>",
+        ),
+        (
+            &["memory", "edit", "m5"],
+            "少了参数：miyu memory edit <编号> <话>",
+            "Missing arguments: miyu memory edit <id> <text>",
+        ),
+        (
+            &["kb", "search"],
+            "少了参数：miyu kb search <词>",
+            "Missing arguments: miyu kb search <words>",
+        ),
+    ];
+    for (args, chinese, english) in cases {
+        assert_eq!(said(args, Language::Chinese), chinese, "{args:?}");
+        assert_eq!(said(args, Language::English), english, "{args:?}");
+    }
+}
+
+#[test]
+fn every_nested_command_with_required_words_is_on_its_help_page() {
+    // 嵌着的子命令有必写的，帮助页的「命令」那一节就得有它那一行：少了参数时照它说（`synopsis`）。
+    let tops: [(Command, Page); 4] = [
+        (Memory::augment_args(Command::new("memory")), Page::Memory),
+        (Kb::augment_args(Command::new("kb")), Page::Kb),
+        (Pkg::augment_args(Command::new("pkg")), Page::Pkg),
+        (Config::augment_args(Command::new("config")), Page::Config),
+    ];
+    for (top, page) in tops {
+        for sub in top.get_subcommands() {
+            if !sub.get_arguments().any(|arg| arg.is_required_set()) {
+                continue;
+            }
+            for language in [Language::Chinese, Language::English] {
+                assert!(
+                    synopsis(language, page, sub.get_name()).is_some(),
+                    "{} {} 不在帮助页上",
+                    top.get_name(),
+                    sub.get_name()
+                );
+            }
+        }
+    }
 }

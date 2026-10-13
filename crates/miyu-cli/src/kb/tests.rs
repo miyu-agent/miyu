@@ -73,3 +73,21 @@ fn an_auto_base_says_so_after_its_count() {
         ["world  雾港  4 documents  auto recall  世界观"]
     );
 }
+
+#[test]
+fn plain_refusals_in_both_languages() {
+    // 施工 K-7 修：不认的格式、编号写错、页码出界，中英文。
+    let (zh, en) = (Language::Chinese, Language::English);
+    assert_eq!(
+        en.kb_not_document("report.docx"),
+        "Only .md, .markdown, .txt, .pdf, .html, .htm can be added: report.docx"
+    );
+    assert_eq!(
+        zh.kb_not_document("report.docx"),
+        "只收 .md、.markdown、.txt、.pdf、.html、.htm：report.docx"
+    );
+    assert!(en.kb_bad_id("日语").ends_with("at most 64: 日语"));
+    assert_eq!(zh.kb_no_page(9, 3), "没有第 9 页，一共 3 页。");
+    assert_eq!(en.kb_no_page(9, 1), "There is no page 9; it has 1 page.");
+    assert_eq!(en.kb_no_page(9, 3), "There is no page 9; it has 3 pages.");
+}

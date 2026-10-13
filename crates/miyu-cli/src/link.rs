@@ -106,14 +106,33 @@ pub(crate) async fn request_saying(
     err: &mut dyn Write,
     refused: impl FnOnce(&Value) -> String,
 ) -> Result<Value, u8> {
+    match answer(rpc, method, params, language, err).await? {
+        Ok(result) => Ok(result),
+        Err(error) => {
+            say(err, &refused(&error));
+            Err(exit::ERROR)
+        }
+    }
+}
+
+/// 发一条请求，等回应：做成的交回 `result`，被拒绝的交回核心回的 `error`（不说，调的一方看原因再说，施工 K-7 修）；核心断开、
+/// 写不出去的说清楚，交回退出码。
+///
+/// # Errors
+///
+/// 核心断开、写不出去。
+pub(crate) async fn answer(
+    rpc: &mut Rpc,
+    method: &str,
+    params: Value,
+    language: &Language,
+    err: &mut dyn Write,
+) -> Result<Result<Value, Value>, u8> {
     match rpc.call(method, params).await {
-        Ok(Some(reply)) => match reply.get("error") {
+        Ok(Some(reply)) => Ok(match reply.get("error") {
             None => Ok(reply["result"].clone()),
-            Some(error) => {
-                say(err, &refused(error));
-                Err(exit::ERROR)
-            }
-        },
+            Some(error) => Err(error.clone()),
+        }),
         Ok(None) => {
             say(err, &language.disconnected());
             Err(exit::ERROR)

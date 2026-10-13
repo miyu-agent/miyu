@@ -1,6 +1,7 @@
 //! `miyu kb` 给人看的字（施工 K-7 下，`docs/blueprint/cli/kb.md`「给人看的字」）。
 
 use super::Language;
+use miyu_store::knowledge::EXTENSIONS;
 
 impl Language {
     /// `list` 一个库都没有。
@@ -57,6 +58,42 @@ impl Language {
         match self {
             Language::Chinese => format!("改好了：{kb}"),
             Language::English => format!("Updated {kb}"),
+        }
+    }
+
+    /// 不认的格式（施工 K-7 修）：只收哪几种、是哪个文件。
+    pub(crate) fn kb_not_document(&self, name: &str) -> String {
+        let listed = |gap: &str| {
+            EXTENSIONS
+                .iter()
+                .map(|extension| format!(".{extension}"))
+                .collect::<Vec<_>>()
+                .join(gap)
+        };
+        match self {
+            Language::Chinese => format!("只收 {}：{name}", listed("、")),
+            Language::English => format!("Only {} can be added: {name}", listed(", ")),
+        }
+    }
+
+    /// 库的编号写错了（施工 K-7 修）：说清写法（`miyu_store::layers::valid`）。
+    pub(crate) fn kb_bad_id(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => {
+                format!("库的编号要小写字母开头，只能有小写字母、数字、-、_，最多 64 个：{id}")
+            }
+            Language::English => format!(
+                "A knowledge base id starts with a lowercase letter and has only lowercase letters, digits, - and _, at most 64: {id}"
+            ),
+        }
+    }
+
+    /// 页码出界（施工 K-7 修）：第 `page` 页没有，一共 `pages` 页。
+    pub(crate) fn kb_no_page(&self, page: u64, pages: u64) -> String {
+        match (self, pages) {
+            (Language::Chinese, _) => format!("没有第 {page} 页，一共 {pages} 页。"),
+            (Language::English, 1) => format!("There is no page {page}; it has 1 page."),
+            (Language::English, _) => format!("There is no page {page}; it has {pages} pages."),
         }
     }
 

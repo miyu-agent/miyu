@@ -81,8 +81,19 @@ fn the_help_is_the_page_and_the_version_says_miyu() {
 #[test]
 fn a_mistake_is_one_sentence_and_exit_code_2() {
     let home = Home::new();
-    let cases: [(&[&str], &str, &str); 4] = [
+    let cases: [(&[&str], &str, &str); 6] = [
         (&["ask"], "zh_CN.UTF-8", "少了要说的话：miyu ask \"…\""),
+        // 嵌着的子命令少了必写的照帮助页说怎么写（施工 K-7 修）。
+        (
+            &["kb", "read", "notes"],
+            "zh_CN.UTF-8",
+            "少了参数：miyu kb read <库> <文档>",
+        ),
+        (
+            &["memory", "edit", "m5"],
+            "C",
+            "Missing arguments: miyu memory edit <id> <text>",
+        ),
         (
             &["ask", "--format", "xml", "hi"],
             "C",

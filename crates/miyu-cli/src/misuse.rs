@@ -5,6 +5,7 @@ use clap::error::{ContextKind, ContextValue, ErrorKind};
 
 use miyu_store::human::clean;
 
+use crate::help::{self, Page, page_named};
 use crate::language::Language;
 
 /// clap 报的错说成一句话。帮助、版本不是错，主程序自己印，不走这里。
@@ -34,7 +35,24 @@ pub fn misuse(error: &clap::Error, language: Language) -> String {
             true => format!("少了 {}", option(&arg)),
             false => format!("Missing {}", option(&arg)),
         },
-        // 必写的只有 `ask` 的要说的话：测试查着，多了一个，这里要跟着改。
+        // 嵌着的子命令少了必写的（施工 K-7 修，`miyu kb read notes`）：照这个命令的帮助页说它怎么写，同 `ask` 那一句。帮助页上
+        // 找不到的说到它是哪个命令为止。
+        ErrorKind::MissingRequiredArgument
+            if nested(error).is_some_and(|path| path.split(' ').count() > 2) =>
+        {
+            let path = nested(error).unwrap_or_default();
+            let words: Vec<&str> = path.split(' ').collect();
+            let written = page_named(words[1])
+                .and_then(|page| synopsis(language, page, words[2]))
+                .map_or(path.clone(), |synopsis| {
+                    format!("miyu {} {synopsis}", words[1])
+                });
+            match chinese {
+                true => format!("少了参数：{written}"),
+                false => format!("Missing arguments: {written}"),
+            }
+        }
+        // 最外面那一层必写的只有 `ask` 的要说的话：测试查着，多了一个，这里要跟着改。
         ErrorKind::MissingRequiredArgument => match chinese {
             true => "少了要说的话：miyu ask \"…\"".to_string(),
             false => "Missing what to say: miyu ask \"…\"".to_string(),
@@ -95,6 +113,22 @@ pub fn misuse(error: &clap::Error, language: Language) -> String {
             }
         }
     }
+}
+
+/// 这种语言的帮助页 `page` 上子命令 `sub` 那一行的写法（`read <库> <文档>`）：「命令」那一节一行一个，空两格起头，写法和
+/// 说明之间至少空两格（施工 K-7 修）。没有那一行的没有。
+pub(crate) fn synopsis(language: Language, page: Page, sub: &str) -> Option<String> {
+    help::page(language, page)
+        .lines()
+        .filter_map(|line| line.strip_prefix("  "))
+        .find(|line| line.split(' ').next() == Some(sub))
+        .map(|line| {
+            line.split("  ")
+                .next()
+                .unwrap_or(line)
+                .trim_end()
+                .to_string()
+        })
 }
 
 /// 写错的子命令是不是嵌着的那一层的：看 clap 报的用法那一行（`Usage: miyu sandbox <COMMAND>`），第一个 `<`、`[`

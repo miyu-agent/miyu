@@ -15,6 +15,8 @@ use serde_json::{Value, json};
 
 use miyu_ipc::{Connection, connect_or_start};
 use miyu_store::env::Env;
+use miyu_store::knowledge::Knowledge;
+use miyu_store::layers::valid;
 use miyu_store::root::DataRoot;
 
 use crate::ask::{Format, exit};
@@ -209,6 +211,11 @@ async fn act(
     err: &mut dyn Write,
 ) -> Result<(), u8> {
     let (args, language) = (&plan.args, &plan.language);
+    // 库的编号写错的这里就说清写法（施工 K-7 修：核心只回「参数错误。」）。
+    if let Some(id) = ids(args).into_iter().find(|id| !valid(id)) {
+        say(err, &language.kb_bad_id(id));
+        return Err(exit::MISUSE);
+    }
     let auto = match (args.auto, args.no_auto) {
         (true, _) => Some(true),
         (_, true) => Some(false),
@@ -225,12 +232,7 @@ async fn act(
             let result = ask(rpc, "kb.search", params, language, err).await?;
             return search(&result, plan, out);
         }
-        KbCommand::Read { kb, path } => {
-            let params = json!({"kb": kb, "path": path, "page": args.page});
-            let result = ask(rpc, "kb.read", params, language, err).await?;
-            say(out, &shown::page(&result, language));
-            return Ok(());
-        }
+        KbCommand::Read { kb, path } => return read(rpc, plan, &kb, &path, out, err).await,
         KbCommand::New { kb } => {
             ask(
                 rpc,
@@ -292,6 +294,14 @@ async fn add(
     err: &mut dyn Write,
 ) -> Result<(), u8> {
     let (args, language) = (&plan.args, &plan.language);
+    // 不认的格式在传以前就说清，一个都不传（施工 K-7 修：核心只回「参数错误。」，还白传一份）。
+    for file in files {
+        let name = file.file_name().unwrap_or_default().to_string_lossy();
+        if !Knowledge::known(&name) {
+            say(err, &language.kb_not_document(&name));
+            return Err(exit::ERROR);
+        }
+    }
     for file in files {
         let local = absolute(&plan.cwd, file);
         let put = ask(rpc, "blob.put", json!({"path": local}), language, err).await?;
@@ -305,6 +315,64 @@ async fn add(
         say(out, &language.kb_added(kb, &path));
     }
     Ok(())
+}
+
+/// `read`：读一页印出来。写了 `--page`、核心说参数不对的是页码出界：再读一次第一页看一共几页，说清（施工 K-7 修）；别的错照
+/// 原话说。
+async fn read(
+    rpc: &mut Rpc,
+    plan: &KbPlan,
+    kb: &str,
+    path: &str,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+) -> Result<(), u8> {
+    let (args, language) = (&plan.args, &plan.language);
+    let params = json!({"kb": kb, "path": path, "page": args.page});
+    match link::answer(rpc, "kb.read", without_nulls(params), language, err).await? {
+        Ok(result) => {
+            say(out, &shown::page(&result, language));
+            Ok(())
+        }
+        Err(error) => {
+            if let (Some(page), Some("bad_params")) = (args.page, error["data"]["reason"].as_str())
+            {
+                let first = ask(
+                    rpc,
+                    "kb.read",
+                    json!({"kb": kb, "path": path}),
+                    language,
+                    err,
+                )
+                .await?;
+                say(
+                    err,
+                    &language.kb_no_page(page, first["pages"].as_u64().unwrap_or(1)),
+                );
+            } else {
+                say(err, &refusal(&error, language));
+            }
+            Err(exit::ERROR)
+        }
+    }
+}
+
+/// 这一次说到的知识库的编号（子命令的、`--kb` 的）。
+fn ids(args: &Kb) -> Vec<&str> {
+    let command = match &args.command {
+        Some(
+            KbCommand::Read { kb, .. }
+            | KbCommand::New { kb }
+            | KbCommand::Edit { kb }
+            | KbCommand::Add { kb, .. }
+            | KbCommand::Remove { kb, .. }
+            | KbCommand::Mount { kb, .. }
+            | KbCommand::Delete { kb }
+            | KbCommand::Reindex { kb },
+        ) => Some(kb.as_str()),
+        Some(KbCommand::List | KbCommand::Search { .. }) | None => None,
+    };
+    command.into_iter().chain(args.only.as_deref()).collect()
 }
 
 /// `list` 的回应印出来：`json` 的原样印那一串；`text` 的一行一个库，一个都没有的说一句。
@@ -348,13 +416,18 @@ async fn ask(
     err: &mut dyn Write,
 ) -> Result<Value, u8> {
     link::request_saying(rpc, method, without_nulls(params), language, err, |error| {
-        let said = error["message"].as_str().unwrap_or_default();
-        match error["data"]["message"].as_str() {
-            Some(why) => language.refused_because(said, why),
-            None => language.refused(said),
-        }
+        refusal(error, language)
     })
     .await
+}
+
+/// 核心拒了说的那一句：原话；挂不上的目录、挪不进回收站的接上它给的为什么。
+fn refusal(error: &Value, language: &Language) -> String {
+    let said = error["message"].as_str().unwrap_or_default();
+    match error["data"]["message"].as_str() {
+        Some(why) => language.refused_because(said, why),
+        None => language.refused(said),
+    }
 }
 
 /// `params` 里加上 `extra` 写了的几格。
