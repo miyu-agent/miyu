@@ -713,7 +713,7 @@ flowchart TB
 
 opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）和 Console Go（`https://opencode.ai/zen/go/v1`，订阅）。两个都在目录里，地址、驱动照目录推，只写 key 就能用。
 
-1. **头**：档案 `[providers.opencode]`（Zen）和 `[providers.opencode-go]`（Go）各带几个头，值里的 `{session_digest}` 是种子的 SHA-256 写成十六进制的前 26 位——种子是会话编号（同一个会话重启以后还是它）；一次性调用是用途；`provider.test` 是固定的 `provider.test`。值里只认这一个字段，别的 `{…}` 读档案时就报错（档案读不进来）。头由 HTTP 执行器照端点另配的头发（`http.md`），和驱动无关；名字和上面同名的（`User-Agent`）换掉上面那个。
+1. **头**：档案 `[providers.opencode]`（Zen）和 `[providers.opencode-go]`（Go）各带几个头，值里的 `{session_digest}` 照种子换成 opencode 会话编号的样子，26 位小写十六进制：前 12 位是时间照 opencode 的倒序编法（`~(毫秒 × 4096)` 的低 48 位），后 14 位是种子的 SHA-256 的十六进制前 14 位（施工 8-14 补，2026-10-13）。种子是会话编号（同一个会话重启以后还是它），是 UUIDv7 的照它记的毫秒数编时间；一次性调用是用途，`provider.test` 是固定的 `provider.test`，这两种照固定的 2026-01-01 编。值里只认这一个字段，别的 `{…}` 读档案时就报错（档案读不进来）。头由 HTTP 执行器照端点另配的头发（`http.md`），和驱动无关；名字和上面同名的（`User-Agent`）换掉上面那个。
 
    | 哪一家 | 头 | 值 |
    |---|---|---|
@@ -724,7 +724,7 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
    | `opencode` | `x-opencode-session` | `ses_{session_digest}` |
 
    - **Go**：缺 `x-opencode-session` 回 400（`MissingSessionID`）。官方文档（`opencode.ai/docs/go`「Where can I use it」）写明 Go 给第三方编码 agent 用：用自己的 User-Agent、每段对话发一个稳定的 `x-opencode-session`；`miyu/<版本>` 照旧。
-   - **Zen 免费档**（2026-10-04 实测，一次只改一个变量）：免费模型要求三件同时成立，还要流式——User-Agent 是 `opencode/<版本≥1.18>` 的形状（`miyu/<版本>` 一律 403 `FreeTierError`，`opencode/1.17.0` 回 426）；至少一个 `x-opencode-*` 头，值里的 id 是小写十六进制（base62 带大写的 403）；工具面里同时有 `shell` 和 `read`。这是绕过服务端的客户端检查，判据随时会被改——改了先跑旧版 `miyu-agent` 仓库里留下的测具 `testkit/opencode-zen/freetier_probe.js`，再动档案里那一行 UA。
+   - **Zen 免费档**（2026-10-04 实测，一次只改一个变量）：免费模型要求三件同时成立，还要流式——User-Agent 是 `opencode/<版本≥1.18>` 的形状（`miyu/<版本>` 一律 403 `FreeTierError`，`opencode/1.17.0` 回 426）；至少一个 `x-opencode-*` 头；`x-opencode-session` 的前 12 位是 opencode 那种倒序的时间编号（2026-10-13 再测：Zen 改了判据，哈希出来的乱码、正序编的一律 403，时间新旧不管，一年前的、一小时以后的都放行；尾巴是小写十六进制、带大写的 base62 都行）；工具面里同时有 `shell` 和 `read`。这是绕过服务端的客户端检查，判据随时会被改——改了先跑旧版 `miyu-agent` 仓库里留下的测具 `testkit/opencode-zen/freetier_probe.js`，再动档案里那一行 UA。
 2. **占位工具**：档案给 Zen 写 `placeholder_tools = ["read", "shell"]`。发请求之前，统一的请求的工具面里缺哪件，补一件同名的：说明是 `resources/core/drivers/placeholder-tool.txt` 那一句，参数 `{"type":"object","properties":{}}`，照名字排进工具面。补在统一的请求上、驱动编码之前（`miyu-session` 的 `route/placeholder.rs`，`exchange.rs`、`probe.rs` 调），所以三种驱动都成立；有这两件的会话一个字节都不动。她真调了占位的那件：内核的工具规则里没有它（快照的工具面里没有），照没有这件工具处理（`kernel/tools.md`），不会多出权限。
 3. **一家几种驱动、思考回传**：见 `drivers/openai-chat.md`「接 opencode Zen」。Go 上的 Claude、MiniMax 这几个走 `anthropic`，GPT、Grok 走 `openai-responses`，别的走 `openai-chat`；交错思考的照目录的 `interleaved` 回传。
 

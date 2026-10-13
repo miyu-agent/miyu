@@ -463,7 +463,7 @@ fn headers_come_from_the_profile_and_fill_with_the_seed() {
         go.headers("ses-1"),
         [(
             "x-opencode-session".to_string(),
-            "ses_09df36791e54c51f7be063867e".to_string()
+            "ses_4892557fffff09df36791e54c5".to_string()
         )]
     );
     assert_eq!(go.headers("ses-1"), go.headers("ses-1"));

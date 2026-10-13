@@ -41,13 +41,14 @@ base_url = "https://api.openai.com/v1"
 
 # opencode Console Go（施工 8-14）：驱动、地址照目录（https://opencode.ai/zen/go/v1，模型各自写着包名：Claude、MiniMax 这几个走
 # anthropic，GPT、Grok 走 openai-responses，别的走 openai-chat）。缺 x-opencode-session 回 400 MissingSessionID（2026-10-03 实测）；
-# 官方文档写明给第三方 agent 用：用自己的 User-Agent，每段对话发一个稳定的 x-opencode-session。值里的 {session_digest} 是种子
-# （会话编号、一次性调用的用途）的 SHA-256 前 26 位。
+# 官方文档写明给第三方 agent 用：用自己的 User-Agent，每段对话发一个稳定的 x-opencode-session。值里的 {session_digest} 照种子
+# （会话编号、一次性调用的用途）换成 opencode 会话编号的样子：前 12 位是时间的倒序编法，后 14 位是 SHA-256 的十六进制。
 [providers.opencode-go]
 headers = { "x-opencode-session" = "ses_{session_digest}" }
 
-# opencode Zen（施工 8-14 补，2026-10-04 实测）：免费档按客户端识别，三件同时成立——User-Agent 要是 opencode/<版本≥1.18>
-# 的形状、请求带至少一个 x-opencode-* 头（值里的种子照 {session_digest} 换，得是小写十六进制）、工具面里有 shell 和 read；
+# opencode Zen（施工 8-14 补，2026-10-04 实测；2026-10-13 再测）：免费档按客户端识别，几件同时成立——User-Agent 要是
+# opencode/<版本≥1.18> 的形状、请求带至少一个 x-opencode-* 头、x-opencode-session 的前 12 位是 opencode 那种倒序的时间编号
+# （10-13 起查：哈希出来的乱码、正序的一律 403，时间新旧不管；{session_digest} 照这个编）、工具面里有 shell 和 read；
 # 还要求流式。头只发给这一家（目录里的地址是 https://opencode.ai/zen/v1）。User-Agent 盖掉客户端的 miyu/<版本>，这里写的是
 # 本机装的 opencode 版本（2.0.21）；opencode 升级或被闸改判据时，先跑旧版 `miyu-agent` 仓库里的测具
 # `testkit/opencode-zen/freetier_probe.js` 再动这一行。占位工具见「八、opencode Zen」第 2 条。
