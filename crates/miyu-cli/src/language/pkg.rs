@@ -11,6 +11,30 @@ impl Language {
         }
     }
 
+    /// 装好以后问的那一句，后面不换行（作者说明第九节第 1 条）。
+    pub(crate) fn open_now(&self) -> &'static str {
+        match self {
+            Language::Chinese => "现在打开？[Y/n] ",
+            Language::English => "Turn it on now? [Y/n] ",
+        }
+    }
+
+    /// 打开了 `id`。
+    pub(crate) fn opened(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => format!("打开了：{id}"),
+            Language::English => format!("Turned on {id}"),
+        }
+    }
+
+    /// 没打开：以后在「软件包」页里打开。
+    pub(crate) fn not_opened(&self) -> &'static str {
+        match self {
+            Language::Chinese => "没有打开：以后在「软件包」页里打开",
+            Language::English => "Not turned on: turn it on later on the Packages page",
+        }
+    }
+
     /// `remove` 卸掉了 `id`。
     pub fn uninstalled(&self, id: &str) -> String {
         match self {

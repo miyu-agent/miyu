@@ -230,3 +230,100 @@ async fn every_help_is_the_page_in_the_language() {
         }
     }
 }
+
+/// 一份带 MCP 服务的 `bundle`（有开关、装好是关着的；服务的程序不在，起不来，不碍开关）。
+const TOOLS: &str = "[package]\nname = { en = \"Tools\", zh = \"工具包\" }\n\n[[mcp]]\nname = \"nothing\"\ncommand = [\"miyu-nothing\"]\n";
+
+#[tokio::test]
+async fn pkg_offers_to_turn_on_what_it_installed() {
+    let home = Home::new();
+    let root = home.root.path().to_path_buf();
+    let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    let cwd = home.dir.with_extension("open");
+    let fresh = TOOLS.replace("nothing", "other");
+    for (id, text) in [("tools", TOOLS), ("xpkg", XPKG), ("fresh", fresh.as_str())] {
+        std::fs::create_dir_all(cwd.join(id)).expect("建得了目录");
+        std::fs::write(cwd.join(id).join("package.toml"), text).expect("写得进");
+    }
+    let zh = "zh_CN.UTF-8";
+    let open = "\n现在打开？[Y/n] ";
+
+    let no = answering(&root, &cwd, &["pkg", "install", "./tools"], "\nn\n").await;
+    assert_eq!(no.status.code(), Some(0), "照样算装好了：{no:?}");
+    assert!(
+        stdout(&no).ends_with(&format!(
+            "装好了：tools\n{open}没有打开：以后在「软件包」页里打开\n"
+        )),
+        "{no:?}"
+    );
+    let closed = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n").await;
+    assert!(
+        stdout(&closed).ends_with(&format!(
+            "装好了：tools\n{open}\n没有打开：以后在「软件包」页里打开\n"
+        )),
+        "没得答的不打开：{closed:?}"
+    );
+    let yes = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n\n").await;
+    assert!(
+        stdout(&yes).ends_with(&format!("装好了：tools\n{open}打开了：tools\n")),
+        "{yes:?}"
+    );
+    let again = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n").await;
+    assert!(
+        stdout(&again).ends_with("装好了：tools\n"),
+        "开着的不再问：{again:?}"
+    );
+    let quiet = run(&root, &cwd, zh, &["pkg", "install", "./fresh", "--yes"]).await;
+    assert_eq!(
+        stdout(&quiet),
+        "装好了：fresh\n打开了：fresh\n",
+        "--yes 当是：{quiet:?}"
+    );
+    let missing = run(&root, &cwd, zh, &["pkg", "install", "./xpkg", "--yes"]).await;
+    assert_eq!(
+        (missing.status.code(), stdout(&missing)),
+        (Some(0), "装好了：xpkg\n".to_string()),
+        "程序不在的不问也不开"
+    );
+    drop(held);
+    if let Err(error) = std::fs::remove_dir_all(&cwd) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}
+
+/// 要能力的扩展打开时一并批（只在 Unix 上跑：程序是一段 shell 脚本，起来不握手，开关打开就算成）。
+#[cfg(unix)]
+#[tokio::test]
+async fn pkg_approves_what_the_extension_asks_for_when_turning_it_on() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let home = Home::new();
+    let root = home.root.path().to_path_buf();
+    let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    let cwd = home.dir.with_extension("approve");
+    let dir = cwd.join("xcap");
+    std::fs::create_dir_all(dir.join("bin")).expect("建得了目录");
+    std::fs::write(
+        dir.join("package.toml"),
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Cap\" }\n\n[command]\nname = \"xcap\"\nprogram = \"miyu-xcap\"\nabout = { en = \"Cap\" }\n\n[process]\nstart = \"manual\"\ncapabilities = [\"tools\"]\n",
+    )
+    .expect("写得进");
+    let program = dir.join("bin/miyu-xcap");
+    std::fs::write(&program, "#!/bin/sh\nsleep 30\n").expect("写得进");
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).expect("改得了权限");
+    let installed = answering(&root, &cwd, &["pkg", "install", "./xcap"], "\n\n").await;
+    let text = stdout(&installed);
+    assert!(text.contains("\n需要："), "先列出要的能力：{text}");
+    assert!(
+        text.ends_with("装好了：xcap\n\n现在打开？[Y/n] 打开了：xcap\n"),
+        "能力一并批了才打得开：{installed:?}"
+    );
+    drop(held);
+    if let Err(error) = std::fs::remove_dir_all(&cwd) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}

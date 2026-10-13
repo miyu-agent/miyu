@@ -6,6 +6,7 @@
 //! `check` 查出改了少了的也是 1（照 pacman）；参数写错的 2，由 clap 管。
 
 mod confirm;
+mod open;
 mod query;
 mod shown;
 
@@ -228,17 +229,28 @@ async fn act(
         }
         PkgCommand::Install { what } => {
             let params = installing(&what, &plan.cwd);
+            // 看一眼：没写 `--yes` 的印出来、问一句；要的能力装好以后打开时一并批（作者说明第九节第 1 条）。
+            let shown = ask(rpc, "package.install", previewed(&params), language, err).await?;
             if !plan.args.yes {
                 let doing = match params.get("path") {
                     Some(_) => Doing::Install,
                     None => Doing::Restore,
                 };
-                let shown = ask(rpc, "package.install", previewed(&params), language, err).await?;
                 lines(out, confirm::plan(&shown, doing, language));
                 confirm::asked(input, out, err, doing, language)?;
             }
             let result = ask(rpc, "package.install", params, language, err).await?;
-            say(out, &language.installed(package_of(&result)));
+            let id = package_of(&result);
+            say(out, &language.installed(id));
+            if !open::wanted(&result, &shown) {
+                return Ok(());
+            }
+            if !open::agreed(input, out, plan.args.yes, language) {
+                say(out, language.not_opened());
+                return Ok(());
+            }
+            open::open(rpc, id, &open::capabilities(&shown), language, err).await?;
+            say(out, &language.opened(id));
             Ok(())
         }
         PkgCommand::Remove { package } => {
