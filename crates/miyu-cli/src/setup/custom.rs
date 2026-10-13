@@ -1,8 +1,11 @@
 //! 自定义的一家（施工 8-11 再补，2026-10-08 项目主人定，`docs/blueprint/cli/setup.md`「怎么走」第 4 条）：依次问 base URL、
 //! 接口协议（核心会说的三种），key 在试的时候问（可以空：本机的服务、不要 key 的中转）。配置里的编号照地址的主机名起
-//! （[`host_id`]），撞了往后加 `-2`、`-3`（[`Flow::fresh_id`]）：能定的不让人填。
+//! （[`host_id`]），撞了往后加 `-2`、`-3`（[`Flow::fresh_id`]）；试通了以后问一句，直接回车用它，也能自己起
+//! （[`Flow::named_id`]，施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，没地方改）。
 
 use serde_json::json;
+
+use miyu_config::key;
 
 use super::flow::{Chosen, Custom, Flow, Key};
 use super::pick::{Row, Typed, config_id, numbered, typed};
@@ -61,17 +64,47 @@ impl Flow<'_> {
     /// 配置里还没用过的编号：`id` 没用过的就是它，用过的往后加 `-2`、`-3`。照 `config.get` 的最终值。
     pub(super) async fn fresh_id(&mut self, id: &str) -> Result<String, u8> {
         let got = self.request("config.get", json!({})).await?;
-        let taken = |candidate: &str| {
-            let prefix = format!("providers.{candidate}.");
-            got["items"]
-                .as_object()
-                .is_some_and(|items| items.keys().any(|key| key.starts_with(&prefix)))
-        };
         Ok(std::iter::once(id.to_string())
             .chain((2..).map(|n| format!("{id}-{n}")))
-            .find(|candidate| !taken(candidate))
+            .find(|candidate| !taken(&got, candidate))
             .unwrap_or_else(|| id.to_string()))
     }
+
+    /// 问编号（施工 8-11 六补）：直接回车用自动起的 `suggested`；敲的不合「路径里的名字」写法、配置里已经有了的，说一句再问。读到头的
+    /// 是「没选」。不在终端里的不问，用 `suggested`。
+    pub(super) async fn named_id(&mut self, suggested: String) -> Result<String, u8> {
+        if !self.console.terminal() {
+            return Ok(suggested);
+        }
+        let language = self.plan.language;
+        loop {
+            let Some(line) = self.ask(&language.custom_id(&suggested)) else {
+                return self.not_picked();
+            };
+            let id = line.trim();
+            if id.is_empty() || id == suggested {
+                return Ok(suggested);
+            }
+            if !key::valid(key::ID, id) {
+                say(self.err, &language.bad_custom_id(id));
+                continue;
+            }
+            let got = self.request("config.get", json!({})).await?;
+            if taken(&got, id) {
+                say(self.err, &language.custom_id_taken(id));
+                continue;
+            }
+            return Ok(id.to_string());
+        }
+    }
+}
+
+/// `config.get` 交回的 `got` 里有没有这一家：有 `providers.<id>.` 开头的键。
+fn taken(got: &serde_json::Value, id: &str) -> bool {
+    let prefix = format!("providers.{id}.");
+    got["items"]
+        .as_object()
+        .is_some_and(|items| items.keys().any(|key| key.starts_with(&prefix)))
 }
 
 /// 地址里的主机名：去掉协议、用户名、端口、路径。

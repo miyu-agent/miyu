@@ -144,7 +144,8 @@ impl<'a> Flow<'a> {
             }
         };
         if chosen.custom.is_some() {
-            chosen.id = self.fresh_id(&chosen.id).await?;
+            let suggested = self.fresh_id(&chosen.id).await?;
+            chosen.id = self.named_id(suggested).await?;
         }
         let stored = pasted.is_some();
         if let Some(key) = pasted {
