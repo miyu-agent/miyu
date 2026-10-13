@@ -55,8 +55,8 @@ pub(crate) struct Texts {
 ///
 /// # Errors
 ///
-/// 做不出卡片的：过不了闸、不是网页、人机验证页、B 站「视频没了」的页面（[`Why::NoPreview`]）；连不上、4xx、5xx
-/// （[`Why::Unreachable`]）。
+/// 做不出卡片的：过不了闸、不是网页、人机验证页（[`Why::NoPreview`]）；连不上、4xx、5xx，B 站「视频去哪了」的那一页
+/// （[`Why::Unreachable`]：B 站拦下的请求也给这一页，视频还在，过会儿再要常常就有了）。
 pub(crate) async fn draft(
     fetcher: &Fetcher,
     sites: &Sites,
@@ -74,10 +74,13 @@ pub(crate) async fn draft(
     let (page, text) = fetcher.page(&target, until).await?;
     let found = html::scan(&text, &page, youtube);
     let title = html::tidy(&found.title, usize::MAX);
-    // 人机验证页；B 站「视频没了」的那一页（第 12 条第 1 款）
-    let gone = bilibili.is_some() && sites.bilibili.gone_titles.contains(&title);
-    if challenge_titles.contains(&title) || gone {
+    // 人机验证页
+    if challenge_titles.contains(&title) {
         return Err(Why::NoPreview);
+    }
+    // B 站「视频去哪了」的那一页（第 12 条第 1 款第 3 条）：删了的视频是它，B 站拦下的请求也是它，分不出来，当过会儿再试
+    if bilibili.is_some() && sites.bilibili.gone_titles.contains(&title) {
+        return Err(Why::Unreachable);
     }
     let mut draft = Draft {
         found,

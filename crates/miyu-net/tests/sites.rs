@@ -126,15 +126,16 @@ async fn a_bilibili_video_is_read_from_the_data_in_its_page() {
 }
 
 #[tokio::test]
-async fn a_gone_bilibili_video_has_no_card() {
-    // 删了的视频：页面标题是「视频去哪了呢？」，og 的简介是没填的模板（2026-10-02、10-03 实测）
+async fn a_bilibili_placeholder_page_is_tried_again_later() {
+    // 删了的视频：页面标题是「视频去哪了呢？」，og 的简介是没填的模板（2026-10-02、10-03 实测）。B 站拦下的请求也给这一页，
+    // 视频其实还在（2026-10-14 实测），分不出来：当过会儿再试（`unreachable`），头照普通链接画，过会儿再要
     let gone = r#"<html><head><title>视频去哪了呢？_哔哩哔哩_bilibili</title>
         <meta property="og:description" content="视频去哪了呢？{$0}的视频"></head><body></body></html>"#;
     let bili = Site::start(vec![("/video/BV1GJ411x7h7".to_string(), Reply::html(gone))]).await;
     let store = Store::new();
     let links = previewer(&store);
     let url = format!("http://www.bilibili.com:{}/video/BV1GJ411x7h7", bili.port);
-    assert_eq!(miss(&links, &url).await, Why::NoPreview);
+    assert_eq!(miss(&links, &url).await, Why::Unreachable);
     // 同样的标题不在 B 站的视频页上，不算
     let other = Site::start(vec![("/p".to_string(), Reply::html(gone))]).await;
     let plain = card(&links, &other.url("/p")).await;
