@@ -252,7 +252,7 @@
 | `oneshot` | 布尔，不写是 `false` | `true` 只要一次性的 |
 | `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
 
-回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字，有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
+回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字，有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
 
 ```json
 {"busy":true,"cwd":"~/src/miyu","last_active":"2026-10-01T06:03:12.345Z","oneshot":false,"parent":null,"session":"0192f3a0-2222-7abc-8def-5566778899aa","title":"修 CI"}
@@ -1010,7 +1010,7 @@
 
 **会话列表的推送**（施工 9-5，2026-10-07 项目主人批准 M9 头几步时定、提到 O 线前面：网页的侧边栏要对每个会话订阅整份日志才画得出标题、在跑，会话一多就慢；形状先给终端界面、网页看过）
 
-1. `subscribe` 的 `sessions`：回应 `{"sessions": […]}`，每一项和 `session.list` 的一样（`busy`、`cwd`、`last_active`、`oneshot`、`parent`、`pinned`、`session`、`title`，有的才写照那边），从新到旧，全部：一次性的、子会话都在。一个连接至多一个；再订阅换一个新的（交回一份新的列表，旧的停掉）。`unsubscribe` 停掉它，没订阅过的也回 `{}`。
+1. `subscribe` 的 `sessions`：回应 `{"sessions": […]}`，每一项和 `session.list` 的一样（`busy`、`cwd`、`last_active`、`named`、`oneshot`、`parent`、`pinned`、`session`、`title`，有的才写照那边），从新到旧，全部：一次性的、子会话都在。一个连接至多一个；再订阅换一个新的（交回一份新的列表，旧的停掉）。`unsubscribe` 停掉它，没订阅过的也回 `{}`。
 2. 之后推 `sessions.changed`：`{"session": <编号>, "entry": <一项>}`，头照编号整项替换；删掉的是 `{"session": <编号>, "removed": true}`。
 3. 什么时候推：造了会话（主会话、子会话、一次性的）；改名、置顶（人改的、内核起的标题都算）；一轮开始（`busy`、`cwd`、`last_active` 跟着变）；一轮结束、会话空下来（`busy` 去掉，`last_active` 跟着变）；删了。`last_active` 只在这几个时刻跟着走，不是每条事件都推。「未读」由头自己拿 `last_active` 和自己看过的比。
 4. 先后：一项一项照核心里一个排队的任务算，一个接一个；订阅的回应里的列表也由它算。所以回应里的列表包含回应之前的每一次变化，之后推的每一条都比它新，旧的一项盖不住新的。推送和别的命令（例如 `session.create`）的回应之间不保证先后：推的是整项，晚到的照样对。

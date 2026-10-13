@@ -79,6 +79,8 @@ pub(crate) struct Listed {
     pub(crate) parent: Option<SessionId>,
     /// 标题：空的是没有。
     pub(crate) title: String,
+    /// 标题是人起的（施工 3-8 八补）。
+    pub(crate) named: bool,
     pub(crate) pinned: bool,
     /// 工作目录（施工 C-3）：头报来的写法。
     pub(crate) cwd: String,
@@ -104,6 +106,7 @@ impl Listed {
             oneshot: row.oneshot,
             parent: row.parent,
             title: row.title,
+            named: row.named,
             pinned: row.pinned,
             cwd: row.cwd.unwrap_or_else(|| NO_CWD.to_string()),
             busy,
@@ -115,8 +118,8 @@ impl Listed {
         }
     }
 
-    /// `session.list` 的一项：有标题的才写 `title`，没标题、说过话的写 `preview`（施工 9-5），置顶的、忙的才写 `pinned`、`busy`
-    /// （写 `true`）。
+    /// `session.list` 的一项：有标题的才写 `title`，人起的再写 `named`（施工 3-8 八补）；没标题、说过话的写 `preview`（施工 9-5），
+    /// 置顶的、忙的才写 `pinned`、`busy`（写 `true`）。
     pub(crate) fn to_json(&self) -> Value {
         let mut item = json!({
             "session": self.id.as_str(),
@@ -127,6 +130,9 @@ impl Listed {
         });
         if !self.title.is_empty() {
             item["title"] = json!(self.title);
+            if self.named {
+                item["named"] = json!(true);
+            }
         } else if !self.preview.is_empty() {
             item["preview"] = json!(self.preview);
         }

@@ -270,3 +270,34 @@ fn the_preview_is_the_first_line_of_the_first_words() {
     row.see(&said(4, r#"[{"type":"text","text":"后来的"}]"#));
     assert_eq!(row.preview, "长".repeat(50), "第二句盖不过第一句");
 }
+
+/// 内核起的标题：`by` 是内核。
+fn titled(seq: u64, title: &str) -> Event {
+    event(&format!(
+        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"kernel"}},"body":{{"title":"{title}"}}}}"#
+    ))
+}
+
+/// 标题是不是人起的（施工 3-8 八补）：照最后一条写了标题的算，内核起的、去掉了的不算；只改置顶的不动它；照样存进表、读回来。
+#[test]
+fn a_title_counts_as_named_only_when_a_person_wrote_it_last() {
+    let mut row = Row::new(id(), &created()).unwrap();
+    assert!(!row.named, "没有标题");
+    row.see(&titled(2, "列出 src"));
+    assert!(!row.named, "内核起的");
+    row.see(&renamed(3, "修 CI", false));
+    assert!(row.named, "人改的");
+    let pin = event(
+        r#"{"seq":4,"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{"kind":"kernel"},"body":{"pinned":true}}"#,
+    );
+    row.see(&pin);
+    assert!(row.named, "只改置顶的不动它");
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    assert!(index.put(&row, None).unwrap());
+    assert!(index.rows().unwrap()[&id()].named, "存进表、读回来");
+    row.see(&renamed(5, "", false));
+    assert!(!row.named, "去掉了标题");
+    row.see(&titled(6, "又起了一个"));
+    assert!(!row.named, "最后写的是内核");
+}

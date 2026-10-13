@@ -33,6 +33,7 @@
 | `oneshot` | 一次性的（0、1） | `session.created` 的 `oneshot` |
 | `title` | 标题，空的是没有 | `session.meta_changed` 一条条盖上：写了 `title` 的换成它 |
 | `pinned` | 置顶（0、1） | `session.meta_changed` 写了 `pinned` 的换成它 |
+| `named` | 标题是人起的（0、1，施工 3-8 八补） | `session.meta_changed` 写了 `title` 的：不是空的、`by` 是人的算 1，别的算 0；只改置顶的不动它 |
 | `cwd` | 工作目录，空的是日志里一条都没记（很早以前的日志） | 最后一条带 `cwd` 的 `turn.started`、换工作区的 `session.workspace_changed`（施工 9-7 上），都没有就照 `session.created` 的（`protocol.md`「会话表」第 5 条，同一个函数 `cwd`） |
 | `created` | 造的时刻，毫秒 | `session.created` 的 `at` |
 | `last_active` | 最近一次动静，毫秒 | 照到的最后一条事件的 `at`，哪种事件都算 |
@@ -45,7 +46,7 @@
 | `preset` | 预设（施工 P-2 上），可以是空的 | `session.created` 的 `preset`；以前的日志没有的是空的 |
 
 - 忙不忙不进索引：列会话时从会话表的内存里拿（`protocol.md` 的 `session.list` 第 5 条）。
-- 结构的版本记在 SQLite 的 `user_version` 里，现在是 5（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
+- 结构的版本记在 SQLite 的 `user_version` 里，现在是 6（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
 - 日志模式是 WAL，`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏。丢了的那几次，照到的位置落在后面，列会话照日志补（下面第 3 条）。
 
 ### 怎么走
