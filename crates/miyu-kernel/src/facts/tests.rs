@@ -256,12 +256,12 @@ fn older_templates_without_the_session_one_have_no_session_block() {
 }
 
 #[test]
-fn the_env_block_has_the_hour_the_timezone_and_the_directory() {
+fn the_env_block_has_the_ten_minutes_the_timezone_and_the_directory() {
     let block = templates().env(now(), &environment("~/src/miyu"));
     assert_eq!(block.kind.as_str(), "env");
     assert_eq!(
         block.text,
-        r#"<e t="Fri 2026-09-25 16:00–17:00" z="UTC+09:00" d="~/src/miyu"/>"#
+        r#"<e t="Fri 2026-09-25 16:00–16:10" z="UTC+09:00" d="~/src/miyu"/>"#
     );
 }
 
@@ -272,7 +272,7 @@ fn the_directory_is_escaped() {
     assert_eq!(
         block.text,
         format!(
-            r#"<e t="Fri 2026-09-25 16:00–17:00" z="UTC+09:00" d="{}"/>"#,
+            r#"<e t="Fri 2026-09-25 16:00–16:10" z="UTC+09:00" d="{}"/>"#,
             escape(cwd)
         )
     );

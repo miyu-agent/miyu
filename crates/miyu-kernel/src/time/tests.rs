@@ -131,40 +131,40 @@ fn offsets_beyond_fourteen_hours_are_refused() {
 }
 
 #[test]
-fn the_local_hour_is_the_wall_clock_to_the_hour() {
+fn the_local_ten_minutes_is_the_wall_clock_to_ten_minutes() {
     for (utc, minutes, local) in [
         (
             "2026-09-25T07:04:05.140Z",
             540,
-            "Fri 2026-09-25 16:00–17:00",
+            "Fri 2026-09-25 16:00–16:10",
         ),
         (
             "2026-09-25T07:04:05.140Z",
             330,
-            "Fri 2026-09-25 12:00–13:00",
+            "Fri 2026-09-25 12:30–12:40",
         ),
         (
             "2026-12-31T20:30:00.000Z",
             540,
-            "Fri 2027-01-01 05:00–06:00",
+            "Fri 2027-01-01 05:30–05:40",
         ),
         (
             "2026-03-01T02:00:00.000Z",
             -300,
-            "Sat 2026-02-28 21:00–22:00",
+            "Sat 2026-02-28 21:00–21:10",
         ),
-        ("2028-02-29T12:00:00.000Z", 0, "Tue 2028-02-29 12:00–13:00"),
-        ("1969-12-31T23:00:00.000Z", 0, "Wed 1969-12-31 23:00–24:00"),
+        ("2028-02-29T12:00:00.000Z", 0, "Tue 2028-02-29 12:00–12:10"),
+        ("1969-12-31T23:59:00.000Z", 0, "Wed 1969-12-31 23:50–24:00"),
         (
             "2026-09-25T00:30:00.000Z",
             -210,
-            "Thu 2026-09-24 21:00–22:00",
+            "Thu 2026-09-24 21:00–21:10",
         ),
-        ("2026-09-25T23:59:59.999Z", 1, "Sat 2026-09-26 00:00–01:00"),
+        ("2026-09-25T23:59:59.999Z", 1, "Sat 2026-09-26 00:00–00:10"),
     ] {
         let t = Timestamp::parse(utc).unwrap();
         assert_eq!(
-            t.local_hour(offset(minutes)),
+            t.local_ten_minutes(offset(minutes)),
             local,
             "{utc} 在 {minutes} 分钟的时区"
         );
@@ -172,14 +172,15 @@ fn the_local_hour_is_the_wall_clock_to_the_hour() {
 }
 
 #[test]
-fn the_last_hour_of_a_day_ends_at_24() {
+fn the_last_ten_minutes_of_a_day_end_at_24() {
     for (utc, local) in [
-        ("2026-09-25T14:00:00.000Z", "Fri 2026-09-25 23:00–24:00"),
-        ("2026-09-25T14:59:59.999Z", "Fri 2026-09-25 23:00–24:00"),
-        ("2026-09-25T15:00:00.000Z", "Sat 2026-09-26 00:00–01:00"),
+        ("2026-09-25T14:50:00.000Z", "Fri 2026-09-25 23:50–24:00"),
+        ("2026-09-25T14:59:59.999Z", "Fri 2026-09-25 23:50–24:00"),
+        ("2026-09-25T15:00:00.000Z", "Sat 2026-09-26 00:00–00:10"),
+        ("2026-09-25T14:49:59.999Z", "Fri 2026-09-25 23:40–23:50"),
     ] {
         let t = Timestamp::parse(utc).unwrap();
-        assert_eq!(t.local_hour(offset(540)), local, "{utc} 在 +09:00");
+        assert_eq!(t.local_ten_minutes(offset(540)), local, "{utc} 在 +09:00");
     }
 }
 
@@ -189,7 +190,7 @@ fn every_day_of_the_week_has_its_name() {
     let names: Vec<String> = (0..7)
         .map(|day| {
             let t = Timestamp::from_unix_millis(sunday + day * MS_PER_DAY).unwrap();
-            t.local_hour(offset(0))[..3].to_string()
+            t.local_ten_minutes(offset(0))[..3].to_string()
         })
         .collect();
     assert_eq!(names, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);

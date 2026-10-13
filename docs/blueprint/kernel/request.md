@@ -271,7 +271,7 @@
    查的时候，时刻取这个边界上那条输入的时刻，时区取会话现在的，工作目录取这一轮开始时的（派工具带的也是它）。查过就清掉「切过」，放宽的这时生效。执行器中途报的新工作目录，下一轮开头才写进去。
 5. **回复被打断**：出了可以重试的错、收到的半截已经写成回复，紧跟着追加 `reply_cut`，再等着重试（`kernel/session.md`）。
 6. **写成什么**：
-   - `time`：此刻在那个时区落在哪一个小时，写成这个小时的起止：`Fri 2026-09-25 16:00–17:00`。星期三个字母（`Sun` 到 `Sat`），年-月-日，二十四小时制，分钟都写 `00`，中间是连接号 `–`；23 点写 `23:00–24:00`（施工 1-13 补，`kernel/ids.md`「当地钟点」）。
+   - `time`：此刻在那个时区落在哪一个十分钟，写成起止：`Fri 2026-09-25 16:00–16:10`。星期三个字母（`Sun` 到 `Sat`），年-月-日，二十四小时制，分钟是 10 的倍数，中间是连接号 `–`；23:50 那一段写 `23:50–24:00`（施工 1-13 补；施工 1-13 三补从到小时改成十分钟，项目主人 2026-10-14 定：到小时太粗。照 `kernel/ids.md`「当地钟点」）。
    - `timezone`：`UTC+09:00`、`UTC-05:30`，零时区写 `UTC+00:00`。
    - `cwd`：`Environment.cwd` 原样。
    - `level`：只读开着写 `read_only`；关着写常用的那一级，`workspace` 或 `full`；不认识的级别写 `read_only`（`effective_level`）。
@@ -642,7 +642,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-kernel/src/session/tests/scenario/permission_changed.rs`（施工 2-7 补） | 人切了级别：空闲时切的，下一轮开头用切换那一份、带上一级；一个边界之前切过去又切回来的（空闲时、工具在跑时）不注入；回合中途切的，排在工具结果后面、这一轮下一次请求看得到；连着切的写她最近看到的那一级；压缩以后写平常那一份；撤掉切到完全放开的那一轮以后，上一级是她还看得到的工作区；撤掉所有带着权限的轮以后写平常那一份；撤掉的回合里切的，载入以后照样算；崩了载入以后不重发；以前的快照写平常那一份 |
 | `crates/miyu-kernel/src/session/tests/scenario/session_fact.rs`（施工 1-13 再补） | 会话编号：第一轮排在环境、权限后面注入，第二轮不注入；压缩以后再注入一次；撤掉带着它的那一轮以后下一轮重新注入；崩了载入以后编号一样、不重发；子会话写它自己的编号；以前的快照没有模板的不注入 |
 | `crates/miyu-kernel/src/session/tests/difference.rs` | 第一处不同交给执行器、记进 `model.called` |
-| `crates/miyu-kernel/src/time/tests.rs` | 钟点到小时、星期、时区的写法和范围 |
+| `crates/miyu-kernel/src/time/tests.rs` | 钟点到十分钟、星期、时区的写法和范围 |
 | `crates/miyu-kernel/src/template/tests.rs` | 换字段、双写的大括号、每种要转的字、转出来是一行合法的 JSON 字符串、伪造属性和记录和标签都失效、`fields()`、`fill`、坏模板、少了字段 |
 | `crates/miyu-kernel/src/accumulate/tests.rs` | 三种块拼对、调用编号、空块、交错、被打断、对不上的增量、随机切片拼出来一样；每一块带着它在流里是第几块（施工 2-3 补） |
 

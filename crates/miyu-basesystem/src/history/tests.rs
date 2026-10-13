@@ -197,7 +197,7 @@ async fn entries_can_be_picked_by_number_time_and_who() {
     // 第 55 条正好在 16:31:00：到 16:30 那一分钟完为止的不含它。
     assert_eq!(pick(json!({"until": "2026-09-25 16:30"})).await, [52, 54]);
     assert_eq!(
-        pick(json!({"since": "2026-09-25T16:40:00"})).await,
+        pick(json!({"since": "2026-09-25T16:39:00"})).await,
         [75, 77, 81, 82]
     );
     // 只写日期：那一整天。

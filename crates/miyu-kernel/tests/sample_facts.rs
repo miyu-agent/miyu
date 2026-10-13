@@ -153,7 +153,8 @@ fn after_the_compaction_both_blocks_are_injected_again() {
     let events = events();
     let injected = injected_after(&events, 54);
     let texts: Vec<&str> = injected.iter().map(|fact| fact.text.as_str()).collect();
-    assert_eq!(texts, [sample_fact(&events, 43).text.as_str(), READ_ONLY]);
+    // 压缩在 07:30，和下一轮开头的 57 号同一个十分钟（施工 1-13 三补起到十分钟）。
+    assert_eq!(texts, [sample_fact(&events, 57).text.as_str(), READ_ONLY]);
     assert_eq!(
         injected_after(&events, 56),
         [sample_fact(&events, 57), sample_fact(&events, 58)],

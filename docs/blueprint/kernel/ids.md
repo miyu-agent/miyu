@@ -11,7 +11,7 @@
 | `crates/miyu-kernel/src/id.rs` | 十五种用字符串写的编号和名字；序号 `Seq`、回合编号 `TurnId`；内容哈希怎么算（`ContentHash::of`、`Hasher`）；会话的短编号 `SessionId::short`（施工 C-1） |
 | `crates/miyu-kernel/src/id/call.rs` | 调用编号 `CallId` |
 | `crates/miyu-kernel/src/id/job.rs` | 任务编号 `JobId`（施工 7-1；带上父会话的编号，施工 7-1 补） |
-| `crates/miyu-kernel/src/time.rs` | 时刻 `Timestamp`；时区 `UtcOffset`；给模型看的当地钟点 `local_hour` |
+| `crates/miyu-kernel/src/time.rs` | 时刻 `Timestamp`；时区 `UtcOffset`；给模型看的当地钟点 `local_ten_minutes` |
 | `crates/miyu-kernel/src/origin.rs` | `by`：八种，加上不认识的 |
 | `crates/miyu-kernel/src/format_error.rs` | 写法不对时报的 `FormatError`（它的样子见 `kernel/events.md`「出错」） |
 | `crates/miyu-kernel/src/raw.rs` | `by` 照 `kind` 分派的读法（`kernel/blocks.md`） |
@@ -95,11 +95,11 @@
 - 写成 `UTC+09:00`、`UTC-05:30`；零时区写 `UTC+00:00`，字数固定。
 - 不进 JSON。内核不读本机的时区设置：时区由执行器送进来，夏令时一换，送进来的就跟着变。
 
-**当地钟点** `Timestamp::local_hour(offset)`：这个时刻在那个时区落在哪一个小时，写成这个小时的起止，例如 `Fri 2026-09-25 16:00–17:00`（施工 1-13 补）。
+**当地钟点** `Timestamp::local_ten_minutes(offset)`：这个时刻在那个时区落在哪一个十分钟，写成起止，例如 `Fri 2026-09-25 16:00–16:10`（施工 1-13 补；原来到小时 `local_hour`，施工 1-13 三补改成十分钟，项目主人 2026-10-14 定：到小时太粗）。
 
 - 星期写三个字母：`Sun`、`Mon`、`Tue`、`Wed`、`Thu`、`Fri`、`Sat`（1970-01-01 是星期四）。
-- 日期写成 `年-月-日`，年补足四位，月、日两位；二十四小时制，起止的小时都是两位、分钟都写 `00`，中间是连接号 `–`（U+2013）：同一个小时里字节不变。
-- 23 点写 `23:00–24:00`，日期还是这一天。
+- 日期写成 `年-月-日`，年补足四位，月、日两位；二十四小时制，起止的小时、分钟都是两位，分钟是 10 的倍数，中间是连接号 `–`（U+2013）：同一个十分钟里字节不变。
+- 23:50 那一段写 `23:50–24:00`，日期还是这一天。
 - 加上时区跨出 0000 年到 9999 年的（0000 年初在西边的时区、9999 年末在东边的时区），年写不成四位：`-001-12-31`、`10000-01-01`（没有测试证实）。
 - 环境那一块事实的 `time`、`timezone` 两格用它和 `UtcOffset`（`kernel/request.md`）。
 
@@ -188,7 +188,7 @@
 
 **当地钟点**：
 
-18. 先把时刻加上时区的分钟数，再照 UTC 的办法算日期、小时、星期：跨日、跨月、跨年、闰日、1970 年以前、负的时区、差半小时的时区都照这一条。例如 `2026-12-31T20:30:00.000Z` 在 +09:00 是 `Fri 2027-01-01 05:00–06:00`，`2026-09-25T00:30:00.000Z` 在 −03:30 是 `Thu 2026-09-24 21:00–22:00`，`2026-09-25T14:59:59.999Z` 在 +09:00 是 `Fri 2026-09-25 23:00–24:00`。
+18. 先把时刻加上时区的分钟数，再照 UTC 的办法算日期、小时、星期：跨日、跨月、跨年、闰日、1970 年以前、负的时区、差半小时的时区都照这一条。例如 `2026-12-31T20:30:00.000Z` 在 +09:00 是 `Fri 2027-01-01 05:30–05:40`，`2026-09-25T00:30:00.000Z` 在 −03:30 是 `Thu 2026-09-24 21:00–21:10`，`2026-09-25T14:59:59.999Z` 在 +09:00 是 `Fri 2026-09-25 23:50–24:00`。
 
 **「谁」**：
 
@@ -240,7 +240,7 @@ bad session id: must be 36 characters (got "x")
 |---|---|
 | `crates/miyu-kernel/src/id/tests.rs` | 图纸上的例子读写一字不差（`samples_from_the_drawing_round_trip`、`names_from_the_drawing_round_trip`）；会话编号（`session_id_must_be_lowercase_uuid_text`）；短名字（`command_id_is_short_printable_text`、`short_names_are_opaque_but_bounded`）；路径里的名字（`account_is_like_a_linux_login_name`、`module_driver_and_fact_names_follow_the_account_rule`）；内容哈希的写法和算法（`content_hash_is_sha256_in_lowercase_hex`、`content_hash_of_known_contents`、`hashing_piece_by_piece_is_the_same_as_all_at_once`）；媒体类型、文件名、事件种类各自的规则；序号和回合编号（`seq_starts_at_one`、`turn_id_reads_like_a_seq`）；会话的短编号（`a_short_session_id_is_its_last_eight_characters`，施工 C-1）；调用编号第 9 到 12 条（`call_id_accepts_only_what_the_kernel_writes`）；任务编号第 25、26 条和排序（`job_id_accepts_only_what_the_kernel_writes`、`job_ids_sort_by_number`，施工 7-1；几段的、`under`、`last`，施工 7-1 补）；报错的样子和 80 个字符（`error_says_what_why_and_what_was_read`、`long_text_in_errors_is_cut`） |
 | `crates/miyu-session/src/clock/tests.rs` 的 `ids_made_together_differ_in_their_short_form`（施工 C-1） | 真造的编号：同一刻连造的几个前 8 位一样，短编号是最后 8 位、各不一样。内核不造编号，所以放在造编号的那一层 |
-| `crates/miyu-kernel/src/time/tests.rs` | 图纸上的例子；几个标准时刻和两头的界（`well_known_moments`、`years_outside_0000_to_9999_are_refused`）；闰年；1600 年到 2400 年一天一天数过去和换算对得上；第 13 到 17 条每种坏写法；时区的写法和范围；第 18 条当地钟点（`the_local_hour_is_the_wall_clock_to_the_hour`；23 点到 24 点 `the_last_hour_of_a_day_ends_at_24`，施工 1-13 补）；七天的写法 |
+| `crates/miyu-kernel/src/time/tests.rs` | 图纸上的例子；几个标准时刻和两头的界（`well_known_moments`、`years_outside_0000_to_9999_are_refused`）；闰年；1600 年到 2400 年一天一天数过去和换算对得上；第 13 到 17 条每种坏写法；时区的写法和范围；第 18 条当地钟点（`the_local_ten_minutes_is_the_wall_clock_to_ten_minutes`；最后十分钟到 24 点 `the_last_ten_minutes_of_a_day_end_at_24`，施工 1-13 补、三补）；七天的写法 |
 | `crates/miyu-kernel/src/origin/tests.rs` | 八种读写一字不差、各读成自己那一种；不认识的一字不差；认识的种类多出来的格不管；第 19 条的几种坏写法；`harness` 的名字照短名字的规则（施工 7-1） |
 | `xtask/src/purity.rs`（门禁「纯逻辑」） | 内核的 `src/` 里没有 `SystemTime`、`Instant`：不读时钟 |
 
@@ -251,7 +251,7 @@ bad session id: must be 36 characters (got "x")
 - `01-架构.md` 第六节：身份取自连接，正文里自称的不作数。
 - `06-多用户与身份.md` 第二节（账号、外部身份）、第五节（权限按这一步是谁要求的判）。
 - `07-存储.md` 第五节：blob 的文件名是去掉 `sha256:` 的 64 位。
-- `08-上下文投影.md` 第五节「环境和状态的事实怎么写」：时间到小时、时区写成 `UTC+09:00`。
+- `08-上下文投影.md` 第五节「环境和状态的事实怎么写」：时间到十分钟（施工 1-13 三补，原来到小时）、时区写成 `UTC+09:00`。
 - `agents.md`「对外的样子」：任务编号 `j1`、`j2`，`by` 多一种 `harness`（施工 7-1）；子会话派的带上它在父会话里的编号（施工 7-1 补）。
 - `cross-session.md`「会话的短编号」「谁」：短编号取后 8 位，`session` 分三种关系（施工 C-1，2026-10-01 项目主人批准图纸）。
 

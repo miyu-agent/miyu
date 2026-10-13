@@ -1,7 +1,7 @@
 //! 时间：UTC，精确到毫秒。JSON 里写成 `"2026-09-25T07:04:05.123Z"`，固定 24 个字符
 //! （`docs/designs/03-事件模型.md` 第二节）。只存 UTC，显示成本地时间是头的事。
 //!
-//! 给模型看的当地钟点和时区也在这里（[`Timestamp::local_hour`]、[`UtcOffset`]），环境那一块
+//! 给模型看的当地钟点和时区也在这里（[`Timestamp::local_ten_minutes`]、[`UtcOffset`]），环境那一块
 //! 事实要用（`08-上下文投影.md` 第五节「环境和状态的事实怎么写」）。
 //!
 //! 公历日期和天数的互转用的是 Howard Hinnant 的标准算法（days_from_civil），不引入日期库。
@@ -118,20 +118,26 @@ const WEEKDAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MAX_OFFSET_MINUTES: i32 = 14 * 60;
 
 impl Timestamp {
-    /// 这个时刻在 `offset` 那个时区落在哪一个小时，写成这个小时的起止：`Fri 2026-09-25 16:00–17:00`。
+    /// 这个时刻在 `offset` 那个时区落在哪一个十分钟，写成起止：`Fri 2026-09-25 16:10–16:20`。
     ///
-    /// 星期写三个字母，日期写成年-月-日，二十四小时制，分钟都写 `00`，中间是连接号 `–`：同一个小时里
-    /// 字节不变；23 点写 `23:00–24:00`，日期还是这一天。只写 `16:00` 的话，她会当成正好 16 点（施工 1-13 补，
-    /// `08-上下文投影.md` 第五节「环境和状态的事实怎么写」）。
-    pub fn local_hour(self, offset: UtcOffset) -> String {
+    /// 星期写三个字母，日期写成年-月-日，二十四小时制，中间是连接号 `–`：同一个十分钟里字节不变；23:50 那一段写
+    /// `23:50–24:00`，日期还是这一天。只写 `16:10` 的话，她会当成正好那一分钟（施工 1-13 补，`08-上下文投影.md` 第五节
+    /// 「环境和状态的事实怎么写」）。原来到小时，施工 1-13 三补改成十分钟（项目主人 2026-10-14 定：到小时太粗）。
+    pub fn local_ten_minutes(self, offset: UtcOffset) -> String {
         let local = self.0 + i64::from(offset.0) * 60_000;
         let days = local.div_euclid(MS_PER_DAY);
         let (year, month, day) = civil_from_days(days);
-        let hour = local.rem_euclid(MS_PER_DAY) / 3_600_000;
+        let start = local.rem_euclid(MS_PER_DAY) / 600_000 * 10;
         // rem_euclid 出来一定在 0 到 6 之间，转成下标不会截断。
         let weekday = WEEKDAYS[(days + 4).rem_euclid(7) as usize];
-        let end = hour + 1;
-        format!("{weekday} {year:04}-{month:02}-{day:02} {hour:02}:00–{end:02}:00")
+        let end = start + 10;
+        format!(
+            "{weekday} {year:04}-{month:02}-{day:02} {:02}:{:02}–{:02}:{:02}",
+            start / 60,
+            start % 60,
+            end / 60,
+            end % 60
+        )
     }
 
     /// 这个时刻在 `offset` 那个时区的钟点，到分钟：`2026-09-29 14:03`（施工 6-4，`history` 给每一条写时刻）。

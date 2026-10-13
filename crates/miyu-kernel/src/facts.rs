@@ -176,13 +176,13 @@ impl FactTemplates {
         }
     }
 
-    /// 环境那一块：此刻 `now` 到小时，时区，工作目录。
+    /// 环境那一块：此刻 `now` 到十分钟（施工 1-13 三补，原来到小时），时区，工作目录。
     ///
     /// # Panics
     ///
     /// 实际不会 panic：造的时候已经拿全部字段试换过；`env` 这个类别名也合写法。
     pub fn env(&self, now: Timestamp, environment: &Environment) -> ContextInjected {
-        let time = now.local_hour(environment.offset);
+        let time = now.local_ten_minutes(environment.offset);
         let timezone = environment.offset.to_string();
         let fields = env_fields(&time, &timezone, &environment.cwd);
         ContextInjected {
