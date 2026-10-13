@@ -10,6 +10,7 @@
 
 mod catch_up;
 mod extract;
+mod manage;
 mod mount;
 mod read;
 mod write;
@@ -126,6 +127,10 @@ pub enum KnowledgeError {
     ReadOnly,
     /// 不是文字的文档（PDF、网页）写不了（施工 K-5）。
     NotText,
+    /// 要建、要挂的库已经有了（施工 K-7 上）。
+    BaseExists,
+    /// 要挂的目录用不了：为什么（施工 K-7 上）。
+    FolderUnavailable(String),
     /// 挂的目录用不了：为什么（施工 K-4）。列出来的照它带 `error`，搜的时候跳过，读的当没有这个文档。
     Unavailable(String),
     /// 索引读写不了。
@@ -153,6 +158,8 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
             KnowledgeError::ReadOnly => write!(f, "mounted folder is read-only"),
             KnowledgeError::NotText => write!(f, "only text documents can be written"),
+            KnowledgeError::BaseExists => write!(f, "knowledge base already exists"),
+            KnowledgeError::FolderUnavailable(why) => write!(f, "{why}"),
             KnowledgeError::Unavailable(why) => write!(f, "{why}"),
             KnowledgeError::Db(error) => write!(f, "index: {error}"),
             KnowledgeError::Io(why) => write!(f, "{why}"),

@@ -260,7 +260,7 @@ pub(crate) async fn picture(
 }
 
 /// 取一个 blob：没有的 `unknown_attachment`，读不了的记一行、`internal_error`。
-fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Refusal> {
+pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Refusal> {
     blobs.get(blob).map_err(|error| match error {
         BlobError::Missing(_) => Refusal::UNKNOWN_ATTACHMENT,
         error => {

@@ -15,4 +15,32 @@ impl Refusal {
         reason: "unknown_document",
         data: None,
     };
+    /// 要建、要挂的库已经有了（施工 K-7 上）。
+    pub(crate) const KB_EXISTS: Refusal = Refusal {
+        code: REFUSED,
+        reason: "kb_exists",
+        data: None,
+    };
+    /// 要加的文档已经有了，没说换（施工 K-7 上）。
+    pub(crate) const DOCUMENT_EXISTS: Refusal = Refusal {
+        code: REFUSED,
+        reason: "document_exists",
+        data: None,
+    };
+    /// 往挂进来的库里加、删（施工 K-7 上，19 N7：只读）。
+    pub(crate) const KB_READ_ONLY: Refusal = Refusal {
+        code: REFUSED,
+        reason: "kb_read_only",
+        data: None,
+    };
+
+    /// 要挂的目录用不了（施工 K-7 上）：`data.message` 是英文的一句为什么。
+    pub(crate) fn folder_unavailable(why: String) -> Refusal {
+        Refusal::with("folder_unavailable", "message", serde_json::json!(why))
+    }
+
+    /// 挪不进回收站（施工 K-7 上）：`data.message` 是英文的一句为什么。
+    pub(crate) fn trash_failed(why: String) -> Refusal {
+        Refusal::with("trash_failed", "message", serde_json::json!(why))
+    }
 }

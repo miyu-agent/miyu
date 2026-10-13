@@ -2,6 +2,8 @@
 //! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。照管理员的
 //! 账号（和 `memory.*` 一样）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
 
+mod manage;
+
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -9,7 +11,7 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use miyu_store::knowledge::{Hit, Knowledge, KnowledgeError, Meaning, Skipped};
+use miyu_store::knowledge::{Base, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
 use miyu_store::root::DataRoot;
 
@@ -72,28 +74,16 @@ struct Read {
 
 /// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。
 pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Result<Value, Refusal> {
+    if let Some(managed) = manage::call(core, method, params).await {
+        return managed;
+    }
     let knowledge = Arc::clone(&core.knowledge);
     let account = core.admin.clone();
     match method {
         "kb.list" => {
             let (bases, skipped) = blocking(move || knowledge.list(&account)).await?;
             report(&skipped);
-            let bases: Vec<Value> = bases
-                .into_iter()
-                .map(|base| {
-                    let mut value = json!({
-                        "id": base.id,
-                        "name": base.name,
-                        "description": base.description,
-                        "documents": base.documents,
-                        "chunks": base.chunks,
-                    });
-                    if let Some(error) = base.error {
-                        value["error"] = Value::String(error);
-                    }
-                    value
-                })
-                .collect();
+            let bases: Vec<Value> = bases.into_iter().map(shown_base).collect();
             Ok(json!({ "bases": bases }))
         }
         "kb.search" => {
@@ -151,6 +141,21 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
     }
 }
 
+/// 一个库在回应里的样子（`kb.list` 的一项；建、改、挂、重建的回应，施工 K-7 上）。
+fn shown_base(base: Base) -> Value {
+    let mut value = json!({
+        "id": base.id,
+        "name": base.name,
+        "description": base.description,
+        "documents": base.documents,
+        "chunks": base.chunks,
+    });
+    if let Some(error) = base.error {
+        value["error"] = Value::String(error);
+    }
+    value
+}
+
 /// 一块在回应里的样子。
 fn shown(hit: &Hit) -> Value {
     let mut shown = json!({
@@ -180,7 +185,8 @@ fn read<T: DeserializeOwned>(params: &Value) -> Result<T, Refusal> {
 }
 
 /// 在阻塞线程里做，[`KnowledgeError`] 写成拒绝：没有的库 `unknown_kb`，没有的文档 `unknown_document`，没有这一页
-/// `bad_params`，读不了的记一行、是内部出错。
+/// `bad_params`；管理的几种（施工 K-7 上）：已经有的库 `kb_exists`、已经有的文档 `document_exists`、挂进来的 `kb_read_only`、
+/// 挂不上的目录 `folder_unavailable`、挪不进回收站 `trash_failed`；读不了的记一行、是内部出错。
 async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, KnowledgeError> + Send + 'static,
 ) -> Result<T, Refusal> {
@@ -189,6 +195,11 @@ async fn blocking<T: Send + 'static>(
         Ok(Err(KnowledgeError::UnknownBase)) => Err(Refusal::UNKNOWN_KB),
         Ok(Err(KnowledgeError::UnknownDocument)) => Err(Refusal::UNKNOWN_DOCUMENT),
         Ok(Err(KnowledgeError::BadPage)) => Err(Refusal::BAD_PARAMS),
+        Ok(Err(KnowledgeError::BaseExists)) => Err(Refusal::KB_EXISTS),
+        Ok(Err(KnowledgeError::Exists)) => Err(Refusal::DOCUMENT_EXISTS),
+        Ok(Err(KnowledgeError::ReadOnly)) => Err(Refusal::KB_READ_ONLY),
+        Ok(Err(KnowledgeError::FolderUnavailable(why))) => Err(Refusal::folder_unavailable(why)),
+        Ok(Err(KnowledgeError::Trash(why))) => Err(Refusal::trash_failed(why)),
         Ok(Err(error)) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "knowledge failed");
             Err(Refusal::INTERNAL)
@@ -199,3 +210,6 @@ async fn blocking<T: Send + 'static>(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

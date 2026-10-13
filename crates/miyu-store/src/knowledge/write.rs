@@ -138,18 +138,15 @@ impl Knowledge {
     ) -> Result<(PathBuf, String), KnowledgeError> {
         let file = self.target(account, kb, path)?;
         existing(&file)?.ok_or(KnowledgeError::UnknownDocument)?;
-        match miyu_fs::trash::put(&file, home) {
-            Ok(location) => Ok((file, location)),
-            Err(miyu_fs::trash::Refused::Unavailable) => {
-                Err(KnowledgeError::Trash("no trash on this disk".to_string()))
-            }
-            Err(miyu_fs::trash::Refused::Lost) => Err(KnowledgeError::Trash(
-                "moved but not found in the trash".to_string(),
-            )),
-            Err(miyu_fs::trash::Refused::Failed(error)) => {
-                Err(KnowledgeError::Trash(error.to_string()))
-            }
-        }
+        let location = miyu_fs::trash::put(&file, home).map_err(trash_refused)?;
+        Ok((file, location))
+    }
+
+    /// `path` 合不合一篇文档的写法（库里的相对路径、扩展名，同读的那一套，什么格式都算），不看在不在（施工 K-7 上：人加、删
+    /// 以前先看）。
+    #[must_use]
+    pub fn document(path: &str) -> bool {
+        target(Path::new(""), path).is_some()
     }
 
     /// `path` 是不是她写得了的一篇（库里的相对路径、扩展名，同读的那一套；只有文字的两种，施工 K-5），不看在不在（施工 K-3：
@@ -176,8 +173,17 @@ impl Knowledge {
     }
 }
 
+/// 挪不进回收站的为什么（她删一篇、人删库同一套，施工 K-7 上挪出来）。
+pub(super) fn trash_refused(refused: miyu_fs::trash::Refused) -> KnowledgeError {
+    KnowledgeError::Trash(match refused {
+        miyu_fs::trash::Refused::Unavailable => "no trash on this disk".to_string(),
+        miyu_fs::trash::Refused::Lost => "moved but not found in the trash".to_string(),
+        miyu_fs::trash::Refused::Failed(error) => error.to_string(),
+    })
+}
+
 /// 一篇现在的内容：没有的是没有；有了却不是普通文件（目录、链接）的当不是文档。
-fn existing(file: &Path) -> Result<Option<Vec<u8>>, KnowledgeError> {
+pub(super) fn existing(file: &Path) -> Result<Option<Vec<u8>>, KnowledgeError> {
     match std::fs::symlink_metadata(file) {
         Ok(metadata) if metadata.is_file() => std::fs::read(file).map(Some).map_err(io),
         Ok(_) => Err(KnowledgeError::UnknownDocument),

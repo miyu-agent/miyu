@@ -43,7 +43,7 @@ impl Knowledge {
     }
 
     /// 挂的路径 `mount` 换成一个读得了的目录。
-    fn mounted(&self, mount: &str) -> Result<PathBuf, String> {
+    pub(super) fn mounted(&self, mount: &str) -> Result<PathBuf, String> {
         let path = match miyu_fs::tilde(mount) {
             // 一段段接：Windows 上 `/`、`\` 都写得出来。
             Some(rest) => rest

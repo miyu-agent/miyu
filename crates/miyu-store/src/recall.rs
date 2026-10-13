@@ -152,6 +152,18 @@ impl RecallIndex {
         Ok(())
     }
 
+    /// 关上连接，连同 `-wal`、`-shm` 删掉，以后什么都不写（施工 K-7 上：删知识库）。还拿着这一份的（会话在后台补向量）照
+    /// 「库用不了的不写」。
+    ///
+    /// # Errors
+    ///
+    /// 删不掉。
+    pub fn discard(&self) -> Result<(), DbError> {
+        let mut db = self.lock();
+        drop(db.take());
+        remove(&self.path)
+    }
+
     /// 放进一条：`key` 已经有的整条换掉（字、时刻、词都换），在一个事务里。
     ///
     /// # Errors
