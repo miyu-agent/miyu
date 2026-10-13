@@ -11,6 +11,7 @@ use miyu_policy::script::feature_id as script_feature;
 use miyu_policy::skill::feature_id;
 use miyu_store::human::Human;
 use miyu_store::presets::Found;
+use miyu_store::scripts::HOME_PACKAGE;
 use miyu_store::skills::Skill;
 
 use crate::Core;
@@ -40,23 +41,21 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
         .filter_map(|one| Some((one.id.as_str(), one.read.as_ref().ok()?)))
     {
         packages.insert(package);
-        for feature in manifest.features_of(package) {
+        // 被个人设置里同名的服务盖住的不列：那个功能列在个人设置的那一个上（施工 F-9 下）。
+        for feature in manifest.features_of(package).into_iter().filter(|feature| {
+            feature
+                .service
+                .as_ref()
+                .is_none_or(|service| !core.home_mcp.covers(service))
+        }) {
             let on = file.opens_in(&feature.id, package);
-            let tools: Vec<Value> = catalog
-                .specs()
-                .map(|spec| spec.name.as_str())
-                .filter(|name| {
-                    catalog.package_of(name) == Some(package)
-                        && table.of_tool(package, name) == Some(feature.id.as_str())
+            let tools = tools_of(&catalog, &table, (package, &feature.id), |name| {
+                json!({
+                    "name": name,
+                    "label": label(words.as_ref(), name),
+                    "on": on && !file.tools_off.contains(name),
                 })
-                .map(|name| {
-                    json!({
-                        "name": name,
-                        "label": label(words.as_ref(), name),
-                        "on": on && !file.tools_off.contains(name),
-                    })
-                })
-                .collect();
+            });
             let mut one = json!({
                 "id": feature.id,
                 "name": pick(&feature.name, language),
@@ -92,6 +91,25 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
             one["summary"] = json!(summary);
         }
         listed.push(one);
+    }
+    // 个人设置里的 MCP 服务各算一个功能（施工 F-9 下）：名字是服务名；工具是目录里挂在 `~home` 下、归它的。
+    for server in core.home_mcp.now().iter() {
+        let id = server.feature_id();
+        let on = file.opens_in(&id, HOME_PACKAGE);
+        let tools = tools_of(&catalog, &table, (HOME_PACKAGE, &id), |name| {
+            json!({
+                "name": name,
+                "label": label(words.as_ref(), name),
+                "on": on && !file.tools_off.contains(name),
+            })
+        });
+        listed.push(json!({
+            "id": id,
+            "name": server.name,
+            "on": on,
+            "installed": true,
+            "tools": tools,
+        }));
     }
     // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格挑这个连接的语言（施工 X-13 下），没写名字的照技能的
     // 名字；没有工具。
@@ -133,6 +151,24 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
         }));
     }
     listed
+}
+
+/// 工具目录里挂在包 `package` 下、归功能 `feature` 的工具，照目录的先后，每件照 `row` 写。
+fn tools_of(
+    catalog: &miyu_tool::Catalog,
+    table: &miyu_policy::features::Features,
+    (package, feature): (&str, &str),
+    row: impl Fn(&str) -> Value,
+) -> Vec<Value> {
+    catalog
+        .specs()
+        .map(|spec| spec.name.as_str())
+        .filter(|name| {
+            catalog.package_of(name) == Some(package)
+                && table.of_tool(package, name) == Some(feature)
+        })
+        .map(row)
+        .collect()
 }
 
 /// 工具 `name` 给人看的显示名：给人看的字里有的照它，没有的照工具名。

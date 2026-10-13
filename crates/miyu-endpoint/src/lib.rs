@@ -186,6 +186,8 @@ pub struct Core {
     extensions: extensions::Extensions,
     /// MCP 服务（施工 X-3 上，`mcp.rs`）：`bundle` 包带的。
     mcp: mcp::Servers,
+    /// 管理员个人设置里的 MCP 服务（施工 F-9 下，`mcp/home.rs`）：这一刻照着起的几个。
+    home_mcp: mcp::HomeMcp,
     /// 软件包列表里哪个包变了（施工 F-8 三补，`packages/changes.rs`）。
     package_changes: packages::changes::Changes,
 }
@@ -277,6 +279,7 @@ impl Core {
             builtins: None,
             extensions: extensions::Extensions::new(extensions::Timing::default()),
             mcp: mcp::Servers::new(extensions::Timing::default()),
+            home_mcp: mcp::HomeMcp::default(),
             package_changes: packages::changes::Changes::default(),
         }
     }

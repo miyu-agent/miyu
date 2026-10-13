@@ -87,12 +87,21 @@ pub(crate) fn package(script: &Script) -> &str {
     script.package.as_deref().unwrap_or(HOME_PACKAGE)
 }
 
-/// 装了的功能，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的工具名。
+/// 装了的功能，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的工具名；个人设置里的 MCP
+/// 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到工具：那个服务不起，
+/// 目录里没有挂在那个包下的工具。
 pub(crate) fn features(core: &Core) -> Features {
     let mut list: Vec<Feature> = crate::packages::features(&core.packages())
         .iter()
         .cloned()
         .collect();
+    list.extend(core.home_mcp.now().iter().map(|server| Feature {
+        id: server.feature_id(),
+        package: HOME_PACKAGE.to_string(),
+        tools: Vec::new(),
+        service: Some(server.name.clone()),
+        script: None,
+    }));
     list.extend(core.scripts().iter().map(|script| Feature {
         id: feature_id(&script.head.name),
         package: package(script).to_string(),

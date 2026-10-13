@@ -43,15 +43,17 @@ pub(crate) async fn turn_off(
 /// 包 `id` 带的服务的工具出目录（清单是 `manifest`）：开着的会话下一个回合换掉。
 pub(super) fn withdraw(core: &Core, id: &str, manifest: &Manifest) {
     for server in &manifest.mcp {
-        let service = server.name.as_str();
-        let generation = core
-            .tools
-            .replace(|catalog| {
-                Ok::<_, std::convert::Infallible>(
-                    catalog.replacing_service(id, service, Vec::new()).0,
-                )
-            })
-            .unwrap_or_else(|never| match never {});
-        tracing::info!(target: TARGET, package = id, service, generation, "mcp tools withdrawn");
+        withdraw_one(core, id, &server.name);
     }
+}
+
+/// 包 `id` 的服务 `service` 的工具出目录。
+pub(super) fn withdraw_one(core: &Core, id: &str, service: &str) {
+    let generation = core
+        .tools
+        .replace(|catalog| {
+            Ok::<_, std::convert::Infallible>(catalog.replacing_service(id, service, Vec::new()).0)
+        })
+        .unwrap_or_else(|never| match never {});
+    tracing::info!(target: TARGET, package = id, service, generation, "mcp tools withdrawn");
 }

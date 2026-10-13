@@ -381,6 +381,8 @@ async fn run(
     say(&Ready::Ready);
     // 照开关拉起开着的扩展（施工 9-4 上）：写了 `ready` 以后，拉起它的头不等它们。
     core.start_extensions();
+    // 个人设置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了个人设置，当场起停。
+    let _home_mcp = core.follow_home_mcp();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
     // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。

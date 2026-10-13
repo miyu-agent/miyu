@@ -108,7 +108,7 @@ pub(crate) fn status(
     }
     match manifest.kind {
         // `bundle` 照它带的服务合起来算（施工 X-3 上）。
-        PackageKind::Bundle => of_state(core.mcp.state(id, manifest).unwrap_or(State::Off)),
+        PackageKind::Bundle => of_state(core.mcp.state(core, id, manifest).unwrap_or(State::Off)),
         _ => of_state(core.extensions.status(id).state),
     }
 }

@@ -1,11 +1,22 @@
 //! 个人设置里的 MCP 服务（施工 F-9，`docs/blueprint/mcp.md`「个人设置里的一张表」）：`miyu check` 照行报写错的、报盖住了包里
-//! 同名服务的；`[mcp.<名字>]` 不算配置里不认识的键。
+//! 同名服务的；`[mcp.<名字>]` 不算配置里不认识的键（F-9 上）。核心照它真起测试用的服务（`miyu-test-mcp`）：写了就起、挂在
+//! `~home` 下、预设里一个功能，盖住包里同名的（那个不起）；手改个人设置当场换：新写的起、包里同名的停下，删掉的停下、包里的
+//! 照开关起回来（F-9 下）。
+
+use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use miyu_session::testkit::Script;
+use miyu_endpoint::Core;
+use miyu_kernel::block::{Block, Text};
+use miyu_kernel::event::Body;
+use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
 
+use crate::support::extensions::{Program, install, quick, steps, until_state};
+use crate::support::mcp::*;
 use crate::support::venues::configured_core;
 use crate::support::*;
 
@@ -105,4 +116,261 @@ async fn the_mcp_table_does_not_disturb_the_rest_of_the_settings() {
         "{reply}"
     );
     assert_eq!(reply["result"]["problems"], json!([]), "{reply}");
+}
+
+/// 个人设置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。
+fn mine(record: &str) -> String {
+    format!(
+        "[mcp.probe]\ncommand = ['{SERVER}', '{record}']\nenv = {{ MIYU_MCP_PROBE = \"mine\" }}\ntimeout_ms = 1000\n"
+    )
+}
+
+/// 照磁盘上的配置起来的核心，扩展退避得快。
+fn configured(home: &Home, script: &Script) -> Arc<Core> {
+    let items = [
+        miyu_endpoint::settings::UiSettings::ITEMS,
+        miyu_endpoint::settings::PermissionSettings::ITEMS,
+    ]
+    .concat();
+    let config = miyu_endpoint::config::Config::load(
+        &home.root,
+        &alice(),
+        None,
+        items,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    Arc::new(
+        home.core_full(script, Catalog::default(), None, TOKEN)
+            .with_config(config)
+            .with_extension_timing(quick()),
+    )
+}
+
+/// 说一句、等第 `n` 轮说完，交回这一轮最后一个工具结果的字（剧本里调的是 `mcp__probe__env`）。
+async fn env_answer(home: &Home, client: &mut Client, session: &str, n: usize) -> String {
+    client.say(&format!("s{n}"), session, "看一下").await;
+    home.until_turns(session, n).await;
+    home.log(session)
+        .into_iter()
+        .filter_map(|event| match event.body {
+            Body::ToolResult(result) => Some(
+                result
+                    .blocks
+                    .iter()
+                    .map(|block| match block {
+                        Block::Text(Text { text }) => text.clone(),
+                        _ => String::new(),
+                    })
+                    .collect::<String>(),
+            ),
+            _ => None,
+        })
+        .next_back()
+        .unwrap_or_default()
+}
+
+/// 等到文件 `path` 在：最多 60 秒。
+async fn until_exists(path: &Path) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while !path.exists() {
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "{} 没出现",
+            path.display()
+        );
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+}
+
+#[tokio::test]
+async fn a_server_in_the_settings_runs_and_covers_the_package_one() {
+    let home = Home::new();
+    let (theirs, record) = recording(&home, "package");
+    bundle(&home, "kit", "probe", &[&record]);
+    let (ours, record) = recording(&home, "settings");
+    home.write("home/alice/settings.toml", &mine(&record));
+    let script = Script::new([
+        Play::calls(&[("mcp__probe__env", r#"{"text":"MIYU_MCP_PROBE"}"#)]),
+        Play::Says("好。"),
+    ]);
+    let core = configured(&home, &script);
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    enable(&mut client, "kit").await;
+    until_exists(&ours).await;
+    let session = open(&mut client).await;
+    assert_eq!(
+        env_answer(&home, &mut client, &session, 1).await,
+        "mine",
+        "调到的是个人设置里的那个"
+    );
+    assert!(!theirs.exists(), "包里同名的不起");
+    let kit = entry(&mut client, "kit").await;
+    assert_eq!(
+        kit["status"], "off",
+        "服务都被盖住的包照关着算，不卡在起着：{kit}"
+    );
+    let listed = client
+        .call("g", "preset.get", json!({"preset": "full"}))
+        .await;
+    let probes: Vec<&Value> = listed["result"]["features"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{listed}"))
+        .iter()
+        .filter(|one| one["id"] == "mcp-probe")
+        .collect();
+    assert_eq!(probes.len(), 1, "一个名字一个功能：{listed}");
+    assert_eq!(probes[0]["name"], "probe");
+    let tools = probes[0]["tools"].as_array().expect("列出工具");
+    assert!(
+        tools.iter().any(|tool| tool["name"] == "mcp__probe__env"),
+        "{listed}"
+    );
+    core.stop_extensions().await;
+}
+
+#[tokio::test]
+async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
+    let home = Home::new();
+    home.root.prepare_home(&alice()).expect("建得了家目录");
+    let (theirs, record) = recording(&home, "package");
+    bundle(&home, "kit", "probe", &[&record]);
+    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    let calls = || Play::calls(&[("mcp__probe__env", r#"{"text":"MIYU_MCP_PROBE"}"#)]);
+    let script = Script::new([
+        calls(),
+        Play::Says("好。"),
+        calls(),
+        Play::Says("好。"),
+        calls(),
+        Play::Says("好。"),
+        calls(),
+        Play::Says("好。"),
+    ]);
+    let core = configured(&home, &script);
+    let _watching = core.watch_config().expect("监视得了");
+    core.start_extensions();
+    let _following = core.follow_home_mcp();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    enable(&mut client, "kit").await;
+    until_status(&mut client, "kit", "running").await;
+    let session = open(&mut client).await;
+    assert_eq!(
+        env_answer(&home, &mut client, &session, 1).await,
+        "set",
+        "先是包里的"
+    );
+
+    // 写进个人设置：包里同名的停下，个人设置里的起来。
+    let (ours, record) = recording(&home, "settings");
+    home.write(
+        "home/alice/settings.toml",
+        &format!("[ui]\nlanguage = \"zh\"\n\n{}", mine(&record)),
+    );
+    until_exists(&ours).await;
+    until_line(&ours, "tools/list").await;
+    assert_eq!(env_answer(&home, &mut client, &session, 2).await, "mine");
+
+    // 改了：停下、照新写的再起。
+    let (changed, record) = recording(&home, "changed");
+    home.write(
+        "home/alice/settings.toml",
+        &format!(
+            "[ui]\nlanguage = \"zh\"\n\n{}",
+            mine(&record).replace("\"mine\"", "\"again\"")
+        ),
+    );
+    until_exists(&changed).await;
+    until_line(&changed, "tools/list").await;
+    assert_eq!(env_answer(&home, &mut client, &session, 3).await, "again");
+
+    // 删掉：个人设置里的停下，包里的照开关起回来。
+    std::fs::remove_file(&theirs).expect("删得掉");
+    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    until_exists(&theirs).await;
+    until_line(&theirs, "tools/list").await;
+    assert_eq!(env_answer(&home, &mut client, &session, 4).await, "set");
+    core.stop_extensions().await;
+}
+
+/// 扩展包 `relay`（照 `start` 起）带一个服务 `xsvc`，记到 `record`。
+fn relay(home: &Home, program: &Program, start: &str, record: &str) {
+    install(
+        home,
+        "relay",
+        &program.name(),
+        start,
+        &steps(&["hello", "wait"]),
+    );
+    let manifest = home
+        .root
+        .path()
+        .join("home/alice/packages/relay/package.toml");
+    let mut text = std::fs::read_to_string(&manifest).expect("读得了清单");
+    text.push_str(&format!(
+        "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\n"
+    ));
+    std::fs::write(&manifest, text).expect("写得进");
+}
+
+/// 个人设置里一张 `[mcp.xsvc]`，记到 `record`。
+fn ours_xsvc(record: &str) -> String {
+    format!("[mcp.xsvc]\ncommand = ['{SERVER}', '{record}']\n")
+}
+
+/// 起来、开始监视配置和跟着个人设置换的核心，连上的连接。
+async fn following(
+    home: &Home,
+) -> (
+    Arc<Core>,
+    miyu_store::watch::Watch,
+    tokio::task::JoinHandle<()>,
+    Client,
+) {
+    home.root.prepare_home(&alice()).expect("建得了家目录");
+    let core = configured(home, &Script::new([]));
+    let watching = core.watch_config().expect("监视得了");
+    core.start_extensions();
+    let follow = core.follow_home_mcp();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    (core, watching, follow, client)
+}
+
+#[tokio::test]
+async fn a_running_extension_gets_its_service_back_when_the_settings_let_go() {
+    let home = Home::new();
+    let program = Program::new();
+    let (theirs, record) = recording(&home, "relay");
+    relay(&home, &program, "always", &record);
+    let (ours, mine) = recording(&home, "settings");
+    home.write("home/alice/settings.toml", &ours_xsvc(&mine));
+    let (core, _watching, _follow, mut client) = following(&home).await;
+    until_state(&mut client, "relay", |one| one["state"] == "running").await;
+    until_line(&ours, "tools/list").await;
+    assert!(!theirs.exists(), "扩展在跑，它带的同名服务照样被盖住");
+    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    until_line(&ours, "eof").await;
+    until_line(&theirs, "tools/list").await;
+    core.stop_extensions().await;
+}
+
+#[tokio::test]
+async fn an_extension_switched_off_stays_off_when_the_settings_let_go() {
+    let home = Home::new();
+    let program = Program::new();
+    let (theirs, record) = recording(&home, "relay");
+    relay(&home, &program, "manual", &record);
+    let (ours, mine) = recording(&home, "settings");
+    home.write("home/alice/settings.toml", &ours_xsvc(&mine));
+    let (core, _watching, _follow, _client) = following(&home).await;
+    until_line(&ours, "tools/list").await;
+    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    until_line(&ours, "eof").await;
+    // 放开以后不该起：等一会儿，扩展没开，它带的服务照样不在。
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert!(!theirs.exists(), "扩展没开，它带的服务不起");
+    core.stop_extensions().await;
 }

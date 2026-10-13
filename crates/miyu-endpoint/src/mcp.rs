@@ -5,10 +5,11 @@
 //! （`system/extensions.json`，没写的关着）；扩展包带的跟着扩展起停（施工 X-3 下）。核心起来时起开着的包的服务
 //! （[`Core::start_extensions`] 里），停的时候一起关掉；有在跑、在等着重启的，核心不算空闲。怎么起一个在 `launch.rs`，看管在
 //! `supervise.rs`，目录缓存在 `cache.rs`，工具名、规格在 `spec.rs`，一件工具在 `tool.rs`，结果换块在 `content.rs`，开关在
-//! `switch.rs`。
+//! `switch.rs`。管理员个人设置里的服务挂在 `~home` 下，盖住包里同名的（施工 F-9 下，`home.rs`）。
 
 mod cache;
 mod content;
+mod home;
 mod launch;
 mod spec;
 mod supervise;
@@ -16,10 +17,12 @@ mod switch;
 mod tool;
 
 pub(crate) use cache::forget;
+pub(crate) use home::HomeMcp;
 pub(crate) use launch::stderr_file;
 pub(crate) use switch::{turn_off, turn_on};
 
 use std::collections::BTreeMap;
+use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
@@ -27,7 +30,7 @@ use tokio::sync::{Notify, watch};
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
 
-use miyu_config::package::{Manifest, PackageKind};
+use miyu_config::package::{Manifest, McpServer, PackageKind};
 use miyu_mcp::Client;
 use miyu_store::packages::Found;
 
@@ -158,11 +161,13 @@ impl Servers {
 
     /// 包 `package` 的服务合起来在哪一步：有停下的算停下；都在跑的算在跑；别的（起着、退避着、还没起过）算起着。没有服务
     /// 的没有。
-    pub(crate) fn state(&self, package: &str, manifest: &Manifest) -> Option<State> {
+    pub(crate) fn state(&self, core: &Core, package: &str, manifest: &Manifest) -> Option<State> {
         let slots = self.slots();
+        // 被个人设置里同名的盖住的不起，不算进来（施工 F-9 下）。
         let states: Vec<State> = manifest
             .mcp
             .iter()
+            .filter(|server| !core.home_mcp.covers(&server.name))
             .map(|server| {
                 slots
                     .get(&(package.to_string(), server.name.clone()))
@@ -192,41 +197,61 @@ impl Servers {
         Some(State::Starting { pid: None })
     }
 
-    /// 起包 `package` 的服务（清单是 `manifest`）：在跑、在等的不动。
+    /// 起包 `package` 的服务（清单是 `manifest`）：在跑、在等的不动；被个人设置里同名的盖住了的不起（施工 F-9 下）。
     fn launch(&self, core: &Arc<Core>, package: &str, manifest: &Manifest) {
         let dir = crate::packages::dir_of(core, package);
-        let mut slots = self.slots();
         for server in &manifest.mcp {
-            let key = (package.to_string(), server.name.clone());
-            let slot = slots.entry(key).or_insert_with(|| Slot {
-                shared: Arc::new(Shared::new(package, &server.name)),
-                task: None,
-            });
-            if slot
-                .task
-                .as_ref()
-                .is_some_and(|(_, task)| !task.is_finished())
-            {
-                continue;
+            if !core.home_mcp.covers(&server.name) {
+                self.launch_one(core, package, server, &dir);
             }
-            let mut plan = launch::plan(core, package, server, &dir);
-            // 照缓存先登记（施工 X-3 下）：服务好以前调到的说暂时不可用；连的时候照记着的时代直接说。
-            if let Some((era, tools)) = cache::read(core, server) {
-                spec::register(core, package, server, &tools, &slot.shared);
-                plan.known = Some(era);
-            }
-            // 任务跑起来之前就算在干活：刚起的那一瞬间核心不算空闲。
-            slot.shared.set(core, State::Starting { pid: None }, 0);
-            let (stop, asked) = watch::channel(false);
-            let task = tokio::spawn(supervise::run(
-                Arc::downgrade(core),
-                plan,
-                Arc::clone(&slot.shared),
-                asked,
-                self.timing,
-            ));
-            slot.task = Some((stop, task));
         }
+    }
+
+    /// 起包 `package`（程序照包目录 `dir` 找）的一个服务 `server`：在跑、在等的不动。
+    fn launch_one(&self, core: &Arc<Core>, package: &str, server: &McpServer, dir: &Path) {
+        let mut slots = self.slots();
+        let key = (package.to_string(), server.name.clone());
+        let slot = slots.entry(key).or_insert_with(|| Slot {
+            shared: Arc::new(Shared::new(package, &server.name)),
+            task: None,
+        });
+        if slot
+            .task
+            .as_ref()
+            .is_some_and(|(_, task)| !task.is_finished())
+        {
+            return;
+        }
+        let mut plan = launch::plan(core, package, server, dir);
+        // 照缓存先登记（施工 X-3 下）：服务好以前调到的说暂时不可用；连的时候照记着的时代直接说。
+        if let Some((era, tools)) = cache::read(core, server) {
+            spec::register(core, package, server, &tools, &slot.shared);
+            plan.known = Some(era);
+        }
+        // 任务跑起来之前就算在干活：刚起的那一瞬间核心不算空闲。
+        slot.shared.set(core, State::Starting { pid: None }, 0);
+        let (stop, asked) = watch::channel(false);
+        let task = tokio::spawn(supervise::run(
+            Arc::downgrade(core),
+            plan,
+            Arc::clone(&slot.shared),
+            asked,
+            self.timing,
+        ));
+        slot.task = Some((stop, task));
+    }
+
+    /// 关掉包 `package` 的一个服务 `service`（施工 F-9 下）：请它退出、等它退出，记成关着，工具出目录。
+    async fn halt_one(&self, core: &Core, package: &str, service: &str) {
+        let key = (package.to_string(), service.to_string());
+        let task = self
+            .slots()
+            .get_mut(&key)
+            .map(|slot| (Arc::clone(&slot.shared), ask_to_stop(slot)));
+        if let Some((shared, task)) = task {
+            settle(core, &shared, task).await;
+        }
+        switch::withdraw_one(core, package, service);
     }
 
     /// 关掉包 `package` 的服务：请它们退出、等它们退出（最多等到杀掉），记成关着。工具留在目录里：要它们出目录的用

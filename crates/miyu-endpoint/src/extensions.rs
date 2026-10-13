@@ -324,13 +324,16 @@ impl Core {
         crate::system_accounts::prepare(self);
         // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
         self.follow_scripts();
+        // 个人设置里的 MCP 服务（施工 F-9 下）：起包里带的以前先定下谁盖住谁。
+        self.note_home_mcp();
         let (switches, _) = read_switches(self);
         let packages = self.packages();
         for (id, manifest) in processes(&packages) {
             self.start_one(id, manifest, &switches);
         }
-        // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）。
+        // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；个人设置里的写了就起（施工 F-9 下）。
         self.start_mcp();
+        self.start_home_mcp();
     }
 
     /// 开着的拉起：程序不在的不拉起，记成停下（`not_installed`，施工 F-6 上）；要的能力还有没批的不拉起，记成停下
