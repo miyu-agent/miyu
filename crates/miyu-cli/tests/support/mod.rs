@@ -74,6 +74,14 @@ impl Home {
         )
     }
 
+    /// 数据根旁边、只归这一个 Home 的目录（建好了，Home 收尾时一起删）：加的文件、挂的目录放这里，数据根里的
+    /// `blob.put` 不收。
+    pub fn outside(&self) -> PathBuf {
+        let dir = beside(&self.dir);
+        std::fs::create_dir_all(&dir).expect("建得了");
+        dir
+    }
+
     /// 起一个核心：请求模型照 `models`，工具照 `tools`。沙盒能用，助手是 cargo 编出来的那一个（施工 5-4 上）：
     /// `miyu ask` 里执行命令不问人。
     pub fn with_tools(models: Arc<dyn Models>, tools: Catalog) -> Home {
@@ -314,7 +322,15 @@ impl Drop for Home {
     fn drop(&mut self) {
         self.running.abort();
         let _ = std::fs::remove_dir_all(&self.dir);
+        let _ = std::fs::remove_dir_all(beside(&self.dir));
     }
+}
+
+/// 数据根 `dir` 旁边、这一个 Home 自己的目录：`<数据根>-outside`。
+fn beside(dir: &Path) -> PathBuf {
+    let mut name = dir.as_os_str().to_owned();
+    name.push("-outside");
+    PathBuf::from(name)
 }
 
 /// 一个用完就删的临时数据根，建好了骨架。

@@ -2,7 +2,7 @@
 //! 路径传上去再加进库、`--to` 放进库里的目录、已经有的拒、`--replace` 换；挂目录照当前目录接相对路径；核心拒的照原话说，挂不上的
 //! 接上为什么；`edit` 什么都没写的说一句、退出码 1。
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use clap::Parser;
@@ -33,13 +33,6 @@ fn parsed(words: &[&str]) -> Kb {
     }
 }
 
-/// 数据根旁边的一个目录：加的文件、挂的目录放这里（数据根里的 `blob.put` 不收）。
-fn outside(home: &Home) -> PathBuf {
-    let dir = home.root.path().parent().expect("有上一级").join("outside");
-    std::fs::create_dir_all(&dir).expect("建得了");
-    dir
-}
-
 /// 在真的套接字上连上核心，照 `words`（`kb` 后面的）跑一次；界面是中文，当前目录是 `cwd`。
 async fn run(home: &Home, cwd: &Path, words: &[&str]) -> Asked {
     let plan = KbPlan {
@@ -60,9 +53,20 @@ async fn run(home: &Home, cwd: &Path, words: &[&str]) -> Asked {
 }
 
 #[tokio::test]
+async fn each_home_has_its_own_folder_beside_the_data_root() {
+    // 原来照数据根的上一级拼，所有测试共用一个 `<临时目录>/outside`：并着跑时别的测试把 `cat.md` 写回原样，换的那一篇偶尔
+    // 换成旧的。
+    let (a, b) = (
+        Home::new(Arc::new(Script::new([]))),
+        Home::new(Arc::new(Script::new([]))),
+    );
+    assert_ne!(a.outside(), b.outside());
+}
+
+#[tokio::test]
 async fn building_a_base_from_the_shell() {
     let home = Home::new(Arc::new(Script::new([])));
-    let cwd = outside(&home);
+    let cwd = home.outside();
     std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子是橘猫。\n").expect("写得进");
     std::fs::write(cwd.join("dog.txt"), "阿黄是小狗。\n").expect("写得进");
 
@@ -152,7 +156,7 @@ async fn building_a_base_from_the_shell() {
 #[tokio::test]
 async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     let home = Home::new(Arc::new(Script::new([])));
-    let cwd = outside(&home);
+    let cwd = home.outside();
     let notes = cwd.join("notes");
     std::fs::create_dir_all(&notes).expect("建得了");
     std::fs::write(notes.join("a.md"), "团子\n").expect("写得进");
@@ -192,7 +196,7 @@ async fn the_auto_switch_from_the_shell() {
     // 施工 K-6 补：`--auto` 开、`--no-auto` 关，`new`、`edit`、`mount` 都收；列表在篇数后面接「自动想起」；只写开关的 `edit` 也算
     // 改了；两个一起写读不懂。
     let home = Home::new(Arc::new(Script::new([])));
-    let cwd = outside(&home);
+    let cwd = home.outside();
     let toml = |kb: &str| {
         std::fs::read_to_string(
             home.root
@@ -237,7 +241,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
     // 施工 K-7 修（验收手册待定 2 到 4）：原来只说「参数错误。」。不认的格式在传以前就说清只收哪几种，一个都不传；库的编号写错
     // 说清写法，退出码 2；页码出界说一共几页。
     let home = Home::new(Arc::new(Script::new([])));
-    let cwd = outside(&home);
+    let cwd = home.outside();
     std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子是橘猫。\n").expect("写得进");
     std::fs::write(cwd.join("report.docx"), "PK").expect("写得进");
     assert_eq!(run(&home, &cwd, &["new", "notes"]).await.code, 0);
