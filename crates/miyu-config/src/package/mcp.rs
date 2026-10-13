@@ -1,6 +1,10 @@
 //! 包带的 MCP 服务（施工 X-2，`docs/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。只查写法；
 //! 怎么起、怎么登记工具在核心那一边（X-3）。一个服务一个功能（[`McpServer::feature_id`]），编号全局不重，两个包撞了照功能
-//! 编号撞了报（`miyu-store` 的 `feature_taken`）。
+//! 编号撞了报（`miyu-store` 的 `feature_taken`）。个人设置里的 `[mcp.<名字>]` 照同样的格子读（施工 F-9 上，`personal.rs`）。
+
+mod personal;
+
+pub use personal::personal;
 
 use toml_edit::{Item, Value};
 
@@ -91,7 +95,7 @@ fn one(
     reader.only(
         table,
         "mcp",
-        &["name", "command", "env", "venues", "timeout_ms"],
+        &["name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3]],
     )?;
     let name = match table.get("name").and_then(Item::as_str) {
         Some(name) if valid_name(name) => name.to_string(),
@@ -112,6 +116,18 @@ fn one(
             ));
         }
     };
+    fields(table, name, line)
+}
+
+/// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）。
+const FIELDS: [&str; 4] = ["command", "env", "venues", "timeout_ms"];
+
+/// 叫 `name` 的服务的几格，表是 `table`，写在第 `line` 行。
+fn fields(
+    table: &dyn toml_edit::TableLike,
+    name: String,
+    line: Option<usize>,
+) -> Result<McpServer, Problem> {
     let at = format!("mcp.{name}");
     let command = match table.get("command").and_then(Item::as_array) {
         Some(array) => texts(array).filter(|command| !command.is_empty()),

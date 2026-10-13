@@ -293,3 +293,20 @@ fn a_misspelt_group_still_finds_the_nearest_key() {
         [(Some("uii.language"), Some("ui.language"))]
     );
 }
+
+#[test]
+fn the_mcp_table_of_personal_settings_is_skipped_elsewhere_unknown() {
+    // 个人设置里的 `[mcp.<名字>]` 不在清单里，另读（施工 F-9 上）：跳过、不报；系统配置里写了照不认识的报。
+    let source =
+        "[ui]\nlanguage = \"zh\"\n\n[mcp.fetch]\ncommand = [\"uvx\", \"mcp-server-fetch\"]\n";
+    let parsed = parse(&items(), Layer::Personal, source).expect("写法对");
+    assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
+    assert_eq!(parsed.entries.len(), 1);
+    let parsed = parse(&items(), Layer::System, source).expect("写法对");
+    let keys: Vec<Option<&str>> = parsed
+        .problems
+        .iter()
+        .map(|problem| problem.key.as_deref())
+        .collect();
+    assert_eq!(keys, [Some("mcp.fetch.command")]);
+}

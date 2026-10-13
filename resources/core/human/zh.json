@@ -457,6 +457,7 @@
     "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
     "package-problems/skill_skipped": "跳过了这个技能：{detail}",
     "package-problems/script_covered": "和 {detail} 同名，被它盖住了，这一份不用",
+    "package-problems/mcp_covered": "和 {detail} 同名，被它盖住了，这一份不用",
     "package-problems/skill_covered": "和 {detail} 同名，被它盖住了，这一份不用",
     "config/reference-header": "Miyu 的全部配置项和默认值。这份是生成的，改它没有用。",
     "config/reference-where": "系统配置写在 system/config.toml，个人设置写在 home/<账号>/settings.toml。",

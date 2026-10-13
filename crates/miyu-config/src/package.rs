@@ -23,7 +23,9 @@ pub use capability::Capability;
 pub use code::Code;
 pub use features::Feature;
 pub use links::{Connection, Worker};
-pub use mcp::{EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT};
+pub use mcp::{
+    EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
+};
 pub use settings::{Setting, SettingKind};
 pub use upgrade::without_kind;
 

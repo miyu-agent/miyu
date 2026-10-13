@@ -7,7 +7,9 @@
 //!
 //! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`）。
 //!
-//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
+//! 个人设置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。
+//!
+//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`mcp`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
 //! 项目配置写成 `~/…`，出厂的人格写真的路径）、`code`、`level`、`message`（照这个连接的语言），有行列的带上。
 
 use std::path::{Path, PathBuf};
@@ -24,6 +26,7 @@ use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 
 use crate::Core;
 
+mod mcp;
 mod run;
 mod skipped;
 use crate::config::methods::{check_text, said_at, words};
@@ -174,6 +177,10 @@ fn check_config(core: &Core, words: &Human, file: &ConfigFile) -> Result<Vec<Val
     for problem in &mut problems {
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");
+    }
+    // 个人设置里的 MCP 服务另读（施工 F-9 上）：只认管理员的，这一份就是。
+    if file.layer == Layer::Personal {
+        problems.extend(mcp::personal(core, words, &file.shown, &text));
     }
     Ok(problems)
 }
