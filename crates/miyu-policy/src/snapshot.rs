@@ -99,6 +99,10 @@ pub struct Snapshot {
     /// 不改。没有技能、工具面上没有 `read` 的没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub skills: Option<String>,
+    /// 「关于你」那一块拼好的原文（施工 P-9，`compose.rs`）：system 里接在人设、场所说明后面，造会话时钉下，会话中途不改
+    /// （换人格、换预设也照旧）。没写称呼和更多描述的、场所会话没要的没有：不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。

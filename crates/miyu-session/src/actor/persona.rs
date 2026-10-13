@@ -209,6 +209,8 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         },
         knowledge: listing,
         skills: old.skills.clone(),
+        // 「关于你」造会话时钉下（施工 P-9）：换人格、换预设照旧，不重读配置。
+        profile: old.profile.clone(),
     };
     let new = match build(&refresh.resources, parts) {
         Ok(new) => new,

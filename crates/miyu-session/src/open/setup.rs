@@ -8,10 +8,10 @@ use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::UtcOffset;
-use miyu_policy::PersonaTexts;
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::Chosen;
+use miyu_policy::{PersonaTexts, Profile};
 use miyu_store::index::SessionIndex;
 use miyu_store::personas::Personas;
 use miyu_store::presets::Presets;
@@ -50,6 +50,9 @@ pub struct Create<'a> {
     pub persona: Option<&'a str>,
     /// 这个人格的字，几层叠好的（施工 P-1 上，`miyu_store::personas`）：造快照用。
     pub persona_texts: PersonaTexts,
+    /// 「关于你」（施工 P-9）：这个人写的称呼、更多描述，造会话时照 `core/profile.txt` 拼进 system；两项都空的、场所会话
+    /// 没要的是空的（端点定）。
+    pub profile: Profile,
     /// 人格的几层（施工 P-1 再补）：回合开始时照它看人格的文件改了没有。
     pub personas: Personas,
     /// 记忆归哪个账号（施工 P-1 上，`Personas::memory_account`）：回合库、记忆日志照它和人格开。

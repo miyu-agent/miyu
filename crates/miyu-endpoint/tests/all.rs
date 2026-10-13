@@ -5,6 +5,7 @@
 
 mod goal_command;
 mod goal_heads;
+mod profile;
 mod provide;
 mod provide_end_turn;
 mod provide_exit;

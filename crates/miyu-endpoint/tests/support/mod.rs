@@ -158,6 +158,7 @@ impl Home {
         let items = [
             miyu_endpoint::settings::UiSettings::ITEMS,
             miyu_endpoint::settings::PermissionSettings::ITEMS,
+            miyu_endpoint::settings::ProfileSettings::ITEMS,
             miyu_log::settings::LogSettings::ITEMS,
             extra,
         ]

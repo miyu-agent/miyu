@@ -1,5 +1,6 @@
 //! 拼策略快照（施工 3-6 上起在 `open.rs`，施工 P-1 再补挪出来：换快照也照它拼）：人格的字照几层叠好的，接上随核心附带的
-//! 字、工具面、记忆的范围；子会话接场所说明，群会话接格式说明（施工 O-13 中）；最后是核心的几行和风格锁（`docs/designs/26-提示词.md` 第四节）。
+//! 字、工具面、记忆的范围；子会话接场所说明，群会话接格式说明（施工 O-13 中）；再接「关于你」（施工 P-9）；最后是核心的几行和风格锁
+//! （`docs/designs/26-提示词.md` 第四节）。
 
 use std::collections::BTreeSet;
 
@@ -29,6 +30,8 @@ pub(crate) struct Parts {
     pub(crate) knowledge: Option<String>,
     /// 她用得上的技能那一块（施工 X-10 上，[`crate::skills::listing`]）：工具面上有 `read` 的才有；换人格时照旧快照的。
     pub(crate) skills: Option<String>,
+    /// 「关于你」那一块（施工 P-9，`miyu_policy::Profile::block`）：开会话时照这个人写的拼；换人格时照旧快照的。
+    pub(crate) profile: Option<String>,
 }
 
 /// 工具目录 `catalog` 里有工具的功能（施工 O-18；施工 F-3 上起照装了的功能 `features` 认工具归哪个功能）：不照这次的预设筛，
@@ -64,6 +67,7 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     if let Some(offset) = parts.group {
         snapshot = snapshot.with_group(&resources.group_note()?, resources.group_chat(offset)?);
     }
+    snapshot = snapshot.with_profile(parts.profile);
     let lines = resources.core_lines()?;
     Ok(snapshot
         .with_core_lines(&lines)

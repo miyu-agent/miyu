@@ -10,6 +10,7 @@
 |---|---|
 | `crates/miyu-store/src/resources.rs` | 找资源目录；读出一个人格要用的原文、子会话的场所说明 |
 | `crates/miyu-store/src/resources/venues.rs`（施工 O-34 从 `resources.rs` 拆出来） | 场所会话用的几份：群会话的格式说明、群会话钉下的字（`group_note`、`group_chat`），合并转发那几行的三句（`forward`），私聊记号的语音那一句（`private_media`，施工 O-35） |
+| `crates/miyu-store/src/resources/tool_texts.rs`（施工 P-9 从 `resources.rs` 拆出来） | 工具结果、拒绝时写给她的几句，都不进策略快照：提供者的工具超时（`tool_timed_out`），MCP 不给她看的、截掉了的（`mcp_not_shown`、`mcp_cut`），会话不在场所里、只碰得到自己工作区的（`not_in_venue`、`confined_texts`） |
 | `crates/miyu-store/src/human.rs` | 读给人看的字；照说法换成一句话；换进去的字段把控制字符换成 `�`；配置那一格照 `Words` 交给配置清单（施工 8-1） |
 | `crates/miyu-store/src/env.rs` | 找资源目录要看的 `MIYU_RESOURCES`、程序的位置（`store.md`） |
 | `resources/` | 源码树里的资源目录，开发时 `MIYU_RESOURCES` 指到它 |

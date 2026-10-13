@@ -64,6 +64,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         id,
         persona,
         persona_texts,
+        profile,
         personas,
         memory_account,
         memory_scope,
@@ -221,6 +222,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .map_err(CreateError::Shipped)?
                 .flatten(),
             skills: skilled,
+            profile: profile.block(&resources.profile().map_err(CreateError::Shipped)?),
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;

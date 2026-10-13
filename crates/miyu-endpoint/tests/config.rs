@@ -137,6 +137,8 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
             "ui.welcomed",
             "permission.start_read_only",
             "permission.level",
+            "profile.name",
+            "profile.about",
             "log.level"
         ]
     );
@@ -151,7 +153,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     let level = &all["result"]["items"][5];
     assert_eq!(level["control"], "select", "{level}");
     assert_eq!(level["default"], "workspace", "{level}");
-    assert_eq!(all["result"]["items"][6]["env"], "MIYU_LOG");
+    assert_eq!(all["result"]["items"][8]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
         json!([{"id":"general","name":"通用"},{"id":"advanced","name":"高级"}])

@@ -45,6 +45,10 @@ pub(crate) struct VenueParams {
     /// 新造的会话用哪个预设（施工 P-2 上）：同 `persona`，桥照场所规则算好交来；不写的照默认预设。找回已有的会话时不看。
     #[serde(default)]
     preset: Option<String>,
+    /// 新造的会话带不带属主写的「关于你」（施工 P-9）：桥照场所规则算好交来，属主是管理员本人的私聊这类才写 `true`；不写的
+    /// 不带，群聊不写。找回已有的会话时不看。
+    #[serde(default)]
+    profile: bool,
 }
 
 /// 场所是私聊还是群。
@@ -158,6 +162,7 @@ pub(crate) async fn session(
         preset: params.preset,
         group: params.kind == Kind::Group,
         chosen: false,
+        profile: params.profile,
     };
     let cwd = params
         .cwd

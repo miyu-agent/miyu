@@ -12,9 +12,9 @@ use miyu_session::{Child, Lineage};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::{Opening, local, opening_level};
+use super::{Opening, local, opening_level, profile_for};
 use crate::Core;
-use crate::settings::PermissionSettings;
+use crate::settings::{PermissionSettings, ProfileSettings};
 use crate::test_support::{resources, temp_root};
 
 #[tokio::test]
@@ -86,6 +86,7 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
         preset: None,
         group: false,
         chosen: true,
+        profile: false,
     };
     let cwd = dir.to_string_lossy().into_owned();
     let command = CommandId::parse("c1").expect("合写法");
@@ -128,5 +129,44 @@ fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
         opening_level(&settings("full"), Some(&venue)),
         Level::Workspace,
         "场所会话照旧"
+    );
+}
+
+/// 「关于你」（施工 P-9）：属主是管理员本人、又是本机开的或者桥说要的才带，别的都是空的。
+#[test]
+fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
+    let settings = || ProfileSettings {
+        name: Some("小林".to_string()),
+        about: Some("写 Rust".to_string()),
+    };
+    let venue = local();
+    let full = profile_for(settings(), None, false, true);
+    assert_eq!(
+        (full.name.as_str(), full.about.as_str()),
+        ("小林", "写 Rust")
+    );
+    assert_eq!(
+        profile_for(settings(), Some(&venue), true, true),
+        full,
+        "桥说要的"
+    );
+    for (at, asked, admin) in [
+        (Some(&venue), false, true),
+        (None, false, false),
+        (Some(&venue), true, false),
+    ] {
+        assert_eq!(
+            profile_for(settings(), at, asked, admin),
+            miyu_policy::Profile::default(),
+            "{at:?} {asked} {admin}"
+        );
+    }
+    let empty = ProfileSettings {
+        name: None,
+        about: None,
+    };
+    assert_eq!(
+        profile_for(empty, None, false, true),
+        miyu_policy::Profile::default()
     );
 }

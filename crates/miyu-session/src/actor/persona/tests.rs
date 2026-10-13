@@ -53,6 +53,7 @@ fn setup_with(
 
         knowledge: None,
         skills: None,
+        profile: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {
@@ -103,6 +104,29 @@ fn a_swap_keeps_the_skills_it_was_made_with() {
     };
     assert_eq!(snapshot.skills.as_deref(), Some(block));
     assert!(snapshot.system.contains(block), "{}", snapshot.system);
+}
+
+/// 换人格（施工 P-9）：「关于你」那一块照旧快照钉下的，不重读配置；新的人设后面照样接着它。
+#[test]
+fn a_swap_keeps_the_profile_it_was_made_with() {
+    let (_scratch, root, mut refresh) = setup("profile-swap", "You are Miyu.\n");
+    let block = "<user>\nname: 小林\n</user>";
+    refresh.snapshot = refresh
+        .snapshot
+        .clone()
+        .with_profile(Some(block.to_string()));
+    write(&root, "persona.md", "You are Miyu, softly.\n");
+    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+        panic!("改了要换");
+    };
+    assert_eq!(snapshot.profile.as_deref(), Some(block));
+    assert!(
+        snapshot
+            .system
+            .starts_with(&format!("You are Miyu, softly.\n\n{block}\n\n")),
+        "{}",
+        snapshot.system
+    );
 }
 
 /// 群会话换人格（施工 O-13 中）：新快照照样在人设后面接着格式说明，时区照旧快照钉下的。

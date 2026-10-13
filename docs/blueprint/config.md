@@ -298,6 +298,7 @@ miyu_config::settings! {
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
+- `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）：只写在个人设置里，可以不写（不写就没有，没有默认值），最多 64、2000 个字，新会话生效。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；设置页「通用」里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
@@ -1100,6 +1101,15 @@ subagent = false
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。新会话生效。
 default = "full"
 
+[profile]
+# 更多描述：想让 AI 知道的关于你的事，可以空。新会话生效；通讯平台的群聊里不带。
+# 能写：最多 2000 个字的文字。只能写在个人设置里。新会话生效。
+# about =
+
+# AI 怎么称呼你：AI 平时怎么叫你，例如名字、昵称。新会话生效。
+# 能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。
+# name =
+
 [providers."<id>"]
 # 地址：这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
@@ -1486,6 +1496,25 @@ currency = "USD"
       },
       "type": "object"
     },
+    "profile": {
+      "properties": {
+        "about": {
+          "description": "想让 AI 知道的关于你的事，可以空。新会话生效；通讯平台的群聊里不带。能写：最多 2000 个字的文字。只能写在个人设置里。新会话生效。",
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "更多描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "AI 平时怎么叫你，例如名字、昵称。新会话生效。能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "AI 怎么称呼你",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "providers": {
       "additionalProperties": {
         "properties": {
@@ -1823,6 +1852,10 @@ currency = "USD"
 | 选项（8-28 改了 `info`、`debug`、`trace` 三个：照多少排，一眼看出哪个更细） | `error` 只记错误、`warn` 错误和警告、`info` 常规、`debug` 详细，排查用、`trace` 最详细、`off` 不记 | Errors only、Errors and warnings、Normal、Detailed, for debugging、Most detailed、Nothing | エラーのみ、エラーと警告、通常、詳細（調査用）、最も詳細、記録しない |
 | `permission.start_read_only` 名字 | 新会话开局只读 | Start new sessions read-only | 新しいセッションを読み取り専用で始める |
 | 说明 | 打开以后，新会话一开始就是只读。她只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。 | When on, new sessions begin read-only. She can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. | オンにすると、新しいセッションは読み取り専用で始まります。調査と計画だけを行い、ファイルを変更するときに読み取り専用をオフにします。プロジェクト設定ではオンにすることしかできません。 |
+| `profile.name` 名字（P-9） | AI 怎么称呼你 | What the AI calls you | AI からの呼び名 |
+| 说明 | AI 平时怎么叫你，例如名字、昵称。新会话生效。 | How the AI addresses you, such as your name or a nickname. Takes effect in new sessions. | AI があなたを呼ぶときの名前やニックネームです。新しいセッションから有効です。 |
+| `profile.about` 名字（P-9） | 更多描述 | More about you | あなたについての補足 |
+| 说明 | 想让 AI 知道的关于你的事，可以空。新会话生效；通讯平台的群聊里不带。 | Anything you want the AI to know about you; can be left empty. Takes effect in new sessions; not included in group chats on messaging platforms. | AI に知っておいてほしいことです。空でもかまいません。新しいセッションから有効です。メッセージングのグループチャットでは使われません。 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
 | 说明 | 新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。 | Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. | 新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。 |
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开 | Workspace (sandbox)、Full access | ワークスペース（サンドボックス）、フルアクセス |

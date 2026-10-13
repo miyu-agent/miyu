@@ -75,6 +75,14 @@
         "name": "Default preset",
         "description": "The preset new sessions use."
       },
+      "profile.name": {
+        "name": "What the AI calls you",
+        "description": "How the AI addresses you, such as your name or a nickname. Takes effect in new sessions."
+      },
+      "profile.about": {
+        "name": "More about you",
+        "description": "Anything you want the AI to know about you; can be left empty. Takes effect in new sessions; not included in group chats on messaging platforms."
+      },
       "permission.level": {
         "name": "Permission level for new sessions",
         "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.",
@@ -283,6 +291,7 @@
       "memory": "Memory",
       "log": "Runtime log",
       "sessions": "Sessions",
+      "profile": "About you",
       "uses": "Uses",
       "pools": "Pools",
       "providers": "Providers",

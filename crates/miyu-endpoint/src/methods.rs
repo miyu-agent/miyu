@@ -111,6 +111,7 @@ pub(crate) async fn call(
                 preset: params.preset,
                 group: false,
                 chosen: params.chosen,
+                profile: false,
             };
             let created = core
                 .sessions

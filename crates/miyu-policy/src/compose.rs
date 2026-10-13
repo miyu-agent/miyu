@@ -96,6 +96,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         foreground: false,
         knowledge: None,
         skills: None,
+        profile: None,
     }
 }
 
@@ -242,7 +243,7 @@ impl Snapshot {
 }
 
 /// system：照先后，每一块去掉末尾的空白，没有的块不留空行，块和块之间空一行。
-fn system(pieces: &[&str]) -> String {
+pub(crate) fn system(pieces: &[&str]) -> String {
     pieces
         .iter()
         .map(|piece| piece.trim_end())

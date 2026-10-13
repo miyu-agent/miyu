@@ -139,6 +139,15 @@ subagent = false
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.
 default = "full"
 
+[profile]
+# More about you: Anything you want the AI to know about you; can be left empty. Takes effect in new sessions; not included in group chats on messaging platforms.
+# Allowed: text of at most 2000 characters. Only in personal settings. Applies to new sessions.
+# about =
+
+# What the AI calls you: How the AI addresses you, such as your name or a nickname. Takes effect in new sessions.
+# Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
+# name =
+
 [providers."<id>"]
 # Address: The address of this provider's API; the driver adds the path. Known providers can leave it out.
 # Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.

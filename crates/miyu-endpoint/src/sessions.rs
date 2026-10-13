@@ -10,11 +10,12 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use miyu_kernel::event::{Body, Level, Permission};
+use miyu_kernel::event::{Body, Permission};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person, Session};
 use miyu_kernel::time::{Timestamp, UtcOffset};
+use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{Child, Create, Handle, create, new_id};
 use miyu_store::log::first_event;
@@ -23,15 +24,18 @@ use crate::Core;
 use crate::personas;
 use crate::presets;
 use crate::refusal::Refusal;
-use crate::settings::PermissionSettings;
+use crate::settings::{PermissionSettings, ProfileSettings};
 use crate::spawn;
 
 mod delete;
 mod found;
 mod idle;
+mod opening;
 mod orphans;
 mod places;
 
+pub(crate) use opening::Opening;
+use opening::{opening_level, profile_for};
 pub(crate) use places::{Picked, check_dirs, pick, workspace};
 #[cfg(test)]
 mod tests;
@@ -158,6 +162,12 @@ impl Sessions {
         }
         let permission = PermissionSettings::from(&resolved.values());
         let level = opening_level(&permission, who.venue.as_ref());
+        let profile = profile_for(
+            ProfileSettings::from(&resolved.values()),
+            who.venue.as_ref(),
+            who.profile,
+            who.owner == core.admin,
+        );
         let preset = presets::resolve(core, who.preset.as_deref()).await?;
         let persona = personas::resolve(core, persona).await?;
         let id = new_id(now());
@@ -170,6 +180,7 @@ impl Sessions {
                 .as_ref()
                 .map(|found| found.texts.clone())
                 .unwrap_or_default(),
+            profile,
             personas: personas::personas(core),
             memory_account: personas::memory_account(
                 persona.as_ref(),
@@ -310,6 +321,7 @@ impl Sessions {
                 .as_ref()
                 .map(|found| found.texts.clone())
                 .unwrap_or_default(),
+            profile: Profile::default(),
             personas: personas::personas(core),
             memory_account: personas::memory_account(
                 persona.as_ref(),
@@ -390,30 +402,6 @@ impl Sessions {
     }
 }
 
-/// 造会话时要记下的几样：有没有人能确认，是不是一次性的，用哪个模型。
-#[derive(Debug, Clone)]
-pub(crate) struct Opening {
-    /// 属主（施工 O-4 下）：`session.create` 的是连接是谁，`venue.session` 的照对应表、系统账号定。
-    pub(crate) owner: AccountId,
-    /// 有没有人能确认：头握手时报的。
-    pub(crate) attended: bool,
-    /// 一次性的：`miyu ask` 开的（施工 3-9 下）。
-    pub(crate) oneshot: bool,
-    /// 用哪个模型（施工 8-8）：`session.create` 的 `model` 照这时的配置解析好的引用，模型或 `@池`；没写的是空的，照这时的
-    /// `models.chat`。
-    pub(crate) model: Option<String>,
-    /// 场所（施工 O-3）：通讯平台的场所会话写它，本机的是空的（`local`）。
-    pub(crate) venue: Option<VenueId>,
-    /// 记忆的范围（施工 R-3 下）：`session.create` 的 `memory`；没写的照人格的 `persona.toml`，那也没写的跟着人格。
-    pub(crate) memory: Option<MemoryScope>,
-    /// 用哪个预设（施工 P-2 上）：`session.create`、`venue.session` 的 `preset`；没写的照这时的 `preset.default`。
-    pub(crate) preset: Option<String>,
-    /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的。
-    pub(crate) group: bool,
-    /// 工作目录是人明着选的（施工 9-7 补）：`session.create` 的 `chosen`。太宽的照用；不是的照旧退回属主的工作区。
-    pub(crate) chosen: bool,
-}
-
 /// 管理员：本机连上来的都是他（`06-多用户与身份.md` 第二节）。
 pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
@@ -447,14 +435,6 @@ async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {
 }
 
 /// 本机这个场所。
-/// 新会话开局的级别（施工 8-32）：本机开的照 `permission.level`，场所会话照旧从工作区开局（外部身份另有限制）。
-fn opening_level(permission: &PermissionSettings, venue: Option<&VenueId>) -> Level {
-    match (permission.level.as_str(), venue) {
-        ("full", None) => Level::Full,
-        _ => Level::Workspace,
-    }
-}
-
 fn local() -> VenueId {
     VenueId::parse("local").unwrap_or_else(|e| unreachable!("「local」合场所的写法：{e}"))
 }

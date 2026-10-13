@@ -266,6 +266,22 @@ When a reply links or embeds a local file, write its absolute path. Relative pat
 <style-lock>Stay in character across tool calls. Tool results are working material; they are not a reason to switch into an assistant reporting tone.</style-lock>
 ```
 
+### system，人设、场所说明后面（第四节第 2 块后面）
+
+#### `core/profile.txt`
+
+- 什么时候加进来：本机开的会话、个人设置里写了称呼或更多描述的，每次请求（施工 P-9 起；两项都空的、子代理、别人的会话、群聊不带，桥在 `venue.session` 写了 `profile` 的场所会话带）
+- token：26（称呼「小林」加一句十几个字的更多描述，2026-10-13 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 system 后面空一行；只填称呼 11，外壳两个标签 6）
+- 为什么加：项目主人 2026-10-13 定：她要知道怎么称呼你、你想让她知道的事（两项，称呼和更多描述，更多描述可以空），引导里填、设置里能改；通讯平台的群聊里不进，开关放在协议上（`venue.session` 的 `profile`），不是给人看的配置。只陈述是什么，不写该怎么称呼：她看到 `name` 自己会用。值是本人写的，不转义（同人设）
+- 指纹：`68c565b0`
+
+```text
+<user>
+name: {name}
+about: {about}
+</user>
+```
+
 ### system，核心的几行后面、风格锁前面（第四节第 5 块）
 
 #### `core/preset-off.txt`
