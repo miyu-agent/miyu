@@ -1,6 +1,6 @@
 //! 时间线上工具的名字（施工 9-8 六补）：真核心、真 MCP 服务走一遍。服务给了 `title` 的工具，调的那一刻记进结果（不分语言，记在
 //! `en` 下，中文的连接没有中文的照它），视图的标题照它；服务没给的照工具名。服务关掉、工具出了目录，再翻照旧是记下的名字。
-//! 扩展登记时写了 `display_name` 的同样记下，照连接的语言挑。
+//! 扩展登记时写了 `display_name` 的同样记下，照连接的语言挑。这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）。
 
 use std::sync::Arc;
 
@@ -49,6 +49,17 @@ async fn an_mcp_tool_step_is_titled_with_the_name_the_server_gave() {
     let enabled = enable(&mut client, "probe").await;
     assert_eq!(enabled["result"]["enabled"], true, "{enabled}");
     until_status(&mut client, "probe", "running").await;
+    // 这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）：没给的不在。
+    let human = client.call("h1", "human.get", json!({})).await;
+    assert_eq!(
+        human["result"]["tools"]["mcp__probe__echo"],
+        json!({"name": "Echo back"}),
+        "{human}"
+    );
+    assert!(
+        human["result"]["tools"].get("mcp__probe__fail").is_none(),
+        "{human}"
+    );
     let session = open(&mut client).await;
     client.say("s1", &session, "调一下").await;
     home.until_turns(&session, 1).await;
@@ -114,6 +125,17 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
     until("扩展登记完", || read(&path).lines().count() >= 3).await;
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
+    // `human.get` 照要的语言挑（施工 9-8 七补）。
+    for (language, name) in [("zh", "打招呼"), ("en", "Greet")] {
+        let human = client
+            .call("h", "human.get", json!({"language": language}))
+            .await;
+        assert_eq!(
+            human["result"]["tools"]["greet"],
+            json!({ "name": name }),
+            "{human}"
+        );
+    }
     let session = client.create("c1", "~").await;
     client.say("s1", &session, "打个招呼").await;
     home.until_turns(&session, 1).await;
