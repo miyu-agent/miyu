@@ -36,6 +36,8 @@ pub struct Relay {
     asked: Arc<Mutex<Vec<String>>>,
     /// 桥回核心的回应（没有 `method` 的一行），照先后（施工 O-26）。
     answers: Arc<Mutex<Vec<Value>>>,
+    /// 桥问 `venue.session` 的参数，照先后（施工 O-39：查带不带 `profile`）。
+    sessions: Arc<Mutex<Vec<Value>>>,
 }
 
 impl Relay {
@@ -61,6 +63,11 @@ impl Relay {
         }
     }
 
+    /// 桥问 `venue.session` 的参数（施工 O-39），照先后。
+    pub fn sessions(&self) -> Vec<Value> {
+        self.sessions.lock().expect("没 panic").clone()
+    }
+
     /// 桥回核心的回应（施工 O-26），照先后。
     pub fn answers(&self) -> Vec<Value> {
         self.answers.lock().expect("没 panic").clone()
@@ -74,10 +81,12 @@ pub fn pipe_to(root: &DataRoot, config: Value, accounts: Option<Accounts>) -> (P
     let (push, mut pushes) = mpsc::unbounded_channel::<Value>();
     let asked = Arc::new(Mutex::new(Vec::new()));
     let answers = Arc::new(Mutex::new(Vec::new()));
+    let sessions = Arc::new(Mutex::new(Vec::new()));
     let relay = Relay {
         push,
         asked: Arc::clone(&asked),
         answers: Arc::clone(&answers),
+        sessions: Arc::clone(&sessions),
     };
     let root = root.clone();
     tokio::spawn(async move {
@@ -140,6 +149,10 @@ pub fn pipe_to(root: &DataRoot, config: Value, accounts: Option<Accounts>) -> (P
                         Some(method) => {
                             asked.lock().expect("没 panic").push(method.to_string());
                             if method == "venue.session" {
+                                sessions
+                                    .lock()
+                                    .expect("没 panic")
+                                    .push(request["params"].clone());
                                 venues
                                     .lock()
                                     .expect("没 panic")

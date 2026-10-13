@@ -379,7 +379,12 @@ pub fn serve_relayed(
     settings: Settings,
     accounts: Option<Accounts>,
 ) -> (Serve, Relay) {
-    let (pipe, relay) = pipe::pipe_to(&root, handed(&settings), accounts);
+    serve_handed(root, handed(&settings), accounts)
+}
+
+/// 同 [`serve_relayed`]，握手交的配置是 `config`（施工 O-39：多交 `onebot.whitelist`）。
+pub fn serve_handed(root: DataRoot, config: Value, accounts: Option<Accounts>) -> (Serve, Relay) {
+    let (pipe, relay) = pipe::pipe_to(&root, config, accounts);
     let serve = Serve {
         pipe,
         root,

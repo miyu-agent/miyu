@@ -2,7 +2,8 @@
 //! → 会话编号只记在内存里，每个场所桥起来以后第一次要用时问一次 `venue.session`（起来时经 `venue.sessions` 订阅了的群不再问，
 //! 施工 O-32，`revive`）；会话不在了忘掉、再问一次。
 //!
-//! - 私聊：`venue.session {venue, kind: "private", peer}`；不是终端管理员（`no_system_account`），或者回应的属主是桥自己（核心
+//! - 私聊：`venue.session {venue, kind: "private", peer, profile?}`；不是白名单成员的多带 `profile: true`（施工 O-39：终端管理员
+//!   本人的私聊要「关于你」，核心照属主挑；白名单成员的、群的不写）；不是终端管理员（`no_system_account`），或者回应的属主是桥自己（核心
 //!   O-4 中以后陌生人的会话归系统账号，「施工时定的」第 49 条）、对方又不在白名单里的：不接，会话编号不记、不订阅。白名单成员
 //!   的照接（施工 O-27，2026-10-10 项目主人定），`venue.session` 照场所规则带人格、预设、工作区（同群）。问到了订阅（第 9 条）。
 //! - 群：`venue.session {venue, kind: "group", persona?, preset?, cwd?}`（照场所规则，`applied`）；群的会话本来就归桥自己的
@@ -45,10 +46,15 @@ impl Place {
         listed: Option<&Applied>,
     ) -> Place {
         let mut opening = json!({"venue": venue.id(), "kind": "private", "peer": external});
-        if let Some(applied) = listed {
-            for (key, value) in super::applied::opening(applied) {
-                opening[key] = json!(value);
+        match listed {
+            Some(applied) => {
+                for (key, value) in super::applied::opening(applied) {
+                    opening[key] = json!(value);
+                }
             }
+            // 不是白名单成员：问以前认不出是不是终端管理员，都要「关于你」，核心照会话的属主挑（属主不是管理员的不带，
+            // 陌生人的会话本来就不接）。白名单成员的会话归系统账号、群的不写（不写，不是写假；`onebot.md` 第 241 条）。
+            None => opening["profile"] = json!(true),
         }
         Place {
             opening,

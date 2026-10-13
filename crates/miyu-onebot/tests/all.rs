@@ -36,6 +36,7 @@ mod pipe;
 mod platform;
 mod private;
 mod private_media;
+mod profiled;
 mod pronoun;
 mod provider;
 mod queue;
