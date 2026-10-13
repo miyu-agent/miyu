@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>474</b><span>/ 485 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>476</b><span>/ 487 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">6f3c007c</b><span>最近一步（R-6 修 抽取不把忘掉的抽回来）的提交</span></li>
+    <li><b class="mono">c17e9f54</b><span>最近一步（8-11 五补 测试连接只列模型）的提交</span></li>
   </ul>
 </header>
 
@@ -837,6 +837,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sF-9c"><span class="n">F-9 补</span>个人设置里的服务给头看状态<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-8k"><span class="n">F-8 五补</span>卸包清开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sfiles-cache"><span class="n">files 修</span>缓存测试的前提<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s8-14b"><span class="n">8-14 补</span>Zen 的会话头<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s8-11e"><span class="n">8-11 五补</span>测试连接只列模型<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-1"><span class="n">S-1</span>给界面用的门面 miyu-client<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-5"><span class="n">S-5</span>核心仓库删掉两个界面<span class="st">✓</span></a></li>
       </ol>
@@ -24101,6 +24103,108 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 files修-缓存测试.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s8-14b" aria-labelledby="h-s814b">
+  <div class="sheet-head"><h2 id="h-s814b"><span class="no">8-14 补</span>Zen 的会话头</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">Zen 的免费档改了判据：x-opencode-session 前 12 位要是 opencode 那种倒序的时间编号。原来是哈希的乱码，选 OpenCode Zen 的免费模型一律 403。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">Zen 的会话头</span><span class="dir-note">8-14 补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>{session_digest} 照 opencode 的会话编号编：前 12 位是种子的时间倒序编，后 14 位是 SHA-256</li>
+              <li>会话编号是 UUIDv7 的取它的时间，同一个会话不变；别的照固定的 2026-01-01</li>
+              <li>档案注释、蓝图八、opencode Zen 跟着写新判据</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">一次只改一个变量</span><span class="rl">照旧版的测具对照：只差这一个头</span></div>
+          <div class="tile new"><span class="nm">时间新旧不管</span><span class="rl">一年前、一小时后都放行，正序的才拦</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">8-14 补</dd></div>
+        <div><dt>名称</dt><dd>Zen 的会话头</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-13</dd></div>
+        <div><dt>提交</dt><dd class="mono">15c841d7</dd></div>
+        <div><dt>验收</dt><dd>三台 CI（run 2017）、真的 Zen</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真的 Zen：setup 列出 47 个模型，cat-jam-free 说话回了「你好」</span></li>
+        <li><span class="ok">✓</span><span>变异 8 处全抓住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 8-14补-Zen会话头照opencode的编号.md</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s8-11e" aria-labelledby="h-s811e">
+  <div class="sheet-head"><h2 id="h-s811e"><span class="no">8-11 五补</span>测试连接只列模型</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">测试连接原来列完模型还挑最新的那个真发一句，中转上碰到 Zen 免费档 403，引导卡死；项目主人定：列得出就算通，测不通也能仍然保存。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">测试连接只列模型</span><span class="dir-note">8-11 五补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>列得出模型就算通，不发请求（checked: list）</li>
+              <li>写的模型不在列表里、列不出又不是认证错的才发一句（checked: request）</li>
+              <li>列不出又没写模型的回 need_model，头请人填模型名</li>
+              <li>引用的密钥、环境变量没设的照连接的语言说，和 miyu check 同一句</li>
+              <li>miyu setup 测不通问「仍然保存？[y/N]」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">2026-10-13 项目主人定</span><span class="rl">列模型就验过了地址和 key</span></div>
+          <div class="tile new"><span class="nm">认证错</span><span class="rl">停在列模型，给了模型名也不发</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">8-11 五补</dd></div>
+        <div><dt>名称</dt><dd>测试连接只列模型</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-13</dd></div>
+        <div><dt>提交</dt><dd class="mono">c17e9f54</dd></div>
+        <div><dt>验收</dt><dd>三台 CI（run 2017）、真的中转</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真的 magpie：不写 --model 列出 91 个模型，选好接着说话</span></li>
+        <li><span class="ok">✓</span><span>变异 16 处全抓住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 8-11-测试连接只列模型（五补）.md</li>
       </ul>
     </div>
   </div>
