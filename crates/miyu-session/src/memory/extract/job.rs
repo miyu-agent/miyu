@@ -10,13 +10,14 @@ use tokio::sync::oneshot;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{AccountId, Seq, SessionId};
 use miyu_kernel::request::Message;
-use miyu_kernel::time::UtcOffset;
+use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::Skipped;
 use miyu_recall::extract::candidates;
 use miyu_recall::redact::redact;
 use miyu_tool::TEXT_CHARS;
+use miyu_tool::load::say;
 
-use super::{Extraction, Extractor, PURPOSE, Plan, TRIES, secrets};
+use super::{DROPPED, Extraction, Extractor, PURPOSE, Plan, TRIES, secrets};
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
@@ -71,8 +72,12 @@ impl Job {
                 text,
                 turns,
                 more,
+                since,
             } => {
-                let recorded = self.ask(upto, text, turns).await;
+                let recorded = match self.dropped(text, since).await {
+                    Some(text) => self.ask(upto, text, turns).await,
+                    None => false,
+                };
                 if recorded && more {
                     (self.again)();
                 }
@@ -89,6 +94,46 @@ impl Job {
             None if recorded => self.merge_job().start(),
             None => {}
         }
+    }
+
+    /// 这一段 `text` 后面接上第一句话的时刻 `since` 以后忘掉的几条（施工 R-6 修，`memory.md` 第六条第 4 款）：一条都没有的
+    /// 原样交回。记忆日志读不了的这一次放下（不算这一段失败），交回没有。
+    async fn dropped(&self, text: String, since: Timestamp) -> Option<String> {
+        let keeper = self.keeper.clone();
+        let dropped = blocking(move || keeper.dropped_since(since, DROPPED)).await;
+        let dropped = match dropped {
+            Ok(dropped) => dropped,
+            Err(refused) => {
+                tracing::warn!(target: TARGET, session = %self.session, error = ?refused, "memory extraction failed");
+                self.extractor.abandon();
+                return None;
+            }
+        };
+        if dropped.is_empty() {
+            return Some(text);
+        }
+        let texts = &self.extraction.texts;
+        let lines: Vec<String> = dropped
+            .iter()
+            .map(|entry| {
+                say(
+                    &texts.line,
+                    &[
+                        ("id", &entry.id.to_string()),
+                        ("class", &entry.class),
+                        ("date", &entry.at.local_date(self.offset)),
+                        ("text", &entry.text.replace('\n', " ")),
+                    ],
+                )
+                .trim_end()
+                .to_string()
+            })
+            .collect();
+        Some(format!(
+            "{text}\n\n{}\n{}",
+            say(&texts.dropped, &[]).trim_end(),
+            lines.join("\n")
+        ))
     }
 
     /// 发、读、遮、记；交回记成了没有。

@@ -59,6 +59,7 @@ fn ask(plan: Plan) -> (Seq, String, BTreeSet<u64>, bool) {
             text,
             turns,
             more,
+            ..
         } => (upto, text, turns, more),
         other => panic!("要发：{other:?}"),
     }
@@ -423,4 +424,27 @@ fn who_spoke_is_read_from_the_log() {
         [Voice::Line, Voice::Line, Voice::Line],
         "群里的一行原样"
     );
+}
+
+#[test]
+fn the_slice_starts_at_its_first_words() {
+    // 这一段以后忘掉的照第一句话的时刻挑（施工 R-6 修）：人的头一句比她的回答早。
+    let mut spoken: Vec<Spoken> = [
+        exchange(2, "我下周三要干嘛", "去体检。"),
+        exchange(6, "好的", "好。"),
+    ]
+    .concat();
+    let first = Timestamp::parse("2026-10-09T02:59:00.000Z").expect("合写法");
+    spoken[0].at = first;
+    match plan(
+        &spoken,
+        &BTreeSet::new(),
+        2,
+        UtcOffset::UTC,
+        &texts(),
+        &owner(&spoken),
+    ) {
+        Plan::Ask { since, .. } => assert_eq!(since, first),
+        other => panic!("要发：{other:?}"),
+    }
 }

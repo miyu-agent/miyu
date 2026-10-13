@@ -4517,6 +4517,17 @@ You: {text}
 [... excerpted ...]
 ```
 
+#### `software/memory/extract/dropped.txt`
+
+- 什么时候加进来：这一段开始以后有作废的、改掉的记忆时：接在这一段几轮的后面，下面一条一行（照 `memory_search/memory.txt`，最多 20 条）；一条都没有的不加
+- token：28（2026-10-13 照开发端点量）
+- 为什么加：抽取只看那一段对话，不知道里面说的事后来作废了、改了，会把它抽回来（施工 R-6 修，验收手册实测：她照摘要复述了体检，人在别的会话里作废，两分钟后这一段被抽又记回来）。开发端点实测同一段对话：不加 5 次抽回 5 次，加了 10 次 0 次，同一段里另有新的事照样记下（10 次 10 次）；措辞说清「对话里说的已经过时」，只说「别再记」的那一版 5 次还抽回 1 次
+- 指纹：`c599529c`
+
+```text
+These memories were forgotten or changed after this conversation, so what the conversation says about them is out of date. Do not record them again:
+```
+
 ### 合并那一次请求，不进主对话
 
 #### `software/memory/merge/instruction.txt`

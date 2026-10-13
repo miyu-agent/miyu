@@ -43,6 +43,7 @@ fn entry(n: u64, text: &str) -> Entry {
         by: By::Kernel,
         replaced_by: None,
         retired: None,
+        retired_at: None,
         cleared: false,
     }
 }

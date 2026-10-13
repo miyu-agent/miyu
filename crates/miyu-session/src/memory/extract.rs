@@ -8,6 +8,7 @@
 //! - **拼法**（单发）：指令在前，后面是这一段的几轮，一轮一块（编号、日期、人的话、她的回答），一条 user，不带 system、
 //!   工具面。最多 [`ROOM`] 字节：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮；一轮自己就放不下的留头尾、截中间，
 //!   照样抽，`upto` 照样往前走，不卡在一轮上。
+//! - **忘掉的**：这一段开始以后作废的、改掉的，接在这一段后面列出来，说清别再记（施工 R-6 修）；没有的请求一字不变。
 //! - **跳过**：这一段里她调过 `remember`、`forget` 的整段跳过，只记抽到了哪。
 //! - **发**：经一次性入口发 `memory.organizer`（没写的照 `models.chat`），用途 `memory`，记在会话属主的账上。发出去以前遮掉
 //!   key（配置里引用的密钥的原文、常见的写法），交回来的再遮一遍。
@@ -46,8 +47,12 @@ const TRIES: u32 = 3;
 /// 记忆这个软件包在资源目录里的名字（和 `summary.rs` 的同一个）。
 const PACKAGE: &str = "memory";
 
-/// 抽取给模型看的字（`resources/software/memory/extract/`，登记簿）：指令、一轮的头尾、人的话、她的回答、截了中间的那一句。
-/// 换进去的字照模板的规矩转义成一行（`miyu_kernel::template`）：人的话伪造不了一轮的尾巴。
+/// 这一段以后忘掉的最多列几条（施工 R-6 修）：一个闲置窗口里忘掉的一般只有几条，合并一次作废的多，新的在前够用。
+pub(crate) const DROPPED: usize = 20;
+
+/// 抽取给模型看的字（`resources/software/memory/extract/`，登记簿）：指令、一轮的头尾、人的话、她的回答、截了中间的那一句、
+/// 这一段以后忘掉的那一句（一条一行照 `memory_search/memory.txt`）。换进去的字照模板的规矩转义成一行
+/// （`miyu_kernel::template`）：人的话伪造不了一轮的尾巴。
 #[derive(Debug, Clone)]
 pub struct ExtractTexts {
     instruction: Template,
@@ -57,11 +62,14 @@ pub struct ExtractTexts {
     person: Template,
     assistant: Template,
     excerpted: Template,
+    pub(super) dropped: Template,
+    pub(super) line: Template,
 }
 
 impl ExtractTexts {
     /// 从资源目录 `resources` 读：`extract/instruction.txt`、`turn-open.txt`（`{turn}`、`{date}`）、`turn-close.txt`、
-    /// `owner.txt`、`assistant.txt`（`{text}`）、`person.txt`（`{name}`、`{text}`）、`excerpted.txt`。
+    /// `owner.txt`、`assistant.txt`（`{text}`）、`person.txt`（`{name}`、`{text}`）、`excerpted.txt`、`dropped.txt`，一条忘掉的
+    /// 照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`）。
     ///
     /// # Errors
     ///
@@ -77,6 +85,14 @@ impl ExtractTexts {
             person: text("person", &["name", "text"])?,
             assistant: text("assistant", &["text"])?,
             excerpted: text("excerpted", &[])?,
+            dropped: text("dropped", &[])?,
+            line: load::text(
+                resources,
+                PACKAGE,
+                "memory_search",
+                "memory",
+                &["id", "class", "date", "text"],
+            )?,
         })
     }
 }
@@ -273,6 +289,8 @@ pub(crate) enum Plan {
         turns: BTreeSet<u64>,
         /// 放不下、还剩几轮没取：抽完接着抽剩下的。
         more: bool,
+        /// 这一段第一句话的时刻：这以后忘掉的接在后面（施工 R-6 修）。
+        since: Timestamp,
     },
 }
 
@@ -287,7 +305,10 @@ pub(crate) fn plan(
     voices: &Voices,
 ) -> Plan {
     let exchanges = exchanges(spoken, voices);
-    let Some(last) = exchanges.last().map(|exchange| exchange.seq) else {
+    let (Some(last), Some(first)) = (
+        exchanges.last().map(|exchange| exchange.seq),
+        spoken.first(),
+    ) else {
         return Plan::Wait;
     };
     if exchanges.len() < min_turns.max(1) {
@@ -325,6 +346,7 @@ pub(crate) fn plan(
         text: format!("{}\n{}", instruction.trim_end(), blocks.join(GAP)),
         turns,
         more: upto != last,
+        since: first.at,
     }
 }
 

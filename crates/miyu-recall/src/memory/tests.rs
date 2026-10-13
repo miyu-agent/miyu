@@ -7,6 +7,7 @@ use miyu_kernel::time::Timestamp;
 
 use super::*;
 
+mod dropped;
 mod merged;
 mod restored;
 mod venue;

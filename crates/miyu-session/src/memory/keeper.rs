@@ -293,6 +293,36 @@ impl Keeper {
             .collect())
     }
 
+    /// `since` 以后忘掉的（作废的、改掉的旧版本）：听众合、没清掉的，新的在前最多 `limit` 条（施工 R-6 修，
+    /// `memory.md` 第六条第 4 款）。抽取照它告诉模型这些别再记。
+    ///
+    /// # Errors
+    ///
+    /// 记忆日志开不了。
+    pub(crate) fn dropped_since(
+        &self,
+        since: Timestamp,
+        limit: usize,
+    ) -> Result<Vec<Entry>, Refused> {
+        let log = self.log()?;
+        let mut dropped: Vec<(Timestamp, Entry)> = log.book(|book| {
+            book.all()
+                .filter_map(|entry| {
+                    let at = book.dropped_at(entry.id).filter(|at| *at >= since)?;
+                    Some((at, entry.clone()))
+                })
+                .collect()
+        });
+        dropped.retain(|(_, entry)| !entry.cleared && self.hears(entry));
+        // 同一个时刻忘掉的照编号：后记的在前。
+        dropped.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.id.cmp(&a.1.id)));
+        Ok(dropped
+            .into_iter()
+            .take(limit)
+            .map(|(_, entry)| entry)
+            .collect())
+    }
+
     /// 照意思找的那一路照 `using` 在后台补这一间缺的向量（施工 R-5 下，`vectors.rs`）：搜的时候起。没接向量的、`off` 的什么
     /// 都不做。
     pub fn fill(&self, using: &Using) {

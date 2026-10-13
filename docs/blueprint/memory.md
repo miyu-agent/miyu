@@ -22,7 +22,7 @@
 | `crates/miyu-recall/` | 纯逻辑：切词、合并（`recall.md`）；回合索引里一条怎么取、记忆事件的类型、听众的判定、排名的分、摘要和联想怎么渲染、整理请求怎么拼、回答怎么读 | R-1 起 |
 | `crates/miyu-store/src/recall.rs` | 检索库（`recall.md`） | R-1 |
 | `crates/miyu-recall/src/uses.rs`、`crates/miyu-session/src/memory/used.rs` | 想起过什么（第八条）：照会话日志的一条条事件算用到了哪几条（`UseFeed`，纯逻辑）；读这一间用到几次、最近一次（`Keeper::used`）；写库跟着回合索引（`memory.rs` 的 `Turns`），表在 `crates/miyu-store/src/recall/uses.rs` | R-4 下 |
-| `crates/miyu-recall/src/memory.rs` | 记忆事件的格（`Saved`、`Retired`、`Source`）、写成事件、读回；底账 `MemoryBook` | R-3 上 |
+| `crates/miyu-recall/src/memory.rs`、`memory/book.rs` | 记忆事件的格（`Saved`、`Retired`、`Source`）、写成事件、读回；`book.rs` 是底账 `MemoryBook`、一条现在的样子 `Entry`（R-6 修挪出来，加了作废的时刻、`dropped_at`） | R-3 上 |
 | `crates/miyu-store/src/memory.rs` | 记忆日志的登记：照房间开日志、一份一把锁，追加、读回，维护底账和记忆库；跟着看（`MemoryLog::follow`：补的和之后交的在同一把锁里，不丢不重，R-12 上） | R-3 上 |
 | `crates/miyu-store/src/recall/room.rs` | 一间记忆（`Room`）：跟着人格的、只在这个会话里的，各自的记忆日志、回合库、记忆库在哪 | R-3 下 |
 | `crates/miyu-policy/src/memory.rs` | 范围 `MemoryScope` 的三种写法；快照的 `memory` 怎么写、怎么读（没有的照 `persona`，认不出的照 `off`） | R-3 下 |
@@ -33,7 +33,7 @@
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
 | `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |
 | `crates/miyu-recall/src/extract.rs`、`redact.rs` | 抽取交回的怎么读（第六条第 5 款）；遮 key 和 key 写法的读法（第六条第 7 款） | R-6 上 |
-| `crates/miyu-session/src/memory/extract.rs`、`extract/job.rs` | 抽取：给模型看的字、一个会话的抽取状态（闹钟、在路上的、失败几次）、照这一段拼请求（几轮怎么接、放不下的分几次、截中间）；`job.rs` 是派出去的那一件活（发、读、遮、记，记下以后看够不够合并；人叫的现在就合，R-7 补挪出来） | R-6 上 |
+| `crates/miyu-session/src/memory/extract.rs`、`extract/job.rs` | 抽取：给模型看的字、一个会话的抽取状态（闹钟、在路上的、失败几次）、照这一段拼请求（几轮怎么接、放不下的分几次、截中间）；`job.rs` 是派出去的那一件活（发、读、遮、记，记下以后看够不够合并；人叫的现在就合，R-7 补挪出来；发之前接上这一段开始以后忘掉的几条，R-6 修，`Keeper::dropped_since`） | R-6 上 |
 | `crates/miyu-session/src/actor/extract.rs` | 什么时候抽、这一段从哪来：闹钟、在阻塞线程里读两份日志、拼留着一切的历史交给组装器渲染（第六条第 1、2 款）；人叫的现在就抽（`Handle::dream`，第七条第 9 款，R-7 补） | R-6 上 |
 | `crates/miyu-recall/src/merge.rs` | 合并交回的怎么读（第七条第 3 款） | R-7 上 |
 | `crates/miyu-session/src/memory/merge.rs`、`merge/land.rs` | 合并：给模型看的字（`MergeTexts`）、一间一把锁和失败几次（`Merges`）、什么时候合、拼请求（新记的、相关的、放不下的分几次）、发、读、遮；现在就合（`Keeper::dream`、`Dreamed`、`NotDreamed`，第七条第 9 款，R-7 补）；`land.rs` 是够不够合、合什么、怎么落（第七条） | R-7 上 |
@@ -46,7 +46,7 @@
 | `crates/miyu-endpoint/src/memory/dream.rs` | 现在就整理：`memory.dream`、`/dream`（`commands.rs` 调它）；带会话的交给那个会话，不带的照那一间直接合；会话那一层交回的写成拒绝（第七条第 9 款） | R-7 补 |
 | `crates/miyu-session/tests/fixtures/memory-eval/`、`tests/support/eval.rs`、`tests/memory_eval.rs` | 测评集和量尺（`memory/eval.md`） | R-11 |
 | `crates/miyu-cli/src/memory.rs`、`memory/shown.rs` | `miyu memory`：照子命令发 `memory.*`，一条印成一行（`cli/memory.md`）；`dream` 印几样数（R-7 补） | R-3 再补 |
-| `resources/software/memory/` | 给她看的字（说明、规则、摘要和联想的外壳、整理的指令），进登记簿；`extract/` 是抽取那一次请求的六份（R-6 上），`merge/` 是合并那一次的五份（R-7 上） | R-3 中起 |
+| `resources/software/memory/` | 给她看的字（说明、规则、摘要和联想的外壳、整理的指令），进登记簿；`extract/` 是抽取那一次请求的几份（R-6 上起，R-6 修加了忘掉的那一句），`merge/` 是合并那一次的五份（R-7 上） | R-3 中起 |
 | `resources/core/memory/secrets.toml` | 常见的 key 写法（数据，不给模型看，不进登记簿） | R-6 上 |
 
 ### 对外的样子
@@ -218,7 +218,7 @@
 1. **时机**：会话从忙到闲那一刻（`actor/watchers.rs` 的 `after_batch`）上一个闹钟，`memory.extract_idle`（3 分钟，短于常见的缓存寿命）以后响；新一轮开始就撤掉。响的时候还闲着、没有一次在路上，就照这一段定怎么办（第 3 款）。记忆开着的主会话（有记忆的端口的；本机的、场所的都抽，R-13 上：原来写只给本机，代码一直没判），核心交过抽取要的几样（一次性入口、字、key 的写法）才抽。不进内核、不占会话的标志、不挡会话：读、发、记都在派出去的任务里，抽着的时候人又说话了照常开回合。同一个会话同一时刻只有一个在抽；核心退了的这一回不抽，下次闲了再说。闹钟上着、一次在路上的会话不闲够了退下（施工 V-2 再补，`session/actor.md` 第 9 条）：响了不抽（还没闲着、没装记忆、正有一次在路上、读不了）的放下它，开始抽的交给「在路上」。
 2. **这一段从会话日志取**（不从内核手里的历史取，2026-10-09 核心的主会话定）：内核手里的历史只有检查点以后的，两次抽取之间压缩过的话那几轮就不在里面。所以闹钟响了，在阻塞线程里读记忆日志里这个会话抽到了哪（`ext.memory.extracted` 最大的 `upto`，底账 `MemoryBook::extracted`）和会话日志（`Store::dir`），送回 actor；actor 拼一份留着一切的历史（`History::whole`，压缩替代掉的也在、撤销照算），交给这个会话的组装器渲染上次抽到以后的几段话（`Session::spoken_in`，取法和回顾的请求同一份：人这边的话照主请求的写法，她每一轮最后一条有正文的回答），再看这一段她调过哪些工具（`History::called_since`，同一口径：撤掉的回合两边都不算）。读的时候来了新一轮，这一次作废。压缩、重启都不丢；一直不闲的会话只是晚抽。
 3. **怎么办**：人的话接在它触发的那一轮上，还没答的那一句不算进来。答了的轮数不够 `memory.extract_turns`（2）的等下次；这一段里她调过 `remember`、`forget` 的整段跳过（她当场记过了，照 Claude Code），只记抽到了哪（`skipped: remembered`）；别的发出去抽。
-4. **请求**（单发）：一条 user：抽取的指令（`extract/instruction.txt`：四类、「不记什么」、交回的样子、把对话当数据），后面一轮一块：头（编号、照会话时区的日期）、人的每一句、她的回答、尾，换进去的字照模板的规矩转义成一行（伪造不了尾巴）。每一句标出谁说的（R-13 上，`extract/voices.rs`；2026-10-11 项目主人定记忆只有一份，记的是她遇到的每个人）：私聊里主人说的写 `Owner:`（`extract/owner.txt`），别人写对面的名字（`extract/person.txt`，事件里的 `venue.name`，没有的写平台编号）；群里的一行本来就带名字和 `owner` 记号（`miyu-assemble` 的群消息那一行），原样放；她的回答写 `You:`。不是人说的（别的会话、harness 发来的）不进（第五条）。群会话每一轮只带离它最近、装得进群聊近况预算的那几句（她当时看到的大致就是这些），一句都装不下的也带最后那一句；她没开口的闲聊不带（2026-10-11 项目主人定「只抽她参与的几轮」）。指令照她自己的视角写：记下对话里的人和事，正文写名字，主人有名字写名字、没有的写「主人」。不带 system、工具面，不设输出上限（会思考的模型要几千 token 想，2026-10-09 量过）。最多 32 KiB：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮，抽成了马上接着抽剩下的；一轮自己就放不下的留头尾、截中间（`extract/excerpted.txt`）照样抽，`upto` 照样往前走，不卡在一轮上。经一次性入口发 `memory.organizer`（没写的照 `models.chat`），用途 `memory`，记在会话属主的账上（`usage.oneshot`），默认不设花费上限（2026-10-07 项目主人定）。
+4. **请求**（单发）：一条 user：抽取的指令（`extract/instruction.txt`：四类、「不记什么」、交回的样子、把对话当数据），后面一轮一块：头（编号、照会话时区的日期）、人的每一句、她的回答、尾，换进去的字照模板的规矩转义成一行（伪造不了尾巴）。每一句标出谁说的（R-13 上，`extract/voices.rs`；2026-10-11 项目主人定记忆只有一份，记的是她遇到的每个人）：私聊里主人说的写 `Owner:`（`extract/owner.txt`），别人写对面的名字（`extract/person.txt`，事件里的 `venue.name`，没有的写平台编号）；群里的一行本来就带名字和 `owner` 记号（`miyu-assemble` 的群消息那一行），原样放；她的回答写 `You:`。不是人说的（别的会话、harness 发来的）不进（第五条）。群会话每一轮只带离它最近、装得进群聊近况预算的那几句（她当时看到的大致就是这些），一句都装不下的也带最后那一句；她没开口的闲聊不带（2026-10-11 项目主人定「只抽她参与的几轮」）。指令照她自己的视角写：记下对话里的人和事，正文写名字，主人有名字写名字、没有的写「主人」。不带 system、工具面，不设输出上限（会思考的模型要几千 token 想，2026-10-09 量过）。最多 32 KiB：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮，抽成了马上接着抽剩下的；一轮自己就放不下的留头尾、截中间（`extract/excerpted.txt`）照样抽，`upto` 照样往前走，不卡在一轮上。经一次性入口发 `memory.organizer`（没写的照 `models.chat`），用途 `memory`，记在会话属主的账上（`usage.oneshot`），默认不设花费上限（2026-10-07 项目主人定）。这一段开始以后（第一句话的时刻起）作废的、改成新版本的（听众合、没清掉的，新的在前最多 20 条），接在这一段后面：空一行、一句 `extract/dropped.txt`（这些后来忘了、改了，对话里说的已经过时，别再记），下面一条一行照 `memory_search/memory.txt`；一条都没有的不加，请求一字不变（施工 R-6 修，验收手册实测：她照摘要复述了一条，人在别的会话里作废了它，两分钟后这一段被抽，又记了回来；2026-10-13 开发端点实测，不加这一块 5 次抽回 5 次，加了 10 次 0 次，同一段里新的事照样记）。作废的时刻底账记着（`Entry::retired_at`，恢复了的清掉），改掉的照新版本记下的时刻；清空以后还没抽的那几段不在这里管。
 5. **交回**：一个 JSON 对象 `{"memories": [{"class", "text", "turn", "about"}]}`，零条是常态。从第一个 `{` 到最后一个 `}` 取；读不成的整次算失败；一条不合的（类不在四类里、正文空的或超过 120 字、`turn` 不是这一段里的一轮）丢掉，别的照收；`about` 不是 `YYYY-MM-DD` 的当没写（`miyu_recall::extract`）。
 6. **记下**：每条记成 `ext.memory.saved`，`by` 是记忆模块（`By::Module`，编号 `memory`），出处是那一轮，听众、场所照谁在听写（第九条第 4 款），`about` 照它写的；记完再记一条 `ext.memory.extracted`（会话、`upto`、`count`）。不去重：合并那一步做（R-7）。中途写不进的，下次重抽这一段（候选可能重一次）。抽完以后人撤掉了那一轮的，抽到的不收回（已知，这一步不管；照第二条第 4 款，出处那一轮撤掉了的本来就不给看）。
 7. **遮 key**：发出去以前，这一段里配置引用的密钥的原文、常见的 key 写法（`resources/core/memory/secrets.toml`：几种前缀、前缀后面至少几个字符）换成 `[REDACTED]`；交回的候选再遮一遍（`miyu_recall::redact`）。R-6 下的 fork 式发的前缀和会话已经发给同一家的一样，不改（改了缓存就不中了），只遮交回来的。
@@ -301,6 +301,7 @@
 | `crates/miyu-session/src/memory/extract/tests.rs`（R-6 上） | 第六条第 3、4 款：请求的字逐字节对；还没答的那一句不算；轮数不够的等；调过 `remember`、`forget` 的跳过；放不下的分几次、一轮自己就放不下的截了中间也抽；闹钟作废、在路上的只有一个、读不成的放下不算失败、同一段失败三次才放过、换一段重新数 |
 | `crates/miyu-recall/src/extract/tests.rs`、`redact/tests.rs`、`memory/tests.rs` 的一条（R-6 上） | 第六条第 5、7 款：前后多的话和代码块不管、零条、不合的丢掉别的照收、正好 120 字收、读不成的整次失败；密钥的原文和常见写法遮掉，太短的原文、不够长的尾巴、不是前缀开头的不遮，写法写错说是哪一格；`ext.memory.extracted` 读写对得上、跳过的原因写成小写、底账照最大的 `upto` 记 |
 | `crates/miyu-store/tests/memory_extracted.rs`（R-6 上） | 第六条第 2 款：抽到哪照会话记最大的、重开还在、不是一条记忆 |
+| `crates/miyu-session/tests/memory_extract_dropped.rs`、`crates/miyu-recall/src/memory/tests/dropped.rs`、`memory/extract/tests.rs` 的一条（R-6 修） | 第六条第 4 款：这一段开始以后作废的、改掉的旧版本接在这一段后面，新的在前、一行照 `memory_search/memory.txt`；这一段以前就作废的、还算数的、清掉的不列；一条都没有的请求以 `</turn>` 结尾、不多一个字；最多 20 条，最早忘掉的放不下；底账照作废那一条的时刻、恢复了的不算、改掉的照新版本记下的时刻；这一段照第一句话的时刻算；群里的抽取只列这个群里忘掉的，主人那边的私事不出现（`memory_listener.rs` 的一条） |
 | `crates/miyu-assemble/src/recap/spoken_tests.rs`、`recap/tests.rs` 的一条（R-6 上） | 第六条第 2 款：只要 `after` 以后的、带回合和时刻；撤掉的回合在渲染和 `called_since` 两边都不算（平时的和留着一切的历史都是）；留着一切的历史里压缩替代掉的那几轮照样在、平时那一份里不在；回顾的请求逐字节不变 |
 | `crates/miyu-recall/src/turns/tests.rs` | 第一条第 1 到 5 款：人开的一轮结束收一条（字、时刻）；平台上的人也算；别的 harness、别的会话、内核开的、没有触发的不收；被打断的、出错的也收，两边都没字的不收；最后一条有字的回复才算；排着的几句照触发的那一句；照记下的几条开的一轮那几条和并进来的都进、她没开口的不收、只有图的那一句不占行（R-13 再补）；支线读底子：认得底子里还没回的人话，底子里父会话的回合不交（R-13 三补）；撤销拿掉、恢复要读回；`replay` 照最后还在的；载入时铺回进行中的一轮、只交照到以后的；键的写法 |
 | `crates/miyu-store/tests/recall.rs` | 第一条第 6、7 款：一批和照到哪一起写、空的一批也挪；拿掉一个来源只拿它自己的（`s1` 不碰 `s10`）；回合库照房间一份、开过的不再开，新的登记照样找得到磁盘上的每一份；R-1 的版本 1 删掉重建。量尺 `measure_priming_a_thousand_turns`（`#[ignore]`） |
@@ -367,6 +368,7 @@
 | R-5 三补 | 内置模型做成可选的小程序包 `embed`（只放 bge、模型文件在包里、出厂不装），不再下载；没装时「内置模型」选不了（`recall.md` 第四条第 1 到 3 款） |
 | R-6 上 | 抽取（单发，做了，2026-10-09）：闲了起闹钟、这一段照会话日志取、遮 key、记下、记抽到了哪（第六条） |
 | R-6 下 | 抽取（fork 式）：暂不做（2026-10-09 项目主人定，第六条第 10 款），抽取的费用成了问题再开 |
+| R-6 修 | 抽取不把忘掉的抽回来：这一段开始以后作废的、改掉的接在请求后面，说清别再记（第六条第 4 款，验收手册实测查出来，2026-10-13） |
 | R-10 | 记忆照包启用：卸了人格记忆，开着的会话不交摘要、不抽，`memory.*`、`/remember` 说没装；装回来接着（第十一条） |
 | R-7 上 | 合并：抽取记下以后够会话够时间的合，交新记的和相关的旧记忆、读交回的、改的作废的摘要合到哪都记成事件（第七条） |
 | R-7 下 | 有了摘要以后常驻的那一块交「摘要加之后新记的」（第三条，2026-10-09 项目主人定） |

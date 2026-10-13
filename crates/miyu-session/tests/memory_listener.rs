@@ -1,6 +1,6 @@
 //! 谁在听（施工 R-13 上，`docs/blueprint/memory.md` 第九条）：记忆只有一份，就像一个人只有一个大脑；主人那边冒得出全部，一个
 //! 场所里只冒出在这个场所说过的。场所里记的带着这个场所；场所里的常驻那一块没有摘要那一行；合并照全部合，不管是哪个会话抽完
-//! 以后起的。
+//! 以后起的；群里的抽取只列在这个群里忘掉的（施工 R-6 修）。
 
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Text};
@@ -9,7 +9,7 @@ use miyu_kernel::id::{AccountId, ExternalId, Seq, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 use miyu_kernel::request::{Message, Request};
 use miyu_kernel::session::Command;
-use miyu_recall::{MemoryEvent, MemoryId, Saved, Summary};
+use miyu_recall::{MemoryEvent, MemoryId, Retired, Saved, Summary};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Filter, Keeper, Listener, Stamp};
 use miyu_store::recall::Room;
@@ -352,4 +352,59 @@ async fn past_turns_from_a_place_stay_in_that_place() {
     let mut both: Vec<String> = sessions.iter().map(ToString::to_string).collect();
     both.sort();
     assert_eq!(found(owner()), both, "主人那边全部");
+}
+
+/// 群里那一段开始以后忘掉的，抽取只列这个群里的（施工 R-6 修，`memory.md` 第六条第 4 款）：主人那边的私事作废了，群里的抽取
+/// 请求里不出现。
+#[tokio::test]
+async fn in_a_group_only_what_was_dropped_there_follows_the_slice() {
+    let server = Server::start(vec![every_turn("不要紧")]).await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "extract_turns = 1\n");
+    let private = save(&home, "主人下周三去体检", None);
+    let shared = save(&home, "群里周六聚餐", Some(place(1)));
+    let script = Script::new([Play::Says("好。")]);
+    let lines = Lines {
+        venue: place(1),
+        group: true,
+        memory_account: admin(),
+        ..Lines::default()
+    };
+    let handle = home
+        .create_full(&script, &catalog(&home), Opening::default(), lines)
+        .await;
+    within(
+        "回应",
+        handle.command(id("cmd-1"), member(), heard("早", "8800", true)),
+    )
+    .await
+    .expect("会话在跑");
+    let (log, _) = home.logs.open(&room()).expect("开得了");
+    for id in [private, shared] {
+        let retired = Retired {
+            id,
+            why: "不算了".into(),
+        };
+        log.append(now(), alice(), None, &MemoryEvent::Retired(retired))
+            .expect("记得下");
+    }
+    let mut pushes = watch(&handle).await;
+    within(
+        "回应",
+        handle.command(id("cmd-2"), member(), heard("聚餐还办吗", "8801", false)),
+    )
+    .await
+    .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    requested(&server, 1).await;
+    let text = asked(&server, 0);
+    assert!(
+        text.contains("群里周六聚餐"),
+        "这个群里忘掉的列出来：{text}"
+    );
+    assert!(
+        !text.contains("主人下周三去体检"),
+        "主人那边的私事不在群里冒出来：{text}"
+    );
+    stop(&handle).await;
 }
