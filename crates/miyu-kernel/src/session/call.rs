@@ -2,26 +2,26 @@
 //! 第六节「回复怎么收、回合怎么结束」）。
 //!
 //! 三种回报都带着这次请求的 `seen`，对不上的是过时的，不理。每次请求都记一条
-//! `model.called`，出错的也记（`03-事件模型.md` 第三节「模型调用怎么写」）。
+//! `model.called`，出错的也记（`03-事件模型.md` 第三节「模型调用怎么写」）。结局怎么写在 [`settle`]。
+
+mod settle;
 
 use super::Session;
 use super::action::Action;
 use super::aside::bad_stream;
 use super::compaction::Compacting;
-use super::spans::{Mark, Spans, millis};
-use super::summary::{Summarized, called_tool};
+use super::spans::{Mark, Spans};
 use super::turn::Stage;
 use crate::accumulate::{Accumulator, Delta};
-use crate::block::{Block, ToolCall};
 use crate::event::{
-    Body, CallError, CallResult, CompactionProgress, Cost, EndReason, ErrorClass, Event,
-    FirstDifference, MessageAssistant, ModelCalled, ModelDelta, Piece, Transient, TransientBody,
-    Usage,
+    CallError, CompactionProgress, Cost, EndReason, ErrorClass, ModelDelta, Piece, Transient,
+    TransientBody, Usage,
 };
 use crate::id::{CommandId, ContentHash, Seq};
 use crate::origin::{By, Model};
 use crate::request::Difference;
 use crate::time::Timestamp;
+use settle::Ending;
 
 /// 在路上的一次请求。
 #[derive(Debug)]
@@ -70,6 +70,11 @@ impl Call {
         }
     }
 
+    /// 一段增量都还没到，连思考都没有（施工 4-15 撤掉重发看它）。
+    pub(super) fn silent(&self) -> bool {
+        self.first_token.is_none()
+    }
+
     /// 这一次是压缩的摘要请求。
     pub(super) fn compacting(mut self, compacting: Compacting) -> Call {
         self.compaction = Some(Box::new(compacting));
@@ -98,32 +103,6 @@ impl Call {
         self.spans.mark(at, mark);
         Ok(pushed)
     }
-}
-
-/// 一次请求的结局。
-enum Ending {
-    /// 执行器报说完了：正常说完的带用量（和金额，装在盒子里：照 `model.called` 的那一格），出错的带分类和原话。
-    Said {
-        usage: Option<Usage>,
-        cost: Option<Box<Cost>>,
-        error: Option<CallError>,
-    },
-    /// 被人打断。
-    CutOff,
-}
-
-/// 一次请求收拾完：追加的事件、写成的回复是第几条、回复里的调用、出错的分类和原话；摘要请求取到的摘要和它替代到
-/// 哪。
-struct Settled {
-    events: Vec<Event>,
-    reply: Option<Seq>,
-    calls: Vec<ToolCall>,
-    error: Option<CallError>,
-    summary: Option<Summarized>,
-    /// 摘要请求多记的，交回来：报了超长的照它截短再发（施工 6-6 中）。
-    compaction: Option<Box<Compacting>>,
-    /// 摘要回复里调了工具、要改走隔离式（施工 6-6 下）。
-    isolating: bool,
 }
 
 /// 要推给头的：主请求的一段增量，和它的 `by`，那个模型；摘要请求的进度。
@@ -302,167 +281,6 @@ impl Session {
             _ => events.extend(self.finish_turn(at, By::Kernel, cause, EndReason::Completed)),
         }
         vec![Action::Append(events)]
-    }
-
-    /// 打断在路上的请求：收到的半截照累积器留下，不是空的写成回复，多写一格被打断；
-    /// 记一条结果是被打断的 `model.called`。返回追加的事件和半截回复里留下的调用。
-    pub(super) fn cut_off(
-        &mut self,
-        at: Timestamp,
-        call: Call,
-        cause: Option<CommandId>,
-    ) -> (Vec<Event>, Vec<ToolCall>) {
-        let settled = self.settle(at, call, cause, Ending::CutOff);
-        (settled.events, settled.calls)
-    }
-
-    /// 这次请求有了结局：该写的回复写上，记一条 `model.called`。
-    fn settle(
-        &mut self,
-        at: Timestamp,
-        call: Call,
-        cause: Option<CommandId>,
-        ending: Ending,
-    ) -> Settled {
-        let Call {
-            seen,
-            messages,
-            difference,
-            sent,
-            first_token,
-            accumulator,
-            spans,
-            compaction,
-        } = call;
-        let (usage, cost, mut error, cut) = match ending {
-            Ending::Said { usage, cost, error } => (usage, cost, error, false),
-            Ending::CutOff => (None, None, None, true),
-        };
-        let mut events = Vec::new();
-        let mut reply = None;
-        let mut calls = Vec::new();
-        let mut summary = None;
-        let mut isolating = false;
-        let mut times = None;
-        match &sent {
-            None if !cut && error.is_none() => {
-                error = Some(bad_stream("请求还没发出去就说完了"));
-            }
-            // 摘要请求不写回复，说完了的取出摘要（施工 6-2 上）。
-            Some(_) if compaction.is_some() => {
-                if !cut && error.is_none() {
-                    let blocks = accumulator.finish(self.ledger.next_seq());
-                    let isolates = compaction
-                        .as_deref()
-                        .is_some_and(|compacting| self.can_isolate(compacting));
-                    match self.summary_of(&blocks, isolates) {
-                        Ok(text) => summary = Some(text),
-                        Err(bad) => {
-                            isolating = isolates && called_tool(&blocks);
-                            error = Some(bad);
-                        }
-                    }
-                }
-            }
-            Some(sent) => {
-                let seq = self.ledger.next_seq();
-                // 出错断了的，照打断的规矩留下半截，工具调用一个不留：没收全的执行不了，收全了的
-                // 也不派，回复没说完（02 第六节「回复怎么收」第 4 条）。
-                let failed = error.is_some();
-                let mut numbered = accumulator.numbered(seq, !cut && !failed);
-                if failed {
-                    numbered.retain(|(_, block)| !matches!(block, Block::ToolCall(_)));
-                }
-                let (kept, blocks): (Vec<usize>, Vec<Block>) = numbered.into_iter().unzip();
-                if blocks.is_empty() {
-                    if !cut && !failed {
-                        error = Some(CallError {
-                            class: ErrorClass::EmptyReply,
-                            message: "回复里一个块都没有".to_string(),
-                            status: None,
-                        });
-                    }
-                } else {
-                    calls = blocks
-                        .iter()
-                        .filter_map(|block| match block {
-                            Block::ToolCall(call) => Some(call.clone()),
-                            _ => None,
-                        })
-                        .collect();
-                    let body = MessageAssistant {
-                        blocks,
-                        seen,
-                        interrupted: cut || failed,
-                        indexes: MessageAssistant::indexes_for(&kept),
-                    };
-                    let by = By::Model(sent.model.clone());
-                    events.push(self.record(at, by, cause.clone(), Body::MessageAssistant(body)));
-                    reply = Some(seq);
-                    times = Some(spans.of(sent.at, kept));
-                }
-            }
-            None => {}
-        }
-        let result = if cut {
-            CallResult::Interrupted
-        } else if error.is_some() {
-            CallResult::Error
-        } else {
-            CallResult::Ok
-        };
-        let called = ModelCalled {
-            seen,
-            endpoint: sent.as_ref().map(|sent| sent.model.endpoint.clone()),
-            model: sent.as_ref().map(|sent| sent.model.model.clone()),
-            request: sent.as_ref().map(|sent| sent.request.clone()),
-            messages: messages as u64,
-            first_difference: difference
-                .map(|difference| Box::new(FirstDifference::from(difference))),
-            usage,
-            cost,
-            first_token_ms: sent
-                .as_ref()
-                .zip(first_token)
-                .map(|(sent, first)| millis(sent.at, first)),
-            duration_ms: sent.as_ref().map(|sent| millis(sent.at, at)),
-            blocks: times,
-            result,
-            error: error.clone(),
-            compaction: compaction
-                .as_ref()
-                .map(|compacting| compacting.trigger().clone()),
-            purpose: None,
-        };
-        let summary = summary
-            .zip(compaction.as_ref())
-            .map(|(summary, compacting)| {
-                let (paths, reread) = compacting.rebuild_inputs();
-                Summarized {
-                    upto: compacting.upto(),
-                    trigger: compacting.trigger().clone(),
-                    instructions: compacting.instructions(),
-                    refills: compacting.refills(),
-                    cut: compacting.shortened().0,
-                    summary,
-                    before: compacting.before(),
-                    usage: called.usage,
-                    duration_ms: called.duration_ms,
-                    paths,
-                    reread,
-                    prepared: false,
-                }
-            });
-        events.push(self.record(at, By::Kernel, cause, Body::ModelCalled(called)));
-        Settled {
-            events,
-            reply,
-            calls,
-            error,
-            summary,
-            compaction,
-            isolating,
-        }
     }
 
     /// 在路上、名字是 `seen` 的那次请求。

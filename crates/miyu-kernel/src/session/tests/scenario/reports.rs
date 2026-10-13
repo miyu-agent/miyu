@@ -282,14 +282,17 @@ fn reports_queued_when_interrupted_are_not_withdrawn_and_open_nothing() {
         s.say("刚才的回报呢");
         assert!(last_request(&s).contains("15 child.reported\n"));
     }
-    // 接着发的，排着的消息接着开下一轮，回报在那一轮里一起听到。
+    // 接着发的，排着的消息接着开下一轮，回报在那一轮里一起听到。她已经在想了：那句话排着队，不撤掉重发（施工 4-15）。
     let mut s = dispatched(stage());
-    s.model([Line::says("").held(), Line::says("都看到了。")]);
+    s.model([
+        Line::says("").thinking("想").held(),
+        Line::says("都看到了。"),
+    ]);
     s.say("hi");
     s.child_reports(1, CHILD, ChildReason::Done, "做完了。");
     s.say("还有这句");
     s.interrupt(Queued::Send);
-    assert_eq!(trigger_of(&s, 19), Some(seq(16)), "由排着的消息接着开");
+    assert_eq!(trigger_of(&s, 20), Some(seq(16)), "由排着的消息接着开");
     assert!(last_request(&s).contains("15 child.reported\n"));
 }
 

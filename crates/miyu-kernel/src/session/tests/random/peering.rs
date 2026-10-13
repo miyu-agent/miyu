@@ -53,16 +53,22 @@ pub(super) fn some_peer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opti
     }))
 }
 
-/// 在跑的调用做完了、订了一个发话方，等的会话交来「空了」，执行器交来作废或者不在了（施工 C-6）。四分之一的有别的会话的
-/// 种子（种子除以 16 余 15）有在跑的调用就由它做完、订一个（随机的会话难得有调用在跑）；别的种子不订，原来走得到的路照样
+/// 在跑的调用做完了、订了一个发话方，等的会话交来「空了」，执行器交来作废或者不在了（施工 C-6）。一半的有别的会话的
+/// 种子（种子除以 8 余 7，施工 4-15 从除以 16 余 15 放宽）有在跑的调用就由它做完、订一个（随机的会话难得有调用在跑）；别的种子不订，原来走得到的路照样
 /// 走得到。别的时候六回里一回送通知：八回里六回是「空了」，作废、不在了各一回。订的种子少，收下、作废、不在了这几条路放在
-/// 长跑里查（`paths.rs`）。
-pub(super) fn some_notice(rng: &mut Rng, watch: &Watch, ids: &mut u64) -> Option<Input> {
+/// 长跑里查（`paths.rs`）。闲着、又在等（`watching`）的时候每回都送：闲着的时候短，六回里一回难得碰上，闲着时到的那几条路
+/// 两万例里只有一例走到（施工 4-15 量的）。
+pub(super) fn some_notice(
+    rng: &mut Rng,
+    watch: &Watch,
+    watching: bool,
+    ids: &mut u64,
+) -> Option<Input> {
     // 只订、只等前两个：第三个一直是不在等的。
     let session = SessionId::parse(SENDERS[rng.below(2) as usize]).unwrap();
     let when = at(rng.below(60));
     if let Some(&call_id) = watch.running.iter().next()
-        && watch.seed % 16 == 15
+        && watch.seed % 8 == 7
     {
         // 照随机输入里做完的调用那一刻（`random.rs`）。
         return Some(Input::ToolDone {
@@ -79,7 +85,7 @@ pub(super) fn some_notice(rng: &mut Rng, watch: &Watch, ids: &mut u64) -> Option
             end_turn: false,
         });
     }
-    if rng.below(6) != 0 {
+    if !(watching && !watch.turn_open()) && rng.below(6) != 0 {
         return None;
     }
     Some(match rng.below(8) {

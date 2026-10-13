@@ -55,6 +55,7 @@ mod sight;
 mod spans;
 mod step;
 mod summary;
+mod supersede;
 mod title;
 mod todos;
 mod tools;

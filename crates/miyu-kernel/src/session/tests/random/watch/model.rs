@@ -10,9 +10,10 @@
 //! - 一步里连着再来不超过 5 次；
 //! - 再来的只有能再来的分类，和端口说换了端点的（不管分类）；换了端点、全在冷却的，没到 5 次、要等的不超过 2 分钟就一定
 //!   再来；推的 `status` 带的 `failover` 和端口说的一样，换了端点又没说等多久的等 0 毫秒（施工 8-9）；
-//! - 金额：说完了的 `model.called` 带的就是最近一次喂进去的说完了带的，原样；被打断的没有（施工 8-15）。
+//! - 金额：说完了的 `model.called` 带的就是最近一次喂进去的说完了带的，原样；被打断的、撤掉重发的没有（施工 8-15）；
+//! - 撤掉重发的另查（施工 4-15，`watch/supersede.rs`）。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::*;
 use crate::event::{Cost, ModelCalled, Prices, Real, Status};
@@ -44,6 +45,10 @@ pub(super) struct Retries {
     expecting_said: Said,
     /// 每次请求最近一次喂进去的说完了带的金额（施工 8-15）：记了 `model.called` 就拿走，照它查。
     costs: BTreeMap<Seq, Option<Cost>>,
+    /// 喂过增量的请求：撤掉重发只撤一个字都还没回的（施工 4-15）。
+    pub(super) spoke: BTreeSet<Seq>,
+    /// 撤掉重发了：下一次主请求是重发，不算步数。
+    pub(super) superseded: bool,
 }
 
 /// 喂进去的金额，照请求的序号造（施工 8-15）：不同的请求金额不同，记混了查得出来。
@@ -108,7 +113,8 @@ impl Watch {
             "种子 {seed}：请求照全部历史，撤回的、撤掉的、压缩掉的除外"
         );
         // 被动压完的重发和报超长的那一次是同一步（`compaction.md` 第六条第 1 条）。
-        let retry = self.retry_request() || self.passive_resend();
+        let resend = self.superseded_resend();
+        let retry = self.retry_request() || self.passive_resend() || resend;
         let count = self.requests.entry(turn).or_default();
         if !retry {
             *count += 1;
@@ -163,7 +169,13 @@ impl Watch {
                 "种子 {seed}：被打断的请求，这一批里接着是被打断（或者被重启打断）的回合结束"
             );
         }
-        if self.summary_seen(called.seen) {
+        if called.result == CallResult::Superseded {
+            assert!(
+                !self.summary_seen(called.seen),
+                "种子 {seed}：摘要请求不撤掉重发"
+            );
+            self.superseded_called(called, k.checked_sub(1).map(|k| &events[k]));
+        } else if self.summary_seen(called.seen) {
             self.summary_ended(called, events, k);
         } else if !self.main_too_long(called, events, k) {
             self.reply_ended(called, before, after);
@@ -178,8 +190,14 @@ impl Watch {
     fn cost_recorded(&mut self, called: &ModelCalled) {
         let seed = self.seed;
         let fed = self.retries.costs.remove(&called.seen);
-        if called.result == CallResult::Interrupted {
-            assert_eq!(called.cost, None, "种子 {seed}：被打断的请求不该有金额");
+        if matches!(
+            called.result,
+            CallResult::Interrupted | CallResult::Superseded
+        ) {
+            assert_eq!(
+                called.cost, None,
+                "种子 {seed}：被打断、撤掉重发的请求不该有金额"
+            );
             return;
         }
         if let Some(fed) = fed {
@@ -366,6 +384,12 @@ impl Watch {
                 failover: *failover,
             };
             self.retries.said.insert(*seen, said);
+        }
+        if let Input::ModelDelta { seen, .. } = input
+            && self.asking == Some(*seen)
+            && self.sent.contains(seen)
+        {
+            self.retries.spoke.insert(*seen);
         }
         if let Input::Woke { seen, .. } = input
             && self.retries.waiting == Some(*seen)

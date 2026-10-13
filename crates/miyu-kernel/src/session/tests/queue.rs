@@ -1,5 +1,8 @@
 //! 排队的消息（`docs/designs/02-内核.md` 第六节「排队的消息」）：最后一步里排着的，回复完了接着
-//! 开一轮；由最后一条触发；出错、到步数上限的一样；还有下一步时来的不接着开；打断接着发、退回。
+//! 开一轮；由最后一条触发；出错、到步数上限的一样；还有下一步时来的不接着开；打断接着发、退回。一个字都还没回时来的撤掉
+//! 重发在 [`supersede`]（施工 4-15）。
+
+mod supersede;
 
 use super::executor::*;
 use super::*;
@@ -26,13 +29,13 @@ fn withdrawn(event: &Event) -> &MessageWithdrawn {
 #[test]
 fn a_message_during_the_last_reply_opens_the_next_turn() {
     let mut session = asking();
-    allowing(&mut session, sent(5));
+    speaking(&mut session, 5);
     // 她在写最后的回答，你补了一句：排着队，这次回复看不到。
     assert_eq!(
         appended(&allowing(&mut session, send(2, "顺便也看下 tests"))),
         seqs(&[6])
     );
-    let actions = answer(&mut session, 5, "src 下有 lib.rs");
+    let actions = answer_from(&mut session, 5, 1, "src 下有 lib.rs");
     let events = appended_events(&actions);
     assert_eq!(
         appended(&actions),
@@ -75,10 +78,10 @@ fn a_message_during_the_last_reply_opens_the_next_turn() {
 #[test]
 fn the_last_of_several_queued_messages_triggers() {
     let mut session = asking();
-    allowing(&mut session, sent(5));
+    speaking(&mut session, 5);
     allowing(&mut session, send(2, "一"));
     allowing(&mut session, send(3, "二"));
-    let events = appended_events(&answer(&mut session, 5, "好"));
+    let events = appended_events(&answer_from(&mut session, 5, 1, "好"));
     assert_eq!(started(&events[3]).1, seq(7), "由后一条触发");
     assert_eq!(events[3].cause, Some(id(3)));
 }
@@ -87,6 +90,7 @@ fn the_last_of_several_queued_messages_triggers() {
 fn a_failed_or_limited_turn_also_goes_on() {
     // 出错结束：认证失败，不重试。
     let mut session = asking();
+    speaking(&mut session, 5);
     allowing(&mut session, send(2, "还在吗"));
     let events = appended_events(&allowing(
         &mut session,
@@ -130,6 +134,7 @@ fn a_message_heard_by_a_later_step_does_not_reopen() {
 #[test]
 fn interrupting_with_send_opens_a_turn_for_the_queued() {
     let mut session = asking();
+    speaking(&mut session, 5);
     allowing(&mut session, send(2, "别查了，先看 README"));
     let actions = allowing(&mut session, stop_with(3, at(47), Queued::Send));
     let events = appended_events(&actions);
@@ -146,6 +151,7 @@ fn interrupting_with_send_opens_a_turn_for_the_queued() {
 #[test]
 fn interrupting_with_return_takes_the_queued_back() {
     let mut session = asking();
+    speaking(&mut session, 5);
     allowing(&mut session, send(2, "顺便把 README 也看了"));
     allowing(&mut session, send(4, "还有 Cargo.toml"));
     let actions = allowing(&mut session, stop_with(5, at(47), Queued::Return));
@@ -183,6 +189,7 @@ fn interrupting_with_return_takes_the_queued_back() {
 #[test]
 fn interrupting_with_keep_leaves_the_queued_for_the_next_turn() {
     let mut session = asking();
+    speaking(&mut session, 5);
     allowing(&mut session, send(2, "顺便把 README 也看了"));
     allowing(&mut session, send(4, "还有 Cargo.toml"));
     let actions = allowing(&mut session, stop_with(5, at(47), Queued::Keep));

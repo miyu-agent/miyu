@@ -204,3 +204,18 @@ fn the_tail_is_the_smaller_of_its_cap_and_a_quarter_of_the_line() {
     let actions = session.handle(compact(3, None));
     assert_eq!(actions, [rejected_reply(3, Reason::NothingToCompact)]);
 }
+
+/// 摘要请求在路上、一个字都还没回时来了一句话（施工 4-15）：不撤掉重发，照常排着队。
+#[test]
+fn a_message_does_not_withdraw_a_summary_request() {
+    let mut session = after_one_turn();
+    session.handle(compact(3, None));
+    assert_eq!(calls(&session.handle(stored(9))).len(), 1, "发了摘要请求");
+    let actions = session.handle(send(4, "还在吗"));
+    assert_eq!(appended(&actions), seqs(&[10]), "只记下消息");
+    assert!(
+        !actions
+            .iter()
+            .any(|action| matches!(action, Action::CancelModel { .. }))
+    );
+}

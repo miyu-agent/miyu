@@ -121,11 +121,34 @@ pub(super) fn asking() -> Session {
 
 /// 请求 `seen` 发出去、说了 `text`、说完了。返回说完了那一步的动作。
 pub(super) fn answer(session: &mut Session, seen: u64, text: &str) -> Vec<Action> {
+    answer_from(session, seen, 0, text)
+}
+
+/// 同 [`answer`]，正文是流里的第 `index` 块：前面几块 [`speaking`] 开过了。发出去报两次的只认第一次。
+pub(super) fn answer_from(
+    session: &mut Session,
+    seen: u64,
+    index: usize,
+    text: &str,
+) -> Vec<Action> {
     session.handle(sent(seen));
-    for piece in words(0, text) {
+    for piece in words(index, text) {
         session.handle(delta(seen, 41, piece));
     }
     session.handle(ended(seen))
+}
+
+/// 请求 `seen` 发出去了、开始回字了：流里第 0 块是一段空的思考，回复里不留（施工 4-15：这时来的消息排着队，不撤掉
+/// 重发）。接着说的从第 1 块起（[`answer_from`]、[`call_tools_from`]）。
+pub(super) fn speaking(session: &mut Session, seen: u64) {
+    session.handle(sent(seen));
+    let thinking = Delta::Start {
+        index: 0,
+        kind: Kind::Reasoning,
+    };
+    for piece in [thinking, Delta::End { index: 0 }] {
+        session.handle(delta(seen, 41, piece));
+    }
 }
 
 pub(super) fn called_of(event: &Event) -> &ModelCalled {
@@ -144,8 +167,18 @@ pub(super) fn reason_of(event: &Event) -> &EndReason {
 
 /// 请求 `seen` 发出去、调了这几件工具（工具名、参数原文）、说完了。返回说完了那一步的动作。
 pub(super) fn call_tools(session: &mut Session, seen: u64, calls: &[(&str, &str)]) -> Vec<Action> {
+    call_tools_from(session, seen, 0, calls)
+}
+
+/// 同 [`call_tools`]，调用从流里的第 `first` 块起：前面几块 [`speaking`] 开过了。
+pub(super) fn call_tools_from(
+    session: &mut Session,
+    seen: u64,
+    first: usize,
+    calls: &[(&str, &str)],
+) -> Vec<Action> {
     session.handle(sent(seen));
-    for (index, (name, args)) in calls.iter().enumerate() {
+    for (index, (name, args)) in (first..).zip(calls) {
         let steps = [
             Delta::Start {
                 index,

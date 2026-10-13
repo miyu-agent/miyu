@@ -196,8 +196,16 @@ async fn two_connections_loading_one_session_start_one_actor() {
     );
     assert!(first["result"]["events"].is_array(), "{first}");
     assert!(second["result"]["events"].is_array(), "{second}");
-    // 第二句排在第一句那一轮后面，接着开一轮：一共三轮。
-    home.until_turns(&session, 3).await;
+    // 第二句到的时候，第一句那一轮还没回字的撤掉重发、并进这一轮（施工 4-15），已经在说的排在后面接着开一轮：两种都对。
+    // 等三句都记下、开过的轮都说完。
+    let settled = |log: &[miyu_kernel::event::Event]| {
+        let count = |pick: fn(&Body) -> bool| log.iter().filter(|event| pick(&event.body)).count();
+        let started = count(|body| matches!(body, Body::TurnStarted(_)));
+        count(|body| matches!(body, Body::MessageUser(_))) == 3
+            && started >= 2
+            && started == count(|body| matches!(body, Body::TurnEnded(_)))
+    };
+    until("三句都说完", || settled(&home.log(&session))).await;
 }
 
 #[tokio::test]

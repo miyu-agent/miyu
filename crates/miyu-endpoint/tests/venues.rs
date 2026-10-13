@@ -142,9 +142,10 @@ async fn who_speaks_in_a_venue_session() {
     .await;
     assert!(reply["result"]["events"].is_array(), "{reply}");
     home.until_turns(&session, 1).await;
-    for (id, speaker) in [
-        ("s2", json!({"external": "qq:20002"})),
-        ("s3", json!({"external": "qq:10003", "role": "manager"})),
+    // 一句说完了再发下一句：还没回字时来的会撤掉重发、并进那一轮（施工 4-15），这里要的是三轮各一个说话的人。
+    for (turns, id, speaker) in [
+        (2, "s2", json!({"external": "qq:20002"})),
+        (3, "s3", json!({"external": "qq:10003", "role": "manager"})),
     ] {
         let reply = send(
             &mut client,
@@ -153,8 +154,8 @@ async fn who_speaks_in_a_venue_session() {
         )
         .await;
         assert!(reply["result"]["events"].is_array(), "{reply}");
+        home.until_turns(&session, turns).await;
     }
-    home.until_turns(&session, 3).await;
     let venue = miyu_kernel::id::VenueId::parse("qq:private:10001").expect("合写法");
     let mut owner = Person::new(alice());
     owner.via = Some(miyu_kernel::id::ExternalId::parse("qq:10001").expect("合写法"));

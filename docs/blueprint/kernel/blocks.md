@@ -66,7 +66,7 @@
 | `Decision` | `event/tool.rs` | `once`、`session`、`workspace`、`deny` | 同上 |
 | `Part` | `event/model.rs` | `tools`、`system`、`message` | 同上 |
 | `MessageRole` | `event/model.rs` | `user`、`assistant`、`tool` | 同上 |
-| `CallResult` | `event/model.rs` | `ok`、`error`、`interrupted` | 同上 |
+| `CallResult` | `event/model.rs` | `ok`、`error`、`interrupted`、`superseded`（施工 4-15） | 同上 |
 | `ErrorClass` | `event/model.rs` | `retryable`、`rate_limited`、`context_too_long`、`auth`、`content_policy`、`other`、`bad_stream`、`empty_reply` | 同上 |
 
 `ErrorClass` 里写成 `other` 的那一个认识的值，代码里叫 `Unclassified`：`Other` 这个名字留给读到的不认识的分类。

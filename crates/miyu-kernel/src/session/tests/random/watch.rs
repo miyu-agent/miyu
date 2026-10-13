@@ -32,6 +32,7 @@ mod restore;
 mod shorten;
 mod sight;
 mod stopping;
+mod supersede;
 mod transient;
 mod undo;
 

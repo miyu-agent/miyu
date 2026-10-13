@@ -13,8 +13,8 @@ use crate::time::Timestamp;
 impl Session {
     /// 发一条消息：一块内容都没有、也没带场所的东西（交了原图的不算，施工 O-35）的拒绝，`empty_message`。别处来的（子代理的留言，施工 7-7；别的 harness 发来的话，
     /// 施工 7-10；别的会话发来的话，施工 C-2）照回报的规矩到。空闲时追加 `message.user`、同一批开一个回合；回合进行中
-    /// 追加、带上这个回合、排进队，这一步里在等人的调用作废，急着插话的再跳过还没跑的，叫停的 `CancelTool` 排在 `Append`
-    /// 后面。
+    /// 追加、带上这个回合、排进队，这一步里在等人的调用作废，在路上的请求一个字都还没回的撤掉重发（施工 4-15），急着插话的
+    /// 再跳过还没跑的，叫停的 `CancelTool`、`CancelModel` 排在 `Append` 后面。
     pub(super) fn send(
         &mut self,
         id: CommandId,
@@ -52,6 +52,11 @@ impl Session {
             let (voided, stopped) = self.void_waiting(at, &by, &id);
             events.extend(voided);
             stops = stopped;
+            // 在路上的请求一个字都还没回的，撤掉带上它重发（施工 4-15，`supersede.rs`）。
+            if let Some((superseded, cancel)) = self.supersede(at, &id) {
+                events.extend(superseded);
+                stops.push(cancel);
+            }
             if urgent {
                 events.extend(self.interject(at, by, id));
             }

@@ -434,3 +434,38 @@ fn an_approved_call_runs_with_the_level_in_effect() {
         Some(permission(Level::Workspace, true))
     );
 }
+
+/// 只读时链说要问人、要的是写入（施工 4-15 补的定点用例：随机测试里这条路一千例才一两回，挪进了长跑）：不问人，内核
+/// 当场拦下。跑命令的照规则不算写入，收紧时不拦，等链的结论。
+#[test]
+fn under_read_only_an_ask_to_write_is_denied_on_the_spot() {
+    use super::approval::ask;
+    use crate::tool::Access;
+    let mut session = asking();
+    call_tools(&mut session, 5, &[("shell", "{}")]);
+    assert_eq!(guards(&session.handle(stored(7))), [call(6, 1)]);
+    let actions = session.handle(read_only(2, true));
+    assert!(
+        appended_events(&actions)
+            .iter()
+            .all(|event| !matches!(event.body, Body::ToolResult(_))),
+        "收紧时不拦跑命令的"
+    );
+    let actions = session.handle(guarded(call(6, 1), ask(Access::Write, false)));
+    let events = appended_events(&actions);
+    assert_eq!(
+        result_of(&events[0]),
+        (
+            call(6, 1),
+            ToolStatus::Denied,
+            By::Kernel,
+            "read only".to_string()
+        )
+    );
+    assert!(
+        events
+            .iter()
+            .all(|event| !matches!(event.body, Body::ApprovalRequested(_))),
+        "不问人"
+    );
+}

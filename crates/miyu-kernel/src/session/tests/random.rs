@@ -189,6 +189,12 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
         return sent_now(seen);
     }
     match slot {
+        // 一个字都还没回时来的消息撤掉重发（施工 4-15）：常发的这几格这时先来增量，别的几格照样发。
+        0..=2 if watch.silent() => Input::ModelDelta {
+            at: at(41),
+            seen: watch.some_seen(rng),
+            delta: watch.some_delta(rng),
+        },
         0..=2 => send(next_command(next_id), "hi"),
         3 => send(1 + rng.below(*next_id), "hi"),
         4 => send(next_command(next_id), ""),
@@ -389,7 +395,12 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
                 watch.feed(&mut session, input);
             }
             if peering
-                && let Some(input) = peering::some_notice(&mut notices, &watch, &mut notice_ids)
+                && let Some(input) = peering::some_notice(
+                    &mut notices,
+                    &watch,
+                    !session.watching().is_empty(),
+                    &mut notice_ids,
+                )
             {
                 watch.feed(&mut session, input);
             }

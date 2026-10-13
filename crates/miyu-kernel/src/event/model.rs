@@ -175,6 +175,8 @@ text_enum!(
         Error = "error",
         /// 被人打断：用量没有，用时算到打断为止。
         Interrupted = "interrupted",
+        /// 排队的消息到了、一个字都还没回，撤掉了带上新消息重发（施工 4-15）：用量没有，用时算到撤掉为止。
+        Superseded = "superseded",
     }
 );
 

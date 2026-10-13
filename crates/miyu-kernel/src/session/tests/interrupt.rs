@@ -256,11 +256,12 @@ fn an_urgent_message_skips_the_calls_not_yet_run() {
 #[test]
 fn an_urgent_message_during_a_request_skips_the_calls_of_its_reply() {
     let mut session = asking();
+    speaking(&mut session, 5);
     assert_eq!(
         appended(&allowing(&mut session, urgent(2, "换个做法"))),
         seqs(&[6])
     );
-    let actions = call_tools(&mut session, 5, &[("read", "{}"), ("reed", "{}")]);
+    let actions = call_tools_from(&mut session, 5, 1, &[("read", "{}"), ("reed", "{}")]);
     let events = appended_events(&actions);
     assert_eq!(appended(&actions), seqs(&[7, 8, 9, 10]));
     assert_eq!(result_of(&events[2]).1, ToolStatus::Skipped);
