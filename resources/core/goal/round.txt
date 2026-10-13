@@ -7,5 +7,4 @@ Make one concrete step of progress now. Never spend a round only reporting that 
   goal {"action":"complete"}
 · blocked, incl. needing an answer from the user →
   goal {"action":"blocked","reason":"…"}
-Write everything you say to the user, including short notes between tool calls, in the language the objective is written in.
 </goal_round>
