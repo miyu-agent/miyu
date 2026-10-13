@@ -27,7 +27,7 @@ mod turns;
 pub mod uses;
 pub mod vector;
 
-pub use fuse::{FLOOR, fuse};
+pub use fuse::{FLOOR, fuse, fuse_above};
 pub use memory::{
     CLASSES, Cleared, Entry, Extracted, MemoryBook, MemoryEvent, MemoryId, Merged, Restored,
     Retired, Saved, Skipped, Source, Summary, from_event, to_event,

@@ -242,7 +242,7 @@ impl Core {
             memory.give_extraction(extraction);
         }
         Core {
-            knowledge: knowledge::shelf(&root, home.clone(), knowledge::extractor()),
+            knowledge: knowledge::shelf(&root, home.clone(), knowledge::extractor(), &resources),
             memory,
             index,
             system_indexes: std::sync::Mutex::default(),

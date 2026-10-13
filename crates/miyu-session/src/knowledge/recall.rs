@@ -81,7 +81,7 @@ pub(crate) fn texts(resources: &ResourceRoot) -> Option<Arc<RecallTexts>> {
 
 fn load(resources: &ResourceRoot) -> Result<RecallTexts, String> {
     let thresholds = resources
-        .knowledge_recall()
+        .knowledge_table("recall")
         .map_err(|error| error.to_string())
         .and_then(|text| {
             Thresholds::parse(&text).map_err(|why| format!("core/knowledge/recall.toml：{why}"))

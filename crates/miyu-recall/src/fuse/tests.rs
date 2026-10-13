@@ -56,3 +56,19 @@ fn ties_follow_the_keyword_order_then_the_vector_order() {
     let fused = fuse(&keys(&["a", "b"]), &near(&[("x", 0.9), ("y", 0.9)]));
     assert_eq!(fused, keys(&["a", "b", "x", "y"]));
 }
+
+#[test]
+fn a_floor_of_its_own() {
+    // 施工 K-2 修：知识库照模型交下限，只看只有向量一路找到的；关键词也找到的照旧不看。
+    let fused = fuse_above(
+        &keys(&["a"]),
+        &near(&[("x", 0.55), ("y", 0.45), ("a", 0.1)]),
+        0.5,
+    );
+    assert_eq!(fused, keys(&["a", "x"]), "y 过了 0.40、不到 0.5");
+    assert_eq!(
+        fuse_above(&keys(&["a"]), &near(&[("y", 0.45)]), FLOOR),
+        fuse(&keys(&["a"]), &near(&[("y", 0.45)])),
+        "fuse 就是照 FLOOR"
+    );
+}

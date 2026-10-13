@@ -21,6 +21,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
+use miyu_recall::associate::Thresholds;
 
 use crate::layers::valid;
 use crate::recall::{DbError, RecallIndex};
@@ -39,6 +40,8 @@ pub struct Knowledge {
     home: Option<PathBuf>,
     /// 抽字的小程序 `miyu-extract`（施工 K-5）：没有的不认 PDF、网页（补的时候跳过，读的时候读不了）。
     extractor: Option<PathBuf>,
+    /// 只照意思找到的那一路的下限，照模型（施工 K-2 修）：表里没有的照 [`miyu_recall::FLOOR`]。
+    floors: Thresholds,
     open: Mutex<BTreeMap<(AccountId, String), Arc<Shelf>>>,
 }
 
@@ -178,6 +181,7 @@ impl Knowledge {
             root: root.clone(),
             home: None,
             extractor: None,
+            floors: Thresholds::default(),
             open: Mutex::new(BTreeMap::new()),
         }
     }
@@ -192,6 +196,19 @@ impl Knowledge {
     #[must_use]
     pub fn with_extractor(self, extractor: Option<PathBuf>) -> Knowledge {
         Knowledge { extractor, ..self }
+    }
+
+    /// 只照意思找到的那一路的下限照这张表（施工 K-2 修，`core/knowledge/search.toml`）；没交的、表里没有的模型照
+    /// [`miyu_recall::FLOOR`]。
+    #[must_use]
+    pub fn with_floors(self, floors: Thresholds) -> Knowledge {
+        Knowledge { floors, ..self }
+    }
+
+    /// 问句照模型 `model` 算的时候，只照意思找到的那一路的下限（施工 K-2 修）：表里有的照表，没有的照 [`miyu_recall::FLOOR`]。
+    #[must_use]
+    pub fn floor(&self, model: &str) -> f32 {
+        self.floors.of(model).unwrap_or(miyu_recall::FLOOR)
     }
 
     /// 账号 `account` 下的知识库，照编号排；每个先照文件补。目录不在的当一个都没有。
@@ -219,8 +236,8 @@ impl Knowledge {
 
     /// 照关键词搜：`only` 是只搜这几个库（人经协议写了 `kb` 的一个，她的工具照人格收窄的几个，施工 K-1 下），没有的搜账号下
     /// 全部；几个库的照名次轮流合（每个库的第一名在前，同名次照 `only` 的先后，全部的照编号），最多 `limit` 块。搜之前照文件补。
-    /// 有问句的向量 `near` 的（施工 K-2）：每个库照关键词、照意思各找 `limit` 的四倍，两路照名次合（`fuse`，只有照意思那一路
-    /// 找到的过下限），再轮流合；补向量是调的一方在后台做的（[`Knowledge::index_of`]），没补上的块只有关键词那一路找得到。
+    /// 有问句的向量 `near` 的（施工 K-2）：每个库照关键词、照意思各找 `limit` 的四倍，两路照名次合（`fuse_above`，只有照意思
+    /// 那一路找到的过下限，下限照模型，[`Knowledge::with_floors`]），再轮流合；补向量是调的一方在后台做的（[`Knowledge::index_of`]），没补上的块只有关键词那一路找得到。
     ///
     /// # Errors
     ///
@@ -242,6 +259,7 @@ impl Knowledge {
             }
             None => self.ids(account)?,
         };
+        let floor = near.map_or(miyu_recall::FLOOR, |near| self.floor(near.model));
         let mut skipped = Vec::new();
         let mut lists = Vec::new();
         for id in ids {
@@ -251,7 +269,7 @@ impl Knowledge {
                 Err(error) => return Err(error),
             }
             let shelf = self.shelf(account, &id);
-            lists.push(fused(&shelf.index, &id, query, limit, near)?.into_iter());
+            lists.push(fused(&shelf.index, &id, query, limit, near, floor)?.into_iter());
         }
         let mut hits = Vec::new();
         for _ in 0..limit {
@@ -399,13 +417,14 @@ impl Knowledge {
 }
 
 /// 库 `kb` 里照关键词、照意思（有问句的向量的）各找 `limit` 的四倍，两路照名次合，取 `limit` 块（施工 K-2，同记忆的回合库
-/// 那一套，`memory/past.rs`）。
+/// 那一套，`memory/past.rs`）；只有照意思那一路找到的过 `floor`（施工 K-2 修）。
 fn fused(
     index: &RecallIndex,
     kb: &str,
     query: &str,
     limit: usize,
     near: Option<Meaning<'_>>,
+    floor: f32,
 ) -> Result<Vec<Hit>, KnowledgeError> {
     let wide = limit.saturating_mul(4);
     let words = index.search(query, wide)?;
@@ -424,7 +443,7 @@ fn fused(
         .map(|hit| (hit.key, (hit.text, hit.at)))
         .collect();
     found.extend(words.into_iter().map(|hit| (hit.key, (hit.text, hit.at))));
-    Ok(miyu_recall::fuse(&keys, &similar)
+    Ok(miyu_recall::fuse_above(&keys, &similar, floor)
         .into_iter()
         .filter_map(|key| {
             let (text, at) = found.remove(&key)?;

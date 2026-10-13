@@ -11,23 +11,37 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
+use miyu_recall::associate::Thresholds;
 use miyu_store::knowledge::{Base, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
+use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 核心一份的知识库：`~/` 照家目录 `home` 接（施工 K-4），PDF、网页照抽字的小程序 `extractor` 抽（施工 K-5）。
+/// 核心一份的知识库：`~/` 照家目录 `home` 接（施工 K-4），PDF、网页照抽字的小程序 `extractor` 抽（施工 K-5），只照意思找到的
+/// 那一路的下限照资源目录 `resources` 里的表（施工 K-2 修，`core/knowledge/search.toml`）：读不出来的记一行，都照
+/// [`miyu_recall::FLOOR`]，别的照常。
 pub(crate) fn shelf(
     root: &DataRoot,
     home: Option<PathBuf>,
     extractor: Option<PathBuf>,
+    resources: &ResourceRoot,
 ) -> Arc<Knowledge> {
+    let floors = resources
+        .knowledge_table("search")
+        .map_err(|error| error.to_string())
+        .and_then(|text| Thresholds::parse(&text))
+        .inspect_err(|error| {
+            tracing::warn!(target: "miyu::endpoint", error = error.as_str(), "knowledge search floors unreadable");
+        })
+        .unwrap_or_default();
     Arc::new(
         Knowledge::new(root)
             .with_home(home)
-            .with_extractor(extractor),
+            .with_extractor(extractor)
+            .with_floors(floors),
     )
 }
 
@@ -45,7 +59,7 @@ impl Core {
     /// 找）。
     #[must_use]
     pub fn with_extractor(mut self, extractor: Option<PathBuf>) -> Core {
-        self.knowledge = shelf(&self.root, self.home.clone(), extractor);
+        self.knowledge = shelf(&self.root, self.home.clone(), extractor, &self.resources);
         self
     }
 }

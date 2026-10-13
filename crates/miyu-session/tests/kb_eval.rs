@@ -108,6 +108,47 @@ fn the_kb_eval_set_is_well_formed() {
     }
 }
 
+/// 测评集的世界观放进 alice 的库 `world`，照文件补好（一段一块）。
+fn world(sections: &BTreeMap<String, String>) -> Home {
+    let home = Home::new();
+    let world = home.root.account_dir(&alice_account()).join("kb/world");
+    std::fs::create_dir_all(&world).expect("建得了");
+    for entry in std::fs::read_dir(fixtures().join("world")).expect("读得了") {
+        let path = entry.expect("读得了").path();
+        std::fs::copy(&path, world.join(path.file_name().expect("有名字"))).expect("拷得了");
+    }
+    let (bases, _) = home.knowledge.list(&alice_account()).expect("补得了");
+    assert_eq!(bases[0].chunks, sections.len(), "一段一块");
+    home
+}
+
+/// 设了 `MIYU_EMBED_MODEL_DIR` 的：接上真的 bge，补齐库 `world` 的向量，交回算问句向量要的两样；没设的没有。
+async fn bge(home: &Home) -> Option<(Arc<Vectors>, Using)> {
+    let files = std::env::var_os("MIYU_EMBED_MODEL_DIR")?;
+    let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
+    let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(home)));
+    let using = Using {
+        config: Arc::new(Turn::new(
+            Default::default(),
+            Arc::clone(&*home.configs.borrow()),
+        )),
+        owner: alice_account(),
+    };
+    let index = home.knowledge.index_of(&alice_account(), "world");
+    vectors.fill_knowledge(&using, "kb alice world".to_string(), Arc::clone(&index));
+    for _ in 0..1200 {
+        if index.missing(MODEL, 0, 100).expect("读得了").is_empty() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert!(
+        index.missing(MODEL, 0, 100).expect("读得了").is_empty(),
+        "补齐了向量"
+    );
+    Some((vectors, using))
+}
+
 /// 每句带了哪几段（键）。
 type Picked = Vec<BTreeSet<String>>;
 
@@ -184,15 +225,7 @@ async fn measure_the_kb_eval_set() {
             )
         })
         .collect();
-    let home = Home::new();
-    let world = home.root.account_dir(&alice_account()).join("kb/world");
-    std::fs::create_dir_all(&world).expect("建得了");
-    for entry in std::fs::read_dir(fixtures().join("world")).expect("读得了") {
-        let path = entry.expect("读得了").path();
-        std::fs::copy(&path, world.join(path.file_name().expect("有名字"))).expect("拷得了");
-    }
-    let (bases, _) = home.knowledge.list(&alice_account()).expect("补得了");
-    assert_eq!(bases[0].chunks, sections.len(), "一段一块");
+    let home = world(&sections);
 
     // 标题名：话里出现了这一段标题的最后一段（两个字以上）。
     let named: Picked = set
@@ -225,31 +258,11 @@ async fn measure_the_kb_eval_set() {
         table("关键词搜得到（前 3 块）", &set, &sections, &keyword)
     );
 
-    let Some(files) = std::env::var_os("MIYU_EMBED_MODEL_DIR") else {
+    let Some((vectors, using)) = bge(&home).await else {
         println!("没设 MIYU_EMBED_MODEL_DIR：只量了标题名、关键词");
         return;
     };
-    let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
-    let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(&home)));
-    let using = Using {
-        config: Arc::new(Turn::new(
-            Default::default(),
-            Arc::clone(&*home.configs.borrow()),
-        )),
-        owner: alice_account(),
-    };
     let index = home.knowledge.index_of(&alice_account(), "world");
-    vectors.fill_knowledge(&using, "kb alice world".to_string(), Arc::clone(&index));
-    for _ in 0..1200 {
-        if index.missing(MODEL, 0, 100).expect("读得了").is_empty() {
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-    }
-    assert!(
-        index.missing(MODEL, 0, 100).expect("读得了").is_empty(),
-        "补齐了向量"
-    );
     // 每句前 3 块的相似度。
     let mut near: Vec<Vec<(String, f32)>> = Vec::new();
     for query in &set.query {
@@ -323,5 +336,83 @@ async fn measure_the_kb_eval_set() {
             .collect();
         right.sort_by(f32::total_cmp);
         println!("{kind} 该带的那一段多像（前 3 块里没有的是 0）：{right:.3?}");
+    }
+}
+
+/// `kb_search` 只照意思找到的那一路的下限（施工 K-2 修，验收手册待定 11）：同她的工具，每句关键词、照意思各找 20 块，只有照意思
+/// 找到的过下限才算，两路照名次合，取前 5 块；几个下限各打一张表。平常的话（`none`）带了东西的就是乱带。
+#[tokio::test]
+#[ignore = "量尺：要设 MIYU_EMBED_MODEL_DIR"]
+async fn measure_the_search_floor() {
+    let set = shipped();
+    let sections = sections();
+    let home = world(&sections);
+    let Some((vectors, using)) = bge(&home).await else {
+        println!("没设 MIYU_EMBED_MODEL_DIR：量不了");
+        return;
+    };
+    let index = home.knowledge.index_of(&alice_account(), "world");
+    let mut asked = Vec::new();
+    for query in &set.query {
+        let words: Vec<String> = index
+            .search(&query.text, 20)
+            .expect("搜得了")
+            .into_iter()
+            .map(|hit| hit.key)
+            .collect();
+        let near = vectors.query(&using, &query.text).await.expect("算得出");
+        let close: Vec<(String, f32)> = index
+            .nearest(MODEL, &near.vector, 20)
+            .expect("找得了")
+            .into_iter()
+            .map(|hit| (hit.key, hit.similar))
+            .collect();
+        asked.push((words, close));
+    }
+    for floor in [0.40, 0.45, 0.50, 0.55, 0.60, 0.65] {
+        let picked: Picked = asked
+            .iter()
+            .map(|(words, close)| {
+                let close: Vec<(String, f32)> = close
+                    .iter()
+                    .filter(|(key, similar)| *similar >= floor || words.contains(key))
+                    .cloned()
+                    .collect();
+                miyu_recall::fuse(words, &close)
+                    .into_iter()
+                    .take(5)
+                    .collect()
+            })
+            .collect();
+        println!(
+            "{}",
+            table(
+                &format!("kb_search，下限 {floor:.2}，前 5 块"),
+                &set,
+                &sections,
+                &picked
+            )
+        );
+    }
+    let picked: Picked = asked
+        .iter()
+        .map(|(words, _)| words.iter().take(5).cloned().collect())
+        .collect();
+    println!(
+        "{}",
+        table("kb_search，只走关键词，前 5 块", &set, &sections, &picked)
+    );
+    // 测评集里换了说法的多半还有一两个字对得上；这几句一个字都对不上，只能照意思找到：该找到的那一段多像。
+    for (text, label) in [
+        ("雷雨天谁最害怕", "people.md:艾琳"),
+        ("喷火的大怪兽住在哪", "people.md:赤鳞"),
+        ("这里的钞票长什么样", "lore.md:银鳞币"),
+        ("哪个节日要放飞亮光", "history.md:灯笼节"),
+    ] {
+        let near = vectors.query(&using, text).await.expect("算得出");
+        let found = index.nearest(MODEL, &near.vector, 20).expect("找得了");
+        let rank = found.iter().position(|hit| hit.key == sections[label]);
+        let similar = rank.map(|at| found[at].similar);
+        println!("{text} → {label}：第 {rank:?} 像，{similar:.3?}");
     }
 }

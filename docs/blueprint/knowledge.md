@@ -23,7 +23,8 @@
 | `crates/miyu-store/src/knowledge/mount.rs` | 库的文档在哪：自己的目录，还是挂进来的（`mount` 换成读得了的目录，`~/` 照核心的家目录）；写的三件照它拒挂进来的（「对外的样子」、第三条第 6 款） | K-4 |
 | `crates/miyu-store/src/knowledge/extract.rs` | 文档是哪一种、上限、哪几种写得了；文字的照原样读，PDF、网页拉起 `miyu-extract` 抽、等它、卡住了杀掉；主程序旁边找它（`extractor_beside`）（第二条第 5、6 款） | K-5 |
 | `crates/miyu-extract/`（`src/lib.rs`、`radicals.rs`、`main.rs`，`data/EquivalentUnifiedIdeograph.txt`） | 抽字的小程序：一次抽一份 PDF 或网页，照 JSON 交回去就退；PDF 一页一页抽、部首的码位换回平常的字（Unicode 的对照表原样带着），网页换成文字（第二条第 5、6 款） | K-5 |
-| `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个） | K-5 |
+| `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个）、照资源目录读的搜的下限（K-2 修） | K-5 |
+| `resources/core/knowledge/search.toml`、`Knowledge::with_floors`、`floor`，`miyu_recall::fuse_above` | 搜的时候只照意思找到的那一路的下限，照模型（第四条）；数据，不给模型看 | K-2 修 |
 | `crates/miyu-session/src/knowledge/recall.rs`、`resources/core/knowledge/recall.toml`、`resources/software/knowledge/recall/`，`crates/miyu-session/src/actor/model.rs`（`hooks`、`recalling`） | 自动想起：挑、拼那一块、门槛表、外壳；回合开始和记忆的挂接点并着问（第九条）；`Knowledge::sections`、`auto` 列出一个库的每一段、开没开 | K-6 下 |
 | `crates/miyu-store/src/knowledge/manage.rs` | 人管理：建库、改名字说明、挂目录、加文档、删库、重建索引（第八条）；`RecallIndex::discard`（关上、删掉索引） | K-7 上 |
 | `crates/miyu-cli/src/kb.rs`（详见 `cli/kb.md`） | 命令行 `miyu kb`：照子命令发 `kb.*`，加文件照 `blob.put` 本机路径 | K-7 下 |
@@ -142,7 +143,7 @@ Knowledge bases you can search:
 6. 挂进来的照挂的目录补（K-4）。挂的目录用不了（不在、不是目录、读不了，写的不是绝对路径也不是 `~/` 开头、家目录不知道）：不补，索引不动（U 盘拔了再插回来不用重建），`kb.list` 里这个库带 `error`、数照索引里现有的，搜的时候跳过它（第四条），读里面的文档是没有这个文档；她的 system 里照旧列着（只有这一刻才知道用不了，跟着变就每回断一次缓存）。
 7. 不另监视文件（K-4 量过）：每次列、搜之前照指纹补就跟得上原处的改动。3000 篇（24000 块）的库不变的重扫 8 到 10 毫秒、改了一篇 8 到 13 毫秒、头一次补 0.6 秒上下（Linux、release，`measure_three_thousand_documents`）；监视省下的只有这 10 毫秒和「改过的块下一次搜完才补上向量」。量出重扫成了瓶颈再加。
 
-**四、搜**（K-1 上、K-2）：每个要搜的库（挂的目录用不了的跳过，K-4）里照关键词（`recall.md` 第一条）找 `limit` 的四倍；有问句的向量的（K-2，`recall.md` 第三条：问句照调的一方手里的配置算，`models.embedding` 是 `off` 的、本机的没装的、算不出的、1 秒等不到的没有）再照意思找同样多，两路照名次合（加权 RRF，只有照意思那一路找到的过 0.40 的下限），取 `limit` 块；几个库的再照名次轮流合（每个库的第一名在前，同名次照库的编号，收窄的照列的先后），取 `limit` 块。
+**四、搜**（K-1 上、K-2）：每个要搜的库（挂的目录用不了的跳过，K-4）里照关键词（`recall.md` 第一条）找 `limit` 的四倍；有问句的向量的（K-2，`recall.md` 第三条：问句照调的一方手里的配置算，`models.embedding` 是 `off` 的、本机的没装的、算不出的、1 秒等不到的没有）再照意思找同样多，两路照名次合（加权 RRF，只有照意思那一路找到的过下限：照模型，表在 `resources/core/knowledge/search.toml`，`local:bge-small-zh-v1.5` 是 0.50，表里没有的照 0.40，`miyu_recall::FLOOR`；核心起来时读一次交给知识库，读不出来的记一行 `WARN knowledge search floors unreadable`，都照 0.40；K-2 修：原来都照 0.40，装了内置语义模型以后平常的话也搜得出东西，验收手册查出来，bge 的 0.50 照测评集量、2026-10-13 项目主人定，`knowledge/eval.md`「搜的下限」），取 `limit` 块；几个库的再照名次轮流合（每个库的第一名在前，同名次照库的编号，收窄的照列的先后），取 `limit` 块。
 
 搜完在后台补搜过的几个库缺的向量（K-2，同记忆的「搜的时候补」，`Vectors::fill_knowledge`）：一个库一个名字（`kb <账号> <编号>`），她的工具、人经协议补同一个库同一时刻只有一个在补；远程的花费记在调的一方名下（会话的属主、人经协议是管理员）。开了 `auto` 的库，自动想起的时候也照这样补（第九条第 2 款，同一个名字）。没补上向量的块只有关键词那一路找得到；新写进来的、改过的块下一次搜完（开了 `auto` 的，下一次自动想起）再补。
 
@@ -216,7 +217,8 @@ Knowledge bases you can search:
 | `crates/miyu-session/tests/knowledge_recall.rs`（K-6 下） | 第九条，真会话、真目录：开了 `auto` 的库，话里提到标题名的那一轮那一块逐字节对、`refs` 对；带过的这一段上下文里不再带、只带新提到的；平常的话、没开 `auto` 的、预设关了知识库的不带；照意思（远程的假 embedding）：模型不在门槛表里的不带、不问那一家（也不补段的向量），在表里的（测试改的那一份门槛表）过门槛的带、不过的不带；她不搜，段的向量也在后台补上，补完的下一轮换了说法带得上；那一家停住不回的，标题名照带；原处加了一段的下一轮照文件补 |
 | `crates/miyu-session/src/knowledge/recall/tests.rs`（K-6 下） | 第九条第 3、4 款：只有知识库交过的算交过，带过几条连同记忆的联想一起数；一块逐字节对，PDF 说第几页、没标题的只写路径、换行写成空格、长的截到 120 个字接省略号，超过 600 字节的那一段和以后的不加 |
 | `crates/miyu-store/tests/knowledge_manage.rs`（K-7 上） | 第八条：建库带名字说明（转义）、有了的不建、编号不对的；改名字说明照留注释和别的格、空字符串拿掉（文件里没这一格）、没有的库；挂目录、有了的不挂、目录不在的和相对路径的什么都不建、改名字时 `mount` 照留；加文档（PDF 也行）、有了的不换、说换的换、路径不对的三种、挂进来的不加且挂的目录没动；删库整个目录进回收站、索引删掉、列不出来了、同一个编号再建照样搜得到，挂进来的拿掉登记、挂的目录没动，没有的库；重建数对得上、向量没了；`auto` 写进 `kb.toml`、列出来带上、`false` 拿掉（K-6 下）；一个库的每一段（键、标题路径、字）列得出（K-6 下） |
-| `crates/miyu-endpoint/src/knowledge/tests.rs`（K-7 上） | 知识库那一层的每一种错写成哪一种拒绝，`folder_unavailable`、`trash_failed` 带 `data.message` |
+| `crates/miyu-endpoint/src/knowledge/tests.rs`（K-7 上） | 知识库那一层的每一种错写成哪一种拒绝，`folder_unavailable`、`trash_failed` 带 `data.message`；核心照资源目录交搜的下限：出厂的表 bge 0.50、表里没有的 0.40、表读不出来的都 0.40（K-2 修） |
+| `crates/miyu-store/tests/knowledge_floor.rs`、`crates/miyu-recall/src/fuse/tests.rs` 的 `a_floor_of_its_own`（K-2 修） | 第四条：表里的模型照表（0.55 找得到、0.45 不要），没有的照 0.40；出厂的表 bge 是 0.50；`fuse` 就是照 0.40 的 `fuse_above`，关键词也找到的不看下限 |
 | `crates/miyu-endpoint/tests/knowledge_manage.rs`（K-7 上） | 「协议」管理的七个方法，真核心：建、改、加（照上传好的 blob）、换、搜得到、重建的回应；挂 `~/`、挂不上的、往挂进来的加删拒、删文档、删库（挪不进回收站的照实报）、挂的目录没动；写错的十三种 |
 | `crates/miyu-store/tests/knowledge_write.rs`（K-3） | 第七条：建库带说明（转义）、已经有的不动、没说明的不写 `kb.toml`、编号不对的；新建、已经有的不写；接在后面补换行、没有就新建；照原文换一段、找不到、不止一处、没有的文档；路径跑出去的七种、没有的库、太大的什么都不写；挪进回收站、没有的文档；数据根的路上有链接的照真实的位置写（Unix） |
 | `crates/miyu-session/tests/knowledge_write.rs`（K-3） | 第七条，真会话、真目录：一个库都没有只有 `kb_save`、编号写成中文的说清怎么写、什么都不建（K-3 补）、写到没有的库就建它、下一个回合五件都有；接在后面、改、新建撞上已经有的，撤销改的那一轮文件改回去；人格收窄的写不了没列的、建不了新库、改不了没列的；挪进回收站、撤销移回来（只在 Linux 上跑）；挂进来的照搜、照读，写的三件拒、挂的目录和库目录里什么都没动（K-4） |
@@ -243,6 +245,7 @@ Knowledge bases you can search:
 | K-1 补 | 系统提示词里列出她查得到的库：编号、名字、一句说明，放在 system 第 4 块；变了下一个回合换上（2026-10-12 项目主人看了 K-1 下的实测定） |
 | K-3 | 她操作知识库（N4、N14，2026-10-12 项目主人定提前到 K-1 补以后）：`kb_save`（新建、追加，写到没有的库就建它）、`kb_edit`、`kb_delete`（系统回收站），撤销得回来；不能删整个库 |
 | K-2 | 照意思找：向量一路、两路合并，和记忆同一套（N3）；搜完在后台补搜过的库缺的向量 |
+| K-2 修 | 只照意思找到的那一路的下限照模型（第四条）：bge 0.50，表里没有的照 0.40（验收手册查出来，2026-10-13 项目主人定） |
 | K-4 | 挂进来的目录（只读，N7）；不另监视文件，照每次列、搜之前补（量过，第三条第 7 款）；头一次补照键的范围删（3000 篇从 5 秒上下到 0.6 秒上下） |
 | K-5 | PDF（照页抽字、照页引用、照页读，部首的码位换回平常的字）、网页 HTML（换成文字、照标题切，不挑正文）（N2）；只有文字的文档写得了 |
 | K-6 上 | 自动想起的测评集和量尺（`knowledge/eval.md`）：几种挑法量过，项目主人 2026-10-13 定标题名加照意思 0.60 |

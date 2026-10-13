@@ -1,6 +1,8 @@
-//! 知识库那一层的错写成哪一种拒绝（施工 K-7 上）：真核心上挪不进回收站碰不出来，这里照每一种错直接对。
+//! 知识库那一层的错写成哪一种拒绝（施工 K-7 上）：真核心上挪不进回收站碰不出来，这里照每一种错直接对。核心照资源目录交
+//! 知识库搜索的下限（施工 K-2 修）。
 
 use miyu_store::knowledge::KnowledgeError;
+use miyu_store::resources::ResourceRoot;
 
 use super::blocking;
 
@@ -52,4 +54,18 @@ async fn each_knowledge_error_becomes_its_refusal() {
             "{reason}"
         );
     }
+}
+
+#[test]
+fn the_core_takes_its_search_floors_from_resources() {
+    // 施工 K-2 修：出厂的表里 bge 是 0.50，表里没有的照 0.40；表读不出来的都照 0.40（记一行 WARN）。
+    let (root, dir) = crate::test_support::temp_root("kb-floor");
+    let shipped = ResourceRoot::at(crate::test_support::resources());
+    let knowledge = super::shelf(&root, None, None, &shipped);
+    assert!((knowledge.floor("local:bge-small-zh-v1.5") - 0.50).abs() < f32::EPSILON);
+    assert!((knowledge.floor("emb/text-emb") - miyu_recall::FLOOR).abs() < f32::EPSILON);
+    let broken = ResourceRoot::at(dir.join("no-resources"));
+    let knowledge = super::shelf(&root, None, None, &broken);
+    assert!((knowledge.floor("local:bge-small-zh-v1.5") - miyu_recall::FLOOR).abs() < f32::EPSILON);
+    drop(std::fs::remove_dir_all(&dir));
 }

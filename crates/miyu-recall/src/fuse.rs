@@ -18,8 +18,17 @@ const VECTOR: f32 = 0.5;
 pub const FLOOR: f32 = 0.40;
 
 /// 合并：`keyword` 是关键词一路找到的，最相关的在前；`vector` 是向量一路的（条目、相似度），最像的在前。交回合并以后的条目，
-/// 分高的在前；分一样的照关键词一路的先后、再照向量一路的。
+/// 分高的在前；分一样的照关键词一路的先后、再照向量一路的。只有向量一路找到的照 [`FLOOR`]。
 pub fn fuse<Key: Ord + Clone>(keyword: &[Key], vector: &[(Key, f32)]) -> Vec<Key> {
+    fuse_above(keyword, vector, FLOOR)
+}
+
+/// 同 [`fuse`]，只有向量一路找到的照 `floor`（施工 K-2 修：知识库照模型交下限，`docs/blueprint/knowledge.md` 第四条）。
+pub fn fuse_above<Key: Ord + Clone>(
+    keyword: &[Key],
+    vector: &[(Key, f32)],
+    floor: f32,
+) -> Vec<Key> {
     // 条目 → （分，第一次出现的先后）。
     let mut scored: BTreeMap<Key, (f32, usize)> = BTreeMap::new();
     let mut order = 0;
@@ -29,7 +38,7 @@ pub fn fuse<Key: Ord + Clone>(keyword: &[Key], vector: &[(Key, f32)]) -> Vec<Key
         order += 1;
     }
     for (rank, (key, similar)) in vector.iter().enumerate() {
-        if *similar < FLOOR && !scored.contains_key(key) {
+        if *similar < floor && !scored.contains_key(key) {
             continue;
         }
         let entry = scored.entry(key.clone()).or_insert((0.0, order));
