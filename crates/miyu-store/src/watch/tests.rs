@@ -275,3 +275,38 @@ fn when_the_system_watch_fails_it_falls_back_to_polling() {
     fs::write(&file, "[ui]\n").unwrap();
     assert_eq!(received.recv_timeout(WAIT).unwrap(), file);
 }
+
+/// 看一整个目录（施工 X-12 补）：点开头的以外哪个名字都算，交的是目录；点开头的、子文件夹里的、只读的不算。
+#[test]
+fn a_watched_directory_counts_every_plain_name_in_it() {
+    let (_temp, dir) = scratch();
+    let table = Table::of_dir(&dir);
+    let modify = EventKind::Modify(ModifyKind::Any);
+    for name in ["weather.py", "notes", "backup~"] {
+        assert_eq!(
+            table.touched(&event(modify, &dir.join(name))),
+            [dir.as_path()],
+            "{name}"
+        );
+    }
+    for path in [dir.join(".weather.py.swp"), dir.join("deep").join("x.py")] {
+        assert!(table.touched(&event(modify, &path)).is_empty(), "{path:?}");
+    }
+    let read = EventKind::Access(AccessKind::Open(AccessMode::Read));
+    assert!(
+        table
+            .touched(&event(read, &dir.join("weather.py")))
+            .is_empty()
+    );
+}
+
+#[test]
+fn a_new_and_a_deleted_file_in_a_watched_directory_are_seen() {
+    let (_temp, dir) = scratch();
+    let (on_change, received) = collect();
+    let _watching = watch_dir(&dir, on_change).unwrap();
+    fs::write(dir.join("weather.py"), "print(1)\n").unwrap();
+    assert_eq!(received.recv_timeout(WAIT).unwrap(), dir);
+    fs::remove_file(dir.join("weather.py")).unwrap();
+    assert_eq!(received.recv_timeout(WAIT).unwrap(), dir);
+}

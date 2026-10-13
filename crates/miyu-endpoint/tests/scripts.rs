@@ -18,6 +18,8 @@ use miyu_tool::{Catalog, Tool};
 use crate::support::venues::configured_core;
 use crate::support::*;
 
+mod follow;
+
 /// 只会造脚本工具的端口：内置包的工具不动。
 struct Kit;
 

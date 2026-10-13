@@ -11,6 +11,9 @@
 //! 6. 监视报错、事件太多丢了的，当这几份都变了：重读一遍，一样的调用的一方什么都不做。
 //!
 //! 交出去的是调用的一方给的那个路径（不是真实的位置），在监视自己的线程上调 `on_change`。丢掉 [`Watch`] 就停。
+//!
+//! 也能看一整个目录（[`watch_dir`]，施工 X-12 补，家目录里的脚本）：目录里点开头的以外，哪个名字变了都算，交出去的是这个目录；
+//! 不递归，别的同上。
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -62,6 +65,16 @@ pub fn watch(
     start(files, Backend::Native, QUIET, on_change)
 }
 
+/// 监视目录 `dir` 里的文件（施工 X-12 补）：点开头的以外哪一个变了（合并过的），在监视的线程上调 `on_change`，交的是 `dir`。
+/// 子文件夹里的不算。目录要已经有了。别的同 [`watch`]。
+///
+/// # Errors
+///
+/// 轮询也起不来（目录没有、线程开不了）：原因。
+pub fn watch_dir(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Result<Watch, String> {
+    begin(Table::of_dir(dir), Backend::Native, QUIET, on_change)
+}
+
 /// 用哪一种看。
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Backend {
@@ -78,7 +91,16 @@ pub(crate) fn start(
     quiet: Duration,
     on_change: impl Fn(&Path) + Send + 'static,
 ) -> Result<Watch, String> {
-    let table = Table::of(files);
+    begin(Table::of(files), backend, quiet, on_change)
+}
+
+/// 照排好的表 `table` 开始监视。
+pub(crate) fn begin(
+    table: Table,
+    backend: Backend,
+    quiet: Duration,
+    on_change: impl Fn(&Path) + Send + 'static,
+) -> Result<Watch, String> {
     let (send, events) = channel();
     let (watcher, unavailable) = watcher(&table, backend, send)?;
     spawn(events, table, quiet, on_change)?;
@@ -141,8 +163,19 @@ pub(crate) struct Table {
 #[derive(Debug)]
 struct Target {
     dir: PathBuf,
-    name: OsString,
+    /// 只认这个名字；没有的是目录里点开头的以外哪个都认（[`Table::of_dir`]）。
+    name: Option<OsString>,
     file: PathBuf,
+}
+
+impl Target {
+    /// 认不认目录里的这个名字。
+    fn names(&self, name: &std::ffi::OsStr) -> bool {
+        match &self.name {
+            Some(own) => own == name,
+            None => !name.to_string_lossy().starts_with('.'),
+        }
+    }
 }
 
 impl Table {
@@ -156,7 +189,7 @@ impl Table {
             let dir = real(parent);
             targets.push(Target {
                 dir: dir.clone(),
-                name: name.to_os_string(),
+                name: Some(name.to_os_string()),
                 file: file.clone(),
             });
             if let Ok(body) = std::fs::canonicalize(file)
@@ -165,12 +198,23 @@ impl Table {
             {
                 targets.push(Target {
                     dir: parent.to_path_buf(),
-                    name: name.to_os_string(),
+                    name: Some(name.to_os_string()),
                     file: file.clone(),
                 });
             }
         }
         Table { targets }
+    }
+
+    /// 看一整个目录 `dir`（真实的位置）：交出去的是 `dir`。
+    pub(crate) fn of_dir(dir: &Path) -> Table {
+        Table {
+            targets: vec![Target {
+                dir: real(dir),
+                name: None,
+                file: dir.to_path_buf(),
+            }],
+        }
     }
 
     /// 让 `watcher` 看表里的每个目录，不递归。
@@ -212,7 +256,7 @@ impl Table {
                 continue;
             };
             let mut dir: Option<PathBuf> = None;
-            for target in self.targets.iter().filter(|target| target.name == name) {
+            for target in self.targets.iter().filter(|target| target.names(name)) {
                 let same =
                     parent == target.dir || *dir.get_or_insert_with(|| real(parent)) == target.dir;
                 if same && !touched.contains(&target.file.as_path()) {
