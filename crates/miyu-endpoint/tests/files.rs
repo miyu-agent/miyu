@@ -359,17 +359,50 @@ async fn at_most_four_directories_are_cached_the_oldest_unused_one_is_dropped() 
         "a 被丢了、重新建的清单该看得到新文件：{a_again}"
     );
 
-    // b 还在缓存里：新加的文件在 `fresh:false` 时看不到。
+    // 再问 a 时挤掉的是那时最久没用的 b，c 还在（施工 files 修：原来这里断言 b 还在，只在 b 重建得慢、回应时还没建完
+    // 时碰巧过）。先问 c：还在缓存里，新加的文件在 `fresh:false` 时看不到；再问 b：被挤掉了，重建的清单看得到新文件。
+    touch(&dirs[2], "new.txt");
     touch(&dirs[1], "new.txt");
-    let b_again = client
-        .call(
-            "f1",
-            "fs.find",
-            json!({"cwd": dirs[1].display().to_string(), "query": "", "fresh": false}),
-        )
-        .await;
+    let c_again = until_built(&mut client, &dirs[2].display().to_string(), "", false).await;
     assert!(
-        !paths(&b_again).contains(&"new.txt".to_string()),
-        "b 没被丢，复用旧的那份：{b_again}"
+        !paths(&c_again).contains(&"new.txt".to_string()),
+        "c 没被丢，复用旧的那份：{c_again}"
+    );
+    let b_again = until_built(&mut client, &dirs[1].display().to_string(), "", false).await;
+    assert!(
+        paths(&b_again).contains(&"new.txt".to_string()),
+        "b 是最久没用的，被挤掉了、重新建的清单看得到新文件：{b_again}"
+    );
+}
+
+#[tokio::test]
+async fn using_a_cached_directory_keeps_it_from_being_dropped() {
+    let home = Home::new();
+    let work = workspace(&home);
+    let dirs: Vec<std::path::PathBuf> = ('a'..='e')
+        .map(|letter| {
+            let dir = work.join(letter.to_string());
+            touch(&dir, "f.txt");
+            dir
+        })
+        .collect();
+    let mut client = client(&home).await;
+    for dir in &dirs[0..4] {
+        until_built(&mut client, &dir.display().to_string(), "", false).await;
+    }
+    // 再用一次 a：它成了最近用过的，问 e 时挤掉的是 b（施工 files 修）。
+    until_built(&mut client, &dirs[0].display().to_string(), "", false).await;
+    until_built(&mut client, &dirs[4].display().to_string(), "", false).await;
+    touch(&dirs[0], "new.txt");
+    touch(&dirs[1], "new.txt");
+    let a_again = until_built(&mut client, &dirs[0].display().to_string(), "", false).await;
+    assert!(
+        !paths(&a_again).contains(&"new.txt".to_string()),
+        "a 用过、还在缓存里：{a_again}"
+    );
+    let b_again = until_built(&mut client, &dirs[1].display().to_string(), "", false).await;
+    assert!(
+        paths(&b_again).contains(&"new.txt".to_string()),
+        "b 最久没用、被挤掉了：{b_again}"
     );
 }
