@@ -108,15 +108,16 @@ fn names_need_two_characters_skip_what_was_brought_and_stop_at_the_room() {
         hit("people.md", 4, "人物 › 小雀", None, "孤儿。"),
         hit("manual.pdf", 0, "", Some(1), "没有标题的一页。"),
     ];
+    let keys = texts().keys;
     let none = std::collections::BTreeSet::new();
     assert_eq!(
-        named(&sections, "灯又灭了，艾琳在吗", &none, 3),
+        named(&sections, "灯又灭了，艾琳在吗", &none, 3, &keys),
         ["world/people.md#0"],
         "一个字的标题不算"
     );
     let all = "艾琳、巴德、老莫、小雀都来了";
     assert_eq!(
-        named(&sections, all, &none, 3),
+        named(&sections, all, &none, 3, &keys),
         [
             "world/people.md#0",
             "world/people.md#1",
@@ -126,11 +127,11 @@ fn names_need_two_characters_skip_what_was_brought_and_stop_at_the_room() {
     );
     let brought: std::collections::BTreeSet<String> = ["world/people.md#0".to_string()].into();
     assert_eq!(
-        named(&sections, all, &brought, 2),
+        named(&sections, all, &brought, 2, &keys),
         ["world/people.md#1", "world/people.md#3"],
         "交过的不要"
     );
-    assert!(named(&sections, "今天好累啊", &none, 3).is_empty());
+    assert!(named(&sections, "今天好累啊", &none, 3, &keys).is_empty());
 }
 
 #[test]
@@ -139,4 +140,74 @@ fn the_room_is_three_a_turn_within_forty_a_context() {
     assert_eq!(room(38), 2);
     assert_eq!(room(40), 0);
     assert_eq!(room(45), 0);
+}
+
+#[test]
+fn keywords_under_the_heading_bring_their_section_like_its_name() {
+    // 施工 K-9：标题下一行写的关键词当别名，一节切成几块的每块都算；两个字以上、不分大小写，标题名也不分；没有标题的段写了
+    // 也不算；只认头一行。
+    let keys = texts().keys;
+    let sections = [
+        hit(
+            "people.md",
+            0,
+            "人物 › 艾琳",
+            None,
+            "关键词：守灯人、灯塔的姑娘、Eileen、雷\n\n守灯人，十九岁。",
+        ),
+        hit("people.md", 1, "人物 › 艾琳", None, "最怕打雷。"),
+        hit(
+            "people.md",
+            2,
+            "人物 › Bard",
+            None,
+            "老船长。\n关键词：船长",
+        ),
+        hit("notes.txt", 0, "", None, "关键词：杂货铺\n东边的镇子。"),
+    ];
+    let none = std::collections::BTreeSet::new();
+    assert_eq!(
+        named(&sections, "灯塔的姑娘最近怎么样", &none, 3, &keys),
+        ["world/people.md#0", "world/people.md#1"],
+        "一节的每一块都照这一节的关键词算"
+    );
+    assert_eq!(
+        named(&sections, "eileen and BARD", &none, 3, &keys),
+        [
+            "world/people.md#0",
+            "world/people.md#1",
+            "world/people.md#2"
+        ],
+        "英文的关键词、标题名都不分大小写"
+    );
+    assert!(
+        named(&sections, "打雷了", &none, 3, &keys).is_empty(),
+        "一个字的关键词不算"
+    );
+    assert!(
+        named(&sections, "老船长", &none, 3, &keys).is_empty(),
+        "不是头一行的不是关键词"
+    );
+    assert!(
+        named(&sections, "去杂货铺", &none, 3, &keys).is_empty(),
+        "没有标题的段没有关键词"
+    );
+}
+
+#[test]
+fn the_keyword_line_is_left_out_of_the_block() {
+    let named = hit(
+        "people.md",
+        0,
+        "人物 › 艾琳",
+        None,
+        "关键词：守灯人、Eileen\n\n守灯人，十九岁。",
+    );
+    let plain = hit("notes.txt", 0, "", None, "关键词：杂货铺\n东边的镇子。");
+    let block = render(&texts(), &[&named, &plain]).expect("有");
+    assert_eq!(
+        block.fact.text,
+        "<knowledge>\n[world] people.md: 人物 › 艾琳\n守灯人，十九岁。\n[world] notes.txt\n关键词：杂货铺 东边的镇子。\n</knowledge>\n",
+        "有标题的去掉关键词那一行，没有标题的原样"
+    );
 }

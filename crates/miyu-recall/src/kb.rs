@@ -1,10 +1,15 @@
 //! 一个知识库的 `kb.toml`（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」）：给人看的名字、一句话说这个库是什么。
 //! 几格都可以不写；别的格不认，读进来报错（调的一方照没有 `kb.toml` 的样子用，把为什么交给人看）。`mount` 是挂进来的现成
 //! 目录（施工 K-4）：写了的库，文档在那里，只读。账号自己的 `kb.toml` 记软件包带来的库人改过的开关（施工 K-8，[`switches`]）。
+//! 小节标题下那一行关键词怎么认在 [`Keys`]（施工 K-9）。
 
 use std::collections::BTreeMap;
 
 use serde::Deserialize;
+
+mod keys;
+
+pub use keys::Keys;
 
 /// `kb.toml` 里写的。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]

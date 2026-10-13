@@ -116,6 +116,32 @@ async fn a_named_section_comes_once_and_plain_chat_brings_nothing() {
 }
 
 #[tokio::test]
+async fn a_keyword_under_the_heading_brings_its_section_without_that_line() {
+    // 施工 K-9（19 N9，2026-10-14 项目主人定）：标题下一行写关键词，当别名用；带上的字里没有那一行。英文的不分大小写，
+    // 标题名也是。
+    let home = Home::new();
+    world(
+        &home,
+        "auto = true\n",
+        "# 人物\n\n## 艾琳\n关键词：守灯人、灯塔的姑娘、Eileen\n\n守灯人，十九岁。\n\n## Bard\n\n老船长。\n",
+    );
+    let handle = session(&home, 3, Lines::default()).await;
+    let log = chat(&home, &handle, 1, "灯塔的姑娘最近怎么样").await;
+    let blocks = recalled(&log);
+    assert_eq!(blocks.len(), 1, "{log:#?}");
+    assert_eq!(
+        blocks[0].text,
+        "<knowledge>\n[world] people.md: 人物 › 艾琳\n守灯人，十九岁。\n</knowledge>\n"
+    );
+    let log = chat(&home, &handle, 2, "bard 呢").await;
+    let blocks = recalled(&log);
+    assert_eq!(blocks.len(), 2, "标题名不分大小写：{log:#?}");
+    assert_eq!(blocks[1].refs, ["world/people.md#1"]);
+    let log = chat(&home, &handle, 3, "EILEEN 呢").await;
+    assert_eq!(recalled(&log).len(), 2, "带过的不再带");
+}
+
+#[tokio::test]
 async fn off_bases_and_a_preset_without_knowledge_bring_nothing() {
     let home = Home::new();
     world(&home, "name = \"世界观\"\n", PEOPLE);

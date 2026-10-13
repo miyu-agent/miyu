@@ -1,17 +1,18 @@
 //! 自动想起（施工 K-6 下，`docs/blueprint/knowledge.md` 第九条，19 N5）：人开的一轮，回合开始照这一轮人说的话，从她查得到、
 //! 开了 `auto` 的库里挑几段带给她，宁可不带（`knowledge/eval.md`，项目主人 2026-10-13 定的挑法）：
 //!
-//! - **标题名**：话里出现了某一段标题的最后一段（[`NAME`] 个字以上）的带。
+//! - **标题名和关键词**：话里出现了某一段标题的最后一段、或者这一节标题下那一行写的关键词（施工 K-9，`miyu_recall::kb::Keys`；
+//!   都是 [`NAME`] 个字以上，不分大小写）的带。
 //! - **照意思**：照这一轮的配置算话的向量，每个库找最像的 [`WIDE`] 块，过门槛的带（`core/knowledge/recall.toml`）；表里没有的
 //!   模型不算向量（远程的不白花钱），只走标题名。
 //! - 模型在门槛表里的，开了 `auto` 的库在后台补缺的向量（同搜完补）：她不搜，照意思那一路也补得上。照意思那一路限时
 //!   [`MEANING`]，等不到的这一轮只走标题名。
 //! - 先标题名、再照意思，这一段上下文里交过的不带；一轮最多 [`TURN`] 段，联想和自动想起合起来一段上下文累计 [`SEGMENT`] 条
 //!   （19 N5 共用一份预算，记忆那边数的时候也把这边的算上）。
-//! - 一段两行：头一行照 `kb_search` 的那一行，下面是这一段开头 [`SNIPPET`] 个字，截了的照 `recall/cut.txt` 接省略号；要全文她
-//!   自己 `kb_read`。一块不超过 [`LIMIT`] 字节，放不下的那一段和以后的不加。
+//! - 一段两行：头一行照 `kb_search` 的那一行，下面是这一段开头 [`SNIPPET`] 个字（关键词那一行不算），截了的照 `recall/cut.txt`
+//!   接省略号；要全文她自己 `kb_read`。一块不超过 [`LIMIT`] 字节，放不下的那一段和以后的不加。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -21,6 +22,7 @@ use miyu_kernel::id::{FactKind, ModuleId};
 use miyu_kernel::session::Injection;
 use miyu_kernel::template::Template;
 use miyu_recall::associate::{SEGMENT, TURN, Thresholds, pick};
+use miyu_recall::kb::Keys;
 use miyu_store::knowledge::Hit;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::load;
@@ -48,7 +50,7 @@ const SAID: usize = 1000;
 /// 每个库照意思找几块再挑：交过的挑掉以后还够。
 const WIDE: usize = 32;
 
-/// 标题名至少几个字：一个字的（「猫」）到处都撞得上。
+/// 标题名、关键词至少几个字：一个字的（「猫」）到处都撞得上。
 const NAME: usize = 2;
 
 /// 照意思那一路最晚等到什么时候：从自动想起开始数。比回合开始的挂接点（`actor/model.rs` 的 `HOOKS`，300 毫秒）短，留出拼块的
@@ -56,7 +58,7 @@ const NAME: usize = 2;
 /// 整块超时丢掉。从开始数而不是从问向量数：读段慢了（头一回补、慢机器）照意思那一路少等，不把整块拖过挂接点。
 const MEANING: Duration = Duration::from_millis(200);
 
-/// 自动想起要的几样：外壳、截短的写法、头一行（同 `kb_search`）、门槛表。
+/// 自动想起要的几样：外壳、截短的写法、头一行（同 `kb_search`）、门槛表、关键词那一行的写法（施工 K-9）。
 #[derive(Debug)]
 pub(crate) struct RecallTexts {
     open: Template,
@@ -66,6 +68,7 @@ pub(crate) struct RecallTexts {
     plain: Template,
     page: Template,
     thresholds: Thresholds,
+    keys: Keys,
 }
 
 /// 从资源目录读自动想起要的几样；读不出来的这个会话不自动想起，记一行。
@@ -86,6 +89,12 @@ fn load(resources: &ResourceRoot) -> Result<RecallTexts, String> {
         .and_then(|text| {
             Thresholds::parse(&text).map_err(|why| format!("core/knowledge/recall.toml：{why}"))
         })?;
+    let keys = resources
+        .knowledge_table("keys")
+        .map_err(|error| error.to_string())
+        .and_then(|text| {
+            Keys::parse(&text).map_err(|why| format!("core/knowledge/keys.toml：{why}"))
+        })?;
     let text = |tool: &str, name: &str, fields: &[&str]| {
         load::text(resources.path(), MODULE, tool, name, fields).map_err(|error| error.to_string())
     };
@@ -97,6 +106,7 @@ fn load(resources: &ResourceRoot) -> Result<RecallTexts, String> {
         plain: text("kb_search", "plain", &["kb", "path"])?,
         page: text("kb_search", "page", &["kb", "path", "page"])?,
         thresholds,
+        keys,
     })
 }
 
@@ -133,7 +143,7 @@ impl Shelves {
             let ids: BTreeSet<String> = sections.iter().map(|hit| hit.kb.clone()).collect();
             super::fill(self, using, ids.into_iter().collect());
         }
-        let mut chosen = named(&sections, &said, &seen, room);
+        let mut chosen = named(&sections, &said, &seen, room, &texts.keys);
         if let Some(threshold) = threshold
             && chosen.len() < room
             && let Some(near) = self
@@ -240,18 +250,33 @@ fn room(brought: usize) -> usize {
     TURN.min(SEGMENT.saturating_sub(brought))
 }
 
-/// 标题名：话 `said` 里出现了标题路径最后一段（[`NAME`] 个字以上）的那几段，照索引里的先后，`seen` 里的（这一段上下文里交过的）
-/// 不要，最多 `room` 段。
-fn named(sections: &[Hit], said: &str, seen: &BTreeSet<String>, room: usize) -> Vec<String> {
+/// 标题名和关键词：话 `said` 里出现了标题路径最后一段、或者这一节的关键词（照 `keys` 认，施工 K-9）的那几段，都是 [`NAME`] 个字
+/// 以上、不分大小写；照索引里的先后，`seen` 里的（这一段上下文里交过的）不要，最多 `room` 段。一节切成几块的，每块都照这一节
+/// 写的关键词算（写在头一块的正文开头）。没有标题的段没有关键词。
+fn named(
+    sections: &[Hit],
+    said: &str,
+    seen: &BTreeSet<String>,
+    room: usize,
+    keys: &Keys,
+) -> Vec<String> {
+    let said = said.to_lowercase();
+    let mut listed: BTreeMap<(&str, &str, &str), Vec<String>> = BTreeMap::new();
+    for hit in sections.iter().filter(|hit| !hit.heading.is_empty()) {
+        listed
+            .entry((&hit.kb, &hit.path, &hit.heading))
+            .or_default()
+            .extend(keys.split(&hit.text).0);
+    }
     let mut chosen: Vec<String> = Vec::new();
     for hit in sections {
         let key = key(hit);
         let leaf = hit.heading.rsplit(" › ").next().unwrap_or_default();
-        if leaf.chars().count() >= NAME
-            && said.contains(leaf)
-            && !seen.contains(&key)
-            && !chosen.contains(&key)
-        {
+        let aliases = listed.get(&(hit.kb.as_str(), hit.path.as_str(), hit.heading.as_str()));
+        let mentioned = std::iter::once(leaf)
+            .chain(aliases.into_iter().flatten().map(String::as_str))
+            .any(|name| name.chars().count() >= NAME && said.contains(&name.to_lowercase()));
+        if mentioned && !seen.contains(&key) && !chosen.contains(&key) {
             chosen.push(key);
         }
     }
@@ -310,7 +335,12 @@ fn render(texts: &RecallTexts, picked: &[&Hit]) -> Option<Injection> {
                 ],
             ),
         };
-        let flat = hit.text.split_whitespace().collect::<Vec<_>>().join(" ");
+        // 关键词那一行不进带上的字（施工 K-9）：没有标题的段没有关键词，原样。
+        let text = match hit.heading.is_empty() {
+            true => hit.text.as_str(),
+            false => texts.keys.split(&hit.text).1,
+        };
+        let flat = text.split_whitespace().collect::<Vec<_>>().join(" ");
         let body = match flat.chars().count() > SNIPPET {
             true => say(
                 &texts.cut,

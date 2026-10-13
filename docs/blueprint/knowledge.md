@@ -28,6 +28,7 @@
 | `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个）、照资源目录读的搜的下限（K-2 修） | K-5 |
 | `resources/core/knowledge/search.toml`、`Knowledge::with_floors`、`floor`，`miyu_recall::fuse_above` | 搜的时候只照意思找到的那一路的下限，照模型（第四条）；数据，不给模型看 | K-2 修 |
 | `crates/miyu-session/src/knowledge/recall.rs`、`resources/core/knowledge/recall.toml`、`resources/software/knowledge/recall/`，`crates/miyu-session/src/actor/model.rs`（`hooks`、`recalling`） | 自动想起：挑、拼那一块、门槛表、外壳；回合开始和记忆的挂接点并着问（第九条）；`Knowledge::sections`、`auto` 列出一个库的每一段、开没开 | K-6 下 |
+| `crates/miyu-recall/src/kb/keys.rs`、`resources/core/knowledge/keys.toml` | 小节的关键词那一行（K-9）：写法表（开头、冒号、分隔，数据）、认那一行、分开、交回那一行以后的正文（「对外的样子」、第九条第 3、4 款） | K-9 |
 | `crates/miyu-store/src/knowledge/manage.rs` | 人管理：建库、改名字说明、挂目录、加文档、删库、重建索引（第八条）；`RecallIndex::discard`（关上、删掉索引） | K-7 上 |
 | `crates/miyu-cli/src/kb.rs`（详见 `cli/kb.md`） | 命令行 `miyu kb`：照子命令发 `kb.*`，加文件照 `blob.put` 本机路径 | K-7 下 |
 | `crates/miyu-endpoint/src/knowledge/manage.rs`、`refusal/knowledge.rs` | 协议管理的七个方法：读参数、在阻塞线程里调、写回应；`kb_exists`、`document_exists`、`kb_read_only`、`folder_unavailable`、`trash_failed` | K-7 上 |
@@ -62,6 +63,14 @@
 
   只读：她的写的三件写不进（「她的工具」）。挂的目录用不了的见「怎么走」第三条第 6 款。编号、名字、说明、索引的位置、人格收窄、system 里列出来的样子都和自己的一样。人经协议的 `kb.mount` 随 K-7，在那以前手写 `kb.toml`。
 - 文档：扩展名是 `.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`（K-5，19 N2）的文件，子目录里的照样算；以点开头的文件、目录、链接不算（挂的那个目录本身是链接的照它指的地方）；`kb.toml` 不算。别的格式（Word、EPUB）不认。文字的超过 4 MiB、不是 UTF-8 的不收；PDF、网页的文件超过 64 MiB、抽出来的字超过 4 MiB、抽不出来的（坏的、加了密的、一个字都没有的扫描件）不收；都记一行运行日志（「出错」）。
+- 关键词（K-9，19 N9）：Markdown、网页的一节，标题下面正文的头一行（空行不算）照 `关键词：` 开头的，后面用 `、`、`，`、`,`、`；`、`;` 分开，每个是这一节的一个别名，开了自动想起的库里提到哪一个都带这一节（「怎么走」第九条）。开头认 `关键词`、`keys`、`キーワード`，不分大小写，冒号中英文都行（`resources/core/knowledge/keys.toml`，数据）：
+
+  ```markdown
+  ## 艾琳
+  关键词：守灯人、灯塔的姑娘、Eileen
+
+  守灯人，最怕打雷。
+  ```
 
 **软件包带来的**（K-8，19 N1、N6；项目主人 2026-10-13 定只读、自动想起人能开关、卸包以后跟着没有、列出来标「随 <包名>」）：装了的软件包（清单读成了的）目录里的 `kb/<编号>/`，照约定带（同 `skills/`，清单里不写，`packages.md`），里面 `kb.toml`（`name`、`description`、`auto`，同自己的；不认 `mount`）和文档。
 
@@ -191,12 +200,12 @@ Knowledge bases you can search:
 1. **哪些回合**：人开的一轮（`said` 有字的，同记忆的联想，`memory.md` 第四条第 1 款），本机的、场所的都算；会话这一刻的工具面上有 `kb_search`（知识库这个包装着、预设开着、查得到至少一个库）；只看她查得到的库（第六条第 1 款，人格收窄照旧）里 `kb.toml` 写了 `auto = true` 的。
 2. **补**：那几个库先照文件补（第三条，同搜之前；挂的目录用不了的跳过），再照索引里的每一段挑（`Knowledge::sections`）。这一轮的模型在门槛表里的（第 3 款），那几个库在后台补缺的向量（同搜完补，第四条，同一个名字）：她不搜，照意思那一路也补得上；头一回开的库这一轮照意思找不到，补完以后的回合找得到。不在表里的不补。
 3. **挑**：
-   - **标题名**：人说的话（前 1000 个字）里出现了某一段标题路径的最后一段（两个字以上）的，带。PDF 的段没有标题，只走照意思。
+   - **标题名和关键词**：人说的话（前 1000 个字）里出现了某一段标题路径的最后一段、或者这一节写的关键词（两个字以上，不分大小写）的，带（关键词 K-9，项目主人 2026-10-14 定：写在标题下一行、当别名用，只看这一轮人说的；标题名同一天跟着改成不分大小写）。关键词那一行在这一节头一块的正文开头（「对外的样子」）：一节切成几块的，每块都照这一节的关键词算。认那一行、分开、去掉在 `miyu_recall::kb::Keys`，写法表照 `core/knowledge/keys.toml`（会话开的时候和门槛表一起读）。PDF 的段、没有标题的段没有标题也没有关键词，只走照意思。
    - **照意思**：这一轮的模型（同她的工具、联想，照这一轮的配置）在门槛表里的，算话的向量，每个库找最像的 32 块，过门槛的带（`miyu_recall::associate::pick`）。门槛照模型，数据在 `resources/core/knowledge/recall.toml`：`local:bge-small-zh-v1.5` 是 0.60。表里没有的模型不算向量（远程的不白花钱），只走标题名；没有照意思那一路的（`off`、没装、算不出、等不到）也只走标题名。
-   - 先标题名、再照意思（最像的在前），去掉重的；这一段上下文里自动想起交过的不带（`present` 里模块 `knowledge`、类别 `recall` 的 `refs`）；一轮最多 3 段；联想和自动想起合起来一段上下文累计 40 条（压缩以后从零数），到了不再带（19 N5 共用一份预算：两边各自数的时候都把对方的算上）。
-4. **交什么**：一块 `context.injected`，模块 `knowledge`、类别 `recall`，`refs` 是带的那几段（`<库>/<路径>#<第几块>`）。外壳 `<knowledge>`、`</knowledge>`（`software/knowledge/recall/`，登记簿），中间一段两行：头一行照 `kb_search` 的那一行（`[<库>] <路径>: <标题路径>`，PDF 的 `[<库>] <路径>, page <页>`，没标题的 `[<库>] <路径>`），下面是这一段的字，连着的空白（换行）换成一个空格，超过 120 个字的截到 120 个字、照 `recall/cut.txt` 接省略号。要全文她自己 `kb_read`。一块不超过 600 字节，放不下的那一段和以后的不加。追加在这一轮的话前面、原样回放，不改以前的前缀。
+   - 先标题名和关键词、再照意思（最像的在前），去掉重的；这一段上下文里自动想起交过的不带（`present` 里模块 `knowledge`、类别 `recall` 的 `refs`）；一轮最多 3 段；联想和自动想起合起来一段上下文累计 40 条（压缩以后从零数），到了不再带（19 N5 共用一份预算：两边各自数的时候都把对方的算上）。
+4. **交什么**：一块 `context.injected`，模块 `knowledge`、类别 `recall`，`refs` 是带的那几段（`<库>/<路径>#<第几块>`）。外壳 `<knowledge>`、`</knowledge>`（`software/knowledge/recall/`，登记簿），中间一段两行：头一行照 `kb_search` 的那一行（`[<库>] <路径>: <标题路径>`，PDF 的 `[<库>] <路径>, page <页>`，没标题的 `[<库>] <路径>`），下面是这一段的字（关键词那一行不算，K-9；`kb_search`、`kb_read` 照原样带着它），连着的空白（换行）换成一个空格，超过 120 个字的截到 120 个字、照 `recall/cut.txt` 接省略号。要全文她自己 `kb_read`。一块不超过 600 字节，放不下的那一段和以后的不加。追加在这一轮的话前面、原样回放，不改以前的前缀。
 5. **时限、排**：和记忆的挂接点并着问（`tokio::join!`），各自限时 300 毫秒，过了的这一轮不交，记一行 `DEBUG turn start hook timed out module=knowledge part=recall`；照模块编号排，知识库那一块在记忆的几块前面。照意思那一路从自动想起开始数最多等 200 毫秒（`recall.rs` 的 `MEANING`，留出拼块的工夫；读段慢了照意思那一路就少等），过了的这一轮只走标题名，记一行 `DEBUG knowledge recall by meaning timed out`：本机模型冷启动的那一轮（真 bge 试过，头一轮算话的向量连拉起小程序要三百毫秒上下）、那一家回得慢的，标题名不跟着整块超时丢掉；算向量的那一件照样算完。
-6. **出错**：库、索引读不了的这一轮不带，记一行 `WARN knowledge recall not read error=…`；会话开的时候外壳的字、门槛表读不出来的这个会话不自动想起，记一行 `WARN knowledge recall texts unreadable error=…`（目标 `miyu::session`）。
+6. **出错**：库、索引读不了的这一轮不带，记一行 `WARN knowledge recall not read error=…`；会话开的时候外壳的字、门槛表、关键词的写法表读不出来的这个会话不自动想起，记一行 `WARN knowledge recall texts unreadable error=…`（目标 `miyu::session`）。
 
 **十、装卸**（K-8）：做法在 `knowledge/place.rs`，核心那一头在端点的 `knowledge.rs`（`of_core`、`carried`、`follow`）、`packages.rs`（`adopt_packages`）、`packages/manage.rs`（`switch_packages` 里一行）。
 
@@ -232,6 +241,8 @@ Knowledge bases you can search:
 | `crates/miyu-endpoint/tests/knowledge.rs` 的 `a_mounted_folder_follows_the_home_and_an_unplugged_one_is_skipped`（K-4） | 第三条第 6 款，真核心：`~/` 照核心的家目录；挂的目录挪走了 `kb.list` 带 `error`、数照索引里的，`kb.search` 跳过它、不算出错 |
 | `crates/miyu-session/tests/knowledge_recall.rs`（K-6 下） | 第九条，真会话、真目录：开了 `auto` 的库，话里提到标题名的那一轮那一块逐字节对、`refs` 对；带过的这一段上下文里不再带、只带新提到的；平常的话、没开 `auto` 的、预设关了知识库的不带；照意思（远程的假 embedding）：模型不在门槛表里的不带、不问那一家（也不补段的向量），在表里的（测试改的那一份门槛表）过门槛的带、不过的不带；她不搜，段的向量也在后台补上，补完的下一轮换了说法带得上；那一家停住不回的，标题名照带；原处加了一段的下一轮照文件补 |
 | `crates/miyu-session/src/knowledge/recall/tests.rs`（K-6 下） | 第九条第 3、4 款：只有知识库交过的算交过，带过几条连同记忆的联想一起数；一块逐字节对，PDF 说第几页、没标题的只写路径、换行写成空格、长的截到 120 个字接省略号，超过 600 字节的那一段和以后的不加 |
+| `crates/miyu-recall/src/kb/keys.rs` 的测试（K-9） | 关键词那一行：几种开头、中英文冒号、开头不分大小写、头一行是空行的、只写了开头的照样去掉、几种分隔、空的不要；不是头一行的、没冒号的、开头只是前缀的（`keystone:`）不算；写法表少了格、空的、有空字符串、多了格的读不进来 |
+| `crates/miyu-session/src/knowledge/recall/tests.rs` 的 `keywords_under_the_heading_bring_their_section_like_its_name`、`the_keyword_line_is_left_out_of_the_block`，`tests/knowledge_recall.rs` 的 `a_keyword_under_the_heading_brings_its_section_without_that_line`（K-9） | 第九条第 3、4 款：关键词当别名，一节切成几块的每块都算；英文的关键词、标题名不分大小写；一个字的不算，不是头一行的不算，没有标题的段写了也不算；带上的字里没有那一行，没有标题的段原样；真会话里人说别名的那一轮那一块逐字节对，带过的不再带 |
 | `crates/miyu-store/tests/knowledge_manage.rs`（K-7 上） | 第八条：建库带名字说明（转义）、有了的不建、编号不对的；改名字说明照留注释和别的格、空字符串拿掉（文件里没这一格）、没有的库；挂目录、有了的不挂、目录不在的和相对路径的什么都不建、改名字时 `mount` 照留；加文档（PDF 也行）、有了的不换、说换的换、路径不对的三种、挂进来的不加且挂的目录没动；删库整个目录进回收站、索引删掉、列不出来了、同一个编号再建照样搜得到，挂进来的拿掉登记、挂的目录没动，没有的库；重建数对得上、向量没了；`auto` 写进 `kb.toml`、列出来带上、`false` 拿掉（K-6 下）；一个库的每一段（键、标题路径、字）列得出（K-6 下） |
 | `crates/miyu-endpoint/src/knowledge/tests.rs`（K-7 上） | 知识库那一层的每一种错写成哪一种拒绝，`folder_unavailable`、`trash_failed` 带 `data.message`；核心照资源目录交搜的下限：出厂的表 bge 0.50、表里没有的 0.40、表读不出来的都 0.40（K-2 修） |
 | `crates/miyu-store/tests/knowledge_floor.rs`、`crates/miyu-recall/src/fuse/tests.rs` 的 `a_floor_of_its_own`（K-2 修） | 第四条：表里的模型照表（0.55 找得到、0.45 不要），没有的照 0.40；出厂的表 bge 是 0.50；`fuse` 就是照 0.40 的 `fuse_above`，关键词也找到的不看下限 |
@@ -271,4 +282,4 @@ Knowledge bases you can search:
 | K-7 上 | 管理的协议：`kb.create`、`kb.update`、`kb.delete`、`kb.mount`、`kb.add`、`kb.remove`、`kb.reindex`（第八条，2026-10-13 项目主人定删库进回收站、加文档照附件上传、建库改名也在这一步） |
 | K-7 下 | 命令行 `miyu kb`（`cli/kb.md`）：`list`、`search`、`read`、`new`、`edit`、`add`、`remove`、`mount`、`delete`、`reindex`；补上 K-7 上那五种拒绝给人看的话 |
 | K-8 | 软件包带来的知识库（N6，「对外的样子」那一节、第十条）：包目录里的 `kb/<编号>/`，只读，自动想起人能开关、记在账号自己的 `kb.toml`，列出来带 `package`；卸包时索引、开关一起删（2026-10-13 项目主人定） |
-| K-9 | 关键词触发的条目（N9，照 SillyTavern 的 World Info） |
+| K-9 | 关键词触发的条目（N9，照 SillyTavern 的 World Info）：标题下一行 `关键词：…`，当别名，和标题名一样触发、同一份预算，那一行不进带上的字；只看这一轮人说的；标题名一起改成不分大小写（2026-10-14 项目主人定） |
