@@ -14,6 +14,7 @@ mod core;
 mod crash;
 mod dev_home;
 mod heads;
+mod kb;
 mod link_preview;
 mod login;
 mod login_tty;

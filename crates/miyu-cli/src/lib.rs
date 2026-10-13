@@ -29,6 +29,7 @@ mod compact;
 mod config;
 pub mod head;
 pub mod help;
+mod kb;
 pub mod language;
 mod link;
 mod login;
@@ -51,6 +52,7 @@ pub use compact::{Compact, CompactPlan, compact, compact_on};
 pub use config::{
     Check, Config, ConfigCommand, ConfigPlan, Console, Terminal, check, config, config_on,
 };
+pub use kb::{Kb, KbCommand, KbPlan, kb, kb_on};
 pub use login::{KeyCommand, Login, LoginPlan, Logout, login, login_on};
 pub use memory::{Clear as MemoryClear, Memory, MemoryCommand, MemoryPlan, memory, memory_on};
 pub use misuse::misuse;

@@ -103,6 +103,9 @@ fn each_page_lists_exactly_the_options_there_are() {
         ("ID", "<编号>"),
         ("VAR", "<变量>"),
         ("REASON", "<原因>"),
+        ("KB", "<库>"),
+        ("PAGE", "<页>"),
+        ("DESCRIPTION", "<说明>"),
     ];
     let english = [
         ("SESSION", "<id>"),
@@ -114,6 +117,9 @@ fn each_page_lists_exactly_the_options_there_are() {
         ("ID", "<id>"),
         ("VAR", "<var>"),
         ("REASON", "<reason>"),
+        ("KB", "<kb>"),
+        ("PAGE", "<page>"),
+        ("DESCRIPTION", "<description>"),
     ];
     for (language, id) in [(Language::Chinese, &chinese), (Language::English, &english)] {
         assert_eq!(
@@ -191,6 +197,13 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&memory, id),
             "{language:?} memory"
         );
+        // `kb` 那一页（施工 K-7 下）：选项都是全局的，写在 `kb` 上，子命令的都是位置参数。
+        let kb = crate::Kb::augment_args(Command::new("kb"));
+        assert_eq!(
+            listed(page(language, Page::Kb)),
+            real(&kb, id),
+            "{language:?} kb"
+        );
         // `login`、`logout` 两页（施工 8-5）：名字是位置参数，不算选项。
         let login = Login::augment_args(Command::new("login"));
         assert_eq!(
@@ -250,6 +263,7 @@ fn each_page_is_its_own_file() {
             (Page::Web, "web"),
             (Page::Memory, "memory"),
             (Page::Pkg, "pkg"),
+            (Page::Kb, "kb"),
         ] {
             let file = dir.join(code).join(format!("{name}.txt"));
             let on_disk = std::fs::read_to_string(&file).expect("有这一页");
@@ -294,6 +308,7 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Web,
             Page::Memory,
             Page::Pkg,
+            Page::Kb,
         ] {
             let text = page(language, which);
             assert!(

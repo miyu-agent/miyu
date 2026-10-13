@@ -40,5 +40,16 @@ async fn each_knowledge_error_becomes_its_refusal() {
             .and_then(|data| data.get("message"))
             .and_then(|message| message.as_str());
         assert_eq!(said, message, "{reason}");
+        // 每一种都有给人看的话（施工 K-7 下：K-7 上加的五种头一回漏了，头和命令行只看得到「已拒绝。」）。
+        assert_ne!(
+            refused.message(crate::refusal::Locale::Zh),
+            "已拒绝。",
+            "{reason}"
+        );
+        assert_ne!(
+            refused.message(crate::refusal::Locale::En),
+            "Refused.",
+            "{reason}"
+        );
     }
 }

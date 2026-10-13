@@ -59,6 +59,8 @@ enum Command {
     Memory(miyu_cli::Memory),
     /// 看装了哪些软件包，装、卸（施工 T-3）。
     Pkg(miyu_cli::Pkg),
+    /// 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下）。
+    Kb(miyu_cli::Kb),
     /// 存一个供应商的 key，`--list` 列出哪几个设了（施工 8-5）。
     Login(miyu_cli::Login),
     /// 删掉一个供应商的 key（施工 8-5）。
@@ -164,6 +166,17 @@ fn main() -> ExitCode {
                 pkg.mut_subcommand(name, |sub| sub.override_help(help))
             })
         })
+        .mut_subcommand("kb", |kb| {
+            let help = page(language, Page::Kb);
+            [
+                "list", "search", "read", "new", "edit", "add", "remove", "mount", "delete",
+                "reindex",
+            ]
+            .into_iter()
+            .fold(kb.override_help(help), |kb, name| {
+                kb.mut_subcommand(name, |sub| sub.override_help(help))
+            })
+        })
         .mut_subcommand("sandbox", |sandbox| {
             let help = page(language, Page::Sandbox);
             sandbox
@@ -198,6 +211,7 @@ fn main() -> ExitCode {
         Some(Command::Check(args)) => miyu_cli::check(args, core),
         Some(Command::Memory(args)) => miyu_cli::memory(args, core),
         Some(Command::Pkg(args)) => miyu_cli::pkg(args, core),
+        Some(Command::Kb(args)) => miyu_cli::kb(args, core),
         Some(Command::Login(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Logout(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),

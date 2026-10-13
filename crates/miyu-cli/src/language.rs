@@ -9,6 +9,7 @@ mod config;
 mod config_write;
 mod confirm;
 mod harness;
+mod kb;
 mod login;
 mod memory;
 mod pkg;

@@ -1,0 +1,30 @@
+Usage: miyu kb [command] [options]
+
+Manage knowledge bases: documents the AI can look things up in.
+Without a command it is list. Removed documents and deleted bases go to
+the system trash, so you can get them back.
+
+Commands:
+  list                    List knowledge bases
+  search <words>          Search
+  read <kb> <document>    Read one page of a document
+  new <kb>                Create a knowledge base
+  edit <kb>               Change the name or description
+  add <kb> <file>...      Add files: PDF, web pages, text; 20 MiB each at most
+  remove <kb> <document>  Remove a document
+  mount <kb> <folder>     Mount an existing folder, read-only; your files stay
+                          as they are
+  delete <kb>             Delete a whole knowledge base; a mounted one only
+                          loses its registration, the folder stays
+  reindex <kb>            Rebuild the index
+
+Options:
+      --kb <kb>           search: only this knowledge base
+      --page <page>       read: which page, the first one by default
+      --name <name>       new, edit, mount: the name people see
+      --description <description>
+                          new, edit, mount: one sentence about the base
+      --to <dir>          add: put the files in this folder of the base
+      --replace           add: replace ones that are already there
+      --format text|json  list, search: json for scripts
+  -h, --help              Print help

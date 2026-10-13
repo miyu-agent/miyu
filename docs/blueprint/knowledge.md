@@ -8,7 +8,7 @@
 - 检索用记忆那一套底子（`recall.md`，N3、N8）：关键词一路（K-1 上）、照意思那一路（K-2），两路照名次合。
 - 仿 Linux：文档就是文件（19 第二节）。真相是目录里的文件，索引随时能删掉照文件重建（`07-存储.md` S1、S3）。
 
-状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）。
+状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）、K-7 下（命令行 `miyu kb`，`cli/kb.md`）。
 
 ### 在哪
 
@@ -25,6 +25,7 @@
 | `crates/miyu-extract/`（`src/lib.rs`、`radicals.rs`、`main.rs`，`data/EquivalentUnifiedIdeograph.txt`） | 抽字的小程序：一次抽一份 PDF 或网页，照 JSON 交回去就退；PDF 一页一页抽、部首的码位换回平常的字（Unicode 的对照表原样带着），网页换成文字（第二条第 5、6 款） | K-5 |
 | `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个） | K-5 |
 | `crates/miyu-store/src/knowledge/manage.rs` | 人管理：建库、改名字说明、挂目录、加文档、删库、重建索引（第八条）；`RecallIndex::discard`（关上、删掉索引） | K-7 上 |
+| `crates/miyu-cli/src/kb.rs`（详见 `cli/kb.md`） | 命令行 `miyu kb`：照子命令发 `kb.*`，加文件照 `blob.put` 本机路径 | K-7 下 |
 | `crates/miyu-endpoint/src/knowledge/manage.rs`、`refusal/knowledge.rs` | 协议管理的七个方法：读参数、在阻塞线程里调、写回应；`kb_exists`、`document_exists`、`kb_read_only`、`folder_unavailable`、`trash_failed` | K-7 上 |
 | `crates/miyu-store/src/knowledge/write.rs` | 她写知识库那一层：建库、新建、追加、照原文换一段、挪进回收站，交回改前改后的内容（第七条） | K-3 |
 | `crates/miyu-session/src/knowledge/write.rs` | 写哪几个、建得了建不了新库（第七条第 1 款） | K-3 |
@@ -211,7 +212,7 @@ Knowledge bases you can search:
 
 ### 还没有的
 
-见「施工步子」后面几步：自动想起、命令行、软件包带来的库、关键词条目。
+见「施工步子」后面几步：自动想起、软件包带来的库、关键词条目。
 
 - Markdown 第一个标题以前的那一节里，代码块被空行切开、某一块恰好以 `# ` 开头的，搜到时那一行会被当成标题路径（只影响显示，搜得到）。碰到了再改成每块都写标题那一行。
 - 跳过的文档每次补都记一行：人经协议、她的工具补的都记，量出来吵了再只记头一次。
@@ -230,6 +231,6 @@ Knowledge bases you can search:
 | K-5 | PDF（照页抽字、照页引用、照页读，部首的码位换回平常的字）、网页 HTML（换成文字、照标题切，不挑正文）（N2）；只有文字的文档写得了 |
 | K-6 | 自动想起：每个库一个开关，默认关（N5） |
 | K-7 上 | 管理的协议：`kb.create`、`kb.update`、`kb.delete`、`kb.mount`、`kb.add`、`kb.remove`、`kb.reindex`（第八条，2026-10-13 项目主人定删库进回收站、加文档照附件上传、建库改名也在这一步） |
-| K-7 下 | 命令行 `miyu kb`：`list`、`search`、`read`、`new`、`add`、`remove`、`mount`、`reindex`、删库 |
+| K-7 下 | 命令行 `miyu kb`（`cli/kb.md`）：`list`、`search`、`read`、`new`、`edit`、`add`、`remove`、`mount`、`delete`、`reindex`；补上 K-7 上那五种拒绝给人看的话 |
 | K-8 | 软件包带来的知识库（N6） |
 | K-9 | 关键词触发的条目（N9，照 SillyTavern 的 World Info） |

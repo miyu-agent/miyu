@@ -133,6 +133,15 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "memory_too_long" => ("记忆过长。", "Memory too long."),
         "unknown_kb" => ("知识库不存在。", "Knowledge base not found."),
         "unknown_document" => ("文档不存在。", "Document not found."),
+        // 施工 K-7 下：K-7 上加的五种（`knowledge.md` 第八条）。
+        "kb_exists" => ("知识库已经有了。", "Knowledge base already exists."),
+        "document_exists" => ("这一篇已经有了。", "Document already exists."),
+        "kb_read_only" => (
+            "挂进来的知识库是只读的。",
+            "A mounted knowledge base is read-only.",
+        ),
+        "folder_unavailable" => ("这个目录挂不上。", "Folder cannot be mounted."),
+        "trash_failed" => ("挪不进回收站。", "Could not move it to the trash."),
         "unknown_job" => ("任务不存在或已结束。", "Job not found or finished."),
         "not_a_command" => ("不是后台命令。", "Not a background command."),
         "nothing_to_compact" => ("没有可压缩的内容。", "Nothing to compact."),

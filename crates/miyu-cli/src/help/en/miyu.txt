@@ -9,6 +9,7 @@ Commands:
   recap                 Recap the session: goal, progress, blockers
   rename <title>        Give the session a title
   memory [command]      What the AI remembers: search, add, edit, forget, clear
+  kb [command]          Knowledge bases: list, search, read, add, remove, mount
   pkg [command]         See installed packages; install, remove
   config <command>      See and change settings, trust a project config
   check [file]          Check config, secrets, personas, presets and packages
