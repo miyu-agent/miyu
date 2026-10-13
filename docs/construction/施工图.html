@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>487</b><span>/ 496 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>488</b><span>/ 497 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">83ae4f61</b><span>最近一步（3-8 八补 标题是人起的）的提交</span></li>
+    <li><b class="mono">74aa3c99</b><span>最近一步（R-6 再修 照称呼写人）的提交</span></li>
   </ul>
 </header>
 
@@ -708,6 +708,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-6g"><span class="n">R-6</span>照称呼写人（再修）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-7"><span class="n">R-7</span>合并（上）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-7b"><span class="n">R-7</span>常驻的那一块交摘要（下）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-7c"><span class="n">R-7</span>现在就整理记忆（补）<span class="st">✓</span></a></li>
@@ -20016,6 +20017,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/K-3-编号写错说清怎么写（补）.md</code>；蓝图 <code>knowledge.md</code>「她的工具」、第七条第 1 款；<code>26-提示词.md</code> 第十节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-6g" aria-labelledby="h-sR6g">
+  <div class="sheet-head"><h2 id="h-sR6g"><span class="no">R-6</span>照称呼写人（再修）</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">抽出来的记忆写「主人」、她自己记的写「用户」，混着写；有了「AI 怎么认识你」的称呼以后，统一照称呼写，没设的写「用户」。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/owner.rs</span><span class="dir-note">R-6 再修</span></div>
+            <ol class="pipe" aria-label="主人怎么写">
+              <li>称呼照这一次的冻结配置读（<code>profile.name</code>），去掉空白、空的当没有</li>
+              <li>抽取：这个会话的快照带了「关于你」才用称呼，不然写「用户」那一句</li>
+              <li>合并：摘要从主人写起，照属主的称呼</li>
+              <li>指令里的 <code>{owner}</code> 换成称呼或「用户」那一句，转义成一行</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">owner-unnamed</span><span class="rl">没设称呼时那一句，11 token</span></div>
+          <div class="tile new"><span class="nm">ProfileSettings</span><span class="rl">从端点挪到会话这一层，定义一字不改</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-6 再修</dd></div>
+        <div><dt>名称</dt><dd>照称呼写人</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">74aa3c99</dd></div>
+        <div><dt>验收</dt><dd>真会话测试、开发端点实测、变异、CI · 自己验收，写法项目主人定</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真会话：设了称呼的抽取、合并都照称呼写，没设的、只有空白的写「用户」那一句，快照不带「关于你」的抽取写「用户」、合并照属主的，人叫的现在就整理也照写；称呼转义成一行；配置样本一字不变</span></li>
+        <li><span class="ok">✓</span><span>开发端点实测：改前 12 处全写「主人」，有称呼的 13 处全写称呼，没设的中文全写「用户」、日文全写「ユーザー」，合并的摘要照写；手写变异 8 个全被逮住；门禁八项全过；三台机器的 CI 全绿（run 38425972571）；顺手修了知识库自动想起补向量那一条的偶发红（单独一个提交）</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-6-照称呼写人（再修）.md</code>；蓝图 <code>memory.md</code> 第六条第 4 款、第七条第 2 款，<code>config.md</code> 的 <code>profile.name</code>；设计 <code>26-提示词.md</code> 第十节。</li>
       </ul>
     </div>
   </div>
