@@ -28,6 +28,12 @@ impl Refusal {
         reason: "not_switchable",
         data: None,
     };
+    /// 个人设置里没有这个名字的 MCP 服务（施工 F-9 补，`mcp.restart`）。
+    pub(crate) const UNKNOWN_SERVER: Refusal = Refusal {
+        code: REFUSED,
+        reason: "unknown_server",
+        data: None,
+    };
     /// 重启关着的包（施工 X-4，`package.restart`）。
     pub(crate) const PACKAGE_OFF: Refusal = Refusal {
         code: REFUSED,

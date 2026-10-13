@@ -56,10 +56,17 @@ impl Listed {
                 let entry = crate::extensions::entry(core, id, shaken.now(core))?;
                 json!({"jsonrpc": "2.0", "method": "extension.changed", "params": {"entry": entry}})
             }
-            Listed::Packages => {
-                let entry = crate::packages::entry(core, id, shaken.now(core));
-                json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
-            }
+            // 个人设置里的 MCP 服务（施工 F-9 补）：推 `mcp.changed`，删掉了的 `server` 是 `null`。
+            Listed::Packages => match crate::mcp::home::server_of(id) {
+                Some(name) => {
+                    let server = crate::mcp::methods::entry(core, name);
+                    json!({"jsonrpc": "2.0", "method": "mcp.changed", "params": {"name": name, "server": server}})
+                }
+                None => {
+                    let entry = crate::packages::entry(core, id, shaken.now(core));
+                    json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
+                }
+            },
         };
         Some(line.to_string())
     }

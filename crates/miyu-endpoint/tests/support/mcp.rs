@@ -2,16 +2,19 @@
 //! `tests/mcp_cache.rs` 用。
 
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use miyu_endpoint::Core;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, ToolStatus};
 use miyu_session::testkit::Script;
+use miyu_tool::Catalog;
 
-use super::extensions::read;
-use super::{Client, Home};
+use super::extensions::{quick, read};
+use super::{Client, Home, TOKEN, alice};
 
 /// 测试用的服务。
 pub const SERVER: &str = env!("CARGO_BIN_EXE_miyu-test-mcp");
@@ -147,4 +150,32 @@ pub fn results(home: &Home, session: &str) -> Vec<(String, String, bool, usize)>
     }
     found.sort();
     found
+}
+
+/// 个人设置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。
+pub fn mine(record: &str) -> String {
+    format!(
+        "[mcp.probe]\ncommand = ['{SERVER}', '{record}']\nenv = {{ MIYU_MCP_PROBE = \"mine\" }}\ntimeout_ms = 1000\n"
+    )
+}
+
+/// 照磁盘上的配置起来的核心，扩展退避得快。
+pub fn configured(home: &Home, script: &Script) -> Arc<Core> {
+    let items = [
+        miyu_endpoint::settings::UiSettings::ITEMS,
+        miyu_endpoint::settings::PermissionSettings::ITEMS,
+    ]
+    .concat();
+    let config = miyu_endpoint::config::Config::load(
+        &home.root,
+        &alice(),
+        None,
+        items,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    Arc::new(
+        home.core_full(script, Catalog::default(), None, TOKEN)
+            .with_config(config)
+            .with_extension_timing(quick()),
+    )
 }

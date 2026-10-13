@@ -15,7 +15,7 @@ use miyu_kernel::event::Body;
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
 
-use crate::support::extensions::{Program, install, quick, steps, until_state};
+use crate::support::extensions::{Program, install, steps, until_state};
 use crate::support::mcp::*;
 use crate::support::venues::configured_core;
 use crate::support::*;
@@ -116,34 +116,6 @@ async fn the_mcp_table_does_not_disturb_the_rest_of_the_settings() {
         "{reply}"
     );
     assert_eq!(reply["result"]["problems"], json!([]), "{reply}");
-}
-
-/// 个人设置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。
-fn mine(record: &str) -> String {
-    format!(
-        "[mcp.probe]\ncommand = ['{SERVER}', '{record}']\nenv = {{ MIYU_MCP_PROBE = \"mine\" }}\ntimeout_ms = 1000\n"
-    )
-}
-
-/// 照磁盘上的配置起来的核心，扩展退避得快。
-fn configured(home: &Home, script: &Script) -> Arc<Core> {
-    let items = [
-        miyu_endpoint::settings::UiSettings::ITEMS,
-        miyu_endpoint::settings::PermissionSettings::ITEMS,
-    ]
-    .concat();
-    let config = miyu_endpoint::config::Config::load(
-        &home.root,
-        &alice(),
-        None,
-        items,
-        miyu_endpoint::config::Environment::of(&[]),
-    );
-    Arc::new(
-        home.core_full(script, Catalog::default(), None, TOKEN)
-            .with_config(config)
-            .with_extension_timing(quick()),
-    )
 }
 
 /// 说一句、等第 `n` 轮说完，交回这一轮最后一个工具结果的字（剧本里调的是 `mcp__probe__env`）。

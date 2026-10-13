@@ -24,6 +24,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "preset_invalid" => ("预设文件有误。", "Invalid preset file."),
         "not_a_directory" => ("不是目录。", "Not a directory."),
         "unknown_package" => ("软件包不存在。", "Package not found."),
+        "unknown_server" => (
+            "个人设置里没有这个 MCP 服务。",
+            "No such MCP server in the personal settings.",
+        ),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",

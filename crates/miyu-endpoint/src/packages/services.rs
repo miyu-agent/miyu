@@ -7,18 +7,32 @@ use serde_json::{Value, json};
 use crate::Core;
 use crate::extensions::methods::details;
 
-/// 给包 `id` 那一项的 `mcp` 每一格填上这时的状态：没有 `mcp` 的不动。
+/// 给包 `id` 那一项的 `mcp` 每一格填上这时的状态：没有 `mcp` 的不动。服务全被个人设置里同名的盖住的，包那一项也带
+/// `covered: true`（施工 F-9 补）。
 pub(super) fn fill(core: &Core, id: &str, item: &mut Value) {
     let Some(servers) = item.get_mut("mcp").and_then(Value::as_array_mut) else {
         return;
     };
+    let all_covered = !servers.is_empty()
+        && servers.iter().all(|server| {
+            server["name"]
+                .as_str()
+                .is_some_and(|name| core.home_mcp.covers(name))
+        });
     for server in servers {
         let Some(name) = server["name"].as_str().map(str::to_string) else {
             continue;
         };
         let status = core.mcp.service(id, &name);
+        if core.home_mcp.covers(&name) {
+            // 被个人设置里同名的盖住了（施工 F-9 补）：不起，`state` 照旧是 `off`。
+            server["covered"] = json!(true);
+        }
         server["state"] = json!(status.state.as_str());
         server["failures"] = json!(status.failures);
         details(server, status.state, &crate::mcp::stderr_file(core, &name));
+    }
+    if all_covered {
+        item["covered"] = json!(true);
     }
 }

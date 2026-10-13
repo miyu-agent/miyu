@@ -444,6 +444,8 @@ fn people_only(method: &str) -> bool {
                 | "package.disable"
                 | "package.restart"
                 | "package.file"
+                | "mcp.list"
+                | "mcp.restart"
                 | "package.call"
                 | "config.set"
                 | "config.trust"

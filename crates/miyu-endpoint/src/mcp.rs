@@ -9,8 +9,9 @@
 
 mod cache;
 mod content;
-mod home;
+pub(crate) mod home;
 mod launch;
+pub(crate) mod methods;
 mod spec;
 mod supervise;
 mod switch;
@@ -33,6 +34,7 @@ use tokio::time::Instant;
 use miyu_config::package::{Manifest, McpServer, PackageKind};
 use miyu_mcp::Client;
 use miyu_store::packages::Found;
+use miyu_store::scripts::HOME_PACKAGE;
 
 use crate::Core;
 use crate::extensions::{State, Status, Timing};
@@ -95,10 +97,13 @@ impl Shared {
         *self.status.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 记下状态，告诉订阅着的连接这个包变了。
+    /// 记下状态，告诉订阅着的连接这个包变了；个人设置里的服务报 `~home/<服务名>`（施工 F-9 补：推 `mcp.changed`，不推包）。
     fn set(&self, core: &Core, state: State, failures: u32) {
         *self.status.lock().unwrap_or_else(PoisonError::into_inner) = Status { state, failures };
-        core.extensions.notify(&self.package);
+        match self.package.as_str() {
+            HOME_PACKAGE => core.extensions.notify(&home::changed(&self.service)),
+            package => core.extensions.notify(package),
+        }
     }
 
     /// 这时连着的客户端。
@@ -243,6 +248,12 @@ impl Servers {
 
     /// 关掉包 `package` 的一个服务 `service`（施工 F-9 下）：请它退出、等它退出，记成关着，工具出目录。
     async fn halt_one(&self, core: &Core, package: &str, service: &str) {
+        self.stop_one(core, package, service).await;
+        switch::withdraw_one(core, package, service);
+    }
+
+    /// 停下包 `package` 的一个服务 `service`：请它退出、等它退出，记成关着；工具留在目录里（重启用，施工 F-9 补）。
+    async fn stop_one(&self, core: &Core, package: &str, service: &str) {
         let key = (package.to_string(), service.to_string());
         let task = self
             .slots()
@@ -251,7 +262,6 @@ impl Servers {
         if let Some((shared, task)) = task {
             settle(core, &shared, task).await;
         }
-        switch::withdraw_one(core, package, service);
     }
 
     /// 关掉包 `package` 的服务：请它们退出、等它们退出（最多等到杀掉），记成关着。工具留在目录里：要它们出目录的用

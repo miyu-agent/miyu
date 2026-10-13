@@ -52,6 +52,7 @@ mod login;
 mod mcp;
 mod mcp_cache;
 mod mcp_settings;
+mod mcp_settings_status;
 mod mcp_status;
 mod memory;
 mod memory_api;

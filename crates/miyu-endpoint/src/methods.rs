@@ -148,7 +148,7 @@ pub(crate) async fn call(
             .await
         }
         // 软件包的几个方法（施工 F-8 中上挪出去：这里放不下了）。
-        name if name.starts_with("package.") => {
+        name if name.starts_with("package.") || name.starts_with("mcp.") => {
             crate::packages::methods::call(core, peer, caller, request).await
         }
         "view.page" => crate::view::page(core, peer, params(request)?).await,

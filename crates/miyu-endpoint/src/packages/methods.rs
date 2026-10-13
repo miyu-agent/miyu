@@ -1,5 +1,6 @@
 //! 软件包的几个方法（`protocol.md` 的 `package.*`）：从端点的方法表挪出来（施工 F-8 中上，方法表放不下了），照方法名分给各处。
-//! 在后台答的 `package.call` 不在这里（`methods::call_later`）。
+//! 在后台答的 `package.call` 不在这里（`methods::call_later`）。个人设置里的 MCP 服务的 `mcp.*`（施工 F-9 补）也从这里分：
+//! 方法表到了行数上限。
 
 use std::sync::Arc;
 
@@ -11,7 +12,7 @@ use crate::methods::params;
 use crate::refusal::Refusal;
 use crate::wire::Request;
 
-/// 答一条 `package.*`；不认识的 `unknown_method`。
+/// 答一条 `package.*`、`mcp.*`；不认识的 `unknown_method`。
 pub(crate) async fn call(
     core: &Arc<Core>,
     peer: Peer,
@@ -31,6 +32,8 @@ pub(crate) async fn call(
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,
         "package.file" => crate::backstage::read(core, params(request)?).await,
         "package.methods" => crate::backstage::register(core, caller, params(request)?),
+        "mcp.list" => Ok(crate::mcp::methods::list(core)),
+        "mcp.restart" => crate::mcp::methods::restart(core, params(request)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }

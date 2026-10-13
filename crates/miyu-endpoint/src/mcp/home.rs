@@ -104,7 +104,27 @@ impl Core {
             }
         }
         self.start_home_mcp();
+        // 盖住、放开了的包，列表上那一项的 `covered` 变了（施工 F-9 补）：服务没起停的也报一声。
+        for name in old
+            .iter()
+            .chain(new.iter())
+            .map(|server| server.name.as_str())
+            .filter(|name| {
+                old.iter().any(|s| s.name == *name) != new.iter().any(|s| s.name == *name)
+            })
+        {
+            for id in carrying(self, name) {
+                self.extensions.notify(&id);
+            }
+        }
         tracing::info!(target: TARGET, servers = new.len(), "mcp settings followed");
+    }
+
+    /// 重启个人设置里的服务 `name`（施工 F-9 补，`mcp.restart`）：停下、再起，连续失败从零数；工具留在目录里，起好列完照
+    /// 新的换。
+    pub(crate) async fn restart_home_mcp(self: &Arc<Self>, name: &str) {
+        self.mcp.stop_one(self, HOME_PACKAGE, name).await;
+        self.start_home_mcp();
     }
 
     /// 个人设置里删掉了 `service`：包里带同名服务的，开着（`bundle` 照开关，扩展照它在跑）的起回来。
@@ -136,8 +156,18 @@ fn read(text: &str) -> Vec<McpServer> {
     servers
 }
 
+/// 个人设置里的服务 `service` 的状态变了，报给订阅着的连接的那个键：`~home/<服务名>`（施工 F-9 补）。
+pub(super) fn changed(service: &str) -> String {
+    format!("{HOME_PACKAGE}/{service}")
+}
+
+/// 推送的键 `key` 是个人设置里哪个服务的；不是的没有。
+pub(crate) fn server_of(key: &str) -> Option<&str> {
+    key.strip_prefix(HOME_PACKAGE)?.strip_prefix('/')
+}
+
 /// 带叫 `service` 的服务的包的编号。
-fn carrying(core: &Core, service: &str) -> Vec<String> {
+pub(super) fn carrying(core: &Core, service: &str) -> Vec<String> {
     core.packages()
         .iter()
         .filter(|found| {
