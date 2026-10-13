@@ -2,7 +2,8 @@
 //! 核心经协议交出去，终端、网页都不用再自己去资源目录里读。
 //!
 //! 每次现读资源目录（`web-module.md`「起草时定的」第 32 条）：一个连接只要一次，读几份 JSON 很快；开发时改了资源，
-//! 下一次调就是新的，不用重启核心。在阻塞线程里读。
+//! 下一次调就是新的，不用重启核心。在阻塞线程里读。工具目录里这一刻写了显示名的脚本、MCP 的、扩展的工具也并进 `tools`（施工
+//! 9-8 七补）。
 
 use std::collections::BTreeMap;
 
@@ -46,13 +47,31 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: Params) -> Result<Value
             return Err(Refusal::INTERNAL);
         }
     };
-    let tools: Map<String, Value> = human
+    let mut tools: Map<String, Value> = human
         .tools()
         .iter()
         .map(|(name, face)| (name.clone(), json!(face)))
         .collect();
+    named(core, &language, &mut tools);
     let said: BTreeMap<&str, &str> = human.said_entries().collect();
     Ok(json!({"language": language, "said": said, "tools": tools}))
+}
+
+/// 工具目录里这一刻写了显示名的工具（脚本、MCP 的、扩展的，施工 9-8 七补）并进 `tools`：照 `language` 挑（这种语言没写的照
+/// 英文、中文、日文的先后），`{"name": …}`；上面读出来的字里已经有的照那一份。
+fn named(core: &Core, language: &str, tools: &mut Map<String, Value>) {
+    let catalog = core.tools();
+    for spec in catalog.specs() {
+        if tools.contains_key(&spec.name) {
+            continue;
+        }
+        let picked = catalog
+            .get(&spec.name)
+            .and_then(|tool| crate::personas::pick(&tool.display_name(), language));
+        if let Some(name) = picked {
+            tools.insert(spec.name.clone(), json!({ "name": name }));
+        }
+    }
 }
 
 /// `language` 合不合写法：2 到 8 个小写字母（`protocol.md`「`human.get`」）。
