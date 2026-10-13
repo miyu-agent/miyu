@@ -1,6 +1,6 @@
 //! `miyu setup` 的自定义一家、取不到模型列表（施工 8-11 再补，`docs/blueprint/cli/setup.md`「怎么走」第 4、7 条）：依次问
 //! base URL、接口协议、key（可以空）；配置里的编号照主机名起、撞了往后加；空 key 的不存、不写密钥。列不出模型的印
-//! 「未获取到模型列表」、问模型名，拿它再试，通了不再列、不再问。三个平台一样跑。
+//! 「未获取到模型列表」、问模型名，拿它发一句再试（施工 8-11 五补：列得出的不发请求），通了不再列、不再问。三个平台一样跑。
 
 use serde_json::json;
 
@@ -39,7 +39,7 @@ fn leak(text: String) -> &'static str {
 
 #[tokio::test]
 async fn a_custom_provider_asks_address_protocol_and_key_and_is_named_after_its_host() {
-    let server = Server::start(vec![listing(&["m-small", "m-large"]), answer()]).await;
+    let server = Server::start(vec![listing(&["m-small", "m-large"])]).await;
     let home = Home::onboarding("", &[], json!({}));
     let base_url = leak(format!("{}/", remote(&server)));
     let mut typist = Typist::at_terminal(&[CUSTOM, "example.com", base_url, "1", "2"], &[FAKE]);
@@ -55,7 +55,7 @@ async fn a_custom_provider_asks_address_protocol_and_key_and_is_named_after_its_
          \x20 2  Anthropic\n\
          \x20 3  OpenAI Responses\n\
          选一个编号：Key（不显示，可以空）：试一下 127.1……\n\
-         · 通了：试的 m-large，N 毫秒收到第一个字。\n\
+         · 通了：列出 2 个模型。\n\
          · local 的 key 存好了\n\
          选主对话的模型：\n\
          \x20 1  m-large（推荐）\n\
@@ -75,15 +75,14 @@ async fn a_custom_provider_asks_address_protocol_and_key_and_is_named_after_its_
         home.secrets()
     );
     let bearer = format!("Bearer {FAKE}");
-    assert_eq!(
-        server.received()[1].header("authorization"),
-        Some(bearer.as_str())
-    );
+    let received = server.received();
+    assert_eq!(received.len(), 1, "列到了就不发请求");
+    assert_eq!(received[0].header("authorization"), Some(bearer.as_str()));
 }
 
 #[tokio::test]
 async fn a_taken_id_gets_a_number_and_an_empty_key_stores_nothing() {
-    let server = Server::start(vec![listing(&["m-small"]), answer()]).await;
+    let server = Server::start(vec![listing(&["m-small"])]).await;
     let config = "[providers.local]\ndriver = \"anthropic\"\nbase_url = \"http://127.0.0.1:1\"\n";
     let home = Home::onboarding(config, &[], json!({}));
     let base_url = leak(remote(&server));

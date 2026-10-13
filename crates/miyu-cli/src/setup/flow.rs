@@ -1,9 +1,10 @@
-//! `miyu setup` 一步步怎么走（`docs/blueprint/cli/setup.md`「怎么走」第 3 到 11 条，施工 8-11、8-11 再补）：选一家
-//! （`choose.rs`，自定义的在 `custom.rs`），拿 key，试；取不到模型列表的印「未获取到模型列表」、让人填模型名再试；试不通回到
-//! 上一步，贴的 key 试通了才存，选模型（`model.rs`），写配置。
+//! `miyu setup` 一步步怎么走（`docs/blueprint/cli/setup.md`「怎么走」第 3 到 11 条，施工 8-11、8-11 再补、8-11 五补）：选一家
+//! （`choose.rs`，自定义的在 `custom.rs`），拿 key，试；核心说要模型名的（`need_model`）印「未获取到模型列表」、让人填模型名
+//! 再试；试不通的在终端里问「仍然保存？」，不存的回到上一步；贴的 key 试通了、或者人说仍然保存了才存，选模型（`model.rs`），
+//! 写配置。
 //!
-//! 贴的 key 只在内存里：先照 `{value}` 试，通了才 `secret.set`（「施工时定的」8-11：试不通的不留下，也不盖掉原来的同名
-//! 密钥）。从不印出来。
+//! 贴的 key 只在内存里：先照 `{value}` 试，通了（或者人说仍然保存）才 `secret.set`（「施工时定的」8-11：试不通又不保存的不留下，
+//! 也不盖掉原来的同名密钥）。从不印出来。
 //!
 //! 配置里一个池都没有的，写配置时一起写三个预设的池（施工 8-8 补，[`PRESET_POOLS`]）。
 
@@ -156,8 +157,9 @@ impl<'a> Flow<'a> {
         self.write_config(&chosen, stored, &model).await
     }
 
-    /// 拿 key、试；取不到模型列表的问模型名、拿它再试（施工 8-11 再补）；不通的在终端里回到上一步：贴的 key 回到贴 key，别的
-    /// 回到选一家（`fixed` 的没有上一步）。
+    /// 拿 key、试；核心说要模型名的问模型名、拿它再试（施工 8-11 再补、五补）；不通的在终端里先问仍然保存不保存（施工 8-11
+    /// 五补，2026-10-13 项目主人定），保存的照填的往下走，不保存的回到上一步：贴的 key 回到贴 key，别的回到选一家（`fixed` 的
+    /// 没有上一步）。
     async fn attempt(&mut self, chosen: &Chosen, fixed: bool) -> Result<Attempted, u8> {
         let language = self.plan.language;
         loop {
@@ -176,7 +178,8 @@ impl<'a> Flow<'a> {
                     let typed = model.is_some() && self.plan.setup.model.is_none();
                     return Ok(Attempted::Worked(pasted, self.worked(&tested, typed)));
                 }
-                if tested["stage"] == json!("list") && model.is_none() && self.console.terminal() {
+                if tested["need_model"] == json!(true) && model.is_none() && self.console.terminal()
+                {
                     say(self.err, language.no_model_list());
                     match self
                         .ask(language.model_name())
@@ -198,6 +201,14 @@ impl<'a> Flow<'a> {
                         error["message"].as_str().unwrap_or_default(),
                     ),
                 );
+                if self.console.terminal() && self.save_anyway() {
+                    let model = match model {
+                        Some(model) => model,
+                        None => self.typed_model()?,
+                    };
+                    let models = Vec::new();
+                    return Ok(Attempted::Worked(pasted, Tried { models, model }));
+                }
                 match (self.console.terminal(), &chosen.key, fixed) {
                     (false, _, _) => return Err(exit::ERROR),
                     (true, Key::Paste | Key::Optional, _) => break,
@@ -208,13 +219,22 @@ impl<'a> Flow<'a> {
         }
     }
 
-    /// 试通了：印一行灰字，交回列出来的模型和试的那一个。`typed` 的（取不到列表、人填了模型名的）不再列、不再问：交回的
-    /// 列表是空的。
+    /// 试通了：印一行灰字（只列了模型的说列出几个，发了一句的说试的哪个、多快），交回列出来的模型和推荐的那一个。`typed` 的
+    /// （取不到列表、人填了模型名的）不再列、不再问：交回的列表是空的。
     fn worked(&mut self, tested: &Value, typed: bool) -> Tried {
         let language = self.plan.language;
         let model = tested["model"].as_str().unwrap_or_default().to_string();
-        let ms = tested["first_token_ms"].as_u64().unwrap_or_default();
-        self.gray(language.it_works(&model, ms));
+        let models: Vec<String> = tested["models"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect();
+        match tested["first_token_ms"].as_u64() {
+            Some(ms) => self.gray(language.it_works(&model, ms)),
+            None => self.gray(language.listed(models.len())),
+        }
         if typed {
             return Tried {
                 models: Vec::new(),
@@ -224,14 +244,27 @@ impl<'a> Flow<'a> {
         if tested["listed"] == json!("catalog") {
             self.gray(language.listed_from_catalog().to_string());
         }
-        let models = tested["models"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(Value::as_str)
-            .map(str::to_string)
-            .collect();
         Tried { models, model }
+    }
+
+    /// 没通：问仍然保存不保存（施工 8-11 五补）。`y`、`yes`（不分大小写）是保存，别的、直接回车、读到头是不保存。
+    fn save_anyway(&mut self) -> bool {
+        let answer = self
+            .ask(self.plan.language.save_anyway())
+            .unwrap_or_default();
+        matches!(answer.trim().to_lowercase().as_str(), "y" | "yes")
+    }
+
+    /// 仍然保存、又没有模型的：问一个模型名。直接回车、读到头：「没选」。
+    fn typed_model(&mut self) -> Result<String, u8> {
+        let language = self.plan.language;
+        match self
+            .ask(language.model_name())
+            .map(|line| line.trim().to_string())
+        {
+            Some(name) if !name.is_empty() => Ok(name),
+            _ => self.not_picked(),
+        }
     }
 
     /// 说「没选」，交回退出码 1。

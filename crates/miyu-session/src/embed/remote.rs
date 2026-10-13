@@ -84,7 +84,7 @@ impl Remote {
         let reached = self
             .data
             .with(|knowledge| reach(&values, knowledge, &self.provider, &secret))
-            .map_err(|why| Unavailable::Off(why.0))?;
+            .map_err(|unreached| Unavailable::Off(unreached.why.0))?;
         let client = self
             .data
             .fetcher_for(&reached.base_url)

@@ -1,15 +1,17 @@
-//! 试一家供应商（`docs/blueprint/models.md`「协议」`provider.test`、「怎么走」第七条第 4 条，施工 8-11）：推驱动、地址、
-//! key，列模型，挑一个，发一句，收到第一段正文就停。
+//! 试一家供应商（`docs/blueprint/models.md`「协议」`provider.test`、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：推驱动、
+//! 地址、key，列模型。列得出来就算通，不发请求（2026-10-13 项目主人定：列模型就验过了地址和 key）。
 //!
-//! 1. 照最终值推这一家（和会话的路由同一个 `miyu_models::provider::provider`）。推不出的、地址或 key 取不到的：`config`。
-//! 2. 列模型（[`list_models`]，和拉列表一样整个 30 秒）。拉到了的，`save` 的（配好了的一家）存进供应商的列表；拉不到的
-//!    照目录里对上的那一家列，出错照驱动分类留着。
-//! 3. 挑模型：写了的用它；没写的照推荐挑（`miyu_models::onboard::recommend`）。列表是空的：`list`，交第 2 步的出错。
-//! 4. 发：只有一条 user，没有 system、没有工具面；收到正文那一块的第一段字就叫停，空闲 60 秒。驱动照挑的那个模型（施工
-//!    8-14，没有驱动的是 `config`），档案另配的头照固定的种子 `provider.test` 换。客户端和列模型用同一个
-//!    （照地址挑，施工 8-11 补：地址落在本机的不走代理，别的照环境变量，和会话真发时一样）。请求发了就报请求的结果
-//!    （「施工时定的」8-11）。
-//! 5. 不记会话日志、不记用量；记一行 `INFO provider tested`。key、地址不进任何一行。
+//! 1. 照最终值推这一家（和会话的路由同一个 `miyu_models::provider::provider`）。推不出的、地址或 key 取不到的：`config`，
+//!    引用取不到的带上缺的那一样（[`Missing`]），给人看的话照它说。
+//! 2. 列模型（[`list_models`]，和拉列表一样整个 30 秒）。拉到了的，`save` 的（配好了的一家）存进供应商的列表。
+//! 3. 列到了：写了模型、它在列表里的，或者没写、照推荐挑得出的（`miyu_models::onboard::recommend`），通了，不发请求。
+//!    列表是空的、又没写模型的：`list`，要人给一个模型名（`need_model`）。写了的模型不在列表里：拿它发一句（第 5 步）。
+//! 4. 列不到：认证错（`auth`）的就是没通，`list`。别的（这一家不给列、地址不对……）：写了模型的拿它发一句（第 5 步）；
+//!    没写的 `list`，要人给一个模型名（`need_model`）。模型照目录里对上的那一家列（`from_catalog`）。
+//! 5. 发：只有一条 user，没有 system，工具面只有档案的占位工具；收到正文那一块的第一段字就叫停，空闲 60 秒。驱动照这个模型
+//!    （施工 8-14，没有驱动的是 `config`），档案另配的头照固定的种子 `provider.test` 换。客户端和列模型用同一个（照地址挑，
+//!    施工 8-11 补：地址落在本机的不走代理，别的照环境变量，和会话真发时一样）。请求发了就报请求的结果（「施工时定的」8-11）。
+//! 6. 不记会话日志、不记用量；记一行 `INFO provider tested`。key、地址不进任何一行。
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -37,7 +39,7 @@ use miyu_models::provider::{NoModel, Provider};
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
-use crate::route::endpoint::{Reached, reach};
+use crate::route::endpoint::{Missing, Reached, Unreached, reach};
 use crate::route::lists::{TIMEOUT, list_models, listing_texts};
 use crate::route::shared::ModelData;
 
@@ -93,10 +95,10 @@ pub enum Probed {
         models: Vec<String>,
         /// 是不是照目录列的（供应商列不出）。
         from_catalog: bool,
-        /// 试的哪个。
+        /// 推荐的（列到了、没写模型的），或者写的那个。
         model: String,
-        /// 从发出去到收到第一段增量的毫秒数。
-        first_token_ms: u64,
+        /// 发了一句的：从发出去到收到第一段增量的毫秒数。只列了模型的没有。
+        first_token_ms: Option<u64>,
     },
     /// 没成：哪一步、出错（和 `model.called` 的一样）。
     Failed {
@@ -104,6 +106,10 @@ pub enum Probed {
         stage: Stage,
         /// 分类、状态、原话。
         error: CallError,
+        /// 列不出模型、给一个模型名就能拿它再试（第 3、4 步）。
+        need_model: bool,
+        /// `config` 那一步：配置里引用了、却取不到的那一样。
+        missing: Option<Missing>,
     },
 }
 
@@ -125,14 +131,18 @@ async fn run(
     probe: &Probe<'_>,
     tried: &mut Option<String>,
 ) -> Result<Probed, Probed> {
-    let config = |NoModel(why): NoModel| failed(Stage::Config, ErrorClass::NoModel, why);
     let Reached {
         provider,
         base_url,
         key,
     } = data
         .with(|knowledge| reach(probe.values, knowledge, probe.id, probe.secret))
-        .map_err(config)?;
+        .map_err(|Unreached { why, missing }| Probed::Failed {
+            stage: Stage::Config,
+            error: said(ErrorClass::NoModel, why.0),
+            need_model: false,
+            missing,
+        })?;
     let unready = |why: String| failed(Stage::Config, ErrorClass::Unclassified, why);
     // 地址落在本机的不走代理（施工 8-11 补，`route/shared.rs` `ModelData::fetcher_for`）。
     let client = data
@@ -146,7 +156,7 @@ async fn run(
         .map(|key| driver.auth(key.expose()))
         .unwrap_or_default();
     let listed = list_models(&client, driver.as_ref(), &base_url, &headers, TIMEOUT).await;
-    let (models, from_catalog, unlisted) = match listed {
+    let (models, from_catalog, model) = match listed {
         Ok(listed) => {
             let mut models: Vec<String> = listed.iter().map(|model| model.id.clone()).collect();
             models.sort_unstable();
@@ -159,28 +169,40 @@ async fn run(
                 };
                 blocking(move || data.set_list(&id, list)).await;
             }
-            (models, false, None)
+            let chosen = match probe.model {
+                Some(model) => Some(model.to_string()),
+                None => pick(data, probe.resolved, &provider, &models),
+            };
+            let Some(model) = chosen else {
+                let nothing = said(ErrorClass::Unclassified, "no models listed".to_string());
+                return Err(listing(nothing, true));
+            };
+            *tried = Some(model.clone());
+            if models.contains(&model) {
+                return Ok(Probed::Worked {
+                    models,
+                    from_catalog: false,
+                    model,
+                    first_token_ms: None,
+                });
+            }
+            (models, false, model)
         }
-        Err(why) => (
-            catalog_models(data, &provider),
-            true,
-            Some(classify(driver.as_ref(), &why)),
-        ),
-    };
-    let model = match probe.model {
-        Some(model) => model.to_string(),
-        None => pick(data, probe.resolved, &provider, &models).ok_or_else(|| Probed::Failed {
-            stage: Stage::List,
-            error: unlisted.unwrap_or_else(|| CallError {
-                class: ErrorClass::Unclassified,
-                message: "no models listed".to_string(),
-                status: None,
-            }),
-        })?,
+        Err(why) => {
+            let error = classify(driver.as_ref(), &why);
+            let unauthorized = error.class == ErrorClass::Auth;
+            match probe.model {
+                Some(model) if !unauthorized => {
+                    (catalog_models(data, &provider), true, model.to_string())
+                }
+                _ => return Err(listing(error, !unauthorized)),
+            }
+        }
     };
     *tried = Some(model.clone());
     // 发那一句照这个模型的驱动（施工 8-14：同一家里的模型可以各走各的），没有驱动的是 `config`；另配的头照固定的种子换。
     // 温度照这个模型配置的默认（施工 8-22），和会话真发时一样。
+    let config = |NoModel(why): NoModel| failed(Stage::Config, ErrorClass::NoModel, why);
     let (speaking, temperature) = data.with(|knowledge| {
         let (facts, _) = facts(probe.resolved, knowledge, &provider, &model);
         let speaking = provider.for_model(&model, &facts.wire, &knowledge.profiles.npm);
@@ -209,7 +231,7 @@ async fn run(
         models,
         from_catalog,
         model,
-        first_token_ms,
+        first_token_ms: Some(first_token_ms),
     })
 }
 
@@ -281,6 +303,8 @@ async fn ask(
         } => Err(Probed::Failed {
             stage: Stage::Request,
             error: classified.error,
+            need_model: false,
+            missing: None,
         }),
         Outcome::Ended { error: None, .. } | Outcome::Cancelled => Ok(seen.first_token_ms()),
     }
@@ -373,10 +397,27 @@ fn pick(
 fn failed(stage: Stage, class: ErrorClass, message: String) -> Probed {
     Probed::Failed {
         stage,
-        error: CallError {
-            class,
-            message,
-            status: None,
-        },
+        error: said(class, message),
+        need_model: false,
+        missing: None,
+    }
+}
+
+/// 列模型没成；`need_model` 的给一个模型名就能拿它再试。
+fn listing(error: CallError, need_model: bool) -> Probed {
+    Probed::Failed {
+        stage: Stage::List,
+        error,
+        need_model,
+        missing: None,
+    }
+}
+
+/// 分类、原话，没有状态码。
+fn said(class: ErrorClass, message: String) -> CallError {
+    CallError {
+        class,
+        message,
+        status: None,
     }
 }

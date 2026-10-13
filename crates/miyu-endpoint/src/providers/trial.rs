@@ -1,5 +1,6 @@
-//! `provider.test`（`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条，施工 8-11）：试一家配好了的供应商
-//! （`provider`），或者还没写进配置的一家（`candidate`），会真的花一点额度。
+//! `provider.test`（`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：试一家配好了的
+//! 供应商（`provider`），或者还没写进配置的一家（`candidate`）。列得出模型就算通，不发请求；列不出的、写的模型不在列表里的
+//! 才发一句，会花一点额度。
 //!
 //! 1. `provider`、`candidate` 不是正好写一个、`candidate` 不是那个形状（`key` 不是三种之一、多了别的格）、`model` 是空的：
 //!    `bad_params`。`provider` 不是配好了的：`unknown_provider`。
@@ -7,19 +8,26 @@
 //! 3. key 先取好再试：配好的照这一刻的配置抄一份（和 `model.list` 同一个办法），候选的只取它自己那一个。`{value}` 只在
 //!    这一次的内存里，不记、不存：最终值里写成一个不合密钥名字写法的引用（`miyu_models::onboard::value_key`），只认它。
 //! 4. 试由会话那一层做（`miyu_session::probe`）：配好的列到的模型存进供应商的列表，候选的不存。
+//! 5. 回应：通了的 `checked` 说是列了模型（`list`）还是发了一句（`request`，带 `first_token_ms`）；没通的、给一个模型名就能
+//!    再试的带 `need_model`。`config` 那一步是配置里引用的密钥、环境变量取不到的，`message` 照这个连接的语言说（和
+//!    `miyu check` 同一句），别的照旧是英文的一句。
 
 use std::sync::Arc;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_config::Words;
 use miyu_config::merge::Resolved;
 use miyu_config::secret::{Reference, Secret};
 use miyu_models::onboard::{Candidate, value_key};
 use miyu_models::provider::configured;
-use miyu_session::{Probe, Probed, probe};
+use miyu_session::{Missing, Probe, Probed, probe};
+use miyu_store::human::Human;
 
 use crate::Core;
+use crate::config::methods::words;
+use crate::hello::Peer;
 use crate::models::snapshot;
 use crate::refusal::Refusal;
 
@@ -57,12 +65,13 @@ enum KeyParam {
     Value(String),
 }
 
-/// `provider.test`。
-pub(crate) async fn test(core: &Core, params: Value) -> Result<Value, Refusal> {
+/// `provider.test`：`config` 那一步给人看的话照 `peer` 的语言说。
+pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value, Refusal> {
     let params: TestParams = serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?;
     if params.model.as_deref() == Some("") {
         return Err(Refusal::BAD_PARAMS);
     }
+    let words = words(core, peer.language)?;
     let data = Arc::clone(&core.model_data);
     data.wait().await;
     let text = core.resources.probe().map_err(|error| {
@@ -113,7 +122,7 @@ pub(crate) async fn test(core: &Core, params: Value) -> Result<Value, Refusal> {
         }
         _ => return Err(Refusal::BAD_PARAMS),
     };
-    Ok(answer(probed))
+    Ok(answer(probed, &words))
 }
 
 /// 候选写成 [`Candidate`]，它的 key 先取好：`{value}` 的就是写的（照 `secret.set` 的规矩去掉前后空白，不收的当取不到），
@@ -142,27 +151,54 @@ fn candidate(core: &Core, written: CandidateParams) -> (Candidate, Option<Secret
     (candidate, value)
 }
 
-/// 写成回应。
-fn answer(probed: Probed) -> Value {
+/// 写成回应：缺了引用的那一样的照 `words` 说。
+fn answer(probed: Probed, words: &Human) -> Value {
     match probed {
         Probed::Worked {
             models,
             from_catalog,
             model,
             first_token_ms,
-        } => json!({
-            "ok": true,
-            "models": models,
-            "listed": if from_catalog { "catalog" } else { "provider" },
-            "model": model,
-            "first_token_ms": first_token_ms,
-        }),
-        Probed::Failed { stage, error } => {
-            let mut said = json!({"class": error.class.as_str(), "message": error.message});
+        } => {
+            let mut said = json!({
+                "ok": true,
+                "checked": if first_token_ms.is_some() { "request" } else { "list" },
+                "models": models,
+                "listed": if from_catalog { "catalog" } else { "provider" },
+                "model": model,
+            });
+            if let Some(ms) = first_token_ms {
+                said["first_token_ms"] = json!(ms);
+            }
+            said
+        }
+        Probed::Failed {
+            stage,
+            error,
+            need_model,
+            missing,
+        } => {
+            let message = missing
+                .and_then(|missing| told(words, &missing))
+                .unwrap_or(error.message);
+            let mut said = json!({"class": error.class.as_str(), "message": message});
             if let Some(status) = error.status {
                 said["status"] = json!(status);
             }
-            json!({"ok": false, "stage": stage.as_str(), "error": said})
+            let mut answer = json!({"ok": false, "stage": stage.as_str(), "error": said});
+            if need_model {
+                answer["need_model"] = json!(true);
+            }
+            answer
         }
     }
+}
+
+/// 配置里引用了、却取不到的那一样，照 `miyu check` 的那一句说（`config/unknown-secret`、`config/env-not-set`）。
+fn told(words: &Human, missing: &Missing) -> Option<String> {
+    let (key, name) = match &missing.reference {
+        Reference::Secret(name) => ("config/unknown-secret", name),
+        Reference::Env(name) => ("config/env-not-set", name),
+    };
+    words.sentence(key, &[("key", &missing.key), ("name", name)])
 }

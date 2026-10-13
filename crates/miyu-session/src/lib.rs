@@ -81,8 +81,9 @@ pub use open::{
 };
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{
-    Answer, Ask, IDLE, LOCAL_WAIT, ModelData, Observed, OneShot, Probe, Probed, Retirement, Routes,
-    Running, STALE, Stage, Unanswered, find_local, probe, read_observed, refresh_list,
+    Answer, Ask, IDLE, LOCAL_WAIT, Missing, ModelData, Observed, OneShot, Probe, Probed,
+    Retirement, Routes, Running, STALE, Stage, Unanswered, find_local, probe, read_observed,
+    refresh_list,
 };
 pub use sandbox::SandboxCache;
 pub use shown::{Next, Shown};

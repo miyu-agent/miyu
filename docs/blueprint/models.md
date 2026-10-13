@@ -40,8 +40,8 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-session/src/route/turn.rs` | 回合开始照这一轮的配置重新解析会话的引用：换成内核交的、解析不出的退回 `models.chat`、钉着的成员还在的照旧、限额重算（`ModelPort::turn`） | 8-10 |
 | `crates/miyu-session/src/shown.rs` | 给头看的那一份 `Shown`：限额和会话接下来请求的模型 `Next`（8-18 多 `effort`），actor 写、`Handle` 读，`subscribe` 照它答 | 8-10、8-18 |
 | `crates/miyu-session/src/route/lists.rs` | 拉一家供应商的模型列表：照驱动的 `models_path()` GET、`parse_models`，存 `state/models/providers/<编号>.json`（8-7）；GET 一家的列表那一段 `provider.test` 也用（`list_models`，8-11） | 8-7、8-11 |
-| `crates/miyu-session/src/route/probe.rs` | `provider.test` 试一次（8-11）：推驱动、地址、key，列模型（列不出的照目录），挑模型，发一句、收到第一段正文就停；发的那一句照挑的模型的驱动、带档案另配的头（8-14） | 8-11、8-14 |
-| `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头（`reach`，R-5 补从 `probe.rs` 抽出来）：`provider.test` 和远程的 embedding（`recall.md` 第四条第 7 款）共用，不走路由、池、冷却 | R-5 补 |
+| `crates/miyu-session/src/route/probe.rs` | `provider.test` 试一次（8-11）：推驱动、地址、key，列模型；列得出的挑一个就算通，不发请求（8-11 五补）；写的模型不在列表里、列不出又不是认证错的才发一句，收到第一段正文就停；发的那一句照这个模型的驱动、带档案另配的头（8-14） | 8-11、8-14、8-11 五补 |
+| `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头（`reach`，R-5 补从 `probe.rs` 抽出来）：`provider.test` 和远程的 embedding（`recall.md` 第四条第 7 款）共用，不走路由、池、冷却；引用的密钥、环境变量取不到的带上缺的那一样（`Missing`，8-11 五补） | R-5 补、8-11 五补 |
 | `crates/miyu-session/src/route/local.rs` | `provider.detect` 探本机的服务（8-11）：几家一起发，各等 300 毫秒，不走代理 | 8-11 |
 | `crates/miyu-core/src/models.rs`、`models/` | 起来时读档案、认原厂的表（TOML 读成 JSON），造路由；读目录（V-2 下补起找到资源目录就读，不等 `ready`）、用出来的、供应商的列表、池的指针（`models/catalog.rs`：快照和缓存挑新的），后台更新（`models/refresh.rs`，8-8：地址可以是环境变量的引用，`Schedule`）；`[models.cooldown]` 照配置当场换（`follow_cooldown`，8-9）；多造一个不走代理的 GET 客户端，探本机的服务用（8-11） | 8-6 起 |
 | `crates/miyu-endpoint/src/models.rs`、`models/entry.rs` | 协议：`model.list`（8-7，`entry.rs` 写一家；8-8 加 `pools`、`uses.vision`，8-8 补去掉 `tiers`、池多 `subagent`、`description`；8-9 加模型、key 的冷却；8-18（补）起 `facts.effort` 多 `key`），`session.create` 的 `model` 怎么解析（`record`，8-8，`methods.rs` 调它）；`session.configure` 的参数（`methods.rs` 先查参数、再找会话、再 `record`，`ConfigureParams`，写了 `effort` 的 8-18（补）起 `bad_params`）、`subscribe` 回应的 `model`（`connection.rs` 调它，8-10；8-18 多 `effort`）；`provider.detect`、`provider.catalog`、`provider.test` 在 `providers.rs`、`providers/trial.rs`（8-11）；`model.call` 在 `models/call.rs`（8-20：参数、照这个账号的 blob 认图（`attach.rs` 的 `images`）、调一次性入口、出错写成拒绝；8-15 记在这个连接的账号上）；`usage.query` 在 `usage.rs`（8-15：开 `state/usage.db`、参数、先补再查、写成 `rows`） | 8-7 到 8-11、8-15、8-20 |
@@ -363,22 +363,25 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 {"providers":[{"id":"deepseek","name":"DeepSeek","driver":"openai-chat","base_url":"https://api.deepseek.com","env":["DEEPSEEK_API_KEY"],"doc":"https://api-docs.deepseek.com/quick_start/pricing","models":4,"supported":true,"local":false},{"id":"anthropic","name":"Anthropic","driver":"anthropic","base_url":null,"env":["ANTHROPIC_API_KEY"],"doc":"https://docs.anthropic.com/en/docs/about-claude/models","models":16,"supported":false,"local":false}]}
 ```
 
-**`provider.test`**（命令，8-11）：会真的花一点额度。
+**`provider.test`**（命令，8-11；8-11 五补，2026-10-13 项目主人定：列得出模型就算通，不发请求）：列不出、写的模型不在列表里时才发一句，那时会花一点额度。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `provider` | 字符串，和 `candidate` 二选一 | 配好了的供应商 |
 | `candidate` | 对象，和 `provider` 二选一 | 还没写进配置的：`driver`、`base_url`（写死的地址）、`key`（`{secret}`、`{env}`，或者 `{value}`：这一次用，不存、不记）、`catalog`。都可以不写，没写的照档案、目录推。另配的头 `headers` 随 8-14 |
-| `model` | 字符串，可以不写 | 拿哪个试。不写的照推荐挑（第七条第 4 条第 3 款）。写空的 `bad_params` |
+| `model` | 字符串，可以不写 | 拿哪个试：在列到的列表里的不发请求，不在的、列不出的拿它发一句（第七条第 4 条）。不写的照推荐挑。写空的 `bad_params` |
 
 - `provider`、`candidate` 不是正好写一个的、`candidate` 不是这个形状的（`key` 不是三种之一、多了别的格）：`bad_params`。`provider` 不是配好了的：`unknown_provider`。
 - `candidate` 照写进配置以后的样子推：编号是 `catalog`，没写的是 `candidate`（「施工时定的」8-11）。
 
-回应：`ok`。成了的带 `models`（列出来的模型名）、`listed`（`provider` 或 `catalog`）、`model`（试的哪个）、`first_token_ms`（从发出去到收到第一段增量的毫秒数）。没成的带 `stage`（`list` 列模型、`request` 发请求、`config` 推不出驱动或地址、取不到 key）、`error`（`class`、`status`、`message`，和 `model.called` 的一样；没有状态码的不写 `status`）。
+回应：`ok`。成了的带 `checked`（`list` 只列了模型，`request` 发了一句）、`models`（列出来的模型名）、`listed`（`provider` 或 `catalog`）、`model`（推荐的，或者写的那个）；发了一句的另带 `first_token_ms`（从发出去到收到第一段增量的毫秒数）。没成的带 `stage`（`list` 列模型、`request` 发请求、`config` 推不出驱动或地址、取不到 key）、`error`（`class`、`status`、`message`，和 `model.called` 的一样；没有状态码的不写 `status`）；列不出、给一个模型名就能拿它再试的带 `need_model: true`（8-11 五补）。`config` 那一步是配置里引用的密钥、环境变量取不到的，`message` 照这个连接的语言说，和 `miyu check` 同一句（`config/unknown-secret`、`config/env-not-set`）；别的照旧是英文的一句。
 
 ```json
-{"ok":true,"models":["deepseek-flash","deepseek-v4-pro"],"listed":"provider","model":"deepseek-flash","first_token_ms":812}
+{"ok":true,"checked":"list","models":["deepseek-flash","deepseek-v4-pro"],"listed":"provider","model":"deepseek-flash"}
+{"ok":true,"checked":"request","models":["deepseek-flash"],"listed":"catalog","model":"my-model","first_token_ms":812}
+{"ok":false,"stage":"list","need_model":true,"error":{"class":"other","status":404,"message":"not found"}}
 {"ok":false,"stage":"request","error":{"class":"auth","status":401,"message":"Authentication Fails (no such user)"}}
+{"ok":false,"stage":"config","error":{"class":"no_model","message":"providers.deepseek.key 引用的密钥 deepseek-mv29vzu7 还没设"}}
 {"ok":false,"stage":"config","error":{"class":"no_model","message":"provider \"candidate\" needs base_url: it matches nothing in the catalog"}}
 ```
 
@@ -692,11 +695,11 @@ flowchart TB
 3. **`provider.catalog`**：照目录和档案列（`miyu_models::onboard::listed`、`search`）。驱动是现在有的（`openai-chat`）、有地址的算 `supported`。别的也列、标出来，人知道为什么选不了：`driver` 是 `null` 的认不出接口，`base_url` 是 `null` 的没有地址，都有的是驱动还没有。
    - **常用的几家**（8-11 再补，2026-10-08 项目主人定）：`featured` 交回资源目录 `models/featured.toml` 列的几家，照这个先后：OpenCode Zen、OpenCode Go、DeepSeek、Anthropic、OpenAI、OpenRouter、Moonshot 国际版和国内版、智谱 GLM 国内版、Z.AI 国际版、通义千问国际版和国内版、MiniMax 国际版和国内版（施工 T-12，2026-10-10 项目主人定照 opencode 的常用供应商，国内外分开的各列一行；Google 目录里走 Gemini 自己的接口、核心接不上，GitHub Copilot 要 OAuth，Vercel 没实测，都不列）。一家一项 `[[providers]]`：`catalog` 是目录、档案里的编号，`catalog_zh` 是中文界面用的（国内的地址），`name` 是一句字或者语言到一句话的表。`miyu setup` 和头的第一次引导列的是同一份，改它不用改代码。
 4. **`provider.test`**（`route/probe.rs`）：
-   1. 照配置（`provider`）或者照候选写成的一份最终值（`candidate`，`miyu_models::onboard::candidate`）推这一家，和会话的路由走同一条路（`miyu_models::provider::provider`）。推不出驱动、地址的，地址是环境变量的引用、取不到的，写了 key 一个都取不到的：`stage` 是 `config`，分类 `no_model`，原话照路由的。
-   2. 列模型：照驱动的 `models_path()`，带第一个取得到的 key，整个 30 秒（和拉列表一样，`route/lists.rs` 的 `list_models`）。拉到了的，配好了的供应商顺手存进供应商的列表（第二条第 10 条），候选不存。拉不到的不算失败：照目录里对上的那一家列，`listed` 是 `catalog`。模型名照字节排、去重。
-   3. 挑模型：`model` 写了的用它。没写的照推荐挑：能调工具、窗口不小于 64000、不是 `deprecated` 的里面发布最晚的（目录的 `release_date`，没有的排最后，一样的取列表里靠前的）；一个都不够格的取列表第一个（`miyu_models::onboard::recommend`）。列表是空的、又没写 `model`：`stage` 是 `list`，交列模型的出错（列表本来就是空的：分类 `other`，原话 `no models listed`）。
-   4. 发一次请求：只有一条 user，是 `resources/core/models/probe.txt` 那一句（去掉行尾的空白），没有 system，没有工具面。驱动照挑的那个模型（第一条第 2 条，没有驱动的 `stage` 是 `config`，8-14），档案另配的头照种子 `provider.test` 换（8-14）。收到第一段正文（正文那一块的第一段字）就叫停，不等说完，省额度；思考不算。空闲 60 秒。客户端是拉列表的那一个（照环境变量的代理，和会话真发时一样）。
-   5. 成了交回 `first_token_ms`：从发出去到收到第一段增量（思考也算），和 `model.called` 的一样。没说正文就正常说完的也算成了。没成交回分类、HTTP 状态、原话（`stage` 是 `request`）。请求发了，就报请求的结果：列模型的出错只在没有模型可试时报（第 3 款）。
+   1. 照配置（`provider`）或者照候选写成的一份最终值（`candidate`，`miyu_models::onboard::candidate`）推这一家，和会话的路由走同一条路（`miyu_models::provider::provider`）。推不出驱动、地址的，地址是环境变量的引用、取不到的，写了 key 一个都取不到的：`stage` 是 `config`，分类 `no_model`。原话照路由的；引用的密钥、环境变量取不到的照连接的语言说那一项引用的什么没设（8-11 五补，「协议」）。
+   2. 列模型：照驱动的 `models_path()`，带第一个取得到的 key，整个 30 秒（和拉列表一样，`route/lists.rs` 的 `list_models`）。拉到了的，配好了的供应商顺手存进供应商的列表（第二条第 10 条），候选不存。模型名照字节排、去重。
+   3. 列到了（8-11 五补，2026-10-13 项目主人定：列模型就验过了地址和 key，不必再拿一个模型真发一句；原来挑最新的那个去发，中转上碰到 Zen 的免费档就 403，引导卡死）：`model` 写了、在列表里的，就是它；没写的照推荐挑：能调工具、窗口不小于 64000、不是 `deprecated` 的里面发布最晚的（目录的 `release_date`，没有的排最后，一样的取列表里靠前的），一个都不够格的取列表第一个（`miyu_models::onboard::recommend`）。挑得出就算通了，`checked` 是 `list`，不发请求。列表是空的、又没写 `model`：`stage` 是 `list`，`need_model`，分类 `other`，原话 `no models listed`。写的 `model` 不在列表里：拿它发一句（第 5 款）。
+   4. 列不到：分类照驱动分（和 `model.called` 的一样）。认证错（`auth`）的就是没通：`stage` 是 `list`，写没写 `model` 都不发请求。别的（这一家不给列、地址不对、连不上……）：写了 `model` 的拿它发一句（第 5 款），模型照目录里对上的那一家列，`listed` 是 `catalog`；没写的 `stage` 是 `list`、`need_model`，头请人给一个模型名再试。
+   5. 发一次请求：只有一条 user，是 `resources/core/models/probe.txt` 那一句（去掉行尾的空白），没有 system，工具面只有档案的占位工具。驱动照这个模型（第一条第 2 条，没有驱动的 `stage` 是 `config`，8-14），档案另配的头照种子 `provider.test` 换（8-14）。收到第一段正文（正文那一块的第一段字）就叫停，不等说完，省额度；思考不算。空闲 60 秒。客户端是拉列表的那一个（照环境变量的代理，和会话真发时一样）。成了的 `checked` 是 `request`，交回 `first_token_ms`：从发出去到收到第一段增量（思考也算），和 `model.called` 的一样。没说正文就正常说完的也算成了。没成交回分类、HTTP 状态、原话（`stage` 是 `request`）。
    6. `candidate` 的 `{value}` 只在这一次的内存里，不记日志、不存。
    7. 不记会话日志，不记用量汇总：它不属于哪个会话。记一行 `INFO provider tested provider=… model=… ok=…`（候选的 `provider` 写它推的编号；没有模型可试的 `model` 是空的）。
 5. **`miyu setup` 走的方法**，照先后。问法：交互式一步步选（列出来、敲数字、贴 key 不回显），参数能跳过对应的一步。2026-10-01 项目主人看过、定了：这是主程序里最基本的一份，全屏的引导做在各个头里，照同一组方法（施工方案 M9 那一段第 3 条）。每一步的样子在 `cli/setup.md`：

@@ -88,6 +88,22 @@ impl Language {
         }
     }
 
+    /// 只列了模型就算通了（施工 8-11 五补）：列出几个。
+    pub(crate) fn listed(&self, count: usize) -> String {
+        match self {
+            Language::Chinese => format!("· 通了：列出 {count} 个模型。"),
+            Language::English => format!("· It works: {count} models listed."),
+        }
+    }
+
+    /// 没通，问仍然保存不保存（施工 8-11 五补）。
+    pub(crate) fn save_anyway(&self) -> &'static str {
+        match self {
+            Language::Chinese => "仍然保存？[y/N] ",
+            Language::English => "Save anyway? [y/N] ",
+        }
+    }
+
     /// 模型照目录列的。
     pub(crate) fn listed_from_catalog(&self) -> &'static str {
         match self {

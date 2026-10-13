@@ -2,14 +2,14 @@
 //! 服务器），假终端照剧本回，在真的套接字上走一遍。三个平台一样跑：人那一头是照剧本回的 `Console`（`cli/login.md` 的先例）。
 //!
 //! 常用的几家、本机的服务、自定义列成一张表（施工 8-11 再补）；环境变量里的 key 只引用不复制；贴的 key 先试、通了存成密钥；
-//! 试不通回到上一步；本机的服务不要 key；已经配好的只写 `models.chat`；核心看不到的变量说清是哪个；屏幕上从头到尾没有 key；
+//! 列得出模型就算通、不发请求（施工 8-11 五补）；试不通先问仍然保存不保存，不保存的回到上一步；本机的服务不要 key；已经配好的只写 `models.chat`；核心看不到的变量说清是哪个；屏幕上从头到尾没有 key；
 //! `miyu ask` 没模型时先走一遍。配置里一个池都没有的，一起写三个预设的池（施工 8-8 补）。自定义的、取不到模型列表的在
 //! `setup_custom.rs`。
 
 use serde_json::json;
 
 use crate::support::Home;
-use crate::support::onboarding::{FAKE, Typist, answer, deepseek_at, listing, plan};
+use crate::support::onboarding::{FAKE, Typist, deepseek_at, listing, plan};
 use miyu_cli::Setup;
 use miyu_http::testkit::{Reply, Server};
 
@@ -51,10 +51,11 @@ fn no_key_on(home: &Home, screen: &str) {
 
 #[tokio::test]
 async fn a_key_in_the_environment_is_referenced_never_copied() {
-    let server = Server::start(vec![
-        listing(&["deepseek-v4-pro", "deepseek-flash", "a-tiny"]),
-        answer(),
-    ])
+    let server = Server::start(vec![listing(&[
+        "deepseek-v4-pro",
+        "deepseek-flash",
+        "a-tiny",
+    ])])
     .await;
     let home = Home::onboarding("", &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
     let mut typist = Typist::at_terminal(&["3", ""], &[]);
@@ -74,7 +75,7 @@ async fn a_key_in_the_environment_is_referenced_never_copied() {
          \x20    OpenAI        用不了：目录里没有它的地址\n\
          \x20 4  自定义\n\
          选一个编号：试一下 DeepSeek……\n\
-         · 通了：试的 deepseek-flash，N 毫秒收到第一个字。\n\
+         · 通了：列出 3 个模型。\n\
          选主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  a-tiny\n\
@@ -92,24 +93,21 @@ async fn a_key_in_the_environment_is_referenced_never_copied() {
     );
     assert_eq!(home.secrets(), "", "不复制进密钥文件");
     no_key_on(&home, &asked.screen);
+    let received = server.received();
+    assert_eq!(received.len(), 1, "列到了就不发请求");
     let bearer = format!("Bearer {FAKE}");
-    assert_eq!(
-        server.received()[1].header("authorization"),
-        Some(bearer.as_str())
-    );
+    assert_eq!(received[0].header("authorization"), Some(bearer.as_str()));
 }
 
 #[tokio::test]
 async fn a_pasted_key_is_tried_first_and_kept_only_once_it_works() {
     let server = Server::start(vec![
         unauthorized(),
-        unauthorized(),
         listing(&["deepseek-flash", "deepseek-v4-pro"]),
-        answer(),
     ])
     .await;
     let home = Home::onboarding("", &[], deepseek_at(&server));
-    let mut typist = Typist::at_terminal(&["3", "2"], &[WRONG, FAKE]);
+    let mut typist = Typist::at_terminal(&["3", "", "2"], &[WRONG, FAKE]);
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
@@ -122,16 +120,17 @@ async fn a_pasted_key_is_tried_first_and_kept_only_once_it_works() {
          \x20    OpenAI        用不了：目录里没有它的地址\n\
          \x20 4  自定义\n\
          选一个编号：粘贴 deepseek 的 key（不显示）：试一下 DeepSeek……\n\
-         不通（发请求）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
-         粘贴 deepseek 的 key（不显示）：试一下 DeepSeek……\n\
-         · 通了：试的 deepseek-flash，N 毫秒收到第一个字。\n\
+         不通（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+         仍然保存？[y/N] 粘贴 deepseek 的 key（不显示）：试一下 DeepSeek……\n\
+         · 通了：列出 2 个模型。\n\
          · deepseek 的 key 存好了\n\
          选主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  deepseek-v4-pro\n\
          选一个编号，直接回车用推荐的：写好了：models.chat = deepseek/deepseek-v4-pro\n"
     );
-    assert_eq!(typist.hidden, 2, "试不通回到贴 key");
+    assert_eq!(typist.hidden, 2, "试不通、不保存，回到贴 key");
+    assert_eq!(server.received().len(), 2, "两次都只列了模型");
     let secrets = home.secrets();
     assert!(
         secrets.contains(&format!("deepseek = \"{FAKE}\"\n")),
@@ -148,6 +147,59 @@ async fn a_pasted_key_is_tried_first_and_kept_only_once_it_works() {
         "{config}"
     );
     no_key_on(&home, &asked.screen);
+}
+
+/// 试不通、人说仍然保存（施工 8-11 五补，2026-10-13 项目主人定）：列不出模型的先问模型名，贴的 key 照样存、配置照填的写。
+#[tokio::test]
+async fn a_failed_try_can_be_saved_anyway() {
+    let server = Server::start(vec![unauthorized()]).await;
+    let home = Home::onboarding("", &[], deepseek_at(&server));
+    let mut typist = Typist::at_terminal(&["3", "Y", " my-model "], &[FAKE]);
+    let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
+    assert_eq!(asked.code, 0, "{}", asked.screen);
+    let (_, after) = asked
+        .screen
+        .split_once("粘贴 deepseek 的 key（不显示）：")
+        .expect("问了 key");
+    assert_eq!(
+        after,
+        "试一下 DeepSeek……\n\
+         不通（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+         仍然保存？[y/N] 模型名：\
+         · deepseek 的 key 存好了\n\
+         写好了：models.chat = deepseek/my-model\n"
+    );
+    assert_eq!(typist.hidden, 1, "保存了就不回去贴 key");
+    assert!(
+        home.secrets().contains(&format!("deepseek = \"{FAKE}\"\n")),
+        "{}",
+        home.secrets()
+    );
+    assert!(
+        home.personal_settings()
+            .contains("chat = \"deepseek/my-model\""),
+        "{}",
+        home.personal_settings()
+    );
+    assert_eq!(server.received().len(), 1, "只列了一次模型");
+    no_key_on(&home, &asked.screen);
+}
+
+/// 仍然保存、模型名却没填：「没选」，退出码 1，key、配置都不写。
+#[tokio::test]
+async fn saving_anyway_without_a_model_name_is_not_picked() {
+    let server = Server::start(vec![unauthorized()]).await;
+    let home = Home::onboarding("", &[], deepseek_at(&server));
+    let mut typist = Typist::at_terminal(&["3", "yes", "  "], &[FAKE]);
+    let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
+    assert_eq!(asked.code, 1, "{}", asked.screen);
+    assert!(
+        asked.screen.ends_with("仍然保存？[y/N] 模型名：没选\n"),
+        "{}",
+        asked.screen
+    );
+    assert_eq!(home.secrets(), "", "没存 key");
+    assert_eq!(home.personal_settings(), "", "配置一个字都没写");
 }
 
 /// 贴 key 那一步取消了（施工 8-5 补：`Ctrl+C`，或者空行 `Ctrl+D`），`Console::hidden` 报
@@ -169,12 +221,7 @@ async fn cancelling_the_key_paste_writes_nothing() {
 
 #[tokio::test]
 async fn a_local_service_needs_no_key() {
-    let server = Server::start(vec![
-        listing(&["qwen3-8b"]),
-        listing(&["qwen3-8b"]),
-        answer(),
-    ])
-    .await;
+    let server = Server::start(vec![listing(&["qwen3-8b"]), listing(&["qwen3-8b"])]).await;
     let profiles =
         json!({"lab": {"name": "Lab", "driver": "openai-chat", "base_url": server.base_url}});
     let home = Home::onboarding("", &[], profiles);
@@ -202,7 +249,7 @@ async fn a_local_service_needs_no_key() {
 
 #[tokio::test]
 async fn a_provider_already_set_up_only_gets_models_chat() {
-    let server = Server::start(vec![listing(&["deepseek-flash"]), answer()]).await;
+    let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
     let config = "[providers.ds]\ncatalog = \"deepseek\"\nkey = { env = \"DEEPSEEK_API_KEY\" }\nprice_multiplier = 0.5\n";
     let home = Home::onboarding(config, &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
     let mut typist = Typist::at_terminal(&["3", ""], &[]);
@@ -261,7 +308,7 @@ async fn nothing_picked_or_no_key_ends_with_1() {
 
 #[tokio::test]
 async fn ask_without_a_model_goes_through_setup_first_at_a_terminal() {
-    let server = Server::start(vec![listing(&["deepseek-flash"]), answer()]).await;
+    let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
     let home = Home::onboarding("", &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
     let mut piped = Typist::piping("");
     let (ready, asked) = home.ready(&plan(Setup::default(), &[]), &mut piped).await;
@@ -301,7 +348,7 @@ async fn three_preset_pools_go_in_only_when_there_are_no_pools() {
                    [pools.standard]\nmodels = []\nsubagent = true\n\n\
                    [pools.flagship]\nmodels = []\nsubagent = true\n";
     for (config, wanted) in [("", true), ("[pools.mine]\nsubagent = true\n", false)] {
-        let server = Server::start(vec![listing(&["deepseek-flash"]), answer()]).await;
+        let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
         let home = Home::onboarding(config, &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
         let mut typist = Typist::at_terminal(&["3", ""], &[]);
         let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
@@ -328,10 +375,11 @@ async fn three_preset_pools_go_in_only_when_there_are_no_pools() {
 /// 盖住。原来写系统配置，屏幕上说写好了，会话照旧用个人设置里那一个。
 #[tokio::test]
 async fn a_chat_model_in_personal_settings_is_replaced() {
-    let server = Server::start(vec![
-        listing(&["deepseek-v4-pro", "deepseek-flash", "a-tiny"]),
-        answer(),
-    ])
+    let server = Server::start(vec![listing(&[
+        "deepseek-v4-pro",
+        "deepseek-flash",
+        "a-tiny",
+    ])])
     .await;
     let home = Home::onboarding("", &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
     let personal = home.root.path().join("home/admin/settings.toml");

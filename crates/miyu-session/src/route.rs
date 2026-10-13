@@ -51,6 +51,7 @@ pub(crate) mod shared;
 mod sight;
 mod turn;
 
+pub use endpoint::Missing;
 pub use lists::{STALE, refresh_list};
 pub use local::{LOCAL_WAIT, Running, find_local};
 pub use once::{Answer, Ask, OneShot, Unanswered};

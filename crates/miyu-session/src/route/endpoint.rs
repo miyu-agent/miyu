@@ -2,8 +2,8 @@
 //! `provider.test` 试一家，远程的 embedding（`embed/remote.rs`）照 `models.embedding` 点名的那一家发。配置照调的一方手里
 //! 的那一份（会话里是这一轮冻结的）。
 
-use miyu_config::Values;
 use miyu_config::secret::{Reference, Secret};
+use miyu_config::{Address, Values};
 use miyu_http::Endpoint;
 use miyu_models::Knowledge;
 use miyu_models::provider::{self, NoModel, Provider};
@@ -34,25 +34,62 @@ impl Reached {
     }
 }
 
+/// 推不出来：英文的一句（`no provider "x"` 这样，和路由说的一样），是引用取不到的另带缺的那一样（施工 8-11 五补：试一家时
+/// 给人看的话照它说）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Unreached {
+    /// 英文的一句。
+    pub why: NoModel,
+    /// 引用取不到的：哪一项、缺的是什么。
+    pub missing: Option<Missing>,
+}
+
+/// 配置里引用了、却取不到的一样：哪一项（`providers.<编号>.key` 这样的键）、引用的什么。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Missing {
+    /// 写着引用的那一项。
+    pub key: String,
+    /// 引用的密钥、环境变量。
+    pub reference: Reference,
+}
+
+impl From<NoModel> for Unreached {
+    fn from(why: NoModel) -> Unreached {
+        Unreached { why, missing: None }
+    }
+}
+
 /// 照配置 `values`、模型资料 `knowledge` 找编号是 `id` 的那一家，地址、key 照 `secret` 取。
 ///
 /// # Errors
 ///
-/// 没配这一家；地址取不到；配了 key 却取不到：英文的一句（`no provider "x"` 这样，和路由说的一样）。
+/// 没配这一家；地址取不到；配了 key 却取不到（后两种带上缺的那一样）。
 pub(crate) fn reach(
     values: &Values,
     knowledge: &Knowledge<'_>,
     id: &str,
     secret: &dyn Fn(&Reference) -> Option<Secret>,
-) -> Result<Reached, NoModel> {
+) -> Result<Reached, Unreached> {
     let provider = provider::provider(values, knowledge, id)?;
-    let base_url = provider::resolve_base_url(&provider, secret)?;
+    let base_url = provider::resolve_base_url(&provider, secret).map_err(|why| Unreached {
+        why,
+        missing: match &provider.base_url {
+            Address::Env(name) => Some(Missing {
+                key: format!("providers.{id}.base_url"),
+                reference: Reference::Env(name.clone()),
+            }),
+            Address::Literal(_) => None,
+        },
+    })?;
     let key = match &provider.key {
         None => None,
-        Some(reference) => Some(
-            secret(reference)
-                .ok_or_else(|| NoModel(format!("provider {id:?} has no usable key")))?,
-        ),
+        Some(reference) => Some(secret(reference).ok_or_else(|| Unreached {
+            why: NoModel(format!("provider {id:?} has no usable key")),
+            missing: Some(Missing {
+                key: format!("providers.{id}.key"),
+                reference: reference.clone(),
+            }),
+        })?),
     };
     Ok(Reached {
         provider,

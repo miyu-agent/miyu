@@ -1,6 +1,8 @@
-//! `provider.test`（施工 8-11，`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条）：对本机回环上的假服务器试。
-//! 成了交 `first_token_ms`、收到第一段正文就停（假服务器之后停住不动也照样成了）；配好的存列表、候选不存；列不出的照目录
-//! 列；认证失败交分类、状态、原话；推荐的模型；推不出的 `config`；没有模型可试的 `list`；参数不对、`unknown_provider`；配了温度的照带（施工 8-22）。
+//! `provider.test`（施工 8-11、8-11 五补，`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条）：对本机回环上的假
+//! 服务器试。列得出模型就算通、不发请求（`checked: list`）；写的模型不在列表里、列不出又不是认证错的才发一句（`checked:
+//! request`，交 `first_token_ms`、收到第一段正文就停）；列不出、没写模型的要模型名（`need_model`）；配好的存列表、候选不存；
+//! 认证失败交分类、状态、原话；推荐的模型；推不出的 `config`，引用取不到的照连接的语言说；参数不对、`unknown_provider`；配了
+//! 温度的照带（施工 8-22）。
 
 use std::sync::Arc;
 
@@ -67,17 +69,14 @@ fn asked(server: &Server, at: usize) -> Value {
 }
 
 #[tokio::test]
-async fn a_configured_provider_works_its_list_is_kept_and_it_stops_at_the_first_words() {
-    let server = Server::start(vec![
-        listing(&[
-            "deepseek-v4-pro",
-            "deepseek-flash",
-            "deepseek-v4-flash",
-            "deepseek-flash",
-            "a-tiny",
-        ]),
-        first_words_then_stall(),
-    ])
+async fn a_configured_provider_that_lists_works_without_a_request() {
+    let server = Server::start(vec![listing(&[
+        "deepseek-v4-pro",
+        "deepseek-flash",
+        "deepseek-v4-flash",
+        "deepseek-flash",
+        "a-tiny",
+    ])])
     .await;
     let home = Home::new();
     home.write(
@@ -95,30 +94,74 @@ async fn a_configured_provider_works_its_list_is_kept_and_it_stops_at_the_first_
         json!({"provider": "deepseek"}),
     )
     .await;
-    let result = &reply["result"];
-    assert_eq!(result["ok"], true, "{reply}");
     assert_eq!(
-        result["models"],
-        json!([
-            "a-tiny",
-            "deepseek-flash",
-            "deepseek-v4-flash",
-            "deepseek-v4-pro"
-        ]),
-        "照字节排、去重"
+        reply["result"],
+        json!({"ok": true, "checked": "list", "listed": "provider", "model": "deepseek-flash",
+            "models": ["a-tiny", "deepseek-flash", "deepseek-v4-flash", "deepseek-v4-pro"]}),
+        "照字节排、去重；推荐的是够格的里面发布最晚的，不是列表第一个；只列了模型的没有 first_token_ms"
     );
-    assert_eq!(result["listed"], "provider");
-    assert_eq!(
-        result["model"], "deepseek-flash",
-        "够格的里面发布最晚的，不是列表第一个；deprecated 的不算"
-    );
-    assert!(result["first_token_ms"].is_u64(), "{reply}");
-    assert!(!reply.to_string().contains("FAKE"));
     let received = server.received();
+    assert_eq!(received.len(), 1, "列到了就不发请求");
     assert_eq!(received[0].path, "/v1/models");
     let bearer = format!("Bearer {FAKE}");
     assert_eq!(received[0].header("authorization"), Some(bearer.as_str()));
-    assert_eq!(received[1].header("authorization"), Some(bearer.as_str()));
+    assert!(shared.list_fetched("deepseek").is_some(), "配好的存进列表");
+
+    let listed = Server::start(vec![listing(&["deepseek-flash", "deepseek-v4-pro"])]).await;
+    home.write(
+        "system/config.toml",
+        &format!("[providers.deepseek]\nbase_url = \"{}\"\n", listed.base_url),
+    );
+    let reply = test(
+        &home,
+        &[],
+        fresh(),
+        json!({"provider": "deepseek", "model": "deepseek-v4-pro"}),
+    )
+    .await;
+    assert_eq!(
+        reply["result"]["checked"], "list",
+        "写的在列表里也不发：{reply}"
+    );
+    assert_eq!(reply["result"]["model"], "deepseek-v4-pro");
+    assert_eq!(listed.received().len(), 1);
+}
+
+/// 写的模型不在列表里：拿它发一句，收到第一段正文就停（假服务器之后停住不动也照样成了）。
+#[tokio::test]
+async fn a_model_not_in_the_list_is_tried_with_one_request() {
+    let server = Server::start(vec![
+        listing(&["deepseek-v4-pro"]),
+        first_words_then_stall(),
+    ])
+    .await;
+    let home = Home::new();
+    home.write(
+        "system/config.toml",
+        &format!(
+            "[providers.deepseek]\nbase_url = \"{}\"\nkey = {{ env = \"DEEPSEEK_API_KEY\" }}\n",
+            server.base_url
+        ),
+    );
+    let reply = test(
+        &home,
+        &[("DEEPSEEK_API_KEY", FAKE)],
+        fresh(),
+        json!({"provider": "deepseek", "model": "deepseek-flash"}),
+    )
+    .await;
+    let result = &reply["result"];
+    assert_eq!(result["ok"], true, "{reply}");
+    assert_eq!(result["checked"], "request");
+    assert_eq!(result["listed"], "provider");
+    assert_eq!(result["model"], "deepseek-flash");
+    assert!(result["first_token_ms"].is_u64(), "{reply}");
+    assert!(!reply.to_string().contains("FAKE"));
+    let bearer = format!("Bearer {FAKE}");
+    assert_eq!(
+        server.received()[1].header("authorization"),
+        Some(bearer.as_str())
+    );
     let body = asked(&server, 1);
     assert_eq!(body["model"], "deepseek-flash");
     assert_eq!(
@@ -128,13 +171,16 @@ async fn a_configured_provider_works_its_list_is_kept_and_it_stops_at_the_first_
     );
     assert!(body.get("tools").is_none(), "没有工具面：{body}");
     assert!(body.get("temperature").is_none(), "没配温度的不带：{body}");
-    assert!(shared.list_fetched("deepseek").is_some(), "配好的存进列表");
 }
 
-/// 试的那个模型配了温度的照带（施工 8-22，「怎么走」第十四条第 4 条），和会话真发时一样。
+/// 发的那个模型配了温度的照带（施工 8-22，「怎么走」第十四条第 4 条），和会话真发时一样。
 #[tokio::test]
 async fn the_probe_takes_the_configured_temperature_of_the_model() {
-    let server = Server::start(vec![listing(&["deepseek-flash"]), first_words_then_stall()]).await;
+    let server = Server::start(vec![
+        listing(&["deepseek-v4-pro"]),
+        first_words_then_stall(),
+    ])
+    .await;
     let home = Home::new();
     home.write(
         "system/config.toml",
@@ -150,28 +196,46 @@ async fn the_probe_takes_the_configured_temperature_of_the_model() {
         json!({"provider": "deepseek", "model": "deepseek-flash"}),
     )
     .await;
-    assert_eq!(reply["result"]["ok"], true, "{reply}");
+    assert_eq!(reply["result"]["checked"], "request", "{reply}");
     assert_eq!(asked(&server, 1)["temperature"], 0.6);
 }
 
+/// 列不出（不是认证错）：没写模型的要模型名、不发请求；写了的拿它发一句，模型照目录列。
 #[tokio::test]
-async fn a_candidate_lists_from_the_catalog_when_the_provider_cannot() {
+async fn a_provider_that_cannot_list_asks_for_a_model_then_tries_it() {
     let server = Server::start(vec![
+        Reply::error(404, &[], "no such path"),
         Reply::error(404, &[], "no such path"),
         first_words_then_stall(),
     ])
     .await;
     let home = Home::new();
     let shared = fresh();
+    let candidate = json!({"catalog": "deepseek", "base_url": server.base_url, "key": {"value": format!(" {FAKE}\n")}});
     let reply = test(
         &home,
         &[],
         Arc::clone(&shared),
-        json!({"candidate": {"catalog": "deepseek", "base_url": server.base_url, "key": {"value": format!(" {FAKE}\n")}}}),
+        json!({"candidate": candidate}),
+    )
+    .await;
+    let result = &reply["result"];
+    assert_eq!(result["ok"], false, "{reply}");
+    assert_eq!(result["stage"], "list");
+    assert_eq!(result["need_model"], true);
+    assert_eq!(result["error"]["status"], 404);
+    assert_eq!(server.received().len(), 1, "没写模型的不发请求");
+
+    let reply = test(
+        &home,
+        &[],
+        Arc::clone(&shared),
+        json!({"candidate": candidate, "model": "deepseek-flash"}),
     )
     .await;
     let result = &reply["result"];
     assert_eq!(result["ok"], true, "{reply}");
+    assert_eq!(result["checked"], "request");
     assert_eq!(result["listed"], "catalog");
     assert_eq!(
         result["models"],
@@ -185,7 +249,7 @@ async fn a_candidate_lists_from_the_catalog_when_the_provider_cannot() {
     assert_eq!(result["model"], "deepseek-flash");
     let bearer = format!("Bearer {FAKE}");
     assert_eq!(
-        server.received()[1].header("authorization"),
+        server.received()[2].header("authorization"),
         Some(bearer.as_str()),
         "{{value}} 去掉前后空白"
     );
@@ -198,7 +262,7 @@ async fn a_candidate_lists_from_the_catalog_when_the_provider_cannot() {
 
 #[tokio::test]
 async fn a_candidate_is_never_kept_in_the_lists() {
-    let server = Server::start(vec![listing(&["deepseek-flash"]), first_words_then_stall()]).await;
+    let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
     let home = Home::new();
     let shared = fresh();
     let reply = test(
@@ -215,9 +279,10 @@ async fn a_candidate_is_never_kept_in_the_lists() {
     );
 }
 
+/// 请求发了就报请求的：分类、状态、原话。
 #[tokio::test]
 async fn a_failed_request_says_class_status_and_message() {
-    let server = Server::start(vec![unauthorized(), unauthorized()]).await;
+    let server = Server::start(vec![Reply::error(404, &[], "no such path"), unauthorized()]).await;
     let home = Home::new();
     home.write("system/secrets.toml", &format!("mine = \"{FAKE}\"\n"));
     let reply = test(
@@ -231,6 +296,7 @@ async fn a_failed_request_says_class_status_and_message() {
     let result = &reply["result"];
     assert_eq!(result["ok"], false, "{reply}");
     assert_eq!(result["stage"], "request", "请求发了就报请求的");
+    assert!(result.get("need_model").is_none(), "{reply}");
     assert_eq!(result["error"]["class"], "auth");
     assert_eq!(result["error"]["status"], 401);
     assert!(
@@ -246,24 +312,28 @@ async fn a_failed_request_says_class_status_and_message() {
     );
 }
 
+/// 列模型就认证失败的：停在 `list`，写没写模型都不发请求，也不要模型名；列到的是空的要模型名。
 #[tokio::test]
-async fn nothing_to_try_reports_the_listing() {
-    let server = Server::start(vec![unauthorized()]).await;
+async fn an_unauthorized_listing_stops_there() {
+    let server = Server::start(vec![unauthorized(), unauthorized()]).await;
     let home = Home::new();
-    let reply = test(
-        &home,
-        &[("RELAY_KEY", FAKE)],
-        fresh(),
-        json!({"candidate": {"driver": "openai-chat", "base_url": server.base_url, "key": {"env": "RELAY_KEY"}}}),
-    )
-    .await;
-    assert_eq!(
-        reply["result"]["stage"], "list",
-        "列不出、目录里也没有：{reply}"
-    );
-    assert_eq!(reply["result"]["error"]["class"], "auth");
-    assert_eq!(reply["result"]["error"]["status"], 401);
-    assert_eq!(server.received().len(), 1, "没有模型就不发请求");
+    let candidate =
+        json!({"driver": "openai-chat", "base_url": server.base_url, "key": {"env": "RELAY_KEY"}});
+    for params in [
+        json!({"candidate": candidate}),
+        json!({"candidate": candidate, "model": "deepseek-chat"}),
+    ] {
+        let reply = test(&home, &[("RELAY_KEY", FAKE)], fresh(), params).await;
+        let result = &reply["result"];
+        assert_eq!(result["stage"], "list", "{reply}");
+        assert!(
+            result.get("need_model").is_none(),
+            "认证错的给模型名也没用：{reply}"
+        );
+        assert_eq!(result["error"]["class"], "auth");
+        assert_eq!(result["error"]["status"], 401);
+    }
+    assert_eq!(server.received().len(), 2, "两次都只列了模型");
 
     let empty = Server::start(vec![listing(&[])]).await;
     let reply = test(
@@ -275,16 +345,19 @@ async fn nothing_to_try_reports_the_listing() {
     .await;
     assert_eq!(
         reply["result"],
-        json!({"ok": false, "stage": "list", "error": {"class": "other", "message": "no models listed"}})
+        json!({"ok": false, "stage": "list", "need_model": true,
+            "error": {"class": "other", "message": "no models listed"}})
     );
 }
 
+/// 推不出的是 `config`；引用的密钥、环境变量取不到的照这个连接的语言说（和 `miyu check` 同一句，施工 8-11 五补），别的照旧是
+/// 英文的一句。
 #[tokio::test]
 async fn what_cannot_be_worked_out_is_the_config_stage() {
     let home = Home::new();
     home.write(
         "system/config.toml",
-        "[providers.deepseek]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n",
+        "[providers.deepseek]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n\n[providers.gone]\nbase_url = \"http://127.0.0.1:9/v1\"\nkey = { secret = \"gone-key\" }\n\n[providers.far]\nbase_url = { env = \"FAR_URL\" }\n",
     );
     let reply = test(&home, &[], fresh(), json!({"candidate": {}})).await;
     assert_eq!(reply["result"]["stage"], "config", "{reply}");
@@ -294,12 +367,24 @@ async fn what_cannot_be_worked_out_is_the_config_stage() {
             .as_str()
             .is_some_and(|message| message.contains("needs base_url"))
     );
-    let reply = test(&home, &[], fresh(), json!({"provider": "deepseek"})).await;
-    assert_eq!(
-        reply["result"],
-        json!({"ok": false, "stage": "config", "error": {"class": "no_model",
-            "message": "provider \"deepseek\" has no usable key"}})
-    );
+    for (provider, said) in [
+        (
+            "deepseek",
+            "providers.deepseek.key 引用的环境变量 DEEPSEEK_API_KEY 核心起来时没有设",
+        ),
+        ("gone", "providers.gone.key 引用的密钥 gone-key 还没设"),
+        (
+            "far",
+            "providers.far.base_url 引用的环境变量 FAR_URL 核心起来时没有设",
+        ),
+    ] {
+        let reply = test(&home, &[], fresh(), json!({"provider": provider})).await;
+        assert_eq!(
+            reply["result"],
+            json!({"ok": false, "stage": "config", "error": {"class": "no_model", "message": said}}),
+            "{provider}"
+        );
+    }
     let reply = test(
         &home,
         &[],
@@ -333,8 +418,8 @@ async fn wrong_params_and_unknown_providers_are_refused() {
     assert_eq!(reason(&reply), Some("unknown_provider"));
 }
 
-/// 施工 8-14：发的那一句照挑的模型的驱动（Go 上的 MiniMax 走 `anthropic`），档案另配的头照固定的种子 `provider.test` 换；
-/// 列模型不带它。模型没有驱动的是 `config`。
+/// 施工 8-14：发的那一句照这个模型的驱动（Go 上的 MiniMax 走 `anthropic`），档案另配的头照固定的种子 `provider.test` 换；
+/// 列模型不带它。模型没有驱动的是 `config`。写的模型不在列表里才发（施工 8-11 五补）。
 #[tokio::test]
 async fn the_probe_speaks_through_the_model_driver_with_the_profile_headers() {
     let anthropic = std::fs::read(
@@ -343,9 +428,9 @@ async fn the_probe_speaks_through_the_model_driver_with_the_profile_headers() {
     )
     .expect("样本读得到");
     let server = Server::start(vec![
-        listing(&["minimax-m3", "gemini-3-pro"]),
+        listing(&["gemini-3-pro"]),
         Reply::stream(vec![Piece::Bytes(anthropic)]),
-        listing(&["minimax-m3", "gemini-3-pro"]),
+        listing(&["minimax-m3"]),
     ])
     .await;
     let home = Home::new();
@@ -367,6 +452,7 @@ async fn the_probe_speaks_through_the_model_driver_with_the_profile_headers() {
     )
     .await;
     assert_eq!(reply["result"]["ok"], true, "{reply}");
+    assert_eq!(reply["result"]["checked"], "request");
     let received = server.received();
     assert_eq!(received[0].header("x-opencode-session"), None, "列模型不带");
     assert_eq!(received[1].path, "/v1/messages");
