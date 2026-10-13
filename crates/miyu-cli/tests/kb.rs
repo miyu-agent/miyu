@@ -129,7 +129,10 @@ async fn building_a_base_from_the_shell() {
     let nothing = run(&home, &cwd, &["edit", "notes"]).await;
     assert_eq!(
         (nothing.code, nothing.err.as_str()),
-        (1, "改什么：写 --name 或者 --description。\n")
+        (
+            1,
+            "改什么：写 --name、--description、--auto 或者 --no-auto。\n"
+        )
     );
     let rebuilt = run(&home, &cwd, &["reindex", "notes"]).await;
     assert_eq!(rebuilt.out, "重建好了：notes，2 篇\n");
@@ -182,4 +185,49 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
         "团子\n",
         "挂的目录没动"
     );
+}
+
+#[tokio::test]
+async fn the_auto_switch_from_the_shell() {
+    // 施工 K-6 补：`--auto` 开、`--no-auto` 关，`new`、`edit`、`mount` 都收；列表在篇数后面接「自动想起」；只写开关的 `edit` 也算
+    // 改了；两个一起写读不懂。
+    let home = Home::new(Arc::new(Script::new([])));
+    let cwd = outside(&home);
+    let toml = |kb: &str| {
+        std::fs::read_to_string(
+            home.root
+                .account_dir(&crate::support::AccountIdOf::admin())
+                .join("kb")
+                .join(kb)
+                .join("kb.toml"),
+        )
+        .expect("读得了")
+    };
+    let made = run(&home, &cwd, &["new", "world", "--name", "雾港", "--auto"]).await;
+    assert_eq!(made.code, 0, "{}", made.err);
+    assert!(toml("world").contains("auto = true"), "{}", toml("world"));
+    let listed = run(&home, &cwd, &[]).await;
+    assert_eq!(listed.out, "world  雾港  0 篇  自动想起\n");
+    let off = run(&home, &cwd, &["edit", "world", "--no-auto"]).await;
+    assert_eq!(
+        (off.code, off.out.as_str()),
+        (0, "改好了：world\n"),
+        "{}",
+        off.err
+    );
+    assert!(!toml("world").contains("auto"), "{}", toml("world"));
+    assert_eq!(run(&home, &cwd, &[]).await.out, "world  雾港  0 篇\n");
+    let on = run(&home, &cwd, &["edit", "world", "--auto"]).await;
+    assert_eq!(on.code, 0, "{}", on.err);
+    assert!(toml("world").contains("auto = true"));
+
+    let notes = cwd.join("notes");
+    std::fs::create_dir_all(&notes).expect("建得了");
+    std::fs::write(notes.join("a.md"), "团子\n").expect("写得进");
+    let mounted = run(&home, &cwd, &["mount", "mine", "notes", "--auto"]).await;
+    assert_eq!(mounted.code, 0, "{}", mounted.err);
+    assert!(toml("mine").contains("auto = true"), "{}", toml("mine"));
+
+    let both = Line::try_parse_from(["miyu", "kb", "edit", "world", "--auto", "--no-auto"]);
+    assert!(both.is_err(), "两个一起写读不懂");
 }

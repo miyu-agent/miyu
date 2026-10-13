@@ -9,7 +9,7 @@ Commands:
   search <words>          Search
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base
-  edit <kb>               Change the name or description
+  edit <kb>               Change the name, description or auto recall
   add <kb> <file>...      Add files: PDF, web pages, text; 20 MiB each at most
   remove <kb> <document>  Remove a document
   mount <kb> <folder>     Mount an existing folder, read-only; your files stay
@@ -24,6 +24,10 @@ Options:
       --name <name>       new, edit, mount: the name people see
       --description <description>
                           new, edit, mount: one sentence about the base
+      --auto              new, edit, mount: turn on auto recall: when someone
+                          names a section of this base or says something close
+                          to it, the AI gets its opening lines
+      --no-auto           edit: turn off auto recall
       --to <dir>          add: put the files in this folder of the base
       --replace           add: replace ones that are already there
       --format text|json  list, search: json for scripts

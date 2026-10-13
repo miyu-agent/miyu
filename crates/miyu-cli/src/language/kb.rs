@@ -63,8 +63,18 @@ impl Language {
     /// `edit` 什么都没写。
     pub fn kb_edit_nothing(&self) -> &'static str {
         match self {
-            Language::Chinese => "改什么：写 --name 或者 --description。",
-            Language::English => "Nothing to change: give --name or --description.",
+            Language::Chinese => "改什么：写 --name、--description、--auto 或者 --no-auto。",
+            Language::English => {
+                "Nothing to change: give --name, --description, --auto or --no-auto."
+            }
+        }
+    }
+
+    /// `list` 里开了自动想起的那一格（施工 K-6 补）。
+    pub(crate) fn kb_auto(&self) -> &'static str {
+        match self {
+            Language::Chinese => "自动想起",
+            Language::English => "auto recall",
         }
     }
 

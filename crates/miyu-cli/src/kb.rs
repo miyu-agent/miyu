@@ -41,6 +41,12 @@ pub struct Kb {
     /// `new`、`edit`、`mount`：一句话说这个库是什么。
     #[arg(long, global = true, value_name = "DESCRIPTION")]
     pub description: Option<String>,
+    /// `new`、`edit`、`mount`：开自动想起（施工 K-6 补，`knowledge.md` 第九条）。
+    #[arg(long, global = true, conflicts_with = "no_auto")]
+    pub auto: bool,
+    /// `edit`：关自动想起（施工 K-6 补）；`new`、`mount` 本来就关着，写了也一样。
+    #[arg(long = "no-auto", global = true)]
+    pub no_auto: bool,
     /// `add`：放进库里的这个目录。
     #[arg(long, global = true, value_name = "DIR")]
     pub to: Option<String>,
@@ -203,7 +209,12 @@ async fn act(
     err: &mut dyn Write,
 ) -> Result<(), u8> {
     let (args, language) = (&plan.args, &plan.language);
-    let named = || json!({"name": args.name, "description": args.description});
+    let auto = match (args.auto, args.no_auto) {
+        (true, _) => Some(true),
+        (_, true) => Some(false),
+        _ => None,
+    };
+    let named = || json!({"name": args.name, "description": args.description, "auto": auto});
     let said = match args.command.clone().unwrap_or(KbCommand::List) {
         KbCommand::List => {
             let result = ask(rpc, "kb.list", json!({}), language, err).await?;
@@ -232,7 +243,7 @@ async fn act(
             language.kb_created(&kb)
         }
         KbCommand::Edit { kb } => {
-            if args.name.is_none() && args.description.is_none() {
+            if args.name.is_none() && args.description.is_none() && auto.is_none() {
                 say(err, language.kb_edit_nothing());
                 return Err(exit::ERROR);
             }

@@ -4,8 +4,8 @@ use serde_json::Value;
 
 use crate::language::Language;
 
-/// `list`：一个库一行，编号照最长的对齐；后面是名字（和编号一样的不写）、几篇、说明（没写的不写），两个空格隔开；用不了的
-/// 接上为什么。
+/// `list`：一个库一行，编号照最长的对齐；后面是名字（和编号一样的不写）、几篇、开了自动想起的「自动想起」（施工 K-6 补）、
+/// 说明（没写的不写），两个空格隔开；用不了的接上为什么。
 pub(super) fn bases(bases: &[Value], language: &Language) -> Vec<String> {
     let text = |base: &Value, field: &str| base[field].as_str().unwrap_or_default().to_string();
     let width = bases
@@ -23,6 +23,9 @@ pub(super) fn bases(bases: &[Value], language: &Language) -> Vec<String> {
                 parts.push(name);
             }
             parts.push(language.kb_documents(base["documents"].as_u64().unwrap_or(0)));
+            if base["auto"].as_bool() == Some(true) {
+                parts.push(language.kb_auto().to_string());
+            }
             let description = text(base, "description");
             if !description.is_empty() {
                 parts.push(description);

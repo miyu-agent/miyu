@@ -56,3 +56,20 @@ fn a_page_says_which_when_there_are_more() {
     assert_eq!(page(&two, &Language::Chinese), "第二页\n（第 2/3 页）");
     assert_eq!(page(&two, &Language::English), "第二页\n(page 2 of 3)");
 }
+
+#[test]
+fn an_auto_base_says_so_after_its_count() {
+    // 施工 K-6 补：开了自动想起的，篇数后面接「自动想起」，再接说明。
+    let listed = [
+        json!({"id": "world", "name": "雾港", "description": "世界观", "documents": 4, "chunks": 17, "auto": true}),
+        json!({"id": "notes", "name": "notes", "description": "", "documents": 1, "chunks": 1, "auto": false}),
+    ];
+    assert_eq!(
+        bases(&listed, &Language::Chinese),
+        ["world  雾港  4 篇  自动想起  世界观", "notes  1 篇"]
+    );
+    assert_eq!(
+        bases(&listed[0..1], &Language::English),
+        ["world  雾港  4 documents  auto recall  世界观"]
+    );
+}

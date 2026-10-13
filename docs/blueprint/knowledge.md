@@ -250,7 +250,7 @@ Knowledge bases you can search:
 | K-5 | PDF（照页抽字、照页引用、照页读，部首的码位换回平常的字）、网页 HTML（换成文字、照标题切，不挑正文）（N2）；只有文字的文档写得了 |
 | K-6 上 | 自动想起的测评集和量尺（`knowledge/eval.md`）：几种挑法量过，项目主人 2026-10-13 定标题名加照意思 0.60 |
 | K-6 下 | 自动想起（第九条）：`kb.toml` 的 `auto`，默认关，协议 `auto`；标题名加照意思 0.60，一轮最多三段，每段头一行加开头 120 个字；和联想共用 40 条的累计 |
-| K-6 补 | 命令行 `miyu kb` 的 `--auto`，列出来标上开着的 |
+| K-6 补 | 命令行 `miyu kb` 的 `--auto` 开、`--no-auto` 关（`new`、`edit`、`mount`），列表在篇数后面接「自动想起」（`cli/kb.md`，2026-10-13 项目主人定写法） |
 | K-7 上 | 管理的协议：`kb.create`、`kb.update`、`kb.delete`、`kb.mount`、`kb.add`、`kb.remove`、`kb.reindex`（第八条，2026-10-13 项目主人定删库进回收站、加文档照附件上传、建库改名也在这一步） |
 | K-7 下 | 命令行 `miyu kb`（`cli/kb.md`）：`list`、`search`、`read`、`new`、`edit`、`add`、`remove`、`mount`、`delete`、`reindex`；补上 K-7 上那五种拒绝给人看的话 |
 | K-8 | 软件包带来的知识库（N6） |
