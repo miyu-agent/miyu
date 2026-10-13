@@ -3084,9 +3084,9 @@ The user's latest message, so you know what matters most:
 #### `core/goal/round-again.txt`
 
 - 什么时候加进来：之后的每一次续轮（施工 X-7）
-- token：113（同上，「Round 2 of 20」，人设的）
-- 为什么加：短版自包含（目标原文、规矩、两条写好的结束调用）：压缩以后不指向丢掉的旧文（旧版实测，目标改过以后指向旧文案）
-- 指纹：`386604aa`
+- token：137（同上，「Round 2 of 20」，人设的；施工 X-7 补 多 24）
+- 为什么加：短版自包含（目标原文、规矩、两条写好的结束调用）：压缩以后不指向丢掉的旧文（旧版实测，目标改过以后指向旧文案）；末尾照目标的语言那一句同上一行
+- 指纹：`1703e51a`
 
 ```text
 <goal_round>
@@ -3096,6 +3096,7 @@ Make one concrete step of progress now, or end the goal — both calls are compl
   goal {"action":"complete"}
 · blocked, incl. needing an answer from the user →
   goal {"action":"blocked","reason":"…"}
+Write everything you say to the user, including short notes between tool calls, in the language the objective is written in.
 </goal_round>
 ```
 
@@ -3851,9 +3852,9 @@ Reply with OK.
 #### `core/goal/round.txt`
 
 - 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」、`{set_by}` 填谁设的（施工 X-8 上，下面两行）
-- token：213（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前）
-- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
-- 指纹：`9ef51bfd`
+- token：237（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前；施工 X-7 补 末尾加照目标的语言那一句，同一个端点量多 24）
+- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）。末尾那句（她跟人说的话、连工具调用之间的短句，都照目标的语言）是施工 X-7 补 加的（2026-10-13 项目主人照推荐定）：续轮消息是英文的、又是最新的一条，中文目标她在回合中间常用英文说一句「I'll start by…」。主会话 A/B（同一个端点，无人格的会话，目标「统计 data.csv 每一列有几个空值，写进 report.md」，数回合里整句是英文的话）：不加 18 遍里 6 遍有、27 句里 11 句；system 里加一行「照人说的语言回答」3 遍里 2 遍有，没用；续轮末尾只说「照目标的语言跟人说话」8 遍里 4 遍有，没用；点明「连工具调用之间的短句」的这一句 16 遍里 3 遍有、24 句里 3 句。最后的总结几组都是中文
+- 指纹：`66f9101a`
 
 ```text
 <goal_round>
@@ -3865,6 +3866,7 @@ Make one concrete step of progress now. Never spend a round only reporting that 
   goal {"action":"complete"}
 · blocked, incl. needing an answer from the user →
   goal {"action":"blocked","reason":"…"}
+Write everything you say to the user, including short notes between tool calls, in the language the objective is written in.
 </goal_round>
 ```
 
