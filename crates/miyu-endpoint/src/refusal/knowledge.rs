@@ -34,6 +34,13 @@ impl Refusal {
         data: None,
     };
 
+    /// 改、删软件包带来的库（施工 K-8：名字、说明、文档照包，只有自动想起的开关人能改）。
+    pub(crate) const KB_PACKAGED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "kb_packaged",
+        data: None,
+    };
+
     /// 要挂的目录用不了（施工 K-7 上）：`data.message` 是英文的一句为什么。
     pub(crate) fn folder_unavailable(why: String) -> Refusal {
         Refusal::with("folder_unavailable", "message", serde_json::json!(why))

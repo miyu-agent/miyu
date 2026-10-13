@@ -39,6 +39,7 @@ pub(crate) struct All {
     trash: Template,
     bad_id: Template,
     read_only: Template,
+    packaged: Template,
     not_text: Template,
 }
 
@@ -72,6 +73,7 @@ impl Texts {
             trash: text("common", "trash", &["path", "error"])?,
             bad_id: text("common", "bad-id", &["kb"])?,
             read_only: text("common", "read-only", &["kb"])?,
+            packaged: text("common", "packaged", &["kb"])?,
             not_text: text("common", "not-text", &["path"])?,
         })))
     }
@@ -141,6 +143,9 @@ impl Texts {
             KbRefused::BadId(kb) => self.error(&self.0.bad_id, "common/bad-id", &[("kb", kb)]),
             KbRefused::ReadOnly(kb) => {
                 self.error(&self.0.read_only, "common/read-only", &[("kb", kb)])
+            }
+            KbRefused::Packaged(kb) => {
+                self.error(&self.0.packaged, "common/packaged", &[("kb", kb)])
             }
             KbRefused::NotText(path) => {
                 self.error(&self.0.not_text, "common/not-text", &[("path", path)])

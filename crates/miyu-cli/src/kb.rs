@@ -4,6 +4,7 @@
 //!
 //! 做成了退出码 0；核心拒的照核心的原话印在标准错误上，退出码 1；参数写错的 2，由 clap 管。
 
+mod listing;
 mod shown;
 
 use std::io::{self, Write};
@@ -225,12 +226,13 @@ async fn act(
     let said = match args.command.clone().unwrap_or(KbCommand::List) {
         KbCommand::List => {
             let result = ask(rpc, "kb.list", json!({}), language, err).await?;
-            return list(&result, plan, out);
+            let names = listing::package_names(rpc, &result, language, err).await?;
+            return listing::list(&result, &names, plan, out);
         }
         KbCommand::Search { words } => {
             let params = json!({"query": words.join(" "), "kb": args.only});
             let result = ask(rpc, "kb.search", params, language, err).await?;
-            return search(&result, plan, out);
+            return listing::search(&result, plan, out);
         }
         KbCommand::Read { kb, path } => return read(rpc, plan, &kb, &path, out, err).await,
         KbCommand::New { kb } => {
@@ -373,38 +375,6 @@ fn ids(args: &Kb) -> Vec<&str> {
         Some(KbCommand::List | KbCommand::Search { .. }) | None => None,
     };
     command.into_iter().chain(args.only.as_deref()).collect()
-}
-
-/// `list` 的回应印出来：`json` 的原样印那一串；`text` 的一行一个库，一个都没有的说一句。
-fn list(result: &Value, plan: &KbPlan, out: &mut dyn Write) -> Result<(), u8> {
-    let bases = result["bases"].as_array().cloned().unwrap_or_default();
-    if plan.args.format == Format::Json {
-        say(out, &Value::Array(bases).to_string());
-        return Ok(());
-    }
-    if bases.is_empty() {
-        say(out, plan.language.no_bases());
-        return Ok(());
-    }
-    for row in shown::bases(&bases, &plan.language) {
-        say(out, &row);
-    }
-    Ok(())
-}
-
-/// `search` 的回应印出来：`json` 的原样印那一串；`text` 的一块一段，段和段之间空一行，一块都没有的说一句。
-fn search(result: &Value, plan: &KbPlan, out: &mut dyn Write) -> Result<(), u8> {
-    let hits = result["hits"].as_array().cloned().unwrap_or_default();
-    if plan.args.format == Format::Json {
-        say(out, &Value::Array(hits).to_string());
-        return Ok(());
-    }
-    if hits.is_empty() {
-        say(out, plan.language.nothing_found());
-        return Ok(());
-    }
-    say(out, &shown::hits(&hits, &plan.language));
-    Ok(())
 }
 
 /// 发一条，拒了的照原话印在 `err` 上：挂不上的目录、挪不进回收站的后面接上核心给的为什么。

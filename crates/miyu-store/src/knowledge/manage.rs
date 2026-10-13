@@ -14,7 +14,7 @@ use miyu_config::Value;
 use miyu_config::edit::{Change, apply};
 use miyu_kernel::id::AccountId;
 
-use super::mount::Documents;
+use super::place::Place;
 use super::read::target;
 use super::write::{existing, trash_refused};
 use super::{Base, Knowledge, KnowledgeError, Skipped};
@@ -73,8 +73,18 @@ impl Knowledge {
         kb: &str,
         fields: BaseFields<'_>,
     ) -> Result<Base, KnowledgeError> {
-        let dir = self.dir(account, kb)?;
-        about(&dir, fields.values())?;
+        match self.place(account, kb)? {
+            Place::Own(dir) => about(&dir, fields.values())?,
+            // 包里的（施工 K-8）：名字、说明照包；自动想起的开关记在账号自己那边。
+            Place::Package { package, .. } => {
+                if fields.name.is_some() || fields.description.is_some() {
+                    return Err(KnowledgeError::Packaged);
+                }
+                if let Some(auto) = fields.auto {
+                    self.switch(account, &package, kb, auto)?;
+                }
+            }
+        }
         self.counted(account, kb, None)
     }
 
@@ -114,10 +124,7 @@ impl Knowledge {
         bytes: &[u8],
         replace: bool,
     ) -> Result<(), KnowledgeError> {
-        let Documents::Own(dir) = self.documents(account, kb)? else {
-            return Err(KnowledgeError::ReadOnly);
-        };
-        let dir = std::fs::canonicalize(dir).map_err(io)?;
+        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
         let file = target(&dir, path).ok_or(KnowledgeError::UnknownDocument)?;
         if existing(&file)?.is_some() && !replace {
             return Err(KnowledgeError::Exists);
@@ -140,7 +147,10 @@ impl Knowledge {
         kb: &str,
         home: Option<&Path>,
     ) -> Result<String, KnowledgeError> {
-        let dir = std::fs::canonicalize(self.dir(account, kb)?).map_err(io)?;
+        let Place::Own(dir) = self.place(account, kb)? else {
+            return Err(KnowledgeError::Packaged);
+        };
+        let dir = std::fs::canonicalize(dir).map_err(io)?;
         let shelf = self.shelf(account, kb);
         let _only_one = shelf
             .catching_up
@@ -185,7 +195,8 @@ impl Knowledge {
             return Err(KnowledgeError::UnknownBase);
         }
         let dir = self.top(account).join(kb);
-        match dir.exists() {
+        // 包里同编号的看得见，也算已经有了（施工 K-8）：不另建一个盖住它。
+        match dir.exists() || self.place(account, kb).is_ok() {
             true => Err(KnowledgeError::BaseExists),
             false => Ok(dir),
         }

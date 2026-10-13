@@ -2702,6 +2702,17 @@ Could not move {path} to the trash: {error}.
 {kb} is a mounted folder and read-only. Save to another knowledge base.
 ```
 
+#### `software/knowledge/common/packaged.txt`
+
+- 什么时候加进来：`kb_save`、`kb_edit`、`kb_delete` 写到软件包带来的库（字段按 `notes` 填）
+- token：16（2026-10-13 量）
+- 为什么加：包里的库只读（施工 K-8，项目主人 2026-10-13 定）：同挂进来的那一句，说清是随包来的、写到别的库里
+- 指纹：`c11b044f`
+
+```text
+{kb} comes with a package and is read-only. Save to another knowledge base.
+```
+
 #### `software/knowledge/common/not-text.txt`
 
 - 什么时候加进来：`kb_save`、`kb_edit` 写 PDF、网页（字段按 `cat.pdf` 填）

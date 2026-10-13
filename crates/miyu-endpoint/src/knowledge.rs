@@ -14,6 +14,7 @@ use serde_json::{Value, json};
 use miyu_recall::associate::Thresholds;
 use miyu_store::knowledge::{Base, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
+use miyu_store::packages::Found;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -22,12 +23,13 @@ use crate::refusal::Refusal;
 
 /// 核心一份的知识库：`~/` 照家目录 `home` 接（施工 K-4），PDF、网页照抽字的小程序 `extractor` 抽（施工 K-5），只照意思找到的
 /// 那一路的下限照资源目录 `resources` 里的表（施工 K-2 修，`core/knowledge/search.toml`）：读不出来的记一行，都照
-/// [`miyu_recall::FLOOR`]，别的照常。
+/// [`miyu_recall::FLOOR`]，别的照常；装了的软件包 `found` 带来的库也算（施工 K-8）。
 pub(crate) fn shelf(
     root: &DataRoot,
     home: Option<PathBuf>,
     extractor: Option<PathBuf>,
     resources: &ResourceRoot,
+    found: &[Found],
 ) -> Arc<Knowledge> {
     let floors = resources
         .knowledge_table("search")
@@ -41,8 +43,35 @@ pub(crate) fn shelf(
         Knowledge::new(root)
             .with_home(home)
             .with_extractor(extractor)
-            .with_floors(floors),
+            .with_floors(floors)
+            .with_packages(carried(found)),
     )
+}
+
+/// 核心起来时的那一份知识库：家目录 `home`，主程序旁边的抽字小程序，资源目录 `resources`，读成的清单 `found`。
+pub(crate) fn of_core(
+    root: &DataRoot,
+    home: Option<PathBuf>,
+    resources: &ResourceRoot,
+    found: &[Found],
+) -> Arc<Knowledge> {
+    shelf(root, home, extractor(), resources, found)
+}
+
+/// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`）。
+pub(crate) fn carried<'a>(found: impl IntoIterator<Item = &'a Found>) -> Vec<(String, PathBuf)> {
+    found
+        .into_iter()
+        .filter(|one| one.read.is_ok())
+        .map(|one| (one.id.clone(), one.files_dir()))
+        .collect()
+}
+
+/// 装卸以后知识库跟上（施工 K-8）：卸掉的包留下的索引、开关清掉，清不掉的记一行。
+pub(crate) fn follow(knowledge: &Knowledge, now: &[&Found]) {
+    for problem in knowledge.follow_packages(carried(now.iter().copied())) {
+        tracing::warn!(target: "miyu::endpoint", error = problem.as_str(), "knowledge package not forgotten");
+    }
 }
 
 /// 主程序真实位置旁边的抽字的小程序 `miyu-extract`（施工 K-5，`knowledge.md`「怎么走」第二条）：找不到的没有，那样的核心不认
@@ -59,7 +88,13 @@ impl Core {
     /// 找）。
     #[must_use]
     pub fn with_extractor(mut self, extractor: Option<PathBuf>) -> Core {
-        self.knowledge = shelf(&self.root, self.home.clone(), extractor, &self.resources);
+        self.knowledge = shelf(
+            &self.root,
+            self.home.clone(),
+            extractor,
+            &self.resources,
+            &self.packages(),
+        );
         self
     }
 }
@@ -168,6 +203,9 @@ fn shown_base(base: Base) -> Value {
     if let Some(error) = base.error {
         value["error"] = Value::String(error);
     }
+    if let Some(package) = base.package {
+        value["package"] = Value::String(package);
+    }
     value
 }
 
@@ -213,6 +251,7 @@ async fn blocking<T: Send + 'static>(
         Ok(Err(KnowledgeError::BaseExists)) => Err(Refusal::KB_EXISTS),
         Ok(Err(KnowledgeError::Exists)) => Err(Refusal::DOCUMENT_EXISTS),
         Ok(Err(KnowledgeError::ReadOnly)) => Err(Refusal::KB_READ_ONLY),
+        Ok(Err(KnowledgeError::Packaged)) => Err(Refusal::KB_PACKAGED),
         Ok(Err(KnowledgeError::FolderUnavailable(why))) => Err(Refusal::folder_unavailable(why)),
         Ok(Err(KnowledgeError::Trash(why))) => Err(Refusal::trash_failed(why)),
         Ok(Err(error)) => {

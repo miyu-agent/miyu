@@ -169,6 +169,7 @@
 | `session` | DEBUG | `knowledge recall by meaning timed out` | | 自动想起开始以后 200 毫秒内照意思那一路没等到（本机模型冷启动、那一家回得慢、读段读得慢）：这一轮只走标题名（`knowledge.md` 第九条第 5 款，施工 K-6 下）。带会话编号 |
 | `session` | WARN | `knowledge recall texts unreadable` | `error` | 会话开的时候自动想起的外壳、门槛表（`core/knowledge/recall.toml`）读不出来、写错了：这个会话不自动想起，别的照常（施工 K-6 下） |
 | `endpoint` | WARN | `knowledge search floors unreadable` | `error` | 核心起来时知识库搜的下限表（`core/knowledge/search.toml`）读不出来、写错了：只照意思找到的那一路都照 0.40，别的照常（`knowledge.md` 第四条，施工 K-2 修） |
+| `endpoint` | WARN | `knowledge package not forgotten` | `error` | 卸掉软件包以后，某个账号里它带来的库的索引、自动想起的开关清不掉（`error` 带账号、包和为什么）：照样换上新的清单，装回来照文件重建（`knowledge.md` 第十条，施工 K-8） |
 | `endpoint` | WARN | `memory recall texts unreadable` | `error` | 核心起来时联想的外壳、门槛表（`core/memory/recall.toml`）读不出来、写错了：这个核心不联想，别的照常（施工 R-8） |
 | `session` | INFO | `image not described` | `blob`、`why` | 替看不了图的模型看图没成（`models.md` 第十三条第 7 条，施工 8-17）：没配 `models.vision`、一次性入口没答成、回答是空的。会话的 actor 记，带会话编号；这张图这一轮写占位 |
 | `core` | INFO | `sandbox` | `helper`（助手的路径）、`platform`、`mechanisms`（逗号连起来，空的写 `none`） | 起来时探沙盒的助手，探成了（`sandbox.md`，施工 5-1） |

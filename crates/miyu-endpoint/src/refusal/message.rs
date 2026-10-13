@@ -144,6 +144,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "挂进来的知识库是只读的。",
             "A mounted knowledge base is read-only.",
         ),
+        // 施工 K-8：软件包带来的库。
+        "kb_packaged" => (
+            "随软件包来的知识库是只读的，只能开关自动想起。",
+            "A knowledge base from a package is read-only; only auto recall can be switched.",
+        ),
         "folder_unavailable" => ("这个目录挂不上。", "Folder cannot be mounted."),
         "trash_failed" => ("挪不进回收站。", "Could not move it to the trash."),
         "unknown_job" => ("任务不存在或已结束。", "Job not found or finished."),

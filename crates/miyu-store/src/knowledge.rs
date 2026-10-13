@@ -6,24 +6,26 @@
 //! - 读照路径直接读目录里的文件（`knowledge/read.rs`），不读索引。
 //! - 挂进来的库（施工 K-4，`knowledge/mount.rs`）：文档在 `kb.toml` 的 `mount` 那个目录里，只读；挂的目录用不了的列出来带
 //!   `error`、搜的时候跳过，索引不动。
-//! - 这一层不记运行日志：跳过的文档交回给调的一方记（[`Skipped`]）。
+//! - 软件包带来的库（施工 K-8，`knowledge/place.rs`）：装了的包目录里的 `kb/<编号>/`，只读，自动想起的开关人改了记在账号
+//!   自己的 `kb.toml`；同编号的自己的赢；卸包时索引、开关一起删。
+//! - 这一层不记运行日志：跳过的文档交回给调的一方记（[`Skipped`]），卸包清不掉的交回给调的一方记。
 
 mod catch_up;
 mod extract;
 mod manage;
 mod mount;
+mod place;
 mod read;
 mod write;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex};
 
 use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::associate::Thresholds;
 
-use crate::layers::valid;
 use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
@@ -40,16 +42,23 @@ pub struct Knowledge {
     home: Option<PathBuf>,
     /// 抽字的小程序 `miyu-extract`（施工 K-5）：没有的不认 PDF、网页（补的时候跳过，读的时候读不了）。
     extractor: Option<PathBuf>,
+    /// 装了的软件包（编号、包目录，照编号排，施工 K-8）：它们的 `kb/` 里的库也算。
+    packages: place::Packages,
     /// 只照意思找到的那一路的下限，照模型（施工 K-2 修）：表里没有的照 [`miyu_recall::FLOOR`]。
     floors: Thresholds,
-    open: Mutex<BTreeMap<(AccountId, String), Arc<Shelf>>>,
+    open: Mutex<Open>,
 }
+
+/// 开着的索引：账号、库的编号 → 那一份。
+type Open = BTreeMap<(AccountId, String), Arc<Shelf>>;
 
 /// 一个库开着的索引和补的锁。索引交得出去（施工 K-2）：会话在后台补它缺的向量。
 #[derive(Debug)]
 struct Shelf {
     index: Arc<RecallIndex>,
     catching_up: Mutex<()>,
+    /// 索引文件在哪（施工 K-8：卸包时照它认出是那个包的）。
+    path: PathBuf,
 }
 
 /// 照意思找要的问句的向量（施工 K-2，`recall.md` 第三条）：算它的模型、归一化过的向量。
@@ -76,8 +85,10 @@ pub struct Base {
     pub chunks: usize,
     /// `kb.toml` 读不出来的、挂的目录用不了的（施工 K-4）为什么。
     pub error: Option<String>,
-    /// 自动想起开着（`kb.toml` 的 `auto`，施工 K-6 下）。
+    /// 自动想起开着（`kb.toml` 的 `auto`，施工 K-6 下；包里的人改过的照改的，施工 K-8）。
     pub auto: bool,
+    /// 软件包带来的是哪个包的（施工 K-8）；自己的、挂进来的没有。
+    pub package: Option<String>,
 }
 
 /// 搜到的一块。
@@ -131,6 +142,8 @@ pub enum KnowledgeError {
     Trash(String),
     /// 挂进来的库只读（施工 K-4，19 N7）。
     ReadOnly,
+    /// 软件包带来的库只读（施工 K-8）：名字、说明、文档照包；自动想起的开关人能改。
+    Packaged,
     /// 不是文字的文档（PDF、网页）写不了（施工 K-5）。
     NotText,
     /// 要建、要挂的库已经有了（施工 K-7 上）。
@@ -163,6 +176,7 @@ impl std::fmt::Display for KnowledgeError {
             KnowledgeError::Ambiguous(count) => write!(f, "text found {count} times"),
             KnowledgeError::Trash(why) => write!(f, "trash: {why}"),
             KnowledgeError::ReadOnly => write!(f, "mounted folder is read-only"),
+            KnowledgeError::Packaged => write!(f, "knowledge base from a package is read-only"),
             KnowledgeError::NotText => write!(f, "only text documents can be written"),
             KnowledgeError::BaseExists => write!(f, "knowledge base already exists"),
             KnowledgeError::FolderUnavailable(why) => write!(f, "{why}"),
@@ -181,6 +195,7 @@ impl Knowledge {
             root: root.clone(),
             home: None,
             extractor: None,
+            packages: Mutex::default(),
             floors: Thresholds::default(),
             open: Mutex::new(BTreeMap::new()),
         }
@@ -321,8 +336,11 @@ impl Knowledge {
     ///
     /// 没有这个库。
     pub fn auto(&self, account: &AccountId, id: &str) -> Result<bool, KnowledgeError> {
-        let dir = self.dir(account, id)?;
-        Ok(catch_up::about(&dir).0.auto.unwrap_or(false))
+        let place = self.place(account, id)?;
+        let switched = self.switched(account, id, &place);
+        Ok(switched
+            .or(catch_up::about(place.dir()).0.auto)
+            .unwrap_or(false))
     }
 
     /// 库 `id` 的每一段（施工 K-6 下，自动想起照标题名挑、照它拼）：先照文件补，交回索引里的每一块写成搜到的那样，和跳过的
@@ -355,64 +373,6 @@ impl Knowledge {
     #[must_use]
     pub fn index_of(&self, account: &AccountId, id: &str) -> Arc<RecallIndex> {
         Arc::clone(&self.shelf(account, id).index)
-    }
-
-    /// 账号下合写法的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）。目录不在的是空的。
-    ///
-    /// # Errors
-    ///
-    /// 知识库的目录读不了。
-    pub fn ids(&self, account: &AccountId) -> Result<Vec<String>, KnowledgeError> {
-        let top = self.top(account);
-        let entries = match std::fs::read_dir(&top) {
-            Ok(entries) => entries,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(error) => return Err(KnowledgeError::Io(error.to_string())),
-        };
-        let mut ids: Vec<String> = entries
-            .flatten()
-            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .filter(|name| valid(name))
-            .collect();
-        ids.sort();
-        Ok(ids)
-    }
-
-    /// 账号下的知识库都在哪个目录下。
-    fn top(&self, account: &AccountId) -> PathBuf {
-        self.root.account_dir(account).join("kb")
-    }
-
-    /// 库 `id` 的目录：编号合写法、目录在。
-    fn dir(&self, account: &AccountId, id: &str) -> Result<PathBuf, KnowledgeError> {
-        let dir = self.top(account).join(id);
-        if valid(id) && dir.is_dir() {
-            Ok(dir)
-        } else {
-            Err(KnowledgeError::UnknownBase)
-        }
-    }
-
-    /// 库 `id` 开着的索引：开过的交回同一份。
-    fn shelf(&self, account: &AccountId, id: &str) -> Arc<Shelf> {
-        let mut open = self.lock();
-        let key = (account.clone(), id.to_string());
-        if let Some(shelf) = open.get(&key) {
-            return Arc::clone(shelf);
-        }
-        let path = self.root.index(account).join("kb").join(format!("{id}.db"));
-        let (index, _) = RecallIndex::open(&path);
-        let shelf = Arc::new(Shelf {
-            index: Arc::new(index),
-            catching_up: Mutex::new(()),
-        });
-        open.insert(key, Arc::clone(&shelf));
-        shelf
-    }
-
-    fn lock(&self) -> MutexGuard<'_, BTreeMap<(AccountId, String), Arc<Shelf>>> {
-        self.open.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 

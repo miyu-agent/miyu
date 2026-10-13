@@ -279,3 +279,82 @@ async fn what_the_core_would_refuse_is_said_plainly() {
         "别的错照原话"
     );
 }
+
+#[tokio::test]
+async fn a_base_from_a_package_from_the_shell() {
+    // 施工 K-8：装上一个带 kb/world/ 的包，列表接「随 <包名>」；只开关自动想起改得了，改名字照核心的原话拒。
+    let home = Home::new(Arc::new(Script::new([])));
+    let cwd = home.outside();
+    let pack = cwd.join("world-pack");
+    std::fs::create_dir_all(pack.join("kb/world")).expect("建得了");
+    std::fs::write(
+        pack.join("package.toml"),
+        "[package]\nname = { en = \"World\", zh = \"雾港世界观\" }\n",
+    )
+    .expect("写得进");
+    std::fs::write(
+        pack.join("kb/world/kb.toml"),
+        "name = \"雾港\"\nauto = true\n",
+    )
+    .expect("写得进");
+    std::fs::write(pack.join("kb/world/people.md"), "# 艾琳\n\n守灯人。\n").expect("写得进");
+    let installed = {
+        #[derive(Parser)]
+        struct PkgLine {
+            #[command(subcommand)]
+            command: PkgTop,
+        }
+        #[derive(clap::Subcommand)]
+        enum PkgTop {
+            Pkg(miyu_cli::Pkg),
+        }
+        let PkgTop::Pkg(args) =
+            PkgLine::try_parse_from(["miyu", "pkg", "install", "./world-pack", "--yes"])
+                .expect("读得懂")
+                .command;
+        let plan = miyu_cli::PkgPlan {
+            args,
+            language: Language::Chinese,
+            cwd: cwd.clone(),
+        };
+        let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
+        let tape = Tape::default();
+        let (mut out, mut err) = (tape.pen(false), tape.pen(true));
+        let code = within(
+            "装",
+            miyu_cli::pkg_on(
+                connection,
+                &token,
+                &plan,
+                &mut std::io::empty(),
+                &mut out,
+                &mut err,
+            ),
+        )
+        .await;
+        (code, tape.text(|_| true))
+    };
+    assert_eq!(installed.0, 0, "{}", installed.1);
+    let listed = run(&home, &cwd, &[]).await;
+    assert_eq!(
+        listed.out, "world  雾港  1 篇  随 雾港世界观  自动想起\n",
+        "{}",
+        listed.err
+    );
+    let off = run(&home, &cwd, &["edit", "world", "--no-auto"]).await;
+    assert_eq!(
+        (off.code, off.out.as_str()),
+        (0, "改好了：world\n"),
+        "{}",
+        off.err
+    );
+    assert_eq!(
+        run(&home, &cwd, &[]).await.out,
+        "world  雾港  1 篇  随 雾港世界观\n"
+    );
+    let renamed = run(&home, &cwd, &["edit", "world", "--name", "新名字"]).await;
+    assert_eq!(
+        (renamed.code, renamed.err.as_str()),
+        (1, "随软件包来的知识库是只读的，只能开关自动想起。\n")
+    );
+}

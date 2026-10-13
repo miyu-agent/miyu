@@ -688,11 +688,11 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）。`kb.search` 跳过挂的目录用不了的库 |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）；软件包带来的（施工 K-8）多一格 `package`：包的编号（名字照 `package.list`）。`kb.search` 跳过挂的目录用不了的库 |
 | `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的那一块多 `page`（施工 K-5） |
 | `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字，网页是换出来的字（施工 K-5） |
 | `kb.create` | `kb`，必写；`name`、`description`、`auto`（布尔，施工 K-6 下）（可以不写） | 一个库（同 `kb.list` 的一项） |
-| `kb.update` | `kb`，必写；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉） | 一个库 |
+| `kb.update` | `kb`，必写；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉；软件包带来的只收 `auto`，施工 K-8） | 一个库 |
 | `kb.mount` | `kb`、`folder`（绝对路径或 `~/` 开头），必写；`name`、`description`、`auto` | 一个库（照挂的目录补完的） |
 | `kb.delete` | `kb` | `{"trash"}`：整个库目录在回收站里的位置 |
 | `kb.add` | `kb`、`path`、`blob`（`blob.put`、分块上传交回的），必写；`replace`（布尔，不写 `false`） | `{}` |
@@ -703,7 +703,7 @@
 2. 一块：哪个库、哪个文档、第几块（从 0 起）、标题路径（`语法 › て形`，没有标题的是空字符串）、这一块的字（不带标题那一行）、文档改的时刻；PDF 的那一块多 `page`：第几页，从 1 起（施工 K-5），别的不写这一格。几个库的照名次轮流合（`knowledge.md`「怎么走」第四条）。
 3. `kb.read` 照路径读目录里的文件，不读索引；一页 32 KiB，截在字的边界上，空文档是一页空的。PDF 照它自己的页，`pages` 是 PDF 的页数；网页读换出来的字（施工 K-5，`knowledge.md`「怎么走」第五条）。抽不出来的（坏的 PDF、文件超过 64 MiB）：`internal_error`。
 4. 出错：参数写错、`query` 空白、`limit` 出了范围、编号不合写法（`knowledge.md`「对外的样子」）、`page` 是 0 或超过 `pages`：`bad_params`。没有这个库：`unknown_kb`。库里没有这个文档（不是文档的、不在库里的、`..` 跑出去的都算）：`unknown_document`。读不了目录、索引：`internal_error`，记一行 `WARN knowledge failed`。
-5. 管理的七个（施工 K-7 上，`knowledge.md`「怎么走」第八条）：建库、挂目录写 `kb.toml`；改名字说明只改那一格，空字符串拿掉；加文档照上传好的 blob，什么格式都行，已经有的只在 `replace` 时换；删文档、删库挪进系统回收站，挂进来的库只拿掉登记、挂的目录不动；重建删掉索引照文件补。出错：`kb_exists`（要建、要挂的已经有了）、`document_exists`（要加的已经有了）、`kb_read_only`（往挂进来的库里加、删）、`folder_unavailable`（要挂的目录用不了，`data.message`）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在）；`bad_params`：编号、路径不合写法，`kb.update` 两格都没写，`folder`、`blob`、`replace` 写在不该写的方法上或该写的没写，多写了不认识的格。不认请求编号去重。
+5. 管理的七个（施工 K-7 上，`knowledge.md`「怎么走」第八条）：建库、挂目录写 `kb.toml`；改名字说明只改那一格，空字符串拿掉；加文档照上传好的 blob，什么格式都行，已经有的只在 `replace` 时换；删文档、删库挪进系统回收站，挂进来的库只拿掉登记、挂的目录不动；重建删掉索引照文件补。出错：`kb_exists`（要建、要挂的已经有了）、`document_exists`（要加的已经有了）、`kb_read_only`（往挂进来的库里加、删）、`kb_packaged`（改软件包带来的库的名字、说明，加、删文档，删它，施工 K-8）、`folder_unavailable`（要挂的目录用不了，`data.message`）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在）；`bad_params`：编号、路径不合写法，`kb.update` 两格都没写，`folder`、`blob`、`replace` 写在不该写的方法上或该写的没写，多写了不认识的格。不认请求编号去重。
 
 **`session.recap`**（施工 3-8 四补，`04-核心协议.md` 第九节，`kernel/session.md`「回顾」）
 
@@ -1477,6 +1477,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/memory_restore.rs`、`memory_turns.rs`（施工 R-12 下） | `memory.restore`：忘了的恢复以后照常列出、搜得到，同一个编号只算一次，本来就算数的不写，拒绝的几种；`memory.turns`：搜得到以前那一轮的会话、轮、时刻、字，`limit`，会话那一间的不串，写错的几种（细节见 `memory.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/knowledge.rs`（施工 K-1 上） | 「`kb.*`」：三个方法的回应一格一格对、`kb.toml` 写错的带 `error`、挂的目录用不了的带 `error`、`kb.search` 跳过它（施工 K-4）、只搜一个；写错的几种 `bad_params`、`unknown_kb`、`unknown_document`、`kb.` 开头的别的方法 `unknown_method`（细节见 `knowledge.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/knowledge_manage.rs`（施工 K-7 上） | 「`kb.*`」管理的七个：建、改、挂、加、换、删文档、删库、重建的回应；各自的拒绝（细节见 `knowledge.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge_package.rs`（施工 K-8） | 「`kb.*`」软件包带来的库：装上当场列得出、带 `package`、搜得到；改名字、删拒 `kb_packaged`，建同编号 `kb_exists`，`auto` 照改；卸掉当场没了；核心起来时照核对过的清单，没收的包不带库 |
 | `crates/miyu-endpoint/tests/config_watch.rs`、`config_watch_log.rs`（施工 8-4） | 订阅配置、取消、参数不对；手改推 `config.changed`；`config.set` 先见推送后见回应；掉队推 `resync`；改了语言下一句照新的（`config.md`「守着它的」） |
 
 ### 出处

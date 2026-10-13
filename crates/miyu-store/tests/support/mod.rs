@@ -39,9 +39,14 @@ impl Drop for Scratch {
 
 /// 临时目录下的数据根，建好了骨架和管理员的家目录。
 pub fn root_in(scratch: &Scratch) -> DataRoot {
+    root_at(&scratch.0.join("data"))
+}
+
+/// 数据根在 `dir`（照这个路径用，路上有链接的不换成真实的位置），建好了骨架和管理员的家目录。
+pub fn root_at(dir: &Path) -> DataRoot {
     let root = DataRoot::locate(&Env {
         platform: Platform::current(),
-        miyu_home: Some(scratch.0.join("data").into_os_string()),
+        miyu_home: Some(dir.as_os_str().to_owned()),
         home: None,
         xdg_cache_home: None,
         local_app_data: None,

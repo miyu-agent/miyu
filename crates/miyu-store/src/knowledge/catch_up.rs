@@ -112,7 +112,9 @@ impl Knowledge {
         id: &str,
         unavailable: Option<String>,
     ) -> Result<Base, KnowledgeError> {
-        let (about, error) = about(&self.dir(account, id)?);
+        let place = self.place(account, id)?;
+        let (about, error) = about(place.dir());
+        let switched = self.switched(account, id, &place);
         let shelf = self.shelf(account, id);
         Ok(Base {
             id: id.to_string(),
@@ -121,7 +123,8 @@ impl Knowledge {
             documents: shelf.index.stamps()?.len(),
             chunks: shelf.index.keys()?.len(),
             error: unavailable.or(error),
-            auto: about.auto.unwrap_or(false),
+            auto: switched.or(about.auto).unwrap_or(false),
+            package: place.package().map(str::to_string),
         })
     }
 }

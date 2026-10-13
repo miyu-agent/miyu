@@ -243,7 +243,7 @@ impl Core {
             memory.give_extraction(extraction);
         }
         Core {
-            knowledge: knowledge::shelf(&root, home.clone(), knowledge::extractor(), &resources),
+            knowledge: knowledge::of_core(&root, home.clone(), &resources, &found),
             memory,
             index,
             system_indexes: std::sync::Mutex::default(),
@@ -347,8 +347,7 @@ impl Core {
     /// 交进来，`package.list`、包的配置项的字照它。没设的是 `Core::new` 自己读的那一份。
     #[must_use]
     pub fn with_packages(mut self, packages: Vec<miyu_store::packages::Found>) -> Core {
-        self.memory
-            .set_installed(packages::is_installed(&packages, MEMORY));
+        self.adopt_packages(&packages);
         self.packages = std::sync::RwLock::new(Arc::new(packages));
         self
     }

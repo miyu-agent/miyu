@@ -35,7 +35,7 @@
 
 **以前的写法**（`packages/<编号>.toml` 加同名目录）：核心起来读清单时，家目录那一层照它认出来，挪成 `<编号>/package.toml`，记一行运行日志 `INFO package moved`；文件夹里已经有一份 `package.toml` 的不覆盖，两份都留着，记 `WARN package not moved`（设计 31 第七节第 2 条）。写了 `[package] kind` 的清单（施工 F-8 上补以前）同时改成照表认的：去掉 `kind` 那一行，还没有对应的程序表的在末尾补一张空的（`miyu_config::package::without_kind`），记 `INFO package rewritten`；写的种类认不出的原样不动，读的时候报 `unknown_key`。资源目录在仓库里改好了，不改。
 
-**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle` 或 `mascot`）。
+**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`；知识库照约定带在 `kb/<编号>/` 里，同 `skills/`，施工 K-8，`knowledge.md`「对外的样子」软件包带来的那一节），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle` 或 `mascot`）。
 
 ```toml
 [package]

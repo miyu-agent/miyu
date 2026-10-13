@@ -1,12 +1,19 @@
 //! `miyu kb` 印的样子（`docs/blueprint/cli/kb.md`「样子」）：纯的，测试里照它算。
 
+use std::collections::BTreeMap;
+
 use serde_json::Value;
 
 use crate::language::Language;
 
-/// `list`：一个库一行，编号照最长的对齐；后面是名字（和编号一样的不写）、几篇、开了自动想起的「自动想起」（施工 K-6 补）、
-/// 说明（没写的不写），两个空格隔开；用不了的接上为什么。
-pub(super) fn bases(bases: &[Value], language: &Language) -> Vec<String> {
+/// `list`：一个库一行，编号照最长的对齐；后面是名字（和编号一样的不写）、几篇、软件包带来的「随 <包名>」（施工 K-8，包名照
+/// `names`，没有的照包的编号）、开了自动想起的「自动想起」（施工 K-6 补）、说明（没写的不写），两个空格隔开；用不了的接上
+/// 为什么。
+pub(super) fn bases(
+    bases: &[Value],
+    names: &BTreeMap<String, String>,
+    language: &Language,
+) -> Vec<String> {
     let text = |base: &Value, field: &str| base[field].as_str().unwrap_or_default().to_string();
     let width = bases
         .iter()
@@ -23,6 +30,10 @@ pub(super) fn bases(bases: &[Value], language: &Language) -> Vec<String> {
                 parts.push(name);
             }
             parts.push(language.kb_documents(base["documents"].as_u64().unwrap_or(0)));
+            if let Some(package) = base["package"].as_str() {
+                let name = names.get(package).map_or(package, String::as_str);
+                parts.push(language.kb_from(name));
+            }
             if base["auto"].as_bool() == Some(true) {
                 parts.push(language.kb_auto().to_string());
             }

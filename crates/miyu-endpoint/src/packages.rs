@@ -363,6 +363,17 @@ pub fn compiled(found: &mut [Found], built_in: &[&str]) {
     }
 }
 
+impl Core {
+    /// 照核心起来时核对过的清单 `packages` 换上（[`Core::with_packages`]）：人格记忆装没装（施工 F-2）、知识库带的包（施工
+    /// K-8，只换不清：没收的包不是卸了）。
+    pub(crate) fn adopt_packages(&self, packages: &[Found]) {
+        self.memory
+            .set_installed(is_installed(packages, miyu_policy::preset::MEMORY));
+        self.knowledge
+            .use_packages(crate::knowledge::carried(packages));
+    }
+}
+
 /// 内置包 `id` 装了（施工 F-2）：有它读成了的清单，种类是内置。编进来的代码照它起不起。
 pub fn is_installed(found: &[Found], id: &str) -> bool {
     found.iter().any(|one| {

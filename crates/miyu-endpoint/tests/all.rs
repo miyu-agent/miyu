@@ -47,6 +47,7 @@ mod job_output;
 mod job_stop;
 mod knowledge;
 mod knowledge_manage;
+mod knowledge_package;
 mod limits;
 mod list;
 mod login;

@@ -48,6 +48,7 @@
     "common/trash": "{path} 挪不进回收站：{error}",
     "common/bad-id": "{kb} 不能当知识库的编号",
     "common/read-only": "{kb} 是挂进来的目录，只读",
+    "common/packaged": "{kb} 随软件包来，只读",
     "common/not-text": "{path} 不是文字的文档，写不了"
   }
 }

@@ -147,9 +147,21 @@ impl DataRoot {
     ///
     /// 读不了 `home/`。
     pub fn owner_of(&self, session: &SessionId) -> io::Result<Option<AccountId>> {
+        Ok(self
+            .accounts()?
+            .into_iter()
+            .find(|account| self.session_dir(account, session).is_dir()))
+    }
+
+    /// `home/` 下的账号，照账号名排；不合账号写法的目录不算，`home/` 不在的是空的（施工 K-8：卸包时每个账号里清一遍）。
+    ///
+    /// # Errors
+    ///
+    /// 读不了 `home/`。
+    pub fn accounts(&self) -> io::Result<Vec<AccountId>> {
         let entries = match fs::read_dir(self.homes()) {
             Ok(entries) => entries,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error),
         };
         let mut accounts = Vec::new();
@@ -160,9 +172,7 @@ impl DataRoot {
             }
         }
         accounts.sort_by(|a, b| a.as_str().cmp(b.as_str()));
-        Ok(accounts
-            .into_iter()
-            .find(|account| self.session_dir(account, session).is_dir()))
+        Ok(accounts)
     }
 
     /// 一个会话的目录：`home/<账号>/sessions/<会话编号>/`（`07-存储.md` 第三节）。

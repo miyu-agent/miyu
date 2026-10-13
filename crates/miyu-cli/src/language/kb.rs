@@ -107,6 +107,14 @@ impl Language {
         }
     }
 
+    /// `list` 里软件包带来的那一格（施工 K-8）：哪个包。
+    pub(crate) fn kb_from(&self, package: &str) -> String {
+        match self {
+            Language::Chinese => format!("随 {package}"),
+            Language::English => format!("from {package}"),
+        }
+    }
+
     /// `list` 里开了自动想起的那一格（施工 K-6 补）。
     pub(crate) fn kb_auto(&self) -> &'static str {
         match self {

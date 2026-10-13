@@ -86,6 +86,7 @@ impl Core {
         self.follow_packages(&processes_of(before), &processes_of(now))
             .await;
         self.follow_bundles(before, now).await;
+        crate::knowledge::follow(&self.knowledge, now);
         if let (Some(builtins), Some(vectors)) = (&self.builtins, self.memory.vectors()) {
             vectors.replace_local(builtins.embed(now)).await;
         }

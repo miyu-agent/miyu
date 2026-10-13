@@ -48,6 +48,7 @@
     "common/trash": "{path} をごみ箱に移せません：{error}",
     "common/bad-id": "{kb} はナレッジベースの ID に使えません",
     "common/read-only": "{kb} はマウントしたフォルダで、読み取り専用です",
+    "common/packaged": "{kb} はパッケージに付いてきたもので、読み取り専用です",
     "common/not-text": "{path} はテキストの文書ではないので書けません"
   }
 }

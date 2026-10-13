@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 
 use super::catch_up::about;
+use super::place::Place;
 use super::{Knowledge, KnowledgeError};
 
 /// 一个库的文档在哪。
@@ -15,31 +16,50 @@ pub(super) enum Documents {
     Own(PathBuf),
     /// 挂进来的目录；用不了的是为什么（英文的一句）。
     Mounted(Result<PathBuf, String>),
+    /// 软件包带来的库的目录（施工 K-8），只读。
+    Package(PathBuf),
 }
 
 impl Documents {
     /// 照这个目录补、读：挂的目录用不了的是 [`KnowledgeError::Unavailable`]。
     pub(super) fn usable(self) -> Result<PathBuf, KnowledgeError> {
         match self {
-            Documents::Own(dir) | Documents::Mounted(Ok(dir)) => Ok(dir),
+            Documents::Own(dir) | Documents::Mounted(Ok(dir)) | Documents::Package(dir) => Ok(dir),
             Documents::Mounted(Err(why)) => Err(KnowledgeError::Unavailable(why)),
         }
     }
 }
 
 impl Knowledge {
-    /// 库 `id` 的文档在哪。`kb.toml` 读不出来的照没写（同 [`Knowledge::list`] 带的 `error`）。
+    /// 库 `id` 的文档在哪。`kb.toml` 读不出来的照没写（同 [`Knowledge::list`] 带的 `error`）；包里的就在包里那个目录（不认
+    /// `mount`，施工 K-8）。
     pub(super) fn documents(
         &self,
         account: &AccountId,
         id: &str,
     ) -> Result<Documents, KnowledgeError> {
-        let dir = self.dir(account, id)?;
+        let dir = match self.place(account, id)? {
+            Place::Package { dir, .. } => return Ok(Documents::Package(dir)),
+            Place::Own(dir) => dir,
+        };
         let (about, _) = about(&dir);
         Ok(match about.mount {
             None => Documents::Own(dir),
             Some(mount) => Documents::Mounted(self.mounted(&mount)),
         })
+    }
+
+    /// 写得进的库 `id` 的目录：挂进来的 [`KnowledgeError::ReadOnly`]，包里的 [`KnowledgeError::Packaged`]（施工 K-8）。
+    pub(super) fn writable_dir(
+        &self,
+        account: &AccountId,
+        id: &str,
+    ) -> Result<PathBuf, KnowledgeError> {
+        match self.documents(account, id)? {
+            Documents::Own(dir) => Ok(dir),
+            Documents::Mounted(_) => Err(KnowledgeError::ReadOnly),
+            Documents::Package(_) => Err(KnowledgeError::Packaged),
+        }
     }
 
     /// 挂的路径 `mount` 换成一个读得了的目录。

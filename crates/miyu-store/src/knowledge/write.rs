@@ -12,7 +12,6 @@ use miyu_kernel::id::AccountId;
 
 use super::catch_up::BIGGEST;
 use super::extract::Kind;
-use super::mount::Documents;
 use super::read::target;
 use super::{Knowledge, KnowledgeError};
 use crate::layers::valid;
@@ -43,10 +42,11 @@ impl Knowledge {
         if !valid(kb) {
             return Err(KnowledgeError::UnknownBase);
         }
-        let dir = self.top(account).join(kb);
-        if dir.is_dir() {
+        // 看得见的（连包里的，施工 K-8）当已经有了：写到包里的库照样拒，不另建一个盖住它。
+        if self.place(account, kb).is_ok() {
             return Ok(());
         }
+        let dir = self.top(account).join(kb);
         std::fs::create_dir_all(&dir).map_err(io)?;
         let dir = std::fs::canonicalize(&dir).map_err(io)?;
         if let Some(about) = about.map(str::trim).filter(|about| !about.is_empty()) {
@@ -171,10 +171,7 @@ impl Knowledge {
 
     /// 库 `kb` 里 `path` 照写法该在哪：库得在、不是挂进来的（施工 K-4，只读），路径照读的那一套，库的目录照真实的位置。
     fn target(&self, account: &AccountId, kb: &str, path: &str) -> Result<PathBuf, KnowledgeError> {
-        let Documents::Own(dir) = self.documents(account, kb)? else {
-            return Err(KnowledgeError::ReadOnly);
-        };
-        let dir = std::fs::canonicalize(dir).map_err(io)?;
+        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
         target(&dir, path).ok_or(KnowledgeError::UnknownDocument)
     }
 }

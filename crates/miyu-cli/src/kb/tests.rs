@@ -1,6 +1,8 @@
 //! `miyu kb` 印的样子（`docs/blueprint/cli/kb.md`「样子」）：库一行一个、编号对齐、名字和编号一样的不写、用不了的接上为什么；
 //! 搜到的一块一段、PDF 说第几页；读的不止一页的末尾说第几页。
 
+use std::collections::BTreeMap;
+
 use serde_json::json;
 
 use super::shown::{bases, hits, page};
@@ -14,7 +16,7 @@ fn bases_one_line_each() {
         json!({"id": "usb", "name": "U 盘", "description": "", "documents": 3, "chunks": 9, "error": "mounted folder /mnt/usb: not found"}),
     ];
     assert_eq!(
-        bases(&listed, &Language::Chinese),
+        bases(&listed, &BTreeMap::new(), &Language::Chinese),
         [
             "notes  日语笔记  12 篇  学日语的",
             "world  1 篇",
@@ -22,11 +24,11 @@ fn bases_one_line_each() {
         ]
     );
     assert_eq!(
-        bases(&listed[1..2], &Language::English),
+        bases(&listed[1..2], &BTreeMap::new(), &Language::English),
         ["world  1 document"]
     );
     assert_eq!(
-        bases(&listed[0..1], &Language::English),
+        bases(&listed[0..1], &BTreeMap::new(), &Language::English),
         ["notes  日语笔记  12 documents  学日语的"]
     );
 }
@@ -65,11 +67,11 @@ fn an_auto_base_says_so_after_its_count() {
         json!({"id": "notes", "name": "notes", "description": "", "documents": 1, "chunks": 1, "auto": false}),
     ];
     assert_eq!(
-        bases(&listed, &Language::Chinese),
+        bases(&listed, &BTreeMap::new(), &Language::Chinese),
         ["world  雾港  4 篇  自动想起  世界观", "notes  1 篇"]
     );
     assert_eq!(
-        bases(&listed[0..1], &Language::English),
+        bases(&listed[0..1], &BTreeMap::new(), &Language::English),
         ["world  雾港  4 documents  auto recall  世界观"]
     );
 }
@@ -90,4 +92,25 @@ fn plain_refusals_in_both_languages() {
     assert_eq!(zh.kb_no_page(9, 3), "没有第 9 页，一共 3 页。");
     assert_eq!(en.kb_no_page(9, 1), "There is no page 9; it has 1 page.");
     assert_eq!(en.kb_no_page(9, 3), "There is no page 9; it has 3 pages.");
+}
+
+#[test]
+fn a_base_from_a_package_says_which_one() {
+    // 施工 K-8：包里的篇数后面接「随 <包名>」（包名照 package.list，拿不到的照编号），再接自动想起、说明。
+    let listed = [
+        json!({"id": "world", "name": "雾港", "description": "世界观", "documents": 4, "chunks": 17, "auto": true, "package": "world-pack"}),
+        json!({"id": "wiki", "name": "wiki", "description": "", "documents": 1, "chunks": 1, "auto": false, "package": "shorin-wiki"}),
+    ];
+    let names = BTreeMap::from([("world-pack".to_string(), "雾港世界观".to_string())]);
+    assert_eq!(
+        bases(&listed, &names, &Language::Chinese),
+        [
+            "world  雾港  4 篇  随 雾港世界观  自动想起  世界观",
+            "wiki   1 篇  随 shorin-wiki"
+        ]
+    );
+    assert_eq!(
+        bases(&listed[0..1], &names, &Language::English),
+        ["world  雾港  4 documents  from 雾港世界观  auto recall  世界观"]
+    );
 }

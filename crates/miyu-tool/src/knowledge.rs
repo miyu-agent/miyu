@@ -144,6 +144,8 @@ pub enum KbRefused {
     BadId(String),
     /// 写到挂进来的库（施工 K-4，19 N7：只读）：哪个库。
     ReadOnly(String),
+    /// 写到软件包带来的库（施工 K-8：只读）：哪个库。
+    Packaged(String),
     /// 写 PDF、网页（施工 K-5：只有文字的文档写得了）：哪一篇。
     NotText(String),
     /// 读不了：为什么。

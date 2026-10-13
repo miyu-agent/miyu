@@ -12,6 +12,7 @@ mod knowledge_floor;
 mod knowledge_formats;
 mod knowledge_manage;
 mod knowledge_mount;
+mod knowledge_package;
 mod knowledge_write;
 mod memory;
 mod memory_extracted;

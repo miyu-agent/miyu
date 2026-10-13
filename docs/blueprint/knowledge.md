@@ -2,13 +2,13 @@
 
 ### 是什么
 
-你放给她查的文档（`19-知识库.md`）：一个知识库是一个目录，里面是文档，外加一份派生的索引（N1）。不是记忆（记忆是她自己从对话里记下的，`memory.md`）。三种来源：你自己的、挂进来的现成目录（K-4，只读，N7）、软件包带来的（N1，随 K-8）。
+你放给她查的文档（`19-知识库.md`）：一个知识库是一个目录，里面是文档，外加一份派生的索引（N1）。不是记忆（记忆是她自己从对话里记下的，`memory.md`）。三种来源：你自己的、挂进来的现成目录（K-4，只读，N7）、软件包带来的（K-8，只读，N1、N6）。
 
 - 知识库是账号级的图书馆：账号下的全部她都能查，人格可以收窄（N10、N11，2026-10-12 项目主人定）；群里、别人的私聊里也查得到（N12，同一天定：和记忆不一样，不照「谁在听」挡）。
 - 检索用记忆那一套底子（`recall.md`，N3、N8）：关键词一路（K-1 上）、照意思那一路（K-2），两路照名次合。
 - 仿 Linux：文档就是文件（19 第二节）。真相是目录里的文件，索引随时能删掉照文件重建（`07-存储.md` S1、S3）。
 
-状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）、K-7 下（命令行 `miyu kb`，`cli/kb.md`）、K-6 上（自动想起的测评集，`knowledge/eval.md`）、K-6 下（自动想起）。
+状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）、K-7 下（命令行 `miyu kb`，`cli/kb.md`）、K-6 上（自动想起的测评集，`knowledge/eval.md`）、K-6 下（自动想起）、K-8（软件包带来的知识库）。
 
 ### 在哪
 
@@ -20,7 +20,9 @@
 | `crates/miyu-endpoint/src/knowledge.rs`、`refusal/knowledge.rs` | 协议 `kb.*`：读参数、在阻塞线程里调、写回应；`unknown_kb`、`unknown_document` | K-1 上 |
 | `crates/miyu-tool/src/knowledge.rs` | 两件工具的名字、最多给几块、知识库的端口 `KnowledgePort` 和它交回的几样；`Call` 多一格 `knowledge` | K-1 下 |
 | `crates/miyu-knowledge/` | 知识库这个软件包的五件工具 `kb_search`、`kb_read`（K-1 下）、`kb_save`、`kb_edit`、`kb_delete`（K-3）（第 3 层，同 `miyu-memory`）：读参数、照端口交回的写给她看的字、报效果 | K-1 下 |
-| `crates/miyu-store/src/knowledge/mount.rs` | 库的文档在哪：自己的目录，还是挂进来的（`mount` 换成读得了的目录，`~/` 照核心的家目录）；写的三件照它拒挂进来的（「对外的样子」、第三条第 6 款） | K-4 |
+| `crates/miyu-store/src/knowledge/mount.rs` | 库的文档在哪：自己的目录，还是挂进来的（`mount` 换成读得了的目录，`~/` 照核心的家目录），还是包里的（K-8）；写的三件照它拒挂进来的、包里的（「对外的样子」、第三条第 6 款） | K-4 |
+| `crates/miyu-store/src/knowledge/place.rs` | 一个库在哪（K-8 从 `knowledge.rs` 挪出来）：看得见哪几个（自己的加包里的、撞名谁赢）、索引放哪、包里的库人改过的开关、装卸以后跟上（第一条、第十条） | K-8 |
+| `resources/software/knowledge/common/packaged.txt` | 她写到软件包带来的库时那一句（26 第十节登记） | K-8 |
 | `crates/miyu-store/src/knowledge/extract.rs` | 文档是哪一种、上限、哪几种写得了；文字的照原样读，PDF、网页拉起 `miyu-extract` 抽、等它、卡住了杀掉；主程序旁边找它（`extractor_beside`）（第二条第 5、6 款） | K-5 |
 | `crates/miyu-extract/`（`src/lib.rs`、`radicals.rs`、`main.rs`，`data/EquivalentUnifiedIdeograph.txt`） | 抽字的小程序：一次抽一份 PDF 或网页，照 JSON 交回去就退；PDF 一页一页抽、部首的码位换回平常的字（Unicode 的对照表原样带着），网页换成文字（第二条第 5、6 款） | K-5 |
 | `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个）、照资源目录读的搜的下限（K-2 修） | K-5 |
@@ -61,6 +63,14 @@
   只读：她的写的三件写不进（「她的工具」）。挂的目录用不了的见「怎么走」第三条第 6 款。编号、名字、说明、索引的位置、人格收窄、system 里列出来的样子都和自己的一样。人经协议的 `kb.mount` 随 K-7，在那以前手写 `kb.toml`。
 - 文档：扩展名是 `.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`（K-5，19 N2）的文件，子目录里的照样算；以点开头的文件、目录、链接不算（挂的那个目录本身是链接的照它指的地方）；`kb.toml` 不算。别的格式（Word、EPUB）不认。文字的超过 4 MiB、不是 UTF-8 的不收；PDF、网页的文件超过 64 MiB、抽出来的字超过 4 MiB、抽不出来的（坏的、加了密的、一个字都没有的扫描件）不收；都记一行运行日志（「出错」）。
 
+**软件包带来的**（K-8，19 N1、N6；项目主人 2026-10-13 定只读、自动想起人能开关、卸包以后跟着没有、列出来标「随 <包名>」）：装了的软件包（清单读成了的）目录里的 `kb/<编号>/`，照约定带（同 `skills/`，清单里不写，`packages.md`），里面 `kb.toml`（`name`、`description`、`auto`，同自己的；不认 `mount`）和文档。
+
+- 每个账号都看得见（包是管理员装的、整台机器的）；人格收窄照编号。同编号的自己的（连挂进来的）赢，包里的那一个不出来；两个包带了同编号的，照包的编号先到先得（同技能）。要建、要挂的编号和看得见的包里的撞了算已经有了（`kb_exists`）：自己的盖住包里的，只在装包以前就有同编号的库时出现。
+- 只读：名字、说明、文档照包。她的写的三件拒（「她的工具」）；人改名字、说明、加删文档、删库拒 `kb_packaged`；重建索引照做（索引是我们的）。
+- 自动想起的开关先照包里 `kb.toml` 的 `auto`；人改了的（`kb.update` 只收 `auto`）记在账号自己的 `home/<账号>/kb.toml`：`[auto]` 下一行 `"<包>/<编号>" = true/false`，照 `miyu_config::edit` 改，注释和别的照原样。
+- 索引在 `home/<账号>/index/kb/packages/<包>/<编号>.db`，照包目录补（同挂进来的）。
+- 装卸（「怎么走」第十条）：核心起来时照读成的清单找；装、卸以后当场跟上，卸掉的包每个账号里它的索引、开关一起删。
+
 **索引**（K-1 上）：`home/<账号>/index/kb/<编号>.db`，检索库（`recall.md`「库的结构」），派生的。
 
 - 一块一行：键是 `<相对路径>#<第几块>`（路径照 `/` 分，块从 0 起），字是这一块（带着它的标题路径，第二条），时刻是文档改的时刻。
@@ -74,18 +84,18 @@
 | `kb.search` | 查询 | `query`（不能是空白）；`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [<一块>…]}`，最相关的在前 |
 | `kb.read` | 查询 | `kb`、`path`（文档的相对路径）；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字、网页是换出来的字（K-5） |
 | `kb.create` | 命令 | `kb`；`name`、`description`、`auto`（可以不写）（K-7 上；`auto` K-6 下） | 一个库 |
-| `kb.update` | 命令 | `kb`；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉） | 一个库 |
+| `kb.update` | 命令 | `kb`；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉；软件包带来的只收 `auto`，K-8） | 一个库 |
 | `kb.mount` | 命令 | `kb`、`folder`（绝对路径或 `~/` 开头）；`name`、`description`、`auto` | 一个库（照挂的目录补完的） |
 | `kb.delete` | 命令 | `kb` | `{"trash"}`：整个库目录在回收站里的位置 |
 | `kb.add` | 命令 | `kb`、`path`、`blob`（`blob.put`、分块上传交回的）；`replace`（已经有了的换掉，不写 `false`） | `{}` |
 | `kb.remove` | 命令 | `kb`、`path` | `{"trash"}`：这一篇在回收站里的位置 |
 | `kb.reindex` | 命令 | `kb` | 一个库（删掉照文件重建完的） |
 
-- 一个库：`{"id", "name", "description", "documents", "chunks", "auto"}`（`auto` 是自动想起开着没有，K-6 下），读 `kb.toml` 出错的、挂的目录用不了的（K-4）多一格 `error`（英文的一句为什么）。`documents`、`chunks` 是照文件补完以后的数（挂的目录用不了的是索引里现有的）。
+- 一个库：`{"id", "name", "description", "documents", "chunks", "auto"}`（`auto` 是自动想起开着没有，K-6 下；软件包带来的人改过的照改的，K-8），软件包带来的多一格 `package`（包的编号，K-8），读 `kb.toml` 出错的、挂的目录用不了的（K-4）多一格 `error`（英文的一句为什么）。`documents`、`chunks` 是照文件补完以后的数（挂的目录用不了的是索引里现有的）。
 - 一块：`{"kb", "path", "chunk", "heading", "text", "at"}`：哪个库、哪个文档、第几块、标题路径（没有标题的是空的）、这一块的字（不带标题那一行）、文档改的时刻。PDF 的那一块多一格 `page`（第几页，从 1 起，K-5），别的不写这一格。
 - 一页 32 KiB，截在字的边界上；`pages` 是一共几页，空文档是一页空的。PDF 照它自己的页：`pages` 是 PDF 的页数（K-5）。
 - 出错：`unknown_kb`（没有这个库）、`unknown_document`（库里没有这个文档：不是文档的、不在库里的、`..` 跑出去的都算）、`bad_params`（`query` 空白、`limit` 出范围、编号不合写法、`page` 是 0 或超过 `pages`）。
-- 管理的出错（K-7 上，「怎么走」第八条）：`kb_exists`（要建、要挂的库已经有了）、`document_exists`（要加的已经有了，没写 `replace`）、`kb_read_only`（往挂进来的库里加、删）、`folder_unavailable`（要挂的目录不在、读不了、不是绝对路径也不是 `~/` 开头，`data.message` 一句英文）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在，同 `session.send`）；`bad_params`：编号、路径不合写法（`kb.add`、`kb.remove` 的路径照「文档」的写法，什么格式都行）、`kb.update` 两格都没写、`kb.mount` 没写 `folder` 或别的写了 `folder`、`kb.add` 没写 `blob` 或别的写了 `blob`、`replace`、多写了不认识的格。
+- 管理的出错（K-7 上，「怎么走」第八条）：`kb_exists`（要建、要挂的库已经有了）、`document_exists`（要加的已经有了，没写 `replace`）、`kb_read_only`（往挂进来的库里加、删）、`kb_packaged`（改软件包带来的库的名字、说明，加、删文档，删它，K-8）、`folder_unavailable`（要挂的目录不在、读不了、不是绝对路径也不是 `~/` 开头，`data.message` 一句英文）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在，同 `session.send`）；`bad_params`：编号、路径不合写法（`kb.add`、`kb.remove` 的路径照「文档」的写法，什么格式都行）、`kb.update` 两格都没写、`kb.mount` 没写 `folder` 或别的写了 `folder`、`kb.add` 没写 `blob` 或别的写了 `blob`、`replace`、多写了不认识的格。
 
 **她的工具**（K-1 下、K-3，19 N4、N14）：知识库这个内置包（`knowledge`，出厂装着；预设照功能开关：全部功能开、基础功能关）带五件；查的两件访问类别 `read`，写的三件 `write`（只读级别下不能用）。
 
@@ -122,7 +132,7 @@ Knowledge bases you can search:
 
 ### 怎么走
 
-**一、哪些库**（K-1 上）：`home/<账号>/kb/` 下每一个合写法的目录是一个库，照编号排。目录不在的当一个都没有。库的文档在它自己的目录里；`kb.toml` 写了 `mount` 的在挂的那个目录里（K-4）。
+**一、哪些库**（K-1 上）：`home/<账号>/kb/` 下每一个合写法的目录是一个库，加上装了的软件包带来的（K-8，「对外的样子」那一节；同编号的自己的赢），照编号排。目录不在的当一个都没有。库的文档在它自己的目录里；`kb.toml` 写了 `mount` 的在挂的那个目录里（K-4）；包里的在包目录里（K-8）。做法在 `knowledge/place.rs`。
 
 **二、切块**（K-1 上，`miyu_recall::chunk`，调研第五节第 7 条：200～400 token 一块）：
 
@@ -158,7 +168,7 @@ Knowledge bases you can search:
 
 **七、她写**（K-3，19 N14）：
 
-1. 写哪几个：她这一刻查得到的库（第六条第 1 款），挂进来的除外（K-4，N7：只读，拒，什么都不动）。`kb_save` 写到账号下还没有的库就是建它（目录、写了 `about` 的 `kb.toml` 的 `description`）；人格收窄了的不建（建了她也查不到），账号下有、人格没列的当没有；编号不合写法的不建、说清编号怎么写（K-3 补）；路径不合写法的不建。
+1. 写哪几个：她这一刻查得到的库（第六条第 1 款），挂进来的除外（K-4，N7：只读，拒，什么都不动），软件包带来的除外（K-8：拒，那一句 `common/packaged.txt` 说清是随包来的、写到别的库里；`kb_save` 写到包里的库不另建一个盖住它）。`kb_save` 写到账号下还没有的库就是建它（目录、写了 `about` 的 `kb.toml` 的 `description`）；人格收窄了的不建（建了她也查不到），账号下有、人格没列的当没有；编号不合写法的不建、说清编号怎么写（K-3 补）；路径不合写法的不建。
 2. 给不给：`kb_save` 照知识库这个包装着、预设开着就给，一个库都没有也给（好建第一个，2026-10-12 项目主人定）；`kb_edit`、`kb_delete` 同 `kb_search`（第六条第 2 款）。本机的、群里的、别人私聊里的都给（同一天项目主人定）。回合开始照这一刻再判的照第六条第 3 款，五件一起比。
 3. 路径同读（第五条）：库里的相对路径、文档的扩展名、不许 `..` 和以点开头的一段；上级目录没有的建；已经有了却不是普通文件的当不是文档。`kb_save`、`kb_edit` 只写 `.md`、`.markdown`、`.txt`（K-5：PDF、网页照原样存着，写进字会弄坏），写别的拒、什么都不动；`kb_delete` 照样删得了 PDF、网页。
 4. 新建的：这一篇已经有了不写。接在后面的：原来末尾没换行的先补一个；没有就新建。写进去的末尾没换行的补一个。改的：`old` 得正好出现一次；不是 UTF-8 的当读不了。写完超过 4 MiB 的不写（同第三条的上限）。
@@ -173,7 +183,8 @@ Knowledge bases you can search:
 4. 删文档（`kb.remove`）：同她的 `kb_delete`，挪进系统回收站；挂进来的拒。
 5. 删库（`kb.delete`）：先拿这个库的补的锁，关上索引的连接、连同 `-wal`、`-shm` 删掉（Windows 上开着的 SQLite 删不掉；会话在后台补向量拿着的是同一份，关上以后照「库用不了的不写」），再把整个库目录挪进系统回收站（2026-10-13 项目主人定）。挂进来的那个库目录里只有登记，挂的目录在外面，一个字都不动。挪不进回收站的，库目录照旧在，索引下一次补的时候照文件重建。她照旧删不了整个库（N14）。
 6. 重建索引（`kb.reindex`）：拿补的锁、删掉重建一份空的（`RecallIndex::reset`），放开锁照文件补一遍；向量下一次搜完再补。挂的目录用不了的照列出来的样子带 `error`。
-7. 不认请求编号去重：建、挂的再发一次回 `kb_exists`，删的再发一次回 `unknown_kb`，加的再发一次回 `document_exists`（写了 `replace` 的照样换，结果一样）。改完不推通知：头自己再 `kb.list`。
+7. 软件包带来的库（K-8）：改名字、说明，加、删文档，删库拒 `kb_packaged`；改 `auto` 照做，记在账号自己的 `kb.toml`；建、挂同编号的回 `kb_exists`。
+8. 不认请求编号去重：建、挂的再发一次回 `kb_exists`，删的再发一次回 `unknown_kb`，加的再发一次回 `document_exists`（写了 `replace` 的照样换，结果一样）。改完不推通知：头自己再 `kb.list`。
 
 **九、自动想起**（K-6 下，19 N5；项目主人 2026-10-12 定开关放 `kb.toml`、关键词也算，2026-10-13 看了测评集定照标题名算、照意思门槛 0.60，`knowledge/eval.md`）：做法在 `crates/miyu-session/src/knowledge/recall.rs`，回合开始的挂接点在 `actor/model.rs` 的 `hooks`。
 
@@ -186,6 +197,11 @@ Knowledge bases you can search:
 4. **交什么**：一块 `context.injected`，模块 `knowledge`、类别 `recall`，`refs` 是带的那几段（`<库>/<路径>#<第几块>`）。外壳 `<knowledge>`、`</knowledge>`（`software/knowledge/recall/`，登记簿），中间一段两行：头一行照 `kb_search` 的那一行（`[<库>] <路径>: <标题路径>`，PDF 的 `[<库>] <路径>, page <页>`，没标题的 `[<库>] <路径>`），下面是这一段的字，连着的空白（换行）换成一个空格，超过 120 个字的截到 120 个字、照 `recall/cut.txt` 接省略号。要全文她自己 `kb_read`。一块不超过 600 字节，放不下的那一段和以后的不加。追加在这一轮的话前面、原样回放，不改以前的前缀。
 5. **时限、排**：和记忆的挂接点并着问（`tokio::join!`），各自限时 300 毫秒，过了的这一轮不交，记一行 `DEBUG turn start hook timed out module=knowledge part=recall`；照模块编号排，知识库那一块在记忆的几块前面。照意思那一路从自动想起开始数最多等 200 毫秒（`recall.rs` 的 `MEANING`，留出拼块的工夫；读段慢了照意思那一路就少等），过了的这一轮只走标题名，记一行 `DEBUG knowledge recall by meaning timed out`：本机模型冷启动的那一轮（真 bge 试过，头一轮算话的向量连拉起小程序要三百毫秒上下）、那一家回得慢的，标题名不跟着整块超时丢掉；算向量的那一件照样算完。
 6. **出错**：库、索引读不了的这一轮不带，记一行 `WARN knowledge recall not read error=…`；会话开的时候外壳的字、门槛表读不出来的这个会话不自动想起，记一行 `WARN knowledge recall texts unreadable error=…`（目标 `miyu::session`）。
+
+**十、装卸**（K-8）：做法在 `knowledge/place.rs`，核心那一头在端点的 `knowledge.rs`（`of_core`、`carried`、`follow`）、`packages.rs`（`adopt_packages`）、`packages/manage.rs`（`switch_packages` 里一行）。
+
+1. 核心起来时把读成了的清单交给知识库（包的编号、包目录，`Knowledge::with_packages`）；主程序交进核对过的清单时只换不清（`use_packages`：没收的包不是卸了）。
+2. 装、卸以后（`switch_packages`）照新的清单跟上（`follow_packages`）：新装的下一次列、搜就有；卸掉的包，每个账号里开着的索引关上、`index/kb/packages/<包>/` 删掉、`kb.toml` 里 `"<包>/…"` 那几行拿掉（项目主人 2026-10-13 定：卸包以后跟着没有，同 F-8 五补「卸包清开关」）。清不掉的记一行 `WARN knowledge package not forgotten`，照样换上新的清单。
 
 ### 出错
 
@@ -220,6 +236,7 @@ Knowledge bases you can search:
 | `crates/miyu-endpoint/src/knowledge/tests.rs`（K-7 上） | 知识库那一层的每一种错写成哪一种拒绝，`folder_unavailable`、`trash_failed` 带 `data.message`；核心照资源目录交搜的下限：出厂的表 bge 0.50、表里没有的 0.40、表读不出来的都 0.40（K-2 修） |
 | `crates/miyu-store/tests/knowledge_floor.rs`、`crates/miyu-recall/src/fuse/tests.rs` 的 `a_floor_of_its_own`（K-2 修） | 第四条：表里的模型照表（0.55 找得到、0.45 不要），没有的照 0.40；出厂的表 bge 是 0.50；`fuse` 就是照 0.40 的 `fuse_above`，关键词也找到的不看下限 |
 | `crates/miyu-endpoint/tests/knowledge_manage.rs`（K-7 上） | 「协议」管理的七个方法，真核心：建、改、加（照上传好的 blob）、换、搜得到、重建的回应；挂 `~/`、挂不上的、往挂进来的加删拒、删文档、删库（挪不进回收站的照实报）、挂的目录没动；写错的十三种 |
+| `crates/miyu-store/tests/knowledge_package.rs`、`crates/miyu-endpoint/tests/knowledge_package.rs`、`crates/miyu-session/tests/knowledge_package.rs`、`crates/miyu-cli/tests/kb.rs` 的一条（K-8） | 「对外的样子」包带来的那一节、第一条、第十条：装了的包里的库列得出、带 `package`、搜得到、读得到，索引在包那一格；写的几样拒（她那一句、`kb_packaged`），改名字拒、开关照改、记在账号的 `kb.toml`、包里的不动，建同编号的 `kb_exists`；自己的赢、两个包先到先得；没有 `kb/`、写错的目录、包目录不在的不碍事；数据根的路上有链接的照真实的位置记开关、拿掉开关；真核心装上当场有、卸掉当场没、索引和开关清掉，起来时照核对过的清单（没收的包不带库）；她搜得到、开着 `auto` 的自动想起、写进去拒那一句、不另建；命令行列表接「随 <包名>」、`edit --no-auto` 改得了、改名字照原话拒 |
 | `crates/miyu-store/tests/knowledge_write.rs`（K-3） | 第七条：建库带说明（转义）、已经有的不动、没说明的不写 `kb.toml`、编号不对的；新建、已经有的不写；接在后面补换行、没有就新建；照原文换一段、找不到、不止一处、没有的文档；路径跑出去的七种、没有的库、太大的什么都不写；挪进回收站、没有的文档；数据根的路上有链接的照真实的位置写（Unix） |
 | `crates/miyu-session/tests/knowledge_write.rs`（K-3） | 第七条，真会话、真目录：一个库都没有只有 `kb_save`、编号写成中文的说清怎么写、什么都不建（K-3 补）、写到没有的库就建它、下一个回合五件都有；接在后面、改、新建撞上已经有的，撤销改的那一轮文件改回去；人格收窄的写不了没列的、建不了新库、改不了没列的；挪进回收站、撤销移回来（只在 Linux 上跑）；挂进来的照搜、照读，写的三件拒、挂的目录和库目录里什么都没动（K-4） |
 
@@ -253,5 +270,5 @@ Knowledge bases you can search:
 | K-6 补 | 命令行 `miyu kb` 的 `--auto` 开、`--no-auto` 关（`new`、`edit`、`mount`），列表在篇数后面接「自动想起」（`cli/kb.md`，2026-10-13 项目主人定写法） |
 | K-7 上 | 管理的协议：`kb.create`、`kb.update`、`kb.delete`、`kb.mount`、`kb.add`、`kb.remove`、`kb.reindex`（第八条，2026-10-13 项目主人定删库进回收站、加文档照附件上传、建库改名也在这一步） |
 | K-7 下 | 命令行 `miyu kb`（`cli/kb.md`）：`list`、`search`、`read`、`new`、`edit`、`add`、`remove`、`mount`、`delete`、`reindex`；补上 K-7 上那五种拒绝给人看的话 |
-| K-8 | 软件包带来的知识库（N6） |
+| K-8 | 软件包带来的知识库（N6，「对外的样子」那一节、第十条）：包目录里的 `kb/<编号>/`，只读，自动想起人能开关、记在账号自己的 `kb.toml`，列出来带 `package`；卸包时索引、开关一起删（2026-10-13 项目主人定） |
 | K-9 | 关键词触发的条目（N9，照 SillyTavern 的 World Info） |

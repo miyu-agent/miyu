@@ -11,6 +11,7 @@
 | `crates/miyu/src/main.rs` | 子命令 `kb`；换上帮助页 |
 | `crates/miyu-cli/src/kb.rs` | 参数、找数据根、连核心、握手、照子命令发请求、`add` 一个个传、退出码 |
 | `crates/miyu-cli/src/kb/shown.rs` | 库一行、搜到的一段、读的一页印成什么样（纯的，测试里照它算） |
+| `crates/miyu-cli/src/kb/listing.rs` | 列、搜的回应怎么印：`json` 原样，`text` 照 `shown.rs`；列表里有软件包带来的库的先问一次包的名字（施工 K-8 挪出来） |
 | `crates/miyu-cli/src/language/kb.rs` | 给人看的几句，中英文 |
 | `crates/miyu-cli/src/help/{zh,en}/kb.txt` | 帮助页 |
 
@@ -51,7 +52,7 @@
 2. **发**：照上面的表；没给的选项不写那一格。`edit` 名字、说明、开关一样都没写的不发，说一句，退出码 1。
 3. **加文件**：一个个来：`blob.put`（`path` 是照当前目录接好的绝对路径），交回的 `name` 是文件名；路径是 `--to` 加文件名；再 `kb.add`。碰到没成的那一个就停（前面成了的不退），照原话说，退出码 1。传以前先看一遍文件名：扩展名不在认的几种里的（`miyu_store::knowledge::EXTENSIONS`：`.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`）一个都不传，说「只收 …：<文件名>」，退出码 1（施工 K-7 修：核心只回「参数错误。」，还白传一份）。
 4. **印**（标准输出）：
-   - `list`：一个库一行，编号照最长的对齐，后面是名字（和编号一样的不写）、几篇、开了自动想起的接「自动想起」（施工 K-6 补，2026-10-13 项目主人定）、说明（没写的不写），两个空格隔开；挂的目录用不了的接上「（用不了：<为什么>）」。一个都没有的：「还没有知识库。」
+   - `list`：一个库一行，编号照最长的对齐，后面是名字（和编号一样的不写）、几篇、软件包带来的接「随 <包名>」（施工 K-8，2026-10-13 项目主人定；包名照 `package.list`、照界面语言，列表里有包里的才问它，拿不到的照包的编号）、开了自动想起的接「自动想起」（施工 K-6 补，2026-10-13 项目主人定）、说明（没写的不写），两个空格隔开；挂的目录用不了的接上「（用不了：<为什么>）」。一个都没有的：「还没有知识库。」
    - `search`：一块一段，段和段之间空一行：头一行是库、文档、标题路径（PDF 的是「第 <页> 页」，没有标题的不写），两个空格隔开；下面是这一块的字，每行空两格。一块都没有的：「没找到。」
    - `read`：那一页的字；不止一页的另起一行「（第 <页>/<页数> 页）」。
    - 别的一句：「建好了：<库>」「改好了：<库>」「加进去了：<库>/<路径>」（一个文件一行）「挪进回收站了：<位置>」「挂上了：<库>，<几> 篇」「删掉了 <库>，在回收站里：<位置>」「重建好了：<库>，<几> 篇」。
@@ -61,7 +62,7 @@
 
 ```text
 notes  日语笔记  12 篇  学日语的
-world  雾港  4 篇  自动想起  世界观
+world  雾港  4 篇  随 雾港世界观  自动想起  世界观
 usb    U 盘  3 篇（用不了：mounted folder /mnt/usb: No such file or directory (os error 2)）
 ```
 
@@ -95,6 +96,7 @@ manuals  cat.pdf  第 3 页
 | 改好了 | 改好了：{kb} | Updated {kb} |
 | 改什么 | 改什么：写 --name、--description、--auto 或者 --no-auto。 | Nothing to change: give --name, --description, --auto or --no-auto. |
 | 开了自动想起 | 自动想起 | auto recall |
+| 软件包带来的 | 随 {package} | from {package} |
 | 不认的格式 | 只收 .md、.markdown、.txt、.pdf、.html、.htm：{name} | Only .md, .markdown, .txt, .pdf, .html, .htm can be added: {name} |
 | 编号写错 | 库的编号要小写字母开头，只能有小写字母、数字、-、_，最多 64 个：{id} | A knowledge base id starts with a lowercase letter and has only lowercase letters, digits, - and _, at most 64: {id} |
 | 页码出界 | 没有第 {page} 页，一共 {pages} 页。 | There is no page {page}; it has 1 page.、…; it has {pages} pages. |
