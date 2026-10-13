@@ -191,7 +191,8 @@ async fn by_meaning_over_the_threshold_and_only_for_a_model_in_the_table() {
 
 #[tokio::test]
 async fn recall_fills_the_vectors_itself() {
-    // 她不搜也补得上：头一轮库里还没有向量，照意思找不到，后台补上；下一轮换了说法也带得上。
+    // 她不搜也补得上：开头库里还没有向量，头一轮起了后台补；补上以后下一轮换了说法也带得上。头一轮带不带看谁快（后台补和
+    // 照意思那一路并着问同一家），不断言：原来断言头一轮不带，macOS 的 CI 上补得比问得快，偶发红。
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
@@ -206,10 +207,13 @@ async fn recall_fills_the_vectors_itself() {
         "auto = true\n",
         "# 人物\n\n## 艾琳\n\n守灯人，最怕打雷。\n",
     );
-    let handle = session(&home, 2, Lines::default()).await;
-    let log = chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
-    assert!(recalled(&log).is_empty(), "还没有向量");
     let index = home.knowledge.index_of(&alice_account(), "world");
+    assert!(
+        !index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
+        "开头还没有向量"
+    );
+    let handle = session(&home, 2, Lines::default()).await;
+    chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
     for _ in 0..600 {
         if index.missing(MODEL, 0, 10).expect("读得了").is_empty() {
             break;
