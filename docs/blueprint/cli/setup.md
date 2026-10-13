@@ -15,7 +15,7 @@
 | `crates/miyu-cli/src/setup/pick.rs` | 供应商、接口协议、模型的编号表，敲的字认成哪一个，目录里的编号在配置里写成什么 |
 | `crates/miyu-cli/src/setup/flow.rs` | 一步步：拿 key、试、取不到模型列表的问模型名、试不通回到上一步、存、写 |
 | `crates/miyu-cli/src/setup/choose.rs` | 选一家：常用的几家、本机的服务、`--provider` 写的，`--env` 盖过找到的 |
-| `crates/miyu-cli/src/setup/custom.rs` | 自定义的一家：问地址、接口协议，照主机名起配置里的编号（施工 8-11 再补） |
+| `crates/miyu-cli/src/setup/custom.rs` | 自定义的一家：问地址、接口协议，照主机名起配置里的编号（施工 8-11 再补）；试通了问编号，直接回车用起好的（施工 8-11 六补） |
 | `crates/miyu-cli/src/setup/model.rs` | 选主对话的模型 |
 | `crates/miyu-cli/tests/support/onboarding.rs` | 测试用：带模型资料的核心、照剧本回的假终端 |
 | `crates/miyu-cli/src/config/console.rs` | 人那一头 `Console`（和 `miyu config`、`miyu login` 共用） |
@@ -43,7 +43,8 @@
 4. **自定义**（施工 8-11 再补）：
    1. 问「Base URL：」，去掉前后空白和末尾的 `/`。不是 `http://`、`https://` 开头的：说「要以 http:// 或 https:// 开头」，再问。直接回车、读到头：「没选」，退出码 1。
    2. 标准错误上一行头「接口协议：」，列三行：`OpenAI 兼容`、`Anthropic`、`OpenAI Responses`（驱动 `openai-chat`、`anthropic`、`openai-responses`，核心现在会说的三种）。问「选一个编号：」，认法同第 3 条。
-   3. 名字是地址的主机名。配置里的编号照主机名起：本机的（`localhost`、IP）是 `local`；别的取倒数第二段（`api.example.com` 是 `example`），倒数第二段是通用的二级域名（`co`、`com`、`net`、`org`、`edu`、`gov`、`ac`）的再往前一段（`api.example.co.uk` 是 `example`）；写法照第 10 条改（`302.ai` 是 `p-302`）。试通了以后，配置里已经有这个编号的往后加 `-2`、`-3`。
+   3. 名字是地址的主机名。配置里的编号照主机名起：本机的（`localhost`、IP）是 `local`；别的取倒数第二段（`api.example.com` 是 `example`），倒数第二段是通用的二级域名（`co`、`com`、`net`、`org`、`edu`、`gov`、`ac`）的再往前一段（`api.example.co.uk` 是 `example`）；写法照第 10 条改（`302.ai` 是 `p-302`）。试通了以后（或者人说仍然保存），配置里已经有这个编号的往后加 `-2`、`-3`。
+   4. 在终端里的接着问「编号（直接回车用 <起好的>）：」（施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，再接一家只能是 `local-2`，没地方改）：去掉前后空白是空的、和起好的一样的，用起好的；不合「路径里的名字」写法的（小写字母开头，只用小写字母、数字、`-`、`_`，最长 32 个字），说「<敲的> 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字」，再问；配置里已经有的（问一次 `config.get`），说「已经有 <敲的> 了」，再问；读到头：「没选」，退出码 1，什么都不写。贴的 key 存成这个编号（第 8 条）。
 5. **`--provider`**：`provider.catalog` 带 `query` 是它，取 `id` 一模一样、能用的那一家。没有的：说「目录里没有能用的 <编号>」，退出码 2。`provider.detect` 里有它的 key 的，照找到的那个变量用（第一个）。
 6. **key**：
    - 选的是找到的 key：引用那个变量 `{ env = … }`，不复制。写了 `--env` 的照 `--env`。
@@ -112,6 +113,7 @@ Base URL：https://api.example.com/v1/
 Key（不显示，可以空）：
 试一下 api.example.com……
 · 通了：列出 2 个模型。
+编号（直接回车用 example）：
 · example 的 key 存好了
 选主对话的模型：
   1  deepseek-v4.1-flash（推荐）
@@ -227,6 +229,9 @@ Outside a terminal, give --provider and pipe the key in:
 | 自定义的 key | Key（不显示，可以空）： | Key (hidden, may be empty): |
 | 取不到模型列表 | 未获取到模型列表 | Could not get the model list |
 | 问模型名 | 模型名： | Model name: |
+| 自定义的问编号 | 编号（直接回车用 {起好的}）： | ID (Enter for {suggested}): |
+| 编号不合写法 | {敲的} 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字 | {typed} is not a valid ID: start with a lowercase letter, then lowercase letters, digits, - or _, up to 32 characters |
+| 编号已经有了 | 已经有 {敲的} 了 | {typed} is already taken |
 | 目录里没有 | 目录里没有能用的 {id} | No usable provider {id} in the catalog |
 | 要终端 | 要在终端里选，或者写 miyu setup --provider <编号> | Pick in a terminal, or run miyu setup --provider <id> |
 | 试 | 试一下 {name}…… | Trying {name}… |
@@ -250,7 +255,7 @@ Outside a terminal, give --provider and pipe the key in:
 |---|---|
 | `crates/miyu-cli/src/setup/pick/tests.rs` | 编号表照样子（对齐、用不了的不编号且是灰的、最后一行 `0` 只和编号对齐）；敲的编号、`0`、别的字、超出的、直接回车、读到头；目录里的编号在配置里写成什么（`p-302ai`、`wafer-ai`） |
 | `crates/miyu-cli/tests/setup.rs` | 空的配置里写出三个预设的池（空成员、开关开着），已经有池的不写（施工 8-8 补）；在进程里起核心（真目录裁出来的一份，本机的服务和供应商是假服务器）、假终端照剧本回，走一遍（Unix 和 Windows 一样跑）：选一家那张表（常用的几家照先后、已找到 key、已配好、用不了的不编号、本机、最后一行自定义，施工 8-11 再补）；环境变量里的 key 只引用不复制（配置里是 `{ env }`，密钥文件里没有）；贴的 key 先试、通了存成密钥；试不通回到上一步（贴错一次再贴对）；本机的服务写 `local = true`（施工 8-25）；已经配好的只写 `models.chat`；核心看不到的变量说清是哪个、不复制；写出的配置对；推荐的排第一、敲编号换一个；没选、没收到 key；贴 key 那一步取消了（照剧本回的假终端报 `Ctrl+C`），退出码 130，配置文件、密钥文件都没动（施工 8-5 补）；屏幕上、日志里从头到尾没有 key；`miyu ask` 没模型：终端里先走 setup 再说，不是终端的退出码 5、不造会话 |
-| `crates/miyu-cli/tests/setup_custom.rs`、`crates/miyu-cli/src/setup/custom/tests.rs` | 自定义（施工 8-11 再补）：问地址（不是 http、https 开头的再问）、接口协议、key，写 `driver`、`base_url`、`key`（施工 8-25），贴的 key 存成密钥；编号照主机名起（本机、IP 是 `local`，通用的二级域名往前一段，不合写法的加 `p-`），配置里有了的往后加 `-2`；空 key 不存、不写 `key`、不带认证头；列不出模型的印「未获取到模型列表」、问模型名、拿它再试、通了不再列不再问；模型名、地址直接回车是没选、什么都不写 |
+| `crates/miyu-cli/tests/setup_custom.rs`、`crates/miyu-cli/src/setup/custom/tests.rs` | 自定义（施工 8-11 再补）：问地址（不是 http、https 开头的再问）、接口协议、key，写 `driver`、`base_url`、`key`（施工 8-25），贴的 key 存成密钥；编号照主机名起（本机、IP 是 `local`，通用的二级域名往前一段，不合写法的加 `p-`），配置里有了的往后加 `-2`；空 key 不存、不写 `key`、不带认证头；列不出模型的印「未获取到模型列表」、问模型名、拿它再试、通了不再列不再问；模型名、地址直接回车是没选、什么都不写；试通了问编号，自己起的不合写法、配置里已经有的再问，合的用它、key 存成它，读到头是没选（施工 8-11 六补） |
 | `crates/miyu-cli/tests/setup_skip.rs` | 每一步都能用参数跳过：`--provider`、`--env`、`--model` 全写的不问一句；不在终端里的从管道读 key、用推荐的模型；不在终端里又没写 `--provider` 的退出码 2、不连核心；`--provider` 不是目录里能用的退出码 2；不在终端里试不通退出码 1 |
 | `crates/miyu-cli/src/help/tests.rs` | 两页列的选项和程序真有的对得上，最宽 80 列 |
 | `crates/miyu/tests/setup.rs` | 真跑主程序：帮助页跟着界面语言；不在终端里又没写 `--provider` 退出码 2、不拉起核心 |
@@ -284,6 +289,6 @@ Outside a terminal, give --provider and pipe the key in:
 | 目录里的编号不合「路径里的名字」写法的（`302ai`、`wafer.ai`）换一个配置里的编号（`p-302ai`、`wafer-ai`），另写 `catalog`；密钥也用这个名字 | 配置的编号、密钥的名字都只收小写字母开头的那种，照原样写进去 `config.set` 不收 | 这两家不让选：目录里有、选不了，说不清为什么 |
 | 不通的那一行不另写 HTTP 状态：驱动的原话里有（`HTTP 401: …`） | 写两遍；和 `miyu ask` 出错那一行一样 | 照 `status` 另写一段：`HTTP 401：HTTP 401: …` |
 | 用不了的原因照 `driver`、`base_url` 认：`driver` 是 `null` 的认不出接口，`base_url` 是 `null` 的没有地址，都有的是驱动还没有；`provider.detect` 的 `keys` 没有地址那一格，当有地址 | 核心不另交原因；现在用不了的几家（`anthropic`、`openai`）`driver` 都有 | `provider.catalog` 另交一格原因：这一步只有这一处要它 |
-| 自定义的编号由 `miyu setup` 照地址的主机名起，不让人填；撞了的往后加 `-2`、`-3`（施工 8-11 再补，2026-10-08） | 能定的不让人填（`design-for-user-needs`） | 问「起个名字：」：多一问 |
+| 自定义的编号由 `miyu setup` 照地址的主机名起，撞了的往后加 `-2`、`-3`（施工 8-11 再补，2026-10-08）；试通了问一句，直接回车用它（施工 8-11 六补，2026-10-13 项目主人照推荐定） | 局域网的一律叫 `local`，没地方改；直接回车就是原来的样子，多的只是一句 | 不问：第二家局域网的只能叫 `local-2` |
 | 搜整份目录那一步去掉（施工 8-11 再补，2026-10-08） | 项目主人要的是几家加自定义；目录里别的几家照旧能经 `--provider`、配置文件用 | 留一行「从目录里找」：项目主人没要 |
 | 填了模型名试通的，不再列模型、不再问（施工 8-11 再补，2026-10-08） | 人已经说了用哪个；列不出的再列一遍是空的，「照 models.dev 的目录列」那一句也没东西跟着 | 照常问：问一个刚答过的问题 |
