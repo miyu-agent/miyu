@@ -376,6 +376,15 @@ impl ResourceRoot {
         self.read(&["core", "memory", "recall.toml"])
     }
 
+    /// 知识库自动想起的门槛表的原文（`core/knowledge/recall.toml`，施工 K-6 下）：写法同 [`ResourceRoot::memory_recall`]。
+    ///
+    /// # Errors
+    ///
+    /// 读不出来：写明是哪个文件。
+    pub fn knowledge_recall(&self) -> Result<String, SourceError> {
+        self.read(&["core", "knowledge", "recall.toml"])
+    }
+
     /// 认能出向量的模型的规矩的原文（`models/embedding.toml`，施工 R-5 再补）：`model.list` 的 `embedding` 照它标。怎么读由
     /// `miyu_models::embedding` 定。
     ///

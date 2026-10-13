@@ -360,6 +360,34 @@ impl RecallIndex {
         Ok(hits)
     }
 
+    /// 库里的每一条：键、字、时刻，照放进去的先后（施工 K-6 下：知识库的自动想起照标题名挑）。库用不了的是空的。
+    ///
+    /// # Errors
+    ///
+    /// 读不了。
+    pub fn entries(&self) -> Result<Vec<(String, String, Timestamp)>, DbError> {
+        let db = self.lock();
+        let Some(db) = db.as_ref() else {
+            return Ok(Vec::new());
+        };
+        let mut select = db.prepare("SELECT key, text, at FROM items ORDER BY id")?;
+        let rows = select.query_map(params![], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        })?;
+        let mut entries = Vec::new();
+        for row in rows {
+            let (key, text, at) = row?;
+            let at = Timestamp::from_unix_millis(at)
+                .ok_or_else(|| DbError::Bad(format!("time {at}")))?;
+            entries.push((key, text, at));
+        }
+        Ok(entries)
+    }
+
     /// 库里有哪些键，照键排：重建时和真相比，多的拿掉。
     ///
     /// # Errors

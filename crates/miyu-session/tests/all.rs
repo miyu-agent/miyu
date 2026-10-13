@@ -34,6 +34,7 @@ mod jobs_stop;
 mod kb_eval;
 mod knowledge_formats;
 mod knowledge_meaning;
+mod knowledge_recall;
 mod knowledge_tools;
 mod knowledge_write;
 mod limits;

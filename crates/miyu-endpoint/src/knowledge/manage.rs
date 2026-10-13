@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::ContentHash;
 use miyu_store::blob::Blobs;
-use miyu_store::knowledge::Knowledge;
+use miyu_store::knowledge::{BaseFields, Knowledge};
 use miyu_store::layers::valid;
 
 use super::{blocking, read, report, shown_base};
@@ -24,6 +24,9 @@ struct Named {
     name: Option<String>,
     #[serde(default)]
     description: Option<String>,
+    /// 自动想起（施工 K-6 下）：`false` 是拿掉那一格。
+    #[serde(default)]
+    auto: Option<bool>,
     /// 只有 `kb.mount` 要。
     #[serde(default)]
     folder: Option<String>,
@@ -74,23 +77,21 @@ async fn named(
     let renaming = method == "kb.update";
     if !valid(&named.kb)
         || named.folder.is_some() != mount
-        || (renaming && named.name.is_none() && named.description.is_none())
+        || (renaming && named.name.is_none() && named.description.is_none() && named.auto.is_none())
     {
         return Err(Refusal::BAD_PARAMS);
     }
     let account = core.admin.clone();
     let (base, skipped) = blocking(move || {
-        let (name, description) = (named.name.as_deref(), named.description.as_deref());
+        let fields = BaseFields {
+            name: named.name.as_deref(),
+            description: named.description.as_deref(),
+            auto: named.auto,
+        };
         match (named.folder.as_deref(), renaming) {
-            (Some(folder), _) => knowledge.mount(&account, &named.kb, folder, name, description),
-            (None, true) => Ok((
-                knowledge.rename(&account, &named.kb, name, description)?,
-                Vec::new(),
-            )),
-            (None, false) => Ok((
-                knowledge.found(&account, &named.kb, name, description)?,
-                Vec::new(),
-            )),
+            (Some(folder), _) => knowledge.mount(&account, &named.kb, folder, fields),
+            (None, true) => Ok((knowledge.rename(&account, &named.kb, fields)?, Vec::new())),
+            (None, false) => Ok((knowledge.found(&account, &named.kb, fields)?, Vec::new())),
         }
     })
     .await?;

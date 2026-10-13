@@ -149,6 +149,7 @@ fn shown_base(base: Base) -> Value {
         "description": base.description,
         "documents": base.documents,
         "chunks": base.chunks,
+        "auto": base.auto,
     });
     if let Some(error) = base.error {
         value["error"] = Value::String(error);

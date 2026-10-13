@@ -7,6 +7,7 @@
 //! 线程里做。搜的时候照意思找（施工 K-2，`knowledge.md`「怎么走」第四条）：同记忆，问句照这一轮的配置算向量，搜完在后台补
 //! 搜过的几个库缺的向量。
 
+pub(crate) mod recall;
 mod write;
 
 use std::path::PathBuf;
@@ -46,6 +47,8 @@ pub(crate) struct Shelving {
     pub(crate) owner: AccountId,
     pub(crate) home: Option<PathBuf>,
     pub(crate) vectors: Option<Arc<Vectors>>,
+    /// 自动想起要的字（施工 K-6 下，`knowledge/recall.rs`）：读不出来的这个会话不自动想起。
+    pub(crate) recall: Option<Arc<recall::RecallTexts>>,
 }
 
 /// 一个会话查知识库要的：照哪个账号查，和 [`Shelving`] 的那几样。
@@ -57,6 +60,7 @@ pub(crate) struct Shelves {
     owner: AccountId,
     home: Option<PathBuf>,
     vectors: Option<Arc<Vectors>>,
+    recall: Option<Arc<recall::RecallTexts>>,
 }
 
 impl Shelves {
@@ -69,6 +73,7 @@ impl Shelves {
             owner,
             home,
             vectors,
+            recall,
         } = shelving;
         Shelves {
             knowledge,
@@ -78,6 +83,15 @@ impl Shelves {
             owner,
             home,
             vectors,
+            recall,
+        }
+    }
+
+    /// 照这一轮的配置 `config` 算向量要的：远程的花费记在会话的属主名下（施工 K-2）。
+    pub(crate) fn using(&self, config: &TurnConfig) -> Using {
+        Using {
+            config: Arc::clone(config),
+            owner: self.owner.clone(),
         }
     }
 
@@ -219,10 +233,7 @@ pub(crate) fn port(
     let shelves = shelves?;
     Some(Arc::new(Port {
         shelves: Arc::clone(shelves),
-        using: Using {
-            config: Arc::clone(config),
-            owner: shelves.owner.clone(),
-        },
+        using: shelves.using(config),
     }))
 }
 
@@ -319,7 +330,8 @@ fn search(
     Ok((hits, only))
 }
 
-/// 搜过的几个库在后台补缺的向量（施工 K-2，同记忆的「搜的时候补」）：一个库同一时刻只有一个在补，`off` 的不补。
+/// 几个库在后台补缺的向量：搜过的（施工 K-2，同记忆的「搜的时候补」）、自动想起的（K-6 下）。一个库同一时刻只有一个在补，
+/// `off` 的不补。
 fn fill(shelves: &Shelves, using: &Using, searched: Vec<String>) {
     let Some(vectors) = &shelves.vectors else {
         return;
@@ -370,7 +382,7 @@ fn failed(error: &KnowledgeError) -> KbRefused {
 }
 
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。
-fn report(skipped: &[Skipped]) {
+pub(crate) fn report(skipped: &[Skipped]) {
     for one in skipped {
         tracing::warn!(target: TARGET, kb = one.kb.as_str(), path = one.path.as_str(), why = one.why.as_str(), "knowledge document skipped");
     }

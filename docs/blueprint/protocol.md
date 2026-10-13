@@ -687,12 +687,12 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks"}…]}`，照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）。`kb.search` 跳过挂的目录用不了的库 |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）。`kb.search` 跳过挂的目录用不了的库 |
 | `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的那一块多 `page`（施工 K-5） |
 | `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字，网页是换出来的字（施工 K-5） |
-| `kb.create` | `kb`，必写；`name`、`description`（可以不写） | 一个库（同 `kb.list` 的一项） |
-| `kb.update` | `kb`，必写；`name`、`description`（至少写一个，空字符串是拿掉） | 一个库 |
-| `kb.mount` | `kb`、`folder`（绝对路径或 `~/` 开头），必写；`name`、`description` | 一个库（照挂的目录补完的） |
+| `kb.create` | `kb`，必写；`name`、`description`、`auto`（布尔，施工 K-6 下）（可以不写） | 一个库（同 `kb.list` 的一项） |
+| `kb.update` | `kb`，必写；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉） | 一个库 |
+| `kb.mount` | `kb`、`folder`（绝对路径或 `~/` 开头），必写；`name`、`description`、`auto` | 一个库（照挂的目录补完的） |
 | `kb.delete` | `kb` | `{"trash"}`：整个库目录在回收站里的位置 |
 | `kb.add` | `kb`、`path`、`blob`（`blob.put`、分块上传交回的），必写；`replace`（布尔，不写 `false`） | `{}` |
 | `kb.remove` | `kb`、`path` | `{"trash"}`：这一篇在回收站里的位置 |

@@ -17,6 +17,9 @@ pub struct About {
     /// 挂进来的目录（施工 K-4）：绝对路径，或者 `~/` 开头；路径照写的原样，换成真实位置是调的一方的事。没写的是自己的库。
     #[serde(default)]
     pub mount: Option<String>,
+    /// 自动想起（施工 K-6 下，19 N5）：`true` 的库，人说的话提到了它的某一段，回合开始就带给她。没写的是关（默认关）。
+    #[serde(default)]
+    pub auto: Option<bool>,
 }
 
 /// 读 `kb.toml` 的字。
@@ -41,8 +44,11 @@ mod tests {
                 name: Some("日语笔记".into()),
                 description: Some("学日语的笔记".into()),
                 mount: None,
+                auto: None,
             }
         );
+        assert_eq!(about("auto = true\n").expect("合写法").auto, Some(true));
+        assert!(about("auto = \"yes\"\n").is_err());
         assert_eq!(
             about("mount = \"~/notes\"\n")
                 .expect("合写法")

@@ -10,6 +10,7 @@ pub mod meaning;
 mod opening;
 pub mod package;
 pub mod remote_embedding;
+pub mod resources;
 pub mod routing;
 mod scratch;
 pub mod table;

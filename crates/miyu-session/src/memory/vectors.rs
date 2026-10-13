@@ -175,6 +175,12 @@ impl Vectors {
         }
     }
 
+    /// 照 `using` 会用哪个模型（施工 K-6 下：知识库的自动想起先看门槛表里有没有它，没有的不算向量，远程的不白花钱）；`off`
+    /// 的、要本机的却没有的没有。
+    pub(crate) fn model(&self, using: &Using) -> Option<String> {
+        self.way(using).map(|(model, _)| model)
+    }
+
     /// 照 `using` 算问句 `text` 的向量，最多等 1 秒（冷的核对、拉起都算在里面）；`off` 的、用不了、算不出、等不到的没有。
     pub async fn query(&self, using: &Using, text: &str) -> Option<Query> {
         let (model, way) = self.way(using)?;

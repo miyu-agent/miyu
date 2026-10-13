@@ -52,7 +52,7 @@ async fn list_search_and_read() {
     );
     assert_eq!(
         bases[1],
-        json!({"id": "notes", "name": "日语笔记", "description": "学日语的笔记", "documents": 1, "chunks": 1}),
+        json!({"id": "notes", "name": "日语笔记", "description": "学日语的笔记", "documents": 1, "chunks": 1, "auto": false}),
         "{listed}"
     );
 

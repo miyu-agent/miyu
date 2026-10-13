@@ -1,4 +1,5 @@
-//! 联想那一块（施工 R-8）：这一段交过的照 `present` 算（模块 `memory` 两类都算，联想带过几条只数 `recall`，别的模块不算）；
+//! 联想那一块（施工 R-8）：这一段交过的照 `present` 算（模块 `memory` 两类都算，联想带过几条只数 `recall`，连同知识库自动想起
+//! 的，施工 K-6 下；别的模块不算）；
 //! 一块逐字节对、换行写成空格、日期照时区；超过 500 字节的那一行和以后的不加，一行都放不下的没有。
 
 use std::path::Path;
@@ -53,10 +54,14 @@ fn what_was_brought_is_counted_from_present() {
         present("memory", "recall", &["m3"]),
         present("memory", "recall", &["m4", "m5"]),
         present("roleplay", "recall", &["m9"]),
+        present("knowledge", "recall", &["world/people.md#0"]),
     ]);
     let ids: Vec<String> = ids.iter().map(ToString::to_string).collect();
     assert_eq!(ids, ["m1", "m2", "m3", "m4", "m5"], "别的模块不算");
-    assert_eq!(brought, 3, "只数联想带过的");
+    assert_eq!(
+        brought, 4,
+        "数联想带过的，连同知识库自动想起带过的（施工 K-6 下，共用一份预算）"
+    );
     assert_eq!(seen(&[]).1, 0);
 }
 

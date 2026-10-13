@@ -20,8 +20,32 @@ use super::write::{existing, trash_refused};
 use super::{Base, Knowledge, KnowledgeError, Skipped};
 use crate::layers::valid;
 
+/// 建库、改库、挂目录时 `kb.toml` 写的几格：不写的（`None`）不动；空字符串、`false` 是拿掉那一格。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct BaseFields<'a> {
+    /// 给人看的名字。
+    pub name: Option<&'a str>,
+    /// 一句话说这个库是什么。
+    pub description: Option<&'a str>,
+    /// 自动想起（施工 K-6 下，19 N5）：`true` 写上，`false` 拿掉（默认关）。
+    pub auto: Option<bool>,
+}
+
+impl BaseFields<'_> {
+    /// 写进 `kb.toml` 的几格：键、值。
+    fn values(&self) -> Vec<(&'static str, Option<Value>)> {
+        let text =
+            |value: Option<&str>| value.map(|value| Value::Text(Cow::Owned(value.to_string())));
+        vec![
+            ("name", text(self.name)),
+            ("description", text(self.description)),
+            ("auto", self.auto.map(Value::Bool)),
+        ]
+    }
+}
+
 impl Knowledge {
-    /// 建库 `kb`，`name`、`description` 写进 `kb.toml`（不写的不写）。
+    /// 建库 `kb`，`fields` 写进 `kb.toml`（不写的不写）。
     ///
     /// # Errors
     ///
@@ -30,16 +54,15 @@ impl Knowledge {
         &self,
         account: &AccountId,
         kb: &str,
-        name: Option<&str>,
-        description: Option<&str>,
+        fields: BaseFields<'_>,
     ) -> Result<Base, KnowledgeError> {
         let dir = self.vacant(account, kb)?;
         std::fs::create_dir_all(&dir).map_err(io)?;
-        about(&dir, &[("name", name), ("description", description)])?;
+        about(&dir, fields.values())?;
         self.counted(account, kb, None)
     }
 
-    /// 改库 `kb` 的名字、说明：不写的不动，空字符串是拿掉；`kb.toml` 里别的照原样。
+    /// 改库 `kb` 的名字、说明、自动想起（`fields`）：不写的不动，空字符串、`false` 是拿掉；`kb.toml` 里别的照原样。
     ///
     /// # Errors
     ///
@@ -48,11 +71,10 @@ impl Knowledge {
         &self,
         account: &AccountId,
         kb: &str,
-        name: Option<&str>,
-        description: Option<&str>,
+        fields: BaseFields<'_>,
     ) -> Result<Base, KnowledgeError> {
         let dir = self.dir(account, kb)?;
-        about(&dir, &[("name", name), ("description", description)])?;
+        about(&dir, fields.values())?;
         self.counted(account, kb, None)
     }
 
@@ -66,21 +88,15 @@ impl Knowledge {
         account: &AccountId,
         kb: &str,
         folder: &str,
-        name: Option<&str>,
-        description: Option<&str>,
+        fields: BaseFields<'_>,
     ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
         let dir = self.vacant(account, kb)?;
         self.mounted(folder)
             .map_err(KnowledgeError::FolderUnavailable)?;
         std::fs::create_dir_all(&dir).map_err(io)?;
-        about(
-            &dir,
-            &[
-                ("name", name),
-                ("description", description),
-                ("mount", Some(folder)),
-            ],
-        )?;
+        let mut values = fields.values();
+        values.push(("mount", Some(Value::Text(Cow::Owned(folder.to_string())))));
+        about(&dir, values)?;
         self.catch_up(account, kb)
     }
 
@@ -176,19 +192,19 @@ impl Knowledge {
     }
 }
 
-/// 库目录 `dir` 的 `kb.toml` 照 `fields` 改：没写的（`None`）不动，空字符串拿掉，别的写成字。没有 `kb.toml` 的新建。
-fn about(dir: &Path, fields: &[(&str, Option<&str>)]) -> Result<(), KnowledgeError> {
+/// 库目录 `dir` 的 `kb.toml` 照 `fields` 改：没写的（`None`）不动，空字符串、`false` 拿掉，别的写上。没有 `kb.toml` 的新建。
+fn about(dir: &Path, fields: Vec<(&'static str, Option<Value>)>) -> Result<(), KnowledgeError> {
     let file = std::fs::canonicalize(dir).map_err(io)?.join("kb.toml");
     let mut text = match std::fs::read_to_string(&file) {
         Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
         Err(error) => return Err(io(error)),
     };
-    for (key, value) in fields {
-        let value = value.map(|value| Value::Text(Cow::Owned(value.to_string())));
-        let change = match &value {
+    for (key, value) in &fields {
+        let change = match value {
             None => continue,
             Some(Value::Text(text)) if text.is_empty() => Change::Unset(key),
+            Some(Value::Bool(false)) => Change::Unset(key),
             Some(value) => Change::Set(key, value),
         };
         text = apply(&text, change).map_err(|blocked| {

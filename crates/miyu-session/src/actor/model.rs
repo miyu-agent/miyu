@@ -23,6 +23,7 @@ use super::{Actor, answer};
 use crate::TARGET;
 use crate::config::TurnConfig;
 use crate::handle::Pushed;
+use crate::knowledge::Shelves;
 use crate::lines::{millis, where_};
 use crate::memory::Calls;
 use crate::port::{Cancel, Report, Reports, Sight};
@@ -147,7 +148,8 @@ impl Actor {
         let policy = self.refresh_persona(values).await;
         let skills = self.skills_turn(&present).await;
         let config = Arc::clone(self.config.current());
-        let mut injected = hooks(self.tools.memory(), present, said, config).await;
+        let knowledge = self.recalling();
+        let mut injected = hooks(self.tools.memory(), knowledge, present, said, config).await;
         injected.extend(skills);
         Input::TurnStartHooksDone {
             policy,
@@ -157,6 +159,18 @@ impl Actor {
             injected,
             replaced,
         }
+    }
+
+    /// 自动想起问谁（施工 K-6 下，`knowledge.md` 第九条）：会话这一刻的工具面上有 `kb_search` 的（知识库这个包装着、预设开着、
+    /// 查得到至少一个库），它的知识库。
+    fn recalling(&self) -> Option<Arc<Shelves>> {
+        let refresh = self.persona.as_ref()?;
+        let on = refresh
+            .snapshot
+            .tools
+            .iter()
+            .any(|tool| tool.name == miyu_tool::KB_SEARCH);
+        refresh.knowledge.clone().filter(|_| on)
     }
 
     /// 限额 `limits` 变了的交给内核；给头看的照内核算的限额、端口的引用和模型写一次。
@@ -321,12 +335,35 @@ fn finished(
     }
 }
 
-/// 问回合开始的挂接点（施工 R-4 上，`memory.md` 第三条）：现在只有记忆一个（`memory` 是它的端口和会话的时区），交常驻的
-/// 摘要和联想（施工 R-8，第四条：`said` 是这一轮人说的话，不是人开的一轮没有；照意思找照这一轮的配置 `config`）；`present`
-/// 是内核交来的这一段上下文里模块注入过的。先问摘要、再问联想（联想要知道这一轮摘要列了哪几条，不重复带），各自限时
-/// [`HOOKS`]：过了的那一件当这一轮没交，记一行 `DEBUG`（那次读在阻塞线程里照样读完，交回的丢掉）。第二个挂接点来了再并行问、
-/// 照模块编号排。
+/// 问回合开始的挂接点：记忆（施工 R-4 上，`memory.md` 第三条；`memory` 是它的端口和会话的时区）交常驻的摘要和联想（施工
+/// R-8，第四条），知识库（施工 K-6 下，`knowledge.md` 第九条；`knowledge` 是会话的知识库）交自动想起。`said` 是这一轮人说的话，
+/// 不是人开的一轮没有；照意思找照这一轮的配置 `config`；`present` 是内核交来的这一段上下文里模块注入过的。两个挂接点并行问，
+/// 照模块编号排（知识库在记忆前面）；各自限时 [`HOOKS`]：过了的那一件当这一轮没交，记一行 `DEBUG`（那次读在阻塞线程里照样
+/// 读完，交回的丢掉）。
 async fn hooks(
+    memory: Option<(Calls, UtcOffset)>,
+    knowledge: Option<Arc<Shelves>>,
+    present: Vec<Present>,
+    said: Option<String>,
+    config: TurnConfig,
+) -> Vec<Injection> {
+    let known = async {
+        let (shelves, said) = (knowledge?, said.as_deref()?);
+        let using = shelves.using(&config);
+        timed(
+            "knowledge",
+            "recall",
+            shelves.recall(&using, said, &present),
+        )
+        .await
+    };
+    let remembered = remember(memory, present.clone(), said.clone(), Arc::clone(&config));
+    let (known, remembered) = tokio::join!(known, remembered);
+    known.into_iter().chain(remembered).collect()
+}
+
+/// 记忆那一个挂接点：先问摘要、再问联想（联想要知道这一轮摘要列了哪几条，不重复带）。
+async fn remember(
     memory: Option<(Calls, UtcOffset)>,
     present: Vec<Present>,
     said: Option<String>,
@@ -335,7 +372,7 @@ async fn hooks(
     let Some((memory, offset)) = memory else {
         return Vec::new();
     };
-    let summary = timed("summary", memory.summary(offset, present.clone())).await;
+    let summary = timed("memory", "summary", memory.summary(offset, present.clone())).await;
     let Some(said) = said else {
         return summary.into_iter().collect();
     };
@@ -346,19 +383,25 @@ async fn hooks(
         kind: injection.fact.kind.clone(),
         refs: injection.fact.refs.clone(),
     }));
-    let recall = timed("recall", memory.recall(said, offset, seen, &config)).await;
+    let recall = timed(
+        "memory",
+        "recall",
+        memory.recall(said, offset, seen, &config),
+    )
+    .await;
     summary.into_iter().chain(recall).collect()
 }
 
-/// 限时 [`HOOKS`] 等挂接点的一件（`part`：`summary`、`recall`）；过了的没有，记一行 `DEBUG`。
+/// 限时 [`HOOKS`] 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`recall`）；过了的没有，记一行 `DEBUG`。
 async fn timed(
+    module: &'static str,
     part: &'static str,
     asked: impl Future<Output = Option<Injection>>,
 ) -> Option<Injection> {
     match tokio::time::timeout(HOOKS, asked).await {
         Ok(injected) => injected,
         Err(_) => {
-            tracing::debug!(target: TARGET, module = "memory", part, "turn start hook timed out");
+            tracing::debug!(target: TARGET, module, part, "turn start hook timed out");
             None
         }
     }

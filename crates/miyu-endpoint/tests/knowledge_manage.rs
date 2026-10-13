@@ -49,7 +49,7 @@ async fn creating_renaming_adding_and_reindexing() {
         .await;
     assert_eq!(
         created["result"],
-        json!({"id": "notes", "name": "笔记", "description": "学日语的", "documents": 0, "chunks": 0}),
+        json!({"id": "notes", "name": "笔记", "description": "学日语的", "documents": 0, "chunks": 0, "auto": false}),
         "{created}"
     );
     let again = client.call("c2", "kb.create", json!({"kb": "notes"})).await;
@@ -59,6 +59,19 @@ async fn creating_renaming_adding_and_reindexing() {
         .await;
     assert_eq!(renamed["result"]["name"], "日语", "{renamed}");
     assert_eq!(renamed["result"]["description"], "学日语的");
+    // 自动想起的开关（施工 K-6 下）：只写 `auto` 也算改了一格，`false` 拿掉。
+    let on = client
+        .call("u2", "kb.update", json!({"kb": "notes", "auto": true}))
+        .await;
+    assert_eq!(
+        (&on["result"]["auto"], &on["result"]["name"]),
+        (&json!(true), &json!("日语")),
+        "{on}"
+    );
+    let off = client
+        .call("u3", "kb.update", json!({"kb": "notes", "auto": false}))
+        .await;
+    assert_eq!(off["result"]["auto"], false, "{off}");
 
     let blob = upload(&mut client, "b1", "a.md", "团子是橘猫\n").await;
     let added = client
@@ -186,6 +199,11 @@ async fn wrong_requests_are_refused() {
             "bad_params",
         ),
         ("kb.update", json!({"kb": "notes"}), "bad_params"),
+        (
+            "kb.update",
+            json!({"kb": "notes", "auto": "yes"}),
+            "bad_params",
+        ),
         (
             "kb.update",
             json!({"kb": "nope", "name": "x"}),

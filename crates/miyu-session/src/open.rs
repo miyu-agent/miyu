@@ -123,6 +123,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             owner: owner.clone(),
             home: home.map(Path::to_path_buf),
             vectors,
+            recall: crate::knowledge::recall::texts(&shipped),
         };
         Arc::new(Shelves::new(shelving, memory_account.clone()))
     });

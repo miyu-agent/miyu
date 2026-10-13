@@ -121,6 +121,7 @@ impl Knowledge {
             documents: shelf.index.stamps()?.len(),
             chunks: shelf.index.keys()?.len(),
             error: unavailable.or(error),
+            auto: about.auto.unwrap_or(false),
         })
     }
 }

@@ -356,6 +356,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 owner: owner.clone(),
                 home: home.map(Path::to_path_buf),
                 vectors,
+                recall: crate::knowledge::recall::texts(&shipped),
             })
             .await,
         ),

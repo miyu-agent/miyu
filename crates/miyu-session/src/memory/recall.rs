@@ -151,7 +151,8 @@ impl Keeper {
     }
 }
 
-/// 这一段上下文里模块 `memory` 交过的编号（常驻那一块的、联想带过的），和联想累计带过几条。
+/// 这一段上下文里模块 `memory` 交过的编号（常驻那一块的、联想带过的），和联想累计带过几条：知识库的自动想起带过的也算进去
+/// （施工 K-6 下，19 N5 共用一份预算）。
 fn seen(present: &[Present]) -> (BTreeSet<MemoryId>, usize) {
     let ours = present
         .iter()
@@ -161,8 +162,15 @@ fn seen(present: &[Present]) -> (BTreeSet<MemoryId>, usize) {
         .flat_map(|present| present.refs.iter())
         .filter_map(|id| MemoryId::parse(id))
         .collect();
-    let brought = ours
+    let brought = present
+        .iter()
         .filter(|present| present.kind.as_str() == KIND)
+        .filter(|present| {
+            matches!(
+                present.module.as_str(),
+                MODULE | crate::knowledge::recall::MODULE
+            )
+        })
         .map(|present| present.refs.len())
         .sum();
     (seen, brought)

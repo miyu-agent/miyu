@@ -191,7 +191,7 @@
 
    合计照旧不超过 3000 字节，超了截新记的那几行，最后一行说还有几条；之后什么都没记的只有摘要一行。`refs` 是列出来的那几条，摘要那一行不算一条。摘要不算了的（第七条第 8 款）照上面只列条目。2026-10-10 照开发端点量：同样的事，摘要模式的一块 121 token，只列条目 201。
 3. **上限**：整块不超过 3000 字节（`memory/summary.rs` 的 `LIMIT`）。起点是约 1000 token；中文为主的一块照字节/4 折算会少算，2026-10-08 在开发端点量过 4000 字节 1298 token、3000 字节 964 token，所以取 3000。超了截在一条的边界上，最后一行写还有几条：`…and 12 more; memory_search finds them.`。
-4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。现在只有记忆这一个挂接点（摘要、联想两件，第四条第 6 款）；第二个来了再并行问、照模块编号排。
+4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。记忆这一个挂接点有摘要、联想两件（第四条第 6 款）；知识库的自动想起（施工 K-6 下，`knowledge.md` 第九条）和它并着问、照模块编号排。
 5. **读字**：外壳和截了的那一句（`resources/software/memory/summary/` 的 `open.txt`、`close.txt`、`more.txt`，登记簿）核心起来时照 `miyu_tool::load` 读好，交给 `Memory`（`SummaryTexts`）。读不出来的（安装坏了）这个核心不交摘要，记一行 `WARN memory summary texts unreadable error=…`；列记忆出错的那一轮不交，记一行 `WARN memory summary not read error=…`。
 6. 整理改了摘要，跑着的会话不跟：压缩以后、新会话才换（R-7）。
 7. **内核的接口**（R-4 上，2026-10-08 和核心的主会话定）：
@@ -206,7 +206,7 @@
 2. **过门槛才带**，宁可不带：照这一轮的配置算 `said` 的向量（同 `memory_search`，`Vectors::query`；人说的话只拿前 1000 个字），在这一间记下的记忆里找最像的 32 条，只留现在算数的、出处活着的、听众合的，相似度过门槛的才带（`miyu_recall::associate::pick`）。门槛照模型，数据在 `resources/core/memory/recall.toml`：`local:bge-small-zh-v1.5` 是 0.60。表里没有的模型（远程的、换了的本机模型）不联想：没量过的不知道多像才算像。没有照意思那一路的（没装内置语义模型、`models.embedding` 是 `off`、算不出、等不到）不联想（2026-10-10 项目主人定）。关键词那一路不参与：两字切分里「什么」「怎么」这类到处都有，测评集上加进来平常的话误带一成半以上。不找以前的对话（回合索引）：测评集还没量它。
 3. **测评集上量的**（`memory/eval.md`，2026-10-10，bge-small-zh-v1.5，门槛 0.60）：平常的话（`none`）13 句一句都不带；带了的里 72% 正是该带的，其余多半沾边；能答的问句 45% 这一轮带对了（换了说法的 17%，「严」的代价）。平常的话最像的那一条在 0.43 到 0.60 之间。
 4. **交什么**：一块 `context.injected`，模块 `memory`、类别 `recall`（常驻那一块是 `memory`，`present` 照类别分），`refs` 是带的那几条。外壳 `<recalled>`、`</recalled>`（`resources/software/memory/recall/`，登记簿），中间一条一行，和常驻那一块、`memory_search` 的一行同一个写法（`m12 user 2026-10-08: …`，日期照会话的时区，正文的换行换成空格）：会话的事实里有今天的日期，不另写「几天前」。不带出处和原话，要细节她用 `memory_search`。最像的在前，最多 3 条，一块不超过 500 字节（约 150 token，`memory/recall.rs` 的 `LIMIT`），放不下的那一行和以后的不加。
-5. **不重复**：这一段上下文里模块 `memory` 交过的不带：`present` 里常驻那一块、之前联想那几块的 `refs`，连同这一轮常驻那一块列的（挂接点先问常驻那一块，再问联想）。最近一次压缩以后联想累计带过 40 条（约 2000 token）就不再带，压缩以后从零数（照 `present` 数，派生的，不另存）。
+5. **不重复**：这一段上下文里模块 `memory` 交过的不带：`present` 里常驻那一块、之前联想那几块的 `refs`，连同这一轮常驻那一块列的（挂接点先问常驻那一块，再问联想）。最近一次压缩以后联想累计带过 40 条（约 2000 token）就不再带，压缩以后从零数（照 `present` 数，派生的，不另存）；知识库的自动想起带过的也算在这 40 条里（施工 K-6 下，19 N5 共用一份预算，`knowledge.md` 第九条）。
 6. **时限**：和常驻那一块同一个挂接点，先问常驻那一块、再问联想，各自限时 300 毫秒（`actor/model.rs` 的 `HOOKS`）；过了的那一件这一轮不交，记一行 `DEBUG turn start hook timed out module=memory part=recall`。
 7. **出错**：读不了记忆日志、记忆库的，这一轮不带，记一行 `WARN memory recall not read error=…`；核心起来时外壳的字、门槛表读不出来的，这个核心不联想，记一行 `WARN memory recall texts unreadable error=…`（目标 `miyu::endpoint`）。
 8. **疲劳**（被想起的次数越多分越低，旧版一条被召回 5197 次）不做（第八条第 5 款，2026-10-11 项目主人定）：旧版的毛病是每轮都带，这里一段上下文里交过的不再带（第 5 款），一条被想起几千次的事不会出现。

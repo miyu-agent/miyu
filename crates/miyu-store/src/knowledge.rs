@@ -27,6 +27,7 @@ use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
 pub use extract::beside as extractor_beside;
+pub use manage::BaseFields;
 pub use read::Page;
 pub use write::Written;
 
@@ -72,6 +73,8 @@ pub struct Base {
     pub chunks: usize,
     /// `kb.toml` 读不出来的、挂的目录用不了的（施工 K-4）为什么。
     pub error: Option<String>,
+    /// 自动想起开着（`kb.toml` 的 `auto`，施工 K-6 下）。
+    pub auto: bool,
 }
 
 /// 搜到的一块。
@@ -292,6 +295,42 @@ impl Knowledge {
             about.name.unwrap_or_else(|| id.to_string()),
             about.description.unwrap_or_default(),
         ))
+    }
+
+    /// 库 `id` 开着自动想起没有（`kb.toml` 的 `auto`，施工 K-6 下）：`kb.toml` 写错的、没写的当关着。不补索引。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个库。
+    pub fn auto(&self, account: &AccountId, id: &str) -> Result<bool, KnowledgeError> {
+        let dir = self.dir(account, id)?;
+        Ok(catch_up::about(&dir).0.auto.unwrap_or(false))
+    }
+
+    /// 库 `id` 的每一段（施工 K-6 下，自动想起照标题名挑、照它拼）：先照文件补，交回索引里的每一块写成搜到的那样，和跳过的
+    /// 文档。挂的目录用不了的是空的（不补、不报错，同搜的时候跳过）。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个库；目录、索引读不了。
+    pub fn sections(
+        &self,
+        account: &AccountId,
+        id: &str,
+    ) -> Result<(Vec<Hit>, Vec<Skipped>), KnowledgeError> {
+        let skipped = match self.catch_up(account, id) {
+            Ok((_, skipped)) => skipped,
+            Err(KnowledgeError::Unavailable(_)) => return Ok((Vec::new(), Vec::new())),
+            Err(error) => return Err(error),
+        };
+        let shelf = self.shelf(account, id);
+        let hits = shelf
+            .index
+            .entries()?
+            .into_iter()
+            .filter_map(|(key, text, at)| catch_up::hit(id, &key, &text, at))
+            .collect();
+        Ok((hits, skipped))
     }
 
     /// 库 `id` 开着的索引（施工 K-2）：会话照它在后台补缺的向量（同记忆的回合库）。库在不在不查：没有的照样开一份空的。
