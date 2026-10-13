@@ -1,4 +1,5 @@
-//! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话开局只读
+//! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话的权限级别
+//! `permission.level`（施工 8-32），新会话开局只读
 //! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上）。
 //!
 //! 核心起来时照 `ui.language` 的最终值挑生成的文件用哪种语言；握手时照它和头报的系统语言算这个连接的语言（第二条
@@ -80,6 +81,14 @@ miyu_config::settings! {
             tighten: true_only,
             applies: new_session,
             ui: { page: "general", group: "sessions", control: toggle },
+        },
+        /// 新会话开局的权限级别（施工 8-32）：`workspace` 是工作区（执行命令在沙盒里跑），`full` 是完全放开。头的第一次
+        /// 引导里「沙盒」那一步写它，开是 `workspace`（2026-10-13 项目主人定：默认开）。只管本机的会话：场所会话照旧从工作区开局。
+        level: String = "workspace" {
+            kind: option ["workspace", "full"],
+            layers: [System, Personal],
+            applies: new_session,
+            ui: { page: "general", group: "sessions", control: select },
         },
     }
 }

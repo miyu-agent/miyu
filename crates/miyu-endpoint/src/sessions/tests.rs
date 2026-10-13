@@ -12,8 +12,9 @@ use miyu_session::{Child, Lineage};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::{Opening, local};
+use super::{Opening, local, opening_level};
 use crate::Core;
+use crate::settings::PermissionSettings;
 use crate::test_support::{resources, temp_root};
 
 #[tokio::test]
@@ -107,4 +108,25 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录留着：{error}");
     }
+}
+
+/// 开局的级别（施工 8-32）：本机开的照 `permission.level`，认不出的、场所会话一律从工作区开局。
+#[test]
+fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
+    let settings = |level: &str| PermissionSettings {
+        start_read_only: false,
+        level: level.to_string(),
+    };
+    assert_eq!(opening_level(&settings("full"), None), Level::Full);
+    assert_eq!(
+        opening_level(&settings("workspace"), None),
+        Level::Workspace
+    );
+    assert_eq!(opening_level(&settings("other"), None), Level::Workspace);
+    let venue = local();
+    assert_eq!(
+        opening_level(&settings("full"), Some(&venue)),
+        Level::Workspace,
+        "场所会话照旧"
+    );
 }

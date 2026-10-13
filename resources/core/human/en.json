@@ -75,6 +75,14 @@
         "name": "Default preset",
         "description": "The preset new sessions use."
       },
+      "permission.level": {
+        "name": "Permission level for new sessions",
+        "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.",
+        "options": {
+          "workspace": "Workspace (sandbox)",
+          "full": "Full access"
+        }
+      },
       "permission.start_read_only": {
         "name": "Start new sessions read-only",
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."

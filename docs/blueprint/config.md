@@ -298,6 +298,7 @@ miyu_config::settings! {
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
+- `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
 - 蓝图里写着「配置那一步能改」的几个数（压缩的几个数、`jobs.*`、回收处留几天、空闲多久退出）这次不挪：只挪真要调的（2026-10-01 主会话定）。有人要改哪一个，再为它开一张小单。
@@ -1064,6 +1065,10 @@ listen = 8301
 # whitelist =
 
 [permission]
+# 新会话的权限级别：新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。
+# 能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。
+level = "workspace"
+
 # 新会话开局只读：打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。
 # 能写：true 或 false。只能写在系统配置、个人设置或项目配置里。新会话生效。
 start_read_only = false
@@ -1403,6 +1408,16 @@ currency = "USD"
     },
     "permission": {
       "properties": {
+        "level": {
+          "default": "workspace",
+          "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。",
+          "enum": [
+            "workspace",
+            "full"
+          ],
+          "title": "新会话的权限级别",
+          "type": "string"
+        },
         "start_read_only": {
           "default": false,
           "description": "打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。能写：true 或 false。只能写在系统配置、个人设置或项目配置里。新会话生效。",
@@ -1808,6 +1823,9 @@ currency = "USD"
 | 选项（8-28 改了 `info`、`debug`、`trace` 三个：照多少排，一眼看出哪个更细） | `error` 只记错误、`warn` 错误和警告、`info` 常规、`debug` 详细，排查用、`trace` 最详细、`off` 不记 | Errors only、Errors and warnings、Normal、Detailed, for debugging、Most detailed、Nothing | エラーのみ、エラーと警告、通常、詳細（調査用）、最も詳細、記録しない |
 | `permission.start_read_only` 名字 | 新会话开局只读 | Start new sessions read-only | 新しいセッションを読み取り専用で始める |
 | 说明 | 打开以后，新会话一开始就是只读。她只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。 | When on, new sessions begin read-only. She can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. | オンにすると、新しいセッションは読み取り専用で始まります。調査と計画だけを行い、ファイルを変更するときに読み取り専用をオフにします。プロジェクト設定ではオンにすることしかできません。 |
+| `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
+| 说明 | 新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。 | Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. | 新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。 |
+| 选项 | `workspace` 工作区（沙盒）、`full` 完全放开 | Workspace (sandbox)、Full access | ワークスペース（サンドボックス）、フルアクセス |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |
 | 说明（8-28 改成不点名哪个头） | 打开终端界面或网页时，开一个新会话，还是接着最近的那一个。 | Whether a terminal interface or the web page opens a new session or picks up the most recent one. | 端末画面やウェブを開いたときに、新しいセッションを始めるか、最近のセッションを続けるかです。 |
 | 选项 | `new` 新会话、`recent` 最近的会话 | A new session、The most recent session | 新しいセッション、最近のセッション |

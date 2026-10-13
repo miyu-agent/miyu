@@ -64,6 +64,7 @@ fn the_registered_list_is_well_formed() {
             "preset.default",
             "usage.currency",
             "permission.start_read_only",
+            "permission.level",
             "external.bindings.<external>",
             "models.chat",
             "models.vision",

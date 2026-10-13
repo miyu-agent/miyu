@@ -104,6 +104,10 @@ listen = 8301
 # whitelist =
 
 [permission]
+# Permission level for new sessions: Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.
+# Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.
+level = "workspace"
+
 # Start new sessions read-only: When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on.
 # Allowed: true or false. Only in the system config, personal settings or a project config. Applies to new sessions.
 start_read_only = false
