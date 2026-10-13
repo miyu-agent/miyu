@@ -142,6 +142,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `access`：这件工具会碰什么。`read`（只看，不碰这台机器、不出 Miyu）、`write`（改文件）、`execute`（跑命令）、`network`（上网）、`outbound`（往 Miyu 外面发东西）、`venue`（在聊天平台上做动作：撤回、禁言这些）。权限策略照它决定问不问人，**照实写**：往外发东西的写成 `read` 是在骗管理员。
    - `venues`：给哪种会话，`local`（本机的）、`private`（平台私聊）、`group`（群）里的一个或几个。
    - `timeout_ms`：可以不写，1000 到 600000，默认 60000。
+   - `display_name`：可以不写，给人看的名字，照语言写：`{"zh": "打招呼", "en": "Greet"}`。时间线上照用的人的语言写它，没写的照 `name`。这是给人看的，不给模型。
    - 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool":"hello_greet","problem":"name"}`）。
 5. **被调**：AI 调到你的工具时，核心发给你 `tool.call`：
 

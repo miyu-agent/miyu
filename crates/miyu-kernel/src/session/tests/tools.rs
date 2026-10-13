@@ -332,3 +332,44 @@ fn a_dispatched_call_carries_the_cause_of_its_turn() {
     session.handle(answer(2, call(6, 1), Decision::Once, None));
     assert_eq!(causes(&session.handle(stored(9))), [Some(id(1))]);
 }
+
+/// 执行器交回的给人看的名字（施工 9-8 六补）：照抄进结果，内核不改不补。
+#[test]
+fn the_name_people_see_is_written_into_the_result() {
+    let mut session = asking();
+    call_tools(&mut session, 5, &[("read", "{}")]);
+    allowing(&mut session, stored(7));
+    let named = std::collections::BTreeMap::from([("zh".to_string(), "回声".to_string())]);
+    let Input::ToolDone {
+        at,
+        call_id,
+        error,
+        blocks,
+        duration_ms,
+        human,
+        effects,
+        stopped,
+        end_turn,
+        ..
+    } = done(call(6, 1), "a")
+    else {
+        unreachable!("是执行完了");
+    };
+    let input = Input::ToolDone {
+        at,
+        call_id,
+        error,
+        blocks,
+        duration_ms,
+        human,
+        effects,
+        stopped,
+        end_turn,
+        display_name: named.clone(),
+    };
+    let events = appended_events(&allowing(&mut session, input));
+    let Body::ToolResult(result) = &events[0].body else {
+        panic!("应该是 tool.result：{events:?}");
+    };
+    assert_eq!(result.display_name, named);
+}

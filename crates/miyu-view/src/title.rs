@@ -1,6 +1,8 @@
 //! 标题那一句（`docs/blueprint/view.md`「标题那一句」，终端蓝图 `tui.md`「时间线」第 3、6–9 条）：显示名、对象、
 //! 别的会话的短编号、结果那一句，照连接的语言。
 
+use std::collections::BTreeMap;
+
 use serde_json::Value;
 
 use miyu_kernel::event::Said;
@@ -9,17 +11,22 @@ use miyu_kernel::id::SessionId;
 use crate::entry::{Title, ToolState};
 use crate::words::{self, Texts, ToolKind, keys};
 
-/// 一步工具的标题。`said` 是结果那一句的说法，结果还没到的没有。
+/// 一步工具的标题。`said` 是结果那一句的说法，结果还没到的没有；`named` 是结果里记下的给人看的名字（施工 9-8 六补），
+/// 还没到的、没记的是空的。名字先照记下的挑连接的语言，再照核心的字、这一刻工具目录里的，都没有的照工具名。
 pub(crate) fn of(
     name: &str,
     args: &Value,
     state: ToolState,
     said: Option<&Said>,
+    named: &BTreeMap<String, String>,
     texts: &Texts,
 ) -> Title {
     let words = texts.local.as_ref();
     let face = words.face(name);
-    let shown = face.as_ref().map_or(name, |f| f.name.as_str()).to_string();
+    let shown = words::pick(named, &texts.language)
+        .or_else(|| face.as_ref().map(|f| f.name.clone()))
+        .or_else(|| texts.tools.get(name).cloned())
+        .unwrap_or_else(|| name.to_string());
     if state == ToolState::Preparing {
         let name = words::say(words, keys::PREPARE, &[("name", shown.clone())]).unwrap_or(shown);
         return Title {

@@ -32,6 +32,7 @@ fn wrote(call_id: CallId, written: TodoWritten) -> Input {
         effects: vec![Effect::TodoWritten(written)],
         stopped: false,
         end_turn: false,
+        display_name: Default::default(),
     }
 }
 

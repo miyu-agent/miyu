@@ -158,6 +158,7 @@ mod view_page;
 mod view_skill;
 mod view_status;
 mod view_stream;
+mod view_tool_names;
 mod view_tree;
 mod watch;
 mod welcomed;

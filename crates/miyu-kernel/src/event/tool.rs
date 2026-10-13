@@ -38,6 +38,10 @@ pub struct ToolResult {
     /// （`completed`）。只有成功的结果带它，只在要的时候写；老日志、别的结果没有这一格。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub end_turn: bool,
+    /// 这件工具给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：脚本、MCP 的、扩展的工具派出去那一刻的，头在时间线上
+    /// 照连接的语言挑。不发给模型。核心自带的、内核自己写的结果、没写显示名的、老日志没有这一格。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub display_name: BTreeMap<String, String>,
 }
 
 /// 给人看的说法（`03-事件模型.md` 第三节，施工 4-5 上）：用的是哪一句、换进去的字段。字放在资源目录的

@@ -34,7 +34,6 @@ use crate::blocking::blocking;
 use crate::config::TurnConfig;
 use crate::effects;
 use crate::job_ids::JobIds;
-use crate::lines::millis;
 use crate::messages;
 use crate::pictures;
 use crate::port::Back;
@@ -44,6 +43,7 @@ use crate::usage::{Asked, Ledger};
 
 mod back;
 mod goals;
+mod halt;
 mod kit;
 mod preview;
 mod questions;
@@ -105,6 +105,8 @@ struct Running {
     stopping: bool,
     started: Instant,
     name: String,
+    /// 派它那一刻这件工具给人看的名字（施工 9-8 六补）：送回来时随结果记进日志。
+    display_name: BTreeMap<String, String>,
     /// 它交了题、在等回答（施工 D-2）：回答落了盘从这里送回去。叫停、掐掉、了结时跟着丢，工具当没答收场。
     answer: Option<tokio::sync::oneshot::Sender<Vec<Response>>>,
 }
@@ -335,9 +337,11 @@ impl Tools {
                 effects: Vec::new(),
                 stopped: false,
                 end_turn: false,
+                display_name: Default::default(),
             });
         };
         tracing::info!(target: TARGET, call = call_text.as_str(), tool = name.as_str(), "running");
+        let display_name = tool.display_name();
         let progress = {
             let backs = self.backs.clone();
             Progress::new(move |text| send(&backs, ToolBack::Progress { call_id, text }))
@@ -407,41 +411,11 @@ impl Tools {
                 stopping: false,
                 started: Instant::now(),
                 name,
+                display_name,
                 answer: None,
             },
         );
         None
-    }
-
-    /// 叫它停（施工 4-9 再补一）：举起这次调用的旗，不掐任务。工具看旗，停在改之前或者做完，照常送回来。不在跑的，
-    /// 什么都不做。
-    pub(crate) fn stop(&mut self, call_id: CallId) {
-        if let Some(running) = self.running.get_mut(&call_id) {
-            running.stop.raise();
-            running.stopping = true;
-            // 在等回答的不等了（施工 D-2）：口子一丢，工具当没答收场。
-            running.answer = None;
-        }
-    }
-
-    /// 掐掉一次在跑的调用：举旗，掐掉跑它的任务。之后什么都不再报。叫它停过、还没交回来的，多记一行 `WARN`：它要是
-    /// 后来改完了，这次改动不留效果。
-    pub(crate) fn cancel(&mut self, call_id: CallId) {
-        let Some(running) = self.running.remove(&call_id) else {
-            return;
-        };
-        running.stop.raise();
-        running.task.abort();
-        let call = call_id.to_string();
-        tracing::info!(
-            target: TARGET,
-            call = call.as_str(),
-            took_ms = millis(running.started.elapsed()),
-            "stopped"
-        );
-        if running.stopping {
-            tracing::warn!(target: TARGET, call = call.as_str(), "cancelled while stopping");
-        }
     }
 }
 

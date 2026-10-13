@@ -83,6 +83,7 @@ pub(super) fn some_notice(
             })],
             stopped: false,
             end_turn: false,
+            display_name: Default::default(),
         });
     }
     if !(watching && !watch.turn_open()) && rng.below(6) != 0 {

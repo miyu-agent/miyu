@@ -101,6 +101,12 @@ pub(super) fn register(
                 access: access(tool),
             },
             original: tool.name.clone(),
+            title: tool
+                .title
+                .as_deref()
+                .map(str::trim)
+                .filter(|title| !title.is_empty())
+                .map(str::to_string),
             venues: venues(server),
             timeout: Duration::from_millis(server.timeout_ms),
             shared: Arc::clone(shared),

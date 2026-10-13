@@ -51,11 +51,11 @@
 
 1. 照工具名在工具目录里找。目录是核心起来时登记的；工具面是造会话时冻结在快照里的：核心升级拿掉了一件，老会话里她照样会调它；改了名的一件，老会话里她照旧名字调，目录照以前的名字也找得到它（施工 7-5 再补，`tools/interface.md`「登记」）。
 2. 目录里没有：不派。记一行 `WARN` `unavailable`（`call`、`tool`），当场交回一条出错的结果：一段字是 `unavailable.txt` 换进工具名，说法 `core/tool-results/unavailable`（字段 `name`），没有用时，没有效果。
-3. 有：记一行 `INFO` `running`（`call`、`tool`），交给它这一刻的 `Call`：她看过的是这一刻的那一份，之后变了，它拿着的不变。沙盒照下面第 1a 条写，每件工具都带，只有 `shell` 用它。任务端口照这次调用造一个（第 5 条），每件工具都带，只有 `shell` 用它（施工 7-3）。
+3. 有：记一行 `INFO` `running`（`call`、`tool`），取下这件工具这一刻给人看的名字（`Tool::display_name`，施工 9-8 六补：脚本、MCP 的、扩展的工具交，核心自带的是空的），交给它这一刻的 `Call`：她看过的是这一刻的那一份，之后变了，它拿着的不变。沙盒照下面第 1a 条写，每件工具都带，只有 `shell` 用它。任务端口照这次调用造一个（第 5 条），每件工具都带，只有 `shell` 用它（施工 7-3）。
 4. 在它自己的任务里跑，带着会话的 span，马上往下走，不等。内核一起派的几件（例如几件只读的）各跑各的，不排队；派几件由内核定（`kernel/session.md`）。
 5. 执行中的输出：一段段送回 actor，这次调用还在跑的，才交进内核（推给头，不落盘）。
-6. 跑完了：先在阻塞线程里把效果存成 blob（第 2 条），再送回 actor。看着它的任务、存 blob 的阻塞线程都带着会话的 span，存不进去的那一行有会话编号（施工 4-9 再补四上）。送回来时它还在跑的：先记下她看过的（第 3 条），记一行 `INFO` `ran`（`call`、`took_ms`，出错的多一格 `error=true`，停在改之前的多一格 `stopped=true`），交进内核：出没出错、内容块、说法、效果、停在改之前没有、要不要结束这一轮（施工 4-14），用时是从派出去到 actor 收到的毫秒数。
-7. 工具 panic 了，或者存效果的那个线程 panic 了：记一行 `ERROR` `crashed`（`call`、`tool`、`took_ms`），交回一条出错的结果：一段字是 `crashed.txt` 换进工具名，说法 `core/tool-results/crashed`（字段 `name`），有用时，没有效果。会话照常往下走。
+6. 跑完了：先在阻塞线程里把效果存成 blob（第 2 条），再送回 actor。看着它的任务、存 blob 的阻塞线程都带着会话的 span，存不进去的那一行有会话编号（施工 4-9 再补四上）。送回来时它还在跑的：先记下她看过的（第 3 条），记一行 `INFO` `ran`（`call`、`took_ms`，出错的多一格 `error=true`，停在改之前的多一格 `stopped=true`），交进内核：出没出错、内容块、说法、效果、停在改之前没有、要不要结束这一轮（施工 4-14）、派它那一刻取下的给人看的名字（施工 9-8 六补），用时是从派出去到 actor 收到的毫秒数。
+7. 工具 panic 了，或者存效果的那个线程 panic 了：记一行 `ERROR` `crashed`（`call`、`tool`、`took_ms`），交回一条出错的结果：一段字是 `crashed.txt` 换进工具名，说法 `core/tool-results/crashed`（字段 `name`），有用时，没有效果，给人看的名字照派它那一刻取下的。会话照常往下走。
 8. 叫停一次调用有两种：
    1. 「叫它停」（`StopTool`）：举起这次调用的旗（`Call.stop`），不掐任务；工具看旗，停在改之前或者做完，照常送回（第 6 条），停在改之前的带 `stopped`。
    2. 「掐掉」（`CancelTool`）：掐掉它的任务，记一行 `INFO` `stopped`（`call`、`took_ms`）。之后什么都不再报：还到的输出、结果、效果都丢掉，内核本来也不理了。掐掉的是叫它停过、还没交回来的写（等满了 10 秒，或者又打断了一次、要重启了），多记一行 `WARN` `cancelled while stopping`（`call`）：它要是后来写完了，这次改动不留效果。
@@ -146,7 +146,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 2. 工具交题：经回传的通道送回 actor（`ToolBack::Asks`，带一个回信的口子）。这次调用还在跑、没被叫停的，记下口子，交给内核 `ToolAsks`；内核记 `question.asked`（`by` 是这次调用）、等（`kernel/asking.md`）。叫停过、已经掐掉的不理：口子跟着丢。
 3. 人用 `session.answer` 回答，`question.answered` 落了盘内核出 `AnswerTool`：照调用编号把回答送给在等的工具（`Tools::answer`），工具写成结果交回，照常报跑完。
 4. 没答到就了结：叫停（`StopTool`）丢掉口子；打断、等的时候来了一句话、收紧成只读，内核补了结果、出 `CancelTool`，掐掉时口子跟着丢。工具那一头拿到没有回答，照叫停收场；内核已经有这次调用的结果，不再收它。
-5. `tools.rs` 到了 500 行，施工 D-2 把「跑工具的任务送回来的，写成内核的输入」挪进 `tools/back.rs`，提问的这一摊在 `tools/questions.rs`。
+5. `tools.rs` 到了 500 行，施工 D-2 把「跑工具的任务送回来的，写成内核的输入」挪进 `tools/back.rs`，提问的这一摊在 `tools/questions.rs`；施工 9-8 六补又把叫停、掐掉挪进 `tools/halt.rs`。
 
 **1f. 长期目标**（`crates/miyu-session/src/tools/goals.rs`，施工 X-8 上；`tools/goal.md`）
 
@@ -267,6 +267,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-session/tests/tools.rs` | 请求里的工具照名字排，载入以后照快照发；没有工具的不发；调用在这一轮的工作目录里跑、结果落盘、她接着说；出错的工具给出错的结果；执行中的输出推送、不落盘；两件只读的同时跑；打断掐掉在跑的；目录里没有的说现在用不了；panic 的给出错的结果、会话照常；停下会话、没人拿着了，在跑的都掐掉；工具交回的图片成了图片块、接在字后面、blob 存下了、下一次请求带着它（施工 4-13） |
+| `crates/miyu-session/tests/display_name.rs`（施工 9-8 六补） | 写了显示名的工具，结果里记下派它那一刻的；没写的不记 |
 | `crates/miyu-session/tests/tool_log.rs` | 开始跑、跑完、出错、叫停、崩了、目录里没有各一行；停在改之前的带 `stopped=true`；叫它停过又掐掉的多一行 `WARN`；参数、工具交回的字不进日志 |
 | `crates/miyu-session/tests/stop.rs` | 打断时在跑的写：叫它停只举旗、不掐，停在改之前的记「已取消」；叫它停的时候已经改完的照记；不停的，又打断一次就掐掉 |
 | `crates/miyu-session/src/effects/tests.rs` | 改前改后存成 blob、别的照原样过去；存不成的照样有哈希；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |

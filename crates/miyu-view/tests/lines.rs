@@ -202,3 +202,56 @@ fn a_step_that_read_a_skill_names_it() {
         ]
     );
 }
+
+/// 工具的名字（施工 9-8 六补）：结果里记下了给人看的名字的，照记下的挑连接的语言（这种语言没写的照英文、中文的先后）；没记的
+/// 照核心的字、这一刻工具目录里的（交进来的字的 `tools`）；都没有的照工具名。还在跑的没有结果，照这一刻工具目录里的。
+#[test]
+fn a_tool_step_shows_the_name_people_see() {
+    let call = |n: u64, name: &str| {
+        format!(r#"{{"type":"tool_call","call_id":"call_4_{n}","name":"{name}","args":"{{}}"}}"#)
+    };
+    let asked = format!(
+        r#"{{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{{"kind":"model","endpoint":"e","model":"m"}},"cause":"cmd-1","body":{{"blocks":[{},{},{},{}],"seen":3}}}}"#,
+        call(1, "echo"),
+        call(2, "weather"),
+        call(3, "mcp__probe__echo"),
+        call(4, "plain"),
+    );
+    let result = |n: u64, named: &str| {
+        let named = match named {
+            "" => String::new(),
+            named => format!(r#","display_name":{named}"#),
+        };
+        format!(
+            r#"{{"seq":{},"at":"2026-09-25T07:00:04.000Z","kind":"tool.result","turn":3,"by":{{"kind":"tool","call_id":"call_4_{n}"}},"cause":"cmd-1","body":{{"call_id":"call_4_{n}","status":"ok","blocks":[{{"type":"text","text":"x"}}]{named}}}}}"#,
+            4 + n
+        )
+    };
+    let names = |language: &str, lines: &[&str]| -> Vec<String> {
+        let mut projector = Projector::new(Arc::new(texts(language)), None);
+        for line in lines {
+            projector.event(&Event::from_line(line).unwrap_or_else(|e| panic!("{line}: {e}")));
+        }
+        of_kind(projector.entries(), "tool")
+            .into_iter()
+            .map(|entry| {
+                json(entry)["title"]["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_string()
+            })
+            .collect()
+    };
+    // 还在跑：没有结果，照这一刻工具目录里的，没有的照工具名。
+    assert_eq!(
+        names("en", &[CREATED, ASKED, STARTED, &asked]),
+        ["echo", "天气", "mcp__probe__echo", "plain"]
+    );
+    let (a, b) = (result(1, r#"{"en":"Echo","zh":"回声"}"#), result(2, ""));
+    let (c, d) = (result(3, r#"{"en":"Probe echo"}"#), result(4, ""));
+    let done = [CREATED, ASKED, STARTED, &asked, &a, &b, &c, &d];
+    assert_eq!(names("en", &done), ["Echo", "天气", "Probe echo", "plain"]);
+    // 中文的连接挑中文；只写了英文的照英文。
+    assert_eq!(names("zh", &done)[0], "回声");
+    assert_eq!(names("zh", &done)[2], "Probe echo");
+}

@@ -1,6 +1,7 @@
 //! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：真核心走一遍。核心起来时把管理员家目录里放的脚本
 //! 登记成工具，会话的工具面里有它；她调它照跑命令的规矩（这个核心没有能用的沙盒、没人能确认：拒绝，真跑在基础系统那边测）；每个脚本一个功能 `script-<名字>`，`preset.get` 列出来，预设关掉的会话里没有；
 //! 撞了别的工具名字的不登记；装上一个带脚本的包，当场登记上；`check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）。
+//! 时间线上写开头的显示名（施工 9-8 六补）。
 
 use std::sync::Arc;
 
@@ -140,6 +141,18 @@ async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
         result.contains("needs the user's approval, which no one can give here"),
         "访问类别是执行：没有沙盒、没人能确认的拒绝：{result}"
     );
+    // 时间线上写开头的显示名（施工 9-8 六补）：内核替它写的拒绝不记，照这一刻工具目录里的。
+    let reply = client
+        .call("p1", "view.page", json!({"session": session, "view": true}))
+        .await;
+    let titles: Vec<&str> = reply["result"]["entries"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|entry| entry["kind"] == "tool")
+        .filter_map(|entry| entry["title"]["name"].as_str())
+        .collect();
+    assert_eq!(titles, ["回声"], "{reply}");
 }
 
 #[tokio::test]

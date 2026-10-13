@@ -69,7 +69,7 @@ impl Projector {
             group: group.clone(),
             call,
             name: name.to_string(),
-            title: title::of(name, &parsed, state, None, &self.texts),
+            title: title::of(name, &parsed, state, None, &BTreeMap::new(), &self.texts),
             state,
             diff: self.estimate(name, &parsed, state),
             args,
@@ -113,7 +113,14 @@ impl Projector {
             if let Body::Tool(tool) = &mut entry.body {
                 let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
                 tool.state = ToolState::Running;
-                tool.title = title::of(&tool.name, &parsed, tool.state, None, &texts);
+                tool.title = title::of(
+                    &tool.name,
+                    &parsed,
+                    tool.state,
+                    None,
+                    &BTreeMap::new(),
+                    &texts,
+                );
                 tool.diff = diff;
                 tool.to_title = to_title;
             }
@@ -260,7 +267,14 @@ impl Projector {
             if let Body::Tool(tool) = &mut entry.body {
                 let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
                 tool.state = state;
-                tool.title = title::of(&tool.name, &parsed, state, result.human.as_ref(), &texts);
+                tool.title = title::of(
+                    &tool.name,
+                    &parsed,
+                    state,
+                    result.human.as_ref(),
+                    &result.display_name,
+                    &texts,
+                );
                 tool.images = images;
                 tool.job = job;
                 tool.files = files;

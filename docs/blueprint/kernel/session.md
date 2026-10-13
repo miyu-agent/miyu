@@ -76,7 +76,7 @@
 | `ModelDelta { at, seen, delta }` | 一段增量：`Start { index, kind }`、`Text { index, text }`、`Private { index, private }`、`End { index }` | 「收回复」 |
 | `ModelEnded { at, seen, usage, cost, error, wait_ms, excess, failover }` | 用量；金额（施工 8-15：执行器照价格算好的，原样记进 `model.called` 的 `cost`，内核不碰价格）；出错的分类和原话；供应商说要等多少毫秒（换了端点的是别的候选都在冷却时要等多久）；超长的超了多少 token（施工 6-6 中，不进日志）；端口换了端点（`failover`，施工 8-9，不进日志）。没发出去就失败的不报 `RequestSent`，直接报这一条 | 「收回复」「出错再来」 |
 | `Woke { at, seen }` | 为哪一次请求等的；等停着的，是那一步回复的序号 | 「出错再来」「打断」第 7 条 |
-| `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的 | 「调工具」「打断」第 7 条 |
+| `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped, end_turn, display_name }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的；要结束这一轮的（施工 4-14）；这件工具给人看的名字，派它那一刻取的（施工 9-8 六补） | 「调工具」「打断」第 7 条 |
 | `ToolProgress { at, call_id, text }` | 一段输出 | 「调工具」 |
 | `ToolGuarded { at, call_id, verdict }`、`ToolAsks { at, call_id, questions }` | 链的结论；一组题 | `asking.md` |
 | `Restored { at, files }` | 改回文件每一步的结局 | `history.md` |
@@ -303,7 +303,7 @@
 2. **修正参数**（`tool::repair`）：去掉空白是空的，当 `{}`。不是 JSON 对象的，修正不了。参数格式读不出来、没有 `properties` 的，原文照交。顺着 `properties`（对象的各格）和 `items`（数组的每一项）往下走（施工 4-9 再补二），每一格 `type` 写成一个字符串、模型给的值也是字符串的，去掉前后空白再还原：`array` 以 `[` 开头、读得成数组的；`object` 以 `{` 开头、读得成对象的；`integer` 读得成 64 位整数的；`number` 读得成有限小数的；`boolean` 是 `true`、`false` 的，大小写都收。还原出来的、本来就是的对象和数组，照它的声明接着往下修。换了一格就把整个对象重写一遍（紧凑的 JSON，键照名字排）；一个都没换，原文照交。`string` 和别的类型一个字节都不碰。修正只用在执行上，日志里的回复照模型给的原文。
 3. **回复落了盘才派**。轮到的交给执行前的链（`GuardTool`，`asking.md`），带上这一轮的工作目录、实际生效的那一级。人允许了的，那条决定落了盘才 `RunTool`；人答完了的，那条回答落了盘才 `AnswerTool`。一次出的动作里，先是 `RunTool`、`AnswerTool`，再是 `GuardTool`，各自照调用的先后。
 4. **轮到谁**：照调用的先后。只读（`read`）的，前面没有还没结果的非只读调用就轮到；不是只读的，前面的都有了结果才轮到，它没结果，后面的都等。过链的、等人的、允许了还没派的、在跑的、问着人的，都占着位置。
-5. **结果**（`ToolDone`）：只收这一步里在跑的调用（派出去了的、问着人的、答完了等落盘的）和停着的（「打断」第 7 条）；别的不理。追加 `tool.result`：`status` 照 `error` 是 `error` 或 `ok`，内容、用时、说法、效果照交的，`by` 是那次调用，`cause` 是回合的。没叫它停却交回停在改之前的（带 `stopped`）：记 `cancelled`，那一句是「已取消，跑到一半」，照内核写的（第 8 条）；执行器只在叫它停以后才这样交，这一条是兜底。然后派后面能派的。
+5. **结果**（`ToolDone`）：只收这一步里在跑的调用（派出去了的、问着人的、答完了等落盘的）和停着的（「打断」第 7 条）；别的不理。追加 `tool.result`：`status` 照 `error` 是 `error` 或 `ok`，内容、用时、说法、效果、给人看的名字照交的，`by` 是那次调用，`cause` 是回合的。没叫它停却交回停在改之前的（带 `stopped`）：记 `cancelled`，那一句是「已取消，跑到一半」，照内核写的（第 8 条）；执行器只在叫它停以后才这样交，这一条是兜底。然后派后面能派的。
 6. **输出**（`ToolProgress`）：只收在跑的调用的，推一条 `tool.progress`，`by` 是那次调用，`cause` 是回合的。
 7. **这一步齐了**：调用都有了结果，这一步派出去的前台子代理（策略的 `foreground`，施工 T-1 下：记结果时 `subagent` 那次的 `job.started` 填上 `foreground`；给前台子代理留了言的那次也算，等它再报）也都报回来了。等它们不设时限，等的时候来的消息照排队，人要停就打断。这一步里有工具交回 `end_turn` 的（施工 4-14，`Step::ending` 记头一件），结束回合，`completed`，`by` 是那一次调用，同一步别的照常跑完，排着、并进来的照常接着开下一轮；有计划的重启碰上这样的一步，照 `completed` 收、再起来不接着干（崩了的本来就不再请求）。请求数到了步数上限，结束回合，`step_limit`；不然回到 `Ready`，这一轮里切过权限级别的先查一遍事实，落了盘请求下一次。上限只在一步齐了时查：第一次请求总会发，上限是 0 和 1 一样。
 8. **内核写的结果**：`blocks` 是一块文字（那一句），`human` 是那一句的说法，没有用时、没有效果。

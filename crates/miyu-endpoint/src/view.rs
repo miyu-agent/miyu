@@ -72,7 +72,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     // 要条目的：投影要的字照这个连接的语言读，改了多少行照属主的 blob 算。
     let view = match params.view {
         true => Some((
-            (core.resources.clone(), SkillPlaces::of(core)),
+            (core.resources.clone(), Titles::of(core)),
             peer.language,
             Blobs::new(core.root.blobs(&owner)),
         )),
@@ -102,39 +102,69 @@ pub(crate) fn newest(events: &[Event], texts: Texts, blobs: Blobs) -> (Value, Pr
     )
 }
 
-/// 投影要的字：照资源目录读 `language` 一份、英文一份，技能的给人看的名字照 `skills` 挑（施工 9-8 四补）。读不成的记一行
-/// 日志、回内部出错。碰磁盘。
+/// 投影要的字：照资源目录读 `language` 一份、英文一份，技能、工具的给人看的名字照 `titles` 挑（施工 9-8 四补、六补）。读不成的
+/// 记一行日志、回内部出错。碰磁盘。
 pub(crate) fn texts(
     resources: &ResourceRoot,
     language: &str,
-    skills: &SkillPlaces,
+    titles: &Titles,
 ) -> Result<Texts, Refusal> {
     let mut texts = project::texts(resources, language).map_err(|project::Unreadable(why)| {
         tracing::warn!(target: "miyu::endpoint", why = %why, "view words not read");
         Refusal::INTERNAL
     })?;
-    texts.skills = skills.titles(language);
+    texts.skills = titles.skills(language);
+    texts.tools = titles.tools(language);
     Ok(texts)
 }
 
-/// 找技能的地方（施工 9-8 四补）：这一刻装了的包、数据根、管理员，拿到阻塞线程里再找。
+/// 投影兜底用的给人看的名字从哪来：找技能的地方（施工 9-8 四补：这一刻装了的包、数据根、管理员，拿到阻塞线程里再找），工具
+/// 目录里这一刻的工具交的显示名（施工 9-8 六补：脚本、MCP 的、扩展的工具，照语言）。
 #[derive(Clone)]
-pub(crate) struct SkillPlaces(Arc<Vec<Found>>, DataRoot, AccountId);
+pub(crate) struct Titles {
+    packages: Arc<Vec<Found>>,
+    root: DataRoot,
+    admin: AccountId,
+    tools: BTreeMap<String, BTreeMap<String, String>>,
+}
 
-impl SkillPlaces {
-    pub(crate) fn of(core: &Core) -> SkillPlaces {
-        SkillPlaces(core.packages(), core.root.clone(), core.admin.clone())
+impl Titles {
+    pub(crate) fn of(core: &Core) -> Titles {
+        let catalog = core.tools();
+        let tools = catalog
+            .specs()
+            .filter_map(|spec| {
+                let names = catalog.get(&spec.name)?.display_name();
+                (!names.is_empty()).then(|| (spec.name.clone(), names))
+            })
+            .collect();
+        Titles {
+            packages: core.packages(),
+            root: core.root.clone(),
+            admin: core.admin.clone(),
+            tools,
+        }
     }
 
     /// 技能的名字到给人看的名字，照语言 `language` 挑，没写的照名字。碰磁盘。
-    fn titles(&self, language: &str) -> BTreeMap<String, String> {
-        miyu_store::skills::find(&self.0, &self.1, &self.2)
+    fn skills(&self, language: &str) -> BTreeMap<String, String> {
+        miyu_store::skills::find(&self.packages, &self.root, &self.admin)
             .0
             .into_iter()
             .map(|skill| {
                 let title = crate::personas::pick(&skill.head.display_name, language)
                     .unwrap_or_else(|| skill.head.name.clone());
                 (skill.head.name, title)
+            })
+            .collect()
+    }
+
+    /// 写了显示名的工具的名字到给人看的名字，照语言 `language` 挑。
+    fn tools(&self, language: &str) -> BTreeMap<String, String> {
+        self.tools
+            .iter()
+            .filter_map(|(name, names)| {
+                Some((name.clone(), crate::personas::pick(names, language)?))
             })
             .collect()
     }

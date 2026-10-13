@@ -53,6 +53,8 @@ pub(super) struct McpTool {
     pub(super) spec: Spec,
     /// 服务给的名字，原样：发 `tools/call` 用它。
     pub(super) original: String,
+    /// 服务给的给人看的名字（`title`），没写的、空白的没有（施工 9-8 六补）。
+    pub(super) title: Option<String>,
     /// 给哪种会话。
     pub(super) venues: Venues,
     /// 等多久。
@@ -107,6 +109,14 @@ impl Tool for McpTool {
 
     fn venues(&self) -> Option<Venues> {
         Some(self.venues)
+    }
+
+    /// 服务给的 `title` 不分语言：记在 `en` 下，别的语言没写的照它（施工 9-8 六补）。
+    fn display_name(&self) -> BTreeMap<String, String> {
+        self.title
+            .iter()
+            .map(|title| ("en".to_string(), title.clone()))
+            .collect()
     }
 
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {

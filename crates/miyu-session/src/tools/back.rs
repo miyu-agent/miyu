@@ -74,6 +74,7 @@ impl Tools {
                     effects,
                     stopped: done.stopped,
                     end_turn: done.end_turn,
+                    display_name: running.display_name,
                 })
             }
             ToolBack::Crashed { call_id } => {
@@ -97,6 +98,7 @@ impl Tools {
                     effects: Vec::new(),
                     stopped: false,
                     end_turn: false,
+                    display_name: running.display_name,
                 })
             }
         }

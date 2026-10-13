@@ -139,3 +139,33 @@ fn the_timeout_is_checked() {
 }
 
 mod remote_tests;
+
+/// 给人看的名字（施工 9-8 六补）：照语言收下，派出去那一刻交给执行器；不写的是空的；语言、名字是空白的拒。
+#[test]
+fn the_name_people_see_is_kept_and_blanks_are_refused() {
+    let named = |display_name: Value| -> ToolParams {
+        serde_json::from_value(json!({
+            "name": "send_group", "description": "Send to a group.",
+            "input_schema": {"type": "object"}, "access": "outbound", "venues": ["group"],
+            "display_name": display_name
+        }))
+        .expect("合写法")
+    };
+    let Checked { display_name, .. } =
+        checked(named(json!({"zh": "发到群里", "en": "Send to group"}))).expect("合写法");
+    assert_eq!(
+        display_name,
+        BTreeMap::from([
+            ("en".to_string(), "Send to group".to_string()),
+            ("zh".to_string(), "发到群里".to_string()),
+        ])
+    );
+    let Checked { display_name, .. } = checked(tool("outbound", json!(["group"]))).expect("合写法");
+    assert!(display_name.is_empty(), "不写的是空的");
+    for blank in [json!({"zh": " "}), json!({"": "发到群里"})] {
+        assert_eq!(
+            refused_for(named(blank)),
+            json!({"tool": "send_group", "problem": "display_name"})
+        );
+    }
+}

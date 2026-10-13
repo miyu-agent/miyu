@@ -5,7 +5,7 @@
 mod cache;
 mod remote;
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
@@ -67,6 +67,9 @@ struct ToolParams {
     /// 等它答多久（施工 O-2 下）：毫秒，[`TIMEOUT_MS`] 以内，不写是 [`DEFAULT_TIMEOUT_MS`]。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     timeout_ms: Option<u64>,
+    /// 给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：头在时间线上写它，不写的照工具名。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    display_name: BTreeMap<String, String>,
 }
 
 /// 不写时等多久：一分钟。
@@ -80,6 +83,7 @@ struct Checked {
     spec: Spec,
     venues: Venues,
     timeout: Duration,
+    display_name: BTreeMap<String, String>,
 }
 
 /// `provide`：见模块的说明。
@@ -203,6 +207,14 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
     }
     let parameters: RawJson = serde_json::from_str(&tool.input_schema.to_string())
         .map_err(|_| bad_tool(&tool.name, "parameters"))?;
+    // 显示名：语言、名字都不能是空白的。
+    if tool
+        .display_name
+        .iter()
+        .any(|(language, name)| language.trim().is_empty() || name.trim().is_empty())
+    {
+        return Err(bad_tool(&tool.name, "display_name"));
+    }
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -212,6 +224,7 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         },
         venues,
         timeout: Duration::from_millis(timeout),
+        display_name: tool.display_name,
     })
 }
 

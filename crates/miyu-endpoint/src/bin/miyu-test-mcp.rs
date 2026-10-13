@@ -14,7 +14,7 @@
 //! 几件工具：`echo` 照参数 `text` 回文字；`env` 回环境变量 `text` 的值（没有的是空的）；`cwd` 回工作目录；`picture` 回一张
 //! 1×1 的 PNG 和一句话；`audio` 回一段声音；`link` 回一条链接；`fail` 说自己出错了；`structured` 只回结构化的；`huge` 回
 //! 100005 个 `x`；`slow` 不回；`error` 回 JSON-RPC 的错；`garbled` 回认不出的 `resultType`；`die` 一收到就退出。只有 `echo`、
-//! `env`、`cwd` 标了只读。
+//! `env`、`cwd` 标了只读；只有 `echo` 写了给人看的名字 `Echo back`。
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
@@ -144,12 +144,17 @@ fn main() {
 /// 列出来的一件。
 fn tool(name: &str) -> Value {
     let read_only = matches!(name, "echo" | "env" | "cwd");
-    json!({
+    let mut tool = json!({
         "name": name,
         "description": format!("The {name} tool."),
         "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}},
         "annotations": {"readOnlyHint": read_only},
-    })
+    });
+    // 给人看的名字只写 `echo` 的（施工 9-8 六补）。
+    if name == "echo" {
+        tool["title"] = json!("Echo back");
+    }
+    tool
 }
 
 /// 调一件：交回结果或错误；不回的（`slow`）没有。`die` 当场退出。

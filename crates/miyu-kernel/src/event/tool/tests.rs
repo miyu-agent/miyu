@@ -182,3 +182,22 @@ fn broken_approval_events_say_which_kind() {
         rejected::<Event>(&line, &format!("body of {kind} not readable"));
     }
 }
+
+/// 给人看的名字（施工 9-8 六补）：写了的读写一字不差；没写的读进来是空的，写出去也不写。
+#[test]
+fn the_name_people_see_round_trips_and_is_left_out_when_empty() {
+    let named = r#"{"call_id":"call_44_1","status":"ok","blocks":[],"display_name":{"en":"Echo","zh":"回声"}}"#;
+    match read_body("tool.result", named) {
+        Body::ToolResult(result) => {
+            assert_eq!(
+                result.display_name.get("zh").map(String::as_str),
+                Some("回声")
+            );
+        }
+        other => panic!("{other:?}"),
+    }
+    match read_body("tool.result", &result_with("ok")) {
+        Body::ToolResult(result) => assert!(result.display_name.is_empty()),
+        other => panic!("{other:?}"),
+    }
+}

@@ -280,6 +280,7 @@ impl Stage {
             effects: Vec::new(),
             stopped: false,
             end_turn: false,
+            display_name: Default::default(),
         }
     }
 
@@ -295,6 +296,7 @@ impl Stage {
             effects: Vec::new(),
             stopped: true,
             end_turn: false,
+            display_name: Default::default(),
         }
     }
 }

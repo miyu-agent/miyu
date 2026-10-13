@@ -46,6 +46,8 @@ pub(crate) struct Stores {
 pub(crate) struct RemoteTool {
     spec: Spec,
     venues: Venues,
+    /// 登记时写的给人看的名字，照语言（施工 9-8 六补）。
+    display_name: BTreeMap<String, String>,
     timeout: Duration,
     package: String,
     provided: Arc<Provided>,
@@ -76,6 +78,7 @@ impl RemoteTool {
         RemoteTool {
             spec: checked.spec,
             venues: checked.venues,
+            display_name: checked.display_name,
             timeout: checked.timeout,
             package: package.to_string(),
             provided,
@@ -161,6 +164,10 @@ impl Tool for RemoteTool {
 
     fn venues(&self) -> Option<Venues> {
         Some(self.venues)
+    }
+
+    fn display_name(&self) -> BTreeMap<String, String> {
+        self.display_name.clone()
     }
 
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {

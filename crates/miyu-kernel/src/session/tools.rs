@@ -383,6 +383,7 @@ impl Session {
             human: worded.said,
             effects: Vec::new(),
             end_turn: false,
+            display_name: Default::default(),
         };
         self.record(at, by, cause, Body::ToolResult(result))
     }

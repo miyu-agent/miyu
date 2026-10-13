@@ -87,6 +87,7 @@ pub fn texts(language: &str) -> Texts {
         kinds,
         home: Some("/home/alice".to_string()),
         skills: std::collections::BTreeMap::from([("notes".to_string(), "Notes".to_string())]),
+        tools: std::collections::BTreeMap::from([("weather".to_string(), "天气".to_string())]),
         language: language.to_string(),
     }
 }

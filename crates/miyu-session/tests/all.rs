@@ -8,6 +8,7 @@ mod support;
 mod actor;
 mod backlog;
 mod delete;
+mod display_name;
 mod embed;
 mod embed_replace;
 mod end_turn;

@@ -20,6 +20,7 @@ pub(super) fn some_stop_end(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> 
         effects,
         stopped,
         end_turn: false,
+        display_name: Default::default(),
     };
     match rng.below(10) {
         0..=2 => Some(done(true, Vec::new())),

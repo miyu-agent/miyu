@@ -17,7 +17,7 @@
 | `crates/miyu-view/src/projector.rs`、`projector/`（新） | 投影这台小机器：喂一条事件交出它引起的变化（`Change`）；`users.rs` 消息和排着的话，`turns.rs` 开轮、收尾、每次请求，`blocks.rs` 回复的一块块和起止，`tools.rs` 调工具的一步、确认、提问，`notices.rs` 旁白，`undo.rs` 撤销恢复 |
 | `crates/miyu-view/src/entry.rs`、`notice.rs`、`change.rs`、`id.rs` | 条目、旁白、变化、编号的格 |
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
-| `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补） |
+| `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补）、工具的名字照记下的、照这一刻工具目录里的、照工具名（9-8 六补） |
 | `crates/miyu-endpoint/tests/view_entries.rs`、`view_page.rs`、`view_detail.rs` | 真核心走一遍（9-8 中）：握手报版本；交条目的页、边界照旧、字照连接的语言；更早派出的任务照样有标题；调用的结果原文、压缩的摘要 |
 | `crates/miyu-view/tests/status.rs`（9-8 补上） | 闲着、在跑、在等人（确认、提问到了结）；正在写、在调工具；重试和都在冷却出现又消失；上下文用了多少；任务从派出到了结、停了的为什么 |
 | `crates/miyu-endpoint/tests/view_tree.rs`（9-8 补下） | 派出去的子代理在跑一轮：那一项带 `busy`、`spawned`、`running_deep`、`usage`，整份带 `running_deep`、`usage_tree`；子代理派了孙代理也数进来；连子代理一起的用量 |
@@ -84,7 +84,7 @@
 | `workspace` | 换了工作区：`cwd`、`dirs`，原样（照 `session.workspace_changed`，家目录写 `~` 由头做）。「她在哪干活」是头拿自己的目录比的，留在头里 |
 | `peer` | 等的会话空下来了、等不到了（`peer.idle`）：`session`、`reason`（`idle`、`expired`、`gone`）、`status`。终端现在不画，网页画 |
 
-**标题那一句**（`tool` 的 `title`）：`{"name", "object", "said"}`，照连接的语言。派子代理的 `object` 是描述（`description`），任务编号在 `job`，两个头都写成「任务编号 · 描述」，还没派出去的只有描述；点开的交代是 `args` 里的 `prompt`。留言（`send_message`）的 `object` 照 `to`：子代理写任务编号（标题另在 `to_title`），父会话写「父会话」，别的会话写「会话 短编号」；送到了不写 `said`（和对象重了）。`name` 是显示名（`human` 的 `tools.<名字>.name`）；`object` 是对象（`subject`：路径在家目录里的写 `~/…`，命令写短标题 `description`，参数带会话编号的另给 `session` 短编号）；`said` 是结果那一句（`tool.result` 的 `human` 换成字，换不成的不写）。准备中的 `name` 是「准备执行命令」这种。
+**标题那一句**（`tool` 的 `title`）：`{"name", "object", "said"}`，照连接的语言。派子代理的 `object` 是描述（`description`），任务编号在 `job`，两个头都写成「任务编号 · 描述」，还没派出去的只有描述；点开的交代是 `args` 里的 `prompt`。留言（`send_message`）的 `object` 照 `to`：子代理写任务编号（标题另在 `to_title`），父会话写「父会话」，别的会话写「会话 短编号」；送到了不写 `said`（和对象重了）。`name` 是显示名：先照结果里记下的 `display_name`（施工 9-8 六补：脚本、MCP 的、扩展的工具派出去那一刻的，照连接的语言挑，这种语言没写的照英文、中文、日文的先后；卸了包、关了服务历史照旧），没有的照 `human` 的 `tools.<名字>.name`（核心自带的），再没有的照这一刻工具目录里那件工具的显示名（还在跑的、内核替它写的拒绝和取消、以前的日志都走这一条），都没有的照工具名；`object` 是对象（`subject`：路径在家目录里的写 `~/…`，命令写短标题 `description`，参数带会话编号的另给 `session` 短编号）；`said` 是结果那一句（`tool.result` 的 `human` 换成字，换不成的不写）。准备中的 `name` 是「准备执行命令」这种。
 
 **收起那一行**：`summary` 照连接的语言，`summary_en` 固定英文（界面语言是自动的头用英文那份）。一行拆成几段，带颜色的单拎出来：
 

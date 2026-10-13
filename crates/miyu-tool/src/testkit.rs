@@ -2,6 +2,7 @@
 //! 测试、会话和协议端点的测试都用它，在各自的 dev-dependencies 里打开（照会话的剧本端口，施工 3-8 上）。
 //! 另有换了名字的一件 [`Renamed`]：造改名以前的核心的目录（施工 7-5 再补）。
 
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
@@ -57,6 +58,7 @@ pub struct Fake {
     spec: Spec,
     act: Act,
     venues: Option<Venues>,
+    display_name: BTreeMap<String, String>,
     calls: Mutex<Vec<Call>>,
     dropped: Arc<AtomicUsize>,
 }
@@ -94,6 +96,7 @@ impl Fake {
             spec,
             act,
             venues: None,
+            display_name: BTreeMap::new(),
             calls: Mutex::new(Vec::new()),
             dropped: Arc::new(AtomicUsize::new(0)),
         })
@@ -104,6 +107,18 @@ impl Fake {
         let mut fake = Fake::new(name, access, act);
         if let Some(fake) = Arc::get_mut(&mut fake) {
             fake.venues = Some(venues);
+        }
+        fake
+    }
+
+    /// 带给人看的名字的假工具，像脚本、MCP 的、扩展的（施工 9-8 六补）：`display_name` 是语言到名字。
+    pub fn named(name: &str, access: Access, display_name: &[(&str, &str)], act: Act) -> Arc<Fake> {
+        let mut fake = Fake::new(name, access, act);
+        if let Some(fake) = Arc::get_mut(&mut fake) {
+            fake.display_name = display_name
+                .iter()
+                .map(|(language, name)| ((*language).to_string(), (*name).to_string()))
+                .collect();
         }
         fake
     }
@@ -169,6 +184,10 @@ impl Tool for Fake {
 
     fn venues(&self) -> Option<Venues> {
         self.venues
+    }
+
+    fn display_name(&self) -> BTreeMap<String, String> {
+        self.display_name.clone()
     }
 
     /// 参数里的 `path`（一条）、`paths`（几条）就是要碰的路径；访问类别是写的，就是写（施工 4-3 下）。

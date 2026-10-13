@@ -142,6 +142,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `access`: what the tool touches. `read` (only looks; touches nothing on this machine and sends nothing out of Miyu), `write` (changes files), `execute` (runs commands), `network` (goes online), `outbound` (sends something out of Miyu), `venue` (acts on a chat platform: recalling, muting and the like). The permission policy decides from it whether to ask a person, so **tell the truth**: marking a tool that sends things out as `read` deceives the administrator.
    - `venues`: which kinds of sessions get it, one or more of `local` (on this machine), `private` (platform private chats), `group` (groups).
    - `timeout_ms`: optional, 1000 to 600000, default 60000.
+   - `display_name`: optional, the name people see, per language: `{"zh": "打招呼", "en": "Greet"}`. The timeline shows it in the reader's language and falls back to `name`. It is for people, not for the model.
    - A wrong entry rejects the whole set; the reply's `data` says which tool and what is wrong (`{"tool":"hello_greet","problem":"name"}`).
 5. **Being called**: when the AI calls one of your tools, the core sends you `tool.call`:
 

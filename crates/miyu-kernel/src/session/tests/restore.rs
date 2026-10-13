@@ -31,6 +31,7 @@ pub(super) fn changed(call_id: CallId) -> Input {
         })],
         stopped: false,
         end_turn: false,
+        display_name: Default::default(),
     }
 }
 

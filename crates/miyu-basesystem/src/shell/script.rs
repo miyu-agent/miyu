@@ -10,6 +10,7 @@
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
 
+use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
@@ -35,6 +36,8 @@ const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
 /// 一个脚本。
 pub(crate) struct Script {
     spec: Spec,
+    /// 开头写的给人看的名字，照语言（施工 9-8 六补）。
+    display_name: BTreeMap<String, String>,
     file: PathBuf,
     timeout: u64,
     results: Results,
@@ -66,6 +69,7 @@ impl Script {
                 parameters,
                 access: Access::Execute,
             },
+            display_name: head.display_name.clone(),
             timeout: head.timeout,
             results: Results::load(resources)?,
             timed_out: text("timed-out", &["seconds"])?,
@@ -121,6 +125,10 @@ impl Script {
 impl Tool for Script {
     fn spec(&self) -> &Spec {
         &self.spec
+    }
+
+    fn display_name(&self) -> BTreeMap<String, String> {
+        self.display_name.clone()
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

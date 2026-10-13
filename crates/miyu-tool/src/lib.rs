@@ -71,6 +71,8 @@ pub use stop::Stop;
 pub use todos::TODOWRITE;
 pub use usage::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};
 
+use std::collections::BTreeMap;
+
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::tool::Access;
 
@@ -107,6 +109,12 @@ pub trait Tool: Send + Sync {
     /// 给哪种会话（施工 O-2 上）：提供者的工具照它挑。核心自带的没有，照工具面自己的规矩挑（`miyu-session` 的 `Agents::face`）。
     fn venues(&self) -> Option<Venues> {
         None
+    }
+
+    /// 给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：脚本、MCP 的、扩展的工具交，执行器派它那一刻取下、随结果记进
+    /// 日志，头照连接的语言挑。核心自带的不交，照核心的字（`resources/core/human/`）。默认空。
+    fn display_name(&self) -> BTreeMap<String, String> {
+        BTreeMap::new()
     }
 
     /// 这次调用要碰的路径、是读是写：照参数算，不碰磁盘（施工 4-3 下）。换成真实的位置、查边界是执行前的
