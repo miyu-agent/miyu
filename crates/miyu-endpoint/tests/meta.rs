@@ -86,6 +86,13 @@ async fn renaming_records_the_trimmed_title_and_pushes_it_before_the_reply() {
     assert_eq!(event.by, By::Person(Person::new(alice())));
     assert_eq!(event.cause.as_ref().map(|cause| cause.as_str()), Some("t1"));
     assert_eq!(event.turn, None, "空闲时改的不带回合");
+    // 人起的标题，列表那一项带 `named`（施工 3-8 八补，终端只把人起的写进输入框的边框）。
+    let item = listed(&mut client, "l1", &session).await;
+    assert_eq!(
+        (&item["title"], &item["named"]),
+        (&json!("整理 src 目录"), &json!(true)),
+        "{item}"
+    );
 }
 
 #[tokio::test]
@@ -145,6 +152,7 @@ async fn a_null_title_takes_the_title_away() {
     );
     let item = listed(&mut client, "l1", &session).await;
     assert!(item.get("title").is_none(), "去掉了就不写：{item}");
+    assert!(item.get("named").is_none(), "去掉了不算人起的：{item}");
 }
 
 #[tokio::test]

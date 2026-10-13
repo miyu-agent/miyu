@@ -7,6 +7,7 @@ use rusqlite::Row as SqlRow;
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
 use super::IndexError;
@@ -25,6 +26,9 @@ pub struct Row {
     pub oneshot: bool,
     /// 标题：空的是没有。
     pub title: String,
+    /// 标题是人起的（施工 3-8 八补，终端要的）：最后一条写了标题的 `session.meta_changed` 的 `by` 是人。内核起的、没有标题的是
+    /// `false`。
+    pub named: bool,
     /// 置顶。
     pub pinned: bool,
     /// 工作目录：日志里最后一条带 `cwd` 的（[`cwd`]），很早以前的日志一条都没有。
@@ -62,6 +66,7 @@ impl Row {
             parent: created.parent.clone(),
             oneshot: created.oneshot,
             title: String::new(),
+            named: false,
             pinned: false,
             cwd: created.cwd.clone(),
             created: first.at,
@@ -79,8 +84,8 @@ impl Row {
     }
 
     /// 照先后看一条（`protocol.md` 的 `session.list` 第 3、4 条）：它的时刻是最近一次动静；带 `cwd` 的盖上工作目录；
-    /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），写了 `pinned` 的换成它。撤掉的回合里改的也算：改名不是
-    /// 对话的一部分。
+    /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），`by` 是人、又不是去掉的算人起的；写了 `pinned` 的换成它。
+    /// 撤掉的回合里改的也算：改名不是对话的一部分。
     pub fn see(&mut self, event: &Event) {
         self.last_active = event.at;
         if let Some(cwd) = cwd(event) {
@@ -94,6 +99,7 @@ impl Row {
         if let Body::MetaChanged(changed) = &event.body {
             if let Some(title) = &changed.title {
                 self.title.clone_from(title);
+                self.named = !title.is_empty() && matches!(event.by, By::Person(_));
             }
             self.pinned = changed.pinned.unwrap_or(self.pinned);
         }
@@ -131,11 +137,12 @@ impl Row {
             venue: row.get(13)?,
             persona: row.get(14)?,
             preset: row.get(15)?,
+            named: row.get(16)?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 16], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 17], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -161,6 +168,7 @@ impl Row {
             text(&self.venue),
             optional(self.persona.as_deref()),
             optional(self.preset.as_deref()),
+            Value::Integer(i64::from(self.named)),
         ])
     }
 }

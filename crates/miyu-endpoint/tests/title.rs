@@ -96,10 +96,9 @@ async fn the_first_answer_gets_a_title_every_head_sees() {
         "{}",
         text.text
     );
-    assert_eq!(
-        listed(&mut client, "c3", &session).await["title"],
-        json!("打个招呼")
-    );
+    let item = listed(&mut client, "c3", &session).await;
+    assert_eq!(item["title"], json!("打个招呼"));
+    assert!(item.get("named").is_none(), "内核起的不算人起的：{item}");
     // 起过了，第二轮答完不再起；核心重启以后列表照样带着。
     watcher.say("c4", &session, "再说一句").await;
     watcher.until_turn_ends(&session).await;
