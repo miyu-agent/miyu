@@ -1,10 +1,14 @@
 //! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，系统配置、个人设置
-//! 里它的几项删掉，别的项、注释不动；状态目录整个删掉。家目录里装的、出厂的都一样。
+//! 里它的几项删掉，别的项、注释不动；状态目录整个删掉。家目录里装的、出厂的都一样。开关的文件里它开没开、批过的能力也清掉
+//! （施工 F-8 五补）：装回来从头开、从头批。
+
+use std::sync::Arc;
 
 use serde_json::{Value, json};
 
 use miyu_session::testkit::Script;
 
+use crate::support::extensions::{Program, install_asking, quick, status, steps, until_state};
 use crate::support::*;
 
 /// 一份带配置项的界面包：`xcfg.port` 两层都能写。
@@ -67,4 +71,59 @@ async fn removing_a_shipped_package_forgets_its_settings_too() {
     assert!(!system.contains("listen"), "{system}");
     assert!(system.contains("level = \"debug\""), "{system}");
     assert!(!state.exists());
+}
+
+#[tokio::test]
+async fn removing_an_extension_forgets_its_switch_and_approvals() {
+    let home = Home::new();
+    let program = Program::new();
+    let waits = steps(&["hello", "wait"]);
+    install_asking(
+        &home,
+        "echo",
+        &program.name(),
+        "manual",
+        &waits,
+        &["network"],
+    );
+    let source = home.work.join("again").join("echo");
+    std::fs::create_dir_all(&source).expect("建得了");
+    std::fs::copy(
+        home.root
+            .path()
+            .join("home/alice/packages/echo/package.toml"),
+        source.join("package.toml"),
+    )
+    .expect("拷得了");
+    let core = crate::support::extensions::core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let on = call(
+        &mut client,
+        "extension.enable",
+        json!({"package": "echo", "approve": ["network"]}),
+    )
+    .await;
+    assert_eq!(on["result"]["on"], true, "{on}");
+    until_state(&mut client, "echo", |one| one["state"] == "running").await;
+    let switches = || read(&home, "system/extensions.json");
+    assert!(switches().contains("echo"), "{}", switches());
+
+    let removed = call(&mut client, "package.remove", json!({"package": "echo"})).await;
+    assert_eq!(removed["result"]["removed"], true, "{removed}");
+    assert!(
+        !switches().contains("echo"),
+        "开没开、批过的能力一起清掉：{}",
+        switches()
+    );
+    let back = call(
+        &mut client,
+        "package.install",
+        json!({"path": source.to_string_lossy()}),
+    )
+    .await;
+    assert_eq!(back["result"]["enabled"], false, "装回来是关着的：{back}");
+    let fresh = status(&mut client, "echo").await;
+    assert_eq!(fresh["unapproved"], json!(["network"]), "要重新批：{fresh}");
+    core.stop_extensions().await;
 }

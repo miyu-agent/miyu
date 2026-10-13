@@ -203,7 +203,8 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let home = home(core)?;
     let local_root = packages(core).local_root();
     let state = packages(core).state_dir(&id);
-    // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H）：它的配置项照清单列的删，状态目录整个删。
+    // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H）：它的配置项照清单列的删，状态目录整个删，开关、批过的能力删（施工
+    // F-8 五补）。
     let keys = setting_keys(one);
     // 它带的 MCP 服务的缓存、工作目录也清掉（施工 X-3 下）：它们不在包的状态目录里。
     let services: Vec<String> = one
@@ -241,6 +242,8 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let now = core.packages();
     core.switch_packages(&without, &refs(&now)).await;
     crate::config::forget::forget(core, &keys);
+    // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
+    crate::extensions::forget_switch(core, &removed).await;
     if let Err(refusal) = blocking(move || remove_dir_if_there(&state)).await {
         tracing::warn!(target: TARGET, package = removed.as_str(), reason = refusal.reason, "package state not removed");
     }

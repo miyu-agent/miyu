@@ -127,3 +127,18 @@ pub(crate) fn described(core: &Core, manifest: &Manifest, language: &str) -> Opt
         .collect();
     Some(json!(listed))
 }
+
+/// 卸掉了包 `id`（施工 F-8 五补，设计 31 第三节第 3 条「重装回来从头设」）：开关的文件里它开没开、批过的能力一起删；都没有的
+/// 不写文件。写不成的记一行 `WARN`，卸照样算成了。
+pub(crate) async fn forget(core: &Core, id: &str) {
+    let _one_at_a_time = core.extensions.one_at_a_time().await;
+    let (mut switches, version) = super::read_switches(core);
+    let switched = switches.on.remove(id).is_some();
+    let approved = switches.approved.remove(id).is_some();
+    if !(switched || approved) {
+        return;
+    }
+    if let Err(refusal) = super::write_switches(core, id, &switches, version.as_deref()) {
+        tracing::warn!(target: super::TARGET, package = id, reason = refusal.reason, "extension switch not forgotten");
+    }
+}
