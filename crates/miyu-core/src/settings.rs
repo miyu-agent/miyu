@@ -15,8 +15,7 @@ use miyu_config::package::Manifest;
 use miyu_config::{Item, Layer, Missing, Values, Words, reference, schema};
 use miyu_endpoint::config::{Config, Environment};
 use miyu_endpoint::settings::{
-    EXTERNAL_BINDINGS, PermissionSettings, PersonaSettings, PresetSettings, ProfileSettings,
-    UiSettings,
+    EXTERNAL_BINDINGS, PermissionSettings, PersonaSettings, PresetSettings, UiSettings,
 };
 use miyu_kernel::id::AccountId;
 use miyu_log::settings::LogSettings;
@@ -25,7 +24,7 @@ use miyu_models::settings::{
     AuthCooldown, CatalogSettings, ModelSettings, PoolSettings, PriceSettings, ProviderSettings,
     RateLimitedCooldown, RetryableCooldown, UsageSettings, UseSettings,
 };
-use miyu_session::settings::{CompactionSettings, MemorySettings};
+use miyu_session::settings::{CompactionSettings, MemorySettings, ProfileSettings};
 use miyu_store::generated;
 use miyu_store::human::Human;
 use miyu_store::packages::Found;

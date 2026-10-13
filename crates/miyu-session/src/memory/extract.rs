@@ -51,7 +51,8 @@ const PACKAGE: &str = "memory";
 pub(crate) const DROPPED: usize = 20;
 
 /// 抽取给模型看的字（`resources/software/memory/extract/`，登记簿）：指令、一轮的头尾、人的话、她的回答、截了中间的那一句、
-/// 这一段以后忘掉的那一句（一条一行照 `memory_search/memory.txt`）。换进去的字照模板的规矩转义成一行
+/// 这一段以后忘掉的那一句（一条一行照 `memory_search/memory.txt`），没有称呼时主人写的那一句（`common/owner-unnamed.txt`，
+/// 施工 R-6 再修）。换进去的字照模板的规矩转义成一行
 /// （`miyu_kernel::template`）：人的话伪造不了一轮的尾巴。
 #[derive(Debug, Clone)]
 pub struct ExtractTexts {
@@ -64,12 +65,13 @@ pub struct ExtractTexts {
     excerpted: Template,
     pub(super) dropped: Template,
     pub(super) line: Template,
+    unnamed: Template,
 }
 
 impl ExtractTexts {
-    /// 从资源目录 `resources` 读：`extract/instruction.txt`、`turn-open.txt`（`{turn}`、`{date}`）、`turn-close.txt`、
+    /// 从资源目录 `resources` 读：`extract/instruction.txt`（`{owner}`）、`turn-open.txt`（`{turn}`、`{date}`）、`turn-close.txt`、
     /// `owner.txt`、`assistant.txt`（`{text}`）、`person.txt`（`{name}`、`{text}`）、`excerpted.txt`、`dropped.txt`，一条忘掉的
-    /// 照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`）。
+    /// 照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），`common/owner-unnamed.txt`。
     ///
     /// # Errors
     ///
@@ -78,7 +80,7 @@ impl ExtractTexts {
         let text =
             |name: &str, fields: &[&str]| load::text(resources, PACKAGE, "extract", name, fields);
         Ok(ExtractTexts {
-            instruction: text("instruction", &[])?,
+            instruction: text("instruction", &["owner"])?,
             open: text("turn-open", &["turn", "date"])?,
             close: text("turn-close", &[])?,
             owner: text("owner", &["text"])?,
@@ -93,6 +95,7 @@ impl ExtractTexts {
                 "memory",
                 &["id", "class", "date", "text"],
             )?,
+            unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
         })
     }
 }
@@ -295,7 +298,7 @@ pub(crate) enum Plan {
 }
 
 /// 照这一段 `spoken`（她在里面调过的工具 `called`，每一句是谁说的 `voices`）定怎么办：答了的轮数至少 `min_turns`；日期照
-/// 会话的时区 `offset`。
+/// 会话的时区 `offset`；主人照称呼 `name` 写，没有的写「用户」那一句（施工 R-6 再修）。
 pub(crate) fn plan(
     spoken: &[Spoken],
     called: &BTreeSet<String>,
@@ -303,6 +306,7 @@ pub(crate) fn plan(
     offset: UtcOffset,
     texts: &ExtractTexts,
     voices: &Voices,
+    name: Option<&str>,
 ) -> Plan {
     let exchanges = exchanges(spoken, voices);
     let (Some(last), Some(first)) = (
@@ -340,7 +344,8 @@ pub(crate) fn plan(
             break;
         }
     }
-    let instruction = say(&texts.instruction, &[]);
+    let owner = super::owner::owner(name, &texts.unnamed);
+    let instruction = say(&texts.instruction, &[("owner", &owner)]);
     Plan::Ask {
         upto,
         text: format!("{}\n{}", instruction.trim_end(), blocks.join(GAP)),

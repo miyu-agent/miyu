@@ -67,11 +67,13 @@ pub struct MergeTexts {
     new: Template,
     related: Template,
     line: Template,
+    unnamed: Template,
 }
 
 impl MergeTexts {
-    /// 从资源目录 `resources` 读：`merge/instruction.txt`、`summary.txt`（`{text}`）、`none.txt`、`new.txt`、`related.txt`，一行
-    /// 照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`）。
+    /// 从资源目录 `resources` 读：`merge/instruction.txt`（`{owner}`）、`summary.txt`（`{text}`）、`none.txt`、`new.txt`、
+    /// `related.txt`，一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），没有称呼时主人写的那一句
+    /// `common/owner-unnamed.txt`（施工 R-6 再修）。
     ///
     /// # Errors
     ///
@@ -80,7 +82,7 @@ impl MergeTexts {
         let text =
             |name: &str, fields: &[&str]| load::text(resources, PACKAGE, "merge", name, fields);
         Ok(MergeTexts {
-            instruction: text("instruction", &[])?,
+            instruction: text("instruction", &["owner"])?,
             summary: text("summary", &["text"])?,
             none: text("none", &[])?,
             new: text("new", &[])?,
@@ -92,6 +94,7 @@ impl MergeTexts {
                 "memory",
                 &["id", "class", "date", "text"],
             )?,
+            unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
         })
     }
 }
@@ -313,9 +316,11 @@ impl MergeJob {
             Some(text) => say(&texts.summary, &[("text", text)]),
             None => say(&texts.none, &[]),
         };
+        // 摘要从主人写起：照属主的称呼（这一份配置就是属主的），不看是哪个会话起的合并（施工 R-6 再修）。
+        let owner = super::owner::owner(super::called(&self.config).as_deref(), &texts.unnamed);
         let head = format!(
             "{}\n\n{}\n\n{}",
-            say(&texts.instruction, &[]).trim_end(),
+            say(&texts.instruction, &[("owner", &owner)]).trim_end(),
             summary.trim_end(),
             say(&texts.new, &[]).trim_end()
         );

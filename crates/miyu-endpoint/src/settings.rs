@@ -93,27 +93,6 @@ miyu_config::settings! {
     }
 }
 
-miyu_config::settings! {
-    /// 「AI 怎么认识你」（施工 P-9，2026-10-13 项目主人定：两项，称呼和更多描述）：只写在个人设置里，新会话生效。造会话时
-    /// 照模板拼进 system（`miyu_policy::Profile`）；本机开的会话带，场所会话照桥交的 `profile`。
-    pub struct ProfileSettings in "profile" {
-        /// AI 怎么称呼你。
-        name: Option<String> = none {
-            kind: text [64],
-            layers: [Personal],
-            applies: new_session,
-            ui: { page: "general", group: "profile", common: true, control: text },
-        },
-        /// 更多描述：可以空。
-        about: Option<String> = none {
-            kind: text [2000],
-            layers: [Personal],
-            applies: new_session,
-            ui: { page: "general", group: "profile", control: text },
-        },
-    }
-}
-
 /// 跟着系统。
 const AUTO: &str = "auto";
 

@@ -19,7 +19,8 @@ use tokio::sync::oneshot;
 
 use super::back::answer_back;
 use super::{Actor, answer};
-use crate::memory::{Dreamed, Job, NotDreamed, Voices, plan};
+use crate::config::Turn;
+use crate::memory::{Dreamed, Job, NotDreamed, Voices, called, plan};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 
@@ -31,6 +32,13 @@ impl Actor {
         Some(group.recent.as_ref().map_or(usize::MAX, |recent| {
             usize::try_from(recent.budget).unwrap_or(usize::MAX)
         }))
+    }
+
+    /// 抽取照称呼写主人（施工 R-6 再修）：这个会话的快照带了「关于你」才用配置 `config` 里的称呼。不带的（群聊、别人的
+    /// 会话、桥没写 `profile` 的场所会话）不能把管理员的称呼当成这个人：配置里只有管理员的个人设置。
+    fn owner_name(&self, config: &Turn) -> Option<String> {
+        self.persona.as_ref()?.snapshot.profile.as_ref()?;
+        called(config)
     }
 
     /// 刚从忙到闲：抽取开着的上一个闹钟。
@@ -127,6 +135,7 @@ impl Actor {
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
         let min_turns = usize::try_from(settings.extract_turns).unwrap_or(1);
+        let name = self.owner_name(&config);
         let plan = plan(
             &spoken,
             &called,
@@ -134,6 +143,7 @@ impl Actor {
             offset,
             &extraction.texts,
             &voices,
+            name.as_deref(),
         );
         let job = Job {
             offset,
@@ -232,7 +242,16 @@ impl Actor {
         let spoken = self.session.spoken_in(&history, after);
         let called = history.called_since(after);
         let voices = Voices::of(history.events(), self.group_budget());
-        let plan = plan(&spoken, &called, 1, offset, &extraction.texts, &voices);
+        let name = self.owner_name(&config);
+        let plan = plan(
+            &spoken,
+            &called,
+            1,
+            offset,
+            &extraction.texts,
+            &voices,
+            name.as_deref(),
+        );
         let job = Job {
             offset,
             dream: Some(reply),

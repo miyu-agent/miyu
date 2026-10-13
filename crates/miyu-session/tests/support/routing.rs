@@ -30,25 +30,39 @@ pub fn items() -> Vec<Item> {
         PoolSettings::ITEMS,
         miyu_session::settings::CompactionSettings::ITEMS,
         miyu_session::settings::MemorySettings::ITEMS,
+        miyu_session::settings::ProfileSettings::ITEMS,
     ]
     .concat()
 }
 
 /// 照系统配置的字 `source` 造一份不变的配置，另带取得到的几个密钥：引用和值。写错的配置当场报出来。
 pub fn configs(source: &str, secrets: &[(Reference, &str)]) -> Configs {
+    configs_with(source, "", secrets)
+}
+
+/// 同 [`configs`]，另有个人设置的字 `personal`（施工 R-6 再修：称呼只写在个人设置里）。
+pub fn configs_with(source: &str, personal: &str, secrets: &[(Reference, &str)]) -> Configs {
     let secrets = secrets
         .iter()
         .map(|(reference, value)| (reference.clone(), Secret::new(value).expect("key 合写法")))
         .collect();
-    fixed_with(resolved(source), secrets)
+    fixed_with(resolved_with(source, personal), secrets)
 }
 
 /// 照系统配置的字 `source` 合出来的最终值。写错的配置当场报出来。
 pub fn resolved(source: &str) -> Resolved {
+    resolved_with(source, "")
+}
+
+/// 同 [`resolved`]，另有个人设置的字 `personal`。
+pub fn resolved_with(source: &str, personal: &str) -> Resolved {
     let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
+    let mine = parse(&items(), Layer::Personal, personal).expect("写法对");
+    assert!(mine.problems.is_empty(), "{:?}", mine.problems);
     let layers = Layers {
         system: Some(&parsed),
+        personal: Some(&mine),
         ..Layers::default()
     };
     merge(&items(), &layers, &|_| None)

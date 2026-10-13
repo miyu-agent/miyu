@@ -163,7 +163,7 @@ impl Home {
             id: new_id(now()),
             persona: Some("engineer"),
             persona_texts: miyu_session::testkit::sample_persona_texts(),
-            profile: miyu_policy::Profile::default(),
+            profile: lines.profile,
             personas: miyu_store::personas::Personas::new(
                 &self.resources,
                 &self.root,

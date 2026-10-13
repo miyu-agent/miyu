@@ -24,8 +24,9 @@ use crate::Core;
 use crate::personas;
 use crate::presets;
 use crate::refusal::Refusal;
-use crate::settings::{PermissionSettings, ProfileSettings};
+use crate::settings::PermissionSettings;
 use crate::spawn;
+use miyu_session::settings::ProfileSettings;
 
 mod delete;
 mod found;

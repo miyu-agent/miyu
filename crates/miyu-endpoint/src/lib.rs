@@ -219,7 +219,7 @@ impl Core {
             settings::PersonaSettings::ITEMS,
             settings::PresetSettings::ITEMS,
             settings::PermissionSettings::ITEMS,
-            settings::ProfileSettings::ITEMS,
+            miyu_session::settings::ProfileSettings::ITEMS,
             settings::EXTERNAL_BINDINGS,
         ]
         .concat();

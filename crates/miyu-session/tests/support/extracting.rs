@@ -15,7 +15,7 @@ use miyu_store::blob::Blobs;
 
 use super::calling::entry;
 use super::meaning::persona;
-use super::routing::{configs, routes};
+use super::routing::{configs_with, routes};
 use super::{Home, alice_account};
 
 /// 候选写到第几轮。
@@ -59,12 +59,22 @@ pub fn organizer(home: &mut Home, server: &Server, extra: &str) {
 
 /// 同 [`organizer`]，闲 `idle` 才抽。
 pub fn organizer_after(home: &mut Home, server: &Server, extra: &str, idle: Duration) {
+    organizer_full(home, server, extra, "", idle);
+}
+
+/// 同 [`organizer`]，个人设置写着 `personal`（施工 R-6 再修：称呼）。
+pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, personal: &str) {
+    organizer_full(home, server, extra, personal, Duration::from_millis(100));
+}
+
+fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str, idle: Duration) {
     let source = format!(
         "[providers.org]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"ORG_KEY\" }}\n\n[memory]\norganizer = \"org/m\"\n{extra}",
         server.base_url
     );
-    home.configs = configs(
+    home.configs = configs_with(
         &source,
+        personal,
         &[(
             Reference::Env("ORG_KEY".to_string()),
             "sk-org-0123456789abcdef",

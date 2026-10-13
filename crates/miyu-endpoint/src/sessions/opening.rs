@@ -5,7 +5,8 @@ use miyu_kernel::id::{AccountId, VenueId};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 
-use crate::settings::{PermissionSettings, ProfileSettings};
+use crate::settings::PermissionSettings;
+use miyu_session::settings::ProfileSettings;
 
 /// 造会话时要记下的几样：有没有人能确认，是不是一次性的，用哪个模型。
 #[derive(Debug, Clone)]

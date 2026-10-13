@@ -5,6 +5,8 @@
 //!
 //! 抽取的三项（施工 R-6 上，`memory.md` 第六条）：闲多久、攒几轮、照哪个模型。会话 actor 从忙到闲起闹钟时照这一轮的配置读。
 //! 合并的两项（施工 R-7 上，第七条）：多久合一次、攒几个会话；抽取记下以后照那一轮的配置读。
+//! 「AI 怎么认识你」的两项（施工 P-9 端点声明，R-6 再修挪到这里，同一份）：造会话时端点照它拼「关于你」；抽取、合并照这一轮的
+//! 配置读称呼，写人。
 //! 核心替人格记忆这个内置包声明（施工 F-4，设计 `30-插件框架.md` 第七节）：挂在「软件包」那一页、`memory` 那一组；包没装的照样
 //! 认，设置页不画（`miyu-core` 的 `settings::Packaged`）。
 
@@ -60,6 +62,28 @@ miyu_config::settings! {
             layers: [System, Personal],
             applies: next_turn,
             ui: { page: "packages", group: "memory", control: number },
+        },
+    }
+}
+
+miyu_config::settings! {
+    /// 「AI 怎么认识你」（施工 P-9，2026-10-13 项目主人定：两项，称呼和更多描述）：只写在个人设置里，新会话生效。造会话时
+    /// 照模板拼进 system（`miyu_policy::Profile`）；本机开的会话带，场所会话照桥交的 `profile`。抽取、合并照它写人（施工 R-6 再修，
+    /// 从端点挪到这里：会话这一层要读）。
+    pub struct ProfileSettings in "profile" {
+        /// AI 怎么称呼你。
+        name: Option<String> = none {
+            kind: text [64],
+            layers: [Personal],
+            applies: new_session,
+            ui: { page: "general", group: "profile", common: true, control: text },
+        },
+        /// 更多描述：可以空。
+        about: Option<String> = none {
+            kind: text [2000],
+            layers: [Personal],
+            applies: new_session,
+            ui: { page: "general", group: "profile", control: text },
         },
     }
 }

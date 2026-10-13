@@ -14,8 +14,9 @@ use miyu_tool::Catalog;
 
 use super::{Opening, local, opening_level, profile_for};
 use crate::Core;
-use crate::settings::{PermissionSettings, ProfileSettings};
+use crate::settings::PermissionSettings;
 use crate::test_support::{resources, temp_root};
+use miyu_session::settings::ProfileSettings;
 
 #[tokio::test]
 async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {

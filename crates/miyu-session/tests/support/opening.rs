@@ -46,6 +46,8 @@ pub struct Lines {
     pub owner_is_admin: bool,
     /// 群会话（施工 O-13 中）：默认不是。
     pub group: bool,
+    /// 「关于你」那两项（施工 P-9；R-6 再修照它判抽取写不写称呼）：默认都空，快照里没有那一块。
+    pub profile: miyu_policy::Profile,
 }
 
 impl Default for Lines {
@@ -64,6 +66,7 @@ impl Default for Lines {
             indexed: true,
             group: false,
             owner_is_admin: true,
+            profile: miyu_policy::Profile::default(),
         }
     }
 }

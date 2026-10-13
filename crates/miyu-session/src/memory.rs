@@ -11,6 +11,7 @@ mod follow;
 mod keeper;
 mod listener;
 mod merge;
+mod owner;
 mod past;
 mod port;
 mod recall;
@@ -25,6 +26,7 @@ pub use follow::Following;
 pub use keeper::{Filter, Keeper, Stamp};
 pub use listener::Listener;
 pub use merge::{Dreamed, MergeTexts, NotDreamed};
+pub(crate) use owner::called;
 
 /// 记忆模块的编号：注入、抽取记下的 `by` 都是它（施工 R-4 上、R-6 上）。
 pub(crate) const MODULE: &str = "memory";

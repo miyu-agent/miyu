@@ -79,7 +79,7 @@ fn served_core(home: &Home) -> Arc<Core> {
         miyu_endpoint::settings::PersonaSettings::ITEMS,
         miyu_endpoint::settings::PresetSettings::ITEMS,
         miyu_endpoint::settings::PermissionSettings::ITEMS,
-        miyu_endpoint::settings::ProfileSettings::ITEMS,
+        miyu_session::settings::ProfileSettings::ITEMS,
         miyu_endpoint::settings::EXTERNAL_BINDINGS,
     ]
     .concat();
