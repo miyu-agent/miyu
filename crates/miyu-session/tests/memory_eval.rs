@@ -8,18 +8,16 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 
 use miyu_recall::associate::{Thresholds, pick};
-use miyu_session::{EmbedSetup, Embedder, Keeper, Listener, Stamp, Turn, Using, Vectors};
+use miyu_session::{Embedder, Keeper, Listener, Stamp, Turn, Using, Vectors};
 use miyu_tool::Remember;
 
 use crate::support::eval::{
     Brought, EvalSet, Found, Picked, Row, brought, brought_table, day, parse, problems, score,
     shipped, table,
 };
-use crate::support::meaning::{filled, model_data, persona};
-use crate::support::package::program;
+use crate::support::meaning::{filled, model_data, persona, real_package};
 use crate::support::{Home, alice, alice_account};
 
 #[test]
@@ -294,23 +292,6 @@ fn sound(set: &EvalSet, found: &[Found]) {
                 "作废的 {key} 搜出来了"
             );
         }
-    }
-}
-
-/// Release 的文件摆成内置语义模型的包目录：模型清单照出厂的。
-fn real_package(dir: &Path, files: &Path) -> EmbedSetup {
-    std::fs::create_dir_all(dir).expect("建得了");
-    let shipped =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
-    std::fs::copy(shipped, dir.join("model.toml")).expect("拷得了");
-    for name in ["model_quantized.onnx", "vocab.txt"] {
-        std::fs::copy(files.join(name), dir.join(name)).expect("Release 的文件在");
-    }
-    EmbedSetup {
-        program: Some(program()),
-        manifest: dir.join("model.toml"),
-        dir: dir.to_path_buf(),
-        idle: Duration::from_secs(600),
     }
 }
 

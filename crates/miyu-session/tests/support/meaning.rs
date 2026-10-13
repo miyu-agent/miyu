@@ -1,6 +1,7 @@
 //! 照意思找记忆的测试共用的（施工 R-5 下挪出来，R-5 补的远程也用）：人记一条、她搜一句、说一轮、读结果、等补上向量，
 //! 和接远程要的空的模型资料。
 
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,10 +12,11 @@ use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_recall::{MemoryEvent, Saved};
 use miyu_session::testkit::Play;
-use miyu_session::{Handle, ModelData, Observed};
+use miyu_session::{EmbedSetup, Handle, ModelData, Observed};
 use miyu_store::recall::Room;
 use miyu_tool::Catalog;
 
+use super::package::program;
 use super::{Home, alice, alice_account, id, now, until_logged, within};
 
 /// 空的模型资料（没有档案、没有目录，读完了）：带一个不走代理的客户端，用量记进场地的汇总。
@@ -128,4 +130,21 @@ pub async fn filled(home: &Home, model: &str, memory: bool, key: &str) {
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
     panic!("三十秒没补上 {key}");
+}
+
+/// Release 的文件摆成内置语义模型的包目录：模型清单照出厂的。
+pub fn real_package(dir: &Path, files: &Path) -> EmbedSetup {
+    std::fs::create_dir_all(dir).expect("建得了");
+    let shipped =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
+    std::fs::copy(shipped, dir.join("model.toml")).expect("拷得了");
+    for name in ["model_quantized.onnx", "vocab.txt"] {
+        std::fs::copy(files.join(name), dir.join(name)).expect("Release 的文件在");
+    }
+    EmbedSetup {
+        program: Some(program()),
+        manifest: dir.join("model.toml"),
+        dir: dir.to_path_buf(),
+        idle: Duration::from_secs(600),
+    }
 }

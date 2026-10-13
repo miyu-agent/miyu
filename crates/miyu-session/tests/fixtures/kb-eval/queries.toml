@@ -1,0 +1,242 @@
+# 知识库自动想起的测评集（施工 K-6 上，`docs/blueprint/knowledge/eval.md`）：问句照人在聊天里真会说的话写，`expect` 是该想起的
+# 几段，写成「文档:标题」（标题路径的最后一段）。虚构的世界观，人名、地名都是编的。
+
+[[query]]
+kind = "name"
+text = "艾琳今天去哪了"
+expect = ["people.md:艾琳"]
+
+[[query]]
+kind = "name"
+text = "巴德船长年轻时候干过什么"
+expect = ["people.md:巴德"]
+
+[[query]]
+kind = "name"
+text = "我想去老莫那儿买点东西"
+expect = ["people.md:老莫"]
+
+[[query]]
+kind = "name"
+text = "小雀会做什么"
+expect = ["people.md:小雀"]
+
+[[query]]
+kind = "name"
+text = "赤鳞喜欢什么"
+expect = ["people.md:赤鳞"]
+
+[[query]]
+kind = "name"
+text = "雾港冬天冷吗"
+expect = ["places.md:雾港"]
+
+[[query]]
+kind = "name"
+text = "我们去灰塔看看吧"
+expect = ["places.md:灰塔"]
+
+[[query]]
+kind = "name"
+text = "鲸骨湾的人靠什么生活"
+expect = ["places.md:鲸骨湾"]
+
+[[query]]
+kind = "name"
+text = "北林里有什么危险"
+expect = ["places.md:北林"]
+
+[[query]]
+kind = "name"
+text = "潮汐魔法怎么用"
+expect = ["lore.md:潮汐魔法"]
+
+[[query]]
+kind = "name"
+text = "一枚银鳞币能买什么"
+expect = ["lore.md:银鳞币"]
+
+[[query]]
+kind = "name"
+text = "月光罗盘现在在谁手里"
+expect = ["lore.md:月光罗盘"]
+
+[[query]]
+kind = "name"
+text = "灯笼节是哪天"
+expect = ["history.md:灯笼节"]
+
+[[query]]
+kind = "name"
+text = "跟我讲讲大雾之年"
+expect = ["history.md:大雾之年"]
+
+[[query]]
+kind = "paraphrase"
+text = "那个守灯的姑娘怕什么"
+expect = ["people.md:艾琳"]
+
+[[query]]
+kind = "paraphrase"
+text = "缺了根手指的老船长爱喝什么"
+expect = ["people.md:巴德"]
+
+[[query]]
+kind = "paraphrase"
+text = "那条红色的老龙住在哪"
+expect = ["people.md:赤鳞", "places.md:灰塔"]
+
+[[query]]
+kind = "paraphrase"
+text = "跟着潮水走的那种法术退潮时还能用吗"
+expect = ["lore.md:潮汐魔法"]
+
+[[query]]
+kind = "paraphrase"
+text = "这里的人平时用什么钱"
+expect = ["lore.md:银鳞币"]
+
+[[query]]
+kind = "paraphrase"
+text = "满月才会转的那个东西是什么来历"
+expect = ["lore.md:月光罗盘"]
+
+[[query]]
+kind = "paraphrase"
+text = "管灯塔的那帮人规矩多吗"
+expect = ["lore.md:灯塔会"]
+
+[[query]]
+kind = "paraphrase"
+text = "一百年前那场雾后来怎么散的"
+expect = ["history.md:大雾之年", "history.md:赤鳞之约"]
+
+[[query]]
+kind = "paraphrase"
+text = "海滩上立着大骨头的那个村子冬天怎么样"
+expect = ["places.md:鲸骨湾"]
+
+[[query]]
+kind = "paraphrase"
+text = "林子深处那口会说话的井是怎么回事"
+expect = ["places.md:北林"]
+
+[[query]]
+kind = "paraphrase"
+text = "跟龙立下的那个约定现在还算数吗"
+expect = ["history.md:赤鳞之约"]
+
+[[query]]
+kind = "paraphrase"
+text = "瘸腿的杂货铺老板收什么"
+expect = ["people.md:老莫"]
+
+[[query]]
+kind = "chat"
+text = "陪我去雾港的老码头走走吧"
+expect = ["places.md:旧码头", "places.md:雾港"]
+
+[[query]]
+kind = "chat"
+text = "外面打雷了，艾琳没事吧"
+expect = ["people.md:艾琳"]
+
+[[query]]
+kind = "chat"
+text = "今晚是满月，我想去找找那个罗盘"
+expect = ["lore.md:月光罗盘"]
+
+[[query]]
+kind = "chat"
+text = "小雀又一个人跑去北林玩了"
+expect = ["people.md:小雀", "places.md:北林"]
+
+[[query]]
+kind = "chat"
+text = "灯又灭了，我会不会挨罚啊"
+expect = ["lore.md:灯塔会"]
+
+[[query]]
+kind = "chat"
+text = "我手腕上好像长出了奇怪的纹路"
+expect = ["lore.md:潮汐魔法"]
+
+[[query]]
+kind = "chat"
+text = "听说去灰塔的台阶上有个陷阱"
+expect = ["places.md:灰塔"]
+
+[[query]]
+kind = "chat"
+text = "我捡到一枚放在灯下会发绿的硬币"
+expect = ["lore.md:银鳞币"]
+
+[[query]]
+kind = "none"
+text = "今天好累啊"
+expect = []
+
+[[query]]
+kind = "none"
+text = "你好呀"
+expect = []
+
+[[query]]
+kind = "none"
+text = "帮我写一个 Python 脚本"
+expect = []
+
+[[query]]
+kind = "none"
+text = "晚饭吃什么好"
+expect = []
+
+[[query]]
+kind = "none"
+text = "最近在看什么书"
+expect = []
+
+[[query]]
+kind = "none"
+text = "明天要早起开会"
+expect = []
+
+[[query]]
+kind = "none"
+text = "这个周末天气怎么样"
+expect = []
+
+[[query]]
+kind = "none"
+text = "讲个笑话吧"
+expect = []
+
+[[query]]
+kind = "none"
+text = "我有点想家了"
+expect = []
+
+[[query]]
+kind = "none"
+text = "谢谢你"
+expect = []
+
+[[query]]
+kind = "none"
+text = "你觉得我该学什么编程语言"
+expect = []
+
+[[query]]
+kind = "none"
+text = "我的猫又把杯子打翻了"
+expect = []
+
+[[query]]
+kind = "none"
+text = "能不能说慢一点"
+expect = []
+
+[[query]]
+kind = "none"
+text = "嗯嗯，然后呢"
+expect = []
