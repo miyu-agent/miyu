@@ -4,6 +4,9 @@
 //!
 //! 认不认这一份照 `of`：读的一方算的指纹（原文是哪一份、多大、什么时候改的，程序是哪一个），加上这里的 [`VERSION`]。对不上
 //! 的、读不懂的、编号越界的都当没有，照原文现解。
+//!
+//! 两份索引（名字、规整过的名字）也照平铺的样子写下来（施工 V-8，版本 2）：读回来照编号拼，不再一个个规整、排序、去重。
+//! 原来读回来约 8 ms，三成多花在现建索引上；核心起来时载入会话要等它读完。
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -11,12 +14,13 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+use super::index::Index;
 use super::{
-    Catalog, CatalogModel, CatalogProvider, Inputs, ModelTable, Price, Reasoning, Shared, Text, USD,
+    Catalog, CatalogModel, CatalogProvider, Inputs, ModelTable, Price, Reasoning, Text, USD,
 };
 
 /// 写法的版本：这一份的样子变了就加一。
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// 一个模型一行：名字、显示名、家族、能不能调工具、输入、窗口、最大输出、价格、思考强度、能不能调温度、状态、发布日期、
 /// 包名、交错思考的字段。字写 `texts` 里的编号，价格、思考强度写各自那一排里的编号。
@@ -37,9 +41,9 @@ type Row = (
     Option<u32>,
 );
 
-/// 一家供应商：编号、显示名、环境变量、包名、地址、文档、模型。
+/// 一家供应商：编号（`texts` 里的编号，和索引里的条目共用一份字）、显示名、环境变量、包名、地址、文档、模型。
 type Provider<S> = (
-    S,
+    u32,
     Option<S>,
     Vec<S>,
     Option<S>,
@@ -47,6 +51,9 @@ type Provider<S> = (
     Option<S>,
     Vec<Row>,
 );
+
+/// 一份索引平铺的两排（施工 V-8，照 [`Index::parts`]）：键（字的编号）和它的条目从哪到哪；条目（供应商、模型的字的编号）。
+type Flat = (Vec<(u32, u32, u32)>, Vec<(u32, u32)>);
 
 /// 写的那一份。
 #[derive(Serialize)]
@@ -57,6 +64,8 @@ struct Out<'a> {
     prices: Vec<&'a Price>,
     reasonings: Vec<&'a Reasoning>,
     providers: Vec<Provider<&'a str>>,
+    named: Flat,
+    normalized: Flat,
 }
 
 /// 读的那一份。
@@ -71,6 +80,8 @@ struct In<'a> {
     reasonings: Vec<Reasoning>,
     #[serde(borrow)]
     providers: Vec<Provider<Cow<'a, str>>>,
+    named: Flat,
+    normalized: Flat,
 }
 
 impl Catalog {
@@ -79,9 +90,11 @@ impl Catalog {
         let mut writer = Writer::default();
         let providers = self
             .providers
-            .values()
-            .map(|entry| writer.provider(entry))
+            .iter()
+            .map(|(key, entry)| writer.provider(key, entry))
             .collect();
+        let named = writer.index(&self.named);
+        let normalized = writer.index(&self.normalized);
         let out = Out {
             v: VERSION,
             of,
@@ -89,6 +102,8 @@ impl Catalog {
             prices: writer.prices,
             reasonings: writer.reasonings,
             providers,
+            named,
+            normalized,
         };
         serde_json::to_string(&out).unwrap_or_default()
     }
@@ -99,21 +114,17 @@ impl Catalog {
         if read.v != VERSION || read.of != of {
             return None;
         }
-        let mut shared = Shared::default();
-        let texts: Vec<Text> = read
-            .texts
-            .iter()
-            .map(|text| shared.texts.get(text))
-            .collect();
+        // 写的时候同样的字只写了一次：一个编号一份，供应商的编号、模型名、索引里的键和条目都照编号共用它。
+        let texts: Vec<Text> = read.texts.iter().map(|text| Text::from(&**text)).collect();
+        let text_at = |index: u32| texts.get(index as usize).cloned();
+        let at = |index: Option<u32>| -> Option<Option<Text>> {
+            index.map_or(Some(None), |index| text_at(index).map(Some))
+        };
         let prices: Vec<Arc<Price>> = read.prices.into_iter().map(catalog_price).collect();
         let reasonings: Vec<Arc<Reasoning>> = read.reasonings.into_iter().map(Arc::new).collect();
-        let at = |index: Option<u32>| -> Option<Option<Text>> {
-            index.map_or(Some(None), |index| {
-                texts.get(index as usize).cloned().map(Some)
-            })
-        };
         let mut catalog = Catalog::default();
         for (id, name, env, npm, api, doc, rows) in read.providers {
+            let key = text_at(id)?;
             let mut models = Vec::with_capacity(rows.len());
             for row in rows {
                 let model = CatalogModel {
@@ -131,10 +142,10 @@ impl Catalog {
                     npm: at(row.12)?,
                     interleaved: at(row.13)?,
                 };
-                models.push((texts.get(row.0 as usize)?.clone(), model));
+                models.push((text_at(row.0)?, model));
             }
             let entry = CatalogProvider {
-                id: id.to_string(),
+                id: key.to_string(),
                 name: name.map(Cow::into_owned),
                 env: env.into_iter().map(Cow::into_owned).collect(),
                 npm: npm.map(Cow::into_owned),
@@ -142,11 +153,26 @@ impl Catalog {
                 doc: doc.map(Cow::into_owned),
                 models: ModelTable::of(models),
             };
-            catalog.providers.insert(shared.texts.get(&id), entry);
+            catalog.providers.insert(key, entry);
         }
-        catalog.index(&mut shared.texts);
+        catalog.named = index_of(&texts, read.named)?;
+        catalog.normalized = index_of(&texts, read.normalized)?;
         Some(catalog)
     }
+}
+
+/// 照平铺的两排、字的编号拼回一份索引：编号越界的、拼不成（[`Index::from_parts`]）的没有。
+fn index_of(texts: &[Text], (keys, entries): Flat) -> Option<Index> {
+    let text = |index: u32| texts.get(index as usize).cloned();
+    let keys = keys
+        .into_iter()
+        .map(|(key, from, to)| Some((text(key)?, from, to)))
+        .collect::<Option<Vec<_>>>()?;
+    let entries = entries
+        .into_iter()
+        .map(|(provider, model)| Some((text(provider)?, text(model)?)))
+        .collect::<Option<Vec<_>>>()?;
+    Index::from_parts(keys, entries)
 }
 
 /// 写的时候：同样的字、同一份价格、同一份思考强度只写一次，记下编号。
@@ -161,14 +187,14 @@ struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
-    fn provider(&mut self, entry: &'a CatalogProvider) -> Provider<&'a str> {
+    fn provider(&mut self, key: &'a Text, entry: &'a CatalogProvider) -> Provider<&'a str> {
         let rows = entry
             .models
             .iter()
             .map(|(name, model)| self.row(name, model))
             .collect();
         (
-            entry.id.as_str(),
+            self.text(key),
             entry.name.as_deref(),
             entry.env.iter().map(String::as_str).collect(),
             entry.npm.as_deref(),
@@ -198,6 +224,20 @@ impl<'a> Writer<'a> {
             model.npm.as_ref().map(|text| self.text(text)),
             model.interleaved.as_ref().map(|text| self.text(text)),
         )
+    }
+
+    /// 一份索引照 [`Index::parts`] 写成两排，字写编号。
+    fn index(&mut self, index: &'a Index) -> Flat {
+        let (keys, entries) = index.parts();
+        let keys = keys
+            .iter()
+            .map(|(key, from, to)| (self.text(key), *from, *to))
+            .collect();
+        let entries = entries
+            .iter()
+            .map(|(provider, model)| (self.text(provider), self.text(model)))
+            .collect();
+        (keys, entries)
     }
 
     fn text(&mut self, text: &'a Text) -> u32 {

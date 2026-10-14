@@ -344,7 +344,7 @@ fn a_digest_reads_back_the_same_catalog_and_only_for_its_own_fingerprint() {
         None,
         "指纹不对"
     );
-    let other = digest.replacen("{\"v\":1,", "{\"v\":0,", 1);
+    let other = digest.replacen("{\"v\":2,", "{\"v\":1,", 1);
     assert_ne!(other, digest);
     assert_eq!(
         Catalog::from_digest(&other, "snapshot 1 2"),
@@ -358,4 +358,69 @@ fn a_digest_reads_back_the_same_catalog_and_only_for_its_own_fingerprint() {
         None,
         "编号越界"
     );
+}
+
+#[test]
+fn a_digest_carries_both_indexes_and_a_broken_one_is_not_trusted() {
+    // 施工 V-8：两份索引照平铺的样子写进去，读回来照编号拼，不再现规整、现排序；拼不成的（键的先后乱了、段对不上）
+    // 整份当没有，照原文重解。
+    let read = Catalog::parse(TRIMMED).expect("读得进").catalog;
+    let digest = read.digest("of");
+    let value: serde_json::Value = serde_json::from_str(&digest).expect("是 JSON");
+    let keys = value["normalized"][0].as_array().expect("有键").len();
+    assert!(keys > 1, "规整过的名字的索引写进去了：{keys}");
+    let back = Catalog::from_digest(&digest, "of").expect("读得回来");
+    let key = crate::matching::normalize("deepseek-v4.1-flash");
+    assert!(!read.normalized(&key).is_empty(), "样本里有这个模型");
+    assert_eq!(back.normalized(&key), read.normalized(&key));
+
+    let tamper = |edit: &dyn Fn(&mut serde_json::Value)| {
+        let mut value = value.clone();
+        edit(&mut value);
+        Catalog::from_digest(&value.to_string(), "of")
+    };
+    // 每一种坏法只撞一条检查：键的字对调、段不动；挑一段有几个条目的把起点往后挪一位（段不空）；末尾补一个空段。
+    let swapped = tamper(&|value| {
+        let keys = value["named"][0].as_array_mut().expect("有键");
+        let first = keys[0][0].clone();
+        keys[0][0] = keys[1][0].clone();
+        keys[1][0] = first;
+    });
+    assert_eq!(swapped, None, "键的先后乱了");
+    let several = |value: &serde_json::Value| {
+        value["normalized"][0]
+            .as_array()
+            .expect("有键")
+            .iter()
+            .position(|key| key[2].as_u64() > key[1].as_u64().map(|from| from + 1))
+            .expect("样本里有一个规整名对着几个模型")
+    };
+    let gap = tamper(&|value| {
+        let at = several(value);
+        let key = &mut value["normalized"][0][at];
+        key[1] = serde_json::json!(key[1].as_u64().expect("是数") + 1);
+    });
+    assert_eq!(gap, None, "一段的起点接不上前一段");
+    let short = tamper(&|value| {
+        let keys = value["normalized"][0].as_array_mut().expect("有键");
+        keys.pop();
+    });
+    assert_eq!(short, None, "最后一段没了，条目盖不全");
+    let empty = tamper(&|value| {
+        // 一个比哪个键都大的字（`~` 排在字母后面），末尾补一个指着它、一个条目都没有的键。
+        let texts = value["texts"].as_array_mut().expect("有字");
+        texts.push(serde_json::json!("~~~"));
+        let bigger = texts.len() - 1;
+        let entries = value["named"][1].as_array().expect("有条目").len();
+        let keys = value["named"][0].as_array_mut().expect("有键");
+        keys.push(serde_json::json!([bigger, entries, entries]));
+    });
+    assert_eq!(empty, None, "末尾多一个空段");
+    let mixed = tamper(&|value| {
+        let at = several(value);
+        let from = value["normalized"][0][at][1].as_u64().expect("是数") as usize;
+        let entries = value["normalized"][1].as_array_mut().expect("有条目");
+        entries.swap(from, from + 1);
+    });
+    assert_eq!(mixed, None, "段里的条目乱了");
 }

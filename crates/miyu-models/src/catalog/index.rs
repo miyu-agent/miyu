@@ -1,5 +1,6 @@
 //! 照名字找条目的索引（施工 V-5 中）：键照字节排成一排，每个键记着它的条目在另一排里的哪一段。原来是「名字 → 条目的
 //! `Vec`」的 `BTreeMap`：一个名字一次分配，八千多个模型两份索引一万多次分配、约 1.5 MB，平铺以后两排各一次分配。
+//! 整理好的目录把这两排原样写下来（施工 V-8），读回来照 [`Index::from_parts`] 拼，不再现规整、现排序。
 
 use super::{Entry, Text};
 
@@ -31,6 +32,31 @@ impl Index {
             keys: keys.into_boxed_slice(),
             entries: entries.into_boxed_slice(),
         }
+    }
+
+    /// 平铺的两排（施工 V-8：整理好的目录照这个样子写下来）：键和它的条目从哪到哪，条目。
+    pub(super) fn parts(&self) -> (&[(Text, u32, u32)], &[Entry]) {
+        (&self.keys, &self.entries)
+    }
+
+    /// 照 [`Index::parts`] 的两排拼回来，不再排序（施工 V-8）。要和 [`Index::of`] 造出来的一样：键严格照字节升序，每个键
+    /// 的那一段不空、首尾相接地盖住全部条目，段里照字节升序、不重复；不是这样的交回空的（整理好的那一份坏了，照原文重解）。
+    pub(super) fn from_parts(keys: Vec<(Text, u32, u32)>, entries: Vec<Entry>) -> Option<Index> {
+        let mut next = 0;
+        for (at, (key, from, to)) in keys.iter().enumerate() {
+            if *from != next || to <= from || at > 0 && keys[at - 1].0 >= *key {
+                return None;
+            }
+            let range = entries.get(*from as usize..*to as usize)?;
+            if range.windows(2).any(|pair| pair[0] >= pair[1]) {
+                return None;
+            }
+            next = *to;
+        }
+        (next as usize == entries.len()).then(|| Index {
+            keys: keys.into_boxed_slice(),
+            entries: entries.into_boxed_slice(),
+        })
     }
 
     /// 键是 `key` 的条目，照字节排；没有的是空的。
