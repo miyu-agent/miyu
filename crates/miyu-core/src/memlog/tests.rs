@@ -5,44 +5,18 @@ use super::*;
 fn timing() -> Timing {
     Timing {
         every: Duration::from_secs(60),
-        peek: Duration::from_secs(5),
         grew: 32 * 1024 * 1024,
     }
 }
 
 #[test]
-fn a_sample_is_due_on_the_minute_or_when_it_grew_fast() {
+fn growing_fast_is_32_mib_over_the_last_sample() {
     let mib = 1024 * 1024;
     let t = timing();
-    assert_eq!(
-        due(Duration::from_secs(60), 100 * mib, Some(100 * mib), &t),
-        Some(Why::Tick)
-    );
-    assert_eq!(
-        due(Duration::from_secs(61), 100 * mib, None, &t),
-        Some(Why::Tick),
-        "看不到 RSS 也到点"
-    );
-    assert_eq!(
-        due(Duration::from_secs(10), 100 * mib, Some(132 * mib), &t),
-        Some(Why::Grew)
-    );
-    assert_eq!(
-        due(Duration::from_secs(10), 100 * mib, Some(131 * mib), &t),
-        None,
-        "没涨够"
-    );
-    assert_eq!(
-        due(Duration::from_secs(10), 100 * mib, Some(50 * mib), &t),
-        None,
-        "落了不算"
-    );
-    assert_eq!(due(Duration::from_secs(10), 100 * mib, None, &t), None);
-    assert_eq!(
-        due(Duration::ZERO, u64::MAX - 1, Some(u64::MAX - 1), &t),
-        None,
-        "加不溢出"
-    );
+    assert!(grew(100 * mib, 132 * mib, &t));
+    assert!(!grew(100 * mib, 131 * mib, &t), "没涨够");
+    assert!(!grew(100 * mib, 50 * mib, &t), "落了不算");
+    assert!(!grew(u64::MAX - 1, u64::MAX - 1, &t), "加不溢出");
 }
 
 #[test]

@@ -1,11 +1,13 @@
 //! 核心自己记内存账（`docs/designs/23-性能预算.md` F4，施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来时、之后每
 //! [`Timing::every`] 采一次自己的内存（RSS；Linux 上另有 PSS、私有的、匿名的、换出去的，macOS 上另有算在头上的；glibc 的堆；载入着几个会话），一行一个 JSON 写进
-//! `state/logs/memory.jsonl`；两次之间每 [`Timing::peek`] 看一眼 RSS，比上一次采的时候涨了 [`Timing::grew`] 的当场多采一次。
+//! `state/logs/memory.jsonl`；一阵请求过去、安静下来时看一眼 RSS，比上一次采的时候涨了 [`Timing::grew`] 的多采一次（施工
+//! V-6 下，以前两次之间每五秒看一眼）。
 //! 量不出来的平台（Windows，23「后续再定」）不记。
 
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
@@ -23,23 +25,21 @@ pub const FILE: &str = "memory.jsonl";
 /// 一份写到多大换下：换下的是 `memory.jsonl.1`，只留这一份。一分钟一行、一行三百来字节，一份够记两天多。
 pub const LIMIT: u64 = 1024 * 1024;
 
-/// 多久采一次、多久看一眼、涨多少算涨得快。
+/// 多久采一次、涨多少算涨得快。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Timing {
     /// 隔多久采一次。
     pub every: Duration,
-    /// 两次之间隔多久看一眼 RSS。
-    pub peek: Duration,
-    /// RSS 比上一次采的时候涨了这么多字节，当场多采一次。
+    /// 一阵请求过去、安静下来时（施工 V-6 下，`settle.rs`），RSS 比上一次采的时候涨了这么多字节，多采一次。
     pub grew: u64,
 }
 
 impl Default for Timing {
-    /// 一分钟采一次，五秒看一眼，涨 32 MiB 多采：打开一个一万条事件的大会话约涨 20 MB（`docs/perf`），比它大的才算涨得快。
+    /// 一分钟采一次，涨 32 MiB 多采：打开一个一万条事件的大会话约涨 20 MB（`docs/perf`），比它大的才算涨得快。以前两次之间
+    /// 每五秒看一眼 RSS（施工 V-4），空闲的核心每秒因此醒一次多，施工 V-6 下改成安静下来时看。
     fn default() -> Timing {
         Timing {
             every: Duration::from_secs(60),
-            peek: Duration::from_secs(5),
             grew: 32 * 1024 * 1024,
         }
     }
@@ -67,14 +67,9 @@ impl Why {
     }
 }
 
-/// 该不该采：上一次采是 `since` 以前、那时 RSS 是 `was`；这时看到的 RSS 是 `now`（看不到的是没有）。到点了是 `Tick`，
-/// 没到点、涨够了的是 `Grew`。
-pub fn due(since: Duration, was: u64, now: Option<u64>, timing: &Timing) -> Option<Why> {
-    if since >= timing.every {
-        return Some(Why::Tick);
-    }
-    now.filter(|rss| *rss >= was.saturating_add(timing.grew))
-        .map(|_| Why::Grew)
+/// 涨得快不快：上一次采的时候 RSS 是 `was`，这时是 `now`。
+pub fn grew(was: u64, now: u64, timing: &Timing) -> bool {
+    now >= was.saturating_add(timing.grew)
 }
 
 /// 一行（不带换行）：格照名字的字母先后，字节数都是整数。这个平台量不出的那几样不写（`Usage` 里没有的），没有堆的统计的
@@ -115,8 +110,16 @@ pub fn line(
     Value::Object(fields).to_string()
 }
 
+/// 起来以后的记账：账本，和到点采的那个任务。
+pub struct Sampling {
+    /// 账本：安静下来时照它看涨得快不快（[`Ledger::settled`]）。
+    pub ledger: Arc<Ledger>,
+    /// 起来时采一次、之后到点采的任务。
+    pub task: tokio::task::JoinHandle<()>,
+}
+
 /// 起采样：量不出来的平台不起，交回没有。`logs` 是 `state/logs/`，打不开文件的记一行 `WARN`、不起。要在 tokio 的运行时里调。
-pub fn spawn(core: &Arc<Core>, logs: &Path, timing: Timing) -> Option<tokio::task::JoinHandle<()>> {
+pub fn spawn(core: &Arc<Core>, logs: &Path, timing: Timing) -> Option<Sampling> {
     if miyu_heap::usage::resident().is_none() {
         tracing::debug!(target: TARGET, "memory samples unsupported");
         return None;
@@ -128,31 +131,71 @@ pub fn spawn(core: &Arc<Core>, logs: &Path, timing: Timing) -> Option<tokio::tas
             return None;
         }
     };
-    Some(tokio::spawn(watch(Arc::downgrade(core), sink, timing)))
+    let ledger = Arc::new(Ledger {
+        core: Arc::downgrade(core),
+        sink,
+        timing,
+        last: AtomicU64::new(0),
+    });
+    let task = tokio::spawn(Arc::clone(&ledger).tick());
+    Some(Sampling { ledger, task })
 }
 
-/// 一直采到核心没了。
-async fn watch(core: Weak<Core>, sink: Arc<RotatingFile>, timing: Timing) {
-    let mut why = Why::Start;
-    loop {
-        let Some(sessions) = loaded(&core).await else {
-            return;
-        };
-        let writer = Arc::clone(&sink);
-        let taken = tokio::task::spawn_blocking(move || take(&writer, why, sessions)).await;
-        let was = taken.ok().flatten().unwrap_or(0);
-        let since = Instant::now();
-        why = loop {
-            tokio::time::sleep(timing.peek).await;
-            let now = tokio::task::spawn_blocking(miyu_heap::usage::resident)
-                .await
-                .ok()
-                .flatten();
-            if let Some(why) = due(since.elapsed(), was, now, &timing) {
-                break why;
-            }
-        };
+/// 记账的那一份。
+pub struct Ledger {
+    core: Weak<Core>,
+    sink: Arc<RotatingFile>,
+    timing: Timing,
+    /// 上一次采的时候 RSS 多大。
+    last: AtomicU64,
+}
+
+impl Ledger {
+    /// 起来时采一次，之后每 [`Timing::every`] 采一次，一直采到核心没了。
+    async fn tick(self: Arc<Ledger>) {
+        let mut why = Why::Start;
+        while self.take(why).await {
+            tokio::time::sleep(self.timing.every).await;
+            why = Why::Tick;
+        }
     }
+
+    /// 一阵请求过去、安静下来了（施工 V-6 下，`settle.rs` 在还了内存以后叫它）：RSS 比上一次采的时候涨了
+    /// [`Timing::grew`] 以上的，多采一次。不定时看。
+    pub async fn settled(&self) {
+        let now = tokio::task::spawn_blocking(miyu_heap::usage::resident)
+            .await
+            .ok()
+            .flatten();
+        if now.is_some_and(|now| grew(self.last.load(Ordering::Acquire), now, &self.timing)) {
+            self.take(Why::Grew).await;
+        }
+    }
+
+    /// 采一次、写一行，记下这时的 RSS。核心没了的什么都不写，交回假。
+    async fn take(&self, why: Why) -> bool {
+        let Some(sessions) = loaded(&self.core).await else {
+            return false;
+        };
+        let sink = Arc::clone(&self.sink);
+        let taken = tokio::task::spawn_blocking(move || take(&sink, why, sessions)).await;
+        if let Some(rss) = taken.ok().flatten() {
+            self.last.store(rss, Ordering::Release);
+        }
+        true
+    }
+}
+
+/// 安静下来以后看涨得快不快（施工 V-6 下）：交给 `settle.rs`。没有账本的（量不出来的平台）什么都不做。
+pub(crate) fn on_settled(ledger: Option<Arc<Ledger>>) -> crate::settle::Then {
+    Box::new(move || {
+        let ledger = ledger.clone();
+        Box::pin(async move {
+            if let Some(ledger) = ledger {
+                ledger.settled().await;
+            }
+        })
+    })
 }
 
 /// 核心还在的话，这时载入着几个会话。

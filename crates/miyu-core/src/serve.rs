@@ -4,8 +4,6 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use tokio::time::MissedTickBehavior;
-
 use miyu_endpoint::Core;
 use miyu_ipc::Listener;
 
@@ -33,6 +31,9 @@ impl Stopped {
 /// 接连接，直到空闲够久了（没有连接、也没有在跑的回合，连续 `idle` 这么久），或者 `stop` 来了。`stop`
 /// 来了的，先让在跑的会话有计划地停下：跑到一半的回合记成「重启了」，下次载入接着干。停之前请扩展退出（施工 9-4 上）。
 ///
+/// 连着头的时候不定时看空不空闲（施工 V-6 下）：有连接就不算空闲，等连上、断开、来请求的信号（`Activity`）再算。没有连接
+/// 以后才每隔一会儿（`check`：空闲时限的四分之一）看一次（回合、后台命令、扩展忙完没有，没有统一的信号），看到退出为止。
+///
 /// 停之前记一条「停了」：那时锁还在手里，下一个核心起来之前，这一份日志还是它一个人写。交回以后，
 /// 监听器、锁、各个连接都没了。
 pub async fn serve(
@@ -43,17 +44,27 @@ pub async fn serve(
 ) -> Stopped {
     let running = miyu_endpoint::run(listener, Arc::clone(&core));
     tokio::pin!(running, stop);
-    let mut ticks = tokio::time::interval(check(idle));
-    ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
+    let mut changes = core.activity().subscribe();
+    let every = check(idle);
+    // 下一次看的时刻：定死了，有动静不往后推（一直有人来连一下就走的，照样到点看）。
+    let mut next = tokio::time::Instant::now() + every;
     let mut quiet: Option<Instant> = None;
     let stopped = loop {
+        // 连着头：不算空闲，空闲从断开以后重新算。
+        let connected = core.connections() > 0;
+        if connected {
+            quiet = None;
+        }
         tokio::select! {
             never = &mut running => match never {},
             () = &mut stop => {
                 core.stop_sessions().await;
                 break Stopped::Signal;
             }
-            _ = ticks.tick() => {
+            // 有动静了（连上、断开、来请求）：回到上面重新看。信号断不了（核心在它就在），断了也当没动静。
+            Ok(()) = changes.changed() => continue,
+            () = tokio::time::sleep_until(next), if !connected => {
+                next = tokio::time::Instant::now() + every;
                 if !core.idle().await {
                     quiet = None;
                     continue;

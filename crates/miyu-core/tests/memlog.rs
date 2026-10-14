@@ -1,5 +1,5 @@
-//! 核心自己记内存账（施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来就记一行，到点再记，涨得快的当场多记一行；
-//! 量不出来的平台（Windows）不起、不写文件。
+//! 核心自己记内存账（施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来就记一行，到点再记，安静下来时涨得快的多记一行
+//! （施工 V-6 下）；量不出来的平台（Windows）不起、不写文件。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -42,12 +42,11 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
     let core = home.core(Arc::new(Script::new([])), "t");
     let timing = Timing {
         every: Duration::from_millis(200),
-        peek: Duration::from_millis(20),
         grew: u64::MAX,
     };
-    let task = memlog::spawn(&core, &home.root.state().join("logs"), timing);
+    let sampling = memlog::spawn(&core, &home.root.state().join("logs"), timing);
     if !cfg!(any(target_os = "linux", target_os = "macos")) {
-        assert!(task.is_none(), "量不出来的平台不起");
+        assert!(sampling.is_none(), "量不出来的平台不起");
         tokio::time::sleep(Duration::from_millis(300)).await;
         assert!(lines(&home).is_empty());
         return;
@@ -72,13 +71,14 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
         cfg!(target_env = "gnu"),
         "glibc 上带堆的统计：{first}"
     );
-    if let Some(task) = task {
-        task.abort();
+    if let Some(sampling) = sampling {
+        sampling.task.abort();
     }
 }
 
 #[tokio::test]
-async fn growing_fast_takes_one_more_sample() {
+async fn growing_fast_takes_one_more_sample_when_things_settle() {
+    // 施工 V-6 下：两次之间不再定时看一眼；安静下来时看，涨够了的多采一次，没涨够的不采。
     if !cfg!(any(target_os = "linux", target_os = "macos")) {
         return;
     }
@@ -86,20 +86,25 @@ async fn growing_fast_takes_one_more_sample() {
     let core = home.core(Arc::new(Script::new([])), "t");
     let timing = Timing {
         every: Duration::from_secs(3600),
-        peek: Duration::from_millis(20),
         grew: 16 * 1024 * 1024,
     };
-    let task = memlog::spawn(&core, &home.root.state().join("logs"), timing);
+    let sampling = memlog::spawn(&core, &home.root.state().join("logs"), timing).expect("量得出");
     until_why(&home, "start").await;
+    sampling.ledger.settled().await;
+    assert_eq!(lines(&home).len(), 1, "没涨够不采");
     // 64 MiB、每一页都写过：真的进了物理内存。
     let held = vec![1u8; 64 * 1024 * 1024];
-    let lines = until_why(&home, "grew").await;
-    assert!(
-        lines.iter().all(|line| line["why"] != "tick"),
-        "还没到点：{lines:?}"
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(lines(&home).len(), 1, "不定时看：不安静下来不采");
+    sampling.ledger.settled().await;
+    let lines = lines(&home);
+    assert_eq!(
+        lines
+            .iter()
+            .map(|line| line["why"].clone())
+            .collect::<Vec<_>>(),
+        ["start", "grew"]
     );
     std::hint::black_box(&held);
-    if let Some(task) = task {
-        task.abort();
-    }
+    sampling.task.abort();
 }

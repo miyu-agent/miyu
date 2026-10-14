@@ -3,7 +3,14 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+use std::sync::Arc;
+
 use super::*;
+
+/// 安静下来以后什么都不再做。
+fn nothing() -> Then {
+    Box::new(|| Box::pin(async {}))
+}
 
 static RELEASED: AtomicUsize = AtomicUsize::new(0);
 
@@ -28,7 +35,7 @@ async fn released(times: usize) -> bool {
 async fn a_burst_of_requests_is_settled_once_and_quiet_stays_asleep() {
     let quiet = Duration::from_millis(60);
     let activity = Arc::new(Activity::default());
-    let task = spawn(Arc::clone(&activity), quiet, release);
+    let task = spawn(&activity, quiet, release, nothing());
     // 没请求：一直不还。
     tokio::time::sleep(quiet * 3).await;
     assert_eq!(RELEASED.load(Ordering::SeqCst), 0, "没请求不还");

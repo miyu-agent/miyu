@@ -393,9 +393,18 @@ async fn run(
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
     // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。
-    let _sampling = memlog::spawn(&core, &logs, memlog::Timing::default());
-    // 一阵请求过去、安静下来以后把堆里空着的还给系统（施工 V-5 中，[`settle`]）：没请求时不醒。
-    let _settling = settle::spawn(core.activity(), settle::QUIET, miyu_heap::trim);
+    let sampling = memlog::spawn(&core, &logs, memlog::Timing::default());
+    // 一阵请求过去、安静下来以后把堆里空着的还给系统（施工 V-5 中，[`settle`]），再看内存涨得快不快（施工 V-6 下）：没请求时
+    // 不醒。
+    let ledger = sampling
+        .as_ref()
+        .map(|sampling| Arc::clone(&sampling.ledger));
+    let _settling = settle::spawn(
+        &core.activity(),
+        settle::QUIET,
+        miyu_heap::trim,
+        memlog::on_settled(ledger),
+    );
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
     let purging = trash::purge(trashed, admin());

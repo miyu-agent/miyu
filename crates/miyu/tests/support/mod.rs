@@ -76,17 +76,17 @@ impl Home {
         std::fs::read_to_string(self.root.state().join("logs").join("core.log")).unwrap_or_default()
     }
 
-    /// 等核心走：连不上了，锁也放开了。最多六十秒。
+    /// 等核心走：锁放开了，也连不上了。最多六十秒。先只看锁：一直去连它，每连一次都算有人在用，核心的空闲时限从头算
+    /// （施工 V-6 下），就一直不走了。
     pub async fn until_stopped(&self) {
         within("核心走了", async {
-            loop {
-                let gone = matches!(
-                    miyu_ipc::connect(&self.root).await,
-                    Err(ConnectError::NotRunning)
-                );
-                if gone && Lock::acquire(&self.root).is_ok() {
-                    return;
-                }
+            while Lock::acquire(&self.root).is_err() {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+            while !matches!(
+                miyu_ipc::connect(&self.root).await,
+                Err(ConnectError::NotRunning)
+            ) {
                 tokio::time::sleep(Duration::from_millis(20)).await;
             }
         })

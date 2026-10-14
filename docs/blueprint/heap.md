@@ -15,7 +15,7 @@
 | `crates/miyu-core/src/models.rs` | 读完模型目录 trim 一次 |
 | `crates/miyu-session/src/open/load.rs` | 载入一个会话以后 trim 一次（`session/actor.md` 第 2 条） |
 | `crates/miyu-session/src/actor/life.rs` | 会话的 actor 结束、它占的放掉以后 trim 一次（`session/actor.md`）：停下、删掉、闲够了退下（`protocol.md`「会话表」第 9 条）都算 |
-| `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后 trim 一次（施工 V-5 中）；连接每读到一个请求叫一声，信号是 `miyu-endpoint` 的 `Activity`（`activity.rs`） |
+| `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后 trim 一次（施工 V-5 中），再看内存涨得快不快（施工 V-6 下）；连接每读到一个请求、连上、断开都叫一声，信号是 `miyu-endpoint` 的 `Activity`（`activity.rs`，几处各拿一份都叫得醒） |
 
 ### 对外的样子
 
@@ -43,7 +43,7 @@
    ```
 
    `why` 是 `start`（起来时）、`tick`（到点了）、`grew`（涨得快）；`sessions` 是这时载入着几个会话（`Core::loaded`）；不是 glibc 的没有 `heap`。这个平台量不出的那几样不写：macOS 上只有 `rss`、`footprint`（施工 V-4 补），例如 `{"at":"…","footprint":31457280,"rss":52428800,"sessions":0,"why":"start"}`。
-3. **什么时候采**：写了 `ready`、拉起扩展以后记一行 `start`；之后每 5 秒看一眼 RSS（`resident`），离上一次采满 60 秒的记 `tick`，没满、比上一次采的时候涨了 32 MiB 的当场记 `grew`（打开一个一万条事件的大会话约涨 20 MB，比它大的才算涨得快）。读文件、写一行都在阻塞线程里。核心没了（`Core` 只剩弱引用）就停。
+3. **什么时候采**：写了 `ready`、拉起扩展以后记一行 `start`；之后每 60 秒记一行 `tick`。一阵请求过去、安静下来、还过内存以后（「还内存」，`settle.rs`）看一眼 RSS（`resident`），比上一次采的时候涨了 32 MiB 的记 `grew`（打开一个一万条事件的大会话约涨 20 MB，比它大的才算涨得快）。以前两次之间每 5 秒看一眼 RSS，空闲的核心因此每秒醒一次多，施工 V-6 下改成安静下来时看（`Ledger::settled`）：不定时看。读文件、写一行都在阻塞线程里。核心没了（`Core` 只剩弱引用）就停。
 4. **哪些平台记**：Linux（`/proc/self/status` 读得到的）、macOS（施工 V-4 补）。Windows 怎么量还没定（23「后续再定」），不起，记一条 `DEBUG memory samples unsupported`、不建文件。
 5. **开销**：见施工单 `V-4-核心自己记内存账.md`「量到的」。
 
@@ -53,6 +53,6 @@
 |---|---|
 | `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
-| `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 到点、涨够了才采，落了的、没涨够的不采，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；涨了 64 MiB 当场记 `grew`；量不出来的平台不起、不写 |
+| `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写 |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |
 | 量尺（`perf.md`） | 大会话没人订阅、闲够了退下以后核心的内存回落 |
