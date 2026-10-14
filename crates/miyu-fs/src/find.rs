@@ -1,12 +1,12 @@
 //! 模糊找文件（`fs.find`，施工 W-2，`docs/blueprint/web-module.md`「三、列文件、找文件」第 4、6、7、9 条）：在一个
 //! 目录里建一份清单，后台建、随时能读建到现在的那部分；打分、排序。
 //!
-//! 清单在后台线程里建（不是请求的那个线程），不挡别的请求；头隔一阵再问，读到的是建到现在的那部分，`done` 说
-//! 建完了没有。清单记几份、`fresh` 时多久重建是协议端点的事（`crates/miyu-endpoint/src/files.rs`），这里只管
+//! 清单在后台线程里建（不是请求的那个线程），不挡别的请求；读到的是建到现在的那部分，`done` 说建完了没有。要等它
+//! 建完的（`fs.find` 带 `wait`，施工 V-6 上）照 [`Index::wait`] 睡着等，建完了叫醒，不隔一阵再问。清单记几份、`fresh` 时多久重建是协议端点的事（`crates/miyu-endpoint/src/files.rs`），这里只管
 //! 怎么走一遍目录、怎么打分。
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 use std::thread;
 
 use ignore::WalkBuilder;
@@ -48,10 +48,33 @@ pub struct Built {
     pub partial: bool,
 }
 
-/// 一份清单：在后台线程里建，随时能照 [`Index::with`] 读建到现在的那部分。
+/// 一份清单：在后台线程里建，随时能照 [`Index::with`] 读建到现在的那部分，照 [`Index::wait`] 等它建完。
 #[derive(Clone)]
 pub struct Index {
-    shared: Arc<Mutex<Built>>,
+    shared: Arc<Shared>,
+}
+
+/// 建的线程和读的一方共用的：清单，和「建完了」的叫醒。
+#[derive(Default)]
+struct Shared {
+    built: Mutex<Built>,
+    finished: Condvar,
+}
+
+impl Shared {
+    fn lock(&self) -> MutexGuard<'_, Built> {
+        self.built.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// 建的线程结束时（走完、收满，崩了也算）标上建完了、叫醒等着的：等的一方不会一直睡下去。
+struct Finish(Arc<Shared>);
+
+impl Drop for Finish {
+    fn drop(&mut self) {
+        self.0.lock().done = true;
+        self.0.finished.notify_all();
+    }
 }
 
 impl Index {
@@ -65,23 +88,34 @@ impl Index {
         cap: usize,
         on_error: impl FnMut(String) + Send + 'static,
     ) -> Index {
-        let shared = Arc::new(Mutex::new(Built::default()));
-        let into = Arc::clone(&shared);
-        thread::spawn(move || walk(&root, &boundary, cap, &into, on_error));
+        let shared = Arc::new(Shared::default());
+        let finish = Finish(Arc::clone(&shared));
+        thread::spawn(move || {
+            walk(&root, &boundary, cap, &finish.0.built, on_error);
+            drop(finish);
+        });
         Index { shared }
     }
 
     /// 照现在建到的那部分做一件事：拿着锁的这一刻看到的快照。
     pub fn with<R>(&self, f: impl FnOnce(&Built) -> R) -> R {
-        let built = self
-            .shared
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        f(&built)
+        f(&self.shared.lock())
+    }
+
+    /// 睡着等到建完（施工 V-6 上）：建完了的当场回。要睡，在阻塞线程里调。
+    pub fn wait(&self) {
+        let mut built = self.shared.lock();
+        while !built.done {
+            built = self
+                .shared
+                .finished
+                .wait(built)
+                .unwrap_or_else(PoisonError::into_inner);
+        }
     }
 }
 
-/// 走一遍 `root`，把收到的分批写进 `into`；完了把 `done`、`partial` 置好。
+/// 走一遍 `root`，把收到的分批写进 `into`；完了把 `partial` 置好（`done` 由 [`Finish`] 标）。
 fn walk(
     root: &Path,
     boundary: &Boundary,
@@ -143,20 +177,14 @@ fn walk(
         }
     }
     push(into, &mut batch);
-    let mut built = into
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    built.done = true;
-    built.partial = partial;
+    into.lock().unwrap_or_else(PoisonError::into_inner).partial = partial;
 }
 
 fn push(into: &Mutex<Built>, batch: &mut Vec<Found>) {
     if batch.is_empty() {
         return;
     }
-    let mut built = into
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut built = into.lock().unwrap_or_else(PoisonError::into_inner);
     built.entries.append(batch);
 }
 

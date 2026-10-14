@@ -53,6 +53,9 @@ pub(crate) struct FindParams {
     /// 头开列表时写 `true`：清单建好 10 秒以上的重建。
     #[serde(default)]
     fresh: bool,
+    /// 清单还在建的，建完再答（施工 V-6 上）：在后台答，不挡这个连接别的请求。
+    #[serde(default)]
+    wait: bool,
 }
 
 /// `fs.realpath` 的参数（施工 W-3）。
@@ -121,7 +124,12 @@ fn list_blocking(place: &Place, params: ListParams) -> Result<Value, Refusal> {
 /// `fs.find`：在 `cwd` 里模糊找，清单记在核心的 [`Cache`] 里。
 pub(crate) async fn find(core: &Core, params: FindParams) -> Result<Value, Refusal> {
     let place = place(core);
-    let FindParams { cwd, query, fresh } = params;
+    let FindParams {
+        cwd,
+        query,
+        fresh,
+        wait,
+    } = params;
     let (real, boundary) = blocking(move || {
         let boundary = boundary_of(&place);
         let real = require_dir(Path::new("/"), place.home.as_deref(), &cwd, &boundary)?;
@@ -129,6 +137,14 @@ pub(crate) async fn find(core: &Core, params: FindParams) -> Result<Value, Refus
     })
     .await?;
     let index = core.files.get(&real, &boundary, fresh, core.files_fresh);
+    if wait {
+        let waiting = index.clone();
+        blocking(move || {
+            waiting.wait();
+            Ok(())
+        })
+        .await?;
+    }
     let scored = index.with(|built| snapshot(built, &query));
     let items: Vec<Value> = scored
         .hits

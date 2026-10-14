@@ -78,6 +78,11 @@ impl Actor {
                 tokio::spawn(async move { answer(reply, reading.await) });
                 Mail::Done
             }
+            // 头等输出长了（施工 V-6 上）：交回任务那一层的信号，不进内核。
+            Message::Changes(reply) => {
+                drop(reply.send(self.jobs.changes()));
+                Mail::Done
+            }
             // 有会话在等这个会话空下来（施工 C-6，`watchers.rs`）：不进内核，记进名单，上不上膛照 `watchers.rs` 判
             // （2026-10-01 改：空着的先不发，等下一次忙完）。
             Message::Watch { watcher, since } => {

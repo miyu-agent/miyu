@@ -48,7 +48,7 @@ pub use goals::{
 };
 pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
-    RUN_IN_BACKGROUND, SHELL,
+    RUN_IN_BACKGROUND, SHELL, Text,
 };
 pub use knowledge::{
     KB_DELETE, KB_EDIT, KB_HITS, KB_READ, KB_SAVE, KB_SEARCH, KbHit, KbPage, KbRefused, KbSave,

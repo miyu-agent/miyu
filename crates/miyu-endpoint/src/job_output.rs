@@ -2,18 +2,19 @@
 //! 几行。读哪一份由执行器定，和她用 `jobs` 读的是同一份（`Handle::job_output`，`session/tools.md` 第 6 条第 3 款）；这里
 //! 只取尾巴、量上限。
 //!
-//! 输出可能很长（一直开着的服务），头又照一秒一次来读：整份边读边数，不整份读进内存；一行再长，留在内存里的也只有它的
-//! 末尾。
+//! 输出可能很长（一直开着的服务）：整份边读边数，不整份读进内存；一行再长，留在内存里的也只有它的末尾。头一直往下接的
+//! 带 `after` 只要新长出来的那一段，带 `wait` 的没有新的就等（施工 V-6 上，[`after`]）。
 
 use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, ErrorKind, Read};
 use std::sync::Arc;
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use serde_json::{Value, json};
 
 use miyu_kernel::id::{JobId, SessionId};
-use miyu_session::Unreadable;
+use miyu_session::{Handle, Unreadable};
+use miyu_tool::Output;
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -37,32 +38,66 @@ pub(crate) struct Params {
     session: String,
     job: String,
     /// 要最后几行，不写是 [`TAIL`]。写 `null` 的、不是非负整数的读不成，是参数不对。
-    #[serde(default = "default_tail")]
-    tail: u64,
+    #[serde(default, deserialize_with = "written")]
+    tail: Option<u64>,
+    /// 头已经有了前几个字节，只要后面的（施工 V-6 上）。和 `tail` 只能写一个。
+    #[serde(default, deserialize_with = "written")]
+    after: Option<u64>,
+    /// 带 `after` 的：没有新的就等到有、或者命令结束了再答（施工 V-6 上）。
+    #[serde(default)]
+    wait: bool,
 }
 
-fn default_tail() -> u64 {
-    TAIL
+/// 写了的数：写 `null` 的读不成（不当没写）。
+fn written<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<u64>, D::Error> {
+    u64::deserialize(deserializer).map(Some)
 }
 
-/// 读 `params` 说的那一条后台命令的输出，交回回应的 `result`。`tail` 先查，不对的不找会话；再照 `job.stop` 查编号、找会话。
-pub(crate) async fn read(core: &Arc<Core>, params: Params) -> Result<Value, Refusal> {
-    if !(1..=MOST_LINES).contains(&params.tail) {
-        return Err(Refusal::BAD_PARAMS);
+/// 照哪种读。
+enum Mode {
+    /// 最后几行。
+    Tail(usize),
+    /// 第几个字节以后的，等不等。
+    After { after: u64, wait: bool },
+}
+
+impl Params {
+    /// 照哪种读：`tail`、`after` 都写了的，`wait` 没带 `after` 的，`tail` 不在 1 到 [`MOST_LINES`] 的，参数不对。
+    fn mode(&self) -> Result<Mode, Refusal> {
+        match (self.tail, self.after) {
+            (Some(_), Some(_)) => Err(Refusal::BAD_PARAMS),
+            (_, None) if self.wait => Err(Refusal::BAD_PARAMS),
+            (_, Some(after)) => Ok(Mode::After {
+                after,
+                wait: self.wait,
+            }),
+            (tail, None) => {
+                let tail = tail.unwrap_or(TAIL);
+                if !(1..=MOST_LINES).contains(&tail) {
+                    return Err(Refusal::BAD_PARAMS);
+                }
+                usize::try_from(tail)
+                    .map(Mode::Tail)
+                    .map_err(|_| Refusal::BAD_PARAMS)
+            }
+        }
     }
-    let want = usize::try_from(params.tail).map_err(|_| Refusal::BAD_PARAMS)?;
+}
+
+/// 读 `params` 说的那一条后台命令的输出，交回回应的 `result`。参数先查，不对的不找会话；再照 `job.stop` 查编号、找会话。
+pub(crate) async fn read(core: &Arc<Core>, params: Params) -> Result<Value, Refusal> {
+    let mode = params.mode()?;
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let job = JobId::parse(&params.job).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
-    let output = match found.handle.job_output(job).await {
-        Ok(Ok(output)) => output,
-        Ok(Err(Unreadable::Unknown)) => return Err(Refusal::UNKNOWN_JOB),
-        Ok(Err(Unreadable::Agent)) => return Err(Refusal::NOT_A_COMMAND),
-        Err(_) => {
-            core.sessions.forget(&session).await;
-            return Err(Refusal::STOPPED);
+    let handle = &found.handle;
+    let want = match mode {
+        Mode::Tail(want) => want,
+        Mode::After { after, wait } => {
+            return read_after(core, (&session, handle), &job, after, wait).await;
         }
     };
+    let output = output_of(core, (&session, handle), &job).await?;
     let tail = match output.text {
         // 开不了的（没存下来）和空的一样，和 `jobs` 一样。
         None => Tail::default(),
@@ -74,6 +109,63 @@ pub(crate) async fn read(core: &Arc<Core>, params: Params) -> Result<Value, Refu
             })?,
     };
     Ok(reply(tail, output.running))
+}
+
+/// 带 `after` 的（施工 V-6 上）：读 `after` 以后的；带 `wait` 的，没有新的、命令还在跑就等任务那一层叫一声再读。先拿着
+/// 信号再读，读完到等之间长出来的也叫得醒。会话停了、信号断了的，照这时的答。
+async fn read_after(
+    core: &Core,
+    (session, handle): (&SessionId, &Handle),
+    job: &JobId,
+    after: u64,
+    wait: bool,
+) -> Result<Value, Refusal> {
+    let mut changes = match wait {
+        true => Some(handle.job_changes().await.map_err(|_| Refusal::STOPPED)?),
+        false => None,
+    };
+    loop {
+        if let Some(changes) = changes.as_mut() {
+            changes.borrow_and_update();
+        }
+        let output = output_of(core, (session, handle), job).await?;
+        let running = output.running;
+        let piece = match output.text {
+            None => after::Piece {
+                size: after,
+                ..after::Piece::default()
+            },
+            Some(text) => tokio::task::spawn_blocking(move || after::read(text, after, running))
+                .await
+                .map_err(|error| {
+                    tracing::error!(target: TARGET, error = %error, "job output panicked");
+                    Refusal::INTERNAL
+                })?,
+        };
+        let Some(waiting) = changes.as_mut() else {
+            return Ok(piece.reply(running));
+        };
+        if !piece.output.is_empty() || !running || waiting.changed().await.is_err() {
+            return Ok(piece.reply(running));
+        }
+    }
+}
+
+/// 读这一条的输出：没派过的 `unknown_job`，子代理 `not_a_command`；会话停了的从表里拿掉，`stopped`。
+async fn output_of(
+    core: &Core,
+    (session, handle): (&SessionId, &Handle),
+    job: &JobId,
+) -> Result<Output, Refusal> {
+    match handle.job_output(job.clone()).await {
+        Ok(Ok(output)) => Ok(output),
+        Ok(Err(Unreadable::Unknown)) => Err(Refusal::UNKNOWN_JOB),
+        Ok(Err(Unreadable::Agent)) => Err(Refusal::NOT_A_COMMAND),
+        Err(_) => {
+            core.sessions.forget(session).await;
+            Err(Refusal::STOPPED)
+        }
+    }
 }
 
 /// 回应的 `result`：格照名字的字母先后排（`serde_json` 的对象就是这样排的）。
@@ -211,5 +303,6 @@ fn fit(mut raw: Vec<u8>, cut: bool) -> (String, bool) {
     (text, true)
 }
 
+mod after;
 #[cfg(test)]
 mod tests;

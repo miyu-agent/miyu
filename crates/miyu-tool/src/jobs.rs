@@ -19,7 +19,7 @@ pub const RUN_IN_BACKGROUND: &str = "run_in_background";
 
 use std::fmt;
 use std::future::Future;
-use std::io::{self, Read};
+use std::io::{self, Read, Seek};
 use std::pin::Pin;
 
 use miyu_kernel::event::JobKind;
@@ -64,12 +64,18 @@ pub struct Listed {
     pub took_ms: u64,
 }
 
+/// 读到的输出：能从头读，也能跳到中间接着读（施工 V-6 上：头带 `after` 读 `job.output` 只要新长出来的那一段）。输出文件、
+/// blob、内存里的一段字都是。
+pub trait Text: Read + Seek + Send {}
+
+impl<T: Read + Seek + Send> Text for T {}
+
 /// 读到的一个任务的输出（施工 7-4）。
 pub struct Output {
     /// 后台命令、子代理。
     pub what: JobKind,
     /// 读到的字：后台命令的输出，子代理最近的回答，已经是合法的 UTF-8。没有的（输出没存下来、子代理还没说过话）是空的。
-    pub text: Option<Box<dyn Read + Send>>,
+    pub text: Option<Box<dyn Text>>,
     /// 还在跑：后台命令还没结束，子代理这一轮还没完。
     pub running: bool,
     /// 子代理这一步在跑的工具，照先后；后台命令、闲着的子代理是空的。

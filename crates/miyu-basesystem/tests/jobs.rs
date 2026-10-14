@@ -1,7 +1,7 @@
 //! `jobs`（`docs/blueprint/tools/jobs.md`，施工 7-4）：三个动作的输出逐字节比；读输出照 `read` 分页；停交给端口，没有、结束了
 //! 的出错；参数不对的照共用的那一句。给人看的说法两种语言都换得出字。
 
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use serde_json::json;
@@ -56,7 +56,7 @@ impl JobPort for Port {
     fn output(&self, job: JobId) -> Asking<'_, Result<Output, JobError>> {
         let reader = |text: &Option<String>| {
             text.clone()
-                .map(|text| Box::new(Cursor::new(text)) as Box<dyn Read + Send>)
+                .map(|text| Box::new(Cursor::new(text)) as Box<dyn miyu_tool::Text>)
         };
         let output = match job.to_string().as_str() {
             "j1" => Ok(Output {

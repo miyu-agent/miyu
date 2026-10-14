@@ -4,7 +4,7 @@ use std::fmt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
 use miyu_kernel::event::{Event, Transient};
 use miyu_kernel::id::{AccountId, CommandId, JobId, SessionId, VenueId};
@@ -16,6 +16,7 @@ use miyu_tool::{JobError, Log, Output};
 
 use crate::backlog::Backlog;
 
+mod jobs;
 mod retire;
 mod subscription;
 
@@ -81,6 +82,8 @@ pub(crate) enum Message {
         job: JobId,
         reply: oneshot::Sender<Result<Output, Unreadable>>,
     },
+    /// 头等输出长了（施工 V-6 上）：交回这个会话的任务那一层的信号。
+    Changes(oneshot::Sender<watch::Receiver<u64>>),
     /// 现在就整理记忆（施工 R-7 补）：先抽这个会话还没抽的，再合，交回几样数。
     Dream(oneshot::Sender<Result<crate::memory::Dreamed, crate::memory::NotDreamed>>),
     /// 会话 `watcher` 等这个会话空下来（施工 C-6）：记进名单，不进内核、不写盘；`since` 是那一边这次订的起算时刻。
@@ -380,19 +383,6 @@ impl Handle {
             cause,
             reply,
         }))?;
-        answer.await.map_err(|_| Stopped)
-    }
-
-    /// 头读后台命令 `job` 的输出（施工 7-4 补，协议的 `job.output`）：交回读得到的字、它还在不在跑。读的和她用 `jobs` 读的
-    /// 是同一份（`docs/blueprint/session/tools.md` 第 6 条第 3 款）：结束了、存成 blob 的读 blob，别的读会话目录下的输出
-    /// 文件，跑着的读到这时的。不进内核、不写盘：是什么照名册当场看，开文件另起一个任务，不占 actor。
-    ///
-    /// # Errors
-    ///
-    /// 会话停了。里面那一层：这个会话没派过这个任务（[`Unreadable::Unknown`]），或者它是子代理（[`Unreadable::Agent`]）。
-    pub async fn job_output(&self, job: JobId) -> Result<Result<Output, Unreadable>, Stopped> {
-        let (reply, answer) = oneshot::channel();
-        self.send(Message::Output { job, reply })?;
         answer.await.map_err(|_| Stopped)
     }
 

@@ -20,7 +20,7 @@ pub(super) struct Page {
 impl Page {
     /// 从 `source` 的第 `offset` 行（从 1 数起）读一页。读到一半读不下去的（文件被删了之类），读到多少算多少。解不开的
     /// 字节换成 `�`：写进去的都是解好的字，只有一行被截在半个字上时会碰到。
-    pub(super) fn read(source: Box<dyn Read + Send>, offset: u64) -> Page {
+    pub(super) fn read(source: impl Read, offset: u64) -> Page {
         let mut page = Page::default();
         let mut chars = 0;
         let mut full = false;

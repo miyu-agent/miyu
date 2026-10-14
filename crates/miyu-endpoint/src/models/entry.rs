@@ -39,13 +39,15 @@ use miyu_session::ModelData;
 
 use super::Snapshot;
 
-/// 编号 `id` 这一家，冷却照 `now` 这一刻，能出向量的照 `names` 认。
+/// 编号 `id` 这一家，冷却照 `now` 这一刻，能出向量的照 `names` 认。给了 `only` 的只列这几个模型（施工 V-6 上，
+/// `model.list` 的 `models`），在算每个模型的资料之前就筛掉。
 pub(crate) fn provider(
     data: &ModelData,
     snapshot: &Snapshot,
     id: &str,
     now: Timestamp,
     names: &EmbeddingNames,
+    only: Option<&BTreeSet<String>>,
 ) -> Value {
     let values = snapshot.resolved.values();
     let settings = ProviderSettings::at(&values, &[id]);
@@ -105,6 +107,9 @@ pub(crate) fn provider(
                             .or_default()
                             .insert("catalog");
                     }
+                }
+                if let Some(only) = only {
+                    listed.retain(|model, _| only.contains(model));
                 }
                 let models: Vec<Value> = listed
                     .into_iter()

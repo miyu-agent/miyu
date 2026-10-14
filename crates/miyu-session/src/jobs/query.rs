@@ -4,13 +4,13 @@
 
 use std::fs::File;
 use std::future::Future;
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 use std::sync::Arc;
 
 use miyu_kernel::event::JobKind;
 use miyu_kernel::id::{JobId, SessionId};
 use miyu_store::jobs::output_path;
-use miyu_tool::{JobError, Output};
+use miyu_tool::{JobError, Output, Text};
 
 use super::stop::{Who, Why, stop_agent, stopped_report};
 use super::{Ended, SessionJobs, Shared};
@@ -93,7 +93,7 @@ impl Shared {
                 let text = blocking(move || File::open(path).ok()).await;
                 Ok(Output {
                     what,
-                    text: text.map(|file| Box::new(file) as Box<dyn Read + Send>),
+                    text: text.map(|file| Box::new(file) as Box<dyn Text>),
                     running,
                     doing: Vec::new(),
                 })
@@ -108,7 +108,7 @@ impl Shared {
                     what,
                     text: peek
                         .reply
-                        .map(|reply| Box::new(Cursor::new(reply)) as Box<dyn Read + Send>),
+                        .map(|reply| Box::new(Cursor::new(reply)) as Box<dyn Text>),
                     running: peek.working,
                     doing: peek.doing,
                 })

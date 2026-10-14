@@ -274,3 +274,55 @@ fn unreadable_subdirectories_are_skipped_and_reported_through_the_callback() {
         "读不了一层目录，`on_error` 收到那一句"
     );
 }
+
+/// 照 [`Index::wait`] 等，最多五秒：等不到的当场红，不把整套测试卡死。
+fn waited(index: &Index) -> bool {
+    let (done, waited) = std::sync::mpsc::channel();
+    let waiting = index.clone();
+    std::thread::spawn(move || {
+        waiting.wait();
+        // 等的那一头超时走了的，送不到也不要紧。
+        done.send(()).unwrap_or_default();
+    });
+    waited.recv_timeout(Duration::from_secs(5)).is_ok()
+}
+
+#[test]
+fn wait_sleeps_until_the_index_is_built() {
+    // 施工 V-6 上：`fs.find` 带 `wait` 的照它睡着等，建完了回来就是整份。
+    let scratch = Scratch::new();
+    let root = &scratch.0;
+    for n in 0..300 {
+        touch(root, &format!("d{}/f{n}.rs", n % 7));
+    }
+    let index = Index::start(root.clone(), permissive(root), CAP, no_errors);
+    assert!(waited(&index), "建完了就叫醒");
+    index.with(|built| {
+        assert!(built.done);
+        assert_eq!(built.entries.len(), 307, "300 个文件、7 个目录");
+    });
+    assert!(waited(&index), "建完了的当场回");
+}
+
+#[cfg(unix)]
+#[test]
+fn wait_returns_even_when_building_breaks() {
+    // 建清单的线程崩了也标上建完了：等的一方不会一直睡下去。
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = Scratch::new();
+    let root = &scratch.0;
+    touch(root, "open/a.rs");
+    touch(root, "locked/b.rs");
+    let locked = root.join("locked");
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).expect("改得了权限");
+    static BROKE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    let index = Index::start(root.clone(), permissive(root), CAP, |error| {
+        BROKE.store(true, Ordering::SeqCst);
+        panic!("读不了一层目录：{error}")
+    });
+    let woke = waited(&index);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).expect("改得回来");
+    assert!(woke, "崩了也叫醒");
+    assert!(BROKE.load(Ordering::SeqCst), "真崩过");
+    assert!(index.with(|built| built.done));
+}

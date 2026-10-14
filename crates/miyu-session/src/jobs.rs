@@ -25,9 +25,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Instant;
 
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 
-use miyu_kernel::event::{Event, JobReason, JobReported};
+use miyu_kernel::event::{Body, Event, JobReason, JobReported};
 use miyu_kernel::id::{CallId, CommandId, JobId};
 use miyu_kernel::origin::{By, Tool};
 use miyu_kernel::session::Input;
@@ -122,6 +122,9 @@ struct Shared {
     roster: Mutex<Roster>,
     /// 停子代理、读它在做什么要的会话表的端口（施工 7-4）：会话表交进来了才有。
     agents: Option<Arc<Agents>>,
+    /// 后台命令的输出写进一段、关上，回报落了盘，都叫一声（施工 V-6 上）：头带 `wait` 读 `job.output` 的等着它。actor 停了
+    /// 跟着没了，等着的那一头就知道不用等了。
+    changes: Arc<watch::Sender<u64>>,
 }
 
 /// 一条后台命令结束了，交回 actor 的：`job.reported` 的 `by`、`cause`、`body`（`kernel/session.md`「回报」第 2 条）。
@@ -157,17 +160,31 @@ impl SessionJobs {
                 backs,
                 roster: Mutex::new(roster),
                 agents,
+                changes: Arc::new(watch::Sender::new(0)),
             }),
             landing: Vec::new(),
         }
     }
 
-    /// 落了盘的一批：派出去的任务、回报记进 [`Roster`]（施工 7-4）。
+    /// 落了盘的一批：派出去的任务、回报记进 [`Roster`]（施工 7-4）。有后台命令的回报的，叫一声（施工 V-6 上）：等着读它
+    /// 输出的头醒来看见它不在跑了。
     pub(crate) fn note(&self, events: &[Event]) {
         let mut roster = self.shared.roster();
         for event in events {
             roster.note(event);
         }
+        drop(roster);
+        if events
+            .iter()
+            .any(|event| matches!(event.body, Body::JobReported(_)))
+        {
+            output::bump(&self.shared.changes);
+        }
+    }
+
+    /// 后台命令的输出长了、结束了的信号（施工 V-6 上，[`Shared::changes`]）。
+    pub(crate) fn changes(&self) -> watch::Receiver<u64> {
+        self.shared.changes.subscribe()
     }
 
     /// 交给调用 `call_id` 的任务端口：它起的命令自己退出了，`by` 是这次调用，`cause` 是它所在那一轮的 `cause`。

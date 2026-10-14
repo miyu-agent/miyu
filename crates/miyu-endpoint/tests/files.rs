@@ -3,7 +3,7 @@
 //! `fresh` 隔一段时间才重建；最多记几份、多了丢最久没用的；`path` 一律用 `/`。
 
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
@@ -46,23 +46,17 @@ fn paths(reply: &Value) -> Vec<String> {
         .collect()
 }
 
-/// 一直发 `fs.find`，等到 `building` 是 `false`，最多六十秒：建清单在后台线程里，别写成死等。
+/// 带 `wait` 发一次 `fs.find`（施工 V-6 上）：清单建完再答，`building` 一定是 `false`。用到它的测试都顺带守着 `wait`。
 async fn until_built(client: &mut Client, cwd: &str, query: &str, fresh: bool) -> Value {
-    let until = Instant::now() + Duration::from_secs(60);
-    loop {
-        let reply = client
-            .call(
-                "f",
-                "fs.find",
-                json!({"cwd": cwd, "query": query, "fresh": fresh}),
-            )
-            .await;
-        if reply["result"]["building"] == json!(false) {
-            return reply;
-        }
-        assert!(Instant::now() < until, "六十秒内清单没建完：{reply}");
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
+    let reply = client
+        .call(
+            "f",
+            "fs.find",
+            json!({"cwd": cwd, "query": query, "fresh": fresh, "wait": true}),
+        )
+        .await;
+    assert_eq!(reply["result"]["building"], json!(false), "{reply}");
+    reply
 }
 
 #[tokio::test]

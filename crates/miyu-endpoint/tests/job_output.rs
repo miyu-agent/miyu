@@ -350,3 +350,103 @@ async fn a_subagent_is_not_a_command() {
         json!("Not a background command.")
     );
 }
+
+/// 读 `j1` 带 `after` 的输出（施工 V-6 上），`wait` 照给的；交回回应的 `result`。
+async fn after(client: &mut Client, id: &str, session: &str, after: u64, wait: bool) -> Value {
+    let params = json!({"session": session, "job": "j1", "after": after, "wait": wait});
+    let reply = client.call(id, "job.output", params).await;
+    assert!(reply.get("error").is_none(), "{reply}");
+    reply["result"].clone()
+}
+
+#[tokio::test]
+async fn after_reads_only_what_is_new_and_wait_sleeps_until_it_grows_or_ends() {
+    // 施工 V-6 上：头一直往下接，只要新长出来的；带 `wait` 的没有新的就等，长了、结束了才答，不隔一阵再问。
+    let home = Home::new();
+    let held = Held::streaming(&["building\n"]);
+    let (mut client, session) = started(&home, &held, vec![Play::Says("跑完了。")]).await;
+    read_until(&mut client, &session, |got| got["lines"] == json!(1)).await;
+    let first = after(&mut client, "a1", &session, 0, false).await;
+    assert_eq!(
+        first,
+        json!({"more": false, "output": "building\n", "running": true, "size": 9})
+    );
+    assert_eq!(
+        after(&mut client, "a2", &session, 9, false).await,
+        json!({"more": false, "output": "", "running": true, "size": 9}),
+        "不带 wait 的没有新的当场答"
+    );
+    let writer = Arc::clone(&held);
+    let grow = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        writer.say("half\n");
+    });
+    let began = std::time::Instant::now();
+    let grown = after(&mut client, "a3", &session, 9, true).await;
+    assert!(
+        began.elapsed() >= Duration::from_millis(100),
+        "等到长了才答"
+    );
+    assert_eq!(
+        grown,
+        json!({"more": false, "output": "half\n", "running": true, "size": 14})
+    );
+    grow.await.expect("没有 panic");
+    let ender = Arc::clone(&held);
+    let end = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        ender.end(Exit::Code(0));
+    });
+    let ended = after(&mut client, "a4", &session, 14, true).await;
+    assert_eq!(
+        ended,
+        json!({"more": false, "output": "", "running": false, "size": 14}),
+        "结束了、回报落了盘就答"
+    );
+    end.await.expect("没有 panic");
+}
+
+#[tokio::test]
+async fn after_and_tail_do_not_mix_and_wait_needs_after() {
+    let home = Home::new();
+    let held = Held::new(&["x\n"]);
+    let (mut client, session) = started(&home, &held, Vec::new()).await;
+    let base = json!({"session": session, "job": "j1"});
+    for (n, extra) in [
+        json!({"after": 0, "tail": 5}),
+        json!({"wait": true}),
+        json!({"wait": true, "tail": 5}),
+        json!({"after": null}),
+        json!({"after": -1}),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut params = base.clone();
+        for (key, value) in extra.as_object().unwrap() {
+            params[key] = value.clone();
+        }
+        let reply = client.call(&format!("b{n}"), "job.output", params).await;
+        assert_eq!(
+            reply["error"]["data"]["reason"], "bad_params",
+            "{extra} {reply}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_waiting_read_does_not_hold_up_the_connection() {
+    // 等着的那一条在后台答：同一个连接上后发的请求照样先答（施工 V-6 上）。
+    let home = Home::new();
+    let held = Held::streaming(&["a\n"]);
+    let (mut client, session) = started(&home, &held, Vec::new()).await;
+    read_until(&mut client, &session, |got| got["lines"] == json!(1)).await;
+    let waiting = json!({"jsonrpc": "2.0", "id": "w1", "method": "job.output",
+        "params": {"session": session, "job": "j1", "after": 2, "wait": true}});
+    client.line(&waiting.to_string()).await;
+    let quick = after(&mut client, "q1", &session, 0, false).await;
+    assert_eq!(quick["output"], "a\n", "等着的那一条没挡住它");
+    held.say("b\n");
+    let (_, woke) = client.until_reply("w1").await;
+    assert_eq!(woke["result"]["output"], "b\n", "{woke}");
+}

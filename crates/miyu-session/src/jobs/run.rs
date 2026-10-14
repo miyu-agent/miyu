@@ -50,7 +50,11 @@ impl JobPort for Port {
                 return Err(error);
             }
         };
-        let sink = Arc::new(Output::new(output_path(&shared.dir, &job), file));
+        let sink = Arc::new(Output::new(
+            output_path(&shared.dir, &job),
+            file,
+            Arc::clone(&shared.changes),
+        ));
         let key = (shared.owner, job.clone());
         let started = Instant::now();
         {

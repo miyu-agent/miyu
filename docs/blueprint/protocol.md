@@ -178,7 +178,7 @@
 | `command.catalog` | 列核心认的斜杠命令，给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补） |
 | `session.answer` | 回答一次确认（允许这一次、本会话都允许、拒绝），或者一组题（施工 D-1） |
 | `job.stop` | 停掉一个后台命令或者子代理（施工 7-4） |
-| `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补） |
+| `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：第一次给管理员设网页登录的用户名和密码、忘了密码重设；只给出示本机令牌的连接（施工 W-8） |
 | `account.setup` | 用一次性码连上的设用户名和密码，换一个登录令牌（施工 W-8） |
@@ -186,7 +186,7 @@
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
 | `blob.get` | 分块读这个账号的一个 blob：照属主给，不照会话（施工 W-6） |
 | `fs.list` | 列一层目录：数据根只有账号自己的默认工作区能列（施工 W-2） |
-| `fs.find` | 在一个目录里模糊找文件：数据根只有账号自己的默认工作区能找（施工 W-2） |
+| `fs.find` | 在一个目录里模糊找文件：数据根只有账号自己的默认工作区能找（施工 W-2）；带 `wait` 等清单建完再答（施工 V-6 上） |
 | `fs.realpath` | 一个路径换成真实的位置：不查边界，落在数据根里的照样换（施工 W-3） |
 | `fs.read` | 分块读本机的一份文件：数据根只有账号自己的默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
@@ -201,7 +201,7 @@
 | `secret.set` | 写入或者换掉一个密钥（`name`、`value`），落了盘、记了日志才回应 `{"replaced"}`（施工 8-5，`config.md`「协议」）；扩展进程调回 `local_only`（施工 T-9） |
 | `secret.delete` | 删掉一个密钥（`name`），回应 `{}`（施工 8-5）；扩展进程调回 `local_only`（施工 T-9） |
 | `secret.list` | 密钥的名字、设没设、谁在用（`used_by`），从不交出值（施工 8-5） |
-| `model.list` | 配好的供应商和模型，每一格资料的值和来源、状态，在用的目录（施工 8-7）；池、两种用途（施工 8-8：`pools`、`uses` 多 `vision`；8-8 补去掉 `tiers`，池多 `subagent`、`description`）；模型、key 的状态多 `cooling`，带 `until`、`class`（施工 8-9）；每个模型的 `facts` 多 `effort`（施工 8-18），多一格 `key`（8-18（补））。参数 `provider`（只看这一家）、`refresh`（先拉一遍供应商的模型列表）都可以不写；形状照 `models.md`「协议」`model.list` |
+| `model.list` | 配好的供应商和模型，每一格资料的值和来源、状态，在用的目录（施工 8-7）；池、两种用途（施工 8-8：`pools`、`uses` 多 `vision`；8-8 补去掉 `tiers`，池多 `subagent`、`description`）；模型、key 的状态多 `cooling`，带 `until`、`class`（施工 8-9）；每个模型的 `facts` 多 `effort`（施工 8-18），多一格 `key`（8-18（补））。参数 `provider`（只看这一家）、`refresh`（先拉一遍供应商的模型列表）、`models`（只要这几个，施工 V-6 上）都可以不写；形状照 `models.md`「协议」`model.list` |
 | `provider.detect` | 找现成的：核心的环境里设了的 key（不交值）、本机跑着的模型服务、找了哪些环境变量（施工 8-11）；形状照 `models.md`「协议」 |
 | `provider.catalog` | 搜目录和档案里的供应商：`query`、`limit` 都可以不写；每一家能不能用、在不在本机（施工 8-11）；`featured` 只要常用的几家（施工 8-11 再补）；每一家的图标 `logo`（施工 8-31，`models.md`「图标」，`model.list` 每一家也有） |
 | `provider.test` | 试一家：配好了的（`provider`）或者还没写进配置的（`candidate`）。列得出模型就算通（施工 8-11 五补）；列不出、写的模型不在列表里的才真发一句，收到第一段正文就停，那时会花一点额度；交回成没成、哪一步、出错，要模型名的带 `need_model`（施工 8-11） |
@@ -361,12 +361,13 @@
 | `cwd` | 字符串，必写 | 在哪个目录里找，写法同上 |
 | `query` | 字符串，不写是 `""` | 打的字 |
 | `fresh` | 布尔，不写是 `false` | 头开列表时写 `true`：清单建好 10 秒以上的重建 |
+| `wait` | 布尔，不写是 `false` | 清单还在建的，建完再答（施工 V-6 上） |
 
 回应同 `fs.list`，另有 `building`：清单还在建。
 
 1. `cwd` 照 `fs.list` 第 1 条换、查边界。
 2. 在 `cwd` 里建一份清单：`ignore` 库，和核心的 `glob`、`grep` 同一套，认 `.gitignore`（不要求是 git 仓库），跳过隐藏目录和出厂名单里的 `node_modules`、`target`，跳过数据根（工作区除外，工作区常常就在数据根里面），不跟链接；最深 8 层，最多 20000 个，收满就停、`partial` 是 `true`。`path` 是相对 `cwd` 的，用 `/` 连，目录后面带 `/`。
-3. 清单在后台线程里建，不挡别的请求。还没建完，照已经建好的那一部分答，`building` 是 `true`；头隔 200 毫秒再问，直到 `false`。
+3. 清单在后台线程里建，不挡别的请求。还没建完，照已经建好的那一部分答，`building` 是 `true`。头要整份的再发一次带 `wait: true` 的（施工 V-6 上，以前头隔 200 毫秒再问，直到 `false`）：建完了再答，`building` 一定是 `false`。带 `wait` 的在后台答（这个连接别的请求照答）；等是睡着等，建清单的线程走完、收满、崩了都叫醒（`miyu_fs::Index::wait`），不隔一阵再看。连接断了的，等着的那一条跟着丢掉。
 4. 什么时候重建：这个目录还没有清单；`fresh` 是 `true`、清单建好 10 秒以上。核心最多记 4 个目录的清单，多了丢最久没用的。同一个目录同时来两次，第二次拿到第一次那一份。
 5. 怎么排：打的字照先后都在 `path` 里（大小写不论）才列。先试整个落在文件名里，落不下再从路径开头找；每个字对上 1 分，落在文件名里多 3 分，在一段的开头（路径的头一个字，或者前面是 `/`、`-`、`_`、`.`、空格）多 8 分，和上一个字连着多 5 分；文件名去掉扩展名正好是打的字多 100 分。分高的在前，一样的路径短的在前，再一样的照字排。最多 50 条，对得上的比截出来的还多也算 `partial`。`query` 是空的都对得上、0 分。
 6. 建清单时读不了一层目录的（没有权限这类），跳过它接着建，不算整份失败。
@@ -748,8 +749,10 @@
 | `session` | 字符串，必写 | 哪个会话派出去的 |
 | `job` | 字符串，必写 | 任务编号，`j1` 这样 |
 | `tail` | 整数，不写是 200 | 要最后几行：1 到 2000 |
+| `after` | 整数，可以不写 | 头已经有了前几个字节（UTF-8），只要后面的（施工 V-6 上）。和 `tail` 只能写一个 |
+| `wait` | 布尔，不写是 `false` | 带 `after` 的：没有新的、命令还在跑，就等到有新的或者它结束再答（施工 V-6 上） |
 
-回应：`lines` 一共几行、`output` 交的字、`running` 还在不在跑、`truncated` 前面还有没有没交的。查询，不改会话：什么都不写，不推送。例子（格照名字的字母先后排）：
+回应：`lines` 一共几行、`output` 交的字、`running` 还在不在跑、`truncated` 前面还有没有没交的。带 `after` 的回应换成另一个样子，见第 9 条。查询，不改会话：什么都不写，不推送。例子（格照名字的字母先后排）：
 
 ```json
 {"id":"o1","jsonrpc":"2.0","result":{"lines":2,"output":"building\nhalf\n","running":true,"truncated":false}}
@@ -759,10 +762,16 @@
 2. `output` 只交最后 `tail` 行，照原样接起来：每一行带着它的换行，最后一段没有换行的照样没有；解不开的字节换成 `�`，和 `jobs` 一样。`lines` 照 `jobs` 的数法数一共几行：照换行切，最后一段没有换行的也算一行，只有 `\r` 的不切。一行都没有的，`output` 是空字符串、`lines` 是 0。
 3. 一次最多交 128 KiB（131,072 字节，照 UTF-8 算）：一行最长 1 MiB（「一行一条」），字写进 JSON 最坏一个字节变六个（控制字符写成 `\u001b` 这样），回应的其余部分不到 1 KiB，6 × 128 KiB + 1 KiB 放得进一行。最后 `tail` 行超了的，从前面按整行去掉；最后一行自己就超了的，只交它的末尾：不过 128 KiB，从一个字的开头起，前面的行都不交（接着别的行，看着就像它从那里开头）。
 4. `truncated` 是前面还有没交的：去掉了前面的行，或者只交了最后一行的末尾。
-5. 在阻塞线程里读，整份边读边数，不整份读进内存：一行再长，留在内存里的也只有它的末尾。每读一次都从头数：头照 1 秒读一次（网页演示这样接），推增量随 M8（「还没有的」）。
+5. 在阻塞线程里读，整份边读边数，不整份读进内存：一行再长，留在内存里的也只有它的末尾。不带 `after` 的每读一次都从头数；头一直往下接的带 `after`、`wait`（第 9、10 条，施工 V-6 上）。
 6. `tail` 先查：写了 0、负数、超过 2000、不是整数的（小数、字符串、`null`……）：`bad_params`，不找会话。`job` 照 `job.stop` 第 3 条，不合写法的 `bad_params`。先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
 7. 这个会话没派过这个任务（不认识的种类也算）：`unknown_job`，和 `job.stop` 同一个原因码。是子代理的：`not_a_command`，它说了什么，头订阅它的子会话看（`agents.md`）。
 8. 谁能读照 `job.stop`：现在连上来的只有管理员（「还没有的」）。
+9. **带 `after` 的**（施工 V-6 上）：头一直往下接的写它，不再每次从头数。回应是 `{"more", "output", "running", "size"}`：
+   - 从第 `after` 个字节读起（输出文件、blob 都是能跳着读的文件，跳过去读，不从头读），最多 128 KiB（同第 3 条）；`after` 过了结尾的照结尾算。
+   - `size` 是到这一段为止一共多少字节，停在一个完整的字后面：最后几个字节是半个字的（后面还会写进来，或者被上限截在了字中间）先不交，留到下一次。命令已经结束、后面也没有了的照原样交，解不开的换成 `�`。下一次照 `size` 写 `after`。
+   - `more` 是这一段后面还有没交的（上限截住了）。不给 `lines`：头自己数（第一次带 `tail` 拿到的 `lines`，加上之后每段里的换行；上一段末尾没有换行的那一行别再加一）。
+   - `after` 和 `tail` 都写了的，`after` 不是非负整数的（写 `null` 的也算），`wait` 没带 `after` 的：`bad_params`，不找会话。
+10. **带 `wait` 的**（施工 V-6 上）：有新的字、或者命令已经不在跑了，当场答；不然在后台等（这个连接别的请求照答），等会话的任务那一层叫一声（这个会话哪一条后台命令的输出写进了一段、关上了，哪一条的回报落了盘，都叫一声，`Handle::job_changes`）再读一遍，照这时的答。先拿着信号再读：读完到开始等之间长出来的也叫得醒。不设上限、没有定时器；会话停了的照那时的答；连接断了的，等着的那一条跟着丢掉。头收起浮层以后，晾着的那一条回来了丢掉就是。
 
 **`human.get`**（施工 W-1，`web-module.md`「二、给人看的字」）
 
@@ -1131,7 +1140,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `parse_error` | -32700 | 不是 JSON；一行太长（之后断开） |
 | `invalid_request` | -32600 | 是 JSON，不是请求（「请求」的表） |
 | `unknown_method` | -32601 | 握手以后，没有这个方法 |
-| `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `workspace`、`full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6）；`view.page` 第 7 条那几种（施工 9-6 下） |
+| `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `workspace`、`full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补），`after` 不是非负整数、和 `tail` 都写了、`wait` 没带 `after`（施工 V-6 上）；`model.list` 的 `models` 不是字符串数组、哪一个没有 `/` 或者 `/` 一边是空的（施工 V-6 上）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6）；`view.page` 第 7 条那几种（施工 9-6 下） |
 | `internal_error` | -32603 | 造会话时装坏了、磁盘上建不成、`session.created` 没落盘；列会话时读不了放会话的目录、崩了；附件存不下来、读不出来；删会话时读不了放会话的目录、挪不进回收处、崩了；读后台命令的输出时崩了（施工 7-4 补）；给人看的字读不懂（施工 W-1）；画图的库初始化不了：`style.json` 读不懂，或者这台机器上一种字体都读不到（施工 W-4）；分块上传的暂存文件建不了、写不进（施工 W-5）；`link_preview.json` 读不懂（施工 W-7） |
 | `hello_first` | -32010 | 握手以前发了别的方法 |
 | `protocol_mismatch` | -32010 | 头支持的主版本里没有 1（之后断开） |
@@ -1437,7 +1446,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/permission.rs` | 协议上切权限级别（施工 3-8 再补）：切到完全放开、开只读、两样一起换，各记一条、推给订阅着的头、回应 `{}`；和现在一样的四种什么都不记不推；两格都不写（含写 `null`、会话没有的）、级别和只读的值不对、会话编号不对、没写会话是参数不对；没有的会话找不到，停了的会话是停了；回合进行中收紧成只读，真核心走一遍：等着的写入当场补 `denied`、和切权限同一批、推送在回应前面，放行以后请求之前注入只读那一块（切换那一份，带上一级 `workspace`，施工 2-7 补），写的一次没跑 |
 | `crates/miyu-endpoint/tests/answer.rs`（施工 D-1） | `session.answer` 真核心走一遍：允许这一次照常跑、回应列出事件；本会话都允许以后同一个目录不再问；拒绝的理由她看得到、这一轮接着走；参数不对的七种 `bad_params`、什么都没记；`unexpected_reason`、答过了 `not_asking`，话照握手的语言 |
 | `crates/miyu-endpoint/tests/job_stop.rs` | 协议上停子代理（施工 7-4）：回应 `{}`、回应之前父会话记下了回报、子会话那一轮被父会话打断；停过的、没有的 `unknown_job`，中文、英文；编号不合写法、不是字符串的参数不对；没有这个会话 |
-| `crates/miyu-endpoint/tests/job_output.rs` | 协议上读后台命令的输出（施工 7-4 补），后台命令用假的：跑着的读到这时为止的、`running` 是真，和她用 `jobs` 读到的一样；结束了的读 blob（拿掉输出文件照样读得到）、`running` 是假，和 `jobs` 读到的一字不差；`tail` 截尾、`truncated`、`lines`，最后一段没有换行的照样，不写 `tail` 交最后 200 行；超了上限从前面按整行去掉；开不了的输出文件当是空的；空的；没有这个任务、编号不合写法、`tail` 不对的七种（先查、不找会话）、没有这个会话、子代理的拒绝，中文、英文；拒绝的什么都不写 |
+| `crates/miyu-endpoint/tests/job_output.rs` | 协议上读后台命令的输出（施工 7-4 补），后台命令用假的：跑着的读到这时为止的、`running` 是真，和她用 `jobs` 读到的一样；结束了的读 blob（拿掉输出文件照样读得到）、`running` 是假，和 `jobs` 读到的一字不差；`tail` 截尾、`truncated`、`lines`，最后一段没有换行的照样，不写 `tail` 交最后 200 行；超了上限从前面按整行去掉；开不了的输出文件当是空的；空的；没有这个任务、编号不合写法、`tail` 不对的七种（先查、不找会话）、没有这个会话、子代理的拒绝，中文、英文；拒绝的什么都不写。施工 V-6 上：`after` 只读新长出来的、`size`，带 `wait` 的等到长了、结束了才答，等着的那一条不挡这个连接别的请求，`after`、`tail`、`wait` 写错的几种 `bad_params`；`after/tests.rs` 停在完整的字后面、一次最多 128 KiB、过了结尾照结尾算 |
 | `crates/miyu-endpoint/src/job_output/tests.rs` | 取尾巴（施工 7-4 补）：照 `jobs` 数行、只照换行切；最后几行；上限正好 131,072 字节的一行整行给、多一个字节只留末尾；超了从前面按整行去掉；最后一行太长只交末尾、前面的不接上（前面那一行正好放得下也不接），读的时候就去掉过前面的也一样；中间太长的一行、截过的一行后面又来了行，整行去掉；截处从一个字的开头起，剩半个字的跳过；解不开的字节换成 `�`；读不下去的读到多少算多少；最坏的回应（每个字节都转义成六个、编号全是引号）放得进一行；回应的格 |
 | `crates/miyu-endpoint/tests/human.rs`（施工 W-1） | 协议上 `human.get`：和 `Human::load` 读到的一样，工具的样子一样、说法的编号带位置（`core/…`、`software/<包>/…`）、模板是原文一个字不换；软件包盖掉内核的同名工具；没有这种语言照英文；不写 `language` 照握手的语言；`language` 不合写法参数不对；回应里没有 `config` 那一格；读不懂 `internal_error`；改了资源，核心不重启下一次调就是新的；真核心照源码树的资源，`zh`、`en`、`ja` 三种都交得出 `tools`、`said` |
 | `crates/miyu-endpoint/src/queries/tests.rs`、`crates/miyu-core/tests/packages.rs`（施工 W-4） | 查询表：没登记的方法交回 `None`、照协议是 `unknown_method`；登记过的名字正好对上才找得到。`mermaid.render`：真核心走一遍，一张流程图、一张时序图都出 SVG，回应的 `marks` 和 SVG 里用的三种记号色对得上，同一份源码两次拿到一样的回应；空的 `bad_params`、超过 64 KiB `mermaid_too_long`、画不出 `mermaid_failed`（`data.detail` 不是空的）。细节见 `mermaid.md`「守着它的」 |
@@ -1458,7 +1467,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/attach.rs` | `blob.put`（施工 3-9 三补）：传路径、传内容；照内容认图片（扩展名不算）、PDF、文本、别的文件，量宽高，回应的格照字母排、存成管理员的 blob；写了的媒体类型什么时候算、改名、写 `null` 等于没写；太大（20 MiB、图片的宽高和 5 MiB，正好在线上的收）；数据根里的不给、管理员的默认工作区给、指到数据根里的链接不给；读不了（没有、目录、没有家目录时的 `~`）；参数不对的十二种、一个都没存；四种拒绝的中英文 |
 | `crates/miyu-endpoint/tests/uploads.rs`、`crates/miyu-core/tests/packages.rs`（施工 W-5） | `blob.open`、`blob.write`、`blob.close`：分块传完和 `blob.put` 同一个回应、同一个 blob；接不上回 `upload_offset`（`data.received` 对）；没收齐 `close` 回 `upload_incomplete`，还能接着写完；别的连接拿编号用不了；连接断了、60 秒不写都作废并删暂存；`size` 超过 20 MiB 当场 `attachment_too_big`；同时开到第 5 个 `too_many_uploads`，关掉一个腾出位置；`data` 不是 base64、一块超过 512 KiB、加起来超过 `size` 都是 `bad_params`；图片照 `blob.put` 的规矩认、查上限。`packages.rs` 另测 `packages::clear_uploads`：崩了留下的 `upload-*` 清掉、真的 blob 不碰、账号还没存过东西时不出错 |
 | `crates/miyu-endpoint/tests/attach_send.rs` | `session.send` 带附件（施工 3-9 三补）：照先后接在文字后面，宽高、种类照核心量的，图片块带着 `blob.put` 的名字（施工 3-9 四补），她收到的请求里就是这几块；只有附件也是一句话，`null` 是没有；blob 不在的拒绝、什么都没写、换的工作目录也没送进会话；附件的格不对的七种 |
-| `crates/miyu-endpoint/tests/files.rs` | `fs.list`、`fs.find`（施工 W-2）：真核心上数据根不列不找、账号的默认工作区照样列；开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`marks`；模糊找有 `marks`、子目录的 `path` 用 `/`；清单没建完先给一部分、`building`；`fresh` 隔一段时间才重建、不是 `true` 不重建；最多记 4 份、多了丢最久没用的；换不成真实的位置、不是目录的 `path_unreadable`；没写 `cwd` 的 `bad_params` |
+| `crates/miyu-endpoint/tests/files.rs` | `fs.list`、`fs.find`（施工 W-2）：真核心上数据根不列不找、账号的默认工作区照样列；开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`marks`；模糊找有 `marks`、子目录的 `path` 用 `/`；清单没建完先给一部分、`building`；`fresh` 隔一段时间才重建、不是 `true` 不重建；最多记 4 份、多了丢最久没用的；换不成真实的位置、不是目录的 `path_unreadable`；没写 `cwd` 的 `bad_params`。施工 V-6 上起等清单建完都带 `wait`（一次请求，`building` 一定是 `false`）；`miyu-fs` 的 `find/tests.rs` 守着 `wait` 建完了才醒、建的线程崩了也醒 |
 | `crates/miyu-endpoint/tests/hello.rs`（施工 W-3） | 握手的 `host`：三格总有、`platform` 是这台机器的、`workspace` 换成真实的位置（链接也换成指的地方）、没有系统的家目录 `home` 是 `null`、没人建过工作区就回原样的路径（不替连上来的头造目录）。`fs.realpath`：`~` 照家目录接、`cwd` 可以不写也可以本身是 `~`；相对的没给 `cwd` 的 `bad_params`；往上找最近在的一层、后面几段原样接上；路中间的链接换成指的地方；落在数据根里的照样换，不查边界；一层都不在（没有家目录）`path_unreadable` |
 | `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
@@ -1512,7 +1521,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 - 远程连接、登录令牌、WebSocket 和它的 Origin 检查；扩展、桥当提供者，反向调用（第二节、第四节）。
 - 事件流只对会话的属主和有 `events.read` 能力的扩展开放（第五节）：现在连上来的只有管理员。
 - `job.output` 照会话的读权限：现在连上来的只有管理员，不拦，多用户那一步再拦（施工 7-4 补）。
-- 后台命令的输出推给头（施工 7-4 补定不做）：现在头照 1 秒读一次 `job.output`，每次从头数；推增量随 M8 的视图流再说。
+- 后台命令的输出不推给头（施工 7-4 补定不做）：头带 `after`、`wait` 读 `job.output`，长了再答（施工 V-6 上，`job.output` 第 9、10 条），不用推送。
 - 成员只能切到只读和工作区（`11-权限与沙盒.md`）：现在连上来的只有管理员，`session.set_permission_level` 不拦，多用户那一步再拦。
 - 消息结构只在 Rust 类型里定义一次，生成 JSON Schema 和 TypeScript 类型（第二节）。
 - 会话空闲一段时间后 actor 退出（`07-存储.md` 第七节）。

@@ -75,6 +75,7 @@ mod models;
 mod models_effort;
 mod models_embedding;
 mod models_name;
+mod models_only;
 mod models_pools;
 mod models_retire;
 mod models_temperature;

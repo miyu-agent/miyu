@@ -34,7 +34,7 @@ fn profiles() -> Profiles {
 }
 
 /// 带上真目录裁出来的一份、能拉列表的模型资料。
-fn data() -> Arc<ModelData> {
+pub(super) fn data() -> Arc<ModelData> {
     let text = include_str!("../../miyu-models/testdata/models-dev-trimmed.json");
     let vendors = Vendors::parse(&json!({"claude": ["anthropic"], "deepseek": ["deepseek"]}))
         .expect("读得进");
@@ -52,7 +52,7 @@ fn data() -> Arc<ModelData> {
 }
 
 /// 三家：只写了 key 的 DeepSeek、地址指到 `relay` 的中转、什么都推不出来的一家。
-fn config(relay: &str) -> String {
+pub(super) fn config(relay: &str) -> String {
     format!(
         "[providers.deepseek]\nkey = {{ env = \"DEEPSEEK_API_KEY\" }}\n\n\
          [providers.newapi]\ndriver = \"openai-chat\"\nbase_url = \"{relay}\"\nkey = {{ env = \"NEWAPI_KEY\" }}\nprice_multiplier = 0.5\nlocal = false\n\n\
@@ -88,14 +88,19 @@ fn core(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Core> {
 }
 
 /// 照配置 `config`、环境 `env` 起一个核心，连上、握手，问一次 `model.list`。
-async fn list(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>, params: Value) -> Value {
+pub(super) async fn list(
+    home: &Home,
+    env: &[(&str, &str)],
+    data: Arc<ModelData>,
+    params: Value,
+) -> Value {
     let core = core(home, env, data);
     let mut client = Client::connect(core);
     client.hello().await;
     client.call("list-1", "model.list", params).await
 }
 
-fn model<'a>(provider: &'a Value, name: &str) -> &'a Value {
+pub(super) fn model<'a>(provider: &'a Value, name: &str) -> &'a Value {
     provider["models"]
         .as_array()
         .and_then(|models| models.iter().find(|model| model["model"] == name))

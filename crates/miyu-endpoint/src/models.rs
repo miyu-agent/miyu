@@ -19,6 +19,7 @@ mod retire;
 
 pub(crate) use call::call;
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -42,6 +43,9 @@ struct ListParams {
     provider: Option<String>,
     #[serde(default)]
     refresh: Option<bool>,
+    /// 只要这几个模型，`<供应商>/<模型>`（施工 V-6 上：终端的底栏只要现在用的那个，不用整份）。
+    #[serde(default)]
+    models: Option<Vec<String>>,
 }
 
 /// `session.configure` 的参数：`session`、`model` 都必写，`model` 是空字当参数不对（「施工时定的」8-10）。思考强度改在
@@ -112,11 +116,15 @@ pub(crate) async fn list(core: &Core, params: Value) -> Result<Value, Refusal> {
     let snapshot = snapshot(core);
     let values = snapshot.resolved.values();
     let configured = miyu_config::key::names(values.keys(), "providers.<id>", &[]);
-    let chosen: Vec<String> = match &params.provider {
+    let mut chosen: Vec<String> = match &params.provider {
         Some(id) if !configured.contains(id) => return Err(Refusal::UNKNOWN_PROVIDER),
         Some(id) => vec![id.clone()],
         None => configured,
     };
+    let only = params.models.as_deref().map(wanted).transpose()?;
+    if let Some(only) = &only {
+        chosen.retain(|id| only.contains_key(id));
+    }
     let secret = |reference: &Reference| snapshot.secret(reference);
     if params.refresh == Some(true) {
         for id in &chosen {
@@ -132,7 +140,10 @@ pub(crate) async fn list(core: &Core, params: Value) -> Result<Value, Refusal> {
     let names = embedding_names(core);
     let providers: Vec<Value> = chosen
         .iter()
-        .map(|id| entry::provider(&data, &snapshot, id, now, &names))
+        .map(|id| {
+            let models = only.as_ref().and_then(|only| only.get(id));
+            entry::provider(&data, &snapshot, id, now, &names, models)
+        })
         .collect();
     let catalog = data.catalog().map_or(
         Value::Null,
@@ -145,6 +156,24 @@ pub(crate) async fn list(core: &Core, params: Value) -> Result<Value, Refusal> {
         "uses": {"chat": uses.chat, "vision": uses.vision},
         "catalog": catalog,
     }))
+}
+
+/// `models` 照供应商分好：`<供应商>/<模型>`，第一个 `/` 前面是供应商（模型名里可以再有 `/`）。没有 `/`、两边有空的：
+/// `bad_params`。
+fn wanted(models: &[String]) -> Result<BTreeMap<String, BTreeSet<String>>, Refusal> {
+    let mut wanted: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for reference in models {
+        match reference.split_once('/') {
+            Some((provider, model)) if !provider.is_empty() && !model.is_empty() => {
+                wanted
+                    .entry(provider.to_string())
+                    .or_default()
+                    .insert(model.to_string());
+            }
+            _ => return Err(Refusal::BAD_PARAMS),
+        }
+    }
+    Ok(wanted)
 }
 
 /// 认能出向量的模型的规矩（施工 R-5 再补）：每次照资源目录的 `models/embedding.toml` 读。读不了、写错了的这一次一个都不标，
