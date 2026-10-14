@@ -82,7 +82,13 @@ async fn a_dream_merges_now_and_says_how_much() {
 
 #[tokio::test]
 async fn a_dream_is_answered_in_the_background_and_one_at_a_time() {
-    let server = Server::start(vec![slow("{}", Duration::from_millis(800)), said("{}")]).await;
+    // 整理那一次的模型回答停在闸前，等后面两个请求都回了才放行：后面的先回不靠时序。原来让它等 800 毫秒，Windows 的 CI 上
+    // 列一遍比它慢，偶发红（K-3 修的 CI 上碰到）。整理要是挡住了后面的，两个都等不到，六十秒报错。
+    let gate = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+    let mut held = said("{}");
+    held.body
+        .insert(0, Piece::Gate(std::sync::Arc::clone(&gate)));
+    let server = Server::start(vec![held, said("{}")]).await;
     let home = Home::new();
     let mut client = connected(&home, &server).await;
     remember(&mut client, "c1", "用户养了一只猫").await;
@@ -102,10 +108,17 @@ async fn a_dream_is_answered_in_the_background_and_one_at_a_time() {
     let mut order = Vec::new();
     let mut replies = Vec::new();
     while order.len() < 3 {
-        let message = client.next().await.expect("连着");
+        let Some(message) = client.next_within(Duration::from_secs(20)).await else {
+            // 整理挡住了后面的：放开闸让它做完再报，不然收尾时还在等它。
+            let _released = tokio::time::timeout(Duration::from_secs(5), gate.wait()).await;
+            panic!("整理挡住了后面的请求：{order:?}");
+        };
         if let Some(id) = message["id"].as_str() {
             order.push(id.to_string());
             replies.push(message.clone());
+            if order.len() == 2 {
+                gate.wait().await;
+            }
         }
     }
     assert_eq!(
