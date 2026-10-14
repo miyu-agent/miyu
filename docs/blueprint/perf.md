@@ -157,7 +157,7 @@ OPENAI_BASE_URL=… OPENAI_API_KEY=… MIYU_BENCH_MODEL=… uv run bench/rivals/
 | `machine/tests.rs` | `/proc/cpuinfo`、`/proc/meminfo` 的读法 |
 | `args/tests.rs` | 默认、写了的、写错的；`--render` 只要 `--design`、`--out`；`--gate` 要正数（施工 V-3） |
 | `report/tests.rs` | 日期；一份造出来的结果写成表：照预算判、没量的「不量」、缺预算报错；原始数据；写出去再读回来一字不差、表一样，坏了说是哪一格；闸门只报超了倍数的那几行、内存照预算拦、没量的不算、没写倍数的不拦（施工 V-3） |
-| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；占位怎么换；汇表时没量的写「—」 |
+| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；占位怎么换；没装的一家不挡量别的几家（V-7 修）；汇表时没量的写「—」 |
 
 真跑要 release 构建和几分钟，不进 `cargo test`；CI 里另一项跑（施工 V-3）。三家对比的测具不跑别家的那几条在 CI 的量尺那一项里先跑（`python3 -m unittest`，施工 V-7）。
 

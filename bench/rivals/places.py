@@ -75,6 +75,9 @@ class Places:
             "tui_package": str(self.tui_repo / "tui"),
         }
         for name, path in self.programs.items():
+            # 没找到的（没装、也没指）不给占位：只量别的几家时用不到它（`rival.load` 查过要量的几家都找到了）。
+            if path is None:
+                continue
             words[name] = str(path)
             words[f"{name}_dir"] = str(path.parent)
         words.update(extra or {})

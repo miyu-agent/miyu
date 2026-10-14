@@ -98,6 +98,17 @@ class Fill(unittest.TestCase):
             self.assertIsNone(rival.load(where, ["codex"])[0].argv("daemon"))
 
 
+class Missing(unittest.TestCase):
+    def test_a_rival_that_is_not_installed_does_not_stop_the_others(self):
+        # 没装 jcode 的机器上 `--only Miyu`：jcode 找不到是 None，换占位时不能拿它算目录（V-7 修）。
+        with tempfile.TemporaryDirectory() as tmp:
+            where = fake_places(Path(tmp))
+            where.programs["jcode"] = None
+            miyu = rival.load(where, ["Miyu"])[0]
+            self.assertEqual(miyu.argv("task", prompt="hi")[-1], "hi")
+            self.assertEqual(miyu.env()["MIYU_HOME"], str(where.homes / "miyu"))
+
+
 class Summary(unittest.TestCase):
     def test_a_table_comes_out_with_dashes_for_what_was_not_measured(self):
         conditions = {
