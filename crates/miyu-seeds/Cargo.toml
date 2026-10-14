@@ -1,0 +1,18 @@
+[package]
+name = "miyu-seeds"
+description = "从一张图挑主题色的候选：核心算人格的头像，两个头算壁纸，同一份解码、缩图、量化、打分（施工 P-6 补，docs/blueprint/personas.md）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# MD3 的量化和打分（Celebi 量化、Score 挑候选）：终端原来就用它取头像的主色，种子固定的伪随机，同一张图每次挑的一样；
+# MIT 或 Apache-2.0。只开量化。
+material-colors = { version = "0.5", default-features = false, features = ["std", "quantize"] }
+# 解码、缩图：头像是 PNG、JPEG、WebP，壁纸还有 GIF、BMP。纯 Rust 的几个解码器，只从内存里的字节读；MIT 或 Apache-2.0。
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp"] }
+
+[lints]
+workspace = true

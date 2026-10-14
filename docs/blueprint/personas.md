@@ -123,7 +123,7 @@ assistant: 8640
 
 ### 主题色、背景图（Y15，施工 P-6，2026-10-10；网页对过）
 
-1. **主题色**：`persona.toml` 的 `[appearance] seed`，一个 `#rrggbb`，大小写都认，读出来一律小写。照 `persona.toml` 逐项盖的规矩叠。核心不算配色，头照它算；没写的，头从头像取色。
+1. **主题色**：`persona.toml` 的 `[appearance] seed`，一个 `#rrggbb`，大小写都认，读出来一律小写。照 `persona.toml` 逐项盖的规矩叠。核心不算配色，头照它算；没写的，头用头像的候选主色 `seeds` 的第一个（第 4 条，施工 P-6 补；以前是头自己从头像取色）。
    - `persona.set` 多一格 `seed`：`"#rrggbb"` 写进管理员家目录那一层，`{"unset": true}` 删掉那一层的，回到下面那一层的。只改主题色的可以不写 `changes`、`prompts`，新建时也可以只写它。写错的、`changes` 里同时改 `appearance.seed` 的 `bad_params`。`changes` 照样能改 `appearance.seed`，值写错的照文件写错算 `persona_invalid`。
    - 文件里写错（不是 `#rrggbb`）是 `persona_invalid`，`problem` 的 `code` 是 `bad_seed`；`[appearance]` 里多了别的键是 `unknown_key`。
    - `persona.list` 的每一格、`persona.get` 多一格 `seed`，没有的是 `null`。
@@ -136,6 +136,12 @@ assistant: 8640
    - 最大 5 MiB，宽、高都不超过 4096。5 MiB 是 `blob.put` 收图的上限：再大的传不上来。网页传之前缩到长边 2560。
    - 拒绝是 `background_not_image`、`background_too_big`，`data` 同头像的 `{"bytes", "width", "height", "max_bytes", "max_side"}`。头像、背景图、主题色一起改的，先查两张图，有一张不合规矩的什么都不写。
 3. 只铺对话区、怎么铺、怎么配字的颜色是头的事（网页图纸 `web.md`「主题」）。
+4. **头像的候选主色**（施工 P-6 补，2026-10-14 项目主人定：头像取色归核心，壁纸取色归头）：
+   - `persona.list` 的每一格、`persona.get`（`persona.set` 的回应同它）多一格 `seeds`：从头像挑的最多 4 个候选，小写的 `#rrggbb`，打分最高的排第一。没有头像的、头像读不了、解不开的是 `null`；全透明的头像是空的列表。
+   - 挑法在 `miyu-seeds`（模块层）：照 `image` 的 `thumbnail` 等比缩到边长 128，不透明度不到 200 的像素不算，MD3 的 Celebi 量化成 128 种，Score 挑最多 4 个（太灰、太少见的滤掉，一个都不合格的给 Google 蓝 `#4285f4`）。和终端原来取头像主色的做法一样，同一个头像的第一个候选不变。
+   - 两个头算壁纸的候选经门面 `miyu_client::seeds` 用同一份（`client.md`），同一张图在哪里挑出来的都一样。网页原来用的 JS 版量化里有随机数，同一张图每次挑的会抖，和 Rust 版也对不上，所以一律在这里算。
+   - 选哪个由头写进人格的 `seed`（第 1 条的 `persona.set`），两个头看到的是同一个；配色是不是跟随头像、怎么生成配色还是头的事。
+   - 同一张图只算一次：照图的字节的哈希记在核心进程里，换了图哈希就变，记满 64 张整个清掉。读盘、解图在阻塞线程里做。
 
 ### 出错
 
@@ -151,6 +157,8 @@ assistant: 8640
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-endpoint/tests/persona_avatar.rs`（施工 P-5） | 头像换上、读回、删了回到下面那一层、版本对不上不动、不合规矩的拒绝且什么都不写、新建时带头像 |
+| `crates/miyu-endpoint/tests/persona_seeds.rs`（施工 P-6 补） | 头像挑出的候选和 `miyu-seeds` 算的一样、最多 4 个、`persona.get`、`persona.list` 都带；没有头像的是 `null`；换了头像跟着换（`persona.set` 的回应和再读到的）；只有 PNG 开头、解不开的有版本没有候选 |
+| `crates/miyu-seeds/src/tests.rs`（施工 P-6 补） | 见得多的排第一、最多 4 个、少的也在候选里；透明的不算、全透明的没有候选；灰的给 Google 蓝；图的字节照 `thumbnail` 缩到 128 再挑、同一张图挑的一样、不是图的读不成；`#rrggbb` 小写 |
 | `crates/miyu-endpoint/tests/persona_appearance.rs`（施工 P-6） | 主题色大写写成小写、列出来带着、删了回到下面那一层、写错的和重复改的拒绝且什么都不写、只写主题色能新建；背景图比头像的上限大也收、读回、版本对不上不动、删了回到下面那一层、不合规矩的拒绝（`data` 带量到的和上限）且一起改的主题色也不写 |
 | `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的九种写明第几行（`[memory]` 的三种在内，R-3 下）、P-3 上写的 `base` 当没写（施工 P-3 再补）、`[memory] scope` 两种、不写是没有、上一层盖下面的、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |

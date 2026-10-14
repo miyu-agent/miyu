@@ -150,24 +150,25 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         }
     }
     let personas = personas(core);
-    let found = tokio::task::spawn_blocking(move || {
+    let language = peer.language;
+    tokio::task::spawn_blocking(move || {
         let found = match params.persona {
             Some(id) => write(&personas, &id, &wanted, &prompts, said.as_ref()),
             None => create(&personas, &wanted, &prompts, said.as_ref()),
         }?;
         if pictures.is_empty() {
-            return Ok(found);
+            return Ok(describe(&found, language));
         }
         for checked in &pictures {
             super::picture::apply(&personas, &found.id, checked)?;
         }
         personas
             .find(&found.id)
+            .map(|found| describe(&found, language))
             .map_err(|error| super::told(&error, said.as_ref()))
     })
     .await
-    .map_err(|_| Refusal::INTERNAL)??;
-    Ok(describe(&found, peer.language))
+    .map_err(|_| Refusal::INTERNAL)?
 }
 
 /// 新建：挑一个没用过的编号，先建它的目录占住（别处同时建了同一个的，换下一个），再照常写；写不成的把空目录删掉。

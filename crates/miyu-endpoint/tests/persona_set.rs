@@ -68,6 +68,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
             "avatar": null,
             "background": null,
             "seed": null,
+            "seeds": null,
             "background_opacity": null,
             "background_focus": null,
             "remove": "delete",

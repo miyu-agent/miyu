@@ -13,6 +13,7 @@ use crate::{
     open::{Browser, Core, SystemBrowser},
     places::{DataRoot, Env, Platform, ResourceRoot, cache_root, locale},
     protocol::{Said, SessionId, Template},
+    seeds::{MAX, Seed, from_image, from_rgba},
     texts::{Face, Human, clean},
 };
 

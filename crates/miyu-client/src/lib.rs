@@ -9,6 +9,7 @@
 //! - [`protocol`]：协议里的类型：编号、事件、模板（`miyu-kernel`）。
 //! - [`manifest`]：读自己的软件包清单（`miyu-config`）。
 //! - [`log`]：运行日志（`miyu-log`）。
+//! - [`seeds`]：从一张图挑主题色的候选，跟随壁纸用（`miyu-seeds`，施工 P-6 补）：和核心算头像的同一份。
 
 pub mod open;
 #[cfg(test)]
@@ -61,4 +62,10 @@ pub mod manifest {
 /// 运行日志。
 pub mod log {
     pub use miyu_log::{LevelFilter, install};
+}
+
+/// 从一张图挑主题色的候选（施工 P-6 补）：头算壁纸的候选用它，和核心算人格头像的候选（`persona.list` 的 `seeds`）是同一份
+/// 解码、缩图、量化、打分，挑出来的一样。
+pub mod seeds {
+    pub use miyu_seeds::{MAX, Seed, from_image, from_rgba};
 }

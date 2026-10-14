@@ -550,7 +550,7 @@
 
 **`persona.list`**（施工 P-1 上，`personas.md`「怎么走」第 7 条）
 
-没有参数。回应 `{"personas": [...]}`，照编号排，一个人格一格：`persona` 编号，`avatar` 头像的版本（没有的 `null`，施工 P-5），`background` 背景图的版本、`seed` 主题色（小写的 `#rrggbb`），没有的 `null`（施工 P-6），`background_opacity` 背景图露出多少（0 到 100）、`background_focus` 焦点（`[x, y]`，各 0 到 100），没有的 `null`（施工 P-7），`name`、`summary` 一句字（施工 P-3 补：写成一句的就是它；以前写成语言表的、出厂的几个照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；说明写成空的字的也是 `null`，施工 P-3 再补）。来自哪几层不给（施工 P-3 补，2026-10-08 项目主人：人看的是名字）。文件写错的只有 `persona`、`problem` 和知道第几行的 `line`：`problem` 照这个连接的语言说哪里写错了，同 `persona.*` 里 `persona_invalid` 的 `data.message`、`data.line`（施工 P-3 再补：原来是给排查看的英文原话，项目主人看不懂）。
+没有参数。回应 `{"personas": [...]}`，照编号排，一个人格一格：`persona` 编号，`avatar` 头像的版本（没有的 `null`，施工 P-5），`background` 背景图的版本、`seed` 主题色（小写的 `#rrggbb`），没有的 `null`（施工 P-6），`seeds` 头像的候选主色（最多 4 个小写的 `#rrggbb`，打分最高的排第一；没有头像、解不开的 `null`，施工 P-6 补，`personas.md`「主题色、背景图」第 4 条），`background_opacity` 背景图露出多少（0 到 100）、`background_focus` 焦点（`[x, y]`，各 0 到 100），没有的 `null`（施工 P-7），`name`、`summary` 一句字（施工 P-3 补：写成一句的就是它；以前写成语言表的、出厂的几个照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；说明写成空的字的也是 `null`，施工 P-3 再补）。来自哪几层不给（施工 P-3 补，2026-10-08 项目主人：人看的是名字）。文件写错的只有 `persona`、`problem` 和知道第几行的 `line`：`problem` 照这个连接的语言说哪里写错了，同 `persona.*` 里 `persona_invalid` 的 `data.message`、`data.line`（施工 P-3 再补：原来是给排查看的英文原话，项目主人看不懂）。
 
 **`preset.list`**（施工 P-2 上，`presets.md`「协议」）
 
@@ -656,7 +656,7 @@
 |---|---|---|
 | `persona` | 字符串，必写 | 人格的编号 |
 
-回应 `{"persona", "name", "summary", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "background_opacity", "background_focus", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头从头像取色；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
+回应 `{"persona", "name", "summary", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "seeds", "background_opacity", "background_focus", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头用 `seeds` 的第一个；`seeds` 施工 P-6 补：头像的候选主色，同 `persona.list`；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 

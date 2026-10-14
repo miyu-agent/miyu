@@ -19,6 +19,7 @@ use crate::settings::PersonaSettings;
 
 mod appearance;
 pub(crate) mod picture;
+mod seeds;
 pub(crate) mod write;
 
 use picture::Picture;
@@ -152,7 +153,8 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             .into_iter()
             .map(|id| {
                 let found = personas.find(&id);
-                (id, found)
+                let seeds = found.as_ref().ok().and_then(seeds::of);
+                (id, found, seeds)
             })
             .collect::<Vec<_>>()
     })
@@ -160,7 +162,7 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     .map_err(|_| Refusal::INTERNAL)?;
     let listed: Vec<Value> = read
         .into_iter()
-        .map(|(id, found)| match found {
+        .map(|(id, found, seeds)| match found {
             Ok(found) => json!({
                 "persona": id,
                 "name": label(found.file.name.as_ref(), peer.language),
@@ -168,6 +170,7 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
                 "avatar": picture::version(&found, Picture::Avatar),
                 "background": picture::version(&found, Picture::Background),
                 "seed": found.file.seed,
+                "seeds": seeds,
                 "background_opacity": found.file.background_opacity,
                 "background_focus": found.file.background_focus,
             }),
@@ -189,14 +192,19 @@ pub(crate) struct GetParams {
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
-    let found = tokio::task::spawn_blocking(move || personas.find(&params.persona))
-        .await
-        .map_err(|_| Refusal::INTERNAL)?
-        .map_err(|error| told(&error, said.as_ref()))?;
-    Ok(describe(&found, peer.language))
+    let language = peer.language;
+    tokio::task::spawn_blocking(move || {
+        personas
+            .find(&params.persona)
+            .map(|found| describe(&found, language))
+    })
+    .await
+    .map_err(|_| Refusal::INTERNAL)?
+    .map_err(|error| told(&error, said.as_ref()))
 }
 
-/// 叠好的一个人格照 `persona.get` 写（`persona.set` 的回应也是它，施工 P-3 下），名字、说明照语言 `language` 挑。
+/// 叠好的一个人格照 `persona.get` 写（`persona.set` 的回应也是它，施工 P-3 下），名字、说明照语言 `language` 挑。头像的候选
+/// 主色要读盘、解图（施工 P-6 补），在阻塞线程里调。
 fn describe(found: &Found, language: &str) -> Value {
     json!({
         "persona": found.id,
@@ -210,6 +218,7 @@ fn describe(found: &Found, language: &str) -> Value {
         "avatar": picture::version(found, Picture::Avatar),
         "background": picture::version(found, Picture::Background),
         "seed": found.file.seed,
+        "seeds": seeds::of(found),
         "background_opacity": found.file.background_opacity,
         "background_focus": found.file.background_focus,
         "remove": remove(&found.layers),

@@ -18,6 +18,7 @@ miyu-store = { path = "../miyu-store" }
 miyu-kernel = { path = "../miyu-kernel" }
 miyu-config = { path = "../miyu-config" }
 miyu-log = { path = "../miyu-log" }
+miyu-seeds = { path = "../miyu-seeds" }
 # `open`：照终端的样子连核心、一问一答（从 miyu-webserve 挪来，施工 S-1）。
 serde_json = "1.0"
 tokio = { version = "1", features = ["io-util", "time"] }

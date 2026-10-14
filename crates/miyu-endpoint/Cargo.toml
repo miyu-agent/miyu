@@ -53,6 +53,8 @@ miyu-tool = { path = "../miyu-tool" }
 miyu-mcp = { path = "../miyu-mcp" }
 # 视图投影（施工 9-8 中）：`view.page` 照它把一页日志算成条目。
 miyu-view = { path = "../miyu-view" }
+# 人格头像的候选主色（施工 P-6 补，`persona.list`、`persona.get` 的 `seeds`）：和两个头算壁纸的同一份。
+miyu-seeds = { path = "../miyu-seeds" }
 # 头报来的工作目录太不太宽（施工 4-3 下）。
 miyu-fs = { path = "../miyu-fs" }
 # 附件（施工 3-9 三补）：blob.put 传来的内容是 base64；和基础系统用的是同一个。
@@ -72,6 +74,8 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 similar = { version = "2", default-features = false, features = ["text"] }
 
 [dev-dependencies]
+# 人格头像的候选主色（施工 P-6 补）：测试里画一张真的 PNG 当头像。
+image = { version = "0.25", default-features = false, features = ["png"] }
 # 撤销的回应（施工 4-7 下）：她用真的写文件的工具改过文件。
 miyu-basesystem = { path = "../miyu-basesystem" }
 # 测试用的假工具（施工 4-2）。

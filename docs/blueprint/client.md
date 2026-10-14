@@ -21,6 +21,7 @@
 | `protocol` | `SessionId`、`Said`、`Template` | `miyu-kernel` |
 | `manifest` | `read`、`Value` | `miyu-config` |
 | `log` | `install`、`LevelFilter` | `miyu-log` |
+| `seeds` | `from_image`、`from_rgba`、`Seed`、`MAX`：从一张图挑主题色的候选，头算壁纸的用它，和核心算人格头像的（`persona.list` 的 `seeds`）同一份（施工 P-6 补，`personas.md`「主题色、背景图」第 4 条） | `miyu-seeds` |
 | 根 | `CoreCommand`；`testkit` 打开时 `WORKSPACE_ROOT`（钉住的那份检出的仓库根，测试照它读 `resources/`、`docs/designs/samples/`） | 本 crate |
 
 ### 规矩
