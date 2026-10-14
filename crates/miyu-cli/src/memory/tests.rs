@@ -77,3 +77,28 @@ fn nothing_says_so() {
         "Nothing to organize."
     );
 }
+
+#[test]
+fn a_failed_dream_says_why() {
+    // 施工 R-7 修（验收手册待定 10）：整理没成的，原话后面接上核心给的为什么（同 `miyu kb` 挂不上的目录）；太长的照旧说
+    // 几个字；没给为什么的照原话。
+    let failed = json!({
+        "message": "整理记忆失败。",
+        "data": {"reason": "dream_failed", "message": "model request failed: HTTP 401"},
+    });
+    assert_eq!(
+        super::refused(&failed, &Language::Chinese),
+        "整理记忆失败：model request failed: HTTP 401"
+    );
+    let failed = json!({
+        "message": "Memory organization failed.",
+        "data": {"reason": "dream_failed", "message": "reply was not JSON"},
+    });
+    assert_eq!(
+        super::refused(&failed, &Language::English),
+        "Memory organization failed: reply was not JSON"
+    );
+    let plain =
+        json!({"message": "记忆不可用。", "data": {"reason": "memory_unavailable", "why": "off"}});
+    assert_eq!(super::refused(&plain, &Language::Chinese), "记忆不可用。");
+}

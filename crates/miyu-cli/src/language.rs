@@ -241,6 +241,16 @@ impl Language {
         reason.to_string()
     }
 
+    /// 核心拒了，原话 `said` 后面接上它给的为什么 `why`（`data.message`：知识库挂不上的目录、挪不进回收站，整理记忆没成，
+    /// 施工 K-7 下、R-7 修）。为什么是核心给的英文一句，照原样接。
+    pub(crate) fn refused_because(&self, said: &str, why: &str) -> String {
+        let said = said.trim_end_matches(['。', '.']);
+        match self {
+            Language::Chinese => format!("{said}：{why}"),
+            Language::English => format!("{said}: {why}"),
+        }
+    }
+
     /// 问完那一行用量。
     pub(crate) fn usage(&self, sum: &crate::ask::Sum) -> String {
         usage_line(self, sum)

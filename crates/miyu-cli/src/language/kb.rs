@@ -162,13 +162,4 @@ impl Language {
             Language::English => format!("Rebuilt {kb}: {}", self.kb_documents(documents)),
         }
     }
-
-    /// 核心拒了，原话 `said` 后面接上它给的为什么 `why`（挂不上的目录、挪不进回收站）。
-    pub(crate) fn refused_because(&self, said: &str, why: &str) -> String {
-        let said = said.trim_end_matches(['。', '.']);
-        match self {
-            Language::Chinese => format!("{said}：{why}"),
-            Language::English => format!("{said}: {why}"),
-        }
-    }
 }

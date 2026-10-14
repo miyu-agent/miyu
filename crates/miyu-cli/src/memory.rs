@@ -278,17 +278,20 @@ fn print(
     Ok(())
 }
 
-/// 被拒绝时说的那一句：太长的照 `data` 说这一条几个字、一条最多几个（核心的原话是给程序看的，说的是去 `data` 里看）；别的
-/// 照核心的原话。
+/// 被拒绝时说的那一句：太长的照 `data` 说这一条几个字、一条最多几个（核心的原话是给程序看的，说的是去 `data` 里看）；核心
+/// 给了为什么的（`data.message`：整理记忆没成，施工 R-7 修，验收手册待定 10）原话后面接上它；别的照核心的原话。
 fn refused(error: &Value, language: &Language) -> String {
     let data = &error["data"];
+    let said = error["message"].as_str().unwrap_or_default();
     match (
         data["reason"].as_str(),
         data["chars"].as_u64(),
         data["limit"].as_u64(),
+        data["message"].as_str(),
     ) {
-        (Some("memory_too_long"), Some(chars), Some(limit)) => language.too_long(chars, limit),
-        _ => language.refused(error["message"].as_str().unwrap_or_default()),
+        (Some("memory_too_long"), Some(chars), Some(limit), _) => language.too_long(chars, limit),
+        (_, _, _, Some(why)) => language.refused_because(said, why),
+        _ => language.refused(said),
     }
 }
 
