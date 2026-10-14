@@ -25,7 +25,7 @@ use miyu_tool::{Catalog, Edition, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE, KB_SEARC
 
 use super::Actor;
 use crate::TARGET;
-use crate::agents::{Agents, Holds, Offers, Site};
+use crate::agents::{Agents, Holds, Offers, Reach, Site};
 use crate::blocking::blocking;
 use crate::knowledge::Shelves;
 use crate::open::PresetPlaces;
@@ -144,12 +144,15 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         .as_ref()
         .map(|shelves| shelves.listed())
         .unwrap_or_default();
-    let knows = !listed.is_empty();
+    let reach = refresh
+        .knowledge
+        .as_ref()
+        .map_or(Reach::Save, |shelves| shelves.reach(&listed));
     let shelved = match &preset {
         Preset::Unknown => None,
-        Preset::Nothing => Some(offered(refresh, values, catalog, None, knows)),
+        Preset::Nothing => Some(offered(refresh, values, catalog, None, reach)),
         Preset::Same(chosen) | Preset::Changed(chosen) => {
-            Some(offered(refresh, values, catalog, Some(&chosen.file), knows))
+            Some(offered(refresh, values, catalog, Some(&chosen.file), reach))
         }
     };
     let flipped = shelved
@@ -173,15 +176,15 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
     }
     let (face, pin) = match &preset {
         Preset::Changed(chosen) => (
-            refaced(refresh, values, catalog, &chosen.file, knows),
+            refaced(refresh, values, catalog, &chosen.file, reach),
             Some(chosen.pin()),
         ),
         Preset::Same(chosen) if moved => (
-            followed(refresh, values, catalog, Some(&chosen.file), knows),
+            followed(refresh, values, catalog, Some(&chosen.file), reach),
             old.preset.clone(),
         ),
         Preset::Nothing if moved => (
-            followed(refresh, values, catalog, None, knows),
+            followed(refresh, values, catalog, None, reach),
             old.preset.clone(),
         ),
         _ => (old.tools.clone(), old.preset.clone()),
@@ -303,7 +306,7 @@ fn offered(
     values: &Values,
     catalog: &Catalog,
     file: Option<&PresetFile>,
-    knows: bool,
+    reach: Reach,
 ) -> Vec<ToolEntry> {
     let old = &refresh.snapshot;
     Agents::face(
@@ -317,7 +320,7 @@ fn offered(
         old.attended,
         Holds {
             memory: old.memory_scope(),
-            knowledge: knows,
+            knowledge: reach,
         },
         file.map(|file| (file, features(refresh))),
     )
@@ -353,10 +356,10 @@ fn refaced(
     values: &Values,
     catalog: &Catalog,
     file: &PresetFile,
-    knows: bool,
+    reach: Reach,
 ) -> Vec<ToolEntry> {
     let old = &refresh.snapshot;
-    offered(refresh, values, catalog, Some(file), knows)
+    offered(refresh, values, catalog, Some(file), reach)
         .into_iter()
         .map(|entry| {
             if catalog.provided(&entry.name) {
@@ -385,9 +388,9 @@ fn followed(
     values: &Values,
     catalog: &Catalog,
     file: Option<&PresetFile>,
-    knows: bool,
+    reach: Reach,
 ) -> Vec<ToolEntry> {
-    let fresh = offered(refresh, values, catalog, file, knows);
+    let fresh = offered(refresh, values, catalog, file, reach);
     let basis = refresh.seen.as_ref().map(|seen| &seen.catalog);
     let mut face = Vec::new();
     for kept in &refresh.snapshot.tools {

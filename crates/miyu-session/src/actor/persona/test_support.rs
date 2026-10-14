@@ -107,7 +107,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         true,
         crate::agents::Holds {
             memory: scope,
-            knowledge: false,
+            knowledge: crate::agents::Reach::Save,
         },
         Some((&chosen.file, Some(&installed()))),
     );

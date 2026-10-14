@@ -20,7 +20,7 @@ use miyu_tool::{Log, Seen};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
-use crate::agents::{Agents, Holds, Offers, Site, job_in};
+use crate::agents::{Agents, Holds, Offers, Reach, Site, job_in};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
@@ -128,11 +128,17 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         };
         Arc::new(Shelves::new(shelving, memory_account.clone()))
     });
-    let listed = match shelves.clone() {
-        Some(shelves) => blocking(move || shelves.listed()).await,
-        None => Vec::new(),
+    let (listed, reach) = match shelves.clone() {
+        Some(shelves) => {
+            blocking(move || {
+                let listed = shelves.listed();
+                let reach = shelves.reach(&listed);
+                (listed, reach)
+            })
+            .await
+        }
+        None => (Vec::new(), Reach::Save),
     };
-    let knows = !listed.is_empty();
     // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
     // 只读。
     let watch = packages_installed.clone().map(|installed| skills::Watch {
@@ -171,7 +177,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         attended,
         Holds {
             memory: scope,
-            knowledge: knows,
+            knowledge: reach,
         },
         preset.as_ref().map(|chosen| (&chosen.file, features)),
     );

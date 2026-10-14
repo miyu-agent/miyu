@@ -58,7 +58,7 @@ fn names(venue: &str, group: bool) -> Vec<String> {
         false,
         crate::agents::Holds {
             memory: MemoryScope::Off,
-            knowledge: false,
+            knowledge: crate::agents::Reach::Save,
         },
         None,
     )

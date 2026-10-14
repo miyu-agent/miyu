@@ -24,6 +24,7 @@ use miyu_tool::{
 };
 
 use crate::TARGET;
+use crate::agents::Reach;
 use crate::blocking::blocking;
 use crate::config::TurnConfig;
 use crate::memory::{Query, Using, Vectors};
@@ -144,6 +145,16 @@ impl Shelves {
             }
             None => ids,
         })
+    }
+
+    /// 知识库的几件给到哪一步（施工 K-3 修）：查得到的 `listed` 不是空的五件都给；空的、人格收窄了的一件都不给（收窄了的建
+    /// 不了库）；空的、没收窄的只给 `kb_save`。人格的文件读不了的当没收窄（同 [`Shelves::bases`]）。碰磁盘，在阻塞线程里调。
+    pub(crate) fn reach(&self, listed: &[Listed]) -> Reach {
+        match (listed.is_empty(), self.narrowing()) {
+            (false, _) => Reach::All,
+            (true, Ok(Some(_))) => Reach::Nothing,
+            (true, _) => Reach::Save,
+        }
     }
 
     /// 她这一刻查得到的库，带着名字、说明（施工 K-1 补），先后同 [`Shelves::bases`]。工具面上给不给两件工具照它是不是空的

@@ -25,7 +25,7 @@ use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_tool::{
     ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
-    KB_READ, KB_SEARCH, MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND,
+    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND,
     SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, Spawned, Spawning, TODOWRITE,
     is_subagent,
 };
@@ -45,13 +45,25 @@ pub(crate) struct Site<'a> {
     pub(crate) group: bool,
 }
 
-/// 会话有什么（施工 K-1 下从 `memory` 一格扩出来）：记忆的范围，查不查得到知识库。工具面照它给记忆的三件、知识库的两件。
+/// 会话有什么（施工 K-1 下从 `memory` 一格扩出来）：记忆的范围，知识库给到哪一步。工具面照它给记忆的三件、知识库的五件。
 #[derive(Clone, Copy)]
 pub(crate) struct Holds {
     /// 记忆的范围：`off` 的不给记忆的三件。
     pub(crate) memory: MemoryScope,
-    /// 查得到至少一个知识库（[`crate::knowledge::Shelves::listed`] 不是空的）：查不到的不给 `kb_search`、`kb_read`（2026-10-12 项目主人定）。
-    pub(crate) knowledge: bool,
+    /// 知识库的几件给到哪一步（[`crate::knowledge::Shelves::reach`]）。
+    pub(crate) knowledge: Reach,
+}
+
+/// 知识库的几件给到哪一步（`knowledge.md`「怎么走」第六条第 2 款、第七条第 2 款）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Reach {
+    /// 五件都给：查得到至少一个库。
+    All,
+    /// 只给 `kb_save`：一个都查不到、人格没收窄，好建第一个（施工 K-3，2026-10-12 项目主人定）。
+    Save,
+    /// 一件都不给：一个都查不到、人格收窄了（收窄成空的、列着的都还没有）。收窄了的建不了库，给了 `kb_save` 也写不进（施工
+    /// K-3 修，验收手册待定 13，2026-10-15 项目主人定写也照收窄）。
+    Nothing,
 }
 
 /// 一个会话派子代理要的：造子会话的端口，和子会话照抄的、会话里不变的几样。
@@ -163,10 +175,16 @@ impl Agents {
                     || ![REMEMBER, FORGET, MEMORY_SEARCH].contains(&spec.name.as_str())
             })
             // 知识库的搜、读、改、删给查得到至少一个库的会话（施工 K-1 下、K-3，`knowledge.md`「怎么走」第六条）：本机的、
-            // 场所的、子会话都给，还照预设。新建那一件 `kb_save` 一个库都没有也给，好建第一个（施工 K-3，2026-10-12 项目主人定）。
-            .filter(|spec| {
-                holds.knowledge
-                    || ![KB_SEARCH, KB_READ, KB_EDIT, KB_DELETE].contains(&spec.name.as_str())
+            // 场所的、子会话都给，还照预设。新建那一件 `kb_save` 一个库都没有也给，好建第一个（施工 K-3，2026-10-12 项目主人定）；
+            // 人格收窄了的建不了库，一个都查不到的也不给它（施工 K-3 修）。
+            .filter(|spec| match holds.knowledge {
+                Reach::All => true,
+                Reach::Save => {
+                    ![KB_SEARCH, KB_READ, KB_EDIT, KB_DELETE].contains(&spec.name.as_str())
+                }
+                Reach::Nothing => {
+                    ![KB_SEARCH, KB_READ, KB_SAVE, KB_EDIT, KB_DELETE].contains(&spec.name.as_str())
+                }
             })
             // 提供者的工具照它给哪种会话挑（施工 O-2 上）。
             .filter(|spec| {

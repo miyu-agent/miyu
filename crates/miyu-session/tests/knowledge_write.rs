@@ -254,6 +254,42 @@ async fn a_narrowed_persona_writes_only_its_own_and_makes_none() {
     assert_eq!(read(&kb(&home).join("secret/a.md")), "字\n");
 }
 
+#[tokio::test]
+async fn a_persona_narrowed_to_nothing_it_can_read_gets_no_save_either() {
+    // 施工 K-3 修（验收手册待定 13，2026-10-15 项目主人定写也照收窄）：收窄了的建不了库，查不到一个的（收窄成空的、列着的
+    // 一个都还没有）给了 `kb_save` 也写不进，不给；列着的库有了，下一个回合五件都有。没收窄的照旧（一个库都没有也给它）。
+    let home = Home::new();
+    let dir = kb(&home).join("secret");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("a.md"), "字\n").expect("写得进");
+    let persona = home.root.system().join("personas/engineer/persona.toml");
+    std::fs::write(&persona, "[knowledge]\nbases = []\n").expect("写得进");
+    let script = Script::new([Play::Says("好。"), Play::Says("嗯。"), Play::Says("哦。")]);
+    let handle = session(&home, &script).await;
+    chat(&home, &handle, 1, "收窄成空的").await;
+    std::fs::write(&persona, "[knowledge]\nbases = [\"notes\"]\n").expect("写得进");
+    chat(&home, &handle, 2, "列着的还没有").await;
+    let notes = kb(&home).join("notes");
+    std::fs::create_dir_all(&notes).expect("建得了");
+    std::fs::write(notes.join("b.md"), "字\n").expect("写得进");
+    chat(&home, &handle, 3, "列着的有了").await;
+    let requests = script.requests();
+    assert!(
+        names(&requests[0].1).is_empty(),
+        "{:?}",
+        names(&requests[0].1)
+    );
+    assert!(
+        names(&requests[1].1).is_empty(),
+        "{:?}",
+        names(&requests[1].1)
+    );
+    assert_eq!(
+        names(&requests[2].1),
+        ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"]
+    );
+}
+
 #[cfg(target_os = "linux")]
 #[tokio::test]
 async fn a_document_goes_to_the_trash_and_undo_brings_it_back() {
