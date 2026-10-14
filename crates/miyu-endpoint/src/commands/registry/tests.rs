@@ -32,7 +32,15 @@ fn the_built_in_commands_are_registered_in_name_order() {
     let names: Vec<&str> = commands.all().map(|slash| slash.name()).collect();
     assert_eq!(
         names,
-        ["clear", "dream", "goal", "remember", "stop", "workspace"]
+        [
+            "clear",
+            "clear-memory",
+            "dream",
+            "goal",
+            "remember",
+            "stop",
+            "workspace"
+        ]
     );
     assert_eq!(
         commands.find("reset").map(|slash| slash.name()),
@@ -43,9 +51,8 @@ fn the_built_in_commands_are_registered_in_name_order() {
 
 #[test]
 fn a_different_alias_is_not_a_clash() {
-    // 记忆的会话要加的 `/clear-memory`（别名 `/reset-memory`）：和 `/clear`、`/reset` 是不同的词。
-    let mut commands = builtin();
-    commands.register(Arc::new(Named("clear-memory", &["reset-memory"])));
+    // 记忆的 `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补）：和 `/clear`、`/reset` 是不同的词。
+    let commands = builtin();
     assert_eq!(
         commands.find("reset-memory").map(|slash| slash.name()),
         Some("clear-memory")

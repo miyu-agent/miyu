@@ -32,6 +32,7 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
         reply["result"]["commands"],
         json!([
             {"name": "clear", "aliases": ["reset"], "summary": "清空上下文"},
+            {"name": "clear-memory", "aliases": ["reset-memory"], "summary": "清掉这个会话的记忆"},
             {"name": "dream", "aliases": [], "summary": "整理记忆"},
             {"name": "goal", "aliases": [], "summary": "长期目标", "argument": "<目标>"},
             {"name": "remember", "aliases": [], "summary": "添加记忆", "argument": "<内容>"},
@@ -67,7 +68,14 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
         .await;
     assert_eq!(
         names(&reply),
-        ["clear", "dream", "remember", "stop", "workspace"]
+        [
+            "clear",
+            "clear-memory",
+            "dream",
+            "remember",
+            "stop",
+            "workspace"
+        ]
     );
 }
 

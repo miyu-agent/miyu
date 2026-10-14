@@ -99,6 +99,13 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
         .await;
     assert_eq!(
         names(&reply),
-        ["clear", "dream", "remember", "stop", "workspace"]
+        [
+            "clear",
+            "clear-memory",
+            "dream",
+            "remember",
+            "stop",
+            "workspace"
+        ]
     );
 }

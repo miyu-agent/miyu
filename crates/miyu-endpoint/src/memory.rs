@@ -133,6 +133,29 @@ pub(crate) async fn remember_in(
     Ok(text)
 }
 
+/// 会话 `handle` 产生的记忆清掉（`/clear-memory`，施工 R-3 五补）：同 `memory.forget` 带 `clear: "session"`，出处全在这个会话
+/// 里的清掉，别的出处还有的、人记的（没有出处）不动；会话那一间的就是整间。`by` 是打命令的人，命令编号是 `id`。交回清掉了几条
+/// （不算改掉的旧版本）。
+///
+/// # Errors
+///
+/// 这个会话没有记忆（范围 `off`、场所会话、没装人格记忆）：`memory_unavailable`；记忆日志写不进：内部出错。
+pub(crate) async fn clear_in(
+    core: &Arc<Core>,
+    handle: &Handle,
+    id: &CommandId,
+    by: By,
+) -> Result<usize, Refusal> {
+    let keeper = keeper_of(core, handle, by.clone())?;
+    let session = matches!(keeper.room(), Room::Persona { .. }).then(|| handle.id().clone());
+    let stamp = Stamp {
+        at: now(),
+        by,
+        cause: Some(id.clone()),
+    };
+    blocking(move || keeper.clear(stamp, session)).await
+}
+
 async fn list(core: &Arc<Core>, params: List) -> Result<Value, Refusal> {
     let filter = Filter {
         class: params.class,

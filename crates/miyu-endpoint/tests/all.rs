@@ -20,6 +20,7 @@ mod attach_send;
 mod backstage;
 mod check;
 mod clear;
+mod clear_memory_command;
 mod command_catalog;
 mod commands;
 mod compact;

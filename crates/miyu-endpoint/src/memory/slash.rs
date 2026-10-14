@@ -1,6 +1,7 @@
 //! 记忆的斜杠命令（施工 R-3 补、R-7 补，O-6 三补起由记忆这边登记）：`/remember <话>` 直接记一条记忆，不经过模型，只在本机的
-//! 会话里；`/dream` 现在就整理记忆，先抽这一段、再合，回执报几样数，要等模型，在后台答。两条都要这个会话开着记忆
-//! （`memory.md`「协议」、第七条第 9 款）。
+//! 会话里；`/dream` 现在就整理记忆，先抽这一段、再合，回执报几样数，要等模型，在后台答；`/clear-memory`（别名
+//! `/reset-memory`，施工 R-3 五补）清掉这个会话产生的记忆，不先问，回执说清了几条。三条都要这个会话开着记忆（`memory.md`
+//! 「协议」、第七条第 9 款，`protocol.md`「`command.run`」第 8、9、12 条）。
 
 use std::sync::Arc;
 
@@ -11,10 +12,11 @@ use crate::Core;
 use crate::commands::{Call, Commands, Ran, Running, Said, Slash};
 use crate::refusal::Refusal;
 
-/// 登记这两条。
+/// 登记这三条。
 pub(crate) fn register(commands: &mut Commands) {
     commands.register(Arc::new(Remember));
     commands.register(Arc::new(Dream));
+    commands.register(Arc::new(ClearMemory));
 }
 
 /// 这个会话开着记忆的才能用。
@@ -95,6 +97,53 @@ impl Slash for Dream {
                 said: dreamed_said(&dreamed),
             })
         })
+    }
+}
+
+/// `/clear-memory`（别名 `/reset-memory`）：只删、不请求模型，照顺序答（项目主人 2026-10-15 定名字、不先问）。
+struct ClearMemory;
+
+impl Slash for ClearMemory {
+    fn name(&self) -> &'static str {
+        "clear-memory"
+    }
+
+    fn aliases(&self) -> &'static [&'static str] {
+        &["reset-memory"]
+    }
+
+    fn summary(&self) -> &'static str {
+        "commands/summary/clear-memory"
+    }
+
+    fn allowed(&self, core: &Core, handle: &Handle, _by: &By) -> Result<(), Refusal> {
+        remembering(core, handle)
+    }
+
+    fn run<'a>(&'a self, call: Call<'a>) -> Running<'a> {
+        Box::pin(async move {
+            let cleared =
+                super::clear_in(call.core, call.handle(), call.id, call.by.clone()).await?;
+            Ok(Ran {
+                events: Vec::new(),
+                said: cleared_said(cleared),
+            })
+        })
+    }
+}
+
+/// `/clear-memory` 的回执：清了几条（一条的发 `/one`，英文说单数）；一条都没有的说这个会话没有记下的记忆。
+pub(super) fn cleared_said(cleared: usize) -> Said {
+    match cleared {
+        0 => Said::plain("commands/cleared-memory-none"),
+        1 => Said {
+            key: "commands/cleared-memory/one",
+            fields: vec![("count", "1".to_string())],
+        },
+        _ => Said {
+            key: "commands/cleared-memory",
+            fields: vec![("count", cleared.to_string())],
+        },
     }
 }
 
