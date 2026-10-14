@@ -63,6 +63,11 @@ pub fn results(raw: &Value, mut args: Args) -> Result<Results, String> {
             load: times(&raw["hot"]["load_ms"], "hot.load_ms")?,
             idle: processes(&raw["hot"]["idle"], "hot.idle")?,
             active: processes(&raw["hot"]["active"], "hot.active")?,
+            // 施工 V-5 下以前的原始数据没有这一样：当没量。
+            headed: match &raw["hot"]["headed"] {
+                Value::Null => Vec::new(),
+                headed => processes(headed, "hot.headed")?,
+            },
             sessions: count(&raw["hot"]["sessions"], "hot.sessions")?,
         },
         large: Large {

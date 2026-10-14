@@ -33,6 +33,7 @@ fn budgets() -> BTreeMap<String, Budget> {
         ("同一个会话从头投影一次", ms(50, 100.0)),
         ("追加一步的事件并同步", ms(99, 20.0)),
         ("核心空闲、没有会话载入", mb(30.0)),
+        ("核心空闲、连着一个头", mb(30.0)),
         ("核心里每多一个活动会话", mb(5.0)),
     ]
     .into_iter()
@@ -88,6 +89,7 @@ fn results(memory: bool) -> Results {
             load: vec![3.0, 4.0],
             idle: pick(core(20)),
             active: pick(core(40)),
+            headed: pick(core(25)),
             sessions: 10,
         },
         large: Large {
@@ -141,6 +143,14 @@ fn the_table_judges_against_the_budgets() {
     assert!(row("追加一条事件并同步").ends_with("| p99 20 ms | 超 |"));
     assert!(row("核心空闲").contains("| PSS 20.0 MB，匿名 10.0 MB | 30 MB | 过 |"));
     assert!(row("核心里每多一个活动会话").contains("| 2.00 MB | 5 MB | 过 |"));
+    assert!(
+        row("核心空闲、连着一个头").contains("| PSS 25.0 MB，匿名 12.5 MB | 30 MB | 过 |"),
+        "施工 V-5 下"
+    );
+    assert!(
+        text.contains("| 连着一个头、安静以后 | miyu（42） | 25.0 MB | 12.5 MB | 25.1 MB |"),
+        "{text}"
+    );
     assert!(row("大会话 |").contains("10010 条事件，6 轮，日志 8.0 MB"));
     assert!(
         text.contains("| 0–999 | 1 | 1.0 / 1.0 ms | 0.5 / 0.5 ms | 10.0 / 10.0 ms |"),
@@ -245,6 +255,22 @@ fn raw_data_from_before_v2_middle_reads_projection_as_the_whole_request() {
     let said = read.large.turns[1];
     assert_eq!((said.request, said.projection), (2.0, 2.0));
     assert_eq!(read.large.first_projection, vec![120.0]);
+}
+
+#[test]
+fn raw_data_from_before_v5_reads_the_headed_core_as_not_measured() {
+    // V-5 下以前的原始数据没有 `hot.headed`：照没量，表里那一行写「不量」，闸门不拦。
+    let mut written = raw::json(&results(true));
+    written["hot"].as_object_mut().unwrap().remove("headed");
+    let read = load(&written, results(false).args).unwrap();
+    assert!(read.hot.headed.is_empty());
+    let text = rows::markdown(&read, &budgets(), "x").unwrap();
+    assert!(
+        text.contains(
+            "| 核心空闲、连着一个头（头起来时问的几样过去、安静下来以后） | 不量 | 30 MB | 不量 |"
+        ),
+        "{text}"
+    );
 }
 
 #[test]

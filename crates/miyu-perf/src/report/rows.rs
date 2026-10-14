@@ -14,10 +14,19 @@ const PROJECTION: &str = "一次请求的投影（增量，一万条事件的会
 const FROM_SCRATCH: &str = "同一个会话从头投影一次";
 const APPEND: &str = "追加一步的事件并同步";
 const IDLE: &str = "核心空闲、没有会话载入";
+const HEADED: &str = "核心空闲、连着一个头";
 const PER_SESSION: &str = "核心里每多一个活动会话";
 
 /// 要和 23 第二节比的几项：名字照那张表的第一格。
-pub const ITEMS: &[&str] = &[HOT, PROJECTION, FROM_SCRATCH, APPEND, IDLE, PER_SESSION];
+pub const ITEMS: &[&str] = &[
+    HOT,
+    PROJECTION,
+    FROM_SCRATCH,
+    APPEND,
+    IDLE,
+    HEADED,
+    PER_SESSION,
+];
 
 /// 对照预算的一行：说的是什么、量到的那一格、照预算的分位量到的数（没量的没有）、预算。
 pub struct Check {
@@ -99,6 +108,12 @@ pub fn checks(results: &Results, budgets: &BTreeMap<String, Budget>) -> Result<V
         cell: memory_cell(results.hot.idle.first()),
         measured: core_pss(&results.hot.idle),
         budget: budget(IDLE)?,
+    });
+    checks.push(Check {
+        label: format!("{HEADED}（头起来时问的几样过去、安静下来以后）"),
+        cell: memory_cell(results.hot.headed.first()),
+        measured: core_pss(&results.hot.headed),
+        budget: budget(HEADED)?,
     });
     let per_session = core_pss(&results.hot.active)
         .zip(core_pss(&results.hot.idle))
@@ -307,6 +322,7 @@ fn memory(text: &mut String, results: &Results) {
     let large = &results.large;
     let moments = [
         ("核心空闲".to_string(), &results.hot.idle),
+        ("连着一个头、安静以后".to_string(), &results.hot.headed),
         (
             format!("{} 个小会话订阅着", results.hot.sessions),
             &results.hot.active,

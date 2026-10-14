@@ -58,10 +58,14 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
       - name: 长跑
+        # 查对错，不量快慢：不用 release 的整体优化（施工 V-5 下），省下编的时间。
+        env:
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo test --release -p miyu-kernel -p miyu-assemble -- --ignored for_longer
 
   # 量尺（施工 V-3，23 F4）：照 23 第二节的预算量核心这一边，表贴进这一次跑的摘要和日志。只在 Linux 上：预算照 Linux 定的。
-  # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间超过预算的 1.5 倍、内存超过预算的红
+  # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间、内存超过预算本身就红（施工 V-5 下，以前时间放到 1.5 倍）
   # （倍数照这台机器实测定，见 docs/blueprint/perf.md「闸门」）。
   perf:
     timeout-minutes: 45
@@ -76,7 +80,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
       - name: 量尺
-        run: cargo xtask perf --idle-wait 0 --gate 1.5 --out "$GITHUB_WORKSPACE/target/perf-out"
+        run: cargo xtask perf --idle-wait 0 --gate 1 --out "$GITHUB_WORKSPACE/target/perf-out"
       - name: 表贴进摘要
         if: always()
         run: cat "$GITHUB_WORKSPACE"/target/perf-out/*.md | tee -a "$GITHUB_STEP_SUMMARY" || true

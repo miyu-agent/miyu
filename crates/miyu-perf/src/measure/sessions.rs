@@ -1,9 +1,12 @@
 //! 热启动和每多一个会话（`23-性能预算.md` 第二节「热启动到能提交第一轮」「核心里每多一个活动会话」）。
 //!
 //! 先造几个小会话各说一句，重启核心：一个会话都没载入。量核心空闲的内存；再一个个连上、握手、订阅（订阅时核心才
-//! 载入它），量这一段；都订阅着、各再说一句以后量内存，涨的除以会话数。
+//! 载入它），量这一段；都订阅着、各再说一句以后量内存，涨的除以会话数。最后再重启一次，像头那样连上、问一遍头起来时问的
+//! 几样，安静下来以后量内存（施工 V-5 下，「核心空闲、连着一个头」）。
 
 use std::time::Instant;
+
+use serde_json::json;
 
 use crate::fake::Fake;
 use crate::measure::{SETTLE, open, say, subscribe};
@@ -21,6 +24,8 @@ pub struct Hot {
     pub idle: Vec<Process>,
     /// 几个会话都订阅着、各说了一句以后的内存。
     pub active: Vec<Process>,
+    /// 重启以后连着一个头、头起来时的那一阵请求过去、安静下来以后的内存（施工 V-5 下）。
+    pub headed: Vec<Process>,
     /// 几个会话。
     pub sessions: usize,
 }
@@ -62,10 +67,38 @@ pub async fn hot(sandbox: &Sandbox, fake: &mut Fake, count: usize) -> Result<Hot
     let active = memory::tree(running.pid());
     drop(connections);
     sandbox.stop(running)?;
+    let headed = headed(sandbox).await?;
     Ok(Hot {
         load,
         idle,
         active,
+        headed,
         sessions: count,
     })
+}
+
+/// 头起来时问的几样（终端、网页都问）：读配置、读人、列模型、人格、预设、软件包。
+const HEAD_ASKS: [&str; 6] = [
+    "config.get",
+    "human.get",
+    "model.list",
+    "persona.list",
+    "preset.list",
+    "package.list",
+];
+
+/// 重启核心，像头那样连上、问一遍 [`HEAD_ASKS`]，等核心安静下来还了内存（它照最后一个请求过去 2 秒算）再歇一会儿，量
+/// 内存。连接留到量完。
+async fn headed(sandbox: &Sandbox) -> Result<Vec<Process>, String> {
+    let running = sandbox.start()?;
+    tokio::time::sleep(SETTLE).await;
+    let mut rpc = Rpc::connect(&sandbox.root).await?;
+    for method in HEAD_ASKS {
+        rpc.call(method, json!({})).await?;
+    }
+    tokio::time::sleep(SETTLE * 2).await;
+    let headed = memory::tree(running.pid());
+    drop(rpc);
+    sandbox.stop(running)?;
+    Ok(headed)
 }
