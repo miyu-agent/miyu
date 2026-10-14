@@ -109,6 +109,17 @@ class Missing(unittest.TestCase):
             self.assertEqual(miyu.env()["MIYU_HOME"], str(where.homes / "miyu"))
 
 
+class Sandbox(unittest.TestCase):
+    def test_caches_stay_inside_each_home(self):
+        # Miyu 的缓存跟 XDG_CACHE_HOME 走、不跟 MIYU_HOME 走（store.md）：不指进沙箱，就读写本机真实的缓存（V-7 修）。
+        with tempfile.TemporaryDirectory() as tmp:
+            where = fake_places(Path(tmp))
+            for r in rival.load(where):
+                env = r.env()
+                cache = env.get("XDG_CACHE_HOME") or env.get("CODEX_HOME")
+                self.assertTrue(cache and cache.startswith(str(r.home)), f"{r.name} 的缓存不在沙箱里：{cache}")
+
+
 class Summary(unittest.TestCase):
     def test_a_table_comes_out_with_dashes_for_what_was_not_measured(self):
         conditions = {

@@ -32,8 +32,10 @@ install = [
   ["miyu-tui（终端界面）", "{tui}"],
 ]
 
+# 缓存跟 XDG_CACHE_HOME 走、不跟 MIYU_HOME 走（store.md）：也指进沙箱，不然读写本机真实的缓存（模型目录、终端的）。
 [miyu.env]
 MIYU_HOME = "{home}"
+XDG_CACHE_HOME = "{home}/.cache"
 MIYU_RESOURCES = "{core}/resources"
 MIYU_CORE_BIN = "{miyu}"
 

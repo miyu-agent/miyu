@@ -125,7 +125,7 @@ OPENAI_BASE_URL=… OPENAI_API_KEY=… MIYU_BENCH_MODEL=… uv run bench/rivals/
 **怎么走**
 
 1. 被测的程序都放进自己的 systemd scope 跑：CPU 照 scope 的 `cpu.stat`（退出了的子进程也算），内存报进程树的 PSS 之和和 scope 的 `memory.peak`，读写照每个进程 `/proc/<进程号>/io` 相加（写报两样：交给系统的 `wchar`，落到盘上的 `write_bytes`），唤醒照每个线程的上下文切换相加。都去掉 `XDG_RUNTIME_DIR`：沙箱的核心把套接字放进自己的数据根（`ipc.md`）。
-2. 模板：每家在空的沙箱家目录里配好模型（Miyu 走 `miyu pkg install` 装终端界面的包、`miyu config set` 配模型，和人配的是同一条路），跑一轮很短的任务，开一次终端界面看到首屏再关，存成模板。每次量之前照模板还原，还原完先 `sync`：拷出来的脏页没落盘，被测的程序一 fsync，文件系统会顺手一起刷，块设备的写就算到它头上（btrfs 上实测一轮多出 17 MiB）。三家的起点一样（23 第四节：jcode 测别家用真实的家目录，这里不照搬）。
+2. 模板：每家在空的沙箱家目录里配好模型（Miyu 走 `miyu pkg install` 装终端界面的包、`miyu config set` 配模型，和人配的是同一条路），跑一轮很短的任务，开一次终端界面看到首屏再关，存成模板。家目录、缓存都在沙箱里（Miyu 的缓存跟 `XDG_CACHE_HOME` 走、不跟 `MIYU_HOME` 走，也指进沙箱，`store.md`）。每次量之前照模板还原，还原完先 `sync`：拷出来的脏页没落盘，被测的程序一 fsync，文件系统会顺手一起刷，块设备的写就算到它头上（btrfs 上实测一轮多出 17 MiB）。三家的起点一样（23 第四节：jcode 测别家用真实的家目录，这里不照搬）。
 3. 首屏：伪终端里起终端界面，屏幕上出现 `rivals.toml` 写的那几个字算到了。做模板时就开一次，对不上的当场报，改 `marker`。
 4. 场景：
    1. **冷启动到首屏**：没有后台进程，从起终端界面算到首屏；记时间、CPU、PSS。
@@ -157,7 +157,7 @@ OPENAI_BASE_URL=… OPENAI_API_KEY=… MIYU_BENCH_MODEL=… uv run bench/rivals/
 | `machine/tests.rs` | `/proc/cpuinfo`、`/proc/meminfo` 的读法 |
 | `args/tests.rs` | 默认、写了的、写错的；`--render` 只要 `--design`、`--out`；`--gate` 要正数（施工 V-3） |
 | `report/tests.rs` | 日期；一份造出来的结果写成表：照预算判、没量的「不量」、缺预算报错；原始数据；写出去再读回来一字不差、表一样，坏了说是哪一格；闸门只报超了倍数的那几行、内存照预算拦、没量的不算、没写倍数的不拦（施工 V-3） |
-| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；占位怎么换；没装的一家不挡量别的几家（V-7 修）；汇表时没量的写「—」 |
+| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；各家的缓存都在沙箱里（Miyu 的跟 `XDG_CACHE_HOME` 走，V-7 修）；占位怎么换；没装的一家不挡量别的几家（V-7 修）；汇表时没量的写「—」 |
 
 真跑要 release 构建和几分钟，不进 `cargo test`；CI 里另一项跑（施工 V-3）。三家对比的测具不跑别家的那几条在 CI 的量尺那一项里先跑（`python3 -m unittest`，施工 V-7）。
 
