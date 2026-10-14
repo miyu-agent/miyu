@@ -87,3 +87,7 @@ path = "tests/all.rs"
 [[test]]
 name = "embed_log"
 path = "tests/embed_log.rs"
+
+[[test]]
+name = "memlog"
+path = "tests/memlog.rs"

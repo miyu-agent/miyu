@@ -1,5 +1,10 @@
 //! 核心自己记内存账（施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来就记一行，到点再记，安静下来时涨得快的多记一行
 //! （施工 V-6 下）；量不出来的平台（Windows）不起、不写文件。
+//!
+//! 自己一个程序（`Cargo.toml` 另列）：记的是整个进程的内存，和别的测试并在一个程序里，它们并着分配的也算进涨幅，
+//! 「没涨够不采」那一步会多采一次（整套并跑时红过，单跑过）。
+
+mod support;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,7 +14,7 @@ use serde_json::Value;
 use miyu_core::memlog::{self, FILE, Timing};
 use miyu_session::testkit::Script;
 
-use crate::support::Home;
+use support::Home;
 
 /// 记下的几行。
 fn lines(home: &Home) -> Vec<Value> {

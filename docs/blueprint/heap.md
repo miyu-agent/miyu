@@ -53,6 +53,6 @@
 |---|---|
 | `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
-| `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写 |
+| `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写。`tests/memlog.rs` 自己一个测试程序：记的是整个进程，和别的测试并在一起，它们分配的也算进涨幅（V-6 下修） |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |
 | 量尺（`perf.md`） | 大会话没人订阅、闲够了退下以后核心的内存回落 |
