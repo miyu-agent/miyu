@@ -294,21 +294,19 @@ impl Language {
         }
     }
 
-    /// 自定义的一家问编号，直接回车用自动起的 `suggested`（施工 8-11 六补）。
+    /// 自定义的一家问 ID，直接回车用自动起的 `suggested`（施工 8-11 六补；8-11 七补「编号」改叫「ID」，2026-10-14 项目主人定）。
     pub(crate) fn custom_id(&self, suggested: &str) -> String {
         match self {
-            Language::Chinese => format!("编号（直接回车用 {suggested}）："),
+            Language::Chinese => format!("ID（直接回车用 {suggested}）："),
             Language::English => format!("ID (Enter for {suggested}): "),
         }
     }
 
-    /// 敲的编号不合写法。
+    /// 敲的 ID 不合写法。
     pub(crate) fn bad_custom_id(&self, typed: &str) -> String {
         match self {
             Language::Chinese => {
-                format!(
-                    "{typed} 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字"
-                )
+                format!("{typed} 不能当 ID：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字")
             }
             Language::English => format!(
                 "{typed} is not a valid ID: start with a lowercase letter, then lowercase letters, digits, - or _, up to 32 characters"
@@ -316,7 +314,7 @@ impl Language {
         }
     }
 
-    /// 敲的编号配置里已经有了。
+    /// 敲的 ID 配置里已经有了。
     pub(crate) fn custom_id_taken(&self, typed: &str) -> String {
         match self {
             Language::Chinese => format!("已经有 {typed} 了"),

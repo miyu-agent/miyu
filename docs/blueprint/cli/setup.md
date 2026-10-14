@@ -44,7 +44,7 @@
    1. 问「Base URL：」，去掉前后空白和末尾的 `/`。不是 `http://`、`https://` 开头的：说「要以 http:// 或 https:// 开头」，再问。直接回车、读到头：「没选」，退出码 1。
    2. 标准错误上一行头「接口协议：」，列三行：`OpenAI 兼容`、`Anthropic`、`OpenAI Responses`（驱动 `openai-chat`、`anthropic`、`openai-responses`，核心现在会说的三种）。问「选一个编号：」，认法同第 3 条。
    3. 名字是地址的主机名。配置里的编号照主机名起：本机的（`localhost`、IP）是 `local`；别的取倒数第二段（`api.example.com` 是 `example`），倒数第二段是通用的二级域名（`co`、`com`、`net`、`org`、`edu`、`gov`、`ac`）的再往前一段（`api.example.co.uk` 是 `example`）；写法照第 10 条改（`302.ai` 是 `p-302`）。试通了以后（或者人说仍然保存），配置里已经有这个编号的往后加 `-2`、`-3`。
-   4. 在终端里的接着问「编号（直接回车用 <起好的>）：」（施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，再接一家只能是 `local-2`，没地方改）：去掉前后空白是空的、和起好的一样的，用起好的；不合「路径里的名字」写法的（小写字母开头，只用小写字母、数字、`-`、`_`，最长 32 个字），说「<敲的> 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字」，再问；配置里已经有的（问一次 `config.get`），说「已经有 <敲的> 了」，再问；读到头：「没选」，退出码 1，什么都不写。贴的 key 存成这个编号（第 8 条）。
+   4. 在终端里的接着问「ID（直接回车用 <起好的>）：」（施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，再接一家只能是 `local-2`，没地方改；8-11 七补，2026-10-14 项目主人定这一格叫「ID」，「编号」像 1234567）：去掉前后空白是空的、和起好的一样的，用起好的；不合「路径里的名字」写法的（小写字母开头，只用小写字母、数字、`-`、`_`，最长 32 个字），说「<敲的> 不能当 ID：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字」，再问；配置里已经有的（问一次 `config.get`），说「已经有 <敲的> 了」，再问；读到头：「没选」，退出码 1，什么都不写。贴的 key 存成这个 ID（第 8 条）。
 5. **`--provider`**：`provider.catalog` 带 `query` 是它，取 `id` 一模一样、能用的那一家。没有的：说「目录里没有能用的 <编号>」，退出码 2。`provider.detect` 里有它的 key 的，照找到的那个变量用（第一个）。
 6. **key**：
    - 选的是找到的 key：引用那个变量 `{ env = … }`，不复制。写了 `--env` 的照 `--env`。
@@ -113,7 +113,7 @@ Base URL：https://api.example.com/v1/
 Key（不显示，可以空）：
 试一下 api.example.com……
 · 通了：列出 2 个模型。
-编号（直接回车用 example）：
+ID（直接回车用 example）：
 · example 的 key 存好了
 选主对话的模型：
   1  deepseek-v4.1-flash（推荐）
@@ -229,7 +229,7 @@ Outside a terminal, give --provider and pipe the key in:
 | 自定义的 key | Key（不显示，可以空）： | Key (hidden, may be empty): |
 | 取不到模型列表 | 未获取到模型列表 | Could not get the model list |
 | 问模型名 | 模型名： | Model name: |
-| 自定义的问编号 | 编号（直接回车用 {起好的}）： | ID (Enter for {suggested}): |
+| 自定义的问 ID | ID（直接回车用 {起好的}）： | ID (Enter for {suggested}): |
 | 编号不合写法 | {敲的} 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字 | {typed} is not a valid ID: start with a lowercase letter, then lowercase letters, digits, - or _, up to 32 characters |
 | 编号已经有了 | 已经有 {敲的} 了 | {typed} is already taken |
 | 目录里没有 | 目录里没有能用的 {id} | No usable provider {id} in the catalog |
