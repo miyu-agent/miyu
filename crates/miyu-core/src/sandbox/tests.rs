@@ -207,6 +207,7 @@ fn no_cache_dir_is_logged_and_gives_none() {
 }
 
 /// 照上一次探到的用（施工 V-5 上）：探一次 `exe`，状态目录是 `state`，交回探到的结果和记下的行。
+#[cfg(unix)]
 fn probed_in(exe: &Path, state: &Path) -> (Availability, Vec<String>) {
     let memory = Memory::new();
     let found = tracing::subscriber::with_default(
