@@ -70,7 +70,7 @@ pub(super) fn read(mut text: Box<dyn Text>, after: u64, running: bool) -> Piece 
 
 /// 末尾半个字有几个字节：最后一个字的头一个字节说它该有几个字节，后面没写够的就是半个。不是 UTF-8 的照 0 算（整个交出去，
 /// 换成 `�`）。
-fn half_char(bytes: &[u8]) -> usize {
+pub(super) fn half_char(bytes: &[u8]) -> usize {
     let tail = bytes.len().saturating_sub(4);
     for (at, &byte) in bytes.iter().enumerate().skip(tail).rev() {
         let width = match byte {

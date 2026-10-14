@@ -98,17 +98,18 @@ pub(crate) async fn read(core: &Arc<Core>, params: Params) -> Result<Value, Refu
         }
     };
     let output = output_of(core, (&session, handle), &job).await?;
+    let running = output.running;
     let tail = match output.text {
         // 开不了的（没存下来）和空的一样，和 `jobs` 一样。
         None => Tail::default(),
-        Some(text) => tokio::task::spawn_blocking(move || Tail::read(text, want))
+        Some(text) => tokio::task::spawn_blocking(move || Tail::read(text, want, running))
             .await
             .map_err(|error| {
                 tracing::error!(target: TARGET, error = %error, "job output panicked");
                 Refusal::INTERNAL
             })?,
     };
-    Ok(reply(tail, output.running))
+    Ok(reply(tail, running))
 }
 
 /// 带 `after` 的（施工 V-6 上）：读 `after` 以后的；带 `wait` 的，没有新的、命令还在跑就等任务那一层叫一声再读。先拿着
@@ -174,6 +175,7 @@ fn reply(tail: Tail, running: bool) -> Value {
         "lines": tail.lines,
         "output": tail.output,
         "running": running,
+        "size": tail.size,
         "truncated": tail.truncated,
     })
 }
@@ -187,16 +189,21 @@ struct Tail {
     lines: u64,
     /// 前面还有没交的：去掉了前面的行，或者只交了一行的末尾。
     truncated: bool,
+    /// 读到的一共多少字节（施工 V-6 上补）：头接着带 `after` 读的起点。命令还在跑、最后几个字节是半个字的不算，那半个字也不交，
+    /// 下一次带 `after` 从它开头接上。
+    size: u64,
 }
 
 impl Tail {
     /// 从 `source` 读出最后 `want` 行（至少 1），一共不过 [`CAP`] 字节。一行照换行切，最后一段没有换行的也算一行，和 `jobs`
     /// 的数法一样（`tools/jobs.md` 第 3 条）；解不开的字节换成 `�`，也和它一样。读到一半读不下去的，读到多少算多少。
-    fn read(source: impl Read, want: usize) -> Tail {
+    /// 命令还在跑（`running`）的，末尾半个字留到下一次（[`Tail::size`]）。
+    fn read(source: impl Read, want: usize, running: bool) -> Tail {
         let mut reader = BufReader::new(source);
         let mut kept = Kept::new(want);
         let mut line = Vec::new();
         let mut cut = false;
+        let mut size: u64 = 0;
         loop {
             let chunk = match reader.fill_buf() {
                 Ok([]) => break,
@@ -210,6 +217,7 @@ impl Tail {
             };
             line.extend_from_slice(&chunk[..take]);
             reader.consume(take);
+            size += u64::try_from(take).unwrap_or(u64::MAX);
             // 一行太长：只留末尾，内存不跟着它涨。攒到两倍才挪，挪一次去掉一半。
             if line.len() > 2 * CAP {
                 line.drain(..line.len() - CAP);
@@ -220,10 +228,17 @@ impl Tail {
                 cut = false;
             }
         }
+        if running {
+            let half = after::half_char(&line);
+            line.truncate(line.len() - half);
+            size -= u64::try_from(half).unwrap_or(0);
+        }
         if !line.is_empty() {
             kept.push(line, cut);
         }
-        kept.finish()
+        let mut tail = kept.finish();
+        tail.size = size;
+        tail
     }
 }
 
@@ -279,6 +294,7 @@ impl Kept {
             truncated: self.cut || kept < self.total,
             lines: self.total,
             output: self.lines.into_iter().collect(),
+            size: 0,
         }
     }
 }

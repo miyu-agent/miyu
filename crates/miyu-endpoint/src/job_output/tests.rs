@@ -5,8 +5,11 @@ use miyu_kernel::id::CommandId;
 use super::*;
 use crate::wire::{LINE_LIMIT, result};
 
+/// 读最后 `want` 行；`size` 另有测试，这里清掉不比。
 fn tail(text: &str, want: usize) -> Tail {
-    Tail::read(Cursor::new(text.as_bytes().to_vec()), want)
+    let mut read = Tail::read(Cursor::new(text.as_bytes().to_vec()), want, false);
+    read.size = 0;
+    read
 }
 
 fn got(output: &str, lines: u64, truncated: bool) -> Tail {
@@ -14,6 +17,7 @@ fn got(output: &str, lines: u64, truncated: bool) -> Tail {
         output: output.to_string(),
         lines,
         truncated,
+        size: 0,
     }
 }
 
@@ -116,8 +120,11 @@ fn a_cut_line_never_starts_with_half_a_char() {
 
 #[test]
 fn bytes_that_do_not_decode_become_replacement_chars() {
-    let read = Tail::read(Cursor::new(vec![0xFF, b'\n', b'a']), 200);
-    assert_eq!(read, got("\u{FFFD}\na", 2, false));
+    let read = Tail::read(Cursor::new(vec![0xFF, b'\n', b'a']), 200, false);
+    assert_eq!(
+        (read.output.as_str(), read.lines, read.size),
+        ("\u{FFFD}\na", 2, 3)
+    );
 }
 
 /// 读几段以后读不下去的源。
@@ -137,8 +144,11 @@ impl Read for Broken {
 
 #[test]
 fn a_source_that_breaks_gives_what_was_read() {
-    let read = Tail::read(Broken(vec![&b"c"[..], &b"a\nb\n"[..]]), 200);
-    assert_eq!(read, got("a\nb\nc", 3, false));
+    let read = Tail::read(Broken(vec![&b"c"[..], &b"a\nb\n"[..]]), 200, false);
+    assert_eq!(
+        (read.output.as_str(), read.lines, read.size),
+        ("a\nb\nc", 3, 5)
+    );
 }
 
 #[test]
@@ -149,6 +159,7 @@ fn the_worst_reply_fits_on_one_line() {
         output: "\u{1}".repeat(CAP),
         lines: u64::MAX,
         truncated: false,
+        size: u64::MAX,
     };
     let line = result(&id, reply(worst, false));
     assert!(line.len() <= LINE_LIMIT, "{} 字节", line.len());
@@ -159,8 +170,34 @@ fn the_reply_names_its_fields() {
     assert_eq!(
         result(
             &CommandId::parse("o1").unwrap(),
-            reply(got("a\n", 1, false), true)
+            reply(
+                Tail {
+                    size: 2,
+                    ..got("a\n", 1, false)
+                },
+                true
+            )
         ),
-        r#"{"id":"o1","jsonrpc":"2.0","result":{"lines":1,"output":"a\n","running":true,"truncated":false}}"#
+        r#"{"id":"o1","jsonrpc":"2.0","result":{"lines":1,"output":"a\n","running":true,"size":2,"truncated":false}}"#
+    );
+}
+
+#[test]
+fn the_tail_says_how_many_bytes_it_read_up_to_a_whole_char() {
+    // 施工 V-6 上补：不带 `after` 的那一次也交 `size`，头照它接着带 `after` 读。还在跑的，末尾半个字留到下一次。
+    let read = |bytes: &[u8], running| Tail::read(Cursor::new(bytes.to_vec()), 200, running);
+    assert_eq!(read(b"a\nb\n", true).size, 4);
+    let mut half = b"ab\n".to_vec();
+    half.extend_from_slice(&"你".as_bytes()[..2]);
+    let running = read(&half, true);
+    assert_eq!(
+        (running.output.as_str(), running.lines, running.size),
+        ("ab\n", 1, 3)
+    );
+    let over = read(&half, false);
+    assert_eq!(
+        (over.output.as_str(), over.lines, over.size),
+        ("ab\n\u{FFFD}", 2, 5),
+        "结束了的照原样交"
     );
 }

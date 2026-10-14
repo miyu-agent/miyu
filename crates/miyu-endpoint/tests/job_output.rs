@@ -111,7 +111,7 @@ async fn a_running_command_reads_so_far_and_an_ended_one_reads_it_all() {
     let running = read_until(&mut client, &session, |got| got["lines"] == json!(2)).await;
     assert_eq!(
         running,
-        json!({"lines": 2, "output": "building\nhalf\n", "running": true, "truncated": false})
+        json!({"lines": 2, "output": "building\nhalf\n", "running": true, "size": 14, "truncated": false})
     );
     client.say("c3", &session, "看一眼").await;
     home.until_turns(&session, 2).await;
@@ -136,7 +136,7 @@ async fn a_running_command_reads_so_far_and_an_ended_one_reads_it_all() {
     let ended = read(&mut client, "r1", &session, None).await;
     assert_eq!(
         ended,
-        json!({"lines": 2, "output": "building\nhalf\n", "running": false, "truncated": false})
+        json!({"lines": 2, "output": "building\nhalf\n", "running": false, "size": 14, "truncated": false})
     );
     client.say("c4", &session, "再看一眼").await;
     home.until_turns(&session, 4).await;
@@ -155,7 +155,7 @@ async fn only_the_last_lines_are_read() {
     let all = read_until(&mut client, &session, |got| got["lines"] == json!(5)).await;
     assert_eq!(
         all,
-        json!({"lines": 5, "output": "1\n2\n3\n4\n5", "running": true, "truncated": false}),
+        json!({"lines": 5, "output": "1\n2\n3\n4\n5", "running": true, "size": 9, "truncated": false}),
         "最后一段没有换行也算一行，原样交"
     );
     for (tail, output, truncated) in [
@@ -198,7 +198,7 @@ async fn an_output_that_cannot_be_opened_reads_empty() {
         .expect("输出文件在");
     assert_eq!(
         read(&mut client, "r1", &session, None).await,
-        json!({"lines": 0, "output": "", "running": true, "truncated": false}),
+        json!({"lines": 0, "output": "", "running": true, "size": 0, "truncated": false}),
         "开不了的当是空的，和 `jobs` 一样"
     );
 }
@@ -228,7 +228,7 @@ async fn an_empty_output_has_no_lines() {
     let (mut client, session) = started(&home, &held, vec![Play::Says("跑完了。")]).await;
     assert_eq!(
         read(&mut client, "r1", &session, None).await,
-        json!({"lines": 0, "output": "", "running": true, "truncated": false})
+        json!({"lines": 0, "output": "", "running": true, "size": 0, "truncated": false})
     );
     held.end(Exit::Code(0));
     until("它结束了、回报落了盘", || {
@@ -237,7 +237,7 @@ async fn an_empty_output_has_no_lines() {
     .await;
     assert_eq!(
         read(&mut client, "r2", &session, None).await,
-        json!({"lines": 0, "output": "", "running": false, "truncated": false})
+        json!({"lines": 0, "output": "", "running": false, "size": 0, "truncated": false})
     );
 }
 
