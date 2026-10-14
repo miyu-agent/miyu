@@ -388,7 +388,8 @@ fn the_group_chat_texts_are_their_own_files() {
     }
 }
 
-/// 核心的几行（施工 2-7 补）：读的是 `core/permission-rule.txt`、`core/local-paths-rule.txt` 的原文；没有的说是哪一份。
+/// 核心的几行（施工 2-7 补）：读的是 `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/machine.txt`（施工 2-7
+/// 再补）的原文；没有的说是哪一份。
 #[test]
 fn the_core_lines_are_their_own_files() {
     let lines = repo().core_lines().unwrap();
@@ -399,6 +400,10 @@ fn the_core_lines_are_their_own_files() {
     assert_eq!(
         lines.local_paths,
         include_str!("../../../../resources/core/local-paths-rule.txt")
+    );
+    assert_eq!(
+        lines.machine,
+        include_str!("../../../../resources/core/machine.txt")
     );
     let scratch = Scratch::new();
     match ResourceRoot::at(scratch.path()).core_lines().unwrap_err() {

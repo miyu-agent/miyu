@@ -51,7 +51,7 @@
 <资源目录>/
 ├── core/                                随核心附带的
 │   ├── checkpoint-open.txt、checkpoint-close.txt、checkpoint-end.txt
-│   ├── permission-rule.txt、local-paths-rule.txt  核心的几行，拼进 system（施工 2-7 补）
+│   ├── permission-rule.txt、local-paths-rule.txt、machine.txt  核心的几行，拼进 system（施工 2-7 补、再补）
 │   ├── style-lock.txt                    风格锁，带角色扮演提示的人格拼在 system 最后（施工 P-1 补）
 │   ├── turn-ended/<原因>.txt             5 份
 │   ├── facts/env.txt、permission.txt、reply-cut.txt、session.txt、permission-changed.txt
@@ -80,7 +80,7 @@
 | `core/jobs/subagent-venue.txt` | `ResourceRoot::subagent_venue` | 造子会话时，接进 system（施工 7-5） |
 | `core/venues/group.txt`、`core/venues/no-text.txt`、`recent-open.txt`、`recent-omitted.txt`、`voice.txt` | `ResourceRoot::group_note`、`group_chat`；`voice.txt` 另经 `ResourceRoot::private_media`（`sources_with` 也读） | 造群会话时：第一份接进 system，别的记进快照的 `group`（施工 O-13 中、下；`voice.txt` 施工 O-33）；`voice.txt` 造会话时另记进快照的 `core.private_media`（施工 O-35） |
 | `core/venues/forward/label.txt`、`numbered.txt`、`more.txt` | `ResourceRoot::forward`（`sources_with` 也读） | 造会话时记进快照的 `core.forward`（施工 O-34） |
-| `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/style-lock.txt` | `ResourceRoot::core_lines` | 造会话时，接在 system 最后（施工 2-7 补，`policy.md` 的 `with_core_lines`）；风格锁再接在它们后面，只有带角色扮演提示的人格（施工 P-1 补，`with_style_lock`） |
+| `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/machine.txt`（施工 2-7 再补）、`core/style-lock.txt` | `ResourceRoot::core_lines` | 造会话时，接在 system 最后（施工 2-7 补，`policy.md` 的 `with_core_lines`）；风格锁再接在它们后面，只有带角色扮演提示的人格（施工 P-1 补，`with_style_lock`） |
 | `core/human/`、`software/<软件包>/human/` | `Human::load` | `miyu ask` 起来时读一次，印每一步用（`cli/ask.md`）；核心起来时照系统的语言读一次，生成配置的 Schema 和参考文件（施工 8-1，`config.md`） |
 | `software/basesystem/` 下别的 | `miyu-basesystem` | 核心起来时登记工具（`tools/*.md`） |
 | `software/mermaid/style.json` | `miyu-mermaid` | `mermaid.render` 第一次调时读一次，之后留着（施工 W-4，`mermaid.md`） |

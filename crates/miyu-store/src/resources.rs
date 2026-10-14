@@ -182,9 +182,9 @@ impl ResourceRoot {
         self.read(&["models", "featured.toml"])
     }
 
-    /// 核心的几行（施工 2-7 补，`26-提示词.md` 第四节第 3 块）：`core/permission-rule.txt`、`core/local-paths-rule.txt` 的
-    /// 原文，造会话时拼进 system（`Snapshot::with_core_lines`）。只在造会话时读：以前造的快照 system 里没有它们。风格锁
-    /// `core/style-lock.txt` 一起读（第 7 块，施工 P-1 补，`Snapshot::with_style_lock`）。
+    /// 核心的几行（施工 2-7 补，`26-提示词.md` 第四节第 3 块）：`core/permission-rule.txt`、`core/local-paths-rule.txt`、
+    /// `core/machine.txt`（施工 2-7 再补）的原文，造会话时拼进 system（`Snapshot::with_core_lines`）。只在造会话时读：以前造的
+    /// 快照 system 里没有它们。风格锁 `core/style-lock.txt` 一起读（第 7 块，施工 P-1 补，`Snapshot::with_style_lock`）。
     ///
     /// # Errors
     ///
@@ -193,6 +193,7 @@ impl ResourceRoot {
         Ok(CoreLines {
             permission: self.read(&["core", "permission-rule.txt"])?,
             local_paths: self.read(&["core", "local-paths-rule.txt"])?,
+            machine: self.read(&["core", "machine.txt"])?,
             style_lock: self.read(&["core", "style-lock.txt"])?,
             preset_off: self.read(&["core", "preset-off.txt"])?,
         })

@@ -82,7 +82,7 @@
 | `Snapshot::with_tools(工具)` | 带上工具面 |
 | `Snapshot::with_venue(说明)` | 带上场所说明：system 的第二块，接在人设后面（施工 7-5）。子会话有 |
 | `Snapshot::with_group(说明, GroupChat)` | 带上群会话（施工 O-13 中）：格式说明照 `with_venue` 接在人设后面（`core/venues/group.txt`），快照记下 `group` |
-| `Snapshot::with_core_lines(&CoreLines)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有三格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）。一行一句，先权限、后路径；工具面是空的不带权限那一句 |
+| `Snapshot::with_core_lines(&CoreLines, os)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有这几格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`machine`（`machine.txt`，施工 2-7 再补，`{os}` 换成 `os`）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）、`preset_off`（交给 `with_preset`）。一行一句，先权限、再路径、最后本机是什么系统；工具面是空的不带权限、系统那两句 |
 | `Snapshot::swappable(新的)` | 能不能换成 `新的`（施工 P-1 再补）：除了 `system`、`demos`、`tools`、`reminder`、`persona_digest`、`preset`（后两格施工 P-2 下：换预设时工具面重新筛过，留着的那几件是原样），别的格都一样 |
 | `Snapshot::with_knowledge(那一块)` | 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（`26-提示词.md` 第四节），记进快照的 `knowledge`。在 `with_core_lines` 以后、`with_preset` 以前调；没有的 system 一字不变 |
 | `Snapshot::with_preset(预设, 那一行)` | 带上预设（施工 P-2 中）：记进快照的 `preset`（编号、装了没开的软件）；没开角色扮演的去掉 `reminder`；装了没开的软件（角色扮演除外）写成一行接在 system 后面（`26-提示词.md` 第四节第 5 块，`core/preset-off.txt`）。在 `with_core_lines` 以后、`with_style_lock` 以前调；没有预设、都开着的 system 一字不变 |
@@ -105,7 +105,7 @@
 
 1. 人格的编号要合写法：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。它是一层目录的名字，不许带路径。
 2. 读 `CoreTexts` 表里的每一份，再读 `personas/<编号>/prompts/persona.md`。原文照抄，行尾的换行也算。
-3. 核心的几行 `core/permission-rule.txt`、`core/local-paths-rule.txt` 另读（`ResourceRoot::core_lines`，施工 2-7 补），交给 `with_core_lines`；它们只拼进 system，不另存进快照的 `core`。风格锁 `core/style-lock.txt` 和它们一起读（施工 P-1 补），装了没开的那一行 `core/preset-off.txt` 也是（施工 P-2 中）。
+3. 核心的几行 `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/machine.txt`（施工 2-7 再补）另读（`ResourceRoot::core_lines`，施工 2-7 补），和本机系统的名字（`miyu_store::env::os_name`，核心头一次要时认一次）一起交给 `with_core_lines`；它们只拼进 system，不另存进快照的 `core`。风格锁 `core/style-lock.txt` 和它们一起读（施工 P-1 补），装了没开的那一行 `core/preset-off.txt` 也是（施工 P-2 中）。
 4. 角色扮演提示的包装 `core/facts/reminder-open.txt`、`reminder-close.txt` 读进 `Sources.reminder`（施工 P-1 补）：拼进快照的 `reminder`，也不另存进 `core`，没有角色扮演提示的快照字节不变。
 
 **拼**（`compose`）

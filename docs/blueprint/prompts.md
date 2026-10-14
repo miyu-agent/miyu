@@ -253,6 +253,19 @@ A <permission> block gives the permission level from that point on. In read_only
 When a reply links or embeds a local file, write its absolute path. Relative paths resolve against the session working directory.
 ```
 
+### system，核心的几行的第三行（本机文件的路径那一句后面）
+
+#### `core/machine.txt`
+
+- 什么时候加进来：有工具的会话的每次请求（施工 2-7 再补起；没有工具的会话、以前造的快照不带，一个字节不变）
+- token：6（`{os}` 按 `Arch Linux` 算，2026-10-14 主会话在开发端点的 `deepseek-v4.1-flash` 上量，带和不带各问四次 `hi` 取平均：会话编号每次切法差一两个）
+- 为什么加：本机是什么系统：`{os}` 换成核心认出的系统名（Linux 照 `/etc/os-release` 的 `NAME` 加 `VERSION_ID`，macOS 写大版本，Windows 分 10、11，认不出的照平台写），她照它挑包管理器、写命令。2026-10-14 项目主人问到、定放进 system：系统名一个会话里不会变，不放进每小时重发的环境那一块。主会话 A/B（同一天，`miyu ask` 问「这台电脑上装 ripgrep 敲什么命令，只告诉我、别替我装」，各 4 遍）：不加时 4 遍都先跑一遍 `cat /etc/os-release` 再答，一共多调 5 次工具；加了以后 4 遍都直接答 `sudo pacman -S ripgrep`，没调工具。只写系统名和大版本：小版本常变，变了新会话的 system 就和前一天的不同
+- 指纹：`71bd4fbd`
+
+```text
+The local machine runs {os}.
+```
+
 ### system 的最后一块（第四节第 7 块）
 
 #### `core/style-lock.txt`

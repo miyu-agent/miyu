@@ -73,6 +73,18 @@ fn the_local_paths_rule_is_one_plain_line() {
     assert!(rule.contains("absolute path"), "{rule}");
 }
 
+/// system 里核心的几行（施工 2-7 再补）：本机是什么系统也是一整行英文，`{os}` 换成系统的名字，行尾一个换行，没有分号。
+#[test]
+fn the_machine_line_is_one_plain_line_naming_the_os() {
+    let line = include_str!("../../../resources/core/machine.txt");
+    assert!(
+        line.ends_with(".\n") && line.matches('\n').count() == 1,
+        "{line:?}"
+    );
+    assert!(!line.contains(';'), "{line}");
+    assert_eq!(line.matches("{os}").count(), 1, "{line}");
+}
+
 /// system 里核心的那一行：每一级能做什么、只有人能切（`26-提示词.md` J2）。施工 2-7 补拼进
 /// system（有工具的会话）；查它是一整行英文，行尾一个换行，没有分号。
 #[test]

@@ -127,6 +127,8 @@ pub struct CoreLines {
     pub permission: String,
     /// 回答里提到本机的文件写绝对路径（`core/local-paths-rule.txt`）。
     pub local_paths: String,
+    /// 本机是什么系统（`core/machine.txt`，施工 2-7 再补）：`{os}` 换成系统的名字。没有工具的会话不带。
+    pub machine: String,
     /// 风格锁（`core/style-lock.txt`）：只有带角色扮演提示的人格带（[`Snapshot::with_style_lock`]）。
     pub style_lock: String,
     /// 装了、这个预设没开的那一行（`core/preset-off.txt`，施工 P-2 中，Y8）：`{packages}` 换成逗号隔开的编号；施工 F-3 上起是功能
@@ -136,14 +138,18 @@ pub struct CoreLines {
 
 impl Snapshot {
     /// 带上核心的几行（施工 2-7 补）：system 的第三块，接在人设、场所说明后面，所以在 [`Snapshot::with_tools`]、
-    /// [`Snapshot::with_venue`] 以后最后调。块里一行一句，先权限、后本机文件的路径；工具面是空的会话用不上权限那一句，
-    /// 不带（26 第十节）。以前造的快照 system 里没有这一块，载入照快照发，前缀一字不变。
+    /// [`Snapshot::with_venue`] 以后最后调。块里一行一句，先权限、再本机文件的路径、最后本机是什么系统 `os`（施工 2-7 再补）；
+    /// 工具面是空的会话用不上权限、系统那两句，不带（26 第十节）。以前造的快照 system 里没有这一块（施工 2-7 再补以前造的
+    /// 没有系统那一句），载入照快照发，前缀一字不变。
     #[must_use]
-    pub fn with_core_lines(mut self, lines: &CoreLines) -> Snapshot {
-        let permission = (!self.tools.is_empty()).then_some(lines.permission.as_str());
-        let block = permission
+    pub fn with_core_lines(mut self, lines: &CoreLines, os: &str) -> Snapshot {
+        let tooled = !self.tools.is_empty();
+        let machine = lines.machine.replace("{os}", os);
+        let block = tooled
+            .then_some(lines.permission.as_str())
             .into_iter()
             .chain([lines.local_paths.as_str()])
+            .chain(tooled.then_some(machine.as_str()))
             .map(str::trim_end)
             .filter(|line| !line.is_empty())
             .collect::<Vec<_>>()
@@ -253,237 +259,4 @@ pub(crate) fn system(pieces: &[&str]) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn pieces_are_trimmed_and_joined_with_a_blank_line() {
-        assert_eq!(system(&["人设\n", "", "  \n", "场所\n\n"]), "人设\n\n场所");
-        assert_eq!(
-            system(&["You are a helpful software engineer.\n"]),
-            "You are a helpful software engineer."
-        );
-        assert_eq!(system(&[]), "");
-        // 开头的空白是人格自己写的，照留。
-        assert_eq!(system(&["  缩进的第一行\n"]), "  缩进的第一行");
-    }
-
-    #[test]
-    fn the_venue_note_follows_the_persona_after_a_blank_line() {
-        let snapshot = crate::test_support::engineer();
-        let persona = snapshot.system.clone();
-        let child = snapshot.with_venue("You are a subagent.\n");
-        assert_eq!(child.system, format!("{persona}\n\nYou are a subagent."));
-        let blank = crate::test_support::engineer().with_venue("\n");
-        assert_eq!(blank.system, persona, "空的说明不留空行");
-    }
-
-    /// 核心的几行（施工 2-7 补）：两句，一行一句，排在人设、场所说明后面，空一行。
-    fn lines() -> CoreLines {
-        CoreLines {
-            permission: "Permission rule.\n".to_string(),
-            local_paths: "Local paths rule.\n".to_string(),
-            style_lock: String::new(),
-            preset_off: String::new(),
-        }
-    }
-
-    /// 一件工具：有它，工具面就不是空的。
-    fn a_tool() -> crate::tools::ToolEntry {
-        serde_json::from_str(r#"{"name":"read","description":"Read.","parameters":{"type":"object"},"access":"read"}"#)
-            .unwrap()
-    }
-
-    #[test]
-    fn the_core_lines_come_after_the_persona_and_the_venue() {
-        let persona = crate::test_support::engineer().system;
-        let main = crate::test_support::engineer()
-            .with_tools(vec![a_tool()])
-            .with_core_lines(&lines());
-        assert_eq!(
-            main.system,
-            format!("{persona}\n\nPermission rule.\nLocal paths rule.")
-        );
-        let child = crate::test_support::engineer()
-            .with_tools(vec![a_tool()])
-            .with_venue("You are a subagent.\n")
-            .with_core_lines(&lines());
-        assert_eq!(
-            child.system,
-            format!("{persona}\n\nYou are a subagent.\n\nPermission rule.\nLocal paths rule.")
-        );
-    }
-
-    #[test]
-    fn a_session_without_tools_has_no_permission_line() {
-        let persona = crate::test_support::engineer().system;
-        let bare = crate::test_support::engineer().with_core_lines(&lines());
-        assert_eq!(bare.system, format!("{persona}\n\nLocal paths rule."));
-    }
-
-    /// 带角色扮演提示的人格：快照里是拼好的一块（包装、去掉末尾空白的原文、换行、收尾），造出的策略第一轮就注入它。
-    fn reminding(reminders: &str) -> Snapshot {
-        let mut sources = crate::test_support::sources();
-        sources.persona.reminders = reminders.to_string();
-        sources.reminder = Wrap {
-            open: "<persona-reminder>\n".to_string(),
-            close: "</persona-reminder>\n".to_string(),
-        };
-        compose(Some("miyu"), sources, true)
-    }
-
-    #[test]
-    fn a_reminder_is_wrapped_into_the_snapshot_and_reaches_the_facts() {
-        let snapshot = reminding("  Stay soft.\n\n");
-        let block = "<persona-reminder>\n  Stay soft.\n</persona-reminder>\n";
-        assert_eq!(snapshot.reminder.as_deref(), Some(block));
-        let fact = snapshot
-            .policy()
-            .unwrap()
-            .facts
-            .reminder(&miyu_kernel::history::History::default())
-            .unwrap();
-        assert_eq!(fact.text, block);
-        let read = Snapshot::from_bytes(&snapshot.to_bytes()).unwrap();
-        assert_eq!(read, snapshot, "存得回来");
-    }
-
-    #[test]
-    fn a_blank_reminder_is_none_and_the_snapshot_is_as_before() {
-        assert_eq!(reminding(" \n\t\n").reminder, None);
-        let engineer = crate::test_support::engineer();
-        assert_eq!(engineer.reminder, None);
-        let bytes = String::from_utf8(engineer.to_bytes()).unwrap();
-        assert!(!bytes.contains("reminder"), "没有的不写：{bytes}");
-        assert!(
-            engineer
-                .policy()
-                .unwrap()
-                .facts
-                .reminder(&miyu_kernel::history::History::default())
-                .is_none()
-        );
-    }
-
-    #[test]
-    fn the_style_lock_ends_the_system_of_a_persona_with_a_reminder_only() {
-        let lock = "<style-lock>Stay.</style-lock>\n";
-        let main = reminding("Stay soft.")
-            .with_tools(vec![a_tool()])
-            .with_core_lines(&lines())
-            .with_style_lock(lock);
-        assert!(
-            main.system
-                .ends_with("Permission rule.\nLocal paths rule.\n\n<style-lock>Stay.</style-lock>"),
-            "{}",
-            main.system
-        );
-        let plain = crate::test_support::engineer().with_core_lines(&lines());
-        assert_eq!(
-            plain.clone().with_style_lock(lock).system,
-            plain.system,
-            "没有角色扮演提示的不带"
-        );
-    }
-
-    /// 人格的指纹（施工 P-1 再补）：同样的字同样的指纹，三份里改了哪一份都变；拼进快照。
-    #[test]
-    fn the_digest_follows_the_three_persona_texts() {
-        let base = crate::test_support::sources().persona;
-        let digest = base.digest();
-        assert_eq!(base.clone().digest(), digest);
-        let mut persona = base.clone();
-        persona.persona.push('x');
-        let mut examples = base.clone();
-        examples.examples = crate::persona::read_examples("user: a\nassistant: b\n").unwrap();
-        let mut reminders = base.clone();
-        reminders.reminders = "Stay.".to_string();
-        for changed in [persona, examples, reminders] {
-            assert_ne!(changed.digest(), digest);
-        }
-        assert_eq!(crate::test_support::engineer().persona_digest, Some(digest));
-    }
-
-    /// 换快照只许人格的那几格不一样（施工 P-1 再补）：核心的字、工具面、人格编号变了的都不算。
-    #[test]
-    fn only_the_persona_and_preset_parts_may_differ_for_a_swap() {
-        let old = crate::test_support::engineer()
-            .with_tools(vec![a_tool()])
-            .with_core_lines(&lines());
-        let mut sources = crate::test_support::sources();
-        sources.persona.persona = "You are Miyu.\n".to_string();
-        sources.persona.reminders = "Stay.".to_string();
-        let new = compose(Some("engineer"), sources, true)
-            .with_tools(vec![a_tool()])
-            .with_core_lines(&lines())
-            .with_style_lock("<lock/>");
-        assert!(old.swappable(&new));
-        let mut core = new.clone();
-        core.core.facts.env = "<e/>\n".to_string();
-        assert!(!old.swappable(&core), "核心的字变了");
-        let mut tools = new.clone();
-        tools.tools.clear();
-        tools.preset = Some(crate::preset::PresetPin {
-            id: "dev".to_string(),
-            off: vec!["basesystem".to_string()],
-            digest: None,
-        });
-        assert!(
-            old.swappable(&tools),
-            "工具面、预设可以变（施工 P-2 下：换预设时重新筛过）"
-        );
-        let mut memory = new.clone();
-        memory.memory = Some("off".to_string());
-        assert!(!old.swappable(&memory), "记忆的范围钉在会话上");
-        let mut attended = new.clone();
-        attended.attended = false;
-        assert!(!old.swappable(&attended));
-        let mut other = new;
-        other.persona = Some("miyu".to_string());
-        assert!(!old.swappable(&other), "不是同一个人格");
-    }
-
-    #[test]
-    fn without_the_core_lines_the_system_is_as_before() {
-        let tooled = crate::test_support::engineer().with_tools(vec![a_tool()]);
-        assert_eq!(tooled.system, "You are a helpful software engineer.");
-        let empty = CoreLines {
-            permission: "\n".to_string(),
-            local_paths: String::new(),
-            style_lock: String::new(),
-            preset_off: String::new(),
-        };
-        assert_eq!(
-            tooled.clone().with_core_lines(&empty).system,
-            tooled.system,
-            "空的几行不留空行"
-        );
-    }
-
-    /// 无人格（施工 P-4 上）：快照不写 `persona`、没有人格的指纹，system 里只有核心的那段；带人格的字节照旧写着它。
-    #[test]
-    fn without_a_persona_the_snapshot_names_none_and_says_no_character() {
-        let mut sources = crate::test_support::sources();
-        sources.persona = PersonaTexts::default();
-        let nobody = compose(None, sources, true);
-        assert_eq!((&nobody.persona, &nobody.persona_digest), (&None, &None));
-        let bytes = String::from_utf8(nobody.to_bytes()).expect("是字");
-        assert!(!bytes.contains("\"persona\""), "{bytes}");
-        assert!(
-            !nobody.system.contains("software engineer"),
-            "{}",
-            nobody.system
-        );
-        let created = nobody.session_created(
-            miyu_kernel::id::AccountId::parse("alice").unwrap(),
-            miyu_kernel::id::VenueId::parse("local").unwrap(),
-            miyu_kernel::event::Permission {
-                level: miyu_kernel::event::Level::Workspace,
-                read_only: false,
-            },
-        );
-        assert_eq!(created.persona, None);
-        let named = String::from_utf8(crate::test_support::engineer().to_bytes()).expect("是字");
-        assert!(named.starts_with("{\"persona\":\"engineer\","), "{named}");
-    }
-}
+mod tests;

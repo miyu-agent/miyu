@@ -38,11 +38,16 @@ mod unclaimed;
 
 /// 场所说明的原文。
 const VENUE: &str = include_str!("../../../resources/core/jobs/subagent-venue.txt");
-/// 核心的几行（施工 2-7 补）：权限那一句、本机文件的路径那一句，一行一句。
-const LINES: &str = concat!(
-    include_str!("../../../resources/core/permission-rule.txt"),
-    include_str!("../../../resources/core/local-paths-rule.txt"),
-);
+/// 核心的几行（施工 2-7 补）：权限那一句、本机文件的路径那一句、本机是什么系统那一句（施工 2-7 再补），一行一句。
+fn core_lines() -> String {
+    let machine = include_str!("../../../resources/core/machine.txt");
+    concat!(
+        include_str!("../../../resources/core/permission-rule.txt"),
+        include_str!("../../../resources/core/local-paths-rule.txt"),
+    )
+    .to_string()
+        + &machine.replace("{os}", miyu_store::env::os_name())
+}
 
 /// 假的会话表：记下要它造的子会话、发的命令。造的第 n 个子会话编号末位是 n；`failing` 里的第几次造不成。
 #[derive(Default)]

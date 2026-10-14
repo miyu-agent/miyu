@@ -9,6 +9,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-store/src/env.rs` | 环境快照：找数据根、资源目录要看的几样，从进程里读一次；系统的语言 `locale`（施工 8-1，都没设的看系统设置 `system_locale`，施工 8-2） |
+| `crates/miyu-store/src/env/os.rs` | 本机是什么系统 `os_name`（施工 2-7 再补）：写进 system 核心的几行 |
 | `crates/miyu-store/src/config_file.rs` | 读配置文件（施工 8-2，`config.md`「怎么走」第二条第 2 条）：没有的是空的，1 MiB 的上限，去掉开头的 BOM（记下有没有），不是 UTF-8 的报错，版本是整份字节的 SHA-256。写（施工 8-3，第五条第 4 到 7 条）：顺着链接写本体、临时文件在本体旁边、带上原来的权限位、替换前再读一次（和调用的一方读的版本不一样的放弃）、Windows 上改名失败歇 20 毫秒再试、最多 5 次 |
 | `crates/miyu-store/src/watch.rs` | 监视几份文件（施工 8-4，`config.md`「怎么走」第七条），或者一整个目录（`watch_dir`，施工 X-12 补：管理员家目录里的脚本，点开头的以外哪个名字变了都算，交出去的是目录）：看它们所在的目录（链接的另看本体所在的目录），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒里没有新的变动了才交出去；系统的监视起不来的退回每 2 秒轮询，交回原因 |
 | `crates/miyu-store/src/accounts.rs`、`logins.rs`、`private_json.rs` | 网页登录的凭据 `system/accounts.json`（argon2id，`m=19456`、`t=2`、`p=1`）、登录令牌的哈希 `home/<账号>/logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
@@ -45,6 +46,8 @@
 没设的、读不到的是空的。空的、相对的算不算数，由用它的地方定。
 
 **系统的语言 `env::locale()`**（施工 8-1）：`LC_ALL`、`LC_MESSAGES`、`LANG` 照这个先后，取第一个设了、不是空的（不是 UTF-8 的当没设），和命令行认界面语言的一样；都没设的是空的。不在快照里，只有核心要用语言、又没有头的时候读一次（生成配置的 Schema 和参考文件，`config.md`「怎么走」第一条第 6 条）。这几个都没设时看系统设置（`system_locale`，用 `sys-locale`：macOS 的首选语言、Windows 的界面语言，Linux 上它看 `LANGUAGE`，施工 8-2）。命令行握手以前也照它挑界面语言（`cli/main.md`）。
+
+**本机是什么系统 `env::os_name()`**（施工 2-7 再补）：核心头一次要时认一次，之后照它，写进新会话 system 核心的几行（`policy.md` 的 `with_core_lines`）。Linux 照 `/etc/os-release`（没有的看 `/usr/lib/os-release`）的 `NAME` 加 `VERSION_ID`：`Arch Linux`、`Ubuntu 24.04`；macOS 照 `/System/Library/CoreServices/SystemVersion.plist` 的 `ProductVersion` 写大版本：`macOS 15`；Windows 照内部版本号（`windows-version`）分 `Windows 10`、`Windows 11`（22000 起），服务器版写 `Windows Server`。认不出的照平台写 `Linux`、`macOS`、`Windows`。只写名字和大版本：小版本常变，变了新会话的 system 就和前一天的不同，跨会话的缓存接不上。只留一行：控制字符换成空格，最长 64 个字。
 
 **生成的文件 `generated::write(路径, 字节)`**（施工 8-1）：和磁盘上已经有的逐字节比，一样的不写，交回 `false`；不一样的在旁边新建临时文件 `.<文件名>.<进程号>-<计数>.tmp`、写进去、同步、关上，改名盖上，再同步目录，交回 `true`；没有的目录建上（Unix 上 0700）。写到一半失败的，临时文件删掉。不顺着链接找本体、不带原来的权限位、Windows 上改名失败不重试：它们是派生的，下次起来再写（`config.md`「怎么走」第一条第 7 条）。
 

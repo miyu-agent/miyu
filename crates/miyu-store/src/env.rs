@@ -5,9 +5,15 @@
 //! 同时跑的别的测试）。平台也是快照的一格，三个平台的默认位置在任何一台机器上都测得到。
 //!
 //! 系统的语言另读（[`locale`]，施工 8-1；环境变量都没设的看系统设置，施工 8-2）。
+//!
+//! 本机是什么系统另认（[`os_name`]，施工 2-7 再补）：写进 system，她照它写命令。
 
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+
+mod os;
+
+pub use os::os_name;
 
 /// 平台：缓存目录的默认位置照它定；数据根三个平台都在家目录的 `.miyu` 里。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -18,7 +18,8 @@ fn child_at(depth: u32) -> Lines {
 #[tokio::test]
 async fn only_local_sessions_below_the_depth_limit_can_spawn() {
     let persona = "You are a helpful software engineer.";
-    let lines = LINES.trim_end();
+    let lines = core_lines();
+    let lines = lines.trim_end();
     // 主会话：有 `subagent`、没有以前的名字 `agent`（施工 7-5 再补），system 是人设和核心的几行（施工 2-7 补）。
     let table = Arc::new(Table::default());
     let (request, _) = first_request(Lines::default(), &table).await;

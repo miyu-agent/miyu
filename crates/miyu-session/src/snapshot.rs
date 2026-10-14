@@ -1,6 +1,6 @@
 //! 拼策略快照（施工 3-6 上起在 `open.rs`，施工 P-1 再补挪出来：换快照也照它拼）：人格的字照几层叠好的，接上随核心附带的
 //! 字、工具面、记忆的范围；子会话接场所说明，群会话接格式说明（施工 O-13 中）；再接「关于你」（施工 P-9）；最后是核心的几行和风格锁
-//! （`docs/designs/26-提示词.md` 第四节）。
+//! （`docs/designs/26-提示词.md` 第四节）。核心的几行里本机是什么系统照 [`miyu_store::env::os_name`] 写（施工 2-7 再补）。
 
 use std::collections::BTreeSet;
 
@@ -70,7 +70,7 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     snapshot = snapshot.with_profile(parts.profile);
     let lines = resources.core_lines()?;
     Ok(snapshot
-        .with_core_lines(&lines)
+        .with_core_lines(&lines, miyu_store::env::os_name())
         .with_skills(parts.skills)
         .with_knowledge(parts.knowledge)
         .with_preset(parts.preset, &lines.preset_off, &parts.tooled)
