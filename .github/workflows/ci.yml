@@ -79,6 +79,9 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
+      # 三家对比的测具（施工 V-7）本身要真模型、要别家的程序，发版前人跑；这里只跑它不用别家就能查的几条：表写得对、占位都认识、汇表。
+      - name: 三家对比的测具
+        run: python3 -m unittest discover -s bench/rivals -p 'test_*.py'
       - name: 量尺
         run: cargo xtask perf --idle-wait 0 --gate 1 --out "$GITHUB_WORKSPACE/target/perf-out"
       - name: 表贴进摘要

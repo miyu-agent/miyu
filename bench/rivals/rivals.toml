@@ -1,0 +1,128 @@
+# 三家对比（施工 V-7，蓝图 `docs/blueprint/perf.md`「三家对比」）：每一家怎么配、怎么起、屏幕上看到什么算到了。
+# 加一家只在这里加一张表，测具的代码不动。
+#
+# 字里的占位照 `places.py` 换：
+# - {model}、{base_url}：模型和端点，照环境变量 MIYU_BENCH_MODEL、OPENAI_BASE_URL；
+# - {home}：这一家的沙箱家目录；{work}：工作目录的根（下面有 tui、task、long）；
+# - {prompt}：这一轮的话；{session}：长会话的编号；
+# - {miyu}、{tui}、{jcode}、{codex}：程序（照参数找到的，链接解开了）；{<程序>_dir}：它所在的目录；
+# - {release}：核心的 target/release；{core}：核心仓库；{tui_package}：终端仓库里的 tui/。
+# key 不进占位、不写进任何文件：留在环境变量 OPENAI_API_KEY 里，各家从环境变量读。
+
+[miyu]
+name = "Miyu"
+programs = ["miyu", "tui"]
+# 首屏：屏幕上出现这几句里的一句（去掉空白比）就算到了。
+marker = ["Tab切换权限级别"]
+tui = ["{tui}"]
+resume = ["{tui}", "--resume", "{session}"]
+task = ["{miyu}", "ask", "{prompt}"]
+cont = ["{miyu}", "ask", "-c", "{prompt}"]
+# 热启动先起的后台进程。
+daemon = ["{miyu}", "core"]
+# 长会话：最新的那个会话目录的名字就是编号。
+session = { glob = "home/admin/sessions/*", id = "name" }
+session_files = ["home/admin/sessions/{session}"]
+install = [
+  ["miyu（核心和命令行）", "{release}/miyu"],
+  ["miyu-sandbox", "{release}/miyu-sandbox"],
+  ["miyu-extract", "{release}/miyu-extract"],
+  ["miyu-embed", "{release}/miyu-embed"],
+  ["resources/", "{core}/resources"],
+  ["miyu-tui（终端界面）", "{tui}"],
+]
+
+[miyu.env]
+MIYU_HOME = "{home}"
+MIYU_RESOURCES = "{core}/resources"
+MIYU_CORE_BIN = "{miyu}"
+
+# 配模型走命令行，和人配的是同一条路；地址、key 都写成 { env = … } 引用，家目录里只有变量名。
+[miyu.setup]
+run = [
+  ["{miyu}", "pkg", "install", "{tui_package}", "--yes"],
+  ["{miyu}", "config", "set", "providers.bench.driver", "openai-chat"],
+  ["{miyu}", "config", "set", "providers.bench.base_url", '{ env = "OPENAI_BASE_URL" }'],
+  ["{miyu}", "config", "set", "providers.bench.key", '{ env = "OPENAI_API_KEY" }'],
+  ["{miyu}", "config", "set", "models.chat", "bench/{model}"],
+  ["{miyu}", "config", "set", "ui.welcomed", "true"],
+]
+
+[jcode]
+name = "jcode"
+programs = ["jcode"]
+marker = ["Howwouldyouliketobegin", "OpenAI-compatible"]
+tui = ["{jcode}", "--no-update", "-p", "openai-compatible"]
+resume = ["{jcode}", "--no-update", "-p", "openai-compatible", "--resume", "{session}"]
+task = ["{jcode}", "--no-update", "run", "-p", "openai-compatible", "{prompt}"]
+cont = ["{jcode}", "--no-update", "--resume", "{session}", "run", "-p", "openai-compatible", "{prompt}"]
+daemon = ["{jcode}", "--no-update", "serve", "-p", "openai-compatible"]
+session = { glob = ".jcode/sessions/*.json", id = "stem" }
+session_files = [".jcode/sessions/{session}*"]
+# 发行包是一个启动脚本加一个程序，压缩包、校验和不算。
+install = [
+  ["jcode-linux-x86_64.bin", "{jcode_dir}/jcode-linux-x86_64.bin"],
+  ["启动脚本", "{jcode}"],
+]
+
+# jcode 照 HOME、XDG_* 找自己的东西：都指进沙箱家目录。
+[jcode.env]
+HOME = "{home}"
+XDG_CONFIG_HOME = "{home}/.config"
+XDG_DATA_HOME = "{home}/.local/share"
+XDG_CACHE_HOME = "{home}/.cache"
+XDG_STATE_HOME = "{home}/.local/state"
+JCODE_NO_TELEMETRY = "1"
+DO_NOT_TRACK = "1"
+JCODE_NO_AUTO_UPDATE = "1"
+JCODE_CHECK_UPDATES = "0"
+JCODE_PROVIDER = "openai-compatible"
+JCODE_OPENAI_COMPAT_API_BASE = "{base_url}"
+JCODE_OPENAI_COMPAT_DEFAULT_MODEL = "{model}"
+JCODE_OPENAI_COMPAT_API_KEY_NAME = "OPENAI_API_KEY"
+
+[codex]
+name = "codex"
+programs = ["codex"]
+marker = ["AskCodextodoanything"]
+tui = ["{codex}"]
+resume = ["{codex}", "resume", "{session}"]
+task = ["{codex}", "exec", "--skip-git-repo-check", "{prompt}"]
+cont = ["{codex}", "exec", "--skip-git-repo-check", "resume", "--last", "{prompt}"]
+# 会话文件名的最后 36 个字是编号。
+session = { glob = "sessions/**/rollout-*.jsonl", id = "tail36" }
+session_files = ["sessions/**/rollout-*{session}.jsonl"]
+# 装的是一个目录（程序在它的 bin/ 下，旁边是它带的 rg、bwrap）。
+install = [["codex（整个安装目录）", "{codex_dir}/.."]]
+
+[codex.env]
+CODEX_HOME = "{home}"
+
+# codex 的自定义供应商只认写死的地址：写进沙箱家目录，不进仓库；key 照样从环境变量读。工作目录先信任上，不然首屏是问信不信任。
+[[codex.files]]
+path = "config.toml"
+text = '''
+model = "{model}"
+model_provider = "bench"
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+check_for_update_on_startup = false
+
+[model_providers.bench]
+name = "bench"
+base_url = "{base_url}"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
+
+[analytics]
+enabled = false
+
+[projects."{work}/tui"]
+trust_level = "trusted"
+
+[projects."{work}/task"]
+trust_level = "trusted"
+
+[projects."{work}/long"]
+trust_level = "trusted"
+'''
