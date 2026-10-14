@@ -1991,8 +1991,11 @@ dependencies = [
  "miyu-kernel",
  "miyu-log",
  "reqwest",
+ "rustls",
+ "rustls-native-certs",
  "tokio",
  "tracing",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -2095,6 +2098,7 @@ dependencies = [
  "flate2",
  "http",
  "hyper-util",
+ "miyu-http",
  "miyu-kernel",
  "miyu-net",
  "miyu-store",

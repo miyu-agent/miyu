@@ -74,9 +74,12 @@ impl Clients {
     }
 }
 
-/// 造一个：TLS 用 rustls；跳转一个都不跟（自己跟，每一跳过闸）；照 `way` 钉地址、不走代理或者只走那一个代理。
+/// 造一个：TLS 用 rustls，配置是整个进程共用的那一份（[`miyu_http::tls`]）；跳转一个都不跟（自己跟，每一跳过闸）；照 `way` 钉地址、不走代理或者只走那一个代理。
 fn build(way: &Way) -> reqwest::Result<Client> {
-    let builder = Client::builder().use_rustls_tls().redirect(Policy::none());
+    // 整个进程共用一份 TLS 配置（施工 V-5 上）：每钉一个地址造一个客户端，不再每次重读系统的证书。
+    let builder = Client::builder()
+        .use_preconfigured_tls(miyu_http::tls())
+        .redirect(Policy::none());
     let builder = match way {
         Way::Direct => builder.no_proxy(),
         Way::Pinned(host, addresses) => builder.no_proxy().resolve_to_addrs(host, addresses),

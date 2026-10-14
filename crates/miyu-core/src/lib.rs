@@ -119,6 +119,8 @@ pub fn main(options: Options) -> ExitCode {
         Ok(resources) => resources,
         Err(error) => return failed("resources", error.to_string()),
     };
+    // 系统的证书也在旁边先读（施工 V-5 上）：整个进程只读这一次（`miyu_http::tls`），后面造 HTTP 客户端时多半已经读好了。
+    drop(std::thread::spawn(|| drop(miyu_http::tls())));
     // 目录最先读（施工 V-2 下补）：和下面读清单、配置、生成文件并着走。
     let catalog = models::read_early(
         resources
@@ -333,7 +335,7 @@ async fn run(
         catalog,
         Some(root.state().join("models")),
     );
-    let sandbox = sandbox::probe(env.exe.as_deref());
+    let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.state()));
     let sandbox_cache = sandbox::cache(&env, std::env::var_os("CARGO_HOME"));
     let embedder = embed::setup(&env, &live.found);
     let tools = match tools(&resources, &live.found) {

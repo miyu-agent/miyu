@@ -50,7 +50,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 **客户端**
 
 1. 一个核心一个（`crates/miyu-core/src/models.rs` 造一次），各会话拿它的克隆，连接池里的连接跨请求复用。照环境变量走代理的、不走代理的各造一个（`FromEnvironment`、`Off`，POST、GET 各一对），核心起来时一起造好，不每次请求新造。
-2. TLS 用 rustls，根证书认两份：系统里装的、webpki 自带的。不用 OpenSSL。reqwest 编进了 HTTP/2。
+2. TLS 用 rustls，根证书认两份：系统里装的、webpki 自带的。不用 OpenSSL。reqwest 编进了 HTTP/2。**一个进程只读一次证书**（施工 V-5 上）：`miyu_http::tls()` 第一次叫时读系统证书、拼好 TLS 配置（协议 TLS 1.2、1.3，ALPN 先 `h2` 后 `http/1.1`），以后每次交一份克隆；造客户端一律 `use_preconfigured_tls(tls())`，`miyu-net` 也用它。以前每造一个客户端就重读一遍系统证书（一千多个文件，十几毫秒），核心起来要造四个。核心起来时在另一个线程里先叫一次，和读目录、开端点并着做。
 3. `User-Agent` 是 `miyu/<版本>`，版本是这个包的版本号。
 4. 连上一个地址最多等 30 秒，连不上是可重试的错。
 5. `FromEnvironment` 照环境变量 `HTTPS_PROXY`、`HTTP_PROXY`、`ALL_PROXY`、`NO_PROXY`（小写的也认），这是 reqwest 的默认做法；不读 Windows、macOS 的系统代理设置。`Off` 一概不走代理。**地址落在本机的一律直连**（施工 8-11 补）：照 `is_loopback_url` 判，不管 `FromEnvironment` 还是 `Off`，主机是 `localhost`（大小写不论）、`*.localhost`，或者是回环的 IP（`127.0.0.0/8`、`::1`，IPv4 映射的也算）的都不走代理——环境变量里的代理不会自动放行回环地址，`NO_PROXY` 没写回环地址的机器探不到本机的服务。挑哪个客户端（照环境变量的、不走代理的）由上一层照每次请求的地址选（`miyu-session` 的 `ModelData::fetcher_for`、`Routes::client`/`Routes::direct`），`miyu-http` 本身不挑，只给判断的方法（`is_loopback_host`、`is_loopback_url`）。不改 `NO_PROXY` 的读法，也不读系统的代理设置。

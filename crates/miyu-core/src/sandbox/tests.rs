@@ -15,7 +15,7 @@ fn probed(exe: Option<&Path>) -> (Availability, Vec<String>) {
     let memory = Memory::new();
     let helper = tracing::subscriber::with_default(
         miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
-        || probe(exe),
+        || probe(exe, None),
     );
     (helper, memory.lines())
 }
@@ -204,4 +204,132 @@ fn no_cache_dir_is_logged_and_gives_none() {
             && lines[0].ends_with(" sandbox cache unavailable reason=\"no home directory\""),
         "{lines:?}"
     );
+}
+
+/// 照上一次探到的用（施工 V-5 上）：探一次 `exe`，状态目录是 `state`，交回探到的结果和记下的行。
+fn probed_in(exe: &Path, state: &Path) -> (Availability, Vec<String>) {
+    let memory = Memory::new();
+    let found = tracing::subscriber::with_default(
+        miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
+        || probe(Some(exe), Some(state)),
+    );
+    (found, memory.lines())
+}
+
+/// 一个慢的假助手：`probe` 时先睡 `secs` 秒再印 `line`。
+#[cfg(unix)]
+fn slow_helper(dir: &Dir, line: &str, secs: &str) {
+    let status = std::process::Command::new("/bin/sh")
+        .args([
+            "-c",
+            r#"printf '#!/bin/sh\nsleep %s\ncat <<"EOF"\n%s\nEOF\n' "$3" "$2" > "$1" && chmod 755 "$1""#,
+            "sh",
+        ])
+        .arg(dir.0.join(miyu_sandbox::HELPER))
+        .arg(line)
+        .arg(secs)
+        .status()
+        .expect("起得来");
+    assert!(status.success());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_remembered_probe_is_used_without_waiting_and_refreshed_behind() {
+    let dir = Dir::new();
+    let state = dir.0.join("state");
+    slow_helper(&dir, &said(&["landlock"]), "1");
+    let started = std::time::Instant::now();
+    let (found, lines) = probed_in(&dir.exe(), &state);
+    assert!(
+        started.elapsed() >= std::time::Duration::from_secs(1),
+        "头一次照常探"
+    );
+    assert_eq!(
+        found,
+        Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
+    );
+    assert!(!lines.iter().any(|l| l.contains("remembered")), "{lines:?}");
+    let file = state.join(remembered::FILE);
+    assert!(file.is_file(), "探成了记下");
+    std::fs::remove_file(&file).expect("删得掉");
+    // 记下一份再起来：不等助手，照记下的用，多一格 remembered；后台再探一遍、重新记下。
+    let key = remembered::key(&dir.0.join(miyu_sandbox::HELPER)).expect("认得出");
+    remembered::remember(
+        &state,
+        &key,
+        &miyu_sandbox::Probe::new(vec!["landlock".to_string()]),
+    );
+    let started = std::time::Instant::now();
+    let (found, lines) = probed_in(&dir.exe(), &state);
+    assert!(
+        started.elapsed() < std::time::Duration::from_millis(500),
+        "不等助手"
+    );
+    assert_eq!(
+        found,
+        Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
+    );
+    assert!(
+        lines.len() == 1 && lines[0].contains(" INFO ") && lines[0].contains(" remembered=true"),
+        "{lines:?}"
+    );
+    std::fs::remove_file(&file).expect("删得掉");
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !file.is_file() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(file.is_file(), "后台再探一遍，重新记下");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_changed_helper_is_probed_again_and_a_failed_probe_is_not_remembered() {
+    let dir = Dir::new();
+    let state = dir.0.join("state");
+    fake_helper(&dir, &said(&[]));
+    assert_eq!(
+        probed_in(&dir.exe(), &state).0,
+        Availability::Unusable(Unusable::NoMechanism)
+    );
+    // 换了助手（大小、改动时间都变了）：不照记下的，照常探，探到的是新的。
+    fake_helper(&dir, &said(&["landlock", "seccomp"]));
+    let (found, lines) = probed_in(&dir.exe(), &state);
+    assert_eq!(
+        found,
+        Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
+    );
+    assert!(!lines.iter().any(|l| l.contains("remembered")), "{lines:?}");
+    // 探不成的不记。
+    let other = Dir::new();
+    let fresh = other.0.join("state");
+    std::fs::write(other.0.join(miyu_sandbox::HELPER), b"just text\n").expect("写得进");
+    assert_eq!(
+        probed_in(&other.exe(), &fresh).0,
+        Availability::Unusable(Unusable::HelperFailed)
+    );
+    assert!(!fresh.join(remembered::FILE).exists(), "探不成的不记");
+}
+
+#[test]
+fn a_remembered_probe_is_only_recalled_for_the_same_helper_and_version() {
+    let dir = Dir::new();
+    let state = dir.0.join("state");
+    let helper = dir.0.join(miyu_sandbox::HELPER);
+    std::fs::write(&helper, b"one").expect("写得进");
+    let key = remembered::key(&helper).expect("认得出");
+    let probe = miyu_sandbox::Probe::new(vec!["landlock".to_string()]);
+    remembered::remember(&state, &key, &probe);
+    assert_eq!(remembered::recall(&state, &key), Some(probe));
+    std::fs::write(&helper, b"two, longer").expect("写得进");
+    let changed = remembered::key(&helper).expect("认得出");
+    assert_ne!(changed, key, "助手换了，认不出");
+    assert_eq!(remembered::recall(&state, &changed), None);
+    // 说法的版本不对、读不懂的都当没记过。
+    let mut old = miyu_sandbox::Probe::new(Vec::new());
+    old.version = miyu_sandbox::VERSION + 1;
+    remembered::remember(&state, &key, &old);
+    assert_eq!(remembered::recall(&state, &key), None);
+    std::fs::write(state.join(remembered::FILE), b"{not json").expect("写得进");
+    assert_eq!(remembered::recall(&state, &key), None);
 }

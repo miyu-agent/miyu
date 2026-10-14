@@ -10,6 +10,7 @@
 //! - [`get()`]：一次 GET，整个读完，有总时限、大小上限、`ETag`（施工 8-7：拉目录、拉模型列表），客户端用 [`fetcher()`]；
 //!   [`get_full()`] 出错时另交回状态码、响应头、响应体（施工 8-11）；
 //! - [`is_loopback_host()`]、[`is_loopback_url()`]：地址是不是回环（施工 8-11 补：回环地址不该被代理挡住）；
+//! - [`tls()`]：整个进程共用的一份 TLS 配置，系统的证书只读一次（施工 V-5 上）；
 //! - `testkit`（开关）：测试用的假服务器。
 
 mod client;
@@ -20,6 +21,7 @@ mod post;
 mod send;
 #[cfg(feature = "testkit")]
 pub mod testkit;
+mod tls;
 
 pub use client::{Proxy, client, fetcher};
 pub use endpoint::Endpoint;
@@ -29,3 +31,4 @@ pub use post::{Post, post};
 /// HTTP 客户端：[`client()`] 造的那一个，连接跨请求复用。上层照这个名字拿着它，不用直接依赖 reqwest。
 pub use reqwest::Client;
 pub use send::{Attempt, Outcome, Progress, send};
+pub use tls::tls;

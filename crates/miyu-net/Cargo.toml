@@ -12,6 +12,8 @@ autotests = false
 # 卡片的图存成这个账号的 blob，回应里写内容哈希。
 miyu-kernel = { path = "../miyu-kernel" }
 miyu-store = { path = "../miyu-store" }
+# 整个进程共用的那一份 TLS 配置（施工 V-5 上）：系统的证书只读一次。
+miyu-http = { path = "../miyu-http" }
 # 发请求：和 miyu-http 同一个库、同一套功能（TLS 用 rustls，证书认系统的和 webpki 自带的两份，不依赖 OpenSSL）。
 # 跳转自己跟、每一跳钉住解析好的地址，都要它的 `ClientBuilder`。MIT 或 Apache-2.0。
 # gzip/brotli/deflate/zstd：B 站不管请求带不带 Accept-Encoding 都压着发页面，开了这几个才解得开（W-7 补，

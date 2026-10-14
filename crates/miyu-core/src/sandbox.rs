@@ -1,6 +1,8 @@
 //! 起来时找沙盒的助手、探一次（`docs/blueprint/sandbox.md`「怎么走」第 1、2 条，施工 5-1）：记一行日志，探到的结果交给
 //! 协议端点：握手时报给头，能用的把助手交给会话（施工 5-4 上、下）。再算出沙盒的缓存放在哪（施工 5-4 下）。起不起得来
-//! 不看这两样。
+//! 不看这两样。助手和系统没换的照上一次探到的用，后台再探一遍（施工 V-5 上，[`remembered`]）。
+
+mod remembered;
 
 use std::path::{Path, PathBuf};
 
@@ -17,30 +19,71 @@ const WAIT: Duration = Duration::from_secs(5);
 /// 主程序的真实位置是 `exe`（环境快照里的，顺着链接找到的本体）：找旁边的助手、探一次、记一行，`INFO sandbox`
 /// 或者 `WARN sandbox unavailable`。不知道主程序在哪的，也当找不到。探到了手段的能用，带着助手；手段是空的、找不到、
 /// 探不成的用不了，带着原因。
-pub(crate) fn probe(exe: Option<&Path>) -> Availability {
+///
+/// 给了状态目录 `state` 的（施工 V-5 上）：助手和系统都没换、上一次探成了的，照记下的用，`INFO` 那一行多一格
+/// `remembered=true`，另起一个线程再探一遍、照新的记下（下一次起来用新的，这一次不改）；没记过、对不上的照常探，探成了
+/// 记下。探不成的不记：下一次照常探。
+pub(crate) fn probe(exe: Option<&Path>, state: Option<&Path>) -> Availability {
     let Some(helper) = exe.and_then(miyu_sandbox::locate) else {
         tracing::warn!(target: TARGET, reason = "helper not found", "sandbox unavailable");
         return Availability::Unusable(Unusable::HelperMissing);
     };
+    let key = state.and(remembered::key(&helper));
+    if let (Some(state), Some(key)) = (state, &key)
+        && let Some(probe) = remembered::recall(state, key)
+    {
+        log(&helper, &probe, true);
+        let (again, state, key) = (helper.clone(), state.to_path_buf(), key.clone());
+        std::thread::spawn(move || {
+            if let Ok(probe) = miyu_sandbox::probe(&again, WAIT) {
+                remembered::remember(&state, &key, &probe);
+            }
+        });
+        return availability(helper, &probe);
+    }
     match miyu_sandbox::probe(&helper, WAIT) {
         Ok(probe) => {
-            tracing::info!(
-                target: TARGET,
-                helper = %helper.display(),
-                platform = probe.platform.name(),
-                mechanisms = %probe.mechanisms_text(),
-                "sandbox"
-            );
-            if probe.mechanisms.is_empty() {
-                Availability::Unusable(Unusable::NoMechanism)
-            } else {
-                Availability::Usable(helper)
+            log(&helper, &probe, false);
+            if let (Some(state), Some(key)) = (state, &key) {
+                remembered::remember(state, key, &probe);
             }
+            availability(helper, &probe)
         }
         Err(error) => {
             tracing::warn!(target: TARGET, reason = %error, "sandbox unavailable");
             Availability::Unusable(Unusable::HelperFailed)
         }
+    }
+}
+
+/// 探到的记一行 `INFO sandbox`；照上一次记下的用的多一格 `remembered=true`。
+fn log(helper: &Path, probe: &miyu_sandbox::Probe, remembered: bool) {
+    if remembered {
+        tracing::info!(
+            target: TARGET,
+            helper = %helper.display(),
+            platform = probe.platform.name(),
+            mechanisms = %probe.mechanisms_text(),
+            remembered = true,
+            "sandbox"
+        );
+    } else {
+        tracing::info!(
+            target: TARGET,
+            helper = %helper.display(),
+            platform = probe.platform.name(),
+            mechanisms = %probe.mechanisms_text(),
+            "sandbox"
+        );
+    }
+}
+
+/// 探到了手段的能用，带着助手；手段是空的用不了。
+fn availability(helper: PathBuf, probe: &miyu_sandbox::Probe) -> Availability {
+    if probe.mechanisms.is_empty() {
+        Availability::Unusable(Unusable::NoMechanism)
+    } else {
+        Availability::Usable(helper)
     }
 }
 

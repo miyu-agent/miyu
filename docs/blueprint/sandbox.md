@@ -88,6 +88,7 @@
 1. **找助手**（`locate`）：主程序真实位置旁边的 `miyu-sandbox`，Windows 上是 `miyu-sandbox.exe`。不是普通文件的、没有的，是空的。
 2. **核心起来时探一次**：
    - 主程序的真实位置照环境的快照（`core.md` 第 1 步）。
+   - **记下的先用**（施工 V-5 上）：状态目录里的 `sandbox-probe.json` 记着上一次探成的结果，认四样：助手的路径、大小、改动时间，加上系统的版本（Linux 是内核版本号，Landlock 跟着内核走；别的平台是平台名加架构）；说法的版本 `miyu_sandbox::VERSION` 也要对得上。都对得上的直接用，记的那一行多一个字段 `remembered=true`，再在另一个线程里照下面跑一遍、成了就照新的记，下一次起来用新的。对不上、没记过、读不懂的，照下面现探。探成了的（手段空不空都算）才记，没找到、跑不了、超时、读不懂的不记。写的时候先写临时文件再换名，写不成的记一行 `DEBUG`，不影响起来。代码在 `crates/miyu-core/src/sandbox/remembered.rs`。
    - 找到了就跑 `miyu-sandbox probe`，最多等 5 秒：读它的输出、等它退出加起来不过 5 秒，到时杀掉它。读输出在另一个线程里，它放出去的东西拿着管道不放，也不一直等。
    - 成了：记一行 `INFO` `sandbox`，字段 `helper`（路径，家目录写成 `~`）、`platform`、`mechanisms`（逗号连起来，空的写 `none`）。
    - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）。

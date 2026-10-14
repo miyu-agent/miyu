@@ -18,7 +18,7 @@ pub enum Proxy {
     Off,
 }
 
-/// 造一个客户端：TLS 用 rustls，证书认系统的和 webpki 自带的两份；`User-Agent` 是 `miyu/<版本>`。
+/// 造一个客户端：TLS 用 rustls，证书认系统的和 webpki 自带的两份（整个进程读一次，[`crate::tls()`]）；`User-Agent` 是 `miyu/<版本>`。
 ///
 /// # Errors
 ///
@@ -39,7 +39,8 @@ pub fn fetcher(proxy: Proxy) -> reqwest::Result<reqwest::Client> {
 /// 照连接的时限造。
 fn build(proxy: Proxy, connect: Duration) -> reqwest::Result<reqwest::Client> {
     let mut builder = reqwest::Client::builder()
-        .use_rustls_tls()
+        // 整个进程共用一份 TLS 配置，不让每个客户端都重读系统的证书（施工 V-5 上）。
+        .use_preconfigured_tls(crate::tls())
         .user_agent(concat!("miyu/", env!("CARGO_PKG_VERSION")))
         .connect_timeout(connect)
         // 链接卡片（miyu-net）开了 gzip/brotli/deflate/zstd 这几个 reqwest 特性；cargo 的特性是整个工作区合起来
