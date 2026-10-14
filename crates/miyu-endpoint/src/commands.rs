@@ -1,12 +1,9 @@
 //! 斜杠命令由核心解析（施工 O-6，`docs/designs/04-核心协议.md` P4，`docs/blueprint/protocol.md`「`command.run`」）：头把人打的
 //! 原文交过来，核心认命令、判谁能用、执行、记一条 `command.ran`，回执的那一句照连接的语言写好交回去。
 //!
-//! 头一批两个命令（2026-10-07 项目主人定）：`/clear`（别名 `/reset`）清空上下文；`/stop` 全停：打断这一轮（排着的话留着，
-//! 不撤回、不接着开），再停掉她派出去的后台命令和子代理。终端、网页、通讯平台用同一套名字。施工 9-7 下加 `/workspace`
-//! （`workspace.rs`）：换会话在哪个目录干活，只有主人本人能用。`/remember <话>` 直接记一条记忆（施工 R-3 补，`memory.md`
-//! 「协议」）：不经过模型，只在本机的会话里。`/dream` 现在就整理记忆（施工 R-7 补，`memory.md` 第七条第 9 款）：先抽这一段、
-//! 再合，回执报几样数；要等模型，在后台答（[`answered_later`]）。`/goal` 交代、看、停、继续、改、清掉长期目标（施工 X-8 下，
-//! `goal.rs`）：只在有长期目标的会话里（本机的主会话、长期目标装了、预设开着）。
+//! 认哪些命令照登记表（施工 O-6 三补，[`registry`]）：核心自己的 `/clear`（别名 `/reset`）、`/stop`、`/workspace` 在
+//! `basic.rs`；记忆的 `/remember`、`/dream` 在 `memory/slash.rs`；长期目标的 `/goal` 在 `goal.rs`。各自写名字、别名、跟不跟字、
+//! 在不在后台答、谁能用、怎么执行；这里只认、判身份、记下、写回执，不再写死名字。
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
 
@@ -18,18 +15,19 @@ use serde_json::{Value, json};
 use miyu_config::Words;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{By, Role};
-use miyu_kernel::session::{Command, Outcome, Queued, Reason};
+use miyu_kernel::session::{Command, Outcome};
 use miyu_session::Handle;
 use miyu_store::human::Human;
 
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
-use crate::memory;
 use crate::refusal::Refusal;
 use crate::sessions::admin;
 use crate::venues::{self, AsParams};
 use crate::wire::Request;
+
+pub(crate) use registry::{Call, Commands, Ran, Running, Slash};
 
 /// `command.run` 的参数。
 #[derive(Debug, Deserialize)]
@@ -44,86 +42,37 @@ pub(crate) struct RunParams {
     cwd: Option<String>,
 }
 
-/// 认得出的命令。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Slash {
-    Clear,
-    Stop,
-    Workspace,
-    Remember,
-    Dream,
-    Goal,
-}
-
-impl Slash {
-    /// 认得的全部，照名字排（施工 O-6 补：`command.catalog` 照它列）。
-    const ALL: [Slash; 6] = [
-        Slash::Clear,
-        Slash::Dream,
-        Slash::Goal,
-        Slash::Remember,
-        Slash::Stop,
-        Slash::Workspace,
-    ];
-
-    /// 照名字认：别名换成正名。认不出的没有。
-    fn of(name: &str) -> Option<Slash> {
-        Slash::ALL
-            .into_iter()
-            .find(|slash| slash.name() == name || slash.aliases().contains(&name))
-    }
-
-    /// 别名。
-    fn aliases(self) -> &'static [&'static str] {
-        match self {
-            Slash::Clear => &["reset"],
-            Slash::Stop | Slash::Workspace | Slash::Remember | Slash::Dream | Slash::Goal => &[],
-        }
-    }
-
-    /// 名字后面要跟字（施工 O-6 补：`command.catalog` 照它给参数提示）。
-    fn takes_text(self) -> bool {
-        matches!(self, Slash::Workspace | Slash::Remember | Slash::Goal)
-    }
-
-    /// 在后台答（施工 R-7 补）：要等模型的只有 `/dream`，几秒到十几秒；别的照旧按顺序答。
-    fn later(self) -> bool {
-        self == Slash::Dream
-    }
-
-    /// 正名。
-    fn name(self) -> &'static str {
-        match self {
-            Slash::Clear => "clear",
-            Slash::Stop => "stop",
-            Slash::Workspace => "workspace",
-            Slash::Remember => "remember",
-            Slash::Dream => "dream",
-            Slash::Goal => "goal",
-        }
-    }
-}
-
 /// 这一条 `command.run` 在后台答不答（施工 R-7 补，`methods::answered_later` 问它）：照原文认出的命令问
 /// [`Slash::later`]；认不出的、参数不对的照旧按顺序答，由 [`run`] 拒。
-pub(crate) fn answered_later(request: &Request) -> bool {
+pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     request
         .params
         .get("text")
         .and_then(Value::as_str)
-        .and_then(|text| parse(text).ok())
+        .and_then(|text| parse(&core.commands, text).ok())
         .is_some_and(|(slash, _)| slash.later())
 }
 
+/// 核心起来时的登记表：核心自己的、记忆的、长期目标的（施工 O-6 三补）。
+pub(crate) fn builtin() -> Commands {
+    let mut commands = Commands::default();
+    basic::register(&mut commands);
+    crate::memory::slash::register(&mut commands);
+    goal::register(&mut commands);
+    commands
+}
+
 /// 回执那一句：`core/human/<语言>.json` 的键，和要填的字。
-struct Said {
-    key: &'static str,
-    fields: Vec<(&'static str, String)>,
+pub(crate) struct Said {
+    /// 键。
+    pub(crate) key: &'static str,
+    /// 要填的字。
+    pub(crate) fields: Vec<(&'static str, String)>,
 }
 
 impl Said {
     /// 不用填字的一句。
-    fn plain(key: &'static str) -> Said {
+    pub(crate) fn plain(key: &'static str) -> Said {
         Said {
             key,
             fields: Vec::new(),
@@ -138,7 +87,7 @@ pub(crate) async fn run(
     id: &CommandId,
     params: RunParams,
 ) -> Result<Value, Refusal> {
-    let (slash, rest) = parse(&params.text)?;
+    let (slash, rest) = parse(&core.commands, &params.text)?;
     if params
         .cwd
         .as_deref()
@@ -157,58 +106,23 @@ pub(crate) async fn run(
         (false, None) => return Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => venues::speaker(core, handle.venue(), handle.owner(), speaking)?,
     };
-    if let Err(refused) = allowed(core, slash, &handle, &by) {
+    if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
         let why = why::why(core, peer, &handle, &refused).await;
         return Err(refused.because(why));
     }
-    let mut events = Vec::new();
-    let said = match slash {
-        Slash::Clear => {
-            let outcome = command(core, &session, &handle, id, &by, Command::Clear).await?;
-            events.extend(accepted(outcome)?);
-            Said::plain("commands/cleared")
-        }
-        Slash::Workspace => {
-            let head = params.cwd.as_deref();
-            let (moved, said) = workspace::run(core, &session, &found, id, &by, rest, head).await?;
-            events.extend(moved);
-            said
-        }
-        Slash::Stop => {
-            let interrupt = Command::Interrupt {
-                queued: Queued::Keep,
-            };
-            match command(core, &session, &handle, id, &by, interrupt).await? {
-                // 没有在进行的回合：照样往下停后台的。
-                Outcome::Rejected {
-                    reason: Reason::NotRunning,
-                    ..
-                } => {}
-                outcome => events.extend(accepted(outcome)?),
-            }
-            if handle.stop_jobs(by.clone(), id.clone()).await.is_err() {
-                core.sessions.forget(&session).await;
-                return Err(Refusal::STOPPED);
-            }
-            Said::plain("commands/stopped")
-        }
-        Slash::Remember => {
-            let remembered = memory::remember_in(core, &handle, id, by.clone(), rest).await?;
-            // 回执说记下了那句话，不露编号（施工 R-3 四补）；换行这些在一行回执里换成空格，记下的原文不动。
-            Said {
-                key: "commands/remembered",
-                fields: vec![("text", remembered.replace(char::is_control, " "))],
-            }
-        }
-        Slash::Dream => dreamed(memory::dream::in_session(core, &session, &handle).await?),
-        Slash::Goal => {
-            let (changed, said) = goal::run(core, peer, (&session, &handle), id, &by, rest).await?;
-            events.extend(changed);
-            said
-        }
+    let call = Call {
+        core,
+        peer,
+        session: &session,
+        found: &found,
+        id,
+        by: &by,
+        rest,
+        head: params.cwd.as_deref(),
     };
+    let Ran { mut events, said } = slash.run(call).await?;
     let note = Command::Ran {
-        text: params.text,
+        text: params.text.clone(),
         command: slash.name().to_string(),
     };
     events.extend(accepted(
@@ -218,54 +132,28 @@ pub(crate) async fn run(
     Ok(json!({"command": slash.name(), "events": events, "said": said}))
 }
 
-/// `/dream` 的回执：几样数；摘要换了的多半句，什么都没交进去的说没有要整理的。
-fn dreamed(dreamed: miyu_session::Dreamed) -> Said {
-    if dreamed.given == 0 {
-        return Said::plain("commands/dreamed-nothing");
-    }
-    Said {
-        key: if dreamed.summary {
-            "commands/dreamed-summary"
-        } else {
-            "commands/dreamed"
-        },
-        fields: vec![
-            ("given", dreamed.given.to_string()),
-            ("revised", dreamed.revised.to_string()),
-            ("retired", dreamed.retired.to_string()),
-        ],
-    }
-}
-
-/// 原文的头一个词是命令名：开头的空白不算，`/` 开头，名字紧跟着 `/`、到空白为止。交回命令和后面跟的字（去掉前后空白；
-/// `/workspace`、`/remember`、`/goal` 用它）。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
-fn parse(text: &str) -> Result<(Slash, &str), Refusal> {
+/// 原文的头一个词是命令名：开头的空白不算，`/` 开头，名字紧跟着 `/`、到空白为止。照登记表认，交回命令和后面跟的字（去掉
+/// 前后空白）。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
+fn parse<'a>(
+    commands: &'a Commands,
+    text: &'a str,
+) -> Result<(&'a Arc<dyn Slash>, &'a str), Refusal> {
     let after = text
         .trim_start()
         .strip_prefix('/')
         .ok_or(Refusal::BAD_PARAMS)?;
     let (name, rest) = after.split_once(char::is_whitespace).unwrap_or((after, ""));
-    let slash = Slash::of(name).ok_or(Refusal::UNKNOWN_COMMAND)?;
+    let slash = commands.find(name).ok_or(Refusal::UNKNOWN_COMMAND)?;
     Ok((slash, rest.trim()))
 }
 
 /// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先判身份
-/// （[`may_run`]）；`/workspace` 动的是沙盒能写的地方，管理的人不行、只有主人本人；`/remember`、`/dream` 要这个会话开着记忆；
-/// `/goal` 要这个会话有长期目标（施工 X-8 下，[`Handle::goals`]）。
-fn allowed(core: &Core, slash: Slash, handle: &Handle, by: &By) -> Result<(), Refusal> {
+/// （[`may_run`]），再问命令自己（[`Slash::allowed`]：主人本人才行、要开着记忆这些）。
+fn allowed(core: &Core, slash: &dyn Slash, handle: &Handle, by: &By) -> Result<(), Refusal> {
     if !may_run(by) {
         return Err(Refusal::COMMAND_NOT_ALLOWED);
     }
-    if slash == Slash::Workspace && !by.is_owner() {
-        return Err(Refusal::OWNER_ONLY);
-    }
-    if matches!(slash, Slash::Remember | Slash::Dream) && !memory::remembers(core, handle) {
-        return Err(Refusal::MEMORY_UNAVAILABLE);
-    }
-    if slash == Slash::Goal && !handle.goals() {
-        return Err(Refusal::GOAL_UNAVAILABLE);
-    }
-    Ok(())
+    slash.allowed(core, handle, by)
 }
 
 /// 谁能用（`18-通讯平台.md` 第十二节）：本人（本机的头、私聊里对应表认出的本人），对应表里有的外部身份（群里的主人），场所里
@@ -326,8 +214,10 @@ async fn words(core: &Core, peer: &Peer, said: &Said) -> String {
     }
 }
 
+mod basic;
 mod catalog;
 mod goal;
+mod registry;
 #[cfg(test)]
 mod tests;
 mod why;

@@ -30,8 +30,9 @@ pub(crate) async fn catalog(
     peer: &Peer,
     params: CatalogParams,
 ) -> Result<Value, Refusal> {
-    let listed: Vec<Slash> = match params.session {
-        None => Slash::ALL.to_vec(),
+    let all = core.commands.all();
+    let listed: Vec<&Arc<dyn Slash>> = match params.session {
+        None => all.collect(),
         Some(text) => {
             let session = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
             let found = core.sessions.get(core, &session).await?;
@@ -40,42 +41,19 @@ pub(crate) async fn catalog(
                 return Err(Refusal::VENUE_SESSION);
             }
             let by = admin(core);
-            Slash::ALL
-                .into_iter()
-                .filter(|slash| allowed(core, *slash, handle, &by).is_ok())
+            all.filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
                 .collect()
         }
     };
     let mut commands = Vec::with_capacity(listed.len());
     for slash in listed {
-        let summary = words(core, peer, &Said::plain(summary_key(slash))).await;
+        let summary = words(core, peer, &Said::plain(slash.summary())).await;
         let mut item =
             json!({"name": slash.name(), "aliases": slash.aliases(), "summary": summary});
-        if slash.takes_text() {
-            item["argument"] = json!(words(core, peer, &Said::plain(argument_key(slash))).await);
+        if let Some(argument) = slash.argument() {
+            item["argument"] = json!(words(core, peer, &Said::plain(argument)).await);
         }
         commands.push(item);
     }
     Ok(json!({ "commands": commands }))
-}
-
-/// 这个命令是做什么的那一句：`core/human/<语言>.json` 的键。
-fn summary_key(slash: Slash) -> &'static str {
-    match slash {
-        Slash::Clear => "commands/summary/clear",
-        Slash::Stop => "commands/summary/stop",
-        Slash::Workspace => "commands/summary/workspace",
-        Slash::Remember => "commands/summary/remember",
-        Slash::Dream => "commands/summary/dream",
-        Slash::Goal => "commands/summary/goal",
-    }
-}
-
-/// 名字后面跟什么的提示：同上。只有 [`Slash::takes_text`] 的有。
-fn argument_key(slash: Slash) -> &'static str {
-    match slash {
-        Slash::Workspace => "commands/argument/workspace",
-        Slash::Goal => "commands/argument/goal",
-        _ => "commands/argument/remember",
-    }
 }

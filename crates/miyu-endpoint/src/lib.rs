@@ -148,6 +148,8 @@ pub struct Core {
     knowledge: Arc<miyu_store::knowledge::Knowledge>,
     /// 执行器的任务表（施工 7-3）：所有会话的后台命令，核心里一张。
     jobs: Arc<Jobs>,
+    /// 斜杠命令的登记表（施工 O-6 三补，`commands/registry.rs`）：起来时登记好内置的。
+    commands: commands::Commands,
     /// 连着几个连接：`serve` 开始时加一，走的时候减一（施工 3-9 上）。
     connections: AtomicUsize,
     /// 来请求了的信号（施工 V-5 中，`activity.rs`）：核心照它在安静下来以后还内存。
@@ -268,6 +270,7 @@ impl Core {
             token,
             sessions: Sessions::default(),
             jobs: Arc::new(Jobs::new()),
+            commands: commands::builtin(),
             connections: AtomicUsize::new(0),
             activity: Arc::default(),
             hello_wait: HELLO_WAIT,

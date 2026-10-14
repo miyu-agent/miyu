@@ -8,6 +8,7 @@
 //! 卡住的照停着办：人答了 `/goal resume` 接着跑。改目标交内核 `Goal` 命令（照请求的编号），拒的照内核的原因说。
 
 use std::num::NonZeroU32;
+use std::sync::Arc;
 
 use miyu_kernel::event::GoalOutcome;
 use miyu_kernel::id::{CommandId, SessionId};
@@ -15,10 +16,56 @@ use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, GoalChange};
 use miyu_session::{Goal, GoalState, Handle};
 
+use super::registry::{Call, Commands, Ran, Running, Slash};
 use super::{Said, accepted, command, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
+
+/// 登记 `/goal`（施工 O-6 三补）。
+pub(super) fn register(commands: &mut Commands) {
+    commands.register(Arc::new(GoalCommand));
+}
+
+/// `/goal`：只在有长期目标的会话里（本机的主会话、长期目标装了、预设开着）。
+struct GoalCommand;
+
+impl Slash for GoalCommand {
+    fn name(&self) -> &'static str {
+        "goal"
+    }
+
+    fn summary(&self) -> &'static str {
+        "commands/summary/goal"
+    }
+
+    fn argument(&self) -> Option<&'static str> {
+        Some("commands/argument/goal")
+    }
+
+    fn allowed(&self, _core: &Core, handle: &Handle, _by: &By) -> Result<(), Refusal> {
+        match handle.goals() {
+            true => Ok(()),
+            false => Err(Refusal::GOAL_UNAVAILABLE),
+        }
+    }
+
+    fn run<'a>(&'a self, call: Call<'a>) -> Running<'a> {
+        Box::pin(async move {
+            let handle = call.handle();
+            let (events, said) = run(
+                call.core,
+                call.peer,
+                (call.session, handle),
+                call.id,
+                call.by,
+                call.rest,
+            )
+            .await?;
+            Ok(Ran { events, said })
+        })
+    }
+}
 
 /// 人要做的。
 #[derive(Debug, PartialEq, Eq)]

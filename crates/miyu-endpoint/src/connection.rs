@@ -232,7 +232,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             continue;
         }
         if let Some(peer) = peer
-            && methods::answered_later(&request)
+            && methods::answered_later(&core, &request)
         {
             let later = subscriptions.later();
             background.spawn(call_later(

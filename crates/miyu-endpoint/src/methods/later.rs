@@ -13,10 +13,10 @@ use crate::{Core, backstage, commands, files, job_output, memory, models};
 /// 在后台答的自带请求（施工 8-20 补，`protocol.md`「一个连接」第 1 条）：`model.call` 要等模型说完，几秒到几分钟；现在就整理
 /// 记忆（`memory.dream`，`command.run` 的 `/dream`，施工 R-7 补）几秒到十几秒。同一个连接后面的请求不等它，回应照 `id`
 /// 对上。`command.run` 的照命令表问（[`commands::answered_later`]），别的命令照旧按顺序答。
-pub(crate) fn answered_later(request: &Request) -> bool {
+pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     match request.method.as_str() {
         "model.call" | "memory.dream" | "package.call" => true,
-        "command.run" => commands::answered_later(request),
+        "command.run" => commands::answered_later(core, request),
         // 要等的在后台答（施工 V-6 上）：清单建完、输出长了才回，不挡这个连接别的请求。
         "fs.find" | "job.output" => {
             request.params.get("wait").and_then(Value::as_bool) == Some(true)

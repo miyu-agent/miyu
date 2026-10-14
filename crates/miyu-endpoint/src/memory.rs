@@ -11,6 +11,7 @@
 pub(crate) mod dream;
 mod params;
 mod shown;
+pub(crate) mod slash;
 #[cfg(test)]
 mod tests;
 mod turns;

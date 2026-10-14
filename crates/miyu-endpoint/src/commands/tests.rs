@@ -4,12 +4,7 @@
 use miyu_kernel::id::{AccountId, ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 
-use serde_json::{Value, json};
-
-use miyu_kernel::id::CommandId;
-
-use super::{Slash, answered_later, may_run, parse};
-use crate::wire::Request;
+use super::{builtin, may_run, parse};
 
 fn external(account: Option<&str>, role: Option<Role>) -> By {
     By::External(External {
@@ -34,56 +29,39 @@ fn the_owner_and_managers_may_run_and_others_may_not() {
     assert!(!may_run(&By::Kernel));
 }
 
+/// 照内置的登记表认 `text`：交回正名和后面跟的字，认不出的交回拒绝的原因。
+fn parsed(text: &str) -> Result<(&'static str, String), &'static str> {
+    let commands = builtin();
+    parse(&commands, text)
+        .map(|(slash, rest)| (slash.name(), rest.to_string()))
+        .map_err(|refusal| refusal.reason)
+}
+
 #[test]
 fn names_and_aliases() {
-    assert_eq!(parse("/clear").ok(), Some((Slash::Clear, "")));
-    assert_eq!(parse("/reset").ok(), Some((Slash::Clear, "")));
-    assert_eq!(parse("\t/stop now").ok(), Some((Slash::Stop, "now")));
-    assert_eq!(parse("/stop\nnow").ok(), Some((Slash::Stop, "now")));
+    let ok = |name: &'static str, rest: &str| Ok((name, rest.to_string()));
+    assert_eq!(parsed("/clear"), ok("clear", ""));
+    assert_eq!(parsed("/reset"), ok("clear", ""));
+    assert_eq!(parsed("\t/stop now"), ok("stop", "now"));
+    assert_eq!(parsed("/stop\nnow"), ok("stop", "now"));
+    assert_eq!(parsed("/workspace  ~/a b \n"), ok("workspace", "~/a b"));
     assert_eq!(
-        parse("/workspace  ~/a b \n").ok(),
-        Some((Slash::Workspace, "~/a b"))
+        parsed("/remember  用户 喜欢猫 "),
+        ok("remember", "用户 喜欢猫")
     );
-    assert_eq!(
-        parse("/remember  用户 喜欢猫 ").ok(),
-        Some((Slash::Remember, "用户 喜欢猫"))
-    );
-    assert_eq!(parse("/remember").ok(), Some((Slash::Remember, "")));
-    assert_eq!(
-        parse("/Stop").err().map(|refusal| refusal.reason),
-        Some("unknown_command")
-    );
-    assert_eq!(
-        parse("stop").err().map(|refusal| refusal.reason),
-        Some("bad_params")
-    );
+    assert_eq!(parsed("/remember"), ok("remember", ""));
+    assert_eq!(parsed("/dream"), ok("dream", ""));
+    assert_eq!(parsed("/Stop"), Err("unknown_command"));
+    assert_eq!(parsed("stop"), Err("bad_params"));
 }
 
 #[test]
 fn only_dream_is_answered_later() {
-    let run = |text: Value| Request {
-        id: CommandId::parse("k1").expect("合写法"),
-        method: "command.run".to_string(),
-        params: json!({"session": "s", "text": text}),
-    };
-    assert!(answered_later(&run(json!("/dream"))));
-    assert!(answered_later(&run(json!("  /dream 现在"))));
-    for text in [
-        json!("/clear"),
-        json!("/reset"),
-        json!("/stop"),
-        json!("/remember 用户喜欢猫"),
-        json!("/workspace ~"),
-        json!("/dreams"),
-        json!("dream"),
-        json!(3),
-    ] {
-        assert!(!answered_later(&run(text.clone())), "{text}");
-    }
-    let no_text = Request {
-        params: json!({"session": "s"}),
-        ..run(json!(""))
-    };
-    assert!(!answered_later(&no_text));
-    assert_eq!(parse("/dream").ok(), Some((Slash::Dream, "")));
+    let commands = builtin();
+    let later: Vec<&str> = commands
+        .all()
+        .filter(|slash| slash.later())
+        .map(|slash| slash.name())
+        .collect();
+    assert_eq!(later, ["dream"]);
 }
