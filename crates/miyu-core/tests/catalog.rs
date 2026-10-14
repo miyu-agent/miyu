@@ -13,10 +13,11 @@ use tokio::sync::watch;
 use miyu_config::secret::Reference;
 use miyu_config::{Address, Value, Values};
 use miyu_core::models::catalog::{FILE, META, Meta, Places, load};
+use miyu_core::models::digest;
 use miyu_core::models::refresh::{RETRY, Refreshed, Refresher, Schedule, next_try};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Proxy, fetcher};
-use miyu_models::catalog::CatalogSource;
+use miyu_models::catalog::{Catalog, CatalogSource};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::CatalogSettings;
@@ -85,6 +86,7 @@ fn the_newer_copy_wins_and_a_broken_one_falls_back() {
     let places = Places {
         snapshot: dir.at("snapshot"),
         cache: Some(dir.at("cache")),
+        program: None,
     };
     put(&places.snapshot, &catalog("old"), Some(OLD), None);
     put(
@@ -129,12 +131,14 @@ fn the_newer_copy_wins_and_a_broken_one_falls_back() {
     let only = Places {
         snapshot: places.snapshot.clone(),
         cache: None,
+        program: None,
     };
     put(&only.snapshot, &catalog("snap"), Some(OLD), None);
     assert_eq!(has(&only, "snap"), Some((true, CatalogSource::Snapshot)));
     let empty_cache = Places {
         snapshot: only.snapshot.clone(),
         cache: Some(dir.at("never")),
+        program: None,
     };
     assert_eq!(
         has(&empty_cache, "snap"),
@@ -332,6 +336,69 @@ async fn an_address_from_the_environment_is_fetched_from_where_it_points() {
     running.await.expect("没有 panic");
 }
 
+#[test]
+fn a_parsed_copy_is_kept_digested_and_read_back_until_the_source_or_program_changes() {
+    // 施工 V-5 中：解过一次就在缓存目录里留一份整理好的，下次照它读；原文、程序换了的重解。
+    let dir = Dir::new();
+    let program = dir.at("bin").join("miyu");
+    std::fs::write(&program, b"program one").expect("写得进");
+    let places = Places {
+        snapshot: dir.at("snapshot"),
+        cache: Some(dir.at("cache")),
+        program: Some(program.clone()),
+    };
+    put(&places.snapshot, &catalog("parsed"), Some(OLD), None);
+    let kept = dir.at("cache").join(digest::FILE);
+    assert_eq!(
+        has(&places, "parsed"),
+        Some((true, CatalogSource::Snapshot))
+    );
+    let since = std::time::Instant::now();
+    while !kept.exists() && since.elapsed() < Duration::from_secs(5) {
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert!(kept.exists(), "解过以后留了一份");
+    // 换成另一份同指纹的：读的是它，证明没再解原文。
+    let of = digest::fingerprint(
+        CatalogSource::Snapshot,
+        &places.snapshot.join(FILE),
+        OLD,
+        Some(&program),
+    )
+    .expect("算得出指纹");
+    let other = Catalog::parse(&catalog("digested"))
+        .expect("读得进")
+        .catalog;
+    std::fs::write(&kept, other.digest(&of)).expect("写得进");
+    assert_eq!(
+        has(&places, "digested"),
+        Some((true, CatalogSource::Snapshot))
+    );
+    // 程序换了：重解原文。
+    std::fs::write(&program, b"program two, longer").expect("写得进");
+    assert_eq!(
+        has(&places, "parsed"),
+        Some((true, CatalogSource::Snapshot))
+    );
+    // 不知道程序在哪的：不存不读。
+    let dir = Dir::new();
+    let unknown = Places {
+        snapshot: dir.at("snapshot"),
+        cache: Some(dir.at("cache")),
+        program: None,
+    };
+    put(&unknown.snapshot, &catalog("plain"), Some(OLD), None);
+    assert_eq!(
+        has(&unknown, "plain"),
+        Some((true, CatalogSource::Snapshot))
+    );
+    std::thread::sleep(Duration::from_millis(200));
+    assert!(
+        !dir.at("cache").join(digest::FILE).exists(),
+        "不知道程序在哪不留"
+    );
+}
+
 /// 量尺（施工 8-7，「起草时定的」第 13 条，预算 150 毫秒）：读安装包带的快照要多久，读五次各印一行。
 /// `cargo test --release -p miyu-core --test catalog -- --ignored --nocapture`。只断言读得出来，不断言耗时。
 #[test]
@@ -340,6 +407,7 @@ fn measure_reading_the_bundled_snapshot() {
     let places = Places {
         snapshot: Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/models"),
         cache: None,
+        program: None,
     };
     for round in 1..=5 {
         let started = std::time::Instant::now();

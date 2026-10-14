@@ -24,6 +24,7 @@
 //!   （施工 W-5，`uploads.rs`）。连接断了、60 秒没写都作废。
 //! - [`extensions`]：核心拉起的 `process` 包，经标准输入输出说同一套协议；开关、退避重启、随核心退出（施工 9-4 上）。
 
+mod activity;
 mod appending;
 mod attach;
 mod backstage;
@@ -77,6 +78,8 @@ mod view;
 mod wire;
 mod workspace;
 
+pub use activity::Activity;
+pub(crate) use activity::Connected;
 pub use connection::serve;
 pub use listen::run;
 
@@ -147,6 +150,8 @@ pub struct Core {
     jobs: Arc<Jobs>,
     /// 连着几个连接：`serve` 开始时加一，走的时候减一（施工 3-9 上）。
     connections: AtomicUsize,
+    /// 来请求了的信号（施工 V-5 中，`activity.rs`）：核心照它在安静下来以后还内存。
+    activity: Arc<Activity>,
     /// 连上以后最多等多久握手（施工 4-9 再补三上）：等不来就断开，不然一个连上不说话的本机进程能让核心一直
     /// 不空闲退出。
     hello_wait: Duration,
@@ -264,6 +269,7 @@ impl Core {
             sessions: Sessions::default(),
             jobs: Arc::new(Jobs::new()),
             connections: AtomicUsize::new(0),
+            activity: Arc::default(),
             hello_wait: HELLO_WAIT,
             model_data,
             files: files::Cache::default(),
@@ -450,6 +456,11 @@ impl Core {
         self.knows(owner).then(|| Arc::clone(&self.usage))
     }
 
+    /// 来请求了的信号（施工 V-5 中）。
+    pub fn activity(&self) -> Arc<Activity> {
+        Arc::clone(&self.activity)
+    }
+
     /// 连着几个连接。
     pub fn connections(&self) -> usize {
         self.connections.load(Ordering::Acquire)
@@ -468,23 +479,6 @@ impl Core {
     /// 有计划地停下全部在跑的会话：核心收到停的信号时。跑到一半的回合记成「重启了」，下次载入接着干。
     pub async fn stop_sessions(&self) {
         self.sessions.stop_all().await;
-    }
-}
-
-/// 连着的一个连接：数着，走的时候减掉，连接的任务被叫停了也减。
-pub(crate) struct Connected(Arc<Core>);
-
-impl Connected {
-    /// 数上一个。
-    pub(crate) fn new(core: Arc<Core>) -> Connected {
-        core.connections.fetch_add(1, Ordering::AcqRel);
-        Connected(core)
-    }
-}
-
-impl Drop for Connected {
-    fn drop(&mut self) {
-        self.0.connections.fetch_sub(1, Ordering::AcqRel);
     }
 }
 

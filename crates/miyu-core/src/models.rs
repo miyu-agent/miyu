@@ -9,6 +9,7 @@
 //! 档案、认原厂的表是 TOML，这里读成 JSON 交给 `miyu-models`（那一层只用白名单里的 `serde_json`）。
 
 pub mod catalog;
+pub mod digest;
 pub mod logos;
 pub mod refresh;
 
@@ -82,6 +83,7 @@ pub fn routes(resources: &ResourceRoot) -> Result<Arc<dyn Models>, String> {
     let places = Places {
         snapshot: resources.path().join("models"),
         cache: None,
+        program: None,
     };
     routes
         .data
@@ -91,9 +93,13 @@ pub fn routes(resources: &ResourceRoot) -> Result<Arc<dyn Models>, String> {
 
 /// 最早的一步（施工 V-2 下补）：找到资源目录就在一个线程里读目录（快照和缓存挑新的），和读配置、生成文件这些起来的步子
 /// 并着走。头一连上就要载入会话，载入要等目录读完：原来造好路由才开始读，起来约 15 ms 以后才动手。线程起不来的，到
-/// [`begin`] 再读。
-pub fn read_early(snapshot: PathBuf, cache: Option<PathBuf>) -> Early {
-    let places = Places { snapshot, cache };
+/// [`begin`] 再读。`program` 是程序的真实位置：缓存目录里整理好的一份认它（施工 V-5 中，[`digest`]）。
+pub fn read_early(snapshot: PathBuf, cache: Option<PathBuf>, program: Option<PathBuf>) -> Early {
+    let places = Places {
+        snapshot,
+        cache,
+        program,
+    };
     let reading = places.clone();
     let thread = std::thread::Builder::new()
         .name("catalog".to_string())

@@ -10,8 +10,9 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-endpoint/src/lib.rs` | `Core`：核心的家底（数据根、资源目录、请求模型的端口、工具目录、系统的家目录、沙盒的助手（施工 5-4 上）、管理员、本机令牌、会话表、配置（施工 8-2））；数着几个连接；空不空闲；停下全部会话 |
+| `crates/miyu-endpoint/src/lib.rs` | `Core`：核心的家底（数据根、资源目录、请求模型的端口、工具目录、系统的家目录、沙盒的助手（施工 5-4 上）、管理员、本机令牌、会话表、配置（施工 8-2））；空不空闲；停下全部会话 |
 | `crates/miyu-endpoint/src/listen.rs` | `run`：在监听器上一个个接连接 |
+| `crates/miyu-endpoint/src/activity.rs` | 数着几个连接（`Connected`）；来请求了的信号 `Activity`：连接每读到一个请求叫一声，核心照它安静下来以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
 | `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
 | `crates/miyu-endpoint/src/wire.rs` | 读一行、认成请求、回应写成一行 |
 | `crates/miyu-endpoint/src/hello.rs` | 握手 |

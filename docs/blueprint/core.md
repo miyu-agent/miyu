@@ -15,6 +15,7 @@
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 照编进来的可选软件包（cargo 开关）往查询表里登记，交给 `Core`（施工 W-4，`mermaid.md`；`net` 的 `link.preview` 在后台答，卡片的图存进管理员的 blob，施工 W-7，`net.md`）；起来时清掉管理员分块上传留下的暂存（施工 W-5） |
 | `crates/miyu-core/src/trash.rs` | 起来时清一次回收处；删了的会话留多久 `KEEP`（施工 3-8 三补）；删了的人格同样清（施工 P-3 下） |
+| `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
 | `crates/miyu-core/src/memlog.rs` | 自己记内存账：什么时候采、一行的样子、采样的任务（施工 V-4，`heap.md`「自己记账」） |
 | `crates/miyu-core/src/settings.rs` | 配置清单：登记各模块的几项；起来时读配置（施工 8-5 起连同密钥文件，环境照进程的）、照 `log.level` 换运行日志的级别（施工 8-2），生成两份 JSON Schema 和参考文件（施工 8-1，`config.md`「怎么走」第一、二条）；运行中跟着配置换级别、重写这三份（`settings/follow.rs`，施工 8-4） |
 | `crates/miyu-sandbox/src/lifeline.rs`、`lifeline/` | 核心没了，它起的命令跟着没（施工 7-8，下面「子进程随核心退出」）：Unix 上每条命令的组里一个看门的，Windows 上核心进作业对象 |

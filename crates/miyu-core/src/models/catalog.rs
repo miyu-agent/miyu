@@ -2,7 +2,7 @@
 //! `meta` 的 `fetched`，用新的；新的读不了，用另一份；都读不了，目录是空的，照样起来。
 //!
 //! 两份都是原样的 `api.json`，旁边一份 `<名字>.meta.json`：`{"source":<网址>,"fetched":<时刻>}`，缓存的另带 `etag`。
-//! `meta` 没有、读不了的当作最旧。
+//! `meta` 没有、读不了的当作最旧。挑中的那一份解过一次的，下次照缓存目录里整理好的一份读（施工 V-5 中，[`super::digest`]）。
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use miyu_models::catalog::{Catalog, CatalogSource, Loaded};
 
+use super::digest;
 use crate::TARGET;
 
 /// 目录的文件名。
@@ -44,17 +45,21 @@ impl Meta {
     }
 }
 
-/// 两份目录在哪：快照的目录（资源目录的 `models/`），缓存的目录（`<缓存目录>/models`，算不出来的没有）。
+/// 两份目录在哪：快照的目录（资源目录的 `models/`），缓存的目录（`<缓存目录>/models`，算不出来的没有）；程序在哪（整理
+/// 好的一份认它，施工 V-5 中；不知道的没有，不存不读整理好的）。
 #[derive(Debug, Clone)]
 pub struct Places {
     /// 快照所在的目录。
     pub snapshot: PathBuf,
     /// 缓存所在的目录。
     pub cache: Option<PathBuf>,
+    /// 程序的真实位置。
+    pub program: Option<PathBuf>,
 }
 
 /// 读目录：挑新的、坏的退回另一份，读完记 `INFO catalog loaded`，坏了的记 `WARN catalog unreadable`，都读不了再记
-/// `WARN catalog empty`。一个模型坏了的记一行 `DEBUG`。在阻塞线程里调。
+/// `WARN catalog empty`。一个模型坏了的记一行 `DEBUG`。挑中的那一份有整理好的就读它，`catalog loaded` 多一格
+/// `digest=true`；没有的解完另起线程整理一份（施工 V-5 中）。在阻塞线程里调。
 pub fn load(places: &Places) -> Option<Loaded> {
     let mut candidates = vec![(CatalogSource::Snapshot, places.snapshot.clone())];
     if let Some(cache) = &places.cache {
@@ -71,6 +76,20 @@ pub fn load(places: &Places) -> Option<Loaded> {
     candidates.sort_by(|a, b| fetched(&b.2).cmp(fetched(&a.2)));
     for (source, dir, meta) in candidates {
         let started = Instant::now();
+        let fetched = meta.map(|meta| meta.fetched).unwrap_or_default();
+        let of = places.cache.as_ref().and_then(|_| {
+            digest::fingerprint(source, &dir.join(FILE), &fetched, places.program.as_deref())
+        });
+        if let (Some(cache), Some(of)) = (&places.cache, &of)
+            && let Some(catalog) = digest::recall(cache, of)
+        {
+            loaded(&catalog, source, &fetched, started, true);
+            return Some(Loaded {
+                catalog,
+                source,
+                fetched,
+            });
+        }
         let read = std::fs::read_to_string(dir.join(FILE))
             .map_err(|error| error.to_string())
             .and_then(|text| Catalog::parse(&text));
@@ -79,17 +98,11 @@ pub fn load(places: &Places) -> Option<Loaded> {
                 for skipped in &read.skipped {
                     tracing::debug!(target: TARGET, entry = %skipped, "catalog entry skipped");
                 }
-                let fetched = meta.map(|meta| meta.fetched).unwrap_or_default();
                 let catalog = read.catalog;
-                tracing::info!(
-                    target: TARGET,
-                    source = source.as_str(),
-                    fetched = %fetched,
-                    providers = catalog.providers().count(),
-                    models = catalog.model_count(),
-                    ms = started.elapsed().as_millis(),
-                    "catalog loaded"
-                );
+                loaded(&catalog, source, &fetched, started, false);
+                if let (Some(cache), Some(of)) = (&places.cache, of) {
+                    drop(digest::keep(cache.clone(), of, catalog.clone()));
+                }
                 return Some(Loaded {
                     catalog,
                     source,
@@ -103,6 +116,21 @@ pub fn load(places: &Places) -> Option<Loaded> {
     }
     tracing::warn!(target: TARGET, "catalog empty");
     None
+}
+
+/// 记一行 `INFO catalog loaded`；照整理好的一份读的多一格 `digest=true`。
+fn loaded(catalog: &Catalog, source: CatalogSource, fetched: &str, started: Instant, digest: bool) {
+    let (providers, models, ms) = (
+        catalog.providers().count(),
+        catalog.model_count(),
+        started.elapsed().as_millis(),
+    );
+    let source = source.as_str();
+    if digest {
+        tracing::info!(target: TARGET, source, fetched, providers, models, ms, digest, "catalog loaded");
+    } else {
+        tracing::info!(target: TARGET, source, fetched, providers, models, ms, "catalog loaded");
+    }
 }
 
 /// 比新旧用的：没有 `meta` 的是空字，最旧。

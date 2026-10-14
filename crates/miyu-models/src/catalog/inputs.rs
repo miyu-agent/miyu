@@ -4,7 +4,10 @@
 const KINDS: [&str; 5] = ["text", "image", "pdf", "audio", "video"];
 
 /// 一个模型能收的输入里认得的几种：`text`、`image`、`pdf`、`audio`、`video`。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(transparent)]
 pub struct Inputs(u8);
 
 impl Inputs {

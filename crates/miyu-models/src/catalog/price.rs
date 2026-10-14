@@ -4,11 +4,11 @@
 
 use std::borrow::Cow;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
 /// 四项的价：每一百万 token，没写的没有。
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct Rates {
     /// 输入（不算缓存的）。
     pub input: Option<f64>,
@@ -21,7 +21,7 @@ pub struct Rates {
 }
 
 /// 按上下文分的一档：输入超过 `size` 的照这一档的价（施工 8-15，[`crate::price`]）。
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Tier {
     /// 门槛：超过多少 token。
     pub size: u64,
@@ -30,7 +30,7 @@ pub struct Tier {
 }
 
 /// 一个模型的价格。
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Price {
     /// 四项。
     pub rates: Rates,

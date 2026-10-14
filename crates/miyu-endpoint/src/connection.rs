@@ -180,6 +180,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             }
         };
         tracing::debug!(target: "miyu::endpoint", method = request.method.as_str(), "request");
+        core.activity.touch();
         reap(&mut background);
         // 用一次性码连上的，先设密码（施工 W-8）。
         if via == Some(Via::Code)

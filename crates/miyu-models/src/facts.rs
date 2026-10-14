@@ -336,7 +336,7 @@ fn price(
         };
     }
     fact(entry.and_then(|(entry, matched, fetched)| {
-        let price = entry.price.clone().filter(|_| matched.price)?;
+        let price = entry.price.as_deref().cloned().filter(|_| matched.price)?;
         Some((price, Source::catalog(matched, fetched)))
     }))
 }

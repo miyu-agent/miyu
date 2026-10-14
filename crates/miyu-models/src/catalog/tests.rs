@@ -34,7 +34,7 @@ fn the_trimmed_real_catalog_reads_with_the_broken_model_skipped() {
         (Some(1_000_000), Some(393_216))
     );
     assert_eq!(
-        flash.reasoning,
+        flash.reasoning.as_deref().cloned(),
         Some(Reasoning {
             levels: vec!["low".to_string(), "high".to_string(), "max".to_string()],
             toggle: true,
@@ -109,7 +109,7 @@ fn odd_fields_are_read_the_cautious_way() {
     );
     let model = |name: &str| read.catalog.model("p", name).cloned().expect("有");
     assert_eq!(
-        model("toggle").reasoning,
+        model("toggle").reasoning.as_deref().cloned(),
         Some(Reasoning {
             levels: Vec::new(),
             toggle: true
@@ -117,7 +117,7 @@ fn odd_fields_are_read_the_cautious_way() {
         "只有开关的：没有档位，开关记下（能不能关照档案，施工 8-18）"
     );
     assert_eq!(
-        model("off-by-name").reasoning,
+        model("off-by-name").reasoning.as_deref().cloned(),
         Some(Reasoning {
             levels: vec!["off".to_string(), "low".to_string()],
             toggle: false
@@ -139,7 +139,7 @@ fn odd_fields_are_read_the_cautious_way() {
     assert_eq!(
         model("null-level")
             .reasoning
-            .map(|reasoning| reasoning.levels),
+            .map(|reasoning| reasoning.levels.clone()),
         Some(vec!["low".to_string(), "high".to_string()]),
         "写了 null 的那一级不算，整个模型照读"
     );
@@ -253,4 +253,109 @@ fn inputs_are_switches() {
     );
     assert!(inputs.has("image") && !inputs.has("pdf") && !inputs.has("smell"));
     assert!(super::Inputs::of([]).is_empty());
+}
+
+#[test]
+fn prices_and_reasoning_written_the_same_are_kept_once() {
+    // 施工 V-5 中：原文写得一样的价格、思考强度共用一份，写得不一样的各一份；读不懂的照旧跳过这个模型。
+    let cost = json!({"input": 1, "output": 2});
+    let effort = json!([{"type": "effort", "values": ["low", "high"]}]);
+    let text = json!({"p": {"models": {
+        "a": {"cost": cost, "reasoning_options": effort},
+        "b": {"cost": cost, "reasoning_options": effort},
+        "c": {"cost": {"input": 3}, "reasoning_options": [{"type": "toggle"}]},
+        "d": {"cost": {"input": "much"}},
+        "e": {"reasoning_options": "fast"},
+    }}})
+    .to_string();
+    let read = Catalog::parse(&text).expect("读得进");
+    assert_eq!(read.skipped, ["p/d", "p/e"]);
+    let model = |name: &str| read.catalog.model("p", name).expect("有");
+    let (a, b, c) = (model("a"), model("b"), model("c"));
+    let same = |x: &Option<std::sync::Arc<Price>>, y: &Option<std::sync::Arc<Price>>| {
+        std::sync::Arc::ptr_eq(x.as_ref().expect("有价"), y.as_ref().expect("有价"))
+    };
+    assert!(same(&a.price, &b.price), "写得一样的价格是同一份");
+    assert!(!same(&a.price, &c.price), "写得不一样的各一份");
+    assert_eq!(
+        c.price.as_ref().and_then(|price| price.rates.input),
+        Some(3.0)
+    );
+    let (ra, rb, rc) = (
+        a.reasoning.as_ref().expect("有档"),
+        b.reasoning.as_ref().expect("有档"),
+        c.reasoning.as_ref().expect("有开关"),
+    );
+    assert!(std::sync::Arc::ptr_eq(ra, rb), "写得一样的思考强度是同一份");
+    assert_eq!(ra.levels, ["low", "high"]);
+    assert!(rc.toggle && rc.levels.is_empty());
+}
+
+#[test]
+fn a_provider_s_models_are_sorted_and_found_by_name() {
+    // 施工 V-5 中：模型表是排好的一排，照名字二分；`for … in &表` 照名字的字节排。
+    let text = json!({"p": {"models": {"b-2": {}, "a-1": {}, "B-0": {}}}}).to_string();
+    let catalog = Catalog::parse(&text).expect("读得进").catalog;
+    let models = &catalog.provider("p").expect("有").models;
+    assert_eq!(models.len(), 3);
+    assert_eq!(
+        models.keys().map(|name| &**name).collect::<Vec<_>>(),
+        ["B-0", "a-1", "b-2"]
+    );
+    assert!(models.contains_key("a-1") && !models.contains_key("a"));
+    assert_eq!(models.into_iter().count(), 3);
+    let table = ModelTable::of(vec![
+        (Arc::from("x"), CatalogModel::default()),
+        (
+            Arc::from("x"),
+            CatalogModel {
+                tools: Some(true),
+                ..CatalogModel::default()
+            },
+        ),
+    ]);
+    assert_eq!(table.len(), 1, "同名的只留一个");
+    assert_eq!(
+        table.get("x").and_then(|model| model.tools),
+        Some(true),
+        "留后写的"
+    );
+}
+
+#[test]
+fn a_digest_reads_back_the_same_catalog_and_only_for_its_own_fingerprint() {
+    // 施工 V-5 中：整理好的一份读回来和现解的一模一样；指纹、版本对不上的，读不懂、编号越界的都当没有。
+    let read = Catalog::parse(TRIMMED).expect("读得进").catalog;
+    let digest = read.digest("snapshot 1 2");
+    let back = Catalog::from_digest(&digest, "snapshot 1 2").expect("读得回来");
+    assert_eq!(back, read);
+    assert_eq!(
+        back.named("deepseek-v4.1-flash"),
+        read.named("deepseek-v4.1-flash")
+    );
+    let flash = back.model("deepseek", "deepseek-flash").expect("有");
+    let price = flash.price.as_ref().expect("有价");
+    assert!(
+        matches!(price.currency, std::borrow::Cow::Borrowed(USD)),
+        "币种照旧不另分配"
+    );
+    assert_eq!(
+        Catalog::from_digest(&digest, "snapshot 1 3"),
+        None,
+        "指纹不对"
+    );
+    let other = digest.replacen("{\"v\":1,", "{\"v\":0,", 1);
+    assert_ne!(other, digest);
+    assert_eq!(
+        Catalog::from_digest(&other, "snapshot 1 2"),
+        None,
+        "版本不对"
+    );
+    assert_eq!(Catalog::from_digest("{", "snapshot 1 2"), None, "读不懂");
+    let empty_texts = digest.replacen("\"texts\":[", "\"texts\":[],\"x\":[", 1);
+    assert_eq!(
+        Catalog::from_digest(&empty_texts, "snapshot 1 2"),
+        None,
+        "编号越界"
+    );
 }
