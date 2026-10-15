@@ -158,6 +158,9 @@ pub(crate) fn call<'a>(
         "events.append" => answer(move || async move {
             crate::appending::append(core, caller, request, params(request)?).await
         }),
+        "model.embed" => {
+            answer(move || async move { crate::embedding::embed(core, params(request)?).await })
+        }
         "system.append" => {
             answer(move || async move { crate::appends::append(core, caller, params(request)?) })
         }

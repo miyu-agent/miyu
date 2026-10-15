@@ -29,6 +29,9 @@ use crate::route::shared::ModelData;
 /// 问句的向量最多等多久。
 const WAIT: Duration = Duration::from_secs(1);
 
+/// 扩展要的一批里，一条最多等多久（施工 X-17）：冷的本机模型要核对文件、拉起小程序。
+const ONE_WAIT: Duration = Duration::from_secs(30);
+
 /// 补的时候一次取几条。
 const BATCH: usize = 16;
 
@@ -179,6 +182,30 @@ impl Vectors {
     /// 的、要本机的却没有的没有。
     pub(crate) fn model(&self, using: &Using) -> Option<String> {
         self.way(using).map(|(model, _)| model)
+    }
+
+    /// 照 `using` 算一批 `texts` 的向量（施工 X-17：扩展经 `model.embed` 要的），一条一条算，每条最多等 30 秒：交回模型编号
+    /// 和照先后的向量。
+    ///
+    /// # Errors
+    ///
+    /// `off` 的、要本机的却没有的 [`Unavailable::Off`]；哪一条算不出、等不到的 [`Unavailable::Failed`]，整批不交。
+    pub async fn embed_all(
+        &self,
+        using: &Using,
+        texts: &[String],
+    ) -> Result<(String, Vec<Vec<f32>>), Unavailable> {
+        let (model, way) = self
+            .way(using)
+            .ok_or_else(|| Unavailable::Off("embedding is off".to_string()))?;
+        let mut vectors = Vec::with_capacity(texts.len());
+        for text in texts {
+            let vector = tokio::time::timeout(ONE_WAIT, way.embed(text))
+                .await
+                .map_err(|_| Unavailable::Failed("timed out".to_string()))??;
+            vectors.push(vector);
+        }
+        Ok((model, vectors))
     }
 
     /// 照 `using` 算问句 `text` 的向量，最多等 1 秒（冷的核对、拉起都算在里面）；`off` 的、用不了、算不出、等不到的没有。

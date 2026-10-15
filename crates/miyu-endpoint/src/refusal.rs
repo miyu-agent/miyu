@@ -119,6 +119,12 @@ impl Refusal {
         data: None,
     };
     /// 没有这个会话。
+    /// `model.embed`：这个账号的 `models.embedding` 是 `off`，或者要本机的却没装内置模型（施工 X-17）。
+    pub(crate) const EMBEDDING_OFF: Refusal = Refusal {
+        code: REFUSED,
+        reason: "embedding_off",
+        data: None,
+    };
     /// `provide` 只收核心拉起的扩展（施工 O-2 上）。
     pub(crate) const NOT_A_PROVIDER: Refusal = Refusal {
         code: REFUSED,
@@ -374,6 +380,15 @@ impl Refusal {
             data.insert("problem".to_string(), serde_json::json!(problem));
         }
         refusal
+    }
+
+    /// `model.embed` 算不出：哪一条没算出来、等不到（施工 X-17），`data.why` 是原因（英文一句）。
+    pub(crate) fn embedding_failed(why: &str) -> Refusal {
+        Refusal::with(
+            "embedding_failed",
+            "why",
+            serde_json::Value::String(why.to_string()),
+        )
     }
 
     /// 开一个扩展，它要的能力还有没批的（施工 9-4 下上，`extensions.md`「能力」）：`data.capabilities` 是没批的那几个。

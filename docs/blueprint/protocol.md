@@ -208,6 +208,7 @@
 | `provider.catalog` | 搜目录和档案里的供应商：`query`、`limit` 都可以不写；每一家能不能用、在不在本机（施工 8-11）；`featured` 只要常用的几家（施工 8-11 再补）；每一家的图标 `logo`（施工 8-31，`models.md`「图标」，`model.list` 每一家也有） |
 | `provider.test` | 试一家：配好了的（`provider`）或者还没写进配置的（`candidate`）。列得出模型就算通（施工 8-11 五补）；列不出、写的模型不在列表里的才真发一句，收到第一段正文就停，那时会花一点额度；交回成没成、哪一步、出错，要模型名的带 `need_model`（施工 8-11） |
 | `model.call` | 经一次性入口叫一次模型或池，拿整段回答和用量；不进任何会话；会花额度（施工 8-20，`models.md`「协议」、「怎么走」第十二条）。8-15 起每发出去一次记一笔账：这个连接的账号的账号日志、用量汇总 |
+| `model.embed` | 照这个账号的 `models.embedding`（本机的内置模型、远程那一家）算一批字的向量（施工 X-17，给扩展按意思搜）：`{texts}`，1 到 64 条、每条 1 到 8000 个字；回应 `{model, vectors}`，`model` 是模型编号（`local:<id>`、`<供应商>/<模型>`，换了模型的向量不能和以前的比），`vectors` 照先后、归一化过的。一条一条算，每条至多等 30 秒，有一条算不出整批不交。远程的用量记在管理员名下。不另设能力（同 `model.call`）。拒绝：写法不对的 `bad_params`；关着、要本机的却没装的 `embedding_off`；算不出、等不到的 `embedding_failed` |
 | `usage.query` | 查用量和金额：照人、场所、模型、天、会话、用途分组，金额照币种各加各的；先补再查（施工 8-15，`models.md`「协议」、「怎么走」第九条） |
 | `human.get` | 给人看的字：工具的样子、说法的模板原文，照这个连接的语言；不带 `config`（施工 W-1） |
 | `mermaid.render` | mermaid 源码画成 SVG。编进了 `mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
@@ -1192,6 +1193,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `path_forbidden` | -32010 | `fs.list`、`fs.find` 的目录落在数据根里、又不在这个账号的默认工作区里（施工 W-2）；`fs.read` 的路径也一样（施工 W-6）；`session.set_workspace`、`/workspace` 换去的目录也一样，账号自己的默认工作区可以（施工 9-7 上、下） |
 | `mermaid_too_long` | -32010 | `mermaid.render` 的源码超过 64 KiB（施工 W-4） |
 | `mermaid_failed` | -32010 | `mermaid.render` 画不出；`data.detail` 是画图的库的原话（施工 W-4） |
+| `embedding_off` | -32010 | `model.embed`：这个账号的 `models.embedding` 是 `off`，或者要本机的却没装内置模型（施工 X-17） |
+| `embedding_failed` | -32010 | `model.embed`：有一条算不出、等不到；`data.why` 是原因，英文一句（施工 X-17） |
 | `too_many_uploads` | -32010 | 这个连接同时开着 4 个分块上传（施工 W-5） |
 | `upload_unknown` | -32010 | 没有这个上传：编号不对、作废了、不是这个连接开的（施工 W-5） |
 | `upload_offset` | -32010 | `blob.write` 的 `offset` 和已经收到的对不上；`data.received` 是实际收到的几个（施工 W-5） |
@@ -1373,6 +1376,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `path_forbidden` | 无权访问。 | Access denied. |
 | `mermaid_too_long` | 图表源码过长。 | Diagram source too long. |
 | `mermaid_failed` | 图表渲染失败。 | Diagram rendering failed. |
+| `embedding_off` | 未配置 Embedding。 | Embedding is not configured. |
+| `embedding_failed` | Embedding 计算失败。 | Embedding failed. |
 | `too_many_uploads` | 同时上传的文件过多。 | Too many uploads at once. |
 | `upload_unknown` | 上传已失效，请重新上传。 | Upload expired. Upload again. |
 | `upload_offset` | 上传位置不一致。 | Upload offset mismatch. |

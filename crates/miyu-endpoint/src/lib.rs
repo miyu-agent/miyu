@@ -35,6 +35,7 @@ mod commands;
 pub mod config;
 mod connection;
 mod diffs;
+mod embedding;
 pub mod extensions;
 mod files;
 mod forking;
