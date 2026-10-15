@@ -49,6 +49,9 @@ pub struct Policy {
     pub peers: Peers,
     /// 后台运行关着（施工 T-1 上、下）：派的子代理前台跑，派它的那一步等它报回来。
     pub foreground: bool,
+    /// 要先加载的工具（施工 L-1，`docs/designs/25-工具加载.md` W9）：工具面上有要先加载的才有。`load_tools` 由内核当场答，
+    /// 没加载直接调、出错了的附上完整格式（`tool::Loading`）。
+    pub loading: Option<crate::tool::Loading>,
 }
 
 /// 起标题的两个数（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）：数值是数据，放在策略快照里。

@@ -99,6 +99,7 @@ pub(super) fn register(
                 description: description(tool.description.as_deref()),
                 parameters,
                 access: access(tool),
+                need_load: server.need_load,
             },
             original: tool.name.clone(),
             title: tool

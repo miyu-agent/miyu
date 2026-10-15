@@ -25,6 +25,7 @@ mod interrupt;
 mod jobs;
 mod limits;
 mod load;
+mod loading;
 mod manual;
 mod messages;
 mod meta;

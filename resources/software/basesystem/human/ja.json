@@ -62,6 +62,7 @@
       "subject": "to",
       "icon": "↗"
     },
+    "load_tools": {"name": "ツールを読み込む", "icon": "⇣"},
     "sessions": {
       "name": "セッション一覧",
       "icon": "≡"

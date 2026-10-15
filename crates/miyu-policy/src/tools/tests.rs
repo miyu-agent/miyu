@@ -14,6 +14,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         description: format!("The {name} tool."),
         parameters: serde_json::from_str::<RawJson>(parameters).unwrap(),
         access,
+        need_load: false,
     }
 }
 

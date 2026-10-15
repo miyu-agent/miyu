@@ -30,6 +30,10 @@ pub struct ToolEntry {
     pub parameters: RawJson,
     /// 访问类别。
     pub access: Access,
+    /// 要先加载（施工 L-1，`25-工具加载.md` W9）：tools 数组里参数换成空的外壳，完整格式由 `load_tools` 交。没有的不写，以前
+    /// 造的快照读成没有：字节和以前一样。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub need_load: bool,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时

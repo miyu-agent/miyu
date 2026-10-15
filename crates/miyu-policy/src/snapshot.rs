@@ -159,6 +159,9 @@ pub struct CoreTexts {
     /// 以前渲染；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub private_media: Option<PrivateMediaTexts>,
+    /// 要先加载的工具用的字（`loading/`，施工 L-1）。以前造的快照里没有，读成没有：那时还没有要先加载的工具；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loading: Option<crate::loading::LoadingTexts>,
 }
 
 /// 压缩的几句（施工 6-2 上）。
@@ -354,7 +357,13 @@ impl Snapshot {
             private_media: self.private_media(),
             group: self.group.as_ref().map(GroupChat::texts).transpose()?,
         };
-        let (face, rules) = tools::split(&self.tools)?;
+        let (mut face, mut rules) = tools::split(&self.tools)?;
+        let loading =
+            crate::loading::stub(&self.tools, core.loading.as_ref(), &mut face, &mut rules)
+                .map_err(|error| BuildError::Texts {
+                    which: "loading texts",
+                    error,
+                })?;
         let stable = Stable {
             tools: face,
             system: self.system.clone(),
@@ -375,6 +384,7 @@ impl Snapshot {
             titles: self.titles(),
             peers: self.peers(),
             foreground: self.foreground,
+            loading,
         })
     }
 

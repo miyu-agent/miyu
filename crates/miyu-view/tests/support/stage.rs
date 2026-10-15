@@ -73,6 +73,7 @@ pub fn policy() -> Policy {
     };
     Policy {
         foreground: false,
+        loading: None,
         assembler: Box::new(Nothing),
         facts: FactTemplates::new(
             r#"<e t="{time}"/>"#,

@@ -36,6 +36,9 @@ impl std::error::Error for LoadError {}
 struct SpecFile {
     description: String,
     parameters: RawJson,
+    /// 要先加载（施工 L-1）：出厂的都不写，全量。
+    #[serde(default)]
+    need_load: bool,
 }
 
 /// 读软件包 `package` 的工具 `name` 的说明和参数格式，访问类别是 `access`。
@@ -60,6 +63,7 @@ pub fn spec(
         description: parsed.description,
         parameters: parsed.parameters,
         access,
+        need_load: parsed.need_load,
     })
 }
 

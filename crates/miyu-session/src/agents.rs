@@ -218,6 +218,7 @@ impl Agents {
                     description: spec.description.clone(),
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
+                    need_load: spec.need_load,
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {

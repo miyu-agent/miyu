@@ -58,6 +58,7 @@ fn provided_tools_join_change_and_leave_the_face() {
         description: "Send, the new way.".to_string(),
         parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).unwrap(),
         access: Access::Read,
+        need_load: false,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     let snapshot = swap(&mut refresh);
@@ -264,6 +265,7 @@ fn a_changed_preset_takes_provided_tools_as_registered_now() {
         description: "Send, the new way.".to_string(),
         parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).unwrap(),
         access: Access::Read,
+        need_load: false,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     super::test_support::write_preset(&root, "[tools]\nshell = false\n");

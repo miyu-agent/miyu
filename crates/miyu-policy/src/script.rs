@@ -7,7 +7,8 @@
 //! - `Display name`、`显示名称`：给人看的名字（英文、中文），`描述`：给人看的一句说明（中文）；
 //! - `Timeout`：秒，正整数，没写的 [`TIMEOUT`]；
 //! - `Parameters`：参数的 JSON Schema，接在下面的几行注释里，拼成一份 JSON 为止；顶层得是 `"type": "object"`。没写的当
-//!   没有参数。
+//!   没有参数；
+//! - `Need load`：`yes` 是要先加载（施工 L-1，`25-工具加载.md` W9），`no` 和没写的全量；大小写不论，`true`、`false` 也认。
 //!
 //! 别的键（`Id`、`Group`、`Trust`、`Permission`、编码声明……）照旧版留着的，认、不用。工具名照文件名（[`tool_name`]）。纯逻辑：
 //! 进来的是文件名和文件里的字，出去的是读好的样子，或者哪里不对。
@@ -49,6 +50,8 @@ pub struct ScriptHead {
     pub display_name: BTreeMap<String, String>,
     /// 给人看的一句说明，照语言：`zh` 是 `描述`。
     pub summary: BTreeMap<String, String>,
+    /// 要先加载（`Need load`，施工 L-1）。
+    pub need_load: bool,
 }
 
 /// 哪里不对。
@@ -64,6 +67,8 @@ pub enum ScriptProblem {
     BadParameters(String),
     /// `Parameters` 顶层不是 `"type": "object"`。
     NotAnObject,
+    /// `Need load` 不是 `yes`、`no`（施工 L-1）：写的原样。
+    BadNeedLoad(String),
 }
 
 impl fmt::Display for ScriptProblem {
@@ -76,6 +81,7 @@ impl fmt::Display for ScriptProblem {
             }
             ScriptProblem::BadParameters(why) => write!(f, "Parameters is not valid JSON: {why}"),
             ScriptProblem::NotAnObject => f.write_str("Parameters must be a JSON object schema"),
+            ScriptProblem::BadNeedLoad(text) => write!(f, "Need load {text:?} is not yes or no"),
         }
     }
 }
@@ -95,6 +101,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         timeout: TIMEOUT,
         display_name: BTreeMap::new(),
         summary: BTreeMap::new(),
+        need_load: false,
     };
     let mut rest = lines.iter();
     while let Some(line) = rest.next() {
@@ -114,6 +121,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                     .ok_or_else(|| ScriptProblem::BadTimeout(value.to_string()))?;
             }
             "Parameters" => head.parameters = parameters(value, &mut rest)?,
+            "Need load" => head.need_load = yes_or_no(value)?,
             _ => {}
         }
     }
@@ -121,6 +129,15 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         return Err(ScriptProblem::NoDescription);
     }
     Ok(head)
+}
+
+/// `Need load` 的值：`yes`、`true` 是要，`no`、`false` 是不要，大小写不论（施工 L-1）。
+fn yes_or_no(value: &str) -> Result<bool, ScriptProblem> {
+    match value.to_ascii_lowercase().as_str() {
+        "yes" | "true" => Ok(true),
+        "no" | "false" => Ok(false),
+        _ => Err(ScriptProblem::BadNeedLoad(value.to_string())),
+    }
 }
 
 /// 文件名换成工具名：去掉最后一个扩展名（`.py`、`.sh` 这种；没有的照原样），不合 `[A-Za-z0-9_-]` 的字换成 `_`，最多

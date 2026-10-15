@@ -68,6 +68,7 @@ impl Script {
                 description: head.description.clone(),
                 parameters,
                 access: Access::Execute,
+                need_load: head.need_load,
             },
             display_name: head.display_name.clone(),
             timeout: head.timeout,

@@ -116,6 +116,7 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             description: "Changed.".to_string(),
             parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).expect("是 JSON"),
             access: Access::Read,
+            need_load: false,
         },
         Act::Echo,
     );
@@ -127,6 +128,55 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
     let second = again.requests()[0].1.clone();
     assert_eq!(second.tools, first.tools);
     assert_eq!(second.system, first.system);
+}
+
+/// 要先加载的工具（施工 L-1，`25-工具加载.md` W9）：tools 数组里它的参数是空的外壳、说明整段，多一件 `load_tools`；她调
+/// `load_tools` 拿到完整格式（内核当场答，不派给执行器），再调它照常跑；第二次请求的 tools 和第一次一字不差。
+#[tokio::test]
+async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contract() {
+    let home = Home::new();
+    let schema = r#"{"type":"object","properties":{"word":{"type":"string"}},"required":["word"]}"#;
+    let lookup = Fake::from_spec(
+        Spec {
+            name: "lookup".to_string(),
+            description: "Look a word up.".to_string(),
+            parameters: serde_json::from_str::<RawJson>(schema).expect("是 JSON"),
+            access: Access::Read,
+            need_load: true,
+        },
+        Act::Echo,
+    );
+    let echo = Fake::new("echo", Access::Read, Act::Echo);
+    let script = Script::new([
+        Play::calls(&[("load_tools", r#"{"tools":["lookup"]}"#)]),
+        Play::calls(&[("lookup", r#"{"word":"cat"}"#)]),
+        Play::Says("好。"),
+    ]);
+    let handle = home.create_with(&script, &catalog(&[&lookup, &echo])).await;
+    turn(&handle, "cmd-1").await;
+    let requests = script.requests();
+    let first = &requests[0].1;
+    assert_eq!(names(first), ["echo", "load_tools", "lookup"]);
+    let shell = first
+        .tools
+        .iter()
+        .find(|tool| tool.name == "lookup")
+        .expect("在工具面上");
+    assert_eq!(shell.parameters.get(), r#"{"type":"object"}"#);
+    assert_eq!(shell.description, "Look a word up.", "说明整段");
+    let log = home.log(handle.id());
+    let results = results(&log);
+    assert_eq!(
+        text(&results[0].blocks),
+        format!(r#"{{"name":"lookup","description":"Look a word up.","parameters":{schema}}}"#)
+            + "\n"
+    );
+    assert_eq!(
+        lookup.calls().len(),
+        1,
+        "load_tools 不派给执行器，lookup 照常跑"
+    );
+    assert_eq!(requests[1].1.tools, first.tools, "前缀不变");
 }
 
 #[tokio::test]

@@ -138,6 +138,35 @@ fn the_timeout_is_checked() {
     }
 }
 
+/// 要先加载（施工 L-1）：`true` 的规格里记上，不写、`false` 的全量；不是布尔的拒，`problem` 是 `need_load`。
+#[test]
+fn need_load_is_a_boolean() {
+    let marked = |need: Value| {
+        let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
+        params["need_load"] = need;
+        serde_json::from_value::<ToolParams>(params).unwrap()
+    };
+    assert!(checked(marked(json!(true))).expect("合写法").spec.need_load);
+    assert!(
+        !checked(marked(json!(false)))
+            .expect("合写法")
+            .spec
+            .need_load
+    );
+    assert!(
+        !checked(tool("read", json!(["local"])))
+            .expect("合写法")
+            .spec
+            .need_load
+    );
+    for bad in [json!("yes"), json!(1)] {
+        assert_eq!(
+            refused_for(marked(bad)),
+            json!({"tool": "send_group", "problem": "need_load"}),
+        );
+    }
+}
+
 mod remote_tests;
 
 /// 给人看的名字（施工 9-8 六补）：照语言收下，派出去那一刻交给执行器；不写的是空的；语言、名字是空白的拒。

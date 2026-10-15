@@ -301,6 +301,8 @@
     }
   },
   "said": {
+    "loading/loaded": "{tools} を読み込みました",
+    "loading/bad-args": "読み込むツールが指定されていません",
     "tool-results/unknown": "ツールが存在しません",
     "tool-results/not-an-object": "引数の形式が正しくありません",
     "tool-results/cancelled-before": "キャンセルしました",

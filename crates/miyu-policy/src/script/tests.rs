@@ -99,6 +99,10 @@ fn wrong_ones_say_what_is_wrong() {
             "# Description: Hi.\n# Parameters: {\"type\": \"string\"}\n",
             ScriptProblem::NotAnObject,
         ),
+        (
+            "# Description: Hi.\n# Need load: maybe\n",
+            ScriptProblem::BadNeedLoad("maybe".to_string()),
+        ),
     ];
     for (text, wanted) in cases {
         assert_eq!(read("a", text), Err(wanted), "{text}");
@@ -118,6 +122,21 @@ fn wrong_ones_say_what_is_wrong() {
         read(".a", "# Description: Hi.\n"),
         Err(ScriptProblem::NoName)
     );
+}
+
+/// `Need load`（施工 L-1）：`yes`、`true` 是要先加载，`no`、`false`、没写的全量，大小写不论。
+#[test]
+fn need_load_is_yes_or_no() {
+    for (line, need) in [
+        ("# Need load: yes\n", true),
+        ("# Need load: TRUE\n", true),
+        ("# Need load：No\n", false),
+        ("# Need load: false\n", false),
+        ("", false),
+    ] {
+        let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
+        assert_eq!(head.need_load, need, "{line}");
+    }
 }
 
 /// 脚本算的功能的编号（施工 X-12 中）：`script-<工具名>`。

@@ -14,6 +14,7 @@ command = ["npx", "-y", "@modelcontextprotocol/server-github"]
 env = { GITHUB_TOKEN = { secret = "github" }, LOG = "quiet", HOME_DIR = { env = "HOME" } }
 venues = ["local", "group"]
 timeout_ms = 120000
+need_load = true
 
 [[mcp]]
 name = "fetch"
@@ -48,12 +49,14 @@ fn a_package_with_only_mcp_servers_is_a_bundle_and_reads_every_field() {
     );
     assert_eq!(github.venues, ["local", "group"]);
     assert_eq!(github.timeout_ms, 120_000);
+    assert!(github.need_load, "施工 L-1");
     assert_eq!(github.line, Some(4));
     let fetch = &manifest.mcp[1];
     assert_eq!(fetch.env, []);
     assert_eq!(fetch.venues, ["local"], "没写的只给本机的会话");
     assert_eq!(fetch.timeout_ms, TIMEOUT_DEFAULT);
-    assert_eq!(fetch.line, Some(11));
+    assert!(!fetch.need_load, "没写的全量");
+    assert_eq!(fetch.line, Some(12));
 }
 
 #[test]
@@ -161,6 +164,10 @@ fn every_mistake_is_bad_mcp_at_its_server() {
         (
             "name = \"g\"\ncommand = [\"x\"]\ntimeout_ms = \"60s\"",
             "mcp.g.timeout_ms",
+        ),
+        (
+            "name = \"g\"\ncommand = [\"x\"]\nneed_load = \"yes\"",
+            "mcp.g.need_load",
         ),
     ] {
         let problem = read(&one(body)).expect_err(body);

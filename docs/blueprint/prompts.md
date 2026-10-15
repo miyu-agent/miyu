@@ -463,6 +463,39 @@ A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but 
 The tool returned no output.
 ```
 
+#### `core/loading/unknown.txt`
+
+- 什么时候加进来：`load_tools` 要的名字里有不用加载、不存在的（施工 L-1）
+- token：11（同上，`names` 按 `grep` 填）
+- 为什么加：说清哪几个不用加载，她别再找
+- 指纹：`eb657bc2`
+
+```text
+These need no loading or do not exist: {names}.
+```
+
+#### `core/loading/bad-args.txt`
+
+- 什么时候加进来：`load_tools` 的参数里没有名字的列表（施工 L-1）
+- token：11（同上）
+- 为什么加：说清该怎么写
+- 指纹：`c4e6d253`
+
+```text
+List the names of the tools to load in tools.
+```
+
+#### `core/loading/contract.txt`
+
+- 什么时候加进来：要先加载的工具没加载直接调、出错了，结果后面接这一句和它的完整参数格式（施工 L-1，W6）
+- token：6（同上，`name` 按 `kb_search` 填；不算后面的参数格式）
+- 为什么加：第一次调错就学会，不用再来回一次
+- 指纹：`98965270`
+
+```text
+Full parameters of {name}:
+```
+
 #### `core/tool-results/unknown.txt`
 
 - 什么时候加进来：模型编了没有的工具名
@@ -3846,99 +3879,21 @@ Describe what this image shows for someone who cannot see it. Copy all text in i
 Reply with OK.
 ```
 
-### 人这边
-
-#### `core/turn-ended/interrupted.txt`
-
-- 什么时候加进来：那一轮被打断以后的请求
-- token：17
-- 为什么加：她知道那一轮没走完（施工 1-12）
-- 指纹：`0d43114a`
-
-```text
-<turn-ended reason="interrupted">The user interrupted this turn.</turn-ended>
-```
-
-#### `core/turn-ended/error.txt`
-
-- 什么时候加进来：那一轮出错结束以后
-- token：17
-- 为什么加：同上
-- 指纹：`a1e51108`
-
-```text
-<turn-ended reason="error">This turn stopped on an error.</turn-ended>
-```
-
-#### `core/turn-ended/step_limit.txt`
-
-- 什么时候加进来：那一轮走到步数上限以后
-- token：19
-- 为什么加：同上
-- 指纹：`a4126217`
-
-```text
-<turn-ended reason="step_limit">This turn stopped at the step limit.</turn-ended>
-```
-
-#### `core/turn-ended/aborted.txt`
-
-- 什么时候加进来：核心崩了、那一轮没走完以后
-- token：23
-- 为什么加：同上。原来说程序重启了，其实是核心没走完就停了，有计划的重启另有一句；施工 4-9 再补四下改成实情
-- 指纹：`e82c8e69`
-
-```text
-<turn-ended reason="aborted">Miyu stopped unexpectedly and this turn did not finish.</turn-ended>
-```
-
-#### `core/turn-ended/restarted.txt`
-
-- 什么时候加进来：有计划的重启打断了那一轮以后
-- token：21
-- 为什么加：同上（施工 2-8）
-- 指纹：`5a9d12ba`
-
-```text
-<turn-ended reason="restarted">A planned restart of Miyu stopped this turn.</turn-ended>
-```
-
-### 人这边：一条 `message.user`（`by` 是模块 `goal`），续轮开的那一轮的触发
-
-#### `core/goal/round.txt`
-
-- 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」、`{set_by}` 填谁设的（施工 X-8 上，下面两行）
-- token：213（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前）
-- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
-- 指纹：`9ef51bfd`
-
-```text
-<goal_round>
-Your standing objective, {set_by}. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
-Objective: {objective}  ·  {round}
-
-Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports wake you. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
-· done, verified against the workspace rather than earlier rounds' claims →
-  goal {"action":"complete"}
-· blocked, incl. needing an answer from the user →
-  goal {"action":"blocked","reason":"…"}
-</goal_round>
-```
-
-### 填进续轮消息的 `{set_by}`
-
-#### `core/goal/set-by-person.txt`
-
-- 什么时候加进来：人用 `/goal` 设的目标（施工 X-8 上）
-- token：9（2026-10-12 量）
-- 为什么加：续轮消息原来写死的那半句，挪出来好和下一行二选一，字不变
-- 指纹：`574f7625`
-
-```text
-set by the user with `/goal`
-```
-
 ### tools 数组
+
+#### `core/loading/load_tools.json`
+
+- 什么时候加进来：会话的工具面上有登记了 `need_load` 的工具（施工 L-1，`25-工具加载.md` W9）；出厂的工具都不标，所以出厂的会话里没有它
+- token：84（2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，和一件小工具一起时的边际份量）
+- 为什么加：要先加载的工具 tools 数组里只有名字、说明和空的外壳，她用之前照它拿完整格式：两句，是什么、什么时候调；一个参数一句
+- 指纹：`51ecfe50`
+
+```json
+{
+  "description": "Load the full parameters of tools listed with only a name and a description. Call it before using such a tool.",
+  "parameters": {"type":"object","properties":{"tools":{"type":"array","items":{"type":"string"},"description":"Names of the tools to load."}},"required":["tools"]}
+}
+```
 
 #### `software/basesystem/tools/read.json`
 
@@ -4394,6 +4349,98 @@ Start a subagent in a new session to do one task and wait for it; its report arr
   "description": "Fetch an image, video or file from a QQ message. Images come back to view; videos and files are saved to qq-files/ in your workspace.",
   "parameters": {"type":"object","properties":{"msg":{"type":"string","description":"The msg= id."},"index":{"type":"integer","description":"Which item in that message, from 1 (the #n); default 1."}},"required":["msg"]}
 }
+```
+
+### 人这边
+
+#### `core/turn-ended/interrupted.txt`
+
+- 什么时候加进来：那一轮被打断以后的请求
+- token：17
+- 为什么加：她知道那一轮没走完（施工 1-12）
+- 指纹：`0d43114a`
+
+```text
+<turn-ended reason="interrupted">The user interrupted this turn.</turn-ended>
+```
+
+#### `core/turn-ended/error.txt`
+
+- 什么时候加进来：那一轮出错结束以后
+- token：17
+- 为什么加：同上
+- 指纹：`a1e51108`
+
+```text
+<turn-ended reason="error">This turn stopped on an error.</turn-ended>
+```
+
+#### `core/turn-ended/step_limit.txt`
+
+- 什么时候加进来：那一轮走到步数上限以后
+- token：19
+- 为什么加：同上
+- 指纹：`a4126217`
+
+```text
+<turn-ended reason="step_limit">This turn stopped at the step limit.</turn-ended>
+```
+
+#### `core/turn-ended/aborted.txt`
+
+- 什么时候加进来：核心崩了、那一轮没走完以后
+- token：23
+- 为什么加：同上。原来说程序重启了，其实是核心没走完就停了，有计划的重启另有一句；施工 4-9 再补四下改成实情
+- 指纹：`e82c8e69`
+
+```text
+<turn-ended reason="aborted">Miyu stopped unexpectedly and this turn did not finish.</turn-ended>
+```
+
+#### `core/turn-ended/restarted.txt`
+
+- 什么时候加进来：有计划的重启打断了那一轮以后
+- token：21
+- 为什么加：同上（施工 2-8）
+- 指纹：`5a9d12ba`
+
+```text
+<turn-ended reason="restarted">A planned restart of Miyu stopped this turn.</turn-ended>
+```
+
+### 人这边：一条 `message.user`（`by` 是模块 `goal`），续轮开的那一轮的触发
+
+#### `core/goal/round.txt`
+
+- 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」、`{set_by}` 填谁设的（施工 X-8 上，下面两行）
+- token：213（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前）
+- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
+- 指纹：`9ef51bfd`
+
+```text
+<goal_round>
+Your standing objective, {set_by}. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
+Objective: {objective}  ·  {round}
+
+Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports wake you. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
+· done, verified against the workspace rather than earlier rounds' claims →
+  goal {"action":"complete"}
+· blocked, incl. needing an answer from the user →
+  goal {"action":"blocked","reason":"…"}
+</goal_round>
+```
+
+### 填进续轮消息的 `{set_by}`
+
+#### `core/goal/set-by-person.txt`
+
+- 什么时候加进来：人用 `/goal` 设的目标（施工 X-8 上）
+- token：9（2026-10-12 量）
+- 为什么加：续轮消息原来写死的那半句，挪出来好和下一行二选一，字不变
+- 指纹：`574f7625`
+
+```text
+set by the user with `/goal`
 ```
 
 ### 抽取、合并那一次请求的指令里，换进 `{owner}`

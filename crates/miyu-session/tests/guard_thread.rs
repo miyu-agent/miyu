@@ -86,6 +86,7 @@ async fn the_async_thread_is_free_while_the_guard_judges() {
             description: "Stops while it names its paths.".to_string(),
             parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).expect("是 JSON"),
             access: Access::Read,
+            need_load: false,
         },
         entered: entered_tx,
         release: Mutex::new(release_rx),

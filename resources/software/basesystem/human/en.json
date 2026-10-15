@@ -62,6 +62,7 @@
       "subject": "to",
       "icon": "↗"
     },
+    "load_tools": {"name": "Load tools", "icon": "⇣"},
     "sessions": {
       "name": "Sessions",
       "icon": "≡"

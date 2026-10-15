@@ -4,6 +4,7 @@
 //! 工具由软件包提供，内核不内置（`10-自带软件.md` 第一节）。内核只要知道两样：能不能和别的
 //! 一起跑（看访问类别），参数长什么样（修正畸形参数）。
 
+mod loading;
 mod texts;
 
 use serde_json::{Map, Value};
@@ -11,6 +12,7 @@ use serde_json::{Map, Value};
 use crate::raw::RawJson;
 use crate::text_enum::text_enum;
 
+pub use loading::{Contract, Loading, LoadingSources};
 pub use texts::{ToolTextSources, ToolTexts, Worded};
 
 text_enum!(

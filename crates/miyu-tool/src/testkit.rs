@@ -85,6 +85,7 @@ impl Fake {
                 description: format!("The {name} tool."),
                 parameters: serde_json::from_str::<RawJson>(parameters).expect("参数格式是 JSON"),
                 access,
+                need_load: false,
             },
             act,
         )

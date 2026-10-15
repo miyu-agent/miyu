@@ -70,6 +70,10 @@ struct ToolParams {
     /// 给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：头在时间线上写它，不写的照工具名。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     display_name: BTreeMap<String, String>,
+    /// 要先加载（施工 L-1，`25-工具加载.md` W9）：`true` 的工具面上只给名字、说明和空的参数外壳。不写、写 `false` 的全量；别的
+    /// 写法 `bad_tool`，`problem` 是 `need_load`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    need_load: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -215,12 +219,18 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
     {
         return Err(bad_tool(&tool.name, "display_name"));
     }
+    let need_load = match &tool.need_load {
+        None => false,
+        Some(Value::Bool(need)) => *need,
+        Some(_) => return Err(bad_tool(&tool.name, "need_load")),
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
             description: tool.description,
             parameters,
             access,
+            need_load,
         },
         venues,
         timeout: Duration::from_millis(timeout),

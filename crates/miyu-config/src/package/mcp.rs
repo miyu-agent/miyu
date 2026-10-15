@@ -40,6 +40,8 @@ pub struct McpServer {
     pub venues: Vec<String>,
     /// 一次调用等多久，毫秒。
     pub timeout_ms: u64,
+    /// 这个服务的工具都要先加载（施工 L-1，`25-工具加载.md` W9）：没写的全量。
+    pub need_load: bool,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -95,7 +97,9 @@ fn one(
     reader.only(
         table,
         "mcp",
-        &["name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3]],
+        &[
+            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4],
+        ],
     )?;
     let name = match table.get("name").and_then(Item::as_str) {
         Some(name) if valid_name(name) => name.to_string(),
@@ -120,7 +124,7 @@ fn one(
 }
 
 /// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）。
-const FIELDS: [&str; 4] = ["command", "env", "venues", "timeout_ms"];
+const FIELDS: [&str; 5] = ["command", "env", "venues", "timeout_ms", "need_load"];
 
 /// 叫 `name` 的服务的几格，表是 `table`，写在第 `line` 行。
 fn fields(
@@ -178,12 +182,23 @@ fn fields(
             })?,
         None => TIMEOUT_DEFAULT,
     };
+    let need_load = match table.get("need_load") {
+        Some(item) => item.as_bool().ok_or_else(|| {
+            bad(
+                line,
+                &format!("{at}.need_load"),
+                format!("{at}.need_load must be true or false"),
+            )
+        })?,
+        None => false,
+    };
     Ok(McpServer {
         name,
         command,
         env,
         venues,
         timeout_ms,
+        need_load,
         line,
     })
 }

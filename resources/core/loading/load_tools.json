@@ -1,0 +1,4 @@
+{
+  "description": "Load the full parameters of tools listed with only a name and a description. Call it before using such a tool.",
+  "parameters": {"type":"object","properties":{"tools":{"type":"array","items":{"type":"string"},"description":"Names of the tools to load."}},"required":["tools"]}
+}

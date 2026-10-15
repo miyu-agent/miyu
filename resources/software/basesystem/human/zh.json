@@ -62,6 +62,7 @@
       "subject": "to",
       "icon": "↗"
     },
+    "load_tools": {"name": "加载工具", "icon": "⇣"},
     "sessions": {
       "name": "列会话",
       "icon": "≡"

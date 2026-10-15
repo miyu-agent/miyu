@@ -90,6 +90,9 @@ pub struct Spec {
     pub parameters: RawJson,
     /// 访问类别：权限策略、能不能和别的一起跑，都看它。
     pub access: Access,
+    /// 要先加载（施工 L-1，`25-工具加载.md` W9）：登记的一方说的。是的，工具面上只给名字、说明和空的参数外壳，她用之前
+    /// `load_tools` 拿完整的格式；不是的全量。四个来处各写一处：内置工具的说明文件、脚本开头、扩展 `provide`、MCP 服务。
+    pub need_load: bool,
 }
 
 /// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。

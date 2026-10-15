@@ -11,6 +11,7 @@ fn server(name: &str, command: &[&str], line: usize) -> McpServer {
         env: Vec::new(),
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
+        need_load: false,
         line: Some(line),
     }
 }

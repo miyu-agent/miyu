@@ -301,6 +301,8 @@
     }
   },
   "said": {
+    "loading/loaded": "加载了 {tools}",
+    "loading/bad-args": "没写要加载哪几件工具",
     "tool-results/unknown": "工具不存在",
     "tool-results/not-an-object": "参数格式错误",
     "tool-results/cancelled-before": "已取消",

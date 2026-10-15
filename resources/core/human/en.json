@@ -301,6 +301,8 @@
     }
   },
   "said": {
+    "loading/loaded": "Loaded {tools}",
+    "loading/bad-args": "No tools named to load",
     "tool-results/unknown": "Tool not found",
     "tool-results/not-an-object": "Invalid arguments",
     "tool-results/cancelled-before": "Cancelled",
