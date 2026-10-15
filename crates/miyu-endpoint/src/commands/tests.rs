@@ -4,7 +4,8 @@
 use miyu_kernel::id::{AccountId, ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 
-use super::{builtin, may_run, parse};
+use super::{builtin, may_run, split};
+use crate::refusal::Refusal;
 
 fn external(account: Option<&str>, role: Option<Role>) -> By {
     By::External(External {
@@ -32,9 +33,9 @@ fn the_owner_and_managers_may_run_and_others_may_not() {
 /// 照内置的登记表认 `text`：交回正名和后面跟的字，认不出的交回拒绝的原因。
 fn parsed(text: &str) -> Result<(&'static str, String), &'static str> {
     let commands = builtin();
-    parse(&commands, text)
-        .map(|(slash, rest)| (slash.name(), rest.to_string()))
-        .map_err(|refusal| refusal.reason)
+    let (name, rest) = split(text).map_err(|refusal| refusal.reason)?;
+    let slash = commands.find(name).ok_or(Refusal::UNKNOWN_COMMAND.reason)?;
+    Ok((slash.name(), rest.to_string()))
 }
 
 #[test]

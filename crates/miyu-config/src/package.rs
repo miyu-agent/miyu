@@ -17,6 +17,7 @@ mod look;
 mod mcp;
 mod reader;
 pub mod settings;
+mod slash;
 mod upgrade;
 
 pub use capability::Capability;
@@ -27,6 +28,7 @@ pub use mcp::{
     EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
 };
 pub use settings::{Setting, SettingKind};
+pub use slash::SlashCommand;
 pub use upgrade::without_kind;
 
 use reader::{Reader, line_of};
@@ -74,6 +76,8 @@ pub struct Manifest {
     pub mascot: Option<Mascot>,
     /// 带的 MCP 服务（施工 X-2，`[[mcp]]`）：照写的先后；没有的是空的。只有扩展包、`bundle` 能写。
     pub mcp: Vec<McpServer>,
+    /// 声明的斜杠命令（施工 X-14 下，`[[slash]]`）：交给包的程序办；照写的先后，没有的是空的。只有扩展包能写。
+    pub slash: Vec<SlashCommand>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -200,7 +204,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 15] = [
+const TABLES: [&str; 16] = [
     "package",
     "builtin",
     "command",
@@ -216,6 +220,7 @@ const TABLES: [&str; 15] = [
     "page",
     "mascot",
     "mcp",
+    "slash",
 ];
 
 /// 读一份清单。
@@ -241,8 +246,8 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        // `[[mcp]]` 是一串表（施工 X-2）：写成别的样子的由 `mcp.rs` 报。
-        if !item.is_table_like() && !(key == "mcp" && item.is_array_of_tables()) {
+        // `[[mcp]]`、`[[slash]]` 是一串表（施工 X-2、X-14 下）：写成别的样子的由 `mcp.rs`、`slash.rs` 报。
+        if !item.is_table_like() && !(matches!(key, "mcp" | "slash") && item.is_array_of_tables()) {
             return Err(reader.problem(
                 Some(item),
                 Code::NotATable,
@@ -325,6 +330,16 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(node) => mcp::read(&reader, node)?,
         None => Vec::new(),
     };
+    let slash = match root.get("slash") {
+        Some(node) => slash::read(&reader, node)?,
+        None => Vec::new(),
+    };
+    slash::needs_capability(
+        &slash,
+        process
+            .as_ref()
+            .map_or(&[][..], |process| process.capabilities.as_slice()),
+    )?;
     Ok(Manifest {
         kind,
         version: head.version,
@@ -346,6 +361,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         page,
         mascot,
         mcp,
+        slash,
     })
 }
 

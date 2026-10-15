@@ -148,6 +148,27 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         listed.push(one);
         carried_ids.insert(id);
     }
+    // 扩展声明的命令各算一个功能（施工 X-14 下）：名字是 `/<命令名>`，说明照清单的、照连接的语言挑，挂在它的包下；自己放的
+    // 同名模板盖住它的不列。
+    for one in carried
+        .declared
+        .iter()
+        .filter(|one| !carried.commands.iter().any(|t| t.name == one.command.name))
+    {
+        let id = one.command.feature_id();
+        let mut item = json!({
+            "id": id,
+            "name": format!("/{}", one.command.name),
+            "on": file.opens_in(&id, &one.package),
+            "installed": true,
+            "tools": [],
+        });
+        if let Some(summary) = pick(&one.command.summary, language) {
+            item["summary"] = json!(summary);
+        }
+        listed.push(item);
+        carried_ids.insert(id);
+    }
     let written: BTreeSet<&String> = file
         .features
         .keys()

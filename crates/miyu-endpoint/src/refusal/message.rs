@@ -78,6 +78,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Cannot send messages directly to a platform session.",
         ),
         "unknown_command" => ("命令不存在。", "Command not found."),
+        "command_unavailable" => ("命令暂时不可用。", "Command unavailable for now."),
+        "command_failed" => ("命令执行失败。", "Command failed."),
         "unknown_file" => ("不支持检查这个文件。", "This file cannot be checked."),
         "command_not_allowed" => (
             "仅终端管理员和群管理员可用。",

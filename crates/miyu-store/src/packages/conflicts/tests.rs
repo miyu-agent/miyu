@@ -171,3 +171,22 @@ fn slash_commands_meet_installed_packages_and_the_builtins() {
         "拥有那条内置命令的包自己不算"
     );
 }
+
+/// 扩展声明的斜杠命令（施工 X-14 下）和模板一个名字空间：清单里的 `[[slash]]` 撞了装着的包的模板也算。
+#[test]
+fn declared_slash_commands_count_like_templates() {
+    let scratch = Scratch::new();
+    let dir = scratch.path();
+    let installed = vec![package(
+        dir,
+        "kit",
+        BUNDLE,
+        &[("commands/weather.md", "Weather.\n")],
+    )];
+    let extension = "[package]\nprotocol = [1, 1]\nname = { en = \"W\" }\n\n[command]\nname = \"wx\"\nprogram = \"miyu-wx\"\nabout = { en = \"W\" }\n\n[process]\ncapabilities = [\"commands\"]\n\n[[slash]]\nname = \"weather\"\nsummary = { en = \"Weather\" }\n";
+    let new = package(&dir.join("new"), "wx", extension, &[]);
+    assert_eq!(
+        check(&new, &installed),
+        vec![("slash", "weather".to_string(), "kit".to_string())]
+    );
+}

@@ -48,12 +48,19 @@ pub(crate) struct RunParams {
 /// 这一条 `command.run` 在后台答不答（施工 R-7 补，`methods::answered_later` 问它）：照原文认出的命令问
 /// [`Slash::later`]；认不出的、参数不对的照旧按顺序答，由 [`run`] 拒。
 pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
-    request
+    let Some((name, _)) = request
         .params
         .get("text")
         .and_then(Value::as_str)
-        .and_then(|text| parse(&core.commands, text).ok())
-        .is_some_and(|(slash, _)| slash.later())
+        .and_then(|text| split(text).ok())
+    else {
+        return false;
+    };
+    match core.commands.find(name) {
+        Some(slash) => slash.later(),
+        // 扩展声明的命令要等它的程序答（施工 X-14 下）：同 `/dream` 在后台答。
+        None => declared::named(core, name).is_some(),
+    }
 }
 
 /// 核心起来时的登记表：核心自己的、记忆的、长期目标的（施工 O-6 三补）。
@@ -157,16 +164,6 @@ fn split(text: &str) -> Result<(&str, &str), Refusal> {
     Ok((name, rest.trim()))
 }
 
-/// 照登记表认：交回命令和后面跟的字。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
-fn parse<'a>(
-    commands: &'a Commands,
-    text: &'a str,
-) -> Result<(&'a Arc<dyn Slash>, &'a str), Refusal> {
-    let (name, rest) = split(text)?;
-    let slash = commands.find(name).ok_or(Refusal::UNKNOWN_COMMAND)?;
-    Ok((slash, rest))
-}
-
 /// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先判身份
 /// （[`may_run`]），再问命令自己（[`Slash::allowed`]：主人本人才行、要开着记忆这些）。
 fn allowed(core: &Core, slash: &dyn Slash, handle: &Handle, by: &By) -> Result<(), Refusal> {
@@ -236,6 +233,7 @@ async fn words(core: &Core, peer: &Peer, said: &Said) -> String {
 
 mod basic;
 mod catalog;
+mod declared;
 mod goal;
 mod registry;
 mod templates;
@@ -245,4 +243,5 @@ mod why;
 mod workspace;
 
 pub(crate) use catalog::catalog;
+pub(crate) use declared::{Declared, found as declared_commands};
 pub(crate) use templates::found as template_commands;

@@ -119,6 +119,7 @@ name = { en = "Greeting", zh = "问候语" }
 
      参数是一份 JSON，在环境变量 `MIYU_ARGS_JSON` 和标准输入里各一份；标准输出就是交给 AI 的结果，退出码不是 0 的算失败；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`。照 `#!` 起（Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。跑的规矩同 AI 跑命令：在沙盒里跑（写只在工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读），沙盒用不了的要人确认。说明、参数写短：每一轮都跟着请求发。
    - **斜杠命令模板**照 Claude Code 的写法：`commands/<名字>.md`，人敲 `/<名字> 参数` 时把正文当这个人说的一句发给 AI，正文里的 `$ARGUMENTS` 换成参数（`$ARGUMENTS[0]` 是第一个），没写的参数接在末尾。开头可以写一段 YAML：`description` 是命令菜单里那一句（英文），`argument-hint` 是名字后面跟什么的提示，中文、日文的说明写在 `metadata` 的 `summary_zh`、`summary_ja`。名字同子命令名的写法；和 Miyu 自带的命令同名的不算（自带的赢）。时间线上显示人敲的那一行（`docs/blueprint/slash.md`）。
+   - **交给程序办的斜杠命令**（扩展包）：清单一段一条 `[[slash]]`，写 `name`、`summary`（语言到一句话）、可以写 `argument`（名字后面跟什么的提示），`[process] capabilities` 里要有 `commands`。人敲了，核心发给你的程序 `command.call {command, argument, text, session, by, owner, language}`，你答 `{"said": "…"}`（可以多行），这段话就是给人看的回执；答 JSON-RPC 错误的，人看到「命令执行失败」和你的原话。你的程序起来以后要 `provide` 一次（没有工具的写空的），核心才认得你的连接。谁能用和 Miyu 自带的命令一样（本人、群里的主人和管理的人），要再挡的照 `by` 自己挡。
    - 写错了的不登记，`miyu check` 说哪一个、为什么；和别的工具撞了名的也说。
    - 不想做成包的，直接放进 `~/.miyu/home/admin/skills/`、`scripts/`、`commands/` 也一样用（同名的这里赢），不归包管理。
 

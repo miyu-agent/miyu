@@ -89,6 +89,8 @@ pub enum Code {
     BadMascotModel,
     /// `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了。
     BadMcp,
+    /// `[[slash]]` 写错了（施工 X-14 下）：命令名、说明、提示、给哪种会话，同一个包里重了，没声明 `commands` 能力。
+    BadSlash,
 }
 
 impl Code {
@@ -138,11 +140,12 @@ impl Code {
             Code::BadPageDir => "bad_page_dir",
             Code::BadMascotModel => "bad_mascot_model",
             Code::BadMcp => "bad_mcp",
+            Code::BadSlash => "bad_slash",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 43] = [
+    pub const ALL: [Code; 44] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -186,5 +189,6 @@ impl Code {
         Code::BadPageDir,
         Code::BadMascotModel,
         Code::BadMcp,
+        Code::BadSlash,
     ];
 }

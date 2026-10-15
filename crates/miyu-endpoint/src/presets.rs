@@ -161,6 +161,8 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
 pub(super) struct Carried {
     pub(super) skills: Vec<Skill>,
     pub(super) commands: Vec<Template>,
+    /// 扩展声明的命令（施工 X-14 下）。
+    pub(super) declared: Vec<crate::commands::Declared>,
 }
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
@@ -173,6 +175,7 @@ pub(super) async fn carried(core: &Core) -> Carried {
     Carried {
         skills,
         commands: crate::commands::template_commands(core, &core.admin).await,
+        declared: crate::commands::declared_commands(core),
     }
 }
 

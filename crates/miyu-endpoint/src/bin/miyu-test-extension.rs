@@ -15,7 +15,8 @@
 //! - `listen`：读标准输入直到读到头，读到的每一行都记下（施工 9-4 下下：核心推来的 `extension.config`）；
 //! - `serve`：读标准输入直到读到头，每一行都记下；是核心发来的 `tool.call` 的，照工具名答（施工 O-2 上）：`boom` 回一个错误，
 //!   `garbled` 回写法不对的结果，`oops` 回一段字、说出了错，别的回一段字 `served <工具名>`；是 `method.call` 的照方法名答
-//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，别的回 `{"answered": <方法名>}`；
+//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
+//!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
 //!
@@ -101,6 +102,16 @@ fn main() {
                 {
                     send(&answer);
                 }
+                if line.contains(r#""method":"command.call""#)
+                    && let Some(id) = field(&line, "id")
+                    && let Some(answer) = commanded(
+                        &id,
+                        &field(&line, "command").unwrap_or_default(),
+                        &field(&line, "argument").unwrap_or_default(),
+                    )
+                {
+                    send(&answer);
+                }
             }
         } else if step == "hang" {
             loop {
@@ -183,6 +194,20 @@ fn answered(id: &str, method: &str) -> Option<String> {
             format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32001,"message":"boom"}}}}"#)
         }
         _ => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"answered":"{method}"}}}}"#),
+    })
+}
+
+/// 答编号是 `id`、命令是 `command`、跟的字是 `argument` 的那一次 `command.call`（施工 X-14 下）。
+fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
+    Some(match argument {
+        "silent" => return None,
+        "boom" => {
+            format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#)
+        }
+        "garbled" => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"nothing":1}}}}"#),
+        _ => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"said":"{command} {argument}\nok"}}}}"#
+        ),
     })
 }
 

@@ -18,7 +18,7 @@ use miyu_session::Handle;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_store::slash::{self, Command as Template};
 
-use super::{RunParams, Said, accepted, command, may_run, speaker, why, words};
+use super::{RunParams, Said, accepted, command, declared, may_run, speaker, why, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -36,17 +36,17 @@ pub(crate) async fn found(core: &Core, owner: &AccountId) -> Vec<Template> {
 }
 
 /// 模板命令挂在哪个包下（预设照它开关）：包带的照包的编号，自己放的是 [`HOME_PACKAGE`]。
-fn package(template: &Template) -> &str {
+pub(super) fn package(template: &Template) -> &str {
     template.package.as_deref().unwrap_or(HOME_PACKAGE)
 }
 
-/// 会话的预设开没开 `template`：开着的、没有预设的、说不准的（会话表里查不到、预设读不出）是 `Ok`；关着的拒
-/// `command_not_allowed`，`data.why` 带上预设的名字。
+/// 会话的预设开没开命令 `name`（挂在包 `package` 下，功能 `command-<名字>`；模板、扩展声明的都照它）：开着的、没有预设的、
+/// 说不准的（会话表里查不到、预设读不出）是 `Ok`；关着的拒 `command_not_allowed`，`data.why` 带上预设的名字。
 pub(super) async fn opened(
     core: &Core,
     peer: &Peer,
     handle: &Handle,
-    template: &Template,
+    (name, package): (&str, &str),
 ) -> Result<(), Refusal> {
     let Some(preset) = why::listed(core, handle)
         .await
@@ -57,22 +57,20 @@ pub(super) async fn opened(
     let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
         return Ok(());
     };
-    if found
-        .file
-        .opens_in(&feature_id(&template.name), package(template))
-    {
+    if found.file.opens_in(&feature_id(name), package) {
         return Ok(());
     }
-    let name = crate::personas::label(found.file.name.as_ref(), peer.language).unwrap_or(preset);
+    let label = crate::personas::label(found.file.name.as_ref(), peer.language).unwrap_or(preset);
     let said = Said {
         key: "commands/unavailable/command-preset-off",
-        fields: vec![("preset", name), ("command", template.name.clone())],
+        fields: vec![("preset", label), ("command", name.to_string())],
     };
     Err(Refusal::COMMAND_NOT_ALLOWED.because(words(core, peer, &said).await))
 }
 
-/// `command.run` 打的是模板命令 `name`、后面跟 `rest`：找会话、认说话的人、找模板、判身份、看预设，展开发出去，交回
-/// `{"command", "events", "said": ""}`。找不到的 `unknown_command`；展开完是空的照内核拒 `empty_message`。
+/// `command.run` 打的不是登记表里的 `name`、后面跟 `rest`：找会话、认说话的人，再认是哪一种（自己放的模板先，再扩展声明的
+/// （施工 X-14 下，交给 [`declared::run`]），再包里的模板；包里的两种装包时查过、撞不上），判身份、看预设。模板展开发出去，交回
+/// `{"command", "events", "said": ""}`。都没有的 `unknown_command`；展开完是空的照内核拒 `empty_message`。
 pub(super) async fn run(
     core: &Arc<Core>,
     peer: &Peer,
@@ -85,13 +83,37 @@ pub(super) async fn run(
     let handle = found.handle.clone();
     let by = speaker(core, &handle, params.as_external.clone())?;
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
-    let template = found_named(core, handle.owner(), name)
-        .await
-        .ok_or(Refusal::UNKNOWN_COMMAND)?;
+    let template = found_named(core, handle.owner(), name).await;
+    let declared = match &template {
+        Some(own) if own.package.is_none() => None,
+        _ => declared::named(core, name),
+    };
+    if template.is_none() && declared.is_none() {
+        return Err(Refusal::UNKNOWN_COMMAND);
+    }
     if !may_run(&by) {
         return Err(Refusal::COMMAND_NOT_ALLOWED);
     }
-    opened(core, peer, &handle, &template).await?;
+    if let Some(declared) = declared {
+        opened(
+            core,
+            peer,
+            &handle,
+            (&declared.command.name, &declared.package),
+        )
+        .await?;
+        return declared::run(
+            core,
+            peer,
+            id,
+            params,
+            (&session, &handle, &by),
+            (&declared, rest),
+        )
+        .await;
+    }
+    let template = template.ok_or(Refusal::UNKNOWN_COMMAND)?;
+    opened(core, peer, &handle, (&template.name, package(&template))).await?;
     let expanded = expand(&template.template.body, rest);
     let blocks = match expanded.is_empty() {
         true => Vec::new(),

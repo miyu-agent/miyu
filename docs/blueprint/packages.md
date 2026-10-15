@@ -118,7 +118,7 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`（施工 X-2） |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
 | `worker` | `[package]`、`[worker]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7） |
@@ -247,7 +247,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 
-1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）。七样各算各的：技能 `notes` 和库 `notes` 不算撞。
+1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）。七样各算各的：技能 `notes` 和库 `notes` 不算撞。
 2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：核心自己的 `basesystem`，记忆的 `memory`，长期目标的 `goal`；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；家目录里自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
 3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
 4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
@@ -275,6 +275,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 | `not_built_in` | 清单是内置包，这一份核心没编进它的代码（施工 F-2，核心起来时标；`miyu check` 不查） |
 | `bad_icon`、`bad_page_dir` | `[package] icon` 不是 Lucide 图标名的写法，`[page] dir` 不是包目录里的相对目录（施工 F-6 上） |
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |
+| `bad_slash` | `[[slash]]` 写错了（施工 X-14 下，`slash.md`「扩展的命令」）：命令名、说明、提示，同一个包里重了；声明了却没在 `[process] capabilities` 写 `commands`（`detail` 是 `slash`，报在第一段）；`detail` 是哪一格（`slash.<名字>.<格>`）、报在那一段 |
 | `protocol_mismatch` | 读成了，说的协议版本不包含 1（列表里照样带全；`miyu check` 是警告） |
 | `check_failed`、`check_unavailable`、`check_output` | 跑包的检查（施工 9-2，都是警告）：跑坏了、到时没完；程序没找到；印了看不懂的行 |
 

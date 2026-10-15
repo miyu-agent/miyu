@@ -102,6 +102,13 @@ fn names(id: &str, manifest: &Manifest, dir: &Path) -> BTreeSet<(Kind, String)> 
     if let Some(command) = &manifest.command {
         names.insert((Kind::Command, command.name.clone()));
     }
+    // 扩展声明的斜杠命令（施工 X-14 下）和模板一个名字空间。
+    names.extend(
+        manifest
+            .slash
+            .iter()
+            .map(|slash| (Kind::Slash, slash.name.clone())),
+    );
     for feature in manifest.features_of(id) {
         match feature.service {
             Some(service) => names.insert((Kind::Mcp, service)),

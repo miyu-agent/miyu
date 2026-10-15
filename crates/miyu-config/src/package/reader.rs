@@ -408,8 +408,8 @@ pub(super) fn protocol(item: &Item) -> Option<[u32; 2]> {
     }
 }
 
-/// 子命令名：小写字母开头，小写字母、数字、`-`，最多 32 个。
-fn command_name(name: &str) -> bool {
+/// 子命令名：小写字母开头，小写字母、数字、`-`，最多 32 个（扩展声明的斜杠命令也照它，施工 X-14 下）。
+pub(super) fn command_name(name: &str) -> bool {
     let mut chars = name.chars();
     chars.next().is_some_and(|first| first.is_ascii_lowercase())
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')

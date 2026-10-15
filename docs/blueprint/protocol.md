@@ -140,7 +140,7 @@
 | `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」） |
 | `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
 | `session.note` | 只记几块事实，不开回合（施工 O-14 补，`venues.md`「记几块事实」） |
-| `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下） |
+| `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下）；人敲了扩展声明的斜杠命令，核心反向调用 `command.call`（施工 X-14 下，`command.run` 第 14 条） |
 | `venue.binding` | 问一个平台身份在主人对应表里对着哪个本机账号，只给系统账号的连接（施工 O-31 前，`venues.md`「问对应表」） |
 | `venue.records` | 判官看的群聊记录：要判的那一条和它之前的几条，一行一条，和她看到的同一个写法（施工 O-24，`venues.md`「判官看的群聊记录」） |
 | `events.append` | 往会话里记一条不带回合编号的事件：扩展自己的 `ext.*`、场所的 `venue.recalled`、`venue.delivered`（施工 O-13 上，`venues.md`） |
@@ -526,6 +526,7 @@
 11. **登记表**（施工 O-6 三补，`commands/registry.rs`）：认哪些命令照登记表，中心不写名字。一条命令一个 `Slash`，在管它的模块里写：名字、别名、`summary` 和 `argument` 的字键（跟字的才有 `argument`）、在不在后台答（`later`，现在只有 `/dream`）、身份以外谁能用（`allowed`：`/workspace` 只给主人本人，`/remember`、`/dream`、`/clear-memory` 要开着记忆，`/goal` 要有长期目标）、怎么执行（交回追加的序号和回执）。核心起来时登记：核心自己的 `/clear`、`/stop`、`/workspace`（`commands/basic.rs`），记忆的 `/remember`、`/dream`、`/clear-memory`（`memory/slash.rs`），长期目标的 `/goal`（`commands/goal.rs`）。名字和别名在同一个名字空间里，照原样比；撞了是内置命令写错了，登记时就 `panic`，测试当场拦（`registry/tests.rs`）。别名不一样的不算撞：`/reset-memory` 和 `/reset` 是两个词。登记表里没有的名字照命令模板认（第 13 条）。
 12. `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，2026-10-15 项目主人定名字、不先问、回执说清了几条）：清掉这个会话产生的记忆。不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.forget`、`clear: "session"`（`memory.*`、`memory.md` 第二条第 5 款）：出处全在这个会话里的清掉，别的会话也是出处的、人记的（没有出处）不动，会话那一间清的就是整间；清掉的哪里都不出来、找不回来，不先问。`by` 是打命令的人。回执说清了几条：「清掉了这个会话记下的 3 条记忆。」（`commands/cleared-memory`，一条的发 `commands/cleared-memory/one`，英文说单数），一条都没清掉的「这个会话没有记下的记忆。」（`commands/cleared-memory-none`）。不请求模型，照顺序答。
 13. **命令模板**（施工 X-14 上，`slash.md`）：名字不在登记表里的，照这个会话属主的家目录 `commands/`、装了的包的 `commands/` 找 `<名字>.md`（和内置的撞名的不算，内置的赢）。先找会话、认说话的人（`as`），再找模板：找不到的 `unknown_command`（谁打的都是：场所里的桥照它把话当平常说的记下）；找到了再判身份（同第 2 条）；会话的预设关了这条（功能 `command-<名字>`）的 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」。照参数展开成一块文字，当这个人说的一句发出去（同 `session.send`，不急着插话），`message.user` 带 `command: {"name", "text"}`，`text` 是人敲的那一行；展开完是空的照内核拒 `empty_message`。回应 `{"command": "<名字>", "events": [<这一句的序号>], "said": ""}`：没有回执，不记 `command.ran`（时间线上就是人敲的那一行）。
+14. **扩展声明的命令**（施工 X-14 下，`slash.md`「扩展的命令」）：清单 `[[slash]]` 写的。认的先后：登记表、自己放的模板、扩展声明的、包里的模板（包里的两种装包时查过、撞不上）；身份、预设同第 13 条。核心反向调用那个扩展（它 `provide` 过的那个连接）`command.call {"command", "argument", "text", "session", "by", "owner", "language"}`：`argument` 是名字后面跟的字（去掉前后空白），`text` 是人敲的那一行，`by` 同 `tool.call`，`language` 是这个连接的语言。扩展答 `{"said": "<一段话，可以多行>"}`：记一条 `command.ran`，回应 `{"command", "events": [<command.ran 的序号>], "said": <它答的>}`。扩展没连上、断了、一分钟没答的拒 `command_unavailable`；答了 JSON-RPC 错误的拒 `command_failed`，`data.why` 是它的 `message`；答的没有 `said` 的也是 `command_failed`。都不记 `command.ran`。在后台答（「一个连接」第 1 条）。
 
 **`command.catalog`**（施工 O-6 补，网页的会话要的，终端也用）
 
@@ -1174,6 +1175,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `venue_session` | -32010 | 场所会话只收代表外部的人说的话：不带 `as` 的 `session.send`（施工 O-3）、`command.run`（施工 O-6）；`command.catalog` 只收本机的会话（施工 O-6 补） |
 | `unknown_command` | -32010 | `command.run` 认不出这个命令（施工 O-6） |
 | `command_not_allowed` | -32010 | `command.run`：场所里既不是主人、也不是管理的人（施工 O-6） |
+| `command_unavailable`、`command_failed` | -32010 | `command.run` 扩展声明的命令（施工 X-14 下，`slash.md`「扩展的命令」）：扩展没连上、断了、一分钟没答；扩展答了错、答的写法不对，`data.why` 是它的原话 |
 | `owner_only` | -32010 | `command.run`：这个命令只有主人本人能用，管理的人也不行（`/workspace`，施工 9-7 下） |
 | `session_stopped` | -32010 | 会话停了：写不进去、出了 bug |
 | `session_broken` | -32010 | 会话载入不了：日志、策略快照坏了、读不了 |
@@ -1353,6 +1355,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
 | `command_not_allowed` | 仅终端管理员和群管理员可用。 | Terminal and group admins only. |
+| `command_unavailable` | 命令暂时不可用。 | Command unavailable for now. |
+| `command_failed` | 命令执行失败。 | Command failed. |
 | `owner_only` | 仅终端管理员可用。 | Terminal admin only. |
 | `session_stopped` | 会话已停止，重新发送即可载入。 | Session stopped. Send again to reload. |
 | `session_broken` | 会话已损坏，无法载入。 | Session is corrupted and cannot be loaded. |
