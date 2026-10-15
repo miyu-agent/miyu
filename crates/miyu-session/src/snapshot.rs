@@ -32,6 +32,8 @@ pub(crate) struct Parts {
     pub(crate) skills: Option<String>,
     /// 「关于你」那一块（施工 P-9，`miyu_policy::Profile::block`）：开会话时照这个人写的拼；换人格时照旧快照的。
     pub(crate) profile: Option<String>,
+    /// 扩展放在 system 尾部的那几段（施工 X-20，[`crate::appended::resolve`]）：包的编号到原文。
+    pub(crate) appended: std::collections::BTreeMap<String, String>,
 }
 
 /// 工具目录 `catalog` 里有工具的功能（施工 O-18；施工 F-3 上起照装了的功能 `features` 认工具归哪个功能）：不照这次的预设筛，
@@ -74,5 +76,6 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
         .with_skills(parts.skills)
         .with_knowledge(parts.knowledge)
         .with_preset(parts.preset, &lines.preset_off, &parts.tooled)
-        .with_style_lock(&lines.style_lock))
+        .with_style_lock(&lines.style_lock)
+        .with_appended(parts.appended))
 }

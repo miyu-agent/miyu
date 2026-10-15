@@ -381,6 +381,8 @@
     "extensions/capabilities/widgets/summary": "Show its own content on the home screen, the sidebar, the status bar and its own pages",
     "extensions/capabilities/context.inject": "Add to context",
     "extensions/capabilities/context.inject/summary": "Add content to what the AI sees at the start of each turn",
+    "extensions/capabilities/context.system": "Add to the system prompt",
+    "extensions/capabilities/context.system/summary": "Put a passage at the end of the system prompt the AI sees every turn",
     "extensions/capabilities/tool.guard": "Intercept tool calls",
     "extensions/capabilities/tool.guard/summary": "Allow, deny or ask you before a tool runs",
     "extensions/capabilities/tool.rewrite": "Modify tool results",

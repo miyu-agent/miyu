@@ -8,6 +8,7 @@
 //! 都没变的照旧），不为它断一次缓存。知识库的两件照这一刻查不查得到给、拿掉（施工 K-1 下，`knowledge.md`「怎么走」第六条）：
 //! 建了第一个库下一个回合有，删光了下一个回合没有。
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_config::Values;
@@ -78,7 +79,13 @@ impl Actor {
         let persona = refresh.snapshot.persona.clone();
         let now = refresh.tools.edition();
         let seen = now.clone();
-        match blocking(move || look(&refresh, &values, &now)).await {
+        // 扩展这一刻要放在 system 尾部的（施工 X-20）：没说过的照快照里钉的。
+        let asked = self
+            .tools
+            .hooks()
+            .map(|(port, session)| port.appended(session.as_str()))
+            .unwrap_or_default();
+        match blocking(move || look(&refresh, &values, &now, asked)).await {
             Seen::Same => {
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.seen = Some(seen);
@@ -109,9 +116,19 @@ impl Actor {
     }
 }
 
-/// 在阻塞线程里看一遍：`now` 是架子上现在的那一代。
-fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
+/// 在阻塞线程里看一遍：`now` 是架子上现在的那一代，`asked` 是开场所会话的扩展这一刻要插的那一段（施工 X-20，没说过的是
+/// `None`）。
+fn look(
+    refresh: &Refresh,
+    values: &Values,
+    now: &Edition,
+    asked: BTreeMap<String, Option<String>>,
+) -> Seen {
     let old = &refresh.snapshot;
+    // 扩展说的和钉的不一样（施工 X-20）：这一轮要换。
+    let said = asked
+        .iter()
+        .any(|(package, text)| old.appended.get(package) != text.as_ref());
     // 无人格的（施工 P-4 上）只看预设；人格的文件没了的照快照里的接着用，不换也不报。
     let texts = match (&old.persona, &old.persona_digest) {
         (None, _) => PersonaTexts::default(),
@@ -171,7 +188,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         None => old.knowledge.clone(),
     };
     let relisted = listing != old.knowledge;
-    if same && !moved && !flipped && !relisted && !matches!(preset, Preset::Changed(_)) {
+    if same && !moved && !flipped && !relisted && !said && !matches!(preset, Preset::Changed(_)) {
         return Seen::Same;
     }
     let (face, pin) = match &preset {
@@ -193,6 +210,8 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         Some(fresh) => reshelved(face, fresh),
         None => face,
     };
+    let appended = crate::appended::resolve(catalog, &face, &old.appended, &asked);
+    let reappended = appended != old.appended;
     let parts = Parts {
         name: old.persona.clone(),
         texts,
@@ -214,6 +233,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         skills: old.skills.clone(),
         // 「关于你」造会话时钉下（施工 P-9）：换人格、换预设照旧，不重读配置。
         profile: old.profile.clone(),
+        appended,
     };
     let new = match build(&refresh.resources, parts) {
         Ok(new) => new,
@@ -224,7 +244,7 @@ fn look(refresh: &Refresh, values: &Values, now: &Edition) -> Seen {
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
-    let edited = !same || matches!(preset, Preset::Changed(_)) || relisted;
+    let edited = !same || matches!(preset, Preset::Changed(_)) || relisted || reappended;
     if !edited && !old.swappable(&new) && new.tools == old.tools {
         return Seen::Same;
     }

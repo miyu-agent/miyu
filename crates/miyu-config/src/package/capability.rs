@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，管理员
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十三个名字（施工 X-15 上加了 `widgets`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十四个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`），先后照这张表。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -12,6 +12,8 @@ pub enum Capability {
     Widgets,
     /// 回合开始时往上下文注入内容。
     ContextInject,
+    /// 往系统提示词尾部放一段（施工 X-20，`system.append`）。
+    ContextSystem,
     /// 工具执行前放行、拒绝，或要求询问人。
     ToolGuard,
     /// 工具执行后改写结果。
@@ -34,11 +36,12 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 13] = [
+    pub const ALL: [Capability; 14] = [
         Capability::Tools,
         Capability::Commands,
         Capability::Widgets,
         Capability::ContextInject,
+        Capability::ContextSystem,
         Capability::ToolGuard,
         Capability::ToolRewrite,
         Capability::EventsRead,
@@ -57,6 +60,7 @@ impl Capability {
             Capability::Commands => "commands",
             Capability::Widgets => "widgets",
             Capability::ContextInject => "context.inject",
+            Capability::ContextSystem => "context.system",
             Capability::ToolGuard => "tool.guard",
             Capability::ToolRewrite => "tool.rewrite",
             Capability::EventsRead => "events.read",

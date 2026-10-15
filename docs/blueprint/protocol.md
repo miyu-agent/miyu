@@ -141,6 +141,7 @@
 | `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」） |
 | `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
 | `session.note` | 只记几块事实，不开回合（施工 O-14 补，`venues.md`「记几块事实」） |
+| `system.append` | 声明了 `context.system` 的扩展往 system 尾部放一段（施工 X-20，`extensions.md`「放在 system 尾部的」）：`{content, session?}`，`content` 是原文（1 到 4000 个字）或 `null`（去掉这一层），不写 `session` 的管全部会话、写了的只管那一个、优先；回应 `{}`。不是核心拉起的扩展 `not_a_provider`，没声明的 `needs_approval`（`data.capabilities` 是 `["context.system"]`），写法不对的 `bad_params` |
 | `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下）；人敲了扩展声明的斜杠命令，核心反向调用 `command.call`（施工 X-14 下，`command.run` 第 14 条）；声明了 `context.inject` 的，回合开始核心反向调用 `turn.start`（施工 X-16，`extensions.md`「回合开始的挂接点」） |
 | `venue.binding` | 问一个平台身份在主人对应表里对着哪个本机账号，只给系统账号的连接（施工 O-31 前，`venues.md`「问对应表」） |
 | `venue.records` | 判官看的群聊记录：要判的那一条和它之前的几条，一行一条，和她看到的同一个写法（施工 O-24，`venues.md`「判官看的群聊记录」） |

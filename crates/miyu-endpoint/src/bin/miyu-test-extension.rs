@@ -23,6 +23,7 @@
 //!   （施工 X-16）；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `turn.start`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
+//! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
 //!
@@ -160,6 +161,10 @@ fn main() {
                 {
                     send(&answer);
                 }
+            }
+        } else if let Some(path) = step.strip_prefix("pause:") {
+            while !std::path::Path::new(path).exists() {
+                std::thread::sleep(Duration::from_millis(10));
             }
         } else if step == "hang" {
             loop {

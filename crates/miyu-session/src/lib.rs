@@ -23,6 +23,7 @@
 
 mod actor;
 mod agents;
+mod appended;
 mod attached;
 mod backlog;
 mod blocking;

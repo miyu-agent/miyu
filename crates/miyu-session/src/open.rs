@@ -185,6 +185,16 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let pin = preset.as_ref().map(Chosen::pin);
     let foreground = Agents::foreground(preset.as_ref().map(|chosen| &chosen.file));
     let tooled = tooled(&edition.catalog, features);
+    // 扩展这时说过要放在 system 尾部的（施工 X-20）。
+    let appended = crate::appended::resolve(
+        &edition.catalog,
+        &face,
+        &Default::default(),
+        &hooks
+            .as_ref()
+            .map(|port| port.appended(id.as_str()))
+            .unwrap_or_default(),
+    );
     let roleplay = installed(ROLEPLAY);
     let preset = preset.map(|chosen| chosen.id);
     let asks = Agents::asks(
@@ -231,6 +241,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .flatten(),
             skills: skilled,
             profile: profile.block(&resources.profile().map_err(CreateError::Shipped)?),
+            appended,
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;

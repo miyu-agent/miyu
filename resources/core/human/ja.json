@@ -380,6 +380,8 @@
     "extensions/capabilities/widgets/summary": "ホーム画面、サイドバー、ステータスバー、専用のページに自分の内容を表示する",
     "extensions/capabilities/context.inject": "コンテキストに追加",
     "extensions/capabilities/context.inject/summary": "各ターンの開始時にAI が見る内容へ追加する",
+    "extensions/capabilities/context.system": "システムプロンプトに追加",
+    "extensions/capabilities/context.system/summary": "AI が毎ターン見るシステムプロンプトの末尾に一段落を置く",
     "extensions/capabilities/tool.guard": "ツール呼び出しを制御",
     "extensions/capabilities/tool.guard/summary": "ツールの実行前に許可・拒否・確認を行う",
     "extensions/capabilities/tool.rewrite": "ツール結果を変更",

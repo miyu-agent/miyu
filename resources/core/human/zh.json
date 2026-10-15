@@ -380,6 +380,8 @@
     "extensions/capabilities/widgets/summary": "在首页、侧边栏、底栏和它自己的整页里显示它的内容",
     "extensions/capabilities/context.inject": "往上下文里加内容",
     "extensions/capabilities/context.inject/summary": "每一轮开始时往 AI 看到的内容里加东西",
+    "extensions/capabilities/context.system": "往系统提示词里放内容",
+    "extensions/capabilities/context.system/summary": "在 AI 每一轮都看到的系统提示词最后放一段",
     "extensions/capabilities/tool.guard": "拦截工具调用",
     "extensions/capabilities/tool.guard/summary": "工具执行前放行、拒绝，或者先问你",
     "extensions/capabilities/tool.rewrite": "修改工具结果",

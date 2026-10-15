@@ -1,6 +1,7 @@
 //! 回合开始问扩展要加的字（施工 X-16，`docs/blueprint/extensions.md`「回合开始的挂接点」）：协议端点交给会话的端口。会话在
 //! 记忆、知识库的挂接点之后问它；问谁、限时、写法对不对由端口管，交回来的都是能记的。
 
+use std::collections::BTreeMap;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -58,4 +59,11 @@ pub type Injecting<'a> = Pin<Box<dyn Future<Output = Vec<Inject>> + Send + 'a>>;
 pub trait HooksPort: Send + Sync {
     /// 问工具面上有它的工具、声明了 `context.inject` 的扩展，照包的编号排；没答的、超时的、写法不对的不在里面。
     fn turn_start(&self, ask: TurnAsk) -> Injecting<'_>;
+
+    /// 扩展这一刻要放在会话 `session` 的 system 尾部的那几段（施工 X-20，`system.append`）：键是包的编号；`Some` 是要放的原文，
+    /// `None` 是去掉了。没出现的包是没说过，照快照里钉的。
+    fn appended(&self, session: &str) -> BTreeMap<String, Option<String>> {
+        let _ = session;
+        BTreeMap::new()
+    }
 }

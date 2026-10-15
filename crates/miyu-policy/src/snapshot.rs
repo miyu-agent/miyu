@@ -2,6 +2,8 @@
 //! 就是结构体里的先后，同样的内容字节一定一样。装的是发请求要用的全部：人格、拼好的 system、随核心
 //! 附带的字、几样开关。模型和供应商不在里面：同一份快照可以交给不同的端点，发请求时才定。
 
+use std::collections::BTreeMap;
+
 use miyu_assemble::{DefaultAssembler, Stable, Texts};
 use miyu_drivers::DriverTexts;
 use miyu_kernel::estimate::Flat;
@@ -103,6 +105,10 @@ pub struct Snapshot {
     /// （换人格、换预设也照旧）。没写称呼和更多描述的、场所会话没要的没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<String>,
+    /// 扩展放在 system 尾部的那几段（施工 X-20，`appended.rs`）：包的编号到原文，造会话时钉下，扩展改了下一轮换上。没有的
+    /// 不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub appended: BTreeMap<String, String>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。

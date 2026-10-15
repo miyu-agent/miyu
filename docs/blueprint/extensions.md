@@ -14,6 +14,7 @@
 | `crates/miyu-endpoint/src/extensions.rs` | 一张表：每个 `process` 包一个看管的任务；开、关、重启、列状态；核心空闲、退出时问它 |
 | `crates/miyu-endpoint/src/extensions/supervise.rs` | 看管一个包：拉起、交给连接、等它退出、退避、停下 |
 | `crates/miyu-endpoint/src/extensions/stderr.rs` | 标准错误的文件：拉起前太大的挪成 `.old`，状态里给最后几行 |
+| `crates/miyu-endpoint/src/appends.rs` | `system.append`：照包、照会话记下扩展放的，交给端口；`miyu-session` 的 `appended.rs` 照工具面挑、钉进快照 |
 | `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `turn.start`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
@@ -87,6 +88,12 @@
 4. **记**：交回的一块记成 `context.injected`，`by` 是这个包（模块编号就是包的编号），`kind` 照交的，排在触发的那句话前面（和记忆的注入一样，`08-上下文投影.md` 第五节）。写进日志就不变：下一轮照日志原样回放，前缀稳定。
 5. **不问的**：没有这种扩展的会话一个字节不变；子会话照问（它的工具面上有那件工具才问）。
 
+**放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：
+
+1. **谁能放**：清单 `[process] capabilities` 写了 `context.system`、在跑的扩展（`appends.rs`），经 `system.append {content, session?}`。
+2. **管哪些会话**：不写 `session` 的管全部，写了的只管那一个、优先；`content` 写 `null` 去掉那一层（单给会话的去掉了退回全部的那一份）。只记在核心的内存里。
+3. **怎么进 system**：工具面上有这个包的工具的会话才带；原文照放、不套包的编号，每个包一段、照包的编号排，接在整段 system 的最后（`26-提示词.md` 第四节第 8 块）。造会话时照这一刻的钉进快照（`appended`）；回合开始经端口（`HooksPort::appended`）问一声，和钉的不一样就换一份快照，整段重算一次。核心重启以后照钉的，扩展再设一样的不再换；包卸了、预设关了它的下一轮去掉。
+
 ### 怎么走
 
 1. **拉起**（施工 F-6 上：程序不在的当没装，`package-pages.md`「程序不在就当没装」：`extension.enable` 拒绝 `program_missing`、什么都不写；开着的在核心起来时不照登记缓存登记工具、记成停下 `not_installed`）：程序照 9-2 的找法（`miyu_store::packages::locate`：先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不走 `PATH`，施工 F-8 上再补），参数是清单的 `[process] args`，环境照核心的，另把 `MIYU_HOME`、`MIYU_RESOURCES` 设成核心手上正在用的数据根、资源目录的路径（施工 O-18：扩展和核心认同一份，不管核心是怎么找到它们的；测试里的核心跑在测试程序里，环境里没有临时的数据根，靠它把扩展指过去），工作目录是这个包放状态的目录（`state/packages/<编号>/`，没有的建）。标准输入、输出接管道，交给协议的连接；标准错误直接接到 `state/logs/<编号>.stderr` 上（追加，拉起前超过 1 MiB 的先挪成 `<编号>.stderr.old`）。核心丢下它时杀掉（`kill_on_drop`），兜底。Windows 上不开新的控制台窗口。拉起时系统说程序正被开着写（Linux 的 `ETXTBSY`：装包刚拷进来的程序，拷的那一刻核心起的别的子进程在换成自己的程序以前也攥着写它的句柄），隔 50 毫秒再试，最多 20 次，还不成才算起不来（施工 F-8 上再补）。
@@ -137,4 +144,4 @@
 
 - 装包时批能力：有了装包那一步，审批挪到装的时候。
 - 能力的强制执行、照连接的身份挡方法、沙盒里跑：随多用户、沙盒那一段（扩展的身份是系统账号，施工 O-4 下做了）。
-- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16。`tool.guard`、`tool.rewrite` 还没有。
+- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20。`tool.guard`、`tool.rewrite` 还没有。

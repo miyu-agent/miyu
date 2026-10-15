@@ -4,6 +4,7 @@
 //! 端口拿着核心的弱引用（同 `spawn.rs`）：核心没了（正在退出）的不问。在跑、`provide` 过的连接才问：扩展没批过的能力起不来
 //! （`extensions/approval.rs`），在跑就是批过的。
 
+use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 
@@ -35,6 +36,13 @@ pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn HooksPort> {
 struct Hooks(Weak<Core>);
 
 impl HooksPort for Hooks {
+    fn appended(&self, session: &str) -> BTreeMap<String, Option<String>> {
+        self.0
+            .upgrade()
+            .map(|core| core.appends.of(session))
+            .unwrap_or_default()
+    }
+
     fn turn_start(&self, ask: TurnAsk) -> Injecting<'_> {
         Box::pin(async move {
             let Some(core) = self.0.upgrade() else {

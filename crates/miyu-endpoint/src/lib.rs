@@ -26,6 +26,7 @@
 
 mod activity;
 mod appending;
+mod appends;
 mod attach;
 mod backstage;
 pub mod builtins;
@@ -202,6 +203,8 @@ pub struct Core {
     package_changes: packages::changes::Changes,
     /// 界面块（施工 X-15 中，`widgets.rs`）：程序推来的内容、谁在看。
     widgets: widgets::Widgets,
+    /// 扩展放在 system 尾部的（施工 X-20，`appends.rs`）。
+    appends: appends::Appends,
 }
 
 /// 连上以后最多等多久握手。
@@ -297,6 +300,7 @@ impl Core {
             home_mcp: mcp::HomeMcp::default(),
             package_changes: packages::changes::Changes::default(),
             widgets: widgets::Widgets::default(),
+            appends: appends::Appends::default(),
         }
     }
 

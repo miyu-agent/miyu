@@ -127,6 +127,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         knowledge: None,
         skills: None,
         profile: None,
+        appended: Default::default(),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {
@@ -156,7 +157,12 @@ pub(super) fn write_preset(root: &DataRoot, text: &str) {
 }
 
 pub(super) fn look_now(refresh: &Refresh) -> Seen {
-    look(refresh, &Values::default(), &refresh.tools.edition())
+    look(
+        refresh,
+        &Values::default(),
+        &refresh.tools.edition(),
+        Default::default(),
+    )
 }
 
 pub(super) fn names(snapshot: &Snapshot) -> Vec<&str> {

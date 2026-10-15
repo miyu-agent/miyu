@@ -16,7 +16,12 @@ use super::*;
 
 /// 照全是默认值的配置看一遍。
 fn seen(refresh: &Refresh) -> Seen {
-    look(refresh, &Values::default(), &refresh.tools.edition())
+    look(
+        refresh,
+        &Values::default(),
+        &refresh.tools.edition(),
+        Default::default(),
+    )
 }
 
 /// 一个临时数据根，Miyu 住在管理员 alice 的家目录，人设是 `persona`；和照这一刻的文件拼好快照的 `Refresh`。
@@ -54,6 +59,7 @@ fn setup_with(
         knowledge: None,
         skills: None,
         profile: None,
+        appended: Default::default(),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

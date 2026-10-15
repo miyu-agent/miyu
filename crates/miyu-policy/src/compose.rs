@@ -4,7 +4,7 @@
 //! 施工 3-6（上）时只有人设。别的块跟着各自的功能来，按 J12 先实测证明不加不行：场所说明施工 7-5 加（子会话）；核心的
 //! 几行施工 2-7 补加，权限那一行和本机文件的路径那一行，2026-10-01 主会话 A/B 实测过（`26-提示词.md` 第十节）。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use miyu_kernel::id::ContentHash;
 
@@ -97,6 +97,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         knowledge: None,
         skills: None,
         profile: None,
+        appended: BTreeMap::new(),
     }
 }
 
