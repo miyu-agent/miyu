@@ -27,12 +27,19 @@ fn remembering(core: &Core, handle: &Handle) -> Result<(), Refusal> {
     }
 }
 
+/// 人格记忆这个包的编号（同 `miyu_memory::PACKAGE`；端点不依赖软件包的 crate）。
+const PACKAGE: &str = "memory";
+
 /// `/remember <话>`。
 struct Remember;
 
 impl Slash for Remember {
     fn name(&self) -> &'static str {
         "remember"
+    }
+
+    fn package(&self) -> &'static str {
+        PACKAGE
     }
 
     fn summary(&self) -> &'static str {
@@ -77,6 +84,10 @@ impl Slash for Dream {
         "dream"
     }
 
+    fn package(&self) -> &'static str {
+        PACKAGE
+    }
+
     fn summary(&self) -> &'static str {
         "commands/summary/dream"
     }
@@ -110,6 +121,10 @@ impl Slash for ClearMemory {
 
     fn aliases(&self) -> &'static [&'static str] {
         &["reset-memory"]
+    }
+
+    fn package(&self) -> &'static str {
+        PACKAGE
     }
 
     fn summary(&self) -> &'static str {

@@ -371,7 +371,8 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     Ok(listed(core, back, &places, &words, peer.language, false))
 }
 
-/// 要装的包（编号 `id`、清单 `manifest`、文件夹 `dir`）和装着的别的包重了名的（施工 F-8 六补，`packages.md`「冲突」）：
+/// 要装的包（编号 `id`、清单 `manifest`、文件夹 `dir`）和装着的别的包、核心内置的斜杠命令（施工 X-14 上补）重了名的
+/// （施工 F-8 六补，`packages.md`「冲突」）：
 /// `package_conflict`，什么都不动。读包文件夹在阻塞线程里。
 pub(super) async fn clear_of_conflicts(
     core: &Arc<Core>,
@@ -380,8 +381,10 @@ pub(super) async fn clear_of_conflicts(
     dir: PathBuf,
 ) -> Result<(), Refusal> {
     let installed = core.packages();
+    let reserved = core.commands.reserved();
     let id = id.to_string();
-    let found = blocking(move || Ok(conflicts(&id, &manifest, &dir, &installed))).await?;
+    let found =
+        blocking(move || Ok(conflicts(&id, &manifest, &dir, &installed, &reserved))).await?;
     match found.is_empty() {
         true => Ok(()),
         false => Err(Refusal::package_conflict(&found)),

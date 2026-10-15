@@ -1,6 +1,7 @@
 //! 装之前查冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节、定了的 I，`docs/blueprint/packages.md`「冲突」）：照 pacman 的
 //! 「冲突的文件」，要装的包带的东西和装着的别的包重了名，就不装。每个包只往自己的文件夹里放，文件撞不上，撞的是几块共用的
-//! 名字：子命令、功能的编号、工具名（功能下列的、脚本）、技能、MCP 服务、知识库。
+//! 名字：子命令、功能的编号、工具名（功能下列的、脚本）、技能、MCP 服务、知识库、斜杠命令模板（施工 X-14 上补，也不能和核心
+//! 内置的斜杠命令撞，内置的由调的一方交进来）。
 //!
 //! 以前装完重读清单才认撞没撞，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在动文件以前
 //! 比，新来的让。同一个编号（升级）不跟自己比；家目录里自己放的技能、脚本不算（自己的赢，设计 31 第五节第 3 条）。
@@ -29,6 +30,8 @@ pub enum Kind {
     Mcp,
     /// 知识库的编号。
     Knowledge,
+    /// 斜杠命令模板的名字（施工 X-14 上补）。
+    Slash,
 }
 
 impl Kind {
@@ -41,6 +44,7 @@ impl Kind {
             Kind::Skill => "skill",
             Kind::Mcp => "mcp",
             Kind::Knowledge => "knowledge",
+            Kind::Slash => "slash",
         }
     }
 }
@@ -56,11 +60,26 @@ pub struct Conflict {
     pub package: String,
 }
 
-/// 编号是 `id`、清单是 `manifest`、文件夹是 `dir` 的包，和装着的 `installed`（读成了的，同编号的不算）重了名的那几处，照
-/// 哪一样、名字、包排。没有的是空的。
-pub fn conflicts(id: &str, manifest: &Manifest, dir: &Path, installed: &[Found]) -> Vec<Conflict> {
+/// 编号是 `id`、清单是 `manifest`、文件夹是 `dir` 的包，和装着的 `installed`（读成了的，同编号的不算）、核心内置的斜杠命令
+/// `reserved`（名字、拥有它的包，拥有它的就是 `id` 的不算）重了名的那几处，照哪一样、名字、包排。没有的是空的。
+pub fn conflicts(
+    id: &str,
+    manifest: &Manifest,
+    dir: &Path,
+    installed: &[Found],
+    reserved: &[(String, String)],
+) -> Vec<Conflict> {
     let mine = names(id, manifest, dir);
     let mut found = BTreeSet::new();
+    for (name, package) in reserved.iter().filter(|(_, package)| package != id) {
+        if mine.contains(&(Kind::Slash, name.clone())) {
+            found.insert(Conflict {
+                kind: Kind::Slash,
+                name: name.clone(),
+                package: package.clone(),
+            });
+        }
+    }
     for other in installed.iter().filter(|other| other.id != id) {
         let Ok(theirs) = &other.read else {
             continue;
@@ -106,6 +125,12 @@ fn names(id: &str, manifest: &Manifest, dir: &Path) -> BTreeSet<(Kind, String)> 
         crate::knowledge::carried(dir)
             .into_iter()
             .map(|name| (Kind::Knowledge, name)),
+    );
+    names.extend(
+        crate::slash::carried(dir)
+            .0
+            .into_iter()
+            .map(|name| (Kind::Slash, name)),
     );
     names
 }

@@ -15,7 +15,7 @@
 6. 和自己放的同名：照装，自己的盖住包里的，`miyu check` 报（同技能、脚本，设计 31 第五节第 3 条）。
 7. 模板命令时间线上显示人敲的那一行，展开的那段只给 AI，记在事件里。
 
-状态：施工 X-14 上做完（2026-10-15）：模板的找、读、展开、发出去，`command.catalog`、`preset.get` 列出来，预设开关。装包时查命令名、`miyu check` 报跳过的和被盖住的在 X-14 上补；扩展的命令在 X-14 下。
+状态：施工 X-14 上做完（2026-10-15）：模板的找、读、展开、发出去，`command.catalog`、`preset.get` 列出来，预设开关。X-14 上补做完（同一天）：装包时查命令名（包之间、和内置的）、看一眼列出来、`miyu check` 报跳过的和用不上的。扩展的命令在 X-14 下。
 
 ### 代码（施工 X-14 上）
 
@@ -49,11 +49,12 @@
 
 ### 装包时查（施工 X-14 上补）
 
-`packages.md`「冲突」多一样 `slash`：包的 `commands/` 里的命令名，和装着的别的包的、核心内置的（名字和别名）比；内置的那几条记在拥有它的包上（`/clear`、`/stop`、`/workspace` 是 `basesystem`，`/remember`、`/dream`、`/clear-memory` 是 `memory`，`/goal` 是 `goal`）。命令行写「斜杠命令」、英文 `slash command`。
+1. `packages.md`「冲突」多一样 `slash`：包的 `commands/` 里读得成的命令名，和装着的别的包的、核心内置的（名字和别名，`Commands::reserved`）比；内置的那几条记在拥有它的包上（`Slash::package`：`/clear`、`/stop`、`/workspace` 是 `basesystem`，`/remember`、`/dream`、`/clear-memory` 是 `memory`，`/goal` 是 `goal`），拥有它的包自己不算。命令行写「斜杠命令 review 已在 kit 中」、英文 `slash command review exists in kit`。
+2. 看一眼（`preview: true`）多一格 `slash`：包带的模板的名字；读不成的另列在 `skipped`（同技能、脚本）。命令行「包含：」照它印「斜杠命令 /<名字>」。
 
 ### `miyu check`（施工 X-14 上补）
 
-报跳过的模板（开头写错、名字不合写法）、被盖住的（`command_covered`：被自己放的、被内置的、被先读到的包），各一条警告，同 `check/skipped.rs`。
+照这一刻装了的包和管理员家目录再找一遍（`check/skipped.rs`），`kind` 是 `slash`，各一条警告：读不成的（名字不合写法、开头写错）`slash_skipped`，说为什么；同名被盖住的 `slash_covered`，说被哪一份盖住；和核心内置的同名、用不上的 `slash_builtin`（核心升级后新带了同名的命令也是它，定了的第 4 条）。
 
 ### 守着它的
 
@@ -63,6 +64,7 @@
 | `crates/miyu-store/src/slash/tests.rs` | 两处找、照名字排、自己放的盖住包里的、记被谁盖住；出厂的先于家目录；读坏了的清单不算；点开头、不是 `.md`、子文件夹不算；名字不合写法、开头写错的跳过说为什么；包文件夹带了哪几条 |
 | `crates/miyu-kernel/src/session/tests/typed.rs` | 闲着照 `session.send` 开一轮、`message.user` 带上那一行；正忙的排进这一轮、不插话；重做照原样的带着它、不重读，换了字的不带 |
 | `crates/miyu-view/tests/lines.rs` 的 `a_typed_command_shows_the_line_that_was_typed` | 时间线那一条是人敲的那一行 |
+| `crates/miyu-store/src/packages/conflicts/tests.rs` 的 `slash_commands_meet_installed_packages_and_the_builtins`、`crates/miyu-endpoint/tests/packages_conflicts.rs` 的 `slash_command_templates_count_and_the_builtins_too`、`slash_templates.rs` 的 `check_says_which_templates_are_not_used`、`crates/miyu-cli` 的 `pkg::tests`、`pkg::confirm::tests`（施工 X-14 上补） | 装包时撞了装着的包的、内置的名字和别名的不装，拥有那条内置命令的包自己不算；看一眼列出 `slash`；`check` 报 `slash_skipped`、`slash_covered`、`slash_builtin`；命令行的「斜杠命令」两处写法 |
 | `crates/miyu-endpoint/tests/slash_templates.rs` | 真核心：展开发出去、日志里两样、模型看到展开的那段、没有回执、不记 `command.ran`；自己放的盖住包里的、`$ARGUMENTS[0]`、内置的赢；认不出的、展开是空的拒、什么都不说；预设关了的拒、说清哪个预设、菜单不列、`preset.get` 列成关着；菜单照名字排、说明照语言、没写的照正文第一行、和内置同名的不列；撤销的回执、会话列表的预览是那一行；场所会话照内置的那一关，认不出的照旧 `unknown_command`（`crates/miyu-onebot/tests/group.rs` 的 `slash_commands_in_a_group_answer_in_the_group` 照它把 `/xxx` 记成旁听） |
 
 ### 施工拆分
@@ -70,5 +72,5 @@
 | 步 | 做什么 |
 |---|---|
 | X-14 上 | 模板：找、读开头、展开、发出去（`message.user` 的 `command`、给人看的照那一行）、`command.catalog` 列出来、每条一个功能、预设开关：做完了（2026-10-15） |
-| X-14 上补 | 装包时查斜杠命令名（包之间、和内置的）；`miyu check` 报跳过的、被盖住的 |
+| X-14 上补 | 装包时查斜杠命令名（包之间、和内置的）、看一眼列出来；`miyu check` 报跳过的、被盖住的、和内置同名的：做完了（2026-10-15） |
 | X-14 下 | 扩展的命令：清单声明、能力、核心反向调用、回一段文字 |

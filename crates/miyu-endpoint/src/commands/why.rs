@@ -12,7 +12,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 /// 长期目标这个包、功能的编号（同 `miyu_goal::PACKAGE`；端点不依赖软件包的 crate）。
-const GOAL_PACKAGE: &str = "goal";
+pub(super) const GOAL_PACKAGE: &str = "goal";
 
 /// `refused` 这一句拒绝，说成给人看的为什么。
 pub(super) async fn why(core: &Core, peer: &Peer, handle: &Handle, refused: &Refusal) -> String {

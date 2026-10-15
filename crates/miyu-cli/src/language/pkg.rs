@@ -83,8 +83,10 @@ impl Language {
             (Language::Chinese, "skill") => "技能",
             (Language::Chinese, "mcp") => "MCP 服务",
             (Language::Chinese, "knowledge") => "知识库",
+            (Language::Chinese, "slash") => "斜杠命令",
             (Language::English, "mcp") => "MCP server",
             (Language::English, "knowledge") => "knowledge base",
+            (Language::English, "slash") => "slash command",
             _ => kind,
         }
     }

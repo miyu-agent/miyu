@@ -236,3 +236,44 @@ async fn bringing_a_shipped_package_back_checks_too() {
         .await;
     assert_eq!(reason(&peek), Some("package_conflict"), "{peek}");
 }
+
+/// 斜杠命令模板（施工 X-14 上补）：和装着的包的撞了不装，和核心内置的名字、别名撞了也不装（记在拥有它的包上）；看一眼列出
+/// 包带的模板 `slash`。
+#[tokio::test]
+async fn slash_command_templates_count_and_the_builtins_too() {
+    let home = Home::new();
+    let mut client = connected(&home).await;
+    let first = source(
+        &home,
+        "zkit",
+        BUNDLE,
+        &[("commands/review.md", "Review.\n".into())],
+    );
+    installed(&install(&mut client, &first).await);
+    let second = source(
+        &home,
+        "akit",
+        BUNDLE,
+        &[
+            ("commands/review.md", "Mine.\n".into()),
+            ("commands/remember.md", "Mine.\n".into()),
+            ("commands/reset.md", "Mine.\n".into()),
+        ],
+    );
+    assert_eq!(
+        conflicts(&install(&mut client, &second).await),
+        vec![
+            json!({"kind": "slash", "name": "remember", "package": "memory"}),
+            json!({"kind": "slash", "name": "reset", "package": "basesystem"}),
+            json!({"kind": "slash", "name": "review", "package": "zkit"}),
+        ]
+    );
+    let third = source(
+        &home,
+        "bkit",
+        BUNDLE,
+        &[("commands/fresh.md", "Fresh.\n".into())],
+    );
+    let peek = preview(&mut client, &third).await;
+    assert_eq!(peek["result"]["slash"], json!(["fresh"]), "{peek}");
+}

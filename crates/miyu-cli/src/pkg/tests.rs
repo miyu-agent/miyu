@@ -96,14 +96,15 @@ fn a_conflict_says_cannot_install_and_one_line_each() {
             {"kind": "tool", "name": "read", "package": "basesystem"},
             {"kind": "skill", "name": "pdf", "package": "kit"},
             {"kind": "mcp", "name": "lone", "package": "svc"},
+            {"kind": "slash", "name": "review", "package": "kit"},
         ]}
     });
     assert_eq!(
         refused(&error, &Language::Chinese),
-        "装不上：和已装的软件包冲突\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中"
+        "装不上：和已装的软件包冲突\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中\n斜杠命令 review 已在 kit 中"
     );
     assert_eq!(
         refused(&error, &Language::English),
-        "Cannot install: conflicts with installed packages\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc"
+        "Cannot install: conflicts with installed packages\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc\nslash command review exists in kit"
     );
 }

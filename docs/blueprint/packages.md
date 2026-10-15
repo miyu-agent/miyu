@@ -202,7 +202,7 @@ timeout_ms = 600000                               # 可以不写：一次调用�
 
 1. 一段一个服务，照写的先后；同一个包里服务名不重（重了 `bad_mcp`）。扩展包和 `bundle` 能写，别的种类写了 `wrong_kind`。`bundle` 只能写 `[package]`、`[[mcp]]`、`[mascot]`，不说协议（写了 `protocol` 报 `wrong_kind`：带的服务说的是 MCP，不是 Miyu 的协议）。
 2. 一个服务一个功能（2026-10-11 项目主人照推荐定，`mcp.md`）：编号 `mcp-<服务名>`，名字是服务名，接在包自己的功能后面（`Manifest::features_of`）；`bundle` 自己不另算一个。两个包带了同名的服务，功能编号撞了，后读到的那一份报 `feature_taken`、整份不收、报在那一段。这个服务的工具名是 `mcp__<服务名>__<工具名>`（X-3 登记），照前缀归它的功能；包自己的工具照包自己的功能算，MCP 服务的功能不算在「只有一个功能」里（`miyu_policy::features::Features::of_tool`）。
-3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。包文件夹里带的技能、脚本（施工 X-13 上）也列：看一眼多 `skills`（技能名）、`scripts`（工具名），开头读得成的才列；读不成的另列在 `skipped`（施工 X-13 补：`file` 是包文件夹里的相对路径，`why` 英文一句）；`miyu pkg install` 照它印「技能 <名字>」「脚本 <名字>」，读不成的印「读不成：<路径>（为什么）」。
+3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。包文件夹里带的技能、脚本（施工 X-13 上）也列：看一眼多 `skills`（技能名）、`scripts`（工具名）、`slash`（斜杠命令模板的名字，施工 X-14 上补），开头读得成的才列；读不成的另列在 `skipped`（施工 X-13 补：`file` 是包文件夹里的相对路径，`why` 英文一句）；`miyu pkg install` 照它印「技能 <名字>」「脚本 <名字>」，读不成的印「读不成：<路径>（为什么）」。
 4. 起服务、登记工具、开关随施工 X-3：带了服务的 `bundle` 照扩展的办法开关（只带技能、脚本的没有开关，施工 X-13 上），开关记在同一份 `system/extensions.json`，没写的关着；`status` 照它带的服务合起来算，`enabled` 照开关（施工 X-3 上，`mcp.md`、`package-pages.md`「开关」）。扩展包带的服务跟着扩展起停（施工 X-3 下）；卸包时服务的缓存、工作目录一起删。
 
 ### 吉祥物包（施工 F-7，2026-10-11 项目主人定，终端界面的会话转来）
@@ -247,9 +247,9 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 
-1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号。六样各算各的：技能 `notes` 和库 `notes` 不算撞。
-2. **跟谁比**：两层里清单读成了的、编号不是它的包。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；家目录里自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
-3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
+1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）。七样各算各的：技能 `notes` 和库 `notes` 不算撞。
+2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：核心自己的 `basesystem`，记忆的 `memory`，长期目标的 `goal`；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；家目录里自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
+3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
 4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
 5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于家目录，同一层照编号。子命令、功能撞了的家目录那一份整份不收（`command_taken`、`feature_taken`）；技能、脚本、知识库跳过家目录那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
 

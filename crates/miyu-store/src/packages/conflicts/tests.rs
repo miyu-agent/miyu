@@ -31,7 +31,7 @@ const SCRIPT: &str = "#!/bin/sh\n# Description: Echo.\n# Parameters: {\"type\": 
 
 fn check(new: &Found, installed: &[Found]) -> Vec<(&'static str, String, String)> {
     let manifest = new.read.as_ref().expect("读成了");
-    conflicts(&new.id, manifest, &new.files_dir(), installed)
+    conflicts(&new.id, manifest, &new.files_dir(), installed, &[])
         .into_iter()
         .map(|one| (one.kind.as_str(), one.name, one.package))
         .collect()
@@ -117,5 +117,57 @@ fn a_command_name_and_a_feature_id_are_their_own_kinds() {
     assert_eq!(
         check(&new_feature, &installed),
         vec![("feature", "share".to_string(), "zbuilt".to_string())]
+    );
+}
+
+/// 斜杠命令模板（施工 X-14 上补）：和装着的包的、核心内置的名字、别名比；拥有那条内置命令的包自己不算（装回人格记忆不和
+/// `/remember` 撞）。
+#[test]
+fn slash_commands_meet_installed_packages_and_the_builtins() {
+    let scratch = Scratch::new();
+    let dir = scratch.path();
+    let installed = vec![package(
+        dir,
+        "kit",
+        BUNDLE,
+        &[("commands/review.md", "Review.\n")],
+    )];
+    let reserved = vec![
+        ("remember".to_string(), "memory".to_string()),
+        ("reset".to_string(), "basesystem".to_string()),
+    ];
+    let new = package(
+        &dir.join("new"),
+        "mine",
+        BUNDLE,
+        &[
+            ("commands/review.md", "Mine.\n"),
+            ("commands/reset.md", "Mine.\n"),
+            ("commands/fresh.md", "Mine.\n"),
+        ],
+    );
+    let manifest = new.read.as_ref().expect("读成了");
+    let found: Vec<(&str, String, String)> =
+        conflicts(&new.id, manifest, &new.files_dir(), &installed, &reserved)
+            .into_iter()
+            .map(|one| (one.kind.as_str(), one.name, one.package))
+            .collect();
+    assert_eq!(
+        found,
+        vec![
+            ("slash", "reset".to_string(), "basesystem".to_string()),
+            ("slash", "review".to_string(), "kit".to_string()),
+        ]
+    );
+    let memory = package(
+        &dir.join("back"),
+        "memory",
+        BUNDLE,
+        &[("commands/remember.md", "Mine.\n")],
+    );
+    let manifest = memory.read.as_ref().expect("读成了");
+    assert!(
+        conflicts(&memory.id, manifest, &memory.files_dir(), &[], &reserved).is_empty(),
+        "拥有那条内置命令的包自己不算"
     );
 }

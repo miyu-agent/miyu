@@ -41,7 +41,8 @@ impl Language {
         word.to_string()
     }
 
-    /// 带的另几样：子命令、后台页、吉祥物、接的平台、系统账号、几个配置项、MCP 服务（施工 X-2）、技能、脚本（施工 X-13 上）。
+    /// 带的另几样：子命令、后台页、吉祥物、接的平台、系统账号、几个配置项、MCP 服务（施工 X-2）、技能、脚本（施工 X-13 上）、
+    /// 斜杠命令模板（施工 X-14 上补）。
     pub(crate) fn carried(&self, what: Carried<'_>) -> String {
         match (self, what) {
             (Language::Chinese, Carried::Command(name)) => format!("命令 miyu {name}"),
@@ -53,6 +54,7 @@ impl Language {
             (Language::Chinese, Carried::Mcp(name)) => format!("MCP 服务 {name}"),
             (Language::Chinese, Carried::Skill(name)) => format!("技能 {name}"),
             (Language::Chinese, Carried::Script(name)) => format!("脚本 {name}"),
+            (Language::Chinese, Carried::Slash(name)) => format!("斜杠命令 /{name}"),
             (Language::English, Carried::Command(name)) => format!("command miyu {name}"),
             (Language::English, Carried::Page) => "admin page".to_string(),
             (Language::English, Carried::Mascot) => "mascot".to_string(),
@@ -63,6 +65,7 @@ impl Language {
             (Language::English, Carried::Mcp(name)) => format!("MCP server {name}"),
             (Language::English, Carried::Skill(name)) => format!("skill {name}"),
             (Language::English, Carried::Script(name)) => format!("script {name}"),
+            (Language::English, Carried::Slash(name)) => format!("slash command /{name}"),
         }
     }
 
@@ -164,6 +167,8 @@ pub(crate) enum Carried<'a> {
     Skill(&'a str),
     /// 带的脚本（施工 X-13 上）：装上以后是她的一件工具，在这台机器上跑。
     Script(&'a str),
+    /// 带的斜杠命令模板（施工 X-14 上补）。
+    Slash(&'a str),
 }
 
 /// 一行开头的词。

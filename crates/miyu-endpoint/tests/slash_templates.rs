@@ -292,3 +292,46 @@ async fn in_a_venue_the_same_people_as_for_builtins_may_run_one() {
     assert_eq!(reason(&reply), Some("unknown_command"), "{reply}");
     assert!(said(&home.log(&session)).is_empty());
 }
+
+/// `miyu check`（施工 X-14 上补）：被自己放的盖住的 `slash_covered`、和内置同名的 `slash_builtin`、写错的 `slash_skipped`。
+#[tokio::test]
+async fn check_says_which_templates_are_not_used() {
+    let home = Home::new();
+    home.write("home/alice/commands/review.md", "Mine.\n");
+    home.write("home/alice/commands/stop.md", "Not the builtin.\n");
+    home.write("home/alice/commands/Bad.md", "x\n");
+    home.write(
+        "home/alice/packages/kit/package.toml",
+        "[package]\nname = { en = \"Kit\" }\n",
+    );
+    home.write("home/alice/packages/kit/commands/review.md", "Theirs.\n");
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let reply = client.call("k1", "check", json!({})).await;
+    let mut problems: Vec<(String, String, String)> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|one| one["kind"] == "slash")
+        .map(|one| {
+            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
+            (text("code"), text("file"), text("message"))
+        })
+        .collect();
+    problems.sort();
+    assert_eq!(problems.len(), 3, "{reply}");
+    assert_eq!(problems[0].0, "slash_builtin");
+    assert!(problems[0].1.ends_with("commands/stop.md"), "{problems:?}");
+    assert!(problems[0].2.contains("/stop"), "{problems:?}");
+    assert_eq!(problems[1].0, "slash_covered");
+    assert!(
+        problems[1].1.ends_with("kit/commands/review.md"),
+        "{problems:?}"
+    );
+    assert!(
+        problems[1].2.contains("home/alice/commands/review.md"),
+        "{problems:?}"
+    );
+    assert_eq!(problems[2].0, "slash_skipped");
+    assert!(problems[2].1.ends_with("commands/Bad.md"), "{problems:?}");
+}

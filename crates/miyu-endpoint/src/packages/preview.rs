@@ -99,11 +99,12 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
     Ok(Value::Object(answer))
 }
 
-/// 包文件夹里带的技能、脚本（施工 X-13 上）：清单里写不出它们，照文件夹找。脚本装上就是这台机器上跑得起来的工具，同 MCP
+/// 包文件夹里带的技能、脚本（施工 X-13 上）、斜杠命令模板（施工 X-14 上补，`slash`）：清单里写不出它们，照文件夹找。脚本装上就是这台机器上跑得起来的工具，同 MCP
 /// 服务，装之前给人看名字。读不成的另列（施工 X-13 补）：包文件夹里的相对路径（`/` 分隔）和为什么。碰磁盘。
 struct Content {
     skills: Vec<String>,
     scripts: Vec<String>,
+    slash: Vec<String>,
     skipped: Vec<Value>,
 }
 
@@ -111,9 +112,11 @@ impl Content {
     fn of(dir: &Path) -> Content {
         let (skills, broken_skills) = miyu_store::skills::carried(dir);
         let (scripts, broken_scripts) = miyu_store::scripts::carried(dir);
+        let (slash, broken_slash) = miyu_store::slash::carried(dir);
         let skipped = broken_skills
             .iter()
             .chain(&broken_scripts)
+            .chain(&broken_slash)
             .map(|one| {
                 let file = one.path.strip_prefix(dir).unwrap_or(&one.path);
                 let file = file
@@ -127,6 +130,7 @@ impl Content {
         Content {
             skills,
             scripts,
+            slash,
             skipped,
         }
     }
@@ -186,6 +190,9 @@ fn carries(
     }
     if !content.scripts.is_empty() {
         answer.insert("scripts".into(), json!(content.scripts));
+    }
+    if !content.slash.is_empty() {
+        answer.insert("slash".into(), json!(content.slash));
     }
     if !content.skipped.is_empty() {
         answer.insert("skipped".into(), json!(content.skipped));
