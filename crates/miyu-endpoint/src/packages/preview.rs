@@ -191,12 +191,12 @@ fn carries(
     if !content.scripts.is_empty() {
         answer.insert("scripts".into(), json!(content.scripts));
     }
-    // 斜杠命令：模板和扩展声明的（施工 X-14 下）一起列，照名字排。
+    // 斜杠命令：模板、扩展声明的（施工 X-14 下）、整页的（施工 X-15 上）一起列，照名字排。
     let mut slash: Vec<&str> = content
         .slash
         .iter()
         .map(String::as_str)
-        .chain(manifest.slash.iter().map(|declared| declared.name.as_str()))
+        .chain(manifest.slash_names())
         .collect();
     slash.sort_unstable();
     if !slash.is_empty() {

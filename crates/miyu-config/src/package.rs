@@ -19,6 +19,7 @@ mod reader;
 pub mod settings;
 mod slash;
 mod upgrade;
+mod widget;
 
 pub use capability::Capability;
 pub use code::Code;
@@ -30,6 +31,7 @@ pub use mcp::{
 pub use settings::{Setting, SettingKind};
 pub use slash::SlashCommand;
 pub use upgrade::without_kind;
+pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
 use reader::{Reader, line_of};
 
@@ -78,6 +80,8 @@ pub struct Manifest {
     pub mcp: Vec<McpServer>,
     /// 声明的斜杠命令（施工 X-14 下，`[[slash]]`）：交给包的程序办；照写的先后，没有的是空的。只有扩展包能写。
     pub slash: Vec<SlashCommand>,
+    /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
+    pub widgets: Vec<Widget>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -204,7 +208,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 16] = [
+const TABLES: [&str; 17] = [
     "package",
     "builtin",
     "command",
@@ -221,6 +225,7 @@ const TABLES: [&str; 16] = [
     "mascot",
     "mcp",
     "slash",
+    "widget",
 ];
 
 /// 读一份清单。
@@ -246,8 +251,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        // `[[mcp]]`、`[[slash]]` 是一串表（施工 X-2、X-14 下）：写成别的样子的由 `mcp.rs`、`slash.rs` 报。
-        if !item.is_table_like() && !(matches!(key, "mcp" | "slash") && item.is_array_of_tables()) {
+        // `[[mcp]]`、`[[slash]]`、`[[widget]]` 是一串表（施工 X-2、X-14 下、X-15 上）：写成别的样子的由各自的模块报。
+        if !item.is_table_like()
+            && !(matches!(key, "mcp" | "slash" | "widget") && item.is_array_of_tables())
+        {
             return Err(reader.problem(
                 Some(item),
                 Code::NotATable,
@@ -334,12 +341,15 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(node) => slash::read(&reader, node)?,
         None => Vec::new(),
     };
-    slash::needs_capability(
-        &slash,
-        process
-            .as_ref()
-            .map_or(&[][..], |process| process.capabilities.as_slice()),
-    )?;
+    let capabilities = process
+        .as_ref()
+        .map_or(&[][..], |process| process.capabilities.as_slice());
+    slash::needs_capability(&slash, capabilities)?;
+    let widgets = match root.get("widget") {
+        Some(node) => widget::read(&reader, node)?,
+        None => Vec::new(),
+    };
+    widget::check(&widgets, capabilities, &slash)?;
     Ok(Manifest {
         kind,
         version: head.version,
@@ -362,6 +372,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         mascot,
         mcp,
         slash,
+        widgets,
     })
 }
 

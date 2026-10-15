@@ -168,6 +168,7 @@ mod view_tool_names;
 mod view_tree;
 mod watch;
 mod welcomed;
+mod widgets;
 mod workspace;
 mod workspace_command;
 mod workspace_property;

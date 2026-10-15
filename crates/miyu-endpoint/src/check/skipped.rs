@@ -64,17 +64,16 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             .filter(|template| core.commands.find(&template.name).is_some())
             .map(|template| warn("slash", "slash_builtin", &template.file, &template.name)),
     );
-    // 扩展声明的命令和内置的同名（施工 X-14 下）：报在清单上。
+    // 扩展声明的命令、整页的命令名（施工 X-14 下、X-15 上）和内置的同名：报在清单上。
     for found in core.packages().iter() {
         let Ok(manifest) = &found.read else {
             continue;
         };
         problems.extend(
             manifest
-                .slash
-                .iter()
-                .filter(|declared| core.commands.find(&declared.name).is_some())
-                .map(|declared| warn("slash", "slash_builtin", &found.path, &declared.name)),
+                .slash_names()
+                .filter(|name| core.commands.find(name).is_some())
+                .map(|name| warn("slash", "slash_builtin", &found.path, name)),
         );
     }
     problems

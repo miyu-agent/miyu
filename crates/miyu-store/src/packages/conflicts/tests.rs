@@ -190,3 +190,21 @@ fn declared_slash_commands_count_like_templates() {
         vec![("slash", "weather".to_string(), "kit".to_string())]
     );
 }
+
+#[test]
+fn page_commands_count_like_slash_commands() {
+    let scratch = Scratch::new();
+    let dir = scratch.path();
+    let installed = vec![package(
+        dir,
+        "kit",
+        BUNDLE,
+        &[("commands/weather.md", "Weather.\n")],
+    )];
+    let extension = "[package]\nprotocol = [1, 1]\nname = { en = \"W\" }\n\n[command]\nname = \"wx\"\nprogram = \"miyu-wx\"\nabout = { en = \"W\" }\n\n[process]\ncapabilities = [\"widgets\"]\n\n[[widget]]\nid = \"week\"\nplace = \"page\"\ntitle = { en = \"Week\" }\ncommand = \"weather\"\n";
+    let new = package(&dir.join("new"), "wx", extension, &[]);
+    assert_eq!(
+        check(&new, &installed),
+        vec![("slash", "weather".to_string(), "kit".to_string())]
+    );
+}

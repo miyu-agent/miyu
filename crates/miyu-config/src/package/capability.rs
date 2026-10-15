@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，管理员
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十二个名字，先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十三个名字（施工 X-15 上加了 `widgets`），先后照这张表。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -8,6 +8,8 @@ pub enum Capability {
     Tools,
     /// 提供斜杠命令。
     Commands,
+    /// 在界面上显示它自己的内容（施工 X-15 上，设计 `33-界面扩展.md`）。
+    Widgets,
     /// 回合开始时往上下文注入内容。
     ContextInject,
     /// 工具执行前放行、拒绝，或要求询问人。
@@ -32,9 +34,10 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 12] = [
+    pub const ALL: [Capability; 13] = [
         Capability::Tools,
         Capability::Commands,
+        Capability::Widgets,
         Capability::ContextInject,
         Capability::ToolGuard,
         Capability::ToolRewrite,
@@ -52,6 +55,7 @@ impl Capability {
         match self {
             Capability::Tools => "tools",
             Capability::Commands => "commands",
+            Capability::Widgets => "widgets",
             Capability::ContextInject => "context.inject",
             Capability::ToolGuard => "tool.guard",
             Capability::ToolRewrite => "tool.rewrite",

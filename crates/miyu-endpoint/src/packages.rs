@@ -274,6 +274,34 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
             .collect();
         item["mcp"] = json!(servers);
     }
+    // 界面块（施工 X-15 上，`widgets.md`）：头照它知道这个包在哪几个位置放东西、哪几页能开。
+    if !manifest.widgets.is_empty() {
+        let widgets: Vec<Value> = manifest
+            .widgets
+            .iter()
+            .map(|widget| {
+                let scope = if widget.per_session {
+                    "session"
+                } else {
+                    "global"
+                };
+                let mut one =
+                    json!({"id": widget.id, "place": widget.place.as_str(), "scope": scope});
+                if let Some(title) = widget
+                    .title
+                    .as_ref()
+                    .and_then(|title| pick(title, language))
+                {
+                    one["title"] = json!(title);
+                }
+                if let Some(command) = &widget.command {
+                    one["command"] = json!(command);
+                }
+                one
+            })
+            .collect();
+        item["widgets"] = json!(widgets);
+    }
 }
 
 /// 说的协议版本不包含核心的：交回给人看的那个范围，例如 `2–3`；包含的、不说协议的（吉祥物包）没有。
