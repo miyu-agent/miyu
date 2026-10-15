@@ -120,6 +120,7 @@ name = { en = "Greeting", zh = "问候语" }
      参数是一份 JSON，在环境变量 `MIYU_ARGS_JSON` 和标准输入里各一份；标准输出就是交给 AI 的结果，退出码不是 0 的算失败；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`。照 `#!` 起（Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。跑的规矩同 AI 跑命令：在沙盒里跑（写只在工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读），沙盒用不了的要人确认。说明、参数写短：每一轮都跟着请求发。
    - **斜杠命令模板**照 Claude Code 的写法：`commands/<名字>.md`，人敲 `/<名字> 参数` 时把正文当这个人说的一句发给 AI，正文里的 `$ARGUMENTS` 换成参数（`$ARGUMENTS[0]` 是第一个），没写的参数接在末尾。开头可以写一段 YAML：`description` 是命令菜单里那一句（英文），`argument-hint` 是名字后面跟什么的提示，中文、日文的说明写在 `metadata` 的 `summary_zh`、`summary_ja`。名字同子命令名的写法；和 Miyu 自带的命令同名的不算（自带的赢）。时间线上显示人敲的那一行（`docs/blueprint/slash.md`）。
    - **交给程序办的斜杠命令**（扩展包）：清单一段一条 `[[slash]]`，写 `name`、`summary`（语言到一句话）、可以写 `argument`（名字后面跟什么的提示），`[process] capabilities` 里要有 `commands`。人敲了，核心发给你的程序 `command.call {command, argument, text, session, by, owner, language}`，你答 `{"said": "…"}`（可以多行），这段话就是给人看的回执；答 JSON-RPC 错误的，人看到「命令执行失败」和你的原话。你的程序起来以后要 `provide` 一次（没有工具的写空的），核心才认得你的连接。谁能用和 Miyu 自带的命令一样（本人、群里的主人和管理的人），要再挡的照 `by` 自己挡。
+   - **界面块**（扩展包）：往终端、网页上放自己的东西。清单一段一块 `[[widget]]`：`id`、`place`（`home` 首页、`sidebar` 侧边栏、`status` 底栏的一小段、`page` 整页）、`title`（语言到一句话，侧边栏、整页必写）、`scope = "session"`（只给侧边栏：跟着会话，一个会话一份）、`command`（只给整页：打了这个斜杠命令就打开这一页）。一个包最多 16 块，`[process] capabilities` 里要有 `widgets`。界面自己画，你只给内容（第四节第 8 条）；换不掉界面自带的东西，时间线、输入框、设置页也放不进去（设计 `33-界面扩展.md`）。
    - 写错了的不登记，`miyu check` 说哪一个、为什么；和别的工具撞了名的也说。
    - 不想做成包的，直接放进 `~/.miyu/home/admin/skills/`、`scripts/`、`commands/` 也一样用（同名的这里赢），不归包管理。
 
@@ -161,10 +162,20 @@ name = { en = "Greeting", zh = "问候语" }
 
    `blocks` 是内容块（文字 `{"type":"text","text":…}`；图片先经 `blob.put` 传上去，再放 `{"type":"image","blob":…,"media_type":…,"width":…,"height":…}`）。失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算这次失败。同一时间可能来好几个 `tool.call`，照 `id` 对着回。
 6. **超时和叫停**：过了 `timeout_ms` 没回的、人打断的，核心发通知 `tool.cancel {"session","call_id"}`（没有 `id`，不用回）。收到就放下那一件；已经做了的收不回，回的时候照实说。
-7. **后台页的方法**（有后台页的才要）：发 `package.methods {"methods":[{"name":"status"}]}` 登记；页面调到时核心发 `method.call {"method","params"}`，你回什么页面就拿到什么，不认识的方法回 JSON-RPC 的 `-32601`。
-8. **退出**：标准输入读到头就是「请退出」，三个平台一样；5 秒内不退会被杀掉。
-9. **崩了怎么办**：你自己退出（退出码 0 也算）、握手不成、标准输出关了，都算一次失败，核心隔 1、2、4、8、16 秒（最多 60 秒）再拉起，连续 5 次停下。**退出码 1 留给「配置错、端口被占」这类重启也没用的**：核心直接停下、不重试，人改好再开。连着跑满 60 秒的，下次失败从头数。
-10. **别做的**：别读写数据根里别的地方（会话、别人的包、配置文件、密钥文件）；要信息走协议。扩展调 `extension.*`、`package.install` 这类只给本机的人用的方法会被拒（`local_only`）。
+7. **后台页的方法**（有后台页的、界面块里有按钮的才要）：发 `package.methods {"methods":[{"name":"status"}]}` 登记；页面、按钮调到时核心发 `method.call {"method","params"}`，你回什么页面就拿到什么，不认识的方法回 JSON-RPC 的 `-32601`。
+8. **界面块的内容**（声明了 `[[widget]]` 的才要）：
+   - 有人在看你的一块时，核心发通知 `widget.watch {"widget", "session"?}`；最后一个人不看了发 `widget.unwatch`。握手以后马上就可能来，和你的请求的回应穿插着，照 `id` 分开。只在有人看时取数据、算内容，别定时刷。
+   - 推内容：`widget.set {"widget", "session"?, "title"?, "content"}`，跟着会话的写 `session`，`title` 能换掉清单里的标题（「构建 3/5」这种会变的）。内容是几段，只有六种：
+
+     ```json
+     [{"type":"heading","text":"本周"},{"type":"text","text":{"zh":"晴 23°C","en":"Sunny 23°C"},"tone":"accent"},{"type":"pairs","items":[{"label":"湿度","value":"40%"}]},{"type":"progress","value":0.4,"text":"索引 40%"},{"type":"list","items":[{"title":"构建 #128","right":"3m","state":"doing","action":{"call":"build.open","params":{"id":128}}}]},{"type":"buttons","items":[{"label":"刷新","action":{"call":"refresh"}}]}]
+     ```
+
+   - 只有字：不认 Markdown、HTML、颜色码，字可以按语言给几份。语气 `tone`：`normal`、`dim`、`accent`、`good`、`warn`、`bad`；状态 `state`：`todo`、`doing`、`done`、`failed`、`off`。动作三种：`{"call": <方法>}` 调你登记的方法（第 7 条），`{"open": <整页的编号>}` 打开你的一整页，`{"copy": <字>}` 人点了写进剪贴板。底栏只收一段一行的 `text`，最宽 40 列（中文算两列）。
+   - 写错的整块不收，回 `bad_widget_content`，`data.path` 说错在哪，原来的照旧显示。同一块推得再快，界面最多每 250 毫秒变一次，最后一份不丢。`widget.clear` 回到没有内容。程序停了，你推过的全清；重新起来、握了手，核心再告诉你谁在看。
+9. **退出**：标准输入读到头就是「请退出」，三个平台一样；5 秒内不退会被杀掉。
+10. **崩了怎么办**：你自己退出（退出码 0 也算）、握手不成、标准输出关了，都算一次失败，核心隔 1、2、4、8、16 秒（最多 60 秒）再拉起，连续 5 次停下。**退出码 1 留给「配置错、端口被占」这类重启也没用的**：核心直接停下、不重试，人改好再开。连着跑满 60 秒的，下次失败从头数。
+11. **别做的**：别读写数据根里别的地方（会话、别人的包、配置文件、密钥文件）；要信息走协议。扩展调 `extension.*`、`package.install` 这类只给本机的人用的方法会被拒（`local_only`）。
 
 ### 五、一个最小的扩展
 
@@ -220,7 +231,7 @@ Windows 上 `bin/` 里要放 `.exe`：用 PyInstaller 打包，或者换一种�
 
 ### 六、能力和审批
 
-1. 清单 `[process] capabilities` 写你要哪些，只认这十二个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`context.inject`（回合开始时往上下文里加内容）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）和后台页的方法；命令、挂接点还没开放。
+1. 清单 `[process] capabilities` 写你要哪些，只认这十三个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`widgets`（在界面上显示自己的内容）、`context.inject`（回合开始时往上下文里加内容）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）、斜杠命令、后台页的方法和界面块；挂接点（`context.inject`、`tool.guard`、`tool.rewrite`）还没开放。
 2. 管理员打开你的扩展时批：一次批你这时声明的全部。升级以后多要的，下次打开只问多的那几个。没批完的不拉起。
 3. 照批过的能力挡方法、在沙盒里跑，随多用户、沙盒那一段做，现在还没强制。**照实声明**：以后没声明的会被挡掉。
 

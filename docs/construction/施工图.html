@@ -276,7 +276,7 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>515</b><span>/ 523 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>518</b><span>/ 526 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
     <li><b class="mono">0800f934</b><span>最近一步（R-3 五补 清掉这个会话的记忆（五补））的提交</span></li>
   </ul>
@@ -944,6 +944,9 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-14a"><span class="n">X-14 上</span>斜杠命令模板<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-14b"><span class="n">X-14 上补</span>装包查斜杠命令撞名<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-14c"><span class="n">X-14 下</span>扩展的斜杠命令<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-15a"><span class="n">X-15 上</span>界面块的清单<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-15b"><span class="n">X-15 中</span>界面块的内容和推送<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-15c"><span class="n">X-15 下</span>整页的斜杠命令<span class="st">✓</span></a></li>
       </ol>
       <p class="later">技能和脚本照图纸 skills.md（2026-10-11 项目主人照推荐定了五条）。</p>
     </li>
@@ -27460,6 +27463,159 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/X-14下-扩展的斜杠命令.md</code>、图纸 <code>docs/blueprint/slash.md</code>「扩展的命令」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-15a" aria-labelledby="h-sX15a">
+  <div class="sheet-head"><h2 id="h-sX15a"><span class="no">X-15 上</span>界面块的清单</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">扩展包在清单里说清往界面的哪几个位置放东西。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">[[widget]]</span><span class="dir-note">要 widgets 能力</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>四个位置：首页、侧边栏、底栏、整页</li>
+              <li>侧边栏能跟着会话，整页能带一个斜杠命令名</li>
+              <li>package.list 列出来，标题照连接的语言</li>
+              <li>整页的命令名装包查撞名、miyu check 查</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">一个包最多 16 块</span><span class="rl">只有扩展包能写</span></div>
+          <div class="tile new"><span class="nm">第十三个扩展能力</span><span class="rl">widgets，排在 commands 后面</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-15 上</dd></div>
+        <div><dt>名称</dt><dd>界面块的清单</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-15</dd></div>
+        <div><dt>提交</dt><dd class="mono">a8935a1b</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 38688243204）、手写变异</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>清单每一格、每一种写错</span></li>
+        <li><span class="ok">✓</span><span>真核心列出来、报撞了内置的</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/X-15上-界面块的清单.md</code>、设计 <code>33-界面扩展.md</code>、图纸 <code>docs/blueprint/widgets.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-15b" aria-labelledby="h-sX15b">
+  <div class="sheet-head"><h2 id="h-sX15b"><span class="no">X-15 中</span>界面块的内容和推送</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">程序推内容，核心查写法、记着、转给在看的头；有人看才叫程序干活。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">widget.set</span><span class="dir-note">六种段，只有字</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>头订阅 widgets，屏上的几块记成在看</li>
+              <li>没人看到有人看：告诉程序 widget.watch</li>
+              <li>程序推的内容查过记下，推 widget.changed</li>
+              <li>最后一个人走了 widget.unwatch，程序停了清空</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">同一块 250 毫秒</span><span class="rl">中间的只留最新的</span></div>
+          <div class="tile new"><span class="nm">跟着会话的</span><span class="rl">没人看的会话不留</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-15 中</dd></div>
+        <div><dt>名称</dt><dd>界面块的内容和推送</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-15</dd></div>
+        <div><dt>提交</dt><dd class="mono">7f52b649</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 38688243204）、手写变异</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真核心拉起测试用的扩展走一遍</span></li>
+        <li><span class="ok">✓</span><span>连推十次只到头两三次，最后一份不丢</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/X-15中-界面块的内容和推送.md</code>、图纸 <code>docs/blueprint/widgets.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-15c" aria-labelledby="h-sX15c">
+  <div class="sheet-head"><h2 id="h-sX15c"><span class="no">X-15 下</span>整页的斜杠命令</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">打一个斜杠命令就打开扩展的一整页。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">command = "week"</span><span class="dir-note">只给整页</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>命令菜单列出来，带 opens</li>
+              <li>打了回 opens，头打开那一页</li>
+              <li>不碰会话、不记日志、不归预设管</li>
+              <li>场所会话里不认</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">自己放的赢</span><span class="rl">同名模板盖住整页的命令</span></div>
+          <div class="tile new"><span class="nm">作者说明</span><span class="rl">中、英两份加界面块</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-15 下</dd></div>
+        <div><dt>名称</dt><dd>整页的斜杠命令</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-15</dd></div>
+        <div><dt>提交</dt><dd class="mono">3d81245e</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 38688243204）、手写变异</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真核心 4 条：列、打、盖住、不认</span></li>
+        <li><span class="ok">✓</span><span>手写变异全逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/X-15下-整页的斜杠命令.md</code>、图纸 <code>docs/blueprint/widgets.md</code>「整页的命令」。</li>
       </ul>
     </div>
   </div>
