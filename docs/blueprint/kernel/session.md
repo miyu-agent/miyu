@@ -54,9 +54,9 @@
 | `subagents()` | 这个会话派出去的子代理，照任务编号（施工 7-7）：子会话、被停掉了没有（以 `stopped`、`undone` 报过）。派它的那一轮撤掉了的不在：她看不到派它的调用，也就不是她的；做完了、崩了报过的照样在。只读。执行器派每一次调用之前抄一份交给 `send_message`（`session/tools.md`「父子之间留言」） |
 | `watching()`、`watch_hours()` | 在等哪几个会话的通知、各从哪一刻算起，照编号；订了多久作废（施工 C-6，账本的 `watching()`、策略的 `peers.watch_hours`）。只读。等的这一边的执行器每送完一批照它订、计时（`session/tools.md`「订、计时、再订」） |
 | `vacant()`、`last_line()` | 「空了」：`idle()`，而且派的子代理都不欠回报（`waiting_children()` 是空的），没收到「要重启了」；最近结束的那一轮最后一条有字的回复的第一行，截到 `peers.status_chars`，超了接 `…`，没说话的没有（施工 C-6，「空了的通知」第 5 条）。只读。被等的那一边的 actor 照它发通知（`session/actor.md`「被等的名单」） |
-| `idle()` | 空闲：没有回合在进行，没有结束了、`turn.ended` 还没落盘的回合，没在读回日志、改回文件。核心照它决定能不能空闲退出（后台命令另由执行器的任务表算，`core.md`） |
+| `idle()` | 空闲：没有回合在进行，没有结束了、`turn.ended` 还没落盘的回合，没在读回日志。核心照它决定能不能空闲退出（后台命令另由执行器的任务表算，`core.md`） |
 | `landed()` | 落了盘的最后一条（施工 3-8 六补）：`Stored` 送进来那一刻就推送了，所以也是推过的最后一条；还没落过盘的没有，载入的是日志里最后一条。只读。会话 actor 订阅时照它定补发补到哪一条（`session/actor.md` 第 6 条） |
-| `deletable()` | 删得了没有（施工 3-8 三补）：空闲的删得了；正在读回日志、改回文件的是 `Restoring`；别的不空闲（有回合在进行、`turn.ended` 还没落盘）是 `TurnRunning`。只读。会话 actor 照它答应删、停下，挪目录是会话表的事（`protocol.md` 的 `session.delete`） |
+| `deletable()` | 删得了没有（施工 3-8 三补）：空闲的删得了；正在读回日志的是 `Restoring`；别的不空闲（有回合在进行、`turn.ended` 还没落盘）是 `TurnRunning`。只读。会话 actor 照它答应删、停下，挪目录是会话表的事（`protocol.md` 的 `session.delete`） |
 | `context_used()` | 这时的上下文用量（施工 8-15）：照有效历史组装这时的请求，用和压缩线同一个算法估（`compaction.md` 第一条）。没交过限额的、策略里没有压缩的没有。只读，不出动作。执行器派 `session_usage` 时向它要一份（`tools/session_usage.md`） |
 | `context_limits()` | 给头看的限额 `ContextLimits`（施工 6-3 补）：`window` 上下文窗口，`compaction_line` 压缩线，和内核判到线用的是同一条（`compaction.md` 第二条第 2 条）。没交过限额的、没报窗口的，两格都没有；策略里没有压缩的、算不出正数的，没有压缩线。只读，不出动作。协议照它回 `subscribe`（`protocol.md`） |
 | `turn_cause()` | 在跑的回合的编号和它的 `cause`；没有在跑的回合的没有（施工 8-9）。只读，不出动作。会话 actor 推 `model.changed` 时照它写 `turn`、`cause`（`models.md`「瞬时事件」） |
@@ -79,7 +79,6 @@
 | `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped, end_turn, display_name }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的；要结束这一轮的（施工 4-14）；这件工具给人看的名字，派它那一刻取的（施工 9-8 六补） | 「调工具」「打断」第 7 条 |
 | `ToolProgress { at, call_id, text }` | 一段输出 | 「调工具」 |
 | `ToolGuarded { at, call_id, verdict }`、`ToolAsks { at, call_id, questions }` | 链的结论；一组题 | `asking.md` |
-| `Restored { at, files }` | 改回文件每一步的结局 | `history.md` |
 | `ReadBack { at, from, events }` | 从第 `from` 条读回的日志，连到最后一条（施工 6-9） | 对得上正在读回的那一次，才记撤销（`history.md`「撤掉压缩」）；对不上的不理 |
 | `Reread { at, seen, files }` | 哪一次摘要请求；压完要重读的文件，一个一项，照交出去的先后：读到了（`blob`、原文）、太大、读不到（施工 6-5） | 记在那次摘要请求上，什么都不出（`compaction.md` 第九条） |
 | `Recalled { texts }` | `Recall` 读出来的原文，照 blob 找（施工 6-5；6-9 起是 `Recall` 的回报） | 放进有效历史，什么都不出（`history.md`「重读的原文」） |
@@ -131,7 +130,6 @@
 | `AnswerTool { call_id, answers }` | 人的回答 | 交给在等的调用（`asking.md`） |
 | `CancelTool { call_id }` | 哪次调用 | 掐掉，不送回；之后到的不理 |
 | `StopTool { call_id }` | 哪次改文件的调用 | 叫它停：停在改之前，或者做完；照常送回 `ToolDone`，停在改之前的带 `stopped`（「打断」第 7 条） |
-| `Restore { steps }` | 改回的几步 | 改回文件，送回 `Restored`（`history.md`） |
 | `Reread { seen, paths, limit }` | 哪一次摘要请求（排在它的「请求模型」前面）；要重读的文件，真实的位置，照先后；单个最多多少字节（施工 6-5） | 读完、存成 blob 再做下一个动作，送回 `Reread`（`compaction.md` 第九条） |
 | `ReadBack { from }` | 从第几条起（施工 6-9） | 只读地读日志，从第 `from` 条到最后一条，读完才收收件箱，送回 `ReadBack`；读不了的，会话停下（`history.md`「撤掉压缩」） |
 | `Report(Upward)` | 子会话交给父会话的一份回报（施工 7-6）：报的是哪一轮 `turn`、`reason`（`done` 或 `aborted`）、正文 `text`、`truncated`、`person` | 补上任务编号、子会话，经端口交给父会话，命令编号 `<子会话>/report/<turn>`，不送回（`session/actor.md`「向上回报」） |
@@ -155,7 +153,7 @@
 | `turn_running` | `TurnRunning` | 有回合在进行时撤销（`history.md`，下同）、重做（施工 4-7 再补）、手动压缩（施工 6-8）、清空（施工 6-8 补）；`deletable()` 说有回合在进行（施工 3-8 三补） |
 | `unknown_turn` | `UnknownTurn` | 要撤的那一轮没有，或者已经撤掉了 |
 | `nothing_to_unrevert` | `NothingToUnrevert` | 没有能恢复的撤销 |
-| `restoring` | `Restoring` | 撤销、恢复还没做完：正在读回更早的日志，或者正在改回文件；`deletable()` 也照它说 |
+| `restoring` | `Restoring` | 撤销还没做完：正在读回更早的日志；`deletable()` 也照它说（施工 U-1 拿掉了改回文件，码的名字照旧） |
 | `nothing_to_revert` | `NothingToRevert` | 不写回合编号的撤销，一轮都没有 |
 | `nothing_to_compact` | `NothingToCompact` | 手动压缩时没有能压的（「手动压缩」，施工 6-8） |
 | `nothing_to_clear` | `NothingToClear` | 清空时上下文本来就是空的（「清空」，施工 6-8 补） |
@@ -196,7 +194,7 @@
 2. 拒绝的当场回应，什么都不追加。编号不记：同一个编号再来，重新判。
 3. 接受的，等它产生的事件都落了盘才回应。附上的序号：发消息的只有 `message.user` 那一条，子会话交来回报的只有 `child.reported` 那一条（由它开的那一轮不在里面）；打断、回答确认的是这一次追加的全部；回答提问、切权限级别和换模型（施工 8-10）、改标题和置顶的是 `question.answered`、`session.policy_changed`、`session.meta_changed` 那一条；切到和现在一样的级别、改成和现在一样的标题和置顶、换成和现在一样的模型，空的，当场回；撤销、恢复见 `history.md`；重做的是 `turn.reverted`、`files.restored`（有的话）和重发的每一句，新的一轮的开头不在里面（`history.md`「重做」）；手动压缩、清空的是那一轮的 `turn.started`；记下斜杠命令的是 `command.ran` 那一条（施工 O-6）。回顾回的是 `Recapped`，等的是那条 `session.recapped`（「回顾」）。
 4. 记着最近接受的 1024 个编号（`recent::CAPACITY`）和它们的序号，满了丢最早的。载入时照日志重建，和没重启时回的一样（施工 2-1 补，2026-10-07 项目主人定统一）：`cause` 是它的那几条，在它开的头一个 `turn.started` 前面截住，头一条就是 `turn.started` 的（手动压缩、清空）只留它。以前载入以后回的是 `cause` 是它的全部，连同它开的那一轮，重启前后不一样。同一个编号再来，不再生效：它的事件都落了盘的，当场照上一次回应；还没有的，等落了盘再回，来几次回几次。回顾不记，也不查：同一个编号再来就是再要一次（施工 3-8 四补，「回顾」第 1 条）。
-5. 正在读回日志（撤掉压缩的撤销、重做）、正在改回文件（撤销、恢复、重做以后）的时候，接受过的编号照第 4 条；别的命令一律拒绝，`restoring`。
+5. 正在读回日志（撤掉压缩的撤销、重做）的时候，接受过的编号照第 4 条；别的命令一律拒绝，`restoring`。
 6. 命令产生的事件：`at` 是命令到的时刻，`by` 是发命令的一方，`cause` 是命令编号。一条输入产生的几条事件，时刻相同。等执行器回来才记的（撤掉压缩的撤销、改回文件的结局），时刻是回来的那一刻（`history.md`）。
 7. 造一条事件：序号照账本给；`turn.started` 的 `turn` 是它自己的序号，两种回报一律不带（「回报」第 3 条），别的事件在回合进行中带上这个回合，空闲时没有；先过账本（`history.md`），再进有效历史，等落盘。
 8. **落了盘**（`Stored { at, upto }`）：追加过、还没落盘的事件里，序号不超过 `upto` 的算落了盘；一条都没有的，什么都不做。有的，照这个先后出：`Push` 这些事件；`Reply` 事件全落了盘的命令，照收到的先后；`RunTurnEndHooks` `turn.ended` 落了盘的回合；向上回报（「向上回报」第 4 条）；起标题（「起标题」第 1 条，施工 3-8 五补）；然后回合往下走（派工具，或者跑回合开始的挂接点，或者发请求）。

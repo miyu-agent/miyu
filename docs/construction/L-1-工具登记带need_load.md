@@ -1,6 +1,6 @@
 ## 施工单 L-1：工具登记带 need_load
 
-状态：待施工。设计 `25-工具加载.md` W9（2026-10-15 项目主人定），图纸 `kernel/tools.md`、`providers.md`、`skills.md`、`mcp.md`。
+状态：合了（2026-10-15，33c1ea8c，CI run 38734494379）。设计 `25-工具加载.md` W9（2026-10-15 项目主人定），图纸 `kernel/tools.md`、`providers.md`、`skills.md`、`mcp.md`。
 
 ### 目的
 
@@ -33,3 +33,16 @@
 
 - 快照多一格：没标的不写，旧快照、旧指纹不动。
 - 内核当场答 `load_tools`，结果的字节只看快照，不看这时的目录：包升级了也照会话开局时的格式交。
+
+### 施工时定的
+
+- `load_tools` 由内核当场答（`miyu-kernel/src/tool/loading.rs`），不做成基础系统里的工具：答的字节只看快照，用的几句字冻在快照的 `core.loading`。
+- 拆工具面在策略（`miyu-policy/src/loading.rs`）：参数换成 `{"type":"object"}`、说明整段，`load_tools` 照名字排进去；内核拿到的规则照旧是完整格式，没加载直接调的照完整格式校验。
+- `provide` 的 `need_load` 只收布尔（`null` 当没写）；扩展缓存照登记的原样，没写的不落一个 `null`。
+- 给模型的字进登记簿：`load_tools` 84、不用加载的那一句 11、参数不对的那一句 11、附上完整格式的那一句 6 token。
+
+### 验收结果
+
+- 新测试：四个来处（内置 JSON、脚本开头、`provide`、`[[mcp]]`）；工具面是外壳、多一件 `load_tools`、第二次请求的 tools 一字不差；内核当场答、不派给执行器；参数写成字符串照修正；出错附上完整格式，成了的、不用加载的不附；以前的快照读进来写出去一字不差。
+- 真模型（magpie 那组，脚本 `# Need load: yes`）：她没先调 `load_tools`，直接调了那件；出错的结果后面附上了完整格式。这一家照声明的参数格式约束输出，外壳下参数一律成了 `{}`，见 L-2。
+- 内核长跑随机测试（`random:: --include-ignored`）过；`cargo xtask check` 八项；三台 CI（run 38734494379）。

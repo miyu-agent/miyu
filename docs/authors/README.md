@@ -83,6 +83,7 @@ name = { en = "Greeting", zh = "问候语" }
    env = { TOKEN = { secret = "notes" } }            # 可以不写；值能引用密钥 { secret = … }、环境变量 { env = … }
    venues = ["local"]                                # 可以不写，不写是只给本机的会话
    timeout_ms = 600000                               # 可以不写：一次调用等多久，1000 到 3600000
+   need_load = true                                  # 可以不写：这个服务的工具都要先加载（下面「要先加载」）
    ```
 
    - **她看到的工具**叫 `mcp__<服务名>__<工具名>`，说明、参数照服务给的原样（说明超过 2048 个字的截断）。预设里一个服务算一个功能，编号 `mcp-<服务名>`，能整个关、也能一件件关。
@@ -113,6 +114,7 @@ name = { en = "Greeting", zh = "问候语" }
      # Description: Roll dice and return each face and the total.
      # 描述：掷骰子，交回每一颗和总数。
      # Timeout: 10
+     # Need load: yes
      # Parameters:
      # {"type": "object", "properties": {"count": {"type": "integer"}, "sides": {"type": "integer"}}, "required": ["count", "sides"]}
      ```
@@ -147,6 +149,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `venues`：给哪种会话，`local`（本机的）、`private`（平台私聊）、`group`（群）里的一个或几个。
    - `timeout_ms`：可以不写，1000 到 600000，默认 60000。
    - `display_name`：可以不写，给人看的名字，照语言写：`{"zh": "打招呼", "en": "Greet"}`。时间线上照用的人的语言写它，没写的照 `name`。这是给人看的，不给模型。
+   - `need_load`：可以不写，`true` 是要先加载（下面「要先加载」）。
    - 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool":"hello_greet","problem":"name"}`）。
 5. **被调**：AI 调到你的工具时，核心发给你 `tool.call`：
 

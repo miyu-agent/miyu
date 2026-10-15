@@ -164,7 +164,7 @@
 | `turn.reverted` | `turns` | 回合编号的列表 | 必有 | 撤掉的回合：某一轮，和它以后还在有效历史里的每一轮，照先后 |
 | `turn.unreverted` | `turns` | 回合编号的列表 | 必有 | 恢复的回合：照最近那一条 `turn.reverted` 原样写 |
 
-**`files.restored`**：撤销、恢复时改回文件的结局。`files` 是一步一项的列表，必有，照做的先后。它不进上下文；`cause` 是撤销、恢复的那个命令。
+**`files.restored`**：撤销、恢复时改回文件的结局。施工 U-1 起不再产生（撤销不再改回文件），类型留着只为读以前的日志。`files` 是一步一项的列表，必有，照做的先后。它不进上下文；`cause` 是撤销、恢复的那个命令。
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|
@@ -279,7 +279,7 @@
 - 改前改后的内容由执行器存成 blob，效果里是它们的哈希（`session/actor.md`）。
 - 缺了 `kind`、认识的种类缺了必有的格、哈希或者任务编号不合写法的，读不进来。
 - 不认识的种类，例如第三方的工具报来的，整块原样留着，内核不解读。
-- 撤销、恢复照效果改回文件（`kernel/history.md`）；她看过的文件也照效果记（`session/actor.md`）。`job.started`、`job.messaged`、`peer.watch`、`todo.written` 不改回什么，撤销时也不算改过文件。
+- 她看过的文件照效果记（`session/actor.md`）。施工 U-1 起撤销不再照效果改回文件。`job.started`、`job.messaged`、`peer.watch`、`todo.written` 不改回什么，撤销时也不算改过文件。
 - `job.started` 的编号整份日志里不重复，撤掉的回合里的也算，由账本查（`kernel/history.md`）。
 
 **`tool.approval_requested`**：请人确认一次调用。

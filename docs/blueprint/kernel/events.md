@@ -53,7 +53,7 @@
 | `turn.ended` | 回合结束 | 内核；被打断的，是打断的人 | 必带 | `turn.ended.jsonl` |
 | `turn.reverted` | 撤销了几个回合 | 撤销的人 | 不带：有回合在进行时撤不了 | `turn.reverted.jsonl` |
 | `turn.unreverted` | 恢复了最近一次撤销的回合 | 恢复的人 | 不带：撤了以后开过回合就恢复不了 | `turn.unreverted.jsonl` |
-| `files.restored` | 撤销、恢复时改回文件的结局 | 和那条撤销、恢复一样 | 不带 | `files.restored.jsonl` |
+| `files.restored` | 撤销、恢复时改回文件的结局：施工 U-1 起不再产生，以前的日志里照样读得进来 | 和那条撤销、恢复一样 | 不带 | `files.restored.jsonl` |
 | `message.user` | 人发来的消息，或者另一个会话发来的消息 | 发消息的 | 回合进行中来的带上：排着队；场所里旁听的不带（施工 O-13 上） | `message.user.jsonl` |
 | `message.assistant` | 模型一次响应的完整内容，工具调用也在里面 | 模型 | 必带 | `message.assistant.jsonl` |
 | `message.withdrawn` | 撤回排着队、她还没听到的消息 | 打断的人 | 必带 | `message.withdrawn.jsonl` |

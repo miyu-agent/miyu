@@ -112,7 +112,7 @@
 | `ToolStatus` | 投影里算没成（tool 消息的 `error` 是真） | `crates/miyu-assemble/src/render.rs` |
 | `Decision` | 回答确认的命令带着不认识的决定，拒绝，原因码 `unknown_decision` | `crates/miyu-kernel/src/session/approval.rs` 的 `answer` |
 | `ErrorClass` | 不重试 | `crates/miyu-kernel/src/session/retry.rs` 的 `retryable` |
-| `RestoreAction`、`RestoreOutcome` | 改回文件时不当「改成了」：下一次撤销、恢复照上一次的地方找 | `crates/miyu-kernel/src/session/restore.rs` 的 `where_is`（`kernel/history.md`） |
+| `RestoreAction`、`RestoreOutcome` | 内核只读不写：施工 U-1 起撤销不再改回文件，`files.restored` 只为读以前的日志 | — |
 | `Part`、`MessageRole`、`CallResult` | 内核只写不读 | — |
 
 ### 出错

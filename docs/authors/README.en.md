@@ -83,6 +83,7 @@ name = { en = "Greeting", zh = "问候语" }
    env = { TOKEN = { secret = "notes" } }            # optional; values can refer to a secret { secret = … } or an environment variable { env = … }
    venues = ["local"]                                # optional; when left out, only local sessions get it
    timeout_ms = 600000                               # optional: how long one call may take, 1000 to 3600000
+   need_load = true                                  # optional: every tool of this server needs loading first (see "Tools that need loading")
    ```
 
    - **The tools the AI sees** are named `mcp__<server>__<tool>`; descriptions and parameters are passed on as the server gives them (descriptions longer than 2048 characters are cut). In a preset each server is one feature, `mcp-<server>`, which can be turned off whole or tool by tool.
@@ -113,6 +114,7 @@ name = { en = "Greeting", zh = "问候语" }
      # Description: Roll dice and return each face and the total.
      # 描述：掷骰子，交回每一颗和总数。
      # Timeout: 10
+     # Need load: yes
      # Parameters:
      # {"type": "object", "properties": {"count": {"type": "integer"}, "sides": {"type": "integer"}}, "required": ["count", "sides"]}
      ```
@@ -146,6 +148,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `access`: what the tool touches. `read` (only looks; touches nothing on this machine and sends nothing out of Miyu), `write` (changes files), `execute` (runs commands), `network` (goes online), `outbound` (sends something out of Miyu), `venue` (acts on a chat platform: recalling, muting and the like). The permission policy decides from it whether to ask a person, so **tell the truth**: marking a tool that sends things out as `read` deceives the administrator.
    - `venues`: which kinds of sessions get it, one or more of `local` (on this machine), `private` (platform private chats), `group` (groups).
    - `timeout_ms`: optional, 1000 to 600000, default 60000.
+   - `need_load`: optional; `true` means the tool needs loading first (see "Tools that need loading").
    - `display_name`: optional, the name people see, per language: `{"zh": "打招呼", "en": "Greet"}`. The timeline shows it in the reader's language and falls back to `name`. It is for people, not for the model.
    - A wrong entry rejects the whole set; the reply's `data` says which tool and what is wrong (`{"tool":"hello_greet","problem":"name"}`).
 5. **Being called**: when the AI calls one of your tools, the core sends you `tool.call`:

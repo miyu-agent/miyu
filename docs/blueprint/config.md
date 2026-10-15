@@ -294,7 +294,7 @@ miyu_config::settings! {
 | `models.catalog.every` | 时长 1 小时到 30 天 | `24h` | 系统、个人 | 不能写 | `now` | 8-7 |
 | `models.cooldown.rate_limited.base`、`retryable.base`、`auth.base` | 时长 1 秒到 1 小时 | `30s`、`10s`、`10m` | 系统、个人 | 不能写 | `now` | 8-9 |
 | `models.cooldown.rate_limited.max`、`retryable.max`、`auth.max` | 时长 1 秒到 1 天 | `10m`、`5m`、`2h` | 系统、个人 | 不能写 | `now` | 8-9 |
-| 模型的 `driver`，供应商的 `headers`、`compat`、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
+| 模型的 `driver`，供应商的 `headers`、`compat`（施工 L-2 先登记了 `compat.strict_tools`）、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。

@@ -4,7 +4,7 @@
 
 日志只追加。每一条事件追加之前，先交给账本照规矩查一遍：新写的和从磁盘载入的走同一条路，违反的不追加。查过的交给有效历史：投影要用的那一段，从最近一次压缩算起，去掉撤销掉的回合、撤回的消息，照每次请求当时看到的样子排好。
 
-撤销、恢复也是追加一条事件。撤掉的那几轮改过文件的，内核照效果算出改回的几步，交给执行器，结局记成一条 `files.restored`。撤掉的那几轮派出去、还在跑的任务，内核交给执行器停下，回报记 `undone`（施工 7-8）。
+撤销、恢复也是追加一条事件。文件不改回（施工 U-1，2026-10-15 项目主人定：改回文件交给 git 这类程序，harness 做太危险）：以前日志里的 `files.restored` 照样读得进来、照样过账本，不再产生。撤掉的那几轮派出去、还在跑的任务，内核交给执行器停下，回报记 `undone`（施工 7-8）。
 
 撤销能撤掉压缩：压缩跟着它所在的回合撤掉，有效历史回到前一次还算数的压缩。更早的那一段不在内存里，内核叫执行器从磁盘读回来，照它重建有效历史；恢复把撤掉的压缩放回来，不读磁盘（施工 6-9，`compaction.md` 第十一条）。
 
@@ -22,11 +22,10 @@
 | `crates/miyu-kernel/src/history/undo.rs` | 撤掉的拿走、放回；跟着撤的话 |
 | `crates/miyu-kernel/src/history/jobs.rs` | 派出去过的任务：标题、种类、派它的那一轮撤掉了没有（施工 7-2）；在哪几轮里派的（施工 7-8） |
 | `crates/miyu-kernel/src/session/jobs.rs` 的 `stop_undone` | 撤销时停哪几个（施工 7-8）：撤掉的那几轮里派的、还在跑的 |
-| `crates/miyu-kernel/src/session/revert.rs` | 撤销、恢复两个命令，改回文件的来回，撤掉压缩时读回日志的来回，取回重读的原文 |
+| `crates/miyu-kernel/src/session/revert.rs` | 撤销、恢复两个命令，撤掉压缩时读回日志的来回，取回重读的原文 |
 | `crates/miyu-kernel/src/session/redo.rs` | 重做（施工 4-7 再补）：能不能重做，撤销记下以后重发开那一轮的话、开新的一轮 |
 | `crates/miyu-kernel/src/session/load.rs` | 载入：整份过账本，从还算数的最近一次压缩起重建有效历史（`kernel/session.md`） |
-| `crates/miyu-kernel/src/session/restore.rs` | 改回的几步怎么算 |
-| `crates/miyu-kernel/src/event/restore.rs` | `files.restored` 的每一格 |
+| `crates/miyu-kernel/src/event/restore.rs` | `files.restored` 的每一格：只为读以前的日志（施工 U-1） |
 
 ### 对外的样子
 
@@ -74,19 +73,7 @@
 
 **命令**：`Revert { turn }`（`session.revert`，从哪一轮起，`None` 是最后一轮）记 `turn.reverted { turns }`；`Unrevert`（`session.unrevert`）记 `turn.unreverted { turns }`；`Redo { text, attachments }`（`session.redo`，施工 4-7 再补；开这一轮的那一句里的字、附件各换成的块，`None` 是照原来的，两样都是 `None` 的原样重发）记 `turn.reverted { turns }`，再记重发的几句 `message.user` 和新的一轮的开头。拒绝的原因码见下面「撤销」「恢复」「重做」。
 
-**改回文件**：动作 `Restore { steps }`，输入 `Restored { at, files }`。一步是 `Step { result, effect, path, action }`：照第 `result` 条 `tool.result` 的第 `effect` 个效果（从 0 数起），改效果里记的 `path`：
-
-| `StepAction` | 做什么 | 动手之前 |
-|---|---|---|
-| `Write { expect, content }` | 写回 `content`（blob 的哈希） | 原处是 `expect` |
-| `Trash { expect }` | 移进回收站 | 原处是 `expect` |
-| `Untrash { from }` | 从回收站的 `from` 移回原处 | 原处空着，`from` 还在 |
-
-`Expect`：`Absent` 空着；`Content(哈希)` 一个文件，内容是这个哈希；`Present` 有东西就行，文件、目录都算。`Step::restored()` 是这一步照做成了的结局：`action` 照这一步，`outcome` 是 `restored`，别的附项都空。
-
-`files.restored` 的一项（`Restored`）：`result`、`effect`、`path`；`action` 是 `write`、`trash`、`untrash`；`outcome` 是 `restored`（改回了，或者已经是要改成的样子），或者没动的 `changed`、`missing`、`occupied`、`gone`、`unsaved`、`unavailable`、`failed`；附项 `found`（`changed` 时现在的哈希）、`trash`（移进回收站成了时的新位置）、`hash`（移回来的是文件时它的哈希）、`error`（`failed` 时系统的原话）。内核只读 `result`、`effect`、`action`、`outcome`、`trash`、`hash`，别的原样记。
-
-### 怎么走
+**改回文件**：施工 U-1 拿掉了（动作 `Restore`、输入 `Restored`、算几步的 `restore.rs`）。`files.restored` 的类型留着，只为读以前的日志。
 
 **账本查的规矩**：只看这一条和它之前的日志，不看策略，不看时钟：时刻的先后不查。照下表的先后查，第一条违反的报出来。
 
@@ -255,10 +242,8 @@
 3. 没有那一轮、它已经撤掉了：拒绝，`unknown_turn`。写的序号不是一轮的开头也照这一条判。压缩以前的回合照样能撤（施工 6-9，`compaction.md` 第十一条）。
 4. 撤的几轮里有还算数的压缩的（账本的 `read_back_from` 有）：先读回更早的日志，读回来了再记（下面「撤掉压缩」）。没有的，当场记。
 5. 记一条 `turn.reverted`：`turns` 是那一轮和它以后还没撤掉的每一轮，照先后；`by` 是撤销的人，`cause` 是这个命令，不带回合编号。
-   - 撤掉的那几轮里派出去、还在跑的任务（账本的 `running_jobs` 里，有效历史照回合认出是这几轮派的，施工 7-8）：同时出 `StopJobs { jobs, by, cause }`，照编号，`by`、`cause` 是撤销的人和命令，排在 `Append` 后面，有改回文件的排在 `Restore` 前面（停下的命令不会再动文件）；读回日志的，排在 `Recall` 后面。一个都没有的不出。执行器停好了交回报：后台命令的是 `JobEnded`（`undone`），子代理的是子会话交来的 `Report`（`undone`），都照「回报」只记下、不叫醒（`kernel/session.md`）。撤销不等它们，照第 6 到 8 条回应（`agents.md` 第七条第 1 条）。
-6. 算改回的几步（下面「改回的几步」）。没有要改的：它落了盘就回应，附上它的序号。
-7. 有要改的：出 `Append` 和 `Restore { steps }`，会话进入改回文件。这时来的命令，接受过的照上一次回应，别的拒绝，`restoring`；这个撤销命令自己的编号这时还没记下，它再来也是 `restoring`。会话不算空闲。
-8. `Restored` 回来：先对照交出去的几步：一步一项、先后一样，每一项的 `result`、`effect`、`path`、`action` 和那一步一样；移进回收站成了的（`trash` 那一步 `restored`）要带着 `trash`。对不上的那一项改成 `failed`，`error` 写 `executor report did not match`；少了的照那一步补一项 `failed`，多出来的不要。然后记一条 `files.restored`，`files` 照对过的记，`by`、`cause` 和撤销那一条一样，不带回合编号；两条都落了盘才回应，附上两条的序号。不在改回文件时来的 `Restored` 是过时的，不理。
+   - 撤掉的那几轮里派出去、还在跑的任务（账本的 `running_jobs` 里，有效历史照回合认出是这几轮派的，施工 7-8）：同时出 `StopJobs { jobs, by, cause }`，照编号，`by`、`cause` 是撤销的人和命令，排在 `Append` 后面；读回日志的，排在 `Recall` 后面。一个都没有的不出。执行器停好了交回报：后台命令的是 `JobEnded`（`undone`），子代理的是子会话交来的 `Report`（`undone`），都照「回报」只记下、不叫醒（`kernel/session.md`）。撤销不等它们，照第 6 到 8 条回应（`agents.md` 第七条第 1 条）。
+6. 它落了盘就回应，附上它的序号。文件不改回（施工 U-1）。
 9. 撤了就跟没说过一样：请求里不写撤销过什么。
 10. 撤销不改现在的权限：撤掉的回合里切的级别照样算（`kernel/session.md`「切权限级别」第 7 条）。跟着撤掉的只是她看到过的那几块权限，下一个边界照有效历史里还剩的最近一块比，级别不一样的用切换那一份告诉她（`kernel/request.md`「事实」第 2 条，施工 2-7 补）。
 
@@ -369,14 +354,13 @@
 | `crates/miyu-kernel/src/history/tests/jobs.rs`（施工 7-2） | 派出去过的任务：标题、种类压缩掉派它的那一条也在；撤掉派它的那一轮标上、恢复去掉、恢复不了了照样标着；只记任务不留事件，换一份照原来的；由上一轮里到的回报接着开的一轮撤掉，带走上一轮排着的话、回报留着；闲着时由回报开的一轮撤掉，不拿别的 |
 | `crates/miyu-kernel/src/history/tests/settle.rs`（施工 6-9） | 落到检查点上：最近的压缩当检查点、比它早的一起丢、原文清掉、没有压缩的不动；从日志的一段重建：撤掉的回合里的压缩放在一边，恢复放回来换检查点；没有撤掉过压缩的日志，重建的和一条条收的一样；留着一切的那一份恢复了压缩照先后留成一条 |
 | `crates/miyu-kernel/src/session/tests/revert.rs` | 撤最后一轮、从前面的一轮撤；回合进行中拒绝；没有、撤掉了的拒绝；恢复以后请求接着往下长；两次撤销一次一次恢复；下一轮以后没得恢复；载入以后一样；撤过的重启轮不接 |
-| `crates/miyu-kernel/src/session/tests/restore.rs` | 改过文件的撤销等改完才回应、改的时候拒绝命令（手动压缩也拒绝，施工 6-8）、不算空闲；恢复一样；没改过文件的照旧；过时的结局不理；交回的少了一项，补一项 `failed` |
-| `crates/miyu-kernel/src/session/restore/tests.rs` | 撤销倒着来、只读的跳过；恢复正着来、只把真移回来的再移进去；来回以后用最新的位置；做成了的结局；对照交回的结局：对得上的照原样，移进回收站成了没带位置的、先后反了的、做的不是那一步的、编号路径对不上的 `failed`，少了的补、多出来的不要 |
+| `crates/miyu-kernel/src/session/tests/edits.rs`（施工 U-1） | 撤掉的那一轮改过文件的，撤销照样只记那一条、落了盘就回应，不交出别的动作、不挡紧跟着来的命令；以前日志里带 `files.restored` 的照样载入、照样能撤 |
 | `crates/miyu-kernel/src/session/tests/redo.rs`、`scenario/redo.rs`（施工 4-7 再补） | 重做最后一轮：一批里撤掉、原话再发、新开一轮，落了盘才回应、附撤销和重发的几句；换了话的只换开这一轮的那一句、附件照带；只换附件的字照原来的、不要附件的只剩字、字和附件都换的；换过一块都不剩的拒 `empty_message`（原来只有字换成空的、原来只有图不要附件）；排着接过来的几句一起重发、照先后；重做过的再重做、再撤销都带着全部几句；改过文件的先改回再发；撤掉压缩的先读回再发，读回以后才看得出不能重做的照样拒绝；回报叫醒的、手动压缩、清空、重启接着干的、没说过话、都撤掉了的拒 `not_redoable`，有回合在进行的拒 `turn_running`；重做以后不能恢复；同一个编号再来照上一次回应；载入以后一样 |
 | `crates/miyu-assemble/tests/redo.rs`（施工 4-7 再补） | 重做以后新的一轮的第一次请求和撤掉的那一轮的第一次请求一字不差（统一的请求、编码成线上的字节都比）：空闲时说的一句、排着接过来的几句 |
 | `crates/miyu-kernel/src/session/tests/revert/compaction.rs`（施工 6-9） | 撤掉压缩：先读回、读回的时候拒绝命令、不算空闲；读回来的对不上的（少一条、起点不对、中间断了）不理；撤销记在读回来的那一刻；回到前一个检查点、一次都没有的从头；撤不到压缩的不读；改回的文件照读回的那一段算；恢复不读磁盘、不请求模型、放回压缩；一次撤掉几次压缩；载入时认出哪次还算数，载入以后照样能恢复；不带回合的压缩载入不了 |
 | `crates/miyu-kernel/src/session/tests/scenario/rebuild.rs` | 检查点换了取回重读的原文：撤到没有检查点的不取，恢复了、载入以后、撤掉后来的一次回到它的，都取回它那几份（施工 6-9） |
 | `crates/miyu-kernel/src/session/tests/scenario.rs` | 撤销、恢复、再说一句；压缩以后事实重新注入（替身的压缩单开一轮，施工 6-9） |
-| `crates/miyu-kernel/src/session/tests/random/watch/undo.rs`、`watch/redo.rs`、`watch/restore.rs`、`random/restoring.rs`、`random/undoing.rs`（施工 6-9；重做施工 4-7 再补） | 随机输入里撤销、恢复、重做、改回文件照规矩接受或拒绝；重做重发的正好是撤掉的人的话、由最后一句开一轮；撤销、恢复、压缩随机交错：撤掉压缩的先读回、恢复不读、换回来的检查点取回原文；请求照撤销、恢复以后的历史；只交出改过的文件；结局只记一条；过时的、对不上的读回不理 |
+| `crates/miyu-kernel/src/session/tests/random/watch/undo.rs`、`watch/redo.rs`、`watch/reading.rs`、`watch/effects.rs`、`random/undoing.rs`（施工 6-9；重做施工 4-7 再补；施工 U-1 拿掉了改回文件那两份） | 随机输入里撤销、恢复、重做照规矩接受或拒绝，读回日志时来的命令一律 `restoring`，工具报的效果照样记（不占随机数）；重做重发的正好是撤掉的人的话、由最后一句开一轮；撤销、恢复、压缩随机交错：撤掉压缩的先读回、恢复不读、换回来的检查点取回原文；请求照撤销、恢复以后的历史；过时的、对不上的读回不理 |
 | `crates/miyu-kernel/src/session/tests/random/watch/jobs.rs`（施工 7-1） | 执行器替身在工具结果里派任务，后台命令和子代理轮着来，编号接着用过的最大的往下数，每隔两个接在前缀 `j9` 后面（带前缀的和不带的混在一份日志里，施工 7-1 补）：随机的撤销、恢复、压缩、崩了载入里账本照收（载入时整份日志再过一遍）。两种回报施工 7-2 接上（`watch/reports.rs`，`kernel/session.md`「守着它的」） |
 | `crates/miyu-kernel/src/facts/tests.rs`、`crates/miyu-kernel/tests/sample_facts.rs` | 事实照有效历史比：压缩、撤销以后重新注入 |
 

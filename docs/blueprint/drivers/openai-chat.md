@@ -56,6 +56,7 @@
 | `stream_usage` | 发不发 `stream_options.include_usage` | 发 | 同默认 |
 | `continuation` | `None` 不会接着写；`Prefix { field, path }`：`field` 是 `Prefix`（`prefix`）或 `Partial`（`partial`） | `None` | `Prefix { Prefix, "/beta/chat/completions" }` |
 | `toggle` | 开关思考的字段（施工 8-18）：`Toggle { field, on, off }`，`on`、`off` 照原样的 JSON 发；没有的是没有。装在 `Box` 里 | 没有 | `thinking`：`{"type":"enabled"}`、`{"type":"disabled"}` |
+| `strict_tools` | 约束解码（施工 L-2）：这一家照参数格式出字，见了要先加载的工具的外壳只能发 `{}`；是的，那几件照请求的 `full_parameters` 发完整格式 | 不是 | 不是 |
 
 常量：`FAMILY` = `openai-chat`，`PATH` = `/chat/completions`，`MESSAGE_LIMIT` = 2000（原话最多几个字节，在 `classify.rs`）。
 
@@ -82,7 +83,7 @@
    - 文字照 user 的拼法，发不了的图片、文件换成的字也照文字拼；一个字都没有的，写 `no-output.txt` 那一句；只有能发的图片、文件、没有字的，写 `tool-attachments-only.txt` 那一句。
    - 统一的请求里的 `error` 不发：出错写在内容里。
 7. **挪出来的附件**：tool 消息里能发的图片、PDF 挪走，一串 tool 消息完了（下一条不是 tool、或者到了最后），插一条 user：第一段是 `tool-attachments.txt` 那一句，后面照先后放它们。带名字的图片连同前后的标签一起挪，标签照 user 的拼法和挨着的文字拼成一段（`read` 读出来的图不带名字，现在不会有，施工 3-9 四补）。没有要挪的不插。
-8. **工具面**：`[{"type":"function","function":{"name":…,"description":…,"parameters":…}}]`，照统一的请求的先后，参数格式原样。工具面是空的、历史里也没有工具调用的，不发 `tools`；历史里有调用的，发 `[]`（有的网关要）。
+8. **工具面**：`[{"type":"function","function":{"name":…,"description":…,"parameters":…}}]`，照统一的请求的先后，参数格式原样；开关 `strict_tools` 开着的，要先加载的那几件的参数换成请求 `full_parameters` 里的完整格式（施工 L-2）。工具面是空的、历史里也没有工具调用的，不发 `tools`；历史里有调用的，发 `[]`（有的网关要）。
 9. **图片、文件**：
    - 图片：`Call.inputs.images` 是真的，写成 data URL；不是的，换成占位那一句，照文字接上。
    - 替它看的图（施工 8-17，`models.md`「怎么走」第十三条）：`Call.inputs.images` 不是真的、统一的请求的 `described` 里有这张图（照 `blob`）的转述、快照里有那三句标签的，不写占位，写 `image-description-open.txt`（带名字的图用 `image-description-open-named.txt`，写上名字）、转述原文（不转义：模型写的多行正文，和检查点里的摘要一样；末尾没有换行的补一个）、`image-description-close.txt`，照文字接上。工具结果里的就地换，和占位一样。能看图的不看 `described`：请求字节和没有转述时一个不差。快照里没有那三句的（以前造的）照旧写占位。
@@ -319,7 +320,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
    - 能不能关思考、要不要替它填输出上限，照模型的驱动算（Zen 上的 Claude 走 `anthropic`，开关是接口自带的）。
    - 三种驱动接同一个地址，各发各的路径（`/chat/completions`、`/messages`、`/responses`），key 一样，认证头照各自的驱动。
    - 列模型照供应商的驱动：这一页的 `GET /models`。
-3. **开关**：照默认（没实测过的不开）：`max_tokens`、发 `stream_options`、不接着写、没有思考的开关（目录写着 `toggle` 的模型不多 `off`）。思考回传照第 4 条。
+3. **开关**：照默认（没实测过的不开）：`max_tokens`、发 `stream_options`、不接着写、没有思考的开关、不是约束解码（目录写着 `toggle` 的模型不多 `off`）。思考回传照第 4 条。
 4. **思考回传照目录的 `interleaved`**（对所有走这一页的供应商都成立，不只 Zen）：
    - 目录给交错思考的模型写了 `interleaved`。`{"field":"reasoning_content"}` 的，`reasoning` 开关当 `Replay { ReasoningContent, always: true }`；`{"field":"reasoning"}` 的当 `Replay { Reasoning, always: true }`；别的写法（`true`、`{"field":"reasoning_details"}`）不认，照档案。
    - 只认第 1、2 层对上的（手写指定的、供应商对上了的）：字段名是供应商接口的写法，不是模型的性质，按名字对上的中转不借。

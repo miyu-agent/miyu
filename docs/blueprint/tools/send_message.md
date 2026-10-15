@@ -15,8 +15,10 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-basesystem/src/send_message.rs` | 参数、认 `to`（parent/子代理/会话编号）、长度上限、交给端口、结果和效果 |
+| `crates/miyu-basesystem/src/attach.rs`（施工 C-9） | 读她带的附件：最多 8 个，照 `read` 的规矩过权限链、安全打开、读到上限多一个字节为止，照 `miyu_tool::attachment` 认，交回 `Attached`（名字、真实的位置、内容、种类） |
 | `crates/miyu-tool/src/messages.rs` | 发话的端口 `MessagePort`、发给谁 `Recipient`（多 `Session`）、送到了 `Delivered`（`Sent`/`Held`）、没送出去 `NotSent`，那件工具的名字 `SEND_MESSAGE`、以前的名字 `SEND_MESSAGE_FORMERLY`（`tools/interface.md`） |
 | `crates/miyu-session/src/messages.rs` | 执行器这一头：照内核交的这个会话派出去的子代理认编号，经会话表的端口送过去；送到了再问一句对方是不是没人看着的一次性会话（`SessionPort::held`）；拒绝的原因码译成 `NotSent`（`session/tools.md`「父子之间留言」） |
+| `crates/miyu-session/src/attached.rs`（施工 C-9） | 附件存进属主的 blob，接在那一句字后面造成图片块、文件块；派子代理的在 `agents/spawner.rs` 里先存好再造子会话 |
 | `crates/miyu-session/src/spawn.rs` | 会话表的端口多一个方法 `SessionPort::held`：对方这时是不是没人看着的一次性会话 |
 | `crates/miyu-session/src/handle.rs`、`actor.rs`、`actor/mail.rs` | `Handle` 多 `oneshot()`、`watched()`：和 `busy()` 一样由 actor 的订阅者数算出来、共用一面旗 |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表那一头 `held` 的实现：照会话表里的 `Handle` 看。`watch`（施工 C-6）：找到被等的会话（没载入的先载入），把「谁在等」交给它的 actor |

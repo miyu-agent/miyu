@@ -17,6 +17,7 @@
 | `crates/miyu-policy/src/drivers.rs` | 快照里驱动的几句占位 `DriverPlaceholders`，读成驱动的占位（施工 3-9 四补从 `snapshot.rs` 挪出来） |
 | `crates/miyu-policy/src/tools.rs` | 工具面：排序、拆成两份；执行器替工具写的两句 |
 | `crates/miyu-policy/src/tools/choice.rs` | 工具面上一件的一个参数照会话开局时的配置填上能选的几个（`ToolEntry::offer`：插 `enum`、说明后面一行一个，一个都没有的拿掉这个参数），照快照读回能选的（`ToolEntry::offered`）；照原样的 JSON 搬，别的字节不动（施工 8-8 补，`subagent` 的 `pool`） |
+| `crates/miyu-policy/src/loading.rs` | 要先加载的工具：参数换成外壳、加上 `load_tools`、快照里的几句字 `LoadingTexts`（施工 L-1，`kernel/tools.md`） |
 | `crates/miyu-policy/src/guard.rs` | 权限策略拒绝时写的三句 |
 | `crates/miyu-policy/src/image_name.rs` | 带名字的图片的三句（施工 3-9 四补） |
 | `crates/miyu-policy/src/attached_path.rs` | 看不了的附件带上原来的路径的两句（施工 3-9 五补） |

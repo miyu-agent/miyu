@@ -22,7 +22,7 @@
 | `crates/miyu-fs/src/find.rs` | 模糊找文件的清单（`Index`）、打分（`score`），`fs.find` 用（施工 W-2） |
 | `crates/miyu-fs/src/range.rs` | 安全地打开以后读一段（`read_range`），`blob.get`、`fs.read` 用（施工 W-6） |
 
-用它的：基础系统的几件工具（`tools/`）；权限策略 `crates/miyu-session/src/guard.rs`（换成真实的位置、查边界；判 `trash` 时最后一段不跟链接）；撤销时改回文件 `crates/miyu-session/src/restore.rs`（`replace`、`trash::put`、`trash::restore`）；开会话时挑工作区 `crates/miyu-endpoint/src/sessions.rs`（`resolve`、`too_wide`）；`blob.put` 读人附的文件 `crates/miyu-endpoint/src/attach.rs`（`resolve`、`tilde`、边界表只拦谁都不能碰的那一片、`open_file`，施工 3-9 三补，`protocol.md`）；`fs.list`、`fs.find` `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`list_dir`、`find::Index`、`find::score`，找文件的清单记几份住在 `files/cache.rs`，施工 W-2，`protocol.md`）；`fs.realpath` 同一个 `crates/miyu-endpoint/src/files.rs`（直接用 `resolve`，不查边界，施工 W-3，`protocol.md`）；握手回应的 `host.home`（施工 W-3，`crates/miyu-endpoint/src/hello.rs`）照原样不走这一层，`host.workspace` 只调 `std::fs::canonicalize`，没有 `~`、相对路径要接，不用 `resolve`。`fs.read` 也是 `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`read_range`，施工 W-6，`protocol.md`）；`blob.get` 经 `crates/miyu-store/src/blob.rs` 的 `Blobs::read_range` 调同一个 `read_range`（`crates/miyu-endpoint/src/attach.rs`，施工 W-6）。
+用它的：基础系统的几件工具（`tools/`）；权限策略 `crates/miyu-session/src/guard.rs`（换成真实的位置、查边界；判 `trash` 时最后一段不跟链接）；开会话时挑工作区 `crates/miyu-endpoint/src/sessions.rs`（`resolve`、`too_wide`）；`blob.put` 读人附的文件 `crates/miyu-endpoint/src/attach.rs`（`resolve`、`tilde`、边界表只拦谁都不能碰的那一片、`open_file`，施工 3-9 三补，`protocol.md`）；`fs.list`、`fs.find` `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`list_dir`、`find::Index`、`find::score`，找文件的清单记几份住在 `files/cache.rs`，施工 W-2，`protocol.md`）；`fs.realpath` 同一个 `crates/miyu-endpoint/src/files.rs`（直接用 `resolve`，不查边界，施工 W-3，`protocol.md`）；握手回应的 `host.home`（施工 W-3，`crates/miyu-endpoint/src/hello.rs`）照原样不走这一层，`host.workspace` 只调 `std::fs::canonicalize`，没有 `~`、相对路径要接，不用 `resolve`。`fs.read` 也是 `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`read_range`，施工 W-6，`protocol.md`）；`blob.get` 经 `crates/miyu-store/src/blob.rs` 的 `Blobs::read_range` 调同一个 `read_range`（`crates/miyu-endpoint/src/attach.rs`，施工 W-6）。
 
 ### 对外的样子
 
@@ -43,7 +43,6 @@
 | `open_file(real)` | 安全地打开一份要读的普通文件 |
 | `replace(real, bytes)` | 把一份文件整体换成 `bytes` |
 | `trash::put(real, home)` | 放进系统的回收站，交回它在回收站里的真实路径 |
-| `trash::restore(kept, to)` | 把回收站里的 `kept` 移回 `to` |
 | `list_dir(dir, prefix, boundary)` | 列 `dir` 这一层：名字照 `prefix` 开头对、落进「谁都不能碰」那一片的不列，交回最多 `SHOWN` 条和有没有列全（`fs.list`，施工 W-2） |
 | `find::Index::start(root, boundary, cap, on_error)` | 在后台线程里建 `root` 的清单，随时能照 `Index::with` 读建到现在的那部分（`fs.find`，施工 W-2） |
 | `find::score(path, query)` | 模糊找怎么打分：交回分和对上的是第几个字（施工 W-2） |
@@ -224,14 +223,7 @@
 
 **别的系统**：一律 `Unavailable`。
 
-**移回来**（`trash::restore(kept, to)`）：
-
-1. `to` 的上级目录没了的建上。
-2. 把 `kept` 改名移回 `to`。
-3. 删掉回收站给它记的那一份：Linux 上 `kept` 的上级叫 `files` 的，删掉同一个回收站里的 `info/<名字>.trashinfo`，不是的什么都不删；Windows 上删掉 `$R` 旁边的 `$I`；macOS 上没有要删的。不在的不算；删不掉的只记一条运行日志：东西已经回来了。
-
-- `to` 要空着、`kept` 要还在：先查的是调用的一方（`crates/miyu-session/src/restore.rs`）。查和移之间 `to` 被别的程序占了的，改名会盖掉它。
-- 出错：上级目录建不了、改名移不回去（例如 `kept` 已经没了）：报那个错。
+**移回来**：施工 U-1 拿掉了（撤销不再改回文件）。进了回收站的，人自己从系统的回收站找回。
 
 #### 七、列一层、模糊找（`fs.list`、`fs.find`，施工 W-2；协议层的参数、边界检查、出错、清单记几份在 `web-module.md`「三、列文件、找文件」、`protocol.md`）
 
@@ -276,7 +268,7 @@
 | | `NotAFile(Kind)` | `it is a directory`、`it is a link`、`it is a FIFO`、`it is a device`、`it is a socket`、`it is not a regular file` |
 | | `Io` | 系统的原话 |
 
-`OpenError` 的这几句现在没有哪一处给她看：`read` 照种类说自己的那几句（`tools/read.md`）。`replace`、`trash::restore` 出错是系统的 `io::Error`；`trash::put` 出错见上面那三种。
+`OpenError` 的这几句现在没有哪一处给她看：`read` 照种类说自己的那几句（`tools/read.md`）。`replace` 出错是系统的 `io::Error`；`trash::put` 出错见上面那三种。
 
 运行日志（target `miyu::fs`，级别 WARN）：
 
@@ -296,7 +288,7 @@
 | `crates/miyu-fs/tests/wide.rs` | 太宽的四样；家目录读不出来时 |
 | `crates/miyu-fs/src/replace/tests.rs` | 新建和覆盖、不留临时文件、只读的不写、盖不上去时临时文件删掉；路上有链接的一个字节都不落到链接指的地方、不留临时文件（Unix（施工 5-10 下）） |
 | `crates/miyu-fs/src/nofollow/tests.rs` | 普通的文件、目录打得开；路上、最后一层有链接的报 `ELOOP`；一层一层打开那条路单独测：链接照样不开、相对的不收（施工 5-10 下） |
-| `crates/miyu-fs/tests/trash.rs` | Linux：移回来、`.trashinfo` 删了、上级目录没了的建上、只删回收站里的记录、回收站里没有了的移不回来；macOS、Windows（在 CI 上）：文件、目录放进系统的回收站再移回来，Windows 的 `$I` 删了 |
+| `crates/miyu-fs/tests/trash.rs` | Linux：放进场地假家目录的回收站，交回它在回收站里的位置、记下 `.trashinfo`；macOS、Windows（在 CI 上）：文件、目录放进系统的回收站，看完删掉（施工 U-1 起不再移回来） |
 | `crates/miyu-fs/src/trash/recycled/tests.rs` | `$I` 第 2 版、第 1 版，认不出的、不够长的、字数说得比记录长的，`$I` 在 `$R` 旁边 |
 | `crates/miyu-basesystem/tests/trash.rs` | 经 `trash` 这件工具：Linux 上放进家目录的回收站、记录的样子、`files/` 和 `info/` 是 `0700`、重名接 `.2`、同名却没有记录的不盖、目录和链接、转义、挪不动的不删也不留记录、家目录的回收站建不了的不删 |
 | `crates/miyu-basesystem/tests/write.rs` | 经 `write`：原来的权限照留、不留临时文件、只读的不写 |
@@ -309,7 +301,7 @@
 ### 出处
 
 - `11-权限与沙盒.md` 第四节（边界的默认值、几片重叠时谁说了算、第一版的清单、当前目录太宽）、第七节（核心进程里的文件工具、第一版怎么做）、A4、A9。
-- `10-自带软件.md` 第三节（「`write` 的细则」：先写临时文件再改名盖上去；「`trash` 的细则」：三个平台怎么放）、第七节（「改回文件的细则」：移回来）。
+- `10-自带软件.md` 第三节（「`write` 的细则」：先写临时文件再改名盖上去；「`trash` 的细则」：三个平台怎么放）。施工 U-1 拿掉了移回来（`trash::restore`）：撤销不再改回文件。
 - `web-module.md`「三、列文件、找文件」（施工 W-2，`fs.list`、`fs.find` 协议层的参数、出错、清单记几份）；打分照 proto/web-demo 分支 `web-demo/bridge/src/mention.rs` 的 `score` 搬过来。
 - `web-module.md`「七、分块读」（施工 W-6，`blob.get`、`fs.read` 协议层的参数、边界检查、出错）。
 
