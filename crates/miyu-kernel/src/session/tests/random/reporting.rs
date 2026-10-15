@@ -25,7 +25,7 @@ pub(super) fn opened(policy: Policy, oneshot: bool) -> Session {
 
 /// 回报，另用一串随机数。派出去的任务少（三百例里二十来个），有还没结束的时候多送：闲着三回里一回，正忙八回里一回；
 /// 没有的三十回里一回（多半对不上）。八回里一回交有没有头订阅着（三回里两回有），三回后台命令结束，四回子会话的回报。
-/// 后台命令结束不在改回文件、读回日志的时候送：执行器做完那一件才收收件箱（`kernel/session.md`「回报」第 9 条）。
+/// 后台命令结束不在读回日志的时候送：执行器做完那一件才收收件箱（`kernel/session.md`「回报」第 9 条）。
 pub(super) fn some_report(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Option<Input> {
     let live = watch.reports.jobs.values().any(|job| !job.over);
     let chance = match (live, watch.turn_open()) {
@@ -36,7 +36,7 @@ pub(super) fn some_report(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Op
     if rng.below(chance) != 0 {
         return None;
     }
-    let busy = watch.restoring.pending.is_some() || watch.undo.reading.is_some();
+    let busy = watch.undo.reading.is_some();
     match rng.below(8) {
         0 => Some(Input::Watched {
             watched: rng.below(3) > 0,

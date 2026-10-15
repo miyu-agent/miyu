@@ -1,12 +1,13 @@
-//! 撤销、恢复（终端蓝图 `tui.md`「正文」）：撤掉的几轮藏起来，别处来的话不跟着藏；另起一条撤销说明，改回了哪些文件、
-//! 停掉了哪些任务记在它上面。恢复时那几轮显示回来，最近那一条撤销说明藏起来。
+//! 撤销、恢复（终端蓝图 `tui.md`「正文」）：撤掉的几轮藏起来，别处来的话不跟着藏；另起一条撤销说明，停掉了哪些任务记在
+//! 它上面。恢复时那几轮显示回来，最近那一条撤销说明藏起来。施工 U-1 起撤销不再改回文件，说明上不提文件；以前日志里的
+//! `files.restored` 不进视图。
 
-use miyu_kernel::event::{Event, FilesRestored, TurnReverted, TurnUnreverted};
+use miyu_kernel::event::{Event, TurnReverted, TurnUnreverted};
 use miyu_kernel::id::TurnId;
 
 use super::Projector;
 use crate::entry::{Body, EntryId};
-use crate::notice::{Notice, RevertedFile};
+use crate::notice::Notice;
 
 impl Projector {
     /// 撤掉了几轮。
@@ -21,7 +22,6 @@ impl Projector {
             Notice::Reverted {
                 turns: reverted.turns.clone(),
                 said,
-                files: Vec::new(),
                 jobs: Vec::new(),
             },
         );
@@ -35,26 +35,6 @@ impl Projector {
         if let Some(id) = self.reverted.take() {
             self.hide(vec![id], true);
         }
-    }
-
-    /// 改回文件的结局：记在最近那一条撤销说明上（恢复时改回的不记）。
-    pub(super) fn restored(&mut self, restored: &FilesRestored) {
-        let Some(id) = self.reverted.clone() else {
-            return;
-        };
-        let files: Vec<RevertedFile> = restored
-            .files
-            .iter()
-            .map(|file| RevertedFile {
-                path: file.path.clone(),
-                outcome: file.outcome.clone(),
-            })
-            .collect();
-        self.touch(&id, |entry| {
-            if let Body::Notice(Notice::Reverted { files: mine, .. }) = &mut entry.body {
-                mine.extend(files);
-            }
-        });
     }
 
     /// 属于这几轮的条目：别处来的话不算；讲到这几轮的回顾也算。

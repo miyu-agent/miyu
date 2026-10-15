@@ -22,8 +22,7 @@
 //!   这一轮的工作目录；
 //! - 撤销、恢复：照规矩接受或者拒绝，列的是那几轮；请求照的是撤销、恢复以后的历史；撤了又恢复的，
 //!   下一次请求接着上一次往下长；
-//! - 改回文件：那几轮改过文件的才交出去，一个改过的文件一步；改的时候来的命令拒绝；结局只记一条
-//!   `files.restored`；过时的结局不理（施工 4-7 上）；
+//! - 文件不改回（施工 U-1）：撤销、恢复、重做只记那一条，读回日志的时候来的命令拒绝；
 //! - 打断时在跑的改文件的调用：叫它停，等它交回来、到点、又打断一次才收尾（施工 4-9 再补一，
 //!   `watch/stopping.rs`）；
 //! - 压缩：交了限额、用量过了线，先发摘要请求，替代到的 N 照规矩；说完了写压缩，取不出摘要的出错收场；压完的
@@ -61,7 +60,6 @@ mod recapping;
 mod replies;
 mod reporting;
 mod rereading;
-mod restoring;
 mod rng;
 mod sighting;
 mod stopping;
@@ -95,7 +93,6 @@ use paths::{EXPECTED_PATHS, LONG_PATHS};
 use recapping::{finish_recap, some_recap};
 use replies::some_injections;
 use rereading::some_reread;
-use restoring::some_restored;
 use rng::Rng;
 use stopping::some_stop_end;
 use undoing::{read_back_now, some_read_back, some_redo, some_undo};
@@ -330,7 +327,6 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         // 不跟着错开。
         let mut crashes = Rng(seed ^ 0x00C0_FFEE);
         let mut undos = Rng(seed ^ 0x0DD0_0DD0);
-        let mut restores = Rng(seed ^ 0x5E57_04ED);
         let mut limits = Rng(seed ^ 0x11A1_7500);
         let mut rereads = Rng(seed ^ 0x2E2E_AD00);
         let mut overflows = Rng(seed ^ 0x0F10_0D00);
@@ -369,9 +365,6 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
                 watch.feed(&mut session, input);
             }
             if let Some(input) = some_undo(&mut undos, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_restored(&mut restores, &watch, &mut next_id) {
                 watch.feed(&mut session, input);
             }
             if let Some(input) = some_limits(&mut limits) {
@@ -432,10 +425,6 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         }
         if let Some(input) = read_back_now(&watch) {
             watch.feed(&mut session, input);
-        }
-        if let Some(steps) = watch.restoring.pending.clone() {
-            let files = steps.iter().map(crate::testkit::restored).collect();
-            watch.feed(&mut session, Input::Restored { at: at(58), files });
         }
         for input in finish_recap(&watch) {
             watch.feed(&mut session, input);

@@ -45,7 +45,6 @@ mod replies;
 mod report;
 mod respond;
 mod restart;
-mod restore;
 mod retry;
 mod revert;
 mod seal;
@@ -76,7 +75,6 @@ pub use policy::{
     Compaction, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, SkillRebuild, Titles,
 };
 pub use report::Upward;
-pub use restore::{Expect, Step, StepAction};
 
 use crate::event::{Body, Event, Permission, SessionCreated, ToolResult, ToolStatus};
 use crate::facts::Environment;
@@ -88,7 +86,7 @@ use crate::request::Fingerprint;
 use crate::time::Timestamp;
 use jobs::Arrived;
 use recent::Recent;
-use revert::{ReadingBack, Restoring};
+use revert::ReadingBack;
 use turn::Turn;
 
 /// 一个会话的状态机。
@@ -123,8 +121,6 @@ pub struct Session {
     last_request: Option<Fingerprint>,
     /// 结束了、`turn.ended` 还没落盘的回合，和那一条的序号：落了盘才跑回合结束的挂接点。
     closing: Vec<(TurnId, Seq)>,
-    /// 撤销、恢复以后正在改回文件（施工 4-7 上）：交出去了，结局还没回来。
-    restoring: Option<Restoring>,
     /// 撤掉压缩的撤销正在读回日志（施工 6-9）：交出去了，读回的还没来。
     reading: Option<ReadingBack>,
     /// 模型的限额，执行器交来的；没交过的不主动压缩（施工 6-2 上）。只在内存里。
@@ -191,10 +187,7 @@ impl Session {
     /// 空闲：没有在跑的回合，也没有结束了、`turn.ended` 还没落盘的，也没在读回日志、改回文件。核心看它决定能不能空闲
     /// 退出（`12-进程形态与分发.md` 第二节，施工 3-9 上）。
     pub fn idle(&self) -> bool {
-        self.turn.is_none()
-            && self.closing.is_empty()
-            && self.restoring.is_none()
-            && self.reading.is_none()
+        self.turn.is_none() && self.closing.is_empty() && self.reading.is_none()
     }
 
     /// 会话现在在哪个目录里干活：头最近一次报来的，回合开始时这一轮照它（施工 8-4）。纯查询：会话 actor 在回合开始时照它
@@ -217,7 +210,7 @@ impl Session {
     ///
     /// 删不了，交回原因。
     pub fn deletable(&self) -> Result<(), Reason> {
-        if self.restoring.is_some() || self.reading.is_some() {
+        if self.reading.is_some() {
             return Err(Reason::Restoring);
         }
         match self.idle() {
@@ -315,7 +308,6 @@ impl Session {
                 call_id,
                 questions,
             } => self.tool_asks(at, call_id, questions),
-            Input::Restored { at, files } => self.restored(at, files),
             Input::ReadBack { at, from, events } => self.read_back(at, from, events),
             Input::Restarting { at } => self.restart(at),
             Input::JobEnded {
@@ -373,8 +365,8 @@ impl Session {
             let events = events.to_vec();
             return self.reply_when_stored(id, events);
         }
-        // 读回日志、改回文件的时候不接命令：会话 actor 做完才接下一个，这是兜底（施工 4-7 上、6-9）。
-        if self.restoring.is_some() || self.reading.is_some() {
+        // 读回日志的时候不接命令：会话 actor 做完才接下一个，这是兜底（施工 6-9）。
+        if self.reading.is_some() {
             return vec![rejected(id, Reason::Restoring)];
         }
         if self.ledger.sealed() && !seal::taken_when_sealed(&command) {

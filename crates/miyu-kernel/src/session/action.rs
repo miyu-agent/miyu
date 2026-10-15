@@ -11,7 +11,6 @@ use crate::request::{Difference, Request};
 use crate::time::Timestamp;
 
 use super::report::Upward;
-use super::restore::Step;
 
 /// 会话要执行器做的一件事。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,17 +117,10 @@ pub enum Action {
         /// 照题目的先后，每道题的回答。
         answers: Vec<Response>,
     },
-    /// 撤销、恢复时照效果改回文件（`10-自带软件.md` 第七节「改回文件的细则」，施工 4-7 上）：一步一步先核对再动手，
-    /// 做完了一步一项交回结局。这时不开新的一轮，做完才接下一个命令。
-    Restore {
-        /// 改回的几步，照先后。
-        steps: Vec<Step>,
-    },
     /// 停掉撤掉的那几轮派出去、还在跑的任务（施工 7-8，`agents.md` 第七条第 1 条）：后台命令整组杀掉，子代理连它派的一起
     /// 停，回报都记 `undone`、不叫醒她。打断时停这一步在等的前台子代理也是它（施工 T-1 下，`undone` 是假：记 `stopped`，前台
     /// 的回报一律不叫醒）。后台命令的回报交回 [`super::Input::JobEnded`]（`by`、`cause` 照这里的），子代理的
-    /// 由子会话交来（命令 `Report`）。不送回、不等：撤销照常回应。排在撤销那一条的 `Append` 后面、改回文件前面：停下的
-    /// 命令不会再动文件。
+    /// 由子会话交来（命令 `Report`）。不送回、不等：撤销照常回应。排在撤销那一条的 `Append` 后面。
     StopJobs {
         /// 停哪几个，照编号。
         jobs: Vec<JobId>,
@@ -262,7 +254,7 @@ pub enum Reason {
     UnknownTurn,
     /// 没有能恢复的撤销：没撤过，或者撤了以后开过回合、压缩过。
     NothingToUnrevert,
-    /// 撤销、恢复还没做完：正在读回更早的日志（施工 6-9）、正在改回文件（施工 4-7 上）。等它做完再来。
+    /// 撤销还没做完：正在读回更早的日志（施工 6-9）。等它做完再来。原因码的名字照旧（施工 U-1 拿掉了改回文件，头认的是这个码）。
     Restoring,
     /// 撤最后一轮（不写回合编号）时一轮都没有：没说过话、都撤掉了、都压缩进了摘要（施工 4-7 下）。
     NothingToRevert,

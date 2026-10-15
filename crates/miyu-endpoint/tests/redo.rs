@@ -1,6 +1,6 @@
 //! 重做（施工 4-7 再补，`docs/blueprint/protocol.md` 的 `session.redo`）：协议上重做一次，回应照撤销写、`events` 最后是重发的
 //! 那一句；推送里是一批撤销、原话、新的一轮，新的一轮的请求和撤掉的那一轮的一字不差；换了话的推送里是新的话，`said` 是原来
-//! 的；改过文件的先改回；重做以后恢复不了。一轮都没有、最后一轮是清空的、有回合在进行、换成空的，照头的语言拒绝；`text`
+//! 的；改过文件的照样同一批重发，文件不动（施工 U-1）；重做以后恢复不了。一轮都没有、最后一轮是清空的、有回合在进行、换成空的，照头的语言拒绝；`text`
 //! 不是字符串、会话编号不对的是参数不对，写 `null` 当没写。附件照 `session.send` 传：不写的照带原来的，写了的换掉，空的是不要，
 //! 核心里没有的拒绝。
 
@@ -75,8 +75,11 @@ async fn a_turn_is_redone_over_the_protocol() {
     assert_eq!(events.len(), 2, "撤销、重发的那一句：{result}");
     assert_eq!(result["turns"], json!(1));
     assert_eq!(result["said"], json!("hi"));
-    assert_eq!(result["commands"], json!(0));
-    assert_eq!(result["files"], json!([]));
+    assert!(
+        result.get("files").is_none(),
+        "不提文件（施工 U-1）：{result}"
+    );
+    assert!(result.get("commands").is_none(), "{result}");
     assert!(result["cwd"].is_string(), "{result}");
     assert_eq!(
         words_at(&home, &session, events[1]),
@@ -144,7 +147,7 @@ async fn new_words_are_said_instead() {
 }
 
 #[tokio::test]
-async fn the_files_come_back_before_it_is_said_again() {
+async fn a_redo_that_changed_files_leaves_them_and_says_it_again() {
     let home = Home::new();
     std::fs::write(home.work.join("a.txt"), "old\n").expect("写得进");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
@@ -173,18 +176,19 @@ async fn the_files_come_back_before_it_is_said_again() {
     let result = result_of(&reply);
     assert_eq!(
         result["events"].as_array().map(Vec::len),
-        Some(3),
-        "撤销、改回的结局、重发的那一句：{result}"
+        Some(2),
+        "撤销、重发的那一句：{result}"
     );
-    assert_eq!(result["files"][0]["outcome"], json!("restored"), "{result}");
+    assert!(result.get("files").is_none(), "{result}");
     assert_eq!(
         std::fs::read_to_string(home.work.join("a.txt")).expect("在"),
-        "old\n"
+        "new\n",
+        "文件不动"
     );
     home.until_turns(&session, 2).await;
     assert_eq!(
         opened_by(&home, &session, "c3"),
-        result["events"][2].as_u64().expect("是序号") + 1
+        result["events"][1].as_u64().expect("是序号") + 1
     );
 }
 

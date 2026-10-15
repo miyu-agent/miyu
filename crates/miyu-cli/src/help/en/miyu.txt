@@ -2,7 +2,7 @@ Usage: miyu <command> [options]
 
 Commands:
   ask <words>           Say something and print the AI's answer
-  undo, rewind          Undo the last turn and restore the files the AI changed
+  undo, rewind          Undo the last turn
   restore               Bring back what the latest undo took
   redo [words]          Redo the last turn, or redo it with new words
   compact [words]       Compact the context into a summary

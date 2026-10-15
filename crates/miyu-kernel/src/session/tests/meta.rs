@@ -4,7 +4,6 @@
 
 use super::executor::*;
 use super::load::{Logged, load};
-use super::restore::{edited, steps_of};
 use super::revert::revert;
 use super::*;
 use crate::event::MetaChanged;
@@ -134,15 +133,6 @@ fn only_an_idle_session_can_be_deleted() {
     );
     session.handle(stored(8));
     assert_eq!(session.deletable(), Ok(()));
-}
-
-#[test]
-fn a_session_restoring_files_cannot_be_deleted() {
-    let (mut logged, _) = edited();
-    let actions = logged.handle(revert(9, 3));
-    assert!(!steps_of(&actions).is_empty(), "要改回文件");
-    logged.handle(stored(logged.last()));
-    assert_eq!(logged.session.deletable(), Err(Reason::Restoring));
 }
 
 /// 记下用了一个斜杠命令（施工 O-6）：记一条 `command.ran`，`by`、`cause` 照命令，落了盘回应、附上它；同一个编号再来照上一次

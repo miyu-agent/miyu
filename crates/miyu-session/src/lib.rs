@@ -48,7 +48,6 @@ mod pictures;
 mod port;
 mod report;
 mod reread;
-mod restore;
 mod route;
 mod sandbox;
 mod sessions;

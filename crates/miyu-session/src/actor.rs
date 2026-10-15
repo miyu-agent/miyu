@@ -422,14 +422,6 @@ impl Actor {
                 self.tools.cancel(call_id);
                 None
             }
-            // 改回文件（施工 4-7 上）：当场在阻塞线程里做完，结局排在收件箱里别的命令前面送回去。
-            Action::Restore { steps } => {
-                let files = self.tools.restore(steps).await;
-                Some(Input::Restored {
-                    at: self.clock.now(),
-                    files,
-                })
-            }
             // 压完重读（施工 6-5）：当场在阻塞线程里读完、存成 blob，再做下一个动作（它后面紧跟着摘要请求）。
             Action::Reread { seen, paths, limit } => {
                 let files = self.tools.reread(paths, limit).await;

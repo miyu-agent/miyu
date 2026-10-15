@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-use miyu_kernel::event::{CallError, CompactTrigger, PauseReason, RestoreOutcome, Usage};
+use miyu_kernel::event::{CallError, CompactTrigger, PauseReason, Usage};
 use miyu_kernel::id::{JobId, Seq, TurnId};
 
 use crate::entry::{Answered, JobDone, ModelSwap, Peer, is_false};
@@ -33,9 +33,6 @@ pub enum Notice {
         /// 撤掉的第一句的头一行。
         #[serde(skip_serializing_if = "Option::is_none")]
         said: Option<String>,
-        /// 改回了哪些文件。
-        #[serde(skip_serializing_if = "Vec::is_empty")]
-        files: Vec<RevertedFile>,
         /// 停掉的后台任务。
         #[serde(skip_serializing_if = "Vec::is_empty")]
         jobs: Vec<JobId>,
@@ -64,15 +61,6 @@ pub enum Notice {
     },
     /// 等的会话怎么了。
     Peer(Peer),
-}
-
-/// 改回的一个文件。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RevertedFile {
-    /// 路径。
-    pub path: String,
-    /// 改回的结局。
-    pub outcome: RestoreOutcome,
 }
 
 /// 压缩那一条。

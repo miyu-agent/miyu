@@ -1,11 +1,10 @@
-//! 重做（`docs/blueprint/kernel/history.md`「重做」，施工 4-7 再补）这一层：一批追加、落了盘才回应；改过文件的先改回，
-//! 改的时候拒绝命令、不算空闲，改完了 `files.restored`、重发、新的一轮同一批；同一个编号再来照上一次回应。走一整轮的
-//! 场景在 `scenario/redo.rs`。
+//! 重做（`docs/blueprint/kernel/history.md`「重做」，施工 4-7 再补）这一层：一批追加、落了盘才回应；改过文件的照样同一批
+//! 重发，文件不动（施工 U-1）；同一个编号再来照上一次回应。走一整轮的场景在 `scenario/redo.rs`。
 
+use super::edits::edited;
 use super::load::Logged;
-use super::restore::{edited, steps_of};
 use super::*;
-use crate::event::{FilesRestored, MessageUser};
+use crate::event::MessageUser;
 
 /// `n` 号命令：alice 重做最后一轮，开这一轮的那一句换成 `words`（没有的原样）。
 fn redo(n: u64, words: Option<&str>) -> Input {
@@ -22,14 +21,6 @@ fn redo(n: u64, words: Option<&str>) -> Input {
             attachments: None,
         },
     })
-}
-
-/// 这几步都改回了的结局。
-fn done(steps: &[Step]) -> Input {
-    Input::Restored {
-        at: at(58),
-        files: steps.iter().map(crate::testkit::restored).collect(),
-    }
 }
 
 /// 一轮（3 号，2 到 8）说完了，全落了盘。
@@ -105,60 +96,24 @@ fn the_same_redo_again_is_answered_as_before() {
 }
 
 #[test]
-fn a_redo_that_changed_files_restores_them_before_saying_it_again() {
+fn a_redo_that_changed_files_says_it_again_at_once() {
     let (mut logged, _) = edited();
     let asked = logged.log[1].clone();
     let actions = logged.handle(redo(9, None));
-    let reverted = logged.last();
-    assert_eq!(appended(&actions), seqs(&[reverted]), "先只记撤销");
-    let steps = steps_of(&actions);
-    assert_eq!(steps.len(), 1, "交出改回文件");
-    logged.handle(stored(reverted));
-    assert!(!logged.session.idle(), "改回文件的时候不算空闲");
-    let actions = logged.handle(send(10, "hi"));
     assert!(
-        matches!(
-            actions.as_slice(),
-            [Action::Reply {
-                outcome: Outcome::Rejected {
-                    reason: Reason::Restoring,
-                    ..
-                },
-                ..
-            }]
-        ),
-        "{actions:?}"
+        actions
+            .iter()
+            .all(|action| matches!(action, Action::Append(_))),
+        "文件不动（施工 U-1）：{actions:?}"
     );
-    let actions = logged.handle(done(&steps));
     let events = appended_events(&actions);
     assert_eq!(
         events
             .iter()
             .map(|event| event.body.kind())
-            .collect::<Vec<_>>(),
-        [
-            "files.restored",
-            "message.user",
-            "turn.started",
-            "context.injected",
-            "context.injected"
-        ],
-        "改完了：结局、重发、新的一轮同一批"
+            .collect::<Vec<_>>()[..3],
+        ["turn.reverted", "message.user", "turn.started"],
+        "撤销、重发、新的一轮同一批"
     );
-    let files = steps.iter().map(crate::testkit::restored).collect();
-    assert_eq!(events[0].body, Body::FilesRestored(FilesRestored { files }));
     assert_eq!(events[1].body, asked.body, "原话原样");
-    assert_eq!(
-        (&events[1].by, &events[1].cause, events[1].turn),
-        (&alice(), &Some(id(9)), None)
-    );
-    for event in &events {
-        assert_eq!(event.at, at(58), "时刻是改完回来的那一刻");
-    }
-    let (restored, resent) = (events[0].seq.get(), events[1].seq.get());
-    let actions = logged.handle(stored(logged.last()));
-    assert_eq!(
-        replies(&actions),
-        [&accepted_reply(9, &[reverted, restored, resent])]
-    );
 }

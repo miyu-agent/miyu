@@ -267,7 +267,6 @@ impl Session {
             && !self.ledger.sealed()
             && !self.restarting
             && self.ledger.last_reverted().is_none()
-            && self.restoring.is_none()
     }
 
     /// 派它的那一轮撤掉了：回报不渲染，也不叫醒她（`agents.md` 第七条第 2 条）。没派过的一样。别的 harness、别的会话发来的

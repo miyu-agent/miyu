@@ -1,10 +1,9 @@
 //! 撤销时停掉那几轮派出去的（施工 7-8，`docs/blueprint/agents.md` 第七条第 1、3 条，`kernel/history.md`「撤销」）：撤掉的
 //! 那几轮派出去、还在跑的后台命令和子代理，记下撤销的同时交出 `StopJobs`，`by`、`cause` 是撤销的人和命令；已经结束了的、
-//! 别的回合派的不停；停好了的回报记 `undone`，不叫醒她；恢复撤销不重起；重做的撤销那一半一样停；改过文件的先停任务、
-//! 再改回文件。
+//! 别的回合派的不停；停好了的回报记 `undone`，不叫醒她；恢复撤销不重起；重做的撤销那一半一样停；改过文件的照样只停任务，
+//! 文件不动（施工 U-1）。
 
 use super::super::load::Logged;
-use super::super::restore::steps_of;
 use super::super::revert::revert as undo;
 use super::reports::{CHILD, dispatched, last_request, starter};
 use super::*;
@@ -160,10 +159,8 @@ fn stopping_comes_before_restoring_files() {
         .map(|action| match action {
             Action::Append(_) => "append",
             Action::StopJobs { .. } => "stop_jobs",
-            Action::Restore { .. } => "restore",
             _ => "other",
         })
         .collect();
-    assert_eq!(kinds, ["append", "stop_jobs", "restore"]);
-    assert_eq!(steps_of(&actions).len(), 1);
+    assert_eq!(kinds, ["append", "stop_jobs"], "文件不动（施工 U-1）");
 }

@@ -42,7 +42,7 @@ pub(super) fn some_undo(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opti
 /// 重做（施工 4-7 再补），另用一串随机数：空闲时十回里有一回，回合开着时八十回里一回（该被拒）。一半原样，一半换成一句
 /// 话，二十回里有一回换成空的（随机的话没有附件，该被拒）。
 pub(super) fn some_redo(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Option<Input> {
-    // 最后一轮里压过的、改过文件的，多半重做它：撤它要先读回日志、改回文件，光靠均匀地抽难得碰上（照撤销，施工 6-9）。
+    // 最后一轮里压过的、改过文件的，多半重做它：撤它要先读回日志，光靠均匀地抽难得碰上（照撤销，施工 6-9）。
     let last = watch.undo.effective.last();
     let compacted = watch.compaction_turns().last() == last;
     let changed = last.is_some_and(|turn| watch.changes_in(&[*turn]) > 0);

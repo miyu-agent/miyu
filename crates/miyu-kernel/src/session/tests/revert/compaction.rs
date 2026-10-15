@@ -4,9 +4,9 @@
 //!
 //! 用执行器替身跑的，压缩是替身单开的一轮（[`Stage::compact`]）：替代到原来的最后一条。
 
+use super::super::edits::{changed, edited};
 use super::super::load::Logged;
 use super::super::load::load;
-use super::super::restore::{changed, edited, steps_of};
 use super::*;
 use crate::event::{EndReason, RestoredFile, TurnEnded, TurnStarted};
 use crate::id::ContentHash;
@@ -291,7 +291,7 @@ fn while_reading_back_commands_are_refused_and_what_does_not_fit_is_ignored() {
     gap.remove(4);
     gap.push(log.last().unwrap().clone());
     assert_eq!(session.handle(read_back(1, gap)), [], "中间断了的不理");
-    // 对得上的：撤掉回合 3 和压缩那一轮，改过的文件照读回的那一段改回。
+    // 对得上的：撤掉回合 3 和压缩那一轮；改过的文件不动（施工 U-1）。
     let actions = session.handle(read_back(1, log.clone()));
     assert_eq!(
         session.history.own(),
@@ -306,7 +306,12 @@ fn while_reading_back_commands_are_refused_and_what_does_not_fit_is_ignored() {
         })]
     );
     assert_eq!(events[0].at, at(58), "记在读回来的那一刻");
-    assert_eq!(steps_of(&actions).len(), 1, "回合 3 改过的那个文件改回去");
+    assert!(
+        actions
+            .iter()
+            .all(|action| matches!(action, Action::Append(_))),
+        "文件不动：{actions:?}"
+    );
     assert_eq!(
         session.handle(read_back(1, log)),
         [],
@@ -347,7 +352,7 @@ fn a_compaction_without_its_turn_does_not_load() {
     );
 }
 
-/// 撤掉压缩回到的检查点重读过文件、撤掉的那一轮又改过文件：先记撤销，紧跟着取回原文，再改回文件。
+/// 撤掉压缩回到的检查点重读过文件、撤掉的那一轮又改过文件：先记撤销，紧跟着取回原文；文件不动（施工 U-1）。
 #[test]
 fn back_to_a_checkpoint_with_files_the_recall_comes_right_after_the_undo() {
     let (logged, _) = edited();
@@ -405,7 +410,7 @@ fn back_to_a_checkpoint_with_files_the_recall_comes_right_after_the_undo() {
     assert!(
         matches!(
             actions.as_slice(),
-            [Action::Append(_), Action::Recall { blobs }, Action::Restore { .. }] if *blobs == [blob.clone()]
+            [Action::Append(_), Action::Recall { blobs }] if *blobs == [blob.clone()]
         ),
         "{actions:?}"
     );

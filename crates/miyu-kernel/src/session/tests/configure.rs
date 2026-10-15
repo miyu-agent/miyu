@@ -2,9 +2,9 @@
 //! 不记，编号照样记下；回合进行中的带上回合、回合照常；造会话时记下的引用就是现在的，回合开始交出去；载入照整份日志算
 //! 回来，撤掉的回合里换的也算；改回文件的时候拒绝。退回默认的对不上不记。
 
+use super::edits::edited;
 use super::executor::*;
 use super::load::{Logged, load};
-use super::restore::edited;
 use super::revert::revert;
 use super::*;
 use crate::event::PolicyChanged;
@@ -135,24 +135,14 @@ fn loading_counts_every_change_even_in_undone_turns() {
 }
 
 #[test]
-fn a_change_is_refused_while_files_are_being_restored() {
+fn a_change_right_after_undoing_an_edit_is_taken() {
     let (mut logged, _) = edited();
     logged.handle(revert(9, 3));
     logged.handle(stored(logged.last()));
     let actions = logged.handle(configure(10, "b/n"));
-    assert!(appended_events(&actions).is_empty());
     assert!(
-        matches!(
-            replies(&actions)[..],
-            [Action::Reply {
-                outcome: Outcome::Rejected {
-                    reason: Reason::Restoring,
-                    ..
-                },
-                ..
-            }]
-        ),
-        "{actions:?}"
+        !appended_events(&actions).is_empty(),
+        "文件不动，撤销完不挡命令（施工 U-1）：{actions:?}"
     );
 }
 

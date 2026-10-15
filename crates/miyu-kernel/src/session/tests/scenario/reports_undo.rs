@@ -3,8 +3,8 @@
 //! 照日志算回来；由上一轮里到的回报接着开的一轮，撤它带走上一轮排着的消息，回报留着；读回日志的时候到的后台命令结束，
 //! 读回来记了撤销再记。
 
+use super::super::edits::changed;
 use super::super::load::{Logged, load};
-use super::super::restore::{changed, steps_of};
 use super::super::revert::{revert as undo, unrevert};
 use super::reports::{CHILD, dispatched, last_request, starter, trigger_of};
 use super::*;
@@ -130,7 +130,7 @@ fn a_report_after_its_start_was_compacted_still_opens_a_turn() {
 }
 
 #[test]
-fn restoring_files_after_a_redo_holds_the_report_until_they_are_back() {
+fn a_report_after_unreverting_an_edit_opens_a_turn_at_once() {
     let mut logged = Logged::new();
     let seen = logged.ask(1, "改一下，顺便跑测试");
     logged.tools(seen, &[("write", r#"{"file_path":"a.txt"}"#)]);
@@ -155,19 +155,15 @@ fn restoring_files_after_a_redo_holds_the_report_until_they_are_back() {
     let actions = logged.handle(stored(logged.last()));
     let (seen, _) = calls(&actions).remove(0);
     logged.say(seen.get(), "改好了");
-    let restored = |actions: &[Action]| Input::Restored {
-        at: at(58),
-        files: steps_of(actions)
-            .iter()
-            .map(crate::testkit::restored)
-            .collect(),
-    };
     let actions = logged.handle(undo(20, 3));
+    assert!(
+        actions
+            .iter()
+            .all(|action| !matches!(action, Action::Append(events) if events.len() > 1)),
+        "只记撤销：{actions:?}"
+    );
     logged.handle(stored(logged.last()));
-    logged.handle(restored(&actions));
-    logged.handle(stored(logged.last()));
-    let actions = logged.handle(unrevert(21));
-    assert!(!steps_of(&actions).is_empty(), "恢复要改回文件");
+    logged.handle(unrevert(21));
     logged.handle(stored(logged.last()));
     let ended = logged.handle(Input::JobEnded {
         at: at(57),
@@ -184,20 +180,16 @@ fn restoring_files_after_a_redo_holds_the_report_until_they_are_back() {
             chars: None,
         },
     });
-    let kinds = |actions: &[Action]| -> Vec<String> {
-        appended_events(actions)
-            .iter()
-            .map(|event| event.body.kind().to_string())
-            .collect()
-    };
-    assert_eq!(kinds(&ended), ["job.reported"], "改回文件的时候只记下");
-    let reported = appended_events(&ended)[0].seq;
-    let back = logged.handle(restored(&actions));
-    let events = appended_events(&back);
-    assert_eq!(kinds(&back)[..2], ["files.restored", "turn.started"]);
+    let events = appended_events(&ended);
+    let kinds: Vec<&str> = events.iter().map(|event| event.body.kind()).collect();
+    assert_eq!(
+        kinds[..2],
+        ["job.reported", "turn.started"],
+        "文件不动，恢复了当场接着开（施工 U-1）"
+    );
     assert!(
-        matches!(&events[1].body, Body::TurnStarted(started) if started.trigger == Some(reported)),
-        "改完了由它接着开：{events:?}"
+        matches!(&events[1].body, Body::TurnStarted(started) if started.trigger == Some(events[0].seq)),
+        "由它接着开：{events:?}"
     );
 }
 

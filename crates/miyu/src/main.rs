@@ -36,7 +36,7 @@ struct Cli {
 enum Command {
     /// 说一句话，打印她的回答。
     Ask(miyu_cli::Ask),
-    /// 撤掉当前会话的最后一轮，把她改过的文件改回去。也可以写成 `rewind`（施工 4-7 补）。
+    /// 撤掉当前会话的最后一轮（文件不改回，施工 U-1）。也可以写成 `rewind`（施工 4-7 补）。
     #[command(alias = "rewind")]
     Undo(miyu_cli::Undo),
     /// 发下一句之前，恢复最近一次撤销（原来叫 `redo`，施工 4-7 补改名）。

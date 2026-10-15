@@ -11,6 +11,7 @@ mod breaker;
 mod clear;
 mod compaction;
 mod configure;
+mod effects;
 mod invariants;
 mod jobs;
 mod load;
@@ -24,11 +25,11 @@ mod prepare;
 mod present;
 mod question;
 mod queue;
+mod reading;
 mod rebuild;
 mod recap;
 mod redo;
 mod reports;
-mod restore;
 mod shorten;
 mod sight;
 mod stopping;
@@ -95,10 +96,8 @@ pub(super) struct Watch {
     restarts: load::Restarts,
     /// 撤销：有效历史里还有哪几轮、能恢复的几次、请求里不该有的几条。
     pub(super) undo: undo::Undo,
-    /// 重做（施工 4-7 再补）：在等读回的、在等改回文件的那一次。
+    /// 重做（施工 4-7 再补）：在等读回的那一次。
     redoing: redo::Redoing,
-    /// 改回文件：交出去了、结局还没回来的那几步（施工 4-7 上）。
-    pub(super) restoring: restore::Restoring,
     /// 喂过的输入种类（`kinds.rs` 的清单）。
     pub(super) fed: BTreeSet<InputKind>,
     /// 重试：该交出到点叫醒的、在等的、叫醒了的，这一步连着几次。
@@ -162,7 +161,6 @@ impl Watch {
             restarts: load::Restarts::default(),
             undo: undo::Undo::default(),
             redoing: redo::Redoing::default(),
-            restoring: restore::Restoring::default(),
             fed: BTreeSet::new(),
             retries: model::Retries::default(),
             stopping: stopping::Stopping::default(),
@@ -210,18 +208,12 @@ impl Watch {
             Input::Command(command) if !self.fresh(&command.id) => Some(command.id.clone()),
             _ => None,
         };
-        // 改回文件的时候来的新命令一律拒绝（`watch/restore.rs`）：别的看守不再照自己的规矩判。
-        let refused = self.restoring_refuses(&input);
+        // 读回日志的时候来的新命令一律拒绝（`watch/reading.rs`）：别的看守不再照自己的规矩判。
+        let refused = self.reading_refuses(&input);
         let judged = self.before_approval(&input).filter(|_| !refused);
         let replied = self.before_question(&input).filter(|_| !refused);
         let undone = self.before_undo(&input).filter(|_| !refused);
         let redone = self.before_redo(&input).filter(|_| !refused);
-        let reverting = undone
-            .as_ref()
-            .and_then(undo::Expect::turns)
-            .or_else(|| redone.as_ref().and_then(redo::Expect::turns));
-        let restore = self.before_restore(&input);
-        let recorded = matches!(restore, Some(restore::Expect::Recorded(_)));
         let compact = self.before_compact(&input).filter(|_| !refused);
         let clear = self.before_clear(&input).filter(|_| !refused);
         let report = self.before_report(&input).filter(|_| !refused);
@@ -288,8 +280,7 @@ impl Watch {
         self.after_question(&actions, replied);
         self.after_undo(&actions, undone);
         self.after_redo(&actions, redone);
-        self.after_restore(&actions, restore);
-        self.redo_restored(&actions, recorded);
+        self.after_reading(&actions, refused);
         self.after_compact(&actions, compact);
         self.after_clear(&actions, clear);
         self.after_report(&actions, report);
@@ -297,7 +288,6 @@ impl Watch {
         self.after_notice(session, &actions, notice);
         self.after_recap(&actions, recap);
         self.after_configure(&actions, configure);
-        self.restore_matches(&actions, reverting);
         for action in actions {
             self.check(action);
         }
@@ -379,7 +369,6 @@ impl Watch {
                 ..
             } => self.guard(call_id, &name, &cwd, &permission),
             Action::RunTool { call_id, .. } => self.run(call_id),
-            Action::Restore { steps } => self.restore_asked(steps),
             stop @ Action::StopJobs { .. } => self.stop_checked(&stop),
             // 读回日志照撤销的规矩查（`watch/undo.rs`）；取回原文在这一条输入送完以后交回。
             Action::ReadBack { .. } => {}

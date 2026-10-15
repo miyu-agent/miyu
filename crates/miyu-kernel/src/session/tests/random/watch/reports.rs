@@ -265,10 +265,7 @@ impl Watch {
                 self.peers_heard(called.seen);
             }
             Body::TurnEnded(_) => self.reports.pending.clear(),
-            Body::TurnUnreverted(unreverted) if self.changes_in(&unreverted.turns) == 0 => {
-                self.woken(next);
-            }
-            Body::FilesRestored(_) => self.woken(next),
+            Body::TurnUnreverted(_) => self.woken(next),
             _ => {}
         }
     }
@@ -344,9 +341,6 @@ impl Watch {
 
     /// 闲着时回报这时开得了一轮。
     fn can_wake(&self) -> bool {
-        !self.unwatched()
-            && !self.undo.can_unrevert()
-            && self.restoring.pending.is_none()
-            && self.undo.reading.is_none()
+        !self.unwatched() && !self.undo.can_unrevert() && self.undo.reading.is_none()
     }
 }

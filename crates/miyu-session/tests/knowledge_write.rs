@@ -1,7 +1,7 @@
 //! 她写知识库（施工 K-3，`docs/blueprint/knowledge.md`「怎么走」第七条，19 N14）：真知识库的目录、真会话，执行器替身照剧本
 //! 调工具，数据根在临时目录。一个库都没有时只有 `kb_save`，写到还没有的库就是建它，下一个回合五件都有；新建、追加、改照
-//! 文件对，撤销那一轮文件回去；人格收窄的写不了没列的、建不了新库；挪进回收站、撤销移回来（只在 Linux 上跑：别的平台删进
-//! 的是系统真的回收站）。
+//! 文件对，撤销那一轮文件不动（施工 U-1：撤销不再改回文件）；人格收窄的写不了没列的、建不了新库；挪进回收站、撤销不移回来
+//! （只在 Linux 上跑：别的平台删进的是系统真的回收站）。
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
@@ -172,7 +172,7 @@ async fn with_no_base_only_save_is_given_and_saving_makes_the_first() {
 }
 
 #[tokio::test]
-async fn saving_appending_and_editing_follow_the_file_and_undo_puts_it_back() {
+async fn saving_appending_and_editing_follow_the_file_and_undo_leaves_it() {
     let home = Home::new();
     let file = kb(&home).join("notes/a.md");
     std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
@@ -211,7 +211,11 @@ async fn saving_appending_and_editing_follow_the_file_and_undo_puts_it_back() {
     ask(&handle, "undo", Command::Revert { turn: Some(edited) })
         .await
         .expect("会话在跑");
-    assert_eq!(read(&file), "猫\n狗\n", "撤销改的那一轮：文件改回去");
+    assert_eq!(
+        read(&file),
+        "猫\n兔\n",
+        "撤销改的那一轮：文件不动（施工 U-1）"
+    );
 }
 
 #[tokio::test]
@@ -292,7 +296,7 @@ async fn a_persona_narrowed_to_nothing_it_can_read_gets_no_save_either() {
 
 #[cfg(target_os = "linux")]
 #[tokio::test]
-async fn a_document_goes_to_the_trash_and_undo_brings_it_back() {
+async fn a_document_goes_to_the_trash_and_undo_leaves_it_there() {
     let home = Home::outside_temp();
     let file = kb(&home).join("notes/old.md");
     std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
@@ -317,7 +321,7 @@ async fn a_document_goes_to_the_trash_and_undo_brings_it_back() {
     )
     .await
     .expect("会话在跑");
-    assert_eq!(read(&file), "过时了\n", "撤销那一轮：从回收站移回来");
+    assert!(!file.exists(), "撤销那一轮：不从回收站移回来（施工 U-1）");
 }
 
 #[tokio::test]

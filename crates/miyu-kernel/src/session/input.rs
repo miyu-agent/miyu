@@ -9,7 +9,7 @@ use crate::block::Block;
 use crate::estimate::ImagePrice;
 use crate::event::{
     CallError, ContextInjected, Cost, Effect, Event, IdleReason, JobReported, Purpose, Question,
-    Restored, Said, Usage,
+    Said, Usage,
 };
 use crate::facts::Environment;
 use crate::id::{CallId, CommandId, ContentHash, ModuleId, Seq, SessionId, TurnId};
@@ -148,13 +148,6 @@ pub enum Input {
         call_id: CallId,
         /// 一组题，照先后。
         questions: Vec<Question>,
-    },
-    /// 改回文件做完了（施工 4-7 上）：[`super::Action::Restore`] 的每一步照先后，一步一项结局。
-    Restored {
-        /// 到的时刻，取自执行器的时钟。
-        at: Timestamp,
-        /// 每一步的结局，照交出去的先后。
-        files: Vec<Restored>,
     },
     /// 压完要重读的文件读好了（施工 6-5）：[`super::Action::Reread`] 的每一个照先后，一个一项。内核记在那次摘要
     /// 请求上，什么都不出；不是在路上的那一次的，不理。

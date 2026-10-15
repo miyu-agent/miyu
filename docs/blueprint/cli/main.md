@@ -22,7 +22,7 @@
 | 子命令 | 做什么 | 在哪一页 |
 |---|---|---|
 | `ask` | 说一句话，打印她的回答 | `cli/ask.md` |
-| `undo`（别名 `rewind`） | 撤掉当前会话的最后一轮，把她改过的文件改回去 | `cli/undo.md` |
+| `undo`（别名 `rewind`） | 撤掉当前会话的最后一轮（文件不改回，施工 U-1） | `cli/undo.md` |
 | `restore` | 发下一句之前，恢复最近一次撤销（原来叫 `redo`，施工 4-7 补改名，2026-09-29 项目主人定） | `cli/undo.md` |
 | `redo` | 撤掉当前会话的最后一轮，把你那句话（或者换成写的话）再发一次，让她重新做（施工 4-7 再补，2026-09-30 项目主人定） | `cli/redo.md` |
 | `compact` | 把当前会话的上下文压缩成摘要，可以附上要求（施工 6-8，命令名 2026-09-29 项目主人定） | `cli/compact.md` |
@@ -80,7 +80,7 @@
 
 命令：
   ask <要说的话>        说一句话，打印 AI 的回答
-  undo、rewind          撤掉最后一轮，把 AI 改过的文件改回去
+  undo、rewind          撤掉最后一轮
   restore               发下一句之前，恢复最近一次撤销
   redo [话]             撤掉最后一轮，重新做；写了话的换成这句
   compact [要求]        把上下文压缩成摘要，可以附上要求
@@ -131,7 +131,7 @@ Usage: miyu <command> [options]
 
 Commands:
   ask <words>           Say something and print the AI's answer
-  undo, rewind          Undo the last turn and restore the files the AI changed
+  undo, rewind          Undo the last turn
   restore               Bring back what the latest undo took
   redo [words]          Redo the last turn, or redo it with new words
   compact [words]       Compact the context into a summary

@@ -114,7 +114,7 @@ fn the_screen_is_the_sample_of_the_drawing() {
 
 #[test]
 fn the_undo_lines_are_asides_without_the_restore_hint() {
-    // 撤掉了压缩、没有人说的话（那一句只有附件），差异照 `miyu undo`；不说怎么恢复；标准输出上什么都没有。
+    // 撤掉了压缩、没有人说的话（那一句只有附件），照 `miyu undo` 的几行；不说怎么恢复；标准输出上什么都没有。
     let work = under(&["work"]);
     let messages = vec![
         replied(json!({
@@ -128,8 +128,8 @@ fn the_undo_lines_are_asides_without_the_restore_hint() {
     assert_eq!(step, Step::Going);
     assert_eq!(out, "");
     assert_eq!(
-        err,
-        "· 撤销最后一轮，重新做\n· 撤掉了压缩，上下文回到了压缩前\n· 改回 a.rs → 没动：之后又被改过\n    --- AI 改完的\n    +++ 现在\n    @@ -1 +1 @@\n    -a\n    +b\n"
+        err, "· 撤销最后一轮，重新做\n· 撤掉了压缩，上下文回到了压缩前\n",
+        "以前的核心多交的 files 照样不印（施工 U-1）"
     );
 }
 

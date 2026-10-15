@@ -22,11 +22,9 @@ pub(in super::super) struct Restarts {
 }
 
 impl Watch {
-    /// 追加过的事件都落了盘没有，也没在改回文件、读回日志：崩在这时候才不会丢回应（改回文件做到一半崩了不重做，施工
-    /// 4-7 上「风险」，随机测试不在那时候崩）。
+    /// 追加过的事件都落了盘没有，也没在读回日志：崩在这时候才不会丢回应。
     pub(in super::super) fn all_stored(&self) -> bool {
-        self.restoring.pending.is_none()
-            && self.undo.reading.is_none()
+        self.undo.reading.is_none()
             && self
                 .events
                 .iter()

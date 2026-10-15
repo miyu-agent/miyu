@@ -118,11 +118,6 @@ impl Stage {
                 self.stopping.push(stop);
                 Vec::new()
             }
-            // 改回文件（施工 4-7 上）：替身不碰文件，每一步都当改回了。
-            Action::Restore { steps } => vec![Input::Restored {
-                at: self.tick(),
-                files: steps.iter().map(super::restored).collect(),
-            }],
         }
     }
 

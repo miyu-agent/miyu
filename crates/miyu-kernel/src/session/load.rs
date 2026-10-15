@@ -227,7 +227,6 @@ impl Session {
             turn: None,
             last_request: None,
             closing: Vec::new(),
-            restoring: None,
             reading: None,
             limits: None,
             oneshot: replay.oneshot,

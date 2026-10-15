@@ -20,8 +20,6 @@ type Change = (Option<Vec<Block>>, Option<Vec<Block>>);
 pub(in super::super) struct Redoing {
     /// 等读回日志的那一次：命令、换什么。
     reading: Option<(CommandId, Change)>,
-    /// 撤销记下了、等改回文件的结局才重发的那一次。
-    restoring: Option<Resend>,
 }
 
 /// 该怎么重发：哪个命令、原来那几句（序号，照先后）、开这一轮的那一句、换什么。
@@ -43,16 +41,6 @@ pub(super) enum Expect {
     Ignored,
     /// 记撤销、重发：撤这一轮；是读回来以后记的吗；要取回原文的 blob。
     Redone(TurnId, bool, Vec<ContentHash>, CommandId, Change),
-}
-
-impl Expect {
-    /// 接受了、当场记撤销的那一轮：看守照它查交没交改回文件（`watch/restore.rs`）。
-    pub(super) fn turns(&self) -> Option<Vec<TurnId>> {
-        match self {
-            Expect::Redone(turn, ..) => Some(vec![*turn]),
-            _ => None,
-        }
-    }
 }
 
 impl Watch {
@@ -162,7 +150,7 @@ impl Watch {
         self.events.iter().find(|event| event.seq == seq)
     }
 
-    /// 送进去以后：照判出来的查。收下的记撤销、重发；等改回文件的，结局回来再查重发（[`Watch::redo_restored`]）。
+    /// 送进去以后：照判出来的查。收下的记撤销、重发。
     pub(super) fn after_redo(&mut self, actions: &[Action], expect: Option<Expect>) {
         let seed = self.seed;
         match expect {
@@ -217,7 +205,7 @@ impl Watch {
         }
     }
 
-    /// 收下的重做：只撤这一轮；那一轮改过文件的，先只记撤销、交出改回文件，等结局；没改过的，同一批重发。
+    /// 收下的重做：只撤这一轮，同一批重发；改过文件的也一样，文件不动（施工 U-1）。
     fn redone(
         &mut self,
         actions: &[Action],
@@ -270,27 +258,6 @@ impl Watch {
         if resend.said.len() > 1 {
             self.seen_paths.insert("重做重发了几句");
         }
-        if actions
-            .iter()
-            .any(|action| matches!(action, Action::Restore { .. }))
-        {
-            self.seen_paths.insert("重做先改回文件");
-            assert_eq!(appended.len(), 1, "种子 {seed}：改回文件以前只记撤销");
-            self.redoing.restoring = Some(resend);
-            return;
-        }
-        self.resent(&appended[1..], &resend);
-    }
-
-    /// 改回文件的结局回来了：在等的是重做的，结局后面重发（`watch/restore.rs` 查结局那一条）。
-    pub(super) fn redo_restored(&mut self, actions: &[Action], recorded: bool) {
-        if !recorded {
-            return;
-        }
-        let Some(resend) = self.redoing.restoring.take() else {
-            return;
-        };
-        let appended = appended_of(actions);
         self.resent(&appended[1..], &resend);
     }
 

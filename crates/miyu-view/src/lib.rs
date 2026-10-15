@@ -25,7 +25,7 @@ pub use entry::{
     ModelSwap, Output, Part, Peer, Picture, Reply, SkillUsed, Thought, Title, Tone, Tool,
     ToolState, TouchKind, Touched, User, Was,
 };
-pub use notice::{Compaction, CompactionState, Notice, RevertedFile};
+pub use notice::{Compaction, CompactionState, Notice};
 pub use projector::{Lines, Projector};
 pub use status::{
     Doing, FINISHED_KEPT, JobRow, JobState, Preparing, Speed, State, Status, Wait, Waiting,

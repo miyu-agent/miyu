@@ -20,10 +20,10 @@ use tracing::Instrument;
 
 use crate::lettering::Lettering;
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Effect, Permission, Question, Response, Restored};
+use miyu_kernel::event::{Effect, Permission, Question, Response};
 use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Input, Reread, Step, Subagent};
+use miyu_kernel::session::{Input, Reread, Subagent};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_store::blob::Blobs;
 use miyu_tool::{Call, CallIds, Done, JobPort, Log, Progress, Seen, Shelf, Stop};
@@ -229,14 +229,6 @@ impl Tools {
     /// 她看过的文件换成 `seen`：撤销、恢复以后照日志重算的（施工 4-7 上）。在跑的调用拿着的是原来那一份。
     pub(crate) fn see(&mut self, seen: Seen) {
         self.seen = Arc::new(seen);
-    }
-
-    /// 改回文件（施工 4-7 上）：照这几步在阻塞线程里做完，一步一项交回结局。写回的内容从这个会话的 blob 里取，
-    /// 移进回收站照交给工具的那个家目录。
-    pub(crate) async fn restore(&self, steps: Vec<Step>) -> Vec<Restored> {
-        let blobs = self.blobs.clone();
-        let home = self.home.clone();
-        blocking(move || crate::restore::restore(&steps, &blobs, home.as_deref())).await
     }
 
     /// 压完重读（施工 6-5）：在阻塞线程里一个一个读，读到的存进这个会话的 blob。

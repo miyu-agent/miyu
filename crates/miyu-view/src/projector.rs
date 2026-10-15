@@ -175,7 +175,6 @@ impl Projector {
             EventBody::TurnEnded(ended) => self.ended(event, ended),
             EventBody::TurnReverted(reverted) => self.reverted(event, reverted),
             EventBody::TurnUnreverted(unreverted) => self.unreverted(unreverted),
-            EventBody::FilesRestored(restored) => self.restored(restored),
             EventBody::MessageUser(message) => self.message(event, message),
             EventBody::MessageAssistant(reply) => self.assistant(event, reply),
             EventBody::MessageWithdrawn(withdrawn) => self.withdrawn(withdrawn),
