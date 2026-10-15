@@ -15,12 +15,12 @@
 | `crates/miyu-endpoint/src/extensions/supervise.rs` | 看管一个包：拉起、交给连接、等它退出、退避、停下 |
 | `crates/miyu-endpoint/src/extensions/stderr.rs` | 标准错误的文件：拉起前太大的挪成 `.old`，状态里给最后几行 |
 | `crates/miyu-endpoint/src/appends.rs` | `system.append`：照包、照会话记下扩展放的，交给端口；`miyu-session` 的 `appended.rs` 照工具面挑、钉进快照 |
-| `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `turn.start`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
+| `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `user.append`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
 | `crates/miyu-endpoint/src/connection.rs`、`hello.rs`、`login.rs` | 核心亲手给的连接：握手不看凭据（`Via::Spawned`） |
 | `crates/miyu-core/src/lib.rs`、`serve.rs` | 写了 `ready` 以后照开关拉起，停的时候请扩展退出 |
-| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `turn.start`（施工 X-16） |
+| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `user.append`（施工 X-16、X-16 补） |
 
 ### 对外的样子
 
@@ -83,9 +83,9 @@
 **回合开始的挂接点**（施工 X-16，设计 `34-表情包.md` 第五节第 1 条）：
 
 1. **谁被问**：清单 `[process] capabilities` 写了 `context.inject`、批过的（出厂的算批过）、在跑、登记过工具的扩展（`provide` 过的连接），而且这个会话这一刻的工具面上有它登记的工具（预设关了它就没有，就不问）。照包的编号排。
-2. **问**：回合开始、记忆和知识库的挂接点之后，核心向每一个发 `turn.start {"session", "venue", "text"?}`：`venue` 是 `local`（本机）、`private`（平台私聊）、`group`（群）；`text` 是触发这一轮的人话，不是人开的一轮（回报叫醒的、续轮）不带。几个并行问，各自限时 300 毫秒（`HOOK_ANSWER`），过了的当这一轮没交，记一行 `DEBUG`。
-3. **答**：`{"inject": [{"kind", "text"}]}`，至多 3 块：`kind` 照事实类别的写法（小写字母、数字、`-`、`_`），`text` 1 到 4000 个字符，原样进上下文（外壳、转义扩展自己做）。空的、写法不对的整份当没交，记一行 `WARN`；JSON-RPC 的错误也当没交。
-4. **记**：交回的一块记成 `context.injected`，`by` 是这个包（模块编号就是包的编号），`kind` 照交的，排在触发的那句话前面（和记忆的注入一样，`08-上下文投影.md` 第五节）。写进日志就不变：下一轮照日志原样回放，前缀稳定。
+2. **问**：回合开始、记忆和知识库的挂接点之后，核心向每一个发 `user.append {"session", "venue", "text"?}`（施工 X-16 补以前叫 `turn.start`）：`venue` 是 `local`（本机）、`private`（平台私聊）、`group`（群）；`text` 是触发这一轮的人话，不是人开的一轮（回报叫醒的、续轮）不带。几个并行问，各自限时 300 毫秒（`HOOK_ANSWER`），过了的当这一轮没交，记一行 `DEBUG`。
+3. **答**：`{"content": [{"kind", "text"}]}`（X-16 补以前这一格叫 `inject`），至多 3 块：`kind` 照事实类别的写法（小写字母、数字、`-`、`_`），`text` 1 到 4000 个字符，原样进上下文（外壳、转义扩展自己做）。空的、写法不对的整份当没交，记一行 `WARN`；JSON-RPC 的错误也当没交。
+4. **记**：交回的一块记成 `context.injected`，`by` 是这个包（模块编号就是包的编号），`kind` 照交的，`after` 是真：排在触发的那句话**后面**（施工 X-16 补，项目主人定「插到用户消息尾部」；记忆、知识库的照旧排前面）。写进日志就不变：下一轮照日志原样回放，前缀稳定。
 5. **不问的**：没有这种扩展的会话一个字节不变；子会话照问（它的工具面上有那件工具才问）。
 
 **放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：

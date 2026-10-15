@@ -62,6 +62,7 @@ fn injection(inject: Inject) -> Option<Injection> {
             kind: FactKind::parse(&inject.kind).ok()?,
             text: inject.text,
             refs: Vec::new(),
+            after: true,
         },
     })
 }

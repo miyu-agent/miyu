@@ -53,6 +53,7 @@ fn respond(n: u64, to: &[u64]) -> Input {
                 kind: FactKind::parse("judge").unwrap(),
                 text: "<reply-to who=\"小林\"/>\n".to_string(),
                 refs: Vec::new(),
+                after: false,
             }],
         },
     })

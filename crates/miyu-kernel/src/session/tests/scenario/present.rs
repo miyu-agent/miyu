@@ -17,6 +17,7 @@ fn memory() -> Injection {
             kind: FactKind::parse("memory").unwrap(),
             text: "<memories>\nm1 user 2026-10-08: 喜欢喝茶\n</memories>\n".to_string(),
             refs: vec!["m1".to_string()],
+            after: false,
         },
     }
 }

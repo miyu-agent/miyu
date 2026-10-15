@@ -365,6 +365,7 @@ fn render(texts: &RecallTexts, picked: &[&Hit]) -> Option<Injection> {
             kind: FactKind::parse(KIND).expect("合写法"),
             text: format!("{open}\n{}\n{close}\n", rows.join("\n")),
             refs,
+            after: false,
         },
     })
 }

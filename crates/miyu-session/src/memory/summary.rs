@@ -160,6 +160,7 @@ impl Keeper {
                 kind: FactKind::parse(NAME).expect("合写法"),
                 text,
                 refs,
+                after: false,
             },
         })
     }

@@ -152,6 +152,7 @@ pub(super) fn some_note(seed: u64, next_id: &mut u64) -> Input {
         kind: FactKind::parse("failed").expect("合写法"),
         text: "<upload-failed/>\n".to_string(),
         refs: Vec::new(),
+        after: false,
     };
     let facts = match rng.below(3) {
         0 => vec![fact()],

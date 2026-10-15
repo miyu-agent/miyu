@@ -212,6 +212,7 @@ fn render(texts: &RecallTexts, entries: &[&Entry], offset: UtcOffset) -> Option<
             kind: FactKind::parse(KIND).expect("合写法"),
             text: format!("{open}\n{}\n{close}\n", lines.join("\n")),
             refs,
+            after: false,
         },
     })
 }

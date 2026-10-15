@@ -56,7 +56,7 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
             Body::ContextInjected(fact) => {
                 let reminder = event.by == By::Kernel && fact.kind.as_str() == REMINDER;
                 let place = match transcript.trigger_of(event.turn) {
-                    Some(trigger) if reminder => Place::After(trigger),
+                    Some(trigger) if reminder || fact.after => Place::After(trigger),
                     Some(trigger) => Place::Before(trigger),
                     None => Place::Here,
                 };

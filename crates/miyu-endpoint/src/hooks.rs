@@ -18,7 +18,7 @@ use miyu_tool::{HooksPort, Inject, Injecting, TurnAsk};
 use crate::Core;
 use crate::reverse::Peer;
 
-/// 每一个扩展答 `turn.start` 最多等多久。
+/// 每一个扩展答 `user.append` 最多等多久。
 const HOOK_ANSWER: Duration = Duration::from_millis(300);
 
 /// 一个扩展一轮至多交几块。
@@ -63,7 +63,7 @@ impl HooksPort for Hooks {
                     let params = params.clone();
                     tokio::spawn(async move {
                         let answer =
-                            tokio::time::timeout(HOOK_ANSWER, peer.call("turn.start", params));
+                            tokio::time::timeout(HOOK_ANSWER, peer.call("user.append", params));
                         taken(&package, answer.await)
                     })
                 })
@@ -102,11 +102,11 @@ fn asked(core: &Core, tools: &[String]) -> Vec<(String, Peer)> {
     asked
 }
 
-/// `turn.start` 的回应。
+/// `user.append` 的回应。
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Answer {
-    inject: Vec<Block>,
+    content: Vec<Block>,
 }
 
 /// 交回的一块。
@@ -125,18 +125,18 @@ fn taken(
     let result = match answer {
         Ok(Ok(Ok(result))) => result,
         Ok(Ok(Err(_))) | Ok(Err(_)) => {
-            tracing::debug!(target: "miyu::endpoint", package, "turn.start refused or gone");
+            tracing::debug!(target: "miyu::endpoint", package, "user.append refused or gone");
             return Vec::new();
         }
         Err(_) => {
-            tracing::debug!(target: "miyu::endpoint", package, "turn.start timed out");
+            tracing::debug!(target: "miyu::endpoint", package, "user.append timed out");
             return Vec::new();
         }
     };
     match blocks(package, result) {
         Some(blocks) => blocks,
         None => {
-            tracing::warn!(target: "miyu::endpoint", package, "turn.start answer malformed");
+            tracing::warn!(target: "miyu::endpoint", package, "user.append answer malformed");
             Vec::new()
         }
     }
@@ -146,11 +146,11 @@ fn taken(
 fn blocks(package: &str, result: Value) -> Option<Vec<Inject>> {
     ModuleId::parse(package).ok()?;
     let answer: Answer = serde_json::from_value(result).ok()?;
-    if answer.inject.len() > MOST_BLOCKS {
+    if answer.content.len() > MOST_BLOCKS {
         return None;
     }
     answer
-        .inject
+        .content
         .into_iter()
         .map(|block| {
             FactKind::parse(&block.kind).ok()?;

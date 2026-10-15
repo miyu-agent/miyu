@@ -112,6 +112,7 @@ fn facts(facts: Vec<FactParams>) -> Result<Vec<ContextInjected>, Refusal> {
                 kind,
                 text: fact.text,
                 refs: Vec::new(),
+                after: false,
             })
         })
         .collect()

@@ -1,5 +1,5 @@
 //! 回合开始问扩展要加的字（施工 X-16，`docs/blueprint/extensions.md`「回合开始的挂接点」）：声明了 `context.inject`、在跑、
-//! 工具面上有它的工具的扩展被问，交回的记成 `context.injected`、`by` 是这个包，排在人说的话前面；没声明的、工具不在这个会话的
+//! 工具面上有它的工具的扩展被问，交回的记成 `context.injected`、`by` 是这个包，排在人说的话后面（施工 X-16 补，`user.append`）；没声明的、工具不在这个会话的
 //! 工具面上的不问；超时、回错误、写法不对、交多了的当没交，这一轮照常走完。
 
 use std::sync::Arc;
@@ -29,7 +29,7 @@ async fn lines(path: &std::path::Path, n: usize) {
     }
 }
 
-/// 一个扩展：编号、怎么答 `turn.start`、声明不声明 `context.inject`、工具在哪种场所。
+/// 一个扩展：编号、怎么答 `user.append`、声明不声明 `context.inject`、工具在哪种场所。
 struct Ext {
     id: &'static str,
     inject: &'static str,
@@ -150,6 +150,7 @@ async fn extensions_add_blocks_before_what_was_said() {
         .iter()
         .filter_map(|event| match &event.body {
             Body::ContextInjected(fact) if fact.kind.as_str() == "meme" => {
+                assert!(fact.after, "记成排在后面");
                 Some((format!("{:?}", event.by), fact.text.clone()))
             }
             _ => None,
@@ -168,10 +169,10 @@ async fn extensions_add_blocks_before_what_was_said() {
     let request = format!("{:?}", script.requests()[0].1);
     let hint = request.find("hint local 早上好").expect("进了请求");
     let said = request.find("\"早上好\"").expect("人说的话在");
-    assert!(hint < said, "排在人说的话前面");
+    assert!(said < hint, "排在人说的话后面");
 
     for (ext, path) in EXTS.iter().zip(&records) {
-        let asked = read(path).contains("\"method\":\"turn.start\"");
+        let asked = read(path).contains("\"method\":\"user.append\"");
         let expected = ext.declares && ext.venue == "local";
         assert_eq!(asked, expected, "{} 问没问", ext.id);
     }

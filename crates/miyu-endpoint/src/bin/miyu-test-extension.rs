@@ -19,9 +19,9 @@
 //!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
-//!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；是 `turn.start` 的照 `inject` 定的答
+//!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；是 `user.append` 的照 `inject` 定的答
 //!   （施工 X-16）；
-//! - `inject:<怎么答>`：之后的 `serve` 照它答 `turn.start`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
+//! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `hang`：不管标准输入，一直睡；
@@ -39,7 +39,7 @@ fn main() {
     let mut record: Option<File> = None;
     // 最近一条带会话编号的回应里的那个编号：`ask` 的参数照它换。
     let mut session = String::new();
-    // `serve` 怎么答 `turn.start`（施工 X-16）。
+    // `serve` 怎么答 `user.append`（施工 X-16）。
     let mut inject = String::from("silent");
     for (n, step) in std::env::args().skip(1).enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
@@ -145,7 +145,7 @@ fn main() {
                         std::process::exit(0);
                     }
                 }
-                if line.contains(r#""method":"turn.start""#)
+                if line.contains(r#""method":"user.append""#)
                     && let Some(id) = field(&line, "id")
                     && let Some(answer) = injected(&id, &inject, &line)
                 {
@@ -264,7 +264,7 @@ fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
     })
 }
 
-/// 答编号是 `id` 的那一次 `turn.start`（施工 X-16），照 `how`。
+/// 答编号是 `id` 的那一次 `user.append`（施工 X-16），照 `how`。
 fn injected(id: &str, how: &str, line: &str) -> Option<String> {
     let block = |text: &str| format!(r#"{{"kind":"meme","text":"{text}"}}"#);
     let blocks = match how {
@@ -282,13 +282,13 @@ fn injected(id: &str, how: &str, line: &str) -> Option<String> {
         }
         "garbled" => {
             return Some(format!(
-                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"inject":[{{"kind":"Bad Kind","text":"x"}}]}}}}"#
+                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"content":[{{"kind":"Bad Kind","text":"x"}}]}}}}"#
             ));
         }
         _ => return None,
     };
     Some(format!(
-        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"inject":[{blocks}]}}}}"#
+        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"content":[{blocks}]}}}}"#
     ))
 }
 

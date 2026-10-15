@@ -21,6 +21,10 @@ pub struct ContextInjected {
     /// 交回挂接点（[`crate::facts::Present`]），给模块去重、算「用到没有」。以前的日志里没有、没带的是空的，不写这一格。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub refs: Vec<String>,
+    /// 排在触发这一轮的那句话后面（施工 X-16 补：扩展经 `user.append` 交的）；假的排在前面，同记忆、知识库。以前的日志里没有、
+    /// 假的不写这一格，字节和以前一样。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub after: bool,
 }
 
 /// `context.compacted`：压缩的检查点。三种压缩方式都写这一种（`09-压缩.md` 第三节）。

@@ -91,6 +91,7 @@ pub(crate) fn tail(
             kind: FactKind::parse(MODULE).expect("合类别的写法"),
             text,
             refs: vec![now],
+            after: false,
         },
     }))
 }

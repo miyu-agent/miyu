@@ -35,6 +35,7 @@ pub(super) fn injection(module: &str, text: &str) -> Injection {
         module: ModuleId::parse(module).unwrap(),
         fact: ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: FactKind::parse(module).unwrap(),
             text: text.to_string(),
         },

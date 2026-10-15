@@ -55,6 +55,7 @@ fn permission(level: Level, read_only: bool) -> Permission {
 fn fact(kind: &str, text: &str) -> ContextInjected {
     ContextInjected {
         refs: Vec::new(),
+        after: false,
         kind: FactKind::parse(kind).unwrap(),
         text: text.to_string(),
     }

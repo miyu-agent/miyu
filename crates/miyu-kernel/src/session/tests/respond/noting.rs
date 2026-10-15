@@ -15,6 +15,7 @@ fn note(n: u64) -> Input {
                 kind: FactKind::parse("failed").expect("合写法"),
                 text: "<upload-failed/>\n".to_string(),
                 refs: Vec::new(),
+                after: false,
             }],
         },
     })

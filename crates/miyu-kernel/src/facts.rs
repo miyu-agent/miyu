@@ -155,6 +155,7 @@ impl FactTemplates {
         }
         Some(ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind,
             text: text.clone(),
         })
@@ -168,6 +169,7 @@ impl FactTemplates {
     pub fn reply_cut(&self) -> ContextInjected {
         ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: kind("reply_cut"),
             text: self
                 .reply_cut
@@ -187,6 +189,7 @@ impl FactTemplates {
         let fields = env_fields(&time, &timezone, &environment.cwd);
         ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: kind("env"),
             text: self.env.render(&fields).expect("造的时候试换过，字段都有"),
         }
@@ -201,6 +204,7 @@ impl FactTemplates {
         let template = self.session.as_ref()?;
         Some(ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: kind("session"),
             text: template
                 .render(&session_fields(id.as_str()))
@@ -216,6 +220,7 @@ impl FactTemplates {
     pub fn permission(&self, permission: &Permission) -> ContextInjected {
         ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: kind("permission"),
             text: self.permission_text(effective_level(permission)),
         }
@@ -235,6 +240,7 @@ impl FactTemplates {
         let template = self.permission_changed.as_ref()?;
         Some(ContextInjected {
             refs: Vec::new(),
+            after: false,
             kind: kind("permission"),
             text: changed_text(template, effective_level(permission), previous),
         })
