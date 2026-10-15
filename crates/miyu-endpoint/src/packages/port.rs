@@ -8,7 +8,7 @@ use std::sync::{Arc, Weak};
 
 use serde_json::{Value, json};
 
-use miyu_tool::{Looking, PackageRefusal, PackagesPort};
+use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use super::local::InfoParams;
 use miyu_policy::preset::Unlisted;
@@ -33,6 +33,7 @@ impl Port {
             reason: "shutting_down".to_string(),
             problem: None,
             line: None,
+            conflicts: Vec::new(),
         })
     }
 }
@@ -46,9 +47,10 @@ fn english() -> Peer {
     }
 }
 
-/// 协议上的拒绝换成端口的：原因代码，写错的清单带上哪里不对、第几行。
+/// 协议上的拒绝换成端口的：原因代码，写错的清单带上哪里不对、第几行，撞了名的带上每一处（施工 F-8 六补修）。
 fn refused(refusal: Refusal) -> PackageRefusal {
     let data = refusal.data.unwrap_or_default();
+    let field = |one: &Value, key: &str| one[key].as_str().unwrap_or_default().to_string();
     PackageRefusal {
         reason: refusal.reason.to_string(),
         problem: data
@@ -56,6 +58,19 @@ fn refused(refusal: Refusal) -> PackageRefusal {
             .and_then(Value::as_str)
             .map(str::to_string),
         line: data.get("line").and_then(Value::as_u64),
+        conflicts: data
+            .get("conflicts")
+            .and_then(Value::as_array)
+            .map(|all| {
+                all.iter()
+                    .map(|one| PackageConflict {
+                        kind: field(one, "kind"),
+                        name: field(one, "name"),
+                        package: field(one, "package"),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
     }
 }
 

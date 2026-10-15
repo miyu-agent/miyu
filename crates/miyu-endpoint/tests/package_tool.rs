@@ -183,3 +183,31 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
     );
     assert!(!installed(&home, "broken"));
 }
+
+/// 和装着的包撞了名（施工 F-8 六补修）：核心拒 `package_conflict`，工具结果一处一行说撞了什么、在哪个包里，她照它改。
+#[tokio::test]
+async fn a_name_clash_tells_her_what_and_where() {
+    let home = Home::new();
+    home.write(
+        "home/alice/packages/zkit/package.toml",
+        "[package]\nname = { en = \"Z\" }\n",
+    );
+    home.write(
+        "home/alice/packages/zkit/skills/notes/SKILL.md",
+        "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
+    );
+    let folder = kit(&home, "akit");
+    let plays = vec![
+        Play::calls(&[("package", &json!({"install": folder}).to_string())]),
+        Play::Says("撞了。"),
+    ];
+    let (_client, session) = started(&home, plays, true).await;
+    home.until_turns(&session, 1).await;
+    let said = results(&home, &session);
+    assert_eq!(said.len(), 1, "{said:?}");
+    assert!(
+        said[0].contains("cannot be installed: installed packages already use these names.\n- skill notes (in zkit)\n"),
+        "{said:?}"
+    );
+    assert!(!installed(&home, "akit"));
+}

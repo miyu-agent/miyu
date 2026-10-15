@@ -12,7 +12,9 @@ use serde_json::Value;
 use miyu_kernel::event::Said;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Call, Done, PACKAGES, PackageRefusal, Progress, Running, Spec, Target, Tool};
+use miyu_tool::{
+    Call, Done, PACKAGES, PackageConflict, PackageRefusal, Progress, Running, Spec, Target, Tool,
+};
 
 use crate::common::said;
 use crate::load::{self, LoadError, say};
@@ -35,6 +37,8 @@ struct Texts {
     invalid_line: Template,
     unknown: Template,
     refused: Template,
+    conflict: Template,
+    conflict_line: Template,
     both: Template,
     relative: Template,
     unavailable: Template,
@@ -66,6 +70,8 @@ impl Packages {
                 invalid_line: text("invalid-line", &["path", "line", "problem"])?,
                 unknown: text("unknown", &["package"])?,
                 refused: text("refused", &["what", "reason"])?,
+                conflict: text("conflict", &["path"])?,
+                conflict_line: text("conflict-line", &["kind", "name", "package"])?,
                 both: text("both", &[])?,
                 relative: text("relative", &[])?,
                 unavailable: text("unavailable", &[])?,
@@ -202,6 +208,11 @@ impl Texts {
                 ),
                 None => say(&self.invalid, &[("path", path), ("problem", &problem)]),
             }),
+            Err(refusal) if !refusal.conflicts.is_empty() => Err(conflicting(
+                (&self.conflict, &self.conflict_line),
+                path,
+                &refusal.conflicts,
+            )),
             Err(refusal) => Err(self.refused(&refusal, path)),
         }
     }
@@ -213,4 +224,25 @@ impl Texts {
             &[("what", what), ("reason", &refusal.reason)],
         )
     }
+}
+
+/// 和装着的包撞了名（施工 F-8 六补修，`package`、`packages` 共用）：头一行 `head` 说 `what` 装不上，下面照 `line` 一处一行：
+/// 哪一样、什么名字、在哪个包里，她照它改自己的包。
+pub(crate) fn conflicting(
+    (head, line): (&Template, &Template),
+    what: &str,
+    conflicts: &[PackageConflict],
+) -> String {
+    let mut said = say(head, &[("path", what)]);
+    for one in conflicts {
+        said.push_str(&say(
+            line,
+            &[
+                ("kind", one.kind.as_str()),
+                ("name", one.name.as_str()),
+                ("package", one.package.as_str()),
+            ],
+        ));
+    }
+    said
 }

@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::template::escape;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Done, Looking, PackageRefusal, PackagesPort};
+use miyu_tool::{Done, Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use crate::support::{Site, check, human, readable, said, tool};
 
@@ -78,6 +78,7 @@ fn refusal(reason: &str, problem: Option<&str>, line: Option<u64>) -> PackageRef
         reason: reason.to_string(),
         problem: problem.map(str::to_string),
         line,
+        conflicts: Vec::new(),
     }
 }
 
@@ -183,6 +184,31 @@ async fn installing_and_removing_go_through_the_core() {
     let unknown = Port::new(Err(refusal("unknown_package", None, None)));
     let done = package(&unknown, json!({"remove": "kit"})).await;
     assert_eq!(text(&done), "No package named kit.\n");
+    // 和装着的包撞了名：一处一行（施工 F-8 六补修），装回出厂的照编号说。
+    let clash = Port::new(Err(PackageRefusal {
+        conflicts: vec![
+            PackageConflict {
+                kind: "skill".to_string(),
+                name: "pdf".to_string(),
+                package: "kit".to_string(),
+            },
+            PackageConflict {
+                kind: "tool".to_string(),
+                name: "read".to_string(),
+                package: "basesystem".to_string(),
+            },
+        ],
+        ..refusal("package_conflict", None, None)
+    }));
+    let done = package(&clash, json!({"install": path})).await;
+    assert!(done.error);
+    assert_eq!(
+        text(&done),
+        format!(
+            "{shown} cannot be installed: installed packages already use these names.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
+        )
+    );
+    check(&mut checked, human(done), said("package/failed"));
     readable(&checked, &["package"]);
 }
 

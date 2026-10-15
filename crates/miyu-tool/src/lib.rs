@@ -62,7 +62,7 @@ pub use memory::{
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
 };
-pub use packages::{Looking, PACKAGE, PACKAGES, PackageRefusal, PackagesPort};
+pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, Target};
 pub use sessions::{Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session};

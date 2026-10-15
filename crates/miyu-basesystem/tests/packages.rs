@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::template::escape;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Call, Done, Looking, PackageRefusal, PackagesPort};
+use miyu_tool::{Call, Done, Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use crate::support::{Site, check, human, readable, said, tool};
 
@@ -79,6 +79,7 @@ fn refusal(reason: &str, problem: Option<&str>, line: Option<u64>) -> PackageRef
         reason: reason.to_string(),
         problem: problem.map(str::to_string),
         line,
+        conflicts: Vec::new(),
     }
 }
 
@@ -238,6 +239,33 @@ async fn a_folder_is_checked_before_it_is_installed() {
     assert_eq!(
         text(&done),
         format!("Cannot look at {shown}: path_unreadable.\n")
+    );
+    // 和装着的包撞了名：一处一行，她照它改自己的包（施工 F-8 六补修）。
+    let port = Arc::new(Port {
+        inspected: Err(PackageRefusal {
+            conflicts: vec![
+                PackageConflict {
+                    kind: "skill".to_string(),
+                    name: "pdf".to_string(),
+                    package: "kit".to_string(),
+                },
+                PackageConflict {
+                    kind: "tool".to_string(),
+                    name: "read".to_string(),
+                    package: "basesystem".to_string(),
+                },
+            ],
+            ..refusal("package_conflict", None, None)
+        }),
+        ..Port::new()
+    });
+    let done = packages(&port, json!({"path": path})).await;
+    assert!(done.error);
+    assert_eq!(
+        text(&done),
+        format!(
+            "{shown} cannot be installed: installed packages already use these names.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
+        )
     );
     readable(&checked, &[]);
 }
