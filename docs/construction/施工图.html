@@ -953,6 +953,10 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sU-1"><span class="n">U-1</span>撤销不再改回文件<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sL-1"><span class="n">L-1</span>工具登记带 need_load<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sL-2"><span class="n">L-2</span>吃不下空外壳的供应商<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-16"><span class="n">X-16</span>扩展回合开始加提醒<span class="st">✓</span></a></li>
+        <li><span class="step"><span class="n">X-20</span>开会话的扩展给会话插一段</span></li>
+        <li><span class="step"><span class="n">X-21</span>软件包自己的几行</span></li>
+        <li><span class="step"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹</span></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
       </ol>
@@ -27814,6 +27818,42 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-15</dd></div>
         <div><dt>提交</dt><dd class="mono">b5429e04</dd></div>
         <div><dt>验收</dt><dd>新测试、变异 9 个、三台 CI（run 38734494379）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-16" aria-labelledby="h-sX16">
+  <div class="sheet-head"><h2 id="h-sX16"><span class="no">X-16</span>扩展回合开始加提醒</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">声明了 <code>context.inject</code> 的扩展，回合开始往她的上下文里加一段字，和记忆、知识库走同一个挂接点。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-16</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>会话的端口 <code>HooksPort</code>，端点照清单、提供者挑要问的扩展</li>
+              <li>并行发 <code>turn.start {session, venue, text?}</code>，各自限时 300 毫秒</li>
+              <li>至多 3 块、1 到 4000 字，记成 <code>context.injected</code>，<code>by</code> 是包</li>
+              <li>测试扩展会答 <code>turn.start</code>；作者说明中英文写上</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">和记忆并着问</span><span class="rl">只等慢的那一个，不是加起来</span></div>
+          <div class="tile new"><span class="nm">工具面上有它才问</span><span class="rl">预设关了它就不问</span></div>
+          <div class="tile new"><span class="nm">在跑就是批过的</span><span class="rl">没批的能力起不来</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-16</dd></div>
+        <div><dt>名称</dt><dd>扩展回合开始加提醒</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">9f381a5e</dd></div>
+        <div><dt>验收</dt><dd>八个测试扩展的端到端测试、八个手写变异全抓住、三台 CI（run 38763309347）</dd></div>
       </dl>
     </figcaption>
   </figure>
