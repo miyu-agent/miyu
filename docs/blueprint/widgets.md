@@ -63,11 +63,11 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 | `text` | `text`，`tone` 可以不写 | 只有它能换行（`\n`） |
 | `pairs` | `items`：`{"label", "value", "tone"?}` | 50 对 |
 | `progress` | `value`：0 到 1 的数；`text`、`mark` 可以不写：`mark` 是 0 到 1 的数，标在条上的那一处（上下文的压缩线这类） | |
-| `list` | `items`：`{"title", "detail"?, "right"?, "state"?, "action"?}` | 200 条 |
+| `list` | `items`：`{"title", "detail"?, "right"?, "state"?, "action"?}`；`right` 是一句字，或者最多 4 段 `[{"text", "tone"?}]`（施工 X-15 补） | 200 条 |
 | `buttons` | `items`：`{"label", "action"}` | 8 个 |
 
 1. **字**：每一处字是一个字符串，或者语言到字符串的表（同 `title`），核心照连接的语言挑（这种语言、`en`、`zh`、`ja`）。`text` 段的字最多 2000 个，别的最多 200 个。不许有控制字符（`text` 段的 `\n` 除外）、改写方向的字符（U+202A–U+202E、U+2066–U+2069）。不认 Markdown、HTML：头一律当字画。
-2. **语气** `tone`：`normal`（不写就是它）、`dim`、`accent`、`good`、`warn`、`bad`。**状态** `state`：`todo`、`doing`、`done`、`failed`、`off`。颜色、图标由头照自己的主题定。
+2. **语气** `tone`：`normal`（不写就是它）、`dim`、`accent`、`good`、`warn`、`bad`。**状态** `state`：`todo`、`doing`、`done`、`failed`、`off`。颜色、图标由头照自己的主题定。列表一条的 `right` 写成几段的，每段带自己的语气，例如改动的文件 `[{"text": "+12", "tone": "good"}, {"text": "−3", "tone": "bad"}]`（施工 X-15 补，网页 2026-10-15 对图时要的）。
 3. **动作** `action`：`{"call": <方法名>, "params"?: <对象>}` 调这个包的程序登记的方法（`package-pages.md` 的 `package.methods`，名字写法同那里）；`{"open": <块的编号>}` 打开同一个包的一个 `page` 块；`{"copy": <字>}` 人点了把这段字写进剪贴板（最多 2000 个字，终端 2026-10-15 要的：会话的短编号点了复制完整编号，扩展的构建号、地址同理）。
 4. **整块**：最多 64 段；编成 JSON 最多 64 KiB。`status` 的只能是一段 `text`、一行、显示宽度最多 40 列（中文这类宽字算两列，照 Unicode 的宽度）；`home` 的最多 8 段。头画的上限另由各自的版式图定（终端：首页最多 3 块、一块最多 6 行；侧边栏一块最多 10 行；底栏最多 3 格）。
 
