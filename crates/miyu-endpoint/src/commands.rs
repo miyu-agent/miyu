@@ -8,7 +8,7 @@
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
 //!
 //! 登记表里没有的名字照模板命令认（施工 X-14 上，[`templates`]）：属主家目录、装了的包里的 `commands/<名字>.md`，展开成一段话
-//! 发出去。
+//! 发出去。扩展整页的命令（施工 X-15 下，[`pages`]）也在那里认：只叫头打开那一页。
 
 use std::sync::Arc;
 
@@ -235,6 +235,7 @@ mod basic;
 mod catalog;
 mod declared;
 mod goal;
+mod pages;
 mod registry;
 mod templates;
 #[cfg(test)]

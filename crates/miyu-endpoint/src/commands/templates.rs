@@ -18,9 +18,10 @@ use miyu_session::Handle;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_store::slash::{self, Command as Template};
 
-use super::{RunParams, Said, accepted, command, declared, may_run, speaker, why, words};
+use super::{RunParams, Said, accepted, command, declared, may_run, pages, speaker, why, words};
 use crate::Core;
 use crate::hello::Peer;
+use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
 /// 账号 `owner` 用得上的模板命令：家目录的、装了的包的，同名的先找到的赢，和登记表撞名的不算。照名字排。
@@ -84,6 +85,14 @@ pub(super) async fn run(
     let by = speaker(core, &handle, params.as_external.clone())?;
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
     let template = found_named(core, handle.owner(), name).await;
+    let own = matches!(&template, Some(own) if own.package.is_none());
+    // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
+    if !own
+        && handle.venue().as_str() == LOCAL
+        && let Some(page) = pages::named(core, name)
+    {
+        return Ok(pages::opened(&page));
+    }
     let declared = match &template {
         Some(own) if own.package.is_none() => None,
         _ => declared::named(core, name),

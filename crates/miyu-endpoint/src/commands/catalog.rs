@@ -2,7 +2,8 @@
 //! `/help`。不写会话的列全部；写了的只列这个连接在这个会话里打了不会被拒的，和 `command.run` 同一份判法（[`super::allowed`]）。
 //! 只收本机的会话：场所会话的命令由桥代表外部的人说，桥自己知道。列表不推送，头换会话、打开菜单时问。
 //!
-//! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）一起列，照名字排进去：
+//! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）、整页的命令（施工 X-15 下，
+//! [`super::pages`]，带 `opens`）一起列，照名字排进去：
 //! 不写会话的照管理员的家目录、装了的包找全部；写了的照会话属主找，只列预设开着的。自己放的模板盖住扩展声明的同名的。
 
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use miyu_kernel::id::SessionId;
 use miyu_store::slash::Command as Template;
 
 use super::declared::{self, Declared};
-use super::{Said, Slash, allowed, templates, words};
+use super::{Said, Slash, allowed, pages, templates, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
@@ -92,6 +93,17 @@ pub(crate) async fn catalog(
             .iter()
             .filter(|one| !templates.iter().any(|t| t.name == one.command.name))
             .map(|one| declared::listed(one, peer.language)),
+    );
+    // 整页的命令（施工 X-15 下）：不归预设管；自己放的同名模板盖住它。
+    commands.extend(
+        pages::found(core)
+            .iter()
+            .filter(|page| {
+                !templates
+                    .iter()
+                    .any(|t| t.package.is_none() && t.name == page.name)
+            })
+            .map(|page| pages::listed(page, peer.language)),
     );
     commands.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     Ok(json!({ "commands": commands }))
