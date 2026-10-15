@@ -376,3 +376,69 @@ fn words_are_picked_in_the_connections_language() {
     assert_eq!(zh[2]["items"][0]["label"], "Humidity");
     assert_eq!(localize(&content, "ja")[0]["text"], "Sunny");
 }
+
+#[test]
+fn the_right_side_of_an_item_may_be_spans_with_their_own_tone() {
+    let with = |right: Value| json!([{"type": "list", "items": [{"title": "src/main.rs", "right": right}]}]);
+    let spans =
+        json!([{"text": "+12", "tone": "good"}, {"text": {"zh": "−3", "en": "-3"}, "tone": "bad"}]);
+    assert_eq!(
+        check(WidgetPlace::Sidebar, &[], &with(spans.clone())),
+        Ok(())
+    );
+    assert_eq!(
+        check(WidgetPlace::Sidebar, &[], &with(json!([{"text": "3m"}]))),
+        Ok(()),
+        "语气可以不写"
+    );
+    let at = "content[0].items[0].right";
+    for (wrong, path, kind) in [
+        (json!([]), at.to_string(), Problem::Missing),
+        (
+            json!(
+                (0..5)
+                    .map(|n| json!({"text": n.to_string()}))
+                    .collect::<Vec<_>>()
+            ),
+            at.to_string(),
+            Problem::TooMany,
+        ),
+        (json!(["+12"]), format!("{at}[0]"), Problem::Type),
+        (
+            json!([{"tone": "good"}]),
+            format!("{at}[0].text"),
+            Problem::Missing,
+        ),
+        (
+            json!([{"text": "+12", "color": "green"}]),
+            format!("{at}[0].color"),
+            Problem::Unknown,
+        ),
+        (
+            json!([{"text": "+12", "tone": "green"}]),
+            format!("{at}[0].tone"),
+            Problem::Tone,
+        ),
+        (
+            json!([{"text": "a\u{7}"}]),
+            format!("{at}[0].text"),
+            Problem::ControlChar,
+        ),
+        (json!(3), at.to_string(), Problem::Type),
+    ] {
+        assert_eq!(
+            problem(WidgetPlace::Sidebar, &with(wrong.clone())),
+            (path, kind),
+            "{wrong}"
+        );
+    }
+    let picked = localize(&with(spans), "en");
+    assert_eq!(
+        picked[0]["items"][0]["right"],
+        json!([{"text": "+12", "tone": "good"}, {"text": "-3", "tone": "bad"}])
+    );
+    assert_eq!(
+        localize(&with(json!({"zh": "三分钟", "en": "3m"})), "zh")[0]["items"][0]["right"],
+        "三分钟"
+    );
+}

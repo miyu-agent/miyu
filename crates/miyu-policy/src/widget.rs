@@ -17,6 +17,8 @@ pub const MOST_BYTES: usize = 64 * 1024;
 const LONG: usize = 2000;
 /// 别的字最多几个。
 const SHORT: usize = 200;
+/// 列表一条右边的字最多分几段（施工 X-15 补：改动的文件「+12 −3」两种颜色）。
+const RIGHT_SPANS: usize = 4;
 /// 首页的一块最多几段。
 const HOME_PARTS: usize = 8;
 /// 底栏的一段最多多宽（显示宽度，宽字算两列）。
@@ -145,11 +147,16 @@ pub fn localize(content: &Value, language: &str) -> Value {
                     pick_in(object, &["text"], language);
                     if let Some(items) = object.get_mut("items").and_then(Value::as_array_mut) {
                         for item in items.iter_mut().filter_map(Value::as_object_mut) {
-                            pick_in(
-                                item,
-                                &["label", "value", "title", "detail", "right"],
-                                language,
-                            );
+                            pick_in(item, &["label", "value", "title", "detail"], language);
+                            match item.get_mut("right") {
+                                Some(Value::Array(spans)) => {
+                                    for span in spans.iter_mut().filter_map(Value::as_object_mut) {
+                                        pick_in(span, &["text"], language);
+                                    }
+                                }
+                                Some(right) => *right = pick(right, language),
+                                None => {}
+                            }
                         }
                     }
                 }
@@ -248,7 +255,7 @@ fn part(at: &str, part: &Value, pages: &[&str]) -> Result<(), Bad> {
                 only(at, item, &["title", "detail", "right", "state", "action"])?;
                 required(at, item, "title", SHORT, false)?;
                 optional(at, item, "detail", SHORT)?;
-                optional(at, item, "right", SHORT)?;
+                right(&format!("{at}.right"), item.get("right"))?;
                 one_of(at, item, "state", &STATES, Problem::State)?;
                 match item.get("action") {
                     Some(action) => self::action(&format!("{at}.action"), action, pages),
@@ -293,6 +300,31 @@ fn items(
             return Err(bad(&at, Problem::Type));
         };
         each(&at, item)?;
+    }
+    Ok(())
+}
+
+/// 列表一条右边的字：一句字（同别的字），或者最多 [`RIGHT_SPANS`] 段 `{"text", "tone"?}`，每段带自己的语气。
+fn right(at: &str, value: Option<&Value>) -> Result<(), Bad> {
+    let spans = match value {
+        None => return Ok(()),
+        Some(Value::Array(spans)) => spans,
+        Some(value) => return words(value, at, SHORT, false),
+    };
+    if spans.is_empty() {
+        return Err(bad(at, Problem::Missing));
+    }
+    if spans.len() > RIGHT_SPANS {
+        return Err(bad(at, Problem::TooMany));
+    }
+    for (n, span) in spans.iter().enumerate() {
+        let at = format!("{at}[{n}]");
+        let Some(span) = span.as_object() else {
+            return Err(bad(&at, Problem::Type));
+        };
+        only(&at, span, &["text", "tone"])?;
+        required(&at, span, "text", SHORT, false)?;
+        one_of(&at, span, "tone", &TONES, Problem::Tone)?;
     }
     Ok(())
 }
