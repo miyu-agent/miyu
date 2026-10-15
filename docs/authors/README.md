@@ -122,6 +122,7 @@ name = { en = "Greeting", zh = "问候语" }
      参数是一份 JSON，在环境变量 `MIYU_ARGS_JSON` 和标准输入里各一份；标准输出就是交给 AI 的结果，退出码不是 0 的算失败；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`。照 `#!` 起（Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。跑的规矩同 AI 跑命令：在沙盒里跑（写只在工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读），沙盒用不了的要人确认。说明、参数写短：每一轮都跟着请求发。
    - **斜杠命令模板**照 Claude Code 的写法：`commands/<名字>.md`，人敲 `/<名字> 参数` 时把正文当这个人说的一句发给 AI，正文里的 `$ARGUMENTS` 换成参数（`$ARGUMENTS[0]` 是第一个），没写的参数接在末尾。开头可以写一段 YAML：`description` 是命令菜单里那一句（英文），`argument-hint` 是名字后面跟什么的提示，中文、日文的说明写在 `metadata` 的 `summary_zh`、`summary_ja`。名字同子命令名的写法；和 Miyu 自带的命令同名的不算（自带的赢）。时间线上显示人敲的那一行（`docs/blueprint/slash.md`）。
    - **交给程序办的斜杠命令**（扩展包）：清单一段一条 `[[slash]]`，写 `name`、`summary`（语言到一句话）、可以写 `argument`（名字后面跟什么的提示），`[process] capabilities` 里要有 `commands`。人敲了，核心发给你的程序 `command.call {command, argument, text, session, by, owner, language}`，你答 `{"said": "…"}`（可以多行），这段话就是给人看的回执；答 JSON-RPC 错误的，人看到「命令执行失败」和你的原话。你的程序起来以后要 `provide` 一次（没有工具的写空的），核心才认得你的连接。谁能用和 Miyu 自带的命令一样（本人、群里的主人和管理的人），要再挡的照 `by` 自己挡。
+   - **回合开始加一段字**（施工 X-16）：`[process] capabilities` 里要有 `context.inject`，程序起来以后 `provide` 过一次，而且这个会话的工具面上有你的工具（预设关了你就不问）。每一轮开始核心发 `turn.start {"session", "venue", "text"?}`：`venue` 是 `local`（终端、网页）、`private`（平台私聊）、`group`（群），`text` 是触发这一轮的人话（不是人开的一轮不带）。300 毫秒内答 `{"inject": [{"kind", "text"}]}`，至多 3 块，`kind` 小写字母、数字、`-`、`_`，`text` 1 到 4000 个字符，原样进她的上下文、排在人说的话前面，记进会话日志以后不再变。没得加就答 `{"inject": []}`；超时、出错、写法不对的这一轮当没交。概率、开关你自己管。你交的字是给模型看的：写英文短句、外面套一层 XML 标签，自己记账（量 token、写明为什么要）。
    - **界面块**（扩展包）：往终端、网页上放自己的东西。清单一段一块 `[[widget]]`：`id`、`place`（`home` 首页、`sidebar` 侧边栏、`status` 底栏的一小段、`page` 整页）、`title`（语言到一句话，侧边栏、整页必写）、`scope = "session"`（只给侧边栏：跟着会话，一个会话一份）、`command`（只给整页：打了这个斜杠命令就打开这一页）。一个包最多 16 块，`[process] capabilities` 里要有 `widgets`。界面自己画，你只给内容（第四节第 8 条）；换不掉界面自带的东西，时间线、输入框、设置页也放不进去（设计 `33-界面扩展.md`）。
    - 写错了的不登记，`miyu check` 说哪一个、为什么；和别的工具撞了名的也说。
    - 不想做成包的，直接放进 `~/.miyu/home/admin/skills/`、`scripts/`、`commands/` 也一样用（同名的这里赢），不归包管理。
@@ -234,7 +235,7 @@ Windows 上 `bin/` 里要放 `.exe`：用 PyInstaller 打包，或者换一种�
 
 ### 六、能力和审批
 
-1. 清单 `[process] capabilities` 写你要哪些，只认这十三个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`widgets`（在界面上显示自己的内容）、`context.inject`（回合开始时往上下文里加内容）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）、斜杠命令、后台页的方法和界面块；挂接点（`context.inject`、`tool.guard`、`tool.rewrite`）还没开放。
+1. 清单 `[process] capabilities` 写你要哪些，只认这十三个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`widgets`（在界面上显示自己的内容）、`context.inject`（回合开始时往上下文里加内容）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）、斜杠命令、后台页的方法、界面块和回合开始加的字（`context.inject`，第四节）；`tool.guard`、`tool.rewrite` 还没开放。
 2. 管理员打开你的扩展时批：一次批你这时声明的全部。升级以后多要的，下次打开只问多的那几个。没批完的不拉起。
 3. 照批过的能力挡方法、在沙盒里跑，随多用户、沙盒那一段做，现在还没强制。**照实声明**：以后没声明的会被挡掉。
 

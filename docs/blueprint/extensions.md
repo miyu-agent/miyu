@@ -14,11 +14,12 @@
 | `crates/miyu-endpoint/src/extensions.rs` | 一张表：每个 `process` 包一个看管的任务；开、关、重启、列状态；核心空闲、退出时问它 |
 | `crates/miyu-endpoint/src/extensions/supervise.rs` | 看管一个包：拉起、交给连接、等它退出、退避、停下 |
 | `crates/miyu-endpoint/src/extensions/stderr.rs` | 标准错误的文件：拉起前太大的挪成 `.old`，状态里给最后几行 |
+| `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `turn.start`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
 | `crates/miyu-endpoint/src/connection.rs`、`hello.rs`、`login.rs` | 核心亲手给的连接：握手不看凭据（`Via::Spawned`） |
 | `crates/miyu-core/src/lib.rs`、`serve.rs` | 写了 `ready` 以后照开关拉起，停的时候请扩展退出 |
-| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去 |
+| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `turn.start`（施工 X-16） |
 
 ### 对外的样子
 
@@ -78,6 +79,14 @@
 3. **变了推** `extension.config`：`{"keys": {"onebot.token": "<新真值>"}}`。握手的回应写出去以后，核心盯着配置服务交给核心的那一份（配置文件改了、`secret.set` 换了值、手改了密钥文件，都会换上新的一份），把这个包自己的那份重算一遍，跟上一次交给它的比，变了推，只放变了的键；变成没设、取不到的写 `null`。不用订阅。不叫 `config.changed`：那是头订阅的推送，形状带 `origin`、`applies`（通讯平台的会话提的，主会话定）。
 4. **不留痕**：值不进运行日志、不进事件；运行日志只记 `DEBUG extension config handed package=… keys=<几个>`、`extension config pushed`，不带值。
 
+**回合开始的挂接点**（施工 X-16，设计 `34-表情包.md` 第五节第 1 条）：
+
+1. **谁被问**：清单 `[process] capabilities` 写了 `context.inject`、批过的（出厂的算批过）、在跑、登记过工具的扩展（`provide` 过的连接），而且这个会话这一刻的工具面上有它登记的工具（预设关了它就没有，就不问）。照包的编号排。
+2. **问**：回合开始、记忆和知识库的挂接点之后，核心向每一个发 `turn.start {"session", "venue", "text"?}`：`venue` 是 `local`（本机）、`private`（平台私聊）、`group`（群）；`text` 是触发这一轮的人话，不是人开的一轮（回报叫醒的、续轮）不带。几个并行问，各自限时 300 毫秒（`HOOK_ANSWER`），过了的当这一轮没交，记一行 `DEBUG`。
+3. **答**：`{"inject": [{"kind", "text"}]}`，至多 3 块：`kind` 照事实类别的写法（小写字母、数字、`-`、`_`），`text` 1 到 4000 个字符，原样进上下文（外壳、转义扩展自己做）。空的、写法不对的整份当没交，记一行 `WARN`；JSON-RPC 的错误也当没交。
+4. **记**：交回的一块记成 `context.injected`，`by` 是这个包（模块编号就是包的编号），`kind` 照交的，排在触发的那句话前面（和记忆的注入一样，`08-上下文投影.md` 第五节）。写进日志就不变：下一轮照日志原样回放，前缀稳定。
+5. **不问的**：没有这种扩展的会话一个字节不变；子会话照问（它的工具面上有那件工具才问）。
+
 ### 怎么走
 
 1. **拉起**（施工 F-6 上：程序不在的当没装，`package-pages.md`「程序不在就当没装」：`extension.enable` 拒绝 `program_missing`、什么都不写；开着的在核心起来时不照登记缓存登记工具、记成停下 `not_installed`）：程序照 9-2 的找法（`miyu_store::packages::locate`：先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不走 `PATH`，施工 F-8 上再补），参数是清单的 `[process] args`，环境照核心的，另把 `MIYU_HOME`、`MIYU_RESOURCES` 设成核心手上正在用的数据根、资源目录的路径（施工 O-18：扩展和核心认同一份，不管核心是怎么找到它们的；测试里的核心跑在测试程序里，环境里没有临时的数据根，靠它把扩展指过去），工作目录是这个包放状态的目录（`state/packages/<编号>/`，没有的建）。标准输入、输出接管道，交给协议的连接；标准错误直接接到 `state/logs/<编号>.stderr` 上（追加，拉起前超过 1 MiB 的先挪成 `<编号>.stderr.old`）。核心丢下它时杀掉（`kill_on_drop`），兜底。Windows 上不开新的控制台窗口。拉起时系统说程序正被开着写（Linux 的 `ETXTBSY`：装包刚拷进来的程序，拷的那一刻核心起的别的子进程在换成自己的程序以前也攥着写它的句柄），隔 50 毫秒再试，最多 20 次，还不成才算起不来（施工 F-8 上再补）。
@@ -109,6 +118,7 @@
 | `crates/miyu-endpoint/tests/extension_approval.rs`、`crates/miyu-config/src/package/tests.rs`、`crates/miyu-store/src/extensions/tests.rs`（施工 9-4 下上） | 清单的能力照表的先后、不认识的和重复的报 `bad_capability`；开关文件的 `approved` 读写、以前的文件当没批过、没批的不写这一格；管理员装的：不带 `approve` 拒绝 `needs_approval`、只批一部分说剩下的、不是声明的名字 `bad_params`、批了开起来、记下、关了不清；`always` 的没批不拉起、不拦空闲、`restart` 拒绝、批了拉起；升级多了的只问多的；出厂的桥不用批；名字照连接的语言 |
 | `crates/miyu-endpoint/tests/extension_config.rs`、`src/extensions/config/tests.rs`（施工 9-4 下下） | 握手交自己的键（默认值、密钥真值、没设的不放），头的连接没有；改了自己的项推、`secret.set` 换了值推新真值、去掉了推 `null`、别的项变了不推；只放变了的键 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
+| `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
 | `crates/miyu-endpoint/tests/system_account.rs`、`crates/miyu-store/src/packages/tests.rs`、`crates/miyu-store/src/personas/tests.rs`（施工 O-4 下） | 声明了系统账号的包：起来时建它的工作区；起来以后才装上的、装回来的当场建（施工 F-5 下），会话写进它自己的索引；拉起的扩展握手的 `account` 是它；群的场所会话归它（目录、工作目录、回应的 `account`）、找回同一个；对应表里的主人的私聊照旧归主人、这个连接照样能对它说话；群里主人说的记成外部身份带 `account`；附件拷进它名下；用量记在它名下；记忆归管理员、删了照管理员埋墓碑；没声明的扩展照旧 `no_system_account`、不建账号；撞了管理员的 `account_taken` |
 
 ### 起草时定的
@@ -127,4 +137,4 @@
 
 - 装包时批能力：有了装包那一步，审批挪到装的时候。
 - 能力的强制执行、照连接的身份挡方法、沙盒里跑：随多用户、沙盒那一段（扩展的身份是系统账号，施工 O-4 下做了）。
-- 扩展提供工具、命令、挂接点：O-2。
+- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16。`tool.guard`、`tool.rewrite` 还没有。

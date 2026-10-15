@@ -19,7 +19,10 @@
 //!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
-//!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；
+//!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；是 `turn.start` 的照 `inject` 定的答
+//!   （施工 X-16）；
+//! - `inject:<怎么答>`：之后的 `serve` 照它答 `turn.start`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
+//!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
 //!
@@ -35,6 +38,8 @@ fn main() {
     let mut record: Option<File> = None;
     // 最近一条带会话编号的回应里的那个编号：`ask` 的参数照它换。
     let mut session = String::new();
+    // `serve` 怎么答 `turn.start`（施工 X-16）。
+    let mut inject = String::from("silent");
     for (n, step) in std::env::args().skip(1).enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
             let mut file = OpenOptions::new()
@@ -89,6 +94,8 @@ fn main() {
                 session = id;
             }
             keep(&mut record, &reply);
+        } else if let Some(how) = step.strip_prefix("inject:") {
+            how.clone_into(&mut inject);
         } else if step == "wait" {
             while !read(&mut input).is_empty() {}
         } else if step == "listen" {
@@ -136,6 +143,12 @@ fn main() {
                     if inner_method(&line).as_deref() == Some("quit") {
                         std::process::exit(0);
                     }
+                }
+                if line.contains(r#""method":"turn.start""#)
+                    && let Some(id) = field(&line, "id")
+                    && let Some(answer) = injected(&id, &inject, &line)
+                {
+                    send(&answer);
                 }
                 if line.contains(r#""method":"command.call""#)
                     && let Some(id) = field(&line, "id")
@@ -244,6 +257,34 @@ fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"said":"{command} {argument}\nok"}}}}"#
         ),
     })
+}
+
+/// 答编号是 `id` 的那一次 `turn.start`（施工 X-16），照 `how`。
+fn injected(id: &str, how: &str, line: &str) -> Option<String> {
+    let block = |text: &str| format!(r#"{{"kind":"meme","text":"{text}"}}"#);
+    let blocks = match how {
+        "hint" => {
+            let venue = field(line, "venue").unwrap_or_default();
+            let text = field(line, "text").unwrap_or_else(|| "-".to_string());
+            block(&format!("hint {venue} {text}"))
+        }
+        "many" => vec![block("a"); 4].join(","),
+        "empty" => String::new(),
+        "boom" => {
+            return Some(format!(
+                r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#
+            ));
+        }
+        "garbled" => {
+            return Some(format!(
+                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"inject":[{{"kind":"Bad Kind","text":"x"}}]}}}}"#
+            ));
+        }
+        _ => return None,
+    };
+    Some(format!(
+        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"inject":[{blocks}]}}}}"#
+    ))
 }
 
 /// 推块 `widget` 的一段字（施工 X-15 中）：`<字> <块>`，跟着会话的后面接会话编号；`temp` 那一块只推字本身。

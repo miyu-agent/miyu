@@ -23,6 +23,7 @@ mod agents;
 pub mod attachment;
 mod catalog;
 mod goals;
+mod hooks;
 mod jobs;
 mod knowledge;
 pub mod load;
@@ -48,6 +49,7 @@ pub use catalog::{BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_pr
 pub use goals::{
     BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
 };
+pub use hooks::{HooksPort, Inject, Injecting, TurnAsk, Where};
 pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
     RUN_IN_BACKGROUND, SHELL, Text,

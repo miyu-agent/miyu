@@ -193,7 +193,7 @@
 
    合计照旧不超过 3000 字节，超了截新记的那几行，最后一行说还有几条；之后什么都没记的只有摘要一行。`refs` 是列出来的那几条，摘要那一行不算一条。摘要不算了的（第七条第 8 款）照上面只列条目。2026-10-10 照开发端点量：同样的事，摘要模式的一块 121 token，只列条目 201。
 3. **上限**：整块不超过 3000 字节（`memory/summary.rs` 的 `LIMIT`）。起点是约 1000 token；中文为主的一块照字节/4 折算会少算，2026-10-08 在开发端点量过 4000 字节 1298 token、3000 字节 964 token，所以取 3000。超了截在一条的边界上，最后一行写还有几条：`…and 12 more; memory_search finds them.`。
-4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。记忆这一个挂接点有摘要、联想两件（第四条第 6 款）；知识库的自动想起（施工 K-6 下，`knowledge.md` 第九条）和它并着问、照模块编号排。
+4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。记忆这一个挂接点有摘要、联想两件（第四条第 6 款）；知识库的自动想起（施工 K-6 下，`knowledge.md` 第九条）和它并着问、照模块编号排；声明了 `context.inject` 的扩展也并着问（施工 X-16，`extensions.md`「回合开始的挂接点」），排在它们后面。
 5. **读字**：外壳和截了的那一句（`resources/software/memory/summary/` 的 `open.txt`、`close.txt`、`more.txt`，登记簿）核心起来时照 `miyu_tool::load` 读好，交给 `Memory`（`SummaryTexts`）。读不出来的（安装坏了）这个核心不交摘要，记一行 `WARN memory summary texts unreadable error=…`；列记忆出错的那一轮不交，记一行 `WARN memory summary not read error=…`。
 6. 整理改了摘要，跑着的会话不跟：压缩以后、新会话才换（R-7）。
 7. **内核的接口**（R-4 上，2026-10-08 和核心的主会话定）：

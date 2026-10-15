@@ -37,6 +37,7 @@ mod back;
 mod extract;
 mod goal;
 mod halt;
+mod injects;
 mod life;
 mod listing;
 mod mail;

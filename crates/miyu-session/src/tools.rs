@@ -90,6 +90,8 @@ pub(crate) struct Tools {
     knowledge: Option<Arc<crate::knowledge::Shelves>>,
     /// 看软件包的端口（施工 F-10 上）；会话用的预设（施工 F-10 下下）。
     packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    /// 回合开始问扩展要加的字（施工 X-16）。
+    hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     preset: Option<String>,
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
@@ -182,6 +184,11 @@ impl Tools {
         Some((self.memory.clone()?, self.offset))
     }
 
+    /// 回合开始问扩展的端口和这个会话的编号（施工 X-16）：没交端口的没有。
+    pub(crate) fn hooks(&self) -> Option<(Arc<dyn miyu_tool::HooksPort>, SessionId)> {
+        Some((self.hooks.clone()?, self.session.clone()))
+    }
+
     /// 照 `kit` 跑，回报送进 `backs`。
     pub(crate) fn new(kit: ToolKit, backs: mpsc::UnboundedSender<Back>) -> Tools {
         let sandbox = kit.sandbox.map(|helper| {
@@ -216,6 +223,7 @@ impl Tools {
             knowledge: kit.knowledge,
             preset: kit.preset,
             packages: kit.packages,
+            hooks: kit.hooks,
             running: BTreeMap::new(),
             backs,
         }

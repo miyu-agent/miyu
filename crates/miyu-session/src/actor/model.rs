@@ -149,7 +149,13 @@ impl Actor {
         let skills = self.skills_turn(&present).await;
         let config = Arc::clone(self.config.current());
         let knowledge = self.recalling();
-        let mut injected = hooks(self.tools.memory(), knowledge, present, said, config).await;
+        // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
+        let extensions = self.extension_injections(said.clone());
+        let (mut injected, extended) = tokio::join!(
+            hooks(self.tools.memory(), knowledge, present, said, config),
+            extensions
+        );
+        injected.extend(extended);
         injected.extend(skills);
         Input::TurnStartHooksDone {
             policy,

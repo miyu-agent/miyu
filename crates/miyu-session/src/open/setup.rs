@@ -96,6 +96,8 @@ pub struct Create<'a> {
     pub sessions: Option<Arc<dyn SessionPort>>,
     /// 看软件包的端口（施工 F-10 上）：协议端点交进来，`packages` 照它看。没有的（测试里自己造的），`packages` 说看不了。
     pub packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    /// 回合开始问扩展要加的字（施工 X-16，`extensions.md`「回合开始的挂接点」）：协议端点交进来。没有的（测试里自己造的）不问。
+    pub hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     /// 执行器的任务表，核心里一张（施工 7-3）：后台命令交给它。
     pub jobs: &'a Arc<Jobs>,
     /// 属主的会话列表的索引（施工 3-8 七补）：日志每落一批，顺手更新这个会话的那一行。没有的（测试里自己造的）不更新。
@@ -182,6 +184,8 @@ pub struct Load<'a> {
     pub sessions: Option<Arc<dyn SessionPort>>,
     /// 看软件包的端口（施工 F-10 上）：同 [`Create::packages`]。
     pub packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    /// 回合开始问扩展要加的字（施工 X-16，`extensions.md`「回合开始的挂接点」）：协议端点交进来。没有的（测试里自己造的）不问。
+    pub hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     /// 执行器的任务表，核心里一张（施工 7-3）：后台命令交给它，任务编号照日志往后数。
     pub jobs: &'a Arc<Jobs>,
     /// 同 [`Create::index`]。

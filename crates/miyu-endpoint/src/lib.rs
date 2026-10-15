@@ -39,6 +39,7 @@ mod files;
 mod forking;
 mod from;
 mod hello;
+mod hooks;
 mod human;
 mod job_output;
 mod knowledge;
@@ -69,6 +70,7 @@ mod subscriptions;
 mod system_accounts;
 #[cfg(test)]
 mod test_support;
+mod timing;
 mod toml_changes;
 mod undo;
 mod uploads;
@@ -319,40 +321,11 @@ impl Core {
         self
     }
 
-    /// 同一份家底，连上以后最多等 `wait` 握手：测试里设短的，不用真等 10 秒。
-    #[must_use]
-    pub fn with_hello_wait(mut self, wait: Duration) -> Core {
-        self.hello_wait = wait;
-        self
-    }
-
-    /// 同一份家底，`fs.find` 的 `fresh` 照 `fresh` 这个时长判断要不要重建清单（施工 W-2）：测试里设短的，不用
-    /// 真等十秒。
-    #[must_use]
-    pub fn with_files_fresh(mut self, fresh: Duration) -> Core {
-        self.files_fresh = fresh;
-        self
-    }
-
     /// 同一份家底，可选软件包登记的查询照 `queries`（施工 W-4）：核心起来时照编进来的包往里登记一份，这里
     /// 整个换上。没设的是空表，没有任何可选软件包的方法。
     #[must_use]
     pub fn with_queries(mut self, queries: Queries) -> Core {
         self.queries = queries;
-        self
-    }
-
-    /// 同一份家底，分块上传多久没写就作废照 `idle`（施工 W-5）：测试里设短的，不用真等 60 秒。
-    #[must_use]
-    pub fn with_upload_idle(mut self, idle: Duration) -> Core {
-        self.upload_idle = idle;
-        self
-    }
-
-    /// 同一份家底，一次性码 `ttl` 有效（施工 W-8）：测试里设短的，不用真等 5 分钟。
-    #[must_use]
-    pub fn with_code_ttl(mut self, ttl: Duration) -> Core {
-        self.identity = login::Identity::new(ttl);
         self
     }
 
@@ -387,14 +360,6 @@ impl Core {
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner),
         )
-    }
-
-    /// 同一份家底，扩展进程、MCP 服务（施工 X-3 上）等多久、退避多久照 `timing`（施工 9-4 上）：测试里设短的，不用真等。
-    #[must_use]
-    pub fn with_extension_timing(mut self, timing: extensions::Timing) -> Core {
-        self.extensions = extensions::Extensions::new(timing);
-        self.mcp = mcp::Servers::new(timing);
-        self
     }
 
     /// 同一份家底，配置照 `config`（施工 8-2）：核心起来时读好交进来。没设的全是默认值，只认端点自己的两项。

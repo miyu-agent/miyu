@@ -171,6 +171,7 @@ async fn a_write_that_fails_stops_the_session() {
             memory: None,
             knowledge: None,
             packages: None,
+            hooks: None,
             preset: None,
             shelves: Vec::new(),
             names: Default::default(),
