@@ -78,6 +78,7 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
             "mcp",
             "slash",
             "widget",
+            "export",
         ],
         PackageKind::Builtin => &[
             "package",

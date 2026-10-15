@@ -250,7 +250,7 @@ fn process_ui_and_check_fields_are_checked() {
     );
 }
 
-/// 能力（施工 9-4 下上）：`[process] capabilities` 只认 05 第三节的十四个名字，照那张表的先后排好；不认识的、重复的、
+/// 能力（施工 9-4 下上）：`[process] capabilities` 只认 05 第三节的十五个名字，照那张表的先后排好；不认识的、重复的、
 /// 不是字的列表说是哪一处。
 #[test]
 fn capabilities_are_read_in_the_table_order() {
@@ -281,6 +281,7 @@ fn capabilities_are_read_in_the_table_order() {
             "events.read",
             "events.write",
             "sessions.drive",
+            "packages.call",
             "act_for_external",
             "network",
             "fs.read",

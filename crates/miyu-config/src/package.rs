@@ -82,6 +82,9 @@ pub struct Manifest {
     pub slash: Vec<SlashCommand>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub widgets: Vec<Widget>,
+    /// 给别的软件调的方法（施工 X-18，`[export] methods`）：声明了 `packages.call` 的扩展经 `package.call` 只调得到这几个。只有
+    /// 扩展包能写，没写的是空的。
+    pub export: Vec<String>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -208,7 +211,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 17] = [
+const TABLES: [&str; 18] = [
     "package",
     "builtin",
     "command",
@@ -226,6 +229,7 @@ const TABLES: [&str; 17] = [
     "mcp",
     "slash",
     "widget",
+    "export",
 ];
 
 /// 读一份清单。
@@ -350,6 +354,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => Vec::new(),
     };
     widget::check(&widgets, capabilities, &slash)?;
+    let export = match root.get("export").and_then(Item::as_table_like) {
+        Some(table) => links::export(&reader, table)?,
+        None => Vec::new(),
+    };
     Ok(Manifest {
         kind,
         version: head.version,
@@ -373,6 +381,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         mcp,
         slash,
         widgets,
+        export,
     })
 }
 

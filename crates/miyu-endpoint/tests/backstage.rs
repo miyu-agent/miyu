@@ -220,7 +220,7 @@ async fn a_page_calls_the_methods_its_program_registered() {
 }
 
 #[tokio::test]
-async fn only_extensions_register_methods_and_only_people_call_them() {
+async fn only_extensions_register_methods_and_extensions_need_approval_to_call() {
     let home = Home::new();
     let program = Program::new();
     let (record, keep) = crate::support::extensions::record(&home, "relay");
@@ -259,7 +259,8 @@ async fn only_extensions_register_methods_and_only_people_call_them() {
     let replies = tokio::time::timeout(Duration::from_secs(60), async {
         loop {
             let text = std::fs::read_to_string(&record).unwrap_or_default();
-            if text.matches("local_only").count() >= 2 {
+            // 扩展调 `package.call` 没声明 `packages.call` 的 `needs_approval`（施工 X-18），`package.file` 照旧只给人。
+            if text.contains("needs_approval") && text.contains("local_only") {
                 return text;
             }
             tokio::time::sleep(Duration::from_millis(20)).await;

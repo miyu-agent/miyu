@@ -186,3 +186,20 @@ fn a_package_carries_one_program() {
     let problem = read(&kind).expect_err("kind 不再认");
     assert_eq!((problem.code, problem.line), (Code::UnknownKey, Some(2)));
 }
+
+/// 给别的软件调的方法（施工 X-18）：`[export] methods` 照写的先后读；不是方法名的、重复的 `bad_export`；只给扩展包。
+#[test]
+fn an_extension_exports_methods_by_name() {
+    let manifest = read(&format!(
+        "{BRIDGE}\n[export]\nmethods = [\"add\", \"search.by-meaning\"]\n"
+    ))
+    .unwrap();
+    assert_eq!(manifest.export, ["add", "search.by-meaning"]);
+    assert!(read(BRIDGE).unwrap().export.is_empty(), "没写的是空的");
+    for bad in ["[\"Add\"]", "[\"add\", \"add\"]", "[\"\"]"] {
+        let (code, _) = wrong(&format!("{BRIDGE}\n[export]\nmethods = {bad}\n"));
+        assert_eq!(code, Code::BadExport, "{bad}");
+    }
+    let (code, _) = wrong(&format!("{MEMORY}\n[export]\nmethods = [\"add\"]\n"));
+    assert_eq!(code, Code::WrongKind, "内置包不能写");
+}

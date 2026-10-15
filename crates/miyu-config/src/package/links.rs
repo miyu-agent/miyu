@@ -70,6 +70,38 @@ pub(super) fn workers(
     Ok(workers)
 }
 
+/// `[export]`（施工 X-18）：`methods` 是给别的软件经 `package.call` 调的方法名，写法同后台页的方法（小写字母开头，小写字母、
+/// 数字、`_`、`.`、`-`，1 到 64 个），不重复；没写的是空的。
+pub(super) fn export(reader: &Reader<'_>, table: &dyn TableLike) -> Result<Vec<String>, Problem> {
+    reader.only(table, "export", &["methods"])?;
+    let methods = reader.texts(table, "export", "methods")?;
+    for (index, name) in methods.iter().enumerate() {
+        let why = if !method_name(name) {
+            "is not a method name"
+        } else if methods[..index].contains(name) {
+            "is listed twice"
+        } else {
+            continue;
+        };
+        return Err(reader.problem(
+            table.get("methods"),
+            Code::BadExport,
+            name,
+            format!("export.methods: {name:?} {why}"),
+        ));
+    }
+    Ok(methods)
+}
+
+/// 方法名的写法：小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个（同 `package.methods` 登记的）。
+fn method_name(name: &str) -> bool {
+    name.len() <= 64
+        && name.starts_with(|c: char| c.is_ascii_lowercase())
+        && name
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '_' | '.' | '-'))
+}
+
 /// `[worker]`：`program` 必写。
 pub(super) fn worker(
     reader: &Reader<'_>,

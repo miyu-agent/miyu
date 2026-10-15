@@ -654,7 +654,7 @@
 
 - `package.file {"package", "path", "offset"?}`：回应 `{"data", "size", "eof"}`，一次最多 512 KiB。拒绝：路径写法不对 `bad_params`；没有的包 `unknown_package`；没有后台页 `no_page`；没有、跑出目录、不是普通文件 `not_found`。扩展调回 `local_only`。
 - `package.methods {"methods": [{"name", "timeout_ms"?}]}`：只给核心拉起的扩展，别的连接 `not_an_extension`；换掉这个包上一次登记的，回应 `{"methods": 个数}`；写法不对的 `bad_params`。
-- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params"}` 给那个扩展，回什么交回什么；在后台答。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`（`data.message`、`data.code`）、`method_timeout`。扩展调回 `local_only`。
+- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?}` 给那个扩展，回什么交回什么；在后台答。扩展也能调（施工 X-18）：要声明 `packages.call`，只调得到对方清单 `[export]` 里的，转过去带 `from`（调的包的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`；扩展调的另有 `needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）（`data.message`、`data.code`）、`method_timeout`。扩展调回 `local_only`。
 
 **`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`**（施工 9-4 上，`extensions.md`「对外的样子」）
 
@@ -1212,6 +1212,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_redoable` | -32010 | 重做时最后一轮不是人说的话开的，或者一轮都没有（施工 4-7 再补） |
 | `nothing_to_recap` | -32010 | 回顾时她一个带正文的回复都还没有；以前造的快照里没有回顾的字（施工 3-8 四补） |
 | `not_asking` | -32010 | `session.answer` 回答的调用没在等回答：答过了、了结了、等的不是这一种（施工 D-1） |
+| `not_exported` | -32010 | 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法；`data.method` 是哪一个（施工 X-18） |
 | `not_a_provider` | -32010 | `provide` 不是核心拉起的扩展发的（施工 O-2 上） |
 | `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`need_load`（施工 L-1）之一（施工 O-2 上） |
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
@@ -1397,6 +1398,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `nothing_to_recap` | 没有可回顾的内容。 | Nothing to recap. |
 | `not_asking` | 不在等待回答。 | Not waiting for an answer. |
 | `not_ambient` | 不是旁听消息。 | Not an overheard message. |
+| `not_exported` | 对方软件没有开放这个方法。 | The other package does not offer this method. |
 | `not_a_provider` | 仅扩展可提供工具。 | Only extensions can provide tools. |
 | `bad_tool` | 工具规格有误。 | Invalid tool spec. |
 | `already_answered` | 已回复。 | Already answered. |

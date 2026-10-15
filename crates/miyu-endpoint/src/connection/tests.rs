@@ -17,7 +17,6 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "package.disable",
         "package.restart",
         "package.file",
-        "package.call",
         "mcp.list",
         "mcp.restart",
         "config.set",
@@ -33,6 +32,8 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "persona.read",
         "session.send",
         "package.list",
+        // 施工 X-18：扩展照 `packages.call`、对方的 `[export]` 调，在 `backstage::call` 里挡。
+        "package.call",
         "config.get",
         "config.schema",
         "config.check",

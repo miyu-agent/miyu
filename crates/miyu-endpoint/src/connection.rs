@@ -238,6 +238,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             background.spawn(call_later(
                 Arc::clone(&core),
                 peer,
+                caller.package.clone(),
                 request,
                 later,
                 out.clone(),
@@ -377,11 +378,12 @@ async fn answer_later(
 async fn call_later(
     core: Arc<Core>,
     peer: crate::hello::Peer,
+    from: Option<String>,
     request: Request,
     later: Later,
     out: mpsc::Sender<String>,
 ) {
-    let result = methods::call_later(&core, peer, &request).await;
+    let result = methods::call_later(&core, peer, from.as_deref(), &request).await;
     let line = answer(&request, result, peer.locale);
     later.reply(target(&request).as_ref(), line, &out).await;
 }
@@ -454,7 +456,6 @@ fn people_only(method: &str) -> bool {
                 | "package.file"
                 | "mcp.list"
                 | "mcp.restart"
-                | "package.call"
                 | "config.set"
                 | "config.trust"
                 | "secret.set"

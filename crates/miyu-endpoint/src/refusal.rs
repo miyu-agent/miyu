@@ -373,29 +373,6 @@ impl Refusal {
         }
     }
 
-    /// `provide` 的一件工具规格不对、撞名（施工 O-2 上）：`data.tool` 是哪一件，`data.problem` 是哪一条。
-    pub(crate) fn bad_tool(tool: &str, problem: &str) -> Refusal {
-        let mut refusal = Refusal::with("bad_tool", "tool", serde_json::json!(tool));
-        if let Some(data) = refusal.data.as_mut() {
-            data.insert("problem".to_string(), serde_json::json!(problem));
-        }
-        refusal
-    }
-
-    /// `model.embed` 算不出：哪一条没算出来、等不到（施工 X-17），`data.why` 是原因（英文一句）。
-    pub(crate) fn embedding_failed(why: &str) -> Refusal {
-        Refusal::with(
-            "embedding_failed",
-            "why",
-            serde_json::Value::String(why.to_string()),
-        )
-    }
-
-    /// 开一个扩展，它要的能力还有没批的（施工 9-4 下上，`extensions.md`「能力」）：`data.capabilities` 是没批的那几个。
-    pub(crate) fn needs_approval(capabilities: serde_json::Value) -> Refusal {
-        Refusal::with("needs_approval", "capabilities", capabilities)
-    }
-
     /// 参数不对，`data.limit` 说超了哪一样上限（施工 O-34：场所消息里的合并转发合起来的条数 `forward_nodes`、字节数
     /// `forward_bytes`）。
     pub(crate) fn bad_params_about(limit: &str) -> Refusal {

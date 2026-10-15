@@ -6,6 +6,7 @@
 mod goal_command;
 mod goal_heads;
 mod model_embed;
+mod package_call_ext;
 mod profile;
 mod provide;
 mod provide_end_turn;

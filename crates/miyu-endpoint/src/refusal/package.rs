@@ -1,5 +1,6 @@
 //! 装、卸软件包时的三种拒绝（施工 F-5 上，`packages.md`「装卸」）：`refusal.rs` 到了 500 行，挪到这里。施工 F-6 上多开关的两种
-//! （`package-pages.md`「开关」「程序不在就当没装」）。
+//! （`package-pages.md`「开关」「程序不在就当没装」）。扩展带数据的几种（工具规格不对、能力没批、没导出、embedding 算不出）施工
+//! X-19 时 `refusal.rs` 又到了 500 行，也挪到这里。
 
 use super::{REFUSED, Refusal};
 
@@ -118,5 +119,37 @@ impl Refusal {
             data.insert("line".to_string(), serde_json::json!(line));
         }
         refusal
+    }
+
+    /// `provide` 的一件工具规格不对、撞名（施工 O-2 上）：`data.tool` 是哪一件，`data.problem` 是哪一条。
+    pub(crate) fn bad_tool(tool: &str, problem: &str) -> Refusal {
+        let mut refusal = Refusal::with("bad_tool", "tool", serde_json::json!(tool));
+        if let Some(data) = refusal.data.as_mut() {
+            data.insert("problem".to_string(), serde_json::json!(problem));
+        }
+        refusal
+    }
+
+    /// `model.embed` 算不出：哪一条没算出来、等不到（施工 X-17），`data.why` 是原因（英文一句）。
+    pub(crate) fn embedding_failed(why: &str) -> Refusal {
+        Refusal::with(
+            "embedding_failed",
+            "why",
+            serde_json::Value::String(why.to_string()),
+        )
+    }
+
+    /// 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法（施工 X-18）：`data.method` 是哪一个。
+    pub(crate) fn not_exported(method: &str) -> Refusal {
+        Refusal::with(
+            "not_exported",
+            "method",
+            serde_json::Value::String(method.to_string()),
+        )
+    }
+
+    /// 开一个扩展，它要的能力还有没批的（施工 9-4 下上，`extensions.md`「能力」）：`data.capabilities` 是没批的那几个。
+    pub(crate) fn needs_approval(capabilities: serde_json::Value) -> Refusal {
+        Refusal::with("needs_approval", "capabilities", capabilities)
     }
 }

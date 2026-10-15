@@ -25,16 +25,18 @@ pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     }
 }
 
-/// 在后台办一条 [`answered_later`] 认的请求，连接的这一头是 `peer`（`command.run` 的回执照它的语言写）。
+/// 在后台办一条 [`answered_later`] 认的请求，连接的这一头是 `peer`（`command.run` 的回执照它的语言写）；`from` 是核心拉起的
+/// 扩展的包（施工 X-18：`package.call` 照它查能调哪几个），人的连接没有。
 pub(crate) async fn call_later(
     core: &Arc<Core>,
     peer: Peer,
+    from: Option<&str>,
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
         "model.call" => models::call(core, params(request)?).await,
         "memory.dream" => memory::dream::call(core, &request.params).await,
-        "package.call" => backstage::call(core, params(request)?).await,
+        "package.call" => backstage::call(core, from, params(request)?).await,
         "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
         "fs.find" => files::find(core, params(request)?).await,
         "job.output" => job_output::read(core, params(request)?).await,

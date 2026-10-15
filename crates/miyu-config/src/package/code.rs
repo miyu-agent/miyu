@@ -87,6 +87,8 @@ pub enum Code {
     BadPageDir,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
     BadMascotModel,
+    /// `[export] methods` 里有不是方法名的、重复的（施工 X-18）。
+    BadExport,
     /// `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了。
     BadMcp,
     /// `[[slash]]` 写错了（施工 X-14 下）：命令名、说明、提示、给哪种会话，同一个包里重了，没声明 `commands` 能力。
@@ -141,6 +143,7 @@ impl Code {
             Code::BadIcon => "bad_icon",
             Code::BadPageDir => "bad_page_dir",
             Code::BadMascotModel => "bad_mascot_model",
+            Code::BadExport => "bad_export",
             Code::BadMcp => "bad_mcp",
             Code::BadSlash => "bad_slash",
             Code::BadWidget => "bad_widget",
@@ -148,7 +151,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 45] = [
+    pub const ALL: [Code; 46] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -191,6 +194,7 @@ impl Code {
         Code::BadIcon,
         Code::BadPageDir,
         Code::BadMascotModel,
+        Code::BadExport,
         Code::BadMcp,
         Code::BadSlash,
         Code::BadWidget,

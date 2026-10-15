@@ -94,12 +94,18 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 换掉这个包上一次登记的；不用另批能力：只有管理员的头在这个软件自己的页上调得到。
    - 不缓存：连接断了、扩展停了就没有了，调到的回 `program_not_running`。
    - 不是核心拉起的扩展的连接调它，`not_an_extension`。名字写法不对、重复、时限不在范围里的 `bad_params`，什么都不换。回应 `{"methods": 个数}`。
-2. **调**：头发 `package.call {"package", "method", "params"?}`。只给出示本机令牌、登录令牌的连接。
+2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人）调得到登记的全部。施工 X-18 起扩展也能调别的软件（「软件之间互相调」）：要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到对方清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。
    - 没有这个包 `unknown_package`；它的程序没连着、还没登记方法 `program_not_running`；没登记这个方法 `unregistered`，`data.method` 是哪一个。
-   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params"}}` 给扩展，等它回，回什么交回什么（`result` 原样）。
+   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
+
+**软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条）：
+
+1. **给出来**：被调的包在清单里写 `[export] methods = ["add", "search"]`（只有扩展包能写；方法名写法同登记的，不重复，写错 `bad_export`），照旧经 `package.methods` 登记；没写进 `[export]` 的只有人的后台页调得到。
+2. **调**：调的扩展声明 `packages.call`、人批过，发 `package.call`；核心照上面第 2 条转过去，多带 `from`。被调的照 `from` 认是谁（例如表情包记下「接入QQ 放进来的」）。
+3. **不做的**：不限调用频率、不记账；被调的一方自己挡（看 `from`）。
 
 ### 网页软件怎么给后台页（网页的会话做，`web-ui.md` 跟着写）
 

@@ -232,11 +232,10 @@ fn served(id: &str, tool: &str) -> Option<String> {
     })
 }
 
-/// `method.call` 的 `params` 里的方法名：`"params":{"method":"…"` 那一个。
+/// `method.call` 的 `params` 里的方法名：`"params":{` 后面的第一个 `"method":"…"`（施工 X-18：前面可以有 `from`）。
 fn inner_method(line: &str) -> Option<String> {
-    let (_, rest) = line.split_once(r#""params":{"method":""#)?;
-    let (value, _) = rest.split_once('"')?;
-    Some(value.to_string())
+    let (_, rest) = line.split_once(r#""params":{"#)?;
+    field(rest, "method")
 }
 
 /// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限。

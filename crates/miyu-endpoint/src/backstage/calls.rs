@@ -9,6 +9,8 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_config::package::Capability;
+
 use crate::Core;
 use crate::hello::Caller;
 use crate::refusal::Refusal;
@@ -95,14 +97,35 @@ pub(crate) fn register(
     Ok(json!({ "methods": count }))
 }
 
-/// `package.call`：照登记的转给扩展，回什么交回什么。
-pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refusal> {
-    let installed = core
-        .packages()
-        .iter()
-        .any(|found| found.id == params.package && found.read.is_ok());
-    if !installed {
+/// `package.call`：照登记的转给扩展，回什么交回什么。`from` 是调的扩展的包（施工 X-18）：它要声明了 `packages.call`，只调得到
+/// 对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。
+pub(crate) async fn call(
+    core: &Core,
+    from: Option<&str>,
+    params: CallParams,
+) -> Result<Value, Refusal> {
+    let packages = core.packages();
+    let manifest = |id: &str| {
+        packages
+            .iter()
+            .find(|found| found.id == id)
+            .and_then(|found| found.read.as_ref().ok())
+    };
+    let Some(target) = manifest(&params.package) else {
         return Err(Refusal::UNKNOWN_PACKAGE);
+    };
+    if let Some(from) = from {
+        let declared = manifest(from)
+            .and_then(|caller| caller.process.as_ref())
+            .is_some_and(|process| process.capabilities.contains(&Capability::PackagesCall));
+        if !declared {
+            return Err(Refusal::needs_approval(json!([
+                Capability::PackagesCall.as_str()
+            ])));
+        }
+        if !target.export.contains(&params.method) {
+            return Err(Refusal::not_exported(&params.method));
+        }
     }
     let (peer, timeout) = {
         let table = core
@@ -117,8 +140,11 @@ pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refus
             .ok_or_else(|| Refusal::unregistered(&params.method))?;
         (registered.peer.clone(), timeout)
     };
-    let request =
+    let mut request =
         json!({"method": params.method, "params": params.params.unwrap_or_else(|| json!({}))});
+    if let Some(from) = from {
+        request["from"] = Value::String(from.to_string());
+    }
     match tokio::time::timeout(timeout, peer.call("method.call", request)).await {
         Err(_) => Err(Refusal::METHOD_TIMEOUT),
         Ok(Err(Gone)) => Err(Refusal::NOT_RUNNING),

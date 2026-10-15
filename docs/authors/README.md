@@ -182,6 +182,8 @@ name = { en = "Greeting", zh = "问候语" }
 9. **退出**：标准输入读到头就是「请退出」，三个平台一样；5 秒内不退会被杀掉。
 10. **崩了怎么办**：你自己退出（退出码 0 也算）、握手不成、标准输出关了，都算一次失败，核心隔 1、2、4、8、16 秒（最多 60 秒）再拉起，连续 5 次停下。**退出码 1 留给「配置错、端口被占」这类重启也没用的**：核心直接停下、不重试，人改好再开。连着跑满 60 秒的，下次失败从头数。
 11. **别做的**：别读写数据根里别的地方（会话、别人的包、配置文件、密钥文件）；要信息走协议。扩展调 `extension.*`、`package.install` 这类只给本机的人用的方法会被拒（`local_only`）。
+12. **让别的软件调你、你调别的软件**（施工 X-18）：想给别的软件调的方法写进清单 `[export] methods = ["add"]`（照样经 `package.methods` 登记）；别的软件调到时，`method.call` 多一格 `from`，是调的那个包的编号（核心填的，冒充不了），你照它判断谁在调、要不要挡。要调别的软件的，声明 `packages.call`，发 `package.call {"package","method","params"}`，只调得到对方 `[export]` 里的。
+
 
 ### 五、一个最小的扩展
 
@@ -237,7 +239,7 @@ Windows 上 `bin/` 里要放 `.exe`：用 PyInstaller 打包，或者换一种�
 
 ### 六、能力和审批
 
-1. 清单 `[process] capabilities` 写你要哪些，只认这十四个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`widgets`（在界面上显示自己的内容）、`context.inject`（回合开始时往上下文里加内容）、`context.system`（往系统提示词尾部放一段）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）、斜杠命令、后台页的方法、界面块、回合开始加的字（`context.inject`）和放在系统提示词尾部的（`context.system`，都在第四节）；`tool.guard`、`tool.rewrite` 还没开放。
+1. 清单 `[process] capabilities` 写你要哪些，只认这十五个：`tools`（往工具目录里登记工具）、`commands`（提供斜杠命令）、`widgets`（在界面上显示自己的内容）、`context.inject`（回合开始时往上下文里加内容）、`context.system`（往系统提示词尾部放一段）、`tool.guard`（工具执行前放行、拒绝或要求问人）、`tool.rewrite`（工具执行后改写结果）、`events.read`（读会话的原始事件）、`events.write`（追加自己名下的事件）、`sessions.drive`（发消息、造子会话这类驱动会话的事）、`packages.call`（调别的软件给出来的方法）、`act_for_external`（代表聊天平台上的人发命令，只给平台的桥）、`network`（上网）、`fs.read`、`fs.write`（读、写指定的路径）。现在协议上第三方用得上的是登记工具（`provide`）、斜杠命令、后台页的方法、界面块、回合开始加的字（`context.inject`）和放在系统提示词尾部的（`context.system`，都在第四节）；`tool.guard`、`tool.rewrite` 还没开放。
 2. 管理员打开你的扩展时批：一次批你这时声明的全部。升级以后多要的，下次打开只问多的那几个。没批完的不拉起。
 3. 照批过的能力挡方法、在沙盒里跑，随多用户、沙盒那一段做，现在还没强制。**照实声明**：以后没声明的会被挡掉。
 
