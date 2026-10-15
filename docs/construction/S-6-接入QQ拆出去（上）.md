@@ -9,7 +9,12 @@
 ### 这一步做什么
 
 1. **`MIYU_PACKAGE_DIR`**：核心拉起扩展（`extensions/supervise.rs`）、命令行转交包的命令（`miyu-cli` 的 `packages::forward`，Windows 那一份同样）时多设这一个：这个包的文件夹（出厂的在资源目录、自己装的在家目录，哪一层就是哪一层）。`MIYU_HOME`、`MIYU_RESOURCES` 照旧。作者说明第四节第 1 条、`extensions.md` 第 122 行那一条一起改。
-2. **包文件夹带数据**：`resources/software/onebot/` 整个挪进 `resources/packages/onebot/data/`（`git mv`）；桥的 `tuning`、`rules`、`texts`、`settings`（读自己清单的出厂值）照 `MIYU_PACKAGE_DIR` 读，没设的（老核心、手跑）退回资源目录的 `packages/onebot/`。给人看的字的编号照旧是 `software/onebot/<哪一句>`，只换读的地方。登记簿门禁的四份豁免、设计 26 第十节里的路径照新位置改。
+2. **包文件夹带数据**：`resources/software/onebot/` 整个挪进 `resources/packages/onebot/data/`（`git mv`）。读的地方全部改成相对包文件夹的 `data/`：照 `MIYU_PACKAGE_DIR` 读，没设的（老核心、手跑）退回资源目录的 `packages/onebot/data/`。逐处（接入QQ 的会话 10-16 审出来的）：
+   - `tuning`（`FILE` 带的 `software/onebot/` 前缀）、`rules`（第 84 行自己拼的路径）、`settings`（读自己清单的出厂值，照包文件夹的 `package.toml`）；
+   - 平台工具的 `Factory::load`（`main.rs`、`venue.rs`）：`tools/`、`facts/`、`tool-results/`、`judge/`；
+   - **给人看的字**：`Human::load` 只扫资源目录的 `software/*/human/`，挪走以后桥的字会静静地没了（读不到不算错）。`Human` 加一个读法：从一个文件夹补读一份、编号前缀照给的（`software/onebot`），核心那份照旧从资源目录读；门面的 `texts` 组转出它。
+   - 测试里写死源码路径的跟着改：`miyu-chat` 的 `include_str!`（`moderation`、`rules/resolve` 的 `tests.rs`，`params`、`judge` 的 `test_support.rs`），`miyu-onebot` 的 `decide`、`applied`、`outbound`、`ask`、`provider` 的 `tests.rs`；`tests/support/spawning.rs` 直接拉桥时也设 `MIYU_PACKAGE_DIR`，集成测试走正路、不走回退。
+   - 登记簿门禁的四份豁免、设计 26 第十节里的路径照新位置改。
 3. **门面加组**：照桥和群聊内核实际用到的（2026-10-16 数的）转出：
    - `ids`：`ExternalId`、`VenueId`、`Seq`、`ContentHash`；`time`：`Timestamp`、`UtcOffset`；
    - `events`：`Event`、`Body`、`By`、`FormatError`；
@@ -25,8 +30,13 @@
 - 包文件夹的路径用环境变量交，不让扩展自己拼 `MIYU_HOME/home/admin/packages/<编号>`：家目录的布局是核心的事，出厂、自己装两层由核心挑。
 - 数据放 `data/` 不放包文件夹根：根上是清单和 `page/`、`bin/`，作者说明里各有各的位置。
 
+### 留给 S-6 中
+
+- 桥的集成测试用进程内的 `miyu-core`（开发依赖）装出厂的 onebot 包；拆出去以后核心的资源目录里没有 `packages/onebot/`，新仓库的测试夹具要拼一个资源目录：核心钉住那一版的资源，加上自己的包文件夹。
+
 ### 验收
 
 - 接入QQ 原来的测试照旧过；新测试：扩展拉起时 `MIYU_PACKAGE_DIR` 是包文件夹（测试扩展记下环境变量那一步），自己装的包指家目录那一份；转交命令同样。
+- 设了 `MIYU_PACKAGE_DIR`、资源目录里没有 `software/onebot/` 时，桥说的某一句不是空的（给人看的字读到了）。
 - 去掉 `MIYU_PACKAGE_DIR` 的回退那一行，桥的「出厂参数读得到」测试照旧过（资源目录那一份）；去掉环境变量那一行，扩展测试红。
 - `cargo xtask check` 八项；三台 CI；接入QQ 的会话照本机回放测具过一遍。
