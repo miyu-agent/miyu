@@ -1959,6 +1959,28 @@ Could not read the usage: {error}
 {path} is not a valid package, line {line}: {problem}
 ```
 
+#### `software/basesystem/packages/conflict.txt`
+
+- 什么时候加进来：`packages` 看包文件夹、`package` 装包：带的名字和装着的别的包撞了（`package_conflict`），头一行
+- token：14（2026-10-15 照 o200k 量，路径按 `/w/akit`）
+- 为什么加：只给原因代码她不知道撞了什么、改不了自己的包（施工 F-8 六补修，终端的会话发现）
+- 指纹：`3481aa8d`
+
+```text
+{path} cannot be installed: installed packages already use these names.
+```
+
+#### `software/basesystem/packages/conflict-line.txt`
+
+- 什么时候加进来：同上，一处一行（字段按 `skill`、`notes`、`zkit` 填）
+- token：8（同上）
+- 为什么加：哪一样、什么名字、在哪个包里，照命令行那样列
+- 指纹：`0a462570`
+
+```text
+- {kind} {name} (in {package})
+```
+
 #### `software/basesystem/packages/unknown.txt`
 
 - 什么时候加进来：`packages`：看一个：没有这个包

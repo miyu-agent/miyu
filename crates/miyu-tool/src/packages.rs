@@ -61,6 +61,19 @@ pub struct PackageRefusal {
     pub problem: Option<String>,
     /// 第几行：知道的才有。
     pub line: Option<u64>,
+    /// 和装着的别的包重了名的那几处（`package_conflict` 才有，施工 F-8 六补修）。
+    pub conflicts: Vec<PackageConflict>,
+}
+
+/// 一处重了名：哪一样（`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`，同协议）、什么名字、已经有它的包。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackageConflict {
+    /// 哪一样。
+    pub kind: String,
+    /// 名字。
+    pub name: String,
+    /// 已经有它的包的编号。
+    pub package: String,
 }
 
 /// 端口不打出里面的东西。

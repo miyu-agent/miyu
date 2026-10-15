@@ -38,6 +38,8 @@ struct Texts {
     invalid_line: Template,
     relative: Template,
     unknown: Template,
+    conflict: Template,
+    conflict_line: Template,
 }
 
 /// 她给的参数：写一个。别的参数不认，也不报错。
@@ -76,6 +78,8 @@ impl Package {
                 invalid_line: shared("invalid-line", &["path", "line", "problem"])?,
                 relative: shared("relative", &[])?,
                 unknown: shared("unknown", &["package"])?,
+                conflict: shared("conflict", &["path"])?,
+                conflict_line: shared("conflict-line", &["kind", "name", "package"])?,
             },
         })
     }
@@ -100,7 +104,7 @@ impl Texts {
         }
     }
 
-    /// 核心拒了：写错的清单说哪里不对、第几行，没有这个包的照 `packages`，别的说原因代码。
+    /// 核心拒了：写错的清单说哪里不对、第几行，没有这个包的照 `packages`，撞了名的一处一行，别的说原因代码。
     fn refused(&self, refusal: &PackageRefusal, what: &str) -> String {
         match refusal {
             PackageRefusal {
@@ -122,6 +126,12 @@ impl Texts {
             refusal if refusal.reason == "unknown_package" => {
                 say(&self.unknown, &[("package", what)])
             }
+            // 撞了名的说清每一处（施工 F-8 六补修）：只给原因代码她改不了自己的包。
+            refusal if !refusal.conflicts.is_empty() => crate::packages::conflicting(
+                (&self.conflict, &self.conflict_line),
+                what,
+                &refusal.conflicts,
+            ),
             refusal => say(
                 &self.refused,
                 &[("what", what), ("reason", &refusal.reason)],
