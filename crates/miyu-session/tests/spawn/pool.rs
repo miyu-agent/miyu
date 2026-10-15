@@ -2,6 +2,7 @@
 //! 的 `tier` 的，用父会话这时生效的引用。能选哪几个池在造会话时照那时的配置拼进工具面：开着开关、有成员的才列；以后配置改了，
 //! 这个会话（连同载入以后）一个字节不变，新会话才变；老会话里写新会话才列的池照参数不对。
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_config::merge::Resolved;
@@ -29,15 +30,15 @@ const FAST_ONLY: &str = r#""pool":{"type":"string","enum":["fast"],"description"
 /// 照 `CHANGED` 拼出来的。
 const BOTH: &str = r#""pool":{"type":"string","enum":["fast","slow"],"description":"Model pool for the task. Default: your own model.\nfast: Changed.\nslow: Big model, slow."}"#;
 
-/// 调一次 `subagent`，带池 `pool`。
+/// 调一次 `subagent`，带池 `pool`；交代就写 `title`，好认出是哪一次。
 fn pooled(title: &str, pool: &str) -> (&'static str, String) {
-    let args = serde_json::json!({"description": title, "prompt": "Task.", "pool": pool});
+    let args = serde_json::json!({"description": title, "prompt": title, "pool": pool});
     ("subagent", args.to_string())
 }
 
-/// 调一次 `subagent`，带以前的挡位 `tier`。
+/// 调一次 `subagent`，带以前的挡位 `tier`；交代就写 `title`。
 fn tiered(title: &str, tier: &str) -> (&'static str, String) {
-    let args = serde_json::json!({"description": title, "prompt": "Task.", "tier": tier});
+    let args = serde_json::json!({"description": title, "prompt": title, "tier": tier});
     ("subagent", args.to_string())
 }
 
@@ -64,6 +65,30 @@ fn models(table: &Table) -> Vec<Option<String>> {
     let mut made = table.made();
     made.sort_by(|a, b| a.command.as_str().cmp(b.command.as_str()));
     made.into_iter().map(|child| child.model).collect()
+}
+
+/// 交给会话表的子会话各记着哪个模型，照送进去的交代认是哪一次调用：几个调用并行跑，领任务编号、造会话的先后不定。
+fn models_by_task(table: &Table) -> BTreeMap<String, Option<String>> {
+    let sent = table.sent();
+    table
+        .made()
+        .into_iter()
+        .map(|child| {
+            let prompt = format!("{}/prompt", child.command.as_str());
+            let task = sent
+                .iter()
+                .find(|(_, id, _, _)| id.as_str() == prompt)
+                .and_then(|(_, _, _, command)| match command {
+                    Command::Send { blocks, .. } => blocks.iter().find_map(|block| match block {
+                        Block::Text(text) => Some(text.text.clone()),
+                        _ => None,
+                    }),
+                    _ => None,
+                })
+                .expect("交代送进去了");
+            (task, child.model)
+        })
+        .collect()
 }
 
 /// 请求里 `subagent` 的参数格式，原样的字。
@@ -96,7 +121,7 @@ async fn a_pool_is_recorded_and_no_pool_or_a_tier_takes_the_parent_model() {
     let table = Arc::new(Table::default());
     let script = Script::new([
         calls(&[
-            subagent("没写池", "Task."),
+            subagent("没写池", "没写池"),
             pooled("快", "fast"),
             tiered("以前的", "lite"),
             pooled("没开的", "slow"),
@@ -108,8 +133,12 @@ async fn a_pool_is_recorded_and_no_pool_or_a_tier_takes_the_parent_model() {
     let log = one_turn(&home, &handle, 1).await;
     let some = |text: &str| Some(text.to_string());
     assert_eq!(
-        models(&table),
-        [some("a/main"), some("@fast"), some("a/main")],
+        models_by_task(&table),
+        BTreeMap::from([
+            ("没写池".to_string(), some("a/main")),
+            ("快".to_string(), some("@fast")),
+            ("以前的".to_string(), some("a/main")),
+        ]),
         "没写的、写 tier 的抄父会话的（它照造的时候的 chat），写了池的记 @池"
     );
     // 几个调用并行跑，结果在日志里的先后不定：照调用的第几个排好再看。
