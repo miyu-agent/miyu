@@ -954,8 +954,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sL-1"><span class="n">L-1</span>工具登记带 need_load<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sL-2"><span class="n">L-2</span>吃不下空外壳的供应商<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-16"><span class="n">X-16</span>扩展回合开始加提醒<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">X-20</span>开会话的扩展给会话插一段</span></li>
-        <li><span class="step"><span class="n">X-21</span>软件包自己的几行</span></li>
+        <li><a class="step done" href="#sX-20"><span class="n">X-20</span>扩展往系统提示词尾部放一段<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-16p"><span class="n">X-16 补</span>插到用户消息尾部<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹</span></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
@@ -27854,6 +27854,76 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
         <div><dt>提交</dt><dd class="mono">9f381a5e</dd></div>
         <div><dt>验收</dt><dd>八个测试扩展的端到端测试、八个手写变异全抓住、三台 CI（run 38763309347）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-16p" aria-labelledby="h-sX16p">
+  <div class="sheet-head"><h2 id="h-sX16p"><span class="no">X-16 补</span>插到用户消息尾部</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">扩展每轮交的字排到触发这一轮的那句话后面，方法改名 <code>user.append</code>。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-16 补</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>turn.start</code> 改叫 <code>user.append</code>，回答的 <code>inject</code> 改叫 <code>content</code></li>
+              <li><code>context.injected</code> 多一格 <code>after</code>，扩展交的记成真</li>
+              <li>投影照它排在触发那句话后面，记忆、知识库照旧在前</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">位置记在日志里</span><span class="rl">回放照原样，不靠猜模块名</span></div>
+          <div class="tile new"><span class="nm">只做一个</span><span class="rl">记进日志就原样回放，前后对缓存一样</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-16 补</dd></div>
+        <div><dt>名称</dt><dd>插到用户消息尾部</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">99921784</dd></div>
+        <div><dt>验收</dt><dd>端到端测试、4 个手写变异全抓住、三台 CI（run 38777883083）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-20" aria-labelledby="h-sX20">
+  <div class="sheet-head"><h2 id="h-sX20"><span class="no">X-20</span>扩展往系统提示词尾部放一段</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">声明了 <code>context.system</code> 的扩展调 <code>system.append</code>，往 system 最后放一段；原来的「开会话的扩展插一段」「包自己的几行」合成这一步。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-20</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>system.append {content, session?}</code>：管全部会话或单个会话，<code>null</code> 去掉</li>
+              <li>工具面上有它的工具的会话才带，原文照放、照包编号排、接在最后</li>
+              <li>造会话时钉进快照，改了下一轮换上，卸了去掉</li>
+              <li>新能力 <code>context.system</code>，能力表十四个</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">静态动态一个方法</span><span class="rl">起来时调一次就是固定的</span></div>
+          <div class="tile new"><span class="nm">不套包的编号</span><span class="rl">外壳包自己写</span></div>
+          <div class="tile new"><span class="nm">顺序照编号</span><span class="rl">system 改了后面全重算，顺序和缓存无关</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-20</dd></div>
+        <div><dt>名称</dt><dd>扩展往系统提示词尾部放一段</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">62781190</dd></div>
+        <div><dt>验收</dt><dd>端到端四个测试扩展、9 个手写变异全抓住、三台 CI（run 38777883083）</dd></div>
       </dl>
     </figcaption>
   </figure>
