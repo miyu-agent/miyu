@@ -29,6 +29,7 @@ mod listed;
 mod memory;
 mod sessions;
 mod view;
+mod widgets;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -67,6 +68,8 @@ pub(crate) struct Subscriptions {
     later: Later,
     /// 记忆日志的订阅（施工 R-12 上）：照订阅时写的那一间，一间一个。
     memory: BTreeMap<MemoryAt, MemoryForwarder>,
+    /// 界面块的订阅（施工 X-15 中，`subscriptions/widgets.rs`）。
+    widgets: Option<crate::widgets::head::HeadForwarder>,
 }
 
 /// 一条回应经哪个订阅写出去。
@@ -84,6 +87,8 @@ pub(crate) enum Target {
     Packages,
     /// 记忆日志的订阅的回应：经它写出去，排在补的后面、之后的推送前面（施工 R-12 上）。
     Memory(MemoryAt),
+    /// 界面块的订阅的回应：经它写出去，排在之后的推送前面（施工 X-15 中）。
+    Widgets,
 }
 
 /// 一个订阅的转发任务，交回应给它的那一头，和这个订阅还在不在推。
@@ -234,12 +239,14 @@ impl Subscriptions {
     /// 握手时拿的盯配置的那一头；变了推 `extension.config`。握手的回应写出去以后调。
     pub(crate) fn add_extension_config(
         &mut self,
+        core: &Arc<Core>,
         package: String,
         handed: BTreeMap<String, serde_json::Value>,
         current: tokio::sync::watch::Receiver<Arc<crate::config::Config>>,
         out: &mpsc::Sender<String>,
     ) {
         self.extension_config = Some(ExtensionConfigForwarder::start(
+            Arc::clone(core),
             package,
             handed,
             current,
@@ -336,6 +343,13 @@ impl Subscriptions {
                 }
             }
             Some(Target::Memory(at)) => match self.memory.get_mut(at) {
+                Some(forwarder) => match forwarder.reply(line) {
+                    Ok(()) => return true,
+                    Err(line) => line,
+                },
+                None => line,
+            },
+            Some(Target::Widgets) => match &mut self.widgets {
                 Some(forwarder) => match forwarder.reply(line) {
                     Ok(()) => return true,
                     Err(line) => line,

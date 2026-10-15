@@ -11,6 +11,7 @@ mod knowledge;
 mod memory;
 mod message;
 mod package;
+mod widgets;
 
 /// 一次拒绝：JSON-RPC 的错误码，和原因码。
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -38,6 +38,7 @@ mod text_file;
 mod title;
 mod tools;
 mod vision;
+pub mod widget;
 
 #[cfg(test)]
 mod test_support;

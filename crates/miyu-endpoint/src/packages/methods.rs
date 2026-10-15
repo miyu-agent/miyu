@@ -32,6 +32,8 @@ pub(crate) async fn call(
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,
         "package.file" => crate::backstage::read(core, params(request)?).await,
         "package.methods" => crate::backstage::register(core, caller, params(request)?),
+        "widget.set" => crate::widgets::set::set(core, caller, params(request)?),
+        "widget.clear" => crate::widgets::set::clear(core, caller, params(request)?),
         "mcp.list" => Ok(crate::mcp::methods::list(core)),
         "mcp.restart" => crate::mcp::methods::restart(core, params(request)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),

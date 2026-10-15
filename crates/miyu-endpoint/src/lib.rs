@@ -75,6 +75,7 @@ mod uploads;
 mod usage;
 mod venues;
 mod view;
+mod widgets;
 mod wire;
 mod workspace;
 
@@ -197,6 +198,8 @@ pub struct Core {
     home_mcp: mcp::HomeMcp,
     /// 软件包列表里哪个包变了（施工 F-8 三补，`packages/changes.rs`）。
     package_changes: packages::changes::Changes,
+    /// 界面块（施工 X-15 中，`widgets.rs`）：程序推来的内容、谁在看。
+    widgets: widgets::Widgets,
 }
 
 /// 连上以后最多等多久握手。
@@ -291,6 +294,7 @@ impl Core {
             mcp: mcp::Servers::new(extensions::Timing::default()),
             home_mcp: mcp::HomeMcp::default(),
             package_changes: packages::changes::Changes::default(),
+            widgets: widgets::Widgets::default(),
         }
     }
 

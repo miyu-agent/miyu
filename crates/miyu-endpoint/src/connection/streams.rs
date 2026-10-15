@@ -44,6 +44,8 @@ pub(super) enum Stream {
     Packages,
     /// 一间的记忆日志（施工 R-12 上，`memory.md`「协议」）。
     Memory(MemoryAt),
+    /// 界面块（施工 X-15 中，`widgets.md`「头」）：头这一刻在看什么。
+    Widgets(crate::widgets::head::Looking),
 }
 
 /// 会话 `session` 的 `session.created`：日志第一条，在阻塞线程里读一行。读不了、第一条不是它的是没有。
@@ -100,13 +102,18 @@ pub(super) async fn subscribe(
         (Ok(Stream::View(session)), Some(shook)) => {
             session_reply(view(core, subscriptions, session, shook, out).await)
         }
+        (Ok(Stream::Widgets(looking)), Some(shook)) => {
+            let reply = subscriptions.add_widgets(core, looking, shook, out);
+            (Ok(reply), Some(Target::Widgets))
+        }
         (Ok(Stream::Memory(at)), _) => match memory(core, subscriptions, request, at, out).await {
             Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
             Err(refusal) => (Err(refusal), None),
         },
-        (Ok(Stream::Extensions | Stream::Packages | Stream::View(_)), None) => {
-            (Err(Refusal::HELLO_FIRST), None)
-        }
+        (
+            Ok(Stream::Extensions | Stream::Packages | Stream::View(_) | Stream::Widgets(_)),
+            None,
+        ) => (Err(Refusal::HELLO_FIRST), None),
         (Err(refusal), _) => (Err(refusal), None),
     }
 }
@@ -311,6 +318,10 @@ fn after_of(request: &Request) -> Result<Option<u64>, Refusal> {
 pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
     let params: StreamParams =
         serde_json::from_value(request.params.clone()).map_err(|_| Refusal::BAD_PARAMS)?;
+    if params.stream == "widgets" {
+        // 界面块带会话、屏上的位置、开着的整页，由那边读（施工 X-15 中）。
+        return crate::widgets::head::looking(&request.params).map(Stream::Widgets);
+    }
     if params.stream == "memory" {
         // 找哪一间同 `memory.*`：两样都写的、写错的由那边判（施工 R-12 上）。
         return Ok(Stream::Memory(MemoryAt {

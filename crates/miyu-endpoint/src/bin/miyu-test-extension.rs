@@ -10,13 +10,16 @@
 //! - `hello`：发握手（不带凭据），读一行回应记下；
 //! - `call:<方法>`：发一条不带参数的请求，读一行回应记下；
 //! - `ask:<方法>:<JSON 参数>`：发一条带参数的请求，读一行回应记下；参数里的 `{session}` 换成最近一条带 `"session"` 的回应里
-//!   的会话编号（施工 O-4 下：造了场所会话接着对它说话）；
+//!   的会话编号（施工 O-4 下：造了场所会话接着对它说话）。等回应时先来的 `widget.watch` 照 `serve` 答、接着等，`widget.set`
+//!   的回应记下接着等（施工 X-15 中：握了手核心就会说谁在看）；
 //! - `wait`：读标准输入直到读到头；
 //! - `listen`：读标准输入直到读到头，读到的每一行都记下（施工 9-4 下下：核心推来的 `extension.config`）；
 //! - `serve`：读标准输入直到读到头，每一行都记下；是核心发来的 `tool.call` 的，照工具名答（施工 O-2 上）：`boom` 回一个错误，
 //!   `garbled` 回写法不对的结果，`oops` 回一段字、说出了错，别的回一段字 `served <工具名>`；是 `method.call` 的照方法名答
 //!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
+//!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
+//!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
 //!
@@ -68,7 +71,20 @@ fn main() {
             send(&format!(
                 r#"{{"jsonrpc":"2.0","id":"s{n}","method":"{method}","params":{params}}}"#
             ));
-            let reply = read(&mut input);
+            let mut reply = read(&mut input);
+            while reply.contains(r#""method":"widget.watch""#) || reply.contains(r#""id":"w-"#) {
+                keep(&mut record, &reply);
+                if let Some(widget) =
+                    field(&reply, "widget").filter(|_| reply.contains("widget.watch"))
+                {
+                    send(&shown(
+                        &widget,
+                        field(&reply, "session").as_deref(),
+                        "watching",
+                    ));
+                }
+                reply = read(&mut input);
+            }
             if let Some(id) = session_in(&reply) {
                 session = id;
             }
@@ -96,11 +112,30 @@ fn main() {
                 {
                     send(&answer);
                 }
+                if line.contains(r#""method":"widget.watch""#)
+                    && let Some(widget) = field(&line, "widget")
+                {
+                    send(&shown(
+                        &widget,
+                        field(&line, "session").as_deref(),
+                        "watching",
+                    ));
+                }
+                if line.contains(r#""method":"method.call""#)
+                    && inner_method(&line).as_deref() == Some("burst")
+                {
+                    for n in 0..10 {
+                        send(&shown("temp", None, &format!("n={n}")));
+                    }
+                }
                 if line.contains(r#""method":"method.call""#)
                     && let Some(id) = field(&line, "id")
                     && let Some(answer) = answered(&id, &inner_method(&line).unwrap_or_default())
                 {
                     send(&answer);
+                    if inner_method(&line).as_deref() == Some("quit") {
+                        std::process::exit(0);
+                    }
                 }
                 if line.contains(r#""method":"command.call""#)
                     && let Some(id) = field(&line, "id")
@@ -209,6 +244,19 @@ fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"said":"{command} {argument}\nok"}}}}"#
         ),
     })
+}
+
+/// 推块 `widget` 的一段字（施工 X-15 中）：`<字> <块>`，跟着会话的后面接会话编号；`temp` 那一块只推字本身。
+fn shown(widget: &str, session: Option<&str>, text: &str) -> String {
+    let words = match (widget, session) {
+        ("temp", _) => text.to_string(),
+        (_, Some(session)) => format!("{text} {widget} {session}"),
+        (_, None) => format!("{text} {widget}"),
+    };
+    let session = session.map_or_else(String::new, |session| format!(r#","session":"{session}""#));
+    format!(
+        r#"{{"jsonrpc":"2.0","id":"w-{widget}","method":"widget.set","params":{{"widget":"{widget}"{session},"content":[{{"type":"text","text":"{words}"}}]}}}}"#
+    )
 }
 
 /// 记下一行。

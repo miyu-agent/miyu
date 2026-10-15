@@ -310,6 +310,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                         Stream::Extensions => subscriptions.remove_listed(false),
                         Stream::Packages => subscriptions.remove_listed(true),
                         Stream::Memory(at) => subscriptions.remove_memory(&at),
+                        Stream::Widgets(_) => subscriptions.remove_widgets(),
                     }
                     json!({})
                 });
@@ -323,7 +324,13 @@ async fn read_all<R: AsyncRead + Unpin>(
         // 握手的回应写出去了，才起推包自己的配置的任务（施工 9-4 下下）：推送不会跑到回应前面。
         let replied = subscriptions.reply(target.as_ref(), answer, &out).await;
         if let Some(given) = handing.take() {
-            subscriptions.add_extension_config(given.package, given.handed, given.current, &out);
+            subscriptions.add_extension_config(
+                &core,
+                given.package,
+                given.handed,
+                given.current,
+                &out,
+            );
         }
         if !replied || close {
             break;
