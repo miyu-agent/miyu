@@ -142,6 +142,7 @@ impl Watch {
                 Body::MessageUser(MessageUser {
                     blocks,
                     venue: None,
+                    command: None,
                 }) => edited(blocks, change).is_empty(),
                 _ => false,
             })
@@ -307,6 +308,7 @@ impl Watch {
             let Body::MessageUser(MessageUser {
                 blocks,
                 venue: None,
+                command: None,
             }) = &original.body
             else {
                 panic!("种子 {seed}：要重发的 {seq} 不是人的话");
@@ -319,7 +321,8 @@ impl Watch {
                 event.body,
                 Body::MessageUser(MessageUser {
                     blocks: expected,
-                    venue: None
+                    venue: None,
+                    command: None,
                 }),
                 "种子 {seed}：重发的内容照原来的"
             );

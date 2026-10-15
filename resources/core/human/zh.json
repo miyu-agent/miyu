@@ -360,6 +360,7 @@
     "commands/argument/goal": "<目标>",
     "commands/unavailable/goal-not-installed": "长期目标未安装。",
     "commands/unavailable/goal-preset-off": "预设「{preset}」未启用长期目标。",
+    "commands/unavailable/command-preset-off": "预设「{preset}」未启用 /{command}。",
     "software/basesystem": "基础系统",
     "software/net": "联网",
     "software/goal": "长期目标",

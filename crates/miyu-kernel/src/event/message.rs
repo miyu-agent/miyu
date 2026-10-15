@@ -15,6 +15,27 @@ pub struct MessageUser {
     /// 通讯平台上的一条消息（施工 O-13 上）：平台编号、引用、@ 了谁、带的东西、旁听。本机的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venue: Option<VenueMessage>,
+    /// 斜杠命令模板展开成的这一句（施工 X-14 上，`docs/blueprint/slash.md`「模板」第 4 条）：人敲的那一行。`blocks` 是展开的
+    /// 那段，模型照它看；给人看的地方（时间线、撤销的回执、会话列表）照这一行。别的消息没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command: Option<TypedCommand>,
+}
+
+/// 人敲的一条斜杠命令（施工 X-14 上）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TypedCommand {
+    /// 命令名。
+    pub name: String,
+    /// 人敲的那一行原文。
+    pub text: String,
+}
+
+impl MessageUser {
+    /// 给人看的那一行：斜杠命令模板展开成的是人敲的那一行，别的没有（照内容块）。
+    #[must_use]
+    pub fn typed(&self) -> Option<&str> {
+        self.command.as_ref().map(|command| command.text.as_str())
+    }
 }
 
 /// `message.assistant`：模型一次响应的完整内容，工具调用也在里面（03 E1）。

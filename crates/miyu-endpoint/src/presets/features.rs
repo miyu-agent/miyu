@@ -1,6 +1,6 @@
 //! `preset.get` 的一个个功能（施工 F-3 下，设计 `30-插件框架.md` 第四节，`docs/blueprint/presets.md`「怎么走」第 8 条）：
 //! 装了的功能照清单读的先后，每个带开不开、下面的每件工具开不开；接着是登记上的脚本（施工 X-12 中）、用得上的技能（施工
-//! X-11 上），一个一个功能；预设里写了、没装的接在后面。头照它一个功能一个开关画，展开能逐件关。
+//! X-11 上）、模板命令（施工 X-14 上），一个一个功能；预设里写了、没装的接在后面。头照它一个功能一个开关画，展开能逐件关。
 
 use std::collections::BTreeSet;
 
@@ -9,11 +9,12 @@ use serde_json::{Value, json};
 use miyu_config::Words;
 use miyu_policy::script::feature_id as script_feature;
 use miyu_policy::skill::feature_id;
+use miyu_policy::slash::feature_id as command_feature;
 use miyu_store::human::Human;
 use miyu_store::presets::Found;
 use miyu_store::scripts::HOME_PACKAGE;
-use miyu_store::skills::Skill;
 
+use super::Carried;
 use crate::Core;
 use crate::config::methods::words;
 use crate::personas::pick;
@@ -26,7 +27,7 @@ use crate::personas::pick;
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
-pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill]) -> Vec<Value> {
+pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
     let words = words(core, language).ok();
     let catalog = core.tools();
     let found_packages = core.packages();
@@ -113,8 +114,8 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
     }
     // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格挑这个连接的语言（施工 X-13 下），没写名字的照技能的
     // 名字；没有工具。
-    let mut skill_ids = BTreeSet::new();
-    for skill in skills {
+    let mut carried_ids = BTreeSet::new();
+    for skill in &carried.skills {
         let id = feature_id(&skill.head.name);
         let mut one = json!({
             "id": id,
@@ -127,14 +128,32 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, skills: &[Skill
             one["summary"] = json!(summary);
         }
         listed.push(one);
-        skill_ids.insert(id);
+        carried_ids.insert(id);
+    }
+    // 模板命令各算一个功能（施工 X-14 上）：名字是 `/<命令名>`，说明照模板写的、照这个连接的语言挑；没有工具。自己放的挂在
+    // `~home` 下。
+    for command in &carried.commands {
+        let id = command_feature(&command.name);
+        let package = command.package.as_deref().unwrap_or(HOME_PACKAGE);
+        let mut one = json!({
+            "id": id,
+            "name": format!("/{}", command.name),
+            "on": file.opens_in(&id, package),
+            "installed": true,
+            "tools": [],
+        });
+        if let Some(summary) = pick(&command.template.summary, language) {
+            one["summary"] = json!(summary);
+        }
+        listed.push(one);
+        carried_ids.insert(id);
     }
     let written: BTreeSet<&String> = file
         .features
         .keys()
         .chain(file.software.keys())
         .filter(|id| {
-            !table.installed(id) && !packages.contains(id.as_str()) && !skill_ids.contains(*id)
+            !table.installed(id) && !packages.contains(id.as_str()) && !carried_ids.contains(*id)
         })
         .collect();
     for id in written {

@@ -6,6 +6,9 @@
 //! 在不在后台答、谁能用、怎么执行；这里只认、判身份、记下、写回执，不再写死名字。
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
+//!
+//! 登记表里没有的名字照模板命令认（施工 X-14 上，[`templates`]）：属主家目录、装了的包里的 `commands/<名字>.md`，展开成一段话
+//! 发出去。
 
 use std::sync::Arc;
 
@@ -80,14 +83,15 @@ impl Said {
     }
 }
 
-/// `command.run`：认命令、判谁能用、执行、记下，交回 `{"command", "events", "said"}`。
+/// `command.run`：认命令、判谁能用、执行、记下，交回 `{"command", "events", "said"}`。登记表里没有的照模板命令
+/// （[`templates::run`]）。
 pub(crate) async fn run(
     core: &Arc<Core>,
     peer: &Peer,
     id: &CommandId,
     params: RunParams,
 ) -> Result<Value, Refusal> {
-    let (slash, rest) = parse(&core.commands, &params.text)?;
+    let (name, rest) = split(&params.text)?;
     if params
         .cwd
         .as_deref()
@@ -95,17 +99,17 @@ pub(crate) async fn run(
     {
         return Err(Refusal::BAD_PARAMS);
     }
+    let Some(slash) = core.commands.find(name) else {
+        if name.is_empty() {
+            return Err(Refusal::UNKNOWN_COMMAND);
+        }
+        return templates::run(core, peer, id, &params, (name, rest)).await;
+    };
     let noted = CommandId::parse(&format!("{id}/ran")).map_err(|_| Refusal::BAD_PARAMS)?;
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
     let handle = found.handle.clone();
-    let local = handle.venue().as_str() == LOCAL;
-    let by = match (local, params.as_external) {
-        (true, None) => admin(core),
-        (true, Some(_)) => return Err(Refusal::BAD_PARAMS),
-        (false, None) => return Err(Refusal::VENUE_SESSION),
-        (false, Some(speaking)) => venues::speaker(core, handle.venue(), handle.owner(), speaking)?,
-    };
+    let by = speaker(core, &handle, params.as_external)?;
     if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
         let why = why::why(core, peer, &handle, &refused).await;
         return Err(refused.because(why));
@@ -132,19 +136,35 @@ pub(crate) async fn run(
     Ok(json!({"command": slash.name(), "events": events, "said": said}))
 }
 
-/// 原文的头一个词是命令名：开头的空白不算，`/` 开头，名字紧跟着 `/`、到空白为止。照登记表认，交回命令和后面跟的字（去掉
-/// 前后空白）。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
-fn parse<'a>(
-    commands: &'a Commands,
-    text: &'a str,
-) -> Result<(&'a Arc<dyn Slash>, &'a str), Refusal> {
+/// 说命令的是谁：本机的会话是管理员本人（不收 `as`），场所会话照 `as` 认出平台上的人（不带的 `venue_session`）。
+fn speaker(core: &Core, handle: &Handle, speaking: Option<AsParams>) -> Result<By, Refusal> {
+    match (handle.venue().as_str() == LOCAL, speaking) {
+        (true, None) => Ok(admin(core)),
+        (true, Some(_)) => Err(Refusal::BAD_PARAMS),
+        (false, None) => Err(Refusal::VENUE_SESSION),
+        (false, Some(speaking)) => venues::speaker(core, handle.venue(), handle.owner(), speaking),
+    }
+}
+
+/// 原文的头一个词是命令名：开头的空白不算，`/` 开头，名字紧跟着 `/`、到空白为止。交回名字和后面跟的字（去掉前后空白）。
+/// 不是 `/` 开头的参数不对。
+fn split(text: &str) -> Result<(&str, &str), Refusal> {
     let after = text
         .trim_start()
         .strip_prefix('/')
         .ok_or(Refusal::BAD_PARAMS)?;
     let (name, rest) = after.split_once(char::is_whitespace).unwrap_or((after, ""));
+    Ok((name, rest.trim()))
+}
+
+/// 照登记表认：交回命令和后面跟的字。不是 `/` 开头的参数不对，认不出的 `unknown_command`。
+fn parse<'a>(
+    commands: &'a Commands,
+    text: &'a str,
+) -> Result<(&'a Arc<dyn Slash>, &'a str), Refusal> {
+    let (name, rest) = split(text)?;
     let slash = commands.find(name).ok_or(Refusal::UNKNOWN_COMMAND)?;
-    Ok((slash, rest.trim()))
+    Ok((slash, rest))
 }
 
 /// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先判身份
@@ -218,9 +238,11 @@ mod basic;
 mod catalog;
 mod goal;
 mod registry;
+mod templates;
 #[cfg(test)]
 mod tests;
 mod why;
 mod workspace;
 
 pub(crate) use catalog::catalog;
+pub(crate) use templates::found as template_commands;

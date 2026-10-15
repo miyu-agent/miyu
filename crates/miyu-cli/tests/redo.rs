@@ -38,6 +38,7 @@ fn said(home: &Home, session: &SessionId) -> Vec<String> {
             Body::MessageUser(MessageUser {
                 blocks,
                 venue: None,
+                command: None,
             }) => Some(blocks),
             _ => None,
         })

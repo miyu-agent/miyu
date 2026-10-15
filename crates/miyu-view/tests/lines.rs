@@ -42,6 +42,18 @@ fn a_message_is_heard_by_the_request_that_saw_up_to_it() {
     );
 }
 
+/// 斜杠命令模板展开成的一句（施工 X-14 上）：给人看人敲的那一行，展开的那段只给模型。
+#[test]
+fn a_typed_command_shows_the_line_that_was_typed() {
+    let entries = feed(&[
+        CREATED,
+        r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"Review a.rs carefully."}],"command":{"name":"review","text":"/review a.rs"}}}"#,
+        STARTED,
+    ]);
+    let user = json(&entries[0]);
+    assert_eq!(user["text"], "/review a.rs", "{user}");
+}
+
 #[test]
 fn a_step_without_a_result_at_the_end_of_the_turn_is_cancelled() {
     let entries = feed(&[

@@ -174,8 +174,8 @@
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
 | `kb.list`、`kb.search`、`kb.read` | 列知识库、搜、读一个文档的一页（施工 K-1 上，`knowledge.md`「对外的样子」） |
-| `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6） |
-| `command.catalog` | 列核心认的斜杠命令，给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补） |
+| `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6）；登记表里没有的照命令模板展开成一句发给 AI（施工 X-14 上，`slash.md`） |
+| `command.catalog` | 列核心认的斜杠命令（连命令模板），给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补、X-14 上） |
 | `session.answer` | 回答一次确认（允许这一次、本会话都允许、拒绝），或者一组题（施工 D-1） |
 | `job.stop` | 停掉一个后台命令或者子代理（施工 7-4） |
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
@@ -253,7 +253,7 @@
 | `oneshot` | 布尔，不写是 `false` | `true` 只要一次性的 |
 | `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
 
-回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字，有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
+回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
 
 ```json
 {"busy":true,"cwd":"~/src/miyu","last_active":"2026-10-01T06:03:12.345Z","oneshot":false,"parent":null,"session":"0192f3a0-2222-7abc-8def-5566778899aa","title":"修 CI"}
@@ -513,7 +513,7 @@
 
 回应 `{"command": "clear"|"stop"|"workspace"|"remember"|"dream"|"clear-memory"|"goal", "events": [...], "said": "<回执>"}`：`command` 是正名（别名换成了正名），`events` 是这一次追加的全部事件的序号、最后一条是记下的 `command.ran`，`said` 是回执那一句，照这个连接的语言（`ui.language`），头原样发给人。
 
-1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember`、`/goal` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）、`clear-memory`（别名 `reset-memory`，施工 R-3 五补）、`goal`（施工 X-8 下）。认不出的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
+1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember`、`/goal` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）、`clear-memory`（别名 `reset-memory`，施工 R-3 五补）、`goal`（施工 X-8 下）。登记表、命令模板（第 13 条）里都没有的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
 2. 谁能用：本机的会话（本机的头就是管理员本人）；场所会话里主人对应表认出的本人（记成带 `via` 的本人）、对应表里有的外部身份（群里的主人，`account`）、`role` 是 `manager` 的。别人回 `command_not_allowed`。`/workspace` 动的是沙盒能写的地方，只有主人本人能用（本机的会话、对应表认出的本人、群里的主人），管理的人回 `owner_only`。先查参数、再找会话、再判身份。
 3. `/clear` 同 `session.clear`：内核拒的照原因回（`turn_running`、`nothing_to_clear`、`restoring`）。
 4. `/stop` 全停：打断这一轮，排着的照 `keep` 留着；没有回合在进行的照样往下走。再停掉这个会话派出去的后台命令和子代理（同 `job.stop`，停的人记成说命令的人）。
@@ -523,8 +523,9 @@
 8. `/remember <话>`（施工 R-3 补，`memory.md`「协议」）：名字后面跟的字是那一条，类 `user`，记进这个会话那一间，`by` 是打命令的人，出处空，听众是这个人；回执说记下了那句话（`commands/remembered`：「记下了：用户喜欢猫」，那句话里的换行、制表换成空格），不露编号（施工 R-3 四补，2026-10-10 项目主人定）。不请求模型。场所会话、范围 `off`、人格记忆没装的（施工 R-10）回 `memory_unavailable`，`data.why` 是照连接语言说的为什么（施工 O-6 再补：没装人格记忆的「人格记忆未安装。」，先于别的，施工 R-10；没有人格的「没有人格的会话记忆不生效」，预设没开记忆的带上预设的名字，字在 `core/human/<语言>.json` 的 `commands/unavailable/…`，别的照拒绝的那一句）；空的 `bad_params`，超过 120 字的 `memory_too_long`。先判身份，再查这个会话有没有记忆，再查字。同一个 `id` 再发只记一次（记忆事件的 `cause`，`memory.*` 第 5 条）。
 9. `/dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.dream`（`memory.*` 第 6 条），拒绝照它的。回执照几样数说：「整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。」（`commands/dreamed`，摘要换了的 `commands/dreamed-summary`），什么都没交进去的「无需整理。」（`commands/dreamed-nothing`）。在后台答（「一个连接」第 1 条）：只有它，别的命令照旧按顺序答。同一个 `id` 再发照第 7 条只记一次 `command.ran`，整理照样再做一次（多半没有要整理的）。
 10. `/goal`（施工 X-8 下，`goal.md`）：交代、看、停、继续、改、清掉长期目标。`/goal` 看：回执是「原文 · 在哪一步 · 第几轮」（`commands/goal-is`：「把测试修绿 · 等待回复 · 第 1/3 轮」；在哪一步照会话状态的 `goal.state`，卡住的带原因「受阻：…」；有上限的写「第 1/3 轮」，不限的「第 1 轮」；原文、原因里的换行写成空格），没有目标的「无长期目标。」，什么都不记、只记 `command.ran`。`/goal <目标>` 设一个（同她的 `goal` 工具，当场算授权过，会话闲着就开续轮）；`/goal pause`、`/goal resume`、`/goal clear` 后面没字的才是子命令，带字的整句当目标；`/goal edit <目标>` 改原文。设、改都能在目标前面写 `--rounds N` 定轮数上限，`0` 是不限，改的时候不写的照原来的。`edit` 后面没字、`--rounds` 后面不是非负整数、只写了上限的回 `bad_params`。卡住的照停着办：`resume` 接着跑（轮数照数），`edit` 改，`clear` 清掉；再设拒 `goal_exists`，停拒 `goal_paused`。改了的记对应的 `goal.*`（`by` 是打命令的人），回执「已设定长期目标：…」「已暂停长期目标。」「已继续长期目标。」「已修改长期目标：…」「已清除长期目标。」；内核拒的照原因回（`goal_exists`、`no_goal`、`goal_paused`、`goal_running`、`empty_message`）。这个会话没有长期目标的回 `goal_unavailable`（工具面上没有 `goal`：群里、私聊、子代理的会话，长期目标没装、预设关了的；照造会话、载入时的工具面判），`data.why` 说具体：没装的「长期目标未安装。」，本机主会话预设关了的「预设「…」未启用长期目标。」，别的照拒绝的那一句。续轮那条 `message.user`（`by` 是 `{"kind":"module","id":"goal"}`）的 `cause` 照约定写 `goal-<第几轮>-<毫秒>`（施工 X-8 补，`miyu_kernel::event::round_command`、`round_of` 一处造一处读）：头照它知道这是第几轮，补发、翻页时也一样，不翻提示词；视图条目已经读好写在 `round`。目标现在的样子照订阅回应的 `goal` 和推过来的 `goal.changed`（「订阅」）。
-11. **登记表**（施工 O-6 三补，`commands/registry.rs`）：认哪些命令照登记表，中心不写名字。一条命令一个 `Slash`，在管它的模块里写：名字、别名、`summary` 和 `argument` 的字键（跟字的才有 `argument`）、在不在后台答（`later`，现在只有 `/dream`）、身份以外谁能用（`allowed`：`/workspace` 只给主人本人，`/remember`、`/dream`、`/clear-memory` 要开着记忆，`/goal` 要有长期目标）、怎么执行（交回追加的序号和回执）。核心起来时登记：核心自己的 `/clear`、`/stop`、`/workspace`（`commands/basic.rs`），记忆的 `/remember`、`/dream`、`/clear-memory`（`memory/slash.rs`），长期目标的 `/goal`（`commands/goal.rs`）。名字和别名在同一个名字空间里，照原样比；撞了是内置命令写错了，登记时就 `panic`，测试当场拦（`registry/tests.rs`）。别名不一样的不算撞：`/reset-memory` 和 `/reset` 是两个词。扩展包能不能在清单里声明斜杠命令还没定（待项目主人定，见「还没有的」）。协议的形状不变。
+11. **登记表**（施工 O-6 三补，`commands/registry.rs`）：认哪些命令照登记表，中心不写名字。一条命令一个 `Slash`，在管它的模块里写：名字、别名、`summary` 和 `argument` 的字键（跟字的才有 `argument`）、在不在后台答（`later`，现在只有 `/dream`）、身份以外谁能用（`allowed`：`/workspace` 只给主人本人，`/remember`、`/dream`、`/clear-memory` 要开着记忆，`/goal` 要有长期目标）、怎么执行（交回追加的序号和回执）。核心起来时登记：核心自己的 `/clear`、`/stop`、`/workspace`（`commands/basic.rs`），记忆的 `/remember`、`/dream`、`/clear-memory`（`memory/slash.rs`），长期目标的 `/goal`（`commands/goal.rs`）。名字和别名在同一个名字空间里，照原样比；撞了是内置命令写错了，登记时就 `panic`，测试当场拦（`registry/tests.rs`）。别名不一样的不算撞：`/reset-memory` 和 `/reset` 是两个词。登记表里没有的名字照命令模板认（第 13 条）。
 12. `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，2026-10-15 项目主人定名字、不先问、回执说清了几条）：清掉这个会话产生的记忆。不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.forget`、`clear: "session"`（`memory.*`、`memory.md` 第二条第 5 款）：出处全在这个会话里的清掉，别的会话也是出处的、人记的（没有出处）不动，会话那一间清的就是整间；清掉的哪里都不出来、找不回来，不先问。`by` 是打命令的人。回执说清了几条：「清掉了这个会话记下的 3 条记忆。」（`commands/cleared-memory`，一条的发 `commands/cleared-memory/one`，英文说单数），一条都没清掉的「这个会话没有记下的记忆。」（`commands/cleared-memory-none`）。不请求模型，照顺序答。
+13. **命令模板**（施工 X-14 上，`slash.md`）：名字不在登记表里的，照这个会话属主的家目录 `commands/`、装了的包的 `commands/` 找 `<名字>.md`（和内置的撞名的不算，内置的赢）。先找会话、认说话的人（`as`），再找模板：找不到的 `unknown_command`（谁打的都是：场所里的桥照它把话当平常说的记下）；找到了再判身份（同第 2 条）；会话的预设关了这条（功能 `command-<名字>`）的 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」。照参数展开成一块文字，当这个人说的一句发出去（同 `session.send`，不急着插话），`message.user` 带 `command: {"name", "text"}`，`text` 是人敲的那一行；展开完是空的照内核拒 `empty_message`。回应 `{"command": "<名字>", "events": [<这一句的序号>], "said": ""}`：没有回执，不记 `command.ran`（时间线上就是人敲的那一行）。
 
 **`command.catalog`**（施工 O-6 补，网页的会话要的，终端也用）
 
@@ -536,7 +537,8 @@
 
 1. 不写 `session`：列核心认的全部（头还没造会话、`/help` 列全部时用）。
 2. 写了：只列这个连接在这个会话里打了不会被拒的，和 `command.run` 第 2、8、10、12 条同一份判法（谁能用；`/workspace` 只给主人本人；`/remember`、`/dream` 要这个会话开着记忆；`/goal` 要这个会话有长期目标）。用不了的不列（2026-10-09 项目主人定）：人打了菜单里没有的命令，头照样交给 `command.run`，照拒绝的 `data.why` 说为什么，不自己说「没有这个命令」。
-3. 不推送：头换会话、打开命令菜单时问一次。头自己的命令（`help`、`theme` 这些）、软件包登记的同名命令由头自己拼、自己去重；核心这份里没有只有头懂的命令。
+3. 命令模板（施工 X-14 上，`slash.md`「找、盖住、开关」第 5 条）照名字排在一起：一项 `{"name", "aliases": [], "summary", "argument"?}`，`summary` 照模板的说明、照连接的语言挑，没写的照正文第一行不是空白的那一行；写了 `argument-hint` 的带 `argument`（照原样）。不写会话的照管理员找，写了的照会话属主找、只列预设开着的；和内置同名的不列。
+4. 不推送：头换会话、打开命令菜单时问一次。头自己的命令（`help`、`theme` 这些）、软件包登记的同名命令由头自己拼、自己去重；核心这份里没有只有头懂的命令。
 
 **`check`**（施工 8-30，`cli/check.md`）
 
@@ -1524,7 +1526,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 - 远程连接、登录令牌、WebSocket 和它的 Origin 检查；扩展、桥当提供者，反向调用（第二节、第四节）。
 - 事件流只对会话的属主和有 `events.read` 能力的扩展开放（第五节）：现在连上来的只有管理员。
 - `job.output` 照会话的读权限：现在连上来的只有管理员，不拦，多用户那一步再拦（施工 7-4 补）。
-- 扩展包在清单里声明斜杠命令（施工 O-6 三补时提出，记忆的会话 2026-10-14 问）：登记表留着口子（一条命令一个 `Slash`），包声明的命令怎么交给包的程序执行、撞名怎么算，等项目主人定要不要做。
+- 扩展包在清单里声明、交给包的程序办的斜杠命令（2026-10-15 项目主人定了要做，`slash.md`）：施工 X-14 下。
 - 后台命令的输出不推给头（施工 7-4 补定不做）：头带 `after`、`wait` 读 `job.output`，长了再答（施工 V-6 上，`job.output` 第 9、10 条），不用推送。
 - 成员只能切到只读和工作区（`11-权限与沙盒.md`）：现在连上来的只有管理员，`session.set_permission_level` 不拦，多用户那一步再拦。
 - 消息结构只在 Rust 类型里定义一次，生成 JSON Schema 和 TypeScript 类型（第二节）。

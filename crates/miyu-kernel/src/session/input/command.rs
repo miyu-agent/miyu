@@ -2,8 +2,8 @@
 
 use crate::block::Block;
 use crate::event::{
-    Body, ChildReported, ContextInjected, Decision, Level, Response, VenueDelivered, VenueMessage,
-    VenueRecalled,
+    Body, ChildReported, ContextInjected, Decision, Level, Response, TypedCommand, VenueDelivered,
+    VenueMessage, VenueRecalled,
 };
 use crate::id::EventKind;
 use crate::id::{CallId, Seq, TurnId};
@@ -69,6 +69,14 @@ pub enum Command {
         cwd: String,
         /// 新的加进来的目录；不换就没有。
         dirs: Option<Vec<String>>,
+    },
+    /// 斜杠命令模板展开成的一句（施工 X-14 上，`docs/blueprint/slash.md`「模板」第 4 条）：照 `session.send` 发（闲着开一轮，
+    /// 正忙的排队，不急着插话），`message.user` 带上人敲的那一行。
+    Typed {
+        /// 展开的那段，成一块文字。
+        blocks: Vec<Block>,
+        /// 人敲的那一条命令。
+        command: TypedCommand,
     },
     /// 记下人用了一个斜杠命令（施工 O-6，`command.run`）：命令本身已经照它自己的编号执行了，这一条只记 `command.ran`。
     Ran {

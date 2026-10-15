@@ -202,6 +202,10 @@ fn said(log: &[Event], turn: TurnId) -> Option<String> {
     let (Body::MessageUser(message), By::Person(_)) = (&event.body, &event.by) else {
         return None;
     };
+    // 斜杠命令模板展开成的照人敲的那一行（施工 X-14 上）。
+    if let Some(typed) = message.typed() {
+        return Some(typed.to_string());
+    }
     message.blocks.iter().find_map(|block| match block {
         Block::Text(text) => text
             .text

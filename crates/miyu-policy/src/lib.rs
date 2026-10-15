@@ -32,6 +32,7 @@ mod recap;
 pub mod script;
 mod shorten;
 pub mod skill;
+pub mod slash;
 mod snapshot;
 mod text_file;
 mod title;

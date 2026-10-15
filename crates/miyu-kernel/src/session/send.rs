@@ -5,7 +5,7 @@
 use super::action::{Action, Reason};
 use super::{Appended, Session, rejected};
 use crate::block::Block;
-use crate::event::{Body, MessageUser, VenueMessage};
+use crate::event::{Body, MessageUser, TypedCommand, VenueMessage};
 use crate::id::CommandId;
 use crate::origin::By;
 use crate::time::Timestamp;
@@ -20,7 +20,7 @@ impl Session {
         id: CommandId,
         by: By,
         at: Timestamp,
-        (blocks, venue): (Vec<Block>, Option<VenueMessage>),
+        (blocks, venue, command): (Vec<Block>, Option<VenueMessage>, Option<TypedCommand>),
         urgent: bool,
     ) -> Vec<Action> {
         // 只有带的东西（图、表情、文件）、没有字的场所消息照样收（施工 O-13 补）：内容块和带的东西都没有才是空的。交了原图的
@@ -33,7 +33,11 @@ impl Session {
             return self.elsewhere_says(id, by, at, blocks, waker);
         }
         let ambient = venue.as_ref().is_some_and(|venue| venue.ambient);
-        let body = Body::MessageUser(MessageUser { blocks, venue });
+        let body = Body::MessageUser(MessageUser {
+            blocks,
+            venue,
+            command,
+        });
         if ambient {
             // 旁听的：只记下，不开回合，回合进行中也不排进这一轮（施工 O-13 上）。
             let message = self.record_outside(at, by, Some(id.clone()), body);

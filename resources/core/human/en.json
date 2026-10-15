@@ -361,6 +361,7 @@
     "commands/argument/goal": "<goal>",
     "commands/unavailable/goal-not-installed": "Long-running goals not installed.",
     "commands/unavailable/goal-preset-off": "Preset \"{preset}\" has long-running goals off.",
+    "commands/unavailable/command-preset-off": "Preset \"{preset}\" has /{command} off.",
     "software/basesystem": "Base system",
     "software/net": "Web",
     "software/goal": "Goals",

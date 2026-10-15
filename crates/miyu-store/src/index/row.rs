@@ -94,7 +94,11 @@ impl Row {
         if let Body::MessageUser(message) = &event.body
             && self.preview.is_empty()
         {
-            self.preview = preview(&message.blocks);
+            // 斜杠命令模板展开成的照人敲的那一行（施工 X-14 上）。
+            self.preview = match message.typed() {
+                Some(typed) => first_line(typed),
+                None => preview(&message.blocks),
+            };
         }
         if let Body::MetaChanged(changed) = &event.body {
             if let Some(title) = &changed.title {
@@ -190,10 +194,17 @@ fn preview(blocks: &[Block]) -> String {
     blocks
         .iter()
         .find_map(|block| match block {
-            Block::Text(text) => Some(text.text.as_str()),
+            Block::Text(text) => Some(first_line(&text.text)),
             _ => None,
         })
-        .and_then(|text| text.lines().map(str::trim).find(|line| !line.is_empty()))
+        .unwrap_or_default()
+}
+
+/// `text` 第一行不是空白的，截到 [`PREVIEW_CHARS`] 个字；都是空白的是空的。
+fn first_line(text: &str) -> String {
+    text.lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
         .map(|line| line.chars().take(PREVIEW_CHARS).collect())
         .unwrap_or_default()
 }

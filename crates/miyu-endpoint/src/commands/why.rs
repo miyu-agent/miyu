@@ -50,7 +50,7 @@ async fn goal(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
 }
 
 /// 会话表里的这一条；查不到的没有。
-async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::Listed> {
+pub(super) async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::Listed> {
     let (root, admin, index) = (core.root.clone(), core.admin.clone(), core.index.clone());
     let id = handle.id().clone();
     tokio::task::spawn_blocking(move || crate::list::one(&root, &admin, &index, &id, false))

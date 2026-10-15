@@ -10,6 +10,7 @@ use miyu_session::PresetPlaces;
 use miyu_store::human::Human;
 use miyu_store::presets::{Found, PresetError, Presets};
 use miyu_store::skills::Skill;
+use miyu_store::slash::Command as Template;
 
 use crate::Core;
 use crate::config::methods::words;
@@ -152,27 +153,38 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
         .await
         .map_err(|_| Refusal::INTERNAL)?
         .map_err(|error| told(&error, said.as_ref()))?;
-    let skills = skills(core).await;
-    Ok(describe(core, &found, peer.language, &skills))
+    let carried = carried(core).await;
+    Ok(describe(core, &found, peer.language, &carried))
 }
 
-/// 管理员用得上的技能（施工 X-11 上）：功能表照它一个技能列一个功能。碰磁盘，在阻塞线程里找；找不成的当没有。
-pub(super) async fn skills(core: &Core) -> Vec<Skill> {
+/// 管理员用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能。
+pub(super) struct Carried {
+    pub(super) skills: Vec<Skill>,
+    pub(super) commands: Vec<Template>,
+}
+
+/// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
+pub(super) async fn carried(core: &Core) -> Carried {
     let (packages, root, admin) = (core.packages(), core.root.clone(), core.admin.clone());
-    tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &admin).0)
-        .await
-        .unwrap_or_default()
+    let skills =
+        tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &admin).0)
+            .await
+            .unwrap_or_default();
+    Carried {
+        skills,
+        commands: crate::commands::template_commands(core, &core.admin).await,
+    }
 }
 
 /// 叠好的一个预设照 `preset.get` 写（`preset.set` 的回应也是它，施工 P-3 中），名字、说明照语言 `language` 挑。
-fn describe(core: &Core, found: &Found, language: &str, skills: &[Skill]) -> Value {
+fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Value {
     json!({
         "preset": found.id,
         "name": label(found.file.name.as_ref(), language),
         "summary": label(found.file.summary.as_ref(), language),
         "icon": found.file.icon,
         "unlisted": found.file.unlisted().as_str(),
-        "features": features::listed(core, found, language, skills),
+        "features": features::listed(core, found, language, carried),
         "remove": remove(&found.layers),
     })
 }

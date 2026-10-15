@@ -35,6 +35,8 @@ impl Projector {
         // 回答进行中来的、不是旁听的：排着，等哪一次请求看到它。
         let queued = self.turn.is_some() && !ambient;
         let (text, attachments) = content(&message.blocks);
+        // 斜杠命令模板展开成的（施工 X-14 上）：给人看人敲的那一行，展开的那段只给模型。
+        let text = message.typed().map_or(text, str::to_string);
         let user = User {
             text,
             attachments,

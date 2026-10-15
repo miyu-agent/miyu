@@ -385,7 +385,10 @@ impl Session {
                 blocks,
                 urgent,
                 venue,
-            } => self.send(id, by, at, (blocks, venue), urgent),
+            } => self.send(id, by, at, (blocks, venue, None), urgent),
+            Command::Typed { blocks, command } => {
+                self.send(id, by, at, (blocks, None, Some(command)), false)
+            }
             Command::Append { event } => self.append(id, by, at, event),
             Command::Respond { to, facts } => self.respond(id, by, at, to, facts),
             Command::Note { facts } => self.note(id, by, at, facts),

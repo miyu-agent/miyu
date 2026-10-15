@@ -360,6 +360,7 @@
     "commands/argument/goal": "<目標>",
     "commands/unavailable/goal-not-installed": "長期目標は未インストールです。",
     "commands/unavailable/goal-preset-off": "プリセット「{preset}」は長期目標がオフです。",
+    "commands/unavailable/command-preset-off": "プリセット「{preset}」は /{command} がオフです。",
     "software/basesystem": "基本システム",
     "software/net": "ウェブ",
     "software/goal": "長期目標",

@@ -67,6 +67,7 @@ fn a_redo_is_one_batch_and_replies_when_it_is_stored() {
                 text: "换个说法".to_string(),
             })],
             venue: None,
+            command: None,
         })
     );
     assert!(replies(&actions).is_empty(), "落了盘才回应");

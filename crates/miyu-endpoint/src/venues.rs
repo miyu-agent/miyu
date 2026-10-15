@@ -60,7 +60,7 @@ enum Kind {
 }
 
 /// `session.send` 的 `as`：代表通讯平台上的哪个人，他在场所里是什么身份。
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct AsParams {
     external: String,

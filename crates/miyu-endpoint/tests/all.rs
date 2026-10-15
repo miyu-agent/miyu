@@ -136,6 +136,7 @@ mod secrets;
 mod sessions;
 mod sessions_changed;
 mod skills;
+mod slash_templates;
 mod socket;
 mod spawn;
 mod spawn_choice;

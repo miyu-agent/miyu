@@ -122,27 +122,30 @@ impl Session {
             Body::TurnStarted(started) if event.seq == redo.turn.started() => started.trigger,
             _ => None,
         });
-        let said: Vec<(Seq, By, Vec<Block>)> = undone
+        let said: Vec<(Seq, By, MessageUser)> = undone
             .iter()
             .filter(|event| event.turn != Some(redo.turn))
             .filter_map(|event| match (&event.body, &event.by) {
                 (Body::MessageUser(message), By::Person(_)) => {
-                    Some((event.seq, event.by.clone(), message.blocks.clone()))
+                    Some((event.seq, event.by.clone(), message.clone()))
                 }
                 _ => None,
             })
             .collect();
         let mut events = Vec::new();
         let mut opener = None;
-        for (seq, by, blocks) in said {
+        for (seq, by, message) in said {
             let opens = Some(seq) == trigger;
             let blocks = match opens {
-                true => redo.edited(&blocks),
-                false => blocks,
+                true => redo.edited(&message.blocks),
+                false => message.blocks,
             };
+            // 斜杠命令模板展开成的那一句（施工 X-14 上）：照原样重发的还是那条命令；换了字的照写的字发，不再是命令。
+            let command = message.command.filter(|_| !(opens && redo.text.is_some()));
             let body = Body::MessageUser(MessageUser {
                 blocks,
                 venue: None,
+                command,
             });
             let message = self.record(at, by, Some(id.clone()), body);
             if opens {

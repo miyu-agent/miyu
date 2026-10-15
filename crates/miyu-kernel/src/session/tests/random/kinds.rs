@@ -127,6 +127,7 @@ impl InputKind {
                     venue: Some(venue), ..
                 } if venue.ambient => InputKind::Overheard,
                 Command::Send { urgent: false, .. } => InputKind::Send,
+                Command::Typed { .. } => InputKind::Send,
                 Command::Send { urgent: true, .. } => InputKind::Urgent,
                 Command::Interrupt {
                     queued: Queued::Send,

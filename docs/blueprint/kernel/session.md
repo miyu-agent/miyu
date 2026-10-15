@@ -109,6 +109,7 @@
 | `Clear` | `session.clear` | 没有（施工 6-8 补） | 「清空」 |
 | `Report(回报)` | 没有：子会话的执行器经端口交（施工 7-6，`session/actor.md`「向上回报」） | `child.reported` 的 `body`；发命令的一方是子会话（施工 7-2） | 「回报」 |
 | `Recap` | `session.recap` | 没有（施工 3-8 四补） | 「回顾」 |
+| `Typed { blocks, command }` | `command.run` 的命令模板（施工 X-14 上，`slash.md`） | 展开的那段成的块、人敲的那一条（`TypedCommand`：名字、那一行） | 「斜杠命令」第 4 条 |
 | `Ran { text, command }` | `command.run`（命令本身照它自己的编号先交，这一条用派生的编号 `<编号>/ran`） | 人打的原文、执行了的命令的正名（施工 O-6） | 「斜杠命令」 |
 | `PeerIdle { status }` | 没有：被等的会话的执行器经端口交（施工 C-6，`session/actor.md`「被等的名单」） | 它最近结束的那一轮最后一条有字的回复的第一行，没说话的没有；发命令的一方是被等的会话 | 「空了的通知」 |
 
@@ -426,6 +427,7 @@
 1. 命令由协议端点认、判谁能用、执行（`/clear` 交 `Clear`，`/stop` 交 `Interrupt { queued: Keep }` 再叫执行器停掉后台的），执行了以后再交 `Ran` 记一条 `command.ran`；被拒的端点不交，什么都不记。
 2. 什么时候来都收：记一条，`by` 是说命令的人，`cause` 是这个命令，回合进行中的带上这个回合；落了盘回应，附上这一条。同一个编号再来不再记。
 3. 它不进她的上下文：渲染时不出，也不改「接着写的记号」（`kernel/request.md`「组装」）。
+4. 命令模板（`Typed`，施工 X-14 上，`slash.md`「模板」第 4 条）：端点展开好交来，照 `Send` 发（不急着插话、不带场所的格），`message.user` 多带 `command`；不另记 `command.ran`。重做照原样重发的带着 `command`，开这一轮的那一句换了字的不带（`history.md`「重做」）。
 
 **回顾**（`Recap`，施工 3-8 四补，`04-核心协议.md` 第九节 `session.recap`，`kernel/request.md`「回顾的请求」）：
 

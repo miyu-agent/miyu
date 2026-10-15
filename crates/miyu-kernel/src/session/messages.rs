@@ -79,6 +79,7 @@ impl Session {
         let body = Body::MessageUser(MessageUser {
             blocks,
             venue: None,
+            command: None,
         });
         let events = match self.land(at, by, Some(id.clone()), body, Some(waker)) {
             Ok(events) => events,
