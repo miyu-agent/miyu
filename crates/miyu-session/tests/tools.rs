@@ -164,6 +164,13 @@ async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contra
         .expect("在工具面上");
     assert_eq!(shell.parameters.get(), r#"{"type":"object"}"#);
     assert_eq!(shell.description, "Look a word up.", "说明整段");
+    // 请求带上完整格式（施工 L-2）：吃不下外壳的那一家编码时换回；只带要先加载的。
+    let full: Vec<(&str, &str)> = first
+        .full_parameters
+        .iter()
+        .map(|(name, parameters)| (name.as_str(), parameters.get()))
+        .collect();
+    assert_eq!(full, [("lookup", schema)]);
     let log = home.log(handle.id());
     let results = results(&log);
     assert_eq!(
@@ -177,6 +184,19 @@ async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contra
         "load_tools 不派给执行器，lookup 照常跑"
     );
     assert_eq!(requests[1].1.tools, first.tools, "前缀不变");
+}
+
+/// 没有要先加载的工具的（施工 L-2）：请求不带完整格式，字节和以前一样。
+#[tokio::test]
+async fn a_face_without_tools_to_load_carries_no_full_parameters() {
+    let home = Home::new();
+    let echo = Fake::new("echo", Access::Read, Act::Echo);
+    let script = Script::new([Play::Says("好。")]);
+    let handle = home.create_with(&script, &catalog(&[&echo])).await;
+    turn(&handle, "cmd-1").await;
+    let request = &script.requests()[0].1;
+    assert_eq!(names(request), ["echo"]);
+    assert!(request.full_parameters.is_empty());
 }
 
 #[tokio::test]

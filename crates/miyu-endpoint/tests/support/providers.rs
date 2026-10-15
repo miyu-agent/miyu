@@ -14,8 +14,8 @@ use miyu_models::catalog::{Catalog, CatalogSource, Loaded};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::{
-    CatalogSettings, ModelSettings, PoolSettings, PriceSettings, ProviderSettings, UsageSettings,
-    UseSettings,
+    CatalogSettings, CompatSettings, ModelSettings, PoolSettings, PriceSettings, ProviderSettings,
+    UsageSettings, UseSettings,
 };
 use miyu_session::testkit::Script;
 use miyu_session::{ModelData, Models, Observed, Routes};
@@ -122,6 +122,7 @@ fn assembled(
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
+        CompatSettings::ITEMS,
         CatalogSettings::ITEMS,
         PoolSettings::ITEMS,
         UsageSettings::ITEMS,

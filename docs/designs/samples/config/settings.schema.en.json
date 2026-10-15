@@ -326,6 +326,16 @@
             "title": "Catalog provider",
             "type": "string"
           },
+          "compat": {
+            "properties": {
+              "strict_tools": {
+                "description": "This provider writes only what the parameter schema allows, so a tool shown with an empty schema gets {}. When on, tools that need loading are sent to it in full. Left out, it follows the profile. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+                "title": "Constrained decoding",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
           "driver": {
             "description": "How to talk to this provider. Known providers can leave it out. Allowed: openai-chat, anthropic or openai-responses. Only in the system config or personal settings. Takes effect next turn.",
             "enum": [

@@ -201,6 +201,7 @@ impl OneShot {
             stable: 0,
             continuation: false,
             described: Default::default(),
+            full_parameters: Default::default(),
             output_cap: None,
         };
         let texts = listing_texts().map_err(|why| Unanswered::Failed(other(why)))?;

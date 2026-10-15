@@ -1143,6 +1143,11 @@ default = "full"
 # 能写：0 到 1000 之间的数。只能写在系统配置或个人设置里。下一轮生效。
 # price_multiplier =
 
+[providers."<id>".compat]
+# 约束解码：这家照参数格式出字，空的参数外壳只能填 {}。打开后，要先加载的工具发给它时带完整格式。不写照档案。
+# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
+# strict_tools =
+
 [providers."<id>".models."<model>"]
 # 对应目录里的：照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。
 # 能写：最多 256 个字的文字。只能写在系统配置或个人设置里。下一轮生效。
@@ -1554,6 +1559,16 @@ currency = "USD"
             "description": "这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。下一轮生效。",
             "title": "对应的供应商",
             "type": "string"
+          },
+          "compat": {
+            "properties": {
+              "strict_tools": {
+                "description": "这家照参数格式出字，空的参数外壳只能填 {}。打开后，要先加载的工具发给它时带完整格式。不写照档案。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
+                "title": "约束解码",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
           },
           "driver": {
             "description": "怎么和这家说话。认得出的供应商可以不写。能写：openai-chat、anthropic 或 openai-responses。只能写在系统配置或个人设置里。下一轮生效。",

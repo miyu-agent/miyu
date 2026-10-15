@@ -1,7 +1,9 @@
-//! 要先加载的工具（施工 L-1，`docs/designs/25-工具加载.md` W9）：`load_tools` 由内核当场答（`tool::Loading`）。
+//! 要先加载的工具（施工 L-1，`docs/designs/25-工具加载.md` W9）：`load_tools` 由内核当场答（`tool::Loading`）；请求带上它们的完整
+//! 参数格式（施工 L-2），驱动给吃不下外壳的那一家编码时换回。
 
 use super::Session;
 use crate::block::ToolCall;
+use crate::request::Request;
 use crate::tool::{Worded, repair};
 
 impl Session {
@@ -19,5 +21,22 @@ impl Session {
             None => call.args.clone(),
         };
         Some(loading.answer(&args))
+    }
+
+    /// 请求的工具面上要先加载的那几件，完整的参数格式放进 `full_parameters`（施工 L-2）。会话没有要先加载的工具的，原样交回。
+    pub(super) fn with_full_parameters(&self, mut request: Request) -> Request {
+        let Some(loading) = self.policy.loading.as_ref() else {
+            return request;
+        };
+        let found: Vec<_> = request
+            .tools
+            .iter()
+            .filter_map(|tool| {
+                let contract = loading.contracts.get(&tool.name)?;
+                Some((tool.name.clone(), contract.parameters.clone()))
+            })
+            .collect();
+        request.full_parameters.extend(found);
+        request
     }
 }

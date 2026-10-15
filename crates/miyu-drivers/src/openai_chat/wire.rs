@@ -138,8 +138,9 @@ struct Function<'a> {
     parameters: &'a RawJson,
 }
 
-/// 工具面：没有工具时不发；可历史里有工具调用的，发一个空的（有的网关要）。
-pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
+/// 工具面：没有工具时不发；可历史里有工具调用的，发一个空的（有的网关要）。`strict` 的（约束解码，施工 L-2）要先加载的那几件
+/// 照请求的 `full_parameters` 发完整格式，别的照工具面原样。
+pub(super) fn tools(request: &Request, strict: bool) -> Option<Vec<Tool<'_>>> {
     if request.tools.is_empty() && !calls_tools(request) {
         return None;
     }
@@ -152,7 +153,13 @@ pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
                 function: Function {
                     name: &tool.name,
                     description: &tool.description,
-                    parameters: &tool.parameters,
+                    parameters: match strict {
+                        true => request
+                            .full_parameters
+                            .get(&tool.name)
+                            .unwrap_or(&tool.parameters),
+                        false => &tool.parameters,
+                    },
                 },
             })
             .collect(),

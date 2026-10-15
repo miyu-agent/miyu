@@ -177,6 +177,10 @@
           "per_request": "Per request"
         }
       },
+      "providers.<id>.compat.strict_tools": {
+        "name": "Constrained decoding",
+        "description": "This provider writes only what the parameter schema allows, so a tool shown with an empty schema gets {}. When on, tools that need loading are sent to it in full. Left out, it follows the profile."
+      },
       "providers.<id>.models.<model>.catalog": {
         "name": "Catalog entry",
         "description": "Which models.dev entry to use: <provider>/<model>. Left out, it is found by name."

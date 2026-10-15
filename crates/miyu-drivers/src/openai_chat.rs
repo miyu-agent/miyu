@@ -48,10 +48,13 @@ pub struct Compat {
     /// 开关思考写在哪个字段（施工 8-18）：没有的不能照开关关思考，`off` 只能发 `reasoning_effort: "none"`。装在盒子里：
     /// 大多数供应商没有它，`Compat` 跟着每个请求的目标走，不为它变大。
     pub toggle: Option<Box<Toggle>>,
+    /// 约束解码（施工 L-2，`docs/designs/25-工具加载.md` W9）：这一家照参数格式出字，见了要先加载的工具的外壳只能发 `{}`。是的，
+    /// 那几件照请求的 `full_parameters` 发完整格式。没实测过的不标。
+    pub strict_tools: bool,
 }
 
 impl Default for Compat {
-    /// `max_tokens`，不回传思考，报用量，不会接着写，没有思考的开关。
+    /// `max_tokens`，不回传思考，报用量，不会接着写，没有思考的开关，不是约束解码。
     fn default() -> Compat {
         Compat {
             output_limit: OutputLimit::MaxTokens,
@@ -59,6 +62,7 @@ impl Default for Compat {
             stream_usage: true,
             continuation: Continuation::None,
             toggle: None,
+            strict_tools: false,
         }
     }
 }
@@ -209,7 +213,7 @@ pub fn encode(
         ranges.push(start..body.len());
     }
     body.push(b']');
-    if let Some(tools) = wire::tools(request) {
+    if let Some(tools) = wire::tools(request, compat.strict_tools) {
         body.extend_from_slice(b",\"tools\":");
         json(&mut body, &tools);
     }

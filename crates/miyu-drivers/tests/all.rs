@@ -18,6 +18,7 @@ mod openai_chat_files;
 mod openai_chat_image_names;
 mod openai_chat_media;
 mod openai_chat_streams;
+mod openai_chat_strict;
 mod openai_responses;
 mod openai_responses_media;
 mod openai_responses_reasoning;

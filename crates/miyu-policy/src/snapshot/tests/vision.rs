@@ -56,6 +56,7 @@ fn written(snapshot: &Snapshot) -> String {
         stable: 0,
         continuation: false,
         described: [(picture().blob, "Sunset.".to_string())].into(),
+        full_parameters: Default::default(),
         output_cap: None,
     };
     let call = Call {

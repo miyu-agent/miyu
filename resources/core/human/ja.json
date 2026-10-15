@@ -177,6 +177,10 @@
           "per_request": "リクエストごと"
         }
       },
+      "providers.<id>.compat.strict_tools": {
+        "name": "制約付きデコード",
+        "description": "このプロバイダーはパラメーターの形式どおりにしか書けず、空の形式のツールには {} しか送れません。オンにすると、読み込みが要るツールを完全な形式で送ります。書かなければプロファイルに従います。"
+      },
       "providers.<id>.models.<model>.catalog": {
         "name": "カタログの項目",
         "description": "models.dev のどの項目に合わせるか：<プロバイダー>/<モデル>。書かなければ名前で探します。"

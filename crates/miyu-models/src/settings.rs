@@ -84,6 +84,21 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
+    /// 一家供应商手写的开关（`models.md`「对外的样子」`compat`，施工 L-2）：一格格盖在档案上面。只登记了用得上的一格，别的
+    /// 随用到它的那一步。只管 `openai-chat`。
+    pub struct CompatSettings in "providers.<id>.compat" {
+        /// 约束解码：这一家照参数格式出字，见了要先加载的工具的外壳只能发 `{}`。打开的，那几件发给它时带完整格式。不写照档案，
+        /// 档案没有的是不打开。
+        strict_tools: Option<bool> = none {
+            kind: bool,
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "models", group: "providers", control: toggle },
+        },
+    }
+}
+
+miyu_config::settings! {
     /// 一个模型手写的资料（`models.md`「对外的样子」）：模型名是键里 `<model>` 那一段。每一格都压过用出来的、供应商的列表、
     /// 目录（「模型的资料」那张表）。窗口、最大输出造会话、载入时交给内核，开着的会话下一个回合开始时跟着换（施工 8-10）。
     pub struct ModelSettings in "providers.<id>.models.<model>" {

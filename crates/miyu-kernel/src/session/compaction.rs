@@ -334,7 +334,7 @@ impl Session {
             false => assembler.summarize(&self.history, upto, cut, asked),
         };
         // 看不了图的，转述过的图照样换成字（施工 8-17，`sight.rs`）。
-        let request = self.with_descriptions(request);
+        let request = self.with_full_parameters(self.with_descriptions(request));
         let fingerprint = request.fingerprint();
         let difference = self
             .last_request

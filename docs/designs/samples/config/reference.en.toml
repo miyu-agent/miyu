@@ -181,6 +181,11 @@ default = "full"
 # Allowed: a number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.
 # price_multiplier =
 
+[providers."<id>".compat]
+# Constrained decoding: This provider writes only what the parameter schema allows, so a tool shown with an empty schema gets {}. When on, tools that need loading are sent to it in full. Left out, it follows the profile.
+# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# strict_tools =
+
 [providers."<id>".models."<model>"]
 # Catalog entry: Which models.dev entry to use: <provider>/<model>. Left out, it is found by name.
 # Allowed: text of at most 256 characters. Only in the system config or personal settings. Takes effect next turn.

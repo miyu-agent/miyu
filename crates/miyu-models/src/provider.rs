@@ -4,7 +4,7 @@
 //! 1. 驱动、地址：先看手写的，没写的看档案（`[providers.<目录里的编号>]`：写了 `catalog` 的是它，没写的是这一家自己的
 //!    编号）。档案也没有的，看它对上的目录里那一家（[`crate::matching::recognize`]）的 `api` 和 `npm`，`npm` 照档案的
 //!    `[npm]` 表换成驱动（8-7）。都没有的，这一家用不了，别的照常。
-//! 2. 开关：档案的，没有的用驱动的默认（手写的 `compat` 随用到它的那一步）。
+//! 2. 开关：档案的，没有的用驱动的默认；手写的一格格盖在上面（施工 L-2 先登记了 `strict_tools`，别的随用到它的那一步）。
 //! 3. key：一家一个（施工 8-25）。取不到值的这一家不当候选（由执行器取）。
 //! 4. 本机的服务：手写的 `local`，没写的照地址在不在本机（第二条第 12 条，8-7）。手写的地址是环境变量的引用时查不出来，
 //!    照不在本机算，想算本机的自己写 `local = true`（施工 8-6b）。
@@ -34,7 +34,7 @@ use crate::headers;
 use crate::knowledge::Knowledge;
 use crate::matching::{Recognized, recognize};
 use crate::profile::ImageTokens;
-use crate::settings::{ProviderSettings, UseSettings};
+use crate::settings::{CompatSettings, ProviderSettings, UseSettings};
 
 /// 认得的驱动。8-6 有 OpenAI 兼容的对话接口，8-12 加 Anthropic 的消息接口，8-13 加 OpenAI 的 Responses 接口。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -309,15 +309,20 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
     let local = settings
         .local
         .unwrap_or_else(|| literal(&base_url).is_some_and(on_this_machine));
+    let mut compat = profile
+        .compat
+        .as_ref()
+        .map(|compat| compat.compat())
+        .unwrap_or_default();
+    // 手写的开关一格格盖在档案上面（施工 L-2：先登记了约束解码这一格）。
+    if let Some(strict) = CompatSettings::at(values, &[id]).strict_tools {
+        compat.strict_tools = strict;
+    }
     Ok(Provider {
         id: id.to_string(),
         driver: driver_kind,
         base_url,
-        compat: profile
-            .compat
-            .as_ref()
-            .map(|compat| compat.compat())
-            .unwrap_or_default(),
+        compat,
         key: settings.key,
         images: profile.image_tokens,
         catalog,

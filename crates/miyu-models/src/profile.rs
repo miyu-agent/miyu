@@ -83,6 +83,9 @@ pub struct CompatSpec {
     /// 开关思考写在哪个字段（施工 8-18）：`{ field, on, off }`。
     #[serde(default)]
     pub toggle: Option<ToggleSpec>,
+    /// 约束解码（施工 L-2）：吃不下要先加载的工具的外壳。出厂的档案一家都不标：没有实测过的证据。
+    #[serde(default)]
+    pub strict_tools: Option<bool>,
 }
 
 /// 开关思考的写法（施工 8-18，`models.md`「对外的样子」`compat` 那张表）：顶层的哪个字段，开、关各写什么（照原样的 JSON 发）。
@@ -229,6 +232,9 @@ impl CompatSpec {
                     path: path.clone(),
                 },
             };
+        }
+        if let Some(strict) = self.strict_tools {
+            compat.strict_tools = strict;
         }
         compat.toggle = self.toggle.as_ref().map(|toggle| {
             Box::new(Toggle {

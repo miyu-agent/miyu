@@ -30,6 +30,7 @@ fn request(messages: Vec<Message>, described: &[(&[u8], &str)]) -> Request {
             .iter()
             .map(|(content, text)| (ContentHash::of(content), (*text).to_string()))
             .collect(),
+        full_parameters: Default::default(),
         output_cap: None,
     }
 }
