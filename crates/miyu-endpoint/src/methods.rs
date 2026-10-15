@@ -14,8 +14,9 @@
 //! `provider.detect`、`provider.catalog`、`provider.test` 在 `providers.rs`（施工 8-11）。分块上传
 //! `blob.open`、`blob.write`、`blob.close` 在 `uploads.rs`（施工 W-5），要这个连接的上传表 `uploads`。分块读一个 blob
 //! `blob.get` 在 `attach.rs`（施工 W-6）。用量汇总的 `usage.query` 在 `usage.rs`（施工 8-15）。
-//! 各方法的参数在 `methods/params.rs`（W-5 合并时这一份过了 500 行，挪出去的）。
+//! 各方法的参数在 `methods/params.rs`（W-5 合并时这一份过了 500 行，挪出去的）。会话的那十几个方法的身子在 `methods/session.rs`，这里只路由。
 
+use std::pin::Pin;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
@@ -53,364 +54,248 @@ use crate::wire::Request;
 
 mod later;
 mod params;
+mod session;
 
 pub(crate) use later::{answered_later, call_later};
 use params::*;
 
-/// 照方法办一条请求：交回回应的 `result`，或者拒绝。
-pub(crate) async fn call(
-    core: &Arc<Core>,
+/// 照方法办一条请求：交回办它的 future（[`answer`] 放在堆上），出来的是回应的 `result`，或者拒绝。
+pub(crate) fn call<'a>(
+    core: &'a Arc<Core>,
     peer: Peer,
-    caller: &Caller,
-    request: &Request,
-    uploads: &mut Uploads,
-) -> Result<Value, Refusal> {
+    caller: &'a Caller,
+    request: &'a Request,
+    uploads: &'a mut Uploads,
+) -> Answer<'a> {
     match request.method.as_str() {
-        "session.create" => {
-            let params: CreateParams = params(request)?;
-            // 解析不出的什么都不造（施工 8-8）。
-            let model = params
-                .model
-                .map(|text| models::record(core, &text))
-                .transpose()?;
-            let memory = params
-                .memory
-                .map(|text| MemoryScope::parse(&text).ok_or(Refusal::BAD_PARAMS))
-                .transpose()?;
-            let who = Opening {
-                owner: caller.account.clone(),
-                attended: peer.input,
-                oneshot: params.oneshot,
-                model,
-                venue: None,
-                memory,
-                preset: params.preset,
-                group: false,
-                chosen: params.chosen,
-                profile: false,
-            };
-            let created = core
-                .sessions
-                .create(
-                    core,
-                    request.id.clone(),
-                    params.persona.as_ref().map(Option::as_deref),
-                    params.cwd,
-                    params.dirs,
-                    who,
-                )
-                .await?;
-            let mut reply =
-                json!({"session": created.id.as_str(), "events": [1], "cwd": created.cwd});
-            if let Some(file) = created.untrusted {
-                reply["untrusted_project"] = json!(file);
-            }
-            if created.wide {
-                reply["wide"] = json!(true);
-            }
-            Ok(reply)
+        "session.create" => answer(move || session::create(core, peer, caller, request)),
+        "check" => {
+            answer(move || async move { crate::check::check(core, peer, params(request)?).await })
         }
-        "check" => crate::check::check(core, peer, params(request)?).await,
-        "persona.list" => personas::list(core, peer).await,
-        "persona.avatar" => {
+        "persona.list" => answer(move || async move { personas::list(core, peer).await }),
+        "persona.avatar" => answer(move || async move {
             personas::picture::read(core, personas::picture::Picture::Avatar, params(request)?)
                 .await
-        }
-        "persona.background" => {
+        }),
+        "persona.background" => answer(move || async move {
             personas::picture::read(
                 core,
                 personas::picture::Picture::Background,
                 params(request)?,
             )
             .await
-        }
+        }),
         // 软件包的几个方法（施工 F-8 中上挪出去：这里放不下了）。
         name if ["package.", "mcp.", "widget."]
             .iter()
             .any(|at| name.starts_with(at)) =>
         {
-            crate::packages::methods::call(core, peer, caller, request).await
+            answer(move || async move {
+                crate::packages::methods::call(core, peer, caller, request).await
+            })
         }
-        "view.page" => crate::view::page(core, peer, params(request)?).await,
-        "view.detail" => crate::view::detail(core, params(request)?).await,
-        "extension.status" => Ok(crate::extensions::status(core, peer)),
-        "extension.enable" => crate::extensions::enable(core, peer, params(request)?).await,
-        "extension.disable" => crate::extensions::disable(core, peer, params(request)?).await,
-        "extension.restart" => crate::extensions::restart(core, peer, params(request)?).await,
-        "persona.get" => personas::get(core, peer, params(request)?).await,
-        "persona.set" => personas::write::set(core, peer, params(request)?).await,
-        "persona.read" => personas::write::read_prompt(core, peer, params(request)?).await,
-        "persona.delete" => personas::write::delete(core, params(request)?).await,
-        "preset.list" => crate::presets::list(core, peer).await,
-        "preset.get" => crate::presets::get(core, peer, params(request)?).await,
-        "preset.set" => crate::presets::write::set(core, peer, params(request)?).await,
-        "preset.delete" => crate::presets::write::delete(core, params(request)?).await,
-        kb if kb.starts_with("kb.") => crate::knowledge::call(core, kb, &request.params).await,
-        method if memory::METHODS.contains(&method) => {
+        "view.page" => {
+            answer(move || async move { crate::view::page(core, peer, params(request)?).await })
+        }
+        "view.detail" => {
+            answer(move || async move { crate::view::detail(core, params(request)?).await })
+        }
+        "extension.status" => {
+            answer(move || async move { Ok(crate::extensions::status(core, peer)) })
+        }
+        "extension.enable" => {
+            answer(
+                move || async move { crate::extensions::enable(core, peer, params(request)?).await },
+            )
+        }
+        "extension.disable" => {
+            answer(
+                move || async move { crate::extensions::disable(core, peer, params(request)?).await },
+            )
+        }
+        "extension.restart" => {
+            answer(
+                move || async move { crate::extensions::restart(core, peer, params(request)?).await },
+            )
+        }
+        "persona.get" => {
+            answer(move || async move { personas::get(core, peer, params(request)?).await })
+        }
+        "persona.set" => {
+            answer(move || async move { personas::write::set(core, peer, params(request)?).await })
+        }
+        "persona.read" => answer(move || async move {
+            personas::write::read_prompt(core, peer, params(request)?).await
+        }),
+        "persona.delete" => {
+            answer(move || async move { personas::write::delete(core, params(request)?).await })
+        }
+        "preset.list" => answer(move || async move { crate::presets::list(core, peer).await }),
+        "preset.get" => {
+            answer(move || async move { crate::presets::get(core, peer, params(request)?).await })
+        }
+        "preset.set" => {
+            answer(
+                move || async move { crate::presets::write::set(core, peer, params(request)?).await },
+            )
+        }
+        "preset.delete" => {
+            answer(
+                move || async move { crate::presets::write::delete(core, params(request)?).await },
+            )
+        }
+        kb if kb.starts_with("kb.") => {
+            answer(move || async move { crate::knowledge::call(core, kb, &request.params).await })
+        }
+        method if memory::METHODS.contains(&method) => answer(move || async move {
             memory::call(core, &request.method, &request.id, &request.params).await
-        }
-        "session.list" => {
+        }),
+        "session.list" => answer(move || async move {
             let params: ListParams = params(request)?;
             let sessions = list::list(core, params.oneshot, params.limit).await?;
             Ok(json!({"sessions": sessions}))
+        }),
+        "events.append" => answer(move || async move {
+            crate::appending::append(core, caller, request, params(request)?).await
+        }),
+        "provide" => {
+            answer(
+                move || async move { crate::provide::provide(core, caller, params(request)?).await },
+            )
         }
-        "events.append" => crate::appending::append(core, caller, request, params(request)?).await,
-        "provide" => crate::provide::provide(core, caller, params(request)?).await,
-        "session.respond" => {
+        "session.respond" => answer(move || async move {
             crate::responding::respond(core, caller, request, params(request)?).await
+        }),
+        "session.fork" => answer(move || async move {
+            crate::forking::fork(core, caller, request, params(request)?).await
+        }),
+        "session.note" => answer(move || async move {
+            crate::responding::note(core, caller, request, params(request)?).await
+        }),
+        "venue.records" => {
+            answer(move || async move { venues::records(core, params(request)?).await })
         }
-        "session.fork" => crate::forking::fork(core, caller, request, params(request)?).await,
-        "session.note" => crate::responding::note(core, caller, request, params(request)?).await,
-        "venue.records" => venues::records(core, params(request)?).await,
-        "venue.binding" => venues::binding(core, &caller.account, params(request)?),
-        "venue.session" => {
+        "venue.binding" => {
+            answer(move || async move { venues::binding(core, &caller.account, params(request)?) })
+        }
+        "venue.session" => answer(move || async move {
             venues::session(core, &caller.account, request.id.clone(), params(request)?).await
-        }
-        "venue.sessions" => {
+        }),
+        "venue.sessions" => answer(move || async move {
             let params: venues::SessionsParams = params(request)?;
             venues::sessions(core, &caller.account, params).await
+        }),
+        "session.send" => answer(move || session::send(core, request)),
+        "session.interrupt" => answer(move || session::interrupt(core, request)),
+        "session.revert" => answer(move || session::revert(core, request)),
+        "session.unrevert" => answer(move || session::unrevert(core, request)),
+        "command.run" => answer(move || async move {
+            commands::run(core, &peer, &request.id, params(request)?).await
+        }),
+        "command.catalog" => {
+            answer(move || async move { commands::catalog(core, &peer, params(request)?).await })
         }
-        "session.send" => {
-            let params: SendParams = params(request)?;
-            // 别的 harness 报的名字先查（施工 7-10）：不对的，会话里什么都不送。代表外部的人（施工 O-3）和它不能同时写。
-            if params.from.is_some() && params.as_external.is_some() {
-                return Err(Refusal::BAD_PARAMS);
-            }
-            let mut by = match &params.from {
-                Some(name) => from::harness(name)?,
-                None => admin(core),
-            };
-            let mut blocks = said(params.text);
-            let session = session(&params.session)?;
-            // 场所的那几格（施工 O-13 上）：先查写法，只跟着 `as` 来。
-            let venue = params
-                .venue
-                .map(crate::venues::VenueMessageParams::checked)
-                .transpose()?;
-            if venue.is_some() && params.as_external.is_none() {
-                return Err(Refusal::BAD_PARAMS);
-            }
-            // 附件先查，再找会话：不对的，会话里什么都不送（施工 3-9 三补）。头报的 `cwd`、`dirs` 不再换工作区（施工 9-7 上）。
-            let attachments = params.attachments.unwrap_or_default();
-            blocks.extend(attach::blocks(core, attachments).await?);
-            let found = core.sessions.get(core, &session).await?;
-            // 附件照连接的账号读，她照会话的属主读：不是一个账号的拷一份过去（施工 O-4 下）。
-            attach::hand_over(core, found.handle.owner(), &blocks).await?;
-            let command = Command::Send {
-                blocks,
-                urgent: params.urgent,
-                venue,
-            };
-            // 场所会话只收代表外部的人说的话，本机的会话不收（施工 O-3，`venues.md`）。
-            let local = found.handle.venue().as_str() == list::LOCAL;
-            match (local, params.as_external) {
-                (true, None) => {}
-                (true, Some(_)) => return Err(Refusal::BAD_PARAMS),
-                (false, None) => return Err(Refusal::VENUE_SESSION),
-                (false, Some(speaking)) => {
-                    by = venues::speaker(
-                        core,
-                        found.handle.venue(),
-                        found.handle.owner(),
-                        speaking,
-                    )?;
-                }
-            }
-            let events = command_by(core, request, &session, &found.handle, by, command).await?;
-            let mut reply = json!({"events": events, "cwd": found.cwd});
-            let untrusted = core.config().untrusted(&found.cwd);
-            if let Some(file) = untrusted {
-                reply["untrusted_project"] = json!(file);
-            }
-            Ok(reply)
-        }
-        "session.interrupt" => {
-            let params: InterruptParams = params(request)?;
-            let queued = match params.queued {
-                QueuedParam::Send => Queued::Send,
-                QueuedParam::Return => Queued::Return,
-                QueuedParam::Keep => Queued::Keep,
-            };
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::Interrupt { queued };
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({ "events": events }))
-        }
-        "session.revert" => {
-            let params: RevertParams = params(request)?;
-            let turn = params
-                .turn
-                .map(|turn| Seq::new(turn).map(TurnId::new).ok_or(Refusal::BAD_PARAMS))
-                .transpose()?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::Revert { turn };
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(undo::reply(core, &session, &found.cwd, events).await)
-        }
-        "session.unrevert" => {
-            let params: UnrevertParams = params(request)?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::Unrevert;
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(undo::reply(core, &session, &found.cwd, events).await)
-        }
-        "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
-        "command.catalog" => commands::catalog(core, &peer, params(request)?).await,
-        "session.redo" => {
-            let params: RedoParams = params(request)?;
-            let session = session(&params.session)?;
-            // 附件照 `session.send` 先查，再找会话。
-            let attachments = match params.attachments {
-                Some(attachments) => Some(attach::blocks(core, attachments).await?),
-                None => None,
-            };
-            let found = core.sessions.get(core, &session).await?;
-            if let Some(blocks) = &attachments {
-                attach::hand_over(core, found.handle.owner(), blocks).await?;
-            }
-            let command = Command::Redo {
-                text: params.text.map(said),
-                attachments,
-            };
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(undo::reply(core, &session, &found.cwd, events).await)
-        }
-        "session.compact" => {
-            let params: CompactParams = params(request)?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::Compact {
-                instructions: params.instructions,
-            };
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({ "events": events }))
-        }
+        "session.redo" => answer(move || session::redo(core, request)),
+        "session.compact" => answer(move || session::compact(core, request)),
         "session.set_permission_level" => {
-            let params: PermissionParams = params(request)?;
-            if params.level.is_none() && params.read_only.is_none() {
-                return Err(Refusal::BAD_PARAMS);
+            answer(move || session::set_permission_level(core, request))
+        }
+        "session.answer" => answer(move || session::answer_question(core, request)),
+        "session.clear" => answer(move || session::clear(core, request)),
+        "session.recap" => answer(move || session::recap(core, request)),
+        "job.stop" => answer(move || session::stop_job(core, request)),
+        "job.output" => {
+            answer(move || async move { job_output::read(core, params(request)?).await })
+        }
+        "human.get" => {
+            answer(move || async move { human::get(core, peer, params(request)?).await })
+        }
+        "config.schema" => {
+            answer(move || async move { config::methods::schema(core, peer, params(request)?) })
+        }
+        "config.get" => {
+            answer(move || async move { config::methods::get(core, peer, params(request)?) })
+        }
+        "config.check" => {
+            answer(move || async move { config::methods::check(core, peer, params(request)?) })
+        }
+        "config.set" => {
+            answer(
+                move || async move { config::set::set(core, peer, &request.id, params(request)?) },
+            )
+        }
+        "config.trust" => answer(move || async move {
+            config::trusting::trust(core, peer, &request.id, params(request)?)
+        }),
+        "secret.set" => {
+            answer(move || async move { secrets::set(core, peer, &request.id, params(request)?) })
+        }
+        "secret.delete" => {
+            answer(
+                move || async move { secrets::delete(core, peer, &request.id, params(request)?) },
+            )
+        }
+        "secret.list" => answer(move || async move { Ok(secrets::list(core)) }),
+        "model.list" => answer(move || async move { models::list(core, params(request)?).await }),
+        "provider.detect" => answer(move || async move { providers::detect(core).await }),
+        "provider.catalog" => {
+            answer(move || async move { providers::catalog(core, peer, params(request)?).await })
+        }
+        "provider.test" => {
+            answer(move || async move { providers::test(core, peer, params(request)?).await })
+        }
+        "usage.query" => {
+            answer(move || async move { crate::usage::query(core, params(request)?).await })
+        }
+        "blob.put" => answer(move || async move { attach::put(core, params(request)?).await }),
+        "blob.open" => {
+            answer(move || async move { uploads::open(core, uploads, params(request)?).await })
+        }
+        "blob.write" => {
+            answer(move || async move { uploads::write(core, uploads, params(request)?).await })
+        }
+        "blob.close" => {
+            answer(move || async move { uploads::close(core, uploads, params(request)?).await })
+        }
+        "blob.get" => answer(move || async move { attach::get(core, params(request)?).await }),
+        "session.configure" => answer(move || session::configure(core, request)),
+        "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
+        "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),
+        "fs.realpath" => {
+            answer(move || async move { files::realpath(core, params(request)?).await })
+        }
+        "fs.read" => answer(move || async move { files::read(core, params(request)?).await }),
+        "session.set_workspace" => {
+            answer(
+                move || async move { crate::workspace::set(core, request, params(request)?).await },
+            )
+        }
+        "session.set_meta" => answer(move || session::set_meta(core, request)),
+        "session.delete" => answer(move || session::delete(core, request)),
+        other => answer(move || async move {
+            match core.queries.get(other).filter(|_| core.serves(other)) {
+                // 可选软件包登记的查询（施工 W-4，`queries.rs`）：没登记的方法，这张表之外当没有这个方法。
+                Some(handler) => handler(Arc::clone(core), request.params.clone())
+                    .await
+                    .map_err(Refusal::from),
+                None => Err(Refusal::UNKNOWN_METHOD),
             }
-            let level = params.level.map(|level| match level {
-                LevelParam::Workspace => Level::Workspace,
-                LevelParam::Full => Level::Full,
-            });
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::SetPermission {
-                level,
-                read_only: params.read_only,
-            };
-            command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({}))
-        }
-        "session.answer" => {
-            // 先查参数，再找会话（施工 D-1）。
-            let params: AnswerParams = params(request)?;
-            let call_id = CallId::parse(&params.call).map_err(|_| Refusal::BAD_PARAMS)?;
-            let session = session(&params.session)?;
-            let answer = params.answer()?;
-            let found = core.sessions.get(core, &session).await?;
-            let command = Command::Answer { call_id, answer };
-            let events = command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({ "events": events }))
-        }
-        "session.clear" => {
-            let params: ClearParams = params(request)?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let events = command_to(core, request, &session, &found.handle, Command::Clear).await?;
-            Ok(json!({ "events": events }))
-        }
-        "session.recap" => {
-            let params: RecapParams = params(request)?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let by = admin(core);
-            match outcome(core, request, &session, &found.handle, by, Command::Recap).await? {
-                Outcome::Recapped { text, upto, cached } => {
-                    Ok(json!({"text": text, "upto": upto.get(), "cached": cached}))
-                }
-                _ => Err(Refusal::INTERNAL),
-            }
-        }
-        "job.stop" => {
-            let params: JobStopParams = params(request)?;
-            let session = session(&params.session)?;
-            let job = JobId::parse(&params.job).map_err(|_| Refusal::BAD_PARAMS)?;
-            let found = core.sessions.get(core, &session).await?;
-            match found
-                .handle
-                .stop_job(job, admin(core), request.id.clone())
-                .await
-            {
-                Ok(Ok(())) => Ok(json!({})),
-                Ok(Err(_)) => Err(Refusal::UNKNOWN_JOB),
-                Err(_) => {
-                    core.sessions.forget(&session).await;
-                    Err(Refusal::STOPPED)
-                }
-            }
-        }
-        "job.output" => job_output::read(core, params(request)?).await,
-        "human.get" => human::get(core, peer, params(request)?).await,
-        "config.schema" => config::methods::schema(core, peer, params(request)?),
-        "config.get" => config::methods::get(core, peer, params(request)?),
-        "config.check" => config::methods::check(core, peer, params(request)?),
-        "config.set" => config::set::set(core, peer, &request.id, params(request)?),
-        "config.trust" => config::trusting::trust(core, peer, &request.id, params(request)?),
-        "secret.set" => secrets::set(core, peer, &request.id, params(request)?),
-        "secret.delete" => secrets::delete(core, peer, &request.id, params(request)?),
-        "secret.list" => Ok(secrets::list(core)),
-        "model.list" => models::list(core, params(request)?).await,
-        "provider.detect" => providers::detect(core).await,
-        "provider.catalog" => providers::catalog(core, peer, params(request)?).await,
-        "provider.test" => providers::test(core, peer, params(request)?).await,
-        "usage.query" => crate::usage::query(core, params(request)?).await,
-        "blob.put" => attach::put(core, params(request)?).await,
-        "blob.open" => uploads::open(core, uploads, params(request)?).await,
-        "blob.write" => uploads::write(core, uploads, params(request)?).await,
-        "blob.close" => uploads::close(core, uploads, params(request)?).await,
-        "blob.get" => attach::get(core, params(request)?).await,
-        "session.configure" => {
-            let params: models::ConfigureParams = params(request)?;
-            let text = params.model()?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            let model = models::record(core, text)?;
-            let command = Command::Configure { model };
-            command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({}))
-        }
-        "fs.list" => files::list(core, params(request)?).await,
-        "fs.find" => files::find(core, params(request)?).await,
-        "fs.realpath" => files::realpath(core, params(request)?).await,
-        "fs.read" => files::read(core, params(request)?).await,
-        "session.set_workspace" => crate::workspace::set(core, request, params(request)?).await,
-        "session.set_meta" => {
-            let params: MetaParams = params(request)?;
-            let command = params.command()?;
-            let session = session(&params.session)?;
-            let found = core.sessions.get(core, &session).await?;
-            command_to(core, request, &session, &found.handle, command).await?;
-            Ok(json!({}))
-        }
-        "session.delete" => {
-            let params: DeleteParams = params(request)?;
-            let session = session(&params.session)?;
-            core.sessions.delete(core, &session).await?;
-            Ok(json!({}))
-        }
-        other => match core.queries.get(other).filter(|_| core.serves(other)) {
-            // 可选软件包登记的查询（施工 W-4，`queries.rs`）：没登记的方法，这张表之外当没有这个方法。
-            Some(handler) => handler(Arc::clone(core), request.params.clone())
-                .await
-                .map_err(Refusal::from),
-            None => Err(Refusal::UNKNOWN_METHOD),
-        },
+        }),
     }
+}
+
+/// 一条请求在办的样子：放在堆上。
+pub(crate) type Answer<'a> = Pin<Box<dyn Future<Output = Result<Value, Refusal>> + Send + 'a>>;
+
+/// 照 `make` 造出办这条请求的 future，放到堆上。造在这个函数自己的一帧里：调试版不复用栈槽，八十来个方法的 future 写在
+/// 一个 async 函数里，每个都在它那一帧里占一份，一帧上 1 MB，Windows 上的调试版跟着请求往下走就栈溢出了（施工 L-2 时
+/// 撞上的）。
+fn answer<'a, F, Fut>(make: F) -> Answer<'a>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<Value, Refusal>> + Send + 'a,
+{
+    Box::pin(make())
 }
 
 /// 把命令交给会话 `session`（把手是 `handle`），记成管理员发的，等它的回应：接受的交回它产生的事件的序号。会话停了的
