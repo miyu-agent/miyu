@@ -61,8 +61,6 @@ miyu-fs = { path = "../miyu-fs" }
 base64 = "0.22"
 # 分块上传的编号：16 位小写十六进制（施工 W-5）；和本机令牌用的是同一份。
 getrandom = { version = "0.4", features = ["std"] }
-# 附件（施工 3-9 三补）：认文本文件和驱动照同一条（text_file）。
-miyu-drivers = { path = "../miyu-drivers" }
 # 协议是 JSON-RPC 2.0（04-核心协议.md P1）。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

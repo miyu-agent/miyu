@@ -13,6 +13,8 @@
 | `crates/miyu-tool/src/catalog.rs` | 工具目录照以前的名字也找得到这一件（`tools/interface.md`「登记」） |
 | `crates/miyu-session/src/agents.rs` | 执行器这一头：照父会话填好子会话，经会话表的端口造出来、送交代（`session/tools.md`「派子代理」）；造会话时拼 `pool` 那一格、照快照读回列着的池（施工 8-8 补） |
 | `crates/miyu-policy/src/tools/choice.rs` | 拼 `pool` 那一格（`ToolEntry::offer`）、照快照读回（`ToolEntry::offered`），照原样的 JSON 搬，别的字节不动（施工 8-8 补） |
+| `crates/miyu-basesystem/src/attach.rs` | 交代带的附件（施工 C-9，同 `send_message`） |
+| `crates/miyu-session/src/agents/spawner.rs` | 派子代理的端口（施工 C-9 从 `agents.rs` 挪出来）：附件先存成 blob，存不下的不造子会话 |
 | `resources/software/basesystem/tools/subagent.json` | 说明和参数格式 |
 | `resources/software/basesystem/agent/*.txt` | 输出里给她看的两句（目录照以前的名字，「以前的名字」） |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名（`subagent`、`agent` 两个键）、结果那一句 |
@@ -27,7 +29,7 @@
 ```json
 {
   "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. It sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
 }
 ```
 
@@ -52,7 +54,7 @@
 ```json
 "pool":{"type":"string","enum":["fast","flagship"],"description":"Model pool for the task. Default: your own model.\nfast: Small model for quick lookups.\nflagship"}
 ```
-- 一条路径都不报：权限策略照访问类别判，读的放行（`session/guard.md`）。
+- 报的路径只有附件（施工 C-9）：同 `send_message`，照读文件的规矩查（`session/guard.md`）；没带附件的一条都不报。
 - 只有能派子代理的会话工具面里有它：在本机（场所 `local`）、还没到深度上限（`jobs.depth`，`agents.md`「对外的样子」）。场所会话、到了上限的会话造会话时就拿掉它，她调了照没有这件工具拒掉（`kernel/tools.md`）。
 
 **以前的名字**：`agent`（施工 7-5 再补改名，2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话，叫 `subagent` 一看就知道是派子代理）。
@@ -68,9 +70,10 @@
 1. 读参数：读不成的（少了哪一个、不是字符串），交回参数不对的那一句，端口一次都不问。
 2. 这一次调用没有派子代理的端口（`Call.agents` 是空的：测试里的假调用，没装会话表的核心）：交回派不了。
 3. 写了 `pool`、不在端口的 `pools()` 里的（大小写不对、带 `@`、这个会话一个都没列的都算）：交回参数不对的那一句，原话照 `serde` 的 `unknown variant` 列出能写的几个（例如 ``unknown variant `x`, expected `fast` or `flagship` ``；一个都没列的是 ``unknown variant `x`, there are no variants ``），端口不派。
-4. 交给端口 `spawn(description, prompt, pool)`：执行器领一个任务编号，子会话记 `@<池>`（没写的抄父会话的），造子会话，把交代送进去（`session/tools.md`「派子代理」）。端口说派不了的，交回派不了；原因执行器已经记进运行日志，不给她看。
-5. 派出去了：交回派出去了那一句，效果报一条 `job.started`：`job` 是端口交回的编号，`what` 是 `agent`，`title` 是 `description` 原样，`session` 是子会话的编号（`kernel/events-bodies.md`）。
-6. 不看叫停的旗：端口一下就返回。被掐掉的时候子会话可能已经造好了：它照样跑，父会话的日志里没有这一次的 `job.started`（撤销、停掉随 7-8）。
+4. 附件（施工 C-9）：同 `send_message` 第 6 款，有一个不成的不派，端口一次都不问。
+5. 交给端口 `spawn(description, prompt, pool, attached)`：附件接在交代后面一起送进子会话；执行器领一个任务编号，子会话记 `@<池>`（没写的抄父会话的），造子会话，把交代送进去（`session/tools.md`「派子代理」）。端口说派不了的，交回派不了；原因执行器已经记进运行日志，不给她看。
+6. 派出去了：交回派出去了那一句，效果报一条 `job.started`：`job` 是端口交回的编号，`what` 是 `agent`，`title` 是 `description` 原样，`session` 是子会话的编号（`kernel/events-bodies.md`）。
+7. 不看叫停的旗：端口一下就返回。被掐掉的时候子会话可能已经造好了：它照样跑，父会话的日志里没有这一次的 `job.started`（撤销、停掉随 7-8）。
 
 ### 样子
 

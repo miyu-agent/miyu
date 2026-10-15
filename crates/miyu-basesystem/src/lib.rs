@@ -12,6 +12,7 @@
 //! 名字、参数、输出照成熟 harness 的规范，以 Claude Code 为主（`10-自带软件.md` 第十节）。
 
 mod ask_user;
+mod attach;
 mod blocking;
 mod common;
 mod edit;

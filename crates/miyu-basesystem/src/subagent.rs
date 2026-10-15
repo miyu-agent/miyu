@@ -7,7 +7,8 @@
 //! `pools()`，会话开局时拼进工具面、照快照读回），写错的照参数不对、端口不派，原话照 `serde` 的 `unknown variant`；交给
 //! 端口，子会话记 `@<池>`，不写的用父会话这时用的。以前的会话写 `tier` 不报错、不理它（[`Args`] 不认别的参数）。施工 P-2 补
 //! 加人格 `persona`，同池：只认这个会话列着的人格（端口的 `personas()`），没写的是软件工程师。预设不给她挑，子会话一律照父
-//! 会话的（2026-10-08 项目主人定）。
+//! 会话的（2026-10-08 项目主人定）。施工 C-9 加附件 `attachments`：同 `send_message` 的（[`crate::attach`]），接在交代后面送进
+//! 子会话；有一个读不成、太大的，不派。
 
 use std::path::Path;
 
@@ -17,9 +18,10 @@ use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{
-    Call, Done, Effect, Order, Progress, Running, SUBAGENT, SUBAGENT_FORMERLY, Spec, Tool,
+    Call, Done, Effect, Order, Progress, Running, SUBAGENT, SUBAGENT_FORMERLY, Spec, Target, Tool,
 };
 
+use crate::attach;
 use crate::common::{Common, said};
 use crate::load::{self, LoadError, say};
 
@@ -42,6 +44,7 @@ struct Texts {
     common: Common,
     started: Template,
     not_started: Template,
+    attachments: attach::Texts,
 }
 
 /// 她给的参数。别的参数不认，也不报错：以前的会话快照里冻着的 `tier`（施工 8-8）照不写办。
@@ -55,6 +58,9 @@ struct Args {
     /// 人格（施工 P-2 补）：不写、写 `null` 的是没有。能不能写，照端口列着的查（[`unknown`]）。
     #[serde(default)]
     persona: Option<String>,
+    /// 附件（施工 C-9）：她读得到的文件路径。
+    #[serde(default)]
+    attachments: Option<Vec<String>>,
 }
 
 /// 写了列表里没有的池（施工 P-2 补起人格也是）：原话照 `serde` 的 `unknown_variant`，列出能写的几个（`models.md`
@@ -78,6 +84,7 @@ impl Subagent {
         Ok(Subagent {
             spec: load::spec(resources, SUBAGENT, Access::Read)?,
             texts: Texts {
+                attachments: attach::Texts::load(resources, common.clone())?,
                 common,
                 started: text("started", &["job", "title"])?,
                 not_started: text("not-started", &[])?,
@@ -102,6 +109,13 @@ impl Tool for Subagent {
         Some(&self.foreground)
     }
 
+    /// 交代带的附件要读（施工 C-9）：执行前的链照读文件的规矩查。
+    fn targets(&self, call: &Call) -> Vec<Target> {
+        serde_json::from_str::<Args>(&call.args)
+            .map(|args| attach::targets(&args.attachments.unwrap_or_default()))
+            .unwrap_or_default()
+    }
+
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         let texts = self.texts.clone();
         Box::pin(async move {
@@ -111,7 +125,7 @@ impl Tool for Subagent {
             };
             let not_started =
                 || Done::error(say(&texts.not_started, &[])).said(said("agent/not-started"));
-            let Some(port) = call.agents else {
+            let Some(port) = call.agents.clone() else {
                 return not_started();
             };
             let pool = args.pool.as_deref();
@@ -127,11 +141,17 @@ impl Tool for Subagent {
             {
                 return texts.common.bad_args(&unknown(persona, port.personas()));
             }
+            let paths = args.attachments.clone().unwrap_or_default();
+            let attached = match attach::read(&texts.attachments, &call, paths).await {
+                Ok(attached) => attached,
+                Err(refused) => return *refused,
+            };
             let order = Order {
                 description: &args.description,
                 prompt: &args.prompt,
                 pool,
                 persona,
+                attached,
             };
             let Ok(spawned) = port.spawn(order).await else {
                 return not_started();

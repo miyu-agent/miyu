@@ -8,6 +8,8 @@
 
 施工 C-6 多一格 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条）：`to` 是别的会话的，那次调用报效果 `peer.watch`，那个会话下次空下来时她收到一条通知。`message` 可以不写：只订不发，那边不开轮、不花 token。
 
+施工 C-9 多一格 `attachments`（设计 29 第五节，2026-10-15 项目主人定）：她读得到的文件，接在那句话后面一起送过去，那边收到的和人附的附件一样。
+
 ### 在哪
 
 | 代码 | 管什么 |
@@ -20,6 +22,10 @@
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表那一头 `held` 的实现：照会话表里的 `Handle` 看。`watch`（施工 C-6）：找到被等的会话（没载入的先载入），把「谁在等」交给它的 actor |
 | `crates/miyu-tool/src/run.rs` | 效果多一种 `PeerWatch`（施工 C-6），执行器照原样换成内核的 `peer.watch`（`miyu-session/src/effects.rs`） |
 | `crates/miyu-session/src/peers.rs`、`actor/watchers.rs` | 订、计时、再订（等的这一边），名单和发通知（被等的那一边），施工 C-6，`session/tools.md`「订、计时、再订」、`session/actor.md`「被等的名单」 |
+| `crates/miyu-basesystem/src/attach.rs` | 附件（施工 C-9，`subagent` 共用）：要读的路径（`targets`）、照这一轮的工作目录读、照内容认，最多 8 个，读不成、太大的交回那一句 |
+| `crates/miyu-tool/src/attachment.rs` | 一个附件是什么、上限 20 MiB、`Attached`（施工 C-9 从协议端点挪来，`blob.put` 共用） |
+| `crates/miyu-session/src/attached.rs` | 执行器这一头：附件存成属主的 blob，造成图片块、文件块接在字后面（施工 C-9） |
+| `resources/software/basesystem/attachments/*.txt` | 附件超过 8 个、太大的两句（施工 C-9，`subagent` 共用） |
 | `resources/software/basesystem/tools/send_message.json` | 说明和参数格式 |
 | `resources/software/basesystem/send_message/*.txt` | 输出里给她看的几句 |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、结果那一句，`message_agent`、`send_message` 两个键都在 |
@@ -33,12 +39,13 @@
 ```json
 {
   "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to send with the message, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
 }
 ```
 
 - 第一句比改名以前多了「or to another of your sessions by its id」，第二、三句一字不改。
 - 施工 C-6：`message` 的说明多半句「, which can be left out with notify_when_idle」，多一格 `notify_when_idle`，必填的只剩 `to`。说明本身一字没动。
+- 施工 C-9：多一格 `attachments`，一句。说明一字没动：读不成、太大的写进被拒的那一句。
 
 | 参数 | 必填 | 怎么认 |
 |---|---|---|
@@ -48,29 +55,30 @@
 | `notify_when_idle` | 否 | `true`：订 `to` 那个会话「空了告诉我」，只对别的会话（施工 C-6） |
 
 - 别的参数不认，也不报错。`null` 当没写。
-- 一条路径都不报：权限策略照访问类别判，读的放行。
+- 报的路径只有附件（施工 C-9）：每一个照读文件报（`write` 是否、`itself` 是否），执行前的链照读的规矩查，工作区以外的问人、数据根里的拒（`session/guard.md`）。没带附件的一条都不报，照旧放行。
 - 本机（场所 `local`）的会话工具面里都有它，到了深度上限、没有 `subagent` 的子会话也有；场所会话（群）里没有：它派不了子代理，也没有父，也不能发给别的会话，给了只会被拒（`agents.md` 第一条第 6 条，`session/tools.md`「工具面」）。
 
 ### 怎么走
 
-1. 读参数：读不成的（少了 `to`、类型不对），交回参数不对的那一句，端口一次都不问。`message` 不写、`notify_when_idle` 也不是 `true` 的，照样参数不对（那一句写 ``missing field `message` ``，施工 C-6）。
+1. 读参数：读不成的（少了 `to`、类型不对），交回参数不对的那一句，端口一次都不问。`message` 不写、`notify_when_idle` 也不是 `true` 的，照样参数不对（那一句写 ``missing field `message` ``，施工 C-6）。带了 `attachments` 却没写 `message` 的也是这一句：附件跟着一句话走（施工 C-9）。
 2. 认 `to`，照这个先后（`cross-session.md` 第三条第 1 款）：
    1. `parent`：发给父会话。
    2. 合任务编号写法的（`j1`、`j2.1`）：发给自己派的子代理。
    3. 别的当会话编号认：这个会话不能发给别的会话的（子会话、场所会话，没有列会话的端口），交回「这里不能给别的会话发话」，不去找。有端口的，在这个会话看得到的主会话（加她自己）里找：一个都没有，交回「没有这个会话」；不止一个，交回「写长一点」；是她自己，交回「就是这个会话」。
 3. 订（施工 C-6）：写了 `notify_when_idle: true`、`to` 认成子代理或者 `parent` 的，整次拒（「只能等别的会话」），留言也不发。认成别的会话的，往下走，最后报效果。
-4. 长度：`message` 超过 `peers.message_chars` 的，发出去之前拒，不去送（父子之间的留言也照它）。没写 `message` 的（只订不发）跳过第 4 到 7 款，端口一次都不问。
+4. 长度：`message` 超过 `peers.message_chars` 的，发出去之前拒，不去送（父子之间的留言也照它）。没写 `message` 的（只订不发）跳过第 4 到 8 款，端口一次都不问。
 5. 这一次调用没有发话的端口（`Call.messages` 是空的：测试里的假调用、没装会话表的核心）：交回送不到。
-6. 交给端口 `send(to, message)`（执行器这一头见 `session/tools.md`「父子之间留言」）：
+6. 附件（施工 C-9）：超过 8 个的拒（`attachments/too-many.txt`）；在阻塞线程里照先后读，路径照这一轮的工作目录换成真实位置，一层链接都不跟地打开，最多读 20 MiB 多一个字节。没有的、是目录的、不是普通文件的、读不了的，照共用的那几句；超过 20 MiB 的、照内容认是图却超过 5 MiB 或者一边超过 8000 像素的，拒（`attachments/too-big.txt`）。有一个不成的整句不发，端口一次都不问。名字是真实位置的最后一段，原来的路径是真实位置。
+7. 交给端口 `send(to, message, attached)`（执行器这一头见 `session/tools.md`「父子之间留言」：附件先存成这个会话属主的 blob，存不下的照送不到）：
    - 发给父，这个会话是主会话：没有父。
    - 发给子代理，编号不在这个会话派出去的子代理里（没派过、派的是后台命令、派它的那一轮撤掉了）：不是她派的。兄弟、孙代理的编号都落在这一种：她只认得自己派的。
    - 是她派的、被停掉了（以 `stopped`、`undone` 报过）：被停掉了。做完了报过的不算停：它的会话还在，留言开它的下一轮，结束时照样回报。
    - 发给别的会话，对方因为防刷屏拒绝（限速、一模一样、对方没看的太多，只在发给别的会话时才会碰到，`cross-session.md` 第五条第 7 款）：照拒绝的原因各一句，一模一样的不算出错。
    - 会话表送不到（对方拒收、对方的会话停了、核心正在停）：送不到，原因执行器记进运行日志。
-7. 送到了，再看一眼对方这时是不是没人看着的一次性会话（会话表照它的 `Handle` 看）：是，交回「存下了」；不是，交回「送到了」。两种都不算出错。
-8. 订了的（施工 C-6）：发话送到了（「送到了」「存下了」「一模一样的」都算）或者没发话，报一样效果 `peer.watch`（`session` 是认出来的整个编号），结果接一句「空下来时会告诉你」。发话被拒、送不到、太长的，整次不订，照那一句出错。工具自己不去订：效果落了盘，执行器照内核算的在等的去订（`session/tools.md`「订、计时、再订」）。给人看的说法：带话的照发话的那一句，只订的是「空下来时告诉她」。发给子代理的报一样效果 `job.messaged`（`job` 是它的编号，`kernel/events-bodies.md`）：它欠一份回报，这个会话照它等，它报了才把自己的活向上报（`agents.md` 第二条第 2 条）。发给父会话、别的会话的不报：对方不欠她什么，要回话由对方自己发。
-9. 不看叫停的旗：端口很快就返回。被掐掉的时候留言可能已经送到了：对方照样看到。
-10. 运行日志：送到了记 `INFO message sent`，`to` 写短编号（父子之间同一行）。送不到记 `WARN message not delivered`。话的字不进运行日志。
+8. 送到了，再看一眼对方这时是不是没人看着的一次性会话（会话表照它的 `Handle` 看）：是，交回「存下了」；不是，交回「送到了」。两种都不算出错。
+9. 订了的（施工 C-6）：发话送到了（「送到了」「存下了」「一模一样的」都算）或者没发话，报一样效果 `peer.watch`（`session` 是认出来的整个编号），结果接一句「空下来时会告诉你」。发话被拒、送不到、太长的，整次不订，照那一句出错。工具自己不去订：效果落了盘，执行器照内核算的在等的去订（`session/tools.md`「订、计时、再订」）。给人看的说法：带话的照发话的那一句，只订的是「空下来时告诉她」。发给子代理的报一样效果 `job.messaged`（`job` 是它的编号，`kernel/events-bodies.md`）：它欠一份回报，这个会话照它等，它报了才把自己的活向上报（`agents.md` 第二条第 2 条）。发给父会话、别的会话的不报：对方不欠她什么，要回话由对方自己发。
+10. 不看叫停的旗：端口很快就返回。被掐掉的时候留言可能已经送到了：对方照样看到。
+11. 运行日志：送到了记 `INFO message sent`，`to` 写短编号（父子之间同一行）。送不到记 `WARN message not delivered`。话的字不进运行日志。
 
 ### 样子
 

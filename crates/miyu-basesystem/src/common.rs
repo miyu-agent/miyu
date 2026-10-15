@@ -21,7 +21,7 @@ use miyu_tool::{Call, Done};
 use crate::load::{self, LoadError, say};
 
 pub(crate) use integer::integer;
-pub(crate) use shown::Shown;
+pub(crate) use shown::{Shown, plain};
 
 /// 一次的输出最多多少字节：`read`、`grep` 一样，到了就停在那一条，说从哪接。
 pub(crate) const OUTPUT_BYTES: usize = 64 * 1024;

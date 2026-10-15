@@ -13,6 +13,9 @@
 //! `peer.watch`，结果接一句「空下来时告诉你」。工具自己不去订：效果落了盘，执行器照内核算的在等的去订（`peers.rs`）。
 //! 带 `message` 的先发话，送到了（`sent`、`held`、一模一样的都算）再订，发话被拒、送不到的整次不订。`message` 可以不写：
 //! 只订不发，那边不开轮。`to` 是子代理、`parent` 的整次拒，留言也不发（照 Claude Code）。两样都没有的，参数不对。
+//!
+//! 施工 C-9 多一格 `attachments`（`cross-session.md` 第四条第 4 款）：她读得到的文件路径，照 `read` 的规矩读（[`crate::attach`]），
+//! 接在那句话后面一起送过去。带附件要有 `message`；有一个读不成、太大的，整句不发。
 
 use std::path::Path;
 
@@ -22,11 +25,13 @@ use miyu_kernel::event::{JobMessaged, PeerWatch};
 use miyu_kernel::id::{JobId, SessionId};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
+use miyu_tool::attachment::Attached;
 use miyu_tool::{
     Call, Delivered, Done, Effect, Found, NotSent, Progress, Recipient, Running, SEND_MESSAGE,
-    SEND_MESSAGE_FORMERLY, Spec, Tool, find_session,
+    SEND_MESSAGE_FORMERLY, Spec, Target, Tool, find_session,
 };
 
+use crate::attach;
 use crate::common::{Common, said};
 use crate::load::{self, LoadError, say};
 
@@ -63,6 +68,7 @@ struct Texts {
     inbox_full: Template,
     watching: Template,
     watch_peers_only: Template,
+    attachments: attach::Texts,
 }
 
 /// 她给的参数。别的参数不认，也不报错。`null` 当没写。
@@ -75,6 +81,9 @@ struct Args {
     /// 订「空了告诉我」（施工 C-6）。
     #[serde(default)]
     notify_when_idle: Option<bool>,
+    /// 附件（施工 C-9）：她读得到的文件路径。
+    #[serde(default)]
+    attachments: Option<Vec<String>>,
 }
 
 impl SendMessage {
@@ -85,6 +94,7 @@ impl SendMessage {
         Ok(SendMessage {
             spec: load::spec(resources, SEND_MESSAGE, Access::Read)?,
             texts: Texts {
+                attachments: attach::Texts::load(resources, common.clone())?,
                 common,
                 sent: text("sent", &["to"])?,
                 held: text("held", &["to"])?,
@@ -117,6 +127,13 @@ impl Tool for SendMessage {
         &[SEND_MESSAGE_FORMERLY]
     }
 
+    /// 带的附件要读（施工 C-9）：执行前的链照读文件的规矩查。
+    fn targets(&self, call: &Call) -> Vec<Target> {
+        serde_json::from_str::<Args>(&call.args)
+            .map(|args| attach::targets(&args.attachments.unwrap_or_default()))
+            .unwrap_or_default()
+    }
+
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         let texts = self.texts.clone();
         Box::pin(async move {
@@ -125,7 +142,9 @@ impl Tool for SendMessage {
                 Err(error) => return texts.common.bad_args(&error),
             };
             let watch = args.notify_when_idle == Some(true);
-            if args.message.is_none() && !watch {
+            let paths = args.attachments.unwrap_or_default();
+            // 附件跟着一句话走（施工 C-9）：只订不发的不能带。
+            if args.message.is_none() && (!watch || !paths.is_empty()) {
                 return texts.common.bad_args(&"missing field `message`");
             }
             let to = args.to.as_str();
@@ -140,11 +159,16 @@ impl Tool for SendMessage {
                 (_, false) => None,
             };
             let sent = match &args.message {
-                Some(message) => match deliver(&texts, &call, recipient.clone(), to, message).await
-                {
-                    Ok(done) => Some(done),
-                    Err(refused) => return refused,
-                },
+                Some(message) => {
+                    let attached = match attach::read(&texts.attachments, &call, paths).await {
+                        Ok(attached) => attached,
+                        Err(refused) => return *refused,
+                    };
+                    match deliver(&texts, &call, recipient.clone(), to, message, attached).await {
+                        Ok(done) => Some(done),
+                        Err(refused) => return refused,
+                    }
+                }
                 None => None,
             };
             match (sent, watched) {
@@ -162,13 +186,15 @@ impl Tool for SendMessage {
     }
 }
 
-/// 发话：长度上限、交给端口。送到了的（`sent`、`held`、一模一样的）交回那一句；拒绝、送不到的交回出错的那一句。
+/// 发话：长度上限、连同附件 `attached` 交给端口。送到了的（`sent`、`held`、一模一样的）交回那一句；拒绝、送不到的交回出错的
+/// 那一句。
 async fn deliver(
     texts: &Texts,
     call: &Call,
     recipient: Recipient,
     to: &str,
     message: &str,
+    attached: Vec<Attached>,
 ) -> Result<Done, Done> {
     let chars = message.chars().count();
     if chars > MESSAGE_CHARS {
@@ -177,7 +203,7 @@ async fn deliver(
     let Some(port) = &call.messages else {
         return Err(refused(texts, NotSent::Undelivered, to));
     };
-    match port.send(recipient, message).await {
+    match port.send(recipient, message, attached).await {
         Ok(delivered) => Ok(delivered_ok(texts, delivered, to)),
         Err(NotSent::Duplicate) => Ok(refused(texts, NotSent::Duplicate, to)),
         Err(why) => Err(refused(texts, why, to)),

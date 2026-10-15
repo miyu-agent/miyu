@@ -254,7 +254,7 @@ async fn without_pools_to_offer_there_is_no_pool_parameter() {
     one_turn(&home, &handle, 1).await;
     assert_eq!(
         subagent_parameters(&script.requests()[0].1),
-        r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"persona":{"type":"string","enum":["engineer"],"description":"Persona for the subagent. Default: no persona.\nengineer"}},"required":["description","prompt"]}"#,
+        r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Persona for the subagent. Default: no persona.\nengineer"}},"required":["description","prompt"]}"#,
         "没有池的拿掉 pool；人格照出厂的两个填（施工 P-2 补）"
     );
 }

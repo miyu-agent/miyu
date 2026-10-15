@@ -15,6 +15,8 @@ use std::pin::Pin;
 
 use miyu_kernel::id::{JobId, SessionId};
 
+use crate::attachment::Attached;
+
 /// 这件工具的名字（`agents.md` 第一条第 6 条）：场所会话里不给它。施工 C-5 从 `message_agent` 改名（照 Claude Code 的
 /// `SendMessage`，2026-10-01 项目主人定）。
 pub const SEND_MESSAGE: &str = "send_message";
@@ -36,8 +38,9 @@ pub enum Recipient {
 
 /// 给父会话、自己派的子代理、别的会话留言。
 pub trait MessagePort: Send + Sync {
-    /// 把 `message` 作为这个会话发来的话送给 `to`：对方落了盘才交回，不等它回答。
-    fn send<'a>(&'a self, to: Recipient, message: &'a str) -> Sending<'a>;
+    /// 把 `message` 连同附件 `attached`（施工 C-9：工具已经读好、认好，照先后接在字后面）作为这个会话发来的话送给 `to`：
+    /// 对方落了盘才交回，不等它回答。
+    fn send<'a>(&'a self, to: Recipient, message: &'a str, attached: Vec<Attached>) -> Sending<'a>;
 }
 
 /// 送一句留言的 future。

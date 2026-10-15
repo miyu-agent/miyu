@@ -1913,7 +1913,6 @@ dependencies = [
  "miyu-assemble",
  "miyu-basesystem",
  "miyu-config",
- "miyu-drivers",
  "miyu-fs",
  "miyu-goal",
  "miyu-http",
@@ -2265,6 +2264,7 @@ name = "miyu-tool"
 version = "0.0.0"
 dependencies = [
  "imagesize",
+ "miyu-drivers",
  "miyu-kernel",
  "miyu-recall",
  "miyu-sandbox",

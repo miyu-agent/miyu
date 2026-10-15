@@ -11,6 +11,7 @@ use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::id::{JobId, SessionId};
 use miyu_kernel::tool::Access;
+use miyu_tool::attachment::Attached;
 use miyu_tool::{AgentPort, Done, Effect, NotSpawned, Order, Spawned, Spawning};
 
 use miyu_store::human::Human;
@@ -30,6 +31,8 @@ struct Port {
     asked: Mutex<Vec<(String, String)>>,
     chosen: Mutex<Vec<Option<String>>>,
     picked: Mutex<Vec<Option<String>>>,
+    /// 每一次带的附件（施工 C-9）。
+    attached: Mutex<Vec<Vec<Attached>>>,
 }
 
 impl Port {
@@ -45,6 +48,7 @@ impl Port {
             asked: Mutex::new(Vec::new()),
             chosen: Mutex::new(Vec::new()),
             picked: Mutex::new(Vec::new()),
+            attached: Mutex::new(Vec::new()),
         })
     }
 
@@ -82,6 +86,10 @@ impl AgentPort for Port {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(order.persona.map(str::to_string));
+        self.attached
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(order.attached);
         let job = JobId::new(asked.len() as u64).expect("从 1 数起");
         let answer = match &self.session {
             Some(session) => Ok(Spawned {
@@ -123,7 +131,10 @@ fn it_declares_a_title_the_task_and_a_pool() {
         .unwrap()
         .keys()
         .collect();
-    assert_eq!(names, ["description", "persona", "pool", "prompt"]);
+    assert_eq!(
+        names,
+        ["attachments", "description", "persona", "pool", "prompt"]
+    );
     assert_eq!(parameters["required"], json!(["description", "prompt"]));
     assert_eq!(
         parameters["properties"]["pool"],
@@ -347,4 +358,38 @@ async fn a_persona_is_one_the_port_lists_and_goes_to_the_port() {
         format!("The arguments are not right: {error}.\n")
     );
     assert_eq!(port.picked().len(), 3, "写错的端口不派");
+}
+
+#[tokio::test]
+async fn attachments_go_along_with_the_task() {
+    let site = Site::new();
+    site.file("work/spec.md", b"# Spec\n");
+    let port = Port::new(Some(CHILD));
+    let args = json!({"description": "Read spec", "prompt": "Read the attached spec.", "attachments": ["spec.md"]});
+    let done = site
+        .done_with_agents("subagent", args, Some(port.clone()))
+        .await;
+    assert!(!done.error, "{}", text(&done));
+    let attached = port
+        .attached
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
+    let [one] = attached.try_into().expect("派过一次");
+    let names: Vec<&str> = one.iter().map(|attached| attached.name.as_str()).collect();
+    assert_eq!(names, ["spec.md"]);
+    assert_eq!(one[0].bytes, b"# Spec\n");
+    // 有一个读不成的，不派。
+    let port = Port::new(Some(CHILD));
+    let args = json!({"description": "Read spec", "prompt": "Read it.", "attachments": ["spec.md", "nope.md"]});
+    let done = site
+        .done_with_agents("subagent", args, Some(port.clone()))
+        .await;
+    assert!(done.error);
+    assert!(
+        text(&done).starts_with("There is no file or directory at \"nope.md\"."),
+        "{}",
+        text(&done)
+    );
+    assert!(port.asked().is_empty(), "端口一次都没问");
 }

@@ -191,6 +191,8 @@
     "send_message/inbox-full": "{to} 没看的话太多了",
     "send_message/watching": "{to} 空下来时告诉 AI",
     "send_message/watch-peers-only": "只能等别的会话空下来",
+    "attachments/too-many": "最多带 {limit} 个附件",
+    "attachments/too-big": "{path} 太大，带不了",
     "sessions/listed": "列出 {count} 个会话",
     "sessions/none": "没有别的会话",
     "sessions/past-end": "一共 {total} 个别的会话，已经列完了",

@@ -37,7 +37,7 @@ impl Shown {
 
 /// 绝对路径去掉 Windows 换真实位置时加上的 `\\?\`：`\\?\C:\x` 写成 `C:\x`，`\\?\UNC\host\share` 写成
 /// `\\host\share`。别的平台上不会有这个前缀，照原样。
-pub(super) fn plain(real: &Path) -> String {
+pub(crate) fn plain(real: &Path) -> String {
     let text = real.to_string_lossy();
     if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
         return format!(r"\\{rest}");

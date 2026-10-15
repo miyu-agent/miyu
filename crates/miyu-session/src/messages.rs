@@ -17,25 +17,30 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{CallId, CommandId, JobId, SessionId};
 use miyu_kernel::origin::{By, Session};
 use miyu_kernel::session::{Command, Outcome, Reason, Subagent};
+use miyu_store::blob::Blobs;
+use miyu_tool::attachment::Attached;
 use miyu_tool::{Delivered, MessagePort, NotSent, Recipient, Sending};
 
 use crate::TARGET;
 use crate::agents::Agents;
+use crate::attached::blocks;
 
-/// 交给一次调用的发话端口：这个会话的父会话、它派出去的子代理照 `subagents`，命令编号照调用 `call`。
+/// 交给一次调用的发话端口：这个会话的父会话、它派出去的子代理照 `subagents`，命令编号照调用 `call`，带的附件存进 `blobs`
+/// （这个会话的，施工 C-9）。
 pub(crate) fn for_call(
     agents: &Arc<Agents>,
     call: CallId,
     subagents: BTreeMap<JobId, Subagent>,
+    blobs: Blobs,
 ) -> Arc<dyn MessagePort> {
     Arc::new(Messenger {
         agents: Arc::clone(agents),
         call,
         subagents,
+        blobs,
     })
 }
 
@@ -44,20 +49,24 @@ struct Messenger {
     agents: Arc<Agents>,
     call: CallId,
     subagents: BTreeMap<JobId, Subagent>,
+    blobs: Blobs,
 }
 
 impl MessagePort for Messenger {
-    fn send<'a>(&'a self, to: Recipient, message: &'a str) -> Sending<'a> {
+    fn send<'a>(&'a self, to: Recipient, message: &'a str, attached: Vec<Attached>) -> Sending<'a> {
         Box::pin(async move {
             let (session, label) = self.recipient(to)?;
+            // 带的附件先存好（施工 C-9）：存不下的整句不发。
+            let blocks = blocks(&self.blobs, message, attached).await.map_err(|error| {
+                tracing::warn!(target: TARGET, to = label.as_str(), error = error.as_str(), "message attachments not stored");
+                NotSent::Undelivered
+            })?;
             let agents = &self.agents;
             let by = By::Session(Session {
                 id: agents.session.clone(),
             });
             let send = Command::Send {
-                blocks: vec![Block::Text(Text {
-                    text: message.to_string(),
-                })],
+                blocks,
                 urgent: false,
                 venue: None,
             };

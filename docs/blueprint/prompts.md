@@ -1728,6 +1728,28 @@ You will get a notice when {to} is next idle.
 notify_when_idle works only for other sessions.
 ```
 
+#### `software/basesystem/attachments/too-many.txt`
+
+- 什么时候加进来：`send_message`、`subagent` 带的附件超过 8 个：整句不发
+- token：8（2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，`limit` 按 8 填）
+- 为什么加：说清上限，她分成几次发（施工 C-9）
+- 指纹：`d7b89259`
+
+```text
+Attach at most {limit} files.
+```
+
+#### `software/basesystem/attachments/too-big.txt`
+
+- 什么时候加进来：`send_message`、`subagent` 带的一个附件超过 20 MiB，或者是超过 5 MiB、一边超过 8000 像素的图：整句不发
+- token：37（同上，`path` 按 `notes/plan.md` 填）
+- 为什么加：说清哪一个、上限多少，她能先压小再发（施工 C-9）；读不到、是目录的照共用的那几句
+- 指纹：`cb5ba9b1`
+
+```text
+"{path}" is too large to attach: files can be up to 20 MiB, images up to 5 MiB and 8000 pixels a side.
+```
+
 #### `software/basesystem/sessions/you.txt`
 
 - 什么时候加进来：`sessions` 的第一行
@@ -4044,14 +4066,14 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/subagent.json`
 
 - 什么时候加进来：会话的工具面里有 `subagent`：本机、没到深度上限的会话（每次请求都带）；`pool` 那一格会话开局时照配置拼，一个池都没列的没有它
-- token：141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填
-- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。
-- 指纹：`07741cfa`
+- token：141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38
+- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。
+- 指纹：`900cb319`
 
 ```json
 {
   "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. It sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
 }
 ```
 
@@ -4293,14 +4315,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/send_message.json`
 
 - 什么时候加进来：会话的工具面里有 `send_message`：本机的会话，到了深度上限的也有（每次请求都带）；旧会话冻着 `message_agent` 这个名字
-- token：165 → 204（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39）
-- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）
-- 指纹：`ac9f57af`
+- token：165 → 204 → 241（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39；施工 C-9 加 `attachments`，2026-10-15 主会话照同一个模型量，只带这一件时 446 → 483，多 37）
+- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句
+- 指纹：`a9c97784`
 
 ```json
 {
   "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to send with the message, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
 }
 ```
 

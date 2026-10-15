@@ -1,7 +1,7 @@
 //! 附件（施工 3-9 三补，`docs/blueprint/protocol.md` 的 `blob.put`、`session.send`；`04-核心协议.md` 第九节）：人说话时
 //! 附上的图片、文件。
 //!
-//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`mod@kind`]），存成管理员的 blob，回应
+//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成管理员的 blob，回应
 //!   给头看的几样。
 //! - [`blocks`]：`session.send` 的 `attachments` 变成内容块：blob 要在，照内容再认一遍，块里的宽高、媒体类型都是核心
 //!   自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。
@@ -11,11 +11,9 @@
 //!
 //! 读文件、读 blob、存 blob 都碰磁盘，在阻塞线程里做。
 //!
-//! 认是什么（[`mod@kind`]）、文件名和媒体类型怎么查（[`file_name`]、[`media_type`]）、存好了怎么拼回应
+//! 认是什么（[`miyu_tool::attachment`]）、文件名和媒体类型怎么查（[`file_name`]、[`media_type`]）、存好了怎么拼回应
 //! （[`reply`]）、一个最多几个字节（[`LIMIT`]）：这几样和分块上传（`uploads.rs`，施工 W-5）共用一份，不重写
 //! 一遍（`web-module.md`「在哪」）。
-
-pub(crate) mod kind;
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -33,11 +31,10 @@ use miyu_store::root::DataRoot;
 
 use crate::Core;
 use crate::refusal::Refusal;
-use kind::{Kind, kind};
+use miyu_tool::attachment::{Kind, kind};
 
-/// 一个附件最多几个字节：20 MiB（`04-核心协议.md` 第十一节）。`blob.open` 的 `size` 也照这个数（施工 W-5，
-/// `uploads.rs`）。
-pub(crate) const LIMIT: u64 = 20 * 1024 * 1024;
+/// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
+pub(crate) use miyu_tool::attachment::LIMIT;
 
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";

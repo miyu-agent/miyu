@@ -17,9 +17,10 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{ContentHash, FileName, Hasher, MediaType};
 use miyu_store::blob::Blobs;
+use miyu_tool::attachment::kind;
 
 use crate::Core;
-use crate::attach::{self, kind::kind};
+use crate::attach;
 use crate::refusal::Refusal;
 
 /// 运行日志的来源。

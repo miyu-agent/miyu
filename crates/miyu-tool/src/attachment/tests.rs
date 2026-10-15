@@ -1,5 +1,5 @@
+use crate::picture::{MAX_BYTES, MAX_SIDE};
 use miyu_kernel::id::MediaType;
-use miyu_tool::picture::{MAX_BYTES, MAX_SIDE};
 
 use super::{Kind, TooBig, kind};
 

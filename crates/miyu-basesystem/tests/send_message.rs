@@ -14,6 +14,10 @@ mod by_session_id;
 #[path = "send_message/watch.rs"]
 mod watch;
 
+/// 带附件（施工 C-9）：拆进这里，理由同上。
+#[path = "send_message/attachments.rs"]
+mod attachments;
+
 use std::sync::{Arc, Mutex, PoisonError};
 
 use serde_json::json;
@@ -22,6 +26,7 @@ use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::JobMessaged;
 use miyu_kernel::id::JobId;
 use miyu_kernel::tool::Access;
+use miyu_tool::attachment::Attached;
 use miyu_tool::{Delivered, Done, Effect, MessagePort, NotSent, Recipient, Sending};
 
 use crate::support::{Site, check, human, readable, said, tool};
@@ -35,6 +40,8 @@ const OTHER: &str = "0192f3a0-2222-7abc-8def-00119f03b21c";
 struct Port {
     answer: Result<Delivered, NotSent>,
     asked: Mutex<Vec<(Recipient, String)>>,
+    /// 每一次带的附件（施工 C-9）。
+    attached: Mutex<Vec<Vec<Attached>>>,
 }
 
 impl Port {
@@ -42,7 +49,15 @@ impl Port {
         Arc::new(Port {
             answer,
             asked: Mutex::new(Vec::new()),
+            attached: Mutex::new(Vec::new()),
         })
+    }
+
+    fn attachments(&self) -> Vec<Vec<Attached>> {
+        self.attached
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     fn asked(&self) -> Vec<(Recipient, String)> {
@@ -54,11 +69,15 @@ impl Port {
 }
 
 impl MessagePort for Port {
-    fn send<'a>(&'a self, to: Recipient, message: &'a str) -> Sending<'a> {
+    fn send<'a>(&'a self, to: Recipient, message: &'a str, attached: Vec<Attached>) -> Sending<'a> {
         self.asked
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push((to, message.to_string()));
+        self.attached
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(attached);
         let answer = self.answer;
         Box::pin(async move { answer })
     }
@@ -90,7 +109,7 @@ fn it_declares_the_recipient_the_message_and_the_watch() {
         .unwrap()
         .keys()
         .collect();
-    assert_eq!(names, ["message", "notify_when_idle", "to"]);
+    assert_eq!(names, ["attachments", "message", "notify_when_idle", "to"]);
     assert_eq!(
         parameters["required"],
         json!(["to"]),

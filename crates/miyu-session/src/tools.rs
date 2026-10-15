@@ -279,13 +279,14 @@ impl Tools {
                 (cwd.clone(), dirs.clone()),
                 permission.clone(),
                 inherit,
+                self.blobs.clone(),
             )
         });
         // 留言的端口照这一刻派出去的子代理抄（施工 7-7）。
         let messages = self
             .agents
             .as_ref()
-            .map(|agents| messages::for_call(agents, call_id, subagents));
+            .map(|agents| messages::for_call(agents, call_id, subagents, self.blobs.clone()));
         // 列会话的端口只给本机的主会话（施工 C-3）。
         let sessions = self.agents.as_ref().and_then(sessions::for_call);
         let call = Call {

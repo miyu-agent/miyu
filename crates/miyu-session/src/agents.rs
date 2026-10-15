@@ -14,25 +14,27 @@
 use std::sync::Arc;
 
 use miyu_config::Values;
-use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Effect, JobKind, JobStarted, Permission};
 use miyu_kernel::id::{AccountId, CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Session};
-use miyu_kernel::session::{Command, Outcome};
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
+use miyu_store::blob::Blobs;
 use miyu_tool::{
     ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
-    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, NotSpawned, Order, REMEMBER, RUN_IN_BACKGROUND,
-    SEND_MESSAGE, SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, Spawned, Spawning, TODOWRITE,
-    is_subagent,
+    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE,
+    SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, TODOWRITE, is_subagent,
 };
 
 use crate::TARGET;
 use crate::job_ids::JobIds;
-use crate::spawn::{Child, Lineage, SessionPort};
+use crate::spawn::{Lineage, SessionPort};
+
+mod spawner;
+
+use spawner::Spawner;
 
 /// 本机这个场所（`protocol.md` 的 `session.create` 第 2 条）：只有它的会话能派子代理；回合索引也只收它的（施工 R-2 再补，
 /// `memory.rs`）。
@@ -267,13 +269,14 @@ impl Agents {
     }
 
     /// 交给一次调用的端口：编号从 `ids` 领，子会话在这一轮的工作目录 `cwd`、加进来的目录 `dirs` 里，权限照派出去那一刻
-    /// 实际的 `permission`，模型照 `inherit`（施工 8-8）。
+    /// 实际的 `permission`，模型照 `inherit`（施工 8-8），交代带的附件存进 `blobs`（这个会话的，施工 C-9）。
     pub(crate) fn for_call(
         self: &Arc<Agents>,
         ids: Arc<JobIds>,
         (cwd, dirs): (String, Vec<String>),
         permission: Permission,
         inherit: Inherit,
+        blobs: Blobs,
     ) -> Arc<dyn AgentPort> {
         Arc::new(Spawner {
             agents: Arc::clone(self),
@@ -282,6 +285,7 @@ impl Agents {
             dirs,
             permission,
             inherit,
+            blobs,
         })
     }
 }
@@ -326,116 +330,6 @@ fn choices(values: &Values) -> Vec<Choice> {
             description: offer.description,
         })
         .collect()
-}
-
-/// 一次调用的派子代理的端口。
-struct Spawner {
-    agents: Arc<Agents>,
-    ids: Arc<JobIds>,
-    cwd: String,
-    dirs: Vec<String>,
-    permission: Permission,
-    inherit: Inherit,
-}
-
-impl AgentPort for Spawner {
-    /// 标题不交给子会话：它只给头看，记在 `job.started` 里（工具报）。人格没挑的是无人格（施工 P-4 上：出厂不带人格，原来是
-    /// 软件工程师，走查 C5），预设照父会话的。
-    fn spawn<'a>(&'a self, order: Order<'a>) -> Spawning<'a> {
-        let Order {
-            prompt,
-            pool,
-            persona,
-            ..
-        } = order;
-        Box::pin(async move {
-            let job = self.ids.next();
-            let agents = &self.agents;
-            let parent = &agents.session;
-            let child = Child {
-                lineage: Lineage {
-                    parent: parent.clone(),
-                    depth: agents.depth + 1,
-                },
-                command: command_id(parent, &job, ""),
-                persona: persona.map(str::to_string),
-                owner: agents.owner.clone(),
-                venue: agents.venue.clone(),
-                permission: self.permission.clone(),
-                attended: agents.attended,
-                cwd: self.cwd.clone(),
-                dirs: self.dirs.clone(),
-                model: self.inherit.model(pool),
-                preset: agents.preset.clone(),
-            };
-            let job_text = job.to_string();
-            let session = agents.port.create(child).await.map_err(|error| {
-                tracing::warn!(target: TARGET, job = job_text.as_str(), error = error.as_str(), "subagent not created");
-                NotSpawned
-            })?;
-            // 造好了、还没交回：这时被掐掉（打断、来了一句话），守着的停掉它（施工 7-5 补）。
-            let mut unclaimed = Unclaimed {
-                agents: Arc::clone(agents),
-                job: job.clone(),
-                child: Some(session.clone()),
-            };
-            // 交代原样送进去，不加包装：子会话的场所说明已经说了它来自父会话（第一条第 2 条）。
-            let by = By::Session(Session { id: parent.clone() });
-            let send = Command::Send {
-                blocks: vec![Block::Text(Text {
-                    text: prompt.to_string(),
-                })],
-                urgent: false,
-                venue: None,
-            };
-            let sent = agents
-                .port
-                .command(
-                    session.clone(),
-                    command_id(parent, &job, "/prompt"),
-                    by,
-                    send,
-                )
-                .await;
-            let why = match sent {
-                Ok(Outcome::Accepted { .. } | Outcome::Recapped { .. }) => {
-                    tracing::info!(target: TARGET, job = job_text.as_str(), child = session.as_str(), "subagent started");
-                    unclaimed.child = None;
-                    return Ok(Spawned { job, session });
-                }
-                Ok(Outcome::Rejected { reason, .. }) => {
-                    format!("the task was refused: {}", reason.code())
-                }
-                Err(error) => error,
-            };
-            tracing::warn!(target: TARGET, job = job_text.as_str(), child = session.as_str(), error = why.as_str(), "subagent not given its task");
-            Err(NotSpawned)
-        })
-    }
-
-    fn pools(&self) -> &[String] {
-        &self.agents.pools
-    }
-
-    fn personas(&self) -> &[String] {
-        &self.agents.personas
-    }
-}
-
-/// 造好了、还没交回的子会话（施工 7-5 补，`agents.md` 第一条第 9 条）：派到一半被掐掉的，丢掉时停掉它，不留没人管的
-/// 子代理；交回了就不管（`child` 拿走）。
-struct Unclaimed {
-    agents: Arc<Agents>,
-    job: JobId,
-    child: Option<SessionId>,
-}
-
-impl Drop for Unclaimed {
-    fn drop(&mut self) {
-        if let Some(child) = self.child.take() {
-            self.agents.stop_unclaimed(&self.job, child);
-        }
-    }
 }
 
 /// 一份结果的效果里派出去的子代理：任务编号和子会话（施工 7-5 补）。后台命令、没有子会话的不算。

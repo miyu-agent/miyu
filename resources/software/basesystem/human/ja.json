@@ -191,6 +191,8 @@
     "send_message/inbox-full": "{to} の未読メッセージが多すぎます",
     "send_message/watching": "{to} が空いたら AI に知らせます",
     "send_message/watch-peers-only": "待てるのはほかのセッションだけです",
+    "attachments/too-many": "添付は {limit} 個まで",
+    "attachments/too-big": "{path} は大きすぎて添付できません",
     "sessions/listed": "{count} 件のセッション",
     "sessions/none": "ほかのセッションはありません",
     "sessions/past-end": "ほかのセッション {total} 件はすべて表示済みです",

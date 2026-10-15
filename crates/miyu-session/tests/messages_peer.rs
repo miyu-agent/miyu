@@ -248,6 +248,66 @@ async fn the_three_peer_refusals_translate_to_their_own_sayings() {
     }
 }
 
+#[tokio::test]
+async fn attachments_are_stored_and_ride_after_the_words() {
+    use miyu_kernel::block::Block;
+    let home = Home::new();
+    let work = home.scratch.0.join("work");
+    std::fs::create_dir_all(&work).unwrap();
+    std::fs::write(work.join("plan.md"), b"# Plan\n").unwrap();
+    let mut png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR".to_vec();
+    png.extend(3u32.to_be_bytes());
+    png.extend(2u32.to_be_bytes());
+    png.extend([8, 6, 0, 0, 0, 0, 0, 0, 0]);
+    std::fs::write(work.join("dot.png"), &png).unwrap();
+    let table = Arc::new(Table::new(Outcome::Accepted { events: Vec::new() }, false));
+    let args = serde_json::json!({"to": OTHER, "message": "看这两个", "attachments": ["dot.png", "plan.md"]});
+    let script = Script::new([
+        Play::calls(&[("send_message", &args.to_string())]),
+        Play::Says("发了。"),
+    ]);
+    let lines = Lines {
+        sessions: Some(Arc::clone(&table) as Arc<dyn SessionPort>),
+        ..Lines::default()
+    };
+    let opening = Opening {
+        cwd: work.to_string_lossy().into_owned(),
+        ..Opening::default()
+    };
+    let handle = home
+        .create_full(&script, &basesystem(&home), opening, lines)
+        .await;
+    let log = one_turn(&home, &handle, 1).await;
+    assert_eq!(last_result(&log), format!("Message sent to {OTHER}.\n"));
+    let [(_, _, _, command)]: [_; 1] = table.sent().try_into().expect("送过一次");
+    let Command::Send { blocks, .. } = command else {
+        panic!("发的是一句话");
+    };
+    let [Block::Text(said), Block::Image(image), Block::File(file)] = blocks.as_slice() else {
+        panic!("字、图、文件：{blocks:?}");
+    };
+    assert_eq!(said.text, "看这两个");
+    assert_eq!((image.width, image.height), (3, 2));
+    assert_eq!(
+        image.name.as_ref().map(|name| name.as_str()),
+        Some("dot.png")
+    );
+    assert_eq!(file.name.as_str(), "plan.md");
+    assert_eq!(file.media_type.as_str(), "text/plain");
+    // 真实的位置；Windows 上去掉换真实位置时加的 `\\?\`，和头交来的路径一个写法。
+    let real = std::fs::canonicalize(work.join("plan.md")).unwrap();
+    let real = real.to_string_lossy();
+    let real = real.strip_prefix(r"\\?\").unwrap_or(&real);
+    assert_eq!(
+        file.path.as_ref().map(|path| path.as_str()),
+        Some(real),
+        "带上真实的位置"
+    );
+    let blobs = miyu_store::blob::Blobs::new(home.root.blobs(&crate::support::alice_account()));
+    assert_eq!(blobs.get(&image.blob).unwrap(), png, "存进属主的 blob");
+    assert_eq!(blobs.get(&file.blob).unwrap(), b"# Plan\n");
+}
+
 /// 日志里最后一次 `tool.result` 的调用编号（命令编号的组成部分）。
 fn last_call_id(log: &[miyu_kernel::event::Event]) -> miyu_kernel::id::CallId {
     use miyu_kernel::event::Body;

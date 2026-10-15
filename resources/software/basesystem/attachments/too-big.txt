@@ -1,0 +1,1 @@
+"{path}" is too large to attach: files can be up to 20 MiB, images up to 5 MiB and 8000 pixels a side.
