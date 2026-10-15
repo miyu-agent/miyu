@@ -53,6 +53,42 @@ impl Language {
         }
     }
 
+    /// 和装着的包冲突（施工 F-8 六补，照 pacman 的「冲突的文件」）：第一行说装不上，接着一处一行，「<哪一样> <名字> 已在
+    /// <包> 中」。`conflicts` 是核心交回的 `data.conflicts`。
+    pub(crate) fn conflicting(&self, conflicts: &[serde_json::Value]) -> String {
+        let mut said = vec![match self {
+            Language::Chinese => "装不上：和已装的软件包冲突".to_string(),
+            Language::English => "Cannot install: conflicts with installed packages".to_string(),
+        }];
+        for one in conflicts {
+            let (kind, name, package) = (
+                self.conflict_kind(one["kind"].as_str().unwrap_or_default()),
+                one["name"].as_str().unwrap_or_default(),
+                one["package"].as_str().unwrap_or_default(),
+            );
+            said.push(match self {
+                Language::Chinese => format!("{kind} {name} 已在 {package} 中"),
+                Language::English => format!("{kind} {name} exists in {package}"),
+            });
+        }
+        said.join("\n")
+    }
+
+    /// 冲突的那一样叫什么；不认识的照原样。
+    fn conflict_kind<'a>(&self, kind: &'a str) -> &'a str {
+        match (self, kind) {
+            (Language::Chinese, "command") => "子命令",
+            (Language::Chinese, "feature") => "功能",
+            (Language::Chinese, "tool") => "工具",
+            (Language::Chinese, "skill") => "技能",
+            (Language::Chinese, "mcp") => "MCP 服务",
+            (Language::Chinese, "knowledge") => "知识库",
+            (Language::English, "mcp") => "MCP server",
+            (Language::English, "knowledge") => "knowledge base",
+            _ => kind,
+        }
+    }
+
     /// 卸掉了的出厂的包接在名字后面的那一截。
     pub(crate) fn removed_mark(&self) -> &'static str {
         match self {

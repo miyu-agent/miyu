@@ -58,11 +58,12 @@ pub(crate) fn of_core(
     shelf(root, home, extractor(), resources, found)
 }
 
-/// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`）。
+/// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`），出厂的先于家目录、同一层照编号（施工 F-8 六补：
+/// 核心升级后出厂的新带了同编号的库，出厂的赢，设计 31 定了的 J）。
 pub(crate) fn carried<'a>(found: impl IntoIterator<Item = &'a Found>) -> Vec<(String, PathBuf)> {
-    found
-        .into_iter()
-        .filter(|one| one.read.is_ok())
+    let mut read: Vec<&Found> = found.into_iter().filter(|one| one.read.is_ok()).collect();
+    read.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
+    read.into_iter()
         .map(|one| (one.id.clone(), one.files_dir()))
         .collect()
 }

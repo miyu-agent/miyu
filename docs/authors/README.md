@@ -70,6 +70,7 @@ name = { en = "Greeting", zh = "问候语" }
 5. **包自己的检查** `[check] args = ["check"]`：`miyu check` 时跑 `<程序> check`，你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有，`line`、`column`、`code`、`key`、`rule`、`source` 可以有），只有警告时退出码 0，有错误 1。最多跑 30 秒。
 6. **后台页** `[page] dir = "page"`：目录里要有 `index.html`。页面经网页软件给的通道调你登记的方法（第四节第 7 条）。
 7. 读不成的清单不装：`miyu pkg install` 会说第几行哪里不对；`miyu check` 也查。
+   带的名字和装着的别的包撞了的也不装（照 pacman 的冲突）：子命令、功能的编号、工具名（功能下列的、脚本）、技能、MCP 服务、知识库的编号，`miyu pkg install` 一处一行说撞了什么、在哪个包里。名字建议带上包的编号做前缀。
 8. **带 MCP 服务** `[[mcp]]`：一段一个服务，核心照它拉起服务的进程、经标准输入输出说 MCP，把服务的工具登记进来。只带服务、不带程序的包不用写 `protocol`、`[command]`、`[process]`；扩展包也能带，服务跟着扩展起停。
 
    ```toml

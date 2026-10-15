@@ -18,12 +18,12 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-policy/src/skill.rs` | 读 `SKILL.md` 的开头：`---` 之间的 YAML（`yaml-rust2`），名字合不合写法、和文件夹同不同名，说明并成一行、截到 1024 个字，`metadata` 里给人看的两格；写错了的说哪里不对（英文一句） |
-| `crates/miyu-store/src/skills.rs` | 找：家目录 `home/<账号>/skills/` 先，再照包的编号找装了的（清单读成了的）软件包的 `skills/`；同名的先找到的赢，后来的、开头写错的、读不了的跳过并说为什么；点开头的文件夹、没有 `SKILL.md` 的不算；照名字排 |
+| `crates/miyu-store/src/skills.rs` | 找：家目录 `home/<账号>/skills/` 先，再找装了的（清单读成了的）软件包的 `skills/`，出厂的先于家目录、同一层照编号（施工 F-8 六补；装的时候撞了名的装不上，`packages.md`「冲突」）；同名的先找到的赢，后来的、开头写错的、读不了的跳过并说为什么；点开头的文件夹、没有 `SKILL.md` 的不算；照名字排 |
 | `crates/miyu-store/src/resources/skills.rs`、`resources/core/skills/open.txt`、`line.txt` | 列出来的那一块的两份字（26 第十节登记） |
 | `crates/miyu-session/src/skills.rs` | 造会话时找（跳过的记一行运行日志）、拼 system 里那一块（工具面上没有 `read` 的、一个技能都没有的不拼）；放开只读的文件夹 |
 | `crates/miyu-session/src/skills/watch.rs`、`crates/miyu-session/src/actor/skills.rs`、`resources/core/skills/changed-open.txt`、`changed-close.txt`、`none.txt` | 会话中途列表变了（施工 X-11 下）：回合开始再找一遍、换放开的文件夹、和她最后看到的比，变了交一块 `<skills-changed>`（`context.injected`，模块 `skills`） |
 | `crates/miyu-policy/src/script.rs` | 读脚本的开头注释（施工 X-12 上）：旧版的键（全角、半角冒号），`Parameters` 往下逐行拼成一份 JSON 为止，认、不用的键跳过；工具名照文件名 |
-| `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再照包的编号找装了的包的 `scripts/`；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
+| `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再找装了的包的 `scripts/`，出厂的先于家目录、同一层照编号（施工 F-8 六补）；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
 | `crates/miyu-basesystem/src/shell/script.rs`、`resources/software/basesystem/script/` | 脚本当一件工具（施工 X-12 上）：照 `#!` 起（Windows 上照解释器的名字、扩展名找），参数交给 `MIYU_ARGS_JSON` 和标准输入，缓存目录 `MIYU_SCRIPT_CACHE_DIR`，`PYTHONUTF8=1`；起进程、看门、截输出、跑完了的几句和 `shell` 同一套 |
 | `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）、管理员家目录的 `scripts/` 里有文件变了（`Core::watch_scripts`，施工 X-12 补，2026-10-13 项目主人照推荐定：没有的先建上，点开头的、子文件夹里的不算，200 毫秒合并一次；再找一遍的一次一个）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
 | `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告 |

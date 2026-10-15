@@ -132,6 +132,38 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
     assert!(skipped[..2].iter().all(|one| one.by.is_none()));
 }
 
+/// 两个包带了同一个工具名，出厂的先于家目录（施工 F-8 六补，设计 31 定了的 J），不照编号。
+#[test]
+fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
+    let places = Places::new();
+    let manifest = |id: &str| {
+        format!("[package]\nprotocol = [1, 1]\nname = {{ en = \"{id}\" }}\n\n[builtin]\n")
+            .into_bytes()
+    };
+    places.write("res/packages/z-tools/package.toml", &manifest("z-tools"));
+    places.write(
+        "res/packages/z-tools/scripts/weather.sh",
+        &script("Shipped."),
+    );
+    places.write(
+        "data/home/admin/packages/a-kit/package.toml",
+        &manifest("a-kit"),
+    );
+    places.write(
+        "data/home/admin/packages/a-kit/scripts/weather.sh",
+        &script("Installed."),
+    );
+    let (scripts, skipped) = places.found();
+    assert_eq!(scripts.len(), 1);
+    assert_eq!(scripts[0].package.as_deref(), Some("z-tools"));
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert!(
+        skipped[0]
+            .path
+            .ends_with("home/admin/packages/a-kit/scripts/weather.sh")
+    );
+}
+
 #[test]
 fn nothing_anywhere_is_empty() {
     assert_eq!(Places::new().found(), (Vec::new(), Vec::new()));

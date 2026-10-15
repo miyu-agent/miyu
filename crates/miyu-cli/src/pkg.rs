@@ -392,13 +392,16 @@ fn print(result: &Value, plan: &PkgPlan, out: &mut dyn Write) -> Result<(), u8> 
     Ok(())
 }
 
-/// 被拒绝时说的那一句：清单装不上的照 `data` 说哪里不对、第几行（核心的原话是给程序看的，说的是去 `data` 里看）；别的照
-/// 核心的原话。
+/// 被拒绝时说的那一句：清单装不上的照 `data` 说哪里不对、第几行（核心的原话是给程序看的，说的是去 `data` 里看）；和装着的包
+/// 冲突的一处一行（施工 F-8 六补）；别的照核心的原话。
 fn refused(error: &Value, language: &Language) -> String {
     let data = &error["data"];
     match (data["reason"].as_str(), data["problem"].as_str()) {
         (Some("package_invalid"), Some(problem)) => {
             language.cannot_install(problem, data["line"].as_u64())
+        }
+        (Some("package_conflict"), _) => {
+            language.conflicting(data["conflicts"].as_array().map_or(&[], Vec::as_slice))
         }
         _ => language.refused(error["message"].as_str().unwrap_or_default()),
     }

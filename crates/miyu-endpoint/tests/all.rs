@@ -91,6 +91,7 @@ mod package_tool;
 mod package_tool_open;
 mod packages;
 mod packages_config;
+mod packages_conflicts;
 mod packages_embed;
 mod packages_extensions;
 mod packages_install;

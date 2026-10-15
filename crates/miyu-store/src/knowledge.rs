@@ -34,6 +34,14 @@ pub use manage::BaseFields;
 pub use read::Page;
 pub use write::Written;
 
+/// 包文件夹 `dir` 带的库的编号（施工 F-8 六补：装之前查冲突，`docs/blueprint/packages.md`「冲突」），照编号排。
+pub fn carried(dir: &std::path::Path) -> Vec<String> {
+    place::carried_in(dir)
+        .into_iter()
+        .map(|(id, _)| id)
+        .collect()
+}
+
 /// 核心一份的知识库登记：开过的索引留着（一个库一个连接、一把补的锁）。
 #[derive(Debug)]
 pub struct Knowledge {

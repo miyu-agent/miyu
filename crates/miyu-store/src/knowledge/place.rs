@@ -49,14 +49,14 @@ impl Place {
     }
 }
 
-/// 装了的软件包：编号、包目录，照编号排。
+/// 装了的软件包：编号、包目录，照调的一方给的先后（出厂的先于家目录、同一层照编号，施工 F-8 六补）。
 pub(super) type Packages = Mutex<Vec<(String, PathBuf)>>;
 
 impl Knowledge {
-    /// 装了的软件包（编号、包目录）带来的库也算（施工 K-8）：清单读成了的那几个，调的一方交。
+    /// 装了的软件包（编号、包目录）带来的库也算（施工 K-8）：清单读成了的那几个，调的一方交；两个包带了同编号的，排在前的
+    /// 赢，调的一方照出厂的先于家目录、同一层照编号排好（施工 F-8 六补，设计 31 定了的 J）。
     #[must_use]
-    pub fn with_packages(self, mut packages: Vec<(String, PathBuf)>) -> Knowledge {
-        packages.sort();
+    pub fn with_packages(self, packages: Vec<(String, PathBuf)>) -> Knowledge {
         Knowledge {
             packages: Mutex::new(packages),
             ..self
@@ -64,16 +64,14 @@ impl Knowledge {
     }
 
     /// 换上一份装了的软件包（编号、包目录），什么都不清（施工 K-8）：核心起来时照核对过的清单换，没收的包不是卸了。
-    pub fn use_packages(&self, mut packages: Vec<(String, PathBuf)>) {
-        packages.sort();
+    pub fn use_packages(&self, packages: Vec<(String, PathBuf)>) {
         *self.packages_now() = packages;
     }
 
     /// 装卸以后照新的一份（编号、包目录）跟上（施工 K-8）：卸掉的包，每个账号里它的库的索引、自动想起的开关一起删（项目主人
     /// 2026-10-13 定：卸包以后跟着没有）。交回删不掉的那几处为什么（调的一方记日志），照样换上新的一份。
     #[must_use]
-    pub fn follow_packages(&self, mut packages: Vec<(String, PathBuf)>) -> Vec<String> {
-        packages.sort();
+    pub fn follow_packages(&self, packages: Vec<(String, PathBuf)>) -> Vec<String> {
         let gone: Vec<String> = {
             let mut now = self.packages_now();
             let gone = now
@@ -228,26 +226,11 @@ impl Knowledge {
             .collect())
     }
 
-    /// 装了的包带来的库：编号、包的编号、库的目录；同编号的照包的编号先到先得。包目录里没有 `kb/` 的、读不了的没有。
+    /// 装了的包带来的库：编号、包的编号、库的目录；同编号的照给的包的先后先到先得。包目录里没有 `kb/` 的、读不了的没有。
     fn carried(&self) -> Vec<(String, String, PathBuf)> {
         let mut carried: Vec<(String, String, PathBuf)> = Vec::new();
         for (package, dir) in self.packages_now().iter() {
-            let Ok(entries) = std::fs::read_dir(dir.join("kb")) else {
-                continue;
-            };
-            let mut found: Vec<(String, PathBuf)> = entries
-                .flatten()
-                .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
-                .map(|entry| {
-                    (
-                        entry.file_name().to_string_lossy().into_owned(),
-                        entry.path(),
-                    )
-                })
-                .filter(|(id, _)| valid(id))
-                .collect();
-            found.sort();
-            for (id, path) in found {
+            for (id, path) in carried_in(dir) {
                 if !carried.iter().any(|(taken, _, _)| *taken == id) {
                     carried.push((id, package.clone(), path));
                 }
@@ -323,4 +306,24 @@ fn read_or_empty(file: &Path) -> Result<String, KnowledgeError> {
 
 fn io(error: std::io::Error) -> KnowledgeError {
     KnowledgeError::Io(error.to_string())
+}
+
+/// 包文件夹 `dir` 带的库：`kb/` 下写法对的子文件夹，编号和目录，照编号排。没有 `kb/` 的、读不了的是空的。
+pub(super) fn carried_in(dir: &Path) -> Vec<(String, PathBuf)> {
+    let Ok(entries) = std::fs::read_dir(dir.join("kb")) else {
+        return Vec::new();
+    };
+    let mut found: Vec<(String, PathBuf)> = entries
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+        .map(|entry| {
+            (
+                entry.file_name().to_string_lossy().into_owned(),
+                entry.path(),
+            )
+        })
+        .filter(|(id, _)| valid(id))
+        .collect();
+    found.sort();
+    found
 }

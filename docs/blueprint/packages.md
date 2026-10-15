@@ -17,6 +17,7 @@
 | `crates/miyu-config/src/package/code.rs` | 读不成时的代码（施工 F-1 从 `package.rs` 挪出来） |
 | `crates/miyu-config/src/phrases.rs` | 「语言到一句话」那一格的读法，和人格的名字、说明共用 |
 | `crates/miyu-store/src/packages.rs` | 两层在哪、读出所有清单、同编号、子命令名撞了、功能的编号撞了（施工 F-1）、系统账号撞了管理员（施工 O-4 下）；声明了的系统账号（`system_accounts`）；包放状态的目录；包目录（`Found::files_dir`，施工 R-5 三补） |
+| `crates/miyu-store/src/packages/conflicts.rs` | 装之前查冲突（施工 F-8 六补，下面「冲突」）：一个包占的名字，和装着的别的包重了的那几处 |
 | `crates/miyu-store/src/packages/install.rs`、`migrate.rs` | 装卸时拷进、换下、删掉家目录里的包目录（施工 F-5 上）；家目录里以前的写法挪成一个文件夹一个包（施工 F-8 上）、写了 `kind` 的改成照表认（施工 F-8 上补） |
 | `crates/miyu-config/src/package/kinds.rs`、`upgrade.rs` | 照带的表认种类、哪种包能写哪几张表；写了 `kind` 的清单怎么改（施工 F-8 上补） |
 | `crates/miyu-endpoint/src/packages.rs` | 核心起来时读一次、记运行日志；`package.list`；照核心自己的模块认撞没撞、拼包的配置项（`settle`，施工 9-1 下） |
@@ -147,7 +148,7 @@ program = "miyu-embed"
 3. 包的编号是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的三项）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
 
-**两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）。和内置子命令撞的，由 9-2 在命令行那一头拦。声明了系统账号、编号和管理员的账号一样的报 `account_taken`，整份不收（施工 O-4 下）。
+**两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）。和内置子命令撞的，由 9-2 在命令行那一头拦。别的包占了的名字装的时候先查过（下面「冲突」），读的时候撞得上的只剩核心升级后出厂的新带了同名的：出厂的先读到。声明了系统账号、编号和管理员的账号一样的报 `account_taken`，整份不收（施工 O-4 下）。
 
 **系统账号**（施工 O-4 下，`06-多用户与身份.md` U14、`18-通讯平台.md` Q19）：`[process] system_account = true` 的包有一个系统账号，账号名就是包的编号（一个包一个，编号两层里不重）。核心起来时读清单那一次建它的 `home/<编号>/` 和 `workspace/`（已经有的不动，建不成的记 `WARN system account not prepared`、账号照样算有），拉起扩展前开它自己的会话列表索引（`home/<编号>/index/sessions.db`）；名单照核心手里这时的清单算，不落盘；装上、装回来的当场建，卸掉的不再算，家目录、索引留着、装回来接着用（施工 F-5 下）。核心拉起的这个包的扩展以它的身份连进来（`extensions.md`「握手」），群、陌生人私聊的场所会话归它（`venues.md`）。没有密码、不能登录；人格、预设、软件包照管理员的找，记忆归管理员（`personas.md`「怎么走」第 5 条）。彻底卸载时连数据一起删：随 `12-进程形态与分发.md` R9。
 
@@ -237,12 +238,20 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 
 1. **只动管理员家目录那一层**（`miyu_store::packages::install`）：装是把整个包目录拷成 `<编号>/`（施工 F-8 上）；先拷到点开头的暂存处再换进去，原来就有的先挪到点开头的备份处，装成了删备份、装不成放回去。卸家目录的是删掉这个包目录。卸出厂的是在家目录记一笔 `<编号>.removed`（空文件，像 systemd 的 mask），资源目录不动；装回来是删掉这一笔。
 2. **当场生效**：装、卸以后照两层重读、标没编进来的内置包、认配置项撞没撞，换掉核心手里的那一份（`Core::reload_packages`）。`package.list`、预设的功能、新开的会话、开着的会话下一个回合都照新的。内置包的工具照 `Builtins` 端口（`miyu-core` 装上）重新要，新装上的换进工具目录、卸掉的拿掉并记下随包卸掉了（施工 F-5 中，`Catalog::placing`、`removing`）：用过它的会话工具面不变、调到时报「已卸载」，开着的会话下一个回合拿到新装上的包的工具。查询记着属于哪个包，包没装的当没有（`unknown_method`）。扩展进程照装卸前后的清单停下、拉起、升级了的重起，经提供者登记的工具随包卸掉的同样报「已卸载」，声明了系统账号的当场建账号（施工 F-5 下，`extensions.md`「怎么走」第 7 条）；卸是先停用着它的再删文件（施工 F-5 补）。配置项照新的清单当场换（「配置项」第 2 条，施工 F-5 补）。人格记忆装没装最先照新的清单设（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）：开着的会话照它交不交摘要、抽不抽。本机的向量模型照新的清单当场换（`Builtins::embed` 拼、`Vectors::replace_local` 换，一样的不动，施工 F-5 再补）。这几样走同一个入口（`Core::switch_packages`）：卸包、升级在动文件以前照去掉它的清单换一遍，删不成、换不成的照原来的换回来。
-3. **装之前查**：路径要是绝对的包目录（文件夹名就是编号），或者包目录里的 `package.toml`（施工 F-8 上）；照规矩读得成；编号不和出厂的撞。拷进去以后照两层重读一遍，这一份撞了别的包（子命令名、功能编号、系统账号）、是核心没编进来的内置包的，撤回（原来那一份放回去）、报 `package_invalid`。
+3. **装之前查**：路径要是绝对的包目录（文件夹名就是编号），或者包目录里的 `package.toml`（施工 F-8 上）；照规矩读得成；编号不和出厂的撞；带的名字不和装着的别的包撞，撞了的报 `package_conflict`、什么都不动（施工 F-8 六补，下面「冲突」）。拷进去以后照两层重读一遍，这一份还是读坏了的（声明了系统账号、编号是管理员的账号的 `account_taken`）、是核心没编进来的内置包的，撤回（原来那一份放回去）、报 `package_invalid`。
 4. **卸之前查**：没装的 `unknown_package`；必需的（基础系统）`package_required`。
 5. **卸掉的出厂的**：读两层时不算装了（`Packages::read`）；`package.list` 照样列它，带 `removed: true`（`Packages::read_removed`），好让头给人装回来。
 6. 装、卸一次只做一件；只给本机的人用，扩展进程调回 `local_only`；做成了记一行运行日志 `INFO package installed`、`package removed`、`package restored`。
 7. **卸就是清干净**（施工 F-8 中下补，设计 31 第三节第 3 条）：换下清单以后，系统配置和管理员的个人设置里这个包清单列的项照原文删掉（`miyu_config::edit` 的 `Unset`，空了的表头一起删，注释、别的项不动），走 `config.set` 那一条写盘、记日志、推 `config.changed`，改的人记成管理员（端点的 `config/forget.rs`）；包的状态目录 `state/packages/<编号>/` 整个删掉；它带的 MCP 服务的目录缓存 `state/mcp/<服务名>.json`、工作目录 `state/mcp/<服务名>/` 一起删（施工 X-3 下）。家目录里装的、出厂的都一样，重装回来从头设。不碰的：密钥文件（一条密钥可能别处也在引用）、项目目录里的 `.miyu/config.toml`、系统账号的家目录（群里的会话是人的数据）。写不进、删不掉的记一行 `WARN`，卸照算成。 开关的文件 `system/extensions.json` 里它开没开、批过的能力也删掉（施工 F-8 五补）：装回来从头开、从头批，不会一装上就照以前的开关起来。
 8. **先看一眼**（施工 F-8 下补，端点的 `packages/preview.rs`）：`package.install`、`package.remove` 带 `preview: true` 的照真做之前查的那几样查一遍（装、看一眼共用 `manage.rs` 的 `source`，卸、看一眼共用 `removable`），交回要做什么（`protocol.md`），文件、配置、清单一样都不动；和装卸一样排队（拿同一把锁），看到的是前一件做完的样子。命令行照它印一份、问一句（`cli/pkg.md`）。
+
+### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
+
+1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号。六样各算各的：技能 `notes` 和库 `notes` 不算撞。
+2. **跟谁比**：两层里清单读成了的、编号不是它的包。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；家目录里自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
+3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
+4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
+5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于家目录，同一层照编号。子命令、功能撞了的家目录那一份整份不收（`command_taken`、`feature_taken`）；技能、脚本、知识库跳过家目录那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
 
 ### 出错
 
@@ -296,6 +305,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 | `crates/miyu-endpoint/tests/packages_install.rs`（施工 F-5 上） | 装一份清单、同名目录一起拷、列表和预设的功能当场有；升级换掉、升级撞了放回原来的、不留暂存；写错的、和出厂撞了的、和别的包撞了的不装；卸家目录的删掉；卸出厂的记一笔、列表里标卸掉、装得回来；必需的、没装的不能卸 |
 | `crates/miyu-store/src/packages/tests.rs` 的 `a_program_is_found_in_the_package_bin_then_beside_main`、`crates/miyu-cli/src/head/tests.rs` 的 `a_head_runs_the_program_its_package_brings`、`crates/miyu/tests/packages.rs` 的 `a_package_command_runs_the_program_in_its_bin`、`crates/miyu-endpoint/tests/packages_programs.rs`（施工 F-8 上再补） | 程序先找包文件夹的 `bin/`、再找主程序旁边的，相对的包文件夹不找 `bin/`；界面、转交的子命令照包里带的跑；真核心装上一个自己带程序的扩展：拉起、列表里在跑、预设里它的功能算装了、装上的文件里有它的程序；程序还被开着写的（Linux）等放开再拉起 |
 | `crates/miyu-config/src/package/mcp/tests.rs`、`crates/miyu-policy/src/features/tests.rs` 的 `an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own`、`crates/miyu-store/src/packages/tests.rs` 的 `an_mcp_server_name_is_taken_by_whoever_is_read_first`、`crates/miyu-endpoint/tests/packages.rs` 的 `a_bundle_lists_its_mcp_servers_as_features`、`packages_preview.rs` 的 `a_bundle_preview_names_its_mcp_servers`、`crates/miyu-cli/src/pkg/confirm/tests.rs`（施工 X-2） | `[[mcp]]` 每一格、没写的照什么；每一种写错报 `bad_mcp`、报在那一段；只带 MCP 服务的是 `bundle`、不说协议、能带吉祥物；界面、小程序、内置包写了 `wrong_kind`；一个服务一个功能、扩展包照旧先算自己的；MCP 的工具照前缀归服务、包自己的工具照旧；两个包同名的服务后到的 `feature_taken`；列表、看一眼、命令行那一份都列出服务 |
+| `crates/miyu-store/src/packages/conflicts/tests.rs`、`crates/miyu-endpoint/tests/packages_conflicts.rs`、`crates/miyu-store/src/skills/tests.rs` 和 `scripts/tests.rs` 的 `a_shipped_package_wins_over_a_home_one_whatever_the_ids`、`crates/miyu-store/tests/knowledge_package.rs` 的 `the_package_given_first_wins_whatever_its_id`、`crates/miyu-endpoint/tests/knowledge_package.rs` 的 `a_shipped_package_base_wins_over_a_home_one_whatever_the_ids`、`crates/miyu-cli/src/pkg/tests.rs` 的 `a_conflict_says_cannot_install_and_one_line_each`（施工 F-8 六补） | 「冲突」：六样各找得到、各算各的，同一个包、读坏了的不比；真核心：撞了技能的装不上、看一眼也拒、什么都不动、装着的照旧好；编号排在前的新包挤不掉装着的（以前挤得掉）；脚本撞了出厂的工具、MCP 服务、知识库也算；升级自己、和家目录里自己放的同名照装；装回出厂的也查；读的时候技能、脚本、库出厂的先于家目录；命令行第一行说装不上、一处一行 |
 | `crates/miyu-endpoint/tests/packages.rs` | `package.list` 的每一格、照语言挑；施工 F-1 的几格（必需、功能、平台接入、依赖、小程序）；没编进来的内置包报 `not_built_in`、只认读成了的内置包算装了（施工 F-2）；写错的、同编号、撞名、协议版本对不上、`process` 和 `check`；起来时读一次；`check` 查清单、写了文件的认得出、别的文件认不出。只断言出厂的网页和测试自己放的几份，家目录里的编号、子命令名避开出厂会有的（施工 9-1 补：终端界面要出厂 `tui`）；家目录里以前的写法读时挪成新的（施工 F-8 上） |
 
 ### 起草时定的

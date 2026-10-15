@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{Pkg, PkgCommand, installing, shown};
+use super::{Pkg, PkgCommand, installing, refused, shown};
 use crate::language::Language;
 
 #[test]
@@ -85,4 +85,25 @@ fn pacman_options_are_the_plain_commands() {
     ] {
         assert!(parsed(wrong).is_err(), "{wrong:?}");
     }
+}
+
+#[test]
+fn a_conflict_says_cannot_install_and_one_line_each() {
+    // 施工 F-8 六补：照 pacman 的「冲突的文件」，第一行说装不上，接着一处一行。
+    let error = json!({
+        "message": "与已安装的软件包冲突，无法安装。",
+        "data": {"reason": "package_conflict", "conflicts": [
+            {"kind": "tool", "name": "read", "package": "basesystem"},
+            {"kind": "skill", "name": "pdf", "package": "kit"},
+            {"kind": "mcp", "name": "lone", "package": "svc"},
+        ]}
+    });
+    assert_eq!(
+        refused(&error, &Language::Chinese),
+        "装不上：和已装的软件包冲突\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中"
+    );
+    assert_eq!(
+        refused(&error, &Language::English),
+        "Cannot install: conflicts with installed packages\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc"
+    );
 }

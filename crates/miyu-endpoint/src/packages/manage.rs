@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 
 use miyu_config::package;
 use miyu_policy::preset::MEMORY;
+use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
 use miyu_store::packages::{Found, Issue, Layer, MANIFEST, Packages};
 
@@ -153,7 +154,7 @@ pub(crate) async fn install(
         (Some(path), None, false) => from_path(core, peer, Path::new(&path)).await,
         (None, Some(id), false) => bring_back(core, peer, &id).await,
         (Some(path), None, true) => super::preview::installing(core, peer, Path::new(&path)).await,
-        (None, Some(id), true) => super::preview::restoring(core, peer, &id),
+        (None, Some(id), true) => super::preview::restoring(core, peer, &id).await,
         _ => Err(Refusal::BAD_PARAMS),
     }
 }
@@ -256,9 +257,10 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
 }
 
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、
-/// 拷进去以后和别的包也不撞，才算装上。编号是文件夹的名字。
+/// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。
 async fn from_path(core: &Arc<Core>, peer: Peer, path: &Path) -> Result<Value, Refusal> {
-    let (folder, id, _) = source(core, peer, path)?;
+    let (folder, id, manifest) = source(core, peer, path)?;
+    clear_of_conflicts(core, &id, manifest, folder.clone()).await?;
     let words = words(core, peer.language)?;
     let places = packages(core);
     let home = home(core)?;
@@ -351,6 +353,7 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     if !places.removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
+    shipped_clear_of_conflicts(core, id).await?;
     let home = home(core)?;
     let target = id.to_string();
     let before = core.packages();
@@ -366,6 +369,36 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
         .find(|one| one.id == id)
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;
     Ok(listed(core, back, &places, &words, peer.language, false))
+}
+
+/// 要装的包（编号 `id`、清单 `manifest`、文件夹 `dir`）和装着的别的包重了名的（施工 F-8 六补，`packages.md`「冲突」）：
+/// `package_conflict`，什么都不动。读包文件夹在阻塞线程里。
+pub(super) async fn clear_of_conflicts(
+    core: &Arc<Core>,
+    id: &str,
+    manifest: package::Manifest,
+    dir: PathBuf,
+) -> Result<(), Refusal> {
+    let installed = core.packages();
+    let id = id.to_string();
+    let found = blocking(move || Ok(conflicts(&id, &manifest, &dir, &installed))).await?;
+    match found.is_empty() {
+        true => Ok(()),
+        false => Err(Refusal::package_conflict(&found)),
+    }
+}
+
+/// 把卸掉的出厂的包 `id` 装回来之前也查（同 [`clear_of_conflicts`]）：卸掉以后家目录里装了同名的。
+pub(super) async fn shipped_clear_of_conflicts(core: &Arc<Core>, id: &str) -> Result<(), Refusal> {
+    let shipped = Packages::shipped(&core.resources).read();
+    let Some((manifest, dir)) = shipped
+        .iter()
+        .find(|one| one.id == id)
+        .and_then(|one| Some((one.read.as_ref().ok()?.clone(), one.files_dir())))
+    else {
+        return Ok(());
+    };
+    clear_of_conflicts(core, id, manifest, dir).await
 }
 
 /// 管理员家目录那一层。

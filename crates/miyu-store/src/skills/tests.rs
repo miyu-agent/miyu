@@ -125,6 +125,35 @@ fn skills_come_from_installed_packages_and_the_home_folder() {
     );
 }
 
+/// 两个包撞了名，出厂的先于家目录（施工 F-8 六补，设计 31 定了的 J）：核心升级后出厂的新带了同名的，编号排在前的家目录
+/// 的包也让给它；同一层照编号。
+#[test]
+fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
+    let places = Places::new();
+    places.write("res/packages/z-tools/package.toml", &package("z-tools"));
+    places.write(
+        "res/packages/z-tools/skills/pdf/SKILL.md",
+        &skill("pdf", "Shipped."),
+    );
+    places.write(
+        "data/home/admin/packages/a-kit/package.toml",
+        &package("a-kit"),
+    );
+    places.write(
+        "data/home/admin/packages/a-kit/skills/pdf/SKILL.md",
+        &skill("pdf", "Installed."),
+    );
+    let (skills, skipped) = places.found();
+    assert_eq!(skills.len(), 1);
+    assert_eq!(skills[0].package.as_deref(), Some("z-tools"));
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert!(
+        skipped[0]
+            .path
+            .ends_with("home/admin/packages/a-kit/skills/pdf")
+    );
+}
+
 #[test]
 fn a_wrong_head_is_skipped_and_said_why() {
     let places = Places::new();

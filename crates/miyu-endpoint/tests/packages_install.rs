@@ -149,12 +149,16 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
         .call("i2", "package.install", json!({"path": shipped}))
         .await;
     assert_eq!(reason(&reply), Some("package_exists"), "{reply}");
-    // 读得成，可子命令名和出厂的接入QQ 撞了：拷进去以后认出来，撤回。
+    // 读得成，可子命令名和出厂的接入QQ 撞了：装之前就查出来，什么都不动（施工 F-8 六补）。
     let clash = source(&home, "xclash", &manifest("撞了", "onebot"));
     let reply = client
         .call("i3", "package.install", json!({"path": clash}))
         .await;
-    assert_eq!(reason(&reply), Some("package_invalid"), "{reply}");
+    assert_eq!(reason(&reply), Some("package_conflict"), "{reply}");
+    assert_eq!(
+        reply["error"]["data"]["conflicts"],
+        json!([{"kind": "command", "name": "onebot", "package": "onebot"}])
+    );
     for left in ["xbad", "mermaid", "xclash"] {
         assert!(!mine(&home, left).exists(), "{left} 不留");
     }
@@ -230,23 +234,29 @@ async fn required_and_unknown_packages_cannot_be_removed() {
 async fn a_failed_upgrade_keeps_the_old_one() {
     let home = Home::new();
     let mut client = connected(&home).await;
-    let path = source(&home, "xkeep", &manifest("旧的", "xkeep"));
-    std::fs::create_dir_all(home.work.join("xkeep")).expect("建得了");
-    std::fs::write(home.work.join("xkeep/v.txt"), "1").expect("写得进");
+    let path = source(&home, "alice", &manifest("旧的", "alice"));
+    std::fs::create_dir_all(home.work.join("alice")).expect("建得了");
+    std::fs::write(home.work.join("alice/v.txt"), "1").expect("写得进");
     let reply = client
         .call("i1", "package.install", json!({"path": path}))
         .await;
     assert_eq!(reply["result"]["name"], "旧的", "{reply}");
-    std::fs::write(home.work.join("xkeep/v.txt"), "2").expect("写得进");
-    let path = source(&home, "xkeep", &manifest("新的", "onebot"));
+    std::fs::write(home.work.join("alice/v.txt"), "2").expect("写得进");
+    // 拷进去重读以后才认得出来的：声明了系统账号，编号却是管理员的账号（`account_taken`）。撤回，原来的放回去。撞名的装之前
+    // 就拦了（施工 F-8 六补）。
+    let path = source(
+        &home,
+        "alice",
+        &format!("{}system_account = true\n", manifest("新的", "alice")),
+    );
     let reply = client
         .call("i2", "package.install", json!({"path": path}))
         .await;
     assert_eq!(reason(&reply), Some("package_invalid"), "{reply}");
     let packages = list(&mut client).await;
-    assert_eq!(find(&packages, "xkeep").expect("还在")["name"], "旧的");
+    assert_eq!(find(&packages, "alice").expect("还在")["name"], "旧的");
     assert_eq!(
-        std::fs::read_to_string(mine(&home, "xkeep/v.txt")).expect("还在"),
+        std::fs::read_to_string(mine(&home, "alice/v.txt")).expect("还在"),
         "1",
         "原来的文件放回去"
     );

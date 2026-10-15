@@ -20,6 +20,7 @@ use miyu_kernel::id::AccountId;
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
 
+pub mod conflicts;
 pub mod install;
 pub mod local;
 pub mod migrate;

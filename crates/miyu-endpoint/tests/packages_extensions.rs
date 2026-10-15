@@ -290,15 +290,16 @@ async fn a_failed_upgrade_or_removal_brings_the_extension_back() {
     core.stop_extensions().await;
 }
 
-/// 升级成撞了别的包的（施工 F-5 补）：原来的那一份放回去，先停下的那一个照原来的清单重新拉起。
+/// 升级成拷进去才认得出来写错了的（施工 F-5 补；撞名的施工 F-8 六补起装之前就拦）：原来的那一份放回去，先停下的那一个照原来的
+/// 清单重新拉起。
 #[tokio::test]
 async fn an_invalid_upgrade_brings_the_old_extension_back() {
     let home = Home::new();
     let program = Program::new();
-    let (path, step) = record(&home, "xbad");
+    let (path, step) = record(&home, "alice");
     install(
         &home,
-        "xbad",
+        "alice",
         &program.name(),
         "always",
         &steps(&[&step, "hello", "serve"]),
@@ -306,7 +307,7 @@ async fn an_invalid_upgrade_brings_the_old_extension_back() {
     let written = home
         .root
         .path()
-        .join("home/alice/packages/xbad/package.toml");
+        .join("home/alice/packages/alice/package.toml");
     let good = std::fs::read_to_string(&written).expect("读得到");
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
@@ -315,14 +316,15 @@ async fn an_invalid_upgrade_brings_the_old_extension_back() {
     core.start_extensions();
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    until_state(&mut client, "xbad", |entry| entry["state"] == "running").await;
+    until_state(&mut client, "alice", |entry| entry["state"] == "running").await;
     lines(&path, 2).await;
-    // 子命令名撞了出厂的接入QQ（施工 S-5：两个界面的清单搬走了）。
-    let source = home.work.join("xbad");
+    // 拷进去重读以后才认得出来的：声明了系统账号，编号却是管理员的账号（`account_taken`）。撞名的装之前就拦了，什么都不停
+    // （施工 F-8 六补）。
+    let source = home.work.join("alice");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::write(
         source.join("package.toml"),
-        good.replace("name = \"xbad\"", "name = \"onebot\""),
+        format!("{good}system_account = true\n"),
     )
     .expect("写得进");
     let reply = client
@@ -335,6 +337,6 @@ async fn an_invalid_upgrade_brings_the_old_extension_back() {
         "原来的放回去了"
     );
     lines(&path, 4).await;
-    until_state(&mut client, "xbad", |entry| entry["state"] == "running").await;
+    until_state(&mut client, "alice", |entry| entry["state"] == "running").await;
     core.stop_extensions().await;
 }

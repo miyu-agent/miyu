@@ -37,6 +37,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Required package, cannot be removed.",
         ),
         "package_invalid" => ("清单有误，无法安装。", "Invalid manifest, cannot install."),
+        "package_conflict" => (
+            "与已安装的软件包冲突，无法安装。",
+            "Conflicts with installed packages, cannot install.",
+        ),
         "program_missing" => ("程序未安装。", "Program not installed."),
         "no_page" => ("没有后台页。", "No admin page."),
         "not_found" => ("文件不存在。", "File not found."),

@@ -167,6 +167,22 @@ fn your_own_base_wins_and_the_first_package_wins() {
     ));
 }
 
+/// 两个包带了同编号的库，照给的先后先到先得（施工 F-8 六补）：核心照出厂的先于家目录排好交进来，不另照编号排。
+#[test]
+fn the_package_given_first_wins_whatever_its_id() {
+    let scratch = Scratch::new("kb-package-order");
+    let root = root_in(&scratch);
+    let shipped = package(&scratch, "z-shipped", "lore", "name = \"出厂的\"\n");
+    let home = package(&scratch, "a-home", "lore", "name = \"家目录的\"\n");
+    let knowledge = Knowledge::new(&root)
+        .with_packages(vec![("z-shipped".into(), shipped), ("a-home".into(), home)]);
+    assert_eq!(
+        listed(&knowledge),
+        [("lore".to_string(), Some("z-shipped".to_string()), false)]
+    );
+    assert_eq!(knowledge.title(&admin(), "lore").expect("在").0, "出厂的");
+}
+
 #[test]
 fn removing_a_package_takes_its_bases_index_and_switches() {
     let scratch = Scratch::new("kb-package-gone");

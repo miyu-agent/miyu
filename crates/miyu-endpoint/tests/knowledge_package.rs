@@ -121,3 +121,46 @@ async fn the_core_starts_with_the_packages_it_accepted() {
         (json!("world"), json!("world-pack"))
     );
 }
+
+/// 把 `from` 整个拷到 `to`。
+fn copy_tree(from: &std::path::Path, to: &std::path::Path) {
+    std::fs::create_dir_all(to).expect("建得了目录");
+    for entry in std::fs::read_dir(from).expect("读得了目录") {
+        let entry = entry.expect("读得了目录项");
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("认得出种类").is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), &target).expect("拷得了");
+        }
+    }
+}
+
+#[tokio::test]
+async fn a_shipped_package_base_wins_over_a_home_one_whatever_the_ids() {
+    // 施工 F-8 六补（设计 31 定了的 J）：核心升级后出厂的包新带了和装着的包同编号的库，出厂的赢，不照包的编号。
+    let home = Home::new();
+    let resources = home.work.join("resources");
+    copy_tree(&default_resources(), &resources);
+    let shipped = resources.join("packages/z-lore");
+    std::fs::create_dir_all(shipped.join("kb/lore")).expect("建得了");
+    std::fs::write(
+        shipped.join("package.toml"),
+        "[package]\nname = { en = \"Lore\" }\n",
+    )
+    .expect("写得进");
+    std::fs::write(shipped.join("kb/lore/a.md"), "# 出厂的\n").expect("写得进");
+    home.write(
+        "home/alice/packages/a-lore/package.toml",
+        "[package]\nname = { en = \"Mine\" }\n",
+    );
+    home.write("home/alice/packages/a-lore/kb/lore/b.md", "# 装的\n");
+    let mut client = Client::connect(home.core_with_resources(&Script::new([]), resources));
+    client.hello().await;
+    let listed = bases(&mut client).await;
+    assert_eq!(listed.len(), 1, "{listed:?}");
+    assert_eq!(
+        (listed[0]["id"].clone(), listed[0]["package"].clone()),
+        (json!("lore"), json!("z-lore"))
+    );
+}

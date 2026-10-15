@@ -11,7 +11,9 @@ use miyu_config::package::{Manifest, PackageKind};
 use miyu_store::packages::local;
 use miyu_store::packages::{Layer, Packages};
 
-use super::manage::{removable, setting_keys, source};
+use super::manage::{
+    clear_of_conflicts, removable, setting_keys, shipped_clear_of_conflicts, source,
+};
 use super::packages;
 use crate::Core;
 use crate::hello::Peer;
@@ -24,6 +26,7 @@ pub(crate) async fn installing(
     path: &Path,
 ) -> Result<Value, Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
+    clear_of_conflicts(core, &id, manifest.clone(), folder.clone()).await?;
     let (files, content) =
         tokio::task::spawn_blocking(move || (local::scan(&folder), Content::of(&folder)))
             .await
@@ -41,10 +44,11 @@ pub(crate) async fn installing(
 }
 
 /// 把卸掉的出厂的包装回来：编号、版本、带了什么，`restores: true`。没卸过的 `unknown_package`。
-pub(crate) fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
+pub(crate) async fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     if !packages(core).removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
+    shipped_clear_of_conflicts(core, id).await?;
     let shipped = Packages::shipped(&core.resources).read();
     let one = shipped
         .iter()

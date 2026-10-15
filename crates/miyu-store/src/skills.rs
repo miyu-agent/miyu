@@ -4,7 +4,8 @@
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；
 //! - 本机自己放的 `home/<账号>/skills/<名字>/SKILL.md`。
 //!
-//! 同名的自己放的赢；两个包撞了名字，照包的编号先后留前一个；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
+//! 同名的自己放的赢；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
+//! 撞得上的只剩核心升级后出厂的新带了同名的）；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
 //! 跳过，交回给调的一方记（[`Skipped`]）。
 //! 碰磁盘，调的一方放在阻塞线程里。
 
@@ -54,7 +55,8 @@ pub fn find(
     let own = root.account_dir(account).join("skills");
     let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
-    installed.sort_by(|a, b| a.id.cmp(&b.id));
+    // 出厂的先于家目录，同一层照编号（施工 F-8 六补）：核心升级后出厂的新带了同名的，出厂的赢（设计 31 定了的 J）。
+    installed.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
     places.extend(
         installed
             .into_iter()

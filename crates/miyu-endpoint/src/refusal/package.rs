@@ -90,6 +90,23 @@ impl Refusal {
         }
         refusal
     }
+    /// 要装的包和装着的别的包重了名（施工 F-8 六补，`packages.md`「冲突」）：`data.conflicts` 一处一条
+    /// `{"kind", "name", "package"}`，照哪一样、名字、包排。
+    pub(crate) fn package_conflict(
+        conflicts: &[miyu_store::packages::conflicts::Conflict],
+    ) -> Refusal {
+        let list = conflicts
+            .iter()
+            .map(|one| {
+                serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "package": one.package})
+            })
+            .collect();
+        Refusal::with(
+            "package_conflict",
+            "conflicts",
+            serde_json::Value::Array(list),
+        )
+    }
     /// 装的清单写错了、和别的包撞了（施工 F-5 上）：`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`。
     pub(crate) fn package_invalid(problem: String, line: Option<usize>) -> Refusal {
         let mut refusal = Refusal::with(
