@@ -959,6 +959,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-17"><span class="n">X-17</span>扩展用 embedding<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-18"><span class="n">X-18</span>软件之间互相调<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-19"><span class="n">X-19</span>她发一张图<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-22"><span class="n">X-22</span>给别的包带的内容<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹</span></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
@@ -28030,6 +28031,40 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
         <div><dt>提交</dt><dd class="mono">c7903e8c</dd></div>
         <div><dt>验收</dt><dd>端到端、视图测试、7 个手写变异全抓住、三台 CI（run 38828747319）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-22" aria-labelledby="h-sX22">
+  <div class="sheet-head"><h2 id="h-sX22"><span class="no">X-22</span>给别的包带的内容</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">一个包给另一个包带一个目录的东西（表情包合集这类），被带的那个包的扩展读得到、装卸时收到通知。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-22</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单 <code>[content.&lt;包&gt;] dir</code>，只有 bundle、扩展包能写，写错 <code>bad_content</code></li>
+              <li><code>content.list</code> 看谁给它带了，<code>content.read</code> 分块读那个目录里的</li>
+              <li>每重读一次清单，前后有给它带内容的包就推 <code>content.changed</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不要能力</span><span class="rl">东西是别的包写明了给它的</span></div>
+          <div class="tile new"><span class="nm">挂在重读清单上</span><span class="rl">同版本重装也推，不相干的不推</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-22</dd></div>
+        <div><dt>名称</dt><dd>给别的包带的内容</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">5db6498a</dd></div>
+        <div><dt>验收</dt><dd>真核心一个测试（列、读、拒、推）、7 个手写变异抓 6 个、三台 CI（run 38836604075）</dd></div>
       </dl>
     </figcaption>
   </figure>
