@@ -559,6 +559,7 @@
     "config/expected/int": "{min} から {max} までの整数",
     "config/expected/float": "{min} から {max} までの数",
     "config/expected/text": "{max} 文字までのテキスト",
+    "config/expected/lines": "{max} 文字までのテキスト（改行可）",
     "config/expected/english": "{max} 文字までの英語一行",
     "config/expected/duration": "{min} から {max} までの時間（30s、10m、1h のように書く）",
     "config/expected/url": "http:// か https:// で始まるアドレス",

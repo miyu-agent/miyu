@@ -143,7 +143,7 @@ fn shape(kind: Kind) -> Map<String, Json> {
             property.insert("minimum".to_string(), json!(min));
             property.insert("maximum".to_string(), json!(max));
         }
-        Kind::Text { max } | Kind::English { max } => {
+        Kind::Text { max } | Kind::Lines { max } | Kind::English { max } => {
             property.insert("type".to_string(), json!("string"));
             property.insert("minLength".to_string(), json!(1));
             property.insert("maxLength".to_string(), json!(max));

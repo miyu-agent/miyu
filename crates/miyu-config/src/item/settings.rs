@@ -223,6 +223,9 @@ macro_rules! __settings_kind {
     (text [$max:literal]) => {
         $crate::Kind::Text { max: $max }
     };
+    (lines [$max:literal]) => {
+        $crate::Kind::Lines { max: $max }
+    };
     (english [$max:literal]) => {
         $crate::Kind::English { max: $max }
     };
@@ -364,5 +367,8 @@ macro_rules! __settings_control {
     };
     (combo) => {
         $crate::Control::Combo
+    };
+    (textarea) => {
+        $crate::Control::TextArea
     };
 }

@@ -560,6 +560,7 @@
     "config/expected/int": "a whole number from {min} to {max}",
     "config/expected/float": "a number from {min} to {max}",
     "config/expected/text": "text of at most {max} characters",
+    "config/expected/lines": "text of at most {max} characters; line breaks allowed",
     "config/expected/english": "one line of English, at most {max} characters",
     "config/expected/duration": "a length of time from {min} to {max}, written like 30s, 10m or 1h",
     "config/expected/url": "an address starting with http:// or https://",

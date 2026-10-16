@@ -163,7 +163,7 @@ fn schema_item(
             map.insert("min".to_string(), json!(min));
             map.insert("max".to_string(), json!(max));
         }
-        Kind::Text { max } | Kind::English { max } => {
+        Kind::Text { max } | Kind::Lines { max } | Kind::English { max } => {
             map.insert("max".to_string(), json!(max));
         }
         Kind::List(inner) => {

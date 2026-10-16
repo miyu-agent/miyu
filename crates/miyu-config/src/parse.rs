@@ -266,6 +266,7 @@ pub fn read(kind: Kind, value: &TomlValue) -> Option<Value> {
             | Kind::Model
             | Kind::ModelOr(_)
             | Kind::Text { .. }
+            | Kind::Lines { .. }
             | Kind::English { .. }
             | Kind::Duration { .. },
             TomlValue::String(text),

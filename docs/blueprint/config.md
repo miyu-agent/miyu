@@ -152,6 +152,7 @@ trusted = true
 | 整数 `int` | `3` | 必写最小、最大；不在范围里的 `out_of_range` | 8-6（模型的 `window`） |
 | 小数 `float` | `1.5`，整数也收（`1` 读成 `1.0`） | 必写最小、最大，宏里写成整数 `float [0, 1000]`。`nan`、`inf`、不在范围里的 `out_of_range`；写回 TOML 的整数带 `.0` | 8-7（倍率、价格，`models.md`） |
 | 文字 `text` | `"…"` | 必写最多几个字符，宏里写 `text [3]`；空的、超了的、有控制字符的 `bad_format` | 8-7（币种、对目录里的哪一个；`texts [32]` 是文字的列表：思考强度）；8-18（模型默认的思考强度 `text [32]`）；8-15（显示的币种 `usage.currency`，有默认值的文字：宏的默认值那一格多认 `text`） |
+| 几行字 `lines` | `"喜欢猫\n写 Rust"` | 同文字，只是能换行（`\n`），宏里写 `lines [2000]`；空的（只有空白也算空）、超了的、有换行以外的控制字符的 `bad_format`。协议上 `config.schema` 的 `type` 照旧是 `text`，期望说「最多几个字的文字，可以分行」 | P-9 三补（更多描述 `profile.about`，2026-10-16 项目主人验收时提的：多行的描述要能分行） |
 | 时长 `duration` | `"30s"`、`"10m"`、`"1h"` | 写法照 `miyu ask --timeout`（`cli/ask.md`）：正整数后面跟 `s`、`m`、`h`，不写是秒；读不成的 `bad_format`。必写最短、最长（秒），宏里写 `duration [3600, 2592000]`，不在范围里的 `out_of_range`。设置类型的字段是 `Duration` | 8-7（目录多久拉一次） |
 | 路径 `path` | `"~/notes"` | 绝对路径，或者 `~`、`~/` 开头 | 同上 |
 | 网址 `url` | `"https://…"`，或者 `{ env = "DEEPSEEK_API_URL" }`（施工 8-6b，照「密钥」这一行的读法、查法：行内表、有表头的表都认，没有 `{ secret = … }`：地址不进密钥文件） | `http://`、`https://` 开头（不分大小写），后面有主机名，没有空白、控制字符；不对的 `bad_format`；`{ env = … }` 取不到的（没设、设成空的）照第九条报 `env_not_set`，指的东西在不在由用它的一方当场说（8-6b 由会话的路由当场说 `no_model`） | 8-6（供应商的 `base_url`），8-6b 加引用 |
@@ -192,7 +193,7 @@ trusted = true
 - 项目配置写的值，和默认值、系统配置、个人设置合出来的那个比：不比它宽的收下，宽的不算、报 `not_tightening`（第三条）。一样的收下，等于没写。
 - 清单里没写 `Project` 的项，项目配置里写了不算、报 `wrong_layer`。默认不能写。
 
-**控件** `control`：`select` 下拉、`toggle` 开关、`number` 数、`text` 一行字、`list` 列表、`combo` 下拉加「其他」手写（施工 P-9 补：下拉里是字表给的建议值 `suggestions`，最后一项「其他」换成一行字自己写；写进配置的就是那一行字，类型照旧是文字；已经写了、不在建议里的值，下拉停在「其他」、那一行字里是它）、`secret` 密钥（只显示已设置、未设置）、`custom:<名字>` 头自己做的专门编辑器（例如模型池、供应商的接入向导，`14-配置.md` 第九节）。M8 只用 `select`（8-1）、`toggle`（8-2）、`text`、`number`、`list`（8-6），P-9 补加 `combo`。生效时机、控件和类型一样，哪一步第一次用到哪一种，哪一步加。
+**控件** `control`：`select` 下拉、`toggle` 开关、`number` 数、`text` 一行字、`list` 列表、`textarea` 几行的框（施工 P-9 三补：几行字 `lines` 的那一项，Enter 换行）、`combo` 下拉加「其他」手写（施工 P-9 补：下拉里是字表给的建议值 `suggestions`，最后一项「其他」换成一行字自己写；写进配置的就是那一行字，类型照旧是文字；已经写了、不在建议里的值，下拉停在「其他」、那一行字里是它）、`secret` 密钥（只显示已设置、未设置）、`custom:<名字>` 头自己做的专门编辑器（例如模型池、供应商的接入向导，`14-配置.md` 第九节）。M8 只用 `select`（8-1）、`toggle`（8-2）、`text`、`number`、`list`（8-6），P-9 补加 `combo`，P-9 三补加 `textarea`。生效时机、控件和类型一样，哪一步第一次用到哪一种，哪一步加。
 
 **声明的写法**：`miyu-config` 的 `settings!` 宏，一处声明，生成设置类型和清单（G1：结构只在 Rust 类型里定义一次）。用 `macro_rules!`，不写过程宏。
 
@@ -298,7 +299,7 @@ miyu_config::settings! {
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
-- `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）、`profile.preferred_reply_language`（施工 P-9 补，2026-10-16 项目主人定：回复语言，默认用它、对话里明说换就换）：只写在个人设置里，可以不写（不写就没有，没有默认值），最多 64、2000、64 个字，新会话生效。回复语言的控件是 `combo`，建议值在字表里，照这种界面语言的人最常用的排在前面，都写语言自己的名字（简体中文、English、日本語……），十五个；「其他」的那一行字头自己写。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；抽取、合并照这一次的配置读称呼写人（`memory.md` 第六条第 4 款、第七条第 2 款，施工 R-6 再修；声明从端点挪到 `miyu-session/src/settings.rs`，同记忆那几项）；设置页单独一页「用户」（`user`，施工 P-9 再补，2026-10-16 项目主人定：关于人自己的不放在「通用」里）里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。三项的说明不再写「新会话生效」：生效时机头另有一行写（P-9 再补，原来重复了）。
+- `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）、`profile.preferred_reply_language`（施工 P-9 补，2026-10-16 项目主人定：回复语言，默认用它、对话里明说换就换）：只写在个人设置里，可以不写（不写就没有，没有默认值），最多 64、2000、64 个字，新会话生效；更多描述是几行字（`lines`，控件 `textarea`，P-9 三补），能分行，拼进 `<user>` 块时照原样。回复语言的控件是 `combo`，建议值在字表里，照这种界面语言的人最常用的排在前面，都写语言自己的名字（简体中文、English、日本語……），十五个；「其他」的那一行字头自己写。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；抽取、合并照这一次的配置读称呼写人（`memory.md` 第六条第 4 款、第七条第 2 款，施工 R-6 再修；声明从端点挪到 `miyu-session/src/settings.rs`，同记忆那几项）；设置页单独一页「用户」（`user`，施工 P-9 再补，2026-10-16 项目主人定：关于人自己的不放在「通用」里）里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。三项的说明不再写「新会话生效」：生效时机头另有一行写（P-9 再补，原来重复了）。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
@@ -1103,7 +1104,7 @@ default = "full"
 
 [profile]
 # 更多描述：想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。
-# 能写：最多 2000 个字的文字。只能写在个人设置里。新会话生效。
+# 能写：最多 2000 个字的文字，可以分行。只能写在个人设置里。新会话生效。
 # about =
 
 # AI 怎么称呼你：AI 平时怎么叫你，例如名字、昵称。
@@ -1508,7 +1509,7 @@ currency = "USD"
     "profile": {
       "properties": {
         "about": {
-          "description": "想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。能写：最多 2000 个字的文字。只能写在个人设置里。新会话生效。",
+          "description": "想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。能写：最多 2000 个字的文字，可以分行。只能写在个人设置里。新会话生效。",
           "maxLength": 2000,
           "minLength": 1,
           "title": "更多描述",
@@ -2026,6 +2027,7 @@ currency = "USD"
 | `config/temperature-too-high`（8-22，`unusable_temperature`） | `key`、`got`、`max` | {key} 写的 {got} 超过了这个模型的上限 {max}：请求照没写发 | {key} is {got}, above this model's limit of {max}. Requests go out as if it were not set |
 | `config/expected/float`（8-7，带范围） | `min`、`max` | {min} 到 {max} 之间的数 | a number from {min} to {max} |
 | `config/expected/text`（8-7） | `max` | 最多 {max} 个字的文字 | text of at most {max} characters |
+| `config/expected/lines`（P-9 三补） | `max` | 最多 {max} 个字的文字，可以分行 | text of at most {max} characters; line breaks allowed |
 | `config/expected/english`（8-8 补，日文 `{max} 文字までの英語一行`） | `max` | 最多 {max} 个字的一行英文 | one line of English, at most {max} characters |
 | `config/expected/duration`（8-7，范围写成 `1h`、`720h` 这样） | `min`、`max` | {min} 到 {max} 之间的时长，写成 30s、10m、1h 这样 | a length of time from {min} to {max}, written like 30s, 10m or 1h |
 | `config/expected/id`、`model-name`（8-6，键里名字那一段） | | 小写字母开头，只有小写字母、数字、-、_，最长 32 个字符、1 到 128 个字节，没有控制字符 | start with a lowercase letter and use only lowercase letters, digits, - and _, up to 32 characters、1 to 128 bytes without control characters |

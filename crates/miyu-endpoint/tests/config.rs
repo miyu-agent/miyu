@@ -154,6 +154,10 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     let level = &all["result"]["items"][5];
     assert_eq!(level["control"], "select", "{level}");
     assert_eq!(level["default"], "workspace", "{level}");
+    assert_eq!(
+        all["result"]["items"][7]["control"], "textarea",
+        "更多描述是几行的框（施工 P-9 三补）"
+    );
     let language = &all["result"]["items"][8];
     assert_eq!(language["control"], "combo", "下拉加手写（施工 P-9 补）");
     assert_eq!(language["type"], "text");

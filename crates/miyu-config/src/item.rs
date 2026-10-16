@@ -149,10 +149,12 @@ pub enum Control {
     /// 下拉加「其他」手写（施工 P-9 补：回复语言）：下拉里是字表给的几个建议值（`suggestions`），选「其他」写一行字；写进
     /// 配置的就是那一行字，类型照旧是文字。
     Combo,
+    /// 几行的框（施工 P-9 三补）：能换行的文字（[`crate::Kind::Lines`]），Enter 换行。
+    TextArea,
 }
 
 impl Control {
-    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`、`combo`。
+    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`、`combo`、`textarea`。
     pub fn as_str(self) -> &'static str {
         match self {
             Control::Select => "select",
@@ -161,6 +163,7 @@ impl Control {
             Control::Number => "number",
             Control::List => "list",
             Control::Combo => "combo",
+            Control::TextArea => "textarea",
         }
     }
 }

@@ -256,3 +256,34 @@ fn a_kind_that_cannot_hold_anything_is_reported() {
         assert_eq!(crate::list::check(&[broken(kind)]).len(), 1, "{kind:?}");
     }
 }
+
+#[test]
+fn lines_take_line_breaks_and_text_does_not() {
+    let lines = Kind::Lines { max: 10 };
+    assert_eq!(
+        lines.check(&text("喜欢猫\n写 Rust")),
+        Ok(()),
+        "能换行（施工 P-9 三补）"
+    );
+    assert_eq!(
+        lines.check(&text("a\u{7}b")),
+        Err(Code::BadFormat),
+        "别的控制字符照旧不收"
+    );
+    assert_eq!(
+        lines.check(&text("\n \n")),
+        Err(Code::BadFormat),
+        "只有空白的不算"
+    );
+    assert_eq!(
+        lines.check(&text("一二三四五六七八九十一")),
+        Err(Code::BadFormat),
+        "超过上限"
+    );
+    assert_eq!(lines.as_str(), "text", "协议上照旧是文字");
+    assert_eq!(
+        Kind::Text { max: 8 }.check(&text("a\nb")),
+        Err(Code::BadFormat),
+        "一行的文字照旧不收换行"
+    );
+}

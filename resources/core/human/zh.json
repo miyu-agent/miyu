@@ -559,6 +559,7 @@
     "config/expected/int": "{min} 到 {max} 之间的整数",
     "config/expected/float": "{min} 到 {max} 之间的数",
     "config/expected/text": "最多 {max} 个字的文字",
+    "config/expected/lines": "最多 {max} 个字的文字，可以分行",
     "config/expected/english": "最多 {max} 个字的一行英文",
     "config/expected/duration": "{min} 到 {max} 之间的时长，写成 30s、10m、1h 这样",
     "config/expected/url": "http:// 或 https:// 开头的网址",

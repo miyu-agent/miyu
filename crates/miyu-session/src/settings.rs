@@ -80,10 +80,10 @@ miyu_config::settings! {
         },
         /// 更多描述：可以空。
         about: Option<String> = none {
-            kind: text [2000],
+            kind: lines [2000],
             layers: [Personal],
             applies: new_session,
-            ui: { page: "user", group: "profile", control: text },
+            ui: { page: "user", group: "profile", control: textarea },
         },
         /// 希望她默认用哪种语言回（施工 P-9 补，2026-10-16 项目主人定）：可以空；设置页是下拉加「其他」手写，下拉里的建议值
         /// 在字表里（`suggestions`）。

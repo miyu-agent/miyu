@@ -270,7 +270,7 @@
     "profile": {
       "properties": {
         "about": {
-          "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed: text of at most 2000 characters. Only in personal settings. Applies to new sessions.",
+          "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed: text of at most 2000 characters; line breaks allowed. Only in personal settings. Applies to new sessions.",
           "maxLength": 2000,
           "minLength": 1,
           "title": "More about you",

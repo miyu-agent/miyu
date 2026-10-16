@@ -31,6 +31,7 @@ mod command_catalog;
 mod commands;
 mod compact;
 mod config;
+mod config_lines;
 mod config_set;
 mod config_trust;
 mod config_watch;

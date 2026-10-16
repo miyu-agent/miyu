@@ -52,6 +52,12 @@ pub enum Kind {
         /// 最多几个字符。
         max: usize,
     },
+    /// 几行字（施工 P-9 三补：更多描述）：同 [`Kind::Text`]，只是能换行（`\n`），别的控制字符照旧不收。写成字；`config.schema`
+    /// 的 `type` 照旧是 `text`，设置页照 `control` 画成几行的框。
+    Lines {
+        /// 最多几个字符（换行也算一个）。
+        max: usize,
+    },
     /// 给模型看的字：一行英文，最多 `max` 个字符，不是空的，没有控制字符，CJK 的字不到一半（施工 8-8 补：池的说明）。写成字。
     English {
         /// 最多几个字符。
@@ -115,6 +121,11 @@ impl Kind {
                     && text.chars().count() <= *max
                     && !text.chars().any(char::is_control),
             ),
+            (Kind::Lines { max }, Value::Text(text)) => ok_or_format(
+                !text.trim().is_empty()
+                    && text.chars().count() <= *max
+                    && !text.chars().any(|c| c.is_control() && c != '\n'),
+            ),
             (Kind::English { max }, Value::Text(text)) => {
                 ok_or_format(english::english(text, *max))
             }
@@ -142,7 +153,7 @@ impl Kind {
             Kind::List(_) => "list",
             Kind::ModelOr(_) => "model_or",
             Kind::Float { .. } => "float",
-            Kind::Text { .. } => "text",
+            Kind::Text { .. } | Kind::Lines { .. } => "text",
             Kind::English { .. } => "english",
             Kind::Duration { .. } => "duration",
         }

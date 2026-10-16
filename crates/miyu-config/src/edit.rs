@@ -95,6 +95,7 @@ pub fn input(kind: Kind, text: &str) -> Option<Value> {
         | Kind::Model
         | Kind::ModelOr(_)
         | Kind::Text { .. }
+        | Kind::Lines { .. }
         | Kind::English { .. }
         | Kind::Duration { .. } => Some(Value::Text(Cow::Owned(unquoted(text)))),
         Kind::Url => Reference::from_input(text)
@@ -121,6 +122,7 @@ pub fn from_json(kind: Kind, value: &serde_json::Value) -> Option<Value> {
             | Kind::Model
             | Kind::ModelOr(_)
             | Kind::Text { .. }
+            | Kind::Lines { .. }
             | Kind::English { .. }
             | Kind::Duration { .. },
             serde_json::Value::String(text),
