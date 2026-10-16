@@ -151,10 +151,11 @@ fn changes_in_a_row_are_handed_over_once_after_a_quiet_spell() {
         EventKind::Modify(ModifyKind::Any),
         EventKind::Modify(ModifyKind::Name(RenameMode::To)),
     ];
+    // 时刻在送之前记：`run` 从收到那一刻起算静默，送完以后这个线程可能被挂起一阵，记晚了会冤枉它。
     let mut last = Instant::now();
     for kind in kinds {
-        send.send(Ok(event(kind, &file))).unwrap();
         last = Instant::now();
+        send.send(Ok(event(kind, &file))).unwrap();
         std::thread::sleep(Duration::from_millis(50));
     }
     // 送事件的那一头丢掉以前等它交出来：丢掉了线程就退了。
@@ -163,8 +164,8 @@ fn changes_in_a_row_are_handed_over_once_after_a_quiet_spell() {
         std::thread::sleep(Duration::from_millis(20));
     }
     // 再来一下：隔得远的另算一次。
-    send.send(Ok(event(kinds[1], &file))).unwrap();
     let again = Instant::now();
+    send.send(Ok(event(kinds[1], &file))).unwrap();
     let deadline = Instant::now() + WAIT;
     while seen.lock().unwrap().len() < 2 && Instant::now() < deadline {
         std::thread::sleep(Duration::from_millis(20));
