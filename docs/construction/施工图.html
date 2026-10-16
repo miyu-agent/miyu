@@ -956,6 +956,9 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-16"><span class="n">X-16</span>扩展回合开始加提醒<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-20"><span class="n">X-20</span>扩展往系统提示词尾部放一段<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-16p"><span class="n">X-16 补</span>插到用户消息尾部<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-17"><span class="n">X-17</span>扩展用 embedding<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-18"><span class="n">X-18</span>软件之间互相调<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-19"><span class="n">X-19</span>她发一张图<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹</span></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
@@ -27924,6 +27927,109 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
         <div><dt>提交</dt><dd class="mono">62781190</dd></div>
         <div><dt>验收</dt><dd>端到端四个测试扩展、9 个手写变异全抓住、三台 CI（run 38777883083）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-17" aria-labelledby="h-sX17">
+  <div class="sheet-head"><h2 id="h-sX17"><span class="no">X-17</span>扩展用 embedding</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">扩展经 <code>model.embed</code> 照这个账号的 embedding 算一批字的向量，表情包按意思搜。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-17</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>model.embed {texts}</code> → <code>{model, vectors}</code>，向量归一化过</li>
+              <li>照 <code>models.embedding</code> 挑本机或远程，一条一条算</li>
+              <li>关着的 <code>embedding_off</code>，算不出的 <code>embedding_failed</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不另设能力</span><span class="rl">同 <code>model.call</code></span></div>
+          <div class="tile new"><span class="nm">核心不存向量</span><span class="rl">包照模型编号判断要不要重算</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-17</dd></div>
+        <div><dt>名称</dt><dd>扩展用 embedding</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">5993dd85</dd></div>
+        <div><dt>验收</dt><dd>端到端四种情况、6 个手写变异全抓住、三台 CI（run 38825586542）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-18" aria-labelledby="h-sX18">
+  <div class="sheet-head"><h2 id="h-sX18"><span class="no">X-18</span>软件之间互相调</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">被调的包在清单 <code>[export]</code> 里列方法，声明了 <code>packages.call</code> 的扩展才调得到。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-18</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单 <code>[export] methods</code>，写错 <code>bad_export</code></li>
+              <li>新能力 <code>packages.call</code>，能力表十五个</li>
+              <li>转过去的 <code>method.call</code> 带 <code>from</code>，核心填</li>
+              <li>没导出的 <code>not_exported</code>，没声明的 <code>needs_approval</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm"><code>[export]</code> 不是能力</span><span class="rl">要批的是调的一方</span></div>
+          <div class="tile new"><span class="nm">人照旧调得到全部</span><span class="rl">不带 <code>from</code></span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-18</dd></div>
+        <div><dt>名称</dt><dd>软件之间互相调</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">5f2a2209</dd></div>
+        <div><dt>验收</dt><dd>三个测试扩展的端到端、6 个手写变异全抓住、三台 CI（run 38828747319）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+<section class="sheet" id="sX-19" aria-labelledby="h-sX19">
+  <div class="sheet-head"><h2 id="h-sX19"><span class="no">X-19</span>她发一张图</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">扩展的工具回答带 <code>sent</code>，记进 <code>tool.result.sent</code>，不给模型看，头画在正文里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">X-19</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>工具回答 <code>sent</code> 至多 4 张，<code>path</code> 不收</li>
+              <li><code>tool.result.sent</code>：图片块加 <code>alt</code>、<code>sticker</code></li>
+              <li>视图新条目 <code>media</code>，编号 <code>s&lt;序号&gt;.&lt;n&gt;</code>，收起前面那段时间线</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">记在工具结果里</span><span class="rl">不另记一条她说的话</span></div>
+          <div class="tile new"><span class="nm">两个头看过形状</span><span class="rl">网页要宽高，终端照 blob 取</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-19</dd></div>
+        <div><dt>名称</dt><dd>她发一张图</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">c7903e8c</dd></div>
+        <div><dt>验收</dt><dd>端到端、视图测试、7 个手写变异全抓住、三台 CI（run 38828747319）</dd></div>
       </dl>
     </figcaption>
   </figure>
