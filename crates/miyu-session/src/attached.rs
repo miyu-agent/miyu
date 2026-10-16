@@ -113,15 +113,17 @@ pub(crate) async fn kept_for(
     .await
 }
 
-/// 图片、文件块，没有路径的，或者路径落在数据根 `inside`（真实的位置）里的。
+/// 图片、文件块，没有路径的，或者路径落在数据根 `inside`（真实的位置）里的。路径也照真实的位置比：Windows 上真实的位置带
+/// `\\?\`，工具交来的路径去掉了它，两种写法的盘符前缀比不上（施工 3-9 六补，三平台 CI 查出来的）；找不到的当本机别处的。
 fn foreign(block: &Block, inside: &Path) -> bool {
     let path = match block {
         Block::Image(image) => &image.path,
         Block::File(file) => &file.path,
         _ => return false,
     };
-    path.as_ref()
-        .is_none_or(|path| miyu_fs::within(Path::new(path.as_str()), inside))
+    path.as_ref().is_none_or(|path| {
+        std::fs::canonicalize(path.as_str()).is_ok_and(|real| miyu_fs::within(&real, inside))
+    })
 }
 
 /// 把 blob 存成附件目录 `dir` 里的文件，交回路径。

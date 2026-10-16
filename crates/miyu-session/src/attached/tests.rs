@@ -202,3 +202,32 @@ async fn attachments_from_another_session_land_in_the_receiving_one() {
     );
     assert_eq!(std::fs::read(mine.join("贴的.png")).unwrap(), b"png2");
 }
+
+/// 数据根里的文件换一种写法交来（这里经符号链接，Windows 上是去掉了 `\\?\` 的那种）也认得出：照真实的位置比。
+#[cfg(unix)]
+#[test]
+fn a_path_into_the_data_root_by_another_spelling_is_still_inside() {
+    let scratch = Scratch::new("spelling");
+    let real = scratch.0.join("root");
+    std::fs::create_dir_all(real.join("attachments")).unwrap();
+    std::fs::write(real.join("attachments").join("notes.txt"), b"x").unwrap();
+    let alias = scratch.0.join("alias");
+    std::os::unix::fs::symlink(&real, &alias).unwrap();
+    let inside = std::fs::canonicalize(&real).unwrap();
+    let block = |path: &std::path::Path| {
+        Block::File(File {
+            blob: miyu_kernel::id::ContentHash::of(b"x"),
+            name: FileName::parse("notes.txt").unwrap(),
+            media_type: MediaType::parse("text/plain").unwrap(),
+            path: Some(SourcePath::parse(&path.to_string_lossy()).unwrap()),
+        })
+    };
+    assert!(foreign(
+        &block(&alias.join("attachments").join("notes.txt")),
+        &inside
+    ));
+    assert!(
+        !foreign(&block(&scratch.0.join("elsewhere.txt")), &inside),
+        "找不到的当本机别处的"
+    );
+}
