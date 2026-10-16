@@ -276,7 +276,7 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>522</b><span>/ 530 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>535</b><span>/ 547 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
     <li><b class="mono">0800f934</b><span>最近一步（R-3 五补 清掉这个会话的记忆（五补））的提交</span></li>
   </ul>
@@ -405,6 +405,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s3-9e"><span class="n">3-9</span>附件（三补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s3-9f"><span class="n">3-9</span>图片附件带名字（四补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s3-9g"><span class="n">3-9</span>看不了的附件带上路径（五补）<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s3-9h"><span class="n">3-9</span>附件落成会话里的文件（六补）<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -855,6 +856,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s8-32"><span class="n">8-32</span>新会话的权限级别<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sP-9"><span class="n">P-9</span>AI 怎么认识你<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sP-9b"><span class="n">P-9 补</span>回复语言<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sP-9c"><span class="n">P-9 再补</span>「关于你」单独一页<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sP-9d"><span class="n">P-9 三补</span>更多描述能分行<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s8-11f"><span class="n">8-11 六补</span>自定义的一家问编号<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s8-11h"><span class="n">8-11 七补</span>编号改叫 ID<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-12p"><span class="n">X-12 补</span>家目录的脚本跟着变<span class="st">✓</span></a></li>
@@ -865,6 +868,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s9-8k"><span class="n">9-8 七补</span>human.get 带上工具显示名<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sW-7d"><span class="n">W-7 三补</span>B 站占位页过会儿再试<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-1"><span class="n">S-1</span>给界面用的门面 miyu-client<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sS-1b"><span class="n">S-1 补</span>门面转出进程的堆<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-5"><span class="n">S-5</span>核心仓库删掉两个界面<span class="st">✓</span></a></li>
       </ol>
       <p class="later">框架搭好了（2026-10-09）：接着整理现有功能和代码（T 线），再做性能检查（设计 30 第十二节）。</p>
@@ -5841,6 +5845,62 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/3-9-看不了的附件带上路径（五补）.md</code>；蓝图 <code>protocol.md</code>、<code>kernel/blocks.md</code>、<code>kernel/ids.md</code>、<code>drivers/openai-chat.md</code>、<code>policy.md</code>、<code>kernel/session.md</code>「还没有的」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s3-9h" aria-labelledby="h-s39h">
+  <div class="sheet-head"><h2 id="h-s39h"><span class="no">3-9 六补</span>附件落成会话里的文件</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">剪贴板贴的图、截图、传内容的附件没有路径：她只看得到图，要转给子代理、交给命令行工具都得自己再找。核心把它们存成会话目录里的文件，路径记进块里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">附件落成会话里的文件</span><span class="dir-note">3-9 六补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>session.send</code>、<code>session.redo</code> 收到没有 <code>path</code> 的附件，拷成 <code>sessions/&lt;会话&gt;/attachments/&lt;名字&gt;</code>，块里记这个路径</li>
+              <li>名字去掉路径分隔符、控制字符和 Windows 不认的字，撞名接 <code> (2)</code>，没扩展名的照媒体类型补</li>
+              <li>跨会话收进来的、子代理收到的，在自己的目录里也落一份</li>
+              <li>这个会话的 <code>attachments/</code> 单独放开只读；沙盒里的命令也看得到（还没建的不放）</li>
+              <li>看得了时图片、文本文件前面那一句带路径（<code>image-open-path.txt</code> 58、<code>file-open-path.txt</code> 18 token，登记了），旧快照照旧</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">2026-10-16 项目主人定</span><span class="rl">放会话目录，删会话一起删；不放工作目录、不放系统缓存</span></div>
+          <div class="tile new"><span class="nm">头交了路径的不拷</span><span class="rl">她读原文件，照权限判</span></div>
+          <div class="tile new"><span class="nm">拷，不硬链接</span><span class="rl">blob 按内容存、不许改</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">3-9 六补</dd></div>
+        <div><dt>名称</dt><dd>附件落成会话里的文件</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">9f0e412f、修 47cc36bc</dd></div>
+        <div><dt>验收</dt><dd>变异 10 处抓住 9 处（漏的那处等价）、八项、三台 CI（run 38886333831 Windows 红，修了以后 run 38889721196 全过）、真模型实测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>贴的图落成文件、撞名接序号、补扩展名；头交了路径的不拷</span></li>
+        <li><span class="ok">✓</span><span>这个会话的附件读得了、写不了，别的会话的读不了；沙盒里看得到</span></li>
+        <li><span class="ok">✓</span><span>能看图时图片、文本文件前面带路径，旧快照照旧</span></li>
+        <li><span class="ok">✓</span><span>她自己的附件带给别的会话，落进收的那一边；数据根里的路径换一种写法交来也认得出（Windows 的 <code>\\?\</code>）</span></li>
+        <li><span class="ok">✓</span><span>真模型：贴一张图问存在哪，她答出附件目录里的路径、用 read 读到；派子代理交给它，子代理在自己的目录里读到</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/3-9-附件落成文件（六补）.md</code>；蓝图 <code>protocol.md</code>、<code>store.md</code>、<code>fs.md</code>、<code>sandbox.md</code>、<code>drivers/openai-chat.md</code>、<code>kernel/blocks.md</code>、<code>prompts.md</code>。</li>
       </ul>
     </div>
   </div>
@@ -25065,6 +25125,74 @@ a.step:hover{border-color:var(--primary)}
   </figure>
 </section>
 
+<section class="sheet" id="sP-9c" aria-labelledby="h-sP9c">
+  <div class="sheet-head"><h2 id="h-sP9c"><span class="no">P-9 再补</span>「关于你」单独一页</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人验收回复语言时提的：「关于你」不该放在「通用」里，单独开一页「用户」。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">「关于你」单独一页</span><span class="dir-note">P-9 再补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>设置页多一页 <code>user</code>（用户、User、ユーザー），排在「通用」后面</li>
+              <li>称呼、更多描述、回复语言三项挪过去，组照旧是「关于你」</li>
+              <li>三项的说明去掉「新会话生效」：头另有一行写生效时机</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">2026-10-16 项目主人定</span><span class="rl">单独一页「用户」；以后账号自己的设置也放这里</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">P-9 再补</dd></div>
+        <div><dt>名称</dt><dd>「关于你」单独一页</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">3fd8a25e</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 38879826424），项目主人验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="sheet" id="sP-9d" aria-labelledby="h-sP9d">
+  <div class="sheet-head"><h2 id="h-sP9d"><span class="no">P-9 三补</span>更多描述能分行</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">「更多描述」只是一行的小框；网页改成几行的框以后，带换行的值被核心拒了，引导那一步写两行也存不进去。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">更多描述能分行</span><span class="dir-note">P-9 三补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>新的值类型 <code>lines</code>：同文字，只是能换行，别的控制字符照旧不收；协议上 <code>type</code> 照旧是 <code>text</code></li>
+              <li>新控件 <code>textarea</code>：几行的框，头照它画、不再照长度猜</li>
+              <li><code>profile.about</code> 换成 <code>lines [2000]</code>；称呼、回复语言照旧一行</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">换行照原样进 &lt;user&gt;</span><span class="rl">P-9 起就照原样，给她看的字不变</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">P-9 三补</dd></div>
+        <div><dt>名称</dt><dd>更多描述能分行</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">ee4258bb</dd></div>
+        <div><dt>验收</dt><dd>八项、三台 CI（run 38883544366）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+
 <section class="sheet" id="s8-11f" aria-labelledby="h-s811f">
   <div class="sheet-head"><h2 id="h-s811f"><span class="no">8-11 六补</span>自定义的一家问编号</h2><span class="pill done">已完成</span></div>
   <p class="purpose">C-7 的备注：局域网的一律叫 local，没地方改；试通了问一句，直接回车用起好的。</p>
@@ -25558,6 +25686,41 @@ a.step:hover{border-color:var(--primary)}
       </ul>
     </div>
   </div>
+</section>
+
+<section class="sheet" id="sS-1b" aria-labelledby="h-sS1b">
+  <div class="sheet-head"><h2 id="h-sS1b"><span class="no">S-1 补</span>门面转出进程的堆</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">终端画 23 张图，进程从 16 MiB 涨到 53 MiB；设了 glibc 的大块门槛只有 23 MiB。终端不许写 unsafe、只经门面拿核心的东西，要门面转出核心调堆的那一份。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">门面转出进程的堆</span><span class="dir-note">S-1 补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>门面多一组 <code>heap</code>：<code>tune</code>、<code>trim</code>、<code>stats</code>、<code>Stats</code>、<code>usage</code>、<code>resident</code>、<code>Usage</code></li>
+              <li>代码不搬，和核心用的同一份 <code>miyu-heap</code></li>
+              <li>门面的测试把这几样用一遍钉住</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">什么时候调归终端</span><span class="rl">起来时、还没起别的线程时调一次 tune，同核心</span></div>
+          <div class="tile new"><span class="nm">图的缓存另说</span><span class="rl">画着 23 张图不算空闲，不进空闲预算</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">S-1 补</dd></div>
+        <div><dt>名称</dt><dd>门面转出进程的堆</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">89f031e3</dd></div>
+        <div><dt>验收</dt><dd>八项；终端调了以后复量</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
 </section>
 
 <section class="sheet" id="sS-5" aria-labelledby="h-sS5">
