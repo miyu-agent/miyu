@@ -968,7 +968,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-25"><span class="n">X-25</span>场所显示不了图片<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-6a"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-6b"><span class="n">S-6 中</span>开 miyu-agent/miyu-onebot<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">S-6 下</span>核心仓库删掉接入QQ</span></li>
+        <li><a class="step done" href="#sS-6c"><span class="n">S-6 下</span>核心仓库删掉接入QQ<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
       </ol>
@@ -25793,6 +25793,42 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-17</dd></div>
         <div><dt>提交</dt><dd class="mono">新仓库 f54e4fb；核心补 9b7c3268</dd></div>
         <div><dt>验收</dt><dd>三台 CI、试打三平台包、本机试装、回放逐字节一样</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="sheet" id="sS-6c" aria-labelledby="h-sS6c">
+  <div class="sheet-head"><h2 id="h-sS6c"><span class="no">S-6 下</span>核心仓库删掉接入QQ</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">接入QQ 只在自己的仓库里：核心仓库删掉桥、群聊内核和包文件夹，发布包不带它，借它当例子的测试换成夹具。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心仓库删掉接入QQ</span><span class="dir-note">S-6 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>删 <code>crates/miyu-onebot</code>、<code>crates/miyu-chat</code>、<code>resources/packages/onebot/</code></li>
+              <li>借出厂桥的测试改成测试自己放的包（出厂那一层的夹具扩展 <code>courier</code>）</li>
+              <li>登记簿去掉接入QQ 那几段和门禁的四份豁免，提示词图纸、配置样本重生成</li>
+              <li><code>onebot.md</code>、<code>chat.md</code> 换成指路，层序表去掉两个 crate</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">出厂扩展的夹具拷资源目录</span><span class="rl">照知识库包测试的先例，出厂那一层多放一份清单</span></div>
+          <div class="tile new"><span class="nm">引用写「接入QQ 仓库的」</span><span class="rl">图纸里指向两页的地方照旧写文件名</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">S-6 下</dd></div>
+        <div><dt>名称</dt><dd>核心仓库删掉接入QQ</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">step/S-6c（合进 main 时补）</dd></div>
+        <div><dt>验收</dt><dd>八项门禁、Linux 发布包里没有桥、三台 CI</dd></div>
       </dl>
     </figcaption>
   </figure>

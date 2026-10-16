@@ -16,8 +16,7 @@ fn relay(program: &str, extra: &str, tables: &str) -> String {
     )
 }
 
-/// 一个程序一定不在的扩展：带一个功能、一项配置。演「程序不在」的样子：不借出厂的接入QQ，桥的测试会往测试程序旁边链
-/// `miyu-onebot`，借它的话先跑过桥的测试就红。
+/// 一个程序一定不在的扩展：带一个功能、一项配置。演「程序不在」的样子（出厂的包里没有扩展，接入QQ 施工 S-6 下搬出了核心仓库）。
 fn ghost(home: &Home) {
     home.write(
         "home/alice/packages/ghost/package.toml",

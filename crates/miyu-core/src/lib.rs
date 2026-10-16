@@ -173,7 +173,7 @@ pub fn main(options: Options) -> ExitCode {
 /// 这一份核心编进来的内置包（施工 F-2，设计 `30-插件框架.md` 第二节）：清单是内置包、编号不在这里的，照读坏了的清单报
 /// （`miyu_endpoint::packages::compiled`）。画 mermaid、联网照 cargo 开关。
 pub fn built_in() -> Vec<&'static str> {
-    // 照开关挑，不用 `#[cfg]` 掉 `push`：两个开关都关着时 `mut` 就成了多余的（单独编 `miyu-onebot` 时 clippy 报）。
+    // 照开关挑，不用 `#[cfg]` 掉 `push`：两个开关都关着时 `mut` 就成了多余的，clippy 报（不带默认开关单独编它时就是这样）。
     [
         Some(miyu_tool::BASESYSTEM),
         Some(miyu_memory::PACKAGE),

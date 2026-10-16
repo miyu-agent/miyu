@@ -25,7 +25,7 @@
 | `crates/miyu-store/src/human.rs` | 给人看的字并进包的配置项的名字、说明和组名（`Human::with_packages`，施工 9-1 下） |
 | `crates/miyu-endpoint/src/check.rs` | `miyu check` 照磁盘查清单 |
 | `heads.toml` | 两个界面（终端 `tui`、网页 `web`）的清单不在核心仓库里，在各自的仓库（`miyu-agent/miyu-tui`、`miyu-agent/miyu-web`）里和编号同名的文件夹 `tui/`、`web/` 下（2026-10-13 起，以前叫 `package/`）；核心仓库只记发版时取哪一份（施工 S-5，设计 `32-仓库拆分.md` 第六节）。发版时清单放进资源目录的 `packages/tui/`、`packages/web/`，程序放在 `miyu` 旁边；核心仓库自己编出来的没带它们 |
-| `resources/packages/onebot/package.toml` | 出厂的接入QQ 的清单（施工 O-18；`[settings]` 四项随 O-20，原来核心替它声明，`onebot.md` 第一条「软件包清单」；施工 F-2 改名、多平台接入和功能 `qq`） |
+| `resources/packages/onebot/`（搬走了） | 接入QQ 的清单原来在这里（施工 O-18 起）；施工 S-6 下随桥搬进 `miyu-agent/miyu-onebot` 仓库，单独发、自己装，核心的发布包不带它，也不进 `heads.toml`（设计 `32-仓库拆分.md` 第九节） |
 | `resources/packages/{basesystem,memory,knowledge,roleplay,mermaid,net}/package.toml` | 出厂的内置包的清单（施工 F-2）：基础系统必需、九个功能；人格记忆、知识库（施工 K-1 下）、人设遵循提醒各算一个功能；画 mermaid、联网不带功能；人格记忆推荐小程序 `embed`（施工 R-5 三补） |
 | `crates/miyu-embed/package/embed/package.toml`、`model.toml` | 「内置语义模型」这个小程序包的原本（施工 R-5 三补，`recall.md` 第四条）：出厂不装，不在资源目录里；模型文件不进仓库，做包时从 Release 取 |
 | `crates/miyu-core/src/lib.rs`、`packages.rs` | 编进来的内置包那张表（`built_in`）；起来时照清单登记工具（`tools`）、查询（`packages::register`）（施工 F-2） |
@@ -310,7 +310,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-endpoint/tests/package_settings.rs` | 包的配置项进 `config.schema`（「软件包」那一页、这个包那一组、名字说明照语言、隐藏的带标记）；最终值；写错的、写错层的 `check` 报；撞了核心的模块整份不收（施工 9-1 下）；列表进 Schema、读得到、写错 `check` 报（施工 9-1 补） |
 | `crates/miyu-cli/src/packages/tests.rs`（施工 9-2） | 只有包的子命令转交（内置的、选项、`help`、不认识的不转）；没装的程序说哪份清单；帮助页多的那一节、接在「命令」后面、照语言；跑包的程序时环境多 `MIYU_PACKAGE_DIR`（施工 S-6 上） |
 | `crates/miyu/tests/packages.rs` 的 `a_package_command_is_told_its_package_folder`（施工 S-6 上，只在 Unix 上） | 真二进制转交：包带的程序（指向 `printenv` 的链接）看到的 `MIYU_PACKAGE_DIR` 是家目录里这个包的文件夹 |
-| `crates/miyu/tests/packages.rs`（施工 9-2） | 真二进制：参数原样交过去、退出码照它的、`help <名字>` 转成 `--help`、不拉起核心；帮助页列出包的子命令、撞了内置的不列、内置的照旧；没装的程序退出码 1；不认识的照旧退出码 2 |
+| `crates/miyu/tests/packages.rs`（施工 9-2） | 真二进制：参数原样交过去、退出码照它的、`help <名字>` 转成 `--help`、不拉起核心；帮助页列出包的子命令、撞了内置的不列、内置的照旧，只有出厂的包（都不带命令）不写这一节；没装的程序退出码 1；不认识的照旧退出码 2 |
 | `crates/miyu-endpoint/src/check/run/tests.rs`、`tests/package_check.rs`（施工 9-2） | 一行输出收哪几格、哪些不收；0、1 以外的退出码、信号、到时、跑不起来；真的跑 `sh`、到时杀掉；真核心：包报的接在后面，看不懂的行、跑坏了的、程序没找到的各一条警告 |
 | `crates/miyu-cli/src/head/tests.rs`、`crates/miyu/tests/heads.rs`（施工 9-3） | 照清单定怎么开（不带参数、带 `--page config`、不认这一页、没装、不是界面、有清单程序不在）、没装的列出装了的（只算程序在旁边的，9-3 补）；真二进制在伪终端里：`miyu`、`miyu config` 拉起清单里的界面、退出码照它的，不认设置页的印帮助，`ui.head` 指着没装的退出码 1；出厂的终端只有清单的说程序不在旁边（9-3 补） |
 | `crates/miyu-core/tests/embed_package.rs`、`src/embed/tests.rs`（施工 R-5 三补） | 仓库里的内置语义模型的清单读得成小程序包；出厂的人格记忆推荐它、不依赖它，出厂的资源里没有它；照装了的包拼本机 embedding（`recall.md` 第四条第 1 款） |
@@ -321,7 +321,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-endpoint/tests/packages_live.rs`（施工 F-5 中） | 真核心卸掉一个内置包：查询当没有、用过它的会话工具面不变、调到报「已卸载」、新开的会话没有；装回来工具、查询都回来 |
 | `crates/miyu-endpoint/tests/packages_preview.rs`（施工 F-8 下补） | 看一眼：装的说带了什么、要什么能力、几个文件多大，升级的说换下哪个版本，写错的、撞了出厂的照真装一样拒；卸的说哪一层、写了的设置键、有没有状态目录，必需的拒；装回出厂的；都什么都不动 |
 | `crates/miyu-endpoint/tests/packages_push.rs`（施工 F-8 三补） | 订阅的回应是整份列表；别的连接装上、卸掉家目录里的、卸掉和装回出厂的，各推变了的那一项，照这个连接的语言，卸没了的是 `null`；取消了不推；没握手、带 `after` 的拒 |
-| `crates/miyu-endpoint/tests/packages_purge.rs`（施工 F-8 中下补） | 真核心卸掉家目录里装的、出厂的包：系统配置、个人设置里它的项删了、空了的表头也删了，别的项和注释不动；状态目录删了 |
+| `crates/miyu-endpoint/tests/packages_purge.rs`（施工 F-8 中下补） | 真核心卸掉家目录里装的、出厂的包（出厂的照测试自己放的出厂扩展 `courier`，施工 S-6 下）：系统配置、个人设置里它的项删了、空了的表头也删了，别的项和注释不动；状态目录删了 |
 | `crates/miyu-endpoint/tests/packages_install.rs`（施工 F-5 上） | 装一份清单、同名目录一起拷、列表和预设的功能当场有；升级换掉、升级撞了放回原来的、不留暂存；写错的、和出厂撞了的、和别的包撞了的不装；卸家目录的删掉；卸出厂的记一笔、列表里标卸掉、装得回来；必需的、没装的不能卸 |
 | `crates/miyu-store/src/packages/tests.rs` 的 `a_program_is_found_in_the_package_bin_then_beside_main`、`crates/miyu-cli/src/head/tests.rs` 的 `a_head_runs_the_program_its_package_brings`、`crates/miyu/tests/packages.rs` 的 `a_package_command_runs_the_program_in_its_bin`、`crates/miyu-endpoint/tests/packages_programs.rs`（施工 F-8 上再补） | 程序先找包文件夹的 `bin/`、再找主程序旁边的，相对的包文件夹不找 `bin/`；界面、转交的子命令照包里带的跑；真核心装上一个自己带程序的扩展：拉起、列表里在跑、预设里它的功能算装了、装上的文件里有它的程序；程序还被开着写的（Linux）等放开再拉起 |
 | `crates/miyu-config/src/package/mcp/tests.rs`、`crates/miyu-policy/src/features/tests.rs` 的 `an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own`、`crates/miyu-store/src/packages/tests.rs` 的 `an_mcp_server_name_is_taken_by_whoever_is_read_first`、`crates/miyu-endpoint/tests/packages.rs` 的 `a_bundle_lists_its_mcp_servers_as_features`、`packages_preview.rs` 的 `a_bundle_preview_names_its_mcp_servers`、`crates/miyu-cli/src/pkg/confirm/tests.rs`（施工 X-2） | `[[mcp]]` 每一格、没写的照什么；每一种写错报 `bad_mcp`、报在那一段；只带 MCP 服务的是 `bundle`、不说协议、能带吉祥物；界面、小程序、内置包写了 `wrong_kind`；一个服务一个功能、扩展包照旧先算自己的；MCP 的工具照前缀归服务、包自己的工具照旧；两个包同名的服务后到的 `feature_taken`；列表、看一眼、命令行那一份都列出服务 |

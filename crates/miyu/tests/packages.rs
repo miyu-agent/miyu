@@ -113,12 +113,12 @@ fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
     install(&home, "taken", &manifest("ask", "miyu", "Not me"));
     let zh = text(&miyu(&home, "zh_CN.UTF-8", &["-h"]).stdout);
     assert!(
-        zh.contains("\n\n软件包加的命令：\n  onebot                开、关、查看接入QQ\n  probe                 Probe it（中）\n\n"),
+        zh.contains("\n\n软件包加的命令：\n  probe                 Probe it（中）\n\n"),
         "{zh}"
     );
     let en = text(&miyu(&home, "C", &["--help"]).stdout);
     assert!(
-        en.contains("\n\nCommands from packages:\n  onebot                Start, stop and look at Connect QQ\n  probe                 Probe it\n\n"),
+        en.contains("\n\nCommands from packages:\n  probe                 Probe it\n\n"),
         "{en}"
     );
     assert!(!en.contains("Not me"), "撞了内置的不列：{en}");
@@ -129,16 +129,10 @@ fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
         "{}",
         text(&ask.stdout)
     );
-    // 只有出厂的：桥的带着 onebot（施工 O-18），这一节只有它（两个界面的清单施工 S-5 搬出了核心仓库）。一个都没有的不写这一节，
-    // 由 miyu-cli 的单元测试守着。
+    // 只有出厂的：出厂的包都不带命令（两个界面的清单施工 S-5、接入QQ 施工 S-6 下搬出了核心仓库），一个都没有的不写这一节。
     let plain = Home::new();
     let shipped = text(&miyu(&plain, "C", &["-h"]).stdout);
-    assert!(
-        shipped.contains(
-            "\n\nCommands from packages:\n  onebot                Start, stop and look at Connect QQ\n\n"
-        ),
-        "{shipped}"
-    );
+    assert!(!shipped.contains("Commands from packages"), "{shipped}");
 }
 
 #[test]

@@ -33,11 +33,11 @@
 
 **「另一条线正在回」**（接入QQ 的会话 2026-10-11 实测定）：走 `session.respond` 的 `facts`，由桥带一句事实 `Another line is already replying to msg=<编号>.`（两个模型回 A 合计 0/30、回 B 29/30）；行尾标记效果差（一个模型 7/15），核心不拼。主线开轮时同样由桥带。「你已经回过」不要：近况里有回过的 `[you]` 行时不标也不重复。
 
-**开一轮**：同别的会话，`session.respond`、`session.send`。往支线 `session.send` 带 `venue` 格、`ambient` 照常收（命令编号照 `chat.md` 第七条第 1 条加 `/branch` 去重）。「你另有一条回复正在回 A」这类事实，由桥经 `session.respond` 的 `facts` 交，核心不拼。
+**开一轮**：同别的会话，`session.respond`、`session.send`。往支线 `session.send` 带 `venue` 格、`ambient` 照常收（命令编号照接入QQ 仓库的 `chat.md` 第七条第 1 条加 `/branch` 去重）。「你另有一条回复正在回 A」这类事实，由桥经 `session.respond` 的 `facts` 交，核心不拼。
 
 **订阅**：子会话是普通会话；`subscribe` 带 `after: upto` 补的只有子会话自己的事件，不重放继承来的那一段。
 
-**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（`chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；日志留在磁盘上，再用到照常载入，载入的认得封存。
+**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（接入QQ 仓库的 `chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；日志留在磁盘上，再用到照常载入，载入的认得封存。
 
 **推送**：子会话是普通会话，订阅它的连接照常收到它的事件（桥照它发群消息、记 `venue.delivered`）。
 

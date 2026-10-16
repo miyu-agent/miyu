@@ -219,59 +219,6 @@
       },
       "type": "object"
     },
-    "onebot": {
-      "properties": {
-        "listen": {
-          "default": 8301,
-          "description": "NapCat 反向 WebSocket 连进来的端口，只听本机。NapCat 那边的地址填 ws://127.0.0.1:<端口>/ws。能写：1024 到 65535 之间的整数。只能写在系统配置里。立即生效。",
-          "maximum": 65535,
-          "minimum": 1024,
-          "title": "端口",
-          "type": "integer"
-        },
-        "token": {
-          "description": "NapCat 连进来时要出示的访问令牌，NapCat 那边填同一个。没设的，NapCat 连进来会被拒；在接入QQ的网页上能生成一个。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。立即生效。",
-          "oneOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "secret": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "secret"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "env": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "env"
-              ],
-              "type": "object"
-            }
-          ],
-          "title": "令牌"
-        },
-        "whitelist": {
-          "description": "能私聊 AI、加 AI 好友自动通过、不受限流和睡觉影响、群里冲 AI 来的直接回的人。每一项写 qq:QQ号，例如 qq:20017。能写：最多 128 个字的文字 的列表。只能写在系统配置里。立即生效。",
-          "items": {
-            "maxLength": 128,
-            "minLength": 1,
-            "type": "string"
-          },
-          "title": "白名单成员",
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
     "permission": {
       "properties": {
         "level": {

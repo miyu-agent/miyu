@@ -16,9 +16,9 @@
 //!
 //! - [`ids`]、[`time`]：编号、时刻和时区偏移（`miyu-kernel`）。
 //! - [`events`]：会话日志里的事件（`miyu-kernel`）。
-//! - [`tooltext`]：工具的字怎么读（`miyu-tool`）。
+//! - `tooltext`：工具的字怎么读（`miyu-tool`；feature `tool`，默认不开，所以这里不写成链接）。
 //! - [`settings`]：配置的类型、读法和问题（`miyu-config`）。
-//! - [`http`]：HTTP 客户端（`miyu-http`）。
+//! - `http`：HTTP 客户端（`miyu-http`；feature `http`，同上）。
 
 pub mod open;
 #[cfg(test)]

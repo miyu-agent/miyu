@@ -33,7 +33,7 @@
 
 ### 规矩
 
-- **重的两组放在 feature 后面**（施工 S-1 再补，2026-10-17 网页量出来的）：`tooltext`（feature `tool`）、`http`（feature `http`）拉进 `miyu-tool`、`miyu-http`，连带 reqwest、rustls、ring、沙盒那一套；界面用不上，默认不开，只有接入QQ 打开。门面测试查这两个依赖是可选的、没有默认打开的 feature。
+- **重的两组放在 feature 后面**（施工 S-1 再补，2026-10-17 网页量出来的）：`tooltext`（feature `tool`）、`http`（feature `http`）拉进 `miyu-tool`、`miyu-http`，连带 reqwest、rustls、ring、沙盒那一套；界面用不上，默认不开，只有接入QQ 打开。门面测试查这两个依赖是可选的、没有默认打开的 feature。接入QQ 搬出核心仓库以后（施工 S-6 下）核心里没有别的 crate 打开它们，门面在开发依赖里照打开两组依赖自己：测试、clippy 照旧编、测这两组，界面拿到的照旧默认不开；文档注释里这两组不写成链接（`cargo doc` 照默认的 feature 编）。
 
 1. **代码不搬**：转出去的留在原来的 crate，门面只 `pub use`；`open` 是唯一挪进来的，因为它本来就只给头用。
 2. **门面的样子是协议的一部分**：加、改、拿掉门面上的东西，照改协议的做法告诉两个头（提交号、改了什么）；两个头 2026-10-11 报的用法是这一版的全部。施工 S-6 上照接入QQ（桥和群聊内核）2026-10-16 数的用法多 `ids`、`time`、`events`、`tooltext`、`settings`、`http` 六组，补 `places`、`texts`（设计 32 第九节第 1 条）：接入QQ 拆出去以前，桥只依赖门面；`events` 的 `Block`、`tooltext` 的 `Access` 是桥用到、施工单没数到的，一起转出。

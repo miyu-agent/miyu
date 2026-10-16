@@ -86,8 +86,6 @@
 | `software/basesystem/` 下别的 | `miyu-basesystem` | 核心起来时登记工具（`tools/*.md`） |
 | `software/mermaid/style.json` | `miyu-mermaid` | `mermaid.render` 第一次调时读一次，之后留着（施工 W-4，`mermaid.md`） |
 | `software/net/link_preview.json` | `miyu-net` | `link.preview` 第一次调时读一次，之后留着（施工 W-7，`net.md`）。是数据，不发给模型，不进登记簿 |
-| `packages/onebot/data/bridge.json` | `miyu-onebot` 的 `Tuning::load` | `miyu-onebot serve` 起来时读一次（施工 O-8，`onebot.md`）。是数据，不发给模型，不进登记簿（只豁免这一份文件）。桥照核心交来的 `MIYU_PACKAGE_DIR` 找包文件夹，没交的照资源目录里这一份（施工 S-6 上） |
-| `packages/onebot/data/human/` | `miyu-onebot` 的 `Texts`（核心那一份经 `Human::load`，桥的这一份经 `Human::with_dir` 补读，编号照旧是 `software/onebot/…`） | `miyu-onebot` 起来时照系统的语言读一次，读了配置、握手以后换语言时再读（施工 O-8，`onebot.md`「给人看的字」；施工 S-6 上挪进包文件夹）。核心的 `Human::load` 不再读它：桥的工具给人看的名字由桥在 `provide` 时每件带 `display_name`（照这几份的 `tools.<名字>.name`，有几种语言带几种）、写了的带 `subject`（照 `tools.<名字>.subject`），核心照它们进 `human.get`，同第三方包（施工 S-6 上） |
 | `web/web.json` | `miyu-web` 的 `Settings::load` | `miyu-web serve` 起来时读一次：出厂端口、空闲多久退出、`Content-Security-Policy`、扩展名到媒体类型（施工 W-9，`web-ui.md`）；`/media` 的票据多久不用作废、最多几张（施工 W-10）。是数据，不发给模型，不进登记簿 |
 | `models/models-dev.json`、`models-dev.meta.json` | `ResourceRoot::catalog_snapshot` | 核心写了 `ready` 以后读一次，和缓存目录里后台拉的那一份挑新的（施工 8-7，`models.md`）。原样的 `api.json` 和它是什么时候拉的。是数据，不发给模型，不进登记簿 |
 | `models/models-dev.LICENSE` | 没人读 | models.dev 的 MIT 许可证原文，跟着快照一起发（`licenses.md`「资源里的第三方数据」） |

@@ -219,59 +219,6 @@
       },
       "type": "object"
     },
-    "onebot": {
-      "properties": {
-        "listen": {
-          "default": 8301,
-          "description": "The port NapCat's reverse WebSocket connects to, local only. In NapCat use ws://127.0.0.1:<port>/ws. Allowed: a whole number from 1024 to 65535. Only in the system config. Takes effect immediately.",
-          "maximum": 65535,
-          "minimum": 1024,
-          "title": "Port",
-          "type": "integer"
-        },
-        "token": {
-          "description": "The access token NapCat shows when it connects; set the same one in NapCat. Without it NapCat is refused; you can generate one on Connect QQ web page. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect immediately.",
-          "oneOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "secret": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "secret"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "env": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "env"
-              ],
-              "type": "object"
-            }
-          ],
-          "title": "Token"
-        },
-        "whitelist": {
-          "description": "People who can chat with the AI in private, whose friend requests are accepted, who are not rate-limited or held off while the AI sleeps, and who get a direct reply when they address the AI in groups. Write each as qq:<QQ number>, for example qq:20017. Allowed: a list of text of at most 128 characters. Only in the system config. Takes effect immediately.",
-          "items": {
-            "maxLength": 128,
-            "minLength": 1,
-            "type": "string"
-          },
-          "title": "Whitelist",
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
     "permission": {
       "properties": {
         "level": {

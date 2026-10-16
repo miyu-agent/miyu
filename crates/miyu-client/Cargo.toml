@@ -34,6 +34,9 @@ tokio = { version = "1", features = ["io-util", "time"] }
 [dev-dependencies]
 # 门面测试读自己的清单，查两组重的依赖默认不开；同 miyu-config 用的那一份。
 toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
+# 测试、clippy 照打开两组重的编：核心仓库里没有别的 crate 打开它们了（接入QQ 施工 S-6 下搬走），不这样它们在核心的门禁、
+# CI 里一次都不编、不测。只管测试的那一份，界面照旧默认不开。
+miyu-client = { path = ".", features = ["tool", "http"] }
 
 [lints]
 workspace = true

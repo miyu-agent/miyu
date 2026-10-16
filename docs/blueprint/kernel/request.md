@@ -521,7 +521,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 - 内容：字去掉前后空白、截到 4096 字节（截在字的边界上），带的东西空一格接在后面（`[image]`、`[file: 名字]`、`[sticker: 字]`、`[voice]`、`[video]`）；都没有的写 `no_text`。图片、文件块接在这一行后面交给驱动。
 - 带的东西的记号（施工 O-33，2026-10-11 主会话、核心定）：`[种类 #第几个: 名字, 大小]`，没有的部分不写，名字、大小都没有的不写冒号。
   - 大小照 `venue.media` 的 `size`，十进制单位：不到 1000 字节写 `512 B`，KB 写整数，MB、GB 一位小数，都四舍五入（整数算，不用浮点）；舍入到 1000 KB 的写 `1.0 MB`，舍入到 1000.0 MB 的写 `1.0 GB`（`miyu-assemble` 的 `size.rs`）。
-  - 第几个：快照的 `group` 有 `voice` 的（O-33 起造的群会话）一条里不止一样的照先后从 1 数、每样都标 `#n`，不分种类（和桥的 `fetch_media` 的 `index` 一个数法，`onebot.md`）；只有一样的不标。语音后面空一格接 `voice` 那一句（`core/venues/voice.txt`：先不转文字，告诉她听不了）。
+  - 第几个：快照的 `group` 有 `voice` 的（O-33 起造的群会话）一条里不止一样的照先后从 1 数、每样都标 `#n`，不分种类（和桥的 `fetch_media` 的 `index` 一个数法，接入QQ 仓库的 `onebot.md`）；只有一样的不标。语音后面空一格接 `voice` 那一句（`core/venues/voice.txt`：先不转文字，告诉她听不了）。
   - 以前造的群会话（快照里没有 `voice`）不标第几个、语音不接那一句；以前记的没有 `size`：老日志渲染出来一个字节不变。
   - 不在群里的（私聊，下面）：O-35 起造的会话照这同一个写法（标 `#n`、语音接那一句），另起一块、开头写 `[msg=…]`；以前造的只多大小，不标第几个、语音不接那一句。
 
@@ -541,7 +541,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
   [msg=8820] [file #2: 排班.pdf, 1.2 MB] [voice #3: 5 KB] (not playable yet)
   ```
 
-  - 记号和上面一行里的同一个写法（大小、不止一样的从 1 数标 `#n`、语音接 `private_media.voice`），`msg=` 照一行里的写法转义；她照 `msg=`、`#n` 调 `fetch_media`（`onebot.md`「平台工具（二）」）。`[msg=…]` 总是写，不看 `show_ids`：`show_ids` 只管发的人的平台身份（`id=`、`@mentions` 里的身份），这一块没有发的人，和一行里的 `[msg=…]` 一样。
+  - 记号和上面一行里的同一个写法（大小、不止一样的从 1 数标 `#n`、语音接 `private_media.voice`），`msg=` 照一行里的写法转义；她照 `msg=`、`#n` 调 `fetch_media`（接入QQ 仓库的 `onebot.md`「平台工具（二）」）。`[msg=…]` 总是写，不看 `show_ids`：`show_ids` 只管发的人的平台身份（`id=`、`@mentions` 里的身份），这一块没有发的人，和一行里的 `[msg=…]` 一样。
   - 已经当原图交进来的（`shown`，`venues.md`「场所的格」）不写，免得她看到两遍、又去取一张已经在眼前的；编号照旧连着数（和 `fetch_media` 的 `index` 对得上）。全是交了原图的，这一块整块不写。
   - 位置：正文的块后面、图片和文件块前面；只有东西没有字的，这一块是第一块。正文、记号、合并转发（下面）各自一个文字块，不往正文那一块里拼字。没带东西的、全交了原图的，和以前一个字节不差。
   - 以前造的会话（快照里没有 `private_media`）一字不变：有内容块的照原样；没有内容块只有带的东西的（施工 O-13 补）写成带的东西的记号（`[image] [sticker: 字]`，和一行里的写法同一个函数，只多大小），不然她看到的是空的。

@@ -21,7 +21,7 @@ hello/
     └── index.html        # the admin page, optional
 ```
 
-1. **The ID** (the folder name): starts with a lowercase letter, uses only lowercase letters, digits, `-` and `_`, at most 64 characters. It must not clash with the packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `onebot`, `tui`, `web` and so on).
+1. **The ID** (the folder name): starts with a lowercase letter, uses only lowercase letters, digits, `-` and `_`, at most 64 characters. It must not clash with the packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `tui`, `web` and so on). Avoid the IDs of well-known separately installed extensions too (for example `onebot` for Connect QQ): installing the same ID again is an upgrade and replaces the one the user has.
 2. **The program lives under `bin/`**, named as `[command] program` says, with `.exe` added on Windows. The core looks in the package's `bin/` first, then next to the `miyu` executable, and **never in `PATH`**: no other program can pose as yours. On Linux and macOS the program needs the executable bit; a script needs its `#!` line.
 3. **Do not write into the package folder after installing**: every file's hash is recorded at install time, and `miyu pkg check` reports files you add later as "extra" and files you change as "modified". Keep runtime state in the working directory the core gives you (section 4, item 2).
 

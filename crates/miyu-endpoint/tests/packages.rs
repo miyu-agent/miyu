@@ -246,8 +246,10 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
     let home = Home::new();
     mine(&home, "bad", "[package]\n\n[ui]\n\n[process]\n");
     mine(&home, "mermaid", TERM);
-    // 子命令撞了出厂的桥的 `onebot`（施工 S-5：两个界面的清单搬走了，借出厂的桥）。
-    mine(&home, "web2", &TERM.replace("\"term\"", "\"onebot\""));
+    // 子命令撞了先读到的 `term`（施工 S-6 下：出厂的包都不带命令了，撞的是家目录里编号排在前面的那一份；出厂的先于家目录由
+    // miyu-store 的单元测试守着）。
+    mine(&home, "term", TERM);
+    mine(&home, "web2", TERM);
     mine(
         &home,
         "later",
@@ -258,8 +260,7 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
     mine(
         &home,
         "bridge",
-        // 子命令不叫 onebot：出厂的桥占着它（施工 O-18）。
-        "[package]\nprotocol = [1, 1]\nname = { en = \"Bridge\" }\n\n[command]\nname = \"bridge\"\nprogram = \"miyu-onebot\"\nabout = { en = \"QQ\" }\n\n[process]\nargs = [\"serve\"]\n\n[check]\nargs = [\"check\"]\n",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Bridge\" }\n\n[command]\nname = \"bridge\"\nprogram = \"miyu-bridge\"\nabout = { en = \"QQ\" }\n\n[process]\nargs = [\"serve\"]\n\n[check]\nargs = [\"check\"]\n",
     );
     let packages = listed(&home).await;
     let by_id = |id: &str| {

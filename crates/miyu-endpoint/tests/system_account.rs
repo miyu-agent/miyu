@@ -338,19 +338,21 @@ async fn a_package_installed_later_gets_its_system_account_at_once() {
 /// 起来时就卸掉了的出厂的包（施工 F-5 下）：装回来当场建它的家目录、工作区。
 #[tokio::test]
 async fn a_shipped_package_brought_back_gets_its_system_account_at_once() {
+    // 出厂的扩展用测试自己放的夹具（施工 S-6 下：接入QQ 搬出了核心仓库）。
     let home = Home::new();
-    home.write("home/alice/packages/onebot.removed", "");
-    let core = served_core(&home, &Script::new([]));
-    let onebot = AccountId::parse("onebot").expect("合写法");
-    assert!(!home.root.workspace(&onebot).exists(), "卸掉的不建");
+    home.write("home/alice/packages/courier.removed", "");
+    let resources = shipped::resources(&home);
+    let core = Arc::new(shipped::core(&home, &resources, &Script::new([])));
+    let courier = AccountId::parse(shipped::ID).expect("合写法");
+    assert!(!home.root.workspace(&courier).exists(), "卸掉的不建");
     let mut client = Client::connect(core.clone());
     client.hello().await;
     let reply = client
-        .call("i1", "package.install", json!({"package": "onebot"}))
+        .call("i1", "package.install", json!({"package": shipped::ID}))
         .await;
     assert!(reply.get("error").is_none(), "{reply}");
     assert!(
-        home.root.workspace(&onebot).is_dir(),
+        home.root.workspace(&courier).is_dir(),
         "装回来就建了它的工作区"
     );
     core.stop_extensions().await;

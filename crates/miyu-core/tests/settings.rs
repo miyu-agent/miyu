@@ -20,7 +20,7 @@ fn repository() -> PathBuf {
 }
 
 /// 出厂带的软件包拼好的配置项（施工 9-1 下）：真核心起来时也带着它们。照发行包的样子，程序都在 `miyu` 旁边（施工 F-6 上：
-/// 跑测试的这台机器上测试程序旁边没有 `miyu-onebot`，照它算接入QQ 的几项就没了）。
+/// 不照跑测试的这台机器上程序在不在算）。
 fn shipped() -> Packaged {
     let mut found = Packages::shipped(&ResourceRoot::at(repository().join("resources"))).read();
     Packaged::as_released(&mut found)
@@ -211,32 +211,47 @@ fn tiers_are_unknown_now_and_pools_take_the_two_new_items() {
     assert_eq!(codes, [Code::BadFormat], "说明要写英文");
 }
 
-/// 施工 O-17：白名单成员 `onebot.whitelist`（`onebot.md` 第二条「对外的样子」；施工 O-27 从 `onebot.trusted` 改名，旧键当
-/// 不认识）是平台身份的列表：读得出，不写是没有；只能写在系统配置、当场生效、界面是列表；不是列表的、元素不是字的、空的、
-/// 超过 128 个字的报问题，128 个字的照收。施工 O-20 起它在 QQ 桥自己的清单 `[settings]` 里（`onebot.md` 第一条「软件包
-/// 清单」），照出厂的包拼进来，在「软件包」那一页、这个包那一组；核心自己不再声明 `onebot.` 开头的项
-/// （声明了，清单的 `[settings]` 整份报 `settings_taken`）。
+/// 施工 O-17：一个包在清单 `[settings]` 里声明的列表项，照接入QQ 的白名单成员（`onebot.whitelist`，O-20 起在它自己的清单里）
+/// 写的夹具（施工 S-6 下：接入QQ 搬出了核心仓库，改成测试自己放的包 `relay`）：读得出，不写是没有；只能写在系统配置、当场
+/// 生效、界面是列表，在「软件包」那一页、这个包那一组；不是列表的、元素不是字的、空的、超过 128 个字的报问题，128 个字的照收；
+/// 没声明的键不认。核心自己不声明包的项（声明了，清单的 `[settings]` 整份报 `settings_taken`）。
+fn relay() -> Packaged {
+    let dir = std::env::temp_dir().join(format!("miyu-core-relay-{}", std::process::id()));
+    let package = dir.join("packages/relay");
+    std::fs::create_dir_all(&package).expect("建得了");
+    std::fs::write(
+        package.join("package.toml"),
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"R\" }\n\n[process]\n\n[settings.whitelist]\ntype = \"list\"\nelement = \"text\"\nmax = 128\nlayers = [\"system\"]\napplies = \"now\"\nname = { en = \"Whitelist\" }\n",
+    )
+    .expect("写得进");
+    let mut found = Packages::shipped(&ResourceRoot::at(&dir)).read();
+    if let Err(error) = std::fs::remove_dir_all(&dir) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+    Packaged::as_released(&mut found)
+}
+
 #[test]
-fn onebot_whitelist_is_a_system_list_of_identities() {
+fn a_package_list_setting_is_a_system_list_of_identities() {
     use miyu_config::problem::Code;
     use miyu_config::{Applies, Control, Kind, Layer, Value, Values};
     assert!(
-        items().iter().all(|item| !item.key.starts_with("onebot.")),
-        "核心不再替桥声明"
+        items().iter().all(|item| !item.key.starts_with("relay.")),
+        "核心不替包声明"
     );
-    let listed = shipped().all();
+    let listed = relay().all();
     let item = listed
         .iter()
-        .find(|item| item.key == "onebot.whitelist")
-        .expect("出厂的桥声明了");
+        .find(|item| item.key == "relay.whitelist")
+        .expect("包声明了");
     assert_eq!(item.kind, Kind::List(&Kind::Text { max: 128 }));
     assert_eq!(item.default, None);
     assert_eq!(item.layers, [Layer::System]);
     assert_eq!(item.applies, Applies::Now);
     assert_eq!(
         (item.ui.page, item.ui.group, item.ui.control),
-        ("packages", "onebot", Control::List),
-        "平台接入的配置项和别的包一样在「软件包」那一页（施工 F-6 上：「接入」页去掉了）"
+        ("packages", "relay", Control::List),
+        "包的配置项在「软件包」那一页、这个包那一组（施工 F-6 上：「接入」页去掉了）"
     );
     let parse = |layer: Layer, source: &str| {
         miyu_config::parse::parse(&listed, layer, source).expect("写法对")
@@ -249,61 +264,61 @@ fn onebot_whitelist_is_a_system_list_of_identities() {
             .collect()
     };
     let values = Values::defaults(&listed);
-    assert_eq!(values.get("onebot.whitelist"), None, "不写是没有");
+    assert_eq!(values.get("relay.whitelist"), None, "不写是没有");
     let parsed = parse(
         Layer::System,
-        "[onebot]\nwhitelist = [\"qq:20017\", \"qq:10002\"]\n",
+        "[relay]\nwhitelist = [\"qq:20017\", \"qq:10002\"]\n",
     );
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     assert_eq!(
-        parsed.entries["onebot.whitelist"].value,
+        parsed.entries["relay.whitelist"].value,
         Value::List(vec![
             Value::Text("qq:20017".into()),
             Value::Text("qq:10002".into())
         ])
     );
     assert_eq!(
-        codes(Layer::System, "[onebot]\nwhitelist = []\n"),
+        codes(Layer::System, "[relay]\nwhitelist = []\n"),
         Vec::<Code>::new(),
         "空表照收"
     );
     assert_eq!(
-        codes(Layer::Personal, "[onebot]\nwhitelist = [\"qq:20017\"]\n"),
+        codes(Layer::Personal, "[relay]\nwhitelist = [\"qq:20017\"]\n"),
         [Code::WrongLayer],
         "只能写在系统配置"
     );
     assert_eq!(
-        codes(Layer::System, "[onebot]\nwhitelist = \"qq:20017\"\n"),
+        codes(Layer::System, "[relay]\nwhitelist = \"qq:20017\"\n"),
         [Code::WrongType]
     );
     assert_eq!(
-        codes(Layer::System, "[onebot]\nwhitelist = [20017]\n"),
+        codes(Layer::System, "[relay]\nwhitelist = [20017]\n"),
         [Code::WrongType]
     );
     assert_eq!(
-        codes(Layer::System, "[onebot]\nwhitelist = [\"\"]\n"),
+        codes(Layer::System, "[relay]\nwhitelist = [\"\"]\n"),
         [Code::BadFormat]
     );
     let longest = format!("qq:{}", "1".repeat(125));
     assert_eq!(
         codes(
             Layer::System,
-            &format!("[onebot]\nwhitelist = [\"{longest}\"]\n")
+            &format!("[relay]\nwhitelist = [\"{longest}\"]\n")
         ),
         Vec::<Code>::new()
     );
     assert_eq!(
         codes(
             Layer::System,
-            &format!("[onebot]\nwhitelist = [\"{longest}1\"]\n")
+            &format!("[relay]\nwhitelist = [\"{longest}1\"]\n")
         ),
         [Code::BadFormat],
         "超过 128 个字"
     );
     assert_eq!(
-        codes(Layer::System, "[onebot]\ntrusted = [\"qq:20017\"]\n"),
+        codes(Layer::System, "[relay]\ntrusted = [\"qq:20017\"]\n"),
         [Code::UnknownKey],
-        "旧键不认（施工 O-27）"
+        "没声明的键不认（施工 O-27 改名以后接入QQ 的旧键 trusted 照这一条）"
     );
 }
 

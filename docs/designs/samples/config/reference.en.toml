@@ -90,19 +90,6 @@ base = "10s"
 # Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
 max = "5m"
 
-[onebot]
-# Port: The port NapCat's reverse WebSocket connects to, local only. In NapCat use ws://127.0.0.1:<port>/ws.
-# Allowed: a whole number from 1024 to 65535. Only in the system config. Takes effect immediately.
-listen = 8301
-
-# Token: The access token NapCat shows when it connects; set the same one in NapCat. Without it NapCat is refused; you can generate one on Connect QQ web page.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect immediately.
-# token =
-
-# Whitelist: People who can chat with the AI in private, whose friend requests are accepted, who are not rate-limited or held off while the AI sleeps, and who get a direct reply when they address the AI in groups. Write each as qq:<QQ number>, for example qq:20017.
-# Allowed: a list of text of at most 128 characters. Only in the system config. Takes effect immediately.
-# whitelist =
-
 [permission]
 # Permission level for new sessions: Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.
 # Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.

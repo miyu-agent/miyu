@@ -312,8 +312,6 @@ async fn presets_are_listed_and_read_by_layer() {
                 one["installed"].as_bool().unwrap_or_default(),
             )
         })
-        // 出厂的接入QQ 的功能 qq 在不在看测试程序旁边有没有 `miyu-onebot`（桥的测试会链一个过去），这里不比它。
-        .filter(|(id, _, _, _)| *id != "qq")
         .collect();
     assert_eq!(
         features,

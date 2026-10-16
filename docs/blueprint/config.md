@@ -243,7 +243,7 @@ miyu_config::settings! {
 - `LogSettings::ITEMS`：清单里的这几项，照声明的先后。
 - `LogSettings::from(&最终值)`（`From<&Values>`）：带类型的设置，代码只经它读值，不自己读文件、不另写常量（`14-配置.md` 第十节）。最终值 `Values` 是键到值，8-2 的分层合并交出它；8-1 还不读配置，用的是 `Values::defaults(清单)`，全是默认值。最终值里没有的项照默认值，最终值都校验过，这一步不会出错。字段的类型要能从值变过来（`From<&Value>`）：选项用 `String`，拿到的就是那个选项。
 
-**登记**（`crates/miyu-core/src/settings.rs`）：`MODULES` 一个模块一行，照这个先后：`UiSettings::ITEMS`、`UsageSettings::ITEMS`（`miyu-models`，8-15：`usage.currency`，通用页的「显示」组，排在界面语言后面）（8-3 到 8-28 这里还有 `TuiSettings::ITEMS`，替终端界面声明 `tui.startup`；8-28 改成 `UiSettings` 里的 `ui.startup`）、`PermissionSettings::ITEMS`（`miyu-endpoint`，8-2）、`UseSettings::ITEMS`、`PoolSettings::ITEMS`（8-8；8-8 的 `TierSettings::ITEMS` 8-8 补去掉了）、`ProviderSettings::ITEMS`、`ModelSettings::ITEMS`（`miyu-models`，8-6）、`PriceSettings::ITEMS`、`CatalogSettings::ITEMS`（8-7）、`LogSettings::ITEMS`（`miyu-log`）（O-8 到 O-20 最后还有 `OnebotSettings::ITEMS`，照 8-3 `TuiSettings` 的先例替通讯平台的桥声明 `onebot.listen`、`onebot.web`、`onebot.token`、`onebot.trusted`，在高级页「QQ 桥」组；O-20 挪进桥的清单 `[settings]`，同一个提交删掉，现在是「软件包」页这个包那一组，`onebot.md` 第一条「软件包清单」）。`items()` 把它们接成一张表。设置页的页照第一次出现的先后排：通用、权限、模型、高级（8-3 到 8-28 通用后面还有一页「界面」）；模型那一页先「用途」、再「池」（8-8；「挡位」那一组 8-8 补去掉了）、再「供应商」、再「目录」。
+**登记**（`crates/miyu-core/src/settings.rs`）：`MODULES` 一个模块一行，照这个先后：`UiSettings::ITEMS`、`UsageSettings::ITEMS`（`miyu-models`，8-15：`usage.currency`，通用页的「显示」组，排在界面语言后面）（8-3 到 8-28 这里还有 `TuiSettings::ITEMS`，替终端界面声明 `tui.startup`；8-28 改成 `UiSettings` 里的 `ui.startup`）、`PermissionSettings::ITEMS`（`miyu-endpoint`，8-2）、`UseSettings::ITEMS`、`PoolSettings::ITEMS`（8-8；8-8 的 `TierSettings::ITEMS` 8-8 补去掉了）、`ProviderSettings::ITEMS`、`ModelSettings::ITEMS`（`miyu-models`，8-6）、`PriceSettings::ITEMS`、`CatalogSettings::ITEMS`（8-7）、`LogSettings::ITEMS`（`miyu-log`）（O-8 到 O-20 最后还有 `OnebotSettings::ITEMS`，照 8-3 `TuiSettings` 的先例替通讯平台的桥声明 `onebot.listen`、`onebot.web`、`onebot.token`、`onebot.trusted`，在高级页「QQ 桥」组；O-20 挪进桥的清单 `[settings]`，同一个提交删掉，现在是「软件包」页这个包那一组，接入QQ 仓库的 `onebot.md` 第一条「软件包清单」）。`items()` 把它们接成一张表。设置页的页照第一次出现的先后排：通用、权限、模型、高级（8-3 到 8-28 通用后面还有一页「界面」）；模型那一页先「用途」、再「池」（8-8；「挡位」那一组 8-8 补去掉了）、再「供应商」、再「目录」。
 
 **M8 的配置项**：
 
@@ -1052,19 +1052,6 @@ base = "10s"
 # 出错最多冷却多久：这类错的冷却翻倍到这么久为止。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。立即生效。
 max = "5m"
-
-[onebot]
-# 端口：NapCat 反向 WebSocket 连进来的端口，只听本机。NapCat 那边的地址填 ws://127.0.0.1:<端口>/ws。
-# 能写：1024 到 65535 之间的整数。只能写在系统配置里。立即生效。
-listen = 8301
-
-# 令牌：NapCat 连进来时要出示的访问令牌，NapCat 那边填同一个。没设的，NapCat 连进来会被拒；在接入QQ的网页上能生成一个。
-# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。立即生效。
-# token =
-
-# 白名单成员：能私聊 AI、加 AI 好友自动通过、不受限流和睡觉影响、群里冲 AI 来的直接回的人。每一项写 qq:QQ号，例如 qq:20017。
-# 能写：最多 128 个字的文字 的列表。只能写在系统配置里。立即生效。
-# whitelist =
 
 [permission]
 # 新会话的权限级别：新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。
@@ -2213,7 +2200,7 @@ Options:
 | `crates/miyu-config/src/item/kind/model_or_tests.rs`、`dangling/tests.rs` 的 `a_model_or_word_is_not_checked_and_its_model_is` | 模型或几个字（R-5 补）：列出的字、模型都收，池、写错的、空的、不是字的拒；宏照 `model_or [..]` 声明；TOML、协议、人敲的都读得出；说法、Schema 的 `anyOf`；清单里字重了、带 `/`、一个都没有的报（参考文件里的样子由生成文件的样本守着）；`dangling` 不查字、查模型的供应商 | R-5 补 |
 | `crates/miyu-endpoint/tests/config.rs` 的 `a_model_or_item_lists_its_words`、`memory_meaning.rs` 的 `the_built_in_option_notes_the_local_model` | 协议上 `config.schema` 里 `models.embedding` 的类型是 `model_or`、带 `options`（那几个字和它们的名字）、控件 `text`（R-5 补）；名字「语义模型」、说明、`local` 叫「内置模型」，没接本机的那一路的不带 `note`，接上了的「内置模型」带 `note`（本机清单的 `id`），「关」不带（R-5 再补）；没接的「内置模型」带 `available: false`，接上了的、「关」都不带（R-5 三补） | R-5 补、R-5 再补、R-5 三补 |
 | `crates/miyu-config/src/schema/tests.rs`、`reference/tests.rs`、`value/tests.rs` | 拿假的字和手写的几项：Schema 只有这一层的项、一层层的表、格照字母先后、这一层什么都没有的；参考文件表照名字排、表里的项照名字排、不重开同一张表、每一项两行注释、项间空一行、多行的字每一行都是注释；缺字报是哪一句。值写成 TOML（引号、反斜杠、控制字符转义）、写成 JSON | 8-1 |
-| `crates/miyu-core/tests/settings.rs` | 登记的全部清单过 `list::check`，照登记的先后（8-3 起有 `tui.startup`、8-28 改名 `ui.startup`，8-6 起有模型那一块的六项，O-8 到 O-20 最后是 `onebot.*` 四项，O-20 挪进桥的清单）。`onebot.trusted`（O-17；O-20 起照出厂清单的 `[settings]` 拼进来的那一项查）的类型、层、生效、界面照 `onebot.md` 第一条「软件包清单」，读得出、不写是没有，写进个人设置、不是列表、元素不是字、空的、超过 128 个字的报问题。中文、英文、日文三份（直接读文件）过 `words::check`。照源码树的资源生成的两份 Schema、参考文件和样本逐字节一样（中文、英文），日文生成得出来 | 8-1 |
+| `crates/miyu-core/tests/settings.rs` | 登记的全部清单过 `list::check`，照登记的先后（8-3 起有 `tui.startup`、8-28 改名 `ui.startup`，8-6 起有模型那一块的六项，O-8 到 O-20 最后是 `onebot.*` 四项，O-20 挪进桥的清单）。包在清单 `[settings]` 里声明的列表项（O-17 的 `onebot.trusted`，O-20 起照出厂清单拼进来查；施工 S-6 下接入QQ 搬出核心仓库，改成测试自己放的包 `relay` 照它写的 `relay.whitelist`）的类型、层、生效、界面，读得出、不写是没有，写进个人设置、不是列表、元素不是字、空的、超过 128 个字的报问题，没声明的键不认。中文、英文、日文三份（直接读文件）过 `words::check`。照源码树的资源生成的两份 Schema、参考文件和样本逐字节一样（中文、英文），日文生成得出来 | 8-1 |
 | `crates/miyu-core/src/settings/tests.rs` | 起来时生成：字照系统的语言挑（日文、没有的照英文）。资源里缺字、读不懂的，三份各记一条 `WARN`，什么都不写 | 8-1 |
 | `crates/miyu/tests/settings.rs` | 真核心：照 `LANG` 写三份，和样本逐字节一样（中文、英文）；一样的不重写（修改时间不变），改过的写回来；该是目录的地方是个文件，三份各记一条 `WARN`，照样起来 | 8-1 |
 | `crates/miyu-store/src/generated/tests.rs` | 没有的写上、目录建上；一样的不写（修改时间不变）；不一样的换掉、不留临时文件；目录建不了报错；临时文件点开头、不重名 | 8-1 |

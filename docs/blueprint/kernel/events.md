@@ -70,7 +70,7 @@
 | `child.reported` | 子会话的回报（施工 7-1） | 内核，`by` 是那个子会话，账本查（施工 7-2） | 内核记的不带（2026-09-30 定），账本不另查 | `child.reported.jsonl` |
 | `peer.idle` | 等的那个会话空下来了，或者等不到了（施工 C-1，`cross-session.md`） | `idle` 的是那个会话，`expired`、`gone` 的是内核，账本查 | 不带：别处来的，撤哪一轮都不拿走；账本不另查 | `peer.idle.jsonl` |
 | `image.described` | 一张图的转述：看不了图的模型由 `models.vision` 替它看过（施工 8-17，`models.md`「怎么走」第十三条）。不渲染，经统一的请求的 `described` 进请求 | 内核 | 不带：挂在图上，不属于哪一轮，撤哪一轮都不拿走；账本不另查 | `image.described.jsonl` |
-| `venue.recalled` | 场所里有人撤回了一条消息（施工 O-13 上，`chat.md` 第七条第 2 条） | 桥（模块），经 `events.append` | 不带 | `venue.recalled.jsonl` |
+| `venue.recalled` | 场所里有人撤回了一条消息（施工 O-13 上，接入QQ 仓库的 `chat.md` 第七条第 2 条） | 桥（模块），经 `events.append` | 不带 | `venue.recalled.jsonl` |
 | `venue.delivered` | 她的一句话实际发到了平台上（施工 O-13 上） | 桥（模块），经 `events.append` | 不带 | `venue.delivered.jsonl` |
 
 - 「—」是现在还没有哪里写这一种：读得懂、账本查得了、投影认得，就是不产生（下面「还没有的」）。

@@ -45,7 +45,7 @@
 1. **从哪找**：这个会话的属主（`Handle::owner`，同找技能）家目录的 `commands/` 先，再找装了的包的 `commands/`，出厂的先于家目录、同一层照编号（同技能，`packages.md`「冲突」第 5 条）。同名的先找到的赢，后来的跳过、记被谁盖住。`command.run`、`command.catalog`、`preset.get` 每次照这一刻找：文件少、只读开头，改了模板不用重启。不写会话的 `command.catalog`、`preset.get` 照管理员找。
 2. **内置的赢**：名字和核心登记的（名字、别名）撞了的，模板不算：`command.run` 照内置的办，菜单、预设里不列它。
 3. **开关**：每条模板命令算一个功能 `command-<名字>`，挂在它的包下（自己放的挂在 `~home`），预设里能逐个开关；`preset.get` 列在技能后面：`{"id": "command-<名字>", "name": "/<名字>", "summary"?, "on", "installed": true, "tools": []}`，说明照模板写的、照连接的语言挑，没写的不带。`command.run` 照会话现在的预设判（会话表里记的编号，照这一刻的文件；没有预设的、读不出的当开着），关着的回 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」（`commands/unavailable/command-preset-off`）；`command.catalog` 写了会话的不列。
-4. **谁能用**：和内置命令同一关（`may_run`：本机的会话是本人；场所会话照 `as`，主人、对应表里有的、管理的人），别人回 `command_not_allowed`，场所会话不带 `as` 的 `venue_session`。先找会话、认说话的人，再找模板：认不出的 `unknown_command`，谁打的都是（场所里的桥照它把话当平常说的记下，`onebot.md`），认出了再判身份。
+4. **谁能用**：和内置命令同一关（`may_run`：本机的会话是本人；场所会话照 `as`，主人、对应表里有的、管理的人），别人回 `command_not_allowed`，场所会话不带 `as` 的 `venue_session`。先找会话、认说话的人，再找模板：认不出的 `unknown_command`，谁打的都是（场所里的桥照它把话当平常说的记下，接入QQ 仓库的 `onebot.md`），认出了再判身份。
 5. **菜单里的样子**：`command.catalog` 一项 `{"name", "aliases": [], "summary", "argument"?}`，`summary` 照连接的语言挑，没写说明的照正文第一行不是空白的那一行（同 Claude Code）；写了 `argument-hint` 的带 `argument`。和内置的照名字排在一起。
 
 ### 装包时查（施工 X-14 上补）
@@ -74,7 +74,7 @@
 | `crates/miyu-view/tests/lines.rs` 的 `a_typed_command_shows_the_line_that_was_typed` | 时间线那一条是人敲的那一行 |
 | `crates/miyu-store/src/packages/conflicts/tests.rs` 的 `slash_commands_meet_installed_packages_and_the_builtins`、`crates/miyu-endpoint/tests/packages_conflicts.rs` 的 `slash_command_templates_count_and_the_builtins_too`、`slash_templates.rs` 的 `check_says_which_templates_are_not_used`、`crates/miyu-cli` 的 `pkg::tests`、`pkg::confirm::tests`（施工 X-14 上补） | 装包时撞了装着的包的、内置的名字和别名的不装，拥有那条内置命令的包自己不算；看一眼列出 `slash`；`check` 报 `slash_skipped`、`slash_covered`、`slash_builtin`；命令行的「斜杠命令」两处写法 |
 | `crates/miyu-config/src/package/slash/tests.rs`、`crates/miyu-store/src/packages/conflicts/tests.rs` 的 `declared_slash_commands_count_like_templates`、`crates/miyu-endpoint/tests/slash_extension.rs`（施工 X-14 下） | `[[slash]]` 每一格、每一种写错报 `bad_slash`、报在那一段、没声明能力的报、只有扩展能写；装包时和模板一个名字空间；真核心拉起测试用的扩展：答的一段话（多行）原样当回执、记 `command.ran`、发过去的几格；答错、写法不对的 `command_failed`、不记；没在跑的 `command_unavailable`；菜单、预设页列出来；自己放的模板盖住它 |
-| `crates/miyu-endpoint/tests/slash_templates.rs` | 真核心：展开发出去、日志里两样、模型看到展开的那段、没有回执、不记 `command.ran`；自己放的盖住包里的、`$ARGUMENTS[0]`、内置的赢；认不出的、展开是空的拒、什么都不说；预设关了的拒、说清哪个预设、菜单不列、`preset.get` 列成关着；菜单照名字排、说明照语言、没写的照正文第一行、和内置同名的不列；撤销的回执、会话列表的预览是那一行；场所会话照内置的那一关，认不出的照旧 `unknown_command`（`crates/miyu-onebot/tests/group.rs` 的 `slash_commands_in_a_group_answer_in_the_group` 照它把 `/xxx` 记成旁听） |
+| `crates/miyu-endpoint/tests/slash_templates.rs` | 真核心：展开发出去、日志里两样、模型看到展开的那段、没有回执、不记 `command.ran`；自己放的盖住包里的、`$ARGUMENTS[0]`、内置的赢；认不出的、展开是空的拒、什么都不说；预设关了的拒、说清哪个预设、菜单不列、`preset.get` 列成关着；菜单照名字排、说明照语言、没写的照正文第一行、和内置同名的不列；撤销的回执、会话列表的预览是那一行；场所会话照内置的那一关，认不出的照旧 `unknown_command`（接入QQ 仓库的 `crates/miyu-onebot/tests/group.rs` 的 `slash_commands_in_a_group_answer_in_the_group` 照它把 `/xxx` 记成旁听） |
 
 ### 施工拆分
 

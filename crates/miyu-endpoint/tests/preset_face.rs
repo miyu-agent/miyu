@@ -120,10 +120,9 @@ async fn the_dev_preset_drops_memory_and_says_so() {
     );
     let pin = snapshot.preset.expect("记了预设");
     assert_eq!(pin.id, "dev");
-    // 施工 F-3 上起记的是功能的编号。出厂的接入QQ 的功能 qq 在不在看测试程序旁边有没有 `miyu-onebot`（桥的测试会链一个过去），这里不比它；装了、没开、没有工具的包快照照记，见下一条。
-    let off: Vec<&String> = pin.off.iter().filter(|id| *id != "qq").collect();
-    // 知识库（施工 K-1 下）在基础功能里关着。
-    assert_eq!(off, ["knowledge", "memory", "roleplay"]);
+    // 施工 F-3 上起记的是功能的编号；装了、没开、没有工具的包快照照记，见下一条。知识库（施工 K-1 下）在基础功能里关着。接入QQ
+    // 的功能 qq 随施工 S-6 下搬出核心仓库，出厂的不再有它。
+    assert_eq!(pin.off, ["knowledge", "memory", "roleplay"]);
     // 开会话时要了记忆也没用：开不开归预设。
     let (session, _) = first_request(
         &home,
@@ -289,7 +288,7 @@ async fn preset_get_lists_features_with_their_tools() {
         ]),
         "[tools] 单件关掉的"
     );
-    // 写在 [features] 里的：装了的照装了的列，没装的（程序不在的也是）照「写了没装」接在后面，都只列一遍。出厂的接入QQ 的功能 qq 在不在看测试程序旁边有没有 `miyu-onebot`（桥的测试会链一个过去），这里不比它装没装。
+    // 写在 [features] 里的：装了的照装了的列，没装的（程序不在的也是）照「写了没装」接在后面，都只列一遍。qq 是这个预设写了、没装的（接入QQ 施工 S-6 下搬出了核心仓库）。
     assert_eq!(feature(&nosh, "qq")["on"], false);
     let listed = switches(&nosh);
     let kb = listed

@@ -4,6 +4,7 @@
 //! 必需的、没装的不能卸。装卸以后 `package.list`、预设的功能当场照新的。
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde_json::{Value, json};
 
@@ -131,7 +132,10 @@ async fn a_manifest_installs_with_its_files_and_counts_at_once() {
 #[tokio::test]
 async fn a_wrong_or_clashing_manifest_installs_nothing() {
     let home = Home::new();
-    let mut client = connected(&home).await;
+    // 出厂那一层多一个带子命令的夹具扩展（施工 S-6 下：接入QQ 搬出了核心仓库，出厂的包都不带命令了）。
+    let resources = shipped::resources(&home);
+    let mut client = Client::connect(Arc::new(shipped::core(&home, &resources, &Script::new([]))));
+    client.hello().await;
     let broken = source(&home, "xbad", "[package]\n\n[ui]\n\n[process]\n");
     let reply = client
         .call("i1", "package.install", json!({"path": broken}))
@@ -149,15 +153,15 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
         .call("i2", "package.install", json!({"path": shipped}))
         .await;
     assert_eq!(reason(&reply), Some("package_exists"), "{reply}");
-    // 读得成，可子命令名和出厂的接入QQ 撞了：装之前就查出来，什么都不动（施工 F-8 六补）。
-    let clash = source(&home, "xclash", &manifest("撞了", "onebot"));
+    // 读得成，可子命令名和出厂的扩展撞了：装之前就查出来，什么都不动（施工 F-8 六补）。
+    let clash = source(&home, "xclash", &manifest("撞了", "courier"));
     let reply = client
         .call("i3", "package.install", json!({"path": clash}))
         .await;
     assert_eq!(reason(&reply), Some("package_conflict"), "{reply}");
     assert_eq!(
         reply["error"]["data"]["conflicts"],
-        json!([{"kind": "command", "name": "onebot", "package": "onebot"}])
+        json!([{"kind": "command", "name": "courier", "package": "courier"}])
     );
     for left in ["xbad", "mermaid", "xclash"] {
         assert!(!mine(&home, left).exists(), "{left} 不留");

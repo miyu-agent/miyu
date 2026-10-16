@@ -56,16 +56,18 @@ async fn removing_a_package_forgets_its_settings_and_state() {
 
 #[tokio::test]
 async fn removing_a_shipped_package_forgets_its_settings_too() {
+    // 出厂的扩展用测试自己放的夹具（施工 S-6 下：接入QQ 搬出了核心仓库）。
     let home = Home::new();
     home.write(
         "system/config.toml",
-        "[onebot]\nlisten = 9999\n\n[log]\nlevel = \"debug\"\n",
+        "[courier]\nlisten = 9999\n\n[log]\nlevel = \"debug\"\n",
     );
-    let mut client = Client::connect(home.core(&Script::new([])));
+    let resources = shipped::resources(&home);
+    let mut client = Client::connect(Arc::new(shipped::core(&home, &resources, &Script::new([]))));
     client.hello().await;
-    let state = home.root.path().join("state/packages/onebot");
+    let state = home.root.path().join("state/packages/courier");
     std::fs::create_dir_all(&state).expect("建得了");
-    let removed = call(&mut client, "package.remove", json!({"package": "onebot"})).await;
+    let removed = call(&mut client, "package.remove", json!({"package": "courier"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let system = read(&home, "system/config.toml");
     assert!(!system.contains("listen"), "{system}");

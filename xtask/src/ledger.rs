@@ -38,8 +38,8 @@ const DATA: &str = "models";
 const PACKAGES: &str = "packages";
 
 /// 包文件夹里给模型看的那几个子目录（施工 X-13 下）：技能的 `SKILL.md` 和参考资料，脚本的开头注释；包自己读的数据 `data/`
-/// （施工 S-6 上：接入QQ 的判官的说明、工具、事实从 `software/onebot/` 挪来），里面给人看的 `human/` 照旧不查、只是数据的那几份
-/// 照 [`ONEBOT_DATA`] 豁免。
+/// （施工 S-6 上），里面给人看的 `human/` 照旧不查。接入QQ 的包文件夹随施工 S-6 下搬出核心仓库，给它 `data/` 里四份数据的豁免
+/// 一起去掉：它的字由它自己的仓库登记（设计 `32-仓库拆分.md` 第九节第 3、6 条）。
 const CARRIED: [&str; 3] = ["skills", "scripts", "data"];
 
 /// 资源目录最上一层的这个目录放出厂的预设（施工 P-2 上，`presets.md`）：给人看的名字、说明和开关表，不发给模型，不登记。
@@ -54,16 +54,6 @@ const SOFTWARE_DIR: &str = "software/";
 const PERSONAS_DIR: &str = "personas/";
 const PERSONA_TOML: &str = "persona.toml";
 
-/// 接入QQ 包文件夹的 `data/` 里这几份是数据（施工 S-6 上从 `software/onebot/` 挪来），不发给模型，不登记：群聊内核的出厂参数
-/// （几张表的数，施工 O-15，`chat.md` 第八条施工时定的第 16 条）、违规词表（只拿来比子串）、出厂的场所规则（施工 O-15 下，第八条
-/// 施工时定的第 21 条），桥自己的数（路径、等回应多久、队列多长，施工 O-8，`onebot.md`「施工时定的」第 15 条）。只豁免这几份、
-/// 不豁免整个包（包里有给模型看的字，判官）：别处同名的、`venues.d/` 里别的文件照查。
-const ONEBOT_DATA: [&str; 4] = [
-    "packages/onebot/data/bridge.json",
-    "packages/onebot/data/defaults.toml",
-    "packages/onebot/data/moderation.txt",
-    "packages/onebot/data/venues.d/50-defaults.toml",
-];
 const DATA_PACKAGES: [&str; 2] = ["mermaid", "net"];
 
 /// `core/view.json` 是数据，不发给模型，不登记：视图投影照它认哪件工具算命令、编辑、子代理、留言（施工 9-8 上，`view.md`）。
@@ -127,7 +117,7 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
         if entry.file_type().map_err(unreadable)?.is_dir() {
             // 给人看的字、模型资料、mermaid 的 style.json、net 的 link_preview.json 都不发给模型，不进登记簿（26 第十节，施工
             // 4-5 上、6-3 上、W-4、W-7）。QQ 桥原来 WebUI 的页面 `software/onebot/web/` 随施工 O-28 下去掉，网页软件的 `web/` 随施工
-            // S-5 搬出核心仓库，豁免都一起去掉（施工 T-13）。
+            // S-5 搬出核心仓库，豁免都一起去掉（施工 T-13）；接入QQ 的包文件夹随施工 S-6 下搬走，给它数据的豁免也去掉。
             if prefix.is_empty() && name == PACKAGES {
                 carried(&entry.path(), &format!("{path}/"), files)?;
                 continue;
@@ -142,7 +132,6 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
         } else if !(name == PERSONA_TOML
             && prefix.starts_with(PERSONAS_DIR)
             && prefix.matches('/').count() == 2)
-            && !ONEBOT_DATA.contains(&path.as_str())
             && !CORE_DATA.contains(&path.as_str())
         {
             files.insert(path, std::fs::read(entry.path()).map_err(unreadable)?);
@@ -281,13 +270,6 @@ mod tests {
             ("personas/x/persona.toml", "[persona]"),
             ("personas/x/prompts/persona.md", "p"),
             ("personas/x/prompts/persona.toml", "q"),
-            ("packages/onebot/data/defaults.toml", "[chatty]"),
-            ("packages/onebot/data/judge/system.txt", "s"),
-            ("software/x/defaults.toml", "d"),
-            ("packages/onebot/data/moderation.txt", "spam"),
-            ("packages/onebot/data/venues.d/50-defaults.toml", "[[rule]]"),
-            ("packages/onebot/data/venues.d/60-more.toml", "[[rule]]"),
-            ("software/x/moderation.txt", "m"),
             ("packages/web/package.toml", "[package]"),
             ("packages/kit/skills/notes/SKILL.md", "---"),
             ("packages/kit/skills/notes/reference.md", "r"),
@@ -296,16 +278,10 @@ mod tests {
             ("core/packages/p.txt", "p"),
             ("presets/dev.toml", "[preset]"),
             ("core/presets/p.txt", "p"),
-            ("packages/onebot/data/bridge.json", "{}"),
-            ("packages/onebot/data/prompt.txt", "p"),
-            ("software/x/bridge.json", "{}"),
-            ("packages/onebot/data/human/en.json", "{}"),
-            ("software/onebot/defaults.toml", "d"),
             ("packages/kit/data/notes.txt", "n"),
-            ("software/onebot/web/index.html", "x"),
-            ("software/onebot/web/app.js", "x"),
-            ("software/x/web/page.js", "x"),
-            ("software/onebot/x/web/page.js", "x"),
+            ("packages/kit/data/defaults.toml", "[chatty]"),
+            ("packages/kit/data/bridge.json", "{}"),
+            ("packages/kit/data/human/en.json", "{}"),
         ] {
             let path = dir.join(path);
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -316,12 +292,10 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
         walked.unwrap();
         // 给人看的字、最上一层的模型资料、软件包清单和出厂的预设、software/mermaid/、software/net/、人格目录的 persona.toml、
-        // 群聊内核的出厂参数 packages/onebot/data/defaults.toml、违规词表 moderation.txt、出厂的场所规则 venues.d/50-defaults.toml、桥自己
-        // 的数 packages/onebot/data/bridge.json（施工 S-6 上从 software/onebot/ 挪来，老地方不再豁免）、视图投影的工具分类 core/view.json
-        // 不登记，别的照查（别处叫 models、web、mermaid、net 的目录、别处的 defaults.toml、moderation.txt 和 bridge.json、别的包的 web/、
-        // venues.d/ 里别的文件、onebot 包里别的文件照查：只有正好这几处才豁免；QQ 桥原来 WebUI 的页面 software/onebot/web/ 随施工 O-28 下、
-        // 最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。软件包里带的技能、脚本、数据照查，数据里给人看的字、清单、后台页这些不查
-        // （施工 X-13 下、S-6 上）。
+        // 视图投影的工具分类 core/view.json 不登记，别的照查（别处叫 models、web、mermaid、net 的目录、别的包的 web/ 照查：只有正好
+        // 这几处才豁免；最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。软件包里带的技能、脚本、数据照查，数据里的出厂参数、
+        // 桥的数这类文件名不豁免（接入QQ 那四份的豁免随施工 S-6 下去掉），数据里给人看的字、清单、后台页这些不查（施工 X-13 下、
+        // S-6 上）。
         assert_eq!(
             found.keys().collect::<Vec<_>>(),
             [
@@ -331,26 +305,17 @@ mod tests {
                 "core/presets/p.txt",
                 "core/web/w.txt",
                 "core/x/view.json",
+                "packages/kit/data/bridge.json",
+                "packages/kit/data/defaults.toml",
                 "packages/kit/data/notes.txt",
                 "packages/kit/scripts/dice.py",
                 "packages/kit/skills/notes/SKILL.md",
                 "packages/kit/skills/notes/reference.md",
-                "packages/onebot/data/judge/system.txt",
-                "packages/onebot/data/prompt.txt",
-                "packages/onebot/data/venues.d/60-more.toml",
                 "personas/x/prompts/persona.md",
                 "personas/x/prompts/persona.toml",
-                "software/onebot/defaults.toml",
-                "software/onebot/web/app.js",
-                "software/onebot/web/index.html",
-                "software/onebot/x/web/page.js",
-                "software/x/bridge.json",
-                "software/x/defaults.toml",
                 "software/x/mermaid/not_special_here.json",
-                "software/x/moderation.txt",
                 "software/x/net/not_special_here.json",
                 "software/x/tools/t.json",
-                "software/x/web/page.js",
                 "web/pages/index.html",
                 "web/web.json",
             ]

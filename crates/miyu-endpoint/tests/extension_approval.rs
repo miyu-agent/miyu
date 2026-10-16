@@ -181,14 +181,20 @@ async fn more_capabilities_after_an_upgrade_ask_only_for_the_new_ones() {
 
 #[tokio::test]
 async fn a_shipped_extension_counts_as_approved() {
+    // 出厂的扩展用测试自己放的夹具（施工 S-6 下：接入QQ 搬出了核心仓库）。
     let home = Home::new();
-    let core = core(&home, quick());
+    let resources = shipped::resources(&home);
+    let core = Arc::new(
+        shipped::core(&home, &resources, &miyu_session::testkit::Script::new([]))
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    let bridge = status(&mut client, "onebot").await;
+    let bridge = status(&mut client, shipped::ID).await;
     let declared: Vec<&str> = bridge["capabilities"]
         .as_array()
-        .unwrap_or_else(|| panic!("出厂的桥声明了能力：{bridge}"))
+        .unwrap_or_else(|| panic!("出厂的扩展声明了能力：{bridge}"))
         .iter()
         .filter_map(|one| one["id"].as_str())
         .collect();
