@@ -108,6 +108,16 @@ impl Refusal {
             serde_json::Value::Array(list),
         )
     }
+    /// 装的包依赖的包没装（施工 F-11）：`data.missing` 是缺的那几个，照清单写的先后。
+    pub(crate) fn depends_missing(missing: &[&str]) -> Refusal {
+        Refusal::with("depends_missing", "missing", serde_json::json!(missing))
+    }
+
+    /// 卸的包被别的装着的包依赖着（施工 F-11）：`data.by` 是依赖它的那几个，照编号。
+    pub(crate) fn package_depended(by: &[String]) -> Refusal {
+        Refusal::with("package_depended", "by", serde_json::json!(by))
+    }
+
     /// 装的清单写错了、和别的包撞了（施工 F-5 上）：`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`。
     pub(crate) fn package_invalid(problem: String, line: Option<usize>) -> Refusal {
         let mut refusal = Refusal::with(

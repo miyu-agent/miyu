@@ -42,6 +42,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Conflicts with installed packages, cannot install.",
         ),
         "program_missing" => ("程序未安装。", "Program not installed."),
+        "depends_missing" => ("缺少依赖的软件包。", "Required packages are missing."),
+        "package_depended" => (
+            "其他软件包依赖它，无法卸载。",
+            "Other packages depend on it.",
+        ),
         "no_page" => ("没有后台页。", "No admin page."),
         "not_found" => ("文件不存在。", "File not found."),
         "program_not_running" => ("程序未运行。", "Program not running."),

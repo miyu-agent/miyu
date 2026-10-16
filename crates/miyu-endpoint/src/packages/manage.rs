@@ -182,6 +182,11 @@ pub(super) fn removable<'a>(found: &'a [Found], id: &str) -> Result<&'a Found, R
     if one.read.as_ref().is_ok_and(|manifest| manifest.required) {
         return Err(Refusal::PACKAGE_REQUIRED);
     }
+    // 被别的装着的包依赖着的卸不掉，说清被谁（施工 F-11，照 pacman）。
+    let by = super::depends::dependents(found, id);
+    if !by.is_empty() {
+        return Err(Refusal::package_depended(&by));
+    }
     Ok(one)
 }
 
@@ -383,6 +388,12 @@ pub(super) async fn clear_of_conflicts(
     dir: PathBuf,
 ) -> Result<(), Refusal> {
     let installed = core.packages();
+    // 依赖的包没装的装不上（施工 F-11）：升级时它自己那一份不算。软件源做好以后再定要不要自动装。
+    let others: Vec<&Found> = installed.iter().filter(|one| one.id != id).collect();
+    let missing = super::depends::missing(&others, &manifest);
+    if !missing.is_empty() {
+        return Err(Refusal::depends_missing(&missing));
+    }
     let reserved = core.commands.reserved();
     let id = id.to_string();
     let found =

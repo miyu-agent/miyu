@@ -167,7 +167,7 @@ args = ["serve"]
                     {"id": "xfiles", "name": "文件读写", "summary": "读写文件"},
                     {"id": "xcmd", "name": "Commands"},
                 ],
-                "recommends": {"workers": ["xembed"]},
+                "recommends": {"packages": ["xembed"]},
                 "status": "ready",
             }),
             json!({
@@ -180,7 +180,7 @@ args = ["serve"]
                 "process": {"args": [], "start": "manual"},
                 "features": [{"id": "xbridge", "name": "接入X"}],
                 "connection": {"platform": "x"},
-                "depends": {"workers": ["xembed"]},
+                "depends": {"packages": ["xembed"]},
                 "status": "program_missing",
                 "enabled": false,
             }),

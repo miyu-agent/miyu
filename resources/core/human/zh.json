@@ -489,6 +489,7 @@
     "package-problems/bad_content": "给别的包带的内容写法不对：{detail}",
     "package-problems/bad_needs": "要求的写法不对，现在只认 images：{detail}",
     "package-problems/page_missing": "{detail} 里没有 index.html",
+    "package-problems/depends_missing": "缺少依赖的软件包：{detail}",
     "package-problems/mascot_missing": "包目录里没有 {detail}",
     "package-problems/mascot_too_big": "{detail} 超过 256 KiB",
     "package-problems/mascot_not_json": "{detail} 不是 JSON 对象",

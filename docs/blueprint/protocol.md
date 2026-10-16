@@ -1166,6 +1166,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_file` | -32010 | `check` 写的文件不是 Miyu 读的那几种（施工 8-30） |
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
+| `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
 | `package_invalid`、`package_conflict`、`package_exists`、`package_required` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`）；和出厂的同编号；卸必需的（施工 F-5 上，`packages.md`「装卸」） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（必需的照旧回 `package_required`）（施工 F-6 上，`package-pages.md`） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
@@ -1341,6 +1342,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `package_invalid` | 清单有误，无法安装。 | Invalid manifest, cannot install. |
 | `package_conflict` | 与已安装的软件包冲突，无法安装。 | Conflicts with installed packages, cannot install. |
 | `program_missing` | 程序未安装。 | Program not installed. |
+| `depends_missing` | 缺少依赖的软件包。 | Required packages are missing. |
+| `package_depended` | 其他软件包依赖它，无法卸载。 | Other packages depend on it. |
 | `not_switchable` | 不能启用或停用。 | Cannot be enabled or disabled. |
 | `not_restartable` | 不能重启。 | Cannot be restarted. |
 | `package_off` | 软件包已停用。 | Package disabled. |

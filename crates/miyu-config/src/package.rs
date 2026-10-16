@@ -68,9 +68,9 @@ pub struct Manifest {
     pub features: Option<Vec<Feature>>,
     /// 平台接入（施工 F-1）：只有扩展包能写。
     pub connection: Option<Connection>,
-    /// 缺了就不起的小程序（施工 F-1）：包编号，照写的先后。
+    /// 依赖的包（施工 F-1，F-11 起什么种类都行）：缺了的装不上、装着的不起；包编号，照写的先后。
     pub depends: Vec<String>,
-    /// 缺了照起、少一部分本事的小程序（施工 F-1）。
+    /// 推荐的包（施工 F-1，F-11 起什么种类都行）：缺了照装、照起，少一部分本事。
     pub recommends: Vec<String>,
     /// 小程序怎么拉起（`kind = "worker"`，施工 F-1）。
     pub worker: Option<Worker>,
@@ -329,7 +329,9 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     let [depends, recommends] = ["depends", "recommends"].map(|name| {
         root.get(name)
             .and_then(Item::as_table_like)
-            .map_or(Ok(Vec::new()), |table| links::workers(&reader, table, name))
+            .map_or(Ok(Vec::new()), |table| {
+                links::dependencies(&reader, table, name)
+            })
     });
     let worker = match root.get("worker").and_then(Item::as_table_like) {
         Some(table) => Some(links::worker(&reader, table, &root["worker"])?),

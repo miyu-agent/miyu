@@ -489,6 +489,7 @@
     "package-problems/bad_content": "他のパッケージ向けの内容の書き方が正しくありません: {detail}",
     "package-problems/bad_needs": "要件の書き方が正しくありません。使えるのは images だけです: {detail}",
     "package-problems/page_missing": "{detail} に index.html がありません",
+    "package-problems/depends_missing": "依存するパッケージがありません：{detail}",
     "package-problems/mascot_missing": "パッケージディレクトリに {detail} がありません",
     "package-problems/mascot_too_big": "{detail} が 256 KiB を超えています",
     "package-problems/mascot_not_json": "{detail} は JSON オブジェクトではありません",

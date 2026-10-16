@@ -18,6 +18,7 @@ use miyu_store::root::DataRoot;
 use crate::Core;
 
 pub(crate) mod changes;
+pub(crate) mod depends;
 pub(crate) mod local;
 pub(crate) mod manage;
 pub(crate) mod methods;
@@ -152,6 +153,13 @@ fn listed(
             services::fill(core, &found.id, &mut item);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
+            // 依赖的包缺了（施工 F-11）：不起，写明缺谁。
+            let installed = core.packages();
+            let missing = depends::missing(&installed.iter().collect::<Vec<_>>(), manifest);
+            if !removed && !missing.is_empty() {
+                item["status"] = json!("depends_missing");
+                item["missing"] = json!(missing);
+            }
             let shipped = found.layer == miyu_store::packages::Layer::Shipped;
             if let Some(on) = status::enabled(core, &found.id, manifest, shipped, removed) {
                 item["enabled"] = json!(on);
@@ -246,13 +254,18 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if let Some(connection) = &manifest.connection {
         item["connection"] = json!({"platform": connection.platform});
     }
-    for (key, workers) in [
+    // 依赖、推荐的包（施工 F-11：以前只写小程序，叫 `workers`）。
+    for (key, packages) in [
         ("depends", &manifest.depends),
         ("recommends", &manifest.recommends),
     ] {
-        if !workers.is_empty() {
-            item[key] = json!({"workers": workers});
+        if !packages.is_empty() {
+            item[key] = json!({"packages": packages});
         }
+    }
+    // 给别的软件调的方法（施工 F-11，接入QQ 照它找挂在自己身上的包）。
+    if !manifest.export.is_empty() {
+        item["export"] = json!({"methods": manifest.export});
     }
     if let Some(worker) = &manifest.worker {
         item["worker"] = json!({"program": worker.program, "args": worker.args});

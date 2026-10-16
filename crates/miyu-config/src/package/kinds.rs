@@ -90,8 +90,15 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
             "page",
             "mascot",
         ],
-        PackageKind::Worker => &["package", "worker", "mascot"],
-        PackageKind::Mascot => &["package", "mascot"],
-        PackageKind::Bundle => &["package", "mcp", "mascot", "content"],
+        PackageKind::Worker => &["package", "worker", "mascot", "depends", "recommends"],
+        PackageKind::Mascot => &["package", "mascot", "depends", "recommends"],
+        PackageKind::Bundle => &[
+            "package",
+            "mcp",
+            "mascot",
+            "content",
+            "depends",
+            "recommends",
+        ],
     }
 }

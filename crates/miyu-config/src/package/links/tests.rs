@@ -150,13 +150,9 @@ fn each_kind_writes_only_its_own_tables() {
             "内置包不能写：{extra}"
         );
     }
-    for extra in [
-        command,
-        &check,
-        settings,
-        connection,
-        "\n[recommends]\nworkers = [\"x\"]\n",
-    ] {
+    let depends = read(&format!("{EMBED}\n[depends]\npackages = [\"x\"]\n")).unwrap();
+    assert_eq!(depends.depends, ["x"], "小程序也能写依赖（施工 F-11）");
+    for extra in [command, &check, settings, connection] {
         assert_eq!(
             wrong(&format!("{EMBED}{extra}")).0,
             Code::WrongKind,

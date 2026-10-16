@@ -1,5 +1,5 @@
 //! 包和别处的几条连线（施工 F-1，设计 `30-插件框架.md` 第五节、第六节，`docs/blueprint/packages.md`「格式」）：平台接入
-//! `[connection]`、依赖的小程序 `[depends]`、`[recommends]`、小程序自己的 `[worker]`。
+//! `[connection]`、依赖的包 `[depends]`、`[recommends]`（施工 F-11 起什么种类都行）、小程序自己的 `[worker]`。
 
 use toml_edit::{Item, TableLike};
 
@@ -44,30 +44,34 @@ pub(super) fn connection(
     })
 }
 
-/// `[depends]`、`[recommends]`（`name` 是哪一张）：`workers` 是小程序的包编号，不重复；没写的是空的。
-pub(super) fn workers(
+/// `[depends]`、`[recommends]`（`name` 是哪一张）：`packages` 是别的包的编号，什么种类都行（施工 F-11，照 pacman 只有一份包名）；
+/// 以前写的 `workers` 照样认，读进同一份。不重复；没写的是空的。
+pub(super) fn dependencies(
     reader: &Reader<'_>,
     table: &dyn TableLike,
     name: &str,
 ) -> Result<Vec<String>, Problem> {
-    reader.only(table, name, &["workers"])?;
-    let workers = reader.texts(table, name, "workers")?;
-    for (index, id) in workers.iter().enumerate() {
-        let why = if !valid_name(id) {
-            "is not a package id"
-        } else if workers[..index].contains(id) {
-            "is listed twice"
-        } else {
-            continue;
-        };
-        return Err(reader.problem(
-            table.get("workers"),
-            Code::BadDependency,
-            id,
-            format!("{name}.workers: {id:?} {why}"),
-        ));
+    reader.only(table, name, &["packages", "workers"])?;
+    let mut listed: Vec<String> = Vec::new();
+    for key in ["packages", "workers"] {
+        for id in reader.texts(table, name, key)? {
+            let why = if !valid_name(&id) {
+                "is not a package id"
+            } else if listed.contains(&id) {
+                "is listed twice"
+            } else {
+                listed.push(id);
+                continue;
+            };
+            return Err(reader.problem(
+                table.get(key),
+                Code::BadDependency,
+                &id,
+                format!("{name}.{key}: {id:?} {why}"),
+            ));
+        }
     }
-    Ok(workers)
+    Ok(listed)
 }
 
 /// `[export]`（施工 X-18）：`methods` 是给别的软件经 `package.call` 调的方法名，写法同后台页的方法（小写字母开头，小写字母、

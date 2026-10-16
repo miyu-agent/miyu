@@ -89,11 +89,11 @@ tools = ["read", "write", "edit"]                    # 下面的工具，可以�
 [connection]                     # 平台接入：只有扩展包能写
 platform = "qq"                  # 写法同包的编号
 
-[depends]                        # 缺了就不起的小程序：包编号，不重复
-workers = ["embed"]
+[depends]                        # 依赖的包：缺了装不上、装着的不起；包编号，什么种类都行，不重复（施工 F-11）
+packages = ["onebot"]            # 以前只写小程序，叫 workers，照样认
 
-[recommends]                     # 缺了照起、少一部分本事的小程序
-workers = ["embed"]
+[recommends]                     # 推荐的包：缺了照装、照起，少一部分本事
+packages = ["embed"]
 
 [worker]                         # 小程序必写，别的种类不能写
 program = "miyu-embed"           # 程序名，不带路径分隔符
@@ -121,9 +121,11 @@ program = "miyu-embed"
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
 | `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
-| `worker` | `[package]`、`[worker]` |
-| `mascot` | `[package]`、`[mascot]`（施工 F-7） |
-| `bundle` | `[package]`、`[[mcp]]`、`[mascot]`（施工 X-2）；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
+| `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
+| `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
+| `bundle` | `[package]`、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
+
+施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
 
 施工 F-6 上加的两格（`package-pages.md`「清单多的几格」）：`[package] icon` 是 Lucide 的图标名，哪种包都能写；`[page] dir` 是软件后台页在包目录里的子目录，入口是里面的 `index.html`，只有扩展、内置包能写。
 
@@ -163,7 +165,9 @@ program = "miyu-embed"
 | `required` | 必需的（施工 F-1） | `true` |
 | `features` | `builtin`、`process` 包（施工 F-1） | `[{"id", "name", "summary"}]`：照包算的那一个也列；名字、说明照语言挑，没说明的没有 `summary`；不列工具 |
 | `connection` | 写了的（施工 F-1） | `{"platform"}` |
-| `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"workers": [...]}` |
+| `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"packages": [...]}`，照写的先后（施工 F-11；以前是 `{"workers": [...]}`） |
+| `missing` | 依赖的包缺了的（施工 F-11） | 缺的那几个，照写的先后；这时 `status` 是 `depends_missing` |
+| `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...]}`，照写的先后：别的软件经 `package.call` 调得到的方法 |
 | `worker` | `worker` 包（施工 F-1） | `{"program", "args"}` |
 | `mcp` | 带 MCP 服务的（施工 X-2） | `[{"name", "command", "venues"}]`，照写的先后；环境变量不列（可能引用密钥） |
 | `command` | 有 `[command]` 的 | `{"name", "program", "about"}`，`about` 照语言挑 |
@@ -172,7 +176,7 @@ program = "miyu-embed"
 | `check` | 有 `[check]` 的 | `{"args"}` |
 | `icon` | 写了的（施工 F-6 上） | 原样 |
 | `page` | 有后台页的（施工 F-6 上） | `true` |
-| `status` | 读成了的（施工 F-6 上） | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，算法见 `package-pages.md` |
+| `status` | 读成了的（施工 F-6 上） | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，算法见 `package-pages.md`；依赖的包缺了的（卸掉的出厂的不算）是 `depends_missing`（施工 F-11） |
 | `enabled` | 有开关的（施工 F-6 上） | 开关现在开没开：扩展照它的开关，出厂的、不是必需的内置包照有没有卸掉 |
 | `removed` | 卸掉了的出厂包（施工 F-5 上） | `true`，接在后面 |
 | `code`、`problem`、`line` | 写错的、撞了的、读不了的、协议版本对不上的 | 代码；给人看的一句（照连接的语言，`core/human` 的 `package-problems/<code>`，读不了的是 `config/unreadable`）；第几行，有的才有。写错的、撞了的、读不了的只有 `package`、`layer` 和这几格；协议版本对不上的（`code` 是 `protocol_mismatch`）照样带全，头自己决定用不用 |
@@ -238,6 +242,14 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 2. 被带的那个包的扩展（核心拉起的）经 `content.list`、`content.read` 读（`protocol.md`），只读得到写明给它的那个目录；不要能力。包自己给自己带的照样列。
 3. 核心每重读一次清单（装、卸、升级、装回出厂的包），给它带内容的包前后有一个就给它推 `content.changed`（`{}`）。同版本重装也推（挂在重读上，不挂在列表的推送上）；前后都没有的不推。扩展照 `content.list` 的 `version`、自己记的摘要比，变了的重读。
 
+### 依赖（施工 F-11，设计 `31-软件包.md` 第三节，2026-10-17 接入QQ 的会话要的：附加包靠接入QQ 的 `[export]` 干活）
+
+1. **写法**：`[depends] packages`、`[recommends] packages` 写别的包的编号，什么种类都行；以前的 `workers` 照样认，和 `packages` 读进同一份（同一个编号两边都写了报 `bad_dependency`）。不做版本约束（pacman 的 `onebot>=1.2`），写了报 `bad_dependency`。
+2. **装**：`[depends]` 里有没装的（读成了的才算装了，升级时它自己那一份不算）拒绝 `depends_missing`，`data.missing` 是缺的那几个，什么都不留；看一眼（`preview`）、装回卸掉的出厂的同样查。软件源做好以后再定要不要自动装依赖。`[recommends]` 缺了照装。
+3. **卸**：别的装着的包依赖它的拒绝 `package_depended`，`data.by` 是依赖它的那几个，照编号（照 pacman）；`package.disable` 关出厂的内置包也走这里。
+4. **装着的缺了依赖**（手删了文件、出厂的被卸了、升级以后多依赖了一个）：扩展不拉起（核心起来时、装卸以后照新的清单拉起的那一批都不算它）；`package.list` 的 `status` 是 `depends_missing`、多一格 `missing`；`miyu check` 报 `depends_missing`（错误，说缺谁）。
+5. `package.list` 的每一项另带 `export`（写了 `[export]` 的方法名）：接入QQ 这类扩展照它找挂在自己身上的附加包，不用另外登记。
+
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）
 
 照 pacman 的 `local/`（`miyu_store::packages::local`，端点的 `packages/local.rs`）：
@@ -294,6 +306,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_widget` | `[[widget]]` 写错了（施工 X-15 上，`widgets.md`「清单」）：`detail` 是哪一格、报在那一段 |
 | `bad_content` | `[content.<包>]` 写错了（施工 X-22，「给别的包带的内容」）：键不是包的编号、不是表、`dir` 不是包目录里的相对目录 |
 | `bad_needs` | `[package] needs` 里有不认识的、重复的词（施工 X-25）：现在只认 `images` |
+| `depends_missing` | 装着的包依赖的包缺了（施工 F-11，`miyu check` 是错误）：`detail` 是缺的那几个，逗号分开 |
 | `protocol_mismatch` | 读成了，说的协议版本不包含 1（列表里照样带全；`miyu check` 是警告） |
 | `check_failed`、`check_unavailable`、`check_output` | 跑包的检查（施工 9-2，都是警告）：跑坏了、到时没完；程序没找到；印了看不懂的行 |
 
@@ -327,6 +340,8 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-config/src/package/mcp/tests.rs`、`crates/miyu-policy/src/features/tests.rs` 的 `an_mcp_tool_belongs_to_its_server_and_the_package_keeps_its_own`、`crates/miyu-store/src/packages/tests.rs` 的 `an_mcp_server_name_is_taken_by_whoever_is_read_first`、`crates/miyu-endpoint/tests/packages.rs` 的 `a_bundle_lists_its_mcp_servers_as_features`、`packages_preview.rs` 的 `a_bundle_preview_names_its_mcp_servers`、`crates/miyu-cli/src/pkg/confirm/tests.rs`（施工 X-2） | `[[mcp]]` 每一格、没写的照什么；每一种写错报 `bad_mcp`、报在那一段；只带 MCP 服务的是 `bundle`、不说协议、能带吉祥物；界面、小程序、内置包写了 `wrong_kind`；一个服务一个功能、扩展包照旧先算自己的；MCP 的工具照前缀归服务、包自己的工具照旧；两个包同名的服务后到的 `feature_taken`；列表、看一眼、命令行那一份都列出服务 |
 | `crates/miyu-store/src/packages/conflicts/tests.rs`、`crates/miyu-endpoint/tests/packages_conflicts.rs`、`crates/miyu-store/src/skills/tests.rs` 和 `scripts/tests.rs` 的 `a_shipped_package_wins_over_a_home_one_whatever_the_ids`、`crates/miyu-store/tests/knowledge_package.rs` 的 `the_package_given_first_wins_whatever_its_id`、`crates/miyu-endpoint/tests/knowledge_package.rs` 的 `a_shipped_package_base_wins_over_a_home_one_whatever_the_ids`、`crates/miyu-cli/src/pkg/tests.rs` 的 `a_conflict_says_cannot_install_and_one_line_each`（施工 F-8 六补） | 「冲突」：六样各找得到、各算各的，同一个包、读坏了的不比；真核心：撞了技能的装不上、看一眼也拒、什么都不动、装着的照旧好；编号排在前的新包挤不掉装着的（以前挤得掉）；脚本撞了出厂的工具、MCP 服务、知识库也算；升级自己、和家目录里自己放的同名照装；装回出厂的也查；读的时候技能、脚本、库出厂的先于家目录；命令行第一行说装不上、一处一行 |
 | `crates/miyu-endpoint/tests/packages.rs` | `package.list` 的每一格、照语言挑；施工 F-1 的几格（必需、功能、平台接入、依赖、小程序）；没编进来的内置包报 `not_built_in`、只认读成了的内置包算装了（施工 F-2）；写错的、同编号、撞名、协议版本对不上、`process` 和 `check`；起来时读一次；`check` 查清单、写了文件的认得出、别的文件认不出。只断言出厂的网页和测试自己放的几份，家目录里的编号、子命令名避开出厂会有的（施工 9-1 补：终端界面要出厂 `tui`）；家目录里以前的写法读时挪成新的（施工 F-8 上） |
+
+| `crates/miyu-endpoint/src/packages/depends/tests.rs`、`crates/miyu-endpoint/tests/package_depends.rs`（施工 F-11） | 缺了的装不上、`data.missing` 照写的先后；被依赖的卸不掉、`data.by`；装着的缺了依赖的列表写 `depends_missing`、`miyu check` 报；以前的 `workers` 照认；推荐的缺了不算；读坏了的不算装着；依赖缺了的扩展不拉起；列表带 `export` |
 
 ### 起草时定的
 

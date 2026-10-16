@@ -20,7 +20,7 @@ use serde_json::{Value, json};
 use miyu_config::{Layer, Words};
 use miyu_store::config_file::{self, ReadError};
 use miyu_store::human::Human;
-use miyu_store::packages::Issue;
+use miyu_store::packages::{Found, Issue};
 use miyu_store::personas::{Checked, Issue as PersonaIssue};
 use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 
@@ -250,6 +250,14 @@ async fn check_packages(
                 if let Some(range) = crate::packages::mismatch(manifest) {
                     let message = crate::packages::sentence(words, "protocol_mismatch", &range);
                     problems.push(json!({"kind": "package", "file": file, "code": "protocol_mismatch", "level": "warning", "message": message.unwrap_or_default()}));
+                }
+                // 依赖的包缺了（施工 F-11）：这个包不起。
+                let installed: Vec<&Found> = found.iter().collect();
+                let missing = crate::packages::depends::missing(&installed, manifest);
+                if !missing.is_empty() {
+                    let message =
+                        crate::packages::sentence(words, "depends_missing", &missing.join(", "));
+                    problems.push(json!({"kind": "package", "file": file, "code": "depends_missing", "level": "error", "message": message.unwrap_or_default()}));
                 }
                 // 写了后台页、目录里没有入口（施工 F-6 上，`package-pages.md`）：`package.list` 不带 `page`，这里说一声。
                 if let Some(dir) = manifest

@@ -328,7 +328,9 @@ impl Core {
         self.note_home_mcp();
         let (switches, _) = read_switches(self);
         let packages = self.packages();
-        for (id, manifest) in processes(&packages) {
+        // 依赖的包缺了的不起（施工 F-11）：`package.list` 的状态写明缺谁。
+        let all: Vec<&Found> = packages.iter().collect();
+        for (id, manifest) in processes_of(&all) {
             self.start_one(id, manifest, &switches);
         }
         // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；个人设置里的写了就起（施工 F-9 下）。
@@ -405,9 +407,13 @@ impl Core {
 /// 一份清单里的扩展包：编号到清单（施工 F-5 下、补：装卸时照它对）。
 pub(crate) type Processes<'a> = BTreeMap<&'a str, &'a Manifest>;
 
-/// 清单 `packages` 里的扩展包，收成 [`Processes`]。
+/// 清单 `packages` 里起得来的扩展包，收成 [`Processes`]：依赖的包缺了的不算（施工 F-11），装卸时照它停下、拉起。
 pub(crate) fn processes_of<'a>(packages: &[&'a Found]) -> Processes<'a> {
-    packages.iter().filter_map(|found| process(found)).collect()
+    packages
+        .iter()
+        .filter_map(|found| process(found))
+        .filter(|(_, manifest)| crate::packages::depends::missing(packages, manifest).is_empty())
+        .collect()
 }
 
 pub(crate) fn processes(packages: &[Found]) -> impl Iterator<Item = (&str, &Manifest)> {
