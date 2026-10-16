@@ -854,6 +854,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s8-11e"><span class="n">8-11 五补</span>测试连接只列模型<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s8-32"><span class="n">8-32</span>新会话的权限级别<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sP-9"><span class="n">P-9</span>AI 怎么认识你<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sP-9b"><span class="n">P-9 补</span>回复语言<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s8-11f"><span class="n">8-11 六补</span>自定义的一家问编号<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s8-11h"><span class="n">8-11 七补</span>编号改叫 ID<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-12p"><span class="n">X-12 补</span>家目录的脚本跟着变<span class="st">✓</span></a></li>
@@ -25027,6 +25028,41 @@ a.step:hover{border-color:var(--primary)}
       </ul>
     </div>
   </div>
+</section>
+<section class="sheet" id="sP-9b" aria-labelledby="h-sP9b">
+  <div class="sheet-head"><h2 id="h-sP9b"><span class="no">P-9 补</span>回复语言</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人要一个回复语言：放「AI 怎么认识你」，叫 preferred（默认用它、明说可换），只加一行不另写指令；设置里下拉常用十几种加「其他」手写。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">回复语言</span><span class="dir-note">P-9 补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>个人配置 <code>profile.preferred_reply_language</code>，最多 64 个字，新会话生效</li>
+              <li><code>&lt;user&gt;</code> 块多一行；没填的一字不差，以前的请求不变</li>
+              <li>新控件 <code>combo</code>：字表给 <code>suggestions</code>，照界面语言排先后</li>
+              <li>登记簿：这一行 11 token；开发端点实测有用</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">2026-10-16 项目主人定</span><span class="rl">放关于你；叫 preferred；只加一行</span></div>
+          <div class="tile new"><span class="nm">不跟界面语言</span><span class="rl">界面语言管软件的字、跟着头走</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">P-9 补</dd></div>
+        <div><dt>名称</dt><dd>回复语言</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">c8228997</dd></div>
+        <div><dt>验收</dt><dd>真核心两个测试、手写变异 9 处全抓住、三台 CI（run 38873934739）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
 </section>
 
 <section class="sheet" id="s8-11f" aria-labelledby="h-s811f">
