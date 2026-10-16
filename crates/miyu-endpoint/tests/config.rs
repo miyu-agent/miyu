@@ -160,6 +160,10 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     );
     let language = &all["result"]["items"][6];
     assert_eq!(language["control"], "combo", "下拉加手写（施工 P-9 补）");
+    assert_eq!(
+        language["common"], true,
+        "和称呼一样标常用：头把常用项排在组里前面，回复语言才排得到第一（2026-10-17）"
+    );
     assert_eq!(language["type"], "text");
     assert_eq!(language["max"], 64);
     assert_eq!(
