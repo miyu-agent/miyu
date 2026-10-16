@@ -67,6 +67,7 @@ fn the_registered_list_is_well_formed() {
             "permission.level",
             "profile.name",
             "profile.about",
+            "profile.preferred_reply_language",
             "external.bindings.<external>",
             "models.chat",
             "models.vision",

@@ -10,7 +10,7 @@ use std::fmt;
 
 use serde::Deserialize;
 
-use crate::item::{Item, Kind};
+use crate::item::{Control, Item, Kind};
 
 /// 一种语言的给人看的字，由读资源的那一层实现（`miyu-store` 的 `Human`）。
 pub trait Words {
@@ -47,6 +47,10 @@ pub struct ItemWords {
     /// 选项名：选项到给人看的名字。别的类型没有。
     #[serde(default)]
     pub options: BTreeMap<String, String>,
+    /// 下拉加「其他」手写（`combo`，施工 P-9 补）的建议值，照这种语言的人最常用的排在前面；写进配置的就是值本身。别的
+    /// 控件没有。
+    #[serde(default)]
+    pub suggestions: Vec<String>,
 }
 
 /// 生成文件要的字缺了（资源目录装得不全、旧了）。
@@ -97,6 +101,17 @@ pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
             if !options.contains(&option.as_str()) {
                 problems.push(format!("{key}：资源里多了选项 {option}"));
             }
+        }
+        // 下拉加手写（施工 P-9 补）：要有建议值、一个都不空；别的控件不写。
+        if item.ui.control == Control::Combo {
+            if said.suggestions.is_empty() {
+                problems.push(format!("{key}：没有建议值"));
+            }
+            if said.suggestions.iter().any(|value| value.trim().is_empty()) {
+                problems.push(format!("{key}：有空的建议值"));
+            }
+        } else if !said.suggestions.is_empty() {
+            problems.push(format!("{key}：不是下拉加手写，资源里多了建议值"));
         }
     }
     let keys: BTreeSet<&str> = items.iter().map(|item| item.key).collect();

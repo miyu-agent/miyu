@@ -282,6 +282,13 @@
           "minLength": 1,
           "title": "AI 怎么称呼你",
           "type": "string"
+        },
+        "preferred_reply_language": {
+          "description": "AI 默认用哪种语言回复，对话里可以随时让它换。新会话生效。能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "回复语言",
+          "type": "string"
         }
       },
       "type": "object"

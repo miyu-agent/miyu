@@ -34,7 +34,7 @@ async fn asked_both(profile: &str, personal: &str) -> (String, String) {
     let lines = Lines {
         profile: miyu_policy::Profile {
             name: profile.to_string(),
-            about: String::new(),
+            ..miyu_policy::Profile::default()
         },
         ..Lines::default()
     };
@@ -96,7 +96,7 @@ async fn organizing_now_writes_the_name_too() {
     let lines = Lines {
         profile: miyu_policy::Profile {
             name: "阿凯".to_string(),
-            about: String::new(),
+            ..miyu_policy::Profile::default()
         },
         ..Lines::default()
     };

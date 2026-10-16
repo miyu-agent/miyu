@@ -54,6 +54,7 @@ pub(super) fn profile_for(
         true => Profile {
             name: settings.name.unwrap_or_default(),
             about: settings.about.unwrap_or_default(),
+            preferred_reply_language: settings.preferred_reply_language.unwrap_or_default(),
         },
         false => Profile::default(),
     }

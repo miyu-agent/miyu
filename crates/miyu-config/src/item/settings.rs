@@ -362,4 +362,7 @@ macro_rules! __settings_control {
     (list) => {
         $crate::Control::List
     };
+    (combo) => {
+        $crate::Control::Combo
+    };
 }

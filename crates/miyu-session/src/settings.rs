@@ -67,7 +67,7 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
-    /// 「AI 怎么认识你」（施工 P-9，2026-10-13 项目主人定：两项，称呼和更多描述）：只写在个人设置里，新会话生效。造会话时
+    /// 「AI 怎么认识你」（施工 P-9，2026-10-13 项目主人定：两项，称呼和更多描述；P-9 补 2026-10-16 加回复语言）：只写在个人设置里，新会话生效。造会话时
     /// 照模板拼进 system（`miyu_policy::Profile`）；本机开的会话带，场所会话照桥交的 `profile`。抽取、合并照它写人（施工 R-6 再修，
     /// 从端点挪到这里：会话这一层要读）。
     pub struct ProfileSettings in "profile" {
@@ -84,6 +84,14 @@ miyu_config::settings! {
             layers: [Personal],
             applies: new_session,
             ui: { page: "general", group: "profile", control: text },
+        },
+        /// 希望她默认用哪种语言回（施工 P-9 补，2026-10-16 项目主人定）：可以空；设置页是下拉加「其他」手写，下拉里的建议值
+        /// 在字表里（`suggestions`）。
+        preferred_reply_language: Option<String> = none {
+            kind: text [64],
+            layers: [Personal],
+            applies: new_session,
+            ui: { page: "general", group: "profile", control: combo },
         },
     }
 }

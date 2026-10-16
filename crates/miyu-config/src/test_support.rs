@@ -80,6 +80,7 @@ pub(crate) fn said(name: &str, description: &str, options: &[&str]) -> ItemWords
             .iter()
             .map(|option| (option.to_string(), option.to_uppercase()))
             .collect(),
+        suggestions: Vec::new(),
     }
 }
 

@@ -83,6 +83,11 @@
         "name": "More about you",
         "description": "Anything you want the AI to know about you; can be left empty. Takes effect in new sessions; not included in group chats on messaging platforms."
       },
+      "profile.preferred_reply_language": {
+        "name": "Reply language",
+        "description": "The language the AI replies in by default. You can ask it to switch at any time. Takes effect in new sessions.",
+        "suggestions": ["English", "简体中文", "繁體中文", "日本語", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
+      },
       "permission.level": {
         "name": "Permission level for new sessions",
         "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.",

@@ -1,4 +1,5 @@
 <user>
 name: {name}
 about: {about}
+preferred_reply_language: {preferred_reply_language}
 </user>

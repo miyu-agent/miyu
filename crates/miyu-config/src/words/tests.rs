@@ -165,3 +165,46 @@ fn missing_sentences_are_named() {
         "no words for config/or"
     );
 }
+
+#[test]
+fn a_combo_needs_suggestions_and_other_controls_have_none() {
+    let mut combo = item("profile.language", &["x", "y"], "x");
+    combo.kind = crate::item::Kind::Text { max: 64 };
+    combo.default = None;
+    combo.ui.control = crate::item::Control::Combo;
+    let list = vec![combo];
+    let mut words = ConfigWords {
+        items: [(
+            "profile.language".to_string(),
+            said("回复语言", "说明。", &[]),
+        )]
+        .into_iter()
+        .collect(),
+        ..good()
+    };
+    words.items.retain(|key, _| key == "profile.language");
+    let only_ours = |problems: Vec<String>| -> Vec<String> {
+        problems
+            .into_iter()
+            .filter(|problem| problem.starts_with("profile.language"))
+            .collect()
+    };
+    assert_eq!(
+        only_ours(check(&list, &words)),
+        ["profile.language：没有建议值"]
+    );
+    words.items.get_mut("profile.language").unwrap().suggestions =
+        vec!["简体中文".to_string(), " ".to_string()];
+    assert_eq!(
+        only_ours(check(&list, &words)),
+        ["profile.language：有空的建议值"]
+    );
+    words.items.get_mut("profile.language").unwrap().suggestions = vec!["简体中文".to_string()];
+    assert_eq!(only_ours(check(&list, &words)), Vec::<String>::new());
+    let mut good = good();
+    good.items.get_mut("ui.language").unwrap().suggestions = vec!["中文".to_string()];
+    assert_eq!(
+        check(&items(), &good),
+        ["ui.language：不是下拉加手写，资源里多了建议值"]
+    );
+}

@@ -1,14 +1,22 @@
-//! 「关于你」那一块（施工 P-9）：两项都有、只有一项、都空、截断、称呼里的换行，接在 system 的哪里。
+//! 「关于你」那一块（施工 P-9、P-9 补）：几项都有、只有一项、都空、截断、称呼和回复语言里的换行，接在 system 的哪里。
 
 use super::*;
 use crate::test_support::engineer;
 
-const TEMPLATE: &str = "<user>\nname: {name}\nabout: {about}\n</user>\n";
+const TEMPLATE: &str = "<user>\nname: {name}\nabout: {about}\npreferred_reply_language: {preferred_reply_language}\n</user>\n";
 
 fn profile(name: &str, about: &str) -> Profile {
     Profile {
         name: name.to_string(),
         about: about.to_string(),
+        preferred_reply_language: String::new(),
+    }
+}
+
+fn speaking(language: &str) -> Profile {
+    Profile {
+        preferred_reply_language: language.to_string(),
+        ..Profile::default()
     }
 }
 
@@ -29,6 +37,40 @@ fn both_fields_make_a_block_and_empty_ones_drop_their_line() {
         Some("<user>\nabout: 喜欢先看结论\n</user>")
     );
     assert_eq!(profile(" ", "\n").block(TEMPLATE), None, "都空的没有");
+}
+
+#[test]
+fn the_reply_language_is_one_more_line_and_alone_still_makes_a_block() {
+    let both = Profile {
+        preferred_reply_language: " 简体中文 ".to_string(),
+        ..profile("小林", "")
+    };
+    assert_eq!(
+        both.block(TEMPLATE).as_deref(),
+        Some("<user>\nname: 小林\npreferred_reply_language: 简体中文\n</user>")
+    );
+    assert_eq!(
+        speaking("日本語").block(TEMPLATE).as_deref(),
+        Some("<user>\npreferred_reply_language: 日本語\n</user>"),
+        "只填了回复语言也有这一块"
+    );
+    assert_eq!(
+        speaking("粤\n语").block(TEMPLATE).as_deref(),
+        Some("<user>\npreferred_reply_language: 粤 语\n</user>"),
+        "一行，换行换成空格"
+    );
+    let long = speaking(&"语".repeat(LANGUAGE_MAX + 5))
+        .block(TEMPLATE)
+        .expect("有");
+    assert!(long.contains(&format!(
+        "preferred_reply_language: {}\n",
+        "语".repeat(LANGUAGE_MAX)
+    )));
+    assert_eq!(
+        profile("小林", "").block("<user>\nname: {name}\n</user>\n"),
+        profile("小林", "").block(TEMPLATE),
+        "没填回复语言的，和模板里没有这一行时一字不差（以前的请求不变）"
+    );
 }
 
 #[test]

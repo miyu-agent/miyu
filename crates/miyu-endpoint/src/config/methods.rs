@@ -196,6 +196,10 @@ fn schema_item(
     map.insert("group".to_string(), json!(item.ui.group));
     map.insert("common".to_string(), json!(item.ui.common));
     map.insert("control".to_string(), json!(item.ui.control.as_str()));
+    // 下拉加「其他」手写（施工 P-9 补）：建议值照连接的语言那一份字表。
+    if let Some(said) = said.filter(|said| !said.suggestions.is_empty()) {
+        map.insert("suggestions".to_string(), json!(said.suggestions));
+    }
     if item.ui.hidden {
         map.insert("hidden".to_string(), json!(true));
     }

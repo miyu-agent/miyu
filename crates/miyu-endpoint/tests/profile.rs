@@ -1,4 +1,4 @@
-//! 「AI 怎么认识你」（施工 P-9，`docs/blueprint/prompts.md`「关于你」）：个人设置里写了称呼、更多描述的，本机开的新会话的
+//! 「AI 怎么认识你」（施工 P-9、P-9 补，`docs/blueprint/prompts.md`「关于你」）：个人设置里写了称呼、更多描述、回复语言的，本机开的新会话的
 //! system 里接上那一块、记进快照；没写的一字不变。场所会话只有属主是管理员本人、桥在 `venue.session` 里写了 `profile` 的
 //! 才带。
 
@@ -68,6 +68,33 @@ async fn a_written_profile_joins_the_system_of_new_sessions() {
         with.system.replace(&format!("{block}\n\n"), ""),
         plain.system,
         "别的一字不变"
+    );
+}
+
+#[tokio::test]
+async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
+    let home = Home::new();
+    home.write(
+        "home/alice/settings.toml",
+        &format!("{PROFILE}preferred_reply_language = \"简体中文\"\n"),
+    );
+    let both = snapshot(&home, &open(&home, "c1").await);
+    assert_eq!(
+        both.profile.as_deref(),
+        Some(
+            "<user>\nname: 小林\nabout: 写 Rust 的独立开发者\npreferred_reply_language: 简体中文\n</user>"
+        ),
+        "接在更多描述后面（施工 P-9 补）"
+    );
+    home.write(
+        "home/alice/settings.toml",
+        "[profile]\npreferred_reply_language = \"日本語\"\n",
+    );
+    let alone = snapshot(&home, &open(&home, "c2").await);
+    assert_eq!(
+        alone.profile.as_deref(),
+        Some("<user>\npreferred_reply_language: 日本語\n</user>"),
+        "只填了回复语言也带"
     );
 }
 

@@ -237,6 +237,7 @@ impl Human {
                     name: pick(&setting.label).unwrap_or_else(|| key.clone()),
                     description: pick(&setting.description).unwrap_or_default(),
                     options: BTreeMap::new(),
+                    suggestions: Vec::new(),
                 };
                 self.config.items.insert(key, words);
             }

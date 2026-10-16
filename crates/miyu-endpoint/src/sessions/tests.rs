@@ -133,18 +133,23 @@ fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
     );
 }
 
-/// 「关于你」（施工 P-9）：属主是管理员本人、又是本机开的或者桥说要的才带，别的都是空的。
+/// 「关于你」（施工 P-9、P-9 补）：属主是管理员本人、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。
 #[test]
 fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
     let settings = || ProfileSettings {
         name: Some("小林".to_string()),
         about: Some("写 Rust".to_string()),
+        preferred_reply_language: Some("简体中文".to_string()),
     };
     let venue = local();
     let full = profile_for(settings(), None, false, true);
     assert_eq!(
-        (full.name.as_str(), full.about.as_str()),
-        ("小林", "写 Rust")
+        (
+            full.name.as_str(),
+            full.about.as_str(),
+            full.preferred_reply_language.as_str()
+        ),
+        ("小林", "写 Rust", "简体中文")
     );
     assert_eq!(
         profile_for(settings(), Some(&venue), true, true),
@@ -165,6 +170,7 @@ fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
     let empty = ProfileSettings {
         name: None,
         about: None,
+        preferred_reply_language: None,
     };
     assert_eq!(
         profile_for(empty, None, false, true),

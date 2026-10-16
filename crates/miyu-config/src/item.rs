@@ -146,10 +146,13 @@ pub enum Control {
     Number,
     /// 列表（施工 8-6：供应商的几个 key）。
     List,
+    /// 下拉加「其他」手写（施工 P-9 补：回复语言）：下拉里是字表给的几个建议值（`suggestions`），选「其他」写一行字；写进
+    /// 配置的就是那一行字，类型照旧是文字。
+    Combo,
 }
 
 impl Control {
-    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`。
+    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`、`combo`。
     pub fn as_str(self) -> &'static str {
         match self {
             Control::Select => "select",
@@ -157,6 +160,7 @@ impl Control {
             Control::Text => "text",
             Control::Number => "number",
             Control::List => "list",
+            Control::Combo => "combo",
         }
     }
 }

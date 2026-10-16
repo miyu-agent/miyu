@@ -139,6 +139,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
             "permission.level",
             "profile.name",
             "profile.about",
+            "profile.preferred_reply_language",
             "log.level"
         ]
     );
@@ -153,7 +154,20 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     let level = &all["result"]["items"][5];
     assert_eq!(level["control"], "select", "{level}");
     assert_eq!(level["default"], "workspace", "{level}");
-    assert_eq!(all["result"]["items"][8]["env"], "MIYU_LOG");
+    let language = &all["result"]["items"][8];
+    assert_eq!(language["control"], "combo", "下拉加手写（施工 P-9 补）");
+    assert_eq!(language["type"], "text");
+    assert_eq!(language["max"], 64);
+    assert_eq!(
+        language["suggestions"][0], "简体中文",
+        "中文的连接，简体中文排第一"
+    );
+    assert_eq!(language["suggestions"].as_array().map(Vec::len), Some(15));
+    assert!(
+        all["result"]["items"][7].get("suggestions").is_none(),
+        "别的控件不带建议值"
+    );
+    assert_eq!(all["result"]["items"][9]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
         json!([{"id":"general","name":"通用"},{"id":"advanced","name":"高级"}])

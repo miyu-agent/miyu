@@ -148,6 +148,10 @@ default = "full"
 # Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
 # name =
 
+# Reply language: The language the AI replies in by default. You can ask it to switch at any time. Takes effect in new sessions.
+# Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
+# preferred_reply_language =
+
 [providers."<id>"]
 # Address: The address of this provider's API; the driver adds the path. Known providers can leave it out.
 # Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.

@@ -282,6 +282,13 @@
           "minLength": 1,
           "title": "What the AI calls you",
           "type": "string"
+        },
+        "preferred_reply_language": {
+          "description": "The language the AI replies in by default. You can ask it to switch at any time. Takes effect in new sessions. Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Reply language",
+          "type": "string"
         }
       },
       "type": "object"
