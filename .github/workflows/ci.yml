@@ -6,6 +6,17 @@ name: CI
 on:
   push:
     branches: [main, "step/**"]
+    # 只改了门禁不读的文档不跑（2026-10-16 项目主人同意，施工单 0-3 四补）：施工单、作者说明、评审、设计文档。门禁读的
+    # 照跑：蓝图（样本块、提示词）、设计 01、23、26（层、性能预算、提示词登记簿）、docs/perf。后写的盖先写的。
+    paths:
+      - "**"
+      - "!docs/construction/**"
+      - "!docs/authors/**"
+      - "!docs/reviews/**"
+      - "!docs/designs/**"
+      - "docs/designs/01-架构.md"
+      - "docs/designs/23-性能预算.md"
+      - "docs/designs/26-提示词.md"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +26,30 @@ permissions:
 # （施工 3-7 中）。原来是 30 分钟，2026-10-07 项目主人定改成 45：Windows 平时要 28、29 分钟，长跑 20 到 29 分钟，
 # 几个分支同时排队时卡在线上被取消。
 jobs:
+  # main 上的这个提交在分支上已经整套跑绿过（照 main 快进合的，同一个 sha）：下面三项缓存正好命中的就不再跑一遍，只在缓存
+  # 没命中时照跑，顺带把这一份缓存存上（只有 main 存缓存，分支照它取）。别的分支、手动跑的照旧全跑。
+  tested:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    outputs:
+      already: ${{ steps.look.outputs.already }}
+    steps:
+      - id: look
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          already=false
+          if [ "$GITHUB_REF" = "refs/heads/main" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&status=success&per_page=50" \
+              --jq '[.workflow_runs[] | select(.name == "CI" and .head_branch != "main")] | length')
+            [ "${n:-0}" -gt 0 ] && already=true
+          fi
+          echo "already=$already" >> "$GITHUB_OUTPUT"
+          echo "这个提交在分支上已经测过：$already"
+
   check:
+    needs: tested
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -33,11 +67,13 @@ jobs:
       # 有 1.98.1 的、有 1.99.0 的），分支几乎对不上 main 存的那一份。钉住的工具链在 rust-toolchain.toml 里，它已经
       # 算在键的后一半，换了照样换一份缓存（2026-10-08，0-3 再补）。
       - name: 取编译缓存
+        id: cache
         uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
       - name: 门禁
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: cargo xtask check
 
   # 长跑：随机测试接着平时的往后跑两万例（照 niri 的 randomized-tests，施工 2-10）。平时的
@@ -46,6 +82,7 @@ jobs:
   # 测试本身不到 2 分钟；别的 #[ignore] 是量尺、要外网、要虚拟机的，在这里跑了也白跑。新加长跑测试照这个名字、
   # 放在别的 crate 里的，把 crate 加进下面这一行。
   randomized:
+    needs: tested
     timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
@@ -53,11 +90,13 @@ jobs:
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
       - name: 取编译缓存
+        id: cache
         uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
       - name: 长跑
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         # 查对错，不量快慢：不用 release 的整体优化（施工 V-5 下），省下编的时间。
         env:
           CARGO_PROFILE_RELEASE_LTO: "false"
@@ -68,6 +107,7 @@ jobs:
   # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间、内存超过预算本身就红（施工 V-5 下，以前时间放到 1.5 倍）
   # （倍数照这台机器实测定，见 docs/blueprint/perf.md「闸门」）。
   perf:
+    needs: tested
     timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
@@ -75,15 +115,18 @@ jobs:
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
       - name: 取编译缓存
+        id: cache
         uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           add-rust-environment-hash-key: false
       # 三家对比的测具（施工 V-7）本身要真模型、要别家的程序，发版前人跑；这里只跑它不用别家就能查的几条：表写得对、占位都认识、汇表。
       - name: 三家对比的测具
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: python3 -m unittest discover -s bench/rivals -p 'test_*.py'
       - name: 量尺
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: cargo xtask perf --idle-wait 0 --gate 1 --out "$GITHUB_WORKSPACE/target/perf-out"
       - name: 表贴进摘要
-        if: always()
+        if: always() && (needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true')
         run: cat "$GITHUB_WORKSPACE"/target/perf-out/*.md | tee -a "$GITHUB_STEP_SUMMARY" || true
