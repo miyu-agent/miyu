@@ -22,6 +22,7 @@
 | `manifest` | `read`、`Value` | `miyu-config` |
 | `log` | `install`、`LevelFilter` | `miyu-log` |
 | `seeds` | `from_image`、`from_rgba`、`Seed`、`MAX`：从一张图挑主题色的候选，头算壁纸的用它，和核心算人格头像的（`persona.list` 的 `seeds`）同一份（施工 P-6 补，`personas.md`「主题色、背景图」第 4 条） | `miyu-seeds` |
+| `heap` | `tune`、`trim`、`stats`、`Stats`、`usage`、`resident`、`Usage`：进程的堆，和核心的同一份；头起来时、还没起别的线程时调一次 `tune`（施工 S-1 补，终端画图量出来的；`docs/designs/23-性能预算.md` F3） | `miyu-heap` |
 | 根 | `CoreCommand`；`testkit` 打开时 `WORKSPACE_ROOT`（钉住的那份检出的仓库根，测试照它读 `resources/`、`docs/designs/samples/`） | 本 crate |
 
 ### 规矩

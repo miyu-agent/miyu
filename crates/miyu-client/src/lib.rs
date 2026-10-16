@@ -10,6 +10,7 @@
 //! - [`manifest`]：读自己的软件包清单（`miyu-config`）。
 //! - [`log`]：运行日志（`miyu-log`）。
 //! - [`seeds`]：从一张图挑主题色的候选，跟随壁纸用（`miyu-seeds`，施工 P-6 补）：和核心算头像的同一份。
+//! - [`heap`]：进程的堆：glibc 上限 arena、定大块门槛，空着的还给系统，自己占了多少（`miyu-heap`，施工 S-1 补）。
 
 pub mod open;
 #[cfg(test)]
@@ -68,4 +69,11 @@ pub mod log {
 /// 解码、缩图、量化、打分，挑出来的一样。
 pub mod seeds {
     pub use miyu_seeds::{MAX, Seed, from_image, from_rgba};
+}
+
+/// 进程的堆（施工 S-1 补）：和核心用的同一份。头起来时、还没起别的线程时调一次 [`heap::tune`]；不调的话 glibc 放掉一大块以后
+/// 自己抬高大块门槛，之后的大块落进堆里碎掉、还不回去（终端画 23 张图量过：53 MiB，调了 23 MiB）。别的平台什么都不做。
+pub mod heap {
+    pub use miyu_heap::usage::{Usage, resident, usage};
+    pub use miyu_heap::{Stats, stats, trim, tune};
 }

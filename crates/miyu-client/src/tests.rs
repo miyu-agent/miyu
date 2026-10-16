@@ -8,6 +8,7 @@ use crate::{
         ConnectError, Connection, Ready, StartError, connect, connect_or_start,
         connect_or_start_bare, spawn_detached,
     },
+    heap::{Stats, Usage, resident, stats, trim, tune, usage},
     log::{LevelFilter, install},
     manifest::{Value, read},
     open::{Browser, Core, SystemBrowser},

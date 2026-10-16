@@ -1832,6 +1832,7 @@ name = "miyu-client"
 version = "0.0.0"
 dependencies = [
  "miyu-config",
+ "miyu-heap",
  "miyu-ipc",
  "miyu-kernel",
  "miyu-log",
