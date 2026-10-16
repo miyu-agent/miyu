@@ -75,6 +75,8 @@ pub struct Texts {
     /// 工具目录里这一刻的工具给人看的名字（施工 9-8 六补）：脚本、MCP 的、扩展的工具交的，照连接的语言挑好的；核心自带的
     /// 照核心的字，不在里面。结果里记下了的照记下的，这一份给还在跑的、以前的日志兜底。
     pub tools: BTreeMap<String, String>,
+    /// 工具目录里这一刻每件工具属于哪个包（施工 X-24）：收起那一行判「只为发一张图」用。
+    pub packages: BTreeMap<String, String>,
     /// 连接的语言（施工 9-8 五补）：从记下的显示名里挑一种。
     pub language: String,
 }

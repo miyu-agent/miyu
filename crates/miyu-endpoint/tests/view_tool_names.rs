@@ -49,11 +49,11 @@ async fn an_mcp_tool_step_is_titled_with_the_name_the_server_gave() {
     let enabled = enable(&mut client, "probe").await;
     assert_eq!(enabled["result"]["enabled"], true, "{enabled}");
     until_status(&mut client, "probe", "running").await;
-    // 这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）：没给的不在。
+    // 这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）：没给的不在。带着属于哪个包（施工 X-24）。
     let human = client.call("h1", "human.get", json!({})).await;
     assert_eq!(
         human["result"]["tools"]["mcp__probe__echo"],
-        json!({"name": "Echo back"}),
+        json!({"name": "Echo back", "package": "probe"}),
         "{human}"
     );
     assert!(
@@ -132,7 +132,7 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
             .await;
         assert_eq!(
             human["result"]["tools"]["greet"],
-            json!({ "name": name }),
+            json!({ "name": name, "package": "bridge" }),
             "{human}"
         );
     }

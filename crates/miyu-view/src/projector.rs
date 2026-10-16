@@ -45,6 +45,8 @@ pub struct Projector {
     group: Option<EntryId>,
     /// 一步什么时候结束：思考停了、工具有了结果。
     ended: BTreeMap<EntryId, Timestamp>,
+    /// 一步工具发出去了几张图、它的英文显示名（施工 X-24，收起那一行用）。
+    sent: BTreeMap<EntryId, tools::Sent>,
     /// 在跑的这一轮。
     turn: Option<Running>,
     /// 这次请求的块：块号到条目（还没出字的正文、思考没有条目）。
@@ -138,6 +140,7 @@ impl Projector {
             ops: Vec::new(),
             group: None,
             ended: BTreeMap::new(),
+            sent: BTreeMap::new(),
             turn: None,
             blocks: BTreeMap::new(),
             request: None,
@@ -369,7 +372,7 @@ impl Projector {
         let counted: Vec<_> = steps
             .iter()
             .filter_map(|step| self.get(step))
-            .map(|entry| tools::counted(entry, &self.texts))
+            .map(|entry| tools::counted(entry, &self.texts, self.sent.get(&entry.id)))
             .collect();
         let starts = steps
             .iter()
@@ -390,8 +393,8 @@ impl Projector {
         let next = Group {
             steps,
             open,
-            summary: summary::line(&counted, shown_took, self.texts.local.as_ref()),
-            summary_en: summary::line(&counted, shown_took, self.texts.english.as_ref()),
+            summary: summary::line(&counted, shown_took, self.texts.local.as_ref(), false),
+            summary_en: summary::line(&counted, shown_took, self.texts.english.as_ref(), true),
             failed: summary::failed(&counted),
             took_ms: took,
         };

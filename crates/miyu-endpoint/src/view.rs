@@ -115,6 +115,7 @@ pub(crate) fn texts(
     })?;
     texts.skills = titles.skills(language);
     texts.tools = titles.tools(language);
+    texts.packages.clone_from(&titles.packages_of);
     Ok(texts)
 }
 
@@ -126,6 +127,8 @@ pub(crate) struct Titles {
     root: DataRoot,
     admin: AccountId,
     tools: BTreeMap<String, BTreeMap<String, String>>,
+    /// 每件工具属于哪个包（施工 X-24，收起那一行判「只为发一张图」）。
+    packages_of: BTreeMap<String, String>,
 }
 
 impl Titles {
@@ -138,7 +141,15 @@ impl Titles {
                 (!names.is_empty()).then(|| (spec.name.clone(), names))
             })
             .collect();
+        let packages_of = catalog
+            .specs()
+            .filter_map(|spec| {
+                let package = catalog.package_of(&spec.name)?;
+                Some((spec.name.clone(), package.to_string()))
+            })
+            .collect();
         Titles {
+            packages_of,
             packages: core.packages(),
             root: core.root.clone(),
             admin: core.admin.clone(),

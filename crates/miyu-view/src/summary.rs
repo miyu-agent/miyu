@@ -3,7 +3,9 @@
 //! - 只想过：`Thought for 26s`；
 //! - 一段里只有一条命令、它有短标题：短标题打头；
 //! - 别的按类数：命令、子代理、留言、给会话的留言、别的工具、编辑，先有哪样哪样打头，别的类依次跟在后面；
-//! - 编辑那一格后面接加减的总行数，出错的那一格单拎出来；末尾接这一段的用时。
+//! - 编辑那一格后面接加减的总行数，出错的那一格单拎出来；末尾接这一段的用时；
+//! - 只为发一张图（施工 X-24，项目主人 10-16 定）：这一段的工具全是同一个包的、`sent` 一共一张，打头写发出那张的那件工具的
+//!   显示名（`发送表情包 · 1s`），不再数「用了几件工具」。
 
 use crate::entry::{Part, Tone};
 use crate::words::{self, ToolKind, Words, keys};
@@ -25,6 +27,12 @@ pub(crate) enum Counted {
         title: Option<String>,
         /// 留言发给的是别的会话（编号的写法）。
         to_session: bool,
+        /// 属于哪个包（施工 X-24）：工具目录里这一刻的；不在目录里的没有。
+        package: Option<String>,
+        /// 发出去了几张图（`tool.result.sent`）。
+        sent: usize,
+        /// 显示名：连接的语言一份、英文一份。
+        names: (String, String),
     },
 }
 
@@ -125,8 +133,36 @@ enum Lead {
     Edits,
 }
 
-/// 收起那一行，照 `words` 的语言；`took_ms` 是这一段的用时。
-pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words) -> Vec<Part> {
+/// 只为发一张图的那一段：工具全是同一个包的、一共发了一张，交回发出那张的工具的显示名（`english` 的照英文那一份）。
+fn sending(steps: &[Counted], english: bool) -> Option<String> {
+    let mut package: Option<&str> = None;
+    let mut sent = 0;
+    let mut named = None;
+    for step in steps {
+        let Counted::Tool {
+            package: own,
+            sent: count,
+            names,
+            ..
+        } = step
+        else {
+            continue;
+        };
+        let own = own.as_deref()?;
+        if package.is_some_and(|first| first != own) {
+            return None;
+        }
+        package = Some(own);
+        sent += count;
+        if *count > 0 {
+            named = Some(if english { &names.1 } else { &names.0 });
+        }
+    }
+    (sent == 1).then(|| named.cloned()).flatten()
+}
+
+/// 收起那一行，照 `words` 的语言（`english` 是英文那一份）；`took_ms` 是这一段的用时。
+pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: bool) -> Vec<Part> {
     let tally = Tally::count(steps);
     let key = |name: &str| format!("{}/{name}", keys::SUMMARY);
     let count = |n: usize, name: &str| words::count(words, &key(name), n);
@@ -135,6 +171,18 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words) -> Vec<Pa
         let text =
             words::say(words, keys::THOUGHT_FOR, &[("elapsed", secs.clone())]).unwrap_or(secs);
         return vec![plain(text)];
+    }
+    if let Some(name) = sending(steps, english) {
+        let mut cells = vec![(name, false)];
+        if tally.thoughts > 0 {
+            cells.push((count(tally.thoughts, "thoughts"), false));
+        }
+        let errors = (tally.errors > 0).then(|| count(tally.errors, "errors"));
+        if let Some(errors) = &errors {
+            cells.push((errors.clone(), false));
+        }
+        cells.push((clock(took_ms), false));
+        return parts(cells, errors.as_deref(), (0, 0));
     }
     let lead = if tally.command_title.is_some() {
         Lead::Title

@@ -4,7 +4,9 @@ use miyu_kernel::block::Image;
 use miyu_kernel::event::Sent;
 use miyu_kernel::id::{ContentHash, MediaType};
 use miyu_kernel::testkit::{Line, Play};
-use miyu_view::{Body, Change};
+use std::sync::Arc;
+
+use miyu_view::{Body, Change, Projector};
 
 use crate::support::*;
 
@@ -73,4 +75,72 @@ fn media_index(entries: &[miyu_view::Entry]) -> usize {
         .iter()
         .position(|entry| matches!(entry.body, Body::Media(_)))
         .expect("有图那一条")
+}
+
+/// 收起那一行的字：每一格接起来。
+fn summary(group: &serde_json::Value, key: &str) -> String {
+    group[key]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|part| part["text"].as_str())
+        .collect()
+}
+
+/// 一种情况：调的几件工具和参数、第一件发的图、中文那一行的开头、英文那一行的开头（空的是照旧数）。
+type Case<'a> = (&'a [(&'a str, &'a str)], Vec<Sent>, &'a str, &'a str);
+
+/// 只为发一张图的那一段（施工 X-24）：工具全是同一个包的、一共发了一张，收起那一行打头写那件工具的显示名，英文的写英文的；
+/// 混了别的包的工具、发了不止一张的照旧数。
+#[test]
+fn a_group_that_only_sends_one_image_is_named_after_its_tool() {
+    let cases: [Case; 3] = [
+        (
+            &[("read", r#"{"file_path":"a"}"#)],
+            vec![sticker()],
+            "读取 · ",
+            "Read · ",
+        ),
+        (
+            &[
+                ("read", r#"{"file_path":"a"}"#),
+                ("shell", r#"{"command":"ls"}"#),
+            ],
+            vec![sticker()],
+            "",
+            "",
+        ),
+        (
+            &[("read", r#"{"file_path":"a"}"#)],
+            vec![sticker(), sticker()],
+            "",
+            "",
+        ),
+    ];
+    for (calls, sent, local, english) in cases {
+        let mut stage = stage();
+        stage.model([Line::calls("", calls)]);
+        let mut plays = vec![Play::Sends("Sent.".to_string(), sent.clone())];
+        plays.extend(calls.iter().skip(1).map(|_| Play::Done("ok".to_string())));
+        stage.tools(plays);
+        stage.say("hi");
+        // 连接是中文的：本地那一份是中文、英文那一份是英文。
+        let mut projector = Projector::new(Arc::new(texts("zh")), None);
+        for event in stage.log() {
+            projector.event(event);
+        }
+        let entries = projector.entries().to_vec();
+        let group = json(of_kind(&entries, "group")[0]);
+        let (zh, en) = (summary(&group, "summary"), summary(&group, "summary_en"));
+        if local.is_empty() {
+            assert!(
+                !zh.starts_with("读取") && !en.starts_with("Read"),
+                "照旧数：{zh} / {en}"
+            );
+        } else {
+            assert!(zh.starts_with(local), "{zh}");
+            assert!(en.starts_with(english), "{en}");
+            assert_eq!(zh.matches(" · ").count(), 1, "名字后面只接用时：{zh}");
+        }
+    }
 }

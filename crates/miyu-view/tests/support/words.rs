@@ -88,6 +88,11 @@ pub fn texts(language: &str) -> Texts {
         home: Some("/home/alice".to_string()),
         skills: std::collections::BTreeMap::from([("notes".to_string(), "Notes".to_string())]),
         tools: std::collections::BTreeMap::from([("weather".to_string(), "天气".to_string())]),
+        // 施工 X-24：测试里拿 `read` 当发图那个包的工具，`shell` 是别的包的。
+        packages: std::collections::BTreeMap::from([
+            ("read".to_string(), "stickers".to_string()),
+            ("shell".to_string(), "basesystem".to_string()),
+        ]),
         language: language.to_string(),
     }
 }

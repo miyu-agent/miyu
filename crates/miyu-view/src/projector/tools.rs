@@ -25,8 +25,15 @@ use crate::summary::Counted;
 use crate::title;
 use crate::words::{Texts, ToolKind};
 
+/// 一步工具结果里收起那一行要的（施工 X-24）：发出去了几张图、英文的显示名（结果里记下了的）。
+#[derive(Debug, Clone, Default)]
+pub(super) struct Sent {
+    count: usize,
+    english: Option<String>,
+}
+
 /// 一步在收起那一行里算什么。
-pub(super) fn counted(entry: &Entry, texts: &Texts) -> Counted {
+pub(super) fn counted(entry: &Entry, texts: &Texts, sent: Option<&Sent>) -> Counted {
     match &entry.body {
         Body::Tool(tool) => {
             let args: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
@@ -38,6 +45,14 @@ pub(super) fn counted(entry: &Entry, texts: &Texts) -> Counted {
                 title: arg("description"),
                 to_session: arg("to")
                     .is_some_and(|to| miyu_kernel::id::SessionId::parse(&to).is_ok()),
+                package: texts.packages.get(&tool.name).cloned(),
+                sent: sent.map_or(0, |sent| sent.count),
+                names: (
+                    tool.title.name.clone(),
+                    sent.and_then(|sent| sent.english.clone())
+                        .or_else(|| texts.english.face(&tool.name).map(|face| face.name))
+                        .unwrap_or_else(|| tool.name.clone()),
+                ),
             }
         }
         Body::Thought(thought) => Counted::Thought(thought.took_ms.unwrap_or(0)),
@@ -263,6 +278,13 @@ impl Projector {
             }
         }
         self.ended.insert(id.clone(), event.at);
+        self.sent.insert(
+            id.clone(),
+            Sent {
+                count: result.sent.len(),
+                english: crate::words::pick(&result.display_name, "en"),
+            },
+        );
         self.touch(&id, |entry| {
             if let Body::Tool(tool) = &mut entry.body {
                 let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
