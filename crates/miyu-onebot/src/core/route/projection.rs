@@ -25,10 +25,10 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use miyu_chat::{Conditions, Hit, Pending, Reply, Status};
-use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{ExternalId, Seq};
-use miyu_kernel::origin::By;
-use miyu_kernel::time::Timestamp;
+use miyu_client::events::By;
+use miyu_client::events::{Body, Event};
+use miyu_client::ids::{ExternalId, Seq};
+use miyu_client::time::Timestamp;
 use serde_json::Value;
 
 use super::body::kind_of;

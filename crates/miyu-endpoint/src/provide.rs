@@ -70,6 +70,10 @@ struct ToolParams {
     /// 给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：头在时间线上写它，不写的照工具名。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     display_name: BTreeMap<String, String>,
+    /// 给人看的名字后面跟哪一个参数的值（施工 S-6 上）：`input_schema` 的 `properties` 里的一个名字，别的写法 `bad_tool`，
+    /// `problem` 是 `subject`。头在时间线上照它在名字后面写那个参数。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    subject: Option<String>,
     /// 要先加载（施工 L-1，`25-工具加载.md` W9）：`true` 的工具面上只给名字、说明和空的参数外壳。不写、写 `false` 的全量；别的
     /// 写法 `bad_tool`，`problem` 是 `need_load`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -88,6 +92,7 @@ struct Checked {
     venues: Venues,
     timeout: Duration,
     display_name: BTreeMap<String, String>,
+    subject: Option<String>,
 }
 
 /// `provide`：见模块的说明。
@@ -219,6 +224,15 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
     {
         return Err(bad_tool(&tool.name, "display_name"));
     }
+    // 跟在名字后面的参数：要是参数格式里有的那一个。
+    if let Some(subject) = &tool.subject {
+        let declared = tool.input_schema["properties"]
+            .as_object()
+            .is_some_and(|properties| properties.contains_key(subject));
+        if !declared {
+            return Err(bad_tool(&tool.name, "subject"));
+        }
+    }
     let need_load = match &tool.need_load {
         None => false,
         Some(Value::Bool(need)) => *need,
@@ -235,6 +249,7 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         venues,
         timeout: Duration::from_millis(timeout),
         display_name: tool.display_name,
+        subject: tool.subject,
     })
 }
 

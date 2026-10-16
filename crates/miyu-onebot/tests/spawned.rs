@@ -35,7 +35,7 @@ const WAIT: Duration = Duration::from_secs(60);
 
 /// 照中文说的那一句。
 fn zh(report: &Report) -> String {
-    Texts::load(ResourceRoot::at(resources()), "zh")
+    Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
         .expect("读得出来")
         .report(report)
 }
@@ -235,7 +235,7 @@ async fn a_port_in_use_stops_it_and_status_says_why() {
         Some(zh(&Report::Halted(Halt::ConfigError)).as_str())
     );
     assert_eq!(lines.next(), Some(zh(&Report::Stderr).as_str()));
-    let port_in_use = Texts::load(ResourceRoot::at(resources()), "zh")
+    let port_in_use = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
         .expect("读得出来")
         .failure(&miyu_onebot::serve::Failure::PortInUse(listen));
     assert!(

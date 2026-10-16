@@ -10,7 +10,7 @@
 use miyu_chat::{
     Out, OutChain, OutCtx, OutWhy, Outbound, Outgoing, Sent, Since, Target, plain, split,
 };
-use miyu_kernel::time::Timestamp;
+use miyu_client::time::Timestamp;
 
 use super::projection::{Aim, Speaking};
 use crate::onebot::Lead;

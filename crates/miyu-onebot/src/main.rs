@@ -9,7 +9,8 @@
 //!   数据根，照系统的语言说。
 //! - `-h`、`--help`：用法印在标准输出上，退出码 0（`miyu help onebot` 转成 `--help`）。
 //!
-//! 先找资源目录、读给人看的字（[`Texts`]，照系统的语言），之后说给人听的都照它。`serve` 再装运行日志
+//! 先找资源目录、自己的包文件夹（[`Package`]：核心交来的 `MIYU_PACKAGE_DIR`，没有的照资源目录里出厂的那一份，施工 S-6 上），
+//! 读给人看的字（[`Texts`]，照系统的语言），之后说给人听的都照它。`serve` 再装运行日志
 //! `state/logs/onebot.log`，读 `bridge.json`、清单里 NapCat 端口的默认值（[`Defaults`]）和出厂的场所规则、出厂参数、违规词表
 //! （[`Factory`]，施工 O-21：有问题是打包的错，说 [`Failure::Factory`]、退出码 1），交给 [`run`]：配置由核心在握手的回应里
 //! 交、变了推过来，桥不读系统配置（施工 O-20）。握手以前不说话：起不来的照系统的语言说一句；运行日志装不上的那一句等握手回了
@@ -21,8 +22,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::{Arc, Mutex, PoisonError};
 
+use miyu_client::places::{DataRoot, Env, ResourceRoot, locale};
 use miyu_onebot::control::{Control, CoreCommand, control};
 use miyu_onebot::logs::logs;
+use miyu_onebot::package::{self, Package};
 use miyu_onebot::rules::Factory;
 use miyu_onebot::serve::{Failure, Notice, Pipe, Serve, run};
 use miyu_onebot::settings::Defaults;
@@ -31,9 +34,6 @@ use miyu_onebot::tuning::Tuning;
 use miyu_onebot::venue::show;
 use miyu_onebot::web::web;
 use miyu_onebot::{PROGRAM, TARGET};
-use miyu_store::env::Env;
-use miyu_store::resources::ResourceRoot;
-use miyu_store::root::DataRoot;
 
 /// 用法不对的退出码。
 const USAGE: u8 = 2;
@@ -55,11 +55,13 @@ enum Command {
 
 fn main() -> ExitCode {
     let env = Env::current();
-    let locale = miyu_store::env::locale();
+    let locale = locale();
+    let given = std::env::var_os(package::VARIABLE);
     let texts = ResourceRoot::locate(&env)
         .map_err(|error| error.to_string())
         .and_then(|resources| {
-            Texts::load(resources, system_language(locale.as_deref()))
+            let package = Package::locate(given.as_deref(), &resources);
+            Texts::load(resources, package, system_language(locale.as_deref()))
                 .map_err(|error| error.to_string())
         });
     let mut texts = match texts {
@@ -118,7 +120,7 @@ fn main() -> ExitCode {
             ))
         }
         Command::Logs { follow } => {
-            let every = match follow.then(|| Tuning::load(texts.resources().path())) {
+            let every = match follow.then(|| Tuning::load(&texts.package().data())) {
                 None => None,
                 Some(Ok(tuning)) => Some(tuning.follow()),
                 Some(Err(reason)) => return fail(&texts, reason),
@@ -146,16 +148,17 @@ fn main() -> ExitCode {
 
 /// 装运行日志、读 `bridge.json`、清单里 NapCat 端口的默认值和出厂的场所规则这几样、跑到停。`locale` 是系统的语言。交回退出码。
 async fn serve(root: DataRoot, env: &Env, locale: Option<String>, texts: &mut Texts) -> u8 {
-    let log = miyu_log::install(
+    let log = miyu_client::log::install(
         &root.state().join("logs"),
         "onebot",
-        miyu_log::LevelFilter::INFO,
+        miyu_client::log::LevelFilter::INFO,
         env.home.as_deref(),
     );
     // 运行日志装不上的那一句先欠着：握手回了语言照它说；握手以前就起不来的，说起不来的原因以前先说（「施工时定的」第 42 条）。
     let owed = Arc::new(Mutex::new(log.err().map(|error| error.to_string())));
-    let loaded = Tuning::load(texts.resources().path())
-        .and_then(|tuning| Defaults::load(texts.resources()).map(|defaults| (tuning, defaults)));
+    let package = texts.package().clone();
+    let loaded = Tuning::load(&package.data())
+        .and_then(|tuning| Defaults::load(&package).map(|defaults| (tuning, defaults)));
     let (tuning, defaults) = match loaded {
         Ok(loaded) => loaded,
         Err(reason) => {
@@ -164,7 +167,7 @@ async fn serve(root: DataRoot, env: &Env, locale: Option<String>, texts: &mut Te
             return FAILED;
         }
     };
-    let factory = match Factory::load(texts.resources()) {
+    let factory = match Factory::load(&package) {
         Ok(factory) => factory,
         Err(problems) => {
             settle(texts, &owed);
@@ -178,6 +181,7 @@ async fn serve(root: DataRoot, env: &Env, locale: Option<String>, texts: &mut Te
         locale,
         tuning,
         resources: texts.resources().clone(),
+        package,
         defaults,
         factory,
     };

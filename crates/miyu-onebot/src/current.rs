@@ -8,7 +8,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use serde_json::{Map, Value};
 
-use miyu_config::secret::Secret;
+use miyu_client::settings::Secret;
 
 use crate::TARGET;
 use crate::settings::{Defaults, Settings};

@@ -23,7 +23,7 @@ fn matches(files: &[File], venue: &Venue) -> bool {
 
 /// 仓库里的出厂规则文件（`include_str!` 读进来：数据改了，测试跟着变）。
 const FACTORY: &str =
-    include_str!("../../../../../resources/software/onebot/venues.d/50-defaults.toml");
+    include_str!("../../../../../resources/packages/onebot/data/venues.d/50-defaults.toml");
 
 /// 换到平台 `platform` 上的同一个场所。
 fn on(platform: &str, venue: Venue) -> Venue {

@@ -33,8 +33,9 @@
    - `need_load` 可以不写：`true` 是要先加载，tools 数组里只给名字、说明和空的参数外壳（`25-工具加载.md` W9，施工 L-1）；不是布尔的 `bad_tool`，`problem` 是 `need_load`；
    - `timeout_ms` 可以不写：等它答多久，1000 到 600000 毫秒，不写是 60000（施工 O-2 下）；
    - `display_name` 可以不写：给人看的名字，语言到名字（`{"zh": "发到群里", "en": "Send to group"}`），时间线上照连接的语言写它，没写的照工具名（施工 9-8 六补）；语言、名字是空白的拒；
+   - `subject` 可以不写：给人看的名字后面跟哪一个参数的值（例如 `reason`），要是 `input_schema` 的 `properties` 里的一个名字，不是的（参数格式里没有 `properties` 的也是）拒，`problem` 是 `subject`（施工 S-6 上）；核心照它放进 `human.get` 那件工具的 `subject`（`protocol.md` 的 `human.get` 第 4 条）。调用那一刻记进 `tool.result` 的只有 `display_name`；
    - `venues` 是给哪种会话：`local`（本机的）、`private`（通讯平台的私聊）、`group`（群）里的一个或几个，不能是空的（05 第六节的 `venues`；2026-10-09 和通讯平台的会话定：「发给任意好友或群」只给本机，`skip_reply` 只给场所）。
-3. 登记进工具目录，归这个包：换掉它上一次登记的那几件。名字撞上核心自带的、别的包的、写法不对的：整个不收，`bad_tool`，`data` 是 `{"tool": 名字, "problem": "duplicate" | "name" | "parameters" | "access" | "venues" | "timeout" | "display_name" | "feature"}`。`feature`（施工 T-2）：清单写了几个功能、这一件哪个功能都没列，或者写了空的 `[features]`；归法同预设认工具归哪个功能（`Features::of_tool`：列了的照列的，只有一个功能的都归它，没写 `[features]` 的整个包算一个）。归不上的预设开关不了它。回应 `{"tools": 件数}`。
+3. 登记进工具目录，归这个包：换掉它上一次登记的那几件。名字撞上核心自带的、别的包的、写法不对的：整个不收，`bad_tool`，`data` 是 `{"tool": 名字, "problem": "duplicate" | "name" | "parameters" | "access" | "venues" | "timeout" | "display_name" | "subject" | "feature"}`。`feature`（施工 T-2）：清单写了几个功能、这一件哪个功能都没列，或者写了空的 `[features]`；归法同预设认工具归哪个功能（`Features::of_tool`：列了的照列的，只有一个功能的都归它，没写 `[features]` 的整个包算一个）。归不上的预设开关不了它。回应 `{"tools": 件数}`。
 4. 记下这个包现在由这个连接提供。连接断了、扩展崩了，工具照旧留在目录里（`05-内核接口.md` 第九节：工具从目录里消失会改变请求字节），被调到时回「暂时不可用」。
 5. 这一次登记的原文写进登记缓存 `state/providers/<包>.json`（施工 O-2 中，下面「登记缓存」）。
 

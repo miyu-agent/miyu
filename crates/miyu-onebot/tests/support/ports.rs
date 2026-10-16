@@ -7,8 +7,8 @@ use miyu_onebot::serve::Failure;
 use miyu_onebot::texts::Texts;
 use miyu_store::resources::ResourceRoot;
 
-use super::resources;
 use super::spawning::free_port;
+use super::{package_in, resources};
 
 /// 最多试几个端口。
 pub const TRIES: usize = 5;
@@ -31,7 +31,12 @@ pub async fn on_free_port<T>(attempt: impl AsyncFn(u16) -> Result<T, Taken>) -> 
 /// 核心回的是哪种。
 pub fn taken(said: &str, listen: u16) -> bool {
     ["zh", "en", "ja"].into_iter().any(|language| {
-        let texts = Texts::load(ResourceRoot::at(resources()), language).expect("读得出来");
+        let texts = Texts::load(
+            ResourceRoot::at(resources()),
+            package_in(resources()),
+            language,
+        )
+        .expect("读得出来");
         said.contains(&texts.failure(&Failure::PortInUse(listen)))
     })
 }

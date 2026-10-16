@@ -65,7 +65,7 @@ fn calls(napcat: &Answering, user: i64, message: i64, text: &str, more: &[i64]) 
 
 /// 出厂的「另一条线正在回」那一块：别的线在回第 `message` 条、这条线回第 `aim` 条，去掉行尾。
 fn another_line(message: i64, aim: i64) -> String {
-    let path = resources().join("software/onebot/facts/another-line.txt");
+    let path = resources().join("packages/onebot/data/facts/another-line.txt");
     std::fs::read_to_string(path)
         .expect("读得出")
         .replace("{msg}", &message.to_string())
@@ -325,9 +325,10 @@ async fn tools_on_a_lane_look_at_its_own_trigger() {
     let fetched = results[1]["body"]["blocks"][0]["text"]
         .as_str()
         .unwrap_or_default();
-    let not_found =
-        std::fs::read_to_string(resources().join("software/onebot/tool-results/not-found.txt"))
-            .expect("读得出");
+    let not_found = std::fs::read_to_string(
+        resources().join("packages/onebot/data/tool-results/not-found.txt"),
+    )
+    .expect("读得出");
     assert_eq!(
         fetched.trim_end(),
         not_found.trim_end(),

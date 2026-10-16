@@ -198,3 +198,32 @@ fn the_name_people_see_is_kept_and_blanks_are_refused() {
         );
     }
 }
+
+/// 显示名后面跟哪一个参数（施工 S-6 上）：写了的要是这件工具参数格式 `properties` 里的一个名字，收下；不写的是空的；指着不存在
+/// 的参数、参数格式里没有 `properties` 的拒，同写错的显示名一类。
+#[test]
+fn the_subject_names_one_of_the_parameters() {
+    let with = |schema: Value, subject: &str| -> ToolParams {
+        serde_json::from_value(json!({
+            "name": "send_group", "description": "Send to a group.",
+            "input_schema": schema, "access": "outbound", "venues": ["group"],
+            "subject": subject
+        }))
+        .expect("合写法")
+    };
+    let schema = json!({"type": "object", "properties": {"text": {"type": "string"}}});
+    let Checked { subject, .. } = checked(with(schema.clone(), "text")).expect("合写法");
+    assert_eq!(subject.as_deref(), Some("text"));
+    let Checked { subject, .. } = checked(tool("outbound", json!(["group"]))).expect("合写法");
+    assert_eq!(subject, None, "不写的是空的");
+    for (schema, subject) in [(schema, "nope"), (schema_without_properties(), "text")] {
+        assert_eq!(
+            refused_for(with(schema, subject)),
+            json!({"tool": "send_group", "problem": "subject"})
+        );
+    }
+}
+
+fn schema_without_properties() -> Value {
+    json!({"type": "object"})
+}

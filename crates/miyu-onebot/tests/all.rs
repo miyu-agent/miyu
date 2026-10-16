@@ -16,6 +16,7 @@ mod control;
 mod core;
 mod dependencies;
 mod disciplines;
+mod display_names;
 mod followed;
 mod forwards;
 mod frames;

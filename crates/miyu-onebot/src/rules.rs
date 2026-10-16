@@ -1,7 +1,7 @@
 //! 场所规则和出厂数据（`docs/blueprint/onebot.md` 第一条「场所规则和出厂数据」，施工 O-21）：写法、怎么套由群聊内核管
 //! （`chat.md` 第一条、第八条、第二条第 12 条），读文件是桥的事（群聊内核在第 2 层，不碰磁盘）。
 //!
-//! | 什么 | 出厂（资源目录的 `software/onebot/`） | 系统（数据根的 `system/`） |
+//! | 什么 | 出厂（包文件夹的 `data/`，施工 S-6 上从资源目录的 `software/onebot/` 挪来） | 系统（数据根的 `system/`） |
 //! |---|---|---|
 //! | 场所规则 | `venues.d/*.toml` | `venues.d/*.toml` |
 //! | 出厂参数 | `defaults.toml` | 没有：要改写场所规则 |
@@ -20,6 +20,7 @@
 mod facts;
 mod files;
 mod judge;
+mod names;
 mod tools;
 
 use std::fmt::Display;
@@ -29,23 +30,23 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use miyu_chat::{File, JudgeTexts, Moderation, Params, Problem, Resolved, Rules, Source, Venue};
-use miyu_config::problem::Code;
-use miyu_kernel::template::Template;
-use miyu_store::resources::ResourceRoot;
-use miyu_store::root::DataRoot;
+use miyu_client::places::DataRoot;
+use miyu_client::protocol::Template;
+use miyu_client::settings::problem::Code;
 
+use crate::package::Package;
 use crate::{PACKAGE, TARGET};
 use files::Stamp;
 pub use tools::Tools;
 pub(crate) use tools::{FETCH_MEDIA, MUTE, POKE, RECALL, SKIP_REPLY};
 
-/// 场所规则的目录：出厂的在资源目录的 `software/onebot/` 里，系统的在数据根的 `system/` 里。
+/// 场所规则的目录：出厂的在包文件夹的 `data/` 里，系统的在数据根的 `system/` 里。
 const VENUES: &str = "venues.d";
 
 /// 出厂参数：只有出厂的（`chat.md` 第八条「怎么走」第 3 条）。
 const DEFAULTS: &str = "defaults.toml";
 
-/// 违规词表：出厂的在 `software/onebot/` 里，系统的在 `system/modules/onebot/` 里。
+/// 违规词表：出厂的在包文件夹的 `data/` 里，系统的在 `system/modules/onebot/` 里。
 const MODERATION: &str = "moderation.txt";
 
 /// 包自己的系统数据在 `system/` 下的哪个目录里，再往下是包的编号（2026-10-09 核心的主会话定）。
@@ -70,18 +71,18 @@ pub struct Factory {
 }
 
 impl Factory {
-    /// 读资源目录 `resources` 里的出厂数据：规则文件单独过一遍 [`Rules::parse`]（合上系统的以后，被同名替换的那一份不读，
+    /// 读包文件夹 `package` 的 `data/` 里的出厂数据（施工 S-6 上）：规则文件单独过一遍 [`Rules::parse`]（合上系统的以后，被同名替换的那一份不读，
     /// 单独过才查得全），出厂参数过 [`Params::read`]，违规词表过 [`Moderation::parse_keywords`]，判官的说明过
     /// [`JudgeTexts::new`]（施工 O-23 下），退信的模板过 [`Template::parse`]、只认三个字段（施工 O-25 下；O-36 多「另一条线
-    /// 正在回」，只认 `msg`、`aim`），桥的工具的说明、答的两句照 `miyu_tool::load` 读、查过字段（施工 O-26）。
+    /// 正在回」，只认 `msg`、`aim`），桥的工具的说明、答的两句照 `miyu_client::tooltext::load` 读、查过字段（施工 O-26）。
     ///
     /// # Errors
     ///
     /// 有一条问题就是打包的错（警告也算，照 `chat.md` 第八条施工时定的第 10 条），交回全部问题：规则写错、出厂参数写错、
     /// 判官的说明、退信的模板、桥的工具写坏了、哪一份不在或读不成（`venues.d` 列不出来也是）。问题照规则文件、出厂参数、违规
     /// 词表、判官的说明、退信的模板、桥的工具的先后。
-    pub fn load(resources: &ResourceRoot) -> Result<Factory, Vec<Problem>> {
-        let dir = resources.path().join("software").join(PACKAGE);
+    pub fn load(package: &Package) -> Result<Factory, Vec<Problem>> {
+        let dir = package.data();
         let mut problems = Vec::new();
         let rules = files::rules(&dir.join(VENUES), VENUES, Source::Factory, &mut problems);
         problems.extend(Rules::parse(&rules).problems);
@@ -106,7 +107,7 @@ impl Factory {
             .map(|text| Moderation::parse_keywords(&text));
         let judge = judge::texts(&dir, &mut problems);
         let facts = facts::load(&dir, &mut problems);
-        let tools = tools::load(resources.path(), &mut problems);
+        let tools = tools::load(&dir, &mut problems);
         match (params, keywords, judge, facts, tools) {
             (Some(params), Some(keywords), Some(judge), Some(facts), Some(tools))
                 if problems.is_empty() =>

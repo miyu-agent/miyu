@@ -10,7 +10,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use miyu_store::root::DataRoot;
+use miyu_client::places::DataRoot;
 
 use crate::texts::Texts;
 

@@ -13,7 +13,7 @@
 //!   编号认，她的话照主线的出站链发；`session.sealed` 退订。
 
 use miyu_chat::{Dispatch, Venue, dispatch};
-use miyu_kernel::event::Event;
+use miyu_client::events::Event;
 use serde_json::{Value, json};
 
 use super::judges::Tag;

@@ -6,7 +6,7 @@ use miyu_chat::{
     Conditions, Hit, Judgement, Kind, Mode, Outcome, Route, Score, Standing, Supersede, Unreadable,
     Verdict,
 };
-use miyu_kernel::id::Seq;
+use miyu_client::ids::Seq;
 use serde_json::json;
 
 use super::super::ask::{Answer, Unjudged};

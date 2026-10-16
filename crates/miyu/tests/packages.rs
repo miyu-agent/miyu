@@ -89,6 +89,23 @@ fn a_package_command_runs_the_program_in_its_bin() {
     );
 }
 
+/// 转交时环境多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上）：包里带的程序是指向系统的 `printenv` 的链接，印出它
+/// 看到的值。只在 Unix 上测（Windows 上没有现成的 `printenv`；设环境变量那一步由 miyu-cli 的单元测试守着，两个平台一条路）。
+#[cfg(unix)]
+#[test]
+fn a_package_command_is_told_its_package_folder() {
+    let home = Home::new();
+    let program = format!("miyu-printenv-{}", std::process::id());
+    install(&home, "own", &manifest("own", &program, "Own it"));
+    let dir = home.root.path().join("home/admin/packages/own");
+    std::fs::create_dir_all(dir.join("bin")).expect("建得了目录");
+    std::os::unix::fs::symlink("/usr/bin/printenv", dir.join("bin").join(&program))
+        .expect("链得上");
+    let printed = miyu(&home, "C", &["own", "MIYU_PACKAGE_DIR"]);
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    assert_eq!(text(&printed.stdout), format!("{}\n", dir.display()));
+}
+
 #[test]
 fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
     let home = Home::new();

@@ -6,9 +6,9 @@
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
-use miyu_kernel::event::Event;
-use miyu_kernel::id::VenueId;
-use miyu_kernel::time::Timestamp;
+use miyu_client::events::Event;
+use miyu_client::ids::VenueId;
+use miyu_client::time::Timestamp;
 use serde_json::{Value, json};
 use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite::Message;
@@ -106,8 +106,8 @@ fn the_first_piece_of_the_turn_that_took_it_signals() {
 /// 线 `line` 第 `turn` 轮发出去的一段（施工 O-36：支线的也记在主线的日志里）。
 fn delivered_on(seq: u64, line: &str, turn: u64) -> Event {
     let mut event = delivered(seq, turn);
-    if let miyu_kernel::event::Body::VenueDelivered(delivered) = &mut event.body {
-        delivered.line = miyu_kernel::id::SessionId::parse(line).expect("合写法");
+    if let miyu_client::events::Body::VenueDelivered(delivered) = &mut event.body {
+        delivered.line = miyu_client::protocol::SessionId::parse(line).expect("合写法");
     }
     event
 }

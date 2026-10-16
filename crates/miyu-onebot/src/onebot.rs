@@ -20,8 +20,8 @@ mod segments;
 mod text;
 
 use miyu_chat::{Venue, VenueKind};
-use miyu_kernel::FormatError;
-use miyu_kernel::id::{ExternalId, VenueId};
+use miyu_client::events::FormatError;
+use miyu_client::ids::{ExternalId, VenueId};
 use serde_json::{Value, json};
 
 pub use calls::{CallError, Calls, DETAIL, Pending, said};

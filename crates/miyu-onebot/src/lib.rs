@@ -2,7 +2,9 @@
 //! （`docs/designs/18-通讯平台.md` 第三节）。O-8 是骨架：终端管理员的私聊、只有文字；O-22 起群消息记进场所会话（旁听，不开回合）。
 //!
 //! - [`settings`]：核心在握手时交来、变了推过来的配置：NapCat 的端口、令牌（施工 O-20）；没交的端口照清单的默认值。
-//! - [`tuning`]：桥自己的数（`resources/software/onebot/bridge.json`）：路径、等回应多久、队列多长。
+//! - [`package`]：桥自己的包文件夹（施工 S-6 上）：核心交来的 `MIYU_PACKAGE_DIR`，没有的照资源目录里出厂的那一份；桥自己的
+//!   文件在它的 `data/` 里。
+//! - [`tuning`]：桥自己的数（包文件夹的 `data/bridge.json`）：路径、等回应多久、队列多长。
 //! - [`serve`]：在核心亲手给的管道（标准输入输出，施工 O-18）上握手、开监听，把下面几样接起来；核心关了管道就停。
 //! - `listen`：NapCat 反连进来的反向 WebSocket：只听本机、令牌、一个机器人号一条连接。
 //! - [`onebot`]：OneBot v11 的事件和动作：读私聊、群消息、撤回（施工 O-22）、认消息段、群成员的名字，写 `send_private_msg`、
@@ -11,7 +13,7 @@
 //! - [`status_file`]：桥的状态文件 `state/packages/onebot/status.json`，`status` 读它（施工 O-18）。
 //! - [`control`]：`miyu onebot start`、`stop`、`restart`、`status`：调核心的 `extension.*`（施工 O-18）。
 //! - [`logs`]：`miyu onebot logs [-f]`：印运行日志和标准错误（施工 O-18）。
-//! - [`texts`]：说给人听的字（`resources/software/onebot/human/`）。
+//! - [`texts`]：说给人听的字（包文件夹的 `data/human/`）。
 //! - `current`：桥手里最新的配置：握手交来的，核心推来新的就换上，改了不用重启（施工 O-20）。
 //! - `running`：桥跑着的样子：实际听的端口、连着的号、最新的配置；后台页的 `status`、状态文件照它说，推来的端口变化照它换
 //!   （施工 O-28 下从桥自己的 WebUI 挪出来；桥自己的网页随 O-28 下去掉）。
@@ -23,7 +25,7 @@
 //!
 //! 分层照 `01-架构.md` 第九节第 5 层：只用本机传输连核心（`start` 这几样照终端的样子连，用 `miyu-client` 的 `open::Core`）；场所、平台上的人的编号经第 2
 //! 层的群聊内核 `miyu-chat` 拼；不依赖核心的 crate（`miyu-core`、`miyu-endpoint`，`18-通讯平台.md` 第一节）：配置由核心交
-//! （施工 O-20）。
+//! （施工 O-20）。核心里别的 crate 只经门面 `miyu-client` 拿（设计 32 第九节第 1 条，施工 S-6 上）。
 
 pub mod control;
 mod core;
@@ -32,6 +34,7 @@ mod listen;
 pub mod logs;
 mod media;
 pub mod onebot;
+pub mod package;
 pub mod rules;
 mod running;
 pub mod serve;

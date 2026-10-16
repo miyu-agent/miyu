@@ -1,5 +1,5 @@
-//! `resources/software/onebot/bridge.json`（`onebot.md`「施工时定的」第 15 条）：桥自己的数放在它的软件包里，不进配置
-//! 清单（照网页软件的 `web.json`，`web-module.md`「起草时定的」第 25 条）。起来时读一次。
+//! 包文件夹的 `data/bridge.json`（`onebot.md`「施工时定的」第 15 条；施工 S-6 上从资源目录的 `software/onebot/` 挪来）：桥
+//! 自己的数放在它的软件包里，不进配置清单（照网页软件的 `web.json`，`web-module.md`「起草时定的」第 25 条）。起来时读一次。
 //!
 //! 是数据，不发给模型，不进登记簿（`xtask/src/ledger.rs` 只豁免这一份文件：这个包以后要放给模型看的字）。
 
@@ -8,8 +8,8 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
-/// 文件在资源目录里的位置。
-pub const FILE: &str = "software/onebot/bridge.json";
+/// 文件在包文件夹的 `data/` 里的位置。
+pub const FILE: &str = "bridge.json";
 
 /// 读好的一份。
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -73,14 +73,14 @@ pub struct Tuning {
 }
 
 impl Tuning {
-    /// 读资源目录 `resources` 里的 [`FILE`]。
+    /// 读包文件夹的数据目录 `data`（[`Package::data`](crate::package::Package::data)）里的 [`FILE`]。
     ///
     /// # Errors
     ///
     /// 读不了、不是这个形状、队列写了 0（建不了队列）、判官的并发写了 0（一个都问不了）、排着的过期写了 0（一条都发不出去）：
     /// 原话里说是哪个文件。
-    pub fn load(resources: &Path) -> Result<Tuning, String> {
-        let path = resources.join(FILE);
+    pub fn load(data: &Path) -> Result<Tuning, String> {
+        let path = data.join(FILE);
         let bad = |why: String| format!("{} not readable: {why}", path.display());
         let text = std::fs::read_to_string(&path).map_err(|error| bad(error.to_string()))?;
         let tuning: Tuning = serde_json::from_str(&text).map_err(|error| bad(error.to_string()))?;

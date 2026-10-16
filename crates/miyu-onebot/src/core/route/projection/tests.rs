@@ -4,9 +4,9 @@
 //! （O-25 上）在 `outbound_tests.rs`，夹具在这里。
 
 use miyu_chat::{Conditions, Hit, Kind, Pending, Reply, Status};
-use miyu_kernel::event::Event;
-use miyu_kernel::id::{ExternalId, Seq};
-use miyu_kernel::time::Timestamp;
+use miyu_client::events::Event;
+use miyu_client::ids::{ExternalId, Seq};
+use miyu_client::time::Timestamp;
 use serde_json::{Value, json};
 
 use super::{DECIDED, Projection, Speaking};

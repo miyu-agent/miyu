@@ -13,7 +13,7 @@ use miyu_store::resources::ResourceRoot;
 use miyu_config::Layer;
 use miyu_config::problem::Code;
 
-use crate::support::{TOKEN, admin, defaults, resources, temp_root};
+use crate::support::{TOKEN, admin, defaults, package_in, resources, temp_root};
 
 /// 测试用的默认值：和出厂的不一样，看得出照的是它。
 const FALLBACK: Defaults = Defaults { listen: 18301 };
@@ -38,7 +38,7 @@ fn a_missing_manifest_or_default_is_named() {
     let dir = std::env::temp_dir().join(format!("miyu-onebot-defaults-{}", std::process::id()));
     let packages = dir.join("packages");
     std::fs::create_dir_all(&packages).expect("建得了");
-    let error = Defaults::load(&ResourceRoot::at(dir.clone())).expect_err("没有清单");
+    let error = Defaults::load(&package_in(dir.clone())).expect_err("没有清单");
     assert!(error.contains("onebot"), "{error}");
     // 照出厂的清单写一份，去掉 `onebot.listen` 的默认值。
     let shipped = std::fs::read_to_string(
@@ -52,7 +52,7 @@ fn a_missing_manifest_or_default_is_named() {
     assert_ne!(without, shipped, "真的去掉了");
     std::fs::create_dir_all(packages.join("onebot")).expect("建得了");
     std::fs::write(packages.join("onebot").join("package.toml"), without).expect("写得进");
-    let error = Defaults::load(&ResourceRoot::at(dir.clone())).expect_err("没写默认值");
+    let error = Defaults::load(&package_in(dir.clone())).expect_err("没写默认值");
     let file = std::path::Path::new("onebot")
         .join("package.toml")
         .display()
@@ -62,7 +62,7 @@ fn a_missing_manifest_or_default_is_named() {
         "{error}"
     );
     std::fs::write(packages.join("onebot").join("package.toml"), "not toml [").expect("写得进");
-    let error = Defaults::load(&ResourceRoot::at(dir.clone())).expect_err("读不成");
+    let error = Defaults::load(&package_in(dir.clone())).expect_err("读不成");
     assert!(error.contains(&file), "{error}");
     if std::fs::remove_dir_all(&dir).is_err() {
         // 删不掉就留在临时目录里，不影响测试。

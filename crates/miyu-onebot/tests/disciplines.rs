@@ -153,7 +153,7 @@ async fn each_discipline_goes_its_own_way() {
         .expect("是字")
         .to_string();
     let only =
-        std::fs::read_to_string(resources().join("software/onebot/judge/moderation-only.txt"))
+        std::fs::read_to_string(resources().join("packages/onebot/data/judge/moderation-only.txt"))
             .expect("读得出");
     assert!(system.contains(&only), "只查违规：{system}");
 

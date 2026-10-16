@@ -15,7 +15,7 @@ use miyu_chat::{
     Clock, Ctx, Facts, Mode, Moderation, Params, Pending, Said, Standing, Status, Supersede, Venue,
     VenueKind, addressed,
 };
-use miyu_kernel::id::{ExternalId, Seq};
+use miyu_client::ids::{ExternalId, Seq};
 use serde_json::{Value, json};
 
 use super::ask::Asking;

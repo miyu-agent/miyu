@@ -1,4 +1,4 @@
-//! 说给人听的字（施工 O-8，`onebot.md` 第一条「给人看的字」）：字在 `resources/software/onebot/human/`，三种语言里桥说的
+//! 说给人听的字（施工 O-8，`onebot.md` 第一条「给人看的字」）：字在 `resources/packages/onebot/data/human/`，三种语言里桥说的
 //! 每一句都换得出来（换不出来的会印出说法的编号），字段换进去；中文照图纸；日文照英文；换语言照新的说；握手以前照系统的
 //! 语言（施工 O-20：不读配置）。O-18 多了 `start`、`stop`、`restart`、`status`、`logs` 说的；O-21 多了 `venue show` 说的、
 //! 出厂的数据有问题、问题说成话；O-23 多了限流满了发进群里的那一句；O-28 下去掉桥自己的网页说的几句，`status` 多了设置在哪
@@ -183,10 +183,11 @@ fn everything(texts: &Texts) -> Vec<String> {
 #[test]
 fn every_sentence_turns_into_words_in_every_language() {
     for language in ["zh", "en", "ja"] {
-        let texts = Texts::load(resources(), language).expect("出厂的字读得出来");
+        let texts = Texts::load(resources(), crate::support::package(), language)
+            .expect("出厂的字读得出来");
         for said in everything(&texts) {
             assert!(
-                !said.contains("software/onebot/"),
+                !said.contains("packages/onebot/data/"),
                 "{language}：换不出来：{said}"
             );
             assert!(!said.trim().is_empty(), "{language}：空的");
@@ -196,7 +197,7 @@ fn every_sentence_turns_into_words_in_every_language() {
 
 #[test]
 fn chinese_reads_as_drawn_and_fields_go_in() {
-    let texts = Texts::load(resources(), "zh").expect("读得出来");
+    let texts = Texts::load(resources(), crate::support::package(), "zh").expect("读得出来");
     let listening = Notice::Listening { port: 8301 };
     assert_eq!(
         texts.notice(&listening),
@@ -323,8 +324,8 @@ fn chinese_reads_as_drawn_and_fields_go_in() {
 
 #[test]
 fn japanese_reads_as_english_and_the_language_can_change() {
-    let english = Texts::load(resources(), "en").expect("读得出来");
-    let mut texts = Texts::load(resources(), "ja").expect("读得出来");
+    let english = Texts::load(resources(), crate::support::package(), "en").expect("读得出来");
+    let mut texts = Texts::load(resources(), crate::support::package(), "ja").expect("读得出来");
     assert_eq!(everything(&texts), everything(&english));
     assert_eq!(
         texts.usage(),
@@ -348,7 +349,7 @@ fn before_the_handshake_the_system_language_is_spoken() {
 
 #[test]
 fn venue_show_and_problems_read_as_drawn() {
-    let texts = Texts::load(resources(), "zh").expect("读得出来");
+    let texts = Texts::load(resources(), crate::support::package(), "zh").expect("读得出来");
     let said: Vec<String> = problems().iter().map(|one| texts.problem(one)).collect();
     assert_eq!(
         said,
@@ -388,7 +389,7 @@ fn venue_show_and_problems_read_as_drawn() {
         texts.shown(&Shown::BadVenue("qq:room:1".to_string())),
         "认不出场所编号 qq:room:1。写成 <平台>:group:<群号> 或 <平台>:private:<号>，例如 qq:group:123456。"
     );
-    let english = Texts::load(resources(), "en").expect("读得出来");
+    let english = Texts::load(resources(), crate::support::package(), "en").expect("读得出来");
     assert_eq!(
         english.problem(&problems()[12]),
         "factory defaults.toml: chatty.base is missing"

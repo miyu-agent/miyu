@@ -82,7 +82,7 @@ use std::time::{Duration, Instant};
 use futures_util::StreamExt;
 use futures_util::stream::FuturesOrdered;
 use miyu_chat::Venue;
-use miyu_kernel::id::{ExternalId, VenueId};
+use miyu_client::ids::{ExternalId, VenueId};
 use serde_json::{Map, Value};
 use tokio::sync::mpsc;
 use tokio::task::{JoinError, JoinHandle, JoinSet};

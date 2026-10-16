@@ -1,5 +1,6 @@
 //! 软件包加的子命令（施工 9-2，`docs/blueprint/packages.md`「转交」，`cli/main.md`「分发」）：`miyu <名字> …` 不是内置的
-//! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的。
+//! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的；环境
+//! 只多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上，同核心拉起扩展）。
 //! `miyu help <名字>` 转成 `<程序> --help`：帮助由包自己说。`miyu -h` 多一节「软件包加的命令」。
 //!
 //! 和内置的撞名：内置的优先，不转交、不列（装包时拦随装包那一步）。清单照磁盘现读，不连核心：转交不该为了找一个程序拉起
@@ -131,7 +132,15 @@ pub fn forward(
         say(err, &not_installed(one, language));
         return Some(1);
     };
-    Some(run(&program, &rest, err))
+    Some(run(command(&program, &rest, dir), err))
+}
+
+/// 跑包的程序 `program` 的命令：参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
+/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局）。
+fn command(program: &Path, args: &[OsString], dir: &Path) -> std::process::Command {
+    let mut command = std::process::Command::new(program);
+    command.args(args).env("MIYU_PACKAGE_DIR", dir);
+    command
 }
 
 /// 没装程序：哪一份清单说这个子命令由谁跑。
@@ -155,11 +164,14 @@ fn say(err: &mut dyn Write, text: &str) {
     }
 }
 
-/// Unix 上换成它：信号、终端都直接到它，它的退出码就是这个进程的。换不成的说为什么，退出码 1。
+/// Unix 上换成 `command` 的程序：信号、终端都直接到它，它的退出码就是这个进程的。换不成的说为什么，退出码 1。
 #[cfg(unix)]
-pub(crate) fn run(program: &Path, args: &[OsString], err: &mut dyn Write) -> u8 {
+pub(crate) fn run(mut command: std::process::Command, err: &mut dyn Write) -> u8 {
     use std::os::unix::process::CommandExt;
-    let error = std::process::Command::new(program).args(args).exec();
-    say(err, &format!("{}: {error}", program.display()));
+    let error = command.exec();
+    say(
+        err,
+        &format!("{}: {error}", Path::new(command.get_program()).display()),
+    );
     1
 }

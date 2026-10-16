@@ -1,6 +1,6 @@
-//! `miyu-onebot` 在标准错误上说给人听的字（`onebot.md` 第一条「样子」「出错」「给人看的字」）：字放在
-//! `resources/software/onebot/human/{zh,en,ja}.json`，照 [`Human::load`] 读（`store/resources.md`「怎么走」第 3 条），说法的
-//! 编号是 `software/onebot/<哪一句>`。这里只管挑哪一句、换进什么字段。`start`、`stop`、`restart`、`status`、`logs` 说的
+//! `miyu-onebot` 在标准错误上说给人听的字（`onebot.md` 第一条「样子」「出错」「给人看的字」）：字放在包文件夹的
+//! `data/human/{zh,en,ja}.json`（施工 S-6 上从资源目录的 `software/onebot/` 挪来，[`Package`]），核心那一份照 [`Human::load`]
+//! 从资源目录读，桥的这一份照 [`Human::with_dir`] 补读，说法的编号照旧是 `software/onebot/<哪一句>`。这里只管挑哪一句、换进什么字段。`start`、`stop`、`restart`、`status`、`logs` 说的
 //! （施工 O-18）、`venue show` 说的和场所规则的问题说成话（施工 O-21）、限流满了发进群里的那一句（施工 O-23）、`web` 找不到
 //! `miyu` 的那一句（施工 O-28 补）也在这里。
 //!
@@ -8,20 +8,22 @@
 //! `language`。日文没有专门写的，`ja.json` 照英文写，和核心拒绝时的话一样（`protocol.md`「握手」`language`）。
 
 use miyu_chat::{Entry, Problem, Source};
-use miyu_config::problem::Code;
-use miyu_kernel::event::Said;
-use miyu_store::human::{Human, HumanError};
-use miyu_store::resources::ResourceRoot;
+use miyu_client::places::ResourceRoot;
+use miyu_client::protocol::Said;
+use miyu_client::settings::problem::Code;
+use miyu_client::texts::{Human, HumanError};
 
 use crate::control::{Halt, Report};
 use crate::logs::Heading;
+use crate::package::Package;
 use crate::serve::{Failure, Notice};
 use crate::venue::Shown;
 
-/// 这个包的说法编号的前缀：软件包的说法照它在资源目录里的位置起（`store/resources.md`「怎么走」第 3 条第 4 款）。
-const PREFIX: &str = "software/onebot/";
+/// 这个包的说法编号的前缀：软件包的说法照它原来在资源目录里的位置起（`store/resources.md`「怎么走」第 3 条第 4 款）；字挪进
+/// 包文件夹以后编号照旧（施工 S-6 上）。
+const KEYS: &str = "software/onebot";
 
-/// 握手以前说话的语言：照系统的语言 `locale`（`miyu_store::env::locale`），`zh`、`ja` 开头的照它，别的、没有的说英文。和核心
+/// 握手以前说话的语言：照系统的语言 `locale`（`miyu_client::places::locale`），`zh`、`ja` 开头的照它，别的、没有的说英文。和核心
 /// 照握手的 `locale` 算 `ui.language = auto` 的是同一个规矩（「施工时定的」第 44 条）。
 pub fn system_language(locale: Option<&str>) -> &'static str {
     match locale {
@@ -34,8 +36,10 @@ pub fn system_language(locale: Option<&str>) -> &'static str {
 /// 读好的一种语言的字。
 #[derive(Debug, Clone)]
 pub struct Texts {
-    /// 资源目录：换语言时再读。
+    /// 资源目录：核心那一份字在这里，换语言时再读。
     resources: ResourceRoot,
+    /// 包文件夹：桥自己的字在它的 `data/` 里，换语言时再读（施工 S-6 上）。
+    package: Package,
     /// 现在说的语言：`zh`、`en`、`ja` 这样的写法。
     language: String,
     /// 这种语言的字。
@@ -43,15 +47,20 @@ pub struct Texts {
 }
 
 impl Texts {
-    /// 照资源目录 `resources` 读 `language` 这一种。
+    /// 读 `language` 这一种：核心那一份照资源目录 `resources`，桥的这一份照包文件夹 `package` 的 `data/`。
     ///
     /// # Errors
     ///
-    /// 有一份给人看的字读得到却读不懂（[`Human::load`]）。
-    pub fn load(resources: ResourceRoot, language: &str) -> Result<Texts, HumanError> {
-        let human = Human::load(&resources, language)?;
+    /// 有一份给人看的字读得到却读不懂（[`Human::load`]、[`Human::with_dir`]）。读不到的不算错：那一句照实印出编号。
+    pub fn load(
+        resources: ResourceRoot,
+        package: Package,
+        language: &str,
+    ) -> Result<Texts, HumanError> {
+        let human = Human::load(&resources, language)?.with_dir(&package.data(), KEYS, language)?;
         Ok(Texts {
             resources,
+            package,
             language: language.to_string(),
             human,
         })
@@ -64,7 +73,7 @@ impl Texts {
     /// 那种语言的字读不懂：还照原来的说。
     pub fn speak(&mut self, language: &str) -> Result<(), HumanError> {
         if language != self.language {
-            *self = Texts::load(self.resources.clone(), language)?;
+            *self = Texts::load(self.resources.clone(), self.package.clone(), language)?;
         }
         Ok(())
     }
@@ -72,6 +81,11 @@ impl Texts {
     /// 资源目录。
     pub fn resources(&self) -> &ResourceRoot {
         &self.resources
+    }
+
+    /// 包文件夹（施工 S-6 上）：出厂数据、给模型看的字照它的 `data/` 读。
+    pub fn package(&self) -> &Package {
+        &self.package
     }
 
     /// 用法不对。
@@ -290,7 +304,7 @@ impl Texts {
     /// 照实印出说法的编号和字段，再记一行运行日志。
     fn say(&self, key: &str, fields: &[(&str, String)]) -> String {
         let said = fields.iter().fold(
-            Said::new(format!("{PREFIX}{key}")),
+            Said::new(format!("{KEYS}/{key}")),
             |said, (field, value)| said.with(field, value.clone()),
         );
         self.human.say(&said).unwrap_or_else(|| {

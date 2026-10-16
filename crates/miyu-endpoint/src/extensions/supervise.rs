@@ -70,6 +70,9 @@ pub(super) struct Plan {
     pub(super) home: PathBuf,
     /// 核心手上的资源目录：拉起时设成 `MIYU_RESOURCES`（施工 O-18）。
     pub(super) resources: PathBuf,
+    /// 这个包的文件夹（清单所在的那一层，出厂的在资源目录、自己装的在家目录）：拉起时设成 `MIYU_PACKAGE_DIR`（施工 S-6 上，
+    /// `extensions.md`「怎么走」第 1 条）。
+    pub(super) package: PathBuf,
     /// 标准错误接到哪个文件。
     pub(super) log: PathBuf,
 }
@@ -250,11 +253,13 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
     std::fs::create_dir_all(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
     let mut command = std::process::Command::new(&plan.program);
-    // 环境照核心的，只把这两个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的。
+    // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
+    // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼家目录的布局（施工 S-6 上）。
     command
         .args(&plan.args)
         .env("MIYU_HOME", &plan.home)
         .env("MIYU_RESOURCES", &plan.resources)
+        .env("MIYU_PACKAGE_DIR", &plan.package)
         .current_dir(&plan.dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

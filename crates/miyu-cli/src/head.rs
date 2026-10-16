@@ -63,7 +63,11 @@ pub fn open(page: Option<&str>, admin: &AccountId, start: impl FnOnce() -> Comma
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
     match plan(&head, page, &found, &main) {
-        Plan::Run(program, args) => Opened::Ran(packages::run(&program, &args, &mut io::stderr())),
+        Plan::Run(program, args) => {
+            let mut command = Command::new(&program);
+            command.args(&args);
+            Opened::Ran(packages::run(command, &mut io::stderr()))
+        }
         Plan::NoPage => Opened::NoPage,
         Plan::Missing => {
             say(&unavailable(

@@ -3,7 +3,7 @@
 //! 找回；抄进支线用的人话照抄的写法、留到用不着；封存了去掉。夹具在 `tests.rs`。
 
 use miyu_chat::{Line, Lines};
-use miyu_kernel::event::Event;
+use miyu_client::events::Event;
 use serde_json::json;
 
 use super::tests::{
@@ -179,8 +179,8 @@ fn a_turn_the_lane_opens_for_what_joined_answers_whoever_joined() {
     );
     projection.lane_take(LANE, &ended(7, 4));
     let mut again = started(8, 0, &[]);
-    if let miyu_kernel::event::Body::TurnStarted(started) = &mut again.body {
-        started.trigger = miyu_kernel::id::Seq::new(6);
+    if let miyu_client::events::Body::TurnStarted(started) = &mut again.body {
+        started.trigger = miyu_client::ids::Seq::new(6);
     }
     projection.lane_take(LANE, &again);
     assert_eq!(

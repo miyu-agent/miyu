@@ -15,7 +15,7 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use miyu_http::{Get, Got, Proxy};
+use miyu_client::http::{Get, Got, Proxy};
 use serde_json::Value;
 
 use crate::listen::bots::Link;
@@ -131,13 +131,13 @@ pub(crate) async fn bytes(sources: &[Source], timeout: Duration) -> Result<Vec<u
 
 /// 下一个地址：回环的不走代理（开发机上设了代理也连得上本机），别的照环境变量。
 async fn download(url: &str, timeout: Duration) -> Result<Vec<u8>, String> {
-    let proxy = if miyu_http::is_loopback_url(url) {
+    let proxy = if miyu_client::http::is_loopback_url(url) {
         Proxy::Off
     } else {
         Proxy::FromEnvironment
     };
-    let client = miyu_http::fetcher(proxy).map_err(|error| format!("url: {error}"))?;
-    let got = miyu_http::get(Get {
+    let client = miyu_client::http::fetcher(proxy).map_err(|error| format!("url: {error}"))?;
+    let got = miyu_client::http::get(Get {
         client: &client,
         url,
         headers: &[],

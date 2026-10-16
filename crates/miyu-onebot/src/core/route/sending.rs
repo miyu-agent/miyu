@@ -14,8 +14,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use miyu_kernel::id::ExternalId;
-use miyu_kernel::time::Timestamp;
+use miyu_client::ids::ExternalId;
+use miyu_client::time::Timestamp;
 use serde_json::{Value, json};
 
 use super::projection::{NOTICE, QUEUED, REPLY};

@@ -1,6 +1,9 @@
 //! 从资源目录读工具的字（`26-提示词.md` 第八节）：`software/<软件包>/tools/<工具>.json` 是给模型看的说明和
 //! 参数格式，`software/<软件包>/<工具>/<名字>.txt` 是输出里给她看的几句（施工 4-4 下）。原来在基础系统里、软件包名写死，
 //! 施工 R-3 中挪到这里、多一个软件包名：记忆这个软件包照同一套读（同一件事不写两遍）。
+//!
+//! 自己带着字的软件包（接入QQ，施工 S-6 上）不在资源目录的 `software/` 下：字放在包文件夹的 `data/` 里，照 [`spec_in`]、
+//! [`text_in`] 读，给的是那个目录本身，下面的 `tools/`、`<工具>/` 和 `software/<软件包>/` 下的一个样子。
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -52,7 +55,16 @@ pub fn spec(
     name: &str,
     access: Access,
 ) -> Result<Spec, LoadError> {
-    let file = spec_file(resources, package, name);
+    spec_in(&package_dir(resources, package), name, access)
+}
+
+/// 同 [`spec`]，字在目录 `dir` 里（`dir/tools/<工具>.json`）：包文件夹自己带的字（施工 S-6 上）。
+///
+/// # Errors
+///
+/// 同 [`spec`]。
+pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError> {
+    let file = spec_file(dir, name);
     let text = read(&file)?;
     let parsed: SpecFile = serde_json::from_str(&text).map_err(|error| LoadError {
         file: file.clone(),
@@ -82,7 +94,7 @@ pub fn spec_filled(
 ) -> Result<Spec, LoadError> {
     let mut spec = spec(resources, package, name, access)?;
     let bad = |why: String| LoadError {
-        file: spec_file(resources, package, name),
+        file: spec_file(&package_dir(resources, package), name),
         why,
     };
     let template = Template::parse(&spec.description).map_err(|error| bad(error.to_string()))?;
@@ -105,11 +117,16 @@ pub fn text(
     name: &str,
     fields: &[&str],
 ) -> Result<Template, LoadError> {
-    let file = resources
-        .join("software")
-        .join(package)
-        .join(tool)
-        .join(format!("{name}.txt"));
+    text_in(&package_dir(resources, package), tool, name, fields)
+}
+
+/// 同 [`text`]，字在目录 `dir` 里（`dir/<工具>/<名字>.txt`）：包文件夹自己带的字（施工 S-6 上）。
+///
+/// # Errors
+///
+/// 同 [`text`]。
+pub fn text_in(dir: &Path, tool: &str, name: &str, fields: &[&str]) -> Result<Template, LoadError> {
+    let file = dir.join(tool).join(format!("{name}.txt"));
     let source = read(&file)?;
     let bad = |why: String| LoadError {
         file: file.clone(),
@@ -133,13 +150,14 @@ pub fn say(template: &Template, fields: &[(&str, &str)]) -> String {
     template.render(&fields).expect("造的时候试换过，字段都有")
 }
 
-/// 软件包 `package` 的工具 `name` 的说明在哪。
-fn spec_file(resources: &Path, package: &str, name: &str) -> PathBuf {
-    resources
-        .join("software")
-        .join(package)
-        .join("tools")
-        .join(format!("{name}.json"))
+/// 资源目录 `resources` 里软件包 `package` 的字在哪个目录：`software/<软件包>/`。
+fn package_dir(resources: &Path, package: &str) -> PathBuf {
+    resources.join("software").join(package)
+}
+
+/// 字在 `dir` 里的工具 `name` 的说明在哪。
+fn spec_file(dir: &Path, name: &str) -> PathBuf {
+    dir.join("tools").join(format!("{name}.json"))
 }
 
 /// 读一份文件。

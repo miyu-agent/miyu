@@ -11,6 +11,14 @@
 //! - [`log`]：运行日志（`miyu-log`）。
 //! - [`seeds`]：从一张图挑主题色的候选，跟随壁纸用（`miyu-seeds`，施工 P-6 补）：和核心算头像的同一份。
 //! - [`heap`]：进程的堆：glibc 上限 arena、定大块门槛，空着的还给系统，自己占了多少（`miyu-heap`，施工 S-1 补）。
+//!
+//! 接入QQ 拆出核心仓库以前先只依赖门面（设计 32 第九节第 1 条，施工 S-6 上），多这几组；表情包这类第三方扩展要的也是它们：
+//!
+//! - [`ids`]、[`time`]：编号、时刻和时区偏移（`miyu-kernel`）。
+//! - [`events`]：会话日志里的事件（`miyu-kernel`）。
+//! - [`tooltext`]：工具的字怎么读（`miyu-tool`）。
+//! - [`settings`]：配置的类型、读法和问题（`miyu-config`）。
+//! - [`http`]：HTTP 客户端（`miyu-http`）。
 
 pub mod open;
 #[cfg(test)]
@@ -35,16 +43,63 @@ pub mod connect {
     };
 }
 
-/// 数据根、资源目录、环境、语言、缓存目录在哪。
+/// 数据根、资源目录、环境、语言、缓存目录在哪；生成的文件怎么写、配置文件怎么读、两层的软件包清单（施工 S-6 上）。
 pub mod places {
+    pub use miyu_store::config_file;
     pub use miyu_store::env::{Env, Platform, locale};
+    pub use miyu_store::generated::write;
+    pub use miyu_store::packages::{Issue, Packages};
     pub use miyu_store::resources::ResourceRoot;
     pub use miyu_store::root::{DataRoot, cache_root};
 }
 
 /// 给人看的字：照语言读出来、画工具的显示名和说法。
 pub mod texts {
-    pub use miyu_store::human::{Face, Human, clean};
+    pub use miyu_store::human::{Face, Human, HumanError, clean};
+}
+
+/// 编号（施工 S-6 上）：平台上的人、场所、日志里的序号、内容的哈希。
+pub mod ids {
+    pub use miyu_kernel::id::{ContentHash, ExternalId, Seq, VenueId};
+}
+
+/// 时刻和时区偏移（施工 S-6 上）。
+pub mod time {
+    pub use miyu_kernel::time::{Timestamp, UtcOffset};
+}
+
+/// 会话日志里的事件（施工 S-6 上）：事件、正文、谁做的、内容块，写法不对时的错误。
+pub mod events {
+    pub use miyu_kernel::FormatError;
+    pub use miyu_kernel::block::Block;
+    pub use miyu_kernel::event::{Body, Event};
+    pub use miyu_kernel::origin::By;
+}
+
+/// 工具的字怎么读（施工 S-6 上）：说明和参数格式、输出里给她看的几句（`load`），读好的说明、访问类别。
+pub mod tooltext {
+    pub use miyu_kernel::tool::Access;
+    pub use miyu_tool::Spec;
+    pub use miyu_tool::load;
+}
+
+/// 配置的类型、读法和问题（施工 S-6 上）：值的种类、密钥、照种类读一个值、问题的原因码和位置。
+pub mod settings {
+    pub use miyu_config::Kind;
+    pub use miyu_config::secret::Secret;
+    /// 照种类读一个 TOML 的值、把解析器的原话说短。
+    pub mod parse {
+        pub use miyu_config::parse::{read, why};
+    }
+    /// 问题的原因码、轻重、位置，原文怎么印、最像的名字、说成话。
+    pub mod problem {
+        pub use miyu_config::problem::{At, Code, Severity, got, nearest, tell};
+    }
+}
+
+/// HTTP 客户端（施工 S-6 上）：照核心的规矩下载（只 http、https，超时、代理照它），认本机回环的地址。
+pub mod http {
+    pub use miyu_http::{Get, Got, Proxy, fetcher, get, is_loopback_url};
 }
 
 /// 协议里的类型。

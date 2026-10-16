@@ -6,10 +6,9 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use miyu_store::resources::ResourceRoot;
-
 use super::{Heard, heard};
 use crate::core::methods::Methods;
+use crate::package::Package;
 use crate::rules::{Factory, Tools};
 
 /// 源码树里的资源目录。
@@ -19,14 +18,14 @@ fn resources() -> std::path::PathBuf {
 
 /// 出厂的工具。
 fn tools() -> Arc<Tools> {
-    Factory::load(&ResourceRoot::at(resources()))
+    Factory::load(&Package::at(resources().join("packages/onebot")))
         .expect("出厂的读得出")
         .tools()
 }
 
-/// 出厂的 `software/onebot/<name>` 原样。
+/// 出厂的包文件夹的 `data/<name>` 原样。
 fn shipped(name: &str) -> String {
-    std::fs::read_to_string(resources().join("software/onebot").join(name)).expect("读得出")
+    std::fs::read_to_string(resources().join("packages/onebot/data").join(name)).expect("读得出")
 }
 
 /// 核心反向调 `tool`，编号 `id`。
@@ -51,14 +50,27 @@ fn the_provide_params_follow_the_shipped_spec() {
     let spec = |name: &str| -> Value {
         serde_json::from_str(&shipped(&format!("tools/{name}.json"))).expect("是 JSON")
     };
+    // 施工 S-6 上：每件带给人看的名字，照包文件夹 `data/human/<语言>.json` 的 `tools.<名字>.name`，三种语言都有；写了
+    // `subject` 的带上 `subject`。
+    let human = |language: &str| -> Value {
+        serde_json::from_str(&shipped(&format!("human/{language}.json"))).expect("是 JSON")
+    };
     let entry = |name: &str, access: &str, venues: Value| {
-        json!({
+        let named = |language: &str| human(language)["tools"][name]["name"].clone();
+        let mut entry = json!({
             "name": name,
             "description": spec(name)["description"],
             "input_schema": spec(name)["parameters"],
             "access": access,
             "venues": venues,
-        })
+            "display_name": {"en": named("en"), "ja": named("ja"), "zh": named("zh")},
+        });
+        // 显示名后面跟哪一个参数：照原来的 `tools.<名字>.subject` 带上，没写的不带。
+        let subject = &human("en")["tools"][name]["subject"];
+        if subject.is_string() {
+            entry["subject"] = subject.clone();
+        }
+        entry
     };
     let both = json!(["private", "group"]);
     assert_eq!(

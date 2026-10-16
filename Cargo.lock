@@ -1833,11 +1833,13 @@ version = "0.0.0"
 dependencies = [
  "miyu-config",
  "miyu-heap",
+ "miyu-http",
  "miyu-ipc",
  "miyu-kernel",
  "miyu-log",
  "miyu-seeds",
  "miyu-store",
+ "miyu-tool",
  "serde_json",
  "tokio",
 ]

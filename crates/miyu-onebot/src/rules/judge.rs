@@ -1,4 +1,4 @@
-//! 判官的说明（施工 O-23 下，`onebot.md` 第一条「场所规则和出厂数据」第 1、2 条）：资源 `software/onebot/judge/` 下的十三份
+//! 判官的说明（施工 O-23 下，`onebot.md` 第一条「场所规则和出厂数据」第 1、2 条）：包文件夹的 `data/judge/` 下的十三份
 //! （`chat.md` 第六条，给模型看的字，登记在 `26-提示词.md` 第十节），桥起来时和别的出厂数据一起读，交群聊内核的
 //! [`JudgeTexts::new`] 查。没有系统那一份：给模型看的字随包走。
 //!
@@ -7,7 +7,7 @@
 use std::path::Path;
 
 use miyu_chat::{JudgeSources, JudgeTexts, Problem, Source};
-use miyu_config::problem::Code;
+use miyu_client::settings::problem::Code;
 
 use super::{files, required};
 
@@ -17,7 +17,7 @@ const DIR: &str = "judge";
 /// 写模板的那一份：[`JudgeTexts::new`] 不收的，问题记在它上面。
 const VIOLATIONS: &str = "violations.txt";
 
-/// 读出厂目录 `dir`（`software/onebot/`）里的判官的说明，查过交回。不在、读不成的每一份记一条问题；都读到了、`violations.txt`
+/// 读出厂目录 `dir`（包文件夹的 `data/`）里的判官的说明，查过交回。不在、读不成的每一份记一条问题；都读到了、`violations.txt`
 /// 的模板写坏了（`JudgeTexts::new` 不收）的记一条 `bad_format`，原话是模板的错。有问题的交回空的。
 pub(super) fn texts(dir: &Path, problems: &mut Vec<Problem>) -> Option<JudgeTexts> {
     let base = dir.join(DIR);

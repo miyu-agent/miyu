@@ -5,7 +5,7 @@
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
-use miyu_kernel::id::VenueId;
+use miyu_client::ids::VenueId;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;

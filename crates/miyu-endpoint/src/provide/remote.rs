@@ -48,6 +48,8 @@ pub(crate) struct RemoteTool {
     venues: Venues,
     /// 登记时写的给人看的名字，照语言（施工 9-8 六补）。
     display_name: BTreeMap<String, String>,
+    /// 登记时写的显示名后面跟哪一个参数（施工 S-6 上）。
+    subject: Option<String>,
     timeout: Duration,
     package: String,
     provided: Arc<Provided>,
@@ -85,6 +87,7 @@ impl RemoteTool {
             spec: checked.spec,
             venues: checked.venues,
             display_name: checked.display_name,
+            subject: checked.subject,
             timeout: checked.timeout,
             package: package.to_string(),
             provided,
@@ -185,6 +188,10 @@ impl Tool for RemoteTool {
 
     fn display_name(&self) -> BTreeMap<String, String> {
         self.display_name.clone()
+    }
+
+    fn subject(&self) -> Option<String> {
+        self.subject.clone()
     }
 
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {

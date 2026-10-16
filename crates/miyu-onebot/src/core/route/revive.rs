@@ -8,7 +8,7 @@
 use std::time::Instant;
 
 use miyu_chat::Venue;
-use miyu_kernel::id::{ExternalId, VenueId};
+use miyu_client::ids::{ExternalId, VenueId};
 use serde_json::json;
 
 use super::backlog::Backlog;

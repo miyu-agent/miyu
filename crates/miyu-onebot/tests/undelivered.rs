@@ -13,7 +13,6 @@ use miyu_chat::Source;
 use miyu_config::problem::Code;
 use miyu_onebot::rules::Factory;
 use miyu_session::testkit::{Play, Script};
-use miyu_store::resources::ResourceRoot;
 
 use crate::rules::{clean, copied_resources};
 use crate::support::answering::refused;
@@ -82,7 +81,7 @@ async fn until_decided(home: &Home, group: i64, message: i64) {
 
 /// 出厂的模板照 `why`、`detail`、`text` 填出来的那一块（字段里没有要转义的字）。
 fn fact(why: &str, detail: &str, text: &str) -> String {
-    let path = resources().join("software/onebot/facts/undelivered.txt");
+    let path = resources().join("packages/onebot/data/facts/undelivered.txt");
     std::fs::read_to_string(path)
         .expect("读得出")
         .replace("{why}", why)
@@ -322,13 +321,13 @@ async fn private_words_come_back_too() {
 fn a_broken_undelivered_template_is_a_factory_mistake() {
     // 退信的模板（施工 O-25 下）：写坏了、要了别的字段，记一条 `bad_format`；不在的记一条读不成。文件名带 `facts/`。
     let resources = copied_resources();
-    let facts = resources.join("software/onebot/facts");
+    let facts = resources.join("packages/onebot/data/facts");
     for (text, wanted) in [
         ("<undelivered why=\"{why}\">{text\n", "{text"),
         ("<undelivered who=\"{who}\">{text}</undelivered>\n", "who"),
     ] {
         std::fs::write(facts.join("undelivered.txt"), text).expect("写得进");
-        let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("模板不对");
+        let problems = Factory::load(&package_in(&resources)).expect_err("模板不对");
         assert_eq!(
             problems
                 .iter()
@@ -345,7 +344,7 @@ fn a_broken_undelivered_template_is_a_factory_mistake() {
         );
     }
     std::fs::remove_file(facts.join("undelivered.txt")).expect("删得了");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("不在");
+    let problems = Factory::load(&package_in(&resources)).expect_err("不在");
     assert_eq!(
         problems
             .iter()
@@ -359,6 +358,6 @@ fn a_broken_undelivered_template_is_a_factory_mistake() {
         "<undelivered why=\"{why}\">{text}</undelivered>\n",
     )
     .expect("写得进");
-    assert!(Factory::load(&ResourceRoot::at(&resources)).is_ok());
+    assert!(Factory::load(&package_in(&resources)).is_ok());
     clean(resources.parent().expect("有上一级"));
 }

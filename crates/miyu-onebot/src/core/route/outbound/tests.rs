@@ -3,8 +3,8 @@
 //! 这一轮发出去的换了回合就清。参数照出厂的 `defaults.toml`。
 
 use miyu_chat::{File, OutWhy, Params, Source, Target};
-use miyu_kernel::id::ExternalId;
-use miyu_kernel::time::Timestamp;
+use miyu_client::ids::ExternalId;
+use miyu_client::time::Timestamp;
 
 use super::super::projection::{Aim, Speaking};
 use super::{Spoken, group_ctx, pass, private_ctx, why_name};
@@ -14,7 +14,7 @@ use crate::onebot::Lead;
 fn params() -> Params {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../resources/software/onebot/defaults.toml"
+        "/../../resources/packages/onebot/data/defaults.toml"
     );
     let file = File {
         source: Source::Factory,

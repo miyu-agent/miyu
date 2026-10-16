@@ -13,10 +13,10 @@
 use std::collections::BTreeMap;
 
 use miyu_chat::{Line, Lines};
-use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{ExternalId, Seq};
-use miyu_kernel::origin::By;
+use miyu_client::events::Block;
+use miyu_client::events::By;
+use miyu_client::events::{Body, Event};
+use miyu_client::ids::{ExternalId, Seq};
 use serde_json::{Value, json};
 
 use super::track::Track;

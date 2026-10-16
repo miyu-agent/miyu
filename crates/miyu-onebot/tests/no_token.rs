@@ -34,7 +34,7 @@ async fn ask(served: &mut Served, id: &str, method: &str) -> Value {
 
 /// 照中文说的那一句。
 fn zh(notice: &Notice) -> String {
-    Texts::load(ResourceRoot::at(resources()), "zh")
+    Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
         .expect("读得出来")
         .notice(notice)
 }

@@ -132,7 +132,7 @@ name = { en = "Greeting", zh = "问候语" }
 
 ### 4. Writing an extension program
 
-1. **How it is started**: the program is the one under `bin/`, with `[process] args` as its arguments. The environment is the core's, plus `MIYU_HOME` (the data root) and `MIYU_RESOURCES` (the resource directory). The working directory is the package's state directory, `<data root>/state/packages/<id>/`: keep your database and caches there; they are removed with the package. Standard error goes to `<data root>/state/logs/<id>.stderr`; look there first when something goes wrong.
+1. **How it is started**: the program is the one under `bin/`, with `[process] args` as its arguments. The environment is the core's, plus `MIYU_HOME` (the data root), `MIYU_RESOURCES` (the resource directory) and `MIYU_PACKAGE_DIR` (your package's folder: the manifest sits at its top, and the files your package brings are found from it; where it is installed is up to the core, so do not build the path yourself). `miyu <your command>` sets `MIYU_PACKAGE_DIR` too when it hands over to your program. The working directory is the package's state directory, `<data root>/state/packages/<id>/`: keep your database and caches there; they are removed with the package. Standard error goes to `<data root>/state/logs/<id>.stderr`; look there first when something goes wrong.
 2. **One message per line**: each message is one line of compact JSON ending in `\n`, at most 1 MiB. The `id` of a request you send must be a string (1 to 128 bytes).
 3. **Hello**: the first message is `hello`:
 
@@ -154,6 +154,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `timeout_ms`: optional, 1000 to 600000, default 60000.
    - `need_load`: optional; `true` means the tool needs loading first (see "Tools that need loading").
    - `display_name`: optional, the name people see, per language: `{"zh": "打招呼", "en": "Greet"}`. The timeline shows it in the reader's language and falls back to `name`. It is for people, not for the model.
+   - `subject`: optional, which argument's value the timeline shows after the name, for example `"name"` (shown as "Greet Ann"). It must be one of the names in `input_schema`'s `properties`; otherwise the whole set is refused (`problem` is `subject`).
    - A wrong entry rejects the whole set; the reply's `data` says which tool and what is wrong (`{"tool":"hello_greet","problem":"name"}`).
 5. **Being called**: when the AI calls one of your tools, the core sends you `tool.call`:
 

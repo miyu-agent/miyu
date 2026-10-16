@@ -1,6 +1,7 @@
 //! 时间线上工具的名字（施工 9-8 六补）：真核心、真 MCP 服务走一遍。服务给了 `title` 的工具，调的那一刻记进结果（不分语言，记在
 //! `en` 下，中文的连接没有中文的照它），视图的标题照它；服务没给的照工具名。服务关掉、工具出了目录，再翻照旧是记下的名字。
-//! 扩展登记时写了 `display_name` 的同样记下，照连接的语言挑。这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）。
+//! 扩展登记时写了 `display_name` 的同样记下，照连接的语言挑。这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补），
+//! 写了 `subject` 的一起带上（施工 S-6 上）。
 
 use std::sync::Arc;
 
@@ -113,7 +114,14 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
     };
     let mut greet = spec("greet");
     greet["display_name"] = json!({"zh": "打招呼", "en": "Greet"});
-    let tools = json!({"tools": [greet, spec("plain")]});
+    // 显示名后面跟哪一个参数（施工 S-6 上）：写了的带进 `human.get`。
+    greet["input_schema"] = json!({"type": "object", "properties": {"who": {"type": "string"}}});
+    greet["subject"] = json!("who");
+    // 只写了跟哪个参数、没写显示名的：名字是工具名。
+    let mut bare = spec("bare");
+    bare["input_schema"] = json!({"type": "object", "properties": {"x": {"type": "string"}}});
+    bare["subject"] = json!("x");
+    let tools = json!({"tools": [greet, spec("plain"), bare]});
     install(
         &home,
         "bridge",
@@ -141,7 +149,16 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
             .await;
         assert_eq!(
             human["result"]["tools"]["greet"],
-            json!({ "name": name }),
+            json!({ "name": name, "subject": "who" }),
+            "{human}"
+        );
+        assert!(
+            human["result"]["tools"].get("plain").is_none(),
+            "没写显示名、没写跟哪个参数的照旧不列：{human}"
+        );
+        assert_eq!(
+            human["result"]["tools"]["bare"],
+            json!({"name": "bare", "subject": "x"}),
             "{human}"
         );
         assert_eq!(human["result"]["packages"]["greet"], "bridge", "{human}");

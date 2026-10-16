@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use miyu_chat::{File, Problem, Source};
-use miyu_config::problem::Code;
-use miyu_store::config_file::{self, ReadError};
+use miyu_client::places::config_file::{self, ReadError};
+use miyu_client::settings::problem::Code;
 
 /// 规则文件的名字以它结尾。
 const EXTENSION: &str = ".toml";

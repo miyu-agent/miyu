@@ -10,8 +10,8 @@
 use std::io::Write;
 
 use miyu_chat::Venue;
-use miyu_kernel::id::VenueId;
-use miyu_store::root::DataRoot;
+use miyu_client::ids::VenueId;
+use miyu_client::places::DataRoot;
 
 use crate::rules::{Factory, load};
 use crate::serve::Failure;
@@ -36,7 +36,7 @@ pub enum Shown {
     BadVenue(String),
 }
 
-/// 印场所 `venue`（编号的原文）每一项的值和来处：读资源目录（`texts` 的）里出厂的、数据根 `root` 里系统的，说的照 `texts`。
+/// 印场所 `venue`（编号的原文）每一项的值和来处：读包文件夹（`texts` 的）里出厂的、数据根 `root` 里系统的，说的照 `texts`。
 /// 交回退出码。
 pub fn show(
     root: &DataRoot,
@@ -52,7 +52,7 @@ pub fn show(
             USAGE,
         );
     };
-    let factory = match Factory::load(texts.resources()) {
+    let factory = match Factory::load(texts.package()) {
         Ok(factory) => factory,
         Err(problems) => return said(err, &texts.failure(&Failure::Factory(problems)), FAILED),
     };

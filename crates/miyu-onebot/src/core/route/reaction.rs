@@ -15,8 +15,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_chat::{Kind, Supersede};
-use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::Seq;
+use miyu_client::events::{Body, Event};
+use miyu_client::ids::Seq;
 use tokio::sync::oneshot;
 
 use super::decide::Decision;

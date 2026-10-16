@@ -8,8 +8,8 @@ use miyu_chat::{
     Chatty, Clock, Conditions, Ctx, Facts, File, Hit, Kind, Mode, Moderation, Params, Pending,
     Rate, Reply, Said, Sleep, Source, Standing, Status, Why,
 };
-use miyu_kernel::id::{ExternalId, Seq, VenueId};
-use miyu_kernel::time::{Timestamp, UtcOffset};
+use miyu_client::ids::{ExternalId, Seq, VenueId};
+use miyu_client::time::{Timestamp, UtcOffset};
 use serde_json::json;
 
 use super::super::body::body as written;
@@ -20,7 +20,7 @@ use super::{Case, Conclusion, Decision, decide};
 fn defaults() -> String {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../resources/software/onebot/defaults.toml"
+        "/../../resources/packages/onebot/data/defaults.toml"
     );
     std::fs::read_to_string(path).expect("出厂的读得到")
 }

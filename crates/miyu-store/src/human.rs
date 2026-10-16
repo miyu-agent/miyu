@@ -144,6 +144,24 @@ impl Human {
         Ok(human)
     }
 
+    /// 再从目录 `dir` 补读一份 `language`（`dir/human/<语言>.json`），说法的编号前面加上 `prefix`（施工 S-6 上）：自己带着
+    /// 字的包不在资源目录的 `software/` 下，例如接入QQ 的字在它包文件夹的 `data/` 里，编号照旧是 `software/onebot/…`。读法同
+    /// [`Human::load`] 里的每一份：没有这种语言的照英文，英文也没有的不算错；补读完再补一遍单数（`X/one`）。
+    ///
+    /// # Errors
+    ///
+    /// 那一份读得到、却读不懂（不是 JSON、写法不对、模板坏了），说是哪一份。
+    pub fn with_dir(
+        mut self,
+        dir: &Path,
+        prefix: &str,
+        language: &str,
+    ) -> Result<Human, HumanError> {
+        self.add(dir, prefix, language)?;
+        self.fill_singular();
+        Ok(self)
+    }
+
     /// 凡是有 `X` 没有 `X/one` 的，拿 `X` 补上 `X/one`（施工 4-5 再补「一个的时候说单数」）：英文那份自己写了
     /// 需要的那些 `X/one`，照它；中文、日文没写，退到这里，补出来的字跟 `X` 一个字不差（这两种语言不挑单复数）。
     fn fill_singular(&mut self) {

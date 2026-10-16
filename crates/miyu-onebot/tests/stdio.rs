@@ -2,7 +2,8 @@
 //! 握手报 `onebot`、不带凭据；标准输出上只有协议，说给人听的在标准错误上；关了标准输入（核心请它退出）5 秒内退出、退出码 0，
 //! 运行日志记一行。`-h`、`--help` 印用法到标准输出、退出码 0；`web` 后面多带的照用法不对（施工 O-28 补）。握手交的端口
 //! 被占：握手以前不说话，被占那一句照握手回的语言说（施工 O-20）。握手交来 `onebot.web` 的不认：只开 NapCat 的端口，状态文件
-//! 里没有 `web`，标准错误上不说网页（施工 O-28 下）。
+//! 里没有 `web`，标准错误上不说网页（施工 O-28 下）。给人看的字照核心交来的包文件夹读：资源目录里没有桥的字时照样读得到；
+//! 没交的退回资源目录（施工 S-6 上）。
 
 use std::time::Duration;
 
@@ -55,7 +56,8 @@ async fn serve_speaks_only_the_protocol_on_stdout_and_stops_when_stdin_ends() {
     let listed: Value = serde_json::from_str(&lines[3]).expect("是 JSON");
     assert_eq!(listed["method"], "venue.sessions", "{listed}");
     let said = text(&exited.stderr);
-    let zh = Texts::load(ResourceRoot::at(resources()), "zh").expect("读得出来");
+    let zh = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
+        .expect("读得出来");
     let listening = zh.notice(&Notice::Listening { port: listen });
     assert!(
         said.starts_with(&listening),
@@ -81,7 +83,8 @@ async fn a_port_in_use_is_said_in_the_language_of_the_handshake() {
         .await
         .expect("等得到");
     assert_eq!(exited.status.code(), Some(1), "{}", text(&exited.stderr));
-    let zh = Texts::load(ResourceRoot::at(resources()), "zh").expect("读得出来");
+    let zh = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
+        .expect("读得出来");
     assert_eq!(
         text(&exited.stderr),
         format!("{}\n", zh.failure(&Failure::PortInUse(port))),
@@ -96,7 +99,8 @@ async fn a_port_in_use_is_said_in_the_language_of_the_handshake() {
 #[tokio::test]
 async fn help_goes_to_stdout_and_a_wrong_word_is_a_usage_error() {
     let (dir, root) = temp_root();
-    let en = Texts::load(ResourceRoot::at(resources()), "en").expect("读得出来");
+    let en = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "en")
+        .expect("读得出来");
     for flag in ["-h", "--help"] {
         let mut command = program(&root, &[flag]);
         let shown = tokio::task::spawn_blocking(move || command.output())
@@ -159,11 +163,58 @@ async fn a_web_port_in_the_handshake_is_not_opened() {
         .await
         .expect("等得到");
     assert_eq!(exited.status.code(), Some(0), "{}", text(&exited.stderr));
-    let zh = Texts::load(ResourceRoot::at(resources()), "zh").expect("读得出来");
+    let zh = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
+        .expect("读得出来");
     assert_eq!(
         text(&exited.stderr),
         format!("{}\n", zh.notice(&Notice::Listening { port: listen })),
         "标准错误上只说在哪等 NapCat，不说网页"
+    );
+    if std::fs::remove_dir_all(&dir).is_err() {
+        // 删不掉就留在临时目录里，不影响测试。
+    }
+}
+
+#[tokio::test]
+async fn texts_come_from_the_package_folder_it_is_handed() {
+    // 施工 S-6 上：资源目录是空的（没有 `software/onebot/`，也没有出厂的包），包文件夹在别处，只带给人看的字。
+    let (dir, root) = temp_root();
+    let empty = dir.join("resources");
+    let folder = dir.join("own").join("onebot");
+    let human = folder.join("data").join("human");
+    std::fs::create_dir_all(&empty).expect("建得了");
+    std::fs::create_dir_all(&human).expect("建得了");
+    for language in ["en", "zh", "ja"] {
+        let file = format!("{language}.json");
+        std::fs::copy(
+            package().data().join("human").join(&file),
+            human.join(&file),
+        )
+        .expect("抄得了");
+    }
+    let en = Texts::load(ResourceRoot::at(resources()), package(), "en").expect("读得出来");
+    let run = |handed: Option<&std::path::Path>| {
+        let mut command = program(&root, &["--help"]);
+        command.env("MIYU_RESOURCES", &empty);
+        match handed {
+            Some(folder) => command.env("MIYU_PACKAGE_DIR", folder),
+            None => command.env_remove("MIYU_PACKAGE_DIR"),
+        };
+        tokio::task::spawn_blocking(move || command.output())
+    };
+    let shown = run(Some(&folder)).await.expect("没崩").expect("跑得了");
+    assert_eq!(shown.status.code(), Some(0), "{}", text(&shown.stderr));
+    assert_eq!(
+        text(&shown.stdout),
+        format!("{}\n", en.usage()),
+        "读到了包文件夹里的字"
+    );
+    // 没交的退回资源目录：那里没有，照实印出说法的编号。
+    let fallback = run(None).await.expect("没崩").expect("跑得了");
+    assert!(
+        text(&fallback.stdout).starts_with("software/onebot/usage"),
+        "{}",
+        text(&fallback.stdout)
     );
     if std::fs::remove_dir_all(&dir).is_err() {
         // 删不掉就留在临时目录里，不影响测试。

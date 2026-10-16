@@ -56,7 +56,7 @@ impl Methods {
             (Some(running), TOKEN) => {
                 let token = running.current.token();
                 tracing::info!(target: TARGET, "page token read");
-                json!({"token": token.as_ref().map(miyu_config::secret::Secret::expose)})
+                json!({"token": token.as_ref().map(miyu_client::settings::Secret::expose)})
             }
             _ => {
                 tracing::warn!(target: TARGET, method, "page method not understood");

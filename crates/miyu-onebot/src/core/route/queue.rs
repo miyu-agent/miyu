@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
 
-use miyu_kernel::time::Timestamp;
+use miyu_client::time::Timestamp;
 use serde_json::Value;
 
 use crate::onebot::{CallError, DETAIL, number};

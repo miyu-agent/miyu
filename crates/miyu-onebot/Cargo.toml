@@ -13,23 +13,16 @@ name = "miyu-onebot"
 path = "src/main.rs"
 
 [dependencies]
-# 数据根；系统的语言；资源目录和给人看的字（`Human::load`）。
-miyu-store = { path = "../miyu-store" }
-# 运行日志 `state/logs/onebot.log`，满了照核心的换法。
-miyu-log = { path = "../miyu-log" }
-# `start`、`stop`、`restart`、`status` 照终端的样子连核心、一问一答（`open::Core`），和网页软件同一个（onebot.md「施工时定的」
-# 第 166 条）；施工 S-1 起在门面 miyu-client 里。
+# 核心里的东西只经门面拿（设计 32 第九节第 1 条，施工 S-6 上）：数据根、资源目录、系统的语言（`places`）；给人看的字（`texts`）；
+# 运行日志 `state/logs/onebot.log`，满了照核心的换法（`log`）；`start`、`stop`、`restart`、`status` 照终端的样子连核心、一问一答
+# （`open::Core`，onebot.md「施工时定的」第 166 条）；场所、平台上的人的编号、时刻、事件（`ids`、`time`、`events`）；桥的工具的
+# 说明、答的几句照工具的读法读（`tooltext`，施工 O-26，`providers.md`「给模型看的字」）；令牌是核心交来的密钥（`settings`，`Debug`
+# 只印 `Secret(…)`）；两个端口的默认值照自己的清单读（`manifest`，施工 O-20）；取图、视频、文件照核心的 HTTP 客户端下（`http`，
+# 施工 O-33：只 http、https，超时、代理照它）。配置由核心在握手时交、变了推过来，桥不依赖核心的 crate（`miyu-core`、
+# `miyu-endpoint`，18 第一节）。
 miyu-client = { path = "../miyu-client" }
-# 给人看的字照说法换（`Said`，`Human::say`）；场所、平台上的人的编号是内核的 `VenueId`、`ExternalId`。
-miyu-kernel = { path = "../miyu-kernel" }
 # 群聊内核（第 2 层）：场所、平台上的人的编号经它拼，桥不手拼（`chat.md` 第七条第 1 条）。
 miyu-chat = { path = "../miyu-chat" }
-# 桥的工具的说明、答的几句照工具的读法读（`miyu_tool::load`，施工 O-26，`providers.md`「给模型看的字」）：和核心自带的、记忆的
-# 一个写法。
-miyu-tool = { path = "../miyu-tool" }
-# 令牌是核心交来的密钥（`Debug` 只印 `Secret(…)`）；两个端口的默认值照自己的清单读（`miyu_config::package`，施工 O-20）。
-# 配置由核心在握手时交、变了推过来，桥不依赖核心的 crate（`miyu-core`、`miyu-endpoint`，18 第一节）。
-miyu-config = { path = "../miyu-config" }
 # HTTP/1 的服务端：NapCat 反连进来的那一下是 HTTP 升级（照网页软件，本来就在依赖图里）。MIT。
 hyper = { version = "1", features = ["server", "http1"] }
 hyper-util = { version = "0.1", default-features = false, features = ["tokio"] }
@@ -45,9 +38,6 @@ serde_json = "1.0"
 # `io-std`：`serve` 的标准输入输出是跟核心说协议的管道（施工 O-18）。
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "io-std", "sync", "time", "signal"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-# 取图、视频、文件（施工 O-33，`onebot.md`「平台工具（二）」）：NapCat 回的 url 照核心的 HTTP 客户端下（第 3 层，只 http、https，
-# 超时、代理照它；reqwest 本来就在依赖图里）。
-miyu-http = { path = "../miyu-http" }
 # NapCat 回的 base64 解出来、`blob.write` 分块上传时编成 base64（施工 O-33）。本来就在依赖图里，和核心用的同一份。MIT OR
 # Apache-2.0。
 base64 = "0.22"
@@ -61,6 +51,12 @@ workspace = true
 [dev-dependencies]
 # 测试里核心的替身、头经本机套接字连核心（施工 O-16；O-28 下桥自己不再直接用它）。
 miyu-ipc = { path = "../miyu-ipc" }
+# 测试里造编号、读会话日志、装记日志的订阅者、拼请求这些门面上没有的（施工 S-6 上以前是正式依赖）。
+miyu-store = { path = "../miyu-store" }
+miyu-log = { path = "../miyu-log" }
+miyu-kernel = { path = "../miyu-kernel" }
+miyu-tool = { path = "../miyu-tool" }
+miyu-config = { path = "../miyu-config" }
 # 测试里在进程里起一个真的核心：协议端点、请求模型照剧本回、读会话日志；配置清单照真核心起来时那样拼进出厂的包的配置项
 # （`miyu_core::settings::Packaged`，施工 O-20）。不要核心的可选软件包。
 miyu-core = { path = "../miyu-core", default-features = false }

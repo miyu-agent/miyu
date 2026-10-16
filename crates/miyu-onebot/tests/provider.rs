@@ -11,14 +11,13 @@ use miyu_chat::Source;
 use miyu_config::problem::Code;
 use miyu_onebot::rules::Factory;
 use miyu_session::testkit::{Play, Script};
-use miyu_store::resources::ResourceRoot;
 
 use crate::rules::{clean, copied_resources};
 use crate::support::*;
 
 /// 出厂的资源 `software/onebot/<name>` 原样。
 fn shipped(name: &str) -> String {
-    std::fs::read_to_string(resources().join("software/onebot").join(name)).expect("读得出")
+    std::fs::read_to_string(resources().join("packages/onebot/data").join(name)).expect("读得出")
 }
 
 /// 照核心反向调用的样子拼一次 `tool.call`：编号 `id`，工具 `tool`。
@@ -116,9 +115,9 @@ async fn the_bridge_provides_first_and_answers_the_cores_requests() {
 
 #[test]
 fn the_shipped_tools_are_read_and_broken_ones_stop_the_bridge() {
-    assert!(Factory::load(&ResourceRoot::at(resources())).is_ok());
+    assert!(Factory::load(&package_in(resources())).is_ok());
     let resources = copied_resources();
-    let software = resources.join("software/onebot");
+    let software = resources.join("packages/onebot/data");
     for (file, text, wanted) in [
         (
             "tools/skip_reply.json",
@@ -139,7 +138,7 @@ fn the_shipped_tools_are_read_and_broken_ones_stop_the_bridge() {
         let path = software.join(file);
         let kept = std::fs::read_to_string(&path).expect("读得出");
         std::fs::write(&path, text).expect("写得进");
-        let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("写坏了");
+        let problems = Factory::load(&package_in(&resources)).expect_err("写坏了");
         assert_eq!(
             problems
                 .iter()
@@ -155,13 +154,31 @@ fn the_shipped_tools_are_read_and_broken_ones_stop_the_bridge() {
             "{problems:?}"
         );
         std::fs::remove_file(&path).expect("删得了");
-        let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("不在");
+        let problems = Factory::load(&package_in(&resources)).expect_err("不在");
         assert_eq!(problems.len(), 1, "{problems:?}");
         assert_eq!(problems[0].file, file, "{problems:?}");
         std::fs::write(&path, kept).expect("写得进");
     }
+    // 施工 S-6 上：给人看的名字那几份读得到却读不懂的也是打包的错；没有的不算（那种语言不带名字）。
+    let zh = software.join("human/zh.json");
+    let kept = std::fs::read_to_string(&zh).expect("读得出");
+    std::fs::write(&zh, "{").expect("写得进");
+    let problems = Factory::load(&package_in(&resources)).expect_err("读不懂");
+    assert_eq!(
+        problems
+            .iter()
+            .map(|problem| (problem.code, problem.file.as_str()))
+            .collect::<Vec<_>>(),
+        [(Code::BadFormat, "human/zh.json")]
+    );
+    std::fs::remove_file(&zh).expect("删得了");
+    assert!(
+        Factory::load(&package_in(&resources)).is_ok(),
+        "没有的不算错"
+    );
+    std::fs::write(&zh, kept).expect("写得进");
     // 少要字段照收：答的那一句不带工具名也认得出。
     std::fs::write(software.join("tool-results/unknown.txt"), "No such tool.\n").expect("写得进");
-    assert!(Factory::load(&ResourceRoot::at(&resources)).is_ok());
+    assert!(Factory::load(&package_in(&resources)).is_ok());
     clean(resources.parent().expect("有上一级"));
 }

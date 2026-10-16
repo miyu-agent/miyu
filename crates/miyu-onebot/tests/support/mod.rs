@@ -31,6 +31,7 @@ use miyu_endpoint::Core;
 use miyu_endpoint::config::{Config, Environment};
 use miyu_endpoint::extensions::Timing;
 use miyu_kernel::id::{AccountId, SessionId};
+use miyu_onebot::package::Package;
 use miyu_onebot::rules::Factory;
 use miyu_onebot::serve::{Failure, Notice, Serve, run};
 use miyu_onebot::settings::{Defaults, Settings};
@@ -83,19 +84,29 @@ pub fn resources() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources")
 }
 
+/// 资源目录 `resources` 里出厂的那一份包文件夹（`packages/onebot/`，施工 S-6 上）。
+pub fn package_in(resources: impl AsRef<Path>) -> Package {
+    Package::at(resources.as_ref().join("packages").join("onebot"))
+}
+
+/// 源码树里出厂的包文件夹。
+pub fn package() -> Package {
+    package_in(resources())
+}
+
 /// 出厂的 `bridge.json`。
 pub fn tuning() -> Tuning {
-    Tuning::load(&resources()).expect("出厂的 bridge.json 读得出来")
+    Tuning::load(&package().data()).expect("出厂的 bridge.json 读得出来")
 }
 
 /// 出厂的清单里 NapCat 端口的默认值（施工 O-20）。
 pub fn defaults() -> Defaults {
-    Defaults::load(&ResourceRoot::at(resources())).expect("出厂的清单读得出来")
+    Defaults::load(&package_in(resources())).expect("出厂的清单读得出来")
 }
 
 /// 出厂的场所规则、出厂参数、违规词表（施工 O-21）。
 pub fn factory() -> Factory {
-    Factory::load(&ResourceRoot::at(resources())).expect("出厂的读得出来")
+    Factory::load(&package_in(resources())).expect("出厂的读得出来")
 }
 
 /// 一个新的临时数据根（`MIYU_HOME` 指到它），建好骨架：交回目录（用完调的一方删）和数据根。
@@ -127,7 +138,7 @@ pub fn temp_root() -> (PathBuf, DataRoot) {
 pub fn tuned_resources(dir: &Path, keys: &serde_json::Map<String, Value>) -> PathBuf {
     let copy = dir.join("resources");
     copy_tree(&resources(), &copy);
-    let file = copy.join(miyu_onebot::tuning::FILE);
+    let file = package_in(&copy).data().join(miyu_onebot::tuning::FILE);
     let mut bridge: Value =
         serde_json::from_str(&std::fs::read_to_string(&file).expect("读得了")).expect("是 JSON");
     for (key, value) in keys {
@@ -391,6 +402,7 @@ pub fn serve_handed(root: DataRoot, config: Value, accounts: Option<Accounts>) -
         locale: Some("zh_CN.UTF-8".to_string()),
         tuning: tuning(),
         resources: ResourceRoot::at(resources()),
+        package: package(),
         defaults: defaults(),
         factory: factory(),
     };

@@ -8,7 +8,7 @@ use super::super::test_support::{at, ctx, judge, msg};
 use super::super::{Base64, Ctx, Flag, Moderation, Outcome, Standing};
 
 /// 仓库里的出厂词表（`include_str!` 读进来：数据改了，测试跟着变）。
-const FACTORY: &str = include_str!("../../../../../resources/software/onebot/moderation.txt");
+const FACTORY: &str = include_str!("../../../../../resources/packages/onebot/data/moderation.txt");
 
 /// 违规关键词是 `keywords`、base64 的三个数是 `base64`，群里别的人发 `text`：插旗没有。旗只插一面，也不拦。
 fn flagged_with(keywords: &[&str], base64: Base64, standing: Standing, text: &str) -> bool {

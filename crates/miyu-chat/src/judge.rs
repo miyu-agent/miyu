@@ -2,7 +2,7 @@
 //! 施工 O-11）。
 //!
 //! 主动回复判断要问判官的那一次：[`request()`] 照 `model.call` 的形状拼出一条 `system`、一条 `user`，[`read()`] 从回答里
-//! 读出第三条的 [`Judgement`](crate::Judgement)。说明的原文是资源 `software/onebot/judge/` 下的十三份（[`JudgeSources`]，
+//! 读出第三条的 [`Judgement`](crate::Judgement)。说明的原文是接入QQ 包文件夹的 `data/judge/` 下的十三份（[`JudgeSources`]，
 //! 查过的是 [`JudgeTexts`]），
 //! 登记在 `docs/designs/26-提示词.md` 第十节；代码里一个给模型看的字都不写。
 //!

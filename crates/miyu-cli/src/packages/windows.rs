@@ -6,21 +6,22 @@
     reason = "调 Windows 的控制台接口：这期间不理 Ctrl+C（施工 9-2）"
 )]
 
-use std::ffi::OsString;
 use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 
 use windows_sys::Win32::System::Console::SetConsoleCtrlHandler;
 
 use super::say;
 
-/// 起 `program args…`、等它，交回它的退出码；起不来的说为什么，退出码 1。
-pub(crate) fn run(program: &Path, args: &[OsString], err: &mut dyn Write) -> u8 {
+/// 起 `command`、等它，交回它的退出码；起不来的说为什么，退出码 1。
+pub(crate) fn run(mut command: Command, err: &mut dyn Write) -> u8 {
     // SAFETY: 处理函数传空、第二个参数是 TRUE：只是让这个进程不理 Ctrl+C，不碰任何内存。
     unsafe {
         SetConsoleCtrlHandler(None, 1);
     }
-    match std::process::Command::new(program).args(args).status() {
+    let program = Path::new(command.get_program()).to_path_buf();
+    match command.status() {
         Ok(status) => status
             .code()
             .and_then(|code| u8::try_from(code).ok())

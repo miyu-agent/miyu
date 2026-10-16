@@ -16,7 +16,7 @@ fn at(seconds: i64) -> String {
 
 /// 第 `seconds` 秒的毫秒数。
 fn millis(seconds: i64) -> i64 {
-    miyu_kernel::time::Timestamp::parse(&at(seconds))
+    miyu_client::time::Timestamp::parse(&at(seconds))
         .expect("合写法")
         .unix_millis()
 }

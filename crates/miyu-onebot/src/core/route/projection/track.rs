@@ -4,8 +4,8 @@
 
 use std::collections::HashMap;
 
-use miyu_kernel::id::{ExternalId, Seq};
-use miyu_kernel::time::Timestamp;
+use miyu_client::ids::{ExternalId, Seq};
+use miyu_client::time::Timestamp;
 
 use super::{Projection, Turn, add};
 

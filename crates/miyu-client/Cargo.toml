@@ -1,6 +1,6 @@
 [package]
 name = "miyu-client"
-description = "给界面用的门面：连核心、找数据根、协议里的类型、给人看的字、读自己的清单、运行日志、进程的堆（设计 32 第二节，施工 S-1）"
+description = "给界面和扩展用的门面：连核心、找数据根、协议里的类型、给人看的字、读自己的清单、运行日志、进程的堆（设计 32 第二节，施工 S-1）；编号和时间、事件、工具的字、配置的读法、HTTP 客户端（设计 32 第九节，施工 S-6 上）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -20,6 +20,9 @@ miyu-config = { path = "../miyu-config" }
 miyu-log = { path = "../miyu-log" }
 miyu-seeds = { path = "../miyu-seeds" }
 miyu-heap = { path = "../miyu-heap" }
+# 工具的字怎么读、HTTP 客户端：接入QQ 只依赖门面以后经这里拿（设计 32 第九节第 1 条，施工 S-6 上）。
+miyu-tool = { path = "../miyu-tool" }
+miyu-http = { path = "../miyu-http" }
 # `open`：照终端的样子连核心、一问一答（从 miyu-webserve 挪来，施工 S-1）。
 serde_json = "1.0"
 tokio = { version = "1", features = ["io-util", "time"] }

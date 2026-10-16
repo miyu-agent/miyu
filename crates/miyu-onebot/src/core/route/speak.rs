@@ -7,8 +7,8 @@
 //! `reply dropped why=skipped`。支线推来的（施工 O-36）由 `lanes.rs` 收进主线的投影，她在支线说的话也从这里照主线发。
 
 use miyu_chat::{OutCtx, Venue};
-use miyu_kernel::event::Event;
-use miyu_kernel::id::VenueId;
+use miyu_client::events::Event;
+use miyu_client::ids::VenueId;
 use serde_json::Value;
 
 use super::backlog::queued_reply;

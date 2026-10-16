@@ -15,7 +15,7 @@ use miyu_onebot::status_file;
 use miyu_store::root::DataRoot;
 
 use super::ports::{Taken, taken};
-use super::{resources, within};
+use super::{package, resources, within};
 
 /// 测试程序旁边的 `miyu-onebot`：这个测试程序里头一次要的时候链上（[`link_beside`]）。之后留在那里：别的测试可能正跑着它。
 pub fn linked() -> &'static Path {
@@ -82,14 +82,16 @@ pub fn free_port() -> u16 {
     free.local_addr().expect("有地址").port()
 }
 
-/// 真的程序 `miyu-onebot`：数据根是 `root`，资源目录是源码树的；系统的语言是英文（握手回中文的，说的话换成中文，才看得出
-/// 照握手回的语言说）。不用 `$XDG_RUNTIME_DIR`、`MIYU_LOG`。
+/// 真的程序 `miyu-onebot`：数据根是 `root`，资源目录是源码树的，包文件夹照核心拉起它时那样交（`MIYU_PACKAGE_DIR`，施工 S-6
+/// 上：走正路，不走没设时的回退）；系统的语言是英文（握手回中文的，说的话换成中文，才看得出照握手回的语言说）。不用
+/// `$XDG_RUNTIME_DIR`、`MIYU_LOG`。
 pub fn program(root: &DataRoot, args: &[&str]) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_miyu-onebot"));
     command
         .args(args)
         .env("MIYU_HOME", root.path())
         .env("MIYU_RESOURCES", resources())
+        .env("MIYU_PACKAGE_DIR", package().dir())
         .env("LC_ALL", "en_US.UTF-8")
         .env_remove("XDG_RUNTIME_DIR")
         .env_remove("MIYU_LOG");

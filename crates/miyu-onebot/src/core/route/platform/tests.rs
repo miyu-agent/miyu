@@ -1,7 +1,7 @@
 //! 平台工具（一）做不做、对谁做（施工 O-31，`onebot.md` 第一条「平台工具（一）」第 3、4 条）：往坏里测。冒充（叫她做的那条和
 //! `by` 对不上）、目标是她自己、引用和 @ 是同一个人、@ 了两个人、动不得的人、秒数的边界、私聊不分谁的；时长的写法。
 
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 use serde_json::json;
 
 use super::{Caller, Order, Origin, Plan, Quote, Scene, Why, duration, plan};

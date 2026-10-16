@@ -13,9 +13,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use miyu_chat::{Clock, Ctx, Gate, Moderation, Rate, Sleep, gate};
-use miyu_config::Value;
-use miyu_kernel::id::ExternalId;
-use miyu_kernel::time::{Timestamp, UtcOffset};
+use miyu_client::ids::ExternalId;
+use miyu_client::manifest::Value;
+use miyu_client::time::{Timestamp, UtcOffset};
 
 use crate::rules::Applied;
 

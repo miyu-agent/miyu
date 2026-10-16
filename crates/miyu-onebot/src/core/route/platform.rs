@@ -5,7 +5,7 @@
 //! 谁能叫：撤她自己的、戳一戳谁都行；撤别人的、禁言只给管理的人（`owner`，或者 `by.role` 是 `manager`）。禁言不动终端管理员、
 //! 白名单成员（这里挡），群主、群管理员要问身份（[`Plan::Mute`] 交出去以后由 `acting.rs` 挡）；解禁谁都解（第 181 条）。
 
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 use serde_json::Value;
 
 use crate::rules::{MUTE, POKE, RECALL};

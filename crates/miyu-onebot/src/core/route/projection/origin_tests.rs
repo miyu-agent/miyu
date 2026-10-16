@@ -14,7 +14,7 @@ fn quoting(
     reply_to: Option<&str>,
     mentions: &[i64],
     admin: bool,
-) -> miyu_kernel::event::Event {
+) -> miyu_client::events::Event {
     let mut by = json!({"kind": "external", "venue": "qq:group:5", "id": format!("qq:{user}")});
     if admin {
         by["account"] = json!("admin");
@@ -32,7 +32,7 @@ fn quoting(
 }
 
 /// 她发出去的一段：平台编号 `msg`。
-fn delivered(seq: u64, msg: &str) -> miyu_kernel::event::Event {
+fn delivered(seq: u64, msg: &str) -> miyu_client::events::Event {
     let body = json!({"line": "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91", "turn": 1, "to": [], "msg": msg, "text": "在。"});
     event(
         seq,

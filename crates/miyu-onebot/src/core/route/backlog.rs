@@ -14,8 +14,8 @@
 use std::collections::HashMap;
 
 use miyu_chat::Venue;
-use miyu_kernel::id::VenueId;
-use miyu_kernel::time::Timestamp;
+use miyu_client::ids::VenueId;
+use miyu_client::time::Timestamp;
 use serde_json::Value;
 
 use super::projection::{QUEUED, REPLY, Speaking};

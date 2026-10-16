@@ -13,10 +13,10 @@ fn resources() -> std::path::PathBuf {
 const HUMAN_FACING: [&str; 6] = [
     "packages/onebot/package.toml",
     "packages/onebot/page/texts.js",
-    "software/onebot/human/zh.json",
-    "software/onebot/human/en.json",
-    "software/onebot/human/ja.json",
-    "software/onebot/defaults.toml",
+    "packages/onebot/data/human/zh.json",
+    "packages/onebot/data/human/en.json",
+    "packages/onebot/data/human/ja.json",
+    "packages/onebot/data/defaults.toml",
 ];
 
 /// 一行里有没有用代词说 AI：中文、日文照字，英文照整词（不分大小写）。

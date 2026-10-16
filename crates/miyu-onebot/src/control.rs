@@ -18,7 +18,7 @@ use std::io::Write;
 use serde_json::{Value, json};
 
 use miyu_client::open::Core;
-use miyu_store::root::DataRoot;
+use miyu_client::places::DataRoot;
 
 /// 拉起核心的命令（`start` 这几样连核心时核心没在跑就照它拉起），和网页软件同一个写法。
 pub use miyu_client::CoreCommand;

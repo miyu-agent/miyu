@@ -7,7 +7,7 @@
 //! - 桥的进程号、实际听的 NapCat 端口（推来的换过的照换过的；施工 O-28 下去掉了网页的 `web`）、NapCat 的样子（同后台页的
 //!   `status`，`Bots::napcat`）。
 //! - 端口听上以后写一次；之后有人叫一声（NapCat 连上、断开、认出号、问到实现，推来的换了端口）就照这一刻再写。和磁盘上
-//!   一样的不写，先写临时文件再改名盖上（`miyu_store::generated::write`）：读的人看不到写了一半的。写不进记一行，桥照跑。
+//!   一样的不写，先写临时文件再改名盖上（`miyu_client::places::write`）：读的人看不到写了一半的。写不进记一行，桥照跑。
 //! - 照数据根算位置，不照工作目录的相对路径：核心给的工作目录就是这个目录（`extensions.md`「怎么走」第 1 条），在进程里跑的
 //!   测试也不会写进源码树（「施工时定的」第 23 条）。
 //! - 桥退出不删：`miyu onebot status` 只在核心说桥在跑、进程号对得上时用它（`crate::control`）。
@@ -19,7 +19,7 @@ use std::sync::atomic::Ordering;
 use serde_json::{Value, json};
 use tokio::sync::Notify;
 
-use miyu_store::root::DataRoot;
+use miyu_client::places::DataRoot;
 
 use crate::running::Running;
 use crate::serve::Failure;
@@ -54,8 +54,7 @@ pub(crate) async fn keep(
         });
         let bytes = format!("{now}\n").into_bytes();
         let target = path.clone();
-        match tokio::task::spawn_blocking(move || miyu_store::generated::write(&target, &bytes))
-            .await
+        match tokio::task::spawn_blocking(move || miyu_client::places::write(&target, &bytes)).await
         {
             Ok(Ok(_)) => {}
             Ok(Err(error)) => {

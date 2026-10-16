@@ -481,6 +481,7 @@ fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, R
         dir: crate::packages::packages(core).state_dir(id),
         home: core.root.path().to_path_buf(),
         resources: core.resources.path().to_path_buf(),
+        package: dir,
         log: stderr::path(core, id),
     })
 }

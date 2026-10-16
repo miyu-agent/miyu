@@ -124,6 +124,12 @@ pub trait Tool: Send + Sync {
         BTreeMap::new()
     }
 
+    /// 给人看的名字后面跟哪一个参数的值（施工 S-6 上，`protocol.md` 的 `human.get` 第 4 条）：扩展登记时写的，是参数格式里的
+    /// 一个名字；核心照它放进 `human.get` 那件工具的 `subject`。核心自带的照核心的字，不交。默认没有。
+    fn subject(&self) -> Option<String> {
+        None
+    }
+
     /// 这次调用要碰的路径、是读是写：照参数算，不碰磁盘（施工 4-3 下）。换成真实的位置、查边界是执行前的
     /// 链的事。默认一条都没有，例如执行命令。参数不对的，也交回空的：执行时再报错。
     fn targets(&self, _call: &Call) -> Vec<Target> {

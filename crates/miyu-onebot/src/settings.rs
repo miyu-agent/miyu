@@ -15,11 +15,14 @@
 
 use serde_json::{Map, Value};
 
-use miyu_config::secret::Secret;
-use miyu_store::packages::{Issue, Packages};
-use miyu_store::resources::ResourceRoot;
+use miyu_client::manifest::{self, read};
+use miyu_client::settings::Secret;
 
 use crate::PACKAGE;
+use crate::package::Package;
+
+/// 包文件夹里的清单。
+const MANIFEST: &str = "package.toml";
 
 /// NapCat 反连进来的端口：清单里的名字。
 const LISTEN: &str = "listen";
@@ -47,34 +50,23 @@ pub struct Defaults {
 }
 
 impl Defaults {
-    /// 读资源目录 `resources` 里这个包的清单（出厂那一层的 [`PACKAGE`]，`miyu_store::packages`），取 NapCat 端口的默认值。
+    /// 读包文件夹 `package` 里这个包自己的清单（`package.toml`，施工 S-6 上：出厂的、自己装的都照核心交来的那一层），取 NapCat
+    /// 端口的默认值。
     ///
     /// # Errors
     ///
     /// 清单不在、读不成、写错了，端口没声明、没写默认值、默认值不是端口：原话里说是哪个文件。
-    pub fn load(resources: &ResourceRoot) -> Result<Defaults, String> {
-        let found = Packages::shipped(resources)
-            .read()
-            .into_iter()
-            .find(|found| found.id == PACKAGE)
-            .ok_or_else(|| {
-                format!(
-                    "no {PACKAGE} package manifest in {}",
-                    resources.path().display()
-                )
-            })?;
-        let bad = |why: String| format!("{} not readable: {why}", found.path.display());
-        let manifest = match &found.read {
-            Ok(manifest) => manifest,
-            Err(Issue::Wrong(problem)) => return Err(bad(problem.message.clone())),
-            Err(Issue::Unreadable(error)) => return Err(bad(error.to_string())),
-        };
+    pub fn load(package: &Package) -> Result<Defaults, String> {
+        let path = package.dir().join(MANIFEST);
+        let bad = |why: String| format!("{} not readable: {why}", path.display());
+        let text = std::fs::read_to_string(&path).map_err(|error| bad(error.to_string()))?;
+        let manifest = read(&text).map_err(|problem| bad(problem.message))?;
         let listen = manifest
             .settings
             .iter()
             .find(|setting| setting.name == LISTEN)
             .and_then(|setting| match setting.default {
-                Some(miyu_config::Value::Int(port)) => u16::try_from(port).ok(),
+                Some(manifest::Value::Int(port)) => u16::try_from(port).ok(),
                 _ => None,
             })
             .ok_or_else(|| bad(format!("no port default for {PACKAGE}.{LISTEN}")))?;

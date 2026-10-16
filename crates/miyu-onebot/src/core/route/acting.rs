@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use serde_json::json;
 
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 use serde_json::Value;
 
 use super::fields::{NAME, clean};

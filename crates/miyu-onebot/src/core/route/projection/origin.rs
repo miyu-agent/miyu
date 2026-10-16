@@ -2,7 +2,7 @@
 //! 编号算，纯逻辑；那条线这一轮的回合编号（施工 O-33，`fetch_media` 数次数）。从 `projection.rs` 分出来（那一份行数到了上限）。
 //! 施工 O-36 起照调用所在那条线（主线或者支线）算。
 
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 
 use super::super::platform::{Origin, Quote};
 use super::Projection;

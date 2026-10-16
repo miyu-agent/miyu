@@ -58,19 +58,26 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: Params) -> Result<Value
 }
 
 /// 工具目录里这一刻写了显示名的工具（脚本、MCP 的、扩展的，施工 9-8 七补）并进 `tools`：照 `language` 挑（这种语言没写的照
-/// 英文、中文、日文的先后），`{"name": …}`；上面读出来的字里已经有的照那一份。
+/// 英文、中文、日文的先后），`{"name": …}`；扩展登记时写了跟在名字后面的参数的，多一格 `subject`（施工 S-6 上），只写了它、
+/// 没写显示名的，名字是工具名。上面读出来的字里已经有的照那一份。
 fn named(core: &Core, language: &str, tools: &mut Map<String, Value>) {
     let catalog = core.tools();
     for spec in catalog.specs() {
         if tools.contains_key(&spec.name) {
             continue;
         }
-        let picked = catalog
-            .get(&spec.name)
-            .and_then(|tool| crate::personas::pick(&tool.display_name(), language));
-        if let Some(name) = picked {
-            tools.insert(spec.name.clone(), json!({ "name": name }));
-        }
+        let Some(tool) = catalog.get(&spec.name) else {
+            continue;
+        };
+        let picked = crate::personas::pick(&tool.display_name(), language);
+        let face = match (picked, tool.subject()) {
+            (Some(name), None) => json!({ "name": name }),
+            (picked, Some(subject)) => {
+                json!({ "name": picked.unwrap_or_else(|| spec.name.clone()), "subject": subject })
+            }
+            (None, None) => continue,
+        };
+        tools.insert(spec.name.clone(), face);
     }
 }
 

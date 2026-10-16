@@ -8,7 +8,7 @@ use super::tests::{LINE, assistant, at, ended, event, joined, qq, said_at, start
 use super::{Aim, Projection, QUEUED};
 
 /// 第 `turn` 轮入队了的她的一段 `text`（O-25 中）。
-fn queued(seq: u64, turn: u64, text: &str) -> miyu_kernel::event::Event {
+fn queued(seq: u64, turn: u64, text: &str) -> miyu_client::events::Event {
     let body = json!({"kind": "reply", "text": text, "line": "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91", "turn": turn});
     event(
         seq,
@@ -21,7 +21,7 @@ fn queued(seq: u64, turn: u64, text: &str) -> miyu_kernel::event::Event {
 }
 
 /// 第 `turn` 轮发出去的一段 `text`。
-fn delivered(seq: u64, turn: u64, text: &str) -> miyu_kernel::event::Event {
+fn delivered(seq: u64, turn: u64, text: &str) -> miyu_client::events::Event {
     let body = json!({"line": "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91", "turn": turn, "to": [], "msg": format!("m{seq}"), "text": text});
     event(
         seq,

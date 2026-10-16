@@ -5,7 +5,7 @@
 //! 第 63 条）。名字去掉控制字符、截到上限，空白的不写；引用、带的东西的编号不合的那一格、那一样不记。假的、空的格不写。
 //! 私聊里当原图交进来的那几样记 `shown`（施工 O-35，[`shown`]）。
 
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 use serde_json::{Map, Value, json};
 
 use crate::onebot::{Media, Posted};

@@ -26,12 +26,12 @@
 | `crates/miyu-chat/src/chatty/supersede.rs`、`chatty/dispatch.rs` | 顶替、分派，各一个文件（施工 O-9，O-12 下分开） |
 | `crates/miyu-chat/src/outbound.rs`、`outbound/` | 出站链：插槽、自带三条（清理、去重、引用和 @）；纯文本：Markdown 转纯文本、按段拆开（施工 O-10） |
 | `crates/miyu-chat/src/judge.rs`、`judge/` | 判官：拼 `model.call` 的请求、读回答（施工 O-11） |
-| `resources/software/onebot/judge/` | 判官的说明，十三份原文（给模型看的字，登记在 `26-提示词.md` 第十节） |
+| `resources/packages/onebot/data/judge/` | 判官的说明，十三份原文（给模型看的字，登记在 `26-提示词.md` 第十节） |
 | `crates/miyu-chat/src/params.rs` | 出厂参数：`Params`、读出厂文件、套上场所规则改的几项（第八条，施工 O-15） |
 | `crates/miyu-chat/src/params/items.rs` | 参数的声明：五张表、每一项的名字、类型、范围、落在 `Params` 的哪一格，只此一份 |
-| `resources/software/onebot/defaults.toml` | 出厂参数的数据（数据，不发给模型，不进登记簿；门禁的登记簿豁免它，`xtask/src/ledger.rs`） |
-| `resources/software/onebot/moderation.txt` | 违规关键词的出厂词表（第二条「怎么走」第 12 条，施工 O-15 下；数据，不发给模型，登记簿豁免它） |
-| `resources/software/onebot/venues.d/50-defaults.toml` | 出厂的场所规则（第一条「怎么走」第 7 条，施工 O-15 下；数据，登记簿豁免它） |
+| `resources/packages/onebot/data/defaults.toml` | 出厂参数的数据（数据，不发给模型，不进登记簿；门禁的登记簿豁免它，`xtask/src/ledger.rs`） |
+| `resources/packages/onebot/data/moderation.txt` | 违规关键词的出厂词表（第二条「怎么走」第 12 条，施工 O-15 下；数据，不发给模型，登记簿豁免它） |
+| `resources/packages/onebot/data/venues.d/50-defaults.toml` | 出厂的场所规则（第一条「怎么走」第 7 条，施工 O-15 下；数据，登记簿豁免它） |
 | `crates/miyu-config/src/parse.rs` | `read`：照配置清单的类型认一个 TOML 值，O-1 开成公开的，场所规则复用它；`why`：`toml_edit` 的原话取哪一行，O-12 开成公开的 |
 | `crates/miyu-config/src/problem.rs` | `nearest`：离得最近的名字，O-12 改成收一串名字，场所规则和配置共用 |
 
@@ -112,7 +112,7 @@ Rust 这一边：
    - 值写错了：照配置的原因码（`wrong_type`、`not_an_option`、`out_of_range`、`bad_format`）报，只丢这一项，别的照收（`docs/designs/14-配置.md` G8）。
    - 参数的表（第八条）：不是表的 `wrong_type`，整张表不收；表里不认识的项 `unknown_key`，给这张表里离得最近的项，写成 `表.项`；每一项照声明查，写错的只丢那一项。表名拼错的，最近的名字从属性名和表名里一起找。
 6. **套到一个场所上**：照第 1 条的先后，一个文件一个文件、一条规则一条规则地看；匹配的规则，它写的每一项都盖掉之前的，来处跟着换。参数的表展开以后每一项各自盖：一条规则写 `chatty = { probability = 80 }`，后面一条写 `chatty = { base = 0.9 }`，两项都在，没写的照出厂（第八条）。
-7. **没有规则设到的项**不在结果里。出厂的规则文件（软件包资源目录里的 `venues.d/`）就是软件包的默认值，代码里不写死；参数的出厂值在第八条的出厂文件里，规则里只有改了的几项。出厂的规则文件是 `resources/software/onebot/venues.d/50-defaults.toml`（O-15 下），内容照 18 第四节：群走 `chatty`、私聊走 `every-message`，限流都是 `5/300s`，并行群 `1`、私聊 `0`；不写 `persona`、`preset`（施工时定的第 16 条）。`miyu onebot venue show` 照来处写「出厂」或「系统」和文件名，参数照 `chatty.probability` 印。
+7. **没有规则设到的项**不在结果里。出厂的规则文件（软件包资源目录里的 `venues.d/`）就是软件包的默认值，代码里不写死；参数的出厂值在第八条的出厂文件里，规则里只有改了的几项。出厂的规则文件是 `resources/packages/onebot/data/venues.d/50-defaults.toml`（O-15 下），内容照 18 第四节：群走 `chatty`、私聊走 `every-message`，限流都是 `5/300s`，并行群 `1`、私聊 `0`；不写 `persona`、`preset`（施工时定的第 16 条）。`miyu onebot venue show` 照来处写「出厂」或「系统」和文件名，参数照 `chatty.probability` 印。
 8. **问题的先后**：照文件的先后，同一个文件里照行、列。
 
 **守着它的**（`crates/miyu-chat/src/rules/tests.rs` 等，O-1）
@@ -198,7 +198,7 @@ Rust 这一边：
     - 私聊：一律是。私聊里每一条都是对她说的；旧版私聊不看唤醒词。
     - 群：@ 了她（`mentions_me`）是；引用的是她的消息（`quotes_me`）是；正文去掉开头的空白以后，以某个触发词开头是（场所规则的 `keywords`；空的不算；区分大小写）。
     - 触发词只认开头，不认中间：中间出现就算，「为什么」这类词会误叫（旧版 `group_trigger_text`，08-29 实测）。名字也算触发词，写在 `keywords` 里，出厂是空的。
-12. **违规词表**（`Moderation::parse_keywords`，O-15 下）：开头的 BOM 去掉；一行一个；每一行去掉首尾的空白（`\r` 也去）；去完是空的、以 `#` 开头的不要；一字不差重复的只留第一个，照出现的先后。不会失败：一行一个字，没什么能写错的。出厂的词表是 `resources/software/onebot/moderation.txt`：旧版的 153 个词（旧版 `real_context.rs` 的 `default_real_context_moderation_keywords`）照原样搬，一个不改；开头几行 `#` 写着这是什么、改了要拿真实聊天记录审一遍（旧版 `OD` 一个词 7 天误报 447 次）。读文件、系统里放同名的文件 `system/modules/onebot/moderation.txt` 替换出厂的那一份，由桥读（`onebot.md` 第一条「场所规则和出厂数据」，施工 O-21；第七条第 5 条）。
+12. **违规词表**（`Moderation::parse_keywords`，O-15 下）：开头的 BOM 去掉；一行一个；每一行去掉首尾的空白（`\r` 也去）；去完是空的、以 `#` 开头的不要；一字不差重复的只留第一个，照出现的先后。不会失败：一行一个字，没什么能写错的。出厂的词表是 `resources/packages/onebot/data/moderation.txt`：旧版的 153 个词（旧版 `real_context.rs` 的 `default_real_context_moderation_keywords`）照原样搬，一个不改；开头几行 `#` 写着这是什么、改了要拿真实聊天记录审一遍（旧版 `OD` 一个词 7 天误报 447 次）。读文件、系统里放同名的文件 `system/modules/onebot/moderation.txt` 替换出厂的那一份，由桥读（`onebot.md` 第一条「场所规则和出厂数据」，施工 O-21；第七条第 5 条）。
 
 **守着它的**（`crates/miyu-chat/src/inbound/tests.rs` 等，O-5）
 
@@ -445,7 +445,7 @@ Rust 这一边：
 
 | 名字 | 是什么 |
 |---|---|
-| `JudgeSources` | 资源 `software/onebot/judge/` 下的十三份原文，读资源的一方原样读出来，字段都是字（`violations` 也是未读的字） |
+| `JudgeSources` | 资源 `packages/onebot/data/judge/` 下的十三份原文，读资源的一方原样读出来，字段都是字（`violations` 也是未读的字） |
 | `JudgeTexts::new(sources) -> Result<JudgeTexts, TemplateError>` | 查过的十三份：`violations.txt` 读成模板，拿一个门槛试换一次，写坏了、要了 `severity_min` 以外的字段都在这里报错。字段不公开，只能这样造 |
 | `Ask { persona, records, current, decoded, mode }` | 一次判断要的：人格的说明（`None` 是不带）、渲染好的群聊记录（触发这一条之前的几条，条数从第八条的 `Params::judge.records` 拿，出厂 20 条）、这一条渲染好的样子、base64 解出来的字（第二条的 `Base64::reveal` 解的，没有是 `None`）、`Mode::{Reply, ModerationOnly}` |
 | `request(&texts, &ask, &chatty) -> Vec<JudgeMessage>` | 拼成 `model.call` 的 `messages`：一条 `system`、一条 `user`，`JudgeMessage { role, text }`，`JudgeRole::{System, User}`；不会失败（`JudgeTexts` 造的时候查过） |
@@ -544,11 +544,11 @@ Rust 这一边：
 
 **5. 参数和数据**
 
-- **出厂参数和按场所改**：第八条（施工 O-15）。出厂的数在 `resources/software/onebot/defaults.toml`，五张表：`[inbound]`（base64 的三个数）、`[chatty]`（第三条的全部）、`[dispatch]`（顶替窗口）、`[judge]`（用哪个模型、看几条记录、最多输出、超时、重试、理由最长几个字）、`[outbound]`（第五条的四个数、清理的两份名单、拆段的长度）；读进来时照类型校验，校验不过的报出来、不用（自查第 14 条）。场所规则里写同名的表只覆盖写了的几项（18 Q26）。表的名字和每一项的类型只在群聊内核里声明一次，出厂文件、场所规则都照它查。
-- **违规关键词**：第二条（「怎么走」第 5、12 条，施工 O-15 下）。出厂的词表 `resources/software/onebot/moderation.txt`，一行一个，读法在第二条第 12 条；系统里放同名的文件 `system/modules/onebot/moderation.txt` 替换出厂的（和场所规则一个办法；包自己的系统数据放 `system/modules/<包编号>/`，2026-10-09 核心的主会话定），由桥读（施工 O-21）。
+- **出厂参数和按场所改**：第八条（施工 O-15）。出厂的数在 `resources/packages/onebot/data/defaults.toml`，五张表：`[inbound]`（base64 的三个数）、`[chatty]`（第三条的全部）、`[dispatch]`（顶替窗口）、`[judge]`（用哪个模型、看几条记录、最多输出、超时、重试、理由最长几个字）、`[outbound]`（第五条的四个数、清理的两份名单、拆段的长度）；读进来时照类型校验，校验不过的报出来、不用（自查第 14 条）。场所规则里写同名的表只覆盖写了的几项（18 Q26）。表的名字和每一项的类型只在群聊内核里声明一次，出厂文件、场所规则都照它查。
+- **违规关键词**：第二条（「怎么走」第 5、12 条，施工 O-15 下）。出厂的词表 `resources/packages/onebot/data/moderation.txt`，一行一个，读法在第二条第 12 条；系统里放同名的文件 `system/modules/onebot/moderation.txt` 替换出厂的（和场所规则一个办法；包自己的系统数据放 `system/modules/<包编号>/`，2026-10-09 核心的主会话定），由桥读（施工 O-21）。
 - **白名单成员**：系统配置的 `onebot.whitelist`（原来叫 `onebot.trusted`，O-27 改名，2026-10-10 项目主人定），平台身份的列表，只能写在系统配置（2026-10-07 项目主人定）。随第一个用到它的那一步声明：O-17 的「终端管理员与白名单成员」页（施工单 O-15 上「要定的」第 5 条）。
-- **给人看的字**：`resources/software/onebot/human/{zh,en,ja}.json`，照软件包的规矩（`store/resources.md`）；桥里不写死。
-- **判官的说明**：`resources/software/onebot/judge/`（O-11）。以后别的平台的桥要用时，再挪到群聊内核自己的资源目录。
+- **给人看的字**：`resources/packages/onebot/data/human/{zh,en,ja}.json`，照软件包的规矩（`store/resources.md`）；桥里不写死。
+- **判官的说明**：`resources/packages/onebot/data/judge/`（O-11）。以后别的平台的桥要用时，再挪到群聊内核自己的资源目录。
 
 **6. 已知的代价**：`ext.onebot.chat.decided` 一条群消息记一条，场所会话的日志会长得快；压缩照样不删日志。可以接受，写进 18 第七节。
 
@@ -560,7 +560,7 @@ Rust 这一边：
 
 **对外的样子**
 
-出厂文件 `resources/software/onebot/defaults.toml`，五张表，每一项都得写（`judge.model` 除外）：
+出厂文件 `resources/packages/onebot/data/defaults.toml`，五张表，每一项都得写（`judge.model` 除外）：
 
 ```toml
 [chatty]
@@ -680,12 +680,12 @@ Rust 这一边：
 | 13 | `Params::at` 照声明再查，不合的跳过 | `Resolved` 的格公开，手造得出 `restraint_k = 0`；照配置 `Setting`：校验过的值里没有不合的，只有手写的有 | 不查；报错 |
 | 14 | `Params`、`Judge` 的格公开 | 桥要读：顶替窗口、拆段长度、判官的几项都是桥用，或者交给只收数的函数；要守住的五样，格收进 crate | 全收起来、另写读的方法 |
 | 15 | 拆段的长度出厂 3000，`0` 是不拆 | 旧版 QQ 的 `max_reply_chars` 默认 3000、`0` 不拆（旧版 `crates/miyu-base/src/config/platform.rs`） | — |
-| 16 | `defaults.toml` 不进登记簿：门禁的登记簿豁免 `software/onebot/defaults.toml` 这一份（照人格目录的 `persona.toml` 豁免一份文件的先例） | 是数据，不发给模型（26 第十节只登记发给模型的字） | 登记 |
+| 16 | `defaults.toml` 不进登记簿：门禁的登记簿豁免 `packages/onebot/data/defaults.toml` 这一份（照人格目录的 `persona.toml` 豁免一份文件的先例） | 是数据，不发给模型（26 第十节只登记发给模型的字） | 登记 |
 | 17 | 清理的名单放在 `[outbound]` 的三项：`invisible`、`leak_open`、`leak_close`（O-15 下） | 和出站的别的参数放在一起，照同一份声明查；按场所改也就跟着有了（施工单 O-15 下「要定的」第 1 条） | 另起一个文件 |
 | 18 | 漏进来的工具调用写成两份照位置对上的列表，查法见「怎么走」第 7 条：同一张表里一起写、一样长，只写一份也报（O-15 下） | 配置的类型没有「一对字的列表」，两份字的列表最省（「要定的」第 2 条）。读场所规则时不知道出厂的有几对，只写一份对不对得上判断不了；要求一起写，套出来的一定成对 | 一份写成「开头…结尾」的字再切；场所规则只写一份照收、`at` 不成对的悄悄跳过 |
 | 19 | 不可见字符一个字一项，范围展开写；类型是最多 1 个字符的文字（配置的文字不收空的、不收控制字符），也就是正好一个（O-15 下） | 一眼看得出有哪几个；配置的类型现成（「要定的」第 3 条）。那十五个都不是控制字符 | 写成范围 `U+200B-U+200F` 再解析 |
 | 20 | 标记每项 1 到 64 个字符（O-15 下） | 空的开头、收尾会让清理停不下来，配置的文字本来不收空的；64 同触发词的上限，只防写错 | 不设上限 |
-| 21 | 违规词表、出厂的场所规则也不进登记簿：豁免 `software/onebot/moderation.txt`、`software/onebot/venues.d/50-defaults.toml`，只豁免这几份（O-15 下，照第 16 条） | 是数据，不发给模型：违规词只拿来比子串，判官看不到 | 登记；豁免整个 `software/onebot/` |
+| 21 | 违规词表、出厂的场所规则也不进登记簿：豁免 `packages/onebot/data/moderation.txt`、`packages/onebot/data/venues.d/50-defaults.toml`，只豁免这几份（O-15 下，照第 16 条） | 是数据，不发给模型：违规词只拿来比子串，判官看不到 | 登记；豁免整个 `packages/onebot/data/` |
 | 22 | 缺不缺照文件里写没写算：表在、项没写的，或者整张表没写的，是缺；表写成别的（不是表）的已经报过（O-15 下改） | 原来照「读对了没有、再除掉报过的」算；长度不同只报收尾，开头那一份写了、没报过、被拿掉，照原来的算法会被报成缺 | 长度不同两份都报 |
 | 23 | `judge.records` 的范围改成 1 到 100（O-23 下，2026-10-09 主会话定） | 核心的 `venue.records` 只收 1 到 100 条（`venues.md`「判官看的群聊记录」第 1 条）；范围宽了，桥就得另写一段截到核心收的，参数写的和判官实际看的对不上 | 照旧 0 到 1000、桥里截 |
 | 24 | `[judge]` 加一项 `persona`，开关，出厂 `true`：判官带这个群会话所用的人格的说明，场所规则写 `judge = { persona = false }` 按场所关（O-23 补，2026-10-09 项目主人定：判官也带人格，给一个开关，默认开） | 判官判的是「这个人格愿不愿意开口」，看不到她是谁就只能照通用的口味判；人格的说明每次判官请求都多一份，某个群想省 token 要关得掉（量出来多多少见 `onebot.md`「施工时定的」第 102 条）。和别的几项一样按场所改，不另起配置 | 不给开关；写成系统配置的一项 |

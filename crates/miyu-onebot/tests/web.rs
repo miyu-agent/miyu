@@ -11,7 +11,7 @@ use miyu_onebot::texts::Texts;
 use miyu_onebot::web::web;
 use miyu_store::resources::ResourceRoot;
 
-use crate::support::resources;
+use crate::support::{package_in, resources};
 
 /// `target/tmp` 下这一条测试自己的目录（和 `target/debug` 在同一个文件系统上，硬链接得过去），用完删掉。
 struct Dir(PathBuf);
@@ -86,7 +86,7 @@ fn script(path: &Path, body: &str) {
 }
 
 fn zh() -> Texts {
-    Texts::load(ResourceRoot::at(resources()), "zh").expect("读得出来")
+    Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh").expect("读得出来")
 }
 
 /// 照系统的说法，`program` 为什么跑不了。
@@ -135,7 +135,7 @@ fn a_miyu_stopped_by_a_signal_counts_as_failed() {
     assert!(err.is_empty(), "{}", String::from_utf8_lossy(&err));
 }
 
-/// 跑 `dir` 里的 `miyu-onebot web`（数据根是临时的，说中文），交回它的输出。
+/// 跑 `dir` 里的 `miyu-onebot web`（数据根是临时的，说中文；包文件夹照核心拉起它时那样交，施工 S-6 上），交回它的输出。
 #[cfg(unix)]
 fn run_web(dir: &Dir, args: &[&str]) -> std::process::Output {
     let (home, root) = crate::support::temp_root();
@@ -145,6 +145,7 @@ fn run_web(dir: &Dir, args: &[&str]) -> std::process::Output {
         .args(args)
         .env("MIYU_HOME", root.path())
         .env("MIYU_RESOURCES", resources())
+        .env("MIYU_PACKAGE_DIR", package_in(resources()).dir())
         .env("LC_ALL", "zh_CN.UTF-8")
         .stdin(std::process::Stdio::null())
         .output()

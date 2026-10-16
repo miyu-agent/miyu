@@ -23,7 +23,8 @@ fn files(root: &DataRoot) -> (PathBuf, PathBuf) {
 
 /// 印一次（不跟着看）：交回退出码、标准输出、标准错误。
 fn shown(root: &DataRoot) -> (u8, String, String) {
-    let texts = Texts::load(ResourceRoot::at(resources()), "zh").expect("读得出来");
+    let texts = Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
+        .expect("读得出来");
     let (mut out, mut err) = (Vec::new(), Vec::new());
     let code = logs(root, None, &texts, &mut out, &mut err);
     (
@@ -34,7 +35,7 @@ fn shown(root: &DataRoot) -> (u8, String, String) {
 }
 
 fn zh(heading: &Heading) -> String {
-    Texts::load(ResourceRoot::at(resources()), "zh")
+    Texts::load(ResourceRoot::at(resources()), package_in(resources()), "zh")
         .expect("读得出来")
         .heading(heading)
 }

@@ -13,7 +13,7 @@
 //! - 不接的同一个场所只记一行运行日志（桥起来以后；「施工时定的」第 66 条）。
 
 use miyu_chat::Venue;
-use miyu_kernel::id::ExternalId;
+use miyu_client::ids::ExternalId;
 use serde_json::{Value, json};
 
 use super::projection::Projection;

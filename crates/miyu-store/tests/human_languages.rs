@@ -19,14 +19,18 @@ fn resources() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources")
 }
 
-/// 有 `human/` 的几处：内核，和每个软件包。
+/// 有 `human/` 的几处：内核，`software/` 下的每个软件包，包文件夹自己带着字的（`packages/<编号>/data/`，施工 S-6 上）。
 fn places() -> Vec<PathBuf> {
     let mut places = vec![resources().join("core")];
-    let mut packages: Vec<PathBuf> = std::fs::read_dir(resources().join("software"))
-        .expect("有软件包")
-        .map(|entry| entry.expect("读得了").path())
-        .filter(|path| path.join("human").is_dir())
-        .collect();
+    let listed = |dir: PathBuf, inner: &str| -> Vec<PathBuf> {
+        std::fs::read_dir(dir)
+            .expect("有软件包")
+            .map(|entry| entry.expect("读得了").path().join(inner))
+            .filter(|path| path.join("human").is_dir())
+            .collect()
+    };
+    let mut packages = listed(resources().join("software"), "");
+    packages.extend(listed(resources().join("packages"), "data"));
     packages.sort();
     places.extend(packages);
     places

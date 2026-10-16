@@ -8,7 +8,6 @@ use miyu_chat::{Entry, Origin, Source, Venue, VenueKind};
 use miyu_config::Value;
 use miyu_config::problem::Code;
 use miyu_onebot::rules::{Factory, load};
-use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
 use crate::support::*;
@@ -71,13 +70,13 @@ pub fn copied_resources() -> PathBuf {
     let copy = dir.join("resources");
     for file in [
         "packages/onebot/package.toml",
-        "software/onebot/bridge.json",
-        "software/onebot/human/en.json",
-        "software/onebot/human/zh.json",
-        "software/onebot/human/ja.json",
-        "software/onebot/venues.d/50-defaults.toml",
-        "software/onebot/defaults.toml",
-        "software/onebot/moderation.txt",
+        "packages/onebot/data/bridge.json",
+        "packages/onebot/data/human/en.json",
+        "packages/onebot/data/human/zh.json",
+        "packages/onebot/data/human/ja.json",
+        "packages/onebot/data/venues.d/50-defaults.toml",
+        "packages/onebot/data/defaults.toml",
+        "packages/onebot/data/moderation.txt",
     ] {
         let to = copy.join(file);
         std::fs::create_dir_all(to.parent().expect("有上一级")).expect("建得了");
@@ -85,10 +84,10 @@ pub fn copied_resources() -> PathBuf {
     }
     // 判官的说明（施工 O-23 下）、给她看的事实的模板（施工 O-25 下）、桥的工具的说明和答的两句（施工 O-26）：整个目录抄过去。
     for dir in [
-        "software/onebot/judge",
-        "software/onebot/facts",
-        "software/onebot/tools",
-        "software/onebot/tool-results",
+        "packages/onebot/data/judge",
+        "packages/onebot/data/facts",
+        "packages/onebot/data/tools",
+        "packages/onebot/data/tool-results",
     ] {
         let to = copy.join(dir);
         std::fs::create_dir_all(&to).expect("建得了");
@@ -369,7 +368,7 @@ fn word_list_problems_come_after_the_rule_files() {
 #[test]
 fn factory_mistakes_are_all_reported() {
     let resources = copied_resources();
-    let factory = resources.join("software/onebot");
+    let factory = resources.join("packages/onebot/data");
     std::fs::write(
         factory.join("venues.d/50-defaults.toml"),
         "[[rule]]\nrate = \"abc\"\n",
@@ -382,7 +381,7 @@ fn factory_mistakes_are_all_reported() {
     )
     .expect("写得进");
     std::fs::remove_file(factory.join("moderation.txt")).expect("删得了");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("读不出来");
+    let problems = Factory::load(&package_in(&resources)).expect_err("读不出来");
     let seen = problems
         .iter()
         .map(|problem| {
@@ -419,9 +418,9 @@ fn factory_mistakes_are_all_reported() {
 fn broken_judge_texts_are_factory_mistakes() {
     // 判官的说明（施工 O-23 下）：`violations.txt` 的模板写坏了、要了别的字段，记一条 `bad_format`；少了一份记一条读不成。
     let resources = copied_resources();
-    let judge = resources.join("software/onebot/judge");
+    let judge = resources.join("packages/onebot/data/judge");
     std::fs::write(judge.join("violations.txt"), "Severity {nope}.\n").expect("写得进");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("模板写坏了");
+    let problems = Factory::load(&package_in(&resources)).expect_err("模板写坏了");
     assert_eq!(
         problems
             .iter()
@@ -437,12 +436,12 @@ fn broken_judge_texts_are_factory_mistakes() {
         "{problems:?}"
     );
     std::fs::copy(
-        resources_file("software/onebot/judge/violations.txt"),
+        resources_file("packages/onebot/data/judge/violations.txt"),
         judge.join("violations.txt"),
     )
     .expect("抄得了");
     std::fs::remove_file(judge.join("answer.txt")).expect("删得了");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("少了一份");
+    let problems = Factory::load(&package_in(&resources)).expect_err("少了一份");
     assert_eq!(
         problems
             .iter()
@@ -461,16 +460,16 @@ fn resources_file(path: &str) -> PathBuf {
 #[test]
 fn a_factory_warning_or_a_missing_directory_is_a_mistake_too() {
     let resources = copied_resources();
-    let rules = resources.join("software/onebot/venues.d");
+    let rules = resources.join("packages/onebot/data/venues.d");
     std::fs::write(rules.join("60-extra.toml"), "nonsense = 1\n").expect("写得进");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("警告也算");
+    let problems = Factory::load(&package_in(&resources)).expect_err("警告也算");
     assert_eq!(problems.len(), 1);
     assert_eq!(
         (problems[0].code, problems[0].file.as_str()),
         (Code::UnknownKey, "60-extra.toml")
     );
     std::fs::remove_dir_all(&rules).expect("删得了");
-    let problems = Factory::load(&ResourceRoot::at(&resources)).expect_err("出厂的规则不在");
+    let problems = Factory::load(&package_in(&resources)).expect_err("出厂的规则不在");
     assert_eq!(
         problems
             .iter()

@@ -8,7 +8,7 @@ use super::tests::{LINE, at, event, take_all};
 use super::{MUTED, Projection, UNMUTED};
 
 /// 第 `seq` 条：桥记的禁言、解禁，`body` 照给的。
-fn noted(seq: u64, kind: &str, body: Value) -> miyu_kernel::event::Event {
+fn noted(seq: u64, kind: &str, body: Value) -> miyu_client::events::Event {
     event(
         seq,
         0,

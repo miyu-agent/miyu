@@ -82,6 +82,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
 #[tokio::test]
 async fn it_runs_with_the_cores_data_root_and_resources() {
     // 施工 O-18：拉起时把 `MIYU_HOME`、`MIYU_RESOURCES` 设成核心手上的数据根、资源目录，不管测试程序自己的环境里是什么。
+    // 施工 S-6 上：`MIYU_PACKAGE_DIR` 是这个包的文件夹，自己装的指家目录里的那一份。
     let home = Home::new();
     let program = Program::new();
     let (path, keep) = record(&home, "echo");
@@ -89,13 +90,14 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
         keep.as_str(),
         "env:MIYU_HOME",
         "env:MIYU_RESOURCES",
+        "env:MIYU_PACKAGE_DIR",
         "hello",
         "wait",
     ];
     install(&home, "echo", &program.name(), "always", &steps(&args));
     let core = core(&home, quick());
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    while read(&path).lines().count() < 3 {
+    while read(&path).lines().count() < 4 {
         assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
@@ -108,6 +110,19 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
     assert_eq!(
         lines[2],
         format!("MIYU_RESOURCES={}", default_resources().display())
+    );
+    assert_eq!(
+        lines[3],
+        format!(
+            "MIYU_PACKAGE_DIR={}",
+            home.root
+                .path()
+                .join("home")
+                .join("alice")
+                .join("packages")
+                .join("echo")
+                .display()
+        )
     );
     core.stop_extensions().await;
 }

@@ -3,7 +3,7 @@
 //! 判过要回的接过去，还在判的几条一起重判，`wake` 不看顶替。夹具在 `tests.rs`。
 
 use miyu_chat::{Ctx, Facts, Mode, Rate, Standing, Status, Supersede};
-use miyu_kernel::id::Seq;
+use miyu_client::ids::Seq;
 use serde_json::json;
 
 use super::super::body::body as written;

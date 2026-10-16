@@ -16,7 +16,7 @@ use crate::support::*;
 
 /// 中文的字，资源目录是 `resources`。
 fn zh(resources: &std::path::Path) -> Texts {
-    Texts::load(ResourceRoot::at(resources), "zh").expect("读得出来")
+    Texts::load(ResourceRoot::at(resources), package_in(resources), "zh").expect("读得出来")
 }
 
 /// 照中文跑一次 `venue show <venue>`：交回退出码、标准输出、标准错误。
@@ -137,7 +137,7 @@ fn a_bad_venue_id_is_a_usage_error() {
 fn broken_factory_data_is_said_with_every_problem() {
     let (dir, root) = temp_root();
     let resources = copied_resources();
-    let defaults = resources.join("software/onebot/defaults.toml");
+    let defaults = resources.join("packages/onebot/data/defaults.toml");
     let good = std::fs::read_to_string(&defaults).expect("读得了");
     let line = good
         .lines()
@@ -207,13 +207,14 @@ fn serve_with_broken_factory_data_stops_before_the_handshake() {
     let (dir, root) = temp_root();
     let resources = copied_resources();
     std::fs::write(
-        resources.join("software/onebot/venues.d/50-defaults.toml"),
+        resources.join("packages/onebot/data/venues.d/50-defaults.toml"),
         "[[rule]]\nrate = \"abc\"\n",
     )
     .expect("写得进");
     let mut command = program(&root, &["serve"]);
     command
         .env("MIYU_RESOURCES", &resources)
+        .env("MIYU_PACKAGE_DIR", package_in(&resources).dir())
         .stdin(std::process::Stdio::null());
     let exited = command.output().expect("跑得了");
     assert_eq!(exited.status.code(), Some(1), "{}", text(&exited.stderr));

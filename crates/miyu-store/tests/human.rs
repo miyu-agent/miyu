@@ -278,6 +278,39 @@ fn a_broken_file_is_named_and_a_missing_one_is_fine() {
     assert!(error.why.contains("diff"), "{error}");
 }
 
+/// 从一个文件夹补读一份（施工 S-6 上）：编号前缀照给的，资源目录那一份照旧；没有这种语言的照英文，补读完也补单数；
+/// 读不懂的说是哪一份，那个文件夹里没有的不算错。
+#[test]
+fn a_folder_adds_its_own_words_under_the_prefix_given() {
+    let scratch = Scratch::new();
+    scratch.file("core/human/en.json", r#"{"said":{"a":"core a"}}"#);
+    scratch.file(
+        "own/human/en.json",
+        r#"{"tools":{"t":{"name":"T"}},"said":{"x/y":"{n} things"}}"#,
+    );
+    let words = Human::load(&ResourceRoot::at(&scratch.0), "zh")
+        .and_then(|human| human.with_dir(&scratch.0.join("own"), "software/own", "zh"))
+        .expect("读得出来");
+    assert_eq!(words.say(&Said::new("core/a")).as_deref(), Some("core a"));
+    assert_eq!(words.tool("t").map(|face| face.name.as_str()), Some("T"));
+    for key in ["software/own/x/y", "software/own/x/y/one"] {
+        assert_eq!(
+            words.say(&Said::new(key).with("n", "1")).as_deref(),
+            Some("1 things"),
+            "{key}"
+        );
+    }
+    let missing = Human::default()
+        .with_dir(&scratch.0.join("nowhere"), "software/own", "en")
+        .expect("没有的不算错");
+    assert!(missing.say(&Said::new("software/own/x/y")).is_none());
+    scratch.file("own/human/zh.json", "{");
+    let error = Human::default()
+        .with_dir(&scratch.0.join("own"), "software/own", "zh")
+        .expect_err("读不懂");
+    assert!(error.file.ends_with("own/human/zh.json"), "{error}");
+}
+
 #[test]
 fn config_words_go_to_the_settings_list_with_the_core_prefix() {
     let zh = load("zh");
