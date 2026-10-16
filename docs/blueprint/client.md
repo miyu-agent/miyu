@@ -24,14 +24,16 @@
 | `ids`（施工 S-6 上） | `ExternalId`、`VenueId`、`Seq`、`ContentHash` | `miyu-kernel` 的 `id` |
 | `time`（施工 S-6 上） | `Timestamp`、`UtcOffset` | `miyu-kernel` 的 `time` |
 | `events`（施工 S-6 上） | `Event`、`Body`、`By`、`Block`、`FormatError` | `miyu-kernel` |
-| `tooltext`（施工 S-6 上） | `load`（`spec`、`text`，包文件夹自己带字的照 `spec_in`、`text_in`；`say`、`LoadError`）、`Spec`、`Access` | `miyu-tool`、`miyu-kernel` 的 `tool` |
+| `tooltext`（施工 S-6 上；feature `tool`，默认不开） | `load`（`spec`、`text`，包文件夹自己带字的照 `spec_in`、`text_in`；`say`、`LoadError`）、`Spec`、`Access` | `miyu-tool`、`miyu-kernel` 的 `tool` |
 | `settings`（施工 S-6 上） | `Kind`、`Secret`、`parse::{read, why}`、`problem::{At, Code, Severity, got, nearest, tell}` | `miyu-config` |
-| `http`（施工 S-6 上） | `get`、`fetcher`、`Get`、`Got`、`Proxy`、`is_loopback_url` | `miyu-http` |
+| `http`（施工 S-6 上；feature `http`，默认不开） | `get`、`fetcher`、`Get`、`Got`、`Proxy`、`is_loopback_url` | `miyu-http` |
 | `seeds` | `from_image`、`from_rgba`、`Seed`、`MAX`：从一张图挑主题色的候选，头算壁纸的用它，和核心算人格头像的（`persona.list` 的 `seeds`）同一份（施工 P-6 补，`personas.md`「主题色、背景图」第 4 条） | `miyu-seeds` |
 | `heap` | `tune`、`trim`、`stats`、`Stats`、`usage`、`resident`、`Usage`：进程的堆，和核心的同一份；头起来时、还没起别的线程时调一次 `tune`（施工 S-1 补，终端画图量出来的；`docs/designs/23-性能预算.md` F3） | `miyu-heap` |
 | 根 | `CoreCommand`；`testkit` 打开时 `WORKSPACE_ROOT`（钉住的那份检出的仓库根，测试照它读 `resources/`、`docs/designs/samples/`） | 本 crate |
 
 ### 规矩
+
+- **重的两组放在 feature 后面**（施工 S-1 再补，2026-10-17 网页量出来的）：`tooltext`（feature `tool`）、`http`（feature `http`）拉进 `miyu-tool`、`miyu-http`，连带 reqwest、rustls、ring、沙盒那一套；界面用不上，默认不开，只有接入QQ 打开。门面测试查这两个依赖是可选的、没有默认打开的 feature。
 
 1. **代码不搬**：转出去的留在原来的 crate，门面只 `pub use`；`open` 是唯一挪进来的，因为它本来就只给头用。
 2. **门面的样子是协议的一部分**：加、改、拿掉门面上的东西，照改协议的做法告诉两个头（提交号、改了什么）；两个头 2026-10-11 报的用法是这一版的全部。施工 S-6 上照接入QQ（桥和群聊内核）2026-10-16 数的用法多 `ids`、`time`、`events`、`tooltext`、`settings`、`http` 六组，补 `places`、`texts`（设计 32 第九节第 1 条）：接入QQ 拆出去以前，桥只依赖门面；`events` 的 `Block`、`tooltext` 的 `Access` 是桥用到、施工单没数到的，一起转出。

@@ -20,7 +20,7 @@ path = "src/main.rs"
 # 只印 `Secret(…)`）；两个端口的默认值照自己的清单读（`manifest`，施工 O-20）；取图、视频、文件照核心的 HTTP 客户端下（`http`，
 # 施工 O-33：只 http、https，超时、代理照它）。配置由核心在握手时交、变了推过来，桥不依赖核心的 crate（`miyu-core`、
 # `miyu-endpoint`，18 第一节）。
-miyu-client = { path = "../miyu-client" }
+miyu-client = { path = "../miyu-client", features = ["http", "tool"] }
 # 群聊内核（第 2 层）：场所、平台上的人的编号经它拼，桥不手拼（`chat.md` 第七条第 1 条）。
 miyu-chat = { path = "../miyu-chat" }
 # HTTP/1 的服务端：NapCat 反连进来的那一下是 HTTP 升级（照网页软件，本来就在依赖图里）。MIT。

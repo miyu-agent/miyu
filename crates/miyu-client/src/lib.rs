@@ -76,7 +76,8 @@ pub mod events {
     pub use miyu_kernel::origin::By;
 }
 
-/// 工具的字怎么读（施工 S-6 上）：说明和参数格式、输出里给她看的几句（`load`），读好的说明、访问类别。
+/// 工具的字怎么读（施工 S-6 上；feature `tool`，默认不开）：说明和参数格式、输出里给她看的几句（`load`），读好的说明、访问类别。
+#[cfg(feature = "tool")]
 pub mod tooltext {
     pub use miyu_kernel::tool::Access;
     pub use miyu_tool::Spec;
@@ -97,7 +98,8 @@ pub mod settings {
     }
 }
 
-/// HTTP 客户端（施工 S-6 上）：照核心的规矩下载（只 http、https，超时、代理照它），认本机回环的地址。
+/// HTTP 客户端（施工 S-6 上；feature `http`，默认不开）：照核心的规矩下载（只 http、https，超时、代理照它），认本机回环的地址。
+#[cfg(feature = "http")]
 pub mod http {
     pub use miyu_http::{Get, Got, Proxy, fetcher, get, is_loopback_url};
 }

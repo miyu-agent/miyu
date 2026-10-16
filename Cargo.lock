@@ -1842,6 +1842,7 @@ dependencies = [
  "miyu-tool",
  "serde_json",
  "tokio",
+ "toml_edit",
 ]
 
 [[package]]

@@ -10,6 +10,10 @@ publish.workspace = true
 [features]
 # 界面的测试照钉住的那份核心检出读资源目录、协议样本（`WORKSPACE_ROOT`）。
 testkit = []
+# 工具的字怎么读（`tooltext`）、HTTP 客户端（`http`）只有接入QQ 用：放在 feature 后面，默认不开。界面不开就不拉 reqwest、
+# rustls、ring、沙盒那一套（网页 2026-10-16 量过：多 81 个 crate、release 程序大 351 KB）。
+tool = ["dep:miyu-tool"]
+http = ["dep:miyu-http"]
 
 [dependencies]
 # 下面这几个都是转出去的：界面只经这里拿，代码留在原处（设计 32 第二节第 1 条）。
@@ -21,11 +25,15 @@ miyu-log = { path = "../miyu-log" }
 miyu-seeds = { path = "../miyu-seeds" }
 miyu-heap = { path = "../miyu-heap" }
 # 工具的字怎么读、HTTP 客户端：接入QQ 只依赖门面以后经这里拿（设计 32 第九节第 1 条，施工 S-6 上）。
-miyu-tool = { path = "../miyu-tool" }
-miyu-http = { path = "../miyu-http" }
+miyu-tool = { path = "../miyu-tool", optional = true }
+miyu-http = { path = "../miyu-http", optional = true }
 # `open`：照终端的样子连核心、一问一答（从 miyu-webserve 挪来，施工 S-1）。
 serde_json = "1.0"
 tokio = { version = "1", features = ["io-util", "time"] }
+
+[dev-dependencies]
+# 门面测试读自己的清单，查两组重的依赖默认不开；同 miyu-config 用的那一份。
+toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
 
 [lints]
 workspace = true
