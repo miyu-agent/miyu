@@ -187,7 +187,7 @@ fn every_sentence_turns_into_words_in_every_language() {
             .expect("出厂的字读得出来");
         for said in everything(&texts) {
             assert!(
-                !said.contains("packages/onebot/data/"),
+                !said.contains("software/onebot/"),
                 "{language}：换不出来：{said}"
             );
             assert!(!said.trim().is_empty(), "{language}：空的");
