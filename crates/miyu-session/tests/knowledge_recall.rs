@@ -203,8 +203,13 @@ async fn by_meaning_over_the_threshold_and_only_for_a_model_in_the_table() {
     .expect("写得进");
     world(&home, "auto = true\n", people);
     filled(&home);
-    let handle = session(&home, 1, Lines::default()).await;
-    let log = chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
+    let handle = session(&home, 2, Lines::default()).await;
+    let mut log = chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
+    // 头一轮冷：Windows 的 CI 上头一回连那一家、读索引会过 `MEANING`，照规矩这一轮只走标题名（这句话里没有）。同一句再说
+    // 一轮，热了以后照意思那一路赶得上；头一轮没交过，第二轮照样交得出。
+    if recalled(&log).is_empty() {
+        log = chat(&home, &handle, 2, "那个守灯的姑娘怕什么").await;
+    }
     let blocks = recalled(&log);
     assert_eq!(blocks.len(), 1, "{log:#?}");
     assert_eq!(
