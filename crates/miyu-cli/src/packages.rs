@@ -40,6 +40,8 @@ pub struct Added {
     pub about: Phrases,
     /// 清单在哪：没装程序时说给人听。
     pub manifest: PathBuf,
+    /// 读到这份清单时的资源目录：转交时设成 `MIYU_RESOURCES`（施工 S-6 中查出来的）。
+    pub resources: PathBuf,
 }
 
 /// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排。写错的、子命令名被先读到的占了的（`command_taken`）不算；
@@ -59,6 +61,7 @@ pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
                 program: command.program,
                 about: command.about,
                 manifest: found.path,
+                resources: resources.path().to_path_buf(),
             })
         })
         .collect()
@@ -132,14 +135,23 @@ pub fn forward(
         say(err, &not_installed(one, language));
         return Some(1);
     };
-    Some(run(command(&program, &rest, dir), err))
+    Some(run(command(&program, &rest, dir, &one.resources), err))
 }
 
 /// 跑包的程序 `program` 的命令：参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
-/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局）。
-fn command(program: &Path, args: &[OsString], dir: &Path) -> std::process::Command {
+/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局），`MIYU_RESOURCES` 设成找到它的那份
+/// 资源目录 `resources`（施工 S-6 中：自己装的包程序在包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个）。
+fn command(
+    program: &Path,
+    args: &[OsString],
+    dir: &Path,
+    resources: &Path,
+) -> std::process::Command {
     let mut command = std::process::Command::new(program);
-    command.args(args).env("MIYU_PACKAGE_DIR", dir);
+    command
+        .args(args)
+        .env("MIYU_PACKAGE_DIR", dir)
+        .env("MIYU_RESOURCES", resources);
     command
 }
 

@@ -12,6 +12,7 @@ fn added(name: &str, program: &str) -> Added {
             ("zh".to_string(), "打开终端界面".to_string()),
         ]),
         manifest: PathBuf::from("/data/home/admin/packages/tui/package.toml"),
+        resources: PathBuf::from("/usr/share/miyu"),
     }
 }
 
@@ -94,20 +95,33 @@ fn the_help_page_gets_a_section_after_the_commands() {
     assert!(with.contains("打开终端界面\n\nask 的选项："), "{with}");
 }
 
-/// 跑包的程序时环境只多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上）；参数照原样。真的换成程序在
+/// 跑包的程序时环境多两个：`MIYU_PACKAGE_DIR` 是这个包的文件夹（施工 S-6 上），`MIYU_RESOURCES` 是资源目录（施工 S-6 中）；参数照原样。真的换成程序在
 /// `crates/miyu/tests/packages.rs` 照真二进制走一遍（Unix）。
 #[test]
 fn the_program_gets_its_package_folder() {
     let dir = Path::new("/data/home/admin/packages/tui");
-    let command = command(Path::new("/bin/miyu-tui"), &[OsString::from("--x")], dir);
+    let resources = Path::new("/usr/share/miyu");
+    let command = command(
+        Path::new("/bin/miyu-tui"),
+        &[OsString::from("--x")],
+        dir,
+        resources,
+    );
     assert_eq!(command.get_program(), "/bin/miyu-tui");
     assert_eq!(command.get_args().collect::<Vec<_>>(), ["--x"]);
     let envs: Vec<_> = command.get_envs().collect();
     assert_eq!(
         envs,
-        [(
-            std::ffi::OsStr::new("MIYU_PACKAGE_DIR"),
-            Some(dir.as_os_str())
-        )]
+        [
+            (
+                std::ffi::OsStr::new("MIYU_PACKAGE_DIR"),
+                Some(dir.as_os_str())
+            ),
+            (
+                std::ffi::OsStr::new("MIYU_RESOURCES"),
+                Some(resources.as_os_str())
+            ),
+        ],
+        "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）"
     );
 }
