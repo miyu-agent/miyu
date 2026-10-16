@@ -31,7 +31,7 @@ pub use driver::{Anthropic, Decode, Driver, OpenAiChat, OpenAiResponses};
 pub use image_tokens::{DeepSeekImages, deepseek_image_tokens};
 pub use texts::{
     AttachedPathSources, DriverTextSources, DriverTexts, ImageDescriptionSources, ImageNameSources,
-    TextFileSources,
+    OpenPathSources, TextFileSources,
 };
 
 use std::collections::BTreeMap;

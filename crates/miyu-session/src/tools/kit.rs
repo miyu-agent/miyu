@@ -63,6 +63,8 @@ pub(crate) struct ToolKit {
     pub(crate) hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     /// 开着的技能文件夹（施工 X-10 中）：沙盒藏着数据根，照它单独放开只读。
     pub(crate) shelves: Vec<std::path::PathBuf>,
+    /// 这个会话的附件目录（施工 3-9 六补）：沙盒里单独放开只读。
+    pub(crate) attachments: PathBuf,
     /// 开着的技能给人看的名字（施工 9-8 五补）：读它们的 `SKILL.md` 时记进效果。
     pub(crate) names: crate::skills::Names,
     /// 会话用的预设的编号（施工 F-10 下下）：每次调用带上，她装的包在这一份预设里打开。

@@ -22,6 +22,7 @@
 //! - [`watch`]：监视配置文件所在的目录，按文件名认，合并连着来的变动（施工 8-4）。
 
 pub mod accounts;
+pub mod attachments;
 pub mod blob;
 pub mod config_file;
 mod durable;

@@ -95,7 +95,7 @@
 │       ├── journal.jsonl               账号日志：个人设置的改动、项目配置的信任（config.md，施工 8-3）
 │       ├── trust.toml                  项目配置的信任（config.md，施工 8-2 读，8-3 写）
 │       ├── workspace/                  头报来的工作目录太宽时，退回这里（protocol.md）
-│       ├── sessions/<会话编号>/         会话日志，一段一个文件
+│       ├── sessions/<会话编号>/         会话日志，一段一个文件；attachments/ 是落成文件的附件（施工 3-9 六补）
 │       │   ├── 000000000001.jsonl
 │       │   ├── …
 │       │   └── jobs/<编号>.out          后台命令的输出，例如 jobs/j1.out（施工 7-3）

@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use miyu_drivers::openai_chat::Compat;
 use miyu_drivers::{
     AttachedPathSources, Call, DriverTextSources, DriverTexts, ImageDescriptionSources,
-    ImageNameSources, Inputs, TextFileSources,
+    ImageNameSources, Inputs, OpenPathSources, TextFileSources,
 };
 use miyu_kernel::block::{Block, File, Image, Private, Reasoning, Text, ToolCall};
 use miyu_kernel::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, ModelName};
@@ -60,6 +60,10 @@ pub fn texts() -> DriverTexts {
             file_omitted_path: include_str!(
                 "../../../../resources/core/drivers/file-omitted-path.txt"
             ),
+        }),
+        open_path: Some(OpenPathSources {
+            image_open_path: include_str!("../../../../resources/core/drivers/image-open-path.txt"),
+            file_open_path: include_str!("../../../../resources/core/drivers/file-open-path.txt"),
         }),
     })
     .expect("出厂的占位用得了")

@@ -39,9 +39,10 @@ impl Media<'_> {
             })
     }
 
-    /// 能看图时，带名字的图片前后的两段标签；不带名字的、快照里没有这几句的没有。
+    /// 能看图时，带名字的图片前后的两段标签，有路径的开头带上路径（施工 3-9 六补）；不带名字的、快照里没有这几句的没有。
     pub(crate) fn image_tags(&self, image: &Image) -> Option<(String, String)> {
-        self.texts.image_tags(name(image))
+        self.texts
+            .image_tags(name(image), image.path.as_ref().map(SourcePath::as_str))
     }
 
     /// 发不了的文件写成字：内容是文本的、快照里有那三句的，照字放进来；别的写一句占位，带文件名、媒体类型、大小，带着
@@ -49,14 +50,12 @@ impl Media<'_> {
     pub(crate) fn file_text(&self, file: &File) -> Result<String, EncodeError> {
         let bytes = self.bytes(&file.blob)?;
         let name = file.name.as_str();
-        let text = text_file::as_text(bytes).and_then(|text| self.texts.text_file(name, text));
+        let path = file.path.as_ref().map(SourcePath::as_str);
+        let text =
+            text_file::as_text(bytes).and_then(|text| self.texts.text_file(name, path, text));
         Ok(text.unwrap_or_else(|| {
-            self.texts.file_omitted(
-                name,
-                file.media_type.as_str(),
-                bytes.len(),
-                file.path.as_ref().map(SourcePath::as_str),
-            )
+            self.texts
+                .file_omitted(name, file.media_type.as_str(), bytes.len(), path)
         }))
     }
 

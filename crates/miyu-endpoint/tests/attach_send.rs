@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, File, Image, Text};
 use miyu_kernel::event::Body;
-use miyu_kernel::id::{ContentHash, FileName, MediaType};
+use miyu_kernel::id::{ContentHash, FileName, MediaType, SessionId, SourcePath};
 use miyu_kernel::request::Message;
 use miyu_session::testkit::{Play, Script};
 
@@ -27,6 +27,21 @@ async fn put(client: &mut Client, home: &Home, name: &str, bytes: &[u8]) -> Valu
     std::fs::write(&path, bytes).expect("写得了");
     let reply = client.call("p", "blob.put", json!({"path": path})).await;
     reply["result"].clone()
+}
+
+/// 会话 `session` 的附件目录里的 `name`（施工 3-9 六补）：交回块里该记的路径，和那份文件的内容。
+fn kept(home: &Home, session: &str, name: &str) -> (SourcePath, Vec<u8>) {
+    let dir = miyu_store::attachments::dir(
+        &home.root,
+        &alice(),
+        &SessionId::parse(session).expect("会话编号"),
+    );
+    let path = std::fs::canonicalize(dir.join(name)).expect("落成了文件");
+    let bytes = std::fs::read(&path).expect("读得了");
+    (
+        SourcePath::parse(&path.to_string_lossy()).expect("合写法"),
+        bytes,
+    )
 }
 
 /// 会话日志里人说的话，照先后。
@@ -63,6 +78,11 @@ async fn attachments_follow_the_text_as_measured_by_the_core() {
         .await;
     assert!(reply["result"]["events"].is_array(), "{reply}");
     home.until_turns(&session, 1).await;
+    // 头没交路径的（施工 3-9 六补）：落成会话附件目录里的文件，块里记那个路径。
+    let (shot, shot_bytes) = kept(&home, &session, "shot.png");
+    let (notes_path, notes_bytes) = kept(&home, &session, "notes.md");
+    assert_eq!(shot_bytes, picture);
+    assert_eq!(notes_bytes, "# 待办\n".as_bytes());
     let expected = vec![
         Block::Text(Text {
             text: "看看".to_string(),
@@ -73,13 +93,13 @@ async fn attachments_follow_the_text_as_measured_by_the_core() {
             media_type: MediaType::parse("image/png").unwrap(),
             width: 800,
             height: 600,
-            path: None,
+            path: Some(shot),
         }),
         Block::File(File {
             blob: ContentHash::of("# 待办\n".as_bytes()),
             name: FileName::parse("notes.md").unwrap(),
             media_type: MediaType::parse("text/plain").unwrap(),
-            path: None,
+            path: Some(notes_path),
         }),
     ];
     assert_eq!(said(&home, &session), std::slice::from_ref(&expected));
@@ -89,6 +109,40 @@ async fn attachments_follow_the_text_as_measured_by_the_core() {
         panic!("最后一条是人说的");
     };
     assert!(blocks.ends_with(&expected), "{blocks:?}");
+}
+
+#[tokio::test]
+async fn an_attachment_with_a_local_path_is_not_copied() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&Script::new([Play::Says("好。")])));
+    client.hello().await;
+    let mut image = put(&mut client, &home, "local.png", &png(2, 2)).await;
+    let original = home.work.join("local.png");
+    image["path"] = json!(original);
+    let session = client.create("c1", "~").await;
+    let reply = client
+        .call(
+            "c2",
+            "session.send",
+            json!({"session": session, "text": "看看", "attachments": [image]}),
+        )
+        .await;
+    assert!(reply["result"]["events"].is_array(), "{reply}");
+    let blocks = said(&home, &session);
+    let Block::Image(sent) = &blocks[0][1] else {
+        panic!("第二块是图：{blocks:?}");
+    };
+    assert_eq!(
+        sent.path.as_ref().map(SourcePath::as_str),
+        Some(original.to_string_lossy().as_ref()),
+        "头交了本机路径的照原样，不拷（施工 3-9 六补）"
+    );
+    let dir = miyu_store::attachments::dir(
+        &home.root,
+        &alice(),
+        &SessionId::parse(&session).expect("会话编号"),
+    );
+    assert!(!dir.exists(), "没建附件目录");
 }
 
 #[tokio::test]

@@ -167,7 +167,7 @@ fn text_files_go_in_as_text() {
     anthropic_sample("text-files", &body);
     assert_eq!(
         content(&body, 0)[1],
-        json!({"type": "text", "text": texts().text_file("notes.md", "# Notes\nline two\n").expect("有那三句")})
+        json!({"type": "text", "text": texts().text_file("notes.md", None, "# Notes\nline two\n").expect("有那三句")})
     );
 }
 
@@ -178,7 +178,7 @@ fn named_images_are_wrapped_in_tags_or_named_in_the_placeholder() {
     }]);
     let body = body(&request, sees_all());
     anthropic_sample("image-names", &body);
-    let (open, close) = texts().image_tags(Some("晚霞.png")).expect("有标签");
+    let (open, close) = texts().image_tags(Some("晚霞.png"), None).expect("有标签");
     let said = content(&body, 0);
     assert_eq!(said[0], json!({"type": "text", "text": open}));
     assert_eq!(said[1]["type"], "image");

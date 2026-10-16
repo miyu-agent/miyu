@@ -7,6 +7,7 @@
 //!   自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。
 //! - [`images`]：`model.call` 的图照哈希变成图片块（施工 8-20）：blob 要在这个账号里，照内容认，不是图的参数不对；不带
 //!   名字。
+//! - [`keep()`]：没有本机路径的附件落成会话目录里的文件，路径填回块里（施工 3-9 六补，`keep.rs`）。
 //! - [`get`]：`blob.get`，分块读这个账号的一个 blob，照属主给，不照会话（施工 W-6，`web-module.md`「七、分块读」）。
 //!
 //! 读文件、读 blob、存 blob 都碰磁盘，在阻塞线程里做。
@@ -32,6 +33,9 @@ use miyu_store::root::DataRoot;
 use crate::Core;
 use crate::refusal::Refusal;
 use miyu_tool::attachment::{Kind, kind};
+
+mod keep;
+pub(crate) use keep::keep;
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
 pub(crate) use miyu_tool::attachment::LIMIT;

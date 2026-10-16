@@ -133,6 +133,14 @@ pub(crate) fn core() -> CoreTexts {
                 )
                 .to_string(),
             }),
+            open_path: Some(crate::OpenPathTexts {
+                image_open_path: include_str!(
+                    "../../../resources/core/drivers/image-open-path.txt"
+                )
+                .to_string(),
+                file_open_path: include_str!("../../../resources/core/drivers/file-open-path.txt")
+                    .to_string(),
+            }),
         },
         compaction: Some(CompactionTexts {
             summarize_task: include_str!("../../../resources/core/compaction/summarize-task.txt")

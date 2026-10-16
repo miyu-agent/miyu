@@ -106,3 +106,99 @@ async fn without_attachments_only_the_words_and_no_disk() {
 async fn blocks_err(blobs: &Blobs, one: Attached) -> bool {
     blocks(blobs, "Hi.", vec![one]).await.is_err()
 }
+
+/// 临时目录下的数据根，建好了骨架（施工 3-9 六补）。
+fn root_in(scratch: &Scratch) -> DataRoot {
+    use miyu_store::env::{Env, Platform};
+    let env = Env {
+        platform: Platform::current(),
+        miyu_home: Some(scratch.0.join("data").into_os_string()),
+        home: None,
+        xdg_cache_home: None,
+        local_app_data: None,
+        miyu_resources: None,
+        exe: None,
+    };
+    let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
+    root.prepare().expect("临时目录里建得了骨架");
+    root
+}
+
+#[tokio::test]
+async fn attachments_from_another_session_land_in_the_receiving_one() {
+    let scratch = Scratch::new("kept");
+    let root = root_in(&scratch);
+    let owner = AccountId::parse("admin").unwrap();
+    let (sender, receiver) = (
+        SessionId::parse("01890000-0000-7000-8000-000000000001").unwrap(),
+        SessionId::parse("01890000-0000-7000-8000-000000000002").unwrap(),
+    );
+    let blobs = Blobs::new(root.blobs(&owner));
+    // 发话那个会话的附件目录里的一张图（落在数据根里），一份本机别处的文件，一张没有路径的图。
+    let theirs = attachments::keep(
+        &attachments::dir(&root, &owner, &sender),
+        "截图.png",
+        "image/png",
+        b"png",
+    )
+    .unwrap();
+    let blocks = blocks(
+        &blobs,
+        "看看",
+        vec![
+            Attached {
+                path: Some(SourcePath::parse(&theirs.to_string_lossy()).unwrap()),
+                ..attached(
+                    "截图.png",
+                    b"png",
+                    Kind::Image {
+                        media_type: MediaType::parse("image/png").unwrap(),
+                        width: 1,
+                        height: 1,
+                    },
+                )
+            },
+            attached(
+                "notes.md",
+                b"# x",
+                Kind::File {
+                    media_type: MediaType::parse("text/markdown").unwrap(),
+                },
+            ),
+            Attached {
+                path: None,
+                ..attached(
+                    "贴的.png",
+                    b"png2",
+                    Kind::Image {
+                        media_type: MediaType::parse("image/png").unwrap(),
+                        width: 1,
+                        height: 1,
+                    },
+                )
+            },
+        ],
+    )
+    .await
+    .unwrap();
+    let kept = kept_for(&root, &owner, &receiver, &blobs, blocks)
+        .await
+        .unwrap();
+    let mine = std::fs::canonicalize(attachments::dir(&root, &owner, &receiver)).unwrap();
+    let path_of = |block: &Block| match block {
+        Block::Image(image) => image.path.as_ref().unwrap().as_str().to_string(),
+        Block::File(file) => file.path.as_ref().unwrap().as_str().to_string(),
+        _ => unreachable!(),
+    };
+    assert_eq!(
+        std::path::Path::new(&path_of(&kept[1])),
+        mine.join("截图.png"),
+        "数据根里的换成自己目录里的"
+    );
+    assert_eq!(path_of(&kept[2]), "/work/notes.md", "本机别处的照原样");
+    assert_eq!(
+        std::path::Path::new(&path_of(&kept[3])),
+        mine.join("贴的.png")
+    );
+    assert_eq!(std::fs::read(mine.join("贴的.png")).unwrap(), b"png2");
+}

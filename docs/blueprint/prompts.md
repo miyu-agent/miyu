@@ -3318,6 +3318,17 @@ A package with MCP servers is installed off; the person turns it on in the packa
 <file name="{name}">
 ```
 
+#### `core/drivers/file-open-path.txt`
+
+- 什么时候加进来：人附的文件是文本的、块里有路径的（施工 3-9 六补：本机文件附的是原来的路径，贴的、远程传的落成会话附件目录里的文件）
+- token：18
+- 为什么加：附件落成了文件，她要知道在哪才能转给子代理、交给命令行（项目主人 2026-10-16：贴的图她不知道路径，二进制也没存成文件）。同 `file-open.txt`，多一个 `path`；另成一份：模板没有能不填的字段。照名字 `notes.md`、路径 `/home/alice/work/notes.md` 量，比不带路径的多 10，路径越长越多
+- 指纹：`22513068`
+
+```text
+<file name="{name}" path="{path}">
+```
+
 ### 人附的文本文件，开头那一行后面
 
 #### `core/drivers/file-cut.txt`
@@ -3355,6 +3366,17 @@ Only the first {shown} of {total} bytes of this file are shown.
 
 ```text
 <image name="{name}">
+```
+
+#### `core/drivers/image-open-path.txt`
+
+- 什么时候加进来：人附的图片，模型能看图、块里有路径的（施工 3-9 六补）
+- token：58
+- 为什么加：同 `file-open-path.txt`：截图、剪贴板贴的图落成会话附件目录里的文件，她照这个路径读、带给别的会话。照名字 `截图.png`、会话附件目录里的路径量（会话编号 36 个字符占了大半），比不带路径的多 50；每张图只在它那一句里出现一次，进了缓存不再重花
+- 指纹：`7e900d94`
+
+```text
+<image name="{name}" path="{path}">
 ```
 
 ### 人附的图片的后面

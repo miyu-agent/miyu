@@ -11,7 +11,7 @@ use miyu_tool::{AgentPort, NotSpawned, Order, Spawned, Spawning};
 
 use super::{Agents, Inherit, command_id};
 use crate::TARGET;
-use crate::attached::blocks;
+use crate::attached::{blocks, kept_for};
 use crate::job_ids::JobIds;
 use crate::spawn::{Child, Lineage};
 
@@ -74,6 +74,13 @@ impl AgentPort for Spawner {
                 job: job.clone(),
                 child: Some(session.clone()),
             };
+            // 子会话读得到交代带的附件（施工 3-9 六补）：落进它自己的附件目录。
+            let blocks = kept_for(&agents.root, &agents.owner, &session, &self.blobs, blocks)
+                .await
+                .map_err(|error| {
+                    tracing::warn!(target: TARGET, job = job_text.as_str(), error = error.as_str(), "subagent attachments not kept");
+                    NotSpawned
+                })?;
             // 交代原样送进去，不加包装：子会话的场所说明已经说了它来自父会话（第一条第 2 条）。
             let by = By::Session(Session { id: parent.clone() });
             let send = Command::Send {

@@ -26,7 +26,7 @@ use miyu_tool::{Delivered, MessagePort, NotSent, Recipient, Sending};
 
 use crate::TARGET;
 use crate::agents::Agents;
-use crate::attached::blocks;
+use crate::attached::{blocks, kept_for};
 
 /// 交给一次调用的发话端口：这个会话的父会话、它派出去的子代理照 `subagents`，命令编号照调用 `call`，带的附件存进 `blobs`
 /// （这个会话的，施工 C-9）。
@@ -62,6 +62,13 @@ impl MessagePort for Messenger {
                 NotSent::Undelivered
             })?;
             let agents = &self.agents;
+            // 收的那个会话读得到（施工 3-9 六补）：落进它自己的附件目录。
+            let blocks = kept_for(&agents.root, &agents.owner, &session, &self.blobs, blocks)
+                .await
+                .map_err(|error| {
+                    tracing::warn!(target: TARGET, to = label.as_str(), error = error.as_str(), "message attachments not kept");
+                    NotSent::Undelivered
+                })?;
             let by = By::Session(Session {
                 id: agents.session.clone(),
             });

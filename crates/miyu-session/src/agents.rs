@@ -76,6 +76,8 @@ pub(crate) struct Agents {
     pub(crate) session: SessionId,
     /// 属主。
     pub(crate) owner: AccountId,
+    /// 数据根（施工 3-9 六补）：带过去的附件落进收的那个会话自己的附件目录。
+    pub(crate) root: miyu_store::root::DataRoot,
     /// 场所。
     pub(crate) venue: VenueId,
     /// 这个会话是第几层：主会话是 0。

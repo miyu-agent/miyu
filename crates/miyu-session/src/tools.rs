@@ -199,6 +199,7 @@ impl Tools {
                 (kit.sandbox_cache, kit.confined),
             )
             .with_shelves(kit.shelves.clone())
+            .with_attachments(kit.attachments.clone())
         });
         Tools {
             session: kit.session,

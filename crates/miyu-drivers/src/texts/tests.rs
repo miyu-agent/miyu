@@ -41,6 +41,7 @@ fn sources<'a>(file_omitted: &'a str) -> DriverTextSources<'a> {
         image_name: Some(IMAGE_NAME),
         image_description: Some(IMAGE_DESCRIPTION),
         attached_path: Some(ATTACHED_PATH),
+        open_path: None,
     }
 }
 
@@ -77,22 +78,22 @@ fn an_older_placeholder_without_the_size_still_works() {
 fn a_text_file_is_wrapped_with_its_name() {
     let texts = DriverTexts::new(sources("file {name}\n")).unwrap();
     assert_eq!(
-        texts.text_file("a.md", "# 标题\n正文").as_deref(),
+        texts.text_file("a.md", None, "# 标题\n正文").as_deref(),
         Some("<f a.md>\n# 标题\n正文\n</f>\n"),
         "末尾没换行的补一个"
     );
     assert_eq!(
-        texts.text_file("b.txt", "一行\n").as_deref(),
+        texts.text_file("b.txt", None, "一行\n").as_deref(),
         Some("<f b.txt>\n一行\n</f>\n"),
         "有换行的不再补"
     );
     assert_eq!(
-        texts.text_file("empty", "").as_deref(),
+        texts.text_file("empty", None, "").as_deref(),
         Some("<f empty>\n</f>\n"),
         "空的只有开头收尾"
     );
     // 文件名照规矩转义，内容原样。
-    let wrapped = texts.text_file("\"x\"", "<tag>").unwrap();
+    let wrapped = texts.text_file("\"x\"", None, "<tag>").unwrap();
     assert!(wrapped.starts_with("<f \\u0022x\\u0022>\n"), "{wrapped}");
     assert!(wrapped.contains("\n<tag>\n"), "{wrapped}");
 }
@@ -101,7 +102,7 @@ fn a_text_file_is_wrapped_with_its_name() {
 fn a_long_text_file_says_how_much_was_cut() {
     let texts = DriverTexts::new(sources("file {name}\n")).unwrap();
     let long = "a".repeat(crate::text_file::LIMIT + 10);
-    let wrapped = texts.text_file("big.log", &long).unwrap();
+    let wrapped = texts.text_file("big.log", None, &long).unwrap();
     let expected = format!(
         "<f big.log>\ncut 65536/65546\n{}\n</f>\n",
         "a".repeat(crate::text_file::LIMIT)
@@ -116,14 +117,14 @@ fn without_the_three_texts_a_text_file_is_not_wrapped() {
         ..sources("file {name}\n")
     })
     .unwrap();
-    assert_eq!(texts.text_file("a.md", "x"), None);
+    assert_eq!(texts.text_file("a.md", None, "x"), None);
 }
 
 #[test]
 fn a_named_image_gets_tags_and_a_placeholder_with_its_name() {
     let texts = DriverTexts::new(sources("file {name}\n")).unwrap();
     assert_eq!(
-        texts.image_tags(Some("晚霞.png")),
+        texts.image_tags(Some("晚霞.png"), None),
         Some(("<i 晚霞.png>\n".to_string(), "</i>\n".to_string()))
     );
     assert_eq!(
@@ -131,10 +132,10 @@ fn a_named_image_gets_tags_and_a_placeholder_with_its_name() {
         "no image 晚霞.png\n"
     );
     // 不带名字的照旧：前后什么都不加，占位是不带名字的那一句。
-    assert_eq!(texts.image_tags(None), None);
+    assert_eq!(texts.image_tags(None, None), None);
     assert_eq!(texts.image_omitted(None, None), "no image\n");
     // 名字是人给的文件名，照规矩转义，伪造不了标签。
-    let (open, _) = texts.image_tags(Some("\"><x.png")).unwrap();
+    let (open, _) = texts.image_tags(Some("\"><x.png"), None).unwrap();
     assert_eq!(open, "<i \\u0022\\u003e\\u003cx.png>\n");
     assert_eq!(
         texts.image_omitted(Some("<x>.png"), None),
@@ -150,7 +151,7 @@ fn without_the_image_texts_a_named_image_is_written_as_before() {
         ..sources("file {name}\n")
     })
     .unwrap();
-    assert_eq!(texts.image_tags(Some("a.png")), None);
+    assert_eq!(texts.image_tags(Some("a.png"), None), None);
     assert_eq!(texts.image_omitted(Some("a.png"), None), "no image\n");
 }
 
@@ -280,6 +281,7 @@ fn an_attachment_it_cannot_see_says_where_it_came_from() {
     );
     let older = DriverTexts::new(DriverTextSources {
         attached_path: None,
+        open_path: None,
         ..sources("file {name}\n")
     })
     .unwrap();
@@ -291,5 +293,59 @@ fn an_attachment_it_cannot_see_says_where_it_came_from() {
     assert_eq!(
         older.file_omitted("a.pdf", "application/pdf", 1, Some("/a.pdf")),
         "file a.pdf\n"
+    );
+}
+
+/// 看得了的附件开头带路径的两句（施工 3-9 六补），测试自己写的。
+const OPEN_PATH: OpenPathSources<'static> = OpenPathSources {
+    image_open_path: "<i {name} at {path}>\n",
+    file_open_path: "<f {name} at {path}>\n",
+};
+
+#[test]
+fn a_seen_attachment_with_a_path_says_where_it_is() {
+    let texts = DriverTexts::new(DriverTextSources {
+        open_path: Some(OPEN_PATH),
+        ..sources("file {name}\n")
+    })
+    .unwrap();
+    assert_eq!(
+        texts.image_tags(Some("截图.png"), Some("/data/s/attachments/截图.png")),
+        Some((
+            "<i 截图.png at /data/s/attachments/截图.png>\n".to_string(),
+            "</i>\n".to_string()
+        ))
+    );
+    assert_eq!(
+        texts.image_tags(Some("a.png"), None),
+        Some(("<i a.png>\n".to_string(), "</i>\n".to_string())),
+        "没有路径的照旧只带名字"
+    );
+    assert_eq!(
+        texts.text_file("a.md", Some("/w/a.md"), "x").as_deref(),
+        Some("<f a.md at /w/a.md>\nx\n</f>\n")
+    );
+    assert_eq!(
+        texts.text_file("a.md", None, "x").as_deref(),
+        Some("<f a.md>\nx\n</f>\n")
+    );
+    // 路径也照规矩转义，伪造不了标签。
+    let (open, _) = texts
+        .image_tags(Some("a.png"), Some("/x/\"><y.png"))
+        .unwrap();
+    assert!(!open.contains("\"><"), "{open}");
+}
+
+#[test]
+fn without_the_path_texts_a_seen_attachment_is_written_as_before() {
+    // 以前造的快照里没有这两句：有路径也只带名字，请求一字不变。
+    let texts = DriverTexts::new(sources("file {name}\n")).unwrap();
+    assert_eq!(
+        texts.image_tags(Some("a.png"), Some("/x/a.png")),
+        Some(("<i a.png>\n".to_string(), "</i>\n".to_string()))
+    );
+    assert_eq!(
+        texts.text_file("a.md", Some("/w/a.md"), "x").as_deref(),
+        Some("<f a.md>\nx\n</f>\n")
     );
 }

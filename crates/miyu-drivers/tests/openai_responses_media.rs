@@ -140,9 +140,9 @@ fn text_files_named_images_and_descriptions_are_written_like_openai_chat() {
     let seen = body(&request, sees_all());
     responses_sample("text-files", &seen);
     let notes = texts()
-        .text_file("notes.md", "# Notes\nline two\n")
+        .text_file("notes.md", None, "# Notes\nline two\n")
         .expect("有那三句");
-    let (open, close) = texts().image_tags(Some("晚霞.png")).expect("有标签");
+    let (open, close) = texts().image_tags(Some("晚霞.png"), None).expect("有标签");
     assert_eq!(
         item(&seen, 0)["content"],
         json!([

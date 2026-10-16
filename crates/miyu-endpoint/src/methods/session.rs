@@ -80,6 +80,8 @@ pub(super) async fn send(core: &Arc<Core>, request: &Request) -> Result<Value, R
     let found = core.sessions.get(core, &session).await?;
     // 附件照连接的账号读，她照会话的属主读：不是一个账号的拷一份过去（施工 O-4 下）。
     attach::hand_over(core, found.handle.owner(), &blocks).await?;
+    // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
+    attach::keep(core, found.handle.owner(), &session, &mut blocks).await?;
     let command = Command::Send {
         blocks,
         urgent: params.urgent,
@@ -148,13 +150,14 @@ pub(super) async fn redo(core: &Arc<Core>, request: &Request) -> Result<Value, R
     let params: RedoParams = params(request)?;
     let session = session(&params.session)?;
     // 附件照 `session.send` 先查，再找会话。
-    let attachments = match params.attachments {
+    let mut attachments = match params.attachments {
         Some(attachments) => Some(attach::blocks(core, attachments).await?),
         None => None,
     };
     let found = core.sessions.get(core, &session).await?;
-    if let Some(blocks) = &attachments {
+    if let Some(blocks) = &mut attachments {
         attach::hand_over(core, found.handle.owner(), blocks).await?;
+        attach::keep(core, found.handle.owner(), &session, blocks).await?;
     }
     let command = Command::Redo {
         text: params.text.map(said),

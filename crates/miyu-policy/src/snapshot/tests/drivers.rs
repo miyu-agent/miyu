@@ -20,7 +20,7 @@ fn each_driver_placeholder_is_its_own() {
     // 文本文件的三句（施工 3-9 三补）：出厂的快照带着，开头、截过的、收尾各是各的。
     let text = drivers.text_file.expect("出厂的带着");
     let wrapped = texts
-        .text_file("a.md", &"x".repeat(70_000))
+        .text_file("a.md", None, &"x".repeat(70_000))
         .expect("有三句");
     assert!(wrapped.starts_with(&text.file_open.replace("{name}", "a.md")));
     assert!(
@@ -35,7 +35,7 @@ fn each_driver_placeholder_is_its_own() {
     // 带名字的图片的三句（施工 3-9 四补）：出厂的快照带着，开头、收尾、占位各是各的。
     let image = drivers.image_name.expect("出厂的带着");
     assert_eq!(
-        texts.image_tags(Some("a.png")),
+        texts.image_tags(Some("a.png"), None),
         Some((
             image.image_open.replace("{name}", "a.png"),
             image.image_close
@@ -70,7 +70,7 @@ fn older_snapshots_lack_the_image_name_texts() {
     assert!(!bytes.contains("image_name"), "没有的不写：{bytes}");
     assert_eq!(Snapshot::from_bytes(bytes.as_bytes()), Ok(old.clone()));
     let texts = old.driver_texts().unwrap();
-    assert_eq!(texts.image_tags(Some("a.png")), None);
+    assert_eq!(texts.image_tags(Some("a.png"), None), None);
     assert_eq!(
         texts.image_omitted(Some("a.png"), None),
         texts.image_omitted(None, None)

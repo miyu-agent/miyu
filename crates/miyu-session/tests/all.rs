@@ -6,6 +6,7 @@
 mod support;
 
 mod actor;
+mod attachments;
 mod backlog;
 mod delete;
 mod display_name;

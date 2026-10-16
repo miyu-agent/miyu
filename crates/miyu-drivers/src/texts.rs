@@ -14,6 +14,8 @@
 //!   是 `name`；收尾没有字段。转述原文不转义。以前造的快照里没有这三句，照旧写占位。
 //! - 看不了的附件带上原来的路径（施工 3-9 五补）：图片的占位字段是 `name`、`path`，文件的是 `name`、`media_type`、`size`、
 //!   `path`。以前造的快照里没有这两句，照旧不带路径。
+//! - 看得了的附件带上路径（施工 3-9 六补）：能看图的图片开头、照字放进消息的文本文件开头，各一份带路径的，字段是 `name`、
+//!   `path`；附件都落成了文件，路径是那个文件的。以前造的快照里没有这两句，照旧只带名字。
 //!
 //! 字段照模板的规矩转义（`08-上下文投影.md` 第五节「模板与转义怎么写」）。由执行器从资源目录读好
 //! 交进来，造会话时读一次，冻结在会话上。
@@ -45,6 +47,17 @@ pub struct DriverTexts {
     image_description: Option<ImageDescription>,
     /// 看不了的附件带路径的两句（施工 3-9 五补）；以前造的快照里没有。
     attached_path: Option<AttachedPath>,
+    /// 看得了的附件开头带路径的两句（施工 3-9 六补）；以前造的快照里没有。
+    open_path: Option<OpenPath>,
+}
+
+/// 看得了的附件开头带路径的两句（施工 3-9 六补）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OpenPath {
+    /// 能看图时图片前面：字段是 `name`、`path`。
+    image: Template,
+    /// 照字放进消息的文本文件开头：字段是 `name`、`path`。
+    file: Template,
 }
 
 /// 看不了的附件带路径的两句（施工 3-9 五补）。
@@ -110,6 +123,17 @@ pub struct DriverTextSources<'a> {
     pub image_description: Option<ImageDescriptionSources<'a>>,
     /// 看不了的附件带路径的两句（施工 3-9 五补）；以前造的快照里没有的是 `None`。
     pub attached_path: Option<AttachedPathSources<'a>>,
+    /// 看得了的附件开头带路径的两句（施工 3-9 六补）；以前造的快照里没有的是 `None`。
+    pub open_path: Option<OpenPathSources<'a>>,
+}
+
+/// 看得了的附件开头带路径的两句的原文（施工 3-9 六补）。
+#[derive(Debug, Clone, Copy)]
+pub struct OpenPathSources<'a> {
+    /// `image-open-path.txt`。
+    pub image_open_path: &'a str,
+    /// `file-open-path.txt`。
+    pub file_open_path: &'a str,
 }
 
 /// 看不了的附件带路径的两句的原文（施工 3-9 五补）。
@@ -200,6 +224,15 @@ impl DriverTexts {
                 })
             })
             .transpose()?;
+        let open_path = sources
+            .open_path
+            .map(|path| -> Result<OpenPath, TemplateError> {
+                Ok(OpenPath {
+                    image: Template::parse(path.image_open_path)?,
+                    file: Template::parse(path.file_open_path)?,
+                })
+            })
+            .transpose()?;
         let texts = DriverTexts {
             image_omitted: Template::parse(sources.image_omitted)?,
             file_omitted: Template::parse(sources.file_omitted)?,
@@ -210,8 +243,13 @@ impl DriverTexts {
             image_name,
             image_description,
             attached_path,
+            open_path,
         };
         texts.file_omitted.render(&file("", "", ""))?;
+        if let Some(path) = &texts.open_path {
+            path.image.render(&from(named(""), ""))?;
+            path.file.render(&from(named(""), ""))?;
+        }
         if let Some(path) = &texts.attached_path {
             path.image.render(&from(named(""), ""))?;
             path.file.render(&from(file("", "", ""), ""))?;
@@ -271,14 +309,15 @@ impl DriverTexts {
         Some(out)
     }
 
-    /// 能看图时，带名字 `name` 的图片前后的两段：开头、收尾（施工 3-9 四补）。不带名字的、快照里没有这几句的，交回
-    /// 空的：图片前后什么都不加。
-    pub fn image_tags(&self, name: Option<&str>) -> Option<(String, String)> {
+    /// 能看图时，带名字 `name` 的图片前后的两段：开头、收尾（施工 3-9 四补）。带路径 `path`、快照里有带路径的那一句的
+    /// （施工 3-9 六补），开头写上名字和路径。不带名字的、快照里没有这几句的，交回空的：图片前后什么都不加。
+    pub fn image_tags(&self, name: Option<&str>, path: Option<&str>) -> Option<(String, String)> {
         let (name, image) = (name?, self.image_name.as_ref()?);
-        Some((
-            render(&image.open, &named(name)),
-            render(&image.close, &BTreeMap::new()),
-        ))
+        let open = match (path, &self.open_path) {
+            (Some(path), Some(open)) => render(&open.image, &from(named(name), path)),
+            _ => render(&image.open, &named(name)),
+        };
+        Some((open, render(&image.close, &BTreeMap::new())))
     }
 
     /// 模型不能读这个文件，换成的这一句：`size` 是它有几个字节。带原来的路径 `path`、快照里有带路径的那一句的（施工
@@ -298,11 +337,14 @@ impl DriverTexts {
         }
     }
 
-    /// 文本文件 `name` 照字放进消息：开头、截过的那一句、给她看的那一截、收尾。`text` 是整份的内容。快照里没有
-    /// 这三句的，交回空的：照别的文件写占位。
-    pub fn text_file(&self, name: &str, text: &str) -> Option<String> {
+    /// 文本文件 `name` 照字放进消息：开头、截过的那一句、给她看的那一截、收尾。`text` 是整份的内容。带路径 `path`、
+    /// 快照里有带路径的那一句的（施工 3-9 六补），开头写上名字和路径。快照里没有这三句的，交回空的：照别的文件写占位。
+    pub fn text_file(&self, name: &str, path: Option<&str>, text: &str) -> Option<String> {
         let wrap = self.text_file.as_ref()?;
-        let mut out = render(&wrap.open, &named(name));
+        let mut out = match (path, &self.open_path) {
+            (Some(path), Some(open)) => render(&open.file, &from(named(name), path)),
+            _ => render(&wrap.open, &named(name)),
+        };
         let shown = text_file::shown(text);
         if shown.len() < text.len() {
             let (given, total) = (shown.len().to_string(), text.len().to_string());

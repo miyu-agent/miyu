@@ -175,6 +175,7 @@ fn an_older_snapshot_writes_named_images_as_if_they_had_no_names() {
         image_name: None,
         image_description: None,
         attached_path: None,
+        open_path: None,
     })
     .expect("用得了");
     let plain = without_names(&attached());
@@ -229,9 +230,12 @@ fn a_model_that_cannot_see_gets_the_paths_in_the_placeholders() {
             SHOT.len()
         )
     );
+    // 看得了的图片前面那一句也带路径（施工 3-9 六补：她要知道附件在哪，原来五补定的是不进请求）。
     let seen = body(&request, sees_all(), &texts());
     assert!(
-        !String::from_utf8_lossy(&seen).contains("/home/alice"),
-        "看得了的路径不进请求"
+        String::from_utf8_lossy(&seen)
+            .contains(r#"<image name=\"晚霞.png\" path=\"/home/alice/晚霞.png\">"#),
+        "{}",
+        String::from_utf8_lossy(&seen)
     );
 }

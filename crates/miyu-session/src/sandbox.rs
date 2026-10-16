@@ -28,6 +28,9 @@ pub(crate) struct Sandbox {
     confined: bool,
     /// 开着的技能文件夹（施工 X-10 中）：数据根藏着，它们单独放开只读。
     shelves: Vec<PathBuf>,
+    /// 这个会话的附件目录（施工 3-9 六补）：同技能文件夹单独放开只读；还没建（没存过附件）的不放：Landlock 认不得
+    /// 不在的路径。
+    attachments: Option<PathBuf>,
 }
 
 impl Sandbox {
@@ -46,7 +49,15 @@ impl Sandbox {
             cache,
             confined,
             shelves: Vec::new(),
+            attachments: None,
         }
+    }
+
+    /// 这个会话的附件目录（施工 3-9 六补）。
+    #[must_use]
+    pub(crate) fn with_attachments(mut self, dir: PathBuf) -> Sandbox {
+        self.attachments = Some(dir);
+        self
     }
 
     /// 开着的技能文件夹（施工 X-10 中，`skills.md`「技能」第 3 条）：规格里单独放开只读（外部身份的会话加进只准读的名单）。
@@ -118,7 +129,12 @@ impl Sandbox {
                 write,
                 hidden,
                 read: None,
-                reveal: self.shelves.iter().map(|dir| real(dir)).collect(),
+                reveal: self
+                    .shelves
+                    .iter()
+                    .chain(self.attachments.iter().filter(|dir| dir.is_dir()))
+                    .map(|dir| real(dir))
+                    .collect(),
             },
             env,
         }))

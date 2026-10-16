@@ -42,12 +42,13 @@ use crate::usage::Ledger;
 mod error;
 mod fork;
 mod load;
+mod scan;
 mod setup;
 
 pub use error::{CreateError, LoadError};
 pub use fork::{Fork, ForkError, fork};
-pub(crate) use load::current_policy;
 pub use load::{load, load_placed};
+pub(crate) use scan::current_policy;
 pub use setup::{Create, Installed, Load, PresetPlaces, Workplace};
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
@@ -290,6 +291,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             port,
             session: id.clone(),
             owner: owner.clone(),
+            root: root.clone(),
             venue: venue.clone(),
             depth: Agents::depth_of(lineage.as_ref()),
             parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
@@ -346,7 +348,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
     )
-    .with_shelves(shelves_open.clone());
+    .with_shelves(shelves_open.clone())
+    .with_attachments(miyu_store::attachments::dir(root, &owner, &id));
     let who = Who {
         owner: owner.clone(),
         venue: venue.clone(),
@@ -385,6 +388,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
+            attachments: miyu_store::attachments::dir(root, &owner, &id),
             names: skill_names,
             packages,
             hooks,

@@ -58,6 +58,9 @@ pub(crate) struct Guard {
     confined: Option<Confined>,
     /// 开着的技能文件夹（施工 X-10 上），回合开始照这一刻的换（施工 X-11 下）：和在跑的调用共用这一份策略，所以上锁。
     shelves: RwLock<Vec<PathBuf>>,
+    /// 这个会话的附件目录（施工 3-9 六补）：落成文件的附件放在这里，同技能文件夹单独放开只读；不和技能文件夹放在一起，
+    /// 读它里面的 `SKILL.md` 不算读技能。
+    attachments: Option<PathBuf>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -128,7 +131,15 @@ impl Guard {
             place,
             confined,
             shelves: RwLock::default(),
+            attachments: None,
         }
+    }
+
+    /// 这个会话的附件目录（施工 3-9 六补）：能读，写一律拒；别的会话的附件目录照数据根，谁都不能碰。
+    #[must_use]
+    pub(crate) fn with_attachments(mut self, dir: PathBuf) -> Guard {
+        self.attachments = Some(dir);
+        self
     }
 
     /// 数据根里单独放开只读的目录（施工 X-10 上，开着的技能文件夹）：能读，写一律拒；只碰得到自己工作区的会话也能读。
@@ -257,7 +268,10 @@ impl Guard {
                 .shelves
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone(),
+                .iter()
+                .chain(&self.attachments)
+                .cloned()
+                .collect(),
             ..self.places.clone()
         };
         let boundary = Boundary::new(&places);

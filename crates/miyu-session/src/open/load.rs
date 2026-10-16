@@ -9,8 +9,6 @@ use tokio::sync::mpsc;
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::ContentHash;
-use miyu_kernel::origin::Model;
 use miyu_kernel::session::{Input, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
@@ -19,6 +17,7 @@ use miyu_store::usage::Who;
 use miyu_tool::Log;
 
 use super::place;
+use super::scan::{current_policy, last_sent};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
@@ -242,6 +241,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             port,
             session: id.clone(),
             owner: owner.clone(),
+            root: root.clone(),
             venue: created.venue,
             depth: tasked.as_ref().map_or(0, |_| created.depth.unwrap_or(0)),
             parent: tasked.clone(),
@@ -345,7 +345,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         Arc::clone(&lettering),
         (sandbox.is_some(), place.0, place.1),
     )
-    .with_shelves(shelves_open.clone());
+    .with_shelves(shelves_open.clone())
+    .with_attachments(miyu_store::attachments::dir(root, &owner, &id));
     let ledger = ledger_of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
@@ -395,6 +396,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
+            attachments: miyu_store::attachments::dir(root, &owner, &id),
             names: skill_names,
             packages,
             hooks,
@@ -450,26 +452,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         .with_memory(room)
         .with_goals(on_face);
     Ok((handle, placed))
-}
-
-/// 现在的快照（施工 P-1 再补）：整份日志里最近一条带 `policy` 的 `session.policy_changed`，撤掉的回合里的也算（换快照不是
-/// 对话的一部分）；没换过的没有，照 `session.created` 的。
-pub(crate) fn current_policy(events: &[Event]) -> Option<&ContentHash> {
-    events.iter().rev().find_map(|event| match &event.body {
-        Body::PolicyChanged(changed) => changed.policy.as_ref(),
-        _ => None,
-    })
-}
-
-/// 最近一条发出去了的 `model.called` 发给了谁（施工 8-8）：钉住的池载入时照它认钉着的成员（「起草时定的」第 2 条）。
-fn last_sent(events: &[Event]) -> Option<Model> {
-    events.iter().rev().find_map(|event| match &event.body {
-        Body::ModelCalled(called) => Some(Model {
-            endpoint: called.endpoint.clone()?,
-            model: called.model.clone()?,
-        }),
-        _ => None,
-    })
 }
 
 /// 毫秒，一位小数：运行日志里写载入各段用了多久（施工 V-2 中）。

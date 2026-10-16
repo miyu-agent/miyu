@@ -308,6 +308,69 @@ async fn attachments_are_stored_and_ride_after_the_words() {
     assert_eq!(blobs.get(&file.blob).unwrap(), b"# Plan\n");
 }
 
+/// 发话那个会话的附件（施工 3-9 六补）：落在它自己的附件目录里（数据根里），带给别的会话时落进收的那个会话的附件目录，
+/// 块里的路径换成那里的：收的那一方读得到。
+#[tokio::test]
+async fn her_own_attachment_lands_in_the_receiving_session() {
+    use miyu_kernel::block::Block;
+    use miyu_kernel::id::SessionId;
+    let home = Home::new();
+    let table = Arc::new(Table::new(Outcome::Accepted { events: Vec::new() }, false));
+    let lines = || Lines {
+        sessions: Some(Arc::clone(&table) as Arc<dyn SessionPort>),
+        ..Lines::default()
+    };
+    // 先开一个会话、拿到编号，在它的附件目录里放一份，再载入它让她带着这份发话。
+    let first = Script::new([Play::Says("嗯。")]);
+    let handle = home
+        .create_full(&first, &basesystem(&home), Opening::default(), lines())
+        .await;
+    one_turn(&home, &handle, 1).await;
+    crate::support::stop(&handle).await;
+    let owner = crate::support::alice_account();
+    let mine = miyu_store::attachments::keep(
+        &miyu_store::attachments::dir(&home.root, &owner, handle.id()),
+        "notes.txt",
+        "text/plain",
+        b"x",
+    )
+    .expect("存得下");
+    let args = serde_json::json!({"to": OTHER, "message": "给你", "attachments": [mine.to_string_lossy()]});
+    let again = Script::new([
+        Play::calls(&[("send_message", &args.to_string())]),
+        Play::Says("发了。"),
+    ]);
+    let loaded = home
+        .load_full(
+            handle.id(),
+            &again,
+            &basesystem(&home),
+            &crate::support::environment().cwd,
+            Some(Arc::clone(&table) as Arc<dyn SessionPort>),
+        )
+        .await;
+    one_turn(&home, &loaded, 2).await;
+    let sent = table.sent();
+    let (_, _, _, command) = sent.last().expect("送过一次");
+    let Command::Send { blocks, .. } = command else {
+        panic!("发的是一句话");
+    };
+    let [_, Block::File(file)] = blocks.as_slice() else {
+        panic!("字、文件：{blocks:?}");
+    };
+    let theirs = std::fs::canonicalize(miyu_store::attachments::dir(
+        &home.root,
+        &owner,
+        &SessionId::parse(OTHER).expect("编号"),
+    ))
+    .expect("收的会话的附件目录建了");
+    assert_eq!(
+        std::path::Path::new(file.path.as_ref().expect("有路径").as_str()),
+        theirs.join("notes.txt"),
+        "落进收的那个会话的附件目录"
+    );
+}
+
 /// 日志里最后一次 `tool.result` 的调用编号（命令编号的组成部分）。
 fn last_call_id(log: &[miyu_kernel::event::Event]) -> miyu_kernel::id::CallId {
     use miyu_kernel::event::Body;

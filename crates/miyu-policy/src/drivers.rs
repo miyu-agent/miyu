@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::attached_path::AttachedPathTexts;
 use crate::image_name::ImageNameTexts;
+use crate::open_path::OpenPathTexts;
 use crate::text_file::TextFileTexts;
 use crate::vision::ImageDescriptionTexts;
 
@@ -36,6 +37,9 @@ pub struct DriverPlaceholders {
     /// 看不了的附件带上原来的路径的两句（施工 3-9 五补）。以前造的快照里没有，读成没有：照旧不带路径；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attached_path: Option<AttachedPathTexts>,
+    /// 看得了的附件开头带上路径的两句（施工 3-9 六补）。以前造的快照里没有，读成没有：照旧只带名字；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_path: Option<OpenPathTexts>,
 }
 
 impl DriverPlaceholders {
@@ -58,6 +62,7 @@ impl DriverPlaceholders {
                 .as_ref()
                 .map(ImageDescriptionTexts::sources),
             attached_path: self.attached_path.as_ref().map(AttachedPathTexts::sources),
+            open_path: self.open_path.as_ref().map(OpenPathTexts::sources),
         })
     }
 }
