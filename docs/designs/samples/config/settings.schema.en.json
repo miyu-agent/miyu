@@ -270,21 +270,21 @@
     "profile": {
       "properties": {
         "about": {
-          "description": "Anything you want the AI to know about you; can be left empty. Takes effect in new sessions; not included in group chats on messaging platforms. Allowed: text of at most 2000 characters. Only in personal settings. Applies to new sessions.",
+          "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed: text of at most 2000 characters. Only in personal settings. Applies to new sessions.",
           "maxLength": 2000,
           "minLength": 1,
           "title": "More about you",
           "type": "string"
         },
         "name": {
-          "description": "How the AI addresses you, such as your name or a nickname. Takes effect in new sessions. Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.",
+          "description": "How the AI addresses you, such as your name or a nickname. Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
           "title": "What the AI calls you",
           "type": "string"
         },
         "preferred_reply_language": {
-          "description": "The language the AI replies in by default. You can ask it to switch at any time. Takes effect in new sessions. Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.",
+          "description": "The language the AI replies in by default. You can ask it to switch at any time. Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
           "title": "Reply language",

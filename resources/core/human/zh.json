@@ -77,15 +77,15 @@
       },
       "profile.name": {
         "name": "AI 怎么称呼你",
-        "description": "AI 平时怎么叫你，例如名字、昵称。新会话生效。"
+        "description": "AI 平时怎么叫你，例如名字、昵称。"
       },
       "profile.about": {
         "name": "更多描述",
-        "description": "想让 AI 知道的关于你的事，可以空。新会话生效；通讯平台的群聊里不带。"
+        "description": "想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。"
       },
       "profile.preferred_reply_language": {
         "name": "回复语言",
-        "description": "AI 默认用哪种语言回复，对话里可以随时让它换。新会话生效。",
+        "description": "AI 默认用哪种语言回复，对话里可以随时让它换。",
         "suggestions": ["简体中文", "繁體中文", "English", "日本語", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },
       "permission.level": {
@@ -289,6 +289,7 @@
     "pages": {
       "packages": "软件包",
       "general": "通用",
+      "user": "用户",
       "advanced": "高级",
       "models": "模型"
     },

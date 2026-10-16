@@ -170,7 +170,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(all["result"]["items"][9]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
-        json!([{"id":"general","name":"通用"},{"id":"advanced","name":"高级"}])
+        json!([{"id":"general","name":"通用"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}])
     );
 }
 

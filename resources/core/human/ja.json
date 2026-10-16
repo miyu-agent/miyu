@@ -77,15 +77,15 @@
       },
       "profile.name": {
         "name": "AI からの呼び名",
-        "description": "AI があなたを呼ぶときの名前やニックネームです。新しいセッションから有効です。"
+        "description": "AI があなたを呼ぶときの名前やニックネームです。"
       },
       "profile.about": {
         "name": "あなたについての補足",
-        "description": "AI に知っておいてほしいことです。空でもかまいません。新しいセッションから有効です。メッセージングのグループチャットでは使われません。"
+        "description": "AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。"
       },
       "profile.preferred_reply_language": {
         "name": "返信の言語",
-        "description": "AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。新しいセッションから有効です。",
+        "description": "AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。",
         "suggestions": ["日本語", "English", "简体中文", "繁體中文", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },
       "permission.level": {
@@ -289,6 +289,7 @@
     "pages": {
       "packages": "パッケージ",
       "general": "一般",
+      "user": "ユーザー",
       "advanced": "詳細",
       "models": "モデル"
     },
