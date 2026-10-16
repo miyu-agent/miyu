@@ -398,9 +398,10 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `purpose` | 字符串，必写 | 用途：1 到 32 个字符，只有小写字母、数字、`-`，例如 `vision`、`platform`。记运行日志，key 照它钉 |
 | `messages` | 数组，必写 | 几条消息：`{"role": "system" 或 "user" 或 "assistant", "text": <字>, "images": [<blob 的哈希>, …]}` |
 | `max_tokens` | 正整数，可以不写 | 最多输出多少 token，最大 4294967295；不写的照供应商的默认 |
+| `use` | `"chat"` 或 `"vision"`，可以不写 | 用哪个用途的模型（施工 X-23）：照这一刻的 `models.chat`、`models.vision`；和 `model` 至多写一个。扩展不知道人配了哪个模型时用（表情包「让 AI 写」描述照 `vision`） |
 
 1. `messages`：`system` 最多一条，只能在最前面；后面至少一条，最后一条是 `user`。`text` 必写：`system`、`assistant` 的不能是空的，`user` 的字、图至少有一样。`images` 只有 `user` 能写，是这个账号的 blob（先用 `blob.put` 传）：一条消息里先字后图，和 `session.send` 一样。不认识的格不理。
-2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 这个账号没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。
+2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 这个账号没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。`model`、`use` 一起写的、`use` 不是那两个的：`bad_params`。`use` 是 `vision`、`models.vision` 没配的：`no_model`，原话 `no vision model configured: set models.vision`（同第十三条替看图）。
 3. 请求出错的照第十二条第 5 条：`no_model`（`data.message`）、`cooling`（`data.message`、`data.wait_ms`）、`model_failed`（`data.class`、`data.status`（有状态码的才写）、`data.message`，和 `model.called` 的 `error` 一样）。
 4. 不进任何会话的日志，不推送。
 

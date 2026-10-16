@@ -255,6 +255,45 @@ async fn no_model_says_why_and_a_scripted_core_has_no_one_shot() {
     assert!(server.received().is_empty());
 }
 
+/// 写了 `use`（施工 X-23）：`vision` 照这一刻的 `models.vision`，`chat` 照 `models.chat`；`models.vision` 没配的 `no_model`；
+/// `model`、`use` 一起写的、`use` 不认识的 `bad_params`，都不发。
+#[tokio::test]
+async fn use_picks_the_configured_model_for_that_purpose() {
+    let server = Server::start(vec![said("A dot."), said("Hi.")]).await;
+    let home = Home::new();
+    let mut client = connected(&home, &format!("{}vision = \"a/v\"\n", config(&server))).await;
+    let using = |uses: &str| {
+        json!({"use": uses, "purpose": "describe",
+            "messages": [{"role": "user", "text": "What is this?"}]})
+    };
+    let vision = client.call("c1", "model.call", using("vision")).await;
+    assert_eq!(vision["result"]["model"], "v", "{vision}");
+    let chat = client.call("c2", "model.call", using("chat")).await;
+    assert_eq!(chat["result"]["model"], "m", "{chat}");
+    let models: Vec<Value> = server
+        .received()
+        .iter()
+        .map(|got| serde_json::from_slice::<Value>(&got.body).expect("JSON")["model"].clone())
+        .collect();
+    assert_eq!(models, [json!("v"), json!("m")]);
+    let mut both = using("vision");
+    both["model"] = json!("a/m");
+    for wrong in [both, using("embedding")] {
+        let reply = client.call("c3", "model.call", wrong).await;
+        assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
+    }
+    assert_eq!(server.received().len(), 2, "写错的一次都没发");
+
+    let bare = Home::new();
+    let mut client = connected(&bare, &config(&server)).await;
+    let reply = client.call("c4", "model.call", using("vision")).await;
+    assert_eq!(reason(&reply), Some("no_model"), "{reply}");
+    assert_eq!(
+        reply["error"]["data"]["message"],
+        "no vision model configured: set models.vision"
+    );
+}
+
 /// 标准的 base64。
 fn base64(bytes: &[u8]) -> String {
     use base64::Engine;

@@ -3,7 +3,9 @@
 //!
 //! 1. 先查参数的样子：`purpose` 1 到 32 个小写字母、数字、`-`；`messages` 里 `system` 最多一条、只能在最前，后面至少一条、
 //!    最后一条是 `user`；`text` 必写，`system`、`assistant` 的不能是空的，`user` 的字、图至少一样；`images` 只有 `user`
-//!    能写；`max_tokens` 是 1 到 4294967295；`model` 不是空字。不对的 `bad_params`。
+//!    能写；`max_tokens` 是 1 到 4294967295；`model` 不是空字；`model`、`use` 至多写一个。不对的 `bad_params`。
+//!    `use` 是 `chat`、`vision`（施工 X-23）：照这一刻的配置用 `models.chat`、`models.vision`，扩展说不出具体的模型时用；
+//!    `models.vision` 没配的 `no_model`（`no vision model configured: set models.vision`，同替看图那一句）。
 //! 2. 图照这个账号的 blob 认（`attach.rs` 的 `images`）：没有的 `unknown_attachment`，不是图的 `bad_params`。一条消息里先字
 //!    后图。
 //! 3. 照核心这一刻的配置（不算项目配置的最终值）冻结一份，交给一次性入口（`Models::one_shot()`；照剧本回的端口没有，答
@@ -18,6 +20,7 @@ use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::ContentHash;
 use miyu_kernel::request::Message;
 use miyu_models::provider::NOT_CONFIGURED;
+use miyu_models::settings::UseSettings;
 use miyu_session::{Answer, Ask, ConfigSource, Turn, Unanswered};
 use miyu_store::blob::Blobs;
 
@@ -37,7 +40,21 @@ pub(crate) struct CallParams {
     messages: Vec<Said>,
     #[serde(default)]
     max_tokens: Option<u64>,
+    /// 用哪个用途的模型（施工 X-23）：和 `model` 至多写一个。
+    #[serde(default, rename = "use")]
+    uses: Option<Use>,
 }
+
+/// 用途：配置 `models.*` 里的哪一个。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Use {
+    Chat,
+    Vision,
+}
+
+/// 没配 `models.vision` 时的原话（同替看图，`miyu-session` 的 `route/sight.rs`）。
+const NO_VISION: &str = "no vision model configured: set models.vision";
 
 /// 一条消息。
 #[derive(Debug, Deserialize)]
@@ -66,7 +83,10 @@ struct Line {
 
 /// `model.call`。
 pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refusal> {
-    if !purpose_ok(&params.purpose) || params.model.as_deref() == Some("") {
+    if !purpose_ok(&params.purpose)
+        || params.model.as_deref() == Some("")
+        || (params.model.is_some() && params.uses.is_some())
+    {
         return Err(Refusal::BAD_PARAMS);
     }
     let max_tokens = match params.max_tokens {
@@ -93,11 +113,18 @@ pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refus
     };
     let config = core.config_now().borrow().clone();
     let resolved = config.resolved().clone();
+    let model = match params.uses {
+        Some(Use::Vision) => match UseSettings::from(&resolved.values()).vision {
+            Some(vision) => Some(vision),
+            None => return Err(Refusal::no_model(NO_VISION.to_string())),
+        },
+        Some(Use::Chat) | None => params.model,
+    };
     let source: Arc<dyn ConfigSource> = config;
     let turn = Arc::new(Turn::new(resolved, source));
     let blobs = Blobs::new(core.root.blobs(&core.admin));
     let ask = Ask {
-        model: params.model,
+        model,
         purpose: params.purpose,
         system,
         messages,
