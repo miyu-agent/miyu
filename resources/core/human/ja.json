@@ -84,7 +84,7 @@
         "description": "AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。"
       },
       "profile.preferred_reply_language": {
-        "name": "返信の言語",
+        "name": "AI が返信する言語",
         "description": "AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。",
         "suggestions": ["日本語", "English", "简体中文", "繁體中文", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },

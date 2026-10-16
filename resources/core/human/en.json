@@ -84,7 +84,7 @@
         "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms."
       },
       "profile.preferred_reply_language": {
-        "name": "Reply language",
+        "name": "What language should the AI reply in",
         "description": "The language the AI replies in by default. You can ask it to switch at any time.",
         "suggestions": ["English", "简体中文", "繁體中文", "日本語", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },

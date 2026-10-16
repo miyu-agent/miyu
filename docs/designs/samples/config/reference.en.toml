@@ -148,7 +148,7 @@ default = "full"
 # Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
 # name =
 
-# Reply language: The language the AI replies in by default. You can ask it to switch at any time.
+# What language should the AI reply in: The language the AI replies in by default. You can ask it to switch at any time.
 # Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
 # preferred_reply_language =
 

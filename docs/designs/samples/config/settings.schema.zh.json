@@ -287,7 +287,7 @@
           "description": "AI 默认用哪种语言回复，对话里可以随时让它换。能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。",
           "maxLength": 64,
           "minLength": 1,
-          "title": "回复语言",
+          "title": "AI 用什么语言回复",
           "type": "string"
         }
       },

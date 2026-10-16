@@ -137,9 +137,9 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
             "ui.welcomed",
             "permission.start_read_only",
             "permission.level",
+            "profile.preferred_reply_language",
             "profile.name",
             "profile.about",
-            "profile.preferred_reply_language",
             "log.level"
         ]
     );
@@ -155,10 +155,10 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(level["control"], "select", "{level}");
     assert_eq!(level["default"], "workspace", "{level}");
     assert_eq!(
-        all["result"]["items"][7]["control"], "textarea",
+        all["result"]["items"][8]["control"], "textarea",
         "更多描述是几行的框（施工 P-9 三补）"
     );
-    let language = &all["result"]["items"][8];
+    let language = &all["result"]["items"][6];
     assert_eq!(language["control"], "combo", "下拉加手写（施工 P-9 补）");
     assert_eq!(language["type"], "text");
     assert_eq!(language["max"], 64);
@@ -168,7 +168,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     );
     assert_eq!(language["suggestions"].as_array().map(Vec::len), Some(15));
     assert!(
-        all["result"]["items"][7].get("suggestions").is_none(),
+        all["result"]["items"][8].get("suggestions").is_none(),
         "别的控件不带建议值"
     );
     assert_eq!(all["result"]["items"][9]["env"], "MIYU_LOG");

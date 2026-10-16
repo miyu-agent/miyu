@@ -1111,7 +1111,7 @@ default = "full"
 # 能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。
 # name =
 
-# 回复语言：AI 默认用哪种语言回复，对话里可以随时让它换。
+# AI 用什么语言回复：AI 默认用哪种语言回复，对话里可以随时让它换。
 # 能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。
 # preferred_reply_language =
 
@@ -1526,7 +1526,7 @@ currency = "USD"
           "description": "AI 默认用哪种语言回复，对话里可以随时让它换。能写：最多 64 个字的文字。只能写在个人设置里。新会话生效。",
           "maxLength": 64,
           "minLength": 1,
-          "title": "回复语言",
+          "title": "AI 用什么语言回复",
           "type": "string"
         }
       },
@@ -1883,7 +1883,7 @@ currency = "USD"
 | 说明 | AI 平时怎么叫你，例如名字、昵称。 | How the AI addresses you, such as your name or a nickname. | AI があなたを呼ぶときの名前やニックネームです。 |
 | `profile.about` 名字（P-9） | 更多描述 | More about you | あなたについての補足 |
 | 说明 | 想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。 | Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. | AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。 |
-| `profile.preferred_reply_language` 名字（P-9 补） | 回复语言 | Reply language | 返信の言語 |
+| `profile.preferred_reply_language` 名字（P-9 补；2026-10-17 改名、排到「用户」页第一） | AI 用什么语言回复 | What language should the AI reply in | AI が返信する言語 |
 | 说明 | AI 默认用哪种语言回复，对话里可以随时让它换。 | The language the AI replies in by default. You can ask it to switch at any time. | AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。 |
 | 建议值（先后照这种语言） | 简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Русский、Tiếng Việt、ไทย、Bahasa Indonesia、العربية | English、简体中文、繁體中文、日本語、한국어，后面同中文 | 日本語、English、简体中文、繁體中文、한국어，后面同中文 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
