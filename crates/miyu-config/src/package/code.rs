@@ -95,6 +95,8 @@ pub enum Code {
     BadSlash,
     /// `[[widget]]` 写错了（施工 X-15 上）：编号、位置、标题、范围、命令名，同一个包里重了、太多，没声明 `widgets` 能力。
     BadWidget,
+    /// `[content.<包>]` 写错了（施工 X-22）：不是包的编号、不是表、`dir` 不是包目录里的相对目录。
+    BadContent,
 }
 
 impl Code {
@@ -147,11 +149,12 @@ impl Code {
             Code::BadMcp => "bad_mcp",
             Code::BadSlash => "bad_slash",
             Code::BadWidget => "bad_widget",
+            Code::BadContent => "bad_content",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 46] = [
+    pub const ALL: [Code; 47] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -198,5 +201,6 @@ impl Code {
         Code::BadMcp,
         Code::BadSlash,
         Code::BadWidget,
+        Code::BadContent,
     ];
 }

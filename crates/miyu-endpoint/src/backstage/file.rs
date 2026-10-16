@@ -62,7 +62,7 @@ fn located(core: &Core, id: &str, path: &str) -> Result<(PathBuf, Vec<String>), 
 }
 
 /// 相对路径拆成一段段：空的是 `index.html`；有空段、`.`、`..`、`\`、`:`、控制字符的不收。
-pub(super) fn segments(path: &str) -> Option<Vec<String>> {
+pub(crate) fn segments(path: &str) -> Option<Vec<String>> {
     if path.is_empty() {
         return Some(vec!["index.html".to_string()]);
     }
@@ -79,7 +79,7 @@ pub(super) fn segments(path: &str) -> Option<Vec<String>> {
 }
 
 /// `dir` 下的这一份：换成真实的位置以后还在 `dir` 里、是普通文件的才算（链接指出去的不算）。
-fn beneath(dir: &Path, segments: &[String]) -> Option<PathBuf> {
+pub(crate) fn beneath(dir: &Path, segments: &[String]) -> Option<PathBuf> {
     let root = std::fs::canonicalize(dir).ok()?;
     let real = std::fs::canonicalize(
         segments

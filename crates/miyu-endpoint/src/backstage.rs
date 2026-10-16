@@ -6,4 +6,4 @@ mod calls;
 mod file;
 
 pub(crate) use calls::{Methods, call, register};
-pub(crate) use file::read;
+pub(crate) use file::{beneath, read, segments};

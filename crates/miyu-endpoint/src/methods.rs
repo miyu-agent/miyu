@@ -161,6 +161,14 @@ pub(crate) fn call<'a>(
         "model.embed" => {
             answer(move || async move { crate::embedding::embed(core, params(request)?).await })
         }
+        "content.list" => {
+            answer(move || async move { crate::content::list(core, caller, params(request)?) })
+        }
+        "content.read" => {
+            answer(
+                move || async move { crate::content::read(core, caller, params(request)?).await },
+            )
+        }
         "system.append" => {
             answer(move || async move { crate::appends::append(core, caller, params(request)?) })
         }

@@ -2,7 +2,7 @@
 //! 交给核心的那一份（配置文件改了、`secret.set` 换了值、手改了密钥文件，都会换上新的一份），把这个包自己的那份重算一遍，
 //! 跟上一次交给它的比，变了推 `extension.config`（`{"keys": {键: 新值或 null}}`）。不用订阅；握手的回应写出去以后才起，
 //! 回应以后的变化照样算（盯的那一头是握手时拿的）。连接断了跟着停。同一个时候起告诉它谁在看它的界面块的任务（施工 X-15 中，
-//! `widgets/watch.rs`）。
+//! `widgets/watch.rs`）、给它带的内容变了推 `content.changed` 的任务（施工 X-22，`content.rs`）。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -20,6 +20,8 @@ pub(super) struct ExtensionConfigForwarder {
     task: JoinHandle<()>,
     /// 告诉它谁在看（施工 X-15 中）：停的时候清掉它的内容。
     _watching: crate::widgets::watch::Watching,
+    /// 给它带的内容变了推 `content.changed`（施工 X-22）。
+    _content: crate::content::Watch,
 }
 
 impl ExtensionConfigForwarder {
@@ -32,7 +34,12 @@ impl ExtensionConfigForwarder {
         out: mpsc::Sender<String>,
     ) -> ExtensionConfigForwarder {
         ExtensionConfigForwarder {
-            _watching: crate::widgets::watch::Watching::start(core, package.clone(), out.clone()),
+            _watching: crate::widgets::watch::Watching::start(
+                Arc::clone(&core),
+                package.clone(),
+                out.clone(),
+            ),
+            _content: crate::content::Watch::start(core, package.clone(), out.clone()),
             task: tokio::spawn(forward(package, handed, current, out)),
         }
     }

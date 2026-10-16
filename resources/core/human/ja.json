@@ -480,6 +480,7 @@
     "package-problems/bad_mcp": "MCP サーバーの書き方が正しくありません: {detail}",
     "package-problems/bad_slash": "スラッシュコマンドの書き方が正しくありません: {detail}",
     "package-problems/bad_widget": "ウィジェットの書き方が正しくありません: {detail}",
+    "package-problems/bad_content": "他のパッケージ向けの内容の書き方が正しくありません: {detail}",
     "package-problems/page_missing": "{detail} に index.html がありません",
     "package-problems/mascot_missing": "パッケージディレクトリに {detail} がありません",
     "package-problems/mascot_too_big": "{detail} が 256 KiB を超えています",

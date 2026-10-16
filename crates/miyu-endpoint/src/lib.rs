@@ -34,6 +34,7 @@ mod check;
 mod commands;
 pub mod config;
 mod connection;
+mod content;
 mod diffs;
 mod embedding;
 pub mod extensions;
@@ -206,6 +207,8 @@ pub struct Core {
     widgets: widgets::Widgets,
     /// 扩展放在 system 尾部的（施工 X-20，`appends.rs`）。
     appends: appends::Appends,
+    /// 重读清单的次数（施工 X-22，`content.rs`）：给别的包带的内容变没变照它查。
+    content_rereads: content::Rereads,
 }
 
 /// 连上以后最多等多久握手。
@@ -302,6 +305,7 @@ impl Core {
             package_changes: packages::changes::Changes::default(),
             widgets: widgets::Widgets::default(),
             appends: appends::Appends::default(),
+            content_rereads: content::Rereads::default(),
         }
     }
 

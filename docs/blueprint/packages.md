@@ -224,6 +224,19 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 4. **`miyu check`**：模型文件不在（照真实路径，出了包目录的也算不在）`mascot_missing`，超过 256 KiB `mascot_too_big`，不是 JSON 的对象 `mascot_not_json`，都是错误，写清哪个包、哪个文件。模型里面写得对不对由终端查。
 5. **装卸照常**：`package.install`、`package.remove`；没有开关（`package.enable`、`package.disable` 回 `not_switchable`）、没有配置项、不拉起程序。终端照配置项 `tui.mascot`（终端的清单 `[settings.mascot]`，填包的编号）挑用哪一个。
 
+### 给别的包带的内容（施工 X-22，设计 `34-表情包.md` 第三节「内容包」）
+
+一个包给另一个包带一个目录的东西（表情包合集、人设卡、主题）：核心不认里面是什么，只管谁给谁带了哪个目录、让被带的那个读得到。
+
+```toml
+[content.miyu-memes]      # 给哪个包带：键是它的编号
+dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
+```
+
+1. 只有 `bundle`、扩展包能写；可以写几张，给几个包带。键不是包的编号、不是表、`dir` 不是包目录里的相对目录、少了 `dir` 的整份清单不收（`bad_content`、`missing_key`、`unknown_key`）。被带的包没装的不报错：装上以后它就读得到。
+2. 被带的那个包的扩展（核心拉起的）经 `content.list`、`content.read` 读（`protocol.md`），只读得到写明给它的那个目录；不要能力。包自己给自己带的照样列。
+3. 核心每重读一次清单（装、卸、升级、装回出厂的包），给它带内容的包前后有一个就给它推 `content.changed`（`{}`）。同版本重装也推（挂在重读上，不挂在列表的推送上）；前后都没有的不推。扩展照 `content.list` 的 `version`、自己记的摘要比，变了的重读。
+
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）
 
 照 pacman 的 `local/`（`miyu_store::packages::local`，端点的 `packages/local.rs`）：
@@ -278,6 +291,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |
 | `bad_slash` | `[[slash]]` 写错了（施工 X-14 下，`slash.md`「扩展的命令」）：命令名、说明、提示，同一个包里重了；声明了却没在 `[process] capabilities` 写 `commands`（`detail` 是 `slash`，报在第一段）；`detail` 是哪一格（`slash.<名字>.<格>`）、报在那一段 |
 | `bad_widget` | `[[widget]]` 写错了（施工 X-15 上，`widgets.md`「清单」）：`detail` 是哪一格、报在那一段 |
+| `bad_content` | `[content.<包>]` 写错了（施工 X-22，「给别的包带的内容」）：键不是包的编号、不是表、`dir` 不是包目录里的相对目录 |
 | `protocol_mismatch` | 读成了，说的协议版本不包含 1（列表里照样带全；`miyu check` 是警告） |
 | `check_failed`、`check_unavailable`、`check_output` | 跑包的检查（施工 9-2，都是警告）：跑坏了、到时没完；程序没找到；印了看不懂的行 |
 

@@ -73,6 +73,8 @@ impl Core {
             crate::config::refit::refit(self, items);
         }
         super::changes::announce(self, &before, &super::changes::snapshot(self));
+        // 给别的包带的内容照新的清单查一遍（施工 X-22）。
+        self.content_rereads.bump();
     }
 
     /// 装卸时照清单从 `before` 换到 `now`（施工 F-5 下、补、再补）：人格记忆装没装照 `now` 设（`Memory::set_installed`，施工
