@@ -49,6 +49,7 @@ pub use error::{CreateError, LoadError};
 pub use fork::{Fork, ForkError, fork};
 pub use load::{load, load_placed};
 pub(crate) use scan::current_policy;
+use setup::blinded;
 pub use setup::{Create, Installed, Load, PresetPlaces, Workplace};
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
@@ -99,6 +100,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         presets,
         group,
         owner_is_admin,
+        images,
     } = setup;
     let span = actor::span(&id);
     let config = Turning::start(configs, environment.cwd.clone()).await;
@@ -108,6 +110,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let shipped = resources.clone();
     // 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的）当都装着。
     let features = presets.as_ref().map(|places| &places.features);
+    let preset = blinded(preset, images, features);
     let installed = |feature| features.is_none_or(|features| features.installed(feature));
     // 预设没开记忆的，范围一律 `off`（施工 P-2 中，走查 E2：开不开记忆归预设）。没装人格记忆的也是（施工 F-3 上）。
     // 无人格的记忆不生效（施工 P-4 上，2026-10-08 项目主人：「没有人格的情况下，记忆不生效」）。
@@ -299,6 +302,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             reports: policy.reports.clone(),
             pools,
             preset: preset.clone(),
+            images,
             personas: agents_personas,
         })
     });
@@ -310,6 +314,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         depth: lineage.as_ref().map(|lineage| lineage.depth),
         model: reference,
         preset,
+        images,
         ..snapshot.session_created(owner.clone(), venue.clone(), permission)
     };
     let (mut session, first) = Session::create(
@@ -417,6 +422,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         lineage: lineage.clone(),
         knowledge: shelves,
         skills: watch,
+        images,
     });
     let busy = actor.busy();
     let watched = actor.watched();

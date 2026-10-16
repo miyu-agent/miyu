@@ -24,6 +24,7 @@ mod answer;
 mod attach;
 mod attach_send;
 mod backstage;
+mod blind_venue;
 mod check;
 mod clear;
 mod clear_memory_command;

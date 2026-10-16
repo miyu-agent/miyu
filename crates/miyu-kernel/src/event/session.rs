@@ -50,6 +50,15 @@ pub struct SessionCreated {
     /// 序号是 `upto` 的下一个。不是分叉出来的不写；以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub forked: Option<Forked>,
+    /// 这个会话的场所显示得了图片吗（施工 X-25，`venues.md`「`venue.session`」）：造的时候场所说的，之后不变；显示不了的，
+    /// 清单写了 `needs = ["images"]` 的包整包当没开。显示得了的不写，以前的日志没有这一格，照显示得了读。
+    #[serde(default = "shows_images", skip_serializing_if = "Clone::clone")]
+    pub images: bool,
+}
+
+/// 没写 `images` 的会话显示得了图片（施工 X-25）。
+fn shows_images() -> bool {
+    true
 }
 
 /// 分叉的来源（施工 C-8 上）：父会话、分叉点。

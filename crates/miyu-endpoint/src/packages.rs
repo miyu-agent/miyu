@@ -424,8 +424,15 @@ pub(crate) fn installed(core: &std::sync::Arc<Core>) -> miyu_session::Installed 
 }
 
 /// 装了的功能（施工 F-3 上，设计 30 第三节）：读成了的内置包、扩展包带的，照清单读的先后（包照编号，包里照写的先后）；
-/// 没写功能的包整个算一个（[`Manifest::features_of`]）。界面、小程序不带。预设照它开关、工具照它归。
+/// 没写功能的包整个算一个（[`Manifest::features_of`]）。界面、小程序不带。预设照它开关、工具照它归。清单写了
+/// `needs = ["images"]` 的包另记一份（施工 X-25）。
 pub fn features(found: &[Found]) -> Features {
+    let images = found
+        .iter()
+        .filter_map(|one| one.read.as_ref().ok().map(|manifest| (one, manifest)))
+        .filter(|(_, manifest)| manifest.needs.contains(&miyu_config::package::Need::Images))
+        .map(|(one, _)| one.id.clone());
+    let images: Vec<String> = images.collect();
     Features::new(
         found
             .iter()
@@ -446,6 +453,7 @@ pub fn features(found: &[Found]) -> Features {
             })
             .collect(),
     )
+    .needing_images(images)
 }
 
 /// 读成了的清单：编号和样子（给人看的字照它并进包的配置项的名字）。

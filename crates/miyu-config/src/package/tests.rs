@@ -360,3 +360,19 @@ fn every_code_has_a_name_and_the_message_is_english() {
         "line 5: a package carries one program: [ui] and [process] can't both be here"
     );
 }
+
+/// 包要什么（施工 X-25）：`[package] needs` 只认 `images`；没写的是空的，不认识的、重复的报 `bad_needs`、说是哪一行。
+#[test]
+fn needs_are_read_and_unknown_ones_are_refused() {
+    assert!(read(BRIDGE).unwrap().needs.is_empty(), "没写的是空的");
+    let images = BRIDGE.replace(
+        "name = { en = \"QQ bridge\" }\n",
+        "name = { en = \"QQ bridge\" }\nneeds = [\"images\"]\n",
+    );
+    assert_eq!(read(&images).unwrap().needs, [Need::Images]);
+    let unknown = images.replace("[\"images\"]", "[\"sound\"]");
+    assert_eq!(wrong(&unknown), (Code::BadNeeds, Some(4)));
+    let twice = images.replace("[\"images\"]", "[\"images\", \"images\"]");
+    assert_eq!(wrong(&twice), (Code::BadNeeds, Some(4)));
+    assert_eq!(Code::BadNeeds.as_str(), "bad_needs");
+}

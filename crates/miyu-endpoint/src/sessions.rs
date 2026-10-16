@@ -224,6 +224,7 @@ impl Sessions {
             presets: Some(presets::places(core)),
             group: who.group,
             owner_is_admin: who.owner == core.admin,
+            images: who.images,
         })
         .await;
         let handle = match created {
@@ -360,6 +361,7 @@ impl Sessions {
             presets: Some(presets::places(core)),
             group: false,
             owner_is_admin,
+            images: child.images,
         })
         .await
         .map_err(|error| error.to_string())?;

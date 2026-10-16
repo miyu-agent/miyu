@@ -136,4 +136,6 @@ pub struct Child {
     pub model: Option<String>,
     /// 子会话的预设（施工 P-2 上）：父会话的（C5 的默认）；父会话以前造的、没有预设的是空的。
     pub preset: Option<String>,
+    /// 场所显示得了图片吗（施工 X-25）：父会话的。
+    pub images: bool,
 }

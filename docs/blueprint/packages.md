@@ -44,6 +44,7 @@ version = "0.0.1"                # 可以不写
 protocol = [1, 1]                # 说得了的协议主版本 [最低, 最高]，和握手一样
 name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル画面" }
 summary = { en = "…", zh = "…" } # 可以不写
+needs = ["images"]               # 要这个地方有什么才有用（施工 X-25），可以不写；现在只认 images：显示不了图片的会话里整包当没开
 
 [command]                        # 可以没有
 name = "tui"                     # miyu 后面敲的那个词：小写字母开头，小写字母、数字、-，最多 32 个
@@ -292,6 +293,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_slash` | `[[slash]]` 写错了（施工 X-14 下，`slash.md`「扩展的命令」）：命令名、说明、提示，同一个包里重了；声明了却没在 `[process] capabilities` 写 `commands`（`detail` 是 `slash`，报在第一段）；`detail` 是哪一格（`slash.<名字>.<格>`）、报在那一段 |
 | `bad_widget` | `[[widget]]` 写错了（施工 X-15 上，`widgets.md`「清单」）：`detail` 是哪一格、报在那一段 |
 | `bad_content` | `[content.<包>]` 写错了（施工 X-22，「给别的包带的内容」）：键不是包的编号、不是表、`dir` 不是包目录里的相对目录 |
+| `bad_needs` | `[package] needs` 里有不认识的、重复的词（施工 X-25）：现在只认 `images` |
 | `protocol_mismatch` | 读成了，说的协议版本不包含 1（列表里照样带全；`miyu check` 是警告） |
 | `check_failed`、`check_unavailable`、`check_output` | 跑包的检查（施工 9-2，都是警告）：跑坏了、到时没完；程序没找到；印了看不懂的行 |
 

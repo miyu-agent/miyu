@@ -33,6 +33,9 @@ pub(super) struct CreateParams {
     /// `cwd` 是人明着选的（施工 9-7 补）：太宽的照用、回应带 `wide`；不写的是头自己带上的，太宽照旧退回。
     #[serde(default)]
     pub(super) chosen: bool,
+    /// 这个头显示得了图片吗（施工 X-25）：语音这类写 `false`；不写的是显示得了。
+    #[serde(default = "crate::venues::shows_images")]
+    pub(super) images: bool,
 }
 
 /// `session.list` 的参数（施工 3-9 下）。

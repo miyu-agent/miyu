@@ -335,3 +335,19 @@ fn the_icon_is_read_layered_and_left_out_of_the_digest() {
         );
     }
 }
+
+/// 场所显示不了图片（施工 X-25）：要图的包整包扣下，它的功能都不开、单件工具不留；不算进没开的那几个；指纹不变。别的包照旧。
+#[test]
+fn a_blind_session_withholds_the_packages_that_need_images() {
+    let features = installed().needing_images(["onebot".to_string()]);
+    let file = read("[features]\nmemory = false\n").unwrap();
+    let seeing = Chosen::new("full".to_string(), file.clone(), &features);
+    let blind = Chosen::new("full".to_string(), file, &features).blind(&features);
+    assert!(seeing.file.opens_in("qq", "onebot"), "看得了图的照旧");
+    assert!(!blind.file.opens_in("qq", "onebot"), "扣下的包不开");
+    assert!(!blind.file.keeps("qq", "onebot", "send"), "工具不留");
+    assert!(blind.file.opens_in("files", "basesystem"), "别的包照旧");
+    assert_eq!(blind.off, ["memory"], "扣下的不算没开，预设关的照算");
+    assert_eq!(blind.digest, seeing.digest, "指纹不变");
+    assert_eq!(blind.pin(), seeing.pin(), "快照记的一样");
+}

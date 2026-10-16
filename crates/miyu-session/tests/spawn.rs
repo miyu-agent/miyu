@@ -312,6 +312,7 @@ async fn the_child_copies_the_parent_and_gets_the_task_from_it() {
             dirs: vec!["/extra".to_string()],
             model: None,
             preset: Some("dev".to_string()),
+            images: true,
         }
     );
     // 交代原样、作为父会话发来的话送进子会话，开它的第一轮。

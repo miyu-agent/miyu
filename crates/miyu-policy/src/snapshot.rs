@@ -305,6 +305,7 @@ impl Snapshot {
             persona: self.persona.clone(),
             preset: None,
             forked: None,
+            images: true,
         }
     }
 

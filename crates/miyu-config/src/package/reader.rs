@@ -2,7 +2,7 @@
 
 use toml_edit::{Item, TableLike};
 
-use super::{Capability, Code, Command, PackageKind, Pages, Problem, Process, Start};
+use super::{Capability, Code, Command, Need, PackageKind, Pages, Problem, Process, Start};
 use crate::phrases::{self, PhraseError, Phrases};
 
 /// `[package]` 读出来的几格。
@@ -13,6 +13,7 @@ pub(super) struct Head {
     pub(super) summary: Phrases,
     pub(super) required: bool,
     pub(super) icon: Option<String>,
+    pub(super) needs: Vec<Need>,
 }
 
 /// 照原文算行号。
@@ -87,7 +88,9 @@ impl Reader<'_> {
         self.only(
             table,
             "package",
-            &["version", "protocol", "name", "summary", "required", "icon"],
+            &[
+                "version", "protocol", "name", "summary", "required", "icon", "needs",
+            ],
         )?;
         let version = match table.get("version") {
             Some(item) => Some(self.text(item, "package.version")?),
@@ -107,6 +110,7 @@ impl Reader<'_> {
             Some(item) => Some(super::look::icon(self, item)?),
             None => None,
         };
+        let needs = self.needs(table)?;
         Ok(Head {
             version,
             protocol,
@@ -114,7 +118,32 @@ impl Reader<'_> {
             summary,
             required,
             icon,
+            needs,
         })
+    }
+
+    /// `[package] needs`（施工 X-25）：字的列表，每个都是认识的词、不重复；照 [`Need`] 的先后排好。没写的是空的。
+    fn needs(&self, table: &dyn TableLike) -> Result<Vec<Need>, Problem> {
+        let mut needs = Vec::new();
+        for name in &self.texts(table, "package", "needs")? {
+            match Need::parse(name) {
+                Some(need) if !needs.contains(&need) => needs.push(need),
+                found => {
+                    let why = match found {
+                        Some(_) => "is listed twice",
+                        None => "is not a known need",
+                    };
+                    return Err(self.problem(
+                        table.get("needs"),
+                        Code::BadNeeds,
+                        name,
+                        format!("package.needs: \"{name}\" {why}"),
+                    ));
+                }
+            }
+        }
+        needs.sort_unstable();
+        Ok(needs)
     }
 
     /// `[package] required`（施工 F-1）：开关，只有内置包能写。

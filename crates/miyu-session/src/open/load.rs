@@ -205,6 +205,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (turns, calls) = wired;
     let attended = snapshot.attended;
     let preset_id = created.preset.clone();
+    let images = created.images;
     let room = calls.as_ref().map(|calls| calls.room().clone());
     // 分叉出来的不是任务，不交回报（施工 C-8 上）。
     let upstream = match created.forked {
@@ -249,6 +250,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             reports: policy.reports.clone(),
             pools,
             preset: created.preset.clone(),
+            images,
             personas: agents_personas,
         })
     });
@@ -324,12 +326,20 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         Some(installed) => {
             let (root, owner) = (root.clone(), owner.clone());
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
-            let places = presets.as_ref().map(|places| places.presets.clone());
+            let places = presets.clone();
             blocking(move || {
+                let features = places.as_ref().map(|places| places.features.clone());
                 let file = wanted
-                    .zip(places)
+                    .zip(places.map(|places| places.presets))
                     .and_then(|(id, presets)| presets.find(&id).ok())
                     .map(|found| found.file);
+                // 显示不了图片的会话，要图的包照旧扣下（施工 X-25）。
+                let file = file.map(|mut file| {
+                    if let Some(features) = features.filter(|_| !images) {
+                        file.withheld = features.image_packages().clone();
+                    }
+                    file
+                });
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 (skills::shelves(&found), skills::names(&found))
@@ -429,6 +439,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         lineage: refresh_lineage,
         knowledge: shelves,
         skills: watch,
+        images,
     });
     span.in_scope(|| {
         tracing::info!(

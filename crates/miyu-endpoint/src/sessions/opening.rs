@@ -32,6 +32,8 @@ pub(crate) struct Opening {
     pub(crate) chosen: bool,
     /// 场所会话要不要「关于你」（施工 P-9）：`venue.session` 的 `profile`。本机的不看它，一律要。
     pub(crate) profile: bool,
+    /// 场所显示得了图片吗（施工 X-25）：`session.create`、`venue.session` 的 `images`，不写的是显示得了。
+    pub(crate) images: bool,
 }
 
 /// 新会话开局的级别（施工 8-32）：本机开的照 `permission.level`，场所会话照旧从工作区开局（外部身份另有限制）。

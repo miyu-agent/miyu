@@ -228,6 +228,10 @@ async fn a_venue_session_is_made_with_the_given_preset_and_found_again_without_i
         .expect("造出来了")
         .to_string();
     assert_eq!(created(&home, &session).preset.as_deref(), Some("dev"));
+    assert!(
+        created(&home, &session).images,
+        "没写 images 的显示得了图片（施工 X-25）"
+    );
     assert_eq!(
         created(&home, &session).persona,
         None,
@@ -243,6 +247,22 @@ async fn a_venue_session_is_made_with_the_given_preset_and_found_again_without_i
     let other = json!({"venue": "qq:private:10001x", "kind": "private", "peer": "qq:10001", "preset": "nobody"});
     let reply = client.call("v3", "venue.session", other).await;
     assert_eq!(reason(&reply), Some("unknown_preset"), "{reply}");
+}
+
+/// 场所说显示不了图片（施工 X-25）：`venue.session` 的 `images: false` 记进 `session.created`，找回的不看。
+#[tokio::test]
+async fn a_venue_that_cannot_show_images_says_so_when_its_session_is_made() {
+    let home = Home::new();
+    home.write("system/config.toml", BINDINGS);
+    let script = Script::new([]);
+    let mut client = connected(configured(&home, &script)).await;
+    let voice = json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001", "images": false});
+    let made = client.call("v1", "venue.session", voice).await;
+    let session = made["result"]["session"]
+        .as_str()
+        .expect("造出来了")
+        .to_string();
+    assert!(!created(&home, &session).images, "显示不了的记下");
 }
 
 #[tokio::test]

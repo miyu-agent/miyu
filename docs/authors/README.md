@@ -36,6 +36,7 @@ protocol = [1, 1]                                   # 你说得了的协议主�
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
 icon = "hand"                                       # Lucide 的图标名，可以不写
+needs = ["images"]                                  # 整个包围着图转的写上：显示不了图片的地方（语音）整包当没开；可以不写
 
 [command]                                           # 扩展必写
 name = "hello"                                      # 敲 miyu hello … 时转给你的程序

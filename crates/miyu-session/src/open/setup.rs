@@ -133,6 +133,8 @@ pub struct Create<'a> {
     /// 属主是不是管理员（施工 5-12）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊）只碰得到自己的工作区
     /// （`11-权限与沙盒.md` 第三节「外部身份」）。
     pub owner_is_admin: bool,
+    /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::blind`]），记进 `session.created`。
+    pub images: bool,
 }
 
 /// 照最后一次记下的工作目录（没有的是空的）定实际在哪干活。
@@ -206,4 +208,16 @@ pub struct Load<'a> {
     pub presets: Option<PresetPlaces>,
     /// 同 [`Create::owner_is_admin`]。
     pub owner_is_admin: bool,
+}
+
+/// 场所显示不了图片的会话（施工 X-25）：预设里要图的包整包扣下（[`Chosen::blind`]）。没交装了的功能的（测试里造的）照旧。
+pub(crate) fn blinded(
+    preset: Option<Chosen>,
+    images: bool,
+    features: Option<&Features>,
+) -> Option<Chosen> {
+    match (images, features) {
+        (false, Some(features)) => preset.map(|chosen| chosen.blind(features)),
+        _ => preset,
+    }
 }

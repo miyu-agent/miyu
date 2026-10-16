@@ -22,12 +22,29 @@ pub struct Feature {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Features {
     list: Vec<Feature>,
+    /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::blind`]）。
+    images: BTreeSet<String>,
 }
 
 impl Features {
     /// 照 `list` 的先后。
     pub fn new(list: Vec<Feature>) -> Features {
-        Features { list }
+        Features {
+            list,
+            images: BTreeSet::new(),
+        }
+    }
+
+    /// 记下哪几个包要这个地方显示得了图片（施工 X-25，清单的 `[package] needs`）。
+    #[must_use]
+    pub fn needing_images(mut self, packages: impl IntoIterator<Item = String>) -> Features {
+        self.images = packages.into_iter().collect();
+        self
+    }
+
+    /// 要这个地方显示得了图片的包（施工 X-25），照编号排。
+    pub fn image_packages(&self) -> &BTreeSet<String> {
+        &self.images
     }
 
     /// 每一个，照先后。

@@ -31,6 +31,7 @@ pub(super) async fn create(
         group: false,
         chosen: params.chosen,
         profile: false,
+        images: params.images,
     };
     let created = core
         .sessions

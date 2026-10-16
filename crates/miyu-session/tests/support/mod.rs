@@ -205,6 +205,7 @@ impl Home {
             presets: None,
             group: lines.group,
             owner_is_admin: lines.owner_is_admin,
+            images: lines.images,
         });
         within("造会话", created).await.expect("造得出会话")
     }

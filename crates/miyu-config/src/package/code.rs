@@ -97,6 +97,8 @@ pub enum Code {
     BadWidget,
     /// `[content.<包>]` 写错了（施工 X-22）：不是包的编号、不是表、`dir` 不是包目录里的相对目录。
     BadContent,
+    /// `[package] needs` 里有不认识的、重复的词（施工 X-25）。
+    BadNeeds,
 }
 
 impl Code {
@@ -150,11 +152,12 @@ impl Code {
             Code::BadSlash => "bad_slash",
             Code::BadWidget => "bad_widget",
             Code::BadContent => "bad_content",
+            Code::BadNeeds => "bad_needs",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 47] = [
+    pub const ALL: [Code; 48] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -202,5 +205,6 @@ impl Code {
         Code::BadSlash,
         Code::BadWidget,
         Code::BadContent,
+        Code::BadNeeds,
     ];
 }

@@ -146,6 +146,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         lineage: None,
         knowledge: None,
         skills: None,
+        images: true,
     };
     (scratch, root, refresh)
 }

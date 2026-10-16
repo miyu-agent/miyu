@@ -107,3 +107,35 @@ async fn a_subagent_takes_the_chosen_persona_and_preset_or_the_defaults() {
         "能挑的人格同池，进 enum"
     );
 }
+
+/// 父会话的场所显示不了图片（施工 X-25）：派出去的子会话照父会话的，也记成显示不了。
+#[tokio::test]
+async fn a_subagent_of_a_session_that_cannot_show_images_cannot_either() {
+    let home = Home::new();
+    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).unwrap()).unwrap();
+    let plain = json!({"description": "照常", "prompt": "Read."}).to_string();
+    let script = Script::new([
+        Play::calls(&[("subagent", &plain)]),
+        Play::Says("好。"),
+        Play::Says("好。"),
+    ]);
+    let mut client = Client::connect(home.core_with_tools(&script, tools, TOKEN));
+    client.hello().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let reply = client
+        .call(
+            "c1",
+            "session.create",
+            json!({"cwd": work, "images": false}),
+        )
+        .await;
+    let parent = reply["result"]["session"]
+        .as_str()
+        .expect("造出来了")
+        .to_string();
+    client.say("c2", &parent, "派一个去查").await;
+    home.until_turns(&parent, 1).await;
+    let made = children(&home.log(&parent));
+    assert_eq!(made.len(), 1, "派了一个");
+    assert!(!created(&home, &made[0]).images, "照父会话的");
+}

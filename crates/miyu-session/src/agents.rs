@@ -92,6 +92,8 @@ pub(crate) struct Agents {
     pub(crate) pools: Vec<String>,
     /// 这个会话的预设（施工 P-2 上）：`session.created` 的，子会话没选的照抄（C5 的默认）。以前的会话没有。
     pub(crate) preset: Option<String>,
+    /// 场所显示得了图片吗（施工 X-25）：子会话照抄。
+    pub(crate) images: bool,
     /// 派子代理能选的人格（施工 P-2 补）：同 `pools`，快照里 `subagent` 的 `persona` 的 `enum`（[`Agents::personas_in`]）。
     pub(crate) personas: Vec<String>,
 }

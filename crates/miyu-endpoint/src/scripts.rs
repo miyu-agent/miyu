@@ -129,10 +129,9 @@ pub(crate) fn package(script: &Script) -> &str {
 /// 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到工具：那个服务不起，
 /// 目录里没有挂在那个包下的工具。
 pub(crate) fn features(core: &Core) -> Features {
-    let mut list: Vec<Feature> = crate::packages::features(&core.packages())
-        .iter()
-        .cloned()
-        .collect();
+    let packaged = crate::packages::features(&core.packages());
+    let images = packaged.image_packages().clone();
+    let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
         package: HOME_PACKAGE.to_string(),
@@ -147,5 +146,5 @@ pub(crate) fn features(core: &Core) -> Features {
         service: None,
         script: Some(script.head.name.clone()),
     }));
-    Features::new(list)
+    Features::new(list).needing_images(images)
 }

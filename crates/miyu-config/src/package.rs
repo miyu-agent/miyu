@@ -16,6 +16,7 @@ mod kinds;
 mod links;
 mod look;
 mod mcp;
+mod need;
 mod reader;
 pub mod settings;
 mod slash;
@@ -30,6 +31,7 @@ pub use links::{Connection, Worker};
 pub use mcp::{
     EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
 };
+pub use need::Need;
 pub use settings::{Setting, SettingKind};
 pub use slash::SlashCommand;
 pub use upgrade::without_kind;
@@ -89,6 +91,8 @@ pub struct Manifest {
     pub export: Vec<String>,
     /// 给别的包带的内容（施工 X-22，`[content.<包>] dir`）：照包的编号排；只有 `bundle`、扩展包能写，没写的是空的。
     pub content: Vec<Content>,
+    /// 要这个地方有什么才有用（施工 X-25，`[package] needs`）：照 [`Need`] 的先后，没写的是空的。
+    pub needs: Vec<Need>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -392,6 +396,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         widgets,
         export,
         content,
+        needs: head.needs,
     })
 }
 

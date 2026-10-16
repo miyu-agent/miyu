@@ -132,6 +132,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             model: plan.model,
             persona: created.persona,
             preset: created.preset,
+            images: created.images,
             forked: Some(Forked {
                 from: parent,
                 upto: plan.upto,

@@ -52,6 +52,8 @@ pub(crate) struct Refresh {
     pub(crate) knowledge: Option<Arc<Shelves>>,
     /// 回合开始再找一遍技能（施工 X-11 下，`crate::skills::Watch`）：没交装了的软件包的（测试里造的）不找。
     pub(crate) skills: Option<crate::skills::Watch>,
+    /// 场所显示得了图片吗（施工 X-25）：显示不了的，换预设时要图的包照旧扣下。
+    pub(crate) images: bool,
 }
 
 /// 看了一遍的结果。
@@ -312,6 +314,10 @@ fn preset(refresh: &Refresh) -> Result<Preset, String> {
     let features = &places.features;
     let memory = !pin.off.iter().any(|feature| feature == MEMORY);
     let chosen = Chosen::new(found.id, found.file, features).keeping_memory(memory, features);
+    let chosen = match refresh.images {
+        true => chosen,
+        false => chosen.blind(features),
+    };
     // 以前的快照记的是包的编号（施工 F-3 上）：照现在的功能读一样的算没改，不为改了写法换一次快照。
     Ok(match pin.means_the_same(&chosen.pin(), features) {
         true => Preset::Same(chosen),

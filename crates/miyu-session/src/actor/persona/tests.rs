@@ -75,6 +75,7 @@ fn setup_with(
         lineage: None,
         knowledge: None,
         skills: None,
+        images: true,
     };
     (scratch, root, refresh)
 }

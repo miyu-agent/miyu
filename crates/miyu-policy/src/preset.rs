@@ -64,6 +64,9 @@ pub struct PresetFile {
     pub tools_off: BTreeSet<String>,
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
+    /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
+    /// （[`Chosen::blind`]），不进 [`PresetFile::digest`]、不叠层。
+    pub withheld: BTreeSet<String>,
 }
 
 impl PresetFile {
@@ -86,9 +89,12 @@ impl PresetFile {
         self.unlisted.unwrap_or(Unlisted::On)
     }
 
-    /// 包 `package` 里的功能 `feature` 开不开（施工 F-3 上）：`[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能
+    /// 包 `package` 里的功能 `feature` 开不开（施工 F-3 上）：扣下的包都不开（施工 X-25）；`[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能
     /// 的编号、再认包的编号；都没写的照 `unlisted`。
     pub fn opens_in(&self, feature: &str, package: &str) -> bool {
+        if self.withheld.contains(package) {
+            return false;
+        }
         self.features
             .get(feature)
             .or_else(|| self.software.get(feature))
@@ -189,6 +195,15 @@ impl Chosen {
         self
     }
 
+    /// 场所显示不了图片（施工 X-25）：`features` 里要图的包整包扣下，当没开；也不算进没开的那几个（「装了没开」那一行是说
+    /// 换个预设就有，这里换了也没有）。指纹不变。
+    #[must_use]
+    pub fn blind(mut self, features: &Features) -> Chosen {
+        self.file.withheld = features.image_packages().clone();
+        self.off = off(&self.file, features);
+        self
+    }
+
     /// 记进快照的那一份。
     pub fn pin(&self) -> PresetPin {
         PresetPin {
@@ -203,6 +218,7 @@ impl Chosen {
 fn off(file: &PresetFile, features: &Features) -> Vec<String> {
     let off: BTreeSet<String> = features
         .iter()
+        .filter(|feature| !file.withheld.contains(&feature.package))
         .filter(|feature| !file.opens_in(&feature.id, &feature.package))
         .map(|feature| feature.id.clone())
         .collect();

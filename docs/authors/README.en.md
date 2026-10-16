@@ -36,6 +36,7 @@ protocol = [1, 1]                                   # the protocol major version
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
 icon = "hand"                                       # a Lucide icon name, optional
+needs = ["images"]                                  # for a package that is all about pictures: left out where images cannot be shown (voice); optional
 
 [command]                                           # required for an extension
 name = "hello"                                      # `miyu hello …` is handed to your program

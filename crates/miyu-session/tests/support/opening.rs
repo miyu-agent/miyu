@@ -44,6 +44,8 @@ pub struct Lines {
     pub indexed: bool,
     /// 属主是不是管理员（施工 5-12）：不是的场所会话只碰得到自己的工作区。默认是。
     pub owner_is_admin: bool,
+    /// 场所显示得了图片吗（施工 X-25）：默认显示得了。
+    pub images: bool,
     /// 群会话（施工 O-13 中）：默认不是。
     pub group: bool,
     /// 「关于你」那两项（施工 P-9；R-6 再修照它判抽取写不写称呼）：默认都空，快照里没有那一块。
@@ -66,6 +68,7 @@ impl Default for Lines {
             indexed: true,
             group: false,
             owner_is_admin: true,
+            images: true,
             profile: miyu_policy::Profile::default(),
         }
     }

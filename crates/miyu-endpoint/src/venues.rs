@@ -49,6 +49,15 @@ pub(crate) struct VenueParams {
     /// 不带，群聊不写。找回已有的会话时不看。
     #[serde(default)]
     profile: bool,
+    /// 这个场所显示得了图片吗（施工 X-25）：语音这类显示不了的写 `false`，要图的包在这个会话里整包当没开；不写的是显示得了。
+    /// 找回已有的会话时不看。
+    #[serde(default = "shows_images")]
+    images: bool,
+}
+
+/// 没写 `images` 的场所显示得了图片（施工 X-25）。
+pub(crate) fn shows_images() -> bool {
+    true
 }
 
 /// 场所是私聊还是群。
@@ -163,6 +172,7 @@ pub(crate) async fn session(
         group: params.kind == Kind::Group,
         chosen: false,
         profile: params.profile,
+        images: params.images,
     };
     let cwd = params
         .cwd
