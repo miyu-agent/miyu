@@ -3,7 +3,7 @@
 //!
 //! 每次现读资源目录（`web-module.md`「起草时定的」第 32 条）：一个连接只要一次，读几份 JSON 很快；开发时改了资源，
 //! 下一次调就是新的，不用重启核心。在阻塞线程里读。工具目录里这一刻写了显示名的脚本、MCP 的、扩展的工具也并进 `tools`（施工
-//! 9-8 七补）。每件工具带上它属于哪个包（施工 X-24）。
+//! 9-8 七补）。每件工具属于哪个包另给一张表 `packages`（施工 X-24 补）。
 
 use std::collections::BTreeMap;
 
@@ -53,9 +53,8 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: Params) -> Result<Value
         .map(|(name, face)| (name.clone(), json!(face)))
         .collect();
     named(core, &language, &mut tools);
-    owned(core, &mut tools);
     let said: BTreeMap<&str, &str> = human.said_entries().collect();
-    Ok(json!({"language": language, "said": said, "tools": tools}))
+    Ok(json!({"language": language, "said": said, "tools": tools, "packages": owned(core)}))
 }
 
 /// 工具目录里这一刻写了显示名的工具（脚本、MCP 的、扩展的，施工 9-8 七补）并进 `tools`：照 `language` 挑（这种语言没写的照
@@ -75,15 +74,19 @@ fn named(core: &Core, language: &str, tools: &mut Map<String, Value>) {
     }
 }
 
-/// 工具目录里这一刻有的工具，每一格多一个 `package`：属于哪个包（施工 X-24：终端照它判「只为发一张图」那一段）。目录里没有的
-/// （核心自带、这一刻没登记的）不写。
-fn owned(core: &Core, tools: &mut Map<String, Value>) {
+/// 工具目录里这一刻的每件工具属于哪个包（施工 X-24 补：终端照它判「只为发一张图」那一段）：工具名到包编号，单独一张表。
+/// 不往 `tools` 的每一格里塞：头照 `Face` 读那一格、不认识的格子整格不收（X-24 塞进去时现有的终端读不出工具的样子）。
+fn owned(core: &Core) -> BTreeMap<String, String> {
     let catalog = core.tools();
-    for (name, face) in tools.iter_mut() {
-        if let (Some(package), Some(face)) = (catalog.package_of(name), face.as_object_mut()) {
-            face.insert("package".to_string(), Value::String(package.to_string()));
-        }
-    }
+    catalog
+        .specs()
+        .filter_map(|spec| {
+            Some((
+                spec.name.clone(),
+                catalog.package_of(&spec.name)?.to_string(),
+            ))
+        })
+        .collect()
 }
 
 /// `language` 合不合写法：2 到 8 个小写字母（`protocol.md`「`human.get`」）。

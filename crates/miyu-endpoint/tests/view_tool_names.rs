@@ -49,13 +49,22 @@ async fn an_mcp_tool_step_is_titled_with_the_name_the_server_gave() {
     let enabled = enable(&mut client, "probe").await;
     assert_eq!(enabled["result"]["enabled"], true, "{enabled}");
     until_status(&mut client, "probe", "running").await;
-    // 这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）：没给的不在。带着属于哪个包（施工 X-24）。
+    // 这一刻的显示名也在 `human.get` 的 `tools` 里（施工 9-8 七补）：没给的不在。属于哪个包在 `packages`（施工 X-24 补）。
     let human = client.call("h1", "human.get", json!({})).await;
     assert_eq!(
         human["result"]["tools"]["mcp__probe__echo"],
-        json!({"name": "Echo back", "package": "probe"}),
+        json!({"name": "Echo back"}),
         "{human}"
     );
+    assert_eq!(
+        human["result"]["packages"]["mcp__probe__echo"], "probe",
+        "属于哪个包另一张表（施工 X-24 补）：{human}"
+    );
+    // 头照 `Face` 读每一格、不认识的格子整格不收：每一格都要读得成（X-24 塞过 `package`，现有的终端读不出）。
+    for (name, face) in human["result"]["tools"].as_object().expect("有 tools") {
+        let read: Result<miyu_store::human::Face, _> = serde_json::from_value(face.clone());
+        assert!(read.is_ok(), "{name} 读不成 Face：{face}");
+    }
     assert!(
         human["result"]["tools"].get("mcp__probe__fail").is_none(),
         "{human}"
@@ -132,9 +141,10 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
             .await;
         assert_eq!(
             human["result"]["tools"]["greet"],
-            json!({ "name": name, "package": "bridge" }),
+            json!({ "name": name }),
             "{human}"
         );
+        assert_eq!(human["result"]["packages"]["greet"], "bridge", "{human}");
     }
     let session = client.create("c1", "~").await;
     client.say("s1", &session, "打个招呼").await;
