@@ -83,6 +83,7 @@ pub(super) fn some_notice(
             })],
             stopped: false,
             end_turn: false,
+            sent: Vec::new(),
             display_name: Default::default(),
         });
     }

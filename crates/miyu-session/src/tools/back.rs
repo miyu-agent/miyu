@@ -74,6 +74,7 @@ impl Tools {
                     effects,
                     stopped: done.stopped,
                     end_turn: done.end_turn,
+                    sent: done.sent,
                     display_name: running.display_name,
                 })
             }
@@ -98,6 +99,7 @@ impl Tools {
                     effects: Vec::new(),
                     stopped: false,
                     end_turn: false,
+                    sent: Vec::new(),
                     display_name: running.display_name,
                 })
             }

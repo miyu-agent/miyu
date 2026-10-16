@@ -248,6 +248,19 @@ impl Stage {
                 }
                 vec![done]
             }
+            Play::Sends(text, sent) => {
+                let mut done = self.done(call_id, false, &text);
+                if let Input::ToolDone {
+                    sent: slot,
+                    end_turn,
+                    ..
+                } = &mut done
+                {
+                    *slot = sent;
+                    *end_turn = true;
+                }
+                vec![done]
+            }
             Play::Writes(todos) => {
                 let mut done = self.done(call_id, false, "Todo list updated.");
                 if let Input::ToolDone { effects, .. } = &mut done {
@@ -275,6 +288,7 @@ impl Stage {
             effects: Vec::new(),
             stopped: false,
             end_turn: false,
+            sent: Vec::new(),
             display_name: Default::default(),
         }
     }
@@ -291,6 +305,7 @@ impl Stage {
             effects: Vec::new(),
             stopped: true,
             end_turn: false,
+            sent: Vec::new(),
             display_name: Default::default(),
         }
     }

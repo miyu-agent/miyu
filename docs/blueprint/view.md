@@ -51,6 +51,7 @@
 | 时间线的一段 | `g` 加它第一步的编号去掉 `b`，例如 `g41.0` |
 | 压缩那一条 | `c<序号>`：替代到的那一条（`compaction.progress` 的 `seen`、摘要请求的 `seen`、`context.compacted` 的 `upto` 是同一个），流式的进度、摘要请求的记录、落了盘的检查点改的是同一条 |
 | 别的（一轮的收尾、旁白） | `e<序号>`：引出它的那一条事件 |
+| 她发出去的图（`media`） | `s<序号>.<第几张>`：序号是那条 `tool.result` 的（施工 X-19） |
 | 只在视图流里有的旁白（瞬时事件引出的：出错换了模型） | `x<序号>.<第几个>`：排在序号是它的那一条后面的第几个瞬时旁白。不进日志，翻页、重新订阅都没有它 |
 
 **`message.assistant` 多一格 `indexes`**：每一块在流里是第几块（`model.delta` 的 `index`），照 `blocks` 的先后。空块、打断时丢掉的半截调用不进回复（`kernel/session.md`「收回复」），后面的块的位置和块号就错开了；只有错开时才写，和位置一样的不写，以前的日志没有这一格、照位置算。
@@ -61,6 +62,7 @@
 |---|---|
 | `user` | `text`（命令模板展开成的是人敲的那一行，施工 X-14 上，`slash.md`）；`attachments`（照 `message.user` 的附件块：`kind`（`image`、`file`）、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；大小头照 `blob` 取）；`from`（别处来的话的来处：别的会话、子代理、父会话、别的 harness、场所里的人，和 `by` 一个写法）；`level`（发出去那一刻的权限级别）；`queued: true`（排着、她还没听到，听到了换成不写）；`withdrawn: true`（排着的被退回了：`message.withdrawn`，打断时没听到的那几条；不画，视图流里推到的那一刻头把字放回输入框，翻页、重新订阅看到的不放回）；`round`（长期目标的续轮是第几轮，施工 X-8 补：`from` 是模块 `goal` 的，照那条消息的 `cause` 读，`protocol.md` 的 `command.run` 第 10 条；网页画成一行「目标 · 第 N 轮」，不把续轮的原文给人看，2026-10-12 项目主人定） |
 | `reply` | `text`（Markdown 原文）；`open: true`（还在写，写完不写） |
+| `media` | 她发出去的一张图（施工 X-19，`tool.result.sent`）：`image`（同 `user` 的附件那一格，宽高一定有）、`alt`?、`sticker`?。一张一条，排在那一步工具后面，和 `reply` 一样把前面那段 `group` 收起（那一步照旧在 `group` 里） |
 | `group` | 时间线的一段：`steps`（几步的编号，照先后；多了一步，这一段跟着 `view.update`，`steps` 和收起那一行一起变）；`open: true`（还在进行：她没开口、这一轮没结束）；`summary`、`summary_en`（收起那一行，下面「收起那一行」）；`took_ms`（从第一步开始到最后一步结束） |
 | `thought` | 一步思考：`group`；`text`；`open: true`（还在想）；`took_ms` |
 | `tool` | 一步工具：`group`；`call`（调用编号，流式时还没有）；`name`；`title`（下面「标题那一句」）；`state`；`args`（参数原文，流式时边收边接）；`diff`（编辑、写入的 `{added, removed}`，有了结果以后是真数，之前照参数估、带 `estimated: true`）；`images`（结果里的图：`[{blob, media_type, width, height}]`，照先后，头照 `blob.get` 取；`read` 读了图片的那一步）；`job`（派子代理、后台命令的任务编号）；`to_title`（留言发给子代理的，那个子代理的标题：派它那一步的 `description`）；`approval`（要人确认的：`access`、`rule`、`detail` 照 `tool.approval_requested` 原样，定了以后多 `decision`、`reason`、`by`；确认记在这一步上，不另起旁白）；`took_ms`；`files`（改了哪些文件，照结果的效果：`[{path, action}]`，`path` 是换成真实位置以后的绝对路径，`action` 是 `created`（改之前没有这个文件）、`changed`（改了已有的）或 `trashed`（移进回收站），照先后；读的不算，没有的不写。施工 9-8 三补，网页的预览工作区照它认产物、差异卡片照它写「新建」「修改」）；`skill`（读的是技能的 `SKILL.md` 的那一步：`{name, title}`，名字照结果的 `file.read` 效果，`title` 是给人看的名字，照连接的语言挑，同 `preset.get` 里 `skill-<名字>` 那个功能的 `name`，没写的照名字；施工 9-8 四补，网页照它写「使用技能 · 写技能」。施工 9-8 五补起照读的那一刻记在效果里的 `display_name` 挑（这种语言没写的照英文、中文、日文的先后），卸了包、改了名字历史照旧；以前的日志没记的照这一刻装着的查） |

@@ -167,6 +167,8 @@ name = { en = "Greeting", zh = "问候语" }
    ```
 
    `blocks` 是内容块（文字 `{"type":"text","text":…}`；图片先经 `blob.put` 传上去，再放 `{"type":"image","blob":…,"media_type":…,"width":…,"height":…}`）。失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算这次失败。同一时间可能来好几个 `tool.call`，照 `id` 对着回。
+
+   想让她「发出去」一张图（表情包这类，画在正文里，接入QQ 当表情发）：回答里加 `"sent": [{"blob","media_type","width","height","alt"?,"sticker"?}]`，至多 4 张，图同样先 `blob.put`。`sent` 不给 AI 看，她看到的只有 `blocks`（例如 `Sent m3f2.`）。
 6. **超时和叫停**：过了 `timeout_ms` 没回的、人打断的，核心发通知 `tool.cancel {"session","call_id"}`（没有 `id`，不用回）。收到就放下那一件；已经做了的收不回，回的时候照实说。
 7. **后台页的方法**（有后台页的、界面块里有按钮的才要）：发 `package.methods {"methods":[{"name":"status"}]}` 登记；页面、按钮调到时核心发 `method.call {"method","params"}`，你回什么页面就拿到什么，不认识的方法回 JSON-RPC 的 `-32601`。
 8. **界面块的内容**（声明了 `[[widget]]` 的才要）：

@@ -179,6 +179,7 @@ fn result(seq: u64, effects: Vec<Effect>) -> Event {
             human: None,
             effects,
             end_turn: false,
+            sent: Vec::new(),
             display_name: Default::default(),
         }),
     }

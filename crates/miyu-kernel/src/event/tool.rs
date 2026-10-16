@@ -5,12 +5,27 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::block::Block;
+use crate::block::{Block, Image};
 use crate::event::Effect;
 use crate::id::CallId;
 use crate::raw::RawJson;
 use crate::text_enum::text_enum;
 use crate::tool::Access;
+
+/// 她发出去的一张图（施工 X-19）：图本身同图片块；`alt` 给看不了图的地方的一句（表情包的描述），`sticker` 是表情包（通讯平台
+/// 照表情发）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Sent {
+    /// 图：blob、媒体类型、宽高，同图片块。
+    #[serde(flatten)]
+    pub image: Image,
+    /// 看不了图时的一句。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub alt: Option<String>,
+    /// 是表情包。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sticker: bool,
+}
 
 /// `tool.result`：一个工具调用的结果。结果按到达的先后记进日志，
 /// 投影时按调用的先后排（03 第六节）。
@@ -38,6 +53,10 @@ pub struct ToolResult {
     /// （`completed`）。只有成功的结果带它，只在要的时候写；老日志、别的结果没有这一格。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub end_turn: bool,
+    /// 她发出去的图（施工 X-19，设计 `34-表情包.md` 第五节第 4 条）：工具交的，照交的先后。不发给模型（她看到的是调用和结果
+    /// 的字），头画在正文里，通讯平台照它发。没有的不写这一格，老日志字节不变。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sent: Vec<Sent>,
     /// 这件工具给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：脚本、MCP 的、扩展的工具派出去那一刻的，头在时间线上
     /// 照连接的语言挑。不发给模型。核心自带的、内核自己写的结果、没写显示名的、老日志没有这一格。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]

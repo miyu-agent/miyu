@@ -3,6 +3,7 @@
 mod support;
 
 mod lines;
+mod media;
 mod notices;
 mod preparing;
 mod queue;

@@ -36,6 +36,12 @@ impl EntryId {
         EntryId(format!("e{seq}"))
     }
 
+    /// 她发出去的图（施工 X-19）：工具结果是第 `seq` 条，里面的第 `n` 张，`s<序号>.<n>`。
+    #[must_use]
+    pub fn sent(seq: Seq, n: usize) -> EntryId {
+        EntryId(format!("s{seq}.{n}"))
+    }
+
     /// 压缩那一条：照替代到的那一条，`c<序号>`（流式的进度、落了盘的检查点、摘要请求的记录是同一次压缩）。
     #[must_use]
     pub fn compaction(upto: Seq) -> EntryId {

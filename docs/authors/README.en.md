@@ -167,6 +167,8 @@ name = { en = "Greeting", zh = "问候语" }
    ```
 
    `blocks` are content blocks (text `{"type":"text","text":…}`; for an image, upload it with `blob.put` first, then send `{"type":"image","blob":…,"media_type":…,"width":…,"height":…}`). On failure, still reply with a result, set `error` to `true`, and explain the reason for the model; a JSON-RPC error also counts as a failed call. Several `tool.call`s may arrive at once; answer each by its `id`.
+
+   To have her "send" an image (a sticker and the like, drawn in the body and sent as a sticker on QQ), add `"sent": [{"blob","media_type","width","height","alt"?,"sticker"?}]` to the answer, at most 4, with the image uploaded through `blob.put` first. The AI does not see `sent`; she only sees `blocks` (for example `Sent m3f2.`).
 6. **Timeouts and stopping**: when `timeout_ms` passes without an answer, or a person interrupts, the core sends the notification `tool.cancel {"session","call_id"}` (no `id`, no reply needed). Drop that call when you get it; what has already been done cannot be undone, so say so truthfully if you still answer.
 7. **Methods for the admin page** (only if you have an admin page or buttons in your widgets): register them with `package.methods {"methods":[{"name":"status"}]}`; when the page or a button calls one, the core sends `method.call {"method","params"}`, and whatever you reply is what the page receives. Answer an unknown method with JSON-RPC `-32601`.
 8. **Widget content** (only if you declare `[[widget]]`):

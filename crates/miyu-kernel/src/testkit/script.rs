@@ -180,6 +180,8 @@ pub enum Play {
     Watches(SessionId),
     /// 换上一份待办（施工 D-3）：报 `todo.written`。
     Writes(Vec<Todo>),
+    /// 发出去几张图（施工 X-19）：结果是这段字，带上 `sent`、要结束这一轮（表情包那样）。
+    Sends(String, Vec<crate::event::Sent>),
 }
 
 impl Play {

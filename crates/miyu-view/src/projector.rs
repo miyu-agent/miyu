@@ -5,6 +5,7 @@
 //! 一条事件里同一条可能改好几次：先记下动过哪些（`Op`），喂完一条再照最后的样子交出变化（[`Projector::drain`]）。
 
 mod blocks;
+mod media;
 mod notices;
 mod status;
 mod tools;
@@ -178,7 +179,10 @@ impl Projector {
             EventBody::MessageUser(message) => self.message(event, message),
             EventBody::MessageAssistant(reply) => self.assistant(event, reply),
             EventBody::MessageWithdrawn(withdrawn) => self.withdrawn(withdrawn),
-            EventBody::ToolResult(result) => self.result(event, result),
+            EventBody::ToolResult(result) => {
+                self.result(event, result);
+                self.sent(event, result);
+            }
             EventBody::ApprovalRequested(requested) => self.approval_requested(requested),
             EventBody::ApprovalDecided(decided) => self.approval_decided(event, decided),
             EventBody::QuestionAsked(asked) => {

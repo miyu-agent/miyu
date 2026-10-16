@@ -49,6 +49,8 @@ pub enum Body {
     User(User),
     /// 她的回答里的一块正文。
     Reply(Reply),
+    /// 她发出去的一张图（施工 X-19）：工具交的 `tool.result.sent`，画在正文里。
+    Media(Media),
     /// 时间线的一段：她开口之前的思考、调工具。
     Group(Group),
     /// 一步思考。
@@ -107,6 +109,19 @@ pub struct Attachment {
     /// 带了路径的附件的路径。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+}
+
+/// 她发出去的一张图（施工 X-19）：表情包这类，画在正文里，和她的字一样把前面那段时间线收起。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Media {
+    /// 图：同人附的图片那一格，宽高一定有。
+    pub image: Attachment,
+    /// 看不了图时的一句。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alt: Option<String>,
+    /// 是表情包。
+    #[serde(skip_serializing_if = "is_false")]
+    pub sticker: bool,
 }
 
 /// 她的回答里的一块正文。

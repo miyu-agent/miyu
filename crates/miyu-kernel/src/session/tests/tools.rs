@@ -365,6 +365,7 @@ fn the_name_people_see_is_written_into_the_result() {
         effects,
         stopped,
         end_turn,
+        sent: Vec::new(),
         display_name: named.clone(),
     };
     let events = appended_events(&allowing(&mut session, input));

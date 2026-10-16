@@ -219,6 +219,7 @@ pub(super) fn done(call_id: CallId, text: &str) -> Input {
         effects: Vec::new(),
         stopped: false,
         end_turn: false,
+        sent: Vec::new(),
         display_name: Default::default(),
     }
 }

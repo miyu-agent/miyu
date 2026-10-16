@@ -148,6 +148,7 @@ fn stopping_comes_before_restoring_files() {
         ],
         stopped: false,
         end_turn: false,
+        sent: Vec::new(),
         display_name: Default::default(),
     });
     let actions = logged.handle(stored(logged.last()));

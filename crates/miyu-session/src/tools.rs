@@ -338,6 +338,7 @@ impl Tools {
                 effects: Vec::new(),
                 stopped: false,
                 end_turn: false,
+                sent: Vec::new(),
                 display_name: Default::default(),
             });
         };

@@ -126,6 +126,8 @@ pub struct Done {
     pub images: Vec<Picture>,
     /// 要结束这一轮（施工 4-14）：这一步几件工具的结果都到了，内核不再请求模型，照常记 `turn.ended`。出错的、停了的不算。
     pub end_turn: bool,
+    /// 她发出去的图（施工 X-19）：记进 `tool.result`，不发给模型。
+    pub sent: Vec<miyu_kernel::event::Sent>,
 }
 
 /// 工具交回的一张图片：字节本身，和量好的媒体类型、宽高（`03-事件模型.md` 第四节：量不出尺寸的不当图片）。
@@ -203,6 +205,7 @@ impl Done {
             stopped: false,
             images: Vec::new(),
             end_turn: false,
+            sent: Vec::new(),
         }
     }
 
@@ -216,6 +219,7 @@ impl Done {
             stopped: true,
             images: Vec::new(),
             end_turn: false,
+            sent: Vec::new(),
         }
     }
 
@@ -229,6 +233,7 @@ impl Done {
             stopped: false,
             images: Vec::new(),
             end_turn: false,
+            sent: Vec::new(),
         }
     }
 

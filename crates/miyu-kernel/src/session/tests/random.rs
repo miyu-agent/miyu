@@ -242,6 +242,7 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
                 // 没叫它停却停了的：在跑的偶尔这样交回，内核照已取消记（施工 4-9 再补一）。
                 stopped: watch.running.contains(&call_id) && rng.below(4) == 0,
                 end_turn: false,
+                sent: Vec::new(),
                 display_name: Default::default(),
             }
         }

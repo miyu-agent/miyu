@@ -127,6 +127,8 @@ pub enum Input {
         stopped: bool,
         /// 工具要结束这一轮（施工 4-14）：成功的才认。
         end_turn: bool,
+        /// 她发出去的图（施工 X-19）：工具交的，原样记进结果。
+        sent: Vec<crate::event::Sent>,
         /// 这件工具给人看的名字，照语言，执行器派它那一刻取的（施工 9-8 六补）：脚本、MCP 的、扩展的工具有，核心自带的、
         /// 没写的是空的。
         display_name: BTreeMap<String, String>,

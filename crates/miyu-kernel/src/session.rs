@@ -278,6 +278,7 @@ impl Session {
                 effects,
                 stopped,
                 end_turn,
+                sent,
                 display_name,
             } => self.tool_done(
                 at,
@@ -295,6 +296,7 @@ impl Session {
                     human,
                     effects,
                     end_turn: end_turn && !stopped && !error,
+                    sent,
                     display_name,
                 },
             ),

@@ -14,6 +14,7 @@ mod provide_exit;
 mod provide_features;
 mod provide_later;
 mod provide_venue;
+mod sent_media;
 mod support;
 mod system_append;
 mod turn_inject;

@@ -53,7 +53,7 @@ pub use session::{
     CommandRan, Forked, Level, MetaChanged, Permission, PolicyChanged, SessionCreated,
     SessionRecapped, SessionSealed, WorkspaceChanged,
 };
-pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, ToolResult, ToolStatus};
+pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
 pub use transient::{
     ChangeWhy, CompactionDone, CompactionProgress, CompactionStarted, EffortInUse, EffortSource,
     ModelChanged, ModelDelta, Piece, Retry, Status, TodosChanged, ToolProgress, Transient,

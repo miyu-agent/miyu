@@ -14,7 +14,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::Said;
+use miyu_kernel::event::{Said, Sent};
 use miyu_kernel::id::AccountId;
 use miyu_kernel::template::Template;
 use miyu_store::root::DataRoot;
@@ -64,7 +64,13 @@ struct Answer {
     /// 要结束这一轮（施工 4-14，`protocol.md` 的 `tool.call`）：通讯平台的 `skip_reply` 这类。出错的不算。
     #[serde(default)]
     end_turn: bool,
+    /// 她发出去的图（施工 X-19，`protocol.md` 的 `tool.call`）：至多 [`MOST_SENT`] 张，多了整份当写法不对。
+    #[serde(default)]
+    sent: Vec<Sent>,
 }
+
+/// 一次至多发几张图。
+const MOST_SENT: usize = 4;
 
 impl RemoteTool {
     /// 包 `package` 提供的这一件。
@@ -117,12 +123,22 @@ impl RemoteTool {
     fn answered(&self, outcome: Result<Result<Value, Value>, Gone>) -> Done {
         match outcome {
             Ok(Ok(result)) => match serde_json::from_value::<Answer>(result.clone()) {
-                Ok(answer) => Done {
+                Ok(answer) if answer.sent.len() <= MOST_SENT => Done {
                     error: answer.error,
                     blocks: answer.blocks,
                     end_turn: answer.end_turn && !answer.error,
+                    // 本机路径不收：扩展说的位置不可信，头照 blob 取图（施工 X-19）。
+                    sent: answer
+                        .sent
+                        .into_iter()
+                        .map(|mut sent| {
+                            sent.image.path = None;
+                            sent
+                        })
+                        .collect(),
                     ..Done::ok("")
                 },
+                Ok(_) => failed(result.to_string()),
                 Err(_) => failed(result.to_string()),
             },
             Ok(Err(error)) => failed(
@@ -138,7 +154,8 @@ impl RemoteTool {
     /// 交回的图、文件引用的 blob 拷一份进会话的属主 `owner` 名下（施工 O-2 三补）。没有引用的、不知道是哪个会话的（测试里的
     /// 假调用）原样交回；拷不成的记一行，照暂时不可用。
     async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
-        let hashes = crate::attach::blobs_of(&done.blocks);
+        let mut hashes = crate::attach::blobs_of(&done.blocks);
+        hashes.extend(done.sent.iter().map(|sent| sent.image.blob.clone()));
         let Some(owner) = owner.filter(|_| !hashes.is_empty()) else {
             return done;
         };

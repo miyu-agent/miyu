@@ -23,6 +23,7 @@
 //!   （施工 X-16）；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
+//! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
@@ -41,6 +42,8 @@ fn main() {
     let mut session = String::new();
     // `serve` 怎么答 `user.append`（施工 X-16）。
     let mut inject = String::from("silent");
+    // `serve` 答工具 `sticker` 时发出去的那张图的 blob（施工 X-19）。
+    let mut sent = String::new();
     for (n, step) in std::env::args().skip(1).enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
             let mut file = OpenOptions::new()
@@ -95,6 +98,8 @@ fn main() {
                 session = id;
             }
             keep(&mut record, &reply);
+        } else if let Some(blob) = step.strip_prefix("sent:") {
+            blob.clone_into(&mut sent);
         } else if let Some(how) = step.strip_prefix("inject:") {
             how.clone_into(&mut inject);
         } else if step == "wait" {
@@ -116,7 +121,8 @@ fn main() {
                 keep(&mut record, &line);
                 if line.contains(r#""method":"tool.call""#)
                     && let Some(id) = field(&line, "id")
-                    && let Some(answer) = served(&id, &field(&line, "tool").unwrap_or_default())
+                    && let Some(answer) =
+                        served(&id, &field(&line, "tool").unwrap_or_default(), &sent)
                 {
                     send(&answer);
                 }
@@ -209,8 +215,21 @@ fn field(line: &str, name: &str) -> Option<String> {
 
 /// 答编号是 `id`、工具是 `tool` 的那一次 `tool.call`（施工 O-2 上）；`silent` 不答，等核心超时、发 `tool.cancel`（施工 O-2 下）；
 /// `skip`、`skip_error` 带 `end_turn`（施工 4-14）。
-fn served(id: &str, tool: &str) -> Option<String> {
+fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
     Some(match tool {
+        // 一次发五张，多了（施工 X-19）。
+        "too_many" => {
+            let one =
+                format!(r#"{{"blob":"{sent}","media_type":"image/png","width":2,"height":2}}"#);
+            let five = vec![one; 5].join(",");
+            format!(
+                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"Sent."}}],"sent":[{five}]}}}}"#
+            )
+        }
+        // 发出去一张图（施工 X-19）：本机路径是扩展乱写的，核心不收。
+        "sticker" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"Sent m1."}}],"sent":[{{"blob":"{sent}","media_type":"image/png","width":2,"height":2,"alt":"A cat waving.","sticker":true,"path":"/etc/passwd"}}]}}}}"#
+        ),
         "silent" => return None,
         "boom" => {
             format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#)
