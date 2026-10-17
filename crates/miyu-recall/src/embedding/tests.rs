@@ -63,3 +63,61 @@ fn what_is_wrong_is_said() {
         );
     }
 }
+
+const MERGES: &str =
+    "\n[[files]]\nrole = \"merges\"\nname = \"merges.txt\"\nsha256 = \"22\"\nsize = 3\n";
+
+const BPE: &str = "[tokenizer]\nkind = \"bpe\"\nstart = \"<s>\"\nend = \"</s>\"\n";
+
+/// 分词（R-5 六补）：不写的照 WordPiece；BPE 的带前后两个词、要正好一个 `merges`；WordPiece 的不能有。
+#[test]
+fn the_tokenizer_decides_the_files() {
+    let old = Manifest::parse(&manifest("", BOTH)).expect("旧的照读");
+    assert_eq!(old.tokenizer, Tokenizer::Wordpiece);
+    let bpe = Manifest::parse(&manifest(BPE, &format!("{BOTH}{MERGES}"))).expect("合写法");
+    assert_eq!(
+        bpe.tokenizer,
+        Tokenizer::Bpe {
+            start: "<s>".to_string(),
+            end: "</s>".to_string()
+        }
+    );
+    assert_eq!(bpe.file(Role::Merges).name, "merges.txt");
+    let wrong = [
+        (manifest(BPE, BOTH), "no file is merges"),
+        (
+            manifest(BPE, &format!("{BOTH}{MERGES}{MERGES}")),
+            "two files are merges",
+        ),
+        (
+            manifest("", &format!("{BOTH}{MERGES}")),
+            "a wordpiece tokenizer has no merges file",
+        ),
+        (
+            manifest(
+                "[tokenizer]\nkind = \"wordpiece\"\n",
+                &format!("{BOTH}{MERGES}"),
+            ),
+            "a wordpiece tokenizer has no merges file",
+        ),
+        (
+            manifest(&BPE.replace("bpe", "unigram"), BOTH),
+            "unknown variant `unigram`",
+        ),
+        (
+            manifest(&BPE.replace("end = \"</s>\"\n", ""), BOTH),
+            "missing field `end`",
+        ),
+        (
+            manifest(&format!("{BPE}lowercase = true\n"), BOTH),
+            "unknown field `lowercase`",
+        ),
+    ];
+    for (text, said) in wrong {
+        let error = Manifest::parse(&text).expect_err(said).to_string();
+        assert!(
+            error.contains(said),
+            "说的是「{error}」，要有「{said}」：\n{text}"
+        );
+    }
+}

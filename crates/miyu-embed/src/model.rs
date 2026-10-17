@@ -7,15 +7,55 @@ use std::path::{Path, PathBuf};
 use ort::session::Session;
 use ort::value::Tensor;
 
-use crate::manifest::{Manifest, Pooling, Role};
-use crate::wordpiece::Tokenizer;
+use crate::manifest::{self, Manifest, Pooling, Role};
+use crate::{bpe, wordpiece};
 
 /// 一份载入了的模型。
 #[derive(Debug)]
 pub struct Embedder {
     session: Session,
     tokenizer: Tokenizer,
+    /// 模型声明了的几个输入，照它声明的先后（R-5 六补：granite 没有 `token_type_ids`）。
+    inputs: Vec<Input>,
     manifest: Manifest,
+}
+
+/// 照清单的分词（R-5 六补）。
+#[derive(Debug)]
+enum Tokenizer {
+    Wordpiece(wordpiece::Tokenizer),
+    /// 装箱：比 WordPiece 那一份大得多（正则、两张表）。
+    Bpe(Box<bpe::Tokenizer>),
+}
+
+impl Tokenizer {
+    fn encode(&self, text: &str, limit: usize) -> Vec<i64> {
+        match self {
+            Tokenizer::Wordpiece(tokenizer) => tokenizer.encode(text, limit),
+            Tokenizer::Bpe(tokenizer) => tokenizer.encode(text, limit),
+        }
+    }
+}
+
+/// 模型的一个输入：认这三种。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Input {
+    /// `input_ids`：词的编号。
+    Ids,
+    /// `attention_mask`：全是 1。
+    Mask,
+    /// `token_type_ids`：全是 0。
+    Types,
+}
+
+impl Input {
+    fn name(self) -> &'static str {
+        match self {
+            Input::Ids => "input_ids",
+            Input::Mask => "attention_mask",
+            Input::Types => "token_type_ids",
+        }
+    }
 }
 
 /// 载入不了。
@@ -23,7 +63,7 @@ pub struct Embedder {
 pub enum LoadError {
     /// 清单写的文件在目录里没有。
     Missing(PathBuf),
-    /// 词表读不了、不合写法。
+    /// 词表（BPE 的另有合并）读不了、不合写法。
     Vocab {
         /// 哪个文件。
         path: PathBuf,
@@ -93,37 +133,36 @@ impl Embedder {
     ///
     /// # Errors
     ///
-    /// 文件没有，词表读不了、不合写法，ONNX Runtime 载入不了模型。
+    /// 文件没有，词表（BPE 的另有合并）读不了、不合写法，ONNX Runtime 载入不了模型，模型要的输入不认识。
     pub fn load(manifest: Manifest, dir: &Path) -> Result<Embedder, LoadError> {
         let model = dir.join(&manifest.file(Role::Model).name);
         let vocab = dir.join(&manifest.file(Role::Vocab).name);
-        for path in [&model, &vocab] {
+        let merges = match manifest.tokenizer {
+            manifest::Tokenizer::Wordpiece => None,
+            manifest::Tokenizer::Bpe { .. } => Some(dir.join(&manifest.file(Role::Merges).name)),
+        };
+        for path in [Some(&model), Some(&vocab), merges.as_ref()]
+            .into_iter()
+            .flatten()
+        {
             if !path.is_file() {
                 return Err(LoadError::Missing(path.clone()));
             }
         }
-        let bad_vocab = |error: String| LoadError::Vocab {
-            path: vocab.clone(),
-            error,
-        };
-        let text = std::fs::read_to_string(&vocab).map_err(|error| bad_vocab(error.to_string()))?;
-        let tokenizer = Tokenizer::new(&text).map_err(|error| bad_vocab(error.to_string()))?;
-        // 每一步的错各是一种类型（带着造到一半的那一个），都照原话交上去。
-        let failed = |error: &dyn fmt::Display| LoadError::Model {
-            path: model.clone(),
-            error: error.to_string(),
-        };
-        let session = Session::builder()
-            .map_err(|error| failed(&error))?
-            .with_intra_threads(1)
-            .map_err(|error| failed(&error))?
-            .with_inter_threads(1)
-            .map_err(|error| failed(&error))?
-            .commit_from_file(&model)
-            .map_err(|error| failed(&error))?;
+        // 切词表（granite 那份六十来万条，约 150 毫秒）和 ONNX Runtime 建会话（约 170 毫秒）各不相干，一起做；算向量照旧单线程。
+        let (tokenizer, session) = std::thread::scope(|scope| {
+            let tokenizer = scope.spawn(|| tokenizer(&manifest, &vocab, merges.as_deref()));
+            let session = session(&model);
+            let tokenizer = tokenizer
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+            (tokenizer, session)
+        });
+        let (tokenizer, (session, inputs)) = (tokenizer?, session?);
         Ok(Embedder {
             session,
             tokenizer,
+            inputs,
             manifest,
         })
     }
@@ -138,7 +177,7 @@ impl Embedder {
         self.manifest.dims
     }
 
-    /// 算 `text` 的向量：照清单切词、截断，跑一次模型，取 `[CLS]` 那一格，归一化。
+    /// 算 `text` 的向量：照清单切词、截断，模型要哪几个输入喂哪几个，跑一次，取第一个词那一格，归一化。
     ///
     /// # Errors
     ///
@@ -147,13 +186,21 @@ impl Embedder {
         let ids = self.tokenizer.encode(text, self.manifest.max_tokens);
         let shape = [1, ids.len()];
         let run = |error: ort::Error| EmbedError::Run(error.to_string());
-        let mask = Tensor::from_array((shape, vec![1_i64; ids.len()])).map_err(run)?;
-        let types = Tensor::from_array((shape, vec![0_i64; ids.len()])).map_err(run)?;
-        let ids = Tensor::from_array((shape, ids)).map_err(run)?;
-        let outputs = self
-            .session
-            .run(ort::inputs!["input_ids" => ids, "attention_mask" => mask, "token_type_ids" => types])
-            .map_err(run)?;
+        let count = ids.len();
+        let mut ids = Some(ids);
+        let mut values = Vec::with_capacity(self.inputs.len());
+        for input in &self.inputs {
+            let value = match input {
+                Input::Ids => ids.take().unwrap_or_default(),
+                Input::Mask => vec![1_i64; count],
+                Input::Types => vec![0_i64; count],
+            };
+            values.push((
+                input.name(),
+                Tensor::from_array((shape, value)).map_err(run)?,
+            ));
+        }
+        let outputs = self.session.run(values).map_err(run)?;
         let (shape, values) = outputs[0].try_extract_tensor::<f32>().map_err(run)?;
         let want = self.manifest.dims;
         let got = shape.last().copied().unwrap_or(0);
@@ -165,6 +212,60 @@ impl Embedder {
         };
         normalized(vector.ok_or(EmbedError::Dims { got, want })?)
     }
+}
+
+/// 照清单的分词读词表（BPE 的另读合并）。
+fn tokenizer(
+    manifest: &Manifest,
+    vocab: &Path,
+    merges: Option<&Path>,
+) -> Result<Tokenizer, LoadError> {
+    let bad = |path: &Path, error: String| LoadError::Vocab {
+        path: path.to_path_buf(),
+        error,
+    };
+    let text = std::fs::read_to_string(vocab).map_err(|error| bad(vocab, error.to_string()))?;
+    match (&manifest.tokenizer, merges) {
+        (manifest::Tokenizer::Bpe { start, end }, Some(merges)) => {
+            let pairs =
+                std::fs::read_to_string(merges).map_err(|error| bad(merges, error.to_string()))?;
+            bpe::Tokenizer::new(&text, &pairs, start, end)
+                .map(|tokenizer| Tokenizer::Bpe(Box::new(tokenizer)))
+                .map_err(|error| bad(vocab, error.to_string()))
+        }
+        _ => wordpiece::Tokenizer::new(&text)
+            .map(Tokenizer::Wordpiece)
+            .map_err(|error| bad(vocab, error.to_string())),
+    }
+}
+
+/// ONNX Runtime 载入模型（一次一条、单线程），连同它声明的几个输入：只认三种，要别的、没有 `input_ids` 的载入不了。
+fn session(model: &Path) -> Result<(Session, Vec<Input>), LoadError> {
+    // 每一步的错各是一种类型（带着造到一半的那一个），都照原话交上去。
+    let failed = |error: &dyn fmt::Display| LoadError::Model {
+        path: model.to_path_buf(),
+        error: error.to_string(),
+    };
+    let session = Session::builder()
+        .map_err(|error| failed(&error))?
+        .with_intra_threads(1)
+        .map_err(|error| failed(&error))?
+        .with_inter_threads(1)
+        .map_err(|error| failed(&error))?
+        .commit_from_file(model)
+        .map_err(|error| failed(&error))?;
+    let mut inputs = Vec::new();
+    for outlet in session.inputs() {
+        let input = [Input::Ids, Input::Mask, Input::Types]
+            .into_iter()
+            .find(|input| input.name() == outlet.name())
+            .ok_or_else(|| failed(&format!("the model wants an input named {}", outlet.name())))?;
+        inputs.push(input);
+    }
+    if !inputs.contains(&Input::Ids) {
+        return Err(failed(&"the model has no input named input_ids"));
+    }
+    Ok((session, inputs))
 }
 
 /// `vector` 除以它的长度：以后照点积算相似度（`recall.md` 第三条第 2 款）。
