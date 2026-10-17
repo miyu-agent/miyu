@@ -158,3 +158,83 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
     assert_eq!(all.len(), 3, "别的键变了不推：{all:?}");
     core.stop_extensions().await;
 }
+
+/// 扩展改自己的配置（施工 T-9 补，接入QQ 的会话 2026-10-17 要的、项目主人定）：核心拉起的扩展只能改系统配置里、键以自己的
+/// 包编号开头的几项，逐项改；改了留痕记成这个包。密钥类的项、写成引用的值、个人设置、别的包的键、整份换的照旧 `local_only`：
+/// 握手时它拿到的密钥是真值，能改自己的密钥引用就能指到别人的 key 再读回去。
+#[tokio::test]
+async fn an_extension_sets_only_its_own_plain_settings() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, keep) = record(&home, "echo");
+    let set = |changes: Value| {
+        format!(
+            "ask:config.set:{}",
+            json!({"layer": "system", "changes": changes})
+        )
+    };
+    let asks = [
+        set(json!([{"key": "echo.port", "value": 9000}])),
+        set(json!([{"key": "echo.token", "value": {"secret": "deepseek"}}])),
+        set(json!([{"key": "echo.note", "value": {"env": "DEEPSEEK_API_KEY"}}])),
+        set(json!([{"key": "echo.note", "input": "{ env = \"DEEPSEEK_API_KEY\" }"}])),
+        set(json!([{"key": "ui.language", "value": "en"}])),
+        format!(
+            "ask:config.set:{}",
+            json!({"layer": "personal", "changes": [{"key": "echo.port", "value": 9001}]})
+        ),
+        format!(
+            "ask:config.set:{}",
+            json!({"layer": "system", "text": "[echo]\nport = 1\n", "version": null})
+        ),
+    ];
+    let mut plan: Vec<&str> = vec![&keep, "hello"];
+    plan.extend(asks.iter().map(String::as_str));
+    plan.push("listen");
+    home.write(
+        "home/alice/packages/echo/package.toml",
+        &manifest(&program.name(), &steps(&plan)),
+    );
+    let core = core_with_settings(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    call(&mut client, "extension.enable", "echo").await;
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+    let answers = loop {
+        let answers: Vec<Value> = recorded(&path)
+            .into_iter()
+            .filter(|line| line.get("result").is_some() || line.get("error").is_some())
+            .collect();
+        // 握手一条，七次 config.set 七条。
+        if answers.len() >= 8 {
+            break answers;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    };
+    assert!(
+        answers[1].get("error").is_none(),
+        "自己的项照改：{}",
+        answers[1]
+    );
+    for refused in &answers[2..8] {
+        assert_eq!(
+            refused["error"]["data"]["reason"], "local_only",
+            "{refused}"
+        );
+    }
+    let journal = read(&home.root.path().join("system/journal.jsonl"));
+    let changed = journal
+        .lines()
+        .find(|line| line.contains("echo.port"))
+        .unwrap_or_else(|| panic!("{journal}"));
+    assert!(
+        changed.contains(r#""by":{"kind":"module","id":"echo"}"#),
+        "留痕记成这个包：{changed}"
+    );
+    assert!(
+        !read(&home.root.path().join("system/config.toml")).contains("deepseek"),
+        "引用一个都没写进去"
+    );
+    core.stop_extensions().await;
+}

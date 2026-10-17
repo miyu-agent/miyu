@@ -233,11 +233,17 @@ pub(crate) fn call<'a>(
         "config.check" => {
             answer(move || async move { config::methods::check(core, peer, params(request)?) })
         }
-        "config.set" => {
-            answer(
-                move || async move { config::set::set(core, peer, &request.id, params(request)?) },
-            )
-        }
+        "config.set" => answer(move || async move {
+            let params = params(request)?;
+            match &caller.package {
+                // 核心拉起的扩展只能改自己的几项（施工 T-9 补），记成这个包。
+                Some(package) => {
+                    let by = crate::appending::recorder(core, caller)?;
+                    config::set::set_from_package(core, peer, &request.id, params, (package, by))
+                }
+                None => config::set::set(core, peer, &request.id, params),
+            }
+        }),
         "config.trust" => answer(move || async move {
             config::trusting::trust(core, peer, &request.id, params(request)?)
         }),

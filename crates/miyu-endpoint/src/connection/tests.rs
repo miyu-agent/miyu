@@ -19,7 +19,6 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "package.file",
         "mcp.list",
         "mcp.restart",
-        "config.set",
         "config.trust",
         "secret.set",
         "secret.delete",
@@ -34,6 +33,8 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "package.list",
         // 施工 X-18：扩展照 `packages.call`、对方的 `[export]` 调，在 `backstage::call` 里挡。
         "package.call",
+        // 施工 T-9 补：扩展只能改自己包编号开头的几项，在 `config::set::set_from_package` 里挡。
+        "config.set",
         "config.get",
         "config.schema",
         "config.check",
