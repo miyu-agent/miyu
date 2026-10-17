@@ -57,7 +57,8 @@ pub(super) fn some_peer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opti
 /// 种子（种子除以 8 余 7，施工 4-15 从除以 16 余 15 放宽）有在跑的调用就由它做完、订一个（随机的会话难得有调用在跑）；别的种子不订，原来走得到的路照样
 /// 走得到。别的时候六回里一回送通知：八回里六回是「空了」，作废、不在了各一回。订的种子少，收下、作废、不在了这几条路放在
 /// 长跑里查（`paths.rs`）。闲着、又在等（`watching`）的时候每回都送：闲着的时候短，六回里一回难得碰上，闲着时到的那几条路
-/// 两万例里只有一例走到（施工 4-15 量的）。
+/// 两万例里只有一例走到（施工 4-15 量的）；施工 4-15 补以后打断接着开的轮多了、闲着的时候少了，一例都走不到，作废、不在了
+/// 两种从四分之一提到一半。
 pub(super) fn some_notice(
     rng: &mut Rng,
     watch: &Watch,
@@ -91,7 +92,7 @@ pub(super) fn some_notice(
         return None;
     }
     Some(match rng.below(8) {
-        0..=5 => Input::Command(Received {
+        0..=3 => Input::Command(Received {
             id: CommandId::parse(&format!("idle-{}", next_command(ids))).unwrap(),
             by: By::Session(Peer { id: session }),
             at: when,
@@ -99,7 +100,7 @@ pub(super) fn some_notice(
                 status: (rng.below(2) == 0).then(|| "测试全过了。".to_string()),
             },
         }),
-        6 => Input::WatchEnded {
+        4 | 5 => Input::WatchEnded {
             at: when,
             session,
             reason: crate::event::IdleReason::Expired,

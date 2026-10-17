@@ -81,6 +81,9 @@ pub(super) struct Watch {
     pub(super) writing: bool,
     /// 排着队的消息：这一轮里来的，还没被请求看到过。
     queued: Vec<Seq>,
+    /// 请求看到过、还没得到回答的消息（施工 4-15 补）：请求出错、被打断、被撤掉都还欠着，说完了才算回答过；「马上发」的打断
+    /// 以后由它们接着开一轮。
+    heard: Vec<Seq>,
     /// 正在送进去的那次新的打断，排着队的怎么办。
     interrupting: Option<Queued>,
     /// 回合开着时收下的、最近一次打断是「留着」（施工 O-6）：等停着的那一批先清掉了 `stopping`，回合结束时照它认。
@@ -152,6 +155,7 @@ impl Watch {
             calm: false,
             writing: false,
             queued: Vec::new(),
+            heard: Vec::new(),
             interrupting: None,
             keeping: false,
             permission: lookup::created_permission(),

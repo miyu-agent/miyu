@@ -44,6 +44,13 @@ impl Session {
         }
         let turn_cause = turn.cause.clone();
         let stage = std::mem::replace(&mut turn.stage, Stage::Settling);
+        // 要马上发的（施工 4-15 补）：请求带过、还没得到回答的消息（在路上的、出错等着重发的）放回排着队的，打断以后接着开
+        // 一轮回答它们。没回字就撤掉重发（施工 4-15）把它们带进了请求，不再在队里，以前打断以后就没人回了。
+        if matches!(queued, Queued::Send) {
+            let mut heard = std::mem::take(&mut turn.heard);
+            heard.append(&mut turn.queued);
+            turn.queued = heard;
+        }
         let mut events = Vec::new();
         let mut stops = Vec::new();
         match stage {

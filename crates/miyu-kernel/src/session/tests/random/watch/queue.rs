@@ -20,7 +20,16 @@ impl Watch {
                         .as_ref()
                         .is_none_or(|error| error.class != ErrorClass::CompactionPaused) =>
             {
-                self.queued.retain(|queued| *queued > called.seen);
+                let (seen, later): (Vec<Seq>, Vec<Seq>) = self
+                    .queued
+                    .iter()
+                    .partition(|queued| **queued <= called.seen);
+                self.heard.extend(seen);
+                self.queued = later;
+                // 主请求说完了：看到过的算回答过（施工 4-15 补）。
+                if called.result == crate::event::CallResult::Ok && called.compaction.is_none() {
+                    self.heard.clear();
+                }
             }
             Body::MessageWithdrawn(withdrawn) => {
                 self.seen_paths.insert("打断后排队的退回");
@@ -45,6 +54,7 @@ impl Watch {
                     "种子 {seed}：重启、崩了结束的，排着队的也不接着开"
                 );
                 self.queued.clear();
+                self.heard.clear();
                 self.keeping = false;
             }
             // 留着的打断（施工 O-6）：排着的不撤回、也不接着开，下一句话开的那一轮里看得到它们。
@@ -59,10 +69,24 @@ impl Watch {
                     self.seen_paths.insert("打断后排队的留着");
                 }
                 self.queued.clear();
+                self.heard.clear();
             }
             Body::TurnEnded(ended) => {
                 self.keeping = false;
                 let next = events.get(k + 1).map(|event| &event.body);
+                // 「马上发」的打断：请求看到过、还没回答的也接着开（施工 4-15 补），排在排着队的前面。
+                let send = ended.reason == EndReason::Interrupted
+                    && self.interrupting.or(self.stopping.queued) == Some(Queued::Send);
+                // 撤那一轮时一起撤的，照旧只是请求一次都没看到过的那几句（加上触发它的那一句，`undone_by` 另算）：看到过的
+                // 算上一轮听到过（`history/undo.rs` 的 `left_queued`）。
+                let picked = self.queued.clone();
+                if send && !self.heard.is_empty() {
+                    self.seen_paths.insert("打断后看到过没回答的接着发");
+                    let mut heard = std::mem::take(&mut self.heard);
+                    heard.append(&mut self.queued);
+                    self.queued = heard;
+                }
+                self.heard.clear();
                 let message = self.queued.last().copied();
                 let report = self.report_trigger(&ended.reason);
                 if report.is_some() {
@@ -80,7 +104,7 @@ impl Watch {
                         // 接着开的那一轮，接过去的是排着的这几句：撤它的时候一起撤。
                         self.undo
                             .picked
-                            .insert(TurnId::new(events[k + 1].seq), self.queued.clone());
+                            .insert(TurnId::new(events[k + 1].seq), picked);
                         if message.is_some() {
                             self.seen_paths
                                 .insert(if ended.reason == EndReason::Interrupted {

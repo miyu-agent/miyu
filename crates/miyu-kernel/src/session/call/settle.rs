@@ -162,6 +162,13 @@ impl Session {
             None if error.is_some() => CallResult::Error,
             None => CallResult::Ok,
         };
+        // 主请求说完了：它带着的消息算回答过了（施工 4-15 补）；出错、打断、撤掉的照旧欠着。
+        if result == CallResult::Ok
+            && compaction.is_none()
+            && let Some(turn) = self.turn.as_mut()
+        {
+            turn.heard.clear();
+        }
         let called = ModelCalled {
             seen,
             endpoint: sent.as_ref().map(|sent| sent.model.endpoint.clone()),

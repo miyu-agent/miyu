@@ -259,6 +259,9 @@ impl Watch {
                 self.undo.gone.extend(withdrawn.messages.iter().copied());
                 self.undo.gone.insert(event.seq);
             }
+            // 落下一次压缩（后台提前压好的在这一轮落地的也算，施工 6-11 上）：请求的前缀从头换，同发了摘要请求（施工 4-15 补
+            // 时随机测试走到的：撤了又恢复以后的那一轮用上了提前压好的摘要）。
+            Body::ContextCompacted(_) => self.undo_summary(),
             Body::TurnReverted(reverted) => {
                 let taken = self.undone_by(&reverted.turns);
                 self.undo.gone.extend(taken.iter().copied());

@@ -143,3 +143,66 @@ fn the_facts_are_checked_again_before_the_resend() {
     let calls = calls(&allowing(&mut session, stored(9)));
     assert!(calls[0].1.contains("9 context.injected"), "{}", calls[0].1);
 }
+
+/// 撤掉重发带进请求的那句话（施工 4-15 补）：重发的请求还在路上就以「马上发」打断，结束这一轮以后接着开一轮回答它，由它
+/// 触发；退回、留着的不开（那句话照旧在日志里）。以前打断以后就没人回了：它已经不在队里。
+#[test]
+fn interrupting_the_request_that_took_a_message_answers_it_next() {
+    let opened = |queued: Queued| {
+        let mut session = asking();
+        allowing(&mut session, sent(5));
+        allowing(&mut session, send(2, "你直接输出就行"));
+        allowing(&mut session, stored(7));
+        allowing(&mut session, sent(7));
+        let actions = allowing(&mut session, stop_with(3, at(50), queued));
+        appended_events(&actions)
+            .iter()
+            .find_map(|event| match &event.body {
+                Body::TurnStarted(started) => Some((started.trigger, event.cause.clone())),
+                _ => None,
+            })
+    };
+    assert_eq!(
+        opened(Queued::Send),
+        Some((Some(seq(6)), Some(id(2)))),
+        "接着开一轮，由那句话触发"
+    );
+    assert_eq!(opened(Queued::Keep), None, "留着的不开");
+}
+
+/// 带着那句话的请求出错了、等着重发时打断（施工 4-15 补）：一样接着开一轮回答它。请求说完了的不算欠着：之后在跑工具时
+/// 打断，不再为它开一轮。
+#[test]
+fn a_message_still_unanswered_after_an_error_is_answered_after_the_interruption() {
+    let mut session = asking();
+    allowing(&mut session, sent(5));
+    allowing(&mut session, send(2, "你直接输出就行"));
+    allowing(&mut session, stored(7));
+    allowing(&mut session, sent(7));
+    allowing(
+        &mut session,
+        failed(7, crate::event::ErrorClass::Retryable, "connection reset"),
+    );
+    let actions = allowing(&mut session, stop_with(3, at(50), Queued::Send));
+    let started = appended_events(&actions)
+        .iter()
+        .find_map(|event| match &event.body {
+            Body::TurnStarted(started) => started.trigger,
+            _ => None,
+        });
+    assert_eq!(started, Some(seq(6)), "等着重发的也接着开");
+
+    let mut session = asking();
+    allowing(&mut session, sent(5));
+    allowing(&mut session, send(2, "你直接输出就行"));
+    allowing(&mut session, stored(7));
+    allowing(&mut session, sent(7));
+    call_tools(&mut session, 7, &[("read", "{}")]);
+    let actions = allowing(&mut session, stop_with(3, at(50), Queued::Send));
+    assert!(
+        !appended_events(&actions)
+            .iter()
+            .any(|event| matches!(event.body, Body::TurnStarted(_))),
+        "说完了的算回答过"
+    );
+}

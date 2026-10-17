@@ -45,6 +45,9 @@ pub(super) struct Turn {
     pub(super) interjected: Option<Interjection>,
     /// 排着队的消息：回合进行中来的，还没被请求看到过。序号和它的命令，照先后。
     pub(super) queued: Vec<(Seq, Option<CommandId>)>,
+    /// 请求带过、还没得到回答的消息（施工 4-15 补）：发请求时从排着队的挪过来，撤掉重发、出错重发的接着攒，主请求说完了
+    /// 清掉（`call/settle.rs`）。以「打断以后马上发」打断时放回排着队的，打断以后接着开一轮回答它们。
+    pub(super) heard: Vec<(Seq, Option<CommandId>)>,
     /// 这一轮里到的、会叫醒她的回报，还没被请求看到过，照先后（施工 7-2，`jobs.rs`）。和排着队的消息一样下一次请求就
     /// 听到了；回合结束时还没听到的接着开下一轮，打断的不开。打断退回时不撤回：不是人说的话。
     pub(super) reports: Vec<super::jobs::Arrived>,
@@ -150,6 +153,7 @@ impl Session {
             retrying: false,
             interjected: None,
             queued: Vec::new(),
+            heard: Vec::new(),
             reports: Vec::new(),
             refresh: false,
             compacted: false,
@@ -342,12 +346,15 @@ impl Session {
         if asked.is_some() {
             turn.asked = asked;
         }
-        if !std::mem::take(&mut turn.retrying) {
+        // 带进这次请求的排队消息记下（施工 4-15 补）：撤掉重发、出错重发的，上一次的也还没得到回答，接着攒。
+        if std::mem::take(&mut turn.retrying) {
+            turn.heard.append(&mut turn.queued);
+        } else {
             turn.requests += 1;
+            turn.heard = std::mem::take(&mut turn.queued);
         }
         turn.compacted = false;
         turn.interjected = None;
-        turn.queued.clear();
         turn.reports.clear();
         turn.stage = Stage::Asking(Call::new(seen, request.messages.len(), difference));
         let mut actions = vec![Action::CallModel {
