@@ -215,7 +215,7 @@ fn a_sandboxed_command_goes_through_the_helper_and_keeps_the_rest() {
         expected_envs.sort();
         let mut envs: Vec<_> = wrapped.get_envs().collect();
         envs.sort();
-        assert_eq!(envs, expected_envs, "白名单照旧，沙盒要设的加上");
+        assert_eq!(envs, expected_envs, "挑好的照旧，沙盒要设的加上");
     }
 }
 

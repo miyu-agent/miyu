@@ -16,60 +16,134 @@ fn names(passed: &[(OsString, OsString)]) -> Vec<String> {
         .collect()
 }
 
+/// 另外设上的那几个，照 [`SET`] 的先后。
+const OURS: [&str; 4] = ["GIT_TERMINAL_PROMPT", "PAGER", "GIT_PAGER", "NO_COLOR"];
+
+/// `names` 后面接上 [`OURS`]。
+fn then_ours(names: &[&str]) -> Vec<String> {
+    names
+        .iter()
+        .chain(OURS.iter())
+        .map(|name| (*name).to_owned())
+        .collect()
+}
+
 #[test]
-fn only_the_listed_names_pass_and_git_never_asks() {
+fn everything_passes_but_secrets_and_our_own() {
     let passed = passed_as(
         vars(&[
             ("PATH", "/usr/bin"),
             ("DEEPSEEK_API_KEY", "secret"),
             ("AWS_ACCESS_KEY_ID", "secret"),
-            ("HOME", "/home/a"),
-            ("LC_ALL", "C.UTF-8"),
+            ("aws_secret_access_key", "secret"),
+            ("GH_TOKEN", "secret"),
+            ("PGPASSWORD", "secret"),
+            ("SMB_PASSWD", "secret"),
+            ("GOOGLE_APPLICATION_CREDENTIALS", "/home/a/key.json"),
+            ("MIYU_HOME", "/home/a/.miyu"),
+            ("KUBECONFIG", "/home/a/.kube/config"),
+            ("DISPLAY", ":0"),
+            ("WAYLAND_DISPLAY", "wayland-1"),
             ("SSH_AUTH_SOCK", "/run/agent"),
-            ("CARGO_HOME", "/home/a/.cargo"),
+            ("LC_ALL", "C.UTF-8"),
         ]),
+        false,
         false,
     );
     assert_eq!(
         names(&passed),
-        [
+        then_ours(&[
             "PATH",
-            "HOME",
-            "LC_ALL",
-            "CARGO_HOME",
-            "GIT_TERMINAL_PROMPT"
-        ]
+            "KUBECONFIG",
+            "DISPLAY",
+            "WAYLAND_DISPLAY",
+            "SSH_AUTH_SOCK",
+            "LC_ALL"
+        ])
     );
-    assert_eq!(passed[4].1, "0");
 }
 
 #[test]
-fn git_terminal_prompt_is_always_ours() {
-    let passed = passed_as(vars(&[("GIT_TERMINAL_PROMPT", "1")]), false);
-    assert_eq!(passed, vars(&[("GIT_TERMINAL_PROMPT", "0")]));
+fn the_sandbox_gets_no_desktop_or_agent() {
+    let passed = passed_as(
+        vars(&[
+            ("PATH", "/usr/bin"),
+            ("DISPLAY", ":0"),
+            ("WAYLAND_DISPLAY", "wayland-1"),
+            ("XAUTHORITY", "/run/user/1000/xauth"),
+            ("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"),
+            ("XDG_RUNTIME_DIR", "/run/user/1000"),
+            ("SSH_AUTH_SOCK", "/run/agent"),
+            ("XDG_CONFIG_HOME", "/home/a/.config"),
+            ("DEEPSEEK_API_KEY", "secret"),
+        ]),
+        true,
+        false,
+    );
+    assert_eq!(names(&passed), then_ours(&["PATH", "XDG_CONFIG_HOME"]));
+}
+
+#[test]
+fn what_we_set_is_always_ours() {
+    let passed = passed_as(
+        vars(&[
+            ("GIT_TERMINAL_PROMPT", "1"),
+            ("PAGER", "less"),
+            ("GIT_PAGER", "delta"),
+            ("NO_COLOR", ""),
+        ]),
+        false,
+        false,
+    );
+    assert_eq!(
+        passed,
+        vars(&[
+            ("GIT_TERMINAL_PROMPT", "0"),
+            ("PAGER", "cat"),
+            ("GIT_PAGER", "cat"),
+            ("NO_COLOR", "1"),
+        ])
+    );
 }
 
 #[test]
 fn windows_names_do_not_care_about_case() {
-    let given = vars(&[("Path", "C:\\Windows"), ("windir", "C:\\Windows")]);
+    let given = vars(&[
+        ("Path", "C:\\Windows"),
+        ("Miyu_Home", "C:\\miyu"),
+        ("Display", ":0"),
+        ("pager", "more"),
+    ]);
     assert_eq!(
-        names(&passed_as(given.clone(), true)),
-        ["Path", "windir", "GIT_TERMINAL_PROMPT"]
+        names(&passed_as(given.clone(), true, true)),
+        then_ours(&["Path"])
     );
-    // 别处分大小写：`Path` 不是 `PATH`。
+    // 别处分大小写：`Miyu_Home` 不是我们的，`Display` 不是桌面的，`pager` 不是 `PAGER`。
     assert_eq!(
-        names(&passed_as(given, false)),
-        ["windir", "GIT_TERMINAL_PROMPT"]
+        names(&passed_as(given, true, false)),
+        then_ours(&["Path", "Miyu_Home", "Display", "pager"])
     );
 }
 
 #[test]
-fn a_prefix_only_counts_at_the_start() {
+fn a_secret_word_counts_anywhere_in_the_name() {
     assert_eq!(
         names(&passed_as(
-            vars(&[("XLC_ALL", "x"), ("LC_CTYPE", "y")]),
+            vars(&[("MY_KEYRING", "x"), ("api_token_v2", "y"), ("XLC_ALL", "z")]),
+            false,
             false
         )),
-        ["LC_CTYPE", "GIT_TERMINAL_PROMPT"]
+        then_ours(&["XLC_ALL"])
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn names_that_are_not_text_still_pass() {
+    use std::os::unix::ffi::OsStringExt;
+
+    let odd = OsString::from_vec(vec![b'A', 0xff]);
+    let passed = passed_as([(odd.clone(), OsString::from("v"))], false, false);
+    assert_eq!(passed[0].0, odd);
+    assert_eq!(passed.len(), 1 + OURS.len());
 }

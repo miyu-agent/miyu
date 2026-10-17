@@ -14,7 +14,7 @@ pub struct Sandboxed {
     pub helper: PathBuf,
     /// 规格。
     pub spec: Spec,
-    /// 要给命令设的环境变量，照白名单之后设、同名的盖掉（施工 5-4 上）：例如沙盒自己的临时目录的 `TMPDIR`。
+    /// 要给命令设的环境变量，照核心挑好的之后设、同名的盖掉（施工 5-4 上）：例如沙盒自己的临时目录的 `TMPDIR`。
     pub env: Vec<(OsString, OsString)>,
 }
 

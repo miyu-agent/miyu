@@ -81,7 +81,7 @@
 | `HelperFailed` | 助手跑不起来、超时、退出码不是 0、说的读不懂 | `helper_failed` |
 | `NoMechanism` | 探成了，手段是空的 | `no_mechanism` |
 
-**一次调用带的** `Call.sandbox`（`tools/interface.md`）：`Some(Sandboxed { helper, spec, env })` 的，`shell` 经助手起命令，`env` 里的环境变量照白名单之后设上（同名的盖掉）；`None` 的照旧直接起。执行器照这一刻实际生效的级别带（施工 5-4 上，`session/tools.md`）。
+**一次调用带的** `Call.sandbox`（`tools/interface.md`）：`Some(Sandboxed { helper, spec, env })` 的，`shell` 经助手起命令，`env` 里的环境变量照核心挑好的之后设上（`tools/shell.md`「环境变量」）（同名的盖掉）；`None` 的照旧直接起。执行器照这一刻实际生效的级别带（施工 5-4 上，`session/tools.md`）。
 
 ### 怎么走
 
@@ -93,7 +93,7 @@
    - 成了：记一行 `INFO` `sandbox`，字段 `helper`（路径，家目录写成 `~`）、`platform`、`mechanisms`（逗号连起来，空的写 `none`）。
    - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）。
    - 探到了手段（`mechanisms` 不是空的）：能用，助手交给协议端点，造会话、载入时交给会话，权限策略照它判执行命令，执行器照它给每次调用写规格（施工 5-4 上，`core.md`）。手段是空的、探不成的：用不了，照上面的表记下原因，会话里工作区、只读两级执行命令都要问人（`session/guard.md`）。能不能用、为什么，握手时报给头（`protocol.md`，施工 5-4 下）。起不起得来不看它。
-3. **`shell` 带了规格的**：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`。工作目录、环境变量白名单、标准输入输出、进程组、超时整组杀都和直接起一样：Unix 上助手换成了 shell，是同一个进程。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照「起不来」说，不会不经沙盒就跑。
+3. **`shell` 带了规格的**：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`。工作目录、挑过的环境变量、标准输入输出、进程组、超时整组杀都和直接起一样：Unix 上助手换成了 shell，是同一个进程。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照「起不来」说，不会不经沙盒就跑。
 4. **助手的 `run`**：
    1. 读参数：不是 `run --spec <JSON> -- <程序> …` 的样子，印 `miyu-sandbox: usage: miyu-sandbox run --spec <json> -- <program> [args...]`，退出 125。
    2. 读规格：读不懂的，印 `miyu-sandbox: bad spec: <原话>`，退出 125。

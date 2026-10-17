@@ -1,5 +1,5 @@
 //! `shell`（施工 4-8）：说明里写的是这台机器上的 shell；在工作目录里跑，交回输出；标准错误和标准输出合在一起；退出码
-//! 不是 0 的标成出错；没有输出的说一句；超时整组杀掉；命令只拿到白名单上的环境变量；中文照原样；太长的截成头尾两段；
+//! 不是 0 的标成出错；没有输出的说一句；超时整组杀掉；命令拿到核心的环境变量，名字像密钥的、`MIYU_*` 不给（4-8 补）；中文照原样；太长的截成头尾两段；
 //! 参数不对、要放后台的不跑。Unix 上：放到后台的在命令退出以后停了，叫停时整组停了，被信号杀掉的写明信号。
 //! 三个平台都跑（macOS、Windows 在 CI 上）。
 
@@ -12,7 +12,7 @@ use miyu_kernel::event::Said;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done};
 
-use crate::support::{Site, tool};
+use crate::support::{Site, in_child, tool};
 
 /// 基础系统的说法。
 fn said(key: &str) -> Said {
@@ -206,21 +206,34 @@ async fn a_command_past_its_timeout_is_stopped() {
     );
 }
 
-#[tokio::test]
-async fn only_listed_variables_reach_the_command() {
-    // 测试进程的环境里有 cargo 设的 CARGO_MANIFEST_DIR，它不在名单上。
-    assert!(std::env::var_os("CARGO_MANIFEST_DIR").is_some());
-    let site = Site::new();
-    let done = run(
-        &site,
-        script(
-            "printf '%s|%s|%s\\n' \"${CARGO_MANIFEST_DIR-unset}\" \"$GIT_TERMINAL_PROMPT\" \"${PATH:+set}\"",
-            "Write-Output \"$(if ($env:CARGO_MANIFEST_DIR) {'set'} else {'unset'})|$env:GIT_TERMINAL_PROMPT|$(if ($env:PATH) {'set'})\"",
-        ),
+/// 探针：一个普通的、一个像密钥的、一个桌面的（4-8 补）。
+pub(crate) const PROBES: &[(&str, &str)] = &[
+    ("PROBE_PLAIN", "plain"),
+    ("PROBE_API_KEY", "secret"),
+    ("DISPLAY", ":probe"),
+    ("PAGER", "less"),
+];
+
+/// 印出探针在命令里是什么：没设的印 `unset`。外加测试进程的记号（`MIYU_` 开头）。
+pub(crate) fn probe_script() -> &'static str {
+    script(
+        "printf '%s|%s|%s|%s|%s\\n' \"${PROBE_PLAIN-unset}\" \"${PROBE_API_KEY-unset}\" \"${DISPLAY-unset}\" \"$PAGER\" \"${MIYU_BASESYSTEM_TEST_CHILD-unset}\"",
+        "Write-Output ((@($env:PROBE_PLAIN, $env:PROBE_API_KEY, $env:DISPLAY, $env:PAGER, $env:MIYU_BASESYSTEM_TEST_CHILD) | ForEach-Object { if ($_) { $_ } else { 'unset' } }) -join '|')",
     )
-    .await;
+}
+
+#[tokio::test]
+async fn the_core_environment_reaches_the_command_but_secrets_do_not() {
+    if !in_child(
+        "shell::the_core_environment_reaches_the_command_but_secrets_do_not",
+        PROBES,
+    ) {
+        return;
+    }
+    let site = Site::new();
+    let done = run(&site, probe_script()).await;
     assert!(!done.error, "{}", text(&done));
-    assert_eq!(text(&done), "unset|0|set\n");
+    assert_eq!(text(&done), "plain|unset|:probe|cat|unset\n");
 }
 
 #[tokio::test]

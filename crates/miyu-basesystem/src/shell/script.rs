@@ -6,7 +6,7 @@
 //! - 参数是她给的那份 JSON，交给环境变量 `MIYU_ARGS_JSON`，也写进标准输入（同旧版）。
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
-//!   白名单。
+//!   挑法。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
 
@@ -105,7 +105,7 @@ impl Script {
                     .map_err(io::Error::other)?
             }
         };
-        let mut vars = env::passed(std::env::vars_os());
+        let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
         vars.push((ARGS.into(), call.args.clone().into()));
         vars.push((CACHE.into(), cache.as_os_str().to_owned()));
         // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。

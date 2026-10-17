@@ -9,7 +9,7 @@ use serde_json::json;
 use miyu_kernel::block::Block;
 use miyu_sandbox::{Sandboxed, Spec};
 
-use crate::support::{Site, Taken};
+use crate::support::{Site, Taken, in_child};
 
 /// 交回的字。
 fn text(done: &miyu_tool::Done) -> String {
@@ -110,4 +110,34 @@ async fn a_sandboxed_background_command_runs_through_the_helper() {
         "助手、规格、分隔在前：{printed}"
     );
     assert!(printed.ends_with(" -c echo hi\n"), "{printed}");
+}
+
+/// 沙盒里的命令另外拿不到桌面的（4-8 补，2026-10-17 项目主人定：沙盒里不开窗口）。假助手是 `/bin/sh`：它把收到的第一个
+/// 参数 `run` 当脚本读，读的是工作目录里写好的 `run`，印出探针；读进来再跑，不执行那个文件，碰不上「文件正忙」。
+#[tokio::test]
+async fn a_sandboxed_command_gets_no_desktop() {
+    if !in_child(
+        "shell_sandbox::a_sandboxed_command_gets_no_desktop",
+        crate::shell::PROBES,
+    ) {
+        return;
+    }
+    let site = Site::new();
+    site.file(
+        "work/run",
+        format!("{}\n", crate::shell::probe_script()).as_bytes(),
+    );
+    let done = site
+        .done_sandboxed(
+            "shell",
+            json!({ "command": "echo hi", "description": "Test" }),
+            Sandboxed {
+                helper: "/bin/sh".into(),
+                spec: Spec::from_json("{}").expect("读得懂"),
+                env: Vec::new(),
+            },
+        )
+        .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(text(&done), "plain|unset|unset|cat|unset\n");
 }

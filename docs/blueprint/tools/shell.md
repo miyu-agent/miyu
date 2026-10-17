@@ -2,7 +2,7 @@
 
 ### 是什么
 
-在这一轮的工作目录里用这台机器的 shell 执行一条命令，跑完交回输出和退出码。前台的到时、叫停时整组杀掉；写了 `run_in_background` 的放到后台（施工 7-3）：照前台一样起，交给执行器的任务表，当场交回编号，结束了由任务表记 `job.reported`。每次调用起一个新的 shell，`cd`、变量都不带到下一次。命令只拿到白名单上的环境变量，不读用户的启动文件。不报改了哪些文件：内核看不懂，撤销不了；后台的只报派出去了（`job.started`）。
+在这一轮的工作目录里用这台机器的 shell 执行一条命令，跑完交回输出和退出码。前台的到时、叫停时整组杀掉；写了 `run_in_background` 的放到后台（施工 7-3）：照前台一样起，交给执行器的任务表，当场交回编号，结束了由任务表记 `job.reported`。每次调用起一个新的 shell，`cd`、变量都不带到下一次。命令拿到核心的环境变量，名字像密钥的、`MIYU_*` 不给，沙盒里另不给桌面的（4-8 补）。不报改了哪些文件：内核看不懂，撤销不了；后台的只报派出去了（`job.started`）。
 
 ### 在哪
 
@@ -53,11 +53,11 @@
 1. 读参数，读不懂的（没写 `command`、类型不对）：参数不对。
 2. `run_in_background` 是真的：照下面「后台」走，不定超时。
 3. 定超时（上面的表）。
-   - 调用带了沙盒的（`Call.sandbox`，施工 5-1）：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`，别的都照下面走：Unix 上助手换成了 shell，是同一个进程；Windows 上助手起子进程、等它（`sandbox.md`）。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照下面「起不来」说，不会不经沙盒就跑。沙盒带的环境变量（`Sandboxed.env`，例如 `TMPDIR`）照白名单之后设上，同名的盖掉（施工 5-4 上）。
+   - 调用带了沙盒的（`Call.sandbox`，施工 5-1）：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`，别的都照下面走：Unix 上助手换成了 shell，是同一个进程；Windows 上助手起子进程、等它（`sandbox.md`）。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照下面「起不来」说，不会不经沙盒就跑。沙盒带的环境变量（`Sandboxed.env`，例如 `TMPDIR`）照挑好的之后设上，同名的盖掉（施工 5-4 上）。
 4. 起命令：
    - 程序和参数照下面「用哪个 shell」。
    - 在这一轮的工作目录里跑：`cwd` 是 `~` 开头的，照 `tilde` 接家目录（`fs.md` 第二节第 1 条，和别的工具一样），别的照原样当目录（施工 4-9 再补二）。
-   - 环境变量先清空，只放白名单上的（下面「环境变量」），再设上 `GIT_TERMINAL_PROMPT=0`。
+   - 环境变量先清空，放进照下面「环境变量」挑好的，再设上那四个。
    - 标准输入接空的：要人输入的命令读到结尾就退出（脚本另接一根管道写进参数，施工 X-12 上，`skills.md`「脚本」）。标准输出、标准错误接到同一根管道上，照写出来的先后。
    - Unix 上命令自成一个进程组；Windows 上不弹控制台窗口。组里先起一个看门的，命令起在它的组里，整组杀照它的组号：核心崩了，它把整组杀掉（施工 7-8，`core.md`「子进程随核心退出」第 1 条）；起不来的记一行 `WARN` `command lifeline not started`，照旧自成一组。
    - 起不来（程序找不到、工作目录不在、管道建不起来）：执行不了，带上系统的原话；出错。
@@ -91,7 +91,7 @@
 **后台**（施工 7-3，`agents.md` 第四条）
 
 1. 这次调用没有任务端口（`Call.jobs` 是空的：会话外面的调用，例如测试；后台运行关着的会话，施工 T-1 上）：不跑，说这里不能放到后台，让她在前台跑、慢的放宽 `timeout`；出错。后台运行开着的会话里的调用总有。
-2. 照前台一样造命令：同一个 shell、同一份环境变量白名单、同一个沙盒（`Call.sandbox`），在这一轮的工作目录里；标准输入接空的，标准输出、标准错误接到同一根管道上，自成一组（上面第 3、4 条）。起不来、造不成的照前台说起不来。
+2. 照前台一样造命令：同一个 shell、同样挑过的环境变量、同一个沙盒（`Call.sandbox`），在这一轮的工作目录里；标准输入接空的，标准输出、标准错误接到同一根管道上，自成一组（上面第 3、4 条）。起不来、造不成的照前台说起不来。
 3. 起来了，把输出和进程（`miyu_tool::Background`）交给任务端口，拿回编号。端口收不下（输出的文件建不起来、会话已经停了）：任务表已经整组杀掉了它，照起不来说，原因是端口的原话；出错，不报效果。
 4. 交上了：给她的字是 `started.txt` 换进编号，说法 `shell/background`（字段 `job`），效果 `job.started`（`job` 是编号，`what` 是 `command`，`title` 是 `description`，没有 `session`）。
 5. 从起命令到交回结果一个 `await` 都没有：交上了就一定交回，不会交上了却被掐掉、没人知道它在跑。
@@ -108,7 +108,7 @@
 | Windows，没有 | `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`，没设 `SystemRoot` 的是 `powershell.exe` | 同上 | `Windows PowerShell 5.1` |
 | 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <命令>` | `bash` |
 
-- 不读用户的启动文件：那里可能 `export` 了密钥，环境变量的白名单就白设了。
+- 不读用户的启动文件：那里可能 `export` 了密钥，去掉密钥的那一步就白做了。
 - zsh 带 `+o nomatch`：没匹配到的通配符照原样传下去，和 bash 一样（没加引号的网址里的 `?`、`pip install foo[bar]` 里的方括号，施工 4-9 再补二）。
 - PowerShell 的命令前面先加一句，和她的命令写在同一行（出错时报的行号还对得上），整条编成 UTF-16LE 再 base64：
 
@@ -118,17 +118,19 @@
 
   输出编码设成不带 BOM 的 UTF-8（Windows PowerShell 默认用系统的代码页）；关掉进度条（输出接到管道上时，进度条会变成一段 XML 写进标准错误）。
 
-**环境变量**（`11-权限与沙盒.md` 第四节）：只传名单上的，其余一律不传；名字在 Windows 上不分大小写，别处分。
+**环境变量**（`11-权限与沙盒.md` 第四节，4-8 补改，照 dsh、Codex）：核心的环境整份继承，去掉下面几类；名字在 Windows 上不分大小写，别处分（像密钥的那一条哪里都不分）。
 
-| 哪一类 | 名字 |
+| 哪一类 | 怎么认 |
 |---|---|
-| 找程序、家目录、临时目录、用户 | `PATH`、`HOME`、`USER`、`LOGNAME`、`SHELL`、`TMPDIR`、`TMP`、`TEMP` |
-| 语言、时区、终端 | `LANG`、`LANGUAGE`、`TZ`、`TERM`，和 `LC_` 开头的（开头照原样比） |
-| 工具链 | `CARGO_HOME`、`RUSTUP_HOME`、`GOPATH`、`GOROOT`、`JAVA_HOME`、`NVM_DIR`、`PNPM_HOME`、`VIRTUAL_ENV` |
-| Windows 自己要的 | `PATHEXT`、`SystemRoot`、`SystemDrive`、`windir`、`ComSpec`、`USERPROFILE`、`USERNAME`、`HOMEDRIVE`、`HOMEPATH`、`APPDATA`、`LOCALAPPDATA`、`ProgramData`、`ProgramFiles`、`ProgramFiles(x86)`、`ProgramW6432`、`CommonProgramFiles`、`CommonProgramFiles(x86)`、`CommonProgramW6432`、`PUBLIC`、`ALLUSERSPROFILE`、`NUMBER_OF_PROCESSORS`、`PROCESSOR_ARCHITECTURE`、`OS`、`PSModulePath` |
-| 另外设上的 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；核心环境里原来的那一份不传 |
+| 像密钥的 | 名字里有 `KEY`、`SECRET`、`TOKEN`、`PASSWORD`、`PASSWD`、`CREDENTIAL`（不分大小写）：`DEEPSEEK_API_KEY`、`AWS_ACCESS_KEY_ID`、`GH_TOKEN`、`PGPASSWORD` 都在里面 |
+| Miyu 自己的 | `MIYU_` 开头 |
+| 沙盒里另去掉的：桌面、D-Bus、ssh-agent | `DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`DBUS_SESSION_BUS_ADDRESS`、`XDG_RUNTIME_DIR`、`SSH_AUTH_SOCK`（2026-10-17 项目主人定：沙盒里的命令不开窗口） |
+| 另外设上的，原来的那一份不要 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`：不翻页、不上色（照 dsh） |
 
-- 有意不传的：`SSH_AUTH_SOCK`（本机的 ssh-agent）、`DISPLAY`、`WAYLAND_DISPLAY`（桌面）。核心环境里从终端带来的密钥（例如 `DEEPSEEK_API_KEY`）也拿不到。
+- 名字不是 UTF-8 的照能读出来的那部分判，不像密钥的照传。
+- 这只防不小心带出去（她跑一下 `env`，密钥就进了对话），不是安全边界：同一个系统用户的命令读得到核心的 `/proc/<pid>/environ`。
+- 原来只传白名单，名单外的一律不传：桌面的（`DISPLAY`）、工具链的（`KUBECONFIG`、`PKG_CONFIG_PATH`）都丢了，终端里能跑的命令到这里就不行，名单补不完（2026-10-17 项目主人报，照推荐改）。
+- 拿到的是核心起来时的环境（`config.md`「密钥」）：核心是从 SSH 或者桌面起来以前拉起的，就没有 `DISPLAY`；桌面重登以后那几个值也是旧的。
 
 ### 样子
 
@@ -216,17 +218,18 @@ Exit code 2
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；白名单一样；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
+| `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量和前台一样（4-8 补：带着探针重新拉起测试程序）；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` 的 `line_ends_are_made_unix_across_pieces`（施工 7-3） | `\r\n` 切在两段中间也换，和一整段换出来的一样 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` 的 `a_sandboxed_background_command_runs_through_the_helper`（施工 7-3） | 后台命令一样经沙盒的助手起 |
-| `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；只拿到白名单上的变量、`GIT_TERMINAL_PROMPT` 是 0；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉 |
+| `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉 |
 | `crates/miyu-basesystem/src/shell/tests.rs` | 超时的上下限；秒数怎么写；参数格式里写的上限、默认值和代码一样；每一段以换行结尾 |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` | 数行、数字；`\r\n`；内存只留头尾；截在行尾；中间丢过的照样数；一整行很长的照字数截；正好 30000 个字的整段给；切开的字等配齐；离截处太远的换行不用 |
 | `crates/miyu-basesystem/src/shell/program/tests.rs` | 各系统用哪个 shell、找不到时用什么；名字带版本；不读启动文件、只带给的变量；zsh 带 `+o nomatch`、没匹配到的通配符原样传下去（macOS）；PowerShell 的编码和前面那一句；带了沙盒的四种 shell 都经助手起、参数照先后、工作目录和环境变量照旧，规格写不成 JSON 的起不来（施工 5-1） |
-| `crates/miyu-basesystem/tests/shell_sandbox.rs` | 带了沙盒的真跑一次（Unix）：假助手 `/bin/echo` 收到的是 `run --spec <规格> -- <shell> <参数…>`；规格写不成 JSON 的说起不来，命令没跑（施工 5-1） |
+| `crates/miyu-basesystem/tests/shell_sandbox.rs` | 带了沙盒的真跑一次（Unix）：假助手 `/bin/echo` 收到的是 `run --spec <规格> -- <shell> <参数…>`；规格写不成 JSON 的说起不来，命令没跑（施工 5-1）；`a_sandboxed_command_gets_no_desktop`（4-8 补）：假助手 `/bin/sh` 读工作目录里的 `run`，沙盒里拿不到 `DISPLAY` |
 | `crates/miyu-basesystem/src/shell/process/tests.rs` | 杀不掉的命令，最多再等那么久就交回超时 |
 | `crates/miyu-basesystem/tests/log.rs` | 运行日志的来源是 `shell`；输出还没关那一行在阻塞线程里发，带会话编号（Linux） |
-| `crates/miyu-basesystem/src/shell/env/tests.rs` | 只传名单上的；`GIT_TERMINAL_PROMPT` 总是 0；Windows 上名字不分大小写；前缀只看开头 |
+| `crates/miyu-basesystem/src/shell/env/tests.rs` | 去掉像密钥的、`MIYU_*`，别的照传；沙盒里另去掉桌面的；另设的四个总是我们的；Windows 上名字不分大小写；密钥的词在名字哪里都算；不是 UTF-8 的名字照传（4-8 补） |
+| `crates/miyu-basesystem/tests/script.rs` 的 `a_script_gets_the_same_environment_as_shell`（4-8 补） | 脚本拿到的环境变量和 `shell` 一样，自己那两个照设（Unix） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/write.rs` | 会话里真的跑：结果进日志，给她的是输出加退出码，说法里有退出码，没有效果 |
 | `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
@@ -238,11 +241,12 @@ Exit code 2
 
 - `10-自带软件.md` 第三节（「`shell` 的细则」）、第五节（`shell` 不报改了哪些文件）、第七节（经过 `shell` 的改动撤销不了）、第八节（B8：各平台的 shell）、第十节（不记 `cd`；参数名照 Claude Code）。
 - `agents.md` 第四条（后台命令，施工 7-3）。
-- `11-权限与沙盒.md` 第二节（沙盒能用时执行命令不问，用不了时问人）、第四节（环境变量只传白名单）。
+- `11-权限与沙盒.md` 第二节（沙盒能用时执行命令不问，用不了时问人）、第四节（环境变量：继承、去掉像密钥的，4-8 补改）。
 - `26-提示词.md` 第十节：登记簿里的 `tools/shell.json`、`shell/*.txt`。
 
 ### 还没有的
 
 - 沙盒：命令现在以本人的身份直接跑，碰得到任何地方；只读时每条都问人（`11-权限与沙盒.md` 第二节、第六节，M5）。放行规则照命令开头记，也随 M5（第二节）。
 - Windows 上改用 Git Bash 的配置（`10-自带软件.md` 第八节）。
-- 环境变量的名单是策略数据，配置那一步能改（`11-权限与沙盒.md` 第四节）：现在写在代码里。
+- 环境变量的规则是策略数据，现在写在代码里。像密钥的也要传的（例如 `gh` 要的 `GH_TOKEN`）放行的配置项：2026-10-17 项目主人定先不做，要用的在命令里自己 `export`。
+- 配置里 `{ env = "<变量>" }` 引用的变量名不像密钥的（例如起名 `MAGPIE`）照传：要从会话一路交到执行器，没接。

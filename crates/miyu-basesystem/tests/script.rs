@@ -7,7 +7,7 @@ use serde_json::json;
 use miyu_kernel::block::Block;
 use miyu_tool::Done;
 
-use crate::support::Site;
+use crate::support::{Site, in_child};
 
 fn text(done: &Done) -> String {
     done.blocks
@@ -85,4 +85,25 @@ async fn a_missing_interpreter_says_it_could_not_run() {
         "{}",
         text(&done)
     );
+}
+
+/// 脚本拿到的环境变量和 `shell` 的一样（4-8 补）：核心的照传，像密钥的、`MIYU_*` 不给；自己那两个照设。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_script_gets_the_same_environment_as_shell() {
+    if !in_child(
+        "script::a_script_gets_the_same_environment_as_shell",
+        crate::shell::PROBES,
+    ) {
+        return;
+    }
+    let site = Site::new();
+    let body = format!(
+        "#!/bin/sh\n# Description: Probe.\n{}\necho \"${{MIYU_ARGS_JSON-unset}}\"\n",
+        crate::shell::probe_script()
+    );
+    site.file("scripts/probe.sh", body.as_bytes());
+    let done = site.script("scripts/probe.sh", json!({})).await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(text(&done), "plain|unset|:probe|cat|unset\n{}\n");
 }

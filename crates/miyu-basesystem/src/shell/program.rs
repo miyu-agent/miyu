@@ -1,7 +1,7 @@
 //! 用哪个 shell、怎么起（`10-自带软件.md` 第八节、B8，施工 4-8）：Linux 用 bash，macOS 用 zsh，Windows 用
 //! PowerShell，装了 PowerShell 7 用它。核心起来时找一次，说明里写明是哪一种。
 //!
-//! 不读用户的启动文件：那里可能 `export` 了密钥，环境变量的白名单就白设了。`PATH` 照白名单从核心的环境带过去。
+//! 不读用户的启动文件：那里可能 `export` 了密钥，去掉密钥的那一步就白做了。`PATH` 照 [`super::env`] 从核心的环境带过去。
 //! PowerShell 的命令编成 UTF-16LE 的 base64 传过去（`-EncodedCommand`），引号、换行不会被命令行拆坏。
 //!
 //! 调用带了沙盒的，经沙盒的助手起（施工 5-1）：`<助手> run --spec <规格> -- <shell> <参数…>`，别的都照旧。
@@ -87,7 +87,7 @@ impl Program {
         };
         let mut command = Command::new(program);
         command.args(args).current_dir(cwd).env_clear().envs(env);
-        // 沙盒要设的（例如沙盒自己的临时目录）排在白名单后面：同名的盖掉（施工 5-4 上）。
+        // 沙盒要设的（例如沙盒自己的临时目录）排在挑好的后面：同名的盖掉（施工 5-4 上）。
         if let Some(sandboxed) = sandbox {
             command.envs(sandboxed.env.iter().map(|(name, value)| (name, value)));
         }

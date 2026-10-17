@@ -436,6 +436,33 @@ impl JobPort for Taken {
     }
 }
 
+/// 探针子进程的记号：设了它的是 [`in_child`] 拉起来的那一个。名字是 `MIYU_` 开头的，命令本来就拿不到。
+const CHILD: &str = "MIYU_BASESYSTEM_TEST_CHILD";
+
+/// 带着环境变量 `env` 跑一个测试（4-8 补）：测试进程里不许 `set_var`（`unsafe` 禁了），就照 `test` 这个名字把测试程序
+/// 自己再拉起一次，只跑它，环境里多了 `env` 和 [`CHILD`]。在拉起来的那一个里交回真，接着往下测；在外面的那一个里等它
+/// 跑完、核对过了，交回假，外面的不用再测。
+pub fn in_child(test: &str, env: &[(&str, &str)]) -> bool {
+    if std::env::var_os(CHILD).is_some() {
+        return true;
+    }
+    let exe = std::env::current_exe().expect("知道测试程序在哪");
+    let output = std::process::Command::new(exe)
+        .args([test, "--exact", "--test-threads=1", "--nocapture"])
+        .envs(env.iter().copied())
+        .env(CHILD, "1")
+        .output()
+        .expect("拉得起测试程序");
+    let printed = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success(),
+        "{printed}{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(printed.contains("1 passed"), "只跑了它、它跑了：{printed}");
+    false
+}
+
 /// 纳秒时刻：临时目录名里加上它，Windows 很快复用进程号，光靠进程号和序号会撞上前一个测试进程留下的目录。
 fn stamp() -> u128 {
     std::time::SystemTime::now()

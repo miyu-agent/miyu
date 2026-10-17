@@ -129,7 +129,7 @@ impl Shell {
             .command(
                 &args.command,
                 &workdir(call),
-                env::passed(std::env::vars_os()),
+                env::passed(std::env::vars_os(), call.sandbox.is_some()),
                 call.sandbox.as_deref(),
             )
             .and_then(background::start)
@@ -251,7 +251,7 @@ impl Tool for Shell {
             let command = match self.program.command(
                 &args.command,
                 &workdir(&call),
-                env::passed(std::env::vars_os()),
+                env::passed(std::env::vars_os(), call.sandbox.is_some()),
                 call.sandbox.as_deref(),
             ) {
                 Ok(command) => command,

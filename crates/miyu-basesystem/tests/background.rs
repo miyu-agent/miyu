@@ -1,6 +1,6 @@
 //! `shell` 的后台命令（施工 7-3，`docs/blueprint/tools/shell.md`「后台」）：真的起进程，三个平台都跑。调用当场返回编号、
-//! 说法、`job.started`，命令接着跑；输出合成一根管道、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；只拿到白名单上的
-//! 变量；整组杀掉（Unix 上连它放到后台的）；没有任务端口的不跑；端口收不下的说起不来。Unix 上：被信号杀掉的交回信号，
+//! 说法、`job.started`，命令接着跑；输出合成一根管道、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量
+//! 和前台一样；整组杀掉（Unix 上连它放到后台的）；没有任务端口的不跑；端口收不下的说起不来。Unix 上：被信号杀掉的交回信号，
 //! 自己退出以后组里剩下的也停了。经沙盒的助手起的在 `shell_sandbox.rs`。
 
 use std::sync::Arc;
@@ -13,7 +13,7 @@ use miyu_kernel::event::{JobKind, JobStarted, Said};
 use miyu_kernel::id::JobId;
 use miyu_tool::{Background, Done, Effect, Exit, JobPort};
 
-use crate::support::{Site, Taken};
+use crate::support::{Site, Taken, in_child};
 
 /// 基础系统的说法。
 fn said(key: &str) -> Said {
@@ -142,22 +142,18 @@ async fn the_timeout_does_not_stop_a_background_command() {
 }
 
 #[tokio::test]
-async fn only_listed_variables_reach_a_background_command() {
-    assert!(std::env::var_os("CARGO_MANIFEST_DIR").is_some());
+async fn a_background_command_gets_the_same_environment() {
+    if !in_child(
+        "background::a_background_command_gets_the_same_environment",
+        crate::shell::PROBES,
+    ) {
+        return;
+    }
     let site = Site::new();
     let jobs = Arc::new(Taken::default());
-    start(
-        &site,
-        &jobs,
-        script(
-            "echo \"[$CARGO_MANIFEST_DIR] $GIT_TERMINAL_PROMPT\"",
-            "Write-Output \"[$env:CARGO_MANIFEST_DIR] $env:GIT_TERMINAL_PROMPT\"",
-        ),
-        None,
-    )
-    .await;
+    start(&site, &jobs, crate::shell::probe_script(), None).await;
     let (output, _) = finish(jobs.take(0)).await;
-    assert_eq!(output, "[] 0\n", "和前台一样的白名单");
+    assert_eq!(output, "plain|unset|:probe|cat|unset\n", "和前台一样");
 }
 
 #[tokio::test]
