@@ -63,6 +63,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
             "persona": "persona-1",
             "name": "我的",
             "summary": null,
+            "subagent": false,
             "prompts": {"persona": true, "reminders": true},
             "examples": 2,
             "avatar": null,

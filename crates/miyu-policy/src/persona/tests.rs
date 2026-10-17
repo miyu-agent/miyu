@@ -103,6 +103,7 @@ fn an_upper_layer_replaces_what_it_writes() {
     let shipped = PersonaFile {
         name: phrases(&[("en", "Engineer"), ("zh", "工程师")]),
         summary: phrases(&[("en", "Helps.")]),
+        subagent: None,
         memory: None,
         knowledge: None,
         seed: None,
@@ -112,6 +113,7 @@ fn an_upper_layer_replaces_what_it_writes() {
     let mine = PersonaFile {
         name: one("我的工程师"),
         summary: None,
+        subagent: None,
         memory: None,
         knowledge: None,
         seed: None,
@@ -424,4 +426,18 @@ fn a_base_written_by_p3_is_read_as_unwritten() {
         read_toml("[memory]\nbase = \"none\"\n").is_err(),
         "别的表里照旧不认"
     );
+}
+
+/// `[persona] subagent`（施工 P-10 补）：`true`、`false`，没写的是没有；别的写法报 `bad_subagent`；上一层写了的盖下面的。
+#[test]
+fn subagent_is_true_or_false_and_stacks() {
+    let on = read_toml("[persona]\nsubagent = true\n").unwrap();
+    assert_eq!(on.subagent, Some(true));
+    assert_eq!(read_toml("[persona]\n").unwrap().subagent, None);
+    let wrong = read_toml("[persona]\nname = \"A\"\nsubagent = \"yes\"\n").unwrap_err();
+    assert_eq!(wrong.code, Code::BadSubagent);
+    assert_eq!(wrong.line, Some(3));
+    let off = read_toml("[persona]\nsubagent = false\n").unwrap();
+    assert_eq!(off.clone().over(on.clone()).subagent, Some(false));
+    assert_eq!(PersonaFile::default().over(on).subagent, Some(true));
 }

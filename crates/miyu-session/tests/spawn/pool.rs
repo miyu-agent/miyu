@@ -287,3 +287,45 @@ async fn without_pools_to_offer_there_is_no_pool_parameter() {
         "没有池的拿掉 pool；人格照这台机器上的填，带名字和简单描述（施工 P-2 补、P-10）"
     );
 }
+
+/// 只列写了 `subagent = true` 的人格（施工 P-10 补）：没写的不列；一个都没开的拿掉 `persona`，和没池时拿掉 `pool` 一样。
+#[tokio::test]
+async fn only_personas_turned_on_for_subagents_are_offered() {
+    let parameters = |personas: &[(&str, &str)]| {
+        let personas: Vec<(String, String)> = personas
+            .iter()
+            .map(|(path, text)| (path.to_string(), text.to_string()))
+            .collect();
+        async move {
+            let mut home = Home::new();
+            for (path, text) in &personas {
+                let file = home.root.path().join(path);
+                std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
+                std::fs::write(file, text).expect("写得进");
+            }
+            let table = Arc::new(Table::default());
+            let script = Script::new([Play::Says("好。")]);
+            let handle = parent_on(&mut home, configs("", &[]), &script, &table, None).await;
+            one_turn(&home, &handle, 1).await;
+            subagent_parameters(&script.requests()[0].1)
+        }
+    };
+    let cat = (
+        "system/personas/cat/persona.toml",
+        "[persona]\nname = \"Cat\"\n",
+    );
+    let offered = parameters(&[cat]).await;
+    assert!(
+        offered.contains(r#""enum":["engineer"]"#),
+        "没开的猫不列：{offered}"
+    );
+    let off = (
+        "home/alice/personas/engineer/persona.toml",
+        "[persona]\nsubagent = false\n",
+    );
+    let none = parameters(&[cat, off]).await;
+    assert!(
+        !none.contains(r#""persona""#),
+        "一个都没开的拿掉 persona：{none}"
+    );
+}

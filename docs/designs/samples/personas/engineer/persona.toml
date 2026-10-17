@@ -3,3 +3,5 @@
 [persona]
 name = { zh = "软件工程师", en = "Software Engineer", ja = "ソフトウェアエンジニア" }
 summary = { zh = "写代码、查问题，不带角色扮演", en = "Writes code and tracks down problems, no role-play", ja = "コードを書き、問題を調べます。ロールプレイなし" }
+# 派子代理时能挑它（施工 P-10 补）：软件工程师不带角色扮演，适合派去干活。
+subagent = true

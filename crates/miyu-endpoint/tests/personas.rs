@@ -308,6 +308,7 @@ async fn personas_are_listed_and_read() {
             "persona": "miyu",
             "name": "美羽",
             "summary": "Mine.",
+            "subagent": false,
             "prompts": {"persona": false, "reminders": true},
             "examples": 2,
             "avatar": null,

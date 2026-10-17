@@ -101,30 +101,25 @@ fn only_spawned_subagents_count_as_unclaimed() {
 #[test]
 fn a_persona_choice_carries_its_name_and_summary() {
     let file = |toml: &str| miyu_policy::persona::read_toml(toml).expect("合写法");
-    let said =
-        |id: &str, file: Option<&PersonaFile>| persona_choice(id.to_string(), file).description;
+    let said = |id: &str, file: &PersonaFile| persona_choice(id.to_string(), file).description;
     let both = file(
         "[persona]\nname = { zh = \"猫\", en = \"Cat\" }\nsummary = { zh = \"喵\", en = \"Purrs\\n  a lot\" }\n",
     );
-    assert_eq!(
-        said("cat", Some(&both)).as_deref(),
-        Some("Cat — Purrs a lot")
-    );
+    assert_eq!(said("cat", &both).as_deref(), Some("Cat — Purrs a lot"));
     let named = file("[persona]\nname = \"美羽\"\n");
     assert_eq!(
-        said("miyu", Some(&named)).as_deref(),
+        said("miyu", &named).as_deref(),
         Some("美羽"),
         "只有中文的照给"
     );
     let summed = file("[persona]\nsummary = \"Quiet.\"\n");
-    assert_eq!(said("quiet", Some(&summed)).as_deref(), Some("Quiet."));
+    assert_eq!(said("quiet", &summed).as_deref(), Some("Quiet."));
     let blank = file("[persona]\nname = \"Bare\"\nsummary = \"\"\n");
     assert_eq!(
-        said("bare", Some(&blank)).as_deref(),
+        said("bare", &blank).as_deref(),
         Some("Bare"),
         "空的简单描述当没写"
     );
-    assert_eq!(said("plain", Some(&PersonaFile::default())), None);
-    assert_eq!(said("broken", None), None, "叠不成的只有编号");
-    assert_eq!(persona_choice("cat".to_string(), None).name, "cat");
+    assert_eq!(said("plain", &PersonaFile::default()), None);
+    assert_eq!(persona_choice("cat".to_string(), &both).name, "cat");
 }

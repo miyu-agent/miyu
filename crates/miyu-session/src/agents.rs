@@ -118,29 +118,30 @@ impl Offers {
 }
 
 /// 这台机器上这时能选的人格（施工 P-10，2026-10-17 项目主人定）：照编号排，每个带上名字和简单描述（[`persona_choice`]）。
-/// 叠不成的人格照样列，只有编号。
+/// 只列 `persona.toml` 写了 `subagent = true` 的（施工 P-10 补，同池的 `subagent`）：没写的、叠不成的不列，一个都没有的工具面
+/// 上拿掉 `persona`。
 pub(crate) fn persona_choices(personas: &Personas) -> Vec<Choice> {
     personas
         .ids()
         .into_iter()
-        .map(|id| {
-            let found = personas.find(&id).ok();
-            persona_choice(id, found.as_ref().map(|found| &found.file))
+        .filter_map(|id| {
+            let found = personas.find(&id).ok()?;
+            (found.file.subagent == Some(true)).then(|| persona_choice(id, &found.file))
         })
         .collect()
 }
 
 /// 一个人格给模型看的那一行（施工 P-10）：`<名字> — <简单描述>`；没写简单描述的只有名字，名字也没写的只有简单描述，两样都
 /// 没有的没有这一句（那一行只有编号）。照英文挑（语言表的没有英文挑别的，`Label::pick`）；换行换成空格，一个人格一行。
-pub(crate) fn persona_choice(id: String, file: Option<&PersonaFile>) -> Choice {
+pub(crate) fn persona_choice(id: String, file: &PersonaFile) -> Choice {
     let said = |label: Option<&Label>| {
         label
             .and_then(|label| label.pick("en"))
             .map(|text| text.split_whitespace().collect::<Vec<_>>().join(" "))
             .filter(|text| !text.is_empty())
     };
-    let name = said(file.and_then(|file| file.name.as_ref()));
-    let summary = said(file.and_then(|file| file.summary.as_ref()));
+    let name = said(file.name.as_ref());
+    let summary = said(file.summary.as_ref());
     let description = match (name, summary) {
         (Some(name), Some(summary)) => Some(format!("{name} — {summary}")),
         (name, summary) => name.or(summary),

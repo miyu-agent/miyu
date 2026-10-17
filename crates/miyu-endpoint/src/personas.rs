@@ -212,6 +212,7 @@ fn describe(found: &Found, language: &str) -> Value {
         "persona": found.id,
         "name": label(found.file.name.as_ref(), language),
         "summary": label(found.file.summary.as_ref(), language),
+        "subagent": found.file.subagent.unwrap_or(false),
         "prompts": {
             "persona": !found.texts.persona.trim().is_empty(),
             "reminders": !found.texts.reminders.trim().is_empty(),

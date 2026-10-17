@@ -33,6 +33,8 @@ pub struct PersonaFile {
     pub name: Option<Label>,
     /// 一句说明，写法同名字。
     pub summary: Option<Label>,
+    /// 派子代理时能不能挑它（`[persona] subagent`，施工 P-10 补，2026-10-17 项目主人定）：没写的是没有，照不能算。
+    pub subagent: Option<bool>,
     /// 记忆的默认范围（`[memory] scope`，施工 R-3 下）：只能是 `persona`、`session`；没写的是没有，照 `persona` 算。
     pub memory: Option<MemoryScope>,
     /// 她查得到哪几个知识库（`[knowledge] bases`，施工 K-1 下，19 N11）：列了的只查列着的、在的那几个，空的列表一个都不查；
@@ -53,6 +55,7 @@ impl PersonaFile {
     pub fn over(self, mut lower: PersonaFile) -> PersonaFile {
         lower.name = self.name.or(lower.name);
         lower.summary = self.summary.or(lower.summary);
+        lower.subagent = self.subagent.or(lower.subagent);
         lower.memory = self.memory.or(lower.memory);
         lower.knowledge = self.knowledge.or(lower.knowledge);
         lower.seed = self.seed.or(lower.seed);
@@ -117,7 +120,7 @@ pub enum Code {
     UnknownTable,
     /// `persona` 不是表。
     NotATable,
-    /// `[persona]` 里多了 `name`、`summary` 以外的键。
+    /// `[persona]` 里多了 `name`、`summary`、`subagent` 以外的键。
     UnknownKey,
     /// `name`、`summary` 不是一句字，也不是语言到一句话的表（以前的写法）。
     NotPhrases,
@@ -131,6 +134,8 @@ pub enum Code {
     BadKnowledgeBases,
     /// `[appearance]` 的 `seed` 不是 `#rrggbb`（施工 P-6）。
     BadSeed,
+    /// `[persona]` 的 `subagent` 不是 `true`、`false`（施工 P-10 补）。
+    BadSubagent,
     /// `[appearance]` 的 `background_opacity` 不是 0 到 100 的整数（施工 P-7）。
     BadBackgroundOpacity,
     /// `[appearance]` 的 `background_focus` 不是两个 0 到 100 的整数（施工 P-7）。
@@ -159,6 +164,7 @@ impl Code {
             Code::BadMemoryScope => "bad_memory_scope",
             Code::BadKnowledgeBases => "bad_knowledge_bases",
             Code::BadSeed => "bad_seed",
+            Code::BadSubagent => "bad_subagent",
             Code::BadBackgroundOpacity => "bad_background_opacity",
             Code::BadBackgroundFocus => "bad_background_focus",
             Code::FirstLine => "first_line",
@@ -169,7 +175,7 @@ impl Code {
     }
 
     /// 全部，照先后。
-    pub const ALL: [Code; 14] = [
+    pub const ALL: [Code; 15] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -180,6 +186,7 @@ impl Code {
         Code::BadMemoryScope,
         Code::BadKnowledgeBases,
         Code::BadSeed,
+        Code::BadSubagent,
         Code::FirstLine,
         Code::TakeTurns,
         Code::LastLine,
@@ -197,7 +204,7 @@ impl fmt::Display for Problem {
 }
 
 /// 读 `persona.toml`：`[persona]` 一张表，里面只有 `name`、`summary`，各是一张语言到一句话的表（`zh`、`en`、`ja`），话不能是
-/// 空的；`[memory]` 一张表，里面只有 `scope`（`persona` 或 `session`，施工 R-3 下）；`[knowledge]` 一张表，里面只有 `bases`
+/// 空的，和 `subagent`（`true`、`false`，施工 P-10 补）；`[memory]` 一张表，里面只有 `scope`（`persona` 或 `session`，施工 R-3 下）；`[knowledge]` 一张表，里面只有 `bases`
 /// （一列知识库的编号，施工 K-1 下）；`[appearance]` 一张表，里面只有 `seed`
 /// （`#rrggbb`，大小写都认，施工 P-6）。整个文件、这几张表、每一格都可以没有。
 ///
@@ -247,6 +254,18 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
             ));
         };
         for (key, item) in table.iter() {
+            if key == "subagent" {
+                let Some(on) = item.as_bool() else {
+                    return Err(problem(
+                        at(item),
+                        Code::BadSubagent,
+                        "persona.subagent",
+                        "persona.subagent must be true or false".to_string(),
+                    ));
+                };
+                file.subagent = Some(on);
+                continue;
+            }
             let label = match key {
                 "name" => &mut file.name,
                 "summary" => &mut file.summary,
