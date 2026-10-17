@@ -153,7 +153,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `venues`：给哪种会话，`local`（本机的）、`private`（平台私聊）、`group`（群）里的一个或几个。
    - `timeout_ms`：可以不写，1000 到 600000，默认 60000。
    - `display_name`：可以不写，给人看的名字，照语言写：`{"zh": "打招呼", "en": "Greet"}`。时间线上照用的人的语言写它，没写的照 `name`。这是给人看的，不给模型。
-   - `subject`：可以不写，时间线上名字后面跟哪一个参数的值，例如 `"name"`（显示成「打招呼 Ann」）。要是 `input_schema` 的 `properties` 里有的名字，不是的整份不收（`problem` 是 `subject`）。
+   - `subject`：可以不写，时间线上名字后面跟哪一个参数的值，例如 `"name"`（显示成「打招呼 · Ann」）。要是 `input_schema` 的 `properties` 里有的名字，不是的整份不收（`problem` 是 `subject`）。搜索的、对着某个文件或编号的工具应当写：不写的时间线上只有名字，看不出在搜什么、动的是哪个。
    - `need_load`：可以不写，`true` 是要先加载（下面「要先加载」）。
    - 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool":"hello_greet","problem":"name"}`）。
 5. **被调**：AI 调到你的工具时，核心发给你 `tool.call`：

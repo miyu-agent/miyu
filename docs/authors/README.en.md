@@ -154,7 +154,7 @@ name = { en = "Greeting", zh = "问候语" }
    - `timeout_ms`: optional, 1000 to 600000, default 60000.
    - `need_load`: optional; `true` means the tool needs loading first (see "Tools that need loading").
    - `display_name`: optional, the name people see, per language: `{"zh": "打招呼", "en": "Greet"}`. The timeline shows it in the reader's language and falls back to `name`. It is for people, not for the model.
-   - `subject`: optional, which argument's value the timeline shows after the name, for example `"name"` (shown as "Greet Ann"). It must be one of the names in `input_schema`'s `properties`; otherwise the whole set is refused (`problem` is `subject`).
+   - `subject`: optional, which argument's value the timeline shows after the name, for example `"name"` (shown as "Greet · Ann"). It must be one of the names in `input_schema`'s `properties`; otherwise the whole set is refused (`problem` is `subject`). Tools that search, or act on a particular file or id, should set it: without it the timeline shows only the name, and nobody can tell what was searched or which one was touched.
    - A wrong entry rejects the whole set; the reply's `data` says which tool and what is wrong (`{"tool":"hello_greet","problem":"name"}`).
 5. **Being called**: when the AI calls one of your tools, the core sends you `tool.call`:
 
