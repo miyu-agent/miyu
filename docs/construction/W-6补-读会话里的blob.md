@@ -1,6 +1,6 @@
 ## 施工单 W-6 补：`blob.get` 读会话里的 blob
 
-状态：施工中（2026-10-17）。接入QQ 的会话 2026-10-17 要的（`show` 发到 QQ）；图纸 `docs/blueprint/protocol.md` 的 `blob.get` 第 1 条。
+状态：2026-10-17 合了（f4eb1b1e）。接入QQ 的会话 2026-10-17 要的（`show` 发到 QQ）；图纸 `docs/blueprint/protocol.md` 的 `blob.get` 第 1 条。
 
 ### 起因
 
