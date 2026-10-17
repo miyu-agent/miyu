@@ -228,16 +228,25 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
         })
         .unwrap_or_default();
     let layer = one.layer;
+    // 它带的人格、预设在系统区、家目录里有改动的，卸成了记一笔是它留下的（施工 P-11 下）。
+    let noting = super::left::noting(core, &id, &one.files_dir());
     // 先停下用着它的、再删文件（施工 F-5 补）：Windows 上开着的文件删不掉。删不成的照原来的清单换回来。
     let all = refs(&found);
     let without = leaving(&all, &id);
     core.switch_packages(&all, &without).await;
-    let removed = blocking(move || match layer {
-        Layer::Home => install::take_out(&home, &id).map(|()| {
-            super::local::forget(&local_root, &id);
-            id
-        }),
-        Layer::Shipped => install::mark_removed(&home, &id).map(|()| id),
+    let removed = blocking(move || {
+        let left = noting();
+        let removed = match layer {
+            Layer::Home => install::take_out(&home, &id).map(|()| {
+                super::local::forget(&local_root, &id);
+                id
+            }),
+            Layer::Shipped => install::mark_removed(&home, &id).map(|()| id),
+        };
+        if removed.is_ok() {
+            left.keep();
+        }
+        removed
     })
     .await;
     let removed = match removed {
@@ -304,6 +313,17 @@ async fn from_path(core: &Arc<Core>, peer: Peer, path: &Path) -> Result<Value, R
         return Err(refusal);
     }
     placed.keep();
+    // 它以前卸掉时留下的改动接着叠在它上面，那几笔划掉（施工 P-11 下）。
+    let back = super::left::back(core, &id);
+    if blocking(move || {
+        back();
+        Ok(())
+    })
+    .await
+    .is_err()
+    {
+        tracing::warn!(target: TARGET, package = id.as_str(), "package leftovers not cleared");
+    }
     // 本地库记下这一份（施工 F-8 中上）：记不成的记一行，装成了照算。
     let version = mine
         .and_then(|one| one.read.as_ref().ok())
@@ -364,7 +384,13 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     let home = home(core)?;
     let target = id.to_string();
     let before = core.packages();
-    blocking(move || install::unmark_removed(&home, &target)).await?;
+    let back = super::left::back(core, id);
+    blocking(move || {
+        install::unmark_removed(&home, &target)?;
+        back();
+        Ok(())
+    })
+    .await?;
     core.reload_packages();
     let now = core.packages();
     core.switch_packages(&refs(&before), &refs(&now)).await;
@@ -395,9 +421,15 @@ pub(super) async fn clear_of_conflicts(
         return Err(Refusal::depends_missing(&missing));
     }
     let reserved = core.commands.reserved();
+    // 人格、预设还和出厂、系统区、家目录里有的比（施工 P-11 下）。
+    let layers = super::left::layers(core, id);
     let id = id.to_string();
-    let found =
-        blocking(move || Ok(conflicts(&id, &manifest, &dir, &installed, &reserved))).await?;
+    let found = blocking(move || {
+        Ok(conflicts(
+            &id, &manifest, &dir, &installed, &reserved, &layers,
+        ))
+    })
+    .await?;
     match found.is_empty() {
         true => Ok(()),
         false => Err(Refusal::package_conflict(&found)),

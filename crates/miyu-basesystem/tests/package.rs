@@ -205,7 +205,7 @@ async fn installing_and_removing_go_through_the_core() {
     assert_eq!(
         text(&done),
         format!(
-            "{shown} cannot be installed: installed packages already use these names.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
+            "{shown} cannot be installed: these names are already in use.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
         )
     );
     check(&mut checked, human(done), said("package/failed"));

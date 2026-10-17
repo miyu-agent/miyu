@@ -51,7 +51,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
    - `files`：一个文件一行，`<编号> <绝对路径>`（照 pacman 的 `-Ql`），照路径排。
    - `owns`：「<路径> 属于 <编号>」；在家目录里装的包的目录里、本地库没记的（包自己后来写的）「<路径> 在 <编号> 的目录里，安装时没有」；哪个包都没有的「没有软件包包含 <路径>」印在标准错误上，退出码 1（照 pacman）。路径照换成的绝对路径印。
    - `check`：每个包改了的「<编号>：已修改 <路径>」、少了的「缺失」、多出来的「多出」，一个一行；都没问题的一行「<编号>：正常」；家目录里一个记了的都没有的「没有可检查的软件包」。有改了、少了的退出码 1（照 pacman 的 `-Qk`），多出来的只是提示。
-4. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 说「装不上：<哪里不对>（第 <几> 行）」。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：第一行「装不上：和已装的软件包冲突」，接着照 `data.conflicts` 一处一行「<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令；英文 `Cannot install: conflicts with installed packages`、`<kind> <name> exists in <package>`）。核心断开、请求写不出去照 `miyu rename`。
+4. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 说「装不上：<哪里不对>（第 <几> 行）」。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：第一行「装不上：名字已经有了」（施工 P-11 下改，原来是「和已装的软件包冲突」：人格、预设还会和家目录、系统区、出厂的撞），接着照 `data.conflicts` 一处一行「<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设；撞了一层的 `<包>` 写「出厂的」「系统区」「你的家目录」；英文 `Cannot install: names already in use`、`<kind> <name> exists in <package>`，那一层写 `the shipped ones`、`the system area`、`your home`）。看一眼印的那一份多「人格 <编号>」「预设 <编号>」（施工 P-11 下）。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
 

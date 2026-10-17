@@ -147,3 +147,133 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
     );
     assert_eq!(problems[0]["level"], "warning");
 }
+
+/// 装之前查人格、预设撞名（施工 P-11 下，设计 31 第十节第 4 条）：和装着的别的包、家目录里的撞了不装，说清和谁撞；看一眼列出
+/// 带的人格、预设。
+#[tokio::test]
+async fn persona_and_preset_ids_are_checked_before_installing() {
+    let home = Home::new();
+    home.write(
+        "home/alice/personas/dog/persona.toml",
+        "[persona]\nname = \"My dog\"\n",
+    );
+    let mut client = connected(&home).await;
+    let kitty = source(
+        &home,
+        "kitty",
+        &[
+            ("personas/cat/persona.toml", "[persona]\n"),
+            ("presets/cozy.toml", "[preset]\n"),
+        ],
+    );
+    let looked = client
+        .call(
+            "p",
+            "package.install",
+            json!({"path": kitty.to_string_lossy(), "preview": true}),
+        )
+        .await;
+    assert_eq!(looked["result"]["personas"], json!(["cat"]), "{looked}");
+    assert_eq!(looked["result"]["presets"], json!(["cozy"]), "{looked}");
+    let installed = client
+        .call(
+            "i1",
+            "package.install",
+            json!({"path": kitty.to_string_lossy()}),
+        )
+        .await;
+    assert!(installed["result"].is_object(), "{installed}");
+
+    let pets = source(
+        &home,
+        "pets",
+        &[
+            ("personas/cat/persona.toml", "[persona]\n"),
+            ("personas/dog/persona.toml", "[persona]\n"),
+        ],
+    );
+    let refused = client
+        .call(
+            "i2",
+            "package.install",
+            json!({"path": pets.to_string_lossy()}),
+        )
+        .await;
+    assert_eq!(
+        refused["error"]["data"]["reason"], "package_conflict",
+        "{refused}"
+    );
+    assert_eq!(
+        refused["error"]["data"]["conflicts"],
+        json!([
+            {"kind": "persona", "name": "cat", "package": "kitty"},
+            {"kind": "persona", "name": "dog", "layer": "home"},
+        ])
+    );
+}
+
+/// 卸了以后家目录的改动是它留下的（施工 P-11 下，第十节第 6 条）：`miyu check` 提示；重装它不算撞，提示没了；升级不和自己的
+/// 改动比。
+#[tokio::test]
+async fn edits_left_by_an_uninstalled_package_are_noted_and_it_can_come_back() {
+    let home = Home::new();
+    let mut client = connected(&home).await;
+    let kitty = source(
+        &home,
+        "kitty",
+        &[("personas/cat/persona.toml", "[persona]\nname = \"Cat\"\n")],
+    );
+    let path = json!({"path": kitty.to_string_lossy()});
+    let installed = client.call("i1", "package.install", path.clone()).await;
+    assert!(installed["result"].is_object(), "{installed}");
+    let saved = client
+        .call(
+            "s",
+            "persona.set",
+            json!({"persona": "cat", "changes": [{"key": "persona.summary", "value": "My cat."}]}),
+        )
+        .await;
+    assert!(saved["result"].is_object(), "{saved}");
+    let upgraded = client.call("i2", "package.install", path.clone()).await;
+    assert!(
+        upgraded["result"].is_object(),
+        "升级不和自己的改动比：{upgraded}"
+    );
+
+    let removed = client
+        .call("r", "package.remove", json!({"package": "kitty"}))
+        .await;
+    assert!(removed["result"].is_object(), "{removed}");
+    let left = |reply: &Value| -> Vec<Value> {
+        reply["result"]["problems"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{reply}"))
+            .iter()
+            .filter(|problem| problem["code"] == "persona_left")
+            .cloned()
+            .collect()
+    };
+    assert!(
+        home.root
+            .path()
+            .join("state/packages/.leftovers.json")
+            .exists(),
+        "卸了记下来"
+    );
+    let checked = client.call("k1", "check", json!({})).await;
+    let noted = left(&checked);
+    assert_eq!(noted.len(), 1, "{checked}");
+    assert_eq!(noted[0]["file"], "home/alice/personas/cat");
+    assert_eq!(noted[0]["level"], "warning");
+    assert_eq!(
+        noted[0]["message"],
+        "软件包 kitty 已经卸了，这一份是它留下的改动"
+    );
+
+    let back = client.call("i3", "package.install", path).await;
+    assert!(back["result"].is_object(), "重装它不算撞：{back}");
+    let checked = client.call("k2", "check", json!({})).await;
+    assert!(left(&checked).is_empty(), "{checked}");
+    let record = home.root.path().join("state/packages/.leftovers.json");
+    assert!(!record.exists(), "重装以后那一笔划掉了");
+}

@@ -66,7 +66,13 @@ fn refused(refusal: Refusal) -> PackageRefusal {
                     .map(|one| PackageConflict {
                         kind: field(one, "kind"),
                         name: field(one, "name"),
-                        package: field(one, "package"),
+                        // 撞了人格、预设的一层的（施工 P-11 下）照那一层的写法填：`home`、`system`、`shipped`。
+                        package: one
+                            .get("package")
+                            .or_else(|| one.get("layer"))
+                            .and_then(Value::as_str)
+                            .unwrap_or_default()
+                            .to_string(),
                     })
                     .collect()
             })

@@ -2018,12 +2018,12 @@ Could not read the usage: {error}
 #### `software/basesystem/packages/conflict.txt`
 
 - 什么时候加进来：`packages` 看包文件夹、`package` 装包：带的名字和装着的别的包撞了（`package_conflict`），头一行
-- token：14（2026-10-15 照 o200k 量，路径按 `/w/akit`）
-- 为什么加：只给原因代码她不知道撞了什么、改不了自己的包（施工 F-8 六补修，终端的会话发现）
-- 指纹：`3481aa8d`
+- token：14（2026-10-15 照 o200k 量，路径按 `/w/akit`；施工 P-11 下改了说法照旧 14）
+- 为什么加：只给原因代码她不知道撞了什么、改不了自己的包（施工 F-8 六补修，终端的会话发现）。施工 P-11 下把「装着的包已经用了这些名字」改成「这些名字已经有了」：人格、预设还会和家目录、系统区、出厂的撞，下面一行的包名那一格写那一层（`home`、`system`、`shipped`）
+- 指纹：`0db03221`
 
 ```text
-{path} cannot be installed: installed packages already use these names.
+{path} cannot be installed: these names are already in use.
 ```
 
 #### `software/basesystem/packages/conflict-line.txt`

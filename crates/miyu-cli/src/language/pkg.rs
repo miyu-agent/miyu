@@ -57,18 +57,22 @@ impl Language {
     /// <包> 中」。`conflicts` 是核心交回的 `data.conflicts`。
     pub(crate) fn conflicting(&self, conflicts: &[serde_json::Value]) -> String {
         let mut said = vec![match self {
-            Language::Chinese => "装不上：和已装的软件包冲突".to_string(),
-            Language::English => "Cannot install: conflicts with installed packages".to_string(),
+            Language::Chinese => "装不上：名字已经有了".to_string(),
+            Language::English => "Cannot install: names already in use".to_string(),
         }];
         for one in conflicts {
-            let (kind, name, package) = (
+            let (kind, name) = (
                 self.conflict_kind(one["kind"].as_str().unwrap_or_default()),
                 one["name"].as_str().unwrap_or_default(),
-                one["package"].as_str().unwrap_or_default(),
             );
+            // 撞了人格、预设的一层的（施工 P-11 下）写 `layer`，不写 `package`。
+            let holder = match one["layer"].as_str() {
+                Some(layer) => self.conflict_layer(layer).to_string(),
+                None => one["package"].as_str().unwrap_or_default().to_string(),
+            };
             said.push(match self {
-                Language::Chinese => format!("{kind} {name} 已在 {package} 中"),
-                Language::English => format!("{kind} {name} exists in {package}"),
+                Language::Chinese => format!("{kind} {name} 已在 {holder} 中"),
+                Language::English => format!("{kind} {name} exists in {holder}"),
             });
         }
         said.join("\n")
@@ -84,10 +88,25 @@ impl Language {
             (Language::Chinese, "mcp") => "MCP 服务",
             (Language::Chinese, "knowledge") => "知识库",
             (Language::Chinese, "slash") => "斜杠命令",
+            (Language::Chinese, "persona") => "人格",
+            (Language::Chinese, "preset") => "预设",
             (Language::English, "mcp") => "MCP server",
             (Language::English, "knowledge") => "knowledge base",
             (Language::English, "slash") => "slash command",
             _ => kind,
+        }
+    }
+
+    /// 人格、预设撞上的那一层叫什么（施工 P-11 下）；不认识的照原样。
+    fn conflict_layer<'a>(&self, layer: &'a str) -> &'a str {
+        match (self, layer) {
+            (Language::Chinese, "shipped") => "出厂的",
+            (Language::Chinese, "system") => "系统区",
+            (Language::Chinese, "home") => "你的家目录",
+            (Language::English, "shipped") => "the shipped ones",
+            (Language::English, "system") => "the system area",
+            (Language::English, "home") => "your home",
+            _ => layer,
         }
     }
 

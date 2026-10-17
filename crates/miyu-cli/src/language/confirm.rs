@@ -55,6 +55,8 @@ impl Language {
             (Language::Chinese, Carried::Skill(name)) => format!("技能 {name}"),
             (Language::Chinese, Carried::Script(name)) => format!("脚本 {name}"),
             (Language::Chinese, Carried::Slash(name)) => format!("斜杠命令 /{name}"),
+            (Language::Chinese, Carried::Persona(name)) => format!("人格 {name}"),
+            (Language::Chinese, Carried::Preset(name)) => format!("预设 {name}"),
             (Language::English, Carried::Command(name)) => format!("command miyu {name}"),
             (Language::English, Carried::Page) => "admin page".to_string(),
             (Language::English, Carried::Mascot) => "mascot".to_string(),
@@ -66,6 +68,8 @@ impl Language {
             (Language::English, Carried::Skill(name)) => format!("skill {name}"),
             (Language::English, Carried::Script(name)) => format!("script {name}"),
             (Language::English, Carried::Slash(name)) => format!("slash command /{name}"),
+            (Language::English, Carried::Persona(name)) => format!("persona {name}"),
+            (Language::English, Carried::Preset(name)) => format!("preset {name}"),
         }
     }
 
@@ -169,6 +173,10 @@ pub(crate) enum Carried<'a> {
     Script(&'a str),
     /// 带的斜杠命令模板（施工 X-14 上补）。
     Slash(&'a str),
+    /// 带的人格（施工 P-11 下）。
+    Persona(&'a str),
+    /// 带的预设（施工 P-11 下）。
+    Preset(&'a str),
 }
 
 /// 一行开头的词。

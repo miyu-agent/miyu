@@ -105,6 +105,9 @@ struct Content {
     skills: Vec<String>,
     scripts: Vec<String>,
     slash: Vec<String>,
+    /// 带的人格、预设的编号（施工 P-11 下）。
+    personas: Vec<String>,
+    presets: Vec<String>,
     skipped: Vec<Value>,
 }
 
@@ -131,6 +134,8 @@ impl Content {
             skills,
             scripts,
             slash,
+            personas: miyu_store::personas::carried(dir),
+            presets: miyu_store::presets::carried(dir),
             skipped,
         }
     }
@@ -201,6 +206,12 @@ fn carries(
     slash.sort_unstable();
     if !slash.is_empty() {
         answer.insert("slash".into(), json!(slash));
+    }
+    if !content.personas.is_empty() {
+        answer.insert("personas".into(), json!(content.personas));
+    }
+    if !content.presets.is_empty() {
+        answer.insert("presets".into(), json!(content.presets));
     }
     if !content.skipped.is_empty() {
         answer.insert("skipped".into(), json!(content.skipped));

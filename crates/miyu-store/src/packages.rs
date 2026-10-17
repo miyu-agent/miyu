@@ -22,6 +22,7 @@ use crate::root::DataRoot;
 
 pub mod conflicts;
 pub mod install;
+pub mod leftovers;
 pub mod local;
 pub mod migrate;
 
@@ -199,6 +200,11 @@ impl Packages {
     /// 包 `id` 在这台机器上放状态的目录：`<数据根>/state/packages/<编号>/`。不建：包自己建。
     pub fn state_dir(&self, id: &str) -> PathBuf {
         self.state.join(id)
+    }
+
+    /// 包的状态目录的上一层 `state/packages/`（施工 P-11 下：卸了的包留下的改动记在这里，`leftovers`）。
+    pub fn state_root(&self) -> &Path {
+        &self.state
     }
 }
 

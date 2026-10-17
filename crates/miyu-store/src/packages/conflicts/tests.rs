@@ -3,6 +3,7 @@ use std::path::Path;
 use miyu_config::package;
 
 use super::*;
+use crate::layers::Layer as Place;
 use crate::packages::Layer;
 use crate::test_support::Scratch;
 
@@ -29,12 +30,32 @@ const BUNDLE: &str = "[package]\nname = { en = \"Kit\" }\n";
 const SKILL: &str = "---\nname: pdf\ndescription: Read PDFs.\n---\nbody\n";
 const SCRIPT: &str = "#!/bin/sh\n# Description: Echo.\n# Parameters: {\"type\": \"object\", \"properties\": {}}\necho\n";
 
+/// 几层里什么都没有。
+fn no_layers(_: Kind, _: &str) -> Vec<Place> {
+    Vec::new()
+}
+
+/// 撞了谁：包的编号，或者那一层的写法。
+fn holder(one: &Conflict) -> String {
+    match &one.holder {
+        Holder::Package(id) => id.clone(),
+        Holder::Layer(layer) => layer.as_str().to_string(),
+    }
+}
+
 fn check(new: &Found, installed: &[Found]) -> Vec<(&'static str, String, String)> {
     let manifest = new.read.as_ref().expect("读成了");
-    conflicts(&new.id, manifest, &new.files_dir(), installed, &[])
-        .into_iter()
-        .map(|one| (one.kind.as_str(), one.name, one.package))
-        .collect()
+    conflicts(
+        &new.id,
+        manifest,
+        &new.files_dir(),
+        installed,
+        &[],
+        &no_layers,
+    )
+    .iter()
+    .map(|one| (one.kind.as_str(), one.name.clone(), holder(one)))
+    .collect()
 }
 
 #[test]
@@ -147,11 +168,17 @@ fn slash_commands_meet_installed_packages_and_the_builtins() {
         ],
     );
     let manifest = new.read.as_ref().expect("读成了");
-    let found: Vec<(&str, String, String)> =
-        conflicts(&new.id, manifest, &new.files_dir(), &installed, &reserved)
-            .into_iter()
-            .map(|one| (one.kind.as_str(), one.name, one.package))
-            .collect();
+    let found: Vec<(&str, String, String)> = conflicts(
+        &new.id,
+        manifest,
+        &new.files_dir(),
+        &installed,
+        &reserved,
+        &no_layers,
+    )
+    .iter()
+    .map(|one| (one.kind.as_str(), one.name.clone(), holder(one)))
+    .collect();
     assert_eq!(
         found,
         vec![
@@ -167,7 +194,15 @@ fn slash_commands_meet_installed_packages_and_the_builtins() {
     );
     let manifest = memory.read.as_ref().expect("读成了");
     assert!(
-        conflicts(&memory.id, manifest, &memory.files_dir(), &[], &reserved).is_empty(),
+        conflicts(
+            &memory.id,
+            manifest,
+            &memory.files_dir(),
+            &[],
+            &reserved,
+            &no_layers
+        )
+        .is_empty(),
         "拥有那条内置命令的包自己不算"
     );
 }
@@ -206,5 +241,55 @@ fn page_commands_count_like_slash_commands() {
     assert_eq!(
         check(&new, &installed),
         vec![("slash", "weather".to_string(), "kit".to_string())]
+    );
+}
+
+/// 人格、预设（施工 P-11 下）：和装着的别的包带的撞了算，和几层里有的（调的一方交进来）也算，说清是哪一层。
+#[test]
+fn personas_and_presets_conflict_with_packages_and_layers() {
+    let scratch = Scratch::new();
+    let dir = scratch.path();
+    let kit = package(
+        &dir.join("home"),
+        "kit",
+        BUNDLE,
+        &[
+            ("personas/cat/persona.toml", "[persona]\n"),
+            ("presets/cozy.toml", "[preset]\n"),
+        ],
+    );
+    let new = package(
+        &dir.join("new"),
+        "pets",
+        BUNDLE,
+        &[
+            ("personas/cat/persona.toml", "[persona]\n"),
+            ("personas/dog/persona.toml", "[persona]\n"),
+            ("personas/Bad Name/persona.toml", "[persona]\n"),
+            ("presets/cozy.toml", "[preset]\n"),
+            ("presets/work.toml", "[preset]\n"),
+            ("presets/notes.txt", "x"),
+        ],
+    );
+    let layers = |kind: Kind, name: &str| match (kind, name) {
+        (Kind::Persona, "dog") => vec![Place::System, Place::Home],
+        (Kind::Preset, "work") => vec![Place::Shipped],
+        _ => Vec::new(),
+    };
+    let manifest = new.read.as_ref().expect("读成了");
+    let found: Vec<(&str, String, String)> =
+        conflicts(&new.id, manifest, &new.files_dir(), &[kit], &[], &layers)
+            .iter()
+            .map(|one| (one.kind.as_str(), one.name.clone(), holder(one)))
+            .collect();
+    assert_eq!(
+        found,
+        [
+            ("persona", "cat".to_string(), "kit".to_string()),
+            ("persona", "dog".to_string(), "system".to_string()),
+            ("persona", "dog".to_string(), "home".to_string()),
+            ("preset", "cozy".to_string(), "kit".to_string()),
+            ("preset", "work".to_string(), "shipped".to_string()),
+        ]
     );
 }

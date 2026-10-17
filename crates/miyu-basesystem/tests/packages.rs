@@ -264,7 +264,7 @@ async fn a_folder_is_checked_before_it_is_installed() {
     assert_eq!(
         text(&done),
         format!(
-            "{shown} cannot be installed: installed packages already use these names.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
+            "{shown} cannot be installed: these names are already in use.\n- skill pdf (in kit)\n- tool read (in basesystem)\n"
         )
     );
     readable(&checked, &[]);

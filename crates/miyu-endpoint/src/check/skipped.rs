@@ -83,6 +83,8 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             }));
         }
     }
+    // 卸了的包留下的人格、预设的改动（施工 P-11 下）。
+    problems.extend(crate::packages::left::warnings(core, words).await);
     // 扩展声明的命令、整页的命令名（施工 X-14 下、X-15 上）和内置的同名：报在清单上。
     for found in core.packages().iter() {
         let Ok(manifest) = &found.read else {

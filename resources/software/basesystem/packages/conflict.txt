@@ -1,1 +1,1 @@
-{path} cannot be installed: installed packages already use these names.
+{path} cannot be installed: these names are already in use.

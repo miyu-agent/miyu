@@ -308,20 +308,43 @@ impl Personas {
 
     /// 几层里所有人格的编号，照编号排好，不重复。目录名不合写法的不算；读不了的一层当没有。
     pub fn ids(&self) -> Vec<String> {
-        let mut ids = BTreeSet::new();
-        for (_, dir) in &self.dirs {
-            let Ok(entries) = std::fs::read_dir(dir) else {
-                continue;
-            };
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().into_owned();
-                if valid(&name) && entry.path().is_dir() {
-                    ids.insert(name);
-                }
-            }
-        }
+        let ids: BTreeSet<String> = self.dirs.iter().flat_map(|(_, dir)| ids_in(dir)).collect();
         ids.into_iter().collect()
     }
+
+    /// 包以外的几层里有人格 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、系统区、家目录，从下往上。
+    pub fn layers_with(&self, id: &str) -> Vec<Layer> {
+        self.dirs
+            .iter()
+            .filter(|(layer, dir)| *layer != Layer::Package && valid(id) && dir.join(id).is_dir())
+            .map(|(layer, _)| *layer)
+            .collect()
+    }
+}
+
+/// 包文件夹 `package` 里带的人格的编号（施工 P-11 下，设计 31 第十节）：`personas/` 下合写法的目录，照编号排。
+pub fn carried(package: &Path) -> Vec<String> {
+    ids_in(&package.join("personas"))
+}
+
+/// 一处 `personas/` 里人格的编号：合写法的目录，照编号排；读不了的是空的。
+fn ids_in(dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut ids: Vec<String> = entries
+        .flatten()
+        .map(|entry| {
+            (
+                entry.file_name().to_string_lossy().into_owned(),
+                entry.path(),
+            )
+        })
+        .filter(|(name, path)| valid(name) && path.is_dir())
+        .map(|(name, _)| name)
+        .collect();
+    ids.sort();
+    ids
 }
 
 /// 查出来的一处（施工 8-30，`miyu check`）：哪一层、哪个文件（真的路径）、错在哪。

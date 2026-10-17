@@ -110,6 +110,12 @@ fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     for name in strings(&preview["slash"]) {
         carried(Carried::Slash(name));
     }
+    for name in strings(&preview["personas"]) {
+        carried(Carried::Persona(name));
+    }
+    for name in strings(&preview["presets"]) {
+        carried(Carried::Preset(name));
+    }
     if let Some(n) = preview["settings"]
         .as_u64()
         .filter(|_| doing != Doing::Remove)

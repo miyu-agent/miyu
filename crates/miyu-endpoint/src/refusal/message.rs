@@ -38,8 +38,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         ),
         "package_invalid" => ("清单有误，无法安装。", "Invalid manifest, cannot install."),
         "package_conflict" => (
-            "与已安装的软件包冲突，无法安装。",
-            "Conflicts with installed packages, cannot install.",
+            "名称已被占用，无法安装。",
+            "Names already in use, cannot install.",
         ),
         "program_missing" => ("程序未安装。", "Program not installed."),
         "depends_missing" => ("缺少依赖的软件包。", "Required packages are missing."),

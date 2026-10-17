@@ -2,6 +2,8 @@
 //! （`package-pages.md`「开关」「程序不在就当没装」）。扩展带数据的几种（工具规格不对、能力没批、没导出、embedding 算不出）施工
 //! X-19 时 `refusal.rs` 又到了 500 行，也挪到这里。
 
+use miyu_store::packages::conflicts::Holder;
+
 use super::{REFUSED, Refusal};
 
 impl Refusal {
@@ -98,8 +100,14 @@ impl Refusal {
     ) -> Refusal {
         let list = conflicts
             .iter()
-            .map(|one| {
-                serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "package": one.package})
+            // 撞了装着的包的写 `package`，撞了人格、预设的一层的写 `layer`（施工 P-11 下）。
+            .map(|one| match &one.holder {
+                Holder::Package(package) => {
+                    serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "package": package})
+                }
+                Holder::Layer(layer) => {
+                    serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "layer": layer.as_str()})
+                }
             })
             .collect();
         Refusal::with(

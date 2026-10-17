@@ -206,7 +206,9 @@ async fn a_name_clash_tells_her_what_and_where() {
     let said = results(&home, &session);
     assert_eq!(said.len(), 1, "{said:?}");
     assert!(
-        said[0].contains("cannot be installed: installed packages already use these names.\n- skill notes (in zkit)\n"),
+        said[0].contains(
+            "cannot be installed: these names are already in use.\n- skill notes (in zkit)\n"
+        ),
         "{said:?}"
     );
     assert!(!installed(&home, "akit"));

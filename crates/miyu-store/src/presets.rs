@@ -186,21 +186,39 @@ impl Presets {
 
     /// 几层里所有预设的编号，照编号排好，不重复。文件名不是 `<合写法的编号>.toml` 的、不是文件的不算；读不了的一层当没有。
     pub fn ids(&self) -> Vec<String> {
-        let mut ids = BTreeSet::new();
-        for (_, dir) in &self.dirs {
-            let Ok(entries) = std::fs::read_dir(dir) else {
-                continue;
-            };
-            for entry in entries.flatten() {
-                if let Some(id) = id_of(&entry.path())
-                    && entry.path().is_file()
-                {
-                    ids.insert(id);
-                }
-            }
-        }
+        let ids: BTreeSet<String> = self.dirs.iter().flat_map(|(_, dir)| ids_in(dir)).collect();
         ids.into_iter().collect()
     }
+
+    /// 包以外的几层里有预设 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、系统区、家目录，从下往上。
+    pub fn layers_with(&self, id: &str) -> Vec<Layer> {
+        self.dirs
+            .iter()
+            .filter(|(layer, dir)| {
+                *layer != Layer::Package && valid(id) && file_of(dir, id).is_file()
+            })
+            .map(|(layer, _)| *layer)
+            .collect()
+    }
+}
+
+/// 包文件夹 `package` 里带的预设的编号（施工 P-11 下，设计 31 第十节）：`presets/` 下 `<合写法的编号>.toml` 的文件，照编号排。
+pub fn carried(package: &Path) -> Vec<String> {
+    ids_in(&package.join("presets"))
+}
+
+/// 一处 `presets/` 里预设的编号：照编号排；读不了的是空的。
+fn ids_in(dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut ids: Vec<String> = entries
+        .flatten()
+        .filter(|entry| entry.path().is_file())
+        .filter_map(|entry| id_of(&entry.path()))
+        .collect();
+    ids.sort();
+    ids
 }
 
 /// 查出来的一处（`miyu check`）：哪一层、哪个文件（真的路径）、错在哪。

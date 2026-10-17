@@ -300,7 +300,7 @@ async fn check_packages(
 }
 
 /// 一份文件给人看的写法：数据根里的写相对数据根的（`/` 分隔），别的写真的路径。
-fn shown(core: &Core, path: &Path) -> String {
+pub(crate) fn shown(core: &Core, path: &Path) -> String {
     match path.strip_prefix(core.root.path()) {
         Ok(rest) => rest
             .iter()
