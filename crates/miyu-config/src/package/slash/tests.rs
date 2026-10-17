@@ -1,7 +1,7 @@
 //! `[[slash]]`（施工 X-14 下）：每一格读成什么、没写的照什么；每一种写错报 `bad_slash`、报在那一段；要声明 `commands` 能力；
 //! 只有扩展包能写；一条一个功能。
 
-use super::super::{Code, read};
+use super::super::{Access, Code, read};
 
 /// 一个扩展：声明了 `commands` 能力、两条命令。
 const EXTENSION: &str = r#"[package]
@@ -55,8 +55,33 @@ fn an_extension_declares_its_commands_with_every_field() {
     );
     assert_eq!(weather.line, Some(13));
     assert_eq!(weather.feature_id(), "command-weather");
+    assert_eq!(weather.access, None, "没写的照 admin");
     let forecast = &manifest.slash[1];
     assert_eq!(forecast.argument, None);
+}
+
+/// 出厂的谁能用（施工 O-6 六补）：三种写法认得，别的报 `bad_slash`、报在那一段。
+#[test]
+fn a_command_may_ship_who_can_use_it() {
+    for (written, access) in [
+        ("admin", Access::Admin),
+        ("anyone", Access::Anyone),
+        ("off", Access::Off),
+    ] {
+        let manifest = read(&with_first(&format!(
+            "[[slash]]\nname = \"weather\"\nsummary = {{ en = \"x\" }}\naccess = \"{written}\"\n"
+        )))
+        .expect(written);
+        assert_eq!(manifest.slash[0].access, Some(access), "{written}");
+    }
+    let problem = read(&with_first(
+        "[[slash]]\nname = \"weather\"\nsummary = { en = \"x\" }\naccess = \"everyone\"\n",
+    ))
+    .expect_err("写错的");
+    assert_eq!(
+        (problem.code, problem.detail.as_str(), problem.line),
+        (Code::BadSlash, "slash.weather.access", Some(13))
+    );
 }
 
 #[test]

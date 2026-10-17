@@ -45,7 +45,7 @@
 1. **从哪找**：这个会话的属主（`Handle::owner`，同找技能）家目录的 `commands/` 先，再找装了的包的 `commands/`，出厂的先于家目录、同一层照编号（同技能，`packages.md`「冲突」第 5 条）。同名的先找到的赢，后来的跳过、记被谁盖住。`command.run`、`command.catalog`、`preset.get` 每次照这一刻找：文件少、只读开头，改了模板不用重启。不写会话的 `command.catalog`、`preset.get` 照管理员找。
 2. **内置的赢**：名字和核心登记的（名字、别名）撞了的，模板不算：`command.run` 照内置的办，菜单、预设里不列它。
 3. **开关**：每条模板命令算一个功能 `command-<名字>`，挂在它的包下（自己放的挂在 `~home`），预设里能逐个开关；`preset.get` 列在技能后面：`{"id": "command-<名字>", "name": "/<名字>", "summary"?, "on", "installed": true, "tools": []}`，说明照模板写的、照连接的语言挑，没写的不带。`command.run` 照会话现在的预设判（会话表里记的编号，照这一刻的文件；没有预设的、读不出的当开着），关着的回 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」（`commands/unavailable/command-preset-off`）；`command.catalog` 写了会话的不列。
-4. **谁能用**：和内置命令同一关（`may_run`：本机的会话是本人；场所会话照 `as`，主人、对应表里有的、管理的人），别人回 `command_not_allowed`，场所会话不带 `as` 的 `venue_session`。先找会话、认说话的人，再找模板：认不出的 `unknown_command`，谁打的都是（场所里的桥照它把话当平常说的记下，接入QQ 仓库的 `onebot.md`），认出了再判身份。
+4. **谁能用**：和内置命令同一关（`may_run`：本机的会话是本人；场所会话照 `as`，主人、对应表里有的、管理的人；每条命令能另配 `commands.<名字>.access`，见下面「谁能用」），别人回 `command_not_allowed`，场所会话不带 `as` 的 `venue_session`。先找会话、认说话的人，再找模板：认不出的 `unknown_command`，谁打的都是（场所里的桥照它把话当平常说的记下，接入QQ 仓库的 `onebot.md`），认出了再判身份。
 5. **菜单里的样子**：`command.catalog` 一项 `{"name", "aliases": [], "summary", "argument"?}`，`summary` 照连接的语言挑，没写说明的照正文第一行不是空白的那一行（同 Claude Code）；写了 `argument-hint` 的带 `argument`。和内置的照名字排在一起。
 
 ### 装包时查（施工 X-14 上补）
@@ -57,9 +57,18 @@
 
 照这一刻装了的包和管理员家目录再找一遍（`check/skipped.rs`），`kind` 是 `slash`，各一条警告：读不成的（名字不合写法、开头写错）`slash_skipped`，说为什么；同名被盖住的 `slash_covered`，说被哪一份盖住；和核心内置的同名、用不上的 `slash_builtin`（核心升级后新带了同名的命令也是它，定了的第 4 条）。
 
+### 谁能用（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）
+
+1. 每条命令（内置的、模板、扩展声明的、整页的）一档：`admin`（本人、对应表里认得的外部身份、场所里管理的人，就是原来那一关 `may_run`）、`anyone`（谁都过身份这一关）、`off`（谁都不过）。
+2. 照这个先后定：系统配置 `commands.<名字>.access`（`config.md`，只写在系统配置里，立即生效）；扩展清单 `[[slash]]` 的 `access`（出厂值）；都没有的是 `admin`。模板命令没有出厂值。
+3. `off` 的谁打都回 `command_not_allowed`，`data.why`「/<名字> 已停用。」（`commands/unavailable/off`）；`command.catalog` 写不写会话都不列它；整页的命令也不开。
+4. `anyone` 只放过身份这一关：命令自己的限制照旧（`/workspace` 只给主人本人回 `owner_only`，记忆、长期目标要开着，模板照预设开关）。
+5. 设置页不画（`hidden`）：带名字的这一段两个头还没有画法；要画的时候头照 `command.catalog` 一条一个下拉。
+6. 怎么回给群里的人归桥：接入QQ 照项目主人定的，被拒的那一句只回给终端管理员和管理的人，别人被拒不出声。
+
 ### 扩展的命令（施工 X-14 下）
 
-1. **声明**：扩展包的清单一段一条 `[[slash]]`：`name`（写法同子命令名）、`summary`（一句说明，语言到一句话，必写）、`argument`（名字后面跟什么的提示，语言到一句话，不跟字的不写）。要在 `[process] capabilities` 里声明 `commands`，没声明的整份 `bad_slash`。只有扩展包能写，别的种类 `wrong_kind`（`packages.md`「出错」）。不分会话种类：和内置命令同一关（定了的第 3 条），扩展收到 `by`、`owner` 自己再挡。
+1. **声明**：扩展包的清单一段一条 `[[slash]]`：`name`（写法同子命令名）、`summary`（一句说明，语言到一句话，必写）、`argument`（名字后面跟什么的提示，语言到一句话，不跟字的不写）、`access`（出厂的谁能用，`admin`、`anyone`、`off`，不写的是 `admin`；施工 O-6 六补，写错的 `bad_slash`）。要在 `[process] capabilities` 里声明 `commands`，没声明的整份 `bad_slash`。只有扩展包能写，别的种类 `wrong_kind`（`packages.md`「出错」）。不分会话种类：和内置命令同一关（定了的第 3 条），扩展收到 `by`、`owner` 自己再挡。
 2. **认**：登记表、自己放的模板、扩展声明的、包里的模板，照这个先后；包里的两种装包时查过（`packages.md`「冲突」，和模板一个名字空间 `slash`），撞不上。和内置的撞名的不算（定了的第 4 条）。每条一个功能 `command-<名字>`，挂在它的包下，预设能关（同模板）。
 3. **办**：核心经扩展 `provide` 过的那个连接反向调用 `command.call {command, argument, text, session, by, owner, language}`（`protocol.md` 的 `command.run` 第 14 条），等它答 `{"said"}` 最多一分钟；答了的记一条 `command.ran`，`said` 原样当回执（可以多行）。没连上、断了、到时没答的拒 `command_unavailable`；答了错、没有 `said` 的拒 `command_failed`，`data.why` 是它的原话。在后台答。只声明命令、不提供工具的扩展照样 `provide` 一次（`tools` 写空的），核心照它认连接。
 4. **列出来**：`command.catalog`、`preset.get` 同模板（说明、提示照连接的语言挑，没写这种语言的照 `en`、`zh`、`ja`）；自己放的同名模板盖住它的不列。看一眼（`preview: true`）的 `slash` 连它一起列。`miyu check` 和内置同名的报 `slash_builtin`，报在清单上。
@@ -68,6 +77,7 @@
 
 | 测试 | 守什么 |
 |---|---|
+| `crates/miyu-endpoint/tests/command_access.rs`、`slash_extension.rs` 的 `a_shipped_access_off_turns_the_command_off`、`crates/miyu-config/src/package/slash/tests.rs` 的 `a_command_may_ship_who_can_use_it`（施工 O-6 六补） | `anyone` 群员也行、`off` 主人也不行（说「/<名字> 已停用。」）、`admin` 照旧、`/workspace` 照旧只给主人；本机也停用、菜单不列；清单写 `off` 的谁都用不了、不交给扩展、不列；三种写法认得、写错的 `bad_slash` |
 | `crates/miyu-policy/src/slash/tests.rs` | 名字的写法、功能编号；开头给人看的几格、Claude Code 别的键不碍事；没有开头、只有开头一行、空开头；开头写错、不是表；`$ARGUMENTS`、`$ARGUMENTS[N]`、不是数字的方括号、参数里带记号、没跟字；没写记号的接在末尾 |
 | `crates/miyu-store/src/slash/tests.rs` | 两处找、照名字排、自己放的盖住包里的、记被谁盖住；出厂的先于家目录；读坏了的清单不算；点开头、不是 `.md`、子文件夹不算；名字不合写法、开头写错的跳过说为什么；包文件夹带了哪几条 |
 | `crates/miyu-kernel/src/session/tests/typed.rs` | 闲着照 `session.send` 开一轮、`message.user` 带上那一行；正忙的排进这一轮、不插话；重做照原样的带着它、不重读，换了字的不带 |

@@ -9,6 +9,30 @@ use super::reader::{Reader, command_name, line_of};
 use super::{Code, Problem};
 use crate::phrases::Phrases;
 
+/// 一条斜杠命令谁能用（施工 O-6 六补，`docs/blueprint/slash.md`「谁能用」）：系统配置 `commands.<名字>.access`、清单
+/// `[[slash]]` 的出厂值都是这三种。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Access {
+    /// 本人、对应表里认得的外部身份、场所里管理的人（照旧，不写的就是它）。
+    Admin,
+    /// 谁都行：场所里随便哪个外部身份。命令自己的限制照旧（`/workspace` 只给主人本人）。
+    Anyone,
+    /// 谁都不行：回 `command_not_allowed`。
+    Off,
+}
+
+impl Access {
+    /// 照写法认：`admin`、`anyone`、`off`；别的没有。
+    pub fn parse(text: &str) -> Option<Access> {
+        match text {
+            "admin" => Some(Access::Admin),
+            "anyone" => Some(Access::Anyone),
+            "off" => Some(Access::Off),
+            _ => None,
+        }
+    }
+}
+
 /// 扩展声明的一条斜杠命令。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SlashCommand {
@@ -18,6 +42,8 @@ pub struct SlashCommand {
     pub summary: Phrases,
     /// 名字后面跟什么的提示，照语言；不跟字的没有。
     pub argument: Option<Phrases>,
+    /// 出厂的谁能用（施工 O-6 六补）：没写的没有，照 `admin`；系统配置写了的压过它。
+    pub access: Option<Access>,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -42,7 +68,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<SlashCommand>
     let mut commands: Vec<SlashCommand> = Vec::new();
     for table in array.iter() {
         let line = table.span().map(|span| line_of(reader.text, span.start));
-        reader.only(table, "slash", &["name", "summary", "argument"])?;
+        reader.only(table, "slash", &["name", "summary", "argument", "access"])?;
         let name = match table.get("name").and_then(Item::as_str) {
             Some(name) if command_name(name) => name.to_string(),
             Some(name) => {
@@ -84,10 +110,24 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<SlashCommand>
             Some(item) => Some(reader.phrases(item, &format!("{at}.argument"))?),
             None => None,
         };
+        let access = match table.get("access") {
+            None => None,
+            Some(item) => match item.as_str().and_then(Access::parse) {
+                Some(access) => Some(access),
+                None => {
+                    return Err(bad(
+                        line,
+                        &format!("{at}.access"),
+                        format!("{at}.access must be \"admin\", \"anyone\" or \"off\""),
+                    ));
+                }
+            },
+        };
         commands.push(SlashCommand {
             name,
             summary,
             argument,
+            access,
             line,
         });
     }

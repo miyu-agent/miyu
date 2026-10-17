@@ -65,6 +65,7 @@ fn the_registered_list_is_well_formed() {
             "usage.currency",
             "permission.start_read_only",
             "permission.level",
+            "commands.<id>.access",
             "profile.preferred_reply_language",
             "profile.name",
             "profile.about",

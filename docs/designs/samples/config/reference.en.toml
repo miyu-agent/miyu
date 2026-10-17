@@ -1,6 +1,11 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
 # Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.
 
+[commands."<id>"]
+# Who can use this command: Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins.
+# Allowed: admin, anyone or off. Only in the system config. Takes effect immediately.
+# access =
+
 [compaction]
 # Prepare compaction early: When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before.
 # Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.

@@ -207,3 +207,42 @@ async fn it_is_answered_in_the_background() {
     .expect("不等扩展答");
     assert_eq!(quick["id"], "c9", "{quick}");
 }
+
+/// 清单的 `[[slash]]` 能写出厂的 `access`（施工 O-6 六补）：写了 `off` 的谁都用不了，回 `command_not_allowed`，什么都不交给扩展；
+/// 菜单里不列。系统配置写了的压过它（`command_access.rs`）。
+#[tokio::test]
+async fn a_shipped_access_off_turns_the_command_off() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, step) = record(&home, "wx");
+    let steps = steps(&[&step, "hello", "ask:provide:{\"tools\":[]}", "serve"]);
+    let manifest = manifest(&program.name(), &steps).replace(
+        "argument = { zh = \"<城市>\" }\n",
+        "argument = { zh = \"<城市>\" }\naccess = \"off\"\n",
+    );
+    assert!(manifest.contains("access = \"off\""), "{manifest}");
+    home.write("home/alice/packages/wx/package.toml", &manifest);
+    let core = Arc::new(
+        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
+            .with_extension_timing(quick()),
+    );
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let enabled = client
+        .call(
+            "e1",
+            "extension.enable",
+            json!({"package": "wx", "approve": ["commands"]}),
+        )
+        .await;
+    assert!(enabled["result"].is_object(), "{enabled}");
+    lines(&path, 3).await;
+    let session = client.create("c1", "~").await;
+    let reply = run(&mut client, "k1", &session, "/weather tokyo").await;
+    assert_eq!(reason(&reply), Some("command_not_allowed"), "{reply}");
+    assert!(!read(&path).contains("\"command.call\""), "没交给扩展");
+    let catalog = client
+        .call("c2", "command.catalog", json!({"session": session}))
+        .await;
+    assert!(!catalog.to_string().contains("weather"), "{catalog}");
+}

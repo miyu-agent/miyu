@@ -18,7 +18,12 @@ use miyu_session::Handle;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_store::slash::{self, Command as Template};
 
-use super::{RunParams, Said, accepted, command, declared, may_run, pages, speaker, why, words};
+use super::{
+    RunParams, Said, accepted, access, command, declared, pages, passes, speaker, turned_off, why,
+    words,
+};
+use miyu_config::package::Access;
+
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
@@ -91,6 +96,10 @@ pub(super) async fn run(
         && handle.venue().as_str() == LOCAL
         && let Some(page) = pages::named(core, name)
     {
+        // 停用了的不开（施工 O-6 六补）；整页只在本机开，身份那一关本来就是本人。
+        if access(core, name, None) == Access::Off {
+            return Err(turned_off(core, peer, name).await);
+        }
         return Ok(pages::opened(&page));
     }
     let declared = match &template {
@@ -100,8 +109,14 @@ pub(super) async fn run(
     if template.is_none() && declared.is_none() {
         return Err(Refusal::UNKNOWN_COMMAND);
     }
-    if !may_run(&by) {
-        return Err(Refusal::COMMAND_NOT_ALLOWED);
+    // 谁能用（施工 O-6 六补）：扩展的照清单写的出厂值，模板没有出厂值。
+    let shipped = declared
+        .as_ref()
+        .and_then(|declared| declared.command.access);
+    match access(core, name, shipped) {
+        Access::Off => return Err(turned_off(core, peer, name).await),
+        granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
+        _ => {}
     }
     if let Some(declared) = declared {
         opened(

@@ -33,7 +33,7 @@ pub use mcp::{
 };
 pub use need::Need;
 pub use settings::{Setting, SettingKind};
-pub use slash::SlashCommand;
+pub use slash::{Access, SlashCommand};
 pub use upgrade::without_kind;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 

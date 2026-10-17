@@ -11,11 +11,12 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_config::package::Access;
 use miyu_kernel::id::SessionId;
 use miyu_store::slash::Command as Template;
 
 use super::declared::{self, Declared};
-use super::{Said, Slash, allowed, pages, templates, words};
+use super::{Said, Slash, access, allowed, pages, templates, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
@@ -126,6 +127,17 @@ pub(crate) async fn catalog(
             })
             .map(|page| pages::listed(page, peer.language)),
     );
+    // 停用了的不列（施工 O-6 六补）：扩展的照清单写的出厂值算。
+    let shipped = |name: &str| {
+        declared
+            .iter()
+            .find(|one| one.command.name == name)
+            .and_then(|one| one.command.access)
+    };
+    commands.retain(|item| {
+        let name = item["name"].as_str().unwrap_or_default();
+        access(core, name, shipped(name)) != Access::Off
+    });
     commands.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     Ok(json!({ "commands": commands }))
 }

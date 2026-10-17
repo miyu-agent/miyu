@@ -300,6 +300,7 @@ miyu_config::settings! {
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
 - `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）、`profile.preferred_reply_language`（施工 P-9 补，2026-10-16 项目主人定：回复语言，默认用它、对话里明说换就换）：只写在个人设置里，可以不写（不写就没有，没有默认值），最多 64、2000、64 个字，新会话生效；更多描述是几行字（`lines`，控件 `textarea`，P-9 三补），能分行，拼进 `<user>` 块时照原样。回复语言的控件是 `combo`，建议值在字表里，照这种界面语言的人最常用的排在前面，都写语言自己的名字（简体中文、English、日本語……），十五个；「其他」的那一行字头自己写。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；抽取、合并照这一次的配置读称呼写人（`memory.md` 第六条第 4 款、第七条第 2 款，施工 R-6 再修；声明从端点挪到 `miyu-session/src/settings.rs`，同记忆那几项）；设置页单独一页「用户」（`user`，施工 P-9 再补，2026-10-16 项目主人定：关于人自己的不放在「通用」里）里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。三项的说明不再写「新会话生效」：生效时机头另有一行写（P-9 再补，原来重复了）。
+- `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
@@ -963,6 +964,11 @@ $ miyu logout bigmodel-2
 ```toml
 # Miyu 的全部配置项和默认值。这份是生成的，改它没有用。
 # 系统配置写在 system/config.toml，个人设置写在 home/<账号>/settings.toml。
+
+[commands."<id>"]
+# 谁能用这条命令：这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。
+# 能写：admin、anyone 或 off。只能写在系统配置里。立即生效。
+# access =
 
 [compaction]
 # 提前压好：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。
@@ -1873,6 +1879,9 @@ currency = "USD"
 | `profile.preferred_reply_language` 名字（P-9 补；2026-10-17 改名、排到「用户」页第一） | AI 用什么语言回复 | What language should the AI reply in | AI が返信する言語 |
 | 说明 | AI 默认用哪种语言回复，对话里可以随时让它换。 | The language the AI replies in by default. You can ask it to switch at any time. | AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。 |
 | 建议值（先后照这种语言） | 简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Русский、Tiếng Việt、ไทย、Bahasa Indonesia、العربية | English、简体中文、繁體中文、日本語、한국어，后面同中文 | 日本語、English、简体中文、繁體中文、한국어，后面同中文 |
+| `commands.<id>.access` 名字（O-6 六补） | 谁能用这条命令 | Who can use this command | このコマンドを使える人 |
+| 说明 | 这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。 | Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins. | このスラッシュコマンドを使える人。管理者はターミナルの管理者とグループの管理者、全員はチャットの誰でも、無効は誰も使えません。設定しない場合はコマンド自身の設定、それもなければ管理者です。 |
+| 选项 | `admin` 管理员、`anyone` 所有人、`off` 停用 | Admins、Everyone、Off | 管理者、全員、無効 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
 | 说明 | 新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。 | Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. | 新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。 |
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开 | Workspace (sandbox)、Full access | ワークスペース（サンドボックス）、フルアクセス |

@@ -93,6 +93,20 @@ miyu_config::settings! {
     }
 }
 
+miyu_config::settings! {
+    /// 一条斜杠命令的配置（施工 O-6 六补，`slash.md`「谁能用」，接入QQ 的会话 2026-10-17 要的）：`<id>` 是命令名（写法同「路径里的名字」，命令名都合）。
+    pub struct CommandSettings in "commands.<id>" {
+        /// 谁能用：`admin` 本人、对应表里认得的、场所里管理的人；`anyone` 谁都行；`off` 谁都不行。没写的照命令的出厂值（扩展
+        /// 清单 `[[slash]]` 的 `access`），也没有的是 `admin`。设置页不画：带名字的这一段两个头还没有画法。
+        access: Option<String> = none {
+            kind: option ["admin", "anyone", "off"],
+            layers: [System],
+            applies: now,
+            ui: { page: "general", group: "commands", control: select, hidden: true },
+        },
+    }
+}
+
 /// 跟着系统。
 const AUTO: &str = "auto";
 

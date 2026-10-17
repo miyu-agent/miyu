@@ -88,6 +88,15 @@
         "description": "AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。",
         "suggestions": ["日本語", "English", "简体中文", "繁體中文", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },
+      "commands.<id>.access": {
+        "name": "このコマンドを使える人",
+        "description": "このスラッシュコマンドを使える人。管理者はターミナルの管理者とグループの管理者、全員はチャットの誰でも、無効は誰も使えません。設定しない場合はコマンド自身の設定、それもなければ管理者です。",
+        "options": {
+          "admin": "管理者",
+          "anyone": "全員",
+          "off": "無効"
+        }
+      },
       "permission.level": {
         "name": "新しいセッションの権限レベル",
         "description": "新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。",
@@ -294,6 +303,7 @@
       "models": "モデル"
     },
     "groups": {
+      "commands": "コマンド",
       "display": "表示",
       "persona": "ペルソナ",
       "preset": "プリセット",
@@ -629,6 +639,7 @@
     "view/error/status/402": "利用枠が不足しています",
     "view/error/status/404": "見つかりません。エンドポイントのアドレスとモデル名を確認してください",
     "view/error/status/429": "レート制限中です。しばらくしてから再試行してください",
+    "commands/unavailable/off": "/{name} は無効になっています。",
     "commands/unavailable/not-installed": "ペルソナの記憶は未インストールです。",
     "commands/unavailable/preset-off": "プリセット「{preset}」は記憶がオフです。",
     "commands/workspace-wide": "ワークスペースを {cwd} に切り替えました（範囲の広いディレクトリ）。"

@@ -29,6 +29,7 @@ mod blob_session;
 mod check;
 mod clear;
 mod clear_memory_command;
+mod command_access;
 mod command_catalog;
 mod commands;
 mod compact;

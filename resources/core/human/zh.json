@@ -88,6 +88,15 @@
         "description": "AI 默认用哪种语言回复，对话里可以随时让它换。",
         "suggestions": ["简体中文", "繁體中文", "English", "日本語", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },
+      "commands.<id>.access": {
+        "name": "谁能用这条命令",
+        "description": "这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。",
+        "options": {
+          "admin": "管理员",
+          "anyone": "所有人",
+          "off": "停用"
+        }
+      },
       "permission.level": {
         "name": "新会话的权限级别",
         "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。",
@@ -294,6 +303,7 @@
       "models": "模型"
     },
     "groups": {
+      "commands": "命令",
       "display": "显示",
       "persona": "人格",
       "preset": "预设",
@@ -629,6 +639,7 @@
     "view/error/status/402": "额度不足",
     "view/error/status/404": "未找到，请检查端点地址和模型名",
     "view/error/status/429": "请求受限，请稍后重试",
+    "commands/unavailable/off": "/{name} 已停用。",
     "commands/unavailable/not-installed": "人格记忆未安装。",
     "commands/unavailable/preset-off": "预设「{preset}」未启用记忆。",
     "commands/workspace-wide": "工作区已切换到 {cwd}（范围较大）。"

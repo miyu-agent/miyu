@@ -16,6 +16,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::Words;
+use miyu_config::package::Access;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{By, Role};
 use miyu_kernel::session::{Command, Outcome};
@@ -27,6 +28,7 @@ use crate::hello::Peer;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 use crate::sessions::admin;
+use crate::settings::CommandSettings;
 use crate::venues::{self, AsParams};
 use crate::wire::Request;
 
@@ -119,6 +121,9 @@ pub(crate) async fn run(
     let handle = found.handle.clone();
     let by = speaker(core, &handle, params.as_external)?;
     if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
+        if access(core, slash.name(), None) == Access::Off {
+            return Err(turned_off(core, peer, slash.name()).await);
+        }
         let why = why::why(core, peer, &handle, &refused).await;
         return Err(refused.because(why));
     }
@@ -165,13 +170,42 @@ fn split(text: &str) -> Result<(&str, &str), Refusal> {
     Ok((name, rest.trim()))
 }
 
-/// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先判身份
-/// （[`may_run`]），再问命令自己（[`Slash::allowed`]：主人本人才行、要开着记忆这些）。
+/// `by` 在这个会话里能不能用 `slash`（施工 O-6 补收成一处，`command.run` 和 `command.catalog` 共用）：先照这条命令谁能用判身份
+/// （[`access`]、[`passes`]），再问命令自己（[`Slash::allowed`]：主人本人才行、要开着记忆这些）。
 fn allowed(core: &Core, slash: &dyn Slash, handle: &Handle, by: &By) -> Result<(), Refusal> {
-    if !may_run(by) {
+    if !passes(access(core, slash.name(), None), by) {
         return Err(Refusal::COMMAND_NOT_ALLOWED);
     }
     slash.allowed(core, handle, by)
+}
+
+/// 命令 `name` 谁能用（施工 O-6 六补，`slash.md`「谁能用」）：系统配置 `commands.<名字>.access` 写了的照它，没写的照出厂值
+/// `shipped`（扩展清单 `[[slash]]` 的 `access`），都没有的是 `admin`。
+fn access(core: &Core, name: &str, shipped: Option<Access>) -> Access {
+    CommandSettings::at(&core.config().resolved().values(), &[name])
+        .access
+        .as_deref()
+        .and_then(Access::parse)
+        .or(shipped)
+        .unwrap_or(Access::Admin)
+}
+
+/// 照 `access` 判 `by` 过不过身份那一关：`admin` 照旧（[`may_run`]），`anyone` 都过，`off` 都不过。
+fn passes(access: Access, by: &By) -> bool {
+    match access {
+        Access::Admin => may_run(by),
+        Access::Anyone => true,
+        Access::Off => false,
+    }
+}
+
+/// 停用的命令 `name` 被拒：`command_not_allowed`，`data.why` 说「/<名字> 已停用。」（施工 O-6 六补）。
+async fn turned_off(core: &Core, peer: &Peer, name: &str) -> Refusal {
+    let said = Said {
+        key: "commands/unavailable/off",
+        fields: vec![("name", name.to_string())],
+    };
+    Refusal::COMMAND_NOT_ALLOWED.because(words(core, peer, &said).await)
 }
 
 /// 谁能用（`18-通讯平台.md` 第十二节）：本人（本机的头、私聊里对应表认出的本人），对应表里有的外部身份（群里的主人），场所里

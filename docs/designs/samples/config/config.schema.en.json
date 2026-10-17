@@ -1,6 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
+    "commands": {
+      "additionalProperties": {
+        "properties": {
+          "access": {
+            "description": "Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins. Allowed: admin, anyone or off. Only in the system config. Takes effect immediately.",
+            "enum": [
+              "admin",
+              "anyone",
+              "off"
+            ],
+            "title": "Who can use this command",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    },
     "compaction": {
       "properties": {
         "prepare": {
