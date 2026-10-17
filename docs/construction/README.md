@@ -401,6 +401,7 @@ flowchart LR
 | W-4 | mermaid | 可选软件包 `mermaid`、crate `miyu-mermaid`、可选软件包的查询表、`mermaid.render`（三种记号色、缓存、第一次用才读字体）。合了告诉两个头 |
 | W-5 | 分块上传 | `blob.open`、`blob.write`、`blob.close`：跟着连接走，60 秒不写作废，暂存在 `blobs/tmp/`。合了告诉两个头 |
 | W-6 | 分块读 | `blob.get`、`fs.read`：一块最多 512 KiB，`length` 写 0 只问大小；数据根不读（工作区除外）。合了告诉两个头 |
+| W-6 补 | `blob.get` 读会话里的 blob | 接入QQ 的会话 2026-10-17 要的：`blob.get` 多 `session`，照会话的属主读；别的系统账号只读得到它的平台的场所会话里照结构引用过的。施工单见 `W-6补-读会话里的blob.md` |
 | W-7 | 链接卡片 | 可选软件包 `net`、crate `miyu-net`、`link.preview`：地址闸、走环境变量的代理、跳转自己跟、挖元数据、图存成 blob。合了告诉两个头 |
 | W-7 补 | 压缩的页面和 head 后面的标签 | 抓卡片的客户端解压（B 站不问也压着发）、上限照解开以后算；`og:title` 在 `</head>` 后面的（YouTube）接着往下找（2026-10-02 项目主人实测撞到）。施工单见 `W-7-压缩的页面和 head 后面的标签（补）.md` |
 | W-7 再补 | 按网站取卡片 | B 站走它的视频接口（封面、UP 主、时长），MediaWiki 走它们的接口（摘要、缩略图、标题去尾巴），YouTube 读时长，人机验证页不出假卡片；卡片多 `kind`、`duration`、`author`（2026-10-02 项目主人要的，网页转来）。施工单见 `W-7-按网站取卡片（再补）.md` |

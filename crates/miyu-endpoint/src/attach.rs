@@ -35,6 +35,7 @@ use crate::refusal::Refusal;
 use miyu_tool::attachment::{Kind, kind};
 
 mod keep;
+mod reach;
 pub(crate) use keep::keep;
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
@@ -76,6 +77,9 @@ pub(crate) struct Attachment {
 #[derive(Debug, Deserialize)]
 pub(crate) struct GetParams {
     blob: String,
+    /// 照哪个会话的属主找（施工 W-6 补）；不写的照管理员。
+    #[serde(default)]
+    session: Option<String>,
     #[serde(default)]
     offset: u64,
     #[serde(default = "default_length")]
@@ -271,24 +275,34 @@ pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Re
     })
 }
 
-/// `blob.get`：分块读这个账号的一个 blob，照属主给，不照会话（施工 W-6，`web-module.md`「七、分块读」第 1、12
-/// 条）。没有这个 blob：`unknown_blob`；`length` 超过 [`miyu_fs::MAX_LENGTH`]：`bad_params`。
-pub(crate) async fn get(core: &Core, params: GetParams) -> Result<Value, Refusal> {
+/// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照管理员名下，写了的照
+/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接的账号。没有这个 blob、读不到：`unknown_blob`；`length`
+/// 超过 [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
+pub(crate) async fn get(
+    core: &Core,
+    caller: &AccountId,
+    params: GetParams,
+) -> Result<Value, Refusal> {
     if params.length > miyu_fs::MAX_LENGTH {
         return Err(Refusal::BAD_PARAMS);
     }
     let hash = ContentHash::parse(&params.blob).map_err(|_| Refusal::BAD_PARAMS)?;
-    let place = place(core);
-    blocking(move || get_blocking(&place, &hash, params.offset, params.length)).await
+    let account = match &params.session {
+        Some(session) => reach::owner(core, caller, session, &hash).await?,
+        None => core.admin.clone(),
+    };
+    let root = core.root.clone();
+    blocking(move || get_blocking(&root, &account, &hash, params.offset, params.length)).await
 }
 
 fn get_blocking(
-    place: &Place,
+    root: &DataRoot,
+    account: &AccountId,
     hash: &ContentHash,
     offset: u64,
     length: u64,
 ) -> Result<Value, Refusal> {
-    let blobs = Blobs::new(place.root.blobs(&place.admin));
+    let blobs = Blobs::new(root.blobs(account));
     let (data, size) = blobs
         .read_range(hash, offset, length)
         .map_err(|error| match error {

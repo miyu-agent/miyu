@@ -65,13 +65,13 @@ pub(crate) async fn sessions(
 /// 这个平台的身份对着的本机账号（不存在的账号不算）。
 ///
 /// 清单照「系统账号的编号就是包的编号」找（施工 O-4 下的约定）：以后系统账号改了名、不再和包同名，这里要跟着改。
-struct Owners {
+pub(crate) struct Owners {
     platform: Option<String>,
     bound: BTreeSet<AccountId>,
 }
 
 /// 照这时的清单、配置算 [`Owners`]。
-fn owners(core: &Core, caller: &AccountId) -> Owners {
+pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
     let packages = core.packages();
     let platform = packages
         .iter()
@@ -93,7 +93,7 @@ fn owners(core: &Core, caller: &AccountId) -> Owners {
 
 impl Owners {
     /// 场所 `venue` 最新的会话属主是 `owner`、不是调用的系统账号的，列不列：平台对得上、属主是对应表里这个平台的身份对着的。
-    fn take(&self, venue: &str, owner: &AccountId) -> bool {
+    pub(crate) fn take(&self, venue: &str, owner: &AccountId) -> bool {
         self.platform.is_some()
             && platform_of(venue) == self.platform.as_deref()
             && self.bound.contains(owner)
