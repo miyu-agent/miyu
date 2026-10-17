@@ -72,3 +72,29 @@ fn a_failed_remember_is_just_a_tool() {
     let en = summary(&group, "summary_en");
     assert!(en.starts_with("Used 1 tool · "), "{en}");
 }
+
+/// 「记住」单算以后，标题照旧接结果那一句（9-8 十补带进来的回归，网页 10-18 报：「记住 · 内容 · 记成 m14」丢了「记成」那一句）。
+/// 测试用的字只认核心的说法：照一句核心的说法看接没接上。
+#[test]
+fn a_remember_title_still_ends_with_its_result() {
+    let mut stage = stage();
+    stage.model([
+        Line::calls("", &[("remember", r#"{"class":"user","text":"养猫"}"#)]),
+        Line::says("好。"),
+    ]);
+    stage.tools([Play::done("Saved as m14.")]);
+    stage.say("hi");
+    let mut projector = Projector::new(Arc::new(texts("en")), None);
+    for event in stage.log() {
+        let mut event = event.clone();
+        if let miyu_kernel::event::Body::ToolResult(result) = &mut event.body {
+            result.human = Some(miyu_kernel::event::Said::new(
+                "core/tool-results/cancelled-before",
+            ));
+        }
+        projector.event(&event);
+    }
+    let entries = projector.entries().to_vec();
+    let tool = json(of_kind(&entries, "tool")[0]);
+    assert_eq!(tool["title"]["said"], "Cancelled", "{tool}");
+}

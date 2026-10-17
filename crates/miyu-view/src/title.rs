@@ -56,8 +56,9 @@ pub(crate) fn of(
         .and_then(arg)
         .map(|id| on_session(id, texts));
     // 别的工具后面跟结果那一句；命令有预览、编辑有加减的行数、子代理有任务编号，不写；留言送到了的和对象重了，不写。
+    // 记住（9-8 十补只为收起那一行单算）照别的工具接「记成 m14」。
     let said = match kind {
-        None => said.and_then(|s| words.say(s)),
+        None | Some(ToolKind::Remember) => said.and_then(|s| words.say(s)),
         Some(ToolKind::Message) if state.failed() => said.and_then(|s| words.say(s)),
         _ => None,
     };
