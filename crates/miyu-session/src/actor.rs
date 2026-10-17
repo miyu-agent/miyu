@@ -280,7 +280,10 @@ impl Actor {
                 true => tracing::trace!(target: TARGET, kind, "input"),
                 false => tracing::debug!(target: TARGET, kind, "input"),
             }
-            for action in self.session.handle(input) {
+            let actions = self.session.handle(input);
+            // 内核一收下就写「有没有在跑的回合」：回应在批中间就发出去了，回合开头慢的那一阵不能算闲着（`tests/busy.rs`）。
+            self.settle_busy();
+            for action in actions {
                 inputs.extend(self.act(action).await?);
             }
         }
