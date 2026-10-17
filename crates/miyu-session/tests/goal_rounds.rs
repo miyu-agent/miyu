@@ -1,6 +1,6 @@
 //! 长期目标的续轮（施工 X-7，`docs/blueprint/goal.md`）：真 actor、假模型。设了、空着就开续轮，第一轮完整版、之后短版；续轮里调了
 //! 工具的接着开，没调工具的停下等人，人说一句以后接着开；到了上限记卡住；停了不开、接着跑重新发完整版；载入时还跑着的记成
-//! 停着、不开；跑着的不闲够了退下。
+//! 停着、不开；跑着的不闲够了退下。后台命令还在跑的先不开，它报完叫醒她、干完那一轮再开（施工 X-7 再补）。
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -14,8 +14,8 @@ use miyu_kernel::session::{Command, GoalChange};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Goal, GoalState, Handle, Retire};
-use miyu_tool::testkit::{Act, Fake};
-use miyu_tool::{Catalog, Tool};
+use miyu_tool::testkit::{Act, Fake, Held};
+use miyu_tool::{Catalog, Exit, Tool};
 
 use crate::support::*;
 
@@ -226,4 +226,78 @@ async fn rounds_go_on_while_a_head_keeps_asking_for_the_status() {
     let waiting = until_goal(&handle, |goal| goal.state == GoalState::Waiting).await;
     assert_eq!(waiting.round, 3);
     asking.abort();
+}
+
+/// 有假工具 `read`、`start`（把 `held` 交给任务端口当后台命令）的目录（施工 X-7 再补）。
+fn with_background(held: &Arc<Held>) -> Catalog {
+    let read = Fake::new("read", Access::Read, Act::Echo);
+    let start = Fake::new("start", Access::Read, Act::Background(Arc::clone(held)));
+    Catalog::new([read as Arc<dyn Tool>, start as Arc<dyn Tool>]).expect("合写法")
+}
+
+/// 等到日志里结束了 `n` 轮：最多六十秒。
+async fn until_ended(home: &Home, session: &SessionId, n: usize) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while ended(home, session) < n {
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "六十秒内没结束 {n} 轮"
+        );
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+}
+
+#[tokio::test]
+async fn a_running_command_holds_the_round_until_it_reports() {
+    let home = Home::new();
+    let held = Held::new(&["building\n"]);
+    let models = script([
+        Play::calls(&[("start", "{}")]),
+        Play::Says("开了编译，等它。"),
+        Play::calls(&[("read", "{}")]),
+        Play::Says("编译过了。"),
+        Play::Says("做完了，等你看。"),
+    ]);
+    let handle = home.create_with(&models, &with_background(&held)).await;
+    let session = handle.id().clone();
+    goal(&handle, "g1", set(Some(9))).await;
+    until_ended(&home, &session, 1).await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(
+        (ended(&home, &session), rounds(&home, &session).len()),
+        (1, 1),
+        "后台命令还在跑，续轮先不开"
+    );
+    let now = until_goal(&handle, |_| true).await;
+    assert_eq!(now.state, GoalState::Running, "不是在等人");
+
+    // 命令报完：叫醒她，那一轮干完再开续轮；续轮没调工具才等人。
+    held.end(Exit::Code(0));
+    let waiting = until_goal(&handle, |goal| goal.state == GoalState::Waiting).await;
+    // 第几轮照跑着时开的每一轮算（`goal.rs`），叫醒的那一轮也算；续轮消息只发了两条。
+    assert_eq!(
+        (
+            waiting.round,
+            ended(&home, &session),
+            rounds(&home, &session).len()
+        ),
+        (3, 3, 2),
+        "叫醒的一轮、第二条续轮"
+    );
+    let log = home.log(&session);
+    let reported = log
+        .iter()
+        .position(|event| matches!(event.body, Body::JobReported(_)))
+        .expect("报完了");
+    let second = log
+        .iter()
+        .enumerate()
+        .filter(|(_, event)| {
+            matches!(&event.by, By::Module(module) if module.id.as_str() == "goal")
+                && matches!(event.body, Body::MessageUser(_))
+        })
+        .nth(1)
+        .map(|(at, _)| at)
+        .expect("第二轮续轮");
+    assert!(reported < second, "回报叫醒在前，续轮在后");
 }

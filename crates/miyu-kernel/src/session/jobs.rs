@@ -46,6 +46,12 @@ impl Session {
         self.ledger.running_started()
     }
 
+    /// 还有没报过结束的后台命令（施工 X-7 再补）：长期目标的续轮等它们报完再开（`docs/blueprint/goal.md`「照旧版留下的」第 8 条）。
+    /// 子代理不算，等子代理在 [`Session::vacant`] 里。纯查询。
+    pub fn commands_running(&self) -> bool {
+        !self.ledger.running_commands().is_empty()
+    }
+
     /// 日志里用过的任务编号最后一段最大的数（施工 7-5；照最后一段数，施工 7-1 补）：撤掉的回合里派的也算，一个都没派过的
     /// 是 0。纯查询：会话 actor 造会话、载入以后照它建领号的，新派的任务从下一个数起（`session/tools.md`「任务编号」）。施工
     /// 8-9 从 `session.rs` 挪来，那边放不下了。

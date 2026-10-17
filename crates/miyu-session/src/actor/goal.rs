@@ -3,6 +3,14 @@
 //! `by` 是模块 `goal`，正文是续轮消息；到了轮数上限的改成记卡住。授权就是「跑着」：载入时内核把还跑着的记成停着（核心重启
 //! 以后要人 `/goal resume`），跑着的一定是这次运行里设下、接着跑的。等人开口只在内存里，照这次运行里落了盘的事件记
 //! （[`GoalRun::note`]）。
+//!
+//! 后台命令还在跑的先不开（施工 X-7 再补，`goal.md`「照旧版留下的」第 8 条）：她结束这一轮就是在等它，命令报完会叫醒她；一空下来
+//! 就开续轮，她只能 `sleep` 着轮询。等满 [`FALLBACK`] 照常开（常驻的服务不会报完）。被回报叫醒的那一轮和续轮一样记调没调工具：
+//! 调了的不再等人（保底开的那一轮没事可做、锁进等人，回报叫醒她干了活，接着开续轮）。
+
+use std::time::Duration;
+
+use tokio::time::Instant;
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event, GoalOutcome, round_command};
@@ -18,6 +26,17 @@ use crate::goal::{Goal, GoalState};
 /// 发续轮的模块。
 const MODULE: &str = "goal";
 
+/// 后台命令一直没报完，最多等多久照常开续轮（施工 X-7 再补，项目主人 2026-10-18 定 20 分钟，照 Claude Code 自己定节奏时的保底）。
+pub(super) const FALLBACK: Duration = Duration::from_secs(20 * 60);
+
+/// 正在看的一轮（续轮开的，或者回报叫醒的）：回合编号、调没调过工具、是不是回报叫醒的。
+#[derive(Debug, Clone, Copy)]
+struct Watched {
+    turn: TurnId,
+    called: bool,
+    woken: bool,
+}
+
 /// 这次运行里的续轮账。
 #[derive(Debug, Default)]
 pub(super) struct GoalRun {
@@ -27,8 +46,14 @@ pub(super) struct GoalRun {
     full_sent: bool,
     /// 续轮消息落盘的序号：它开的那一轮是续轮。
     ours: Option<Seq>,
-    /// 续轮开的那一轮：回合编号、调没调过工具。
-    turn: Option<(TurnId, bool)>,
+    /// 续轮开的、回报叫醒的那一轮（施工 X-7 再补）：回合编号、调没调过工具。
+    turn: Option<Watched>,
+    /// 还没开轮的后台命令回报的序号（施工 X-7 再补）：哪一轮是它们叫醒的。
+    reports: Vec<Seq>,
+    /// 后台命令还在跑、续轮先不开，从哪一刻起等的（施工 X-7 再补）：开了一轮重新算。
+    held: Option<Instant>,
+    /// 等到哪一刻照常开（施工 X-7 再补）：主循环到点醒一次。
+    pub(super) wake: Option<Instant>,
     /// 上一次发的时候目标在第几轮：同一轮不发两次（被拒了、没开起来的不再发）。
     sent_at: Option<u32>,
     /// 上一次推给头的样子（施工 X-8 补）：变了才推。
@@ -55,30 +80,55 @@ impl GoalRun {
                     self.heard = true;
                 }
                 Body::QuestionAnswered(_) if matches!(event.by, By::Person(_)) => self.heard = true,
+                Body::JobReported(_) => self.reports.push(event.seq),
                 Body::TurnStarted(started) => {
                     let ours = started.trigger.is_some() && started.trigger == self.ours;
-                    self.turn = ours.then(|| (TurnId::new(event.seq), false));
+                    let woken = started
+                        .trigger
+                        .is_some_and(|trigger| self.reports.contains(&trigger));
+                    self.turn = (ours || woken).then(|| Watched {
+                        turn: TurnId::new(event.seq),
+                        called: false,
+                        woken,
+                    });
                     self.ours = None;
+                    self.reports.clear();
+                    self.held = None;
                 }
                 Body::MessageAssistant(reply) => {
-                    if let Some((turn, called)) = self.turn.as_mut()
-                        && event.turn == Some(*turn)
+                    if let Some(watched) = self.turn.as_mut()
+                        && event.turn == Some(watched.turn)
                         && reply
                             .blocks
                             .iter()
                             .any(|block| matches!(block, Block::ToolCall(_)))
                     {
-                        *called = true;
+                        watched.called = true;
                     }
                 }
-                Body::TurnEnded(_) => {
-                    if let Some((_, called)) = self.turn.take() {
-                        self.waiting |= !called;
-                    }
-                }
+                Body::TurnEnded(_) => match self.turn.take() {
+                    Some(Watched {
+                        woken: true,
+                        called: true,
+                        ..
+                    }) => self.waiting = false,
+                    Some(Watched {
+                        woken: false,
+                        called,
+                        ..
+                    }) => self.waiting |= !called,
+                    _ => {}
+                },
                 _ => {}
             }
         }
+    }
+
+    /// 后台命令还在跑（施工 X-7 再补）：头一回看到时记下起点；没等满 [`FALLBACK`] 交回到点的时刻（先不开），等满了交回
+    /// `None`（照常开）。
+    pub(super) fn hold(&mut self, now: Instant) -> Option<Instant> {
+        let until = *self.held.get_or_insert(now) + FALLBACK;
+        (now < until).then_some(until)
     }
 
     /// 头上看到的样子（施工 X-7）：跑着、在等人开口的是等人。
@@ -103,6 +153,7 @@ fn is_ours(by: &By) -> bool {
 impl Actor {
     /// 送完一批以后：该开续轮的交回续轮消息，到了轮数上限的交回记卡住的命令；别的没有。
     pub(super) fn goal_round(&mut self) -> Option<Input> {
+        self.goal_run.wake = None;
         let goal = self.counted().goals.now().cloned()?;
         let run = &self.goal_run;
         if goal.state != GoalState::Running || run.waiting || self.session.sealed() {
@@ -110,6 +161,12 @@ impl Actor {
         }
         if run.sent_at == Some(goal.round) || !self.session.vacant() || !self.inbox.is_empty() {
             return None;
+        }
+        if self.session.commands_running() {
+            self.goal_run.wake = self.goal_run.hold(Instant::now());
+            if self.goal_run.wake.is_some() {
+                return None;
+            }
         }
         self.goal_run.sent_at = Some(goal.round);
         let at = self.clock.now();

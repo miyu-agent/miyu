@@ -228,6 +228,8 @@ impl Actor {
                 }
                 continue;
             }
+            // 后台命令还在跑、续轮先不开的（施工 X-7 再补，`goal.rs`）：等满保底时长醒一次，回到上面照常开。
+            let wake = self.goal_run.wake;
             let input = tokio::select! {
                 biased;
                 Some(back) = self.back.recv() => match self.back(back) {
@@ -252,6 +254,8 @@ impl Actor {
                         return;
                     }
                 },
+                () = tokio::time::sleep_until(wake.unwrap_or_else(tokio::time::Instant::now)),
+                    if wake.is_some() => continue,
             };
             if self.drain(VecDeque::from([input])).await.is_err() {
                 return;
