@@ -1,6 +1,6 @@
 ## 施工单 X-8 再补：再发 `/goal` 就是改
 
-状态：施工中（2026-10-17）。2026-10-17 项目主人定；图纸 `docs/blueprint/goal.md` 第 6 条、`protocol.md` 的 `command.run` 第 10 条。
+状态：2026-10-17 合了（e1fd699a，补修 7feeaa58）。2026-10-17 项目主人定；图纸 `docs/blueprint/goal.md` 第 6 条、`protocol.md` 的 `command.run` 第 10 条。
 
 ### 为什么
 
