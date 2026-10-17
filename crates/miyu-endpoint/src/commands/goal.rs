@@ -51,7 +51,7 @@ impl Slash for GoalCommand {
     fn usage(&self) -> &'static [(&'static str, &'static str)] {
         &[
             ("", "commands/usage/goal/show"),
-            ("<>", "commands/usage/goal/set"),
+            ("commands/placeholder/goal", "commands/usage/goal/set"),
             ("pause", "commands/usage/goal/pause"),
             ("resume", "commands/usage/goal/resume"),
             ("clear", "commands/usage/goal/clear"),

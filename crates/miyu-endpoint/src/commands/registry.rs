@@ -83,8 +83,9 @@ pub(crate) trait Slash: Send + Sync {
         None
     }
 
-    /// 几种写法（施工 O-6 四补，`command.catalog` 的 `usage`）：名字后面跟的（空的是只打名字；`<>` 括起来的照 [`Slash::argument`]
-    /// 那一句写）、做什么的那一句的键，照先后。只有一种写法的不写，头照 `summary`、`argument` 显示。
+    /// 几种写法（施工 O-6 四补，`command.catalog` 的 `usage`）：名字后面跟的（空的是只打名字；`commands/` 开头的是
+    /// `core/human` 的键，照连接的语言换成那一句，例如占位的「<目标>」）、做什么那一句的键，照先后。只有一种写法的不写。
+    /// 头的菜单照 [`Slash::argument`] 一行显示（施工 O-6 五补：有几种写法的 `argument` 写成语法提要），`/help` 照它一行一种。
     fn usage(&self) -> &'static [(&'static str, &'static str)] {
         &[]
     }

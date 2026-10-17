@@ -85,14 +85,14 @@ pub(crate) async fn catalog(
         if let Some(argument) = &argument {
             item["argument"] = json!(argument);
         }
-        // 几种写法（施工 O-6 四补）：`/<名字>` 接上后面跟的，`<>` 照 `argument` 那一句写。
+        // 几种写法（施工 O-6 四补）：`/<名字>` 接上后面跟的；`commands/` 开头的照连接的语言换成那一句（施工 O-6 五补）。
         let mut usage = Vec::new();
         for (rest, said) in slash.usage() {
-            let rest = match (*rest, &argument) {
-                ("<>", Some(argument)) => argument.as_str(),
-                (rest, _) => rest,
+            let rest = match rest.starts_with("commands/") {
+                true => words(core, peer, &Said::plain(rest)).await,
+                false => (*rest).to_string(),
             };
-            let form = match rest {
+            let form = match rest.as_str() {
                 "" => format!("/{}", slash.name()),
                 rest => format!("/{} {rest}", slash.name()),
             };
