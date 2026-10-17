@@ -127,10 +127,10 @@
 | `execute` | 放行 | 沙盒能用：放行（在沙盒里跑）；用不了：问人 | 沙盒能用：放行（在只读沙盒里跑）；用不了：问人 |
 | `execute`，要在沙盒外跑（施工 D-4） | 放行 | 问人，不提规则 | 拒绝：只读 |
 | `network`、`outbound`、不认识的 | 放行 | 问人 | 问人 |
-| `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝 | 同左 | 同左 |
+| `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝（`venues` 有 `local` 的照 `outbound`，施工 O-31 补） | 同左 | 同左 |
 
 - 读写不报路径的放行：查不到路径的，执行时工具自己报错。
-- 在场所里做的事（`venue`，施工 O-31 前，2026-10-10 核心定）不看级别、不看报的路径：场所会话（场所不是 `local` 的）里放行，不问人，有没有人能确认都一样（场所会话本来就没人能确认，问了等于拒）；本机的会话（终端、网页）里拒绝，`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/not-in-venue.txt`），说法 `core/permissions/not-in-venue`。谁能叫、能动谁是提供者的事（`providers.md`「在场所里做的事」）。本机的会话的工具面本来就没有只给场所的工具（`venues` 不含 `local`），这一条是兜底。
+- 在场所里做的事（`venue`，施工 O-31 前，2026-10-10 核心定）不看级别、不看报的路径：场所会话（场所不是 `local` 的）里放行，不问人，有没有人能确认都一样（场所会话本来就没人能确认，问了等于拒）；本机的会话（终端、网页）里拒绝，`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/not-in-venue.txt`），说法 `core/permissions/not-in-venue`。也给本机用的（工具的 `venues` 里有 `local`，施工 O-31 补，2026-10-17 接入QQ 的会话要的「主动发消息」）本机的会话里不拒，照对外发消息（`outbound`）判：完全放开放行，工作区问人，没人能确认的拒（本机的会话就是管理员本人）。谁能叫、能动谁是提供者的事（`providers.md`「在场所里做的事」）。本机的会话的工具面本来就没有只给场所的工具（`venues` 不含 `local`），这一条是兜底。
 - 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」，2026-10-11 项目主人定）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊；协议端点造、载入时照属主填 `owner_is_admin`）。不看级别：文件类工具报的每一条路径换成真实的位置以后，要在这一轮的工作区或者加进来的目录里，外面的（连读）一律拒（放开只读的技能文件夹里的读除外，施工 X-10 上），`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/outside-workspace.txt`，字段 `path`），说法 `core/permissions/outside-workspace`；访问类别是执行命令的：沙盒能用、又关得住读（`miyu_sandbox::CONFINES_READS`，现在只有 Linux）的放行，在只准读名单里的沙盒里跑（施工 5-12 下，`session/tools.md` 第 1a 条）；别的一律拒（`no-commands.txt`，说法 `core/permissions/no-commands`）；要在沙盒外跑的一律拒。管理员本人的场所会话、本机的会话照旧。
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。
 - 要在沙盒外跑的执行（工具报 `Tool::outside_sandbox`，`shell` 写了 `outside_sandbox`，施工 D-4）：完全放开放行；工作区问人，不管沙盒能不能用，不提规则（一次放开整个沙盒，不该一劳永逸）；只读拒绝，说只读开着、命令不能在沙盒外跑。本会话放行过的规则管不到它：规则只管路径。执行器照同一个报不写沙盒的规格，所以工作区一定问过人才跑得到。
@@ -206,8 +206,8 @@
 | `crates/miyu-session/src/guard/tests.rs` | 判法表的每一格（边界以外的读哪一级都放行）；实际生效的那一级，不认识的按只读；不报路径的：执行命令沙盒能用时工作区、只读都放行，用不了时都问人、不提规则、说明是 `{"sandbox":false,"tool":"shell"}`（施工 D-4 起），读写放行，联网除了完全放开都问人（施工 5-4 上）；说明并进工具交的几格、工具名盖不过、执行类才写 `sandbox`，沙盒用不了时也带标题和命令（施工 D-4） |
 | `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4） | 要在沙盒外跑的：工作区问人、不提规则、说明逐字节比，允许一次的那一次不带沙盒的规格、没报的照旧带、不问；拒绝的没跑、是拒绝；没人能确认的拒绝；只读不问、拒绝；完全放开不问、不带规格；碰数据根的照拒、不问；沙盒用不了时每条命令都问、说明带标题和命令；Unix 上真经助手跑 `shell`：没写的写不进工作区以外，写了的允许以后写得进 |
 | `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读放行（施工 5-4 上）；越界的写问人，规则和说明写对了、`by` 是 `permissions`；没人能确认的拒绝；数据根哪一级都拒、写对了那一句和说法；完全放开越界的写不问；执行命令照沙盒能不能用：能用时工作区、只读都放行，用不了时问人（没人能确认就拒）；工作区里的 git 钩子只能读；几条路径照最严的，有一条在数据根里就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；写 git 钩子问人，说明里是 `read_only`、规则只有 `write`；`~` 照家目录换，写到边界以外要问人（没人能确认，是内核拒的，不是权限策略）；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
-| `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样 |
-| `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前） | 契约：扩展登记 `venue` 的工具收；本机的会话调到它当场拒绝、写那一句，扩展收不到 `tool.call` |
+| `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，工作区没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
+| `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 问人，人点头以前扩展收不到 `tool.call`。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |
 | `crates/miyu-session/tests/guard_grants.rs`（施工 D-1） | 选了本会话都允许，同一个目录下面的写不再问、名字只是开头一样的旁边的目录照旧问；家目录里的一个文件只放它本身、同在家目录里的别的照旧问；家目录在链接后面也照真实的位置比（只在 Unix 上） |
 | `crates/miyu-session/tests/guard_dirs.rs` | 加进来的目录（施工 5-10 上）：里面写不用问、里面的 `.git/hooks` 只能读、只读照旧拒绝 |
 | `crates/miyu-session/tests/guard_private.rs`（施工 5-13） | 私密目录：工作区、只读两级的读都问人，说明里是 `private`、规则放行整个目录；没人能确认的不跑；只读的写不问直接拒；完全放开读写都不问；工作区、加进来的目录在里面的照工作区 |

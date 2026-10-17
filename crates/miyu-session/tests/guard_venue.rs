@@ -129,3 +129,42 @@ async fn a_loaded_session_still_knows_where_it_is() {
         );
     }
 }
+
+/// 也给本机用的（`venues` 有 `local`，施工 O-31 补，接入QQ 的会话 2026-10-17 要的「主动发消息」）：本机的会话里照对外发消息
+/// 判（本机的会话就是管理员本人）：完全放开直接跑；工作区要问人，没人能确认的拒，说的是没人能确认、不是「不在场所里」。
+#[tokio::test]
+async fn a_venue_action_meant_for_local_too_goes_by_outbound_on_this_machine() {
+    let venues = miyu_tool::Venues {
+        local: true,
+        private: true,
+        group: true,
+    };
+    for (level, runs) in [(Level::Full, true), (Level::Workspace, false)] {
+        let home = Home::new();
+        let tool = Fake::in_venues("qq_send", Access::Venue, venues, Act::Echo);
+        let catalog = Catalog::new([Arc::clone(&tool) as Arc<dyn Tool>]).expect("合写法");
+        let opening = Opening {
+            permission: Permission {
+                level: level.clone(),
+                read_only: false,
+            },
+            attended: false,
+            ..Opening::default()
+        };
+        let script = Script::new([Play::calls(&[("qq_send", "{}")]), Play::Says("好。")]);
+        let handle = home
+            .create_full(&script, &catalog, opening, Lines::default())
+            .await;
+        let log = turn(&home, &handle).await;
+        assert_eq!(tool.calls().len(), usize::from(runs), "{level:?}：{log:#?}");
+        let said = log.iter().find_map(|event| match &event.body {
+            Body::ToolResult(result) => result.human.as_ref().map(|said| said.key.clone()),
+            _ => None,
+        });
+        assert_ne!(
+            said.as_deref(),
+            Some("core/permissions/not-in-venue"),
+            "{level:?}：不是「不在场所里」"
+        );
+    }
+}

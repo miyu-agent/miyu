@@ -30,7 +30,8 @@ text_enum!(
         /// 对外发消息。
         Outbound = "outbound",
         /// 在通讯平台的场所里做的事（施工 O-31 前，`kernel/tools.md`）：撤回、禁言、戳一戳这些。只在场所会话里能用，
-        /// 权限策略放行、不问人；本机的会话里拒绝。谁能叫、能动谁由提供者照 `by`、`owner` 自己挡（`providers.md`）。
+        /// 权限策略放行、不问人；本机的会话里拒绝，工具的 `venues` 有 `local` 的照 [`Access::Outbound`] 判（施工 O-31 补）。谁能叫、
+        /// 能动谁由提供者照 `by`、`owner` 自己挡（`providers.md`）。
         Venue = "venue",
         /// 改这台机器上装了什么（施工 F-10 下，`docs/blueprint/tools/package.md`）：装、卸软件包，打开扩展。算写入；权限策略
         /// 照级别判：完全放开放行，工作区每次问人，只读拒绝。

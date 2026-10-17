@@ -174,8 +174,12 @@ impl Guard {
         };
         let level = effective(permission);
         let access = tool.spec().access.clone();
-        // 在场所里做的事不报路径、不在沙盒外跑：只看会话在不在场所里（施工 O-31 前）。
-        if access == Access::Venue {
+        // 在场所里做的事不报路径、不在沙盒外跑：只看会话在不在场所里（施工 O-31 前）。也给本机用的（`venues` 有 `local`，
+        // 施工 O-31 补：接入QQ 的「主动发消息」本机的会话里也叫她发），本机的会话里照对外发消息判：本机的会话就是管理员本人。
+        let local_venue = access == Access::Venue
+            && matches!(self.place, Place::Local(_))
+            && tool.venues().is_some_and(|venues| venues.local);
+        if access == Access::Venue && !local_venue {
             return in_venue(&self.place);
         }
         // 只碰得到自己工作区的会话：命令只在把读也关进工作区的沙盒里跑（施工 5-12 下），关不住读的平台、沙盒用不了的
@@ -210,6 +214,9 @@ impl Guard {
             ids: None,
         };
         let asking = tool.asking(&call);
+        if local_venue {
+            return untargeted(level, name, Access::Outbound, self.sandboxed, &asking);
+        }
         let verdict = self.paths(tool.as_ref(), name, level, &call, dirs, grants, &asking);
         // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）。
         if let Some(confined) = &self.confined
