@@ -504,6 +504,8 @@
     "package-problems/script_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/mcp_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/skill_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
+    "package-problems/persona_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
+    "package-problems/preset_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_skipped": "このスラッシュコマンドはスキップされました：{detail}",
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",

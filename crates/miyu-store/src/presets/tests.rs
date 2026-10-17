@@ -28,7 +28,9 @@ impl Places {
         };
         let root = DataRoot::locate(&env).unwrap();
         let admin = AccountId::parse("admin").unwrap();
-        let presets = Presets::new(&resources, &root, &admin);
+        // 两个装着的包 `a`、`b`（施工 P-11 上）：先后照交进来的。
+        let packages = [scratch.path().join("pkgs/a"), scratch.path().join("pkgs/b")];
+        let presets = Presets::new(&resources, &root, &admin).with_packages(&packages);
         Places { scratch, presets }
     }
 
@@ -36,6 +38,7 @@ impl Places {
     fn dir(&self, layer: Layer) -> PathBuf {
         let base = match layer {
             Layer::Shipped => "res/presets",
+            Layer::Package => "pkgs/a/presets",
             Layer::System => "data/system/presets",
             Layer::Home => "data/home/admin/presets",
         };
@@ -258,4 +261,50 @@ fn every_problem_code_is_said_in_three_languages() {
             );
         }
     }
+}
+
+/// 包带的预设在出厂的和系统区的中间，一个编号只认一份（施工 P-11 上，设计 31 第十节第 2、7 条）。
+#[test]
+fn a_package_preset_sits_between_shipped_and_system() {
+    let places = Places::new();
+    places.write(
+        Layer::Package,
+        "chat.toml",
+        "[preset]\nname = \"Chat\"\nunlisted = \"off\"\n",
+    );
+    places.write(Layer::Home, "chat.toml", "[preset]\nunlisted = \"on\"\n");
+    let found = places.presets.find("chat").unwrap();
+    assert_eq!(found.layers, [Layer::Package, Layer::Home]);
+    assert_eq!(found.file.name.unwrap().pick("en"), Some("Chat"));
+    places.write(Layer::Shipped, "dev.toml", DEV);
+    let b = places.scratch.path().join("pkgs/b/presets");
+    fs::create_dir_all(&b).unwrap();
+    fs::write(b.join("dev.toml"), "[preset]\nname = \"B\"\n").unwrap();
+    fs::write(b.join("chat.toml"), "[preset]\nname = \"B\"\n").unwrap();
+    assert_eq!(places.presets.find("dev").unwrap().layers, [Layer::Shipped]);
+    assert_eq!(
+        places
+            .presets
+            .find("chat")
+            .unwrap()
+            .file
+            .name
+            .unwrap()
+            .pick("en"),
+        Some("Chat"),
+        "排在前面的包赢"
+    );
+    assert_eq!(
+        places.presets.covered(),
+        [
+            Covered {
+                path: b.join("chat.toml"),
+                by: places.dir(Layer::Package).join("chat.toml"),
+            },
+            Covered {
+                path: b.join("dev.toml"),
+                by: places.dir(Layer::Shipped).join("dev.toml"),
+            },
+        ]
+    );
 }

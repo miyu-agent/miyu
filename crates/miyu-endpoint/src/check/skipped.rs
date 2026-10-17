@@ -14,7 +14,7 @@ use miyu_store::skills::Skipped;
 use super::shown;
 use crate::Core;
 
-/// 几条警告：`kind` 是 `script`、`skill`、`slash`。
+/// 几条警告：`kind` 是 `script`、`skill`、`slash`、`persona`、`preset`。
 pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
     let (packages, root, admin) = (core.packages(), core.root.clone(), core.admin.clone());
     let found = tokio::task::spawn_blocking(move || {
@@ -64,6 +64,25 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             .filter(|template| core.commands.find(&template.name).is_some())
             .map(|template| warn("slash", "slash_builtin", &template.file, &template.name)),
     );
+    // 包里带的人格、预设被出厂的、排在前面的包盖住了（施工 P-11 上）。
+    let (personas, presets) = (
+        crate::personas::personas(core),
+        crate::presets::presets(core),
+    );
+    let covered =
+        tokio::task::spawn_blocking(move || (personas.covered(), presets.covered())).await;
+    if let Ok((personas, presets)) = covered {
+        for (kind, covered) in [("persona", personas), ("preset", presets)] {
+            problems.extend(covered.iter().map(|one| {
+                warn(
+                    kind,
+                    &format!("{kind}_covered"),
+                    &one.path,
+                    &shown(core, &one.by),
+                )
+            }));
+        }
+    }
     // 扩展声明的命令、整页的命令名（施工 X-14 下、X-15 上）和内置的同名：报在清单上。
     for found in core.packages().iter() {
         let Ok(manifest) = &found.read else {

@@ -1,5 +1,6 @@
 //! 人格在哪、几层怎么叠（施工 P-1 上，`docs/blueprint/personas.md`，`16-人格与预设.md` 第四节）：出厂的
-//! `<资源目录>/personas/<编号>/`、系统区 `system/personas/<编号>/`、管理员家目录 `home/<管理员>/personas/<编号>/`，同名的后面
+//! `<资源目录>/personas/<编号>/`、装着的软件包带的 `<包文件夹>/personas/<编号>/`（施工 P-11 上，一个编号只认一份，
+//! `layers::covered`）、系统区 `system/personas/<编号>/`、管理员家目录 `home/<管理员>/personas/<编号>/`，同名的后面
 //! 的叠在前面的上面：`persona.toml` 逐项盖，`prompts/` 里的文件同名替换、没写的沿用。读法同配置文件：只有本人写自己的
 //! 家目录，顺着链接读。文件怎么读成样子在 `miyu_policy::persona`。
 
@@ -13,8 +14,8 @@ use miyu_policy::PersonaTexts;
 use miyu_policy::persona;
 pub use miyu_policy::persona::{PersonaFile, Phrases, Problem};
 
-pub use crate::layers::{Layer, valid};
-use crate::layers::{read_text, real};
+pub use crate::layers::{Covered, Layer, valid};
+use crate::layers::{covered_all, hidden, read_text, real, with_packages};
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
 
@@ -135,6 +136,24 @@ impl Personas {
         self
     }
 
+    /// 同一份，插上软件包那一层（施工 P-11 上）：`packages` 是装着的包的文件夹，出厂的包在前、同一层照编号；读的时候看各自的
+    /// `personas/`。
+    #[must_use]
+    pub fn with_packages(mut self, packages: &[PathBuf]) -> Personas {
+        with_packages(&mut self.dirs, packages, "personas");
+        self
+    }
+
+    /// 包里带的、被出厂的或者排在前面的包盖住了的人格（施工 P-11 上，`miyu check` 报）：照编号、包的先后。
+    pub fn covered(&self) -> Vec<Covered> {
+        covered_all(
+            &self.dirs,
+            &self.ids(),
+            |dir, id| dir.join(id),
+            Path::is_dir,
+        )
+    }
+
     /// 找人格 `id`，几层叠好。
     ///
     /// # Errors
@@ -171,7 +190,11 @@ impl Personas {
             avatar: None,
             background: None,
         };
-        for (layer, dir) in &self.dirs {
+        let lost: Vec<usize> = hidden(&self.dirs, |dir| dir.join(id).is_dir());
+        for (at, (layer, dir)) in self.dirs.iter().enumerate() {
+            if lost.contains(&at) {
+                continue;
+            }
             let dir = dir.join(id);
             let edits = home.filter(|_| *layer == Layer::Home);
             let written = edits.is_some_and(|edits| edits.values().any(Option::is_some));
@@ -262,8 +285,14 @@ impl Personas {
     }
 
     /// 一份字真住在哪个文件（施工 P-3 下，`persona.read` 读原文）：人格 `id` 在 `layer` 那一层的目录里的 `relative`。
+    /// 包那一层是认的那一个包里的（施工 P-11 上）；没有一个包带它的没有。
     pub fn file_of(&self, id: &str, layer: Layer, relative: &str) -> Option<PathBuf> {
-        let (_, dir) = self.dirs.iter().find(|(at, _)| *at == layer)?;
+        let lost: Vec<usize> = hidden(&self.dirs, |dir| dir.join(id).is_dir());
+        let (_, dir) = self.dirs.iter().enumerate().find_map(|(at, (one, dir))| {
+            let package = layer == Layer::Package;
+            (*one == layer && (!package || (dir.join(id).is_dir() && !lost.contains(&at))))
+                .then_some((at, dir))
+        })?;
         Some(inside(&dir.join(id), relative))
     }
 

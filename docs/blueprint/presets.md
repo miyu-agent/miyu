@@ -2,7 +2,7 @@
 
 ### 是什么
 
-预设管「她以什么方式工作」：哪些软件开着、哪几件工具关掉、不指定人格时用哪个人格（`16-人格与预设.md`）。一个预设是一份 TOML 文件，和人格一样三层叠起来：出厂的、系统区的、管理员家目录里的。开会话必须有预设，没指定的照默认（Y12），钉在会话上（Y5）。
+预设管「她以什么方式工作」：哪些软件开着、哪几件工具关掉、不指定人格时用哪个人格（`16-人格与预设.md`）。一个预设是一份 TOML 文件，和人格一样四层叠起来：出厂的、装着的软件包带的（施工 P-11 上，`<包文件夹>/presets/<编号>.toml`，一个编号只认一份，同 `personas.md`「软件包带的」）、系统区的、管理员家目录里的。开会话必须有预设，没指定的照默认（Y12），钉在会话上（Y5）。
 
 状态：图纸，施工 P-2（上）做了（2026-10-08 主会话；方向照人格与预设走查的 C 组、D2 和 Y12，项目主人 2026-10-07 定；出厂编号和默认预设和通讯平台的会话对过）。照预设挑工具面、装了没开的那一行（Y8）、开不开记忆和角色扮演施工 P-2（中）做了（2026-10-08，走查 C1、C4、E2）。改了预设的文件开着的会话下一个回合换上施工 P-2（下）做了（2026-10-08，K3）。预设里写配置值（D1）、子代理选人格和预设（C5）随后面两步，新建、改、删、`base` 随 P-3。 预设照功能开关施工 F-3（上）做了（2026-10-09 主会话，设计 `30-插件框架.md` 第四节）：`[features]`、工具照功能留不留、没装的功能就是没有；`preset.get` 照功能列、`preset.set` 改功能施工 F-3（下）做了（同一天）。
 
@@ -12,7 +12,7 @@
 |---|---|
 | `crates/miyu-policy/src/preset.rs` | 一份预设文件读成样子：每一格的写法，写错的报第一处，带代码、第几行；逐格叠（纯逻辑） |
 | `crates/miyu-store/src/presets.rs` | 三层在哪、怎么叠、列出编号、`miyu check` 查每一份 |
-| `crates/miyu-store/src/layers.rs` | 人格、预设共用的三层和编号的写法 |
+| `crates/miyu-store/src/layers.rs` | 人格、预设共用的四层、包那一层认哪一份（`covered`，施工 P-11 上）和编号的写法 |
 | `crates/miyu-endpoint/src/presets.rs` | 造会话时照默认找、算装了哪些软件和没开的、`preset.list`、`preset.get` |
 | `crates/miyu-tool/src/catalog.rs` | 工具目录按包登记，记下每件工具归哪个包（施工 P-2 中） |
 | `crates/miyu-session/src/agents.rs`、`open.rs` | 造会话时照预设筛工具面、定记忆的范围（施工 P-2 中） |
@@ -27,6 +27,7 @@
 
 ```text
 <资源目录>/presets/<编号>.toml        出厂的，只读
+<包文件夹>/presets/<编号>.toml         装着的软件包带的，只读（施工 P-11 上）；被出厂的、排在前面的包盖住的 `miyu check` 报 `preset_covered`
 system/presets/<编号>.toml            系统区
 home/<管理员>/presets/<编号>.toml      管理员自己的
 ```
@@ -137,7 +138,7 @@ shell = false
 |---|---|
 | `crates/miyu-policy/src/preset/tests.rs` 的 `the_icon_is_read_layered_and_left_out_of_the_digest`、`crates/miyu-endpoint/tests/persona_avatar.rs` 的 `presets_carry_their_icons_and_one_can_be_changed`（施工 P-5） | 图标的读法、层叠、不进指纹、写错报错；列出来、改、回到出厂的 |
 | `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；P-3 上写的 `base` 当没写（施工 P-3 再补） |
-| `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
+| `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和系统区中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |
 | `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补、再补） | 不写编号新建、`remove`、改出厂的只写改了的、保留格式、删一项、`expect`、整条不收还带一句、参数不对、删你那一层、一样的值不写（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |

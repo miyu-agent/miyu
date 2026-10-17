@@ -505,6 +505,8 @@
     "package-problems/script_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/mcp_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/skill_covered": "Same name as {detail}, which covers it; this one is not used",
+    "package-problems/persona_covered": "Same name as {detail}, which covers it; this one is not used",
+    "package-problems/preset_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_skipped": "This slash command was skipped: {detail}",
     "package-problems/slash_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_builtin": "Same name as Miyu's built-in /{detail}; this one is not used",

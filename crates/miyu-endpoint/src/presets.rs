@@ -24,9 +24,10 @@ pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 这个核心的几层预设：出厂、系统区、管理员的家目录。
+/// 这个核心的几层预设：出厂、装着的软件包带的（施工 P-11 上）、系统区、管理员的家目录。
 pub(crate) fn presets(core: &Core) -> Presets {
     Presets::new(&core.resources, &core.root, &core.admin)
+        .with_packages(&crate::packages::folders(core))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（个人设置压着系统配置，都没写的是出厂的 `full`）。指着没有

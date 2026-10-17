@@ -1,5 +1,5 @@
 //! 预设在哪、几层怎么叠（施工 P-2 上，`docs/blueprint/presets.md`，`16-人格与预设.md` 第三、四节）：出厂的
-//! `<资源目录>/presets/<编号>.toml`、系统区 `system/presets/<编号>.toml`、管理员家目录 `home/<管理员>/presets/<编号>.toml`，同名的
+//! `<资源目录>/presets/<编号>.toml`、装着的软件包带的 `<包文件夹>/presets/<编号>.toml`（施工 P-11 上，一个编号只认一份）、系统区 `system/presets/<编号>.toml`、管理员家目录 `home/<管理员>/presets/<编号>.toml`，同名的
 //! 后面的叠在前面的上面，逐格盖。文件怎么读成样子在 `miyu_policy::preset`。
 
 use std::collections::BTreeSet;
@@ -10,8 +10,8 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 use miyu_policy::preset::{self, PresetFile, Problem};
 
-pub use crate::layers::Layer;
-use crate::layers::{read_text, real, valid};
+pub use crate::layers::{Covered, Layer};
+use crate::layers::{covered_all, hidden, read_text, real, valid, with_packages};
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
 
@@ -81,6 +81,19 @@ impl Presets {
         }
     }
 
+    /// 同一份，插上软件包那一层（施工 P-11 上）：`packages` 是装着的包的文件夹，出厂的包在前、同一层照编号；读的时候看各自的
+    /// `presets/`。
+    #[must_use]
+    pub fn with_packages(mut self, packages: &[PathBuf]) -> Presets {
+        with_packages(&mut self.dirs, packages, "presets");
+        self
+    }
+
+    /// 包里带的、被出厂的或者排在前面的包盖住了的预设（施工 P-11 上，`miyu check` 报）：照编号、包的先后。
+    pub fn covered(&self) -> Vec<Covered> {
+        covered_all(&self.dirs, &self.ids(), file_of, Path::is_file)
+    }
+
     /// 找预设 `id`，几层叠好。
     ///
     /// # Errors
@@ -142,7 +155,11 @@ impl Presets {
             file: PresetFile::default(),
             layers: Vec::new(),
         };
-        for (layer, dir) in &self.dirs {
+        let lost = hidden(&self.dirs, |dir| file_of(dir, id).is_file());
+        for (at, (layer, dir)) in self.dirs.iter().enumerate() {
+            if lost.contains(&at) {
+                continue;
+            }
             let text = match home {
                 Some(text) if *layer == Layer::Home => text.to_string(),
                 _ => {

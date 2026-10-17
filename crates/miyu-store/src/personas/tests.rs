@@ -1,4 +1,4 @@
-//! 人格的三层怎么叠（施工 P-1 上）。
+//! 人格的几层怎么叠（施工 P-1 上；软件包那一层施工 P-11 上）。
 
 use std::fs;
 
@@ -27,14 +27,31 @@ impl Places {
         };
         let root = DataRoot::locate(&env).unwrap();
         let admin = AccountId::parse("admin").unwrap();
-        let personas = Personas::new(&resources, &root, &admin);
+        // 两个装着的包 `a`、`b`（施工 P-11 上）：先后照交进来的。
+        let packages = [scratch.path().join("pkgs/a"), scratch.path().join("pkgs/b")];
+        let personas = Personas::new(&resources, &root, &admin).with_packages(&packages);
         Places { scratch, personas }
+    }
+
+    /// 在包 `package` 里写人格 `id` 的一个文件（施工 P-11 上）。
+    fn write_in(&self, package: &str, id: &str, file: &str, text: &str) {
+        let path = self
+            .scratch
+            .path()
+            .join("pkgs")
+            .join(package)
+            .join("personas")
+            .join(id)
+            .join(file);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, text).unwrap();
     }
 
     /// 在一层里写人格 `id` 的一个文件。
     fn write(&self, layer: Layer, id: &str, file: &str, text: &str) {
         let base = match layer {
             Layer::Shipped => "res/personas",
+            Layer::Package => "pkgs/a/personas",
             Layer::System => "data/system/personas",
             Layer::Home => "data/home/admin/personas",
         };
@@ -363,4 +380,94 @@ fn nothing_ships_with_the_core() {
             "{gone}"
         );
     }
+}
+
+/// 包带的那一层在出厂的和系统区的中间（施工 P-11 上，设计 31 第十节第 2 条）：系统区、家目录写了同名的就是改它。
+#[test]
+fn a_package_persona_sits_between_shipped_and_system() {
+    let places = Places::new();
+    places.write(
+        Layer::Package,
+        "cat",
+        "persona.toml",
+        "[persona]\nname = \"Cat\"\nsummary = \"From the package.\"\n",
+    );
+    places.write(
+        Layer::Package,
+        "cat",
+        "prompts/persona.md",
+        "package persona\n",
+    );
+    places.write(
+        Layer::System,
+        "cat",
+        "persona.toml",
+        "[persona]\nsummary = \"System.\"\n",
+    );
+    places.write(Layer::Home, "cat", "prompts/persona.md", "my cat\n");
+    let found = places.personas.find("cat").unwrap();
+    assert_eq!(found.layers, [Layer::Package, Layer::System, Layer::Home]);
+    assert_eq!(found.file.name.unwrap().pick("en"), Some("Cat"));
+    assert_eq!(found.file.summary.unwrap().pick("en"), Some("System."));
+    assert_eq!(found.texts.persona, "my cat\n");
+    assert_eq!(found.persona_from, Some(Layer::Home));
+    assert_eq!(found.home, Some(AccountId::parse("admin").unwrap()));
+    assert_eq!(places.personas.ids(), ["cat"]);
+    assert!(
+        places.personas.home_of("cat").is_some(),
+        "家目录有改动的照旧归管理员"
+    );
+    let only = Places::new();
+    only.write(
+        Layer::Package,
+        "cat",
+        "prompts/persona.md",
+        "package persona\n",
+    );
+    assert_eq!(
+        only.personas.home_of("cat"),
+        None,
+        "只在包里的不归谁的家目录"
+    );
+    assert_eq!(only.personas.find("cat").unwrap().layers, [Layer::Package]);
+}
+
+/// 包里的一个编号只认一份（施工 P-11 上，设计 31 第十节第 7 条）：出厂的有的不认包里的，几个包都有的认排在前面的；
+/// 被盖住的照位置列出来，`miyu check` 报。
+#[test]
+fn shipped_and_the_first_package_cover_the_others() {
+    let places = Places::new();
+    places.write(Layer::Shipped, "cat", "prompts/persona.md", "shipped cat\n");
+    places.write_in("a", "cat", "prompts/persona.md", "a cat\n");
+    places.write_in("a", "dog", "prompts/persona.md", "a dog\n");
+    places.write_in("b", "dog", "prompts/persona.md", "b dog\n");
+    let cat = places.personas.find("cat").unwrap();
+    assert_eq!(cat.layers, [Layer::Shipped]);
+    assert_eq!(cat.texts.persona, "shipped cat\n");
+    let dog = places.personas.find("dog").unwrap();
+    assert_eq!(dog.layers, [Layer::Package]);
+    assert_eq!(dog.texts.persona, "a dog\n");
+    let pkgs = places.scratch.path().join("pkgs");
+    assert_eq!(
+        places.personas.file_of("dog", Layer::Package, PERSONA_MD),
+        Some(inside(&pkgs.join("a/personas/dog"), PERSONA_MD))
+    );
+    assert_eq!(
+        places.personas.file_of("cat", Layer::Package, PERSONA_MD),
+        None
+    );
+    let res = places.scratch.path().join("res/personas");
+    assert_eq!(
+        places.personas.covered(),
+        [
+            Covered {
+                path: pkgs.join("a/personas/cat"),
+                by: res.join("cat"),
+            },
+            Covered {
+                path: pkgs.join("b/personas/dog"),
+                by: pkgs.join("a/personas/dog"),
+            },
+        ]
+    );
 }
