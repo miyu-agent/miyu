@@ -33,6 +33,8 @@
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
 | `crates/miyu-embed/src/manifest.rs` | 小程序读清单的文件 | R-5 上 |
 | `crates/miyu-embed/src/wordpiece.rs` | BERT 的 WordPiece 分词（第四条第 5 款） | R-5 上 |
+| `crates/miyu-embed/src/bpe.rs` | 字节级 BPE 分词（第四条第 5 款） | R-5 六补 |
+| `crates/miyu-embed/tools/bpe_files.py` | 把 Hugging Face 的 `tokenizer.json` 转成 BPE 的两个文件、印出清单那几段（第四条第 2、5 款；只用标准库，不进门禁） | R-5 六补 |
 | `crates/miyu-embed/src/model.rs` | 照清单载入模型、算一句的向量：ONNX Runtime 静态链接在这个小程序里 | R-5 上 |
 | `crates/miyu-embed/src/serve.rs`、`main.rs` | 小程序 `miyu-embed` 的协议和参数（第四条第 4 款） | R-5 上 |
 | `crates/miyu-session/src/embed.rs` | 核心一份的 `Embedder`：核对包里的文件、按需拉起、一条一条问、空闲退出、连着起不来就不再拉起（第四条第 3、4 款） | R-5 中 |
@@ -142,9 +144,10 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 
    本机的那一路从包来（R-5 三补，2026-10-09 项目主人定：内置的 embedding 做成一个可选的包、只放 bge、模型文件打进包里、出厂不装）：人格记忆的清单推荐小程序包 `embed`（`[recommends] workers = ["embed"]`）；它装着（读成了、种类是小程序，`packages.md`「内置语义模型」）才有。核心照这时读到的包清单拼好交给 `Embedder`（`miyu-core/src/embed.rs` 的 `setup`），连同模型资料交给协议端点（`Core::with_vectors`，远程的照它查供应商、记账）：小程序照小程序清单的 `program` 在主程序真实位置的旁边找（`packages::locate`，不找 `PATH`），模型清单是包目录（`Found::files_dir`，清单旁边的同名目录）里的 `model.toml`，模型文件在同一个目录。没装的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，这是常态）。拼的这一段能再调：装卸以后核心照新的清单再拼一次，交给 `Vectors::replace_local`（第 4 款；会话这一半 R-5 四补，核心那一半 F-5 再补：`Builtins::embed` 照清单拼、`Core::switch_packages` 交给它，装卸时拼不出的不记「没装」那一行；端点照 `core.memory.vectors()` 拿到那一份，核心起来时总会造，没装 `embed` 的本机那一路是空的）。
 2. **模型清单**（R-5 上；R-5 三补搬进包里）：本机模型照一份 TOML 认，在包目录里，名字是 `model.toml`（内置语义模型这个小程序认的约定，小程序清单里不另写）；仓库里的原本是 `crates/miyu-embed/package/embed/model.toml`。可更换（2026-10-07 项目主人定）照换包做：装一个放着别的模型的同名包，或者指定远程的；不另设换清单的配置项（2026-10-09 项目主人定）。几格：
-   - `id`：模型的名字，向量的模型编号写成 `local:<id>`；`dims`：几维；`pooling`：怎么取一句的向量，现在只认 `cls`（取 `[CLS]` 那一格）；`max_tokens`：一句最多几个词（连 `[CLS]`、`[SEP]`），至少 2。
-   - `[[files]]`：每个文件的 `role`（`model`、`vocab` 各正好一个）、`name`（一个单纯的文件名，不带目录）、`sha256`、`size`（R-5 三补去掉 `url`：不下了）。
-   - 少格、多格、不认识的取法、`role` 重了或缺了、`dims` 是 0、`id` 或文件名带目录的都拒，说哪里不对。向量一律归一化。WordPiece 以外的分词、`cls` 以外的取法，换到那样的模型时再加。
+   - `id`：模型的名字，向量的模型编号写成 `local:<id>`；`dims`：几维；`pooling`：怎么取一句的向量，现在只认 `cls`（取第一个词那一格）；`max_tokens`：一句最多几个词（连前后加的两个特殊的词），至少 2。
+   - `[tokenizer]`（R-5 六补）：`kind` 是 `wordpiece`（不写这一段的照它）或 `bpe`（第 5 款）；`bpe` 的另写 `start`、`end`：前后加的两个特殊的词，要在词表里。
+   - `[[files]]`：每个文件的 `role`、`name`（一个单纯的文件名，不带目录）、`sha256`、`size`（R-5 三补去掉 `url`：不下了）。`role` 是 `model`（ONNX 模型）、`vocab`（词表：一行一个词，行号是编号）各正好一个；`bpe` 的另要正好一个 `merges`（合并：一行一条「左 右」，行号是先后），`wordpiece` 的不能有。
+   - 少格、多格、不认识的取法和分词、`role` 重了缺了或和分词对不上、`dims` 是 0、`id` 或文件名带目录的都拒，说哪里不对。向量一律归一化。`cls` 以外的取法，换到那样的模型时再加。
    - 出厂的是 bge-small-zh-v1.5 的 8 位量化 ONNX（`model_quantized.onnx`，24 MB，512 维，MIT）：十句和原版 fp32 的余弦平均 0.991，`model_int8.onnx` 只有 0.970，一样快（2026-10-09 量）。
 3. **核对文件**（R-5 中；R-5 三补去掉下载，`embed/files.rs`）：模型文件随包装，做包时从 Miyu 自己的 GitHub Release 取（项目主人定；Release `models-bge-small-zh-v1.5`，预发布，2026-10-09 建，放模型、`vocab.txt`、FlagEmbedding 的 MIT 许可证、`SHA256SUMS`）。核心不下、不写包目录：
    - 第一次要向量时在阻塞线程里照模型清单的 `size`、`sha256` 一个个核对包目录里的文件（先比大小，对得上再算 SHA-256），同时来的等同一次，只核对一次（R-5 五补：24 MB 十来毫秒，原来先交「还在备」、补的每秒再问一次，核心起来以后头一次照意思搜到要一秒，2026-10-10 项目主人说冷启动不合预期以后改的）。
@@ -162,14 +165,25 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
    - `miyu-embed --manifest <清单> --dir <模型文件的目录>`：照 `role` 在目录里找文件，核对是核心的事。
    - 载入成了，标准输出印一行 `{"ready":{"model":"local:<id>","dims":<维数>}}`；清单读不懂、文件没有、模型载入不了，印一行 `{"error":"…"}`，退出码 1；参数写错，标准错误印用法，退出码 2。
    - 之后标准输入一行 `{"id":"…","text":"…"}`，标准输出回一行 `{"id":"…","vector":[…]}`（f32，JSON 的最短写法，读回 f32 一位不差）；读不懂的、不是 UTF-8 的、算不出的回 `{"id":"…","error":"…"}`（读不出 `id` 的写 `null`），接着读下一行；行尾的 `\r` 不算。标准输入关了退出码 0；读不了标准输入、写不进标准输出的，原因写到标准错误，退出码 1。
+   - 模型声明了哪几个输入就喂哪几个：`input_ids`、`attention_mask`（全是 1）、`token_type_ids`（全是 0），没有 `input_ids` 或者要别的的载入不了（R-5 六补：granite 没有 `token_type_ids`）。
    - 一次一条、单线程（ONNX Runtime 的 `intra`、`inter` 都是 1；旧版实测一次 32 条、16 线程时内存冲到 2 GB 不还）。错误的原话是英文短句；协议只有核心读，不给模型看，不进登记簿。
    - ONNX Runtime 静态链接在它里面（`ort` 钉死 `=2.0.0-rc.13`，ONNX Runtime 1.28，编译时下 pyke 预编好的静态库），主程序不带。
-5. **分词**（R-5 上）：BERT 的 WordPiece，照 bge-small-zh-v1.5 原版的配置，和 Hugging Face `tokenizers` 的结果一样（`crates/miyu-embed/tests/tokens.rs` 逐个比）：
+5. **分词**：两种，照清单的 `[tokenizer]`（第 2 款），都和 Hugging Face `tokenizers` 的结果一样。
+
+   WordPiece（R-5 上）：BERT 的，照 bge-small-zh-v1.5 原版的配置（`crates/miyu-embed/tests/tokens.rs` 逐个比）：
    - 去掉 `U+0000`、`U+FFFD` 和 Unicode「其他」类的字（控制、格式、代理、私用、没分配；制表、换行、回车算空白）；空白处断开；汉字（CJK 统一表意文字那几段）、标点（ASCII 的标点和 Unicode 的七种标点类）一个一个成词。不转小写、不去重音（原版的配置）。
    - 一个词超过 100 个字整个算 `[UNK]`；不然从头起每次取最长的、在词表里的一段（不是开头的带 `##`），有一段取不出来整个词算 `[UNK]`。
    - 前后加 `[CLS]`、`[SEP]`；超过 `max_tokens` 的截掉后面的，留住 `[SEP]`。词表一行一个词，行号是编号，没有 `[CLS]`、`[SEP]`、`[UNK]` 的、一个词写了两行的拒。
    - 和 `tokenizers` 不一样的两处：字里写着 `[CLS]` 这种的照普通的字切（人说的话不变成控制用的词）；Unicode 的类别照新的表，Unicode 9 以后才有的字切成 `[UNK]`（它的表旧，当没分配去掉）。
    - 原版不转小写：大写的英文词（`RTX`、`Hello`）、片假名的词都是 `[UNK]`，那一部分靠关键词那一路（第一条的两两切词管得到日文）；改不改照测评集（`memory/eval.md`）：2026-10-10 的基线里跨语言的五句两路都几乎找不到（recall@5 加了向量才 20%）。
+
+   字节级 BPE（R-5 六补，granite-embedding-97m-multilingual-r2 这一类，GPT-4o 的那一套切法；`crates/miyu-embed/tests/bpe.rs` 逐个比）：
+   - 不规范化。照 o200k 那条正则（`bpe.rs` 的 `SPLIT`，有 `\s+(?!\S)` 往前看，用 `fancy-regex`）切成一段一段，没匹配上的也单独一段；每段的字节照 GPT-2 的表换成字（不加前导空格）。
+   - 整段在词表里的直接用（`ignore_merges`）；不然从一个个字节起，每次合先后最靠前的那一对、同一对取最左边，合到没有能合的（照 `tokenizers` 的做法用堆）。
+   - 前后加清单的 `start`、`end`；超过 `max_tokens` 的截掉后面的，留住 `end`，够了就不再往后切。
+   - 词表一行一个词、行号是编号（特殊的词接在后面），合并一行一条「左 右」、行号是先后：不读 `tokenizer.json`，解析 25 MB 的 JSON 冲高的内存不还（2026-10-18 量：`tokenizers` 读它 194 MB，读两份文本 22 MB）。词表里没有的字节丢掉（照 `tokenizers`：granite 的词表没有大部分控制字符和 `0xF1` 以后的几个）。拒：词写了两行、没有 `start`、`end`；合并的一行不是两个词、左右或合成的不在词表里、一对写了两行。两个文件由 `crates/miyu-embed/tools/bpe_files.py` 从 `tokenizer.json` 转，只认上面这一种配置，别的拒。
+   - 和 `tokenizers` 不一样的两处，同 WordPiece：字里写着特殊的词（`<|return|>`、`<|reserved_…|>`）的照普通的字切；Unicode 的类别照 `regex` 的表，`tokenizers` 照 Oniguruma 的，新分配的字可能切得不一样。
+
 6. **实测**（本机 Ryzen 9 7940H，Linux x86_64，release 没 strip，Release 的 bge-small-zh-v1.5）：程序 29 MB，没有 ONNX Runtime 的动态库，峰值内存 62 MB。2026-10-10 重量（R-5 五补，各十次取中位）：拉起到 `ready` 45 毫秒（进程 4、词表 3、ONNX Runtime 建会话约 38，图优化开不开差不多），之后一句 1.5 毫秒；退出时收 ONNX Runtime 约 50 毫秒，没人等。2026-10-09 量的「起来到 ready 130 到 580 毫秒」是同一台机器上别的会话在编译时量的，作废。真核心（release）上：核心刚起来，记一条马上搜，头一次就照意思找到，那一次 69 到 77 毫秒（核对、拉起、算一句都在里面），从记下起 72 到 79 毫秒；改之前要搜 44 次、1.02 秒（R-5 五补）。
 
 7. **远程**（R-5 补，`embed/remote.rs`；怎么配、怎么取端点、怎么记账 2026-10-09 核心的主会话定）：`models.embedding` 写 `<供应商>/<模型>` 的，一次算一句：
@@ -234,7 +248,7 @@ R-5 中做好的：
 |---|---|
 | `crates/miyu-session/tests/embed.rs` | 第四条第 3、4 款，手造的小模型摆成临时的包目录、真的 `miyu-embed`（R-5 三补改成核对包里的、不下）：第一次要的当场算得出（R-5 五补：等核对、拉起，不交「还在备」）、和小程序直接算的一样、包里的一个不动；头一回两个一起要的都拿到；对不上的、少了的用不了、不删不改、这一回不再核对；没有小程序、模型清单读不了的用不了；两个一起要的都拿到；闲了退出、下一条再拉起；起不来过三次以后不再拉起 |
 | `crates/miyu-session/src/embed/worker/tests.rs` | 和小程序说话，对面是内存里的管道：`ready` 报模型编号、报错、退出了、过了时限；回的照编号收；回一句错的照收、接着问；编号对不上、读不懂、没有向量、退出了、不回话的当它坏了 |
-| `crates/miyu-recall/src/embedding/tests.rs` | 第四条第 2 款：清单的原文怎么读、怎么查（R-5 中从 `miyu-embed` 挪过来，多一条：`id` 带目录的拒） |
+| `crates/miyu-recall/src/embedding/tests.rs` | 第四条第 2 款：清单的原文怎么读、怎么查（R-5 中从 `miyu-embed` 挪过来，多一条：`id` 带目录的拒）；分词（R-5 六补）：不写的照 WordPiece，`bpe` 的带 `start`、`end`、要正好一个 `merges`，WordPiece 的带了 `merges` 的拒，不认识的分词、少格多格说清楚 |
 
 R-5 上做好的：
 
@@ -242,7 +256,8 @@ R-5 上做好的：
 |---|---|
 | `crates/miyu-embed/tests/tokens.rs` | 第四条第 5 款：真词表上 39 句照 `tokenizers` 0.23.2 的结果逐个比（空的、空白、汉字、全角标点、大写英文、带重音的、片假名、韩文、emoji、零宽空格、BOM、控制字符、`U+FFFD`、不间断空格、100 和 101 个字的词、扩展区和兼容区的汉字、全角字母、`##` 开头的）；截断留住 `[SEP]`；字里的 `[CLS]` 照普通的字；词表少了特殊的词、写了两行的拒；`\r\n` 的词表也认 |
 | `crates/miyu-embed/tests/manifest.rs` | 第四条第 2 款：仓库里的模型清单原本（R-5 三补搬进 `package/embed/`）读得出、每一格对；文件读不了说是哪个（原文的读法 R-5 中挪进 `miyu-recall`） |
-| `crates/miyu-embed/tests/protocol.rs` | 第四条第 4 款，手造的小模型（`fixtures/tiny/`，`fixtures/make.py` 造）：`ready`；向量和 Python 的 ONNX Runtime 算的每格差不过 1e-6；超长截断、空字也有向量；不是 JSON、没有 `id`、`id` 不是字、没有 `text`、空行、不是 UTF-8 的回错，接着读下一行；行尾的 `\r`；标准输入关了退出码 0；清单读不了、文件不在、模型是坏的退出码 1；清单的 `dims` 和模型对不上的每一句回错；参数写错（少了、多了、写了两次）退出码 2、印用法 |
+| `crates/miyu-embed/tests/protocol.rs` | 第四条第 4 款，手造的小模型（`fixtures/tiny/`，`fixtures/make.py` 造）：`ready`；向量和 Python 的 ONNX Runtime 算的每格差不过 1e-6；超长截断、空字也有向量；不是 JSON、没有 `id`、`id` 不是字、没有 `text`、空行、不是 UTF-8 的回错，接着读下一行；行尾的 `\r`；标准输入关了退出码 0；清单读不了、文件不在、模型是坏的退出码 1；清单的 `dims` 和模型对不上的每一句回错；参数写错（少了、多了、写了两次）退出码 2、印用法；字节级 BPE、只有两个输入的小模型（`fixtures/tiny-bpe/`，R-5 六补）：向量逐个比、超长截断，清单写的 `merges` 不在、模型要不认识的输入（`position_ids`）的退出码 1 |
+| `crates/miyu-embed/tests/bpe.rs` | 第四条第 5 款 BPE（R-5 六补）：照 `tokenizers` 训练的小 BPE（`fixtures/tiny-bpe/`，造的多语种句子训的，`fixtures/make_bpe.py` 造、`tools/bpe_files.py` 转）上几十句照它的结果逐个比（空的、空白、换行、`\r\n`、数字、标点、英文缩写、大小写、汉字、日文、韩文、阿拉伯文、emoji、组合字符、不间断空格、全角空格、超长的段）；截断留住 `end`；字里的特殊词照普通的字；词表、合并坏了的拒；真的 granite 词表（`#[ignore]`，`MIYU_EMBED_BPE_DIR`）上公开、造的句子逐个比 |
 | `crates/miyu-embed/tests/real.rs` | 真模型（`#[ignore]`，`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件）：四句的向量和 Python 的 ONNX Runtime 算的余弦不低于 0.999 |
 
 R-1 做好的：

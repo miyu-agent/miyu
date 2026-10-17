@@ -3,15 +3,15 @@
 //! 目录里（`model.toml`，施工 R-5 三补）：换模型就是换包。
 //!
 //! 放在纯逻辑这一层，是因为两边要读同一份：小程序 `miyu-embed` 照它载入模型，核心照它核对包里的文件（R-5 三补起不再下载）；
-//! 核心又不能依赖 `miyu-embed`（会把 ONNX Runtime 链进主程序）。这里只照原文读、查；读文件是用的一方的事。WordPiece 以外的分词、`cls`
-//! 以外的取法，换到那样的模型时再加：现在写别的，读的时候就拒，不悄悄算错。
+//! 核心又不能依赖 `miyu-embed`（会把 ONNX Runtime 链进主程序）。这里只照原文读、查；读文件是用的一方的事。分词认 WordPiece 和
+//! 字节级 BPE 两种（R-5 六补）；`cls` 以外的取法，换到那样的模型时再加：现在写别的，读的时候就拒，不悄悄算错。
 
 use std::fmt;
 use std::path::{Component, Path};
 
 use serde::Deserialize;
 
-/// 一份清单。读进来的都查过（[`Manifest::parse`]）：两种文件各正好一个，数在范围里，文件名是一个单纯的名字。
+/// 一份清单。读进来的都查过（[`Manifest::parse`]）：分词要的几种文件各正好一个，数在范围里，文件名是一个单纯的名字。
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
@@ -22,8 +22,11 @@ pub struct Manifest {
     pub dims: usize,
     /// 怎么从模型的输出取一句的向量。
     pub pooling: Pooling,
-    /// 一句最多几个词（连 `[CLS]`、`[SEP]`）：超过的截掉后面的，留住 `[SEP]`。
+    /// 一句最多几个词（连前后加的两个特殊的词）：超过的截掉后面的，留住后面那一个。
     pub max_tokens: usize,
+    /// 怎么分词（不写的照 WordPiece，R-5 六补以前的清单照读）。
+    #[serde(default)]
+    pub tokenizer: Tokenizer,
     /// 模型的几个文件。
     pub files: Vec<ModelFile>,
 }
@@ -36,14 +39,32 @@ pub enum Pooling {
     Cls,
 }
 
+/// 怎么分词（R-5 六补）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Tokenizer {
+    /// BERT 的 WordPiece（bge）：前后加 `[CLS]`、`[SEP]`。
+    #[default]
+    Wordpiece,
+    /// 字节级 BPE（granite r2 这一类）：要 `merges` 那个文件。
+    Bpe {
+        /// 前面加的特殊的词，例如 `<|startoftext|>`。
+        start: String,
+        /// 后面加的，例如 `<|return|>`。
+        end: String,
+    },
+}
+
 /// 一个文件是做什么的。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     /// ONNX 模型。
     Model,
-    /// WordPiece 的词表：一行一个词，行号就是编号。
+    /// 词表：一行一个词，行号就是编号。
     Vocab,
+    /// BPE 的合并：一行一条「左 右」，行号就是先后（R-5 六补）。
+    Merges,
 }
 
 impl Role {
@@ -52,6 +73,7 @@ impl Role {
         match self {
             Role::Model => "model",
             Role::Vocab => "vocab",
+            Role::Merges => "merges",
         }
     }
 }
@@ -87,8 +109,8 @@ impl Manifest {
     ///
     /// # Errors
     ///
-    /// TOML 坏了、少格或多格、取法不认识；`id`、文件名带目录；`model`、`vocab` 不是各正好一个；`dims` 是 0；`max_tokens`
-    /// 放不下 `[CLS]`、`[SEP]`。
+    /// TOML 坏了、少格或多格、取法或分词不认识；`id`、文件名带目录；`model`、`vocab`（BPE 的另有 `merges`）不是各正好一个，
+    /// WordPiece 的有 `merges`；`dims` 是 0；`max_tokens` 放不下前后两个特殊的词。
     pub fn parse(text: &str) -> Result<Manifest, ManifestError> {
         let manifest: Manifest = toml_edit::de::from_str(text)
             .map_err(|error| ManifestError(error.to_string().trim_end().to_string()))?;
@@ -108,11 +130,25 @@ impl Manifest {
         if self.max_tokens < 2 {
             return Err("max_tokens must be at least 2".to_string());
         }
-        for role in [Role::Model, Role::Vocab] {
-            match self.files.iter().filter(|file| file.role == role).count() {
-                0 => return Err(format!("no file is {}", role.as_str())),
-                1 => {}
-                _ => return Err(format!("two files are {}", role.as_str())),
+        let merges = matches!(self.tokenizer, Tokenizer::Bpe { .. });
+        for (role, wanted) in [
+            (Role::Model, true),
+            (Role::Vocab, true),
+            (Role::Merges, merges),
+        ] {
+            match (
+                self.files.iter().filter(|file| file.role == role).count(),
+                wanted,
+            ) {
+                (0, true) => return Err(format!("no file is {}", role.as_str())),
+                (1, true) | (0, false) => {}
+                (_, true) => return Err(format!("two files are {}", role.as_str())),
+                (_, false) => {
+                    return Err(format!(
+                        "a wordpiece tokenizer has no {} file",
+                        role.as_str()
+                    ));
+                }
             }
         }
         match self.files.iter().find(|file| !plain(&file.name)) {
