@@ -341,6 +341,7 @@ impl Tools {
                 end_turn: false,
                 sent: Vec::new(),
                 display_name: Default::default(),
+                detail: None,
             });
         };
         tracing::info!(target: TARGET, call = call_text.as_str(), tool = name.as_str(), "running");

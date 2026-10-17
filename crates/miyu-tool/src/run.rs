@@ -128,6 +128,8 @@ pub struct Done {
     pub end_turn: bool,
     /// 她发出去的图（施工 X-19）：记进 `tool.result`，不发给模型。
     pub sent: Vec<miyu_kernel::event::Sent>,
+    /// 给头看的结构化结果（施工 W-11）：一个对象，形状由这件工具定（写在它的图纸里）；记进 `tool.result` 的 `detail`，不发给模型。
+    pub detail: Option<serde_json::Value>,
 }
 
 /// 工具交回的一张图片：字节本身，和量好的媒体类型、宽高（`03-事件模型.md` 第四节：量不出尺寸的不当图片）。
@@ -227,6 +229,7 @@ impl Done {
             images: Vec::new(),
             end_turn: false,
             sent: Vec::new(),
+            detail: None,
         }
     }
 
@@ -241,6 +244,7 @@ impl Done {
             images: Vec::new(),
             end_turn: false,
             sent: Vec::new(),
+            detail: None,
         }
     }
 
@@ -255,7 +259,15 @@ impl Done {
             images: Vec::new(),
             end_turn: false,
             sent: Vec::new(),
+            detail: None,
         }
+    }
+
+    /// 带上给头看的结构化结果（施工 W-11）：`detail` 是一个对象。
+    #[must_use]
+    pub fn detail(mut self, detail: serde_json::Value) -> Done {
+        self.detail = Some(detail);
+        self
     }
 
     /// 带上给人看的说法。

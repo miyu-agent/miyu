@@ -159,6 +159,7 @@ mod subscribe_now;
 mod system_account;
 mod title;
 mod todos;
+mod tool_detail;
 mod tools;
 mod undo;
 mod undo_jobs;

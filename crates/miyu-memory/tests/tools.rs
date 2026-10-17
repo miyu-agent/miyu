@@ -375,6 +375,20 @@ async fn searching_lists_memories_then_past_conversations() {
         *port.searched.lock().unwrap_or_else(PoisonError::into_inner),
         [("显卡".to_string(), true)]
     );
+    // 给头看的那一份（施工 W-11）：日期照会话的时区，对话片段是原文、不截，会话写整个编号，作废的带 `forgotten`。
+    assert_eq!(
+        done.detail,
+        Some(serde_json::json!({
+            "memories": [
+                {"id": "m3", "class": "user", "date": "2026-10-05", "text": "用户用 N 卡"},
+                {"id": "m1", "class": "user", "date": "2026-10-01", "text": "用户用 A 卡", "forgotten": true},
+            ],
+            "turns": [
+                {"date": "2026-10-06", "session": "0192f3a0-1111-7abc-8def-001122334455", "text": "我换了显卡\n\n好的"},
+                {"date": "2026-10-06", "session": "0192f3a0-1111-7abc-8def-001122334455", "text": format!("{}尾巴", "长".repeat(300))},
+            ],
+        }))
+    );
     let empty = Arc::new(Fake::default());
     let done = call(
         Some(Arc::clone(&empty)),
@@ -385,6 +399,11 @@ async fn searching_lists_memories_then_past_conversations() {
     assert_eq!(
         (done.error, text(&done)),
         (false, "Nothing found.".to_string())
+    );
+    assert_eq!(
+        done.detail,
+        Some(serde_json::json!({"memories": [], "turns": []})),
+        "什么都没找到的也带一份空的"
     );
     assert_eq!(
         *empty

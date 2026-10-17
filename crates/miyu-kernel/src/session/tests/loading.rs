@@ -154,6 +154,7 @@ fn failed_done(call_id: CallId, text: &str) -> Input {
         end_turn,
         sent: Vec::new(),
         display_name,
+        detail: None,
     }
 }
 

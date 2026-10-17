@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use miyu_kernel::event::Effect;
+use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Input;
 use miyu_kernel::time::Timestamp;
 
@@ -76,6 +77,8 @@ impl Tools {
                     end_turn: done.end_turn,
                     sent: done.sent,
                     display_name: running.display_name,
+                    // 给头看的结构化结果（施工 W-11）：工具交的照原样记。
+                    detail: done.detail.as_ref().and_then(RawJson::of),
                 })
             }
             ToolBack::Crashed { call_id } => {
@@ -101,6 +104,7 @@ impl Tools {
                     end_turn: false,
                     sent: Vec::new(),
                     display_name: running.display_name,
+                    detail: None,
                 })
             }
         }

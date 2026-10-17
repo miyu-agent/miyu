@@ -59,6 +59,15 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
         "字原样给，末尾的换行去掉"
     );
     assert_eq!(said(&done), "software/knowledge/kb_search/found");
+    // 给头看的那一份（施工 W-11）：没有标题的、不是 PDF 的不写那一格，字去掉末尾的换行。
+    assert_eq!(
+        done.detail,
+        Some(serde_json::json!({"hits": [
+            {"kb": "notes", "path": "grammar.md", "heading": "语法 › て形", "snippet": "食べる → 食べて"},
+            {"kb": "world", "path": "towns/east.txt", "snippet": "东边的镇子靠海。\n<b>不转义</b>"},
+            {"kb": "manuals", "path": "cat.pdf", "page": 3, "snippet": "每年十月打疫苗。"},
+        ]}))
+    );
     assert_eq!(
         *port.searched.lock().unwrap_or_else(PoisonError::into_inner),
         [("食べて".to_string(), Some("notes".to_string()))]
@@ -73,6 +82,7 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
     assert!(!none.error, "没搜到不算出错");
     assert_eq!(text(&none), "Nothing found.");
     assert_eq!(said(&none), "software/knowledge/kb_search/nothing");
+    assert_eq!(none.detail, Some(serde_json::json!({"hits": []})));
 }
 
 #[tokio::test]
@@ -92,6 +102,13 @@ async fn reading_gives_the_page_and_says_where_it_is_when_there_are_more() {
     )
     .await;
     assert_eq!(text(&done), "第二页的字\n(Page 2 of 3.)");
+    assert_eq!(
+        done.detail,
+        Some(
+            serde_json::json!({"kb": "notes", "path": "a.md", "page": 2, "pages": 3, "text": "第二页的字\n"})
+        ),
+        "给头的是这一页的正文，不带「还有几页」那一行"
+    );
     assert_eq!(said(&done), "software/knowledge/kb_read/page");
     assert_eq!(
         *port.read.lock().unwrap_or_else(PoisonError::into_inner),

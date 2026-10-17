@@ -96,6 +96,7 @@ impl Projector {
             files: Vec::new(),
             skill: None,
             shown: None,
+            detail: None,
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());
@@ -308,6 +309,7 @@ impl Projector {
                 tool.files = files;
                 tool.skill = skill;
                 tool.shown = shown;
+                tool.detail = result.detail.clone();
                 if let Some(real) = real
                     && !state.failed()
                 {

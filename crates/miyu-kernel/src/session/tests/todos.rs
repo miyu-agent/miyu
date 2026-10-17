@@ -34,6 +34,7 @@ fn wrote(call_id: CallId, written: TodoWritten) -> Input {
         end_turn: false,
         sent: Vec::new(),
         display_name: Default::default(),
+        detail: None,
     }
 }
 

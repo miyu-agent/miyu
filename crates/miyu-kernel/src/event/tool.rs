@@ -61,6 +61,10 @@ pub struct ToolResult {
     /// 照连接的语言挑。不发给模型。核心自带的、内核自己写的结果、没写显示名的、老日志没有这一格。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub display_name: BTreeMap<String, String>,
+    /// 给头看的结构化结果（施工 W-11，2026-10-17 两个头要的）：一个对象，形状由那件工具定、写在它自己那一页图纸里，例如
+    /// `memory_search` 命中的记忆、`kb_read` 那一页正文。不发给模型，内核不看，原样记、原样回放。工具没交的、老日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detail: Option<crate::raw::RawJson>,
 }
 
 /// 给人看的说法（`03-事件模型.md` 第三节，施工 4-5 上）：用的是哪一句、换进去的字段。字放在资源目录的

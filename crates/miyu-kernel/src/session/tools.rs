@@ -411,6 +411,7 @@ impl Session {
             end_turn: false,
             sent: Vec::new(),
             display_name: Default::default(),
+            detail: None,
         };
         self.record(at, by, cause, Body::ToolResult(result))
     }

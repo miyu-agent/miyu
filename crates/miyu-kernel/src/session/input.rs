@@ -132,6 +132,8 @@ pub enum Input {
         /// 这件工具给人看的名字，照语言，执行器派它那一刻取的（施工 9-8 六补）：脚本、MCP 的、扩展的工具有，核心自带的、
         /// 没写的是空的。
         display_name: BTreeMap<String, String>,
+        /// 给头看的结构化结果（施工 W-11）：工具交的，原样记进结果；没交的没有。
+        detail: Option<crate::raw::RawJson>,
     },
     /// 工具执行中的一段输出，只推给头（`03-事件模型.md` 第五节）。
     ToolProgress {

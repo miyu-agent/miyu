@@ -234,6 +234,9 @@ pub struct Tool {
     /// 给人看的文件（施工 D-5，`docs/blueprint/tools/show.md`）：照结果的 `file.shown` 效果，格同它。没有的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shown: Option<miyu_kernel::event::FileShown>,
+    /// 给头看的结构化结果（施工 W-11）：照结果的 `detail` 原样带上，形状由那件工具定。没有的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<miyu_kernel::raw::RawJson>,
 }
 
 /// 标题那一句，照连接的语言。

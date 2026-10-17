@@ -367,6 +367,7 @@ fn the_name_people_see_is_written_into_the_result() {
         end_turn,
         sent: Vec::new(),
         display_name: named.clone(),
+        detail: None,
     };
     let events = appended_events(&allowing(&mut session, input));
     let Body::ToolResult(result) = &events[0].body else {

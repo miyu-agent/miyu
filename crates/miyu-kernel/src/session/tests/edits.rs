@@ -31,6 +31,7 @@ pub(super) fn changed(call_id: CallId) -> Input {
         end_turn: false,
         sent: Vec::new(),
         display_name: Default::default(),
+        detail: None,
     }
 }
 

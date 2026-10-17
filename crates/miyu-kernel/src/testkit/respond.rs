@@ -290,6 +290,7 @@ impl Stage {
             end_turn: false,
             sent: Vec::new(),
             display_name: Default::default(),
+            detail: None,
         }
     }
 
@@ -307,6 +308,7 @@ impl Stage {
             end_turn: false,
             sent: Vec::new(),
             display_name: Default::default(),
+            detail: None,
         }
     }
 }

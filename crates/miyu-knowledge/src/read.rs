@@ -51,12 +51,16 @@ impl Tool for Read {
             let Some(port) = call.knowledge.as_ref() else {
                 return texts.off();
             };
-            let path = args.path.clone();
+            let (kb, path) = (args.kb.clone(), args.path.clone());
             let page = match port.read(args.kb, args.path, args.page.unwrap_or(1)).await {
                 Ok(page) => page,
                 Err(refused) => return texts.refused(&refused),
             };
             let (number, pages) = (page.page.to_string(), page.pages.to_string());
+            // 给头看的那一份（施工 W-11）：这一页的正文，不带「还有几页」那一行。
+            let detail = serde_json::json!({
+                "kb": kb, "path": path, "page": page.page, "pages": page.pages, "text": page.text,
+            });
             let text = match page.pages > 1 {
                 true => {
                     let more = line(&texts.all().more, &[("page", &number), ("pages", &pages)]);
@@ -64,10 +68,12 @@ impl Tool for Read {
                 }
                 false => page.text,
             };
-            Done::ok(text).said(said(
-                "kb_read/page",
-                &[("path", &path), ("page", &number), ("pages", &pages)],
-            ))
+            Done::ok(text)
+                .said(said(
+                    "kb_read/page",
+                    &[("path", &path), ("page", &number), ("pages", &pages)],
+                ))
+                .detail(detail)
         })
     }
 }

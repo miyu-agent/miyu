@@ -5,9 +5,10 @@ use std::path::Path;
 
 use serde::Deserialize;
 
+use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
-use miyu_tool::{Call, Done, MEMORY_SEARCH, Progress, Running, Spec, Tool};
+use miyu_tool::{Call, Done, MEMORY_SEARCH, Progress, Running, Searched, Spec, Tool};
 
 use crate::texts::{Texts, line, said};
 use crate::{PACKAGE, TURN_CHARS};
@@ -56,8 +57,11 @@ impl Tool for Search {
                 Ok(found) => found,
                 Err(error) => return texts.refused(&miyu_tool::Refused::Failed(error)),
             };
+            let shown = detail(&found, call.offset);
             if found.memories.is_empty() && found.turns.is_empty() {
-                return Done::ok(line(&all.nothing, &[])).said(said("memory_search/nothing", &[]));
+                return Done::ok(line(&all.nothing, &[]))
+                    .said(said("memory_search/nothing", &[]))
+                    .detail(shown);
             }
             let mut lines = Vec::new();
             for memory in &found.memories {
@@ -99,9 +103,42 @@ impl Tool for Search {
                     ("turns", counts[1].1.as_str()),
                 ],
             );
-            Done::ok(lines.join("\n")).said(human)
+            Done::ok(lines.join("\n")).said(human).detail(shown)
         })
     }
+}
+
+/// 给头看的那一份（施工 W-11，`docs/blueprint/memory.md`「工具」）：记忆、对话片段照给她看的先后，日期照会话的时区 `offset`；
+/// 作废的带 `forgotten`，对话片段是原文（不截、不换行），会话写整个编号。
+fn detail(found: &Searched, offset: UtcOffset) -> serde_json::Value {
+    let memories: Vec<serde_json::Value> = found
+        .memories
+        .iter()
+        .map(|memory| {
+            let mut item = serde_json::json!({
+                "id": memory.id.to_string(),
+                "class": memory.class,
+                "date": memory.at.local_date(offset),
+                "text": memory.text,
+            });
+            if memory.retired {
+                item["forgotten"] = serde_json::Value::Bool(true);
+            }
+            item
+        })
+        .collect();
+    let turns: Vec<serde_json::Value> = found
+        .turns
+        .iter()
+        .map(|turn| {
+            serde_json::json!({
+                "date": turn.at.local_date(offset),
+                "session": turn.session.as_str(),
+                "text": turn.text,
+            })
+        })
+        .collect();
+    serde_json::json!({ "memories": memories, "turns": turns })
 }
 
 /// 一段对话写成一行：换行（人的话和她的回答之间的空行）换成 ` / `，截到 [`TURN_CHARS`] 个字，截了的末尾接 `…`。

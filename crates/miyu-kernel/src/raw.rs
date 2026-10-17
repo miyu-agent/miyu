@@ -16,6 +16,11 @@ use serde_json::value::RawValue;
 pub struct RawJson(Box<RawValue>);
 
 impl RawJson {
+    /// 照一个值写成的一块（施工 W-11）：写成紧凑的 JSON，键照 serde_json 的先后。写不成的（不会有）没有。
+    pub fn of(value: &serde_json::Value) -> Option<RawJson> {
+        serde_json::value::to_raw_value(value).ok().map(RawJson)
+    }
+
     /// 原样的 JSON 文本。
     pub fn get(&self) -> &str {
         self.0.get()

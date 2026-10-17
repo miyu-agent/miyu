@@ -246,6 +246,7 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
                 end_turn: false,
                 sent: Vec::new(),
                 display_name: Default::default(),
+                detail: None,
             }
         }
         26 if !watch.calm || rng.below(10) == 0 => some_interrupt(rng, watch.seed, next_id),
