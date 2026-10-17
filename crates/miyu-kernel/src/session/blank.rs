@@ -50,6 +50,7 @@ impl Session {
             grants: super::grants::Grants::default(),
             rounds: super::seal::Rounds::default(),
             told_todos: Vec::new(),
+            told_done: Vec::new(),
         }
     }
 }

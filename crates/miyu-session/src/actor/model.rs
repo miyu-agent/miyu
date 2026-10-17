@@ -197,10 +197,12 @@ impl Actor {
     /// 内核推了 `todos.changed`（施工 D-3）：给头看的那一份跟着换，`subscribe` 照它答。别的瞬时事件不管。
     pub(super) fn show_todos(&self, transient: &Transient) {
         if let TransientBody::TodosChanged(changed) = &transient.body {
-            self.shown
+            let mut shown = self
+                .shown
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .todos = changed.todos.clone();
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            shown.todos = changed.todos.clone();
+            shown.todos_done = changed.done.clone();
         }
     }
 

@@ -39,6 +39,11 @@ pub(crate) fn whole(
         status["model"] = model;
     }
     status["todos"] = json!(handle.todos());
+    // 因为全部做完而清空的（施工 9-8 九补）：清空前那一份，同事件流 `todos.changed` 的 `done`；别的时候不写。
+    let done = handle.todos_done();
+    if !done.is_empty() {
+        status["todos_done"] = json!(done);
+    }
     if let Some(current) = current {
         status["usage"] = crate::usage::tallied(core, &current.tally);
         status["permission"] = json!(current.permission);

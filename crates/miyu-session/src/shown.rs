@@ -21,6 +21,8 @@ pub struct Shown {
     pub next: Next,
     /// 当前的待办（施工 D-3）：造会话、载入时照内核的，内核推 `todos.changed` 时跟着换。
     pub todos: Vec<Todo>,
+    /// 因为全部做完而清空的：清空前那一份（施工 9-8 九补，`todos.changed` 的 `done`）。清单不是空的、载入以后的是空的。
+    pub todos_done: Vec<Todo>,
     /// 这个会话累计的（施工 9-6 上）：造会话时是空的，载入时照整份日志算，之后每落一批盘加上这一批。
     pub tally: Tally,
     /// 长期目标现在的样子（施工 X-6）：喂法同 `tally`。
@@ -34,6 +36,7 @@ impl Shown {
             limits,
             next,
             todos,
+            todos_done: Vec::new(),
             tally: Tally::default(),
             goals: Goals::default(),
         }

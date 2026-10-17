@@ -157,6 +157,8 @@ pub struct Session {
     rounds: seal::Rounds,
     /// 上次告诉头的待办（施工 D-3，`todos.rs`）：变了才推 `todos.changed`。只在内存里。
     told_todos: Vec<crate::event::Todo>,
+    /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。
+    told_done: Vec<crate::event::Todo>,
 }
 
 impl Session {

@@ -27,15 +27,17 @@ impl Session {
             return None;
         }
         let todos = self.todos();
-        if todos == self.told_todos {
-            return None;
-        }
-        self.told_todos = todos.clone();
-        // 因为全部做完而清空的，带上做完的那一份（施工 D-3 补）。
+        // 因为全部做完而清空的，带上做完的那一份（施工 D-3 补）。连它一起比（施工 9-8 九补）：没写过就一次全做完的，清单前后
+        // 都是空的，以前当没变、不推，头拿不到做完的那一份。
         let done = match todos.is_empty() {
             true => self.history.todos_finished().to_vec(),
             false => Vec::new(),
         };
+        if todos == self.told_todos && done == self.told_done {
+            return None;
+        }
+        self.told_todos = todos.clone();
+        self.told_done = done.clone();
         Some(Action::PushTransient(Transient {
             at,
             turn: self.turn.as_ref().map(|turn| turn.id),
