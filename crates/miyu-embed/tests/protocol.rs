@@ -1,6 +1,6 @@
 //! 小程序的协议（`recall.md` 第四条第 4 款），手造的小模型（`fixtures/tiny/`）：起来先说 `ready`；一行一句，回一行向量，
 //! 和 Python 的 ONNX Runtime 算的逐个比；坏的一行回错、接着读；超长的截断；标准输入关了退出码 0；清单、文件不对的说一行
-//! 错、退出码 1；参数写错退出码 2。
+//! 错、退出码 1；参数写错退出码 2。字节级 BPE、只有两个输入的小模型（`fixtures/tiny-bpe/`，施工 R-5 六补）另走一遍。
 
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -272,4 +272,78 @@ fn wrong_arguments_exit_with_two() {
             "{said}"
         );
     }
+}
+
+/// 小 BPE 对几句的编号和向量（`fixtures/tiny-bpe/expected.json`，施工 R-5 六补）。
+#[derive(Deserialize)]
+struct BpeExpected {
+    text: String,
+    vector: Vec<f32>,
+}
+
+/// 字节级 BPE、只有两个输入的小模型（施工 R-5 六补）：照清单切词、只喂模型要的两个输入，向量和 Python 的 ONNX Runtime 算的
+/// 逐个比，超长的照 `max_tokens` 截。
+#[test]
+fn a_bpe_model_with_two_inputs_answers_each_line() {
+    let dir = fixtures().join("tiny-bpe");
+    let mut embed = Embed::spawn(&[
+        "--manifest".as_ref(),
+        dir.join("manifest.toml").as_os_str(),
+        "--dir".as_ref(),
+        dir.as_os_str(),
+    ]);
+    assert_eq!(
+        embed.line(),
+        json!({"ready": {"model": "local:tiny-bpe", "dims": 4}})
+    );
+    let expected: Vec<BpeExpected> =
+        serde_json::from_str(&read("tiny-bpe/expected.json")).expect("合写法");
+    for (k, case) in expected.iter().enumerate() {
+        let reply = embed.ask(&request(&format!("b{k}"), &case.text));
+        let got = vector(&reply);
+        assert!(
+            same(&got, &case.vector),
+            "{}：{got:?} 对 {:?}",
+            case.text,
+            case.vector
+        );
+    }
+    assert_eq!(embed.close(), Some(0));
+}
+
+/// 清单写的 `merges` 不在、模型要一个不认识的输入：载入不了，退出码 1（施工 R-5 六补）。
+#[test]
+fn a_bpe_model_without_merges_or_with_an_odd_input_exits_with_one() {
+    let source = fixtures().join("tiny-bpe");
+    let scratch = std::env::temp_dir().join(format!("miyu-embed-bpe-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).expect("建得了");
+    for name in ["vocab.txt", "model.onnx", "odd-input.onnx"] {
+        std::fs::copy(source.join(name), scratch.join(name)).expect("拷得了");
+    }
+    let manifest = source.join("manifest.toml");
+    let (reply, code) = refused(&manifest, &scratch);
+    assert!(
+        reply["error"]
+            .as_str()
+            .is_some_and(|said| said.starts_with("cannot find") && said.contains("merges.txt")),
+        "{reply}"
+    );
+    assert_eq!(code, Some(1));
+    std::fs::copy(source.join("merges.txt"), scratch.join("merges.txt")).expect("拷得了");
+    let odd = scratch.join("odd.toml");
+    let text = std::fs::read_to_string(&manifest).expect("读得了");
+    std::fs::write(
+        &odd,
+        text.replace("name = \"model.onnx\"", "name = \"odd-input.onnx\""),
+    )
+    .expect("写得进");
+    let (reply, code) = refused(&odd, &scratch);
+    assert!(
+        reply["error"]
+            .as_str()
+            .is_some_and(|said| said.contains("the model wants an input named position_ids")),
+        "{reply}"
+    );
+    assert_eq!(code, Some(1));
+    std::fs::remove_dir_all(&scratch).expect("删得了");
 }

@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-pub use miyu_recall::embedding::{Manifest, ManifestError, ModelFile, Pooling, Role};
+pub use miyu_recall::embedding::{Manifest, ManifestError, ModelFile, Pooling, Role, Tokenizer};
 
 /// 读 `path` 那一份清单。
 ///
