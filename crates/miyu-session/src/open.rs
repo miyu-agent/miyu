@@ -20,7 +20,7 @@ use miyu_tool::{Log, Seen};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
-use crate::agents::{Agents, Holds, Offers, Reach, Site, job_in};
+use crate::agents::{Agents, Holds, Offers, Reach, Site, job_in, persona_choices};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
@@ -168,7 +168,10 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     };
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
-    let offers = Offers::of(&config.current().resolved.values(), personas.ids());
+    let offers = Offers::of(
+        &config.current().resolved.values(),
+        persona_choices(&personas),
+    );
     // 照架子上现在的那一代拼；记下第几代，回合开头看换没换（施工 O-2 中）。
     let edition = tools.edition();
     let face = Agents::face(

@@ -96,3 +96,35 @@ fn only_spawned_subagents_count_as_unclaimed() {
     assert_eq!(spawned_in(&effects), [(job("j2"), child)]);
     assert!(spawned_in(&[]).is_empty());
 }
+
+/// 派子代理挑人格那一行（施工 P-10）：名字和简单描述都有的两样都给，缺一样给另一样，都没有的只剩编号；挑英文的，换行并成一行。
+#[test]
+fn a_persona_choice_carries_its_name_and_summary() {
+    let file = |toml: &str| miyu_policy::persona::read_toml(toml).expect("合写法");
+    let said =
+        |id: &str, file: Option<&PersonaFile>| persona_choice(id.to_string(), file).description;
+    let both = file(
+        "[persona]\nname = { zh = \"猫\", en = \"Cat\" }\nsummary = { zh = \"喵\", en = \"Purrs\\n  a lot\" }\n",
+    );
+    assert_eq!(
+        said("cat", Some(&both)).as_deref(),
+        Some("Cat — Purrs a lot")
+    );
+    let named = file("[persona]\nname = \"美羽\"\n");
+    assert_eq!(
+        said("miyu", Some(&named)).as_deref(),
+        Some("美羽"),
+        "只有中文的照给"
+    );
+    let summed = file("[persona]\nsummary = \"Quiet.\"\n");
+    assert_eq!(said("quiet", Some(&summed)).as_deref(), Some("Quiet."));
+    let blank = file("[persona]\nname = \"Bare\"\nsummary = \"\"\n");
+    assert_eq!(
+        said("bare", Some(&blank)).as_deref(),
+        Some("Bare"),
+        "空的简单描述当没写"
+    );
+    assert_eq!(said("plain", Some(&PersonaFile::default())), None);
+    assert_eq!(said("broken", None), None, "叠不成的只有编号");
+    assert_eq!(persona_choice("cat".to_string(), None).name, "cat");
+}

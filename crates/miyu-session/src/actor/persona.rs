@@ -26,7 +26,7 @@ use miyu_tool::{Catalog, Edition, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE, KB_SEARC
 
 use super::Actor;
 use crate::TARGET;
-use crate::agents::{Agents, Holds, Offers, Reach, Site};
+use crate::agents::{Agents, Holds, Offers, Reach, Site, persona_choices};
 use crate::blocking::blocking;
 use crate::knowledge::Shelves;
 use crate::open::PresetPlaces;
@@ -342,7 +342,7 @@ fn offered(
             group: old.group.is_some(),
         },
         refresh.lineage.as_ref(),
-        &Offers::of(values, refresh.personas.ids()),
+        &Offers::of(values, persona_choices(&refresh.personas)),
         old.attended,
         Holds {
             memory: old.memory_scope(),

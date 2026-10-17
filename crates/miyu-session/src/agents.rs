@@ -14,14 +14,17 @@
 use std::sync::Arc;
 
 use miyu_config::Values;
+use miyu_config::phrases::Label;
 use miyu_kernel::event::{Effect, JobKind, JobStarted, Permission};
 use miyu_kernel::id::{AccountId, CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Session};
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
+use miyu_policy::persona::PersonaFile;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_store::blob::Blobs;
+use miyu_store::personas::Personas;
 use miyu_tool::{
     ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
     KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE,
@@ -105,18 +108,46 @@ pub(crate) struct Offers {
 }
 
 impl Offers {
-    /// 照这时的配置 `values`、人格的编号 `personas`（照编号排）。人格只填名字，不带说明：说明是人格的作者写的，不一定是英文。
-    pub(crate) fn of(values: &Values, personas: Vec<String>) -> Offers {
+    /// 照这时的配置 `values`、能选的人格 `personas`（[`persona_choices`]）。
+    pub(crate) fn of(values: &Values, personas: Vec<Choice>) -> Offers {
         Offers {
             pools: choices(values),
-            personas: personas
-                .into_iter()
-                .map(|name| Choice {
-                    name,
-                    description: None,
-                })
-                .collect(),
+            personas,
         }
+    }
+}
+
+/// 这台机器上这时能选的人格（施工 P-10，2026-10-17 项目主人定）：照编号排，每个带上名字和简单描述（[`persona_choice`]）。
+/// 叠不成的人格照样列，只有编号。
+pub(crate) fn persona_choices(personas: &Personas) -> Vec<Choice> {
+    personas
+        .ids()
+        .into_iter()
+        .map(|id| {
+            let found = personas.find(&id).ok();
+            persona_choice(id, found.as_ref().map(|found| &found.file))
+        })
+        .collect()
+}
+
+/// 一个人格给模型看的那一行（施工 P-10）：`<名字> — <简单描述>`；没写简单描述的只有名字，名字也没写的只有简单描述，两样都
+/// 没有的没有这一句（那一行只有编号）。照英文挑（语言表的没有英文挑别的，`Label::pick`）；换行换成空格，一个人格一行。
+pub(crate) fn persona_choice(id: String, file: Option<&PersonaFile>) -> Choice {
+    let said = |label: Option<&Label>| {
+        label
+            .and_then(|label| label.pick("en"))
+            .map(|text| text.split_whitespace().collect::<Vec<_>>().join(" "))
+            .filter(|text| !text.is_empty())
+    };
+    let name = said(file.and_then(|file| file.name.as_ref()));
+    let summary = said(file.and_then(|file| file.summary.as_ref()));
+    let description = match (name, summary) {
+        (Some(name), Some(summary)) => Some(format!("{name} — {summary}")),
+        (name, summary) => name.or(summary),
+    };
+    Choice {
+        name: id,
+        description,
     }
 }
 
