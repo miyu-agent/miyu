@@ -1,9 +1,10 @@
 //! `/goal`（施工 X-8 下，`docs/blueprint/goal.md`「在新的架构里怎么放」第 6 条，`protocol.md` 的 `command.run`）：人交代、看、
 //! 停、继续、改、清掉长期目标。照旧版的写法：
 //!
-//! - `/goal` 看现在的目标；`/goal <目标>` 设一个（当场算授权过，会话闲着就开续轮）；
+//! - `/goal` 看现在的目标；`/goal <目标>` 设一个（当场算授权过，会话闲着就开续轮）；已经有一个没完成的，就是改它（施工 X-8 再补，
+//!   2026-10-17 项目主人定：头里翻输入历史调出上一句改了再发，用不着 `edit`），同 `edit`，停着、卡住的改完接着跑；
 //! - `/goal pause`、`/goal resume`、`/goal clear`：后面没字的才是子命令，带字的整句当目标；
-//! - `/goal edit <目标>` 改原文；设、改都能在目标前面写 `--rounds N` 定轮数上限（0 是不限），改的时候不写的照原来的。
+//! - `/goal edit <目标>` 改原文（照旧认，头不再提）；设、改都能在目标前面写 `--rounds N` 定轮数上限（0 是不限），改的时候不写的照原来的。
 //!
 //! 卡住的照停着办：人答了 `/goal resume` 接着跑。改目标交内核 `Goal` 命令（照请求的编号），拒的照内核的原因说。
 
@@ -77,7 +78,8 @@ enum Asked<'a> {
     Show,
     Set {
         text: &'a str,
-        limit: Option<NonZeroU32>,
+        /// 没写 `--rounds` 的没有：新设的不限，改的照原来的（施工 X-8 再补）。
+        limit: Option<Option<NonZeroU32>>,
     },
     Edit {
         text: &'a str,
@@ -98,11 +100,22 @@ pub(super) async fn run(
     by: &By,
     asked: &str,
 ) -> Result<(Vec<u64>, Said), Refusal> {
+    // 停着、卡住的改完接着跑（施工 X-8 再补）。
+    let mut resume = false;
     let change = match parse(asked)? {
         Asked::Show => return Ok((Vec::new(), shown(core, peer, session, handle).await?)),
-        Asked::Set { text, limit } => GoalChange::Set {
-            text: text.to_string(),
-            limit,
+        Asked::Set { text, limit } => match unfinished(core, session, handle).await? {
+            Some(goal) => {
+                resume = matches!(goal.state, GoalState::Paused | GoalState::Blocked);
+                GoalChange::Change {
+                    text: text.to_string(),
+                    limit: limit.unwrap_or(goal.limit),
+                }
+            }
+            None => GoalChange::Set {
+                text: text.to_string(),
+                limit: limit.flatten(),
+            },
         },
         Asked::Edit { text, limit } => GoalChange::Change {
             text: text.to_string(),
@@ -121,8 +134,33 @@ pub(super) async fn run(
         },
     };
     let said = receipt(&change);
-    let events = accepted(command(core, session, handle, id, by, Command::Goal(change)).await?)?;
+    let mut events =
+        accepted(command(core, session, handle, id, by, Command::Goal(change)).await?)?;
+    if resume {
+        // 另一条命令，编号照这一条接 `/resume`：两条各记各的 `goal.*`，回执只说改了。
+        let again = CommandId::parse(&format!("{id}/resume")).map_err(|_| Refusal::BAD_PARAMS)?;
+        let resumed = command(
+            core,
+            session,
+            handle,
+            &again,
+            by,
+            Command::Goal(GoalChange::Resume),
+        );
+        events.extend(accepted(resumed.await?)?);
+    }
     Ok((events, said))
+}
+
+/// 现在没完成的目标（跑着、等人、停着、卡住）；没有的、完成了的没有。
+async fn unfinished(
+    core: &Core,
+    session: &SessionId,
+    handle: &Handle,
+) -> Result<Option<Goal>, Refusal> {
+    Ok(now(core, session, handle)
+        .await?
+        .filter(|goal| goal.state != GoalState::Completed))
 }
 
 /// 读人写的：见模块的说明。写错的（`edit` 后面没字、`--rounds` 后面不是数、只写了上限）参数不对。
@@ -144,10 +182,7 @@ fn parse(asked: &str) -> Result<Asked<'_>, Refusal> {
         _ => {}
     }
     let (limit, text) = rounds(asked)?;
-    Ok(Asked::Set {
-        text,
-        limit: limit.flatten(),
-    })
+    Ok(Asked::Set { text, limit })
 }
 
 /// 开头的 `--rounds N`：没写的没有；`0` 是不限。剩下的是目标原文，空的参数不对。

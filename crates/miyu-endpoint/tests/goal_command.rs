@@ -99,9 +99,6 @@ async fn set_show_pause_edit_resume_and_clear() {
         "再写 文档 · 已暂停 · 第 1/3 轮",
         "没写上限的照原来的"
     );
-    let reply = run(&mut client, "k8", &session, "/goal 别的").await;
-    assert_eq!(reason(&reply), Some("goal_exists"), "{reply}");
-
     let reply = run(&mut client, "k9", &session, "/goal resume").await;
     assert_eq!(said(&reply), "已继续长期目标。");
     until_ended(&home, &session, 2).await;
@@ -134,7 +131,59 @@ async fn set_show_pause_edit_resume_and_clear() {
         .iter()
         .filter(|event| matches!(event.body, Body::CommandRan(_)))
         .count();
-    assert_eq!(ran, 10, "执行了的都记，被拒的两次不记");
+    assert_eq!(ran, 10, "执行了的都记，被拒的一次不记");
+}
+
+/// 已经有一个没完成的再发 `/goal <目标>` 就是改它（施工 X-8 再补，2026-10-17 项目主人定）：原文换掉、第几轮接着数，没写
+/// `--rounds` 的上限照原来的；停着的改完接着跑；等人的只改不另开；清掉以后才是新设一个。
+#[tokio::test]
+async fn a_second_goal_edits_the_current_one() {
+    let home = Home::new();
+    let script = Script::new([
+        Play::Says("在等你确认。"),
+        Play::Says("还在等。"),
+        Play::Says("好。"),
+    ])
+    .titles([Play::Says("测试")]);
+    let mut client = Client::connect(configured_core(&home, &script, goal_tools()));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    run(&mut client, "k1", &session, "/goal --rounds 3 把测试修绿").await;
+    until_ended(&home, &session, 1).await;
+    run(&mut client, "k2", &session, "/goal pause").await;
+    let reply = run(&mut client, "k3", &session, "/goal 再写文档").await;
+    assert_eq!(said(&reply), "已修改长期目标：再写文档", "{reply}");
+    until_ended(&home, &session, 2).await;
+    let reply = run(&mut client, "k4", &session, "/goal").await;
+    assert_eq!(
+        said(&reply),
+        "再写文档 · 等待回复 · 第 2/3 轮",
+        "停着的改完接着跑，轮数接着数，上限照原来的"
+    );
+    let reply = run(&mut client, "k5", &session, "/goal --rounds 5 再补测试").await;
+    assert_eq!(said(&reply), "已修改长期目标：再补测试");
+    let reply = run(&mut client, "k6", &session, "/goal").await;
+    assert_eq!(
+        said(&reply),
+        "再补测试 · 等待回复 · 第 2/5 轮",
+        "等人的只改"
+    );
+    run(&mut client, "k7", &session, "/goal clear").await;
+    let reply = run(&mut client, "k8", &session, "/goal 新的").await;
+    assert_eq!(said(&reply), "已设定长期目标：新的", "清掉以后是新设");
+    let log = home.log(&session);
+    assert_eq!(
+        goal_kinds(&log),
+        [
+            "goal.set",
+            "goal.paused",
+            "goal.changed",
+            "goal.resumed",
+            "goal.changed",
+            "goal.ended",
+            "goal.set"
+        ]
+    );
 }
 
 #[tokio::test]
@@ -162,8 +211,6 @@ async fn a_blocked_goal_resumes_after_its_limit_is_lifted() {
         "把测试修绿 · 受阻：Reached the round limit (1). · 第 1/1 轮",
         "{reply}"
     );
-    let reply = run(&mut client, "k3", &session, "/goal 新的").await;
-    assert_eq!(reason(&reply), Some("goal_exists"), "卡住的还算没完成");
     let reply = run(&mut client, "k4", &session, "/goal pause").await;
     assert_eq!(reason(&reply), Some("goal_paused"), "{reply}");
     run(

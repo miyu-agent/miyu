@@ -35,15 +35,16 @@ fn rounds_come_first_and_zero_means_no_limit() {
         parse("--rounds 20 把测试修绿"),
         Ok(Asked::Set {
             text: "把测试修绿",
-            limit: limit(20)
+            limit: Some(limit(20))
         })
     );
     assert_eq!(
         parse("--rounds 0 把测试修绿"),
         Ok(Asked::Set {
             text: "把测试修绿",
-            limit: None
-        })
+            limit: Some(None)
+        }),
+        "0 是写了不限，和没写分得开（改的时候照原来的）"
     );
     assert_eq!(
         parse("edit --rounds 5 再写文档"),
