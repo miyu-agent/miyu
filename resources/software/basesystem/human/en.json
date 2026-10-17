@@ -31,6 +31,11 @@
       "subject": "file_path",
       "icon": "←"
     },
+    "show": {
+      "name": "Show",
+      "subject": "path",
+      "icon": "◆"
+    },
     "shell": {
       "name": "Run",
       "subject": "command",
@@ -162,6 +167,8 @@
     "trash/protected": "the working directory, its parents, home and root can't be deleted",
     "trash/lost": "deleted, but not found in the trash",
     "trash/failed": "can't delete: {error}",
+    "show/shown": "Shown to the user",
+    "show/too-big": "Larger than 20 MiB, not shown",
     "shell/done": "{count} lines of output",
     "shell/done/one": "{count} line of output",
     "shell/quiet": "no output",

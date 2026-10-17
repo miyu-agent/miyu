@@ -157,6 +157,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             "session_usage",
             "sessions",
             "shell",
+            "show",
             "subagent",
             "todowrite",
             "trash",

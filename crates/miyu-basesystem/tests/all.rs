@@ -24,6 +24,7 @@ mod session_usage;
 mod sessions;
 mod shell;
 mod shell_sandbox;
+mod show;
 mod stop;
 mod subagent;
 mod todowrite;

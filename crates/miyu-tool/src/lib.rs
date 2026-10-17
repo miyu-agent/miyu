@@ -68,7 +68,9 @@ pub use messages::{
 };
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
-pub use run::{Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, Target};
+pub use run::{
+    Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, ShownFile, Target,
+};
 pub use sessions::{Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session};
 pub use shelf::{Edition, Shelf};
 pub use stop::Stop;

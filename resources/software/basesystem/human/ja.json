@@ -31,6 +31,11 @@
       "subject": "file_path",
       "icon": "←"
     },
+    "show": {
+      "name": "表示",
+      "subject": "path",
+      "icon": "◆"
+    },
     "shell": {
       "name": "コマンド実行",
       "subject": "command",
@@ -148,6 +153,8 @@
     "trash/protected": "作業ディレクトリ、その上位、ホーム、ルートは削除できません",
     "trash/lost": "削除しましたが、ゴミ箱に見つかりません",
     "trash/failed": "削除できません：{error}",
+    "show/shown": "ユーザーに表示しました",
+    "show/too-big": "20 MiB を超えるため表示できません",
     "shell/done": "出力 {count} 行",
     "shell/quiet": "出力なし",
     "shell/exited": "終了コード {code}",

@@ -231,6 +231,9 @@ pub struct Tool {
     /// 读的是技能的 `SKILL.md`（施工 9-8 四补）：照结果的 `file.read` 效果。没有的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skill: Option<SkillUsed>,
+    /// 给人看的文件（施工 D-5，`docs/blueprint/tools/show.md`）：照结果的 `file.shown` 效果，格同它。没有的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shown: Option<miyu_kernel::event::FileShown>,
 }
 
 /// 标题那一句，照连接的语言。

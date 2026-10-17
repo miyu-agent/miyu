@@ -192,6 +192,27 @@ pub enum Effect {
     PeerWatch(PeerWatch),
     /// 换上了一整份待办（施工 D-3）：`todowrite` 报，执行器原样换成内核的 `todo.written`。
     TodoWritten(TodoWritten),
+    /// 给人看了一个文件（施工 D-5）：带着内容，执行器存成 blob，换成内核的 `file.shown`。
+    Shown(ShownFile),
+}
+
+/// `show` 给人看的一个文件（施工 D-5）：内容和认出来的几样。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShownFile {
+    /// 真实的位置。
+    pub path: PathBuf,
+    /// 内容。
+    pub content: Vec<u8>,
+    /// 文件名。
+    pub name: String,
+    /// 媒体类型。
+    pub media_type: String,
+    /// 她写的标题。
+    pub title: Option<String>,
+    /// 代码、文本的语言。
+    pub language: Option<String>,
+    /// 图片的宽、高。
+    pub size: Option<(u32, u32)>,
 }
 
 impl Done {

@@ -29,6 +29,7 @@ mod send_message;
 mod session_usage;
 mod sessions;
 mod shell;
+mod show;
 mod subagent;
 mod text;
 mod todowrite;
@@ -73,6 +74,7 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
         Arc::new(write::Write::load(resources, common.clone())?),
         Arc::new(edit::Edit::load(resources, common.clone())?),
         Arc::new(trash::Trash::load(resources, common.clone())?),
+        Arc::new(show::Show::load(resources, common.clone())?),
         Arc::new(shell::Shell::load(resources, common.clone())?),
         Arc::new(history::History::load(resources, common.clone())?),
         Arc::new(subagent::Subagent::load(resources, common.clone())?),

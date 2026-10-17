@@ -33,8 +33,8 @@ pub use context::{
 };
 pub use cost::{Cost, Prices, Real};
 pub use effect::{
-    Effect, FileChanged, FileRead, FileTrashed, JobKind, JobMessaged, JobStarted, PeerWatch, Todo,
-    TodoStatus, TodoWritten,
+    Effect, FileChanged, FileRead, FileShown, FileTrashed, JobKind, JobMessaged, JobStarted,
+    PeerWatch, Todo, TodoStatus, TodoWritten,
 };
 pub use goal::{
     GoalChanged, GoalEnded, GoalOutcome, GoalPaused, GoalResumed, GoalSet, round_command, round_of,

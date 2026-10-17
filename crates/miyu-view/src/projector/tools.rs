@@ -95,6 +95,7 @@ impl Projector {
             took_ms: None,
             files: Vec::new(),
             skill: None,
+            shown: None,
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());
@@ -259,6 +260,11 @@ impl Projector {
             }),
             _ => None,
         });
+        // 给人看的文件（施工 D-5）。
+        let shown = result.effects.iter().find_map(|effect| match effect {
+            Effect::FileShown(shown) => Some(shown.clone()),
+            _ => None,
+        });
         let mut job = None;
         for effect in &result.effects {
             if let Effect::JobStarted(started) = effect {
@@ -301,6 +307,7 @@ impl Projector {
                 tool.job = job;
                 tool.files = files;
                 tool.skill = skill;
+                tool.shown = shown;
                 if let Some(real) = real
                     && !state.failed()
                 {

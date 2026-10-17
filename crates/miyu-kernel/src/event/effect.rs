@@ -37,6 +37,9 @@ pub enum Effect {
     /// 换上了一整份待办（施工 D-3）。
     #[serde(rename = "todo.written")]
     TodoWritten(TodoWritten),
+    /// 给人看了一个文件（施工 D-5，`docs/blueprint/tools/show.md`）。
+    #[serde(rename = "file.shown")]
+    FileShown(FileShown),
     /// 不认识的种类：整块原样留着，写出去还是原样。
     #[serde(untagged)]
     Unknown(RawJson),
@@ -81,6 +84,34 @@ pub struct FileTrashed {
     pub path: String,
     /// 回收站里的位置：各平台自己的写法，撤销时照它移回来。
     pub trash: String,
+}
+
+/// `file.shown`：`show` 给人看了一个文件（施工 D-5，设计 `35-展示.md`）。内容存成了 blob；头照这几格选怎么显示，同一个
+/// `path` 再来一条换掉那一张。内核不读它。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileShown {
+    /// 换成真实位置以后的绝对路径。
+    pub path: String,
+    /// 内容。
+    pub blob: ContentHash,
+    /// 文件名：真实位置的最后一段。
+    pub name: String,
+    /// 认出来的媒体类型。
+    pub media_type: String,
+    /// 字节数。
+    pub size: u64,
+    /// 她写的标题；没写的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// 代码、文本照后缀认出的语言（Markdown 代码块的写法）；认不出的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+    /// 图片的宽，像素；别的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<u32>,
+    /// 图片的高，像素；别的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub height: Option<u32>,
 }
 
 /// `job.started`：派出去一个任务（`agents.md`「对外的样子」）。编号整份日志里不重复、`agent` 带会话、`command` 不带，
@@ -177,6 +208,7 @@ impl<'de> Deserialize<'de> for Effect {
                     "job.messaged" => raw::parse(json).map(Effect::JobMessaged),
                     "peer.watch" => raw::parse(json).map(Effect::PeerWatch),
                     "todo.written" => raw::parse(json).map(Effect::TodoWritten),
+                    "file.shown" => raw::parse(json).map(Effect::FileShown),
                     _ => return None,
                 })
             },

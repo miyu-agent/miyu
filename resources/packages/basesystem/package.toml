@@ -1,4 +1,4 @@
-# 基础系统（施工 F-2，设计 30 第二节、第三节）：内置包，代码编在核心里，必需。九个功能和下面的工具，预设照功能开关（F-3）。
+# 基础系统（施工 F-2，设计 30 第二节、第三节）：内置包，代码编在核心里，必需。几个功能和下面的工具，预设照功能开关（F-3）。
 # 给人看的字，不发给模型。
 
 [package]
@@ -46,5 +46,9 @@ tools = ["session_usage"]
 [features.packages]
 name = { en = "Packages", zh = "软件包", ja = "パッケージ" }
 tools = ["packages", "package"]
+
+[features.show]
+name = { en = "Show", zh = "展示", ja = "表示" }
+tools = ["show"]
 
 [builtin]

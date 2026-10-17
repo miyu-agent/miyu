@@ -32,11 +32,12 @@
 //! 施工 F-10 下加了 `package`（332 字节，边际份量 86）：2026-10-12 主会话照同一个端点整张重量，十七件合计 2847 个 token、9780
 //! 字节，还在预算里，预算不改。施工 F-10 下下给 `package` 加 `enable`（边际份量 86 → 116）：十七件合计 2877 个 token、9888 字节，
 //! 还在预算里，预算不改。
+//! 施工 D-5 加了 `show`（给人看一个文件，435 字节）：2026-10-17 主会话照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 整张重量，十八件合计 3073 个 token、10577 字节，`show` 的边际份量 121，超了；照同一个办法预算改成 3380 个 token（实测加一成），合 11700 字节。
 
 use std::path::Path;
 
 /// 预算：字节，回车 `\r` 不算（Windows 上检出的可能多出回车）。
-const BUDGET: usize = 10400;
+const BUDGET: usize = 11700;
 
 #[test]
 fn the_tool_face_stays_within_its_budget() {
@@ -55,7 +56,7 @@ fn the_tool_face_stays_within_its_budget() {
             files += 1;
         }
     }
-    assert_eq!(files, 17, "基础系统现在是十七件");
+    assert_eq!(files, 18, "基础系统现在是十八件");
     assert!(
         total <= BUDGET,
         "工具面的几份说明一共 {total} 字节，超过预算 {BUDGET}：重新量 token，再改预算（10-自带软件.md 第九节）"

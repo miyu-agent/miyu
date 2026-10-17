@@ -56,6 +56,7 @@ fn the_catalog_has_the_base_system() {
             "session_usage",
             "sessions",
             "shell",
+            "show",
             "subagent",
             "todowrite",
             "trash",

@@ -267,3 +267,26 @@ fn a_tool_step_shows_the_name_people_see() {
     assert_eq!(names("zh", &done)[0], "回声");
     assert_eq!(names("zh", &done)[2], "Probe echo");
 }
+
+/// 给人看的文件（施工 D-5）：工具卡带 `shown`，格同结果的 `file.shown`；别的工具没有这一格。
+#[test]
+fn a_step_that_showed_a_file_carries_it() {
+    const BLOB: &str = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    let asked = r#"{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{"kind":"model","endpoint":"e","model":"m"},"cause":"cmd-1","body":{"blocks":[{"type":"tool_call","call_id":"call_4_1","name":"show","args":"{\"path\":\"pic.png\"}"},{"type":"tool_call","call_id":"call_4_2","name":"read","args":"{}"}],"seen":3}}"#;
+    let shown = format!(
+        r#"{{"seq":5,"at":"2026-09-25T07:00:04.000Z","kind":"tool.result","turn":3,"by":{{"kind":"tool","call_id":"call_4_1"}},"cause":"cmd-1","body":{{"call_id":"call_4_1","status":"ok","blocks":[{{"type":"text","text":"Shown to the user.\n"}}],"effects":[{{"kind":"file.shown","path":"/w/pic.png","blob":"{BLOB}","name":"pic.png","media_type":"image/png","size":7,"title":"A chart","width":3,"height":4}}]}}}}"#
+    );
+    let read = r#"{"seq":6,"at":"2026-09-25T07:00:04.000Z","kind":"tool.result","turn":3,"by":{"kind":"tool","call_id":"call_4_2"},"cause":"cmd-1","body":{"call_id":"call_4_2","status":"ok","blocks":[{"type":"text","text":"x"}]}}"#;
+    let entries = feed(&[CREATED, ASKED, STARTED, asked, &shown, read]);
+    let cards: Vec<serde_json::Value> = of_kind(&entries, "tool")
+        .into_iter()
+        .map(|entry| json(entry)["shown"].clone())
+        .collect();
+    assert_eq!(
+        cards,
+        [
+            serde_json::json!({"path": "/w/pic.png", "blob": BLOB, "name": "pic.png", "media_type": "image/png", "size": 7, "title": "A chart", "width": 3, "height": 4}),
+            serde_json::Value::Null,
+        ]
+    );
+}

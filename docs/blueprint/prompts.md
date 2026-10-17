@@ -1135,6 +1135,28 @@ Edits {first} and {second} overlap in "{path}". Merge them into one edit.
 Moved "{path}" to the trash.
 ```
 
+#### `software/basesystem/show/shown.txt`
+
+- 什么时候加进来：展示成了
+- token：5（o200k）
+- 为什么加：每次调用都要有结果；只说给人看了，不回内容（施工 D-5，设计 35 定了的 B）
+- 指纹：`489c2e50`
+
+```text
+Shown to the user.
+```
+
+#### `software/basesystem/show/too-big.txt`
+
+- 什么时候加进来：文件超过 20 MiB（字段按 `/w/a.png` 填）
+- token：15（o200k）
+- 为什么加：说清为什么没展示，和附件同一个上限（施工 D-5）
+- 指纹：`760aa251`
+
+```text
+{path} is larger than 20 MiB and cannot be shown.
+```
+
 #### `software/basesystem/trash/unavailable.txt`
 
 - 什么时候加进来：那块盘上没有能放的回收站，没删
@@ -3782,6 +3804,20 @@ Placeholder for a tool this client is expected to send with the request; it is n
 {
   "description": "Move a file or directory to the system trash, where it can be restored. Use this instead of rm in the shell.",
   "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."}},"required":["file_path"]}
+}
+```
+
+#### `software/basesystem/tools/show.json`
+
+- 什么时候加进来：会话的工具面里有 `show`（每次请求都带；预设关了功能「展示」的不带）
+- token：121（2026-10-17 主会话照开发端点整张重量的边际份量，十八件合计 3073）
+- 为什么加：`show` 的说明和参数（施工 D-5，设计 35，2026-10-17 项目主人定）：三句，是什么、她拿不回内容、同一个路径再展示换掉那一张；参数 `path`、`title` 各一句。不加的话她给人看图、页面只能贴路径让人自己开
+- 指纹：`d0e05cf3`
+
+```json
+{
+  "description": "Show a file to the user: an image, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
+  "parameters": {"type":"object","properties":{"path":{"type":"string","description":"The file to show."},"title":{"type":"string","description":"A short title. Default: the file name."}},"required":["path"]}
 }
 ```
 

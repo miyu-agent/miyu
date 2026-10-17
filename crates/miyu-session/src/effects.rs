@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::event::{Body, Effect, Event, FileChanged, FileRead, FileTrashed};
+use miyu_kernel::event::{Body, Effect, Event, FileChanged, FileRead, FileShown, FileTrashed};
 use miyu_kernel::id::{ContentHash, TurnId};
 use miyu_store::blob::Blobs;
 use miyu_tool::Seen;
@@ -43,6 +43,18 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
             miyu_tool::Effect::JobMessaged(messaged) => Effect::JobMessaged(messaged),
             miyu_tool::Effect::PeerWatch(watch) => Effect::PeerWatch(watch),
             miyu_tool::Effect::TodoWritten(written) => Effect::TodoWritten(written),
+            // 给人看的文件（施工 D-5）：内容存成 blob。
+            miyu_tool::Effect::Shown(shown) => Effect::FileShown(FileShown {
+                path: text(&shown.path),
+                blob: put(blobs, &shown.content),
+                name: shown.name,
+                media_type: shown.media_type,
+                size: shown.content.len() as u64,
+                title: shown.title,
+                language: shown.language,
+                width: shown.size.map(|(width, _)| width),
+                height: shown.size.map(|(_, height)| height),
+            }),
         })
         .collect()
 }
@@ -97,11 +109,13 @@ pub(crate) fn saw(seen: &mut Seen, effects: &[Effect]) {
             Effect::FileTrashed(trashed) => {
                 seen.remove(Path::new(&trashed.path));
             }
-            // 派出去的任务、留的言、订的别的会话、写的待办不是看过的文件（施工 7-1、7-7、C-1、D-3）。
+            // 派出去的任务、留的言、订的别的会话、写的待办不是看过的文件（施工 7-1、7-7、C-1、D-3）；给人看的她没拿到内容，
+            // 也不算看过（施工 D-5）。
             Effect::JobStarted(_)
             | Effect::JobMessaged(_)
             | Effect::PeerWatch(_)
             | Effect::TodoWritten(_)
+            | Effect::FileShown(_)
             | Effect::Unknown(_) => {}
         }
     }
