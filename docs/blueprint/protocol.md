@@ -543,6 +543,8 @@
 
 回应 `{"commands": [{"name": "clear", "aliases": ["reset"], "summary": "清空上下文"}, {"name": "workspace", "aliases": [], "summary": "切换工作区", "argument": "<路径>"}, …]}`：照名字排；`summary`、`argument` 照这个连接的语言，字在 `core/human/<语言>.json` 的 `commands/summary/<名字>`、`commands/argument/<名字>`；名字后面要跟字的（`workspace`、`remember`）才有 `argument`。
 
+有几种写法的命令多一格 `usage`（施工 O-6 四补，2026-10-17 项目主人看终端的命令菜单时提的：`/goal` 只写了设定和看进度，停、继续、清除都没列）：`[{"form": "/goal pause", "summary": "暂停"}, …]`，照先后，`form` 是一整条写法（名字后面跟字的那一段照 `argument` 写），`summary` 照这个连接的语言（`commands/usage/<名字>/<哪一种>`）。只有一种写法的不写这一格，头照 `summary`、`argument` 显示；有这一格的，头的命令菜单、`/help` 照它一行一种列出来，不自己拼说明。现在有它的是 `/goal`：`/goal` 看进度、`/goal <目标>` 设定（已经有一个就改它，施工 X-8 再补）、`/goal pause`、`/goal resume`、`/goal clear`；`/goal edit` 照旧认、不列。
+
 1. 不写 `session`：列核心认的全部（头还没造会话、`/help` 列全部时用）。
 2. 写了：只列这个连接在这个会话里打了不会被拒的，和 `command.run` 第 2、8、10、12 条同一份判法（谁能用；`/workspace` 只给主人本人；`/remember`、`/dream` 要这个会话开着记忆；`/goal` 要这个会话有长期目标）。用不了的不列（2026-10-09 项目主人定）：人打了菜单里没有的命令，头照样交给 `command.run`，照拒绝的 `data.why` 说为什么，不自己说「没有这个命令」。
 3. 命令模板（施工 X-14 上，`slash.md`「找、盖住、开关」第 5 条）照名字排在一起：一项 `{"name", "aliases": [], "summary", "argument"?}`，`summary` 照模板的说明、照连接的语言挑，没写的照正文第一行不是空白的那一行；写了 `argument-hint` 的带 `argument`（照原样）。不写会话的照管理员找，写了的照会话属主找、只列预设开着的；和内置同名的不列。

@@ -78,8 +78,29 @@ pub(crate) async fn catalog(
         let summary = words(core, peer, &Said::plain(slash.summary())).await;
         let mut item =
             json!({"name": slash.name(), "aliases": slash.aliases(), "summary": summary});
-        if let Some(argument) = slash.argument() {
-            item["argument"] = json!(words(core, peer, &Said::plain(argument)).await);
+        let argument = match slash.argument() {
+            Some(argument) => Some(words(core, peer, &Said::plain(argument)).await),
+            None => None,
+        };
+        if let Some(argument) = &argument {
+            item["argument"] = json!(argument);
+        }
+        // 几种写法（施工 O-6 四补）：`/<名字>` 接上后面跟的，`<>` 照 `argument` 那一句写。
+        let mut usage = Vec::new();
+        for (rest, said) in slash.usage() {
+            let rest = match (*rest, &argument) {
+                ("<>", Some(argument)) => argument.as_str(),
+                (rest, _) => rest,
+            };
+            let form = match rest {
+                "" => format!("/{}", slash.name()),
+                rest => format!("/{} {rest}", slash.name()),
+            };
+            let summary = words(core, peer, &Said::plain(said)).await;
+            usage.push(json!({"form": form, "summary": summary}));
+        }
+        if !usage.is_empty() {
+            item["usage"] = json!(usage);
         }
         commands.push(item);
     }

@@ -83,6 +83,12 @@ pub(crate) trait Slash: Send + Sync {
         None
     }
 
+    /// 几种写法（施工 O-6 四补，`command.catalog` 的 `usage`）：名字后面跟的（空的是只打名字；`<>` 括起来的照 [`Slash::argument`]
+    /// 那一句写）、做什么的那一句的键，照先后。只有一种写法的不写，头照 `summary`、`argument` 显示。
+    fn usage(&self) -> &'static [(&'static str, &'static str)] {
+        &[]
+    }
+
     /// 在后台答（要等模型的，例如 `/dream`）：同一个连接后面的请求不等它。
     fn later(&self) -> bool {
         false
