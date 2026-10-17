@@ -2,7 +2,8 @@
 //! 接入QQ 的会话 2026-10-17 要的：群会话归系统账号，`show` 存的 blob 在它名下；以前一律照管理员找，桥读不到。
 //!
 //! 谁读得到：会话的属主、管理员（头看的都是这台机器上的会话）；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions`
-//! 列谁的会话，`venues::owners`）里引用过的 blob：消息、工具结果的图片块、文件块，`file.shown` 的 blob（[`references`]）。只认
+//! 列谁的会话，`venues::owners`）里引用过的 blob：消息、工具结果的图片块、文件块，`file.shown` 的 blob，她经工具发出去的图
+//! （`tool.result.sent`，施工 W-6 再补：接入QQ 发表情包要读管理员私聊里的）（[`references`]）。只认
 //! 结构里的引用，不在原文里搜：桥能以外部身份往主人的私聊里发字，照原文搜它就能写一句带着哈希的话、读走主人别的 blob。
 //! 不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
 
@@ -53,7 +54,7 @@ pub(super) async fn owner(
     .await
 }
 
-/// 一条事件引用了 blob `hash`：消息、工具结果的图片块、文件块（`attach::blobs_of`），工具结果的 `file.shown`。
+/// 一条事件引用了 blob `hash`：消息、工具结果的图片块、文件块（`attach::blobs_of`），工具结果的 `file.shown`、`sent`。
 fn references(event: &Event, hash: &ContentHash) -> bool {
     let blocks = match &event.body {
         Body::MessageUser(message) => &message.blocks,
@@ -63,6 +64,7 @@ fn references(event: &Event, hash: &ContentHash) -> bool {
                 .effects
                 .iter()
                 .any(|effect| matches!(effect, Effect::FileShown(shown) if shown.blob == *hash))
+                || result.sent.iter().any(|sent| sent.image.blob == *hash)
             {
                 return true;
             }
@@ -72,3 +74,6 @@ fn references(event: &Event, hash: &ContentHash) -> bool {
     };
     super::blobs_of(blocks).contains(hash)
 }
+
+#[cfg(test)]
+mod tests;
