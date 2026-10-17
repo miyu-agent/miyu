@@ -2,7 +2,8 @@
 
 use super::Todos;
 use crate::event::{
-    Body, Effect, Event, Todo, TodoStatus, TodoWritten, ToolResult, TurnReverted, TurnUnreverted,
+    Body, CompactTrigger, ContextCompacted, Effect, Event, Todo, TodoStatus, TodoWritten,
+    TodosCleared, ToolResult, TurnReverted, TurnUnreverted,
 };
 use crate::history::History;
 use crate::id::{Seq, TurnId};
@@ -87,4 +88,50 @@ fn history_after_a_checkpoint_still_knows_the_list() {
         Some("a"),
         "写它的那一条被替代掉了，清单照样在"
     );
+}
+
+/// 压缩的检查点：`trigger` 是 `trigger`，替代到第 `upto` 条。
+fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
+    event(
+        n,
+        turn,
+        Body::ContextCompacted(ContextCompacted {
+            upto: seq(upto),
+            summary: String::new(),
+            trigger: Some(trigger),
+            instructions: None,
+            notes: String::new(),
+            restored: Vec::new(),
+            refills: None,
+            prepared: false,
+        }),
+    )
+}
+
+/// 平常的压缩不动清单；清空上下文的那一种清掉，撤掉那一轮回来（施工 D-3 再补）。
+#[test]
+fn only_clearing_the_context_clears_the_list() {
+    let mut todos = Todos::default();
+    todos.note(&wrote(5, 3, "a"));
+    todos.note(&compacted(8, 7, 6, CompactTrigger::Auto));
+    assert_eq!(current(&todos).as_deref(), Some("a"), "平常的压缩照旧");
+    todos.note(&compacted(10, 9, 8, CompactTrigger::Clear));
+    assert_eq!(current(&todos).as_deref(), Some(""), "清空上下文的清掉");
+    let reverted: TurnReverted = serde_json::from_value(serde_json::json!({"turns": [9]})).unwrap();
+    todos.note(&event(12, 9, Body::TurnReverted(reverted)));
+    assert_eq!(current(&todos).as_deref(), Some("a"), "撤掉清空的那一轮");
+}
+
+/// `todos.cleared`（施工 D-3 再补，`/todo clear`）：清掉；不属于哪一轮的撤不掉。
+#[test]
+fn a_todos_cleared_clears_the_list() {
+    let mut todos = Todos::default();
+    todos.note(&wrote(5, 3, "a"));
+    let cleared = Event {
+        turn: None,
+        ..event(6, 3, Body::TodosCleared(TodosCleared {}))
+    };
+    todos.note(&cleared);
+    assert_eq!(current(&todos).as_deref(), Some(""));
+    assert!(todos.finished().is_empty(), "不是做完了清空的");
 }

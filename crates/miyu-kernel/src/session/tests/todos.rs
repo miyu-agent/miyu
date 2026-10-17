@@ -5,7 +5,7 @@ use super::executor::*;
 use super::load::{Logged, load};
 use super::revert::{revert, unrevert};
 use super::*;
-use crate::event::{Effect, Todo, TodoStatus, TodoWritten, Transient, TransientBody};
+use crate::event::{Effect, Todo, TodoStatus, TodoWritten, TodosCleared, Transient, TransientBody};
 use crate::id::CallId;
 
 fn list(items: &[(&str, TodoStatus)]) -> Vec<Todo> {
@@ -241,4 +241,153 @@ fn clearing_because_all_is_done_carries_the_finished_list() {
         },
     );
     assert_eq!(dones(&actions), [Vec::<Todo>::new()], "写空的不带");
+}
+
+/// 编号是 `n` 的命令：alice 要清空待办（施工 D-3 再补，`/todo clear`）。
+fn clear_todos(n: u64) -> Input {
+    Input::Command(Received {
+        id: id(n),
+        by: alice(),
+        at: at(n % 60),
+        command: Command::ClearTodos,
+    })
+}
+
+/// 清空上下文（`/clear`）连待办一起清（施工 D-3 再补，2026-10-17 项目主人定）：落了盘推一份空的；撤掉清空的那一轮，清单回来，
+/// 恢复又清掉。
+#[test]
+fn clearing_the_context_clears_the_list_and_undoing_brings_it_back() {
+    let a = list(&[("一", TodoStatus::InProgress)]);
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "开工");
+    let (_, seen) = write(&mut logged, seen, a.clone());
+    logged.say(seen, "好");
+    logged.handle(super::clear::clear(2));
+    let cleared = last_turn(&logged);
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(
+        changes(&actions),
+        [Vec::<Todo>::new()],
+        "清空上下文也清待办"
+    );
+    assert!(logged.session.todos().is_empty());
+    let (session, _) = load(logged.log.clone());
+    assert!(session.todos().is_empty(), "载入以后照样是空的");
+    // 撤掉压缩要先读回日志（施工 6-9）：照它重建有效历史。
+    let actions = logged.handle(revert(3, cleared));
+    let [Action::ReadBack { from }] = actions.as_slice() else {
+        panic!("先读回：{actions:?}");
+    };
+    let from = *from;
+    let events = logged
+        .log
+        .iter()
+        .filter(|event| event.seq >= from)
+        .cloned()
+        .collect();
+    logged.handle(Input::ReadBack {
+        at: at(58),
+        from,
+        events,
+    });
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(
+        changes(&actions),
+        std::slice::from_ref(&a),
+        "撤掉清空，清单回来"
+    );
+    logged.handle(unrevert(4));
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(changes(&actions), [Vec::<Todo>::new()], "恢复又清掉");
+}
+
+/// `/todo clear`（施工 D-3 再补）：记一条 `todos.cleared`（谁发的写在 `by`，`cause` 是命令），落了盘推一份空的、回应附上
+/// 这一条；载入以后照样是空的。
+#[test]
+fn the_todo_command_records_a_clear_and_pushes_an_empty_list() {
+    let a = list(&[("一", TodoStatus::Pending)]);
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "开工");
+    let (_, seen) = write(&mut logged, seen, a);
+    logged.say(seen, "好");
+    let actions = logged.handle(clear_todos(2));
+    let [Action::Append(events)] = actions.as_slice() else {
+        panic!("只追加一条：{actions:?}");
+    };
+    let [event] = events.as_slice() else {
+        panic!("一条：{events:?}");
+    };
+    assert_eq!(event.body, Body::TodosCleared(TodosCleared {}));
+    assert_eq!(event.by, alice());
+    assert_eq!(event.cause, Some(id(2)));
+    assert_eq!(event.turn, None, "闲着时不属于哪一轮");
+    let seq = event.seq;
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(changes(&actions), [Vec::<Todo>::new()]);
+    assert!(actions.contains(&Action::Reply {
+        id: id(2),
+        outcome: Outcome::Accepted { events: vec![seq] },
+    }));
+    let (session, _) = load(logged.log.clone());
+    assert!(session.todos().is_empty(), "载入以后照样是空的");
+}
+
+/// 回合进行中照收：这一条带上这一轮，撤掉那一轮清单回来。
+#[test]
+fn the_todo_command_works_while_a_turn_runs() {
+    let a = list(&[("一", TodoStatus::Pending)]);
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "开工");
+    let turn = last_turn(&logged);
+    let (_, _) = write(&mut logged, seen, a);
+    let actions = logged.handle(clear_todos(2));
+    let [Action::Append(events)] = actions.as_slice() else {
+        panic!("只追加一条：{actions:?}");
+    };
+    assert_eq!(events[0].turn, Some(TurnId::new(seq(turn))));
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(changes(&actions), [Vec::<Todo>::new()]);
+}
+
+/// 没有待办的拒绝，`nothing_to_clear`，什么都不追加：没写过的、清空了的都是。
+#[test]
+fn clearing_no_list_is_refused() {
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "开工");
+    logged.say(seen, "好");
+    let refused = Action::Reply {
+        id: id(2),
+        outcome: Outcome::Rejected {
+            reason: Reason::NothingToClear,
+            about: Vec::new(),
+        },
+    };
+    assert_eq!(logged.handle(clear_todos(2)), [refused], "没写过");
+    let seen = logged.ask(3, "再来");
+    let (_, seen) = write(&mut logged, seen, Vec::new());
+    logged.say(seen, "好");
+    let refused = Action::Reply {
+        id: id(4),
+        outcome: Outcome::Rejected {
+            reason: Reason::NothingToClear,
+            about: Vec::new(),
+        },
+    };
+    assert_eq!(logged.handle(clear_todos(4)), [refused], "清空了的");
+}
+
+/// 清空那一批三条只落了第一条时不推，清空的检查点也落了盘才推（先落盘，后推送；施工 D-3 再补）。
+#[test]
+fn a_clear_not_yet_on_disk_is_not_pushed() {
+    let a = list(&[("一", TodoStatus::Pending)]);
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "开工");
+    let (_, seen) = write(&mut logged, seen, a);
+    logged.say(seen, "好");
+    let before = logged.last();
+    logged.handle(super::clear::clear(2));
+    let actions = logged.handle(stored(before + 1));
+    assert!(changes(&actions).is_empty(), "检查点还没落盘：{actions:?}");
+    let actions = logged.handle(stored(logged.last()));
+    assert_eq!(changes(&actions), [Vec::<Todo>::new()]);
 }

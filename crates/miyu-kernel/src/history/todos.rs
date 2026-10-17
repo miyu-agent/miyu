@@ -4,7 +4,7 @@
 //! 丢，撤销、恢复只改「撤掉了没有」，和派出去过的任务（`jobs.rs`）一个办法。一次写一项，随写的次数长：一份清单几十个字，
 //! 写几百次也不多。
 
-use crate::event::{Body, Effect, Event, Todo};
+use crate::event::{Body, CompactTrigger, Effect, Event, Todo};
 use crate::id::TurnId;
 
 /// 写过的每一份待办，照先后。
@@ -26,8 +26,18 @@ struct Written {
 }
 
 impl Todos {
-    /// 记下这一条带来的变化：工具结果的效果里换上的待办记下；撤掉的那几轮里写的标成撤掉了，恢复的去掉这个标。
+    /// 记下这一条带来的变化：工具结果的效果里换上的待办记下；人清掉的（`todos.cleared`）、清空上下文的检查点（施工 D-3 再补）
+    /// 记成一份空的，平常的压缩不动；撤掉的那几轮里写的、清的标成撤掉了，恢复的去掉这个标。
     pub(super) fn note(&mut self, event: &Event) {
+        if clears(event) {
+            self.written.push(Written {
+                todos: Vec::new(),
+                done: Vec::new(),
+                turn: event.turn,
+                undone: false,
+            });
+            return;
+        }
         match &event.body {
             Body::ToolResult(result) => {
                 for effect in &result.effects {
@@ -71,6 +81,15 @@ impl Todos {
                 written.undone = undone;
             }
         }
+    }
+}
+
+/// 这一条清不清掉待办：人清掉的，清空上下文的检查点（施工 D-3 再补）。
+pub(crate) fn clears(event: &Event) -> bool {
+    match &event.body {
+        Body::TodosCleared(_) => true,
+        Body::ContextCompacted(compacted) => compacted.trigger == Some(CompactTrigger::Clear),
+        _ => false,
     }
 }
 

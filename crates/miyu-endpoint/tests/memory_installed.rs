@@ -92,7 +92,11 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
     let reply = client
         .call("c2", "command.catalog", json!({"session": session}))
         .await;
-    assert_eq!(names(&reply), ["clear", "stop", "workspace"], "{reply}");
+    assert_eq!(
+        names(&reply),
+        ["clear", "stop", "todo", "workspace"],
+        "{reply}"
+    );
     restore(&mut client).await;
     let reply = client
         .call("c3", "command.catalog", json!({"session": session}))
@@ -105,6 +109,7 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
             "dream",
             "remember",
             "stop",
+            "todo",
             "workspace"
         ]
     );

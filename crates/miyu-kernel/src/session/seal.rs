@@ -101,6 +101,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::Redo { .. }
         | Command::Compact { .. }
         | Command::Clear
+        | Command::ClearTodos
         | Command::Goal(_) => false,
     }
 }

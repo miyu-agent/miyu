@@ -6,9 +6,13 @@
 //! - 先落盘，后推送：还没落盘的事件里有换待办、撤销、恢复的，等它们落了盘再比，头看到的清单一定是磁盘上有的。
 //! - 造会话时告诉过头的是空的；载入时当已经告诉过当前那份（头订阅时从回应里拿，`protocol.md` 的 `subscribe`）。
 
-use super::Session;
-use super::action::Action;
-use crate::event::{Body, Effect, Event, Todo, TodosChanged, Transient, TransientBody};
+use super::action::{Action, Reason};
+use super::{Session, rejected};
+use crate::event::{
+    Body, Effect, Event, Todo, TodosChanged, TodosCleared, Transient, TransientBody,
+};
+use crate::history::clears;
+use crate::id::CommandId;
 use crate::origin::By;
 use crate::time::Timestamp;
 
@@ -19,6 +23,22 @@ impl Session {
             .todos()
             .map(<[Todo]>::to_vec)
             .unwrap_or_default()
+    }
+
+    /// 人清掉待办（施工 D-3 再补，`/todo clear`）：当前没有的拒绝，`nothing_to_clear`；有的记一条 `todos.cleared`（回合进行中的
+    /// 带上这个回合），落了盘回应、推一份空的。
+    pub(super) fn clear_todos(&mut self, id: CommandId, by: By, at: Timestamp) -> Vec<Action> {
+        if self.todos().is_empty() {
+            return vec![rejected(id, Reason::NothingToClear)];
+        }
+        let event = self.record(
+            at,
+            by,
+            Some(id.clone()),
+            Body::TodosCleared(TodosCleared {}),
+        );
+        self.accept(id, vec![event.seq]);
+        vec![Action::Append(vec![event])]
     }
 
     /// 落了盘以后：当前的待办和上次告诉头的不一样，推一条 `todos.changed`，记下这一份。还有没落盘的事件会动待办的，先不推。
@@ -48,8 +68,11 @@ impl Session {
     }
 }
 
-/// 这一条会不会动当前的待办：换了一份的工具结果、撤销、恢复。
+/// 这一条会不会动当前的待办：换了一份的工具结果、清掉的（施工 D-3 再补）、撤销、恢复。
 fn touches_todos(event: &Event) -> bool {
+    if clears(event) {
+        return true;
+    }
     match &event.body {
         Body::ToolResult(result) => result
             .effects

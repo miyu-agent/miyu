@@ -43,6 +43,10 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
             ]},
             {"name": "remember", "aliases": [], "summary": "添加记忆", "argument": "<内容>"},
             {"name": "stop", "aliases": [], "summary": "全部停止"},
+            {"name": "todo", "aliases": [], "summary": "待办", "argument": "[clear]", "usage": [
+                {"form": "/todo", "summary": "看待办"},
+                {"form": "/todo clear", "summary": "清空"},
+            ]},
             {"name": "workspace", "aliases": [], "summary": "切换工作区", "argument": "<路径>"},
         ]),
         "{reply}"
@@ -61,7 +65,7 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
         .await;
     assert_eq!(
         names(&reply),
-        ["clear", "stop", "workspace"],
+        ["clear", "stop", "todo", "workspace"],
         "这个会话没开记忆"
     );
 
@@ -80,6 +84,7 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
             "dream",
             "remember",
             "stop",
+            "todo",
             "workspace"
         ]
     );

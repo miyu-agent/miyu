@@ -136,6 +136,8 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
             | Body::SessionRecapped(_)
             // 斜杠命令的那一句只给人和聊天记录看（施工 O-6）。
             | Body::CommandRan(_)
+            // 人清掉待办只动头看的清单（施工 D-3 再补）。
+            | Body::TodosCleared(_)
             // 图的转述经请求的 `described` 进请求，驱动把图的位置换成它（施工 8-17）。
             | Body::ImageDescribed(_)
             | Body::TurnReverted(_)
@@ -427,6 +429,7 @@ pub(crate) fn continues(history: &History) -> bool {
                 | Body::MetaChanged(_)
                 | Body::WorkspaceChanged(_)
                 | Body::CommandRan(_)
+                | Body::TodosCleared(_)
                 | Body::ImageDescribed(_)
         )
     });

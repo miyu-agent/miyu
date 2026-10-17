@@ -8,7 +8,7 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）；权限 `Permission`、级别 `Level` |
+| `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）、`todos.cleared`（施工 D-3 再补）；权限 `Permission`、级别 `Level` |
 | `crates/miyu-kernel/src/event/turn.rs` | `turn.joined`（施工 O-14 下）、`turn.started`、`turn.ended`（`EndReason`）、`turn.reverted`、`turn.unreverted` |
 | `crates/miyu-kernel/src/event/restore.rs` | `files.restored`（`Restored`、`RestoreAction`、`RestoreOutcome`） |
 | `crates/miyu-kernel/src/event/message.rs` | `message.user`、`message.assistant`、`message.withdrawn` |
@@ -122,6 +122,8 @@
 - 它前面紧跟着那一次回顾请求的 `model.called`（`purpose` 是 `recap`），同一批追加。
 
 **`command.ran`**：人用了一个斜杠命令（施工 O-6，`protocol.md` 的 `command.run`，`kernel/session.md`「斜杠命令」）。执行了的才记，被拒的什么都不记；给人和聊天记录看，不进她的上下文（渲染时不出）。`by` 是说命令的人（本人、群里的外部身份），`cause` 是派生的命令编号 `<那个命令>/ran`；回合进行中记的带上那一轮。
+
+**`todos.cleared`**：人清掉了待办（施工 D-3 再补，`/todo clear`，`protocol.md` 的 `command.run` 第 14 条，`kernel/session.md`「待办」）。`body` 是空对象 `{}`。`by` 是说命令的人，`cause` 是那个命令的编号；回合进行中记的带上那一轮，撤掉那一轮清单跟着回来。有效历史从这一条起当前的清单是空的；不进她的上下文（渲染时不出）。没有待办时不记（内核拒 `nothing_to_clear`）。
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|

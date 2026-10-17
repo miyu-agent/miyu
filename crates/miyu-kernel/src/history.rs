@@ -17,6 +17,7 @@ mod todos;
 mod undo;
 
 pub use jobs::Dispatched;
+pub(crate) use todos::clears;
 
 /// 一个会话的有效历史：最近一次压缩的检查点，加上它之后还有效的事件。
 ///

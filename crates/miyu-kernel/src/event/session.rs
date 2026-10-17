@@ -134,6 +134,11 @@ pub struct CommandRan {
     pub command: String,
 }
 
+/// `todos.cleared`：人清掉了待办（施工 D-3 再补，`/todo clear`，`docs/blueprint/kernel/events-bodies.md`）。谁发的写在 `by`，
+/// `cause` 是那个命令；回合进行中的带上这个回合。有效历史从这一条起当前的清单是空的（`history/todos.rs`），不进她的上下文。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TodosCleared {}
+
 /// `session.recapped`：一句回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）。头要的，推给所有订阅着的头，
 /// 不进她的上下文；不带回合编号。`by` 是内核，`cause` 是要它的那个命令。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

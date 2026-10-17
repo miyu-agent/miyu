@@ -15,6 +15,8 @@ pub(super) enum Expect {
     Refused(CommandId, Reason),
     /// 收下：替代到哪。
     Cleared(CommandId, Seq),
+    /// 清掉待办（施工 D-3 再补）：随机的会话从不写待办，回回拒绝。
+    NoTodos(CommandId),
 }
 
 impl Watch {
@@ -23,7 +25,13 @@ impl Watch {
         let Input::Command(received) = input else {
             return None;
         };
-        if received.command != Command::Clear || !self.fresh(&received.id) {
+        if !self.fresh(&received.id) {
+            return None;
+        }
+        if received.command == Command::ClearTodos {
+            return Some(Expect::NoTodos(received.id.clone()));
+        }
+        if received.command != Command::Clear {
             return None;
         }
         let id = received.id.clone();
@@ -85,6 +93,21 @@ impl Watch {
                 return;
             }
             Expect::Cleared(command, upto) => (command, upto),
+            Expect::NoTodos(command) => {
+                self.seen_paths.insert("没有待办时清待办被拒");
+                assert_eq!(
+                    actions,
+                    [Action::Reply {
+                        id: command,
+                        outcome: Outcome::Rejected {
+                            reason: Reason::NothingToClear,
+                            about: Vec::new()
+                        },
+                    }],
+                    "种子 {seed}：没有待办，清待办该被拒"
+                );
+                return;
+            }
         };
         let [Action::Append(events)] = actions else {
             panic!("种子 {seed}：收下的清空只追加一批：{actions:?}");

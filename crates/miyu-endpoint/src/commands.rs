@@ -2,7 +2,7 @@
 //! 原文交过来，核心认命令、判谁能用、执行、记一条 `command.ran`，回执的那一句照连接的语言写好交回去。
 //!
 //! 认哪些命令照登记表（施工 O-6 三补，[`registry`]）：核心自己的 `/clear`（别名 `/reset`）、`/stop`、`/workspace` 在
-//! `basic.rs`；记忆的 `/remember`、`/dream` 在 `memory/slash.rs`；长期目标的 `/goal` 在 `goal.rs`。各自写名字、别名、跟不跟字、
+//! `basic.rs`；记忆的 `/remember`、`/dream` 在 `memory/slash.rs`；长期目标的 `/goal` 在 `goal.rs`；看、清待办的 `/todo` 在 `todo.rs`（施工 D-3 再补）。各自写名字、别名、跟不跟字、
 //! 在不在后台答、谁能用、怎么执行；这里只认、判身份、记下、写回执，不再写死名字。
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
@@ -69,6 +69,7 @@ pub(crate) fn builtin() -> Commands {
     basic::register(&mut commands);
     crate::memory::slash::register(&mut commands);
     goal::register(&mut commands);
+    todo::register(&mut commands);
     commands
 }
 
@@ -240,6 +241,7 @@ mod registry;
 mod templates;
 #[cfg(test)]
 mod tests;
+mod todo;
 mod why;
 mod workspace;
 

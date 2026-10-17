@@ -93,3 +93,89 @@ async fn heads_get_the_list_from_subscribe_and_from_pushes() {
     .await;
     assert_eq!(reply["result"]["todos"], todos, "{reply}");
 }
+
+/// 她写好一份待办、回合结束了的会话（施工 D-3 再补）：交回核心、客户端、会话编号。
+async fn with_a_list(home: &Home, todos: &Value) -> (Client, String) {
+    let args = json!({ "todos": todos }).to_string();
+    let script = Script::new([Play::calls(&[("todowrite", &args)]), Play::Says("好。")]);
+    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("读得出"))
+        .expect("合写法");
+    let core = home.core_with_tools(&script, tools, TOKEN);
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("c2", &session, "开工").await;
+    home.until_turns(&session, 1).await;
+    (client, session)
+}
+
+/// `/todo` 的回执。
+async fn todo(client: &mut Client, id: &str, session: &str, text: &str) -> Value {
+    client
+        .call(id, "command.run", json!({"session": session, "text": text}))
+        .await
+}
+
+/// 日志里的 `todos.cleared`：谁、起因。
+fn cleared(home: &Home, session: &str) -> Vec<(miyu_kernel::origin::By, String)> {
+    home.log(session)
+        .iter()
+        .filter(|event| matches!(event.body, miyu_kernel::event::Body::TodosCleared(_)))
+        .map(|event| {
+            let cause = event.cause.as_ref().map(|id| id.as_str().to_string());
+            (event.by.clone(), cause.unwrap_or_default())
+        })
+        .collect()
+}
+
+/// `/todo` 看、`/todo clear` 清（施工 D-3 再补，2026-10-17 项目主人定）：看的一项一行、什么都不记；清的记一条 `todos.cleared`，
+/// 再看是没有；没有了再清说没有、什么都不记；后面跟别的字的参数不对。
+#[tokio::test]
+async fn the_todo_command_shows_and_clears_the_list() {
+    let home = Home::new();
+    let todos = json!([
+        {"content": "读代码", "status": "completed"},
+        {"content": "写测试", "status": "in_progress"},
+        {"content": "提交", "status": "pending"}
+    ]);
+    let (mut client, session) = with_a_list(&home, &todos).await;
+
+    let reply = todo(&mut client, "k1", &session, "/todo").await;
+    assert_eq!(reply["result"]["command"], "todo", "{reply}");
+    assert_eq!(
+        reply["result"]["said"],
+        "读代码 · 已完成；写测试 · 进行中；提交 · 未开始"
+    );
+    assert!(cleared(&home, &session).is_empty(), "看的什么都不清");
+
+    let reply = todo(&mut client, "k2", &session, "/todo nope").await;
+    assert_eq!(reply["error"]["data"]["reason"], "bad_params", "{reply}");
+
+    let reply = todo(&mut client, "k3", &session, "/todo clear").await;
+    assert_eq!(reply["result"]["said"], "已清空待办。", "{reply}");
+    assert_eq!(
+        cleared(&home, &session),
+        [(
+            miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::new(alice())),
+            "k3".to_string()
+        )]
+    );
+    let reply = todo(&mut client, "k4", &session, "/todo").await;
+    assert_eq!(reply["result"]["said"], "无待办。");
+
+    let reply = todo(&mut client, "k5", &session, "/todo clear").await;
+    assert_eq!(reply["result"]["said"], "无待办。", "{reply}");
+    assert_eq!(cleared(&home, &session).len(), 1, "没有的不再记");
+}
+
+/// `/clear` 连待办一起清（施工 D-3 再补）。
+#[tokio::test]
+async fn clearing_the_context_clears_the_list_too() {
+    let home = Home::new();
+    let todos = json!([{"content": "读代码", "status": "in_progress"}]);
+    let (mut client, session) = with_a_list(&home, &todos).await;
+    let reply = todo(&mut client, "k1", &session, "/clear").await;
+    assert_eq!(reply["result"]["said"], "已清空上下文。", "{reply}");
+    let reply = todo(&mut client, "k2", &session, "/todo").await;
+    assert_eq!(reply["result"]["said"], "无待办。");
+}

@@ -66,6 +66,8 @@ kinds! {
     Compact,
     /// 清空上下文（施工 6-8 补）。
     Clear,
+    /// 清掉待办（施工 D-3 再补）。
+    ClearTodos,
     /// 子会话交来的回报（施工 7-2）。
     Report,
     /// 等的会话交来的「空了」（施工 C-6）。
@@ -158,6 +160,7 @@ impl InputKind {
                 Command::Redo { .. } => InputKind::Redo,
                 Command::Compact { .. } => InputKind::Compact,
                 Command::Clear => InputKind::Clear,
+                Command::ClearTodos => InputKind::ClearTodos,
                 Command::Report(_) => InputKind::Report,
                 Command::PeerIdle { .. } => InputKind::PeerIdle,
                 Command::Recap => InputKind::Recap,

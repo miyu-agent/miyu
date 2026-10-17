@@ -133,6 +133,20 @@ fn compact_now(n: u64, instructions: Option<String>) -> Input {
     })
 }
 
+/// 清掉待办（施工 D-3 再补），另用一串随机数：随机的会话从不写待办，回回该被拒，`nothing_to_clear`。一百五十回里一回。
+pub(super) fn some_clear_todos(rng: &mut Rng, next_id: &mut u64) -> Option<Input> {
+    if rng.below(150) != 0 {
+        return None;
+    }
+    let n = next_command(next_id);
+    Some(Input::Command(Received {
+        id: id(n),
+        by: alice(),
+        at: at(n % 60),
+        command: Command::ClearTodos,
+    }))
+}
+
 /// 清空上下文，另用一串随机数：原来那串输入不跟着错开（施工 6-8 补）。空闲时六十回里有一回，回合开着时一百二十回里一回
 /// （该被拒）。
 pub(super) fn some_clear(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Option<Input> {

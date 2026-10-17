@@ -51,7 +51,7 @@ pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, 
 pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
 pub use session::{
     CommandRan, Forked, Level, MetaChanged, Permission, PolicyChanged, SessionCreated,
-    SessionRecapped, SessionSealed, WorkspaceChanged,
+    SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
 };
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
 pub use transient::{
@@ -149,6 +149,8 @@ bodies! {
     SessionSealed = "session.sealed",
     /// 人用了一个斜杠命令（施工 O-6）。
     CommandRan = "command.ran",
+    /// 人清掉了待办（施工 D-3 再补）。
+    TodosCleared = "todos.cleared",
     /// 回合开始。
     TurnStarted = "turn.started",
     /// 照记下的几条并进正在跑的这一轮（施工 O-14 下）。

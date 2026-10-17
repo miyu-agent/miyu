@@ -82,7 +82,9 @@ use crate::origin::Model;
 use crate::raw::RawJson;
 use crate::tool::Access;
 use asking::{some_answer, some_question, some_reply, some_verdict};
-use compacting::{random_policy, some_clear, some_compact, some_limits, some_overflow};
+use compacting::{
+    random_policy, some_clear, some_clear_todos, some_compact, some_limits, some_overflow,
+};
 use endings::some_ending;
 use kinds::InputKind;
 use naming::{
@@ -352,6 +354,8 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         // 三个种子里有一个开着提前压好（施工 6-11 上）：另一串随机数。
         let (mut prepares, preparing) = (Rng(seed ^ 0x6110_0000), seed % 3 == 2);
         watch.prepares.seeded = preparing;
+        // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
+        let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
         for _ in 0..300 {
             // 有回顾在路上的不崩：崩了它就丢了，等着的命令收不到回应（施工 3-8 四补）。
             if watch.all_stored() && crashes.below(200) == 0 && watch.recaps_idle() {
@@ -384,6 +388,9 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
                 watch.feed(&mut session, input);
             }
             if let Some(input) = some_clear(&mut clears, &watch, &mut next_id) {
+                watch.feed(&mut session, input);
+            }
+            if let Some(input) = some_clear_todos(&mut todo_clears, &mut next_id) {
                 watch.feed(&mut session, input);
             }
             if peering && let Some(input) = peering::some_peer(&mut peers, &watch, &mut next_id) {

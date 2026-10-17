@@ -410,6 +410,7 @@ impl Session {
             Command::Redo { text, attachments } => self.redo(id, by, at, text, attachments),
             Command::Compact { instructions } => self.compact(id, at, instructions),
             Command::Clear => self.clear(id, at),
+            Command::ClearTodos => self.clear_todos(id, by, at),
             Command::Recap => self.recap(id),
             Command::Report(reported) => self.report(id, by, at, reported),
             Command::PeerIdle { status } => self.peer_idle(id, by, at, status),
