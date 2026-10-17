@@ -33,14 +33,18 @@ pub struct Said {
     pub turn: f64,
 }
 
-/// 在 `cwd` 里造一个会话，订阅它，交回编号。
+/// 在 `cwd` 里造一个会话，订阅它，交回编号。记忆关着（`memory: off`）：这一组量核心自己，和 P-12 以前无人格的会话一样不接
+/// 记忆（P-12 起无人格的会话也有记忆，量尺的会话就是无人格的）；开记忆的另量一组（施工 V-9）。
 ///
 /// # Errors
 ///
 /// 核心拒了、回应里没有编号。
 pub async fn open(rpc: &mut Rpc, cwd: &Path) -> Result<String, String> {
     let created = rpc
-        .call("session.create", json!({"cwd": cwd.to_string_lossy()}))
+        .call(
+            "session.create",
+            json!({"cwd": cwd.to_string_lossy(), "memory": "off"}),
+        )
         .await?;
     let session = created["session"]
         .as_str()
