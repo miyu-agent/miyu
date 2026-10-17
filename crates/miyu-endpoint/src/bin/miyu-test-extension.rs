@@ -24,6 +24,7 @@
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
+//! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
@@ -44,6 +45,8 @@ fn main() {
     let mut inject = String::from("silent");
     // `serve` 答工具 `sticker` 时发出去的那张图的 blob（施工 X-19）。
     let mut sent = String::new();
+    // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
+    let mut give = String::new();
     for (n, step) in std::env::args().skip(1).enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
             let mut file = OpenOptions::new()
@@ -100,6 +103,8 @@ fn main() {
             keep(&mut record, &reply);
         } else if let Some(blob) = step.strip_prefix("sent:") {
             blob.clone_into(&mut sent);
+        } else if let Some(given) = step.strip_prefix("give:") {
+            given.clone_into(&mut give);
         } else if let Some(how) = step.strip_prefix("inject:") {
             how.clone_into(&mut inject);
         } else if step == "wait" {
@@ -144,7 +149,8 @@ fn main() {
                 }
                 if line.contains(r#""method":"method.call""#)
                     && let Some(id) = field(&line, "id")
-                    && let Some(answer) = answered(&id, &inner_method(&line).unwrap_or_default())
+                    && let Some(answer) =
+                        answered(&id, &inner_method(&line).unwrap_or_default(), &give)
                 {
                     send(&answer);
                     if inner_method(&line).as_deref() == Some("quit") {
@@ -257,10 +263,18 @@ fn inner_method(line: &str) -> Option<String> {
     field(rest, "method")
 }
 
-/// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限。
-fn answered(id: &str, method: &str) -> Option<String> {
+/// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限；`give` 交回 `give` 那几段字
+/// （施工 W-6 三补）。
+fn answered(id: &str, method: &str, give: &str) -> Option<String> {
     Some(match method {
         "slow" => return None,
+        "give" => {
+            let given: Vec<String> = give.split(',').map(|one| format!("{one:?}")).collect();
+            format!(
+                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"given":[{}]}}}}"#,
+                given.join(",")
+            )
+        }
         "boom" => {
             format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32001,"message":"boom"}}}}"#)
         }

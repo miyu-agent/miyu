@@ -6,6 +6,9 @@
 //! （`tool.result.sent`，施工 W-6 再补：接入QQ 发表情包要读管理员私聊里的）（[`references`]）。只认
 //! 结构里的引用，不在原文里搜：桥能以外部身份往主人的私聊里发字，照原文搜它就能写一句带着哈希的话、读走主人别的 blob。
 //! 不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
+//!
+//! 扩展的连接（施工 W-6 三补）：照账号放行的那一条（属主、管理员）不放它，它要的 blob 也得是那个会话引用过的。没声明系统账号
+//! 的包的扩展是管理员，以前写上管理员随便一个会话，就读得到管理员名下任何一个 blob。
 
 use miyu_kernel::event::{Body, Effect, Event};
 use miyu_kernel::id::{AccountId, ContentHash, SessionId};
@@ -14,10 +17,11 @@ use super::blocking;
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 照会话 `session` 找 blob `hash` 时，去哪个账号名下读；`caller` 是连接的账号。会话编号不合写法的 `bad_params`。
+/// 照会话 `session` 找 blob `hash` 时，去哪个账号名下读；`caller` 是连接的账号，`extension` 是不是扩展的连接。会话编号不合
+/// 写法的 `bad_params`。
 pub(super) async fn owner(
     core: &Core,
-    caller: &AccountId,
+    (caller, extension): (&AccountId, bool),
     session: &str,
     hash: &ContentHash,
 ) -> Result<AccountId, Refusal> {
@@ -27,19 +31,22 @@ pub(super) async fn owner(
         .owner(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;
-    if *caller == owner || *caller == core.admin {
+    let own = *caller == owner || *caller == core.admin;
+    if own && !extension {
         return Ok(owner);
     }
-    let owners = crate::venues::owners(core, caller);
+    let owners = (!own).then(|| crate::venues::owners(core, caller));
     let dir = core.root.session_dir(&owner, &id);
     let (hash, reached) = (hash.clone(), owner.clone());
     blocking(move || {
-        let venue = match miyu_store::log::first_event(&dir).map(|event| event.body) {
-            Ok(Body::SessionCreated(created)) => created.venue,
-            _ => return Err(Refusal::UNKNOWN_BLOB),
-        };
-        if !owners.take(venue.as_str(), &reached) {
-            return Err(Refusal::UNKNOWN_BLOB);
+        if let Some(owners) = owners {
+            let venue = match miyu_store::log::first_event(&dir).map(|event| event.body) {
+                Ok(Body::SessionCreated(created)) => created.venue,
+                _ => return Err(Refusal::UNKNOWN_BLOB),
+            };
+            if !owners.take(venue.as_str(), &reached) {
+                return Err(Refusal::UNKNOWN_BLOB);
+            }
         }
         let mut found = false;
         let read = miyu_store::log::read_segments(&dir, |events| {

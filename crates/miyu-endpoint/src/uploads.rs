@@ -244,10 +244,11 @@ pub(crate) async fn write(
     Ok(json!({"received": entry.received}))
 }
 
-/// `blob.close`：收齐了认是什么、存成 blob，回应和 `blob.put` 一样。
+/// `blob.close`：收齐了认是什么、存成 blob，回应和 `blob.put` 一样。`package` 是传的扩展的包（人的连接没有）：存好了它拿得到
+/// 这个 blob（施工 W-6 三补，[`attach::Grants`]）。
 pub(crate) async fn close(
     core: &Core,
-    uploads: &mut Uploads,
+    (uploads, package): (&mut Uploads, Option<&str>),
     params: CloseParams,
 ) -> Result<Value, Refusal> {
     match uploads.claim(&params.upload) {
@@ -266,8 +267,15 @@ pub(crate) async fn close(
                 .expect("claim 刚确认过在");
             let hash = entry.hasher.finish();
             let blobs = blobs_of(core);
-            blocking(move || finish_blocking(&blobs, &path, &hash, &entry.name, entry.media_type))
-                .await
+            let stored = hash.clone();
+            let reply = blocking(move || {
+                finish_blocking(&blobs, &path, &hash, &entry.name, entry.media_type)
+            })
+            .await?;
+            if let Some(package) = package {
+                core.blob_grants.grant(package, &stored);
+            }
+            Ok(reply)
         }
     }
 }

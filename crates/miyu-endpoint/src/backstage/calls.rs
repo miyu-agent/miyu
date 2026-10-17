@@ -98,7 +98,8 @@ pub(crate) fn register(
 }
 
 /// `package.call`：照登记的转给扩展，回什么交回什么。`from` 是调的扩展的包（施工 X-18）：它要声明了 `packages.call`，只调得到
-/// 对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。
+/// 对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。回应里对方拿得到的 blob，
+/// `from` 也拿得到（施工 W-6 三补，[`crate::attach::Grants::pass`]）。
 pub(crate) async fn call(
     core: &Core,
     from: Option<&str>,
@@ -148,7 +149,12 @@ pub(crate) async fn call(
     match tokio::time::timeout(timeout, peer.call("method.call", request)).await {
         Err(_) => Err(Refusal::METHOD_TIMEOUT),
         Ok(Err(Gone)) => Err(Refusal::NOT_RUNNING),
-        Ok(Ok(Ok(result))) => Ok(result),
+        Ok(Ok(Ok(result))) => {
+            if let Some(from) = from {
+                core.blob_grants.pass(&params.package, from, &result);
+            }
+            Ok(result)
+        }
         Ok(Ok(Err(error))) => Err(Refusal::method_failed(
             error
                 .get("message")

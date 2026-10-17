@@ -267,21 +267,26 @@ pub(crate) fn call<'a>(
         "usage.query" => {
             answer(move || async move { crate::usage::query(core, params(request)?).await })
         }
-        "blob.put" => answer(move || async move { attach::put(core, params(request)?).await }),
+        "blob.put" => answer(move || async move {
+            attach::put(core, caller.package.as_deref(), params(request)?).await
+        }),
         "blob.open" => {
             answer(move || async move { uploads::open(core, uploads, params(request)?).await })
         }
         "blob.write" => {
             answer(move || async move { uploads::write(core, uploads, params(request)?).await })
         }
-        "blob.close" => {
-            answer(move || async move { uploads::close(core, uploads, params(request)?).await })
-        }
-        "blob.get" => {
-            answer(
-                move || async move { attach::get(core, &caller.account, params(request)?).await },
+        "blob.close" => answer(move || async move {
+            uploads::close(core, (uploads, caller.package.as_deref()), params(request)?).await
+        }),
+        "blob.get" => answer(move || async move {
+            attach::get(
+                core,
+                (&caller.account, caller.package.as_deref()),
+                params(request)?,
             )
-        }
+            .await
+        }),
         "session.configure" => answer(move || session::configure(core, request)),
         "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
         "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),

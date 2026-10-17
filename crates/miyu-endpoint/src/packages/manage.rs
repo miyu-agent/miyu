@@ -268,6 +268,8 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     for service in &services {
         crate::mcp::forget(core, service);
     }
+    // 它拿得到的 blob（施工 W-6 三补）：装回来从空的开始。
+    core.blob_grants.forget(&removed);
     tracing::info!(target: TARGET, package = removed.as_str(), "package removed");
     Ok(json!({"package": removed, "removed": true}))
 }

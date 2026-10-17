@@ -25,6 +25,7 @@ mod attach;
 mod attach_send;
 mod backstage;
 mod blind_venue;
+mod blob_grants;
 mod blob_session;
 mod check;
 mod clear;

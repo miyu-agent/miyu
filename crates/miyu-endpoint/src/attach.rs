@@ -34,8 +34,10 @@ use crate::Core;
 use crate::refusal::Refusal;
 use miyu_tool::attachment::{Kind, kind};
 
+mod grants;
 mod keep;
 mod reach;
+pub(crate) use grants::Grants;
 pub(crate) use keep::keep;
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
@@ -104,8 +106,13 @@ struct Place {
     home: Option<PathBuf>,
 }
 
-/// `blob.put`：读、认、存，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。
-pub(crate) async fn put(core: &Core, params: PutParams) -> Result<Value, Refusal> {
+/// `blob.put`：读、认、存，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。`package` 是存的扩展的包
+/// （人的连接没有）：存好了它拿得到这个 blob（施工 W-6 三补，[`Grants`]）。
+pub(crate) async fn put(
+    core: &Core,
+    package: Option<&str>,
+    params: PutParams,
+) -> Result<Value, Refusal> {
     let name = params.name.as_deref().map(file_name).transpose()?;
     let given = params.media_type.as_deref().map(media_type).transpose()?;
     let source = match (params.path, params.data, name) {
@@ -119,7 +126,11 @@ pub(crate) async fn put(core: &Core, params: PutParams) -> Result<Value, Refusal
         _ => return Err(Refusal::BAD_PARAMS),
     };
     let place = place(core);
-    blocking(move || put_blocking(&place, source, given)).await
+    let (blob, reply) = blocking(move || put_blocking(&place, source, given)).await?;
+    if let Some(package) = package {
+        core.blob_grants.grant(package, &blob);
+    }
+    Ok(reply)
 }
 
 /// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后。
@@ -276,11 +287,12 @@ pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Re
 }
 
 /// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照管理员名下，写了的照
-/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接的账号。没有这个 blob、读不到：`unknown_blob`；`length`
-/// 超过 [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
+/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接的账号，`package` 是扩展的包（人的连接没有）。扩展不写
+/// `session` 的只读得到它拿得到的（施工 W-6 三补，[`Grants`]）。没有这个 blob、读不到：`unknown_blob`；`length` 超过
+/// [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
 pub(crate) async fn get(
     core: &Core,
-    caller: &AccountId,
+    (caller, package): (&AccountId, Option<&str>),
     params: GetParams,
 ) -> Result<Value, Refusal> {
     if params.length > miyu_fs::MAX_LENGTH {
@@ -288,7 +300,10 @@ pub(crate) async fn get(
     }
     let hash = ContentHash::parse(&params.blob).map_err(|_| Refusal::BAD_PARAMS)?;
     let account = match &params.session {
-        Some(session) => reach::owner(core, caller, session, &hash).await?,
+        Some(session) => reach::owner(core, (caller, package.is_some()), session, &hash).await?,
+        None if package.is_some_and(|package| !core.blob_grants.holds(package, &hash)) => {
+            return Err(Refusal::UNKNOWN_BLOB);
+        }
         None => core.admin.clone(),
     };
     let root = core.root.clone();
@@ -350,7 +365,11 @@ fn block(
 }
 
 /// 在阻塞线程里：读来源、认、存。
-fn put_blocking(place: &Place, source: Source, given: Option<MediaType>) -> Result<Value, Refusal> {
+fn put_blocking(
+    place: &Place,
+    source: Source,
+    given: Option<MediaType>,
+) -> Result<(ContentHash, Value), Refusal> {
     let (bytes, name) = match source {
         Source::Data(bytes, name) => (bytes, name),
         Source::Path(path, name) => {
@@ -372,7 +391,8 @@ fn put_blocking(place: &Place, source: Source, given: Option<MediaType>) -> Resu
             tracing::warn!(target: TARGET, error = %error, "attachment not stored");
             Refusal::INTERNAL
         })?;
-    Ok(reply(&blob, &name, found))
+    let reply = reply(&blob, &name, found);
+    Ok((blob, reply))
 }
 
 /// 存好了，拼回应：`blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`（第 5 条）。分块上传
