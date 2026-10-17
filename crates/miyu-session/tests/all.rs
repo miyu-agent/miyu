@@ -8,6 +8,7 @@ mod support;
 mod actor;
 mod attachments;
 mod backlog;
+mod catch_up;
 mod delete;
 mod display_name;
 mod embed;

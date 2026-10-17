@@ -1,5 +1,6 @@
 //! 订阅一个会话的推送（`docs/blueprint/session/actor.md`「推送和订阅」）：施工 9-6 上从 `handle.rs` 挪出来（那一份到了 500 行）。
 
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use tokio::sync::broadcast;
@@ -19,6 +20,8 @@ pub struct Subscription {
     _watching: Option<Watching>,
     /// 订阅那一刻「当前的」几样（施工 9-6 上）：和订阅在 actor 的同一步里拿。测试里直接造的没有。
     current: Option<Current>,
+    /// 先推的（施工 9-8 六补）：订阅那一刻正在流的那次请求到目前为止的块，推完了才轮到之后的。
+    catching_up: VecDeque<Arc<Pushed>>,
 }
 
 /// 一个看着会话的头：跟着订阅走，放下时往 actor 的收件箱送一声（施工 7-9）。拿的是弱的一头：不因为还有订阅，就不让
@@ -54,7 +57,20 @@ impl Subscription {
             lagged: false,
             _watching: None,
             current: None,
+            catching_up: VecDeque::new(),
         }
+    }
+
+    /// 先推这几条瞬时事件（施工 9-8 六补）：订阅那一刻正在流的那次请求到目前为止的块，和订阅在 actor 的同一步里拿。
+    pub(super) fn catching_up(
+        mut self,
+        streaming: Vec<miyu_kernel::event::Transient>,
+    ) -> Subscription {
+        self.catching_up = streaming
+            .into_iter()
+            .map(|one| Arc::new(Pushed::Transient(one)))
+            .collect();
+        self
     }
 
     /// 向 actor 要来的：放下时告诉它（`watching`），带着那一刻的几样（`current`）。
@@ -78,6 +94,9 @@ impl Subscription {
         if self.lagged {
             return Err(Ended::Lagged);
         }
+        if let Some(pushed) = self.catching_up.pop_front() {
+            return Ok(pushed);
+        }
         match self.pushes.recv().await {
             Ok(pushed) => Ok(pushed),
             Err(RecvError::Lagged(_)) => {
@@ -97,6 +116,9 @@ impl Subscription {
     pub fn try_next(&mut self) -> Option<Result<Arc<Pushed>, Ended>> {
         if self.lagged {
             return Some(Err(Ended::Lagged));
+        }
+        if let Some(pushed) = self.catching_up.pop_front() {
+            return Some(Ok(pushed));
         }
         match self.pushes.try_recv() {
             Ok(pushed) => Some(Ok(pushed)),

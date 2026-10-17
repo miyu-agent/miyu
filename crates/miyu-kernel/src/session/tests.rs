@@ -41,6 +41,7 @@ mod restart;
 mod revert;
 mod scenario;
 mod spans;
+mod streaming;
 mod title;
 mod todos;
 mod tools;

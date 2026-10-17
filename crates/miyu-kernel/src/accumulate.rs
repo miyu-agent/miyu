@@ -117,6 +117,13 @@ impl Accumulator {
         Ok(())
     }
 
+    /// 到目前为止的每一块（施工 9-8 六补，中途订阅的补推）：是什么、拼好的字、收全了没有，照开始的先后。私有数据不给。
+    pub fn so_far(&self) -> impl Iterator<Item = (&Kind, &str, bool)> {
+        self.blocks
+            .iter()
+            .map(|block| (&block.kind, block.text.as_str(), block.ended))
+    }
+
     /// 正常说完：每一块照收到的拼起来。工具调用的编号照这条回复的序号 `reply` 分配，写成
     /// `call_<序号>_<第几个>`；空块不要。
     ///

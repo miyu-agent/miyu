@@ -107,6 +107,8 @@ pub(crate) struct Taken {
     pub(crate) log: Log,
     /// 这一刻「当前的」几样（施工 9-6 上）。
     pub(crate) current: crate::current::Current,
+    /// 正在流的那次请求到目前为止的块（施工 9-8 六补）：只给这个订阅先推。
+    pub(crate) streaming: Vec<miyu_kernel::event::Transient>,
 }
 
 /// 停掉派出去的任务（施工 7-4，`docs/blueprint/session/actor.md`「停掉任务」）。
@@ -319,8 +321,11 @@ impl Handle {
             upto,
             log,
             current,
+            streaming,
         } = answer.await.map_err(|_| Stopped)?;
-        let subscription = Subscription::new(pushes).watched(watching, current);
+        let subscription = Subscription::new(pushes)
+            .watched(watching, current)
+            .catching_up(streaming);
         Ok((subscription, upto, log))
     }
 

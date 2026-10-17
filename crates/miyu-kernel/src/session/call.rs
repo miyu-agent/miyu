@@ -105,6 +105,25 @@ impl Call {
     }
 }
 
+impl Call {
+    /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 六补）：每块先 `start`，有字的再一段拼好的字，收全了的再 `end`。
+    /// 还没发出去的、摘要请求（推的是进度）没有。
+    fn so_far(&self) -> Option<(By, Vec<(usize, Piece)>)> {
+        let sent = self.sent.as_ref().filter(|_| self.compaction.is_none())?;
+        let mut pieces = Vec::new();
+        for (index, (kind, text, ended)) in self.accumulator.so_far().enumerate() {
+            pieces.push((index, Piece::Start(kind.clone())));
+            if !text.is_empty() {
+                pieces.push((index, Piece::Text(text.to_string())));
+            }
+            if ended {
+                pieces.push((index, Piece::End));
+            }
+        }
+        Some((By::Model(sent.model.clone()), pieces))
+    }
+}
+
 /// 要推给头的：主请求的一段增量，和它的 `by`，那个模型；摘要请求的进度。
 enum Pushed {
     Delta { by: By, index: usize, piece: Piece },
@@ -141,6 +160,35 @@ impl Session {
             ))],
             None => Vec::new(),
         }
+    }
+
+    /// 正在流的那次请求到目前为止的块（施工 9-8 六补，`protocol.md`「补发」第 4 条）：中途订阅的头没见过前面的增量，
+    /// 后面的 `{index, text}` 不知道是哪一种块。照原来的形状拼好，一块一块推给它：`model.delta` 的 `start`、拼好的
+    /// `text`、收全了的 `end`，时刻是 `at`。没有在流的请求是空的。纯查询，不落盘：会话 actor 订阅时只交给这一个订阅。
+    pub fn streaming(&self, at: Timestamp) -> Vec<Transient> {
+        let Some(turn) = self.turn.as_ref() else {
+            return Vec::new();
+        };
+        let Stage::Asking(call) = &turn.stage else {
+            return Vec::new();
+        };
+        let Some((by, pieces)) = call.so_far() else {
+            return Vec::new();
+        };
+        pieces
+            .into_iter()
+            .map(|(index, piece)| Transient {
+                at,
+                turn: Some(turn.id),
+                by: by.clone(),
+                cause: turn.cause.clone(),
+                body: TransientBody::ModelDelta(ModelDelta {
+                    seen: call.seen,
+                    index,
+                    piece,
+                }),
+            })
+            .collect()
     }
 
     /// 模型的一段增量：交给累积器，收下了就推给头。出错的，这次请求按出错算，叫执行器

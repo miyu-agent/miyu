@@ -53,13 +53,15 @@ impl Actor {
                     command,
                 }))
             }
-            // 补发补到哪一条和订阅在这同一步里拿（施工 3-8 六补）：这一步之前落了盘的都推过了，之后的都还没推。
+            // 补发补到哪一条和订阅在这同一步里拿（施工 3-8 六补）：这一步之前落了盘的都推过了，之后的都还没推。正在流的
+            // 那次请求推过的增量也在这一步里拼好（施工 9-8 六补）：之前推过的都在里面，之后的照常推。
             Message::Subscribe(reply) => {
                 let taken = Taken {
                     pushes: self.pushes.subscribe(),
                     upto: self.session.landed().map_or(0, Seq::get),
                     log: self.tools.log(),
                     current: self.current(),
+                    streaming: self.session.streaming(self.clock.now()),
                 };
                 answer(reply, taken);
                 self.watch(true)
