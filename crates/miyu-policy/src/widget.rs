@@ -1,8 +1,10 @@
 //! 界面块的内容（施工 X-15 中，`docs/blueprint/widgets.md`「内容」，设计 `33-界面扩展.md` 第四节）：程序推来的一块内容
 //! 查写法（[`check`]）、换掉的标题查写法（[`check_title`]）、推给头之前照连接的语言把字挑好（[`localize`]）。纯逻辑。
 //!
-//! 只认六种段、各自认的格；字是一个字符串，或者语言（`zh`、`en`、`ja`）到字符串的表。写错的整块不收，交回错在哪
-//! （[`Bad`]）：核心不替程序改。
+//! 只认六种段、各自认的格；整页里另有能改的两种（`sections`、`form`，施工 X-15 再补，`form.rs`）。字是一个字符串，或者语言
+//! （`zh`、`en`、`ja`）到字符串的表。写错的整块不收，交回错在哪（[`Bad`]）：核心不替程序改。
+
+use std::collections::BTreeSet;
 
 use miyu_config::package::WidgetPlace;
 use miyu_config::phrases::LANGUAGES;
@@ -57,6 +59,8 @@ pub enum Problem {
     Place,
     /// 语言表里有不认的语言，或者是空的。
     Language,
+    /// 编号、键重了：表单的编号、一张表单里格的键、一组里项的编号、选项的值（施工 X-15 再补）。
+    Duplicate,
 }
 
 impl Problem {
@@ -76,6 +80,7 @@ impl Problem {
             Problem::Action => "action",
             Problem::Place => "place",
             Problem::Language => "language",
+            Problem::Duplicate => "duplicate",
         }
     }
 }
@@ -118,10 +123,27 @@ pub fn check(place: WidgetPlace, pages: &[&str], content: &Value) -> Result<(), 
         WidgetPlace::Status => status(parts)?,
         _ => {}
     }
+    let mut ctx = Ctx {
+        pages,
+        page: place == WidgetPlace::Page,
+        inside: false,
+        sections: false,
+        forms: BTreeSet::new(),
+    };
     for (n, part) in parts.iter().enumerate() {
-        self::part(&format!("content[{n}]"), part, pages)?;
+        self::part(&format!("content[{n}]"), part, &mut ctx)?;
     }
     Ok(())
+}
+
+/// 查一块时带着的（施工 X-15 再补）：这个包的整页的编号、这一块在不在整页里、是不是在 `sections` 的一项里、有没有用过
+/// `sections`、见过的表单编号。
+struct Ctx<'a> {
+    pages: &'a [&'a str],
+    page: bool,
+    inside: bool,
+    sections: bool,
+    forms: BTreeSet<String>,
 }
 
 /// 换掉的标题：一句短的字，不换行。
@@ -143,27 +165,34 @@ pub fn localize(content: &Value, language: &str) -> Value {
             .iter()
             .map(|part| {
                 let mut part = part.clone();
-                if let Some(object) = part.as_object_mut() {
-                    pick_in(object, &["text"], language);
-                    if let Some(items) = object.get_mut("items").and_then(Value::as_array_mut) {
-                        for item in items.iter_mut().filter_map(Value::as_object_mut) {
-                            pick_in(item, &["label", "value", "title", "detail"], language);
-                            match item.get_mut("right") {
-                                Some(Value::Array(spans)) => {
-                                    for span in spans.iter_mut().filter_map(Value::as_object_mut) {
-                                        pick_in(span, &["text"], language);
-                                    }
-                                }
-                                Some(right) => *right = pick(right, language),
-                                None => {}
-                            }
-                        }
-                    }
-                }
+                localize_part(&mut part, language);
                 part
             })
             .collect(),
     )
+}
+
+/// 一段照语言挑好；`sections` 一项里的段、表单里的字也挑（施工 X-15 再补，[`form::pick_inside`]）。
+fn localize_part(part: &mut Value, language: &str) {
+    let Some(object) = part.as_object_mut() else {
+        return;
+    };
+    pick_in(object, &["text"], language);
+    if let Some(items) = object.get_mut("items").and_then(Value::as_array_mut) {
+        for item in items.iter_mut().filter_map(Value::as_object_mut) {
+            pick_in(item, &["label", "value", "title", "detail"], language);
+            match item.get_mut("right") {
+                Some(Value::Array(spans)) => {
+                    for span in spans.iter_mut().filter_map(Value::as_object_mut) {
+                        pick_in(span, &["text"], language);
+                    }
+                }
+                Some(right) => *right = pick(right, language),
+                None => {}
+            }
+        }
+    }
+    form::pick_inside(object, language);
 }
 
 /// 一句字照语言挑好：字照旧，语言表挑一句。
@@ -210,7 +239,8 @@ fn status(parts: &[Value]) -> Result<(), Bad> {
     Ok(())
 }
 
-fn part(at: &str, part: &Value, pages: &[&str]) -> Result<(), Bad> {
+fn part(at: &str, part: &Value, ctx: &mut Ctx<'_>) -> Result<(), Bad> {
+    let pages = ctx.pages;
     let Some(object) = part.as_object() else {
         return Err(bad(at, Problem::Type));
     };
@@ -274,6 +304,8 @@ fn part(at: &str, part: &Value, pages: &[&str]) -> Result<(), Bad> {
                 }
             })
         }
+        "sections" => form::sections(at, object, ctx),
+        "form" => form::form(at, object, ctx),
         _ => Err(bad(&format!("{at}.type"), Problem::Type)),
     }
 }
@@ -456,5 +488,6 @@ fn clean(text: &str, lines: bool) -> bool {
     })
 }
 
+mod form;
 #[cfg(test)]
 mod tests;

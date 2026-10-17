@@ -71,6 +71,36 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 3. **动作** `action`：`{"call": <方法名>, "params"?: <对象>}` 调这个包的程序登记的方法（`package-pages.md` 的 `package.methods`，名字写法同那里）；`{"open": <块的编号>}` 打开同一个包的一个 `page` 块；`{"copy": <字>}` 人点了把这段字写进剪贴板（最多 2000 个字，终端 2026-10-15 要的：会话的短编号点了复制完整编号，扩展的构建号、地址同理）。
 4. **整块**：最多 64 段；编成 JSON 最多 64 KiB。`status` 的只能是一段 `text`、一行、显示宽度最多 40 列（中文这类宽字算两列，照 Unicode 的宽度）；`home` 的最多 8 段。头画的上限另由各自的版式图定（终端：首页最多 3 块、一块最多 6 行；侧边栏一块最多 10 行；底栏最多 3 格）。
 
+**整页里能改**（施工 X-15 再补，设计 33 第十节，2026-10-18 项目主人定方向，接入QQ 的场所卡片要；接入QQ、终端、网页三个会话同一天过目）：`page` 块另能放两种段，别的位置放了的整块不收（`place`）。
+
+```json
+[
+  {"type": "sections", "items": [
+    {"id": "123456", "title": "测试群", "subtitle": "123456", "badge": {"text": "禁言中", "tone": "warn"}, "state": "good", "blocks": [
+      {"type": "form", "id": "chat-123456", "fields": [
+        {"key": "persona", "label": "人格", "control": "select", "value": null, "options": [{"value": "miyu", "label": "Miyu"}], "default": {"text": "默认 · Miyu"}},
+        {"key": "reply", "label": "接话", "control": "toggle", "value": true},
+        {"key": "font", "label": "字号", "control": "number", "value": 14, "min": 8, "max": 40, "integer": true}
+      ], "submit": {"label": "保存", "call": "cards.save_one", "params": {"id": "123456"}}},
+      {"type": "buttons", "items": [{"label": "删掉", "action": {"call": "cards.remove", "params": {"id": "123456"}}}]}
+    ]}
+  ], "add": {"label": "加一个群", "call": "cards.add", "options": [{"value": "654321", "label": "新群"}]}}
+]
+```
+
+| 段 | 格 | 上限 |
+|---|---|---|
+| `sections` | `items`：`{"id", "title", "subtitle"?, "badge"?, "state"?, "blocks"}`；`add` 可以不写：`{"label", "call", "options"?}` | 200 项，每项 `blocks` 32 段；一块里最多一个，不放进别的 `sections` 里 |
+| `form` | `id`、`fields`：`{"key", "label", "hint"?, "control", "value", "options"?, "placeholder"?, "default"?: {"text"}, "min"?, "max"?, "integer"?}`、`submit`：`{"label", "call", "params"?}` | 50 格；`options` 100 个 |
+
+1. **编号**：`sections` 一项的 `id`、`form` 的 `id`、一张表单里格的 `key` 都是一段不换行的字，最多 64 个；一组里项的 `id` 不重，一块里表单的 `id` 不重，一张表单里格的 `key` 不重，下拉选项的 `value` 不重，重了的 `duplicate`。推送前后稳定：头靠它们把新推来的内容和人正在改的对上。
+2. **`badge`**：一小段字（最多 20 个），或者 `{"text", "tone"?}`。**`state`**：`good`、`warn`、`bad`、`off`，头画成状态点（好、要留意、坏、关着），不写的不画。
+3. **控件** `control`：`toggle`、`select`、`text`、`textarea`、`list`、`number`，名字、画法同配置页（`config.md`「控件」）。值 `value` 必写，类型照控件：开关是布尔，数字是数（可以带 `min`、`max`、`integer`），下拉是选项里的一个 `value`（选项 `[{"value": <字符串>, "label": <字>}]`，只有下拉写、必写），`text` 是一行字（最多 200 个），`textarea` 能换行（最多 2000 个），`list` 是字的数组（最多 100 个，每个最多 200 个）；都可以是 `null`：沿用默认，头画淡字和 `default.text`，改过的给「恢复默认」（改回 `null`）。写错类型的 `value`，别的控件写了 `options`、`min` 这些的 `unknown`。
+4. **保存**：头经 `package.call` 调 `submit.call`，参数是 `submit.params` 合上 `{"values": {...}}`，**只放这次改过的格**（改回默认的写 `null`，没动的不交）；包照部分更新办，没交的格不动。包回 `{"saved": true}`；`{"saved": false, "problems": [{"key", "message"}]}`（头把 `message` 写在那一格下面，`key` 不在这张表单上的写在表单底下，填的值不丢）；或者 `{"saved": false, "message"}`（整张表单的错，例如群已经退了，写在表单底下）。`message` 由包照连接的语言写好，核心只转发。`package.call` 本身失败照它的错误码回（`program_not_running`、`method_failed`、`method_timeout`，`package-pages.md`），头写「保存失败」和原因。存成以后包照常 `widget.set` 推新的内容。
+5. **加一项**：人选了 `add.options` 里的一项（没有 `options` 的直接点），头经 `package.call` 调 `add.call`，参数 `{"value": <选的那一项的 value>}`（没有选项的 `{}`）；包可以回 `{"id": <新那一项的编号>}`，头照它选中，不回照旧。删一项用 `buttons` 段。
+6. **头的事**（两头一致，不进协议）：选中哪一项头自己记，不告诉包，包对所有看的人推一份（设计 33 W8）；够宽画左右两栏，窄的一列、回车进、`Esc` 回来，头照宽度定。推来新内容时，同 `id` 的表单里人改过还没存的格留着人填的，没动的照新的；推来的值和人开始改时的不一样的格提示「已在别处修改」；那一项、那张表单没了的丢掉人填的并提示。保存中防重；没保存就离开的问一句还是丢掉，头定。
+7. 不做：「选了某一项才露出另一格」（接入QQ 的场所卡片没有，2026-10-18 问过）。
+
 **程序发给核心**（只在核心拉起的那个连接上；别的连接 `not_an_extension`）：
 
 | 方法 | 参数 | 回应 |
@@ -126,6 +156,7 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 | `crates/miyu-policy/src/widget/tests.rs`、`crates/miyu-endpoint/src/widgets/tests.rs`（X-15 中） | 六种段的每一格、上限、控制字符和改方向的字符、语言表、两种动作、`status` 和 `home` 的限制、错在哪的路径 |
 | `crates/miyu-endpoint/tests/widget_content.rs`（X-15 中） | 真核心、测试用的扩展：头订阅以后程序收到 `widget.watch`，推的内容转到头、照语言挑；换会话、换版面照新的算，最后一个走了 `widget.unwatch`；没人看的会话不留；限速只推最新的；写法不对的拒、原来的不动；程序停了内容清空、新的程序握了手又被告诉一遍；关掉推 `null`；订阅的参数不对 `bad_params`；登记表：只有第一个人来、最后一个人走时说，跟着会话的没人看不留 |
 | `crates/miyu-endpoint/tests/widget_commands.rs`（X-15 下） | 菜单列出整页的命令、带 `opens`，会话里照样列；打了回 `opens`、日志一条不多；自己放的模板盖住它；关着的扩展不列不认；场所会话里 `unknown_command`（装包时撞名在 X-15 上守着） |
+| `crates/miyu-policy/src/widget/form/tests.rs`（X-15 再补） | 整页收两种段、别的位置不收、表单也能直接放；格的值照控件的类型、下拉的值在选项里、只有下拉有选项、只有数字有上下限、字太长、列表里不是字；`sections` 不嵌套、一块一个、项和表单的编号不重；项、格、选项、段太多；里面的字照语言挑 |
 
 ### 起草时定的
 
