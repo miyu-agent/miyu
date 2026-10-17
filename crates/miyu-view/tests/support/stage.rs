@@ -66,7 +66,7 @@ impl Assembler for Nothing {
     }
 }
 
-/// 几件工具：读、写、编辑、命令、留言、问人。
+/// 几件工具：读、写、编辑、命令、留言、问人，记忆的记、搜（收起那一行「记住」单算）。
 pub fn policy() -> Policy {
     let rule = |access: Access| ToolRule {
         access,
@@ -91,6 +91,8 @@ pub fn policy() -> Policy {
             ("shell".to_string(), rule(Access::Execute)),
             ("send_message".to_string(), rule(Access::Read)),
             ("ask_user".to_string(), rule(Access::Read)),
+            ("remember".to_string(), rule(Access::Read)),
+            ("memory_search".to_string(), rule(Access::Read)),
         ]),
         step_limit: None,
         tool_texts: ToolTexts::new(ToolTextSources {

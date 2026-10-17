@@ -37,6 +37,8 @@ pub enum ToolKind {
     Agent,
     /// 留言。
     Message,
+    /// 记住一条（项目主人 2026-10-17 定：收起那一行单算）。
+    Remember,
 }
 
 /// `core/view.json`：语言之外的那几样。

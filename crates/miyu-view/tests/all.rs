@@ -8,6 +8,7 @@ mod notices;
 mod preparing;
 mod queue;
 mod random;
+mod remembered;
 mod status;
 mod steps;
 mod turns;

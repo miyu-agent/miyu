@@ -2,7 +2,8 @@
 //!
 //! - 只想过：`Thought for 26s`；
 //! - 一段里只有一条命令、它有短标题：短标题打头；
-//! - 别的按类数：命令、子代理、留言、给会话的留言、别的工具、编辑，先有哪样哪样打头，别的类依次跟在后面；
+//! - 别的按类数：命令、子代理、留言、给会话的留言、记住（项目主人 2026-10-17 定，`remember` 一次一条；`memory_search` 算别的工具）、
+//!   别的工具、编辑，先有哪样哪样打头，别的类依次跟在后面；
 //! - 编辑那一格后面接加减的总行数，出错的那一格单拎出来；末尾接这一段的用时；
 //! - 只为发一张图（施工 X-24，项目主人 10-16 定）：这一段的工具全是同一个包的、`sent` 一共一张，打头写发出那张的那件工具的
 //!   显示名（`发送表情包 · 1s`），不再数「用了几件工具」。
@@ -45,6 +46,7 @@ struct Tally {
     agents: usize,
     messages: usize,
     session_messages: usize,
+    remembered: usize,
     thoughts: usize,
     errors: usize,
     thinking_ms: u64,
@@ -85,6 +87,9 @@ impl Tally {
                         Some(ToolKind::Agent) => tally.agents += 1,
                         Some(ToolKind::Message) if *to_session => tally.session_messages += 1,
                         Some(ToolKind::Message) => tally.messages += 1,
+                        // 出错、被拒的没记成：同编辑，算成用过一件工具。
+                        Some(ToolKind::Remember) if *failed => tally.tools += 1,
+                        Some(ToolKind::Remember) => tally.remembered += 1,
                         None => tally.tools += 1,
                     }
                 }
@@ -112,6 +117,7 @@ impl Tally {
             + self.agents
             + self.messages
             + self.session_messages
+            + self.remembered
     }
 }
 
@@ -129,6 +135,7 @@ enum Lead {
     Agents,
     Messages,
     SessionMessages,
+    Remembered,
     Tools,
     Edits,
 }
@@ -194,6 +201,8 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
         Lead::Messages
     } else if tally.session_messages > 0 {
         Lead::SessionMessages
+    } else if tally.remembered > 0 {
+        Lead::Remembered
     } else if tally.tools > 0 {
         Lead::Tools
     } else {
@@ -206,6 +215,7 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
         Lead::Agents => (count(tally.agents, "spawned"), false),
         Lead::Messages => (count(tally.messages, "messaged"), false),
         Lead::SessionMessages => (count(tally.session_messages, "messaged-sessions"), false),
+        Lead::Remembered => (count(tally.remembered, "remembered"), false),
         Lead::Tools => (count(tally.tools, "used"), false),
         Lead::Edits => (count(tally.edits, "made"), true),
     }];
@@ -221,6 +231,9 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
     // 给别的会话的留言：不打头也写成 Messaged 那一种。
     if lead != Lead::SessionMessages && tally.session_messages > 0 {
         cells.push((count(tally.session_messages, "messaged-sessions"), false));
+    }
+    if lead != Lead::Remembered && tally.remembered > 0 {
+        cells.push((count(tally.remembered, "memories"), false));
     }
     if lead != Lead::Tools && tally.tools > 0 {
         cells.push((count(tally.tools, "tools"), false));
