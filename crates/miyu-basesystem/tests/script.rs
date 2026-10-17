@@ -7,7 +7,7 @@ use serde_json::json;
 use miyu_kernel::block::Block;
 use miyu_tool::Done;
 
-use crate::support::{Site, in_child};
+use crate::support::Site;
 
 fn text(done: &Done) -> String {
     done.blocks
@@ -91,7 +91,7 @@ async fn a_missing_interpreter_says_it_could_not_run() {
 #[cfg(unix)]
 #[tokio::test]
 async fn a_script_gets_the_same_environment_as_shell() {
-    if !in_child(
+    if !crate::support::in_child(
         "script::a_script_gets_the_same_environment_as_shell",
         crate::shell::PROBES,
     ) {
