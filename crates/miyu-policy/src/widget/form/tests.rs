@@ -184,6 +184,52 @@ fn each_mistake_in_a_form_says_where_and_what() {
     }
 }
 
+/// 默认是什么（施工 X-15 三补）：`default.value` 可以不写；写了的照控件的类型查，下拉要是选项里的，`null` 不收。
+#[test]
+fn a_default_value_follows_the_control() {
+    let at = "content[1].items[0].blocks[1].fields[0].default.value";
+    let with = |default: Value| {
+        field(
+            0,
+            json!({"key": "persona", "label": "人格", "control": "select", "value": null,
+                   "options": [{"value": "miyu", "label": "Miyu"}], "default": default}),
+        )
+    };
+    assert_eq!(
+        check(
+            WidgetPlace::Page,
+            &[],
+            &with(json!({"text": "默认 · Miyu", "value": "miyu"}))
+        ),
+        Ok(())
+    );
+    for wrong in [json!("dev"), json!(true), Value::Null] {
+        assert_eq!(
+            problem(&with(json!({"text": "默认", "value": wrong}))),
+            (at.to_string(), Problem::Value),
+            "{wrong}"
+        );
+    }
+    let toggle = field(
+        1,
+        json!({"key": "reply", "label": "接话", "control": "toggle", "value": null,
+               "default": {"text": "默认 · 开", "value": true}}),
+    );
+    assert_eq!(check(WidgetPlace::Page, &[], &toggle), Ok(()));
+    let words = field(
+        1,
+        json!({"key": "reply", "label": "接话", "control": "toggle", "value": null,
+               "default": {"text": "默认 · 开", "value": "on"}}),
+    );
+    assert_eq!(
+        problem(&words),
+        (
+            "content[1].items[0].blocks[1].fields[1].default.value".to_string(),
+            Problem::Value
+        )
+    );
+}
+
 #[test]
 fn sections_are_one_per_block_never_nested_and_ids_do_not_repeat() {
     let mut nested = page();

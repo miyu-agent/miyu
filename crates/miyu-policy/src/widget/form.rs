@@ -128,7 +128,7 @@ fn field(at: &str, object: &Map<String, Value>, keys: &mut BTreeSet<String>) -> 
         let Some(default) = default.as_object() else {
             return Err(bad(&at, Problem::Type));
         };
-        only(&at, default, &["text"])?;
+        only(&at, default, &["text", "value"])?;
         required(&at, default, "text", SHORT, false)?;
     }
     let control_at = format!("{at}.control");
@@ -151,6 +151,15 @@ fn field(at: &str, object: &Map<String, Value>, keys: &mut BTreeSet<String>) -> 
             ("number", Some(_)) => return Err(bad(&format!("{at}.{key}"), Problem::Type)),
             (_, Some(_)) => return Err(bad(&format!("{at}.{key}"), Problem::Unknown)),
         }
+    }
+    // 默认是什么（施工 X-15 三补，网页的会话 2026-10-18 要的）：头照它画 `value` 是 `null` 的那一格，开关从它翻过来、下拉把它画成
+    // 淡的选中。可以不写；写了的照控件的类型查，`null` 没有意思，不收。
+    if let Some(given) = object.get("default").and_then(|d| d.get("value")) {
+        let default_at = format!("{at}.default.value");
+        if given.is_null() {
+            return Err(bad(&default_at, Problem::Value));
+        }
+        value_of(&default_at, control, given, &options)?;
     }
     let value_at = format!("{at}.value");
     let Some(value) = object.get("value") else {
