@@ -1,6 +1,6 @@
 ## 施工单 W-6 三补：扩展只读得到它拿得到的 blob
 
-状态：2026-10-18 做了。接入QQ 的会话报的；图纸 `docs/blueprint/protocol.md` 的 `blob.get` 第 1 条。
+状态：2026-10-18 合了（86c6442e）。接入QQ 的会话报的；图纸 `docs/blueprint/protocol.md` 的 `blob.get` 第 1 条。
 
 ### 起因
 
