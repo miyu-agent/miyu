@@ -3,7 +3,8 @@
 //! `MIYU_EMBED_MODEL_DIR` 的再接上真的 bge 两路合并搜一遍，照种类印表。
 //!
 //! 跑量尺：`MIYU_EMBED_MODEL_DIR=<Release 的文件> cargo test -p miyu-session --release --test all memory_eval -- --ignored
-//! --nocapture`（不设只量关键词那一路）。
+//! --nocapture`（不设只量关键词那一路）。设了 `MIYU_MEMORY_EVAL_DIR` 的量那个目录里的另一份，设了 `MIYU_MEMORY_EVAL_OUT` 的另把每句
+//! 搜出来、带上的键写进那个文件（JSON，给仓库外的真数据标答案用，`eval.md`「量另一份」）。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -14,8 +15,8 @@ use miyu_session::{Embedder, Keeper, Listener, Stamp, Turn, Using, Vectors};
 use miyu_tool::Remember;
 
 use crate::support::eval::{
-    Brought, EvalSet, Found, Picked, Row, brought, brought_table, day, parse, problems, score,
-    shipped, table,
+    Brought, EvalSet, Found, Picked, Row, brought, brought_table, day, measured, parse, problems,
+    score, shipped, table,
 };
 use crate::support::meaning::{filled, model_data, persona, real_package};
 use crate::support::{Home, alice, alice_account};
@@ -298,7 +299,7 @@ fn sound(set: &EvalSet, found: &[Found]) {
 #[tokio::test]
 #[ignore = "量尺：设了 MIYU_EMBED_MODEL_DIR 的连照意思那一路一起量"]
 async fn measure_the_eval_set() {
-    let set = shipped();
+    let set = measured();
     let home = Home::new();
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     let mut keys = BTreeMap::new();
@@ -356,6 +357,30 @@ async fn measure_the_eval_set() {
         "{}",
         brought_table("联想（门槛照出厂的表）", &brought(&picked))
     );
+    if let Some(out) = std::env::var_os("MIYU_MEMORY_EVAL_OUT") {
+        write_out(Path::new(&out), &set, &keyword, &both, &picked);
+    }
+}
+
+/// 每句一条：话、种类、该想起的、只走关键词搜出来的、两路合并搜出来的、联想带上的（键），写成一个 JSON 数组。
+fn write_out(out: &Path, set: &EvalSet, keyword: &[Found], both: &[Found], picked: &[Picked]) {
+    let rows: Vec<serde_json::Value> = set
+        .queries
+        .iter()
+        .enumerate()
+        .map(|(n, query)| {
+            serde_json::json!({
+                "text": query.text,
+                "kind": query.kind,
+                "expect": query.expect,
+                "keyword": keyword[n].got,
+                "both": both[n].got,
+                "picked": picked[n].picked,
+            })
+        })
+        .collect();
+    let text = serde_json::to_string_pretty(&rows).expect("写得成 JSON");
+    std::fs::write(out, text).expect("写得进");
 }
 
 /// 联想（施工 R-8）：每句照出厂的门槛表、`miyu_recall::associate::pick` 挑（不算这一段的去重和一块的字节）。

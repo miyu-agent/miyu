@@ -732,6 +732,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-9"><span class="n">R-9</span>记忆验收<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-10"><span class="n">R-10</span>记忆照包启用<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-11"><span class="n">R-11</span>测评集<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-11b"><span class="n">R-11 补</span>量尺量另一份<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-12"><span class="n">R-12</span>订阅记忆日志（上）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-12b"><span class="n">R-12</span>以前的对话和恢复误删（下）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-13"><span class="n">R-13</span>群聊里的记忆（上）<span class="st">✓</span></a></li>
@@ -19979,6 +19980,49 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-11-测评集.md</code>；蓝图新一页 <code>memory/eval.md</code>，<code>memory.md</code> 第四条第 2 款、第八条，<code>recall.md</code> 第三条第 3 款、第四条第 5 款。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-11b" aria-labelledby="h-sR11b">
+  <div class="sheet-head"><h2 id="h-sR11b"><span class="no">R-11 补</span>量尺量另一份</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">虚构的测评集只说明照设计能做到多少：同一把量尺拿主人旧版的真记忆量一次，数据留在仓库外。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session/tests/memory_eval.rs</span><span class="dir-note">R-11 补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>MIYU_MEMORY_EVAL_DIR</code>：量仓库外的另一份，同一个格式</li>
+              <li><code>MIYU_MEMORY_EVAL_OUT</code>：写出每句的排名，池化标注</li>
+              <li>真数据：549 条记忆、60 句主人说过的话，判了 376 对</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步量出来的</p>
+          <div class="tile new"><span class="nm">recall@5</span><span class="rl">真数据加 bge 49%（虚构的 81%）</span></div>
+          <div class="tile new"><span class="nm">平常的话</span><span class="rl">联想三成带进不相干的：门槛要重定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-11 补</dd></div>
+        <div><dt>名称</dt><dd>量尺量另一份</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">step/R-11b-real-set（合进 main 时补）</dd></div>
+        <div><dt>验收</dt><dd>门禁八项 · 真数据量一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-11补-量另一份.md</code>；蓝图 <code>memory/eval.md</code>「量另一份」和「基线」的真数据一段。</li>
       </ul>
     </div>
   </div>

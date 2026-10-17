@@ -61,7 +61,20 @@ pub struct EvalSet {
 
 /// 仓库里的那一份。
 pub fn shipped() -> EvalSet {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/memory-eval");
+    read_dir(&PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/memory-eval"))
+}
+
+/// 量尺量的那一份：设了 `MIYU_MEMORY_EVAL_DIR` 的照它读（仓库外的真数据，同一个格式，`eval.md`「量另一份」），没设的是仓库里的。
+/// 另一份不照「格式」的条数、种类查：只读得进就量。
+pub fn measured() -> EvalSet {
+    match std::env::var_os("MIYU_MEMORY_EVAL_DIR") {
+        Some(dir) => read_dir(&PathBuf::from(dir)),
+        None => shipped(),
+    }
+}
+
+/// 读一个目录里的两份。
+fn read_dir(dir: &std::path::Path) -> EvalSet {
     let read = |name: &str| std::fs::read_to_string(dir.join(name)).expect("读得到");
     parse(&read("memories.toml"), &read("queries.toml")).unwrap_or_else(|why| panic!("{why}"))
 }
