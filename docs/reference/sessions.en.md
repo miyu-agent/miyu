@@ -1,0 +1,333 @@
+# Sessions: `session.*`, `view.*`
+
+A session is one conversation: an append-only event log, from which the core works out the current state. Heads create sessions, speak into them, and subscribe to their events to draw. Chinese version: [sessions.md](sessions.md).
+
+| Method | What it does |
+|---|---|
+| [`session.create`](#sessioncreate) | Create a session |
+| [`session.list`](#sessionlist) | List sessions |
+| [`session.send`](#sessionsend) | Say something |
+| [`session.interrupt`](#sessioninterrupt) | Interrupt the running turn |
+| [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
+| [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
+| [`session.redo`](#sessionredo) | Redo the last turn |
+| [`session.compact`](#sessioncompact) | Compact the context now |
+| [`session.clear`](#sessionclear) | Clear the context |
+| [`session.recap`](#sessionrecap) | Get a one-line recap |
+| [`session.set_permission_level`](#sessionset_permission_level) | Change the permission level, the read-only switch |
+| [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
+| [`session.set_meta`](#sessionset_meta) | Rename, pin |
+| [`session.configure`](#sessionconfigure) | Change the model |
+| [`session.fork`](#sessionfork) | Fork a child session |
+| [`session.delete`](#sessiondelete) | Delete a session |
+| [`view.page`](#viewpage) | Read history page by page |
+| [`view.detail`](#viewdetail) | The full diff of a tool call; a compaction's summary |
+
+Sessions in venues (group chats and private chats on a chat platform) have a few more methods; see [Venues](venues.en.md).
+
+## Common
+
+- **Session ids** are UUIDv7 strings, ordered by creation.
+- **Who can call**: people can call all of these; extensions can call them on sessions their account can see (an extension without a system account is the admin).
+- **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
+- **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
+- **Finding the session** can fail on every method with a `session`:
+
+| `data.reason` | When |
+|---|---|
+| `session_not_found` | No such session; deleted ones too |
+| `session_broken` | The session can't be loaded: its log is broken or unreadable |
+| `session_stopped` | The session stopped (couldn't write, a bug); sending again reloads it |
+| `session_sealed` | A forked session ran its turns and was sealed; commands that change the conversation are refused |
+| `restoring` | A command arrived while an undo is still finishing (normally unreachable) |
+
+## `session.create`
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `cwd` | string, required | The head's working directory as a person sees it, e.g. `~/src/miyu` |
+| `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
+| `preset` | string | Which preset; omitted follows `preset.default`, else `full` |
+| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
+| `memory` | `persona`, `session`, `off` | Memory follows the persona, stays in this session, or is off; omitted follows the persona's setting |
+| `dirs` | array of strings | Extra directories, readable and writable like the working directory |
+| `chosen` | boolean, default `false` | The person explicitly chose `cwd`: a too-wide one (home, root) is used anyway; otherwise a too-wide one falls back to the default workspace |
+| `oneshot` | boolean, default `false` | A one-shot session (the `miyu ask` kind) |
+| `images` | boolean, default `true` | Whether you can display images |
+
+**Response**
+
+| Name | Notes |
+|---|---|
+| `session` | The new session's id |
+| `events` | `[1]`: the `session.created` event |
+| `cwd` | Where the session actually works |
+| `wide` | `true`: the directory is too wide and is used because the person chose it |
+| `untrusted_project` | The directory has a project config not yet trusted or rejected: where it is |
+
+```json
+→ {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
+← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
+```
+
+Sending the same `id` again returns the session created the first time.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Malformed persona or preset id; `memory` not one of the three; `model` not a string |
+| `unknown_persona`, `persona_invalid` | No such persona; its files are wrong (`data.problem` says which layer, file and line) |
+| `unknown_preset`, `preset_invalid` | The same, for presets |
+| `unknown_model` | `model` can't be resolved: malformed, unknown provider, unknown pool |
+| `dir_too_wide` | A `dirs` entry is too wide (home, root, contains the data directory) |
+| `internal_error` (`-32603`) | The core couldn't create it |
+
+## `session.list`
+
+**Params**: `oneshot` (boolean, `true` lists only one-shot sessions), `limit` (at most this many; all when omitted).
+
+**Response** `{"sessions": [<item>…]}`, newest first. An item:
+
+| Name | Notes |
+|---|---|
+| `session` | Id |
+| `cwd` | Working directory as a person sees it |
+| `last_active` | Time of the last event |
+| `oneshot` | Whether it's one-shot |
+| `parent` | A child session's parent; `null` for main sessions |
+| `title` | Title; omitted when there is none |
+| `named` | `true`: a person gave the title |
+| `preview` | When there's no title: the first line of the first message, at most 50 characters |
+| `pinned` | `true`: pinned |
+| `busy` | `true`: a turn is running |
+| `persona`, `preset` | Which persona and preset; omitted when none |
+
+Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
+
+**Errors**: `bad_params`; `internal_error` when the session directory can't be read.
+
+## `session.send`
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `session` | string, required | Which session |
+| `text` | string, required | What to say |
+| `attachments` | array | Attachments, each the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine) |
+| `urgent` | boolean, default `false` | Cut in: if she's busy, she sees it at the next step |
+| `from` | string | You are another agent program: your name; the message is recorded as yours, not the person's |
+| `as`, `venue` | object | Venue sessions only; see [Venues](venues.en.md) |
+
+**Response**: `events` (this message's number), `cwd`, `untrusted_project` (as in `session.create`).
+
+1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
+2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
+3. Attachments are checked before the session is looked up: the blob must exist and is recognized again from its content (see [Attachments](blob.en.md)).
+
+```json
+→ {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"Look at this image","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
+← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[42]}}
+```
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | An attachment is missing fields or malformed; `from` not a string or empty after removing control characters |
+| `empty_message` | No text and no attachments |
+| `unknown_attachment` | An attachment's blob isn't in the core |
+| `attachment_too_big` | An attachment is an image over the limits |
+| `venue_session` | Speaking into a venue session without `as` |
+
+## `session.interrupt`
+
+**Params**: `session`; `queued` (required): what to do with queued messages not yet sent: `send` sends them right after, `return` hands them back, `keep` keeps them without sending.
+
+**Response**: `{"events": [<the events appended>…]}`.
+
+**Errors**: `not_running`: no turn is running.
+
+## `session.answer`
+
+When she does something that needs approval she stops and asks (pushed as `tool.approval_requested`); when she asks with `ask_user` she waits too (pushed as `question.asked`). This answers both.
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `session` | string, required | Which session |
+| `call` | string, required | That call's `call_id` |
+| `decision` | `once`, `session`, `deny` | Answer an approval: allow once, allow for this session, deny |
+| `reason` | string | Why it was denied, shown to her; only with deny |
+| `answers` | array | Answer questions: one item per question in order, `{"picked": [chosen option labels…], "text": <written answer>}`, both optional |
+
+Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers…]}`.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Both or neither given; `reason` with questions; `decision` not one of the three |
+| `not_asking` | The call isn't waiting: already answered, finished, or waiting for the other kind |
+| `no_rule` | `session` chosen, but this approval has no scope that can be remembered |
+| `unexpected_reason` | Allowed, but with a reason |
+| `bad_answer` | The answers don't match the questions: wrong count, unknown option, several picks on a single-choice question |
+
+## `session.revert`, `session.unrevert`
+
+Undo takes the last turn (or every turn from one on) out of the conversation; files she changed are left as they are. Restore takes back the last undo.
+
+**Params**: `session`; `revert` also takes `turn`: undo from this turn on (that turn's `turn.started` number); omitted undoes the last turn.
+
+**Response**
+
+| Name | Notes |
+|---|---|
+| `events` | The events: `turn.reverted` or `turn.unreverted` |
+| `cwd` | The session's working directory (real path) |
+| `turns` | How many turns were undone (restored) |
+| `said` | The first line of what the person said in the first one; omitted when none |
+| `compactions`, `clears` | Undo only: compactions and clears inside the undone turns; the context is back to before them. Omitted when 0 |
+| `jobs` | Undo only: background jobs stopped, `[{"job", "what", "title"}]`; omitted when none |
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | `turn` is 0 |
+| `turn_running` | A turn is running: interrupt first |
+| `nothing_to_revert` | There are no turns |
+| `unknown_turn` | That turn isn't in the current history |
+| `nothing_to_unrevert` | Nothing to restore: no undo, or a new turn or compaction since |
+
+## `session.redo`
+
+Undo the last turn and send the messages that started it again, starting a new turn. Editing your last message in the web UI goes through this.
+
+**Params**: `session`; `text`: replace the text of the message that started the turn (omitted keeps it); `attachments`: replace its attachments (omitted keeps them; an empty array removes them).
+
+**Response**: as for undo; `events` ends with the numbers of the resent messages. The new turn's `turn.started` has this request's `id` as `cause`.
+
+**Errors**: `not_redoable` (the last turn wasn't started by a person, or there are no turns), `turn_running`, `empty_message` (nothing left after the replacement), and the attachment errors of `session.send`.
+
+## `session.compact`
+
+**Params**: `session`; `instructions`: what the person wants kept, e.g. "keep the database design discussion".
+
+**Response**: `{"events": [<that turn's turn.started number>]}`, returned once it starts, not when it's done. Progress arrives as `compaction.progress`, `compaction.done`, `context.compacted`, `turn.ended`.
+
+**Errors**: `turn_running`; `nothing_to_compact` (nothing new since the last compaction).
+
+## `session.clear`
+
+Clear the context: a turn that only records an empty checkpoint, with no model request. The to-do list is cleared too.
+
+**Params**: `session`. **Response**: as for `session.compact`; by the time it arrives, that turn's start, empty checkpoint and end have already been pushed. Undoing that turn brings the context back.
+
+**Errors**: `turn_running`; `nothing_to_clear` (already empty).
+
+## `session.recap`
+
+A one-line recap: what this session is doing, what's done, what's stuck. A separate model request fed only the last few turns.
+
+**Params**: `session`. **Response** `{"text", "upto", "cached"}`: the line, up to which event, and whether it's the previous one returned again (nothing new since, no request).
+
+When it's written, every subscribed head first receives `model.called` (`purpose` is `recap`) and `session.recapped`.
+
+**Errors**: `nothing_to_recap` (she hasn't said anything yet); `recap_failed` (the request failed or returned no text).
+
+## `session.set_permission_level`
+
+**Params**: `session`; `level`: `workspace` or `full` (fully open); `read_only`: the read-only switch. Give at least one.
+
+**Response**: `{}`. A change is pushed as `session.policy_changed`. Tightening applies at once; loosening applies from the next request. Whether to ask the person before going fully open is up to the head.
+
+**Errors**: `bad_params`: neither given; `level` not one of the two.
+
+## `session.set_workspace`
+
+**Params**: `session`; `cwd`: the new working directory (absolute or starting with `~`); `dirs`: the new extra directories, replacing them all (empty removes all). Give at least one.
+
+**Response**: `{"cwd", "dirs"}`, plus `wide: true` when too wide. A change is pushed as `session.workspace_changed`; this turn keeps the old one, the next starts with the new one.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Neither given |
+| `path_unreadable` | The directory doesn't exist or can't be read |
+| `not_a_directory` | It's a file |
+| `path_forbidden` | It's inside Miyu's data directory (except the account's own default workspace) |
+| `dir_too_wide` | A `dirs` entry is too wide |
+
+## `session.set_meta`
+
+**Params**: `session`; `title`: the new title, 1 to 200 characters, `null` removes it; `pinned`: `true` pins, `false` unpins. Give at least one.
+
+**Response**: `{}`. A change is pushed as `session.meta_changed`. Sessions without a name get a title from the core after the first turn, also pushed as `session.meta_changed` (`by` is the kernel).
+
+**Errors**: `bad_params`: neither given; an empty title or one over 200 characters.
+
+## `session.configure`
+
+Change the session's model; it applies from the next turn.
+
+**Params**: `session`; `model` (required): `<provider>/<model>` or `@<pool>`.
+
+**Response**: `{}`. A change is pushed as `session.policy_changed`; when it takes effect, `model.changed`.
+
+**Errors**: `bad_params` (`model` empty or not a string); `unknown_model`.
+
+## `session.fork`
+
+Fork a child session from a main session: the child carries on from its history up to the fork point, with a byte-identical request prefix, so the cache is reused.
+
+**Params**: `session` (the parent, a main session); `seal_after`: seal after this many turns (from 1); omitted never seals.
+
+**Response**: `{"session": <child id>, "upto": <fork point number>}`. If the parent is in the middle of a turn, the fork point is just before that turn.
+
+**Errors**: `bad_params`: the parent is a subagent or a fork; `seal_after` isn't an integer from 1.
+
+## `session.delete`
+
+Moves it to the trash, kept for 7 days. Child sessions it spawned are deleted with it.
+
+**Params**: `session`. **Response**: `{}` once moved. Heads subscribed to it get `resync`.
+
+**Errors**: `turn_running`: a turn is running (interrupt first); `internal_error`: couldn't move it.
+
+## `view.page`
+
+Read history page by page, from the newest back; page edges fall between turns.
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `session` | string, required | Which session |
+| `before` | positive integer | Only numbers below this; omitted is the newest page. To page back, pass the previous page's `first` |
+| `turns` | 1 to 50, default 20 | At most this many turns |
+| `view` | boolean, default `false` | `true` returns entries ready to draw (the view projection) instead of raw events |
+
+**Response**: `events` (or `entries`) and `more` (whether there's more before), plus `first` and `last` when not empty; `capped: true` when fewer turns came back to stay under 1 MiB; `jobs` for jobs that finished on this page but were started earlier.
+
+The newest page's `last` is the last event right now: then `subscribe {"after": last}` gets only what's new.
+
+**Errors**: `bad_params`; `session_not_found`; `session_broken`.
+
+## `view.detail`
+
+**Params**: `session`; `call` (a tool call's `call_id`) or `compaction` (the number a compaction replaced up to), exactly one.
+
+**Response**
+
+- A call: `{"files": [...], "output"}`. `output` is the full result text; `files` has one item per file: `path`, `action` (`write` or `trash`), `diff` (unified, 3 lines of context), `added`, `removed`; when no diff can be computed, `skipped` (`too_big`, `binary`, `missing`).
+- A compaction: `{"summary"}`: its summary text.
+
+A call's result never changes; asking once is enough.
+
+**Errors**: `bad_params`; `session_not_found`; `unknown_call` (no result for that call, or no such compaction); `session_broken`.

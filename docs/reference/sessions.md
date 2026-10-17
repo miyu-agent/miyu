@@ -1,0 +1,333 @@
+# 会话：`session.*`、`view.*`
+
+会话是一段对话：一份只追加的事件日志，核心照它算出现在的样子。头造会话、往里说话、订阅它的事件来画界面。英文版：[sessions.en.md](sessions.en.md)。
+
+| 方法 | 做什么 |
+|---|---|
+| [`session.create`](#sessioncreate) | 造一个会话 |
+| [`session.list`](#sessionlist) | 列出会话 |
+| [`session.send`](#sessionsend) | 说一句话 |
+| [`session.interrupt`](#sessioninterrupt) | 打断在进行的回合 |
+| [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
+| [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
+| [`session.redo`](#sessionredo) | 重做最后一轮 |
+| [`session.compact`](#sessioncompact) | 手动压缩上下文 |
+| [`session.clear`](#sessionclear) | 清空上下文 |
+| [`session.recap`](#sessionrecap) | 要一句回顾 |
+| [`session.set_permission_level`](#sessionset_permission_level) | 切权限级别、只读开关 |
+| [`session.set_workspace`](#sessionset_workspace) | 换工作目录 |
+| [`session.set_meta`](#sessionset_meta) | 改标题、置顶 |
+| [`session.configure`](#sessionconfigure) | 换模型 |
+| [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
+| [`session.delete`](#sessiondelete) | 删除会话 |
+| [`view.page`](#viewpage) | 按页读历史 |
+| [`view.detail`](#viewdetail) | 一次工具调用的完整差异、一次压缩的摘要原文 |
+
+场所会话（通讯平台上的群、私聊）另有几个方法，见 [场所](venues.md)。
+
+## 通用
+
+- **会话编号**是 UUIDv7 字符串，照造的先后排。
+- **谁能调**：下面的方法人都能调；扩展照它的账号能看到的会话调（没声明系统账号的扩展就是管理员）。
+- **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
+- **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
+- **找会话的出错**，每个带 `session` 的方法都可能回：
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `session_not_found` | 没有这个会话，删了的也是 |
+| `session_broken` | 会话载入不了：日志坏了、读不了 |
+| `session_stopped` | 会话停了（写不进去、出了 bug）；再发一次会重新载入 |
+| `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收 |
+| `restoring` | 撤销还没做完时来的命令（照常碰不到） |
+
+## `session.create`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `cwd` | 字符串，必写 | 头的工作目录，人看到的写法，例如 `~/src/miyu` |
+| `persona` | 字符串或 `null` | 用哪个人格；`null` 是不用人格；不写照配置 `persona.default` |
+| `preset` | 字符串 | 用哪个预设；不写照 `preset.default`，都没有是 `full` |
+| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
+| `memory` | `persona`、`session`、`off` | 记忆跟着人格、只在这个会话里、不用；不写照人格的设置 |
+| `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
+| `chosen` | 布尔，默认 `false` | `cwd` 是人明着选的：太宽（家目录、根目录）也照用；不写的太宽了退回默认工作区 |
+| `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
+| `images` | 布尔，默认 `true` | 你显示得了图片吗 |
+
+**回应**
+
+| 名字 | 说明 |
+|---|---|
+| `session` | 新会话的编号 |
+| `events` | `[1]`：`session.created` 那一条 |
+| `cwd` | 会话实际在哪个目录干活 |
+| `wide` | `true`：目录太宽、照人选的用着 |
+| `untrusted_project` | 这个目录有项目配置、还没决定信不信任的，写它在哪 |
+
+```json
+→ {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
+← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
+```
+
+同一个 `id` 再发，交回上一次造的那一个，不再造。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 人格、预设编号写法不对；`memory` 不是那三种；`model` 不是字符串 |
+| `unknown_persona`、`persona_invalid` | 没有这个人格；人格的文件写错了（`data.problem` 说哪一层、哪个文件第几行） |
+| `unknown_preset`、`preset_invalid` | 同上，预设的 |
+| `unknown_model` | `model` 解析不出：写法不对、没有这家供应商、没有这个池 |
+| `dir_too_wide` | `dirs` 里有一条太宽（家目录、根目录、包含数据目录的） |
+| `internal_error`（`-32603`） | 核心造不出来 |
+
+## `session.list`
+
+**参数**：`oneshot`（布尔，`true` 只要一次性的）、`limit`（最多几个，不写是全部）。
+
+**回应** `{"sessions": [<一项>…]}`，从新到旧。一项：
+
+| 名字 | 说明 |
+|---|---|
+| `session` | 编号 |
+| `cwd` | 工作目录，人看到的写法 |
+| `last_active` | 最后一条事件的时刻 |
+| `oneshot` | 是不是一次性的 |
+| `parent` | 子会话的父会话，主会话是 `null` |
+| `title` | 标题，没有的不写 |
+| `named` | `true`：标题是人起的 |
+| `preview` | 没有标题时：第一句话的第一行，最多 50 个字 |
+| `pinned` | `true`：置顶了 |
+| `busy` | `true`：有回合在进行 |
+| `persona`、`preset` | 用哪个人格、预设，没有的不写 |
+
+只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。
+
+**出错**：`bad_params`；读不了会话目录 `internal_error`。
+
+## `session.send`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `text` | 字符串，必写 | 要说的话 |
+| `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
+| `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
+| `from` | 字符串 | 你是别的 agent 程序：写上你的名字，这句话记成你说的，不是本人 |
+| `as`、`venue` | 对象 | 只给场所会话，见 [场所](venues.md) |
+
+**回应**：`events`（这一句的序号）、`cwd`、`untrusted_project`（同 `session.create`）。
+
+1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
+2. 这一句落了盘就回，不等她答完：她怎么答看推送。
+3. 附件先查再找会话：附件的 blob 要在、照内容再认一遍（见 [附件](blob.md)）。
+
+```json
+→ {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"看看这张图","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
+← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[42]}}
+```
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 附件缺了格、写法不对；`from` 不是字符串或去掉控制字符以后是空的 |
+| `empty_message` | 没有字、没有附件 |
+| `unknown_attachment` | 附件的 blob 核心里没有 |
+| `attachment_too_big` | 附件里有超了上限的图 |
+| `venue_session` | 对场所会话说话却没带 `as` |
+
+## `session.interrupt`
+
+**参数**：`session`；`queued`（必写）：排着队还没发的话怎么办，`send` 打断以后马上发，`return` 退回来，`keep` 留着不发。
+
+**回应**：`{"events": [<这一次追加的事件>…]}`。
+
+**出错**：`not_running`：没有回合在进行。
+
+## `session.answer`
+
+她做要确认的事时会停下来问（推送 `tool.approval_requested`），她用 `ask_user` 提问时也会等（推送 `question.asked`）。用它回答。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `call` | 字符串，必写 | 那一次调用的 `call_id` |
+| `decision` | `once`、`session`、`deny` | 回答确认：允许这一次、这个会话都允许、拒绝 |
+| `reason` | 字符串 | 拒绝的理由，她看得到；只有拒绝能带 |
+| `answers` | 数组 | 回答提问：照题目先后一题一项 `{"picked": [选的选项标题…], "text": <自己写的>}`，两格都可不写 |
+
+`decision`、`answers` 正好写一个。**回应**：`{"events": [序号…]}`。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 两样都写或都不写；提问带了 `reason`；`decision` 不是那三种 |
+| `not_asking` | 这个调用没在等回答：答过了、结束了、等的不是这一种 |
+| `no_rule` | 选了 `session`，这次确认却没有能记住的范围 |
+| `unexpected_reason` | 允许却带了理由 |
+| `bad_answer` | 回答和题目对不上：条数不对、选了没有的、单选选了几项 |
+
+## `session.revert`、`session.unrevert`
+
+撤销：把最后一轮（或者从某一轮起）从对话里撤掉，她改过的文件不动。恢复：撤回最近一次撤销。
+
+**参数**：`session`；`revert` 另可写 `turn`：从哪一轮起撤（那一轮 `turn.started` 的序号），不写撤最后一轮。
+
+**回应**
+
+| 名字 | 说明 |
+|---|---|
+| `events` | 这一次的事件：`turn.reverted` 或 `turn.unreverted` |
+| `cwd` | 会话的工作目录（真实位置） |
+| `turns` | 撤了（恢复了）几轮 |
+| `said` | 第一轮里人说的那句话的第一行，没有的不写 |
+| `compactions`、`clears` | 只有撤销：撤掉的几轮里有几次压缩、清空，上下文回到了那之前；0 的不写 |
+| `jobs` | 只有撤销：停掉的后台任务 `[{"job", "what", "title"}]`，没有的不写 |
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | `turn` 写了 0 |
+| `turn_running` | 有回合在进行：先打断 |
+| `nothing_to_revert` | 一轮都没有 |
+| `unknown_turn` | 那一轮不在现在的历史里 |
+| `nothing_to_unrevert` | 没有能恢复的：没撤过，或者撤了以后开过新的一轮、压缩过 |
+
+## `session.redo`
+
+撤掉最后一轮，把开它的话再发一次，开新的一轮。网页里「编辑上一句」也走它。
+
+**参数**：`session`；`text`：换掉开这一轮那句话的字（不写照原来的）；`attachments`：换掉它的附件（不写照原来的，空数组是不要附件）。
+
+**回应**：同撤销，`events` 最后是重发的每一句的序号。新的一轮 `turn.started` 的 `cause` 是这一条的 `id`。
+
+**出错**：`not_redoable`（最后一轮不是人说话开的，或者一轮都没有）、`turn_running`、`empty_message`（换完一块都不剩），附件的同 `session.send`。
+
+## `session.compact`
+
+**参数**：`session`；`instructions`：人附的要求，例如「重点保留数据库设计的讨论」。
+
+**回应**：`{"events": [<那一轮 turn.started 的序号>]}`，开了就回，不等压完。进度看推送里的 `compaction.progress`、`compaction.done`、`context.compacted`、`turn.ended`。
+
+**出错**：`turn_running`；`nothing_to_compact`（上一次压缩以后没有新的内容）。
+
+## `session.clear`
+
+清空上下文：开一轮只记一个空的检查点，不请求模型。待办也一起清掉。
+
+**参数**：`session`。**回应**：同 `session.compact`；回应到的时候，那一轮的开头、空的检查点、结束都已经推过来了。撤掉这一轮，上下文回到清空以前。
+
+**出错**：`turn_running`；`nothing_to_clear`（本来就是空的）。
+
+## `session.recap`
+
+要一句回顾：这个会话在做什么、做完了什么、卡在哪。单独请求一次模型，只喂最近几轮的对话。
+
+**参数**：`session`。**回应** `{"text", "upto", "cached"}`：那一句、照到第几条、是不是交回的上一句（之后没有新内容，没请求）。
+
+成了的，订阅着的头都会先收到 `model.called`（`purpose` 是 `recap`）和 `session.recapped`。
+
+**出错**：`nothing_to_recap`（她还一句话都没说过）；`recap_failed`（请求出错，或者回复里没有字）。
+
+## `session.set_permission_level`
+
+**参数**：`session`；`level`：`workspace`（工作区）或 `full`（完全放开）；`read_only`：只读开关。改哪样写哪样，至少写一个。
+
+**回应**：`{}`。变了的推 `session.policy_changed`。收紧的当场生效；放宽的下一次请求生效。改成完全放开之前要不要问人一声，是头的事。
+
+**出错**：`bad_params`：两样都没写；`level` 不是那两种。
+
+## `session.set_workspace`
+
+**参数**：`session`；`cwd`：新的工作目录（绝对路径或 `~` 开头）；`dirs`：新的加进来的目录，整份换掉（空数组是去掉全部）。至少写一个。
+
+**回应**：`{"cwd", "dirs"}`，太宽的另带 `wide: true`。变了的推 `session.workspace_changed`；这一轮照旧，下一轮开始照新的。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 两样都没写 |
+| `path_unreadable` | 目录不在、读不了 |
+| `not_a_directory` | 是文件 |
+| `path_forbidden` | 落在 Miyu 的数据目录里（账号自己的默认工作区除外） |
+| `dir_too_wide` | `dirs` 里有一条太宽 |
+
+## `session.set_meta`
+
+**参数**：`session`；`title`：新标题，1 到 200 个字，`null` 是去掉标题；`pinned`：`true` 置顶、`false` 取消。至少写一个。
+
+**回应**：`{}`。变了的推 `session.meta_changed`。没起名的会话，核心在第一轮答完以后自己起一个标题，同样推 `session.meta_changed`（`by` 是内核）。
+
+**出错**：`bad_params`：两样都没写；标题空的、超过 200 个字。
+
+## `session.configure`
+
+换这个会话用的模型，下一轮开始生效。
+
+**参数**：`session`；`model`（必写）：`<供应商>/<模型>` 或 `@<池>`。
+
+**回应**：`{}`。变了的推 `session.policy_changed`；生效的那一刻推 `model.changed`。
+
+**出错**：`bad_params`（`model` 空的、不是字符串）；`unknown_model`。
+
+## `session.fork`
+
+从一个主会话分叉出子会话：子会话带着它到分叉点为止的历史接着说，前面的请求前缀和它逐字节一样，缓存照用。
+
+**参数**：`session`（父会话，要是主会话）；`seal_after`：跑完几轮就封存（1 起），不写不封存。
+
+**回应**：`{"session": <子会话编号>, "upto": <分叉点的序号>}`。父会话正在跑一轮的，分叉点是这一轮开始之前。
+
+**出错**：`bad_params`：父会话是子代理、分叉出来的；`seal_after` 不是 1 起的整数。
+
+## `session.delete`
+
+挪进回收处，留 7 天。它派出去的子会话一起删。
+
+**参数**：`session`。**回应**：`{}`，挪好了才回。订阅着它的头收到 `resync`。
+
+**出错**：`turn_running`：有回合在进行（先打断）；`internal_error`：挪不动。
+
+## `view.page`
+
+按页读历史，从最新往前翻，页的边界落在两轮之间。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `before` | 正整数 | 只要序号小于它的；不写是最新一页。往前翻拿上一页的 `first` |
+| `turns` | 1 到 50，默认 20 | 最多几轮 |
+| `view` | 布尔，默认 `false` | `true` 交给界面直接画的条目（视图投影），不交原始事件 |
+
+**回应**：`events`（或者 `entries`）、`more`（前面还有没有），有内容的另带 `first`、`last`；超过 1 MiB 少给了轮数的带 `capped: true`；这一页里报完、更早派出的任务带 `jobs`。
+
+最新一页的 `last` 就是这一刻的最后一条：接着 `subscribe {"after": last}` 只接新的。
+
+**出错**：`bad_params`；`session_not_found`；`session_broken`。
+
+## `view.detail`
+
+**参数**：`session`；`call`（一次工具调用的 `call_id`）或 `compaction`（一次压缩替代到的序号），正好写一个。
+
+**回应**
+
+- 调用：`{"files": [...], "output"}`。`output` 是结果原文，不截；`files` 一个文件一项：`path`、`action`（`write` 或 `trash`）、`diff`（统一格式，上下文 3 行）、`added`、`removed`，算不出差异的写 `skipped`（`too_big`、`binary`、`missing`）。
+- 压缩：`{"summary"}`：那一次的摘要原文。
+
+同一次调用的结果不会变，问一次就够。
+
+**出错**：`bad_params`；`session_not_found`；`unknown_call`（没有这次调用的结果，或者没有这次压缩）；`session_broken`。

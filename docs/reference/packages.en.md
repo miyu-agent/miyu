@@ -1,0 +1,209 @@
+# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `command.*`, `check`
+
+Manage packages, extension processes and the MCP servers in personal settings; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
+
+| Method | What it does |
+|---|---|
+| [`package.list`](#packagelist) | List packages |
+| [`package.info`, `package.files`, `package.owns`, `package.check`](#packageinfo-packagefiles-packageowns-packagecheck) | A package's info and files; which package owns a path; whether installed files changed |
+| [`package.install`, `package.remove`](#packageinstall-packageremove) | Install, remove |
+| [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
+| [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
+| [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
+| [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
+| [`command.run`](#commandrun) | Run a slash command |
+| [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
+| [`check`](#check) | Check config, personas, presets and packages for mistakes |
+
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+
+**Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
+
+## `package.list`
+
+**Params**: none. **Response**: `{"packages": [...]}`, by id. An item:
+
+| Name | Notes |
+|---|---|
+| `package`, `layer` | Id; `shipped` or `home` |
+| `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `bundle` (no program; only MCP servers, skills, scripts and the like) |
+| `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
+| `version`, `protocol`, `state` | Version, protocol it speaks, state |
+| `required` | Required; can't be removed |
+| `features` | Its features (presets switch these) |
+| `status`, `enabled` | With a process: running or not, on or not |
+| `page` | Has a package page |
+| `mcp` | Its MCP servers: `name`, `command`, `venues`, `state`, `failures`… |
+| `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
+| `removed` | A removed built-in package |
+
+Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `problem` (in the connection's language) and `line`. To keep up to date, subscribe to the `packages` stream.
+
+## `package.info`, `package.files`, `package.owns`, `package.check`
+
+| Method | Params | Response |
+|---|---|---|
+| `package.info` | `package` | `{"package", "layer", "files", "size", "version"?, "installed"?, "source"?}`: file count, bytes, install time, where it was installed from |
+| `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`; `path` is relative to `dir` |
+| `package.owns` | `path` (absolute) | `{"package", "layer", "path", "recorded"}`; `{"package": null}` when no package owns it |
+| `package.check` | `package` (optional) | `{"packages": [{"package", "modified", "missing", "extra"}…]}`: for packages in the home layer, files changed, missing or added since installation |
+
+**Errors**: `unknown_package`; `bad_params` (a relative path for `owns`).
+
+## `package.install`, `package.remove`
+
+| Method | Params | Response |
+|---|---|---|
+| `package.install` | `path`: absolute path to a local package folder (the folder name is the id), or to its `package.toml` | An item as in `package.list` |
+| `package.install` | `package`: install a removed built-in package back | The same |
+| `package.remove` | `package` | `{"package", "removed": true}` |
+
+Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command`, `page`, `mascot`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
+
+Install and remove take effect at once: processes start or stop per their switches, their tools enter or leave the tool catalog, and open sessions pick that up at the next turn.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Both given; a path that isn't absolute |
+| `path_unreadable` | The folder can't be read |
+| `package_invalid` | The manifest is wrong, `data.problem`, `data.line` |
+| `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
+| `package_exists` | Same id as a built-in package |
+| `package_required` | Removing a required package |
+| `depends_missing` | A dependency isn't installed, `data.missing` |
+| `package_depended` | Another installed package depends on it, `data.by` |
+| `unknown_package` | Not installed, or never removed |
+
+## `package.enable`, `package.disable`, `package.restart`
+
+**Params**: `package`; `enable` also takes `approve`: approve the capabilities it declares (see "Capabilities" in [Extensions](extensions.en.md)). **Response**: an item as in `package.list`.
+
+- Extensions: on starts the process; off asks it to exit and its tools leave the catalog.
+- `bundle`: on starts its MCP servers; off stops them.
+- Built-in packages that aren't required: off removes it, on installs it back.
+- `restart`: restarts the extension process and its MCP servers; the failure count starts over.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `unknown_package` | No such package |
+| `package_required` | Turning off a required one |
+| `not_switchable` | UI, worker and mascot packages have no switch |
+| `program_missing` | The package's program wasn't found (neither in the package folder's `bin/` nor next to `miyu`) |
+| `needs_approval` | Capabilities still need approval, `data.capabilities` |
+| `package_depended` | Turning off one another package depends on |
+| `package_off`, `not_restartable` | `restart` on one that's off; nothing to restart |
+
+## `package.file`, `package.call`
+
+**`package.file`**: params `package`, `path` (relative, inside its page folder), `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages and mascot model files are read this way.
+
+**`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
+
+Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file |
+| `program_not_running` | The program isn't connected |
+| `unregistered` | The program didn't register that method, `data.method` |
+| `method_failed` | The program answered with an error, `data.message`, `data.code` |
+| `method_timeout` | No answer in time |
+| `needs_approval`, `not_exported` | Called by an extension: `packages.call` not declared; the method isn't exported (`data.method`) |
+
+## `extension.status`, `extension.enable`, `extension.disable`, `extension.restart`
+
+**Params**: none for `status`; `package` for the others, and `enable` also takes `approve`. **Response**: `status` gives `{"extensions": [...]}`, the others the one extension. One:
+
+| Name | Notes |
+|---|---|
+| `package`, `name` | Id, name |
+| `start` | When the manifest says to start |
+| `on` | The switch |
+| `state` | `off`, `starting`, `running`, `waiting` (failed, waiting to restart), `stopped` |
+| `failures` | Consecutive failures |
+| `pid` | Process id while running |
+| `retry_in` | While waiting: milliseconds until the next start |
+| `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`…), the last lines of stderr |
+| `capabilities`, `unapproved` | Declared capabilities `[{id, name, summary}]`, those not yet approved |
+
+To keep up to date, subscribe to the `extensions` stream.
+
+**Errors**: `unknown_package`; `not_an_extension` (a UI package); `extension_off` (restarting one that's off); `needs_approval`.
+
+## `mcp.list`, `mcp.restart`
+
+MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/settings.toml`). Add, remove and change them by editing personal settings; that takes effect at once.
+
+**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers).
+
+**`mcp.restart`**: param `name`. Response: that server. **Errors**: `unknown_server`.
+
+## `command.run`
+
+Run a slash command: the head passes along exactly what the person typed; the core recognizes it, checks who may use it, and runs it.
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `session` | string, required | Which session |
+| `text` | string, required | What the person typed, e.g. `/stop` |
+| `cwd` | string | The head's directory; only used to resolve a relative path after `/workspace` |
+| `as` | object | Venue sessions: speaking for a person on the platform, as in `session.send` |
+
+**Response**: `{"command", "events", "said"}`: the canonical name (aliases resolved), the events appended, and the reply line (in the connection's language, shown to the person as-is). A command that opens a page returns `{"command", "opens": {"package", "widget"}, "said": ""}` and the head opens that page.
+
+**Commands the core knows**:
+
+| Command | What it does |
+|---|---|
+| `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
+| `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned |
+| `/workspace <path>` | Change the working directory; without a path, say where it is |
+| `/todo`, `/todo clear` | Show the to-do list; clear it |
+| `/remember <words>` | Remember something |
+| `/dream` | Organize memory now (answered in the background) |
+| `/clear-memory` (`/reset-memory`) | Clear what this session remembered |
+| `/goal` family | Show, set, pause, resume, edit, clear the standing goal |
+
+Anything else is looked up, in order, among your own command templates (`home/admin/commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
+
+**Who can use them**: anyone in local sessions; in venue sessions, the owner and managers. The system setting `commands.<name>.access` can change that to `anyone` or `off` (disabled). `/workspace` is for the owner only.
+
+The same `id` sent again counts once.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Doesn't start with `/`; `cwd` not absolute; wrong words after the command |
+| `unknown_command` | No such command |
+| `command_not_allowed` | This person can't use it, or it's disabled or off in the preset; `data.why` is a sentence for people |
+| `owner_only` | Only the owner can use it |
+| `command_unavailable`, `command_failed` | An extension's command: the extension isn't connected or didn't answer within a minute; it answered with an error (`data.why`) |
+| `memory_unavailable`, `goal_unavailable` | No memory or no standing goal in this session, `data.why` |
+| the command's own | `/clear`'s `turn_running`, `nothing_to_clear`; `/workspace`'s `path_unreadable`…, as for the matching method |
+
+## `command.catalog`
+
+**Params**: `session` (optional): only list what this connection can use in this session without being refused.
+
+**Response**: `{"commands": [{"name", "aliases", "summary", "argument"?, "usage"?, "opens"?}…]}`, by name. `argument` hints what follows the name, `usage` lists the forms of commands with several (`{"form", "summary"}`), `opens` marks commands that open a page. `summary` and `argument` are in the connection's language.
+
+Heads add their own commands (like `/help`) to the menu themselves.
+
+## `check`
+
+**Params**: `cwd` (look for a project config from here), `file` (check only this one).
+
+**Response**: `{"problems": [...]}`, one per issue: `kind` (`config`, `secrets`, `persona`, `preset`, `package`, `script`, `skill`, `mcp`), `file`, `code`, `level`, `message`, `line` and `column` when known, and for config `key`, `got`, `suggest`, `using`.
+
+Without `file` it checks everything: system config, personal settings, the project config of `cwd`, the secrets file, personas and presets in every layer, package manifests, and packages' own checks.
+
+**Errors**: `unknown_file`: `file` isn't one of the kinds Miyu reads.

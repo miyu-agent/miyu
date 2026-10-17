@@ -1,0 +1,129 @@
+# 记忆与知识库：`memory.*`、`kb.*`
+
+英文版：[memory.en.md](memory.en.md)。
+
+| 方法 | 做什么 |
+|---|---|
+| [`memory.list`、`memory.search`](#memorylistmemorysearch) | 列、搜记忆 |
+| [`memory.turns`](#memoryturns) | 搜以前的对话 |
+| [`memory.remember`、`memory.update`、`memory.forget`、`memory.restore`](#memoryremembermemoryupdatememoryforgetmemoryrestore) | 记、改、作废和清空、恢复 |
+| [`memory.dream`](#memorydream) | 现在就整理记忆 |
+| [`kb.list`、`kb.search`、`kb.read`](#kblistkbsearchkbread) | 列知识库、搜、读一页 |
+| [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
+
+**谁能调**：人、扩展。人经协议是主人这一边：全部列得出、搜得到、改得了。
+
+## 记忆的「一间」
+
+记忆一间一间分开放：跟着人格的（这个人格的所有会话共用），只在一个会话里的（会话的记忆范围是 `session`），不用人格的会话另有一间。每个 `memory.*` 方法都收这两格之一来指哪一间：
+
+| 名字 | 说明 |
+|---|---|
+| `persona` | 这个人格那一间 |
+| `session` | 这个会话用的那一间 |
+
+都不写的照默认人格。要一直跟着一间的变化，订阅 `memory` 流（[连接](connection.md)）。
+
+**共同的出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `memory_not_installed` | 记忆这个软件包没装（装上就能用，以前记的都在） |
+| `memory_unavailable` | 这里没有记忆：会话的范围是 `off`、场所会话 |
+| `unknown_persona`、`session_not_found` | 找不到那个人格、会话 |
+| `bad_params`（`-32602`） | 两格都写了 |
+
+## 一条记忆
+
+`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue"}`：
+
+| 名字 | 说明 |
+|---|---|
+| `id` | `m<序号>` |
+| `class` | `user`（关于人）、`feedback`（人对她的要求）、`episode`（发生过的事）、`reference`（资料在哪） |
+| `text` | 那一条，最多 120 个字 |
+| `by` | `person`（人记的）或 `tool`（她记的） |
+| `at` | 记下的时刻 |
+| `sources` | 出处 `[{"session", "turn"}]` |
+| `retired` | 作废的原因，没作废的 `null` |
+| `used`、`used_at` | 用到几次、最近一次的时刻 |
+| `venue` | 在哪个场所说的，本机的 `null` |
+
+## `memory.list`、`memory.search`
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `memory.list` | `class`、`from`（会话编号：出处在它里面的）、`forgotten`（布尔，连作废的一起）、`limit`（1 到 500，默认 50） | `{"memories": [...]}`，新的在前 |
+| `memory.search` | `query`（必写）、`forgotten`、`limit`（1 到 500，默认 10） | `{"memories": [...]}`，最相关的在前 |
+
+## `memory.turns`
+
+搜这一间以前的对话：人开的一轮一段，照关键词和意思找。
+
+**参数**：`query`（必写）、`limit`（1 到 500，默认 10）。**回应**：`{"turns": [{"session", "turn", "at", "text"}…]}`：`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。
+
+## `memory.remember`、`memory.update`、`memory.forget`、`memory.restore`
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `memory.remember` | `class`、`text`（都必写） | `{"id"}` |
+| `memory.update` | `id`、`text` | `{"id"}`：改完的新那一条（旧的作废） |
+| `memory.forget` | `id`（可带 `why`）；或者 `clear`：`session`（清掉这个会话记下的，这时 `session` 必写）、`me`（清空整间） | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
+| `memory.restore` | `id` | `{}`：作废了的那一条重新算数 |
+
+落了盘才回应。同一个 `id`（请求编号）再发只算一次，核心重启以后也是。清掉的找不回来、哪里都不再出现。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 字是空的；`class` 不对；`id` 写法不对；`id`、`clear` 不是正好一个 |
+| `memory_too_long` | 超过 120 个字，`data.chars`、`data.limit` |
+| `unknown_memory` | 没有这一条 |
+| `memory_not_current` | 那一条已经改掉、作废、清掉了 |
+
+## `memory.dream`
+
+现在就整理：带 `session` 的先把这个会话还没抽的抽了，再把新记的和以前的合一遍（重复的合掉，过时的作废，写一段对人的了解）。在后台答，几秒到十几秒。
+
+**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。没有要整理的四样都是零，不请求模型。
+
+**出错**：`memory_busy`（这一间正在整理）；`dream_failed`（没合成，`data.message`）。
+
+## `kb.list`、`kb.search`、`kb.read`
+
+知识库在管理员账号下，一个库是一个目录里的文档（Markdown、PDF、网页……），核心建索引来搜。不看知识库软件包装没装：文件是人的。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package` |
+| `kb.search` | `query`（必写）、`kb`（只搜这一个）、`limit`（1 到 50，默认 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的多 `page` |
+| `kb.read` | `kb`、`path`（必写）、`page`（从 1 起，默认 1） | `{"text", "page", "pages"}`：一页 32 KiB；PDF 照它自己的页 |
+
+`heading` 是标题路径（`语法 › て形`），`at` 是文档改的时刻。
+
+**出错**：`bad_params`（`page` 是 0 或超过 `pages`）；`unknown_kb`；`unknown_document`；`internal_error`（坏的 PDF、文件超过 64 MiB）。
+
+## `kb` 的管理
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `kb.create` | `kb`（必写）、`name`、`description`、`auto` | 一个库 |
+| `kb.update` | `kb`；`name`、`description`、`auto` 至少一个（空字、`false` 是拿掉） | 一个库 |
+| `kb.mount` | `kb`、`folder`（绝对路径或 `~/`）；`name`、`description`、`auto` | 一个库：把一个现成的目录挂进来 |
+| `kb.delete` | `kb` | `{"trash"}`：挪进系统回收站的位置；挂进来的只拿掉登记，目录不动 |
+| `kb.add` | `kb`、`path`、`blob`（先 `blob.put`）、`replace`（布尔） | `{}`：加一篇，什么格式都行 |
+| `kb.remove` | `kb`、`path` | `{"trash"}` |
+| `kb.reindex` | `kb` | 一个库：删掉索引照文件重建 |
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `kb_exists`、`document_exists` | 已经有了（加文档的不带 `replace`） |
+| `kb_read_only` | 往挂进来的库里加、删 |
+| `kb_packaged` | 改软件包带来的库（只能改 `auto`） |
+| `folder_unavailable` | 要挂的目录用不了，`data.message` |
+| `trash_failed` | 挪不进回收站，`data.message` |
+| `unknown_attachment` | `blob` 不在 |
+| `unknown_kb`、`unknown_document`、`bad_params` | 同上 |
