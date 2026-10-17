@@ -45,7 +45,7 @@ async fn a_sandboxed_call_runs_through_the_helper() {
         "助手、规格、分隔在前：{printed}"
     );
     assert!(
-        printed.ends_with(" -c echo hi\n"),
+        printed.ends_with(" -c eval \"unset MIYU_COMMAND; $MIYU_COMMAND\"\n"),
         "shell 和它的参数在后：{printed}"
     );
 }
@@ -109,7 +109,10 @@ async fn a_sandboxed_background_command_runs_through_the_helper() {
         printed.starts_with(&format!("run --spec {json} -- /")),
         "助手、规格、分隔在前：{printed}"
     );
-    assert!(printed.ends_with(" -c echo hi\n"), "{printed}");
+    assert!(
+        printed.ends_with(" -c eval \"unset MIYU_COMMAND; $MIYU_COMMAND\"\n"),
+        "{printed}"
+    );
 }
 
 /// 沙盒里的命令另外拿不到桌面的（4-8 补，2026-10-17 项目主人定：沙盒里不开窗口）。假助手是 `/bin/sh`：它把收到的第一个

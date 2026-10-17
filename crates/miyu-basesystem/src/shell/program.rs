@@ -5,6 +5,10 @@
 //! PowerShell 的命令编成 UTF-16LE 的 base64 传过去（`-EncodedCommand`），引号、换行不会被命令行拆坏。
 //!
 //! 调用带了沙盒的，经沙盒的助手起（施工 5-1）：`<助手> run --spec <规格> -- <shell> <参数…>`，别的都照旧。
+//!
+//! bash、zsh 的命令不写进命令行（施工 4-8 再补）：放在环境变量 [`COMMAND`] 里，`-c` 后面是一句固定的 [`RUN`]。命令行里有
+//! 命令原文时，命令里的 `pkill -f <词>` 会连自己所在的 shell 一起杀掉（实测两次，只剩一句 `Killed by signal 15`）。
+//! PowerShell 照旧：Windows 上没有照命令行找进程杀的习惯。
 
 use std::ffi::{OsStr, OsString};
 use std::io;
@@ -52,6 +56,13 @@ pub(super) struct Program {
     path: PathBuf,
 }
 
+/// bash、zsh 放她的命令的环境变量（施工 4-8 再补）。
+const COMMAND: &str = "MIYU_COMMAND";
+
+/// bash、zsh 的 `-c` 后面那一句：先展开出命令原文，再去掉 [`COMMAND`]，命令和它起的子进程都看不到这个变量；`eval` 的退出码
+/// 就是命令的。
+const RUN: &str = r#"eval "unset MIYU_COMMAND; $MIYU_COMMAND""#;
+
 /// PowerShell 执行她的命令之前先做的：输出编码设成不带 BOM 的 UTF-8（Windows PowerShell 默认用系统的代码页），关掉
 /// 进度条（输出接到管道上时，进度条会变成一段 XML 写进标准错误）。和她的命令写在同一行，出错时报的行号还对得上。
 const PRELUDE: &str = "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ProgressPreference = 'SilentlyContinue'; ";
@@ -87,6 +98,9 @@ impl Program {
         };
         let mut command = Command::new(program);
         command.args(args).current_dir(cwd).env_clear().envs(env);
+        if matches!(self.kind, Kind::Bash | Kind::Zsh) {
+            command.env(COMMAND, script);
+        }
         // 沙盒要设的（例如沙盒自己的临时目录）排在挑好的后面：同名的盖掉（施工 5-4 上）。
         if let Some(sandboxed) = sandbox {
             command.envs(sandboxed.env.iter().map(|(name, value)| (name, value)));
@@ -98,9 +112,9 @@ impl Program {
     fn args(&self, script: &str) -> Vec<OsString> {
         let encoded_script;
         let args: &[&str] = match self.kind {
-            Kind::Bash => &["--noprofile", "--norc", "-c", script],
+            Kind::Bash => &["--noprofile", "--norc", "-c", RUN],
             // 没匹配到的通配符照原样传下去，和 bash 一样（施工 4-9 再补二）：zsh 默认直接报错。
-            Kind::Zsh => &["-f", "+o", "nomatch", "-c", script],
+            Kind::Zsh => &["-f", "+o", "nomatch", "-c", RUN],
             Kind::PowerShell7 | Kind::WindowsPowerShell => {
                 encoded_script = encoded(&format!("{PRELUDE}{script}"));
                 &[

@@ -102,13 +102,16 @@ fn startup_files_are_skipped_and_only_the_given_variables_pass() {
     }
     .command("echo hi", Path::new("/work"), env.clone(), None)
     .expect("造得出");
-    assert_eq!(args(&bash), ["--noprofile", "--norc", "-c", "echo hi"]);
+    assert_eq!(args(&bash), ["--noprofile", "--norc", "-c", RUN]);
     assert_eq!(bash.get_current_dir(), Some(Path::new("/work")));
     let envs: Vec<_> = bash.get_envs().collect();
     assert_eq!(
         envs,
-        [(OsStr::new("PATH"), Some(OsStr::new("/usr/bin")))],
-        "只有给的这些"
+        [
+            (OsStr::new("MIYU_COMMAND"), Some(OsStr::new("echo hi"))),
+            (OsStr::new("PATH"), Some(OsStr::new("/usr/bin")))
+        ],
+        "给的这些，加上命令（施工 4-8 再补：不写进命令行）"
     );
     let zsh = Program {
         kind: Kind::Zsh,
@@ -116,7 +119,12 @@ fn startup_files_are_skipped_and_only_the_given_variables_pass() {
     }
     .command("echo hi", Path::new("/work"), env, None)
     .expect("造得出");
-    assert_eq!(args(&zsh), ["-f", "+o", "nomatch", "-c", "echo hi"]);
+    assert_eq!(args(&zsh), ["-f", "+o", "nomatch", "-c", RUN]);
+    assert!(
+        zsh.get_envs()
+            .any(|pair| pair == (OsStr::new("MIYU_COMMAND"), Some(OsStr::new("echo hi")))),
+        "zsh 也放在环境变量里"
+    );
 }
 
 #[test]

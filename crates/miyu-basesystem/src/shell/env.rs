@@ -28,12 +28,14 @@ const DESKTOP: &[&str] = &[
 ];
 
 /// 另外设上的，核心环境里原来的那一份不要：git 要密码时直接失败，不去等人输入；不翻页、不上色，输出是给她看的（照
-/// dsh）。
+/// dsh）。`TERM=dumb`（施工 4-8 再补）：有的程序不认 `NO_COLOR`、也不看输出接没接终端，只照终端的种类上色（实测
+/// `cargo fmt --check` 的 diff 照样带颜色码），`dumb` 的一律不上。
 const SET: &[(&str, &str)] = &[
     ("GIT_TERMINAL_PROMPT", "0"),
     ("PAGER", "cat"),
     ("GIT_PAGER", "cat"),
     ("NO_COLOR", "1"),
+    ("TERM", "dumb"),
 ];
 
 /// 从核心的环境 `vars` 里挑出命令拿得到的，再设上另外那几个。`sandboxed` 说命令进不进沙盒。名字在 Windows 上不分

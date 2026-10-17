@@ -17,7 +17,13 @@ fn names(passed: &[(OsString, OsString)]) -> Vec<String> {
 }
 
 /// 另外设上的那几个，照 [`SET`] 的先后。
-const OURS: [&str; 4] = ["GIT_TERMINAL_PROMPT", "PAGER", "GIT_PAGER", "NO_COLOR"];
+const OURS: [&str; 5] = [
+    "GIT_TERMINAL_PROMPT",
+    "PAGER",
+    "GIT_PAGER",
+    "NO_COLOR",
+    "TERM",
+];
 
 /// `names` 后面接上 [`OURS`]。
 fn then_ours(names: &[&str]) -> Vec<String> {
@@ -91,6 +97,7 @@ fn what_we_set_is_always_ours() {
             ("PAGER", "less"),
             ("GIT_PAGER", "delta"),
             ("NO_COLOR", ""),
+            ("TERM", "xterm-kitty"),
         ]),
         false,
         false,
@@ -102,6 +109,7 @@ fn what_we_set_is_always_ours() {
             ("PAGER", "cat"),
             ("GIT_PAGER", "cat"),
             ("NO_COLOR", "1"),
+            ("TERM", "dumb"),
         ])
     );
 }

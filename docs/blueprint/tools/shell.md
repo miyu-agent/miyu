@@ -103,12 +103,13 @@
 
 | 平台 | 程序 | 参数 | 说明里的名字 |
 |---|---|---|---|
-| macOS | `/bin/zsh` | `-f +o nomatch -c <命令>` | `zsh` |
+| macOS | `/bin/zsh` | `-f +o nomatch -c <下面那一句>` | `zsh` |
 | Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -EncodedCommand <编好的命令>` | `PowerShell 7` |
 | Windows，没有 | `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`，没设 `SystemRoot` 的是 `powershell.exe` | 同上 | `Windows PowerShell 5.1` |
-| 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <命令>` | `bash` |
+| 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <下面那一句>` | `bash` |
 
 - 不读用户的启动文件：那里可能 `export` 了密钥，去掉密钥的那一步就白做了。
+- bash、zsh 的命令不写进命令行（施工 4-8 再补，2026-10-18）：命令原文放在环境变量 `MIYU_COMMAND` 里，`-c` 后面是固定的一句 `eval "unset MIYU_COMMAND; $MIYU_COMMAND"`——先展开出原文，再去掉这个变量，命令和它起的子进程都看不到它，退出码是命令的。命令行里有原文时，命令里的 `pkill -f <词>` 会连自己所在的 shell 一起杀掉，只剩一句 `Killed by signal 15`（真跑碰到两次）。PowerShell 照旧编进命令行：Windows 上没有照命令行找进程杀的习惯。
 - zsh 带 `+o nomatch`：没匹配到的通配符照原样传下去，和 bash 一样（没加引号的网址里的 `?`、`pip install foo[bar]` 里的方括号，施工 4-9 再补二）。
 - PowerShell 的命令前面先加一句，和她的命令写在同一行（出错时报的行号还对得上），整条编成 UTF-16LE 再 base64：
 
@@ -125,7 +126,7 @@
 | 像密钥的 | 名字里有 `KEY`、`SECRET`、`TOKEN`、`PASSWORD`、`PASSWD`、`CREDENTIAL`（不分大小写）：`DEEPSEEK_API_KEY`、`AWS_ACCESS_KEY_ID`、`GH_TOKEN`、`PGPASSWORD` 都在里面 |
 | Miyu 自己的 | `MIYU_` 开头 |
 | 沙盒里另去掉的：桌面、D-Bus、ssh-agent | `DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`DBUS_SESSION_BUS_ADDRESS`、`XDG_RUNTIME_DIR`、`SSH_AUTH_SOCK`（2026-10-17 项目主人定：沙盒里的命令不开窗口） |
-| 另外设上的，原来的那一份不要 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`：不翻页、不上色（照 dsh） |
+| 另外设上的，原来的那一份不要 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`：不翻页、不上色（照 dsh）；`TERM=dumb`（施工 4-8 再补）：有的程序不认 `NO_COLOR`、也不看输出接没接终端，只照终端的种类上色（实测 `cargo fmt --check` 的 diff），`dumb` 的一律不上 |
 
 - 名字不是 UTF-8 的照能读出来的那部分判，不像密钥的照传。
 - 这只防不小心带出去（她跑一下 `env`，密钥就进了对话），不是安全边界：同一个系统用户的命令读得到核心的 `/proc/<pid>/environ`。
@@ -221,7 +222,7 @@ Exit code 2
 | `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量和前台一样（4-8 补：带着探针重新拉起测试程序）；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` 的 `line_ends_are_made_unix_across_pieces`（施工 7-3） | `\r\n` 切在两段中间也换，和一整段换出来的一样 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` 的 `a_sandboxed_background_command_runs_through_the_helper`（施工 7-3） | 后台命令一样经沙盒的助手起 |
-| `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉 |
+| `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉；照命令里的词 `pkill -f` 杀不到自己所在的 shell、命令看不到 `MIYU_COMMAND`（施工 4-8 再补） |
 | `crates/miyu-basesystem/src/shell/tests.rs` | 超时的上下限；秒数怎么写；参数格式里写的上限、默认值和代码一样；每一段以换行结尾 |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` | 数行、数字；`\r\n`；内存只留头尾；截在行尾；中间丢过的照样数；一整行很长的照字数截；正好 30000 个字的整段给；切开的字等配齐；离截处太远的换行不用 |
 | `crates/miyu-basesystem/src/shell/program/tests.rs` | 各系统用哪个 shell、找不到时用什么；名字带版本；不读启动文件、只带给的变量；zsh 带 `+o nomatch`、没匹配到的通配符原样传下去（macOS）；PowerShell 的编码和前面那一句；带了沙盒的四种 shell 都经助手起、参数照先后、工作目录和环境变量照旧，规格写不成 JSON 的起不来（施工 5-1） |
