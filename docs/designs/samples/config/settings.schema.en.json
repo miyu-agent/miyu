@@ -15,7 +15,7 @@
     "memory": {
       "properties": {
         "extract_idle": {
-          "default": "3m",
+          "default": "5m",
           "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories. Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
           "title": "Wait before organizing memories",

@@ -29,7 +29,7 @@ miyu_config::settings! {
     /// 记忆抽取、合并的配置（施工 R-6 上、R-7 上）。
     pub struct MemorySettings in "memory" {
         /// 会话闲了多久才抽新的一段：短于常见的缓存寿命。
-        extract_idle: Duration = "3m" {
+        extract_idle: Duration = "5m" {
             kind: duration [60, 3600],
             layers: [System, Personal],
             applies: next_turn,
