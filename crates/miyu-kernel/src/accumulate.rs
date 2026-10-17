@@ -117,7 +117,7 @@ impl Accumulator {
         Ok(())
     }
 
-    /// 到目前为止的每一块（施工 9-8 六补，中途订阅的补推）：是什么、拼好的字、收全了没有，照开始的先后。私有数据不给。
+    /// 到目前为止的每一块（施工 9-8 八补，中途订阅的补推）：是什么、拼好的字、收全了没有，照开始的先后。私有数据不给。
     pub fn so_far(&self) -> impl Iterator<Item = (&Kind, &str, bool)> {
         self.blocks
             .iter()

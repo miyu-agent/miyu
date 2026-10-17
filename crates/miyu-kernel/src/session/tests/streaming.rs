@@ -1,11 +1,11 @@
-//! 正在流的块（施工 9-8 六补，`protocol.md`「补发」第 4 条）：中途订阅的头要的那一份，照原来的形状拼好。
+//! 正在流的块（施工 9-8 八补，`protocol.md`「补发」第 4 条）：中途订阅的头要的那一份，照原来的形状拼好。
 
 use super::executor::*;
 use super::*;
 use crate::accumulate::{Delta, Kind};
 use crate::event::{Piece, TransientBody};
 
-/// 正在流的块（施工 9-8 六补）：还没发出去的没有；到目前为止的每块照原来的形状（`start`、拼好的字、收全了的 `end`），
+/// 正在流的块（施工 9-8 八补）：还没发出去的没有；到目前为止的每块照原来的形状（`start`、拼好的字、收全了的 `end`），
 /// 工具调用带名字，和推过的同一个 `turn`、`by`、`cause`；说完了的没有。
 #[test]
 fn the_blocks_streamed_so_far_are_rebuilt_for_a_late_subscriber() {

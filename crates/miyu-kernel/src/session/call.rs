@@ -106,7 +106,7 @@ impl Call {
 }
 
 impl Call {
-    /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 六补）：每块先 `start`，有字的再一段拼好的字，收全了的再 `end`。
+    /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 八补）：每块先 `start`，有字的再一段拼好的字，收全了的再 `end`。
     /// 还没发出去的、摘要请求（推的是进度）没有。
     fn so_far(&self) -> Option<(By, Vec<(usize, Piece)>)> {
         let sent = self.sent.as_ref().filter(|_| self.compaction.is_none())?;
@@ -162,7 +162,7 @@ impl Session {
         }
     }
 
-    /// 正在流的那次请求到目前为止的块（施工 9-8 六补，`protocol.md`「补发」第 4 条）：中途订阅的头没见过前面的增量，
+    /// 正在流的那次请求到目前为止的块（施工 9-8 八补，`protocol.md`「补发」第 4 条）：中途订阅的头没见过前面的增量，
     /// 后面的 `{index, text}` 不知道是哪一种块。照原来的形状拼好，一块一块推给它：`model.delta` 的 `start`、拼好的
     /// `text`、收全了的 `end`，时刻是 `at`。没有在流的请求是空的。纯查询，不落盘：会话 actor 订阅时只交给这一个订阅。
     pub fn streaming(&self, at: Timestamp) -> Vec<Transient> {

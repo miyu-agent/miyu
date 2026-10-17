@@ -107,7 +107,7 @@ pub(crate) struct Taken {
     pub(crate) log: Log,
     /// 这一刻「当前的」几样（施工 9-6 上）。
     pub(crate) current: crate::current::Current,
-    /// 正在流的那次请求到目前为止的块（施工 9-8 六补）：只给这个订阅先推。
+    /// 正在流的那次请求到目前为止的块（施工 9-8 八补）：只给这个订阅先推。
     pub(crate) streaming: Vec<miyu_kernel::event::Transient>,
 }
 

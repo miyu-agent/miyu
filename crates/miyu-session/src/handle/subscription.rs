@@ -20,7 +20,7 @@ pub struct Subscription {
     _watching: Option<Watching>,
     /// 订阅那一刻「当前的」几样（施工 9-6 上）：和订阅在 actor 的同一步里拿。测试里直接造的没有。
     current: Option<Current>,
-    /// 先推的（施工 9-8 六补）：订阅那一刻正在流的那次请求到目前为止的块，推完了才轮到之后的。
+    /// 先推的（施工 9-8 八补）：订阅那一刻正在流的那次请求到目前为止的块，推完了才轮到之后的。
     catching_up: VecDeque<Arc<Pushed>>,
 }
 
@@ -61,7 +61,7 @@ impl Subscription {
         }
     }
 
-    /// 先推这几条瞬时事件（施工 9-8 六补）：订阅那一刻正在流的那次请求到目前为止的块，和订阅在 actor 的同一步里拿。
+    /// 先推这几条瞬时事件（施工 9-8 八补）：订阅那一刻正在流的那次请求到目前为止的块，和订阅在 actor 的同一步里拿。
     pub(super) fn catching_up(
         mut self,
         streaming: Vec<miyu_kernel::event::Transient>,
