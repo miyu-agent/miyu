@@ -29,7 +29,7 @@
   "said": {
     "kb_search/found": "Found {hits} passages",
     "kb_search/nothing": "Nothing found",
-    "kb_read/page": "{path} page {page}/{pages}",
+    "kb_read/page": "page {page} of {pages}",
     "common/bad-args": "Bad arguments: {error}",
     "common/off": "No knowledge bases in this session",
     "common/failed": "Knowledge bases unavailable: {error}",

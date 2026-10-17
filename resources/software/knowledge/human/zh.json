@@ -29,7 +29,7 @@
   "said": {
     "kb_search/found": "找到 {hits} 段",
     "kb_search/nothing": "没找到",
-    "kb_read/page": "{path} 第 {page}/{pages} 页",
+    "kb_read/page": "第 {page}/{pages} 页",
     "common/bad-args": "参数不对：{error}",
     "common/off": "这个会话查不了知识库",
     "common/failed": "知识库现在用不了：{error}",

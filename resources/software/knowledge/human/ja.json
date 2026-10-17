@@ -29,7 +29,7 @@
   "said": {
     "kb_search/found": "{hits} 件見つかりました",
     "kb_search/nothing": "見つかりません",
-    "kb_read/page": "{path} {page}/{pages} ページ",
+    "kb_read/page": "{page}/{pages} ページ",
     "common/bad-args": "引数が正しくありません：{error}",
     "common/off": "このセッションではナレッジベースを使えません",
     "common/failed": "ナレッジベースを使えません：{error}",
