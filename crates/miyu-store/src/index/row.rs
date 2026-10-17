@@ -91,6 +91,12 @@ impl Row {
         if let Some(cwd) = cwd(event) {
             self.cwd = Some(cwd.to_string());
         }
+        // 只在空会话里 `/goal` 开的（施工 X-8 补修）：第一句是续轮消息，开头是 `<goal_round>` 标签，照目标原文。
+        if let Body::GoalSet(set) = &event.body
+            && self.preview.is_empty()
+        {
+            self.preview = first_line(&set.text);
+        }
         if let Body::MessageUser(message) = &event.body
             && self.preview.is_empty()
         {

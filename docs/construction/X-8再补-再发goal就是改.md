@@ -17,3 +17,7 @@
 - `commands/goal/tests.rs`：`--rounds 0` 和没写分得开。
 - `tests/goal_command.rs` 的 `a_second_goal_edits_the_current_one`：停着的改完接着跑、轮数接着数、上限照原来的；等人的只改；清掉以后是新设；日志里 `goal.*` 的先后。原来两条测试里「再设拒 `goal_exists`」的两步拿掉。
 - 手写变异 2 处全报红（不接着跑、上限照写的）。
+
+### 补修：只用 `/goal` 开的会话列表里露出 `<goal_round>`
+
+网页的会话 2026-10-17 报的：只在空会话里 `/goal` 开出来、那一轮又出了错（没起成标题）的会话，左栏显示「<goal_round>」。没有标题的会话头照 `preview` 显示，它是第一条 `message.user` 的第一行，这种会话的第一句是续轮消息。`miyu-store` 的 `index/row.rs`：`goal.set` 时 `preview` 还空着的照目标原文的第一行，续轮消息盖不过它。测试 `index/tests.rs` 的 `a_session_opened_by_a_goal_previews_the_goal`（退回去报红）。已经建好的索引行照旧，重建索引以后才变。

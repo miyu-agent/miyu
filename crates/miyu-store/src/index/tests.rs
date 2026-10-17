@@ -271,6 +271,20 @@ fn the_preview_is_the_first_line_of_the_first_words() {
     assert_eq!(row.preview, "长".repeat(50), "第二句盖不过第一句");
 }
 
+/// 只在空会话里 `/goal` 开的（施工 X-8 补修）：照目标原文的第一行，后面的续轮消息盖不过它（以前露出 `<goal_round>`）。
+#[test]
+fn a_session_opened_by_a_goal_previews_the_goal() {
+    let mut row = Row::new(id(), &created()).unwrap();
+    row.see(&event(
+        r#"{"seq":2,"at":"2026-09-25T09:00:00.000Z","kind":"goal.set","by":{"kind":"person","account":"alice"},"cause":"c2","body":{"text":"  把测试修绿\n再写文档"}}"#,
+    ));
+    assert_eq!(row.preview, "把测试修绿");
+    row.see(&event(
+        r#"{"seq":3,"at":"2026-09-25T09:00:00.000Z","kind":"message.user","by":{"kind":"module","id":"goal"},"cause":"goal-1-1","body":{"blocks":[{"type":"text","text":"<goal_round>\n把测试修绿\n</goal_round>"}]}}"#,
+    ));
+    assert_eq!(row.preview, "把测试修绿", "续轮消息盖不过它");
+}
+
 /// 内核起的标题：`by` 是内核。
 fn titled(seq: u64, title: &str) -> Event {
     event(&format!(
