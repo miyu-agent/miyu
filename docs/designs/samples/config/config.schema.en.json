@@ -243,7 +243,7 @@
     "persona": {
       "properties": {
         "default": {
-          "description": "The persona new sessions use. When unset, new sessions have no persona: no character prompt, and memory is off. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.",
+          "description": "The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.",
           "title": "Default persona",
           "type": "string"
         }

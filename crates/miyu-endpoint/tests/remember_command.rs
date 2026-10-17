@@ -112,19 +112,12 @@ async fn remember_saves_in_the_sessions_room_without_asking_the_model() {
     assert_eq!(reply["error"]["message"], "记忆不可用。");
 }
 
-/// 记不了的说具体（施工 O-6 再补，2026-10-09 项目主人在网页上验收）：没有人格的、预设没开记忆的带上预设的名字。
+/// 记不了的说具体（施工 O-6 再补，2026-10-09 项目主人在网页上验收）：预设没开记忆的带上预设的名字。无人格的会话也有记忆
+/// （施工 P-12），不再有「无人格」这一句。
 #[tokio::test]
 async fn a_refused_remember_says_exactly_why() {
     let home = Home::new();
     let script = Script::new([]);
-    let mut client = Client::connect(home.core(&script));
-    client.hello().await;
-    let session = client.create("c1", "~").await;
-    let reply = run(&mut client, "k1", &session, "/remember 用户喜欢猫").await;
-    assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
-    assert_eq!(reply["error"]["data"]["why"], "无人格会话不支持记忆。");
-
-    let home = Home::new();
     let mut client = Client::connect(with_persona(&home, &script, Catalog::default()));
     client.hello().await;
     let session = client

@@ -22,7 +22,7 @@ use crate::sqlite::{self, connect, integer, remove};
 
 pub use crate::sqlite::{DbError, Opened};
 pub use indexes::{Opener, RecallIndexes};
-pub use room::Room;
+pub use room::{NO_PERSONA, Room};
 
 mod indexes;
 mod places;

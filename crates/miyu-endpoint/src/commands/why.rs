@@ -77,15 +77,12 @@ async fn preset_off(
     })
 }
 
-/// 记忆为什么用不了：人格记忆没装的、没有人格的、预设没开记忆的；会话表里查不到、说不准的是 `None`，照拒绝的那一句。
+/// 记忆为什么用不了：人格记忆没装的、预设没开记忆的（无人格的也有记忆，施工 P-12）；会话表里查不到、说不准的是 `None`，照拒绝的那一句。
 async fn memory(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
     if !crate::memory::installed(core) {
         return Some(Said::plain("commands/unavailable/not-installed"));
     }
     let listed = listed(core, handle).await?;
-    if listed.persona.is_none() {
-        return Some(Said::plain("commands/unavailable/no-persona"));
-    }
     preset_off(
         core,
         peer,

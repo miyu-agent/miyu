@@ -13,6 +13,7 @@ use miyu_models::provider::chat;
 use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog, abandon};
+use miyu_store::recall::NO_PERSONA;
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::{Log, Seen};
@@ -113,9 +114,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let preset = blinded(preset, images, features);
     let installed = |feature| features.is_none_or(|features| features.installed(feature));
     // 预设没开记忆的，范围一律 `off`（施工 P-2 中，走查 E2：开不开记忆归预设）。没装人格记忆的也是（施工 F-3 上）。
-    // 无人格的记忆不生效（施工 P-4 上，2026-10-08 项目主人：「没有人格的情况下，记忆不生效」）。
-    let opened = name.is_some()
-        && installed(MEMORY)
+    // 无人格的也有记忆（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：跟着人格的落在无人格那一间。
+    let opened = installed(MEMORY)
         && preset
             .as_ref()
             .is_none_or(|chosen| chosen.file.opens(MEMORY));
@@ -264,7 +264,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             scope,
             &memory_account,
             &owner_of,
-            name.as_deref().unwrap_or_default(),
+            name.as_deref().unwrap_or(NO_PERSONA),
             &id_of,
             &venue_of,
             (&[], &[]),

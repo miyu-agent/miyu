@@ -91,10 +91,13 @@ async fn clear_memory_needs_memory_on() {
     let script = Script::new([]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
-    let session = client.create("c1", "~").await;
+    // 无人格的会话也有记忆（施工 P-12）：造会话时关掉的才用不了，说不准是哪一样，照拒绝的那一句。
+    let session = client
+        .create_with("c1", json!({"cwd": "~", "memory": "off"}))
+        .await;
     let reply = run(&mut client, "k1", &session, "/clear-memory").await;
     assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
-    assert_eq!(reply["error"]["data"]["why"], "无人格会话不支持记忆。");
+    assert_eq!(reply["error"]["data"]["why"], "记忆不可用。");
     let listed = client
         .call("m1", "command.catalog", json!({"session": session}))
         .await;

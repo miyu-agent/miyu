@@ -69,7 +69,7 @@
       },
       "persona.default": {
         "name": "既定のペルソナ",
-        "description": "新しいセッションで使うペルソナ。設定しない場合、新しいセッションはペルソナなしになり、人格設定がなく、記憶は無効です。"
+        "description": "新しいセッションで使うペルソナ。設定しない場合、新しいセッションはペルソナなしになり、人格設定がなく、記憶は専用のものになります。"
       },
       "preset.default": {
         "name": "既定のプリセット",
@@ -630,7 +630,6 @@
     "view/error/status/404": "見つかりません。エンドポイントのアドレスとモデル名を確認してください",
     "view/error/status/429": "レート制限中です。しばらくしてから再試行してください",
     "commands/unavailable/not-installed": "ペルソナの記憶は未インストールです。",
-    "commands/unavailable/no-persona": "人格なしのセッションでは記憶を使えません。",
     "commands/unavailable/preset-off": "プリセット「{preset}」は記憶がオフです。",
     "commands/workspace-wide": "ワークスペースを {cwd} に切り替えました（範囲の広いディレクトリ）。"
   }

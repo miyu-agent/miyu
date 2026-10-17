@@ -94,23 +94,29 @@ async fn without_it_the_persona_file_decides() {
     );
 }
 
-/// 无人格的会话记忆不生效（施工 P-4 上，2026-10-08 项目主人：「没有人格的情况下，记忆不生效」）：写了范围也是 `off`；不写人格、
-/// 没设默认人格的就是无人格。
+/// 无人格的会话也有记忆（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：范围照写的；不写的跟着人格，
+/// 落在无人格自己那一间。不写人格、没设默认人格的就是无人格。
 #[tokio::test]
-async fn without_a_persona_memory_is_off() {
+async fn without_a_persona_memory_follows_what_is_asked() {
     let home = Home::new();
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
-    for (id, params) in [
-        ("c1", json!({"cwd": "~"})),
+    for (id, params, expected) in [
+        ("c1", json!({"cwd": "~"}), MemoryScope::Persona),
         (
             "c2",
             json!({"cwd": "~", "persona": null, "memory": "persona"}),
+            MemoryScope::Persona,
         ),
-        ("c3", json!({"cwd": "~", "memory": "session"})),
+        (
+            "c3",
+            json!({"cwd": "~", "memory": "session"}),
+            MemoryScope::Session,
+        ),
+        ("c4", json!({"cwd": "~", "memory": "off"}), MemoryScope::Off),
     ] {
         let reply = create(&mut client, id, params.clone()).await;
         let session = reply["result"]["session"].as_str().expect("造了");
-        assert_eq!(scope(&home, session), MemoryScope::Off, "{params}");
+        assert_eq!(scope(&home, session), expected, "{params}");
     }
 }

@@ -2,6 +2,8 @@
 //!
 //! - 跟着人格的：记忆归哪个账号（`memory_account`，P-1 上）的家目录下，`modules/memory/<人格>/`、`index/recall/turns-<人格>.db`、
 //!   `index/recall/memory-<人格>.db`。
+//!   无人格的会话（施工 P-12，2026-10-17 项目主人定）也跟着「人格」走，编号写 [`NO_PERSONA`]：属主名下单独一间，无人格的会话
+//!   共用它。无人格不是人格，人格列表里没有它，也改不了。
 //! - 只在这个会话里的：会话自己的目录 `sessions/<会话>/memory/` 下，`log/`、`turns.db`、`memory.db`。删会话、进回收处、恢复
 //!   都跟着目录走，不另写一行。
 
@@ -11,6 +13,9 @@ use std::path::PathBuf;
 use miyu_kernel::id::{AccountId, SessionId};
 
 use crate::root::DataRoot;
+
+/// 无人格的那一间的编号（施工 P-12）：人格的编号以小写字母开头，`_` 开头的撞不上任何人格。
+pub const NO_PERSONA: &str = "_none";
 
 /// 回合库文件名的前后：`turns-<人格>.db`。
 pub(crate) const TURNS_PREFIX: &str = "turns-";

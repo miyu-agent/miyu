@@ -13,7 +13,7 @@ use miyu_policy::Snapshot;
 use miyu_policy::memory::MemoryScope;
 use miyu_store::blob::Blobs;
 use miyu_store::log::read_events;
-use miyu_store::recall::{RecallIndexes, Room};
+use miyu_store::recall::{NO_PERSONA, RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use crate::TARGET;
@@ -72,7 +72,8 @@ fn one(
     let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
     let scope = scope(subagent(created), true, snapshot.memory_scope());
     // 场所会话的回合也补（施工 R-13 下，同载入时，`memory.rs` 的 `connect`）：回合库记下它在哪个场所。
-    if scope != MemoryScope::Persona || snapshot.persona.as_deref() != Some(persona) {
+    if scope != MemoryScope::Persona || snapshot.persona.as_deref().unwrap_or(NO_PERSONA) != persona
+    {
         return Ok(false);
     }
     // 分叉出来的支线照载入时一样读底子（施工 R-13 三补）：父会话到分叉点为止的，认得那里还没回的人话。

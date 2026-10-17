@@ -386,15 +386,53 @@ async fn the_same_command_counts_once_even_after_a_restart() {
     assert_eq!(reply["result"], json!({"id": "m6"}), "{reply}");
 }
 
-/// 不带人格记忆不生效（17 L17，施工 P-4 上起出厂不设默认人格）：不写人格、默认人格也没设的 `memory.*` 没有哪一间，不带人格
-/// 的会话里 `/remember` 也不记；明着写了人格的照样能用。
+/// 无人格有自己的一间记忆（施工 P-12，2026-10-17 项目主人定）：无人格的会话里 `/remember` 记进去，另开一个无人格的会话照
+/// 会话看得到，软件工程师那一间看不到。照人格找时不写人格、默认人格也没设的仍然没有哪一间：无人格不是人格，人格列表里没有它。
 #[tokio::test]
-async fn without_a_persona_there_is_no_memory() {
+async fn without_a_persona_memory_has_a_room_of_its_own() {
     let home = Home::new();
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let reply = client.call("l1", "memory.list", json!({})).await;
     assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
+    let first = client.create("c1", "~").await;
+    let reply = client
+        .call(
+            "k1",
+            "command.run",
+            json!({"session": first, "text": "/remember 用户养猫"}),
+        )
+        .await;
+    assert_eq!(reply["result"]["said"], "记下了：用户养猫", "{reply}");
+    let second = client.create("c2", "~").await;
+    let listed = client
+        .call("l2", "memory.list", json!({"session": second}))
+        .await;
+    let texts: Vec<&str> = listed["result"]["memories"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{listed}"))
+        .iter()
+        .filter_map(|memory| memory["text"].as_str())
+        .collect();
+    assert_eq!(texts, ["用户养猫"], "无人格的会话共用一间");
+    let listed = client
+        .call("l3", "memory.list", json!({"persona": "engineer"}))
+        .await;
+    assert_eq!(
+        listed["result"]["memories"],
+        json!([]),
+        "人格那一间没有：{listed}"
+    );
+}
+
+/// 无人格的会话重启以后载入，照样接回无人格那一间（施工 P-12）：之前记的照会话看得到。
+#[tokio::test]
+async fn a_loaded_session_without_a_persona_finds_its_room_again() {
+    let home = Home::new();
+    let script = Script::new([]);
+    let core = home.core(&script);
+    let mut client = Client::connect(core.clone());
+    client.hello().await;
     let session = client.create("c1", "~").await;
     let reply = client
         .call(
@@ -403,17 +441,17 @@ async fn without_a_persona_there_is_no_memory() {
             json!({"session": session, "text": "/remember 用户养猫"}),
         )
         .await;
-    assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
-    let reply = client
-        .call(
-            "c2",
-            "memory.remember",
-            json!({"class": "user", "text": "用户养猫", "persona": "engineer"}),
-        )
+    assert_eq!(reply["result"]["said"], "记下了：用户养猫", "{reply}");
+    drop(client);
+    drop(core);
+
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let listed = client
+        .call("l1", "memory.list", json!({"session": session}))
         .await;
     assert_eq!(
-        reply["result"],
-        json!({"id": "m1"}),
-        "明着写了人格的照样能记：{reply}"
+        listed["result"]["memories"][0]["text"], "用户养猫",
+        "{listed}"
     );
 }

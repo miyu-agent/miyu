@@ -4,7 +4,7 @@
 //! 施工 R-12 下）在 `memory/turns.rs`。
 //!
 //! - 哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的
-//!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（不带人格记忆不生效）。
+//!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，它那一间照会话找，施工 P-12）。
 //! - 听众是这个连接的人：本机的令牌、网页登录都是管理员。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
@@ -289,7 +289,7 @@ async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
         (persona, None, None) => {
-            // 不带人格的会话记忆不生效（17 L17）：不写、默认人格也没设的，没有哪一间。
+            // 无人格不是人格（施工 P-12）：不写、默认人格也没设的，照人格找没有哪一间；无人格那一间照会话找。
             let found = personas::resolve(core, persona.as_deref().map(Some))
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;

@@ -54,6 +54,8 @@
 
 **范围**（`17-记忆.md` L2、L3，R-3 下）：会话开局时定，之后不改。三种：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。
 
+**无人格的那一间**（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：无人格的会话照样跟着「人格」走，人格编号写 `_none`（`miyu_store::recall::NO_PERSONA`；人格编号以小写字母开头，撞不上），在记忆账号名下单独一间（`modules/memory/_none/`、`turns-_none.db`、`memory-_none.db`），无人格的会话共用它，和每个人格的都分开。无人格不是人格：人格列表里没有它，`memory.*` 写 `persona` 找不到它，照会话找（写 `session`）的找得到。P-12 以前造的无人格会话快照里范围是 `off`，载入照快照，照旧不记。
+
 - 默认照人格的 `persona.toml` 的 `[memory] scope`（`persona` 或 `session`；不写是 `persona`，出厂的软件工程师不写；别的值照人格的文件写错了报，`personas.md`）。开会话时能换：`session.create` 多一格 `memory`（`persona`、`session`、`off`，不写照人格的；别的值 `bad_params`）；`miyu ask --no-memory` 就是 `off`。人格与预设走查 E1（2026-10-07）。
 - 记进策略快照的 `memory`（开局定、之后不改，正是快照管的；内核不认识「记忆」这个词，不进 `session.created`）。新造的都写明，`persona` 也写；以前造的快照里没有的照 `persona`，字节不变；认不出的照 `off`（宁可不记，不往不知道的地方写）。载入时照快照。
 - 子代理一律 `off`（17 第二节，走查 C5）：造子会话时不管交的是什么，快照照写 `off`；以前造的子会话快照里没有这一格，载入时照有没有父会话判。分叉出来的支线（C-8，群里第二个人 @ 她时分的）不算子代理，照父会话的范围（施工 R-13 三补，`memory::subagent`）。派的时候能指定，随 P-2（下）。开不开记忆归预设（走查 E2，施工 P-2 中，`presets.md`）：预设没开 `memory` 的会话，范围一律 `off`，不管 `session.create` 的 `memory` 写了什么；三件工具不在工具面上，回合开始不召回。
@@ -267,7 +269,7 @@
 **十一、装没装**（R-10，2026-10-09 项目主人定：记忆的代码编在核心里，照装没装人格记忆这个包启用，包出厂装着，卸了全没有、磁盘上的数据不删；形状 2026-10-10 和核心的主会话对过）
 
 1. 装没装记在核心一份的 `miyu_session::Memory` 上（`set_installed`、`installed`，没设过的当装着）：核心起来时照读到的清单设一次（`Core::new`、`Core::with_packages`），装卸以后照新的清单设（`Core::switch_packages` 最先做，卸包在动文件以前，删不成照原来的清单设回去，`packages.md`「装卸」第 2 条）。会话手里的功能表是开会话时那一份、不跟装卸，所以开着的会话看这个开关。
-2. 没装的时候：工具不在目录里、新开的会话不接记忆（F-2、F-3 上、F-5 中）；开着的会话这一轮不交摘要（第三条），闲了不上闹钟、上了的响的时候和读回来的时候没装了也不抽（第六条）；协议的 `memory.*` 回 `memory_not_installed`（「协议」），命令行 `miyu memory` 照这一句说；`/remember` 回 `memory_unavailable`，为什么那一句是「人格记忆未安装。」（`commands/unavailable/not-installed`，先于没有人格、预设没开），`command.catalog` 带会话的不列它。
+2. 没装的时候：工具不在目录里、新开的会话不接记忆（F-2、F-3 上、F-5 中）；开着的会话这一轮不交摘要（第三条），闲了不上闹钟、上了的响的时候和读回来的时候没装了也不抽（第六条）；协议的 `memory.*` 回 `memory_not_installed`（「协议」），命令行 `miyu memory` 照这一句说；`/remember` 回 `memory_unavailable`，为什么那一句是「人格记忆未安装。」（`commands/unavailable/not-installed`，先于预设没开），`command.catalog` 带会话的不列它。
 3. 装回来：开着的会话下一轮照常交摘要、闲了照常抽（开会话时就接着记忆的那些）；开会话时没装的照旧不接，记忆照开会话时的（L3），换个新会话才有。磁盘上的记忆日志、检索库、回合库卸包时一个不动，装回来照旧读。
 
 ### 出错
@@ -321,7 +323,7 @@
 | `crates/miyu-endpoint/tests/memory_scope.rs` | 「范围」：`session.create` 的 `memory` 三种和 `null` 照写的记、写错的三种 `bad_params` 不造；不写的照人格的 `persona.toml`，写了的压着它 |
 | `crates/miyu-recall/src/memory/tests.rs`（R-3 补的两条） | 第二条第 5 款：`cleared` 带会话的、整间的写成事件读回一字不差；清掉一个会话的只清出处全在它里面的，有别的出处的、人记的不动；整间的清掉那以前全部，以后记的照常；清过的不再算 |
 | `crates/miyu-store/tests/memory.rs`（R-3 补的一条） | 清空交回清掉几条、记忆库里的字跟着删；记忆库删了照日志重建，清掉的不放回去 |
-| `crates/miyu-endpoint/tests/memory_api.rs` | 「协议」：五个方法各走一遍（新的在前、照类、`limit`、搜、改了旧的不出来、类照旧、作废的只在 `forgotten` 时出来）；写错的几种（超长带 `data`、120 字记得下、类不认识、空白、两样都写、`as`、人格编号、没有的人格、没有的会话、`limit` 出范围、`from` 写错），什么都没记；默认人格、会话那一间、跟着人格的会话、`off` 的 `memory_unavailable`；同一个命令编号记、改、作废、清空再发只算一次，重启以后也是；没设默认人格的不写人格就没有记忆、不带人格的会话里 `/remember` 不记，明着写了人格的照样能记 |
+| `crates/miyu-endpoint/tests/memory_api.rs` | 「协议」：五个方法各走一遍（新的在前、照类、`limit`、搜、改了旧的不出来、类照旧、作废的只在 `forgotten` 时出来）；写错的几种（超长带 `data`、120 字记得下、类不认识、空白、两样都写、`as`、人格编号、没有的人格、没有的会话、`limit` 出范围、`from` 写错），什么都没记；默认人格、会话那一间、跟着人格的会话、`off` 的 `memory_unavailable`；同一个命令编号记、改、作废、清空再发只算一次，重启以后也是；没设默认人格的不写人格就找不到哪一间；无人格的会话里 `/remember` 记进无人格那一间，另一个无人格会话照会话看得到、人格那一间看不到；无人格的会话重启载入照样接回那一间（施工 P-12） |
 | `crates/miyu-session/tests/memory_installed.rs`（R-10） | 第十一条，真会话：没装的这一轮不交摘要、装回来下一轮交、以前记的都在；没装的闲了不抽、装回来照常抽；上了闹钟以后卸掉的响了也不抽 |
 | `crates/miyu-endpoint/tests/memory_installed.rs`（R-10） | 第十一条，真核心经 `package.remove` 卸掉出厂的人格记忆：`memory.*` 五个都回 `memory_not_installed`、原话照语言；`/remember` 回 `memory_unavailable`、为什么说没装，`command.catalog` 不列它；装回来以前记的都在、又列出来 |
 | `crates/miyu-core/tests/packages.rs` 的 `memory_removed_before_start_says_not_installed`、`crates/miyu-endpoint/tests/preset_face.rs` 的 `memory_not_in_the_given_list_says_not_installed`（R-10） | 第十一条第 1 款：起来时就卸掉了的（`Core::new` 读的那一份、`Core::with_packages` 交进来的那一份），`memory.*` 回 `memory_not_installed` |

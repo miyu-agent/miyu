@@ -59,7 +59,10 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
     let script = Script::new([]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
-    let session = client.create("c1", "~").await;
+    // 无人格的会话也有记忆（施工 P-12）：造会话时关掉才是没开。
+    let session = client
+        .create_with("c1", json!({"cwd": "~", "memory": "off"}))
+        .await;
     let reply = client
         .call("c2", "command.catalog", json!({"session": session}))
         .await;

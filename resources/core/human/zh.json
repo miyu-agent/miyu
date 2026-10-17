@@ -69,7 +69,7 @@
       },
       "persona.default": {
         "name": "默认人格",
-        "description": "新会话默认用哪个人格。不设的话，新会话无人格：不带人设，记忆不生效。"
+        "description": "新会话默认用哪个人格。不设的话，新会话无人格：不带人设，记忆单独一份。"
       },
       "preset.default": {
         "name": "默认预设",
@@ -630,7 +630,6 @@
     "view/error/status/404": "未找到，请检查端点地址和模型名",
     "view/error/status/429": "请求受限，请稍后重试",
     "commands/unavailable/not-installed": "人格记忆未安装。",
-    "commands/unavailable/no-persona": "无人格会话不支持记忆。",
     "commands/unavailable/preset-off": "预设「{preset}」未启用记忆。",
     "commands/workspace-wide": "工作区已切换到 {cwd}（范围较大）。"
   }

@@ -13,6 +13,7 @@ use miyu_kernel::session::{Input, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog, read_events};
+use miyu_store::recall::NO_PERSONA;
 use miyu_store::usage::Who;
 use miyu_tool::Log;
 
@@ -158,7 +159,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let pools = Agents::pools_in(&snapshot.tools);
         // 快照里的范围已经照预设、有没有人格算过（施工 P-2 中、P-4 上），这里只再管子会话；分叉出来的支线照父会话的
         // （施工 R-13 三补）。
-        let persona = snapshot.persona.as_deref().unwrap_or_default();
+        let persona = snapshot.persona.as_deref().unwrap_or(NO_PERSONA);
         let scope = memory::scope(memory::subagent(&created), true, snapshot.memory_scope());
         let snapshotted = snapshotting.elapsed();
         let connecting = Instant::now();
