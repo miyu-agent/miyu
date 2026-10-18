@@ -1,5 +1,6 @@
 //! `packages`（`docs/blueprint/tools/packages.md`，施工 F-10 上，设计 `31-软件包.md` 第六节）：她看软件包。不带参数列出装了的
-//! （一个一行：编号、名字、一句说明，关着的、卸掉的、读不了的另说），`package` 看一个，`path` 看一个包文件夹装上会是什么样。
+//! （一个一行：编号、名字、一句说明，关着的、卸掉的、读不了的另说），`package` 看一个，`path` 看一个包文件夹装上会是什么样，
+//! `search` 在软件源里搜（施工 G-6，交回核心那份搜到的 JSON）。
 //! 访问类别是读，哪一级都不问人；看包文件夹的照读那个路径判（只碰得到自己工作区的会话看不了外面的，数据根哪一级都不许）。
 //! 经 [`Call::packages`] 交给核心，照协议那几样回应算；看一个、看文件夹的照原样交回那一份 JSON（英文，紧凑），不另编字：
 //! 调用之后才用得上的知识都在里面。
@@ -51,6 +52,8 @@ struct Args {
     package: Option<String>,
     #[serde(default)]
     path: Option<String>,
+    #[serde(default)]
+    search: Option<String>,
 }
 
 impl Packages {
@@ -107,18 +110,28 @@ impl Tool for Packages {
             let args: Args = serde_json::from_str(&call.args).unwrap_or(Args {
                 package: None,
                 path: None,
+                search: None,
             });
             let Some(port) = call.packages.clone() else {
                 return Done::error(say(&texts.unavailable, &[])).said(said("packages/failed"));
             };
-            let done = match (args.package, args.path) {
-                (Some(_), Some(_)) => Err(say(&texts.both, &[])),
-                (None, None) => port
+            let done = match (args.package, args.path, args.search) {
+                (None, None, Some(query)) => match port.search(query.clone()).await {
+                    Ok(found) => Ok((
+                        format!("{found}\n"),
+                        said("packages/searched").with("query", &query),
+                    )),
+                    Err(refusal) => Err(texts.refused(&refusal, "the package source")),
+                },
+                (Some(_), Some(_), _) | (Some(_), _, Some(_)) | (_, Some(_), Some(_)) => {
+                    Err(say(&texts.both, &[]))
+                }
+                (None, None, None) => port
                     .list()
                     .await
                     .map(|listed| (texts.rows(&listed), said("packages/listed")))
                     .map_err(|refusal| texts.refused(&refusal, "packages")),
-                (Some(package), None) => match port.info(package.clone()).await {
+                (Some(package), None, None) => match port.info(package.clone()).await {
                     Ok(info) => Ok((
                         format!("{info}\n"),
                         said("packages/shown").with("package", &package),
@@ -128,7 +141,7 @@ impl Tool for Packages {
                     }
                     Err(refusal) => Err(texts.refused(&refusal, &package)),
                 },
-                (None, Some(path)) => texts.inspect(&*port, &path).await,
+                (None, Some(path), None) => texts.inspect(&*port, &path).await,
             };
             if call.stop.stopped() {
                 return Done::stopped();

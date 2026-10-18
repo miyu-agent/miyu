@@ -1,1 +1,1 @@
-Give one of install, remove or enable.
+Give one of install, upgrade, remove or enable.

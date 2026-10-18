@@ -237,6 +237,9 @@
     "package/installed": "Installed {package}",
     "package/removed": "Removed {package}",
     "package/enabled": "Turned on {package}",
-    "package/failed": "Could not install or remove"
+    "package/failed": "Could not install or remove",
+    "packages/searched": "Searched the package source for {query}",
+    "package/upgraded": "Upgraded {packages}",
+    "package/nothing-to-upgrade": "Nothing to upgrade"
   }
 }

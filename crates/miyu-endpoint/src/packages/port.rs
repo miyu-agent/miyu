@@ -1,4 +1,5 @@
-//! 软件包的端口（施工 F-10 上，`miyu_tool::PackagesPort`）：`packages` 这件工具经它看，`package` 经它装、卸（施工 F-10 下，
+//! 软件包的端口（施工 F-10 上，`miyu_tool::PackagesPort`）：`packages` 这件工具经它看、在软件源里搜（施工 G-6），`package` 经它
+//! 装、卸、从软件源装、升级（施工 F-10 下、G-6，
 //! 同 `package.install`、`package.remove`，不查连接是不是本机的：权限策略照会话的级别问过人了）。照协议那几样回应算（`package.list`、
 //! `package.info`、`package.install` 带 `preview` 的），名字、说明、写错的那一句照英文：她看的字是英文。拿着核心的弱引用：
 //! 会话活在核心里面，拿强的会绕成环。
@@ -11,6 +12,10 @@ use serde_json::{Value, json};
 use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use super::local::InfoParams;
+use super::source;
+use super::source::fetch::SourceParams;
+use super::source::search::SearchParams;
+use super::source::upgrade::UpgradeParams;
 use miyu_policy::preset::Unlisted;
 
 use super::TARGET;
@@ -162,6 +167,56 @@ impl PackagesPort for Port {
 
     fn remove(&self, package: String) -> Looking<'_> {
         Box::pin(async move { self.remove_or_look(package, false).await })
+    }
+
+    fn search(&self, query: String) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            let found = source::search::search(&core, english(), SearchParams::of(query))
+                .await
+                .map_err(refused)?;
+            Ok(found["packages"].clone())
+        })
+    }
+
+    fn fetching(&self, package: String) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            source::fetch::install(&core, english(), None, SourceParams::looking(&package))
+                .await
+                .map_err(refused)
+        })
+    }
+
+    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            let entry = source::fetch::install(&core, english(), None, SourceParams::of(&package))
+                .await
+                .map_err(refused)?;
+            if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
+                open_in(&core, &preset, package).await;
+            }
+            Ok(entry)
+        })
+    }
+
+    fn upgrading(&self, only: Option<String>) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            source::upgrade::upgrade(&core, english(), None, UpgradeParams::of(only, true))
+                .await
+                .map_err(refused)
+        })
+    }
+
+    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
+        Box::pin(async move {
+            let core = self.core()?;
+            source::upgrade::upgrade(&core, english(), None, UpgradeParams::of(only, false))
+                .await
+                .map_err(refused)
+        })
     }
 }
 

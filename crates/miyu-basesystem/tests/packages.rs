@@ -72,6 +72,12 @@ impl PackagesPort for Port {
     fn remove(&self, _package: String) -> Looking<'_> {
         unreachable!("packages 不卸")
     }
+
+    fn search(&self, query: String) -> Looking<'_> {
+        self.asked.fetch_add(1, Ordering::Relaxed);
+        let found = json!([{"package": "memes", "version": "1.0", "query": query}]);
+        Box::pin(async move { Ok(found) })
+    }
 }
 
 fn refusal(reason: &str, problem: Option<&str>, line: Option<u64>) -> PackageRefusal {
@@ -277,11 +283,26 @@ async fn wrong_arguments_never_reach_the_core() {
     let relative = packages(&port, json!({"path": "pane"})).await;
     assert_eq!(text(&relative), "path must be absolute.\n");
     let both = packages(&port, json!({"package": "a", "path": absolute("a")})).await;
-    assert_eq!(text(&both), "Give package or path, not both.\n");
+    assert_eq!(text(&both), "Give only one of package, path, search.\n");
     assert_eq!(port.asked.load(Ordering::Relaxed), 0);
     let none = Site::new()
         .done_with_packages("packages", json!({}), None)
         .await;
     assert!(none.error);
     assert_eq!(text(&none), "Packages cannot be looked at here.\n");
+}
+
+/// 在软件源里搜（施工 G-6）：交回核心那份搜到的 JSON；和 `package`、`path` 一起写的说只写一个、不问端口。
+#[tokio::test]
+async fn search_gives_the_core_answer_as_it_is() {
+    let port = Arc::new(Port::new());
+    let done = packages(&port, json!({"search": "meme"})).await;
+    assert_eq!(
+        text(&done),
+        "[{\"package\":\"memes\",\"query\":\"meme\",\"version\":\"1.0\"}]\n"
+    );
+    assert_eq!(port.asked.load(Ordering::Relaxed), 1);
+    let both = packages(&port, json!({"search": "meme", "package": "memes"})).await;
+    assert_eq!(text(&both), "Give only one of package, path, search.\n");
+    assert_eq!(port.asked.load(Ordering::Relaxed), 1, "不问端口");
 }

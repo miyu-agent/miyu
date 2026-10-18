@@ -46,6 +46,45 @@ pub trait PackagesPort: Send + Sync {
 
     /// 卸包 `package`（施工 F-10 下）：同 `package.remove {package}`。
     fn remove(&self, package: String) -> Looking<'_>;
+
+    /// 在软件源里搜 `query`（施工 G-6）：同 `package.search` 的 `packages`。没有软件源的（测试里的假核心）说现在看不了。
+    fn search(&self, query: String) -> Looking<'_> {
+        unavailable(query)
+    }
+
+    /// 从软件源装 `package` 之前看一眼（施工 G-6）：同 `package.install {source, preview: true}`。
+    fn fetching(&self, package: String) -> Looking<'_> {
+        unavailable(package)
+    }
+
+    /// 从软件源装 `package`（施工 G-6）：同 `package.install {source}`；会话用的预设 `preset` 同 [`Self::install`]。
+    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
+        drop(preset);
+        unavailable(package)
+    }
+
+    /// 升级之前看一眼（施工 G-6）：同 `package.upgrade {packages, preview: true}`，`only` 没有的是能升的全部。
+    fn upgrading(&self, only: Option<String>) -> Looking<'_> {
+        unavailable(only.unwrap_or_default())
+    }
+
+    /// 升级（施工 G-6）：同 `package.upgrade {packages}`。
+    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
+        unavailable(only.unwrap_or_default())
+    }
+}
+
+/// 没接软件源的端口：照「看不了」拒（原因代码 `unavailable`）。
+fn unavailable<'a>(what: String) -> Looking<'a> {
+    drop(what);
+    Box::pin(async {
+        Err(PackageRefusal {
+            reason: "unavailable".to_string(),
+            problem: None,
+            line: None,
+            conflicts: Vec::new(),
+        })
+    })
 }
 
 /// 端口的 future：成了交回那一份，不成交回为什么。

@@ -25,6 +25,13 @@ pub(crate) struct SearchParams {
     query: String,
 }
 
+impl SearchParams {
+    /// 搜 `query`（她的工具经端口搜，施工 G-6）。
+    pub(crate) fn of(query: String) -> SearchParams {
+        SearchParams { query }
+    }
+}
+
 /// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。
 pub(crate) async fn search(
     core: &Arc<Core>,

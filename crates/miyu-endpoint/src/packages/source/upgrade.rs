@@ -16,8 +16,9 @@ use miyu_source::index::Index;
 use super::super::packages;
 use super::fetch::{self, SourceParams};
 use crate::Core;
-use crate::hello::{Caller, Peer};
+use crate::hello::Peer;
 use crate::refusal::Refusal;
+use crate::reverse::Peer as Reverse;
 use crate::settings::SourceSettings;
 
 /// 装着的一个：编号、清单写的版本、来源仓库（从软件源装的才有）。
@@ -55,6 +56,16 @@ pub(crate) struct UpgradeParams {
     preview: bool,
 }
 
+impl UpgradeParams {
+    /// 只升 `only`（没有的是全部），`preview` 的只看一眼（她的工具经端口升，施工 G-6）。
+    pub(crate) fn of(only: Option<String>, preview: bool) -> UpgradeParams {
+        UpgradeParams {
+            packages: only.map(|one| vec![one]),
+            preview,
+        }
+    }
+}
+
 /// `package.upgrades`：回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
 pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
@@ -72,7 +83,7 @@ pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
 pub(crate) async fn upgrade(
     core: &Arc<Core>,
     peer: Peer,
-    caller: &Caller,
+    caller: Option<&Reverse>,
     params: UpgradeParams,
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;

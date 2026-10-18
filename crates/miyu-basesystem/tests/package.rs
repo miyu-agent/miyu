@@ -71,6 +71,22 @@ impl PackagesPort for Port {
     fn remove(&self, package: String) -> Looking<'_> {
         self.answered(format!("remove {package}"))
     }
+
+    fn fetching(&self, package: String) -> Looking<'_> {
+        self.answered(format!("fetching {package}"))
+    }
+
+    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
+        self.answered(format!("fetch {package} {preset:?}"))
+    }
+
+    fn upgrading(&self, only: Option<String>) -> Looking<'_> {
+        self.answered(format!("upgrading {only:?}"))
+    }
+
+    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
+        self.answered(format!("upgrade {only:?}"))
+    }
 }
 
 fn refusal(reason: &str, problem: Option<&str>, line: Option<u64>) -> PackageRefusal {
@@ -250,14 +266,23 @@ async fn asking_shows_what_the_core_would_do() {
 #[tokio::test]
 async fn wrong_arguments_never_reach_the_core() {
     let port = Port::new(Ok(json!({})));
-    let relative = package(&port, json!({"install": "kit"})).await;
+    let relative = package(&port, json!({"install": "src/kit"})).await;
     assert_eq!(text(&relative), "path must be absolute.\n");
     let both = package(&port, json!({"install": absolute("a"), "remove": "a"})).await;
-    assert_eq!(text(&both), "Give one of install, remove or enable.\n");
+    assert_eq!(
+        text(&both),
+        "Give one of install, upgrade, remove or enable.\n"
+    );
     let two = package(&port, json!({"remove": "a", "enable": "a"})).await;
-    assert_eq!(text(&two), "Give one of install, remove or enable.\n");
+    assert_eq!(
+        text(&two),
+        "Give one of install, upgrade, remove or enable.\n"
+    );
     let neither = package(&port, json!({})).await;
-    assert_eq!(text(&neither), "Give one of install, remove or enable.\n");
+    assert_eq!(
+        text(&neither),
+        "Give one of install, upgrade, remove or enable.\n"
+    );
     assert!(port.asked().is_empty());
     let none = Site::new()
         .done_with_packages("package", json!({"remove": "kit"}), None)
@@ -292,4 +317,48 @@ async fn installing_names_the_sessions_preset() {
         .await;
     assert!(!done.error);
     assert_eq!(port.asked(), [format!("install {path} Some(\"dev\")")]);
+}
+
+/// 从软件源装、升级（施工 G-6）：`install` 写编号的从软件源装，有路径分隔符又不是绝对路径的照旧说要绝对路径；`upgrade` 写编号
+/// 升那一个、写 `all` 升能升的全部；问人之前看一眼的照同一条路；卡片上写装哪个、升哪个；升好了一个个列出来，没有的说没有要升的。
+#[tokio::test]
+async fn ids_install_from_the_source_and_upgrades_list_what_changed() {
+    let tool = tool("package");
+    let site = Site::new();
+    let call = site.call_with_packages(json!({"install": "memes"}), None);
+    assert_eq!(tool.asking(&call), [("install", "memes".to_string())]);
+    let call = site.call_with_packages(json!({"upgrade": "all"}), None);
+    assert_eq!(tool.asking(&call), [("upgrade", "all".to_string())]);
+
+    let port = Port::new(Ok(json!({"package": "memes"})));
+    let done = package(&port, json!({"install": "memes"})).await;
+    assert!(
+        text(&done).starts_with("Installed memes."),
+        "{}",
+        text(&done)
+    );
+    assert_eq!(port.asked(), ["fetch memes None"]);
+    let looked = preview(&port, json!({"install": "memes"})).await;
+    assert!(matches!(looked, Some(Ok(_))));
+    assert_eq!(port.asked()[1], "fetching memes");
+    let relative = package(&port, json!({"install": "src/memes"})).await;
+    assert!(text(&relative).contains("absolute"), "{}", text(&relative));
+    let windows = package(&port, json!({"install": "src\\memes"})).await;
+    assert!(text(&windows).contains("absolute"), "{}", text(&windows));
+    assert_eq!(port.asked().len(), 2, "相对路径不问端口");
+
+    let port = Port::new(Ok(
+        json!({"upgraded": [{"package": "memes", "from": "1.0", "to": "1.1"}]}),
+    ));
+    let done = package(&port, json!({"upgrade": "all"})).await;
+    assert_eq!(text(&done), "Upgraded: memes 1.1 (was 1.0).\n");
+    let done = package(&port, json!({"upgrade": "memes"})).await;
+    assert_eq!(text(&done), "Upgraded: memes 1.1 (was 1.0).\n");
+    assert_eq!(port.asked(), ["upgrade None", "upgrade Some(\"memes\")"]);
+    let looked = preview(&port, json!({"upgrade": "all"})).await;
+    assert!(matches!(looked, Some(Ok(_))));
+    assert_eq!(port.asked()[2], "upgrading None");
+    let port = Port::new(Ok(json!({"upgraded": []})));
+    let done = package(&port, json!({"upgrade": "all"})).await;
+    assert_eq!(text(&done), "Nothing to upgrade.\n");
 }

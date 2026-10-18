@@ -218,6 +218,9 @@
     "package/installed": "{package} をインストールしました",
     "package/removed": "{package} を削除しました",
     "package/enabled": "{package} をオンにしました",
-    "package/failed": "インストールも削除もできませんでした"
+    "package/failed": "インストールも削除もできませんでした",
+    "packages/searched": "ソフトウェアソースで {query} を検索",
+    "package/upgraded": "{packages} を更新",
+    "package/nothing-to-upgrade": "更新するものはありません"
   }
 }

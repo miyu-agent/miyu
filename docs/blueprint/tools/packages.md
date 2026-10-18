@@ -17,6 +17,10 @@
 | `resources/packages/basesystem/package.toml` | 功能「软件包」（`packages`），预设能关 |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、结果那一句 |
 
+### 在软件源里搜（施工 G-6，设计 `37-软件源.md` 第四节第 9 条）
+
+`search` 写几个词：经端口调核心的 `package.search`（本机索引不到 24 小时的直接用），交回那份搜到的 JSON（英文、紧凑），和看一个包的一样不另编字。`package`、`path`、`search` 只能写一个，写多了说 `Give only one of package, path, search.`。只读，哪一级都不问人。
+
 ### 对外的样子
 
 访问类别 `read`。看包文件夹的报那个路径是读（`Target { write: false }`），权限策略照路径判：只碰得到自己工作区的会话（群会话这些，`session/guard.md` 第四条末）看不了工作区外的文件夹，数据根哪一级都不许；列出、看一个不报路径。不报效果。
@@ -25,8 +29,8 @@
 
 ```json
 {
-  "description": "List installed Miyu packages, show one by id, or check a package folder before installing it.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."}}}
+  "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
 }
 ```
 

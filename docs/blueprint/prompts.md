@@ -2083,13 +2083,13 @@ Cannot look at {what}: {reason}.
 
 #### `software/basesystem/packages/both.txt`
 
-- 什么时候加进来：`packages`：`package`、`path` 都写了
-- token：9
+- 什么时候加进来：`packages`：`package`、`path`、`search` 写了不止一个
+- token：10（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 改过）
 - 为什么加：参数写错不问核心（施工 F-10 上）
-- 指纹：`2e964507`
+- 指纹：`4f0088ce`
 
 ```text
-Give package or path, not both.
+Give only one of package, path, search.
 ```
 
 #### `software/basesystem/packages/relative.txt`
@@ -2138,13 +2138,35 @@ Removed {package}.
 
 #### `software/basesystem/package/one.txt`
 
-- 什么时候加进来：`package`：`install`、`remove`、`enable` 写了不止一个或一个都没写
-- token：10（2026-10-12 量，施工 F-10 下下改过）
+- 什么时候加进来：`package`：`install`、`upgrade`、`remove`、`enable` 写了不止一个或一个都没写
+- token：11（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `upgrade` 改过）
 - 为什么加：参数写错不问核心（施工 F-10 下）
-- 指纹：`d5f84fd8`
+- 指纹：`ac32ad34`
 
 ```text
-Give one of install, remove or enable.
+Give one of install, upgrade, remove or enable.
+```
+
+#### `software/basesystem/package/upgraded.txt`
+
+- 什么时候加进来：`package` 升级好了（施工 G-6）
+- token：17（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，`packages` 按一个包填）
+- 为什么加：升了哪几个、从哪一版到哪一版（施工 G-6，设计 `37-软件源.md` 定了的 C）
+- 指纹：`4bd1c754`
+
+```text
+Upgraded: {packages}.
+```
+
+#### `software/basesystem/package/nothing-to-upgrade.txt`
+
+- 什么时候加进来：`package` 升级时没有要升的（施工 G-6）
+- token：4（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量）
+- 为什么加：没升的说清是没有要升的（施工 G-6）
+- 指纹：`789bc4cc`
+
+```text
+Nothing to upgrade.
 ```
 
 #### `software/basesystem/package/enabled.txt`
@@ -4149,28 +4171,28 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/packages.json`
 
 - 什么时候加进来：会话的工具面里有 `packages`：功能「软件包」开着的（基础系统，每次请求都带）
-- token：85
-- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有
-- 指纹：`b8bf2c38`
+- token：111（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 多 26）
+- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有
+- 指纹：`88459d8f`
 
 ```json
 {
-  "description": "List installed Miyu packages, show one by id, or check a package folder before installing it.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."}}}
+  "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
 }
 ```
 
 #### `software/basesystem/tools/package.json`
 
 - 什么时候加进来：会话的工具面里有 `package`：功能「软件包」开着的（基础系统，每次请求都带）
-- token：116（2026-10-12 量；施工 F-10 下上是 86，下下加 `enable` 一个参数多 30）
-- 为什么加：她装、卸软件包，打开装着的（施工 F-10 下，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
-- 指纹：`f9ae23eb`
+- token：150（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量：施工 G-6 `install` 认编号、加 `upgrade` 多 34；之前 116，F-10 下上是 86，下下加 `enable` 多 30）
+- 为什么加：她装、卸软件包，打开装着的，从软件源装、升级（施工 F-10 下、G-6，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
+- 指纹：`ce0f5e5a`
 
 ```json
 {
-  "description": "Install a Miyu package from a folder, remove one, or turn on an installed one. Check the folder with packages first.",
-  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder to install."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
+  "description": "Install a Miyu package from a folder or the package source, upgrade, remove, or turn one on. Check with packages first.",
+  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder, or a package id from the package source."},"upgrade":{"type":"string","description":"Package id to upgrade from the package source, or all."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
 }
 ```
 

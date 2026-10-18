@@ -218,6 +218,9 @@
     "package/installed": "装了 {package}",
     "package/removed": "卸了 {package}",
     "package/enabled": "打开了 {package}",
-    "package/failed": "没装成、没卸成"
+    "package/failed": "没装成、没卸成",
+    "packages/searched": "在软件源里搜了 {query}",
+    "package/upgraded": "升级了 {packages}",
+    "package/nothing-to-upgrade": "没有要升级的"
   }
 }

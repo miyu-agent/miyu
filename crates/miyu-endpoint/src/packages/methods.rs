@@ -23,7 +23,7 @@ pub(crate) async fn call(
         "package.list" => super::list(core, peer),
         // 从软件源装（施工 G-4 上、下）：带 `source` 的，只写 `package`、又不是卸掉的出厂包的；要往发起的连接推下载进度。
         "package.install" if super::source::fetch::wanted(core, &request.params) => {
-            super::source::fetch::install(core, peer, caller, params(request)?).await
+            super::source::fetch::install(core, peer, Some(&caller.reverse), params(request)?).await
         }
         "package.install" => super::manage::install(core, peer, params(request)?).await,
         "package.remove" => super::manage::remove(core, params(request)?).await,
@@ -36,7 +36,8 @@ pub(crate) async fn call(
         "package.clean" => super::source::clean::clean(core).await,
         "package.upgrades" => super::source::upgrade::upgrades(core).await,
         "package.upgrade" => {
-            super::source::upgrade::upgrade(core, peer, caller, params(request)?).await
+            super::source::upgrade::upgrade(core, peer, Some(&caller.reverse), params(request)?)
+                .await
         }
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,

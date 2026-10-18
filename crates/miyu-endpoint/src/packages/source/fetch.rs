@@ -22,8 +22,9 @@ use miyu_store::packages::Packages;
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use crate::Core;
-use crate::hello::{Caller, Peer};
+use crate::hello::Peer;
 use crate::refusal::Refusal;
+use crate::reverse::Peer as Reverse;
 use crate::settings::SourceSettings;
 
 /// 进度最多多久推一次。
@@ -44,10 +45,18 @@ pub(crate) struct SourceParams {
 
 impl SourceParams {
     /// 真装编号是 `id` 的（升级照它一个一个换，施工 G-5）。
-    pub(super) fn of(id: &str) -> SourceParams {
+    pub(crate) fn of(id: &str) -> SourceParams {
         SourceParams {
             source: id.to_string(),
             preview: false,
+        }
+    }
+
+    /// 看一眼编号是 `id` 的（她的工具问人之前，施工 G-6）。
+    pub(crate) fn looking(id: &str) -> SourceParams {
+        SourceParams {
+            source: id.to_string(),
+            preview: true,
         }
     }
 }
@@ -81,7 +90,7 @@ struct Step<'a> {
 pub(crate) async fn install(
     core: &Arc<Core>,
     peer: Peer,
-    caller: &Caller,
+    caller: Option<&Reverse>,
     params: SourceParams,
 ) -> Result<Value, Refusal> {
     if !miyu_store::personas::valid(&params.source) {
@@ -240,15 +249,18 @@ fn preview(steps: &[Step<'_>], core: &Core) -> Value {
     answer
 }
 
-/// 推进度给发起的连接：开始、结束各一次，中间最多 [`EVERY`] 一次。
-fn progress<'a>(caller: &'a Caller, id: &'a str) -> impl Fn(u64, u64) + Sync + 'a {
+/// 推进度给发起的连接：开始、结束各一次，中间最多 [`EVERY`] 一次。她的工具经端口装的没有连接，不推（施工 G-6）。
+fn progress<'a>(caller: Option<&'a Reverse>, id: &'a str) -> impl Fn(u64, u64) + Sync + 'a {
     let last: Mutex<Option<Instant>> = Mutex::new(None);
     move |done, total| {
+        let Some(caller) = caller else {
+            return;
+        };
         let mut last = last.lock().unwrap_or_else(PoisonError::into_inner);
         let due = done == 0 || done == total || last.is_none_or(|at| at.elapsed() >= EVERY);
         if due {
             *last = Some(Instant::now());
-            if !caller.reverse.notify(
+            if !caller.notify(
                 "package.progress",
                 json!({"package": id, "done": done, "total": total}),
             ) {

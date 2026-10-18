@@ -1,5 +1,6 @@
 //! `package`（`docs/blueprint/tools/package.md`，施工 F-10 下，设计 `31-软件包.md` 第六节）：她装、卸软件包，打开装着的。
-//! `install` 装一个包文件夹（绝对路径，装上以后在会话用的预设里打开，施工 F-10 下下），`remove` 卸一个装了的包，`enable` 打开
+//! `install` 装一个包文件夹（绝对路径，装上以后在会话用的预设里打开，施工 F-10 下下），或者写编号从软件源装（施工 G-6，同样在
+//! 预设里打开），`upgrade` 照软件源升级一个包（写 `all` 的是能升的全部，施工 G-6），`remove` 卸一个装了的包，`enable` 打开
 //! 装着的扩展、带了 MCP 服务的包（要的能力一并批，施工 F-10 下下）。访问类别 `install`：权限策略照级别判，完全放开直接做，工作区每次问人，
 //! 只读拒绝；要问的先看一眼（[`Tool::preview`]，同 `package.install`、`package.remove` 带 `preview` 的），人看的卡片照它。
 //! 装的包文件夹报那个路径是读（同 `packages`）：只碰得到自己工作区的会话装不了外面的，数据根哪一级都不许。经
@@ -19,6 +20,9 @@ use miyu_tool::{
 use crate::common::said;
 use crate::load::{self, LoadError, say};
 
+/// `upgrade` 写它的是能升的全部。
+const ALL: &str = "all";
+
 /// `package`。
 pub(crate) struct Package {
     spec: Spec,
@@ -32,6 +36,8 @@ struct Texts {
     removed: Template,
     enabled: Template,
     one: Template,
+    upgraded: Template,
+    nothing: Template,
     refused: Template,
     unavailable: Template,
     invalid: Template,
@@ -51,11 +57,17 @@ struct Args {
     remove: Option<String>,
     #[serde(default)]
     enable: Option<String>,
+    #[serde(default)]
+    upgrade: Option<String>,
 }
 
 /// 要做的那一件。
 enum Doing {
     Install(PathBuf),
+    /// 从软件源装这个编号（施工 G-6）。
+    Fetch(String),
+    /// 照软件源升级：这一个，没有的是能升的全部（施工 G-6）。
+    Upgrade(Option<String>),
     Remove(String),
     Enable(String),
 }
@@ -72,6 +84,8 @@ impl Package {
                 removed: own("removed", &["package"])?,
                 enabled: own("enabled", &["package"])?,
                 one: own("one", &[])?,
+                upgraded: own("upgraded", &["packages"])?,
+                nothing: own("nothing-to-upgrade", &[])?,
                 refused: own("refused", &["what", "reason"])?,
                 unavailable: own("unavailable", &[])?,
                 invalid: shared("invalid", &["path", "problem"])?,
@@ -86,20 +100,26 @@ impl Package {
 }
 
 impl Texts {
-    /// 照参数认出要做的那一件：写了不止一个、一个都没写的，`install` 不是绝对路径的，说哪里不对。
+    /// 照参数认出要做的那一件：写了不止一个、一个都没写的，`install` 是相对路径的，说哪里不对。`install` 没有路径分隔符的是
+    /// 编号，从软件源装（施工 G-6）。
     fn doing(&self, call: &Call) -> Result<Doing, String> {
         let args: Args = serde_json::from_str(&call.args).unwrap_or(Args {
             install: None,
             remove: None,
             enable: None,
+            upgrade: None,
         });
-        match (args.install, args.remove, args.enable) {
-            (Some(path), None, None) if Path::new(&path).is_absolute() => {
+        match (args.install, args.remove, args.enable, args.upgrade) {
+            (Some(path), None, None, None) if Path::new(&path).is_absolute() => {
                 Ok(Doing::Install(path.into()))
             }
-            (Some(_), None, None) => Err(say(&self.relative, &[])),
-            (None, Some(package), None) => Ok(Doing::Remove(package)),
-            (None, None, Some(package)) => Ok(Doing::Enable(package)),
+            (Some(id), None, None, None) if !id.contains(['/', '\\']) => Ok(Doing::Fetch(id)),
+            (Some(_), None, None, None) => Err(say(&self.relative, &[])),
+            (None, Some(package), None, None) => Ok(Doing::Remove(package)),
+            (None, None, Some(package), None) => Ok(Doing::Enable(package)),
+            (None, None, None, Some(which)) => {
+                Ok(Doing::Upgrade(Some(which).filter(|which| which != ALL)))
+            }
             _ => Err(say(&self.one, &[])),
         }
     }
@@ -139,6 +159,29 @@ impl Texts {
         }
     }
 
+    /// 升好了：升了的一个个列出来（`编号 新版本 (was 旧版本)`），一个都没有的说没有要升的。
+    fn upgraded_done(&self, done: &serde_json::Value) -> Done {
+        let rows: Vec<String> = done["upgraded"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|row| {
+                format!(
+                    "{} {} (was {})",
+                    row["package"].as_str().unwrap_or_default(),
+                    row["to"].as_str().unwrap_or_default(),
+                    row["from"].as_str().unwrap_or("?")
+                )
+            })
+            .collect();
+        if rows.is_empty() {
+            return Done::ok(say(&self.nothing, &[])).said(said("package/nothing-to-upgrade"));
+        }
+        let packages = rows.join(", ");
+        Done::ok(say(&self.upgraded, &[("packages", &packages)]))
+            .said(said("package/upgraded").with("packages", &packages))
+    }
+
     /// 出错的那一份。
     fn failed(text: String) -> Done {
         Done::error(text).said(said("package/failed"))
@@ -166,6 +209,10 @@ impl Tool for Package {
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
         match self.texts.doing(call) {
             Ok(Doing::Install(path)) => vec![("install", path.to_string_lossy().into_owned())],
+            Ok(Doing::Fetch(package)) => vec![("install", package)],
+            Ok(Doing::Upgrade(which)) => {
+                vec![("upgrade", which.unwrap_or_else(|| ALL.to_string()))]
+            }
             Ok(Doing::Remove(package)) => vec![("remove", package)],
             Ok(Doing::Enable(package)) => vec![("enable", package)],
             Err(_) => Vec::new(),
@@ -183,6 +230,11 @@ impl Tool for Package {
                 Doing::Install(path) => {
                     let what = path.to_string_lossy().into_owned();
                     (port.inspect(path).await, what)
+                }
+                Doing::Fetch(package) => (port.fetching(package.clone()).await, package),
+                Doing::Upgrade(which) => {
+                    let what = which.clone().unwrap_or_else(|| ALL.to_string());
+                    (port.upgrading(which).await, what)
                 }
                 Doing::Remove(package) => (port.removing(package.clone()).await, package),
                 Doing::Enable(package) => (port.enabling(package.clone()).await, package),
@@ -214,6 +266,21 @@ impl Tool for Package {
                             Done::ok(say(&texts.installed, &[("package", &package)]))
                                 .said(said("package/installed").with("package", &package))
                         }
+                        Err(refusal) => Texts::failed(texts.refused(&refusal, &what)),
+                    }
+                }
+                Doing::Fetch(package) => {
+                    let preset = call.ids.as_ref().and_then(|ids| ids.preset.clone());
+                    match port.fetch(package.clone(), preset).await {
+                        Ok(_) => Done::ok(say(&texts.installed, &[("package", &package)]))
+                            .said(said("package/installed").with("package", &package)),
+                        Err(refusal) => Texts::failed(texts.refused(&refusal, &package)),
+                    }
+                }
+                Doing::Upgrade(which) => {
+                    let what = which.clone().unwrap_or_else(|| ALL.to_string());
+                    match port.upgrade(which).await {
+                        Ok(done) => texts.upgraded_done(&done),
                         Err(refusal) => Texts::failed(texts.refused(&refusal, &what)),
                     }
                 }
