@@ -4,6 +4,8 @@
 //!
 //! 查的时候把这个模型的向量全读出来逐条算点积（旧版的规模约一万条，几毫秒）：慢了先量，再看要不要另想办法。
 
+use std::collections::BTreeMap;
+
 use rusqlite::{OptionalExtension, params};
 
 use miyu_kernel::time::Timestamp;
@@ -77,6 +79,35 @@ impl RecallIndex {
             Ok((row.get(0)?, row.get(1)?, row.get(2)?))
         })?;
         Ok(rows.collect::<Result<_, _>>()?)
+    }
+
+    /// `keys` 这几条照模型 `model` 和 `query`（同一个模型、归一化过的）有多像（施工 R-14：记忆主动搜挡掉只有关键词找到、意思
+    /// 不沾边的）。还没有这个模型的向量的、读不出来的不在交回的里面。
+    ///
+    /// # Errors
+    ///
+    /// 读不了。
+    pub fn similar_to(
+        &self,
+        model: &str,
+        query: &[f32],
+        keys: &[String],
+    ) -> Result<BTreeMap<String, f32>, DbError> {
+        let db = self.lock();
+        let Some(db) = db.as_ref() else {
+            return Ok(BTreeMap::new());
+        };
+        let mut select = db.prepare("SELECT data FROM vectors WHERE key = ?1 AND model = ?2")?;
+        let mut similar = BTreeMap::new();
+        for key in keys {
+            let data: Option<Vec<u8>> = select
+                .query_row(params![key, model], |row| row.get(0))
+                .optional()?;
+            if let Some(vector) = data.as_deref().and_then(from_bytes) {
+                similar.insert(key.clone(), dot(query, &vector));
+            }
+        }
+        Ok(similar)
     }
 
     /// 和 `query`（同一个模型、归一化过的）最像的、最多 `limit` 条，最像的在前。读不出来的向量（长度不对）当不像，跳过。

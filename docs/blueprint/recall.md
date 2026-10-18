@@ -33,6 +33,7 @@
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
 | `crates/miyu-embed/src/manifest.rs` | 小程序读清单的文件 | R-5 上 |
 | `crates/miyu-embed/src/wordpiece.rs` | BERT 的 WordPiece 分词（第四条第 5 款） | R-5 上 |
+| `resources/core/memory/search.toml`、`RecallTexts::keyword_floor`、`RecallIndex::similar_to` | 记忆主动搜只有关键词找到的那几条的下限，照模型（第三条第 3 款）；数据，不给模型看 | R-14 |
 | `crates/miyu-embed/src/bpe.rs` | 字节级 BPE 分词（第四条第 5 款） | R-5 六补 |
 | `crates/miyu-embed/tools/bpe_files.py` | 把 Hugging Face 的 `tokenizer.json` 转成 BPE 的两个文件、印出清单那几段（第四条第 2、5 款；只用标准库，不进门禁） | R-5 六补 |
 | `crates/miyu-embed/src/model.rs` | 照清单载入模型、算一句的向量：ONNX Runtime 静态链接在这个小程序里 | R-5 上 |
@@ -133,7 +134,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 
 1. **向量表**：检索库多一张 `vectors(key, model, data)`，主键是（条目、模型），`data` 是 f32 的小端字节（`miyu_recall::vector`），长度是维数的 4 倍；`model` 是模型的编号：本机的是 `local:<id>`（`local:bge-small-zh-v1.5`），远程的是 `<供应商>/<模型>`（R-5 补）。条目拿掉、整个来源拿掉、换了字（同样的字照留）的，它的向量跟着拿掉；放向量时条目已经没了的不放。不换版本：每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上这张表，以前的库也就有了（换版本要删掉重建，删掉的会话那几块墓碑是删会话时写的，重建补不回来）。换了模型的照新模型补，旧的留着不碍事。
 2. **查**：向量都归一化过，相似度就是点积。读出这个模型的全部向量逐条算（旧版的规模约 1 万条，几毫秒），取最像的几条，带着条目的字和时刻；慢了先量，再看要不要另想办法。
-3. **两路合并**（`miyu_recall::fuse`）：照名次合，不照分数（bm25 和余弦的尺度对不上）：`分 = Σ 权重 / (60 + 名次 + 1)`，名次从 0 数；关键词一路权重 1，向量一路 0.5；只有向量一路找到的，相似度不到 0.40 的不要；分一样的照关键词一路的先后、再照向量一路的。0.40 是 2026-10-09 在 bge-small-zh-v1.5 上量的起点：八句和记忆一个字都不重合的问题（「我家宠物叫什么」对「用户养了一只猫」这种），对的那一条都排第一，相似度最低 0.436、平均 0.564；不对的平均 0.297、九成在 0.368 以下、最高 0.456。几个数在测评集上定（`memory/eval.md`）：2026-10-10 的基线（起点照上面的数）有答案的问句 recall@5 只走关键词 48%、加了向量 81%，平常的话加了向量全都搜得出东西。
+3. **两路合并**（`miyu_recall::fuse`）：照名次合，不照分数（bm25 和余弦的尺度对不上）：`分 = Σ 权重 / (60 + 名次 + 1)`，名次从 0 数；关键词一路权重 1，向量一路 0.5；只有向量一路找到的，相似度不到 0.40 的不要；分一样的照关键词一路的先后、再照向量一路的。0.40 是 2026-10-09 在 bge-small-zh-v1.5 上量的起点：八句和记忆一个字都不重合的问题（「我家宠物叫什么」对「用户养了一只猫」这种），对的那一条都排第一，相似度最低 0.436、平均 0.564；不对的平均 0.297、九成在 0.368 以下、最高 0.456。记忆主动搜另有一道（施工 R-14）：有问句的向量、模型在 `resources/core/memory/search.toml` 里的，只有关键词一路找到的也要和问句够像，不到表里的下限不要，还没补上向量的照留（`RecallIndex::similar_to` 照键算）；granite r2 是 0.80（测评集上换了说法的 hit@1 从 8% 到 42%，`memory/eval.md`「换模型」），表里没有的模型不设。知识库搜不设（量过没好处）。几个数在测评集上定（`memory/eval.md`）：2026-10-10 的基线（起点照上面的数）有答案的问句 recall@5 只走关键词 48%、加了向量 81%，平常的话加了向量全都搜得出东西。
 4. **搜**（`memory_search`、`memory.search`）：先算问句的向量，最多等 1 秒（核心起来以后第一次要的等核对包里的文件、拉起小程序，release 下合计约 60 毫秒，在时限里，R-5 五补；那一条照样在后台算完，不打断小程序的一问一答）；算出来了，记忆库、回合库各照关键词一路、向量一路取（各取四倍再挑），照第 3 款合并，再照原来的规矩挑。算不出（用不了、过了时限）的只走关键词，和原来一样，记一行 `DEBUG query not embedded`，不停下。
 5. **补**：搜的时候起；记下的时候也起（R-5 五补，2026-10-10 项目主人定：刚记的马上照意思搜得到）：她的 `remember`、协议的 `memory.remember`、`memory.update`、`/remember`、抽取记下了几条以后、合并改了几条以后，照那一处的配置。照这一间的记忆库、回合库各起一个后台的，一次取 16 条还没有这个模型的向量的（照行号往后取），一条一条算、写回；冷的那一条照样等核对、拉起（第四条第 3 款，不轮询）；这一条算不出的跳过、接着补别的（下次搜再试），连着 3 条算不出的这一回不补了（远程那一家挂了、key 错了，不一条一条地等，R-5 补）；用不了的（包里的文件对不上、起不来过三次、远程那一家没配）这一回不补了。同一份库同一时刻只有一个在补。补了几条记一行 `INFO memory vectors filled index=… count=… took_ms=…`，读写不了记 `WARN memory vectors not filled error=…`。之后才放进库的（这一轮自己的回合）等下一次搜。
 6. 照哪一路（R-5 补）：照调的一方手里的配置的 `models.embedding` 挑，她的工具照这一轮冻结的配置（派出去那一刻交给端口），协议照这时的配置。不写、写 `local` 的照本机的（第四条第 3、4 款），写 `<供应商>/<模型>` 的照那一家（第四条第 7 款），`off` 的不算问句、不补、不核对模型、不拉起小程序，只照关键词找。
@@ -259,6 +260,7 @@ R-5 上做好的：
 | `crates/miyu-embed/tests/manifest.rs` | 第四条第 2 款：仓库里的模型清单原本（R-5 三补搬进 `package/embed/`）读得出、每一格对；文件读不了说是哪个（原文的读法 R-5 中挪进 `miyu-recall`） |
 | `crates/miyu-embed/tests/protocol.rs` | 第四条第 4 款，手造的小模型（`fixtures/tiny/`，`fixtures/make.py` 造）：`ready`；向量和 Python 的 ONNX Runtime 算的每格差不过 1e-6；超长截断、空字也有向量；不是 JSON、没有 `id`、`id` 不是字、没有 `text`、空行、不是 UTF-8 的回错，接着读下一行；行尾的 `\r`；标准输入关了退出码 0；清单读不了、文件不在、模型是坏的退出码 1；清单的 `dims` 和模型对不上的每一句回错；参数写错（少了、多了、写了两次）退出码 2、印用法；字节级 BPE、只有两个输入的小模型（`fixtures/tiny-bpe/`，R-5 六补）：向量逐个比、超长截断，清单写的 `merges` 不在、模型要不认识的输入（`position_ids`）的退出码 1 |
 | `crates/miyu-embed/tests/bpe.rs` | 第四条第 5 款 BPE（R-5 六补）：照 `tokenizers` 训练的小 BPE（`fixtures/tiny-bpe/`，造的多语种句子训的，`fixtures/make_bpe.py` 造、`tools/bpe_files.py` 转）上几十句照它的结果逐个比（空的、空白、换行、`\r\n`、数字、标点、英文缩写、大小写、汉字、日文、韩文、阿拉伯文、emoji、组合字符、不间断空格、全角空格、超长的段）；截断留住 `end`；字里的特殊词照普通的字；词表、合并坏了的拒；真的 granite 词表（`#[ignore]`，`MIYU_EMBED_BPE_DIR`）上公开、造的句子逐个比 |
+| `crates/miyu-session/tests/memory_search_floor.rs`、`memory/recall/tests.rs` 的 `the_shipped_search_floors_come_from_their_own_table`（施工 R-14） | 第三条第 3 款记忆主动搜的关键词下限：小模型上照意思排不进前四的那一条，下限比它高的不要、比它低的照旧，表里没有的模型、还没有它的向量的照留；出厂的表照 `core/memory/search.toml` 读（granite 0.80、bge 不设） |
 | `crates/miyu-embed/tests/real.rs` | 真模型（`#[ignore]`，`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件）：出厂清单的模型对几句的向量（R-5 七补起是 granite，六句含英文、日文）和 Python 的 ONNX Runtime 算的余弦不低于 0.999 |
 
 R-1 做好的：

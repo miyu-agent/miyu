@@ -332,6 +332,9 @@ async fn measure_the_eval_set() {
     let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
     let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(&home)));
     assert!(home.memory.give_vectors(Arc::clone(&vectors)), "头一次接");
+    // 出厂的两张表（联想的门槛、她主动搜的关键词下限，施工 R-14）交给记忆：搜的时候和会话里同一个规矩。
+    let texts = miyu_session::RecallTexts::load(&home.resources).expect("出厂的读得出来");
+    assert!(home.memory.give_recall(texts), "头一次交");
     let using = Using {
         config: Arc::new(Turn::new(
             Default::default(),
@@ -361,12 +364,66 @@ async fn measure_the_eval_set() {
         brought_table("联想（门槛照出厂的表）", &brought(&picked))
     );
     if let Some(out) = std::env::var_os("MIYU_MEMORY_EVAL_OUT") {
-        write_out(Path::new(&out), &set, &keyword, &both, &picked);
+        let deep = deep(&home, &keeper, &set, &keys, &vectors, &using).await;
+        write_out(Path::new(&out), &set, [&keyword, &both], &picked, &deep);
     }
 }
 
-/// 每句一条：话、种类、该想起的、只走关键词搜出来的、两路合并搜出来的、联想带上的（键），写成一个 JSON 数组。
-fn write_out(out: &Path, set: &EvalSet, keyword: &[Found], both: &[Found], picked: &[Picked]) {
+/// 一句搜得更深的样子（施工 R-14）：只走关键词的前 20 条，和每条还算数的记忆跟问句的相似度（最像的在前）。仓库外调两路合并、
+/// 联想的规矩时照它模拟，不用每换一个数重编一次。
+struct Deep {
+    keyword: Vec<String>,
+    similar: Vec<(String, f32)>,
+}
+
+/// 每句照 [`Deep`] 搜一遍。
+async fn deep(
+    home: &Home,
+    keeper: &Keeper,
+    set: &EvalSet,
+    keys: &BTreeMap<String, String>,
+    vectors: &Vectors,
+    using: &Using,
+) -> Vec<Deep> {
+    let (log, _) = home.logs.open(&persona()).expect("开得了");
+    let live = |key: &String| {
+        set.memories
+            .iter()
+            .any(|memory| &memory.key == key && memory.retired.is_none())
+    };
+    let mut found = Vec::new();
+    for query in &set.queries {
+        let keyword = keeper
+            .search(&query.text, false, 20, None)
+            .expect("搜得了")
+            .iter()
+            .map(|entry| keys[&entry.id.to_string()].clone())
+            .collect();
+        let near = vectors.query(using, &query.text).await.expect("算得出");
+        let similar = log
+            .index()
+            .nearest(&near.model, &near.vector, set.memories.len())
+            .expect("搜得了")
+            .into_iter()
+            .filter_map(|hit| {
+                let key = keys.get(&hit.key)?;
+                live(key).then(|| (key.clone(), hit.similar))
+            })
+            .collect();
+        found.push(Deep { keyword, similar });
+    }
+    found
+}
+
+/// 每句一条：话、种类、该想起的、只走关键词搜出来的、两路合并搜出来的、联想带上的（键），只走关键词的前 20 条、每条的相似度
+/// （[`Deep`]），写成一个 JSON 数组。
+fn write_out(
+    out: &Path,
+    set: &EvalSet,
+    [keyword, both]: [&[Found]; 2],
+    picked: &[Picked],
+    deep: &[Deep],
+) {
     let rows: Vec<serde_json::Value> = set
         .queries
         .iter()
@@ -379,6 +436,8 @@ fn write_out(out: &Path, set: &EvalSet, keyword: &[Found], both: &[Found], picke
                 "keyword": keyword[n].got,
                 "both": both[n].got,
                 "picked": picked[n].picked,
+                "keyword20": deep[n].keyword,
+                "similar": deep[n].similar,
             })
         })
         .collect();

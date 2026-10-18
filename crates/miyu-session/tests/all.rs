@@ -61,6 +61,7 @@ mod memory_recall;
 mod memory_remote;
 mod memory_restore;
 mod memory_scope;
+mod memory_search_floor;
 mod memory_summary;
 mod memory_tools;
 mod memory_uses;
