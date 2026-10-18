@@ -35,7 +35,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 
 ## A memory
 
-`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue"}`:
+`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords"}`:
 
 | Name | Notes |
 |---|---|
@@ -48,6 +48,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 | `retired` | Why it was retired, `null` if it wasn't |
 | `used`, `used_at` | How many times it was used, the last time |
 | `venue` | Which venue it was said in, `null` for local |
+| `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters), `null` if none: searches and recall match them, she never sees this line |
 
 ## `memory.list`, `memory.search`
 
@@ -66,8 +67,8 @@ Search this memory's past conversations: one entry per turn a person started, ma
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.remember` | `class`, `text` (both required) | `{"id"}` |
-| `memory.update` | `id`, `text` | `{"id"}`: the new version (the old one is retired) |
+| `memory.remember` | `class`, `text` (both required); optional `keywords` | `{"id"}` |
+| `memory.update` | `id`, and at least one of `text`, `keywords` | `{"id"}`: with `text`, the new version (the old one is retired; without `keywords` the keywords carry over); with only `keywords`, the same memory, same id; empty `keywords` removes them |
 | `memory.forget` | `id` (optionally `why`); or `clear`: `session` (clear what this session remembered; `session` is then required), `me` (clear the whole memory) | `{}` when retiring, `{"cleared": <count>}` when clearing |
 | `memory.restore` | `id` | `{}`: a retired memory counts again |
 
@@ -77,8 +78,8 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Empty text; wrong `class`; malformed `id`; not exactly one of `id` and `clear` |
-| `memory_too_long` | Over 120 characters, `data.chars`, `data.limit` |
+| `bad_params` (`-32602`) | Empty text; wrong `class`; malformed `id`; not exactly one of `id` and `clear`; `memory.update` with neither `text` nor `keywords` |
+| `memory_too_long` | Text over 120 characters or keywords over 200, `data.chars`, `data.limit`, `data.field` is `text` or `keywords` |
 | `unknown_memory` | No such memory |
 | `memory_not_current` | Already changed, retired or cleared |
 

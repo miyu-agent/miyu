@@ -77,6 +77,7 @@ mod memory_clear;
 mod memory_dream;
 mod memory_follow;
 mod memory_installed;
+mod memory_keywords;
 mod memory_meaning;
 mod memory_restore;
 mod memory_scope;

@@ -3,12 +3,14 @@
 //!
 //! 照基础系统的办法：2026-10-07 照 magpie 网关的 `cline-pass/deepseek-v4.1-flash` 量，十八件（基础系统十五件加这三件）一起时
 //! 的边际份量 `remember` 149、`forget` 66、`memory_search` 70，合计 285 个 token，说明合计 1006 字节；预算是实测加一成，
-//! 314 个 token，合 1100 字节。加工具、改说明超了，重新量过再改这里和设计。
+//! 314 个 token，合 1100 字节。施工 R-15 上 `remember` 多一格 `keywords`：2026-10-19 照同一个网关的
+//! `group/auto-deepseek-v4-1-flash` 量，`remember` 149 → 184，三件合计 320 个 token、1143 字节；预算照实测加一成改成 352 个
+//! token，合 1260 字节。加工具、改说明超了，重新量过再改这里和设计。
 
 use std::path::Path;
 
 /// 预算：字节，回车 `\r` 不算（Windows 上检出的可能多出回车）。
-const BUDGET: usize = 1100;
+const BUDGET: usize = 1260;
 
 #[test]
 fn the_memory_tool_face_stays_within_its_budget() {

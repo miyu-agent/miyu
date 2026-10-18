@@ -237,6 +237,7 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
         replaces: None,
         about: None,
         venue: Some(miyu_kernel::id::VenueId::parse("qq:group:1").expect("合写法")),
+        keywords: None,
     };
     log.append(long_ago, alice(), None, &MemoryEvent::Saved(elsewhere))
         .expect("记得下");
@@ -387,6 +388,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         replaces: None,
         about: None,
         venue: None,
+        keywords: None,
     };
     log.append(
         Timestamp::parse("2026-10-01T00:00:00.000Z").expect("合写法"),

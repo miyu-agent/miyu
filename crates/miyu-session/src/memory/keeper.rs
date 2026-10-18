@@ -25,6 +25,8 @@ use super::Memory;
 use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
+mod update;
+
 /// 一间记忆，连同这次会被谁看到（听众）。可以复制：每次调用照它做。
 #[derive(Debug, Clone)]
 pub struct Keeper {
@@ -86,9 +88,11 @@ impl Keeper {
         sources: Vec<Source>,
     ) -> Result<MemoryId, Refused> {
         let log = self.log()?;
-        if let Some(old) = remember.replaces {
-            self.current(&log, old)?;
-        }
+        // 改一条没给关键词的，带上旧的（施工 R-15 上）：说的还是那件事。
+        let carried = match remember.replaces {
+            Some(old) => self.current(&log, old)?.keywords,
+            None => None,
+        };
         let (audience, venue) = self.listener.heard();
         let saved = Saved {
             class: remember.class,
@@ -98,6 +102,11 @@ impl Keeper {
             replaces: remember.replaces,
             about: None,
             venue,
+            keywords: match remember.keywords {
+                Some(keywords) if keywords.is_empty() => None,
+                Some(keywords) => Some(keywords),
+                None => carried,
+            },
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -157,6 +166,7 @@ impl Keeper {
                 replaces: None,
                 about: candidate.about,
                 venue,
+                keywords: None,
             };
             let stamp = Stamp {
                 at,
@@ -179,25 +189,6 @@ impl Keeper {
         };
         self.append(&log, stamp, &MemoryEvent::Extracted(mark))?;
         Ok(count)
-    }
-
-    /// 改一条（协议的 `memory.update`）：新记一条 `replaces` 它，类照旧的，出处空。
-    ///
-    /// # Errors
-    ///
-    /// 同 [`Keeper::save`]。
-    pub fn update(&self, stamp: Stamp, id: MemoryId, text: String) -> Result<MemoryId, Refused> {
-        let log = self.log()?;
-        if let Some((done, _)) = done(&log, &stamp) {
-            return Ok(done);
-        }
-        let class = self.current(&log, id)?.class;
-        let remember = Remember {
-            class,
-            text,
-            replaces: Some(id),
-        };
-        self.save(stamp, remember, Vec::new())
     }
 
     /// 作废一条。

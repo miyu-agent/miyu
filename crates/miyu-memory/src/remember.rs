@@ -1,11 +1,12 @@
-//! `remember`（施工 R-3 中）：记一条；写了 `replaces` 的是改那一条。超长的、类不认识的、编号写错的不记，说一句。
+//! `remember`（施工 R-3 中）：记一条；写了 `replaces` 的是改那一条。超长的、类不认识的、编号写错的不记，说一句。可以带一行只用来
+//! 检索的关键词（施工 R-15 上），太长的截断、不拒。
 
 use std::path::Path;
 
 use serde::Deserialize;
 
 use miyu_kernel::tool::Access;
-use miyu_recall::CLASSES;
+use miyu_recall::{CLASSES, keywords_of};
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{Call, Done, Progress, REMEMBER, Remember as Remembering, Running, Spec, Tool};
 
@@ -25,6 +26,9 @@ struct Args {
     text: String,
     #[serde(default)]
     replaces: Option<String>,
+    /// 只用来检索的关键词（施工 R-15 上）：可以不写，太长的截断。
+    #[serde(default)]
+    keywords: Option<String>,
 }
 
 impl Remember {
@@ -84,6 +88,7 @@ impl Tool for Remember {
                 class: args.class,
                 text: args.text,
                 replaces,
+                keywords: args.keywords.as_deref().and_then(keywords_of),
             };
             match port.save(remembering).await {
                 Ok(id) => {

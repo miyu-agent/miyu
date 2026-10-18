@@ -35,7 +35,7 @@
 
 ## 一条记忆
 
-`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue"}`：
+`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords"}`：
 
 | 名字 | 说明 |
 |---|---|
@@ -48,6 +48,7 @@
 | `retired` | 作废的原因，没作废的 `null` |
 | `used`、`used_at` | 用到几次、最近一次的时刻 |
 | `venue` | 在哪个场所说的，本机的 `null` |
+| `keywords` | 只用来检索的关键词（一行、逗号隔开，最多 200 字），没有的 `null`：照它也搜得到、想得起，她看不到这一行 |
 
 ## `memory.list`、`memory.search`
 
@@ -66,8 +67,8 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `memory.remember` | `class`、`text`（都必写） | `{"id"}` |
-| `memory.update` | `id`、`text` | `{"id"}`：改完的新那一条（旧的作废） |
+| `memory.remember` | `class`、`text`（都必写）；`keywords` 可以不写 | `{"id"}` |
+| `memory.update` | `id`，`text`、`keywords` 至少写一个 | `{"id"}`：写了 `text` 的是改完的新那一条（旧的作废，没写 `keywords` 的关键词带过去）；只写 `keywords` 的是同一条，编号不变；`keywords` 写空的是去掉 |
 | `memory.forget` | `id`（可带 `why`）；或者 `clear`：`session`（清掉这个会话记下的，这时 `session` 必写）、`me`（清空整间） | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id` | `{}`：作废了的那一条重新算数 |
 
@@ -77,8 +78,8 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 字是空的；`class` 不对；`id` 写法不对；`id`、`clear` 不是正好一个 |
-| `memory_too_long` | 超过 120 个字，`data.chars`、`data.limit` |
+| `bad_params`（`-32602`） | 字是空的；`class` 不对；`id` 写法不对；`id`、`clear` 不是正好一个；`memory.update` 的 `text`、`keywords` 都没写 |
+| `memory_too_long` | 正文超过 120 个字、关键词超过 200 个字，`data.chars`、`data.limit`，`data.field` 是 `text` 或 `keywords` |
 | `unknown_memory` | 没有这一条 |
 | `memory_not_current` | 那一条已经改掉、作废、清掉了 |
 

@@ -45,6 +45,7 @@ fn save(home: &Home, text: &str, by: By, replaces: Option<MemoryId>) -> MemoryId
             replaces,
             about: None,
             venue: None,
+            keywords: None,
         }),
     )
 }

@@ -276,6 +276,7 @@ async fn replaced_ones_and_her_own_session_stay_out_and_other_places_come_in() {
         replaces: None,
         about: None,
         venue: Some(VenueId::parse("qq:group:1").expect("合写法")),
+        keywords: None,
     };
     memories
         .append(now(), someone, None, &MemoryEvent::Saved(private))

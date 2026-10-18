@@ -8,6 +8,7 @@ use miyu_kernel::time::Timestamp;
 use super::*;
 
 mod dropped;
+mod keywords;
 mod merged;
 mod restored;
 mod venue;
@@ -45,6 +46,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         replaces,
         about: None,
         venue: None,
+        keywords: None,
     }
 }
 

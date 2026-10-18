@@ -29,6 +29,8 @@ pub struct Entry {
     pub replaces: Option<MemoryId>,
     /// 在哪个场所说的（施工 R-13 上）；主人那边记的、以前记的没有。
     pub venue: Option<VenueId>,
+    /// 只用来检索的关键词（施工 R-15 上）；没有的没有。
+    pub keywords: Option<String>,
     /// 记下的时刻。
     pub at: Timestamp,
     /// 谁记的。
@@ -164,6 +166,7 @@ impl MemoryBook {
                         audience: saved.audience,
                         about: saved.about,
                         venue: saved.venue,
+                        keywords: saved.keywords,
                         replaces: saved.replaces,
                         at: event.at,
                         by: event.by.clone(),
@@ -180,6 +183,13 @@ impl MemoryBook {
                 if let Some(entry) = self.entries.get_mut(&retired.id) {
                     entry.retired = Some(retired.why);
                     entry.retired_at = Some(event.at);
+                }
+                Ok(Some(0))
+            }
+            // 关键词不进摘要（只用来检索）：摘要照旧算数。
+            Some(Ok(MemoryEvent::Tagged(tagged))) => {
+                if let Some(entry) = self.entries.get_mut(&tagged.id) {
+                    entry.keywords = (!tagged.keywords.is_empty()).then_some(tagged.keywords);
                 }
                 Ok(Some(0))
             }

@@ -27,6 +27,7 @@ fn save(home: &Home, text: &str, replaces: Option<MemoryId>) -> MemoryId {
         replaces,
         about: None,
         venue: None,
+        keywords: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")

@@ -57,6 +57,8 @@ pub struct Remember {
     pub text: String,
     /// 改的是哪一条。
     pub replaces: Option<MemoryId>,
+    /// 只用来检索的关键词（施工 R-15 上）：整理过的（`miyu_recall::keywords_of`）；没有的，改一条时带上旧的。
+    pub keywords: Option<String>,
 }
 
 /// 记不下、作废不了。

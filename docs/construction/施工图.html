@@ -746,6 +746,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-5j"><span class="n">R-5</span>内置语义模型换成 granite（七补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-14"><span class="n">R-14</span>记忆搜的关键词下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-14b"><span class="n">R-14</span>联想也照混合（补）<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-15"><span class="n">R-15</span>记忆的关键词（上）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -20895,6 +20896,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-14-联想也照混合（补）.md</code>；蓝图 <code>memory.md</code> 第四条第 2 款，<code>memory/eval.md</code>「换模型」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-15" aria-labelledby="h-sR15">
+  <div class="sheet-head"><h2 id="h-sR15"><span class="no">R-15</span>记忆的关键词（上）</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">一条记忆多一行只用来检索的关键词：别名、别的语言的说法、用途；字面对不上的也搜得到、想得起，她看不到这一行。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-recall · miyu-store · miyu-session · miyu-endpoint · miyu-memory · miyu-cli</span><span class="dir-note">R-15</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>saved</code> 多 <code>keywords</code>，只换关键词的 <code>tagged</code>、编号不变</li>
+              <li>检索库、向量照正文接关键词，换了的重放、重补</li>
+              <li>协议、命令行能看能改；<code>remember</code> 多可选的一格</li>
+              <li>常驻、联想、<code>memory_search</code>、整理里不显示</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">最多 200 字</span><span class="rl">她给的截断，人给的拒</span></div>
+          <div class="tile new"><span class="nm">remember +35 token</span><span class="rl">预算 1100 → 1260 字节</span></div>
+          <div class="tile"><span class="nm">写关键词</span><span class="rl">抽取、整理在 R-15 下</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-15</dd></div>
+        <div><dt>名称</dt><dd>记忆的关键词（上）</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>变异、六层测试 · 自己验收，通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>12 个手写变异全被逮住；登记簿 <code>remember.json</code> 照开发端点重量、换指纹</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-15-记忆的关键词（上）.md</code>；蓝图 <code>memory.md</code> 第二条、「工具」、「协议」，<code>docs/reference/memory.md</code>，<code>cli/memory.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -61,15 +61,21 @@ pub(super) struct Remember {
     pub(super) at: Where,
     pub(super) class: String,
     pub(super) text: String,
+    /// 只用来检索的关键词（施工 R-15 上），可以不写。
+    #[serde(default)]
+    pub(super) keywords: Option<String>,
 }
 
-/// `memory.update`。
+/// `memory.update`：`text`、`keywords` 至少写一个（施工 R-15 上）。
 #[derive(Debug, Deserialize)]
 pub(super) struct Update {
     #[serde(flatten)]
     pub(super) at: Where,
     pub(super) id: String,
-    pub(super) text: String,
+    #[serde(default)]
+    pub(super) text: Option<String>,
+    #[serde(default)]
+    pub(super) keywords: Option<String>,
 }
 
 /// `memory.forget`：`id`（可以带 `why`）和 `clear` 两样只能写一样。

@@ -44,6 +44,7 @@ pub fn save(home: &Home, text: &str) {
         replaces: None,
         about: None,
         venue: None,
+        keywords: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

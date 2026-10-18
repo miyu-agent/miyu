@@ -10,8 +10,8 @@ use std::sync::Arc;
 
 use miyu_kernel::event::{Body, ContextInjected, Event};
 use miyu_kernel::id::VenueId;
-use miyu_recall::MemoryId;
 use miyu_recall::associate::Thresholds;
+use miyu_recall::{MemoryEvent, MemoryId, Saved};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Embedder, Keeper, Listener, RecallTexts, Stamp, Turn, Using, Vectors};
 
@@ -266,6 +266,54 @@ async fn what_is_forgotten_is_not_brought() {
         .await;
     let log = chat(&home, &handle, 1, ASKED).await;
     assert!(blocks(&log, "recall").is_empty(), "作废了的不带");
+}
+
+/// 关键词只用来找（施工 R-15 上）：正文里没有、关键词里有的说法也想得起来，带进去的那一块里看不到关键词。
+#[tokio::test]
+async fn keywords_find_it_but_are_not_shown() {
+    let home = Home::new();
+    meaning(&home, &table("-1.0"));
+    let (log, _) = home.logs.open(&persona()).expect("开得了");
+    for n in 0..6 {
+        let saved = Saved {
+            class: "user".into(),
+            text: format!("用户喜欢第 {n} 种水果"),
+            sources: Vec::new(),
+            audience: vec![alice()],
+            replaces: None,
+            about: None,
+            venue: None,
+            keywords: Some("苹果,香蕉".into()),
+        };
+        log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
+            .expect("记得下");
+    }
+    remember(&home, 0, 10).await;
+    for n in 1..=6 {
+        filled(&home, MODEL, true, &format!("m{n}")).await;
+    }
+    let handle = home
+        .create_full(
+            &says(1),
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    let log = chat(&home, &handle, 1, "苹果和香蕉").await;
+    let recalled = blocks(&log, "recall");
+    assert_eq!(recalled.len(), 1, "照关键词对上的想得起来");
+    let (_, block) = &recalled[0];
+    assert!(
+        !block.text.contains("苹果"),
+        "关键词不给她看：{}",
+        block.text
+    );
+    assert!(
+        block.text.contains("种水果"),
+        "给她看的是正文：{}",
+        block.text
+    );
 }
 
 #[tokio::test]

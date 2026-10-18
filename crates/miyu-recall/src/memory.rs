@@ -37,6 +37,39 @@ const SUMMARY: &str = "ext.memory.summary";
 const MERGED: &str = "ext.memory.merged";
 /// 恢复作废的（施工 R-12 下）。
 const RESTORED: &str = "ext.memory.restored";
+/// 换一条的关键词（施工 R-15 上）。
+const TAGGED: &str = "ext.memory.tagged";
+
+/// 一条的关键词最多几个字（施工 R-15 上）：一行，逗号隔开，十来个词。
+pub const KEYWORD_CHARS: usize = 200;
+
+/// 整理一行关键词（施工 R-15 上）：去掉前后的空白；超过 [`KEYWORD_CHARS`] 字的在那以内最后一个逗号（`,`、`，`、`、`）处截断，
+/// 一个逗号都没有的照字数截；空的没有。她经工具给的照它截，不拒（`remember`）。
+#[must_use]
+pub fn keywords_of(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    let cut: String = raw.chars().take(KEYWORD_CHARS).collect();
+    let cut = if cut.len() < raw.len() {
+        match cut.rfind([',', '，', '、']) {
+            Some(at) => cut[..at].to_string(),
+            None => cut,
+        }
+    } else {
+        cut
+    };
+    let cut = cut.trim().to_string();
+    (!cut.is_empty()).then_some(cut)
+}
+
+/// 一条进检索库的字（施工 R-15 上，`memory.md` 第二条）：关键词索引、向量都照它，正文后面换行接上关键词；没有关键词的就是正文。
+/// 给她看的地方（常驻那一块、联想、`memory_search`、整理的请求）照旧只用正文。
+#[must_use]
+pub fn indexed(text: &str, keywords: Option<&str>) -> String {
+    match keywords {
+        Some(keywords) if !keywords.is_empty() => format!("{text}\n{keywords}"),
+        _ => text.to_string(),
+    }
+}
 
 /// 出厂认识的四类（2026-10-07 项目主人定）：关于你、你要她怎样、经历、长期有效的事实。日志里别的类原样留着、照常列出；
 /// 她经工具记的照这张名单查（R-3 中）。
@@ -117,6 +150,18 @@ pub struct Saved {
     /// 以前记的没有，不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venue: Option<VenueId>,
+    /// 只用来检索的关键词（施工 R-15 上）：一行，逗号隔开，最多 [`KEYWORD_CHARS`] 字；没有的不写（以前记的都没有）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keywords: Option<String>,
+}
+
+/// `ext.memory.tagged` 的 `body`：只换一条的关键词，编号不变（施工 R-15 上）。空的是去掉。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Tagged {
+    /// 哪一条。
+    pub id: MemoryId,
+    /// 新的关键词。
+    pub keywords: String,
 }
 
 /// `ext.memory.retired` 的 `body`：作废一条。
@@ -213,6 +258,8 @@ pub enum MemoryEvent {
     Merged(Merged),
     /// 恢复作废的（施工 R-12 下）。
     Restored(Restored),
+    /// 换一条的关键词（施工 R-15 上）。
+    Tagged(Tagged),
 }
 
 /// 写成记忆日志里的一条事件：第 `seq` 条，时刻 `at`，`by` 写它的那一方。
@@ -229,6 +276,7 @@ pub fn to_event(seq: Seq, at: Timestamp, by: By, event: &MemoryEvent) -> Result<
         MemoryEvent::Summary(summary) => (SUMMARY, serde_json::to_string(summary)),
         MemoryEvent::Merged(merged) => (MERGED, serde_json::to_string(merged)),
         MemoryEvent::Restored(restored) => (RESTORED, serde_json::to_string(restored)),
+        MemoryEvent::Tagged(tagged) => (TAGGED, serde_json::to_string(tagged)),
     };
     let json = json.map_err(|error| error.to_string())?;
     let body: RawJson = serde_json::from_str(&json).map_err(|error| error.to_string())?;
@@ -256,6 +304,7 @@ pub fn from_event(event: &Event) -> Option<Result<MemoryEvent, String>> {
         SUMMARY => serde_json::from_str(body.get()).map(MemoryEvent::Summary),
         MERGED => serde_json::from_str(body.get()).map(MemoryEvent::Merged),
         RESTORED => serde_json::from_str(body.get()).map(MemoryEvent::Restored),
+        TAGGED => serde_json::from_str(body.get()).map(MemoryEvent::Tagged),
         _ => return None,
     };
     Some(read.map_err(|error| format!("body of {kind} not readable: {error}")))

@@ -16,7 +16,7 @@ use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
-use miyu_recall::{MemoryBook, MemoryEvent, MemoryId, from_event, to_event};
+use miyu_recall::{Entry, MemoryBook, MemoryEvent, MemoryId, from_event, indexed, to_event};
 
 use crate::log::{OpenError, SEGMENT_LIMIT, SessionLog, read_events};
 use crate::recall::{DbError, Edit, Opened, RecallIndex, Room};
@@ -215,11 +215,16 @@ impl MemoryLog {
                 SOURCE,
                 &[Edit::Put {
                     key: MemoryId::new(seq).to_string(),
-                    text: saved.text.clone(),
+                    text: indexed(&saved.text, saved.keywords.as_deref()),
                     at,
                 }],
                 seq,
             ),
+            // 换了关键词的照新的字重放（施工 R-15 上）：检索库换字的时候拿掉旧的向量，补的照新的字补。清掉的、没有的不放。
+            MemoryEvent::Tagged(tagged) => match book.get(tagged.id).and_then(put_of) {
+                Some(put) => self.index.apply(SOURCE, &[put], seq),
+                None => Ok(()),
+            },
             // 作废的不用改记忆库：搜得到，挑不挑是用的一方照底账判，恢复的也是（施工 R-12 下）；抽到哪、合并的摘要和记号不是
             // 一条记忆（施工 R-6 上、R-7 上）。
             MemoryEvent::Retired(_)
@@ -307,11 +312,9 @@ fn catch_up(index: &RecallIndex, events: &[Event], book: &MemoryBook) -> Result<
         .filter(|event| mark.is_none_or(|mark| event.seq > mark))
         .filter(|event| !cleared(MemoryId::new(event.seq)))
         .filter_map(|event| match from_event(event) {
-            Some(Ok(MemoryEvent::Saved(saved))) => Some(Edit::Put {
-                key: MemoryId::new(event.seq).to_string(),
-                text: saved.text,
-                at: event.at,
-            }),
+            // 照整份算好的底账放：以后换过的关键词也在里面（施工 R-15 上）。
+            Some(Ok(MemoryEvent::Saved(_))) => book.get(MemoryId::new(event.seq)).and_then(put_of),
+            Some(Ok(MemoryEvent::Tagged(tagged))) => book.get(tagged.id).and_then(put_of),
             _ => None,
         })
         .collect();
@@ -324,6 +327,15 @@ fn catch_up(index: &RecallIndex, events: &[Event], book: &MemoryBook) -> Result<
     edits.extend(removals(&gone));
     index.apply(SOURCE, &edits, last.seq)?;
     Ok(filled)
+}
+
+/// 一条照底账进记忆库的样子：正文接上关键词（`miyu_recall::indexed`），时刻是记下的时刻；清掉的没有。
+fn put_of(entry: &Entry) -> Option<Edit> {
+    (!entry.cleared).then(|| Edit::Put {
+        key: entry.id.to_string(),
+        text: indexed(&entry.text, entry.keywords.as_deref()),
+        at: entry.at,
+    })
 }
 
 /// 从记忆库里删掉这几条。

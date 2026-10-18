@@ -8,7 +8,8 @@ Commands:
   list                    List memories, newest first
   search <words>          Search memories
   add <text>              Remember one thing
-  edit <id> <text>        Change one; prints the new id
+  edit <id> [<text>]      Change one; prints the new id; leave out the text
+                          to change only the keywords
   forget <id>             Forget one
   clear session [<id>]    Clear what this session remembered; default is
                           the session the last miyu ask opened
@@ -23,5 +24,6 @@ Options:
       --class user|feedback|episode|reference
                           list: only this class; add: save as it (default user)
       --why <reason>      forget: why
+      --keywords <words>  add, edit: comma-separated words to find it by
       --format text|json  list, search: json for scripts
   -h, --help              Print help

@@ -138,6 +138,34 @@ async fn the_three_tools_are_there_and_only_read() {
     }
 }
 
+/// 关键词（施工 R-15 上）：带了的交下去，太长的在逗号处截断、照样记，空的当没写；说的话和不带的一样。
+#[tokio::test]
+async fn keywords_go_along_trimmed_and_cut() {
+    let port = Arc::new(Fake::default());
+    let long = format!("{},尾巴", "猫".repeat(198));
+    for keywords in [" 显卡,英伟达 ", long.as_str(), "  "] {
+        let done = call(
+            Some(Arc::clone(&port)),
+            "remember",
+            serde_json::json!({"class":"user","text":"用户用 N 卡","keywords":keywords}),
+        )
+        .await;
+        assert!(!done.error, "太长的照样记");
+        assert_eq!(text(&done), "Saved as m3.", "说的话不变");
+    }
+    let saved: Vec<Option<String>> = port
+        .saved
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .iter()
+        .map(|remember| remember.keywords.clone())
+        .collect();
+    assert_eq!(
+        saved,
+        [Some("显卡,英伟达".into()), Some("猫".repeat(198)), None]
+    );
+}
+
 #[tokio::test]
 async fn remembering_saves_and_says_the_id() {
     let port = Arc::new(Fake::default());
@@ -168,12 +196,14 @@ async fn remembering_saves_and_says_the_id() {
             Remember {
                 class: "user".into(),
                 text: "用户用 N 卡".into(),
-                replaces: None
+                replaces: None,
+                keywords: None,
             },
             Remember {
                 class: "feedback".into(),
                 text: "别叫我主人，听着别扭".into(),
-                replaces: Some(id(1))
+                replaces: Some(id(1)),
+                keywords: None,
             },
         ]
     );

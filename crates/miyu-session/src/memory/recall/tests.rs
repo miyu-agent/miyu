@@ -45,6 +45,7 @@ fn entry(n: u64, text: &str) -> Entry {
         retired: None,
         retired_at: None,
         cleared: false,
+        keywords: None,
     }
 }
 

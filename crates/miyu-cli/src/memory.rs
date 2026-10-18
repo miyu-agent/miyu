@@ -48,6 +48,9 @@ pub struct Memory {
     /// `forget`：为什么忘。
     #[arg(long, global = true, value_name = "REASON")]
     pub why: Option<String>,
+    /// `add`、`edit`：只用来检索的关键词，逗号隔开（施工 R-15 上）；`edit` 写空的是去掉。
+    #[arg(long, global = true, value_name = "WORDS")]
+    pub keywords: Option<String>,
     /// `list`、`search` 输出的格式。
     #[arg(long, global = true, value_enum, default_value_t = Format::Text)]
     pub format: Format,
@@ -70,12 +73,12 @@ pub enum MemoryCommand {
         #[arg(required = true, num_args = 1..)]
         words: Vec<String>,
     },
-    /// 改一条：编号，新的话。
+    /// 改一条：编号，新的话；只改关键词的不写话（施工 R-15 上）。
     Edit {
         /// 改哪一条，`m<序号>`。
         id: String,
-        /// 改成什么。
-        #[arg(required = true, num_args = 1..)]
+        /// 改成什么；不写的只换 `--keywords`（两样都没写的是少了参数）。
+        #[arg(num_args = 0.., required_unless_present = "keywords")]
         words: Vec<String>,
     },
     /// 忘掉一条。
@@ -205,10 +208,14 @@ async fn act(
         ),
         MemoryCommand::Add { words } => (
             "memory.remember",
-            json!({"class": args.class.as_deref().unwrap_or("user"), "text": words.join(" ")}),
+            json!({"class": args.class.as_deref().unwrap_or("user"), "text": words.join(" "), "keywords": args.keywords}),
         ),
         MemoryCommand::Edit { id, words } => {
-            ("memory.update", json!({"id": id, "text": words.join(" ")}))
+            let text = (!words.is_empty()).then(|| words.join(" "));
+            (
+                "memory.update",
+                json!({"id": id, "text": text, "keywords": args.keywords}),
+            )
         }
         MemoryCommand::Forget { id } => ("memory.forget", json!({"id": id, "why": args.why})),
         MemoryCommand::Clear { what: Clear::Me } => ("memory.forget", json!({"clear": "me"})),

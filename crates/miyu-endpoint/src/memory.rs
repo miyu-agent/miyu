@@ -8,6 +8,7 @@
 //! - 听众是这个连接的人：本机的令牌、网页登录都是管理员。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
+mod checks;
 pub(crate) mod dream;
 mod params;
 mod shown;
@@ -29,7 +30,7 @@ use miyu_session::{
     Using, Vectors,
 };
 use miyu_store::recall::Room;
-use miyu_tool::{Refused, Remember, TEXT_CHARS};
+use miyu_tool::{Refused, Remember};
 
 use crate::Core;
 use crate::list::LOCAL;
@@ -37,6 +38,7 @@ use crate::personas;
 use crate::refusal::Refusal;
 use crate::sessions::{admin, now};
 
+use checks::{checked, keywords, limit};
 use params::{Forget, List, Restore, Search, Update, Where};
 use shown::shown_all;
 
@@ -63,8 +65,6 @@ impl Core {
 const LIST: usize = 50;
 /// `memory.search` 不写 `limit` 时给几条。
 const SEARCH: usize = 10;
-/// `limit` 最多写几。
-const LIMIT: usize = 500;
 
 /// 按顺序答的 `memory.*`（`methods.rs` 照它转过来）；`memory.dream` 在后台答，另走。
 pub(crate) const METHODS: [&str; 7] = [
@@ -118,6 +118,7 @@ pub(crate) async fn remember_in(
         class: "user".to_string(),
         text: text.clone(),
         replaces: None,
+        keywords: None,
     };
     let stamp = Stamp {
         at: now(),
@@ -212,10 +213,12 @@ async fn remember(
     if !CLASSES.contains(&params.class.as_str()) {
         return Err(Refusal::BAD_PARAMS);
     }
+    let keywords = params.keywords.as_deref().map(keywords).transpose()?;
     let remember = Remember {
         class: params.class,
         text: checked(&params.text)?,
         replaces: None,
+        keywords: keywords.filter(|keywords| !keywords.is_empty()),
     };
     let keeper = find(core, params.at).await?;
     let id = blocking({
@@ -229,11 +232,15 @@ async fn remember(
 
 async fn update(core: &Arc<Core>, stamp: Stamp, params: Update) -> Result<Value, Refusal> {
     let id = memory_id(&params.id)?;
-    let text = checked(&params.text)?;
+    let text = params.text.as_deref().map(checked).transpose()?;
+    let keywords = params.keywords.as_deref().map(keywords).transpose()?;
+    if text.is_none() && keywords.is_none() {
+        return Err(Refusal::BAD_PARAMS);
+    }
     let keeper = find(core, params.at).await?;
     let id = blocking({
         let keeper = keeper.clone();
-        move || keeper.update(stamp, id, text)
+        move || keeper.update(stamp, id, text, keywords)
     })
     .await?;
     fill(core, keeper).await;
@@ -393,25 +400,6 @@ fn memory(core: &Core) -> Result<Arc<miyu_session::Memory>, Refusal> {
     core.memory_for(&core.admin)
         .filter(|memory| memory.installed())
         .ok_or(Refusal::MEMORY_UNAVAILABLE)
-}
-
-/// 正文：去掉前后空白，空的参数不对，超过 [`TEXT_CHARS`] 个字的太长。
-fn checked(text: &str) -> Result<String, Refusal> {
-    let text = text.trim();
-    let chars = text.chars().count();
-    match chars {
-        0 => Err(Refusal::BAD_PARAMS),
-        _ if chars > TEXT_CHARS => Err(Refusal::memory_too_long(chars, TEXT_CHARS)),
-        _ => Ok(text.to_string()),
-    }
-}
-
-/// `limit`：不写的照 `default`，1 到 [`LIMIT`]，别的参数不对。
-fn limit(limit: Option<usize>, default: usize) -> Result<usize, Refusal> {
-    match limit.unwrap_or(default) {
-        limit @ 1..=LIMIT => Ok(limit),
-        _ => Err(Refusal::BAD_PARAMS),
-    }
 }
 
 fn memory_id(text: &str) -> Result<MemoryId, Refusal> {

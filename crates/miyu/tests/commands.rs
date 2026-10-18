@@ -92,7 +92,7 @@ fn a_mistake_is_one_sentence_and_exit_code_2() {
         (
             &["memory", "edit", "m5"],
             "C",
-            "Missing arguments: miyu memory edit <id> <text>",
+            "Missing arguments: miyu memory edit <id> [<text>]",
         ),
         (
             &["ask", "--format", "xml", "hi"],

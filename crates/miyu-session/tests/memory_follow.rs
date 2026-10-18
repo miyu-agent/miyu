@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering;
 use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_recall::{
-    Cleared, MemoryEvent, MemoryId, Merged, Restored, Retired, Saved, Source, Summary,
+    Cleared, MemoryEvent, MemoryId, Merged, Restored, Retired, Saved, Source, Summary, Tagged,
 };
 use miyu_session::{Keeper, Listener};
 
@@ -36,6 +36,7 @@ fn said_in(home: &Home, n: u32, text: &str) {
             replaces: None,
             about: None,
             venue: Some(place(n)),
+            keywords: None,
         }),
     );
 }
@@ -161,6 +162,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
             replaces: None,
             about: None,
             venue: None,
+            keywords: None,
         })
     };
     append(&home, alice(), from(&cleared_one));
@@ -203,6 +205,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
             replaces: None,
             about: None,
             venue: None,
+            keywords: None,
         }),
     );
     save(&home, "人记的");
@@ -247,5 +250,31 @@ async fn a_restoration_is_heard_like_a_retirement() {
         seqs(&following.filled),
         [1, 3, 4],
         "这里冒不出来的那一条的作废、恢复不补"
+    );
+}
+
+/// 换关键词的说的是一条（施工 R-15 上）：挑法同作废，听不到的那一条换的关键词不给。
+#[tokio::test]
+async fn a_tagging_is_heard_like_a_retirement() {
+    let home = Home::new();
+    said_in(&home, 1, "小林养了一只猫");
+    said_in(&home, 2, "只有群里那个人听得到的");
+    for n in [1, 2] {
+        let id = MemoryId::parse(&format!("m{n}")).expect("合写法");
+        append(
+            &home,
+            alice(),
+            MemoryEvent::Tagged(Tagged {
+                id,
+                keywords: "宠物".into(),
+            }),
+        );
+    }
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Place(place(1)));
+    let following = keeper.follow(Some(0), 8).expect("跟得上");
+    assert_eq!(
+        seqs(&following.filled),
+        [1, 3],
+        "这里冒不出来的那一条换的关键词不补"
     );
 }

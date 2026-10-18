@@ -37,5 +37,6 @@ fn shown(entry: &Entry) -> Value {
         "sources": entry.sources,
         "retired": entry.retired,
         "venue": entry.venue,
+        "keywords": entry.keywords,
     })
 }

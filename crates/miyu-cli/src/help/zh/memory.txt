@@ -6,7 +6,7 @@
   list                    列出记下的，新的在前
   search <词>             搜记下的
   add <话>                记一条
-  edit <编号> <话>        改一条，印出新的编号
+  edit <编号> [<话>]      改一条，印出新的编号；只改关键词的不写话
   forget <编号>           忘掉一条
   clear session [<会话>]  清掉这个会话记下的；不写是上一次 miyu ask 开的
   clear me                清掉 AI 关于你的全部记忆
@@ -19,5 +19,6 @@
       --class user|feedback|episode|reference
                           list：只要这一类；add：记成这一类，不写是 user
       --why <原因>        forget：为什么忘
+      --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
       --format text|json  list、search：json 给脚本
   -h, --help              印帮助

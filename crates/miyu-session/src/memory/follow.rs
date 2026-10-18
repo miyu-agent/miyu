@@ -102,12 +102,14 @@ impl Keeper {
     }
 }
 
-/// 这一行说的是哪一条：记下的是它自己，作废的、恢复的（施工 R-12 下）是它说的那一条；别的是整间的，没有。
+/// 这一行说的是哪一条：记下的是它自己，作废的、恢复的（施工 R-12 下）、换关键词的（施工 R-15 上）是它说的那一条；别的是整间的，
+/// 没有。
 fn about(event: &Event) -> Option<MemoryId> {
     match from_event(event) {
         Some(Ok(MemoryEvent::Saved(_))) => Some(MemoryId::new(event.seq)),
         Some(Ok(MemoryEvent::Retired(retired))) => Some(retired.id),
         Some(Ok(MemoryEvent::Restored(restored))) => Some(restored.id),
+        Some(Ok(MemoryEvent::Tagged(tagged))) => Some(tagged.id),
         _ => None,
     }
 }

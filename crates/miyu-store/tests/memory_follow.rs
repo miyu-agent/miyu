@@ -24,6 +24,7 @@ fn saved(text: &str) -> MemoryEvent {
         replaces: None,
         about: None,
         venue: None,
+        keywords: None,
     })
 }
 

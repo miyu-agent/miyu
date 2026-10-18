@@ -4205,14 +4205,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/memory/tools/remember.json`
 
 - 什么时候加进来：会话的工具面里有 `remember`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
-- token：149（2026-10-07 照开发端点量，十八件一起时的边际份量）
-- 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条
-- 指纹：`8960cbcd`
+- token：184（2026-10-07 照开发端点量，十八件一起时的边际份量 149；施工 R-15 上多一格可选的 `keywords`，2026-10-19 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量，三件一起时 149 → 184，多 35）
+- 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条。施工 R-15 上加 `keywords`（项目主人 2026-10-19 定：她当场记的也能带关键词，没写的由整理补）：一句，可选、逗号隔开、找得到它的别的说法、别的语言、用途；不进 `required`。真数据上补了关键词的混合联想带对了 23% → 30%、带了的里该带的 52% → 59%（施工单 `R-15-记忆的关键词（上）.md`）；只写在说明里，不常驻 system
+- 指纹：`15bb21fb`
 
 ```json
 {
   "description": "Save a memory you keep across sessions: about the user, how they want you to work (and why), something you went through together, or a lasting fact. Only what will matter later.",
-  "parameters": {"type":"object","properties":{"class":{"type":"string","enum":["user","feedback","episode","reference"]},"text":{"type":"string","description":"One sentence, at most 120 characters, dates written out."},"replaces":{"type":"string","description":"Id of a memory this corrects, like m12."}},"required":["class","text"]}
+  "parameters": {"type":"object","properties":{"class":{"type":"string","enum":["user","feedback","episode","reference"]},"text":{"type":"string","description":"One sentence, at most 120 characters, dates written out."},"replaces":{"type":"string","description":"Id of a memory this corrects, like m12."},"keywords":{"type":"string","description":"Optional comma-separated words to find it by: other names, other languages, what it is for."}},"required":["class","text"]}
 }
 ```
 

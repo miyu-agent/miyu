@@ -20,8 +20,8 @@
 |---|---|---|
 | `list`（不写子命令也是它） | 列出来，新的在前 | `memory.list`，带 `forgotten`、`class` |
 | `search <词>` | 搜，最相关的在前 | `memory.search`，带 `query`、`forgotten` |
-| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user` |
-| `edit <编号> <话>` | 改一条 | `memory.update` |
+| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user`；带 `--keywords` 的另带 `keywords`（施工 R-15 上） |
+| `edit <编号> [<话>]` | 改一条 | `memory.update`；带 `--keywords` 的另带 `keywords`；不写话的只换关键词，编号不变（施工 R-15 上） |
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
 | `clear me` | 清掉她关于你的全部记忆 | `memory.forget`，`clear: "me"` |
@@ -34,6 +34,7 @@
 | `--forgotten` | `list`、`search`：连作废的一起 |
 | `--class user\|feedback\|episode\|reference` | `list`：只要这一类；`add`：记成这一类，不写是 `user`；别的值参数不对 |
 | `--why <原因>` | `forget`：为什么忘 |
+| `--keywords <词>` | `add`、`edit`：只用来检索的关键词，逗号隔开；`edit` 写空的是去掉（施工 R-15 上） |
 | `--format text\|json` | `list`、`search`：`json` 原样印核心回的那一串，给脚本 |
 
 - 几个词用一个空格连起来（照 `miyu rename`）；以 `-` 开头的写在 `--` 后面。
@@ -98,7 +99,7 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
   list                    列出记下的，新的在前
   search <词>             搜记下的
   add <话>                记一条
-  edit <编号> <话>        改一条，印出新的编号
+  edit <编号> [<话>]      改一条，印出新的编号；只改关键词的不写话
   forget <编号>           忘掉一条
   clear session [<会话>]  清掉这个会话记下的；不写是上一次 miyu ask 开的
   clear me                清掉 AI 关于你的全部记忆
@@ -111,6 +112,7 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
       --class user|feedback|episode|reference
                           list：只要这一类；add：记成这一类，不写是 user
       --why <原因>        forget：为什么忘
+      --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
       --format text|json  list、search：json 给脚本
   -h, --help              印帮助
 ```
@@ -128,7 +130,8 @@ Commands:
   list                    List memories, newest first
   search <words>          Search memories
   add <text>              Remember one thing
-  edit <id> <text>        Change one; prints the new id
+  edit <id> [<text>]      Change one; prints the new id; leave out the text
+                          to change only the keywords
   forget <id>             Forget one
   clear session [<id>]    Clear what this session remembered; default is
                           the session the last miyu ask opened
@@ -143,6 +146,7 @@ Options:
       --class user|feedback|episode|reference
                           list: only this class; add: save as it (default user)
       --why <reason>      forget: why
+      --keywords <words>  add, edit: comma-separated words to find it by
       --format text|json  list, search: json for scripts
   -h, --help              Print help
 ```

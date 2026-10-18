@@ -26,6 +26,7 @@ async fn only_where_it_can_come_up_can_it_be_restored() {
         replaces: None,
         about: None,
         venue: Some(place(1)),
+        keywords: None,
     };
     log.append(now(), stranger(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

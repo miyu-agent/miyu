@@ -230,9 +230,9 @@ fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
             "Missing arguments: miyu kb read <kb> <document>",
         ),
         (
-            &["memory", "edit", "m5"],
-            "少了参数：miyu memory edit <编号> <话>",
-            "Missing arguments: miyu memory edit <id> <text>",
+            &["memory", "forget"],
+            "少了参数：miyu memory forget <编号>",
+            "Missing arguments: miyu memory forget <id>",
         ),
         (
             &["kb", "search"],

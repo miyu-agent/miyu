@@ -28,6 +28,7 @@ async fn the_owner_lists_what_was_said_anywhere_with_where() {
             replaces: None,
             about: None,
             venue: Some(VenueId::parse("qq:group:1").expect("合写法")),
+            keywords: None,
         };
         let at = miyu_kernel::time::Timestamp::parse("2026-10-11T08:00:00.000Z").expect("合写法");
         log.append(

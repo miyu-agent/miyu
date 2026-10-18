@@ -45,10 +45,11 @@ impl Refusal {
         )
     }
     /// 一条记忆太长（施工 R-3 补）：`data.chars` 是它有几个字，`data.limit` 是上限。
-    pub(crate) fn memory_too_long(chars: usize, limit: usize) -> Refusal {
+    pub(crate) fn memory_too_long(chars: usize, limit: usize, field: &str) -> Refusal {
         let mut refusal = Refusal::with("memory_too_long", "chars", serde_json::json!(chars));
         if let Some(data) = &mut refusal.data {
             data.insert("limit".to_string(), serde_json::json!(limit));
+            data.insert("field".to_string(), serde_json::json!(field));
         }
         refusal
     }

@@ -99,6 +99,7 @@ impl Keeper {
                 replaces: Some(one.id),
                 about: old.about,
                 venue: old.venue,
+                keywords: old.keywords,
             };
             self.append(&log, stamp(), &MemoryEvent::Saved(saved))?;
             revised += 1;

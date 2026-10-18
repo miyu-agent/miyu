@@ -43,6 +43,7 @@ fn save(
         replaces,
         about: None,
         venue: None,
+        keywords: None,
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))
         .expect("记得下")

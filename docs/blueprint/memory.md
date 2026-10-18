@@ -82,7 +82,8 @@
 
 | 事件 | 什么时候 | `body` 的格 | 哪一步 |
 |---|---|---|---|
-| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上） | R-3 上 |
+| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上）、`keywords`（R-15 上） | R-3 上 |
+| `ext.memory.tagged` | 只换一条的关键词，编号不变：只用来检索，给她看的地方不显示；空的是去掉（R-15 上，2026-10-19 项目主人定） | `id`、`keywords` | R-15 上 |
 | `ext.memory.retired` | 作废一条，原文还在日志里 | `id`、`why` | R-3 上 |
 | `ext.memory.restored` | 人恢复作废了的一条：它不算作废了（第二条第 6 款） | `id` | R-12 下 |
 | `ext.memory.summary` | 合并写的摘要：不是一条记忆，不进记忆库，底账照最后一份（第七条） | `text`、`upto`（合到记忆日志的第几条） | R-7 上 |
@@ -164,7 +165,7 @@
 
 **二、记下的记忆**（R-3 上、中、下）
 
-1. 她调 `remember`（R-3 中）：查过类、长度，追加一条 `ext.memory.saved`，出处是这一轮，听众是这一轮的；结果里写编号。写了 `replaces` 的是改那一条。人在界面、协议上记的（R-3 补），出处空的，听众是那个人。
+1. 她调 `remember`（R-3 中）：查过类、长度，追加一条 `ext.memory.saved`，出处是这一轮，听众是这一轮的；结果里写编号。写了 `replaces` 的是改那一条。人在界面、协议上记的（R-3 补），出处空的，听众是那个人。可以带一行只用来检索的关键词（R-15 上，2026-10-19 项目主人定：别名、别的语言的说法、用途，逗号隔开，最多 200 字；她给的太长的在逗号处截断，人给的太长的拒）：关键词索引、向量都照「正文、换行、关键词」（`miyu_recall::indexed`），常驻那一块、联想、`memory_search`、整理的请求里不显示；改正文的（新编号）关键词带过去，只换关键词的追加 `ext.memory.tagged`、编号不变，检索库照新的字重放、向量重补。没写关键词的由整理补（R-15 下）。
 2. `forget`、`memory.forget`：追加 `ext.memory.retired`；作废的照样搜得到（`memory_search` 带上忘了的），不会再被想起来。
 3. **出处死了就看不见，不写撤回**：一条记忆的出处全被撤销了、全在删掉的会话里，召回、列出、搜的时候都当它不在；恢复了又在。只有一部分出处死了的照常（17 L7 的落地）。人记的没有出处，一直算活的。
 4. **出处活不活怎么知道**（R-3 上，R-3 三补改）：一处出处 `{session, turn}` 活着：那个会话的目录还在（没删进回收处、没清出回收处），这一轮没撤销。会话照目录判：先看这一间的账号名下，没有再找别的账号（系统账号名下的会话、记忆归管理员）。撤销照回合库里的墓碑判，墓碑是会话落盘时顺手照日志写的派生数据：`turn.reverted` 的每一轮（人开的、不是人开的都算），恢复了拿掉；重建时照日志补回来。删会话时也埋一块整个会话的墓碑 `会话编号/`，只用来挡后台补的一批（第一条第 7 款），不拿来判活不活：回合库坏了删掉重建，这块墓碑补不回来（回收处里的会话没人再读），照它判的话删掉的会话里记的又会冒出来（施工 R-3 三补，2026-10-09 查出来的）。从回收处恢复的会话，目录回来了，又算活的。
@@ -295,6 +296,8 @@
 | `crates/miyu-recall/src/memory/tests/venue.rs`（R-13 上） | 「对外的样子」的 `venue`：场所里记的写成事件读回一字不差，以前记的没有这一格照样读得进、不写，底账照记 |
 | `crates/miyu-session/tests/memory_listener.rs`（R-13 上） | 第九条，真记忆日志、真会话：谁在听照属主和记忆账号定（主人自己的私聊也是主人）；主人那边列得出全部，一个场所只冒出在这里说过的，搜不到主人的事、改不了冒不出来的，场所里记的带 `venue`、听众空，主人那边碰得到群里的；场所的常驻那一块只有这里的条目、没有摘要那一行；从场所会话起的合并照全部合；以前的对话照场所挑：两个群各说一轮，一群里只搜得到一群的，主人那边两个都有（R-13 下）；真群会话里抽取那一段的群消息行原样、她的回答 `You:`、没人被当成主人，记下的带这个群、别的群冒不出来 |
 | `crates/miyu-endpoint/tests/memory_venue.rs`（R-13 上） | 「协议」，真核心：人经协议是主人那边，群里说的也列得出，一条带 `venue`，本机的是 `null` |
+| `crates/miyu-recall/src/memory/tests/keywords.rs`、`crates/miyu-store/tests/memory_keywords.rs`（R-15 上） | 第二条的关键词：`saved` 的 `keywords` 读写得回、没有的不写，`tagged` 读写得回；底账照它换、编号不变、空的是去掉、摘要照旧算数；进检索库的字是正文接关键词，照关键词搜得到，换了的照新的搜得到、旧的搜不到、向量重补；记忆库删了重建、落在换关键词那一行前面的，重开都补上；她给的太长的在逗号处截断 |
+| `crates/miyu-endpoint/tests/memory_keywords.rs`、`crates/miyu-memory/tests/tools.rs` 的 `keywords_go_along_trimmed_and_cut`、`crates/miyu-session/tests/memory_follow.rs` 的 `a_tagging_is_heard_like_a_retirement`、`memory_recall.rs` 的 `keywords_find_it_but_are_not_shown`（R-15 上） | 「协议」：`memory.remember` 带关键词、一条记忆交 `keywords`、照它搜得到；`memory.update` 只写 `keywords` 的编号不变、写了 `text` 的关键词带过去、空的是去掉；太长的拒、`data.field` 说是哪一格，两样都没写的参数不对；`remember` 工具带的交下去、太长的截断；跟着看照那一条挑；联想照关键词对上的想得起来，带进去的那一块里看不到关键词 |
 | `crates/miyu-recall/src/memory/tests/restored.rs`（R-12 下） | 第二条第 6 款：`restored` 写成事件读回一字不差；底账里作废的那一条不算作废了，没有的那一条不碍事；恢复了摘要合进去的一条，摘要不算了，摘要以后才记的不碍事 |
 | `crates/miyu-session/tests/memory_restore.rs`（R-12 下） | 第二条第 6 款：这里冒不出来的那一条（别的群）当没有，恢复不了、什么都不写；在那个群里、主人那边恢复得了（R-13 上改写） |
 | `crates/miyu-endpoint/tests/memory_restore.rs`（R-12 下） | 「协议」的 `memory.restore`，真核心：忘了的恢复以后照常列出、`retired` 是 `null`、搜得到；同一个编号只算一次（又忘了、清掉了再发照头一次回），本来就算数的回 `{}`、不写；订阅着的补得到 `ext.memory.restored`；改掉的、清掉的 `memory_not_current`，没有的 `unknown_memory`，写错的 `bad_params`，没装的 `memory_not_installed` |
