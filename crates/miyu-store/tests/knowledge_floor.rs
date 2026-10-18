@@ -53,11 +53,16 @@ fn the_floor_follows_the_model() {
 }
 
 #[test]
-fn the_shipped_table_has_bge_at_one_half() {
+fn the_shipped_table_has_bge_at_one_half_and_granite() {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let text = ResourceRoot::at(&resources)
         .knowledge_table("search")
         .expect("出厂的读得出来");
     let floors = Thresholds::parse(&text).expect("合写法");
     assert_eq!(floors.of("local:bge-small-zh-v1.5"), Some(0.50));
+    assert_eq!(
+        floors.of("local:granite-embedding-97m-multilingual-r2"),
+        Some(0.82),
+        "出厂模型换成 granite（施工 R-5 七补）"
+    );
 }

@@ -7,7 +7,7 @@
 - **关键词**：中文、日文按两个字一组切，交给 SQLite 的 FTS5，照 bm25 排。
 - **向量**：每一条的 embedding 存成 SQLite 里的二进制，查的时候逐条算相似度（R-5）。
 - **两路合并**：照名次合（加权的 RRF），关键词为主、向量为辅（R-5）。
-- **embedding**：用途 `models.embedding`，本机的小程序 `miyu-embed` 跑 bge-small-zh-v1.5，或者走供应商的 `/v1/embeddings`；模型能换（R-5）。
+- **embedding**：用途 `models.embedding`，本机的小程序 `miyu-embed` 跑 granite-embedding-97m-multilingual-r2（R-5 七补以前是 bge-small-zh-v1.5），或者走供应商的 `/v1/embeddings`；模型能换（R-5）。
 
 库都是派生的：真相在会话日志、记忆日志、知识库的文件里，库随时能删掉照真相重建（`07-存储.md` S1、S3）。
 
@@ -43,7 +43,8 @@
 | `crates/miyu-session/src/embed/remote.rs` | 远程的 embedding：照一家供应商发 `/embeddings`、读向量、归一化、记账、记日志（第四条第 7 款） | R-5 补 |
 | `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头，不走路由、池、冷却：`provider.test` 和远程的 embedding 共用（从 `route/probe.rs` 抽出来） | R-5 补 |
 | `crates/miyu-http/src/post.rs` | 一次 POST、整个读完：有总时限、有大小上限，出错的说法同一次 GET | R-5 补 |
-| `crates/miyu-embed/package/embed/package.toml`、`model.toml` | 「内置语义模型」这个小程序包的原本：包清单、bge-small-zh-v1.5 的模型清单（模型资料，不给模型看，不进登记簿；模型文件不进仓库） | R-5 三补 |
+| `crates/miyu-embed/package/embed/package.toml`、`model.toml` | 「内置语义模型」这个小程序包的原本：包清单、出厂模型的模型清单（R-5 七补起是 granite r2 的 4 位量化；模型资料，不给模型看，不进登记簿；模型文件不进仓库） | R-5 三补、七补 |
+| `crates/miyu-embed/tools/quantize_q4.py` | 把 granite r2 的 fp32 ONNX 量化成 4 位、整数计算的那一份（第四条第 2 款；只用 onnxruntime、onnx，不进门禁，可逐字节重现） | R-5 七补 |
 
 `miyu-recall` 只用白名单里的 crate（`01-架构.md` 第九节），不碰 I/O。SQLite 的那一半放在 `miyu-store`：它已经有 `rusqlite` 和开库的规矩（`sqlite.rs`，`store/index.md`），检索库照同一套开、坏了删、版本不对删。
 
@@ -142,14 +143,14 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 
 1. 用途 `models.embedding`（R-5 下，`models.md` 的 `[models]`；类型是 `model_or`，`config.md`「配置项的类型」）：写 `local` 用本机的 `miyu-embed`；写 `off` 不核对模型、不拉起、只照关键词找（2026-10-09 项目主人定加 `off`）；写 `<供应商>/<模型>` 的走那一家 OpenAI 兼容的 `/v1/embeddings`（第 7 款，R-5 补，方向 2026-10-07 定）；不写的照 `local`，没装内置语义模型的包、小程序或模型清单没有的，就只有关键词。下一个回合开始时生效。不收 `@池`：向量要和存下的同一个模型比，池里换了成员就对不上。设置页上这一项叫「语义模型」，`local` 叫「内置模型」，后面暗字写模型名（`config.schema` 选项的 `note`），指定一家的模型从 `model.list` 里 `embedding: true` 的挑（R-5 再补，2026-10-09 项目主人定）；没有本机的那一路时 `local` 这个选项带 `available: false`，头画成灰的、选不了（R-5 三补，2026-10-09 项目主人定「不可选」，形状核心的主会话定）。
 
-   本机的那一路从包来（R-5 三补，2026-10-09 项目主人定：内置的 embedding 做成一个可选的包、只放 bge、模型文件打进包里、出厂不装）：人格记忆的清单推荐小程序包 `embed`（`[recommends] workers = ["embed"]`）；它装着（读成了、种类是小程序，`packages.md`「内置语义模型」）才有。核心照这时读到的包清单拼好交给 `Embedder`（`miyu-core/src/embed.rs` 的 `setup`），连同模型资料交给协议端点（`Core::with_vectors`，远程的照它查供应商、记账）：小程序照小程序清单的 `program` 在主程序真实位置的旁边找（`packages::locate`，不找 `PATH`），模型清单是包目录（`Found::files_dir`，清单旁边的同名目录）里的 `model.toml`，模型文件在同一个目录。没装的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，这是常态）。拼的这一段能再调：装卸以后核心照新的清单再拼一次，交给 `Vectors::replace_local`（第 4 款；会话这一半 R-5 四补，核心那一半 F-5 再补：`Builtins::embed` 照清单拼、`Core::switch_packages` 交给它，装卸时拼不出的不记「没装」那一行；端点照 `core.memory.vectors()` 拿到那一份，核心起来时总会造，没装 `embed` 的本机那一路是空的）。
+   本机的那一路从包来（R-5 三补，2026-10-09 项目主人定：内置的 embedding 做成一个可选的包、只放 bge、模型文件打进包里、出厂不装）：人格记忆的清单推荐小程序包 `embed`（`[recommends] workers = ["embed"]`）；它装着（读成了、种类是小程序，`packages.md`「内置语义模型」）才有。核心照这时读到的包清单拼好交给 `Embedder`（`miyu-core/src/embed.rs` 的 `setup`），连同模型资料交给协议端点（`Core::with_vectors`，远程的照它查供应商、记账）：小程序照小程序清单的 `program` 在主程序真实位置的旁边找（`packages::locate`，不找 `PATH`），模型清单是包文件夹（`Found::files_dir`，施工 F-8 上起就是包清单所在的文件夹）里的 `model.toml`，模型文件在同一个文件夹。没装的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，这是常态）。拼的这一段能再调：装卸以后核心照新的清单再拼一次，交给 `Vectors::replace_local`（第 4 款；会话这一半 R-5 四补，核心那一半 F-5 再补：`Builtins::embed` 照清单拼、`Core::switch_packages` 交给它，装卸时拼不出的不记「没装」那一行；端点照 `core.memory.vectors()` 拿到那一份，核心起来时总会造，没装 `embed` 的本机那一路是空的）。
 2. **模型清单**（R-5 上；R-5 三补搬进包里）：本机模型照一份 TOML 认，在包目录里，名字是 `model.toml`（内置语义模型这个小程序认的约定，小程序清单里不另写）；仓库里的原本是 `crates/miyu-embed/package/embed/model.toml`。可更换（2026-10-07 项目主人定）照换包做：装一个放着别的模型的同名包，或者指定远程的；不另设换清单的配置项（2026-10-09 项目主人定）。几格：
    - `id`：模型的名字，向量的模型编号写成 `local:<id>`；`dims`：几维；`pooling`：怎么取一句的向量，现在只认 `cls`（取第一个词那一格）；`max_tokens`：一句最多几个词（连前后加的两个特殊的词），至少 2。
    - `[tokenizer]`（R-5 六补）：`kind` 是 `wordpiece`（不写这一段的照它）或 `bpe`（第 5 款）；`bpe` 的另写 `start`、`end`：前后加的两个特殊的词，要在词表里。
    - `[[files]]`：每个文件的 `role`、`name`（一个单纯的文件名，不带目录）、`sha256`、`size`（R-5 三补去掉 `url`：不下了）。`role` 是 `model`（ONNX 模型）、`vocab`（词表：一行一个词，行号是编号）各正好一个；`bpe` 的另要正好一个 `merges`（合并：一行一条「左 右」，行号是先后），`wordpiece` 的不能有。
    - 少格、多格、不认识的取法和分词、`role` 重了缺了或和分词对不上、`dims` 是 0、`id` 或文件名带目录的都拒，说哪里不对。向量一律归一化。`cls` 以外的取法，换到那样的模型时再加。
-   - 出厂的是 bge-small-zh-v1.5 的 8 位量化 ONNX（`model_quantized.onnx`，24 MB，512 维，MIT）：十句和原版 fp32 的余弦平均 0.991，`model_int8.onnx` 只有 0.970，一样快（2026-10-09 量）。
-3. **核对文件**（R-5 中；R-5 三补去掉下载，`embed/files.rs`）：模型文件随包装，做包时从 Miyu 自己的 GitHub Release 取（项目主人定；Release `models-bge-small-zh-v1.5`，预发布，2026-10-09 建，放模型、`vocab.txt`、FlagEmbedding 的 MIT 许可证、`SHA256SUMS`）。核心不下、不写包目录：
+   - 出厂的是 granite-embedding-97m-multilingual-r2 的 4 位量化 ONNX（R-5 七补，2026-10-18 项目主人定换：`model_q4.onnx`，61 MB，384 维，Apache-2.0，字节级 BPE 的词表 1.8 MB、合并 4.8 MB）。官方 revision `835ad140` 的 fp32 照 `tools/quantize_q4.py` 量：MatMul 和词嵌入的 Gather 都是 4 位、一块 32 个、对称，激活量成 8 位整数算（`accuracy_level=4`），可逐字节重现；和官方的 8 位（`model_quint8_avx2.onnx`，98 MB）效果一样，召回实测见 `memory/eval.md`。原来是 bge-small-zh-v1.5 的 8 位量化（`model_quantized.onnx`，24 MB，512 维，MIT），中文以外弱、大写英文和片假名切成 `[UNK]`；它存下的向量照旧留着，换了模型照新的编号补（第三条第 1 款）。
+3. **核对文件**（R-5 中；R-5 三补去掉下载，`embed/files.rs`）：模型文件随包装，做包时从 Miyu 自己的 GitHub Release 取（项目主人定；Release `models-granite-embedding-97m-multilingual-r2`，预发布，2026-10-18 建，放模型、`vocab.txt`、`merges.txt`、Apache-2.0 许可证、写明来源和改动的 `NOTICE`、`SHA256SUMS`；原来的 `models-bge-small-zh-v1.5` 2026-10-09 建，留着）。核心不下、不写包目录：
    - 第一次要向量时在阻塞线程里照模型清单的 `size`、`sha256` 一个个核对包目录里的文件（先比大小，对得上再算 SHA-256），同时来的等同一次，只核对一次（R-5 五补：24 MB 十来毫秒，原来先交「还在备」、补的每秒再问一次，核心起来以后头一次照意思搜到要一秒，2026-10-10 项目主人说冷启动不合预期以后改的）。
    - 少了的、读不了的、对不上的这一回用不了，记一行 `WARN embedder unavailable model=… error=…`（对不上的先记一行 `WARN embedding model mismatch file=…`）；不删、不改包里的东西（是装的那一方的）。这一回不再核对：装卸要重启核心（F-5 以后照装卸当场换）。
 4. **`miyu-embed`**：核心这边（R-5 中，`Embedder`）：
@@ -184,7 +185,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
    - 词表一行一个词、行号是编号（特殊的词接在后面），合并一行一条「左 右」、行号是先后：不读 `tokenizer.json`，解析 25 MB 的 JSON 冲高的内存不还（2026-10-18 量：`tokenizers` 读它 194 MB，读两份文本 22 MB）。词表里没有的字节丢掉（照 `tokenizers`：granite 的词表没有大部分控制字符和 `0xF1` 以后的几个）。拒：词写了两行、没有 `start`、`end`；合并的一行不是两个词、左右或合成的不在词表里、一对写了两行。两个文件由 `crates/miyu-embed/tools/bpe_files.py` 从 `tokenizer.json` 转，只认上面这一种配置，别的拒。
    - 和 `tokenizers` 不一样的两处，同 WordPiece：字里写着特殊的词（`<|return|>`、`<|reserved_…|>`）的照普通的字切；Unicode 的类别照 `regex` 的表，`tokenizers` 照 Oniguruma 的，新分配的字可能切得不一样。
 
-6. **实测**（本机 Ryzen 9 7940H，Linux x86_64，release 没 strip，Release 的 bge-small-zh-v1.5）：程序 29 MB，没有 ONNX Runtime 的动态库，峰值内存 62 MB。2026-10-10 重量（R-5 五补，各十次取中位）：拉起到 `ready` 45 毫秒（进程 4、词表 3、ONNX Runtime 建会话约 38，图优化开不开差不多），之后一句 1.5 毫秒；退出时收 ONNX Runtime 约 50 毫秒，没人等。2026-10-09 量的「起来到 ready 130 到 580 毫秒」是同一台机器上别的会话在编译时量的，作废。真核心（release）上：核心刚起来，记一条马上搜，头一次就照意思找到，那一次 69 到 77 毫秒（核对、拉起、算一句都在里面），从记下起 72 到 79 毫秒；改之前要搜 44 次、1.02 秒（R-5 五补）。
+6. **实测**（本机 Ryzen 9 7940H，Linux x86_64，release 没 strip）。granite r2 的 4 位（R-5 六补、七补，2026-10-18，机器上别的会话在编译，负载 8 到 13）：程序 31 MB；拉起到 `ready` 153 毫秒（切词表和建会话一起做，各一百五十毫秒上下）；内存载入后 128 MB、长的知识库块时峰值 172 MB；一句（中位）问句 6 毫秒、记忆 24 毫秒、知识库块 87 毫秒；真核心上刚起来就搜，第一次算出问句（核对三个文件、拉起、算一句）285 到 290 毫秒，磁盘缓存冷的时候 541 毫秒。以下是 Release 的 bge-small-zh-v1.5：程序 29 MB，没有 ONNX Runtime 的动态库，峰值内存 62 MB。2026-10-10 重量（R-5 五补，各十次取中位）：拉起到 `ready` 45 毫秒（进程 4、词表 3、ONNX Runtime 建会话约 38，图优化开不开差不多），之后一句 1.5 毫秒；退出时收 ONNX Runtime 约 50 毫秒，没人等。2026-10-09 量的「起来到 ready 130 到 580 毫秒」是同一台机器上别的会话在编译时量的，作废。真核心（release）上：核心刚起来，记一条马上搜，头一次就照意思找到，那一次 69 到 77 毫秒（核对、拉起、算一句都在里面），从记下起 72 到 79 毫秒；改之前要搜 44 次、1.02 秒（R-5 五补）。
 
 7. **远程**（R-5 补，`embed/remote.rs`；怎么配、怎么取端点、怎么记账 2026-10-09 核心的主会话定）：`models.embedding` 写 `<供应商>/<模型>` 的，一次算一句：
    - 端点：照调的一方手里的配置找那一家，拼地址、key、另配的头（`route/endpoint.rs`，和 `provider.test` 同一段），不走路由、池、冷却；认证头照这一家的驱动写，另配的头照种子 `embedding` 换。客户端照地址挑：落在本机的不走代理，别的照环境变量（`ModelData::fetcher_for`）。这一家没配、地址或 key 取不到、没有客户端的算「用不了」。
@@ -258,7 +259,7 @@ R-5 上做好的：
 | `crates/miyu-embed/tests/manifest.rs` | 第四条第 2 款：仓库里的模型清单原本（R-5 三补搬进 `package/embed/`）读得出、每一格对；文件读不了说是哪个（原文的读法 R-5 中挪进 `miyu-recall`） |
 | `crates/miyu-embed/tests/protocol.rs` | 第四条第 4 款，手造的小模型（`fixtures/tiny/`，`fixtures/make.py` 造）：`ready`；向量和 Python 的 ONNX Runtime 算的每格差不过 1e-6；超长截断、空字也有向量；不是 JSON、没有 `id`、`id` 不是字、没有 `text`、空行、不是 UTF-8 的回错，接着读下一行；行尾的 `\r`；标准输入关了退出码 0；清单读不了、文件不在、模型是坏的退出码 1；清单的 `dims` 和模型对不上的每一句回错；参数写错（少了、多了、写了两次）退出码 2、印用法；字节级 BPE、只有两个输入的小模型（`fixtures/tiny-bpe/`，R-5 六补）：向量逐个比、超长截断，清单写的 `merges` 不在、模型要不认识的输入（`position_ids`）的退出码 1 |
 | `crates/miyu-embed/tests/bpe.rs` | 第四条第 5 款 BPE（R-5 六补）：照 `tokenizers` 训练的小 BPE（`fixtures/tiny-bpe/`，造的多语种句子训的，`fixtures/make_bpe.py` 造、`tools/bpe_files.py` 转）上几十句照它的结果逐个比（空的、空白、换行、`\r\n`、数字、标点、英文缩写、大小写、汉字、日文、韩文、阿拉伯文、emoji、组合字符、不间断空格、全角空格、超长的段）；截断留住 `end`；字里的特殊词照普通的字；词表、合并坏了的拒；真的 granite 词表（`#[ignore]`，`MIYU_EMBED_BPE_DIR`）上公开、造的句子逐个比 |
-| `crates/miyu-embed/tests/real.rs` | 真模型（`#[ignore]`，`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件）：四句的向量和 Python 的 ONNX Runtime 算的余弦不低于 0.999 |
+| `crates/miyu-embed/tests/real.rs` | 真模型（`#[ignore]`，`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件）：出厂清单的模型对几句的向量（R-5 七补起是 granite，六句含英文、日文）和 Python 的 ONNX Runtime 算的余弦不低于 0.999 |
 
 R-1 做好的：
 
@@ -270,6 +271,7 @@ R-1 做好的：
 ### 出处
 
 - 内置的 embedding 做成一个可选的小程序包、只放 bge、模型文件打进包里、出厂不装，人格记忆出厂装着（2026-10-09 项目主人定，`docs/construction/R-5-内置模型做成小程序包（三补）.md`）。
+- Release `models-granite-embedding-97m-multilingual-r2` 的文件来自 Hugging Face 的 `ibm-granite/granite-embedding-97m-multilingual-r2`（commit `835ad140`）：模型照 `tools/quantize_q4.py` 量化，词表、合并照 `tools/bpe_files.py` 转，`NOTICE` 写明；`crates/miyu-embed/tests/fixtures/real.json`、`granite-tokens.json` 照 `make_bpe.py` 生成（`docs/construction/R-5-换成granite（七补）.md`）。换模型的取舍（八个候选、真数据上判过的召回和代价）见 `docs/blueprint/memory/eval.md`「换模型」。
 - Release `models-bge-small-zh-v1.5` 的文件来自 Hugging Face 的 `Xenova/bge-small-zh-v1.5`（commit `75c43b06`，`BAAI/bge-small-zh-v1.5` commit `7999e1d3` 转的 ONNX），原样转发；`crates/miyu-embed/tests/fixtures/` 的标准答案照那里的 `make.py` 生成（`docs/construction/R-5-本机embedding的小程序（上）.md`）。
 - `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第三节（选型和实测）、第五节末尾（技术细节照推荐定）、第八节（项目主人的拍板：本机 embedding 用 bge-small-zh、模型从 Miyu 的 GitHub Release 下、做成可更换的）。
 - `17-记忆.md` 第四节、`19-知识库.md` N3：关键词加向量、两路合并、索引在 SQLite 里。

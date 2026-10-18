@@ -1,19 +1,32 @@
-# 内置语义模型的模型清单（施工 R-5 三补，`docs/blueprint/recall.md` 第四条第 2 款）：bge-small-zh-v1.5 的 8 位量化 ONNX，MIT。
-# 做包时和两个模型文件一起放进包目录（`packages/embed/`），核心第一次用时照这里核对大小、SHA-256；文件从 Miyu 的 GitHub Release
-# `models-bge-small-zh-v1.5` 取（`SHA256SUMS` 照这里写的）。换模型就是换包。
-id = "bge-small-zh-v1.5"
-dims = 512
+# 内置语义模型的模型清单（施工 R-5 三补；R-5 七补换模型，`docs/blueprint/recall.md` 第四条第 2 款）：granite-embedding-97m-multilingual-r2
+# 的 4 位量化 ONNX（`tools/quantize_q4.py` 从官方 revision 835ad140 的 fp32 量化），Apache-2.0，384 维，取第一个词那一格；分词是字节级
+# BPE（`tools/bpe_files.py` 从官方的 tokenizer.json 转）。做包时和三个模型文件一起放进包文件夹，核心第一次用时照这里核对大小、
+# SHA-256；文件从 Miyu 的 GitHub Release `models-granite-embedding-97m-multilingual-r2` 取（`SHA256SUMS` 照这里写的，许可证和改了
+# 什么在 `LICENSE`、`NOTICE`）。换模型就是换包。
+id = "granite-embedding-97m-multilingual-r2"
+dims = 384
 pooling = "cls"
 max_tokens = 512
 
+[tokenizer]
+kind = "bpe"
+start = "<|startoftext|>"
+end = "<|return|>"
+
 [[files]]
 role = "model"
-name = "model_quantized.onnx"
-sha256 = "15b717c382bcb518ba457b93ea6850ede7f4f1cd8937454aa06972366cd19bcc"
-size = 24010842
+name = "model_q4.onnx"
+sha256 = "66dfce3ab5462573ad2b7e578a1ef676eecad0e784c2373a01dad1cf62041f7a"
+size = 61181663
 
 [[files]]
 role = "vocab"
 name = "vocab.txt"
-sha256 = "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
-size = 109540
+sha256 = "ac79df92110c11064cbbb5736c8a0af6f42bf9b8769e0b50b8439988c72bbc84"
+size = 1842293
+
+[[files]]
+role = "merges"
+name = "merges.txt"
+sha256 = "93aa6565feddd2be28537c9ce581ef943558e98565a88c16930dc5ce233ab829"
+size = 4777651
