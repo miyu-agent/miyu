@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
 
-use miyu_recall::associate::{Thresholds, pick};
+use miyu_recall::associate::{KEYWORDS, Thresholds, pick};
 use miyu_session::{Embedder, Keeper, Listener, Stamp, Turn, Using, Vectors};
 use miyu_tool::Remember;
 
@@ -358,7 +358,7 @@ async fn measure_the_eval_set() {
         "{}",
         table(&format!("关键词加 {}", shipped_model()), &score(&both))
     );
-    let picked = recall(&home, &set, &keys, &vectors, &using).await;
+    let picked = recall(&home, &keeper, &set, &keys, &vectors, &using).await;
     println!(
         "{}",
         brought_table("联想（门槛照出厂的表）", &brought(&picked))
@@ -445,9 +445,11 @@ fn write_out(
     std::fs::write(out, text).expect("写得进");
 }
 
-/// 联想（施工 R-8）：每句照出厂的门槛表、`miyu_recall::associate::pick` 挑（不算这一段的去重和一块的字节）。
+/// 联想（施工 R-8；R-14 补起照混合）：每句照出厂的门槛表、和会话里同一个挑法（关键词搜到的前几条里照意思过门槛的，
+/// `miyu_recall::associate::pick`）挑，不算这一段的去重和一块的字节。
 async fn recall(
     home: &Home,
+    keeper: &Keeper,
     set: &EvalSet,
     keys: &BTreeMap<String, String>,
     vectors: &Vectors,
@@ -457,25 +459,26 @@ async fn recall(
         .expect("读得到");
     let thresholds = Thresholds::parse(&shipped).expect("合写法");
     let (log, _) = home.logs.open(&persona()).expect("开得了");
-    let live = |key: &String| {
-        set.memories
-            .iter()
-            .any(|memory| &memory.key == key && memory.retired.is_none())
-    };
     let mut picked = Vec::new();
     for query in &set.queries {
         let near = vectors.query(using, &query.text).await.expect("算得出");
-        let threshold = thresholds.of(&near.model).expect("门槛表里有 bge");
-        let scored: Vec<(String, f32)> = log
-            .index()
-            .nearest(&near.model, &near.vector, 32)
+        let threshold = thresholds.of(&near.model).expect("门槛表里有出厂的模型");
+        // 同会话里的挑法（施工 R-14 补，照混合）：关键词搜到的、现在算数的前几条，照和这句话多像排，过门槛的带。
+        let words: Vec<String> = keeper
+            .search(&query.text, false, KEYWORDS, None)
             .expect("搜得了")
-            .into_iter()
-            .filter_map(|hit| {
-                let key = keys.get(&hit.key)?;
-                live(key).then(|| (key.clone(), hit.similar))
-            })
+            .iter()
+            .map(|entry| entry.id.to_string())
             .collect();
+        let similar = log
+            .index()
+            .similar_to(&near.model, &near.vector, &words)
+            .expect("算得了");
+        let mut scored: Vec<(String, f32)> = words
+            .iter()
+            .filter_map(|id| Some((keys.get(id)?.clone(), *similar.get(id)?)))
+            .collect();
+        scored.sort_by(|(a, x), (b, y)| y.total_cmp(x).then(a.cmp(b)));
         picked.push(Picked {
             kind: query.kind.clone(),
             expect: query.expect.clone(),

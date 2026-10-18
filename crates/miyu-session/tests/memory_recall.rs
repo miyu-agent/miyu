@@ -2,16 +2,18 @@
 //! 挺像，门槛由测试自己定）。
 //!
 //! 人开的一轮：常驻那一块在前，联想那一块在后；带的不在常驻那一块里，最多三条，不超过 500 字节；下一轮不重复带。不过门槛的、
-//! 没有照意思那一路的、模型不在门槛表里的、场所会话、人格记忆没装的，什么都不加。小模型分不出谁更像，断言照性质，不照挑中谁。
+//! 没有照意思那一路的、模型不在门槛表里的、人格记忆没装的，什么都不加。照混合（施工 R-14 补）：字面一个都对不上的不带，门槛再
+//! 低也不带。小模型分不出谁更像，断言照性质，不照挑中谁。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use miyu_kernel::event::{Body, ContextInjected, Event};
 use miyu_kernel::id::VenueId;
+use miyu_recall::MemoryId;
 use miyu_recall::associate::Thresholds;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Embedder, Keeper, Listener, RecallTexts, Turn, Using, Vectors};
+use miyu_session::{Embedder, Keeper, Listener, RecallTexts, Stamp, Turn, Using, Vectors};
 
 use crate::support::meaning::{catalog, chat, filled, model_data, persona, save};
 use crate::support::package::tiny_package;
@@ -99,7 +101,7 @@ async fn what_passes_comes_after_the_summary_and_never_twice() {
             Lines::default(),
         )
         .await;
-    let log = chat(&home, &handle, 1, "我养了一只猫").await;
+    let log = chat(&home, &handle, 1, ASKED).await;
     let summary = blocks(&log, "memory");
     let recalled = blocks(&log, "recall");
     assert_eq!((summary.len(), recalled.len()), (1, 1), "两块各一");
@@ -120,7 +122,7 @@ async fn what_passes_comes_after_the_summary_and_never_twice() {
         );
     }
 
-    let log = chat(&home, &handle, 2, "还有呢").await;
+    let log = chat(&home, &handle, 2, "还有什么水果").await;
     let recalled = blocks(&log, "recall");
     assert!(blocks(&log, "memory").len() == 1, "常驻那一块不再交");
     assert_eq!(recalled.len(), 2, "第二轮也带：常驻那一块列不进的还有");
@@ -129,15 +131,23 @@ async fn what_passes_comes_after_the_summary_and_never_twice() {
     assert!(refs(second).is_disjoint(&refs(summary)));
 }
 
+/// 人说的话：和短的那几条（「用户喜欢第 n 种水果」）字面对得上（「喜欢」「水果」），和长的对不上。
+const ASKED: &str = "我喜欢哪种水果";
+
 /// 照 `prepare` 准备好场地、记几条，说一句：交回日志里联想那一块有几块。
 async fn recalled_after(prepare: impl FnOnce(&Home), lines: Lines) -> usize {
+    recalled_saying(prepare, lines, ASKED).await
+}
+
+/// 同 [`recalled_after`]，说的是 `said`。
+async fn recalled_saying(prepare: impl FnOnce(&Home), lines: Lines, said: &str) -> usize {
     let home = Home::new();
     prepare(&home);
     remember(&home, 6, 10).await;
     let handle = home
         .create_full(&says(1), &catalog(&home), Opening::default(), lines)
         .await;
-    let log = chat(&home, &handle, 1, "我养了一只猫").await;
+    let log = chat(&home, &handle, 1, said).await;
     assert_eq!(blocks(&log, "memory").len(), 1, "常驻那一块照交");
     blocks(&log, "recall").len()
 }
@@ -163,6 +173,57 @@ async fn nothing_is_brought_unless_it_is_sure() {
         0,
         "没有照意思那一路的不联想"
     );
+    assert_eq!(
+        recalled_saying(
+            |home| meaning(home, &table("-1.0")),
+            Lines::default(),
+            "我养了一只猫"
+        )
+        .await,
+        0,
+        "照混合：字面一个都对不上的，门槛再低也不带"
+    );
+    assert_eq!(
+        recalled_unfilled().await,
+        0,
+        "还没补上向量的不带：说不清多像"
+    );
+}
+
+/// 接上照意思那一路（门槛 -1），记几条但不补向量，说一句：交回联想那一块有几块。
+async fn recalled_unfilled() -> usize {
+    let home = Home::new();
+    meaning(&home, &table("-1.0"));
+    // 同 `remember`：长的把常驻那一块占满，短的列不进去，才轮得到联想；只是一条向量都不补。
+    for n in 0..6 {
+        save(&home, &format!("用户喜欢第 {n} 种水果"));
+    }
+    for n in 0..10 {
+        save(
+            &home,
+            &format!("第 {n} 条：{}", "用户说过的很长的一件事".repeat(10)),
+        );
+    }
+    // 先把小程序拉起来：不然这一轮算问句的向量等不到，联想超时，测不出「没向量的不带」。
+    let using = Using {
+        config: Arc::new(Turn::new(
+            Default::default(),
+            Arc::clone(&*home.configs.borrow()),
+        )),
+        owner: alice_account(),
+    };
+    let vectors = home.memory.vectors().expect("接上了").clone();
+    assert!(vectors.query(&using, ASKED).await.is_some(), "算得出");
+    let handle = home
+        .create_full(
+            &says(1),
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    let log = chat(&home, &handle, 1, ASKED).await;
+    blocks(&log, "recall").len()
 }
 
 /// 场所会话里也联想（施工 R-13 下）：主人自己的 QQ 私聊（属主就是记忆归的那个账号）是主人那边，照样想起来。场所里只冒出在
@@ -179,6 +240,34 @@ async fn in_the_owners_own_private_chat_too() {
     );
 }
 
+/// 只带现在算数的（照 `Keeper::shown`，同搜、同列）：作废了的，字面、意思都对得上也不带。
+#[tokio::test]
+async fn what_is_forgotten_is_not_brought() {
+    let home = Home::new();
+    meaning(&home, &table("-1.0"));
+    remember(&home, 6, 10).await;
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
+    for n in 1..=6 {
+        let stamp = Stamp {
+            at: now(),
+            by: alice(),
+            cause: None,
+        };
+        let id = MemoryId::parse(&format!("m{n}")).expect("合写法");
+        keeper.retire(stamp, id, "测试".into()).expect("作废得了");
+    }
+    let handle = home
+        .create_full(
+            &says(1),
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    let log = chat(&home, &handle, 1, ASKED).await;
+    assert!(blocks(&log, "recall").is_empty(), "作废了的不带");
+}
+
 #[tokio::test]
 async fn not_without_the_package() {
     let home = Home::new();
@@ -193,7 +282,7 @@ async fn not_without_the_package() {
             Lines::default(),
         )
         .await;
-    let log = chat(&home, &handle, 1, "我养了一只猫").await;
+    let log = chat(&home, &handle, 1, ASKED).await;
     assert!(blocks(&log, "recall").is_empty(), "人格记忆没装的不联想");
 }
 

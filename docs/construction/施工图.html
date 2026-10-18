@@ -741,6 +741,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-5i"><span class="n">R-5</span>字节级 BPE 切词（六补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-5j"><span class="n">R-5</span>内置语义模型换成 granite（七补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-14"><span class="n">R-14</span>记忆搜的关键词下限<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-14b"><span class="n">R-14</span>联想也照混合（补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -20631,6 +20632,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-14-记忆搜的关键词下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款、<code>memory.md</code>「工具」、<code>memory/eval.md</code>「换模型」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-14b" aria-labelledby="h-sR14b">
+  <div class="sheet-head"><h2 id="h-sR14b"><span class="no">R-14</span>联想也照混合（补）</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">每轮自动带的记忆，字面上搜得到、意思上也够像才带：带的更准，平常的话少乱带。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/recall · miyu-recall · associate</span><span class="dir-note">R-14</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>关键词搜这句话，留现在算数、听得到的前 10 条</li>
+              <li>算它们和这句话多像，过门槛的照最像的在前带</li>
+              <li>还没补上向量的不带；去重、预算照旧</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">granite 0.84</span><span class="rl">core/memory/recall.toml</span></div>
+          <div class="tile new"><span class="nm">真数据准 46% → 52%</span><span class="rl">乱带一样一成</span></div>
+          <div class="tile"><span class="nm">字面对不上的带不上</span><span class="rl">等补关键词</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-14</dd></div>
+        <div><dt>名称</dt><dd>联想也照混合（补）</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>变异、真模型测评集、真数据模拟 · 自己验收，通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>新测试三处、改五条；5 个手写变异全被逮住；真模型测评集带对了 45%、准 57%、平常的话 0%</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-14-联想也照混合（补）.md</code>；蓝图 <code>memory.md</code> 第四条第 2 款，<code>memory/eval.md</code>「换模型」。</li>
       </ul>
     </div>
   </div>
