@@ -139,7 +139,7 @@ fn said(done: &Done) -> (String, Option<String>) {
     let human = done.human.as_ref().expect("有给人看的一句");
     (
         human.key.trim_start_matches("software/net/").to_string(),
-        human.fields.get("source").cloned(),
+        human.fields.get("via").cloned(),
     )
 }
 

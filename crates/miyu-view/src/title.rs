@@ -11,6 +11,9 @@ use miyu_kernel::id::SessionId;
 use crate::entry::{Title, ToolState};
 use crate::words::{self, Texts, ToolKind, keys};
 
+/// 结果的 `human` 里「经谁做的」那一格（施工 N-2 再补，项目主人 2026-10-19 定：网络搜索的来源挑到名字后面）。
+pub const VIA: &str = "via";
+
 /// 一步工具的标题。`said` 是结果那一句的说法，结果还没到的没有；`named` 是结果里记下的给人看的名字（施工 9-8 六补），
 /// 还没到的、没记的是空的。名字先照记下的挑连接的语言，再照核心的字、这一刻工具目录里的，都没有的照工具名。
 pub(crate) fn of(
@@ -57,10 +60,16 @@ pub(crate) fn of(
         .as_deref()
         .and_then(arg)
         .map(|id| on_session(id, texts));
+    let via = said
+        .and_then(|s| s.fields.get(VIA))
+        .filter(|via| !via.is_empty())
+        .cloned();
     // 别的工具后面跟结果那一句；命令有预览、编辑有加减的行数、子代理有任务编号，不写；留言送到了的和对象重了，不写。
     // 记住（9-8 十补只为收起那一行单算）照别的工具接「记成 m14」。
     let said = match kind {
-        None | Some(ToolKind::Remember) => said.and_then(|s| words.say(s)),
+        None | Some(ToolKind::Remember | ToolKind::Search | ToolKind::Fetch) => {
+            said.and_then(|s| words.say(s))
+        }
         Some(ToolKind::Message) if state.failed() => said.and_then(|s| words.say(s)),
         _ => None,
     };
@@ -69,6 +78,7 @@ pub(crate) fn of(
         object,
         session,
         said,
+        via,
     }
 }
 

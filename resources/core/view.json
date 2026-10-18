@@ -5,7 +5,9 @@
     "write": "edit",
     "subagent": "agent",
     "send_message": "message",
-    "remember": "remember"
+    "remember": "remember",
+    "web_search": "search",
+    "web_fetch": "fetch"
   },
   "session_arg": "session"
 }

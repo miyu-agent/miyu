@@ -37,7 +37,7 @@
 
 **`tool` 的 `state`**：`preparing`（还在写参数）、`running`、`ok`、`error`、`denied`、`cancelled`、`skipped`。
 
-**`tool` 的 `title`**：`{"name", "object", "said"}`：给人看的工具名、对象（路径、命令的短标题……）、结果那一句。
+**`tool` 的 `title`**：`{"name", "object", "said", "via"}`：给人看的工具名、对象（路径、命令的短标题……）、结果那一句、经谁做的（例如网络搜索的来源 `Exa`，写在名字后面的括号里；没有的不写）。
 
 **收起那一行**（`summary`）：几段 `{"text", "tone"?}`，`tone` 是 `added`、`removed`、`error`。例如 `Ran 2 commands · 1 edit +3 -1 · 5s`。
 

@@ -51,7 +51,7 @@ https://docs.rs/tokio/latest/tokio/macro.select.html (2026-09-01)
 Waits on multiple concurrent branches, ……
 ```
 
-给人看的那一句：`web_search/found`「{hits} 条（{source}）」（一条的发 `found/one`）、`web_search/nothing`「没搜到（{source}）」，`source` 是那一家给人看的名字（设计 36 第三节第 2 条）。给头的 `detail` 是通用形状 `links`（施工 W-11 补）：`{"kind": "links", "links": [{"title", "url", "snippet"?, "site", "date"?}]}`，和给她的几条一一对应；`site` 是网址的主机名去掉开头的 `www.`（施工 N-2 补，终端的会话要的：卡片标题下面写「站点 · 日期」），读不成网址的没有；没搜到的、出错的不带。
+给人看的那一句：`web_search/found`「{hits} 条」（一条的发 `found/one`）、`web_search/nothing`「没搜到」；那一家给人看的名字（设计 36 第三节第 2 条）放在 `human` 的 `via` 这一格，视图的标题照它多一格 `via`，头写成「网络搜索（Exa）· 查的词 · 8 条」（施工 N-2 再补，项目主人 2026-10-19 定，原来写在那一句的括号里，头拆不出来）。给头的 `detail` 是通用形状 `links`（施工 W-11 补）：`{"kind": "links", "links": [{"title", "url", "snippet"?, "site", "date"?}]}`，和给她的几条一一对应；`site` 是网址的主机名去掉开头的 `www.`（施工 N-2 补，终端的会话要的：卡片标题下面写「站点 · 日期」），读不成网址的没有；没搜到的、出错的不带。
 
 ### 怎么走
 

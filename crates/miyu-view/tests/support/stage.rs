@@ -93,6 +93,8 @@ pub fn policy() -> Policy {
             ("ask_user".to_string(), rule(Access::Read)),
             ("remember".to_string(), rule(Access::Read)),
             ("memory_search".to_string(), rule(Access::Read)),
+            ("web_search".to_string(), rule(Access::Read)),
+            ("web_fetch".to_string(), rule(Access::Read)),
         ]),
         step_limit: None,
         tool_texts: ToolTexts::new(ToolTextSources {

@@ -82,7 +82,7 @@ impl WebSearch {
         let texts = &self.texts;
         if found.hits.is_empty() {
             return Done::ok(line(&texts.nothing, &[("query", query)]))
-                .said(said("web_search/nothing", &[("source", &found.source)]));
+                .said(said("web_search/nothing", &[("via", &found.source)]));
         }
         let blocks: Vec<String> = found
             .hits
@@ -136,7 +136,7 @@ impl WebSearch {
                 .collect(),
         };
         Done::ok(blocks.join("\n\n"))
-            .said(said(key, &[("hits", &count), ("source", &found.source)]))
+            .said(said(key, &[("hits", &count), ("via", &found.source)]))
             .detail(detail.to_value())
     }
 

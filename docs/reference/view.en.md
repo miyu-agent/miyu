@@ -37,7 +37,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 
 **A `tool`'s `state`**: `preparing` (still writing arguments), `running`, `ok`, `error`, `denied`, `cancelled`, `skipped`.
 
-**A `tool`'s `title`**: `{"name", "object", "said"}`: the tool's display name, its object (a path, a command's short title…), and the result sentence.
+**A `tool`'s `title`**: `{"name", "object", "said", "via"}`: the tool's display name, its object (a path, a command's short title…), the result sentence, and who did it (e.g. the web search source `Exa`, shown in parentheses after the name; absent when there is none).
 
 **The collapsed line** (`summary`): segments `{"text", "tone"?}`, `tone` being `added`, `removed`, `error`. For example `Ran 2 commands · 1 edit +3 -1 · 5s`.
 

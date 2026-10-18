@@ -13,3 +13,4 @@ mod status;
 mod steps;
 mod turns;
 mod undo;
+mod web;

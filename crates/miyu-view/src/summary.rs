@@ -3,7 +3,8 @@
 //! - 只想过：`Thought for 26s`；
 //! - 一段里只有一条命令、它有短标题：短标题打头；
 //! - 别的按类数：命令、子代理、留言、给会话的留言、记住（项目主人 2026-10-17 定，`remember` 一次一条；`memory_search` 算别的工具）、
-//!   别的工具、编辑，先有哪样哪样打头，别的类依次跟在后面；
+//!   网络搜索、抓网页（项目主人 2026-10-19 定，`web_search`、`web_fetch` 各一次一条）、别的工具、编辑，先有哪样哪样打头，别的
+//!   类依次跟在后面；记住、搜索、抓取出错的算别的工具；
 //! - 编辑那一格后面接加减的总行数，出错的那一格单拎出来；末尾接这一段的用时；
 //! - 只为发一张图（施工 X-24，项目主人 10-16 定）：这一段的工具全是同一个包的、`sent` 一共一张，打头写发出那张的那件工具的
 //!   显示名（`发送表情包 · 1s`），不再数「用了几件工具」。
@@ -47,6 +48,8 @@ struct Tally {
     messages: usize,
     session_messages: usize,
     remembered: usize,
+    searched: usize,
+    fetched: usize,
     thoughts: usize,
     errors: usize,
     thinking_ms: u64,
@@ -90,6 +93,9 @@ impl Tally {
                         // 出错、被拒的没记成：同编辑，算成用过一件工具。
                         Some(ToolKind::Remember) if *failed => tally.tools += 1,
                         Some(ToolKind::Remember) => tally.remembered += 1,
+                        Some(ToolKind::Search | ToolKind::Fetch) if *failed => tally.tools += 1,
+                        Some(ToolKind::Search) => tally.searched += 1,
+                        Some(ToolKind::Fetch) => tally.fetched += 1,
                         None => tally.tools += 1,
                     }
                 }
@@ -118,6 +124,8 @@ impl Tally {
             + self.messages
             + self.session_messages
             + self.remembered
+            + self.searched
+            + self.fetched
     }
 }
 
@@ -136,6 +144,8 @@ enum Lead {
     Messages,
     SessionMessages,
     Remembered,
+    Searched,
+    Fetched,
     Tools,
     Edits,
 }
@@ -203,6 +213,10 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
         Lead::SessionMessages
     } else if tally.remembered > 0 {
         Lead::Remembered
+    } else if tally.searched > 0 {
+        Lead::Searched
+    } else if tally.fetched > 0 {
+        Lead::Fetched
     } else if tally.tools > 0 {
         Lead::Tools
     } else {
@@ -216,6 +230,8 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
         Lead::Messages => (count(tally.messages, "messaged"), false),
         Lead::SessionMessages => (count(tally.session_messages, "messaged-sessions"), false),
         Lead::Remembered => (count(tally.remembered, "remembered"), false),
+        Lead::Searched => (count(tally.searched, "searched"), false),
+        Lead::Fetched => (count(tally.fetched, "fetched"), false),
         Lead::Tools => (count(tally.tools, "used"), false),
         Lead::Edits => (count(tally.edits, "made"), true),
     }];
@@ -234,6 +250,12 @@ pub(crate) fn line(steps: &[Counted], took_ms: u64, words: &dyn Words, english: 
     }
     if lead != Lead::Remembered && tally.remembered > 0 {
         cells.push((count(tally.remembered, "memories"), false));
+    }
+    if lead != Lead::Searched && tally.searched > 0 {
+        cells.push((count(tally.searched, "searches"), false));
+    }
+    if lead != Lead::Fetched && tally.fetched > 0 {
+        cells.push((count(tally.fetched, "pages"), false));
     }
     if lead != Lead::Tools && tally.tools > 0 {
         cells.push((count(tally.tools, "tools"), false));

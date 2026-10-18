@@ -39,6 +39,10 @@ pub enum ToolKind {
     Message,
     /// 记住一条（项目主人 2026-10-17 定：收起那一行单算）。
     Remember,
+    /// 网络搜索（项目主人 2026-10-19 定：收起那一行单算）。
+    Search,
+    /// 抓网页（同上）。
+    Fetch,
 }
 
 /// `core/view.json`：语言之外的那几样。

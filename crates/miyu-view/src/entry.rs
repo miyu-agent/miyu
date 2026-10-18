@@ -253,6 +253,9 @@ pub struct Title {
     /// 结果那一句。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub said: Option<String>,
+    /// 经谁做的（结果的 `human` 带 `via` 的，例如网络搜索的来源 `Exa`），头写在名字后面的括号里。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub via: Option<String>,
 }
 
 /// 一步工具进行到哪了。
