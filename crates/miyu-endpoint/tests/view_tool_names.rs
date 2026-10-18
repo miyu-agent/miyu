@@ -130,7 +130,7 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
         &steps(&[&step, "hello", &format!("ask:provide:{tools}"), "serve"]),
     );
     let script = Script::new([
-        Play::calls(&[("greet", "{}"), ("plain", "{}")]),
+        Play::calls(&[("greet", r#"{"who":"Ann"}"#), ("plain", "{}")]),
         Play::Says("好。"),
     ])
     .titles([Play::Says("测试")]);
@@ -183,4 +183,16 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
         titles(&mut client, "p1", &session).await,
         ["打招呼", "plain"]
     );
+    // 标题后面跟登记时写的 `subject` 那个参数的值（施工 9-8 十一补，网页报的：原来只有名字）。
+    let reply = client
+        .call("p2", "view.page", json!({"session": session, "view": true}))
+        .await;
+    let objects: Vec<serde_json::Value> = reply["result"]["entries"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|entry| entry["kind"] == "tool")
+        .map(|entry| entry["title"]["object"].clone())
+        .collect();
+    assert_eq!(objects, [json!("Ann"), serde_json::Value::Null], "{reply}");
 }

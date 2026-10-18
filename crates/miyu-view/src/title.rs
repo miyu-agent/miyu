@@ -43,9 +43,11 @@ pub(crate) fn of(
     let object = match kind {
         Some(ToolKind::Command | ToolKind::Agent) => arg("description").map(str::to_string),
         Some(ToolKind::Message) => arg("to").map(|to| recipient(to, texts)),
+        // 对象跟哪个参数：核心的字里写的，没有的照这一刻工具目录里那件自己说的（施工 9-8 十一补：扩展、MCP、脚本的工具）。
         _ => face
             .as_ref()
             .and_then(|f| f.subject.as_deref())
+            .or_else(|| texts.subjects.get(name).map(String::as_str))
             .and_then(arg)
             .map(|value| home_short(value, texts.home.as_deref())),
     };

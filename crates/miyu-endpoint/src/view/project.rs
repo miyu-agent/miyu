@@ -71,6 +71,7 @@ pub(super) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, U
         home: std::env::home_dir().map(|home| home.to_string_lossy().into_owned()),
         skills: std::collections::BTreeMap::new(),
         tools: std::collections::BTreeMap::new(),
+        subjects: std::collections::BTreeMap::new(),
         packages: std::collections::BTreeMap::new(),
         language: language.to_string(),
     })

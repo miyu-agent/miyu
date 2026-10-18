@@ -268,6 +268,35 @@ fn a_tool_step_shows_the_name_people_see() {
     assert_eq!(names("zh", &done)[2], "Probe echo");
 }
 
+/// 扩展的工具的对象（施工 9-8 十一补，网页报的）：核心的字里没有这件工具，照这一刻工具目录里它自己说的 `subject`，标题后面
+/// 跟那个参数的值。
+#[test]
+fn an_extension_tool_title_carries_its_own_subject() {
+    let asked = r#"{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{"kind":"model","endpoint":"e","model":"m"},"cause":"cmd-1","body":{"blocks":[{"type":"tool_call","call_id":"call_4_1","name":"weather","args":"{\"city\":\"上海\"}"},{"type":"tool_call","call_id":"call_4_2","name":"plain","args":"{\"city\":\"北京\"}"}],"seen":3}}"#;
+    let mut projector = Projector::new(Arc::new(texts("zh")), None);
+    for line in [CREATED, ASKED, STARTED, asked] {
+        projector.event(&Event::from_line(line).unwrap_or_else(|e| panic!("{line}: {e}")));
+    }
+    let titles: Vec<(String, serde_json::Value)> = of_kind(projector.entries(), "tool")
+        .into_iter()
+        .map(|entry| {
+            let title = &json(entry)["title"];
+            (
+                title["name"].as_str().unwrap_or("").to_string(),
+                title["object"].clone(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        titles,
+        [
+            ("天气".to_string(), serde_json::json!("上海")),
+            ("plain".to_string(), serde_json::Value::Null),
+        ],
+        "没说 subject 的不跟对象"
+    );
+}
+
 /// 给人看的文件（施工 D-5）：工具卡带 `shown`，格同结果的 `file.shown`；别的工具没有这一格。
 #[test]
 fn a_step_that_showed_a_file_carries_it() {
