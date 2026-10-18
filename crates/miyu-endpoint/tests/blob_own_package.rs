@@ -52,6 +52,19 @@ fn put(path: &Path) -> String {
     )
 }
 
+/// 自己包里一个链接，指到别的包：照真实位置判，照旧拒。只有 Unix 上建得了，Windows 上没有这一条。
+#[cfg(unix)]
+fn link_out(packages: &Path, other: &Path) -> Option<String> {
+    let link = packages.join("memes/files/link.txt");
+    std::os::unix::fs::symlink(other, &link).expect("建得了链接");
+    Some(put(&link))
+}
+
+#[cfg(not(unix))]
+fn link_out(_packages: &Path, _other: &Path) -> Option<String> {
+    None
+}
+
 #[tokio::test]
 async fn an_extension_stores_files_from_its_own_package_folder_only() {
     let home = Home::new();
@@ -62,14 +75,10 @@ async fn an_extension_stores_files_from_its_own_package_folder_only() {
     std::fs::create_dir_all(other.parent().expect("有上一层")).expect("建得了");
     std::fs::write(&own, b"\x89PNG\r\n\x1a\n cat").expect("写得进");
     std::fs::write(&other, b"other package").expect("写得进");
-    let mut asks = vec![put(&own), put(&other)];
-    // 自己包里一个链接，指到别的包：照真实位置判，照旧拒。
-    #[cfg(unix)]
-    {
-        let link = packages.join("memes/files/link.txt");
-        std::os::unix::fs::symlink(&other, &link).expect("建得了链接");
-        asks.push(put(&link));
-    }
+    let asks: Vec<String> = [put(&own), put(&other)]
+        .into_iter()
+        .chain(link_out(&packages, &other))
+        .collect();
     let program = Program::new();
     let (log, step) = record(&home, "memes");
     let mut all = vec![step.as_str(), "hello"];
