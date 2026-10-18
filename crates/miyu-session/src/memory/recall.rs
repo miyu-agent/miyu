@@ -1,8 +1,9 @@
-//! 联想（施工 R-8，`docs/blueprint/memory.md` 第四条）：人开的一轮，回合开始的挂接点照这一轮人说的话找最像的几条记忆，过门槛
-//! 的带上，宁可不带。
+//! 联想（施工 R-8，`docs/blueprint/memory.md` 第四条）：人开的一轮，回合开始的挂接点照这一轮人说的话找几条记忆，两路都对上、
+//! 过门槛的带上，宁可不带。
 //!
-//! - 照意思找（`Vectors::query`），门槛照模型（`core/memory/recall.toml`，[`Thresholds`]）；没有照意思那一路的、模型不在表里的
-//!   不联想（2026-10-10 项目主人定）。关键词那一路不参与（`miyu_recall::associate`）。
+//! - 照混合（施工 R-14 补，2026-10-19 项目主人定）：照关键词搜，前 [`KEYWORDS`] 条里和这句话的相似度（`Vectors::query`）过门槛的
+//!   才带，门槛照模型（`core/memory/recall.toml`，[`Thresholds`]）；还没补上向量的不带；没有照意思那一路的、模型不在表里的不联想
+//!   （2026-10-10 项目主人定）。
 //! - 只要现在算数的、出处活着的、听众合的；这一段上下文里模块 `memory` 交过的（常驻那一块的、之前联想带过的，照 `present`
 //!   的 `refs`）不要。最多三条，一块不超过 [`LIMIT`] 字节；这一段联想累计带过 40 条的不再带（压缩以后从零数）。
 //! - 一块 `context.injected`，模块 `memory`、类别 `recall`，外壳加一条一行（和常驻那一块、`memory_search` 的一行同一个写法）。
@@ -16,7 +17,7 @@ use miyu_kernel::id::{FactKind, ModuleId};
 use miyu_kernel::session::Injection;
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
-use miyu_recall::associate::{Thresholds, pick};
+use miyu_recall::associate::{KEYWORDS, Thresholds, pick};
 use miyu_recall::{Entry, MemoryId};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::load::{self, LoadError};
@@ -36,7 +37,7 @@ pub const LIMIT: usize = 500;
 /// 人说的话最多拿前几个字去算向量：人可能贴进来一整个文件，模型本来也只看前 512 个 token（`recall.md` 第四条第 5 款）。
 const SAID: usize = 1000;
 
-/// 照向量找多少条再挑：交过的、作废的、听众不合的挑掉以后还够三条。
+/// 照关键词搜多少条：作废的、听众不合的挑掉以后还够 [`KEYWORDS`] 条。
 const WIDE: usize = 32;
 
 /// 联想要的几样（`resources/software/memory/recall/` 的外壳，登记簿；一行照 `memory_search/memory.txt`；门槛表
@@ -126,7 +127,7 @@ impl Keeper {
         let threshold = texts.thresholds.of(&near.model)?;
         let (seen, brought) = seen(present);
         let keeper = self.clone();
-        let found = match blocking(move || keeper.close(&near)).await {
+        let found = match blocking(move || keeper.close(&said, &near)).await {
             Ok(found) => found,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory recall not read");
@@ -150,25 +151,32 @@ impl Keeper {
         render(texts, &entries, offset)
     }
 
-    /// 照问句的向量找最像的 [`WIDE`] 条，只留现在算数的、出处活着的、听众合的（最像的在前）。
-    fn close(&self, near: &Query) -> Result<Vec<(Entry, f32)>, String> {
+    /// 照关键词搜 `said`，只留现在算数的、出处活着的、听众合的前 [`KEYWORDS`] 条，带上它们和问句的向量 `near` 有多像（最像的
+    /// 在前）；还没有这个模型的向量的不要。
+    fn close(&self, said: &str, near: &Query) -> Result<Vec<(Entry, f32)>, String> {
         let log = self.log().map_err(|refused| format!("{refused:?}"))?;
-        let hits = log
-            .index()
-            .nearest(&near.model, &near.vector, WIDE)
-            .map_err(|error| error.to_string())?;
-        let found = log.book(|book| {
-            hits.iter()
-                .filter_map(|hit| {
-                    let id = MemoryId::parse(&hit.key)?;
-                    book.get(id).cloned().map(|entry| (entry, hit.similar))
-                })
-                .collect::<Vec<(Entry, f32)>>()
+        let ids = log.search(said, WIDE).map_err(|error| error.to_string())?;
+        let entries: Vec<Entry> = log.book(|book| {
+            ids.iter()
+                .filter_map(|id| book.get(*id).cloned())
+                .filter(|entry| self.shown(entry, false))
+                .take(KEYWORDS)
+                .collect()
         });
-        Ok(found
+        let keys: Vec<String> = entries.iter().map(|entry| entry.id.to_string()).collect();
+        let similar = log
+            .index()
+            .similar_to(&near.model, &near.vector, &keys)
+            .map_err(|error| error.to_string())?;
+        let mut found: Vec<(Entry, f32)> = entries
             .into_iter()
-            .filter(|(entry, _)| self.shown(entry, false))
-            .collect())
+            .filter_map(|entry| {
+                let similar = *similar.get(&entry.id.to_string())?;
+                Some((entry, similar))
+            })
+            .collect();
+        found.sort_by(|(a, x), (b, y)| y.total_cmp(x).then(a.id.cmp(&b.id)));
+        Ok(found)
     }
 }
 

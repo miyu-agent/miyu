@@ -1,12 +1,16 @@
-//! 联想怎么挑（施工 R-8，`docs/blueprint/memory.md` 第四条）：人说的这一句照意思找到的记忆里，相似度过门槛的才带，宁可不带。
-//! 门槛照模型：数据住在资源目录（`core/memory/recall.toml`），表里没有的模型不联想（没量过的不知道多像才算像）。
+//! 联想怎么挑（施工 R-8，`docs/blueprint/memory.md` 第四条）：人说的这一句照关键词搜到的前 [`KEYWORDS`] 条里（施工 R-14 补起照
+//! 混合），和它的相似度过门槛的才带，宁可不带。门槛照模型：数据住在资源目录（`core/memory/recall.toml`），表里没有的模型不联想
+//! （没量过的不知道多像才算像）。
 //!
-//! 门槛是在测评集上量的（`docs/blueprint/memory/eval.md`）：bge-small-zh-v1.5 上平常的话最像的那一条相似度在 0.43 到 0.60
-//! 之间，0.60 起平常的话一句都不误带。关键词那一路不参与：两字切分里「什么」「怎么」这类到处都有，加进来误带就上去了。
+//! 门槛是在测评集上量的（`docs/blueprint/memory/eval.md`）。关键词单走一路并进来不行：两字切分里「什么」「怎么」这类到处都有，
+//! 加进来误带就上去了；两路都对上才带的比只照意思准（R-14 补）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
+
+/// 照关键词搜到的前几条里挑（施工 R-14 补）：前 5、10、20 在两份数据上量过，10 条和纯向量一样严、带的更准。
+pub const KEYWORDS: usize = 10;
 
 /// 一轮最多带几条（`memory.md` 第四条第 4 款：每轮约 150 token）。
 pub const TURN: usize = 3;

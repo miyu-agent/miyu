@@ -84,7 +84,7 @@ fn the_shipped_table_reads() {
     assert_eq!(shipped.of("local:bge-small-zh-v1.5"), Some(0.60));
     assert_eq!(
         shipped.of("local:granite-embedding-97m-multilingual-r2"),
-        Some(0.85),
-        "出厂模型换成 granite（施工 R-5 七补）"
+        Some(0.84),
+        "出厂模型换成 granite（施工 R-5 七补），照混合重量（R-14 补）"
     );
 }
