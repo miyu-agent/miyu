@@ -64,28 +64,32 @@ async fn an_extension_tool_detail_in_a_known_shape_reaches_the_log() {
     client.say("s1", &session, "找一找").await;
     home.until_turns(&session, 1).await;
 
-    let details: Vec<Option<Value>> = home
+    // 三件只读的并行跑，结果照到达的先后记：照给模型的那段字认是哪一件。
+    let mut details: Vec<(String, Option<Value>)> = home
         .log(&session)
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(
+            Body::ToolResult(result) => Some((
+                format!("{:?}", result.blocks),
                 result
                     .detail
                     .as_ref()
                     .map(|raw| serde_json::from_str(raw.get()).expect("是 JSON")),
-            ),
+            )),
             _ => None,
         })
         .collect();
+    details.sort_by(|a, b| a.0.cmp(&b.0));
+    let details: Vec<Option<Value>> = details.into_iter().map(|(_, detail)| detail).collect();
     assert_eq!(
         details,
         [
+            None,
+            None,
             Some(json!({"kind": "links", "links": [
                 {"title": "Miyu", "url": "https://example.com/miyu", "snippet": "A cat."}
             ]})),
-            None,
-            None,
         ],
-        "合形状的照形状重写了记（写成 null 的那一格去掉）；不是 http 的网址整份丢掉；出错的不记"
+        "照字排：failed（出错的不记）、found bad（不是 http 的网址整份丢掉）、found links（照形状重写了记，写成 null 的那一格去掉）"
     );
 }

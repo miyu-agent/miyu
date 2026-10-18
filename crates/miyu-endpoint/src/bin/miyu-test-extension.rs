@@ -253,10 +253,10 @@ fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
         ),
         // 给头看的结构化结果（施工 W-11 补）：合形状的照转；形状不对的、出错时带的，核心丢掉。
         "links" => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found"}}],"detail":{{"kind":"links","links":[{{"title":"Miyu","url":"https://example.com/miyu","snippet":"A cat.","site":null}}]}}}}}}"#
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found links"}}],"detail":{{"kind":"links","links":[{{"title":"Miyu","url":"https://example.com/miyu","snippet":"A cat.","site":null}}]}}}}}}"#
         ),
         "bad_detail" => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found"}}],"detail":{{"kind":"links","links":[{{"title":"Local","url":"file:///etc/passwd"}}]}}}}}}"#
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found bad"}}],"detail":{{"kind":"links","links":[{{"title":"Local","url":"file:///etc/passwd"}}]}}}}}}"#
         ),
         "detail_error" => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"failed"}}],"error":true,"detail":{{"kind":"links","links":[]}}}}}}"#

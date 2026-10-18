@@ -4,6 +4,11 @@
       "name": "Fetch page",
       "subject": "url",
       "icon": "→"
+    },
+    "web_search": {
+      "name": "Web search",
+      "subject": "query",
+      "icon": "✱"
     }
   },
   "said": {
@@ -22,6 +27,13 @@
     "web_fetch/too-complex": "{url} is too large or too deeply nested to convert",
     "web_fetch/empty": "{url} has no readable text",
     "web_fetch/not-ready": "Fetching web pages is not available right now",
-    "web_fetch/no-page": "No page {page}, there are {pages}"
+    "web_fetch/no-page": "No page {page}, there are {pages}",
+    "web_search/found": "{hits} results ({source})",
+    "web_search/found/one": "{hits} result ({source})",
+    "web_search/nothing": "Nothing found ({source})",
+    "web_search/bad-args": "Bad arguments: {error}",
+    "web_search/failed": "Search failed: {why}",
+    "web_search/cooling": "All search sources are rate limited, try again later",
+    "web_search/not-ready": "Web search is not available right now"
   }
 }

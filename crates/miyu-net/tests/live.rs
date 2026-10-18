@@ -99,7 +99,11 @@ async fn real_pages_are_read_by_web_fetch() {
         println!("没设 MIYU_NET_LIVE=1：不连外网，跳过");
         return;
     }
-    let tool = miyu_net::tools(&resources()).expect("字读得出").remove(0);
+    let tool = miyu_net::tools(&resources())
+        .expect("字读得出")
+        .into_iter()
+        .find(|tool| tool.spec().name == miyu_net::WEB_FETCH)
+        .expect("有 web_fetch");
     let mut wrong = Vec::new();
     for (url, word) in PAGES {
         let done = crate::fetch::fetch(&tool, serde_json::json!({"url": url})).await;
@@ -125,4 +129,75 @@ async fn real_pages_are_read_by_web_fetch() {
         }
     }
     assert!(wrong.is_empty(), "这几条没读成：\n{}", wrong.join("\n"));
+}
+
+/// 一家家试的查询和该搜到的字（施工 N-2 上）。
+const QUERIES: &[(&str, &str)] = &[
+    ("tokio select macro", "tokio"),
+    ("Rust 程序设计语言 官网", "rust"),
+];
+
+#[tokio::test]
+#[ignore = "要连外网：设 MIYU_NET_LIVE=1 在能上网的机器上手动跑"]
+async fn every_keyless_source_answers_web_search() {
+    if std::env::var_os("MIYU_NET_LIVE").is_none() {
+        println!("没设 MIYU_NET_LIVE=1：不连外网，跳过");
+        return;
+    }
+    let mut wrong = Vec::new();
+    for id in ["exa", "parallel", "firecrawl", "anysearch", "you"] {
+        let search = miyu_net::Search::new(&resources()).only(&[id]);
+        for (query, word) in QUERIES {
+            let query = miyu_net::Query {
+                text: (*query).to_string(),
+                ..miyu_net::Query::default()
+            };
+            let started = std::time::Instant::now();
+            match tokio::time::timeout(Duration::from_secs(60), search.search(&query)).await {
+                Ok(Ok(found)) => {
+                    println!(
+                        "\n== {id}「{}」{} 条，{:.1} 秒",
+                        query.text,
+                        found.hits.len(),
+                        started.elapsed().as_secs_f32()
+                    );
+                    for hit in found.hits.iter().take(3) {
+                        let snippet: String = hit
+                            .snippet
+                            .as_deref()
+                            .unwrap_or("")
+                            .chars()
+                            .take(120)
+                            .collect();
+                        println!(
+                            "  {} | {} | {:?}\n    {}",
+                            hit.title,
+                            hit.url,
+                            hit.date,
+                            snippet.replace('\n', " ")
+                        );
+                    }
+                    let hay = found
+                        .hits
+                        .iter()
+                        .map(|hit| format!("{} {}", hit.title, hit.url))
+                        .collect::<String>()
+                        .to_lowercase();
+                    if found.hits.is_empty() || !hay.contains(word) {
+                        wrong.push(format!(
+                            "{id}「{}」：{} 条，没有 {word}",
+                            query.text,
+                            found.hits.len()
+                        ));
+                    }
+                }
+                Ok(Err(missed)) => {
+                    println!("\n== {id}「{}」没成：{missed:?}", query.text);
+                    wrong.push(format!("{id}「{}」：{missed:?}", query.text));
+                }
+                Err(_) => wrong.push(format!("{id}「{}」：一分钟没搜完", query.text)),
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "这几条没搜成：\n{}", wrong.join("\n"));
 }

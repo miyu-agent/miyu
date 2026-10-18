@@ -3002,6 +3002,85 @@ Could not reach {url}.
 {url} is {type}, which cannot be read as text.
 ```
 
+#### `software/net/web_search/bad-args.txt`
+
+- 什么时候加进来：参数读不懂、`query` 是空的
+- token：11（2026-10-18 量）
+- 为什么加：一句短话，说清搜不成的原因（施工 N-2 上）
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/net/web_search/cooling.txt`
+
+- 什么时候加进来：几家都在限额的冷却里，一家都没试
+- token：14（2026-10-18 量）
+- 为什么加：说清是限额，过会儿再试，不是她写错了（施工 N-2 上）
+- 指纹：`571da876`
+
+```text
+All web search sources are rate limited right now. Try again later.
+```
+
+#### `software/net/web_search/failed.txt`
+
+- 什么时候加进来：几家都试过、都不成，照最后一家的原因（字段按 `You.com: HTTP 503` 填）
+- token：11（2026-10-18 量）
+- 为什么加：一句短话，说清搜不成的原因（施工 N-2 上）
+- 指纹：`15957123`
+
+```text
+Web search failed: {why}.
+```
+
+#### `software/net/web_search/hit.txt`
+
+- 什么时候加进来：`web_search` 一条结果的头两行：编号、标题，网址（字段按 `1`、`select in tokio - Rust`、网址填）；下面接摘录原样，条和条之间空一行
+- token：18（2026-10-18 量）
+- 为什么加：她照编号引用、照网址 `web_fetch` 接着读（施工 N-2 上）
+- 指纹：`535f02c2`
+
+```text
+[{n}] {title}
+{url}
+```
+
+#### `software/net/web_search/hit-dated.txt`
+
+- 什么时候加进来：同上，来源给了发布日期的（日期按 `2026-09-01` 填）
+- token：25（2026-10-18 量）
+- 为什么加：新闻、发版这类她要知道新旧（施工 N-2 上）
+- 指纹：`37231cd3`
+
+```text
+[{n}] {title}
+{url} ({date})
+```
+
+#### `software/net/web_search/not-ready.txt`
+
+- 什么时候加进来：`search.json` 读不懂
+- token：8（2026-10-18 量）
+- 为什么加：一句短话，说清搜不成的原因（施工 N-2 上）
+- 指纹：`e0a7e620`
+
+```text
+Web search is not available right now.
+```
+
+#### `software/net/web_search/nothing.txt`
+
+- 什么时候加进来：一条都没搜到（字段按 `tokio select macro` 填）
+- token：8（2026-10-18 量）
+- 为什么加：说清是没有结果，不是出错（施工 N-2 上）
+- 指纹：`dbbf4da6`
+
+```text
+No results for {query}.
+```
+
 #### `software/basesystem/common/not-read.txt`
 
 - 什么时候加进来：`write`、`edit` 要改的文件已经在了、她这个会话里没看过
@@ -4274,6 +4353,20 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Fetch a web page or text file by URL and read it as Markdown, a page at a time.",
   "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]}
+}
+```
+
+#### `software/net/tools/web_search.json`
+
+- 什么时候加进来：会话的工具面里有 `web_search`：联网包装着、预设开着「网络搜索」的会话，本机的、场所的、子会话都有（施工 N-2 上，每次请求都带）
+- token：107（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
+- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）
+- 指纹：`78321628`
+
+```json
+{
+  "description": "Search the web and get titles, URLs and excerpts of matching pages. Read a page in full with web_fetch.",
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]}
 }
 ```
 

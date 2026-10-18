@@ -60,9 +60,10 @@ const DATA_PACKAGES: [&str; 1] = ["mermaid"];
 /// `core/memory/secrets.toml` 也是：抽取照它认常见的 key 写法、遮掉，不发给模型（施工 R-6 上，`memory.md` 第六条）。
 /// `core/memory/recall.toml` 也是：联想照它定每个模型的门槛，不发给模型（施工 R-8，第四条）。`core/knowledge/recall.toml`
 /// 同样：知识库的自动想起照它定门槛（施工 K-6 下，`knowledge.md` 第九条）；`core/knowledge/keys.toml` 是小节的关键词那一行
-/// 怎么认（施工 K-9）。`software/net/link_preview.json` 是抓网页的时限、上限、请求头（施工 W-7，`net.md`）；同一个目录里
+/// 怎么认（施工 K-9）。`software/net/link_preview.json` 是抓网页的时限、上限、请求头（施工 W-7，`net.md`），`search.json` 是搜索来源的地址、顺序、
+/// 冷却（施工 N-2 上）；同一个目录里
 /// `web_fetch` 的说明和几句字（施工 N-1）照查。只豁免这几份：`core/` 里别的照查。
-const DATA_FILES: [&str; 7] = [
+const DATA_FILES: [&str; 8] = [
     "core/view.json",
     "core/memory/secrets.toml",
     "core/memory/recall.toml",
@@ -70,6 +71,7 @@ const DATA_FILES: [&str; 7] = [
     "core/knowledge/search.toml",
     "core/knowledge/keys.toml",
     "software/net/link_preview.json",
+    "software/net/search.json",
 ];
 
 /// 查一遍，交回对不上的地方。

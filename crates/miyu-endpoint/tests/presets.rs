@@ -330,6 +330,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("goal", "长期目标", true, true),
             ("knowledge", "知识库", false, true),
             ("memory", "人格记忆", true, true),
+            ("web-search", "网络搜索", true, true),
             ("web-fetch", "抓取网页", true, true),
             ("roleplay", "人设遵循提醒", false, true),
             // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言；「基础功能」开着它（施工 P-8）。

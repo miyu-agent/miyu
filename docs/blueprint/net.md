@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。两件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
+核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。三件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`）、`web_search`（施工 N-2 上，`tools/web_search.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
 
 地址闸是安全边界：网址是模型写的、别人发来的，核心照它去连，等于把 SSRF 的靶子摆在核心上。闸只有这一份，网页软件不另做图片代理（`web-module.md`「起草时定的」第 14 条）。
 
@@ -31,6 +31,7 @@
 | `crates/miyu-endpoint/src/connection.rs` | 在后台答的方法交给一个后台任务，回应照 `id` 对上；连接断了这些任务一起停 |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 登记 `link.preview`；参数怎么读、卡片怎么写成回应 |
 | `crates/miyu-net/src/document.rs`、`document/convert.rs`、`web_fetch.rs` | `web_fetch`：抓整份、换成字、分页（`tools/web_fetch.md`） |
+| `crates/miyu-net/src/search.rs`、`search/*.rs`、`web_search.rs` | `web_search`：几家来源照顺序试、冷却、MCP over HTTP（`tools/web_search.md`）。请求固定的公开地址，不过地址闸，代理照同一套 |
 | `resources/software/net/link_preview.json` | 规矩：时限、上限、请求头、记多久、客户端留多久；认得的站、人机验证页的认法（W-7 再补） |
 
 ### 对外的样子
@@ -231,7 +232,7 @@
 
 ### 还没有的
 
-- `web_search` 工具（设计 36 第五节 N-2 起）。
+- `web_search` 要 key 的几家、网页抓取兜底、「搜索来源」设置、扩展登记来源（设计 36 第五节 N-2 下到 N-5）。
 - 别的站（推特、知乎……）：照第 12 条同一层加。登录才看得到的内容不做。
 - 网页软件的 `/media`（W-10）：卡片的图在那之前照桥的 `/blob` 给。
 - 链接卡片的图随存储的回收清掉：它们是没人引用的 blob（`store.md`「还没有的」）。

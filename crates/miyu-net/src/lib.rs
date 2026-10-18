@@ -18,10 +18,12 @@ mod html;
 mod proxy;
 mod remember;
 mod rules;
+mod search;
 mod sites;
 #[cfg(any(test, feature = "testkit"))]
 pub mod testkit;
 mod web_fetch;
+mod web_search;
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
@@ -38,30 +40,37 @@ use remember::{Keep, Remember};
 use rules::{Clip, Sites};
 
 pub use document::{Miss, Pages, Read};
+pub use search::{Found, Hit, Missed, Query, Search};
 pub use web_fetch::{PACKAGE, WEB_FETCH};
+pub use web_search::WEB_SEARCH;
 
 use miyu_tool::Tool;
 use miyu_tool::load::LoadError;
 
-/// 她的工具：`web_fetch`。字从资源目录 `resources` 读，抓网页照出厂的规矩。
+/// 她的工具：`web_fetch`、`web_search`。字从资源目录 `resources` 读，抓网页、搜网页照出厂的规矩。冷却、记着的页记在这一份
+/// 家底里：装卸软件包以后核心重新要工具，从头算。
 ///
 /// # Errors
 ///
 /// 哪一份字读不出来、写法不对。
 pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
-    tools_with(resources, Pages::new(resources))
+    tools_with(resources, Pages::new(resources), Search::new(resources))
 }
 
-/// 同 [`tools`]，抓网页照给的 `pages`（测试照 `Pages::testing` 打开口子）。
+/// 同 [`tools`]，抓网页照给的 `pages`、搜网页照给的 `search`（测试照 `Pages::testing`、`Search::testing` 打开口子）。
 ///
 /// # Errors
 ///
 /// 同 [`tools`]。
-pub fn tools_with(resources: &Path, pages: Pages) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
-    Ok(vec![Arc::new(web_fetch::WebFetch::load(
-        resources,
-        Arc::new(pages),
-    )?)])
+pub fn tools_with(
+    resources: &Path,
+    pages: Pages,
+    search: Search,
+) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
+    Ok(vec![
+        Arc::new(web_fetch::WebFetch::load(resources, Arc::new(pages))?),
+        Arc::new(web_search::WebSearch::load(resources, Arc::new(search))?),
+    ])
 }
 
 /// 运行日志的目标。

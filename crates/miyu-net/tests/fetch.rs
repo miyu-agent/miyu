@@ -17,9 +17,12 @@ use crate::support::{PNG, Reply, Site, local, resources};
 /// 打开 `testing` 这个口子的 `web_fetch`。
 fn tool(testing: Testing) -> Arc<dyn Tool> {
     let pages = Pages::new(&resources()).testing(testing);
-    let mut tools = miyu_net::tools_with(&resources(), pages).expect("字读得出");
-    assert_eq!(tools.len(), 1);
-    tools.remove(0)
+    let search = miyu_net::Search::new(&resources());
+    let tools = miyu_net::tools_with(&resources(), pages, search).expect("字读得出");
+    tools
+        .into_iter()
+        .find(|tool| tool.spec().name == WEB_FETCH)
+        .expect("有 web_fetch")
 }
 
 /// 调一次，等最多一分钟。

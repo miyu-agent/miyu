@@ -1,0 +1,14 @@
+{
+  "order": ["exa", "parallel", "firecrawl", "anysearch", "you"],
+  "results": 8,
+  "excerpt_chars": 1200,
+  "timeout_seconds": 20,
+  "cooldown_minutes": [30, 60, 120, 360],
+  "sources": {
+    "exa": {"name": "Exa", "kind": "exa", "url": "https://mcp.exa.ai/mcp", "site_operator": false},
+    "parallel": {"name": "Parallel", "kind": "parallel", "url": "https://search.parallel.ai/mcp", "site_operator": true},
+    "firecrawl": {"name": "Firecrawl", "kind": "firecrawl", "url": "https://mcp.firecrawl.dev/v2/mcp", "site_operator": true},
+    "anysearch": {"name": "AnySearch", "kind": "anysearch", "url": "https://api.anysearch.com/v1/search", "site_operator": false},
+    "you": {"name": "You.com", "kind": "you", "url": "https://api.you.com/mcp?profile=free", "site_operator": true}
+  }
+}

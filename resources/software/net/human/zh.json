@@ -4,6 +4,11 @@
       "name": "抓取网页",
       "subject": "url",
       "icon": "→"
+    },
+    "web_search": {
+      "name": "网络搜索",
+      "subject": "query",
+      "icon": "✱"
     }
   },
   "said": {
@@ -22,6 +27,12 @@
     "web_fetch/too-complex": "{url} 太大或嵌套太深，换不成字",
     "web_fetch/empty": "{url} 没有能读的字",
     "web_fetch/not-ready": "现在抓不了网页",
-    "web_fetch/no-page": "没有第 {page} 页，一共 {pages} 页"
+    "web_fetch/no-page": "没有第 {page} 页，一共 {pages} 页",
+    "web_search/found": "{hits} 条（{source}）",
+    "web_search/nothing": "没搜到（{source}）",
+    "web_search/bad-args": "参数不对：{error}",
+    "web_search/failed": "搜不了：{why}",
+    "web_search/cooling": "几家搜索都被限额了，过会儿再试",
+    "web_search/not-ready": "现在搜不了"
   }
 }

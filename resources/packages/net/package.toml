@@ -1,10 +1,14 @@
-# 联网（施工 F-2，设计 30 第三节）：内置包。给头取链接卡片；她的工具照功能分（设计 36）：抓取网页（施工 N-1），网络搜索
-# 做出来时再写上。
+# 联网（施工 F-2，设计 30 第三节）：内置包。给头取链接卡片；她的工具照功能分（设计 36）：网络搜索（施工 N-2 上）、抓取网页
+# （施工 N-1）。
 # 给人看的字，不发给模型。
 
 [package]
 protocol = [1, 1]
 name = { en = "Web", zh = "联网", ja = "ウェブ" }
+
+[features.web-search]
+name = { en = "Web search", zh = "网络搜索", ja = "ウェブ検索" }
+tools = ["web_search"]
 
 [features.web-fetch]
 name = { en = "Fetch web pages", zh = "抓取网页", ja = "ウェブページの取得" }

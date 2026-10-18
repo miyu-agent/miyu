@@ -10,4 +10,5 @@ mod fetch;
 mod live;
 mod preview;
 mod proxy;
+mod search;
 mod sites;

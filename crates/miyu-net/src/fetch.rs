@@ -8,7 +8,7 @@
 //! - 站的接口（[`Fetcher::json`]）、短链跟跳转（[`Fetcher::locate`]）走同一条路：同一道闸、同一套代理、复用的客户端
 //!   （W-7 再补，第 12 条）。人机验证页的头和状态码在读页面时认（[`Fetcher::page`]，第 13 条）。
 
-mod clients;
+pub(crate) mod clients;
 
 use std::time::Duration;
 

@@ -29,6 +29,8 @@ pub struct Reply {
     sized: bool,
     /// 身子写完不关，停住不动，直到对方断开。
     stall: bool,
+    /// 只回一次（施工 N-2 上）：回过了这条路由就不算了，往下找同一个地址的下一条。克隆的共用这一面旗。
+    once: Option<Arc<std::sync::atomic::AtomicBool>>,
 }
 
 impl Reply {
@@ -49,6 +51,7 @@ impl Reply {
             body: body.to_vec(),
             sized: true,
             stall: false,
+            once: None,
         }
     }
 
@@ -60,6 +63,7 @@ impl Reply {
             body: Vec::new(),
             sized: true,
             stall: false,
+            once: None,
         }
     }
 
@@ -71,6 +75,7 @@ impl Reply {
             body: Vec::new(),
             sized: true,
             stall: false,
+            once: None,
         }
     }
 
@@ -94,6 +99,12 @@ impl Reply {
     /// 换一个状态码（W-7 再补：人机验证页回 403、503 也带着页面）。
     pub fn with_status(mut self, status: u16) -> Reply {
         self.status = status;
+        self
+    }
+
+    /// 只回一次：第二次照同一个地址的下一条路由回（施工 N-2 上：一家先限额、再好了）。
+    pub fn once(mut self) -> Reply {
+        self.once = Some(Arc::new(std::sync::atomic::AtomicBool::new(false)));
         self
     }
 
@@ -181,6 +192,23 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
         }
     }
     let head = String::from_utf8_lossy(&data).into_owned();
+    // 有正文的（搜索来源的 POST，施工 N-2 上）照 `Content-Length` 读完再回：没读完就关，客户端那头可能收到连接重置。
+    let length: usize = head
+        .split("\r\n")
+        .filter_map(|line| line.split_once(':'))
+        .find(|(key, _)| key.trim().eq_ignore_ascii_case("content-length"))
+        .and_then(|(_, value)| value.trim().parse().ok())
+        .unwrap_or(0);
+    let body_start = data
+        .windows(4)
+        .position(|window| window == b"\r\n\r\n")
+        .map_or(data.len(), |at| at + 4);
+    while data.len() - body_start < length {
+        match socket.read(&mut buffer).await {
+            Ok(0) | Err(_) => break,
+            Ok(read) => data.extend_from_slice(&buffer[..read]),
+        }
+    }
     let mut lines = head.split("\r\n");
     let target = lines
         .next()
@@ -205,9 +233,16 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
         });
     let reply = routes
         .iter()
-        .find(|(path, _)| match path.strip_suffix('*') {
-            Some(prefix) => target.starts_with(prefix),
-            None => *path == target,
+        .find(|(path, reply)| {
+            let matched = match path.strip_suffix('*') {
+                Some(prefix) => target.starts_with(prefix),
+                None => *path == target,
+            };
+            matched
+                && reply
+                    .once
+                    .as_ref()
+                    .is_none_or(|used| !used.swap(true, std::sync::atomic::Ordering::SeqCst))
         })
         .map_or_else(|| Reply::status(404), |(_, reply)| reply.clone());
     let mut out = format!("HTTP/1.1 {} X\r\n", reply.status);
