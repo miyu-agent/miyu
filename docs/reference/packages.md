@@ -11,6 +11,7 @@
 | [`package.sync`](#packagesync) | 从软件源拿索引 |
 | [`package.search`](#packagesearch) | 在软件源里搜 |
 | [`package.clean`](#packageclean) | 清下载过的包文件 |
+| [`package.upgrades`、`package.upgrade`](#packageupgradespackageupgrade) | 盘点能升级的、升级 |
 | [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`](#mcplistmcprestart) | 个人设置里的 MCP 服务 |
@@ -18,7 +19,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.file`、`extension.*`、`mcp.*` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **两层**：出厂的（随 Miyu 装的）、管理员家目录里装的（`home/admin/packages/`）。家目录里装了同编号的就是升级、换掉原来的；出厂的卸掉是在家目录记一笔，能装回来。
 
@@ -104,6 +105,15 @@
 ## `package.clean`
 
 清掉下载过、不是装着那一版的包文件（施工 G-4 下）。没有参数，回应 `{"removed", "freed"}`：删了几个文件、几个字节。
+
+## `package.upgrades`、`package.upgrade`
+
+照软件源升级（施工 G-5）。只碰从软件源装的；从文件夹、包文件装的不碰。版本不比大小，索引的和装着的不一样就升。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `package.upgrades` | 无 | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "generated", "stale"?}`：能升的；来源仓库变了、不升的；软件源里没有了的；被拉黑的；系统配置 `packages.hold` 跳过的 |
+| `package.upgrade` | `packages`（可以不写，只升这几个）、`preview` | 看一眼 `{"upgrades", "download"}`；真升 `{"upgraded": [{"package", "from", "to"}]}`，下载时同 `package.install {"source"}` 推进度 |
 
 ## `package.enable`、`package.disable`、`package.restart`
 

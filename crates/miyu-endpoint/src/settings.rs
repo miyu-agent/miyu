@@ -145,6 +145,13 @@ miyu_config::settings! {
             applies: now,
             ui: { page: "packages", group: "source", control: list },
         },
+        /// 升级时跳过的包（施工 G-5，照 pacman 的 `IgnorePkg`）：编号的列表。
+        hold: Option<Vec<String>> = none {
+            kind: texts [64],
+            layers: [System],
+            applies: now,
+            ui: { page: "packages", group: "source", control: list },
+        },
     }
 }
 

@@ -11,6 +11,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`package.sync`](#packagesync) | Fetch the index from the package source |
 | [`package.search`](#packagesearch) | Search the package source |
 | [`package.clean`](#packageclean) | Delete downloaded package files |
+| [`package.upgrades`, `package.upgrade`](#packageupgrades-packageupgrade) | What can be upgraded; upgrade |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
@@ -18,7 +19,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
 
@@ -104,6 +105,15 @@ Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "v
 ## `package.clean`
 
 Delete downloaded package files that aren't the installed version. No params; response `{"removed", "freed"}`: how many files and bytes were deleted.
+
+## `package.upgrades`, `package.upgrade`
+
+Upgrade from the package source. Only packages installed from the source are touched; ones installed from a folder or a package file are left alone. Versions aren't compared by size: if the index's version differs from the installed one, it's an upgrade.
+
+| Method | Params | Response |
+|---|---|---|
+| `package.upgrades` | None | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "generated", "stale"?}`: what can be upgraded; what now comes from another repository (not upgraded); what's gone from the source; what's blocked; what the system config's `packages.hold` skips |
+| `package.upgrade` | `packages` (optional, only these), `preview` | Preview `{"upgrades", "download"}`; done `{"upgraded": [{"package", "from", "to"}]}`, pushing progress while downloading as `package.install {"source"}` does |
 
 ## `package.enable`, `package.disable`, `package.restart`
 

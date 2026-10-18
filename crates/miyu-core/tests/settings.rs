@@ -123,6 +123,7 @@ fn the_registered_list_is_well_formed() {
             "net.search.searxng.url",
             "packages.source",
             "packages.mirrors",
+            "packages.hold",
             "log.level"
         ],
         "照登记的先后"

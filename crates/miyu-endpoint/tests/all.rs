@@ -125,6 +125,7 @@ mod packages_push;
 mod packages_search;
 mod packages_sync;
 mod packages_tool;
+mod packages_upgrade;
 mod peers;
 mod permission;
 mod persona_appearance;

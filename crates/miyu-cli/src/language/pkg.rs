@@ -355,3 +355,60 @@ impl Language {
         }
     }
 }
+
+/// `miyu pkg upgrade` 的字（施工 G-5）。
+impl Language {
+    /// 没有要升级的。
+    pub(crate) fn nothing_to_upgrade(&self) -> &'static str {
+        match self {
+            Language::Chinese => "没有要升级的软件包",
+            Language::English => "Nothing to upgrade",
+        }
+    }
+
+    /// 升级好了一个。
+    pub(crate) fn upgraded(&self, id: &str, version: &str) -> String {
+        match self {
+            Language::Chinese => format!("升级好了：{id} {version}"),
+            Language::English => format!("Upgraded {id} to {version}"),
+        }
+    }
+
+    /// 软件源里没有了：照旧用着。
+    pub(crate) fn upgrade_gone(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => format!("提示：{id} 在软件源里没有了，照旧用着装好的那一版"),
+            Language::English => format!(
+                "note: {id} is no longer in the package source; the installed version stays"
+            ),
+        }
+    }
+
+    /// 被拉黑了：照旧开着，卸不卸自己定。
+    pub(crate) fn upgrade_blocked(&self, id: &str, reason: &str) -> String {
+        match self {
+            Language::Chinese => format!("提示：{id} 被拉黑了（{reason}），照旧开着，卸不卸你定"),
+            Language::English => {
+                format!("note: {id} was blocked ({reason}); it stays on, removing it is up to you")
+            }
+        }
+    }
+
+    /// 来源仓库变了：不升。
+    pub(crate) fn upgrade_moved(&self, id: &str, now: &str) -> String {
+        match self {
+            Language::Chinese => format!("提示：{id} 在软件源里换成了 {now} 的，不升"),
+            Language::English => {
+                format!("note: {id} now comes from {now} in the package source; not upgraded")
+            }
+        }
+    }
+
+    /// `packages.hold` 里的：跳过。
+    pub(crate) fn upgrade_held(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => format!("提示：{id} 在不升级的包里，跳过"),
+            Language::English => format!("note: {id} is held; skipped"),
+        }
+    }
+}

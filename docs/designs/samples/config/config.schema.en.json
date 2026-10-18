@@ -436,6 +436,16 @@
     },
     "packages": {
       "properties": {
+        "hold": {
+          "description": "Packages (by id) skipped when upgrading; the installed version stays. Allowed: a list of text of at most 64 characters. Only in the system config. Takes effect immediately.",
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Held packages",
+          "type": "array"
+        },
         "mirrors": {
           "default": [],
           "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it. Allowed: a list of an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",

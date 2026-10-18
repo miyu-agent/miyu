@@ -305,3 +305,73 @@ async fn install_from_the_source_shows_the_plan_asks_and_cleans_up_after() {
         eprintln!("临时目录没删掉：{error}");
     }
 }
+
+/// 同 [`package`]，版本是 `version`。
+fn package_at(dir: &std::path::Path, id: &str, version: &str) -> (String, Vec<u8>) {
+    let folder = dir.join("src").join(format!("{id}-{version}")).join(id);
+    std::fs::create_dir_all(&folder).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        format!("[package]\nversion = \"{version}\"\nname = {{ en = \"{id}\" }}\n"),
+    )
+    .expect("写得进");
+    let name = miyu_source::archive::file_name(id, version, None);
+    let out = dir.join("out").join(&name);
+    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
+    miyu_source::archive::pack(&folder, id, &out).expect("打得成");
+    (name, std::fs::read(&out).expect("在"))
+}
+
+/// 一份签好的索引（`generated` 那一刻，几个包），两份回应。
+fn index_replies(generated: &str, entries: Vec<serde_json::Value>, secret: &str) -> Vec<Reply> {
+    let index =
+        serde_json::to_vec(&json!({"version": 1, "generated": generated, "packages": entries}))
+            .expect("写得成");
+    let signature =
+        serde_json::to_vec(&sign::sign(&index, secret).expect("签得了")).expect("写得成");
+    vec![
+        Reply::stream(vec![Piece::Bytes(index)]),
+        Reply::stream(vec![Piece::Bytes(signature)]),
+    ]
+}
+
+#[tokio::test]
+async fn upgrade_shows_what_changes_and_asks() {
+    let (secret, trusted) = keys();
+    let scratch = std::env::temp_dir().join(format!("miyu-cli-upgrade-{}", std::process::id()));
+    let app1 = package_at(&scratch, "app", "1.0");
+    let app2 = package_at(&scratch, "app", "2.0");
+    let mut entry2 = entry("app", &[], &app2);
+    entry2["version"] = json!("2.0");
+    let mut replies = index_replies(
+        "2026-10-19T03:00:00Z",
+        vec![entry("app", &[], &app1)],
+        &secret,
+    );
+    replies.push(Reply::stream(vec![Piece::Bytes(app1.1.clone())]));
+    replies.extend(index_replies("2026-10-20T03:00:00Z", vec![entry2], &secret));
+    replies.push(Reply::stream(vec![Piece::Bytes(app2.1.clone())]));
+    let server = Server::start(replies).await;
+    let mirror = format!("{}/m", server.base_url);
+    let home = home_with_mirror("https://unreachable.invalid/", &mirror, trusted);
+    let installed = pkg(&home, &["-S", "app", "--yes"]).await;
+    assert_eq!(installed.0, 0, "{installed:?}");
+    let upgraded = pkg_answering(&home, &["-Syu"], b"y\n").await;
+    assert_eq!(upgraded.0, 0, "{upgraded:?}");
+    assert!(
+        upgraded.1.starts_with(
+            "软件源已更新：1 个包（2026-10-20T03:00:00Z）\n将升级 app 1.0 → 2.0\n下载："
+        ),
+        "{upgraded:?}"
+    );
+    assert!(upgraded.1.contains("继续升级？[Y/n] "), "{upgraded:?}");
+    assert!(upgraded.1.ends_with("升级好了：app 2.0\n"), "{upgraded:?}");
+    let again = pkg(&home, &["upgrade"]).await;
+    assert_eq!(
+        again,
+        (0, "没有要升级的软件包\n".to_string(), String::new())
+    );
+    if let Err(error) = std::fs::remove_dir_all(&scratch) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}

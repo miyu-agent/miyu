@@ -18,12 +18,14 @@ Commands:
   pack <folder>           Pack a folder into a package file here
   update                  Fetch the latest index from the package source
   search [<words>…]       Search the package source
+  upgrade                 Upgrade installed packages from the source
   clean                   Delete downloaded files not of installed versions
 
 pacman options work too:
   -U, -R, -Q              install, remove, list
   -Qi, -Ql, -Qo, -Qk      info, files, owns, check
-  -Sy, -Ss, -Sc           update, search, clean
+  -Sy, -Ss, -Sc, -Su      update, search, clean, upgrade
+  -Syu                    update, then upgrade
   -S <id>                 Install from the package source
 
 Options:

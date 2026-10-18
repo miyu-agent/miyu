@@ -34,6 +34,10 @@ pub(crate) async fn call(
         "package.sync" => super::source::sync::method(core, params(request)?).await,
         "package.search" => super::source::search::search(core, peer, params(request)?).await,
         "package.clean" => super::source::clean::clean(core).await,
+        "package.upgrades" => super::source::upgrade::upgrades(core).await,
+        "package.upgrade" => {
+            super::source::upgrade::upgrade(core, peer, caller, params(request)?).await
+        }
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,

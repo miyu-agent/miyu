@@ -16,12 +16,14 @@
   pack <包目录>           打成包文件，写在现在的目录
   update                  从软件源拿新的索引
   search [<词>…]          在软件源里搜
+  upgrade                 照软件源升级装着的包
   clean                   清掉下载过、不是装着那一版的包文件
 
 pacman 的写法也认：
   -U、-R、-Q              install、remove、list
   -Qi、-Ql、-Qo、-Qk      info、files、owns、check
-  -Sy、-Ss、-Sc           update、search、clean
+  -Sy、-Ss、-Sc、-Su      update、search、clean、upgrade
+  -Syu                    先 update 再 upgrade
   -S <编号>               从软件源装
 
 选项：

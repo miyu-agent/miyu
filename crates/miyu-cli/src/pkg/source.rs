@@ -25,6 +25,9 @@ pub struct SyncFlags {
     /// `-Sc`：`clean`（施工 G-4 下）。
     #[arg(short = 'c')]
     clean: bool,
+    /// `-Su`：`upgrade`（施工 G-5），`-Syu` 先拿再升。
+    #[arg(short = 'u')]
+    upgrade: bool,
     /// `-Ss` 搜的词。
     words: Vec<String>,
 }
@@ -32,7 +35,13 @@ pub struct SyncFlags {
 impl SyncFlags {
     /// 从软件源装的那几个：不带 `-s`、`-c`，写了编号的。
     pub(super) fn installs(&self) -> Option<&[String]> {
-        (!self.search && !self.clean && !self.words.is_empty()).then_some(self.words.as_slice())
+        (!self.search && !self.clean && !self.upgrade && !self.words.is_empty())
+            .then_some(self.words.as_slice())
+    }
+
+    /// 带了 `-u`。
+    pub(super) fn upgrade(&self) -> bool {
+        self.upgrade
     }
 
     /// 带了 `-y`。

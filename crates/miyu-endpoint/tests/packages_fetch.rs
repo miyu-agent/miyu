@@ -4,74 +4,25 @@
 
 use serde_json::{Value, json};
 
-use miyu_http::testkit::{Piece, Reply, Server};
-use miyu_source::{archive, sign};
+use miyu_http::testkit::Server;
 
-use crate::support::source::{core, keys, serving};
+use crate::support::source::{
+    bytes, call_collecting, core, file_entry, keys, packed, serving, signed_entries,
+};
 use crate::support::*;
 
-/// 打一个包：编号、依赖，交回文件名、字节。
+/// 打一个包：编号、依赖，版本 1.0。
 fn package(home: &Home, id: &str, depends: &[&str]) -> (String, Vec<u8>) {
-    let folder = home.work.join("src").join(id);
-    std::fs::create_dir_all(&folder).expect("建得了");
-    let depends: Vec<String> = depends.iter().map(|d| format!("\"{d}\"")).collect();
-    let mut text = format!("[package]\nversion = \"1.0\"\nname = {{ en = \"{id}\" }}\n");
-    if !depends.is_empty() {
-        text.push_str(&format!(
-            "\n[depends]\npackages = [{}]\n",
-            depends.join(", ")
-        ));
-    }
-    std::fs::write(folder.join("package.toml"), text).expect("写得进");
-    let name = archive::file_name(id, "1.0", None);
-    let out = home.work.join("out").join(&name);
-    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
-    archive::pack(&folder, id, &out).expect("打得成");
-    (name, std::fs::read(&out).expect("在"))
+    packed(home, id, "1.0", depends)
 }
 
-/// 索引里的一条：照真的包文件写大小和哈希；原址是到不了的，下载走镜像的 `files/`。
+/// 索引里的一条，版本 1.0。
 fn entry(id: &str, depends: &[&str], file: &(String, Vec<u8>)) -> Value {
-    json!({"id": id, "version": "1.0", "name": {"en": id}, "origin": format!("github.com/miyu-agent/{id}"),
-           "official": true, "depends": depends,
-           "files": [{"url": format!("https://example.invalid/{}", file.0), "size": file.1.len(),
-                      "sha256": hex(&file.1)}]})
-}
-
-fn hex(bytes: &[u8]) -> String {
-    use sha2::Digest;
-    sha2::Sha256::digest(bytes)
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+    file_entry(id, "1.0", depends, file)
 }
 
 fn signed(entries: Vec<Value>, secret: &str) -> (Vec<u8>, Vec<u8>) {
-    let index = serde_json::to_vec(
-        &json!({"version": 1, "generated": "2026-10-19T03:00:00Z", "packages": entries}),
-    )
-    .expect("写得成");
-    let signature =
-        serde_json::to_vec(&sign::sign(&index, secret).expect("签得了")).expect("写得成");
-    (index, signature)
-}
-
-fn bytes(body: &[u8]) -> Reply {
-    Reply::stream(vec![Piece::Bytes(body.to_vec())])
-}
-
-/// 发一条请求，收下回应之前推来的所有通知。
-async fn call_collecting(client: &mut Client, method: &str, params: Value) -> (Value, Vec<Value>) {
-    let request = json!({"jsonrpc": "2.0", "id": "c", "method": method, "params": params});
-    client.line(&request.to_string()).await;
-    let mut pushed = Vec::new();
-    loop {
-        let next = client.next().await.expect("有回应");
-        if next.get("id").is_some() {
-            return (next, pushed);
-        }
-        pushed.push(next);
-    }
+    signed_entries("2026-10-19T03:00:00Z", &entries, secret)
 }
 
 fn desc(home: &Home, id: &str) -> Value {

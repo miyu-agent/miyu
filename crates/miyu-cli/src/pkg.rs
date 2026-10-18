@@ -12,6 +12,7 @@ mod pack;
 mod query;
 mod shown;
 mod source;
+mod upgrade;
 
 use std::io::{self, BufRead, Write};
 use std::path::{Component, Path, PathBuf};
@@ -98,6 +99,8 @@ pub enum PkgCommand {
     Update,
     /// 清掉缓存里不是装着那一版的包文件（施工 G-4 下）。
     Clean,
+    /// 照软件源升级装着的包（施工 G-5）。
+    Upgrade,
     /// 在软件源里搜（施工 G-3 下）：几个词都得有；不写的列出全部。
     Search {
         /// 搜什么。
@@ -348,6 +351,13 @@ async fn act(
         PkgCommand::Update => source::update(rpc, language, json, (out, err)).await,
         PkgCommand::Search { words } => {
             source::search(rpc, &words.join(" "), language, json, (out, err)).await
+        }
+        PkgCommand::Upgrade => upgrade::run(rpc, plan, (input, out, err)).await,
+        PkgCommand::Sync(flags) if flags.upgrade() => {
+            if flags.refresh() {
+                source::update(rpc, language, json, (out, err)).await?;
+            }
+            upgrade::run(rpc, plan, (input, out, err)).await
         }
         PkgCommand::Sync(flags) => match flags.installs() {
             Some(ids) => {

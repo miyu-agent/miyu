@@ -11,6 +11,7 @@ fn mirrors_come_before_the_source() {
             Address::Env("MIYU_TEST_NO_SUCH_MIRROR_VARIABLE".to_string()),
             Address::Literal("  ".to_string()),
         ],
+        hold: None,
     };
     assert_eq!(
         bases(&settings),

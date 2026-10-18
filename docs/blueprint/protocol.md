@@ -167,6 +167,7 @@
 | `package.sync` | 从软件源拿索引（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条） |
 | `package.search` | 在软件源里搜（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条） |
 | `package.clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条） |
+| `package.upgrades`、`package.upgrade` | 盘点能升级的、照软件源升级（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条） |
 | `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
@@ -670,6 +671,12 @@
 
 - 没有参数。`state/packages/.cache/` 里不是装着那一版（`<编号>-<版本>.miyu`、`<编号>-<版本>-<系统>.miyu`，照装着的包的清单写的版本）的包文件删掉，下了一半没换过去的也删。和装卸同一把锁，不删正在装的。
 - 回应 `{"removed", "freed"}`：删了几个文件、几个字节。只给人。
+
+**`package.upgrades`、`package.upgrade`**（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，照 pacman 的 `-Su`）
+
+- 只碰从软件源装的：本地库 `desc` 记了来源仓库 `origin` 的；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。先照 `package.sync` 不带 `force` 那样拿索引。
+- `package.upgrades`（没有参数）盘点：被拉黑的（编号或来源仓库对上）进 `blocked`；索引里没有了的进 `gone`；来源仓库和装的时候不一样的进 `moved`，不升；版本和索引的一样的不动；系统配置 `packages.hold` 里的进 `held`；别的进 `upgrades`。回应 `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone": [...], "blocked": [{"package", "reason"}], "held": [...], "generated", "stale"?}`。版本不比大小：索引的那一版和装着的不一样就升，作者撤回新版也跟着回去。
+- `package.upgrade {"packages"?, "preview"?}`：升 `upgrades` 里的（写了 `packages` 的只升列着的）；看一眼回 `{"upgrades", "download"}`（要下多少字节），真升回 `{"upgraded": [{"package", "from", "to"}]}`。升一个就是照 `package.install {"source"}` 重装它（缺的新依赖一起装，下载进度照推）：设置、状态、开关都留着；新版多要的能力照旧要人批了才开。没有能升的回空的列表。只给人。
 
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 

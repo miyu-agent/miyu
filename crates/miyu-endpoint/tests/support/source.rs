@@ -55,12 +55,30 @@ pub fn serving(pair: &(Vec<u8>, Vec<u8>)) -> Vec<Reply> {
 
 /// 系统配置里写了软件源、镜像，认 `keys` 的核心。
 pub fn core(home: &Home, source: &str, mirrors: &[&str], keys: Vec<PublicKey>) -> Arc<Core> {
-    let mirrors: Vec<String> = mirrors.iter().map(|m| format!("\"{m}\"")).collect();
+    core_holding(home, source, mirrors, keys, &[])
+}
+
+/// 同 [`core`]，`packages.hold` 写这几个（施工 G-5）。
+pub fn core_holding(
+    home: &Home,
+    source: &str,
+    mirrors: &[&str],
+    keys: Vec<PublicKey>,
+    hold: &[&str],
+) -> Arc<Core> {
+    let quoted = |items: &[&str]| -> String {
+        items
+            .iter()
+            .map(|item| format!("\"{item}\""))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
     home.write(
         "system/config.toml",
         &format!(
-            "[packages]\nsource = \"{source}\"\nmirrors = [{}]\n",
-            mirrors.join(", ")
+            "[packages]\nsource = \"{source}\"\nmirrors = [{}]\nhold = [{}]\n",
+            quoted(mirrors),
+            quoted(hold)
         ),
     );
     let config = miyu_endpoint::config::Config::load(
@@ -75,4 +93,68 @@ pub fn core(home: &Home, source: &str, mirrors: &[&str], keys: Vec<PublicKey>) -
             .with_config(config)
             .with_source_keys(keys),
     )
+}
+
+/// 打一个真的包：编号、版本、依赖，交回文件名、字节（包文件夹在工作目录的 `src/<编号>-<版本>/<编号>`）。
+pub fn packed(home: &Home, id: &str, version: &str, depends: &[&str]) -> (String, Vec<u8>) {
+    let folder = home
+        .work
+        .join("src")
+        .join(format!("{id}-{version}"))
+        .join(id);
+    std::fs::create_dir_all(&folder).expect("建得了");
+    let mut text = format!("[package]\nversion = \"{version}\"\nname = {{ en = \"{id}\" }}\n");
+    if !depends.is_empty() {
+        let depends: Vec<String> = depends.iter().map(|d| format!("\"{d}\"")).collect();
+        text.push_str(&format!(
+            "\n[depends]\npackages = [{}]\n",
+            depends.join(", ")
+        ));
+    }
+    std::fs::write(folder.join("package.toml"), text).expect("写得进");
+    let name = miyu_source::archive::file_name(id, version, None);
+    let out = home.work.join("out").join(&name);
+    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
+    miyu_source::archive::pack(&folder, id, &out).expect("打得成");
+    (name, std::fs::read(&out).expect("在"))
+}
+
+/// 索引里的一条：照真的包文件写大小和哈希；原址是到不了的，下载走镜像的 `files/`。
+pub fn file_entry(id: &str, version: &str, depends: &[&str], file: &(String, Vec<u8>)) -> Value {
+    json!({"id": id, "version": version, "name": {"en": id}, "origin": format!("github.com/miyu-agent/{id}"),
+           "official": true, "depends": depends,
+           "files": [{"url": format!("https://example.invalid/{}", file.0), "size": file.1.len(),
+                      "sha256": sha256(&file.1)}]})
+}
+
+/// SHA-256，小写十六进制。
+pub fn sha256(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    sha2::Sha256::digest(bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+/// 一份回应：这些字节。
+pub fn bytes(body: &[u8]) -> Reply {
+    Reply::stream(vec![Piece::Bytes(body.to_vec())])
+}
+
+/// 发一条请求，收下回应之前推来的所有通知。
+pub async fn call_collecting(
+    client: &mut super::Client,
+    method: &str,
+    params: Value,
+) -> (Value, Vec<Value>) {
+    let request = json!({"jsonrpc": "2.0", "id": "c", "method": method, "params": params});
+    client.line(&request.to_string()).await;
+    let mut pushed = Vec::new();
+    loop {
+        let next = client.next().await.expect("有回应");
+        if next.get("id").is_some() {
+            return (next, pushed);
+        }
+        pushed.push(next);
+    }
 }

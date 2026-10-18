@@ -12,6 +12,8 @@ impl Language {
             (Language::English, Doing::Install) => format!("Install {id}"),
             (Language::English, Doing::Restore) => format!("Restore {id}"),
             (Language::English, Doing::Remove) => format!("Remove {id}"),
+            (Language::Chinese, Doing::Upgrade) => format!("将升级 {id}"),
+            (Language::English, Doing::Upgrade) => format!("Upgrade {id}"),
         }
     }
 
@@ -149,6 +151,8 @@ impl Language {
     pub(crate) fn proceed(&self, doing: Doing) -> &'static str {
         match (self, doing) {
             (Language::Chinese, Doing::Remove) => "继续卸载？[Y/n] ",
+            (Language::Chinese, Doing::Upgrade) => "继续升级？[Y/n] ",
+            (Language::English, Doing::Upgrade) => "Proceed with upgrade? [Y/n] ",
             (Language::Chinese, _) => "继续安装？[Y/n] ",
             (Language::English, Doing::Remove) => "Proceed with removal? [Y/n] ",
             (Language::English, _) => "Proceed with installation? [Y/n] ",
@@ -178,6 +182,8 @@ pub(crate) enum Doing {
     Install,
     Restore,
     Remove,
+    /// 升级（施工 G-5）。
+    Upgrade,
 }
 
 /// 「包含」那一行除了程序的几样。

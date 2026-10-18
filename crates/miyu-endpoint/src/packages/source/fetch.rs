@@ -42,6 +42,16 @@ pub(crate) struct SourceParams {
     preview: bool,
 }
 
+impl SourceParams {
+    /// 真装编号是 `id` 的（升级照它一个一个换，施工 G-5）。
+    pub(super) fn of(id: &str) -> SourceParams {
+        SourceParams {
+            source: id.to_string(),
+            preview: false,
+        }
+    }
+}
+
 /// 这一条 `package.install` 是不是从软件源装：写了 `source` 的；只写了 `package`、那个编号不是出厂包的（出厂包的编号照旧是
 /// 装回来：卸掉了的装回来，没卸的 `unknown_package`；软件源里也不会有同编号的，装上会撞 `package_exists`）。
 pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
@@ -190,7 +200,7 @@ fn visit<'a>(
 }
 
 /// 本机能用的那个文件：写了本机这一种的先，不分系统的其次。
-fn pick(entry: &Entry) -> Option<&File> {
+pub(super) fn pick(entry: &Entry) -> Option<&File> {
     let here = Target::here().map(Target::as_str);
     entry
         .files
