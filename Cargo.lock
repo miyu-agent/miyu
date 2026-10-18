@@ -2281,7 +2281,12 @@ dependencies = [
 name = "miyu-source"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
+ "jiff",
  "miyu-config",
+ "ring",
+ "serde",
+ "serde_json",
  "sha2 0.11.0",
  "tar",
  "zstd",

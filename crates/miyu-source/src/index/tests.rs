@@ -1,0 +1,79 @@
+//! 索引（施工 G-2 上）：读得成、认版本和时刻、不认识的格子略过；旧的换不掉新的；找编号、找拉黑。
+
+use super::*;
+
+const SAMPLE: &str = r#"{
+  "version": 1,
+  "generated": "2026-10-19T03:00:00Z",
+  "packages": [
+    {
+      "id": "embed",
+      "version": "1.0.0",
+      "name": {"zh": "语义模型", "en": "Embedding model"},
+      "origin": "github.com/miyu-agent/miyu-embed",
+      "official": true,
+      "provides": {"features": ["embed"]},
+      "files": [{"target": null, "url": "https://example.invalid/embed-1.0.0.miyu", "sha256": "ab", "size": 3}],
+      "later": "a field from a newer index"
+    }
+  ],
+  "blocked": [{"origin": "github.com/someone/bad", "reason": "malware"}]
+}"#;
+
+#[test]
+fn an_index_reads_and_ignores_fields_it_does_not_know() {
+    let index = Index::parse(SAMPLE.as_bytes()).expect("读得成");
+    let embed = index.entry("embed").expect("有");
+    assert_eq!(embed.version, "1.0.0");
+    assert!(embed.official);
+    assert_eq!(embed.files[0].target, None);
+    assert_eq!(embed.files[0].size, 3);
+    assert_eq!(embed.provides["features"], ["embed"]);
+    assert!(embed.summary.is_empty() && embed.depends.is_empty());
+    assert!(index.entry("nothing").is_none());
+    assert_eq!(
+        index
+            .blocked("x", "github.com/someone/bad")
+            .map(|blocked| blocked.reason.as_str()),
+        Some("malware")
+    );
+    assert!(
+        index
+            .blocked("embed", "github.com/miyu-agent/miyu-embed")
+            .is_none()
+    );
+}
+
+#[test]
+fn a_wrong_version_or_time_is_refused() {
+    let newer = SAMPLE.replace("\"version\": 1,", "\"version\": 2,");
+    assert_eq!(Index::parse(newer.as_bytes()), Err(Error::Unsupported(2)));
+    let time = SAMPLE.replace("2026-10-19T03:00:00Z", "yesterday");
+    assert_eq!(
+        Index::parse(time.as_bytes()),
+        Err(Error::BadTime("yesterday".to_string()))
+    );
+    assert!(matches!(Index::parse(b"[]"), Err(Error::Malformed(_))));
+}
+
+#[test]
+fn an_older_index_does_not_replace_a_newer_one() {
+    let kept = Index::parse(SAMPLE.as_bytes()).expect("读得成");
+    let older = Index {
+        generated: "2026-10-18T03:00:00Z".to_string(),
+        ..kept.clone()
+    };
+    let newer = Index {
+        generated: "2026-10-20T03:00:00Z".to_string(),
+        ..kept.clone()
+    };
+    assert!(!may_replace(&kept, &older), "旧的不收");
+    assert!(may_replace(&kept, &newer));
+    assert!(may_replace(&kept, &kept), "同一份重拿照收");
+    let broken = Index {
+        generated: "?".to_string(),
+        ..kept.clone()
+    };
+    assert!(may_replace(&broken, &kept), "本机那份坏了的照换");
+    assert!(!may_replace(&kept, &broken));
+}

@@ -14,6 +14,12 @@ miyu-config = { path = "../miyu-config" }
 tar = { version = "0.4", default-features = false }
 zstd = { version = "0.14", default-features = false }
 sha2 = { version = "0.11", default-features = false }
+# 索引的签名（设计 37 第三节第 2 条）：Ed25519 用 rustls 已经带进来的 ring，不另加密码库；Apache-2.0 和 ISC。
+ring = "0.17"
+base64 = "0.22"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+jiff = "0.2"
 
 [lints]
 workspace = true
