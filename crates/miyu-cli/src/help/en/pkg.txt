@@ -8,8 +8,8 @@ A package file is a packed .miyu.
 Commands:
   list                    List packages
   install <folder|file|id>
-                          Install a folder or a package file, or restore a
-                          removed shipped package
+                          Install a folder or a package file; an id comes
+                          from the package source, a shipped one is restored
   remove <id>             Remove a package with its settings and state
   info <id>               Show a package
   files <id>              List the files a package installed
@@ -18,11 +18,13 @@ Commands:
   pack <folder>           Pack a folder into a package file here
   update                  Fetch the latest index from the package source
   search [<words>…]       Search the package source
+  clean                   Delete downloaded files not of installed versions
 
 pacman options work too:
   -U, -R, -Q              install, remove, list
   -Qi, -Ql, -Qo, -Qk      info, files, owns, check
-  -Sy, -Ss                update, search
+  -Sy, -Ss, -Sc           update, search, clean
+  -S <id>                 Install from the package source
 
 Options:
       --format text|json  list, info, files, owns, check: json for scripts

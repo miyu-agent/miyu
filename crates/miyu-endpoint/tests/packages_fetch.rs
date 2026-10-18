@@ -185,15 +185,34 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
         "下好的进缓存"
     );
 
-    // 卸了再装：缓存里有、哈希对得上的不再下（服务器已经没有回应可给了）。
+    // 卸了再装（只写 `package`：不是出厂包的照软件源装）：缓存里有、哈希对得上的不再下（服务器已经没有回应可给了）。
     let removed = client
         .call("r", "package.remove", json!({"package": "app"}))
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let (again, _) =
-        call_collecting(&mut client, "package.install", json!({"source": "app"})).await;
+        call_collecting(&mut client, "package.install", json!({"package": "app"})).await;
     assert_eq!(again["result"]["package"], "app", "{again}");
     assert_eq!(server.received().len(), 4, "没再下");
+
+    // 清缓存：装着那一版的留下，别的删掉。
+    std::fs::write(
+        home.root.path().join("state/packages/.cache/app-0.9.miyu"),
+        b"old",
+    )
+    .expect("写得进");
+    let cleaned = client.call("k", "package.clean", json!({})).await;
+    assert_eq!(
+        cleaned["result"],
+        json!({"removed": 1, "freed": 3}),
+        "{cleaned}"
+    );
+    assert!(
+        home.root
+            .path()
+            .join("state/packages/.cache/app-1.0.miyu")
+            .is_file()
+    );
 }
 
 #[tokio::test]

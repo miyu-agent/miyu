@@ -6,6 +6,7 @@
 //! `check` 查出改了少了的也是 1（照 pacman）；参数写错的 2，由 clap 管。
 
 mod confirm;
+mod install;
 mod open;
 mod pack;
 mod query;
@@ -95,12 +96,14 @@ pub enum PkgCommand {
     },
     /// 从软件源拿新的索引（施工 G-3 上）。
     Update,
+    /// 清掉缓存里不是装着那一版的包文件（施工 G-4 下）。
+    Clean,
     /// 在软件源里搜（施工 G-3 下）：几个词都得有；不写的列出全部。
     Search {
         /// 搜什么。
         words: Vec<String>,
     },
-    /// pacman 的 `-S`：`-y` 是 `update`，`-s` 是 `search`（`-Sys` 先拿再搜）。帮助页里写，clap 的列表里不列。
+    /// pacman 的 `-S`：`-y` 是 `update`，`-s` 是 `search`（`-Sys` 先拿再搜），`-c` 是 `clean`，只带编号的是从软件源装。帮助页里写，clap 的列表里不列。
     #[command(short_flag = 'S', hide = true)]
     Sync(SyncFlags),
     /// pacman 的 `-Q`：不带别的是 `list`，`-i` 是 `info`，`-l` 是 `files`，`-o` 是 `owns`，`-k` 是 `check`。帮助页里写，
@@ -272,29 +275,7 @@ async fn act(
         }
         PkgCommand::Install { what } => {
             let params = installing(&what, &plan.cwd);
-            // 看一眼：没写 `--yes` 的印出来、问一句；要的能力装好以后打开时一并批（作者说明第九节第 1 条）。
-            let shown = ask(rpc, "package.install", previewed(&params), language, err).await?;
-            if !plan.args.yes {
-                let doing = match params.get("path") {
-                    Some(_) => Doing::Install,
-                    None => Doing::Restore,
-                };
-                lines(out, confirm::plan(&shown, doing, language));
-                confirm::asked(input, out, err, doing, language)?;
-            }
-            let result = ask(rpc, "package.install", params, language, err).await?;
-            let id = package_of(&result);
-            say(out, &language.installed(id));
-            if !open::wanted(&result, &shown) {
-                return Ok(());
-            }
-            if !open::agreed(input, out, plan.args.yes, language) {
-                say(out, language.not_opened());
-                return Ok(());
-            }
-            open::open(rpc, id, &open::capabilities(&shown), language, err).await?;
-            say(out, &language.opened(id));
-            Ok(())
+            install::run(rpc, plan, params, (input, out, err)).await
         }
         PkgCommand::Remove { package } => {
             let params = json!({"package": package});
@@ -368,7 +349,19 @@ async fn act(
         PkgCommand::Search { words } => {
             source::search(rpc, &words.join(" "), language, json, (out, err)).await
         }
-        PkgCommand::Sync(flags) => source::pacman(rpc, flags, language, json, (out, err)).await,
+        PkgCommand::Sync(flags) => match flags.installs() {
+            Some(ids) => {
+                if flags.refresh() {
+                    source::update(rpc, language, json, (out, err)).await?;
+                }
+                for id in ids {
+                    install::run(rpc, plan, json!({"source": id}), (input, out, err)).await?;
+                }
+                Ok(())
+            }
+            None => source::pacman(rpc, flags, language, json, (out, err)).await,
+        },
+        PkgCommand::Clean => source::clean(rpc, language, json, (out, err)).await,
         // 平常在连核心之前就做了（[`run`]）；经连接走到这里的照样在本机打。
         PkgCommand::Pack {
             folder,

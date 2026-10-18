@@ -66,6 +66,30 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         }
         row(PlanLabel::AlsoDeletes, deletes);
     }
+    // 从软件源装的（施工 G-4 下）：一起装的依赖、要下多大、来源仓库和官方还是社区。
+    let with = preview["with"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|one| {
+            format!(
+                "{} {}",
+                one["package"].as_str().unwrap_or_default(),
+                one["version"].as_str().unwrap_or_default()
+            )
+        })
+        .collect();
+    row(PlanLabel::With, with);
+    if let Some(bytes) = preview["download"].as_u64() {
+        row(PlanLabel::Download, vec![size(bytes)]);
+    }
+    if let Some(origin) = preview["origin"].as_str() {
+        let official = preview["official"].as_bool() == Some(true);
+        row(
+            PlanLabel::From,
+            vec![format!("{origin}{}", language.origin_mark(official))],
+        );
+    }
     if let (Some(files), Some(bytes)) = (preview["files"].as_u64(), preview["size"].as_u64()) {
         row(
             PlanLabel::Size,

@@ -10,6 +10,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
 | [`package.sync`](#packagesync) | Fetch the index from the package source |
 | [`package.search`](#packagesearch) | Search the package source |
+| [`package.clean`](#packageclean) | Delete downloaded package files |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
@@ -17,7 +18,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
 
@@ -57,7 +58,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 | Method | Params | Response |
 |---|---|---|
 | `package.install` | `path`: absolute path to a local package folder (the folder name is the id), to its `package.toml`, or to a `.miyu` package file | An item as in `package.list` |
-| `package.install` | `package`: install a removed built-in package back | The same |
+| `package.install` | `package`: a built-in id installs the removed package back; any other id is the same as `source`, from the package source | The same |
 | `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
@@ -99,6 +100,10 @@ Response `{"generated", "fetched", "packages", "stale"?}`: when the index was ge
 Search the package source. Param `query` (optional): words separated by spaces, each of which must appear in the id, name or summary (any language), case-insensitive; empty or absent lists everything. Fetches the index as `package.sync` does first (a local copy younger than 24 hours is used as is).
 
 Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked"}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't. Errors as in `package.sync`.
+
+## `package.clean`
+
+Delete downloaded package files that aren't the installed version. No params; response `{"removed", "freed"}`: how many files and bytes were deleted.
 
 ## `package.enable`, `package.disable`, `package.restart`
 

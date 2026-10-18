@@ -6,7 +6,8 @@
 命令：
   list                    列出软件包
   install <包目录|包文件|编号>
-                          装一个包目录、包文件，或者把卸掉的出厂的装回来
+                          装一个包目录、包文件；编号是从软件源装，出厂的
+                          是装回来
   remove <编号>           卸掉，连同它的设置和状态
   info <编号>             一个包的信息
   files <编号>            一个包装了哪些文件
@@ -15,11 +16,13 @@
   pack <包目录>           打成包文件，写在现在的目录
   update                  从软件源拿新的索引
   search [<词>…]          在软件源里搜
+  clean                   清掉下载过、不是装着那一版的包文件
 
 pacman 的写法也认：
   -U、-R、-Q              install、remove、list
   -Qi、-Ql、-Qo、-Qk      info、files、owns、check
-  -Sy、-Ss                update、search
+  -Sy、-Ss、-Sc           update、search、clean
+  -S <编号>               从软件源装
 
 选项：
       --format text|json  list、info、files、owns、check：json 给脚本

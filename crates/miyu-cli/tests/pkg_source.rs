@@ -36,7 +36,17 @@ fn serving(generated: &str, count: usize, secret: &str) -> Vec<Reply> {
 
 /// 认 `keys`、系统配置里软件源是 `source` 的核心。
 fn home(source: &str, keys: Vec<PublicKey>) -> Home {
+    home_with_mirror(source, "", keys)
+}
+
+/// 同 [`home`]，另配一个镜像（空的不配）。
+fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
     let source = source.to_string();
+    let mirrors = if mirror.is_empty() {
+        String::new()
+    } else {
+        format!("\"{mirror}\"")
+    };
     Home::shaped(
         Arc::new(Script::new([])),
         Catalog::default(),
@@ -44,7 +54,11 @@ fn home(source: &str, keys: Vec<PublicKey>) -> Home {
         move |core, root| {
             let path = root.path().join("system/config.toml");
             std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
-            std::fs::write(&path, format!("[packages]\nsource = \"{source}\"\n")).expect("写得进");
+            std::fs::write(
+                &path,
+                format!("[packages]\nsource = \"{source}\"\nmirrors = [{mirrors}]\n"),
+            )
+            .expect("写得进");
             let config = miyu_endpoint::config::Config::load(
                 root,
                 &crate::support::AccountIdOf::admin(),
@@ -59,6 +73,11 @@ fn home(source: &str, keys: Vec<PublicKey>) -> Home {
 
 /// 照 `words` 跑一次 `miyu pkg`：退出码、标准输出、标准错误。
 async fn pkg(home: &Home, words: &[&str]) -> (u8, String, String) {
+    pkg_answering(home, words, b"").await
+}
+
+/// 同 [`pkg`]，问的那一句照 `input` 答。
+async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String, String) {
     #[derive(Parser)]
     struct Line {
         #[command(subcommand)]
@@ -85,7 +104,7 @@ async fn pkg(home: &Home, words: &[&str]) -> (u8, String, String) {
             connection,
             &token,
             &plan,
-            &mut std::io::empty(),
+            &mut &input[..],
             &mut out,
             &mut err,
         ),
@@ -128,14 +147,11 @@ async fn update_fetches_the_index_and_says_how_many() {
         ),
         "照 pacman 说没有指定目标"
     );
-    let install = pkg(&home, &["-S", "embed"]).await;
+    let install = pkg(&home, &["-S", "embed", "--yes"]).await;
     assert_eq!(
-        install,
-        (
-            2,
-            String::new(),
-            "错误：还不能从软件源装（使用 -h 获取帮助）\n".to_string()
-        )
+        (install.0, install.2.as_str()),
+        (1, "软件包不存在。\n"),
+        "-S <编号> 从软件源装，索引里没有的照核心的原话"
     );
     let stale = pkg(&home, &["-Sy"]).await;
     assert_eq!(stale.0, 1, "旧的不收、算没拿成：{stale:?}");
@@ -200,4 +216,92 @@ async fn search_prints_one_line_each_and_nothing_found_is_exit_one() {
         (1, String::new(), String::new()),
         "什么都没搜到的退出码 1"
     );
+}
+
+/// 打一个包：编号、依赖，交回文件名、字节。
+fn package(dir: &std::path::Path, id: &str, depends: &[&str]) -> (String, Vec<u8>) {
+    let folder = dir.join("src").join(id);
+    std::fs::create_dir_all(&folder).expect("建得了");
+    let mut text = format!("[package]\nversion = \"1.0\"\nname = {{ en = \"{id}\" }}\n");
+    if !depends.is_empty() {
+        let depends: Vec<String> = depends.iter().map(|d| format!("\"{d}\"")).collect();
+        text.push_str(&format!(
+            "\n[depends]\npackages = [{}]\n",
+            depends.join(", ")
+        ));
+    }
+    std::fs::write(folder.join("package.toml"), text).expect("写得进");
+    let name = miyu_source::archive::file_name(id, "1.0", None);
+    let out = dir.join("out").join(&name);
+    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
+    miyu_source::archive::pack(&folder, id, &out).expect("打得成");
+    (name, std::fs::read(&out).expect("在"))
+}
+
+fn entry(id: &str, depends: &[&str], file: &(String, Vec<u8>)) -> serde_json::Value {
+    use sha2::Digest;
+    let sha: String = sha2::Sha256::digest(&file.1)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    json!({"id": id, "version": "1.0", "name": {"en": id}, "origin": format!("github.com/miyu-agent/{id}"),
+           "official": true, "depends": depends,
+           "files": [{"url": format!("https://example.invalid/{}", file.0), "size": file.1.len(), "sha256": sha}]})
+}
+
+#[tokio::test]
+async fn install_from_the_source_shows_the_plan_asks_and_cleans_up_after() {
+    let (secret, trusted) = keys();
+    let scratch = std::env::temp_dir().join(format!("miyu-cli-source-{}", std::process::id()));
+    let app = package(&scratch, "app", &["lib"]);
+    let lib = package(&scratch, "lib", &[]);
+    let index = serde_json::to_vec(&json!({"version": 1, "generated": "2026-10-19T03:00:00Z",
+        "packages": [entry("app", &["lib"], &app), entry("lib", &[], &lib)]}))
+    .expect("写得成");
+    let signature =
+        serde_json::to_vec(&sign::sign(&index, &secret).expect("签得了")).expect("写得成");
+    let server = Server::start(vec![
+        Reply::stream(vec![Piece::Bytes(index)]),
+        Reply::stream(vec![Piece::Bytes(signature)]),
+        Reply::stream(vec![Piece::Bytes(lib.1.clone())]),
+        Reply::stream(vec![Piece::Bytes(app.1.clone())]),
+    ])
+    .await;
+    // 服务器当镜像：索引、包文件都先从它拿；软件源的原址到不了。
+    let mirror = format!("{}/m", server.base_url);
+    let home = home_with_mirror("https://unreachable.invalid/", &mirror, trusted);
+    let declined = pkg_answering(&home, &["install", "app"], b"n\n").await;
+    assert_eq!(declined.0, 1, "答不装的不装：{declined:?}");
+    assert!(
+        declined
+            .1
+            .starts_with("将安装 app 1.0\n一起装：lib 1.0\n下载："),
+        "{declined:?}"
+    );
+    assert!(
+        declined
+            .1
+            .contains("来源：github.com/miyu-agent/app（官方）\n"),
+        "{declined:?}"
+    );
+    let installed = pkg_answering(&home, &["-S", "app"], b"y\n").await;
+    assert_eq!(installed.0, 0, "{installed:?}");
+    assert!(
+        installed.1.contains("[Y/n] 正在下载 "),
+        "问完接着说正在下载：{installed:?}"
+    );
+    assert!(
+        installed.1.ends_with("装好了：lib\n装好了：app\n"),
+        "{installed:?}"
+    );
+    let cleaned = pkg(&home, &["clean"]).await;
+    assert_eq!(
+        cleaned,
+        (0, "缓存里没有要清的包文件\n".to_string(), String::new())
+    );
+    let cleaned = pkg(&home, &["-Sc"]).await;
+    assert_eq!(cleaned.0, 0, "{cleaned:?}");
+    if let Err(error) = std::fs::remove_dir_all(&scratch) {
+        eprintln!("临时目录没删掉：{error}");
+    }
 }

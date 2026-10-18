@@ -166,6 +166,7 @@
 | `package.install`、`package.remove` | 装、卸软件包，当场生效（施工 F-5 上，`packages.md`「装卸」） |
 | `package.sync` | 从软件源拿索引（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条） |
 | `package.search` | 在软件源里搜（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条） |
+| `package.clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条） |
 | `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
@@ -643,7 +644,7 @@
 **`package.install`、`package.remove`**（施工 F-5 上，`packages.md`「装卸」）
 
 - `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装进管理员家目录那一层，同一个编号已经有的换成新的。回应同 `package.list` 的一项。
-- `package.install {"package"}`：把卸掉的出厂的包装回来。回应同 `package.list` 的一项。
+- `package.install {"package"}`：编号是出厂包的，把卸掉的装回来（没卸的 `unknown_package`）；不是出厂包的照软件源装，同下一条 `{"source"}`（施工 G-4 下：装只有一个动词，核心判断走哪条路）。回应同 `package.list` 的一项。
 - `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。
   - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "origin", "capabilities", "provides", "download", "with", "replaces"?}`：`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version"}]`，同编号已经装着的带 `replaces: {"version"}`。
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
@@ -664,6 +665,11 @@
 - 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
 - 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked"}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
 - 拒绝、谁能调同 `package.sync`。
+
+**`package.clean`**（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条，照 pacman 的 `-Sc`）
+
+- 没有参数。`state/packages/.cache/` 里不是装着那一版（`<编号>-<版本>.miyu`、`<编号>-<版本>-<系统>.miyu`，照装着的包的清单写的版本）的包文件删掉，下了一半没换过去的也删。和装卸同一把锁，不删正在装的。
+- 回应 `{"removed", "freed"}`：删了几个文件、几个字节。只给人。
 
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 

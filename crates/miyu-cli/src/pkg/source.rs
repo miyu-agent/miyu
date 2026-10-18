@@ -12,8 +12,8 @@ use crate::language::Language;
 use crate::rpc::Rpc;
 use crate::shown::say;
 
-/// `-S` 后面接的（施工 G-3 上、下）：`-y` 拿索引，`-s` 搜，接几个词；都写的先拿再搜。字母、词都没写的照 pacman 说「没有
-/// 指定目标」，退出码 2（项目主人 2026-10-19 定）；只写了词的是从软件源装，G-4 做，现在说一句还没有。
+/// `-S` 后面接的（施工 G-3 上、下，G-4 下）：`-y` 拿索引，`-s` 搜，`-c` 清缓存，接几个词；不带 `-s`、`-c` 只带词的是从软件源
+/// 装这几个（`-Sy <编号>` 先拿再装）。字母、词都没写的照 pacman 说「没有指定目标」，退出码 2（项目主人 2026-10-19 定）。
 #[derive(Debug, Clone, Args)]
 pub struct SyncFlags {
     /// `-Sy`：`update`。
@@ -22,8 +22,23 @@ pub struct SyncFlags {
     /// `-Ss`：`search`。
     #[arg(short = 's')]
     search: bool,
+    /// `-Sc`：`clean`（施工 G-4 下）。
+    #[arg(short = 'c')]
+    clean: bool,
     /// `-Ss` 搜的词。
     words: Vec<String>,
+}
+
+impl SyncFlags {
+    /// 从软件源装的那几个：不带 `-s`、`-c`，写了编号的。
+    pub(super) fn installs(&self) -> Option<&[String]> {
+        (!self.search && !self.clean && !self.words.is_empty()).then_some(self.words.as_slice())
+    }
+
+    /// 带了 `-y`。
+    pub(super) fn refresh(&self) -> bool {
+        self.refresh
+    }
 }
 
 /// pacman 的 `-S…`：照几个字母做。
@@ -34,12 +49,11 @@ pub(super) async fn pacman(
     json: bool,
     (out, err): (&mut dyn Write, &mut dyn Write),
 ) -> Result<(), u8> {
+    if flags.clean {
+        return clean(rpc, language, json, (out, err)).await;
+    }
     if !flags.refresh && !flags.search {
-        let said = match flags.words.is_empty() {
-            true => language.nothing_to_sync(),
-            false => language.sync_install_not_yet(),
-        };
-        say(err, said);
+        say(err, language.nothing_to_sync());
         return Err(exit::MISUSE);
     }
     if flags.refresh {
@@ -118,6 +132,24 @@ fn shown(rows: &[Value], language: &Language) -> Vec<String> {
             line
         })
         .collect()
+}
+
+/// `clean`（`-Sc`，施工 G-4 下）：清掉缓存里不是装着那一版的包文件，说清了几个、腾出多少。`json` 的原样印回应。
+pub(super) async fn clean(
+    rpc: &mut Rpc,
+    language: &Language,
+    json: bool,
+    (out, err): (&mut dyn Write, &mut dyn Write),
+) -> Result<(), u8> {
+    let cleaned = ask(rpc, "package.clean", json!({}), language, err).await?;
+    if json {
+        say(out, &cleaned.to_string());
+        return Ok(());
+    }
+    let removed = cleaned["removed"].as_u64().unwrap_or_default();
+    let freed = super::query::size(cleaned["freed"].as_u64().unwrap_or_default());
+    say(out, &language.cleaned(removed, &freed));
+    Ok(())
 }
 
 /// `update`：不管本机那份新不新都去拿（`package.sync` 带 `force`）。拿成了印包数和索引的时刻；一处都没拿成、用的是本机那份的

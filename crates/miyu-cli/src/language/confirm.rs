@@ -89,11 +89,17 @@ impl Language {
             (Language::Chinese, PlanLabel::Needs) => "需要：",
             (Language::Chinese, PlanLabel::AlsoDeletes) => "一并删除：",
             (Language::Chinese, PlanLabel::Size) => "大小：",
+            (Language::Chinese, PlanLabel::With) => "一起装：",
+            (Language::Chinese, PlanLabel::Download) => "下载：",
+            (Language::Chinese, PlanLabel::From) => "来源：",
             (Language::English, PlanLabel::Includes) => "Includes: ",
             (Language::English, PlanLabel::Skipped) => "Cannot read: ",
             (Language::English, PlanLabel::Needs) => "Needs: ",
             (Language::English, PlanLabel::AlsoDeletes) => "Also deletes: ",
             (Language::English, PlanLabel::Size) => "Size: ",
+            (Language::English, PlanLabel::With) => "Also installs: ",
+            (Language::English, PlanLabel::Download) => "Download: ",
+            (Language::English, PlanLabel::From) => "From: ",
         }
     }
 
@@ -102,6 +108,24 @@ impl Language {
         match self {
             Language::Chinese => "、",
             Language::English => ", ",
+        }
+    }
+
+    /// 来源仓库后面接的：官方的、社区的（没人审过）。
+    pub(crate) fn origin_mark(&self, official: bool) -> &'static str {
+        match (self, official) {
+            (Language::Chinese, true) => "（官方）",
+            (Language::Chinese, false) => "（社区，没人审过）",
+            (Language::English, true) => " (official)",
+            (Language::English, false) => " (community, not reviewed)",
+        }
+    }
+
+    /// 装之前：正在下载多大。
+    pub(crate) fn downloading(&self, size: &str) -> String {
+        match self {
+            Language::Chinese => format!("正在下载 {size}"),
+            Language::English => format!("Downloading {size}"),
         }
     }
 
@@ -188,4 +212,10 @@ pub(crate) enum PlanLabel {
     Needs,
     AlsoDeletes,
     Size,
+    /// 从软件源装时一起装的依赖（施工 G-4 下）。
+    With,
+    /// 从软件源装要下多大（施工 G-4 下）。
+    Download,
+    /// 从软件源装的来源仓库、官方还是社区（施工 G-4 下）。
+    From,
 }

@@ -56,6 +56,7 @@ miyu-session = { path = "../miyu-session", features = ["testkit"] }
 miyu-tool = { path = "../miyu-tool" }
 # 测试里 `miyu setup` 的供应商、本机的服务是假服务器（施工 8-11）。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
+sha2 = { version = "0.11", default-features = false }
 # 测试里核心的模型资料：真目录裁出来的一份、档案（施工 8-11）。
 miyu-models = { path = "../miyu-models" }
 # 测试里在进程里起核心：真的工具经 cargo 编出来的助手执行命令（施工 5-4 上）。

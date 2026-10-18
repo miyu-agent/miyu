@@ -321,13 +321,13 @@ impl Language {
         }
     }
 
-    /// `-S <编号>`：从软件源装还没有（施工 G-4）。
-    pub(crate) fn sync_install_not_yet(&self) -> &'static str {
-        match self {
-            Language::Chinese => "错误：还不能从软件源装（使用 -h 获取帮助）",
-            Language::English => {
-                "error: installing from the package source is not available yet (use -h for help)"
-            }
+    /// `clean`：清掉了几个包文件、腾出多少；一个都没有的说没有要清的。
+    pub(crate) fn cleaned(&self, removed: u64, freed: &str) -> String {
+        match (self, removed) {
+            (Language::Chinese, 0) => "缓存里没有要清的包文件".to_string(),
+            (Language::Chinese, _) => format!("清掉了 {removed} 个包文件，腾出 {freed}"),
+            (Language::English, 0) => "No package files to clean".to_string(),
+            (Language::English, _) => format!("Removed {removed} package files, freed {freed}"),
         }
     }
 

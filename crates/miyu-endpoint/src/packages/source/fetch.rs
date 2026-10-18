@@ -17,6 +17,7 @@ use serde_json::{Value, json};
 use miyu_config::package::Target;
 use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
+use miyu_store::packages::Packages;
 
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
@@ -28,15 +29,35 @@ use crate::settings::SourceSettings;
 /// 进度最多多久推一次。
 const EVERY: Duration = Duration::from_millis(200);
 
-/// `package.install` 从软件源装的参数。
+/// `package.install` 从软件源装的参数：`source` 写编号；只写 `package` 的、那个编号又不是卸掉的出厂包的也走这里（施工 G-4 下：
+/// 装只有一个动词，核心判断是装回出厂的还是从软件源装）。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SourceParams {
     /// 索引里的编号。
+    #[serde(alias = "package")]
     source: String,
     /// 只看一眼。
     #[serde(default)]
     preview: bool,
+}
+
+/// 这一条 `package.install` 是不是从软件源装：写了 `source` 的；只写了 `package`、那个编号不是出厂包的（出厂包的编号照旧是
+/// 装回来：卸掉了的装回来，没卸的 `unknown_package`；软件源里也不会有同编号的，装上会撞 `package_exists`）。
+pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
+    if params.get("source").is_some() {
+        return true;
+    }
+    match (
+        params.get("package").and_then(Value::as_str),
+        params.get("path"),
+    ) {
+        (Some(id), None) => !Packages::shipped(&core.resources)
+            .read()
+            .iter()
+            .any(|shipped| shipped.id == id),
+        _ => false,
+    }
 }
 
 /// 要装的一个：索引里那一条、挑好的文件、文件名。
@@ -184,16 +205,23 @@ fn preview(steps: &[Step<'_>], core: &Core) -> Value {
         return Value::Null;
     };
     let entry = last.entry;
+    // 和从包文件夹装的看一眼同一个形状（命令行、头照同一套印），带了哪几样照索引摊开；另有下多大、一起装的、来源。
     let mut answer = json!({
         "package": entry.id,
         "version": entry.version,
         "official": entry.official,
         "origin": entry.origin,
-        "capabilities": entry.capabilities,
-        "provides": entry.provides,
+        "capabilities": entry.capabilities.iter().map(|name| json!({"name": name})).collect::<Vec<_>>(),
         "download": steps.iter().map(|step| step.file.size).sum::<u64>(),
         "with": before.iter().map(|step| json!({"package": step.entry.id, "version": step.entry.version})).collect::<Vec<_>>(),
     });
+    for (kind, names) in &entry.provides {
+        match kind.as_str() {
+            "command" => answer["command"] = json!(names.first()),
+            "features" => {}
+            _ => answer[kind.as_str()] = json!(names),
+        }
+    }
     let now = core.packages();
     if let Some(old) = now.iter().find(|one| one.id == entry.id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
