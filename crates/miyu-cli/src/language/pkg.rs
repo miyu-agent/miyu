@@ -310,3 +310,48 @@ impl Language {
         }
     }
 }
+
+/// `miyu pkg search` 的几个标记（施工 G-3 下）。
+impl Language {
+    /// `-S` 什么都没带：照 pacman 的原话（项目主人 2026-10-19 定）。
+    pub(crate) fn nothing_to_sync(&self) -> &'static str {
+        match self {
+            Language::Chinese => "错误：没有指定目标（使用 -h 获取帮助）",
+            Language::English => "error: no targets specified (use -h for help)",
+        }
+    }
+
+    /// `-S <编号>`：从软件源装还没有（施工 G-4）。
+    pub(crate) fn sync_install_not_yet(&self) -> &'static str {
+        match self {
+            Language::Chinese => "错误：还不能从软件源装（使用 -h 获取帮助）",
+            Language::English => {
+                "error: installing from the package source is not available yet (use -h for help)"
+            }
+        }
+    }
+
+    /// 装着的。
+    pub(crate) fn installed_mark(&self) -> &'static str {
+        match self {
+            Language::Chinese => "（已装）",
+            Language::English => " (installed)",
+        }
+    }
+
+    /// 不是官方的：没人审过。
+    pub(crate) fn community_mark(&self) -> &'static str {
+        match self {
+            Language::Chinese => "（社区）",
+            Language::English => " (community)",
+        }
+    }
+
+    /// 被拉黑了。
+    pub(crate) fn blocked_mark(&self, reason: &str) -> String {
+        match self {
+            Language::Chinese => format!("（被拉黑：{reason}）"),
+            Language::English => format!(" (blocked: {reason})"),
+        }
+    }
+}

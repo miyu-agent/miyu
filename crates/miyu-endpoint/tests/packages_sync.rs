@@ -2,72 +2,12 @@
 //! 钥匙签。拿到的存进 `state/packages/.sync/`、24 小时以内不再拿、`force` 的照拿；比本机旧的不收、照用本机的、带原因；签名
 //! 不对、连不上的试下一处，镜像在前；一处都不成、本机也没有的拒 `source_unreachable`。
 
-use std::sync::Arc;
-
 use serde_json::{Value, json};
 
-use miyu_endpoint::Core;
-use miyu_http::testkit::{Piece, Reply, Server};
-use miyu_session::testkit::Script;
-use miyu_source::sign::{self, PublicKey};
-use miyu_tool::Catalog;
+use miyu_http::testkit::Server;
 
+use crate::support::source::{core, keys, serving, signed};
 use crate::support::*;
-
-/// 一份签好的索引：生成的时刻、几个包，用 `secret` 签。交回索引和签名两份字节。
-fn signed(generated: &str, ids: &[&str], secret: &str) -> (Vec<u8>, Vec<u8>) {
-    let packages: Vec<Value> = ids
-        .iter()
-        .map(|id| {
-            json!({"id": id, "version": "1.0", "origin": format!("github.com/miyu-agent/{id}"),
-                   "official": true, "files": [{"url": "https://example.invalid/x.miyu", "sha256": "ab", "size": 1}]})
-        })
-        .collect();
-    let index =
-        serde_json::to_vec(&json!({"version": 1, "generated": generated, "packages": packages}))
-            .expect("写得成");
-    let signature =
-        serde_json::to_vec(&sign::sign(&index, secret).expect("签得了")).expect("写得成");
-    (index, signature)
-}
-
-/// 两份回应：索引、签名。
-fn serving(pair: &(Vec<u8>, Vec<u8>)) -> Vec<Reply> {
-    vec![
-        Reply::stream(vec![Piece::Bytes(pair.0.clone())]),
-        Reply::stream(vec![Piece::Bytes(pair.1.clone())]),
-    ]
-}
-
-/// 系统配置里写了软件源、镜像，认 `keys` 的核心。
-fn core(home: &Home, source: &str, mirrors: &[&str], keys: Vec<PublicKey>) -> Arc<Core> {
-    let mirrors: Vec<String> = mirrors.iter().map(|m| format!("\"{m}\"")).collect();
-    home.write(
-        "system/config.toml",
-        &format!(
-            "[packages]\nsource = \"{source}\"\nmirrors = [{}]\n",
-            mirrors.join(", ")
-        ),
-    );
-    let config = miyu_endpoint::config::Config::load(
-        &home.root,
-        &alice(),
-        None,
-        miyu_endpoint::settings::SourceSettings::ITEMS.to_vec(),
-        miyu_endpoint::config::Environment::of(&[]),
-    );
-    Arc::new(
-        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
-            .with_config(config)
-            .with_source_keys(keys),
-    )
-}
-
-fn keys() -> (String, Vec<PublicKey>) {
-    let made = sign::generate().expect("生成得了");
-    let public = PublicKey::from_base64(&made.public).expect("读得成");
-    (made.secret, vec![public])
-}
 
 async fn sync(client: &mut Client, force: bool) -> Value {
     client

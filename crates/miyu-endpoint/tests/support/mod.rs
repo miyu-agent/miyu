@@ -12,6 +12,7 @@ pub mod packaged;
 pub mod providers;
 mod pushes;
 pub mod shipped;
+pub mod source;
 pub mod venues;
 #[allow(unused_imports, reason = "几个测试各用其中一部分")]
 pub use checks::*;

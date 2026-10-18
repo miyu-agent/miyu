@@ -118,6 +118,25 @@ async fn update_fetches_the_index_and_says_how_many() {
             String::new()
         )
     );
+    let plain = pkg(&home, &["-S"]).await;
+    assert_eq!(
+        plain,
+        (
+            2,
+            String::new(),
+            "错误：没有指定目标（使用 -h 获取帮助）\n".to_string()
+        ),
+        "照 pacman 说没有指定目标"
+    );
+    let install = pkg(&home, &["-S", "embed"]).await;
+    assert_eq!(
+        install,
+        (
+            2,
+            String::new(),
+            "错误：还不能从软件源装（使用 -h 获取帮助）\n".to_string()
+        )
+    );
     let stale = pkg(&home, &["-Sy"]).await;
     assert_eq!(stale.0, 1, "旧的不收、算没拿成：{stale:?}");
     assert!(
@@ -137,4 +156,48 @@ async fn update_with_no_source_and_no_index_is_refused() {
     let refused = pkg(&home, &["update"]).await;
     assert_eq!(refused.0, 1, "{refused:?}");
     assert_eq!(refused.2, "软件源连不上。\n");
+}
+
+#[tokio::test]
+async fn search_prints_one_line_each_and_nothing_found_is_exit_one() {
+    let (secret, trusted) = keys();
+    let index = serde_json::to_vec(&json!({
+        "version": 1,
+        "generated": "2026-10-19T03:00:00Z",
+        "packages": [
+            {"id": "embed", "version": "1.0", "name": {"zh": "语义模型"}, "summary": {"zh": "本机算向量"},
+             "origin": "github.com/miyu-agent/miyu-embed", "official": true,
+             "files": [{"url": "https://example.invalid/x.miyu", "sha256": "ab", "size": 1}]},
+            {"id": "cat", "version": "1.0", "name": {"zh": "猫"},
+             "origin": "github.com/someone/cat", "official": false,
+             "files": [{"url": "https://example.invalid/y.miyu", "sha256": "ab", "size": 1}]},
+        ],
+        "blocked": [{"id": "cat", "reason": "spam"}],
+    }))
+    .expect("写得成");
+    let signature =
+        serde_json::to_vec(&sign::sign(&index, &secret).expect("签得了")).expect("写得成");
+    let server = Server::start(vec![
+        Reply::stream(vec![Piece::Bytes(index)]),
+        Reply::stream(vec![Piece::Bytes(signature)]),
+    ])
+    .await;
+    let home = home(&server.base_url, trusted);
+    let all = pkg(&home, &["search"]).await;
+    assert_eq!(
+        all,
+        (
+            0,
+            "embed  语义模型  本机算向量\ncat    猫（社区）（被拉黑：spam）\n".to_string(),
+            String::new()
+        )
+    );
+    let one = pkg(&home, &["-Ss", "向量"]).await;
+    assert_eq!(one.1, "embed  语义模型  本机算向量\n", "{one:?}");
+    let none = pkg(&home, &["search", "nothing"]).await;
+    assert_eq!(
+        none,
+        (1, String::new(), String::new()),
+        "什么都没搜到的退出码 1"
+    );
 }

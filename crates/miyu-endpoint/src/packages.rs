@@ -27,6 +27,7 @@ pub(crate) mod manage;
 pub(crate) mod methods;
 pub(crate) mod port;
 pub(crate) mod preview;
+mod search;
 mod services;
 pub(crate) mod status;
 pub(crate) mod switch;

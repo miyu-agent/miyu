@@ -455,6 +455,7 @@ fn people_only(method: &str) -> bool {
                 | "package.disable"
                 | "package.restart"
                 | "package.sync"
+                | "package.search"
                 | "package.file"
                 | "mcp.list"
                 | "mcp.restart"

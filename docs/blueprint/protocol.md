@@ -165,6 +165,7 @@
 | `package.list` | 列出起来时读到的软件包清单（施工 9-1 上，`packages.md`）；装卸以后当场照新的，卸掉的出厂的带 `removed`（施工 F-5 上） |
 | `package.install`、`package.remove` | 装、卸软件包，当场生效（施工 F-5 上，`packages.md`「装卸」） |
 | `package.sync` | 从软件源拿索引（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条） |
+| `package.search` | 在软件源里搜（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条） |
 | `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
@@ -654,6 +655,12 @@
 - 拿成了的照收到的字节存进 `state/packages/.sync/`（`index.json`、`index.json.sig`，另写拿到的时刻 `fetched`；先写临时文件再换过去）。本机存的那份每次读都再验一遍签名，验不过的当没有。
 - 回应 `{"generated", "fetched", "packages", "stale"?}`：一处都没拿成、用的是本机那份的带 `stale`，是最后一处的原因（英文原话，带地址）。
 - 拒绝：参数不对 `bad_params`；一处都没拿成、本机也没有 `source_unreachable`（`data.why` 是最后一处的原因）。扩展调回 `local_only`。
+
+**`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
+
+- 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
+- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked"}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
+- 拒绝、谁能调同 `package.sync`。
 
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 

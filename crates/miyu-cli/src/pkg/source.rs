@@ -1,15 +1,124 @@
-//! `miyu pkg` 里软件源的几个（施工 G-3 上起，设计 `37-软件源.md` 第四节）：`update`（pacman 的 `-Sy`）拿新的索引。之后的
-//! `search`、从软件源装、`upgrade` 也住这里（`pkg.rs` 到了 500 行）。
+//! `miyu pkg` 里软件源的几个（施工 G-3 上起，设计 `37-软件源.md` 第四节）：`update`（pacman 的 `-Sy`）拿新的索引，`search`
+//! （`-Ss`，施工 G-3 下）在软件源里搜。之后的从软件源装、`upgrade` 也住这里（`pkg.rs` 到了 500 行）。
 
 use std::io::Write;
 
-use serde_json::json;
+use clap::Args;
+use serde_json::{Value, json};
 
 use super::ask;
 use crate::exit;
 use crate::language::Language;
 use crate::rpc::Rpc;
 use crate::shown::say;
+
+/// `-S` 后面接的（施工 G-3 上、下）：`-y` 拿索引，`-s` 搜，接几个词；都写的先拿再搜。字母、词都没写的照 pacman 说「没有
+/// 指定目标」，退出码 2（项目主人 2026-10-19 定）；只写了词的是从软件源装，G-4 做，现在说一句还没有。
+#[derive(Debug, Clone, Args)]
+pub struct SyncFlags {
+    /// `-Sy`：`update`。
+    #[arg(short = 'y')]
+    refresh: bool,
+    /// `-Ss`：`search`。
+    #[arg(short = 's')]
+    search: bool,
+    /// `-Ss` 搜的词。
+    words: Vec<String>,
+}
+
+/// pacman 的 `-S…`：照几个字母做。
+pub(super) async fn pacman(
+    rpc: &mut Rpc,
+    flags: SyncFlags,
+    language: &Language,
+    json: bool,
+    (out, err): (&mut dyn Write, &mut dyn Write),
+) -> Result<(), u8> {
+    if !flags.refresh && !flags.search {
+        let said = match flags.words.is_empty() {
+            true => language.nothing_to_sync(),
+            false => language.sync_install_not_yet(),
+        };
+        say(err, said);
+        return Err(exit::MISUSE);
+    }
+    if flags.refresh {
+        update(rpc, language, json, (out, err)).await?;
+    }
+    if flags.search {
+        search(rpc, &flags.words.join(" "), language, json, (out, err)).await?;
+    }
+    Ok(())
+}
+
+/// `search`：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已装」，社区的接「社区」，拉黑的接理由。一个都
+/// 没搜到的什么都不印、退出码 1（照 pacman）；用的是本机的旧索引的在标准错误上说一句。`json` 的原样印回应。
+pub(super) async fn search(
+    rpc: &mut Rpc,
+    query: &str,
+    language: &Language,
+    json: bool,
+    (out, err): (&mut dyn Write, &mut dyn Write),
+) -> Result<(), u8> {
+    let found = ask(
+        rpc,
+        "package.search",
+        json!({"query": query}),
+        language,
+        err,
+    )
+    .await?;
+    if let Some(why) = found["stale"].as_str() {
+        say(
+            err,
+            &language.index_stale(found["generated"].as_str().unwrap_or_default(), why),
+        );
+    }
+    let rows = found["packages"].as_array().cloned().unwrap_or_default();
+    if json {
+        say(out, &found.to_string());
+    } else {
+        for line in shown(&rows, language) {
+            say(out, &line);
+        }
+    }
+    if rows.is_empty() {
+        Err(exit::ERROR)
+    } else {
+        Ok(())
+    }
+}
+
+/// 搜到的一行一个。
+fn shown(rows: &[Value], language: &Language) -> Vec<String> {
+    let text = |row: &Value, key: &str| row[key].as_str().unwrap_or_default().to_string();
+    let width = rows
+        .iter()
+        .map(|row| text(row, "package").chars().count())
+        .max()
+        .unwrap_or(0);
+    rows.iter()
+        .map(|row| {
+            let line = format!(
+                "{:width$}  {}  {}",
+                text(row, "package"),
+                text(row, "name"),
+                text(row, "summary")
+            );
+            let mut line = line.trim_end().to_string();
+            if row["installed"].is_string() {
+                line.push_str(language.installed_mark());
+            }
+            if row["official"].as_bool() != Some(true) {
+                line.push_str(language.community_mark());
+            }
+            if let Some(reason) = row["blocked"].as_str() {
+                line.push_str(&language.blocked_mark(reason));
+            }
+            line
+        })
+        .collect()
+}
 
 /// `update`：不管本机那份新不新都去拿（`package.sync` 带 `force`）。拿成了印包数和索引的时刻；一处都没拿成、用的是本机那份的
 /// 说一句、退出码 1（照 pacman：`-Sy` 没拿成算失败）。`json` 的原样印回应。

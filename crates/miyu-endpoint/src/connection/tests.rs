@@ -17,6 +17,7 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "package.disable",
         "package.restart",
         "package.sync",
+        "package.search",
         "package.file",
         "mcp.list",
         "mcp.restart",

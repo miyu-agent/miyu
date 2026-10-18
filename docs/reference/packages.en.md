@@ -9,6 +9,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`package.install`, `package.remove`](#packageinstall-packageremove) | Install, remove |
 | [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
 | [`package.sync`](#packagesync) | Fetch the index from the package source |
+| [`package.search`](#packagesearch) | Search the package source |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
@@ -16,7 +17,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
 
@@ -90,6 +91,12 @@ Response `{"generated", "fetched", "packages", "stale"?}`: when the index was ge
 | `data.reason` | When |
 |---|---|
 | `source_unreachable` | Nothing could be fetched and there is no local index; `data.why` is the last place's reason |
+
+## `package.search`
+
+Search the package source. Param `query` (optional): words separated by spaces, each of which must appear in the id, name or summary (any language), case-insensitive; empty or absent lists everything. Fetches the index as `package.sync` does first (a local copy younger than 24 hours is used as is).
+
+Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked"}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't. Errors as in `package.sync`.
 
 ## `package.enable`, `package.disable`, `package.restart`
 

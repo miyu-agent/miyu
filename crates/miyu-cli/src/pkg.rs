@@ -29,6 +29,7 @@ use crate::language::{self, Doing, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{offset, say};
+pub use source::SyncFlags;
 
 /// `miyu pkg` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
 #[derive(Debug, Clone, Args)]
@@ -94,7 +95,12 @@ pub enum PkgCommand {
     },
     /// 从软件源拿新的索引（施工 G-3 上）。
     Update,
-    /// pacman 的 `-S`：`-y` 是 `update`。帮助页里写，clap 的列表里不列。
+    /// 在软件源里搜（施工 G-3 下）：几个词都得有；不写的列出全部。
+    Search {
+        /// 搜什么。
+        words: Vec<String>,
+    },
+    /// pacman 的 `-S`：`-y` 是 `update`，`-s` 是 `search`（`-Sys` 先拿再搜）。帮助页里写，clap 的列表里不列。
     #[command(short_flag = 'S', hide = true)]
     Sync(SyncFlags),
     /// pacman 的 `-Q`：不带别的是 `list`，`-i` 是 `info`，`-l` 是 `files`，`-o` 是 `owns`，`-k` 是 `check`。帮助页里写，
@@ -123,19 +129,10 @@ pub struct Query {
     target: Option<String>,
 }
 
-/// `-S` 后面接的：现在只有 `-y`（施工 G-3 上），搜、装、升级随后几步加。
-#[derive(Debug, Clone, Args)]
-pub struct SyncFlags {
-    /// `-Sy`：`update`。现在 `-S` 只有这一种，不写 `-y` 也当 `update`；搜、装、升级加进来时再分。
-    #[arg(short = 'y')]
-    refresh: bool,
-}
-
 impl PkgCommand {
     /// pacman 的写法换成正式的子命令。
     fn plain(self) -> PkgCommand {
         let query = match self {
-            PkgCommand::Sync(_) => return PkgCommand::Update,
             PkgCommand::Query(query) => query,
             other => return other,
         };
@@ -367,9 +364,11 @@ async fn act(
             }
             if broken { Err(exit::ERROR) } else { Ok(()) }
         }
-        PkgCommand::Update | PkgCommand::Sync(_) => {
-            source::update(rpc, language, json, (out, err)).await
+        PkgCommand::Update => source::update(rpc, language, json, (out, err)).await,
+        PkgCommand::Search { words } => {
+            source::search(rpc, &words.join(" "), language, json, (out, err)).await
         }
+        PkgCommand::Sync(flags) => source::pacman(rpc, flags, language, json, (out, err)).await,
         // 平常在连核心之前就做了（[`run`]）；经连接走到这里的照样在本机打。
         PkgCommand::Pack {
             folder,

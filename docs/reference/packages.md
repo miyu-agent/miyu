@@ -9,6 +9,7 @@
 | [`package.install`、`package.remove`](#packageinstallpackageremove) | 装、卸 |
 | [`package.enable`、`package.disable`、`package.restart`](#packageenablepackagedisablepackagerestart) | 开、关、重启 |
 | [`package.sync`](#packagesync) | 从软件源拿索引 |
+| [`package.search`](#packagesearch) | 在软件源里搜 |
 | [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`](#mcplistmcprestart) | 个人设置里的 MCP 服务 |
@@ -16,7 +17,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.file`、`extension.*`、`mcp.*` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.file`、`extension.*`、`mcp.*` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **两层**：出厂的（随 Miyu 装的）、管理员家目录里装的（`home/admin/packages/`）。家目录里装了同编号的就是升级、换掉原来的；出厂的卸掉是在家目录记一笔，能装回来。
 
@@ -90,6 +91,12 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `source_unreachable` | 一处都没拿成，本机也没有索引；`data.why` 是最后一处的原因 |
+
+## `package.search`
+
+在软件源里搜（施工 G-3 下）。参数 `query`（可以不写）：几个词，空白分开，都得出现在编号、名字、说明（哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 拿索引（本机那份不到 24 小时的直接用）。
+
+回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked"}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`。出错同 `package.sync`。
 
 ## `package.enable`、`package.disable`、`package.restart`
 
