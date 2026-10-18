@@ -75,7 +75,7 @@
 | `by` | 是谁要她做的（施工 O-2 下，下面「是谁要的」）：那一条的 `by` 原样，例如 `{"kind":"external","venue":…,"id":"qq:…","role":"manager"}`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人（施工 O-2 下）：本机的人、私聊里对应表认出的本人、群里对应表里有的外部身份是；没有 `by` 的不是 |
 
-回应 `{"result": {"blocks": [内容块…], "error": 布尔, "end_turn": 布尔}}`：内容块照内核的写法（`text`、`image`），`error` 不写是假。`end_turn` 是真的（施工 4-14，通讯平台的 `skip_reply` 这类「这一轮不说了」）：这一步几件工具的结果都到了，核心不再请求模型，这一轮照走完了结束（同一步别的照常跑完；这一轮里排着、并进来的照常接着开下一轮；分叉照常封存），结果上记着 `end_turn`；`error` 是真的不认；不写是假。回应是 JSON-RPC 的错误、写法不对的：算这次调用出错，原话写进结果。图片、文件块引用的 blob 先经 `blob.put` 传上来（存在管理员名下），回应到了核心拷一份进调用它的会话的属主名下、块原样不动（施工 O-2 三补，同 `session.send` 的附件）：群会话属于系统账号，她照属主读。管理员名下也没有这个 blob、存不下的，这次调用照暂时不可用。
+回应 `{"result": {"blocks": [内容块…], "error": 布尔, "end_turn": 布尔}}`：内容块照内核的写法（`text`、`image`），`error` 不写是假。`end_turn` 是真的（施工 4-14，通讯平台的 `skip_reply` 这类「这一轮不说了」）：这一步几件工具的结果都到了，核心不再请求模型，这一轮照走完了结束（同一步别的照常跑完；这一轮里排着、并进来的照常接着开下一轮；分叉照常封存），结果上记着 `end_turn`；`error` 是真的不认；不写是假。`detail` 是给头看的结构化结果（施工 W-11 补，2026-10-18 项目主人定）：照 `miyu_tool::detail` 的三种通用形状（`links`、`table`、`images`）读，多一格少一格、超了上限、`error` 是真的，整格丢掉、结果照常，运行日志记 `WARN tool detail dropped tool=… why=…`；读成了的照形状重写一遍记进结果（不是原样）。`images` 引用的 blob 和图片块一样拷进会话属主名下。回应是 JSON-RPC 的错误、写法不对的：算这次调用出错，原话写进结果。图片、文件块引用的 blob 先经 `blob.put` 传上来（存在管理员名下），回应到了核心拷一份进调用它的会话的属主名下、块原样不动（施工 O-2 三补，同 `session.send` 的附件）：群会话属于系统账号，她照属主读。管理员名下也没有这个 blob、存不下的，这次调用照暂时不可用。
 
 她发出去的图（施工 X-19，设计 `34-表情包.md` 第五节第 4 条）：回应多一格 `sent`：`[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`，至多 4 张，多了的整份当写法不对。图同上先经 `blob.put` 传、核心拷进属主名下；`path` 写了也不收（扩展说的本机位置不可信）。记进 `tool.result.sent`，**不发给模型**（她看到的照旧只有 `blocks`），头画在正文里，通讯平台照它发（`sticker` 的当表情）。
 
@@ -111,6 +111,8 @@
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前） | 契约：登记成 `venue` 的工具收；本机的会话调到它，权限策略当场拒绝、写 `not-in-venue` 那一句，扩展收不到 `tool.call` |
 | `crates/miyu-endpoint/tests/provide_features.rs`（施工 T-2） | 写了几个功能的，登记没列的工具整个不收（`feature`）、只登记列了的照收；空的 `[features]` 一件都不收；只写了一个功能的都收 |
 | `crates/miyu-endpoint/tests/provide_end_turn.rs`（施工 4-14） | 契约：回应带 `end_turn` 的，这一轮结束、不再请求；出错的照样带上的不认，接着请求 |
+| `crates/miyu-endpoint/tests/provide_detail.rs`（施工 W-11 补） | 契约：合形状的 `detail` 记进结果；网址不是 http 的、出错时带的丢掉 |
+| `crates/miyu-tool/src/detail/tests.rs`（施工 W-11 补） | 三种形状读进来写回去一样；只有图引用 blob；多一格、少一格、超上限、坏网址、坏格子、坏哈希、不是图、超 64 KiB 各报原因 |
 | `crates/miyu-endpoint/tests/provide.rs` | 契约：扩展登记、撞名的整个不收、头不是提供者；新造的会话工具面里有给本机的、没有只给群的；`tool.call` 带会话、调用编号、参数、是谁要的、是不是主人；结果、错误、写法不对的各自交回；不答的到点超时、扩展收到 `tool.cancel`；扩展关掉了，下一个回合没有它的工具 |
 | `crates/miyu-kernel/src/session/tests/respond/asking.rs`、`origin/tests.rs` 的 `the_owner_is_a_person_or_someone_on_the_owner_table` | 是谁要的：开回合的触发、照记下的几条开的最后一条、并进来的和排着队的被请求看到以后换上，回报不换、别的 harness 换；主人的判法 |
 | `crates/miyu-endpoint/src/provide/tests/remote_tests.rs`、`reverse/tests.rs` | `tool.call` 带 `by`、`owner`；超时交回那一句、发 `tool.cancel`；叫它停发、照样等它回；掐掉发；回应先到的不发；不等了的调用从表里拿掉，通知不带编号、断了不发 |

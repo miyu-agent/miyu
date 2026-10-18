@@ -78,7 +78,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
 
-**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?}}`:
+**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?}}`:
 
 | Name | Notes |
 |---|---|
@@ -86,6 +86,17 @@ Register every tool this package provides now, replacing the previous registrati
 | `error` | The call counts as failed |
 | `end_turn` | Once this step's results are all in, don't ask the model again; the turn ends |
 | `sent` | Images she "sends", at most 4: `[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`. Not shown to the model; heads draw them in the reply and chat platforms send them |
+| `detail` | A structured result for heads, in one of the three common shapes below; not shown to the model. If the shape is wrong or `error` is true, the core drops this field and keeps the rest of the result |
+
+The three shapes of `detail` (at most 64 KiB as JSON):
+
+| `kind` | Other fields | Limit |
+|---|---|---|
+| `links` | `links: [{"title", "url", "snippet"?, "site"?, "date"?}]`; `url` must be `http` or `https` | 50 links |
+| `table` | `columns: ["name", …]`, `rows: [[cell, …], …]`; each row has one cell per column, cells are strings, numbers, booleans or `null` | 20 columns, 200 rows |
+| `images` | `images: [{"blob", "media_type", "caption"?}]`; `media_type` starts with `image/`; upload images with `blob.put` first | 20 images |
+
+Extra or missing fields are refused. Heads that know the shape draw it as a card; it is kept in the `detail` of `tool.result` (see [Events](events.en.md)).
 
 A JSON-RPC error or a malformed answer counts as a failed call. With no answer by `timeout_ms`, the call reports "didn't finish within N seconds".
 

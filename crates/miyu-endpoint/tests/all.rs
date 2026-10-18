@@ -10,6 +10,7 @@ mod model_embed;
 mod package_call_ext;
 mod profile;
 mod provide;
+mod provide_detail;
 mod provide_end_turn;
 mod provide_exit;
 mod provide_features;

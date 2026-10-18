@@ -4,7 +4,7 @@
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{AccountId, CallId, ExternalId, Seq, SessionId, VenueId};
 use miyu_kernel::origin::{By, External, Person};
-use miyu_tool::{CallIds, Progress};
+use miyu_tool::{CallIds, Done, Progress};
 use tokio::sync::mpsc;
 
 use super::*;
@@ -246,4 +246,21 @@ async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
         forget(dir);
     }
     forget(first);
+}
+
+/// 拷进会话属主名下的 blob（施工 W-11 补）：图片块、发出去的图、`images` 形状里的图都算；别的形状、读不成的不算。
+#[test]
+fn the_blobs_a_result_references_include_detail_images() {
+    let hash = |n: u8| miyu_kernel::id::ContentHash::of(&[n]);
+    let mut done = Done::ok("x");
+    done.detail = Some(
+        json!({"kind": "images", "images": [{"blob": hash(1).as_str(), "media_type": "image/png"}]}),
+    );
+    assert_eq!(referenced(&done), [hash(1)]);
+    done.detail = Some(json!({"kind": "links", "links": []}));
+    assert!(referenced(&done).is_empty());
+    done.detail = Some(
+        json!({"kind": "images", "images": [{"blob": hash(2).as_str(), "media_type": "text/plain"}]}),
+    );
+    assert!(referenced(&done).is_empty(), "读不成的已经丢了，不拷");
 }

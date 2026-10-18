@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Said, Sent};
-use miyu_kernel::id::AccountId;
+use miyu_kernel::id::{AccountId, ContentHash};
 use miyu_kernel::template::Template;
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
@@ -69,6 +69,9 @@ struct Answer {
     /// 她发出去的图（施工 X-19，`protocol.md` 的 `tool.call`）：至多 [`MOST_SENT`] 张，多了整份当写法不对。
     #[serde(default)]
     sent: Vec<Sent>,
+    /// 给头看的结构化结果（施工 W-11 补，`providers.md`）：照 [`miyu_tool::detail`] 的通用形状读，读不成的丢掉、记一行。
+    #[serde(default)]
+    detail: Option<Value>,
 }
 
 /// 一次至多发几张图。
@@ -127,6 +130,10 @@ impl RemoteTool {
         match outcome {
             Ok(Ok(result)) => match serde_json::from_value::<Answer>(result.clone()) {
                 Ok(answer) if answer.sent.len() <= MOST_SENT => Done {
+                    detail: answer
+                        .detail
+                        .filter(|_| !answer.error)
+                        .and_then(|detail| self.shaped(&detail)),
                     error: answer.error,
                     blocks: answer.blocks,
                     end_turn: answer.end_turn && !answer.error,
@@ -154,11 +161,21 @@ impl RemoteTool {
         }
     }
 
+    /// 照通用形状读扩展交的 `detail`：读不成的不要，记一行（原因是英文的一句）。
+    fn shaped(&self, detail: &Value) -> Option<Value> {
+        match miyu_tool::detail::read(detail) {
+            Ok(shaped) => Some(shaped.to_value()),
+            Err(why) => {
+                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), why = why.as_str(), "tool detail dropped");
+                None
+            }
+        }
+    }
+
     /// 交回的图、文件引用的 blob 拷一份进会话的属主 `owner` 名下（施工 O-2 三补）。没有引用的、不知道是哪个会话的（测试里的
     /// 假调用）原样交回；拷不成的记一行，照暂时不可用。
     async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
-        let mut hashes = crate::attach::blobs_of(&done.blocks);
-        hashes.extend(done.sent.iter().map(|sent| sent.image.blob.clone()));
+        let hashes = referenced(&done);
         let Some(owner) = owner.filter(|_| !hashes.is_empty()) else {
             return done;
         };
@@ -281,6 +298,16 @@ impl Drop for Cancel {
 }
 
 /// 照模板 `template` 换进字段 `fields`；模板坏了的交回空的。
+/// 一份结果引用的 blob：图片、文件块，发出去的图，`images` 形状里的图（施工 W-11 补：读过一遍，这里读得成）。
+pub(super) fn referenced(done: &Done) -> Vec<ContentHash> {
+    let mut hashes = crate::attach::blobs_of(&done.blocks);
+    hashes.extend(done.sent.iter().map(|sent| sent.image.blob.clone()));
+    if let Some(Ok(detail)) = done.detail.as_ref().map(miyu_tool::detail::read) {
+        hashes.extend(detail.blobs());
+    }
+    hashes
+}
+
 fn render(template: &str, fields: &[(&str, &str)]) -> String {
     let fields: BTreeMap<&str, &str> = fields.iter().copied().collect();
     Template::parse(template)

@@ -78,7 +78,7 @@
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
 
-**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?}}`：
+**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?}}`：
 
 | 名字 | 说明 |
 |---|---|
@@ -86,6 +86,17 @@
 | `error` | 这次调用算出错 |
 | `end_turn` | 这一步的结果都到了以后，不再请求模型，这一轮结束 |
 | `sent` | 她「发出去」的图，至多 4 张：`[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`。不给模型看；头画在正文里，聊天平台照它发 |
+| `detail` | 给头看的结构化结果，照下面三种通用形状写一种；不给模型看。形状不对的、`error` 是真的，核心丢掉这一格、结果照常 |
+
+`detail` 的三种形状（整份写成 JSON 至多 64 KiB）：
+
+| `kind` | 其余几格 | 上限 |
+|---|---|---|
+| `links` | `links: [{"title", "url", "snippet"?, "site"?, "date"?}]`，`url` 只收 `http`、`https` | 50 条 |
+| `table` | `columns: ["列名", …]`，`rows: [[格, …], …]`；一行的格数和列数一样，格是字、数、真假或者 `null` | 20 列、200 行 |
+| `images` | `images: [{"blob", "media_type", "caption"?}]`，`media_type` 是 `image/` 开头的；图先 `blob.put` | 20 张 |
+
+多一格、少一格都不收。头认得的画成卡片，结果记进 `tool.result` 的 `detail`（见 [事件](events.md)）。
 
 回了 JSON-RPC 错误、写法不对的，算这次调用出错。到了 `timeout_ms` 没回，这次调用交回「没在 N 秒内答完」。
 

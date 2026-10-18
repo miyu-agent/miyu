@@ -138,6 +138,7 @@ Response:
 - `blocks` is content for the model: text `{"type": "text", "text"}`; for images, upload with `blob.put` first, then `{"type": "image", "blob", "media_type", "width", "height"}`.
 - On failure, still return a result with `error: true` and the reason written for the model; a JSON-RPC error also counts as failure.
 - To have her "send" an image (stickers and the like, drawn in the reply, sent as an image on chat platforms): add `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]` to the result, at most 4. The AI doesn't see `sent`.
+- To have heads draw the result as a card, add `detail` in one of the three common shapes: a link list `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`, a table `{"kind": "table", "columns": [...], "rows": [[...]]}`, or images `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`. The AI doesn't see `detail`; if the shape is wrong the core drops the field and logs `tool detail dropped`. Fields and limits are in the [protocol reference](../reference/extensions.en.md#toolcalltoolcancel).
 - Several `tool.call`s may be in flight at once; answer each by its `id`.
 - After `timeout_ms`, or when a person interrupts, the core sends the notification `tool.cancel {"session", "call_id"}`: drop that call.
 

@@ -22,6 +22,7 @@
 mod agents;
 pub mod attachment;
 mod catalog;
+pub mod detail;
 mod goals;
 mod hooks;
 mod jobs;

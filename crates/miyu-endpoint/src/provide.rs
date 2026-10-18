@@ -21,6 +21,8 @@ use crate::hello::Caller;
 use crate::refusal::Refusal;
 use crate::reverse::Peer;
 
+#[cfg(test)]
+use remote::referenced;
 use remote::{RemoteTool, Stores, Texts};
 
 /// 哪个包现在由哪个连接提供。
