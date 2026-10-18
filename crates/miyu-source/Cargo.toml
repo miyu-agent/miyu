@@ -20,6 +20,12 @@ base64 = "0.22"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 jiff = "0.2"
+# 收录读 sources.toml 这几份规则（施工 G-2 下）。
+toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
+# 收录的小程序下 Release、包文件（施工 G-2 下）；之后客户端拿索引、下包也用它。
+miyu-http = { path = "../miyu-http" }
+reqwest = { version = "0.12", default-features = false }
+tokio = { version = "1", features = ["rt"] }
 
 [lints]
 workspace = true

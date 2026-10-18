@@ -610,6 +610,7 @@ flowchart LR
 | P-7 补 | 人格背景图模糊 | 网页的会话 2026-10-19 要的：`[appearance]` 多 `background_blur`（1 到 100，没写的不模糊），逐项盖；`persona.set` 照 `background_opacity` 的写法写、删，`changes` 也收；`persona.get`、`persona.list` 没写的交 `null`。施工单见 `P-7补-背景图模糊.md` |
 | G-1 | 包文件 | 设计 `37-软件源.md` 第二节：`miyu pkg pack` 打成可重现的 `.miyu`，`package.install` 认包文件，清单的 `targets`。施工单见 `G-1-包文件.md` |
 | G-2 上 | 索引和签名 | 设计 `37-软件源.md` 第三节：`index.json` 的写法、Ed25519 签名（ring）、`miyu-index` 的 keygen、sign、verify。施工单见 `G-2上-索引和签名.md` |
+| G-2 下 | 收录 | 设计 `37-软件源.md` 第三节第 4、5 条：四份规则、照官方来源读最新的 Release、编号先到先得、拉黑，`miyu-index build`。施工单见 `G-2下-收录.md` |
 | P-8 | 「基础功能」也开写技能 | 项目主人 2026-10-12 照推荐定：出厂预设「基础功能」的软件多 `authoring`，她看得到写技能、写包的两个技能（原来看不到，让她写技能时在本机目录里翻了三十多秒）；每次请求多 137 token，登记过。施工单见 `P-8-基础功能开写技能.md` |
 | P-9 | AI 怎么认识你 | 项目主人 2026-10-13 定：两项，称呼和更多描述（可以空）；配置 `profile.name`、`profile.about` 只写在个人设置里，新会话生效；拼成一块 `<user>` 接在人设、场所说明后面，记进快照；本机开的管理员会话带，场所会话照 `venue.session` 的 `profile`，群聊不带。施工单见 `P-9-AI怎么认识你.md` |
 | P-9 | 回复语言（补）、「关于你」单独一页（再补）、更多描述能分行（三补） | 项目主人 2026-10-16 验收时提的：`<user>` 块多一行 `preferred_reply_language`，设置里下拉加手写（控件 `combo`）；「关于你」挪到新的一页「用户」；更多描述换成能换行的值类型 `lines`、控件 `textarea`。2026-10-16 合了，施工单见 `P-9-AI怎么认识你（补）.md`、`（再补）.md`、`（三补）.md` |
