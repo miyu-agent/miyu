@@ -102,10 +102,11 @@ pub(super) struct Appearance {
     pub(super) seed: Option<String>,
     pub(super) background_opacity: Option<u8>,
     pub(super) background_focus: Option<[u8; 2]>,
+    pub(super) background_blur: Option<u8>,
 }
 
 /// `[appearance]`：`seed`（`#` 加六位十六进制，交回小写的），`background_opacity`（0 到 100 的整数），`background_focus`
-/// （两个 0 到 100 的整数，施工 P-7）。别的键 `unknown_key`。
+/// （两个 0 到 100 的整数，施工 P-7），`background_blur`（1 到 100 的整数，施工 P-7 补）。别的键 `unknown_key`。
 pub(super) fn read_appearance(
     item: &Item,
     at: &dyn Fn(&Item) -> Option<usize>,
@@ -165,6 +166,18 @@ pub(super) fn read_appearance(
                 };
                 appearance.background_focus = Some(focus);
             }
+            "background_blur" => {
+                let Some(blur) = item.as_integer().and_then(blur) else {
+                    return Err(problem(
+                        at(item),
+                        Code::BadBackgroundBlur,
+                        "appearance.background_blur",
+                        "appearance.background_blur must be a whole number from 1 to 100"
+                            .to_string(),
+                    ));
+                };
+                appearance.background_blur = Some(blur);
+            }
             _ => {
                 return Err(problem(
                     at(item),
@@ -181,6 +194,11 @@ pub(super) fn read_appearance(
 /// 0 到 100 的百分比；别的没有。
 pub fn percent(number: i64) -> Option<u8> {
     u8::try_from(number).ok().filter(|percent| *percent <= 100)
+}
+
+/// 模糊多少：1 到 100；0 不算（不模糊就是不写），别的也没有。
+pub fn blur(number: i64) -> Option<u8> {
+    percent(number).filter(|blur| *blur > 0)
 }
 
 /// `#rrggbb` 的颜色，大小写都认，交回小写的；别的写法没有（施工 P-6：头照它比对，一律小写）。

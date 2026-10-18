@@ -337,3 +337,85 @@ async fn background_opacity_and_focus_are_set_listed_and_unset() {
     }
     assert_eq!(mine(&home), before, "什么都没写");
 }
+
+/// 背景图模糊多少（施工 P-7 补，网页要的）：1 到 100 的整数，`persona.set` 写进家目录那一层的 `[appearance]`，
+/// `persona.get`、`persona.list` 带着，没写的是 `null`（不模糊）；`unset` 删掉；`changes` 也认；0、超范围、不是整数的、
+/// 和 `changes` 撞了的拒，什么都不写。
+#[tokio::test]
+async fn background_blur_is_set_listed_and_unset() {
+    let home = Home::new();
+    base(&home, &png(64, 64));
+    let mut client = connected(&home).await;
+    let got = client
+        .call("g", "persona.get", json!({"persona": "base"}))
+        .await;
+    assert_eq!(got["result"]["background_blur"], Value::Null, "{got}");
+    let changed = set(
+        &mut client,
+        json!({"persona": "base", "background_blur": 12}),
+    )
+    .await;
+    assert_eq!(changed["result"]["background_blur"], 12, "{changed}");
+    assert_eq!(
+        mine(&home).as_deref(),
+        Some("[appearance]\nbackground_blur = 12\n")
+    );
+    let listed = client.call("l", "persona.list", json!({})).await;
+    let row = listed["result"]["personas"]
+        .as_array()
+        .expect("有")
+        .iter()
+        .find(|row| row["persona"] == "base")
+        .cloned()
+        .expect("列出来了");
+    assert_eq!(row["background_blur"], 12, "{listed}");
+    let via_changes = set(
+        &mut client,
+        json!({"persona": "base", "changes": [{"key": "appearance.background_blur", "value": 100}]}),
+    )
+    .await;
+    assert_eq!(
+        via_changes["result"]["background_blur"], 100,
+        "{via_changes}"
+    );
+    let edge = set(
+        &mut client,
+        json!({"persona": "base", "background_blur": 1}),
+    )
+    .await;
+    assert_eq!(edge["result"]["background_blur"], 1, "{edge}");
+    let unset = set(
+        &mut client,
+        json!({"persona": "base", "background_blur": {"unset": true}}),
+    )
+    .await;
+    assert_eq!(unset["result"]["background_blur"], Value::Null, "{unset}");
+    let before = mine(&home);
+    for wrong in [
+        json!({"persona": "base", "background_blur": 0}),
+        json!({"persona": "base", "background_blur": 101}),
+        json!({"persona": "base", "background_blur": -1}),
+        json!({"persona": "base", "background_blur": "20"}),
+        json!({"persona": "base", "background_blur": {"unset": false}}),
+        json!({"persona": "base", "background_blur": 20, "changes": [{"key": "appearance.background_blur", "value": 30}]}),
+    ] {
+        let reply = set(&mut client, wrong.clone()).await;
+        assert_eq!(reason(&reply), Some("bad_params"), "{wrong}：{reply}");
+    }
+    let via_changes = set(
+        &mut client,
+        json!({"persona": "base", "changes": [{"key": "appearance.background_blur", "value": 0}]}),
+    )
+    .await;
+    assert_eq!(
+        reason(&via_changes),
+        Some("persona_invalid"),
+        "changes 写的照人格文件查：{via_changes}"
+    );
+    assert_eq!(
+        via_changes["error"]["data"]["message"],
+        "appearance.background_blur 要写成 1 到 100 的整数",
+        "照这个连接的语言说哪里错了"
+    );
+    assert_eq!(mine(&home), before, "什么都没写");
+}

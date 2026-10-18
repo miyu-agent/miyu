@@ -175,6 +175,7 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
                 "seeds": seeds,
                 "background_opacity": found.file.background_opacity,
                 "background_focus": found.file.background_focus,
+                "background_blur": found.file.background_blur,
             }),
             Err(error) => listed_problem(&id, &error, said.as_ref()),
         })
@@ -224,6 +225,7 @@ fn describe(found: &Found, language: &str) -> Value {
         "seeds": seeds::of(found),
         "background_opacity": found.file.background_opacity,
         "background_focus": found.file.background_focus,
+        "background_blur": found.file.background_blur,
         "remove": remove(&found.layers),
     })
 }

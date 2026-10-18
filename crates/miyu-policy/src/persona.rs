@@ -12,7 +12,7 @@ use toml_edit::{Document, Item};
 use crate::memory::MemoryScope;
 
 mod tables;
-pub use tables::{color, percent};
+pub use tables::{blur, color, percent};
 use tables::{read_appearance, read_knowledge, read_memory};
 
 /// `persona.toml` 在人格目录里的名字。
@@ -47,6 +47,8 @@ pub struct PersonaFile {
     /// 背景图的焦点（`[appearance] background_focus`，施工 P-7）：`[x, y]`，各 0 到 100 的百分比（同 CSS 的
     /// `background-position`）；背景图不裁，窗口变宽变窄都尽量露着这一处。没写的是没有，头照居中画。
     pub background_focus: Option<[u8; 2]>,
+    /// 背景图模糊多少（`[appearance] background_blur`，施工 P-7 补）：1 到 100；没写的是没有，不模糊。
+    pub background_blur: Option<u8>,
 }
 
 impl PersonaFile {
@@ -61,6 +63,7 @@ impl PersonaFile {
         lower.seed = self.seed.or(lower.seed);
         lower.background_opacity = self.background_opacity.or(lower.background_opacity);
         lower.background_focus = self.background_focus.or(lower.background_focus);
+        lower.background_blur = self.background_blur.or(lower.background_blur);
         lower
     }
 }
@@ -140,6 +143,8 @@ pub enum Code {
     BadBackgroundOpacity,
     /// `[appearance]` 的 `background_focus` 不是两个 0 到 100 的整数（施工 P-7）。
     BadBackgroundFocus,
+    /// `[appearance]` 的 `background_blur` 不是 1 到 100 的整数（施工 P-7 补）。
+    BadBackgroundBlur,
     /// 示范对话第一行不是人说的。
     FirstLine,
     /// 示范对话没有一问一答交替。
@@ -167,6 +172,7 @@ impl Code {
             Code::BadSubagent => "bad_subagent",
             Code::BadBackgroundOpacity => "bad_background_opacity",
             Code::BadBackgroundFocus => "bad_background_focus",
+            Code::BadBackgroundBlur => "bad_background_blur",
             Code::FirstLine => "first_line",
             Code::TakeTurns => "take_turns",
             Code::LastLine => "last_line",
@@ -235,6 +241,7 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
             file.seed = appearance.seed;
             file.background_opacity = appearance.background_opacity;
             file.background_focus = appearance.background_focus;
+            file.background_blur = appearance.background_blur;
             continue;
         }
         if key != "persona" {

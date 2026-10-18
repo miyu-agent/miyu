@@ -133,6 +133,7 @@ assistant: 8640
 2. **背景图露出多少、焦点**（施工 P-7，2026-10-11 项目主人定、网页转来）：`[appearance] background_opacity` 是 0 到 100 的整数（百分比，背景图露出多少），`background_focus` 是 `[x, y]` 两个 0 到 100 的整数（百分比，同 CSS 的 `background-position`：背景图不裁，窗口变宽变窄都尽量露着这一处）。一个人格各一份，照逐项盖的规矩叠。没写的是没有，头照自己的默认画（网页露 20、焦点居中），核心不填默认值。
    - `persona.set` 多两格 `background_opacity`、`background_focus`：值写进管理员家目录那一层，`{"unset": true}` 删掉那一层的。只改它们的可以不写 `changes`、`prompts`，新建时也可以只写它们。写错的（不是 0 到 100 的整数、焦点不是两个数）、`changes` 里同时改了同一项的 `bad_params`。`changes` 也能改 `appearance.background_opacity`、`appearance.background_focus`（焦点照两个数的数组写）。
    - 文件里写错是 `persona_invalid`，`problem` 的 `code` 是 `bad_background_opacity`、`bad_background_focus`。
+   - **模糊多少**（施工 P-7 补，2026-10-19 网页的会话要的）：`[appearance] background_blur` 是 1 到 100 的整数，模糊的程度由头换算；没写的是不模糊（0 不收：不模糊就是不写）。叠法、`persona.set` 的写法、`changes`、`persona.get`、`persona.list` 都同上两项；写错的代码 `bad_background_blur`。
    - `persona.list` 的每一格、`persona.get` 多这两格，没有的是 `null`。
 2. **背景图**：同头像的第 1 到 7 条，换成这几处：
    - 文件名 `background.png`、`background.jpg`、`background.webp`；`persona.set` 的 `background`；读 `persona.background {"persona"}`，回应 `{"background": <版本>, "media_type", "data"}`；`persona.list`、`persona.get` 的 `background` 是版本。

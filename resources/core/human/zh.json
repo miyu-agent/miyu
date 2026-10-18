@@ -456,6 +456,7 @@
     "persona-problems/bad_subagent": "{detail} 要写 true 或 false",
     "persona-problems/bad_background_opacity": "{detail} 要写成 0 到 100 的整数",
     "persona-problems/bad_background_focus": "{detail} 要写成 [x, y]，两个都是 0 到 100 的整数",
+    "persona-problems/bad_background_blur": "{detail} 要写成 1 到 100 的整数",
     "persona-problems/first_line": "第一行要以 user: 开头",
     "persona-problems/take_turns": "user 和 assistant 要一问一答交替",
     "persona-problems/last_line": "最后一句要是 assistant 的",

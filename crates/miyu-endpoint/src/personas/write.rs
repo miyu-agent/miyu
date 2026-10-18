@@ -68,6 +68,9 @@ pub(crate) struct SetParams {
     /// 背景图的焦点（施工 P-7）：`[x, y]`，各 0 到 100 的整数，或者 `{"unset": true}`。
     #[serde(default)]
     background_focus: Option<appearance::NumberParams<Vec<i64>>>,
+    /// 背景图模糊多少（施工 P-7 补）：1 到 100 的整数，或者 `{"unset": true}`（不模糊）。
+    #[serde(default)]
+    background_blur: Option<appearance::NumberParams<i64>>,
 }
 
 /// `prompts` 的一份：`text`、`unset`、`pairs`（只给示范对话）正好写一个；`expect` 是 `persona.read` 给的版本，`null` 是
@@ -121,18 +124,20 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         && params.background.is_none()
         && params.seed.is_none()
         && params.background_opacity.is_none()
-        && params.background_focus.is_none();
+        && params.background_focus.is_none()
+        && params.background_blur.is_none();
     if empty || params.persona.as_deref().is_some_and(|id| !valid(id)) {
         return Err(Refusal::BAD_PARAMS);
     }
     let said = words(core, peer.language).ok();
     let mut wanted = wanted_as(params.changes, true)?;
     appearance::seed(params.seed, &mut wanted)?;
-    appearance::backdrop(
-        params.background_opacity,
-        params.background_focus,
-        &mut wanted,
-    )?;
+    let backdrop = appearance::Backdrop {
+        opacity: params.background_opacity,
+        focus: params.background_focus,
+        blur: params.background_blur,
+    };
+    appearance::backdrop(backdrop, &mut wanted)?;
     let prompts = prompts(params.prompts, said.as_ref())?;
     let writes =
         wanted.iter().any(Wanted::writes) || prompts.iter().any(|prompt| prompt.text.is_some());

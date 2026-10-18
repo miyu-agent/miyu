@@ -72,6 +72,27 @@ fn the_seed_is_a_lowercase_color_and_an_upper_layer_wins() {
     }
 }
 
+/// 背景图模糊多少（施工 P-7 补）：1、100 两头都收，上一层写了的盖下面的、没写的沿用，都没写的是没有（不模糊）。
+#[test]
+fn background_blur_is_read_and_layered() {
+    let lower = read_toml("[appearance]\nbackground_blur = 1\n").unwrap();
+    assert_eq!(lower.background_blur, Some(1));
+    let upper = read_toml("[appearance]\nbackground_blur = 100\n").unwrap();
+    assert_eq!(
+        upper.over(lower).background_blur,
+        Some(100),
+        "上一层的盖下面的"
+    );
+    let lower = read_toml("[appearance]\nbackground_blur = 30\n").unwrap();
+    let upper = read_toml("[appearance]\nseed = \"#3368c0\"\n").unwrap();
+    assert_eq!(
+        upper.over(lower).background_blur,
+        Some(30),
+        "没写的沿用下面的"
+    );
+    assert_eq!(read_toml("").unwrap().background_blur, None, "没写的是没有");
+}
+
 /// 背景图露出多少、焦点（施工 P-7）：读成数，上一层写了的盖下面的、没写的沿用；0、100 两头都收。
 #[test]
 fn background_opacity_and_focus_are_read_and_layered() {

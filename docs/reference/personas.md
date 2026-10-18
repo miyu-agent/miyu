@@ -31,6 +31,7 @@
 | `seed` | 主题色，小写的 `#rrggbb`，没有的 `null` |
 | `seeds` | 从头像里挑的候选主色，最多 4 个，没有头像的 `null` |
 | `background_opacity`、`background_focus` | 背景图露出多少（0 到 100）、焦点 `[x, y]`，没有的 `null` |
+| `background_blur` | 背景图模糊多少（1 到 100），没有的 `null`，不模糊 |
 
 文件写错了的那一个只有 `persona`、`problem`（照连接的语言说哪里错了），知道第几行的另带 `line`。
 
@@ -66,6 +67,7 @@
 | `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |
 | `background_opacity` | 0 到 100 或 `{"unset": true}` | 背景图露出多少 |
 | `background_focus` | `[x, y]` 或 `{"unset": true}` | 背景图的焦点，各 0 到 100 |
+| `background_blur` | 1 到 100 或 `{"unset": true}` | 背景图模糊多少，删掉就是不模糊 |
 
 **回应**：同 `persona.get`，改完叠好的样子。几样一起查，有错什么都不写。和你那一层现在一样的不写。
 

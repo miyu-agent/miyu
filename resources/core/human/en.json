@@ -457,6 +457,7 @@
     "persona-problems/bad_subagent": "{detail} must be true or false",
     "persona-problems/bad_background_opacity": "{detail} must be a whole number from 0 to 100",
     "persona-problems/bad_background_focus": "{detail} must be [x, y], each a whole number from 0 to 100",
+    "persona-problems/bad_background_blur": "{detail} must be a whole number from 1 to 100",
     "persona-problems/first_line": "The first line must start with user:",
     "persona-problems/take_turns": "user and assistant must take turns",
     "persona-problems/last_line": "The last line must be the assistant's",

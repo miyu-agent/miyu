@@ -109,6 +109,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         seed: None,
         background_opacity: None,
         background_focus: None,
+        background_blur: None,
     };
     let mine = PersonaFile {
         name: one("我的工程师"),
@@ -119,6 +120,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         seed: None,
         background_opacity: None,
         background_focus: None,
+        background_blur: None,
     };
     let merged = mine.over(shipped);
     assert_eq!(merged.name, one("我的工程师"), "写了的整格换掉");
@@ -302,6 +304,21 @@ fn each_mistake_carries_its_code_and_where() {
             "[appearance]\nbackground_opacity = \"20\"\n",
             Code::BadBackgroundOpacity,
             Some("appearance.background_opacity"),
+        ),
+        (
+            "[appearance]\nbackground_blur = 0\n",
+            Code::BadBackgroundBlur,
+            Some("appearance.background_blur"),
+        ),
+        (
+            "[appearance]\nbackground_blur = 101\n",
+            Code::BadBackgroundBlur,
+            Some("appearance.background_blur"),
+        ),
+        (
+            "[appearance]\nbackground_blur = 2.5\n",
+            Code::BadBackgroundBlur,
+            Some("appearance.background_blur"),
         ),
         (
             "[appearance]\nbackground_focus = [50]\n",

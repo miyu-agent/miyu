@@ -31,6 +31,7 @@ A persona is "who she is": the character prompt, example dialogue, roleplay remi
 | `seed` | Theme color, lowercase `#rrggbb`; `null` when none |
 | `seeds` | Candidate colors picked from the avatar, at most 4; `null` without an avatar |
 | `background_opacity`, `background_focus` | How much the background shows (0 to 100), its focus `[x, y]`; `null` when none |
+| `background_blur` | How much the background is blurred (1 to 100); `null` means no blur |
 
 A persona whose files are wrong has only `persona` and `problem` (what's wrong, in the connection's language), plus `line` when known.
 
@@ -66,6 +67,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | `seed` | string or `{"unset": true}` | Theme color `#rrggbb` |
 | `background_opacity` | 0 to 100 or `{"unset": true}` | How much the background shows |
 | `background_focus` | `[x, y]` or `{"unset": true}` | The background's focus, 0 to 100 each |
+| `background_blur` | 1 to 100 or `{"unset": true}` | How much the background is blurred; unset means no blur |
 
 **Response**: as `persona.get`, the stacked result. Everything is checked together and nothing is written on error. Parts equal to your layer aren't written.
 
