@@ -12,8 +12,9 @@ use miyu_config::package;
 use miyu_policy::preset::MEMORY;
 use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
-use miyu_store::packages::{Found, Issue, Layer, MANIFEST, Packages};
+use miyu_store::packages::{Found, Issue, Layer, Packages};
 
+use super::folder::source;
 use super::{TARGET, compiled, listed, load, packages, sentence, settle};
 use crate::Core;
 use crate::config::methods::words;
@@ -153,7 +154,10 @@ pub(crate) async fn install(
 ) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
     match (params.path, params.package, params.preview) {
-        (Some(path), None, false) => from_path(core, peer, Path::new(&path)).await,
+        (Some(path), None, preview) if super::archive::is_package_file(Path::new(&path)) => {
+            super::archive::install(core, peer, Path::new(&path), preview).await
+        }
+        (Some(path), None, false) => from_path(core, peer, Path::new(&path), None).await,
         (None, Some(id), false) => bring_back(core, peer, &id).await,
         (Some(path), None, true) => super::preview::installing(core, peer, Path::new(&path)).await,
         (None, Some(id), true) => super::preview::restoring(core, peer, &id).await,
@@ -276,7 +280,12 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
 
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、
 /// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。
-async fn from_path(core: &Arc<Core>, peer: Peer, path: &Path) -> Result<Value, Refusal> {
+pub(super) async fn from_path(
+    core: &Arc<Core>,
+    peer: Peer,
+    path: &Path,
+    file: Option<&Path>,
+) -> Result<Value, Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
     clear_of_conflicts(core, &id, manifest, folder.clone()).await?;
     let words = words(core, peer.language)?;
@@ -330,8 +339,11 @@ async fn from_path(core: &Arc<Core>, peer: Peer, path: &Path) -> Result<Value, R
     let version = mine
         .and_then(|one| one.read.as_ref().ok())
         .and_then(|manifest| manifest.version.clone());
-    let (record_places, record_id, from) =
-        (places.clone(), id.clone(), folder.display().to_string());
+    let (record_places, record_id, from) = (
+        places.clone(),
+        id.clone(),
+        file.unwrap_or(&folder).display().to_string(),
+    );
     if let Err(refusal) =
         blocking(move || super::local::record(&record_places, &record_id, version, &from)).await
     {
@@ -344,36 +356,6 @@ async fn from_path(core: &Arc<Core>, peer: Peer, path: &Path) -> Result<Value, R
         .find(|one| one.id == id)
         .ok_or(Refusal::INTERNAL)?;
     Ok(listed(core, mine, &places, &words, peer.language, false))
-}
-
-/// 从 `path` 装之前查的（装、看一眼共用）：包文件夹（写成里面的 `package.toml` 的取它的上一层）、编号（文件夹名）、读成了的
-/// 清单。路径不是绝对的、编号不合写法的 `bad_params`；读不了的 `path_unreadable`；写错的 `package_invalid`；和出厂的撞了的
-/// `package_exists`。
-pub(super) fn source(
-    core: &Core,
-    peer: Peer,
-    path: &Path,
-) -> Result<(PathBuf, String, package::Manifest), Refusal> {
-    let folder = match path.file_name().and_then(|name| name.to_str()) {
-        Some(MANIFEST) => path.parent().ok_or(Refusal::BAD_PARAMS)?,
-        _ => path,
-    };
-    let id = folder
-        .file_name()
-        .and_then(|name| name.to_str())
-        .filter(|id| miyu_store::personas::valid(id))
-        .map(str::to_string)
-        .filter(|_| folder.is_absolute())
-        .ok_or(Refusal::BAD_PARAMS)?;
-    let text =
-        std::fs::read_to_string(folder.join(MANIFEST)).map_err(|_| Refusal::PATH_UNREADABLE)?;
-    let words = words(core, peer.language)?;
-    let manifest = package::read(&text).map_err(|problem| invalid(&words, &problem))?;
-    let shipped = Packages::shipped(&core.resources).read();
-    if shipped.iter().any(|one| one.id == id) {
-        return Err(Refusal::PACKAGE_EXISTS);
-    }
-    Ok((folder.to_path_buf(), id, manifest))
 }
 
 /// 把卸掉的出厂的包 `id` 装回来：删掉家目录里记的那一笔。
@@ -460,7 +442,7 @@ fn home(core: &Core) -> Result<PathBuf, Refusal> {
 }
 
 /// 清单写错了、撞了：照连接的语言说一句。
-fn invalid(words: &miyu_store::human::Human, problem: &package::Problem) -> Refusal {
+pub(super) fn invalid(words: &miyu_store::human::Human, problem: &package::Problem) -> Refusal {
     let said = sentence(words, problem.code.as_str(), &problem.detail)
         .unwrap_or_else(|| problem.message.clone());
     Refusal::package_invalid(said, problem.line)

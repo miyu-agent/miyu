@@ -23,6 +23,7 @@ mod no_proxy;
 mod packages;
 mod packages_live;
 mod pkg;
+mod pkg_pack;
 mod recap;
 mod redo;
 mod rename;

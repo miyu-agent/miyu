@@ -17,8 +17,10 @@ use miyu_store::root::DataRoot;
 
 use crate::Core;
 
+mod archive;
 pub(crate) mod changes;
 pub(crate) mod depends;
+mod folder;
 pub(crate) mod left;
 pub(crate) mod local;
 pub(crate) mod manage;

@@ -22,12 +22,13 @@
 | 子命令 | 做什么 | 发什么 |
 |---|---|---|
 | `list`（不写子命令也是它） | 列出来，照编号 | `package.list` |
-| `install <包目录\|编号>` | 带 `/`、`\`，是 `.`、`..`，或者以 `.toml` 结尾的是一个包目录（或它里面的 `package.toml`）的路径，相对的照现在的目录换成绝对的，`.`、`..` 照字面去掉（施工 F-8 上）；别的是卸掉了的出厂的包的编号，装回来 | `package.install`，带 `path` 或者 `package` |
+| `install <包目录\|包文件\|编号>` | 带 `/`、`\`，是 `.`、`..`，或者以 `.toml`、`.miyu`（包文件，施工 G-1）结尾的是一个包目录（或它里面的 `package.toml`）、包文件的路径，相对的照现在的目录换成绝对的，`.`、`..` 照字面去掉（施工 F-8 上）；别的是卸掉了的出厂的包的编号，装回来 | `package.install`，带 `path` 或者 `package` |
 | `remove <编号>` | 卸掉：家目录里装的删掉，出厂的记一笔；它的设置和状态一并删掉（`packages.md`「装卸」第 7 条） | `package.remove` |
 | `info <编号>` | 一个包的信息：名称、版本、大小、安装时间 | `package.info`，名称照 `package.list` |
 | `files <编号>` | 一个包装了哪些文件，一个一行、绝对路径 | `package.files` |
 | `owns <路径>` | 一个文件归哪个包；相对的照现在的目录换成绝对的 | `package.owns` |
 | `check [<编号>]` | 装好的文件改了、少了、多出来的；不写是家目录里记了的全部 | `package.check` |
+| `pack <包目录>` | 把包目录打成包文件（施工 G-1，设计 `37-软件源.md` 第二节）：照装的那一套读清单，要写了版本；清单写了 `targets` 的用 `--target` 挑一种、没写的不许写；写到 `-o` 给的目录（没有的建上，不写的是现在的目录），文件名 `<编号>-<版本>[-<系统>].miyu`；印三行：打好了的路径、`SHA-256: <哈希>`、大小（`--format json` 印 `{"package", "version", "target", "path", "sha256", "size"}`）。不连核心 | 不发 |
 
 pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）：`-U` 是 `install`，`-R` 是 `remove`，`-Q` 是 `list`，`-Qi`、`-Ql`、`-Qo`、`-Qk` 是 `info`、`files`、`owns`、`check`。`-Q` 后面的字母最多一个；`-Qi`、`-Ql`、`-Qo` 要接编号或路径，`-Q` 不带字母的不接（参数不对，退出码 2）。软件源那几个（`-S…`）随软件源那一段。
 
@@ -35,6 +36,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 |---|---|
 | `--format text\|json` | `list`、`info`、`files`、`owns`、`check`：`json` 原样印核心回的（`list` 印那一串，别的印整个回应），给脚本 |
 | `--yes`、`--noconfirm` | `install`、`remove`：不问，直接做（施工 F-8 下补，`--noconfirm` 是 pacman 的写法），给脚本 |
+| `--target <系统>`、`-o, --out <目录>` | `pack`：打给哪一种系统、写到哪个目录（施工 G-1） |
 
 界面语言照 `cli/main.md`。用到的环境变量：`MIYU_HOME`。
 

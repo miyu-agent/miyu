@@ -16,6 +16,7 @@ name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
 icon = "hand"                                       # Lucide 的图标名，可以不写
 needs = ["images"]                                  # 可以不写：显示不了图片的地方（语音）整包当没开
+targets = ["linux-x86_64", "macos-aarch64"]         # 可以不写：带了本机程序的写它能跑的几种系统
 
 [command]                                           # 扩展必写
 name = "hello"                                      # 人敲 miyu hello … 时转给你的程序
@@ -68,6 +69,7 @@ place = "status"
 | `summary` | 一句说明 |
 | `icon` | Lucide 的图标名 |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
+| `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |
 
 ## `[command]`
 

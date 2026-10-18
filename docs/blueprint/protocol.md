@@ -640,11 +640,11 @@
 
 **`package.install`、`package.remove`**（施工 F-5 上，`packages.md`「装卸」）
 
-- `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。装进管理员家目录那一层，同一个编号已经有的换成新的。回应同 `package.list` 的一项。
+- `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装进管理员家目录那一层，同一个编号已经有的换成新的。回应同 `package.list` 的一项。
 - `package.install {"package"}`：把卸掉的出厂的包装回来。回应同 `package.list` 的一项。
 - `package.remove {"package"}`：家目录那一层的删掉；出厂的在家目录记一笔。回应 `{"package", "removed": true}`。
 - 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置、个人设置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
-- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；卸必需的 `package_required`；没装的、没卸过的 `unknown_package`。扩展自己调回 `local_only`。
+- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；卸必需的 `package_required`；没装的、没卸过的 `unknown_package`。扩展自己调回 `local_only`。
 
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 

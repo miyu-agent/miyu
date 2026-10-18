@@ -54,7 +54,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径 | 同 `package.list` 的一项 |
+| `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 同 `package.list` 的一项 |
 | `package.install` | `package`：把卸掉的出厂包装回来 | 同上 |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
@@ -71,6 +71,8 @@
 | `package_invalid` | 清单写错了，`data.problem`、`data.line` |
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令 |
 | `package_exists` | 和出厂的同编号 |
+| `package_file_bad` | 包文件解不开 |
+| `wrong_target` | 清单写了 `targets`，里面没有本机这一种系统 |
 | `package_required` | 卸必需的 |
 | `depends_missing` | 依赖的包没装，`data.missing` |
 | `package_depended` | 别的装着的包依赖它，`data.by` |

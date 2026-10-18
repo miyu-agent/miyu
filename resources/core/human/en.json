@@ -526,6 +526,7 @@
     "package-problems/bad_widget": "Badly written widget: {detail}",
     "package-problems/bad_content": "Badly written content for another package: {detail}",
     "package-problems/bad_needs": "Unknown or repeated need, only images is known: {detail}",
+    "package-problems/bad_targets": "Unknown or repeated target, known are linux-x86_64, linux-aarch64, macos-aarch64, windows-x86_64: {detail}",
     "package-problems/page_missing": "{detail} has no index.html",
     "package-problems/depends_missing": "Missing required packages: {detail}",
     "package-problems/mascot_missing": "{detail} is not in the package directory",

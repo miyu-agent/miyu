@@ -7,6 +7,7 @@
 
 mod confirm;
 mod open;
+mod pack;
 mod query;
 mod shown;
 
@@ -58,6 +59,17 @@ pub enum PkgCommand {
     Remove {
         /// 卸哪一个。
         package: String,
+    },
+    /// 把一个包文件夹打成 `.miyu`（施工 G-1）：不连核心。
+    Pack {
+        /// 哪个文件夹，相对的照现在的目录算。
+        folder: String,
+        /// 打给哪一种系统：清单写了 `targets` 的必须挑一种。
+        #[arg(long)]
+        target: Option<String>,
+        /// 写到哪个目录；不写的是现在的目录。
+        #[arg(long, short = 'o')]
+        out: Option<String>,
     },
     /// 一个包的信息。
     Info {
@@ -164,6 +176,24 @@ async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
         Ok(cwd) => cwd,
         Err(error) => return failed(&error.to_string()),
     };
+    if let Some(PkgCommand::Pack {
+        folder,
+        target,
+        out,
+    }) = &args.command
+    {
+        let wanted = pack::Wanted {
+            folder,
+            target: target.as_deref(),
+            out: out.as_deref(),
+        };
+        let json = args.format == Format::Json;
+        let streams = (
+            &mut io::stdout() as &mut dyn Write,
+            &mut io::stderr() as &mut dyn Write,
+        );
+        return pack::pack(&wanted, &cwd, &language::current(), json, streams);
+    }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
@@ -321,6 +351,22 @@ async fn act(
             }
             if broken { Err(exit::ERROR) } else { Ok(()) }
         }
+        // 平常在连核心之前就做了（[`run`]）；经连接走到这里的照样在本机打。
+        PkgCommand::Pack {
+            folder,
+            target,
+            out: dir,
+        } => {
+            let wanted = pack::Wanted {
+                folder: &folder,
+                target: target.as_deref(),
+                out: dir.as_deref(),
+            };
+            match pack::pack(&wanted, &plan.cwd, language, json, (out, err)) {
+                exit::OK => Ok(()),
+                code => Err(code),
+            }
+        }
     }
 }
 
@@ -359,7 +405,8 @@ fn installing(what: &str, cwd: &Path) -> Value {
         || what.contains('\\')
         || what == "."
         || what == ".."
-        || what.ends_with(".toml");
+        || what.ends_with(".toml")
+        || what.ends_with(".miyu");
     match path {
         true => json!({"path": joined(cwd, what)}),
         false => json!({"package": what}),

@@ -11,9 +11,8 @@ use miyu_config::package::{Manifest, PackageKind};
 use miyu_store::packages::local;
 use miyu_store::packages::{Layer, Packages};
 
-use super::manage::{
-    clear_of_conflicts, removable, setting_keys, shipped_clear_of_conflicts, source,
-};
+use super::folder::source;
+use super::manage::{clear_of_conflicts, removable, setting_keys, shipped_clear_of_conflicts};
 use super::packages;
 use crate::Core;
 use crate::hello::Peer;

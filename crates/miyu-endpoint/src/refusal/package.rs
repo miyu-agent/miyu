@@ -13,6 +13,18 @@ impl Refusal {
         reason: "package_exists",
         data: None,
     };
+    /// 包文件解不开（施工 G-1）：不是 zstd 压的 tar、有链接、路径跑到外面、太大。
+    pub(crate) const PACKAGE_FILE_BAD: Refusal = Refusal {
+        code: REFUSED,
+        reason: "package_file_bad",
+        data: None,
+    };
+    /// 清单写了 `targets`，里面没有本机这一种系统（施工 G-1）。
+    pub(crate) const WRONG_TARGET: Refusal = Refusal {
+        code: REFUSED,
+        reason: "wrong_target",
+        data: None,
+    };
     /// 卸必需的包（施工 F-5 上）：基础系统。
     pub(crate) const PACKAGE_REQUIRED: Refusal = Refusal {
         code: REFUSED,

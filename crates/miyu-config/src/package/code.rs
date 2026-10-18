@@ -99,6 +99,8 @@ pub enum Code {
     BadContent,
     /// `[package] needs` 里有不认识的、重复的词（施工 X-25）。
     BadNeeds,
+    /// `[package] targets` 里有不认识的、重复的系统（施工 G-1）。
+    BadTargets,
 }
 
 impl Code {
@@ -153,11 +155,12 @@ impl Code {
             Code::BadWidget => "bad_widget",
             Code::BadContent => "bad_content",
             Code::BadNeeds => "bad_needs",
+            Code::BadTargets => "bad_targets",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 48] = [
+    pub const ALL: [Code; 49] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -206,5 +209,6 @@ impl Code {
         Code::BadWidget,
         Code::BadContent,
         Code::BadNeeds,
+        Code::BadTargets,
     ];
 }

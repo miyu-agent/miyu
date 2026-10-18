@@ -376,3 +376,27 @@ fn needs_are_read_and_unknown_ones_are_refused() {
     assert_eq!(wrong(&twice), (Code::BadNeeds, Some(4)));
     assert_eq!(Code::BadNeeds.as_str(), "bad_needs");
 }
+
+/// 能装在哪几种系统上（施工 G-1）：`[package] targets` 照固定的先后排好；没写的是空的（哪种都能装），不认识的、重复的报
+/// `bad_targets`、说是哪一行。
+#[test]
+fn targets_are_read_in_order_and_unknown_ones_are_refused() {
+    assert!(read(BRIDGE).unwrap().targets.is_empty(), "没写的是空的");
+    let two = BRIDGE.replace(
+        "name = { en = \"QQ bridge\" }\n",
+        "name = { en = \"QQ bridge\" }\ntargets = [\"windows-x86_64\", \"linux-x86_64\"]\n",
+    );
+    assert_eq!(
+        read(&two).unwrap().targets,
+        [Target::LinuxX86_64, Target::WindowsX86_64],
+        "照固定的先后"
+    );
+    let unknown = two.replace("\"windows-x86_64\"", "\"macos-x86_64\"");
+    assert_eq!(wrong(&unknown), (Code::BadTargets, Some(4)));
+    let twice = two.replace("\"windows-x86_64\"", "\"linux-x86_64\"");
+    assert_eq!(wrong(&twice), (Code::BadTargets, Some(4)));
+    assert_eq!(Code::BadTargets.as_str(), "bad_targets");
+    for target in Target::ALL {
+        assert_eq!(Target::parse(target.as_str()), Some(target));
+    }
+}

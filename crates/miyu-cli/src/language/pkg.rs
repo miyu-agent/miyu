@@ -212,3 +212,80 @@ pub(crate) enum Checked {
     Extra,
     Fine,
 }
+
+/// `miyu pkg pack` 的字（施工 G-1）。
+impl Language {
+    /// 打好了，写在 `path`。
+    pub(crate) fn packed(&self, path: &str) -> String {
+        match self {
+            Language::Chinese => format!("打好了：{path}"),
+            Language::English => format!("Packed {path}"),
+        }
+    }
+
+    /// 包文件多大。
+    pub(crate) fn packed_size(&self, size: u64) -> String {
+        match self {
+            Language::Chinese => format!("大小：{size} 字节"),
+            Language::English => format!("Size: {size} bytes"),
+        }
+    }
+
+    /// 文件夹名不是包的编号。
+    pub(crate) fn not_a_package_id(&self, name: &str) -> String {
+        match self {
+            Language::Chinese => format!("文件夹名不是包的编号：{name}"),
+            Language::English => format!("The folder name is not a package id: {name}"),
+        }
+    }
+
+    /// 读不了清单。
+    pub(crate) fn unreadable(&self, path: &str) -> String {
+        match self {
+            Language::Chinese => format!("读不了：{path}"),
+            Language::English => format!("Cannot read {path}"),
+        }
+    }
+
+    /// 清单写错了、打不成。
+    pub(crate) fn cannot_pack(&self, why: &str) -> String {
+        match self {
+            Language::Chinese => format!("打包失败：{why}"),
+            Language::English => format!("Cannot pack: {why}"),
+        }
+    }
+
+    /// 清单没写版本。
+    pub(crate) fn no_version(&self) -> String {
+        match self {
+            Language::Chinese => "清单里没写版本（[package] version）".to_string(),
+            Language::English => "The manifest has no version ([package] version)".to_string(),
+        }
+    }
+
+    /// 清单没写 `targets`，却给了 `--target`。
+    pub(crate) fn no_targets(&self) -> String {
+        match self {
+            Language::Chinese => "清单没写 targets，不用 --target".to_string(),
+            Language::English => "The manifest has no targets: leave out --target".to_string(),
+        }
+    }
+
+    /// 清单写了 `targets`，要用 `--target` 挑一种。
+    pub(crate) fn needs_target(&self, listed: &str) -> String {
+        match self {
+            Language::Chinese => format!("这个包只能装在 {listed} 上，用 --target 挑一种"),
+            Language::English => format!("This package is for {listed}: pick one with --target"),
+        }
+    }
+
+    /// `--target` 不在清单的 `targets` 里。
+    pub(crate) fn not_listed_target(&self, asked: &str, listed: &str) -> String {
+        match self {
+            Language::Chinese => format!("--target {asked} 不在清单的 targets 里（{listed}）"),
+            Language::English => {
+                format!("--target {asked} is not in the manifest's targets ({listed})")
+            }
+        }
+    }
+}

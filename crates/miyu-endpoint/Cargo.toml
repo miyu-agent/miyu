@@ -47,6 +47,7 @@ miyu-session = { path = "../miyu-session" }
 miyu-sandbox = { path = "../miyu-sandbox" }
 # 数据根、资源目录、会话日志打不开的几种情形。
 miyu-store = { path = "../miyu-store" }
+miyu-source = { path = "../miyu-source" }
 # 工具目录：造会话时交给它，照它存下工具面（施工 4-1）。
 miyu-tool = { path = "../miyu-tool" }
 # MCP 的客户端（施工 X-3 上）：起 `bundle` 包带的服务，认时代、列工具、调工具。

@@ -20,6 +20,7 @@ mod need;
 mod reader;
 pub mod settings;
 mod slash;
+mod target;
 mod upgrade;
 mod widget;
 
@@ -34,6 +35,7 @@ pub use mcp::{
 pub use need::Need;
 pub use settings::{Setting, SettingKind};
 pub use slash::{Access, SlashCommand};
+pub use target::Target;
 pub use upgrade::without_kind;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
@@ -93,6 +95,8 @@ pub struct Manifest {
     pub content: Vec<Content>,
     /// 要这个地方有什么才有用（施工 X-25，`[package] needs`）：照 [`Need`] 的先后，没写的是空的。
     pub needs: Vec<Need>,
+    /// 能装在哪几种系统上（施工 G-1，`[package] targets`）：照 [`Target::ALL`] 的先后；没写的是空的，哪种都能装。
+    pub targets: Vec<Target>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -399,6 +403,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         export,
         content,
         needs: head.needs,
+        targets: head.targets,
     })
 }
 

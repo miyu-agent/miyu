@@ -1,0 +1,19 @@
+[package]
+name = "miyu-source"
+description = "软件源：包文件的打包、解包（施工 G-1），之后是索引、签名、下载（设计 37-软件源.md）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+miyu-config = { path = "../miyu-config" }
+# 包文件是 zstd 压的 tar（设计 31 第八节第 1 条）。tar 是纯 Rust 的，MIT 或 Apache-2.0；zstd 和 reqwest 带进来的是同一版，
+# MIT（底下的 libzstd 是 BSD）。
+tar = { version = "0.4", default-features = false }
+zstd = { version = "0.14", default-features = false }
+sha2 = { version = "0.11", default-features = false }
+
+[lints]
+workspace = true

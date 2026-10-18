@@ -790,6 +790,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "filetime"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c287a33c7f0a620c38e641e7f60827713987b3c0f26e8ddc9462cc69cf75759"
+dependencies = [
+ "cfg-if",
+ "libc",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1863,6 +1873,7 @@ dependencies = [
  "miyu-pipe",
  "miyu-sandbox",
  "miyu-session",
+ "miyu-source",
  "miyu-store",
  "miyu-tool",
  "rustix",
@@ -1979,6 +1990,7 @@ dependencies = [
  "miyu-sandbox",
  "miyu-seeds",
  "miyu-session",
+ "miyu-source",
  "miyu-store",
  "miyu-tool",
  "miyu-view",
@@ -2263,6 +2275,16 @@ dependencies = [
  "toml_edit",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "miyu-source"
+version = "0.0.0"
+dependencies = [
+ "miyu-config",
+ "sha2 0.11.0",
+ "tar",
+ "zstd",
 ]
 
 [[package]]
@@ -3402,6 +3424,16 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eab9a99a024a169fe8a903cf9d4a3b3601109bcc13bd9e3c6fff259138626c4"
 dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "tar"
+version = "0.4.46"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f6221d9a6003c78398e3b239969f352578258df48c8eb051caadae0015bc840"
+dependencies = [
+ "filetime",
  "libc",
 ]
 

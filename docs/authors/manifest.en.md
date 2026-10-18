@@ -16,6 +16,7 @@ name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
 icon = "hand"                                       # a Lucide icon name, optional
 needs = ["images"]                                  # optional: off where images can't be shown (voice)
+targets = ["linux-x86_64", "macos-aarch64"]         # optional: the systems its own programs run on
 
 [command]                                           # required for extensions
 name = "hello"                                      # `miyu hello …` is handed to your program
@@ -68,6 +69,7 @@ place = "status"
 | `summary` | A one-line summary |
 | `icon` | A Lucide icon name |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
+| `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |
 
 ## `[command]`
 

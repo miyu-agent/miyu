@@ -23,6 +23,7 @@ miyu-kernel = { path = "../miyu-kernel" }
 miyu-config = { path = "../miyu-config" }
 # 数据根、环境快照；给人看的字。
 miyu-store = { path = "../miyu-store" }
+miyu-source = { path = "../miyu-source" }
 # `miyu sandbox setup`、`remove`：Windows 上装好、撤掉沙盒用户（施工 5-8）。
 miyu-sandbox = { path = "../miyu-sandbox" }
 # `miyu login`、`miyu setup` 贴 key 时自己管终端的设置（施工 8-5 补，`config.md` 第十一条第 4 条）：Unix 上关

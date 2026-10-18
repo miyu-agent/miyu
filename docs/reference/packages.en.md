@@ -54,7 +54,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 
 | Method | Params | Response |
 |---|---|---|
-| `package.install` | `path`: absolute path to a local package folder (the folder name is the id), or to its `package.toml` | An item as in `package.list` |
+| `package.install` | `path`: absolute path to a local package folder (the folder name is the id), to its `package.toml`, or to a `.miyu` package file | An item as in `package.list` |
 | `package.install` | `package`: install a removed built-in package back | The same |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
@@ -71,6 +71,8 @@ Install and remove take effect at once: processes start or stop per their switch
 | `package_invalid` | The manifest is wrong, `data.problem`, `data.line` |
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
 | `package_exists` | Same id as a built-in package |
+| `package_file_bad` | The package file can't be unpacked |
+| `wrong_target` | The manifest lists `targets` and this system isn't one of them |
 | `package_required` | Removing a required package |
 | `depends_missing` | A dependency isn't installed, `data.missing` |
 | `package_depended` | Another installed package depends on it, `data.by` |
