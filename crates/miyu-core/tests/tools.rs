@@ -1,4 +1,4 @@
-//! 核心起来时登记基础系统（施工 4-4 上）：工具目录里有读的三件（施工 4-4 下）、写的三件（施工 4-6）、`shell`（施工 4-8）、`history`（施工 6-4）、`subagent`（施工 7-5，7-5 再补改名）、`jobs`（施工 7-4）、`send_message`（施工 7-7，施工 C-5 从 `message_agent` 改名）、`sessions`（施工 C-3）、`session_usage`（施工 8-15）、`ask_user`（施工 D-2）和 `todowrite`（施工 D-3），记忆这个软件包的 `remember`、`forget`、`memory_search`（施工 R-3 中），长期目标这个软件包的 `goal`（施工 X-8 上）；资源目录坏了，
+//! 核心起来时登记基础系统（施工 4-4 上）：工具目录里有读的三件（施工 4-4 下）、写的三件（施工 4-6）、`shell`（施工 4-8）、`history`（施工 6-4）、`subagent`（施工 7-5，7-5 再补改名）、`jobs`（施工 7-4）、`send_message`（施工 7-7，施工 C-5 从 `message_agent` 改名）、`sessions`（施工 C-3）、`session_usage`（施工 8-15）、`ask_user`（施工 D-2）和 `todowrite`（施工 D-3），记忆这个软件包的 `remember`、`forget`、`memory_search`（施工 R-3 中），长期目标这个软件包的 `goal`（施工 X-8 上），联网这个软件包的 `web_fetch`（施工 N-1）；资源目录坏了，
 //! 说是哪一份。
 
 use std::path::Path;
@@ -60,6 +60,7 @@ fn the_catalog_has_the_base_system() {
             "subagent",
             "todowrite",
             "trash",
+            "web_fetch",
             "write"
         ]
     );
@@ -89,17 +90,26 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
             "没装知识库，没有 {tool}"
         );
     }
-    assert_eq!(
-        names_without(&["basesystem", "knowledge"]),
-        ["forget", "goal", "memory_search", "remember"],
-        "没装基础系统、知识库，只有记忆的三件和长期目标的一件"
+    assert!(
+        !names_without(&["net"]).contains(&"web_fetch".to_string()),
+        "没装联网，没有 web_fetch"
     );
     assert_eq!(
-        names_without(&["basesystem", "memory", "goal"]),
+        names_without(&["basesystem", "knowledge", "net"]),
+        ["forget", "goal", "memory_search", "remember"],
+        "没装基础系统、知识库、联网，只有记忆的三件和长期目标的一件"
+    );
+    assert_eq!(
+        names_without(&["basesystem", "memory", "goal", "net"]),
         ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
         "只装知识库（施工 K-1 下、K-3），只有它的五件"
     );
-    assert!(names_without(&["basesystem", "memory", "goal", "knowledge"]).is_empty());
+    assert_eq!(
+        names_without(&["basesystem", "memory", "goal", "knowledge"]),
+        ["web_fetch"],
+        "只装联网（施工 N-1），只有它的一件"
+    );
+    assert!(names_without(&["basesystem", "memory", "goal", "knowledge", "net"]).is_empty());
 }
 
 /// 写错了的清单不算装了（施工 F-2）：照读成了的认。

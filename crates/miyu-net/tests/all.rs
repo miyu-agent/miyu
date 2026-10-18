@@ -5,6 +5,8 @@
 
 mod support;
 
+mod budget;
+mod fetch;
 mod live;
 mod preview;
 mod proxy;

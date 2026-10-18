@@ -72,3 +72,57 @@ async fn real_sites_make_real_cards() {
     }
     assert!(wrong.is_empty(), "这几条不像样：\n{}", wrong.join("\n"));
 }
+
+/// 要抓的网页和读出来应该有的字（施工 N-1）：网页、维基、接口回的 JSON、纯文字。
+const PAGES: &[(&str, &str)] = &[
+    (
+        "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+        "Rust",
+    ),
+    ("https://zh.wikipedia.org/wiki/Rust", "Rust"),
+    ("https://wiki.archlinux.org/title/Pacman", "pacman"),
+    (
+        "https://api.github.com/repos/rust-lang/rust",
+        "\"full_name\"",
+    ),
+    (
+        "https://raw.githubusercontent.com/rust-lang/rust/master/README.md",
+        "Rust",
+    ),
+    ("https://www.rust-lang.org/", "Rust"),
+];
+
+#[tokio::test]
+#[ignore = "要连外网：设 MIYU_NET_LIVE=1 在能上网的机器上手动跑"]
+async fn real_pages_are_read_by_web_fetch() {
+    if std::env::var_os("MIYU_NET_LIVE").is_none() {
+        println!("没设 MIYU_NET_LIVE=1：不连外网，跳过");
+        return;
+    }
+    let tool = miyu_net::tools(&resources()).expect("字读得出").remove(0);
+    let mut wrong = Vec::new();
+    for (url, word) in PAGES {
+        let done = crate::fetch::fetch(&tool, serde_json::json!({"url": url})).await;
+        let read = crate::fetch::text(&done);
+        let head: String = read.chars().take(400).collect();
+        let tail: String = read
+            .chars()
+            .rev()
+            .take(60)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect();
+        println!(
+            "\n== {url}（{} 个字）\n{head}\n……{tail}",
+            read.chars().count()
+        );
+        if done.error || !read.contains(word) {
+            wrong.push(format!(
+                "{url}：{}",
+                read.lines().next().unwrap_or_default()
+            ));
+        }
+    }
+    assert!(wrong.is_empty(), "这几条没读成：\n{}", wrong.join("\n"));
+}

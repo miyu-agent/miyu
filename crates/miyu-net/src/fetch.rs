@@ -34,7 +34,49 @@ pub(crate) struct Fetcher {
     page: Fetching,
     image: Fetching,
     api: Fetching,
+    document: Fetching,
     challenge: Challenge,
+}
+
+/// 一串跳转为什么没走到头（施工 N-1：`web_fetch` 要分清过不了闸和连不上；卡片照旧都当拿不到卡片，见 [`Why::from`]）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Hop {
+    /// 过不了闸：内网、本机、链路本地这些地址，或者网址的样子不对。
+    Blocked,
+    /// 超时、连不上、跳转没写 `Location`。
+    Unreachable,
+    /// 跳转太多。
+    Redirects,
+}
+
+impl From<Hop> for Why {
+    fn from(hop: Hop) -> Why {
+        match hop {
+            Hop::Blocked | Hop::Redirects => Why::NoPreview,
+            Hop::Unreachable => Why::Unreachable,
+        }
+    }
+}
+
+/// `web_fetch` 抓到的一份（施工 N-1）：最后落到的地址、媒体类型（小写、去掉参数）、`charset`（写了的）、读到的字节，超了
+/// 上限截断的 `cut` 是真。
+pub(crate) struct Fetched {
+    pub(crate) url: Url,
+    pub(crate) media: String,
+    pub(crate) charset: Option<String>,
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) cut: bool,
+}
+
+/// `web_fetch` 抓不到（施工 N-1）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Missed {
+    /// 一串跳转没走到头。
+    Hop(Hop),
+    /// 人机验证、挡爬虫的页面。
+    Challenge,
+    /// 回了 2xx 以外的状态码。
+    Status(u16),
 }
 
 impl Fetcher {
@@ -50,6 +92,7 @@ impl Fetcher {
             page: rules.page.clone(),
             image: rules.image.clone(),
             api: rules.api.clone(),
+            document: rules.document.clone(),
             challenge: rules.challenge.clone(),
         }
     }
@@ -62,7 +105,7 @@ impl Fetcher {
     /// 过不了闸、跳转太多、不是 HTML、人机验证页（头、状态码，第 13 条）：[`Why::NoPreview`]；超时、连不上、
     /// 别的 4xx、5xx、读到一半断了：[`Why::Unreachable`]。
     pub(crate) async fn page(&self, url: &Url, until: Until) -> Result<(Url, String), Why> {
-        let (response, page) = self.get(url, &self.page).await?;
+        let (response, page) = self.get(url, &self.page).await.map_err(Why::from)?;
         let kind = response
             .headers()
             .get(CONTENT_TYPE)
@@ -110,7 +153,7 @@ impl Fetcher {
     ///
     /// 过不了闸、跳转太多：[`Why::NoPreview`]；连不上、跳转没写 `Location`：[`Why::Unreachable`]。
     pub(crate) async fn locate(&self, url: &Url) -> Result<Url, Why> {
-        let (_, page) = self.get(url, &self.page).await?;
+        let (_, page) = self.get(url, &self.page).await.map_err(Why::from)?;
         Ok(page)
     }
 
@@ -156,9 +199,52 @@ impl Fetcher {
         Some((bytes, kind))
     }
 
+    /// 抓一份网页给 `web_fetch`（施工 N-1，设计 36 第一节第 3 条）：照 `document` 的规矩，最多读 `max_bytes`，多的截掉
+    /// （`cut`）。人机验证页、2xx 以外的状态码单独说；什么种类都交回去，认不认得由调的一方看。
+    ///
+    /// # Errors
+    ///
+    /// 过不了闸、连不上、跳转太多（[`Missed::Hop`]），人机验证页，2xx 以外的状态码。
+    pub(crate) async fn document(&self, url: &Url) -> Result<Fetched, Missed> {
+        let (response, page) = self.get(url, &self.document).await.map_err(Missed::Hop)?;
+        let kind = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let mut parts = kind.split(';');
+        let media = parts.next().unwrap_or_default().trim().to_string();
+        let charset = parts.find_map(|part| {
+            let (name, value) = part.split_once('=')?;
+            (name.trim() == "charset").then(|| value.trim().trim_matches('"').to_string())
+        });
+        if self.is_challenge(&response, media.contains("html")) {
+            return Err(Missed::Challenge);
+        }
+        let status = response.status();
+        if !status.is_success() {
+            return Err(Missed::Status(status.as_u16()));
+        }
+        let max = self.document.max_bytes;
+        // 多读一个字节：读满了说明超了，截在上限上
+        let mut bytes = body::read_prefix(response, max.saturating_add(1))
+            .await
+            .map_err(|_| Missed::Hop(Hop::Unreachable))?;
+        let cut = bytes.len() > max;
+        bytes.truncate(max);
+        Ok(Fetched {
+            url: page,
+            media,
+            charset,
+            bytes,
+            cut,
+        })
+    }
+
     /// GET 一个地址，自己跟跳转：每一跳过闸、挑怎么连。交回最后那一跳（不是跳转的那一跳）的回应和它的地址；
     /// 状态码由调的一方看。
-    async fn get(&self, url: &Url, fetching: &Fetching) -> Result<(Response, Url), Why> {
+    async fn get(&self, url: &Url, fetching: &Fetching) -> Result<(Response, Url), Hop> {
         let mut current = url.clone();
         for _ in 0..=self.redirects {
             let response = self.hop(&current, fetching).await?;
@@ -168,24 +254,24 @@ impl Fetcher {
                     .headers()
                     .get(LOCATION)
                     .and_then(|value| value.to_str().ok())
-                    .ok_or(Why::Unreachable)?;
-                current = current.join(location).map_err(|_| Why::Unreachable)?;
+                    .ok_or(Hop::Unreachable)?;
+                current = current.join(location).map_err(|_| Hop::Unreachable)?;
                 continue;
             }
             return Ok((response, current));
         }
         // 跳转太多：不会自己变好
-        Err(Why::NoPreview)
+        Err(Hop::Redirects)
     }
 
     /// 一跳：过闸，挑怎么连，发出去，交回回应（还没读身子）。
-    async fn hop(&self, url: &Url, fetching: &Fetching) -> Result<Response, Why> {
+    async fn hop(&self, url: &Url, fetching: &Fetching) -> Result<Response, Hop> {
         let deadline = Instant::now() + fetching.timeout;
         let resolved = self
             .guard
             .pass(url, fetching.timeout)
             .await
-            .map_err(|_| Why::NoPreview)?;
+            .map_err(|_| Hop::Blocked)?;
         let way = match (self.proxies.via(url), resolved) {
             (Some(via), _) => Way::Proxy(via),
             (None, Resolved::Addresses(addresses)) => {
@@ -193,12 +279,12 @@ impl Fetcher {
                 Way::Pinned(host, addresses)
             }
             (None, Resolved::Literal) => Way::Direct,
-            (None, Resolved::Nowhere) => return Err(Why::Unreachable),
+            (None, Resolved::Nowhere) => return Err(Hop::Unreachable),
         };
-        let client = self.clients.get(&way).map_err(|_| Why::Unreachable)?;
+        let client = self.clients.get(&way).map_err(|_| Hop::Unreachable)?;
         let left = deadline.saturating_duration_since(Instant::now());
         if left == Duration::ZERO {
-            return Err(Why::Unreachable);
+            return Err(Hop::Unreachable);
         }
         client
             .get(url.clone())
@@ -208,6 +294,6 @@ impl Fetcher {
             .header(ACCEPT_LANGUAGE, &self.accept_language)
             .send()
             .await
-            .map_err(|_| Why::Unreachable)
+            .map_err(|_| Hop::Unreachable)
     }
 }

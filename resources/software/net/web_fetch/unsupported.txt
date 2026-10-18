@@ -1,0 +1,1 @@
+{url} is {type}, which cannot be read as text.

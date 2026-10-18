@@ -28,6 +28,7 @@ struct File {
     page: Budget,
     image: Budget,
     api: Budget,
+    document: DocumentFile,
     redirects: usize,
     user_agent: String,
     accept_language: String,
@@ -52,6 +53,18 @@ struct Budget {
     timeout_seconds: u64,
     max_bytes: usize,
     accept: String,
+}
+
+/// 抓网页的 `web_fetch`（施工 N-1）：一跳的规矩，另有一页几个字、抓过的记多久。
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DocumentFile {
+    timeout_seconds: u64,
+    max_bytes: usize,
+    accept: String,
+    page_chars: usize,
+    keep_seconds: u64,
+    keep_entries: usize,
 }
 
 #[derive(Deserialize)]
@@ -79,6 +92,17 @@ pub(crate) struct Fetching {
     pub(crate) max_bytes: usize,
     /// 请求头 `Accept`。
     pub(crate) accept: String,
+}
+
+/// `web_fetch` 交给她的样子（施工 N-1）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Reading {
+    /// 一页至多几个字（Unicode 字符）。
+    pub(crate) page_chars: usize,
+    /// 抓过的记多久：翻页不重抓。
+    pub(crate) keep: Duration,
+    /// 最多记几个，满了整个清空。
+    pub(crate) keep_entries: usize,
 }
 
 /// 标题、简介、站名最多几个字。
@@ -111,6 +135,10 @@ pub(crate) struct Rules {
     pub(crate) image: Fetching,
     /// 调站的接口（W-7 再补）。
     pub(crate) api: Fetching,
+    /// `web_fetch` 抓网页（施工 N-1）。
+    pub(crate) document: Fetching,
+    /// `web_fetch` 一页几个字、抓过的记多久、记几个（施工 N-1）。
+    pub(crate) reading: Reading,
     /// 最多跟几次跳转。
     pub(crate) redirects: usize,
     /// 请求头 `User-Agent`：装成浏览器，有的站对不认识的客户端不给 og 标签。
@@ -170,6 +198,11 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
         ("image.max_bytes", parsed.image.max_bytes as u64),
         ("api.timeout_seconds", parsed.api.timeout_seconds),
         ("api.max_bytes", parsed.api.max_bytes as u64),
+        ("document.timeout_seconds", parsed.document.timeout_seconds),
+        ("document.max_bytes", parsed.document.max_bytes as u64),
+        ("document.page_chars", parsed.document.page_chars as u64),
+        ("document.keep_seconds", parsed.document.keep_seconds),
+        ("document.keep_entries", parsed.document.keep_entries as u64),
         ("clip.title", parsed.clip.title as u64),
         ("clip.description", parsed.clip.description as u64),
         ("clip.site", parsed.clip.site as u64),
@@ -189,6 +222,16 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
         page: fetching(parsed.page),
         image: fetching(parsed.image),
         api: fetching(parsed.api),
+        document: Fetching {
+            timeout: Duration::from_secs(parsed.document.timeout_seconds),
+            max_bytes: parsed.document.max_bytes,
+            accept: parsed.document.accept,
+        },
+        reading: Reading {
+            page_chars: parsed.document.page_chars,
+            keep: Duration::from_secs(parsed.document.keep_seconds),
+            keep_entries: parsed.document.keep_entries,
+        },
         redirects: parsed.redirects,
         user_agent: parsed.user_agent,
         accept_language: parsed.accept_language,

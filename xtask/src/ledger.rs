@@ -45,8 +45,8 @@ const CARRIED: [&str; 3] = ["skills", "scripts", "data"];
 /// 资源目录最上一层的这个目录放出厂的预设（施工 P-2 上，`presets.md`）：给人看的名字、说明和开关表，不发给模型，不登记。
 const PRESETS: &str = "presets";
 
-/// `software/mermaid/`、`software/net/` 整个是数据（字体、三种记号色、源码的上限；抓链接卡片的时限、上限、请求头），
-/// 不发给模型，不登记（施工 W-4，`mermaid.md`「样子」：「这条线不加给模型看的字」；施工 W-7，`net.md`）。
+/// `software/mermaid/` 整个是数据（字体、三种记号色、源码的上限），不发给模型，不登记（施工 W-4，`mermaid.md`「样子」：
+/// 「这条线不加给模型看的字」）。
 const SOFTWARE_DIR: &str = "software/";
 
 /// 人格目录里的 `persona.toml` 是给人看的名字、说明和几项配置，不发给模型，不登记（施工 P-1 下，`personas.md`）；同一个目录里
@@ -54,20 +54,22 @@ const SOFTWARE_DIR: &str = "software/";
 const PERSONAS_DIR: &str = "personas/";
 const PERSONA_TOML: &str = "persona.toml";
 
-const DATA_PACKAGES: [&str; 2] = ["mermaid", "net"];
+const DATA_PACKAGES: [&str; 1] = ["mermaid"];
 
 /// `core/view.json` 是数据，不发给模型，不登记：视图投影照它认哪件工具算命令、编辑、子代理、留言（施工 9-8 上，`view.md`）。
 /// `core/memory/secrets.toml` 也是：抽取照它认常见的 key 写法、遮掉，不发给模型（施工 R-6 上，`memory.md` 第六条）。
 /// `core/memory/recall.toml` 也是：联想照它定每个模型的门槛，不发给模型（施工 R-8，第四条）。`core/knowledge/recall.toml`
 /// 同样：知识库的自动想起照它定门槛（施工 K-6 下，`knowledge.md` 第九条）；`core/knowledge/keys.toml` 是小节的关键词那一行
-/// 怎么认（施工 K-9）。只豁免这几份：`core/` 里别的照查。
-const CORE_DATA: [&str; 6] = [
+/// 怎么认（施工 K-9）。`software/net/link_preview.json` 是抓网页的时限、上限、请求头（施工 W-7，`net.md`）；同一个目录里
+/// `web_fetch` 的说明和几句字（施工 N-1）照查。只豁免这几份：`core/` 里别的照查。
+const DATA_FILES: [&str; 7] = [
     "core/view.json",
     "core/memory/secrets.toml",
     "core/memory/recall.toml",
     "core/knowledge/recall.toml",
     "core/knowledge/search.toml",
     "core/knowledge/keys.toml",
+    "software/net/link_preview.json",
 ];
 
 /// 查一遍，交回对不上的地方。
@@ -132,7 +134,7 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
         } else if !(name == PERSONA_TOML
             && prefix.starts_with(PERSONAS_DIR)
             && prefix.matches('/').count() == 2)
-            && !CORE_DATA.contains(&path.as_str())
+            && !DATA_FILES.contains(&path.as_str())
         {
             files.insert(path, std::fs::read(entry.path()).map_err(unreadable)?);
         }

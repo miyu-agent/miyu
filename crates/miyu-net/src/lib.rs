@@ -1,5 +1,6 @@
-//! 可选软件包 `net`（设计 10 第四节，`net.md`，施工 W-7）：核心去抓别人家网页的地方。现在只有链接卡片：
-//! [`LinkPreview::preview`] 抓下一页的标题、简介、图，图存成这个账号的 blob。以后 `web_fetch` 用同一份抓取和地址闸。
+//! 可选软件包 `net`（设计 10 第四节，`net.md`，施工 W-7）：核心去抓别人家网页的地方。链接卡片
+//! [`LinkPreview::preview`] 抓下一页的标题、简介、图，图存成这个账号的 blob；她的工具 `web_fetch`（施工 N-1，设计 36，
+//! `web_fetch.rs`、`document.rs`）抓一份网页给她读。两边同一道地址闸、同一套代理。
 //!
 //! - 地址闸（`guard.rs`）是安全边界：每一跳都过，不走代理的钉住解析好的地址（`fetch.rs`）。
 //! - 代理照环境变量，和请求模型同一套读法（`proxy.rs`）。
@@ -10,6 +11,7 @@
 //! - 认得的站（B 站、YouTube、MediaWiki 站）照各自的办法取，人机验证页不出卡片（`sites.rs`，W-7 再补）。
 
 mod body;
+mod document;
 mod fetch;
 mod guard;
 mod html;
@@ -19,9 +21,10 @@ mod rules;
 mod sites;
 #[cfg(any(test, feature = "testkit"))]
 pub mod testkit;
+mod web_fetch;
 
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
 use miyu_kernel::id::ContentHash;
@@ -33,6 +36,33 @@ use guard::Guard;
 use proxy::Proxies;
 use remember::{Keep, Remember};
 use rules::{Clip, Sites};
+
+pub use document::{Miss, Pages, Read};
+pub use web_fetch::{PACKAGE, WEB_FETCH};
+
+use miyu_tool::Tool;
+use miyu_tool::load::LoadError;
+
+/// 她的工具：`web_fetch`。字从资源目录 `resources` 读，抓网页照出厂的规矩。
+///
+/// # Errors
+///
+/// 哪一份字读不出来、写法不对。
+pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
+    tools_with(resources, Pages::new(resources))
+}
+
+/// 同 [`tools`]，抓网页照给的 `pages`（测试照 `Pages::testing` 打开口子）。
+///
+/// # Errors
+///
+/// 同 [`tools`]。
+pub fn tools_with(resources: &Path, pages: Pages) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
+    Ok(vec![Arc::new(web_fetch::WebFetch::load(
+        resources,
+        Arc::new(pages),
+    )?)])
+}
 
 /// 运行日志的目标。
 const TARGET: &str = "miyu::net";

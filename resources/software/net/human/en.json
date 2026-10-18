@@ -1,0 +1,27 @@
+{
+  "tools": {
+    "web_fetch": {
+      "name": "Fetch page",
+      "subject": "url",
+      "icon": "→"
+    }
+  },
+  "said": {
+    "web_fetch/fetched": "Fetched",
+    "web_fetch/titled": "{title}",
+    "web_fetch/page": "Page {page} of {pages}",
+    "web_fetch/titled-page": "{title}, page {page} of {pages}",
+    "web_fetch/bad-args": "Bad arguments: {error}",
+    "web_fetch/not-a-url": "{url} is not an http or https URL",
+    "web_fetch/blocked": "{url} is a local or private address and cannot be fetched",
+    "web_fetch/unreachable": "Could not reach {url}",
+    "web_fetch/redirects": "Too many redirects from {url}",
+    "web_fetch/challenge": "{url} answered with a bot check page",
+    "web_fetch/status": "{url} answered with HTTP {status}",
+    "web_fetch/unsupported": "{url} is {type} and cannot be read as text",
+    "web_fetch/too-complex": "{url} is too large or too deeply nested to convert",
+    "web_fetch/empty": "{url} has no readable text",
+    "web_fetch/not-ready": "Fetching web pages is not available right now",
+    "web_fetch/no-page": "No page {page}, there are {pages}"
+  }
+}

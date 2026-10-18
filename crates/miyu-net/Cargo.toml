@@ -25,6 +25,14 @@ reqwest = { version = "0.12", default-features = false, features = ["http2", "ru
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 # `Matcher` 收的地址是 `http::Uri`。本来就在依赖图里。MIT 或 Apache-2.0。
 http = "1"
+# 抓网页的 `web_fetch`（施工 N-1，设计 36）：HTML 换成 Markdown。照 turndown.js 的规矩，底下是 html5ever。Apache-2.0。
+htmd = "0.5.6"
+# 认 `htmd` 建的树里的元素（找 `<main>`、`<article>`，施工 N-1）：htmd 底下就是它，本来就在依赖图里。MIT 或 Apache-2.0。
+markup5ever_rcdom = "0.38"
+# 抓网页的工具（施工 N-1）：工具的接口、读资源目录里的说明。
+miyu-tool = { path = "../miyu-tool" }
+# 抓到的网页照字符集解成字（施工 N-1）：中文的老站常是 GBK。reqwest 自己也带着它，本来就在依赖图里。(Apache-2.0 OR MIT) AND BSD-3-Clause。
+encoding_rs = "0.8"
 # 读 link_preview.json。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

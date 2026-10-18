@@ -1,0 +1,1 @@
+{url} is a local or private network address and cannot be fetched.

@@ -112,13 +112,14 @@ impl Reply {
 }
 
 /// 收到的一个请求：请求行里的地址（直连的是路径，经代理的是整个地址）、`Host`、`User-Agent`、`Accept-Encoding`
-/// （没写的是空字，W-7 补：查客户端是不是自己带上了它）。
+/// （没写的是空字，W-7 补：查客户端是不是自己带上了它）、`Accept`（N-1：抓网页和卡片各照各的）。
 #[derive(Debug, Clone)]
 pub struct Seen {
     pub target: String,
     pub host: String,
     pub user_agent: String,
     pub accept_encoding: String,
+    pub accept: String,
 }
 
 /// 跑着的假服务器：照请求行里的地址回，没有的回 404；路由以 `*` 结尾的照前缀对（W-7 再补：接口的查询参数长）。
@@ -200,6 +201,7 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
             host: header("host"),
             user_agent: header("user-agent"),
             accept_encoding: header("accept-encoding"),
+            accept: header("accept"),
         });
     let reply = routes
         .iter()

@@ -1,0 +1,27 @@
+{
+  "tools": {
+    "web_fetch": {
+      "name": "ページ取得",
+      "subject": "url",
+      "icon": "→"
+    }
+  },
+  "said": {
+    "web_fetch/fetched": "取得しました",
+    "web_fetch/titled": "{title}",
+    "web_fetch/page": "{page}/{pages} ページ",
+    "web_fetch/titled-page": "{title}、{page}/{pages} ページ",
+    "web_fetch/bad-args": "引数が正しくありません：{error}",
+    "web_fetch/not-a-url": "{url} は http、https の URL ではありません",
+    "web_fetch/blocked": "{url} はローカルまたは内部ネットワークのアドレスで、取得できません",
+    "web_fetch/unreachable": "{url} に接続できません",
+    "web_fetch/redirects": "{url} のリダイレクトが多すぎます",
+    "web_fetch/challenge": "{url} はボット確認ページを返しました",
+    "web_fetch/status": "{url} は HTTP {status} を返しました",
+    "web_fetch/unsupported": "{url} は {type} で、テキストとして読めません",
+    "web_fetch/too-complex": "{url} は大きすぎるか入れ子が深すぎて変換できません",
+    "web_fetch/empty": "{url} に読めるテキストがありません",
+    "web_fetch/not-ready": "今はページを取得できません",
+    "web_fetch/no-page": "{page} ページはありません（全 {pages} ページ）"
+  }
+}

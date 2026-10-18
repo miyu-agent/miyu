@@ -234,6 +234,12 @@ fn groups(resources: &ResourceRoot, found: &[Found]) -> Result<Vec<Builtin>, Str
             miyu_knowledge::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_knowledge::PACKAGE, knowledge));
     }
+    // 联网这个软件包的工具（施工 N-1，设计 36）：`web_fetch`，只读，哪种会话都有。
+    #[cfg(feature = "net")]
+    if installed(miyu_net::PACKAGE) {
+        let net = miyu_net::tools(resources.path()).map_err(|error| error.to_string())?;
+        groups.push((miyu_net::PACKAGE, net));
+    }
     Ok(groups)
 }
 

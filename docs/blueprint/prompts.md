@@ -2837,6 +2837,171 @@ Could not move {path} to the trash: {error}.
 {path} is not a text document. Only .md, .markdown and .txt can be written.
 ```
 
+#### `software/net/web_fetch/bad-args.txt`
+
+- 什么时候加进来：`web_fetch` 参数读不懂（字段按 serde 的原话填）
+- token：11（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/net/web_fetch/blocked.txt`
+
+- 什么时候加进来：`web_fetch` 本机、内网、链路本地这些地址（`net.md`「地址闸」）
+- token：19（2026-10-18 量）
+- 为什么加：说清是地址不让抓，免得换个写法再试（施工 N-1）
+- 指纹：`29d0e636`
+
+```text
+{url} is a local or private network address and cannot be fetched.
+```
+
+#### `software/net/web_fetch/challenge.txt`
+
+- 什么时候加进来：`web_fetch` 回的是人机验证页（`sites.rs` 那一套认法）
+- token：18（2026-10-18 量）
+- 为什么加：说清是挡爬虫的页面，不是正文（施工 N-1）
+- 指纹：`593b0aff`
+
+```text
+{url} answered with a bot check page instead of the content.
+```
+
+#### `software/net/web_fetch/cut.txt`
+
+- 什么时候加进来：`web_fetch` 超了 5 MiB 截了后面的，最后一页末尾
+- token：11（2026-10-18 量）
+- 为什么加：她知道后面没抓全，别当成整篇（施工 N-1）
+- 指纹：`b5292856`
+
+```text
+(The rest of the page was too large to fetch.)
+```
+
+#### `software/net/web_fetch/empty.txt`
+
+- 什么时候加进来：`web_fetch` 换完一个字都没有
+- token：12（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`48e57272`
+
+```text
+{url} has no readable text.
+```
+
+#### `software/net/web_fetch/more.txt`
+
+- 什么时候加进来：`web_fetch` 不止一页的，接在那一页的字后面（字段按 `2`、`3` 填）
+- token：8（2026-10-18 量）
+- 为什么加：她知道还有几页、接着读第几页（同 `kb_read`）（施工 N-1）
+- 指纹：`3159296b`
+
+```text
+(Page {page} of {pages}.)
+```
+
+#### `software/net/web_fetch/moved.txt`
+
+- 什么时候加进来：`web_fetch` 跟过跳转的，放在正文前面、空一行（字段按落到的地址填）
+- token：11（2026-10-18 量）
+- 为什么加：她引用的是真正落到的地址（施工 N-1）
+- 指纹：`447ebb69`
+
+```text
+Redirected to {url}.
+```
+
+#### `software/net/web_fetch/no-page.txt`
+
+- 什么时候加进来：`web_fetch` 要的那一页没有（字段按 `5`、`4` 填）
+- token：12（2026-10-18 量）
+- 为什么加：一句短话，带上一共几页（施工 N-1）
+- 指纹：`fab9d913`
+
+```text
+There is no page {page}. It has {pages}.
+```
+
+#### `software/net/web_fetch/not-a-url.txt`
+
+- 什么时候加进来：`web_fetch` 不是 http、https 的网址
+- token：15（2026-10-18 量）
+- 为什么加：说清只抓 http、https（施工 N-1）
+- 指纹：`722113e7`
+
+```text
+{url} is not an http or https URL.
+```
+
+#### `software/net/web_fetch/not-ready.txt`
+
+- 什么时候加进来：`web_fetch` `link_preview.json` 读不懂
+- token：10（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`6054804c`
+
+```text
+Fetching web pages is not available right now.
+```
+
+#### `software/net/web_fetch/redirects.txt`
+
+- 什么时候加进来：`web_fetch` 跳转超过 5 跳
+- token：12（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`1b721837`
+
+```text
+{url} redirected too many times.
+```
+
+#### `software/net/web_fetch/status.txt`
+
+- 什么时候加进来：`web_fetch` 回了 2xx 以外的状态码
+- token：13（2026-10-18 量）
+- 为什么加：状态码她看得懂（404 是地址错了、5xx 可以过会儿再试）（施工 N-1）
+- 指纹：`606e11f8`
+
+```text
+{url} answered with HTTP {status}.
+```
+
+#### `software/net/web_fetch/too-complex.txt`
+
+- 什么时候加进来：`web_fetch` 网页太大、嵌套太深（超过 20 万个节点、160 层）
+- token：17（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`399c2074`
+
+```text
+{url} is too large or too deeply nested to convert.
+```
+
+#### `software/net/web_fetch/unreachable.txt`
+
+- 什么时候加进来：`web_fetch` 超时、连不上
+- token：11（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
+- 指纹：`8b317fdc`
+
+```text
+Could not reach {url}.
+```
+
+#### `software/net/web_fetch/unsupported.txt`
+
+- 什么时候加进来：`web_fetch` 图、PDF、压缩包这些读不成字的（字段按媒体类型填）
+- token：19（2026-10-18 量）
+- 为什么加：说清是种类不对，不是没抓到（施工 N-1）
+- 指纹：`b1b6d9c0`
+
+```text
+{url} is {type}, which cannot be read as text.
+```
+
 #### `software/basesystem/common/not-read.txt`
 
 - 什么时候加进来：`write`、`edit` 要改的文件已经在了、她这个会话里没看过
@@ -4095,6 +4260,20 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
   "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to send with the message, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+}
+```
+
+#### `software/net/tools/web_fetch.json`
+
+- 什么时候加进来：会话的工具面里有 `web_fetch`：联网包装着、预设开着「抓取网页」的会话，本机的、场所的、子会话都有（施工 N-1，每次请求都带）
+- token：84（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
+- 为什么加：她能读网页、文档站、接口回的 JSON（设计 36 第一节，项目主人 2026-10-18 定）
+- 指纹：`40a13369`
+
+```json
+{
+  "description": "Fetch a web page or text file by URL and read it as Markdown, a page at a time.",
+  "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]}
 }
 ```
 

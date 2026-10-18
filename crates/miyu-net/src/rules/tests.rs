@@ -60,6 +60,13 @@ fn the_shipped_rules_carry_the_numbers_of_the_blueprint() {
             author: 60
         }
     );
+    // tools/web_fetch.md「怎么走」第 4、5、10 条（施工 N-1）。
+    assert_eq!(rules.document.timeout, Duration::from_secs(20));
+    assert_eq!(rules.document.max_bytes, 5 * 1024 * 1024);
+    assert!(rules.document.accept.starts_with("text/html"));
+    assert_eq!(rules.reading.page_chars, 30_000);
+    assert_eq!(rules.reading.keep, Duration::from_secs(600));
+    assert_eq!(rules.reading.keep_entries, 32);
     assert_eq!(rules.client_ttl, Duration::from_secs(120));
     assert_eq!(rules.client_keep, 32);
     // 不先要 AVIF：它不在收的五种里（「起草时定的」第 7 条）。
@@ -97,6 +104,11 @@ fn a_zero_is_refused_and_named() {
         ),
         ("\"title\": 120", "\"title\": 0", "clip.title"),
         ("\"keep\": 32", "\"keep\": 0", "clients.keep"),
+        (
+            "\"page_chars\": 30000",
+            "\"page_chars\": 0",
+            "document.page_chars",
+        ),
     ] {
         let changed = text().replacen(from, to, 1);
         assert_ne!(changed, text(), "{from} 在出厂的那一份里");

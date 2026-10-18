@@ -1,0 +1,27 @@
+{
+  "tools": {
+    "web_fetch": {
+      "name": "抓取网页",
+      "subject": "url",
+      "icon": "→"
+    }
+  },
+  "said": {
+    "web_fetch/fetched": "抓到了",
+    "web_fetch/titled": "{title}",
+    "web_fetch/page": "第 {page}/{pages} 页",
+    "web_fetch/titled-page": "{title}，第 {page}/{pages} 页",
+    "web_fetch/bad-args": "参数不对：{error}",
+    "web_fetch/not-a-url": "{url} 不是 http、https 的网址",
+    "web_fetch/blocked": "{url} 是本机或内网的地址，抓不了",
+    "web_fetch/unreachable": "连不上 {url}",
+    "web_fetch/redirects": "{url} 跳转太多次",
+    "web_fetch/challenge": "{url} 回的是人机验证页",
+    "web_fetch/status": "{url} 回了 HTTP {status}",
+    "web_fetch/unsupported": "{url} 是 {type}，读不成字",
+    "web_fetch/too-complex": "{url} 太大或嵌套太深，换不成字",
+    "web_fetch/empty": "{url} 没有能读的字",
+    "web_fetch/not-ready": "现在抓不了网页",
+    "web_fetch/no-page": "没有第 {page} 页，一共 {pages} 页"
+  }
+}

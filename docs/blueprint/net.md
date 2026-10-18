@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。现在只有一件事：`link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。以后 `web_fetch` 用同一份抓取和地址闸（设计 10 第四节）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
+核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。两件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
 
 地址闸是安全边界：网址是模型写的、别人发来的，核心照它去连，等于把 SSRF 的靶子摆在核心上。闸只有这一份，网页软件不另做图片代理（`web-module.md`「起草时定的」第 14 条）。
 
@@ -30,6 +30,7 @@
 | `crates/miyu-endpoint/src/queries.rs` | 登记的查询多一种「在后台答」：`register_background` |
 | `crates/miyu-endpoint/src/connection.rs` | 在后台答的方法交给一个后台任务，回应照 `id` 对上；连接断了这些任务一起停 |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 登记 `link.preview`；参数怎么读、卡片怎么写成回应 |
+| `crates/miyu-net/src/document.rs`、`document/convert.rs`、`web_fetch.rs` | `web_fetch`：抓整份、换成字、分页（`tools/web_fetch.md`） |
 | `resources/software/net/link_preview.json` | 规矩：时限、上限、请求头、记多久、客户端留多久；认得的站、人机验证页的认法（W-7 再补） |
 
 ### 对外的样子
@@ -79,6 +80,14 @@
     "timeout_seconds": 12,
     "max_bytes": 2097152,
     "accept": "application/json"
+  },
+  "document": {
+    "timeout_seconds": 20,
+    "max_bytes": 5242880,
+    "accept": "text/html,application/xhtml+xml,text/plain;q=0.9,application/json;q=0.8,*/*;q=0.5",
+    "page_chars": 30000,
+    "keep_seconds": 600,
+    "keep_entries": 32
   },
   "redirects": 5,
   "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
@@ -203,7 +212,8 @@
 | `crates/miyu-net/src/html/tests.rs` | 元数据的先后、站名、图标、相对地址、截断、实体；坏的标记不崩；`<head>` 里没挖到东西时接着往正文找 `og:title`；`<head>` 里已经有 `<title>` 的不去正文找；`meta_is_og_title` 的键、`name` 退路、内容不空 |
 | `crates/miyu-net/src/body/tests.rs` | 只收五种图、不收 SVG；读到 `</head>`、`<body` 就停；`HeadSignals` 边读边找 `<title>`、不空的 `og:title`，标签跨在接缝上不丢、处理过的不重扫 |
 | `crates/miyu-net/src/remember/tests.rs` | 三种结果各记多久；满了整个清空 |
-| `crates/miyu-net/src/rules/tests.rs` | 出厂的 `link_preview.json` 读得进、数对得上；多一格、是 0 的读不了 |
+| `crates/miyu-net/src/rules/tests.rs` | 出厂的 `link_preview.json` 读得进、数对得上（`document` 那一段也是）；多一格、是 0 的读不了 |
+| `web_fetch` 的几份 | 见 `tools/web_fetch.md`「守着它的」 |
 | `crates/miyu-net/tests/preview.rs` | 本机的假服务器上整条走通：钉住的地址（系统解析不了的名字照样到了）、元数据、图存成 blob、`blob` 没了交 `null`、记着的不再抓；跳转每一跳过闸（内网、`localhost`、`ftp`、云的元数据地址）、最多 5 跳、没写 `Location`；不是 HTML、没写类型、没有标题、4xx、5xx；读到 `</head>`、`<body` 就停，最多 2 MiB；图只收五种、不收 SVG、最多 3 MiB（报了长度的、没报的）；`link_preview.json` 读不了。gzip、br 压过的页面不带 `Accept-Encoding` 也解得开（W-7 补）；一个压得很小解开很大的包照上限停，标题在上限前面的找得到、后面的找不到；`og:title` 挪到 `</head>` 后面的找得到，挪到上限以后的找不到；`og:title` 排在 `<head>` 里靠前、别的字段排在后面隔着一截填料的，不会因为先找到 `og:title` 就提前收手丢了后面的字段 |
 | `crates/miyu-net/src/sites/*/tests.rs`、`crates/miyu-net/src/rules/tests.rs` | 认主机（一样的、子域名、像而不是的 `notbilibili.com`）；BV、av 的样子；B 站页面脚本里的 `videoData`（读不成的照页面的 `<meta name="author">`）；ISO 8601 的时长；`wgPageName` 的 JSON 字符串（转义、中文）；`EditURI`；第一段 `<p>`（空的、`<sup>` 去掉，框、表格里的不算）；接口回应读出来的几格；`sites`、`challenge` 多一格少一格读不了 |
 | `crates/miyu-net/tests/sites.rs` | 本机的假服务器当 B 站、YouTube、维基百科、别的 MediaWiki 站：B 站 BV、av、短链跟跳转都认，页面脚本里有视频数据的卡片带封面、UP 主、时长、`kind: video`，没有的照页面的 og 和 `<meta name="author">`、还是 `kind: video`，不调接口，「视频没了」那一页 `no_preview`、同样的标题不在 B 站视频页上的照常、模板那一格当没有；MediaWiki 照列着的主机、照 `generator` 都认，`api.php` 的简介、缩略图、站名，没有 TextExtracts 退回第一段，标题去尾巴，`kind: article`，接口没成照页面；YouTube 读过 `</head>`、时长换成秒、频道名、读不到时长的是 `page`；人机验证的标题、头、403 和 503 的 HTML 都 `no_preview`，403 不是 HTML 的照旧 `unreachable`；不认得的站照旧 `kind: page`、不调接口；MediaWiki 站的 `EditURI` 指到内网的被闸拦住、照页面合成卡片 |
@@ -221,7 +231,7 @@
 
 ### 还没有的
 
-- `web_fetch`、`web_search` 工具：用这一份的抓取和地址闸。
+- `web_search` 工具（设计 36 第五节 N-2 起）。
 - 别的站（推特、知乎……）：照第 12 条同一层加。登录才看得到的内容不做。
 - 网页软件的 `/media`（W-10）：卡片的图在那之前照桥的 `/blob` 给。
 - 链接卡片的图随存储的回收清掉：它们是没人引用的 blob（`store.md`「还没有的」）。
