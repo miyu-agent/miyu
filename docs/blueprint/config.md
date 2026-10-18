@@ -263,7 +263,7 @@ miyu_config::settings! {
 | `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
-| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`（N-3 上加后四个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索来源，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
+| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索来源，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
 | `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「联网搜索」组 |
 | `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
 | `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索来源挑了 Tavily 时用 |
@@ -1067,7 +1067,7 @@ max = "5m"
 
 [net.search]
 # 搜索来源：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
-# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave 或 searxng。只能写在系统配置或个人设置里。下一轮生效。
+# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。
 source = "auto"
 
 [net.search.brave]
@@ -1593,7 +1593,7 @@ currency = "USD"
             },
             "source": {
               "default": "auto",
-              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave 或 searxng。只能写在系统配置或个人设置里。下一轮生效。",
+              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。",
               "enum": [
                 "auto",
                 "exa",
@@ -1604,7 +1604,9 @@ currency = "USD"
                 "deepseek",
                 "tavily",
                 "brave",
-                "searxng"
+                "searxng",
+                "duckduckgo",
+                "bing"
               ],
               "title": "搜索来源",
               "type": "string"

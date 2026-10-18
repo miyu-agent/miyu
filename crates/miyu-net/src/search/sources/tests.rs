@@ -146,6 +146,7 @@ fn the_rest_requests_carry_the_key_where_each_source_wants_it() {
         &"字".repeat(200),
         80,
         Some("sk-x"),
+        "UA",
     )
     .unwrap();
     assert!(!deepseek.get);
@@ -167,6 +168,7 @@ fn the_rest_requests_carry_the_key_where_each_source_wants_it() {
         "rust",
         30,
         Some("tvly-x"),
+        "UA",
     )
     .unwrap();
     assert_eq!(
@@ -181,6 +183,7 @@ fn the_rest_requests_carry_the_key_where_each_source_wants_it() {
         "rust lang",
         8,
         Some("b-x"),
+        "UA",
     )
     .unwrap();
     assert!(brave.get && brave.body.is_none());
@@ -194,7 +197,15 @@ fn the_rest_requests_carry_the_key_where_each_source_wants_it() {
             .contains(&("X-Subscription-Token", "b-x".to_string()))
     );
 
-    let searxng = rest(Kind::Searxng, "http://127.0.0.1:8888/", "rust", 8, None).unwrap();
+    let searxng = rest(
+        Kind::Searxng,
+        "http://127.0.0.1:8888/",
+        "rust",
+        8,
+        None,
+        "UA",
+    )
+    .unwrap();
     assert_eq!(
         searxng.url,
         "http://127.0.0.1:8888/search?q=rust&format=json"
@@ -202,7 +213,51 @@ fn the_rest_requests_carry_the_key_where_each_source_wants_it() {
     assert!(searxng.headers.is_empty());
 
     assert!(
-        rest(Kind::Exa, "https://mcp.exa.ai/mcp", "rust", 8, None).is_none(),
+        rest(Kind::Exa, "https://mcp.exa.ai/mcp", "rust", 8, None, "UA").is_none(),
         "走 MCP 的不走这里"
+    );
+}
+
+/// 抓结果页的两家（施工 N-3 下）：带浏览器标识；Bing 照查询的语言挑市场。
+#[test]
+fn the_scraped_pages_carry_a_browser_and_bing_picks_a_market_by_language() {
+    let ddg = rest(
+        Kind::Duckduckgo,
+        "https://html.duckduckgo.com/html/",
+        "tokio select",
+        8,
+        None,
+        "UA",
+    )
+    .unwrap();
+    assert!(ddg.get);
+    assert_eq!(ddg.url, "https://html.duckduckgo.com/html/?q=tokio+select");
+    assert_eq!(ddg.headers, [("User-Agent", "UA".to_string())]);
+    let english = rest(
+        Kind::Bing,
+        "https://www.bing.com/search",
+        "tokio select",
+        8,
+        None,
+        "UA",
+    )
+    .unwrap();
+    assert_eq!(
+        english.url,
+        "https://www.bing.com/search?q=tokio+select&mkt=en-US&setlang=en"
+    );
+    let chinese = rest(
+        Kind::Bing,
+        "https://www.bing.com/search",
+        "rust 程序设计语言",
+        8,
+        None,
+        "UA",
+    )
+    .unwrap();
+    assert!(
+        chinese.url.ends_with("&mkt=zh-CN&setlang=zh"),
+        "{}",
+        chinese.url
     );
 }

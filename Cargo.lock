@@ -2144,6 +2144,7 @@ dependencies = [
 name = "miyu-net"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
  "brotli 8.0.4",
  "encoding_rs",
  "flate2",

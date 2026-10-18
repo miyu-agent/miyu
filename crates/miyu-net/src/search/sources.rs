@@ -26,9 +26,13 @@ pub(crate) fn mcp_call(
         ),
         Kind::Firecrawl => ("firecrawl_search", json!({"query": query, "limit": want})),
         Kind::You => ("you-search", json!({"query": query, "count": want})),
-        Kind::Anysearch | Kind::Deepseek | Kind::Tavily | Kind::Brave | Kind::Searxng => {
-            return None;
-        }
+        Kind::Anysearch
+        | Kind::Deepseek
+        | Kind::Tavily
+        | Kind::Brave
+        | Kind::Searxng
+        | Kind::Duckduckgo
+        | Kind::Bing => return None,
     })
 }
 
@@ -46,13 +50,14 @@ pub(crate) struct Rest {
 }
 
 /// 走 REST 的几家怎么问：`url` 是这一家的地址（SearXNG 是设置里的实例地址），`key` 是配的 key（要 key 的几家没有的走不到
-/// 这里）。走 MCP 的几家没有。
+/// 这里），`browser` 是抓结果页的两家带的浏览器标识（施工 N-3 下）。走 MCP 的几家没有。
 pub(crate) fn rest(
     kind: Kind,
     url: &str,
     query: &str,
     want: usize,
     key: Option<&str>,
+    browser: &str,
 ) -> Option<Rest> {
     let bearer = || {
         key.map(|key| vec![("Authorization", format!("Bearer {key}"))])
@@ -103,8 +108,33 @@ pub(crate) fn rest(
             headers: Vec::new(),
             body: None,
         },
+        Kind::Duckduckgo => Rest {
+            get: true,
+            url: with_query(url, &[("q", query)]),
+            headers: vec![("User-Agent", browser.to_string())],
+            body: None,
+        },
+        Kind::Bing => {
+            // 照查询的语言挑市场：Bing 照 IP 挑地区，英文的查询在别的地区常给出不相干的结果（2026-10-19 实测）。
+            let (market, language) = if query.chars().any(cjk) {
+                ("zh-CN", "zh")
+            } else {
+                ("en-US", "en")
+            };
+            Rest {
+                get: true,
+                url: with_query(url, &[("q", query), ("mkt", market), ("setlang", language)]),
+                headers: vec![("User-Agent", browser.to_string())],
+                body: None,
+            }
+        }
         Kind::Exa | Kind::Parallel | Kind::Firecrawl | Kind::You => return None,
     })
+}
+
+/// 中日韩的字：汉字、假名、谚文。
+fn cjk(c: char) -> bool {
+    matches!(c, '\u{3040}'..='\u{30ff}' | '\u{3400}'..='\u{9fff}' | '\u{ac00}'..='\u{d7af}' | '\u{f900}'..='\u{faff}')
 }
 
 /// 地址接上查询参数（照 URL 的规矩编码）；读不成地址的照原样接。
@@ -205,6 +235,8 @@ pub(crate) fn read(kind: Kind, text: &str) -> Result<Vec<Hit>, Failure> {
                 })
                 .collect())
         }
+        Kind::Duckduckgo => super::scrape::duckduckgo(text),
+        Kind::Bing => super::scrape::bing(text),
         Kind::Anysearch => {
             let value = json(text)?;
             if value["code"].as_i64() != Some(0) {

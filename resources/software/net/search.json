@@ -1,9 +1,10 @@
 {
-  "order": ["exa", "parallel", "firecrawl", "anysearch", "you", "deepseek"],
+  "order": ["exa", "parallel", "firecrawl", "anysearch", "you", "deepseek", "duckduckgo", "bing"],
   "results": 8,
   "excerpt_chars": 1200,
   "timeout_seconds": 20,
   "cooldown_minutes": [30, 60, 120, 360],
+  "browser_user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
   "sources": {
     "exa": {"name": "Exa", "kind": "exa", "url": "https://mcp.exa.ai/mcp", "needs": "key_optional", "site_operator": false},
     "parallel": {"name": "Parallel", "kind": "parallel", "url": "https://search.parallel.ai/mcp", "needs": "nothing", "site_operator": true},
@@ -13,6 +14,8 @@
     "deepseek": {"name": "DeepSeek", "kind": "deepseek", "url": "https://api.deepseek.com/v1/tools/search", "needs": "key", "site_operator": true},
     "tavily": {"name": "Tavily", "kind": "tavily", "url": "https://api.tavily.com/search", "needs": "key", "site_operator": false},
     "brave": {"name": "Brave", "kind": "brave", "url": "https://api.search.brave.com/res/v1/web/search", "needs": "key", "site_operator": true},
-    "searxng": {"name": "SearXNG", "kind": "searxng", "url": "", "needs": "address", "site_operator": true}
+    "searxng": {"name": "SearXNG", "kind": "searxng", "url": "", "needs": "address", "site_operator": true},
+    "duckduckgo": {"name": "DuckDuckGo", "kind": "duckduckgo", "url": "https://html.duckduckgo.com/html/", "needs": "nothing", "site_operator": true},
+    "bing": {"name": "Bing", "kind": "bing", "url": "https://www.bing.com/search", "needs": "nothing", "site_operator": true}
   }
 }

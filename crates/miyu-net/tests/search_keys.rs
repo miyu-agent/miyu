@@ -10,7 +10,7 @@ use miyu_net::{Found, Missed, Query, Search, Using};
 
 use crate::support::{Reply, Site, resources};
 
-const SOURCES: [&str; 8] = [
+const SOURCES: [&str; 10] = [
     "exa",
     "parallel",
     "firecrawl",
@@ -19,6 +19,8 @@ const SOURCES: [&str; 8] = [
     "deepseek",
     "tavily",
     "brave",
+    "duckduckgo",
+    "bing",
 ];
 
 /// 几家都指到这台假服务器：`/exa`、`/deepseek`……
@@ -51,11 +53,19 @@ fn exa() -> Reply {
     Reply::bytes("application/json", body.to_string().as_bytes())
 }
 
-/// 出厂的五家免 key 的都 500：顺序走到最后。
+/// 出厂的免 key 的几家（连同网页抓取兜底的两家）都 500：顺序走到最后。
 fn free_ones_fail() -> Vec<(String, Reply)> {
-    ["exa", "parallel", "firecrawl", "anysearch", "you"]
-        .map(|id| (format!("/{id}"), Reply::status(500)))
-        .to_vec()
+    [
+        "exa",
+        "parallel",
+        "firecrawl",
+        "anysearch",
+        "you",
+        "duckduckgo",
+        "bing",
+    ]
+    .map(|id| (format!("/{id}"), Reply::status(500)))
+    .to_vec()
 }
 
 #[tokio::test]

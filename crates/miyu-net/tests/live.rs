@@ -145,7 +145,7 @@ async fn every_keyless_source_answers_web_search() {
         return;
     }
     let mut wrong = Vec::new();
-    for id in ["exa", "parallel", "firecrawl", "anysearch", "you"] {
+    for id in ["exa", "parallel", "firecrawl", "anysearch", "you", "bing"] {
         let search = miyu_net::Search::new(&resources()).only(&[id]);
         for (query, word) in QUERIES {
             let query = miyu_net::Query {

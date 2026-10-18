@@ -44,9 +44,17 @@ const EXA: &str = "Title: Tokio select\nURL: https://docs.rs/tokio/latest/tokio/
 
 /// 几家都指到这台假服务器：`/exa`、`/parallel`、`/firecrawl`、`/anysearch`、`/you`。
 fn tool(site: &Site) -> Arc<dyn Tool> {
-    let urls = ["exa", "parallel", "firecrawl", "anysearch", "you"]
-        .map(|id| (id.to_string(), site.url(&format!("/{id}"))))
-        .to_vec();
+    let urls = [
+        "exa",
+        "parallel",
+        "firecrawl",
+        "anysearch",
+        "you",
+        "duckduckgo",
+        "bing",
+    ]
+    .map(|id| (id.to_string(), site.url(&format!("/{id}"))))
+    .to_vec();
     let search = Search::new(&resources()).testing(urls);
     miyu_net::tools_with(
         &resources(),
@@ -234,36 +242,50 @@ async fn limited_sources_cool_down_and_failing_ones_are_passed_over() {
 
 #[tokio::test]
 async fn when_every_source_fails_the_last_reason_is_told_and_when_all_cool_that_is_told() {
-    let site = Site::start(vec![
-        ("/exa".to_string(), Reply::status(429)),
-        ("/parallel".to_string(), Reply::status(429)),
-        ("/firecrawl".to_string(), Reply::status(429)),
-        ("/anysearch".to_string(), Reply::status(429)),
-        ("/you".to_string(), Reply::status(503)),
-    ])
-    .await;
+    // 前面几家都限额，最后一家（网页抓取兜底的 Bing，施工 N-3 下）回 503
+    let mut routes: Vec<(String, Reply)> = [
+        "exa",
+        "parallel",
+        "firecrawl",
+        "anysearch",
+        "you",
+        "duckduckgo",
+    ]
+    .map(|id| (format!("/{id}*"), Reply::status(429)))
+    .to_vec();
+    routes.push(("/bing*".to_string(), Reply::status(503)));
+    let site = Site::start(routes).await;
     let tool = tool(&site);
 
     let failed = search(&tool, json!({"query": "rust"})).await;
     assert!(failed.error);
     assert_eq!(said(&failed).0, "web_search/failed");
     assert!(
-        text(&failed).starts_with("Web search failed: You.com: HTTP 503"),
-        "{}",
+        text(&failed).starts_with("Web search failed: Bing: HTTP 503"),
+        "照最后一家的原因说：{}",
         text(&failed)
     );
 
-    // You.com 出错的不冷却：再搜只剩它，它又出错。挑了它的（施工 N-2 下）先问它，出厂顺序里不再问第二遍。
-    let asked = site.hits("/you");
+    // Bing 出错的不冷却：再搜只剩它，它又出错。挑了它的（施工 N-2 下）先问它，出厂顺序里不再问第二遍。
+    let asked = site
+        .seen()
+        .iter()
+        .filter(|seen| seen.target.starts_with("/bing"))
+        .count();
     let again = search_with(
         &tool,
         json!({"query": "rust"}),
-        Some(Arc::new(Picked("you"))),
+        Some(Arc::new(Picked("bing"))),
     )
     .await;
-    assert_eq!(site.hits("/you"), asked + 1, "挑的那一家只问一遍");
+    let now = site
+        .seen()
+        .iter()
+        .filter(|seen| seen.target.starts_with("/bing"))
+        .count();
+    assert_eq!(now, asked + 1, "挑的那一家只问一遍");
     assert!(
-        text(&again).starts_with("Web search failed: You.com"),
+        text(&again).starts_with("Web search failed: Bing"),
         "{}",
         text(&again)
     );
@@ -272,9 +294,17 @@ async fn when_every_source_fails_the_last_reason_is_told_and_when_all_cool_that_
 #[tokio::test]
 async fn all_sources_cooling_is_told_without_asking_anyone() {
     let site = Site::start(
-        ["exa", "parallel", "firecrawl", "anysearch", "you"]
-            .map(|id| (format!("/{id}"), Reply::status(429)))
-            .to_vec(),
+        [
+            "exa",
+            "parallel",
+            "firecrawl",
+            "anysearch",
+            "you",
+            "duckduckgo",
+            "bing",
+        ]
+        .map(|id| (format!("/{id}*"), Reply::status(429)))
+        .to_vec(),
     )
     .await;
     let tool = tool(&site);

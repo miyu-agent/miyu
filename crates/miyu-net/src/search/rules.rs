@@ -30,6 +30,10 @@ pub(crate) enum Kind {
     Brave,
     /// 自己搭的 SearXNG（要地址）。
     Searxng,
+    /// DuckDuckGo 的 HTML 结果页（施工 N-3 下，免 key 的网页抓取兜底）。
+    Duckduckgo,
+    /// Bing 的结果页（施工 N-3 下）。
+    Bing,
 }
 
 /// 一家要什么才能用（施工 N-3 上）。
@@ -75,6 +79,8 @@ pub(crate) struct Rules {
     pub(crate) timeout: Duration,
     /// 冷却的台阶。
     pub(crate) cooldown: Vec<Duration>,
+    /// 抓结果页的两家带的浏览器标识（施工 N-3 下）：不带的直接被挡。
+    pub(crate) browser_user_agent: String,
     /// 编号 → 来源。
     pub(crate) sources: BTreeMap<String, Source>,
 }
@@ -88,6 +94,7 @@ struct File {
     excerpt_chars: usize,
     timeout_seconds: u64,
     cooldown_minutes: Vec<u64>,
+    browser_user_agent: String,
     sources: BTreeMap<String, Source>,
 }
 
@@ -154,6 +161,7 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
             .iter()
             .map(|minutes| Duration::from_secs(minutes * 60))
             .collect(),
+        browser_user_agent: parsed.browser_user_agent,
         sources: parsed.sources,
     })
 }

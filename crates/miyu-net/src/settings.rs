@@ -14,7 +14,7 @@ miyu_config::settings! {
         source: String = "auto" {
             kind: option [
                 "auto", "exa", "parallel", "firecrawl", "anysearch", "you", "deepseek", "tavily", "brave",
-                "searxng"
+                "searxng", "duckduckgo", "bing"
             ],
             layers: [System, Personal],
             applies: next_turn,

@@ -10,7 +10,7 @@
       "net.search.tavily.key": {"name": "Tavily 的 key", "description": "搜索来源选了 Tavily 时要它。"},
       "net.search.brave.key": {"name": "Brave Search 的 key", "description": "搜索来源选了 Brave 时要它。"},
       "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。"},
-      "net.search.source": {"name": "搜索来源", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
+      "net.search.source": {"name": "搜索来源", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {
         "name": "整理记忆前等多久",
         "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。"

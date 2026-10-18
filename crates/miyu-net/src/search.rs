@@ -11,6 +11,7 @@ mod cooldown;
 mod mcp;
 mod rest;
 mod rules;
+mod scrape;
 mod sources;
 mod using;
 
@@ -362,8 +363,15 @@ impl Ready {
                 mcp::call(&client, &self.sessions, url.as_str(), tool, args, timeout).await?
             }
             None => {
-                let rest = sources::rest(source.kind, url.as_str(), &text, want, key)
-                    .ok_or_else(|| Failure::Failed("no way to ask this source".to_string()))?;
+                let rest = sources::rest(
+                    source.kind,
+                    url.as_str(),
+                    &text,
+                    want,
+                    key,
+                    &self.rules.browser_user_agent,
+                )
+                .ok_or_else(|| Failure::Failed("no way to ask this source".to_string()))?;
                 rest::send(&client, &rest, timeout).await?
             }
         };

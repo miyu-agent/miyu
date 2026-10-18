@@ -97,7 +97,7 @@ max = "5m"
 
 [net.search]
 # 搜索来源：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
-# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave 或 searxng。只能写在系统配置或个人设置里。下一轮生效。
+# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。
 source = "auto"
 
 [net.search.brave]
