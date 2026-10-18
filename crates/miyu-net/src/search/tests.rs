@@ -1,6 +1,6 @@
 //! 收拾结果、写查询、认限额（施工 N-2 上）。
 
-use super::rules::{Kind, Source};
+use super::rules::{Kind, Needs, Source};
 use super::{Failure, Hit, Query, clip, domain_of, phrase, tidy};
 
 fn hit(url: &str, snippet: &str) -> Hit {
@@ -17,6 +17,7 @@ fn source(site_operator: bool) -> Source {
         name: "Test".to_string(),
         kind: Kind::Firecrawl,
         url: "https://example.invalid/mcp".to_string(),
+        needs: Needs::Nothing,
         site_operator,
     }
 }

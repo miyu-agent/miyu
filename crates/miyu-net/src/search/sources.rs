@@ -26,13 +26,93 @@ pub(crate) fn mcp_call(
         ),
         Kind::Firecrawl => ("firecrawl_search", json!({"query": query, "limit": want})),
         Kind::You => ("you-search", json!({"query": query, "count": want})),
-        Kind::Anysearch => return None,
+        Kind::Anysearch | Kind::Deepseek | Kind::Tavily | Kind::Brave | Kind::Searxng => {
+            return None;
+        }
     })
 }
 
-/// AnySearch 的请求：至多 10 条（它的上限）。
-pub(crate) fn anysearch_body(query: &str, want: usize) -> Value {
-    json!({"query": query, "max_results": want.min(10)})
+/// 一次 REST 请求怎么发（施工 N-3 上）：方法、地址（带好查询参数）、另加的头、JSON 正文。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Rest {
+    /// 是 GET；不是的 POST。
+    pub(crate) get: bool,
+    /// 地址。
+    pub(crate) url: String,
+    /// 另加的头：认证这些。
+    pub(crate) headers: Vec<(&'static str, String)>,
+    /// POST 的正文。
+    pub(crate) body: Option<Value>,
+}
+
+/// 走 REST 的几家怎么问：`url` 是这一家的地址（SearXNG 是设置里的实例地址），`key` 是配的 key（要 key 的几家没有的走不到
+/// 这里）。走 MCP 的几家没有。
+pub(crate) fn rest(
+    kind: Kind,
+    url: &str,
+    query: &str,
+    want: usize,
+    key: Option<&str>,
+) -> Option<Rest> {
+    let bearer = || {
+        key.map(|key| vec![("Authorization", format!("Bearer {key}"))])
+            .unwrap_or_default()
+    };
+    Some(match kind {
+        Kind::Anysearch => Rest {
+            get: false,
+            url: url.to_string(),
+            headers: Vec::new(),
+            // 它的上限是 10 条。
+            body: Some(json!({"query": query, "max_results": want.min(10)})),
+        },
+        Kind::Deepseek => Rest {
+            get: false,
+            url: url.to_string(),
+            headers: bearer(),
+            // 查询至多 128 个字（官方的规矩），条数 1 到 50。
+            body: Some(
+                json!({"query": query.chars().take(128).collect::<String>(), "count": want.clamp(1, 50)}),
+            ),
+        },
+        Kind::Tavily => Rest {
+            get: false,
+            url: url.to_string(),
+            headers: bearer(),
+            body: Some(json!({"query": query, "max_results": want.min(20)})),
+        },
+        Kind::Brave => Rest {
+            get: true,
+            url: with_query(url, &[("q", query), ("count", &want.min(20).to_string())]),
+            headers: key
+                .map(|key| {
+                    vec![
+                        ("X-Subscription-Token", key.to_string()),
+                        ("Accept", "application/json".to_string()),
+                    ]
+                })
+                .unwrap_or_default(),
+            body: None,
+        },
+        Kind::Searxng => Rest {
+            get: true,
+            url: with_query(
+                &format!("{}/search", url.trim_end_matches('/')),
+                &[("q", query), ("format", "json")],
+            ),
+            headers: Vec::new(),
+            body: None,
+        },
+        Kind::Exa | Kind::Parallel | Kind::Firecrawl | Kind::You => return None,
+    })
+}
+
+/// 地址接上查询参数（照 URL 的规矩编码）；读不成地址的照原样接。
+fn with_query(url: &str, pairs: &[(&str, &str)]) -> String {
+    match reqwest::Url::parse_with_params(url, pairs) {
+        Ok(url) => url.to_string(),
+        Err(_) => url.to_string(),
+    }
 }
 
 /// 读一家交回的字。
@@ -71,6 +151,57 @@ pub(crate) fn read(kind: Kind, text: &str) -> Result<Vec<Hit>, Failure> {
                     let highlights = joined(&one["contents"]["highlights"]);
                     let snippet = highlights.or_else(|| string(&one["description"]));
                     hit(one, "url", "title", snippet, date(&one["page_age"]))
+                })
+                .collect())
+        }
+        Kind::Deepseek => {
+            let value = json(text)?;
+            Ok(list(&value["results"])
+                .map(|one| {
+                    let snippet = string(&one["summary"]).or_else(|| string(&one["snippet"]));
+                    hit(one, "url", "title", snippet, date(&one["date"]))
+                })
+                .collect())
+        }
+        Kind::Tavily => {
+            let value = json(text)?;
+            Ok(list(&value["results"])
+                .map(|one| {
+                    hit(
+                        one,
+                        "url",
+                        "title",
+                        string(&one["content"]),
+                        date(&one["published_date"]),
+                    )
+                })
+                .collect())
+        }
+        Kind::Brave => {
+            let value = json(text)?;
+            Ok(list(&value["web"]["results"])
+                .map(|one| {
+                    hit(
+                        one,
+                        "url",
+                        "title",
+                        string(&one["description"]),
+                        date(&one["page_age"]),
+                    )
+                })
+                .collect())
+        }
+        Kind::Searxng => {
+            let value = json(text)?;
+            Ok(list(&value["results"])
+                .map(|one| {
+                    hit(
+                        one,
+                        "url",
+                        "title",
+                        string(&one["content"]),
+                        date(&one["publishedDate"]),
+                    )
                 })
                 .collect())
         }
@@ -124,7 +255,7 @@ fn exa(text: &str) -> Vec<Hit> {
                 title: field("Title: ").unwrap_or_default(),
                 url: field("URL: ").unwrap_or_default(),
                 snippet,
-                date: field("Published: ").map(|text| text.chars().take(10).collect()),
+                date: field("Published: ").and_then(|text| iso_day(&text)),
             }
         })
         .filter(|hit| !hit.url.is_empty())
@@ -175,9 +306,19 @@ fn joined(value: &Value) -> Option<String> {
     (!text.trim().is_empty()).then_some(text)
 }
 
-/// 日期：只要前十个字（`2026-07-09T12:00:00` 取 `2026-07-09`）。
+/// 日期：`2026-07-09` 这样开头的只要前十个字（`2026-07-09T12:00:00` 取 `2026-07-09`）；别的写法（`Mon, 01 Jan 2024`）不要。
 fn date(value: &Value) -> Option<String> {
-    string(value).map(|text| text.chars().take(10).collect())
+    string(value).and_then(|text| iso_day(&text))
+}
+
+/// 开头是 `YYYY-MM-DD` 的取这十个字。
+fn iso_day(text: &str) -> Option<String> {
+    let day: String = text.chars().take(10).collect();
+    let shape = day.char_indices().all(|(at, c)| match at {
+        4 | 7 => c == '-',
+        _ => c.is_ascii_digit(),
+    });
+    (day.len() == 10 && shape).then_some(day)
 }
 
 #[cfg(test)]

@@ -92,11 +92,13 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         .memory
         .vectors()
         .and_then(|vectors| vectors.local_name());
+    let values = config.resolved().values();
     for item in items {
         let said = words
             .item(item.key)
             .or_else(|| english.as_ref().and_then(|english| english.item(item.key)));
-        let notes = |option: &str| noted(core, &words, item.key, option, local.as_deref());
+        let notes =
+            |option: &str| noted(core, (&words, &values), item.key, option, local.as_deref());
         let usable = |option: &str| usable(item.key, option, local.is_some());
         listed.push(schema_item(item, said, &notes, &usable));
         let page = item.ui.page;

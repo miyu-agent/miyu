@@ -241,19 +241,190 @@
       "properties": {
         "search": {
           "properties": {
+            "brave": {
+              "properties": {
+                "key": {
+                  "description": "搜索来源选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Brave Search 的 key"
+                }
+              },
+              "type": "object"
+            },
+            "deepseek": {
+              "properties": {
+                "key": {
+                  "description": "搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "DeepSeek 的 key"
+                }
+              },
+              "type": "object"
+            },
+            "exa": {
+              "properties": {
+                "key": {
+                  "description": "配了就用你自己的 Exa 额度，不配照免费额度。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Exa 的 key"
+                }
+              },
+              "type": "object"
+            },
+            "searxng": {
+              "properties": {
+                "url": {
+                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "oneOf": [
+                    {
+                      "format": "uri",
+                      "type": "string"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "SearXNG 的地址"
+                }
+              },
+              "type": "object"
+            },
             "source": {
               "default": "auto",
-              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch 或 you。只能写在系统配置或个人设置里。下一轮生效。",
+              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave 或 searxng。只能写在系统配置或个人设置里。下一轮生效。",
               "enum": [
                 "auto",
                 "exa",
                 "parallel",
                 "firecrawl",
                 "anysearch",
-                "you"
+                "you",
+                "deepseek",
+                "tavily",
+                "brave",
+                "searxng"
               ],
               "title": "搜索来源",
               "type": "string"
+            },
+            "tavily": {
+              "properties": {
+                "key": {
+                  "description": "搜索来源选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Tavily 的 key"
+                }
+              },
+              "type": "object"
             }
           },
           "type": "object"

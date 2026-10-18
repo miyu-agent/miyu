@@ -51,22 +51,32 @@ impl Kit {
         )
     }
 
-    /// 配置项 `key` 的选项 `option` 这一刻的状态：搜索来源冷却着的那一家写冷却到什么时候。
-    pub(crate) fn option_state(&self, key: &str, option: &str) -> Option<OptionState> {
+    /// 配置项 `key` 的选项 `option` 这一刻的状态：搜索来源冷却着的那一家写冷却到什么时候，要 key、要地址没配的照最终值
+    /// `values` 说（施工 N-3 上）。
+    pub(crate) fn option_state(
+        &self,
+        key: &str,
+        option: &str,
+        values: &miyu_config::Values,
+    ) -> Option<OptionState> {
         #[cfg(feature = "net")]
         if miyu_net::SearchSettings::ITEMS
             .iter()
             .any(|item| item.key == key)
         {
-            return self
+            let cooling = self
                 .search
                 .cooling()
                 .into_iter()
                 .find(|(id, _)| id == option)
                 .map(|(_, until)| OptionState::CoolingUntil(until));
+            return cooling.or_else(|| match miyu_net::missing(option, values)? {
+                miyu_net::Missing::Key => Some(OptionState::NeedsKey),
+                miyu_net::Missing::Address => Some(OptionState::NeedsAddress),
+            });
         }
         #[cfg(not(feature = "net"))]
-        let _ = (key, option);
+        let _ = (key, option, values);
         None
     }
 }

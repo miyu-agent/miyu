@@ -97,8 +97,33 @@ max = "5m"
 
 [net.search]
 # 搜索来源：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
-# 能写：auto、exa、parallel、firecrawl、anysearch 或 you。只能写在系统配置或个人设置里。下一轮生效。
+# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave 或 searxng。只能写在系统配置或个人设置里。下一轮生效。
 source = "auto"
+
+[net.search.brave]
+# Brave Search 的 key：搜索来源选了 Brave 时要它。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
+# key =
+
+[net.search.deepseek]
+# DeepSeek 的 key：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
+# key =
+
+[net.search.exa]
+# Exa 的 key：配了就用你自己的 Exa 额度，不配照免费额度。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
+# key =
+
+[net.search.searxng]
+# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。
+# 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
+# url =
+
+[net.search.tavily]
+# Tavily 的 key：搜索来源选了 Tavily 时要它。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
+# key =
 
 [permission]
 # 新会话的权限级别：新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。

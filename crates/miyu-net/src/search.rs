@@ -9,8 +9,10 @@
 
 mod cooldown;
 mod mcp;
+mod rest;
 mod rules;
 mod sources;
+mod using;
 
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock, PoisonError};
@@ -22,7 +24,9 @@ use crate::TARGET;
 use crate::fetch::clients::{Clients, Way};
 use crate::proxy::Proxies;
 use cooldown::Cooldowns;
-use rules::{Kind, Rules, Source};
+use rules::{Kind, Needs, Rules, Source};
+
+pub use using::Using;
 
 /// 搜到的一条。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -93,6 +97,8 @@ impl Failure {
             "usage limit",
             "limit reached",
             "http 429",
+            "http 402",
+            "insufficient balance",
         ];
         if limited.iter().any(|word| lower.contains(word)) {
             Failure::Limited
@@ -164,21 +170,21 @@ impl Search {
         self
     }
 
-    /// 搜一次：`preferred` 是设置里挑的那一家（`auto`、没有的照出厂的顺序），排在最前，用不了照出厂的顺序兜底（设计 36
-    /// 第二节第 3 条）。
+    /// 搜一次，照 `using`：设置里挑的那一家排在最前，用不了照出厂的顺序兜底（设计 36 第二节第 3 条）；要 key、要地址没配的
+    /// 跳过（施工 N-3 上）。
     ///
     /// # Errors
     ///
     /// 见 [`Missed`]。
-    pub async fn search(&self, query: &Query, preferred: Option<&str>) -> Result<Found, Missed> {
+    pub async fn search(&self, query: &Query, using: &Using) -> Result<Found, Missed> {
         let ready = self.ready().ok_or(Missed::NotReady)?;
         let mut last = None;
-        for id in &ready.order(preferred) {
+        for id in &ready.order(using) {
             let source = &ready.rules.sources[id];
             if ready.cooling(id).is_some() {
                 continue;
             }
-            match ready.ask(source, query).await {
+            match ready.ask(id, source, query, using).await {
                 Ok(hits) => {
                     ready.cooldown().succeeded(id);
                     let hits = tidy(hits, query, ready.rules.results, ready.rules.excerpt_chars);
@@ -281,19 +287,33 @@ impl Search {
 }
 
 impl Ready {
-    /// 这一次试的先后：挑了出厂有的那一家的排在最前，其余照出厂的顺序。
-    fn order(&self, preferred: Option<&str>) -> Vec<String> {
-        let first = preferred.filter(|id| self.rules.sources.contains_key(*id));
+    /// 这一次试的先后：挑了出厂有的那一家的排在最前，其余照出厂的顺序；要 key、要地址没配的不试（施工 N-3 上）。
+    fn order(&self, using: &Using) -> Vec<String> {
+        let ready = |id: &String| {
+            self.rules
+                .sources
+                .get(id)
+                .is_some_and(|source| match source.needs {
+                    Needs::Nothing | Needs::KeyOptional => true,
+                    Needs::Key => using.key(id).is_some(),
+                    Needs::Address => using.address.is_some(),
+                })
+        };
+        let first = using
+            .preferred
+            .as_ref()
+            .filter(|id| self.rules.sources.contains_key(*id));
         first
-            .map(str::to_string)
+            .cloned()
             .into_iter()
             .chain(
                 self.rules
                     .order
                     .iter()
-                    .filter(|id| Some(id.as_str()) != first)
+                    .filter(|id| Some(*id) != first)
                     .cloned(),
             )
+            .filter(ready)
             .collect()
     }
 
@@ -307,9 +327,23 @@ impl Ready {
         self.cooldown().until(id, Instant::now())
     }
 
-    /// 问一家。
-    async fn ask(&self, source: &Source, query: &Query) -> Result<Vec<Hit>, Failure> {
-        let url = Url::parse(&source.url).map_err(|error| Failure::Failed(error.to_string()))?;
+    /// 问一家 `id`：要地址的照设置里的地址，配了 key 的带上（Exa 接在地址后面，别的几家放在头里）。
+    async fn ask(
+        &self,
+        id: &str,
+        source: &Source,
+        query: &Query,
+        using: &Using,
+    ) -> Result<Vec<Hit>, Failure> {
+        let key = using.key(id);
+        let base = match source.needs {
+            Needs::Address => using.address.clone().unwrap_or_default(),
+            _ => source.url.clone(),
+        };
+        let mut url = Url::parse(&base).map_err(|error| Failure::Failed(error.to_string()))?;
+        if let (Kind::Exa, Some(key)) = (source.kind, key) {
+            url.query_pairs_mut().append_pair("exaApiKey", key);
+        }
         let way = self.proxies.via(&url).map_or(Way::Direct, Way::Proxy);
         let client = self
             .clients
@@ -325,47 +359,16 @@ impl Ready {
         let timeout = self.rules.timeout;
         let answer = match sources::mcp_call(source.kind, &text, want, &self.session) {
             Some((tool, args)) => {
-                mcp::call(&client, &self.sessions, &source.url, tool, args, timeout).await?
+                mcp::call(&client, &self.sessions, url.as_str(), tool, args, timeout).await?
             }
-            None => rest(&client, source, &text, want, timeout).await?,
+            None => {
+                let rest = sources::rest(source.kind, url.as_str(), &text, want, key)
+                    .ok_or_else(|| Failure::Failed("no way to ask this source".to_string()))?;
+                rest::send(&client, &rest, timeout).await?
+            }
         };
         sources::read(source.kind, &answer)
     }
-}
-
-/// REST 的那一家（现在只有 AnySearch）。
-async fn rest(
-    client: &reqwest::Client,
-    source: &Source,
-    text: &str,
-    want: usize,
-    timeout: std::time::Duration,
-) -> Result<String, Failure> {
-    debug_assert_eq!(source.kind, Kind::Anysearch);
-    let response = client
-        .post(&source.url)
-        .timeout(timeout)
-        .header(reqwest::header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_vec(&sources::anysearch_body(text, want)).unwrap_or_default())
-        .send()
-        .await
-        .map_err(|error| Failure::Failed(error.without_url().to_string()))?;
-    let status = response.status();
-    if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err(Failure::Limited);
-    }
-    let bytes = crate::body::read_prefix(response, 4 * 1024 * 1024)
-        .await
-        .map_err(|_| Failure::Failed("the answer broke off".to_string()))?;
-    let text = String::from_utf8_lossy(&bytes).into_owned();
-    if !status.is_success() && !text.trim_start().starts_with('{') {
-        return Err(Failure::from_text(&format!(
-            "HTTP {}: {}",
-            status.as_u16(),
-            text.chars().take(200).collect::<String>()
-        )));
-    }
-    Ok(text)
 }
 
 /// 写给这一家的查询：认 `site:` 的把只要的域名接在后面。

@@ -320,8 +320,9 @@ impl miyu_endpoint::builtins::Builtins for BuiltinTools {
         &self,
         key: &str,
         option: &str,
+        values: &miyu_config::Values,
     ) -> Option<miyu_endpoint::builtins::OptionState> {
-        self.kit.option_state(key, option)
+        self.kit.option_state(key, option, values)
     }
 }
 

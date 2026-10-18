@@ -40,8 +40,10 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
             .only(&["exa"]),
     );
     let kit = Kit::with_search(&resources, Arc::clone(&search));
+    // 什么都没配的最终值（施工 N-3 上）：要 key、要地址的几家照它说。
+    let values = miyu_config::Values::defaults(&miyu_net::ITEMS.concat());
     assert_eq!(
-        kit.option_state("net.search.source", "exa"),
+        kit.option_state("net.search.source", "exa", &values),
         None,
         "还没搜过"
     );
@@ -52,23 +54,47 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
         ..miyu_net::Query::default()
     };
     assert!(
-        search.search(&query, None).await.is_err(),
+        search
+            .search(&query, &miyu_net::Using::default())
+            .await
+            .is_err(),
         "唯一的一家限额了"
     );
 
-    let Some(OptionState::CoolingUntil(until)) = kit.option_state("net.search.source", "exa")
+    let Some(OptionState::CoolingUntil(until)) =
+        kit.option_state("net.search.source", "exa", &values)
     else {
         panic!("限额的那一家冷却着");
     };
     assert!(until.duration_since(before).expect("在以后") >= Duration::from_secs(29 * 60));
     assert_eq!(
-        kit.option_state("net.search.source", "parallel"),
+        kit.option_state("net.search.source", "parallel", &values),
         None,
         "别的选项不写"
     );
     assert_eq!(
-        kit.option_state("ui.language", "exa"),
+        kit.option_state("ui.language", "exa", &values),
         None,
         "别的配置项不写"
     );
+}
+
+/// 要 key、要地址没配的几家说少了什么（施工 N-3 上）；配了的、免 key 的不说。
+#[test]
+fn sources_missing_a_key_or_an_address_say_so() {
+    let resources = ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"));
+    let kit = Kit::new(&resources);
+    let mut values = miyu_config::Values::defaults(&miyu_net::ITEMS.concat());
+    let state = |values: &miyu_config::Values, option: &str| {
+        kit.option_state("net.search.source", option, values)
+    };
+    assert_eq!(state(&values, "tavily"), Some(OptionState::NeedsKey));
+    assert_eq!(state(&values, "searxng"), Some(OptionState::NeedsAddress));
+    assert_eq!(state(&values, "parallel"), None, "免 key 的不说");
+    assert_eq!(state(&values, "exa"), None, "Exa 不配 key 也能用");
+    values.set(
+        "net.search.tavily.key",
+        miyu_config::Value::Secret(miyu_config::secret::Reference::Secret("tavily".to_string())),
+    );
+    assert_eq!(state(&values, "tavily"), None, "配了的不说");
 }

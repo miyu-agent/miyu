@@ -131,6 +131,9 @@ pub struct Seen {
     pub user_agent: String,
     pub accept_encoding: String,
     pub accept: String,
+    /// `Authorization`、`X-Subscription-Token`（施工 N-3 上：要 key 的几家带对了没有）。
+    pub authorization: String,
+    pub token: String,
 }
 
 /// 跑着的假服务器：照请求行里的地址回，没有的回 404；路由以 `*` 结尾的照前缀对（W-7 再补：接口的查询参数长）。
@@ -230,6 +233,8 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
             user_agent: header("user-agent"),
             accept_encoding: header("accept-encoding"),
             accept: header("accept"),
+            authorization: header("authorization"),
+            token: header("x-subscription-token"),
         });
     let reply = routes
         .iter()

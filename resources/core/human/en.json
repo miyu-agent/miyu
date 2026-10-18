@@ -5,7 +5,12 @@
         "name": "Prepare compaction early",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."
       },
-      "net.search.source": {"name": "Search source", "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms.", "options": {"auto": "Auto", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com"}},
+      "net.search.exa.key": {"name": "Exa key", "description": "With a key, searches use your own Exa quota; without one, the free quota."},
+      "net.search.deepseek.key": {"name": "DeepSeek key", "description": "Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search."},
+      "net.search.tavily.key": {"name": "Tavily key", "description": "Needed when Tavily is the search source."},
+      "net.search.brave.key": {"name": "Brave Search key", "description": "Needed when Brave is the search source."},
+      "net.search.searxng.url": {"name": "SearXNG address", "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search source."},
+      "net.search.source": {"name": "Search source", "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms.", "options": {"auto": "Auto", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
         "name": "Wait before organizing memories",
         "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories."
@@ -551,6 +556,10 @@
     "config/layer/system": "the system config",
     "config/layer/personal": "personal settings",
     "config/applies/now": "Takes effect immediately",
+    "config/option-needs-key": "Needs a key",
+    "config/option-needs-address": "Needs an address",
+    "config/option-needs-key": "Needs a key",
+    "config/option-needs-address": "Needs an address",
     "config/option-cooling": "Resting until {time}",
     "config/or": "{rest} or {last}",
     "config/or-values": "{rest} or {last}",

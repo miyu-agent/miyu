@@ -2,7 +2,7 @@
 
 ### 是什么
 
-联网包（`net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，被限额的进冷却、到点回来。要 key 的几家、网页抓取兜底在 N-3，「搜索来源」设置在 N-2 下，扩展登记来源在 N-5。
+联网包（`net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，有 key 的 DeepSeek 兜在最后，被限额的进冷却、到点回来；设置里挑了一家的先用它（N-2 下）；Tavily、Brave、自己搭的 SearXNG 挑了才用（N-3 上）。网页抓取兜底在 N-3 下，扩展登记来源在 N-5。
 
 ### 在哪
 
@@ -13,7 +13,10 @@
 | `crates/miyu-net/src/search/rules.rs` | 读 `search.json` |
 | `crates/miyu-net/src/search/cooldown.rs` | 限额冷却的台阶（纯逻辑） |
 | `crates/miyu-net/src/search/mcp.rs` | MCP over HTTP（Streamable HTTP）的最小客户端：握手、会话编号、JSON 或 SSE 的回应 |
-| `crates/miyu-net/src/search/sources.rs` | 各家的参数怎么写、回应怎么读 |
+| `crates/miyu-net/src/search/sources.rs` | 各家的参数怎么写、回应怎么读；走 REST 的几家怎么问（`Rest`：方法、地址、头、正文） |
+| `crates/miyu-net/src/search/rest.rs` | 发 REST 的请求，429、402 当限额（N-3 上） |
+| `crates/miyu-net/src/search/using.rs` | 这一次用得上的：挑的那一家、配的 key、SearXNG 的地址（N-3 上） |
+| `crates/miyu-net/src/settings.rs` | 设置项：搜索来源、几家的 key、SearXNG 的地址；照这一轮的配置拼 `Using`，DeepSeek 照用供应商的 key；「少配了什么」 |
 | `resources/software/net/search.json` | 顺序、条数、摘录长度、时限、冷却台阶、各家的地址 |
 | `resources/software/net/tools/web_search.json` | 说明和参数格式 |
 | `resources/software/net/web_search/*.txt` | 输出里给她看的几句 |
@@ -56,13 +59,14 @@ Waits on multiple concurrent branches, ……
 3. 照 `order` 一家家试（出厂 Exa → Parallel → Firecrawl → AnySearch → You.com，设计 36 第二节第 2 条）。设置里挑了一家的（`net.search.source`，施工 N-2 下，设计 36 第二节第 3 条），它排在最前、出厂顺序里不再问第二遍；`auto`、挑的不是出厂有的、调用没带这一轮配置的（测试里的假调用）照出厂的顺序。这一轮的配置照调用带来的 `settings`（`miyu_tool::SettingsPort`，会话 actor 回合开始冻结的那一份）读：
    - 冷却着的跳过。
    - 成了的（哪怕一条都没有）清零冷却，就用它，后面的不问。
-   - 报限额的（HTTP 429；或者原话里有 rate limit、too many requests、quota、credit、usage limit、limit reached、HTTP 429）进冷却：台阶 30 分钟、1 小时、2 小时，最多 6 小时（`cooldown_minutes`），记 `WARN web search source limited source=… minutes=…`，换下一家。
+   - 报限额的（HTTP 429、402 余额不足；或者原话里有 rate limit、too many requests、quota、credit、usage limit、limit reached、HTTP 429）进冷却：台阶 30 分钟、1 小时、2 小时，最多 6 小时（`cooldown_minutes`），记 `WARN web search source limited source=… minutes=…`，换下一家。
    - 别的出错（超时、连不上、5xx、读不懂）记 `WARN web search source failed source=… why=…`，这一次换下一家，不冷却。
    - 都试过、都不成：`failed`，原因是最后一家的（「{名字}: {原因}」）。一家都没试（都在冷却）：`cooling`。
 4. 问一家：
    - 要几条照 `results`（8）；要筛域名的要两倍，筛完还够数。
    - 认 `site:` 的几家（`site_operator`：Parallel、Firecrawl、You.com）把只要的域名写进查询，`site:a OR site:b`。
-   - MCP 的四家照 `sources.rs` 写参数（Exa `web_search_exa {query, numResults, objective}`，Parallel `web_search {objective, search_queries, session_id}`，Firecrawl `firecrawl_search {query, limit}`，You.com `you-search {query, count}`）；Parallel 的 `session_id` 是这个核心的一个固定编号（它照它算免费额度）。AnySearch 是 REST，`{query, max_results}`，至多 10。
+   - 要 key 的（DeepSeek、Tavily、Brave）没配 key 的、要地址的（SearXNG）没配地址的不试（`needs`，N-3 上）。DeepSeek 在没配置时的顺序最后，有 key 才用；Tavily、Brave、SearXNG 不在那个顺序里，挑了才用。配了 key 的 Exa 把 key 接在地址后面（`exaApiKey`），走自己的额度。
+   - MCP 的四家照 `sources.rs` 写参数（Exa `web_search_exa {query, numResults, objective}`，Parallel `web_search {objective, search_queries, session_id}`，Firecrawl `firecrawl_search {query, limit}`，You.com `you-search {query, count}`）；Parallel 的 `session_id` 是这个核心的一个固定编号（它照它算免费额度）。AnySearch 是 REST，`{query, max_results}`，至多 10。DeepSeek `POST {query, count}`，`Authorization: Bearer`，查询截到 128 个字、至多 50 条，摘录用长的 `summary`；Tavily `POST {query, max_results}`（至多 20），`Authorization: Bearer`；Brave `GET ?q=&count=`（至多 20），`X-Subscription-Token`；SearXNG `GET <地址>/search?q=&format=json`（实例没开 JSON 的回 403，当这一家出错）。日期只收 `YYYY-MM-DD` 开头的。
    - 时限每次请求 `timeout_seconds`（20）。回应至多读 4 MiB。
    - MCP：第一次握手（`initialize`、`notifications/initialized`），对方给了 `Mcp-Session-Id` 的记下、以后带上，会话过期（404）的重新握手一次。回应可以是 JSON 也可以是 SSE，取最后一条带 `result`、`error` 的；`isError`、JSON-RPC 出错的当这一家出错。
 5. 收拾：没有网址的、同一个网址第二次出现的去掉；照 `allowed_domains`、`blocked_domains` 筛主机名；至多 `results` 条；摘录截到 `excerpt_chars`（1200）个字，截了的接一个省略号；日期只留前十个字。
@@ -83,6 +87,9 @@ Waits on multiple concurrent branches, ……
 | `crates/miyu-net/tests/search.rs` 的 `a_picked_source_is_asked_first_and_the_shipped_order_backs_it_up`（N-2 下） | 挑了的先问、成了不问别的；挑的用不了照出厂的顺序；`auto` 照出厂的顺序；都不成时挑的那一家只问一遍 |
 | `crates/miyu-net/src/settings/tests.rs`（N-2 下） | 下拉里的来源就是 `search.json` 里的那几家，`auto` 排第一 |
 | `crates/miyu-session/tests/tools.rs` 的 `a_call_runs_in_the_turns_directory_and_she_hears_the_result` | 派出去的调用带着这一轮冻结的配置 |
+| `crates/miyu-net/tests/search_keys.rs`（N-3 上） | 挑了带 key 的几家，key 放在各家要的地方；没配 key、没配地址的跳过；DeepSeek 有 key 才兜在最后；SearXNG 照配的地址；Exa 的 key 接在地址后面 |
+| `crates/miyu-net/src/settings/tests.rs`（N-3 上） | 「少配了什么」和 `search.json` 的 `needs` 一致；照这一轮的配置拼 `Using`：key 照引用取、取不到的当没配、地址写成环境变量的、DeepSeek 照用供应商的 key |
+| `crates/miyu-core/src/kit/tests.rs` 的 `sources_missing_a_key_or_an_address_say_so`（N-3 上） | 下拉里没配的写「要 key」「要地址」，配了的、免 key 的不写 |
 | `crates/miyu-net/tests/budget.rs` | 两件工具的说明合计不超过 663 字节 |
 
 ### 出处

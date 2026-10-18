@@ -116,6 +116,11 @@ fn the_registered_list_is_well_formed() {
             "memory.merge_every",
             "memory.merge_sessions",
             "net.search.source",
+            "net.search.exa.key",
+            "net.search.deepseek.key",
+            "net.search.tavily.key",
+            "net.search.brave.key",
+            "net.search.searxng.url",
             "log.level"
         ],
         "照登记的先后"

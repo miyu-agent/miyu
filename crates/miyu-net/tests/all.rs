@@ -11,4 +11,5 @@ mod live;
 mod preview;
 mod proxy;
 mod search;
+mod search_keys;
 mod sites;

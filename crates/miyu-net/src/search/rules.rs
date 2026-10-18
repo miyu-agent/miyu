@@ -22,6 +22,28 @@ pub(crate) enum Kind {
     You,
     /// AnySearch 的 REST 接口。
     Anysearch,
+    /// DeepSeek 的搜索接口（施工 N-3 上，要 key）。
+    Deepseek,
+    /// Tavily（要 key）。
+    Tavily,
+    /// Brave Search（要 key）。
+    Brave,
+    /// 自己搭的 SearXNG（要地址）。
+    Searxng,
+}
+
+/// 一家要什么才能用（施工 N-3 上）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum Needs {
+    /// 什么都不要。
+    Nothing,
+    /// 不要也能用，配了 key 的走自己的额度（Exa）。
+    KeyOptional,
+    /// 要 key：没配的跳过。
+    Key,
+    /// 要地址（SearXNG）：没配的跳过。
+    Address,
 }
 
 /// 一家来源。
@@ -32,8 +54,10 @@ pub(crate) struct Source {
     pub(crate) name: String,
     /// 是哪一种。
     pub(crate) kind: Kind,
-    /// 地址。
+    /// 地址：要地址的那一种是空的，照设置。
     pub(crate) url: String,
+    /// 要什么才能用。
+    pub(crate) needs: Needs,
     /// 认不认查询里写 `site:`：认的把只要的域名写进查询。
     pub(crate) site_operator: bool,
 }
@@ -103,6 +127,15 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
         return Err(bad(
             "cooldown_minutes needs at least one step and no 0".to_string()
         ));
+    }
+    if let Some((id, _)) = parsed
+        .sources
+        .iter()
+        .find(|(_, source)| (source.needs == Needs::Address) != source.url.is_empty())
+    {
+        return Err(bad(format!(
+            "source {id} must have a url unless it needs an address"
+        )));
     }
     if let Some(missing) = parsed
         .order

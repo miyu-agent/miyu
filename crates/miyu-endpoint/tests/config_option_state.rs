@@ -38,7 +38,12 @@ impl Builtins for Cooling {
         Err("no scripts here".to_string())
     }
 
-    fn option_state(&self, key: &str, option: &str) -> Option<OptionState> {
+    fn option_state(
+        &self,
+        key: &str,
+        option: &str,
+        _values: &miyu_config::Values,
+    ) -> Option<OptionState> {
         (key == "ui.language" && option == "en").then_some(OptionState::CoolingUntil(self.0))
     }
 }

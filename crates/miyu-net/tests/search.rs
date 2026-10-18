@@ -295,6 +295,14 @@ async fn all_sources_cooling_is_told_without_asking_anyone() {
         "All web search sources are rate limited right now. Try again later."
     );
     assert_eq!(site.seen().len(), asked, "都冷却着，一家都没问");
+    // 挑了要地址的 SearXNG 又没配地址（施工 N-3 上）：它不试，照样是「都在冷却」，不会去问一个空地址再报出错。
+    let picked = search_with(
+        &tool,
+        json!({"query": "rust"}),
+        Some(Arc::new(Picked("searxng"))),
+    )
+    .await;
+    assert_eq!(said(&picked).0, "web_search/cooling");
 }
 
 #[tokio::test]

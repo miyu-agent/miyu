@@ -5,7 +5,12 @@
         "name": "事前に圧縮しておく",
         "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、従来どおり上限に達してから圧縮します。"
       },
-      "net.search.source": {"name": "検索元", "description": "AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。", "options": {"auto": "自動", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com"}},
+      "net.search.exa.key": {"name": "Exa のキー", "description": "設定すると自分の Exa の枠を使います。未設定なら無料枠です。"},
+      "net.search.deepseek.key": {"name": "DeepSeek のキー", "description": "検索元に DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。"},
+      "net.search.tavily.key": {"name": "Tavily のキー", "description": "検索元に Tavily を選んだときに必要です。"},
+      "net.search.brave.key": {"name": "Brave Search のキー", "description": "検索元に Brave を選んだときに必要です。"},
+      "net.search.searxng.url": {"name": "SearXNG のアドレス", "description": "自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索元に SearXNG を選んだときに使います。"},
+      "net.search.source": {"name": "検索元", "description": "AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。", "options": {"auto": "自動", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
         "name": "記憶を整理するまでの待ち時間",
         "description": "会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。"
@@ -550,6 +555,10 @@
     "config/layer/system": "システム設定",
     "config/layer/personal": "個人設定",
     "config/applies/now": "すぐに反映",
+    "config/option-needs-key": "キーが必要",
+    "config/option-needs-address": "アドレスが必要",
+    "config/option-needs-key": "キーが必要",
+    "config/option-needs-address": "アドレスが必要",
     "config/option-cooling": "{time} まで休止",
     "config/or": "{rest}または{last}",
     "config/or-values": "{rest} または {last}",

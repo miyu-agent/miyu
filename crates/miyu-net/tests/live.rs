@@ -153,7 +153,12 @@ async fn every_keyless_source_answers_web_search() {
                 ..miyu_net::Query::default()
             };
             let started = std::time::Instant::now();
-            match tokio::time::timeout(Duration::from_secs(60), search.search(&query, None)).await {
+            match tokio::time::timeout(
+                Duration::from_secs(60),
+                search.search(&query, &miyu_net::Using::default()),
+            )
+            .await
+            {
                 Ok(Ok(found)) => {
                     println!(
                         "\n== {id}「{}」{} 条，{:.1} 秒",

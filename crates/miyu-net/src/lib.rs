@@ -41,8 +41,11 @@ use remember::{Keep, Remember};
 use rules::{Clip, Sites};
 
 pub use document::{Miss, Pages, Read};
-pub use search::{Found, Hit, Missed, Query, Search};
-pub use settings::{AUTO, SearchSettings};
+pub use search::{Found, Hit, Missed, Query, Search, Using};
+pub use settings::{
+    AUTO, BraveKey, DeepseekKey, ExaKey, ITEMS, Missing, SearchSettings, SearxngAddress, TavilyKey,
+    missing,
+};
 pub use web_fetch::{PACKAGE, WEB_FETCH};
 pub use web_search::WEB_SEARCH;
 

@@ -39,9 +39,14 @@ pub trait Builtins: Send + Sync {
         file: std::path::PathBuf,
     ) -> Result<Arc<dyn Tool>, String>;
 
-    /// 配置项 `key` 的选项 `option` 这一刻的状态（施工 N-2 下）：设置页的下拉里那个选项后面暗字写它，例如搜索来源的「冷却到
-    /// 15:30」。没有要说的是空的；不写的内置包都没有。
-    fn option_state(&self, _key: &str, _option: &str) -> Option<OptionState> {
+    /// 配置项 `key` 的选项 `option` 这一刻的状态（施工 N-2 下、N-3 上）：设置页的下拉里那个选项后面暗字写它，例如搜索来源的
+    /// 「冷却到 15:30」「要 key」。`values` 是这个账号的最终值。没有要说的是空的；不写的内置包都没有。
+    fn option_state(
+        &self,
+        _key: &str,
+        _option: &str,
+        _values: &miyu_config::Values,
+    ) -> Option<OptionState> {
         None
     }
 }
@@ -51,4 +56,8 @@ pub trait Builtins: Send + Sync {
 pub enum OptionState {
     /// 被限额，冷却到这一刻。
     CoolingUntil(std::time::SystemTime),
+    /// 要 key，没配（施工 N-3 上）。
+    NeedsKey,
+    /// 要地址，没配（施工 N-3 上）。
+    NeedsAddress,
 }

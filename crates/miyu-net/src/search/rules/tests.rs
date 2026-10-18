@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use super::{Kind, load};
+use super::{Kind, Needs, load};
 
 fn shipped() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources")
@@ -42,10 +42,17 @@ impl Drop for Scratch {
 #[test]
 fn the_shipped_rules_carry_the_order_of_the_design() {
     let rules = load(&shipped()).unwrap();
-    // 设计 36 第二节第 2 条（没 key 的这几家；DeepSeek、网页抓取在 N-3）
+    // 设计 36 第二节第 2 条：免 key 的五家，有 key 才用的 DeepSeek 排最后（网页抓取兜底在 N-3 下）
     assert_eq!(
         rules.order,
-        ["exa", "parallel", "firecrawl", "anysearch", "you"]
+        [
+            "exa",
+            "parallel",
+            "firecrawl",
+            "anysearch",
+            "you",
+            "deepseek"
+        ]
     );
     assert_eq!(
         rules.cooldown,
@@ -58,8 +65,14 @@ fn the_shipped_rules_carry_the_order_of_the_design() {
         rules
             .sources
             .values()
-            .all(|source| source.url.starts_with("https://"))
+            .all(|source| source.url.starts_with("https://") || source.needs == Needs::Address)
     );
+    // 第二节第 1 条：要 key 的几家（N-3 上），Exa 有 key 走自己的额度，SearXNG 要地址
+    for id in ["deepseek", "tavily", "brave"] {
+        assert_eq!(rules.sources[id].needs, Needs::Key, "{id}");
+    }
+    assert_eq!(rules.sources["exa"].needs, Needs::KeyOptional);
+    assert_eq!(rules.sources["searxng"].needs, Needs::Address);
 }
 
 #[test]
@@ -76,6 +89,7 @@ fn a_wrong_file_is_refused() {
         ),
         ("\"order\": [\"exa\",", "\"order\": [\"nowhere\", \"exa\","),
         ("\"kind\": \"exa\"", "\"kind\": \"bing\""),
+        ("\"needs\": \"address\"", "\"needs\": \"nothing\""),
         ("\"results\": 8", "\"results\": 8, \"note\": 1"),
     ] {
         let changed = text().replacen(from, to, 1);

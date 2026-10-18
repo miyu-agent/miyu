@@ -241,19 +241,190 @@
       "properties": {
         "search": {
           "properties": {
+            "brave": {
+              "properties": {
+                "key": {
+                  "description": "Needed when Brave is the search source. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Brave Search key"
+                }
+              },
+              "type": "object"
+            },
+            "deepseek": {
+              "properties": {
+                "key": {
+                  "description": "Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "DeepSeek key"
+                }
+              },
+              "type": "object"
+            },
+            "exa": {
+              "properties": {
+                "key": {
+                  "description": "With a key, searches use your own Exa quota; without one, the free quota. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Exa key"
+                }
+              },
+              "type": "object"
+            },
+            "searxng": {
+              "properties": {
+                "url": {
+                  "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search source. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "oneOf": [
+                    {
+                      "format": "uri",
+                      "type": "string"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "SearXNG address"
+                }
+              },
+              "type": "object"
+            },
             "source": {
               "default": "auto",
-              "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Allowed: auto, exa, parallel, firecrawl, anysearch or you. Only in the system config or personal settings. Takes effect next turn.",
+              "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Allowed: auto, exa, parallel, firecrawl, anysearch, you, deepseek, tavily, brave or searxng. Only in the system config or personal settings. Takes effect next turn.",
               "enum": [
                 "auto",
                 "exa",
                 "parallel",
                 "firecrawl",
                 "anysearch",
-                "you"
+                "you",
+                "deepseek",
+                "tavily",
+                "brave",
+                "searxng"
               ],
               "title": "Search source",
               "type": "string"
+            },
+            "tavily": {
+              "properties": {
+                "key": {
+                  "description": "Needed when Tavily is the search source. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "secret": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "secret"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "env": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "env"
+                      ],
+                      "type": "object"
+                    }
+                  ],
+                  "title": "Tavily key"
+                }
+              },
+              "type": "object"
             }
           },
           "type": "object"
