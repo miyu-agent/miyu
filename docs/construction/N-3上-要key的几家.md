@@ -1,6 +1,6 @@
 ## 施工单 N-3 上：要 key、要地址的几家
 
-状态：2026-10-19 在做。设计 `36-联网搜索.md` 第二节第 1 到 3 条、第三节第 1 条；图纸 `docs/blueprint/tools/web_search.md`、`config.md`「M8 的配置项」。N-3 施工时拆成上、下：下是免 key 的网页抓取兜底。
+状态：2026-10-19 合了（fd20723a）。设计 `36-联网搜索.md` 第二节第 1 到 3 条、第三节第 1 条；图纸 `docs/blueprint/tools/web_search.md`、`config.md`「M8 的配置项」。N-3 施工时拆成上、下：下是免 key 的网页抓取兜底。
 
 ### 做什么
 
