@@ -306,3 +306,59 @@ async fn errors_that_do_not_fail_over_leave_no_cooling() {
     assert!(bearers.len() >= 2);
     assert_eq!(bearers[1], bearers[0], "没记冷却：下一轮还是它");
 }
+
+/// 单个模型（不是池）出错不记冷却（项目主人 2026-10-19 定：冷却只为池里换人用）：认证失败、限速都一样，下一轮照发它。
+#[tokio::test]
+async fn a_single_model_leaves_no_cooling() {
+    let mut replies = vec![
+        Reply::error(
+            401,
+            &[],
+            r#"{"error":{"message":"This API key has expired"}}"#,
+        ),
+        limited(),
+    ];
+    replies.extend(hellos(4));
+    let server = Server::start(replies).await;
+    let mut home = Home::new();
+    home.configs = keyed_configs(&server.base_url, 1);
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = home.create(&routes).await;
+    turn(&handle, "cmd-1").await;
+    let long_ago =
+        miyu_kernel::time::Timestamp::parse("2000-01-01T00:00:00.000Z").expect("时刻写得对");
+    let cooling = routes.data.cooldown(|table, _| {
+        table.cooling(&miyu_models::cooldown::Candidate::new("a1", "m"), long_ago)
+    });
+    assert_eq!(cooling, None, "单个模型什么都不记");
+}
+
+/// 池里一个成员认证失败（中转站透传的上游 401）只冷却它，同一家的别的模型照用（项目主人 2026-10-19 报的）。
+#[tokio::test]
+async fn an_auth_failure_in_a_pool_cools_only_that_member() {
+    let mut replies = vec![Reply::error(
+        401,
+        &[],
+        r#"{"error":{"message":"This API key has expired"}}"#,
+    )];
+    replies.extend(hellos(4));
+    let server = Server::start(replies).await;
+    let mut home = Home::new();
+    home.configs = keyed_configs(&server.base_url, 2);
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = home.create(&routes).await;
+    turn(&handle, "cmd-1").await;
+    let long_ago =
+        miyu_kernel::time::Timestamp::parse("2000-01-01T00:00:00.000Z").expect("时刻写得对");
+    let (member, sibling) = routes.data.cooldown(|table, _| {
+        (
+            table.cooling(&miyu_models::cooldown::Candidate::new("a1", "m"), long_ago),
+            table.cooling(
+                &miyu_models::cooldown::Candidate::new("a1", "other"),
+                long_ago,
+            ),
+        )
+    });
+    assert!(member.is_some(), "池里出错的那一个记冷却");
+    assert_eq!(sibling, None, "同一家的别的模型不停");
+}

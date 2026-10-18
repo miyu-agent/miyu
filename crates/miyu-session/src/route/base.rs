@@ -92,6 +92,7 @@ impl Routes {
             routes: self.clone(),
             choice,
             others: choices.into_iter().map(Choice::who).collect(),
+            pool: matches!(resolved, Resolved::Pool(_)),
         };
         Ok((picked, pins))
     }

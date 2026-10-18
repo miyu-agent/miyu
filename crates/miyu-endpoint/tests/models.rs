@@ -412,7 +412,8 @@ async fn fetching_the_provider_list_resolves_an_env_based_address() {
 }
 
 /// 冷却（施工 8-9，`models.md`「协议」`model.list` 的 `state`；施工 8-25 起一家一个 key）：限速停这一家的这个模型，模型是
-/// `cooling`，带 `until`、`class`，别的模型照常；认证失败停整家，key 和这一家的每个模型都是 `cooling`、`class` 是 `auth`。
+/// `cooling`，带 `until`、`class`，别的模型照常；认证失败也只停那个模型（2026-10-19，中转站透传的上游 401 不该停整家），
+/// key 照旧是 `ok`。
 /// 写了 key、取不到值的，模型都是 `no_key`。
 #[tokio::test]
 async fn cooling_shows_on_models_and_the_key() {
@@ -467,14 +468,19 @@ async fn cooling_shows_on_models_and_the_key() {
     let deepseek = &reply["result"]["providers"][0];
     assert_eq!(
         deepseek["key"],
-        json!({"ref": "env:DEEPSEEK_API_KEY", "set": true, "state": "cooling", "until": stopped, "class": "auth"}),
-        "认证失败停了整家"
+        json!({"ref": "env:DEEPSEEK_API_KEY", "set": true, "state": "ok"}),
+        "认证失败不停整家"
     );
-    let flash_now = model(deepseek, "deepseek-v4-flash");
+    let pro = model(deepseek, "deepseek-v4-pro");
     assert_eq!(
-        (&flash_now["state"], &flash_now["class"]),
-        (&json!("cooling"), &json!("auth")),
-        "这一家别的模型也停"
+        (&pro["state"], &pro["until"], &pro["class"]),
+        (&json!("cooling"), &json!(stopped), &json!("auth")),
+        "认证失败停那个模型"
+    );
+    assert_eq!(
+        model(deepseek, "deepseek-v4-flash")["state"],
+        "ok",
+        "这一家别的模型照用"
     );
 
     let reply = list(&home, &[], data, json!({"provider": "deepseek"})).await;

@@ -118,45 +118,25 @@ fn a_success_clears_the_count() {
     );
 }
 
+/// 认证失败只冷却那一个模型（项目主人 2026-10-19 报的：中转站一个上游的 key 过期透传成 401，不该停整家）。
 #[test]
-fn an_auth_failure_stops_the_whole_provider() {
+fn an_auth_failure_cools_only_that_model() {
     let mut table = Cooldowns::default();
     assert_eq!(
         fail(&mut table, "m", &ErrorClass::Auth, None, at(0)),
         Some(600)
     );
-    let cooling = Some(Cooling {
-        until: at(600),
-        class: ErrorClass::Auth,
-    });
     assert_eq!(
-        table.cooling(&Candidate::new("p", "other"), at(1)),
-        cooling,
-        "这一家的别的模型也停"
-    );
-    assert_eq!(table.provider_cooling("p", at(1)), cooling);
-    assert_eq!(
-        table.cooling(&Candidate::new("q", "m"), at(1)),
-        None,
-        "别的一家不停"
-    );
-    // 这一家的一个模型成了：整家的次数也清零。
-    table.succeed(&Candidate::new("p", "other"));
-    assert_eq!(table.provider_cooling("p", at(2)), None);
-}
-
-#[test]
-fn the_later_of_the_provider_and_the_model_counts() {
-    let mut table = Cooldowns::default();
-    let unit = Candidate::new("p", "m");
-    fail(&mut table, "m", &ErrorClass::Retryable, None, at(0));
-    fail(&mut table, "x", &ErrorClass::Auth, None, at(0));
-    assert_eq!(
-        table.cooling(&unit, at(1)),
+        table.cooling(&Candidate::new("p", "m"), at(1)),
         Some(Cooling {
             until: at(600),
-            class: ErrorClass::Auth
+            class: ErrorClass::Auth,
         })
+    );
+    assert_eq!(
+        table.cooling(&Candidate::new("p", "other"), at(1)),
+        None,
+        "这一家的别的模型照用"
     );
 }
 

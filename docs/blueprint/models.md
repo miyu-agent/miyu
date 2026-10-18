@@ -321,8 +321,8 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 - 先等目录读完（核心找到资源目录就开始读，施工 V-2 下补）。`provider` 写了、不是配好了的：`unknown_provider`；不是字符串的：`bad_params`。
 - 照不算项目配置的最终值答（项目配置里本来就不能写模型这一块）。
 - 列哪些模型：供应商的列表里的、目录里对上的那一家的、配置里手写了的、用途池里点名的（8-7 是 `models.chat`，8-8 加 `vision`、每个池的成员：`miyu_models::reference::named`），合在一起去重，照模型名排。`listed` 里点名的算 `config`。
-- 模型的 `state` 有三种。`ok` 能用。`cooling` 在冷却，带 `until` 最早什么时候能用（时刻，和 `fetched` 一样的写法）、`class` 为什么（8-9）。`no_key` 写了 key、取不到值。冷却看两处：这一家整个在冷却（认证失败停的）、这一家的这个模型在冷却，都算，取晚的（8-25 起一家一个 key）。
-- key 的 `state` 是 `ok`，或者 `cooling`（认证失败停了整家），带 `until`、`class`（8-9；8-7 都是 `ok`）。例子：`{"ref":"env:DEEPSEEK_API_KEY","set":true,"state":"cooling","until":"2026-10-01T08:20:00.000Z","class":"auth"}`。
+- 模型的 `state` 有三种。`ok` 能用。`cooling` 在冷却，带 `until` 最早什么时候能用（时刻，和 `fetched` 一样的写法）、`class` 为什么（8-9）。`no_key` 写了 key、取不到值。冷却只看这一家的这个模型（8-25 起一家一个 key；8-9 修起认证失败也不停整家）。
+- key 的 `state` 照旧给，8-9 修起只会是 `ok`（整家不再冷却，形状不变，头不用改）。例子：`{"ref":"env:DEEPSEEK_API_KEY","set":true,"state":"ok"}`。
 - key 的值从不交出去。
 - 能出向量的（`embedding`，施工 R-5 再补，2026-10-09 核心的主会话定）：给设置页的「语义模型」挑模型用（`models.embedding`，`recall.md` 第四条第 7 款）。目录不标 embedding 的输出种类（models.dev 里的 embedding 模型 `output` 全写 `text`，2026-10-09 查），照名字认，规矩是数据：资源目录的 `models/embedding.toml`（`miyu_models::embedding`），每次 `model.list` 读一次。模型名、目录里对上的那个条目的 `family`（都转小写）含 `contains` 里的一个，或者模型名最后一段（`/` 后面）、`family` 以 `starts` 里的一个开头，算；含 `except` 里的一个的不算。出厂 `contains = ["embed"]`、`starts = ["bge"]`、`except = ["rerank"]`：照 2026-10-09 的目录快照认出 72 个，都是 embedding 模型，`bge-reranker-v2-m3` 不算，漏一个 `intfloat/e5-mistral-7b-instruct`（名字里没有 embed、`family` 写的 `mistral`）。认错了照样能写、能用：选了以后核心照旧发一次就知道。规矩读不了、写错了的这一次一个都不标，记一行 `WARN embedding names unreadable error=…`，`model.list` 照常答。
 - `refresh` 是真的：先一家一家拉，拉完再答，拉不到的照旧用上一份。不是的：没有列表、旧过 24 小时、这一家用得了的，在后台拉，这一次照手头的答。
@@ -644,7 +644,7 @@ flowchart TB
     same --> send
 ```
 
-1. 取排在最前、没在冷却的候选。冷却看两处：这一家整个在冷却（认证失败的），或者这一家的这个模型在冷却。
+1. 取排在最前、没在冷却的候选。冷却只看这一家的这个模型。
 2. 都在冷却：只有一个候选的，照样发它（等多久内核已经照它的规矩等过了）。不止一个的，不发，当场说完，分类 `cooling`（第五条第 6 条）。
 3. 上一次请求收到过增量、然后出错的（说到一半断了），这一次不挑，还发给上一次那一个，不管它冷不冷（第五条第 4 条）。这一次说完了（成了、出错前一个字都没收到、被打断），这一条就放开。
 4. 发出去以后报「发出去了」：真发给的供应商编号和模型名，记进 `model.called`（和现在一样）。
@@ -655,7 +655,8 @@ flowchart TB
 
 1. **哪些错换**：驱动分的 `rate_limited`、`retryable`、`auth`（额度用完的也在这一类）。`context_too_long` 走压缩，`content_policy` 如实说，`other` 是请求本身有错：都不换，不记冷却（`15-模型与供应商.md` 第五节那张表）。内核自己查出的 `bad_stream`、`empty_reply` 不经端口，照旧在同一个端点再来。
 2. **冷却多久**：这个单位连着失败的第 n 次，冷却 = min(`base` × 2^(n−1), `max`)。供应商说了要等多久、比它长的，用供应商说的，也不超过 `max`。`base`、`max` 照分类取 `[models.cooldown]` 的。
-   - 单位：`auth` 是整家供应商（它那一个 key 的每个模型都停，8-25）。别的是这一家的这个模型。
+   - 单位：这一家的这个模型，`auth` 也一样（8-9 修，项目主人 2026-10-19 报的：中转站把一个上游的 401「key 过期」透传过来，原来停整家，连累了同一家底下别的上游的模型）。
+   - 只有经池调用的才记（8-9 修，项目主人 2026-10-19 定：冷却只为池里换人用）：引用是单个模型的出错不记，下一轮照发它，人手动选的也不会被冷却挡；等多久照供应商说的、内核照「出错再来」的规矩等。
    - 冷却到了就能用，失败次数不清零：再失败，照 n+1 算，翻倍。真成功一次才清零（第四条第 5 条）。旧版实测：固定的冷却让一直挂着的端点每两分钟被重新信任一次。
    - 冷却表核心一份，只在内存里：重启从头来。
    - 记一行 `INFO endpoint cooling provider=… key=<第几个> model=… class=… for_ms=… failures=…`。key 只写第几个，从 1 数。
@@ -1094,7 +1095,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs`、`classify/tests.rs`、`classify/excess/tests.rs`，`crates/miyu-http/tests/get.rs` | 列模型的读法；超长交出上限；一次 GET | 8-7 |
 | `crates/miyu-session/tests/route_facts.rs`、`route_learned.rs`、`http.rs` | 目录读完以前造会话等着、窗口照目录、读不了照样造、换上的新目录新会话用；用出来的窗口记下、写盘、记一行、新会话用上、大的不记、手写的盖过；能收什么照手写的资料 | 8-7 |
 | `crates/miyu-models/src/pools/tests.rs` | 钉住从发过的认回（`find`）、候选绕一圈、轮换指针、成员变了取余、指针的字读写、默认的分法（全是按次计费的才轮换）、认不出的成员跳过、没写成员和一个都不剩的解析不出（8-8）；派子代理能选的：开关开着、有认得出的成员的才列，照名字的字节序排，说明照写的（8-8 补） | 8-8 |
-| `crates/miyu-models/src/cooldown/tests.rs` | 翻倍、封顶、连着很多次不溢出，供应商说的更长、更短，成功清零，到期先试、次数不清零，认证失败停整家、别的一家不停、成了一起清（8-25），整家和模型都在冷却的取晚的，只有三类记冷却，规矩照配置、`base` 比 `max` 大的照 `max` | 8-9 |
+| `crates/miyu-models/src/cooldown/tests.rs` | 翻倍、封顶、连着很多次不溢出，供应商说的更长、更短，成功清零，到期先试、次数不清零，认证失败也只停那个模型（8-9 修），只有三类记冷却，规矩照配置、`base` 比 `max` 大的照 `max` | 8-9 |
 | `crates/miyu-models/src/price/tests.rs` | 金额的算式、分档（严格大于、门槛一样取先写的、档里没写的用底价）、缺项不算、思考价不同不算、倍率照资料、用量是 0 的项不要价、币种照价格、本机的是 0、出处的写法、几种币种排先后 | 8-15 |
 | `crates/miyu-kernel/src/event/cost/tests.rs`、`event/model/tests.rs`、`session/tests/cost.rs`、`session/tests/title.rs`（那一条）、`session/tests/limits.rs`（那一条） | `cost` 读写一字不差、整数写成整数、照位比相等、写坏的读不进；`model.called` 的 `cost` 排在 `usage` 后面、以前的日志照读；交来的原样记下、出错的照记、没交的不写、被打断的没有，辅助请求也记；`context_used()` 没限额、没压缩的没有，照压缩线的算法 | 8-15 |
 | `crates/miyu-kernel/src/session/tests/random/watch/model.rs` | 随机测试：说完了的 `model.called` 带的就是最近一次喂进去的金额，被打断的没有（新路「记下金额」） | 8-15 |
@@ -1104,7 +1105,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行 | 8-10 |
 | `crates/miyu-cli/tests/ask.rs` | `miyu ask --model`：新开的照它造，接着的先换（`@池`）再说，换不成的（连同以前的挡位名）退出码 1、不发话 | 8-10、8-8 补 |
 | `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/tests/samples.rs` | 新的几格读写一字不差，以前的日志照读，样本对得上（8-8：`session/tests.rs` 的 `session.created.model`，写在最后、`null` 当没有、不是字的读不进来） | 8-8、8-10、8-15 |
-| `crates/miyu-endpoint/tests/models.rs`、`models_pools.rs` | `model.list` 的形状、来源、状态，用不了的一家、手写指定不存在的、只看一家、`unknown_provider`，`refresh` 拉完再答、不写的在后台拉（8-7）；冷却：模型照能用的 key 里最好的那个、都在冷却的带最早恢复的、认证失败停了的 key、取不到值的 key 不算（8-9）；`models_pools.rs`（8-8）：`pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses` 的形状，用途池里点名的模型也列，`session.create` 的 `model` 记下解析出的、几种 `unknown_model`（连同以前的挡位名）什么都不造、不是字的 `bad_params`，真核心派子代理时子会话照 `pool`、抄父会话记下的，`bad_reference` 的问题、话、`config_errors`，`config.check` 照新的字查；`session.configure` 记下解析出的、先推再回应、一样的不记、参数不对和解析不出的什么都不记，`subscribe` 的 `model` 照真路由（8-10，`models_pools.rs`；`limits.rs` 照蓝图的例子一字不差）；`model.list` 的 `facts` 里来源是配置的带 `layer`，个人设置压着系统配置（`models.rs`，8-7（补））；`models` 只列写到了的、没配的供应商不列、写法不对的 `bad_params`（`models_only.rs`，V-6 上） | 8-7 到 8-10；8-7（补）；V-6 上 |
+| `crates/miyu-endpoint/tests/models.rs`、`models_pools.rs` | `model.list` 的形状、来源、状态，用不了的一家、手写指定不存在的、只看一家、`unknown_provider`，`refresh` 拉完再答、不写的在后台拉（8-7）；冷却：模型照能用的 key 里最好的那个、都在冷却的带最早恢复的、认证失败只停那个模型、key 照旧是 `ok`、取不到值的 key 不算（8-9，8-9 修）；`models_pools.rs`（8-8）：`pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses` 的形状，用途池里点名的模型也列，`session.create` 的 `model` 记下解析出的、几种 `unknown_model`（连同以前的挡位名）什么都不造、不是字的 `bad_params`，真核心派子代理时子会话照 `pool`、抄父会话记下的，`bad_reference` 的问题、话、`config_errors`，`config.check` 照新的字查；`session.configure` 记下解析出的、先推再回应、一样的不记、参数不对和解析不出的什么都不记，`subscribe` 的 `model` 照真路由（8-10，`models_pools.rs`；`limits.rs` 照蓝图的例子一字不差）；`model.list` 的 `facts` 里来源是配置的带 `layer`，个人设置压着系统配置（`models.rs`，8-7（补））；`models` 只列写到了的、没配的供应商不列、写法不对的 `bad_params`（`models_only.rs`，V-6 上） | 8-7 到 8-10；8-7（补）；V-6 上 |
 | `crates/miyu-session/tests/route_retire.rs`、`crates/miyu-endpoint/tests/models_retire.rs` | 下架的模型（8-23）：池的成员回 404、当场拉的列表里没有它的交「下架了」，列表里还有、拉不成的交「没下架」，别的错、直接写着的不查不拉；端点从两层里写着它的池都拿掉、推 `config.changed`（`by` 是内核）、删空了的池留着 `usable` 是假、`models.chat` 不动，列表里还有的不动 | 8-23 |
 | `crates/miyu-models/src/onboard/tests.rs` | 找哪些变量（只有一个名字的、几家同名一家一条）、只探本机能用的几家、档案的一家也列、名字档案的先；搜（编号、名字、不分大小写）、排（能用的先、名字不分大小写）、`limit`；推荐（够格的里发布最晚的、没日期的排后、一样的取靠前的、都不够格取第一个、`deprecated`、窗口、工具）；候选写成的最终值和写进配置的一样推、`{value}` 的引用不和真的密钥撞名 | 8-11 |
 | `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs` | `provider.detect` 照交进来的环境找、值不交、空白的不算设了，本机的服务几家一起探（假服务器等三家都到了才回，挨个探的一家都探不到）、300 毫秒没回的、回错的、读不出的当没有，配好的写 `configured`（变量、地址），`looked_for` 不带值；`provider.catalog` 搜、排、`supported`、`local` 的标法、`limit`、参数不对，`featured` 照资源的先后、名字照语言、中文挑国内的、目录里没有的跳过、不看 `query` 和 `limit`（8-11 再补）；`provider.test`（`providers_test.rs`）对假服务器：成了交 `first_token_ms`、收到第一段正文就停（假服务器停住不动也照样成了）、只有一条 user 没有工具、配好的存列表、候选不存、`{value}` 去掉前后空白，列不出的照目录列，认证失败交分类、状态、原话，推荐的不是列表第一个，推不出的 `config`，没有模型可试的 `list`，参数不对、`unknown_provider` | 8-11 |
@@ -1201,7 +1202,7 @@ mimo = ["xiaomi"]
 | 13 | 写了 `ready` 以后在后台读目录，要它的等它 | 5 MB 的 JSON 要几十毫秒，冷启动预算 150 毫秒（`23-性能预算.md`）。8-7 量了写进施工单 | 读完再说 `ready`：头多等 |
 | 14 | 安装包带原样的 `api.json`，缓存里也是原样的，旁边一份 `meta` | 两份同一个格式，刷新快照就是下载一次。来源、日期另记 | 裁成只留用得上的格：小，可是每次刷新要跑一遍裁的脚本、格式和缓存不一样 |
 | 15 | 冷却的初值：限速 30 秒到 10 分钟，连不上 10 秒到 5 分钟，认证 10 分钟到 2 小时。都是配置 | 旧版固定 2 分钟太短，认证 600 秒。翻倍加封顶，一直挂着的端点越来越少被试 | 一种冷却不分类：认证失败和一时限速一样短 |
-| 16 | 认证失败停整个 key，别的错只停这个 key 的这个模型 | 认证是 key 的事。限速、5xx 常常只是一个模型的事 | 全按 key：一个模型限速拖累同一 key 的别的模型 |
+| 16 | 认证失败停整个 key，别的错只停这个 key 的这个模型（8-9 修改掉：认证失败也只停这个模型，只有池才记冷却） | 认证是 key 的事。限速、5xx 常常只是一个模型的事 | 全按 key：一个模型限速拖累同一 key 的别的模型 |
 | 17 | 只有一个候选时，冷却不拦 | 没得换，拦了只会让内核白数一次重试。等多久由内核照原来的规矩 | 照样拦：单端点的 5xx 重试从 1 秒变成至少 10 秒 |
 | 18 | 说到一半断了，下一次照样发给它，这一条在内存里、对下一次说完就放开 | 设计的「重来的还是原来那个端点」。冷却照记，别的会话、以后的步照它避开 | 断了就换：另一个模型接着说半截话 |
 | 19 | 换模型解除自动压缩的暂停 | 暂停的原因（连着失败、压完很快又满）是跟着模型的窗口来的。`compaction.md` 第十条第 6 条本来就教人「换一个模型」 | 不解除：换到大窗口的模型还是不压，到窗口就停 |

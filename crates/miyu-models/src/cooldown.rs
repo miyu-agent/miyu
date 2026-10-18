@@ -2,11 +2,11 @@
 //!
 //! - 只有三类记冷却：限速 `rate_limited`、可重试 `retryable`、认证失败 `auth`（额度用完的也在这一类）。别的分类（超长、
 //!   内容策略、请求本身有错）换了端点也一样，不记（`15-模型与供应商.md` 第五节那张表）。
-//! - 单位：`auth` 停整家供应商（它那一个 key 的每个模型），别的是这一家的这个模型（施工 8-25：一家一个 key，冷却只管模型，
-//!   不再单独管 key）。
+//! - 单位：这一家的这个模型，认证失败也一样（施工 8-25：一家一个 key，冷却只管模型；项目主人 2026-10-19 报的：中转站把一个
+//!   上游的 401 透传过来，原来停整家会连累别的上游，整家的那一种去掉了）。只有经池调用的才记（会话那一层判，单个模型出错不记）。
 //! - 多久：这个单位连着失败的第 n 次，冷却 `min(base × 2^(n−1), max)`；供应商说了要等多久、比它长的，用供应商说的，也不超过
 //!   `max`。`base`、`max` 照分类取 `[models.cooldown]`（[`Rules`]）。
-//! - 到点了就能用，失败次数不清零：再失败照 n+1 算。真成功一次才清零，整家的认证失败次数一起清（第四条第 5 条）。旧版
+//! - 到点了就能用，失败次数不清零：再失败照 n+1 算。真成功一次才清零（第四条第 5 条）。旧版
 //!   实测：固定的冷却让一直挂着的端点每两分钟被重新信任一次。
 //! - 纯逻辑：时刻由调用的一方交进来。冷却表核心一份、只在内存里，放在会话那一层的 `ModelData`（重启从头来）。
 
@@ -96,22 +96,6 @@ impl Candidate {
             model: model.to_string(),
         }
     }
-
-    /// 这个候选的整家供应商的那一个单位（认证失败记在这里）。
-    fn whole_provider(&self) -> Unit {
-        Unit {
-            provider: self.provider.clone(),
-            model: None,
-        }
-    }
-
-    /// 这个候选的这一家的这个模型的那一个单位。
-    fn one_model(&self) -> Unit {
-        Unit {
-            provider: self.provider.clone(),
-            model: Some(self.model.clone()),
-        }
-    }
 }
 
 /// 一个单位这时在冷却：到什么时候、为什么。
@@ -134,13 +118,6 @@ pub struct Recorded {
     pub failures: u32,
 }
 
-/// 冷却的单位：一家整个（`model` 没有），或者这一家的一个模型。
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Unit {
-    provider: String,
-    model: Option<String>,
-}
-
 /// 一个单位记着的：连着失败了几次、冷却到什么时候、最近一次为什么。
 #[derive(Debug, Clone)]
 struct Entry {
@@ -152,7 +129,7 @@ struct Entry {
 /// 冷却表：核心一份，只在内存里。
 #[derive(Debug, Default)]
 pub struct Cooldowns {
-    units: BTreeMap<Unit, Entry>,
+    units: BTreeMap<Candidate, Entry>,
 }
 
 impl Cooldowns {
@@ -167,13 +144,9 @@ impl Cooldowns {
         now: Timestamp,
     ) -> Option<Recorded> {
         let rule = rules.of(class)?;
-        let unit = match class {
-            ErrorClass::Auth => candidate.whole_provider(),
-            _ => candidate.one_model(),
-        };
         let failures = self
             .units
-            .get(&unit)
+            .get(candidate)
             .map_or(1, |entry| entry.failures.saturating_add(1));
         let max = millis(rule.max);
         let doubled = 1u64
@@ -182,7 +155,7 @@ impl Cooldowns {
         let for_ms = doubled.max(said_ms.unwrap_or(0)).min(max);
         let until = later(now, for_ms);
         self.units.insert(
-            unit,
+            candidate.clone(),
             Entry {
                 failures,
                 until,
@@ -196,35 +169,15 @@ impl Cooldowns {
         })
     }
 
-    /// 候选 `candidate` 成了：这一家的这个模型、这一家整个的失败次数都清零，冷却也没了。
+    /// 候选 `candidate` 成了：失败次数清零，冷却也没了。
     pub fn succeed(&mut self, candidate: &Candidate) {
-        self.units.remove(&candidate.one_model());
-        self.units.remove(&candidate.whole_provider());
+        self.units.remove(candidate);
     }
 
-    /// 候选 `candidate` 在 `now` 这一刻在不在冷却：这一家整个在冷却、这一家的这个模型在冷却，都算；两样都在的取晚的。
+    /// 候选 `candidate` 在 `now` 这一刻在不在冷却：在的话到什么时候、为什么。
     pub fn cooling(&self, candidate: &Candidate, now: Timestamp) -> Option<Cooling> {
-        let whole = self.at(&candidate.whole_provider(), now);
-        let one = self.at(&candidate.one_model(), now);
-        match (whole, one) {
-            (Some(whole), Some(one)) => Some(if one.until > whole.until { one } else { whole }),
-            (whole, one) => whole.or(one),
-        }
-    }
-
-    /// 编号 `provider` 这一家整个在 `now` 这一刻在不在冷却（认证失败停的）：`model.list` 的 key 的状态。
-    pub fn provider_cooling(&self, provider: &str, now: Timestamp) -> Option<Cooling> {
-        let unit = Unit {
-            provider: provider.to_string(),
-            model: None,
-        };
-        self.at(&unit, now)
-    }
-
-    /// 单位 `unit` 在 `now` 这一刻还在冷却的话，到什么时候、为什么。
-    fn at(&self, unit: &Unit, now: Timestamp) -> Option<Cooling> {
         self.units
-            .get(unit)
+            .get(candidate)
             .filter(|entry| entry.until > now)
             .map(|entry| Cooling {
                 until: entry.until,

@@ -51,14 +51,14 @@ pub(crate) fn provider(
 ) -> Value {
     let values = snapshot.resolved.values();
     let settings = ProviderSettings::at(&values, &[id]);
-    // 这一家的 key（施工 8-25：一家一个）：引用的写法、取不取得到、这一家整个冷不冷（认证失败停的）。没写的没有这一格。
+    // 这一家的 key（施工 8-25：一家一个）：引用的写法、取不取得到。没写的没有这一格。整家不再冷却（2026-10-19：认证失败也只
+    // 冷却那一个模型），`state` 照旧给、只会是 `ok`。
     let key: Option<Value> = settings.key.as_ref().map(|reference| {
-        let cooling = data.cooldown(|table, _| table.provider_cooling(id, now));
         let mut key = json!({
             "ref": key_name(reference),
             "set": snapshot.secret(reference).is_some(),
         });
-        state(&mut key, cooling.as_ref());
+        state(&mut key, None);
         key
     });
     // 写了 key、取不到值的：这一家的模型都是 `no_key`。
