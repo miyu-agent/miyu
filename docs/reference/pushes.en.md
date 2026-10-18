@@ -10,6 +10,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`: a config layer changed; `keys` as in `config.set`'s response; `via` is `set`, `edit`, `file` (edited by hand), `package` (after installing or removing packages) |
 | `extension.changed` | `extensions` | `{"entry"}`: one extension's status, as in `extension.status` |
 | `package.changed` | `packages` | `{"package", "entry"}`: one item of the package list; `entry` is `null` when gone |
+| `package.progress` | No subscription: sent only to the connection that called `package.install {"source"}` | `{"package", "done", "total"}`: bytes downloaded so far and in all (once at the start and the end, at most every 200 ms in between) |
 | `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in personal settings; `server` is `null` when removed |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`: one widget replaced whole; `null` when turned off or removed |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`: a new line in one memory's log |

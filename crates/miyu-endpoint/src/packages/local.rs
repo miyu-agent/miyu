@@ -36,8 +36,18 @@ pub(super) fn record(
         installed: crate::sessions::now().to_string(),
         source: source.to_string(),
         size: local::size(&files),
+        origin: None,
     };
     local::write(&places.local_root(), &desc, &files)
+}
+
+/// 包 `id` 是从软件源装的：本地库那一份记上来源仓库 `origin`（施工 G-4 上）。
+pub(super) fn set_origin(places: &Packages, id: &str, origin: &str) -> std::io::Result<()> {
+    let root = places.local_root();
+    let (mut desc, files) =
+        local::read(&root, id).ok_or_else(|| std::io::Error::other("package not recorded"))?;
+    desc.origin = Some(origin.to_string());
+    local::write(&root, &desc, &files)
 }
 
 /// 核心起来时：家目录里读成了、还没记的包补一份，各记一行 `INFO package recorded`；补不成的 `WARN package not recorded`。

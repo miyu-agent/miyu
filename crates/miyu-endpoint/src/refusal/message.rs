@@ -38,6 +38,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         ),
         "package_invalid" => ("清单有误，无法安装。", "Invalid manifest, cannot install."),
         "package_file_bad" => ("包文件无法解开。", "Cannot unpack the package file."),
+        "download_failed" => ("软件包下载失败。", "Package download failed."),
         "source_unreachable" => ("软件源连不上。", "Package source unreachable."),
         "wrong_target" => ("不支持本机的系统。", "Not available for this system."),
         "package_conflict" => (

@@ -31,6 +31,10 @@ pub struct Desc {
     pub source: String,
     /// 包目录里所有文件加起来多少字节。
     pub size: u64,
+    /// 从软件源装的：来源仓库（`github.com/<owner>/<repo>`，施工 G-4 上）；从本机文件夹、包文件装的没有。升级照它判断
+    /// 来源变没变、碰不碰（设计 37 第四节第 6 条）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<String>,
 }
 
 /// 包目录里的一个文件（`files` 的一行）。

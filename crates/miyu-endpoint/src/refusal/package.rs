@@ -138,6 +138,11 @@ impl Refusal {
         Refusal::with("package_depended", "by", serde_json::json!(by))
     }
 
+    /// 包文件哪一处都没下成（施工 G-4 上）：`data.why` 是每一处的原因（英文，带地址），照先后用 `; ` 接起来。
+    pub(crate) fn download_failed(why: String) -> Refusal {
+        Refusal::with("download_failed", "why", serde_json::Value::String(why))
+    }
+
     /// 软件源一处都没拿成、本机也没有索引（施工 G-3 上）：`data.why` 是最后一处的原因（英文原话，带地址）。
     pub(crate) fn source_unreachable(reason: String) -> Refusal {
         Refusal::with(

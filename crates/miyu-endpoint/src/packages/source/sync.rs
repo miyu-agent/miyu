@@ -19,7 +19,7 @@ use miyu_http::{Get, Got, Proxy};
 use miyu_source::index::{Index, may_replace};
 use miyu_source::sign::{self, PublicKey};
 
-use super::{TARGET, packages};
+use super::super::{TARGET, packages};
 use crate::Core;
 use crate::refusal::Refusal;
 use crate::settings::SourceSettings;
@@ -168,15 +168,22 @@ pub(crate) async fn method(core: &Arc<Core>, params: SyncParams) -> Result<Value
 
 /// 照先后试的地址：镜像，再是软件源；写 `{ env = … }` 的照核心的环境取，取不到的跳过。都补上结尾的 `/`。
 fn bases(settings: &SourceSettings) -> Vec<String> {
-    let resolve = |address: &Address| match address {
-        Address::Literal(url) => Some(url.clone()),
-        Address::Env(name) => std::env::var(name).ok(),
-    };
-    settings
-        .mirrors
-        .iter()
-        .chain(std::iter::once(&settings.source))
-        .filter_map(resolve)
+    resolved(
+        settings
+            .mirrors
+            .iter()
+            .chain(std::iter::once(&settings.source)),
+    )
+}
+
+/// 几个地址照先后取成网址：写 `{ env = … }` 的照核心的环境取，取不到的、空的跳过，都补上结尾的 `/`。下包文件的镜像也照它
+/// 取（施工 G-4 上）。
+pub(super) fn resolved<'a>(addresses: impl Iterator<Item = &'a Address>) -> Vec<String> {
+    addresses
+        .filter_map(|address| match address {
+            Address::Literal(url) => Some(url.clone()),
+            Address::Env(name) => std::env::var(name).ok(),
+        })
         .map(|url| url.trim().to_string())
         .filter(|url| !url.is_empty())
         .map(|url| {

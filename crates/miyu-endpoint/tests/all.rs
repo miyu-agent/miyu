@@ -114,6 +114,7 @@ mod packages_config;
 mod packages_conflicts;
 mod packages_embed;
 mod packages_extensions;
+mod packages_fetch;
 mod packages_install;
 mod packages_live;
 mod packages_local;

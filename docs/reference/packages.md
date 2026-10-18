@@ -58,6 +58,7 @@
 |---|---|---|
 | `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 同 `package.list` 的一项 |
 | `package.install` | `package`：把卸掉的出厂包装回来 | 同上 |
+| `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接 | 同上，一起装了依赖的多 `with` |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
 都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`、`page`、`mascot`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
@@ -74,6 +75,7 @@
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令 |
 | `package_exists` | 和出厂的同编号 |
 | `package_file_bad` | 包文件解不开 |
+| `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
 | `wrong_target` | 清单写了 `targets`，里面没有本机这一种系统 |
 | `package_required` | 卸必需的 |
 | `depends_missing` | 依赖的包没装，`data.missing` |

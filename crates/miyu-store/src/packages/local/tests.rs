@@ -31,6 +31,7 @@ fn a_package_is_scanned_written_and_read_back() {
         installed: "2026-10-11T00:00:00.000Z".to_string(),
         source: "/home/me/pkg".to_string(),
         size: size(&files),
+        origin: Some("github.com/miyu-agent/pkg".to_string()),
     };
     write(&root, &desc, &files).expect("写得进");
     assert_eq!(read(&root, "pkg"), Some((desc.clone(), files.clone())));

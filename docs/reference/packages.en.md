@@ -58,6 +58,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 |---|---|---|
 | `package.install` | `path`: absolute path to a local package folder (the folder name is the id), to its `package.toml`, or to a `.miyu` package file | An item as in `package.list` |
 | `package.install` | `package`: install a removed built-in package back | The same |
+| `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
 Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command`, `page`, `mascot`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
@@ -74,6 +75,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
 | `package_exists` | Same id as a built-in package |
 | `package_file_bad` | The package file can't be unpacked |
+| `download_failed` | Installing from the package source, the file couldn't be downloaded anywhere (a size or hash mismatch counts); `data.why` lists each place's reason |
 | `wrong_target` | The manifest lists `targets` and this system isn't one of them |
 | `package_required` | Removing a required package |
 | `depends_missing` | A dependency isn't installed, `data.missing` |

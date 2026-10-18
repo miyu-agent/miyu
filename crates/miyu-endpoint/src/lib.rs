@@ -196,7 +196,7 @@ pub struct Core {
     /// 装、卸一次只做一件（施工 F-5 上）。
     packaging: tokio::sync::Mutex<()>,
     /// 软件源的索引照哪几把公钥验（施工 G-3 上）。
-    trust: packages::sync::Trust,
+    trust: packages::source::sync::Trust,
     /// 内置包的工具从哪来（施工 F-5 中）：装卸以后照它换工具目录；没设的不换。
     builtins: Option<Arc<dyn builtins::Builtins>>,
     /// 扩展进程（施工 9-4 上，`extensions.rs`）：核心拉起的 `process` 包。
@@ -303,7 +303,7 @@ impl Core {
             scripts: scripts::Scripts::default(),
             built_in: None,
             packaging: tokio::sync::Mutex::new(()),
-            trust: packages::sync::Trust::default(),
+            trust: packages::source::sync::Trust::default(),
             builtins: None,
             extensions: extensions::Extensions::new(extensions::Timing::default()),
             mcp: mcp::Servers::new(extensions::Timing::default()),

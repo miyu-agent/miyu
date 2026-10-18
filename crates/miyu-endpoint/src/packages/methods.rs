@@ -21,14 +21,18 @@ pub(crate) async fn call(
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
         "package.list" => super::list(core, peer),
+        // 带 `source` 的是从软件源装（施工 G-4 上），要往发起的连接推下载进度。
+        "package.install" if request.params.get("source").is_some() => {
+            super::source::fetch::install(core, peer, caller, params(request)?).await
+        }
         "package.install" => super::manage::install(core, peer, params(request)?).await,
         "package.remove" => super::manage::remove(core, params(request)?).await,
         "package.info" => super::local::info(core, params(request)?).await,
         "package.files" => super::local::files(core, params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
-        "package.sync" => super::sync::method(core, params(request)?).await,
-        "package.search" => super::search::search(core, peer, params(request)?).await,
+        "package.sync" => super::source::sync::method(core, params(request)?).await,
+        "package.search" => super::source::search::search(core, peer, params(request)?).await,
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,
