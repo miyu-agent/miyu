@@ -54,6 +54,7 @@ async fn a_dream_merges_now_and_says_how_much() {
         said(
             &json!({"retired": [{"id": "m1", "why": "重复"}], "summary": "用户养猫。"}).to_string(),
         ),
+        said(&json!({"keywords": []}).to_string()),
         said("{}"),
     ])
     .await;
@@ -77,7 +78,11 @@ async fn a_dream_merges_now_and_says_how_much() {
         json!({"given": 0, "revised": 0, "retired": 0, "summary": false}),
         "{again}"
     );
-    assert_eq!(server.received().len(), 1, "没有要整理的不发");
+    assert_eq!(
+        server.received().len(),
+        2,
+        "合并、接着补关键词各一次（施工 R-15 下）；没有要整理的不发"
+    );
 }
 
 #[tokio::test]
@@ -164,10 +169,13 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
         said("好。"),
         said("养猫"),
         every_turn("用户养了一只猫"),
+        // 抽取记下以后、合并落完以后各写一次关键词（施工 R-15 下）。
+        said(&json!({"keywords": []}).to_string()),
         slow(
             &json!({"summary": "用户养猫。"}).to_string(),
             Duration::from_millis(500),
         ),
+        said(&json!({"keywords": []}).to_string()),
     ])
     .await;
     let home = Home::new();
@@ -231,8 +239,8 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
     );
     assert_eq!(
         server.received().len(),
-        4,
-        "聊了一轮、起了标题、抽了一次、合了一次"
+        6,
+        "聊了一轮、起了标题、抽了一次、合了一次，抽完、合完各写一次关键词（施工 R-15 下）"
     );
     assert!(
         home.log(&session)

@@ -25,6 +25,7 @@ use super::Memory;
 use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
+mod tag;
 mod update;
 
 /// 一间记忆，连同这次会被谁看到（听众）。可以复制：每次调用照它做。
@@ -132,7 +133,8 @@ impl Keeper {
     }
 
     /// 记下会话 `session` 抽出来的几条（施工 R-6 上）：`by` 是记忆模块，出处各是那一轮，听众是这次的听众；再记一条它抽到了
-    /// 第 `upto` 条（整段跳过的带上为什么）。交回记下了几条。候选在前、记号在后：中途写不进的，下次重抽这一段。
+    /// 第 `upto` 条（整段跳过的带上为什么）。交回记下的那几条的编号（施工 R-15 下：接着给它们写关键词）。候选在前、记号在后：
+    /// 中途写不进的，下次重抽这一段。
     ///
     /// # Errors
     ///
@@ -144,12 +146,12 @@ impl Keeper {
         upto: Seq,
         found: Vec<Candidate>,
         skipped: Option<Skipped>,
-    ) -> Result<u32, Refused> {
+    ) -> Result<Vec<MemoryId>, Refused> {
         let log = self.log()?;
         let by = By::Module(Module {
             id: ModuleId::parse(super::MODULE).expect("合模块编号的写法"),
         });
-        let mut count = 0;
+        let mut saved_ids = Vec::new();
         for candidate in found {
             let Some(turn) = Seq::new(candidate.turn).map(TurnId::new) else {
                 continue;
@@ -173,13 +175,13 @@ impl Keeper {
                 by: by.clone(),
                 cause: None,
             };
-            self.append(&log, stamp, &MemoryEvent::Saved(saved))?;
-            count += 1;
+            let (id, _) = self.append(&log, stamp, &MemoryEvent::Saved(saved))?;
+            saved_ids.push(id);
         }
         let mark = Extracted {
             session: session.clone(),
             upto,
-            count,
+            count: u32::try_from(saved_ids.len()).unwrap_or(u32::MAX),
             skipped,
         };
         let stamp = Stamp {
@@ -188,7 +190,7 @@ impl Keeper {
             cause: None,
         };
         self.append(&log, stamp, &MemoryEvent::Extracted(mark))?;
-        Ok(count)
+        Ok(saved_ids)
     }
 
     /// 作废一条。

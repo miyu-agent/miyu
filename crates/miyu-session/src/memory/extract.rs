@@ -115,6 +115,9 @@ pub struct Extraction {
     pub idle: Option<std::time::Duration>,
     /// 合并给模型看的字（施工 R-7 上）：合并在抽取记下以后起，照同一个一次性入口发。
     pub merge: super::MergeTexts,
+    /// 写关键词给模型看的字（施工 R-15 下）：抽取记下以后、合并落完以后另发一次，照同一个一次性入口。没交的不写（核心总交；
+    /// 测试场地照要不要写关键词给）。
+    pub tag: Option<super::TagTexts>,
 }
 
 impl std::fmt::Debug for Extraction {

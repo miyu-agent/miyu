@@ -10,7 +10,7 @@ use miyu_kernel::event::Body;
 use miyu_kernel::id::{Seq, SessionId, TurnId};
 use miyu_recall::Entry;
 use miyu_recall::redact::KeyShapes;
-use miyu_session::{ExtractTexts, Extraction, MergeTexts};
+use miyu_session::{ExtractTexts, Extraction, MergeTexts, TagTexts};
 use miyu_store::blob::Blobs;
 
 use super::calling::entry;
@@ -43,6 +43,13 @@ pub fn stream(text: &str) -> Reply {
     Reply::stream(vec![Piece::Bytes(body.into_bytes())])
 }
 
+/// 同 [`stream`]，先等 `wait` 再回（施工 R-15 下：等的时候场地里先改点什么）。
+pub fn stream_after(text: &str, wait: Duration) -> Reply {
+    let mut pieces = vec![Piece::Wait(wait)];
+    pieces.extend(stream(text).body);
+    Reply::stream(pieces)
+}
+
 /// 交回的候选：1 到 [`TURNS`] 每一轮各一条 `text`。
 pub fn every_turn(text: &str) -> Reply {
     let memories: Vec<serde_json::Value> = (1..=TURNS)
@@ -67,7 +74,24 @@ pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, personal: &st
     organizer_full(home, server, extra, personal, Duration::from_millis(100));
 }
 
+/// 同 [`organizer`]，另交写关键词的字（施工 R-15 下）：抽取记下以后、合并落完以后各多一次请求。别的场地不交，照旧只有抽取、
+/// 合并那几次。
+pub fn organizer_tagging(home: &mut Home, server: &Server, extra: &str) {
+    organizer_with(home, server, extra, "", Duration::from_millis(100), true);
+}
+
 fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str, idle: Duration) {
+    organizer_with(home, server, extra, personal, idle, false);
+}
+
+fn organizer_with(
+    home: &mut Home,
+    server: &Server,
+    extra: &str,
+    personal: &str,
+    idle: Duration,
+    tagging: bool,
+) {
     let source = format!(
         "[providers.org]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"ORG_KEY\" }}\n\n[memory]\norganizer = \"org/m\"\n{extra}",
         server.base_url
@@ -90,6 +114,7 @@ fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str,
         blobs: Blobs::new(home.root.blobs(&alice_account())),
         idle: Some(idle),
         merge: MergeTexts::load(&resources).expect("读得到"),
+        tag: tagging.then(|| TagTexts::load(&resources).expect("读得到")),
     };
     assert!(home.memory.give_extraction(extraction));
 }

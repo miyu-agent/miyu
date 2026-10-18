@@ -443,8 +443,10 @@ impl MergeJob {
                         let took_ms =
                             u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                         tracing::info!(target: TARGET, room = room.as_str(), revised, retired, took_ms, "memory merged");
-                        if revised > 0 {
-                            // 改出来的几条在后台补向量（施工 R-5 五补）。
+                        // 顺带补这一间还没有关键词的（施工 R-15 下，项目主人定旧的整理时慢慢补）：这一次交进去的在前。
+                        let tagged = self.tag(&asked.given).await;
+                        if revised > 0 || tagged > 0 {
+                            // 改出来的、换了关键词的几条在后台补向量（施工 R-5 五补）。
                             let keeper = self.keeper.clone();
                             let using = Using {
                                 config: Arc::clone(&self.config),

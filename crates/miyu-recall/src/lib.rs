@@ -22,6 +22,7 @@ pub mod kb;
 mod memory;
 pub mod merge;
 pub mod redact;
+pub mod tag;
 mod terms;
 mod turns;
 pub mod uses;
