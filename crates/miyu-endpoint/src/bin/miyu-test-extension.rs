@@ -22,7 +22,7 @@
 //!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；是 `user.append` 的照 `inject` 定的答
 //!   （施工 X-16）；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
-//!   `-`）；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
+//!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
@@ -310,7 +310,10 @@ fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
 fn injected(id: &str, how: &str, line: &str) -> Option<String> {
     let block = |text: &str| format!(r#"{{"kind":"meme","text":"{text}"}}"#);
     let blocks = match how {
-        "hint" => {
+        "hint" | "slow" => {
+            if how == "slow" {
+                std::thread::sleep(std::time::Duration::from_millis(600));
+            }
             let venue = field(line, "venue").unwrap_or_default();
             let text = field(line, "text").unwrap_or_else(|| "-".to_string());
             block(&format!("hint {venue} {text}"))

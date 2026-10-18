@@ -95,13 +95,15 @@ pub fn install_asking(
     );
 }
 
-/// 短的等法：等 300 毫秒再杀，退避从 20 毫秒起、最多 100 毫秒；跑满 60 秒才算稳。
+/// 短的等法：等 300 毫秒再杀，退避从 20 毫秒起、最多 100 毫秒；跑满 60 秒才算稳；回合开始的问话等 3 秒。
 pub fn quick() -> Timing {
     Timing {
         grace: Duration::from_millis(300),
         stable: Duration::from_secs(60),
         backoff: Duration::from_millis(20),
         longest: Duration::from_millis(100),
+        // 回合开始的问话：CI 上忙的时候（Windows）扩展过了 300 毫秒才轮到，交的字被当成没交（2026-10-19）。
+        answer: Duration::from_secs(3),
     }
 }
 

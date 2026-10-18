@@ -6,7 +6,6 @@
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
-use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -17,9 +16,6 @@ use miyu_tool::{HooksPort, Inject, Injecting, TurnAsk};
 
 use crate::Core;
 use crate::reverse::Peer;
-
-/// 每一个扩展答 `user.append` 最多等多久。
-const HOOK_ANSWER: Duration = Duration::from_millis(300);
 
 /// 一个扩展一轮至多交几块。
 const MOST_BLOCKS: usize = 3;
@@ -56,14 +52,14 @@ impl HooksPort for Hooks {
             if let Some(text) = ask.text {
                 params["text"] = Value::String(text);
             }
-            // 几个并行问、各自限时，照包的编号收。
+            // 几个并行问、各自限时（`Timing::answer`），照包的编号收。
+            let wait = core.extensions.timing().answer;
             let answers: Vec<_> = asked
                 .into_iter()
                 .map(|(package, peer)| {
                     let params = params.clone();
                     tokio::spawn(async move {
-                        let answer =
-                            tokio::time::timeout(HOOK_ANSWER, peer.call("user.append", params));
+                        let answer = tokio::time::timeout(wait, peer.call("user.append", params));
                         taken(&package, answer.await)
                     })
                 })

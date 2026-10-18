@@ -41,16 +41,19 @@ pub struct Timing {
     pub backoff: Duration,
     /// 退避最多多久。
     pub longest: Duration,
+    /// 回合开始问扩展要加的字（`user.append`），每一个最多等多久：过了的当没交。
+    pub answer: Duration,
 }
 
 impl Default for Timing {
-    /// 等 5 秒再杀，跑满 60 秒算稳了，退避从 1 秒起、最多 60 秒。
+    /// 等 5 秒再杀，跑满 60 秒算稳了，退避从 1 秒起、最多 60 秒；回合开始的问话等 300 毫秒（人在等这一轮开始）。
     fn default() -> Timing {
         Timing {
             grace: Duration::from_secs(5),
             stable: Duration::from_secs(60),
             backoff: Duration::from_secs(1),
             longest: Duration::from_secs(60),
+            answer: Duration::from_millis(300),
         }
     }
 }

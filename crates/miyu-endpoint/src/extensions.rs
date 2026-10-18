@@ -169,6 +169,11 @@ pub(crate) struct Extensions {
 }
 
 impl Extensions {
+    /// 等多久、退避多久。
+    pub(crate) fn timing(&self) -> Timing {
+        self.timing
+    }
+
     pub(crate) fn new(timing: Timing) -> Extensions {
         Extensions {
             slots: Mutex::new(BTreeMap::new()),
