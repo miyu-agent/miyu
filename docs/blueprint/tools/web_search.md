@@ -50,7 +50,7 @@ https://docs.rs/tokio/latest/tokio/macro.select.html (2026-09-01)
 Waits on multiple concurrent branches, ……
 ```
 
-给人看的那一句：`web_search/found`「{hits} 条（{source}）」（一条的发 `found/one`）、`web_search/nothing`「没搜到（{source}）」，`source` 是那一家给人看的名字（设计 36 第三节第 2 条）。给头的 `detail` 是通用形状 `links`（施工 W-11 补）：`{"kind": "links", "links": [{"title", "url", "snippet"?, "date"?}]}`，和给她的几条一一对应；没搜到的、出错的不带。
+给人看的那一句：`web_search/found`「{hits} 条（{source}）」（一条的发 `found/one`）、`web_search/nothing`「没搜到（{source}）」，`source` 是那一家给人看的名字（设计 36 第三节第 2 条）。给头的 `detail` 是通用形状 `links`（施工 W-11 补）：`{"kind": "links", "links": [{"title", "url", "snippet"?, "site", "date"?}]}`，和给她的几条一一对应；`site` 是网址的主机名去掉开头的 `www.`（施工 N-2 补，终端的会话要的：卡片标题下面写「站点 · 日期」），读不成网址的没有；没搜到的、出错的不带。
 
 ### 怎么走
 
@@ -90,6 +90,7 @@ Waits on multiple concurrent branches, ……
 | `crates/miyu-net/tests/search_keys.rs`（N-3 上） | 挑了带 key 的几家，key 放在各家要的地方；没配 key、没配地址的跳过；DeepSeek 有 key 才兜在最后；SearXNG 照配的地址；Exa 的 key 接在地址后面 |
 | `crates/miyu-net/src/settings/tests.rs`（N-3 上） | 「少配了什么」和 `search.json` 的 `needs` 一致；照这一轮的配置拼 `Using`：key 照引用取、取不到的当没配、地址写成环境变量的、DeepSeek 照用供应商的 key |
 | `crates/miyu-core/src/kit/tests.rs` 的 `sources_missing_a_key_or_an_address_say_so`（N-3 上） | 下拉里没配的写「要 key」「要地址」，配了的、免 key 的不写 |
+| `crates/miyu-net/src/web_search/tests.rs`（N-2 补） | 站点是主机名去掉 `www.`、小写，读不成的没有 |
 | `crates/miyu-net/tests/budget.rs` | 两件工具的说明合计不超过 663 字节 |
 
 ### 出处

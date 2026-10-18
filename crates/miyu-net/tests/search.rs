@@ -173,7 +173,7 @@ async fn the_first_source_answers_and_the_result_is_written_for_her_people_and_h
         done.detail,
         Some(json!({"kind": "links", "links": [{
             "title": "Tokio select", "url": "https://docs.rs/tokio/latest/tokio/macro.select.html",
-            "snippet": "Waits on multiple concurrent branches.", "date": "2026-09-01"}]})),
+            "snippet": "Waits on multiple concurrent branches.", "site": "docs.rs", "date": "2026-09-01"}]})),
         "给头的是通用形状的链接列表"
     );
     assert_eq!(site.hits("/parallel"), 0, "第一家成了不问后面的");

@@ -130,7 +130,7 @@ impl WebSearch {
                     title: hit.title.clone(),
                     url: hit.url.clone(),
                     snippet: hit.snippet.clone(),
-                    site: None,
+                    site: site_of(&hit.url),
                     date: hit.date.clone(),
                 })
                 .collect(),
@@ -187,6 +187,19 @@ impl Tool for WebSearch {
     }
 }
 
+/// 给头看的站点（施工 N-2 补，终端的会话要的：卡片标题下面写「站点 · 日期」）：网址的主机名，去掉开头的 `www.`。读不成的
+/// 没有。
+fn site_of(url: &str) -> Option<String> {
+    let host = reqwest::Url::parse(url)
+        .ok()?
+        .host_str()?
+        .to_ascii_lowercase();
+    Some(
+        host.strip_prefix("www.")
+            .map_or_else(|| host.clone(), str::to_string),
+    )
+}
+
 /// 参数不对。
 fn bad_args(texts: &Texts, error: &str) -> Done {
     Done::error(line(&texts.bad_args, &[("error", error)]))
@@ -205,3 +218,6 @@ fn said(key: &str, fields: &[(&str, &str)]) -> Said {
         |said, (name, value)| said.with(name, (*value).to_string()),
     )
 }
+
+#[cfg(test)]
+mod tests;
