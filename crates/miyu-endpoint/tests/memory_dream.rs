@@ -52,7 +52,7 @@ async fn remember(client: &mut Client, id: &str, text: &str) {
 async fn a_dream_merges_now_and_says_how_much() {
     let server = Server::start(vec![
         said(
-            &json!({"retired": [{"id": "m1", "why": "重复"}], "summary": "用户养猫。"}).to_string(),
+            &json!({"retired": [{"id": "m1", "kind": "repeat", "by": "m2", "why": "重复"}], "summary": "用户养猫。"}).to_string(),
         ),
         said(&json!({"keywords": []}).to_string()),
         said("{}"),

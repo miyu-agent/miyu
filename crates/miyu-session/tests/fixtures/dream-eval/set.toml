@@ -1,0 +1,332 @@
+# 整理的测评集（施工 R-16，`docs/blueprint/memory/eval.md`「整理」）：一个虚构的用户林夏，40 条记忆，每条标好整理时该怎么处理；
+# 8 个只靠摘要回答的问题。全是造的，不是谁的记忆。量尺 `memory_dream_eval.rs`。
+#
+# label：keep 留着；old 被后记的推翻（by 是推翻它的那一条）；dup 和另一条重复（of 是那一条，删哪一条都行）；date 该改成绝对
+# 日期（want 是那一天）；worthless 以后用不着。
+
+owner = "林夏"
+
+[[memory]]
+key = "a1"
+date = "2026-08-03"
+class = "user"
+text = "林夏住在杭州西湖区，在一家游戏公司做客户端开发。"
+label = "old"
+by = "a2"
+
+[[memory]]
+key = "a2"
+date = "2026-10-05"
+class = "user"
+text = "林夏九月底搬到了上海徐汇区，换到一家做教育软件的公司。"
+label = "keep"
+
+[[memory]]
+key = "a3"
+date = "2026-08-10"
+class = "user"
+text = "林夏每天早上喝两杯美式咖啡。"
+label = "old"
+by = "a4"
+
+[[memory]]
+key = "a4"
+date = "2026-10-08"
+class = "user"
+text = "林夏十月起戒了咖啡，早上改喝绿茶。"
+label = "keep"
+
+[[memory]]
+key = "a5"
+date = "2026-08-15"
+class = "user"
+text = "林夏养了一只叫豆包的柯基。"
+label = "keep"
+
+[[memory]]
+key = "a6"
+date = "2026-09-20"
+class = "episode"
+text = "林夏说豆包已经两岁了，最近在学定点上厕所。"
+label = "keep"
+
+[[memory]]
+key = "a7"
+date = "2026-08-20"
+class = "user"
+text = "林夏在学日语，目标是明年考 N2。"
+label = "old"
+by = "a8"
+
+[[memory]]
+key = "a8"
+date = "2026-10-10"
+class = "user"
+text = "林夏放弃了日语，改学西班牙语，打算明年去西班牙旅行。"
+label = "keep"
+
+[[memory]]
+key = "a9"
+date = "2026-09-01"
+class = "user"
+text = "林夏的显示器是 27 寸 2K。"
+label = "old"
+by = "a10"
+
+[[memory]]
+key = "a10"
+date = "2026-10-12"
+class = "user"
+text = "林夏换了一台 32 寸 4K 显示器。"
+label = "keep"
+
+[[memory]]
+key = "a11"
+date = "2026-09-05"
+class = "user"
+text = "林夏单身。"
+label = "old"
+by = "a12"
+
+[[memory]]
+key = "a12"
+date = "2026-10-14"
+class = "user"
+text = "林夏和男朋友周远在一起三周了。"
+label = "keep"
+
+[[memory]]
+key = "b1"
+date = "2026-08-04"
+class = "feedback"
+text = "林夏希望回答先说结论，再给理由。"
+label = "keep"
+
+[[memory]]
+key = "b2"
+date = "2026-09-11"
+class = "feedback"
+text = "林夏要回答时结论放最前面，理由放后面。"
+label = "dup"
+of = "b1"
+
+[[memory]]
+key = "b3"
+date = "2026-08-22"
+class = "user"
+text = "林夏对花生过敏。"
+label = "keep"
+
+[[memory]]
+key = "b4"
+date = "2026-09-30"
+class = "user"
+text = "林夏吃花生会过敏，点外卖要避开。"
+label = "dup"
+of = "b3"
+
+[[memory]]
+key = "b5"
+date = "2026-08-25"
+class = "reference"
+text = "林夏的个人博客地址是 linxia.example.com。"
+label = "keep"
+
+[[memory]]
+key = "b6"
+date = "2026-09-25"
+class = "reference"
+text = "林夏的博客在 linxia.example.com。"
+label = "dup"
+of = "b5"
+
+[[memory]]
+key = "b7"
+date = "2026-09-02"
+class = "user"
+text = "林夏周末常去爬山。"
+label = "keep"
+
+[[memory]]
+key = "b8"
+date = "2026-10-03"
+class = "user"
+text = "林夏喜欢周末去爬山。"
+label = "dup"
+of = "b7"
+
+[[memory]]
+key = "c1"
+date = "2026-10-15"
+class = "episode"
+text = "林夏说她明天要去医院复查膝盖。"
+label = "date"
+want = "2026-10-16"
+
+[[memory]]
+key = "c2"
+date = "2026-10-11"
+class = "episode"
+text = "林夏下周一要给团队做一次技术分享。"
+label = "date"
+want = "2026-10-12"
+
+[[memory]]
+key = "c3"
+date = "2026-09-28"
+class = "episode"
+text = "林夏说她昨天面试通过了。"
+label = "date"
+want = "2026-09-27"
+
+[[memory]]
+key = "c4"
+date = "2026-10-01"
+class = "episode"
+text = "林夏后天要去成都出差三天。"
+label = "date"
+want = "2026-10-03"
+
+[[memory]]
+key = "d1"
+date = "2026-10-02"
+class = "episode"
+text = "林夏让我把一段话翻译成英文。"
+label = "worthless"
+
+[[memory]]
+key = "d2"
+date = "2026-10-06"
+class = "user"
+text = "林夏说她现在有点困。"
+label = "worthless"
+
+[[memory]]
+key = "d3"
+date = "2026-10-07"
+class = "episode"
+text = "林夏问了今天上海的天气。"
+label = "worthless"
+
+[[memory]]
+key = "d4"
+date = "2026-10-09"
+class = "episode"
+text = "林夏说测试一下记忆功能。"
+label = "worthless"
+
+[[memory]]
+key = "d5"
+date = "2026-10-13"
+class = "episode"
+text = "林夏的电脑现在内存占用 80%。"
+label = "worthless"
+
+[[memory]]
+key = "d6"
+date = "2026-10-16"
+class = "episode"
+text = "林夏回复了一句好的。"
+label = "worthless"
+
+[[memory]]
+key = "e1"
+date = "2026-08-05"
+class = "feedback"
+text = "林夏不喜欢回答里用太多表情符号。"
+label = "keep"
+
+[[memory]]
+key = "e2"
+date = "2026-08-12"
+class = "reference"
+text = "林夏的工作代码都在公司的 GitLab，个人项目放 GitHub。"
+label = "keep"
+
+[[memory]]
+key = "e3"
+date = "2026-08-18"
+class = "user"
+text = "林夏的生日是 3 月 14 日。"
+label = "keep"
+
+[[memory]]
+key = "e4"
+date = "2026-08-28"
+class = "user"
+text = "林夏的妈妈住在苏州，每月去看一次。"
+label = "keep"
+
+[[memory]]
+key = "e5"
+date = "2026-09-08"
+class = "feedback"
+text = "林夏让我写代码时用 Rust，除非她说别的。"
+label = "keep"
+
+[[memory]]
+key = "e6"
+date = "2026-09-15"
+class = "episode"
+text = "2026-09-14 林夏完成了第一次半程马拉松，用时 2 小时 10 分。"
+label = "keep"
+
+[[memory]]
+key = "e7"
+date = "2026-09-18"
+class = "user"
+text = "林夏用的是 Arch Linux 和 niri 桌面。"
+label = "keep"
+
+[[memory]]
+key = "e8"
+date = "2026-09-22"
+class = "reference"
+text = "林夏的家庭服务器在 192.168.1.20，跑着 Jellyfin。"
+label = "keep"
+
+[[memory]]
+key = "e9"
+date = "2026-10-04"
+class = "user"
+text = "林夏不吃香菜。"
+label = "keep"
+
+[[memory]]
+key = "e10"
+date = "2026-10-11"
+class = "feedback"
+text = "林夏说讨论方案时要先问清楚再动手。"
+label = "keep"
+
+[[question]]
+text = "林夏现在住在哪个城市？"
+expect = ["上海"]
+
+[[question]]
+text = "林夏早上喝什么？"
+expect = ["茶"]
+
+[[question]]
+text = "林夏在学什么语言？"
+expect = ["西班牙"]
+
+[[question]]
+text = "林夏的感情状况？"
+expect = ["周远"]
+
+[[question]]
+text = "林夏养了什么宠物？"
+expect = ["豆包"]
+
+[[question]]
+text = "林夏对什么过敏？"
+expect = ["花生"]
+
+[[question]]
+text = "林夏希望回答怎么组织？"
+expect = ["结论"]
+
+[[question]]
+text = "林夏现在在什么样的公司工作？"
+expect = ["教育"]

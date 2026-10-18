@@ -270,7 +270,7 @@ async fn which_room_and_wrong_arguments() {
 #[tokio::test]
 async fn dream_organizes_now_and_says_how_much() {
     let server = Server::start(vec![said(
-        &serde_json::json!({"retired": [{"id": "m1", "why": "重复"}], "summary": "用户养猫。"})
+        &serde_json::json!({"retired": [{"id": "m1", "kind": "repeat", "by": "m2", "why": "重复"}], "summary": "用户养猫。"})
             .to_string(),
     )])
     .await;

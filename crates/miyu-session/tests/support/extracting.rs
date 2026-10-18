@@ -80,6 +80,40 @@ pub fn organizer_tagging(home: &mut Home, server: &Server, extra: &str) {
     organizer_with(home, server, extra, "", Duration::from_millis(100), true);
 }
 
+/// 整理记忆的照开发端点（施工 R-16 的量尺）：`MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`、`MIYU_DEV_MODEL` 都设了才接，交回接没接上。
+/// key 只经环境变量交给配置，不写进哪里。`personal` 是个人设置（称呼）。
+pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
+    let (Ok(base_url), Ok(key), Ok(model)) = (
+        std::env::var("MIYU_DEV_BASE_URL"),
+        std::env::var("MIYU_DEV_API_KEY"),
+        std::env::var("MIYU_DEV_MODEL"),
+    ) else {
+        return false;
+    };
+    let source = format!(
+        "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_DEV_API_KEY\" }}\n\n[memory]\norganizer = \"dev/{model}\"\n"
+    );
+    home.configs = configs_with(
+        &source,
+        personal,
+        &[(Reference::Env("MIYU_DEV_API_KEY".to_string()), key.as_str())],
+    );
+    let resources = home.resources.path().to_path_buf();
+    let shapes =
+        KeyShapes::parse(&home.resources.memory_secrets().expect("读得到")).expect("写法对");
+    let extraction = Extraction {
+        texts: ExtractTexts::load(&resources).expect("读得到"),
+        shapes,
+        ask: entry(&routes(serde_json::json!({}), Duration::from_secs(300))),
+        blobs: Blobs::new(home.root.blobs(&alice_account())),
+        idle: Some(Duration::from_secs(3600)),
+        merge: MergeTexts::load(&resources).expect("读得到"),
+        tag: None,
+    };
+    assert!(home.memory.give_extraction(extraction));
+    true
+}
+
 fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str, idle: Duration) {
     organizer_with(home, server, extra, personal, idle, false);
 }
