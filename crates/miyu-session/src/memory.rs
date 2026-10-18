@@ -17,6 +17,7 @@ mod port;
 mod recall;
 mod restore;
 mod summary;
+mod tag;
 mod used;
 mod vectors;
 
@@ -33,6 +34,7 @@ pub(crate) const MODULE: &str = "memory";
 pub(crate) use port::Calls;
 pub use recall::RecallTexts;
 pub use summary::SummaryTexts;
+pub use tag::TagTexts;
 pub use vectors::{LOCAL as EMBED_LOCAL, Query, Using, Vectors};
 
 use std::sync::atomic::{AtomicBool, Ordering};

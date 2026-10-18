@@ -169,10 +169,13 @@ impl Job {
                     candidate.text = redact(&candidate.text, &secrets, &shapes);
                 }
                 let recorded = self.mark(upto, found, None).await;
-                if let Some(count) = recorded {
+                if let Some(saved) = &recorded {
                     let took_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+                    let count = saved.len();
                     tracing::info!(target: TARGET, session = %self.session, count, took_ms, "memory extracted");
-                    if count > 0 {
+                    if !saved.is_empty() {
+                        // 接着给这几条写关键词（施工 R-15 下），再补向量：写上了的照新的字补，只补一遍。
+                        self.tag(saved).await;
                         self.fill().await;
                     }
                 }
@@ -188,6 +191,33 @@ impl Job {
                 false
             }
         }
+    }
+
+    /// 给刚记下的几条写关键词（施工 R-15 下）。
+    async fn tag(&self, saved: &[miyu_recall::MemoryId]) {
+        let keeper = self.keeper.clone();
+        let first = saved.to_vec();
+        let limit = saved.len();
+        let entries = match blocking(move || keeper.untagged(&first, limit)).await {
+            Ok(entries) => entries,
+            Err(refused) => {
+                tracing::warn!(target: TARGET, session = %self.session, error = ?refused, "memory tagging not read");
+                return;
+            }
+        };
+        // 只写刚记下的：`untagged` 名额照这几条给，补不满的不去拿别的（旧的整理时补）。
+        let entries = entries
+            .into_iter()
+            .filter(|entry| saved.contains(&entry.id))
+            .collect();
+        let tagging = super::super::tag::Tagging {
+            keeper: self.keeper.clone(),
+            extraction: self.extraction.clone(),
+            config: Arc::clone(&self.config),
+            owner: self.owner.clone(),
+            offset: self.offset,
+        };
+        tagging.run(entries).await;
     }
 
     /// 记下了几条以后在后台补它们的向量（施工 R-5 五补：不等下一次搜）。
@@ -212,13 +242,13 @@ impl Job {
         }
     }
 
-    /// 记下几条、记抽到了第 `upto` 条，交回记下几条；写不进的记一行，交回没有。
+    /// 记下几条、记抽到了第 `upto` 条，交回记下的编号；写不进的记一行，交回没有。
     async fn mark(
         &self,
         upto: Seq,
         found: Vec<miyu_recall::extract::Candidate>,
         skipped: Option<Skipped>,
-    ) -> Option<u32> {
+    ) -> Option<Vec<miyu_recall::MemoryId>> {
         let (keeper, session) = (self.keeper.clone(), self.session.clone());
         let recorded =
             blocking(move || keeper.record_extraction(wall_now(), &session, upto, found, skipped))
