@@ -1,5 +1,5 @@
-# 内置语义模型（施工 R-5 三补，设计 30 第六节）：小程序包，出厂不装；装的人把它放进 home/<管理员>/packages/，旁边的 embed/ 里放
-# model.toml 和两个模型文件，miyu-embed 放在 miyu 旁边。人格记忆的清单推荐它（[recommends] workers = ["embed"]）。给人看的字，
+# 内置语义模型（施工 R-5 三补，设计 30 第六节；R-5 七补换成 granite-embedding-97m-multilingual-r2）：小程序包，出厂不装；包文件夹
+# 里放 model.toml 和它写的三个模型文件，miyu-embed 放在包文件夹的 bin/ 或 miyu 旁边。人格记忆的清单推荐它（[recommends] workers = ["embed"]）。给人看的字，
 # 不发给模型。
 [package]
 protocol = [1, 1]

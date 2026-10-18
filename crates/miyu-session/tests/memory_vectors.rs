@@ -13,13 +13,10 @@ use miyu_session::testkit::{Play, Script};
 use miyu_session::{EmbedSetup, Embedder, Keeper, Listener, Turn, Using, Vectors};
 
 use crate::support::meaning::*;
-use crate::support::package::{program, tiny_package};
+use crate::support::package::tiny_package;
 use crate::support::*;
 
 const MODEL: &str = "local:tiny";
-
-/// 出厂的真模型（量尺用）。
-const REAL: &str = "local:bge-small-zh-v1.5";
 
 /// 给场地的记忆接上照意思找的那一路：小模型摆在场地的 `packages/embed/`。交回算向量的（看它拉起没有）。
 fn meaning(home: &Home) -> Embedder {
@@ -201,22 +198,7 @@ async fn measure_meaning_with_the_real_model() {
         PathBuf::from(std::env::var_os("MIYU_EMBED_MODEL_DIR").expect("设了 MIYU_EMBED_MODEL_DIR"));
     let home = Home::new();
     let dir = home.scratch.0.join("packages").join("embed");
-    std::fs::create_dir_all(&dir).expect("建得了");
-    let original =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
-    std::fs::copy(original, dir.join("model.toml")).expect("拷得了");
-    for name in ["model_quantized.onnx", "vocab.txt"] {
-        std::fs::copy(from.join(name), dir.join(name)).expect("拷得了");
-    }
-    attach(
-        &home,
-        EmbedSetup {
-            program: Some(program()),
-            manifest: dir.join("model.toml"),
-            dir,
-            idle: Duration::from_secs(600),
-        },
-    );
+    attach(&home, real_package(&dir, &from));
     let memories = [
         "用户养了一只猫，叫团子，三岁",
         "用户喜欢喝乌龙茶，下午不喝咖啡",
@@ -252,7 +234,13 @@ async fn measure_meaning_with_the_real_model() {
     eprintln!("第一次算出问句（核对文件、拉起）：{:?}", started.elapsed());
     let filling = std::time::Instant::now();
     keeper.fill(&using);
-    filled(&home, REAL, true, &format!("m{}", memories.len())).await;
+    filled(
+        &home,
+        &shipped_model(),
+        true,
+        &format!("m{}", memories.len()),
+    )
+    .await;
     eprintln!("补 {} 条：{:?}", memories.len(), filling.elapsed());
     let mut keyword_only = 0;
     let mut by_meaning = 0;
@@ -280,7 +268,7 @@ async fn measure_meaning_with_the_real_model() {
         );
     }
     keeper.fill(&using);
-    filled(&home, REAL, true, "m108").await;
+    filled(&home, &shipped_model(), true, "m108").await;
     eprintln!("补一百条：{:?}", hundred.elapsed());
 }
 

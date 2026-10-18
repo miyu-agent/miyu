@@ -1,6 +1,6 @@
 """生成 miyu-embed 的字节级 BPE 测试数据（施工 R-5 六补）。不进门禁，换数据时手动跑一次：
 
-    python make_bpe.py <这个 fixtures 目录> [granite 的 tokenizer.json]
+    python make_bpe.py <这个 fixtures 目录> [granite 的 tokenizer.json] [Release 的 model_q4.onnx]
 
 要装 tokenizers 0.23.3、onnx、onnxruntime、numpy。句子和训练用的字都是造的，不是谁的记忆、对话。生成：
 
@@ -11,6 +11,8 @@
    odd-input.onnx 另要一个不认识的输入 position_ids（载入时拒）。
 2. bpe-tokens.json：小 BPE 对一批句子的结果（不截断）。
 3. granite-tokens.json（给了 granite 的 tokenizer.json 才生成）：真词表对同一批句子的结果，`#[ignore]` 的那一条照它比。
+4. real.json（再给了 Release 的 model_q4.onnx 才生成，施工 R-5 七补）：出厂模型对几句的整个向量（归一化的第一格），照 Python
+   的 onnxruntime 算，`tests/real.rs` 照余弦比。
 """
 import hashlib, json, os, subprocess, sys
 import numpy as np, onnx, onnxruntime as ort
@@ -145,4 +147,13 @@ if len(sys.argv) > 2:
     granite.no_truncation()
     json.dump([{"text": t, "ids": granite.encode(t).ids} for t in texts],
               open(os.path.join(OUT, "granite-tokens.json"), "w"), ensure_ascii=False, indent=0)
+if len(sys.argv) > 3:
+    real = ort.InferenceSession(sys.argv[3], providers=["CPUExecutionProvider"])
+    rows = []
+    for t in ["用户养了一只猫，叫团子，三岁", "回答先说结论，再给依据", "rtx 4090 显卡", "喝什么茶",
+              "The user's cat is called Tuanzi.", "猫の名前は団子です"]:
+        a = np.array([granite.encode(t).ids], dtype=np.int64)
+        v = real.run(None, {"input_ids": a, "attention_mask": np.ones_like(a)})[0][0, 0]
+        rows.append({"text": t, "vector": [round(float(x), 7) for x in v / np.linalg.norm(v)]})
+    json.dump(rows, open(os.path.join(OUT, "real.json"), "w"), ensure_ascii=False)
 print("ok", len(texts), "texts,", size, "tokens")

@@ -8,7 +8,7 @@ tokenizers 0.23.2、onnx、onnxruntime、numpy。生成：
 1. tokens.json：真词表上，Hugging Face tokenizers 对一批句子的结果（不截断）。字里写着 [CLS] 这种的不放：
    tokenizers 会把它当成那个特殊的词，miyu-embed 照普通的字切（不让人说的话变成控制用的词）。
 2. tiny/：手造的小模型、它的词表，和它对几组编号的输出（照 onnxruntime 算）。清单 tiny/manifest.toml 是手写的。
-3. real.json：真模型对几句的整个向量，测试照余弦比。
+3. real.json 原来也在这里生成（bge 的）；R-5 七补出厂换成 granite，改由 make_bpe.py 生成。
 """
 import json, sys, numpy as np, onnx, onnxruntime as ort
 from onnx import helper, TensorProto, numpy_helper
@@ -64,12 +64,3 @@ for c in cases:
     expected.append({"ids": c, "vector": [float(x) for x in (v / np.linalg.norm(v)).astype(np.float32)]})
 json.dump(expected, open(OUT + "/tiny/expected.json", "w"), indent=0)
 print("ok", len(texts))
-
-# 真模型的对照：几句的整个向量（归一化的 [CLS]），照 Python 的 onnxruntime 算，测试照余弦比。
-real = ort.InferenceSession(D + "/model_quantized.onnx", providers=["CPUExecutionProvider"])
-rows = []
-for t in ["用户养了一只猫，叫团子，三岁", "回答先说结论，再给依据", "rtx 4090 显卡", "喝什么茶"]:
-    a = np.array([tok.encode(t).ids], dtype=np.int64)
-    v = real.run(None, {"input_ids": a, "attention_mask": np.ones_like(a), "token_type_ids": np.zeros_like(a)})[0][0, 0]
-    rows.append({"text": t, "vector": [round(float(x), 7) for x in v / np.linalg.norm(v)]})
-json.dump(rows, open(OUT + "/real.json", "w"), ensure_ascii=False)

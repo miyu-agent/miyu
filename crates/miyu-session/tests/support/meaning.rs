@@ -1,7 +1,7 @@
 //! 照意思找记忆的测试共用的（施工 R-5 下挪出来，R-5 补的远程也用）：人记一条、她搜一句、说一轮、读结果、等补上向量，
 //! 和接远程要的空的模型资料。
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -132,14 +132,26 @@ pub async fn filled(home: &Home, model: &str, memory: bool, key: &str) {
     panic!("三十秒没补上 {key}");
 }
 
-/// Release 的文件摆成内置语义模型的包目录：模型清单照出厂的。
+/// 出厂的模型清单（`miyu-embed/package/embed/model.toml`）。
+fn shipped() -> (PathBuf, miyu_recall::embedding::Manifest) {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
+    let text = std::fs::read_to_string(&path).expect("读得了");
+    let manifest = miyu_recall::embedding::Manifest::parse(&text).expect("出厂的合写法");
+    (path, manifest)
+}
+
+/// 出厂的本机模型的编号（`local:<id>`，施工 R-5 七补换成 granite 以后不再写死）。
+pub fn shipped_model() -> String {
+    shipped().1.model()
+}
+
+/// Release 的文件摆成内置语义模型的包目录：模型清单照出厂的，文件照它写的几个拷。
 pub fn real_package(dir: &Path, files: &Path) -> EmbedSetup {
     std::fs::create_dir_all(dir).expect("建得了");
-    let shipped =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
-    std::fs::copy(shipped, dir.join("model.toml")).expect("拷得了");
-    for name in ["model_quantized.onnx", "vocab.txt"] {
-        std::fs::copy(files.join(name), dir.join(name)).expect("Release 的文件在");
+    let (path, manifest) = shipped();
+    std::fs::copy(path, dir.join("model.toml")).expect("拷得了");
+    for file in &manifest.files {
+        std::fs::copy(files.join(&file.name), dir.join(&file.name)).expect("Release 的文件在");
     }
     EmbedSetup {
         program: Some(program()),

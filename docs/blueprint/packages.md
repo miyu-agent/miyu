@@ -100,7 +100,7 @@ program = "miyu-embed"           # 程序名，不带路径分隔符
 args = ["serve"]                 # 可以不写
 ```
 
-一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放 bge、出厂不装）。人格记忆的清单写 `[recommends] workers = ["embed"]`，核心照它拉：
+一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放一个模型、出厂不装；放的模型 2026-10-18 换成 granite-embedding-97m-multilingual-r2，施工 R-5 七补）。人格记忆的清单写 `[recommends] workers = ["embed"]`，核心照它拉：
 
 ```toml
 # packages/embed/package.toml

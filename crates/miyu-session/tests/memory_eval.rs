@@ -18,7 +18,7 @@ use crate::support::eval::{
     Brought, EvalSet, Found, Picked, Row, brought, brought_table, day, measured, parse, problems,
     score, shipped, table,
 };
-use crate::support::meaning::{filled, model_data, persona, real_package};
+use crate::support::meaning::{filled, model_data, persona, real_package, shipped_model};
 use crate::support::{Home, alice, alice_account};
 
 #[test]
@@ -346,12 +346,15 @@ async fn measure_the_eval_set() {
             .iter()
             .any(|memory| &memory.key == key && memory.retired.is_none())
         {
-            filled(&home, "local:bge-small-zh-v1.5", true, id).await;
+            filled(&home, &shipped_model(), true, id).await;
         }
     }
     let both = run(&keeper, &set, &keys, Some((&vectors, &using))).await;
     sound(&set, &both);
-    println!("{}", table("关键词加 bge-small-zh-v1.5", &score(&both)));
+    println!(
+        "{}",
+        table(&format!("关键词加 {}", shipped_model()), &score(&both))
+    );
     let picked = recall(&home, &set, &keys, &vectors, &using).await;
     println!(
         "{}",

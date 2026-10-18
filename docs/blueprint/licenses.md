@@ -76,6 +76,7 @@ GPL-3.0-or-later，见 `LICENSE`。
 | 文件 | 从哪来 | 许可证 | 怎么守 |
 |---|---|---|---|
 | `crates/miyu-embed/tests/fixtures/bge-vocab.txt` | bge-small-zh-v1.5 的词表（施工 R-5 上，分词的测试用） | MIT（FlagEmbedding 仓库的 `LICENSE`：模型卡写明 bge 模型照它发布，可免费商用） | 原文放在旁边的 `bge-vocab.LICENSE`。只在测试里，不随安装包发；模型文件本身不进仓库，放在 Release `models-bge-small-zh-v1.5`，同一份许可证跟着 |
+| `crates/miyu-embed/tests/fixtures/granite-tokens.json`、`real.json`；内置语义模型的包里的 `model_q4.onnx`、`vocab.txt`、`merges.txt` | granite-embedding-97m-multilingual-r2（IBM，revision `835ad140`）：测试数据是它的词表切出的编号、模型算出的向量；包里的是量化成 4 位的模型、转成一行一条的词表和合并（施工 R-5 六补、七补） | Apache-2.0（模型卡写明） | 模型文件不进仓库，放在 Release `models-granite-embedding-97m-multilingual-r2`，许可证原文 `LICENSE` 和写明改了什么的 `NOTICE` 跟着（Apache-2.0 第四条）；做包时两份一起放进包文件夹。Apache-2.0 能和 GPL-3.0 合在一起发 |
 | `crates/miyu-extract/data/EquivalentUnifiedIdeograph.txt` | Unicode 16.0.0 的字符数据库（施工 K-5：中文 PDF 里部首的码位换回平常的字，`knowledge.md`「怎么走」第二条第 5 款），原样，编进 `miyu-extract` | Unicode License v3（`Unicode-3.0`，在能用的名单里） | 原文放在旁边的 `EquivalentUnifiedIdeograph.LICENSE`。换 Unicode 的版本时整份替换 |
 | `resources/models/models-dev.json` | models.dev 的 `api.json`（模型目录，施工 8-7） | MIT（models.dev 仓库的 `LICENSE`，2025 models.dev） | 原文放在旁边的 `models-dev.LICENSE`，跟着快照一起发。MIT 能和 GPL-3.0 合在一起发 |
 | 供应商图标（不随安装包发，核心拉到缓存目录，施工 8-31） | models.dev 的 `logos/<编号>.svg`；lobe-icons 的 `@lobehub/icons-static-svg`（钉住版本） | 两份都是 MIT（models.dev 仓库的 `LICENSE`；lobe-icons 仓库的 `LICENSE`） | 只拉、只缓存，不改不发；标志是各家的商标，归各自所有者（README 写一句）。资源里只有对照表 `resources/models/logos.json`，是我们写的 |

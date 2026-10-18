@@ -4,23 +4,26 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use serde::Deserialize;
 
 use miyu_session::{Embedder, Turn, Using, Vectors};
 
-use crate::support::meaning::{model_data, real_package};
+use crate::support::meaning::{model_data, real_package, shipped_model};
 use crate::support::{Home, alice_account};
 
 /// 四种问句。
 const KINDS: [&str; 4] = ["name", "paraphrase", "chat", "none"];
 
-/// 照意思那一路量的几个门槛。
-const LINES: [f32; 5] = [0.50, 0.55, 0.60, 0.65, 0.70];
+/// 照意思那一路量的几个门槛：granite 的尺度（施工 R-5 七补；bge 时量的是 0.50 到 0.70）。
+const LINES: [f32; 6] = [0.80, 0.82, 0.84, 0.86, 0.88, 0.90];
 
-/// 本机的那个模型的编号。
-const MODEL: &str = "local:bge-small-zh-v1.5";
+/// `kb_search` 只照意思找到的那一路量的几个下限：同上（bge 时是 0.40 到 0.65）。
+const FLOORS: [f32; 6] = [0.76, 0.78, 0.80, 0.81, 0.82, 0.84];
+
+/// 本机的那个模型的编号：照出厂的模型清单。
+static MODEL: LazyLock<String> = LazyLock::new(shipped_model);
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -122,8 +125,8 @@ fn world(sections: &BTreeMap<String, String>) -> Home {
     home
 }
 
-/// 设了 `MIYU_EMBED_MODEL_DIR` 的：接上真的 bge，补齐库 `world` 的向量，交回算问句向量要的两样；没设的没有。
-async fn bge(home: &Home) -> Option<(Arc<Vectors>, Using)> {
+/// 设了 `MIYU_EMBED_MODEL_DIR` 的：接上出厂的真模型，补齐库 `world` 的向量，交回算问句向量要的两样；没设的没有。
+async fn real(home: &Home) -> Option<(Arc<Vectors>, Using)> {
     let files = std::env::var_os("MIYU_EMBED_MODEL_DIR")?;
     let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
     let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(home)));
@@ -137,13 +140,13 @@ async fn bge(home: &Home) -> Option<(Arc<Vectors>, Using)> {
     let index = home.knowledge.index_of(&alice_account(), "world");
     vectors.fill_knowledge(&using, "kb alice world".to_string(), Arc::clone(&index));
     for _ in 0..1200 {
-        if index.missing(MODEL, 0, 100).expect("读得了").is_empty() {
+        if index.missing(&MODEL, 0, 100).expect("读得了").is_empty() {
             break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     }
     assert!(
-        index.missing(MODEL, 0, 100).expect("读得了").is_empty(),
+        index.missing(&MODEL, 0, 100).expect("读得了").is_empty(),
         "补齐了向量"
     );
     Some((vectors, using))
@@ -258,7 +261,7 @@ async fn measure_the_kb_eval_set() {
         table("关键词搜得到（前 3 块）", &set, &sections, &keyword)
     );
 
-    let Some((vectors, using)) = bge(&home).await else {
+    let Some((vectors, using)) = real(&home).await else {
         println!("没设 MIYU_EMBED_MODEL_DIR：只量了标题名、关键词");
         return;
     };
@@ -267,7 +270,7 @@ async fn measure_the_kb_eval_set() {
     let mut near: Vec<Vec<(String, f32)>> = Vec::new();
     for query in &set.query {
         let asked = vectors.query(&using, &query.text).await.expect("算得出");
-        let found = index.nearest(MODEL, &asked.vector, 3).expect("找得了");
+        let found = index.nearest(&MODEL, &asked.vector, 3).expect("找得了");
         near.push(
             found
                 .into_iter()
@@ -347,7 +350,7 @@ async fn measure_the_search_floor() {
     let set = shipped();
     let sections = sections();
     let home = world(&sections);
-    let Some((vectors, using)) = bge(&home).await else {
+    let Some((vectors, using)) = real(&home).await else {
         println!("没设 MIYU_EMBED_MODEL_DIR：量不了");
         return;
     };
@@ -362,14 +365,14 @@ async fn measure_the_search_floor() {
             .collect();
         let near = vectors.query(&using, &query.text).await.expect("算得出");
         let close: Vec<(String, f32)> = index
-            .nearest(MODEL, &near.vector, 20)
+            .nearest(&MODEL, &near.vector, 20)
             .expect("找得了")
             .into_iter()
             .map(|hit| (hit.key, hit.similar))
             .collect();
         asked.push((words, close));
     }
-    for floor in [0.40, 0.45, 0.50, 0.55, 0.60, 0.65] {
+    for floor in FLOORS {
         let picked: Picked = asked
             .iter()
             .map(|(words, close)| {
@@ -410,7 +413,7 @@ async fn measure_the_search_floor() {
         ("哪个节日要放飞亮光", "history.md:灯笼节"),
     ] {
         let near = vectors.query(&using, text).await.expect("算得出");
-        let found = index.nearest(MODEL, &near.vector, 20).expect("找得了");
+        let found = index.nearest(&MODEL, &near.vector, 20).expect("找得了");
         let rank = found.iter().position(|hit| hit.key == sections[label]);
         let similar = rank.map(|at| found[at].similar);
         println!("{text} → {label}：第 {rank:?} 像，{similar:.3?}");

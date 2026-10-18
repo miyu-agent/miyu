@@ -4,6 +4,10 @@
 #
 # bge-small-zh-v1.5 的 0.60 是 2026-10-13 在知识库的测评集（`docs/blueprint/knowledge/eval.md`）上量的：平常的话最像的那一段
 # 0.36 到 0.49，一句都不带；标题名加 0.60 带的 94% 对，88% 的回合想起了该想的（项目主人同一天定）。
+#
+# granite-embedding-97m-multilingual-r2 的 0.86 是 2026-10-18 换出厂模型时在同一个测评集上量的（施工 R-5 七补）：平常的话最像的
+# 那一段 0.74 到 0.81，一句都不带；标题名加 0.86 带的 89% 对，88% 的回合想起了该想的，和 bge 0.60 最接近。
 
 [thresholds]
 "local:bge-small-zh-v1.5" = 0.60
+"local:granite-embedding-97m-multilingual-r2" = 0.86

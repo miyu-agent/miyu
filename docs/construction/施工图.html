@@ -733,6 +733,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-5g"><span class="n">R-5</span>本机模型当场换（四补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-5h"><span class="n">R-5</span>本机模型冷启动（五补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-5i"><span class="n">R-5</span>字节级 BPE 切词（六补）<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-5j"><span class="n">R-5</span>内置语义模型换成 granite（七补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -20214,6 +20215,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-5-BPE切词（六补）.md</code>；蓝图 <code>recall.md</code> 第四条第 2、4、5 款。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-5j" aria-labelledby="h-sR5j">
+  <div class="sheet-head"><h2 id="h-sR5j"><span class="no">R-5</span>内置语义模型换成 granite（七补）</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">装了内置语义模型的人用上 granite-embedding-97m-multilingual-r2：多语种、乱带的少、知识库找得准；照模型的三个门槛换上当天就量好。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-embed · resources/core · miyu-session 的量尺</span><span class="dir-note">R-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>fp32 照 <code>quantize_q4.py</code> 量成 4 位，逐字节可重现</li>
+              <li>Release 放模型、词表、合并、许可证、<code>NOTICE</code></li>
+              <li>出厂清单换成 granite，bge 的向量留着</li>
+              <li>三个门槛照原来的判法重量</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">记忆联想 0.85</span><span class="rl">真数据乱带 40% → 19%</span></div>
+          <div class="tile new"><span class="nm">知识库 0.86 · 0.82</span><span class="rl">想起、搜的下限</span></div>
+          <div class="tile new"><span class="nm">跨语言 20% → 60%</span><span class="rl">recall@5</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-5</dd></div>
+        <div><dt>名称</dt><dd>内置语义模型换成 granite（七补）</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>真模型、两份测评集、真数据、真核心冷启动 · 自己验收，通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>Release 下载回来六个文件全对；真模型对照过；测评集 recall@5 84%（bge 81%），联想 0.85 平常的话一句不带；真核心刚起来就搜 285 到 290 毫秒</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-5-换成granite（七补）.md</code>；蓝图 <code>recall.md</code> 第四条，<code>memory/eval.md</code>「换模型」，<code>knowledge/eval.md</code>「换成 granite」。</li>
       </ul>
     </div>
   </div>
