@@ -371,3 +371,25 @@ async fn refusals() {
         .await;
     assert_eq!(reason(&reply), Some("memory_not_installed"), "{reply}");
 }
+
+/// 无人格那一间也订阅得到（施工 R-12 再补）：`persona` 写 `_none`，推的带 `"persona": "_none"`。
+#[tokio::test]
+async fn the_room_without_a_persona_can_be_followed() {
+    let home = Home::new();
+    let mut client = watch(connected(&home, &Script::new([])).await);
+    let (_, reply) = follow(&mut client, "s1", json!({"persona": "_none"})).await;
+    assert!(reply.get("error").is_none(), "{reply}");
+    let reply = client
+        .call(
+            "c1",
+            "memory.remember",
+            json!({"persona": "_none", "class": "user", "text": "用户喜欢喝茶"}),
+        )
+        .await;
+    assert_eq!(reply["result"], json!({"id": "m1"}), "{reply}");
+    let message = client.next_push().await.expect("推了");
+    assert_eq!(
+        pushed(&message),
+        ("_none".into(), 1, "ext.memory.saved".into())
+    );
+}

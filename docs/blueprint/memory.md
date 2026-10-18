@@ -54,7 +54,7 @@
 
 **范围**（`17-记忆.md` L2、L3，R-3 下）：会话开局时定，之后不改。三种：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。
 
-**无人格的那一间**（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：无人格的会话照样跟着「人格」走，人格编号写 `_none`（`miyu_store::recall::NO_PERSONA`；人格编号以小写字母开头，撞不上），在记忆账号名下单独一间（`modules/memory/_none/`、`turns-_none.db`、`memory-_none.db`），无人格的会话共用它，和每个人格的都分开。无人格不是人格：人格列表里没有它，`memory.*` 写 `persona` 找不到它，照会话找（写 `session`）的找得到。P-12 以前造的无人格会话快照里范围是 `off`，载入照快照，照旧不记。
+**无人格的那一间**（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：无人格的会话照样跟着「人格」走，人格编号写 `_none`（`miyu_store::recall::NO_PERSONA`；人格编号以小写字母开头，撞不上），在记忆账号名下单独一间（`modules/memory/_none/`、`turns-_none.db`、`memory-_none.db`），无人格的会话共用它，和每个人格的都分开。无人格不是人格：人格列表里没有它；`memory.*`、流 `memory` 的 `persona` 写 `_none` 的就是它（施工 R-12 再补，网页的记忆页没有会话可借），照会话找（写 `session`）的也找得到。P-12 以前造的无人格会话快照里范围是 `off`，载入照快照，照旧不记。
 
 - 默认照人格的 `persona.toml` 的 `[memory] scope`（`persona` 或 `session`；不写是 `persona`，出厂的软件工程师不写；别的值照人格的文件写错了报，`personas.md`）。开会话时能换：`session.create` 多一格 `memory`（`persona`、`session`、`off`，不写照人格的；别的值 `bad_params`）；`miyu ask --no-memory` 就是 `off`。人格与预设走查 E1（2026-10-07）。
 - 记进策略快照的 `memory`（开局定、之后不改，正是快照管的；内核不认识「记忆」这个词，不进 `session.created`）。新造的都写明，`persona` 也写；以前造的快照里没有的照 `persona`，字节不变；认不出的照 `off`（宁可不记，不往不知道的地方写）。载入时照快照。
@@ -119,7 +119,7 @@
 - 给头看的那一份（`tool.result` 的 `detail`，施工 W-11，2026-10-17 两个头要的：点开画给人看的，不画给她的英文）：`memory_search` 交 `{"memories": [{"id", "class", "date", "text", "forgotten"?}], "turns": [{"date", "session", "text"}]}`，照给她看的先后；日期照会话的时区，作废的才写 `forgotten: true`，对话片段是原文（不截、不换行），会话写整个编号；什么都没找到的两个空列表。`remember`、`forget` 不交，头照参数和 `human` 画。
 - 她当场记的那一段，后台不再抽（第六条第 3 款，R-6）。
 
-**协议**（R-3 补，`17-记忆.md` 第九节；原文写法见 `protocol.md`）：人不经过她碰记忆。八个方法都能写 `persona` 或 `session`（最多一个）指哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的那一间（照它的快照；`off` 的、不带人格的、场所会话 `memory_unavailable`）；都不写照默认人格，没设默认人格的 `memory_unavailable`（不带人格记忆不生效，17 L17）。人格记忆这个软件包没装的，八个都回 `memory_not_installed`，先于别的检查（第十一条，R-10）。人经协议是主人那边：全部列得出、搜得到、改得了（第九条第 3 款，R-13 上）。
+**协议**（R-3 补，`17-记忆.md` 第九节；原文写法见 `protocol.md`）：人不经过她碰记忆。八个方法都能写 `persona` 或 `session`（最多一个）指哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的那一间（照它的快照；`off` 的、不带人格的、场所会话 `memory_unavailable`）；都不写照默认人格，没设默认人格的 `memory_unavailable`；`persona` 写 `_none` 的是无人格那一间（施工 R-12 再补，记忆账号是这个连接的账号）。人格记忆这个软件包没装的，八个都回 `memory_not_installed`，先于别的检查（第十一条，R-10）。人经协议是主人那边：全部列得出、搜得到、改得了（第九条第 3 款，R-13 上）。
 
 | 方法 | 类型 | 参数 | 回应 |
 |---|---|---|---|

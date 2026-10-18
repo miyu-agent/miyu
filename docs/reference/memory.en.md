@@ -19,7 +19,7 @@ Memories are kept in separate places: per persona (shared by all sessions with t
 
 | Name | Notes |
 |---|---|
-| `persona` | That persona's memory |
+| `persona` | That persona's memory; `_none` is the one for sessions without a persona (not in the persona list; list it yourself) |
 | `session` | The memory that session uses |
 
 With neither, the default persona's. To follow changes, subscribe to the `memory` stream ([Connection](connection.en.md)).

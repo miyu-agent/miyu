@@ -4,7 +4,8 @@
 //! 施工 R-12 下）在 `memory/turns.rs`。
 //!
 //! - 哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的
-//!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，它那一间照会话找，施工 P-12）。
+//!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，施工 P-12）；
+//!   `persona` 写 `_none`（[`NO_PERSONA`]）的是无人格那一间（施工 R-12 再补：网页的记忆页没有会话可借）。
 //! - 听众是这个连接的人：本机的令牌、网页登录都是管理员。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
@@ -29,7 +30,7 @@ use miyu_session::{
     ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Memory, Stamp, Turn,
     Using, Vectors,
 };
-use miyu_store::recall::Room;
+use miyu_store::recall::{NO_PERSONA, Room};
 use miyu_tool::{Refused, Remember};
 
 use crate::Core;
@@ -295,6 +296,11 @@ async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
     let hearer = admin(core);
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
+        (Some(persona), None, None) if persona == NO_PERSONA => {
+            // 无人格那一间（施工 R-12 再补）：记忆账号是这个连接的账号，同无人格的会话照属主。
+            let room = Room::persona(&core.admin, NO_PERSONA);
+            Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
+        }
         (persona, None, None) => {
             // 无人格不是人格（施工 P-12）：不写、默认人格也没设的，照人格找没有哪一间；无人格那一间照会话找。
             let found = personas::resolve(core, persona.as_deref().map(Some))
