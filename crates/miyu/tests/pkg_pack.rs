@@ -7,6 +7,13 @@ use crate::support::cli::{run, stderr, stdout};
 use crate::support::{Home, within};
 use miyu_ipc::connect_or_start;
 
+/// 印出来的路径和 `expected` 是不是同一个文件：照真实位置比（macOS 的临时目录在 `/private/var`，`/var` 是链接）。
+fn same_file(printed: &str, expected: &std::path::Path) -> bool {
+    let real = |path: &std::path::Path| std::fs::canonicalize(path).ok();
+    real(std::path::Path::new(printed)).is_some()
+        && real(std::path::Path::new(printed)) == real(expected)
+}
+
 /// 一份带版本、手动拉起的扩展包的清单（不会真的起），`more` 接在 `[package]` 里。
 fn manifest(more: &str) -> String {
     format!(
@@ -31,7 +38,8 @@ async fn pkg_packs_a_folder_that_installs_again() {
     let text = stdout(&packed);
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines.len(), 3, "{text}");
-    assert_eq!(lines[0], format!("打好了：{}", file.display()));
+    let printed = lines[0].strip_prefix("打好了：").expect("第一行是路径");
+    assert!(same_file(printed, &file), "{text}");
     let sha = lines[1].strip_prefix("SHA-256: ").expect("第二行是哈希");
     assert_eq!(sha.len(), 64, "{text}");
     assert_eq!(lines[2], format!("大小：{size} 字节"));
@@ -48,9 +56,10 @@ async fn pkg_packs_a_folder_that_installs_again() {
     assert_eq!(shown["package"], "xpkg");
     assert_eq!(shown["version"], "1.0");
     assert_eq!(shown["target"], Value::Null);
-    assert_eq!(
-        shown["path"],
-        cwd.join("out/xpkg-1.0.miyu").display().to_string()
+    let path = shown["path"].as_str().expect("有路径");
+    assert!(
+        same_file(path, &cwd.join("out").join("xpkg-1.0.miyu")),
+        "{shown}"
     );
 
     let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
