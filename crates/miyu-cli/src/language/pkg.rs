@@ -289,3 +289,24 @@ impl Language {
         }
     }
 }
+
+/// `miyu pkg update` 的字（施工 G-3 上）。
+impl Language {
+    /// 拿到了新的索引：几个包、索引的时刻。
+    pub(crate) fn index_updated(&self, count: u64, generated: &str) -> String {
+        match self {
+            Language::Chinese => format!("软件源已更新：{count} 个包（{generated}）"),
+            Language::English => format!("Package index updated: {count} packages ({generated})"),
+        }
+    }
+
+    /// 没拿成，用的是本机那份。
+    pub(crate) fn index_stale(&self, generated: &str, why: &str) -> String {
+        match self {
+            Language::Chinese => format!("软件源连不上，用的是本机的索引（{generated}）：{why}"),
+            Language::English => {
+                format!("Package source unreachable, using the local index ({generated}): {why}")
+            }
+        }
+    }
+}

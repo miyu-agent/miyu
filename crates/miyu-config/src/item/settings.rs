@@ -202,6 +202,9 @@ macro_rules! __settings_kind {
     (url) => {
         $crate::Kind::Url
     };
+    (urls) => {
+        $crate::Kind::List(&$crate::Kind::Url)
+    };
     (name) => {
         $crate::Kind::Name
     };
@@ -251,6 +254,10 @@ macro_rules! __settings_default {
         ::core::option::Option::None
     };
     (secrets, []) => {
+        ::core::option::Option::Some($crate::Value::List(::std::vec::Vec::new()))
+    };
+    // 网址的列表默认空（施工 G-3 上：`packages.mirrors`）。
+    (urls, []) => {
         ::core::option::Option::Some($crate::Value::List(::std::vec::Vec::new()))
     };
     (option, $default:literal) => {

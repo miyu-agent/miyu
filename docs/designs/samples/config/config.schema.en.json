@@ -434,6 +434,60 @@
       },
       "type": "object"
     },
+    "packages": {
+      "properties": {
+        "mirrors": {
+          "default": [],
+          "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it. Allowed: a list of an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "items": {
+            "oneOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "env": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "env"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "title": "Mirrors",
+          "type": "array"
+        },
+        "source": {
+          "default": "https://miyu-agent.github.io/packages/",
+          "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "oneOf": [
+            {
+              "format": "uri",
+              "type": "string"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "env": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "env"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "Package source address"
+        }
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {

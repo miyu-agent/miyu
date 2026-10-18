@@ -13,10 +13,12 @@
   owns <路径>             一个文件归哪个包
   check [<编号>]          装好的文件有没有改过、少了；不写是全部
   pack <包目录>           打成包文件，写在现在的目录
+  update                  从软件源拿新的索引
 
 pacman 的写法也认：
   -U、-R、-Q              install、remove、list
   -Qi、-Ql、-Qo、-Qk      info、files、owns、check
+  -Sy                     update
 
 选项：
       --format text|json  list、info、files、owns、check：json 给脚本

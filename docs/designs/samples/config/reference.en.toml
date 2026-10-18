@@ -125,6 +125,15 @@ source = "auto"
 # Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
 # key =
 
+[packages]
+# Mirrors: Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it.
+# Allowed: a list of an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+mirrors = []
+
+# Package source address: Where to look up and download packages. The official source by default; any other address must serve content signed by the official key.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+source = "https://miyu-agent.github.io/packages/"
+
 [permission]
 # Permission level for new sessions: Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.
 # Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.

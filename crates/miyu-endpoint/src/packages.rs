@@ -30,6 +30,7 @@ pub(crate) mod preview;
 mod services;
 pub(crate) mod status;
 pub(crate) mod switch;
+pub(crate) mod sync;
 pub(crate) mod verify;
 use crate::config::methods::words;
 use crate::hello::Peer;

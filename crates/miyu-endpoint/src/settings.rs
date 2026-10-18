@@ -1,9 +1,12 @@
 //! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话的权限级别
 //! `permission.level`（施工 8-32），新会话开局只读
-//! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上）。
+//! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上），软件源 `packages.source`、`packages.mirrors`
+//! （施工 G-3 上）。
 //!
 //! 核心起来时照 `ui.language` 的最终值挑生成的文件用哪种语言；握手时照它和头报的系统语言算这个连接的语言（第二条
 //! 第 8 条）。造会话时照 `permission.start_read_only` 的最终值（带上信任着的项目配置）定开局是不是只读（第二条第 9 条）。
+
+use miyu_config::Address;
 
 miyu_config::settings! {
     /// 界面的配置。
@@ -122,6 +125,26 @@ impl UiSettings {
             Some(locale) if locale.starts_with("ja") => "ja",
             _ => "en",
         }
+    }
+}
+
+miyu_config::settings! {
+    /// 软件源（施工 G-3 上，设计 `37-软件源.md` 第五节）：从哪拿索引、下包。整台机器一份，只在系统配置里；当场生效。
+    pub struct SourceSettings in "packages" {
+        /// 软件源的地址：放 `index.json`、`index.json.sig` 的那一层目录。索引照编进来的官方公钥验，换成别的地址也得是官方签的。
+        source: Address = "https://miyu-agent.github.io/packages/" {
+            kind: url,
+            layers: [System],
+            applies: now,
+            ui: { page: "packages", group: "source", control: text },
+        },
+        /// 镜像：照先后试，都不成再试上面那个地址。一个镜像同样放 `index.json`、`index.json.sig`，包文件在 `files/` 下面。
+        mirrors: Vec<Address> = [] {
+            kind: urls,
+            layers: [System],
+            applies: now,
+            ui: { page: "packages", group: "source", control: list },
+        },
     }
 }
 

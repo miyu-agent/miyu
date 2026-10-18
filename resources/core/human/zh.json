@@ -264,6 +264,8 @@
         "name": "后台更新目录",
         "description": "在后台去 models.dev 拉新的模型目录。关掉只用安装包带的和已经拉过的。"
       },
+      "packages.source": {"name": "软件源地址", "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。"},
+      "packages.mirrors": {"name": "镜像", "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。"},
       "models.catalog.url": {
         "name": "目录的地址",
         "description": "从哪拉模型目录。"
@@ -324,7 +326,8 @@
       "catalog": "模型目录",
       "cooldown": "冷却",
       "external": "平台账号",
-      "net": "联网搜索"
+      "net": "联网搜索",
+      "source": "软件源"
     }
   },
   "said": {

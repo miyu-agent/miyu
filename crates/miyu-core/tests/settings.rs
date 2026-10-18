@@ -121,6 +121,8 @@ fn the_registered_list_is_well_formed() {
             "net.search.tavily.key",
             "net.search.brave.key",
             "net.search.searxng.url",
+            "packages.source",
+            "packages.mirrors",
             "log.level"
         ],
         "照登记的先后"

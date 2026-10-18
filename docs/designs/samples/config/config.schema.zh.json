@@ -434,6 +434,60 @@
       },
       "type": "object"
     },
+    "packages": {
+      "properties": {
+        "mirrors": {
+          "default": [],
+          "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" } 的列表。只能写在系统配置里。立即生效。",
+          "items": {
+            "oneOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "env": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "env"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "title": "镜像",
+          "type": "array"
+        },
+        "source": {
+          "default": "https://miyu-agent.github.io/packages/",
+          "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置里。立即生效。",
+          "oneOf": [
+            {
+              "format": "uri",
+              "type": "string"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "env": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "env"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "软件源地址"
+        }
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {

@@ -264,6 +264,8 @@
         "name": "Update the catalog",
         "description": "Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones."
       },
+      "packages.source": {"name": "Package source address", "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key."},
+      "packages.mirrors": {"name": "Mirrors", "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it."},
       "models.catalog.url": {
         "name": "Catalog address",
         "description": "Where to fetch the model catalog from."
@@ -324,7 +326,8 @@
       "catalog": "Model catalog",
       "cooldown": "Cooldown",
       "external": "Platform accounts",
-      "net": "Web search"
+      "net": "Web search",
+      "source": "Package source"
     }
   },
   "said": {

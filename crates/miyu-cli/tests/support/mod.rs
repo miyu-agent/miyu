@@ -3,6 +3,9 @@
 
 #![allow(dead_code, reason = "几个测试各用其中一部分")]
 
+mod tape;
+pub use tape::Tape;
+
 pub mod configuring;
 pub mod logging_in;
 pub mod modeled;
@@ -11,8 +14,8 @@ pub mod outside;
 pub mod router;
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tokio::sync::mpsc;
@@ -98,20 +101,29 @@ impl Home {
     }
 
     fn start(models: Arc<dyn Models>, tools: Catalog, sandbox: Availability) -> Home {
+        Home::shaped(models, tools, sandbox, |core, _| core)
+    }
+
+    /// 起一个核心，起之前照 `shape` 改一改（施工 G-3 上：认测试的钥匙、读写好的系统配置）；`shape` 拿到数据根。
+    pub fn shaped(
+        models: Arc<dyn Models>,
+        tools: Catalog,
+        sandbox: Availability,
+        shape: impl FnOnce(Core, &DataRoot) -> Core,
+    ) -> Home {
         let (dir, root) = temp_root();
         let opened = miyu_ipc::open(&root, &dirs()).expect("起得来");
-        let core = Arc::new(
-            Core::new(
-                root.clone(),
-                resources(),
-                models,
-                tools,
-                None,
-                AccountIdOf::admin(),
-                opened.token.clone(),
-            )
-            .with_sandbox(sandbox),
-        );
+        let core = Core::new(
+            root.clone(),
+            resources(),
+            models,
+            tools,
+            None,
+            AccountIdOf::admin(),
+            opened.token.clone(),
+        )
+        .with_sandbox(sandbox);
+        let core = Arc::new(shape(core, &root));
         let running = tokio::spawn(miyu_endpoint::run(opened.listener, Arc::clone(&core)));
         Home {
             dir,
@@ -418,49 +430,6 @@ pub struct Asked {
     pub out: String,
     pub err: String,
     pub screen: String,
-}
-
-/// 一卷屏幕：标准输出、标准错误照先后记在一起。只看各自的缓冲区看不出两条通道交错的先后。
-#[derive(Clone, Default)]
-pub struct Tape(Arc<Mutex<Vec<(bool, u8)>>>);
-
-/// 往屏幕上写的一支笔：`err` 的写标准错误。
-pub struct Pen {
-    tape: Tape,
-    err: bool,
-}
-
-impl std::io::Write for Pen {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut tape = self.tape.0.lock().expect("没 panic");
-        tape.extend(buf.iter().map(|byte| (self.err, *byte)));
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Tape {
-    /// 一支笔。
-    pub fn pen(&self, err: bool) -> Pen {
-        Pen {
-            tape: self.clone(),
-            err,
-        }
-    }
-
-    /// 照 `pick` 挑出来的字节，写成字。
-    pub fn text(&self, pick: impl Fn(bool) -> bool) -> String {
-        let tape = self.0.lock().expect("没 panic");
-        let bytes: Vec<u8> = tape
-            .iter()
-            .filter(|(err, _)| pick(*err))
-            .map(|(_, byte)| *byte)
-            .collect();
-        String::from_utf8(bytes).expect("UTF-8")
-    }
 }
 
 /// 管理员的账号。

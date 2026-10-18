@@ -10,6 +10,7 @@ mod open;
 mod pack;
 mod query;
 mod shown;
+mod source;
 
 use std::io::{self, BufRead, Write};
 use std::path::{Component, Path, PathBuf};
@@ -91,6 +92,11 @@ pub enum PkgCommand {
         /// 只查哪一个。
         package: Option<String>,
     },
+    /// 从软件源拿新的索引（施工 G-3 上）。
+    Update,
+    /// pacman 的 `-S`：`-y` 是 `update`。帮助页里写，clap 的列表里不列。
+    #[command(short_flag = 'S', hide = true)]
+    Sync(SyncFlags),
     /// pacman 的 `-Q`：不带别的是 `list`，`-i` 是 `info`，`-l` 是 `files`，`-o` 是 `owns`，`-k` 是 `check`。帮助页里写，
     /// clap 的列表里不列。
     #[command(short_flag = 'Q', hide = true)]
@@ -117,11 +123,21 @@ pub struct Query {
     target: Option<String>,
 }
 
+/// `-S` 后面接的：现在只有 `-y`（施工 G-3 上），搜、装、升级随后几步加。
+#[derive(Debug, Clone, Args)]
+pub struct SyncFlags {
+    /// `-Sy`：`update`。现在 `-S` 只有这一种，不写 `-y` 也当 `update`；搜、装、升级加进来时再分。
+    #[arg(short = 'y')]
+    refresh: bool,
+}
+
 impl PkgCommand {
     /// pacman 的写法换成正式的子命令。
     fn plain(self) -> PkgCommand {
-        let PkgCommand::Query(query) = self else {
-            return self;
+        let query = match self {
+            PkgCommand::Sync(_) => return PkgCommand::Update,
+            PkgCommand::Query(query) => query,
+            other => return other,
         };
         let target = query.target.unwrap_or_default();
         match (query.info, query.files, query.owns, query.check) {
@@ -350,6 +366,9 @@ async fn act(
                 false => lines(out, rows),
             }
             if broken { Err(exit::ERROR) } else { Ok(()) }
+        }
+        PkgCommand::Update | PkgCommand::Sync(_) => {
+            source::update(rpc, language, json, (out, err)).await
         }
         // 平常在连核心之前就做了（[`run`]）；经连接走到这里的照样在本机打。
         PkgCommand::Pack {

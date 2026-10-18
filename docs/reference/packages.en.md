@@ -8,6 +8,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`package.info`, `package.files`, `package.owns`, `package.check`](#packageinfo-packagefiles-packageowns-packagecheck) | A package's info and files; which package owns a path; whether installed files changed |
 | [`package.install`, `package.remove`](#packageinstall-packageremove) | Install, remove |
 | [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
+| [`package.sync`](#packagesync) | Fetch the index from the package source |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
@@ -15,7 +16,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
 
@@ -77,6 +78,18 @@ Install and remove take effect at once: processes start or stop per their switch
 | `depends_missing` | A dependency isn't installed, `data.missing` |
 | `package_depended` | Another installed package depends on it, `data.by` |
 | `unknown_package` | Not installed, or never removed |
+
+## `package.sync`
+
+Fetch the index from the package source. Param `force` (optional): `true` fetches even if the local copy is recent; otherwise a local copy younger than 24 hours is used as is. Addresses are tried in the order of the system config's `packages.mirrors`, then `packages.source`; the index is verified against the official public keys built into Miyu, and one older than the local copy is not taken.
+
+Response `{"generated", "fetched", "packages", "stale"?}`: when the index was generated and fetched (RFC 3339), and how many packages it lists; `stale` (the last place's reason, in English) means nothing could be fetched this time and the local copy is used.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `source_unreachable` | Nothing could be fetched and there is no local index; `data.why` is the last place's reason |
 
 ## `package.enable`, `package.disable`, `package.restart`
 

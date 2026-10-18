@@ -16,10 +16,12 @@ Commands:
   owns <path>             Show which package a file belongs to
   check [<id>]            Check installed files; all packages if none given
   pack <folder>           Pack a folder into a package file here
+  update                  Fetch the latest index from the package source
 
 pacman options work too:
   -U, -R, -Q              install, remove, list
   -Qi, -Ql, -Qo, -Qk      info, files, owns, check
+  -Sy                     update
 
 Options:
       --format text|json  list, info, files, owns, check: json for scripts

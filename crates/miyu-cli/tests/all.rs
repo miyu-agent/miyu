@@ -14,6 +14,7 @@ mod from;
 mod kb;
 mod login;
 mod memory;
+mod pkg_source;
 mod recap;
 mod redo;
 mod rename;

@@ -138,6 +138,15 @@ impl Refusal {
         Refusal::with("package_depended", "by", serde_json::json!(by))
     }
 
+    /// 软件源一处都没拿成、本机也没有索引（施工 G-3 上）：`data.why` 是最后一处的原因（英文原话，带地址）。
+    pub(crate) fn source_unreachable(reason: String) -> Refusal {
+        Refusal::with(
+            "source_unreachable",
+            "why",
+            serde_json::Value::String(reason),
+        )
+    }
+
     /// 装的清单写错了、和别的包撞了（施工 F-5 上）：`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`。
     pub(crate) fn package_invalid(problem: String, line: Option<usize>) -> Refusal {
         let mut refusal = Refusal::with(

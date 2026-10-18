@@ -255,6 +255,19 @@ impl Setting for Option<Reference> {
 }
 
 /// 密钥的列表（施工 8-6）：照写的先后，不是引用的跳过。
+/// 网址的列表（施工 G-3 上，`packages.mirrors`）：每一格同 [`Address`]，写字的是字，写 `{ env = … }` 的照核心的环境取。
+impl Setting for Vec<Address> {
+    fn read(value: Option<&Value>) -> Vec<Address> {
+        match value {
+            Some(Value::List(values)) => values
+                .iter()
+                .filter_map(|value| <Option<Address> as Setting>::read(Some(value)))
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+}
+
 impl Setting for Vec<Reference> {
     fn read(value: Option<&Value>) -> Vec<Reference> {
         match value {

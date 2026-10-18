@@ -27,6 +27,7 @@ pub(crate) async fn call(
         "package.files" => super::local::files(core, params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
+        "package.sync" => super::sync::method(core, params(request)?).await,
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,

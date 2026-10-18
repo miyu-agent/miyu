@@ -1994,6 +1994,7 @@ dependencies = [
  "miyu-store",
  "miyu-tool",
  "miyu-view",
+ "reqwest",
  "rusqlite",
  "serde",
  "serde_json",
