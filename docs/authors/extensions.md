@@ -135,7 +135,7 @@ if __name__ == "__main__":
 ```
 
 - `args` 已经照你的 `input_schema` 修正过。`by` 是谁让她做的，`owner` 是核心认不认这个人是主人本人：在群里做动作的工具，谁能用要你自己照它们挡。
-- `blocks` 是给模型看的内容：文字 `{"type": "text", "text"}`；图片先经 `blob.put` 传上去，再放 `{"type": "image", "blob", "media_type", "width", "height"}`。
+- `blocks` 是给模型看的内容：文字 `{"type": "text", "text"}`；图片先经 `blob.put` 传上去，再放 `{"type": "image", "blob", "media_type", "width", "height"}`。包里自己带的图用 `{"path": "<MIYU_PACKAGE_DIR>/files/cat.png"}` 传就行（数据目录里别处的文件不收）。
 - 失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算失败。
 - 想让她「发出去」一张图（表情包这类，画在正文里，聊天平台当图发）：回答里加 `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]`，至多 4 张。`sent` 不给 AI 看。
 - 想让头把结果画成卡片：回答里加 `detail`，照三种通用形状写一种：链接列表 `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`、表格 `{"kind": "table", "columns": [...], "rows": [[...]]}`、图片 `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`。`detail` 不给 AI 看；形状不对的核心丢掉这一格，运行日志里记一行 `tool detail dropped`。写法和上限见 [协议参考](../reference/extensions.md#toolcalltoolcancel)。

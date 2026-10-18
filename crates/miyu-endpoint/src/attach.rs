@@ -99,11 +99,12 @@ enum Source {
     Data(Vec<u8>, FileName),
 }
 
-/// 读、存要的几样：数据根、管理员、系统的家目录。
+/// 读、存要的几样：数据根、管理员、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
 struct Place {
     root: DataRoot,
     admin: AccountId,
     home: Option<PathBuf>,
+    own: Option<PathBuf>,
 }
 
 /// `blob.put`：读、认、存，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。`package` 是存的扩展的包
@@ -125,7 +126,8 @@ pub(crate) async fn put(
         ),
         _ => return Err(Refusal::BAD_PARAMS),
     };
-    let place = place(core);
+    let mut place = place(core);
+    place.own = package.and_then(|package| own_folder(core, package));
     let (blob, reply) = blocking(move || put_blocking(&place, source, given)).await?;
     if let Some(package) = package {
         core.blob_grants.grant(package, &blob);
@@ -414,8 +416,16 @@ pub(crate) fn reply(blob: &ContentHash, name: &FileName, found: Kind) -> Value {
     }
 }
 
-/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（管理员的工作区以外）的不给，路上一层链接都
-/// 不跟地打开，最多读到上限多一个字节。
+/// 扩展 `package` 自己的包目录的真实位置（施工 W-6 四补，终端报的）：它带的图在那里，扩展本来就读得到，经 `path` 存它不用
+/// 再绕 base64。找不到这个包、换不成真实位置的没有。
+fn own_folder(core: &Core, package: &str) -> Option<PathBuf> {
+    let packages = core.packages();
+    let found = packages.iter().find(|found| found.id == package)?;
+    std::fs::canonicalize(found.files_dir()).ok()
+}
+
+/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（管理员的工作区以外）的不给，调的扩展自己的包目录
+/// 里的除外（真实位置在里面才算：包里的链接指到外面的照旧不给）；路上一层链接都不跟地打开，最多读到上限多一个字节。
 fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
     let real = resolve(Path::new("/"), place.home.as_deref(), path)
         .map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;
@@ -424,7 +434,8 @@ fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
         place.root.path().to_path_buf(),
         place.home.as_deref(),
     );
-    if Boundary::new(&places).zone(&real) == Zone::Forbidden {
+    let own = place.own.as_ref().is_some_and(|own| real.starts_with(own));
+    if !own && Boundary::new(&places).zone(&real) == Zone::Forbidden {
         return Err(Refusal::ATTACHMENT_IN_DATA_ROOT);
     }
     let file = open_file(&real).map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;
@@ -459,6 +470,7 @@ fn place(core: &Core) -> Place {
         root: core.root.clone(),
         admin: core.admin.clone(),
         home: core.home.clone(),
+        own: None,
     }
 }
 

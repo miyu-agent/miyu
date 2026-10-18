@@ -135,7 +135,7 @@ Response:
 ```
 
 - `args` are already corrected against your `input_schema`. `by` is who asked her; `owner` is whether the core recognizes that person as the owner. For tools that act in groups, check them yourself to decide who may use them.
-- `blocks` is content for the model: text `{"type": "text", "text"}`; for images, upload with `blob.put` first, then `{"type": "image", "blob", "media_type", "width", "height"}`.
+- `blocks` is content for the model: text `{"type": "text", "text"}`; for images, upload with `blob.put` first, then `{"type": "image", "blob", "media_type", "width", "height"}`. Images your package ships can be uploaded with `{"path": "<MIYU_PACKAGE_DIR>/files/cat.png"}` (other files in the data directory are refused).
 - On failure, still return a result with `error: true` and the reason written for the model; a JSON-RPC error also counts as failure.
 - To have her "send" an image (stickers and the like, drawn in the reply, sent as an image on chat platforms): add `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]` to the result, at most 4. The AI doesn't see `sent`.
 - To have heads draw the result as a card, add `detail` in one of the three common shapes: a link list `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`, a table `{"kind": "table", "columns": [...], "rows": [[...]]}`, or images `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`. The AI doesn't see `detail`; if the shape is wrong the core drops the field and logs `tool detail dropped`. Fields and limits are in the [protocol reference](../reference/extensions.en.md#toolcalltoolcancel).

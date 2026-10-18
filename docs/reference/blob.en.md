@@ -53,7 +53,7 @@ Give exactly one of `path` and `data`. `data` sits on one line and a line is at 
 | `data.reason` | When |
 |---|---|
 | `bad_params` (`-32602`) | Both or neither of `path` and `data`; a relative `path`; `data` not base64; `data` without `name`; a malformed `name` or `media_type` |
-| `attachment_in_data_root` | `path` is inside Miyu's data directory |
+| `attachment_in_data_root` | `path` is inside Miyu's data directory; an extension's own package folder doesn't count (by real path, so a link pointing outside is still refused) |
 | `attachment_unreadable` | `path` doesn't exist, isn't a regular file, or can't be read |
 | `attachment_too_big` | Over 20 MiB; an image over 5 MiB or 8000 pixels on a side |
 | `internal_error` (`-32603`) | The core couldn't store it |

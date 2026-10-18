@@ -53,7 +53,7 @@ blob 是核心存的一份文件内容，用内容哈希（`sha256:` 加 64 位�
 | `data.reason` | 什么时候 |
 |---|---|
 | `bad_params`（`-32602`） | `path`、`data` 两个都写或都不写；`path` 是相对路径；`data` 不是 base64；传 `data` 没写 `name`；`name`、`media_type` 写法不对 |
-| `attachment_in_data_root` | `path` 落在 Miyu 的数据目录里 |
+| `attachment_in_data_root` | `path` 落在 Miyu 的数据目录里；扩展自己的包目录里的不算（照真实位置，链接指到外面的照旧拒） |
 | `attachment_unreadable` | `path` 不存在、不是普通文件、没有权限读 |
 | `attachment_too_big` | 超过 20 MiB；图片超过 5 MiB 或某一边超过 8000 像素 |
 | `internal_error`（`-32603`） | 核心存不下来 |
