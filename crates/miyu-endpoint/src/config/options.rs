@@ -20,3 +20,33 @@ pub(super) fn note(key: &str, option: &str, local: Option<&str>) -> Option<Strin
 pub(super) fn usable(key: &str, option: &str, local: bool) -> bool {
     !matches!((key, option), (EMBEDDING, EMBED_LOCAL)) || local
 }
+
+/// 选项后面暗字写的：核心查得出的（[`note`]），没有的照内置包说的这一刻的状态（[`state`]）。
+pub(super) fn noted(
+    core: &crate::Core,
+    words: &miyu_store::human::Human,
+    key: &str,
+    option: &str,
+    local: Option<&str>,
+) -> Option<String> {
+    note(key, option, local).or_else(|| state(core, words, key, option))
+}
+
+/// 选项后面暗字写的另一种（施工 N-2 下）：内置包说的这一刻的状态（`Builtins::option_state`），照连接的语言 `words`、核心这台
+/// 机器的时区拼成一句，例如搜索来源的「冷却到 15:30」。没装内置包端口的核心（测试里造的）、没有要说的没有。
+fn state(
+    core: &crate::Core,
+    words: &miyu_store::human::Human,
+    key: &str,
+    option: &str,
+) -> Option<String> {
+    let crate::builtins::OptionState::CoolingUntil(until) =
+        core.builtins.as_ref()?.option_state(key, option)?;
+    let ms = until
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_millis();
+    let at = miyu_kernel::time::Timestamp::from_unix_millis(i64::try_from(ms).ok()?)?;
+    let clock = at.local_clock(crate::sessions::offset());
+    words.say(&miyu_kernel::event::Said::new("core/config/option-cooling").with("time", clock))
+}

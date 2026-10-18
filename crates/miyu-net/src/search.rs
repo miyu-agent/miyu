@@ -206,6 +206,24 @@ impl Search {
         Err(last.map_or(Missed::Cooling, Missed::Failed))
     }
 
+    /// 这一刻冷却着的几家：编号和冷却到什么时候（施工 N-2 下，设置页的下拉里写「冷却到几点」）。还没搜过的（规矩还没读）
+    /// 一家都没有，不为这个去读规矩。
+    pub fn cooling(&self) -> Vec<(String, SystemTime)> {
+        let Some(Ok(ready)) = self.ready.get() else {
+            return Vec::new();
+        };
+        let (now, wall) = (Instant::now(), SystemTime::now());
+        ready
+            .rules
+            .sources
+            .keys()
+            .filter_map(|id| {
+                let until = ready.cooling(id)?;
+                Some((id.clone(), wall + until.saturating_duration_since(now)))
+            })
+            .collect()
+    }
+
     fn ready(&self) -> Option<&Ready> {
         self.ready
             .get_or_init(|| match rules::load(&self.resources) {

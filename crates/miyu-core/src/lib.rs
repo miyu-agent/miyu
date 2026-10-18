@@ -20,6 +20,7 @@
 //! 会话有计划地停下再退出。起不来的，把原因写成那一行（`error …`）交给头。
 
 pub mod embed;
+mod kit;
 pub mod memlog;
 pub mod models;
 pub mod packages;
@@ -29,6 +30,7 @@ pub mod settings;
 mod settle;
 mod trash;
 
+pub use kit::Kit;
 pub use serve::{Stopped, serve};
 
 use std::io::{self, Write};
@@ -198,8 +200,17 @@ const ROLEPLAY: &str = "roleplay";
 ///
 /// 哪一份字读不出来、写法不对；登记时查不过（重名、名字或参数格式不合写法）。
 pub fn tools(resources: &ResourceRoot, found: &[Found]) -> Result<Catalog, String> {
+    tools_in(resources, found, &Kit::new(resources))
+}
+
+/// 同 [`tools`]，有家底的内置包照 `kit`（施工 N-2 下）：核心起来时造一份，和端口共用。
+///
+/// # Errors
+///
+/// 同 [`tools`]。
+pub fn tools_in(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Catalog, String> {
     // 照软件包登记（施工 P-2 中）：预设照包开关。
-    Catalog::in_packages(groups(resources, found)?).map_err(|error| error.to_string())
+    Catalog::in_packages(groups(resources, found, kit)?).map_err(|error| error.to_string())
 }
 
 /// 一个编进来的内置包的工具：包的编号和它的几件。
@@ -210,7 +221,7 @@ type Builtin = (&'static str, Vec<Arc<dyn miyu_tool::Tool>>);
 /// # Errors
 ///
 /// 同 [`tools`]：哪一份字读不出来、写法不对。
-fn groups(resources: &ResourceRoot, found: &[Found]) -> Result<Vec<Builtin>, String> {
+fn groups(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Vec<Builtin>, String> {
     let installed = |id| miyu_endpoint::packages::is_installed(found, id);
     let mut groups = Vec::new();
     if installed(miyu_tool::BASESYSTEM) {
@@ -234,12 +245,16 @@ fn groups(resources: &ResourceRoot, found: &[Found]) -> Result<Vec<Builtin>, Str
             miyu_knowledge::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_knowledge::PACKAGE, knowledge));
     }
-    // 联网这个软件包的工具（施工 N-1，设计 36）：`web_fetch`，只读，哪种会话都有。
+    // 联网这个软件包的工具（施工 N-1、N-2，设计 36）：`web_fetch`、`web_search`，只读，哪种会话都有；家底照 `kit`。
     #[cfg(feature = "net")]
     if installed(miyu_net::PACKAGE) {
-        let net = miyu_net::tools(resources.path()).map_err(|error| error.to_string())?;
+        let net = kit
+            .net_tools(resources)
+            .map_err(|error| error.to_string())?;
         groups.push((miyu_net::PACKAGE, net));
     }
+    #[cfg(not(feature = "net"))]
+    let _ = kit;
     Ok(groups)
 }
 
@@ -249,9 +264,19 @@ pub fn builtin_tools(
     resources: &ResourceRoot,
     env: &Env,
 ) -> Arc<dyn miyu_endpoint::builtins::Builtins> {
+    builtin_tools_in(resources, env, Kit::new(resources))
+}
+
+/// 同 [`builtin_tools`]，有家底的内置包照 `kit`（施工 N-2 下）：和起来时登记工具的那一份共用。
+pub fn builtin_tools_in(
+    resources: &ResourceRoot,
+    env: &Env,
+    kit: Kit,
+) -> Arc<dyn miyu_endpoint::builtins::Builtins> {
     Arc::new(BuiltinTools {
         resources: resources.clone(),
         env: env.clone(),
+        kit,
     })
 }
 
@@ -259,11 +284,12 @@ pub fn builtin_tools(
 struct BuiltinTools {
     resources: ResourceRoot,
     env: Env,
+    kit: Kit,
 }
 
 impl miyu_endpoint::builtins::Builtins for BuiltinTools {
     fn tools(&self, found: &[Found]) -> Result<Vec<miyu_endpoint::builtins::Group>, String> {
-        Ok(groups(&self.resources, found)?
+        Ok(groups(&self.resources, found, &self.kit)?
             .into_iter()
             .map(|(id, tools)| (id.to_string(), tools))
             .collect())
@@ -287,6 +313,15 @@ impl miyu_endpoint::builtins::Builtins for BuiltinTools {
     ) -> Result<Arc<dyn miyu_tool::Tool>, String> {
         miyu_basesystem::script(self.resources.path(), head, file)
             .map_err(|error| error.to_string())
+    }
+
+    /// 搜索来源冷却着的那一家（施工 N-2 下）：照这个核心的那一份家底。
+    fn option_state(
+        &self,
+        key: &str,
+        option: &str,
+    ) -> Option<miyu_endpoint::builtins::OptionState> {
+        self.kit.option_state(key, option)
     }
 }
 
@@ -347,7 +382,8 @@ async fn run(
     let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.state()));
     let sandbox_cache = sandbox::cache(&env, std::env::var_os("CARGO_HOME"));
     let embedder = embed::setup(&env, &live.found);
-    let tools = match tools(&resources, &live.found) {
+    let kit = Kit::new(&resources);
+    let tools = match tools_in(&resources, &live.found, &kit) {
         Ok(tools) => tools,
         Err(error) => return failed("tools", error),
     };
@@ -355,7 +391,7 @@ async fn run(
     let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
     let queries = packages::register(&resources, &root, &admin());
-    let builtins = builtin_tools(&resources, &env);
+    let builtins = builtin_tools_in(&resources, &env, kit);
     packages::clear_uploads(&root, &admin());
     let mut core = Core::new(
         root,

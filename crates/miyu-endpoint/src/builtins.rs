@@ -38,4 +38,17 @@ pub trait Builtins: Send + Sync {
         head: &miyu_policy::script::ScriptHead,
         file: std::path::PathBuf,
     ) -> Result<Arc<dyn Tool>, String>;
+
+    /// 配置项 `key` 的选项 `option` 这一刻的状态（施工 N-2 下）：设置页的下拉里那个选项后面暗字写它，例如搜索来源的「冷却到
+    /// 15:30」。没有要说的是空的；不写的内置包都没有。
+    fn option_state(&self, _key: &str, _option: &str) -> Option<OptionState> {
+        None
+    }
+}
+
+/// 一个选项这一刻的状态（施工 N-2 下）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OptionState {
+    /// 被限额，冷却到这一刻。
+    CoolingUntil(std::time::SystemTime),
 }

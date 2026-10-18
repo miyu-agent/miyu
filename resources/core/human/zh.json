@@ -550,6 +550,7 @@
     "config/layer/system": "系统配置",
     "config/layer/personal": "个人设置",
     "config/applies/now": "立即生效",
+    "config/option-cooling": "冷却到 {time}",
     "config/or": "{rest}或{last}",
     "config/or-values": "{rest} 或 {last}",
     "config/list": "{rest}、{next}",

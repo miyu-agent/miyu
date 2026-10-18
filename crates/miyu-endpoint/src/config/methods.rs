@@ -13,7 +13,7 @@ use miyu_config::{Item, Kind, Layer, Words};
 use miyu_store::human::{FALLBACK, Human};
 
 use super::file::File;
-use super::options::{note, usable};
+use super::options::{noted, usable};
 use super::{Config, Project, TARGET, wire};
 use crate::Core;
 use crate::hello::Peer;
@@ -96,7 +96,7 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         let said = words
             .item(item.key)
             .or_else(|| english.as_ref().and_then(|english| english.item(item.key)));
-        let notes = |option: &str| note(item.key, option, local.as_deref());
+        let notes = |option: &str| noted(core, &words, item.key, option, local.as_deref());
         let usable = |option: &str| usable(item.key, option, local.is_some());
         listed.push(schema_item(item, said, &notes, &usable));
         let page = item.ui.page;

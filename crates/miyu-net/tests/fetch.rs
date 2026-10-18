@@ -18,7 +18,8 @@ use crate::support::{PNG, Reply, Site, local, resources};
 fn tool(testing: Testing) -> Arc<dyn Tool> {
     let pages = Pages::new(&resources()).testing(testing);
     let search = miyu_net::Search::new(&resources());
-    let tools = miyu_net::tools_with(&resources(), pages, search).expect("字读得出");
+    let tools =
+        miyu_net::tools_with(&resources(), Arc::new(pages), Arc::new(search)).expect("字读得出");
     tools
         .into_iter()
         .find(|tool| tool.spec().name == WEB_FETCH)

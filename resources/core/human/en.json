@@ -551,6 +551,7 @@
     "config/layer/system": "the system config",
     "config/layer/personal": "personal settings",
     "config/applies/now": "Takes effect immediately",
+    "config/option-cooling": "Resting until {time}",
     "config/or": "{rest} or {last}",
     "config/or-values": "{rest} or {last}",
     "config/list": "{rest}, {next}",

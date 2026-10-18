@@ -48,11 +48,15 @@ fn tool(site: &Site) -> Arc<dyn Tool> {
         .map(|id| (id.to_string(), site.url(&format!("/{id}"))))
         .to_vec();
     let search = Search::new(&resources()).testing(urls);
-    miyu_net::tools_with(&resources(), Pages::new(&resources()), search)
-        .expect("字读得出")
-        .into_iter()
-        .find(|tool| tool.spec().name == WEB_SEARCH)
-        .expect("有 web_search")
+    miyu_net::tools_with(
+        &resources(),
+        Arc::new(Pages::new(&resources())),
+        Arc::new(search),
+    )
+    .expect("字读得出")
+    .into_iter()
+    .find(|tool| tool.spec().name == WEB_SEARCH)
+    .expect("有 web_search")
 }
 
 /// 调一次，等最多一分钟。
@@ -316,11 +320,15 @@ async fn a_success_clears_the_strikes_of_a_source() {
         .testing(urls)
         .only(&["exa", "parallel"])
         .cooldown(vec![Duration::ZERO, Duration::from_secs(3600)]);
-    let tool = miyu_net::tools_with(&resources(), Pages::new(&resources()), searcher)
-        .expect("字读得出")
-        .into_iter()
-        .find(|tool| tool.spec().name == WEB_SEARCH)
-        .expect("有 web_search");
+    let tool = miyu_net::tools_with(
+        &resources(),
+        Arc::new(Pages::new(&resources())),
+        Arc::new(searcher),
+    )
+    .expect("字读得出")
+    .into_iter()
+    .find(|tool| tool.spec().name == WEB_SEARCH)
+    .expect("有 web_search");
 
     let mut sources = Vec::new();
     for _ in 0..4 {
@@ -380,6 +388,46 @@ async fn a_picked_source_is_asked_first_and_the_shipped_order_backs_it_up() {
     )
     .await;
     assert_eq!(said(&auto).1.as_deref(), Some("Exa"), "自动照出厂的顺序");
+}
+
+/// 冷却着的几家交得出来（施工 N-2 下）：设置页的下拉里写「冷却到几点」照它。还没搜过的一家都没有。
+#[tokio::test]
+async fn the_cooling_sources_and_their_times_are_told() {
+    let site = Site::start(vec![
+        ("/exa".to_string(), Reply::status(429)),
+        ("/parallel".to_string(), mcp("{\"results\": []}")),
+    ])
+    .await;
+    let urls = ["exa", "parallel"]
+        .map(|id| (id.to_string(), site.url(&format!("/{id}"))))
+        .to_vec();
+    let search = Arc::new(
+        Search::new(&resources())
+            .testing(urls)
+            .only(&["exa", "parallel"]),
+    );
+    assert!(search.cooling().is_empty(), "还没搜过");
+    let tool = miyu_net::tools_with(
+        &resources(),
+        Arc::new(Pages::new(&resources())),
+        Arc::clone(&search),
+    )
+    .expect("字读得出")
+    .into_iter()
+    .find(|tool| tool.spec().name == WEB_SEARCH)
+    .expect("有 web_search");
+
+    let before = std::time::SystemTime::now();
+    search_with(&tool, json!({"query": "rust"}), None).await;
+
+    let cooling = search.cooling();
+    assert_eq!(cooling.len(), 1, "{cooling:?}");
+    assert_eq!(cooling[0].0, "exa");
+    let wait = cooling[0].1.duration_since(before).expect("在以后");
+    assert!(
+        wait >= Duration::from_secs(29 * 60) && wait <= Duration::from_secs(31 * 60),
+        "第一级台阶 30 分钟：{wait:?}"
+    );
 }
 
 #[tokio::test]

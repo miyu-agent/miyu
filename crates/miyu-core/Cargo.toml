@@ -75,6 +75,8 @@ miyu-session = { path = "../miyu-session", features = ["testkit"] }
 # 测试里的假工具：把假的后台命令交给任务表（施工 7-3）。
 miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
 tokio = { version = "1", features = ["io-util", "macros", "rt", "time"] }
+# 测试里把搜索来源指到本机的假服务器（施工 N-2 下，`kit.rs` 的测试）。
+miyu-net = { path = "../miyu-net", features = ["testkit"] }
 
 [lints]
 workspace = true

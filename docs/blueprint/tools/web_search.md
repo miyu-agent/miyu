@@ -67,7 +67,7 @@ Waits on multiple concurrent branches, ……
    - MCP：第一次握手（`initialize`、`notifications/initialized`），对方给了 `Mcp-Session-Id` 的记下、以后带上，会话过期（404）的重新握手一次。回应可以是 JSON 也可以是 SSE，取最后一条带 `result`、`error` 的；`isError`、JSON-RPC 出错的当这一家出错。
 5. 收拾：没有网址的、同一个网址第二次出现的去掉；照 `allowed_domains`、`blocked_domains` 筛主机名；至多 `results` 条；摘录截到 `excerpt_chars`（1200）个字，截了的接一个省略号；日期只留前十个字。
 6. 请求固定的几家公开地址，不过地址闸；代理照环境变量，和抓网页同一套（`net.md`「怎么走」第 5 条）。
-7. 冷却、MCP 的会话记在这一份 `Search` 里：核心重启、装卸软件包（核心重新要内置工具）以后从头算。
+7. 冷却、MCP 的会话记在这一份 `Search` 里，一个核心一份（`miyu-core` 的 `Kit`，施工 N-2 下）：起来时登记的工具、装卸软件包以后核心重新要的工具都用它，核心重启才从头算。设置页「搜索来源」的下拉里，冷却着的那一家后面暗字写「冷却到 15:30」（`config.schema` 的 `note`，照连接的语言、核心这台机器的时区，`config.md`「协议」）。
 
 ### 守着它的
 
@@ -92,4 +92,4 @@ Waits on multiple concurrent branches, ……
 
 ### 还没有的
 
-- 要 key 的几家、网页抓取兜底（N-3）；设置页「搜索来源」下拉的选项后面写冷却到几点（N-2 下的后半）；扩展登记来源（N-5）。
+- 要 key 的几家、网页抓取兜底（N-3）；扩展登记来源（N-5）。

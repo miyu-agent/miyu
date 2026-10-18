@@ -56,22 +56,27 @@ use miyu_tool::load::LoadError;
 ///
 /// 哪一份字读不出来、写法不对。
 pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
-    tools_with(resources, Pages::new(resources), Search::new(resources))
+    tools_with(
+        resources,
+        Arc::new(Pages::new(resources)),
+        Arc::new(Search::new(resources)),
+    )
 }
 
-/// 同 [`tools`]，抓网页照给的 `pages`、搜网页照给的 `search`（测试照 `Pages::testing`、`Search::testing` 打开口子）。
+/// 同 [`tools`]，抓网页照给的 `pages`、搜网页照给的 `search`：核心起来时造一份，装卸软件包重新要工具时照旧用它，冷却、记着
+/// 的页不从头算（施工 N-2 下）；测试照 `Pages::testing`、`Search::testing` 打开口子。
 ///
 /// # Errors
 ///
 /// 同 [`tools`]。
 pub fn tools_with(
     resources: &Path,
-    pages: Pages,
-    search: Search,
+    pages: Arc<Pages>,
+    search: Arc<Search>,
 ) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     Ok(vec![
-        Arc::new(web_fetch::WebFetch::load(resources, Arc::new(pages))?),
-        Arc::new(web_search::WebSearch::load(resources, Arc::new(search))?),
+        Arc::new(web_fetch::WebFetch::load(resources, pages)?),
+        Arc::new(web_search::WebSearch::load(resources, search)?),
     ])
 }
 
