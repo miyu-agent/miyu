@@ -91,3 +91,23 @@ fn a_block_is_exact_and_stays_within_the_limit() {
     );
     assert!(render(&texts(), &[], east9).is_none());
 }
+
+/// 出厂的两张表各是各的（施工 R-14）：她主动搜的下限照 `core/memory/search.toml`，不是联想的门槛那一张。
+#[test]
+fn the_shipped_search_floors_come_from_their_own_table() {
+    let resources = miyu_store::resources::ResourceRoot::at(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"),
+    );
+    let texts = RecallTexts::load(&resources).expect("出厂的读得出来");
+    assert_eq!(
+        texts.keyword_floor("local:granite-embedding-97m-multilingual-r2"),
+        Some(0.80)
+    );
+    assert_eq!(texts.keyword_floor("local:bge-small-zh-v1.5"), None);
+    let empty = RecallTexts::with(resources.path(), Thresholds::default()).expect("读得出来");
+    assert_eq!(
+        empty.keyword_floor("local:granite-embedding-97m-multilingual-r2"),
+        None,
+        "with 造的是空表"
+    );
+}

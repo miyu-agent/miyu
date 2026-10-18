@@ -737,6 +737,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-5h"><span class="n">R-5</span>本机模型冷启动（五补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-5i"><span class="n">R-5</span>字节级 BPE 切词（六补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-5j"><span class="n">R-5</span>内置语义模型换成 granite（七补）<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-14"><span class="n">R-14</span>记忆搜的关键词下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -20421,6 +20422,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-5-换成granite（七补）.md</code>；蓝图 <code>recall.md</code> 第四条，<code>memory/eval.md</code>「换模型」，<code>knowledge/eval.md</code>「换成 granite」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-14" aria-labelledby="h-sR14">
+  <div class="sheet-head"><h2 id="h-sR14"><span class="no">R-14</span>记忆搜的关键词下限</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她搜记忆时，关键词碰上常见的两个字、意思却不沾边的那几条，不再挤掉照意思找对的那一条。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory · miyu-store · recall</span><span class="dir-note">R-14</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只有关键词找到的也要和问句够像，下限照模型</li>
+              <li>还没补上向量的照留，表里没有的模型照旧</li>
+              <li>量尺写出每句的关键词前 20 和相似度，仓库外模拟</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">granite 0.80</span><span class="rl">core/memory/search.toml</span></div>
+          <div class="tile new"><span class="nm">hit@1 45% → 62%</span><span class="rl">换了说法 8% → 42%</span></div>
+          <div class="tile"><span class="nm">联想照纯向量</span><span class="rl">知识库不加</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-14</dd></div>
+        <div><dt>名称</dt><dd>记忆搜的关键词下限</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>变异、真模型测评集、真数据模拟 · 自己验收，通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>新测试 4 条；7 个手写变异全被逮住；真模型测评集 hit@1 62%、recall@5 88%、MRR 0.73（都过了 bge）；真数据找回@5 34% → 39%</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-14-记忆搜的关键词下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款、<code>memory.md</code>「工具」、<code>memory/eval.md</code>「换模型」。</li>
       </ul>
     </div>
   </div>

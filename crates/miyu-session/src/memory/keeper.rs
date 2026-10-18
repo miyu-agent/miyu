@@ -227,7 +227,8 @@ impl Keeper {
     }
 
     /// 搜记下的，最多 `limit` 条，最相关的在前：只给现在算数的（`forgotten` 时作废的也给）、出处活着的、听众合的。照关键词找；
-    /// 有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合（`miyu_recall::fuse`）。
+    /// 有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合（`miyu_recall::fuse`）。模型在关键词下限表里的（施工 R-14，
+    /// `core/memory/search.toml`），只有关键词找到的那几条和问句不够像的不要，还没补上向量的照留。
     ///
     /// # Errors
     ///
@@ -242,7 +243,23 @@ impl Keeper {
         let log = self.log().map_err(failed)?;
         // 多要几倍：改掉的、作废的、出处死了的、听众不合的挑掉以后还够。
         let wide = limit.saturating_mul(4);
-        let ids = log.search(query, wide).map_err(|error| error.to_string())?;
+        let mut ids = log.search(query, wide).map_err(|error| error.to_string())?;
+        let floor = near.and_then(|near| {
+            let floor = self.memory.recall()?.keyword_floor(&near.model)?;
+            Some((near, floor))
+        });
+        if let Some((near, floor)) = floor {
+            let keys: Vec<String> = ids.iter().map(ToString::to_string).collect();
+            let similar = log
+                .index()
+                .similar_to(&near.model, &near.vector, &keys)
+                .map_err(|error| error.to_string())?;
+            ids.retain(|id| {
+                similar
+                    .get(&id.to_string())
+                    .is_none_or(|similar| *similar >= floor)
+            });
+        }
         let close = match near {
             Some(near) => log
                 .index()

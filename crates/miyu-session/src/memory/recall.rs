@@ -40,21 +40,22 @@ const SAID: usize = 1000;
 const WIDE: usize = 32;
 
 /// 联想要的几样（`resources/software/memory/recall/` 的外壳，登记簿；一行照 `memory_search/memory.txt`；门槛表
-/// `core/memory/recall.toml`，数据）。
+/// `core/memory/recall.toml`，数据），连同她主动搜时的关键词下限表（`core/memory/search.toml`，施工 R-14）。
 #[derive(Debug, Clone)]
 pub struct RecallTexts {
     open: Template,
     close: Template,
     line: Template,
     thresholds: Thresholds,
+    search: Thresholds,
 }
 
 impl RecallTexts {
-    /// 从资源目录 `resources` 读：外壳、一行、门槛表。
+    /// 从资源目录 `resources` 读：外壳、一行、门槛表、关键词下限表。
     ///
     /// # Errors
     ///
-    /// 字读不出来、不是合写法的模板、要了别的字段；门槛表读不出来、写错了：交回为什么。
+    /// 字读不出来、不是合写法的模板、要了别的字段；两张表读不出来、写错了：交回为什么。
     pub fn load(resources: &ResourceRoot) -> Result<RecallTexts, String> {
         let thresholds = resources
             .memory_recall()
@@ -62,10 +63,29 @@ impl RecallTexts {
             .and_then(|text| {
                 Thresholds::parse(&text).map_err(|why| format!("core/memory/recall.toml：{why}"))
             })?;
-        RecallTexts::with(resources.path(), thresholds).map_err(|error| error.to_string())
+        let search = resources
+            .memory_search()
+            .map_err(|error| error.to_string())
+            .and_then(|text| {
+                Thresholds::parse(&text).map_err(|why| format!("core/memory/search.toml：{why}"))
+            })?;
+        Ok(RecallTexts::with(resources.path(), thresholds)
+            .map_err(|error| error.to_string())?
+            .searching(search))
     }
 
-    /// 字照资源目录 `resources` 读，门槛照 `thresholds`（测试换成自己的模型）。
+    /// 她主动搜时的关键词下限换成 `search`（测试换成自己的模型；[`RecallTexts::with`] 造的是空表：不设）。
+    #[must_use]
+    pub fn searching(self, search: Thresholds) -> RecallTexts {
+        RecallTexts { search, ..self }
+    }
+
+    /// 模型 `model` 的关键词下限：表里没有的不设。
+    pub(crate) fn keyword_floor(&self, model: &str) -> Option<f32> {
+        self.search.of(model)
+    }
+
+    /// 字照资源目录 `resources` 读，门槛照 `thresholds`（测试换成自己的模型）；关键词下限是空表。
     ///
     /// # Errors
     ///
@@ -82,6 +102,7 @@ impl RecallTexts {
                 &["id", "class", "date", "text"],
             )?,
             thresholds,
+            search: Thresholds::default(),
         })
     }
 }
