@@ -115,6 +115,7 @@ fn the_registered_list_is_well_formed() {
             "memory.organizer",
             "memory.merge_every",
             "memory.merge_sessions",
+            "net.search.source",
             "log.level"
         ],
         "照登记的先后"

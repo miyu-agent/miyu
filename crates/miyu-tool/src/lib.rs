@@ -36,6 +36,7 @@ pub mod picture;
 mod questions;
 mod run;
 mod sessions;
+mod settings;
 mod shelf;
 mod stop;
 #[cfg(feature = "testkit")]
@@ -73,6 +74,7 @@ pub use run::{
     Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, ShownFile, Target,
 };
 pub use sessions::{Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session};
+pub use settings::SettingsPort;
 pub use shelf::{Edition, Shelf};
 pub use stop::Stop;
 pub use todos::TODOWRITE;

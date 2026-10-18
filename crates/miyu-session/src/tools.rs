@@ -320,6 +320,8 @@ impl Tools {
                 asked,
                 preset: self.preset.clone(),
             }),
+            // 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项，例如搜索来源。
+            settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
         };
         let call_text = call_id.to_string();
         let Some(tool) = self.catalog.get(&name) else {

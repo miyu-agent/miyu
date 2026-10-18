@@ -19,6 +19,7 @@ mod proxy;
 mod remember;
 mod rules;
 mod search;
+mod settings;
 mod sites;
 #[cfg(any(test, feature = "testkit"))]
 pub mod testkit;
@@ -41,6 +42,7 @@ use rules::{Clip, Sites};
 
 pub use document::{Miss, Pages, Read};
 pub use search::{Found, Hit, Missed, Query, Search};
+pub use settings::{AUTO, SearchSettings};
 pub use web_fetch::{PACKAGE, WEB_FETCH};
 pub use web_search::WEB_SEARCH;
 

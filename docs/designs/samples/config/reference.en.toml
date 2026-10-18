@@ -95,6 +95,11 @@ base = "10s"
 # Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
 max = "5m"
 
+[net.search]
+# Search source: Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms.
+# Allowed: auto, exa, parallel, firecrawl, anysearch or you. Only in the system config or personal settings. Takes effect next turn.
+source = "auto"
+
 [permission]
 # Permission level for new sessions: Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.
 # Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.

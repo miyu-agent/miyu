@@ -48,6 +48,7 @@ pub(crate) async fn fetch(tool: &Arc<dyn Tool>, args: serde_json::Value) -> Done
         goals: None,
         packages: None,
         ids: None,
+        settings: None,
     };
     tokio::time::timeout(
         Duration::from_secs(60),

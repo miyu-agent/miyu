@@ -31,6 +31,8 @@ htmd = "0.5.6"
 markup5ever_rcdom = "0.38"
 # 抓网页的工具（施工 N-1）：工具的接口、读资源目录里的说明。
 miyu-tool = { path = "../miyu-tool" }
+# 「搜索来源」的配置项（施工 N-2 下）：`settings!` 声明，工具照这一轮的最终值读。
+miyu-config = { path = "../miyu-config" }
 # 抓到的网页照字符集解成字（施工 N-1）：中文的老站常是 GBK。reqwest 自己也带着它，本来就在依赖图里。(Apache-2.0 OR MIT) AND BSD-3-Clause。
 encoding_rs = "0.8"
 # 读 link_preview.json。
@@ -47,6 +49,8 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 testkit = []
 
 [dev-dependencies]
+# 测试里造一份「设置里挑了哪一家」的配置（施工 N-2 下）。
+miyu-config = { path = "../miyu-config" }
 # 自己的集成测试用上测试的口子。
 miyu-net = { path = ".", features = ["testkit"] }
 # 测试里本机的假服务器、假代理。

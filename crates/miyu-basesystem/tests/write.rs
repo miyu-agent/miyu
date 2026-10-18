@@ -79,6 +79,7 @@ fn write_comes_from_the_resources_and_names_what_it_writes() {
         packages: None,
         goals: None,
         ids: None,
+        settings: None,
     });
     assert_eq!(targets.len(), 1);
     assert_eq!(targets[0].path, "src/a.rs");

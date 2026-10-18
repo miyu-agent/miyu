@@ -76,6 +76,8 @@ pub struct Call {
     pub goals: Option<Arc<dyn GoalPort>>,
     /// 这次调用是哪个会话的哪一次（施工 O-2 上）：提供者的工具照它发 `tool.call`。测试里的假调用、执行前的链报路径时没有。
     pub ids: Option<CallIds>,
+    /// 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项、取密钥。会话交；测试里的假调用、会话外面的调用没有，照默认值。
+    pub settings: Option<Arc<dyn crate::SettingsPort>>,
 }
 
 /// 一次调用是哪个会话的哪一次（施工 O-2 上），是谁要她做的（施工 O-2 下）。

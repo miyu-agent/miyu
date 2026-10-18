@@ -212,6 +212,7 @@ impl Guard {
             packages: None,
             goals: None,
             ids: None,
+            settings: None,
         };
         let asking = tool.asking(&call);
         if local_venue {

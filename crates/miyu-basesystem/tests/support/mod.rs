@@ -323,6 +323,7 @@ impl Site {
             packages: None,
             goals: None,
             ids: None,
+            settings: None,
         }
     }
 }

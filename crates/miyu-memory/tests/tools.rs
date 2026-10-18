@@ -99,6 +99,7 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
         packages: None,
         goals: None,
         ids: None,
+        settings: None,
     };
     tool.run(call, Progress::new(|_| {})).await
 }

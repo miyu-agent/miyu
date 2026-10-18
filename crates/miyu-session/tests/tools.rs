@@ -219,6 +219,10 @@ async fn a_call_runs_in_the_turns_directory_and_she_hears_the_result() {
     assert_eq!(calls.len(), 1);
     assert_eq!(calls[0].args, r#"{"x":1}"#);
     assert_eq!(calls[0].cwd, environment().cwd);
+    assert!(
+        calls[0].settings.is_some(),
+        "带着这一轮冻结的配置（施工 N-2 下）"
+    );
     let log = home.log(handle.id());
     let results = results(&log);
     assert_eq!(results.len(), 1);

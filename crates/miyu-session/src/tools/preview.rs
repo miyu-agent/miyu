@@ -92,6 +92,7 @@ impl Tools {
             packages: self.packages.clone(),
             goals: None,
             ids: None,
+            settings: None,
         };
         Some(tool.preview(call)?.await)
     }

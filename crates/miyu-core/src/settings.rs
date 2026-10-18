@@ -40,7 +40,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 21] = [
+const MODULES: [&[Item]; 22] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -61,12 +61,19 @@ const MODULES: [&[Item]; 21] = [
     AuthCooldown::ITEMS,
     CompactionSettings::ITEMS,
     MemorySettings::ITEMS,
+    NET,
     LogSettings::ITEMS,
 ];
 
+/// 联网这个内置包的几项（施工 N-2 下）：「搜索来源」。cargo 开关 `net` 关着的核心没有这个包，也没有这几项。
+#[cfg(feature = "net")]
+const NET: &[Item] = miyu_net::SearchSettings::ITEMS;
+#[cfg(not(feature = "net"))]
+const NET: &[Item] = &[];
+
 /// 核心替内置包声明的配置项（施工 F-4，设计 `30-插件框架.md` 第七节）：包的编号和它的几项。它们照样在 [`MODULES`] 里（包没装
 /// 的也照样认，写了不报不认识），包没装的设置页不画（[`Packaged::all`]）。
-const OWNED: [(&str, &[Item]); 1] = [(miyu_memory::PACKAGE, MemorySettings::ITEMS)];
+const OWNED: [(&str, &[Item]); 2] = [(miyu_memory::PACKAGE, MemorySettings::ITEMS), ("net", NET)];
 
 /// 生成的三份放在状态区的这个目录里：`state/config/`。
 const DIR: &str = "config";

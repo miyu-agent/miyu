@@ -175,6 +175,7 @@ pub fn call(args: &str) -> Call {
         packages: None,
         goals: None,
         ids: None,
+        settings: None,
     }
 }
 

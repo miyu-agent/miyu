@@ -263,6 +263,7 @@ miyu_config::settings! {
 | `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
+| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you` | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索来源，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网」那一组 |
 | `persona.default` | 名字（人格的编号） | 没有 | 系统、个人 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格） |
 | `preset.default` | 名字（预设的编号） | `full` | 系统、个人 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「预设」一组 |
 | `models.chat` | 引用 | 没有：`no_model` | 系统、个人 | 不能写 | `new_session` | 8-6 |
@@ -1059,6 +1060,11 @@ base = "10s"
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。立即生效。
 max = "5m"
 
+[net.search]
+# 搜索来源：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
+# 能写：auto、exa、parallel、firecrawl、anysearch 或 you。只能写在系统配置或个人设置里。下一轮生效。
+source = "auto"
+
 [permission]
 # 新会话的权限级别：新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。
 # 能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。
@@ -1415,6 +1421,30 @@ currency = "USD"
           "description": "主对话的模型看不了图时，替它看图的模型。写法同主对话的模型。能写：<供应商>/<模型> 或 @<池>。只能写在系统配置或个人设置里。下一轮生效。",
           "title": "看图的模型",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "net": {
+      "properties": {
+        "search": {
+          "properties": {
+            "source": {
+              "default": "auto",
+              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch 或 you。只能写在系统配置或个人设置里。下一轮生效。",
+              "enum": [
+                "auto",
+                "exa",
+                "parallel",
+                "firecrawl",
+                "anysearch",
+                "you"
+              ],
+              "title": "搜索来源",
+              "type": "string"
+            }
+          },
+          "type": "object"
         }
       },
       "type": "object"
@@ -1922,6 +1952,8 @@ currency = "USD"
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
 | `memory.merge_sessions` 名字（R-7 上） | 攒几次聊天再归纳 | Chats before consolidating | まとめる前の会話数 |
 | 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
+| `net.search.source` 名字（N-2 下） | 搜索来源 | Search source | 検索元 |
+| 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。 |
 | `pools.<id>.models` 名字（8-8） | 池的成员 | Pool members | プールのメンバー |
 | 说明 | 几个模型编成一组，每个写成 供应商/模型。 | A group of models, each written as provider/model. | いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。 |
 | `pools.<id>.strategy` 名字（8-8） | 池的分法 | Pool strategy | プールの分け方 |

@@ -53,7 +53,7 @@ Waits on multiple concurrent branches, ……
 
 1. 读参数：读不懂、`query` 是空的：参数不对。
 2. 第一次搜读 `search.json`，读不懂的记一条 `WARN web search not ready`，这个核心的生命周期里不再试，每次回 `not-ready`。
-3. 照 `order` 一家家试（出厂 Exa → Parallel → Firecrawl → AnySearch → You.com，设计 36 第二节第 2 条）：
+3. 照 `order` 一家家试（出厂 Exa → Parallel → Firecrawl → AnySearch → You.com，设计 36 第二节第 2 条）。设置里挑了一家的（`net.search.source`，施工 N-2 下，设计 36 第二节第 3 条），它排在最前、出厂顺序里不再问第二遍；`auto`、挑的不是出厂有的、调用没带这一轮配置的（测试里的假调用）照出厂的顺序。这一轮的配置照调用带来的 `settings`（`miyu_tool::SettingsPort`，会话 actor 回合开始冻结的那一份）读：
    - 冷却着的跳过。
    - 成了的（哪怕一条都没有）清零冷却，就用它，后面的不问。
    - 报限额的（HTTP 429；或者原话里有 rate limit、too many requests、quota、credit、usage limit、limit reached、HTTP 429）进冷却：台阶 30 分钟、1 小时、2 小时，最多 6 小时（`cooldown_minutes`），记 `WARN web search source limited source=… minutes=…`，换下一家。
@@ -80,6 +80,9 @@ Waits on multiple concurrent branches, ……
 | `crates/miyu-net/src/search/tests.rs` | 去重、筛域名（含子域名、写法不同）、截摘录、至多几条；`site:` 只写给认的几家；认限额的几种原话 |
 | `crates/miyu-net/tests/search.rs` | 本机假服务器扮五家：访问类别、参数；第一家成了不问后面的、写给她的样子、单数、给头的 `links`；429、SSE 里说限额的冷却，下一次跳过，500 的不冷却照样再试；成功一次清零（台阶换成 0 秒、1 小时，假服务器同一个地址先回 429 再回成功）；都不成照最后一家的原因说；都冷却着一家都不问；没搜到不算出错 |
 | `crates/miyu-net/tests/live.rs` 的 `every_keyless_source_answers_web_search`（`#[ignore]`，还要设 `MIYU_NET_LIVE=1`） | 真网络：五家各搜两条（中、英），都搜得到对口的结果 |
+| `crates/miyu-net/tests/search.rs` 的 `a_picked_source_is_asked_first_and_the_shipped_order_backs_it_up`（N-2 下） | 挑了的先问、成了不问别的；挑的用不了照出厂的顺序；`auto` 照出厂的顺序；都不成时挑的那一家只问一遍 |
+| `crates/miyu-net/src/settings/tests.rs`（N-2 下） | 下拉里的来源就是 `search.json` 里的那几家，`auto` 排第一 |
+| `crates/miyu-session/tests/tools.rs` 的 `a_call_runs_in_the_turns_directory_and_she_hears_the_result` | 派出去的调用带着这一轮冻结的配置 |
 | `crates/miyu-net/tests/budget.rs` | 两件工具的说明合计不超过 663 字节 |
 
 ### 出处
@@ -89,4 +92,4 @@ Waits on multiple concurrent branches, ……
 
 ### 还没有的
 
-- 要 key 的几家、网页抓取兜底（N-3）；配了来源的先用它、设置页「搜索来源」下拉、选项后面写冷却到几点（N-2 下）；扩展登记来源（N-5）。
+- 要 key 的几家、网页抓取兜底（N-3）；设置页「搜索来源」下拉的选项后面写冷却到几点（N-2 下的后半）；扩展登记来源（N-5）。

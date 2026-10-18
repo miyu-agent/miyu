@@ -128,6 +128,7 @@ fn bare(args: Value) -> Call {
         packages: None,
         goals: None,
         ids: None,
+        settings: None,
     }
 }
 

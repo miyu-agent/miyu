@@ -187,6 +187,30 @@
       },
       "type": "object"
     },
+    "net": {
+      "properties": {
+        "search": {
+          "properties": {
+            "source": {
+              "default": "auto",
+              "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Allowed: auto, exa, parallel, firecrawl, anysearch or you. Only in the system config or personal settings. Takes effect next turn.",
+              "enum": [
+                "auto",
+                "exa",
+                "parallel",
+                "firecrawl",
+                "anysearch",
+                "you"
+              ],
+              "title": "Search source",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {

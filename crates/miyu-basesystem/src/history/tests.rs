@@ -111,6 +111,7 @@ fn call(args: Value, log: Option<Log>, minutes: i32) -> Call {
         packages: None,
         goals: None,
         ids: None,
+        settings: None,
     }
 }
 

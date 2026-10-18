@@ -67,6 +67,17 @@ impl Turn {
     }
 }
 
+/// 工具读这一轮的配置（施工 N-2 下，`miyu_tool::SettingsPort`）：派出去的每一次调用都带着这一份。
+impl miyu_tool::SettingsPort for Turn {
+    fn values(&self) -> miyu_config::Values {
+        self.resolved.values()
+    }
+
+    fn secret(&self, reference: &Reference) -> Option<Secret> {
+        Turn::secret(self, reference)
+    }
+}
+
 /// 一份不变的配置：没有配置服务的时候（测试里、自己造的会话），全是 `resolved`，一个密钥都取不到。
 pub fn fixed(resolved: Resolved) -> Configs {
     fixed_with(resolved, Vec::new())

@@ -5,6 +5,7 @@
         "name": "提前压好",
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
       },
+      "net.search.source": {"name": "搜索来源", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com"}},
       "memory.extract_idle": {
         "name": "整理记忆前等多久",
         "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。"
@@ -317,7 +318,8 @@
       "providers": "供应商",
       "catalog": "模型目录",
       "cooldown": "冷却",
-      "external": "平台账号"
+      "external": "平台账号",
+      "net": "联网"
     }
   },
   "said": {

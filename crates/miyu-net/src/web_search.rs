@@ -18,6 +18,7 @@ use miyu_tool::load::{self, LoadError, say};
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
 
 use crate::search::{Found, Missed, Query, Search};
+use crate::settings::SearchSettings;
 use crate::web_fetch::PACKAGE;
 
 /// 工具名。
@@ -172,7 +173,12 @@ impl Tool for WebSearch {
                 allowed: args.allowed_domains,
                 blocked: args.blocked_domains,
             };
-            match self.search.search(&query).await {
+            // 设置里挑的来源（施工 N-2 下）：这一轮冻结的配置；没带的（测试里的假调用）照出厂的顺序。
+            let source = call
+                .settings
+                .as_ref()
+                .map(|settings| SearchSettings::from(&settings.values()).source);
+            match self.search.search(&query, source.as_deref()).await {
                 Ok(found) => self.found(&query.text, found),
                 Err(missed) => self.missed(&missed),
             }

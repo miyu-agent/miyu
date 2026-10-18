@@ -5,6 +5,7 @@
         "name": "事前に圧縮しておく",
         "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、従来どおり上限に達してから圧縮します。"
       },
+      "net.search.source": {"name": "検索元", "description": "AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。", "options": {"auto": "自動", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com"}},
       "memory.extract_idle": {
         "name": "記憶を整理するまでの待ち時間",
         "description": "会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。"
@@ -317,7 +318,8 @@
       "providers": "プロバイダー",
       "catalog": "モデルカタログ",
       "cooldown": "クールダウン",
-      "external": "プラットフォームのアカウント"
+      "external": "プラットフォームのアカウント",
+      "net": "ウェブ"
     }
   },
   "said": {

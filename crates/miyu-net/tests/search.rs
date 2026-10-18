@@ -7,11 +7,14 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use miyu_config::Value as ConfigValue;
+use miyu_config::Values;
+use miyu_config::secret::{Reference, Secret};
 use miyu_kernel::block::Block;
 use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_net::{Pages, Search, WEB_SEARCH};
-use miyu_tool::{Call, Done, Progress, Stop, Tool};
+use miyu_tool::{Call, Done, Progress, SettingsPort, Stop, Tool};
 
 use crate::support::{Reply, Site, resources};
 
@@ -54,6 +57,30 @@ fn tool(site: &Site) -> Arc<dyn Tool> {
 
 /// 调一次，等最多一分钟。
 async fn search(tool: &Arc<dyn Tool>, args: Value) -> Done {
+    search_with(tool, args, None).await
+}
+
+/// 设置里挑了 `source` 的那一轮的配置（施工 N-2 下）。
+struct Picked(&'static str);
+
+impl SettingsPort for Picked {
+    fn values(&self) -> Values {
+        let mut values = Values::defaults(miyu_net::SearchSettings::ITEMS);
+        values.set("net.search.source", ConfigValue::Text(self.0.into()));
+        values
+    }
+
+    fn secret(&self, _reference: &Reference) -> Option<Secret> {
+        None
+    }
+}
+
+/// 带着这一轮的配置 `settings` 调一次。
+async fn search_with(
+    tool: &Arc<dyn Tool>,
+    args: Value,
+    settings: Option<Arc<dyn SettingsPort>>,
+) -> Done {
     let call = Call {
         args: args.to_string(),
         cwd: String::new(),
@@ -75,6 +102,7 @@ async fn search(tool: &Arc<dyn Tool>, args: Value) -> Done {
         goals: None,
         packages: None,
         ids: None,
+        settings,
     };
     tokio::time::timeout(
         Duration::from_secs(60),
@@ -221,8 +249,15 @@ async fn when_every_source_fails_the_last_reason_is_told_and_when_all_cool_that_
         text(&failed)
     );
 
-    // You.com 出错的不冷却：再搜只剩它，它又出错
-    let again = search(&tool, json!({"query": "rust"})).await;
+    // You.com 出错的不冷却：再搜只剩它，它又出错。挑了它的（施工 N-2 下）先问它，出厂顺序里不再问第二遍。
+    let asked = site.hits("/you");
+    let again = search_with(
+        &tool,
+        json!({"query": "rust"}),
+        Some(Arc::new(Picked("you"))),
+    )
+    .await;
+    assert_eq!(site.hits("/you"), asked + 1, "挑的那一家只问一遍");
     assert!(
         text(&again).starts_with("Web search failed: You.com"),
         "{}",
@@ -297,6 +332,54 @@ async fn a_success_clears_the_strikes_of_a_source() {
         ["Parallel", "Exa", "Parallel", "Exa"].map(|name| Some(name.to_string())),
         "握手 429 换 Parallel；回来了、成了，清零；又 429 照清零以后算还是 0 秒；没冷却照样先问 Exa。没清零的话第三次是第二级、冷却 1 小时，第四次就跳过 Exa"
     );
+}
+
+#[tokio::test]
+async fn a_picked_source_is_asked_first_and_the_shipped_order_backs_it_up() {
+    let site = Site::start(vec![
+        ("/exa".to_string(), mcp(EXA)),
+        (
+            "/anysearch".to_string(),
+            anysearch(json!([{"title": "One", "url": "https://a.example.org/1"}])),
+        ),
+        ("/you".to_string(), Reply::status(500)),
+    ])
+    .await;
+    let tool = tool(&site);
+
+    let picked = search_with(
+        &tool,
+        json!({"query": "rust"}),
+        Some(Arc::new(Picked("anysearch"))),
+    )
+    .await;
+    assert_eq!(
+        said(&picked).1.as_deref(),
+        Some("AnySearch"),
+        "挑了的先用它"
+    );
+    assert_eq!(site.hits("/exa"), 0, "挑了的成了，出厂排第一的也不问");
+
+    let broken = search_with(
+        &tool,
+        json!({"query": "rust"}),
+        Some(Arc::new(Picked("you"))),
+    )
+    .await;
+    assert_eq!(
+        said(&broken).1.as_deref(),
+        Some("Exa"),
+        "挑的那一家用不了，照出厂的顺序兜底"
+    );
+    assert!(site.hits("/you") >= 1, "挑的那一家先问过");
+
+    let auto = search_with(
+        &tool,
+        json!({"query": "rust"}),
+        Some(Arc::new(Picked("auto"))),
+    )
+    .await;
+    assert_eq!(said(&auto).1.as_deref(), Some("Exa"), "自动照出厂的顺序");
 }
 
 #[tokio::test]

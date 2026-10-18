@@ -164,15 +164,16 @@ impl Search {
         self
     }
 
-    /// 搜一次。
+    /// 搜一次：`preferred` 是设置里挑的那一家（`auto`、没有的照出厂的顺序），排在最前，用不了照出厂的顺序兜底（设计 36
+    /// 第二节第 3 条）。
     ///
     /// # Errors
     ///
     /// 见 [`Missed`]。
-    pub async fn search(&self, query: &Query) -> Result<Found, Missed> {
+    pub async fn search(&self, query: &Query, preferred: Option<&str>) -> Result<Found, Missed> {
         let ready = self.ready().ok_or(Missed::NotReady)?;
         let mut last = None;
-        for id in &ready.rules.order {
+        for id in &ready.order(preferred) {
             let source = &ready.rules.sources[id];
             if ready.cooling(id).is_some() {
                 continue;
@@ -262,6 +263,22 @@ impl Search {
 }
 
 impl Ready {
+    /// 这一次试的先后：挑了出厂有的那一家的排在最前，其余照出厂的顺序。
+    fn order(&self, preferred: Option<&str>) -> Vec<String> {
+        let first = preferred.filter(|id| self.rules.sources.contains_key(*id));
+        first
+            .map(str::to_string)
+            .into_iter()
+            .chain(
+                self.rules
+                    .order
+                    .iter()
+                    .filter(|id| Some(id.as_str()) != first)
+                    .cloned(),
+            )
+            .collect()
+    }
+
     fn cooldown(&self) -> std::sync::MutexGuard<'_, Cooldowns> {
         self.cooldowns
             .lock()

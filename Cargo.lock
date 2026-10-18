@@ -2151,6 +2151,7 @@ dependencies = [
  "http",
  "hyper-util",
  "markup5ever_rcdom",
+ "miyu-config",
  "miyu-http",
  "miyu-kernel",
  "miyu-net",
@@ -2288,6 +2289,7 @@ name = "miyu-tool"
 version = "0.0.0"
 dependencies = [
  "imagesize",
+ "miyu-config",
  "miyu-drivers",
  "miyu-kernel",
  "miyu-recall",

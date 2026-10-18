@@ -187,6 +187,30 @@
       },
       "type": "object"
     },
+    "net": {
+      "properties": {
+        "search": {
+          "properties": {
+            "source": {
+              "default": "auto",
+              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch 或 you。只能写在系统配置或个人设置里。下一轮生效。",
+              "enum": [
+                "auto",
+                "exa",
+                "parallel",
+                "firecrawl",
+                "anysearch",
+                "you"
+              ],
+              "title": "搜索来源",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {
