@@ -108,7 +108,7 @@ async fn enough_sessions_merge_after_extraction_and_land_as_events() {
         every_turn("用户养了一只猫"),
         merged(serde_json::json!({
             "revised": [{"id": "m1", "text": "用户 2026-10-09 养了一只猫"}],
-            "retired": [{"id": "m2", "why": "重复 m1"}],
+            "retired": [{"id": "m2", "kind": "repeat", "by": "m1", "why": "重复 m1"}],
             "summary": "用户养了一只猫。"
         })),
     ])

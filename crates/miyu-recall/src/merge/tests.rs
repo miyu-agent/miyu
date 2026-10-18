@@ -1,5 +1,5 @@
 //! 合并交回来的怎么读：前后多的话不管、几条、一条不合的丢掉别的照收、又改又作废的照作废、摘要空的当没写、超长的截在句子
-//! 边界上、读不成的整次失败。
+//! 边界上、读不成的整次失败；作废照规矩核对（施工 R-16）。
 
 use super::*;
 
@@ -13,7 +13,7 @@ fn given() -> BTreeSet<MemoryId> {
 
 #[test]
 fn the_object_is_found_inside_extra_words() {
-    let answer = "Sure:\n```json\n{\"revised\": [{\"id\": \"m3\", \"text\": \" 用户 2026-10-08 去了京都 \"}], \"retired\": [{\"id\": \"m7\", \"why\": \"重复 m12\"}], \"summary\": \" 用户住在东京。\"}\n```";
+    let answer = "Sure:\n```json\n{\"revised\": [{\"id\": \"m3\", \"text\": \" 用户 2026-10-08 去了京都 \"}], \"retired\": [{\"id\": \"m7\", \"kind\": \"repeat\", \"by\": \"m12\", \"why\": \"重复 m12\"}], \"summary\": \" 用户住在东京。\"}\n```";
     assert_eq!(
         decisions(answer, &given(), 120, 600).expect("读得成"),
         Decisions {
@@ -23,6 +23,8 @@ fn the_object_is_found_inside_extra_words() {
             }],
             retired: vec![Retire {
                 id: id(7),
+                kind: Kind::Repeat,
+                by: Some(id(12)),
                 why: "重复 m12".into(),
             }],
             summary: Some("用户住在东京。".into()),
@@ -56,10 +58,10 @@ fn a_bad_entry_is_dropped_and_the_rest_kept() {
             {{"id": "m3", "text": "同一条第二次"}},
             "不是对象"
         ], "retired": [
-            {{"id": "m7", "why": " "}},
+            {{"id": "m7", "kind": "worthless", "why": " "}},
             {{"id": "m7"}},
-            {{"id": "m12", "why": "被推翻了"}},
-            {{"id": "m12", "why": "第二次"}}
+            {{"id": "m12", "kind": "worthless", "why": "用不着了"}},
+            {{"id": "m12", "kind": "worthless", "why": "第二次"}}
         ]}}"#
     );
     let read = decisions(&answer, &given(), 120, 600).expect("读得成");
@@ -74,7 +76,9 @@ fn a_bad_entry_is_dropped_and_the_rest_kept() {
         read.retired,
         [Retire {
             id: id(12),
-            why: "被推翻了".into()
+            kind: Kind::Worthless,
+            by: None,
+            why: "用不着了".into()
         }]
     );
     assert_eq!(
@@ -97,7 +101,7 @@ fn a_bad_entry_is_dropped_and_the_rest_kept() {
 
 #[test]
 fn revised_and_retired_at_once_is_retired() {
-    let answer = r#"{"revised": [{"id": "m7", "text": "改一下"}], "retired": [{"id": "m7", "why": "过时了"}]}"#;
+    let answer = r#"{"revised": [{"id": "m7", "text": "改一下"}], "retired": [{"id": "m7", "kind": "outdated", "by": "m12", "why": "过时了"}]}"#;
     let read = decisions(answer, &given(), 120, 600).expect("读得成");
     assert_eq!(read.revised, []);
     assert_eq!(read.retired.len(), 1);
@@ -149,4 +153,87 @@ fn an_unreadable_answer_fails_as_a_whole() {
     ] {
         assert!(decisions(answer, &given(), 120, 600).is_err(), "{answer}");
     }
+}
+
+/// 作废的几条照 `retired` 原文读，交回作废得了的编号。
+fn retired_ids(retired: &str) -> Vec<u64> {
+    let answer = format!(r#"{{"retired": [{retired}]}}"#);
+    decisions(&answer, &given(), 120, 600)
+        .expect("读得成")
+        .retired
+        .iter()
+        .map(|one| one.id.seq().get())
+        .collect()
+}
+
+/// 施工 R-16：模型说的作废是申请，核对得上的才作废。
+#[test]
+fn a_retirement_needs_a_kind_and_a_right_reference() {
+    assert_eq!(
+        retired_ids(r#"{"id": "m7", "why": "没写种类"}"#),
+        Vec::<u64>::new()
+    );
+    assert_eq!(
+        retired_ids(r#"{"id": "m7", "kind": "old", "why": "种类写错"}"#),
+        Vec::<u64>::new()
+    );
+    assert_eq!(
+        retired_ids(r#"{"id": "m7", "kind": "worthless", "why": "用不着"}"#),
+        [7],
+        "没价值的不看 by"
+    );
+    for (by, said) in [
+        ("", "没写"),
+        ("m4", "不是交进去的"),
+        ("m7", "指着自己"),
+        ("x", "写错"),
+    ] {
+        let one = format!(r#"{{"id": "m7", "kind": "repeat", "by": "{by}", "why": "重复"}}"#);
+        assert_eq!(retired_ids(&one), Vec::<u64>::new(), "{said}");
+    }
+    assert_eq!(
+        retired_ids(r#"{"id": "m7", "kind": "outdated", "by": "m12", "why": "被后记的取代"}"#),
+        [7]
+    );
+    assert_eq!(
+        retired_ids(r#"{"id": "m12", "kind": "outdated", "by": "m7", "why": "弄反了"}"#),
+        Vec::<u64>::new(),
+        "取代它的要比它晚"
+    );
+    assert_eq!(
+        retired_ids(r#"{"id": "m12", "kind": "repeat", "by": "m7", "why": "重复的删哪一条都行"}"#),
+        [12]
+    );
+}
+
+#[test]
+fn a_fact_is_never_retired_twice_over() {
+    assert_eq!(
+        retired_ids(
+            r#"{"id": "m3", "kind": "repeat", "by": "m7", "why": "重复"}, {"id": "m7", "kind": "repeat", "by": "m3", "why": "重复"}"#
+        ),
+        [3],
+        "互相指着的只作废先记的那一条"
+    );
+    assert_eq!(
+        retired_ids(
+            r#"{"id": "m7", "kind": "repeat", "by": "m3", "why": "重复"}, {"id": "m3", "kind": "repeat", "by": "m7", "why": "重复"}"#
+        ),
+        [3],
+        "交回的先后反过来也一样"
+    );
+    assert_eq!(
+        retired_ids(
+            r#"{"id": "m3", "kind": "outdated", "by": "m7", "why": "过时"}, {"id": "m7", "kind": "worthless", "why": "用不着"}"#
+        ),
+        [7],
+        "取代它的那条也作废了，宁可留着它"
+    );
+    assert_eq!(
+        retired_ids(
+            r#"{"id": "m3", "kind": "outdated", "by": "m7", "why": "过时"}, {"id": "m7", "kind": "outdated", "by": "m12", "why": "过时"}"#
+        ),
+        [7],
+        "一串的只作废后面那一条，最早的留着"
+    );
 }
