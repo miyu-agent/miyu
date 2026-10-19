@@ -203,7 +203,9 @@ impl Home {
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
             presets: None,
-            group: lines.group,
+            group: lines.group.then_some(miyu_session::GroupSettings {
+                recent: lines.recent,
+            }),
             owner_is_admin: lines.owner_is_admin,
             images: lines.images,
         });

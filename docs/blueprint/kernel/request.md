@@ -585,7 +585,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 - 收的是上一个由人的消息开的回合开始以后、这一轮开始以前的（施工 O-14 上起照回合开始的那一条算界；`session.send` 开的回合和照触发算一字不差），当过触发的（`turn.started.triggers`、`turn.joined.triggers`）不收：旁听的 `message.user`（睡着时收到的不收），别的线替她发进群里的话（`venue.delivered` 的 `line` 不是有效历史的 `own()`：主线自己的回复已经是 assistant 消息）。手动压缩单开的、回报开的回合不算界：回合进行中到的旁听也归下一块。
 - 一行照「群里的一行」，只要字：图片块不接进来。别的线的写 `[you]`，带的图每张一个 `[image]`。
 - 这一条以前记下的 `venue.recalled` 撤了哪一条，在编号后面写 `(recalled)`；别人撤的、这一条看得到身份的写 `(recalled by 身份)`。之后才撤的不改。
-- 从最新往前装，一行连换行算字节，超了预算就停；有没装下的，块头下面接缺口提示，`count` 是没装下的条数。一条都没有的不出。
+- 从最新往前装，一行连换行算字节，超了预算就停；`venue.session` 写了 `recent` 的（施工 O-13 再补，快照的 `limit`）装满那么多条也停，两个取少的；有没装下的，块头下面接缺口提示，`count` 是没装下的条数。一条都没有的不出。
 - 只看这一条以前的日志：一轮开了以后哪几条、写什么就定了，以后每次请求、载入以后一字不差。
 
 ### 出错

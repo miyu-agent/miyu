@@ -115,6 +115,7 @@ pub(crate) fn group_texts_within(minutes: i32, budget: usize) -> Texts {
             offset: miyu_kernel::time::UtcOffset::from_minutes(minutes).expect("在范围里"),
             no_text: "<no-text>".to_string(),
             recent: Some(GroupRecent {
+                limit: None,
                 open: "<recent>\n".to_string(),
                 omitted: Template::parse("<omitted {count}>\n").expect("模板合写法"),
                 budget,

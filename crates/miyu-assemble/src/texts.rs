@@ -102,6 +102,8 @@ pub struct GroupRecent {
     pub omitted: Template,
     /// 一块最多多少字节，从最新往前装。
     pub budget: usize,
+    /// 最多几条（施工 O-13 再补，接入通讯平台要的）：没有的只照字节预算，有的两个都照、取少的。
+    pub limit: Option<usize>,
 }
 
 /// 转述一张图的请求要用的两份（施工 8-17，`docs/blueprint/kernel/request.md`「替它看的图」）：换行都在文件里，拼的时候不加字。

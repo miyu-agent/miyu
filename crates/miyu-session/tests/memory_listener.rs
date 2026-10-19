@@ -410,3 +410,41 @@ async fn in_a_group_only_what_was_dropped_there_follows_the_slice() {
     );
     stop(&handle).await;
 }
+
+/// 群会话写了群聊近况最多几条（施工 O-13 再补）：抽取每一轮也只带那么多句，和她当时看到的一样。
+#[tokio::test]
+async fn a_counted_group_extracts_only_that_many_lines_per_round() {
+    let server = Server::start(vec![every_turn("小林在学日语")]).await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "extract_turns = 1\n");
+    let script = Script::new([Play::Says("加油。")]);
+    let lines = Lines {
+        venue: place(1),
+        group: true,
+        recent: Some(1),
+        memory_account: admin(),
+        ..Lines::default()
+    };
+    let handle = home
+        .create_full(&script, &catalog(&home), Opening::default(), lines)
+        .await;
+    within(
+        "回应",
+        handle.command(id("cmd-1"), member(), heard("早", "8800", true)),
+    )
+    .await
+    .expect("会话在跑");
+    let mut pushes = watch(&handle).await;
+    within(
+        "回应",
+        handle.command(id("cmd-2"), member(), heard("我在学日语", "8801", false)),
+    )
+    .await
+    .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    requested(&server, 1).await;
+    let text = asked(&server, 0);
+    assert!(text.contains("[msg=8801]: 我在学日语"), "{text}");
+    assert!(!text.contains("[msg=8800]"), "只带最近一句：{text}");
+    stop(&handle).await;
+}

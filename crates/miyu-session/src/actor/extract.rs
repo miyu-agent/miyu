@@ -34,6 +34,17 @@ impl Actor {
         }))
     }
 
+    /// 这一段人这边每一句是谁说的、群里每一轮带多少（字节预算、最多几条，施工 O-13 再补）。
+    fn voices(&self, events: &[miyu_kernel::event::Event]) -> Voices {
+        let mut voices = Voices::of(events, self.group_budget());
+        voices.limit = self
+            .persona
+            .as_ref()
+            .and_then(|refresh| refresh.snapshot.group.as_ref()?.recent.as_ref()?.limit)
+            .map(|limit| usize::try_from(limit).unwrap_or(usize::MAX));
+        voices
+    }
+
     /// 抽取照称呼写主人（施工 R-6 再修）：这个会话的快照带了「关于你」才用配置 `config` 里的称呼。不带的（群聊、别人的
     /// 会话、桥没写 `profile` 的场所会话）不能把管理员的称呼当成这个人：配置里只有管理员的个人设置。
     fn owner_name(&self, config: &Turn) -> Option<String> {
@@ -131,7 +142,7 @@ impl Actor {
         }
         let spoken = self.session.spoken_in(&history, after);
         let called = history.called_since(after);
-        let voices = Voices::of(history.events(), self.group_budget());
+        let voices = self.voices(history.events());
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
         let min_turns = usize::try_from(settings.extract_turns).unwrap_or(1);
@@ -241,7 +252,7 @@ impl Actor {
         }
         let spoken = self.session.spoken_in(&history, after);
         let called = history.called_since(after);
-        let voices = Voices::of(history.events(), self.group_budget());
+        let voices = self.voices(history.events());
         let name = self.owner_name(&config);
         let plan = plan(
             &spoken,

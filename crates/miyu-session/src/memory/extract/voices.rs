@@ -28,6 +28,8 @@ pub(crate) struct Voices {
     /// 群会话：每一轮只带离它最近、装得进这么多字节的那几句（群聊近况的预算：她当时看到的大致就是这些），她没开口的闲聊不带
     /// （2026-10-11 项目主人定「只抽她参与的几轮」）。不是群会话的没有。
     pub(crate) budget: Option<usize>,
+    /// 群会话的群聊近况最多几条（施工 O-13 再补）：每一轮也最多带这么多句。没写的、不是群会话的没有。
+    pub(crate) limit: Option<usize>,
 }
 
 impl Voices {
@@ -58,6 +60,7 @@ impl Voices {
         Voices {
             said,
             budget: group,
+            limit: None,
         }
     }
 }

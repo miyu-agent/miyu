@@ -44,6 +44,9 @@ pub(crate) fn recent(
     let mut kept = VecDeque::new();
     let mut used = 0;
     for line in lines.iter().rev() {
+        if words.limit.is_some_and(|limit| kept.len() >= limit) {
+            break;
+        }
         used += line.len() + 1;
         if used > words.budget {
             break;

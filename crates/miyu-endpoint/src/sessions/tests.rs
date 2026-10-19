@@ -86,7 +86,7 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
         venue: None,
         memory: None,
         preset: None,
-        group: false,
+        group: None,
         chosen: true,
         profile: false,
         images: true,

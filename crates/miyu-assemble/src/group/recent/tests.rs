@@ -195,6 +195,29 @@ fn the_budget_keeps_the_newest_and_says_how_many_did_not_fit() {
 }
 
 #[test]
+fn a_count_keeps_at_most_that_many_of_the_newest() {
+    let mut log = Log::new();
+    for msg in ["1", "2", "3"] {
+        ambient(&mut log, "aaaaaaaaaa", msg, "");
+    }
+    opens(&mut log, "嗯", "4");
+    let mut texts = group_texts_within(480, 105);
+    if let Some(recent) = texts.group.as_mut().and_then(|group| group.recent.as_mut()) {
+        recent.limit = Some(2);
+    }
+    assert_eq!(
+        shape(&render(log.history(), &texts)),
+        [concat!(
+            "user: <recent>\n<omitted 1>\n",
+            "[15:00] 小林 [msg=2]: aaaaaaaaaa\n",
+            "[15:00] 小林 [msg=3]: aaaaaaaaaa\n",
+            " | [15:00] 小林 [msg=4]: 嗯",
+        )],
+        "字节装得下三条，条数只要两条：取少的"
+    );
+}
+
+#[test]
 fn nothing_overheard_private_chats_and_older_snapshots_have_no_block() {
     let mut log = Log::new();
     opens(&mut log, "在吗", "8801");

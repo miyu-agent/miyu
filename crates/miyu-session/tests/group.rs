@@ -276,3 +276,52 @@ async fn a_turn_in_a_group_starts_with_what_was_overheard() {
         .expect("那一块还在");
     assert_eq!(words[at + 1], line);
 }
+
+#[tokio::test]
+async fn a_counted_group_keeps_only_that_many_overheard_lines() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("好。")]);
+    let handle = home
+        .create_full(
+            &script,
+            &Catalog::default(),
+            Opening::default(),
+            Lines {
+                recent: Some(1),
+                ..lines("qq:group:1", true)
+            },
+        )
+        .await;
+    let session = handle.id().clone();
+    for (n, (words, msg)) in [("第一句", "8800"), ("第二句", "8801")]
+        .into_iter()
+        .enumerate()
+    {
+        let mut overheard = heard(words, msg);
+        if let Command::Send {
+            venue: Some(venue), ..
+        } = &mut overheard
+        {
+            venue.ambient = true;
+        }
+        within(
+            "回应",
+            handle.command(id(&format!("cmd-{}", n + 1)), member(), overheard),
+        )
+        .await
+        .expect("会话在跑");
+    }
+    one_turn(&handle, "cmd-9", member(), heard("谁在", "8802")).await;
+    stop(&handle).await;
+    let limit = snapshot(&home, &session)
+        .group
+        .and_then(|group| group.recent)
+        .and_then(|recent| recent.limit);
+    assert_eq!(limit, Some(1), "条数钉进快照");
+    let request = &script.requests()[0].1;
+    let text = said(request).join("\n");
+    assert!(
+        text.contains("第二句") && !text.contains("第一句"),
+        "只带最近一条：{text}"
+    );
+}

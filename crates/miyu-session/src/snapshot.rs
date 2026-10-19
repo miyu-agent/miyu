@@ -23,7 +23,8 @@ pub(crate) struct Parts {
     pub(crate) preset: Option<PresetPin>,
     pub(crate) tooled: BTreeSet<String>,
     pub(crate) roleplay: bool,
-    pub(crate) group: Option<i32>,
+    /// 群会话：造会话时的时区（比 UTC 早多少分钟）、群聊近况最多带几条（施工 O-13 再补，没有的只照字节预算）。
+    pub(crate) group: Option<(i32, Option<u64>)>,
     /// 后台运行关着（施工 T-1 上，[`crate::agents::Agents::foreground`]）。
     pub(crate) foreground: bool,
     /// 她查得到的知识库那一块（施工 K-1 补，[`crate::knowledge::listing`]）：工具面上有知识库那两件的才有。
@@ -68,8 +69,12 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     if parts.child {
         snapshot = snapshot.with_venue(&resources.subagent_venue()?);
     }
-    if let Some(offset) = parts.group {
-        snapshot = snapshot.with_group(&resources.group_note()?, resources.group_chat(offset)?);
+    if let Some((offset, recent)) = parts.group {
+        let mut chat = resources.group_chat(offset)?;
+        if let Some(words) = chat.recent.as_mut() {
+            words.limit = recent;
+        }
+        snapshot = snapshot.with_group(&resources.group_note()?, chat);
     }
     snapshot = snapshot
         .with_profile(parts.profile)

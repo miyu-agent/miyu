@@ -54,7 +54,13 @@ pub(crate) struct VenueParams {
     /// 找回已有的会话时不看。
     #[serde(default = "shows_images")]
     images: bool,
+    /// 群聊近况最多带几条（施工 O-13 再补，接入通讯平台要的）：只给群，1 到 [`RECENT_MOST`]；不写的只照字节预算。
+    #[serde(default)]
+    recent: Option<u64>,
 }
+
+/// 群聊近况最多能写几条。
+const RECENT_MOST: u64 = 1000;
 
 /// 没写 `images` 的场所显示得了图片（施工 X-25）。
 pub(crate) fn shows_images() -> bool {
@@ -152,6 +158,11 @@ pub(crate) async fn session(
         (Kind::Group, None) => None,
         _ => return Err(Refusal::BAD_PARAMS),
     };
+    let recent = match (params.kind, params.recent) {
+        (_, None) => None,
+        (Kind::Group, Some(recent @ 1..=RECENT_MOST)) => Some(recent),
+        _ => return Err(Refusal::bad_field("recent")),
+    };
     let owner = match peer.as_ref().and_then(|peer| bound(core, peer)) {
         Some(account) => account,
         None if core.is_system(caller) => caller.clone(),
@@ -170,7 +181,7 @@ pub(crate) async fn session(
         venue: Some(venue),
         memory: None,
         preset: params.preset,
-        group: params.kind == Kind::Group,
+        group: (params.kind == Kind::Group).then_some(miyu_session::GroupSettings { recent }),
         chosen: false,
         profile: params.profile,
         images: params.images,

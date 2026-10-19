@@ -37,7 +37,7 @@ pub(super) async fn create(
         venue: None,
         memory,
         preset: params.preset,
-        group: false,
+        group: None,
         chosen: params.chosen,
         profile: false,
         images: params.images,

@@ -359,7 +359,7 @@ impl Sessions {
             model: child.model,
             preset,
             presets: Some(presets::places(core)),
-            group: false,
+            group: None,
             owner_is_admin,
             images: child.images,
         })

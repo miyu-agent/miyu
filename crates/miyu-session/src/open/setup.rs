@@ -127,9 +127,9 @@ pub struct Create<'a> {
     pub preset: Option<Chosen>,
     /// 预设的几层和装了的软件（施工 P-2 下）：改了预设的文件下一个回合换上。没有的（测试里自己造的）不看。
     pub presets: Option<PresetPlaces>,
-    /// 是不是群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的。是的 system 接上群聊的格式说明，快照钉下这时的
-    /// 时区，群里的人说的渲染成一行一条。
-    pub group: bool,
+    /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有。有的 system 接上群聊的格式说明，快照钉下这时的
+    /// 时区和群聊近况最多带几条，群里的人说的渲染成一行一条。
+    pub group: Option<GroupSettings>,
     /// 属主是不是管理员（施工 5-12）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊）只碰得到自己的工作区
     /// （`11-权限与沙盒.md` 第三节「外部身份」）。
     pub owner_is_admin: bool,
@@ -220,4 +220,11 @@ pub(crate) fn blinded(
         (false, Some(features)) => preset.map(|chosen| chosen.blind(features)),
         _ => preset,
     }
+}
+
+/// 群会话造的时候定的（施工 O-13 中；`recent` 施工 O-13 再补，接入通讯平台要的）：快照钉下，以后不变。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct GroupSettings {
+    /// 群聊近况最多带几条：没有的只照字节预算（`miyu_policy::RECENT_BUDGET`），有的两个都照、取少的。
+    pub recent: Option<u64>,
 }

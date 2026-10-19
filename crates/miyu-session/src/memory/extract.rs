@@ -238,7 +238,7 @@ fn exchanges(spoken: &[Spoken], voices: &Voices) -> Vec<Exchange> {
             (true, Some(turn)) => {
                 let mut said = std::mem::take(&mut said);
                 if let Some(budget) = voices.budget {
-                    said = within(said, budget);
+                    said = within(said, budget, voices.limit);
                 }
                 exchanges.push(Exchange {
                     turn,
@@ -259,8 +259,9 @@ fn exchanges(spoken: &[Spoken], voices: &Voices) -> Vec<Exchange> {
     exchanges
 }
 
-/// 从最新往前装，装不下就停（同群聊近况，`miyu-assemble` 的 `group/recent.rs`）；至少留最后那一句。
-fn within(said: Vec<(Voice, String)>, budget: usize) -> Vec<(Voice, String)> {
+/// 从最新往前装，装不下就停（同群聊近况，`miyu-assemble` 的 `group/recent.rs`）；写了 `limit` 的最多装这么多句；至少留最后
+/// 那一句。
+fn within(said: Vec<(Voice, String)>, budget: usize, limit: Option<usize>) -> Vec<(Voice, String)> {
     let mut used = 0;
     let keep = said
         .iter()
@@ -270,6 +271,7 @@ fn within(said: Vec<(Voice, String)>, budget: usize) -> Vec<(Voice, String)> {
             used <= budget
         })
         .count()
+        .min(limit.unwrap_or(usize::MAX))
         .max(1);
     let skip = said.len().saturating_sub(keep);
     said.into_iter().skip(skip).collect()
@@ -424,5 +426,7 @@ mod voices;
 pub(crate) use job::Job;
 pub(crate) use voices::{Voice, Voices};
 
+#[cfg(test)]
+mod group_tests;
 #[cfg(test)]
 mod tests;

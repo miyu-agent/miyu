@@ -15,6 +15,7 @@ fn tokyo() -> GroupChat {
         offset: 540,
         no_text: "[no text content]\n".to_string(),
         recent: Some(GroupRecent {
+            limit: None,
             open: "[Prior group chat records]\n".to_string(),
             omitted: "({count} left out)\n".to_string(),
             budget: RECENT_BUDGET,
@@ -49,6 +50,7 @@ fn the_assembler_gets_the_pinned_offset_and_the_bare_line() {
             offset: UtcOffset::from_minutes(540).unwrap(),
             no_text: "[no text content]".to_string(),
             recent: Some(miyu_assemble::GroupRecent {
+                limit: None,
                 open: "[Prior group chat records]\n".to_string(),
                 omitted: Template::parse("({count} left out)\n").unwrap(),
                 budget: 80_000,

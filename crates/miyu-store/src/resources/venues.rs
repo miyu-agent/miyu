@@ -30,6 +30,7 @@ impl ResourceRoot {
                 open: self.read(&["core", "venues", "recent-open.txt"])?,
                 omitted: self.read(&["core", "venues", "recent-omitted.txt"])?,
                 budget: miyu_policy::RECENT_BUDGET,
+                limit: None,
             }),
             voice: Some(self.read(&["core", "venues", "voice.txt"])?),
         })

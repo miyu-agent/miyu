@@ -53,7 +53,7 @@ fn setup_with(
         preset,
         tooled: tooled(&tools, None),
         roleplay: true,
-        group,
+        group: group.map(|offset| (offset, None)),
         foreground: false,
 
         knowledge: None,

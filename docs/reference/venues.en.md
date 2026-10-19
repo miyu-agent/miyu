@@ -40,6 +40,7 @@ In a private chat this identity is that account's person; in a group it's the ow
 | `profile` | boolean | Whether to include the owner's "about you" when creating: `true` only for the owner's own private chat |
 | `images` | boolean, default `true` | Whether this venue can display images |
 | `cwd` | string | Working directory when creating; the owner's default workspace when omitted |
+| `recent` | integer, 1 to 1000 | Groups only: at most this many recent group messages (newest first) go in front of a turn; the byte budget still caps it, the smaller wins; omitted means only the byte budget. Fixed when created |
 
 The creation fields are ignored when an existing session is found.
 

@@ -48,6 +48,8 @@ pub struct Lines {
     pub images: bool,
     /// 群会话（施工 O-13 中）：默认不是。
     pub group: bool,
+    /// 群会话的群聊近况最多几条（施工 O-13 再补）：默认不限。
+    pub recent: Option<u64>,
     /// 「关于你」那两项（施工 P-9；R-6 再修照它判抽取写不写称呼）：默认都空，快照里没有那一块。
     pub profile: miyu_policy::Profile,
 }
@@ -67,6 +69,7 @@ impl Default for Lines {
             preset: None,
             indexed: true,
             group: false,
+            recent: None,
             owner_is_admin: true,
             images: true,
             profile: miyu_policy::Profile::default(),

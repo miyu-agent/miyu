@@ -26,8 +26,8 @@ pub(crate) struct Opening {
     pub(crate) memory: Option<MemoryScope>,
     /// 用哪个预设（施工 P-2 上）：`session.create`、`venue.session` 的 `preset`；没写的照这时的 `preset.default`。
     pub(crate) preset: Option<String>,
-    /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的。
-    pub(crate) group: bool,
+    /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有，带群聊近况最多几条（施工 O-13 再补）。
+    pub(crate) group: Option<miyu_session::GroupSettings>,
     /// 工作目录是人明着选的（施工 9-7 补）：`session.create` 的 `chosen`。太宽的照用；不是的照旧退回属主的工作区。
     pub(crate) chosen: bool,
     /// 场所会话要不要「关于你」（施工 P-9）：`venue.session` 的 `profile`。本机的不看它，一律要。

@@ -184,6 +184,7 @@ mod usage;
 mod venue_binding;
 mod venue_forwards;
 mod venue_judge;
+mod venue_recent;
 mod venue_records;
 mod venue_sessions;
 mod venue_shown;

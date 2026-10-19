@@ -36,6 +36,10 @@ pub struct GroupRecent {
     pub omitted: String,
     /// 一块最多多少字节。
     pub budget: u64,
+    /// 最多几条（施工 O-13 再补，`venue.session` 的 `recent`，接入通讯平台要的）：没写的只照字节预算；以前造的没有，不写，字节
+    /// 不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u64>,
 }
 
 impl GroupChat {
@@ -74,6 +78,9 @@ impl GroupRecent {
             open: self.open.clone(),
             omitted,
             budget: usize::try_from(self.budget).unwrap_or(usize::MAX),
+            limit: self
+                .limit
+                .map(|limit| usize::try_from(limit).unwrap_or(usize::MAX)),
         })
     }
 }
