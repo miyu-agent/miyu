@@ -54,6 +54,8 @@
 
 **范围**（`17-记忆.md` L2、L3，R-3 下）：会话开局时定，之后不改。三种：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。
 
+**换了人格**（施工 P-13，`16-人格与预设.md` Y5）：会话中途换了人格，范围不变；跟着人格的，从换的那一条 `session.policy_changed`（带 `persona`）起算新人格那一间的：回合索引把那以前的几轮当底子（只认还没回的人话，不在新的一间记），抽取从那一条以后抽，换之前还没抽的不再抽；以前记的留在原来那一间，不搬。快照换上的那个回合开始当场挪（`Store::rewire`、记忆的端口、`Handle` 的那一间），载入、补齐旧会话照日志里最近一条换成这个人格的算（`memory/recast.rs`）。`session` 的那一间、`off` 的不受影响。
+
 **无人格的那一间**（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：无人格的会话照样跟着「人格」走，人格编号写 `_none`（`miyu_store::recall::NO_PERSONA`；人格编号以小写字母开头，撞不上），在记忆账号名下单独一间（`modules/memory/_none/`、`turns-_none.db`、`memory-_none.db`），无人格的会话共用它，和每个人格的都分开。无人格不是人格：人格列表里没有它；`memory.*`、流 `memory` 的 `persona` 写 `_none` 的就是它（施工 R-12 再补，网页的记忆页没有会话可借），照会话找（写 `session`）的也找得到。P-12 以前造的无人格会话快照里范围是 `off`，载入照快照，照旧不记。
 
 - 默认照人格的 `persona.toml` 的 `[memory] scope`（`persona` 或 `session`；不写是 `persona`，出厂的软件工程师不写；别的值照人格的文件写错了报，`personas.md`）。开会话时能换：`session.create` 多一格 `memory`（`persona`、`session`、`off`，不写照人格的；别的值 `bad_params`）；`miyu ask --no-memory` 就是 `off`。人格与预设走查 E1（2026-10-07）。

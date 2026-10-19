@@ -85,6 +85,9 @@ fn one(
             .collect(),
         None => Vec::new(),
     };
-    Turns::connect(recall, room, session, &created.venue, &base, &events);
+    // 中途换成这个人格的（施工 P-13）：换过来以前的几轮不在这一间记。
+    let floor = super::recast::floor(&events, persona);
+    let (base, own) = super::recast::split(&base, &events, floor);
+    Turns::connect(recall, room, session, &created.venue, &base, own);
     Ok(true)
 }

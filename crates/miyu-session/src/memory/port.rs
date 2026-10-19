@@ -29,6 +29,8 @@ pub(crate) struct Calls {
     owner: AccountId,
     /// 这个会话的抽取（施工 R-6 上）：闹钟、在路上的那一次。
     extractor: Arc<Extractor>,
+    /// 中途换成了这一间的人格（施工 P-13）：换的那一条，抽取从它以后抽。
+    floor: Option<Seq>,
 }
 
 impl Calls {
@@ -46,7 +48,42 @@ impl Calls {
             session: session.clone(),
             owner: owner.clone(),
             extractor: Arc::default(),
+            floor: None,
         }
+    }
+
+    /// 同一个，中途换成了这一间的人格的从第 `floor` 条以后抽（施工 P-13）。
+    #[must_use]
+    pub(crate) fn since(mut self, floor: Option<Seq>) -> Calls {
+        self.floor = floor;
+        self
+    }
+
+    /// 抽取最早从哪一条以后抽（施工 P-13）：中途换过来的是换的那一条，别的是第一条。
+    pub(crate) fn floor(&self) -> Seq {
+        self.floor.unwrap_or(Seq::FIRST)
+    }
+
+    /// 换了人格（施工 P-13）：同一个会话的记忆挪到人格 `persona`（无人格的是 `NO_PERSONA`）的那一间，照会话的底子、日志
+    /// `events` 接上回合索引。在阻塞线程里调。
+    pub(crate) fn moved(
+        &self,
+        personas: &miyu_store::personas::Personas,
+        persona: &str,
+        venue: &miyu_kernel::id::VenueId,
+        events: (&[miyu_kernel::event::Event], &[miyu_kernel::event::Event]),
+    ) -> (Option<super::Turns>, Option<Calls>) {
+        let account = personas.memory_account(persona, &self.owner);
+        super::connect(
+            Some(&self.keeper.memory),
+            miyu_policy::memory::MemoryScope::Persona,
+            &account,
+            &self.owner,
+            persona,
+            &self.session,
+            venue,
+            events,
+        )
     }
 
     /// 抽取用的（施工 R-6 上）：记在哪一间的那一份、哪个会话、谁付钱、这个会话的抽取状态。

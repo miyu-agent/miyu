@@ -3,6 +3,8 @@
 
 use super::*;
 
+mod recast;
+
 /// `session.create`：造会话。
 pub(super) async fn create(
     core: &Arc<Core>,
@@ -274,19 +276,27 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
     }
 }
 
-/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。
+/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换人格、预设（施工 P-13）在
+/// `recast.rs`：先查完，模型先换，再换人格、预设。
 pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
     let session = session(&params.session)?;
+    let recast = recast::checked(core, &session, params.recast()).await?;
     let found = core.sessions.get(core, &session).await?;
     // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
     let model = match text {
-        Some(text) => models::record(core, text)?,
-        None => String::new(),
+        Some(Some(text)) => Some(models::record(core, text)?),
+        Some(None) => Some(String::new()),
+        None => None,
     };
-    let command = Command::Configure { model };
-    command_to(core, request, &session, &found.handle, command).await?;
+    if let Some(model) = model {
+        let command = Command::Configure { model };
+        command_to(core, request, &session, &found.handle, command).await?;
+    }
+    if let Some(command) = recast {
+        recast::send(core, request, &session, &found.handle, command).await?;
+    }
     Ok(json!({}))
 }
 

@@ -15,6 +15,7 @@ mod owner;
 mod past;
 mod port;
 mod recall;
+mod recast;
 mod restore;
 mod summary;
 mod tag;
@@ -33,6 +34,7 @@ pub(crate) use owner::called;
 pub(crate) const MODULE: &str = "memory";
 pub(crate) use port::Calls;
 pub use recall::RecallTexts;
+pub(crate) use recast::{RoomCell, room_cell};
 pub use summary::SummaryTexts;
 pub use tag::TagTexts;
 pub use vectors::{LOCAL as EMBED_LOCAL, Query, Using, Vectors};
@@ -163,6 +165,8 @@ impl Memory {
 /// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在记忆账号 `account` 的那一间，只在这个会话里的在会话自己的目录
 /// 里（属主 `owner` 的）。听众照属主，不照记忆账号：出厂人格的记忆归属主，系统账号开的会话归管理员，听的人还是属主。
 ///
+/// 跟着人格的、中途换过人格的（施工 P-13，`recast.rs`）：换过来以前的几轮当底子，抽取从换的那一条以后抽。
+///
 /// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）：搜以前的对话照谁在听挑，
 /// 一个场所里只搜得到这个场所的（第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
 /// `events` 是底子（分叉出来的支线才有，施工 R-13 三补）和这个会话自己的整份事件。
@@ -188,12 +192,15 @@ pub(crate) fn connect(
     let Some(memory) = memory else {
         return (None, None);
     };
-    let turns = Turns::connect(&memory.turns, &room, session, venue, events.0, events.1);
+    let floor = match scope {
+        MemoryScope::Persona => recast::floor(events.1, persona),
+        _ => None,
+    };
+    let (base, own) = recast::split(events.0, events.1, floor);
+    let turns = Turns::connect(&memory.turns, &room, session, venue, &base, own);
     let listener = Listener::of(account, owner, venue);
-    (
-        turns,
-        Some(Calls::new(memory, room, listener, owner, session)),
-    )
+    let calls = Calls::new(memory, room, listener, owner, session).since(floor);
+    (turns, Some(calls))
 }
 
 /// 会话的记忆的范围：子会话（`child`）不管交的、快照里的是什么都是 `off`（17 第二节，以前造的子会话快照里没有这一格）；

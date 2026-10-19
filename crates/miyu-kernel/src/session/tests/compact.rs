@@ -9,7 +9,7 @@ use crate::event::TurnStarted;
 use crate::session::Compaction;
 
 /// 压缩的数：尾巴的上限是 `tail`，别的很小。
-fn compaction(tail: u64) -> Compaction {
+pub(super) fn compaction(tail: u64) -> Compaction {
     Compaction {
         reserve_cap: 10,
         margin: 10,
@@ -29,7 +29,7 @@ fn compaction(tail: u64) -> Compaction {
 }
 
 /// 说过一轮的日志：1 造会话、2 hi、3 开回合、4、5 两块事实、6 回复、7 模型调用、8 结束。
-fn one_turn_log() -> Vec<Event> {
+pub(super) fn one_turn_log() -> Vec<Event> {
     let mut logged = Logged::new();
     let seen = logged.ask(2, "hi");
     logged.say(seen, "好。");
@@ -38,7 +38,11 @@ fn one_turn_log() -> Vec<Event> {
 }
 
 /// 照 `compaction` 载入这份日志；`window` 是交的窗口，没有的不交限额。
-fn loaded(log: Vec<Event>, compaction: Option<Compaction>, window: Option<u64>) -> Session {
+pub(super) fn loaded(
+    log: Vec<Event>,
+    compaction: Option<Compaction>,
+    window: Option<u64>,
+) -> Session {
     let mut policy = policy();
     policy.compaction = compaction;
     let (mut session, actions) =
@@ -57,7 +61,7 @@ fn loaded(log: Vec<Event>, compaction: Option<Compaction>, window: Option<u64>) 
 }
 
 /// 说过一轮、会压缩、尾巴不留、窗口大到不会自动压的会话。
-fn after_one_turn() -> Session {
+pub(super) fn after_one_turn() -> Session {
     loaded(one_turn_log(), Some(compaction(0)), Some(100_000))
 }
 
@@ -73,7 +77,7 @@ pub(super) fn compact(n: u64, instructions: Option<&str>) -> Input {
     })
 }
 
-fn rejected_reply(n: u64, reason: Reason) -> Action {
+pub(super) fn rejected_reply(n: u64, reason: Reason) -> Action {
     Action::Reply {
         id: id(n),
         outcome: Outcome::Rejected {

@@ -99,6 +99,13 @@ pub struct PolicyChanged {
     /// 钉着的引用没了、内核退回默认时写（施工 8-10）：原来那个。只和 `model` 一起出现（账本查）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub replaced: Option<String>,
+    /// 要换成的人格（施工 P-13，`16-人格与预设.md` Y5）：编号，空的是无人格。下一个回合开始时会话那一层照它重拼快照；内核只记
+    /// 不解读。以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub persona: Option<String>,
+    /// 要换成的预设（施工 P-13）：编号。同上。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
 }
 
 /// `session.meta_changed`：改了哪项写哪项。

@@ -11,6 +11,7 @@ use miyu_tool::{Call, Progress, Running, Spec, Tool, Venues};
 
 use super::test_support::{installed, look_now, names, setup};
 use super::*;
+use miyu_tool::Catalog;
 
 const LOCAL: Venues = Venues {
     local: true,
@@ -38,7 +39,7 @@ fn provide(refresh: &Refresh, tools: Vec<Arc<dyn Tool>>) {
 
 /// 看一遍，该换：照新的快照，记下现在这一代。
 fn swap(refresh: &mut Refresh) -> Snapshot {
-    let Seen::Swapped(snapshot, _, _, _) = look_now(refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(refresh) else {
         panic!("该换");
     };
     refresh.snapshot = (*snapshot).clone();

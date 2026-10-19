@@ -94,6 +94,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::Append { .. }
         | Command::SetPermission { .. }
         | Command::Configure { .. }
+        | Command::Recast { .. }
         | Command::SetWorkspace { .. }
         | Command::Ran { .. }
         | Command::Revert { .. }

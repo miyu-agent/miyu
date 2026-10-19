@@ -11,7 +11,7 @@ use super::action::{Action, Reason};
 use super::compaction::Due;
 use super::turn::Stage;
 use super::{Session, rejected};
-use crate::event::{Body, CompactTrigger, TurnStarted};
+use crate::event::{Body, CompactTrigger, Event, TurnStarted};
 use crate::id::{CommandId, Seq};
 use crate::origin::By;
 use crate::request::Request;
@@ -43,6 +43,20 @@ impl Session {
             return vec![rejected(id, Reason::NothingToCompact)];
         };
         let instructions = instructions.filter(|text| !text.trim().is_empty());
+        let started = self.open_manual(&id, at, upto, instructions);
+        self.accept(id, vec![started.seq]);
+        vec![Action::Append(vec![started])]
+    }
+
+    /// 单开一轮只做压缩（手动压缩、换人格前的那一次，施工 P-13）：追加 `turn.started`（没有 `trigger`，`by` 是内核，`cause`
+    /// 是命令 `id`），回合直接到「准备好」，替代到 `upto`。交回那一条；回应由调的一方定。
+    pub(super) fn open_manual(
+        &mut self,
+        id: &CommandId,
+        at: Timestamp,
+        upto: Seq,
+        instructions: Option<String>,
+    ) -> Event {
         let body = Body::TurnStarted(TurnStarted {
             trigger: None,
             triggers: Vec::new(),
@@ -55,14 +69,13 @@ impl Session {
         self.turn = Some(turn);
         // 记在一边的回报不再由它们另开一轮（施工 7-2）：随便哪一轮开了就清掉，和平常的回合一样。
         self.deferred.clear();
-        self.accept(id, vec![started.seq]);
-        vec![Action::Append(vec![started])]
+        started
     }
 
     /// 手动压缩替代到哪（`compaction.md` 第七条第 2 条）：照还没开的那一轮算，没有触发；尾巴的预算是策略的 `tail`，
     /// 有压缩线的不超过它的四分之一（没报窗口的也能手动压）。策略里没有压缩（6-2 以前造的快照）、没交过限额（算不了
     /// 尾巴）的，没有。
-    fn manual_upto(&self) -> Option<Seq> {
+    pub(super) fn manual_upto(&self) -> Option<Seq> {
         let compaction = self.policy.compaction.as_ref()?;
         let price = self.price()?;
         let budget = self

@@ -386,3 +386,39 @@ fn tokens_add_up_every_call_and_survive_the_table() {
         "输入三项加输出，思考已经算在输出里"
     );
 }
+
+#[test]
+fn a_changed_persona_or_preset_replaces_the_one_from_creation() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    index
+        .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
+        .unwrap();
+    let changed = |seq: u64, body: &str| {
+        event(&format!(
+            r#"{{"seq":{seq},"at":"2026-09-25T10:00:00.000Z","kind":"session.policy_changed","by":{{"kind":"person","account":"alice"}},"body":{body}}}"#
+        ))
+    };
+    let batch = [
+        changed(2, r#"{"persona":"miyu","preset":"chat"}"#),
+        changed(3, r#"{"model":"p/m"}"#),
+    ];
+    index
+        .advance(&id(), &mark(100, 2), &batch, &mark(300, 4))
+        .unwrap();
+    let got = row(&index).unwrap();
+    assert_eq!(
+        (got.persona.as_deref(), got.preset.as_deref()),
+        (Some("miyu"), Some("chat")),
+        "中途换的盖掉造会话时的，只换模型的不动（施工 P-13）"
+    );
+    index
+        .advance(
+            &id(),
+            &mark(300, 4),
+            &[changed(4, r#"{"persona":""}"#)],
+            &mark(400, 5),
+        )
+        .unwrap();
+    assert_eq!(row(&index).unwrap().persona, None, "空的是无人格");
+}

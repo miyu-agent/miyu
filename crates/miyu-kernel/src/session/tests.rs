@@ -34,6 +34,7 @@ mod question;
 mod queue;
 mod random;
 mod recap;
+mod recast;
 mod redo;
 mod reply;
 mod respond;

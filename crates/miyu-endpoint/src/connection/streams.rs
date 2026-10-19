@@ -273,6 +273,16 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     if let Some(goal) = &current.goal {
         reply["goal"] = crate::view::status::goal_of(core, goal);
     }
+    // 中途换了人格、预设的（施工 P-13）：照换成的写，换成无人格的不写 `persona`。
+    if let Some(reply) = reply.as_object_mut() {
+        match &current.persona {
+            Some(persona) => reply.insert("persona".to_string(), json!(persona)),
+            None => reply.remove("persona"),
+        };
+    }
+    if let Some(preset) = &current.preset {
+        reply["preset"] = json!(preset);
+    }
 }
 
 /// 带 `after` 订阅（施工 3-8 六补）：总是换一个新的。原来有一个的，先等它把交给它的推送、回应都放完、拿回它的订阅，补的

@@ -355,15 +355,11 @@ pub(crate) fn remembers(core: &Core, handle: &Handle) -> bool {
 /// 会话 `handle` 用的那一间，听众是 `hearer`：本机的、记忆开着的才有。
 fn keeper_of(core: &Core, handle: &Handle, hearer: By) -> Result<Keeper, Refusal> {
     let room = room(handle).ok_or(Refusal::MEMORY_UNAVAILABLE)?;
-    Ok(Keeper::new(
-        &memory(core)?,
-        room.clone(),
-        Listener::Owner(hearer),
-    ))
+    Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
 }
 
 /// 会话 `handle` 用的那一间：本机的、记忆开着的才有。
-fn room(handle: &Handle) -> Option<&Room> {
+fn room(handle: &Handle) -> Option<Room> {
     handle
         .memory_room()
         .filter(|_| handle.venue().as_str() == LOCAL)

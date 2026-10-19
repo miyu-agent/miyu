@@ -15,7 +15,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     refresh.snapshot.tools[0].description = "Read, the old way.".to_string();
     let read = refresh.snapshot.tools[0].clone();
     write_preset(&root, "[tools]\nshell = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["read", "remember"]);
@@ -24,7 +24,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     refresh.snapshot = *snapshot;
     assert!(matches!(look_now(&refresh), Seen::Same), "换过以后不再换");
     write_preset(&root, "[software]\nbasesystem = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["remember"]);
@@ -35,7 +35,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     );
     refresh.snapshot = *snapshot;
     write_preset(&root, "");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改回来也换");
     };
     assert_eq!(
@@ -53,7 +53,7 @@ fn memory_stays_as_it_was_when_the_session_was_made() {
         &root,
         "[software]\nmemory = false\n\n[tools]\nshell = false\n",
     );
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(
@@ -66,7 +66,7 @@ fn memory_stays_as_it_was_when_the_session_was_made() {
     let (_scratch, root, refresh) = setup("preset-memory-off", "[software]\nmemory = false\n");
     assert_eq!(names(&refresh.snapshot), ["read", "shell"]);
     write_preset(&root, "");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["read", "shell"], "关着的也照旧关着");
@@ -79,7 +79,7 @@ fn roleplay_turned_on_brings_the_reminder_back() {
     let prompts = root.path().join("home/alice/personas/miyu/prompts");
     std::fs::write(prompts.join("reminders.md"), "Stay soft.\n").expect("写得进");
     write_preset(&root, "");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("人格、预设都改了，换一次");
     };
     assert!(snapshot.reminder.is_some(), "角色扮演打开了");
@@ -130,7 +130,7 @@ fn without_a_persona_a_changed_preset_still_swaps() {
     );
     assert!(matches!(look_now(&refresh), Seen::Same), "没改的不换");
     write_preset(&root, "[tools]\nshell = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("无人格的照样换预设");
     };
     assert_eq!(snapshot.persona, None);
@@ -148,7 +148,7 @@ fn an_upgraded_session_still_follows_its_preset() {
     refresh.snapshot.core.facts.env = "<env/>\n".to_string();
     assert!(matches!(look_now(&refresh), Seen::Same), "光是升级不换");
     write_preset(&root, "[software]\nroleplay = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了预设要换");
     };
     assert_eq!(
@@ -208,7 +208,7 @@ fn a_feature_switched_off_takes_its_tools_away() {
         feature("roleplay", "roleplay", &[]),
     ]);
     write_preset(&root, "[features]\ncommands = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["read", "remember"]);
@@ -233,7 +233,7 @@ fn a_swap_leaves_reminders_out_when_they_are_not_installed() {
     refresh.presets.as_mut().expect("有预设的几层").features =
         Features::new(vec![feature("basesystem"), feature("memory")]);
     super::test_support::write(&root, "reminders.md", "Stay soft.\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("人格改了要换");
     };
     assert_eq!(snapshot.reminder, None, "没装人设遵循提醒");
@@ -252,7 +252,7 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
         .cloned()
         .expect("有 shell");
     write_preset(&root, "[features]\nbackground = false\n");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
     assert!(snapshot.foreground, "记下关着");
@@ -263,7 +263,7 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
     );
     refresh.snapshot = *snapshot;
     write_preset(&root, "");
-    let Seen::Swapped(snapshot, _, _, _) = look_now(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改回来也换");
     };
     assert!(!snapshot.foreground, "开着的不记");

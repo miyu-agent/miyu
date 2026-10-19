@@ -130,8 +130,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             parent: Some(parent.clone()),
             depth: Some(1),
             model: plan.model,
-            persona: created.persona,
-            preset: created.preset,
+            persona: plan.persona,
+            preset: plan.preset.or(created.preset),
             images: created.images,
             forked: Some(Forked {
                 from: parent,

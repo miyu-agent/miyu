@@ -17,21 +17,23 @@ use miyu_kernel::id::{ContentHash, VenueId};
 use miyu_kernel::session::Policy;
 use miyu_policy::PersonaTexts;
 use miyu_policy::features::Features;
-use miyu_policy::preset::{Chosen, MEMORY, PresetFile, ROLEPLAY};
-use miyu_policy::{GuardTexts, RunTexts, Snapshot, ToolEntry};
+use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
+use miyu_policy::{GuardTexts, RunTexts, Snapshot};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::ResourceRoot;
-use miyu_tool::{Catalog, Edition, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE, KB_SEARCH, Shelf};
+use miyu_tool::{Edition, Shelf};
 
 use super::Actor;
 use crate::TARGET;
-use crate::agents::{Agents, Holds, Offers, Reach, Site, persona_choices};
+use crate::agents::{Agents, Reach};
 use crate::blocking::blocking;
 use crate::knowledge::Shelves;
 use crate::open::PresetPlaces;
 use crate::snapshot::{Parts, build, tooled};
 use crate::spawn::Lineage;
+use face::{followed, offered, refaced, reshelved, shelf_tools};
+use recast::Wanted;
 
 /// 换快照要的：人格的几层、资源目录、存快照的地方，现在的快照，是不是子会话；预设的几层和装了的软件，重新筛工具面要的目录
 /// 架子、场所、父会话（施工 P-2 下、O-2 中）。
@@ -56,14 +58,23 @@ pub(crate) struct Refresh {
     pub(crate) images: bool,
     /// 属主的项目文件（施工 H-3，`miyu_store::projects`）：回合开始照会话现在在哪个项目找附加提示词。
     pub(crate) projects: std::path::PathBuf,
+    /// 记忆放在哪一间（施工 P-13）：和 [`crate::Handle`] 共用，换人格时跟着换。
+    pub(crate) room: crate::memory::RoomCell,
 }
 
 /// 看了一遍的结果。
 enum Seen {
     /// 没改，或者以前造的快照没有指纹。
     Same,
-    /// 改了，换上这一份：快照、照它造的策略、它的哈希，执行器的几份字（施工 P-1 三补）。
-    Swapped(Box<Snapshot>, Box<Policy>, ContentHash, Box<Retext>),
+    /// 改了，换上这一份：快照、照它造的策略、它的哈希，执行器的几份字（施工 P-1 三补），换了人格的连同新人格的知识库
+    /// （施工 P-13）。
+    Swapped(
+        Box<Snapshot>,
+        Box<Policy>,
+        ContentHash,
+        Box<Retext>,
+        Option<Recast>,
+    ),
     /// 人格、预设找不着、写错了、读不了：照旧。
     Unreadable(String),
     /// 改了，换不了：拼不成、存不进：照旧。
@@ -89,24 +100,29 @@ impl Actor {
             .hooks()
             .map(|(port, session)| port.appended(session.as_str()))
             .unwrap_or_default();
-        // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。
+        // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。人中途换的人格、预设（施工 P-13）。
         let project = self.session.project().map(str::to_string);
-        match blocking(move || look(&refresh, &values, &now, (asked, project))).await {
+        let wanted = Wanted::of(&self.session, &refresh.snapshot, refresh.child);
+        match blocking(move || look(&refresh, &values, &now, (asked, project, wanted))).await {
             Seen::Same => {
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.seen = Some(seen);
                 }
                 None
             }
-            Seen::Swapped(snapshot, policy, hash, texts) => {
-                tracing::info!(target: TARGET, persona = persona.as_deref(), "persona swapped");
+            Seen::Swapped(snapshot, policy, hash, texts, recast) => {
+                tracing::info!(target: TARGET, persona = persona.as_deref(), to = snapshot.persona.as_deref(), "persona swapped");
                 self.session.stage_policy(*policy);
                 let Retext { driver, run, guard } = *texts;
                 self.model.retext(driver);
                 self.tools.lettering().set(run, guard);
+                let to = snapshot.persona.clone();
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.snapshot = *snapshot;
                     refresh.seen = Some(seen);
+                }
+                if let Some(Recast { shelves }) = recast {
+                    self.rehome(to, shelves).await;
                 }
                 Some(hash)
             }
@@ -128,7 +144,7 @@ fn look(
     refresh: &Refresh,
     values: &Values,
     now: &Edition,
-    (asked, project): (BTreeMap<String, Option<String>>, Option<String>),
+    (asked, project, wanted): (BTreeMap<String, Option<String>>, Option<String>, Wanted),
 ) -> Seen {
     let old = &refresh.snapshot;
     // 项目的附加提示词（施工 H-3）：照这一刻拼，和快照里的不一样这一轮要换。
@@ -141,24 +157,38 @@ fn look(
     let said = asked
         .iter()
         .any(|(package, text)| old.appended.get(package) != text.as_ref());
-    // 无人格的（施工 P-4 上）只看预设；人格的文件没了的照快照里的接着用，不换也不报。
-    let texts = match (&old.persona, &old.persona_digest) {
-        (None, _) => PersonaTexts::default(),
-        (Some(_), None) => return Seen::Same,
-        (Some(id), Some(_)) => match refresh.personas.find(id) {
-            Ok(found) => found.texts,
+    // 无人格的（施工 P-4 上）只看预设；人格的文件没了的照快照里的接着用，不换也不报。人换了人格的照新的（施工 P-13）。
+    let (name, texts) = match (&wanted.persona, &old.persona, &old.persona_digest) {
+        (Some(to), _, _) => match recast::texts(refresh, to.as_deref()) {
+            Ok(texts) => (to.clone(), texts),
+            Err(seen) => return seen,
+        },
+        (None, None, _) => (None, PersonaTexts::default()),
+        (None, Some(_), None) => return Seen::Same,
+        (None, Some(id), Some(_)) => match refresh.personas.find(id) {
+            Ok(found) => (old.persona.clone(), found.texts),
             Err(PersonaError::NotFound(_)) => return Seen::Same,
             Err(error) => return Seen::Unreadable(error.to_string()),
         },
     };
-    let preset = match preset(refresh) {
+    let preset = match &wanted.preset {
+        Some(id) => recast::preset(refresh, id).map(Preset::Changed),
+        None => preset(refresh),
+    };
+    let preset = match preset {
         Ok(preset) => preset,
         Err(error) => return Seen::Unreadable(error),
     };
-    let same = old
-        .persona_digest
-        .as_ref()
-        .is_none_or(|digest| texts.digest() == *digest);
+    let same = wanted.persona.is_none()
+        && old
+            .persona_digest
+            .as_ref()
+            .is_none_or(|digest| texts.digest() == *digest);
+    // 换了人格的知识库照新人格查（施工 P-13）。
+    let shelves = match &wanted.persona {
+        Some(to) => recast::shelves(refresh, to.as_deref()),
+        None => refresh.knowledge.clone(),
+    };
     // 目录换了代：预设找得回来的（或者本来没有预设的）照现在的目录重新筛；以前造的、找不回来的照旧（施工 O-2 中）。
     let moved = refresh
         .seen
@@ -168,13 +198,11 @@ fn look(
     let catalog = &now.catalog;
     // 知识库的两件照这一刻查不查得到、照现在的目录和预设该有哪几件（施工 K-1 下）；和快照里的不一样才算改了。预设找不回来的
     // 照旧。
-    let listed = refresh
-        .knowledge
+    let listed = shelves
         .as_ref()
         .map(|shelves| shelves.listed())
         .unwrap_or_default();
-    let reach = refresh
-        .knowledge
+    let reach = shelves
         .as_ref()
         .map_or(Reach::Save, |shelves| shelves.reach(&listed));
     let shelved = match &preset {
@@ -232,7 +260,7 @@ fn look(
     let appended = crate::appended::resolve(catalog, &face, &old.appended, &asked);
     let reappended = appended != old.appended;
     let parts = Parts {
-        name: old.persona.clone(),
+        name,
         texts,
         attended: old.attended,
         face,
@@ -290,7 +318,20 @@ fn look(
         return Seen::Kept(error.to_string());
     }
     let hash = new.hash();
-    Seen::Swapped(Box::new(new), Box::new(policy), hash, Box::new(texts))
+    let recast = wanted.persona.map(|_| Recast { shelves });
+    Seen::Swapped(
+        Box::new(new),
+        Box::new(policy),
+        hash,
+        Box::new(texts),
+        recast,
+    )
+}
+
+/// 换了人格（施工 P-13）：快照换上以后 actor 照它挪记忆、换知识库。
+struct Recast {
+    /// 新人格的知识库：没接知识库的没有。
+    shelves: Option<Arc<Shelves>>,
 }
 
 /// 执行器取自快照的几份字（施工 P-1 三补）：换快照时一起换。
@@ -349,135 +390,13 @@ fn preset(refresh: &Refresh) -> Result<Preset, String> {
     })
 }
 
-/// 照预设 `file`、现在的目录 `catalog` 筛出给这个会话的工具（施工 P-2 中、O-2 中）：场所、子会话、能不能确认、记忆的范围照旧
-/// 快照；新打开的 `subagent` 能选的池照这一轮的配置 `values`。
-fn offered(
-    refresh: &Refresh,
-    values: &Values,
-    catalog: &Catalog,
-    file: Option<&PresetFile>,
-    reach: Reach,
-) -> Vec<ToolEntry> {
-    let old = &refresh.snapshot;
-    Agents::face(
-        catalog,
-        Site {
-            venue: &refresh.venue,
-            group: old.group.is_some(),
-        },
-        refresh.lineage.as_ref(),
-        &Offers::of(values, persona_choices(&refresh.personas)),
-        old.attended,
-        Holds {
-            memory: old.memory_scope(),
-            knowledge: reach,
-        },
-        file.map(|file| (file, features(refresh))),
-    )
-}
-
-/// 知识库的几件（施工 K-1 下两件，K-3 加了写的三件）。
-const KB_TOOLS: [&str; 5] = [KB_SEARCH, KB_READ, KB_SAVE, KB_EDIT, KB_DELETE];
-
-/// 工具面里知识库的几件，照名字排：比快照里的和这一刻该有的一样不一样。
-fn shelf_tools(face: &[ToolEntry]) -> Vec<&str> {
-    let mut names: Vec<&str> = face
-        .iter()
-        .map(|entry| entry.name.as_str())
-        .filter(|name| KB_TOOLS.contains(name))
-        .collect();
-    names.sort_unstable();
-    names
-}
-
-/// 知识库的几件换成这一刻该有的 `fresh` 里的（施工 K-1 下）：查得到的照现在的目录、预设补上，查不到的拿掉；别的照旧。
-fn reshelved(face: Vec<ToolEntry>, fresh: &[ToolEntry]) -> Vec<ToolEntry> {
-    let shelf = |entry: &ToolEntry| KB_TOOLS.contains(&entry.name.as_str());
-    face.into_iter()
-        .filter(|entry| !shelf(entry))
-        .chain(fresh.iter().filter(|entry| shelf(entry)).cloned())
-        .collect()
-}
-
-/// 预设改了，照新的预设 `file` 重新筛工具面（施工 P-2 下）：以前就有的那几件照旧快照里的原样（描述、`subagent` 能选的池都
-/// 不跟着变，改过名的照旧叫以前的名字），新打开的照现在的目录拿；提供者的工具照现在的登记（施工 O-2 中）。
-fn refaced(
-    refresh: &Refresh,
-    values: &Values,
-    catalog: &Catalog,
-    file: &PresetFile,
-    reach: Reach,
-) -> Vec<ToolEntry> {
-    let old = &refresh.snapshot;
-    offered(refresh, values, catalog, Some(file), reach)
-        .into_iter()
-        .map(|entry| {
-            if catalog.provided(&entry.name) {
-                return entry;
-            }
-            old.tools
-                .iter()
-                .find(|kept| {
-                    catalog
-                        .get(&kept.name)
-                        .is_some_and(|tool| tool.spec().name == entry.name)
-                })
-                .cloned()
-                .unwrap_or(entry)
-        })
-        .collect()
-}
-
-/// 目录换了代、预设没改（施工 O-2 中）：照旧快照的先后一件一件对现在的目录 `catalog`。提供者的照现在的登记，不再给这个会话
-/// 的拿掉；自带的照旧快照里的原样，不新加。目录里没有了的：上一次对过的那一代里是提供者的拿掉（扩展关掉了、不再登记它），
-/// 别的照旧留着、调到时暂时不可用（施工 4-2：程序升级拿掉的，载入的会话认不出来的；施工 F-5 中：随包卸掉的，调到时报已卸载）。
-/// 新登记的提供者的工具加进来；新装上的内置包（上一次对过的那一代里这个包一件都没有，施工 F-5 中）的工具也加进来，照样过
-/// 预设；快照照名字排（`miyu_policy` 的工具面）。
-fn followed(
-    refresh: &Refresh,
-    values: &Values,
-    catalog: &Catalog,
-    file: Option<&PresetFile>,
-    reach: Reach,
-) -> Vec<ToolEntry> {
-    let fresh = offered(refresh, values, catalog, file, reach);
-    let basis = refresh.seen.as_ref().map(|seen| &seen.catalog);
-    let mut face = Vec::new();
-    for kept in &refresh.snapshot.tools {
-        match catalog.get(&kept.name) {
-            Some(tool) if catalog.provided(&kept.name) => {
-                let name = &tool.spec().name;
-                face.extend(fresh.iter().find(|entry| entry.name == *name).cloned());
-            }
-            Some(_) => face.push(kept.clone()),
-            // 随包卸掉的提供者的工具照旧留着、调到时报已卸载（施工 F-5 下）；关掉的扩展的拿掉。
-            None if basis.is_some_and(|basis| basis.provided(&kept.name))
-                && !catalog.gone(&kept.name) => {}
-            None => face.push(kept.clone()),
-        }
-    }
-    // 新装上的内置包：它的包在上一次对过的那一代里一件工具都没有。包里多了一件的（程序升级那种）照旧等预设改了才进来。
-    let appeared = |name: &str| {
-        basis.is_some_and(|basis| {
-            catalog
-                .package_of(name)
-                .is_some_and(|package| !basis.packages().any(|owner| owner == package))
-        })
-    };
-    let added: Vec<ToolEntry> = fresh
-        .into_iter()
-        .filter(|entry| {
-            (catalog.provided(&entry.name) || appeared(&entry.name))
-                && !face.iter().any(|kept| kept.name == entry.name)
-        })
-        .collect();
-    face.extend(added);
-    face
-}
-
+mod face;
 #[cfg(test)]
 mod preset_tests;
 mod project;
+mod recast;
+#[cfg(test)]
+mod recast_tests;
 #[cfg(test)]
 mod shelf_tests;
 #[cfg(test)]

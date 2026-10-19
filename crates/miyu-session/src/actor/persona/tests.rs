@@ -13,6 +13,7 @@ use miyu_tool::testkit::{Act, Fake};
 
 use super::test_support::{Scratch, scratch_root, write};
 use super::*;
+use miyu_tool::Catalog;
 
 /// 照全是默认值的配置看一遍。
 fn seen(refresh: &Refresh) -> Seen {
@@ -78,6 +79,7 @@ fn setup_with(
         skills: None,
         images: true,
         projects: std::path::PathBuf::from("no-such-projects.json"),
+        room: Default::default(),
     };
     (scratch, root, refresh)
 }
@@ -87,7 +89,7 @@ fn an_unchanged_persona_is_the_same_and_a_changed_one_swaps() {
     let (_scratch, root, refresh) = setup("swap", "You are Miyu.\n");
     assert!(matches!(seen(&refresh), Seen::Same));
     write(&root, "persona.md", "You are Miyu, softly.\n");
-    let Seen::Swapped(snapshot, _, hash, _) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, _, hash, ..) = seen(&refresh) else {
         panic!("改了要换");
     };
     assert!(snapshot.system.starts_with("You are Miyu, softly."));
@@ -108,7 +110,7 @@ fn a_swap_keeps_the_skills_it_was_made_with() {
         .clone()
         .with_skills(Some(block.to_string()));
     write(&root, "persona.md", "You are Miyu, softly.\n");
-    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = seen(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(snapshot.skills.as_deref(), Some(block));
@@ -125,7 +127,7 @@ fn a_swap_keeps_the_profile_it_was_made_with() {
         .clone()
         .with_profile(Some(block.to_string()));
     write(&root, "persona.md", "You are Miyu, softly.\n");
-    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = seen(&refresh) else {
         panic!("改了要换");
     };
     assert_eq!(snapshot.profile.as_deref(), Some(block));
@@ -150,7 +152,7 @@ fn a_group_keeps_its_note_and_time_zone_across_a_swap() {
             .starts_with(&format!("You are Miyu.\n\n{}", note.trim_end()))
     );
     write(&root, "persona.md", "You are Miyu, softly.\n");
-    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = seen(&refresh) else {
         panic!("改了要换");
     };
     assert!(
@@ -183,7 +185,7 @@ fn a_session_made_before_an_upgrade_still_swaps_with_the_new_core_texts() {
         "光是升级不换：不为它断一次缓存"
     );
     write(&root, "persona.md", "You are Miyu, softly.\n");
-    let Seen::Swapped(snapshot, _, _, texts) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, _, _, texts, _) = seen(&refresh) else {
         panic!("改了人格要换");
     };
     assert_eq!(snapshot.core.facts.env, shipped, "换上新的核心的字");
@@ -213,7 +215,7 @@ fn roleplay_stays_off_across_a_swap() {
     let (_scratch, root, mut refresh) =
         setup_with("roleplay", "You are Miyu.\n", Some(pin.clone()), None);
     write(&root, "reminders.md", "Stay soft.\n");
-    let Seen::Swapped(snapshot, _, _, _) = seen(&refresh) else {
+    let Seen::Swapped(snapshot, ..) = seen(&refresh) else {
         panic!("多了角色扮演提示也算改了");
     };
     assert_eq!(snapshot.reminder, None, "预设没开角色扮演");

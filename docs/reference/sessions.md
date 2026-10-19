@@ -17,7 +17,7 @@
 | [`session.set_permission_level`](#sessionset_permission_level) | 切权限级别、只读开关 |
 | [`session.set_workspace`](#sessionset_workspace) | 换工作目录 |
 | [`session.set_meta`](#sessionset_meta) | 改标题、置顶 |
-| [`session.configure`](#sessionconfigure) | 换模型 |
+| [`session.configure`](#sessionconfigure) | 换模型、人格、预设 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`view.page`](#viewpage) | 按页读历史 |
@@ -277,13 +277,18 @@
 
 ## `session.configure`
 
-换这个会话用的模型，下一轮开始生效。
+换这个会话用的模型、人格、预设，下一轮开始生效。
 
-**参数**：`session`；`model`（必写）：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
+**参数**：`session`；下面三格至少写一格：
+- `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
+- `persona`：人格编号；`null` 是无人格。
+- `preset`：预设编号。
 
-**回应**：`{}`。变了的推 `session.policy_changed`；生效的那一刻推 `model.changed`。
+换人格、预设时先压缩一轮：核心马上照旧人格把前面的对话压成摘要，下一轮换上新的，从摘要接着聊。跟着人格的记忆从这一轮起记在新人格那一间，以前的留在原来那一间。
 
-**出错**：`bad_params`（没写 `model`、空字符串、不是字符串也不是 `null`）；`unknown_model`。
+**回应**：`{}`。变了的推 `session.policy_changed`；换模型生效的那一刻推 `model.changed`。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写。
+
+**出错**：`bad_params`（三格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格）；`unknown_model`；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
 
 ## `session.fork`
 

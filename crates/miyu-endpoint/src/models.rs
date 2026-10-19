@@ -48,7 +48,8 @@ struct ListParams {
     models: Option<Vec<String>>,
 }
 
-/// `session.configure` 的参数：`session`、`model` 都必写，`model` 是空字当参数不对（「施工时定的」8-10）。思考强度改在
+/// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset` 至少写一样，空字当参数不对（「施工时定的」
+/// 8-10）。思考强度改在
 /// 配置里，这里不再收 `effort`：写了（不是 `null`）的也是参数不对（施工 8-18（补），「怎么走」第十一条）——这是协议里
 /// 「同一个主版本只加、都忽略不认识的字段」的一处例外：这个字段以前收过，照样收但当场拒，免得旧头以为还能这样换、静悄悄
 /// 没生效。
@@ -56,29 +57,46 @@ struct ListParams {
 pub(crate) struct ConfigureParams {
     /// 哪个会话。
     pub(crate) session: String,
-    /// 换成的引用，还没解析；写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。不写的是参数不对。
+    /// 换成的引用，还没解析；写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。不写的不换。
     #[serde(default, deserialize_with = "crate::personas::written")]
     model: Option<Option<String>>,
+    /// 换成的人格（施工 P-13）：写 `null` 的换成无人格，不写的不换。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    persona: Option<Option<String>>,
+    /// 换成的预设（施工 P-13）：不写的不换。
+    #[serde(default)]
+    preset: Option<String>,
     /// 以前收的思考强度；只用来判断写没写，内容不读。
     #[serde(default)]
     effort: Option<Value>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样；写 `null` 的是空的（回到跟着 `models.chat`）。没写、空字、写了 `effort` 的是参数不对。
+    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。三样一样都没写、写了空字、
+    /// 写了 `effort` 的是参数不对。
     ///
     /// # Errors
     ///
-    /// 没写、空字、写了 `effort`：`bad_params`。
-    pub(crate) fn model(&self) -> Result<Option<&str>, Refusal> {
-        if self.effort.is_some() {
+    /// 三样都没写、空字、写了 `effort`：`bad_params`。
+    pub(crate) fn model(&self) -> Result<Option<Option<&str>>, Refusal> {
+        let empty = |text: &Option<String>| text.as_deref() == Some("");
+        if self.effort.is_some()
+            || (self.model.is_none() && self.persona.is_none() && self.preset.is_none())
+            || self.model.as_ref().is_some_and(empty)
+            || self.persona.as_ref().is_some_and(empty)
+            || empty(&self.preset)
+        {
             return Err(Refusal::BAD_PARAMS);
         }
-        match &self.model {
-            Some(Some(model)) if !model.is_empty() => Ok(Some(model)),
-            Some(None) => Ok(None),
-            _ => Err(Refusal::BAD_PARAMS),
-        }
+        Ok(self.model.as_ref().map(Option::as_deref))
+    }
+
+    /// 换成的人格、预设（施工 P-13）：同 [`ConfigureParams::model`] 先查过。
+    pub(crate) fn recast(&self) -> (Option<Option<&str>>, Option<&str>) {
+        (
+            self.persona.as_ref().map(Option::as_deref),
+            self.preset.as_deref(),
+        )
     }
 }
 

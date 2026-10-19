@@ -102,6 +102,7 @@ impl Actor {
         if !extractor.due(generation) || !self.session.vacant() || !keeper.installed() {
             return extractor.disarm(generation);
         }
+        let floor = calls.floor();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
             let read = keeper
@@ -110,7 +111,7 @@ impl Actor {
                 .and_then(|after| {
                     let events =
                         miyu_store::log::read_events(&dir).map_err(|error| error.to_string())?;
-                    Ok((after.unwrap_or(Seq::FIRST), events))
+                    Ok((after.unwrap_or(Seq::FIRST).max(floor), events))
                 });
             answer_back(&backs, Back::ExtractRead { generation, read });
         });
@@ -194,6 +195,7 @@ impl Actor {
             return;
         };
         let generation = extractor.arm();
+        let floor = calls.floor();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
             let read = keeper
@@ -202,7 +204,7 @@ impl Actor {
                 .and_then(|after| {
                     let events =
                         miyu_store::log::read_events(&dir).map_err(|error| error.to_string())?;
-                    Ok((after.unwrap_or(Seq::FIRST), events))
+                    Ok((after.unwrap_or(Seq::FIRST).max(floor), events))
                 });
             answer_back(
                 &backs,

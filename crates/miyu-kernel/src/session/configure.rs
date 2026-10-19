@@ -15,9 +15,14 @@ use crate::id::{CommandId, Seq};
 use crate::origin::By;
 use crate::time::Timestamp;
 
-/// 会话的引用，和最近一次换模型写在第几条：每追加一条记一次，载入时照整份日志一路算（`load.rs`）。
+/// 会话的引用，和最近一次换模型写在第几条；会话现在要用的人格、预设（施工 P-13）：每追加一条记一次，载入时照整份日志一路算
+/// （`load.rs`）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct Reference {
+    /// 人格：`session.created` 的，被后来带 `persona` 的 `session.policy_changed` 盖掉（空的是无人格）。
+    persona: Option<String>,
+    /// 预设：同上。
+    preset: Option<String>,
     /// 会话现在的引用；以前的日志没有记下的、造的时候连 `models.chat` 都没配的没有。
     model: Option<String>,
     /// 最近一条带 `model` 的 `session.policy_changed` 的序号：写在它前面的自动压缩的暂停、失败不再算（`compaction.md`
@@ -26,10 +31,14 @@ pub(super) struct Reference {
 }
 
 impl Reference {
-    /// 记下一条：`session.created` 定开头的引用，带 `model` 的 `session.policy_changed` 换掉它。
+    /// 记下一条：`session.created` 定开头的引用、人格、预设，带 `model`、`persona`、`preset` 的 `session.policy_changed` 换掉它们。
     pub(super) fn note(&mut self, event: &Event) {
         match &event.body {
-            Body::SessionCreated(created) => self.model.clone_from(&created.model),
+            Body::SessionCreated(created) => {
+                self.model.clone_from(&created.model);
+                self.persona.clone_from(&created.persona);
+                self.preset.clone_from(&created.preset);
+            }
             // 空的是回到跟着 `models.chat`（施工 8-10 再补）。
             Body::PolicyChanged(PolicyChanged {
                 model: Some(model), ..
@@ -39,11 +48,30 @@ impl Reference {
             }
             _ => {}
         }
+        // 换人格、预设（施工 P-13）：和换模型可以在同一条里。
+        if let Body::PolicyChanged(changed) = &event.body {
+            if let Some(persona) = &changed.persona {
+                self.persona = Some(persona.clone()).filter(|persona| !persona.is_empty());
+            }
+            if let Some(preset) = &changed.preset {
+                self.preset = Some(preset.clone());
+            }
+        }
     }
 
     /// 会话现在的引用。
     pub(super) fn current(&self) -> Option<&str> {
         self.model.as_deref()
+    }
+
+    /// 会话现在要用的人格：无人格的没有。
+    pub(super) fn persona(&self) -> Option<&str> {
+        self.persona.as_deref()
+    }
+
+    /// 会话现在要用的预设：以前的日志没记的没有。
+    pub(super) fn preset(&self) -> Option<&str> {
+        self.preset.as_deref()
     }
 
     /// 第 `seq` 条写在最近一次换模型后面；没换过的都算。熔断照它只看换过去以后的暂停、失败。

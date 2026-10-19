@@ -49,6 +49,13 @@ pub enum Command {
         /// 只读开关；不改就没有。
         read_only: Option<bool>,
     },
+    /// `session.configure` 的 `persona`、`preset`：换人格、预设（施工 P-13），`recast.rs`。先单开一轮压缩，下一个回合开始时换。
+    Recast {
+        /// 换成的人格：没有是不换，`Some(None)` 是无人格。协议那一头查过在不在。
+        persona: Option<Option<String>>,
+        /// 换成的预设：没有是不换。
+        preset: Option<String>,
+    },
     /// `session.configure`：换模型（施工 8-10），`configure.rs`。下一个回合开始时生效；和现在的一样的不记。
     Configure {
         /// 换成的引用：模型或 `@池`，协议那一头已经查过。内核只存字，不解读。空的是回到跟着 `models.chat`（施工 8-10 再补，

@@ -9,7 +9,8 @@ use miyu_view::Status;
 
 use crate::Core;
 
-/// 订阅时定下、之后不变的：会话用哪个人格、哪个预设（照日志第一条 `session.created`，以前的日志没有的是 `None`）。
+/// 订阅时定下的：会话用哪个人格、哪个预设（照日志第一条 `session.created`，以前的日志没有的是 `None`）。向会话要得到「当前的」
+/// 照那一份（中途换了的，施工 P-13）。
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Fixed {
     pub(crate) persona: Option<Value>,
@@ -52,11 +53,23 @@ pub(crate) fn whole(
             status["goal"] = goal_of(core, goal);
         }
     }
-    if let Some(persona) = &fixed.persona {
-        status["persona"] = persona.clone();
+    // 中途换了的照向会话要的那一份（施工 P-13）；拿不到的照订阅时定下的。
+    let (persona, preset) = match current {
+        Some(current) => (
+            current.persona.as_ref().map(|persona| json!(persona)),
+            current
+                .preset
+                .as_ref()
+                .map(|preset| json!(preset))
+                .or_else(|| fixed.preset.clone()),
+        ),
+        None => (fixed.persona.clone(), fixed.preset.clone()),
+    };
+    if let Some(persona) = persona {
+        status["persona"] = persona;
     }
-    if let Some(preset) = &fixed.preset {
-        status["preset"] = preset.clone();
+    if let Some(preset) = preset {
+        status["preset"] = preset;
     }
     status
 }

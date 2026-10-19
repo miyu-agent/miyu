@@ -17,7 +17,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.set_permission_level`](#sessionset_permission_level) | Change the permission level, the read-only switch |
 | [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
 | [`session.set_meta`](#sessionset_meta) | Rename, pin |
-| [`session.configure`](#sessionconfigure) | Change the model |
+| [`session.configure`](#sessionconfigure) | Change the model, persona or preset |
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`view.page`](#viewpage) | Read history page by page |
@@ -277,13 +277,18 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 ## `session.configure`
 
-Change the session's model; it applies from the next turn.
+Change the session's model, persona or preset; it applies from the next turn.
 
-**Params**: `session`; `model` (required): `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
+**Params**: `session`; at least one of:
+- `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
+- `persona`: a persona id; `null` means no persona.
+- `preset`: a preset id.
 
-**Response**: `{}`. A change is pushed as `session.policy_changed`; when it takes effect, `model.changed`.
+Changing the persona or preset compacts first: the core summarizes the conversation so far under the old persona right away, and the next turn switches over and continues from the summary. Memory that follows the persona is kept in the new persona's room from then on; earlier memories stay where they were.
 
-**Errors**: `bad_params` (`model` missing, empty, or neither a string nor `null`); `unknown_model`.
+**Response**: `{}`. A change is pushed as `session.policy_changed`; when a model change takes effect, `model.changed`. `persona` and `preset` in `session.list` and the `subscribe` response show the new values right away.
+
+**Errors**: `bad_params` (nothing given, an empty string, a wrong type; a subagent changing persona or preset, with `data.field` naming it); `unknown_model`; `unknown_persona`; `unknown_preset`; `turn_running`: a turn is running while changing persona or preset (wait for it to finish).
 
 ## `session.fork`
 

@@ -45,8 +45,9 @@ pub struct Handle {
     /// 给头看的限额和会话接下来请求的模型：造会话、载入时交完限额向内核要的（施工 6-3 补）。和 actor 共用：钉住的池出错换了
     /// 成员（施工 8-9）、回合开始重新解析（施工 8-10），actor 写一次。
     shown: Arc<Mutex<Shown>>,
-    /// 这个会话的记忆放在哪一间（施工 R-3 补）：协议、`/remember` 照它找；范围 `off` 的、核心没交记忆的没有。造好以后不变。
-    memory: Option<Room>,
+    /// 这个会话的记忆放在哪一间（施工 R-3 补）：协议、`/remember` 照它找；范围 `off` 的、核心没交记忆的没有。和 actor 共用：
+    /// 中途换了人格的跟着换（施工 P-13）。
+    memory: crate::memory::RoomCell,
     /// 有没有长期目标（施工 X-8 下）：造会话、载入时工具面上有 `goal` 的才有，`/goal` 照它判；中途换了预设，下次载入照新的。
     goals: bool,
 }
@@ -164,21 +165,21 @@ impl Handle {
             oneshot,
             watched,
             shown,
-            memory: None,
+            memory: crate::memory::RoomCell::default(),
             goals: false,
         }
     }
 
     /// 带上这个会话的记忆的那一间（施工 R-3 补）。
     #[must_use]
-    pub(crate) fn with_memory(mut self, memory: Option<Room>) -> Handle {
+    pub(crate) fn with_memory(mut self, memory: crate::memory::RoomCell) -> Handle {
         self.memory = memory;
         self
     }
 
-    /// 这个会话的记忆放在哪一间（施工 R-3 补，`memory.md`「协议」）：范围 `off` 的没有。
-    pub fn memory_room(&self) -> Option<&Room> {
-        self.memory.as_ref()
+    /// 这个会话的记忆这时放在哪一间（施工 R-3 补，`memory.md`「协议」；中途换了人格的跟着换，施工 P-13）：范围 `off` 的没有。
+    pub fn memory_room(&self) -> Option<Room> {
+        self.memory.read().ok()?.clone()
     }
 
     /// 带上这个会话有没有长期目标（施工 X-8 下）。

@@ -19,7 +19,7 @@ use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::ReadLog;
 
 use crate::TARGET;
-use crate::memory::Turns;
+use crate::memory::{Calls, Turns};
 
 /// 一次写一批，返回时这一批都落了盘。在阻塞线程里用，所以要能挪到别的线程上。
 pub(crate) trait Store: Send + 'static {
@@ -36,7 +36,17 @@ pub(crate) trait Store: Send + 'static {
     fn dir(&self) -> Option<PathBuf> {
         None
     }
+
+    /// 换了人格，记忆挪了一间（施工 P-13）：照底子、自己的日志重接回合索引，交回新的记忆的端口。没有回合索引的照整份
+    /// 日志接，接上的回合索引不留。
+    fn rewire(&mut self, connect: Rewire) -> Result<Option<Calls>, String> {
+        Ok(connect(&[], &self.events()?).1)
+    }
 }
+
+/// 照底子、会话自己的日志接上记忆（施工 P-13，[`Store::rewire`]）。
+pub(crate) type Rewire =
+    Box<dyn FnOnce(&[Event], &[Event]) -> (Option<Turns>, Option<Calls>) + Send>;
 
 impl Store for SessionLog {
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
@@ -157,6 +167,16 @@ impl Store for Indexed {
 
     fn dir(&self) -> Option<PathBuf> {
         Store::dir(&self.log)
+    }
+
+    /// 读不了日志的回合索引一并放掉：不往原来那一间接着记。
+    fn rewire(&mut self, connect: Rewire) -> Result<Option<Calls>, String> {
+        self.turns = None;
+        let own = self.log.events()?;
+        let base = self.base.as_deref().map_or(&[][..], Vec::as_slice);
+        let (turns, calls) = connect(base, &own);
+        self.turns = turns;
+        Ok(calls)
     }
 }
 

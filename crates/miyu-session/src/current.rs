@@ -25,6 +25,10 @@ pub struct Current {
     pub tally: Tally,
     /// 长期目标现在的样子（施工 X-6）：没设过、清掉了的没有。
     pub goal: Option<crate::goal::Goal>,
+    /// 会话现在要用的人格（施工 P-13）：中途换过的照换的，无人格的没有。
+    pub persona: Option<String>,
+    /// 会话现在要用的预设（施工 P-13）：同上，以前的日志没记的没有。
+    pub preset: Option<String>,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

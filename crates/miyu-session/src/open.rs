@@ -273,9 +273,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         Ok((snapshot, policy, texts, run, (guard, place), log, turns))
     })
     .await?;
-    let room = calls.as_ref().map(|calls| calls.room().clone());
-    let kept = blobs.clone();
-    let stored = blobs.clone();
+    let room = crate::memory::room_cell(calls.as_ref());
+    let (kept, stored) = (blobs.clone(), blobs.clone());
     models.ready().await;
     let model = models.port(ForSession {
         id: id.clone(),
@@ -428,6 +427,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         skills: watch,
         images,
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
+        room: room.clone(),
     });
     let busy = actor.busy();
     let watched = actor.watched();

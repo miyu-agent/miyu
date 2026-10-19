@@ -84,6 +84,10 @@ pub struct ForkPlan {
     pub model: Option<String>,
     /// 那一刻手上的策略快照：最近换上的那一份，没换过的是造会话时的。
     pub policy: ContentHash,
+    /// 那一刻要用的人格（施工 P-13）：中途换过的照换的，分叉出来的照它记进 `session.created`。无人格的没有。
+    pub persona: Option<String>,
+    /// 那一刻要用的预设（施工 P-13）：同上；以前的日志没记的没有。
+    pub preset: Option<String>,
 }
 
 /// 照父会话 `parent` 落了盘的日志 `events` 算分叉要照的几样（施工 C-8 上）：日志过一遍父会话的账本，停在一轮当中的，分叉点
@@ -135,6 +139,8 @@ pub fn fork_plan(parent: &SessionId, events: &[Event]) -> Result<ForkPlan, LoadE
         permission,
         model: reference.current().map(str::to_string),
         policy,
+        persona: reference.persona().map(str::to_string),
+        preset: reference.preset().map(str::to_string),
     })
 }
 

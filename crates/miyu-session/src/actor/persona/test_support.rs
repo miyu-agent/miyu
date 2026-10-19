@@ -17,6 +17,8 @@ use miyu_tool::Tool;
 use miyu_tool::testkit::{Act, Fake};
 
 use super::*;
+use crate::agents::Offers;
+use miyu_tool::Catalog;
 
 /// 临时目录：用完删掉。
 pub(super) struct Scratch(PathBuf);
@@ -149,6 +151,7 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         skills: None,
         images: true,
         projects: std::path::PathBuf::from("no-such-projects.json"),
+        room: Default::default(),
     };
     (scratch, root, refresh)
 }

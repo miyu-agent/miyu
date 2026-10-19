@@ -184,6 +184,18 @@ impl Tools {
         Some((self.memory.clone()?, self.offset))
     }
 
+    /// 换了人格（施工 P-13）：记忆的端口、知识库换成新人格的；没接记忆的照旧没有。
+    pub(crate) fn rehome(
+        &mut self,
+        memory: Option<crate::memory::Calls>,
+        knowledge: Option<Arc<crate::knowledge::Shelves>>,
+    ) {
+        self.memory = memory;
+        if knowledge.is_some() {
+            self.knowledge = knowledge;
+        }
+    }
+
     /// 回合开始问扩展的端口和这个会话的编号（施工 X-16）：没交端口的没有。
     pub(crate) fn hooks(&self) -> Option<(Arc<dyn miyu_tool::HooksPort>, SessionId)> {
         Some((self.hooks.clone()?, self.session.clone()))

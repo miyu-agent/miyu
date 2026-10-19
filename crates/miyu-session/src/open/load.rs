@@ -207,7 +207,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let attended = snapshot.attended;
     let preset_id = created.preset.clone();
     let images = created.images;
-    let room = calls.as_ref().map(|calls| calls.room().clone());
+    let room = crate::memory::room_cell(calls.as_ref());
     // 分叉出来的不是任务，不交回报（施工 C-8 上）。
     let upstream = match created.forked {
         Some(_) => None,
@@ -442,6 +442,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         skills: watch,
         images,
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
+        room: room.clone(),
     });
     span.in_scope(|| {
         tracing::info!(

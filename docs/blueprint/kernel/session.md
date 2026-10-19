@@ -33,7 +33,8 @@
 | `crates/miyu-kernel/src/session/report.rs` | 向上回报：子会话欠不欠着父会话一份回报、什么时候报、报什么、正文怎么截（施工 7-6，`agents.md` 第二条、第八条） |
 | `crates/miyu-kernel/src/session/permission.rs` | 切权限级别、请求之前查事实 |
 | `crates/miyu-kernel/src/session/meta.rs` | 改标题、置顶；现在的标题、置顶（施工 3-8 三补） |
-| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。8-18 曾在这里加过会话给每个模型记的思考强度，8-18（补）去掉了 |
+| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。8-18 曾在这里加过会话给每个模型记的思考强度，8-18（补）去掉了 |
+| `crates/miyu-kernel/src/session/recast.rs` | 中途换人格、预设（施工 P-13）：收命令、记下要换成的、马上单开一轮压缩（「换人格、预设」） |
 | `crates/miyu-kernel/src/session/send.rs` | 发一条消息（施工 8-10 从 `session.rs` 挪出来，那边放不下了） |
 | `crates/miyu-kernel/src/session/restart.rs`、`load.rs` | 有计划的重启；从日志载入（认出哪次压缩还算数，`history.md`「载入」）、崩了的收尾、重启后接着干 |
 | `crates/miyu-kernel/src/accumulate.rs` | 增量拼成回复 |
@@ -101,6 +102,7 @@
 | `SetPermission { level, read_only }` | `session.set_permission_level` | 常用的那一级、只读开关，不改的是 `None` | 「切权限级别」 |
 | `SetMeta { title, pinned }` | `session.set_meta` | 新的标题（空的是去掉标题）、置顶，不改的是 `None`（施工 3-8 三补） | 「改标题、置顶」 |
 | `Configure { model }` | `session.configure` | 换成的引用：模型或 `@池`（施工 8-10），协议那一头已经查过 | 「换模型」 |
+| `Recast { persona, preset }` | `session.configure` | 换成的人格（外层没有是不换，`Some(None)` 是无人格）、预设（施工 P-13），协议那一头已经查过 | 「换人格、预设」 |
 | `Answer { call_id, answer }` | `session.answer` | `Answer::Approval { decision, reason }` 或 `Answer::Questions(回答)` | `asking.md` |
 | `Revert { turn }`、`Unrevert` | `session.revert`、`session.unrevert` | 从哪一轮起，`None` 是最后一轮 | `history.md` |
 | `Redo { text, attachments }` | `session.redo` | 开这一轮的那一句里的字、附件各换成的块，`None` 是照原来的，两样都没有的原样重发（施工 4-7 再补） | `history.md`「重做」 |
@@ -521,6 +523,13 @@
 4. 回合进行中换的，这一轮照开始时的，下一轮开始才交出去。手动压缩、清空单开的那一轮不跑挂接点，也就不交、不重新解析（`compaction.md`）。
 5. 换了模型，自动压缩的暂停解除：写在最近一条带 `model` 的 `session.policy_changed` 前面的暂停、失败不再算（`compaction.md` 第十条第 6 条，`breaker.rs`）。
 6. 施工 8-18 曾在这里加过「思考强度」一条：会话给每个模型记一格，从日志算。8-18（补）去掉了：思考强度改在配置里（`models.md`「怎么走」第十一条），内核不再记这一格，以前的日志里带 `effort` 的照读得进（不认识的字段不管），不拼进来。
+
+**换人格、预设**（`Recast`，施工 P-13，`recast.rs`，`16-人格与预设.md` Y5）：
+
+1. 会话要用的人格、预设从日志算：`session.created` 的 `persona`、`preset`，被后来带这两格的 `session.policy_changed` 盖掉（空的人格是无人格）。`persona()`、`preset()` 只读交给执行器，分叉照分叉点为止的算（`fork_plan`）。
+2. 有回合在进行的拒，`turn_running`。和现在一样的格去掉；一格都不剩的接受、什么都不记、编号照记。
+3. 别的：追加一条 `session.policy_changed`，写 `persona`（无人格写空的）、`preset`，`by` 是换的人；能压的话紧跟着照手动压缩单开一轮（同「手动压缩」，没有要求），没有能压的不开。两条都落了盘才回应，附上两条的序号。
+4. 真换在下一个回合开始：执行器照 `persona()`、`preset()` 和手里快照的不一样，重拼快照，照「换策略快照」交进来。压缩那一轮不跑挂接点，摘要一定照旧人格的前缀写。压缩没成也照样换。
 
 **换策略快照**（施工 P-1 再补，`policy.rs`，`02-内核.md` K3，`personas.md`「怎么走」第 6 条）：人格的文件改了，下一个回合换上；预设的文件改了也是（施工 P-2 下，`presets.md`「改了文件」），包的工具变了也是（施工 O-2 中，`providers.md`「目录换代」），几样一起改了的换一次。
 

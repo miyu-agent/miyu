@@ -92,7 +92,8 @@ impl Row {
 
     /// 照先后看一条（`protocol.md` 的 `session.list` 第 3、4 条）：它的时刻是最近一次动静；带 `cwd` 的盖上工作目录；
     /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），`by` 是人、又不是去掉的算人起的；写了 `pinned` 的换成它；写了 `project` 的换成它（空的是移出来，施工 H-2）。
-    /// 撤掉的回合里改的也算：改名不是对话的一部分。
+    /// 撤掉的回合里改的也算：改名不是对话的一部分。`policy.changed` 写了 `persona`、`preset` 的换成它（中途换人格、预设，施工
+    /// P-13；空的人格是无人格）：人换了就算，不等下一个回合真换上。
     pub fn see(&mut self, event: &Event) {
         self.last_active = event.at;
         if let Some(cwd) = cwd(event) {
@@ -117,6 +118,14 @@ impl Row {
             && let Some(usage) = &called.usage
         {
             self.tokens += usage.uncached + usage.cache_read + usage.cache_write + usage.output;
+        }
+        if let Body::PolicyChanged(changed) = &event.body {
+            if let Some(persona) = &changed.persona {
+                self.persona = Some(persona.clone()).filter(|persona| !persona.is_empty());
+            }
+            if let Some(preset) = &changed.preset {
+                self.preset = Some(preset.clone());
+            }
         }
         if let Body::MetaChanged(changed) = &event.body {
             if let Some(title) = &changed.title {

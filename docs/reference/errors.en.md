@@ -44,7 +44,7 @@ Chinese version: [errors.md](errors.md).
 | `empty_message` | A message with no content at all | |
 | `dir_too_wide` | An extra directory is too wide | |
 | `not_running` | Interrupting with no turn running | |
-| `turn_running` | Undo, redo, compact, clear or delete while a turn is running | |
+| `turn_running` | Undo, redo, compact, clear, delete, or change persona or preset while a turn is running | |
 | `unknown_turn` | The turn to undo isn't in the current history | |
 | `nothing_to_revert`, `nothing_to_unrevert` | Nothing to undo; nothing to restore | |
 | `not_redoable` | The last turn wasn't started by a person | |

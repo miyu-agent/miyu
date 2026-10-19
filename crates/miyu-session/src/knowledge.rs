@@ -96,6 +96,23 @@ impl Shelves {
         }
     }
 
+    /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 住在谁家查、照它收窄。碰磁盘，在阻塞线程里调。
+    pub(crate) fn recast(&self, persona: Option<String>) -> Shelves {
+        let account = self
+            .personas
+            .memory_account(persona.as_deref().unwrap_or_default(), &self.owner);
+        Shelves {
+            knowledge: Arc::clone(&self.knowledge),
+            account,
+            persona,
+            personas: self.personas.clone(),
+            owner: self.owner.clone(),
+            home: self.home.clone(),
+            vectors: self.vectors.clone(),
+            recall: self.recall.clone(),
+        }
+    }
+
     /// 载入的会话的知识库：记忆的账号照人格住在谁家算（`Personas::memory_account`，碰磁盘，在阻塞线程里）。
     pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
         blocking(move || {

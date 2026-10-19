@@ -146,7 +146,7 @@ impl InputKind {
                 Command::Goal(_) => InputKind::Goal,
                 Command::Ran { .. } => InputKind::Ran,
                 Command::Append { .. } => InputKind::Appended,
-                Command::Configure { .. } => InputKind::Configure,
+                Command::Configure { .. } | Command::Recast { .. } => InputKind::Configure,
                 Command::Answer {
                     answer: Answer::Approval { .. },
                     ..

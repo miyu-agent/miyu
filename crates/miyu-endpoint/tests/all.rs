@@ -135,6 +135,7 @@ mod peers;
 mod permission;
 mod persona_appearance;
 mod persona_avatar;
+mod persona_recast;
 mod persona_seeds;
 mod persona_set;
 mod persona_swap;
