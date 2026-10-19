@@ -103,7 +103,7 @@ Makes it an extension; needs `[command]`.
 
 ## `[settings.<name>]`
 
-One table per setting; the key is `<package id>.<name>`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: the values arrive in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)).
+One table per setting; the key is `<package id>.<name>`. To group many settings, add one level: `[settings.<group>.<name>]` gives `<package id>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: the values arrive in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)).
 
 | Field | Notes |
 |---|---|

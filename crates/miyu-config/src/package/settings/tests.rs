@@ -303,3 +303,43 @@ type = \"list\"\nelement = \"text\"\nname = { en = \"Trusted\" }\n\n[settings.mo
 fn items_of(manifest: &crate::package::Manifest) -> Vec<Item> {
     items("x", &manifest.settings)
 }
+
+#[test]
+fn a_group_adds_one_level_to_the_name() {
+    let manifest = read(&web(
+        "[settings.qq.listen]\ntype = \"url\"\nname = { en = \"Listen\" }\n\n[settings.qq.token]\ntype = \"secret\"\nname = { en = \"Token\" }\n\n[settings.mode]\ntype = \"bool\"\nname = { en = \"Mode\" }\n",
+    ))
+    .unwrap();
+    let names: Vec<&str> = manifest
+        .settings
+        .iter()
+        .map(|one| one.name.as_str())
+        .collect();
+    assert_eq!(names, ["qq.listen", "qq.token", "mode"], "照写的先后");
+    let keys: Vec<&str> = items("im", &manifest.settings)
+        .iter()
+        .map(|item| item.key)
+        .collect();
+    assert_eq!(keys, ["im.qq.listen", "im.qq.token", "im.mode"]);
+    assert_eq!(
+        wrong("[settings.qq.Bad]\ntype = \"bool\"\nname = { en = \"X\" }\n"),
+        Code::BadSettingName,
+        "组里的名字照样查"
+    );
+    assert_eq!(
+        wrong("[settings.qq.deep.listen]\ntype = \"bool\"\nname = { en = \"X\" }\n"),
+        Code::MissingKey,
+        "只多一层：再深的那一层当成一项，缺 type"
+    );
+    assert_eq!(wrong("[settings.qq]\nlisten = 1\n"), Code::NotATable);
+    assert_eq!(
+        wrong("[settings.x]\n"),
+        Code::MissingKey,
+        "空的表是缺了的一项"
+    );
+    assert_eq!(
+        wrong("[settings.x]\nname = \"X\"\n"),
+        Code::MissingKey,
+        "写了 name 没写 type 的是一项，报缺 type，不当成组"
+    );
+}

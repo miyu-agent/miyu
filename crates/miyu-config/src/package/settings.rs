@@ -1,5 +1,5 @@
 //! 清单里的 `[settings]`（施工 9-1 下，`docs/blueprint/packages.md`「配置项」，`05-内核接口.md` 第二节）：一项一张表
-//! `[settings.<名字>]`，读成 [`Setting`]；核心起来时照它们拼成配置项（[`items`]），键是 `<包的编号>.<名字>`，挂在设置页的
+//! `[settings.<名字>]`，或者多一层组 `[settings.<组>.<名字>]`（施工 9-1 再补），读成 [`Setting`]；核心起来时照它们拼成配置项（[`items`]），键是 `<包的编号>.<名字>`，挂在设置页的
 //! 「软件包」那一页、这个包那一组。
 //!
 //! 读的时候不留 `'static` 的字：`miyu check` 每次都照磁盘读。只有核心起来时拼配置项那一次把字留在进程里，一直用到退出
@@ -24,7 +24,7 @@ const TEXT_MAX: usize = 200;
 /// 读好的一项。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Setting {
-    /// 名字：键的最后一段。
+    /// 名字：键里包的编号后面那一段，在组里的是 `<组>.<名字>`。
     pub name: String,
     /// 类型。
     pub kind: SettingKind,
@@ -109,33 +109,52 @@ impl SettingKind {
     }
 }
 
-/// 读 `[settings]`：照写的先后。
+/// 读 `[settings]`：照写的先后。一张表里有 `type` 或 `name` 的（空的也算）是一项，别的是一组（施工 9-1 再补）：`[settings.<组>.<名字>]`，
+/// 名字读成 `<组>.<名字>`，只多一层。
 pub(super) fn read(reader: &Reader<'_>, node: &Node) -> Result<Vec<Setting>, Problem> {
     let Some(table) = node.as_table_like() else {
         return Ok(Vec::new());
     };
     let mut settings = Vec::new();
     for (name, item) in table.iter() {
-        if !setting_name(name) {
-            return Err(reader.problem(
-                Some(item),
-                Code::BadSettingName,
-                &format!("settings.{name}"),
-                format!("settings.{name}: a setting name starts with a lowercase letter and uses only lowercase letters, digits and _"),
-            ));
+        let (at, fields) = entry(reader, "settings", name, item)?;
+        if fields.is_empty() || fields.contains_key("type") || fields.contains_key("name") {
+            settings.push(one(reader, name, &at, fields, item)?);
+            continue;
         }
-        let at = format!("settings.{name}");
-        let Some(fields) = item.as_table_like() else {
-            return Err(reader.problem(
-                Some(item),
-                Code::NotATable,
-                &at,
-                format!("{at} must be a table"),
-            ));
-        };
-        settings.push(one(reader, name, &at, fields, item)?);
+        for (inner, item) in fields.iter() {
+            let (at, fields) = entry(reader, &at, inner, item)?;
+            settings.push(one(reader, &format!("{name}.{inner}"), &at, fields, item)?);
+        }
     }
     Ok(settings)
+}
+
+/// `<上一层>.<名字>` 那一张表：名字合写法、是一张表。
+fn entry<'a>(
+    reader: &Reader<'_>,
+    above: &str,
+    name: &str,
+    item: &'a Node,
+) -> Result<(String, &'a dyn TableLike), Problem> {
+    let at = format!("{above}.{name}");
+    if !setting_name(name) {
+        return Err(reader.problem(
+            Some(item),
+            Code::BadSettingName,
+            &at,
+            format!("{at}: a setting name starts with a lowercase letter and uses only lowercase letters, digits and _"),
+        ));
+    }
+    let Some(fields) = item.as_table_like() else {
+        return Err(reader.problem(
+            Some(item),
+            Code::NotATable,
+            &at,
+            format!("{at} must be a table"),
+        ));
+    };
+    Ok((at, fields))
 }
 
 /// 一项。

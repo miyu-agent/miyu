@@ -220,3 +220,44 @@ async fn a_connection_package_has_its_settings_on_the_packages_page() {
         "{pages:?}"
     );
 }
+
+/// 清单里多一层组（施工 9-1 再补，接入通讯平台要的 `im.qq.listen`）：键是 `<包>.<组>.<名字>`，在这个包那一组；配置里写成
+/// `[<包>.<组>]` 读得到，写错的 `check` 报。
+#[tokio::test]
+async fn a_grouped_setting_is_one_level_deeper() {
+    let home = Home::new();
+    let grouped = "[package]\nprotocol = [1, 1]\nname = { en = \"Chat\" }\n\n[settings.qq.port]\ntype = \"int\"\nmin = 1\nmax = 65535\ndefault = 8302\nlayers = [\"system\"]\nname = { en = \"Port\", zh = \"端口\" }\n\n[settings.web.port]\ntype = \"int\"\nmin = 1\nmax = 65535\ndefault = 8303\nlayers = [\"system\"]\nname = { en = \"Page port\" }\n\n[ui]\n";
+    home.write("home/alice/packages/chat/package.toml", grouped);
+    home.write("system/config.toml", "[chat.qq]\nport = 9000\n");
+    let mut client = connected(&home).await;
+    let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();
+    let port = item(&schema, "chat.qq.port");
+    assert_eq!(
+        (
+            port["name"].clone(),
+            port["group"].clone(),
+            port["package"].clone()
+        ),
+        (json!("端口"), json!("chat"), json!("chat"))
+    );
+    let got = client
+        .call(
+            "g1",
+            "config.get",
+            json!({"keys": ["chat.qq.port", "chat.web.port"]}),
+        )
+        .await;
+    let values = got["result"]["items"].clone();
+    assert_eq!(values["chat.qq.port"]["value"], 9000, "{got}");
+    assert_eq!(values["chat.web.port"]["value"], 8303, "{got}");
+    home.write("system/config.toml", "[chat.qq]\nport = 70000\n");
+    let checked = client.call("c1", "check", json!({})).await;
+    assert!(
+        checked["result"]["problems"]
+            .as_array()
+            .expect("有")
+            .iter()
+            .any(|problem| problem["file"] == "system/config.toml"),
+        "{checked}"
+    );
+}
