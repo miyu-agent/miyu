@@ -1071,17 +1071,17 @@ max = "5m"
 source = "auto"
 
 [net.search.brave]
-# Brave Search 的 key：搜索来源选了 Brave 时要它。
+# Brave Search：搜索来源选了 Brave 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
 [net.search.deepseek]
-# DeepSeek 的 key：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
+# DeepSeek：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
 [net.search.exa]
-# Exa 的 key：配了就用你自己的 Exa 额度，不配照免费额度。
+# Exa：配了就用你自己的 Exa 额度，不配照免费额度。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -1091,7 +1091,7 @@ source = "auto"
 # url =
 
 [net.search.tavily]
-# Tavily 的 key：搜索来源选了 Tavily 时要它。
+# Tavily：搜索来源选了 Tavily 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -1502,7 +1502,7 @@ currency = "USD"
                       "type": "object"
                     }
                   ],
-                  "title": "Brave Search 的 key"
+                  "title": "Brave Search"
                 }
               },
               "type": "object"
@@ -1537,7 +1537,7 @@ currency = "USD"
                       "type": "object"
                     }
                   ],
-                  "title": "DeepSeek 的 key"
+                  "title": "DeepSeek"
                 }
               },
               "type": "object"
@@ -1572,7 +1572,7 @@ currency = "USD"
                       "type": "object"
                     }
                   ],
-                  "title": "Exa 的 key"
+                  "title": "Exa"
                 }
               },
               "type": "object"
@@ -1654,7 +1654,7 @@ currency = "USD"
                       "type": "object"
                     }
                   ],
-                  "title": "Tavily 的 key"
+                  "title": "Tavily"
                 }
               },
               "type": "object"
@@ -2170,13 +2170,13 @@ currency = "USD"
 | 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
 | `net.search.source` 名字（N-2 下） | 搜索来源 | Search source | 検索元 |
 | 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。 |
-| `net.search.exa.key` 名字（N-3 上） | Exa 的 key | Exa key | Exa のキー |
+| `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
-| `net.search.deepseek.key` 名字（N-3 上） | DeepSeek 的 key | DeepSeek key | DeepSeek のキー |
+| `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |
 | 说明 | 搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。 | Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search. | 検索元に DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。 |
-| `net.search.tavily.key` 名字（N-3 上） | Tavily 的 key | Tavily key | Tavily のキー |
+| `net.search.tavily.key` 名字（N-3 上） | Tavily | Tavily | Tavily |
 | 说明 | 搜索来源选了 Tavily 时要它。 | Needed when Tavily is the search source. | 検索元に Tavily を選んだときに必要です。 |
-| `net.search.brave.key` 名字（N-3 上） | Brave Search 的 key | Brave Search key | Brave Search のキー |
+| `net.search.brave.key` 名字（N-3 上） | Brave Search | Brave Search | Brave Search |
 | 说明 | 搜索来源选了 Brave 时要它。 | Needed when Brave is the search source. | 検索元に Brave を選んだときに必要です。 |
 | `net.search.searxng.url` 名字（N-3 上） | SearXNG 的地址 | SearXNG address | SearXNG のアドレス |
 | 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search source. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索元に SearXNG を選んだときに使います。 |

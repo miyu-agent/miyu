@@ -101,17 +101,17 @@ max = "5m"
 source = "auto"
 
 [net.search.brave]
-# Brave Search 的 key：搜索来源选了 Brave 时要它。
+# Brave Search：搜索来源选了 Brave 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
 [net.search.deepseek]
-# DeepSeek 的 key：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
+# DeepSeek：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
 [net.search.exa]
-# Exa 的 key：配了就用你自己的 Exa 额度，不配照免费额度。
+# Exa：配了就用你自己的 Exa 额度，不配照免费额度。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -121,7 +121,7 @@ source = "auto"
 # url =
 
 [net.search.tavily]
-# Tavily 的 key：搜索来源选了 Tavily 时要它。
+# Tavily：搜索来源选了 Tavily 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 

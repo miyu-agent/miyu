@@ -4,7 +4,7 @@
 
 [package]
 protocol = [1, 1]
-name = { en = "Web", zh = "联网", ja = "ウェブ" }
+name = { en = "Web search", zh = "联网搜索", ja = "ウェブ検索" }
 
 [features.web-search]
 name = { en = "Web search", zh = "网络搜索", ja = "ウェブ検索" }

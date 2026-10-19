@@ -221,7 +221,7 @@
                       "type": "object"
                     }
                   ],
-                  "title": "Brave Search key"
+                  "title": "Brave Search"
                 }
               },
               "type": "object"
@@ -256,7 +256,7 @@
                       "type": "object"
                     }
                   ],
-                  "title": "DeepSeek key"
+                  "title": "DeepSeek"
                 }
               },
               "type": "object"
@@ -291,7 +291,7 @@
                       "type": "object"
                     }
                   ],
-                  "title": "Exa key"
+                  "title": "Exa"
                 }
               },
               "type": "object"
@@ -373,7 +373,7 @@
                       "type": "object"
                     }
                   ],
-                  "title": "Tavily key"
+                  "title": "Tavily"
                 }
               },
               "type": "object"

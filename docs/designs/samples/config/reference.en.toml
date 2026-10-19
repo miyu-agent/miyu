@@ -101,17 +101,17 @@ max = "5m"
 source = "auto"
 
 [net.search.brave]
-# Brave Search key: Needed when Brave is the search source.
+# Brave Search: Needed when Brave is the search source.
 # Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
 # key =
 
 [net.search.deepseek]
-# DeepSeek key: Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search.
+# DeepSeek: Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search.
 # Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
 # key =
 
 [net.search.exa]
-# Exa key: With a key, searches use your own Exa quota; without one, the free quota.
+# Exa: With a key, searches use your own Exa quota; without one, the free quota.
 # Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
 # key =
 
@@ -121,7 +121,7 @@ source = "auto"
 # url =
 
 [net.search.tavily]
-# Tavily key: Needed when Tavily is the search source.
+# Tavily: Needed when Tavily is the search source.
 # Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
 # key =
 

@@ -5,10 +5,10 @@
         "name": "提前压好",
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
       },
-      "net.search.exa.key": {"name": "Exa 的 key", "description": "配了就用你自己的 Exa 额度，不配照免费额度。"},
-      "net.search.deepseek.key": {"name": "DeepSeek 的 key", "description": "搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。"},
-      "net.search.tavily.key": {"name": "Tavily 的 key", "description": "搜索来源选了 Tavily 时要它。"},
-      "net.search.brave.key": {"name": "Brave Search 的 key", "description": "搜索来源选了 Brave 时要它。"},
+      "net.search.exa.key": {"name": "Exa", "description": "配了就用你自己的 Exa 额度，不配照免费额度。"},
+      "net.search.deepseek.key": {"name": "DeepSeek", "description": "搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。"},
+      "net.search.tavily.key": {"name": "Tavily", "description": "搜索来源选了 Tavily 时要它。"},
+      "net.search.brave.key": {"name": "Brave Search", "description": "搜索来源选了 Brave 时要它。"},
       "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。"},
       "net.search.source": {"name": "搜索来源", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {
@@ -413,7 +413,7 @@
     "commands/unavailable/goal-preset-off": "预设「{preset}」未启用长期目标。",
     "commands/unavailable/command-preset-off": "预设「{preset}」未启用 /{command}。",
     "software/basesystem": "基础系统",
-    "software/net": "联网",
+    "software/net": "联网搜索",
     "software/goal": "长期目标",
     "software/memory": "人格记忆",
     "software/roleplay": "角色扮演",
