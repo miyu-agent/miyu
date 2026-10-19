@@ -18,7 +18,7 @@ use miyu_models::price::Tariff;
 
 use crate::config::TurnConfig;
 use crate::port::{Cancel, ForSession, ModelPort, Models, Reports};
-use crate::route::{Ask, OneShot, Unanswered};
+use crate::route::{Ask, OneShot, Said, Unanswered};
 
 mod persona;
 
@@ -95,9 +95,30 @@ pub struct Script {
     /// 换快照时交来的驱动的占位（施工 P-1 三补），照先后。
     retexted: Arc<Mutex<Vec<DriverTexts>>>,
     /// 一次性入口照先后答的正文（[`Script::once`]）：没排的没有一次性入口。
-    once: Option<Arc<Mutex<VecDeque<String>>>>,
+    once: Option<Arc<Mutex<VecDeque<Once>>>>,
     /// 交给一次性入口的问，照先后。
     asked: Arc<Mutex<Vec<Ask>>>,
+}
+
+/// 一次性入口的一个答案（[`Script::once`]）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Once {
+    /// 整段答这些字。
+    Says(String),
+    /// 卡住不答，直到调的一方放弃（叫停时请求被丢掉）。
+    Holds,
+}
+
+impl From<&str> for Once {
+    fn from(text: &str) -> Once {
+        Once::Says(text.to_string())
+    }
+}
+
+impl From<String> for Once {
+    fn from(text: String) -> Once {
+        Once::Says(text)
+    }
 }
 
 impl Script {
@@ -131,7 +152,7 @@ impl Script {
     /// 有一次性入口，照先后这样答（施工 test-once）：核心照它交抽取、整理要的几样，`/dream` 这些走得通。答完了的再问交
     /// `no_model`。没排的没有一次性入口，和真核心没配模型一样。
     #[must_use]
-    pub fn once(mut self, answers: impl IntoIterator<Item = impl Into<String>>) -> Script {
+    pub fn once(mut self, answers: impl IntoIterator<Item = impl Into<Once>>) -> Script {
         let answers = answers.into_iter().map(Into::into).collect();
         self.once = Some(Arc::new(Mutex::new(answers)));
         self
@@ -215,9 +236,13 @@ impl Models for Script {
         let (answers, asked) = (Arc::clone(self.once.as_ref()?), Arc::clone(&self.asked));
         Some(OneShot::scripted(Arc::new(move |ask: &Ask| {
             lock(&asked).push(ask.clone());
-            lock(&answers)
-                .pop_front()
-                .ok_or_else(|| Unanswered::NoModel("the script has no more answers".to_string()))
+            match lock(&answers).pop_front() {
+                Some(Once::Says(text)) => Ok(Said::Text(text)),
+                Some(Once::Holds) => Ok(Said::Holds),
+                None => Err(Unanswered::NoModel(
+                    "the script has no more answers".to_string(),
+                )),
+            }
         })))
     }
 }

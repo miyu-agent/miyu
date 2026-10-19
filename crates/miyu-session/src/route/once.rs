@@ -61,9 +61,18 @@ enum Answering {
     Scripted(Scripted),
 }
 
-/// 照剧本答的：交进去的问，交回正文。
+/// 照剧本答的：交进去的问，交回正文，或者卡住不答。
 #[cfg(any(test, feature = "testkit"))]
-pub(crate) type Scripted = std::sync::Arc<dyn Fn(&Ask) -> Result<String, Unanswered> + Send + Sync>;
+pub(crate) type Scripted = std::sync::Arc<dyn Fn(&Ask) -> Result<Said, Unanswered> + Send + Sync>;
+
+/// 剧本这一问怎么答。
+#[cfg(any(test, feature = "testkit"))]
+pub(crate) enum Said {
+    /// 整段正文。
+    Text(String),
+    /// 一直不回，直到调的一方放弃（叫停时 future 被丢掉）。
+    Holds,
+}
 
 /// 交进去的。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -238,7 +247,10 @@ impl OneShot {
             Answering::Routes(routes) => routes,
             #[cfg(any(test, feature = "testkit"))]
             Answering::Scripted(answer) => {
-                let text = answer(&ask)?;
+                let text = match answer(&ask)? {
+                    Said::Text(text) => text,
+                    Said::Holds => std::future::pending::<String>().await,
+                };
                 watch(Watched::Text(&text));
                 return Ok(Answer {
                     text,

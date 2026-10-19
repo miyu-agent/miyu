@@ -81,6 +81,7 @@ mod memory;
 mod memory_api;
 mod memory_clear;
 mod memory_dream;
+mod memory_dream_hold;
 mod memory_follow;
 mod memory_installed;
 mod memory_keywords;
