@@ -264,6 +264,20 @@ impl Agents {
                 if foreground && spec.name == SHELL {
                     entry.without(RUN_IN_BACKGROUND);
                 }
+                // 原型 M-0（设计 39）：点名提示，能被脚本调的几件在自己的说明里说一句。
+                let hint = std::env::var("MIYU_PROTO_HINT").unwrap_or_default();
+                if (hint == "1" || hint == "2")
+                    && matches!(
+                        spec.name.as_str(),
+                        "web_search" | "web_fetch" | "memory_search" | "kb_search" | "kb_read"
+                    )
+                {
+                    if hint == "1" {
+                        entry.description.push_str(" To run it many times (a batch, a loop over pages or items), call it from a shell script with miyu call instead, and print only the result.");
+                    } else {
+                        entry.description.push_str(&format!(" To run it many times (a batch, a loop over pages or items), call it from a shell script instead: `miyu call {} --<param> <value>` prints its result as JSON (`miyu call --schema {}` shows the shape); print only what you need.", spec.name, spec.name));
+                    }
+                }
                 // 在后台跑的工具换前台的说法（施工 T-1 下）：`subagent` 派出去等它报回来。
                 if let Some(said) = foreground
                     .then(|| tools.get(&spec.name))
