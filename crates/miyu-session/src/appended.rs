@@ -31,9 +31,11 @@ fn proto() -> Option<(String, String)> {
     const FULL: &str = r#"Scripting tools: some tools can also be called from shell commands with miyu call <tool> --<param> <value>... (or --json '<object>', --json - for stdin). The result goes to stdout: JSON when the tool has structured output, otherwise text. Only what the script prints comes back to you. When a task needs the same tool many times, or a loop over pages or items, and you only need a summary (counts, filters, comparisons), write one shell script with miyu call instead of making many direct calls. Exit codes: 1 failed, 2 bad usage, 3 interrupted, 4 needs approval (call the tool directly). miyu call --schema <tool> prints its parameters. miyu call works only for: web_search, web_fetch, memory_search, kb_search, kb_read, mcp__*. Call every tool directly as usual.
 JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site","date"}]}; memory_search {"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}; kb_search {"hits":[{"kb","path","heading","snippet","page"}]}; kb_read {"kb","path","page","pages","text"}. web_fetch and MCP tools without structured output print text."#;
     const SHORT: &str = "When a task needs the same tool many times, or a loop over pages or items, and you only need a summary (counts, filters, comparisons), write one shell script with miyu call (see the shell tool) instead of making many direct calls.";
+    const V3: &str = "You can write programs that call tools. When a task takes many tool calls or real logic around them (branches, loops, one tool's results feeding another, tool results mixed with local files or programs) and you only need the outcome, write it as one script with miyu call (see the shell tool) instead of calling step by step. For one or two calls, or when you need to read the results yourself, call the tools directly.";
     let text = match std::env::var("MIYU_PROTO_SYS").ok()?.as_str() {
         "full" => FULL,
         "short" => SHORT,
+        "v3" => V3,
         _ => return None,
     };
     Some(("zz-proto-miyu-call".to_string(), text.to_string()))

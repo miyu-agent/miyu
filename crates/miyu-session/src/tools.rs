@@ -370,7 +370,7 @@ impl Tools {
         };
         // 脚本调工具（原型 M-0，设计 39）：前台的 `shell` 带上端口，核心照环境变量开。
         if name == "shell"
-            && std::env::var_os("MIYU_PROTO_CALL").is_some_and(|value| value == "1" || value == "channel")
+            && std::env::var_os("MIYU_PROTO_CALL").is_some_and(|value| value == "1" || value == "3" || value == "channel")
             && let Some(guard) = &self.guard
         {
             call.nested = Some(Arc::new(nested::Nester {

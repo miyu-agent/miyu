@@ -363,6 +363,12 @@ mod proto {
 Some tools can also be called from commands, so a script can loop over them: miyu call <tool> --<param> <value>... (or --json '<object>', --json - for stdin). The result goes to stdout: JSON when the tool has structured output, otherwise text. Only what the command prints comes back to you, so print just what you need. Exit codes: 1 failed, 2 bad usage, 3 interrupted, 4 needs approval (call the tool directly). miyu call --schema <tool> prints its parameters. miyu call works only for: web_search, web_fetch, memory_search, kb_search, kb_read, mcp__*. Call every tool directly as usual.
 JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site","date"}]}; memory_search {"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}; kb_search {"hits":[{"kb","path","heading","snippet","page"}]}; kb_read {"kb","path","page","pages","text"}. web_fetch and MCP tools without structured output print text."#;
 
+    /// `MIYU_PROTO_CALL=3` 接在后面的一段（第三轮）：写成程序，不只是循环。
+    const CALL_V3: &str = r#"
+
+Commands and scripts you run here can call tools: miyu call <tool> --<param> <value>... (or --json '<object>'; --json - reads it from stdin). It works from any language that can run a command (bash, Python, ...), so tools become functions in real programs: branch on their results, chain and combine several tools, run calls in parallel, mix them with local files and programs, handle errors, and keep only what matters. The result goes to stdout: one line of JSON when the tool has structured output, otherwise text. Tool results stay inside the script; only its final output comes back to you, so print just what you need. Exit codes: 1 the tool failed or was denied, 2 bad usage, 3 interrupted, 4 needs approval (call that tool directly instead). miyu call --schema <tool> prints a tool's parameters. Tools that work with miyu call: web_search, web_fetch, memory_search, kb_search, kb_read, mcp__*.
+JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site","date"}]}; memory_search {"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}; kb_search {"hits":[{"kb","path","heading","snippet","page"}]}; kb_read {"kb","path","page","pages","text"}. web_fetch and MCP tools without structured output print text."#;
+
     /// 照环境变量换好的说明。
     pub(super) fn described(mut spec: Spec) -> Spec {
         if on("MIYU_PROTO_FILES") {
@@ -370,6 +376,8 @@ JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site"
         }
         if on("MIYU_PROTO_CALL") {
             spec.description.push_str(CALL);
+        } else if std::env::var_os("MIYU_PROTO_CALL").is_some_and(|value| value == "3") {
+            spec.description.push_str(CALL_V3);
         }
         spec
     }
