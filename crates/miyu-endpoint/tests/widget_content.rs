@@ -76,7 +76,10 @@ async fn started_with(
 async fn subscribe(client: &mut Client, id: &str, params: Value) -> Value {
     let mut params = params;
     params["stream"] = json!("widgets");
-    client.call(id, "subscribe", params).await
+    // 等这一条的回应：上一个订阅推的 `widget.changed` 可能先到（Windows CI 上撞见过，施工 X-15 修）。
+    let request = json!({"jsonrpc": "2.0", "id": id, "method": "subscribe", "params": params});
+    client.line(&request.to_string()).await;
+    client.until_reply(id).await.1
 }
 
 /// 回应里编号是 `id` 的那一块。
