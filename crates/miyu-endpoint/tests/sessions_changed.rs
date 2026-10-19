@@ -175,7 +175,12 @@ async fn a_title_the_kernel_gives_is_pushed_too() {
     let work = home.work.to_string_lossy().into_owned();
     let session = actor.create("c1", &work).await;
     actor.say("c2", &session, "CI 红了").await;
-    let titled = until_entry(&mut watcher, &session, |item| item["title"] == "修 CI").await;
+    // 标题可能在这一轮还在跑时就到了，那一条推送带 `busy`：等到带标题、不忙的那一条再和列表比（Windows 上偶发红过）。
+    home.until_turns(&session, 1).await;
+    let titled = until_entry(&mut watcher, &session, |item| {
+        item["title"] == "修 CI" && item.get("busy").is_none()
+    })
+    .await;
     assert_eq!(titled, listed(&mut actor, "l1", &session).await);
 }
 
