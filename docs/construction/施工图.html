@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>607</b><span>/ 624 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>612</b><span>/ 629 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">49ab5de9</b><span>最近一步（N-5 扩展登记搜索来源）的提交</span></li>
+    <li><b class="mono">70d6ff7d</b><span>最近一步（9-8 十三补 回复带人格）的提交</span></li>
   </ul>
 </header>
 
@@ -446,6 +446,11 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s91z"><span class="n">9-1 再补</span>配置项多一层组<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sN-4"><span class="n">N-4</span>抓不下来的请别家代抓<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sN-5"><span class="n">N-5</span>扩展登记搜索来源<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV-10"><span class="n">V-10</span>读日志认标签走快路<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV-11"><span class="n">V-11</span>事件一遍读完<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sF-12"><span class="n">F-12</span>包的作者、上游和从哪来<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s95z"><span class="n">9-5 再补</span>会话列表的上下文用量<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s98m"><span class="n">9-8 十三补</span>回复带人格<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -8039,6 +8044,249 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/N-5-扩展登记搜索来源.md</code>、图纸 <code>tools/web_search.md</code> 第 7 条、协议 <code>reference/extensions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV-10" aria-labelledby="h-sV10">
+  <div class="sheet-head"><h2 id="h-sV10"><span class="no">V-10</span>读日志认标签走快路</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">性能闸门「重启后打开大会话」超了：块、by、效果的种类在开头的直接认，不把整块解成一张表。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">读日志认标签走快路</span><span class="dir-note">V-10</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>read_tagged 先试开头第一个字段的快路</li>
+              <li>别的写法照整表认，结果一样</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">闸门是要求</span><span class="rl">达不到就优化</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-10</dd></div>
+        <div><dt>名称</dt><dd>读日志认标签走快路</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">e3ae18f0</dd></div>
+        <div><dt>验收</dt><dd>本机 p95 56.5 → 32.8 ms；变异逮不住关掉快路那一处（只改快慢）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>快路认得出的、交回没有的几种写法</span></li>
+        <li><span class="ok">✓</span><span>两条路读出来一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/V-10-读日志认标签走快路.md</code>、图纸 <code>kernel/blocks.md</code>「读一块」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV-11" aria-labelledby="h-sV11">
+  <div class="sheet-head"><h2 id="h-sV11"><span class="no">V-11</span>事件一遍读完</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">读到 body 时已经知道种类的直接照那一种读；量尺印出载入分段。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">事件一遍读完</span><span class="dir-note">V-11</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>event/read.rs 自己写反序列化</li>
+              <li>量尺印 loaded 分段</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">报错原话不变</span><span class="rl">body of … not readable</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-11</dd></div>
+        <div><dt>名称</dt><dd>事件一遍读完</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">04b153aa</dd></div>
+        <div><dt>验收</dt><dd>CI：载入 34–36 ms（读 26–28、重放 6），打开大会话 p95 38.5 ms</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>内核测试照旧过</span></li>
+        <li><span class="ok">✓</span><span>同进程对照 11.2 对 13.9 ms</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/V-11-事件一遍读完.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sF-12" aria-labelledby="h-sF12">
+  <div class="sheet-head"><h2 id="h-sF12"><span class="no">F-12</span>包的作者、上游和从哪来</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">每个包写作者、上游仓库，软件包信息页露出来；另交从哪来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">包的作者、上游和从哪来</span><span class="dir-note">F-12</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单 author、upstream</li>
+              <li>list、info 交 author、upstream、from</li>
+              <li>出厂 8 个包填上</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">from</span><span class="rl">shipped、official、local</span></div>
+          <div class="tile new"><span class="nm">info 的 source</span><span class="rl">照旧是本机路径</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">F-12</dd></div>
+        <div><dt>名称</dt><dd>包的作者、上游和从哪来</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">aeb283fd</dd></div>
+        <div><dt>验收</dt><dd>变异 7 处全逮住，本地门禁八项，CI 六台绿</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>写错的 bad_author、bad_upstream</span></li>
+        <li><span class="ok">✓</span><span>软件源装的 official、文件夹的 local</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/F-12-包的作者上游和来源.md</code>、作者说明 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s95z" aria-labelledby="h-s95z">
+  <div class="sheet-head"><h2 id="h-s95z"><span class="no">9-5 再补</span>会话列表的上下文用量</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">全部会话页写「上下文消耗 xx/xxx」：列表每项带 context。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">会话列表的上下文用量</span><span class="dir-note">9-5 再补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>索引多 context、context_model（版本 9）</li>
+              <li>Models 查窗口</li>
+              <li>list、sessions 流带 context</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">used</span><span class="rl">同终端底栏</span></div>
+          <div class="tile new"><span class="nm">window</span><span class="rl">查不到的不写</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">9-5 再补</dd></div>
+        <div><dt>名称</dt><dd>会话列表的上下文用量</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">f3f30d85</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>主请求才算、压缩后清空</span></li>
+        <li><span class="ok">✓</span><span>同一个模型只查一次窗口</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/9-5-会话列表的context（再补）.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s98m" aria-labelledby="h-s98m">
+  <div class="sheet-head"><h2 id="h-s98m"><span class="no">9-8 十三补</span>回复带人格</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">中途换了人格，旧回复照旧画旧人格：reply 带这一轮的人格。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">回复带人格</span><span class="dir-note">9-8 十三补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>reply 多 persona</li>
+              <li>投影照快照真换上的时机算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">每条都带</span><span class="rl">无人格是 null</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">9-8 十三补</dd></div>
+        <div><dt>名称</dt><dd>回复带人格</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">70d6ff7d</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>换之前、记了没换上、换上以后</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/9-8-回复带人格（十三补）.md</code>、图纸 <code>view.md</code>。</li>
       </ul>
     </div>
   </div>
