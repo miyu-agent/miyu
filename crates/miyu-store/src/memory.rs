@@ -233,6 +233,7 @@ impl MemoryLog {
             | MemoryEvent::Summary(_)
             | MemoryEvent::Merged(_)
             | MemoryEvent::Merging(_)
+            | MemoryEvent::Swept(_)
             | MemoryEvent::MergeFailed(_) => Ok(()),
             // 清掉的人不要了：字不留在派生的库里。
             MemoryEvent::Cleared(_) => self.index.apply(SOURCE, &removals(&cleared), seq),

@@ -83,16 +83,21 @@ async fn a_dream_in_a_session_extracts_now_and_merges_now() {
     stop(&handle).await;
 }
 
+/// 没有新记的：人叫的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款），一条都没有的不发。
 #[tokio::test]
-async fn nothing_new_is_nothing_to_do_and_asks_nobody() {
+async fn nothing_new_still_looks_over_the_old_and_an_empty_room_asks_nobody() {
     let server = Server::start(vec![
         stream(&serde_json::json!({"summary": "用户养猫。"}).to_string()),
+        stream("{}"),
         // 多备一个：要是又发了，看得出来。
         stream("{}"),
     ])
     .await;
     let mut home = Home::new();
     organizer(&mut home, &server, "");
+    let empty = dream(&home).await.expect("整理了");
+    assert_eq!(empty, Dreamed::default(), "一条都没有的不合");
+    assert!(server.received().is_empty(), "一条都没有的不发");
     save(&home, "用户养了一只猫");
     let first = dream(&home).await.expect("整理了");
     assert_eq!(
@@ -101,16 +106,17 @@ async fn nothing_new_is_nothing_to_do_and_asks_nobody() {
         "不经会话的照样合：{first:?}"
     );
     let second = dream(&home).await.expect("整理了");
-    assert_eq!(
-        second,
-        Dreamed {
-            given: 0,
-            revised: 0,
-            retired: 0,
-            summary: false
-        }
+    assert_eq!(second.given, 1, "重看那一条：{second:?}");
+    let asked = asked(&server, 1);
+    assert!(
+        asked.contains("Other older memories to look over again:\nm1 user "),
+        "{asked}"
     );
-    assert_eq!(server.received().len(), 1, "没有要整理的不发");
+    assert!(
+        !asked.contains("Saved since the summary:"),
+        "没有新记的那一块：{asked}"
+    );
+    assert_eq!(server.received().len(), 2);
 }
 
 #[tokio::test]

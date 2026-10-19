@@ -9,12 +9,15 @@ use miyu_kernel::time::Timestamp;
 use miyu_recall::merge::Decisions;
 use miyu_recall::{
     Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired, Saved,
-    Summary,
+    Summary, Swept,
 };
 use miyu_store::memory::MemoryLog;
 use miyu_tool::Refused;
 
-use super::Batch;
+use super::{Batch, Sweep};
+
+/// 一趟整理顺带重看几条旧记忆（施工 R-19，2026-10-19 项目主人照推荐定）：照编号轮，轮完一圈从头来。
+pub(crate) const SWEEP: usize = 20;
 use crate::memory::{Keeper, Stamp};
 
 /// 记忆模块：合并记下的 `by`。
@@ -26,6 +29,8 @@ fn by() -> By {
 
 impl Keeper {
     /// 这一间够不够合、合什么（`memory.md` 第七条第 1 款）：`check` 是间隔和会话数，没有的不看（接着合剩下的那几次）。
+    /// `sweep` 是挑（一趟的头一批，施工 R-19，第 11 款）的再带上轮到的旧记忆：上次重看到的那一条后面、现在算数、听众合的，
+    /// 照编号最多 [`SWEEP`] 条，不够的从头接；人叫的整理没有新记的也照样重看这几条，后台的没有新记的不合。
     /// 没有新记的、不够的交回没有。新记的是上次合到的那一条以后、现在算数、听众合、出处活着的，不算合并自己改出来的；摘要
     /// 不算了的（第 8 款，施工 R-7 下）照没合并过的从头来：现在算数的都是新记的，摘要照还没有。
     ///
@@ -36,15 +41,17 @@ impl Keeper {
         &self,
         now: Timestamp,
         check: Option<(Duration, usize)>,
+        sweep: Sweep,
     ) -> Result<Option<Batch>, Refused> {
         let log = self.log()?;
-        let (summary, merged, stale, sessions, all) = log.book(|book| {
+        let (summary, merged, stale, sessions, all, swept) = log.book(|book| {
             (
                 book.summary().map(|(text, _)| text.to_string()),
                 book.merged(),
                 book.summary_stale(),
                 book.sessions_since_merge(),
                 book.all().cloned().collect::<Vec<Entry>>(),
+                book.swept(),
             )
         });
         if let Some((every, enough)) = check {
@@ -57,13 +64,28 @@ impl Keeper {
             }
         }
         let after = merged.filter(|_| !stale).map(|(_, upto)| upto);
-        let fresh: Vec<Entry> = all
+        let (fresh, older): (Vec<Entry>, Vec<Entry>) = all
             .into_iter()
-            .filter(|entry| after.is_none_or(|after| entry.id.seq() > after))
-            .filter(|entry| !super::made_by_merge(entry))
             .filter(|entry| self.shown(entry, false))
+            .partition(|entry| after.is_none_or(|after| entry.id.seq() > after));
+        let fresh: Vec<Entry> = fresh
+            .into_iter()
+            .filter(|entry| !super::made_by_merge(entry))
             .collect();
-        Ok((!fresh.is_empty()).then_some(Batch { summary, fresh }))
+        // 从头合的（没合并过、摘要不算了的）全是新记的，不用另外重看。
+        let sweep = match (sweep, after) {
+            (Sweep::Pick, Some(_)) => turn(older, swept, SWEEP),
+            // 挪过来的：落以前照旧核对算不算数（`record_merge`）。
+            (Sweep::Carry(carried), _) => carried,
+            _ => Vec::new(),
+        };
+        let worth = !fresh.is_empty() || (check.is_none() && !sweep.is_empty());
+        Ok(worth.then_some(Batch {
+            summary,
+            fresh,
+            sweep,
+            after,
+        }))
     }
 
     /// 记下一次合并（第七条第 4 款）：落的时候还算数、听众合的才落；改的指着旧的、类出处听众照旧，和原文一样的不记；作废的带
@@ -78,6 +100,7 @@ impl Keeper {
         decided: &Decisions,
         upto: Seq,
         given: u32,
+        swept: Option<&Swept>,
     ) -> Result<(u32, u32), Refused> {
         let log = self.log()?;
         let stamp = || Stamp {
@@ -136,6 +159,10 @@ impl Keeper {
             failed: false,
         };
         self.append(&log, stamp(), &MemoryEvent::Merged(mark))?;
+        // 顺带重看到哪（施工 R-19）：合成了才往前走。
+        if let Some(swept) = swept {
+            self.append(&log, stamp(), &MemoryEvent::Swept(swept.clone()))?;
+        }
         Ok((revised, retired))
     }
 
@@ -228,4 +255,12 @@ impl Keeper {
             tracing::warn!(target: crate::TARGET, room = %self.room(), error = ?refused, "memory merge not recorded");
         }
     }
+}
+
+/// 轮到的旧记忆（施工 R-19）：`older` 照编号排，从 `swept` 后面取，最多 `most` 条，不够的从头接（不重复）。
+fn turn(older: Vec<Entry>, swept: Option<Seq>, most: usize) -> Vec<Entry> {
+    let (before, after): (Vec<Entry>, Vec<Entry>) = older
+        .into_iter()
+        .partition(|entry| swept.is_some_and(|swept| entry.id.seq() <= swept));
+    after.into_iter().chain(before).take(most).collect()
 }

@@ -1,6 +1,7 @@
 //! 量尺：整理（施工 R-16，`docs/blueprint/memory/eval.md`「整理」）：虚构的林夏（`fixtures/dream-eval/set.toml`），每条标好该怎么
 //! 处理，照真的整理（拼法、相关的旧记忆、核对都是会话里那一套）跑开发端点的模型，对着标注打分。两种场景：第一次（还没有摘要，
-//! 40 条一起）；平时（先记旧的、整理一次有了摘要，再记新的、整理第二次，只看第二次）。
+//! 40 条一起）；平时（先记旧的、整理一次有了摘要，再记新的、整理第二次，只看第二次）；轮转（施工 R-19：40 条早就合过、没清理，
+//! 再记一条不相干的新记忆，整理两次，看顺带重看的旧记忆处理得对不对）。
 //!
 //! 跑：`MIYU_DEV_BASE_URL=… MIYU_DEV_API_KEY=… MIYU_DEV_MODEL=… cargo test -p miyu-session --test all memory_dream_eval --
 //! --ignored --nocapture`；`MIYU_DREAM_EVAL_ROUNDS` 是每种场景几轮（不写是 3）。没设的什么都不量。
@@ -11,7 +12,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 
 use miyu_kernel::time::{Timestamp, UtcOffset};
-use miyu_recall::{MemoryEvent, MemoryId, Saved};
+use miyu_recall::{MemoryEvent, MemoryId, Merged, Saved, Summary};
 use miyu_session::{Keeper, Listener, Turn};
 
 use crate::support::extracting::organizer_dev;
@@ -115,6 +116,28 @@ async fn dream(home: &Home) {
         )
         .await;
     println!("  整理：{dreamed:?}");
+}
+
+/// 40 条早就合过（施工 R-19 的「轮转」）：照旧的样子记一份摘要、合到最后一条，没清理过。
+fn merged_long_ago(home: &Home, ids: &BTreeMap<String, MemoryId>) {
+    let (log, _) = home.logs.open(&persona()).expect("开得了");
+    let upto = ids.values().map(|id| id.seq()).max().expect("记了");
+    let at = day("2026-10-12");
+    let summary = Summary {
+        text: "林夏是程序员，养了一只叫豆包的柯基。".into(),
+        upto,
+    };
+    log.append(at, alice(), None, &MemoryEvent::Summary(summary))
+        .expect("记得下");
+    let mark = Merged {
+        upto,
+        given: 40,
+        revised: 0,
+        retired: 0,
+        failed: false,
+    };
+    log.append(at, alice(), None, &MemoryEvent::Merged(mark))
+        .expect("记得下");
 }
 
 /// 一轮的分：矛盾处理、日期、没价值、重复、误删、摘要答得上。
@@ -225,7 +248,7 @@ async fn measure_the_dream_eval_set() {
         .map(|memory| memory.key.as_str())
         .chain(set.memory.iter().filter_map(|memory| memory.by.as_deref()))
         .collect();
-    for scenario in ["第一次", "平时"] {
+    for scenario in ["第一次", "平时", "轮转"] {
         let mut total = Score::default();
         for round in 1..=rounds {
             let mut home = Home::new();
@@ -237,6 +260,21 @@ async fn measure_the_dream_eval_set() {
             let mut ids = BTreeMap::new();
             if scenario == "第一次" {
                 remember(&home, &set.memory.iter().collect::<Vec<_>>(), &mut ids);
+            } else if scenario == "轮转" {
+                remember(&home, &set.memory.iter().collect::<Vec<_>>(), &mut ids);
+                merged_long_ago(&home, &ids);
+                let unrelated = Memory {
+                    key: "z1".into(),
+                    date: "2026-10-18".into(),
+                    class: "user".into(),
+                    text: "林夏最近在读《三体》。".into(),
+                    label: "keep".into(),
+                    by: None,
+                    of: None,
+                    want: None,
+                };
+                remember(&home, &[&unrelated], &mut ids);
+                dream(&home).await;
             } else {
                 let old: Vec<&Memory> = set
                     .memory

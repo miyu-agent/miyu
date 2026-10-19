@@ -70,6 +70,8 @@ pub struct MemoryBook {
     since_merge: BTreeSet<SessionId>,
     /// 开始合了、还没收尾的那一批合到第几条（施工 R-17）。
     merging: Option<Seq>,
+    /// 整理顺带重看的旧记忆轮到第几条（施工 R-19）：最后一条 `ext.memory.swept` 的 `upto`。
+    swept: Option<Seq>,
 }
 
 impl MemoryBook {
@@ -126,6 +128,11 @@ impl MemoryBook {
     /// 开始合了（`ext.memory.merging`）、还没收尾（同一个 `upto` 的 `merged`、`merge_failed`）的那一批合到第几条（施工 R-17）。
     pub fn merging(&self) -> Option<Seq> {
         self.merging
+    }
+
+    /// 整理顺带重看的旧记忆轮到第几条（施工 R-19，`ext.memory.swept`）；还没轮过的没有。
+    pub fn swept(&self) -> Option<Seq> {
+        self.swept
     }
 
     /// 最后一次合并以后抽过几个会话（施工 R-7 上，`memory.md` 第七条第 1 款）；没合并过的照全部，同一个会话算一个。
@@ -250,6 +257,10 @@ impl MemoryBook {
             }
             Some(Ok(MemoryEvent::MergeFailed(failed))) => {
                 self.close(failed.upto);
+                Ok(Some(0))
+            }
+            Some(Ok(MemoryEvent::Swept(swept))) => {
+                self.swept = Some(swept.upto);
                 Ok(Some(0))
             }
         }

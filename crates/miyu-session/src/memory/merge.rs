@@ -5,7 +5,7 @@
 //!   自己改出来的）；那以后抽过的会话够 `memory.merge_sessions`；离上次合并过了 `memory.merge_every`（没合并过的不看时间）。
 //!   一间一把锁（`Merges`，`merge/merges.rs`），在后台合，不挡会话。
 //! - **交什么**：一条 user，指令在前，后面是现在的摘要、上次合并以后新记的（旧的在前）、每条新记的照关键词和意思搜出来的相关
-//!   旧记忆（每条最多 [`RELATED`] 条，去重）。一条一行，同 `memory_search` 的写法。最多 [`ROOM`] 字节：放不下的合完马上接着
+//!   旧记忆（每条最多 [`RELATED`] 条，去重）。一条一行，同 `memory_search` 的写法。最多 `ROOM` 字节（`extract.rs`）：放不下的合完马上接着
 //!   合剩下的。发出去以前遮 key。
 //! - **交回、怎么落**：读法在 `miyu_recall::merge`；改的指着旧的（类、出处、听众照旧）、作废的带为什么、摘要、合到哪的记号，
 //!   都由记忆模块记。落的时候还算数、听众合的才落。
@@ -26,11 +26,11 @@ use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
 use miyu_recall::merge::decisions;
 use miyu_recall::redact::redact;
-use miyu_recall::{Entry, MemoryId};
+use miyu_recall::{Entry, MemoryId, Swept};
 use miyu_tool::TEXT_CHARS;
-use miyu_tool::load::{self, LoadError, say};
+use miyu_tool::load::{self, LoadError};
 
-use super::extract::{ROOM, secrets};
+use super::extract::secrets;
 use super::{Extraction, Keeper, Using};
 use crate::TARGET;
 use crate::blocking::blocking;
@@ -39,6 +39,7 @@ use crate::config::TurnConfig;
 use crate::route::Ask;
 use crate::settings::MemorySettings;
 
+mod compose;
 mod land;
 mod merges;
 
@@ -68,13 +69,15 @@ pub struct MergeTexts {
     none: Template,
     new: Template,
     related: Template,
+    /// 顺带重看的旧记忆那一块的标题（施工 R-19）。
+    sweep: Template,
     line: Template,
     unnamed: Template,
 }
 
 impl MergeTexts {
     /// 从资源目录 `resources` 读：`merge/instruction.txt`（`{owner}`）、`summary.txt`（`{text}`）、`none.txt`、`new.txt`、
-    /// `related.txt`，一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），没有称呼时主人写的那一句
+    /// `related.txt`、`sweep.txt`（施工 R-19），一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），没有称呼时主人写的那一句
     /// `common/owner-unnamed.txt`（施工 R-6 再修）。
     ///
     /// # Errors
@@ -89,6 +92,7 @@ impl MergeTexts {
             none: text("none", &[])?,
             new: text("new", &[])?,
             related: text("related", &[])?,
+            sweep: text("sweep", &[])?,
             line: load::text(
                 resources,
                 PACKAGE,
@@ -180,14 +184,29 @@ pub(crate) struct MergeJob {
 struct Batch {
     summary: Option<String>,
     fresh: Vec<Entry>,
+    /// 一趟的头一批顺带重看的旧记忆（施工 R-19），照编号；别的批是空的。
+    sweep: Vec<Entry>,
+    /// 上次合到的那一条：只重看的一批照它记合到哪。
+    after: Option<Seq>,
 }
 
-/// 交出去的一次：请求的字、交进去的编号、合到第几条、其中新记的几条。
+/// 一批带不带轮到的旧记忆（施工 R-19）。
+enum Sweep {
+    /// 照底账挑：一趟的头一批。
+    Pick,
+    /// 前一批让新记的挤掉了，带上这几条。
+    Carry(Vec<Entry>),
+    /// 这一趟看过了、或者没有可看的。
+    Done,
+}
+
+/// 交出去的一次：请求的字、交进去的编号、合到第几条、其中新记的几条、顺带重看到哪（施工 R-19）。
 struct Asked {
     text: String,
     given: BTreeSet<MemoryId>,
     upto: Seq,
     fresh: u32,
+    swept: Option<Swept>,
 }
 
 impl MergeJob {
@@ -235,11 +254,15 @@ impl MergeJob {
     /// 记忆日志读不了、有一次没成：英文的一句为什么，当场记了 `WARN`。
     async fn run(&self, mut check: Option<(Duration, usize)>) -> Result<Dreamed, String> {
         let (manual, started, mut batches) = (check.is_none(), Instant::now(), 0_u32);
+        // 轮到的旧记忆（施工 R-19）：一趟开头照底账挑一次，头一个放得下的批带上；新记的塞满了的照这一份往后挪，不重挑（重挑会把
+        // 这一趟刚合完的算成旧的）。
+        let mut sweep = Sweep::Pick;
         let room = self.keeper.room().to_string();
         let mut done = Dreamed::default();
         loop {
             let keeper = self.keeper.clone();
-            let found = blocking(move || keeper.merge_batch(wall_now(), check)).await;
+            let picked = std::mem::replace(&mut sweep, Sweep::Done);
+            let found = blocking(move || keeper.merge_batch(wall_now(), check, picked)).await;
             let batch = match found {
                 Ok(Some(batch)) => batch,
                 Ok(None) => {
@@ -267,7 +290,11 @@ impl MergeJob {
                 tracing::info!(target: TARGET, room = room.as_str(), left, manual, "memory merging started");
             }
             batches += 1;
+            let carried = batch.sweep.clone();
             let asked = self.compose(batch).await;
+            if asked.swept.is_none() && !carried.is_empty() {
+                sweep = Sweep::Carry(carried);
+            }
             // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度。
             let (keeper, upto, fresh) = (self.keeper.clone(), asked.upto, asked.fresh);
             blocking(move || keeper.record_merging(wall_now(), upto, fresh, left, manual))
@@ -278,103 +305,6 @@ impl MergeJob {
             done.revised += round.revised;
             done.retired += round.retired;
             done.summary |= round.summary;
-        }
-    }
-
-    /// 拼这一次：新记的照先后一条条加，每条带上相关的旧记忆，放不下的留给下一次（一条都放不下也至少交一条）。
-    async fn compose(&self, batch: Batch) -> Asked {
-        let texts = &self.extraction.merge;
-        let row = |entry: &Entry| {
-            say(
-                &texts.line,
-                &[
-                    ("id", &entry.id.to_string()),
-                    ("class", &entry.class),
-                    ("date", &entry.at.local_date(self.offset)),
-                    ("text", &entry.text.replace('\n', " ")),
-                ],
-            )
-        };
-        let summary = match &batch.summary {
-            Some(text) => say(&texts.summary, &[("text", text)]),
-            None => say(&texts.none, &[]),
-        };
-        // 摘要从主人写起：照属主的称呼（这一份配置就是属主的），不看是哪个会话起的合并（施工 R-6 再修）。
-        let owner = super::owner::owner(super::called(&self.config).as_deref(), &texts.unnamed);
-        let head = format!(
-            "{}\n\n{}\n\n{}",
-            say(&texts.instruction, &[("owner", &owner)]).trim_end(),
-            summary.trim_end(),
-            say(&texts.new, &[]).trim_end()
-        );
-        let related_head = say(&texts.related, &[]).trim_end().to_string();
-        let fresh_ids: BTreeSet<MemoryId> = batch.fresh.iter().map(|entry| entry.id).collect();
-        let (mut new_rows, mut old_rows) = (Vec::new(), Vec::new());
-        let mut given = BTreeSet::new();
-        let mut bytes = head.len() + related_head.len() + 2;
-        let mut upto = None;
-        for entry in &batch.fresh {
-            let related = self.related(entry, &fresh_ids, &given).await;
-            let added: usize = std::iter::once(entry)
-                .chain(&related)
-                .map(|one| row(one).len() + 1)
-                .sum();
-            if upto.is_some() && bytes + added > ROOM {
-                break;
-            }
-            bytes += added;
-            new_rows.push(row(entry));
-            given.insert(entry.id);
-            for one in &related {
-                old_rows.push(row(one));
-                given.insert(one.id);
-            }
-            upto = Some(entry.id.seq());
-        }
-        let upto = upto.unwrap_or(Seq::FIRST);
-        let mut text = format!("{head}\n{}", new_rows.join("\n"));
-        if !old_rows.is_empty() {
-            text.push_str(&format!("\n\n{related_head}\n{}", old_rows.join("\n")));
-        }
-        let fresh = u32::try_from(new_rows.len()).unwrap_or(u32::MAX);
-        Asked {
-            text,
-            given,
-            upto,
-            fresh,
-        }
-    }
-
-    /// `entry` 的相关旧记忆：照关键词和意思搜（有向量那一路的），不算新记的、已经交进去的，最多 [`RELATED`] 条。
-    async fn related(
-        &self,
-        entry: &Entry,
-        fresh: &BTreeSet<MemoryId>,
-        given: &BTreeSet<MemoryId>,
-    ) -> Vec<Entry> {
-        let near = match self.keeper.vectors() {
-            Some(vectors) => {
-                let using = Using {
-                    config: Arc::clone(&self.config),
-                    owner: self.owner.clone(),
-                };
-                vectors.query(&using, &entry.text).await
-            }
-            None => None,
-        };
-        let (keeper, text) = (self.keeper.clone(), entry.text.clone());
-        let limit = RELATED + fresh.len();
-        let found = blocking(move || keeper.search(&text, false, limit, near.as_ref())).await;
-        match found {
-            Ok(found) => found
-                .into_iter()
-                .filter(|one| !fresh.contains(&one.id) && !given.contains(&one.id))
-                .take(RELATED)
-                .collect(),
-            Err(error) => {
-                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = error.as_str(), "memory merge search failed");
-                Vec::new()
-            }
         }
     }
 
@@ -423,9 +353,11 @@ impl MergeJob {
                     *summary = redact(summary, &secrets, shapes);
                 }
                 let summary = decided.summary.is_some();
-                let (keeper, upto) = (self.keeper.clone(), asked.upto);
-                let recorded =
-                    blocking(move || keeper.record_merge(wall_now(), &decided, upto, given)).await;
+                let (keeper, upto, swept) = (self.keeper.clone(), asked.upto, asked.swept.clone());
+                let recorded = blocking(move || {
+                    keeper.record_merge(wall_now(), &decided, upto, given, swept.as_ref())
+                })
+                .await;
                 merges.record(self.keeper.room(), true);
                 match recorded {
                     Ok((revised, retired)) => {

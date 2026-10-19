@@ -729,7 +729,7 @@
 3. `id` 没有这一条、听众不合：`unknown_memory`；已经改掉、作废、清掉了：`memory_not_current`（恢复的是已经改掉、清掉了）。
 4. 记、改、作废、清空、恢复落了盘才回应；写不进记忆日志的 `internal_error`，原因记一行 `WARN memory failed`。
 5. 记、改、作废、清空、恢复，同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样（编号记在记忆事件的 `cause` 里，`memory.md`）。先认编号，再查参数。清空的 `cleared` 不算改掉的旧版本。
-6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；没有要整理的回四样是零，不请求模型。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
+6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 
@@ -1104,7 +1104,7 @@
 1. `subscribe {"stream": "memory", "persona"? | "session"?, "after"?}`：找哪一间、装没装、听众同 `memory.*`（上面「`memory.*`」第一段）：人格记忆没装的 `memory_not_installed`，两样都写的 `bad_params`，没有记忆的 `memory_unavailable`，找不到的照那边。`after` 照「补发」第 8 条，写错了 `bad_params`、先于找那一间。记忆日志开不了、补的那一截读不出来：`internal_error`，记一行 `memory failed`，什么都没订阅。
 2. 写了 `after` 的：记忆日志里序号大于它、订阅那一刻落了盘的，照先后一条条推过来，再回应 `{"upto": <那一刻的最后一条，一条都没有的是 0>}`，之后从 `upto + 1` 接着推，中间不丢不重（读和登记在记忆日志的同一把锁里）。不写的不补，只推之后的。补的那一截在阻塞线程里一次读完。
 3. 推 `memory.event`：`{"event": <日志里那一行>, "persona"? | "session"?}`。`event` 是记忆日志里的事件原样（外壳同会话日志：`seq`、`at`、`kind`、`by`，人经协议、斜杠命令写的带 `cause`；`body` 照 `memory.md`「记忆日志」那张表），`persona`、`session` 照订阅时写的原样带回去（都没写的都不带）。
-4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
+4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`，R-19 起还有 `swept`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
 5. 一个连接一间至多一个，照订阅时写的原样认（写法不同的，例如不写人格和写了默认人格，算两个）：再订阅同一间换一个新的；`unsubscribe {"stream": "memory", "persona"? | "session"?}` 停掉它，没订阅过的也回 `{}`，不找那一间。
 6. 读得太慢、掉了队：之后的最多攒 64 条没写出去的（「慢和掉队」第 1 条），再多推 `resync`（`{"stream": "memory", "persona"? | "session"?}`），这个订阅停了；头带上最后看到的序号（`after`）重新订阅，掉的那一截补回来。
 

@@ -43,6 +43,8 @@ const TAGGED: &str = "ext.memory.tagged";
 const MERGING: &str = "ext.memory.merging";
 /// 这一批这一次没合成（施工 R-17）。
 const MERGE_FAILED: &str = "ext.memory.merge_failed";
+/// 整理顺带重看的旧记忆轮到了哪（施工 R-19）。
+const SWEPT: &str = "ext.memory.swept";
 
 /// 一条的关键词最多几个字（施工 R-15 上）：一行，逗号隔开，十来个词。
 pub const KEYWORD_CHARS: usize = 200;
@@ -280,6 +282,16 @@ pub struct MergeFailed {
     pub tries: Option<u32>,
 }
 
+/// `ext.memory.swept` 的 `body`：一趟整理的头一批顺带重看了几条旧记忆、轮到第几条（施工 R-19，`memory.md` 第七条第 11 款）。
+/// 这一批合成了才记，跟在它的 `merged` 后面；下一趟从 `upto` 后面接着，轮完一圈从头来。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Swept {
+    /// 重看的里最后那一条（照编号）。
+    pub upto: Seq,
+    /// 重看了几条。
+    pub count: u32,
+}
+
 /// 核心半路停了，`merging` 没有收尾（施工 R-17）。
 pub const INTERRUPTED: &str = "interrupted";
 
@@ -316,6 +328,8 @@ pub enum MemoryEvent {
     Merging(Merging),
     /// 这一批这一次没合成（施工 R-17）。
     MergeFailed(MergeFailed),
+    /// 整理顺带重看的旧记忆轮到了哪（施工 R-19）。
+    Swept(Swept),
 }
 
 /// 写成记忆日志里的一条事件：第 `seq` 条，时刻 `at`，`by` 写它的那一方。
@@ -335,6 +349,7 @@ pub fn to_event(seq: Seq, at: Timestamp, by: By, event: &MemoryEvent) -> Result<
         MemoryEvent::Tagged(tagged) => (TAGGED, serde_json::to_string(tagged)),
         MemoryEvent::Merging(merging) => (MERGING, serde_json::to_string(merging)),
         MemoryEvent::MergeFailed(failed) => (MERGE_FAILED, serde_json::to_string(failed)),
+        MemoryEvent::Swept(swept) => (SWEPT, serde_json::to_string(swept)),
     };
     let json = json.map_err(|error| error.to_string())?;
     let body: RawJson = serde_json::from_str(&json).map_err(|error| error.to_string())?;
@@ -365,6 +380,7 @@ pub fn from_event(event: &Event) -> Option<Result<MemoryEvent, String>> {
         TAGGED => serde_json::from_str(body.get()).map(MemoryEvent::Tagged),
         MERGING => serde_json::from_str(body.get()).map(MemoryEvent::Merging),
         MERGE_FAILED => serde_json::from_str(body.get()).map(MemoryEvent::MergeFailed),
+        SWEPT => serde_json::from_str(body.get()).map(MemoryEvent::Swept),
         _ => return None,
     };
     Some(read.map_err(|error| format!("body of {kind} not readable: {error}")))

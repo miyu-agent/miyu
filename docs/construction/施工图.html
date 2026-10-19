@@ -780,6 +780,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-16"><span class="n">R-16</span>整理更可靠<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-17"><span class="n">R-17</span>整理留痕<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-18"><span class="n">R-18</span>删掉 bge<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-19"><span class="n">R-19</span>整理时轮着重看旧记忆<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -22643,6 +22644,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-18-删掉bge.md</code>；蓝图 <code>recall.md</code>「出处」、第四条，<code>knowledge.md</code> 第九条，<code>memory/eval.md</code>「换模型」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-19" aria-labelledby="h-sR19">
+  <div class="sheet-head"><h2 id="h-sR19"><span class="no">R-19</span>整理时轮着重看旧记忆</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">整理只看新记的和相关的，和新记的不沾边的旧记忆永远不会再被看：以前留下的过时、重复、没价值的一直在。项目主人定每次整理顺带最久没看过的 20 条。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/merge/land.rs、compose.rs　miyu-recall · memory/book.rs</span><span class="dir-note">R-19</span></div>
+            <ol class="pipe" aria-label="轮着重看">
+              <li>一趟开头挑一次：上次重看到的后面、照编号 20 条，不够的从头接</li>
+              <li>头一个放得下的批带上，接在相关的旧记忆后面；塞满了的照挑好的往后挪</li>
+              <li>合成了记 <code>ext.memory.swept</code>，没合成的不往前走</li>
+              <li>人叫的没有新记的也重看；后台的只在有新记的时候</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">ext.memory.swept</span><span class="rl">轮到哪、几条</span></div>
+          <div class="tile new"><span class="nm">sweep.txt</span><span class="rl">「Other older memories to look over again:」</span></div>
+          <div class="tile new"><span class="nm">轮转</span><span class="rl">量尺的第三种场景</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-19</dd></div>
+        <div><dt>名称</dt><dd>整理时轮着重看旧记忆</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>量尺先行、测试、变异、CI · 自己验收，20 条项目主人定</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>量尺「轮转」：不轮转的旧库一条都清不掉；轮转矛盾 15/15、日期 10/12、没价值 18/18、重复 12/12、误删 0、摘要 24/24；原来两种场景照旧；一趟多 550 个输入 token 上下</span></li>
+        <li><span class="ok">✓</span><span>手写变异 11 个全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-19-整理时轮着重看旧记忆.md</code>；蓝图 <code>memory.md</code> 第七条第 11 款，<code>memory/eval.md</code>「整理」。</li>
       </ul>
     </div>
   </div>

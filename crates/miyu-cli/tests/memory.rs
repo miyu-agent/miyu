@@ -272,7 +272,9 @@ async fn dream_organizes_now_and_says_how_much() {
     let server = Server::start(vec![said(
         &serde_json::json!({"retired": [{"id": "m1", "kind": "repeat", "by": "m2", "why": "重复"}], "summary": "用户养猫。"})
             .to_string(),
-    )])
+    ),
+    // 合完补关键词的那一次（施工 R-15 下）、第二次整理重看的那一次。
+    said("{}"), said("{}")])
     .await;
     let home = Home::routed(&format!(
         "[persona]\ndefault = \"engineer\"\n\n[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[models]\nchat = \"a/m\"\n",
@@ -290,9 +292,14 @@ async fn dream_organizes_now_and_says_how_much() {
         "{}",
         dreamed.err
     );
+    // 没有新记的照样重看轮到的旧记忆（施工 R-19）：留下的那一条。
     let again = run(&home, &["dream"]).await;
-    assert_eq!((again.code, again.out.as_str()), (0, "无需整理。\n"));
-    assert_eq!(server.received().len(), 1, "没有要整理的不发");
+    assert_eq!(
+        (again.code, again.out.as_str()),
+        (0, "整理完成：检查 1 条，修改 0 条，作废 0 条。\n"),
+        "{}",
+        again.err
+    );
     let forgotten = run(&home, &["list", "--forgotten"]).await;
     assert!(
         forgotten.out.contains("（已作废：重复）"),

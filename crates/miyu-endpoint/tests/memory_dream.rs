@@ -73,15 +73,16 @@ async fn a_dream_merges_now_and_says_how_much() {
     let again = client
         .call("d2", "memory.dream", json!({"persona": "engineer"}))
         .await;
+    // 没有新记的照样重看轮到的旧记忆（施工 R-19）：留下的那一条。
     assert_eq!(
         again["result"],
-        json!({"given": 0, "revised": 0, "retired": 0, "summary": false}),
+        json!({"given": 1, "revised": 0, "retired": 0, "summary": false}),
         "{again}"
     );
     assert_eq!(
         server.received().len(),
-        2,
-        "合并、接着补关键词各一次（施工 R-15 下）；没有要整理的不发"
+        3,
+        "合并、接着补关键词（施工 R-15 下）、重看各一次；那一条补过关键词了，不再补"
     );
 }
 
@@ -176,6 +177,8 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
             Duration::from_millis(500),
         ),
         said(&json!({"keywords": []}).to_string()),
+        // 第二次 `/dream`：没有新记的，重看那一条（施工 R-19）。
+        said("{}"),
     ])
     .await;
     let home = Home::new();
@@ -255,7 +258,10 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
         ))
         .await;
     let (pushed, again) = client.until_reply("k3").await;
-    assert_eq!(again["result"]["said"], "无需整理。", "{again}");
+    assert_eq!(
+        again["result"]["said"], "整理完成：检查 1 条，修改 0 条，作废 0 条。",
+        "没有新记的照样重看（施工 R-19）：{again}"
+    );
     assert!(
         pushed
             .iter()

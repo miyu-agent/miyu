@@ -87,7 +87,7 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 
 Organize now: with `session`, first extract what that session hasn't had extracted yet, then merge the new with the old (duplicates merged, outdated ones retired, a summary of the person written). Answered in the background; takes a few seconds to a dozen or so.
 
-**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many were handed in, retired, revised, and whether the summary changed (boolean). With nothing to organize, all are zero and no model is called.
+**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many were handed in, retired, revised, and whether the summary changed (boolean). With no memories at all, all are zero and no model is called; with nothing new it still looks over the older memories whose turn it is (R-19).
 
 **Errors**: `memory_busy` (already organizing); `dream_failed` (merging failed, `data.message`).
 
@@ -102,9 +102,11 @@ Organize now: with `session`, first extract what that session hasn't had extract
 | `ext.memory.tagged` | `id`, `keywords` | Keywords filled in: after the batch's `merged` |
 | `ext.memory.merged` | `upto`, `given`, `revised`, `retired`, `failed`? | The batch is done (`failed`: three failures in a row, skipped) |
 | `ext.memory.merge_failed` | `upto`, `why`, `tries`? | The batch failed this time; `why` `interrupted` means the core stopped midway |
+| `ext.memory.swept` | `upto`, `count` | How many older memories were looked over again, and up to which one (R-19): after the batch's `merged` |
 
 - A `merging` and the `merged` or `merge_failed` that ends it carry the same `upto`; the revisions, removals and summary between them whose `by` is the memory module are what the batch did (another session may be extracting or a person editing at the same time; `by` tells them apart). One not yet ended is in progress.
 - Progress: the first batch's `left` is the total; the `fresh` of the ended batches adds up to what is done. There is no finer progress within a batch.
+- Each run, the first batch with room also looks over up to 20 older memories in turn (by id, starting over after the last), and revisions or removals of them count as the batch's. A requested run with nothing new still looks them over: that batch's `fresh` and `left` are 0.
 - When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
 
 ## `kb.list`, `kb.search`, `kb.read`, `kb.documents`
