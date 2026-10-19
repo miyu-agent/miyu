@@ -54,33 +54,59 @@ pub fn checks(results: &Results, budgets: &BTreeMap<String, Budget>) -> Result<V
     };
     let large = &results.large;
     let tail: Vec<f64> = tail_of(large).map(|said| said.projection).collect();
-    let timed: [(String, &[f64], Budget); 5] = [
+    let mut timed: Vec<(String, &[f64], Budget)> = vec![
         (
             format!("{HOT}：连上、握手、订阅一个没载入的小会话"),
-            &results.hot.load,
+            &results.hot.load[..],
             budget(HOT)?,
         ),
         (
             format!("{HOT}：重启核心后打开大会话（连上、握手、订阅）"),
-            &large.reload,
+            &large.reload[..],
             budget(HOT)?,
         ),
         (
             "一次请求的投影：大会话上一句落了盘到模型收到请求（组装、编码、连接）".to_string(),
-            &tail,
+            &tail[..],
             budget(PROJECTION)?,
         ),
         (
             "从头投影：重启、打开大会话后头一次说，落了盘到模型收到请求".to_string(),
-            &large.first_projection,
+            &large.first_projection[..],
             budget(FROM_SCRATCH)?,
         ),
         (
             "追加一条事件并同步".to_string(),
-            &results.appends,
+            &results.appends[..],
             budget(APPEND)?,
         ),
     ];
+    // 开着记忆的大会话（施工 V-9）：打开、投影照同样的预算。
+    let remembered: Vec<f64> = results
+        .remembering
+        .iter()
+        .flat_map(tail_of)
+        .map(|said| said.projection)
+        .collect();
+    if let Some(remembering) = &results.remembering {
+        timed.extend([
+            (
+                format!("{HOT}：重启核心后打开大会话，开着记忆"),
+                &remembering.reload[..],
+                budget(HOT)?,
+            ),
+            (
+                "一次请求的投影：开着记忆的大会话".to_string(),
+                &remembered[..],
+                budget(PROJECTION)?,
+            ),
+            (
+                "从头投影：重启、打开开着记忆的大会话后头一次说".to_string(),
+                &remembering.first_projection[..],
+                budget(FROM_SCRATCH)?,
+            ),
+        ]);
+    }
     let mut checks: Vec<Check> = timed
         .into_iter()
         .map(|(label, values, budget)| {

@@ -36,6 +36,7 @@ fn persona() -> Room {
 
 /// 那一间的回合库里搜 `words`，交回键。
 fn found(memory: &Memory, room: &Room, words: &str) -> Vec<String> {
+    memory.settle();
     let (index, _) = memory.turns.turns(room);
     index
         .search(words, 10)
@@ -104,6 +105,7 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
         assert!(Instant::now() < deadline, "等不到补齐：{cats:?} {hikes:?}");
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
+    memory.settle();
     let (index, _) = memory.turns.turns(&persona());
     let places = index.places().expect("读得了");
     assert_eq!(

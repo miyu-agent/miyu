@@ -9,6 +9,7 @@ mod backfill;
 mod extract;
 mod follow;
 mod keeper;
+mod lane;
 mod listener;
 mod merge;
 mod owner;
@@ -26,6 +27,7 @@ pub use extract::{ExtractTexts, Extraction};
 pub(crate) use extract::{Extractor, Job, Voices, plan};
 pub use follow::Following;
 pub use keeper::{Filter, Keeper, Stamp};
+pub(crate) use lane::{Laid, Source, TurnLane};
 pub use listener::Listener;
 pub use merge::{Dreamed, MergeTexts, NotDreamed};
 pub(crate) use owner::called;
@@ -74,6 +76,8 @@ pub struct Memory {
     installed: AtomicBool,
     /// 合并（施工 R-7 上）：哪几间在合、同一批失败了几次。
     merges: merge::Merges,
+    /// 回合索引在后台写（施工 V-9）。
+    lanes: lane::Lanes,
 }
 
 impl Memory {
@@ -112,11 +116,17 @@ impl Memory {
             recall: OnceLock::new(),
             installed: AtomicBool::new(true),
             merges: merge::Merges::default(),
+            lanes: lane::Lanes::default(),
         })
     }
 }
 
 impl Memory {
+    /// 等回合索引的后台把这时交过的都写完（施工 V-9）：搜回合库、删会话以前，测试照它再看回合库。
+    pub fn settle(&self) {
+        self.lanes.settle();
+    }
+
     /// 接上照意思找的那一路（施工 R-5 下）：核心起来、找好小程序和缓存目录以后接一次；接过的再接不算，交回 `false`。
     pub fn give_vectors(&self, vectors: Arc<Vectors>) -> bool {
         self.vectors.set(vectors).is_ok()
@@ -159,8 +169,8 @@ impl Memory {
     }
 }
 
-/// 接上会话 `session` 的记忆：回合索引（[`Turns::connect`]）和三件工具的端口（[`Calls`]）。范围是 `off` 的（子会话、
-/// `--no-memory`）不接，核心没交记忆的（测试里自己造的）没有。在阻塞线程里调。
+/// 接上会话 `session` 的记忆：回合索引（交给后台接上、往后照它写，施工 V-9，`memory/lane.rs`）和三件工具的端口
+/// （[`Calls`]）。范围是 `off` 的（子会话、`--no-memory`）不接，核心没交记忆的（测试里自己造的）没有。在阻塞线程里调。
 ///
 /// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在记忆账号 `account` 的那一间，只在这个会话里的在会话自己的目录
 /// 里（属主 `owner` 的）。听众照属主，不照记忆账号：出厂人格的记忆归属主，系统账号开的会话归管理员，听的人还是属主。
@@ -169,7 +179,7 @@ impl Memory {
 ///
 /// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）：搜以前的对话照谁在听挑，
 /// 一个场所里只搜得到这个场所的（第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
-/// `events` 是底子（分叉出来的支线才有，施工 R-13 三补）和这个会话自己的整份事件。
+/// 回合索引照 `laid` 铺、照 `source` 读回日志：底子（分叉出来的支线才有，施工 R-13 三补）接在会话自己的前面。
 #[expect(
     clippy::too_many_arguments,
     reason = "接上记忆要的几样各是一样，拼成一个结构体只为过这一条"
@@ -182,8 +192,8 @@ pub(crate) fn connect(
     persona: &str,
     session: &SessionId,
     venue: &VenueId,
-    events: (&[Event], &[Event]),
-) -> (Option<Turns>, Option<Calls>) {
+    (laid, source): (Laid<'_>, Source),
+) -> (Option<TurnLane>, Option<Calls>) {
     let room = match scope {
         MemoryScope::Persona => Room::persona(account, persona),
         MemoryScope::Session => Room::session(owner, session),
@@ -193,14 +203,21 @@ pub(crate) fn connect(
         return (None, None);
     };
     let floor = match scope {
-        MemoryScope::Persona => recast::floor(events.1, persona),
+        MemoryScope::Persona => recast::floor(laid.own(), persona),
         _ => None,
     };
-    let (base, own) = recast::split(events.0, events.1, floor);
-    let turns = Turns::connect(&memory.turns, &room, session, venue, &base, own);
+    let lane = memory.lanes.open(lane::Opening {
+        recall: Arc::clone(&memory.turns),
+        room: room.clone(),
+        session: session.clone(),
+        venue: venue.clone(),
+        floor,
+        laid: laid.sent(),
+        source,
+    });
     let listener = Listener::of(account, owner, venue);
     let calls = Calls::new(memory, room, listener, owner, session).since(floor);
-    (turns, Some(calls))
+    (lane, Some(calls))
 }
 
 /// 会话的记忆的范围：子会话（`child`）不管交的、快照里的是什么都是 `off`（17 第二节，以前造的子会话快照里没有这一格）；

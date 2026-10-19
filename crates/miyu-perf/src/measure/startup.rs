@@ -5,7 +5,7 @@
 
 use std::time::Instant;
 
-use crate::measure::open;
+use crate::measure::{FORGETFUL, open};
 use crate::rpc::Rpc;
 use crate::sandbox::Sandbox;
 use crate::stats::ms;
@@ -45,7 +45,7 @@ async fn once(sandbox: &Sandbox) -> Result<(f64, f64, f64), String> {
     let ready = ms(running.ready);
     let mut rpc = Rpc::connect(&sandbox.root).await?;
     let hello = ms(began.elapsed());
-    open(&mut rpc, &sandbox.work).await?;
+    open(&mut rpc, &sandbox.work, FORGETFUL).await?;
     let submit = ms(began.elapsed());
     drop(rpc);
     sandbox.stop(running)?;

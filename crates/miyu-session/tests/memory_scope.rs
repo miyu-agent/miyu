@@ -42,6 +42,7 @@ async fn chat(handle: &Handle, id: &str, words: &str) {
 
 /// 那一间的回合库里搜 `words`，交回键。
 fn found(home: &Home, room: &Room, words: &str) -> Vec<String> {
+    home.memory.settle();
     let (index, _) = home.recall.turns(room);
     index
         .search(words, 10)

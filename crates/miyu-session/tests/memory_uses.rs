@@ -42,6 +42,7 @@ async fn chat_and_stop(home: &Home, handle: &Handle, words: &str) -> Vec<Event> 
 }
 
 fn uses(home: &Home) -> BTreeMap<String, Used> {
+    home.memory.settle();
     home.recall.turns(&persona()).0.uses().expect("读得了")
 }
 
@@ -108,6 +109,7 @@ async fn loading_catches_up_what_was_missed() {
         .await;
     let id = handle.id().clone();
     chat_and_stop(&home, &handle, "在吗").await;
+    home.memory.settle();
     home.recall
         .turns(&persona())
         .0

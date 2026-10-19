@@ -268,7 +268,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             name.as_deref().unwrap_or(NO_PERSONA),
             &id_of,
             &venue_of,
-            (&[], &[]),
+            (memory::Laid::Empty, memory::Source::of(&log, None)),
         );
         Ok((snapshot, policy, texts, run, (guard, place), log, turns))
     })

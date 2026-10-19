@@ -14,6 +14,7 @@ impl Keeper {
     ///
     /// 回合库读不了：英文的一句为什么。
     pub fn used(&self) -> Result<BTreeMap<String, Used>, String> {
+        self.memory.settle();
         let (turns, _) = self.memory.turns.turns(self.room());
         turns.uses().map_err(|error| error.to_string())
     }

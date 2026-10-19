@@ -64,15 +64,15 @@ impl Calls {
         self.floor.unwrap_or(Seq::FIRST)
     }
 
-    /// 换了人格（施工 P-13）：同一个会话的记忆挪到人格 `persona`（无人格的是 `NO_PERSONA`）的那一间，照会话的底子、日志
-    /// `events` 接上回合索引。在阻塞线程里调。
+    /// 换了人格（施工 P-13）：同一个会话的记忆挪到人格 `persona`（无人格的是 `NO_PERSONA`）的那一间，照会话的日志 `source`、
+    /// 读回的会话自己的整份事件 `own` 接上回合索引。在阻塞线程里调。
     pub(crate) fn moved(
         &self,
         personas: &miyu_store::personas::Personas,
         persona: &str,
         venue: &miyu_kernel::id::VenueId,
-        events: (&[miyu_kernel::event::Event], &[miyu_kernel::event::Event]),
-    ) -> (Option<super::Turns>, Option<Calls>) {
+        (source, own): (super::Source, Vec<miyu_kernel::event::Event>),
+    ) -> (Option<super::TurnLane>, Option<Calls>) {
         let account = personas.memory_account(persona, &self.owner);
         super::connect(
             Some(&self.keeper.memory),
@@ -82,7 +82,7 @@ impl Calls {
             persona,
             &self.session,
             venue,
-            events,
+            (super::Laid::Given(own), source),
         )
     }
 

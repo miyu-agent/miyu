@@ -109,6 +109,7 @@ fn results(memory: bool) -> Results {
             first_projection: vec![60.0],
             ..Large::default()
         },
+        remembering: None,
         appends: vec![1.0, 2.0, 30.0],
     }
 }
@@ -324,5 +325,58 @@ fn the_gate_fails_the_run_only_when_asked_and_over() {
     assert!(
         error.starts_with("闸门没过：\n追加一条事件并同步："),
         "{error}"
+    );
+}
+
+#[test]
+fn the_remembering_session_is_held_to_the_same_budgets() {
+    // 开着记忆的大会话（施工 V-9）：打开 300 ms 超了 200 的预算，闸门照名字拦下它；投影、从头投影照样比。
+    let mut results = results(true);
+    results.remembering = Some(Large {
+        turns: vec![
+            Said {
+                seq: 10_002,
+                request: 4.0,
+                turn: 40.0,
+                projection: 2.0,
+            },
+            Said {
+                seq: 10_008,
+                request: 6.0,
+                turn: 60.0,
+                projection: 4.0,
+            },
+        ],
+        tail: 2,
+        reload: vec![300.0],
+        first_projection: vec![70.0],
+        ..Large::default()
+    });
+    let text = rows::markdown(&results, &budgets(), "x").unwrap();
+    for start in [
+        "| 热启动到能提交第一轮：重启核心后打开大会话，开着记忆 |",
+        "| 一次请求的投影：开着记忆的大会话 |",
+        "| 从头投影：重启、打开开着记忆的大会话后头一次说 |",
+    ] {
+        assert!(text.contains(start), "没有「{start}」：\n{text}");
+    }
+    let over = gate::over(&results, &budgets(), 1.0).unwrap();
+    assert!(
+        over.iter()
+            .any(|row| row.starts_with("热启动到能提交第一轮：重启核心后打开大会话，开着记忆：")),
+        "{over:?}"
+    );
+    // 原始数据带上这一组，读回来一样；以前的没有这一组的照样读得回。
+    let written = raw::json(&results);
+    assert_eq!(
+        written["large_memory"]["reload_ms"],
+        serde_json::json!([300.0])
+    );
+    let read = load(&written, results.args.clone()).unwrap();
+    assert_eq!(raw::json(&read), written);
+    assert!(
+        raw::json(&self::results(true))
+            .get("large_memory")
+            .is_none()
     );
 }

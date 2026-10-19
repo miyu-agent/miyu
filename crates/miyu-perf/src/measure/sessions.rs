@@ -9,7 +9,7 @@ use std::time::Instant;
 use serde_json::json;
 
 use crate::fake::Fake;
-use crate::measure::{SETTLE, open, say, subscribe};
+use crate::measure::{FORGETFUL, SETTLE, open, say, subscribe};
 use crate::memory::{self, Process};
 use crate::rpc::Rpc;
 use crate::sandbox::Sandbox;
@@ -41,7 +41,7 @@ pub async fn hot(sandbox: &Sandbox, fake: &mut Fake, count: usize) -> Result<Hot
     {
         let mut rpc = Rpc::connect(&sandbox.root).await?;
         for n in 0..count {
-            let session = open(&mut rpc, &sandbox.work).await?;
+            let session = open(&mut rpc, &sandbox.work, FORGETFUL).await?;
             say(&mut rpc, fake, &session, &format!("perf-small-{n:03}")).await?;
             ids.push(session);
         }

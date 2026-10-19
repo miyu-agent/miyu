@@ -236,6 +236,11 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
             .join("recall")
             .join("turns-engineer.db")
     };
+    // 回合库在后台建（施工 V-9）：等它出现，最多六十秒（机器忙时慢，只在出错时等满）。
+    let built = tokio::time::Instant::now() + Duration::from_secs(60);
+    while !turns(&alice()).exists() && tokio::time::Instant::now() < built {
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
     assert!(!turns(&bot()).exists(), "系统账号没有自己的回合库");
     assert!(turns(&alice()).exists(), "群里的回合进管理员的回合库");
     // 删掉群会话：管理员的回合库里给它埋墓碑，记忆的出处在它里面的都算死了。

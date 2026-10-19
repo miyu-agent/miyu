@@ -4,6 +4,8 @@
 //!
 //! 接着量载着它的内存；不订阅了，等会话 actor 空闲退出，再量一次（分配器攒着不还的就在这里看得出）。最后几次重启核心、
 //! 订阅它（从头读日志、重放），量打开它要多久，和打开以后头一次请求要多久：没有投影缓存，这就是从头投影一次。
+//!
+//! 记忆关着、开着各造一个量一遍（施工 V-9）：开着的载入、落盘还要接上、更新回合索引。
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -11,7 +13,7 @@ use std::time::Instant;
 use miyu_kernel::id::{AccountId, SessionId};
 
 use crate::fake::Fake;
-use crate::measure::{SETTLE, Said, open, say, subscribe};
+use crate::measure::{FORGETFUL, SETTLE, Said, open, say, subscribe};
 use crate::memory::{self, Process};
 use crate::rpc::Rpc;
 use crate::sandbox::Sandbox;
@@ -28,6 +30,8 @@ pub struct Plan {
     pub reloads: usize,
     /// 不订阅以后等多久再量内存。
     pub idle_wait: std::time::Duration,
+    /// 会话的记忆：[`FORGETFUL`]、[`crate::measure::REMEMBERING`]。
+    pub memory: &'static str,
 }
 
 /// 量到的。
@@ -65,7 +69,12 @@ pub struct Large {
 pub async fn large(sandbox: &Sandbox, fake: &mut Fake, plan: Plan) -> Result<Large, String> {
     let running = sandbox.start()?;
     let mut rpc = Rpc::connect(&sandbox.root).await?;
-    let session = open(&mut rpc, &sandbox.work).await?;
+    let session = open(&mut rpc, &sandbox.work, plan.memory).await?;
+    let group = if plan.memory == FORGETFUL {
+        ""
+    } else {
+        "（开着记忆）"
+    };
     let mut large = Large {
         tail: plan.tail,
         dir: directory(sandbox, &session)?,
@@ -80,7 +89,7 @@ pub async fn large(sandbox: &Sandbox, fake: &mut Fake, plan: Plan) -> Result<Lar
         }
         if n.is_multiple_of(200) {
             eprintln!(
-                "  大会话：{} 条事件，这一轮说出去到收到请求 {:.1} ms",
+                "  大会话{group}：{} 条事件，这一轮说出去到收到请求 {:.1} ms",
                 said.seq, said.request
             );
         }
@@ -105,7 +114,7 @@ pub async fn large(sandbox: &Sandbox, fake: &mut Fake, plan: Plan) -> Result<Lar
         large.reload.push(ms(began.elapsed()));
         // 核心自己记的载入分段（`loaded` 那一行：读、快照、记忆、扫、重放、总计），印出来：CI 上看慢在哪一段（施工 V-11）。
         if let Some(line) = loaded(sandbox, &session) {
-            eprintln!("  重启打开大会话第 {}次：{line}", n + 1);
+            eprintln!("  重启打开大会话{group}第 {}次：{line}", n + 1);
         }
         let said = say(&mut rpc, fake, &session, &format!("perf-reload-{n:03}")).await?;
         large.first_request.push(said.request);

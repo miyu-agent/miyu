@@ -75,8 +75,15 @@ async fn run(args: Args) -> Result<(), String> {
         tail: args.tail,
         reloads: args.reloads,
         idle_wait: args.idle_wait,
+        memory: measure::FORGETFUL,
     };
     let large = measure::large::large(&sandbox, &mut fake, plan).await?;
+    eprintln!("大会话（开着记忆）：说到 {} 条事件", args.events);
+    let remembering = Plan {
+        memory: measure::REMEMBERING,
+        ..plan
+    };
+    let remembering = measure::large::large(&sandbox, &mut fake, remembering).await?;
     eprintln!("追加并同步：{} 条", args.appends);
     let appends = measure::append::append(&large.dir, &args.work.join("append"), args.appends)?;
     let sizes = measure::size::sizes(&args.miyu, &args.work.join("strip"));
@@ -93,6 +100,7 @@ async fn run(args: Args) -> Result<(), String> {
         cold,
         hot,
         large,
+        remembering: Some(remembering),
         appends,
     };
     let written = report::write(&results, &budgets, &args.out)?;

@@ -117,6 +117,7 @@ pub async fn filled(home: &Home, model: &str, memory: bool, key: &str) {
             let (log, _) = home.logs.open(&persona()).expect("开得了");
             has_vector(log.index(), model, key)
         } else {
+            home.memory.settle();
             let (turns, _) = home.recall.turns(&persona());
             let keys = turns.keys().expect("读得了");
             keys.iter()

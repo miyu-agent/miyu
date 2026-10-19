@@ -33,17 +33,23 @@ pub struct Said {
     pub turn: f64,
 }
 
-/// 在 `cwd` 里造一个会话，订阅它，交回编号。记忆关着（`memory: off`）：这一组量核心自己，和 P-12 以前无人格的会话一样不接
-/// 记忆（P-12 起无人格的会话也有记忆，量尺的会话就是无人格的）；开记忆的另量一组（施工 V-9）。
+/// 记忆关着（`memory: off`）：量核心自己，和 P-12 以前无人格的会话一样不接记忆（P-12 起无人格的会话也有记忆，量尺的会话
+/// 就是无人格的）。
+pub const FORGETFUL: &str = "off";
+
+/// 记忆开着（跟着人格，无人格的也是）：大会话另量一组，同样的预算（施工 V-9）。
+pub const REMEMBERING: &str = "persona";
+
+/// 在 `cwd` 里造一个会话，记忆照 `memory`（[`FORGETFUL`]、[`REMEMBERING`]），订阅它，交回编号。
 ///
 /// # Errors
 ///
 /// 核心拒了、回应里没有编号。
-pub async fn open(rpc: &mut Rpc, cwd: &Path) -> Result<String, String> {
+pub async fn open(rpc: &mut Rpc, cwd: &Path, memory: &str) -> Result<String, String> {
     let created = rpc
         .call(
             "session.create",
-            json!({"cwd": cwd.to_string_lossy(), "memory": "off"}),
+            json!({"cwd": cwd.to_string_lossy(), "memory": memory}),
         )
         .await?;
     let session = created["session"]

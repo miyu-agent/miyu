@@ -19,7 +19,7 @@ use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::ReadLog;
 
 use crate::TARGET;
-use crate::memory::{Calls, Turns};
+use crate::memory::{Calls, Source, TurnLane};
 
 /// 一次写一批，返回时这一批都落了盘。在阻塞线程里用，所以要能挪到别的线程上。
 pub(crate) trait Store: Send + 'static {
@@ -40,13 +40,17 @@ pub(crate) trait Store: Send + 'static {
     /// 换了人格，记忆挪了一间（施工 P-13）：照底子、自己的日志重接回合索引，交回新的记忆的端口。没有回合索引的照整份
     /// 日志接，接上的回合索引不留。
     fn rewire(&mut self, connect: Rewire) -> Result<Option<Calls>, String> {
-        Ok(connect(&[], &self.events()?).1)
+        let source = Source {
+            dir: self.dir().unwrap_or_default(),
+            base: None,
+        };
+        Ok(connect(source, self.events()?).1)
     }
 }
 
-/// 照底子、会话自己的日志接上记忆（施工 P-13，[`Store::rewire`]）。
+/// 照会话的日志（底子在哪、日志在哪）、读回的会话自己的整份事件接上记忆（施工 P-13，[`Store::rewire`]）。
 pub(crate) type Rewire =
-    Box<dyn FnOnce(&[Event], &[Event]) -> (Option<Turns>, Option<Calls>) + Send>;
+    Box<dyn FnOnce(Source, Vec<Event>) -> (Option<TurnLane>, Option<Calls>) + Send>;
 
 impl Store for SessionLog {
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
@@ -81,8 +85,8 @@ pub(crate) struct Indexed {
     index: Option<Arc<SessionIndex>>,
     /// 用量汇总，和这个会话的属主、场所、父会话：没有的不写。
     usage: Option<(Arc<UsageIndex>, Who)>,
-    /// 回合索引（施工 R-2 上）：主会话、核心交了登记的才有。
-    turns: Option<Turns>,
+    /// 回合索引（施工 R-2 上）：主会话、核心交了登记的才有。在后台写（施工 V-9）。
+    turns: Option<TurnLane>,
     /// 分叉出来的会话的底子（施工 C-8 上）：父会话的日志里到分叉点为止的事件。读回日志时接在自己的前面，撤销读回到分叉点
     /// 以前的也接得上。
     base: Option<Arc<Vec<Event>>>,
@@ -96,7 +100,7 @@ impl Indexed {
         id: &SessionId,
         index: Option<Arc<SessionIndex>>,
         usage: Option<(Arc<UsageIndex>, Who)>,
-        turns: Option<Turns>,
+        turns: Option<TurnLane>,
     ) -> Indexed {
         Indexed {
             log,
@@ -146,9 +150,8 @@ impl Store for Indexed {
         {
             tracing::warn!(target: TARGET, error = %error, "usage not indexed");
         }
-        if let Some(turns) = &mut self.turns {
-            let log = &self.log;
-            turns.advance(events, || Store::events(log));
+        if let Some(turns) = &self.turns {
+            turns.advance(events);
         }
         Ok(())
     }
@@ -173,8 +176,8 @@ impl Store for Indexed {
     fn rewire(&mut self, connect: Rewire) -> Result<Option<Calls>, String> {
         self.turns = None;
         let own = self.log.events()?;
-        let base = self.base.as_deref().map_or(&[][..], Vec::as_slice);
-        let (turns, calls) = connect(base, &own);
+        let source = Source::of(&self.log, self.base.clone());
+        let (turns, calls) = connect(source, own);
         self.turns = turns;
         Ok(calls)
     }

@@ -14,6 +14,7 @@ use crate::support::*;
 
 /// 软件工程师的回合库里搜 `words`，交回键。
 fn found(home: &Home, words: &str) -> Vec<String> {
+    home.memory.settle();
     let (index, _) = home
         .recall
         .turns(&Room::persona(&alice_account(), "engineer"));
@@ -66,6 +67,7 @@ async fn each_turn_goes_in_and_undo_and_restore_follow() {
             session: id.clone(),
             turn,
         };
+        home.memory.settle();
         home.recall
             .alive(&Room::persona(&alice_account(), "engineer"), &source)
             .expect("读得了")
@@ -107,6 +109,7 @@ async fn loading_catches_up_what_was_missed() {
     stop(&handle).await;
 
     // 库里落下了这个会话（更新失败、崩在更新之前）：载入时照整份事件补回来。
+    home.memory.settle();
     let (index, _) = home
         .recall
         .turns(&Room::persona(&alice_account(), "engineer"));
@@ -169,6 +172,7 @@ async fn a_venue_session_is_indexed_with_where_it_is() {
     let session = handle.id().clone();
     stop(&handle).await;
     assert_eq!(found(&home, "团子").len(), 1, "群里的进");
+    home.memory.settle();
     let (index, _) = home
         .recall
         .turns(&Room::persona(&alice_account(), "engineer"));

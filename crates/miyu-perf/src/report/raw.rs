@@ -3,6 +3,7 @@
 use serde_json::{Value, json};
 
 use super::Results;
+use crate::measure::large::Large;
 use crate::memory::Process;
 
 /// 毫秒数留到微秒：再细的是噪声，还让文件白长。
@@ -21,7 +22,29 @@ fn processes(found: &[Process]) -> Value {
 /// 整份原始数据。
 pub fn json(results: &Results) -> Value {
     let args = &results.args;
-    let large = &results.large;
+    let mut raw = json!({
+        "date": results.date,
+        "machine": results.machine.to_json(),
+        "plan": {"runs": args.runs, "sessions": args.sessions, "events": args.events, "tail": args.tail,
+            "reloads": args.reloads, "appends": args.appends, "reply_bytes": args.reply_bytes,
+            "idle_wait_s": args.idle_wait.as_secs()},
+        "binaries": results.sizes.iter().map(crate::measure::size::Size::to_json).collect::<Vec<_>>(),
+        "cold": {"ready_ms": times(&results.cold.ready), "hello_ms": times(&results.cold.hello),
+            "submit_ms": times(&results.cold.submit)},
+        "hot": {"sessions": results.hot.sessions, "load_ms": times(&results.hot.load),
+            "idle": processes(&results.hot.idle), "active": processes(&results.hot.active),
+            "headed": processes(&results.hot.headed)},
+        "large": large(&results.large),
+        "append": {"sync_ms": times(&results.appends)},
+    });
+    if let Some(remembering) = &results.remembering {
+        raw["large_memory"] = large(remembering);
+    }
+    raw
+}
+
+/// 一个大会话的。
+fn large(large: &Large) -> Value {
     let turns: Vec<Value> = large
         .turns
         .iter()
@@ -34,24 +57,10 @@ pub fn json(results: &Results) -> Value {
             ])
         })
         .collect();
-    json!({
-        "date": results.date,
-        "machine": results.machine.to_json(),
-        "plan": {"runs": args.runs, "sessions": args.sessions, "events": args.events, "tail": args.tail,
-            "reloads": args.reloads, "appends": args.appends, "reply_bytes": args.reply_bytes,
-            "idle_wait_s": args.idle_wait.as_secs()},
-        "binaries": results.sizes.iter().map(crate::measure::size::Size::to_json).collect::<Vec<_>>(),
-        "cold": {"ready_ms": times(&results.cold.ready), "hello_ms": times(&results.cold.hello),
-            "submit_ms": times(&results.cold.submit)},
-        "hot": {"sessions": results.hot.sessions, "load_ms": times(&results.hot.load),
-            "idle": processes(&results.hot.idle), "active": processes(&results.hot.active),
-            "headed": processes(&results.hot.headed)},
-        "large": {"events": large.events, "log_bytes": large.log_bytes, "tail": large.tail,
-            "turns_seq_request_ms_turn_ms_projection_ms": turns,
-            "loaded": processes(&large.loaded), "idle": processes(&large.idle),
-            "reload_ms": times(&large.reload), "first_request_ms": times(&large.first_request),
-            "first_projection_ms": times(&large.first_projection),
-            "reloaded": processes(&large.reloaded)},
-        "append": {"sync_ms": times(&results.appends)},
-    })
+    json!({"events": large.events, "log_bytes": large.log_bytes, "tail": large.tail,
+        "turns_seq_request_ms_turn_ms_projection_ms": turns,
+        "loaded": processes(&large.loaded), "idle": processes(&large.idle),
+        "reload_ms": times(&large.reload), "first_request_ms": times(&large.first_request),
+        "first_projection_ms": times(&large.first_projection),
+        "reloaded": processes(&large.reloaded)})
 }

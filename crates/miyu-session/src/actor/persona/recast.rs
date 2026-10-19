@@ -107,7 +107,7 @@ impl Actor {
         };
         let name = persona.unwrap_or_else(|| NO_PERSONA.to_string());
         let connect: Rewire =
-            Box::new(move |base, own| calls.moved(&personas, &name, &venue, (base, own)));
+            Box::new(move |source, own| calls.moved(&personas, &name, &venue, (source, own)));
         let (store, wired) = blocking(move || {
             let wired = store.rewire(connect);
             (store, wired)

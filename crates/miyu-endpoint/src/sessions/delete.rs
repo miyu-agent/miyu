@@ -70,10 +70,12 @@ impl Sessions {
         // 回合库照记忆归谁找：系统账号的会话记在管理员名下（施工 O-4 下）。
         let remembered = core.memory_owner(&account);
         let index = core.index_for(&account);
-        let recall = Arc::clone(&core.memory.turns);
+        let (memory, recall) = (Arc::clone(&core.memory), Arc::clone(&core.memory.turns));
         let order: Vec<SessionId> = family.into_iter().rev().chain([id.clone()]).collect();
         let listing = Arc::clone(core);
         let moved = tokio::task::spawn_blocking(move || {
+            // 停下的会话交给后台还没写完的回合先写完（施工 V-9）：拿掉以后不再冒出来。
+            memory.settle();
             order.into_iter().try_for_each(|session| {
                 trash::discard(&root, &account, &session, at)
                     .map_err(|error| (session.clone(), error))?;

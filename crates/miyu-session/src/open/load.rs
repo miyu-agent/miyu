@@ -171,7 +171,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             persona,
             &id_of,
             &created.venue,
-            (base.as_deref().map_or(&[][..], Vec::as_slice), &events),
+            (
+                memory::Laid::Read(&events),
+                memory::Source::of(&log, base.clone()),
+            ),
         );
         let remembered = remembered(&events);
         Ok((

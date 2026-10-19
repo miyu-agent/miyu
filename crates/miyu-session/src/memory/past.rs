@@ -29,6 +29,7 @@ impl Keeper {
         seen: Option<(&SessionId, Option<Seq>)>,
         near: Option<&Query>,
     ) -> Result<Vec<FoundTurn>, String> {
+        self.memory.settle();
         let (turns, _) = self.memory.turns.turns(self.room());
         let places = turns.places().map_err(|error| error.to_string())?;
         let own = seen.map(|(session, after)| (format!("{session}/"), after));

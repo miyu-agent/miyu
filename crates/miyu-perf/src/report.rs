@@ -37,6 +37,8 @@ pub struct Results {
     pub hot: Hot,
     /// 大会话。
     pub large: Large,
+    /// 开着记忆的大会话（施工 V-9）：以前的原始数据没有。
+    pub remembering: Option<Large>,
     /// 追加并同步，每一条的毫秒数。
     pub appends: Vec<f64>,
 }

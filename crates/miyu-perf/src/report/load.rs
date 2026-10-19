@@ -30,7 +30,6 @@ pub fn results(raw: &Value, mut args: Args) -> Result<Results, String> {
     args.idle_wait =
         std::time::Duration::from_secs(number(&plan["idle_wait_s"], "plan.idle_wait_s")?);
     let machine = &raw["machine"];
-    let large = &raw["large"];
     Ok(Results {
         date: text(&raw["date"], "date")?,
         machine: Machine {
@@ -70,47 +69,59 @@ pub fn results(raw: &Value, mut args: Args) -> Result<Results, String> {
             },
             sessions: count(&raw["hot"]["sessions"], "hot.sessions")?,
         },
-        large: Large {
-            turns: turns(large)?,
-            tail: count(&large["tail"], "large.tail")?,
-            events: number(&large["events"], "large.events")?,
-            log_bytes: number(&large["log_bytes"], "large.log_bytes")?,
-            dir: std::path::PathBuf::new(),
-            loaded: processes(&large["loaded"], "large.loaded")?,
-            idle: processes(&large["idle"], "large.idle")?,
-            reload: times(&large["reload_ms"], "large.reload_ms")?,
-            first_request: times(&large["first_request_ms"], "large.first_request_ms")?,
-            // V-2 中以前的原始数据没有这一格：照说出去到收到请求算（含落盘，上界）。
-            first_projection: match large.get("first_projection_ms") {
-                Some(projection) => times(projection, "large.first_projection_ms")?,
-                None => times(&large["first_request_ms"], "large.first_request_ms")?,
-            },
-            reloaded: processes(&large["reloaded"], "large.reloaded")?,
+        large: large(&raw["large"], "large")?,
+        // 施工 V-9 以前的原始数据没有开着记忆的那一组。
+        remembering: match raw.get("large_memory") {
+            Some(remembering) => Some(large(remembering, "large_memory")?),
+            None => None,
         },
         appends: times(&raw["append"]["sync_ms"], "append.sync_ms")?,
     })
 }
 
+/// 一个大会话的，`name` 是它在原始数据里叫什么。
+fn large(large: &Value, name: &str) -> Result<Large, String> {
+    let at = |what: &str| format!("{name}.{what}");
+    Ok(Large {
+        turns: turns(large, name)?,
+        tail: count(&large["tail"], &at("tail"))?,
+        events: number(&large["events"], &at("events"))?,
+        log_bytes: number(&large["log_bytes"], &at("log_bytes"))?,
+        dir: std::path::PathBuf::new(),
+        loaded: processes(&large["loaded"], &at("loaded"))?,
+        idle: processes(&large["idle"], &at("idle"))?,
+        reload: times(&large["reload_ms"], &at("reload_ms"))?,
+        first_request: times(&large["first_request_ms"], &at("first_request_ms"))?,
+        // V-2 中以前的原始数据没有这一格：照说出去到收到请求算（含落盘，上界）。
+        first_projection: match large.get("first_projection_ms") {
+            Some(projection) => times(projection, &at("first_projection_ms"))?,
+            None => times(&large["first_request_ms"], &at("first_request_ms"))?,
+        },
+        reloaded: processes(&large["reloaded"], &at("reloaded"))?,
+    })
+}
+
 /// 大会话每一轮：V-2 中起四格（序号、说出去到收到请求、一轮、落了盘到收到请求），以前的三格，落了盘到收到请求照说出去到
 /// 收到请求算（上界）。
-fn turns(large: &Value) -> Result<Vec<Said>, String> {
+fn turns(large: &Value, name: &str) -> Result<Vec<Said>, String> {
     let (rows, what) = match large.get("turns_seq_request_ms_turn_ms_projection_ms") {
-        Some(rows) => (rows, "large.turns_seq_request_ms_turn_ms_projection_ms"),
+        Some(rows) => (rows, "turns_seq_request_ms_turn_ms_projection_ms"),
         None => (
             &large["turns_seq_request_ms_turn_ms"],
-            "large.turns_seq_request_ms_turn_ms",
+            "turns_seq_request_ms_turn_ms",
         ),
     };
-    list(rows, what)?
+    let at = |n: usize| format!("{name}.turns[{n}]");
+    list(rows, &format!("{name}.{what}"))?
         .iter()
         .map(|turn| {
-            let request = time(&turn[1], "large.turns[1]")?;
+            let request = time(&turn[1], &at(1))?;
             Ok(Said {
-                seq: number(&turn[0], "large.turns[0]")?,
+                seq: number(&turn[0], &at(0))?,
                 request,
-                turn: time(&turn[2], "large.turns[2]")?,
+                turn: time(&turn[2], &at(2))?,
                 projection: match turn.get(3) {
-                    Some(projection) => time(projection, "large.turns[3]")?,
+                    Some(projection) => time(projection, &at(3))?,
                     None => request,
                 },
             })
