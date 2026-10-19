@@ -61,22 +61,29 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
         let made = terminal(&mut client, "t1", json!({})).await;
         made["session"].as_str().expect("有编号").to_string()
     };
-    // 把这个会话的事件都挪到很早以前，删掉会话列表的索引（派生的，照日志重建）：再起来时它闲置了很久。
-    let dir = home.root.session_dir(
-        &alice(),
-        &miyu_kernel::id::SessionId::parse(&session).expect("编号"),
-    );
-    for entry in std::fs::read_dir(&dir).expect("有目录").flatten() {
+    // 这个会话和指针拷进一个新的数据根，事件都挪到很早以前：那里没有会话列表的索引（派生的，照日志建），起来时它闲置了很久。
+    // 不在原处删索引：头一个核心还开着它，Windows 上删不掉开着的文件（CI run 39320472077）。
+    let id = miyu_kernel::id::SessionId::parse(&session).expect("编号");
+    let later = Home::new();
+    let from = home.root.session_dir(&alice(), &id);
+    let to = later.root.session_dir(&alice(), &id);
+    std::fs::create_dir_all(&to).expect("建得了目录");
+    for entry in std::fs::read_dir(&from).expect("有目录").flatten() {
         let path = entry.path();
         if path.extension().is_some_and(|ext| ext == "jsonl") {
             let text = std::fs::read_to_string(&path).expect("读得了");
-            let old = regex_lite_at(&text);
-            std::fs::write(&path, old).expect("写得进");
+            std::fs::write(to.join(entry.file_name()), regex_lite_at(&text)).expect("写得进");
         }
     }
-    std::fs::remove_dir_all(home.root.index(&alice())).expect("删得掉索引");
+    let pointer = home.root.account_dir(&alice()).join("terminal.json");
+    let written = std::fs::read_to_string(&pointer).expect("记下了指针");
+    std::fs::write(
+        later.root.account_dir(&alice()).join("terminal.json"),
+        written,
+    )
+    .expect("写得进");
 
-    let mut client = Client::connect(home.core(&Script::new([])));
+    let mut client = Client::connect(later.core(&Script::new([])));
     client.hello().await;
     client.call("l1", "session.list", json!({})).await;
     let renewed = terminal(&mut client, "t2", json!({})).await;
@@ -86,15 +93,7 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
         json!({"last": "2026-01-01T00:00:00.000Z"}),
         "{renewed}"
     );
-    assert!(
-        home.root
-            .session_dir(
-                &alice(),
-                &miyu_kernel::id::SessionId::parse(&session).expect("编号")
-            )
-            .is_dir(),
-        "旧的不动"
-    );
+    assert!(to.is_dir(), "旧的不动");
 }
 
 /// 每一行的 `"at":"…"` 都换成 2026-01-01 零点。
