@@ -21,6 +21,7 @@ mod message;
 mod model;
 mod peer;
 mod question;
+mod read;
 mod restore;
 mod session;
 mod tool;
@@ -110,6 +111,21 @@ macro_rules! bodies {
                     $(Body::$variant(_) => $kind,)+
                     Body::Unknown { kind, .. } => kind.as_str(),
                 }
+            }
+
+            /// 已经知道种类时直接照那一种读 `body`，不先截原文（施工 V-11）。不认识的种类原样留着；认识的读不出来报错，原话
+            /// 同 [`Body::read`]。
+            fn read_from<'de, D: Deserializer<'de>>(kind: &EventKind, d: D) -> Result<Body, D::Error> {
+                let read = match kind.as_str() {
+                    $($kind => $variant::deserialize(d).map(Body::$variant),)+
+                    _ => {
+                        return RawJson::deserialize(d).map(|body| Body::Unknown {
+                            kind: kind.clone(),
+                            body,
+                        });
+                    }
+                };
+                read.map_err(|e| D::Error::custom(format!("body of {kind} not readable: {e}")))
             }
 
             /// 按种类读 `body`。认识的种类读不出来是坏数据，报错写明是哪一种。
@@ -248,21 +264,6 @@ struct LineOut<'a> {
     body: &'a Body,
 }
 
-/// 读进来的样子：`body` 先原样读下来，看过 `kind` 再照那一种读。
-/// 可选字段没有、写成 `null`，都当没有；不认识的字段不管。
-#[derive(Deserialize)]
-struct LineIn {
-    seq: Seq,
-    at: Timestamp,
-    kind: EventKind,
-    #[serde(default)]
-    turn: Option<TurnId>,
-    by: By,
-    #[serde(default)]
-    cause: Option<CommandId>,
-    body: RawJson,
-}
-
 impl Serialize for Event {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         LineOut {
@@ -275,20 +276,6 @@ impl Serialize for Event {
             body: &self.body,
         }
         .serialize(s)
-    }
-}
-
-impl<'de> Deserialize<'de> for Event {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let line = LineIn::deserialize(d)?;
-        Ok(Event {
-            seq: line.seq,
-            at: line.at,
-            turn: line.turn,
-            by: line.by,
-            cause: line.cause,
-            body: Body::read(line.kind, line.body).map_err(D::Error::custom)?,
-        })
     }
 }
 

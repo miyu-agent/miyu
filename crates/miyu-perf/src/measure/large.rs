@@ -103,6 +103,10 @@ pub async fn large(sandbox: &Sandbox, fake: &mut Fake, plan: Plan) -> Result<Lar
         let mut rpc = Rpc::connect(&sandbox.root).await?;
         subscribe(&mut rpc, &session).await?;
         large.reload.push(ms(began.elapsed()));
+        // 核心自己记的载入分段（`loaded` 那一行：读、快照、记忆、扫、重放、总计），印出来：CI 上看慢在哪一段（施工 V-11）。
+        if let Some(line) = loaded(sandbox, &session) {
+            eprintln!("  重启打开大会话第 {}次：{line}", n + 1);
+        }
         let said = say(&mut rpc, fake, &session, &format!("perf-reload-{n:03}")).await?;
         large.first_request.push(said.request);
         large.first_projection.push(said.projection);
@@ -144,4 +148,14 @@ fn size_of(dir: &Path) -> u64 {
                 .sum()
         })
         .unwrap_or(0)
+}
+
+/// 核心日志里这个会话最近一条 `loaded` 的分段：`events=… read_ms=… … total_ms=…`；没有的没有。
+fn loaded(sandbox: &Sandbox, session: &str) -> Option<String> {
+    let log = std::fs::read_to_string(sandbox.root.state().join("logs").join("core.log")).ok()?;
+    log.lines()
+        .rev()
+        .find(|line| line.contains(session) && line.contains(" loaded "))
+        .and_then(|line| line.split_once(" loaded "))
+        .map(|(_, fields)| fields.to_string())
 }
