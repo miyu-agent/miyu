@@ -27,7 +27,6 @@ install = [
   ["miyu（核心和命令行）", "{release}/miyu"],
   ["miyu-sandbox", "{release}/miyu-sandbox"],
   ["miyu-extract", "{release}/miyu-extract"],
-  ["miyu-embed", "{release}/miyu-embed"],
   ["resources/", "{core}/resources"],
   ["miyu-tui（终端界面）", "{tui}"],
 ]

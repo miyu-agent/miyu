@@ -31,21 +31,14 @@
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
-| `crates/miyu-embed/src/manifest.rs` | 小程序读清单的文件 | R-5 上 |
-| `crates/miyu-embed/src/wordpiece.rs` | BERT 的 WordPiece 分词（第四条第 5 款） | R-5 上 |
+| `miyu-agent/miyu-embed` 仓库 | 小程序 `miyu-embed`：读清单、WordPiece 和字节级 BPE 分词、ONNX Runtime 载入模型、协议和参数，`tools/` 下转词表和量化的脚本，`package/embed/` 包清单和出厂模型的模型清单（R-5 上、六补、三补、七补；S-7 下拆进自己的仓库，从软件源装） | S-7 下 |
 | `resources/core/memory/search.toml`、`RecallTexts::keyword_floor`、`RecallIndex::similar_to` | 记忆主动搜只有关键词找到的那几条的下限，照模型（第三条第 3 款）；数据，不给模型看 | R-14 |
-| `crates/miyu-embed/src/bpe.rs` | 字节级 BPE 分词（第四条第 5 款） | R-5 六补 |
-| `crates/miyu-embed/tools/bpe_files.py` | 把 Hugging Face 的 `tokenizer.json` 转成 BPE 的两个文件、印出清单那几段（第四条第 2、5 款；只用标准库，不进门禁） | R-5 六补 |
-| `crates/miyu-embed/src/model.rs` | 照清单载入模型、算一句的向量：ONNX Runtime 静态链接在这个小程序里 | R-5 上 |
-| `crates/miyu-embed/src/serve.rs`、`main.rs` | 小程序 `miyu-embed` 的协议和参数（第四条第 4 款） | R-5 上 |
 | `crates/miyu-session/src/embed.rs` | 核心一份的 `Embedder`：核对包里的文件、按需拉起、一条一条问、空闲退出、连着起不来就不再拉起（第四条第 3、4 款） | R-5 中 |
 | `crates/miyu-session/src/embed/files.rs` | 照模型清单核对包里的文件：大小、SHA-256，不删不改（第四条第 3 款；R-5 中的下载随 R-5 三补去掉） | R-5 三补 |
 | `crates/miyu-session/src/embed/worker.rs` | 和跑着的 `miyu-embed` 说话：拉起、等 `ready`、一条一条问、编号对不上、时限、关掉 | R-5 中 |
 | `crates/miyu-session/src/embed/remote.rs` | 远程的 embedding：照一家供应商发 `/embeddings`、读向量、归一化、记账、记日志（第四条第 7 款） | R-5 补 |
 | `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头，不走路由、池、冷却：`provider.test` 和远程的 embedding 共用（从 `route/probe.rs` 抽出来） | R-5 补 |
 | `crates/miyu-http/src/post.rs` | 一次 POST、整个读完：有总时限、有大小上限，出错的说法同一次 GET | R-5 补 |
-| `crates/miyu-embed/package/embed/package.toml`、`model.toml` | 「内置语义模型」这个小程序包的原本：包清单、出厂模型的模型清单（R-5 七补起是 granite r2 的 4 位量化；模型资料，不给模型看，不进登记簿；模型文件不进仓库） | R-5 三补、七补 |
-| `crates/miyu-embed/tools/quantize_q4.py` | 把 granite r2 的 fp32 ONNX 量化成 4 位、整数计算的那一份（第四条第 2 款；只用 onnxruntime、onnx，不进门禁，可逐字节重现） | R-5 七补 |
 
 `miyu-recall` 只用白名单里的 crate（`01-架构.md` 第九节），不碰 I/O。SQLite 的那一半放在 `miyu-store`：它已经有 `rusqlite` 和开库的规矩（`sqlite.rs`，`store/index.md`），检索库照同一套开、坏了删、版本不对删。
 
@@ -145,7 +138,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 1. 用途 `models.embedding`（R-5 下，`models.md` 的 `[models]`；类型是 `model_or`，`config.md`「配置项的类型」）：写 `local` 用本机的 `miyu-embed`；写 `off` 不核对模型、不拉起、只照关键词找（2026-10-09 项目主人定加 `off`）；写 `<供应商>/<模型>` 的走那一家 OpenAI 兼容的 `/v1/embeddings`（第 7 款，R-5 补，方向 2026-10-07 定）；不写的照 `local`，没装内置语义模型的包、小程序或模型清单没有的，就只有关键词。下一个回合开始时生效。不收 `@池`：向量要和存下的同一个模型比，池里换了成员就对不上。设置页上这一项叫「语义模型」，`local` 叫「内置模型」，后面暗字写模型名（`config.schema` 选项的 `note`），指定一家的模型从 `model.list` 里 `embedding: true` 的挑（R-5 再补，2026-10-09 项目主人定）；没有本机的那一路时 `local` 这个选项带 `available: false`，头画成灰的、选不了（R-5 三补，2026-10-09 项目主人定「不可选」，形状核心的主会话定）。
 
    本机的那一路从包来（R-5 三补，2026-10-09 项目主人定：内置的 embedding 做成一个可选的包、只放 bge、模型文件打进包里、出厂不装）：人格记忆的清单推荐小程序包 `embed`（`[recommends] workers = ["embed"]`）；它装着（读成了、种类是小程序，`packages.md`「内置语义模型」）才有。核心照这时读到的包清单拼好交给 `Embedder`（`miyu-core/src/embed.rs` 的 `setup`），连同模型资料交给协议端点（`Core::with_vectors`，远程的照它查供应商、记账）：小程序照小程序清单的 `program` 在主程序真实位置的旁边找（`packages::locate`，不找 `PATH`），模型清单是包文件夹（`Found::files_dir`，施工 F-8 上起就是包清单所在的文件夹）里的 `model.toml`，模型文件在同一个文件夹。没装的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，这是常态）。拼的这一段能再调：装卸以后核心照新的清单再拼一次，交给 `Vectors::replace_local`（第 4 款；会话这一半 R-5 四补，核心那一半 F-5 再补：`Builtins::embed` 照清单拼、`Core::switch_packages` 交给它，装卸时拼不出的不记「没装」那一行；端点照 `core.memory.vectors()` 拿到那一份，核心起来时总会造，没装 `embed` 的本机那一路是空的）。
-2. **模型清单**（R-5 上；R-5 三补搬进包里）：本机模型照一份 TOML 认，在包目录里，名字是 `model.toml`（内置语义模型这个小程序认的约定，小程序清单里不另写）；仓库里的原本是 `crates/miyu-embed/package/embed/model.toml`。可更换（2026-10-07 项目主人定）照换包做：装一个放着别的模型的同名包，或者指定远程的；不另设换清单的配置项（2026-10-09 项目主人定）。几格：
+2. **模型清单**（R-5 上；R-5 三补搬进包里）：本机模型照一份 TOML 认，在包目录里，名字是 `model.toml`（内置语义模型这个小程序认的约定，小程序清单里不另写）；原本在 `miyu-agent/miyu-embed` 仓库的 `package/embed/model.toml`（S-7 下拆过去）。可更换（2026-10-07 项目主人定）照换包做：装一个放着别的模型的同名包，或者指定远程的；不另设换清单的配置项（2026-10-09 项目主人定）。几格：
    - `id`：模型的名字，向量的模型编号写成 `local:<id>`；`dims`：几维；`pooling`：怎么取一句的向量，现在只认 `cls`（取第一个词那一格）；`max_tokens`：一句最多几个词（连前后加的两个特殊的词），至少 2。
    - `[tokenizer]`（R-5 六补）：`kind` 是 `wordpiece`（不写这一段的照它）或 `bpe`（第 5 款）；`bpe` 的另写 `start`、`end`：前后加的两个特殊的词，要在词表里。
    - `[[files]]`：每个文件的 `role`、`name`（一个单纯的文件名，不带目录）、`sha256`、`size`（R-5 三补去掉 `url`：不下了）。`role` 是 `model`（ONNX 模型）、`vocab`（词表：一行一个词，行号是编号）各正好一个；`bpe` 的另要正好一个 `merges`（合并：一行一条「左 右」，行号是先后），`wordpiece` 的不能有。
@@ -172,14 +165,14 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
    - ONNX Runtime 静态链接在它里面（`ort` 钉死 `=2.0.0-rc.13`，ONNX Runtime 1.28，编译时下 pyke 预编好的静态库），主程序不带。
 5. **分词**：两种，照清单的 `[tokenizer]`（第 2 款），都和 Hugging Face `tokenizers` 的结果一样。
 
-   WordPiece（R-5 上）：BERT 的，照 bge-small-zh-v1.5 原版的配置（`crates/miyu-embed/tests/tokens.rs` 逐个比）：
+   WordPiece（R-5 上）：BERT 的，照 bge-small-zh-v1.5 原版的配置（`miyu-embed` 仓库的 `tests/tokens.rs` 逐个比）：
    - 去掉 `U+0000`、`U+FFFD` 和 Unicode「其他」类的字（控制、格式、代理、私用、没分配；制表、换行、回车算空白）；空白处断开；汉字（CJK 统一表意文字那几段）、标点（ASCII 的标点和 Unicode 的七种标点类）一个一个成词。不转小写、不去重音（原版的配置）。
    - 一个词超过 100 个字整个算 `[UNK]`；不然从头起每次取最长的、在词表里的一段（不是开头的带 `##`），有一段取不出来整个词算 `[UNK]`。
    - 前后加 `[CLS]`、`[SEP]`；超过 `max_tokens` 的截掉后面的，留住 `[SEP]`。词表一行一个词，行号是编号，没有 `[CLS]`、`[SEP]`、`[UNK]` 的、一个词写了两行的拒。
    - 和 `tokenizers` 不一样的两处：字里写着 `[CLS]` 这种的照普通的字切（人说的话不变成控制用的词）；Unicode 的类别照新的表，Unicode 9 以后才有的字切成 `[UNK]`（它的表旧，当没分配去掉）。
    - 原版不转小写：大写的英文词（`RTX`、`Hello`）、片假名的词都是 `[UNK]`，那一部分靠关键词那一路（第一条的两两切词管得到日文）；改不改照测评集（`memory/eval.md`）：2026-10-10 的基线里跨语言的五句两路都几乎找不到（recall@5 加了向量才 20%）。
 
-   字节级 BPE（R-5 六补，granite-embedding-97m-multilingual-r2 这一类，GPT-4o 的那一套切法；`crates/miyu-embed/tests/bpe.rs` 逐个比）：
+   字节级 BPE（R-5 六补，granite-embedding-97m-multilingual-r2 这一类，GPT-4o 的那一套切法；`miyu-embed` 仓库的 `tests/bpe.rs` 逐个比）：
    - 不规范化。照 o200k 那条正则（`bpe.rs` 的 `SPLIT`，有 `\s+(?!\S)` 往前看，用 `fancy-regex`）切成一段一段，没匹配上的也单独一段；每段的字节照 GPT-2 的表换成字（不加前导空格）。
    - 整段在词表里的直接用（`ignore_merges`）；不然从一个个字节起，每次合先后最靠前的那一对、同一对取最左边，合到没有能合的（照 `tokenizers` 的做法用堆）。
    - 前后加清单的 `start`、`end`；超过 `max_tokens` 的截掉后面的，留住 `end`，够了就不再往后切。
@@ -213,7 +206,7 @@ R-5 四补做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-session/tests/embed_replace.rs` | 第四条第 4 款的换，真的 `miyu-embed`、小模型摆成包目录：换成另一份的新的算得出、名字是新的，旧的小程序退了，旧的副本要的交回用不了、不再拉起；同样的一份换了地方的算换；一样的小程序照旧跑着、旧的副本照样算得出；路径一样、模型清单内容变了的算换；换成空的就没有本机的那一路，空的再换成一份照它算 |
+| `crates/miyu-session/tests/embed_replace.rs` | 第四条第 4 款的换，测试用的小程序 `miyu-test-embed`（S-7 上以前是真的 `miyu-embed`）、小模型摆成包目录：换成另一份的新的算得出、名字是新的，旧的小程序退了，旧的副本要的交回用不了、不再拉起；同样的一份换了地方的算换；一样的小程序照旧跑着、旧的副本照样算得出；路径一样、模型清单内容变了的算换；换成空的就没有本机的那一路，空的再换成一份照它算 |
 | `crates/miyu-session/src/embed/tests.rs` | 第四条第 4 款的换：排在拉起着的那一条后面的，轮到时已经关掉了，交回用不了、不去拉起；关掉了的当场交回用不了 |
 
 R-5 三补做好的：
@@ -222,7 +215,7 @@ R-5 三补做好的：
 |---|---|
 | `crates/miyu-core/src/embed/tests.rs` | 第四条第 1 款：人格记忆装着、推荐了 `embed`、`embed` 是装着的小程序包的照它拼（程序在主程序旁边、模型清单和目录在包目录里）；没装 `embed`、人格记忆没装、没推荐、`embed` 不是小程序、写坏了的没有；程序不在的照拼、造的时候报用不了；装卸时照清单拼的（`find`，施工 F-5 再补）和起来时一样、说得出缺的是哪一样 |
 | `crates/miyu-core/tests/embed_log.rs`（施工 F-5 再补，自己一个程序：装日志订阅者） | 「没装内置语义模型」那一行只有起来时（`setup`）记，装卸时（`find`）不记 |
-| `crates/miyu-core/tests/embed_package.rs` | 第四条第 1、2 款：仓库里的 `embed/package.toml` 读得成小程序包、程序是 `miyu-embed`；出厂的人格记忆推荐它、不依赖它；出厂的资源里没有它（出厂不装） |
+| `crates/miyu-core/tests/embed_package.rs` | 第四条第 1、2 款：出厂的人格记忆推荐 `embed`、不依赖它；出厂的资源里没有它（出厂不装）。包清单读得成小程序包、程序是 `miyu-embed`，S-7 下起在 `miyu-embed` 仓库的 `tests/package.rs` |
 | `crates/miyu-endpoint/tests/config.rs`、`memory_meaning.rs` | 第四条第 1 款的设置页：没有本机的那一路的核心，`local` 带 `available: false`、没有暗字；接上的带暗字、不带 `available`；`off` 都不带 |
 
 R-5 补做好的：
@@ -241,7 +234,7 @@ R-5 下做好的：
 | `crates/miyu-store/tests/recall_vectors.rs` | 第三条第 1、2 款：缺的照模型列、从哪一行往后列、最多几条；最像的在前、带着字和时刻、别的模型的不算；条目拿掉、换了字、整个来源拿掉、一批里拿掉的，向量跟着没；条目没了的不放；以前的库（没有这张表）照样开、不重建、补上表 |
 | `crates/miyu-store/tests/recall_uses.rs`（R-4 下） | 「库的结构」的 `uses`：一条事件带上一条记忆再写不重复；照记忆分组数次数、最近一次是最晚的那一条；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
 | `crates/miyu-store/tests/recall_places.rs`（R-13 下） | 「库的结构」的 `places`：记一次、再记不碍事；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
-| `crates/miyu-session/tests/memory_vectors.rs` | 第三条第 4 到 6 款，真的 `miyu-embed`、手造的小模型（R-5 三补改成摆成包目录）：一条和问句一个字都不重合的记忆，第一次只走关键词找不到，后台补上向量以后照意思找得到；以前的对话也一样；补的是头一个要的也补齐（等那一次核对，R-5 五补）；她 `remember` 了的不搜就补上，下一轮头一次搜就照意思找得到（R-5 五补）；`off` 的不补、不拉起小程序，关键词照旧找得到 |
+| `crates/miyu-session/tests/memory_vectors.rs` | 第三条第 4 到 6 款，测试用的小程序 `miyu-test-embed`（S-7 上以前是真的 `miyu-embed`）、手造的小模型（R-5 三补改成摆成包目录）：一条和问句一个字都不重合的记忆，第一次只走关键词找不到，后台补上向量以后照意思找得到；以前的对话也一样；补的是头一个要的也补齐（等那一次核对，R-5 五补）；她 `remember` 了的不搜就补上，下一轮头一次搜就照意思找得到（R-5 五补）；`off` 的不补、不拉起小程序，关键词照旧找得到 |
 | `crates/miyu-endpoint/tests/memory_meaning.rs` | 第三条第 4 款：真核心接上本机 embedding，`memory.search` 第一次只走关键词，补齐以后照意思找得到 |
 
 R-5 中做好的：
@@ -257,12 +250,7 @@ R-5 上做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-embed/tests/tokens.rs` | 第四条第 5 款：真词表上 39 句照 `tokenizers` 0.23.2 的结果逐个比（空的、空白、汉字、全角标点、大写英文、带重音的、片假名、韩文、emoji、零宽空格、BOM、控制字符、`U+FFFD`、不间断空格、100 和 101 个字的词、扩展区和兼容区的汉字、全角字母、`##` 开头的）；截断留住 `[SEP]`；字里的 `[CLS]` 照普通的字；词表少了特殊的词、写了两行的拒；`\r\n` 的词表也认 |
-| `crates/miyu-embed/tests/manifest.rs` | 第四条第 2 款：仓库里的模型清单原本（R-5 三补搬进 `package/embed/`）读得出、每一格对；文件读不了说是哪个（原文的读法 R-5 中挪进 `miyu-recall`） |
-| `crates/miyu-embed/tests/protocol.rs` | 第四条第 4 款，手造的小模型（`fixtures/tiny/`，`fixtures/make.py` 造）：`ready`；向量和 Python 的 ONNX Runtime 算的每格差不过 1e-6；超长截断、空字也有向量；不是 JSON、没有 `id`、`id` 不是字、没有 `text`、空行、不是 UTF-8 的回错，接着读下一行；行尾的 `\r`；标准输入关了退出码 0；清单读不了、文件不在、模型是坏的退出码 1；清单的 `dims` 和模型对不上的每一句回错；参数写错（少了、多了、写了两次）退出码 2、印用法；字节级 BPE、只有两个输入的小模型（`fixtures/tiny-bpe/`，R-5 六补）：向量逐个比、超长截断，清单写的 `merges` 不在、模型要不认识的输入（`position_ids`）的退出码 1 |
-| `crates/miyu-embed/tests/bpe.rs` | 第四条第 5 款 BPE（R-5 六补）：照 `tokenizers` 训练的小 BPE（`fixtures/tiny-bpe/`，造的多语种句子训的，`fixtures/make_bpe.py` 造、`tools/bpe_files.py` 转）上几十句照它的结果逐个比（空的、空白、换行、`\r\n`、数字、标点、英文缩写、大小写、汉字、日文、韩文、阿拉伯文、emoji、组合字符、不间断空格、全角空格、超长的段）；截断留住 `end`；字里的特殊词照普通的字；词表、合并坏了的拒；真的 granite 词表（`#[ignore]`，`MIYU_EMBED_BPE_DIR`）上公开、造的句子逐个比 |
 | `crates/miyu-session/tests/memory_search_floor.rs`、`memory/recall/tests.rs` 的 `the_shipped_search_floors_come_from_their_own_table`（施工 R-14） | 第三条第 3 款记忆主动搜的关键词下限：小模型上照意思排不进前四的那一条，下限比它高的不要、比它低的照旧，表里没有的模型、还没有它的向量的照留；出厂的表照 `core/memory/search.toml` 读（granite 0.80、bge 不设） |
-| `crates/miyu-embed/tests/real.rs` | 真模型（`#[ignore]`，`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件）：出厂清单的模型对几句的向量（R-5 七补起是 granite，六句含英文、日文）和 Python 的 ONNX Runtime 算的余弦不低于 0.999 |
 
 R-1 做好的：
 
@@ -274,8 +262,8 @@ R-1 做好的：
 ### 出处
 
 - 内置的 embedding 做成一个可选的小程序包、只放 bge、模型文件打进包里、出厂不装，人格记忆出厂装着（2026-10-09 项目主人定，`docs/construction/R-5-内置模型做成小程序包（三补）.md`）。
-- Release `models-granite-embedding-97m-multilingual-r2` 的文件来自 Hugging Face 的 `ibm-granite/granite-embedding-97m-multilingual-r2`（commit `835ad140`）：模型照 `tools/quantize_q4.py` 量化，词表、合并照 `tools/bpe_files.py` 转，`NOTICE` 写明；`crates/miyu-embed/tests/fixtures/real.json`、`granite-tokens.json` 照 `make_bpe.py` 生成（`docs/construction/R-5-换成granite（七补）.md`）。换模型的取舍（八个候选、真数据上判过的召回和代价）见 `docs/blueprint/memory/eval.md`「换模型」。
-- Release `models-bge-small-zh-v1.5` 的文件来自 Hugging Face 的 `Xenova/bge-small-zh-v1.5`（commit `75c43b06`，`BAAI/bge-small-zh-v1.5` commit `7999e1d3` 转的 ONNX），原样转发；`crates/miyu-embed/tests/fixtures/` 的标准答案照那里的 `make.py` 生成（`docs/construction/R-5-本机embedding的小程序（上）.md`）。
+- Release `models-granite-embedding-97m-multilingual-r2`（S-7 下起在 `miyu-agent/miyu-embed`，核心仓库的那一份留着不动）的文件来自 Hugging Face 的 `ibm-granite/granite-embedding-97m-multilingual-r2`（commit `835ad140`）：模型照 `tools/quantize_q4.py` 量化，词表、合并照 `tools/bpe_files.py` 转，`NOTICE` 写明；`miyu-embed` 仓库的 `tests/fixtures/real.json`、`granite-tokens.json` 照 `make_bpe.py` 生成（`docs/construction/R-5-换成granite（七补）.md`）。换模型的取舍（八个候选、真数据上判过的召回和代价）见 `docs/blueprint/memory/eval.md`「换模型」。
+- Release `models-bge-small-zh-v1.5` 的文件来自 Hugging Face 的 `Xenova/bge-small-zh-v1.5`（commit `75c43b06`，`BAAI/bge-small-zh-v1.5` commit `7999e1d3` 转的 ONNX），原样转发；`miyu-embed` 仓库 `tests/fixtures/` 的标准答案照那里的 `make.py` 生成（`docs/construction/R-5-本机embedding的小程序（上）.md`）。
 - `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第三节（选型和实测）、第五节末尾（技术细节照推荐定）、第八节（项目主人的拍板：本机 embedding 用 bge-small-zh、模型从 Miyu 的 GitHub Release 下、做成可更换的）。
 - `17-记忆.md` 第四节、`19-知识库.md` N3：关键词加向量、两路合并、索引在 SQLite 里。
 - `10-自带软件.md`、`tools/history.md`：混合召回以关键词为主、向量为辅（2026-09-29 项目主人定）。
