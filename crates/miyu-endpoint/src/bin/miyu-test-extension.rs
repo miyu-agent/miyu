@@ -20,7 +20,7 @@
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
 //!   `burst` 先给块 `temp` 连推十次 `n=0` 到 `n=9`，再答；`quit` 答了就以退出码 0 退出；是 `user.append` 的照 `inject` 定的答
-//!   （施工 X-16）；
+//!   （施工 X-16）；是 `search.query` 的照 `query` 答（施工 N-5）：`limit` 回限额的错误，`boom` 回一个错误，别的答一条；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
@@ -163,6 +163,12 @@ fn main() {
                 {
                     send(&answer);
                 }
+                // 搜索来源（施工 N-5）：查 `limit` 的说限额，查 `boom` 的出错，别的答一条。
+                if line.contains(r#""method":"search.query""#)
+                    && let Some(id) = field(&line, "id")
+                {
+                    send(&searched(&id, &field(&line, "query").unwrap_or_default()));
+                }
                 if line.contains(r#""method":"command.call""#)
                     && let Some(id) = field(&line, "id")
                     && let Some(answer) = commanded(
@@ -290,6 +296,21 @@ fn answered(id: &str, method: &str, give: &str) -> Option<String> {
         }
         _ => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"answered":"{method}"}}}}"#),
     })
+}
+
+/// 答编号是 `id`、查的是 `query` 的那一次 `search.query`（施工 N-5）。
+fn searched(id: &str, query: &str) -> String {
+    match query {
+        "limit" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"quota used up","data":{{"reason":"limited"}}}}}}"#
+        ),
+        "boom" => {
+            format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#)
+        }
+        _ => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"hits":[{{"title":"found {query}","url":"https://ext.example/{query}"}}]}}}}"#
+        ),
+    }
 }
 
 /// 答编号是 `id`、命令是 `command`、跟的字是 `argument` 的那一次 `command.call`（施工 X-14 下）。

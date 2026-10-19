@@ -392,6 +392,8 @@ async fn run(
     let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
     let queries = packages::register(&resources, &root, &admin());
+    #[cfg(feature = "net")]
+    let searching = kit.clone();
     let builtins = builtin_tools_in(&resources, &env, kit);
     packages::clear_uploads(&root, &admin());
     let mut core = Core::new(
@@ -415,6 +417,8 @@ async fn run(
     }
     core = core.with_vectors(embedder);
     let core = Arc::new(core);
+    #[cfg(feature = "net")]
+    searching.attach(&core);
     tokio::spawn(settings::follow(
         core.config_now(),
         live.levels,

@@ -18,6 +18,7 @@ mod look;
 mod mcp;
 mod need;
 mod reader;
+mod search;
 pub mod settings;
 mod slash;
 mod target;
@@ -33,6 +34,7 @@ pub use mcp::{
     EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
 };
 pub use need::Need;
+pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Setting, SettingKind};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;
@@ -86,6 +88,8 @@ pub struct Manifest {
     pub mcp: Vec<McpServer>,
     /// 声明的斜杠命令（施工 X-14 下，`[[slash]]`）：交给包的程序办；照写的先后，没有的是空的。只有扩展包能写。
     pub slash: Vec<SlashCommand>,
+    /// 声明的搜索来源（施工 N-5，`[[search]]`）：照写的先后，没有的是空的。只有扩展包能写。
+    pub search: Vec<SearchSource>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub widgets: Vec<Widget>,
     /// 给别的软件调的方法（施工 X-18，`[export] methods`）：声明了 `packages.call` 的扩展经 `package.call` 只调得到这几个。只有
@@ -223,7 +227,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 19] = [
+const TABLES: [&str; 20] = [
     "package",
     "builtin",
     "command",
@@ -240,6 +244,7 @@ const TABLES: [&str; 19] = [
     "mascot",
     "mcp",
     "slash",
+    "search",
     "widget",
     "export",
     "content",
@@ -270,7 +275,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         }
         // `[[mcp]]`、`[[slash]]`、`[[widget]]` 是一串表（施工 X-2、X-14 下、X-15 上）：写成别的样子的由各自的模块报。
         if !item.is_table_like()
-            && !(matches!(key, "mcp" | "slash" | "widget") && item.is_array_of_tables())
+            && !(matches!(key, "mcp" | "slash" | "search" | "widget") && item.is_array_of_tables())
         {
             return Err(reader.problem(
                 Some(item),
@@ -364,6 +369,11 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         .as_ref()
         .map_or(&[][..], |process| process.capabilities.as_slice());
     slash::needs_capability(&slash, capabilities)?;
+    let search = match root.get("search") {
+        Some(node) => search::read(&reader, node)?,
+        None => Vec::new(),
+    };
+    search::needs_capability(&search, capabilities)?;
     let widgets = match root.get("widget") {
         Some(node) => widget::read(&reader, node)?,
         None => Vec::new(),
@@ -399,6 +409,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         mascot,
         mcp,
         slash,
+        search,
         widgets,
         export,
         content,

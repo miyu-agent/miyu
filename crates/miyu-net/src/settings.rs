@@ -101,6 +101,28 @@ pub const ITEMS: [&[miyu_config::Item]; 6] = [
 /// 不挑、照出厂顺序的那一个选项。
 pub const AUTO: &str = "auto";
 
+/// 「搜索服务供应商」加上扩展声明的来源（施工 N-5）：`extra` 是 `<包>/<编号>`，接在出厂的几家后面。字留在进程里，只在核心
+/// 起来、装卸时调；不是这一项的照原样。
+pub fn with_extension_sources(item: &miyu_config::Item, extra: &[String]) -> miyu_config::Item {
+    let mut item = item.clone();
+    if let (true, miyu_config::Kind::Option(shipped)) =
+        (item.key == miyu_config::package::SEARCH_SOURCE, item.kind)
+        && !extra.is_empty()
+    {
+        let all: Vec<&'static str> = shipped
+            .iter()
+            .copied()
+            .chain(
+                extra
+                    .iter()
+                    .map(|id| &*Box::leak(id.clone().into_boxed_str())),
+            )
+            .collect();
+        item.kind = miyu_config::Kind::Option(Box::leak(all.into_boxed_slice()));
+    }
+    item
+}
+
 #[cfg(test)]
 mod tests;
 

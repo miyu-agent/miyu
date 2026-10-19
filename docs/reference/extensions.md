@@ -39,6 +39,7 @@
 | `context.inject` | 回合开始时往上下文里放几句（`user.append`） |
 | `context.system` | 往系统提示词末尾放一段（`system.append`） |
 | `packages.call` | 调别的包导出的方法（`package.call`） |
+| `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
 | `act_for_external` | 代表平台上的人说话：只给通讯平台的桥 |
 | `tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`network`、`fs.read`、`fs.write` | 声明了先批，具体放开随以后的版本 |
 
@@ -111,6 +112,14 @@
 **`method.call`**（核心 → 扩展）：`{"method", "params", "from"?}`：人的头、别的包经 `package.call` 调到它；`from` 是调的包的编号（人调的没有）。回什么，`package.call` 就交回什么；回 JSON-RPC 错误的，对方收到 `method_failed`。
 
 想让别的扩展调到：在清单 `[export] methods` 里列出来。
+
+## `search.query`
+
+人在「搜索服务供应商」里选了这个包清单 `[[search]]` 声明的来源，AI 搜网页时（核心 → 扩展，带 `id`，要回应）：
+
+`{"source", "query", "want", "allowed_domains", "blocked_domains"}`：来源（`<包>/<编号>`）、搜什么、至多要几条、只要这几个域名的、不要这几个域名的（核心拿到以后还会照这两个筛一遍）。
+
+**回应** `{"hits": [{"title", "url", "snippet"?, "date"?}]}`：没有标题、网址的条不收，摘录截短、多的不要，和出厂的几家一样。限额了回 JSON-RPC 错误、`data.reason` 写 `limited`：核心照台阶冷却它（30 分钟起），冷却着不问；别的错、20 秒没答的，这一次照出厂的几家兜底。扩展要开着、登记过连接（`provide`，工具可以是空的）才问得到。
 
 ## `command.call`
 

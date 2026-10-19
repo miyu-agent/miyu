@@ -162,6 +162,7 @@ mod restart;
 mod retire;
 mod revert;
 mod scripts;
+mod search_extension;
 mod secrets;
 mod sessions;
 mod sessions_changed;

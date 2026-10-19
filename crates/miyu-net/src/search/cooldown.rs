@@ -46,6 +46,11 @@ impl Cooldowns {
         until
     }
 
+    /// 记着的几家（冷却着的、冷却过的）的编号。
+    pub(crate) fn ids(&self) -> Vec<String> {
+        self.held.keys().cloned().collect()
+    }
+
     /// `id` 成功了一次：清零。
     pub(crate) fn succeeded(&mut self, id: &str) {
         self.held.remove(id);

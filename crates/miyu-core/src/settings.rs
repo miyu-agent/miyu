@@ -140,16 +140,33 @@ impl Packaged {
             .filter(|(package, _)| self.absent.contains(package))
             .flat_map(|(_, items)| items.iter().map(|item| item.key))
             .collect();
+        let searched = self.search_sources();
         items()
             .into_iter()
             .map(|mut item| {
                 if hidden.contains(&item.key) {
                     item.ui.hidden = true;
                 }
-                item
+                searched(item)
             })
             .chain(self.items.iter().cloned())
             .collect()
+    }
+
+    /// 扩展声明的搜索来源（施工 N-5，清单 `[[search]]`）加进「搜索服务供应商」的选项：`<包>/<编号>`。联网包没编进来的不加。
+    fn search_sources(&self) -> impl Fn(Item) -> Item {
+        let extra: Vec<String> = self
+            .manifests
+            .iter()
+            .flat_map(|(id, manifest)| manifest.search.iter().map(|source| source.option(id)))
+            .collect();
+        move |item: Item| {
+            #[cfg(feature = "net")]
+            let item = miyu_net::with_extension_sources(&item, &extra);
+            #[cfg(not(feature = "net"))]
+            let _ = &extra;
+            item
+        }
     }
 }
 

@@ -155,6 +155,8 @@ if __name__ == "__main__":
 
 **自己的斜杠命令**（`commands`）：清单写 `[[slash]]`。人敲了，核心发 `command.call {"command", "argument", "text", "session", "by", "owner", "language"}`，你答 `{"said": "<回执，可以多行>"}`，这段话原样给人看。你的程序起来以后要 `provide` 一次（没有工具的写空的），核心才认得你的连接。
 
+**当搜索服务供应商**（`search`）：清单写 `[[search]]`。人在设置里选了你，AI 搜网页时核心发 `search.query {"source", "query", "want", "allowed_domains", "blocked_domains"}`，你答 `{"hits": [{"title", "url", "snippet"?, "date"?}]}`；限额了回错误、`data.reason` 写 `limited`，核心让你歇一阵。同样要先 `provide` 一次。
+
 **回合开始往她的上下文里加几句**（`context.inject`）：每一轮开始核心发 `user.append {"session", "venue", "text"?}`，300 毫秒内答 `{"content": [{"kind", "text"}]}`（至多 3 块）。没得加就答 `{"content": []}`。只问这个会话的工具面上有你的工具的扩展。字是给模型看的：英文短句，外面套一层 XML 标签。
 
 **往系统提示词末尾放一段**（`context.system`）：调 `system.append {"content", "session"?}`。不写 `session` 管全部会话；`content` 写 `null` 去掉。改了下一轮整段重算一次，别频繁改；只想放固定几句的，起来时调一次就行。

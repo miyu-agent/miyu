@@ -94,6 +94,7 @@ place = "status"
 |---|---|
 | `tools` | 往工具目录里登记工具 |
 | `commands` | 提供斜杠命令（`[[slash]]`） |
+| `search` | 当搜索服务供应商（`[[search]]`） |
 | `widgets` | 在界面上显示自己的内容（`[[widget]]`） |
 | `context.inject` | 回合开始时往她的上下文里加几句 |
 | `context.system` | 往系统提示词末尾放一段 |
@@ -151,6 +152,17 @@ tools = ["hello_greet"]
 | `access` | 谁能用：`admin`（默认：本人、群里的主人和管理的人）、`anyone`、`off`（先停用）。人在系统配置里写的压过它 |
 
 人打了这条命令，核心调你的程序 `command.call`，见 [写扩展](extensions.md)。只想展开成一句话发给 AI 的，用命令模板，不用写程序（见 [脚本、技能、命令模板](scripts-skills.md)）。
+
+## `[[search]]`
+
+把你的程序登记成一个搜索服务供应商，一段一个；`capabilities` 里要有 `search`。
+
+| 格 | 说明 |
+|---|---|
+| `id` | 编号，写法同 `[command] name`，一个包里不重 |
+| `name` | 给人看的名字 |
+
+设置页「搜索服务供应商」的下拉里多一项，值是 `<包的编号>/<编号>`。人选了它才用，不进「自动」的顺序：你的程序不会在人不知道的时候拿到搜索词。AI 搜网页时核心调你的程序 `search.query`，你用不了的（出错、限额），照出厂的几家兜底。见 [写扩展](extensions.md)。
 
 ## `[[widget]]`
 

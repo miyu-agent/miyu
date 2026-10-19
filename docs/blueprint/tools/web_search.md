@@ -2,7 +2,7 @@
 
 ### 是什么
 
-联网包（`net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，有 key 的 DeepSeek 兜在最后，被限额的进冷却、到点回来；设置里挑了一家的先用它（N-2 下）；Tavily、Brave、自己搭的 SearXNG 挑了才用（N-3 上）。最后是免 key 的网页抓取兜底（DuckDuckGo、Bing 的结果页，N-3 下）。扩展登记来源在 N-5。
+联网包（`net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，有 key 的 DeepSeek 兜在最后，被限额的进冷却、到点回来；设置里挑了一家的先用它（N-2 下）；Tavily、Brave、自己搭的 SearXNG 挑了才用（N-3 上）。最后是免 key 的网页抓取兜底（DuckDuckGo、Bing 的结果页，N-3 下）。扩展能在清单里声明自己是一个来源，选了才用（N-5）。
 
 ### 在哪
 
@@ -17,7 +17,10 @@
 | `crates/miyu-net/src/search/scrape.rs` | 读 DuckDuckGo（HTML 版）、Bing 的结果页：建树照 class 找，链接解包，人机验证页当限额（N-3 下） |
 | `crates/miyu-net/src/search/rest.rs` | 发 REST 的请求，429、402 当限额（N-3 上） |
 | `crates/miyu-net/src/search/using.rs` | 这一次用得上的：挑的那一家、配的 key、SearXNG 的地址（N-3 上） |
-| `crates/miyu-net/src/settings.rs` | 设置项：搜索来源、几家的 key、SearXNG 的地址；照这一轮的配置拼 `Using`，DeepSeek 照用供应商的 key；「少配了什么」 |
+| `crates/miyu-net/src/settings.rs` | 设置项：搜索来源、几家的 key、SearXNG 的地址；照这一轮的配置拼 `Using`，DeepSeek 照用供应商的 key；「少配了什么」；扩展的来源加进下拉的选项（N-5） |
+| `crates/miyu-net/src/search/extension.rs` | 扩展的来源（N-5）：问扩展的端口 `SearchPort`、挑了它的先问、冷却 |
+| `crates/miyu-core/src/kit/search.rs` | `SearchPort` 的实现：经 `miyu_endpoint::search_sources` 反向调扩展的 `search.query`，读回应（N-5） |
+| `crates/miyu-endpoint/src/search_sources.rs` | 找声明了这个来源的包、它的连接，发 `search.query`，认限额（N-5） |
 | `resources/software/net/search.json` | 顺序、条数、摘录长度、时限、冷却台阶、各家的地址 |
 | `resources/software/net/tools/web_search.json` | 说明和参数格式 |
 | `resources/software/net/web_search/*.txt` | 输出里给她看的几句 |
@@ -72,7 +75,8 @@ Waits on multiple concurrent branches, ……
    - MCP：第一次握手（`initialize`、`notifications/initialized`），对方给了 `Mcp-Session-Id` 的记下、以后带上，会话过期（404）的重新握手一次。回应可以是 JSON 也可以是 SSE，取最后一条带 `result`、`error` 的；`isError`、JSON-RPC 出错的当这一家出错。
 5. 收拾：没有网址的、同一个网址第二次出现的去掉；照 `allowed_domains`、`blocked_domains` 筛主机名；至多 `results` 条；摘录截到 `excerpt_chars`（1200）个字，截了的接一个省略号；日期只留前十个字。
 6. 请求固定的几家公开地址，不过地址闸；代理照环境变量，和抓网页同一套（`net.md`「怎么走」第 5 条）。
-7. 冷却、MCP 的会话记在这一份 `Search` 里，一个核心一份（`miyu-core` 的 `Kit`，施工 N-2 下）：起来时登记的工具、装卸软件包以后核心重新要的工具都用它，核心重启才从头算。设置页「搜索来源」的下拉里，冷却着的那一家后面暗字写「冷却到 15:30」（`config.schema` 的 `note`，照连接的语言、核心这台机器的时区，`config.md`「协议」）。
+7. **扩展的来源**（施工 N-5，设计 36 第二节第 5 条）：扩展包清单写 `[[search]]`（`id`、`name`，要能力 `search`），核心起来时把 `<包>/<编号>` 接在下拉的出厂几家后面（`miyu-core` 的 `Packaged::all`，名字照清单，`Human::with_packages`）。挑了它的：先经核心装进来的端口问它（`search.query {source, query, want, allowed_domains, blocked_domains}`，等 20 秒），答了的照出厂的几家一样收拾、给人写清单里的名字；它回 `data.reason: limited` 的照台阶冷却，冷却着不问；别的出错、没声明、没开、端口没装的这一次照出厂的顺序兜底。不进 `auto` 的顺序：别人的程序不会在人不知道的时候拿到搜索词。扩展要 `provide` 过一次，核心才认得它的连接。
+8. 冷却、MCP 的会话记在这一份 `Search` 里，一个核心一份（`miyu-core` 的 `Kit`，施工 N-2 下）：起来时登记的工具、装卸软件包以后核心重新要的工具都用它，核心重启才从头算。设置页「搜索来源」的下拉里，冷却着的那一家后面暗字写「冷却到 15:30」（`config.schema` 的 `note`，照连接的语言、核心这台机器的时区，`config.md`「协议」）。
 
 ### 守着它的
 
@@ -93,6 +97,10 @@ Waits on multiple concurrent branches, ……
 | `crates/miyu-core/src/kit/tests.rs` 的 `sources_missing_a_key_or_an_address_say_so`（N-3 上） | 下拉里没配的写「要 key」「要地址」，配了的、免 key 的不写 |
 | `crates/miyu-net/src/web_search/tests.rs`（N-2 补） | 站点是主机名去掉 `www.`、小写，读不成的没有 |
 | `crates/miyu-net/src/search/scrape/tests.rs`（N-3 下） | DuckDuckGo 解 `uddg`、摘录跟着上一条标题、没摘录的不借；Bing 解 base64、广告不算、摘录不要「阅读更多」；人机验证页当限额、空页不算出错 |
+| `crates/miyu-config/src/package/search/tests.rs`（N-5） | `[[search]]` 读成编号、名字，值是 `<包>/<编号>`；写错、重了、少了名字、没声明能力的 `bad_search`；不是扩展包的不能写 |
+| `crates/miyu-net/tests/search_extensions.rs`（N-5） | 挑了扩展来源的先问它、写它的名字；没挑的不问；限额的冷却、在 `cooling` 里、下一次不问、出厂的兜底；出错的不冷却；端口没装的照出厂的 |
+| `crates/miyu-core/src/settings/tests.rs` 的 `an_extension_search_source_joins_the_dropdown`、`kit/search/tests.rs`（N-5） | 下拉多一项、配置里写它读得进、名字照清单；回应里没标题网址的丢掉 |
+| `crates/miyu-endpoint/tests/search_extension.rs`（N-5） | 真核心拉起测试扩展：没开的不问；答了交回清单的名字和回应、参数交到了；`limited`、别的错、没声明的来源 |
 | `crates/miyu-net/tests/budget.rs` | 两件工具的说明合计不超过 663 字节 |
 
 ### 出处
@@ -102,4 +110,4 @@ Waits on multiple concurrent branches, ……
 
 ### 还没有的
 
-- 要 key 的几家、网页抓取兜底（N-3）；扩展登记来源（N-5）。
+- 扩展的来源代抓网页（`web_fetch` 的兜底只问出厂的三家）。

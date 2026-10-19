@@ -94,6 +94,7 @@ Makes it an extension; needs `[command]`.
 |---|---|
 | `tools` | Registering tools in the tool catalog |
 | `commands` | Providing slash commands (`[[slash]]`) |
+| `search` | Being a search provider (`[[search]]`) |
 | `widgets` | Showing its own content in the UI (`[[widget]]`) |
 | `context.inject` | Adding a few lines to her context at the start of a turn |
 | `context.system` | Putting a section at the end of the system prompt |
@@ -151,6 +152,17 @@ Slash commands the extension provides, one per entry; `capabilities` must includ
 | `access` | Who can use it: `admin` (default: the person, the owner and managers in groups), `anyone`, `off` (disabled for now). A person's setting in the system config overrides it |
 
 When someone types it, the core calls your program with `command.call`; see [Writing an extension](extensions.en.md). For a command that just expands into a message to the AI, use a command template; no program needed (see [Scripts, skills, command templates](scripts-skills.en.md)).
+
+## `[[search]]`
+
+Registers your program as a search provider, one per entry; `capabilities` must include `search`.
+
+| Field | Notes |
+|---|---|
+| `id` | Id, written like `[command] name`; unique within the package |
+| `name` | Shown to people |
+
+The settings screen's "Search provider" dropdown gets one more entry, valued `<package id>/<id>`. It's used only when a person picks it and never joins the "Auto" order, so your program never receives search terms without the person knowing. When the AI searches, the core calls your program with `search.query`; when you can't answer (an error, a rate limit), the shipped providers take over. See [Writing an extension](extensions.en.md).
 
 ## `[[widget]]`
 

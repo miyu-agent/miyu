@@ -8,6 +8,7 @@
 //! - 第一次搜才读规矩，读不懂的记一条 `WARN web search not ready`，这个核心的生命周期里不再试。
 
 mod cooldown;
+mod extension;
 mod mcp;
 mod pages;
 mod rest;
@@ -28,6 +29,7 @@ use crate::proxy::Proxies;
 use cooldown::Cooldowns;
 use rules::{Kind, Needs, Rules, Source};
 
+pub use extension::{Answered, SearchPort, Unanswered};
 pub use pages::Fetched;
 pub use using::Using;
 
@@ -115,6 +117,8 @@ impl Failure {
 pub struct Search {
     resources: PathBuf,
     ready: OnceLock<Result<Ready, ()>>,
+    /// 问扩展的来源的端口（施工 N-5）：核心起来以后装进来，没装的只有出厂的几家。
+    extensions: OnceLock<std::sync::Arc<dyn SearchPort>>,
     #[cfg(any(test, feature = "testkit"))]
     urls: Vec<(String, String)>,
     #[cfg(any(test, feature = "testkit"))]
@@ -140,6 +144,7 @@ impl Search {
         Search {
             resources: resources.to_path_buf(),
             ready: OnceLock::new(),
+            extensions: OnceLock::new(),
             #[cfg(any(test, feature = "testkit"))]
             urls: Vec::new(),
             #[cfg(any(test, feature = "testkit"))]
@@ -182,6 +187,18 @@ impl Search {
     pub async fn search(&self, query: &Query, using: &Using) -> Result<Found, Missed> {
         let ready = self.ready().ok_or(Missed::NotReady)?;
         let mut last = None;
+        // 挑了扩展的来源（施工 N-5）：先问它，用不了照出厂的顺序兜底。
+        let picked = using
+            .preferred
+            .as_deref()
+            .filter(|id| extension::is_extension(id));
+        if let (Some(picked), Some(port)) = (picked, self.extensions.get()) {
+            match ready.ask_extension(port.as_ref(), picked, query).await {
+                Some(Ok(found)) => return Ok(found),
+                Some(Err(Missed::Failed(why))) => last = Some(why),
+                Some(Err(_)) | None => {}
+            }
+        }
         for id in &ready.order(using) {
             let source = &ready.rules.sources[id];
             if ready.cooling(id).is_some() {
@@ -215,6 +232,13 @@ impl Search {
         Err(last.map_or(Missed::Cooling, Missed::Failed))
     }
 
+    /// 装上问扩展的来源的端口（施工 N-5）：核心起来以后装一次，再装的不理。
+    pub fn attach(&self, port: std::sync::Arc<dyn SearchPort>) {
+        if self.extensions.set(port).is_err() {
+            tracing::debug!(target: TARGET, "search port already attached");
+        }
+    }
+
     /// 这一刻冷却着的几家：编号和冷却到什么时候（施工 N-2 下，设置页的下拉里写「冷却到几点」）。还没搜过的（规矩还没读）
     /// 一家都没有，不为这个去读规矩。
     pub fn cooling(&self) -> Vec<(String, SystemTime)> {
@@ -222,13 +246,19 @@ impl Search {
             return Vec::new();
         };
         let (now, wall) = (Instant::now(), SystemTime::now());
+        let extensions = ready.cooldown().ids();
+        let extensions = extensions
+            .into_iter()
+            .filter(|id| extension::is_extension(id));
         ready
             .rules
             .sources
             .keys()
+            .cloned()
+            .chain(extensions)
             .filter_map(|id| {
-                let until = ready.cooling(id)?;
-                Some((id.clone(), wall + until.saturating_duration_since(now)))
+                let until = ready.cooling(&id)?;
+                Some((id, wall + until.saturating_duration_since(now)))
             })
             .collect()
     }

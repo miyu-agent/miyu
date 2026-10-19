@@ -259,6 +259,17 @@ impl Human {
                 };
                 self.config.items.insert(key, words);
             }
+            // 扩展的搜索来源（施工 N-5）：下拉里的名字照清单。
+            if let Some(words) = self
+                .config
+                .items
+                .get_mut(miyu_config::package::SEARCH_SOURCE)
+            {
+                for source in &manifest.search {
+                    let name = pick(&source.name).unwrap_or_else(|| source.option(id));
+                    words.options.insert(source.option(id), name);
+                }
+            }
         }
         self
     }

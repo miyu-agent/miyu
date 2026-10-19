@@ -257,3 +257,62 @@ async fn a_changed_item_list_rewrites_the_files() {
     until("照新的清单重写", || read().contains("[xcfg]")).await;
     assert!(read().contains("port = 8400"), "{}", read());
 }
+
+/// 一个声明了搜索来源的扩展包（施工 N-5）。
+const FINDER: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Finder\" }\n\n[command]\nname = \"finder\"\nprogram = \"miyu-nothing\"\nabout = { en = \"F\" }\n\n[process]\ncapabilities = [\"search\"]\n\n[[search]]\nid = \"web\"\nname = { en = \"Finder\", zh = \"查找\" }\n";
+
+/// 扩展声明的搜索来源进「搜索服务供应商」的下拉（施工 N-5）：值是 `<包>/<编号>`，配置里写它读得进；名字照清单。
+#[test]
+fn an_extension_search_source_joins_the_dropdown() {
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    let mut found = vec![Found {
+        id: "finder".to_string(),
+        layer: miyu_store::packages::Layer::Home,
+        path: root.path().join("finder").join("package.toml"),
+        read: Ok(miyu_config::package::read(FINDER).expect("合写法")),
+    }];
+    let packaged = Packaged::as_released(&mut found);
+    let all = packaged.all();
+    let source = all
+        .iter()
+        .find(|item| item.key == miyu_config::package::SEARCH_SOURCE)
+        .expect("有这一项");
+    let miyu_config::Kind::Option(options) = source.kind else {
+        panic!("是选项：{:?}", source.kind);
+    };
+    assert_eq!(options.first(), Some(&"auto"), "出厂的几家照旧在前");
+    assert_eq!(options.last(), Some(&"finder/web"));
+    std::fs::write(
+        root.system().join("config.toml"),
+        "[net.search]\nsource = \"finder/web\"\n",
+    )
+    .expect("写得进");
+    let config = Config::load(
+        &root,
+        &crate::admin(),
+        None,
+        all,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    assert_eq!(
+        miyu_net::SearchSettings::from(&config.resolved().values()).source,
+        "finder/web"
+    );
+    let words = miyu_store::human::Human::load(&resources(), "zh")
+        .expect("读得出")
+        .with_packages(
+            packaged
+                .manifests
+                .iter()
+                .map(|(id, manifest)| (id.as_str(), manifest)),
+            "zh",
+        );
+    let item = words
+        .item(miyu_config::package::SEARCH_SOURCE)
+        .expect("有字");
+    assert_eq!(
+        item.options.get("finder/web").map(String::as_str),
+        Some("查找")
+    );
+}

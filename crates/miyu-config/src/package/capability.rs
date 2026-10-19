@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，管理员
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十五个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十六个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`），先后照这张表。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -26,6 +26,8 @@ pub enum Capability {
     SessionsDrive,
     /// 调别的软件包给出来的方法（施工 X-18，`package.call`，对方清单 `[export]` 里的）。
     PackagesCall,
+    /// 当搜索来源（施工 N-5，清单 `[[search]]`）：人选了它，搜索词会交给它。
+    Search,
     /// 代表平台上的外部用户发命令：只给通讯平台的桥。
     ActForExternal,
     /// 访问网络。
@@ -38,7 +40,7 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 15] = [
+    pub const ALL: [Capability; 16] = [
         Capability::Tools,
         Capability::Commands,
         Capability::Widgets,
@@ -50,6 +52,7 @@ impl Capability {
         Capability::EventsWrite,
         Capability::SessionsDrive,
         Capability::PackagesCall,
+        Capability::Search,
         Capability::ActForExternal,
         Capability::Network,
         Capability::FsRead,
@@ -70,6 +73,7 @@ impl Capability {
             Capability::EventsWrite => "events.write",
             Capability::SessionsDrive => "sessions.drive",
             Capability::PackagesCall => "packages.call",
+            Capability::Search => "search",
             Capability::ActForExternal => "act_for_external",
             Capability::Network => "network",
             Capability::FsRead => "fs.read",

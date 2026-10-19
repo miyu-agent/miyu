@@ -155,6 +155,8 @@ Each needs the matching capability declared in the manifest (see [The manifest](
 
 **Your own slash commands** (`commands`): declare `[[slash]]`. When a person types one, the core sends `command.call {"command", "argument", "text", "session", "by", "owner", "language"}`; answer `{"said": "<reply, may span lines>"}`, shown to the person as-is. Your program must `provide` once after starting (an empty list if you have no tools) so the core knows your connection.
 
+**Being a search provider** (`search`): declare `[[search]]`. When a person picks you in the settings and the AI searches the web, the core sends `search.query {"source", "query", "want", "allowed_domains", "blocked_domains"}`; answer `{"hits": [{"title", "url", "snippet"?, "date"?}]}`. When rate limited, answer with an error whose `data.reason` is `limited` and the core lets you rest for a while. `provide` once first, as above.
+
 **Adding a few lines to her context at the start of a turn** (`context.inject`): at the start of every turn the core sends `user.append {"session", "venue", "text"?}`; answer within 300 ms with `{"content": [{"kind", "text"}]}` (at most 3 blocks), or `{"content": []}` when there's nothing to add. Only extensions with a tool in the session's tool set are asked. This is text for the model: short English, wrapped in an XML tag.
 
 **A section at the end of the system prompt** (`context.system`): call `system.append {"content", "session"?}`. Without `session` it applies to all sessions; `content: null` removes it. A change recomputes the whole system prompt at the next turn, so don't change it often; for a few fixed lines, call it once at startup.

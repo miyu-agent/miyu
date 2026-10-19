@@ -38,6 +38,13 @@ impl Kit {
         }
     }
 
+    /// 核心起来以后，搜网页能问扩展声明的来源了（施工 N-5）：拿着核心的弱引用。
+    #[cfg(feature = "net")]
+    pub(crate) fn attach(&self, core: &Arc<miyu_endpoint::Core>) {
+        self.search
+            .attach(Arc::new(search::Extensions(Arc::downgrade(core))));
+    }
+
     /// 联网包的工具：抓网页、搜网页照这一份家底。
     #[cfg(feature = "net")]
     pub(crate) fn net_tools(
@@ -81,5 +88,7 @@ impl Kit {
     }
 }
 
+#[cfg(feature = "net")]
+mod search;
 #[cfg(all(test, feature = "net"))]
 mod tests;

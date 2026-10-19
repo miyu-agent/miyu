@@ -39,6 +39,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages the adm
 | `context.inject` | Adding a few lines to the context at the start of a turn (`user.append`) |
 | `context.system` | Putting a section at the end of the system prompt (`system.append`) |
 | `packages.call` | Calling methods other packages export (`package.call`) |
+| `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
 | `act_for_external` | Speaking for people on a chat platform: for chat platform bridges only |
 | `tool.guard`, `tool.rewrite`, `events.read`, `events.write`, `sessions.drive`, `network`, `fs.read`, `fs.write` | Declared and approved now; what they unlock comes in later versions |
 
@@ -111,6 +112,14 @@ Who may ask for what, and who may be acted on, is the providing side's job: chec
 **`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head or another package called it through `package.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what `package.call` returns; a JSON-RPC error becomes `method_failed` on the other side.
 
 To let other extensions call a method, list it in the manifest's `[export] methods`.
+
+## `search.query`
+
+A person picked a source this package declares in `[[search]]` as the search provider, and the AI is searching the web (core → extension, with `id`, needs a response):
+
+`{"source", "query", "want", "allowed_domains", "blocked_domains"}`: the source (`<package>/<id>`), what to search, at most how many results, only these domains, not these domains (the core filters by them again afterwards).
+
+**Response** `{"hits": [{"title", "url", "snippet"?, "date"?}]}`: entries without a title or URL are dropped, excerpts are shortened and extras ignored, as for the shipped providers. When rate limited, answer with a JSON-RPC error whose `data.reason` is `limited`: the core cools you down step by step (from 30 minutes) and doesn't ask meanwhile. Other errors, or no answer within 20 seconds, fall back to the shipped providers for that search. The extension must be running and have registered its connection (`provide`; the tool list may be empty).
 
 ## `command.call`
 
