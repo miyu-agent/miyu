@@ -248,7 +248,8 @@ R-5 中做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-session/tests/embed.rs` | 第四条第 3、4 款，手造的小模型摆成临时的包目录、真的 `miyu-embed`（R-5 三补改成核对包里的、不下）：第一次要的当场算得出（R-5 五补：等核对、拉起，不交「还在备」）、和小程序直接算的一样、包里的一个不动；头一回两个一起要的都拿到；对不上的、少了的用不了、不删不改、这一回不再核对；没有小程序、模型清单读不了的用不了；两个一起要的都拿到；闲了退出、下一条再拉起；起不来过三次以后不再拉起 |
+| `crates/miyu-session/tests/embed.rs` | 第四条第 3、4 款，手造的小模型（`tests/fixtures/embed-tiny/`）摆成临时的包目录、测试用的小程序 `miyu-test-embed`（施工 S-7 上：手算小模型、说同一套协议、不编 ONNX Runtime，和 ONNX Runtime 算的 `expected.json` 每格差不过 1e-6；R-5 三补改成核对包里的、不下）：第一次要的当场算得出（R-5 五补：等核对、拉起，不交「还在备」）、和小程序直接算的一样、包里的一个不动；头一回两个一起要的都拿到；对不上的、少了的用不了、不删不改、这一回不再核对；没有小程序、模型清单读不了的用不了；两个一起要的都拿到；闲了退出、下一条再拉起；起不来过三次以后不再拉起 |
+| `crates/miyu-session/tests/test_embed.rs` | 测试用的小程序 `miyu-test-embed` 自己（施工 S-7 上）：手造小模型照 `expected.json` 的六句每格差不过 1e-6（截断、空句、`[UNK]`），词中间的段带 `##`，读不懂的回错接着读 |
 | `crates/miyu-session/src/embed/worker/tests.rs` | 和小程序说话，对面是内存里的管道：`ready` 报模型编号、报错、退出了、过了时限；回的照编号收；回一句错的照收、接着问；编号对不上、读不懂、没有向量、退出了、不回话的当它坏了 |
 | `crates/miyu-recall/src/embedding/tests.rs` | 第四条第 2 款：清单的原文怎么读、怎么查（R-5 中从 `miyu-embed` 挪过来，多一条：`id` 带目录的拒）；分词（R-5 六补）：不写的照 WordPiece，`bpe` 的带 `start`、`end`、要正好一个 `merges`，WordPiece 的带了 `merges` 的拒，不认识的分词、少格多格说清楚 |
 

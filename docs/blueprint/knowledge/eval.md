@@ -36,7 +36,7 @@
 ### 怎么量
 
 ```text
-MIYU_EMBED_MODEL_DIR=<Release models-bge-small-zh-v1.5 的文件> \
+MIYU_EMBED_PACKAGE=<装好的、或者解开的 embed 包> \
   cargo test -p miyu-session --test all measure_the_kb_eval_set -- --ignored --nocapture
 ```
 
@@ -44,7 +44,7 @@ MIYU_EMBED_MODEL_DIR=<Release models-bge-small-zh-v1.5 的文件> \
 2. 几种挑法，每句挑出带哪几段：
    - **标题名**：话里出现了某一段标题的最后一段（两个字以上）。
    - **关键词搜得到**：只走关键词搜，前 3 块（照 `kb_search` 的那一路）。
-   - 设了 `MIYU_EMBED_MODEL_DIR` 的（同 `memory/eval.md`）：补齐向量，每句算问句的向量，照意思找前 3 块：
+   - 设了 `MIYU_EMBED_PACKAGE` 的（同 `memory/eval.md`）：补齐向量，每句算问句的向量，照意思找前 3 块：
      - **照意思**：相似度过门槛的（0.50 到 0.70 量五档）。
      - **标题名加照意思**：两样合起来。
 3. 照种类印一张表，列是：带了东西的占几成（`none` 的看这一格，该是 0）、带了的里该带的占几成、这一轮至少带对一段的占几成、平均带几段。最后一行 `all` 是有答案的三种合在一起。另印平常的话最像的那一段多像，有答案的该带的那一段多像。

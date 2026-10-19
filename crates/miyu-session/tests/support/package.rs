@@ -1,5 +1,6 @@
-//! 本机 embedding 的测试共用的（施工 R-5 三补）：手造的小模型（`crates/miyu-embed/tests/fixtures/tiny/`）摆成一份「内置语义模型」
-//! 的包目录（模型清单 `model.toml` 加两个文件，`docs/blueprint/recall.md` 第四条第 2 款），和 cargo 编出来的 `miyu-embed`。
+//! 本机 embedding 的测试共用的（施工 R-5 三补）：手造的小模型（`tests/fixtures/embed-tiny/`）摆成一份「内置语义模型」
+//! 的包目录（模型清单 `model.toml` 加两个文件，`docs/blueprint/recall.md` 第四条第 2 款），和 cargo 编出来的测试用小程序
+//! `miyu-test-embed`（施工 S-7 上：`miyu-embed` 在自己的仓库里，这里手算小模型、不编 ONNX Runtime）。
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -7,22 +8,22 @@ use std::time::Duration;
 use miyu_session::EmbedSetup;
 use sha2::{Digest, Sha256};
 
-/// 小模型的文件在哪（`miyu-embed` 的测试数据）。
+/// 小模型的文件在哪。
 pub fn tiny() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/tests/fixtures/tiny")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/embed-tiny")
 }
 
-/// cargo 编出来的 `miyu-embed`：和测试程序所在的 `deps/` 同一层（`cargo test --workspace` 会编它）。
+/// cargo 编出来的 `miyu-test-embed`：和测试程序所在的 `deps/` 同一层。
 pub fn program() -> PathBuf {
     let exe = std::env::current_exe().expect("知道测试程序在哪");
     let dir = exe
         .parent()
         .and_then(Path::parent)
         .expect("在 target/<profile>/deps/ 里");
-    let program = dir.join(format!("miyu-embed{}", std::env::consts::EXE_SUFFIX));
+    let program = dir.join(format!("miyu-test-embed{}", std::env::consts::EXE_SUFFIX));
     assert!(
         program.is_file(),
-        "{} 不在：先 cargo build -p miyu-embed",
+        "{} 不在：先 cargo build -p miyu-session",
         program.display()
     );
     program

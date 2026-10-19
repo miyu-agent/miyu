@@ -108,6 +108,7 @@ mod skills_changed;
 mod spawn;
 mod stop;
 mod strict_tools;
+mod test_embed;
 mod tools;
 mod turn_config;
 mod undo_compaction;

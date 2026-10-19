@@ -18,20 +18,20 @@ use crate::support::memories::texts;
 use crate::support::*;
 
 fn tiny() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/tests/fixtures/tiny")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../miyu-session/tests/fixtures/embed-tiny")
 }
 
-/// cargo 编出来的 `miyu-embed`：和测试程序所在的 `deps/` 同一层。
+/// cargo 编出来的测试用小程序 `miyu-test-embed`（施工 S-7 上，当 `miyu-embed` 用）：和测试程序所在的 `deps/` 同一层。
 fn program() -> PathBuf {
     let exe = std::env::current_exe().expect("知道测试程序在哪");
     let dir = exe
         .parent()
         .and_then(Path::parent)
         .expect("在 target/<profile>/deps/ 里");
-    let program = dir.join(format!("miyu-embed{}", std::env::consts::EXE_SUFFIX));
+    let program = dir.join(format!("miyu-test-embed{}", std::env::consts::EXE_SUFFIX));
     assert!(
         program.is_file(),
-        "{} 不在：先 cargo build -p miyu-embed（cargo test --workspace 会编它）",
+        "{} 不在：先 cargo build -p miyu-session（cargo test --workspace 会编它）",
         program.display()
     );
     program

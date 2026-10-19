@@ -8,6 +8,13 @@ license.workspace = true
 publish.workspace = true
 autotests = false
 
+# 测试用的语义模型小程序（施工 S-7 上）：核心的测试把它当 `miyu-embed` 拉起，手算小模型，不编 ONNX Runtime。不随发行带出去。
+[[bin]]
+name = "miyu-test-embed"
+path = "src/bin/miyu-test-embed/main.rs"
+test = false
+doc = false
+
 [dependencies]
 # 空闲时把空着的堆还给系统、glibc 上限制 arena（23 F3，施工 V-2 再补）。
 miyu-heap = { path = "../miyu-heap" }

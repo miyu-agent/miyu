@@ -1,6 +1,6 @@
 //! 知识库自动想起的测评集（施工 K-6 上，`docs/blueprint/knowledge/eval.md`）：虚构的世界观放进一个库，几十句人在聊天里会说的话，
 //! 每句标着该想起哪几段；量几种挑法（话里提到了标题的名字、关键词搜得到、照意思像到门槛）在每种问句上带了多少、准不准，给 K-6
-//! 下定怎么挑。规矩查一遍（CI 里也跑），量尺（`#[ignore]`）设了 `MIYU_EMBED_MODEL_DIR` 的连照意思那一路一起量。
+//! 下定怎么挑。规矩查一遍（CI 里也跑），量尺（`#[ignore]`）设了 `MIYU_EMBED_PACKAGE` 的连照意思那一路一起量。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use miyu_session::{Embedder, Turn, Using, Vectors};
 
-use crate::support::meaning::{model_data, real_package, shipped_model};
+use crate::support::meaning::{embed_package, model_data, real_package, shipped_model};
 use crate::support::{Home, alice_account};
 
 /// 四种问句。
@@ -125,10 +125,10 @@ fn world(sections: &BTreeMap<String, String>) -> Home {
     home
 }
 
-/// 设了 `MIYU_EMBED_MODEL_DIR` 的：接上出厂的真模型，补齐库 `world` 的向量，交回算问句向量要的两样；没设的没有。
+/// 设了 `MIYU_EMBED_PACKAGE` 的：接上出厂的真模型，补齐库 `world` 的向量，交回算问句向量要的两样；没设的没有。
 async fn real(home: &Home) -> Option<(Arc<Vectors>, Using)> {
-    let files = std::env::var_os("MIYU_EMBED_MODEL_DIR")?;
-    let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
+    embed_package()?;
+    let setup = real_package(&home.scratch.0.join("packages/embed"));
     let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(home)));
     let using = Using {
         config: Arc::new(Turn::new(
@@ -215,7 +215,7 @@ fn table(title: &str, set: &Set, sections: &BTreeMap<String, String>, picked: &P
 }
 
 #[tokio::test]
-#[ignore = "量尺：设了 MIYU_EMBED_MODEL_DIR 的连照意思那一路一起量"]
+#[ignore = "量尺：设了 MIYU_EMBED_PACKAGE 的连照意思那一路一起量"]
 async fn measure_the_kb_eval_set() {
     let set = shipped();
     let sections = sections();
@@ -262,7 +262,7 @@ async fn measure_the_kb_eval_set() {
     );
 
     let Some((vectors, using)) = real(&home).await else {
-        println!("没设 MIYU_EMBED_MODEL_DIR：只量了标题名、关键词");
+        println!("没设 MIYU_EMBED_PACKAGE：只量了标题名、关键词");
         return;
     };
     let index = home.knowledge.index_of(&alice_account(), "world");
@@ -345,13 +345,13 @@ async fn measure_the_kb_eval_set() {
 /// `kb_search` 只照意思找到的那一路的下限（施工 K-2 修，验收手册待定 11）：同她的工具，每句关键词、照意思各找 20 块，只有照意思
 /// 找到的过下限才算，两路照名次合，取前 5 块；几个下限各打一张表。平常的话（`none`）带了东西的就是乱带。
 #[tokio::test]
-#[ignore = "量尺：要设 MIYU_EMBED_MODEL_DIR"]
+#[ignore = "量尺：要设 MIYU_EMBED_PACKAGE"]
 async fn measure_the_search_floor() {
     let set = shipped();
     let sections = sections();
     let home = world(&sections);
     let Some((vectors, using)) = real(&home).await else {
-        println!("没设 MIYU_EMBED_MODEL_DIR：量不了");
+        println!("没设 MIYU_EMBED_PACKAGE：量不了");
         return;
     };
     let index = home.knowledge.index_of(&alice_account(), "world");

@@ -8,7 +8,7 @@ use super::*;
 
 /// 小模型的模型清单能读、程序是一个不存在的：真去拉起的会交回「这一条算不出」，看得出拉没拉。`checked` 的当文件核对过了。
 fn embedder(checked: bool) -> Embedder {
-    let tiny = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/tests/fixtures/tiny");
+    let tiny = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/embed-tiny");
     let embedder = Embedder::new(EmbedSetup {
         program: Some(tiny.join("no-such-miyu-embed")),
         manifest: tiny.join("manifest.toml"),

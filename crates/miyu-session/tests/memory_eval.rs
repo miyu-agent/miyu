@@ -1,8 +1,8 @@
 //! 记忆的测评集（施工 R-11，`docs/blueprint/memory/eval.md`）：仓库里那一份合规矩，故意写坏的几种查得出来，分照定义算；量尺
 //! （`#[ignore]`）照每条记下的日期记进一间、作废的作废，每句照 `Keeper::search` 搜前 5 条，先只走关键词，设了
-//! `MIYU_EMBED_MODEL_DIR` 的再接上真的 bge 两路合并搜一遍，照种类印表。
+//! `MIYU_EMBED_PACKAGE` 的再接上真的 bge 两路合并搜一遍，照种类印表。
 //!
-//! 跑量尺：`MIYU_EMBED_MODEL_DIR=<Release 的文件> cargo test -p miyu-session --release --test all memory_eval -- --ignored
+//! 跑量尺：`MIYU_EMBED_PACKAGE=<真的 embed 包> cargo test -p miyu-session --release --test all memory_eval -- --ignored
 //! --nocapture`（不设只量关键词那一路）。设了 `MIYU_MEMORY_EVAL_DIR` 的量那个目录里的另一份，设了 `MIYU_MEMORY_EVAL_OUT` 的另把每句
 //! 搜出来、带上的键写进那个文件（JSON，给仓库外的真数据标答案用，`eval.md`「量另一份」）。
 
@@ -18,7 +18,9 @@ use crate::support::eval::{
     Brought, EvalSet, Found, Picked, Row, brought, brought_table, day, measured, parse, problems,
     score, shipped, table,
 };
-use crate::support::meaning::{filled, model_data, persona, real_package, shipped_model};
+use crate::support::meaning::{
+    embed_package, filled, model_data, persona, real_package, shipped_model,
+};
 use crate::support::{Home, alice, alice_account};
 
 #[test]
@@ -297,7 +299,7 @@ fn sound(set: &EvalSet, found: &[Found]) {
 }
 
 #[tokio::test]
-#[ignore = "量尺：设了 MIYU_EMBED_MODEL_DIR 的连照意思那一路一起量"]
+#[ignore = "量尺：设了 MIYU_EMBED_PACKAGE 的连照意思那一路一起量"]
 async fn measure_the_eval_set() {
     let set = measured();
     let home = Home::new();
@@ -326,11 +328,11 @@ async fn measure_the_eval_set() {
     let keyword = run(&keeper, &set, &keys, None).await;
     sound(&set, &keyword);
     println!("{}", table("关键词", &score(&keyword)));
-    let Some(files) = std::env::var_os("MIYU_EMBED_MODEL_DIR") else {
-        println!("没设 MIYU_EMBED_MODEL_DIR：只量了关键词那一路");
+    if embed_package().is_none() {
+        println!("没设 MIYU_EMBED_PACKAGE：只量了关键词那一路");
         return;
-    };
-    let setup = real_package(&home.scratch.0.join("packages/embed"), Path::new(&files));
+    }
+    let setup = real_package(&home.scratch.0.join("packages/embed"));
     let vectors = Arc::new(Vectors::new(Some(Embedder::new(setup)), model_data(&home)));
     assert!(home.memory.give_vectors(Arc::clone(&vectors)), "头一次接");
     // 出厂的两张表（联想的门槛、她主动搜的关键词下限，施工 R-14）交给记忆：搜的时候和会话里同一个规矩。

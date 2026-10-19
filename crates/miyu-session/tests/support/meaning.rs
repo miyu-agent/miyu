@@ -16,7 +16,6 @@ use miyu_session::{EmbedSetup, Handle, ModelData, Observed};
 use miyu_store::recall::Room;
 use miyu_tool::Catalog;
 
-use super::package::program;
 use super::{Home, alice, alice_account, id, now, until_logged, within};
 
 /// 空的模型资料（没有档案、没有目录，读完了）：带一个不走代理的客户端，用量记进场地的汇总。
@@ -133,29 +132,42 @@ pub async fn filled(home: &Home, model: &str, memory: bool, key: &str) {
     panic!("三十秒没补上 {key}");
 }
 
-/// 出厂的模型清单（`miyu-embed/package/embed/model.toml`）。
+/// 真的内置语义模型的包目录（施工 S-7 上：`miyu-embed` 在自己的仓库里）：`MIYU_EMBED_PACKAGE` 指到装好的、或者解开的
+/// `embed` 包，里面有模型清单 `model.toml`、它写的几个文件和 `bin/miyu-embed`。只有量尺用。
+pub fn embed_package() -> Option<PathBuf> {
+    std::env::var_os("MIYU_EMBED_PACKAGE").map(PathBuf::from)
+}
+
+/// 真的包里的模型清单。
 fn shipped() -> (PathBuf, miyu_recall::embedding::Manifest) {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../miyu-embed/package/embed/model.toml");
+    let path = embed_package()
+        .expect("设了 MIYU_EMBED_PACKAGE")
+        .join("model.toml");
     let text = std::fs::read_to_string(&path).expect("读得了");
     let manifest = miyu_recall::embedding::Manifest::parse(&text).expect("出厂的合写法");
     (path, manifest)
 }
 
-/// 出厂的本机模型的编号（`local:<id>`，施工 R-5 七补换成 granite 以后不再写死）。
+/// 真的本机模型的编号（`local:<id>`，照包里的清单）。
 pub fn shipped_model() -> String {
     shipped().1.model()
 }
 
-/// Release 的文件摆成内置语义模型的包目录：模型清单照出厂的，文件照它写的几个拷。
-pub fn real_package(dir: &Path, files: &Path) -> EmbedSetup {
+/// 真的包里的文件摆成一份包目录：模型清单和它写的几个文件拷过去，程序用包里的 `bin/miyu-embed`。
+pub fn real_package(dir: &Path) -> EmbedSetup {
     std::fs::create_dir_all(dir).expect("建得了");
     let (path, manifest) = shipped();
+    let package = embed_package().expect("设了 MIYU_EMBED_PACKAGE");
     std::fs::copy(path, dir.join("model.toml")).expect("拷得了");
     for file in &manifest.files {
-        std::fs::copy(files.join(&file.name), dir.join(&file.name)).expect("Release 的文件在");
+        std::fs::copy(package.join(&file.name), dir.join(&file.name)).expect("包里的文件在");
     }
+    let program = package
+        .join("bin")
+        .join(format!("miyu-embed{}", std::env::consts::EXE_SUFFIX));
+    assert!(program.is_file(), "{} 不在", program.display());
     EmbedSetup {
-        program: Some(program()),
+        program: Some(program),
         manifest: dir.join("model.toml"),
         dir: dir.to_path_buf(),
         idle: Duration::from_secs(600),

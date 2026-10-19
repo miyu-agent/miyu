@@ -53,14 +53,14 @@
 ### 怎么量
 
 ```text
-MIYU_EMBED_MODEL_DIR=<Release models-bge-small-zh-v1.5 的文件> \
+MIYU_EMBED_PACKAGE=<装好的、或者解开的 embed 包> \
   cargo test -p miyu-session --test all memory_eval -- --ignored --nocapture
 ```
 
 1. 临时数据根里开一间（alice 的软件工程师那一间），照日期把每条记进去（人记的，没有出处），作废的作废。
 2. 每句照 `Keeper::search` 搜前 5 条（不带 `forgotten`），先只走关键词。
-3. 设了 `MIYU_EMBED_MODEL_DIR` 的（同 `crates/miyu-embed/tests/real.rs`，CI 里不跑）：模型清单照出厂的（`crates/miyu-embed/package/embed/model.toml`），连同那两个文件摆成内置语义模型的包目录，接上本机的那一路，补齐向量，每句算问句的向量，两路合并再搜一遍。没设的只量关键词。
-4. 联想（施工 R-8，同样要设了 `MIYU_EMBED_MODEL_DIR`）：每句照出厂的门槛表（`core/memory/recall.toml`）、`miyu_recall::associate::pick` 挑，和会话里同一个挑法，不算这一段的去重和一块的字节。
+3. 设了 `MIYU_EMBED_PACKAGE` 的（CI 里不跑；施工 S-7 上起指到一份真的 `embed` 包：模型清单 `model.toml`、它写的文件、`bin/miyu-embed`）：清单连同它写的文件摆成内置语义模型的包目录，程序用包里的，接上本机的那一路，补齐向量，每句算问句的向量，两路合并再搜一遍。没设的只量关键词。
+4. 联想（施工 R-8，同样要设了 `MIYU_EMBED_PACKAGE`）：每句照出厂的门槛表（`core/memory/recall.toml`）、`miyu_recall::associate::pick` 挑，和会话里同一个挑法，不算这一段的去重和一块的字节。
 5. 断言结果不断言耗时：作废的一条都没搜出来，每句都搜了。
 
 印的表，照种类一行，最后一行 `all` 是有答案的几种合在一起：
@@ -82,7 +82,7 @@ MIYU_EMBED_MODEL_DIR=<Release models-bge-small-zh-v1.5 的文件> \
 真用户的数据不进仓库，照同一个格式放在仓库外，同一把量尺量（施工 R-11 补，2026-10-17）：
 
 ```text
-MIYU_EMBED_MODEL_DIR=<Release 的文件> MIYU_MEMORY_EVAL_DIR=<放两份的目录> MIYU_MEMORY_EVAL_OUT=<排名.json> \
+MIYU_EMBED_PACKAGE=<embed 包> MIYU_MEMORY_EVAL_DIR=<放两份的目录> MIYU_MEMORY_EVAL_OUT=<排名.json> \
   cargo test -p miyu-session --release --test all memory_eval -- --ignored --nocapture
 ```
 

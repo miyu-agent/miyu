@@ -5,7 +5,6 @@
 //! 的对话也一样；`models.embedding = "off"` 的不算向量、不补、不拉起小程序，只照关键词。小模型四维，什么都挺像（相似度都过
 //! 下限）：下限挡不挡得住在 `miyu-recall` 的单元测试里。
 
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -189,16 +188,14 @@ async fn the_fill_waits_while_the_files_are_checked() {
     filled(&home, MODEL, true, "m1").await;
 }
 
-/// 量尺（验收时手动跑）：真模型（`MIYU_EMBED_MODEL_DIR` 指到 Release 的文件，和仓库里的模型清单原本一起拷进一份包目录），记八
+/// 量尺（验收时手动跑）：真模型（`MIYU_EMBED_PACKAGE` 指到真的 `embed` 包，清单和文件拷进一份包目录），记八
 /// 条、问八句意思对字不对的，量她搜不搜得到、第一次搜等多久、补一百条要多久。
 #[tokio::test]
-#[ignore = "要真模型的文件：MIYU_EMBED_MODEL_DIR=… cargo test -p miyu-session --test all measure_meaning -- --ignored --nocapture"]
+#[ignore = "要真模型的文件：MIYU_EMBED_PACKAGE=… cargo test -p miyu-session --test all measure_meaning -- --ignored --nocapture"]
 async fn measure_meaning_with_the_real_model() {
-    let from =
-        PathBuf::from(std::env::var_os("MIYU_EMBED_MODEL_DIR").expect("设了 MIYU_EMBED_MODEL_DIR"));
     let home = Home::new();
     let dir = home.scratch.0.join("packages").join("embed");
-    attach(&home, real_package(&dir, &from));
+    attach(&home, real_package(&dir));
     let memories = [
         "用户养了一只猫，叫团子，三岁",
         "用户喜欢喝乌龙茶，下午不喝咖啡",
