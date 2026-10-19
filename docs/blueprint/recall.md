@@ -31,7 +31,7 @@
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |
-| `miyu-agent/miyu-embed` 仓库 | 小程序 `miyu-embed`：读清单、WordPiece 和字节级 BPE 分词、ONNX Runtime 载入模型、协议和参数，`tools/` 下转词表和量化的脚本，`package/embed/` 包清单和出厂模型的模型清单（R-5 上、六补、三补、七补；S-7 下拆进自己的仓库，从软件源装） | S-7 下 |
+| `miyu-agent/miyu-embed` 仓库 | 小程序 `miyu-embed`：读清单、字节级 BPE 分词（WordPiece 2026-10-19 删了，读到它的清单报不支持、退出 1，`miyu-embed` 4a6e56e）、ONNX Runtime 载入模型、协议和参数，`tools/` 下转词表和量化的脚本，`package/embed/` 包清单和出厂模型的模型清单（R-5 上、六补、三补、七补；S-7 下拆进自己的仓库，从软件源装） | S-7 下 |
 | `resources/core/memory/search.toml`、`RecallTexts::keyword_floor`、`RecallIndex::similar_to` | 记忆主动搜只有关键词找到的那几条的下限，照模型（第三条第 3 款）；数据，不给模型看 | R-14 |
 | `resources/core/memory/turns.toml`、`RecallTexts::turns_floor`、`memory/past.rs` | 搜以前的对话只有向量找到的那几段的下限，照模型（施工 R-20，第三条第 3 款）；只有关键词找到的照 `search.toml`；数据，不进登记簿 | R-20 |
 | `crates/miyu-session/src/embed.rs` | 核心一份的 `Embedder`：核对包里的文件、按需拉起、一条一条问、空闲退出、连着起不来就不再拉起（第四条第 3、4 款） | R-5 中 |
@@ -166,7 +166,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
    - ONNX Runtime 静态链接在它里面（`ort` 钉死 `=2.0.0-rc.13`，ONNX Runtime 1.28，编译时下 pyke 预编好的静态库），主程序不带。
 5. **分词**：两种，照清单的 `[tokenizer]`（第 2 款），都和 Hugging Face `tokenizers` 的结果一样。
 
-   WordPiece（R-5 上）：BERT 的，照 bge-small-zh-v1.5 原版的配置（`miyu-embed` 仓库的 `tests/tokens.rs` 逐个比）。2026-10-19 项目主人定删掉 bge、不做成包（R-18），出厂的包里没有用它的模型了；这一种留着，核心测试用的手算小模型（`crates/miyu-session/tests/fixtures/embed-tiny/`）照它切：
+   WordPiece（R-5 上）：BERT 的，照 bge-small-zh-v1.5 原版的配置。2026-10-19 项目主人定删掉 bge、不做成包（R-18），同一天又点头删掉 `miyu-embed` 里的这一种（`miyu-embed` 4a6e56e：清单写 `wordpiece`、或者没写分词的，报「the wordpiece tokenizer is not supported; only byte-level BPE is」退出 1）。核心这边留着：清单照旧认这一种，核心测试用的手算小模型（`crates/miyu-session/tests/fixtures/embed-tiny/`，`miyu-test-embed`）照它切：
    - 去掉 `U+0000`、`U+FFFD` 和 Unicode「其他」类的字（控制、格式、代理、私用、没分配；制表、换行、回车算空白）；空白处断开；汉字（CJK 统一表意文字那几段）、标点（ASCII 的标点和 Unicode 的七种标点类）一个一个成词。不转小写、不去重音（原版的配置）。
    - 一个词超过 100 个字整个算 `[UNK]`；不然从头起每次取最长的、在词表里的一段（不是开头的带 `##`），有一段取不出来整个词算 `[UNK]`。
    - 前后加 `[CLS]`、`[SEP]`；超过 `max_tokens` 的截掉后面的，留住 `[SEP]`。词表一行一个词，行号是编号，没有 `[CLS]`、`[SEP]`、`[UNK]` 的、一个词写了两行的拒。
