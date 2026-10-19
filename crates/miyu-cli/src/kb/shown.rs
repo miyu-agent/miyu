@@ -50,6 +50,42 @@ pub(super) fn bases(
         .collect()
 }
 
+/// `list <库>`（施工 K-10）：一篇一行，路径照最长的对齐，后面是大小、改的日期，两个空格隔开；这一回读不了的接上为什么。读不了的
+/// 子目录一个一行接在后面（路径带 `/`）。块数不印（给人看的只放人要的）。
+pub(super) fn documents(
+    documents: &[Value],
+    folders: &[Value],
+    language: &Language,
+) -> Vec<String> {
+    let path = |one: &Value| one["path"].as_str().unwrap_or_default().to_string();
+    let folder = |one: &Value| format!("{}/", path(one));
+    let width = documents
+        .iter()
+        .map(path)
+        .chain(folders.iter().map(folder))
+        .map(|path| path.chars().count())
+        .max()
+        .unwrap_or(0);
+    let unread = |one: &Value| {
+        one["reason"]
+            .as_str()
+            .map(|reason| language.kb_unread(reason))
+            .unwrap_or_default()
+    };
+    let rows = documents.iter().map(|one| {
+        let at = one["at"].as_str().unwrap_or_default();
+        let size = crate::pkg::size(one["size"].as_u64().unwrap_or(0));
+        let date = at.get(..10).unwrap_or(at);
+        format!("{:<width$}  {size}  {date}{}", path(one), unread(one))
+            .trim_end()
+            .to_string()
+    });
+    let folders = folders
+        .iter()
+        .map(|one| format!("{:<width$}{}", folder(one), unread(one)));
+    rows.chain(folders).collect()
+}
+
 /// `search`：一块一段，段和段之间空一行：头一行是库、文档、标题路径（PDF 的是第几页，没有的不写），下面是这一块的字，每行
 /// 空两格。
 pub(super) fn hits(hits: &[Value], language: &Language) -> String {

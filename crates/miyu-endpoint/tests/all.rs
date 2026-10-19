@@ -65,6 +65,7 @@ mod index;
 mod job_output;
 mod job_stop;
 mod knowledge;
+mod knowledge_documents;
 mod knowledge_manage;
 mod knowledge_package;
 mod limits;

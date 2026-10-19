@@ -818,6 +818,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sK-7f"><span class="n">K-7</span>命令行的报错说清（修）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sK-8"><span class="n">K-8</span>软件包带来的知识库<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sK-9"><span class="n">K-9</span>关键词触发的条目<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sK-10"><span class="n">K-10</span>列出库里的文档<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -23621,6 +23622,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/K-9-关键词触发的条目.md</code>；蓝图 <code>knowledge.md</code>「对外的样子」、第九条第 3、4、6 款；设计 <code>19-知识库.md</code> N9。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sK-10" aria-labelledby="h-sK10">
+  <div class="sheet-head"><h2 id="h-sK10"><span class="no">K-10</span>列出库里的文档</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">网页要在设置里做一页「知识库」：点开一个库要看得到里面有哪几篇、哪一篇没进库、为什么。原来只有篇数和块数，读不了的只记在运行日志里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · knowledge/listing.rs　miyu-endpoint · knowledge.rs　miyu-cli · kb</span><span class="dir-note">K-10</span></div>
+            <ol class="pipe" aria-label="列文档">
+              <li><code>kb.documents {"kb"}</code>：先照文件补，同 <code>kb.list</code></li>
+              <li>补的时候列出来的每一篇：路径、哪一种、大小、改的时刻、索引里几块，照路径排</li>
+              <li>这一回读不了的带 <code>reason</code>（太大、不是 UTF-8、PDF 没字、没有抽字的、抽坏了、读不了）和 <code>why</code>；读不了的子目录另列</li>
+              <li><code>kb.list</code> 挂进来的带 <code>mount</code>；命令行 <code>miyu kb list &lt;库&gt;</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">kb.documents</span><span class="rl">一篇一项，读不了的说哪一种</span></div>
+          <div class="tile new"><span class="nm">Reason</span><span class="rl">六种，头照它写给人看的字</span></div>
+          <div class="tile new"><span class="nm">mount</span><span class="rl">挂的是哪个目录</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">K-10</dd></div>
+        <div><dt>名称</dt><dd>列出库里的文档</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>存储层、协议、命令行的测试、变异、CI · 自己验收，页面的样子项目主人定</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>照路径排、四种都认、大小和改的时刻照文件、块数对；读不了的六种里五种当场造出来、带为什么、改坏了的留着旧块；读不了的子目录另列；不是文档的、点开头的不列；挂进来的带写的原样、拔掉的拒；命令行一篇一行、读不了的接原因、空的说一句</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/K-10-列出库里的文档.md</code>；蓝图 <code>knowledge.md</code>「对外的样子」，<code>protocol.md</code>「<code>kb.*</code>」，<code>cli/kb.md</code>。</li>
       </ul>
     </div>
   </div>

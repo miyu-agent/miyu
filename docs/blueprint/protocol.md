@@ -32,7 +32,7 @@
 | `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补），再推 `event`、`resync`；换掉一个订阅时等它写完 |
 | `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
-| `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
+| `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）、`kb.documents`（施工 K-10）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
 | `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`，掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
 | `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`images`，施工 8-20） |
@@ -180,7 +180,7 @@
 | `memory.list`、`memory.search`、`memory.remember`、`memory.update`、`memory.forget` | 人不经过她列、搜、记、改、忘和清空记忆（施工 R-3 补，`memory.md`「协议」） |
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
-| `kb.list`、`kb.search`、`kb.read` | 列知识库、搜、读一个文档的一页（施工 K-1 上，`knowledge.md`「对外的样子」） |
+| `kb.list`、`kb.search`、`kb.read`、`kb.documents` | 列知识库、搜、读一个文档的一页、列一个库里的文档（施工 K-1 上，K-10；`knowledge.md`「对外的样子」） |
 | `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6）；登记表里没有的照命令模板展开成一句发给 AI（施工 X-14 上，`slash.md`） |
 | `command.catalog` | 列核心认的斜杠命令（连命令模板），给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补、X-14 上） |
 | `session.answer` | 回答一次确认（允许这一次、本会话都允许、拒绝），或者一组题（施工 D-1） |
@@ -735,12 +735,13 @@
 
 **`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
 
-照管理员的账号（同 `memory.*`），账号下的全部知识库。不看知识库这个软件包装没装：文件是人的，人随时看得到。查询三个，按顺序答；管理的七个是命令（施工 K-7 上）。`kb.` 开头的别的方法 `unknown_method`。
+照管理员的账号（同 `memory.*`），账号下的全部知识库。不看知识库这个软件包装没装：文件是人的，人随时看得到。查询四个（`kb.documents` 施工 K-10），按顺序答；管理的七个是命令（施工 K-7 上）。`kb.` 开头的别的方法 `unknown_method`。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）；软件包带来的（施工 K-8）多一格 `package`：包的编号（名字照 `package.list`）。`kb.search` 跳过挂的目录用不了的库 |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）；软件包带来的（施工 K-8）多一格 `package`：包的编号（名字照 `package.list`）；挂进来的（施工 K-10）多一格 `mount`：`kb.toml` 里写的目录，照原样。`kb.search` 跳过挂的目录用不了的库 |
 | `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的那一块多 `page`（施工 K-5） |
+| `kb.documents` | `kb`，必写（施工 K-10） | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`，照路径排：`kind` 是 `markdown`、`text`、`pdf`、`html`，`size` 字节数，`at` 文件改的时刻，`chunks` 索引里几块；这一回读不了的多 `reason`（`too_large`、`not_utf8`、`no_text`、`no_extractor`、`extract_failed`、`unreadable`）、`why`（英文的一句）；`folders` 是读不了的子目录。不是文档的文件不列。挂的目录用不了的 `folder_unavailable` |
 | `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字，网页是换出来的字（施工 K-5） |
 | `kb.create` | `kb`，必写；`name`、`description`、`auto`（布尔，施工 K-6 下）（可以不写） | 一个库（同 `kb.list` 的一项） |
 | `kb.update` | `kb`，必写；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉；软件包带来的只收 `auto`，施工 K-8） | 一个库 |

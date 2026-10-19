@@ -358,3 +358,37 @@ async fn a_base_from_a_package_from_the_shell() {
         (1, "随软件包来的知识库是只读的，只能开关自动想起。\n")
     );
 }
+
+/// `list <库>` 列文档（施工 K-10）：一篇一行，读不了的接为什么；空的库说一句；`--format json` 原样印整个回应。
+#[tokio::test]
+async fn the_documents_of_a_base_from_the_shell() {
+    let home = Home::new(Arc::new(Script::new([])));
+    let cwd = home.outside();
+    let notes = cwd.join("notes");
+    std::fs::create_dir_all(&notes).expect("建得了");
+    std::fs::write(notes.join("a.md"), "团子\n").expect("写得进");
+    std::fs::write(notes.join("broken.txt"), [0xff, 0xfe]).expect("写得进");
+    assert_eq!(run(&home, &cwd, &["mount", "mine", "notes"]).await.code, 0);
+    let listed = run(&home, &cwd, &["list", "mine"]).await;
+    assert_eq!(listed.code, 0, "{}", listed.err);
+    let rows: Vec<&str> = listed.out.lines().collect();
+    assert_eq!(rows.len(), 2, "{}", listed.out);
+    assert!(rows[0].starts_with("a.md        7 B  20"), "{}", rows[0]);
+    assert!(
+        rows[1].starts_with("broken.txt  2 B  20")
+            && rows[1].ends_with("  （读不了：不是 UTF-8 编码）"),
+        "{}",
+        rows[1]
+    );
+    let json = run(&home, &cwd, &["list", "mine", "--format", "json"]).await;
+    let value: serde_json::Value = serde_json::from_str(json.out.trim()).expect("是 JSON");
+    assert_eq!(value["documents"][1]["reason"], "not_utf8", "{}", json.out);
+    assert_eq!(run(&home, &cwd, &["new", "empty"]).await.code, 0);
+    let empty = run(&home, &cwd, &["list", "empty"]).await;
+    assert_eq!(
+        (empty.code, empty.out.as_str()),
+        (0, "这个库里还没有文档。\n")
+    );
+    let bad = run(&home, &cwd, &["list", "Bad Id"]).await;
+    assert_eq!(bad.code, 2, "库的编号写错的说清写法：{}", bad.err);
+}

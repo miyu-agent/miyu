@@ -64,8 +64,11 @@ pub struct Kb {
 /// `miyu kb` 的子命令。
 #[derive(Debug, Clone, Subcommand)]
 pub enum KbCommand {
-    /// 列出知识库。
-    List,
+    /// 列出知识库；写了库的列出这个库里的文档（施工 K-10）。
+    List {
+        /// 哪个库。
+        kb: Option<String>,
+    },
     /// 搜：几个词用一个空格连起来。
     Search {
         /// 搜什么。
@@ -223,8 +226,12 @@ async fn act(
         _ => None,
     };
     let named = || json!({"name": args.name, "description": args.description, "auto": auto});
-    let said = match args.command.clone().unwrap_or(KbCommand::List) {
-        KbCommand::List => {
+    let said = match args.command.clone().unwrap_or(KbCommand::List { kb: None }) {
+        KbCommand::List { kb: Some(kb) } => {
+            let result = ask(rpc, "kb.documents", json!({"kb": kb}), language, err).await?;
+            return listing::documents(&result, plan, out);
+        }
+        KbCommand::List { kb: None } => {
             let result = ask(rpc, "kb.list", json!({}), language, err).await?;
             let names = listing::package_names(rpc, &result, language, err).await?;
             return listing::list(&result, &names, plan, out);
@@ -370,9 +377,10 @@ fn ids(args: &Kb) -> Vec<&str> {
             | KbCommand::Remove { kb, .. }
             | KbCommand::Mount { kb, .. }
             | KbCommand::Delete { kb }
-            | KbCommand::Reindex { kb },
+            | KbCommand::Reindex { kb }
+            | KbCommand::List { kb: Some(kb) },
         ) => Some(kb.as_str()),
-        Some(KbCommand::List | KbCommand::Search { .. }) | None => None,
+        Some(KbCommand::List { kb: None } | KbCommand::Search { .. }) | None => None,
     };
     command.into_iter().chain(args.only.as_deref()).collect()
 }

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use super::Reason;
 use super::catch_up::BIGGEST;
 
 /// 抽字的小程序叫什么：Windows 上带 `.exe`。
@@ -41,7 +42,7 @@ pub const EXTENSIONS: [&str; 6] = ["md", "markdown", "txt", "pdf", "html", "htm"
 
 /// 一个文档是哪一种：照扩展名（小写比）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Kind {
+pub enum Kind {
     /// `.md`、`.markdown`：照标题切。
     Markdown,
     /// `.txt`：照段落切。
@@ -68,6 +69,17 @@ impl Kind {
         }
     }
 
+    /// 协议里的写法（施工 K-10，`kb.documents` 的 `kind`）。
+    #[must_use]
+    pub fn code(self) -> &'static str {
+        match self {
+            Kind::Markdown => "markdown",
+            Kind::Plain => "text",
+            Kind::Pdf => "pdf",
+            Kind::Html => "html",
+        }
+    }
+
     /// 她写得了的：文字的两种（PDF、网页照原样存着，写进字会弄坏）。
     pub(super) fn writable(self) -> bool {
         matches!(self, Kind::Markdown | Kind::Plain)
@@ -83,26 +95,31 @@ impl Kind {
 }
 
 /// 文件 `file`（`kind` 那一种）里的字：PDF 一页一份，别的只有一份。PDF、网页照 `extractor` 抽，没有的抽不了。抽不出来的交回
-/// 为什么（英文的一句）。
+/// 哪一种（施工 K-10）和为什么（英文的一句）。
 pub(super) fn pages(
     kind: Kind,
     file: &Path,
     extractor: Option<&Path>,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, (Reason, String)> {
     let program = match kind {
         Kind::Markdown | Kind::Plain => {
-            let bytes = std::fs::read(file).map_err(|error| error.to_string())?;
+            let bytes =
+                std::fs::read(file).map_err(|error| (Reason::Unreadable, error.to_string()))?;
             return String::from_utf8(bytes)
                 .map(|text| vec![text])
-                .map_err(|_| "not UTF-8".to_string());
+                .map_err(|_| (Reason::NotUtf8, "not UTF-8".to_string()));
         }
-        Kind::Pdf | Kind::Html => extractor.ok_or("no miyu-extract beside the main program")?,
+        Kind::Pdf | Kind::Html => extractor.ok_or((
+            Reason::NoExtractor,
+            "no miyu-extract beside the main program".to_string(),
+        ))?,
     };
     let kind = if kind == Kind::Pdf { "pdf" } else { "html" };
-    let (stdout, stderr) = run(program, kind, file)?;
+    let failed = |why: String| (Reason::ExtractFailed, why);
+    let (stdout, stderr) = run(program, kind, file).map_err(failed)?;
     match stdout {
-        Some(stdout) => serde_json::from_slice(&stdout).map_err(|error| error.to_string()),
-        None => Err(String::from_utf8_lossy(&stderr).trim().to_string()),
+        Some(stdout) => serde_json::from_slice(&stdout).map_err(|error| failed(error.to_string())),
+        None => Err(failed(String::from_utf8_lossy(&stderr).trim().to_string())),
     }
 }
 

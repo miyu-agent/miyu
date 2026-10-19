@@ -39,7 +39,8 @@ pub(super) fn page(
     if matches!(kind, Kind::Pdf | Kind::Html) && size > biggest {
         return Err(KnowledgeError::Io(format!("larger than {biggest} bytes")));
     }
-    let texts = extract::pages(kind, &file, extractor).map_err(KnowledgeError::Io)?;
+    let texts =
+        extract::pages(kind, &file, extractor).map_err(|(_, why)| KnowledgeError::Io(why))?;
     let pages: Vec<&str> = match kind {
         Kind::Pdf => texts.iter().map(String::as_str).collect(),
         _ => texts.iter().flat_map(|text| split(text)).collect(),

@@ -5,7 +5,7 @@ Without a command it is list. Removed documents and deleted bases go to
 the system trash, so you can get them back.
 
 Commands:
-  list                    List knowledge bases
+  list [kb]               List knowledge bases; with a kb, its documents
   search <words>          Search
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base

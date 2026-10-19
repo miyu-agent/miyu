@@ -21,6 +21,40 @@ impl Language {
         }
     }
 
+    /// `list <库>` 一篇都没有（施工 K-10）。
+    pub fn kb_no_documents(&self) -> &'static str {
+        match self {
+            Language::Chinese => "这个库里还没有文档。",
+            Language::English => "No documents in this knowledge base yet.",
+        }
+    }
+
+    /// `list <库>` 这一回读不了的那一篇、那个子目录，接在那一行后面（施工 K-10）：照核心的 `reason`，不认得的照原样。
+    pub(crate) fn kb_unread(&self, reason: &str) -> String {
+        let chinese = match reason {
+            "too_large" => "太大了",
+            "not_utf8" => "不是 UTF-8 编码",
+            "no_text" => "PDF 里没有文字（扫描的或者只有图）",
+            "no_extractor" => "缺少抽取文字的小程序 miyu-extract",
+            "extract_failed" => "抽取文字失败",
+            "unreadable" => "没有权限或者读取失败",
+            other => other,
+        };
+        let english = match reason {
+            "too_large" => "too large",
+            "not_utf8" => "not UTF-8",
+            "no_text" => "no text in the PDF (scanned or only pictures)",
+            "no_extractor" => "miyu-extract is missing",
+            "extract_failed" => "text extraction failed",
+            "unreadable" => "no permission or read failed",
+            other => other,
+        };
+        match self {
+            Language::Chinese => format!("  （读不了：{chinese}）"),
+            Language::English => format!("  (unreadable: {english})"),
+        }
+    }
+
     /// 挂的目录用不了的库，接在那一行后面。
     pub(crate) fn kb_unavailable(&self, why: &str) -> String {
         match self {

@@ -12,21 +12,28 @@ use miyu_kernel::time::Timestamp;
 use miyu_recall::chunk;
 
 use super::extract::{self, Kind};
-use super::{Base, Hit, Knowledge, KnowledgeError, Skipped};
+use super::{Base, Hit, Knowledge, KnowledgeError, Reason, Skipped};
 
 /// 一个文字的文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。PDF、网页抽出来的字
 /// 也照它封顶（施工 K-5）。
 pub(super) const BIGGEST: u64 = 4 * 1024 * 1024;
 
 /// 库里的一个文档。
-struct Document {
+pub(super) struct Document {
     /// 库里的相对路径，照 `/` 分：来源、键的前一半。
-    source: String,
+    pub(super) source: String,
     path: PathBuf,
-    kind: Kind,
-    size: u64,
+    pub(super) kind: Kind,
+    pub(super) size: u64,
     /// 改的时刻（毫秒）。
-    modified: i64,
+    pub(super) modified: i64,
+}
+
+/// 补完一个库：列出来的样子、跳过的（文档和读不了的子目录）、列出来的文档（施工 K-10：`kb.documents` 照它）。
+pub(super) struct Caught {
+    pub(super) base: Base,
+    pub(super) skipped: Vec<Skipped>,
+    pub(super) documents: Vec<Document>,
 }
 
 impl Knowledge {
@@ -36,6 +43,12 @@ impl Knowledge {
         account: &AccountId,
         id: &str,
     ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
+        self.caught(account, id)
+            .map(|caught| (caught.base, caught.skipped))
+    }
+
+    /// 照文件补库 `id`，交回补完的样子（[`Caught`]）。
+    pub(super) fn caught(&self, account: &AccountId, id: &str) -> Result<Caught, KnowledgeError> {
         let dir = self.documents(account, id)?.usable()?;
         let shelf = self.shelf(account, id);
         let _only_one = shelf
@@ -50,7 +63,9 @@ impl Knowledge {
             skipped.push(Skipped {
                 kb: id.to_string(),
                 path: source,
+                reason: Reason::Unreadable,
                 why,
+                folder: true,
             });
         });
         let stamps = shelf.index.stamps()?;
@@ -59,14 +74,19 @@ impl Knowledge {
             if stamps.get(&document.source) == Some(&stamp) {
                 continue;
             }
-            let skip = |why: String| Skipped {
+            let skip = |(reason, why): (Reason, String)| Skipped {
                 kb: id.to_string(),
                 path: document.source.clone(),
+                reason,
                 why,
+                folder: false,
             };
             let biggest = document.kind.biggest();
             if document.size > biggest {
-                skipped.push(skip(format!("larger than {biggest} bytes")));
+                skipped.push(skip((
+                    Reason::TooLarge,
+                    format!("larger than {biggest} bytes"),
+                )));
                 continue;
             }
             let pages = extract::pages(document.kind, &document.path, self.extractor.as_deref());
@@ -78,14 +98,18 @@ impl Knowledge {
                 }
             };
             if pages.iter().map(String::len).sum::<usize>() as u64 > BIGGEST {
-                skipped.push(skip(format!("text larger than {BIGGEST} bytes")));
+                skipped.push(skip((
+                    Reason::TooLarge,
+                    format!("text larger than {BIGGEST} bytes"),
+                )));
                 continue;
             }
             let chunks = chunks(document.kind, &pages);
             if document.kind == Kind::Pdf && chunks.is_empty() {
-                skipped.push(skip(
+                skipped.push(skip((
+                    Reason::NoText,
                     "no text in the PDF (scanned or only pictures)".to_string(),
-                ));
+                )));
                 continue;
             }
             // 改的时刻读不出来的（很少见）照 1970 年记：只影响搜到时带的时刻。
@@ -101,7 +125,11 @@ impl Knowledge {
         {
             shelf.index.drop_source(source)?;
         }
-        Ok((self.counted(account, id, None)?, skipped))
+        Ok(Caught {
+            base: self.counted(account, id, None)?,
+            skipped,
+            documents,
+        })
     }
 
     /// 库 `id` 列出来的样子：名字、说明照 `kb.toml`，数照索引里现有的；`unavailable` 是挂的目录用不了的为什么（施工 K-4），
@@ -125,6 +153,7 @@ impl Knowledge {
             error: unavailable.or(error),
             auto: switched.or(about.auto).unwrap_or(false),
             package: place.package().map(str::to_string),
+            mount: about.mount,
         })
     }
 }

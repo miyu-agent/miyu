@@ -8,7 +8,7 @@
 | [`memory.turns`](#memoryturns) | 搜以前的对话 |
 | [`memory.remember`、`memory.update`、`memory.forget`、`memory.restore`](#memoryremembermemoryupdatememoryforgetmemoryrestore) | 记、改、作废和清空、恢复 |
 | [`memory.dream`](#memorydream) | 现在就整理记忆 |
-| [`kb.list`、`kb.search`、`kb.read`](#kblistkbsearchkbread) | 列知识库、搜、读一页 |
+| [`kb.list`、`kb.search`、`kb.read`、`kb.documents`](#kblistkbsearchkbreadkbdocuments) | 列知识库、搜、读一页、列一个库里的文档 |
 | [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
 
 **谁能调**：人、扩展。人经协议是主人这一边：全部列得出、搜得到、改得了。
@@ -107,17 +107,20 @@
 - 进度：头一批的 `left` 是总数，收了尾的各批 `fresh` 加起来是合了多少。一批之内不细分。
 - 会话里叫的先抽的那几条（`ext.memory.saved`，`by` 是记忆模块，带出处）在第一条 `merging` 前面，后面跟 `ext.memory.extracted`。
 
-## `kb.list`、`kb.search`、`kb.read`
+## `kb.list`、`kb.search`、`kb.read`、`kb.documents`
 
 知识库在管理员账号下，一个库是一个目录里的文档（Markdown、PDF、网页……），核心建索引来搜。不看知识库软件包装没装：文件是人的。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package` |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package`，挂进来的另带 `mount`（写的那个目录） |
 | `kb.search` | `query`（必写）、`kb`（只搜这一个）、`limit`（1 到 50，默认 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的多 `page` |
 | `kb.read` | `kb`、`path`（必写）、`page`（从 1 起，默认 1） | `{"text", "page", "pages"}`：一页 32 KiB；PDF 照它自己的页 |
+| `kb.documents` | `kb`（必写） | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`，照路径排：库里的每一篇；这一回读不了的另带 `reason`、`why` |
 
 `heading` 是标题路径（`语法 › て形`），`at` 是文档改的时刻。
+
+`kb.documents` 里 `kind` 是 `markdown`、`text`、`pdf`、`html`；`size` 是字节数；`chunks` 是索引里几块（读不了的以前进过索引的留着旧块）。`reason` 是 `too_large`、`not_utf8`、`no_text`（PDF 里没有字：扫描的、只有图）、`no_extractor`（PDF、网页要 `miyu-extract`）、`extract_failed`、`unreadable` 之一，给人看的字头自己写，`why` 是给日志的英文。`folders` 是读不了的子目录（挂进来的常有）。不是文档的文件不列。挂的目录不在了：`folder_unavailable`。
 
 **出错**：`bad_params`（`page` 是 0 或超过 `pages`）；`unknown_kb`；`unknown_document`；`internal_error`（坏的 PDF、文件超过 64 MiB）。
 
@@ -140,7 +143,7 @@
 | `kb_exists`、`document_exists` | 已经有了（加文档的不带 `replace`） |
 | `kb_read_only` | 往挂进来的库里加、删 |
 | `kb_packaged` | 改软件包带来的库（只能改 `auto`） |
-| `folder_unavailable` | 要挂的目录用不了，`data.message` |
+| `folder_unavailable` | 要挂的目录用不了、`kb.documents` 的库挂的目录不在了，`data.message` |
 | `trash_failed` | 挪不进回收站，`data.message` |
 | `unknown_attachment` | `blob` 不在 |
 | `unknown_kb`、`unknown_document`、`bad_params` | 同上 |

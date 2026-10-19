@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use serde_json::json;
 
-use super::shown::{bases, hits, page};
+use super::shown::{bases, documents, hits, page};
 use crate::language::Language;
 
 #[test]
@@ -112,5 +112,29 @@ fn a_base_from_a_package_says_which_one() {
     assert_eq!(
         bases(&listed[0..1], &names, &Language::English),
         ["world  雾港  4 documents  from 雾港世界观  auto recall  世界观"]
+    );
+}
+
+/// `list <库>`（施工 K-10）：路径对齐、大小、日期；读不了的接为什么，不认得的原因照原样；读不了的子目录带 `/` 接在后面。
+#[test]
+fn documents_one_line_each() {
+    let listed = [
+        json!({"path": "a.md", "kind": "markdown", "size": 2048, "at": "2026-10-19T08:00:00Z", "chunks": 3}),
+        json!({"path": "scan.pdf", "kind": "pdf", "size": 12, "at": "2026-10-18T08:00:00Z", "chunks": 0, "reason": "no_text", "why": "no text"}),
+        json!({"path": "odd.txt", "kind": "text", "size": 1, "at": "2026-10-17T08:00:00Z", "chunks": 0, "reason": "later_reason", "why": "?"}),
+    ];
+    let folders = [json!({"path": "locked", "reason": "unreadable", "why": "Permission denied"})];
+    assert_eq!(
+        documents(&listed, &folders, &Language::Chinese),
+        [
+            "a.md      2.0 KiB  2026-10-19",
+            "scan.pdf  12 B  2026-10-18  （读不了：PDF 里没有文字（扫描的或者只有图））",
+            "odd.txt   1 B  2026-10-17  （读不了：later_reason）",
+            "locked/   （读不了：没有权限或者读取失败）",
+        ]
+    );
+    assert_eq!(
+        documents(&listed[1..2], &[], &Language::English),
+        ["scan.pdf  12 B  2026-10-18  (unreadable: no text in the PDF (scanned or only pictures))"]
     );
 }

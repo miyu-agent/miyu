@@ -12,7 +12,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use miyu_recall::associate::Thresholds;
-use miyu_store::knowledge::{Base, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
+use miyu_store::knowledge::{Base, Document, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
 use miyu_store::packages::Found;
 use miyu_store::resources::ResourceRoot;
@@ -114,6 +114,13 @@ struct Search {
     limit: Option<usize>,
 }
 
+/// `kb.documents` 的参数（施工 K-10）。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Documents {
+    kb: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct Read {
     kb: String,
@@ -177,6 +184,21 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             }
             Ok(json!({ "hits": hits.iter().map(shown).collect::<Vec<Value>>() }))
         }
+        "kb.documents" => {
+            let Documents { kb } = read(params)?;
+            if !valid(&kb) {
+                return Err(Refusal::BAD_PARAMS);
+            }
+            let (listing, skipped) = blocking(move || knowledge.listing(&account, &kb)).await?;
+            report(&skipped);
+            let documents: Vec<Value> = listing.documents.iter().map(shown_document).collect();
+            let folders: Vec<Value> = listing
+                .folders
+                .iter()
+                .map(|one| json!({"path": one.path, "reason": one.reason.code(), "why": one.why}))
+                .collect();
+            Ok(json!({ "documents": documents, "folders": folders }))
+        }
         "kb.read" => {
             let read: Read = read(params)?;
             let page = read.page.unwrap_or(1);
@@ -207,6 +229,25 @@ fn shown_base(base: Base) -> Value {
     if let Some(package) = base.package {
         value["package"] = Value::String(package);
     }
+    if let Some(mount) = base.mount {
+        value["mount"] = Value::String(mount);
+    }
+    value
+}
+
+/// 一篇文档在 `kb.documents` 回应里的样子（施工 K-10）：这一回读不了的多 `reason`、`why`。
+fn shown_document(document: &Document) -> Value {
+    let mut value = json!({
+        "path": document.path,
+        "kind": document.kind.code(),
+        "size": document.size,
+        "at": document.at.to_string(),
+        "chunks": document.chunks,
+    });
+    if let Some((reason, why)) = &document.skipped {
+        value["reason"] = Value::String(reason.code().to_string());
+        value["why"] = Value::String(why.clone());
+    }
     value
 }
 
@@ -230,7 +271,7 @@ fn shown(hit: &Hit) -> Value {
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。
 fn report(skipped: &[Skipped]) {
     for one in skipped {
-        tracing::warn!(target: "miyu::endpoint", kb = one.kb.as_str(), path = one.path.as_str(), why = one.why.as_str(), "knowledge document skipped");
+        tracing::warn!(target: "miyu::endpoint", kb = one.kb.as_str(), path = one.path.as_str(), reason = one.reason.code(), why = one.why.as_str(), "knowledge document skipped");
     }
 }
 
@@ -240,7 +281,7 @@ fn read<T: DeserializeOwned>(params: &Value) -> Result<T, Refusal> {
 
 /// 在阻塞线程里做，[`KnowledgeError`] 写成拒绝：没有的库 `unknown_kb`，没有的文档 `unknown_document`，没有这一页
 /// `bad_params`；管理的几种（施工 K-7 上）：已经有的库 `kb_exists`、已经有的文档 `document_exists`、挂进来的 `kb_read_only`、
-/// 挂不上的目录 `folder_unavailable`、挪不进回收站 `trash_failed`；读不了的记一行、是内部出错。
+/// 挂不上的、挂着用不了的目录 `folder_unavailable`、挪不进回收站 `trash_failed`；读不了的记一行、是内部出错。
 async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, KnowledgeError> + Send + 'static,
 ) -> Result<T, Refusal> {
@@ -253,7 +294,9 @@ async fn blocking<T: Send + 'static>(
         Ok(Err(KnowledgeError::Exists)) => Err(Refusal::DOCUMENT_EXISTS),
         Ok(Err(KnowledgeError::ReadOnly)) => Err(Refusal::KB_READ_ONLY),
         Ok(Err(KnowledgeError::Packaged)) => Err(Refusal::KB_PACKAGED),
-        Ok(Err(KnowledgeError::FolderUnavailable(why))) => Err(Refusal::folder_unavailable(why)),
+        Ok(Err(KnowledgeError::FolderUnavailable(why) | KnowledgeError::Unavailable(why))) => {
+            Err(Refusal::folder_unavailable(why))
+        }
         Ok(Err(KnowledgeError::Trash(why))) => Err(Refusal::trash_failed(why)),
         Ok(Err(error)) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "knowledge failed");

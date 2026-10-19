@@ -12,6 +12,7 @@
 
 mod catch_up;
 mod extract;
+mod listing;
 mod manage;
 mod mount;
 mod place;
@@ -29,7 +30,8 @@ use miyu_recall::associate::Thresholds;
 use crate::recall::{DbError, RecallIndex};
 use crate::root::DataRoot;
 
-pub use extract::{EXTENSIONS, beside as extractor_beside};
+pub use extract::{EXTENSIONS, Kind as DocumentKind, beside as extractor_beside};
+pub use listing::{Document, Listing};
 pub use manage::BaseFields;
 pub use read::Page;
 pub use write::Written;
@@ -97,6 +99,8 @@ pub struct Base {
     pub auto: bool,
     /// 软件包带来的是哪个包的（施工 K-8）；自己的、挂进来的没有。
     pub package: Option<String>,
+    /// 挂进来的库挂的是哪个目录（施工 K-10）：`kb.toml` 里写的原样，`~/` 不展开；自己的、软件包带来的没有。
+    pub mount: Option<String>,
 }
 
 /// 搜到的一块。
@@ -118,15 +122,51 @@ pub struct Hit {
     pub at: Timestamp,
 }
 
-/// 补的时候跳过的一个文档：哪个库、哪个文档、为什么（英文的一句）。调的一方照它记一行运行日志。
+/// 补的时候跳过的一个文档（或者读不了的子目录）：哪个库、哪个文档、哪一种、为什么（英文的一句）。调的一方照它记一行运行日志。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Skipped {
     /// 哪个库。
     pub kb: String,
-    /// 哪个文档。
+    /// 哪个文档；`folder` 的是哪个子目录。
     pub path: String,
+    /// 哪一种（施工 K-10）。
+    pub reason: Reason,
     /// 为什么。
     pub why: String,
+    /// 是读不了的子目录（施工 K-10）。
+    pub folder: bool,
+}
+
+/// 一个文档为什么没进索引（施工 K-10，`kb.documents` 的 `reason`）：头照它写给人看的字。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reason {
+    /// 文件或者抽出来的字超过上限。
+    TooLarge,
+    /// 文字的文档不是 UTF-8。
+    NotUtf8,
+    /// PDF 里没有字：扫描的、只有图。
+    NoText,
+    /// PDF、网页，没有抽字的小程序。
+    NoExtractor,
+    /// 抽字的小程序出错、超时。
+    ExtractFailed,
+    /// 文件、子目录读不了。
+    Unreadable,
+}
+
+impl Reason {
+    /// 协议里的写法。
+    #[must_use]
+    pub fn code(self) -> &'static str {
+        match self {
+            Reason::TooLarge => "too_large",
+            Reason::NotUtf8 => "not_utf8",
+            Reason::NoText => "no_text",
+            Reason::NoExtractor => "no_extractor",
+            Reason::ExtractFailed => "extract_failed",
+            Reason::Unreadable => "unreadable",
+        }
+    }
 }
 
 /// 知识库出的错。

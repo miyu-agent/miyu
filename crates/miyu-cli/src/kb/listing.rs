@@ -1,5 +1,5 @@
 //! `miyu kb` 列、搜的回应怎么印（施工 K-8 从 `kb.rs` 挪出来）：`json` 的原样印，`text` 的照 `shown.rs` 的样子；列表里有软件包
-//! 带来的库的，先问一次包的名字。
+//! 带来的库的，先问一次包的名字；`list <库>` 列文档（施工 K-10）。
 
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -58,6 +58,25 @@ pub(super) fn list(
         return Ok(());
     }
     for row in shown::bases(&bases, names, &plan.language) {
+        say(out, &row);
+    }
+    Ok(())
+}
+
+/// `list <库>` 的回应印出来（施工 K-10）：`json` 的原样印整个回应；`text` 的一篇一行、读不了的子目录接在后面，一篇都没有的
+/// 说一句。
+pub(super) fn documents(result: &Value, plan: &KbPlan, out: &mut dyn Write) -> Result<(), u8> {
+    if plan.args.format == Format::Json {
+        say(out, &result.to_string());
+        return Ok(());
+    }
+    let field = |name: &str| result[name].as_array().cloned().unwrap_or_default();
+    let (documents, folders) = (field("documents"), field("folders"));
+    if documents.is_empty() && folders.is_empty() {
+        say(out, plan.language.kb_no_documents());
+        return Ok(());
+    }
+    for row in shown::documents(&documents, &folders, &plan.language) {
         say(out, &row);
     }
     Ok(())

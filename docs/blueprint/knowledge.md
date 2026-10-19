@@ -8,7 +8,7 @@
 - 检索用记忆那一套底子（`recall.md`，N3、N8）：关键词一路（K-1 上）、照意思那一路（K-2），两路照名次合。
 - 仿 Linux：文档就是文件（19 第二节）。真相是目录里的文件，索引随时能删掉照文件重建（`07-存储.md` S1、S3）。
 
-状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）、K-7 下（命令行 `miyu kb`，`cli/kb.md`）、K-6 上（自动想起的测评集，`knowledge/eval.md`）、K-6 下（自动想起）、K-8（软件包带来的知识库）。
+状态：图纸（2026-10-12 起草，照 `19-知识库.md` N1 到 N14、`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第五节第 7 条）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。做好了的：K-1 上（底子、协议）、K-1 下（她的两件工具、人格收窄、知识库这个包）、K-1 补（system 里列出来的那一块）、K-3（她写知识库）、K-2（照意思找）、K-4（挂进来的目录）、K-5（PDF 和网页）、K-7 上（人经协议管理）、K-7 下（命令行 `miyu kb`，`cli/kb.md`）、K-6 上（自动想起的测评集，`knowledge/eval.md`）、K-6 下（自动想起）、K-8（软件包带来的知识库）、K-10（列出库里的文档）。
 
 ### 在哪
 
@@ -32,6 +32,7 @@
 | `crates/miyu-store/src/knowledge/manage.rs` | 人管理：建库、改名字说明、挂目录、加文档、删库、重建索引（第八条）；`RecallIndex::discard`（关上、删掉索引） | K-7 上 |
 | `crates/miyu-cli/src/kb.rs`（详见 `cli/kb.md`） | 命令行 `miyu kb`：照子命令发 `kb.*`，加文件照 `blob.put` 本机路径 | K-7 下 |
 | `crates/miyu-endpoint/src/knowledge/manage.rs`、`refusal/knowledge.rs` | 协议管理的七个方法：读参数、在阻塞线程里调、写回应；`kb_exists`、`document_exists`、`kb_read_only`、`folder_unavailable`、`trash_failed` | K-7 上 |
+| `crates/miyu-store/src/knowledge/listing.rs`、`crates/miyu-endpoint/src/knowledge.rs` 的 `kb.documents` | 列出一个库里的文档（K-10）：照补的时候列出来的、索引里的块数、这一回跳过的哪一种（`Reason`）和为什么、读不了的子目录 | K-10 |
 | `crates/miyu-store/src/knowledge/write.rs` | 她写知识库那一层：建库、新建、追加、照原文换一段、挪进回收站，交回改前改后的内容（第七条） | K-3 |
 | `crates/miyu-session/src/knowledge/write.rs` | 写哪几个、建得了建不了新库（第七条第 1 款） | K-3 |
 | `crates/miyu-session/src/memory/vectors.rs`（`fill_knowledge`） | 在后台补一个知识库的索引缺的向量（第四条，同记忆的回合库） | K-2 |
@@ -91,6 +92,7 @@
 |---|---|---|---|
 | `kb.list` | 查询 | 没有 | `{"bases": [<一个库>…]}`，照编号排 |
 | `kb.search` | 查询 | `query`（不能是空白）；`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [<一块>…]}`，最相关的在前 |
+| `kb.documents` | 查询 | `kb`（K-10） | `{"documents": [<一篇>…], "folders": [<读不了的子目录>…]}`，照路径排 |
 | `kb.read` | 查询 | `kb`、`path`（文档的相对路径）；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字、网页是换出来的字（K-5） |
 | `kb.create` | 命令 | `kb`；`name`、`description`、`auto`（可以不写）（K-7 上；`auto` K-6 下） | 一个库 |
 | `kb.update` | 命令 | `kb`；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉；软件包带来的只收 `auto`，K-8） | 一个库 |
@@ -100,7 +102,8 @@
 | `kb.remove` | 命令 | `kb`、`path` | `{"trash"}`：这一篇在回收站里的位置 |
 | `kb.reindex` | 命令 | `kb` | 一个库（删掉照文件重建完的） |
 
-- 一个库：`{"id", "name", "description", "documents", "chunks", "auto"}`（`auto` 是自动想起开着没有，K-6 下；软件包带来的人改过的照改的，K-8），软件包带来的多一格 `package`（包的编号，K-8），读 `kb.toml` 出错的、挂的目录用不了的（K-4）多一格 `error`（英文的一句为什么）。`documents`、`chunks` 是照文件补完以后的数（挂的目录用不了的是索引里现有的）。
+- 一个库：`{"id", "name", "description", "documents", "chunks", "auto"}`（`auto` 是自动想起开着没有，K-6 下；软件包带来的人改过的照改的，K-8），软件包带来的多一格 `package`（包的编号，K-8），挂进来的多一格 `mount`（`kb.toml` 里写的目录，照原样、`~/` 不展开，K-10），读 `kb.toml` 出错的、挂的目录用不了的（K-4）多一格 `error`（英文的一句为什么）。`documents`、`chunks` 是照文件补完以后的数（挂的目录用不了的是索引里现有的）。
+- 一篇（K-10，网页的知识库页列文档用；2026-10-19 项目主人提出缺知识库的后台页面）：`{"path", "kind", "size", "at", "chunks"}`：库里的相对路径；`markdown`、`text`、`pdf`、`html`；文件的字节数；文件改的时刻；索引里几块。这一回补的时候读不了的多 `reason`、`why`（英文的一句，同运行日志），读不了的以前进过索引的 `chunks` 是留着的旧块。`reason`：`too_large`（文件或抽出来的字超过上限）、`not_utf8`、`no_text`（PDF 里没有字）、`no_extractor`（PDF、网页，没有抽字的小程序）、`extract_failed`（抽字的出错、超时）、`unreadable`（读不了的文件）。读不了的子目录（挂进来的常有）：`{"path", "reason": "unreadable", "why"}`。列的和补的时候看的一样：不是文档的、点开头的、链接、`kb.toml` 不列。不分页（3000 篇的回应几百 KiB，补那一下本来就全扫）。挂的目录用不了的拒 `folder_unavailable`。
 - 一块：`{"kb", "path", "chunk", "heading", "text", "at"}`：哪个库、哪个文档、第几块、标题路径（没有标题的是空的）、这一块的字（不带标题那一行）、文档改的时刻。PDF 的那一块多一格 `page`（第几页，从 1 起，K-5），别的不写这一格。
 - 一页 32 KiB，截在字的边界上；`pages` 是一共几页，空文档是一页空的。PDF 照它自己的页：`pages` 是 PDF 的页数（K-5）。
 - 出错：`unknown_kb`（没有这个库）、`unknown_document`（库里没有这个文档：不是文档的、不在库里的、`..` 跑出去的都算）、`bad_params`（`query` 空白、`limit` 出范围、编号不合写法、`page` 是 0 或超过 `pages`）。
@@ -223,6 +226,7 @@ Knowledge bases you can search:
 |---|---|
 | `crates/miyu-store/tests/knowledge_mount.rs`（K-4） | 挂进来的：照挂的目录搜、读，库目录里别的文件、以点开头的目录不算，原处改了下一次搜就照新的；`~/` 照家目录，家目录不知道的带 `error`；挂的目录挪走了列出来带 `error`、数照索引里的、搜的时候跳过（只搜它的也不算出错）、读不到，挪回来照搜；写的不是绝对路径的带 `error`；写的三件拒、什么都没动；里面读不了的子目录跳过、照跳过的交回（Unix） |
 | `crates/miyu-store/tests/knowledge_formats.rs`（K-5，PDF 在 `crates/miyu-extract/tests/fixtures/`，怎么做的写在那里的 README；照 cargo 编出来的 `miyu-extract` 抽） | 第二条第 5、6 款、第三条、第五条、第七条第 3 款：没交抽字的小程序的跳过 PDF、网页、读不了，主程序旁边找得到它；中英文的 PDF 一页一块、搜到的说第几页、没有标题路径、部首换回平常的字（康熙部首、部首补充两段）、照页读、页数、没有的页；一个字都没有的、坏的 PDF 跳过、读坏的照实说、比文字的上限大比 PDF 的上限小的照 PDF 的上限去抽；网页照标题切、脚本样式里的字不算、`.htm` 也认、读的是换出来的字；PDF、网页写不了（新建、追加、改），删照删 |
+| `crates/miyu-store/tests/knowledge_documents.rs`（K-10）、`crates/miyu-endpoint/tests/knowledge_documents.rs` | `kb.documents`：照路径排、几种都认、大小、改的时刻、块数；读不了的哪一种、为什么、留着旧块；没有抽字小程序的 PDF；读不了的子目录另列；不是文档的、点开头的不列；挂进来的带 `mount`、拔掉的拒 `folder_unavailable`；参数写错的、没有的库 |
 | `crates/miyu-extract/src/radicals.rs` 的单元测试、`crates/miyu-extract/tests/extract.rs`（K-5） | 部首的码位换成平常的字、全角的字不动、对照表每一行都读得懂；中英文的 PDF 一页一份、头尾空白去掉、只有画的一页是空的、不是 PDF 的说为什么；网页照标题写 `#`、脚本样式不要；小程序照参数抽、照 JSON 交回，参数少了、多了、种类不对、读不了的退出码 1、说为什么 |
 | `crates/miyu-session/tests/knowledge_formats.rs`（K-5） | 「她的工具」，真会话：搜到 PDF 的那一块头一行说第几页、照那一页读、末尾说第几页；写 PDF 拒、说哪几种能写、文件没动 |
 | `crates/miyu-endpoint/tests/knowledge.rs` 的 `a_pdf_hit_says_its_page_and_reads_by_page`（K-5） | 「协议」，真核心：PDF 的那一块多 `page`、别的不写；`kb.read` 读 PDF 的第几页、`pages` 是 PDF 的页数 |
@@ -285,3 +289,4 @@ Knowledge bases you can search:
 | K-7 下 | 命令行 `miyu kb`（`cli/kb.md`）：`list`、`search`、`read`、`new`、`edit`、`add`、`remove`、`mount`、`delete`、`reindex`；补上 K-7 上那五种拒绝给人看的话 |
 | K-8 | 软件包带来的知识库（N6，「对外的样子」那一节、第十条）：包目录里的 `kb/<编号>/`，只读，自动想起人能开关、记在账号自己的 `kb.toml`，列出来带 `package`；卸包时索引、开关一起删（2026-10-13 项目主人定） |
 | K-9 | 关键词触发的条目（N9，照 SillyTavern 的 World Info）：标题下一行 `关键词：…`，当别名，和标题名一样触发、同一份预算，那一行不进带上的字；只看这一轮人说的；标题名一起改成不分大小写（2026-10-14 项目主人定） |
+| K-10 | 列出库里的文档（2026-10-19 项目主人提出缺知识库的后台页面，定在网页设置里做一页、顶上直接搜、终端用命令）：`kb.documents` 一篇一项带大小、时刻、块数，读不了的带 `reason`、`why`，读不了的子目录另列；`kb.list` 挂进来的带 `mount`；命令行 `miyu kb list <库>` |

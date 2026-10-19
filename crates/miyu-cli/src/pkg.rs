@@ -14,6 +14,9 @@ mod shown;
 mod source;
 mod upgrade;
 
+/// 多少字节写成给人看的（`miyu kb list <库>` 也用，施工 K-10）。
+pub(crate) use query::size;
+
 use std::io::{self, BufRead, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, ExitCode};

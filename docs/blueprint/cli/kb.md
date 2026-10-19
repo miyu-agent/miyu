@@ -20,6 +20,7 @@
 | 子命令 | 做什么 | 发什么 |
 |---|---|---|
 | `list`（不写子命令也是它） | 列出知识库 | `kb.list` |
+| `list <库>` | 列出这个库里的文档（施工 K-10，2026-10-19 项目主人定终端不做知识库页面、用命令） | `kb.documents` |
 | `search <词>` | 搜，最相关的在前 | `kb.search`，`--kb` 只搜一个 |
 | `read <库> <文档>` | 读一篇的一页 | `kb.read`，`--page` |
 | `new <库>` | 建一个库 | `kb.create`，`--name`、`--description` |
@@ -40,7 +41,7 @@
 | `--no-auto` | `edit`：关自动想起（`auto: false`，拿掉 `kb.toml` 那一格）；`new`、`mount` 本来就关着；和 `--auto` 只能写一个，参数不对 |
 | `--to <目录>` | `add`：放进库里的这个目录（前后的 `/` 去掉） |
 | `--replace` | `add`：已经有的换掉 |
-| `--format text\|json` | `list`、`search`：`json` 原样印核心回的那一串，给脚本 |
+| `--format text\|json` | `list`、`search`：`json` 原样印核心回的那一串，给脚本；`list <库>` 原样印整个回应 |
 
 - 几个词用一个空格连起来（照 `miyu memory`）。
 - 删的都不问：进回收站，找得回来（同 `miyu memory` 清空不问，2026-10-07 项目主人定的那条）。
@@ -53,6 +54,7 @@
 3. **加文件**：一个个来：`blob.put`（`path` 是照当前目录接好的绝对路径），交回的 `name` 是文件名；路径是 `--to` 加文件名；再 `kb.add`。碰到没成的那一个就停（前面成了的不退），照原话说，退出码 1。传以前先看一遍文件名：扩展名不在认的几种里的（`miyu_store::knowledge::EXTENSIONS`：`.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`）一个都不传，说「只收 …：<文件名>」，退出码 1（施工 K-7 修：核心只回「参数错误。」，还白传一份）。
 4. **印**（标准输出）：
    - `list`：一个库一行，编号照最长的对齐，后面是名字（和编号一样的不写）、几篇、软件包带来的接「随 <包名>」（施工 K-8，2026-10-13 项目主人定；包名照 `package.list`、照界面语言，列表里有包里的才问它，拿不到的照包的编号）、开了自动想起的接「自动想起」（施工 K-6 补，2026-10-13 项目主人定）、说明（没写的不写），两个空格隔开；挂的目录用不了的接上「（用不了：<为什么>）」。一个都没有的：「还没有知识库。」
+   - `list <库>`（施工 K-10）：一篇一行，路径照最长的对齐，后面是大小（照 `miyu pkg` 的写法：`B`、`KiB`、`MiB`）、改的日期，两个空格隔开；这一回读不了的接「（读不了：<原因>）」，原因照 `reason` 换成给人看的字，不认得的照原样；读不了的子目录一个一行接在后面，路径带 `/`。块数不印。一篇都没有的：「这个库里还没有文档。」
    - `search`：一块一段，段和段之间空一行：头一行是库、文档、标题路径（PDF 的是「第 <页> 页」，没有标题的不写），两个空格隔开；下面是这一块的字，每行空两格。一块都没有的：「没找到。」
    - `read`：那一页的字；不止一页的另起一行「（第 <页>/<页数> 页）」。
    - 别的一句：「建好了：<库>」「改好了：<库>」「加进去了：<库>/<路径>」（一个文件一行）「挪进回收站了：<位置>」「挂上了：<库>，<几> 篇」「删掉了 <库>，在回收站里：<位置>」「重建好了：<库>，<几> 篇」。
@@ -64,6 +66,13 @@
 notes  日语笔记  12 篇  学日语的
 world  雾港  4 篇  随 雾港世界观  自动想起  世界观
 usb    U 盘  3 篇（用不了：mounted folder /mnt/usb: No such file or directory (os error 2)）
+```
+
+```text
+grammar.md     2.0 KiB  2026-10-19
+scan.pdf       1.2 MiB  2026-10-18  （读不了：PDF 里没有文字（扫描的或者只有图））
+words/n5.txt   12.3 KiB  2026-10-17
+private/       （读不了：没有权限或者读取失败）
 ```
 
 ```text
@@ -87,6 +96,8 @@ manuals  cat.pdf  第 3 页
 | 键 | 中文 | 英文 |
 |---|---|---|
 | 一个库都没有 | 还没有知识库。 | No knowledge bases yet. |
+| 一篇文档都没有（`list <库>`） | 这个库里还没有文档。 | No documents in this knowledge base yet. |
+| 读不了（`list <库>`） | （读不了：{原因}）：`too_large` 太大了、`not_utf8` 不是 UTF-8 编码、`no_text` PDF 里没有文字（扫描的或者只有图）、`no_extractor` 缺少抽取文字的小程序 miyu-extract、`extract_failed` 抽取文字失败、`unreadable` 没有权限或者读取失败 | (unreadable: {reason})：too large、not UTF-8、no text in the PDF (scanned or only pictures)、miyu-extract is missing、text extraction failed、no permission or read failed |
 | 没找到（`search`） | 没找到。 | Nothing found. |
 | 几篇 | {n} 篇 | 1 document、{n} documents |
 | 用不了 | （用不了：{why}） | (unavailable: {why}) |
@@ -119,7 +130,7 @@ manuals  cat.pdf  第 3 页
 加的文件、删的文档、删的库都进系统回收站，找得回来。
 
 命令：
-  list                    列出知识库
+  list [库]               列出知识库；写了库的列出它里面的文档
   search <词>             搜
   read <库> <文档>        读一篇的一页
   new <库>                建一个库
@@ -155,7 +166,7 @@ Without a command it is list. Removed documents and deleted bases go to
 the system trash, so you can get them back.
 
 Commands:
-  list                    List knowledge bases
+  list [kb]               List knowledge bases; with a kb, its documents
   search <words>          Search
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base

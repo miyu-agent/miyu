@@ -8,6 +8,7 @@ mod support;
 mod human;
 mod human_languages;
 mod knowledge;
+mod knowledge_documents;
 mod knowledge_floor;
 mod knowledge_formats;
 mod knowledge_manage;

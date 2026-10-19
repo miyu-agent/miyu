@@ -8,7 +8,7 @@ Chinese version: [memory.md](memory.md).
 | [`memory.turns`](#memoryturns) | Search past conversations |
 | [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remember, change, retire or clear, restore |
 | [`memory.dream`](#memorydream) | Organize memory now |
-| [`kb.list`, `kb.search`, `kb.read`](#kblist-kbsearch-kbread) | List knowledge bases, search, read a page |
+| [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
 | [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
 
 **Who can call**: people, extensions. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
@@ -107,17 +107,20 @@ Organize now: with `session`, first extract what that session hasn't had extract
 - Progress: the first batch's `left` is the total; the `fresh` of the ended batches adds up to what is done. There is no finer progress within a batch.
 - When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
 
-## `kb.list`, `kb.search`, `kb.read`
+## `kb.list`, `kb.search`, `kb.read`, `kb.documents`
 
 Knowledge bases belong to the admin account; each is a folder of documents (Markdown, PDF, web pages…) that the core indexes for search. Whether the knowledge base package is installed doesn't matter here: the files are the person's.
 
 | Method | Params | Response |
 |---|---|---|
-| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, by id; `auto` is whether automatic recall is on; unreadable ones have `error`, ones from packages have `package` |
+| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, by id; `auto` is whether automatic recall is on; unreadable ones have `error`, ones from packages have `package`, mounted ones have `mount` (the folder as written) |
 | `kb.search` | `query` (required), `kb` (only this one), `limit` (1 to 50, default 10) | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`, most relevant first; PDF hits also have `page` |
 | `kb.read` | `kb`, `path` (required), `page` (from 1, default 1) | `{"text", "page", "pages"}`: 32 KiB per page; PDFs use their own pages |
+| `kb.documents` | `kb` (required) | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`, by path: every document in the base; ones that couldn't be read this time also have `reason` and `why` |
 
 `heading` is the heading path (`Grammar › te-form`); `at` is when the document changed.
+
+In `kb.documents`, `kind` is `markdown`, `text`, `pdf` or `html`; `size` is in bytes; `chunks` is how many pieces are in the index (an unreadable document that was indexed before keeps its old ones). `reason` is one of `too_large`, `not_utf8`, `no_text` (a PDF with no text: scanned or only pictures), `no_extractor` (PDFs and web pages need `miyu-extract`), `extract_failed`, `unreadable`; show your own words for it, `why` is an English sentence for logs. `folders` are subfolders that couldn't be read (common in mounted ones). Files that aren't documents aren't listed. A mounted folder that's gone: `folder_unavailable`.
 
 **Errors**: `bad_params` (`page` 0 or past `pages`); `unknown_kb`; `unknown_document`; `internal_error` (a broken PDF, a file over 64 MiB).
 
@@ -140,7 +143,7 @@ Knowledge bases belong to the admin account; each is a folder of documents (Mark
 | `kb_exists`, `document_exists` | Already exists (adding without `replace`) |
 | `kb_read_only` | Adding to or removing from a mounted one |
 | `kb_packaged` | Changing one that came with a package (only `auto` can change) |
-| `folder_unavailable` | The folder to mount can't be used, `data.message` |
+| `folder_unavailable` | The folder to mount can't be used, or for `kb.documents` a mounted folder is gone, `data.message` |
 | `trash_failed` | Couldn't move it to the trash, `data.message` |
 | `unknown_attachment` | `blob` doesn't exist |
 | `unknown_kb`, `unknown_document`, `bad_params` | As above |
