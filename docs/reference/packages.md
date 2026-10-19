@@ -1,6 +1,6 @@
-# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`command.*`、`check`
+# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`command.*`、`check`
 
-管理软件包、扩展进程、个人设置里的 MCP 服务，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
+管理软件包、扩展进程、个人设置里的 MCP 服务，列出技能，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
 
 | 方法 | 做什么 |
 |---|---|
@@ -14,7 +14,8 @@
 | [`package.upgrades`、`package.upgrade`](#packageupgradespackageupgrade) | 盘点能升级的、升级 |
 | [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
-| [`mcp.list`、`mcp.restart`](#mcplistmcprestart) | 个人设置里的 MCP 服务 |
+| [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 个人设置里的 MCP 服务：列、重启、加或换、删 |
+| [`skill.list`](#skilllist) | 列出用得上的技能 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
@@ -178,13 +179,41 @@
 
 **出错**：`unknown_package`；`not_an_extension`（是界面包）；`extension_off`（重启一个关着的）；`needs_approval`。
 
-## `mcp.list`、`mcp.restart`
+## `mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`
 
-管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。加、删、改直接改个人设置，当场生效。
+管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改个人设置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
+
+**`mcp.set`**：在个人设置里加上一个服务，或者整条换掉同名的那一个。
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `name` | 字符串，必写 | 服务名：小写字母开头，只有小写字母、数字、`-`，最多 32 个 |
+| `command` | 字符串，必写 | 程序 |
+| `args` | 字符串数组 | 程序后面的参数 |
+| `env` | 对象 | 环境变量：值是字，或者 `{"secret": …}`、`{"env": …}` |
+| `venues` | 字符串数组 | 给哪种会话：`local`、`private`、`group`；不写是只给本机的会话 |
+| `timeout_ms` | 整数 | 一次调用等多久，1000 到 3600000；不写是 600000 |
+| `need_load` | 布尔 | 这个服务的工具要先加载；不写的照个人设置里没写的算 |
+
+没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对）；`server_from_package`（个人设置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（个人设置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
+
+**`mcp.remove`**：参数 `name`。从个人设置里删掉这个服务（连同它的子表），回应 `{}`。包里被它盖住的同名服务照包的开关起回来。**出错**：`unknown_server`；`config_file_broken`；`config_conflict`。
+
+## `skill.list`
+
+**参数**：没有。**回应**：`{"skills": [...]}`，核心这一刻用得上的技能，照 `name` 排；同名的几处都有的，只列核心实际用的那一份（自己放的赢；包之间出厂的先于管理员装的，同一层照编号）。一项：
+
+| 名字 | 说明 |
+|---|---|
+| `name` | 技能名 |
+| `display_name`、`summary` | 给人看的名字、一句说明，照连接的语言挑（这种语言没写的照英文、中文、日文的先后）；都没写的没有这一格 |
+| `from` | 从哪来：`home`（管理员自己放的，`home/admin/skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的） |
+| `package` | 随包来的：包的编号 |
+| `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
 
 ## `command.run`
 

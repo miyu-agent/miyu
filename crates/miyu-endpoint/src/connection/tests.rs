@@ -24,6 +24,8 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "package.file",
         "mcp.list",
         "mcp.restart",
+        "mcp.set",
+        "mcp.remove",
         "config.trust",
         "secret.set",
         "secret.delete",
@@ -48,6 +50,8 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "config.schema",
         "config.check",
         "secret.list",
+        // 施工 X-26：同 `package.list`，列装了的。
+        "skill.list",
     ] {
         assert!(!people_only(method), "{method}");
     }

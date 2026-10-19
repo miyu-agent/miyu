@@ -1,5 +1,5 @@
 //! MCP 服务的测试共用的（施工 X-3 上、下）：测试用的服务写成 `bundle` 包、等状态、造会话、看工具面和结果。`tests/mcp.rs`、
-//! `tests/mcp_cache.rs` 用。
+//! `tests/mcp_cache.rs`、`tests/mcp_settings_status.rs`、`tests/mcp_edit.rs` 用。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -150,6 +150,35 @@ pub fn results(home: &Home, session: &str) -> Vec<(String, String, bool, usize)>
     }
     found.sort();
     found
+}
+
+/// `mcp.list` 里叫 `name` 的那一项（施工 F-9 补；施工 X-26 从 `tests/mcp_settings_status.rs` 挪来共用）。
+pub async fn listed(client: &mut Client, name: &str) -> Value {
+    let reply = client.call("l", "mcp.list", json!({})).await;
+    reply["result"]["servers"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .find(|one| one["name"] == name)
+        .cloned()
+        .unwrap_or_else(|| panic!("没有 {name}：{reply}"))
+}
+
+/// 等到 `mcp.list` 里 `name` 那一项合 `wanted`：最多 60 秒。
+pub async fn until_listed(
+    client: &mut Client,
+    name: &str,
+    wanted: impl Fn(&Value) -> bool,
+) -> Value {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        let one = listed(client, name).await;
+        if wanted(&one) {
+            return one;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "等不到：{one}");
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
 }
 
 /// 个人设置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。

@@ -1,6 +1,6 @@
-# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `command.*`, `check`
+# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `command.*`, `check`
 
-Manage packages, extension processes and the MCP servers in personal settings; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
+Manage packages, extension processes and the MCP servers in personal settings; list skills; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
 
 | Method | What it does |
 |---|---|
@@ -14,7 +14,8 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | [`package.upgrades`, `package.upgrade`](#packageupgrades-packageupgrade) | What can be upgraded; upgrade |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
-| [`mcp.list`, `mcp.restart`](#mcplist-mcprestart) | MCP servers in personal settings |
+| [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in personal settings: list, restart, add or replace, remove |
+| [`skill.list`](#skilllist) | List the skills that can be used |
 | [`command.run`](#commandrun) | Run a slash command |
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
@@ -178,13 +179,41 @@ To keep up to date, subscribe to the `extensions` stream.
 
 **Errors**: `unknown_package`; `not_an_extension` (a UI package); `extension_off` (restarting one that's off); `needs_approval`.
 
-## `mcp.list`, `mcp.restart`
+## `mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`
 
-MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/settings.toml`). Add, remove and change them by editing personal settings; that takes effect at once.
+MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/settings.toml`). Editing personal settings by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
 
-**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers).
+**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; left out while unknown (never started, no cache).
 
 **`mcp.restart`**: param `name`. Response: that server. **Errors**: `unknown_server`.
+
+**`mcp.set`**: add a server to personal settings, or replace the one with the same name as a whole.
+
+| Name | Type | Notes |
+|---|---|---|
+| `name` | string, required | Server name: starts with a lowercase letter; lowercase letters, digits and `-` only; at most 32 |
+| `command` | string, required | The program |
+| `args` | array of strings | Arguments after the program |
+| `env` | object | Environment variables: each value is text, or `{"secret": …}`, `{"env": …}` |
+| `venues` | array of strings | Which sessions get it: `local`, `private`, `group`; local sessions only when left out |
+| `timeout_ms` | integer | How long one call may take, 1000 to 3600000; 600000 when left out |
+| `need_load` | boolean | The server's tools must be loaded first; when left out, as if not written in personal settings |
+
+Fields left out are not written: replacing drops what was there before and is not sent again. It is checked by the same rules as reading personal settings and written the way `config.set` writes (with a version, never over a concurrent hand edit). Response `{"name"}`; the server then follows what was written, and state changes push `mcp.changed`. **Errors**: `mcp_invalid` (badly written; `data.problem` says what is wrong); `server_from_package` (personal settings have no server by that name and a package brings one: servers from packages are not changed here); `config_file_broken` (personal settings can't be read, or `mcp` is written in a shape that can't hold a server); `config_conflict`.
+
+**`mcp.remove`**: param `name`. Removes the server (with its sub-tables) from personal settings; response `{}`. A package server it covered starts again according to the package's switch. **Errors**: `unknown_server`; `config_file_broken`; `config_conflict`.
+
+## `skill.list`
+
+**Params**: none. **Response**: `{"skills": [...]}`, the skills the core can use right now, sorted by `name`; when several places have the same name, only the one the core actually uses is listed (your own wins; among packages, built-in before ones the admin installed, then by id). An item:
+
+| Name | Notes |
+|---|---|
+| `name` | Skill name |
+| `display_name`, `summary` | Name and one-line summary for people, picked by the connection's language (falling back to English, Chinese, Japanese in that order); left out when none is written |
+| `from` | Where it comes from: `home` (placed by the admin, `home/admin/skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed) |
+| `package` | For skills from a package: the package id |
+| `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
 
 ## `command.run`
 

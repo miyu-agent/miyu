@@ -1,6 +1,7 @@
 //! 个人设置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
 //! `mcp.restart` 重启一个；状态变了推 `mcp.changed`（订阅软件包列表的连接收，`subscriptions/listed.rs`）。一项同软件包列表上
-//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务。只给本机的人用。
+//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）。只给本机的
+//! 人用。加、换、删在 `editing.rs`（施工 X-26）。
 
 use std::sync::Arc;
 
@@ -9,6 +10,7 @@ use serde_json::{Value, json};
 
 use miyu_config::package::McpServer;
 use miyu_store::scripts::HOME_PACKAGE;
+use miyu_tool::mcp_prefix;
 
 use crate::Core;
 use crate::extensions::methods::details;
@@ -50,7 +52,7 @@ pub(crate) async fn restart(core: &Arc<Core>, params: RestartParams) -> Result<V
     entry(core, &params.name).ok_or(Refusal::UNKNOWN_SERVER)
 }
 
-/// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务。
+/// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务，知道了的另带工具。
 fn one(core: &Core, server: &McpServer) -> Value {
     let status = core.mcp.service(HOME_PACKAGE, &server.name);
     let mut one = json!({
@@ -66,5 +68,22 @@ fn one(core: &Core, server: &McpServer) -> Value {
         status.state,
         &super::stderr_file(core, &server.name),
     );
+    let tools = tools(core, &server.name);
+    if !tools.is_empty() {
+        one["tools"] = json!(tools);
+    }
     one
+}
+
+/// 服务 `service` 这时在工具目录里的工具（施工 X-26），照目录的先后：起好列完的、核心起来时照缓存先登记的都算（同 `preset.get`
+/// 里 `mcp-<名字>` 那个功能的工具）。还不知道的（没起过、缓存也没有）是空的。
+fn tools(core: &Core, service: &str) -> Vec<String> {
+    let prefix = mcp_prefix(service);
+    let catalog = core.tools();
+    catalog
+        .specs()
+        .map(|spec| spec.name.as_str())
+        .filter(|name| catalog.package_of(name) == Some(HOME_PACKAGE) && name.starts_with(&prefix))
+        .map(str::to_string)
+        .collect()
 }

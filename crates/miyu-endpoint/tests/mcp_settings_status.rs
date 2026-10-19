@@ -12,31 +12,6 @@ use miyu_session::testkit::Script;
 use crate::support::mcp::*;
 use crate::support::*;
 
-/// `mcp.list` 里叫 `name` 的那一项。
-async fn listed(client: &mut Client, name: &str) -> Value {
-    let reply = client.call("l", "mcp.list", json!({})).await;
-    reply["result"]["servers"]
-        .as_array()
-        .unwrap_or_else(|| panic!("{reply}"))
-        .iter()
-        .find(|one| one["name"] == name)
-        .cloned()
-        .unwrap_or_else(|| panic!("没有 {name}：{reply}"))
-}
-
-/// 等到 `mcp.list` 里 `name` 那一项合 `wanted`：最多 60 秒。
-async fn until_listed(client: &mut Client, name: &str, wanted: impl Fn(&Value) -> bool) -> Value {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        let one = listed(client, name).await;
-        if wanted(&one) {
-            return one;
-        }
-        assert!(tokio::time::Instant::now() < deadline, "等不到：{one}");
-        tokio::time::sleep(Duration::from_millis(20)).await;
-    }
-}
-
 #[tokio::test]
 async fn covered_services_are_marked_and_settings_servers_are_listed_and_restarted() {
     let home = Home::new();

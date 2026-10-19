@@ -29,6 +29,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "个人设置里没有这个 MCP 服务。",
             "No such MCP server in the personal settings.",
         ),
+        "server_from_package" => (
+            "这个 MCP 服务随软件包提供，不能在这里修改。",
+            "This MCP server comes with a package and cannot be changed here.",
+        ),
+        "mcp_invalid" => ("MCP 服务写法有误。", "Invalid MCP server."),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",

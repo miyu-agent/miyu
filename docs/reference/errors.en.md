@@ -108,6 +108,8 @@ Chinese version: [errors.md](errors.md).
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
 | `extension_off` | Restarting an extension that's off | |
 | `unknown_server` | No such MCP server in personal settings | |
+| `mcp_invalid` | The server sent to `mcp.set` is badly written | `problem` |
+| `server_from_package` | `mcp.set`: personal settings have no server by that name and a package brings one | |
 | `no_page`, `not_found` | No package page; no such file | |
 | `program_not_running`, `unregistered`, `method_failed`, `method_timeout` | `package.call`: the program isn't connected; not registered; it answered with an error; no answer | `method`, `message`, `code` |
 | `not_exported` | An extension called a method the other package doesn't export | `method` |

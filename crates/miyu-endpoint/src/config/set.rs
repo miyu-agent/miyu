@@ -360,16 +360,8 @@ fn changed(
     wanted: &[Wanted],
     words: &Human,
 ) -> Result<Option<String>, Refusal> {
-    let broken = || -> Result<Refusal, Refusal> {
-        let layers = config.layers(None);
-        let mut problems = Vec::new();
-        for problem in file.problems() {
-            problems.push(said(config, &layers, problem, Some(file), words)?);
-        }
-        Ok(Refusal::config_file_broken(problems))
-    };
     if file.broken.is_some() {
-        return Err(broken()?);
+        return Err(broken(config, file, words)?);
     }
     let current = |key: &str| {
         file.parsed
@@ -400,10 +392,24 @@ fn changed(
         };
         text = match edit::apply(&text, change) {
             Ok(text) => text,
-            Err(_) => return Err(broken()?),
+            Err(_) => return Err(broken(config, file, words)?),
         };
     }
     Ok((text != start).then_some(text))
+}
+
+/// 这一份改不了（读不进来，或者要改的那一处放不进去）：`config_file_broken`，带着这份文件的每一处问题，照 `words` 说。
+///
+/// # Errors
+///
+/// 要用的字缺了：内部出错。
+pub(super) fn broken(config: &Config, file: &File, words: &Human) -> Result<Refusal, Refusal> {
+    let layers = config.layers(None);
+    let mut problems = Vec::new();
+    for problem in file.problems() {
+        problems.push(said(config, &layers, problem, Some(file), words)?);
+    }
+    Ok(Refusal::config_file_broken(problems))
 }
 
 /// 写成了：换上新的一份、重算最终值，记日志和运行日志，推给订阅着配置的头（发这一条的连接先见推送、后见回应，施工 8-4），

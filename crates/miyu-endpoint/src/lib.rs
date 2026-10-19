@@ -70,6 +70,7 @@ pub mod search_sources;
 mod secrets;
 mod sessions;
 pub mod settings;
+mod skills;
 mod spawn;
 mod subscriptions;
 mod system_accounts;

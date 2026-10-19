@@ -108,6 +108,8 @@
 | `not_restartable`、`package_off` | 没有能重启的；关着 | |
 | `extension_off` | 重启一个关着的扩展 | |
 | `unknown_server` | 个人设置里没有这个 MCP 服务 | |
+| `mcp_invalid` | `mcp.set` 交来的服务写错了 | `problem` |
+| `server_from_package` | `mcp.set`：个人设置里没写这个名字，有包带着同名服务 | |
 | `no_page`、`not_found` | 没有后台页；没有这份文件 | |
 | `program_not_running`、`unregistered`、`method_failed`、`method_timeout` | `package.call`：程序没连着；没登记；回了错；没回 | `method`、`message`、`code` |
 | `not_exported` | 扩展调了对方没导出的方法 | `method` |

@@ -49,6 +49,12 @@ impl Refusal {
         reason: "unknown_server",
         data: None,
     };
+    /// 个人设置里没写这个名字、有包带着同名的 MCP 服务（施工 X-26，`mcp.set`）：随包来的不经它改。
+    pub(crate) const SERVER_FROM_PACKAGE: Refusal = Refusal {
+        code: REFUSED,
+        reason: "server_from_package",
+        data: None,
+    };
     /// 重启关着的包（施工 X-4，`package.restart`）。
     pub(crate) const PACKAGE_OFF: Refusal = Refusal {
         code: REFUSED,
@@ -163,6 +169,11 @@ impl Refusal {
             data.insert("line".to_string(), serde_json::json!(line));
         }
         refusal
+    }
+
+    /// `mcp.set` 交来的服务写错了（施工 X-26）：`data.problem` 照连接的语言说哪里不对。
+    pub(crate) fn mcp_invalid(problem: String) -> Refusal {
+        Refusal::with("mcp_invalid", "problem", serde_json::Value::String(problem))
     }
 
     /// `provide` 的一件工具规格不对、撞名（施工 O-2 上）：`data.tool` 是哪一件，`data.problem` 是哪一条。

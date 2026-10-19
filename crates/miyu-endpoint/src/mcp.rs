@@ -5,10 +5,12 @@
 //! （`system/extensions.json`，没写的关着）；扩展包带的跟着扩展起停（施工 X-3 下）。核心起来时起开着的包的服务
 //! （[`Core::start_extensions`] 里），停的时候一起关掉；有在跑、在等着重启的，核心不算空闲。怎么起一个在 `launch.rs`，看管在
 //! `supervise.rs`，目录缓存在 `cache.rs`，工具名、规格在 `spec.rs`，一件工具在 `tool.rs`，结果换块在 `content.rs`，开关在
-//! `switch.rs`。管理员个人设置里的服务挂在 `~home` 下，盖住包里同名的（施工 F-9 下，`home.rs`）。
+//! `switch.rs`。管理员个人设置里的服务挂在 `~home` 下，盖住包里同名的（施工 F-9 下，`home.rs`）；头经 `mcp.set`、`mcp.remove`
+//! 改那几张表（施工 X-26，`editing.rs`，字怎么改在 `written.rs`）。
 
 mod cache;
 mod content;
+pub(crate) mod editing;
 pub(crate) mod home;
 mod launch;
 pub(crate) mod methods;
@@ -16,6 +18,7 @@ mod spec;
 mod supervise;
 mod switch;
 mod tool;
+mod written;
 
 pub(crate) use cache::forget;
 pub(crate) use home::HomeMcp;

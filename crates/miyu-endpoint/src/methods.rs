@@ -86,7 +86,7 @@ pub(crate) fn call<'a>(
             .await
         }),
         // 软件包的几个方法（施工 F-8 中上挪出去：这里放不下了）。
-        name if ["package.", "mcp.", "widget."]
+        name if ["package.", "mcp.", "widget.", "skill."]
             .iter()
             .any(|at| name.starts_with(at)) =>
         {

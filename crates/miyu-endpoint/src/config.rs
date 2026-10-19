@@ -7,6 +7,7 @@
 //! - [`Config::resolved`]：不算项目配置的最终值；`Config::with_project`：照一个目录带上项目配置。
 //! - 协议上的 `config.schema`、`config.get`、`config.check` 在 `config/methods.rs`，`config.set` 在 `config/set.rs`，
 //!   `config.trust` 在 `config/trusting.rs`（施工 8-3），写成 JSON 的几样在 `config/wire.rs`，留痕在 `config/journal.rs`。
+//!   配置清单装不下的表照代码改整份字（`mcp.set`、`mcp.remove`，施工 X-26）在 `config/rewrite.rs`。
 //!
 //! 只有核心写配置文件（G4），核心里只有这一个配置服务：它住在一把锁里，改、查排着队一件件办。改之前先把文件重读一遍，
 //! 手改过的照新的字改（G5 第 4 条）；写成了换上新的最终值，新的连接、新的会话照它。
@@ -29,9 +30,10 @@ pub(crate) mod journal;
 pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
-mod project;
+pub(crate) mod project;
 pub(crate) mod push;
 pub(crate) mod refit;
+pub(crate) mod rewrite;
 pub(crate) mod set;
 mod trust;
 pub(crate) mod trusting;

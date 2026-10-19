@@ -26,6 +26,8 @@ pub(super) fn people_only(method: &str) -> bool {
                 | "package.file"
                 | "mcp.list"
                 | "mcp.restart"
+                | "mcp.set"
+                | "mcp.remove"
                 | "config.trust"
                 | "secret.set"
                 | "secret.delete"
