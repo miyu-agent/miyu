@@ -15,10 +15,11 @@ use rustix::termios::{self, LocalModes, OptionalActions, SpecialCodeIndex};
 
 use super::hidden::{Step, read_line};
 
-/// 关掉回显读一行。
-pub(super) fn read_hidden() -> io::Result<Option<String>> {
+/// 关掉回显读一行：切好模式再印提示 `prompt`。
+pub(super) fn read_hidden(prompt: &mut dyn FnMut()) -> io::Result<Option<String>> {
     let stdin = io::stdin();
     let _guard = Guard::enter(&stdin)?;
+    prompt();
     let mut lock = stdin.lock();
     read_line(|| {
         let mut byte = [0u8; 1];

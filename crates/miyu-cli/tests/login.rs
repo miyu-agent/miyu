@@ -53,7 +53,8 @@ impl Console for Fake {
         self.terminal
     }
 
-    fn hidden(&mut self) -> io::Result<Option<String>> {
+    fn hidden(&mut self, prompt: &mut dyn FnMut()) -> io::Result<Option<String>> {
+        prompt();
         self.hidden += 1;
         match self.cancelled {
             true => Err(io::Error::new(io::ErrorKind::Interrupted, "test cancel")),

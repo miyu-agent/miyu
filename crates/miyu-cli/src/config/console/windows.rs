@@ -22,10 +22,11 @@ use windows_sys::Win32::System::Console::{
 
 use super::hidden::{Step, read_line};
 
-/// 关掉回显读一行。
-pub(super) fn read_hidden() -> io::Result<Option<String>> {
+/// 关掉回显读一行：切好模式再印提示 `prompt`。
+pub(super) fn read_hidden(prompt: &mut dyn FnMut()) -> io::Result<Option<String>> {
     let console = OpenOptions::new().read(true).write(true).open("CONIN$")?;
     let _guard = Guard::enter(&console)?;
+    prompt();
     // `(&console).read(...)` 走 `&File` 那个 `Read` 实现，只借一下、不用 `&mut console`：`_guard` 借着 `console`
     // 到这个函数结束（它的 `Drop` 要写回模式），这里要是写成 `console.read(...)` 会跟它的借用撞上。
     read_line(|| {

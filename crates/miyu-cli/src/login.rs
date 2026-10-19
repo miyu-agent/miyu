@@ -288,8 +288,11 @@ impl Keys<'_> {
         };
         let read = match self.console.typed() {
             true => {
-                write(self.err, &language.paste_key(&name));
-                self.console.hidden().map(Option::unwrap_or_default)
+                let prompt = language.paste_key(&name);
+                let err = &mut *self.err;
+                self.console
+                    .hidden(&mut || write(err, &prompt))
+                    .map(Option::unwrap_or_default)
             }
             false => self.console.all(),
         };

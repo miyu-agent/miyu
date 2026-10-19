@@ -118,12 +118,35 @@ impl Capture {
     /// 子进程走完，交回它的退出码和收到的全部字。读的线程这时该已经自己结束了（从端的三份文件描述符都是子进程的，
     /// 它一退出、读的线程马上也会读到「从端全关了」收尾），等它一下确保真的收全了。
     fn finish(self, child: &mut std::process::Child) -> (i32, String) {
-        let status = child.wait().expect("等得到");
+        // 等它退出至多一分钟：等不到的杀掉、连同屏幕上的字报出来，不让整套测试挂死在这里。
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+        let status = loop {
+            if let Some(status) = child.try_wait().expect("看得了") {
+                break status;
+            }
+            if std::time::Instant::now() > deadline {
+                stop(child);
+                let screen = String::from_utf8_lossy(&self.buffer.lock().expect("锁没中毒"))
+                    .replace('\r', "");
+                panic!("一分钟没退出，杀掉了。屏幕上：\n{screen}");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        };
         let buffer = Arc::clone(&self.buffer);
         self.reader.join().expect("读的线程没 panic");
         let text = String::from_utf8_lossy(&buffer.lock().expect("锁没中毒")).replace('\r', "");
         (status.code().expect("Unix 上有退出码"), text)
     }
+}
+
+/// 杀掉、收走子进程：杀不掉、等不到的（已经自己退了）不要紧，调的一方照样报。
+#[expect(
+    clippy::let_underscore_must_use,
+    reason = "只是收尾：杀不掉的照样往下报屏幕上的字"
+)]
+fn stop(child: &mut std::process::Child) {
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 /// 起核心，交回数据根；核心起来以后再建伪终端，免得核心自己的日志混进屏幕（施工 8-5 补）。

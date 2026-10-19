@@ -285,8 +285,10 @@ impl<'a> Flow<'a> {
                     true => language.paste_key_optional().to_string(),
                     false => language.paste_key(name),
                 };
-                write(self.err, &prompt);
-                self.console.hidden().map(Option::unwrap_or_default)
+                let err = &mut *self.err;
+                self.console
+                    .hidden(&mut || write(err, &prompt))
+                    .map(Option::unwrap_or_default)
             }
             false => self.console.all(),
         };

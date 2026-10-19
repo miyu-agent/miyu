@@ -37,13 +37,14 @@ pub trait Console {
     fn edit(&mut self, path: &Path) -> io::Result<Option<i32>>;
     /// 标准输入是终端：人在敲（施工 8-5：贴 key 要关掉回显；不是的整份读管道）。
     fn typed(&self) -> bool;
-    /// 关掉回显读一行，去掉换行：贴 key 用，敲的字不出现在屏幕上（施工 8-5）。读到头了是空的。
+    /// 关掉回显读一行，去掉换行：贴 key 用，敲的字不出现在屏幕上（施工 8-5）。读到头了是空的。先关回显、切成一个字节一个
+    /// 字节读，再调 `prompt` 印提示（看到提示就贴的，字节一定在切换以后到：之前到的 `Ctrl+C` 会被终端当成信号键吃掉）。
     ///
     /// # Errors
     ///
     /// 读不了终端、关不掉回显；按了 `Ctrl+C`，或者还没攒到字时按了 `Ctrl+D`：当人不要了，`kind()` 是
     /// [`io::ErrorKind::Interrupted`]（施工 8-5 补）。
-    fn hidden(&mut self) -> io::Result<Option<String>>;
+    fn hidden(&mut self, prompt: &mut dyn FnMut()) -> io::Result<Option<String>>;
     /// 把标准输入整份读进来（施工 8-5：`echo "$KEY" | miyu login deepseek`）。
     ///
     /// # Errors
@@ -92,11 +93,11 @@ impl Console for Terminal {
         io::stdin().is_terminal()
     }
 
-    fn hidden(&mut self) -> io::Result<Option<String>> {
+    fn hidden(&mut self, prompt: &mut dyn FnMut()) -> io::Result<Option<String>> {
         #[cfg(unix)]
-        return unix::read_hidden();
+        return unix::read_hidden(prompt);
         #[cfg(windows)]
-        return windows::read_hidden();
+        return windows::read_hidden(prompt);
     }
 
     fn all(&mut self) -> io::Result<String> {
