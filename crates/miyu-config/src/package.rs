@@ -11,6 +11,7 @@ use crate::phrases::Phrases;
 mod capability;
 mod code;
 mod content;
+mod credits;
 mod features;
 mod kinds;
 mod links;
@@ -101,6 +102,10 @@ pub struct Manifest {
     pub needs: Vec<Need>,
     /// 能装在哪几种系统上（施工 G-1，`[package] targets`）：照 [`Target::ALL`] 的先后；没写的是空的，哪种都能装。
     pub targets: Vec<Target>,
+    /// 作者（施工 F-12，`[package] author`）：没写的没有。
+    pub author: Option<String>,
+    /// 上游：这个包的源码仓库，`https://` 开头（施工 F-12，`[package] upstream`）：没写的没有。
+    pub upstream: Option<String>,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -415,6 +420,8 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         content,
         needs: head.needs,
         targets: head.targets,
+        author: head.credits.author,
+        upstream: head.credits.upstream,
     })
 }
 

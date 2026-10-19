@@ -14,6 +14,8 @@ version = "0.1.0"                                   # optional, for people only
 protocol = [1, 1]                                   # required for extensions: protocol major versions [lowest, highest]; only 1 exists
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
+author = "Alice <alice@example.com>"               # optional
+upstream = "https://github.com/alice/hello"         # source repository, optional
 icon = "hand"                                       # a Lucide icon name, optional
 needs = ["images"]                                  # optional: off where images can't be shown (voice)
 targets = ["linux-x86_64", "macos-aarch64"]         # optional: the systems its own programs run on
@@ -67,6 +69,8 @@ place = "status"
 | `protocol` | Required for packages with a program: `[lowest, highest]`; only `1` exists |
 | `version` | Version, for people only |
 | `summary` | A one-line summary |
+| `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
+| `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
 | `icon` | A Lucide icon name |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
 | `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |

@@ -113,6 +113,12 @@ pub fn write(root: &Path, desc: &Desc, files: &[Entry]) -> io::Result<()> {
     fs::rename(&staged, &target)
 }
 
+/// 包 `id` 装的时候记下的来源仓库（施工 F-12：信息页写「从官方软件源装的」）：只读 `desc`，不读文件清单。没记的、读不了的没有。
+pub fn origin(root: &Path, id: &str) -> Option<String> {
+    let text = fs::read_to_string(root.join(id).join("desc")).ok()?;
+    serde_json::from_str::<Desc>(&text).ok()?.origin
+}
+
 /// 读本地库 `root` 里的包 `id`；没记的、读不懂的没有。
 pub fn read(root: &Path, id: &str) -> Option<(Desc, Vec<Entry>)> {
     let dir = root.join(id);

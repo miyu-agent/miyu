@@ -14,6 +14,8 @@ version = "0.1.0"                                   # 可以不写，只给人�
 protocol = [1, 1]                                   # 扩展必写：说得了的协议主版本 [最低, 最高]，现在只有 1
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
+author = "Alice <alice@example.com>"               # 作者，可以不写
+upstream = "https://github.com/alice/hello"         # 源码仓库，可以不写
 icon = "hand"                                       # Lucide 的图标名，可以不写
 needs = ["images"]                                  # 可以不写：显示不了图片的地方（语音）整包当没开
 targets = ["linux-x86_64", "macos-aarch64"]         # 可以不写：带了本机程序的写它能跑的几种系统
@@ -67,6 +69,8 @@ place = "status"
 | `protocol` | 带程序的包必写：`[最低, 最高]`，现在只有 `1` |
 | `version` | 版本，只给人看 |
 | `summary` | 一句说明 |
+| `author` | 作者：人名、组织名，可以带邮箱，一行，至多 100 个字。软件包信息页上露出来 |
+| `upstream` | 上游：这个包的源码仓库，`https://` 开头。软件包信息页上露出来 |
 | `icon` | Lucide 的图标名 |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
 | `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |

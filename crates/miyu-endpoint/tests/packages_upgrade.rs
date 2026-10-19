@@ -116,6 +116,46 @@ async fn an_installed_package_is_upgraded_and_local_ones_are_left_alone() {
         .call("i", "package.info", json!({"package": "local"}))
         .await;
     assert_eq!(local["result"]["version"], "1.0", "从文件夹装的不碰");
+    // 从哪来（施工 F-12）：软件源装的是官方的，文件夹装的是本地的，出厂的是出厂；出厂的带作者、上游。
+    assert_eq!(
+        (&info["result"]["from"], &local["result"]["from"]),
+        (&json!("official"), &json!("local"))
+    );
+    let listed = client.call("l", "package.list", json!({})).await;
+    let item = |id: &str| {
+        listed["result"]["packages"]
+            .as_array()
+            .and_then(|all| all.iter().find(|one| one["package"] == id).cloned())
+            .unwrap_or_else(|| panic!("有 {id}：{listed}"))
+    };
+    assert_eq!(item("app")["from"], "official");
+    assert_eq!(item("local")["from"], "local");
+    let shipped = item("basesystem");
+    assert_eq!(
+        (&shipped["from"], &shipped["author"], &shipped["upstream"]),
+        (
+            &json!("shipped"),
+            &json!("miyu-agent"),
+            &json!("https://github.com/miyu-agent/miyu")
+        ),
+        "{shipped}"
+    );
+    let info = client
+        .call("b", "package.info", json!({"package": "basesystem"}))
+        .await;
+    assert_eq!(
+        (
+            &info["result"]["author"],
+            &info["result"]["upstream"],
+            &info["result"]["from"]
+        ),
+        (
+            &json!("miyu-agent"),
+            &json!("https://github.com/miyu-agent/miyu"),
+            &json!("shipped")
+        ),
+        "{info}"
+    );
     let again = client.call("u", "package.upgrades", json!({})).await;
     assert_eq!(again["result"]["upgrades"], json!([]), "{again}");
 }

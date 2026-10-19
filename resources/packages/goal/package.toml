@@ -2,6 +2,8 @@
 # 功能，编号 goal：工具 `goal`、续轮。给人看的字，不发给模型。
 
 [package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
 protocol = [1, 1]
 name = { en = "Long-running goals", zh = "长期目标", ja = "長期目標" }
 summary = { en = "Hand over a long task; the AI keeps working on it round after round", zh = "交代一件要做很久的事，AI 自己一轮轮做下去", ja = "時間のかかる仕事を任せると、AI が自分で一ラウンドずつ進めます" }

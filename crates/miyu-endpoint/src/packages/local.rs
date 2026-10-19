@@ -148,6 +148,22 @@ pub(crate) async fn info(core: &Arc<Core>, params: InfoParams) -> Result<Value, 
     if let Some(version) = version {
         answer["version"] = json!(version);
     }
+    // 作者、上游、从哪来（施工 F-12）：同 `package.list` 的那几格。
+    let now = core.packages();
+    if let Some(found) = now.iter().find(|one| one.id == params.package) {
+        let places = packages(core);
+        answer["from"] = json!(super::fill::from(found, &places).as_str());
+        if let Ok(manifest) = &found.read {
+            for (key, value) in [
+                ("author", &manifest.author),
+                ("upstream", &manifest.upstream),
+            ] {
+                if let Some(value) = value {
+                    answer[key] = json!(value);
+                }
+            }
+        }
+    }
     if let Some(desc) = desc {
         answer["installed"] = json!(desc.installed);
         if !desc.source.is_empty() {

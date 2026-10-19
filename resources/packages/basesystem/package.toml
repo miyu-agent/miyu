@@ -2,6 +2,8 @@
 # 给人看的字，不发给模型。
 
 [package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
 required = true
 protocol = [1, 1]
 name = { en = "Base system", zh = "基础系统", ja = "基本システム" }

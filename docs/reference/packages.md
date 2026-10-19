@@ -32,6 +32,8 @@
 | `package`、`layer` | 编号，`shipped` 或 `home` |
 | `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
+| `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
+| `from` | 从哪来：`shipped`（出厂）、`official`（从官方软件源装的）、`local`（本机文件夹、包文件装的）；以后有了社区软件源再多 `community` |
 | `version`、`protocol`、`state` | 版本、说的协议版本、状态 |
 | `required` | 必需的，卸不了 |
 | `features` | 里面的功能（预设照它开关） |
@@ -47,7 +49,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.info` | `package` | `{"package", "layer", "files", "size", "version"?, "installed"?, "source"?}`：几个文件、多少字节、装的时刻、从哪装的 |
+| `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`：从哪来（同 `package.list`）、几个文件、多少字节、作者、上游、装的时刻、装的时候的本机路径 |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
 | `package.check` | `package`（可不写） | `{"packages": [{"package", "modified", "missing", "extra"}…]}`：家目录里装的包，装好以后改了、少了、多了的文件 |

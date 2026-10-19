@@ -62,6 +62,9 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
             json!({
                 "package": "mermaid",
                 "layer": "shipped",
+                "from": "shipped",
+                "author": "miyu-agent",
+                "upstream": "https://github.com/miyu-agent/miyu",
                 "kind": "builtin",
                 "protocol": [1, 1],
                 "name": "画 mermaid 图",
@@ -73,6 +76,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
             json!({
                 "package": "term",
                 "layer": "home",
+                "from": "local",
                 "kind": "ui",
                 "version": "0.0.1",
                 "protocol": [1, 1],
@@ -159,6 +163,7 @@ args = ["serve"]
             json!({
                 "package": "xbase",
                 "layer": "home",
+                "from": "local",
                 "kind": "builtin",
                 "protocol": [1, 1],
                 "name": "基础",
@@ -173,6 +178,7 @@ args = ["serve"]
             json!({
                 "package": "xbridge",
                 "layer": "home",
+                "from": "local",
                 "kind": "process",
                 "protocol": [1, 1],
                 "name": "接入X",
@@ -187,6 +193,7 @@ args = ["serve"]
             json!({
                 "package": "xembed",
                 "layer": "home",
+                "from": "local",
                 "kind": "worker",
                 "protocol": [1, 1],
                 "name": "Model",

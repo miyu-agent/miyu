@@ -32,6 +32,8 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | `package`, `layer` | Id; `shipped` or `home` |
 | `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
+| `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
+| `from` | Where it came from: `shipped`, `official` (installed from the official software source), `local` (a local folder or package file); `community` will join once community sources exist |
 | `version`, `protocol`, `state` | Version, protocol it speaks, state |
 | `required` | Required; can't be removed |
 | `features` | Its features (presets switch these) |
@@ -47,7 +49,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 
 | Method | Params | Response |
 |---|---|---|
-| `package.info` | `package` | `{"package", "layer", "files", "size", "version"?, "installed"?, "source"?}`: file count, bytes, install time, where it was installed from |
+| `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`: where it came from (as in `package.list`), file count, bytes, author, upstream, install time, the local path it was installed from |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`; `path` is relative to `dir` |
 | `package.owns` | `path` (absolute) | `{"package", "layer", "path", "recorded"}`; `{"package": null}` when no package owns it |
 | `package.check` | `package` (optional) | `{"packages": [{"package", "modified", "missing", "extra"}…]}`: for packages in the home layer, files changed, missing or added since installation |

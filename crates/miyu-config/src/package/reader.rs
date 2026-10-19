@@ -15,6 +15,7 @@ pub(super) struct Head {
     pub(super) icon: Option<String>,
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
+    pub(super) credits: super::credits::Credits,
 }
 
 /// 照原文算行号。
@@ -91,6 +92,7 @@ impl Reader<'_> {
             "package",
             &[
                 "version", "protocol", "name", "summary", "required", "icon", "needs", "targets",
+                "author", "upstream",
             ],
         )?;
         let version = match table.get("version") {
@@ -113,6 +115,7 @@ impl Reader<'_> {
         };
         let needs = self.needs(table)?;
         let targets = self.targets(table)?;
+        let credits = super::credits::read(self, table)?;
         Ok(Head {
             version,
             protocol,
@@ -122,6 +125,7 @@ impl Reader<'_> {
             icon,
             needs,
             targets,
+            credits,
         })
     }
 

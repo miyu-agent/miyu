@@ -2,6 +2,8 @@
 # `kb_search`、`kb_read`。知识库的文件、人经协议查（`kb.*`）不看这个包装没装：文件是人的。给人看的字，不发给模型。
 
 [package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
 protocol = [1, 1]
 name = { en = "Knowledge base", zh = "知识库", ja = "ナレッジベース" }
 summary = { en = "Let her look things up in your notes and documents", zh = "让她查你放进来的笔记和文档", ja = "あなたのノートや文書を調べられるようにします" }

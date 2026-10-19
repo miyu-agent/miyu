@@ -20,6 +20,7 @@ use crate::Core;
 mod archive;
 pub(crate) mod changes;
 pub(crate) mod depends;
+pub(crate) mod fill;
 mod folder;
 pub(crate) mod left;
 pub(crate) mod local;
@@ -34,7 +35,6 @@ pub(crate) mod switch;
 pub(crate) mod verify;
 use crate::config::methods::words;
 use crate::hello::Peer;
-use crate::personas::pick;
 use crate::refusal::Refusal;
 pub use status::absent;
 
@@ -153,7 +153,8 @@ fn listed(
     }
     match &found.read {
         Ok(manifest) => {
-            fill(&mut item, &found.id, manifest, language);
+            fill::fill(&mut item, &found.id, manifest, language);
+            item["from"] = json!(fill::from(found, places).as_str());
             services::fill(core, &found.id, &mut item);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
@@ -196,129 +197,6 @@ fn listed(
         }
     }
     item
-}
-
-/// 读成了的几格；没有的不写。
-fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
-    item["kind"] = json!(manifest.kind.as_str());
-    if let Some(protocol) = manifest.protocol {
-        item["protocol"] = json!(protocol);
-    }
-    item["name"] = json!(pick(&manifest.name, language));
-    if let Some(version) = &manifest.version {
-        item["version"] = json!(version);
-    }
-    if let Some(summary) = pick(&manifest.summary, language) {
-        item["summary"] = json!(summary);
-    }
-    if let Some(command) = &manifest.command {
-        item["command"] = json!({
-            "name": command.name,
-            "program": command.program,
-            "about": pick(&command.about, language),
-        });
-    }
-    if let Some(process) = &manifest.process {
-        item["process"] = json!({"args": process.args, "start": process.start.as_str()});
-    }
-    if let Some(ui) = &manifest.ui {
-        item["opens"] = json!(ui.opens);
-        if let Some(dir) = &ui.pages_dir {
-            item["pages_dir"] = json!(dir);
-        }
-    }
-    if let Some(check) = &manifest.check {
-        item["check"] = json!({"args": check.args});
-    }
-    links(item, id, manifest, language);
-}
-
-/// 施工 F-1 加的几格（设计 30）：必需的、带的功能（照包算的那一个也列，名字、说明照语言挑；不列工具）、平台接入、依赖、小程序。
-fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
-    if manifest.required {
-        item["required"] = json!(true);
-    }
-    if matches!(
-        manifest.kind,
-        PackageKind::Builtin | PackageKind::Process | PackageKind::Bundle
-    ) {
-        let features: Vec<Value> = manifest
-            .features_of(id)
-            .iter()
-            .map(|feature| {
-                let mut listed = json!({"id": feature.id, "name": pick(&feature.name, language)});
-                if let Some(summary) = pick(&feature.summary, language) {
-                    listed["summary"] = json!(summary);
-                }
-                listed
-            })
-            .collect();
-        item["features"] = json!(features);
-    }
-    if let Some(connection) = &manifest.connection {
-        item["connection"] = json!({"platform": connection.platform});
-    }
-    // 依赖、推荐的包（施工 F-11：以前只写小程序，叫 `workers`）。
-    for (key, packages) in [
-        ("depends", &manifest.depends),
-        ("recommends", &manifest.recommends),
-    ] {
-        if !packages.is_empty() {
-            item[key] = json!({"packages": packages});
-        }
-    }
-    // 给别的软件调的方法（施工 F-11，接入QQ 照它找挂在自己身上的包）。
-    if !manifest.export.is_empty() {
-        item["export"] = json!({"methods": manifest.export});
-    }
-    if let Some(worker) = &manifest.worker {
-        item["worker"] = json!({"program": worker.program, "args": worker.args});
-    }
-    if let Some(icon) = &manifest.icon {
-        item["icon"] = json!(icon);
-    }
-    if let Some(mascot) = &manifest.mascot {
-        item["mascot"] = json!({"model": mascot.model});
-    }
-    // 带的 MCP 服务（施工 X-2）：名字、拉起它的命令（人看得到会在这台机器上跑什么）、给哪种会话；环境变量不列（可能引用密钥）。
-    if !manifest.mcp.is_empty() {
-        let servers: Vec<Value> = manifest
-            .mcp
-            .iter()
-            .map(|server| {
-                json!({"name": server.name, "command": server.command, "venues": server.venues})
-            })
-            .collect();
-        item["mcp"] = json!(servers);
-    }
-    // 界面块（施工 X-15 上，`widgets.md`）：头照它知道这个包在哪几个位置放东西、哪几页能开。
-    if !manifest.widgets.is_empty() {
-        let widgets: Vec<Value> = manifest
-            .widgets
-            .iter()
-            .map(|widget| {
-                let scope = if widget.per_session {
-                    "session"
-                } else {
-                    "global"
-                };
-                let mut one =
-                    json!({"id": widget.id, "place": widget.place.as_str(), "scope": scope});
-                if let Some(title) = widget
-                    .title
-                    .as_ref()
-                    .and_then(|title| pick(title, language))
-                {
-                    one["title"] = json!(title);
-                }
-                if let Some(command) = &widget.command {
-                    one["command"] = json!(command);
-                }
-                one
-            })
-            .collect();
-        item["widgets"] = json!(widgets);
-    }
 }
 
 /// 说的协议版本不包含核心的：交回给人看的那个范围，例如 `2–3`；包含的、不说协议的（吉祥物包）没有。

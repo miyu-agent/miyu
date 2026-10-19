@@ -531,6 +531,8 @@
     "package-problems/bad_mcp": "Badly written MCP server: {detail}",
     "package-problems/bad_slash": "Badly written slash command: {detail}",
     "package-problems/bad_search": "Badly written search source: {detail}",
+    "package-problems/bad_author": "Badly written author: {detail}",
+    "package-problems/bad_upstream": "Bad upstream address: {detail}",
     "package-problems/bad_widget": "Badly written widget: {detail}",
     "package-problems/bad_content": "Badly written content for another package: {detail}",
     "package-problems/bad_needs": "Unknown or repeated need, only images is known: {detail}",

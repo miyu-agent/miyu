@@ -46,6 +46,8 @@ name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル�
 summary = { en = "…", zh = "…" } # 可以不写
 needs = ["images"]               # 要这个地方有什么才有用（施工 X-25），可以不写；现在只认 images：显示不了图片的会话里整包当没开
 targets = ["linux-x86_64"]       # 能装在哪几种系统上（施工 G-1，设计 37 第二节第 3 条），可以不写（哪种都能装）；只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，带了本机程序的写它能跑的几种
+author = "miyu-agent"              # 作者（施工 F-12，项目主人 2026-10-19 定每个包都写），可以不写；一行，1 到 100 个字
+upstream = "https://github.com/miyu-agent/miyu"   # 上游源码仓库（施工 F-12），可以不写；https:// 开头，至多 300 个字。`package.list`、`package.info` 原样交出去，另交 `from`（shipped、official、local）
 
 [command]                        # 可以没有
 name = "tui"                     # miyu 后面敲的那个词：小写字母开头，小写字母、数字、-，最多 32 个
@@ -309,6 +311,9 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_content` | `[content.<包>]` 写错了（施工 X-22，「给别的包带的内容」）：键不是包的编号、不是表、`dir` 不是包目录里的相对目录 |
 | `bad_needs` | `[package] needs` 里有不认识的、重复的词（施工 X-25）：现在只认 `images` |
 | `bad_targets` | `[package] targets` 里有不认识的、重复的系统（施工 G-1） |
+| `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
+| `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |
+| `bad_upstream` | `[package] upstream` 不是 `https://` 开头、不带空白、至多 300 个字的网址（施工 F-12） |
 | `depends_missing` | 装着的包依赖的包缺了（施工 F-11，`miyu check` 是错误）：`detail` 是缺的那几个，逗号分开 |
 | `protocol_mismatch` | 读成了，说的协议版本不包含 1（列表里照样带全；`miyu check` 是警告） |
 | `check_failed`、`check_unavailable`、`check_output` | 跑包的检查（施工 9-2，都是警告）：跑坏了、到时没完；程序没找到；印了看不懂的行 |
