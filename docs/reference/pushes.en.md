@@ -6,7 +6,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 |---|---|---|
 | `event` | `events` | `{"session", "event"}`: one event of the session, as-is (see [Events](events.en.md)); replays use it too |
 | `view.add`, `view.update`, `view.append`, `view.hidden`, `view.remove`, `view.status` | `view` | See [View stream](view.en.md) |
-| `sessions.changed` | `sessions` | `{"session", "entry"}`: one item of the session list, replaced whole (as in `session.list`); deleted ones are `{"session", "removed": true}` |
+| `sessions.changed` | `sessions` | `{"session", "entry"}`: one item of the session list, replaced whole (as in `session.list`); deleted ones are `{"session", "removed": true}`. When a child changes, its parent and ancestors (whose `tokens` include their descendants) are pushed too, level by level |
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`: a config layer changed; `keys` as in `config.set`'s response; `via` is `set`, `edit`, `file` (edited by hand), `package` (after installing or removing packages) |
 | `extension.changed` | `extensions` | `{"entry"}`: one extension's status, as in `extension.status` |
 | `package.changed` | `packages` | `{"package", "entry"}`: one item of the package list; `entry` is `null` when gone |

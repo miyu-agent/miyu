@@ -64,13 +64,13 @@
 |---|---|
 | `session` | 新会话的编号 |
 | `events` | `[1]`：`session.created` 那一条；带了 `project` 的是 `[1, 2]` |
-| `cwd` | 会话实际在哪个目录干活 |
+| `cwd` | 会话实际在哪个目录干活，人看到的写法（家目录下的写成 `~/…`，同 `session.list`） |
 | `wide` | `true`：目录太宽、照人选的用着 |
 | `untrusted_project` | 这个目录有项目配置、还没决定信不信任的，写它在哪 |
 
 ```json
 → {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
-← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
+← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
 ```
 
 同一个 `id` 再发，交回上一次造的那一个，不再造。
@@ -105,6 +105,7 @@
 | `pinned` | `true`：置顶了 |
 | `busy` | `true`：有回合在进行 |
 | `persona`、`preset` | 用哪个人格、预设，没有的不写 |
+| `tokens` | 连同它派出去的子会话（一层层往下）一共用了多少 token：每次模型调用（主请求、起标题、压缩都算）的输入（没命中、缓存读、缓存写）加输出，和终端底栏的 `Σ` 同一个算法；还是 0 的不写 |
 | `project` | 在哪个项目，不在的不写 |
 
 只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。
@@ -132,7 +133,7 @@
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"看看这张图","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
-← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[42]}}
+← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[42]}}
 ```
 
 **出错**

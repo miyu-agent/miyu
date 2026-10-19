@@ -64,13 +64,13 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 |---|---|
 | `session` | The new session's id |
 | `events` | `[1]`: the `session.created` event; `[1, 2]` with `project` |
-| `cwd` | Where the session actually works |
+| `cwd` | Where the session actually works, as people write it (`~/…` under the home directory, same as `session.list`) |
 | `wide` | `true`: the directory is too wide and is used because the person chose it |
 | `untrusted_project` | The directory has a project config not yet trusted or rejected: where it is |
 
 ```json
 → {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
-← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
+← {"id":"c1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[1],"session":"01a14aca-d2c4-768c-acc6-a67e35106d22"}}
 ```
 
 Sending the same `id` again returns the session created the first time.
@@ -105,6 +105,7 @@ Sending the same `id` again returns the session created the first time.
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
 | `persona`, `preset` | Which persona and preset; omitted when none |
+| `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
 | `project` | Which project it is in; omitted when none |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
@@ -132,7 +133,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"Look at this image","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
-← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[42]}}
+← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[42]}}
 ```
 
 **Errors**

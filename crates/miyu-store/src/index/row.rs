@@ -50,6 +50,9 @@ pub struct Row {
     pub preset: Option<String>,
     /// 在哪个项目（施工 H-2）：最后一条写了 `project` 的 `session.meta_changed`，移出来了、没进过的是空的。
     pub project: Option<String>,
+    /// 这个会话自己的模型调用一共用了多少 token：每条带用量的 `model.called`（主请求、起标题、压缩这些都算）的输入（没命中、
+    /// 缓存读、缓存写）加输出。终端底栏的 `Σ` 同一个算法；子代理的另算在它们自己的行里，列会话时加上去。
+    pub tokens: u64,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -83,6 +86,7 @@ impl Row {
             persona: created.persona.clone(),
             preset: created.preset.clone(),
             project: None,
+            tokens: 0,
         })
     }
 
@@ -108,6 +112,11 @@ impl Row {
                 Some(typed) => first_line(typed),
                 None => preview(&message.blocks),
             };
+        }
+        if let Body::ModelCalled(called) = &event.body
+            && let Some(usage) = &called.usage
+        {
+            self.tokens += usage.uncached + usage.cache_read + usage.cache_write + usage.output;
         }
         if let Body::MetaChanged(changed) = &event.body {
             if let Some(title) = &changed.title {
@@ -155,11 +164,12 @@ impl Row {
             preset: row.get(15)?,
             named: row.get(16)?,
             project: row.get(17)?,
+            tokens: u64::try_from(row.get::<_, i64>(18)?).map_err(|_| bad("tokens"))?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 18], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 19], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -187,6 +197,7 @@ impl Row {
             optional(self.preset.as_deref()),
             Value::Integer(i64::from(self.named)),
             optional(self.project.as_deref()),
+            number(self.tokens)?,
         ])
     }
 }

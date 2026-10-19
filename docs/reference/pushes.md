@@ -6,7 +6,7 @@
 |---|---|---|
 | `event` | `events` | `{"session", "event"}`：会话的一条事件，原样（见 [事件](events.md)）；补发的也是它 |
 | `view.add`、`view.update`、`view.append`、`view.hidden`、`view.remove`、`view.status` | `view` | 见 [视图流](view.md) |
-| `sessions.changed` | `sessions` | `{"session", "entry"}`：会话列表的一项整个换掉（同 `session.list` 的一项）；删了的 `{"session", "removed": true}` |
+| `sessions.changed` | `sessions` | `{"session", "entry"}`：会话列表的一项整个换掉（同 `session.list` 的一项）；删了的 `{"session", "removed": true}`。子会话变了，父会话、祖先的那一项（`tokens` 连同子孙算）跟着一层层推 |
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`：一层配置变了，`keys` 同 `config.set` 的回应，`via` 是 `set`、`edit`、`file`（手改的）、`package`（装卸包以后） |
 | `extension.changed` | `extensions` | `{"entry"}`：一个扩展的状态，同 `extension.status` 的一项 |
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |

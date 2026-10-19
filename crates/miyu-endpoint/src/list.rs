@@ -46,7 +46,7 @@ pub(crate) async fn list(
     let busy = core.sessions.busy_ids().await;
     let pick = move |row: &Row| local(row) && (!oneshot || row.oneshot);
     let scanned = tokio::task::spawn_blocking(move || {
-        scan(
+        let mut listed = scan(
             &root,
             &admin,
             Some(&index),
@@ -54,7 +54,9 @@ pub(crate) async fn list(
             pick,
             limit,
             &Stop::default(),
-        )
+        )?;
+        tokens::fill(&mut listed, &index);
+        Ok::<_, std::io::Error>(listed)
     })
     .await;
     match scanned {
@@ -98,6 +100,8 @@ pub(crate) struct Listed {
     pub(crate) preset: Option<String>,
     /// 在哪个项目（施工 H-2）。
     pub(crate) project: Option<String>,
+    /// 用了多少 token：先是这个会话自己的，列的时候换成连同子孙的（[`tokens::fill`]）。
+    pub(crate) tokens: u64,
 }
 
 impl Listed {
@@ -118,6 +122,7 @@ impl Listed {
             persona: row.persona,
             preset: row.preset,
             project: row.project,
+            tokens: row.tokens,
         }
     }
 
@@ -153,6 +158,9 @@ impl Listed {
         }
         if let Some(project) = &self.project {
             item["project"] = json!(project);
+        }
+        if self.tokens > 0 {
+            item["tokens"] = json!(self.tokens);
         }
         item
     }
@@ -322,6 +330,8 @@ pub(crate) fn forget(index: &SessionIndex, id: &SessionId) {
         tracing::warn!(target: "miyu::endpoint", session = id.as_str(), error = %error, "session index row not removed");
     }
 }
+
+pub(crate) mod tokens;
 
 #[cfg(test)]
 mod tests;

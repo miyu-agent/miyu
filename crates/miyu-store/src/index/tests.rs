@@ -349,3 +349,40 @@ fn the_project_follows_the_last_move_and_survives_the_table() {
         .unwrap();
     assert_eq!(row(&index).unwrap().project, None, "空的是移出来");
 }
+
+/// 第 `seq` 条：一次模型调用，用量照写的（没写的是出错、打断那种没有用量的）。
+fn called(seq: u64, usage: Option<&str>) -> Event {
+    let usage = usage.map_or(String::new(), |usage| format!(r#","usage":{usage}"#));
+    event(&format!(
+        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"model.called","turn":2,"by":{{"kind":"kernel"}},"body":{{"seen":1,"messages":2,"result":"ok"{usage}}}}}"#
+    ))
+}
+
+#[test]
+fn tokens_add_up_every_call_and_survive_the_table() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    index
+        .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
+        .unwrap();
+    assert_eq!(row(&index).unwrap().tokens, 0);
+    let calls = [
+        called(
+            2,
+            Some(r#"{"uncached":60,"cache_read":40,"cache_write":5,"output":10}"#),
+        ),
+        called(3, None),
+        called(
+            4,
+            Some(r#"{"uncached":1,"cache_read":2,"cache_write":3,"output":4,"reasoning":2}"#),
+        ),
+    ];
+    index
+        .advance(&id(), &mark(100, 2), &calls, &mark(300, 5))
+        .unwrap();
+    assert_eq!(
+        row(&index).unwrap().tokens,
+        115 + 10,
+        "输入三项加输出，思考已经算在输出里"
+    );
+}

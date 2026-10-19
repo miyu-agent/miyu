@@ -81,7 +81,7 @@
 接受的，`result` 里是这个方法的回应：
 
 ```json
-{"id":"c7","jsonrpc":"2.0","result":{"cwd":"/home/me/src/miyu","events":[41]}}
+{"id":"c7","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[41]}}
 ```
 
 拒绝的，`code` 是 JSON-RPC 的错误码，`message` 照握手时的语言写，`data.reason` 是给程序看的原因码（「出错」一节）：

@@ -129,9 +129,16 @@ async fn work(
             return;
         };
         match job {
+            // 一个会话变了，父会话、祖先的 `tokens` 跟着变（连同子孙算的）：一层层往上推。
             Job::Changed(session) => {
-                if let Some(entry) = entry(&core, &session).await {
-                    push(json!({"session": session.as_str(), "entry": entry}));
+                let mut next = Some(session);
+                while let Some(session) = next.take() {
+                    if let Some(entry) = entry(&core, &session).await {
+                        next = entry["parent"]
+                            .as_str()
+                            .and_then(|parent| SessionId::parse(parent).ok());
+                        push(json!({"session": session.as_str(), "entry": entry}));
+                    }
                 }
             }
             Job::Removed(session) => push(json!({"session": session.as_str(), "removed": true})),
@@ -154,9 +161,10 @@ async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
     let session = session.clone();
     // 场所会话不推（施工 O-3）：它不在本机的头上。
     tokio::task::spawn_blocking(move || {
-        one(&root, &admin, &index, &session, busy)
-            .filter(|listed| listed.venue == crate::list::LOCAL)
-            .map(|listed| listed.to_json())
+        let mut listed = one(&root, &admin, &index, &session, busy)
+            .filter(|listed| listed.venue == crate::list::LOCAL)?;
+        crate::list::tokens::fill(std::slice::from_mut(&mut listed), &index);
+        Some(listed.to_json())
     })
     .await
     .ok()
