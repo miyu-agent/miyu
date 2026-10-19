@@ -774,6 +774,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-15b"><span class="n">R-15</span>记忆的关键词（下）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-16"><span class="n">R-16</span>整理更可靠<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-17"><span class="n">R-17</span>整理留痕<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-18"><span class="n">R-18</span>删掉 bge<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -22345,6 +22346,55 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-17-整理留痕.md</code>；蓝图 <code>memory.md</code> 第七条第 6、7、10 款；参考 <code>reference/memory.md</code>「<code>memory.dream</code>」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-18" aria-labelledby="h-sR18">
+  <div class="sheet-head"><h2 id="h-sR18"><span class="no">R-18</span>删掉 bge</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">出厂的内置语义模型已经换成 granite，bge 只剩门槛表里的三行、「以后当可选的包」的说法和一份 Release。项目主人：「bge可以直接删除了，不要做成软件包了」。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/core · memory/recall.toml、knowledge/recall.toml、knowledge/search.toml</span><span class="dir-note">R-18</span></div>
+            <ol class="pipe" aria-label="删掉 bge">
+              <li>三张门槛表拿掉 <code>local:bge-small-zh-v1.5</code>，注释只留 granite 的量法</li>
+              <li>装着旧 bge 包的照「表里没有的模型」办：联想不带、自动想起只走标题名、搜的下限 0.40</li>
+              <li>蓝图里说现状的几处改成 granite；bge-m3 不再当以后的可选包</li>
+              <li>Release <code>models-bge-small-zh-v1.5</code> 删掉；WordPiece 留作测试小模型的切词</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步拿掉的</p>
+          <div class="tile new"><span class="nm">三行门槛</span><span class="rl">bge 的 0.60、0.60、0.50</span></div>
+          <div class="tile new"><span class="nm">Release</span><span class="rl">models-bge-small-zh-v1.5</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-18</dd></div>
+        <div><dt>名称</dt><dd>删掉 bge</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>查出厂表的测试、门禁、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>查出厂表的几条改成查 bge 不在了；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-18-删掉bge.md</code>；蓝图 <code>recall.md</code>「出处」、第四条，<code>knowledge.md</code> 第九条，<code>memory/eval.md</code>「换模型」。</li>
       </ul>
     </div>
   </div>

@@ -59,11 +59,15 @@ async fn each_knowledge_error_becomes_its_refusal() {
 
 #[test]
 fn the_core_takes_its_search_floors_from_resources() {
-    // 施工 K-2 修：出厂的表里 bge 是 0.50（R-5 七补加了 granite 0.82），表里没有的照 0.40；表读不出来的都照 0.40（记一行 WARN）。
+    // 施工 K-2 修：出厂的表里 granite 是 0.82（R-5 七补；bge 那一行 R-18 删掉了），表里没有的照 0.40；表读不出来的都照 0.40（记一行
+    // WARN）。
     let (root, dir) = crate::test_support::temp_root("kb-floor");
     let shipped = ResourceRoot::at(crate::test_support::resources());
     let knowledge = super::shelf(&root, None, None, &shipped, &[]);
-    assert!((knowledge.floor("local:bge-small-zh-v1.5") - 0.50).abs() < f32::EPSILON);
+    assert!(
+        (knowledge.floor("local:bge-small-zh-v1.5") - miyu_recall::FLOOR).abs() < f32::EPSILON,
+        "bge 删掉了（施工 R-18）"
+    );
     assert!(
         (knowledge.floor("local:granite-embedding-97m-multilingual-r2") - 0.82).abs()
             < f32::EPSILON
@@ -71,6 +75,9 @@ fn the_core_takes_its_search_floors_from_resources() {
     assert!((knowledge.floor("emb/text-emb") - miyu_recall::FLOOR).abs() < f32::EPSILON);
     let broken = ResourceRoot::at(dir.join("no-resources"));
     let knowledge = super::shelf(&root, None, None, &broken, &[]);
-    assert!((knowledge.floor("local:bge-small-zh-v1.5") - miyu_recall::FLOOR).abs() < f32::EPSILON);
+    assert!(
+        (knowledge.floor("local:granite-embedding-97m-multilingual-r2") - miyu_recall::FLOOR).abs()
+            < f32::EPSILON
+    );
     drop(std::fs::remove_dir_all(&dir));
 }

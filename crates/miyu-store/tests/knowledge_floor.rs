@@ -1,5 +1,5 @@
 //! 知识库只照意思找到的那一路的下限照模型（施工 K-2 修，`docs/blueprint/knowledge.md` 第四条）：门槛表里有的照它，没有的照
-//! 0.40（`miyu_recall::FLOOR`）；出厂的表里 bge 是 0.50。
+//! 0.40（`miyu_recall::FLOOR`）；出厂的表里 granite 是 0.82（bge 那一行施工 R-18 删掉了）。
 
 use std::path::{Path, PathBuf};
 
@@ -53,13 +53,17 @@ fn the_floor_follows_the_model() {
 }
 
 #[test]
-fn the_shipped_table_has_bge_at_one_half_and_granite() {
+fn the_shipped_table_has_granite_and_no_bge() {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let text = ResourceRoot::at(&resources)
         .knowledge_table("search")
         .expect("出厂的读得出来");
     let floors = Thresholds::parse(&text).expect("合写法");
-    assert_eq!(floors.of("local:bge-small-zh-v1.5"), Some(0.50));
+    assert_eq!(
+        floors.of("local:bge-small-zh-v1.5"),
+        None,
+        "bge 删掉了（施工 R-18）"
+    );
     assert_eq!(
         floors.of("local:granite-embedding-97m-multilingual-r2"),
         Some(0.82),

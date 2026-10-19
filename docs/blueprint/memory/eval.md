@@ -165,7 +165,7 @@ MIYU_EMBED_PACKAGE=<embed 包> MIYU_MEMORY_EVAL_DIR=<放两份的目录> MIYU_ME
 | granite r2 4 位（出厂） | 38% | 24%／47%／9% | 80%／0.67 | 61 MB | 130 到 172 MB | 6 毫秒 |
 | bge-m3 8 位 | 38% | 38%／54%／11% | 80%／0.63 | 570 MB | 约 750 MB | 30 毫秒 |
 
-另试过 static-similarity-mrl-multilingual-v1、bekko a8m，都不如上面几个。挑 granite r2 的 4 位：比 bge 乱带少一半多、知识库找得更准、多语种（英文、日文不再切成 `[UNK]`），代价是内存多 60 MB 上下、一句慢几毫秒；bge-m3 最好但太重，以后当可选的包（项目主人 2026-10-18 定）。
+另试过 static-similarity-mrl-multilingual-v1、bekko a8m，都不如上面几个。挑 granite r2 的 4 位：比 bge 乱带少一半多、知识库找得更准、多语种（英文、日文不再切成 `[UNK]`），代价是内存多 60 MB 上下、一句慢几毫秒；bge-m3 最好但太重（项目主人 2026-10-18 定以后当可选的包，2026-10-19 改了：bge 一概删掉、不做成包，施工 R-18）。
 
 换上以后在这一份测评集上（2026-10-18，Release 的 `model_q4.onnx`）。关键词加 granite r2：
 

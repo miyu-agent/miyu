@@ -81,7 +81,11 @@ fn the_shipped_table_reads() {
         "../../../../resources/core/memory/recall.toml"
     ))
     .expect("出厂的合写法");
-    assert_eq!(shipped.of("local:bge-small-zh-v1.5"), Some(0.60));
+    assert_eq!(
+        shipped.of("local:bge-small-zh-v1.5"),
+        None,
+        "bge 删掉了（施工 R-18）"
+    );
     assert_eq!(
         shipped.of("local:granite-embedding-97m-multilingual-r2"),
         Some(0.84),

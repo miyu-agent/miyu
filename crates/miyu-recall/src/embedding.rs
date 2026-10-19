@@ -15,7 +15,7 @@ use serde::Deserialize;
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
-    /// 模型的名字，例如 `bge-small-zh-v1.5`：一个单纯的名字。向量记的模型编号是 `local:<id>`（[`Manifest::model`]），设置页的
+    /// 模型的名字，例如 `granite-embedding-97m-multilingual-r2`：一个单纯的名字。向量记的模型编号是 `local:<id>`（[`Manifest::model`]），设置页的
     /// 「内置模型」后面暗字写它。
     pub id: String,
     /// 向量几维。
@@ -35,7 +35,7 @@ pub struct Manifest {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Pooling {
-    /// 取第一个词（`[CLS]`）那一格，再归一化（bge 的做法）。
+    /// 取第一个词（`[CLS]`）那一格，再归一化（BERT 一族的做法）。
     Cls,
 }
 
@@ -43,7 +43,7 @@ pub enum Pooling {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Tokenizer {
-    /// BERT 的 WordPiece（bge）：前后加 `[CLS]`、`[SEP]`。
+    /// BERT 的 WordPiece：前后加 `[CLS]`、`[SEP]`（核心测试用的手算小模型照它）。
     #[default]
     Wordpiece,
     /// 字节级 BPE（granite r2 这一类）：要 `merges` 那个文件。
