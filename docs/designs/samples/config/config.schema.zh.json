@@ -244,7 +244,7 @@
             "brave": {
               "properties": {
                 "key": {
-                  "description": "搜索来源选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -279,7 +279,7 @@
             "deepseek": {
               "properties": {
                 "key": {
-                  "description": "搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -349,7 +349,7 @@
             "searxng": {
               "properties": {
                 "url": {
-                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "format": "uri",
@@ -390,13 +390,13 @@
                 "duckduckgo",
                 "bing"
               ],
-              "title": "搜索来源",
+              "title": "搜索服务供应商",
               "type": "string"
             },
             "tavily": {
               "properties": {
                 "key": {
-                  "description": "搜索来源选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,

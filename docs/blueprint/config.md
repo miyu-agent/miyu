@@ -263,12 +263,12 @@ miyu_config::settings! {
 | `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
-| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索来源，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
-| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「联网搜索」组 |
+| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
+| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「搜索服务供应商」分开画） |
 | `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
-| `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索来源挑了 Tavily 时用 |
-| `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索来源挑了 Brave 时用 |
-| `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在搜索来源挑了 SearXNG 时用 |
+| `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Tavily 时用 |
+| `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Brave 时用 |
+| `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在搜索服务供应商挑了 SearXNG 时用 |
 | `persona.default` | 名字（人格的编号） | 没有 | 系统、个人 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格） |
 | `preset.default` | 名字（预设的编号） | `full` | 系统、个人 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「预设」一组 |
 | `models.chat` | 引用 | 没有：`no_model` | 系统、个人 | 不能写 | `new_session` | 8-6 |
@@ -1066,17 +1066,17 @@ base = "10s"
 max = "5m"
 
 [net.search]
-# 搜索来源：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
+# 搜索服务供应商：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
 # 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。
 source = "auto"
 
 [net.search.brave]
-# Brave Search：搜索来源选了 Brave 时要它。
+# Brave Search：搜索服务供应商选了 Brave 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
 [net.search.deepseek]
-# DeepSeek：搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
+# DeepSeek：搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -1086,12 +1086,12 @@ source = "auto"
 # key =
 
 [net.search.searxng]
-# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。
+# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # url =
 
 [net.search.tavily]
-# Tavily：搜索来源选了 Tavily 时要它。
+# Tavily：搜索服务供应商选了 Tavily 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -1475,7 +1475,7 @@ currency = "USD"
             "brave": {
               "properties": {
                 "key": {
-                  "description": "搜索来源选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -1510,7 +1510,7 @@ currency = "USD"
             "deepseek": {
               "properties": {
                 "key": {
-                  "description": "搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -1580,7 +1580,7 @@ currency = "USD"
             "searxng": {
               "properties": {
                 "url": {
-                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "format": "uri",
@@ -1621,13 +1621,13 @@ currency = "USD"
                 "duckduckgo",
                 "bing"
               ],
-              "title": "搜索来源",
+              "title": "搜索服务供应商",
               "type": "string"
             },
             "tavily": {
               "properties": {
                 "key": {
-                  "description": "搜索来源选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+                  "description": "搜索服务供应商选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -2168,18 +2168,18 @@ currency = "USD"
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
 | `memory.merge_sessions` 名字（R-7 上） | 攒几次聊天再归纳 | Chats before consolidating | まとめる前の会話数 |
 | 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
-| `net.search.source` 名字（N-2 下） | 搜索来源 | Search source | 検索元 |
+| `net.search.source` 名字（N-2 下） | 搜索服务供应商 | Search provider | 検索プロバイダー |
 | 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
 | `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |
-| 说明 | 搜索来源用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。 | Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search. | 検索元に DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。 |
+| 说明 | 搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。 | Needed when DeepSeek is the search provider; if unset, the key of your DeepSeek model provider is used. Charged per search. | 検索プロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。 |
 | `net.search.tavily.key` 名字（N-3 上） | Tavily | Tavily | Tavily |
-| 说明 | 搜索来源选了 Tavily 时要它。 | Needed when Tavily is the search source. | 検索元に Tavily を選んだときに必要です。 |
+| 说明 | 搜索服务供应商选了 Tavily 时要它。 | Needed when Tavily is the search provider. | 検索プロバイダーに Tavily を選んだときに必要です。 |
 | `net.search.brave.key` 名字（N-3 上） | Brave Search | Brave Search | Brave Search |
-| 说明 | 搜索来源选了 Brave 时要它。 | Needed when Brave is the search source. | 検索元に Brave を選んだときに必要です。 |
+| 说明 | 搜索服务供应商选了 Brave 时要它。 | Needed when Brave is the search provider. | 検索プロバイダーに Brave を選んだときに必要です。 |
 | `net.search.searxng.url` 名字（N-3 上） | SearXNG 的地址 | SearXNG address | SearXNG のアドレス |
-| 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索来源选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search source. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索元に SearXNG を選んだときに使います。 |
+| 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索プロバイダーに SearXNG を選んだときに使います。 |
 | `pools.<id>.models` 名字（8-8） | 池的成员 | Pool members | プールのメンバー |
 | 说明 | 几个模型编成一组，每个写成 供应商/模型。 | A group of models, each written as provider/model. | いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。 |
 | `pools.<id>.strategy` 名字（8-8） | 池的分法 | Pool strategy | プールの分け方 |

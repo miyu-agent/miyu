@@ -194,7 +194,7 @@
             "brave": {
               "properties": {
                 "key": {
-                  "description": "Needed when Brave is the search source. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "description": "Needed when Brave is the search provider. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -229,7 +229,7 @@
             "deepseek": {
               "properties": {
                 "key": {
-                  "description": "Needed when DeepSeek is the search source; if unset, the key of your DeepSeek model provider is used. Charged per search. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "description": "Needed when DeepSeek is the search provider; if unset, the key of your DeepSeek model provider is used. Charged per search. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -299,7 +299,7 @@
             "searxng": {
               "properties": {
                 "url": {
-                  "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search source. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search provider. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
                   "oneOf": [
                     {
                       "format": "uri",
@@ -340,13 +340,13 @@
                 "duckduckgo",
                 "bing"
               ],
-              "title": "Search source",
+              "title": "Search provider",
               "type": "string"
             },
             "tavily": {
               "properties": {
                 "key": {
-                  "description": "Needed when Tavily is the search source. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+                  "description": "Needed when Tavily is the search provider. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
