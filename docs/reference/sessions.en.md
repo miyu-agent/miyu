@@ -106,6 +106,7 @@ Sending the same `id` again returns the session created the first time.
 | `busy` | `true`: a turn is running |
 | `persona`, `preset` | Which persona and preset; omitted when none |
 | `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
+| `context` | `{"used", "window"?}`: tokens in context (the input of the latest main request: uncached, cache read, cache write, the same figure as the terminal footer and the session status); omitted before the first request and right after a compaction. `window` is the context window of that request's model under the current config, omitted when unknown |
 | `project` | Which project it is in; omitted when none |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).

@@ -146,6 +146,19 @@ impl Models for Routes {
     fn one_shot(&self) -> Option<OneShot> {
         Some(OneShot::new(self.clone()))
     }
+
+    fn window(
+        &self,
+        resolved: &miyu_config::merge::Resolved,
+        provider: &str,
+        model: &str,
+    ) -> Option<u64> {
+        let values = resolved.values();
+        self.data.with(|knowledge| {
+            let provider = provider::provider(&values, knowledge, provider).ok()?;
+            facts(resolved, knowledge, &provider, model).0.window.value
+        })
+    }
 }
 
 impl Routes {

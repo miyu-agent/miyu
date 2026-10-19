@@ -81,3 +81,18 @@ async fn a_new_catalog_is_used_by_the_next_session() {
         Some(CatalogSource::Snapshot)
     );
 }
+
+/// 没载入的会话也查得到窗口（施工 9-5 再补，会话列表的 `context`）：照这时的配置、目录；没配的供应商、目录里没有的没有。
+#[test]
+fn a_window_is_looked_up_without_a_session() {
+    use miyu_session::Models;
+    let data = pending();
+    data.loaded(Some(trimmed()), Observed::default());
+    let routes = routes_with(data, Duration::from_secs(60));
+    let resolved = crate::support::routing::resolved(DEEPSEEK);
+    assert_eq!(
+        routes.window(&resolved, "deepseek", "deepseek-flash"),
+        Some(1_000_000)
+    );
+    assert_eq!(routes.window(&resolved, "nobody", "deepseek-flash"), None);
+}

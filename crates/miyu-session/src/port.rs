@@ -37,6 +37,17 @@ pub trait Models: Send + Sync {
     fn one_shot(&self) -> Option<OneShot> {
         None
     }
+
+    /// 供应商 `provider` 的模型 `model` 照配置 `resolved` 的上下文窗口（施工 9-5 再补：会话列表的 `context` 要，会话没载入也
+    /// 查得到）。不知道的没有；测试的端口没有。
+    fn window(
+        &self,
+        _resolved: &miyu_config::merge::Resolved,
+        _provider: &str,
+        _model: &str,
+    ) -> Option<u64> {
+        None
+    }
 }
 
 /// 造端口时交进来的，这个会话自己的。

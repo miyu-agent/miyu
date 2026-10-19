@@ -53,6 +53,11 @@ pub struct Row {
     /// 这个会话自己的模型调用一共用了多少 token：每条带用量的 `model.called`（主请求、起标题、压缩这些都算）的输入（没命中、
     /// 缓存读、缓存写）加输出。终端底栏的 `Σ` 同一个算法；子代理的另算在它们自己的行里，列会话时加上去。
     pub tokens: u64,
+    /// 上下文用了多少 token（施工 9-5 再补，网页的会话列表要的）：最近一次带用量的主请求（不是压缩、起标题这些）的输入，同
+    /// 终端底栏、会话状态的 `used`；压缩以后、还没有请求的没有。
+    pub context: Option<u64>,
+    /// 那一次请求的模型：`<供应商>/<模型>`。列会话时照它查窗口。
+    pub context_model: Option<String>,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -87,6 +92,8 @@ impl Row {
             preset: created.preset.clone(),
             project: None,
             tokens: 0,
+            context: None,
+            context_model: None,
         })
     }
 
@@ -118,6 +125,16 @@ impl Row {
             && let Some(usage) = &called.usage
         {
             self.tokens += usage.uncached + usage.cache_read + usage.cache_write + usage.output;
+            if called.purpose.is_none() && called.compaction.is_none() {
+                self.context = Some(usage.uncached + usage.cache_read + usage.cache_write);
+                self.context_model = match (&called.endpoint, &called.model) {
+                    (Some(endpoint), Some(model)) => Some(format!("{endpoint}/{model}")),
+                    _ => None,
+                };
+            }
+        }
+        if let Body::ContextCompacted(_) = &event.body {
+            self.context = None;
         }
         if let Body::PolicyChanged(changed) = &event.body {
             if let Some(persona) = &changed.persona {
@@ -174,11 +191,16 @@ impl Row {
             named: row.get(16)?,
             project: row.get(17)?,
             tokens: u64::try_from(row.get::<_, i64>(18)?).map_err(|_| bad("tokens"))?,
+            context: row
+                .get::<_, Option<i64>>(19)?
+                .map(|n| u64::try_from(n).map_err(|_| bad("context")))
+                .transpose()?,
+            context_model: row.get(20)?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 19], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 21], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -207,6 +229,8 @@ impl Row {
             Value::Integer(i64::from(self.named)),
             optional(self.project.as_deref()),
             number(self.tokens)?,
+            self.context.map_or(Ok(Value::Null), number)?,
+            optional(self.context_model.as_deref()),
         ])
     }
 }

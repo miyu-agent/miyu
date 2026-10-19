@@ -80,3 +80,30 @@ async fn a_parent_counts_its_children_and_is_pushed_when_they_spend() {
         "父会话连同子会话"
     );
 }
+
+/// 会话列表的 `context`（施工 9-5 再补）：最近一次主请求的输入（没命中加命中），没说过话的不写；测试的模型端口查不到窗口，
+/// 不写 `window`。
+#[tokio::test]
+async fn the_context_used_by_the_last_request_is_listed() {
+    let home = Home::new();
+    let core = home.core(&Script::new([Play::Says("一。")]));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c", "~").await;
+    let listed = |reply: &Value| {
+        reply["result"]["sessions"]
+            .as_array()
+            .and_then(|all| {
+                all.iter()
+                    .find(|one| one["session"] == session.as_str())
+                    .cloned()
+            })
+            .expect("列着")
+    };
+    let before = client.call("l1", "session.list", json!({})).await;
+    assert!(listed(&before).get("context").is_none(), "还没说过话：不写");
+    client.say("s1", &session, "你好").await;
+    home.until_turns(&session, 1).await;
+    let after = client.call("l2", "session.list", json!({})).await;
+    assert_eq!(listed(&after)["context"], json!({"used": 100}), "{after}");
+}

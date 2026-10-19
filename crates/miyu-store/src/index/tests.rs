@@ -422,3 +422,40 @@ fn a_changed_persona_or_preset_replaces_the_one_from_creation() {
         .unwrap();
     assert_eq!(row(&index).unwrap().persona, None, "空的是无人格");
 }
+
+/// 上下文（施工 9-5 再补）：最近一次带用量的主请求的输入、那一次的模型，存进表、读得回来；起标题、压缩的请求不算；压缩以后
+/// 清空、模型留着。
+#[test]
+fn the_context_follows_the_last_main_request() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    index
+        .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
+        .unwrap();
+    let main = event(
+        r#"{"seq":2,"at":"2026-09-25T08:00:00.000Z","kind":"model.called","turn":2,"by":{"kind":"kernel"},"body":{"seen":1,"endpoint":"deepseek","model":"deepseek-flash","messages":2,"result":"ok","usage":{"uncached":60,"cache_read":40,"cache_write":5,"output":10}}}"#,
+    );
+    let title = event(
+        r#"{"seq":3,"at":"2026-09-25T08:00:01.000Z","kind":"model.called","by":{"kind":"kernel"},"body":{"seen":1,"endpoint":"other","model":"small","messages":1,"result":"ok","purpose":"title","usage":{"uncached":9,"cache_read":0,"cache_write":0,"output":3}}}"#,
+    );
+    index
+        .advance(&id(), &mark(100, 2), &[main, title], &mark(300, 4))
+        .unwrap();
+    let got = row(&index).unwrap();
+    assert_eq!(
+        (got.context, got.context_model.as_deref()),
+        (Some(105), Some("deepseek/deepseek-flash")),
+        "起标题的不算"
+    );
+    let compacted = event(
+        r#"{"seq":4,"at":"2026-09-25T08:00:02.000Z","kind":"context.compacted","turn":4,"by":{"kind":"kernel"},"body":{"upto":2,"summary":"s"}}"#,
+    );
+    index
+        .advance(&id(), &mark(300, 4), &[compacted], &mark(400, 5))
+        .unwrap();
+    let got = row(&index).unwrap();
+    assert_eq!(
+        (got.context, got.context_model.as_deref()),
+        (None, Some("deepseek/deepseek-flash"))
+    );
+}

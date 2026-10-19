@@ -44,6 +44,7 @@ pub(crate) async fn list(
     let admin = core.admin.clone();
     let index = core.index.clone();
     let busy = core.sessions.busy_ids().await;
+    let window = windows(core);
     let pick = move |row: &Row| local(row) && (!oneshot || row.oneshot);
     let scanned = tokio::task::spawn_blocking(move || {
         let mut listed = scan(
@@ -56,6 +57,7 @@ pub(crate) async fn list(
             &Stop::default(),
         )?;
         tokens::fill(&mut listed, &index);
+        context::fill(&mut listed, &window);
         Ok::<_, std::io::Error>(listed)
     })
     .await;
@@ -102,6 +104,10 @@ pub(crate) struct Listed {
     pub(crate) project: Option<String>,
     /// 用了多少 token：先是这个会话自己的，列的时候换成连同子孙的（[`tokens::fill`]）。
     pub(crate) tokens: u64,
+    /// 上下文用了多少、那一次的模型、照它查到的窗口（施工 9-5 再补，[`context`]）。
+    pub(crate) context: Option<u64>,
+    pub(crate) context_model: Option<String>,
+    pub(crate) window: Option<u64>,
 }
 
 impl Listed {
@@ -123,6 +129,9 @@ impl Listed {
             preset: row.preset,
             project: row.project,
             tokens: row.tokens,
+            context: row.context,
+            context_model: row.context_model,
+            window: None,
         }
     }
 
@@ -162,6 +171,7 @@ impl Listed {
         if self.tokens > 0 {
             item["tokens"] = json!(self.tokens);
         }
+        context::write(&mut item, self);
         item
     }
 }
@@ -331,6 +341,14 @@ pub(crate) fn forget(index: &SessionIndex, id: &SessionId) {
     }
 }
 
+/// 照这时的配置查窗口（[`context::fill`] 用）：交出去在阻塞线程里调。
+pub(crate) fn windows(core: &Core) -> impl Fn(&str, &str) -> Option<u64> + Send + 'static {
+    let models = std::sync::Arc::clone(&core.models);
+    let resolved = core.config_now().borrow().resolved().clone();
+    move |provider: &str, model: &str| models.window(&resolved, provider, model)
+}
+
+pub(crate) mod context;
 pub(crate) mod tokens;
 
 #[cfg(test)]
