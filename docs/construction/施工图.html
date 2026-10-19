@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>617</b><span>/ 633 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>619</b><span>/ 635 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">9c3dcaa7</b><span>最近一步（F-13 一个包加几个命令）的提交</span></li>
+    <li><b class="mono">9d8eca0d</b><span>最近一步（8-33 终端会话）的提交</span></li>
   </ul>
 </header>
 
@@ -456,6 +456,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#stonce"><span class="n">test-once</span>剧本的一次性入口<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV-12"><span class="n">V-12</span>读日志照字节分块<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF-13"><span class="n">F-13</span>一个包加几个命令<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s97c"><span class="n">9-7 再补</span>说话带工作目录<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s833"><span class="n">8-33</span>终端会话<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -8551,6 +8553,109 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/F-13-一个包加几个命令.md</code>、图纸 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s97c" aria-labelledby="h-s97c">
+  <div class="sheet-head"><h2 id="h-s97c"><span class="no">9-7 再补</span>说话带工作目录</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">shell 里每一句都可能换了目录：session.send 带 cwd，一步做完，变了才记。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">说话带工作目录</span><span class="dir-note">9-7 再补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>send 的 cwd 照 set_workspace 查</li>
+              <li>一样的不记，变了先换再说</li>
+              <li>换目录那条命令另起编号</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">和现在一样</span><span class="rl">什么都不记</span></div>
+          <div class="tile new"><span class="nm">写错的</span><span class="rl">整句不收</span></div>
+          <div class="tile new"><span class="nm">场所会话</span><span class="rl">不收</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">9-7 再补</dd></div>
+        <div><dt>名称</dt><dd>说话带工作目录</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">05eb8159</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>变了才记一条 workspace_changed</span></li>
+        <li><span class="ok">✓</span><span>共用编号这一句没记上</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/9-7-说话带工作目录（再补）.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s833" aria-labelledby="h-s833">
+  <div class="sheet-head"><h2 id="h-s833"><span class="no">8-33</span>终端会话</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">shell 里说的话进一个一直续下去的会话：哪个算、闲置多久换新的由核心定。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">终端会话</span><span class="dir-note">8-33</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>terminal.persona、preset、idle_new_after</li>
+              <li>指针记在 home/<账号>/terminal.json</li>
+              <li>session.terminal、session.set_terminal</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">闲置超时</span><span class="rl">开新的，旧的不动</span></div>
+          <div class="tile new"><span class="nm">只收</span><span class="rl">自己的本机主会话</span></div>
+          <div class="tile new"><span class="nm">同一时刻</span><span class="rl">只开一个</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">8-33</dd></div>
+        <div><dt>名称</dt><dd>终端会话</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">9d8eca0d</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>开一次以后一直是它</span></li>
+        <li><span class="ok">✓</span><span>删了再开</span></li>
+        <li><span class="ok">✓</span><span>闲置的换新、带上次的时刻</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/8-33-终端会话.md</code>、设计 <code>22-命令行.md</code> 第七节。</li>
       </ul>
     </div>
   </div>
