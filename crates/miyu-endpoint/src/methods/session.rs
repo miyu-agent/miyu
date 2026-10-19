@@ -10,7 +10,16 @@ pub(super) async fn create(
     caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
-    let params: CreateParams = params(request)?;
+    let mut params: CreateParams = params(request)?;
+    // 在项目里建的（施工 H-2）：项目要在，没写的人格、预设照项目的。
+    let project = match &params.project {
+        Some(id) => Some(crate::projects::sessions::find(core, &caller.account, id).await?),
+        None => None,
+    };
+    if let Some(project) = &project {
+        params.persona = params.persona.or_else(|| project.persona.clone());
+        params.preset = params.preset.or_else(|| project.preset.clone());
+    }
     // 解析不出的什么都不造（施工 8-8）。
     let model = params
         .model
@@ -44,7 +53,13 @@ pub(super) async fn create(
             who,
         )
         .await?;
-    let mut reply = json!({"session": created.id.as_str(), "events": [1], "cwd": created.cwd});
+    let mut events = vec![1];
+    if let Some(project) = project {
+        events.extend(
+            crate::projects::sessions::join(core, request, &created.id, project.project).await?,
+        );
+    }
+    let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": created.cwd});
     if let Some(file) = created.untrusted {
         reply["untrusted_project"] = json!(file);
     }
@@ -271,11 +286,21 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     Ok(json!({}))
 }
 
-/// `session.set_meta`：改标题、置顶。
-pub(super) async fn set_meta(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+/// `session.set_meta`：改标题、置顶、项目（施工 H-2：移进的项目要在，会话要是本机的主会话）。
+pub(super) async fn set_meta(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: MetaParams = params(request)?;
     let command = params.command()?;
     let session = session(&params.session)?;
+    if let Some(project) = params.project() {
+        crate::projects::sessions::find(core, &caller.account, project).await?;
+    }
+    if params.moves() {
+        crate::projects::sessions::may_join(core, &session).await?;
+    }
     let found = core.sessions.get(core, &session).await?;
     command_to(core, request, &session, &found.handle, command).await?;
     Ok(json!({}))

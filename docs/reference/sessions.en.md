@@ -56,13 +56,14 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `chosen` | boolean, default `false` | The person explicitly chose `cwd`: a too-wide one (home, root) is used anyway; otherwise a too-wide one falls back to the default workspace |
 | `oneshot` | boolean, default `false` | A one-shot session (the `miyu ask` kind) |
 | `images` | boolean, default `true` | Whether you can display images |
+| `project` | string | Create it in this project ([Projects](projects.en.md)): `persona` and `preset` default to the project's, and a `session.meta_changed` follows (`events` is `[1, 2]`) |
 
 **Response**
 
 | Name | Notes |
 |---|---|
 | `session` | The new session's id |
-| `events` | `[1]`: the `session.created` event |
+| `events` | `[1]`: the `session.created` event; `[1, 2]` with `project` |
 | `cwd` | Where the session actually works |
 | `wide` | `true`: the directory is too wide and is used because the person chose it |
 | `untrusted_project` | The directory has a project config not yet trusted or rejected: where it is |
@@ -104,6 +105,7 @@ Sending the same `id` again returns the session created the first time.
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
 | `persona`, `preset` | Which persona and preset; omitted when none |
+| `project` | Which project it is in; omitted when none |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
 
@@ -266,11 +268,11 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 ## `session.set_meta`
 
-**Params**: `session`; `title`: the new title, 1 to 200 characters, `null` removes it; `pinned`: `true` pins, `false` unpins. Give at least one.
+**Params**: `session`; `title`: the new title, 1 to 200 characters, `null` removes it; `pinned`: `true` pins, `false` unpins; `project`: a project id moves it in, `null` moves it out (only local main sessions can join: venue sessions, subagents and forks get `bad_params` with `data.field` `project`). Give at least one. Pin and project are separate: a head that unpins on moving into a project sends `pinned` itself.
 
 **Response**: `{}`. A change is pushed as `session.meta_changed`. Sessions without a name get a title from the core after the first turn, also pushed as `session.meta_changed` (`by` is the kernel).
 
-**Errors**: `bad_params`: neither given; an empty title or one over 200 characters.
+**Errors**: `bad_params`: nothing given; an empty title or one over 200 characters; an empty `project` string, or a session that cannot join (`data.field` is `project`). `unknown_project`: no such project.
 
 ## `session.configure`
 

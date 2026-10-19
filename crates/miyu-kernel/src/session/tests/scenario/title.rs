@@ -45,6 +45,7 @@ fn kernel_titled(title: &str) -> (By, MetaChanged) {
         MetaChanged {
             title: Some(title.to_string()),
             pinned: None,
+            project: None,
         },
     )
 }
@@ -256,6 +257,7 @@ fn a_person_renaming_while_it_is_in_flight_wins() {
             MetaChanged {
                 title: Some("人起的".to_string()),
                 pinned: None,
+                project: None,
             }
         )],
         "不盖掉人起的"

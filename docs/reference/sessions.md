@@ -56,13 +56,14 @@
 | `chosen` | 布尔，默认 `false` | `cwd` 是人明着选的：太宽（家目录、根目录）也照用；不写的太宽了退回默认工作区 |
 | `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
 | `images` | 布尔，默认 `true` | 你显示得了图片吗 |
+| `project` | 字符串 | 在哪个项目里建（[项目](projects.md)）：没写的 `persona`、`preset` 照项目的，建好了记一条 `session.meta_changed`（回应的 `events` 是 `[1, 2]`） |
 
 **回应**
 
 | 名字 | 说明 |
 |---|---|
 | `session` | 新会话的编号 |
-| `events` | `[1]`：`session.created` 那一条 |
+| `events` | `[1]`：`session.created` 那一条；带了 `project` 的是 `[1, 2]` |
 | `cwd` | 会话实际在哪个目录干活 |
 | `wide` | `true`：目录太宽、照人选的用着 |
 | `untrusted_project` | 这个目录有项目配置、还没决定信不信任的，写它在哪 |
@@ -104,6 +105,7 @@
 | `pinned` | `true`：置顶了 |
 | `busy` | `true`：有回合在进行 |
 | `persona`、`preset` | 用哪个人格、预设，没有的不写 |
+| `project` | 在哪个项目，不在的不写 |
 
 只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。
 
@@ -266,11 +268,11 @@
 
 ## `session.set_meta`
 
-**参数**：`session`；`title`：新标题，1 到 200 个字，`null` 是去掉标题；`pinned`：`true` 置顶、`false` 取消。至少写一个。
+**参数**：`session`；`title`：新标题，1 到 200 个字，`null` 是去掉标题；`pinned`：`true` 置顶、`false` 取消；`project`：项目编号是移进去，`null` 是移出来（只有本机的主会话能进项目：场所会话、子代理、分叉出来的拒 `bad_params`，`data.field` 是 `project`）。至少写一个。置顶和项目是两格：拖进项目时要不要取消置顶，头自己另写 `pinned`。
 
 **回应**：`{}`。变了的推 `session.meta_changed`。没起名的会话，核心在第一轮答完以后自己起一个标题，同样推 `session.meta_changed`（`by` 是内核）。
 
-**出错**：`bad_params`：两样都没写；标题空的、超过 200 个字。
+**出错**：`bad_params`：一样都没写；标题空的、超过 200 个字；`project` 写空字符串、这个会话不能进项目（`data.field` 是 `project`）。`unknown_project`：没有这个项目。
 
 ## `session.configure`
 

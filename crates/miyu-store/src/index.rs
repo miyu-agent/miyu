@@ -31,14 +31,15 @@ pub use crate::sqlite::{DbError as IndexError, Opened};
 pub const FILE: &str = "sessions.db";
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 9-5 多了 `preview`，是 2；施工 O-3 多了 `venue`，是 3；
-/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6。
-const VERSION: i64 = 6;
+/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7。
+const VERSION: i64 = 7;
 
 /// 表里的列，照这个先后读写（[`Row::from_sql`]、[`Row::to_sql`]）。
-const COLUMNS: &str = "id, owner, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named";
+const COLUMNS: &str = "id, owner, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project";
 
 /// 写一行时的占位，个数照 [`COLUMNS`]。
-const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17";
+const VALUES: &str =
+    "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18";
 
 /// 建表。`segment`、`bytes`、`next` 是这一行照到日志的哪里（[`Mark`]）；时刻存成毫秒。
 const SCHEMA: &str = "CREATE TABLE sessions (
@@ -58,7 +59,8 @@ const SCHEMA: &str = "CREATE TABLE sessions (
     venue TEXT NOT NULL,
     persona TEXT,
     preset TEXT,
-    named INTEGER NOT NULL
+    named INTEGER NOT NULL,
+    project TEXT
 ) WITHOUT ROWID";
 
 /// 一个账号的会话列表的索引。
@@ -222,7 +224,7 @@ impl SessionIndex {
 
 /// 换掉一整行，`WHERE` 由调的一方接上。
 const REPLACE: &str = "UPDATE sessions SET id = ?1, owner = ?2, parent = ?3, oneshot = ?4, title = ?5, pinned = ?6, \
-     cwd = ?7, created = ?8, last_active = ?9, segment = ?10, bytes = ?11, next = ?12, preview = ?13, venue = ?14, persona = ?15, preset = ?16, named = ?17";
+     cwd = ?7, created = ?8, last_active = ?9, segment = ?10, bytes = ?11, next = ?12, preview = ?13, venue = ?14, persona = ?15, preset = ?16, named = ?17, project = ?18";
 
 /// 照到的位置写成三格。
 fn mark_values(mark: &Mark) -> Result<[rusqlite::types::Value; 3], IndexError> {

@@ -142,6 +142,7 @@ fn reports_for_another_request_are_ignored() {
         Body::MetaChanged(MetaChanged {
             title: Some("打招呼".to_string()),
             pinned: None,
+            project: None,
         }),
         "对不上的增量没收进来"
     );

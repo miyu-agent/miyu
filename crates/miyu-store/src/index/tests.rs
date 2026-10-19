@@ -315,3 +315,37 @@ fn a_title_counts_as_named_only_when_a_person_wrote_it_last() {
     row.see(&titled(6, "又起了一个"));
     assert!(!row.named, "最后写的是内核");
 }
+
+/// 第 `seq` 条：移进项目 `project`（空的是移出来，施工 H-2）。
+fn into_project(seq: u64, project: &str) -> Event {
+    event(&format!(
+        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person","account":"alice"}},"body":{{"project":"{project}"}}}}"#
+    ))
+}
+
+#[test]
+fn the_project_follows_the_last_move_and_survives_the_table() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    index
+        .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
+        .unwrap();
+    assert_eq!(row(&index).unwrap().project, None);
+    index
+        .advance(
+            &id(),
+            &mark(100, 2),
+            &[into_project(2, "p1"), renamed(3, "发版", true)],
+            &mark(200, 4),
+        )
+        .unwrap();
+    assert_eq!(
+        row(&index).unwrap().project.as_deref(),
+        Some("p1"),
+        "只改标题的照旧"
+    );
+    index
+        .advance(&id(), &mark(200, 4), &[into_project(4, "")], &mark(300, 5))
+        .unwrap();
+    assert_eq!(row(&index).unwrap().project, None, "空的是移出来");
+}

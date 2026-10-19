@@ -42,7 +42,7 @@ Fields that were never set are omitted.
 
 ## `project.delete`
 
-**Params**: `project`. **Result**: `{}`.
+**Params**: `project`. **Result**: `{"moved": <sessions moved out>}`: each session in it first gets a `session.meta_changed {"project": ""}`; sessions are not deleted.
 
 ## Errors
 

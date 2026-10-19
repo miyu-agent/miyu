@@ -80,6 +80,7 @@ async fn renaming_records_the_trimmed_title_and_pushes_it_before_the_reply() {
         &MetaChanged {
             title: Some("整理 src 目录".to_string()),
             pinned: None,
+            project: None,
         },
         "只写改了的那一格，去掉前后空白"
     );

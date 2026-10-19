@@ -110,7 +110,7 @@ async fn projects_are_created_listed_updated_and_deleted() {
     let deleted = client
         .call("d", "project.delete", json!({"project": id}))
         .await;
-    assert_eq!(deleted["result"], json!({}), "{deleted}");
+    assert_eq!(deleted["result"], json!({"moved": 0}), "{deleted}");
     let again = client
         .call("d2", "project.delete", json!({"project": id}))
         .await;

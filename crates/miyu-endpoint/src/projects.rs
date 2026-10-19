@@ -4,6 +4,7 @@
 //! 的 `people_only`）。
 
 pub(crate) mod changes;
+pub(crate) mod sessions;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -47,7 +48,7 @@ pub(crate) async fn call(
         }
         "project.create" => create(core, account, params(request)?).await,
         "project.update" => update(core, account, params(request)?).await,
-        "project.delete" => delete(core, account, params(request)?).await,
+        "project.delete" => delete(core, account, request, params(request)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -149,13 +150,16 @@ async fn update(
     Ok(json!({}))
 }
 
-/// `project.delete`：从文件里拿掉。里面的会话挪出来是施工 H-2 的事。
+/// `project.delete`：先把里面的会话挪出来（施工 H-2，[`sessions::move_out`]），再从文件里拿掉；回挪了几个。
 async fn delete(
     core: &Arc<Core>,
     account: &AccountId,
+    request: &Request,
     params: DeleteParams,
 ) -> Result<Value, Refusal> {
     let id = params.project;
+    sessions::find(core, account, &id).await?;
+    let moved = sessions::move_out(core, account, request, &id).await?;
     change(core, account, &id, |projects| {
         projects
             .remove(&id)
@@ -163,8 +167,8 @@ async fn delete(
             .ok_or(Refusal::UNKNOWN_PROJECT)
     })
     .await?;
-    tracing::info!(target: TARGET, project = id.as_str(), "project deleted");
-    Ok(json!({}))
+    tracing::info!(target: TARGET, project = id.as_str(), moved, "project deleted");
+    Ok(json!({"moved": moved}))
 }
 
 /// 写了值的格换上：空字符串当清掉（名称除外，空的照查出错）。

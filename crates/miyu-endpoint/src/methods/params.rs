@@ -17,6 +17,9 @@ pub(super) struct CreateParams {
     /// 用哪个预设（施工 P-2 上）：不写、写 `null` 的照这时的 `preset.default`。
     #[serde(default)]
     pub(super) preset: Option<String>,
+    /// 在哪个项目里建（施工 H-2）：没写的人格、预设照项目的；建好了记一条 `session.meta_changed`。
+    #[serde(default)]
+    pub(super) project: Option<String>,
     pub(super) cwd: String,
     /// 一次性的：`miyu ask` 开的（施工 3-9 下）。
     #[serde(default)]

@@ -17,6 +17,7 @@ fn set_meta(n: u64, title: Option<&str>, pinned: Option<bool>) -> Input {
         command: Command::SetMeta {
             title: title.map(str::to_string),
             pinned,
+            project: None,
         },
     })
 }
@@ -26,6 +27,7 @@ fn meta(title: Option<&str>, pinned: Option<bool>) -> Body {
     Body::MetaChanged(MetaChanged {
         title: title.map(str::to_string),
         pinned,
+        project: None,
     })
 }
 
@@ -164,4 +166,48 @@ fn a_slash_command_is_noted_and_kept_out_of_the_request() {
         [&accepted_reply(2, &[2])]
     );
     assert_eq!(logged.handle(ran), [accepted_reply(2, &[2])], "只记一次");
+}
+
+/// 编号是 `n` 的命令：alice 移进项目 `project`（空的是移出来，施工 H-2）。
+fn into_project(n: u64, project: &str) -> Input {
+    Input::Command(Received {
+        id: id(n),
+        by: alice(),
+        at: at(n % 60),
+        command: Command::SetMeta {
+            title: None,
+            pinned: None,
+            project: Some(project.to_string()),
+        },
+    })
+}
+
+/// 一条只写了项目的 `session.meta_changed`。
+fn project_meta(project: &str) -> Body {
+    Body::MetaChanged(MetaChanged {
+        title: None,
+        pinned: None,
+        project: Some(project.to_string()),
+    })
+}
+
+#[test]
+fn moving_into_and_out_of_a_project_is_recorded_and_loaded_back() {
+    let mut session = session();
+    assert_eq!(session.project(), None);
+    nothing(&session.handle(into_project(2, "")), 2);
+    let actions = session.handle(into_project(3, "p1"));
+    assert_eq!(appended_events(&actions)[0].body, project_meta("p1"));
+    assert_eq!(session.project(), Some("p1"));
+    session.handle(stored(2));
+    nothing(&session.handle(into_project(4, "p1")), 4);
+    let actions = session.handle(into_project(5, ""));
+    assert_eq!(appended_events(&actions)[0].body, project_meta(""));
+    assert_eq!(session.project(), None, "空的是移出来");
+
+    let mut logged = Logged::new();
+    logged.handle(into_project(20, "p2"));
+    logged.handle(stored(logged.last()));
+    let (loaded, _) = load(logged.log.clone());
+    assert_eq!(loaded.project(), Some("p2"), "载入照日志算回来");
 }

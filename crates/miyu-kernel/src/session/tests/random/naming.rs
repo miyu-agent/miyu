@@ -13,6 +13,7 @@ pub(super) fn some_meta(seed: u64, next_id: &mut u64) -> Input {
     let mut rng = Rng(seed ^ 0x3E7A_0000);
     let title = [None, Some(""), Some("发版")][rng.below(3) as usize];
     let pinned = [None, Some(true), Some(false)][rng.below(3) as usize];
+    let project = [None, Some("p1"), Some("")][rng.below(3) as usize].map(str::to_string);
     Input::Command(Received {
         id: id(next_command(next_id)),
         by: alice(),
@@ -20,6 +21,7 @@ pub(super) fn some_meta(seed: u64, next_id: &mut u64) -> Input {
         command: Command::SetMeta {
             title: title.map(str::to_string),
             pinned,
+            project,
         },
     })
 }

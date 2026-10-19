@@ -42,7 +42,7 @@
 
 ## `project.delete`
 
-**参数**：`project`。**回应**：`{}`。
+**参数**：`project`。**回应**：`{"moved": <挪出来的会话个数>}`：里面的会话先一个个写一条 `session.meta_changed {"project": ""}` 挪出来，会话不删。
 
 ## 出错
 

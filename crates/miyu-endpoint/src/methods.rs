@@ -302,7 +302,7 @@ pub(crate) fn call<'a>(
                 move || async move { crate::workspace::set(core, request, params(request)?).await },
             )
         }
-        "session.set_meta" => answer(move || session::set_meta(core, request)),
+        "session.set_meta" => answer(move || session::set_meta(core, caller, request)),
         "session.delete" => answer(move || session::delete(core, request)),
         other => answer(move || async move {
             match core.queries.get(other).filter(|_| core.serves(other)) {

@@ -1,5 +1,5 @@
-//! 改标题、置顶（施工 3-8 三补，`docs/blueprint/kernel/session.md`「改标题、置顶」）：人改，内核记；和现在一样的不记，
-//! 只写改了的那几格。会话现在的标题、置顶从日志里的 `session.meta_changed` 一路算，载入时照样算回来。
+//! 改标题、置顶、在哪个项目（施工 3-8 三补、H-2，`docs/blueprint/kernel/session.md`「改标题、置顶」）：人改，内核记；和现在一样的
+//! 不记，只写改了的那几格。会话现在的标题、置顶、项目从日志里的 `session.meta_changed` 一路算，载入时照样算回来。
 
 use super::action::Action;
 use super::{Session, accepted};
@@ -15,6 +15,8 @@ pub(super) struct Meta {
     title: String,
     /// 置顶了没有；没改过的是没有。
     pinned: bool,
+    /// 在哪个项目：项目编号，不在项目里的是空的（施工 H-2）。
+    project: String,
 }
 
 impl Meta {
@@ -26,25 +28,38 @@ impl Meta {
         if let Some(pinned) = changed.pinned {
             self.pinned = pinned;
         }
+        if let Some(project) = &changed.project {
+            self.project.clone_from(project);
+        }
+    }
+
+    /// 在哪个项目；不在项目里的没有。
+    pub(super) fn project(&self) -> Option<&str> {
+        Some(self.project.as_str()).filter(|project| !project.is_empty())
     }
 }
 
 impl Session {
-    /// 改标题、置顶：和现在一样的格去掉，还剩的记一条 `session.meta_changed`，回合进行中的带上这个回合；一格都不剩的，
-    /// 接受，什么都不记，编号照样记下。改了什么不影响回合：标题、置顶不进请求。
+    /// 这个会话在哪个项目（施工 H-2）：不在项目里的没有。会话那一层照它拼项目的附加提示词（施工 H-3）。
+    pub fn project(&self) -> Option<&str> {
+        self.meta.project()
+    }
+
+    /// 改标题、置顶、项目：和现在一样的格去掉，还剩的记一条 `session.meta_changed`，回合进行中的带上这个回合；一格都不剩的，
+    /// 接受，什么都不记，编号照样记下。改了什么不影响这一轮：标题、置顶不进请求，项目的附加提示词下一轮才换。
     pub(super) fn set_meta(
         &mut self,
         id: CommandId,
         by: By,
         at: Timestamp,
-        title: Option<String>,
-        pinned: Option<bool>,
+        (title, pinned, project): (Option<String>, Option<bool>, Option<String>),
     ) -> Vec<Action> {
         let changed = MetaChanged {
             title: title.filter(|title| *title != self.meta.title),
             pinned: pinned.filter(|pinned| *pinned != self.meta.pinned),
+            project: project.filter(|project| *project != self.meta.project),
         };
-        if changed.title.is_none() && changed.pinned.is_none() {
+        if changed.title.is_none() && changed.pinned.is_none() && changed.project.is_none() {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }

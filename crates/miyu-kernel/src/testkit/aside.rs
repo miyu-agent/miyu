@@ -49,6 +49,7 @@ impl Stage {
         self.command(Command::SetMeta {
             title: title.map(str::to_string),
             pinned,
+            project: None,
         })
     }
 

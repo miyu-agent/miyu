@@ -110,6 +110,9 @@ pub struct MetaChanged {
     /// 置顶还是取消置顶。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pinned: Option<bool>,
+    /// 移进哪个项目（施工 H-2，设计 `38-项目.md`）：项目编号；空的是移出项目（同标题写空的是去掉）。内核只记不查项目在不在。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project: Option<String>,
 }
 
 /// `session.workspace_changed`：人换了会话在哪个目录干活（施工 9-7 上，`docs/blueprint/kernel/events-bodies.md`）。工作区是会话的

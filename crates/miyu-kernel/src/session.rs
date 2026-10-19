@@ -392,7 +392,11 @@ impl Session {
             Command::Respond { to, facts } => self.respond(id, by, at, to, facts),
             Command::Note { facts } => self.note(id, by, at, facts),
             Command::Interrupt { queued } => self.interrupt(id, by, at, queued),
-            Command::SetMeta { title, pinned } => self.set_meta(id, by, at, title, pinned),
+            Command::SetMeta {
+                title,
+                pinned,
+                project,
+            } => self.set_meta(id, by, at, (title, pinned, project)),
             Command::SetWorkspace { cwd, dirs } => self.set_workspace(id, by, at, cwd, dirs),
             Command::Ran { text, command } => self.ran(id, by, at, text, command),
             Command::Configure { model } => self.configure(id, by, at, model),

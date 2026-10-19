@@ -92,6 +92,7 @@ impl Session {
             let changed = MetaChanged {
                 title: Some(shorten(goal.trim(), titles.chars)),
                 pinned: None,
+                project: None,
             };
             self.meta.note(&changed);
             let event = self.record_aside(at, None, Body::MetaChanged(changed));
@@ -136,6 +137,7 @@ impl Session {
             let changed = MetaChanged {
                 title: Some(shorten(&text, chars)),
                 pinned: None,
+                project: None,
             };
             self.meta.note(&changed);
             events.push(self.record_aside(at, None, Body::MetaChanged(changed)));

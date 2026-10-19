@@ -27,7 +27,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `session.created` | The session was created (event 1): venue, working directory, persona, preset, model… |
 | `session.policy_changed` | Permissions, model or the whole policy changed |
 | `session.workspace_changed` | The working directory changed |
-| `session.meta_changed` | Title or pin changed; titles the kernel gives unnamed sessions too |
+| `session.meta_changed` | Title, pin or project changed (`project`: an id, empty when moved out); titles the kernel gives unnamed sessions too |
 | `session.recapped` | A recap (not in her context) |
 | `session.sealed` | A forked session ran its turns and was sealed |
 | `command.ran` | A person used a slash command (not in her context) |

@@ -48,6 +48,8 @@ pub struct Row {
     pub persona: Option<String>,
     /// 预设（施工 P-2 上）：`session.created` 的 `preset`。以前的日志没有的是空的。
     pub preset: Option<String>,
+    /// 在哪个项目（施工 H-2）：最后一条写了 `project` 的 `session.meta_changed`，移出来了、没进过的是空的。
+    pub project: Option<String>,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -80,11 +82,12 @@ impl Row {
             venue: created.venue.as_str().to_string(),
             persona: created.persona.clone(),
             preset: created.preset.clone(),
+            project: None,
         })
     }
 
     /// 照先后看一条（`protocol.md` 的 `session.list` 第 3、4 条）：它的时刻是最近一次动静；带 `cwd` 的盖上工作目录；
-    /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），`by` 是人、又不是去掉的算人起的；写了 `pinned` 的换成它。
+    /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），`by` 是人、又不是去掉的算人起的；写了 `pinned` 的换成它；写了 `project` 的换成它（空的是移出来，施工 H-2）。
     /// 撤掉的回合里改的也算：改名不是对话的一部分。
     pub fn see(&mut self, event: &Event) {
         self.last_active = event.at;
@@ -112,6 +115,9 @@ impl Row {
                 self.named = !title.is_empty() && matches!(event.by, By::Person(_));
             }
             self.pinned = changed.pinned.unwrap_or(self.pinned);
+            if let Some(project) = &changed.project {
+                self.project = Some(project.clone()).filter(|project| !project.is_empty());
+            }
         }
     }
 
@@ -148,11 +154,12 @@ impl Row {
             persona: row.get(14)?,
             preset: row.get(15)?,
             named: row.get(16)?,
+            project: row.get(17)?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 17], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 18], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -179,6 +186,7 @@ impl Row {
             optional(self.persona.as_deref()),
             optional(self.preset.as_deref()),
             Value::Integer(i64::from(self.named)),
+            optional(self.project.as_deref()),
         ])
     }
 }
