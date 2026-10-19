@@ -75,7 +75,7 @@
 
 **读一块**（`read_tagged`，`by` 照 `kind`、效果照 `kind` 也是这样读）：
 
-1. 先把整块原样读下来。
+1. 先把整块原样读下来。开头第一个字段就是 `type`（`kind`）、值是不带转义的字的（核心自己写的都是这样），直接认出种类，不把整块解成一张表（施工 V-10：一万条事件的会话读日志从约 30 ms 降到约 18 ms，本机）；别的写法照整表认，结果一样。
 2. 不是 JSON 对象的，报 serde_json 的原话（`expected a map`）。
 3. 没有 `type` 的，报「missing field `type`」。
 4. `type` 不是字符串的，报 serde_json 的原话（`invalid type`）。

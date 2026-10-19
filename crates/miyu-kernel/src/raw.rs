@@ -60,19 +60,41 @@ where
     D: Deserializer<'de>,
 {
     let raw = RawJson::deserialize(d)?;
-    let fields: BTreeMap<String, &RawValue> =
-        serde_json::from_str(raw.get()).map_err(D::Error::custom)?;
-    let value = fields
-        .get(field)
-        .ok_or_else(|| D::Error::custom(format!("missing field `{field}`")))?;
-    let tag: String = serde_json::from_str(value.get()).map_err(D::Error::custom)?;
+    let tag = match leading_tag(raw.get(), field) {
+        Some(tag) => tag.to_string(),
+        None => {
+            let fields: BTreeMap<String, &RawValue> =
+                serde_json::from_str(raw.get()).map_err(D::Error::custom)?;
+            let value = fields
+                .get(field)
+                .ok_or_else(|| D::Error::custom(format!("missing field `{field}`")))?;
+            serde_json::from_str(value.get()).map_err(D::Error::custom)?
+        }
+    };
     match known(&tag, raw.get()) {
         Some(read) => read.map_err(D::Error::custom),
         None => Ok(unknown(raw)),
     }
 }
 
+/// 快路（施工 V-10）：标签是开头第一个字段、写成不带转义的字的（核心自己写的都是这样，`{"type":"text",…`），不用把整块
+/// 解成一张表就认得出。别的写法交回没有，照整表认：结果一样。
+fn leading_tag<'a>(json: &'a str, field: &str) -> Option<&'a str> {
+    let rest = json.trim_start().strip_prefix('{')?.trim_start();
+    let rest = rest
+        .strip_prefix('"')?
+        .strip_prefix(field)?
+        .strip_prefix('"')?;
+    let rest = rest.trim_start().strip_prefix(':')?.trim_start();
+    let rest = rest.strip_prefix('"')?;
+    let end = rest.find(['"', '\\'])?;
+    (rest.as_bytes()[end] == b'"').then(|| &rest[..end])
+}
+
 /// 从一段 JSON 文本读出一种认识的写法。
 pub(crate) fn parse<T: DeserializeOwned>(json: &str) -> serde_json::Result<T> {
     serde_json::from_str(json)
 }
+
+#[cfg(test)]
+mod tests;
