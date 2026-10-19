@@ -253,16 +253,15 @@ impl Tool for Shell {
             let mut env = env::passed(std::env::vars_os(), call.sandbox.is_some());
             // 脚本调工具的通道（设计 39，原型 M-0）：有端口的才开，开不成的照旧跑、只是没有通道。
             #[cfg(unix)]
-            let mut channel = call
+            let channel = call
                 .nested
                 .clone()
                 .and_then(|port| channel::Channel::open(port).ok());
             #[cfg(unix)]
-            if channel.is_some() {
-                channel::Channel::env(&mut env);
+            if let Some(channel) = channel.as_ref() {
+                channel.env(&mut env);
             }
-            #[cfg_attr(not(unix), allow(unused_mut))]
-            let mut command = match self.program.command(
+            let command = match self.program.command(
                 &args.command,
                 &workdir(&call),
                 env,
@@ -271,18 +270,10 @@ impl Tool for Shell {
                 Ok(command) => command,
                 Err(error) => return self.failed(&error),
             };
-            #[cfg(unix)]
-            if let Some(fd) = channel.as_ref().and_then(channel::Channel::child_fd) {
-                miyu_sandbox::inherit::pass_fd(&mut command, fd, channel::FD);
-            }
             let started = match process::start(command, None, move |text| progress.push(text)) {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };
-            #[cfg(unix)]
-            if let Some(channel) = channel.as_mut() {
-                channel.started();
-            }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_millis(timeout);

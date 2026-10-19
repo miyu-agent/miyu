@@ -117,7 +117,10 @@ impl NestedPort for Nester {
                     _ => return Outcome::refused(1, "Miyu could not set up the sandbox."),
                 }
             }
-            let done = tool.run(call, Progress::new(|_| {})).await;
+            let mut done = tool.run(call, Progress::new(|_| {})).await;
+            if name == "web_search" && !done.error && done.detail.is_none() {
+                done.detail = Some(serde_json::json!({"kind": "links", "links": []}));
+            }
             outcome(done)
         })
     }

@@ -83,6 +83,9 @@ fn parse(args: &[String]) -> Result<Value, String> {
     if first.starts_with('-') {
         return Err(HOW.into());
     }
+    if args.len() == 2 && args[1] == "--schema" {
+        return Ok(serde_json::json!({"v": VERSION, "op": "schema", "tool": first}));
+    }
     let tool = first.clone();
     let mut named = Map::new();
     let mut json: Option<String> = None;
@@ -134,35 +137,21 @@ fn parse(args: &[String]) -> Result<Value, String> {
     Ok(serde_json::json!({"v": VERSION, "op": "call", "tool": tool, "args": args}))
 }
 
-/// 经入口发一对私有的流过去，发请求、收回答。
+/// 连上环境变量里的套接字，带上令牌发请求、收回答。
 #[cfg(unix)]
 fn send(request: &Value) -> Result<Map<String, Value>, (u8, String)> {
-    use std::os::fd::{AsFd, BorrowedFd};
     use std::os::unix::net::UnixStream;
-
-    use rustix::net::{SendAncillaryBuffer, SendAncillaryMessage, SendFlags, sendmsg};
 
     let outside = || (USAGE, "miyu call only works inside a command Miyu runs.".to_string());
     let ended = || (ENDED, "The command this call belongs to has ended.".to_string());
-    let fd: i32 = std::env::var("MIYU_CALL_FD")
-        .ok()
-        .and_then(|fd| fd.parse().ok())
-        .ok_or_else(outside)?;
-    let (mut ours, theirs) = UnixStream::pair().map_err(|_| ended())?;
-    #[allow(unsafe_code)]
-    // SAFETY: 只在这一次 sendmsg 里借用编号 `fd`，不关它、不存它；编号不是打开着的描述符时系统调用报 EBADF，下面照「不在 Miyu
-    // 起的命令里」答。
-    let entry = unsafe { BorrowedFd::borrow_raw(fd) };
-    let fds = [theirs.as_fd()];
-    let mut space = [std::mem::MaybeUninit::<u8>::uninit(); rustix::cmsg_space!(ScmRights(1))];
-    let mut ancillary = SendAncillaryBuffer::new(&mut space);
-    ancillary.push(SendAncillaryMessage::ScmRights(&fds));
-    match sendmsg(entry, &[std::io::IoSlice::new(b"c")], &mut ancillary, SendFlags::empty()) {
-        Ok(_) => {}
-        Err(rustix::io::Errno::BADF | rustix::io::Errno::NOTSOCK) => return Err(outside()),
-        Err(_) => return Err(ended()),
-    }
-    drop(theirs);
+    let path = std::env::var_os("MIYU_CALL_SOCK").ok_or_else(outside)?;
+    let token = std::env::var("MIYU_CALL_TOKEN").map_err(|_| outside())?;
+    let mut ours = UnixStream::connect(&path).map_err(|error| match error.kind() {
+        std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused => ended(),
+        _ => outside(),
+    })?;
+    let mut request = request.clone();
+    request["token"] = Value::String(token);
     let body = request.to_string();
     let len = u32::try_from(body.len()).map_err(|_| (USAGE, "Arguments are too long.".to_string()))?;
     ours.write_all(&len.to_be_bytes()).map_err(|_| ended())?;

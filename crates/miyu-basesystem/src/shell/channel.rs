@@ -8,26 +8,21 @@
 //! - 丢掉 [`Channel`] 就关：服务的任务掐掉，入口和所有私有的流跟着关，脚本里等着的 `miyu call` 读到结尾。
 
 use std::ffi::OsString;
-use std::io::{self, IoSliceMut};
-use std::mem::MaybeUninit;
-use std::os::fd::{AsRawFd, OwnedFd, RawFd};
-use std::os::unix::net::{UnixDatagram, UnixStream};
+use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
-use rustix::net::{RecvAncillaryBuffer, RecvAncillaryMessage, RecvFlags, recvmsg};
 use serde::Deserialize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::io::Interest;
 use tokio::task::{AbortHandle, JoinSet};
 
 use miyu_tool::{NestedPort, Outcome};
 
-/// 子进程里通道入口的编号。
-pub(super) const FD: RawFd = 3;
+/// 告诉 `miyu call` 套接字在哪的环境变量。
+const SOCK_VAR: &str = "MIYU_CALL_SOCK";
 
-/// 告诉 `miyu call` 入口在哪个编号上的环境变量。
-const FD_VAR: &str = "MIYU_CALL_FD";
+/// 令牌的环境变量。
+const TOKEN_VAR: &str = "MIYU_CALL_TOKEN";
 
 /// 协议版本：第一个帧带它，对不上的回一句、退出码 2。
 const VERSION: u32 = 1;
@@ -40,37 +35,32 @@ const MAX_OPEN: usize = 32;
 
 /// 一次 shell 调用的通道。丢掉就关。
 pub(super) struct Channel {
-    /// 交给子进程的那一头：起完命令就关掉父进程里的这一份。
-    child: Option<UnixDatagram>,
+    /// 套接字的路径：环境变量交给子进程，子进程再起的子进程照样继承到（Python、Node 默认关掉多余的描述符，编号 3 会断）。
+    path: PathBuf,
+    /// 一次性的令牌：连上的先出示，对不上的不答。
+    token: String,
     server: AbortHandle,
 }
 
 impl Channel {
-    /// 照 `port` 开一条：建入口，起服务的任务。
+    /// 照 `port` 开一条：建套接字，起服务的任务。
     pub(super) fn open(port: Arc<dyn NestedPort>) -> io::Result<Channel> {
-        let (core, child) = UnixDatagram::pair()?;
-        core.set_nonblocking(true)?;
-        let core = tokio::net::UnixDatagram::from_std(core)?;
-        let server = tokio::spawn(serve(core, port)).abort_handle();
+        let dir = sock_dir().ok_or_else(|| io::Error::other("no socket dir"))?;
+        let token = random_hex()?;
+        let path = dir.join(format!("{}.sock", &token[..16]));
+        let listener = tokio::net::UnixListener::bind(&path)?;
+        let server = tokio::spawn(serve(listener, port, token.clone())).abort_handle();
         Ok(Channel {
-            child: Some(child),
+            path,
+            token,
             server,
         })
     }
 
-    /// 交给子进程的那一头的编号：起命令前照它放到 [`FD`]。
-    pub(super) fn child_fd(&self) -> Option<RawFd> {
-        self.child.as_ref().map(AsRawFd::as_raw_fd)
-    }
-
-    /// 起完命令：关掉父进程里那一头的这一份。
-    pub(super) fn started(&mut self) {
-        self.child = None;
-    }
-
-    /// 环境变量：入口的编号，`PATH` 最前面加上放 `miyu` 链接的目录。
-    pub(super) fn env(env: &mut Vec<(OsString, OsString)>) {
-        env.push((FD_VAR.into(), FD.to_string().into()));
+    /// 环境变量：套接字的路径、令牌，`PATH` 最前面加上放 `miyu` 链接的目录。
+    pub(super) fn env(&self, env: &mut Vec<(OsString, OsString)>) {
+        env.push((SOCK_VAR.into(), self.path.clone().into_os_string()));
+        env.push((TOKEN_VAR.into(), self.token.clone().into()));
         let Some(dir) = bin_dir() else {
             return;
         };
@@ -89,7 +79,29 @@ impl Channel {
 impl Drop for Channel {
     fn drop(&mut self) {
         self.server.abort();
+        let _ = std::fs::remove_file(&self.path);
     }
+}
+
+/// 放套接字的目录：一个核心进程一个，只有本人能进。
+fn sock_dir() -> Option<PathBuf> {
+    static DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+    DIR.get_or_init(|| {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("miyu-call-{}", std::process::id())).join("s");
+        std::fs::create_dir_all(&dir).ok()?;
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).ok()?;
+        Some(dir)
+    })
+    .clone()
+}
+
+/// 32 个十六进制字符的随机串。
+fn random_hex() -> io::Result<String> {
+    use std::io::Read;
+    let mut bytes = [0u8; 16];
+    std::fs::File::open("/dev/urandom")?.read_exact(&mut bytes)?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 /// 放 `miyu` 链接的目录：一个核心进程一个，第一次用时建。建不成的不加，`miyu call` 照 `PATH` 里原有的找。
@@ -107,49 +119,22 @@ fn bin_dir() -> Option<PathBuf> {
     .clone()
 }
 
-/// 服务：收入口上发来的描述符，一个一个接着答。入口读到结尾、出错就停。
-async fn serve(core: tokio::net::UnixDatagram, port: Arc<dyn NestedPort>) {
+/// 服务：接连上来的，一个一个答。出错就停。
+async fn serve(listener: tokio::net::UnixListener, port: Arc<dyn NestedPort>, token: String) {
     let mut open = JoinSet::new();
     loop {
         tokio::select! {
-            received = core.async_io(Interest::READABLE, || receive(&core)) => match received {
-                Ok(Some(stream)) if open.len() < MAX_OPEN => {
-                    open.spawn(answer(stream, Arc::clone(&port)));
+            accepted = listener.accept() => match accepted {
+                Ok((stream, _)) if open.len() < MAX_OPEN => {
+                    open.spawn(answer(stream, Arc::clone(&port), token.clone()));
                 }
-                // 多了的、不带描述符的：丢掉，对方读到结尾。
+                // 多了的：丢掉，对方读到结尾。
                 Ok(_) => {}
                 Err(_) => break,
             },
             Some(_) = open.join_next(), if !open.is_empty() => {}
         }
     }
-}
-
-/// 收一个数据报：恰好带一个描述符的交回它，别的交回 `None`。
-fn receive(core: &tokio::net::UnixDatagram) -> io::Result<Option<OwnedFd>> {
-    let mut space = [MaybeUninit::<u8>::uninit(); rustix::cmsg_space!(ScmRights(2))];
-    let mut ancillary = RecvAncillaryBuffer::new(&mut space);
-    let mut byte = [0u8; 16];
-    let got = recvmsg(
-        core,
-        &mut [IoSliceMut::new(&mut byte)],
-        &mut ancillary,
-        RecvFlags::CMSG_CLOEXEC,
-    )
-    .map_err(io::Error::from)?;
-    if got.bytes == 0 && ancillary.drain().next().is_none() {
-        return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
-    }
-    let mut fds: Vec<OwnedFd> = Vec::new();
-    for message in ancillary.drain() {
-        if let RecvAncillaryMessage::ScmRights(received) = message {
-            fds.extend(received);
-        }
-    }
-    Ok(match fds.len() {
-        1 => fds.pop(),
-        _ => None,
-    })
 }
 
 /// 一次请求。
@@ -160,17 +145,12 @@ struct Request {
     tool: String,
     #[serde(default)]
     args: String,
+    #[serde(default)]
+    token: String,
 }
 
-/// 在私有的流 `fd` 上答一个请求。读写出错就丢掉：对方已经不在了。
-async fn answer(fd: OwnedFd, port: Arc<dyn NestedPort>) {
-    let std = UnixStream::from(fd);
-    if std.set_nonblocking(true).is_err() {
-        return;
-    }
-    let Ok(mut stream) = tokio::net::UnixStream::from_std(std) else {
-        return;
-    };
+/// 在连上来的流上答一个请求。读写出错就丢掉：对方已经不在了。
+async fn answer(mut stream: tokio::net::UnixStream, port: Arc<dyn NestedPort>, token: String) {
     let Ok(len) = stream.read_u32().await else {
         return;
     };
@@ -183,6 +163,7 @@ async fn answer(fd: OwnedFd, port: Arc<dyn NestedPort>) {
     }
     let outcome = match serde_json::from_slice::<Request>(&body) {
         Err(_) => Outcome::refused(2, "Bad request from miyu call."),
+        Ok(request) if request.token != token => Outcome::refused(2, "miyu call only works inside a command Miyu runs."),
         Ok(request) if request.v != VERSION => Outcome::refused(
             2,
             "This miyu call does not match the running Miyu. Use the miyu found first on PATH.",
