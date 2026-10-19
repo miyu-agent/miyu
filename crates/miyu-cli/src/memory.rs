@@ -4,6 +4,7 @@
 //!
 //! 做成了退出码 0；核心拒的照核心的原话印在标准错误上，退出码 1；参数写错的 2，由 clap 管。
 
+mod dream;
 mod shown;
 
 use std::io::{self, Write};
@@ -11,6 +12,7 @@ use std::process::{Command, ExitCode};
 
 use clap::{Args, Subcommand};
 use serde_json::{Map, Value, json};
+use tokio::sync::mpsc;
 
 use miyu_ipc::{Connection, connect_or_start};
 use miyu_kernel::time::UtcOffset;
@@ -164,24 +166,27 @@ async fn run(args: Memory, start: impl FnOnce() -> Command) -> u8 {
         &plan,
         &mut io::stdout(),
         &mut io::stderr(),
+        crate::ask::presses(),
     )
     .await
 }
 
 /// 在一条连上了的连接上做一次：握手、照子命令发、印，交回退出码；印的写在 `out`，出错的写在 `err`。测试照它在进程里走一遍。
+/// `presses` 是一次次的 Ctrl+C：只有 `dream` 听（施工 R-23）。
 pub async fn memory_on(
     connection: Connection,
     token: &str,
     plan: &MemoryPlan,
     out: &mut dyn Write,
     err: &mut dyn Write,
+    presses: mpsc::Receiver<()>,
 ) -> u8 {
     let mut rpc = Rpc::new(connection, "memory");
     let language = &plan.language;
     if let Err(code) = link::hello(&mut rpc, token, language, false, err).await {
         return code;
     }
-    match act(&mut rpc, plan, out, err).await {
+    match act(&mut rpc, plan, out, err, presses).await {
         Ok(()) => exit::OK,
         Err(code) => code,
     }
@@ -193,6 +198,7 @@ async fn act(
     plan: &MemoryPlan,
     out: &mut dyn Write,
     err: &mut dyn Write,
+    presses: mpsc::Receiver<()>,
 ) -> Result<(), u8> {
     let (args, language) = (&plan.args, &plan.language);
     let command = args.command.clone().unwrap_or(MemoryCommand::List);
@@ -230,7 +236,9 @@ async fn act(
             params = json!({"session": session});
             ("memory.forget", json!({"clear": "session"}))
         }
-        MemoryCommand::Dream => ("memory.dream", json!({})),
+        MemoryCommand::Dream => {
+            return dream::dream(rpc, params, language, out, err, presses).await;
+        }
     };
     merge(&mut params, extra);
     let result = link::request_saying(rpc, method, params, language, err, |error| {
@@ -245,15 +253,7 @@ async fn act(
         MemoryCommand::Edit { .. } => language.changed(id_of(&result)),
         MemoryCommand::Forget { .. } => return Ok(()),
         MemoryCommand::Clear { .. } => language.cleared(result["cleared"].as_u64().unwrap_or(0)),
-        MemoryCommand::Dream => {
-            let count = |field: &str| result[field].as_u64().unwrap_or(0);
-            language.dreamed(
-                count("given"),
-                count("revised"),
-                count("retired"),
-                result["summary"].as_bool().unwrap_or(false),
-            )
-        }
+        MemoryCommand::Dream => unreachable!("上面另走 `dream.rs`"),
     };
     say(out, &said);
     Ok(())

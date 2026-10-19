@@ -124,7 +124,7 @@
 |---|---|---|
 | `memory_not_installed`、`memory_unavailable` | 没装记忆；这里没有记忆 | `why` |
 | `memory_busy`、`dream_failed` | 正在整理；整理没成 | `message` |
-| `not_dreaming` | `/dream stop`：这个会话没有正在跑的整理 | |
+| `not_dreaming` | `/dream stop`、`memory.dream_stop`：没有正在跑的整理 | |
 | `unknown_memory`、`memory_not_current` | 没有这一条；已经改掉、作废、清掉了 | |
 | `memory_too_long` | 超过 120 个字 | `chars`、`limit` |
 | `unknown_kb`、`unknown_document` | 没有这个库、这个文档 | |

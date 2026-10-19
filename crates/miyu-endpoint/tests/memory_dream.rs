@@ -422,12 +422,13 @@ async fn hushed_by(stop: &str) -> Hushed {
         dreamed["result"]["said"], "整理已中断，下次再整理。",
         "{dreamed}"
     );
-    assert!(
-        pushed
-            .iter()
-            .any(|push| push.to_string().contains(r#""why":"stopped""#)),
-        "记忆流推了放弃的那一批：{pushed:?}"
-    );
+    // 记忆流的推送另走转发任务，可能晚于回应到。
+    while !pushed
+        .iter()
+        .any(|push: &Value| push.to_string().contains(r#""why":"stopped""#))
+    {
+        pushed.push(client.next().await.expect("记忆流推了放弃的那一批"));
+    }
     Hushed {
         _home: home,
         _server: server,

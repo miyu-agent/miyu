@@ -1,7 +1,7 @@
 //! 现在就整理记忆（施工 R-7 补，`docs/blueprint/memory.md` 第七条第 9 款，`protocol.md` 的 `memory.dream`、`/dream`）：带
 //! `session` 的叫那个会话先把还没抽的抽了再合（[`Handle::dream`]），带 `persona`、都不写的照那一间直接合
 //! （[`miyu_session::Keeper::dream`]）。交回几样数；这一间正在合的 `memory_busy`，没合成的 `dream_failed`。几秒到十几秒，
-//! 在后台答（`methods::answered_later`）。
+//! 在后台答（`methods::answered_later`）。`memory.dream_stop` 叫停这一间人叫的那一趟（施工 R-23），照顺序答。
 
 use std::sync::Arc;
 
@@ -78,4 +78,19 @@ fn answered(dreamed: Result<Dreamed, NotDreamed>) -> Result<Dreamed, Refusal> {
         NotDreamed::Off => Refusal::MEMORY_UNAVAILABLE,
         NotDreamed::Failed(why) => Refusal::dream_failed(why),
     })
+}
+
+/// `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这时人叫的整理，不管是
+/// 哪一路叫的（会话里的 `/dream`、`memory.dream`），定时的不停。交回 `{"stopped": true}`；被叫停的那条照样回应，带
+/// `"stopped": true`。
+///
+/// # Errors
+///
+/// 这一间这时没有人叫的整理：`not_dreaming`；找哪一间的拒绝同 `memory.*`。
+pub(crate) async fn stop(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
+    let keeper = find(core, read(params)?).await?;
+    match keeper.stop_dream() {
+        true => Ok(json!({"stopped": true})),
+        false => Err(Refusal::NOT_DREAMING),
+    }
 }

@@ -8,6 +8,7 @@
 | [`memory.turns`](#memoryturns) | 搜以前的对话 |
 | [`memory.remember`、`memory.update`、`memory.forget`、`memory.restore`](#memoryremembermemoryupdatememoryforgetmemoryrestore) | 记、改、作废和清空、恢复 |
 | [`memory.dream`](#memorydream) | 现在就整理记忆 |
+| [`memory.dream_stop`](#memorydream_stop) | 叫停正在进行的整理 |
 | [`kb.list`、`kb.search`、`kb.read`、`kb.documents`](#kblistkbsearchkbreadkbdocuments) | 列知识库、搜、读一页、列一个库里的文档 |
 | [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
 
@@ -87,7 +88,7 @@
 
 现在就整理：带 `session` 的先把这个会话还没抽的抽了，再把新记的和以前的合一遍（重复的合掉，过时的作废，写一段对人的了解）。在后台答，几秒到十几秒。
 
-**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆（R-19）。带 `session` 的叫那个会话 `/dream stop`、`/stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（R-22）：正在合的那一批放弃、下次再合，合完了的留着。
+**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆（R-19）。叫停了（[`memory.dream_stop`](#memorydream_stop)，会话里叫的还有那个会话的 `/dream stop`、`/stop`）照样回，几样数是叫停以前合完了的，多 `"stopped": true`（R-22、R-23）：正在合的那一批放弃、下次再合，合完了的留着。
 
 **出错**：`memory_busy`（这一间正在整理）；`dream_failed`（没合成，`data.message`）。
 
@@ -109,6 +110,14 @@
 - 人叫的整理要画「她正在写什么」（施工 R-21）：`merging` 的 `given` 是这一批交给模型的是哪几条，等的时候可以让它们浮过去；另有不落盘的推送 `memory.dreaming`：她每写完一条改的（`kind: revised`，`id`、`text`）、作废的（`kind: retired`，`id`、`retire`、`kept`、`why`）推一条，摘要每多 20 个字、写完推一条（`kind: summary`，`chars`、`done`），都带这一批的 `upto`。推的是她这一刻写的，落的照全部核对、可能少几条，以日志为准；掉了不补。
 - 每一趟头一个放得下的批顺带重看最多 20 条轮到的旧记忆（照编号轮，轮完一圈从头来），对它们的改、删同样算这一批做的。人叫的整理没有新记的也照样重看：那一批的 `fresh`、`left` 是 0。
 - 会话里叫的先抽的那几条（`ext.memory.saved`，`by` 是记忆模块，带出处）在第一条 `merging` 前面，后面跟 `ext.memory.extracted`。
+
+## `memory.dream_stop`
+
+叫停这一间这时人叫的整理（R-23），不管是哪一路叫的（`memory.dream`、会话里的 `/dream`）；后台自己合的不停。合完了的批留着，正在合的那一批放弃、下次整理再合；记忆日志记一条 `ext.memory.merge_failed`（`why: stopped`）。被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。`memory.dream` 在后台答，在同一条连接上接着发它就行。
+
+**参数**：只有 `persona` 或 `session`，同 `memory.dream`。**回应**：`{"stopped": true}`。
+
+**出错**：`not_dreaming`（这一间这时没有人叫的整理）。
 
 ## `kb.list`、`kb.search`、`kb.read`、`kb.documents`
 

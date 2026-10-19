@@ -156,8 +156,8 @@ impl Keeper {
         owner: AccountId,
         offset: UtcOffset,
     ) -> Result<Dreamed, NotDreamed> {
-        self.dream_until(config, owner, offset, Hush::default())
-            .await
+        let hush = self.hush_for(Hush::default());
+        self.dream_until(config, owner, offset, hush).await
     }
 
     /// 同 [`Keeper::dream`]，`hush` 叫停了就停（施工 R-22，会话里的 `/dream`）。

@@ -182,6 +182,7 @@
 | `memory.list`、`memory.search`、`memory.remember`、`memory.update`、`memory.forget` | 人不经过她列、搜、记、改、忘和清空记忆（施工 R-3 补，`memory.md`「协议」） |
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
+| `memory.dream_stop` | 叫停这一间这时人叫的整理（施工 R-23，`memory.md` 第七条第 13 款） |
 | `kb.list`、`kb.search`、`kb.read`、`kb.documents` | 列知识库、搜、读一个文档的一页、列一个库里的文档（施工 K-1 上，K-10；`knowledge.md`「对外的样子」） |
 | `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6）；登记表里没有的照命令模板展开成一句发给 AI（施工 X-14 上，`slash.md`） |
 | `command.catalog` | 列核心认的斜杠命令（连命令模板），给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补、X-14 上） |
@@ -725,6 +726,7 @@
 | `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
 | `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22） |
+| `memory.dream_stop` | 只有 `persona`、`session`（施工 R-23） | `{"stopped": true}` |
 
 1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上。
 2. `text` 去掉前后空白再记；空的 `bad_params`，超过 120 字（数 Unicode 字符）的 `memory_too_long`，`data.chars`、`data.limit`。`class` 不是那四种、`id` 不合 `m<序号>` 的写法、`limit` 出了范围、`id` 和 `clear` 都写或都不写、`clear` 不是那两种：`bad_params`。
@@ -734,6 +736,7 @@
 6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；带 `session` 的叫那个会话 `/stop`、`/dream stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（施工 R-22，`memory.md` 第七条第 13 款）；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
+9. `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这一间这时人叫的整理，不管是哪一路叫的（带 `persona`、`session` 的 `memory.dream`，会话里的 `/dream`）；定时的不停。合完了的批留着，正在合的那一批放弃（记 `merge_failed`，`why: stopped`）、下次再合；被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。回 `{"stopped": true}`；这时没有人叫的整理（定时的在合也算没有）回 `not_dreaming`。照顺序答：`memory.dream` 在后台答，同一条连接上接着发它就行。
 
 **`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
 
@@ -1291,7 +1294,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `memory_unavailable` | -32010 | 这里没有记忆：不带人格（没写人格、又没设默认人格的也是）、范围 `off`、场所会话（施工 R-3 补，`memory.*`、`/remember`；施工 R-3 再补那句话也说没有人格） |
 | `memory_not_installed` | -32010 | 人格记忆这个软件包没装：`memory.*` 六个（施工 R-10）；装上就能用，以前记的都在 |
 | `memory_busy` | -32010 | 这一间正在整理记忆：定时的那一次在合，或者别人先叫了 `memory.dream`、`/dream`（施工 R-7 补） |
-| `not_dreaming` | -32010 | `/dream stop`：这个会话这时没有在跑的整理（施工 R-22） |
+| `not_dreaming` | -32010 | `/dream stop`：这个会话这时没有在跑的整理（施工 R-22）；`memory.dream_stop`：这一间这时没有人叫的整理（施工 R-23） |
 | `dream_failed` | -32010 | 整理记忆没成：请求模型出错、交回的读不成、记忆日志写不进；`data.message` 是英文的一句为什么（施工 R-7 补） |
 | `unknown_memory` | -32010 | 没有这一条记忆，或者听众不合（施工 R-3 补） |
 | `memory_not_current` | -32010 | 那一条记忆已经改掉、作废、清掉了（施工 R-3 补） |
@@ -1560,6 +1563,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs`、`providers_log.rs`（施工 8-11） | `provider.detect`、`provider.catalog`、`provider.test` 的形状、参数不对、`unknown_provider`，`{value}` 的 key 不进回应和运行日志（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_dream.rs`、`src/commands/tests.rs` 的 `only_dream_is_answered_later`、`src/subscriptions/later/tests.rs`（施工 R-7 补） | `memory.dream` 的回应、再叫一次是零、`memory_busy`、`memory_not_installed`、在后台答（同一个连接后面的请求先回）；`/dream` 的回执、命令表里列、在后台答，订阅着的 `command.ran` 先到；在后台答的命令只有 `/dream`；在后台答的回应照办完那一刻的订阅走：订阅着的交给转发任务，没订阅的、不是给会话的、放下了的直接写，换了的交给新的，只拿弱的一头、转发任务退得了，放下了的下一次开通道时清掉（细节见 `memory.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_dream.rs` 的 `slash_stop_stops_the_sessions_dream`、`slash_dream_stop_stops_only_the_dream`（施工 R-22） | `/stop`、`/dream stop` 叫停这个会话的整理：`/dream` 照样回应、回执说中断了，记忆流推 `merge_failed`（`stopped`）；`/dream stop` 的回执，没在整理的 `not_dreaming`，跟别的字的 `bad_params` |
+| `crates/miyu-endpoint/tests/memory_dream_stop.rs`（施工 R-23） | `memory.dream_stop`：照人格叫停同一条连接上在后台答的 `memory.dream`，两条回应都带 `stopped`，记忆流推 `stopped`；叫之前、整理回了以后都是 `not_dreaming`；下次接着合 |
 | `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs`（施工 8-20） | `model.call` 的回应形状、参数校验、blob 的账号、几种出错的 `data`、不进会话日志、运行日志那两行（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/secrets.rs`、`secrets_log.rs`（施工 8-5） | `secret.*` 的回应、拒绝、日志；值不进回应、拒绝、系统日志、运行日志（`config.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/config_set.rs`（施工 8-3） | `config.set` 的回应、每一种拒绝、`expect`、版本、手改重读、全收或者全不收、写不成什么都没变、日志（`config.md`「守着它的」） |

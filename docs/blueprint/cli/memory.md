@@ -25,7 +25,7 @@
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
 | `clear me` | 清掉她关于你的全部记忆 | `memory.forget`，`clear: "me"` |
-| `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒 |
+| `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒。等的时候按一次 Ctrl+C 发 `memory.dream_stop`（同一间、同一条连接），标准错误印「正在停止整理……再按一次 Ctrl+C 直接退出。」，接着等原来那一条回应；再按一次不等，直接退（施工 R-23） |
 
 | 选项 | 做什么 |
 |---|---|
@@ -48,7 +48,7 @@
 3. **发**：照上面的表。
 4. **印**（标准输出）：
    - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「还没有记忆。」，`search` 说「没找到。」。
-   - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条。」，摘要换了的句号前多「，摘要已更新」，一条都没看的「无需整理。」（和 `/dream` 的回执同一句；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。
+   - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条。」，摘要换了的句号前多「，摘要已更新」，一条都没看的「无需整理。」（和 `/dream` 的回执同一句；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「整理已中断：检查 <几> 条，修改 <几> 条，作废 <几> 条，其余下次再整理。」，一批都没合完的「整理已中断，下次再整理。」（和 `/dream` 叫停了的回执同一句），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
 5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `memory.*`）。太长的（`memory_too_long`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.chars`、`data.limit` 说「太长了：这一条 121 个字，一条最多 120 个字。」。核心给了为什么的（`data.message`：整理没成的 `dream_failed`，施工 R-7 修，验收手册待定 10），原话去掉句号接「：」和它（英文的一句，照原样），同 `miyu kb` 挂不上的目录：「整理记忆失败：model request failed: HTTP 401」。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
@@ -103,7 +103,8 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
   forget <编号>           忘掉一条
   clear session [<会话>]  清掉这个会话记下的；不写是上一次 miyu ask 开的
   clear me                清掉 AI 关于你的全部记忆
-  dream                   现在就整理：合掉重复的、改掉过时的、更新摘要
+  dream                   现在就整理：合掉重复的、改掉过时的、更新摘要；
+                          按 Ctrl+C 停下，合完的留着
 
 选项：
       --persona <编号>    哪个人格的记忆；不写是默认人格
@@ -137,7 +138,8 @@ Commands:
                           the session the last miyu ask opened
   clear me                Clear everything the AI remembers about you
   dream                   Organize now: merge duplicates, fix stale ones,
-                          refresh the summary
+                          refresh the summary; Ctrl+C stops it, keeping
+                          what's done
 
 Options:
       --persona <id>      Whose memory; default is the default persona
@@ -156,7 +158,7 @@ Options:
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-cli/src/memory/tests.rs` | 一行的写法：编号对齐、日期照时区换天、作废的带原因、没原因的只写作废；一条都没有的两句；`dream` 的几句（R-7 补）；整理没成的原话接上为什么、中英文，没给为什么的照原话（R-7 修） |
-| `crates/miyu-cli/tests/memory.rs` | 真的核心：每个子命令发什么、印什么、退出码；`--persona`、`-s` 找哪一间；`clear session` 不写会话的照上一次 `miyu ask`；没设默认人格、核心拒的照原话、退出码 1。`dream`（R-7 补）在请求模型是真路由的核心上：合了印几样数、作废的 `list --forgotten` 看得到，再叫一次没有要整理的、不发，没有的人格退出码 1 |
+| `crates/miyu-cli/tests/memory.rs` | 真的核心：每个子命令发什么、印什么、退出码；`--persona`、`-s` 找哪一间；`clear session` 不写会话的照上一次 `miyu ask`；没设默认人格、核心拒的照原话、退出码 1。`dream`（R-7 补）在请求模型是真路由的核心上：合了印几样数、作废的 `list --forgotten` 看得到，再叫一次没有要整理的、不发，没有的人格退出码 1；按一次 Ctrl+C 叫停、印中断了、退出码 3，下次接着合，按两次的直接退（R-23） |
 | `crates/miyu/tests/memory.rs` | 真跑主程序：`memory -h`、`--help`、`help memory`、几个子命令的 `-h` 印的都是这一页，跟着界面语言；参数写错的八种退出码 2 |
 | `crates/miyu-cli/src/help/tests.rs` | 这一页列的选项和程序真有的对得上 |
 

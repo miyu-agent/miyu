@@ -196,7 +196,7 @@ impl Actor {
         };
         let (keeper, session, owner, extractor) = calls.extracting();
         // 从叫的这一刻起听着叫停（施工 R-22）：抽的时候叫停的，抽完不合。
-        let hush = extractor.hushes.listen();
+        let hush = keeper.hush_for(extractor.hushes.listen());
         let config = Arc::clone(self.config.current());
         let dir = self.store.as_ref().and_then(|store| store.dir());
         let (Some(dir), true) = (dir, self.session.vacant()) else {

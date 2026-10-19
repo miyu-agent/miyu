@@ -64,6 +64,30 @@ impl Language {
         }
     }
 
+    /// `dream` 第一次按 Ctrl+C（施工 R-23）：在叫停，再按一次直接退。
+    pub(crate) fn dream_stopping(&self) -> &'static str {
+        match self {
+            Language::Chinese => "正在停止整理……再按一次 Ctrl+C 直接退出。",
+            Language::English => "Stopping… press Ctrl+C again to quit now.",
+        }
+    }
+
+    /// `dream` 叫停了（施工 R-23，和 `/dream` 叫停了的回执同一句）：叫停以前合完了的几样数；一批都没合完的只说中断了。
+    pub(crate) fn dream_stopped(&self, given: u64, revised: u64, retired: u64) -> String {
+        match (self, given) {
+            (Language::Chinese, 0) => "整理已中断，下次再整理。".to_string(),
+            (Language::English, 0) => {
+                "Memory organizing stopped; it will continue next time.".to_string()
+            }
+            (Language::Chinese, _) => format!(
+                "整理已中断：检查 {given} 条，修改 {revised} 条，作废 {retired} 条，其余下次再整理。"
+            ),
+            (Language::English, _) => format!(
+                "Memory organizing stopped: {given} checked, {revised} revised, {retired} retired; the rest next time."
+            ),
+        }
+    }
+
     /// 记的、改的太长：这一条 `chars` 个字，一条最多 `limit` 个。
     pub(crate) fn too_long(&self, chars: u64, limit: u64) -> String {
         match self {

@@ -68,7 +68,7 @@ const LIST: usize = 50;
 const SEARCH: usize = 10;
 
 /// 按顺序答的 `memory.*`（`methods.rs` 照它转过来）；`memory.dream` 在后台答，另走。
-pub(crate) const METHODS: [&str; 7] = [
+pub(crate) const METHODS: [&str; 8] = [
     "memory.list",
     "memory.search",
     "memory.turns",
@@ -76,6 +76,7 @@ pub(crate) const METHODS: [&str; 7] = [
     "memory.update",
     "memory.forget",
     "memory.restore",
+    "memory.dream_stop",
 ];
 
 /// 照方法名办一条 `memory.*`，命令编号是 `id`；不是 [`METHODS`] 里的没有这个方法。
@@ -96,6 +97,7 @@ pub(crate) async fn call(
         "memory.update" => update(core, stamp(core, id), read(params)?).await,
         "memory.forget" => forget(core, stamp(core, id), read(params)?).await,
         "memory.restore" => restore(core, stamp(core, id), read(params)?).await,
+        "memory.dream_stop" => dream::stop(core, params).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }

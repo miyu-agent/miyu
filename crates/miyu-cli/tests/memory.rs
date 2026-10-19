@@ -11,9 +11,10 @@ use crate::support::onboarding::said;
 use crate::support::{Asked, Home, Tape, plan, within};
 use miyu_cli::language::Language;
 use miyu_cli::{Memory, MemoryPlan, memory_on};
-use miyu_http::testkit::Server;
+use miyu_http::testkit::{Piece, Server};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_session::testkit::{Play, Script};
+use tokio::sync::mpsc;
 
 /// 照主程序的样子读参数：`miyu memory …`。
 #[derive(Parser)]
@@ -44,6 +45,17 @@ fn home() -> Home {
 
 /// 在真的套接字上连上核心，照 `words`（`memory` 后面的）跑一次；界面是中文，时区是零时区。
 async fn run(home: &Home, words: &[&str]) -> Asked {
+    let (_, presses) = mpsc::channel(1);
+    run_pressing(home, words, presses, async {}).await
+}
+
+/// 同 [`run`]，`presses` 是一次次的 Ctrl+C，`pressing` 和它一起跑（照时候按）。
+async fn run_pressing(
+    home: &Home,
+    words: &[&str],
+    presses: mpsc::Receiver<()>,
+    pressing: impl std::future::Future<Output = ()>,
+) -> Asked {
     let mut line = vec!["memory"];
     line.extend_from_slice(words);
     let plan = MemoryPlan {
@@ -54,11 +66,8 @@ async fn run(home: &Home, words: &[&str]) -> Asked {
     let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
     let tape = Tape::default();
     let (mut out, mut err) = (tape.pen(false), tape.pen(true));
-    let code = within(
-        "跑完",
-        memory_on(connection, &token, &plan, &mut out, &mut err),
-    )
-    .await;
+    let running = memory_on(connection, &token, &plan, &mut out, &mut err, presses);
+    let (code, ()) = within("跑完", async { tokio::join!(running, pressing) }).await;
     Asked {
         code,
         out: tape.text(|err| !err),
@@ -308,4 +317,63 @@ async fn dream_organizes_now_and_says_how_much() {
     );
     let refused = run(&home, &["dream", "--persona", "nobody"]).await;
     assert_eq!(refused.code, 1, "{}", refused.screen);
+}
+
+/// 整理的时候按 Ctrl+C（施工 R-23）：第一次叫停（`memory.dream_stop`），印中断了、退出码 3；下次接着合。按两次的直接退。
+#[tokio::test]
+async fn ctrl_c_stops_the_dream() {
+    let stalled = || {
+        let mut reply = said("{}");
+        reply.body.insert(0, Piece::Stall);
+        reply
+    };
+    let server = Server::start(vec![
+        stalled(),
+        said(&serde_json::json!({"summary": "用户养猫。"}).to_string()),
+        said("{}"),
+        stalled(),
+    ])
+    .await;
+    let home = Home::routed(&format!(
+        "[persona]\ndefault = \"engineer\"\n\n[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[models]\nchat = \"a/m\"\n",
+        server.base_url
+    ));
+    run(&home, &["add", "用户养了一只猫"]).await;
+    let (press, presses) = mpsc::channel(4);
+    let pressing = async {
+        server.wait_stalled(1).await;
+        press.send(()).await.expect("还在听");
+    };
+    let stopped = run_pressing(&home, &["dream"], presses, pressing).await;
+    assert_eq!(
+        (stopped.code, stopped.out.as_str()),
+        (3, "整理已中断，下次再整理。\n"),
+        "{}",
+        stopped.screen
+    );
+    assert!(
+        stopped.err.contains("再按一次 Ctrl+C 直接退出"),
+        "{}",
+        stopped.err
+    );
+    let next = run(&home, &["dream"]).await;
+    assert_eq!(
+        (next.code, next.out.as_str()),
+        (
+            0,
+            "整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。\n"
+        ),
+        "接着合放弃的那一条：{}",
+        next.screen
+    );
+    // 按两次：不等回应，直接退。
+    run(&home, &["add", "用户养了一只橘猫"]).await;
+    let (press, presses) = mpsc::channel(4);
+    let pressing = async {
+        server.wait_stalled(2).await;
+        press.send(()).await.expect("还在听");
+        press.send(()).await.expect("还在听");
+    };
+    let quit = run_pressing(&home, &["dream"], presses, pressing).await;
+    assert_eq!((quit.code, quit.out.as_str()), (3, ""), "{}", quit.screen);
 }

@@ -15,7 +15,8 @@ Commands:
                           the session the last miyu ask opened
   clear me                Clear everything the AI remembers about you
   dream                   Organize now: merge duplicates, fix stale ones,
-                          refresh the summary
+                          refresh the summary; Ctrl+C stops it, keeping
+                          what's done
 
 Options:
       --persona <id>      Whose memory; default is the default persona

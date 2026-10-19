@@ -796,6 +796,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-20"><span class="n">R-20</span>以前的对话搜的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-21"><span class="n">R-21</span>整理时她正在写什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-22"><span class="n">R-22</span>叫停整理<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -23463,6 +23464,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-22-叫停整理.md</code>；蓝图 <code>memory.md</code> 第七条第 13 款，<code>protocol.md</code>「<code>command.run</code>」第 4、9 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-23" aria-labelledby="h-sR23">
+  <div class="sheet-head"><h2 id="h-sR23"><span class="no">R-23</span>不经会话的整理也停得下</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">R-22 只让会话里的整理停得下；项目主人说命令行的 <code>miyu memory dream</code> 停不下来不合理。一间另有一份叫停的那一头，协议加 <code>memory.dream_stop</code>，命令行按 Ctrl+C 叫停。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/merge/hush.rs、merges.rs　miyu-endpoint · memory/dream.rs　miyu-cli · memory/dream.rs</span><span class="dir-note">R-23</span></div>
+            <ol class="pipe" aria-label="叫停">
+              <li>人叫的整理同时听叫它的会话的和这一间的叫停</li>
+              <li><code>memory.dream_stop</code> 照人格或会话找那一间，叫停人叫的那一趟</li>
+              <li>停的规矩同 R-22：合完的留着，正在合的那一批放弃、下次再合</li>
+              <li>命令行按一次 Ctrl+C 叫停、印中断了；按两次直接退</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">memory.dream_stop</span><span class="rl">叫停这一间人叫的整理</span></div>
+          <div class="tile new"><span class="nm">Ctrl+C</span><span class="rl">miyu memory dream 叫停</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-23</dd></div>
+        <div><dt>名称</dt><dd>不经会话的整理也停得下</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>纯逻辑、协议、命令行的测试、变异、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>两头哪一头叫停都停；协议上照人格叫停、两条回应都带 stopped、记忆流推 stopped、没在整理的 not_dreaming、下次接着合；命令行按一次叫停、按两次直接退</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-23-不经会话的整理也停得下.md</code>；蓝图 <code>memory.md</code> 第七条第 13 款，<code>protocol.md</code>「<code>memory.*</code>」第 9 条，<code>cli/memory.md</code>。</li>
       </ul>
     </div>
   </div>

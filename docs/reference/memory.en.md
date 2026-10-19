@@ -8,6 +8,7 @@ Chinese version: [memory.md](memory.md).
 | [`memory.turns`](#memoryturns) | Search past conversations |
 | [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remember, change, retire or clear, restore |
 | [`memory.dream`](#memorydream) | Organize memory now |
+| [`memory.dream_stop`](#memorydream_stop) | Stop the organizing in progress |
 | [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
 | [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
 
@@ -87,7 +88,7 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 
 Organize now: with `session`, first extract what that session hasn't had extracted yet, then merge the new with the old (duplicates merged, outdated ones retired, a summary of the person written). Answered in the background; takes a few seconds to a dozen or so.
 
-**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many were handed in, retired, revised, and whether the summary changed (boolean). With no memories at all, all are zero and no model is called; with nothing new it still looks over the older memories whose turn it is (R-19). With `session`, if that session's `/dream stop` or `/stop` stops it, it still answers, with the counts merged before the stop and `"stopped": true` (R-22): the batch being merged is dropped and merged next time; finished batches stay.
+**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many were handed in, retired, revised, and whether the summary changed (boolean). With no memories at all, all are zero and no model is called; with nothing new it still looks over the older memories whose turn it is (R-19). If it's stopped ([`memory.dream_stop`](#memorydream_stop), or for one asked from a session that session's `/dream stop` or `/stop`), it still answers, with the counts merged before the stop and `"stopped": true` (R-22, R-23): the batch being merged is dropped and merged next time; finished batches stay.
 
 **Errors**: `memory_busy` (already organizing); `dream_failed` (merging failed, `data.message`).
 
@@ -109,6 +110,14 @@ Organize now: with `session`, first extract what that session hasn't had extract
 - To show what she is writing during a requested organize (R-21): `merging`'s `given` lists the memories handed in for the batch, so they can drift by while waiting; and a push that isn't logged, `memory.dreaming`: one each time she finishes a revision (`kind: revised`, `id`, `text`) or a removal (`kind: retired`, `id`, `retire`, `kept`, `why`), and for the summary every 20 more characters and when done (`kind: summary`, `chars`, `done`), all with the batch's `upto`. It's what she wrote at that moment; what lands is checked as a whole and may have fewer, so trust the log. Missed ones aren't replayed.
 - Each run, the first batch with room also looks over up to 20 older memories in turn (by id, starting over after the last), and revisions or removals of them count as the batch's. A requested run with nothing new still looks them over: that batch's `fresh` and `left` are 0.
 - When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
+
+## `memory.dream_stop`
+
+Stop the organizing a person asked for in this room (R-23), however it was asked (`memory.dream`, or `/dream` in a session); background organizing isn't stopped. Finished batches stay; the batch being merged is dropped and merged next time, and the memory log gets an `ext.memory.merge_failed` with `why: stopped`. The stopped `memory.dream` still answers, with `"stopped": true`. `memory.dream` is answered in the background, so send this on the same connection.
+
+**Params**: only `persona` or `session`, as for `memory.dream`. **Response**: `{"stopped": true}`.
+
+**Errors**: `not_dreaming` (nothing a person asked for is organizing in this room).
 
 ## `kb.list`, `kb.search`, `kb.read`, `kb.documents`
 

@@ -124,7 +124,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `memory_not_installed`, `memory_unavailable` | Memory isn't installed; there's no memory here | `why` |
 | `memory_busy`, `dream_failed` | Already organizing; organizing failed | `message` |
-| `not_dreaming` | `/dream stop`: this session isn't organizing | |
+| `not_dreaming` | `/dream stop`, `memory.dream_stop`: nothing is organizing | |
 | `unknown_memory`, `memory_not_current` | No such memory; already changed, retired or cleared | |
 | `memory_too_long` | Over 120 characters | `chars`, `limit` |
 | `unknown_kb`, `unknown_document` | No such knowledge base or document | |

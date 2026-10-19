@@ -1,4 +1,4 @@
-//! 一间一把锁、同一批连着失败几次（施工 R-7 上；R-17 从 `merge.rs` 挪出来）。
+//! 一间一把锁、同一批连着失败几次（施工 R-7 上；R-17 从 `merge.rs` 挪出来）、叫停这一间人叫的整理的那一头（施工 R-23）。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, PoisonError};
@@ -6,6 +6,7 @@ use std::sync::{Mutex, PoisonError};
 use miyu_store::recall::Room;
 
 use super::TRIES;
+use super::hush::{Hush, Hushes};
 
 /// 核心一份的合并状态：哪几间在合、每一间同一批失败了几次。
 #[derive(Debug, Default)]
@@ -18,6 +19,8 @@ struct MergeState {
     running: BTreeSet<Room>,
     /// 每一间连着失败了几次。
     failures: BTreeMap<Room, u32>,
+    /// 每一间叫停人叫的整理的那一头（施工 R-23）：用到哪一间才有。
+    hushes: BTreeMap<Room, Hushes>,
 }
 
 impl Merges {
@@ -49,5 +52,15 @@ impl Merges {
             state.failures.insert(room.clone(), tries);
         }
         tries
+    }
+
+    /// 人叫的整理 `hush` 再听 `room` 这一间的叫停（施工 R-23）。
+    pub(super) fn listen(&self, room: &Room, hush: Hush) -> Hush {
+        hush.and_room(self.state().hushes.entry(room.clone()).or_default())
+    }
+
+    /// 叫停 `room` 这一间这时人叫的整理（施工 R-23），交回有没有。
+    pub(super) fn hush(&self, room: &Room) -> bool {
+        self.state().hushes.get(room).is_some_and(Hushes::hush)
     }
 }
