@@ -82,6 +82,10 @@ fn main() -> ExitCode {
     let language = language::current();
     // 软件包加的子命令（施工 9-2）：第一个词不是内置的（不认识的、`help`、选项）才照清单找，`miyu core`、`miyu ask` 不多读盘。
     let args: Vec<OsString> = std::env::args_os().collect();
+    // 脚本调工具（设计 39，原型 M-0）：不读清单、不连核心，经编号 3 上的入口直接调。
+    if args.get(1).is_some_and(|first| first == "call") {
+        return miyu_cli::call(&args[2..]);
+    }
     let builtins = builtins();
     let first = args.get(1).and_then(|first| first.to_str());
     let added = match first {

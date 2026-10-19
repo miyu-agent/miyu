@@ -58,6 +58,7 @@ pub(crate) fn call(args: serde_json::Value) -> Call {
         packages: None,
         ids: None,
         settings: None,
+        nested: None,
     }
 }
 

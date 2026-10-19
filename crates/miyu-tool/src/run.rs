@@ -16,7 +16,7 @@ use miyu_kernel::time::UtcOffset;
 use miyu_sandbox::Sandboxed;
 
 use crate::{
-    AgentPort, GoalPort, JobPort, KnowledgePort, Log, MemoryPort, MessagePort, PackagesPort,
+    AgentPort, GoalPort, JobPort, KnowledgePort, Log, MemoryPort, MessagePort, NestedPort, PackagesPort,
     QuestionPort, SessionsPort, Stop, UsagePort,
 };
 
@@ -78,6 +78,8 @@ pub struct Call {
     pub ids: Option<CallIds>,
     /// 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项、取密钥。会话交；测试里的假调用、会话外面的调用没有，照默认值。
     pub settings: Option<Arc<dyn crate::SettingsPort>>,
+    /// 脚本调工具的端口（设计 39，原型 M-0）：只交给前台的 `shell`，它照这个开通道。别的调用、测试里的假调用没有。
+    pub nested: Option<Arc<dyn NestedPort>>,
 }
 
 /// 一次调用是哪个会话的哪一次（施工 O-2 上），是谁要她做的（施工 O-2 下）。

@@ -176,6 +176,7 @@ pub fn call(args: &str) -> Call {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     }
 }
 

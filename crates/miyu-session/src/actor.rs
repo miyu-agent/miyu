@@ -144,7 +144,9 @@ impl Actor {
         config: Turning,
     ) -> Actor {
         let (backs, back) = mpsc::unbounded_channel();
-        let tools = Tools::new(tools, backs.clone());
+        let guard = Arc::new(guard);
+        let mut tools = Tools::new(tools, backs.clone());
+        tools.set_guard(Arc::clone(&guard));
         let jobs = SessionJobs::new(jobs, backs.clone());
         let (pushes, _) = broadcast::channel(PUSH_QUEUE);
         let busy = Arc::new(AtomicBool::new(!session.idle()));
@@ -170,7 +172,7 @@ impl Actor {
             clock,
             tools,
             jobs,
-            guard: Arc::new(guard),
+            guard,
             busy,
             reporter: None,
             config,

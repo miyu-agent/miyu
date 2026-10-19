@@ -7,6 +7,8 @@
 //! 沙盒的，经沙盒的助手起（施工 5-1），别的都照旧。
 
 mod background;
+#[cfg(unix)]
+mod channel;
 mod env;
 mod output;
 mod process;
@@ -89,12 +91,12 @@ impl Shell {
         let program = Program::find(std::env::var_os("PATH").as_deref());
         let text = |name: &str, fields: &[&str]| load::text(resources, "shell", name, fields);
         Ok(Shell {
-            spec: load::spec_filled(
+            spec: proto::described(load::spec_filled(
                 resources,
                 "shell",
                 Access::Execute,
                 &[("shell", program.kind.name())],
-            )?,
+            )?),
             texts: Texts {
                 common,
                 results: Results::load(resources)?,
@@ -248,24 +250,47 @@ impl Tool for Shell {
                 return self.background(&call, args);
             }
             let timeout = limit(args.timeout);
-            let command = match self.program.command(
+            let mut env = env::passed(std::env::vars_os(), call.sandbox.is_some());
+            // 脚本调工具的通道（设计 39，原型 M-0）：有端口的才开，开不成的照旧跑、只是没有通道。
+            #[cfg(unix)]
+            let mut channel = call
+                .nested
+                .clone()
+                .and_then(|port| channel::Channel::open(port).ok());
+            #[cfg(unix)]
+            if channel.is_some() {
+                channel::Channel::env(&mut env);
+            }
+            #[cfg_attr(not(unix), allow(unused_mut))]
+            let mut command = match self.program.command(
                 &args.command,
                 &workdir(&call),
-                env::passed(std::env::vars_os(), call.sandbox.is_some()),
+                env,
                 call.sandbox.as_deref(),
             ) {
                 Ok(command) => command,
                 Err(error) => return self.failed(&error),
             };
+            #[cfg(unix)]
+            if let Some(fd) = channel.as_ref().and_then(channel::Channel::child_fd) {
+                miyu_sandbox::inherit::pass_fd(&mut command, fd, channel::FD);
+            }
             let started = match process::start(command, None, move |text| progress.push(text)) {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };
+            #[cfg(unix)]
+            if let Some(channel) = channel.as_mut() {
+                channel.started();
+            }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_millis(timeout);
             let finished = blocking(call.stop.clone(), move |_| started.wait(wait)).await;
             guard.disarm();
+            // 命令跑完：通道关掉，脚本 `nohup` 出去的进程手里的编号 3 从此连不上。
+            #[cfg(unix)]
+            drop(channel);
             match finished {
                 Ok(finished) => self.finished(finished, timeout),
                 Err(error) => self.failed(&error),
@@ -320,4 +345,37 @@ fn signal(status: std::process::ExitStatus) -> String {
 #[cfg(not(unix))]
 fn signal(_status: std::process::ExitStatus) -> String {
     "?".to_string()
+}
+
+/// 原型 M-0（设计 39 第十节）：实测时照核心的环境变量换 shell 的说明。正式做时放进资源文件、登记。
+mod proto {
+    use miyu_tool::Spec;
+
+    /// 原说明里不让读文件的那一句。
+    const FILES_OLD: &str = "Use it for builds, tests, git and other programs, not to read, search or edit files.";
+
+    /// `MIYU_PROTO_FILES=1` 换成的那一句：批量统计、筛选可以写脚本。
+    const FILES_NEW: &str = "Use it for builds, tests, git and other programs. Read, search and edit files with the file tools when you need to see them; to count or filter many files when you only need the result, a script here is fine.";
+
+    /// `MIYU_PROTO_CALL=1` 接在后面的一段。
+    const CALL: &str = r#"
+
+Some tools can also be called from commands, so a script can loop over them: miyu call <tool> --<param> <value>... (or --json '<object>', --json - for stdin). The result goes to stdout: JSON when the tool has structured output, otherwise text. Only what the command prints comes back to you, so print just what you need. Exit codes: 1 failed, 2 bad usage, 3 interrupted, 4 needs approval (call the tool directly). miyu call --schema <tool> prints its parameters. miyu call works only for: web_search, web_fetch, memory_search, kb_search, kb_read, mcp__*. Call every tool directly as usual.
+JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site","date"}]}; memory_search {"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}; kb_search {"hits":[{"kb","path","heading","snippet","page"}]}; kb_read {"kb","path","page","pages","text"}. web_fetch and MCP tools without structured output print text."#;
+
+    /// 照环境变量换好的说明。
+    pub(super) fn described(mut spec: Spec) -> Spec {
+        if on("MIYU_PROTO_FILES") {
+            spec.description = spec.description.replace(FILES_OLD, FILES_NEW);
+        }
+        if on("MIYU_PROTO_CALL") {
+            spec.description.push_str(CALL);
+        }
+        spec
+    }
+
+    /// 环境变量是 `1`。
+    pub(crate) fn on(name: &str) -> bool {
+        std::env::var_os(name).is_some_and(|value| value == "1")
+    }
 }

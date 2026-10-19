@@ -52,6 +52,10 @@ getrandom = { version = "0.4", features = ["std"] }
 # 加密过的密码写进记录用 base64。MIT OR Apache-2.0。
 base64 = "0.22"
 
+[target.'cfg(unix)'.dependencies]
+# 原型 M-0（设计 39）：把脚本调工具的通道放到子进程的固定编号上（`inherit.rs`）。MIT OR Apache-2.0，工作区里本来就有。
+libc = "0.2"
+
 [target.'cfg(windows)'.dev-dependencies]
 # 测试里的「本人」要是跑测试的这个用户：写出来只给本人的文件，自己才读得回来（施工 5-8）。
 miyu-pipe = { path = "../miyu-pipe" }

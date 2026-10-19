@@ -43,6 +43,7 @@ fn bare(args: serde_json::Value) -> Call {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     }
 }
 
@@ -382,6 +383,7 @@ async fn the_output_is_pushed_to_the_heads_as_it_comes() {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     };
     let done = tool("shell").run(call, progress).await;
     assert!(!done.error, "{}", text(&done));
@@ -427,6 +429,7 @@ async fn a_tilde_working_directory_means_home() {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     };
     let done = tool("shell")
         .run(call, miyu_tool::Progress::new(|_| {}))

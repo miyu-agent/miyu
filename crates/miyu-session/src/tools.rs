@@ -45,6 +45,7 @@ mod back;
 mod goals;
 mod halt;
 mod kit;
+mod nested;
 mod preview;
 mod questions;
 
@@ -96,6 +97,8 @@ pub(crate) struct Tools {
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
     backs: mpsc::UnboundedSender<Back>,
+    /// 权限策略（原型 M-0，设计 39）：脚本调工具旁路判时用。actor 造好以后交进来。
+    guard: Option<Arc<crate::guard::Guard>>,
 }
 
 /// 一次在跑的调用。
@@ -239,7 +242,13 @@ impl Tools {
             hooks: kit.hooks,
             running: BTreeMap::new(),
             backs,
+            guard: None,
         }
+    }
+
+    /// 交进权限策略（原型 M-0，设计 39）：脚本调工具旁路判时用。
+    pub(crate) fn set_guard(&mut self, guard: Arc<crate::guard::Guard>) {
+        self.guard = Some(guard);
     }
 
     /// 这个会话日志的只读入口（施工 3-8 六补）：订阅时交给补发的那一截，由拿着它的一方去读。
@@ -302,7 +311,7 @@ impl Tools {
             .map(|agents| messages::for_call(agents, call_id, subagents, self.blobs.clone()));
         // 列会话的端口只给本机的主会话（施工 C-3）。
         let sessions = self.agents.as_ref().and_then(sessions::for_call);
-        let call = Call {
+        let mut call = Call {
             args,
             cwd,
             home: self.home.clone(),
@@ -334,6 +343,7 @@ impl Tools {
             }),
             // 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项，例如搜索来源。
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
+            nested: None,
         };
         let call_text = call_id.to_string();
         let Some(tool) = self.catalog.get(&name) else {
@@ -358,6 +368,20 @@ impl Tools {
                 detail: None,
             });
         };
+        // 脚本调工具（原型 M-0，设计 39）：前台的 `shell` 带上端口，核心照环境变量开。
+        if name == "shell"
+            && std::env::var_os("MIYU_PROTO_CALL").is_some_and(|value| value == "1")
+            && let Some(guard) = &self.guard
+        {
+            call.nested = Some(Arc::new(nested::Nester {
+                catalog: self.catalog.clone(),
+                guard: Arc::clone(guard),
+                sandbox: self.sandbox.clone(),
+                template: call.clone(),
+                permission: permission.clone(),
+                dirs: dirs.clone(),
+            }));
+        }
         tracing::info!(target: TARGET, call = call_text.as_str(), tool = name.as_str(), "running");
         let display_name = tool.display_name();
         let progress = {

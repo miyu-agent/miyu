@@ -135,6 +135,7 @@ fn bare(args: Value) -> Call {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     }
 }
 

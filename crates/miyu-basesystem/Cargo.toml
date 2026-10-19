@@ -32,7 +32,7 @@ miyu-tool = { path = "../miyu-tool" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 读文件在阻塞线程里做，不占着跑异步任务的线程。
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros"] }
 # edit 宽松那一层的 NFKC 规范化（施工 4-6 中）：Rust 里通用的那一个。
 unicode-normalization = "0.1"
 # 运行日志的门面：shell 收拾命令时出的岔子记一条（施工 4-8）。
@@ -40,7 +40,7 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 [target.'cfg(unix)'.dependencies]
 # shell 超时、叫停时整组杀掉命令：kill(-pgid, SIGKILL) 的安全接口（施工 4-8）。
-rustix = { version = "1", features = ["process"] }
+rustix = { version = "1", features = ["process", "net"] }
 
 [dev-dependencies]
 # 核对工具会说的每一种，中文、英文都换得出字（施工 4-5 上）。

@@ -93,6 +93,7 @@ impl Tools {
             goals: None,
             ids: None,
             settings: None,
+            nested: None,
         };
         Some(tool.preview(call)?.await)
     }

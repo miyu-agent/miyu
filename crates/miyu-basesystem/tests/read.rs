@@ -46,6 +46,7 @@ fn read_comes_from_the_resources_with_its_schema_as_written() {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     });
     assert_eq!(targets.len(), 1);
     assert_eq!(targets[0].path, "src/a.rs");

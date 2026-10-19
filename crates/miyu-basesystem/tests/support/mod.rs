@@ -324,6 +324,7 @@ impl Site {
             goals: None,
             ids: None,
             settings: None,
+            nested: None,
         }
     }
 }

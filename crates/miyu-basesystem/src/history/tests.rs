@@ -112,6 +112,7 @@ fn call(args: Value, log: Option<Log>, minutes: i32) -> Call {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     }
 }
 

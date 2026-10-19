@@ -147,6 +147,7 @@ pub async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) 
         packages: None,
         ids: None,
         settings: None,
+        nested: None,
     };
     tool.run(call, Progress::new(|_| {})).await
 }

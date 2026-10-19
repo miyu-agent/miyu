@@ -31,6 +31,7 @@ pub mod load;
 mod log;
 mod memory;
 mod messages;
+mod nested;
 mod packages;
 pub mod picture;
 mod questions;
@@ -68,6 +69,7 @@ pub use memory::{
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
 };
+pub use nested::{Calling, NestedPort, Outcome};
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{

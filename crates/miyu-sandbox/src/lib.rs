@@ -16,6 +16,8 @@
 //! Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）上照规格收紧；Windows 还不收紧（5-9）。
 
 mod availability;
+#[cfg(unix)]
+pub mod inherit;
 pub mod install;
 pub mod lifeline;
 mod locate;

@@ -80,6 +80,7 @@ fn grep_comes_from_the_resources() {
         goals: None,
         ids: None,
         settings: None,
+        nested: None,
     });
     assert_eq!(targets[0].path, "src");
     assert!(!targets[0].write);
