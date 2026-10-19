@@ -1,6 +1,6 @@
 ## 项目
 
-状态：施工 H-1 做了项目这一样东西（存、`project.*`、`projects` 流）；H-2 做了会话在项目里（进出、新会话照项目的默认、删项目挪出来）；H-3 附加提示词和留言的范围照设计 `38-项目.md` 接着做。协议见 `docs/reference/projects.md`。
+状态：施工 H-1 做了项目这一样东西（存、`project.*`、`projects` 流）；H-2 做了会话在项目里（进出、新会话照项目的默认、删项目挪出来）；H-3 做了附加提示词进她的 system、留言照项目筛。协议见 `docs/reference/projects.md`。
 
 ### 在哪
 
@@ -12,6 +12,9 @@
 | `crates/miyu-endpoint/src/projects/sessions.rs` | 会话在项目里（H-2）：项目在不在、这个会话能不能进（本机的主会话：没有父会话）、建好了移进去、删项目时挪出来 |
 | `crates/miyu-kernel/src/session/meta.rs` | 会话现在在哪个项目：`session.meta_changed` 的 `project` 一路盖上去（空的是移出来），`Session::project` 交出来（H-2） |
 | `crates/miyu-store/src/index/row.rs` | 会话列表的索引多一列 `project`（版本 7，H-2） |
+| `crates/miyu-policy/src/project.rs`、`resources/core/project.txt` | 附加提示词那一块（H-3）：模板包一层，接在「关于你」后面，记进快照的 `project` |
+| `crates/miyu-session/src/actor/persona/project.rs` | 回合开始照会话现在在哪个项目，读属主的 `projects.json` 拼这一块；和快照里的不一样这一轮换快照（同扩展放的那几段）；子代理进不了项目、不带，分叉出来的跟着父会话带 |
+| `crates/miyu-tool/src/sessions.rs` 的 `reaches`、`crates/miyu-session/src/sessions.rs` | 留言的范围（H-3）：列会话照项目筛，认会话、读、发话都照列出来的那一批 |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | `projects` 流：和软件包、扩展的推送共用一个转发任务，回应是整张表，之后推 `projects.changed` |
 
 ### 怎么走
@@ -22,6 +25,8 @@
 4. 只给人（`connection.rs` 的 `people_only`：方法名 `project.` 开头的）。
 5. 会话在哪个项目只记在会话日志里（H-2）：`session.set_meta` 的 `project` 换成内核的 `SetMeta`，`null` 记成空的；移进的项目要在，会话要是本机的主会话（分叉出来的也有父会话）。`session.create` 带 `project` 的，没写的人格、预设照项目的，建好了再交一条 `SetMeta`（命令编号是请求的编号接 `/project`），回应的 `events` 是 `[1, 2]`。
 6. 删项目（H-2）：照会话列表的扫法找出在这个项目里的本机会话，一个个移出来，再从文件里拿掉，回 `moved`。
+7. 附加提示词（H-3）：回合开始照内核记的这个会话在哪个项目（`Session::project`），读那个项目现在的 `prompt` 拼一块，和快照里的比，变了整段 system 重算一次（下一轮生效）；读不成的照旧用快照里的、记一行。
+8. 留言（H-3）：端点列主会话时照 `projects.json` 给每一个填项目、开没开；执行器照列表里自己那一行和每一个比（`reaches`）。
 
 ### 守着它的
 
@@ -34,3 +39,6 @@
 | `crates/miyu-endpoint/tests/projects_sessions.rs` | 在项目里建的照项目的人格、预设、日志第二条移进去，明着写的照写的，没有的项目拒；移进、移出、列表带 `project`，没有的项目、空字符串、分叉出来的拒；删项目挪出来、回 `moved` |
 | `crates/miyu-kernel/src/session/tests/meta.rs` | 移进、移出项目记下来，一样的不记，载入照日志算回来 |
 | `crates/miyu-store/src/index/tests.rs` | 索引的 `project` 照最后一次移动，只改标题的照旧 |
+| `crates/miyu-endpoint/tests/projects_scope.rs` | 她调 `sessions`：没开的项目只看得到同一个项目里的，开了的和外面互相看得到；附加提示词第一轮就带上、项目改了下一轮换上、移出项目下一轮没有 |
+| `crates/miyu-tool/src/sessions/tests.rs` | `reaches` 的几种：都在外面、同一个项目、没开的和外面、开了的和外面、两个开了的、一边没开的 |
+| `crates/miyu-policy/src/project/tests.rs` | 空的提示词没有那一块、字节一样；有的照模板、去掉首尾空白，接在 system 后面 |

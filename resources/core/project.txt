@@ -1,0 +1,3 @@
+<project_instructions>
+{prompt}
+</project_instructions>

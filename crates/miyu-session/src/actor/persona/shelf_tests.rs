@@ -217,6 +217,7 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         knowledge: None,
         skills: None,
         profile: None,
+        project: None,
         appended: Default::default(),
     };
     refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");

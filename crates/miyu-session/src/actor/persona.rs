@@ -54,6 +54,8 @@ pub(crate) struct Refresh {
     pub(crate) skills: Option<crate::skills::Watch>,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，换预设时要图的包照旧扣下。
     pub(crate) images: bool,
+    /// 属主的项目文件（施工 H-3，`miyu_store::projects`）：回合开始照会话现在在哪个项目找附加提示词。
+    pub(crate) projects: std::path::PathBuf,
 }
 
 /// 看了一遍的结果。
@@ -87,7 +89,9 @@ impl Actor {
             .hooks()
             .map(|(port, session)| port.appended(session.as_str()))
             .unwrap_or_default();
-        match blocking(move || look(&refresh, &values, &now, asked)).await {
+        // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。
+        let project = self.session.project().map(str::to_string);
+        match blocking(move || look(&refresh, &values, &now, (asked, project))).await {
             Seen::Same => {
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.seen = Some(seen);
@@ -124,9 +128,15 @@ fn look(
     refresh: &Refresh,
     values: &Values,
     now: &Edition,
-    asked: BTreeMap<String, Option<String>>,
+    (asked, project): (BTreeMap<String, Option<String>>, Option<String>),
 ) -> Seen {
     let old = &refresh.snapshot;
+    // 项目的附加提示词（施工 H-3）：照这一刻拼，和快照里的不一样这一轮要换。
+    let projected = match project::block(refresh, project.as_deref()) {
+        Ok(block) => block,
+        Err(error) => return Seen::Kept(error),
+    };
+    let reprojected = projected != old.project;
     // 扩展说的和钉的不一样（施工 X-20）：这一轮要换。
     let said = asked
         .iter()
@@ -190,7 +200,14 @@ fn look(
         None => old.knowledge.clone(),
     };
     let relisted = listing != old.knowledge;
-    if same && !moved && !flipped && !relisted && !said && !matches!(preset, Preset::Changed(_)) {
+    if same
+        && !moved
+        && !flipped
+        && !relisted
+        && !said
+        && !reprojected
+        && !matches!(preset, Preset::Changed(_))
+    {
         return Seen::Same;
     }
     let (face, pin) = match &preset {
@@ -235,6 +252,7 @@ fn look(
         skills: old.skills.clone(),
         // 「关于你」造会话时钉下（施工 P-9）：换人格、换预设照旧，不重读配置。
         profile: old.profile.clone(),
+        project: projected,
         appended,
     };
     let new = match build(&refresh.resources, parts) {
@@ -246,7 +264,8 @@ fn look(
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
-    let edited = !same || matches!(preset, Preset::Changed(_)) || relisted || reappended;
+    let edited =
+        !same || matches!(preset, Preset::Changed(_)) || relisted || reappended || reprojected;
     if !edited && !old.swappable(&new) && new.tools == old.tools {
         return Seen::Same;
     }
@@ -453,6 +472,7 @@ fn followed(
 
 #[cfg(test)]
 mod preset_tests;
+mod project;
 #[cfg(test)]
 mod shelf_tests;
 #[cfg(test)]

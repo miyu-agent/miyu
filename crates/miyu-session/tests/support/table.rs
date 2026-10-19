@@ -101,6 +101,8 @@ impl SessionPort for Table {
             title: String::new(),
             cwd: "~/src".to_string(),
             busy: true,
+            project: None,
+            open: false,
             last_active: Timestamp::parse("2026-10-01T09:00:00.000Z").expect("合写法"),
         };
         Box::pin(async move { Ok(vec![other]) })

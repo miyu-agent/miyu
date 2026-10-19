@@ -68,6 +68,8 @@ fn main(session: &str, title: &str, cwd: &str, busy: bool, last_active: &str) ->
         title: title.to_string(),
         cwd: cwd.to_string(),
         busy,
+        project: None,
+        open: false,
         last_active: at(last_active),
     }
 }

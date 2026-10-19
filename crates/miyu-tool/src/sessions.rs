@@ -59,6 +59,24 @@ pub struct MainSession {
     pub busy: bool,
     /// 最近一次动静：日志最后一条事件的时刻；日志后面坏了的，照坏的那一段以前的。
     pub last_active: Timestamp,
+    /// 在哪个项目（施工 H-3，设计 `38-项目.md` 第五节）：不在项目里、项目已经删了的没有。
+    pub project: Option<String>,
+    /// 它的项目开了「能和项目外的会话互相留言」；不在项目里的是假。
+    pub open: bool,
+}
+
+impl MainSession {
+    /// 它在哪个项目、项目开没开 `open`：交给 [`reaches`]。
+    pub fn room(&self) -> (Option<&str>, bool) {
+        (self.project.as_deref(), self.open)
+    }
+}
+
+/// 在 `a`、`b` 两个地方（项目、开没开 `open`）的会话互相看得到吗（设计 `38-项目.md` 第五节）：在同一个项目里（都不在也算）
+/// 的看得到；不在同一个的，两边各自在项目里的那一边都要开了 `open` 才看得到。看不到的列不出、读不了、发不到。
+pub fn reaches(a: (Option<&str>, bool), b: (Option<&str>, bool)) -> bool {
+    let open = |(project, open): (Option<&str>, bool)| project.is_none() || open;
+    a.0 == b.0 || (open(a) && open(b))
 }
 
 /// 照她写的 `written` 在 `among` 里认会话（`cross-session.md`「对外的样子」会话的短编号、第三条第 1 款）：整个编号相同，或者

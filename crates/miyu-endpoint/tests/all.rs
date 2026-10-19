@@ -10,6 +10,7 @@ mod model_embed;
 mod package_call_ext;
 mod profile;
 mod projects;
+mod projects_scope;
 mod projects_sessions;
 mod provide;
 mod provide_detail;

@@ -45,7 +45,17 @@ impl SessionsPort for Lister {
                 .inspect_err(|error| {
                     tracing::warn!(target: TARGET, error = error.as_str(), "sessions not listed");
                 })?;
-            listed.retain(|session| session.id != agents.session);
+            // 照项目筛（施工 H-3）：照列表里自己那一行看在哪个项目；找不到自己的（照理不会）当不在项目里。
+            let me = listed
+                .iter()
+                .find(|session| session.id == agents.session)
+                .map(|me| (me.project.clone(), me.open));
+            let me = me
+                .as_ref()
+                .map_or((None, false), |(project, open)| (project.as_deref(), *open));
+            listed.retain(|session| {
+                session.id != agents.session && miyu_tool::reaches(me, session.room())
+            });
             Ok(listed)
         })
     }

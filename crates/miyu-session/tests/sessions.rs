@@ -130,6 +130,8 @@ fn main(id: &str, title: &str, at: &str) -> MainSession {
         title: title.to_string(),
         cwd: "~/src".to_string(),
         busy: false,
+        project: None,
+        open: false,
         last_active: Timestamp::parse(at).expect("合写法"),
     }
 }

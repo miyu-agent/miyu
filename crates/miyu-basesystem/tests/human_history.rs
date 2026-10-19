@@ -24,6 +24,8 @@ fn peer(text: &str) -> MainSession {
         title: String::new(),
         cwd: "~".to_string(),
         busy: false,
+        project: None,
+        open: false,
         last_active: miyu_kernel::time::Timestamp::parse("2026-09-29T05:00:00.000Z")
             .expect("合写法"),
     }

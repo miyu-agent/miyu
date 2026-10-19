@@ -96,6 +96,8 @@ fn main(id: &SessionId) -> MainSession {
         title: String::new(),
         cwd: "~/src".to_string(),
         busy: false,
+        project: None,
+        open: false,
         last_active: now(),
     }
 }

@@ -53,3 +53,27 @@ fn a_suffix_two_sessions_share_is_ambiguous_and_a_longer_one_is_not() {
         "一个都没有"
     );
 }
+
+#[test]
+fn projects_wall_off_sessions_unless_both_sides_are_open() {
+    let outside = (None, false);
+    let closed = (Some("p1"), false);
+    let open = (Some("p1"), true);
+    let other_open = (Some("p2"), true);
+    let other_closed = (Some("p2"), false);
+    assert!(reaches(outside, outside), "都不在项目里");
+    assert!(reaches(closed, closed), "同一个项目");
+    assert!(
+        !reaches(closed, outside) && !reaches(outside, closed),
+        "项目没开的和外面互相看不到"
+    );
+    assert!(
+        reaches(open, outside) && reaches(outside, open),
+        "开了的和外面互相看得到"
+    );
+    assert!(reaches(open, other_open), "两个开了的项目互相看得到");
+    assert!(
+        !reaches(open, other_closed) && !reaches(other_closed, open),
+        "另一边没开的看不到"
+    );
+}

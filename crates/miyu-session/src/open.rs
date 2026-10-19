@@ -248,6 +248,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .flatten(),
             skills: skilled,
             profile: profile.block(&resources.profile().map_err(CreateError::Shipped)?),
+            project: None,
             appended,
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
@@ -426,6 +427,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         knowledge: shelves,
         skills: watch,
         images,
+        projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
     });
     let busy = actor.busy();
     let watched = actor.watched();

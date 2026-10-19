@@ -105,6 +105,10 @@ pub struct Snapshot {
     /// （换人格、换预设也照旧）。没写称呼和更多描述的、场所会话没要的没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<String>,
+    /// 项目的附加提示词那一块拼好的原文（施工 H-3，`project.rs`）：接在「关于你」后面，会话挪进挪出项目、项目改了提示词，下一轮
+    /// 换上。不在项目里、没写的没有：不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project: Option<String>,
     /// 扩展放在 system 尾部的那几段（施工 X-20，`appended.rs`）：包的编号到原文，造会话时钉下，扩展改了下一轮换上。没有的
     /// 不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -168,96 +172,6 @@ pub struct CoreTexts {
     /// 要先加载的工具用的字（`loading/`，施工 L-1）。以前造的快照里没有，读成没有：那时还没有要先加载的工具；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loading: Option<crate::loading::LoadingTexts>,
-}
-
-/// 压缩的几句（施工 6-2 上）。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CompactionTexts {
-    /// 摘要指令的正文（`summarize-task.txt`）。
-    pub summarize_task: String,
-    /// 手动压缩附了要求的，要求前面那一行（`summarize-instructions.txt`，施工 6-8）。以前造的快照里没有，读成空的。
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub summarize_instructions: String,
-    /// 摘要指令的最后一句（`summarize-end.txt`，施工 6-8 从正文里拆出来）。以前造的快照里没有，读成空的：那时的正文里
-    /// 本来就带着这一句，拼出来一字不差。
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub summarize_end: String,
-    /// 压后重建的字（施工 6-5）。以前造的快照里没有，读成没有：不写那几段、不重读。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rebuild: Option<RebuildTexts>,
-    /// 截短重试的字（施工 6-6 中）。以前造的快照里没有，读成没有：不截短。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub shorten: Option<ShortenTexts>,
-    /// 隔离式那一句 system（`summarize-system.txt`，施工 6-6 下）。以前造的快照里没有，读成没有：摘要回复里调了工具照
-    /// 失败算。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub summarize_system: Option<String>,
-}
-
-/// 权限策略拒绝时写给她的两句（施工 4-3 下）。
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PermissionTexts {
-    /// 碰到了数据根（`forbidden.txt`）。
-    pub forbidden: String,
-    /// 路径换不成真实的位置（`unresolvable.txt`）。
-    pub unresolvable: String,
-}
-
-/// 回合没走完的几句，照原因。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TurnEndedTexts {
-    /// 被人打断（`interrupted.txt`）。
-    pub interrupted: String,
-    /// 出错（`error.txt`）。
-    pub error: String,
-    /// 走到了步数上限（`step_limit.txt`）。
-    pub step_limit: String,
-    /// 核心崩了，没走完（`aborted.txt`）。
-    pub aborted: String,
-    /// 被有计划的重启打断（`restarted.txt`）。
-    pub restarted: String,
-}
-
-/// 内核替工具写给模型的几句，名字照 `resources/core/tool-results/` 里的文件。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ToolResultTexts {
-    /// 没有这件工具（`unknown.txt`）。
-    pub unknown: String,
-    /// 参数不是 JSON 对象（`not-an-object.txt`）。
-    pub not_an_object: String,
-    /// 还没开始就被打断（`cancelled-before.txt`）。
-    pub cancelled_before: String,
-    /// 跑到一半被打断（`cancelled-running.txt`）。
-    pub cancelled_running: String,
-    /// 急着插话，这一步没跑的（`skipped.txt`）。
-    pub skipped: String,
-    /// 只读时拦下写入的（`read-only.txt`）。
-    pub read_only: String,
-    /// 人拒绝了（`denied.txt`）。
-    pub denied: String,
-    /// 人拒绝了，还说了理由（`denied-with-reason.txt`）。
-    pub denied_with_reason: String,
-    /// 要确认却没人能确认（`unattended.txt`）。
-    pub unattended: String,
-    /// 问人的时候被打断（`question-interrupted.txt`）。
-    pub question_interrupted: String,
-    /// 问的题作废了（`question-voided.txt`）。
-    pub question_voided: String,
-    /// 要问人却没人能回答（`question-unattended.txt`）。
-    pub question_unattended: String,
-    /// 有计划的重启打断了调用（`restarted.txt`）。
-    pub restarted: String,
-    /// 快照里有、核心的目录里没有的工具（`unavailable.txt`，施工 4-2）：执行器写。这一格以前造的会话
-    /// 里没有，读成空的：那时的会话没有工具，用不到它。
-    #[serde(default)]
-    pub unavailable: String,
-    /// 工具执行时崩了（`crashed.txt`，施工 4-2）：执行器写。读不到的同上。
-    #[serde(default)]
-    pub crashed: String,
-    /// 快照里有、随包卸掉了的工具（`uninstalled.txt`，施工 F-5 中，设计 30 第九节）：执行器写。以前造的快照里没有，读成空的，
-    /// 照 `unavailable` 说。
-    #[serde(default)]
-    pub uninstalled: String,
 }
 
 impl Snapshot {
@@ -492,8 +406,10 @@ impl Snapshot {
 
 mod compaction;
 mod error;
+mod texts;
 pub use compaction::{CompactionNumbers, LEAD, LINE_PERCENT, MARGIN_PERCENT, TAIL};
 pub use error::{BuildError, SnapshotError};
+pub use texts::{CompactionTexts, PermissionTexts, ToolResultTexts, TurnEndedTexts};
 
 #[cfg(test)]
 mod tests;

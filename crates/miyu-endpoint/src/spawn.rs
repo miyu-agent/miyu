@@ -157,20 +157,34 @@ impl SessionPort for Table {
             let index = core.index_for(&owner);
             // 场所会话不列（施工 O-3）：群里、QQ 私聊里的会话不给本机的她看，`history` 也读不到。
             let main = |row: &Row| row.parent.is_none() && crate::list::local(row);
-            let listed = tokio::task::spawn_blocking(move || {
-                scan(&root, &owner, index.as_deref(), &busy, main, None, &stop)
+            let projects = root.account_dir(&owner).join(miyu_store::projects::FILE);
+            let (listed, projects) = tokio::task::spawn_blocking(move || {
+                let listed = scan(&root, &owner, index.as_deref(), &busy, main, None, &stop);
+                // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，人人互相看得到（照以前的样子）。
+                let projects = miyu_store::projects::read(&projects)
+                    .map(|read| read.projects)
+                    .unwrap_or_default();
+                (listed, projects)
             })
             .await
-            .map_err(|error| error.to_string())?
-            .map_err(|error| format!("sessions not listed: {error}"))?;
+            .map_err(|error| error.to_string())?;
+            let listed = listed.map_err(|error| format!("sessions not listed: {error}"))?;
             Ok(listed
                 .into_iter()
-                .map(|listed| MainSession {
-                    id: listed.id,
-                    title: listed.title,
-                    cwd: listed.cwd,
-                    busy: listed.busy,
-                    last_active: listed.last_active,
+                .map(|listed| {
+                    // 项目删了、文件里没有的当不在项目里。
+                    let project = listed
+                        .project
+                        .and_then(|id| projects.find(&id).map(|found| (id, found.open)));
+                    MainSession {
+                        id: listed.id,
+                        title: listed.title,
+                        cwd: listed.cwd,
+                        busy: listed.busy,
+                        last_active: listed.last_active,
+                        open: project.as_ref().is_some_and(|(_, open)| *open),
+                        project: project.map(|(id, _)| id),
+                    }
                 })
                 .collect())
         })

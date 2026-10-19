@@ -32,6 +32,8 @@ pub(crate) struct Parts {
     pub(crate) skills: Option<String>,
     /// 「关于你」那一块（施工 P-9，`miyu_policy::Profile::block`）：开会话时照这个人写的拼；换人格时照旧快照的。
     pub(crate) profile: Option<String>,
+    /// 项目的附加提示词那一块（施工 H-3，`miyu_policy::project_block`）：开会话时没有，回合开始照会话现在在哪个项目拼。
+    pub(crate) project: Option<String>,
     /// 扩展放在 system 尾部的那几段（施工 X-20，[`crate::appended::resolve`]）：包的编号到原文。
     pub(crate) appended: std::collections::BTreeMap<String, String>,
 }
@@ -69,7 +71,9 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     if let Some(offset) = parts.group {
         snapshot = snapshot.with_group(&resources.group_note()?, resources.group_chat(offset)?);
     }
-    snapshot = snapshot.with_profile(parts.profile);
+    snapshot = snapshot
+        .with_profile(parts.profile)
+        .with_project(parts.project);
     let lines = resources.core_lines()?;
     Ok(snapshot
         .with_core_lines(&lines, miyu_store::env::os_name())

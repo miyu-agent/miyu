@@ -59,6 +59,7 @@ fn setup_with(
         knowledge: None,
         skills: None,
         profile: None,
+        project: None,
         appended: Default::default(),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
@@ -76,6 +77,7 @@ fn setup_with(
         knowledge: None,
         skills: None,
         images: true,
+        projects: std::path::PathBuf::from("no-such-projects.json"),
     };
     (scratch, root, refresh)
 }

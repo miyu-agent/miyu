@@ -51,6 +51,8 @@ pub(super) fn other_session() -> MainSession {
         title: "修 CI".to_string(),
         cwd: "~/src".to_string(),
         busy: false,
+        project: None,
+        open: false,
         last_active: Timestamp::parse("2026-10-01T09:00:00.000Z").expect("合写法"),
     }
 }

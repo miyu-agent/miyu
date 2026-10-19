@@ -173,6 +173,15 @@ impl ResourceRoot {
         self.read(&["core", "profile.txt"])
     }
 
+    /// 项目的附加提示词那一块的模板（施工 H-3）：`core/project.txt` 的原文。
+    ///
+    /// # Errors
+    ///
+    /// 读不了这份文件，写明是哪一份。
+    pub fn project(&self) -> Result<String, SourceError> {
+        self.read(&["core", "project.txt"])
+    }
+
     /// 常用的几家（施工 8-11 再补）：`models/featured.toml` 的原文，`provider.catalog {"featured": true}` 每次照它列。
     ///
     /// # Errors

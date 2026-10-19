@@ -441,6 +441,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         knowledge: shelves,
         skills: watch,
         images,
+        projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
     });
     span.in_scope(|| {
         tracing::info!(
