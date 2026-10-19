@@ -92,8 +92,8 @@ miyu_config::settings! {
             applies: new_session,
             ui: { page: "general", group: "terminal", control: text },
         },
-        /// 上一次说话以后闲置超过多少分钟，下一句开一个新的终端会话；0 是不换。默认值项目主人还没定，暂时 240。
-        idle_new_after: i64 = 240 {
+        /// 上一次说话以后闲置超过多少分钟，下一句开一个新的终端会话；0 是不换。默认 12 小时（2026-10-20 项目主人定）。
+        idle_new_after: i64 = 720 {
             kind: int [0, 525600],
             layers: [System, Personal],
             applies: now,

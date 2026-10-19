@@ -748,7 +748,7 @@
     "terminal": {
       "properties": {
         "idle_new_after": {
-          "default": 240,
+          "default": 720,
           "description": "上一次说话以后闲置超过这么多分钟，下一句开一个新的终端会话，旧会话保留。0 表示不开新的。能写：0 到 525600 之间的整数。只能写在系统配置或个人设置里。立即生效。",
           "maximum": 525600,
           "minimum": 0,

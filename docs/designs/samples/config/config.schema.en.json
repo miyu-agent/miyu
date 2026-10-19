@@ -836,7 +836,7 @@
     "terminal": {
       "properties": {
         "idle_new_after": {
-          "default": 240,
+          "default": 720,
           "description": "After this many minutes without a message, the next one starts a new terminal session; the old one is kept. 0 never starts a new one. Allowed: a whole number from 0 to 525600. Only in the system config or personal settings. Takes effect immediately.",
           "maximum": 525600,
           "minimum": 0,
