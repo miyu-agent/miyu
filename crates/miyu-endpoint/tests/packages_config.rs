@@ -169,6 +169,12 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
         schema.get("error").is_none(),
         "config.schema 有它：{schema}"
     );
+    // 包的配置项归哪个包照登记的（施工 F-14）。
+    let item = schema["result"]["items"]
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["key"] == "xcfg.port"))
+        .unwrap_or_else(|| panic!("有这一项：{schema}"));
+    assert_eq!(item["package"], "xcfg", "{item}");
 
     // 再装一个带配置项、哪一层都没写它的：清单换了，认得的、问题都没变，不推。之后的第一条推送是 `config.set` 的。
     let plain = source(&home, "xquiet", &program.name());

@@ -18,7 +18,7 @@ miyu_config::settings! {
             ],
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net", control: select },
+            ui: { page: "packages", group: "net", package: "net", control: select },
         },
     }
 }
@@ -31,7 +31,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", control: text },
+            ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
     }
 }
@@ -44,7 +44,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", control: text },
+            ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
     }
 }
@@ -57,7 +57,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", control: text },
+            ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
     }
 }
@@ -70,7 +70,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", control: text },
+            ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
     }
 }
@@ -83,7 +83,7 @@ miyu_config::settings! {
             kind: url,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", control: text },
+            ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
     }
 }

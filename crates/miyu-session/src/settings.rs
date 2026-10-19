@@ -33,35 +33,35 @@ miyu_config::settings! {
             kind: duration [60, 3600],
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", control: text },
+            ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 上次抽到以后至少有几轮她答了话才抽。
         extract_turns: i64 = 2 {
             kind: int [1, 100],
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", control: number },
+            ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
         /// 整理记忆用的模型：模型或者 `@池`；没写的照 `models.chat`。
         organizer: Option<String> = none {
             kind: reference,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", control: text },
+            ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 离上次合并至少多久才再合（施工 R-7 上）。
         merge_every: Duration = "24h" {
             kind: duration [3600, 2592000],
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", control: text },
+            ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 上次合并以后至少抽过几个会话才再合（施工 R-7 上）。
         merge_sessions: i64 = 5 {
             kind: int [1, 100],
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", control: number },
+            ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
     }
 }

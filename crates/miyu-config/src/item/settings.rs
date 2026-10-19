@@ -110,6 +110,7 @@ macro_rules! settings {
                     ui: {
                         page: $page:literal,
                         group: $group:literal,
+                        $(package: $package:literal,)?
                         $(common: $common:literal,)?
                         control: $control:ident
                         $(, hidden: $hidden:literal)? $(,)?
@@ -142,6 +143,7 @@ macro_rules! settings {
                         ui: $crate::Ui {
                             page: $page,
                             group: $group,
+                            package: $crate::__settings_package!($($package)?),
                             common: $crate::__settings_common!($($common)?),
                             control: $crate::__settings_control!($control),
                             hidden: $crate::__settings_hidden!($($hidden)?),
@@ -319,6 +321,18 @@ macro_rules! __settings_common {
     };
     ($common:literal) => {
         $common
+    };
+}
+
+/// [`settings!`](crate::settings) 里 `ui` 的 `package` 那一格（施工 F-14）：归哪个软件包；不写是没有。
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __settings_package {
+    () => {
+        ::core::option::Option::None
+    };
+    ($package:literal) => {
+        ::core::option::Option::Some($package)
     };
 }
 

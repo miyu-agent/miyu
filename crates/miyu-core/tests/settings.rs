@@ -347,8 +347,8 @@ fn builtin_package_settings_follow_their_package() {
     assert_eq!(owned.len(), 5, "抽取的三项、合并的两项（施工 R-7 上）");
     for item in owned {
         assert_eq!(
-            (item.ui.page, item.ui.group),
-            ("packages", "memory"),
+            (item.ui.page, item.ui.group, item.ui.package),
+            ("packages", "memory", Some("memory")),
             "{}",
             item.key
         );
@@ -375,4 +375,25 @@ fn builtin_package_settings_follow_their_package() {
             .all(|(one, other)| one.ui.hidden == other.ui.hidden),
         "别的包的照旧"
     );
+}
+
+/// 「软件包」那一页上核心替包登记的配置项写明归哪个包（施工 F-14）：联网搜索的几项归 `net`（组是 `net`、`net_keys`），软件源
+/// 那一组不归哪个包；头照它把配置挪进包的信息页，不再拿组名当包名。
+#[test]
+fn core_items_on_the_packages_page_say_which_package() {
+    for item in shipped().all() {
+        if item.ui.page != "packages" {
+            continue;
+        }
+        let wanted = if item.key.starts_with("net.") {
+            Some("net")
+        } else if item.key.starts_with("memory.") {
+            Some("memory")
+        } else if item.key.starts_with("packages.") {
+            None
+        } else {
+            continue;
+        };
+        assert_eq!(item.ui.package, wanted, "{}", item.key);
+    }
 }

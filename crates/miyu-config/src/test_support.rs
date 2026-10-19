@@ -45,6 +45,7 @@ pub(crate) fn item(
         ui: Ui {
             page: "general",
             group: "display",
+            package: None,
             common: false,
             control: Control::Select,
             hidden: false,

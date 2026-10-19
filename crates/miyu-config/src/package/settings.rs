@@ -456,6 +456,7 @@ pub fn items(package: &str, settings: &[Setting]) -> Vec<Item> {
             ui: Ui {
                 page: PAGE,
                 group,
+                package: Some(group),
                 common: false,
                 control: setting.kind.control(),
                 hidden: setting.hidden,

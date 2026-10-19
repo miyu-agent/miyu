@@ -125,6 +125,9 @@ pub struct Ui {
     pub page: &'static str,
     /// 哪一组，名字在资源的 `config.groups` 里。
     pub group: &'static str,
+    /// 归哪个软件包（施工 F-14）：包清单里的配置项是那个包，核心替包登记的（联网搜索的几项）写明是哪个；别的没有。头照它把
+    /// 配置挪进包的信息页。
+    pub package: Option<&'static str>,
     /// 是不是常用项：排在前面。
     pub common: bool,
     /// 用什么控件。

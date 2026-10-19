@@ -75,6 +75,7 @@ fn a_switch_is_declared_with_how_a_project_tightens_it() {
             ui: Ui {
                 page: "permissions",
                 group: "sessions",
+                package: None,
                 common: false,
                 control: Control::Toggle,
                 hidden: false,
@@ -133,6 +134,7 @@ fn the_items_follow_the_fields_in_order() {
                 ui: Ui {
                     page: "general",
                     group: "display",
+                    package: None,
                     common: true,
                     control: Control::Select,
                     hidden: false,
@@ -149,6 +151,7 @@ fn the_items_follow_the_fields_in_order() {
                 ui: Ui {
                     page: "advanced",
                     group: "log",
+                    package: None,
                     common: false,
                     control: Control::Select,
                     hidden: false,

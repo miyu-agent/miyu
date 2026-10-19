@@ -11,6 +11,7 @@ fn items() -> Vec<Item> {
             ui: crate::item::Ui {
                 page: "advanced",
                 group: "log",
+                package: None,
                 ..item("x.y", &["a", "b"], "a").ui
             },
             ..item("log.level", &["info", "off"], "info")

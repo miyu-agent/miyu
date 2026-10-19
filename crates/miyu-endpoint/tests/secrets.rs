@@ -36,6 +36,7 @@ fn secret_item(key: &'static str) -> Item {
         ui: Ui {
             page: "general",
             group: "display",
+            package: None,
             common: false,
             control: Control::Select,
             hidden: false,

@@ -191,9 +191,9 @@ fn schema_item(
         json!(said.map_or("", |said| said.description.as_str())),
     );
     map.insert("page".to_string(), json!(item.ui.page));
-    // 包的配置项归哪个包（施工 F-6 上，`package-pages.md`）：「软件包」那一页的组就是包的编号。
-    if item.ui.page == miyu_config::package::settings::PAGE {
-        map.insert("package".to_string(), json!(item.ui.group));
+    // 包的配置项归哪个包（施工 F-6 上）：照登记的 `package`，不拿组名当包名（施工 F-14：`net_keys`、`source` 填错过）。
+    if let Some(package) = item.ui.package {
+        map.insert("package".to_string(), json!(package));
     }
     map.insert("group".to_string(), json!(item.ui.group));
     map.insert("common".to_string(), json!(item.ui.common));
