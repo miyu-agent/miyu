@@ -206,11 +206,11 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | Command | What it does |
 |---|---|
 | `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
-| `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned |
+| `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
 | `/workspace <path>` | Change the working directory; without a path, say where it is |
 | `/todo`, `/todo clear` | Show the to-do list; clear it |
 | `/remember <words>` | Remember something |
-| `/dream` | Organize memory now (answered in the background) |
+| `/dream`, `/dream stop` | Organize memory now (answered in the background); stop the organizing in progress, keeping what's merged |
 | `/clear-memory` (`/reset-memory`) | Clear what this session remembered |
 | `/goal` family | Show, set, pause, resume, edit, clear the standing goal |
 

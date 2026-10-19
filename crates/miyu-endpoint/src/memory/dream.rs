@@ -16,7 +16,8 @@ use crate::Core;
 use crate::refusal::Refusal;
 use crate::sessions::offset;
 
-/// `memory.dream`：照参数找哪一间（同 `memory.*`），现在就整理，交回 `{"given", "revised", "retired", "summary"}`。
+/// `memory.dream`：照参数找哪一间（同 `memory.*`），现在就整理，交回 `{"given", "revised", "retired", "summary"}`；会话的
+/// `/stop` 叫停了的多一个 `"stopped": true`（施工 R-22），前面几样是叫停以前合完了的。
 pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
     if !installed(core) {
         return Err(Refusal::MEMORY_NOT_INSTALLED);
@@ -36,12 +37,16 @@ pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refu
             answered(keeper.dream(using.config, using.owner, offset()).await)?
         }
     };
-    Ok(json!({
+    let mut answer = json!({
         "given": dreamed.given,
         "revised": dreamed.revised,
         "retired": dreamed.retired,
         "summary": dreamed.summary,
-    }))
+    });
+    if dreamed.stopped {
+        answer["stopped"] = Value::Bool(true);
+    }
+    Ok(answer)
 }
 
 /// 会话 `session`（句柄 `handle`）现在就整理（带 `session` 的 `memory.dream`、`/dream`）：那个会话先抽、再合。

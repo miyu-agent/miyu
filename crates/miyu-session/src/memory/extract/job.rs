@@ -22,7 +22,7 @@ use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
-use crate::memory::merge::MergeJob;
+use crate::memory::merge::{Hush, MergeJob};
 use crate::memory::{Dreamed, Keeper, NotDreamed};
 use crate::route::Ask;
 
@@ -48,6 +48,8 @@ pub(crate) struct Job {
     pub(crate) offset: UtcOffset,
     /// 人叫她现在就整理（施工 R-7 补，`/dream`）：抽完了不看够不够、现在就合，合完把几样数交回这一头。没叫的照定时的看一眼。
     pub(crate) dream: Option<oneshot::Sender<Result<Dreamed, NotDreamed>>>,
+    /// 人叫的整理听着的叫停（施工 R-22）；定时的听不见。
+    pub(crate) hush: Hush,
 }
 
 impl Job {
@@ -87,6 +89,8 @@ impl Job {
         match self.dream.take() {
             Some(reply) => {
                 let dreamed = self.merge_job().now().await;
+                // 回应以前放下听的那一头：回了以后再叫停的说没在整理（施工 R-22）。
+                drop(std::mem::take(&mut self.hush));
                 if reply.send(dreamed).is_err() {
                     tracing::debug!(target: TARGET, session = %self.session, "dream answer not taken");
                 }
@@ -239,6 +243,7 @@ impl Job {
             config: Arc::clone(&self.config),
             owner: self.owner.clone(),
             offset: self.offset,
+            hush: self.hush.clone(),
         }
     }
 

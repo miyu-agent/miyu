@@ -10,7 +10,8 @@
 //! - **交回、怎么落**：读法在 `miyu_recall::merge`；改的指着旧的（类、出处、听众照旧）、作废的带为什么、摘要、合到哪的记号，
 //!   都由记忆模块记。落的时候还算数、听众合的才落。
 //! - **现在就整理**（施工 R-7 补，`/dream`、`memory.dream`）：不看会话数、间隔，现在就合到没有剩下的，交回几样数
-//!   （[`Dreamed`]）；同一间正在合的交回忙。
+//!   （[`Dreamed`]）；同一间正在合的交回忙。会话的 `/stop` 连它叫的这一趟一起停（施工 R-22，`merge/hush.rs`）：合完了的批留着，
+//!   正在合的那一批放弃（记一条 `stopped`）、下次再合。
 //! - **出错**：不动真相，下次抽完再来；同一间连着 [`TRIES`] 次不成的，记一条失败的记号、跳过这一批（成了一次、跳过一次都重新
 //!   数：这一批从哪起只在这两种时候变）。
 
@@ -40,9 +41,11 @@ use crate::route::{Ask, Watched};
 use crate::settings::MemorySettings;
 
 mod compose;
+mod hush;
 mod land;
 mod merges;
 
+pub(crate) use hush::{Hush, Hushes};
 pub(crate) use merges::Merges;
 
 /// 每条新记的最多带几条相关的旧记忆。
@@ -123,6 +126,8 @@ pub struct Dreamed {
     pub retired: u32,
     /// 写了新的摘要。
     pub summary: bool,
+    /// 人叫停了（施工 R-22）：前面几样是叫停以前合完了的。
+    pub stopped: bool,
 }
 
 /// 没整理成。
@@ -151,6 +156,18 @@ impl Keeper {
         owner: AccountId,
         offset: UtcOffset,
     ) -> Result<Dreamed, NotDreamed> {
+        self.dream_until(config, owner, offset, Hush::default())
+            .await
+    }
+
+    /// 同 [`Keeper::dream`]，`hush` 叫停了就停（施工 R-22，会话里的 `/dream`）。
+    pub(crate) async fn dream_until(
+        &self,
+        config: TurnConfig,
+        owner: AccountId,
+        offset: UtcOffset,
+        hush: Hush,
+    ) -> Result<Dreamed, NotDreamed> {
         let Some(extraction) = self.extraction() else {
             return Err(NotDreamed::Off);
         };
@@ -160,6 +177,7 @@ impl Keeper {
             config,
             owner,
             offset,
+            hush,
         }
         .now()
         .await
@@ -178,6 +196,8 @@ pub(crate) struct MergeJob {
     pub(crate) owner: AccountId,
     /// 日期照会话的时区写。
     pub(crate) offset: UtcOffset,
+    /// 人叫停了就停（施工 R-22）；定时的听不见。
+    pub(crate) hush: Hush,
 }
 
 /// 一批：现在的摘要、上次合并以后新记的（旧的在前）。
@@ -260,6 +280,11 @@ impl MergeJob {
         let room = self.keeper.room().to_string();
         let mut done = Dreamed::default();
         loop {
+            if self.hush.heard() {
+                done.stopped = true;
+                tracing::info!(target: TARGET, room = room.as_str(), batches, "memory merging stopped");
+                return Ok(done);
+            }
             let keeper = self.keeper.clone();
             let picked = std::mem::replace(&mut sweep, Sweep::Done);
             let found = blocking(move || keeper.merge_batch(wall_now(), check, picked)).await;
@@ -306,6 +331,7 @@ impl MergeJob {
             done.revised += round.revised;
             done.retired += round.retired;
             done.summary |= round.summary;
+            done.stopped |= round.stopped;
         }
     }
 
@@ -362,11 +388,16 @@ impl MergeJob {
                 self.keeper.memory.dreams.tell(self.keeper.room(), dreaming);
             }
         };
-        let answered = self
-            .extraction
-            .ask
-            .call_watching(&self.config, &self.extraction.blobs, ask, &mut tell)
-            .await
+        let calling =
+            self.extraction
+                .ask
+                .call_watching(&self.config, &self.extraction.blobs, ask, &mut tell);
+        // 人叫停了：这一批放弃（施工 R-22），请求跟着丢掉，同打断一轮。
+        let answered = tokio::select! {
+            answered = calling => answered,
+            () = self.hush.wait() => return self.hushed(asked.upto).await,
+        };
+        let answered = answered
             .map_err(|unanswered| unanswered.reason().to_string())
             .and_then(|answer| decisions(&answer.text, &asked.given, TEXT_CHARS, SUMMARY_CHARS));
         let merges = &self.keeper.memory.merges;
@@ -395,7 +426,10 @@ impl MergeJob {
                             u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                         tracing::info!(target: TARGET, room = room.as_str(), revised, retired, took_ms, "memory merged");
                         // 顺带补这一间还没有关键词的（施工 R-15 下，项目主人定旧的整理时慢慢补）：这一次交进去的在前。
-                        let tagged = self.tag(&asked.given).await;
+                        let tagged = tokio::select! {
+                            tagged = self.tag(&asked.given) => tagged,
+                            () = self.hush.wait() => 0,
+                        };
                         if revised > 0 || tagged > 0 {
                             // 改出来的、换了关键词的几条在后台补向量（施工 R-5 五补）。
                             let keeper = self.keeper.clone();
@@ -410,6 +444,7 @@ impl MergeJob {
                             revised,
                             retired,
                             summary,
+                            stopped: false,
                         })
                     }
                     Err(refused) => {
@@ -441,5 +476,18 @@ impl MergeJob {
                 Err(why)
             }
         }
+    }
+
+    /// 人叫停了这一批（施工 R-22）：记一条 `stopped`，交回什么都没合。写不进的记一行，照样算停了。
+    async fn hushed(&self, upto: Seq) -> Result<Dreamed, String> {
+        let keeper = self.keeper.clone();
+        if let Err(refused) = blocking(move || keeper.record_merge_stopped(wall_now(), upto)).await
+        {
+            tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory merge not recorded");
+        }
+        Ok(Dreamed {
+            stopped: true,
+            ..Dreamed::default()
+        })
     }
 }

@@ -51,8 +51,9 @@ impl Actor {
                 generation,
                 read,
                 reply,
+                hush,
             } => {
-                self.dream_read(generation, read, reply);
+                self.dream_read(generation, read, reply, hush);
                 return None;
             }
             Back::ExtractRead { generation, read } => {

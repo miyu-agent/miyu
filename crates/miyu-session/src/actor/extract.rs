@@ -20,7 +20,7 @@ use tokio::sync::oneshot;
 use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
-use crate::memory::{Dreamed, Job, NotDreamed, Voices, called, plan};
+use crate::memory::{Dreamed, Hush, Job, NotDreamed, Voices, called, plan};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 
@@ -80,6 +80,13 @@ impl Actor {
         self.tools
             .memory()
             .is_some_and(|(calls, _)| calls.extracting().3.pending())
+    }
+
+    /// 叫停这个会话叫的整理（施工 R-22，`/dream stop`、`/stop`）：交回有没有在跑的。
+    pub(super) fn hush_dreams(&self) -> bool {
+        self.tools
+            .memory()
+            .is_some_and(|(calls, _)| calls.extracting().3.hushes.hush())
     }
 
     /// 忙起来了：撤掉闹钟。在路上的那一次照样走完。
@@ -160,6 +167,7 @@ impl Actor {
         let job = Job {
             offset,
             dream: None,
+            hush: Hush::default(),
             keeper: keeper.clone(),
             extraction,
             config,
@@ -187,11 +195,14 @@ impl Actor {
             return answer(reply, Err(NotDreamed::Off));
         };
         let (keeper, session, owner, extractor) = calls.extracting();
+        // 从叫的这一刻起听着叫停（施工 R-22）：抽的时候叫停的，抽完不合。
+        let hush = extractor.hushes.listen();
         let config = Arc::clone(self.config.current());
         let dir = self.store.as_ref().and_then(|store| store.dir());
         let (Some(dir), true) = (dir, self.session.vacant()) else {
             let (keeper, owner) = (keeper.clone(), owner.clone());
-            tokio::spawn(async move { answer(reply, keeper.dream(config, owner, offset).await) });
+            let dreaming = async move { keeper.dream_until(config, owner, offset, hush).await };
+            tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
         let generation = extractor.arm();
@@ -212,6 +223,7 @@ impl Actor {
                     generation,
                     read,
                     reply,
+                    hush,
                 },
             );
         });
@@ -223,6 +235,7 @@ impl Actor {
         generation: u64,
         read: Result<(Seq, Vec<Event>), String>,
         reply: oneshot::Sender<Result<Dreamed, NotDreamed>>,
+        hush: Hush,
     ) {
         let Some((calls, offset)) = self.tools.memory() else {
             return answer(reply, Err(NotDreamed::Off));
@@ -245,7 +258,8 @@ impl Actor {
         let Some(((after, events), extraction)) = read else {
             extractor.disarm(generation);
             let (keeper, owner) = (keeper.clone(), owner.clone());
-            tokio::spawn(async move { answer(reply, keeper.dream(config, owner, offset).await) });
+            let dreaming = async move { keeper.dream_until(config, owner, offset, hush).await };
+            tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
         let mut history = History::whole();
@@ -268,6 +282,7 @@ impl Actor {
         let job = Job {
             offset,
             dream: Some(reply),
+            hush,
             keeper: keeper.clone(),
             extraction,
             config,

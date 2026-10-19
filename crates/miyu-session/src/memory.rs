@@ -31,6 +31,7 @@ pub use follow::Following;
 pub use keeper::{Filter, Keeper, Stamp};
 pub(crate) use lane::{Laid, Source, TurnLane};
 pub use listener::Listener;
+pub(crate) use merge::Hush;
 pub use merge::{Dreamed, MergeTexts, NotDreamed};
 pub(crate) use owner::called;
 

@@ -148,6 +148,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "memory_not_installed" => ("人格记忆未安装。", "Persona memory not installed."),
         "memory_busy" => ("正在整理记忆。", "Memory is being organized."),
         "dream_failed" => ("整理记忆失败。", "Memory organization failed."),
+        "not_dreaming" => ("没有正在进行的整理。", "No memory organizing in progress."),
         "unknown_memory" => ("记忆不存在。", "Memory not found."),
         "memory_not_current" => ("记忆已失效。", "Memory no longer current."),
         "memory_too_long" => ("记忆过长。", "Memory too long."),

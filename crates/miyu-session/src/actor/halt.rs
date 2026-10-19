@@ -49,6 +49,8 @@ impl Actor {
                 }
             }
             Halt::All { by, cause, reply } => {
+                // 这个会话叫的整理一起停（施工 R-22）：正在合的那一批放弃，合完了的留着。
+                self.hush_dreams();
                 let mut agents = Vec::new();
                 for (job, target) in self.jobs.running() {
                     let who = Who {

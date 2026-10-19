@@ -528,12 +528,12 @@
 1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember`、`/goal`、`/todo` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）、`clear-memory`（别名 `reset-memory`，施工 R-3 五补）、`goal`（施工 X-8 下）、`todo`（施工 D-3 再补）。登记表、命令模板（第 13 条）里都没有的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
 2. 谁能用：本机的会话（本机的头就是管理员本人）；场所会话里主人对应表认出的本人（记成带 `via` 的本人）、对应表里有的外部身份（群里的主人，`account`）、`role` 是 `manager` 的。别人回 `command_not_allowed`。这是 `admin` 那一档；每条命令能另配（施工 O-6 六补，接入QQ 的会话 2026-10-17 要的）：系统配置 `commands.<名字>.access` 写 `anyone` 的谁都过这一关，写 `off` 的谁都不过（`command_not_allowed`，`data.why`「/<名字> 已停用。」），没写的照扩展清单 `[[slash]]` 的 `access`，也没有的是 `admin`（`slash.md`「谁能用」）。命令自己的限制照旧（`/workspace` 只给主人本人，记忆、长期目标要开着）。`/workspace` 动的是沙盒能写的地方，只有主人本人能用（本机的会话、对应表认出的本人、群里的主人），管理的人回 `owner_only`。先查参数、再找会话、再判身份。
 3. `/clear` 同 `session.clear`：内核拒的照原因回（`turn_running`、`nothing_to_clear`、`restoring`）。
-4. `/stop` 全停：打断这一轮，排着的照 `keep` 留着；没有回合在进行的照样往下走。再停掉这个会话派出去的后台命令和子代理（同 `job.stop`，停的人记成说命令的人）。
+4. `/stop` 全停：打断这一轮，排着的照 `keep` 留着；没有回合在进行的照样往下走。再停掉这个会话派出去的后台命令和子代理（同 `job.stop`，停的人记成说命令的人），和这个会话正在跑的整理（同 `/dream stop`，第 9 条，施工 R-22）。
 5. `/workspace <路径>` 同 `session.set_workspace` 只换工作目录，加进来的目录照旧（施工 9-7 下）：绝对的、`~` 开头的照原样；相对的照 `cwd` 接成真实的位置（`/workspace .` 就是头所在的目录），没带 `cwd` 的照会话现在的工作区接；路径里的空白照留，不认引号。写错的照那几种原因拒绝（`path_unreadable`、`not_a_directory`、`path_forbidden`，核心读不出家目录时的 `~` 也是读不了）；太宽的照人选的用，回执说一声范围大（「工作区换到了 ~（范围很大）。」，施工 9-7 补，原来退回账号的默认工作区）；和现在一样的不记换，照样记下命令。不带路径的什么都不换，回执说现在在哪。
 6. 执行了的记一条 `command.ran`（`kernel/events-bodies.md`），`cause` 是 `<id>/ran`；被拒的什么都不记。它不进模型的请求。
 7. 同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样。
 8. `/remember <话>`（施工 R-3 补，`memory.md`「协议」）：名字后面跟的字是那一条，类 `user`，记进这个会话那一间，`by` 是打命令的人，出处空，听众是这个人；回执说记下了那句话（`commands/remembered`：「记下了：用户喜欢猫」，那句话里的换行、制表换成空格），不露编号（施工 R-3 四补，2026-10-10 项目主人定）。不请求模型。场所会话、范围 `off`、人格记忆没装的（施工 R-10）回 `memory_unavailable`，`data.why` 是照连接语言说的为什么（施工 O-6 再补：没装人格记忆的「人格记忆未安装。」，先于别的，施工 R-10；没有人格的「没有人格的会话记忆不生效」，预设没开记忆的带上预设的名字，字在 `core/human/<语言>.json` 的 `commands/unavailable/…`，别的照拒绝的那一句）；空的 `bad_params`，超过 120 字的 `memory_too_long`。先判身份，再查这个会话有没有记忆，再查字。同一个 `id` 再发只记一次（记忆事件的 `cause`，`memory.*` 第 5 条）。
-9. `/dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.dream`（`memory.*` 第 6 条），拒绝照它的。回执照几样数说：「整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。」（`commands/dreamed`，摘要换了的 `commands/dreamed-summary`），什么都没交进去的「无需整理。」（`commands/dreamed-nothing`）。在后台答（「一个连接」第 1 条）：只有它，别的命令照旧按顺序答。同一个 `id` 再发照第 7 条只记一次 `command.ran`，整理照样再做一次（多半没有要整理的）。
+9. `/dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：不带字。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.dream`（`memory.*` 第 6 条），拒绝照它的。回执照几样数说：「整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。」（`commands/dreamed`，摘要换了的 `commands/dreamed-summary`），什么都没交进去的「无需整理。」（`commands/dreamed-nothing`）。在后台答（「一个连接」第 1 条）：只有它，别的命令照旧按顺序答。同一个 `id` 再发照第 7 条只记一次 `command.ran`，整理照样再做一次（多半没有要整理的）。叫停了的（`/dream stop`、`/stop`，施工 R-22，`memory.md` 第七条第 13 款）照样回应：「整理已中断：检查 3 条，修改 1 条，作废 0 条，其余下次再整理。」（`commands/dreamed-stopped`，数是叫停以前合完了的），一批都没合完的「整理已中断，下次再整理。」（`commands/dreamed-stopped-nothing`）。`/dream stop` 叫停这个会话正在跑的整理，回执「已停止整理。」（`commands/dream-stopped`），没有在跑的回 `not_dreaming`（定时的、别处叫的不算）；跟别的字的参数不对。
 10. `/goal`（施工 X-8 下，`goal.md`）：交代、看、停、继续、改、清掉长期目标。`/goal` 看：回执是「原文 · 在哪一步 · 第几轮」（`commands/goal-is`：「把测试修绿 · 等待回复 · 第 1/3 轮」；在哪一步照会话状态的 `goal.state`，卡住的带原因「受阻：…」；有上限的写「第 1/3 轮」，不限的「第 1 轮」；原文、原因里的换行写成空格），没有目标的「无长期目标。」，什么都不记、只记 `command.ran`。`/goal <目标>` 设一个（同她的 `goal` 工具，当场算授权过，会话闲着就开续轮）；`/goal pause`、`/goal resume`、`/goal clear` 后面没字的才是子命令，带字的整句当目标；`/goal edit <目标>` 改原文。设、改都能在目标前面写 `--rounds N` 定轮数上限，`0` 是不限，改的时候不写的照原来的。已经有一个没完成的，`/goal <目标>` 就是改它（施工 X-8 再补，`goal.md` 第 6 条）：停着、卡住的改完接着跑，回执「已修改长期目标：…」。`edit` 后面没字、`--rounds` 后面不是非负整数、只写了上限的回 `bad_params`。卡住的照停着办：`resume` 接着跑（轮数照数），`edit` 改，`clear` 清掉；再设拒 `goal_exists`，停拒 `goal_paused`。改了的记对应的 `goal.*`（`by` 是打命令的人），回执「已设定长期目标：…」「已暂停长期目标。」「已继续长期目标。」「已修改长期目标：…」「已清除长期目标。」；内核拒的照原因回（`goal_exists`、`no_goal`、`goal_paused`、`goal_running`、`empty_message`）。这个会话没有长期目标的回 `goal_unavailable`（工具面上没有 `goal`：群里、私聊、子代理的会话，长期目标没装、预设关了的；照造会话、载入时的工具面判），`data.why` 说具体：没装的「长期目标未安装。」，本机主会话预设关了的「预设「…」未启用长期目标。」，别的照拒绝的那一句。续轮那条 `message.user`（`by` 是 `{"kind":"module","id":"goal"}`）的 `cause` 照约定写 `goal-<第几轮>-<毫秒>`（施工 X-8 补，`miyu_kernel::event::round_command`、`round_of` 一处造一处读）：头照它知道这是第几轮，补发、翻页时也一样，不翻提示词；视图条目已经读好写在 `round`。目标现在的样子照订阅回应的 `goal` 和推过来的 `goal.changed`（「订阅」）。
 11. **登记表**（施工 O-6 三补，`commands/registry.rs`）：认哪些命令照登记表，中心不写名字。一条命令一个 `Slash`，在管它的模块里写：名字、别名、`summary` 和 `argument` 的字键（跟字的才有 `argument`）、在不在后台答（`later`，现在只有 `/dream`）、身份以外谁能用（`allowed`：`/workspace` 只给主人本人，`/remember`、`/dream`、`/clear-memory` 要开着记忆，`/goal` 要有长期目标）、怎么执行（交回追加的序号和回执）。核心起来时登记：核心自己的 `/clear`、`/stop`、`/workspace`（`commands/basic.rs`）、`/todo`（`commands/todo.rs`），记忆的 `/remember`、`/dream`、`/clear-memory`（`memory/slash.rs`），长期目标的 `/goal`（`commands/goal.rs`）。名字和别名在同一个名字空间里，照原样比；撞了是内置命令写错了，登记时就 `panic`，测试当场拦（`registry/tests.rs`）。别名不一样的不算撞：`/reset-memory` 和 `/reset` 是两个词。登记表里没有的名字照命令模板认（第 13 条）。
 12. `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，2026-10-15 项目主人定名字、不先问、回执说清了几条）：清掉这个会话产生的记忆。不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.forget`、`clear: "session"`（`memory.*`、`memory.md` 第二条第 5 款）：出处全在这个会话里的清掉，别的会话也是出处的、人记的（没有出处）不动，会话那一间清的就是整间；清掉的哪里都不出来、找不回来，不先问。`by` 是打命令的人。回执说清了几条：「清掉了这个会话记下的 3 条记忆。」（`commands/cleared-memory`，一条的发 `commands/cleared-memory/one`，英文说单数），一条都没清掉的「这个会话没有记下的记忆。」（`commands/cleared-memory-none`）。不请求模型，照顺序答。
@@ -722,14 +722,14 @@
 | `memory.update` | `id`、`text`，必写 | `{"id"}`：新记的那一条 |
 | `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
-| `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔） |
+| `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22） |
 
 1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上。
 2. `text` 去掉前后空白再记；空的 `bad_params`，超过 120 字（数 Unicode 字符）的 `memory_too_long`，`data.chars`、`data.limit`。`class` 不是那四种、`id` 不合 `m<序号>` 的写法、`limit` 出了范围、`id` 和 `clear` 都写或都不写、`clear` 不是那两种：`bad_params`。
 3. `id` 没有这一条、听众不合：`unknown_memory`；已经改掉、作废、清掉了：`memory_not_current`（恢复的是已经改掉、清掉了）。
 4. 记、改、作废、清空、恢复落了盘才回应；写不进记忆日志的 `internal_error`，原因记一行 `WARN memory failed`。
 5. 记、改、作废、清空、恢复，同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样（编号记在记忆事件的 `cause` 里，`memory.md`）。先认编号，再查参数。清空的 `cleared` 不算改掉的旧版本。
-6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
+6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；带 `session` 的叫那个会话 `/stop`、`/dream stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（施工 R-22，`memory.md` 第七条第 13 款）；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 
@@ -1287,6 +1287,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `memory_unavailable` | -32010 | 这里没有记忆：不带人格（没写人格、又没设默认人格的也是）、范围 `off`、场所会话（施工 R-3 补，`memory.*`、`/remember`；施工 R-3 再补那句话也说没有人格） |
 | `memory_not_installed` | -32010 | 人格记忆这个软件包没装：`memory.*` 六个（施工 R-10）；装上就能用，以前记的都在 |
 | `memory_busy` | -32010 | 这一间正在整理记忆：定时的那一次在合，或者别人先叫了 `memory.dream`、`/dream`（施工 R-7 补） |
+| `not_dreaming` | -32010 | `/dream stop`：这个会话这时没有在跑的整理（施工 R-22） |
 | `dream_failed` | -32010 | 整理记忆没成：请求模型出错、交回的读不成、记忆日志写不进；`data.message` 是英文的一句为什么（施工 R-7 补） |
 | `unknown_memory` | -32010 | 没有这一条记忆，或者听众不合（施工 R-3 补） |
 | `memory_not_current` | -32010 | 那一条记忆已经改掉、作废、清掉了（施工 R-3 补） |
@@ -1477,6 +1478,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `memory_unavailable` | 记忆不可用。 | Memory unavailable. |
 | `memory_not_installed` | 人格记忆未安装。 | Persona memory not installed. |
 | `memory_busy` | 正在整理记忆。 | Memory is being organized. |
+| `not_dreaming` | 没有正在进行的整理。 | No memory organizing in progress. |
 | `dream_failed` | 整理记忆失败。 | Memory organization failed. |
 | `unknown_memory` | 记忆不存在。 | Memory not found. |
 | `memory_not_current` | 记忆已失效。 | Memory no longer current. |
@@ -1553,6 +1555,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/models_effort.rs`（施工 8-18；8-18（补）去掉会话那一层） | `session.configure` 写了 `effort` 回 `bad_params`、不写 `model` 回 `bad_params`；`subscribe` 的 `model` 多 `effort`，`from` 是配置的哪一层；`model.list` 的 `facts.effort`、多一格 `key`；配置里写错的 `unknown_effort`（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs`、`providers_log.rs`（施工 8-11） | `provider.detect`、`provider.catalog`、`provider.test` 的形状、参数不对、`unknown_provider`，`{value}` 的 key 不进回应和运行日志（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/memory_dream.rs`、`src/commands/tests.rs` 的 `only_dream_is_answered_later`、`src/subscriptions/later/tests.rs`（施工 R-7 补） | `memory.dream` 的回应、再叫一次是零、`memory_busy`、`memory_not_installed`、在后台答（同一个连接后面的请求先回）；`/dream` 的回执、命令表里列、在后台答，订阅着的 `command.ran` 先到；在后台答的命令只有 `/dream`；在后台答的回应照办完那一刻的订阅走：订阅着的交给转发任务，没订阅的、不是给会话的、放下了的直接写，换了的交给新的，只拿弱的一头、转发任务退得了，放下了的下一次开通道时清掉（细节见 `memory.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/memory_dream.rs` 的 `slash_stop_stops_the_sessions_dream`、`slash_dream_stop_stops_only_the_dream`（施工 R-22） | `/stop`、`/dream stop` 叫停这个会话的整理：`/dream` 照样回应、回执说中断了，记忆流推 `merge_failed`（`stopped`）；`/dream stop` 的回执，没在整理的 `not_dreaming`，跟别的字的 `bad_params` |
 | `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs`（施工 8-20） | `model.call` 的回应形状、参数校验、blob 的账号、几种出错的 `data`、不进会话日志、运行日志那两行（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/secrets.rs`、`secrets_log.rs`（施工 8-5） | `secret.*` 的回应、拒绝、日志；值不进回应、拒绝、系统日志、运行日志（`config.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/config_set.rs`（施工 8-3） | `config.set` 的回应、每一种拒绝、`expect`、版本、手改重读、全收或者全不收、写不成什么都没变、日志（`config.md`「守着它的」） |

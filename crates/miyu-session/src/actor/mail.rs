@@ -13,7 +13,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::session::{Input, Reason, Received};
 
 use super::{Actor, answer};
-use crate::handle::{Halt, Message, Taken};
+use crate::handle::{Dream, Halt, Message, Taken};
 
 /// 收件箱里的一封怎么办。
 pub(super) enum Mail {
@@ -92,8 +92,13 @@ impl Actor {
                 Mail::Done
             }
             // 人叫她现在就整理记忆（施工 R-7 补，`extract.rs`）：先抽再合，在后台，合完交回去。
-            Message::Dream(reply) => {
+            Message::Dream(Dream::Now(reply)) => {
                 self.dream(reply);
+                Mail::Done
+            }
+            // 叫停这个会话叫的整理（施工 R-22）：交回有没有在跑的。
+            Message::Dream(Dream::Stop(reply)) => {
+                answer(reply, self.hush_dreams());
                 Mail::Done
             }
             Message::Retire { idle, reply } => self.retire(idle, reply),

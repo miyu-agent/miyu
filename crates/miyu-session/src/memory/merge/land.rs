@@ -237,6 +237,23 @@ impl Keeper {
         Ok(())
     }
 
+    /// 人叫停了（施工 R-22）：`upto` 那一批放弃，记一条 `stopped`，不算没合成、不数次数；下次整理照样从这一批起。
+    pub(super) fn record_merge_stopped(&self, at: Timestamp, upto: Seq) -> Result<(), Refused> {
+        let log = self.log()?;
+        let failed = MergeFailed {
+            upto,
+            why: miyu_recall::STOPPED.to_string(),
+            tries: None,
+        };
+        let stamp = Stamp {
+            at,
+            by: by(),
+            cause: None,
+        };
+        self.append(&log, stamp, &MemoryEvent::MergeFailed(failed))?;
+        Ok(())
+    }
+
     /// 这一回第一次开这一间（施工 R-17）：上一回开始合了、没收尾的那一批（核心半路停了）补一条 `interrupted`，订阅着的头不会
     /// 一直当它在合。这一回还没有在合的：开日志总在合以前。写不进的记一行，不挡。
     pub(in crate::memory) fn close_interrupted(&self, log: &MemoryLog, at: Timestamp) {

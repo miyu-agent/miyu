@@ -33,7 +33,10 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
         json!([
             {"name": "clear", "aliases": ["reset"], "summary": "清空上下文"},
             {"name": "clear-memory", "aliases": ["reset-memory"], "summary": "清掉这个会话的记忆"},
-            {"name": "dream", "aliases": [], "summary": "整理记忆"},
+            {"name": "dream", "aliases": [], "summary": "整理记忆", "argument": "[stop]", "usage": [
+                {"form": "/dream", "summary": "现在就整理"},
+                {"form": "/dream stop", "summary": "停止整理"},
+            ]},
             {"name": "goal", "aliases": [], "summary": "长期目标", "argument": "[<目标> | pause | resume | clear]", "usage": [
                 {"form": "/goal", "summary": "看进度"},
                 {"form": "/goal <目标>", "summary": "设定长期目标；已经有一个就改它"},

@@ -128,10 +128,11 @@ impl std::fmt::Debug for Extraction {
     }
 }
 
-/// 一个会话的抽取：闹钟是第几个、有没有一次在路上、同一段失败了几次。
+/// 一个会话的抽取：闹钟是第几个、有没有一次在路上、同一段失败了几次；叫停这个会话叫的整理的那一头（施工 R-22）。
 #[derive(Debug, Default)]
 pub(crate) struct Extractor {
     state: Mutex<State>,
+    pub(crate) hushes: super::merge::Hushes,
 }
 
 #[derive(Debug, Default)]

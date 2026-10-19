@@ -77,7 +77,8 @@ async fn a_dream_in_a_session_extracts_now_and_merges_now() {
             given: 1,
             revised: 1,
             retired: 0,
-            summary: true
+            summary: true,
+            stopped: false
         }
     );
     stop(&handle).await;

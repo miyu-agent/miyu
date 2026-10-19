@@ -274,14 +274,14 @@ pub struct Merging {
 }
 
 /// `ext.memory.merge_failed` 的 `body`：`upto` 那一批这一次没合成（施工 R-17）。连着第三次的后面另跟一条 `merged`（`failed`），
-/// 跳过这一批；核心半路停了的，下次开这一间时补一条 `interrupted`。
+/// 跳过这一批；核心半路停了的，下次开这一间时补一条 `interrupted`；人叫停的当场记一条 `stopped`（施工 R-22）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MergeFailed {
     /// 哪一批：和它的 `merging` 一样。
     pub upto: Seq,
-    /// 英文的一句为什么，同运行日志；核心半路停了的是 `interrupted`。
+    /// 英文的一句为什么，同运行日志；核心半路停了的是 `interrupted`，人叫停的是 `stopped`。
     pub why: String,
-    /// 连着第几次；半路停了的不写。
+    /// 连着第几次；半路停了的、人叫停的不写（不算没合成）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tries: Option<u32>,
 }
@@ -298,6 +298,9 @@ pub struct Swept {
 
 /// 核心半路停了，`merging` 没有收尾（施工 R-17）。
 pub const INTERRUPTED: &str = "interrupted";
+
+/// 人叫停了，这一批放弃、下次整理再合（施工 R-22）。
+pub const STOPPED: &str = "stopped";
 
 /// 一段为什么整段跳过。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

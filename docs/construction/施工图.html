@@ -788,6 +788,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-19"><span class="n">R-19</span>整理时轮着重看旧记忆<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-20"><span class="n">R-20</span>以前的对话搜的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-21"><span class="n">R-21</span>整理时她正在写什么<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-22"><span class="n">R-22</span>叫停整理<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -23057,6 +23058,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-21-整理时她正在写什么.md</code>；蓝图 <code>memory.md</code> 第七条第 12 款，<code>protocol.md</code>「记忆日志的推送」第 7 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-22" aria-labelledby="h-sR22">
+  <div class="sheet-head"><h2 id="h-sR22"><span class="no">R-22</span>叫停整理</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人在终端验收 <code>/dream</code> 时定：能中断，合完的批留着，正在合的那一批放弃、下次再合，不回退；<code>/dream stop</code> 只停整理，<code>/stop</code> 连整理一起停。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/merge/hush.rs、handle/dream.rs、actor/halt.rs　miyu-endpoint · memory/slash.rs</span><span class="dir-note">R-22</span></div>
+            <ol class="pipe" aria-label="叫停">
+              <li>人叫的整理从叫的那一刻起听这个会话的叫停</li>
+              <li><code>/dream stop</code> 只停整理，<code>/stop</code> 连整理一起停</li>
+              <li>正在等模型的那一批丢掉，记 <code>merge_failed</code>（<code>stopped</code>），不数次数</li>
+              <li><code>/dream</code> 照样回应：叫停以前合完了的几样数，回执说中断了</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">/dream stop</span><span class="rl">只停整理</span></div>
+          <div class="tile new"><span class="nm">stopped</span><span class="rl">放弃的那一批、叫停了的回应</span></div>
+          <div class="tile new"><span class="nm">not_dreaming</span><span class="rl">没在整理</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-22</dd></div>
+        <div><dt>名称</dt><dd>叫停整理</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>真会话、协议的测试、变异、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>两批的整理叫停：头一批留着、后一批记 stopped、下次接着合到底；抽的时候叫停的不合；协议上两种叫停、回执、没在整理的原因码对得上</span></li>
+        <li><span class="ok">✓</span><span>手写变异 5 个全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-22-叫停整理.md</code>；蓝图 <code>memory.md</code> 第七条第 13 款，<code>protocol.md</code>「<code>command.run</code>」第 4、9 条。</li>
       </ul>
     </div>
   </div>

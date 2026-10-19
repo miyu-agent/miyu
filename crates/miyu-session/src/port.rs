@@ -364,6 +364,8 @@ pub(crate) enum Back {
         read: Result<(Seq, Vec<miyu_kernel::event::Event>), String>,
         reply:
             tokio::sync::oneshot::Sender<Result<crate::memory::Dreamed, crate::memory::NotDreamed>>,
+        /// 人叫停了就停（施工 R-22）：叫的那一刻起听着。
+        hush: crate::memory::Hush,
     },
     /// 等会话 `session` 等不到了（施工 C-6，`peers.rs`）：到点了是 `expired`，订的时候它不在了是 `gone`。
     WatchEnded {

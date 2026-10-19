@@ -35,6 +35,12 @@ impl Refusal {
         reason: "memory_busy",
         data: None,
     };
+    /// 这个会话这时没有在跑的整理（施工 R-22，`/dream stop`）：定时的、别处叫的不算。
+    pub(crate) const NOT_DREAMING: Refusal = Refusal {
+        code: REFUSED,
+        reason: "not_dreaming",
+        data: None,
+    };
     /// 整理记忆没成（施工 R-7 补）：请求模型出错、交回的读不成、记忆日志写不进；`data.message` 是英文的一句为什么。之前合成的
     /// 几次照样记下了，真相没动。
     pub(crate) fn dream_failed(message: String) -> Refusal {

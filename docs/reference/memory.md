@@ -87,7 +87,7 @@
 
 现在就整理：带 `session` 的先把这个会话还没抽的抽了，再把新记的和以前的合一遍（重复的合掉，过时的作废，写一段对人的了解）。在后台答，几秒到十几秒。
 
-**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆（R-19）。
+**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆（R-19）。带 `session` 的叫那个会话 `/dream stop`、`/stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（R-22）：正在合的那一批放弃、下次再合，合完了的留着。
 
 **出错**：`memory_busy`（这一间正在整理）；`dream_failed`（没合成，`data.message`）。
 
@@ -101,7 +101,7 @@
 | `ext.memory.summary` | `text` | 新的对人的了解 |
 | `ext.memory.tagged` | `id`、`keywords` | 补了关键词：在这一批的 `merged` 后面 |
 | `ext.memory.merged` | `upto`、`given`、`revised`、`retired`、`failed`? | 这一批合完了（`failed` 是连着三次没成、跳过了） |
-| `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了 |
+| `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了，`stopped` 的是人叫停了（R-22），这两种不写 `tries` |
 | `ext.memory.swept` | `upto`、`count` | 顺带重看了几条旧记忆、轮到第几条（施工 R-19）：在这一批的 `merged` 后面 |
 
 - `merging` 和收尾它的 `merged`、`merge_failed` 带同一个 `upto`；这中间 `by` 是记忆模块的改、删、摘要就是这一批做了什么（同一时刻别的会话可能在记、人可能在改，`by` 分得开）。没收尾的是正在合。
