@@ -781,6 +781,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-17"><span class="n">R-17</span>整理留痕<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-18"><span class="n">R-18</span>删掉 bge<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-19"><span class="n">R-19</span>整理时轮着重看旧记忆<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-20"><span class="n">R-20</span>以前的对话搜的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -22695,6 +22696,55 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-19-整理时轮着重看旧记忆.md</code>；蓝图 <code>memory.md</code> 第七条第 11 款，<code>memory/eval.md</code>「整理」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-20" aria-labelledby="h-sR20">
+  <div class="sheet-head"><h2 id="h-sR20"><span class="no">R-20</span>以前的对话搜的下限</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">换成 granite 以后，搜以前的对话还照 bge 时的 0.40：什么都过，没得找的也塞满五段。照真对话判过的数据定两道下限。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/past.rs、memory/recall.rs　resources/core/memory/turns.toml</span><span class="dir-note">R-20</span></div>
+            <ol class="pipe" aria-label="两道下限">
+              <li>只照意思找到的照 <code>turns.toml</code>：granite 0.84，表里没有的 0.40</li>
+              <li>只照关键词找到的不够像的不要：照记忆搜的 <code>search.toml</code>，0.80</li>
+              <li>真对话 837 段、200 句真问句、6845 段判过：找到 87 → 85，乱带 4.7 → 3.5 段</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">turns.toml</span><span class="rl">只照意思的下限，照模型</span></div>
+          <div class="tile new"><span class="nm">recall_turns_eval</span><span class="rl">量尺：导出两路的候选</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-20</dd></div>
+        <div><dt>名称</dt><dd>以前的对话搜的下限</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>真数据判过、测试、变异、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>两道下限照表、表里没有的照旧、没向量的照留、出厂两张表接上就照它们办</span></li>
+        <li><span class="ok">✓</span><span>手写变异 6 个全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-20-以前的对话搜的下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款。</li>
       </ul>
     </div>
   </div>

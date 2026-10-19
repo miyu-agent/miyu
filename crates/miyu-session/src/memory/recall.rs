@@ -41,7 +41,8 @@ const SAID: usize = 1000;
 const WIDE: usize = 32;
 
 /// 联想要的几样（`resources/software/memory/recall/` 的外壳，登记簿；一行照 `memory_search/memory.txt`；门槛表
-/// `core/memory/recall.toml`，数据），连同她主动搜时的关键词下限表（`core/memory/search.toml`，施工 R-14）。
+/// `core/memory/recall.toml`，数据），连同她主动搜时的关键词下限表（`core/memory/search.toml`，施工 R-14；搜以前的对话也照它，
+/// 施工 R-20）、搜以前的对话时只照意思找到的下限表（`core/memory/turns.toml`，施工 R-20）。
 #[derive(Debug, Clone)]
 pub struct RecallTexts {
     open: Template,
@@ -49,6 +50,8 @@ pub struct RecallTexts {
     line: Template,
     thresholds: Thresholds,
     search: Thresholds,
+    /// 搜以前的对话时只照意思找到的那一路的下限（施工 R-20，`core/memory/turns.toml`）。
+    turns: Thresholds,
 }
 
 impl RecallTexts {
@@ -70,9 +73,28 @@ impl RecallTexts {
             .and_then(|text| {
                 Thresholds::parse(&text).map_err(|why| format!("core/memory/search.toml：{why}"))
             })?;
+        let turns = resources
+            .memory_turns()
+            .map_err(|error| error.to_string())
+            .and_then(|text| {
+                Thresholds::parse(&text).map_err(|why| format!("core/memory/turns.toml：{why}"))
+            })?;
         Ok(RecallTexts::with(resources.path(), thresholds)
             .map_err(|error| error.to_string())?
-            .searching(search))
+            .searching(search)
+            .searching_turns(turns))
+    }
+
+    /// 搜以前的对话时只照意思找到的那一路的下限换成 `turns`（施工 R-20；[`RecallTexts::with`] 造的是空表：照
+    /// [`miyu_recall::FLOOR`]）。
+    #[must_use]
+    pub fn searching_turns(self, turns: Thresholds) -> RecallTexts {
+        RecallTexts { turns, ..self }
+    }
+
+    /// 模型 `model` 搜以前的对话时只照意思找到的那一路的下限：表里没有的照 [`miyu_recall::FLOOR`]。
+    pub(crate) fn turns_floor(&self, model: &str) -> f32 {
+        self.turns.of(model).unwrap_or(miyu_recall::FLOOR)
     }
 
     /// 她主动搜时的关键词下限换成 `search`（测试换成自己的模型；[`RecallTexts::with`] 造的是空表：不设）。
@@ -104,6 +126,7 @@ impl RecallTexts {
             )?,
             thresholds,
             search: Thresholds::default(),
+            turns: Thresholds::default(),
         })
     }
 }

@@ -411,6 +411,16 @@ impl ResourceRoot {
         self.read(&["core", "memory", "search.toml"])
     }
 
+    /// 搜以前的对话时只照意思找到的那一路的下限表的原文（`core/memory/turns.toml`，施工 R-20）；写法同
+    /// [`ResourceRoot::memory_recall`]。
+    ///
+    /// # Errors
+    ///
+    /// 读不了。
+    pub fn memory_turns(&self) -> Result<String, SourceError> {
+        self.read(&["core", "memory", "turns.toml"])
+    }
+
     /// 知识库的一张门槛表的原文（`core/knowledge/<name>.toml`）：`recall` 是自动想起的门槛（施工 K-6 下），`search` 是搜的时候
     /// 只照意思找到的那一路的下限（施工 K-2 修）；写法同 [`ResourceRoot::memory_recall`]。
     ///
