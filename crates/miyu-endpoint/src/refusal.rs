@@ -286,6 +286,12 @@ impl Refusal {
         reason: "setup_first",
         data: None,
     };
+    /// 交接票没有、过期了、用过了（接入通讯平台要的 `login.redeem`）。
+    pub(crate) const BAD_TICKET: Refusal = Refusal {
+        code: REFUSED,
+        reason: "bad_ticket",
+        data: None,
+    };
     /// 不是出示本机令牌连上的，要不了一次性码（施工 W-8）。
     pub(crate) const LOCAL_ONLY: Refusal = Refusal {
         code: REFUSED,

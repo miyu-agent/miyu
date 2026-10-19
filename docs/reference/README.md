@@ -14,7 +14,7 @@
 
 | 页 | 方法 |
 |---|---|
-| [连接](connection.md) | 怎么连、一行一条、`hello`、`subscribe`、`unsubscribe`、`account.*` |
+| [连接](connection.md) | 怎么连、一行一条、`hello`、`subscribe`、`unsubscribe`、`account.*`、`login.*` |
 | [会话](sessions.md) | `session.*`、`view.page`、`view.detail` |
 | [视图流](view.md) | 给界面直接画的条目、会话状态 |
 | [事件](events.md) | 会话日志里的每一种事件 |

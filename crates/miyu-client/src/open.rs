@@ -59,7 +59,7 @@ impl Core {
         let (connection, token) = miyu_ipc::connect_or_start(root, || core())
             .await
             .map_err(|error| error.to_string())?;
-        Core::shake(connection, token, kind).await
+        Core::shake(connection, ("token", token), kind).await
     }
 
     /// 连已经在跑的核心（不拉起）、出示本机令牌握手，报自己是 `kind` 这个头（施工 9-1 下：网页软件的 `serve` 起来时问
@@ -72,23 +72,40 @@ impl Core {
         let (connection, token) = miyu_ipc::connect(root)
             .await
             .map_err(|error| error.to_string())?;
-        Core::shake(connection, token, kind).await
+        Core::shake(connection, ("token", token), kind).await
     }
 
-    /// 在连上的 `connection` 上出示本机令牌 `token` 握手，报自己是 `kind`。
-    async fn shake(connection: Connection, token: String, kind: &str) -> Result<Core, String> {
+    /// 连已经在跑的核心（不拉起）、出示登录令牌 `login` 握手，报自己是 `kind` 这个头：替人做事的程序（接入通讯平台的页面服务，
+    /// 它的设计 01 第九节第 2 条）照人的登录另开一条连接，不读本机令牌。
+    ///
+    /// # Errors
+    ///
+    /// 核心没在跑、连不上，登录令牌不认（`bad_login`）、没回：原话。
+    pub async fn connect_login(root: &DataRoot, login: &str, kind: &str) -> Result<Core, String> {
+        let connection = miyu_ipc::connect_bare(root)
+            .await
+            .map_err(|error| error.to_string())?;
+        Core::shake(connection, ("login", login.to_string()), kind).await
+    }
+
+    /// 在连上的 `connection` 上出示凭据 `credential`（`token` 本机令牌、`login` 登录令牌和它的值）握手，报自己是 `kind`。
+    async fn shake(
+        connection: Connection,
+        (key, credential): (&str, String),
+        kind: &str,
+    ) -> Result<Core, String> {
         let (read, write) = tokio::io::split(connection);
         let mut core = Core {
             lines: BufReader::new(read),
             write,
             language: None,
         };
-        let hello = json!({
+        let mut hello = json!({
             "protocol": [1, 1],
             "head": {"kind": kind, "version": env!("CARGO_PKG_VERSION")},
             "locale": locale(),
-            "token": token,
         });
+        hello[key] = json!(credential);
         let shaken = core.call("hello", "hello", hello).await?;
         core.language = shaken["language"].as_str().map(str::to_string);
         Ok(core)

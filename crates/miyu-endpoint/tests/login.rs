@@ -420,3 +420,47 @@ async fn broken_files_read_as_empty() {
     );
     assert_eq!(logins_of(&home).tokens.len(), 1);
 }
+
+#[tokio::test]
+async fn tickets_are_for_people_and_redeem_once() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let code = setup_code(&core).await["code"]
+        .as_str()
+        .expect("有码")
+        .to_string();
+    let mut half = Client::connect(Arc::clone(&core));
+    hello_with(&mut half, json!({"code": code})).await;
+    let refused = half.call("t", "login.ticket", json!({})).await;
+    assert_eq!(
+        why(&refused),
+        "setup_first",
+        "一次性码连上的只能设密码，要不了票"
+    );
+
+    let mut local = local(&core).await;
+    let ticket = local.call("t", "login.ticket", json!({})).await;
+    let value = ticket["result"]["ticket"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{ticket}"))
+        .to_string();
+    assert!(is_hex64(&value), "{ticket}");
+    assert!(ticket["result"]["expires"].is_string());
+    let redeemed = local
+        .call("r", "login.redeem", json!({"ticket": value}))
+        .await;
+    assert_eq!(redeemed["result"]["account"], "alice", "{redeemed}");
+    let token = redeemed["result"]["login"]["token"]
+        .as_str()
+        .expect("换出登录令牌")
+        .to_string();
+    let mut browser = Client::connect(Arc::clone(&core));
+    let shaken = hello_with(&mut browser, json!({"login": token})).await;
+    assert!(shaken.get("result").is_some(), "换出的认得：{shaken}");
+    let again = local
+        .call("r2", "login.redeem", json!({"ticket": value}))
+        .await;
+    assert_eq!(why(&again), "bad_ticket");
+    let bad = local.call("r3", "login.redeem", json!({})).await;
+    assert_eq!(why(&bad), "bad_params");
+}

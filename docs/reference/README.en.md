@@ -14,7 +14,7 @@ For programs that talk to the core: "heads" such as the terminal and web UIs, an
 
 | Page | Methods |
 |---|---|
-| [Connection](connection.en.md) | Connecting, one message per line, `hello`, `subscribe`, `unsubscribe`, `account.*` |
+| [Connection](connection.en.md) | Connecting, one message per line, `hello`, `subscribe`, `unsubscribe`, `account.*`, `login.*` |
 | [Sessions](sessions.en.md) | `session.*`, `view.page`, `view.detail` |
 | [View stream](view.en.md) | Ready-to-draw entries and session status |
 | [Events](events.en.md) | Every kind of event in a session log |

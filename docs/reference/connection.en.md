@@ -161,3 +161,24 @@ A one-time code works once. Setting the password revokes every earlier browser l
 |---|---|
 | `bad_params` (`-32602`) | Wrong params; username or password not acceptable |
 | `local_only` | Called by an extension, or `account.setup_code` on a connection that didn't use the local token |
+## `login.ticket`, `login.redeem`
+
+Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side redeems it for a login token and connects to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake).
+
+**Who can call**: `login.ticket` is for people only (connected with the local token, a login token or a password); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
+
+| Method | Params | Result |
+|---|---|---|
+| `login.ticket` | none | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds, bound to this connection's account |
+| `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`: the ticket's account and a new login token (30 days) |
+
+A ticket works once. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | `login.redeem` without `ticket` |
+| `local_only` | An extension asked for a ticket |
+| `bad_ticket` | No such ticket, expired, or already used |
+

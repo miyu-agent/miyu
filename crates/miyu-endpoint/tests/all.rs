@@ -22,6 +22,7 @@ mod provide_venue;
 mod sent_media;
 mod support;
 mod system_append;
+mod ticket_extension;
 mod turn_inject;
 
 mod answer;

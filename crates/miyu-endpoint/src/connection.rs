@@ -25,6 +25,8 @@ use tokio::task::JoinSet;
 
 use miyu_kernel::id::SessionId;
 
+mod people;
+use people::people_only;
 mod streams;
 #[cfg(test)]
 mod tests;
@@ -284,6 +286,11 @@ async fn read_all<R: AsyncRead + Unpin>(
                 .await;
                 (answer(&request, result, peer.locale), target, false)
             }
+            (name, Some(_)) if name.starts_with("login.") => {
+                let result =
+                    login::ticket::call(&core, via.as_ref(), &caller.account, &request).await;
+                (answer(&request, result, locale), None, false)
+            }
             ("account.setup_code", Some(_)) => {
                 let result = login::setup_code(&core, via.as_ref().unwrap_or(&Via::Token));
                 (answer(&request, result, locale), None, false)
@@ -442,38 +449,6 @@ fn answer(request: &Request, result: Result<Value, Refusal>, locale: Locale) -> 
 /// 放进写队列；写队列关了（连接断了），交回 `false`。
 async fn send(out: &mpsc::Sender<String>, line: String) -> bool {
     out.send(line).await.is_ok()
-}
-
-/// 只给人用、扩展进程调了回 `local_only` 的方法：开关、重启扩展（施工 9-4 上），改、删人格和预设（施工 P-3 中），装、卸软件包
-/// （施工 F-5 上），软件包的开关（施工 F-6 上），后台页的文件和方法（施工 F-6 中），改配置、信任项目配置、存删密钥（施工 T-9：
-/// 改了能放宽权限、换模型、拿走别的软件的 key），项目（施工 H-1）。读配置、列密钥的名字照旧给。`config.set` 不在这里：它自己查，扩展只能改自己包
-/// 编号开头的几项（施工 T-9 补，`config::set::set_from_package`）。
-fn people_only(method: &str) -> bool {
-    method.starts_with("extension.")
-        || method.starts_with("project.")
-        || matches!(
-            method,
-            "preset.set"
-                | "preset.delete"
-                | "persona.set"
-                | "persona.delete"
-                | "package.install"
-                | "package.remove"
-                | "package.enable"
-                | "package.disable"
-                | "package.restart"
-                | "package.sync"
-                | "package.search"
-                | "package.clean"
-                | "package.upgrades"
-                | "package.upgrade"
-                | "package.file"
-                | "mcp.list"
-                | "mcp.restart"
-                | "config.trust"
-                | "secret.set"
-                | "secret.delete"
-        )
 }
 
 /// 握手时交给核心拉起的扩展的那份（施工 9-4 下下）：包、交出去的键到值、握手时拿的盯配置的那一头。

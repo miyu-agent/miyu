@@ -161,3 +161,24 @@
 |---|---|
 | `bad_params`（`-32602`） | 参数不对；用户名、密码不合要求 |
 | `local_only` | 扩展调了，或者不是本机令牌连上的调了 `account.setup_code` |
+## `login.ticket`、`login.redeem`
+
+交接票：已经登录的人从一个页面跳到另一个程序的页面（网页跳到接入通讯平台的页面），不用再登录一次。跳过去之前要一张票带在网址里，接的一方拿它换一个登录令牌，再照这个登录令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`）。
+
+**谁能调**：`login.ticket` 只给人（本机令牌、登录令牌、密码连上的），核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `login.ticket` | 没有 | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废，绑这个连接的账号 |
+| `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`：票绑的账号、换出的登录令牌（30 天） |
+
+一张票只换一次；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | `login.redeem` 没写 `ticket` |
+| `local_only` | 扩展要票 |
+| `bad_ticket` | 票没有、过期了、用过了 |
+

@@ -6,11 +6,13 @@
 //! - 用户名、密码握手：对上了造一个登录令牌交回；同一个用户名 60 秒内错 5 次，剩下的时间里先拒、不验。
 //! - 登录令牌握手：哈希在这个账号的 `logins.json` 里、没过期。
 //! - `account.logout`：作废一个、全部；用登录令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
+//! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台要的）在 [`ticket`]。
 //!
 //! 一次性码、密码、登录令牌一个字都不进运行日志。凭据文件的读写在 `miyu-store`（`accounts.rs`、`logins.rs`），这里排着队
 //! 一件件改（[`Identity`] 的锁），argon2 放进阻塞线程。
 
 mod files;
+pub(crate) mod ticket;
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -106,6 +108,8 @@ pub(crate) struct Identity {
     revoked: broadcast::Sender<Revoked>,
     files: tokio::sync::Mutex<()>,
     code_ttl: Duration,
+    /// 交接票（`ticket.rs`）。
+    tickets: ticket::Tickets,
 }
 
 impl Identity {
@@ -117,6 +121,7 @@ impl Identity {
             revoked: broadcast::channel(64).0,
             files: tokio::sync::Mutex::new(()),
             code_ttl,
+            tickets: ticket::Tickets::default(),
         }
     }
 

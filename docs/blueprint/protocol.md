@@ -188,6 +188,7 @@
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：第一次给管理员设网页登录的用户名和密码、忘了密码重设；只给出示本机令牌的连接（施工 W-8） |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性、绑这个账号的票，接的一方换一个登录令牌；扩展要不了票。详见 `docs/reference/connection.md` |
 | `account.setup` | 用一次性码连上的设用户名和密码，换一个登录令牌（施工 W-8） |
 | `account.logout` | 作废登录令牌：这一个，或者 `all` 全部（施工 W-8） |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
@@ -1532,7 +1533,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/attach_send.rs` | `session.send` 带附件（施工 3-9 三补）：照先后接在文字后面，宽高、种类照核心量的，图片块带着 `blob.put` 的名字（施工 3-9 四补），她收到的请求里就是这几块；只有附件也是一句话，`null` 是没有；blob 不在的拒绝、什么都没写、换的工作目录也没送进会话；附件的格不对的七种 |
 | `crates/miyu-endpoint/tests/files.rs` | `fs.list`、`fs.find`（施工 W-2）：真核心上数据根不列不找、账号的默认工作区照样列；开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`marks`；模糊找有 `marks`、子目录的 `path` 用 `/`；清单没建完先给一部分、`building`；`fresh` 隔一段时间才重建、不是 `true` 不重建；最多记 4 份、多了丢最久没用的；换不成真实的位置、不是目录的 `path_unreadable`；没写 `cwd` 的 `bad_params`。施工 V-6 上起等清单建完都带 `wait`（一次请求，`building` 一定是 `false`）；`miyu-fs` 的 `find/tests.rs` 守着 `wait` 建完了才醒、建的线程崩了也醒 |
 | `crates/miyu-endpoint/tests/hello.rs`（施工 W-3） | 握手的 `host`：三格总有、`platform` 是这台机器的、`workspace` 换成真实的位置（链接也换成指的地方）、没有系统的家目录 `home` 是 `null`、没人建过工作区就回原样的路径（不替连上来的头造目录）。`fs.realpath`：`~` 照家目录接、`cwd` 可以不写也可以本身是 `~`；相对的没给 `cwd` 的 `bad_params`；往上找最近在的一层、后面几段原样接上；路中间的链接换成指的地方；落在数据根里的照样换，不查边界；一层都不在（没有家目录）`path_unreadable` |
-| `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」）；交接票只给人、换一次、换出的登录令牌认得（W-8 补） |
+| `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |

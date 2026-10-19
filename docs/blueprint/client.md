@@ -7,7 +7,7 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-client/src/lib.rs` | 门面：几组 `pub use`，`CoreCommand`，`testkit` 打开时的 `WORKSPACE_ROOT` |
-| `crates/miyu-client/src/open.rs` | 照终端的样子连核心（出示本机令牌）、一问一答（`Core`），系统的办法开浏览器（`Browser`、`SystemBrowser`），这台机器的语言（`locale`）。从 `miyu-webserve` 挪来，行为不变（`webserve.md` 的「怎么用」照旧） |
+| `crates/miyu-client/src/open.rs` | 照终端的样子连核心（出示本机令牌；施工 W-8 补起 `connect_login` 出示登录令牌，替人做事的程序用，不读本机令牌）、一问一答（`Core`），系统的办法开浏览器（`Browser`、`SystemBrowser`），这台机器的语言（`locale`）。从 `miyu-webserve` 挪来，行为不变（`webserve.md` 的「怎么用」照旧） |
 | `crates/miyu-client/src/tests.rs` | 门面上的每一样用一遍：拿掉了哪一样当场编不过 |
 
 ### 门面上有什么

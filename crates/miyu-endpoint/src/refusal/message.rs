@@ -222,6 +222,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "model_failed" => ("模型请求失败。", "Model request failed."),
         // 施工 W-8（`web-module.md`「给人看的字」）。
         "bad_code" => ("一次性码已失效。", "One-time code expired."),
+        "bad_ticket" => ("交接票已失效。", "Ticket expired."),
         "bad_login" => ("登录已失效，请重新登录。", "Login expired. Sign in again."),
         "bad_password" => ("用户名或密码错误。", "Incorrect username or password."),
         "login_throttled" => (
