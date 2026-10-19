@@ -252,6 +252,7 @@ impl Core {
             settings::PresetSettings::ITEMS,
             settings::PermissionSettings::ITEMS,
             settings::TerminalSettings::ITEMS,
+            miyu_session::loading::ITEMS,
             miyu_session::settings::ProfileSettings::ITEMS,
             settings::EXTERNAL_BINDINGS,
         ]

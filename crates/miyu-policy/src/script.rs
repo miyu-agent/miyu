@@ -8,7 +8,8 @@
 //! - `Timeout`：秒，正整数，没写的 [`TIMEOUT`]；
 //! - `Parameters`：参数的 JSON Schema，接在下面的几行注释里，拼成一份 JSON 为止；顶层得是 `"type": "object"`。没写的当
 //!   没有参数；
-//! - `Need load`：`yes` 是要先加载（施工 L-1，`25-工具加载.md` W9），`no` 和没写的全量；大小写不论，`true`、`false` 也认。
+//! - `Need load`：`yes` 和没写的要先加载，`no` 是全量（施工 L-3，`25-工具加载.md` W9，2026-10-20 项目主人改：脚本默认先加载，
+//!   原来没写的全量）；大小写不论，`true`、`false` 也认。个人设置的 `loading.tools.<工具名>` 盖过它。
 //!
 //! 别的键（`Id`、`Group`、`Trust`、`Permission`、编码声明……）照旧版留着的，认、不用。工具名照文件名（[`tool_name`]）。纯逻辑：
 //! 进来的是文件名和文件里的字，出去的是读好的样子，或者哪里不对。
@@ -101,7 +102,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         timeout: TIMEOUT,
         display_name: BTreeMap::new(),
         summary: BTreeMap::new(),
-        need_load: false,
+        need_load: true,
     };
     let mut rest = lines.iter();
     while let Some(line) = rest.next() {

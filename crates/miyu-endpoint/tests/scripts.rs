@@ -20,6 +20,7 @@ use crate::support::venues::configured_core;
 use crate::support::*;
 
 mod follow;
+mod loading;
 
 /// 只会造脚本工具的端口：内置包的工具不动。
 struct Kit;
@@ -36,6 +37,7 @@ impl Builtins for Kit {
             miyu_endpoint::settings::PresetSettings::ITEMS,
             miyu_endpoint::settings::PermissionSettings::ITEMS,
             miyu_endpoint::settings::EXTERNAL_BINDINGS,
+            miyu_session::loading::ITEMS,
         ]
         .concat();
         let packaged = miyu_endpoint::packages::settle(found, &own);
@@ -58,7 +60,7 @@ impl Builtins for Kit {
 /// 一个 Python 脚本：把收到的参数原样印出来。
 fn echo(name: &str) -> String {
     format!(
-        "#!/usr/bin/env python3\n# 显示名称：回声\n# Description: Echo {name}.\n# 描述：原样印出参数。\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"say\": {{\"type\": \"string\"}}}}}}\nimport os\nprint('{name}:' + os.environ['MIYU_ARGS_JSON'])\n"
+        "#!/usr/bin/env python3\n# 显示名称：回声\n# Description: Echo {name}.\n# 描述：原样印出参数。\n# Need load: no\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"say\": {{\"type\": \"string\"}}}}}}\nimport os\nprint('{name}:' + os.environ['MIYU_ARGS_JSON'])\n"
     )
 }
 

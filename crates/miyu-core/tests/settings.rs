@@ -68,6 +68,8 @@ fn the_registered_list_is_well_formed() {
             "terminal.persona",
             "terminal.preset",
             "terminal.idle_new_after",
+            "loading.tools.<id>",
+            "loading.mcp.<id>",
             "commands.<id>.access",
             "profile.preferred_reply_language",
             "profile.name",

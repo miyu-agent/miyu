@@ -55,7 +55,7 @@ fn a_package_with_only_mcp_servers_is_a_bundle_and_reads_every_field() {
     assert_eq!(fetch.env, []);
     assert_eq!(fetch.venues, ["local"], "没写的只给本机的会话");
     assert_eq!(fetch.timeout_ms, TIMEOUT_DEFAULT);
-    assert!(!fetch.need_load, "没写的全量");
+    assert!(fetch.need_load, "没写的先加载（施工 L-3）");
     assert_eq!(fetch.line, Some(12));
 }
 
@@ -166,7 +166,7 @@ fn every_mistake_is_bad_mcp_at_its_server() {
             "mcp.g.timeout_ms",
         ),
         (
-            "name = \"g\"\ncommand = [\"x\"]\nneed_load = \"yes\"",
+            "name = \"g\"\ncommand = [\"x\"]\nneed_load = \"maybe\"",
             "mcp.g.need_load",
         ),
     ] {
@@ -186,4 +186,22 @@ fn every_mistake_is_bad_mcp_at_its_server() {
     let table =
         read("[package]\nname = { en = \"P\" }\n\n[mcp]\nname = \"g\"\n").expect_err("写成一张表");
     assert_eq!(table.code, Code::NotATable);
+}
+
+/// 不写、`"yes"` 都是先加载，`false`、`"no"` 全量，大小写不论（施工 L-3）。
+#[test]
+fn need_load_takes_yes_and_no_and_defaults_to_on_demand() {
+    for (line, need) in [
+        ("", true),
+        ("need_load = \"yes\"", true),
+        ("need_load = \"No\"", false),
+        ("need_load = false", false),
+        ("need_load = true", true),
+    ] {
+        let text = format!(
+            "[package]\nname = {{ en = \"P\" }}\n\n[[mcp]]\nname = \"g\"\ncommand = [\"x\"]\n{line}\n"
+        );
+        let manifest = read(&text).expect(line);
+        assert_eq!(manifest.mcp[0].need_load, need, "{line}");
+    }
 }

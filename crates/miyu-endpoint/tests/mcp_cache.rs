@@ -132,7 +132,7 @@ async fn an_extension_carries_its_services_on_and_off() {
         .join("home/alice/packages/relay/package.toml");
     let mut text = std::fs::read_to_string(&manifest).unwrap();
     text.push_str(&format!(
-        "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\n"
+        "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\nneed_load = false\n"
     ));
     std::fs::write(&manifest, text).unwrap();
     let script = Script::new([Play::Says("好。"), Play::Says("嗯。")]);

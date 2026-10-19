@@ -124,7 +124,8 @@ fn wrong_ones_say_what_is_wrong() {
     );
 }
 
-/// `Need load`（施工 L-1）：`yes`、`true` 是要先加载，`no`、`false`、没写的全量，大小写不论。
+/// `Need load`（施工 L-1）：`yes`、`true`、没写的要先加载（施工 L-3，2026-10-20 项目主人改，原来没写的全量），`no`、`false`
+/// 全量，大小写不论。
 #[test]
 fn need_load_is_yes_or_no() {
     for (line, need) in [
@@ -132,7 +133,7 @@ fn need_load_is_yes_or_no() {
         ("# Need load: TRUE\n", true),
         ("# Need load：No\n", false),
         ("# Need load: false\n", false),
-        ("", false),
+        ("", true),
     ] {
         let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
         assert_eq!(head.need_load, need, "{line}");

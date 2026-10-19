@@ -33,6 +33,7 @@ use miyu_tool::{
 
 use crate::TARGET;
 use crate::job_ids::JobIds;
+use crate::loading::Loading;
 use crate::spawn::{Lineage, SessionPort};
 
 mod spawner;
@@ -105,6 +106,8 @@ pub(crate) struct Agents {
 pub(crate) struct Offers {
     pub(crate) pools: Vec<Choice>,
     pub(crate) personas: Vec<Choice>,
+    /// 人改的加载方式（施工 L-3）：照这时的配置。
+    pub(crate) loading: Loading,
 }
 
 impl Offers {
@@ -113,6 +116,7 @@ impl Offers {
         Offers {
             pools: choices(values),
             personas,
+            loading: Loading::of(values),
         }
     }
 }
@@ -254,7 +258,7 @@ impl Agents {
                     description: spec.description.clone(),
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
-                    need_load: spec.need_load,
+                    need_load: offers.loading.need_load(&spec.name, spec.need_load),
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {

@@ -40,7 +40,8 @@ pub struct McpServer {
     pub venues: Vec<String>,
     /// 一次调用等多久，毫秒。
     pub timeout_ms: u64,
-    /// 这个服务的工具都要先加载（施工 L-1，`25-工具加载.md` W9）：没写的全量。
+    /// 这个服务的工具都要先加载（施工 L-1，`25-工具加载.md` W9）：没写的先加载（施工 L-3，2026-10-20 项目主人改：一个服务常有
+    /// 十几件工具），`false`、`"no"` 全量；`"yes"`、`"no"` 大小写不论。个人设置的 `loading.mcp.<服务名>` 盖过它。
     pub need_load: bool,
     /// 这一段写在第几行。
     pub line: Option<usize>,
@@ -183,14 +184,23 @@ fn fields(
         None => TIMEOUT_DEFAULT,
     };
     let need_load = match table.get("need_load") {
-        Some(item) => item.as_bool().ok_or_else(|| {
-            bad(
-                line,
-                &format!("{at}.need_load"),
-                format!("{at}.need_load must be true or false"),
+        Some(item) => item
+            .as_bool()
+            .or_else(
+                || match item.as_str().map(str::to_ascii_lowercase).as_deref() {
+                    Some("yes") => Some(true),
+                    Some("no") => Some(false),
+                    _ => None,
+                },
             )
-        })?,
-        None => false,
+            .ok_or_else(|| {
+                bad(
+                    line,
+                    &format!("{at}.need_load"),
+                    format!("{at}.need_load must be true, false, \"yes\" or \"no\""),
+                )
+            })?,
+        None => true,
     };
     Ok(McpServer {
         name,

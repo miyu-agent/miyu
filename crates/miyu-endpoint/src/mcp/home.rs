@@ -205,6 +205,7 @@ fn same(a: &McpServer, b: &McpServer) -> bool {
         && a.env == b.env
         && a.venues == b.venues
         && a.timeout_ms == b.timeout_ms
+        && a.need_load == b.need_load
 }
 
 /// 两份一样：个数、先后、每一个都一样。

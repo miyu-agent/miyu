@@ -43,6 +43,27 @@
       },
       "type": "object"
     },
+    "loading": {
+      "properties": {
+        "mcp": {
+          "additionalProperties": {
+            "description": "When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+            "title": "Load this MCP server's tools on demand",
+            "type": "boolean"
+          },
+          "type": "object"
+        },
+        "tools": {
+          "additionalProperties": {
+            "description": "When on, only the tool's name and description are sent, and its full parameters load before use; when off, it is sent in full. Unset follows how it was registered (scripts and MCP servers load on demand, built-in and extension tools go in full). Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+            "title": "Load this tool on demand",
+            "type": "boolean"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "log": {
       "properties": {
         "level": {

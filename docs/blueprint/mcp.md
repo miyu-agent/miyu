@@ -164,7 +164,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 ### 还没有的
 
-- 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load = true` 的，这个服务的工具都要先加载（施工 L-1）。
+- 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load` 的照它，这个服务的工具都算（施工 L-1）；没写的先加载，要全量的写 `false` 或 `"no"`（施工 L-3，2026-10-20 项目主人改，原来没写的全量）。个人设置的 `loading.mcp.<服务名>` 盖过它，单件工具的 `loading.tools.<工具名>` 再盖过服务那一项。
 
 - 远程的 MCP 服务（Streamable HTTP，要登录的走 OAuth）：先只接本机拉起的。
 - 服务的 `instructions`、资源（`resources/*`）、提示词（`prompts/*`）、Tasks 扩展、MCP Apps：都先不接。

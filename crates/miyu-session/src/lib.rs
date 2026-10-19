@@ -41,6 +41,7 @@ mod kinds;
 mod knowledge;
 mod lettering;
 mod lines;
+pub mod loading;
 mod memory;
 mod messages;
 mod open;
