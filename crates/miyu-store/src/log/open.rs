@@ -215,7 +215,9 @@ fn read_segment(
     // 从一行中间读起的不算数：多读前面那一个字节，看它是不是 `\n`。这一段比记的短了的，那个字节读不到，也算对不上。
     let skip = u64::from(from > 0);
     file.seek(SeekFrom::Start(from - skip))?;
-    let mut read = Vec::new();
+    // 照文件的大小一次留够（施工 V-12）：原来一路翻倍长大，十兆的日志多搬好几遍。读的时候还在往后写的，照样读到末尾。
+    let size = file.metadata()?.len().saturating_sub(from - skip);
+    let mut read = Vec::with_capacity(usize::try_from(size).unwrap_or(0).saturating_add(1));
     file.read_to_end(&mut read)?;
     if skip == 1 && read.first() != Some(&b'\n') {
         return Ok(None);
@@ -225,16 +227,12 @@ fn read_segment(
         .iter()
         .rposition(|&byte| byte == b'\n')
         .map_or(0, |at| at + 1);
-    let lines: Vec<&[u8]> = bytes[..complete]
-        .split_inclusive(|&byte| byte == b'\n')
-        .map(|line| &line[..line.len() - 1])
-        .collect();
     let end = from + complete as u64;
     if complete < bytes.len() {
         if !is_last {
             return Err(broken(
                 path,
-                lines.len() + 1,
+                memchr::memchr_iter(b'\n', &bytes[..complete]).count() + 1,
                 "ends in a partial line, yet more segments follow".to_string(),
             ));
         }
@@ -242,9 +240,11 @@ fn read_segment(
             truncate(path, end)?;
         }
     }
-    let mut events = Vec::with_capacity(lines.len());
-    for parsed in parse::lines(&lines) {
-        let (number, event) = parsed.map_err(|(number, why)| broken(path, number, why))?;
+    let parsed = parse::lines(&bytes[..complete]);
+    let mut events = Vec::with_capacity(parsed.len());
+    for (k, parsed) in parsed.into_iter().enumerate() {
+        let number = k + 1;
+        let event = parsed.map_err(|(number, why)| broken(path, number, why))?;
         if event.seq != *next {
             return Err(broken(
                 path,
