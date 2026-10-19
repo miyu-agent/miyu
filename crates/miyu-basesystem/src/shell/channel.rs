@@ -39,6 +39,8 @@ pub(super) struct Channel {
     path: PathBuf,
     /// 一次性的令牌：连上的先出示，对不上的不答。
     token: String,
+    /// 这条命令的进程组：起来以后才知道。连上来的进程不在这一组的不答（令牌漏了也只有这条命令自己的进程能用）。
+    group: Arc<OnceLock<u32>>,
     server: AbortHandle,
 }
 
@@ -49,12 +51,19 @@ impl Channel {
         let token = random_hex()?;
         let path = dir.join(format!("{}.sock", &token[..16]));
         let listener = tokio::net::UnixListener::bind(&path)?;
-        let server = tokio::spawn(serve(listener, port, token.clone())).abort_handle();
+        let group = Arc::new(OnceLock::new());
+        let server = tokio::spawn(serve(listener, port, token.clone(), Arc::clone(&group))).abort_handle();
         Ok(Channel {
             path,
             token,
+            group,
             server,
         })
+    }
+
+    /// 命令起来了：记下它的进程组。
+    pub(super) fn bind(&self, group: u32) {
+        let _ = self.group.set(group);
     }
 
     /// 环境变量：套接字的路径、令牌，`PATH` 最前面加上放 `miyu` 链接的目录。
@@ -120,13 +129,18 @@ fn bin_dir() -> Option<PathBuf> {
 }
 
 /// 服务：接连上来的，一个一个答。出错就停。
-async fn serve(listener: tokio::net::UnixListener, port: Arc<dyn NestedPort>, token: String) {
+async fn serve(
+    listener: tokio::net::UnixListener,
+    port: Arc<dyn NestedPort>,
+    token: String,
+    group: Arc<OnceLock<u32>>,
+) {
     let mut open = JoinSet::new();
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
                 Ok((stream, _)) if open.len() < MAX_OPEN => {
-                    open.spawn(answer(stream, Arc::clone(&port), token.clone()));
+                    open.spawn(answer(stream, Arc::clone(&port), token.clone(), Arc::clone(&group)));
                 }
                 // 多了的：丢掉，对方读到结尾。
                 Ok(_) => {}
@@ -135,6 +149,28 @@ async fn serve(listener: tokio::net::UnixListener, port: Arc<dyn NestedPort>, to
             Some(_) = open.join_next(), if !open.is_empty() => {}
         }
     }
+}
+
+/// 连上来的进程在不在这条命令的进程组里。命令刚起、组还没记下的，等一会儿（最多一秒）。
+async fn ours(stream: &tokio::net::UnixStream, group: &OnceLock<u32>) -> bool {
+    let mut waited = 0;
+    let group = loop {
+        if let Some(&group) = group.get() {
+            break group;
+        }
+        if waited >= 100 {
+            return false;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        waited += 1;
+    };
+    let Some(pid) = stream.peer_cred().ok().and_then(|cred| cred.pid()) else {
+        return false;
+    };
+    let Some(pid) = rustix::process::Pid::from_raw(pid) else {
+        return false;
+    };
+    rustix::process::getpgid(Some(pid)).is_ok_and(|pgid| pgid.as_raw_nonzero().get().unsigned_abs() == group)
 }
 
 /// 一次请求。
@@ -150,7 +186,16 @@ struct Request {
 }
 
 /// 在连上来的流上答一个请求。读写出错就丢掉：对方已经不在了。
-async fn answer(mut stream: tokio::net::UnixStream, port: Arc<dyn NestedPort>, token: String) {
+async fn answer(
+    mut stream: tokio::net::UnixStream,
+    port: Arc<dyn NestedPort>,
+    token: String,
+    group: Arc<OnceLock<u32>>,
+) {
+    // 不是这条命令的进程：不答，对方读到结尾。
+    if !ours(&stream, &group).await {
+        return;
+    }
     let Ok(len) = stream.read_u32().await else {
         return;
     };

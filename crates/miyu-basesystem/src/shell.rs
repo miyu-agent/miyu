@@ -274,6 +274,10 @@ impl Tool for Shell {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };
+            #[cfg(unix)]
+            if let Some(channel) = channel.as_ref() {
+                channel.bind(started.group().id());
+            }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_millis(timeout);

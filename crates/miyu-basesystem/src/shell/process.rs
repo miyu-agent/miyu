@@ -278,6 +278,11 @@ fn lock(output: &Mutex<Capture>) -> MutexGuard<'_, Capture> {
 pub(super) struct Group(u32);
 
 impl Group {
+    /// 组的编号（脚本调工具的通道照它认连上来的是不是这条命令的进程，设计 39 第五节）。
+    pub(super) fn id(self) -> u32 {
+        self.0
+    }
+
     /// 整组杀掉。
     pub(super) fn kill(self) {
         kill(self.0);
