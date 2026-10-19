@@ -379,6 +379,10 @@ JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site"
         } else if std::env::var_os("MIYU_PROTO_CALL").is_some_and(|value| value == "3") {
             spec.description.push_str(CALL_V3);
         }
+        if let Some(text) = std::env::var_os("MIYU_PROTO_CALL_FILE").and_then(|path| std::fs::read_to_string(path).ok()) {
+            spec.description.push_str("\n\n");
+            spec.description.push_str(text.trim_end());
+        }
         spec
     }
 

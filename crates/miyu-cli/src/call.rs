@@ -22,6 +22,29 @@ pub fn call(args: &[OsString]) -> ExitCode {
         .iter()
         .map(|arg| arg.to_string_lossy().into_owned())
         .collect();
+    // `--schema` 后面跟好几个名字的：一件一件问，挨着印；有一件不成的，退出码取最后不成的那件的。
+    if args.first().is_some_and(|first| first == "--schema") && args.len() > 2 {
+        let mut code = 0u8;
+        for tool in &args[1..] {
+            let request = serde_json::json!({"v": VERSION, "op": "schema", "tool": tool});
+            match send(&request) {
+                Ok(reply) => {
+                    let text = |key: &str| reply.get(key).and_then(Value::as_str).unwrap_or_default().to_string();
+                    let _ = std::io::stdout().write_all(text("stdout").as_bytes());
+                    let _ = std::io::stderr().write_all(text("stderr").as_bytes());
+                    let got = reply.get("code").and_then(Value::as_u64).unwrap_or(1);
+                    if got != 0 {
+                        code = u8::try_from(got).unwrap_or(1);
+                    }
+                }
+                Err((got, why)) => {
+                    eprintln!("{why}");
+                    code = got;
+                }
+            }
+        }
+        return ExitCode::from(code);
+    }
     let request = match parse(&args) {
         Ok(request) => request,
         Err(why) => return refuse(USAGE, &why),
@@ -46,7 +69,7 @@ fn refuse(code: u8, why: &str) -> ExitCode {
 
 /// 照参数造请求。
 fn parse(args: &[String]) -> Result<Value, String> {
-    const HOW: &str = "Usage: miyu call <tool> --<param> <value>... | miyu call <tool> --json '<object>' | miyu call --schema <tool>";
+    const HOW: &str = "Usage: miyu call <tool> --<param> <value>... | miyu call <tool> --json '<object>' | miyu call --schema <tool>...";
     let mut rest = args.iter();
     let Some(first) = rest.next() else {
         return Err(HOW.into());

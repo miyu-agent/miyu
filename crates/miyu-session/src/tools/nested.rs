@@ -70,7 +70,8 @@ impl NestedPort for Nester {
             Ok(args) => args,
             Err(_) => {
                 let why = format!(
-                    "Bad args for {name}: not a JSON object. See: miyu call --schema {name}"
+                    "Bad args for {name}: not a JSON object.\n{}",
+                    self.schema(&name).unwrap_or_default()
                 );
                 return Box::pin(async move { Outcome::refused(2, why) });
             }
@@ -124,8 +125,15 @@ impl NestedPort for Nester {
     fn schema(&self, name: &str) -> Option<String> {
         let tool = self.callable(name)?;
         let spec = tool.spec();
+        let result = match name {
+            "web_search" => r#"{"kind":"links","links":[{"title","url","snippet","site","date"}]}"#,
+            "memory_search" => r#"{"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}"#,
+            "kb_search" => r#"{"hits":[{"kb","path","heading","snippet","page"}]}"#,
+            "kb_read" => r#"{"kb","path","page","pages","text"}"#,
+            _ => "text",
+        };
         Some(format!(
-            "{name}: {}\nParameters: {}\n",
+            "{name}: {}\nParameters: {}\nResult: {result}\n",
             spec.description,
             spec.parameters.get()
         ))

@@ -32,6 +32,9 @@ fn proto() -> Option<(String, String)> {
 JSON shapes: web_search {"kind":"links","links":[{"title","url","snippet","site","date"}]}; memory_search {"memories":[{"id","class","date","text"}],"turns":[{"date","session","text"}]}; kb_search {"hits":[{"kb","path","heading","snippet","page"}]}; kb_read {"kb","path","page","pages","text"}. web_fetch and MCP tools without structured output print text."#;
     const SHORT: &str = "When a task needs the same tool many times, or a loop over pages or items, and you only need a summary (counts, filters, comparisons), write one shell script with miyu call (see the shell tool) instead of making many direct calls.";
     const V3: &str = "You can write programs that call tools. When a task takes many tool calls or real logic around them (branches, loops, one tool's results feeding another, tool results mixed with local files or programs) and you only need the outcome, write it as one script with miyu call (see the shell tool) instead of calling step by step. For one or two calls, or when you need to read the results yourself, call the tools directly.";
+    if let Some(text) = std::env::var_os("MIYU_PROTO_SYS_FILE").and_then(|path| std::fs::read_to_string(path).ok()) {
+        return Some(("zz-proto-miyu-call".to_string(), text.trim_end().to_string()));
+    }
     let text = match std::env::var("MIYU_PROTO_SYS").ok()?.as_str() {
         "full" => FULL,
         "short" => SHORT,
