@@ -18,6 +18,7 @@ use miyu_models::price::Tariff;
 
 use crate::config::TurnConfig;
 use crate::port::{Cancel, ForSession, ModelPort, Models, Reports};
+use crate::route::{Ask, OneShot, Unanswered};
 
 mod persona;
 
@@ -93,6 +94,10 @@ pub struct Script {
     cached: u64,
     /// 换快照时交来的驱动的占位（施工 P-1 三补），照先后。
     retexted: Arc<Mutex<Vec<DriverTexts>>>,
+    /// 一次性入口照先后答的正文（[`Script::once`]）：没排的没有一次性入口。
+    once: Option<Arc<Mutex<VecDeque<String>>>>,
+    /// 交给一次性入口的问，照先后。
+    asked: Arc<Mutex<Vec<Ask>>>,
 }
 
 impl Script {
@@ -118,7 +123,23 @@ impl Script {
             reference: None,
             tariff: None,
             cached: 40,
+            once: None,
+            asked: Arc::default(),
         }
+    }
+
+    /// 有一次性入口，照先后这样答（施工 test-once）：核心照它交抽取、整理要的几样，`/dream` 这些走得通。答完了的再问交
+    /// `no_model`。没排的没有一次性入口，和真核心没配模型一样。
+    #[must_use]
+    pub fn once(mut self, answers: impl IntoIterator<Item = impl Into<String>>) -> Script {
+        let answers = answers.into_iter().map(Into::into).collect();
+        self.once = Some(Arc::new(Mutex::new(answers)));
+        self
+    }
+
+    /// 交给一次性入口的问，照先后。
+    pub fn asked(&self) -> Vec<Ask> {
+        lock(&self.asked).clone()
     }
 
     /// 同一份剧本，每次说完了报的用量一共是 `total`（施工 6-11 上：好走到起压线、压缩线）：60 没命中、10 输出，别的算命中。
@@ -188,6 +209,16 @@ impl Models for Script {
         let mut port = self.clone();
         port.reference = session.reference;
         Arc::new(port)
+    }
+
+    fn one_shot(&self) -> Option<OneShot> {
+        let (answers, asked) = (Arc::clone(self.once.as_ref()?), Arc::clone(&self.asked));
+        Some(OneShot::scripted(Arc::new(move |ask: &Ask| {
+            lock(&asked).push(ask.clone());
+            lock(&answers)
+                .pop_front()
+                .ok_or_else(|| Unanswered::NoModel("the script has no more answers".to_string()))
+        })))
     }
 }
 

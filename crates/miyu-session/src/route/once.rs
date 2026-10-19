@@ -50,8 +50,20 @@ const FAILOVERS: usize = 5;
 /// 一次性入口（施工 8-20）：核心一份，可以复制。
 #[derive(Clone)]
 pub struct OneShot {
-    routes: Routes,
+    answering: Answering,
 }
+
+/// 照什么答：路由；测试里照剧本（`testkit::Script::once`）。
+#[derive(Clone)]
+enum Answering {
+    Routes(Routes),
+    #[cfg(any(test, feature = "testkit"))]
+    Scripted(Scripted),
+}
+
+/// 照剧本答的：交进去的问，交回正文。
+#[cfg(any(test, feature = "testkit"))]
+pub(crate) type Scripted = std::sync::Arc<dyn Fn(&Ask) -> Result<String, Unanswered> + Send + Sync>;
 
 /// 交进去的。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,7 +152,17 @@ impl From<Unsent> for Unanswered {
 impl OneShot {
     /// 在 `routes` 上的一次性入口：冷却表、池的指针和它造的会话的路由共用。
     pub fn new(routes: Routes) -> OneShot {
-        OneShot { routes }
+        OneShot {
+            answering: Answering::Routes(routes),
+        }
+    }
+
+    /// 照剧本答的（测试的端口，`testkit::Script::once`）：不经路由，不记账。
+    #[cfg(any(test, feature = "testkit"))]
+    pub(crate) fn scripted(answer: Scripted) -> OneShot {
+        OneShot {
+            answering: Answering::Scripted(answer),
+        }
     }
 
     /// 发一次：照这一次的配置 `config`（一次性的照这一刻不算项目配置的最终值），图从 `blobs`（调的一方那个账号的）取。
@@ -212,7 +234,20 @@ impl OneShot {
         ask: Ask,
         watch: &mut (dyn FnMut(Watched<'_>) + Send),
     ) -> Result<Answer, Unanswered> {
-        let routes = &self.routes;
+        let routes = match &self.answering {
+            Answering::Routes(routes) => routes,
+            #[cfg(any(test, feature = "testkit"))]
+            Answering::Scripted(answer) => {
+                let text = answer(&ask)?;
+                watch(Watched::Text(&text));
+                return Ok(Answer {
+                    text,
+                    provider: "script".to_string(),
+                    model: "script".to_string(),
+                    usage: None,
+                });
+            }
+        };
         routes.data.wait().await;
         let values = config.resolved.values();
         let text = match ask.model {

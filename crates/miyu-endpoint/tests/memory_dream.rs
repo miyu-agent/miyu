@@ -315,3 +315,38 @@ async fn subscribers_see_what_she_writes_while_dreaming() {
         json!(["m1", "m2"])
     );
 }
+
+/// 剧本的一次性入口（施工 test-once）：测试核心照 `Script::once` 排的答整理，`memory.dream` 走得通、问的照先后记下；
+/// 没排的剧本没有一次性入口，核心不交整理要的几样，回 `memory_unavailable`（头的端到端测试原来只测得到这一条）。
+#[tokio::test]
+async fn a_scripted_core_dreams_with_the_answers_it_was_given() {
+    let merged = json!({"retired": [{"id": "m1", "kind": "repeat", "by": "m2", "why": "重复"}], "summary": "用户养猫。"});
+    let script = miyu_session::testkit::Script::new([]).once([
+        merged.to_string(),
+        json!({"keywords": []}).to_string(),
+        "{}".to_string(),
+    ]);
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&script));
+    client.hello().await;
+    remember(&mut client, "c1", "用户养了一只猫").await;
+    remember(&mut client, "c2", "用户养了一只猫，叫团子").await;
+    let reply = client
+        .call("d1", "memory.dream", json!({"persona": "engineer"}))
+        .await;
+    assert_eq!(
+        reply["result"],
+        json!({"given": 2, "revised": 0, "retired": 1, "summary": true}),
+        "{reply}"
+    );
+    assert!(!script.asked().is_empty(), "整理经一次性入口问了");
+
+    let plain = Home::new();
+    let mut client = Client::connect(plain.core(&miyu_session::testkit::Script::new([])));
+    client.hello().await;
+    remember(&mut client, "c1", "用户养了一只猫").await;
+    let reply = client
+        .call("d1", "memory.dream", json!({"persona": "engineer"}))
+        .await;
+    assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
+}
