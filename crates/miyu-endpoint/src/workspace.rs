@@ -12,13 +12,13 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::session::Command;
 
 use crate::Core;
 use crate::methods::command_to;
 use crate::refusal::Refusal;
-use crate::sessions::{Picked, check_dirs, pick};
+use crate::sessions::{Found, Picked, check_dirs, pick};
 use crate::wire::Request;
 
 /// `session.set_workspace` 的参数。
@@ -74,6 +74,38 @@ pub(crate) async fn set(
         reply["wide"] = json!(true);
     }
     Ok(reply)
+}
+
+/// `session.send` 带的 `cwd`（施工 9-7 再补，终端无缝集成：每一轮的工作目录跟着 shell 走，设计 22 O6）：照 [`checked`] 查，和
+/// 会话现在的一样什么都不做、不记；不一样的交给会话换（推 `session.workspace_changed`），会话表跟着换，`found` 的跟着改。交回
+/// 太宽没有。和 9-7 上拿掉的头每句话报的目录不是一回事：那是头自己的目录，这是人在 shell 里 `cd` 过去的。
+pub(crate) async fn follow(
+    core: &Arc<Core>,
+    request: &Request,
+    session: &SessionId,
+    found: &mut Found,
+    cwd: &str,
+) -> Result<bool, Refusal> {
+    let picked = checked(core, found.handle.owner(), cwd)?;
+    if picked.cwd == found.cwd {
+        return Ok(false);
+    }
+    let command = Command::SetWorkspace {
+        cwd: picked.cwd.clone(),
+        dirs: None,
+    };
+    // 换目录是这一句之外的另一条命令：编号照这一句的接 `/cwd`，和这一句不撞，重发的照样认得出（命令编号最长 128 个字节，
+    // 接不下的不收）。
+    let moving = Request {
+        id: CommandId::parse(&format!("{}/cwd", request.id.as_str()))
+            .map_err(|_| Refusal::BAD_PARAMS)?,
+        method: request.method.clone(),
+        params: Value::Null,
+    };
+    command_to(core, &moving, session, &found.handle, command).await?;
+    core.sessions.moved(session, picked.cwd.clone(), None).await;
+    found.cwd = picked.cwd;
+    Ok(picked.wide)
 }
 
 /// 核心所在的机器上人的家目录，真实的位置；没有的、换不成的没有。

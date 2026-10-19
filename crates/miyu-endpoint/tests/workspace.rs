@@ -1,6 +1,7 @@
 //! 工作目录太宽（施工 4-3 下，`11-权限与沙盒.md` 第四节）：头报来的是 `~`、系统的家目录、根目录，或者包含
 //! 数据根、落在数据根里的，退回管理员的工作区 `home/<账号>/workspace/`；项目目录照旧。造会话、说话的回应
-//! 说会话实际在哪个目录里干活（施工 4-5 下）。施工 9-7 上起说话不再换工作区，换的是 `session.set_workspace`。
+//! 说会话实际在哪个目录里干活（施工 4-5 下）。施工 9-7 上起换工作区的是 `session.set_workspace`；说话带的 `cwd` 9-7 再补起
+//! 先换过去（`workspace_send.rs`）。
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -150,7 +151,7 @@ async fn the_replies_say_where_the_session_works() {
         .as_str()
         .expect("造出来了")
         .to_string();
-    // 说话带着目录的不再换工作区（施工 9-7 上）：照收不理，回应里是会话现在的。
+    // 说话带着的目录先换过去（施工 9-7 再补，终端无缝集成；9-7 上那时照收不理）：太宽的照人选的用，回应带 `wide`。
     let reply = client
         .call(
             "c2",
@@ -158,7 +159,8 @@ async fn the_replies_say_where_the_session_works() {
             json!({"session": session, "text": "hi", "cwd": "~"}),
         )
         .await;
-    assert_eq!(reply["result"]["cwd"], json!(project), "{reply}");
+    assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
+    assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
     home.until_turns(&session, 1).await;
     // 人明着换到太宽的目录：照人选的用，回应带 `wide`（施工 9-7 补，原来退回账号的工作区）。
     let reply = client

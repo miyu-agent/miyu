@@ -92,10 +92,14 @@ pub(super) async fn send(core: &Arc<Core>, request: &Request) -> Result<Value, R
     if venue.is_some() && params.as_external.is_none() {
         return Err(Refusal::BAD_PARAMS);
     }
+    // 换工作目录的只给本机的会话（施工 9-7 再补）：代表平台上的人说话的不收。
+    if params.cwd.is_some() && params.as_external.is_some() {
+        return Err(Refusal::BAD_PARAMS);
+    }
     // 附件先查，再找会话：不对的，会话里什么都不送（施工 3-9 三补）。头报的 `cwd`、`dirs` 不再换工作区（施工 9-7 上）。
     let attachments = params.attachments.unwrap_or_default();
     blocks.extend(attach::blocks(core, attachments).await?);
-    let found = core.sessions.get(core, &session).await?;
+    let mut found = core.sessions.get(core, &session).await?;
     // 附件照连接的账号读，她照会话的属主读：不是一个账号的拷一份过去（施工 O-4 下）。
     attach::hand_over(core, found.handle.owner(), &blocks).await?;
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
@@ -115,8 +119,18 @@ pub(super) async fn send(core: &Arc<Core>, request: &Request) -> Result<Value, R
             by = venues::speaker(core, found.handle.venue(), found.handle.owner(), speaking)?;
         }
     }
+    // 先换目录再说（施工 9-7 再补）：这一句开的那一轮照新目录跑。
+    let wide = match params.cwd.as_deref() {
+        Some(cwd) if local => {
+            crate::workspace::follow(core, request, &session, &mut found, cwd).await?
+        }
+        _ => false,
+    };
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     let mut reply = json!({"events": events, "cwd": found.cwd});
+    if wide {
+        reply["wide"] = json!(true);
+    }
     let untrusted = core.config().untrusted(&found.cwd);
     if let Some(file) = untrusted {
         reply["untrusted_project"] = json!(file);

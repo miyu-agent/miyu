@@ -124,9 +124,10 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 | `attachments` | array | Attachments, each the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine) |
 | `urgent` | boolean, default `false` | Cut in: if she's busy, she sees it at the next step |
 | `from` | string | You are another agent program: your name; the message is recorded as yours, not the person's |
+| `cwd` | string | Move to this working directory first (shell integration: each turn's directory follows the shell): checked like [`session.set_workspace`](#sessionset_workspace), `wide` included; the same directory records nothing, a change pushes `session.workspace_changed`. Not for venue sessions |
 | `as`, `venue` | object | Venue sessions only; see [Venues](venues.en.md) |
 
-**Response**: `events` (this message's number), `cwd`, `untrusted_project` (as in `session.create`).
+**Response**: `events` (this message's number), `cwd` (after any move), `untrusted_project` (as in `session.create`); `wide: true` when moved somewhere too wide. A bad `cwd` (`path_unreadable`, `not_a_directory`, `path_forbidden`) refuses the whole message.
 
 1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.

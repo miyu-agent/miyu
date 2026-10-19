@@ -290,15 +290,15 @@ async fn the_working_directory_stays_with_the_session() {
         .call(
             "c3",
             "session.send",
-            json!({"session": session, "text": "again", "cwd": "~/src/two"}),
+            json!({"session": session, "text": "again"}),
         )
         .await;
     home.until_turns(&session, 2).await;
     let requests = script.requests();
     let text = |n: usize| String::from_utf8(requests[n].1.canonical_bytes()).expect("请求是 UTF-8");
-    // 工作区是会话的属性（施工 9-7 上）：说话带着的目录照收不理，换工作区另走 `session.set_workspace`。
+    // 工作区是会话的属性（施工 9-7 上）：说话不带目录的照会话的；带了的先换过去（施工 9-7 再补，`workspace_send.rs`）。
     assert!(text(0).contains("~/src/one"), "{}", text(0));
-    assert!(!text(1).contains("~/src/two"), "{}", text(1));
+    assert!(text(1).contains("~/src/one"), "{}", text(1));
     assert!(
         !home
             .log(&session)

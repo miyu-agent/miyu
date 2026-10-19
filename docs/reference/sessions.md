@@ -124,9 +124,10 @@
 | `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
 | `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
 | `from` | 字符串 | 你是别的 agent 程序：写上你的名字，这句话记成你说的，不是本人 |
+| `cwd` | 字符串 | 先换到这个工作目录再说（终端无缝集成：每一轮的工作目录跟着 shell 走）：查法、太宽的 `wide` 同 [`session.set_workspace`](#sessionset_workspace)；和现在一样的什么都不记，换了的推 `session.workspace_changed`。场所会话不收 |
 | `as`、`venue` | 对象 | 只给场所会话，见 [场所](venues.md) |
 
-**回应**：`events`（这一句的序号）、`cwd`、`untrusted_project`（同 `session.create`）。
+**回应**：`events`（这一句的序号）、`cwd`（换过以后的）、`untrusted_project`（同 `session.create`）；换到太宽的目录多 `wide: true`。`cwd` 写错的（`path_unreadable`、`not_a_directory`、`path_forbidden`）整句不收。
 
 1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。

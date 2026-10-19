@@ -208,3 +208,4 @@ mod widgets;
 mod workspace;
 mod workspace_command;
 mod workspace_property;
+mod workspace_send;

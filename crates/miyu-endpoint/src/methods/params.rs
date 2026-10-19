@@ -56,6 +56,9 @@ pub(super) struct ListParams {
 #[derive(Debug, Deserialize)]
 pub(super) struct SendParams {
     pub(super) session: String,
+    /// 先换到这个工作目录再说（施工 9-7 再补，终端无缝集成）：和现在一样的什么都不记。场所会话不收。
+    #[serde(default)]
+    pub(super) cwd: Option<String>,
     pub(super) text: String,
     #[serde(default)]
     pub(super) urgent: bool,
