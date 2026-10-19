@@ -10,6 +10,7 @@ use crate::phrases::Phrases;
 
 mod capability;
 mod code;
+mod command;
 mod content;
 mod credits;
 mod features;
@@ -57,8 +58,9 @@ pub struct Manifest {
     pub name: Phrases,
     /// 一句说明；没写的是空的。
     pub summary: Phrases,
-    /// 给 `miyu` 加的子命令（9-2 转交）。
-    pub command: Option<Command>,
+    /// 给 `miyu` 加的子命令（9-2 转交）：照写的先后，没写的是空的；一个包可以加几个（施工 F-13，`[[command]]`），第一个的程序
+    /// 是这个包的程序（[`Manifest::command`]）。
+    pub commands: Vec<Command>,
     /// 核心怎么拉起它（`kind = "process"`，9-4）。
     pub process: Option<Process>,
     /// 界面认的页、页面文件在哪（`kind = "ui"`）。
@@ -147,13 +149,15 @@ impl PackageKind {
     }
 }
 
-/// `[command]`。
+/// `[command]`，`[[command]]` 的一个（施工 F-13）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Command {
     /// `miyu` 后面敲的那个词。
     pub name: String,
     /// 程序名，不带路径。
     pub program: String,
+    /// 转交时加在人敲的参数前面的（施工 F-13）：没写的是空的。
+    pub args: Vec<String>,
     /// 一句说明，`miyu -h` 照它列。
     pub about: Phrases,
     /// `name` 写在第几行：两个包撞了名，报在这一行。
@@ -278,9 +282,11 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        // `[[mcp]]`、`[[slash]]`、`[[widget]]` 是一串表（施工 X-2、X-14 下、X-15 上）：写成别的样子的由各自的模块报。
+        // `[[mcp]]`、`[[slash]]`、`[[widget]]` 是一串表（施工 X-2、X-14 下、X-15 上）：写成别的样子的由各自的模块报。`command`
+        // 一张、一串都行（施工 F-13）。
         if !item.is_table_like()
-            && !(matches!(key, "mcp" | "slash" | "search" | "widget") && item.is_array_of_tables())
+            && !(matches!(key, "mcp" | "slash" | "search" | "widget" | "command")
+                && item.is_array_of_tables())
         {
             return Err(reader.problem(
                 Some(item),
@@ -303,13 +309,11 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     for (key, item) in root.iter() {
         reader.belongs(kind, key, item)?;
     }
-    let command = match root.get("command").and_then(Item::as_table_like) {
-        Some(table) => Some(reader.command(table, &root["command"])?),
-        None => None,
-    };
+    let commands = command::read(&reader, root.get("command"))?;
+    let command = commands.first();
     let process = match root.get("process").and_then(Item::as_table_like) {
         Some(table) => {
-            reader.needs_command(command.as_ref(), "process", &root["process"])?;
+            reader.needs_command(command, "process", &root["process"])?;
             Some(reader.process(table)?)
         }
         None => None,
@@ -320,7 +324,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     };
     let check = match root.get("check").and_then(Item::as_table_like) {
         Some(table) => {
-            reader.needs_command(command.as_ref(), "check", &root["check"])?;
+            reader.needs_command(command, "check", &root["check"])?;
             reader.only(table, "check", &["args"])?;
             Some(Check {
                 args: reader.texts(table, "check", "args")?,
@@ -398,7 +402,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         protocol: head.protocol,
         name: head.name,
         summary: head.summary,
-        command,
+        commands,
         process,
         ui,
         check,

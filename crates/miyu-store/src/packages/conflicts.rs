@@ -130,9 +130,12 @@ pub fn conflicts(
 /// 一个包占的名字。
 fn names(id: &str, manifest: &Manifest, dir: &Path) -> BTreeSet<(Kind, String)> {
     let mut names = BTreeSet::new();
-    if let Some(command) = &manifest.command {
-        names.insert((Kind::Command, command.name.clone()));
-    }
+    names.extend(
+        manifest
+            .commands
+            .iter()
+            .map(|command| (Kind::Command, command.name.clone())),
+    );
     // 扩展声明的斜杠命令（施工 X-14 下）、整页的命令名（施工 X-15 上）和模板一个名字空间。
     names.extend(
         manifest

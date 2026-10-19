@@ -258,7 +258,7 @@ fn provides(manifest: &Manifest, folder: &Path) -> BTreeMap<String, Vec<String>>
     };
     put(
         "command",
-        manifest.command.iter().map(|c| c.name.clone()).collect(),
+        manifest.commands.iter().map(|c| c.name.clone()).collect(),
     );
     put(
         "features",

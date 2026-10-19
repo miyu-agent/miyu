@@ -49,10 +49,16 @@ targets = ["linux-x86_64"]       # 能装在哪几种系统上（施工 G-1，�
 author = "miyu-agent"              # 作者（施工 F-12，项目主人 2026-10-19 定每个包都写），可以不写；一行，1 到 100 个字
 upstream = "https://github.com/miyu-agent/miyu"   # 上游源码仓库（施工 F-12），可以不写；https:// 开头，至多 300 个字。`package.list`、`package.info` 原样交出去，另交 `from`（shipped、official、local）
 
-[command]                        # 可以没有
+[[command]]                      # 可以没有；一个包可以加几个（施工 F-13），只有一个的照旧写 [command]
 name = "tui"                     # miyu 后面敲的那个词：小写字母开头，小写字母、数字、-，最多 32 个
-program = "miyu-tui"             # 程序名，不带路径分隔符
+program = "miyu-tui"             # 程序名，不带路径分隔符；第一个子命令的程序是这个包的程序
 about = { en = "Open the terminal interface", zh = "打开终端界面" }
+
+[[command]]                      # 第二个：同一个程序，转交时 args 加在人敲的参数前面
+name = "shellhook"
+program = "miyu-tui"
+args = ["shellhook"]             # 可以不写；miyu shellhook install 转交成 miyu-tui shellhook install
+about = { en = "Talk to Miyu from your shell", zh = "在 shell 里和她说话" }
 
 [ui]                             # 有它的是界面
 opens = ["config"]               # 界面认的页（--page），照配置清单的页名；可以是空的
@@ -154,7 +160,7 @@ program = "miyu-embed"
 3. 包的编号是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的三项）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
 
-**两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）。和内置子命令撞的，由 9-2 在命令行那一头拦。别的包占了的名字装的时候先查过（下面「冲突」），读的时候撞得上的只剩核心升级后出厂的新带了同名的：出厂的先读到。声明了系统账号、编号和管理员的账号一样的报 `account_taken`，整份不收（施工 O-4 下）。
+**两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）；一个包加了几个的，每个都算，有一个被占就整份不收（施工 F-13）。同一个包里写了两个同名的也报 `command_taken`，报在后一个。和内置子命令撞的，由 9-2 在命令行那一头拦。别的包占了的名字装的时候先查过（下面「冲突」），读的时候撞得上的只剩核心升级后出厂的新带了同名的：出厂的先读到。声明了系统账号、编号和管理员的账号一样的报 `account_taken`，整份不收（施工 O-4 下）。
 
 **系统账号**（施工 O-4 下，`06-多用户与身份.md` U14、`18-通讯平台.md` Q19）：`[process] system_account = true` 的包有一个系统账号，账号名就是包的编号（一个包一个，编号两层里不重）。核心起来时读清单那一次建它的 `home/<编号>/` 和 `workspace/`（已经有的不动，建不成的记 `WARN system account not prepared`、账号照样算有），拉起扩展前开它自己的会话列表索引（`home/<编号>/index/sessions.db`）；名单照核心手里这时的清单算，不落盘；装上、装回来的当场建，卸掉的不再算，家目录、索引留着、装回来接着用（施工 F-5 下）。核心拉起的这个包的扩展以它的身份连进来（`extensions.md`「握手」），群、陌生人私聊的场所会话归它（`venues.md`）。没有密码、不能登录；人格、预设、软件包照管理员的找，记忆归管理员（`personas.md`「怎么走」第 5 条）。彻底卸载时连数据一起删：随 `12-进程形态与分发.md` R9。
 
@@ -173,7 +179,8 @@ program = "miyu-embed"
 | `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...]}`，照写的先后：别的软件经 `package.call` 调得到的方法 |
 | `worker` | `worker` 包（施工 F-1） | `{"program", "args"}` |
 | `mcp` | 带 MCP 服务的（施工 X-2） | `[{"name", "command", "venues"}]`，照写的先后；环境变量不列（可能引用密钥） |
-| `command` | 有 `[command]` 的 | `{"name", "program", "about"}`，`about` 照语言挑 |
+| `command` | 有 `[command]` 的 | `{"name", "program", "about"}`，`about` 照语言挑；加了几个的是第一个 |
+| `commands` | 有 `[command]` 的（施工 F-13） | 每个子命令一项，同 `command`，照写的先后 |
 | `opens`、`pages_dir` | `ui` 包；`pages_dir` 写了的 | |
 | `process` | `process` 包 | `{"args", "start"}` |
 | `check` | 有 `[check]` 的 | `{"args"}` |
@@ -193,7 +200,7 @@ program = "miyu-embed"
 2. **读一份**：照「格式」查，报第一处；必写的少了报在表头那一行（缺 `[package]` 的整份，没有行号）。
 3. **`package.list`**：照起来时读到的答，名字照这个连接的语言挑。
 4. **`miyu check`**：照磁盘上现在的读，改了马上查得出。
-5. **转交**（施工 9-2，`cli/main.md`「怎么走」第 0 条）：`miyu <名字> …` 不是内置的子命令，照磁盘读两层的清单，`[command]` 的名字是它的那一个包：程序先找这个包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的（`miyu_store::packages::locate`，施工 F-8 上再补：别人做的包自己带程序，随 Miyu 装的那几个在 `miyu` 旁边；包文件夹是相对路径的不找 `bin/`；不找 `PATH`，别的程序冒充不了，2026-10-01 项目主人定），参数、环境、标准输入输出原样（环境只多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹，同核心拉起扩展，施工 S-6 上），Unix 上换成它，Windows 上起它、等它，退出码照它的；`miyu help <名字>` 转成 `--help`。没找到程序说没装、退出码 1。撞了内置子命令的：内置的优先，不转交，帮助页不列；装包时拦随装包那一步。`miyu -h` 多一节「软件包加的命令」。
+5. **转交**（施工 9-2，`cli/main.md`「怎么走」第 0 条）：`miyu <名字> …` 不是内置的子命令，照磁盘读两层的清单，`[command]`（几个里的任一个，施工 F-13）的名字是它的那一个包：程序先找这个包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的（`miyu_store::packages::locate`，施工 F-8 上再补：别人做的包自己带程序，随 Miyu 装的那几个在 `miyu` 旁边；包文件夹是相对路径的不找 `bin/`；不找 `PATH`，别的程序冒充不了，2026-10-01 项目主人定），参数、环境、标准输入输出原样（环境只多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹，同核心拉起扩展，施工 S-6 上），Unix 上换成它，Windows 上起它、等它，退出码照它的；清单写了 `args` 的，加在人敲的参数前面（施工 F-13）；`miyu help <名字>` 转成 `args` 加 `--help`（`miyu help shellhook` 是 `miyu-tui shellhook --help`）。没找到程序说没装、退出码 1。撞了内置子命令的：内置的优先，不转交，帮助页不列；装包时拦随装包那一步。`miyu -h` 多一节「软件包加的命令」。
 6. **跑包的检查**（施工 9-2，`crates/miyu-endpoint/src/check/run.rs`）：核心的 `check` 不写文件时，照起来时读到的清单，有 `[check]` 的每个包跑 `<程序> <args…>`（程序同第 5 条找），标准输入是空的、标准错误不要、环境照核心的，最多等 30 秒、收 1 MiB。标准输出一行一个 JSON：`kind`、`file`、`level`（`error`、`warning`）、`message` 必有，`line`、`column`（正整数）、`code`、`key`、`rule`、`source` 有的才收，别的格不收，接在核心自己查的后面，照包的编号的先后。退出码 0、1 是正常的；别的、被信号杀掉的、跑不起来的、到时没完的报一条警告 `check_failed`；程序没找到的报 `check_unavailable`；有看不懂的行的报 `check_output`（几行），都写清单的位置。写了文件的照旧只认核心自己认得出的。
 7. **入口**（施工 9-3，`cli/main.md`「怎么走」第 3 条）：不带子命令的 `miyu`、不带子命令的 `miyu config` 在终端里时照配置 `ui.head` 找界面包拉起，`miyu config` 带 `--page config`，要清单的 `[ui] opens` 认 `config` 这一页；`miyu web` 照子命令是 `web` 的那一份找网页软件。程序照第 5 条找。
 
@@ -276,7 +283,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 
-1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）。九样各算各的：技能 `notes` 和库 `notes` 不算撞。
+1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名（加了几个的每个都算，施工 F-13）；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）。九样各算各的：技能 `notes` 和库 `notes` 不算撞。
    人格、预设还和出厂、系统区、家目录里有的比（施工 P-11 下，设计 31 第十节第 4 条）：撞了的写 `layer` 不写 `package`；这个包以前卸掉时留下的改动（`state/packages/.leftovers.json`）、升级时装着的这一份已经带着的不算。卸包时它带的人格、预设在系统区、家目录里有改动的记进 `.leftovers.json`，重装它划掉；`miyu check` 对包没装着、改动还在的报 `persona_left`、`preset_left` 警告（`file` 是那一份改动）。
 2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：核心自己的 `basesystem`，记忆的 `memory`，长期目标的 `goal`；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；家目录里自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
 3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。

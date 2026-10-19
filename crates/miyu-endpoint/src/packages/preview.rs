@@ -167,8 +167,15 @@ fn carries(
             .collect();
         answer.insert("mcp".into(), json!(names));
     }
-    if let Some(command) = &manifest.command {
+    // 第一个子命令照旧放在 `command`，几个都在 `commands`（施工 F-13）。
+    if let Some(command) = manifest.command() {
         answer.insert("command".into(), json!(command.name));
+        let names: Vec<&str> = manifest
+            .commands
+            .iter()
+            .map(|one| one.name.as_str())
+            .collect();
+        answer.insert("commands".into(), json!(names));
     }
     if manifest.page.is_some() {
         answer.insert("page".into(), json!(true));

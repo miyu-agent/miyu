@@ -36,6 +36,8 @@ pub struct Added {
     pub name: String,
     /// 跑哪个程序：程序名，不带路径。
     pub program: String,
+    /// 转交时加在人敲的参数前面的（施工 F-13）：没写的是空的。
+    pub args: Vec<String>,
     /// 一句说明，照语言挑。
     pub about: Phrases,
     /// 清单在哪：没装程序时说给人听。
@@ -44,7 +46,7 @@ pub struct Added {
     pub resources: PathBuf,
 }
 
-/// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排。写错的、子命令名被先读到的占了的（`command_taken`）不算；
+/// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排，一个包加几个的照写的先后（施工 F-13）。写错的、子命令名被先读到的占了的（`command_taken`）不算；
 /// 名字是内置子命令 `builtins` 里的也不算：内置的优先。数据根、资源目录找不到的当没有。
 pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
@@ -53,16 +55,21 @@ pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
     Packages::new(&resources, &root, admin)
         .read()
         .into_iter()
-        .filter_map(|found| {
-            let manifest = found.read.ok()?;
-            let command = manifest.command?;
-            (!builtins.contains(&command.name.as_str())).then_some(Added {
-                name: command.name,
-                program: command.program,
-                about: command.about,
-                manifest: found.path,
-                resources: resources.path().to_path_buf(),
-            })
+        .filter_map(|found| Some((found.read.ok()?, found.path)))
+        .flat_map(|(manifest, path)| {
+            let resources = resources.path().to_path_buf();
+            manifest
+                .commands
+                .into_iter()
+                .filter(|command| !builtins.contains(&command.name.as_str()))
+                .map(move |command| Added {
+                    name: command.name,
+                    program: command.program,
+                    args: command.args,
+                    about: command.about,
+                    manifest: path.clone(),
+                    resources: resources.clone(),
+                })
         })
         .collect()
 }
@@ -121,14 +128,7 @@ pub fn forward(
     language: Language,
     err: &mut dyn Write,
 ) -> Option<u8> {
-    let first = args.get(1)?.to_str()?;
-    let (name, rest): (&str, Vec<OsString>) = if first == "help" {
-        let name = args.get(2)?.to_str()?;
-        (name, vec![OsString::from("--help")])
-    } else {
-        (first, args[2..].to_vec())
-    };
-    let one = added.iter().find(|one| one.name == name)?;
+    let (one, rest) = target(args, added)?;
     // 包文件夹就是清单所在的那一层（施工 F-8 上再补：程序先找它的 `bin/`）。
     let dir = one.manifest.parent().unwrap_or(Path::new(""));
     let Some(program) = locate(&one.program, dir, main) else {
@@ -136,6 +136,23 @@ pub fn forward(
         return Some(1);
     };
     Some(run(command(&program, &rest, dir, &one.resources), err))
+}
+
+/// 命令行 `args` 转交给哪一个、交给它的参数；不该转交的没有。清单写的参数在前（施工 F-13）：`miyu shellhook install` 转交成
+/// `miyu-tui shellhook install`，`miyu help shellhook` 转交成 `miyu-tui shellhook --help`。
+fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<OsString>)> {
+    let first = args.get(1)?.to_str()?;
+    let (name, typed): (&str, Vec<OsString>) = if first == "help" {
+        let name = args.get(2)?.to_str()?;
+        (name, vec![OsString::from("--help")])
+    } else {
+        (first, args[2..].to_vec())
+    };
+    let one = added.iter().find(|one| one.name == name)?;
+    Some((
+        one,
+        one.args.iter().map(OsString::from).chain(typed).collect(),
+    ))
 }
 
 /// 跑包的程序 `program` 的命令：参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它

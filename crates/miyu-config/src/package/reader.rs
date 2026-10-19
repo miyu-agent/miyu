@@ -173,46 +173,6 @@ impl Reader<'_> {
         })
     }
 
-    /// `[command]`。
-    pub(super) fn command(&self, table: &dyn TableLike, at: &Item) -> Result<Command, Problem> {
-        self.only(table, "command", &["name", "program", "about"])?;
-        let item = self.required(table, at, "command", "name")?;
-        let line = item.span().map(|span| line_of(self.text, span.start));
-        let name = item
-            .as_str()
-            .filter(|name| command_name(name))
-            .ok_or_else(|| {
-                self.problem(
-                    Some(item),
-                    Code::BadCommandName,
-                    "command.name",
-                    "command.name must start with a lowercase letter and use only lowercase letters, digits and -".to_string(),
-                )
-            })?;
-        let item = self.required(table, at, "command", "program")?;
-        let program = item
-            .as_str()
-            .filter(|program| program_name(program))
-            .ok_or_else(|| {
-                self.problem(
-                    Some(item),
-                    Code::BadProgram,
-                    "command.program",
-                    "command.program must be a program name without a path".to_string(),
-                )
-            })?;
-        let about = self.phrases(
-            self.required(table, at, "command", "about")?,
-            "command.about",
-        )?;
-        Ok(Command {
-            name: name.to_string(),
-            program: program.to_string(),
-            about,
-            line,
-        })
-    }
-
     /// `[process]`。
     pub(super) fn process(&self, table: &dyn TableLike) -> Result<Process, Problem> {
         self.only(

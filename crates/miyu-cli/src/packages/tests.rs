@@ -7,6 +7,7 @@ fn added(name: &str, program: &str) -> Added {
     Added {
         name: name.to_string(),
         program: program.to_string(),
+        args: Vec::new(),
         about: Phrases::from([
             ("en".to_string(), "Open the terminal interface".to_string()),
             ("zh".to_string(), "打开终端界面".to_string()),
@@ -123,5 +124,31 @@ fn the_program_gets_its_package_folder() {
             ),
         ],
         "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）"
+    );
+}
+
+#[test]
+fn the_manifest_args_go_before_what_was_typed() {
+    let mut shellhook = added("shellhook", "miyu-tui");
+    shellhook.args = vec!["shellhook".to_string()];
+    let list = [added("tui", "miyu-tui"), shellhook];
+    let passed =
+        |words: &[&str]| target(&args(words), &list).map(|(one, rest)| (one.name.clone(), rest));
+    let os = |words: &[&str]| words.iter().map(OsString::from).collect::<Vec<_>>();
+    assert_eq!(
+        passed(&["shellhook", "install", "fish"]),
+        Some((
+            "shellhook".to_string(),
+            os(&["shellhook", "install", "fish"])
+        ))
+    );
+    assert_eq!(
+        passed(&["help", "shellhook"]),
+        Some(("shellhook".to_string(), os(&["shellhook", "--help"])))
+    );
+    assert_eq!(
+        passed(&["tui", "--page", "config"]),
+        Some(("tui".to_string(), os(&["--page", "config"]))),
+        "没写 args 的照旧"
     );
 }

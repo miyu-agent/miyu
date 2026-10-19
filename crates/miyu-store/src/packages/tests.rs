@@ -133,6 +133,36 @@ fn a_command_name_is_taken_by_whoever_is_read_first() {
     assert_eq!(problem.line, Some(6), "报在子命令名那一行");
 }
 
+/// 加两个子命令的界面清单（施工 F-13）。
+fn two(first: &str, second: &str) -> String {
+    format!(
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"{first}\" }}\n\n[[command]]\nname = \"{first}\"\nprogram = \"miyu-{first}\"\nabout = {{ en = \"Open\" }}\n\n[[command]]\nname = \"{second}\"\nprogram = \"miyu-{first}\"\nargs = [\"{second}\"]\nabout = {{ en = \"Open\" }}\n\n[ui]\n"
+    )
+}
+
+#[test]
+fn every_command_of_a_package_takes_its_name() {
+    let places = Places::new();
+    places.write(Layer::Shipped, "tui/package.toml", &two("tui", "shellhook"));
+    places.write(Layer::Shipped, "web/package.toml", &two("web", "shellhook"));
+    places.write(Layer::Shipped, "zeta/package.toml", &ui("web"));
+    let found = places.packages.read();
+    assert_eq!(
+        brief(&found),
+        [
+            ("tui".to_string(), Layer::Shipped, None),
+            ("web".to_string(), Layer::Shipped, Some(Code::CommandTaken)),
+            ("zeta".to_string(), Layer::Shipped, None),
+        ],
+        "第二个子命令撞了，整份不收；它的 web 也不算占了"
+    );
+    let Err(Issue::Wrong(problem)) = &found[1].read else {
+        panic!("撞了");
+    };
+    assert_eq!(problem.detail, "shellhook");
+    assert_eq!(problem.line, Some(11), "报在被占的那个子命令名那一行");
+}
+
 /// 一份最小的扩展清单，声明了系统账号。
 fn served(command: &str) -> String {
     ui(command).replace("\n[ui]\n", "\n[process]\nsystem_account = true\n")

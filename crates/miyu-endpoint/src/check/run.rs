@@ -40,7 +40,7 @@ pub(super) async fn packages(core: &Core, words: &Human) -> Vec<Value> {
         let Ok(manifest) = &found.read else {
             continue;
         };
-        let (Some(command), Some(check)) = (&manifest.command, &manifest.check) else {
+        let (Some(command), Some(check)) = (manifest.command(), &manifest.check) else {
             continue;
         };
         let file = super::shown(core, &found.path);

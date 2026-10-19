@@ -23,10 +23,9 @@ pub(crate) fn runs(manifest: &Manifest) -> bool {
 /// 服务照它自己的命令起，施工 X-3）。
 fn program(manifest: &Manifest) -> Option<&str> {
     match manifest.kind {
-        PackageKind::Process | PackageKind::Ui => manifest
-            .command
-            .as_ref()
-            .map(|command| command.program.as_str()),
+        PackageKind::Process | PackageKind::Ui => {
+            manifest.command().map(|command| command.program.as_str())
+        }
         PackageKind::Worker => manifest
             .worker
             .as_ref()

@@ -21,12 +21,21 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
     if let Some(summary) = pick(&manifest.summary, language) {
         item["summary"] = json!(summary);
     }
-    if let Some(command) = &manifest.command {
-        item["command"] = json!({
-            "name": command.name,
-            "program": command.program,
-            "about": pick(&command.about, language),
-        });
+    // 第一个子命令照旧放在 `command`；一个包加几个的（施工 F-13）另交 `commands`，照写的先后。
+    let commands: Vec<Value> = manifest
+        .commands
+        .iter()
+        .map(|command| {
+            json!({
+                "name": command.name,
+                "program": command.program,
+                "about": pick(&command.about, language),
+            })
+        })
+        .collect();
+    if let Some(first) = commands.first() {
+        item["command"] = first.clone();
+        item["commands"] = json!(commands);
     }
     if let Some(process) = &manifest.process {
         item["process"] = json!({"args": process.args, "start": process.start.as_str()});

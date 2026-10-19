@@ -58,7 +58,8 @@ fn a_ui_package_reads_every_field() {
         Some("终端界面")
     );
     assert_eq!(manifest.summary.len(), 2);
-    let command = manifest.command.unwrap();
+    let command = manifest.command().cloned().unwrap();
+    assert!(command.args.is_empty(), "旧的一张 [command] 没有 args");
     assert_eq!(
         (command.name.as_str(), command.program.as_str()),
         ("tui", "miyu-tui")
@@ -113,9 +114,9 @@ fn the_smallest_manifest_has_a_kind_a_protocol_and_a_name() {
     let manifest = read("[package]\nprotocol = [1, 1]\nname = { en = \"x\" }\n\n[ui]\n").unwrap();
     assert_eq!(manifest.kind, PackageKind::Ui, "照 [ui] 认");
     assert_eq!(
-        (manifest.command, manifest.ui),
+        (manifest.commands, manifest.ui),
         (
-            None,
+            Vec::new(),
             Some(Pages {
                 opens: Vec::new(),
                 pages_dir: None

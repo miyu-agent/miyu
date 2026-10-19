@@ -90,8 +90,9 @@ fn program(env: &Env, admin: &AccountId) -> (String, PathBuf) {
         .into_iter()
         .find_map(|found| {
             let dir = found.files_dir();
-            let command = found.read.ok()?.command?;
-            (command.name == "web").then_some((command.program, dir))
+            let manifest = found.read.ok()?;
+            let command = manifest.command_named("web")?;
+            Some((command.program.clone(), dir))
         })
         .unwrap_or_else(fallback)
 }

@@ -41,6 +41,7 @@
 | `page` | 有后台页的 |
 | `mcp` | 带的 MCP 服务：`name`、`command`、`venues`、`state`、`failures`…… |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
+| `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `removed` | 卸掉了的出厂包 |
 
 写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言说）和 `line`。要一直跟着最新的，订阅 `packages` 流。
@@ -65,7 +66,7 @@
 | `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接 | 同上，一起装了依赖的多 `with` |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`、`page`、`mascot`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
 
 装、卸当场生效：带进程的照开关拉起、停下，它的工具进出工具目录，开着的会话下一轮换上。
 

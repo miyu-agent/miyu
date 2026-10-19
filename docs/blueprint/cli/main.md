@@ -256,5 +256,5 @@ Examples:
 
 - 只敲 `miyu` 打开终端界面（`22-命令行.md` 第五节、`13-终端界面.md`）：现在只说还没做好。
 - 会话怎么接：现在每次 `miyu ask` 开一个一次性会话，`--continue`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 管的都是上一次 `miyu ask` 开的那个，容易让人迷惑。做头的时候和终端里的会话一起重定（2026-09-28 项目主人定）。
-- 第五节表里的其余命令：`stdio`、`web`、`status`、`doctor`、`logs`、`session`、`config`、`persona`、`preset`、`memory`、`venue`、`listen`、`stt`、`pkg`、`tools`、`account`、`service`、`upgrade`、`shell-init`、`completions`。
+- 第五节表里的其余命令：`stdio`、`web`、`status`、`doctor`、`logs`、`session`、`config`、`persona`、`preset`、`memory`、`venue`、`listen`、`stt`、`pkg`、`tools`、`account`、`service`、`upgrade`、`completions`（`shellhook` 归终端界面的包，`22-命令行.md` 第七节）。
 - 界面语言是配置里跟着人走的一项（`14-配置.md` 第一节、`16-人格与预设.md` 第五节）；界面的字放在代码之外（`00-设计理念.md` 第六节）：现在照环境变量，字写在代码里。

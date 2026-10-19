@@ -142,7 +142,7 @@ fn plan(head: &str, page: Option<&str>, found: &[Found], main: &Path) -> Plan {
     {
         return Plan::NoPage;
     }
-    let Some(command) = manifest.command.as_ref() else {
+    let Some(command) = manifest.command() else {
         return Plan::Missing;
     };
     let Some(program) = one.program(&command.program, main) else {
@@ -171,8 +171,7 @@ fn installed(found: &[Found], main: &Path) -> Vec<String> {
             one.read.as_ref().is_ok_and(|manifest| {
                 manifest.kind == PackageKind::Ui
                     && manifest
-                        .command
-                        .as_ref()
+                        .command()
                         .is_some_and(|command| one.program(&command.program, main).is_some())
             })
         })

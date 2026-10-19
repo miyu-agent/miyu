@@ -41,6 +41,7 @@ Manage packages, extension processes and the MCP servers in personal settings; r
 | `page` | Has a package page |
 | `mcp` | Its MCP servers: `name`, `command`, `venues`, `state`, `failures`… |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
+| `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
 | `removed` | A removed built-in package |
 
 Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `problem` (in the connection's language) and `line`. To keep up to date, subscribe to the `packages` stream.
@@ -65,7 +66,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 | `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
-Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command`, `page`, `mascot`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
+Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command` (the first subcommand name), `commands` (every subcommand name), `page`, `mascot`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
 
 Install and remove take effect at once: processes start or stop per their switches, their tools enter or leave the tool catalog, and open sessions pick that up at the next turn.
 

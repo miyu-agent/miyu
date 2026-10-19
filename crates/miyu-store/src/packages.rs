@@ -285,7 +285,8 @@ fn reading_order(found: &[Found]) -> Vec<usize> {
     order
 }
 
-/// 子命令名：照读的先后先到先得，后到的那一份报 `command_taken`，报在子命令名那一行。
+/// 子命令名：照读的先后先到先得，后到的那一份报 `command_taken`，报在被占的那个子命令名那一行；一个包加几个的（施工 F-13）
+/// 有一个被占就整份不收，它的几个名字都不算占了。
 fn taken(found: &mut [Found]) {
     let order = reading_order(found);
     let mut owners: BTreeMap<String, String> = BTreeMap::new();
@@ -293,15 +294,19 @@ fn taken(found: &mut [Found]) {
         let Ok(manifest) = &found[index].read else {
             continue;
         };
-        let Some(command) = &manifest.command else {
-            continue;
-        };
-        let (name, line) = (command.name.clone(), command.line);
-        match owners.get(&name) {
+        let clash = manifest.commands.iter().find_map(|command| {
+            owners
+                .get(&command.name)
+                .map(|owner| (command.name.clone(), command.line, owner.clone()))
+        });
+        match clash {
             None => {
-                owners.insert(name, found[index].id.clone());
+                let id = found[index].id.clone();
+                for command in &manifest.commands {
+                    owners.insert(command.name.clone(), id.clone());
+                }
             }
-            Some(owner) => {
+            Some((name, line, owner)) => {
                 let message = format!("command {name} is already taken by package {owner}");
                 found[index].read = Err(Issue::Wrong(Problem {
                     line,
