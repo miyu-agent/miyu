@@ -1,6 +1,6 @@
 //! 照人的登录连核心、交接票（接入通讯平台要的，它的设计 01 第九节第 2、3 条）：真核心、真套接字。用一次性码设好密码拿到登录令牌，
 //! `miyu_client` 的 `connect_login` 照它另开一条连接（不读本机令牌）；这条连接要一张交接票，换出一个登录令牌，再换一次不认。
-//! 登录令牌不认的连不上。
+//! 登录令牌不认的连不上；照用户名、密码连（`connect_password`）换到登录令牌。拒绝照 `Refused::reason` 认（施工 W-8 再补）。
 
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -83,9 +83,38 @@ async fn a_login_connection_hands_off_a_ticket_once() {
     .expect("换出的登录令牌认得");
     let again = im
         .call("r2", "login.redeem", json!({"ticket": ticket}))
-        .await;
-    assert!(again.is_err(), "一张票只换一次：{again:?}");
-    let wrong = Core::connect_login(&home.root, "not-a-login", "im").await;
-    assert!(wrong.is_err(), "登录令牌不认的连不上");
+        .await
+        .err()
+        .map(|refused| refused.reason);
+    assert_eq!(again.as_deref(), Some("bad_ticket"), "一张票只换一次");
+    let wrong = Core::connect_login(&home.root, "not-a-login", "im")
+        .await
+        .err()
+        .map(|refused| refused.reason);
+    assert_eq!(wrong.as_deref(), Some("bad_login"), "登录令牌不认的连不上");
+
+    let (mut by_password, issued) = within(
+        "用户名、密码连上",
+        Core::connect_password(&home.root, "admin", "correct horse battery", "im"),
+    )
+    .await
+    .expect("用户名、密码对");
+    assert_eq!(issued.token.len(), 64, "换到一个登录令牌");
+    assert!(!issued.expires.is_empty());
+    by_password
+        .call("t2", "login.ticket", json!({}))
+        .await
+        .expect("这条连接是人");
+    within(
+        "换到的也连得上",
+        Core::connect_login(&home.root, &issued.token, "im"),
+    )
+    .await
+    .expect("认得");
+    let bad = Core::connect_password(&home.root, "admin", "wrong password", "im")
+        .await
+        .err()
+        .map(|refused| refused.reason);
+    assert_eq!(bad.as_deref(), Some("bad_password"));
     drop(held);
 }

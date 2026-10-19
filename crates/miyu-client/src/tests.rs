@@ -66,3 +66,28 @@ fn the_face_lists_what_the_heads_use() {
     ];
     assert!(kinds[0].starts_with("miyu_client::open::"), "{kinds:?}");
 }
+
+/// 核心的拒绝照 `data.reason` 认、原话照留，登录被挡的带还要等多久（施工 W-8 再补）；没有原因的写 `refused`。
+#[test]
+fn a_refusal_keeps_its_reason_message_and_wait() {
+    let throttled = serde_json::json!({
+        "code": -32010,
+        "message": "登录太频繁",
+        "data": {"reason": "login_throttled", "retry_after_ms": 1500},
+    });
+    let refused = crate::open::Refused::of(&throttled);
+    assert_eq!(
+        (
+            refused.reason.as_str(),
+            refused.message.as_str(),
+            refused.retry_after_ms
+        ),
+        ("login_throttled", "登录太频繁", Some(1500))
+    );
+    assert_eq!(refused.to_string(), "登录太频繁");
+    let bare = crate::open::Refused::of(&serde_json::json!({}));
+    assert_eq!(
+        (bare.reason.as_str(), bare.retry_after_ms),
+        ("refused", None)
+    );
+}

@@ -163,7 +163,7 @@ A one-time code works once. Setting the password revokes every earlier browser l
 | `local_only` | Called by an extension, or `account.setup_code` on a connection that didn't use the local token |
 ## `login.ticket`, `login.redeem`
 
-Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side redeems it for a login token and connects to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake).
+Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side redeems it for a login token and connects to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got).
 
 **Who can call**: `login.ticket` is for people only (connected with the local token, a login token or a password); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
 
