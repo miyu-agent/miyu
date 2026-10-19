@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>593</b><span>/ 612 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>595</b><span>/ 614 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">8646a344</b><span>最近一步（S-7 上 测试不用 miyu-embed）的提交</span></li>
+    <li><b class="mono">666fa7c1</b><span>最近一步（G-8 引导里下语义模型）的提交</span></li>
   </ul>
 </header>
 
@@ -432,6 +432,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sG-6"><span class="n">G-6</span>她的工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sG-7"><span class="n">G-7</span>官方仓库<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-7a"><span class="n">S-7 上</span>测试不用 miyu-embed<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sS-7b"><span class="n">S-7 下</span>miyu-embed 自己的仓库<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sG-8"><span class="n">G-8</span>引导里下语义模型<span class="st">✓</span></a></li>
       </ol>
     </li>
     <li>
@@ -7311,6 +7313,109 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/S-7-语义模型拆出去（上）.md</code>、图纸 <code>recall.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sS-7b" aria-labelledby="h-sS7b">
+  <div class="sheet-head"><h2 id="h-sS7b"><span class="no">S-7 下</span>miyu-embed 自己的仓库</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">内置语义模型搬进自己的仓库，四种系统发包进软件源，核心不再编 ONNX Runtime。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-embed 自己的仓库</span><span class="dir-note">S-7 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>带着历史滤出 miyu-agent/miyu-embed</li>
+              <li>包清单写版本 0.1.0、四种系统</li>
+              <li>打包模板发 v0.1.0，模型文件的 Release 拷过去</li>
+              <li>收录进官方软件源，核心删掉 crate</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">模型文件的 Release 标预发布</span><span class="rl">不顶掉版本</span></div>
+          <div class="tile new"><span class="nm">核心那份 Release 不删</span><span class="rl">旧的验收包还指着它</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">S-7 下</dd></div>
+        <div><dt>名称</dt><dd>miyu-embed 自己的仓库</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">666fa7c1</dd></div>
+        <div><dt>验收</dt><dd>新仓库 CI 三种系统、四种系统打包都绿；沙盒从软件源装上、记忆照意思找到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>索引里有 embed</span></li>
+        <li><span class="ok">✓</span><span>miyu pkg install embed 装上</span></li>
+        <li><span class="ok">✓</span><span>核心拉起包里的 miyu-embed</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/S-7-语义模型拆出去（下）.md</code>、<a href="https://github.com/miyu-agent/miyu-embed">miyu-agent/miyu-embed</a>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sG-8" aria-labelledby="h-sG8">
+  <div class="sheet-head"><h2 id="h-sG8"><span class="no">G-8</span>引导里下语义模型</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">引导里一步装上内置语义模型：核心照软件源装、推进度，两个头画。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">引导里下语义模型</span><span class="dir-note">G-8</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>核心不加方法</li>
+              <li>形状写进施工单：看装没装、问、装、进度、装不上</li>
+              <li>通知两个头</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">小程序包装好就用</span><span class="rl">不用再开</span></div>
+          <div class="tile new"><span class="nm">连不上软件源</span><span class="rl">说一句、接着往下走</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">G-8</dd></div>
+        <div><dt>名称</dt><dd>引导里下语义模型</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">666fa7c1</dd></div>
+        <div><dt>验收</dt><dd>核心侧本机实测；两个头各自验</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>从软件源装上 embed</span></li>
+        <li><span class="ok">✓</span><span>进度推给发起的连接</span></li>
+        <li><span class="ok">✓</span><span>装上以后记忆照意思找</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/G-8-引导里下语义模型.md</code>。</li>
       </ul>
     </div>
   </div>
