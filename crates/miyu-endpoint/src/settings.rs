@@ -1,6 +1,6 @@
 //! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话的权限级别
 //! `permission.level`（施工 8-32），新会话开局只读
-//! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上），软件源 `packages.source`、`packages.mirrors`
+//! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上），终端会话 `terminal.*`（施工 8-33），软件源 `packages.source`、`packages.mirrors`
 //! （施工 G-3 上）。
 //!
 //! 核心起来时照 `ui.language` 的最终值挑生成的文件用哪种语言；握手时照它和头报的系统语言算这个连接的语言（第二条
@@ -70,6 +70,34 @@ miyu_config::settings! {
             layers: [System, Personal],
             applies: new_session,
             ui: { page: "general", group: "preset", control: text },
+        },
+    }
+}
+
+miyu_config::settings! {
+    /// 终端会话（施工 8-33，设计 `22-命令行.md` 第七节，2026-10-20 项目主人定）：在 shell 里说的话进的那个一直续下去的会话。
+    /// `session.terminal` 照它开新的、换新的。
+    pub struct TerminalSettings in "terminal" {
+        /// 新开的终端会话用哪个人格：人格目录的编号。没设的跟随 `persona.default`。只管新开的，在用的不换。
+        persona: Option<String> = none {
+            kind: name,
+            layers: [System, Personal],
+            applies: new_session,
+            ui: { page: "general", group: "terminal", control: text },
+        },
+        /// 新开的终端会话用哪个预设：预设文件的编号。没设的跟随 `preset.default`。
+        preset: Option<String> = none {
+            kind: name,
+            layers: [System, Personal],
+            applies: new_session,
+            ui: { page: "general", group: "terminal", control: text },
+        },
+        /// 上一次说话以后闲置超过多少分钟，下一句开一个新的终端会话；0 是不换。默认值项目主人还没定，暂时 240。
+        idle_new_after: i64 = 240 {
+            kind: int [0, 525600],
+            layers: [System, Personal],
+            applies: now,
+            ui: { page: "general", group: "terminal", control: number },
         },
     }
 }

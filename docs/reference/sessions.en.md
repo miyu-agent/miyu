@@ -17,6 +17,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.set_permission_level`](#sessionset_permission_level) | Change the permission level, the read-only switch |
 | [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
 | [`session.set_meta`](#sessionset_meta) | Rename, pin |
+| [`session.terminal`, `session.set_terminal`](#sessionterminal-sessionset_terminal) | The terminal session: get it, point it elsewhere |
 | [`session.configure`](#sessionconfigure) | Change the model, persona or preset |
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
@@ -268,6 +269,20 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 | `not_a_directory` | It's a file |
 | `path_forbidden` | It's inside Miyu's data directory (except the account's own default workspace) |
 | `dir_too_wide` | A `dirs` entry is too wide |
+
+## `session.terminal`, `session.set_terminal`
+
+The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One per account; the core decides which one it is and when a new one starts.
+
+**`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. Response `{"session"}`:
+
+1. The session pointed at still exists and is this account's own local main session (not a child, venue or one-shot session): it's that one.
+2. It has been idle longer than `terminal.idle_new_after` minutes (0 never replaces): a new one starts, the pointer moves, and the response adds `renewed: {"last"}` (when the old one last had an event); the old one is left alone.
+3. Nothing pointed at yet, or it was deleted or doesn't count: a new one starts and the response adds `created: true`.
+
+A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.default` and `preset.default`). Several connections asking at once get one session.
+
+**`session.set_terminal`**: param `session`: point the terminal session at it (what `/new` or `/sessions` picked). Only this account's own local main sessions; anything else is refused with `session_not_found`. Response `{"session"}`.
 
 ## `session.set_meta`
 

@@ -115,6 +115,18 @@
         "name": "Start new sessions read-only",
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."
       },
+      "terminal.persona": {
+        "name": "Terminal session persona",
+        "description": "The persona for a new terminal session. Unset follows the default persona. A terminal session in use keeps its own."
+      },
+      "terminal.preset": {
+        "name": "Terminal session preset",
+        "description": "The preset for a new terminal session. Unset follows the default preset."
+      },
+      "terminal.idle_new_after": {
+        "name": "New session after idle",
+        "description": "After this many minutes without a message, the next one starts a new terminal session; the old one is kept. 0 never starts a new one."
+      },
       "models.chat": {
         "name": "Chat model",
         "description": "The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool."
@@ -320,6 +332,7 @@
       "memory": "Memory",
       "log": "Runtime log",
       "sessions": "Sessions",
+      "terminal": "Terminal session",
       "profile": "About you",
       "uses": "Uses",
       "pools": "Pools",

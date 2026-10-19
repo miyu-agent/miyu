@@ -51,6 +51,7 @@ pub mod secrets;
 pub mod skills;
 pub mod slash;
 pub mod sqlite;
+pub mod terminal;
 pub mod trash;
 pub mod usage;
 pub mod watch;

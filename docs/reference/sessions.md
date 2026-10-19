@@ -17,6 +17,7 @@
 | [`session.set_permission_level`](#sessionset_permission_level) | 切权限级别、只读开关 |
 | [`session.set_workspace`](#sessionset_workspace) | 换工作目录 |
 | [`session.set_meta`](#sessionset_meta) | 改标题、置顶 |
+| [`session.terminal`、`session.set_terminal`](#sessionterminalsessionset_terminal) | 终端会话：拿到它、指到别的会话 |
 | [`session.configure`](#sessionconfigure) | 换模型、人格、预设 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
@@ -268,6 +269,20 @@
 | `not_a_directory` | 是文件 |
 | `path_forbidden` | 落在 Miyu 的数据目录里（账号自己的默认工作区除外） |
 | `dir_too_wide` | `dirs` 里有一条太宽 |
+
+## `session.terminal`、`session.set_terminal`
+
+终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用，设计 `22-命令行.md` 第七节）。每个账号一个，哪个算、什么时候换新的由核心定。
+
+**`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区。回应 `{"session"}`：
+
+1. 指着的会话还在、是这个账号自己的本机主会话（不是子会话、场所会话、一次性的），就是它。
+2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。
+3. 没指过、指着的删了、不算数的：开一个新的，回应多 `created: true`。
+
+新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要，只开一个。
+
+**`session.set_terminal`**：参数 `session`：把终端会话指到它（`/new`、`/sessions` 选中的）。只收这个账号自己的本机主会话，别的拒 `session_not_found`。回应 `{"session"}`。
 
 ## `session.set_meta`
 

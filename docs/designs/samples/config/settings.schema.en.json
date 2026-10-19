@@ -724,6 +724,29 @@
       },
       "type": "object"
     },
+    "terminal": {
+      "properties": {
+        "idle_new_after": {
+          "default": 240,
+          "description": "After this many minutes without a message, the next one starts a new terminal session; the old one is kept. 0 never starts a new one. Allowed: a whole number from 0 to 525600. Only in the system config or personal settings. Takes effect immediately.",
+          "maximum": 525600,
+          "minimum": 0,
+          "title": "New session after idle",
+          "type": "integer"
+        },
+        "persona": {
+          "description": "The persona for a new terminal session. Unset follows the default persona. A terminal session in use keeps its own. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.",
+          "title": "Terminal session persona",
+          "type": "string"
+        },
+        "preset": {
+          "description": "The preset for a new terminal session. Unset follows the default preset. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.",
+          "title": "Terminal session preset",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ui": {
       "properties": {
         "head": {

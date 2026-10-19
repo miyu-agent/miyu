@@ -176,6 +176,7 @@ mod spawn_choice;
 mod subscribe;
 mod subscribe_now;
 mod system_account;
+mod terminal_session;
 mod title;
 mod todos;
 mod tool_detail;

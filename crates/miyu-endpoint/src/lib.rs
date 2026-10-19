@@ -73,6 +73,7 @@ pub mod settings;
 mod spawn;
 mod subscriptions;
 mod system_accounts;
+mod terminal;
 #[cfg(test)]
 mod test_support;
 mod timing;
@@ -125,6 +126,8 @@ pub struct Core {
     tools: Shelf,
     /// 哪个包现在由哪个连接提供工具（施工 O-2 上，`provide.rs`）。
     provided: Arc<provide::Provided>,
+    /// 终端会话（施工 8-33）：同一时刻只有一个连接在找、开（`terminal.rs`）。
+    terminal: tokio::sync::Mutex<()>,
     /// 后台页的方法：哪个包登记了哪些、由哪个连接答（施工 F-6 中，`backstage.rs`）。
     backstage: backstage::Methods,
     /// 系统的家目录：权限策略照它换 `~`，头报来的工作目录是它的就退回管理员的工作区（施工 4-3 下）。
@@ -247,6 +250,7 @@ impl Core {
             settings::PersonaSettings::ITEMS,
             settings::PresetSettings::ITEMS,
             settings::PermissionSettings::ITEMS,
+            settings::TerminalSettings::ITEMS,
             miyu_session::settings::ProfileSettings::ITEMS,
             settings::EXTERNAL_BINDINGS,
         ]
@@ -283,6 +287,7 @@ impl Core {
             models,
             tools: Shelf::new(tools),
             provided: Arc::default(),
+            terminal: tokio::sync::Mutex::new(()),
             backstage: backstage::Methods::default(),
             home,
             sandbox: Availability::Unusable(Unusable::HelperMissing),

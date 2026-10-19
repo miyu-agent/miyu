@@ -303,6 +303,12 @@ pub(crate) fn call<'a>(
             )
         }
         "session.set_meta" => answer(move || session::set_meta(core, caller, request)),
+        "session.terminal" => answer(move || async move {
+            crate::terminal::get(core, peer, &caller.account, request, params(request)?).await
+        }),
+        "session.set_terminal" => answer(move || async move {
+            crate::terminal::set(core, &caller.account, params(request)?).await
+        }),
         "session.delete" => answer(move || session::delete(core, request)),
         other => answer(move || async move {
             match core.queries.get(other).filter(|_| core.serves(other)) {
