@@ -44,16 +44,8 @@ pub struct Retire {
     pub why: String,
 }
 
-/// 作废的是哪一种（施工 R-16）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
-    /// 被后记的一条取代了。
-    Outdated,
-    /// 和另一条说的一样。
-    Repeat,
-    /// 以后用不着：一次性的请求、转眼就过的状态、测试、客套话。
-    Worthless,
-}
+/// 作废的是哪一种（施工 R-16；R-17 起同一种记进日志）。
+pub use crate::memory::RetireKind as Kind;
 
 /// 交回来的、照规矩取过的。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

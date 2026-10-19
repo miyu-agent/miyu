@@ -40,6 +40,8 @@ fn retire(home: &Home, id: MemoryId) {
     let retired = Retired {
         id,
         why: "不算了".into(),
+        kind: None,
+        kept: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Retired(retired))
         .expect("记得下");

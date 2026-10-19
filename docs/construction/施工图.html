@@ -773,6 +773,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-12c"><span class="n">R-12</span>协议找得到无人格那一间（再补）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-15b"><span class="n">R-15</span>记忆的关键词（下）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-16"><span class="n">R-16</span>整理更可靠<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-17"><span class="n">R-17</span>整理留痕<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -22293,6 +22294,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-16-整理更可靠.md</code>；蓝图 <code>memory.md</code> 第七条第 3 款，<code>memory/eval.md</code>「整理」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-17" aria-labelledby="h-sR17">
+  <div class="sheet-head"><h2 id="h-sR17"><span class="no">R-17</span>整理留痕</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">整理（dream）做到哪、删了什么改了什么，都写进记忆日志：头订阅它就能画进度、列出这一次做了什么，不另开推送。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-recall · memory · miyu-session · memory/merge</span><span class="dir-note">R-17</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>每一批发请求以前记 <code>ext.memory.merging</code>（这一批几条、还有几条、人叫的没有）</li>
+              <li>没合成的每一次记 <code>ext.memory.merge_failed</code>；核心半路停了的下次开时补 <code>interrupted</code></li>
+              <li>整理删的写 <code>kind</code>、<code>kept</code>（留下的那一条）</li>
+              <li>运行日志补一趟合的头尾两行</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">进度照日志算</span><span class="rl">头一批 left 是总数，fresh 加起来是合了多少</span></div>
+          <div class="tile new"><span class="nm">后台的也写</span><span class="rl">manual 分人叫的</span></div>
+          <div class="tile"><span class="nm">一批之内不细分</span><span class="rl">字数不是一件事，不进日志</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-17</dd></div>
+        <div><dt>名称</dt><dd>整理留痕</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>读写、底账、真整理五种情形 · 变异 8/8 · 自己验收，通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人叫的、后台的、连着三次没成、分两批、半路停了：日志里的几行都对得上</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-17-整理留痕.md</code>；蓝图 <code>memory.md</code> 第七条第 6、7、10 款；参考 <code>reference/memory.md</code>「<code>memory.dream</code>」。</li>
       </ul>
     </div>
   </div>

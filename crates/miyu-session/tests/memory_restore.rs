@@ -35,6 +35,8 @@ async fn only_where_it_can_come_up_can_it_be_restored() {
         let retired = Retired {
             id,
             why: "错了".into(),
+            kind: None,
+            kept: None,
         };
         log.append(now(), stranger(), None, &MemoryEvent::Retired(retired))
             .expect("记得下");

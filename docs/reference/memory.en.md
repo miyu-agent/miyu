@@ -91,6 +91,22 @@ Organize now: with `session`, first extract what that session hasn't had extract
 
 **Errors**: `memory_busy` (already organizing); `dream_failed` (merging failed, `data.message`).
 
+**Progress and what it did**: read it from the memory log (subscribe to the `memory` stream). Organizing merges batch by batch; both a requested one and one in the background are written:
+
+| `kind` | `body` | What it is |
+|---|---|---|
+| `ext.memory.merging` | `upto`, `fresh`, `left`, `manual` | A batch starts: how many new memories in it, how many are left including it, whether a person asked |
+| `ext.memory.saved` | with `replaces` | A memory revised: the new text; the old one is the `replaces` memory |
+| `ext.memory.retired` | `id`, `why`, `kind`, `kept` | A memory removed: `kind` is `outdated` (superseded by a later one), `repeat` (a duplicate) or `worthless` (not needed later); `kept` is the one kept instead (none for `worthless`). A person's removal has no `kind` or `kept` |
+| `ext.memory.summary` | `text` | The new summary about the person |
+| `ext.memory.tagged` | `id`, `keywords` | Keywords filled in: after the batch's `merged` |
+| `ext.memory.merged` | `upto`, `given`, `revised`, `retired`, `failed`? | The batch is done (`failed`: three failures in a row, skipped) |
+| `ext.memory.merge_failed` | `upto`, `why`, `tries`? | The batch failed this time; `why` `interrupted` means the core stopped midway |
+
+- A `merging` and the `merged` or `merge_failed` that ends it carry the same `upto`; the revisions, removals and summary between them whose `by` is the memory module are what the batch did (another session may be extracting or a person editing at the same time; `by` tells them apart). One not yet ended is in progress.
+- Progress: the first batch's `left` is the total; the `fresh` of the ended batches adds up to what is done. There is no finer progress within a batch.
+- When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
+
 ## `kb.list`, `kb.search`, `kb.read`
 
 Knowledge bases belong to the admin account; each is a folder of documents (Markdown, PDF, web pages…) that the core indexes for search. Whether the knowledge base package is installed doesn't matter here: the files are the person's.

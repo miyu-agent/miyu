@@ -36,6 +36,8 @@ fn a_memory_is_dropped_when_it_is_retired_or_replaced() {
         MemoryEvent::Retired(Retired {
             id: m(1),
             why: "不去了".into(),
+            kind: None,
+            kept: None,
         }),
     );
     assert_eq!(book.dropped_at(m(1)), Some(at(3)), "照作废那一条的时刻");

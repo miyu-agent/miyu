@@ -203,6 +203,8 @@ async fn once_something_it_covered_is_forgotten_the_summary_is_not_given() {
         MemoryEvent::Retired(Retired {
             id: osaka,
             why: "忘掉".into(),
+            kind: None,
+            kept: None,
         }),
     );
     let (block, refs) = first_block(&home).await;

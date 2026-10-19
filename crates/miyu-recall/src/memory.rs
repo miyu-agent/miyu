@@ -39,6 +39,10 @@ const MERGED: &str = "ext.memory.merged";
 const RESTORED: &str = "ext.memory.restored";
 /// 换一条的关键词（施工 R-15 上）。
 const TAGGED: &str = "ext.memory.tagged";
+/// 开始合一批（施工 R-17）。
+const MERGING: &str = "ext.memory.merging";
+/// 这一批这一次没合成（施工 R-17）。
+const MERGE_FAILED: &str = "ext.memory.merge_failed";
 
 /// 一条的关键词最多几个字（施工 R-15 上）：一行，逗号隔开，十来个词。
 pub const KEYWORD_CHARS: usize = 200;
@@ -164,13 +168,31 @@ pub struct Tagged {
     pub keywords: String,
 }
 
-/// `ext.memory.retired` 的 `body`：作废一条。
+/// `ext.memory.retired` 的 `body`：作废一条。整理作废的另写哪一种、留下的是哪一条（施工 R-17）；人作废的、R-17 以前的不写。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Retired {
     /// 作废哪一条。
     pub id: MemoryId,
     /// 为什么。
     pub why: String,
+    /// 哪一种：核心照规矩核对过的（`miyu_recall::merge`）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<RetireKind>,
+    /// 留下的那一条：取代它的（`outdated`）、和它重复的（`repeat`）；`worthless` 没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kept: Option<MemoryId>,
+}
+
+/// 整理作废的是哪一种（施工 R-16 起模型交、核心核对，R-17 起记进日志）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RetireKind {
+    /// 被后记的一条取代了。
+    Outdated,
+    /// 和另一条说的一样。
+    Repeat,
+    /// 以后用不着：一次性的请求、转眼就过的状态、测试、客套话。
+    Worthless,
 }
 
 /// `ext.memory.restored` 的 `body`：作废了的那一条不算作废了（施工 R-12 下，`memory.md` 第二条第 6 款）：人恢复误删的。
@@ -231,6 +253,36 @@ pub struct Merged {
     pub failed: bool,
 }
 
+/// `ext.memory.merging` 的 `body`：开始合一批（施工 R-17，`memory.md` 第七条第 10 款）。发请求以前写；合完的 `merged`、没合成
+/// 的 `merge_failed` 带同一个 `upto`，照它对上。订阅着的头照它画进度：`left` 是总数，各批的 `fresh` 加起来是合了多少。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Merging {
+    /// 合到记忆日志的第几条：这一批新记的里最后那一条。
+    pub upto: Seq,
+    /// 这一批交几条新记的（不算带上的相关旧记忆）。
+    pub fresh: u32,
+    /// 还有几条新记的要合：这一批的算在里面。
+    pub left: u32,
+    /// 人叫的（`/dream`、`memory.dream`）；后台自己合的是 `false`。
+    pub manual: bool,
+}
+
+/// `ext.memory.merge_failed` 的 `body`：`upto` 那一批这一次没合成（施工 R-17）。连着第三次的后面另跟一条 `merged`（`failed`），
+/// 跳过这一批；核心半路停了的，下次开这一间时补一条 `interrupted`。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MergeFailed {
+    /// 哪一批：和它的 `merging` 一样。
+    pub upto: Seq,
+    /// 英文的一句为什么，同运行日志；核心半路停了的是 `interrupted`。
+    pub why: String,
+    /// 连着第几次；半路停了的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tries: Option<u32>,
+}
+
+/// 核心半路停了，`merging` 没有收尾（施工 R-17）。
+pub const INTERRUPTED: &str = "interrupted";
+
 /// 一段为什么整段跳过。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -260,6 +312,10 @@ pub enum MemoryEvent {
     Restored(Restored),
     /// 换一条的关键词（施工 R-15 上）。
     Tagged(Tagged),
+    /// 开始合一批（施工 R-17）。
+    Merging(Merging),
+    /// 这一批这一次没合成（施工 R-17）。
+    MergeFailed(MergeFailed),
 }
 
 /// 写成记忆日志里的一条事件：第 `seq` 条，时刻 `at`，`by` 写它的那一方。
@@ -277,6 +333,8 @@ pub fn to_event(seq: Seq, at: Timestamp, by: By, event: &MemoryEvent) -> Result<
         MemoryEvent::Merged(merged) => (MERGED, serde_json::to_string(merged)),
         MemoryEvent::Restored(restored) => (RESTORED, serde_json::to_string(restored)),
         MemoryEvent::Tagged(tagged) => (TAGGED, serde_json::to_string(tagged)),
+        MemoryEvent::Merging(merging) => (MERGING, serde_json::to_string(merging)),
+        MemoryEvent::MergeFailed(failed) => (MERGE_FAILED, serde_json::to_string(failed)),
     };
     let json = json.map_err(|error| error.to_string())?;
     let body: RawJson = serde_json::from_str(&json).map_err(|error| error.to_string())?;
@@ -305,6 +363,8 @@ pub fn from_event(event: &Event) -> Option<Result<MemoryEvent, String>> {
         MERGED => serde_json::from_str(body.get()).map(MemoryEvent::Merged),
         RESTORED => serde_json::from_str(body.get()).map(MemoryEvent::Restored),
         TAGGED => serde_json::from_str(body.get()).map(MemoryEvent::Tagged),
+        MERGING => serde_json::from_str(body.get()).map(MemoryEvent::Merging),
+        MERGE_FAILED => serde_json::from_str(body.get()).map(MemoryEvent::MergeFailed),
         _ => return None,
     };
     Some(read.map_err(|error| format!("body of {kind} not readable: {error}")))

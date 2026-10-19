@@ -68,6 +68,8 @@ pub struct MemoryBook {
     merged: Option<(Timestamp, Seq)>,
     /// 最后一次合并以后抽过的会话（施工 R-7 上）：够数了才再合。
     since_merge: BTreeSet<SessionId>,
+    /// 开始合了、还没收尾的那一批合到第几条（施工 R-17）。
+    merging: Option<Seq>,
 }
 
 impl MemoryBook {
@@ -119,6 +121,11 @@ impl MemoryBook {
     /// 最后一次合并：那一条的时刻、合到记忆日志的第几条（施工 R-7 上）；还没合并过的没有。
     pub fn merged(&self) -> Option<(Timestamp, Seq)> {
         self.merged
+    }
+
+    /// 开始合了（`ext.memory.merging`）、还没收尾（同一个 `upto` 的 `merged`、`merge_failed`）的那一批合到第几条（施工 R-17）。
+    pub fn merging(&self) -> Option<Seq> {
+        self.merging
     }
 
     /// 最后一次合并以后抽过几个会话（施工 R-7 上，`memory.md` 第七条第 1 款）；没合并过的照全部，同一个会话算一个。
@@ -234,8 +241,24 @@ impl MemoryBook {
             Some(Ok(MemoryEvent::Merged(merged))) => {
                 self.merged = Some((event.at, merged.upto));
                 self.since_merge.clear();
+                self.close(merged.upto);
                 Ok(Some(0))
             }
+            Some(Ok(MemoryEvent::Merging(merging))) => {
+                self.merging = Some(merging.upto);
+                Ok(Some(0))
+            }
+            Some(Ok(MemoryEvent::MergeFailed(failed))) => {
+                self.close(failed.upto);
+                Ok(Some(0))
+            }
+        }
+    }
+
+    /// `upto` 那一批收尾了。
+    fn close(&mut self, upto: Seq) {
+        if self.merging == Some(upto) {
+            self.merging = None;
         }
     }
 

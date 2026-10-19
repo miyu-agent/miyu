@@ -16,6 +16,8 @@ fn retired(n: u64) -> MemoryEvent {
     MemoryEvent::Retired(Retired {
         id: m(n),
         why: "错了".into(),
+        kind: None,
+        kept: None,
     })
 }
 

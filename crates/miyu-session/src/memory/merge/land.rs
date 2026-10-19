@@ -7,7 +7,11 @@ use miyu_kernel::id::{ModuleId, Seq};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::merge::Decisions;
-use miyu_recall::{Entry, MemoryEvent, MemoryId, Merged, Retired, Saved, Summary};
+use miyu_recall::{
+    Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired, Saved,
+    Summary,
+};
+use miyu_store::memory::MemoryLog;
 use miyu_tool::Refused;
 
 use super::Batch;
@@ -111,6 +115,8 @@ impl Keeper {
             let gone = Retired {
                 id: one.id,
                 why: one.why.clone(),
+                kind: Some(one.kind),
+                kept: one.by,
             };
             self.append(&log, stamp(), &MemoryEvent::Retired(gone))?;
             retired += 1;
@@ -133,7 +139,37 @@ impl Keeper {
         Ok((revised, retired))
     }
 
-    /// 这一批连着合不成三次：记一条失败的记号，跳过它（第七条第 6 款）。
+    /// 开始合一批（施工 R-17，第七条第 10 款）：发请求以前记，合到第 `upto` 条，这一批 `fresh` 条新记的，连它在内还有 `left`
+    /// 条，是不是人叫的。
+    ///
+    /// # Errors
+    ///
+    /// 记忆日志开不了、写不进。
+    pub(super) fn record_merging(
+        &self,
+        at: Timestamp,
+        upto: Seq,
+        fresh: u32,
+        left: u32,
+        manual: bool,
+    ) -> Result<(), Refused> {
+        let log = self.log()?;
+        let merging = Merging {
+            upto,
+            fresh,
+            left,
+            manual,
+        };
+        let stamp = Stamp {
+            at,
+            by: by(),
+            cause: None,
+        };
+        self.append(&log, stamp, &MemoryEvent::Merging(merging))
+            .map(|_| ())
+    }
+
+    /// 这一批这一次没合成（施工 R-17）：记为什么、连着第几次；`skip`（连着第三次）的另记一条失败的记号，跳过它（第七条第 6 款）。
     ///
     /// # Errors
     ///
@@ -143,21 +179,53 @@ impl Keeper {
         at: Timestamp,
         upto: Seq,
         given: u32,
+        why: &str,
+        tries: u32,
+        skip: bool,
     ) -> Result<(), Refused> {
         let log = self.log()?;
-        let mark = Merged {
+        let stamp = || Stamp {
+            at,
+            by: by(),
+            cause: None,
+        };
+        let failed = MergeFailed {
             upto,
-            given,
-            revised: 0,
-            retired: 0,
-            failed: true,
+            why: why.to_string(),
+            tries: Some(tries),
+        };
+        self.append(&log, stamp(), &MemoryEvent::MergeFailed(failed))?;
+        if skip {
+            let mark = Merged {
+                upto,
+                given,
+                revised: 0,
+                retired: 0,
+                failed: true,
+            };
+            self.append(&log, stamp(), &MemoryEvent::Merged(mark))?;
+        }
+        Ok(())
+    }
+
+    /// 这一回第一次开这一间（施工 R-17）：上一回开始合了、没收尾的那一批（核心半路停了）补一条 `interrupted`，订阅着的头不会
+    /// 一直当它在合。这一回还没有在合的：开日志总在合以前。写不进的记一行，不挡。
+    pub(in crate::memory) fn close_interrupted(&self, log: &MemoryLog, at: Timestamp) {
+        let Some(upto) = log.book(miyu_recall::MemoryBook::merging) else {
+            return;
+        };
+        let failed = MergeFailed {
+            upto,
+            why: INTERRUPTED.to_string(),
+            tries: None,
         };
         let stamp = Stamp {
             at,
             by: by(),
             cause: None,
         };
-        self.append(&log, stamp, &MemoryEvent::Merged(mark))
-            .map(|_| ())
+        if let Err(refused) = self.append(log, stamp, &MemoryEvent::MergeFailed(failed)) {
+            tracing::warn!(target: crate::TARGET, room = %self.room(), error = ?refused, "memory merge not recorded");
+        }
     }
 }

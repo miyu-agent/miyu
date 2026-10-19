@@ -204,8 +204,17 @@ impl Keeper {
             return Ok(());
         }
         self.current(&log, id)?;
-        self.append(&log, stamp, &MemoryEvent::Retired(Retired { id, why }))
-            .map(|_| ())
+        self.append(
+            &log,
+            stamp,
+            &MemoryEvent::Retired(Retired {
+                id,
+                why,
+                kind: None,
+                kept: None,
+            }),
+        )
+        .map(|_| ())
     }
 
     /// 清空（第二条第 5 款）：`session` 是只清从这个会话来的，没有的是整间。交回清掉了几条。
@@ -377,6 +386,7 @@ impl Keeper {
             .map_err(|error| Refused::Failed(error.to_string()))?;
         if let Some(report) = report {
             log_report(&self.room, &report);
+            self.close_interrupted(&log, crate::clock::wall_now());
         }
         Ok(log)
     }

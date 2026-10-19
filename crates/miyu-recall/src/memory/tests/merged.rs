@@ -144,6 +144,8 @@ fn a_summary_stops_counting_once_what_it_covered_is_changed_or_cleared() {
         MemoryEvent::Retired(Retired {
             id: MemoryId::new(seq(n)),
             why: "不对".into(),
+            kind: None,
+            kept: None,
         })
     };
     let replay = |events: &[MemoryEvent]| {

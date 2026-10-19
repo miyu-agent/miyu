@@ -225,6 +225,8 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
     let retired = MemoryEvent::Retired(Retired {
         id: gone,
         why: "不对".into(),
+        kind: None,
+        kept: None,
     });
     log.append(long_ago, alice(), None, &retired)
         .expect("记得下");
@@ -460,6 +462,8 @@ async fn a_stale_summary_makes_the_next_merge_start_over() {
         MemoryEvent::Retired(Retired {
             id: id(2),
             why: "搬走了".into(),
+            kind: None,
+            kept: None,
         }),
     ] {
         log.append(long_ago, alice(), None, &event).expect("记得下");

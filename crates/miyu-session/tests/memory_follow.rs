@@ -56,6 +56,8 @@ async fn only_what_the_hearer_may_hear_and_the_whole_room() {
         MemoryEvent::Retired(Retired {
             id: MemoryId::parse("m2").expect("合写法"),
             why: "不要了".into(),
+            kind: None,
+            kept: None,
         }),
     );
     let merged = || {
@@ -174,6 +176,8 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
         MemoryEvent::Retired(Retired {
             id: MemoryId::parse("m1").expect("合写法"),
             why: "不对".into(),
+            kind: None,
+            kept: None,
         }),
     );
     append(&home, alice(), cleared(Some(cleared_one)));
@@ -215,6 +219,8 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
         MemoryEvent::Retired(Retired {
             id: MemoryId::parse("m1").expect("合写法"),
             why: "不对".into(),
+            kind: None,
+            kept: None,
         }),
     );
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
@@ -240,6 +246,8 @@ async fn a_restoration_is_heard_like_a_retirement() {
             MemoryEvent::Retired(Retired {
                 id,
                 why: "错了".into(),
+                kind: None,
+                kept: None,
             }),
         );
         append(&home, alice(), MemoryEvent::Restored(Restored { id }));

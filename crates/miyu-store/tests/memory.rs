@@ -62,6 +62,8 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
     let retired = MemoryEvent::Retired(Retired {
         id: id(2),
         why: "说错了".into(),
+        kind: None,
+        kept: None,
     });
     assert_eq!(
         log.append(at(3), tool(), None, &retired)

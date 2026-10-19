@@ -11,6 +11,7 @@ mod dropped;
 mod keywords;
 mod merged;
 mod restored;
+mod trace;
 mod venue;
 
 fn seq(n: u64) -> Seq {
@@ -82,6 +83,8 @@ fn a_retirement_round_trips_and_other_events_are_not_memory() {
     let body = Retired {
         id: MemoryId::new(seq(7)),
         why: "user asked".to_string(),
+        kind: None,
+        kept: None,
     };
     let event =
         to_event(seq(8), at(2), admin(), &MemoryEvent::Retired(body.clone())).expect("写得出");
@@ -156,6 +159,8 @@ fn the_book_follows_saves_replacements_and_retirements() {
             &MemoryEvent::Retired(Retired {
                 id: MemoryId::new(seq(2)),
                 why: "不养了".into(),
+                kind: None,
+                kept: None,
             }),
         ),
         // 改一条、作废一条不存在的：记下，不碍事。
@@ -172,6 +177,8 @@ fn the_book_follows_saves_replacements_and_retirements() {
             &MemoryEvent::Retired(Retired {
                 id: MemoryId::new(seq(98)),
                 why: "?".into(),
+                kind: None,
+                kept: None,
             }),
         ),
     ];

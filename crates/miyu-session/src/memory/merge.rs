@@ -3,7 +3,7 @@
 //!
 //! - **什么时候**：抽取记下以后看一眼（`extract.rs` 的 `Job`）：上次合并以后有新记的（现在算数、听众合、出处活着，不算合并
 //!   自己改出来的）；那以后抽过的会话够 `memory.merge_sessions`；离上次合并过了 `memory.merge_every`（没合并过的不看时间）。
-//!   一间一把锁（[`Merges`]），在后台合，不挡会话。
+//!   一间一把锁（`Merges`，`merge/merges.rs`），在后台合，不挡会话。
 //! - **交什么**：一条 user，指令在前，后面是现在的摘要、上次合并以后新记的（旧的在前）、每条新记的照关键词和意思搜出来的相关
 //!   旧记忆（每条最多 [`RELATED`] 条，去重）。一条一行，同 `memory_search` 的写法。最多 [`ROOM`] 字节：放不下的合完马上接着
 //!   合剩下的。发出去以前遮 key。
@@ -14,9 +14,9 @@
 //! - **出错**：不动真相，下次抽完再来；同一间连着 [`TRIES`] 次不成的，记一条失败的记号、跳过这一批（成了一次、跳过一次都重新
 //!   数：这一批从哪起只在这两种时候变）。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use miyu_kernel::block::{Block, Text};
@@ -27,7 +27,6 @@ use miyu_kernel::time::UtcOffset;
 use miyu_recall::merge::decisions;
 use miyu_recall::redact::redact;
 use miyu_recall::{Entry, MemoryId};
-use miyu_store::recall::Room;
 use miyu_tool::TEXT_CHARS;
 use miyu_tool::load::{self, LoadError, say};
 
@@ -41,6 +40,9 @@ use crate::route::Ask;
 use crate::settings::MemorySettings;
 
 mod land;
+mod merges;
+
+pub(crate) use merges::Merges;
 
 /// 每条新记的最多带几条相关的旧记忆。
 pub(crate) const RELATED: usize = 3;
@@ -160,51 +162,6 @@ impl Keeper {
     }
 }
 
-/// 核心一份的合并状态：哪几间在合、每一间同一批失败了几次。
-#[derive(Debug, Default)]
-pub(crate) struct Merges {
-    state: Mutex<MergeState>,
-}
-
-#[derive(Debug, Default)]
-struct MergeState {
-    running: BTreeSet<Room>,
-    /// 每一间连着失败了几次。
-    failures: BTreeMap<Room, u32>,
-}
-
-impl Merges {
-    fn state(&self) -> std::sync::MutexGuard<'_, MergeState> {
-        self.state.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-
-    /// 开始合 `room`：已经有一个在合的交回 `false`。
-    fn start(&self, room: &Room) -> bool {
-        self.state().running.insert(room.clone())
-    }
-
-    /// 合完了（成没成都算）。
-    fn finish(&self, room: &Room) {
-        self.state().running.remove(room);
-    }
-
-    /// 这一次成没成：成了的清掉失败的次数，交回 0；没成的交回连着第几次，到了 [`TRIES`] 次的也清掉（这一批跳过了）。
-    fn record(&self, room: &Room, ok: bool) -> u32 {
-        let mut state = self.state();
-        if ok {
-            state.failures.remove(room);
-            return 0;
-        }
-        let tries = state.failures.get(room).copied().unwrap_or(0) + 1;
-        if tries >= TRIES {
-            state.failures.remove(room);
-        } else {
-            state.failures.insert(room.clone(), tries);
-        }
-        tries
-    }
-}
-
 /// 合并要的几样：抽取那一次的（字、一次性入口、key 的写法）、这一轮的配置、记在谁的账上、会话的时区。
 pub(crate) struct MergeJob {
     /// 哪一间、听众是谁。
@@ -225,11 +182,12 @@ struct Batch {
     fresh: Vec<Entry>,
 }
 
-/// 交出去的一次：请求的字、交进去的编号、合到第几条。
+/// 交出去的一次：请求的字、交进去的编号、合到第几条、其中新记的几条。
 struct Asked {
     text: String,
     given: BTreeSet<MemoryId>,
     upto: Seq,
+    fresh: u32,
 }
 
 impl MergeJob {
@@ -276,20 +234,45 @@ impl MergeJob {
     ///
     /// 记忆日志读不了、有一次没成：英文的一句为什么，当场记了 `WARN`。
     async fn run(&self, mut check: Option<(Duration, usize)>) -> Result<Dreamed, String> {
+        let (manual, started, mut batches) = (check.is_none(), Instant::now(), 0_u32);
+        let room = self.keeper.room().to_string();
         let mut done = Dreamed::default();
         loop {
             let keeper = self.keeper.clone();
             let found = blocking(move || keeper.merge_batch(wall_now(), check)).await;
             let batch = match found {
                 Ok(Some(batch)) => batch,
-                Ok(None) => return Ok(done),
+                Ok(None) => {
+                    if batches > 0 {
+                        let took_ms =
+                            u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+                        let Dreamed {
+                            given,
+                            revised,
+                            retired,
+                            ..
+                        } = done;
+                        tracing::info!(target: TARGET, room = room.as_str(), batches, given, revised, retired, took_ms, "memory merging ended");
+                    }
+                    return Ok(done);
+                }
                 Err(refused) => {
                     tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory merge failed");
                     return Err(format!("{refused:?}"));
                 }
             };
             check = None;
+            let left = u32::try_from(batch.fresh.len()).unwrap_or(u32::MAX);
+            if batches == 0 {
+                tracing::info!(target: TARGET, room = room.as_str(), left, manual, "memory merging started");
+            }
+            batches += 1;
             let asked = self.compose(batch).await;
+            // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度。
+            let (keeper, upto, fresh) = (self.keeper.clone(), asked.upto, asked.fresh);
+            blocking(move || keeper.record_merging(wall_now(), upto, fresh, left, manual))
+                .await
+                .map_err(|refused| format!("{refused:?}"))?;
             let round = self.ask(&asked).await?;
             done.given += round.given;
             done.revised += round.revised;
@@ -353,7 +336,13 @@ impl MergeJob {
         if !old_rows.is_empty() {
             text.push_str(&format!("\n\n{related_head}\n{}", old_rows.join("\n")));
         }
-        Asked { text, given, upto }
+        let fresh = u32::try_from(new_rows.len()).unwrap_or(u32::MAX);
+        Asked {
+            text,
+            given,
+            upto,
+            fresh,
+        }
     }
 
     /// `entry` 的相关旧记忆：照关键词和意思搜（有向量那一路的），不算新记的、已经交进去的，最多 [`RELATED`] 条。
@@ -400,7 +389,7 @@ impl MergeJob {
         let secrets = secrets(&self.config);
         let shapes = &self.extraction.shapes;
         let organizer = MemorySettings::from(&self.config.resolved.values()).organizer;
-        tracing::info!(target: TARGET, room = room.as_str(), given = asked.given.len(), "memory merge started");
+        tracing::info!(target: TARGET, room = room.as_str(), given = asked.given.len(), fresh = asked.fresh, "memory merge started");
         let ask = Ask {
             model: organizer,
             purpose: PURPOSE.to_string(),
@@ -470,13 +459,22 @@ impl MergeJob {
             Err(why) => {
                 let tries = merges.record(self.keeper.room(), false);
                 tracing::warn!(target: TARGET, room = room.as_str(), tries, error = why.as_str(), "memory merge failed");
-                if tries >= TRIES {
-                    let (keeper, upto) = (self.keeper.clone(), asked.upto);
-                    let skipped =
-                        blocking(move || keeper.record_merge_failed(wall_now(), upto, given)).await;
-                    if let Err(refused) = skipped {
-                        tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
-                    }
+                // 每一次没成都记一行（施工 R-17），连着第三次的另记跳过这一批。
+                let (keeper, upto) = (self.keeper.clone(), asked.upto);
+                let said = redact(&why, &secrets, shapes);
+                let failed = blocking(move || {
+                    keeper.record_merge_failed(
+                        wall_now(),
+                        upto,
+                        given,
+                        &said,
+                        tries,
+                        tries >= TRIES,
+                    )
+                })
+                .await;
+                if let Err(refused) = failed {
+                    tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
                 }
                 Err(why)
             }

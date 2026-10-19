@@ -91,6 +91,22 @@
 
 **出错**：`memory_busy`（这一间正在整理）；`dream_failed`（没合成，`data.message`）。
 
+**进度和做了什么**：照记忆日志看（订阅 `memory` 流）。整理一批一批合，人叫的、后台自己合的都写：
+
+| `kind` | `body` | 是什么 |
+|---|---|---|
+| `ext.memory.merging` | `upto`、`fresh`、`left`、`manual` | 开始合一批：这一批几条新记的，连它在内还有几条，是不是人叫的 |
+| `ext.memory.saved` | 写了 `replaces` 的 | 改了一条：新的正文；旧的是 `replaces` 那一条 |
+| `ext.memory.retired` | `id`、`why`、`kind`、`kept` | 删了一条：`kind` 是 `outdated`（被后记的取代）、`repeat`（重复）、`worthless`（用不着），`kept` 是留下的那一条（`worthless` 没有）。人删的没有 `kind`、`kept` |
+| `ext.memory.summary` | `text` | 新的对人的了解 |
+| `ext.memory.tagged` | `id`、`keywords` | 补了关键词：在这一批的 `merged` 后面 |
+| `ext.memory.merged` | `upto`、`given`、`revised`、`retired`、`failed`? | 这一批合完了（`failed` 是连着三次没成、跳过了） |
+| `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了 |
+
+- `merging` 和收尾它的 `merged`、`merge_failed` 带同一个 `upto`；这中间 `by` 是记忆模块的改、删、摘要就是这一批做了什么（同一时刻别的会话可能在记、人可能在改，`by` 分得开）。没收尾的是正在合。
+- 进度：头一批的 `left` 是总数，收了尾的各批 `fresh` 加起来是合了多少。一批之内不细分。
+- 会话里叫的先抽的那几条（`ext.memory.saved`，`by` 是记忆模块，带出处）在第一条 `merging` 前面，后面跟 `ext.memory.extracted`。
+
 ## `kb.list`、`kb.search`、`kb.read`
 
 知识库在管理员账号下，一个库是一个目录里的文档（Markdown、PDF、网页……），核心建索引来搜。不看知识库软件包装没装：文件是人的。

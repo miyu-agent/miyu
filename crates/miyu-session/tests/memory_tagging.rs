@@ -139,6 +139,8 @@ async fn a_merge_fills_in_up_to_twenty_without_keywords() {
         &MemoryEvent::Retired(Retired {
             id: m(27),
             why: "不要了".into(),
+            kind: None,
+            kept: None,
         }),
     )
     .expect("记得下");
