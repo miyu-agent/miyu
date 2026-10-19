@@ -12,8 +12,10 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 
+mod swap;
 mod touched;
 
+pub use swap::{ModelSwap, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
 
 pub use crate::id::EntryId;
@@ -132,6 +134,8 @@ pub struct Reply {
     /// 还在写。
     #[serde(skip_serializing_if = "is_false")]
     pub open: bool,
+    /// 这一轮是哪个人格回的（施工 9-8 十三补，中途换了人格的旧回复照旧画旧人格）：人格的编号，无人格的是 `null`。
+    pub persona: Option<String>,
 }
 
 /// 时间线的一段。
@@ -464,34 +468,6 @@ pub struct Peer {
     /// 它最后一句的状态。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
-}
-
-/// 换了模型。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct ModelSwap {
-    /// 换成的端点。
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub endpoint: Option<String>,
-    /// 换成的模型。
-    pub model: String,
-    /// 换之前的。
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<Was>,
-    /// 为什么：`failover`、`replaced`。
-    pub why: &'static str,
-    /// 出错换的：换之前最近一次出错的分类。
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub class: Option<String>,
-}
-
-/// 换之前的模型。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Was {
-    /// 端点。
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub endpoint: Option<String>,
-    /// 模型。
-    pub model: String,
 }
 
 pub(crate) fn is_false(value: &bool) -> bool {

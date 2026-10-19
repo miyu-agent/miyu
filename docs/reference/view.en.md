@@ -27,7 +27,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `kind` | Fields |
 |---|---|
 | `user` | `text`; `attachments` (`kind`, `name`, `media_type`, `blob`, images with `width`, `height`); `from` (where a message from elsewhere came from); `level`; `queued: true` (queued, she hasn't heard it yet); `withdrawn: true` (a queued message handed back: put the text back in the input box); `round` (which round of a standing goal) |
-| `reply` | `text` (Markdown source; parsing and rendering are the head's job); `open: true` (still being written) |
+| `reply` | `text` (Markdown source; parsing and rendering are the head's job); `open: true` (still being written); `persona`: the persona that spoke this turn (its id, `null` for none). After a mid-session persona change, earlier replies keep the old persona: the change counts from the turn it actually takes effect (the next turn start) |
 | `media` | An image she sent: `image`, `alt`, `sticker` |
 | `group` | A stretch of the timeline (thoughts and tool steps): `steps`, `open`, `summary`, `summary_en` (the collapsed line), `took_ms`, `failed` |
 | `thought` | A thought step: `group`, `text`, `open`, `took_ms` |

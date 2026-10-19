@@ -27,7 +27,7 @@
 | `kind` | 格 |
 |---|---|
 | `user` | `text`；`attachments`（`kind`、`name`、`media_type`、`blob`，图有 `width`、`height`）；`from`（别处来的话的来处）；`level`；`queued: true`（排着、她还没听到）；`withdrawn: true`（排着的被退回了：头把字放回输入框）；`round`（长期目标的续轮是第几轮） |
-| `reply` | `text`（Markdown 原文，解析和渲染是头的事）；`open: true`（还在写） |
+| `reply` | `text`（Markdown 原文，解析和渲染是头的事）；`open: true`（还在写）；`persona`：这一轮是哪个人格回的（编号，无人格的是 `null`）。会话中途换了人格的，以前的回复照旧是旧人格：人换的那一下先记着，真换上（下一个回合开始）以后的回复才是新的 |
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |

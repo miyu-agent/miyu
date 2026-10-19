@@ -35,6 +35,14 @@ impl Stage {
         })
     }
 
+    /// 换人格（施工 P-13）：`None` 是换成无人格。返回这个命令的编号。
+    pub fn recast(&mut self, persona: Option<&str>) -> CommandId {
+        self.command(Command::Recast {
+            persona: Some(persona.map(str::to_string)),
+            preset: None,
+        })
+    }
+
     /// 从现在起，引用 `gone` 解析不出了（配置里删了）；这一轮的 `models.chat` 是 `chat`，没配的是 `None`。
     pub fn gone(&mut self, gone: &str, chat: Option<&str>) {
         self.routing.gone.push(gone.to_string());

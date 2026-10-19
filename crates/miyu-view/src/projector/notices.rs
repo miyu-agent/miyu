@@ -30,6 +30,15 @@ impl Projector {
         if let Some(permission) = &changed.permission {
             self.level = Some(level(permission));
         }
+        // 人换的人格先记着，下一回换上快照（带 `policy` 的那一条）才算数（施工 9-8 十三补，同内核、会话那一层）。
+        if let Some(persona) = &changed.persona {
+            self.persona.1 = Some(Some(persona.clone()).filter(|persona| !persona.is_empty()));
+        }
+        if changed.policy.is_some()
+            && let Some(persona) = self.persona.1.take()
+        {
+            self.persona.0 = persona;
+        }
         let (Some(replaced), Some(model)) = (&changed.replaced, &changed.model) else {
             return;
         };

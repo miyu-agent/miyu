@@ -200,3 +200,33 @@ fn ids_do_not_depend_on_where_feeding_starts() {
     assert!(!tail.is_empty());
     assert!(whole.ends_with(&tail), "{whole:?} {tail:?}");
 }
+
+/// 回复带这一轮是哪个人格回的（施工 9-8 十三补）：人换了人格先记着，下一回换上快照（带 `policy` 的那一条）起的回复才算新的；
+/// 以前的回复、换上之前的那一轮照旧是旧的。无人格的是 `null`。
+#[test]
+fn a_reply_carries_the_persona_that_spoke_it() {
+    let mut stage = stage();
+    stage.model([Line::says("one"), Line::says("two"), Line::says("three")]);
+    stage.say("first");
+    stage.recast(Some("miyu"));
+    stage.say("not yet");
+    stage.swap_policy(
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        policy,
+    );
+    stage.say("second");
+    let entries = same(&stage);
+    let personas: Vec<serde_json::Value> = of_kind(&entries, "reply")
+        .iter()
+        .map(|reply| json(reply)["persona"].clone())
+        .collect();
+    assert_eq!(
+        personas,
+        [
+            serde_json::Value::Null,
+            serde_json::Value::Null,
+            serde_json::json!("miyu")
+        ],
+        "{entries:#?}"
+    );
+}

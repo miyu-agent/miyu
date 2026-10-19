@@ -78,6 +78,7 @@ fn reply(index: usize) -> Entry {
         body: Body::Reply(Reply {
             text: "好。".to_string(),
             open: false,
+            persona: None,
         }),
         turn: None,
         hidden: false,

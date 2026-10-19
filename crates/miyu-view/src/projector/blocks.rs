@@ -254,7 +254,11 @@ impl Projector {
         let turn = self.turn.as_ref().map(|t| t.id);
         self.add(Entry {
             id,
-            body: Body::Reply(Reply { text, open }),
+            body: Body::Reply(Reply {
+                text,
+                open,
+                persona: self.persona.0.clone(),
+            }),
             turn,
             hidden: false,
             at,

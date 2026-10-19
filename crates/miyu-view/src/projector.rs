@@ -61,6 +61,8 @@ pub struct Projector {
     users: BTreeMap<Seq, EntryId>,
     /// 现在的权限级别：发出去的消息、一轮的收尾照它记。
     level: Option<String>,
+    /// 现在回话的人格、人要换成还没换上的（施工 9-8 十三补）：回复条目照前一个记。
+    persona: (Option<String>, Option<Option<String>>),
     /// 派出去的后台任务。
     jobs: BTreeMap<JobId, Job>,
     /// 一组题：调用编号到问的那一组。
@@ -148,6 +150,7 @@ impl Projector {
             queued: BTreeMap::new(),
             users: BTreeMap::new(),
             level: None,
+            persona: (None, None),
             jobs: BTreeMap::new(),
             questions: BTreeMap::new(),
             reply: None,
@@ -169,6 +172,7 @@ impl Projector {
         match &event.body {
             EventBody::SessionCreated(created) => {
                 self.level = Some(users::level(&created.permission));
+                self.persona = (created.persona.clone(), None);
             }
             EventBody::PolicyChanged(changed) => self.policy(event, changed),
             EventBody::WorkspaceChanged(changed) => self.workspace(event, changed),
