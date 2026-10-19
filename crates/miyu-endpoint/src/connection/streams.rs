@@ -11,7 +11,7 @@ use miyu_kernel::id::SessionId;
 use miyu_session::Handle;
 
 use crate::Core;
-use crate::hello::Shaken;
+use crate::hello::{Caller, Shaken};
 use crate::refusal::Refusal;
 use crate::subscriptions::{MemoryAt, Subscriptions, Target, View};
 use crate::view::status::Fixed;
@@ -42,6 +42,8 @@ pub(super) enum Stream {
     Extensions,
     /// 软件包列表的推送（施工 F-8 三补）。
     Packages,
+    /// 这个账号的项目（施工 H-1）。
+    Projects,
     /// 一间的记忆日志（施工 R-12 上，`memory.md`「协议」）。
     Memory(MemoryAt),
     /// 界面块（施工 X-15 中，`widgets.md`「头」）：头这一刻在看什么。
@@ -71,7 +73,7 @@ pub(super) async fn subscribe(
     core: &Arc<Core>,
     subscriptions: &mut Subscriptions,
     request: &Request,
-    shaken: Option<Shaken>,
+    (shaken, caller): (Option<Shaken>, &Caller),
     out: &mpsc::Sender<String>,
 ) -> (Result<Value, Refusal>, Option<Target>) {
     let session_reply = |done: Result<(Value, Option<SessionId>), Refusal>| match done {
@@ -96,6 +98,11 @@ pub(super) async fn subscribe(
             let listed = subscriptions.add_listed(core, true, shook, out);
             (listed, Some(Target::Packages))
         }
+        (Ok(Stream::Projects), Some(shook)) => {
+            let account = caller.account.clone();
+            let listed = subscriptions.add_projects(core, account, shook, out).await;
+            (listed, Some(Target::Projects))
+        }
         (Ok(Stream::Events(session)), _) => {
             session_reply(events(core, subscriptions, request, session, out).await)
         }
@@ -111,7 +118,13 @@ pub(super) async fn subscribe(
             Err(refusal) => (Err(refusal), None),
         },
         (
-            Ok(Stream::Extensions | Stream::Packages | Stream::View(_) | Stream::Widgets(_)),
+            Ok(
+                Stream::Extensions
+                | Stream::Packages
+                | Stream::Projects
+                | Stream::View(_)
+                | Stream::Widgets(_),
+            ),
             None,
         ) => (Err(Refusal::HELLO_FIRST), None),
         (Err(refusal), _) => (Err(refusal), None),
@@ -343,6 +356,7 @@ pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
         ("sessions", None) if request.params.get("after").is_none() => Ok(Stream::Sessions),
         ("extensions", None) if request.params.get("after").is_none() => Ok(Stream::Extensions),
         ("packages", None) if request.params.get("after").is_none() => Ok(Stream::Packages),
+        ("projects", None) if request.params.get("after").is_none() => Ok(Stream::Projects),
         _ => Err(Refusal::BAD_PARAMS),
     }
 }

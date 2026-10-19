@@ -11,6 +11,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 | `extension.changed` | `extensions` | `{"entry"}`: one extension's status, as in `extension.status` |
 | `package.changed` | `packages` | `{"package", "entry"}`: one item of the package list; `entry` is `null` when gone |
 | `package.progress` | No subscription: sent only to the connection that called `package.install {"source"}` | `{"package", "done", "total"}`: bytes downloaded so far and in all (once at the start and the end, at most every 200 ms in between) |
+| `projects.changed` | `projects` | `{"project": <item>}`: one of this account's projects, replaced whole (same as an item of `project.list`); a deleted one is `{"project": <id>, "deleted": true}` |
 | `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in personal settings; `server` is `null` when removed |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`: one widget replaced whole; `null` when turned off or removed |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`: a new line in one memory's log |

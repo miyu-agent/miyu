@@ -58,6 +58,7 @@ mod models;
 pub mod packages;
 mod personas;
 mod presets;
+mod projects;
 mod provide;
 mod providers;
 pub mod queries;
@@ -207,6 +208,9 @@ pub struct Core {
     home_mcp: mcp::HomeMcp,
     /// 软件包列表里哪个包变了（施工 F-8 三补，`packages/changes.rs`）。
     package_changes: packages::changes::Changes,
+    /// 项目改的排着做、改了报一声（施工 H-1，`projects.rs`）。
+    projects: tokio::sync::Mutex<()>,
+    project_changes: projects::changes::Changes,
     /// 界面块（施工 X-15 中，`widgets.rs`）：程序推来的内容、谁在看。
     widgets: widgets::Widgets,
     /// 扩展放在 system 尾部的（施工 X-20，`appends.rs`）。
@@ -309,6 +313,8 @@ impl Core {
             mcp: mcp::Servers::new(extensions::Timing::default()),
             home_mcp: mcp::HomeMcp::default(),
             package_changes: packages::changes::Changes::default(),
+            projects: tokio::sync::Mutex::new(()),
+            project_changes: projects::changes::Changes::default(),
             widgets: widgets::Widgets::default(),
             appends: appends::Appends::default(),
             content_rereads: content::Rereads::default(),

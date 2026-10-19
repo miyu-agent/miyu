@@ -115,12 +115,13 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, all of them |
 | `extensions` | An extension's status changed | `{"extensions": […]}` |
 | `packages` | One item of the package list changed | `{"packages": […]}` |
+| `projects` | One of this account's projects changed | `{"projects": […]}`, all of them |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 
 What each stream pushes is in [Pushes](pushes.en.md).
 
-1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages` and `widgets` are one each per connection.
+1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects` and `widgets` are one each per connection.
 2. **Replay**: with `after`, the events with a higher sequence number that were on disk when you subscribed are pushed one by one, then the response (with `upto`), then everything from `upto + 1` on, with nothing lost or repeated. If a model request is streaming at that moment, its deltas so far (`model.delta`) are pushed once more after the replay so the live ones that follow line up. Transient events without sequence numbers are not replayed.
 3. **Falling behind**: if you read too slowly, a session keeps at most 1024 pushes per subscription (16 for config, 64 for memory); beyond that it pushes `resync` and the subscription stops. A stopped session also pushes `resync`. Subscribe again, with the last sequence number you saw as `after`, to catch up.
 4. Being subscribed to a session counts as watching it: in a session nobody is watching, a subagent's report is recorded without waking her.

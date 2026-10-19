@@ -94,6 +94,9 @@ pub(crate) fn call<'a>(
                 crate::packages::methods::call(core, peer, caller, request).await
             })
         }
+        "project.list" | "project.create" | "project.update" | "project.delete" => {
+            answer(move || async move { crate::projects::call(core, caller, request).await })
+        }
         "view.page" => {
             answer(move || async move { crate::view::page(core, peer, params(request)?).await })
         }

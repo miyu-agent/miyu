@@ -27,6 +27,10 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "config.trust",
         "secret.set",
         "secret.delete",
+        "project.list",
+        "project.create",
+        "project.update",
+        "project.delete",
     ] {
         assert!(people_only(method), "{method}");
     }

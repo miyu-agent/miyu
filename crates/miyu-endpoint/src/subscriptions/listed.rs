@@ -1,5 +1,5 @@
-//! 照编号推整项的两个列表的订阅：扩展的状态（施工 9-4 补，`docs/blueprint/extensions.md`「推送」）、软件包列表（施工 F-8 三补，
-//! `protocol.md`「软件包列表的推送」）。一个连接各至多一个，一个转发任务。订阅的回应也交给它，它先写回应、再转推送：收到
+//! 照编号推整项的几个列表的订阅：扩展的状态（施工 9-4 补，`docs/blueprint/extensions.md`「推送」）、软件包列表（施工 F-8 三补，
+//! `protocol.md`「软件包列表的推送」）、这个账号的项目（施工 H-1，设计 `38-项目.md` 第二节第 1 条）。一个连接各至多一个，一个转发任务。订阅的回应也交给它，它先写回应、再转推送：收到
 //! 「哪个包变了」，照这一刻的样子、这个连接这一刻的语言算那一项写出去。推的是整项、照这一刻算，晚到的、重复的都对，不用编号排
 //! 先后。读得慢、掉了队，推一条 `resync`（`{"stream": "extensions"}`、`{"stream": "packages"}`），这个订阅就停了，头重新订阅。
 //! 再订阅总是换一个新的。
@@ -11,30 +11,36 @@ use tokio::sync::broadcast::{self, error::RecvError};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
+use miyu_kernel::id::AccountId;
+
+use super::Subscriptions;
 use crate::Core;
 use crate::hello::Shaken;
 
 /// 哪一个列表。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Listed {
     /// 扩展的状态：推 `extension.changed`。
     Extensions,
     /// 软件包列表：推 `package.changed`；扩展的状态变了，列表里那一项的状态、开关跟着变，也推。
     Packages,
+    /// 这个账号的项目：推 `projects.changed`，别的账号的不推。
+    Projects(AccountId),
 }
 
 impl Listed {
     /// 订阅的流叫什么。
-    fn stream(self) -> &'static str {
+    fn stream(&self) -> &'static str {
         match self {
             Listed::Extensions => "extensions",
             Listed::Packages => "packages",
+            Listed::Projects(_) => "projects",
         }
     }
 
     /// 收「哪个包变了」的几头。
     fn receivers(
-        self,
+        &self,
         core: &Core,
     ) -> (
         broadcast::Receiver<String>,
@@ -46,12 +52,18 @@ impl Listed {
                 core.package_changes.subscribe(),
                 Some(core.extensions.subscribe()),
             ),
+            Listed::Projects(_) => (core.project_changes.subscribe(), None),
         }
     }
 
     /// 包 `id` 变了推的那一行。扩展的状态里没有这个包的不推；软件包列表里没有了的推 `entry: null`。
-    fn line(self, core: &Core, id: &str, shaken: Shaken) -> Option<String> {
+    fn line(&self, core: &Core, id: &str, shaken: Shaken) -> Option<String> {
         let line = match self {
+            Listed::Projects(account) => {
+                let project = crate::projects::changes::mine(id, account)?;
+                let params = crate::projects::item(core, account, project)?;
+                json!({"jsonrpc": "2.0", "method": "projects.changed", "params": params})
+            }
             Listed::Extensions => {
                 let entry = crate::extensions::entry(core, id, shaken.now(core))?;
                 json!({"jsonrpc": "2.0", "method": "extension.changed", "params": {"entry": entry}})
@@ -164,5 +176,65 @@ async fn next(receiver: &mut Option<broadcast::Receiver<String>>) -> Result<Stri
     match receiver {
         Some(receiver) => receiver.recv().await,
         None => std::future::pending().await,
+    }
+}
+
+impl Subscriptions {
+    /// 订阅一个照编号推整项的列表（扩展的状态，施工 9-4 补；软件包列表，施工 F-8 三补）：先起新的转发任务（它先拿收推送的
+    /// 几头，排在这之前的变化照样推，推的是这一刻的整项，重复了也对）替掉原来的，再算一份整的；交回订阅的回应
+    /// （`{"extensions": […]}`、`{"packages": […]}`），它经 [`super::Target::Extensions`]、[`super::Target::Packages`] 交给新的转发
+    /// 任务写出去。`shaken` 是这个连接握手时记下的：推的时候照这一刻的语言挑名字。
+    pub(crate) fn add_listed(
+        &mut self,
+        core: &Arc<Core>,
+        packages: bool,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> Result<serde_json::Value, crate::refusal::Refusal> {
+        let (listed, slot) = match packages {
+            true => (Listed::Packages, &mut self.packages),
+            false => (Listed::Extensions, &mut self.extensions),
+        };
+        *slot = Some(ListedForwarder::start(
+            Arc::clone(core),
+            listed.clone(),
+            shaken,
+            out.clone(),
+        ));
+        match listed {
+            Listed::Packages => crate::packages::list(core, shaken.now(core)),
+            _ => Ok(crate::extensions::status(core, shaken.now(core))),
+        }
+    }
+
+    /// 订阅 `account` 的项目（施工 H-1）：同 [`Subscriptions::add_listed`]，回应 `{"projects": […]}` 经
+    /// [`super::Target::Projects`] 写出去。
+    pub(crate) async fn add_projects(
+        &mut self,
+        core: &Arc<Core>,
+        account: AccountId,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> Result<serde_json::Value, crate::refusal::Refusal> {
+        self.projects = Some(ListedForwarder::start(
+            Arc::clone(core),
+            Listed::Projects(account.clone()),
+            shaken,
+            out.clone(),
+        ));
+        crate::projects::listed(core, &account).await
+    }
+
+    /// 取消订阅扩展的状态（`packages` 是假的）、软件包列表的推送：转发任务当场停。
+    pub(crate) fn remove_listed(&mut self, packages: bool) {
+        match packages {
+            true => self.packages = None,
+            false => self.extensions = None,
+        }
+    }
+
+    /// 取消订阅项目的推送。
+    pub(crate) fn remove_projects(&mut self) {
+        self.projects = None;
     }
 }

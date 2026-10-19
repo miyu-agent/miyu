@@ -11,6 +11,7 @@
 | `extension.changed` | `extensions` | `{"entry"}`：一个扩展的状态，同 `extension.status` 的一项 |
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |
 | `package.progress` | 不用订阅：只推给发起 `package.install {"source"}` 的那个连接 | `{"package", "done", "total"}`：从软件源下包文件下了多少字节、一共多少（开始、结束各一次，中间最多 200 毫秒一次） |
+| `projects.changed` | `projects` | `{"project": <一项>}`：这个账号的一个项目整个换掉（同 `project.list` 的一项）；删了的 `{"project": <编号>, "deleted": true}` |
 | `mcp.changed` | `packages` | `{"name", "server"}`：个人设置里的一个 MCP 服务，删了的 `server` 是 `null` |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`：一块界面块整个换掉，关掉、卸掉的是 `null` |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`：一间记忆的日志里新的一行 |

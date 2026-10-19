@@ -42,6 +42,7 @@ pub mod packages;
 pub mod personas;
 pub mod presets;
 mod private_json;
+pub mod projects;
 pub mod recall;
 pub mod resources;
 pub mod root;

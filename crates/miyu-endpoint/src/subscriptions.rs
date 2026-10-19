@@ -47,7 +47,7 @@ use config::ConfigForwarder;
 use extension_config::ExtensionConfigForwarder;
 pub(crate) use later::Later;
 use lines::{lines, notification, resync};
-use listed::{Listed, ListedForwarder};
+use listed::ListedForwarder;
 pub(crate) use memory::MemoryAt;
 use memory::MemoryForwarder;
 use sessions::SessionsForwarder;
@@ -62,6 +62,8 @@ pub(crate) struct Subscriptions {
     extensions: Option<ListedForwarder>,
     /// 软件包列表的推送（施工 F-8 三补）。
     packages: Option<ListedForwarder>,
+    /// 项目的推送（施工 H-1）。
+    projects: Option<ListedForwarder>,
     /// 核心拉起的扩展自己的配置的推送（施工 9-4 下下）：握手以后起，不用订阅。
     extension_config: Option<ExtensionConfigForwarder>,
     /// 会话订阅交回应的那一头的弱引用：开通道时一起记下，在后台答的回应照它走（施工 R-7 补）。
@@ -85,6 +87,8 @@ pub(crate) enum Target {
     Extensions,
     /// 软件包列表的订阅的回应：同上（施工 F-8 三补）。
     Packages,
+    /// 项目的订阅的回应：同上（施工 H-1）。
+    Projects,
     /// 记忆日志的订阅的回应：经它写出去，排在补的后面、之后的推送前面（施工 R-12 上）。
     Memory(MemoryAt),
     /// 界面块的订阅的回应：经它写出去，排在之后的推送前面（施工 X-15 中）。
@@ -254,41 +258,6 @@ impl Subscriptions {
         ));
     }
 
-    /// 订阅一个照编号推整项的列表（扩展的状态，施工 9-4 补；软件包列表，施工 F-8 三补）：先起新的转发任务（它先拿收推送的
-    /// 几头，排在这之前的变化照样推，推的是这一刻的整项，重复了也对）替掉原来的，再算一份整的；交回订阅的回应
-    /// （`{"extensions": […]}`、`{"packages": […]}`），它经 [`Target::Extensions`]、[`Target::Packages`] 交给新的转发任务写出去。
-    /// `shaken` 是这个连接握手时记下的：推的时候照这一刻的语言挑名字。
-    pub(crate) fn add_listed(
-        &mut self,
-        core: &Arc<Core>,
-        packages: bool,
-        shaken: crate::hello::Shaken,
-        out: &mpsc::Sender<String>,
-    ) -> Result<serde_json::Value, crate::refusal::Refusal> {
-        let (listed, slot) = match packages {
-            true => (Listed::Packages, &mut self.packages),
-            false => (Listed::Extensions, &mut self.extensions),
-        };
-        *slot = Some(ListedForwarder::start(
-            Arc::clone(core),
-            listed,
-            shaken,
-            out.clone(),
-        ));
-        match listed {
-            Listed::Packages => crate::packages::list(core, shaken.now(core)),
-            Listed::Extensions => Ok(crate::extensions::status(core, shaken.now(core))),
-        }
-    }
-
-    /// 取消订阅扩展的状态（`packages` 是假的）、软件包列表的推送：转发任务当场停。
-    pub(crate) fn remove_listed(&mut self, packages: bool) {
-        match packages {
-            true => self.packages = None,
-            false => self.extensions = None,
-        }
-    }
-
     /// 订阅记忆日志的 `at` 那一间（施工 R-12 上）：起一个转发任务，先写补的；原来订阅着这一间的换掉。订阅的回应经
     /// [`Target::Memory`] 交给它。
     pub(crate) fn add_memory(
@@ -329,9 +298,10 @@ impl Subscriptions {
                 },
                 None => line,
             },
-            Some(target @ (Target::Extensions | Target::Packages)) => {
+            Some(target @ (Target::Extensions | Target::Packages | Target::Projects)) => {
                 let slot = match target {
                     Target::Packages => &mut self.packages,
+                    Target::Projects => &mut self.projects,
                     _ => &mut self.extensions,
                 };
                 match slot {

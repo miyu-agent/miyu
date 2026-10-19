@@ -78,6 +78,7 @@
 | `slash.md` | 软件包和自己放的斜杠命令：命令模板展开成一句发给 AI，扩展的命令交给包的程序（施工 X-14） |
 | `widgets.md` | 界面块：清单的 `[[widget]]`、扩展能力 `widgets`、程序推内容、头订阅 `widgets`、整页的命令：图纸，2026-10-15 起草，X-15 照它施工 |
 | `skills.md` | 技能和脚本：技能照公开格式、她用 `read` 读正文；脚本照旧版开头注释接成工具（草稿，等项目主人过） |
+| `projects.md` | 项目：会话的分组，`projects.json`、`project.*`、`projects` 流（施工 H-1 起，设计 `38-项目.md`） |
 | `presets.md` | 预设：在哪、格式、三层怎么叠、默认预设、找人格的先后、`preset.list`、`preset.get`（施工 P-2 上起） |
 | `web-module.md` | 网页界面这个软件和核心给它的通用方法：网页软件 `miyu-web`（端口、页面、WebSocket 照转、一次性登录、媒体地址），核心给所有头的 `human.get`、`fs.*`、`mermaid.render`、分块传和读 blob、`link.preview`：图纸，2026-10-01 项目主人批准；W-1 到 W-7 现在做，身份、网页软件等用户系统 |
 | `web-ui.md` | 网页软件 `miyu-web`：起停、端口（8300）、页面、WebSocket 照转、`miyu web`（施工 W-9，从 `web-module.md` 搬出来独立成页）；媒体地址随 W-10 |

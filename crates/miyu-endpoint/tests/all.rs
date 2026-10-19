@@ -9,6 +9,7 @@ mod goal_heads;
 mod model_embed;
 mod package_call_ext;
 mod profile;
+mod projects;
 mod provide;
 mod provide_detail;
 mod provide_end_turn;

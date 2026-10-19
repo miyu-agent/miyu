@@ -274,8 +274,14 @@ async fn read_all<R: AsyncRead + Unpin>(
             }
             (_, None) => (wire::error(id(), Refusal::HELLO_FIRST, locale), None, false),
             ("subscribe", Some(peer)) => {
-                let (result, target) =
-                    streams::subscribe(&core, &mut subscriptions, &request, shaken, &out).await;
+                let (result, target) = streams::subscribe(
+                    &core,
+                    &mut subscriptions,
+                    &request,
+                    (shaken, &caller),
+                    &out,
+                )
+                .await;
                 (answer(&request, result, peer.locale), target, false)
             }
             ("account.setup_code", Some(_)) => {
@@ -310,6 +316,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                         Stream::Sessions => subscriptions.remove_sessions(),
                         Stream::Extensions => subscriptions.remove_listed(false),
                         Stream::Packages => subscriptions.remove_listed(true),
+                        Stream::Projects => subscriptions.remove_projects(),
                         Stream::Memory(at) => subscriptions.remove_memory(&at),
                         Stream::Widgets(_) => subscriptions.remove_widgets(),
                     }
@@ -439,10 +446,11 @@ async fn send(out: &mpsc::Sender<String>, line: String) -> bool {
 
 /// 只给人用、扩展进程调了回 `local_only` 的方法：开关、重启扩展（施工 9-4 上），改、删人格和预设（施工 P-3 中），装、卸软件包
 /// （施工 F-5 上），软件包的开关（施工 F-6 上），后台页的文件和方法（施工 F-6 中），改配置、信任项目配置、存删密钥（施工 T-9：
-/// 改了能放宽权限、换模型、拿走别的软件的 key）。读配置、列密钥的名字照旧给。`config.set` 不在这里：它自己查，扩展只能改自己包
+/// 改了能放宽权限、换模型、拿走别的软件的 key），项目（施工 H-1）。读配置、列密钥的名字照旧给。`config.set` 不在这里：它自己查，扩展只能改自己包
 /// 编号开头的几项（施工 T-9 补，`config::set::set_from_package`）。
 fn people_only(method: &str) -> bool {
     method.starts_with("extension.")
+        || method.starts_with("project.")
         || matches!(
             method,
             "preset.set"
