@@ -33,7 +33,7 @@
 | `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
 | `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）、`kb.documents`（施工 K-10）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
-| `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`，掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
+| `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`、整理时的 `memory.dreaming`（施工 R-21），掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
 | `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`images`，施工 8-20） |
 | `crates/miyu-tool/src/attachment.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型（施工 C-9 从 `miyu-endpoint/src/attach/kind.rs` 挪来，她发话、派子代理带的附件共用） |
@@ -1107,6 +1107,7 @@
 4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`，R-19 起还有 `swept`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
 5. 一个连接一间至多一个，照订阅时写的原样认（写法不同的，例如不写人格和写了默认人格，算两个）：再订阅同一间换一个新的；`unsubscribe {"stream": "memory", "persona"? | "session"?}` 停掉它，没订阅过的也回 `{}`，不找那一间。
 6. 读得太慢、掉了队：之后的最多攒 64 条没写出去的（「慢和掉队」第 1 条），再多推 `resync`（`{"stream": "memory", "persona"? | "session"?}`），这个订阅停了；头带上最后看到的序号（`after`）重新订阅，掉的那一截补回来。
+7. 整理时她正在写什么（施工 R-21，`memory.md` 第七条第 12 款；2026-10-19 项目主人要「能实时把当前处理的条目显示出来」）：订阅回应以后，这一间整理的每一批，模型写完一条改的、作废的就推一条 `memory.dreaming`，摘要推写到第几个字。不落盘、不补、掉了就掉了（同压缩的 `compaction.progress`）：落的照全部核对过，可能少几条，真相是之后那几行 `memory.event`。说的那一条这个连接听不见的不推（同第 4 条）；推以前遮过 key。
 
 #### 推送
 
@@ -1117,6 +1118,7 @@
 | `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
 | `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置、个人设置每变一次 |
 | `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |
+| `memory.dreaming` | `{"upto": <这一批，同它的 merging>, "kind": "revised", "id", "text"}`；`{"upto", "kind": "retired", "id", "retire": "outdated" \| "repeat" \| "worthless", "kept"?, "why"}`；`{"upto", "kind": "summary", "chars", "done"}`；都加订阅时写的 `persona` 或 `session`（施工 R-21） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 7 条，整理时她每写完一条（摘要每多 20 个字、写完）一条 |
 
 推送的事件不都由这个连接的命令引起：内核自己起的标题（`session.set_meta` 第 6 条，施工 3-8 五补）一轮答完以后自己来，没有 `cause`。
 

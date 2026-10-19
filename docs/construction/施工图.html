@@ -783,6 +783,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-18"><span class="n">R-18</span>删掉 bge<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-19"><span class="n">R-19</span>整理时轮着重看旧记忆<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-20"><span class="n">R-20</span>以前的对话搜的下限<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-21"><span class="n">R-21</span>整理时她正在写什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -22800,6 +22801,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-20-以前的对话搜的下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-21" aria-labelledby="h-sR21">
+  <div class="sheet-head"><h2 id="h-sR21"><span class="no">R-21</span>整理时她正在写什么</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人要人叫的整理能「实时把当前处理的条目显示出来」，像窥探梦境。核心给两样真实的：这一批交给她的是哪几条，她一边写、写完的每一条决定。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-recall · merge/watch.rs　miyu-session · route/once.rs、memory/dreaming.rs　miyu-endpoint · subscriptions/memory.rs</span><span class="dir-note">R-21</span></div>
+            <ol class="pipe" aria-label="边写边推">
+              <li><code>ext.memory.merging</code> 多 <code>given</code>：这一批交的是哪几条</li>
+              <li>一次性入口 <code>call_watching</code> 交来正文的每一段，<code>Watch</code> 边收边读</li>
+              <li>写完一条改的、作废的推一条 <code>memory.dreaming</code>，摘要每多 20 个字一条</li>
+              <li>不落盘、照这一间和听众挑、遮过 key；真相是之后的日志</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">memory.dreaming</span><span class="rl">不落盘的推送</span></div>
+          <div class="tile new"><span class="nm">Watch</span><span class="rl">写到一半的 JSON 里读出写完的</span></div>
+          <div class="tile new"><span class="nm">given</span><span class="rl">这一批交的是哪几条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-21</dd></div>
+        <div><dt>名称</dt><dd>整理时她正在写什么</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>纯逻辑、真整理、协议的测试、变异、CI · 自己验收，怎么画项目主人和头定</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一个字一个字地喂照样一条条交、单条不合的不交、重来不重交；真整理照写完的先后推、遮了 key、不落盘、场所和别的人格那一间收不到；协议上的样子对得上</span></li>
+        <li><span class="ok">✓</span><span>手写变异 6 个全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-21-整理时她正在写什么.md</code>；蓝图 <code>memory.md</code> 第七条第 12 款，<code>protocol.md</code>「记忆日志的推送」第 7 条。</li>
       </ul>
     </div>
   </div>

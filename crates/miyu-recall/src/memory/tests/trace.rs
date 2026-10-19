@@ -54,10 +54,11 @@ fn starting_a_batch_and_failing_it_round_trip() {
         fresh: 2,
         left: 5,
         manual: true,
+        given: vec![MemoryId::new(seq(1)), MemoryId::new(seq(4))],
     });
     assert!(
         line(6, &merging).contains(
-            r#""kind":"ext.memory.merging","by":{"kind":"person","account":"admin"},"body":{"upto":4,"fresh":2,"left":5,"manual":true}}"#
+            r#""kind":"ext.memory.merging","by":{"kind":"person","account":"admin"},"body":{"upto":4,"fresh":2,"left":5,"manual":true,"given":["m1","m4"]}}"#
         ),
         "{}",
         line(6, &merging)
@@ -100,6 +101,7 @@ fn the_book_knows_the_batch_that_has_not_ended() {
             fresh: 1,
             left: 1,
             manual: false,
+            given: Vec::new(),
         })
     };
     let failed = |upto| {

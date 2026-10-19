@@ -95,7 +95,7 @@
 
 | `kind` | `body` | 是什么 |
 |---|---|---|
-| `ext.memory.merging` | `upto`、`fresh`、`left`、`manual` | 开始合一批：这一批几条新记的，连它在内还有几条，是不是人叫的 |
+| `ext.memory.merging` | `upto`、`fresh`、`left`、`manual`、`given` | 开始合一批：这一批几条新记的，连它在内还有几条，是不是人叫的 |
 | `ext.memory.saved` | 写了 `replaces` 的 | 改了一条：新的正文；旧的是 `replaces` 那一条 |
 | `ext.memory.retired` | `id`、`why`、`kind`、`kept` | 删了一条：`kind` 是 `outdated`（被后记的取代）、`repeat`（重复）、`worthless`（用不着），`kept` 是留下的那一条（`worthless` 没有）。人删的没有 `kind`、`kept` |
 | `ext.memory.summary` | `text` | 新的对人的了解 |
@@ -106,6 +106,7 @@
 
 - `merging` 和收尾它的 `merged`、`merge_failed` 带同一个 `upto`；这中间 `by` 是记忆模块的改、删、摘要就是这一批做了什么（同一时刻别的会话可能在记、人可能在改，`by` 分得开）。没收尾的是正在合。
 - 进度：头一批的 `left` 是总数，收了尾的各批 `fresh` 加起来是合了多少。一批之内不细分。
+- 人叫的整理要画「她正在写什么」（施工 R-21）：`merging` 的 `given` 是这一批交给模型的是哪几条，等的时候可以让它们浮过去；另有不落盘的推送 `memory.dreaming`：她每写完一条改的（`kind: revised`，`id`、`text`）、作废的（`kind: retired`，`id`、`retire`、`kept`、`why`）推一条，摘要每多 20 个字、写完推一条（`kind: summary`，`chars`、`done`），都带这一批的 `upto`。推的是她这一刻写的，落的照全部核对、可能少几条，以日志为准；掉了不补。
 - 每一趟头一个放得下的批顺带重看最多 20 条轮到的旧记忆（照编号轮，轮完一圈从头来），对它们的改、删同样算这一批做的。人叫的整理没有新记的也照样重看：那一批的 `fresh`、`left` 是 0。
 - 会话里叫的先抽的那几条（`ext.memory.saved`，`by` 是记忆模块，带出处）在第一条 `merging` 前面，后面跟 `ext.memory.extracted`。
 

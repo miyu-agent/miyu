@@ -54,7 +54,7 @@ mod turn;
 pub use endpoint::Missing;
 pub use lists::{STALE, refresh_list};
 pub use local::{LOCAL_WAIT, Running, find_local};
-pub use once::{Answer, Ask, OneShot, Unanswered};
+pub use once::{Answer, Ask, OneShot, Unanswered, Watched};
 pub use probe::{Probe, Probed, Stage, probe};
 pub use retire::Retirement;
 pub use shared::{ModelData, Observed, read_observed};

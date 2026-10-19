@@ -15,6 +15,9 @@
 
 #[cfg(test)]
 mod tests;
+mod watch;
+
+pub use watch::{SUMMARY_STEP, Seen, Watch};
 
 use std::collections::BTreeSet;
 

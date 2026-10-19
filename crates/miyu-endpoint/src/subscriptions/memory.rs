@@ -1,6 +1,7 @@
 //! 记忆日志的订阅（施工 R-12 上，`docs/blueprint/protocol.md` 的流 `memory`，`memory.md`「协议」）：一个连接一间至多一个，一个
 //! 转发任务。照会话的事件流的「补发」：先把补的一行行写出去，再写订阅的回应（`{"upto"}`，经它写），再照先后推之后追加的；推的
 //! 是记忆日志里那一行原样（`memory.event`）。读得慢、掉了队，推一条 `resync`，这个订阅就停了，头带着最后见过的序号重新订阅。
+//! 整理时她正在写什么（施工 R-21）另推 `memory.dreaming`：不落盘，订阅的回应以后才有，掉了就掉了。
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -10,7 +11,8 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
 use miyu_kernel::event::Event;
-use miyu_session::Following;
+use miyu_recall::merge::Seen;
+use miyu_session::{Dreaming, Following};
 
 /// 订阅的哪一间：照订阅时写的原样（`persona`、`session` 至多一个，都不写的是默认人格那一间），推送照原样带回去。
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -84,6 +86,7 @@ async fn forward(
         filled,
         mut live,
         lagged,
+        mut dreaming,
         ..
     } = following;
     for event in &filled {
@@ -97,8 +100,16 @@ async fn forward(
     if out.send(reply).await.is_err() {
         return;
     }
-    while let Some(event) = live.recv().await {
-        if out.send(pushed(&at, &event)).await.is_err() {
+    loop {
+        let line = tokio::select! {
+            biased;
+            event = live.recv() => match event {
+                Some(event) => pushed(&at, &event),
+                None => break,
+            },
+            Some(seen) = dreaming.next() => dreamt(&at, &seen),
+        };
+        if out.send(line).await.is_err() {
             return;
         }
     }
@@ -130,4 +141,31 @@ fn pushed(at: &MemoryAt, event: &Event) -> String {
         r#"{{"jsonrpc":"2.0","method":"memory.event","params":{{"event":{}{rest}}}}}"#,
         event.to_line()
     )
+}
+
+/// 推一行 `memory.dreaming`（施工 R-21）：哪一批（`upto`），写完的是哪一种：`revised`（`id`、`text`）、`retired`（`id`、
+/// `retire` 哪一种、`kept` 留下的那一条、`why`）、`summary`（`chars` 写了几个字、`done` 写完了），后面接订阅时写的那一格。
+fn dreamt(at: &MemoryAt, dreaming: &Dreaming) -> String {
+    let mut params = Map::new();
+    params.insert("upto".to_string(), Value::from(dreaming.upto.get()));
+    let fields = match &dreaming.seen {
+        Seen::Revised(revised) => {
+            serde_json::json!({"kind": "revised", "id": revised.id.to_string(), "text": revised.text})
+        }
+        Seen::Retired(retire) => serde_json::json!({
+            "kind": "retired",
+            "id": retire.id.to_string(),
+            "retire": retire.kind,
+            "kept": retire.by.map(|by| by.to_string()),
+            "why": retire.why,
+        }),
+        Seen::Summary { chars, done } => {
+            serde_json::json!({"kind": "summary", "chars": chars, "done": done})
+        }
+    };
+    if let Value::Object(fields) = fields {
+        params.extend(fields.into_iter().filter(|(_, value)| !value.is_null()));
+    }
+    params.extend(at.fields());
+    serde_json::json!({"jsonrpc": "2.0", "method": "memory.dreaming", "params": params}).to_string()
 }

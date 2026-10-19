@@ -167,7 +167,7 @@ impl Keeper {
     }
 
     /// 开始合一批（施工 R-17，第七条第 10 款）：发请求以前记，合到第 `upto` 条，这一批 `fresh` 条新记的，连它在内还有 `left`
-    /// 条，是不是人叫的。
+    /// 条，是不是人叫的，交的是 `given` 这几条（施工 R-21）。
     ///
     /// # Errors
     ///
@@ -179,12 +179,14 @@ impl Keeper {
         fresh: u32,
         left: u32,
         manual: bool,
+        given: Vec<MemoryId>,
     ) -> Result<(), Refused> {
         let log = self.log()?;
         let merging = Merging {
             upto,
             fresh,
             left,
+            given,
             manual,
         };
         let stamp = Stamp {

@@ -48,6 +48,7 @@ mod memory_backfill;
 mod memory_digest;
 mod memory_dream;
 mod memory_dream_eval;
+mod memory_dreaming;
 mod memory_eval;
 mod memory_extract;
 mod memory_extract_dropped;

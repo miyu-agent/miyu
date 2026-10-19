@@ -65,12 +65,14 @@ fn trace(home: &Home) -> Vec<MemoryEvent> {
         .collect()
 }
 
-fn merging(upto: u64, fresh: u32, left: u32, manual: bool) -> MemoryEvent {
+/// 开始合一批：交的是 `given` 这几条（施工 R-21；手记的、R-21 以前的没有）。
+fn merging(upto: u64, fresh: u32, left: u32, manual: bool, given: &[u64]) -> MemoryEvent {
     MemoryEvent::Merging(Merging {
         upto: seq(upto),
         fresh,
         left,
         manual,
+        given: given.iter().map(|n| id(*n)).collect(),
     })
 }
 
@@ -96,7 +98,7 @@ async fn a_dream_writes_where_it_starts_and_what_it_retired() {
     assert_eq!(
         trace(&home),
         [
-            merging(3, 3, 3, true),
+            merging(3, 3, 3, true, &[1, 2, 3]),
             MemoryEvent::Retired(Retired {
                 id: id(1),
                 why: "和 m2 一样".into(),
@@ -262,7 +264,7 @@ async fn an_unfinished_batch_is_closed_when_the_room_is_next_opened() {
         drop(log);
         save_in(&earlier, "用户养了一只猫");
         let (log, _) = earlier.open(&persona()).expect("开得了");
-        log.append(now(), alice(), None, &merging(1, 1, 1, false))
+        log.append(now(), alice(), None, &merging(1, 1, 1, false, &[]))
             .expect("记得下");
     }
     let events = trace(&home);
@@ -287,7 +289,7 @@ async fn a_finished_batch_is_left_alone_when_the_room_is_next_opened() {
         save_in(&earlier, "用户养了一只猫");
         let (log, _) = earlier.open(&persona()).expect("开得了");
         for event in [
-            merging(1, 1, 1, true),
+            merging(1, 1, 1, true, &[]),
             MemoryEvent::Merged(Merged {
                 upto: seq(1),
                 given: 1,

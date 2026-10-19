@@ -24,19 +24,19 @@ use miyu_kernel::id::{AccountId, Seq};
 use miyu_kernel::request::Message;
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
-use miyu_recall::merge::decisions;
+use miyu_recall::merge::{Seen, Watch, decisions};
 use miyu_recall::redact::redact;
 use miyu_recall::{Entry, MemoryId, Swept};
 use miyu_tool::TEXT_CHARS;
 use miyu_tool::load::{self, LoadError};
 
 use super::extract::secrets;
-use super::{Extraction, Keeper, Using};
+use super::{Dreaming, Extraction, Keeper, Using};
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
-use crate::route::Ask;
+use crate::route::{Ask, Watched};
 use crate::settings::MemorySettings;
 
 mod compose;
@@ -295,9 +295,10 @@ impl MergeJob {
             if asked.swept.is_none() && !carried.is_empty() {
                 sweep = Sweep::Carry(carried);
             }
-            // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度。
+            // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度；带上这一批交的是哪几条（施工 R-21）。
             let (keeper, upto, fresh) = (self.keeper.clone(), asked.upto, asked.fresh);
-            blocking(move || keeper.record_merging(wall_now(), upto, fresh, left, manual))
+            let given = asked.given.iter().copied().collect();
+            blocking(move || keeper.record_merging(wall_now(), upto, fresh, left, manual, given))
                 .await
                 .map_err(|refused| format!("{refused:?}"))?;
             let round = self.ask(&asked).await?;
@@ -332,10 +333,39 @@ impl MergeJob {
             max_tokens: None,
             owner: self.owner.clone(),
         };
+        // 边收边读，写完一条推一条（施工 R-21）：遮过 key，不落盘。
+        let mut watch = Watch::new(asked.given.clone(), TEXT_CHARS);
+        let mut tell = |watched: Watched<'_>| {
+            let seen = match watched {
+                Watched::Text(text) => watch.feed(text),
+                Watched::Restart => {
+                    watch.restart();
+                    return;
+                }
+            };
+            for seen in seen {
+                let seen = match seen {
+                    Seen::Revised(mut revised) => {
+                        revised.text = redact(&revised.text, &secrets, shapes);
+                        Seen::Revised(revised)
+                    }
+                    Seen::Retired(mut retire) => {
+                        retire.why = redact(&retire.why, &secrets, shapes);
+                        Seen::Retired(retire)
+                    }
+                    summary @ Seen::Summary { .. } => summary,
+                };
+                let dreaming = Dreaming {
+                    upto: asked.upto,
+                    seen,
+                };
+                self.keeper.memory.dreams.tell(self.keeper.room(), dreaming);
+            }
+        };
         let answered = self
             .extraction
             .ask
-            .call(&self.config, &self.extraction.blobs, ask)
+            .call_watching(&self.config, &self.extraction.blobs, ask, &mut tell)
             .await
             .map_err(|unanswered| unanswered.reason().to_string())
             .and_then(|answer| decisions(&answer.text, &asked.given, TEXT_CHARS, SUMMARY_CHARS));

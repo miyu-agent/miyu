@@ -15,8 +15,8 @@ use tokio::sync::mpsc::{self, error::TrySendError};
 use miyu_kernel::event::Event;
 use miyu_recall::{Entry, MemoryBook, MemoryEvent, MemoryId, from_event};
 
-use super::Keeper;
 use super::keeper::failed;
+use super::{DreamFeed, Keeper};
 
 /// 跟着看的一份：补的、到哪为止、之后的。
 #[derive(Debug)]
@@ -29,6 +29,8 @@ pub struct Following {
     pub live: mpsc::Receiver<Event>,
     /// 掉了队：之后的放不进 `live` 了，不再交。`live` 关了以后看它，分得出是掉了队还是日志那一头放下了。
     pub lagged: Arc<AtomicBool>,
+    /// 之后整理时她正在写什么（施工 R-21）：不落盘，只推这时订阅着的。
+    pub dreaming: DreamFeed,
 }
 
 impl Keeper {
@@ -91,6 +93,7 @@ impl Keeper {
             upto,
             live,
             lagged,
+            dreaming: self.dream_feed(),
         })
     }
 

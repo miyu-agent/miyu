@@ -269,3 +269,49 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
         "{pushed:?}"
     );
 }
+
+/// 订阅着这一间的边整理边收到她写完的（施工 R-21）：`memory.dreaming` 照写完的先后，带这一批的 `upto` 和订阅时写的人格；
+/// 开始合的那一行带这一批交的是哪几条。
+#[tokio::test]
+async fn subscribers_see_what_she_writes_while_dreaming() {
+    let server = Server::start(vec![
+        said(
+            &json!({"revised": [{"id": "m2", "text": "用户养了一只橘猫，叫团子"}], "retired": [{"id": "m1", "kind": "repeat", "by": "m2", "why": "重复"}], "summary": "用户养猫。"}).to_string(),
+        ),
+        said(&json!({"keywords": []}).to_string()),
+    ])
+    .await;
+    let home = Home::new();
+    let mut client = connected(&home, &server).await;
+    remember(&mut client, "c1", "用户养了一只猫").await;
+    remember(&mut client, "c2", "用户养了一只猫，叫团子").await;
+    let subscribe = json!({"jsonrpc": "2.0", "id": "s1", "method": "subscribe", "params": {"stream": "memory", "persona": "engineer"}});
+    client.line(&subscribe.to_string()).await;
+    client.until_reply("s1").await;
+    let dream = json!({"jsonrpc": "2.0", "id": "d1", "method": "memory.dream", "params": {"persona": "engineer"}});
+    client.line(&dream.to_string()).await;
+    let (pushed, reply) = client.until_reply("d1").await;
+    assert_eq!(reply["result"]["retired"], 1, "{reply}");
+    let dreaming: Vec<&Value> = pushed
+        .iter()
+        .filter(|push| push["method"] == "memory.dreaming")
+        .map(|push| &push["params"])
+        .collect();
+    assert_eq!(
+        dreaming,
+        [
+            &json!({"upto": 2, "kind": "revised", "id": "m2", "text": "用户养了一只橘猫，叫团子", "persona": "engineer"}),
+            &json!({"upto": 2, "kind": "retired", "id": "m1", "retire": "repeat", "kept": "m2", "why": "重复", "persona": "engineer"}),
+            &json!({"upto": 2, "kind": "summary", "chars": 5, "done": true, "persona": "engineer"}),
+        ],
+        "{pushed:?}"
+    );
+    let merging = pushed
+        .iter()
+        .find(|push| push["params"]["event"]["kind"] == "ext.memory.merging")
+        .expect("推了开始合");
+    assert_eq!(
+        merging["params"]["event"]["body"]["given"],
+        json!(["m1", "m2"])
+    );
+}

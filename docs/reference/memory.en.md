@@ -95,7 +95,7 @@ Organize now: with `session`, first extract what that session hasn't had extract
 
 | `kind` | `body` | What it is |
 |---|---|---|
-| `ext.memory.merging` | `upto`, `fresh`, `left`, `manual` | A batch starts: how many new memories in it, how many are left including it, whether a person asked |
+| `ext.memory.merging` | `upto`, `fresh`, `left`, `manual`, `given` | A batch starts: how many new memories in it, how many are left including it, whether a person asked |
 | `ext.memory.saved` | with `replaces` | A memory revised: the new text; the old one is the `replaces` memory |
 | `ext.memory.retired` | `id`, `why`, `kind`, `kept` | A memory removed: `kind` is `outdated` (superseded by a later one), `repeat` (a duplicate) or `worthless` (not needed later); `kept` is the one kept instead (none for `worthless`). A person's removal has no `kind` or `kept` |
 | `ext.memory.summary` | `text` | The new summary about the person |
@@ -106,6 +106,7 @@ Organize now: with `session`, first extract what that session hasn't had extract
 
 - A `merging` and the `merged` or `merge_failed` that ends it carry the same `upto`; the revisions, removals and summary between them whose `by` is the memory module are what the batch did (another session may be extracting or a person editing at the same time; `by` tells them apart). One not yet ended is in progress.
 - Progress: the first batch's `left` is the total; the `fresh` of the ended batches adds up to what is done. There is no finer progress within a batch.
+- To show what she is writing during a requested organize (R-21): `merging`'s `given` lists the memories handed in for the batch, so they can drift by while waiting; and a push that isn't logged, `memory.dreaming`: one each time she finishes a revision (`kind: revised`, `id`, `text`) or a removal (`kind: retired`, `id`, `retire`, `kept`, `why`), and for the summary every 20 more characters and when done (`kind: summary`, `chars`, `done`), all with the batch's `upto`. It's what she wrote at that moment; what lands is checked as a whole and may have fewer, so trust the log. Missed ones aren't replayed.
 - Each run, the first batch with room also looks over up to 20 older memories in turn (by id, starting over after the last), and revisions or removals of them count as the batch's. A requested run with nothing new still looks them over: that batch's `fresh` and `left` are 0.
 - When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
 

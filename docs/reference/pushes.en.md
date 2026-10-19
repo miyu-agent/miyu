@@ -15,6 +15,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 | `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in personal settings; `server` is `null` when removed |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`: one widget replaced whole; `null` when turned off or removed |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`: a new line in one memory's log |
+| `memory.dreaming` | `memory` | `{"upto", "kind", …, "persona"? | "session"?}`: while organizing, a revision or removal she just finished writing, or how far the summary is; not logged, not replayed (see [`memory.dream`](memory.en.md#memorydream)) |
 | `resync` | all | `{"stream", "session"?}`: fell behind, or the session stopped: this subscription stopped; subscribe again |
 
 **Ordering**

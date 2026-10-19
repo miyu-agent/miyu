@@ -267,6 +267,10 @@ pub struct Merging {
     pub left: u32,
     /// 人叫的（`/dream`、`memory.dream`）；后台自己合的是 `false`。
     pub manual: bool,
+    /// 这一批交给模型的是哪几条（新记的、相关的旧记忆、顺带重看的，照编号；施工 R-21）：头等的时候让它们一条条浮过去。
+    /// R-21 以前的没有。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub given: Vec<MemoryId>,
 }
 
 /// `ext.memory.merge_failed` 的 `body`：`upto` 那一批这一次没合成（施工 R-17）。连着第三次的后面另跟一条 `merged`（`failed`），

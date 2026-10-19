@@ -6,6 +6,7 @@
 //! 回合库是派生的：更新失败记一行 `WARN memory index not updated`，会话照常；照到的位置没往前挪，下次载入照日志补。
 
 mod backfill;
+mod dreaming;
 mod extract;
 mod follow;
 mod keeper;
@@ -23,6 +24,7 @@ mod tag;
 mod used;
 mod vectors;
 
+pub use dreaming::{DreamFeed, Dreaming};
 pub use extract::{ExtractTexts, Extraction};
 pub(crate) use extract::{Extractor, Job, Voices, plan};
 pub use follow::Following;
@@ -78,6 +80,8 @@ pub struct Memory {
     merges: merge::Merges,
     /// 回合索引在后台写（施工 V-9）。
     lanes: lane::Lanes,
+    /// 整理的时候她正在写什么（施工 R-21）：一个核心一路广播。
+    dreams: dreaming::Dreams,
 }
 
 impl Memory {
@@ -117,6 +121,7 @@ impl Memory {
             installed: AtomicBool::new(true),
             merges: merge::Merges::default(),
             lanes: lane::Lanes::default(),
+            dreams: dreaming::Dreams::default(),
         })
     }
 }

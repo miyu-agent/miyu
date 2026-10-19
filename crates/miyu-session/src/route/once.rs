@@ -7,7 +7,8 @@
 //! 2. 照底子挑一个候选：key 照用途钉，没有换过去的 key、没有说到一半断了的；钉住的池第一次照指针取成员，这一次里出错
 //!    从刚才那个往下绕。
 //! 3. 交进去的图，挑中的模型不收图的：不发，交 `model_failed`（`other`），不记冷却、不换。
-//! 4. 发：没有人叫停，增量拼成正文（`once/reply.rs`），不往外推。成了交回正文、真发给的供应商和模型、用量。
+//! 4. 发：没有人叫停，增量拼成正文（`once/reply.rs`），不往外推；要边收边看的（[`OneShot::call_watching`]，施工 R-21：整理
+//!    给头实时画）正文的每一段另交给调的一方，换了端点重来的先说一声。成了交回正文、真发给的供应商和模型、用量。
 //! 5. 出错了、底子说换了端点、别的候选这时就能用的：当场换下一个，最多换 [`FAILOVERS`] 次。只剩等的、只有一个候选的、
 //!    不换的分类：不等，交 `model_failed`。收到过增量才出错的也换（交给底子的「说到一半断了」是假的）：半截没人看到。
 //! 6. 记一行 `INFO model call`（成了）或 `INFO model call failed`（没成），目标 `miyu::session`，不带会话编号。
@@ -17,6 +18,10 @@
 
 mod reply;
 
+use std::collections::BTreeSet;
+
+use miyu_http::Progress;
+use miyu_kernel::accumulate::{Delta, Kind};
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
 use miyu_kernel::id::AccountId;
@@ -76,6 +81,15 @@ pub struct Answer {
     pub model: String,
     /// 用量；供应商没报的没有。
     pub usage: Option<Usage>,
+}
+
+/// 边收边看的一样（施工 R-21，[`OneShot::call_watching`]）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Watched<'a> {
+    /// 正文的一段（思考的不交）。
+    Text(&'a str),
+    /// 换了端点，从头再来：之前交的那几段作废。
+    Restart,
 }
 
 /// 没答成（「怎么走」第十二条第 5 条）。
@@ -141,8 +155,23 @@ impl OneShot {
         blobs: &Blobs,
         ask: Ask,
     ) -> Result<Answer, Unanswered> {
+        self.call_watching(config, blobs, ask, &mut |_| {}).await
+    }
+
+    /// 同 [`OneShot::call`]，正文的每一段边收边交给 `watch`，换了端点重来的先交一个 `Watched::Restart`（施工 R-21）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`OneShot::call`]。
+    pub async fn call_watching(
+        &self,
+        config: &TurnConfig,
+        blobs: &Blobs,
+        ask: Ask,
+        watch: &mut (dyn FnMut(Watched<'_>) + Send),
+    ) -> Result<Answer, Unanswered> {
         let purpose = ask.purpose.clone();
-        let answered = self.answer(config, blobs, ask).await;
+        let answered = self.answer(config, blobs, ask, watch).await;
         match &answered {
             Ok(answer) => {
                 let input = answer
@@ -181,6 +210,7 @@ impl OneShot {
         config: &TurnConfig,
         blobs: &Blobs,
         ask: Ask,
+        watch: &mut (dyn FnMut(Watched<'_>) + Send),
     ) -> Result<Answer, Unanswered> {
         let routes = &self.routes;
         routes.data.wait().await;
@@ -219,13 +249,34 @@ impl OneShot {
             if images && !ready.call.inputs.images {
                 return Err(Unanswered::Failed(no_images(&picked.choice)));
             }
+            if switched > 0 {
+                watch(Watched::Restart);
+            }
             let mut reply = Reply::default();
+            // 正文是哪几块：思考的字不交出去。
+            let mut texts = BTreeSet::new();
             let exchanged = exchange(
                 &ready,
                 &request,
                 blobs,
                 std::future::pending(),
-                |progress| reply.take(progress),
+                |progress| {
+                    if let Progress::Delta(delta) = &progress {
+                        match delta {
+                            Delta::Start {
+                                index,
+                                kind: Kind::Text,
+                            } => {
+                                texts.insert(*index);
+                            }
+                            Delta::Text { index, text } if texts.contains(index) => {
+                                watch(Watched::Text(text));
+                            }
+                            _ => {}
+                        }
+                    }
+                    reply.take(progress);
+                },
             )
             .await;
             if let (true, Exchanged::Ended { usage, .. }) = (reply.sent(), &exchanged) {

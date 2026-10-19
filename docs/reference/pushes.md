@@ -15,6 +15,7 @@
 | `mcp.changed` | `packages` | `{"name", "server"}`：个人设置里的一个 MCP 服务，删了的 `server` 是 `null` |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`：一块界面块整个换掉，关掉、卸掉的是 `null` |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`：一间记忆的日志里新的一行 |
+| `memory.dreaming` | `memory` | `{"upto", "kind", …, "persona"? | "session"?}`：整理时她刚写完的一条改的、作废的，或者摘要写到第几个字；不落盘、不补（见 [`memory.dream`](memory.md#memorydream)） |
 | `resync` | 都有 | `{"stream", "session"?}`：读得太慢掉了队，或者会话停了：这个订阅停了，重新订阅 |
 
 **先后**
