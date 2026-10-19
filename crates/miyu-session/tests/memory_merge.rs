@@ -49,15 +49,15 @@ fn book<R>(home: &Home, read: impl FnOnce(&miyu_recall::MemoryBook) -> R) -> R {
     log.book(read)
 }
 
-/// 等合并记下（最多 10 秒）。
-async fn until_merged(home: &Home) {
+/// 等底账照 `done` 成立（最多 10 秒）：照日志等，慢机器上不赌固定的时长。
+async fn until(home: &Home, done: impl Fn(&miyu_recall::MemoryBook) -> bool) {
     for _ in 0..200 {
-        if book(home, |book| book.merged()).is_some() {
+        if book(home, &done) {
             return;
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
-    panic!("十秒没合完");
+    panic!("十秒没等到");
 }
 
 fn entry(home: &Home, id: MemoryId) -> Entry {
@@ -119,7 +119,7 @@ async fn enough_sessions_merge_after_extraction_and_land_as_events() {
     chat(&home, &handle, 1, "我养了一只猫").await;
     chat(&home, &handle, 2, "是只橘猫").await;
     requested(&server, 2).await;
-    until_merged(&home).await;
+    until(&home, |book| book.merged().is_some()).await;
     let text = asked(&server, 1);
     assert!(text.starts_with("Below are your memories"), "{text}");
     assert!(text.contains("Current summary: none yet."), "{text}");
@@ -184,7 +184,7 @@ async fn too_few_sessions_wait_and_a_merge_does_not_repeat_before_its_time() {
     chat(&home, &second, 1, "我住在东京").await;
     chat(&home, &second, 2, "很多年了").await;
     requested(&server, 3).await;
-    until_merged(&home).await;
+    until(&home, |book| book.merged().is_some()).await;
     assert!(asked(&server, 2).starts_with("Below are your memories"));
     let third = session(&home, 2).await;
     chat(&home, &third, 1, "我周末写 Rust").await;
@@ -296,14 +296,11 @@ async fn what_does_not_fit_goes_next_and_the_merges_own_edits_are_not_new() {
         !fresh_part(&second).contains("改过的第一条"),
         "合并自己改出来的不算新记的"
     );
-    for _ in 0..200 {
-        if book(&home, |book| book.merged())
+    until(&home, |book| {
+        book.merged()
             .is_some_and(|(_, upto)| upto > Seq::new(90).expect("从 1 起"))
-        {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(50)).await;
-    }
+    })
+    .await;
     tokio::time::sleep(Duration::from_millis(300)).await;
     assert_eq!(server.received().len(), 3, "两次合完，没有剩下的");
     stop(&handle).await;
@@ -334,7 +331,7 @@ async fn three_failures_in_a_row_skip_the_batch() {
     requested(&server, 4).await;
     chat(&home, &handle, 3, "三岁").await;
     requested(&server, 6).await;
-    until_merged(&home).await;
+    until(&home, |book| book.merged().is_some()).await;
     assert_eq!(
         book(&home, |book| book
             .summary()
@@ -401,7 +398,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     chat(&home, &first, 1, "我养了一只猫").await;
     chat(&home, &first, 2, "橘猫").await;
     requested(&server, 2).await;
-    until_merged(&home).await;
+    until(&home, |book| book.merged().is_some()).await;
     let revised = book(&home, |book| {
         book.all()
             .find(|entry| entry.replaces == Some(id(1)))
@@ -419,12 +416,14 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     chat(&home, &second, 1, "我住在东京").await;
     chat(&home, &second, 2, "很多年了").await;
     requested(&server, 3).await;
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    // 第三个请求发出去了，抽取的回答落进日志还要一会儿。
+    until(&home, |book| book.sessions_since_merge() >= 1).await;
     assert_eq!(
         book(&home, |book| book.sessions_since_merge()),
         1,
         "会话够了"
     );
+    tokio::time::sleep(Duration::from_millis(500)).await;
     assert_eq!(server.received().len(), 3, "间隔没到不合");
     for handle in [&first, &second] {
         stop(handle).await;
