@@ -4,6 +4,7 @@
   "excerpt_chars": 1200,
   "timeout_seconds": 20,
   "cooldown_minutes": [30, 60, 120, 360],
+  "fetch": {"order": ["exa", "firecrawl", "parallel"], "min_chars": 200, "max_chars": 200000, "timeout_seconds": 45},
   "browser_user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
   "sources": {
     "exa": {"name": "Exa", "kind": "exa", "url": "https://mcp.exa.ai/mcp", "needs": "key_optional", "site_operator": false},

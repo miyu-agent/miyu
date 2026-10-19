@@ -206,3 +206,46 @@ async fn every_keyless_source_answers_web_search() {
     }
     assert!(wrong.is_empty(), "这几条没搜成：\n{}", wrong.join("\n"));
 }
+
+/// 自己抓不下来、要请别家代抓的（施工 N-4，2026-10-19 实测挑的）：网页和代抓出来应该有的字。
+const RESCUED: &[(&str, &str)] = &[
+    (
+        "https://stackoverflow.com/questions/1642028/what-is-the-operator-in-c-c",
+        "-->",
+    ),
+    (
+        "https://www.nytimes.com/2024/05/13/technology/openai-chatgpt-app.html",
+        "ChatGPT",
+    ),
+    ("https://www.bilibili.com/read/cv1", "未知的光"),
+    ("https://www.douban.com/subject/1292052/", "肖申克"),
+];
+
+#[tokio::test]
+#[ignore = "要连外网：设 MIYU_NET_LIVE=1 在能上网的机器上手动跑"]
+async fn blocked_pages_are_fetched_by_other_sources() {
+    if std::env::var_os("MIYU_NET_LIVE").is_none() {
+        println!("没设 MIYU_NET_LIVE=1：不连外网，跳过");
+        return;
+    }
+    let tool = miyu_net::tools(&resources())
+        .expect("字读得出")
+        .into_iter()
+        .find(|tool| tool.spec().name == miyu_net::WEB_FETCH)
+        .expect("有 web_fetch");
+    let mut wrong = Vec::new();
+    for (url, word) in RESCUED {
+        let done = crate::fetch::fetch(&tool, serde_json::json!({"url": url})).await;
+        let read = crate::fetch::text(&done);
+        let via = done
+            .human
+            .as_ref()
+            .and_then(|human| human.fields.get("via").cloned());
+        let head: String = read.chars().take(200).collect();
+        println!("\n== {url}\n  via: {via:?}\n  {head}");
+        if done.error || !read.contains(word) {
+            wrong.push(format!("{url}：{head}"));
+        }
+    }
+    assert!(wrong.is_empty(), "这几条没抓到：\n{}", wrong.join("\n"));
+}

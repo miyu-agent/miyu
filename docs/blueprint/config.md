@@ -1066,7 +1066,7 @@ base = "10s"
 max = "5m"
 
 [net.search]
-# 搜索服务供应商：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。
+# 搜索服务供应商：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。
 # 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。
 source = "auto"
 
@@ -1606,7 +1606,7 @@ currency = "USD"
             },
             "source": {
               "default": "auto",
-              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。",
+              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置或个人设置里。下一轮生效。",
               "enum": [
                 "auto",
                 "exa",
@@ -2169,7 +2169,7 @@ currency = "USD"
 | `memory.merge_sessions` 名字（R-7 上） | 攒几次聊天再归纳 | Chats before consolidating | まとめる前の会話数 |
 | 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
 | `net.search.source` 名字（N-2 下） | 搜索服务供应商 | Search provider | 検索プロバイダー |
-| 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。 |
+| 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel, which then receive the address. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させ、その URL も送られます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
 | `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |

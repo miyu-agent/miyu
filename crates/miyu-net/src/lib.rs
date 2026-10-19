@@ -41,7 +41,7 @@ use remember::{Keep, Remember};
 use rules::{Clip, Sites};
 
 pub use document::{Miss, Pages, Read};
-pub use search::{Found, Hit, Missed, Query, Search, Using};
+pub use search::{Fetched, Found, Hit, Missed, Query, Search, Using};
 pub use settings::{
     AUTO, BraveKey, DeepseekKey, ExaKey, ITEMS, Missing, SearchSettings, SearxngAddress, TavilyKey,
     missing,
@@ -78,7 +78,11 @@ pub fn tools_with(
     search: Arc<Search>,
 ) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     Ok(vec![
-        Arc::new(web_fetch::WebFetch::load(resources, pages)?),
+        Arc::new(web_fetch::WebFetch::load(
+            resources,
+            pages,
+            Arc::clone(&search),
+        )?),
         Arc::new(web_search::WebSearch::load(resources, search)?),
     ])
 }

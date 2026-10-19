@@ -36,6 +36,13 @@ pub(crate) enum Kind {
     Bing,
 }
 
+impl Kind {
+    /// 这一种能不能代抓网页（施工 N-4）：Exa、Parallel、Firecrawl 的 MCP 各有一件抓页面的工具。
+    pub(crate) fn fetches(self) -> bool {
+        matches!(self, Kind::Exa | Kind::Parallel | Kind::Firecrawl)
+    }
+}
+
 /// 一家要什么才能用（施工 N-3 上）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -83,6 +90,31 @@ pub(crate) struct Rules {
     pub(crate) browser_user_agent: String,
     /// 编号 → 来源。
     pub(crate) sources: BTreeMap<String, Source>,
+    /// 代抓网页（施工 N-4）。
+    pub(crate) fetch: Fetching,
+}
+
+/// 自己抓不下来的网页交给哪几家代抓（施工 N-4，设计 36 的 N-4）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Fetching {
+    /// 照这个先后试：来源的编号，只能是能抓页面的几种。
+    pub(crate) order: Vec<String>,
+    /// 正文少于这么多字的当没抓到（登录墙、跳转页）。
+    pub(crate) min_chars: usize,
+    /// 至多要这么多字，多的截掉。
+    pub(crate) max_chars: usize,
+    /// 一次的时限：代抓常要现抓，比搜慢。
+    pub(crate) timeout: Duration,
+}
+
+/// 文件里 `fetch` 那一格。
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FetchFile {
+    order: Vec<String>,
+    min_chars: usize,
+    max_chars: usize,
+    timeout_seconds: u64,
 }
 
 /// 文件里的样子。
@@ -96,6 +128,7 @@ struct File {
     cooldown_minutes: Vec<u64>,
     browser_user_agent: String,
     sources: BTreeMap<String, Source>,
+    fetch: FetchFile,
 }
 
 /// 读不成：哪个文件、为什么。
@@ -151,6 +184,26 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
     {
         return Err(bad(format!("order names an unknown source {missing}")));
     }
+    let fetch = &parsed.fetch;
+    if fetch.order.is_empty()
+        || fetch.min_chars == 0
+        || fetch.max_chars <= fetch.min_chars
+        || fetch.timeout_seconds == 0
+    {
+        return Err(bad(
+            "fetch needs an order, min_chars and timeout_seconds above 0, and max_chars above min_chars".to_string(),
+        ));
+    }
+    if let Some(id) = fetch.order.iter().find(|id| {
+        parsed
+            .sources
+            .get(*id)
+            .is_none_or(|source| !source.kind.fetches())
+    }) {
+        return Err(bad(format!(
+            "fetch order names {id}, which cannot fetch pages"
+        )));
+    }
     Ok(Rules {
         order: parsed.order,
         results: parsed.results,
@@ -163,6 +216,12 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
             .collect(),
         browser_user_agent: parsed.browser_user_agent,
         sources: parsed.sources,
+        fetch: Fetching {
+            order: parsed.fetch.order,
+            min_chars: parsed.fetch.min_chars,
+            max_chars: parsed.fetch.max_chars,
+            timeout: Duration::from_secs(parsed.fetch.timeout_seconds),
+        },
     })
 }
 

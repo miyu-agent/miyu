@@ -93,6 +93,12 @@ fn a_wrong_file_is_refused() {
         ("\"kind\": \"exa\"", "\"kind\": \"google\""),
         ("\"needs\": \"address\"", "\"needs\": \"nothing\""),
         ("\"results\": 8", "\"results\": 8, \"note\": 1"),
+        (
+            "\"order\": [\"exa\", \"firecrawl\", \"parallel\"]",
+            "\"order\": [\"exa\", \"bing\"]",
+        ),
+        ("\"min_chars\": 200", "\"min_chars\": 0"),
+        ("\"max_chars\": 200000", "\"max_chars\": 100"),
     ] {
         let changed = text().replacen(from, to, 1);
         assert_ne!(changed, text(), "{from} 在出厂的那一份里");

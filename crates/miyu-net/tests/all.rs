@@ -7,6 +7,7 @@ mod support;
 
 mod budget;
 mod fetch;
+mod fetch_rescue;
 mod live;
 mod preview;
 mod proxy;

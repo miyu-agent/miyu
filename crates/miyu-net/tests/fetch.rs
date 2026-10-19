@@ -17,7 +17,10 @@ use crate::support::{PNG, Reply, Site, local, resources};
 /// 打开 `testing` 这个口子的 `web_fetch`。
 fn tool(testing: Testing) -> Arc<dyn Tool> {
     let pages = Pages::new(&resources()).testing(testing);
-    let search = miyu_net::Search::new(&resources());
+    // 代抓的几家（施工 N-4）指到回环上没人听的端口：这里的测试不出网，抓不下来的照自己的结果说。
+    let nobody = ["exa", "parallel", "firecrawl"]
+        .map(|id| (id.to_string(), "http://127.0.0.1:9/".to_string()));
+    let search = miyu_net::Search::new(&resources()).testing(nobody.to_vec());
     let tools =
         miyu_net::tools_with(&resources(), Arc::new(pages), Arc::new(search)).expect("字读得出");
     tools
@@ -28,7 +31,12 @@ fn tool(testing: Testing) -> Arc<dyn Tool> {
 
 /// 调一次，等最多一分钟。
 pub(crate) async fn fetch(tool: &Arc<dyn Tool>, args: serde_json::Value) -> Done {
-    let call = Call {
+    run(tool, call(args)).await
+}
+
+/// 照参数 `args` 的一次调用，别的都没有。
+pub(crate) fn call(args: serde_json::Value) -> Call {
+    Call {
         args: args.to_string(),
         cwd: String::new(),
         home: None,
@@ -50,7 +58,11 @@ pub(crate) async fn fetch(tool: &Arc<dyn Tool>, args: serde_json::Value) -> Done
         packages: None,
         ids: None,
         settings: None,
-    };
+    }
+}
+
+/// 跑一次调用，等最多一分钟。
+pub(crate) async fn run(tool: &Arc<dyn Tool>, call: Call) -> Done {
     tokio::time::timeout(
         Duration::from_secs(60),
         tool.run(call, Progress::new(|_| {})),

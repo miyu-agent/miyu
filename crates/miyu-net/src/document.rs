@@ -35,6 +35,8 @@ pub struct Read {
     pub text: String,
     /// 超了大小的上限、截了后面。
     pub cut: bool,
+    /// 自己抓不下来、请哪一家代抓的（施工 N-4）：给人看的名字。自己抓的没有。
+    pub via: Option<String>,
 }
 
 /// 读不成。
@@ -126,6 +128,13 @@ impl Pages {
         Ok(read)
     }
 
+    /// 记下别处读成的一份（施工 N-4：代抓到的），翻页不再去抓。网址读不成、规矩读不懂的不记。
+    pub fn keep(&self, text: &str, read: Arc<Read>) {
+        if let (Ok(url), Some(ready)) = (Url::parse(text.trim()), self.ready()) {
+            ready.keep(url.as_str().to_string(), read);
+        }
+    }
+
     fn ready(&self) -> Option<&Ready> {
         self.ready
             .get_or_init(|| match rules::load(&self.resources) {
@@ -214,5 +223,6 @@ async fn fetch(ready: &Ready, url: &Url) -> Result<Read, Miss> {
         title,
         text,
         cut: fetched.cut,
+        via: None,
     })
 }

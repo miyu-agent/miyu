@@ -18,6 +18,7 @@ use miyu_tool::load::{self, LoadError, say};
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
 
 use crate::document::{Miss, Pages};
+use crate::search::Search;
 
 /// 这个包的编号：资源目录里的名字。
 pub const PACKAGE: &str = "net";
@@ -33,6 +34,8 @@ pub(crate) struct WebFetch {
     spec: Spec,
     texts: Texts,
     pages: Arc<Pages>,
+    /// 自己抓不下来的请它代抓（施工 N-4）。
+    search: Arc<Search>,
 }
 
 /// 她给的参数。
@@ -122,11 +125,16 @@ impl Texts {
 
 impl WebFetch {
     /// 照资源目录 `resources` 造：说明、几句字都从那里读；抓网页的家底是 `pages`。
-    pub(crate) fn load(resources: &Path, pages: Arc<Pages>) -> Result<WebFetch, LoadError> {
+    pub(crate) fn load(
+        resources: &Path,
+        pages: Arc<Pages>,
+        search: Arc<Search>,
+    ) -> Result<WebFetch, LoadError> {
         Ok(WebFetch {
             spec: load::spec(resources, PACKAGE, WEB_FETCH, Access::Read)?,
             texts: Texts::load(resources)?,
             pages,
+            search,
         })
     }
 }
@@ -149,7 +157,18 @@ impl Tool for WebFetch {
                     );
                 }
             };
-            let read = match self.pages.read(&args.url).await {
+            let mut read = self.pages.read(&args.url).await;
+            if rescue::worth(&read, &self.search) {
+                // 这一轮的配置（施工 N-4）：挑的来源排在前面、Exa 配了 key 的走自己的额度。
+                let using = call
+                    .settings
+                    .as_deref()
+                    .map(crate::settings::using)
+                    .unwrap_or_default();
+                let with = (&*self.pages, &*self.search, &using);
+                read = rescue::rescue(read, &args.url, with).await;
+            }
+            let read = match read {
                 Ok(read) => read,
                 Err(miss) => return texts.missed(args.url.trim(), &miss),
             };
@@ -178,7 +197,12 @@ impl Tool for WebFetch {
                 text.push('\n');
                 text.push_str(&line(&texts.cut, &[]));
             }
-            Done::ok(text).said(told(read.title.as_deref(), &number, &count))
+            Done::ok(text).said(told(
+                read.title.as_deref(),
+                &number,
+                &count,
+                read.via.as_deref(),
+            ))
         })
     }
 }
@@ -207,17 +231,22 @@ pub(crate) fn split(text: &str, most: usize) -> Vec<String> {
 }
 
 /// 给人看的那一句：有标题的写标题（太长的截到 [`TITLE_CHARS`] 个字），不止一页的写第几页。
-fn told(title: Option<&str>, page: &str, pages: &str) -> Said {
+fn told(title: Option<&str>, page: &str, pages: &str, via: Option<&str>) -> Said {
     let at = [("page", page), ("pages", pages)];
     let title = title.map(|title| match title.char_indices().nth(TITLE_CHARS) {
         Some((end, _)) => format!("{}…", &title[..end]),
         None => title.to_string(),
     });
-    match (title, pages == "1") {
+    let told = match (title, pages == "1") {
         (Some(title), true) => said("web_fetch/titled", &[("title", &title)]),
         (Some(title), false) => said("web_fetch/titled-page", &[("title", &title), at[0], at[1]]),
         (None, true) => said("web_fetch/fetched", &[]),
         (None, false) => said("web_fetch/page", &at),
+    };
+    // 别家代抓的带上是哪一家（施工 N-4），同 `web_search` 的 `via`：头画在名字后面。
+    match via {
+        Some(via) => told.with("via", via.to_string()),
+        None => told,
     }
 }
 
@@ -234,5 +263,6 @@ fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     )
 }
 
+mod rescue;
 #[cfg(test)]
 mod tests;

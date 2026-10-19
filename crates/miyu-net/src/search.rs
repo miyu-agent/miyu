@@ -9,6 +9,7 @@
 
 mod cooldown;
 mod mcp;
+mod pages;
 mod rest;
 mod rules;
 mod scrape;
@@ -27,6 +28,7 @@ use crate::proxy::Proxies;
 use cooldown::Cooldowns;
 use rules::{Kind, Needs, Rules, Source};
 
+pub use pages::Fetched;
 pub use using::Using;
 
 /// 搜到的一条。
