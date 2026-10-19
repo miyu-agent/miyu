@@ -279,11 +279,11 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 Change the session's model; it applies from the next turn.
 
-**Params**: `session`; `model` (required): `<provider>/<model>` or `@<pool>`.
+**Params**: `session`; `model` (required): `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
 
 **Response**: `{}`. A change is pushed as `session.policy_changed`; when it takes effect, `model.changed`.
 
-**Errors**: `bad_params` (`model` empty or not a string); `unknown_model`.
+**Errors**: `bad_params` (`model` missing, empty, or neither a string nor `null`); `unknown_model`.
 
 ## `session.fork`
 

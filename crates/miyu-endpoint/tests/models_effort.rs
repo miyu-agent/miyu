@@ -109,7 +109,7 @@ async fn session_configure_refuses_an_effort_parameter() {
 }
 
 /// `model` 变回必写（施工 8-18 把它改成了「`model`、`effort` 至少一个」，8-18（补）改回去）：没写的、空字的 `bad_params`，
-/// 不找会话。
+/// 不找会话（写 `null` 的施工 8-10 再补起是回到跟着配置，`models_pools.rs` 守着）。
 #[tokio::test]
 async fn session_configure_requires_a_model() {
     let home = Home::new();
@@ -119,7 +119,6 @@ async fn session_configure_requires_a_model() {
     let session = client.create("c1", "/tmp").await;
     for (n, params) in [
         json!({"session": session}),
-        json!({"session": session, "model": null}),
         json!({"session": session, "model": ""}),
     ]
     .into_iter()

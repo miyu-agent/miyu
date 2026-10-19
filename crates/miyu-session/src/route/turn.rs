@@ -1,8 +1,8 @@
 //! 回合开始时重新解析（施工 8-10，`docs/blueprint/models.md`「怎么走」第六条第 3、4 条）：照这一轮冻结的配置解析会话的
 //! 引用，端点、限额换成解析出的。
 //!
-//! - 内核交了引用的，换成它（变了的，钉着的成员清掉）；没交的（以前的日志、造的时候连 `models.chat` 都没配），照路由记在
-//!   内存里的（「施工时定的」8-10）。
+//! - 内核交了引用的，换成它（变了的，钉着的成员清掉）；没交的（人回到了跟着配置，以前的日志、造的时候连 `models.chat` 都
+//!   没配的）照这一轮的 `models.chat`（施工 8-10 再补；以前照路由记在内存里的）。
 //! - 解析不出的（供应商、池删了，池空了），退回这一轮的 `models.chat`，以后钉在它上面，记一行 `INFO model fallback`；内核
 //!   交了引用的，交回原来的和退回的，内核记一条 `session.policy_changed`。`models.chat` 也解析不出的不退，端口是「没有
 //!   模型」，这一轮的请求当场 `no_model`。
@@ -35,10 +35,13 @@ impl Route {
         };
         let mut pinned = self.lock();
         pinned.config = Arc::clone(config);
-        if let Some(recorded) = recorded
-            && pinned.reference.as_deref() != Some(recorded)
-        {
-            pinned.reference = Some(recorded.to_string());
+        // 内核没记引用的跟着这一轮的 `models.chat`（施工 8-10 再补：人能回到「跟着配置」）：配置换了，这一轮就换。
+        let wanted = match recorded {
+            Some(recorded) => Some(recorded.to_string()),
+            None => provider::chat(&values),
+        };
+        if pinned.reference != wanted {
+            pinned.reference = wanted;
             pinned.member = None;
         }
         let mut replaced = None;

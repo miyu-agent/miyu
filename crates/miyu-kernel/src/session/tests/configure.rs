@@ -169,3 +169,19 @@ fn a_fallback_that_does_not_match_the_reference_is_ignored() {
     assert_eq!(session.reference(), Some("@free"));
     assert_eq!(calls(&actions).len(), 1, "照常请求");
 }
+
+#[test]
+fn an_empty_reference_goes_back_to_following_the_config() {
+    let mut session = session();
+    session.handle(configure(2, "@free"));
+    session.handle(stored(2));
+    let actions = session.handle(configure(3, ""));
+    assert_eq!(appended_events(&actions)[0].body, to(""), "空的照样记一条");
+    assert_eq!(session.reference(), None, "回到跟着 models.chat");
+    session.handle(stored(3));
+    assert_eq!(
+        session.handle(configure(4, "")),
+        [accepted_reply(4, &[])],
+        "本来就跟着的什么都不记"
+    );
+}

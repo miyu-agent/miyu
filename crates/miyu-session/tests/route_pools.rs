@@ -235,3 +235,41 @@ async fn session_created_records_the_reference_it_was_made_with() {
     let nothing = create(&bare, &routes, None).await;
     assert_eq!(recorded(&bare, &nothing), None, "chat 也没配的不写");
 }
+
+/// 回到跟着配置（施工 8-10 再补）：钉着 `b/y` 的会话换成空的引用，下一轮照这时的 `models.chat`；配置里的 chat 换了，再下一轮
+/// 跟着换。
+#[tokio::test]
+async fn a_session_that_follows_the_config_takes_whatever_chat_is_now() {
+    let (first, second) = (
+        Server::start(hellos(8)).await,
+        Server::start(hellos(8)).await,
+    );
+    let with_a = two(&first, &second, r#""b/y""#, "");
+    let with_b = with_a.replace("chat = \"a/m\"", "chat = \"b/y\"");
+    let source =
+        |text: &str| -> Arc<dyn ConfigSource> { Arc::clone(&*configs(text, &[]).borrow()) };
+    let (switch, receiving) = watch::channel(source(&with_a));
+    let mut home = Home::new();
+    home.configs = receiving;
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = create(&home, &routes, Some("b/y")).await;
+    turn(&handle, "cmd-1").await;
+    let follow = miyu_kernel::session::Command::Configure {
+        model: String::new(),
+    };
+    within(
+        "回应",
+        handle.command(crate::support::id("cmd-2"), crate::support::alice(), follow),
+    )
+    .await
+    .expect("会话在跑");
+    turn(&handle, "cmd-3").await;
+    switch.send_replace(source(&with_b));
+    turn(&handle, "cmd-4").await;
+    stop(&handle).await;
+    assert_eq!(
+        sent(&home, &handle),
+        ["b/y", "a/m", "b/y"],
+        "跟着这时的 chat"
+    );
+}

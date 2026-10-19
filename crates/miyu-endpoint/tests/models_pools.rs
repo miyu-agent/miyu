@@ -378,7 +378,12 @@ async fn session_configure_records_the_resolved_model_once() {
     assert_eq!(reply["result"], json!({}), "{reply}");
     let reply = configure(&mut client, "c5", &session, json!("b/anything")).await;
     assert_eq!(reply["result"], json!({}), "{reply}");
-    assert_eq!(switched(&home, &session), ["@free", "b/anything"]);
+    // 写 `null` 的回到跟着 `models.chat`：记空的；本来就跟着的不再记（施工 8-10 再补）。
+    for n in [6, 7] {
+        let reply = configure(&mut client, &format!("c{n}"), &session, Value::Null).await;
+        assert_eq!(reply["result"], json!({}), "{reply}");
+    }
+    assert_eq!(switched(&home, &session), ["@free", "b/anything", ""]);
 }
 
 #[tokio::test]
@@ -391,7 +396,6 @@ async fn session_configure_refuses_what_it_cannot_take() {
         json!({"session": session}),
         json!({"session": session, "model": 3}),
         json!({"session": session, "model": ""}),
-        json!({"session": session, "model": null}),
         json!({"session": "nope", "model": "c/m"}),
     ]
     .into_iter()

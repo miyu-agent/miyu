@@ -100,6 +100,8 @@ pub struct Core {
     write: WriteHalf<Connection>,
     /// 握手回的 `language`。
     language: Option<String>,
+    /// 握手回的 `account`（施工 W-8 再补）。
+    account: Option<String>,
 }
 
 impl Core {
@@ -189,6 +191,7 @@ impl Core {
             lines: BufReader::new(read),
             write,
             language: None,
+            account: None,
         };
         let mut hello = json!({
             "protocol": [1, 1],
@@ -200,12 +203,18 @@ impl Core {
         }
         let shaken = core.call("hello", "hello", hello).await?;
         core.language = shaken["language"].as_str().map(str::to_string);
+        core.account = shaken["account"].as_str().map(str::to_string);
         Ok((core, shaken))
     }
 
     /// 握手回的 `language`：没回的是空的。
     pub fn language(&self) -> Option<&str> {
         self.language.as_deref()
+    }
+
+    /// 握手回的 `account`：这条连接是哪个账号（照用户名密码连上的，账号不一定就是用户名）；没回的是空的。
+    pub fn account(&self) -> Option<&str> {
+        self.account.as_deref()
     }
 
     /// 发一条请求、等它的回应：交回 `result`，拒绝的交回原话。

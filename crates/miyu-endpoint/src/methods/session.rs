@@ -274,13 +274,17 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
     }
 }
 
-/// `session.configure`：换模型。
+/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。
 pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
-    let model = models::record(core, text)?;
+    // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
+    let model = match text {
+        Some(text) => models::record(core, text)?,
+        None => String::new(),
+    };
     let command = Command::Configure { model };
     command_to(core, request, &session, &found.handle, command).await?;
     Ok(json!({}))

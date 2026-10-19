@@ -279,11 +279,11 @@
 
 换这个会话用的模型，下一轮开始生效。
 
-**参数**：`session`；`model`（必写）：`<供应商>/<模型>` 或 `@<池>`。
+**参数**：`session`；`model`（必写）：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
 
 **回应**：`{}`。变了的推 `session.policy_changed`；生效的那一刻推 `model.changed`。
 
-**出错**：`bad_params`（`model` 空的、不是字符串）；`unknown_model`。
+**出错**：`bad_params`（没写 `model`、空字符串、不是字符串也不是 `null`）；`unknown_model`。
 
 ## `session.fork`
 

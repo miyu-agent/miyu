@@ -101,6 +101,11 @@ async fn a_login_connection_hands_off_a_ticket_once() {
     .expect("用户名、密码对");
     assert_eq!(issued.token.len(), 64, "换到一个登录令牌");
     assert!(!issued.expires.is_empty());
+    assert_eq!(
+        by_password.account(),
+        redeemed["account"].as_str(),
+        "握手回的账号存下来"
+    );
     by_password
         .call("t2", "login.ticket", json!({}))
         .await

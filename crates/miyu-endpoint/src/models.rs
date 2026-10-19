@@ -56,26 +56,28 @@ struct ListParams {
 pub(crate) struct ConfigureParams {
     /// 哪个会话。
     pub(crate) session: String,
-    /// 换成的引用，还没解析。
-    model: String,
+    /// 换成的引用，还没解析；写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。不写的是参数不对。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    model: Option<Option<String>>,
     /// 以前收的思考强度；只用来判断写没写，内容不读。
     #[serde(default)]
     effort: Option<Value>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样：空字、写了 `effort` 的是参数不对。
+    /// 换成的引用，原样；写 `null` 的是空的（回到跟着 `models.chat`）。没写、空字、写了 `effort` 的是参数不对。
     ///
     /// # Errors
     ///
-    /// 空字、写了 `effort`：`bad_params`。
-    pub(crate) fn model(&self) -> Result<&str, Refusal> {
+    /// 没写、空字、写了 `effort`：`bad_params`。
+    pub(crate) fn model(&self) -> Result<Option<&str>, Refusal> {
         if self.effort.is_some() {
             return Err(Refusal::BAD_PARAMS);
         }
-        match self.model.is_empty() {
-            true => Err(Refusal::BAD_PARAMS),
-            false => Ok(&self.model),
+        match &self.model {
+            Some(Some(model)) if !model.is_empty() => Ok(Some(model)),
+            Some(None) => Ok(None),
+            _ => Err(Refusal::BAD_PARAMS),
         }
     }
 }
