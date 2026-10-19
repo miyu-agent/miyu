@@ -137,3 +137,32 @@ async fn pkg_pack_refuses_without_a_version_or_a_fitting_target() {
         eprintln!("临时目录没删掉：{error}");
     }
 }
+
+/// 打包不碰数据根（施工 G-7）：作者的 CI 上没有数据根，打包模板也不该建一个；数据根那个位置放着别的东西也照打。
+#[tokio::test]
+async fn pkg_pack_leaves_the_data_root_alone() {
+    let home = Home::new();
+    let cwd = home.dir.with_extension("pack-alone");
+    std::fs::create_dir_all(cwd.join("xpkg")).expect("建得了目录");
+    std::fs::write(cwd.join("xpkg/package.toml"), manifest("")).expect("写得进");
+
+    let missing = home.dir.with_extension("no-root");
+    let packed = run(&missing, &cwd, "en_US.UTF-8", &["pkg", "pack", "xpkg"]).await;
+    assert_eq!(packed.status.code(), Some(0), "{packed:?}");
+    assert!(cwd.join("xpkg-1.0.miyu").exists());
+    assert!(!missing.exists(), "没建数据根");
+
+    let foreign = home.dir.with_extension("foreign-root");
+    std::fs::create_dir_all(&foreign).expect("建得了目录");
+    std::fs::write(foreign.join("notes.txt"), "not miyu").expect("写得进");
+    let out = cwd.join("again");
+    let again = run(
+        &foreign,
+        &cwd,
+        "en_US.UTF-8",
+        &["pkg", "pack", "xpkg", "-o", out.to_str().expect("UTF-8")],
+    )
+    .await;
+    assert_eq!(again.status.code(), Some(0), "{again:?}");
+    assert!(out.join("xpkg-1.0.miyu").exists());
+}

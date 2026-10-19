@@ -48,6 +48,12 @@ hello/
 5. **日志**：扩展的标准错误在 `~/.miyu/state/logs/<编号>.stderr`；核心的运行日志在 `~/.miyu/state/logs/core.log`。
 6. **卸**：`miyu pkg remove hello`。包文件夹、它放状态的目录、设置里它的项一起删；密钥文件里的条目不删（别处可能也在用）。
 
+## 发到软件源
+
+1. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`。
+2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
+3. **收录**：软件源每天收一次各仓库最新的 Release，签名后发出去。现在只收官方仓库，社区包的自动收录以后再开。
+
 ## 三个平台
 
 1. 扩展的程序名照清单写，Windows 上核心找的是 `<名字>.exe`；脚本在 Windows 上照扩展名找解释器（`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。

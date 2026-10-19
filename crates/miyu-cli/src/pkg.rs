@@ -181,16 +181,8 @@ pub fn pkg(args: Pkg, start: impl FnOnce() -> Command) -> ExitCode {
     ExitCode::from(runtime.block_on(run(args, start)))
 }
 
-/// 在运行时里：找数据根、连上核心、照子命令做。
+/// 在运行时里：找数据根、连上核心、照子命令做。`pack` 不连核心，也不碰数据根（作者的 CI 上没有，施工 G-7）。
 async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
-    let env = Env::current();
-    let root = match DataRoot::locate(&env) {
-        Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
-    };
-    if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
-    }
     let cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
         Err(error) => return failed(&error.to_string()),
@@ -212,6 +204,14 @@ async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
             &mut io::stderr() as &mut dyn Write,
         );
         return pack::pack(&wanted, &cwd, &language::current(), json, streams);
+    }
+    let env = Env::current();
+    let root = match DataRoot::locate(&env) {
+        Ok(root) => root,
+        Err(error) => return failed(&error.to_string()),
+    };
+    if let Err(error) = root.prepare() {
+        return failed(&error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await

@@ -48,6 +48,12 @@ hello/
 5. **Logs**: an extension's stderr is in `~/.miyu/state/logs/<id>.stderr`; the core's log is `~/.miyu/state/logs/core.log`.
 6. **Remove**: `miyu pkg remove hello`. The package folder, its state directory and its settings are removed together; entries in the secrets file stay (something else may use them).
 
+## Publishing to the package source
+
+1. **Pack**: `miyu pkg pack ./hello` checks the manifest the way installing does and writes `hello-<version>.miyu`, printing its SHA-256 and size. If the manifest lists `targets`, pack once per system: `--target linux-x86_64`.
+2. **Publish**: keep the package in its own GitHub repository and use the official template `miyu-agent/packages/.github/workflows/pack.yml`. Pushing a tag (`v` followed by the manifest's `version`) packs it and uploads it to that tag's release. See [miyu-agent/packages](https://github.com/miyu-agent/packages).
+3. **Collection**: the package source collects each repository's latest release once a day and publishes a signed index. Only official repositories are collected for now. Automatic collection of community packages comes later.
+
 ## Three platforms
 
 1. The extension's program is named in the manifest; on Windows the core looks for `<name>.exe`. Scripts on Windows find their interpreter by extension (`.py` uses `python`, `.ps1` PowerShell, `.js` `node`).

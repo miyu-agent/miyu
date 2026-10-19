@@ -66,3 +66,11 @@ fn the_official_keys_read_and_match_their_ids() {
     }
     assert_eq!(official().len(), OFFICIAL.len());
 }
+
+#[test]
+fn the_official_source_has_a_key() {
+    assert!(
+        !official().is_empty(),
+        "官方软件源的公钥编进来了（施工 G-7）"
+    );
+}

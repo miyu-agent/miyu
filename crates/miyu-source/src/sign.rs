@@ -14,8 +14,11 @@ use ring::signature::{ED25519, Ed25519KeyPair, KeyPair, UnparsedPublicKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// 官方软件源的公钥：编号、base64。项目主人建好钥匙以后填进来（施工 G-7）。
-pub const OFFICIAL: &[(&str, &str)] = &[];
+/// 官方软件源的公钥：编号、base64（施工 G-7，2026-10-19 建的）。换钥匙时新的加在后面，旧的等不再有人用旧索引再删。
+pub const OFFICIAL: &[(&str, &str)] = &[(
+    "f9234109a4740be9",
+    "CGzEZoVm4Tt0WNZVMYupvv5lNqHum+ITH4nzzaxEuUw=",
+)];
 
 /// 一把公钥。
 #[derive(Debug, Clone, PartialEq, Eq)]
