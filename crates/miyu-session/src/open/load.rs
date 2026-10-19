@@ -35,7 +35,7 @@ use crate::job_ids::JobIds;
 use crate::jobs::Roster;
 use crate::knowledge::{Shelves, Shelving};
 use crate::lettering::Lettering;
-use crate::memory::{self, connect};
+use crate::memory::{self, TurnLane, connect};
 use crate::port::ForSession;
 use crate::report::{Reporter, Upstream, wake_children};
 use crate::skills;
@@ -381,6 +381,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let mut actor = Actor::new(
         session,
         Box::new({
+            // 回合索引等重放完了才接上（施工 V-9）：后台读日志、开库不和载入抢。
+            let turns = turns.map(TurnLane::started);
             let indexed = Indexed::new(log, &id, index, usage.map(|usage| (usage, who)), turns);
             match base {
                 Some(base) => indexed.on_base(base),

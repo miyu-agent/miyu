@@ -85,7 +85,7 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
     let recall = Arc::new(RecallIndexes::new(&root));
     let room = Room::session(&AccountId::parse("admin").expect("账号写对了"), &session);
     let lanes = Lanes::default();
-    let lane = lanes
+    let mut lane = lanes
         .open(Opening {
             recall: Arc::clone(&recall),
             room: room.clone(),
@@ -105,4 +105,81 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
         vec![format!("{session}/2")],
         "这一轮照样记上"
     );
+}
+
+#[test]
+fn nothing_is_opened_until_the_lane_is_started() {
+    let (scratch, root) = root("later");
+    let session = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5eca").expect("编号写对了");
+    let account = AccountId::parse("admin").expect("账号写对了");
+    let mut log = SessionLog::create(&root.session_dir(&account, &session), SEGMENT_LIMIT)
+        .expect("建得了日志");
+    log.append(&[
+        line(
+            1,
+            "message.user",
+            None,
+            ALICE,
+            r#"{"blocks":[{"type":"text","text":"周末去爬山"}]}"#,
+        ),
+        line(2, "turn.started", Some(2), KERNEL, r#"{"trigger":1}"#),
+        line(
+            3,
+            "message.assistant",
+            Some(2),
+            MODEL,
+            r#"{"blocks":[{"type":"text","text":"好。"}],"seen":2}"#,
+        ),
+        line(
+            4,
+            "turn.ended",
+            Some(2),
+            KERNEL,
+            r#"{"reason":"completed"}"#,
+        ),
+    ])
+    .expect("写得进");
+    let recall = Arc::new(RecallIndexes::new(&root));
+    let room = Room::session(&account, &session);
+    let lanes = Lanes::default();
+    let lane = lanes
+        .open(Opening {
+            recall: Arc::clone(&recall),
+            room: room.clone(),
+            session: session.clone(),
+            venue: VenueId::parse(LOCAL).expect("场所写对了"),
+            floor: None,
+            laid: Laid::Read(&[]),
+            source: Source::of(&log, None),
+        })
+        .expect("起得了后台");
+    lanes.settle();
+    assert!(
+        !built(&scratch.0, "turns.db"),
+        "载入时还没接上：后台不读日志、不开库"
+    );
+    let _lane = lane.started();
+    lanes.settle();
+    let (index, _) = recall.turns(&room);
+    assert_eq!(
+        index.keys().expect("列得出"),
+        vec![format!("{session}/2")],
+        "接上以后照日志补上"
+    );
+}
+
+/// `dir` 下面有没有叫 `name` 的文件。
+fn built(dir: &std::path::Path, name: &str) -> bool {
+    std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|entry| {
+            let path = entry.path();
+            if path.is_dir() {
+                built(&path, name)
+            } else {
+                entry.file_name() == name
+            }
+        })
 }

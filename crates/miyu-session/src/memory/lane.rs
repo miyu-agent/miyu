@@ -3,7 +3,8 @@
 //! 那一间攒着这个人格所有会话的回合，越用越大，原来整笔压在打开会话上。
 //!
 //! 一个核心一个线程，照交来的先后做：同一个会话的接上、几批照先后，一批不会赶在接上前面。接上时自己读日志，已经铺过的那几条
-//! 后来又交来的不再看。回合库本来就照「照到哪」认落后的一批不写（`RecallIndex::apply`），会话停了、核心退了还没写的，下次
+//! 后来又交来的不再看。载入时等会话重放完了才交接上（[`TurnLane::start`]）：后台读日志、开库不和载入抢 CPU（CI 上开着记忆
+//! 打开大会话原来多 7 ms 上下）；别的时候头一批交来以前交。回合库本来就照「照到哪」认落后的一批不写（`RecallIndex::apply`），会话停了、核心退了还没写的，下次
 //! 载入照日志补上。
 
 use std::collections::HashMap;
@@ -41,6 +42,8 @@ pub(crate) struct TurnLane {
     id: u64,
     jobs: mpsc::Sender<Job>,
     pending: Arc<AtomicUsize>,
+    /// 还没交的接上。
+    opening: Option<Box<Opening>>,
 }
 
 /// 接上要的几样：回合库在哪一间、会话、场所，抽取从哪一条以后算（中途换过人格的，施工 P-13），一开始铺什么、日志在哪。
@@ -106,20 +109,20 @@ struct Open {
 }
 
 impl Lanes {
-    /// 交上一个会话：后台照 `opening` 接上，交回往后每落一批用的那一条道。线程起不来的没有（记一行，下次载入照日志补）。
+    /// 交上一个会话：后台照 `opening` 接上，交回往后每落一批用的那一条道。接上到 [`TurnLane::start`] 才交。线程起不来的没有
+    /// （记一行，下次载入照日志补）。
     pub(crate) fn open(&self, opening: Opening) -> Option<TurnLane> {
         let pending = Arc::clone(&self.pending);
         let jobs = self
             .jobs
             .get_or_init(|| start(Arc::clone(&pending)))
             .clone()?;
-        let lane = TurnLane {
+        Some(TurnLane {
             id: self.next.fetch_add(1, Ordering::Relaxed),
             jobs,
             pending,
-        };
-        lane.send(Job::Open(lane.id, Box::new(opening)));
-        Some(lane)
+            opening: Some(Box::new(opening)),
+        })
     }
 
     /// 等后台把这时交过的都做完：搜回合库、删会话以前（读到的是落了盘的全部）。没有没做完的不等。
@@ -138,8 +141,22 @@ impl Lanes {
 }
 
 impl TurnLane {
-    /// 一批事件落了盘：交给后台。
-    pub(crate) fn advance(&self, events: &[Event]) {
+    /// 交接上：会话载入完了、换了人格以后。交过的不再交。
+    pub(crate) fn start(&mut self) {
+        if let Some(opening) = self.opening.take() {
+            self.send(Job::Open(self.id, opening));
+        }
+    }
+
+    /// 同 [`TurnLane::start`]，交回自己。
+    pub(crate) fn started(mut self) -> TurnLane {
+        self.start();
+        self
+    }
+
+    /// 一批事件落了盘：交给后台，接上还没交的先交。
+    pub(crate) fn advance(&mut self, events: &[Event]) {
+        self.start();
         if !events.is_empty() {
             self.send(Job::Advance(self.id, events.to_vec()));
         }

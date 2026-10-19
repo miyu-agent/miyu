@@ -150,7 +150,7 @@ impl Store for Indexed {
         {
             tracing::warn!(target: TARGET, error = %error, "usage not indexed");
         }
-        if let Some(turns) = &self.turns {
+        if let Some(turns) = &mut self.turns {
             turns.advance(events);
         }
         Ok(())
@@ -177,7 +177,10 @@ impl Store for Indexed {
         self.turns = None;
         let own = self.log.events()?;
         let source = Source::of(&self.log, self.base.clone());
-        let (turns, calls) = connect(source, own);
+        let (mut turns, calls) = connect(source, own);
+        if let Some(turns) = &mut turns {
+            turns.start();
+        }
         self.turns = turns;
         Ok(calls)
     }
