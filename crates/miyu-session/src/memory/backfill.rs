@@ -5,7 +5,8 @@
 //!
 //! 只看这一间的账号名下的会话：系统账号的场所会话、记忆归这个账号的，随 O-4。
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
+use std::thread::JoinHandle;
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{AccountId, SessionId};
@@ -20,6 +21,39 @@ use crate::TARGET;
 use crate::open::current_policy;
 
 use super::{Turns, scope, subagent};
+
+/// 在跑的补齐（施工 R-28）：[`Memory::settle`](super::Memory::settle) 等它们补完。
+#[derive(Debug, Default)]
+pub(crate) struct Backfills(Mutex<Vec<JoinHandle<()>>>);
+
+impl Backfills {
+    /// 起一个后台线程补 `room`；起不来的记一行。
+    pub(crate) fn spawn(&self, recall: Arc<RecallIndexes>, root: DataRoot, room: Room) {
+        let spawned = std::thread::Builder::new()
+            .name("memory-backfill".to_string())
+            .spawn(move || backfill(&recall, &root, &room));
+        match spawned {
+            Ok(handle) => self.lock().push(handle),
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "memory index not backfilled");
+            }
+        }
+    }
+
+    /// 等这时在跑的都补完；补的线程 panic 了的记一行。
+    pub(crate) fn settle(&self) {
+        let running = std::mem::take(&mut *self.lock());
+        for handle in running {
+            if handle.join().is_err() {
+                tracing::error!(target: TARGET, "memory backfill panicked");
+            }
+        }
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, Vec<JoinHandle<()>>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
 
 /// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。
 pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room) {

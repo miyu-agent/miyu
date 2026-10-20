@@ -148,3 +148,23 @@ async fn a_rebuilt_persona_index_is_filled_too() {
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
 }
+
+/// 等后台（`Memory::settle`）连补齐一起等（施工 R-28）：开了新的回合库马上等一次，旧会话就都补上了，不用再轮询。原来只等
+/// 回合索引的那一条道，删会话、载入补落下的会和还在跑的补齐撞上（门禁里偶发：删了的被补回来，载入时当成补过了）。
+#[tokio::test]
+async fn settling_waits_for_the_backfill() {
+    let home = Home::new();
+    let mut ids = Vec::new();
+    for words in ["我养了一只猫", "周末去爬山", "我在学日语", "明天去体检"] {
+        ids.push(said(&home, Lines::default(), words).await.id().clone());
+    }
+    let memory = Memory::new(&home.root, None);
+    let (index, _) = memory.turns.turns(&persona());
+    memory.settle();
+    let keys: Vec<String> = ["养了", "爬山", "日语", "体检"]
+        .iter()
+        .flat_map(|words| index.search(words, 5).expect("搜得了"))
+        .map(|hit| hit.key)
+        .collect();
+    assert_eq!(keys.len(), ids.len(), "等过了就都补上了：{keys:?}");
+}

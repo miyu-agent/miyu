@@ -30,7 +30,7 @@
 | `crates/miyu-store/src/recall/indexes.rs` | 回合库的登记：照房间开回合库、留着；删会话时拿掉人格那几间里它的（会话那一间跟着目录走） | R-2 上 |
 | `crates/miyu-session/src/memory.rs` | 执行器：会话写日志时顺手更新回合索引、载入时补上（R-2 上）；`Memory::new` 登记第一次开回合库时记日志、补齐（R-2 下）；以后后台抽取、合并 | R-2 起 |
 | `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等 | V-9 |
-| `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照账号的会话一个个读日志、照载入时的判法补（第一条第 9 款） | R-2 下 |
+| `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照账号的会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
 | `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |
 | `crates/miyu-recall/src/extract.rs`、`redact.rs` | 抽取交回的怎么读（第六条第 5 款）；遮 key 和 key 写法的读法（第六条第 7 款） | R-6 上 |
@@ -163,7 +163,7 @@
 6. **照到哪**：检索库另记每个来源照到了哪个序号（`marks`），和这一批的放进、拿掉在同一个事务里写；一批里没有要改的不写（每落一批少写一次库），照到的位置落在后面不要紧，载入时多铺一截、交回的还是空的。载入会话时内核本来就拿到整份事件：照它们先把 `TurnFeed` 的状态铺回来，照到的以后的才放进库，补上崩了、更新失败落下的那一截；一条都没照过的会话就是整份补。
 7. **删会话**（进回收处）：先埋整个会话的墓碑 `会话编号/`，再拿掉这个账号各个回合库里这个会话的全部（键以 `会话编号/` 开头的）和它的 `marks`（R-2 下改成先埋：埋了以后补进来的一批写不进，拿掉以后不会又多出来）。
 8. **出错**：更新、补、拿掉失败，记一行 `WARN memory index not updated session=… error=…`，会话照常；照到的位置没往前挪，下次载入照日志补。库用不了（`Opened::Unusable`）的，什么都不写。回合库这一回第一次开记一行：新建的 `INFO memory index created room=…`，重建的、用不了的 `WARN memory index rebuilt`、`memory index unusable`（带 `reason`、`error`）；`room` 写成 `persona <账号>/<人格>`、`session <账号>/<会话>`（R-2 下起由登记记，开库的四处都算）。
-9. **补齐旧会话**（R-2 下）：人格那一间的回合库这一回是新建的、重建过的（`Opened::Created`、`Rebuilt`），起一个后台线程，照这一间的账号名下的会话一个个补，做的时候搜得到多少算多少。
+9. **补齐旧会话**（R-2 下）：人格那一间的回合库这一回是新建的、重建过的（`Opened::Created`、`Rebuilt`），起一个后台线程，照这一间的账号名下的会话一个个补，做的时候搜得到多少算多少。在跑的补齐登记着，`Memory::settle`（删会话以前、测试里）连它们一起等（R-28）：不等的话删了的会话会被补回来，载入时也会当成已经补过。
    - 什么时候：回合库的登记多一样「第一次开的时候告诉谁」（`RecallIndexes::when_opened`），`Memory::new` 登记它；开库的四处（会话写回合、搜以前的对话、判出处活不活、删会话）都从登记过，谁先开都算。会话那一间不补：只有它自己，载入时本来就整份补。
    - 补哪些：读会话的日志，照最近一次换上的快照，和载入时一样判（第 4 款）：主会话、范围是 `persona`、人格是这一间的，照第 6 款补（照到的位置以后的补，一条都没照过的整份补）。在跑的会话照样补：补的一批落后的检索库不写（`recall.md` 的 `apply`），不会把撤销了的又放回去。
    - 出错：一个会话读不了、快照取不出，记一行 `WARN memory index not backfilled session=… error=…`，跳过，接着补别的；补完记一行 `INFO memory index backfilled room=… sessions=…`（补了几个会话）。

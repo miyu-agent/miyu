@@ -829,6 +829,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-25"><span class="n">R-25</span>miyu check 印语义模型的状态<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-28"><span class="n">R-28</span>等后台也等补齐<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -25109,6 +25110,53 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-25-miyu-check印语义模型的状态.md</code>；蓝图 <code>protocol.md</code>「<code>check</code>」第 5 条，<code>cli/check.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-28" aria-labelledby="h-sR28">
+  <div class="sheet-head"><h2 id="h-sR28"><span class="no">R-28</span>等后台也等补齐</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">主会话门禁里撞见一条偶发红：等后台写完回合索引时没等补齐旧会话的线程，删了的会话被补回来、载入时当成补过了。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory.rs、memory/backfill.rs</span><span class="dir-note">R-28</span></div>
+            <ol class="pipe" aria-label="等后台">
+              <li>回合库新建、重建以后起的补齐线程登记着</li>
+              <li><code>Memory::settle</code> 先等这时在跑的补齐，再等回合索引那一条道</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">Backfills</span><span class="rl">在跑的补齐，settle 等它们</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-28</dd></div>
+        <div><dt>名称</dt><dd>等后台也等补齐</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>测试、变异、负载下 400 次复跑、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>开了新的回合库马上等一次，旧会话都补上了；原来的偶发红负载下 400 次 2 次 → 0 次</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-28-等后台也等补齐.md</code>；蓝图 <code>memory.md</code> 第一条第 9 款。</li>
       </ul>
     </div>
   </div>

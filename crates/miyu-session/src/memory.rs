@@ -83,6 +83,8 @@ pub struct Memory {
     merges: merge::Merges,
     /// 回合索引在后台写（施工 V-9）。
     lanes: lane::Lanes,
+    /// 补齐旧会话的后台线程（施工 R-2 下）：[`Memory::settle`] 也等它们。
+    backfills: Arc<backfill::Backfills>,
     /// 整理的时候她正在写什么（施工 R-21）：一个核心一路广播。
     dreams: dreaming::Dreams,
     /// 整理会话（施工 D-1 上）：核心起来时装上会话表（[`Memory::give_dream_sessions`]），没装的照旧走一次性入口。
@@ -97,6 +99,8 @@ impl Memory {
         let turns = Arc::new(RecallIndexes::new(root));
         let recall = Arc::downgrade(&turns);
         let at = root.clone();
+        let backfills = Arc::new(backfill::Backfills::default());
+        let filling = Arc::clone(&backfills);
         let registered = turns.when_opened(Box::new(move |room, opened| {
             log_opened(room, opened);
             let fresh = matches!(opened, Opened::Created | Opened::Rebuilt(_));
@@ -107,13 +111,7 @@ impl Memory {
             let Some(recall) = recall.upgrade() else {
                 return;
             };
-            let (room, root) = (room.clone(), at.clone());
-            let spawned = std::thread::Builder::new()
-                .name("memory-backfill".to_string())
-                .spawn(move || backfill::backfill(&recall, &root, &room));
-            if let Err(error) = spawned {
-                tracing::warn!(target: TARGET, error = %error, "memory index not backfilled");
-            }
+            filling.spawn(recall, at.clone(), room.clone());
         }));
         debug_assert!(registered, "一份新的登记只登记这一次");
         Arc::new(Memory {
@@ -127,14 +125,17 @@ impl Memory {
             installed: AtomicBool::new(true),
             merges: merge::Merges::default(),
             lanes: lane::Lanes::default(),
+            backfills,
             dreams: dreaming::Dreams::default(),
         })
     }
 }
 
 impl Memory {
-    /// 等回合索引的后台把这时交过的都写完（施工 V-9）：搜回合库、删会话以前，测试照它再看回合库。
+    /// 等回合索引的后台把这时交过的都写完（施工 V-9），连同这时在补齐旧会话的（施工 R-2 下、R-28）：搜回合库、删会话以前，
+    /// 测试照它再看回合库。不等补齐的，删掉的会话会被补回来，载入时也会当成已经补过、不再补。
     pub fn settle(&self) {
+        self.backfills.settle();
         self.lanes.settle();
     }
 
