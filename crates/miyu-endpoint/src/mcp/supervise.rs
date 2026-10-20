@@ -178,9 +178,10 @@ async fn once(
     Ended::Failed(Some(ready_at))
 }
 
-/// 起来的那一头：进程，或者网址的服务（没有进程：丢下客户端，转接跟着停）。
+/// 起来的那一头：进程，或者网址的服务（没有进程：丢下客户端，转接跟着停）。进程那一种装进盒子：Windows 上 `Child` 比过期的
+/// 旗大得多，clippy 的 `large_enum_variant` 只在 Windows 上报。
 enum Running {
-    Child(Child),
+    Child(Box<Child>),
     Remote(miyu_mcp::http::Expired),
 }
 
@@ -220,7 +221,7 @@ async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), En
                 return Err(Ended::Stop(Reason::CannotStart));
             };
             Ok((
-                Running::Child(child),
+                Running::Child(Box::new(child)),
                 pid,
                 Box::new(output),
                 Box::new(input),
