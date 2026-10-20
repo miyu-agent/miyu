@@ -146,7 +146,7 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     assert_eq!(checked.status.code(), Some(1), "有错误：{checked:?}");
     let text = stdout(&checked);
     let lines: Vec<&str> = text.lines().collect();
-    assert_eq!(lines.len(), 3, "{text}");
+    assert_eq!(lines.len(), 4, "{text}");
     assert!(
         lines[0].ends_with("config.toml:8:19 error: permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now."),
         "个人设置定了英文：{text}"
@@ -156,6 +156,11 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
         "{text}"
     );
     assert_eq!(lines[2], "1 error, 1 warning");
+    assert_eq!(
+        lines[3],
+        "Semantic model: not installed; searching by keywords only. Install it: miyu pkg install embed",
+        "合计后面是语义模型的状态，不算问题（施工 R-25）"
+    );
 
     // 写了文件的只查那一份，照它在哪认是哪一层（施工 8-30：不再有 --system、--project）。
     let system = root.join("system").join("config.toml");
@@ -182,6 +187,12 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     assert_eq!(
         (clean.status.code(), stdout(&clean)),
         (Some(0), "{\"problems\":[]}\n".to_string())
+    );
+    // 查全部的 json 带上语义模型的状态（施工 R-25）。
+    let all = run(&root, &cwd, "C", &["check", "--format", "json"]).await;
+    assert!(
+        stdout(&all).contains("\"embedding\":{\"model\":null,\"why\":\"not_installed\"}"),
+        "{all:?}"
     );
     // 人格的文件也查（施工 8-30）。
     let examples = root

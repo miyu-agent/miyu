@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{CommandId, Seq};
+use miyu_kernel::id::{AccountId, CommandId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::{Entry, MemoryBook, MemoryEvent, MemoryId, from_event, indexed, to_event};
@@ -109,6 +109,35 @@ impl MemoryLogs {
             root: root.clone(),
             open: Mutex::new(BTreeMap::new()),
         }
+    }
+
+    /// 账号 `account` 名下有记忆日志的几个人格（`modules/memory/<人格>/` 在的，照编号排；施工 R-25）。不开、不建。
+    ///
+    /// # Errors
+    ///
+    /// 列不出目录（不在的当一个都没有）。
+    pub fn personas(&self, account: &AccountId) -> std::io::Result<Vec<String>> {
+        let dir = self
+            .root
+            .account_dir(account)
+            .join("modules")
+            .join("memory");
+        let entries = match std::fs::read_dir(dir) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(error) => return Err(error),
+        };
+        let mut personas = Vec::new();
+        for entry in entries {
+            let entry = entry?;
+            if entry.file_type()?.is_dir()
+                && let Some(name) = entry.file_name().to_str()
+            {
+                personas.push(name.to_string());
+            }
+        }
+        personas.sort();
+        Ok(personas)
     }
 
     /// 房间 `room` 的记忆日志：开过的交回同一份；没有的建一份空的。这一回第一次开的另交回派生的那些是什么情形（[`Report`]）。

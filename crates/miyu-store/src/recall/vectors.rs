@@ -81,6 +81,26 @@ impl RecallIndex {
         Ok(rows.collect::<Result<_, _>>()?)
     }
 
+    /// 一共几条、几条有模型 `model` 的向量（施工 R-25：`miyu check` 印补到了哪）：（有的、一共）。用不了的库都是 0。
+    ///
+    /// # Errors
+    ///
+    /// 读不了。
+    pub fn coverage(&self, model: &str) -> Result<(u64, u64), DbError> {
+        let db = self.reading();
+        let Some(db) = db.as_ref() else {
+            return Ok((0, 0));
+        };
+        let (have, total): (i64, i64) = db.query_row(
+            // 向量跟着条目：拿掉条目时一起删，条目不在的不放（`put_vector`），照模型数就是有向量的条数。
+            "SELECT (SELECT COUNT(*) FROM vectors WHERE model = ?1), (SELECT COUNT(*) FROM items)",
+            [model],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )?;
+        let count = |n: i64| u64::try_from(n).unwrap_or(0);
+        Ok((count(have), count(total)))
+    }
+
     /// `keys` 这几条照模型 `model` 和 `query`（同一个模型、归一化过的）有多像（施工 R-14：记忆主动搜挡掉只有关键词找到、意思
     /// 不沾边的）。还没有这个模型的向量的、读不出来的不在交回的里面。
     ///

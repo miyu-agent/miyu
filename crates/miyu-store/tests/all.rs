@@ -20,6 +20,7 @@ mod memory;
 mod memory_extracted;
 mod memory_follow;
 mod memory_keywords;
+mod memory_personas;
 mod recall;
 mod recall_marks;
 mod recall_places;

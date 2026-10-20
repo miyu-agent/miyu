@@ -434,7 +434,6 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sS-7a"><span class="n">S-7 上</span>测试不用 miyu-embed<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-7b"><span class="n">S-7 下</span>miyu-embed 自己的仓库<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sG-8"><span class="n">G-8</span>引导里下语义模型<span class="st">✓</span></a></li>
-        <li><a class="step done" href="#sG-9"><span class="n">G-9</span>包带给谁的内容<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sH-1"><span class="n">H-1</span>项目这一样东西<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sH-2"><span class="n">H-2</span>会话在项目里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sH-3"><span class="n">H-3</span>附加提示词和留言<span class="st">✓</span></a></li>
@@ -825,6 +824,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-22c"><span class="n">R-22 三补</span>命令行整理回执跟着改<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-25"><span class="n">R-25</span>miyu check 印语义模型的状态<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -7484,56 +7484,6 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/G-8-引导里下语义模型.md</code>。</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="sheet" id="sG-9" aria-labelledby="h-sG9">
-  <div class="sheet-head"><h2 id="h-sG9"><span class="no">G-9</span>包带给谁的内容</h2><span class="pill done">已完成</span></div>
-  <p class="purpose">im 的商城只列 im 的插件：搜到的、装着的，每一项说清给哪几个包带了内容，不用另读清单。</p>
-  <figure class="frame">
-    <div class="drawing">
-      <div class="d01">
-        <div class="d01-left">
-          <div class="dir">
-            <div class="dir-label"><span class="path">包带给谁的内容</span><span class="dir-note">G-9</span></div>
-            <ol class="pipe" aria-label="做了什么">
-              <li>索引 provides 多 content</li>
-              <li>package.search 多 contents</li>
-              <li>package.list 多 contents</li>
-            </ol>
-          </div>
-        </div>
-        <div class="rules">
-          <p class="rules-title">这一步定下的</p>
-          <div class="tile new"><span class="nm">search</span><span class="rl">没带的是空数组</span></div>
-          <div class="tile new"><span class="nm">list</span><span class="rl">没带的不写</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="titleblock">
-      <dl>
-        <div><dt>图号</dt><dd class="mono">G-9</dd></div>
-        <div><dt>名称</dt><dd>包带给谁的内容</dd></div>
-        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
-        <div><dt>提交</dt><dd class="mono">eabc8460</dd></div>
-        <div><dt>验收</dt><dd>本地门禁八项，三处变异报红</dd></div>
-      </dl>
-    </figcaption>
-  </figure>
-  <div class="notes">
-    <div>
-      <h3>验收</h3>
-      <ul class="checks">
-        <li><span class="ok">✓</span><span>两个 [content.*] 照编号列</span></li>
-        <li><span class="ok">✓</span><span>装着的照自己的清单</span></li>
-      </ul>
-    </div>
-    <div>
-      <h3>图纸</h3>
-      <ul>
-        <li><code>docs/construction/G-9-包带给谁的内容.md</code>。</li>
       </ul>
     </div>
   </div>
@@ -24901,6 +24851,54 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-24-记忆搜只照意思的下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款，<code>memory/eval.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-25" aria-labelledby="h-sR25">
+  <div class="sheet-head"><h2 id="h-sR25"><span class="no">R-25</span>miyu check 印语义模型的状态</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">用的是哪个语义模型、记忆和每个库补到了哪、后台还在不在补，原来只能翻运行日志。不另开命令，<code>miyu check</code> 在合计后面多印一段。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · check/embedding.rs　miyu-store · recall/vectors.rs、indexes.rs、memory.rs　miyu-cli · language/embedding.rs</span><span class="dir-note">R-25</span></div>
+            <ol class="pipe" aria-label="语义模型的状态">
+              <li>照管理员这时的配置挑模型；关着、没装的说为什么</li>
+              <li>每个人格那一间的记忆、以前的对话，每个知识库：有向量的条数、一共几条（只数不补）</li>
+              <li>命令行在合计后面一类一行；不算问题，退出码不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">check.embedding</span><span class="rl">协议回应多一格</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-25</dd></div>
+        <div><dt>名称</dt><dd>miyu check 印语义模型的状态</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>存储、会话、协议、命令行的测试，变异，真程序，CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>补齐了的样子、关着和没装的为什么、只查一份的不带；起补就算在补、补完不算；真程序里看过</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-25-miyu-check印语义模型的状态.md</code>；蓝图 <code>protocol.md</code>「<code>check</code>」第 5 条，<code>cli/check.md</code>。</li>
       </ul>
     </div>
   </div>

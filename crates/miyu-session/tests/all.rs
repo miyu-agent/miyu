@@ -58,6 +58,7 @@ mod memory_eval;
 mod memory_extract;
 mod memory_extract_dropped;
 mod memory_extract_more;
+mod memory_filling;
 mod memory_follow;
 mod memory_installed;
 mod memory_lanes;

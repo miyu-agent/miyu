@@ -248,7 +248,10 @@ async fn config_check_reports_a_bad_secrets_file_without_its_values() {
         out.contains("secrets.toml:2:1 error: DeepSeek is not a valid secret name"),
         "{out}"
     );
-    assert!(out.ends_with("1 error\n"), "{out}");
+    assert!(
+        out.ends_with("1 error\nSemantic model: not installed; searching by keywords only. Install it: miyu pkg install embed\n"),
+        "合计后面是语义模型的状态（施工 R-25）：{out}"
+    );
     // 只查密钥文件的：照核心手里的问题，只有它（施工 8-30）。
     let secrets_only = run(&root, "C", &["check", &secrets.to_string_lossy()], "").await;
     let (_, out, _) = seen(&secrets_only);

@@ -57,16 +57,6 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
             item[key] = json!(value);
         }
     }
-    // 给哪几个包带了内容（`[content.<包>]`，施工 G-9）：im 的商城照它挑 im 的插件；没带的不写，同别的格。
-    if !manifest.content.is_empty() {
-        item["contents"] = json!(
-            manifest
-                .content
-                .iter()
-                .map(|content| content.target.as_str())
-                .collect::<Vec<_>>()
-        );
-    }
     links(item, id, manifest, language);
 }
 

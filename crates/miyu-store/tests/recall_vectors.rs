@@ -177,3 +177,28 @@ fn an_older_index_without_the_table_opens_and_gets_it() {
     index.put_vector("s1/1", MODEL, &[1.0, 0.0]).unwrap();
     assert_eq!(index.nearest(MODEL, &[1.0, 0.0], 1).unwrap().len(), 1);
 }
+
+/// 补到了哪（施工 R-25）：照模型数有的、一共几条；条目拿掉了的向量不算；别的模型的不算。
+#[test]
+fn coverage_counts_per_model() {
+    let scratch = Scratch::new("vectors-coverage");
+    let index = three(&scratch);
+    assert_eq!(index.coverage(MODEL).expect("读得了"), (0, 3));
+    index
+        .put_vector("s1/1", MODEL, &[1.0, 0.0])
+        .expect("放得进");
+    index
+        .put_vector("s1/2", MODEL, &[0.6, 0.8])
+        .expect("放得进");
+    index
+        .put_vector("s2/1", "other", &[1.0, 0.0])
+        .expect("放得进");
+    assert_eq!(index.coverage(MODEL).expect("读得了"), (2, 3));
+    assert_eq!(index.coverage("other").expect("读得了"), (1, 3));
+    index.remove("s1/2").expect("拿得掉");
+    assert_eq!(
+        index.coverage(MODEL).expect("读得了"),
+        (1, 2),
+        "拿掉的连向量一起不算"
+    );
+}

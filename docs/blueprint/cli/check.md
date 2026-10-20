@@ -12,15 +12,17 @@
 |---|---|
 | `crates/miyu-cli/src/config.rs` | `Check` 参数、`check()`：借 `miyu config` 那一套连核心、握手（`ConfigCommand::Check` 不出现在 `miyu config` 下面） |
 | `crates/miyu-cli/src/config/check.rs` | 问 `check`、印、合计、退出码 |
+| `crates/miyu-cli/src/language/embedding.rs` | 合计后面那一段：语义模型的状态（施工 R-25） |
 | `crates/miyu-cli/src/help/{zh,en}/check.txt` | 帮助页 |
 | `crates/miyu-endpoint/src/check.rs` | 核心那一半：几份文件在哪、照磁盘上现在的字查、人格每一层各查各的、只查一份的照位置认 |
+| `crates/miyu-endpoint/src/check/embedding.rs` | 回应的 `embedding`：用哪个模型、补着没有、每个人格那一间和每个库补到了哪（施工 R-25） |
 
 ### 对外的样子
 
 | 参数 | 是什么 |
 |---|---|
 | `[文件]` | 只查这一份；相对的照当前目录接。照它在哪认是哪一种：`system/config.toml`、个人设置、某个目录下的 `.miyu/config.toml`、密钥文件、某一层人格目录里的 `persona.toml` 或 `prompts/examples.md`、某一层 `presets/` 下的 `<编号>.toml`（施工 P-2 上）、某一层 `packages/` 下的 `<编号>/package.toml`（施工 9-1 上，F-8 上改成一个文件夹一个包）。认不出的照核心的原话报（`unknown_file`） |
-| `--format text\|json` | `text` 给人看（默认），`json` 给脚本：核心的回应原样，`{"problems":[…]}` |
+| `--format text\|json` | `text` 给人看（默认），`json` 给脚本：核心的回应原样，`{"problems":[…]}`，不写文件的另带 `embedding`（施工 R-25） |
 
 退出码：0 没有错误（只有警告也是 0）；1 有错误、核心拒绝了、连不上核心；2 参数不对。
 
@@ -28,7 +30,8 @@
 
 1. 连核心、握手照 `miyu config`（`cli/config.md` 第 1、2 条），给人看的字照回应的 `language`。
 2. 问 `check`，带当前目录当 `cwd`，写了文件的带 `file`（绝对路径）。
-3. 标准输出上一处一行：`<文件>:<行>:<列> <级别>：<那一句>`，人格的只到行；文件在家目录下的写成 `~/…`、数据根里的接上数据根；「错误」红、「警告」黄。最后一行合计，没有问题的印「没有问题」。
+3. 标准输出上一处一行：`<文件>:<行>:<列> <级别>：<那一句>`，人格的只到行；文件在家目录下的写成 `~/…`、数据根里的接上数据根；「错误」红、「警告」黄。然后一行合计，没有问题的印「没有问题」。
+4. 不写文件的，合计后面印语义模型的状态（施工 R-25，2026-10-20 项目主人定：不另开 `miyu embed`）：头一行「语义模型：<模型>」，后台在补的接「，补着」；下面一类一行、缩两格：「记忆：<人格> 有/共、…」「以前的对话：…」「知识库：<名字> 有/共、…」，没有的那一类不写，无人格的那一间写「无人格」。关着的印「语义模型：关着（models.embedding = "off"），只照关键词搜」，没装内置语义模型的印「语义模型：没装，只照关键词搜。装上：miyu pkg install embed」。不算问题，退出码照上面。
 
 ### 样子
 
@@ -46,6 +49,8 @@ $ miyu check
 | `crates/miyu/tests/config.rs` | 真核心：全部查、只查一份（照位置认层）、人格写错的那一行、认不出的文件退出码 1、`--format json` |
 | `crates/miyu/tests/login.rs` | 密钥文件写错的那一行，不带值；只查密钥文件的只印它 |
 | `crates/miyu-endpoint/tests/check.rs` | 核心的 `check`（`protocol.md`） |
+| `crates/miyu-endpoint/tests/check_embedding.rs` | 回应的 `embedding`：真小模型补齐了的样子、关着和没装的为什么、没接照意思那一路的不带、只查一份的不带（施工 R-25） |
+| `crates/miyu-cli/src/language/embedding.rs` 的测试 | 那一段的写法：一类一行、空的不写、无人格、补着、关着、没装（施工 R-25） |
 | `crates/miyu-cli/src/help/tests.rs` | 帮助页和参数对得上、80 列、文件和编进去的一样 |
 
 ### 还没有的

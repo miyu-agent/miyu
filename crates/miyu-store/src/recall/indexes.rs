@@ -81,7 +81,27 @@ impl RecallIndexes {
     ///
     /// 列不出目录；有一份写不进（其余的照样拿掉，报最后一个错）。
     pub fn forget_session(&self, account: &AccountId, session: &SessionId) -> Result<(), DbError> {
-        let mut personas: Vec<String> = Vec::new();
+        let personas = self.personas(account)?;
+        let source = session.to_string();
+        let mut failed = None;
+        let tomb = format!("{source}/");
+        for persona in personas {
+            let (index, _) = self.turns(&Room::persona(account, &persona));
+            // 先埋再拿掉（施工 R-2 下）：埋了以后补进来的一批写不进（`apply`），拿掉以后不会又多出来。
+            if let Err(error) = index.bury(&tomb).and_then(|()| index.forget(&source)) {
+                failed = Some(error);
+            }
+        }
+        failed.map_or(Ok(()), Err)
+    }
+
+    /// 账号 `account` 名下有回合库的几个人格（库文件在的，照目录里的先后；施工 R-25 从 [`RecallIndexes::forget_session`] 拆出来）。
+    ///
+    /// # Errors
+    ///
+    /// 列不出目录（不在的当一个都没有）。
+    pub fn personas(&self, account: &AccountId) -> Result<Vec<String>, DbError> {
+        let mut personas = Vec::new();
         match fs::read_dir(recall_dir(&self.root, account)) {
             Ok(entries) => {
                 for entry in entries {
@@ -98,17 +118,8 @@ impl RecallIndexes {
             Err(error) if error.kind() == io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
         }
-        let source = session.to_string();
-        let mut failed = None;
-        let tomb = format!("{source}/");
-        for persona in personas {
-            let (index, _) = self.turns(&Room::persona(account, &persona));
-            // 先埋再拿掉（施工 R-2 下）：埋了以后补进来的一批写不进（`apply`），拿掉以后不会又多出来。
-            if let Err(error) = index.bury(&tomb).and_then(|()| index.forget(&source)) {
-                failed = Some(error);
-            }
-        }
-        failed.map_or(Ok(()), Err)
+        personas.sort();
+        Ok(personas)
     }
 
     /// 记忆的一处出处 `source` 还活着（施工 R-3 上，`memory.md` 第二条第 4 款）：那个会话的目录还在（没删进回收处、没清出回收处，

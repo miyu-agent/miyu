@@ -178,6 +178,29 @@ impl Vectors {
         }
     }
 
+    /// 照 `using` 这时用哪个模型（施工 R-25：`miyu check` 印出来）：用不上的交回为什么，`off`（`models.embedding` 关着）、
+    /// `not_installed`（要本机的却没装内置语义模型的包）。
+    ///
+    /// # Errors
+    ///
+    /// 同上，用不上的为什么。
+    pub fn state(&self, using: &Using) -> Result<String, &'static str> {
+        let values = using.config.resolved.values();
+        if UseSettings::from(&values).embedding.as_deref() == Some(OFF) {
+            return Err(OFF);
+        }
+        self.model(using).ok_or("not_installed")
+    }
+
+    /// 后台这时有没有在补哪一份库（施工 R-25）。
+    pub fn filling(&self) -> bool {
+        !self
+            .filling
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+    }
+
     /// 照 `using` 会用哪个模型（施工 K-6 下：知识库的自动想起先看门槛表里有没有它，没有的不算向量，远程的不白花钱）；`off`
     /// 的、要本机的却没有的没有。
     pub(crate) fn model(&self, using: &Using) -> Option<String> {

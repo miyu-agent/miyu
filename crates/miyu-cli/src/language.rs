@@ -8,6 +8,7 @@ mod agents;
 mod config;
 mod config_write;
 mod confirm;
+mod embedding;
 mod harness;
 mod kb;
 mod login;

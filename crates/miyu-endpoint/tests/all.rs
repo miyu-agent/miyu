@@ -35,6 +35,7 @@ mod blob_grants;
 mod blob_own_package;
 mod blob_session;
 mod check;
+mod check_embedding;
 mod clear;
 mod clear_memory_command;
 mod command_access;

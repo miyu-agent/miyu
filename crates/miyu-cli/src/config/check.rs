@@ -3,6 +3,7 @@
 //!
 //! - 标准输出上一处一行 `<文件>:<行>:<列> <级别>：<那一句>`，最后一行合计；一处都没有的印「没有问题」。`--format json`：
 //!   核心的回应原样，`{"problems":[…]}`。有错误退出码 1，只有警告、没有问题的 0。
+//! - 不写文件的、核心带了 `embedding` 的（施工 R-25）：合计后面再印语义模型的状态，不算问题，退出码不变；`json` 照样带上。
 //! - 写了文件的只查那一份；核心认不出是哪一种的照它的原话报（`unknown_file`），退出码 1。
 
 use std::io::Write;
@@ -38,7 +39,13 @@ pub(super) async fn check(
         .filter(|problem| problem["level"] != "warning")
         .count();
     match format {
-        Format::Json => say(out, &json!({ "problems": problems }).to_string()),
+        Format::Json => {
+            let mut shown = json!({ "problems": problems });
+            if !result["embedding"].is_null() {
+                shown["embedding"] = result["embedding"].clone();
+            }
+            say(out, &shown.to_string());
+        }
         Format::Text => {
             let places = Places::of(talk.plan);
             let language = talk.plan.language;
@@ -51,6 +58,11 @@ pub(super) async fn check(
             }
             let total = language.problems_total(errors, problems.len() - errors);
             write(out, &Line::inked(Ink::Plain, total).paint(talk.plan.color));
+            if !result["embedding"].is_null() {
+                for line in language.embedding(&result["embedding"]) {
+                    write(out, &Line::inked(Ink::Plain, line).paint(talk.plan.color));
+                }
+            }
         }
     }
     match errors {

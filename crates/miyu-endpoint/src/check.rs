@@ -7,7 +7,7 @@
 //!
 //! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`）。
 //!
-//! 个人设置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。
+//! 个人设置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。不写文件的另带语义模型的状态（施工 R-25，`embedding.rs`）。
 //!
 //! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`mcp`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
 //! 项目配置写成 `~/…`，出厂的人格写真的路径）、`code`、`level`、`message`（照这个连接的语言），有行列的带上。
@@ -26,6 +26,7 @@ use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 
 use crate::Core;
 
+mod embedding;
 mod mcp;
 mod run;
 mod skipped;
@@ -54,7 +55,7 @@ struct ConfigFile {
     shown: String,
 }
 
-/// `check`：交回 `{"problems": [...]}`。
+/// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。
 pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let home = core.home.clone();
@@ -64,6 +65,7 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
         .map(|cwd| expand(cwd, home.as_deref(), None));
     let (configs, secrets_path, secrets) = config_files(core, &words, cwd.as_deref())?;
     let mut problems = Vec::new();
+    let mut embedding = None;
     match params.file {
         None => {
             for file in &configs {
@@ -102,6 +104,8 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                     }
                 }
             }
+            // 语义模型的状态（施工 R-25）：不是问题，另一格。
+            embedding = embedding::embedding(core).await;
         }
         Some(file) => {
             let path = real(&expand(&file, home.as_deref(), cwd.as_deref()));
@@ -128,7 +132,11 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             }
         }
     }
-    Ok(json!({ "problems": problems }))
+    let mut reply = json!({ "problems": problems });
+    if let Some(embedding) = embedding {
+        reply["embedding"] = embedding;
+    }
+    Ok(reply)
 }
 
 /// 几份配置文件，和密钥文件的位置、它的问题（照核心手里的那一份）。
