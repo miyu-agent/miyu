@@ -1,0 +1,18 @@
+[package]
+name = "miyu-wallpaper"
+description = "读这台电脑现在的桌面壁纸（主题「跟随壁纸」取色用，蓝图 web.md「跟着人格的外观」第 5 条）：照各家桌面的命令、配置文件找图，只交浏览器认得的图"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# 找壁纸只用标准库：跑系统的命令（awww、gsettings、osascript、reg……）、读配置文件。施工 X-29 从网页仓库搬来（2026-10-20 项目主人定）：
+# 两个头经门面 miyu-client 的 feature `wallpaper` 拿，不再横着互相依赖；不放进核心进程跑（主题是头的事）。
+[dependencies]
+# 换了壁纸跟着变（`watch.rs`）：只用它的系统通知（inotify、FSEvents、ReadDirectoryChangesW、kqueue），不用定时去看的 PollWatcher。
+# 默认特性带 macOS 的 FSEvents。CC0-1.0。
+notify = "8.2"
+
+[lints]
+workspace = true

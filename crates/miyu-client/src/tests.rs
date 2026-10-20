@@ -37,18 +37,27 @@ use crate::{
 use crate::http::{Get, Got, Proxy, fetcher, get, is_loopback_url};
 
 #[cfg(feature = "tool")]
+#[cfg(feature = "wallpaper")]
+#[expect(unused_imports, reason = "只为钉住门面：拿掉了哪一样，这里当场编不过")]
+use crate::wallpaper::{
+    MAX_BYTES, TIMEOUT, Wallpaper, find,
+    matugen::{self, Matugen},
+    watch::{Watch, files_of, watch_list},
+};
+
 #[expect(unused_imports, reason = "只为钉住门面：拿掉了哪一样，这里当场编不过")]
 use crate::tooltext::{
     Access, Spec,
     load::{LoadError, spec, spec_in, text, text_in},
 };
 
-/// 界面用不上的两组放在 feature 后面、默认不开：`miyu-http`、`miyu-tool` 是可选的依赖，不在默认的 feature 里。
+/// 界面用不上的两组放在 feature 后面、默认不开：`miyu-http`、`miyu-tool` 是可选的依赖，不在默认的 feature 里；只有头要的
+/// `miyu-wallpaper` 同样（施工 X-29）。
 #[test]
 fn the_heavy_groups_are_off_by_default() {
     let manifest: toml_edit::DocumentMut =
         include_str!("../Cargo.toml").parse().expect("清单读得懂");
-    for dep in ["miyu-http", "miyu-tool"] {
+    for dep in ["miyu-http", "miyu-tool", "miyu-wallpaper"] {
         assert_eq!(
             manifest["dependencies"][dep]["optional"].as_bool(),
             Some(true),

@@ -20,6 +20,7 @@
 //! - [`settings`]：配置的类型、读法和问题（`miyu-config`）。
 //! - [`widgets`]：界面块内容的查验和挑语言（`miyu-config`，施工 X-28）。
 //! - `http`：HTTP 客户端（`miyu-http`；feature `http`，同上）。
+//! - `wallpaper`：找这台电脑现在的桌面壁纸、换了跟着变（`miyu-wallpaper`；feature `wallpaper`，同上；施工 X-29 从网页仓库搬来）。
 
 pub mod open;
 #[cfg(test)]
@@ -117,6 +118,13 @@ pub mod protocol {
 pub mod widgets {
     pub use miyu_config::package::WidgetPlace;
     pub use miyu_config::widget::{Bad, Problem, check, check_title, localize, pick};
+}
+
+/// 找桌面壁纸（施工 X-29；feature `wallpaper`，默认不开）：主题「跟随壁纸」取色前找图（取色是 [`seeds::from_image`]），
+/// matugen 生成的那一份颜色，盯住来处的文件、换了跟着变。只在头的进程里跑，核心不跑它。
+#[cfg(feature = "wallpaper")]
+pub mod wallpaper {
+    pub use miyu_wallpaper::{MAX_BYTES, TIMEOUT, Wallpaper, find, matugen, watch};
 }
 
 /// 读自己的软件包清单、清单里的值。

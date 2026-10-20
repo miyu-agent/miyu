@@ -1845,6 +1845,7 @@ dependencies = [
  "miyu-seeds",
  "miyu-store",
  "miyu-tool",
+ "miyu-wallpaper",
  "serde_json",
  "tokio",
  "toml_edit",
@@ -2279,6 +2280,13 @@ dependencies = [
  "serde",
  "serde_json",
  "similar",
+]
+
+[[package]]
+name = "miyu-wallpaper"
+version = "0.0.0"
+dependencies = [
+ "notify",
 ]
 
 [[package]]
