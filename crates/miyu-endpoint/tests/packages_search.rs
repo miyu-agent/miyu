@@ -30,7 +30,8 @@ async fn the_index_is_searched_by_id_name_and_summary() {
     let (secret, trusted) = keys();
     // 给 im 带了内容的（施工 G-9）：索引的 `provides` 里有 `content`。
     let mut memes = entry("memes", json!({"en": "Memes", "zh": "表情包"}), json!({}));
-    memes["provides"] = json!({"content": ["im"]});
+    memes["provides"] = json!({"content": ["im"], "skills": ["sticker"]});
+    memes["depends"] = json!(["im"]);
     let index = serde_json::to_vec(&json!({
         "version": 1,
         "generated": "2026-10-19T03:00:00Z",
@@ -78,6 +79,14 @@ async fn the_index_is_searched_by_id_name_and_summary() {
     assert_eq!(rows[0]["blocked"], Value::Null);
     assert_eq!(rows[1]["contents"], json!(["im"]), "给 im 带了内容的");
     assert_eq!(rows[0]["contents"], json!([]), "没带的是空的");
+    // 带了哪几样、依赖哪几个包（施工 G-10）：索引里的原样，没有的是空的。
+    assert_eq!(
+        rows[1]["provides"],
+        json!({"content": ["im"], "skills": ["sticker"]})
+    );
+    assert_eq!(rows[1]["depends"], json!(["im"]));
+    assert_eq!(rows[2]["provides"], json!({}));
+    assert_eq!(rows[2]["depends"], json!([]));
     // 装着的那一份照它自己的清单（施工 G-9）。
     let listed = client.call("l", "package.list", json!({})).await;
     let packages = listed["result"]["packages"].as_array().expect("有");

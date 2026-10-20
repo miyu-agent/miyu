@@ -2,7 +2,8 @@
 //! （本机那份不到 24 小时的直接用），再在索引里照编号、名字、说明搜：几个词都得出现，不分大小写；空的列出全部。
 //!
 //! 每一条带人要的：编号、名字、说明（照连接的语言挑）、装着的版本、是不是官方、被拉黑的理由；版本也给（升级、头要比）；给哪几个
-//! 包带了内容（`contents`，施工 G-9：im 的商城只列 im 的插件）。
+//! 包带了内容（`contents`，施工 G-9：im 的商城只列 im 的插件）；带了哪几样、依赖哪几个包（`provides`、`depends`，施工 G-10：
+//! 软件市场照种类筛）。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -67,6 +68,9 @@ pub(crate) async fn search(
                 "official": entry.official,
                 // 给哪几个包带了内容（施工 G-9）：索引的 `provides` 里的 `content`；没带的是空的。
                 "contents": entry.provides.get("content").cloned().unwrap_or_default(),
+                // 带了哪几样、依赖哪几个包（施工 G-10，网页的软件市场照种类筛）：索引里的原样，没有的是空的。
+                "provides": entry.provides,
+                "depends": entry.depends,
                 "installed": installed.get(&entry.id).map(|version| version.clone().unwrap_or_default()),
                 "blocked": synced.index.blocked(&entry.id, &entry.origin).map(|blocked| blocked.reason.clone()),
             })
