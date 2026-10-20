@@ -1,10 +1,13 @@
-//! 交给一次调用的任务端口（`miyu_tool::JobPort`）：领编号、建输出文件、登记进表，起两个线程，一个读输出写文件，一个等它
-//! 结束、存 blob、报给 actor。进程活多久不定，所以用自己的线程，不占 tokio 的阻塞线程池。
+//! 交给一次调用的任务端口（`miyu_tool::JobPort`）：领编号、建输出文件、登记进表，起三个线程，一个读输出写文件，一个等它
+//! 结束、存 blob、报给 actor，一个看它跑没跑过最长时间。进程活多久不定，所以用自己的线程，不占 tokio 的阻塞线程池。
+//!
+//! 上限（施工 7-12 下，[`JobLimits`]）：跑过最长时间的、输出写过上限的，照停掉的规矩整组杀、存输出，报 `timed_out`、
+//! `too_large`，`by`、`cause` 照起它的那次调用。看时间的线程等的是「结束了」那一声，结束了当场走，不轮询。
 
 use std::io;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -14,6 +17,7 @@ use miyu_kernel::origin::By;
 use miyu_store::jobs::{create_output, output_path};
 use miyu_tool::{Asking, Background, Exit, JobError, JobPort, Listed, Output as Read, Process};
 
+use super::JobLimits;
 use super::output::Output;
 use super::stop::{Who, Why};
 use super::{Ended, Entry, Key, Shared};
@@ -29,11 +33,22 @@ pub(super) struct Port {
     shared: Arc<Shared>,
     by: By,
     cause: Option<CommandId>,
+    limits: JobLimits,
 }
 
 impl Port {
-    pub(super) fn new(shared: Arc<Shared>, by: By, cause: Option<CommandId>) -> Port {
-        Port { shared, by, cause }
+    pub(super) fn new(
+        shared: Arc<Shared>,
+        by: By,
+        cause: Option<CommandId>,
+        limits: JobLimits,
+    ) -> Port {
+        Port {
+            shared,
+            by,
+            cause,
+            limits,
+        }
     }
 }
 
@@ -74,15 +89,27 @@ impl JobPort for Port {
                 },
             );
         }
-        // 两个线程都带着派活时的 span：它们发的行也有会话编号。
+        // 三个线程都带着派活时的 span：它们发的行也有会话编号。
         let span = tracing::Span::current();
+        let halt = Halt {
+            shared: Arc::clone(shared),
+            job: job.clone(),
+            by: self.by.clone(),
+            cause: self.cause.clone(),
+        };
         let (drained, read) = mpsc::channel();
         let writer = Arc::clone(&sink);
         let reading = span.clone();
+        let (limit, capping) = (self.limits.output, halt.clone());
         thread::spawn(move || {
             let _entered = reading.enter();
+            let mut over = false;
             for text in output {
                 writer.write(&text);
+                if !over && writer.written() > limit {
+                    over = true;
+                    capping.halt(Why::TooLarge);
+                }
             }
             #[expect(
                 clippy::let_underscore_must_use,
@@ -90,16 +117,26 @@ impl JobPort for Port {
             )]
             let _ = drained.send(());
         });
+        let (finished, done) = mpsc::channel();
         let watch = Watch {
             shared: Arc::clone(shared),
             key,
             by: self.by.clone(),
             cause: self.cause.clone(),
             started,
+            _finished: finished,
         };
+        let timing = span.clone();
         thread::spawn(move || {
             let _entered = span.enter();
             watch.run(&*process, &sink, &read);
+        });
+        let running = self.limits.running;
+        thread::spawn(move || {
+            let _entered = timing.enter();
+            if let Err(RecvTimeoutError::Timeout) = done.recv_timeout(running) {
+                halt.halt(Why::TimedOut);
+            }
         });
         Ok(job)
     }
@@ -130,6 +167,32 @@ struct Watch {
     by: By,
     cause: Option<CommandId>,
     started: Instant,
+    /// 报完了跟着丢掉：看时间的线程就知道结束了（施工 7-12 下）。
+    _finished: Sender<()>,
+}
+
+/// 到了上限停掉一条命令（施工 7-12 下）：照停掉的规矩，`by`、`cause` 照起它的那次调用。已经报过的（自己退出了、被停了）
+/// 什么都不做。杀进程、碰磁盘，在自己的线程里调。
+#[derive(Clone)]
+struct Halt {
+    shared: Arc<Shared>,
+    job: JobId,
+    by: By,
+    cause: Option<CommandId>,
+}
+
+impl Halt {
+    fn halt(&self, why: Why) {
+        let who = Who {
+            by: self.by.clone(),
+            cause: self.cause.clone(),
+            why,
+        };
+        if let Some(ended) = self.shared.stop_command(self.job.clone(), &who) {
+            tracing::info!(target: TARGET, job = self.job.to_string().as_str(), reason = ?why, "job over its limit");
+            self.shared.back(ended);
+        }
+    }
 }
 
 impl Watch {

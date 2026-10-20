@@ -49,6 +49,10 @@ text_enum!(
         Restarted = "restarted",
         /// 核心崩了，进程跟着没了：载入时补（`02-内核.md` 不变量 8）。
         Aborted = "aborted",
+        /// 跑到了最长时间，停掉的（施工 7-12 下，照 Claude Code：默认 30 分钟，最多 2 小时）。
+        TimedOut = "timed_out",
+        /// 输出超过了上限，停掉的（施工 7-12 下，照 Claude Code：5 GB）。
+        TooLarge = "too_large",
     }
 );
 

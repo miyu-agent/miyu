@@ -226,6 +226,34 @@ fn a_stopped_job_says_why() {
     assert_eq!(row.why, Some("undone"));
 }
 
+/// 到了上限停掉的（施工 7-12 下）：停了，说是哪一种上限。
+#[test]
+fn a_job_stopped_at_its_limit_says_which() {
+    for (reason, why) in [
+        (JobReason::TimedOut, "timed_out"),
+        (JobReason::TooLarge, "too_large"),
+    ] {
+        let mut stage = stage();
+        stage.model([
+            Line::calls(
+                "",
+                &[(
+                    "shell",
+                    r#"{"command":"sleep 9","description":"Wait","run_in_background":true}"#,
+                )],
+            ),
+            Line::says("Started."),
+            Line::says("Stopped."),
+        ]);
+        stage.tools([Play::starts_command(1, "Wait")]);
+        stage.say("wait");
+        stage.job_ends(1, reason, By::Kernel, None);
+        let row = &paged(&stage).jobs[0];
+        assert_eq!(row.state, JobState::Stopped);
+        assert_eq!(row.why, Some(why));
+    }
+}
+
 #[test]
 fn a_decided_approval_stops_waiting_while_the_tool_runs() {
     let mut stage = stage();

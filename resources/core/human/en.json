@@ -1,6 +1,10 @@
 {
   "config": {
     "items": {
+      "jobs.max_running": {
+        "name": "Longest background command",
+        "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours."
+      },
       "compaction.prepare": {
         "name": "Prepare compaction early",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."

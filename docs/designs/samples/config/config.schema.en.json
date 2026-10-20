@@ -51,6 +51,18 @@
       },
       "type": "object"
     },
+    "jobs": {
+      "properties": {
+        "max_running": {
+          "default": "30m",
+          "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours. Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.",
+          "pattern": "^[0-9]+[smh]?$",
+          "title": "Longest background command",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "loading": {
       "properties": {
         "mcp": {

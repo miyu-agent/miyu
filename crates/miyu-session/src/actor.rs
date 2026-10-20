@@ -23,7 +23,7 @@ use crate::clock::Clock;
 use crate::config::Turning;
 use crate::guard::Guard;
 use crate::handle::{Message, Pushed};
-use crate::jobs::SessionJobs;
+use crate::jobs::{JobLimits, SessionJobs};
 use crate::kinds;
 use crate::lines::note;
 use crate::peers::Watches;
@@ -394,12 +394,12 @@ impl Actor {
                 asked,
             } => {
                 let at = self.clock.now();
-                // 后台运行关着的会话不给任务端口（施工 T-1 上）：`shell` 要放到后台的照「这里不能放到后台」说。
-                let foreground = self
-                    .persona
-                    .as_ref()
-                    .is_some_and(|refresh| refresh.snapshot.foreground);
-                let jobs = (!foreground).then(|| self.jobs.port(call_id, cause));
+                // 后台运行关着的会话不给任务端口（施工 T-1 上）：`shell` 要放到后台的照「这里不能放到后台」说。任务的上限照这一轮
+                // 的配置（施工 7-12 下）。
+                let (config, persona) = (self.config.current(), self.persona.as_ref());
+                let background = !persona.is_some_and(|refresh| refresh.snapshot.foreground);
+                let jobs =
+                    background.then(|| self.jobs.port(call_id, cause, JobLimits::of(config)));
                 let usage = crate::usage::asked(&name, &self.session, self.config.current());
                 self.tools.run(
                     at,

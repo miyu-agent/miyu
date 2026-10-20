@@ -92,6 +92,17 @@ fn a_command_ending_while_idle_opens_a_turn_by_whom_it_says() {
     assert_eq!(event(&s, 14).cause, Some(id(1)));
 }
 
+/// 跑过最长时间、输出太多停掉的（施工 7-12 下）：叫醒她，她得知道命令没跑完。
+#[test]
+fn a_command_stopped_at_its_limit_wakes_her() {
+    for reason in [JobReason::TimedOut, JobReason::TooLarge] {
+        let mut s = dispatched(stage());
+        s.model([Line::says("停了，换个法子。")]);
+        s.job_ends(2, reason.clone(), starter(), Some(id(1)));
+        assert_eq!(trigger_of(&s, 14), Some(seq(13)), "{reason:?}");
+    }
+}
+
 #[test]
 fn a_report_while_busy_is_heard_at_the_next_step_and_opens_nothing() {
     let mut s = dispatched(stage());

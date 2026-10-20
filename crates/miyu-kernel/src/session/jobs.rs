@@ -295,7 +295,9 @@ impl Session {
 fn wakes(body: &Body) -> bool {
     match body {
         Body::JobReported(reported) => match reported.reason {
-            JobReason::Exited | JobReason::Other(_) => true,
+            JobReason::Exited | JobReason::TimedOut | JobReason::TooLarge | JobReason::Other(_) => {
+                true
+            }
             JobReason::Stopped => !reported.by_model,
             JobReason::Undone | JobReason::Restarted | JobReason::Aborted => false,
         },

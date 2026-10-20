@@ -21,6 +21,11 @@ prepare = true
 # Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
 # "<name>" =
 
+[jobs]
+# Longest background command: A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours.
+# Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+max_running = "30m"
+
 [loading.mcp]
 # Load this MCP server's tools on demand: When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one.
 # Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.

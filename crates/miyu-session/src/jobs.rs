@@ -10,6 +10,7 @@
 //! - 查和停（施工 7-4）：这个会话派出去的任务照日志记在 [`Roster`] 里，任务端口经它列出、读输出、停掉，后台命令和子代理
 //!   都管（`query.rs`、`stop.rs`）；头经协议读后台命令的输出（施工 7-4 补），读的和 `jobs` 是同一份。
 
+mod limits;
 mod output;
 mod peek;
 mod query;
@@ -40,6 +41,7 @@ use crate::blocking::blocking;
 use crate::job_ids::JobIds;
 use crate::lines::millis;
 use crate::port::Back;
+pub(crate) use limits::JobLimits;
 use output::Output;
 pub use peek::{Peek, peek};
 pub(crate) use query::Target;
@@ -187,12 +189,19 @@ impl SessionJobs {
         self.shared.changes.subscribe()
     }
 
-    /// 交给调用 `call_id` 的任务端口：它起的命令自己退出了，`by` 是这次调用，`cause` 是它所在那一轮的 `cause`。
-    pub(crate) fn port(&self, call_id: CallId, cause: Option<CommandId>) -> Arc<dyn JobPort> {
+    /// 交给调用 `call_id` 的任务端口：它起的命令自己退出了，`by` 是这次调用，`cause` 是它所在那一轮的 `cause`；跑得太久、
+    /// 输出太多照 `limits` 停掉（施工 7-12 下）。
+    pub(crate) fn port(
+        &self,
+        call_id: CallId,
+        cause: Option<CommandId>,
+        limits: JobLimits,
+    ) -> Arc<dyn JobPort> {
         Arc::new(Port::new(
             Arc::clone(&self.shared),
             By::Tool(Tool { call_id }),
             cause,
+            limits,
         ))
     }
 

@@ -12,3 +12,18 @@ fn preparing_is_on_by_default_and_applies_next_turn() {
     assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
     assert_eq!(item.applies, Applies::NextTurn);
 }
+
+/// `jobs.max_running`（施工 7-12 下，照 Claude Code）：默认 30 分钟，最多 2 小时，下一轮生效。
+#[test]
+fn background_commands_run_half_an_hour_by_default() {
+    let defaults = JobSettings::from(&Values::defaults(JobSettings::ITEMS));
+    assert_eq!(defaults.max_running, Duration::from_secs(30 * 60));
+    let item = &JobSettings::ITEMS[0];
+    assert_eq!(item.key, "jobs.max_running");
+    assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
+    assert_eq!(item.applies, Applies::NextTurn);
+    assert_eq!(
+        item.kind,
+        miyu_config::Kind::Duration { min: 60, max: 7200 }
+    );
+}

@@ -15,12 +15,12 @@
 
 use std::fmt;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Seek, SeekFrom, Write};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::SystemTime;
 
-use miyu_kernel::id::ContentHash;
+use miyu_kernel::id::{ContentHash, Hasher};
 
 use crate::durable::{create_dir, create_temp, discard, sync_dir};
 
@@ -68,6 +68,46 @@ impl Blobs {
         create_dir(&tmp)?;
         let (temp, file) = create_temp(&tmp, temp_name)?;
         let stored = store(file, content, &temp, &fan, &path);
+        if stored.is_err() {
+            discard(&temp);
+        }
+        stored?;
+        Ok(hash)
+    }
+
+    /// 照文件 `source` 存一份（施工 7-12 下，后台命令的输出最多 5 GB）：边读边算哈希、边写进临时文件，不把整份放进内存；
+    /// 读到的每一段也交给 `each`（数字数之类）。别的照 [`Blobs::put`]。
+    ///
+    /// # Errors
+    ///
+    /// 读不了 `source`；建不了目录、写不进、同步不了、改不了名。
+    pub fn put_file(&self, source: &Path, each: impl FnMut(&[u8])) -> io::Result<ContentHash> {
+        let tmp = self.dir.join(TMP);
+        create_dir(&tmp)?;
+        let (temp, mut file) = create_temp(&tmp, temp_name)?;
+        let copied = copy(source, &mut file, each).and_then(|hash| {
+            file.sync_data()?;
+            Ok(hash)
+        });
+        drop(file);
+        let hash = match copied {
+            Ok(hash) => hash,
+            Err(error) => {
+                discard(&temp);
+                return Err(error);
+            }
+        };
+        let fan = self.fan(&hash);
+        let path = fan.join(hash.hex());
+        if path.is_file() {
+            discard(&temp);
+            freshen(&path)?;
+            sync_dir(&fan)?;
+            return Ok(hash);
+        }
+        let stored = create_dir(&fan)
+            .and_then(|()| settle(&temp, &path))
+            .and_then(|()| sync_dir(&fan));
         if stored.is_err() {
             discard(&temp);
         }
@@ -253,6 +293,26 @@ fn store(mut file: File, content: &[u8], temp: &Path, fan: &Path, path: &Path) -
     create_dir(fan)?;
     settle(temp, path)?;
     sync_dir(fan)
+}
+
+/// 把 `source` 一段段抄进 `file`，边抄边算哈希，每一段也交给 `each`。
+fn copy(source: &Path, file: &mut File, mut each: impl FnMut(&[u8])) -> io::Result<ContentHash> {
+    let mut source = File::open(source)?;
+    let mut hasher = Hasher::default();
+    let mut buffer = vec![0u8; 64 * 1024];
+    loop {
+        let count = match source.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(count) => count,
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error),
+        };
+        let chunk = &buffer[..count];
+        hasher.update(chunk);
+        each(chunk);
+        file.write_all(chunk)?;
+    }
+    Ok(hasher.finish())
 }
 
 /// 改名成它的哈希。改名失败、可目标已经有了，算成功：两个会话同时存同一份，Windows 上后改名的

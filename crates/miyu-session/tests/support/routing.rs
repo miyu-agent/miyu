@@ -30,6 +30,7 @@ pub fn items() -> Vec<Item> {
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
         miyu_session::settings::CompactionSettings::ITEMS,
+        miyu_session::settings::JobSettings::ITEMS,
         miyu_session::settings::MemorySettings::ITEMS,
         miyu_session::settings::ProfileSettings::ITEMS,
     ]

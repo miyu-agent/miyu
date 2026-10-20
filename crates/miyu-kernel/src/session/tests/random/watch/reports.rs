@@ -324,7 +324,10 @@ impl Watch {
                 let wakes = match reported.reason {
                     JobReason::Stopped => !reported.by_model,
                     JobReason::Undone | JobReason::Restarted | JobReason::Aborted => false,
-                    JobReason::Exited | JobReason::Other(_) => true,
+                    JobReason::Exited
+                    | JobReason::TimedOut
+                    | JobReason::TooLarge
+                    | JobReason::Other(_) => true,
                 };
                 (reported.job.clone(), wakes, true)
             }

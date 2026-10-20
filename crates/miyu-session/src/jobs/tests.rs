@@ -70,6 +70,14 @@ fn cause() -> Option<CommandId> {
     Some(CommandId::parse("cmd-1").unwrap())
 }
 
+/// 宽松的上限：一小时、出厂的输出上限，平常的测试碰不到。
+fn roomy() -> JobLimits {
+    JobLimits {
+        running: Duration::from_secs(3600),
+        output: super::limits::OUTPUT_LIMIT,
+    }
+}
+
 fn at() -> Timestamp {
     Timestamp::from_unix_millis(0).unwrap()
 }
@@ -100,7 +108,10 @@ async fn a_job_counts_on_writes_its_output_and_reports_when_it_exits() {
     let table = Arc::new(Jobs::new());
     let (mut jobs, mut back) = session(&scratch, &table, 2);
     let held = Held::new(&["第一行\n", "second\n"]);
-    let job = jobs.port(call(), cause()).start(held.background()).unwrap();
+    let job = jobs
+        .port(call(), cause(), roomy())
+        .start(held.background())
+        .unwrap();
     assert_eq!(job.to_string(), "j3", "照日志里用过的往后数");
     until_written(&scratch.output(3), "第一行\nsecond\n").await;
     assert!(table.running(), "在跑");
@@ -138,7 +149,9 @@ async fn a_signal_is_reported_and_an_empty_output_has_no_characters() {
     let table = Arc::new(Jobs::new());
     let (jobs, mut back) = session(&scratch, &table, 0);
     let held = Held::new(&[]);
-    jobs.port(call(), None).start(held.background()).unwrap();
+    jobs.port(call(), None, roomy())
+        .start(held.background())
+        .unwrap();
     held.end(Exit::Signal(15));
     let ended = next_end(&mut back).await;
     assert_eq!(ended.reported.job.to_string(), "j1");
@@ -155,10 +168,10 @@ async fn stopping_reports_the_running_ones_and_then_kills_only_them() {
     let (jobs, mut back) = session(&scratch, &table, 0);
     let running = Held::new(&["half\n"]);
     let exited = Held::new(&[]);
-    jobs.port(call(), cause())
+    jobs.port(call(), cause(), roomy())
         .start(running.background())
         .unwrap();
-    jobs.port(call(), cause())
+    jobs.port(call(), cause(), roomy())
         .start(exited.background())
         .unwrap();
     until_written(&scratch.output(1), "half\n").await;
@@ -192,7 +205,7 @@ async fn stopping_reports_the_running_ones_and_then_kills_only_them() {
         "报过 restarted 的，自己结束了也不再报"
     );
     let later = Held::new(&[]);
-    jobs.port(call(), cause())
+    jobs.port(call(), cause(), roomy())
         .start(later.background())
         .unwrap();
     jobs.close().await;
@@ -201,7 +214,7 @@ async fn stopping_reports_the_running_ones_and_then_kills_only_them() {
     assert!(!table.running());
     let refused = Held::new(&[]);
     assert!(
-        jobs.port(call(), cause())
+        jobs.port(call(), cause(), roomy())
             .start(refused.background())
             .is_err(),
         "停了以后不收新的"
@@ -218,10 +231,10 @@ async fn an_actor_going_away_kills_its_jobs_and_leaves_the_others() {
     let (others, _other_back) = session(&other, &table, 0);
     let mine = Held::new(&[]);
     let theirs = Held::new(&[]);
-    let port = jobs.port(call(), cause());
+    let port = jobs.port(call(), cause(), roomy());
     port.start(mine.background()).unwrap();
     others
-        .port(call(), cause())
+        .port(call(), cause(), roomy())
         .start(theirs.background())
         .unwrap();
     drop(jobs);
@@ -246,7 +259,11 @@ async fn an_output_file_that_cannot_be_made_refuses_the_job() {
     let table = Arc::new(Jobs::new());
     let (jobs, _back) = session(&scratch, &table, 0);
     let held = Held::new(&[]);
-    assert!(jobs.port(call(), cause()).start(held.background()).is_err());
+    assert!(
+        jobs.port(call(), cause(), roomy())
+            .start(held.background())
+            .is_err()
+    );
     assert_eq!(held.killed(), 1, "收不下的整组杀掉");
     assert!(!table.running());
 }
@@ -266,7 +283,10 @@ async fn stopping_after_it_ended_on_its_own_does_nothing() {
     let table = Arc::new(Jobs::new());
     let (jobs, mut back) = session(&scratch, &table, 0);
     let held = Held::new(&[]);
-    let job = jobs.port(call(), cause()).start(held.background()).unwrap();
+    let job = jobs
+        .port(call(), cause(), roomy())
+        .start(held.background())
+        .unwrap();
     held.end(Exit::Code(0));
     // 自己退出的已经报了、还没落盘：表里还有它，停也不再杀、不再报第二条。
     let ended = next_end(&mut back).await;
@@ -282,7 +302,10 @@ async fn a_stopped_job_is_not_reported_again_when_its_process_ends() {
     let table = Arc::new(Jobs::new());
     let (jobs, mut back) = session(&scratch, &table, 0);
     let held = Held::new(&["x\n"]);
-    let job = jobs.port(call(), cause()).start(held.background()).unwrap();
+    let job = jobs
+        .port(call(), cause(), roomy())
+        .start(held.background())
+        .unwrap();
     until_written(&scratch.output(1), "x\n").await;
     let stopped = jobs.stop_command(job, who()).await.expect("在跑，停得了");
     assert_eq!(stopped.reported.reason, JobReason::Stopped);
@@ -292,4 +315,55 @@ async fn a_stopped_job_is_not_reported_again_when_its_process_ends() {
     // 杀掉以后等着它的那一头照常去报：表里已经记成报了，收件箱里什么都不来。
     let later = tokio::time::timeout(Duration::from_millis(300), back.recv()).await;
     assert!(later.is_err(), "不交第二次：{later:?}");
+}
+
+/// 上限（施工 7-12 下）：跑到最长时间的停掉、报 `timed_out`；输出写过上限的停掉、报 `too_large`，存下的是停的那一刻写了的；
+/// 两种都照起它的那次调用报、整组杀一次。早结束的不会再被停一次。
+#[tokio::test]
+async fn a_job_over_its_limits_is_stopped() {
+    let scratch = Scratch::new();
+    let table = Arc::new(Jobs::new());
+    let (jobs, mut back) = session(&scratch, &table, 0);
+    let short = JobLimits {
+        running: Duration::from_millis(200),
+        ..roomy()
+    };
+    let held = Held::new(&["一行\n"]);
+    jobs.port(call(), cause(), short)
+        .start(held.background())
+        .unwrap();
+    let ended = next_end(&mut back).await;
+    assert_eq!(ended.reported.reason, JobReason::TimedOut);
+    assert_eq!(ended.by, By::Tool(Tool { call_id: call() }));
+    assert_eq!(ended.cause, cause());
+    assert!(!ended.reported.by_model);
+    assert_eq!(held.killed(), 1);
+
+    let small = JobLimits {
+        output: 10,
+        ..roomy()
+    };
+    let held = Held::new(&["0123456789", "AB", "后面的"]);
+    jobs.port(call(), cause(), small)
+        .start(held.background())
+        .unwrap();
+    let ended = next_end(&mut back).await;
+    assert_eq!(ended.reported.reason, JobReason::TooLarge);
+    assert_eq!(held.killed(), 1);
+    let kept = b"0123456789AB";
+    assert_eq!(
+        ended.reported.output,
+        Some(ContentHash::of(kept)),
+        "写过上限的那一段写了，之后的不写"
+    );
+
+    let held = Held::new(&[]);
+    jobs.port(call(), cause(), short)
+        .start(held.background())
+        .unwrap();
+    held.end(Exit::Code(0));
+    assert_eq!(next_end(&mut back).await.reported.reason, JobReason::Exited);
+    tokio::time::sleep(Duration::from_millis(400)).await;
+    assert!(back.try_recv().is_err(), "结束了的不再报");
+    assert_eq!(held.killed(), 0);
 }

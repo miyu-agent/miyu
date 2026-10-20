@@ -18,10 +18,15 @@ const FILES: [(&str, &str); 3] = [
 ];
 
 /// 样本：`docs/designs/samples/config/` 下这种语言的那一份。
-fn sample(pattern: &str, language: &str) -> String {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+fn sample_path(pattern: &str, language: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/designs/samples/config")
-        .join(pattern.replace("{}", language));
+        .join(pattern.replace("{}", language))
+}
+
+/// 样本的内容。
+fn sample(pattern: &str, language: &str) -> String {
+    let path = sample_path(pattern, language);
     std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}：{error}", path.display()))
 }
 
@@ -63,6 +68,11 @@ async fn the_core_writes_the_files_in_the_system_language() {
         for (name, pattern) in FILES {
             let written = std::fs::read_to_string(generated(&home, name))
                 .unwrap_or_else(|error| panic!("{language} {name} 写了：{error}"));
+            // 配置项变了：设上 `MIYU_PROBE_WRITE=1` 跑一遍重写样本，提交说明里写为什么变（同别处的样本）。
+            if std::env::var_os("MIYU_PROBE_WRITE").is_some() {
+                std::fs::write(sample_path(pattern, language), &written).expect("写得了样本");
+                continue;
+            }
             assert_eq!(written, sample(pattern, language), "{language} {name}");
         }
         let log = home.core_log();

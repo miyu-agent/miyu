@@ -258,6 +258,7 @@ miyu_config::settings! {
 | `ui.head` | 名字（软件包的编号） | `tui` | 系统、个人 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
 | `ui.welcomed` | 布尔 | `false` | 个人 | 不能写 | `now` | 8-11 四补（2026-10-08 终端、网页两个头要的，`cli/setup.md` 以外的第一次引导）：这个账号走完了第一次引导。头走完写 `true`（`config.set` 个人设置），以后不再进引导，缺什么去配置页补；进不进只看它，不看有没有模型。核心不读它。设置页不画（`hidden`） |
 | `compaction.prepare` | 开关 | `true` | 系统、个人 | 不能写 | `next_turn` | 6-11 上（`compaction.md` 第十五条）：提前压好，会话 actor 回合开始时读、交给内核。设置页在「高级」那一页的「压缩」一组，排在「运行日志」前面 |
+| `jobs.max_running` | 时长，60 秒到 2 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | 7-12 下（`agents.md`「后台命令」第 7 条，照 Claude Code）：后台命令最多跑多久，派活时照这一轮的配置读。设置页在「通用」那一页的「会话」一组 |
 | `memory.extract_idle` | 时长，60 秒到 1 小时 | `5m` | 系统、个人 | 不能写 | `next_turn` | R-6 上（`memory.md` 第六条第 1 款）：会话闲了多久才抽新的一段；设置页在「软件包」那一页、人格记忆那一组（施工 F-4 从「高级」那一页挪过来），记忆包没装的不画 |
 | `memory.extract_turns` | 整数 1 到 100 | `2` | 系统、个人 | 不能写 | `next_turn` | R-6 上：上次抽到以后至少有几轮她答了话才抽 |
 | `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
@@ -991,6 +992,11 @@ prepare = true
 # 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
 # "<name>" =
 
+[jobs]
+# 后台命令最长运行时间：AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。
+# 能写：1m 到 2h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。
+max_running = "30m"
+
 [loading.mcp]
 # 这个 MCP 服务的工具先加载：开着的话，这个服务的工具都只给名字和说明，用之前先加载；关着的照全量给。单件工具另写了的照那一件的。
 # 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
@@ -1326,6 +1332,18 @@ currency = "USD"
         "description": "默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
         "title": "这个技能、脚本或 MCP 服务开着",
         "type": "boolean"
+      },
+      "type": "object"
+    },
+    "jobs": {
+      "properties": {
+        "max_running": {
+          "default": "30m",
+          "description": "AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。能写：1m 到 2h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。",
+          "pattern": "^[0-9]+[smh]?$",
+          "title": "后台命令最长运行时间",
+          "type": "string"
+        }
       },
       "type": "object"
     },

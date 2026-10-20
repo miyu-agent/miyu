@@ -485,8 +485,10 @@
 | `undone` | 撤销派它的那一轮时停掉的 |
 | `restarted` | 有计划的重启停掉的 |
 | `aborted` | 核心崩了，进程跟着没了：载入时补（不变量 8） |
+| `timed_out` | 跑到了最长时间，停掉的（施工 7-12 下，`agents.md`「后台命令」第 7 条） |
+| `too_large` | 输出超过了上限，停掉的（施工 7-12 下） |
 
-不认识的原样留着。哪一种都算结束：之后这个任务不再报。`by` 照原因记（2026-09-30 定，`kernel/session.md`「回报」第 2 条）：`exited` 是起它的那次调用，`stopped` 是停它的人或者停它的那次 `jobs` 调用，`undone` 是撤销的人，`restarted`、`aborted` 是内核。
+不认识的原样留着。哪一种都算结束：之后这个任务不再报。`by` 照原因记（2026-09-30 定，`kernel/session.md`「回报」第 2 条）：`exited`、`timed_out`、`too_large` 是起它的那次调用，`stopped` 是停它的人或者停它的那次 `jobs` 调用，`undone` 是撤销的人，`restarted`、`aborted` 是内核。
 
 **`child.reported`**：子会话的回报（施工 7-1，`agents.md` 第二条）。`by` 是那个子会话（`{"kind":"session","id":<子会话>}`），由账本查。
 

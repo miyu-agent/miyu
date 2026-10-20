@@ -26,6 +26,19 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
+    /// 后台命令的配置（施工 7-12 下）：派活时照这一轮的配置读，下一轮生效。
+    pub struct JobSettings in "jobs" {
+        /// 后台命令最多跑多久，到了整组停掉（照 Claude Code：默认 30 分钟，最多 2 小时）。
+        max_running: Duration = "30m" {
+            kind: duration [60, 7200],
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "general", group: "sessions", control: text },
+        },
+    }
+}
+
+miyu_config::settings! {
     /// 记忆抽取、合并的配置（施工 R-6 上、R-7 上）。
     pub struct MemorySettings in "memory" {
         /// 会话闲了多久才抽新的一段：短于常见的缓存寿命。

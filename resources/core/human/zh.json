@@ -1,6 +1,10 @@
 {
   "config": {
     "items": {
+      "jobs.max_running": {
+        "name": "后台命令最长运行时间",
+        "description": "AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。"
+      },
       "compaction.prepare": {
         "name": "提前压好",
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"

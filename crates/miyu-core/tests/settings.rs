@@ -116,6 +116,7 @@ fn the_registered_list_is_well_formed() {
             "models.cooldown.auth.base",
             "models.cooldown.auth.max",
             "compaction.prepare",
+            "jobs.max_running",
             "memory.extract_idle",
             "memory.extract_turns",
             "memory.organizer",

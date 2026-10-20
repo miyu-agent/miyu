@@ -41,6 +41,10 @@ pub(crate) enum Why {
     },
     /// 撤销那一轮停掉的（`undone`，`agents.md` 第七条第 1 条）：只记下，不叫醒，不带 `by_model`。
     Undone,
+    /// 跑到了最长时间（`timed_out`，施工 7-12 下）：叫醒她。只有后台命令有。
+    TimedOut,
+    /// 输出超过了上限（`too_large`，施工 7-12 下）：叫醒她。只有后台命令有。
+    TooLarge,
 }
 
 impl Why {
@@ -49,6 +53,8 @@ impl Why {
         match self {
             Why::Stopped { by_model } => (JobReason::Stopped, by_model),
             Why::Undone => (JobReason::Undone, false),
+            Why::TimedOut => (JobReason::TimedOut, false),
+            Why::TooLarge => (JobReason::TooLarge, false),
         }
     }
 
@@ -57,6 +63,8 @@ impl Why {
         match self {
             Why::Stopped { by_model } => (ChildReason::Stopped, by_model, "/stopped"),
             Why::Undone => (ChildReason::Undone, false, "/undone"),
+            // 子代理没有上限，走不到；照人停的记。
+            Why::TimedOut | Why::TooLarge => (ChildReason::Stopped, false, "/stopped"),
         }
     }
 }

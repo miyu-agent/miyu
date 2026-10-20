@@ -316,3 +316,31 @@ fn read_range_of_an_unknown_blob_is_missing() {
         Err(BlobError::Missing(missing)) if missing == hash
     ));
 }
+
+/// 照文件存（施工 7-12 下）：和整份存的是同一个 blob，读到的每一段都交出来；已经有的照旧不重写。
+#[test]
+fn a_file_is_stored_as_the_same_blob_piece_by_piece() {
+    let scratch = Scratch::new();
+    let blobs = blobs_in(&scratch);
+    std::fs::create_dir_all(scratch.path()).unwrap();
+    let source = scratch.path().join("out.txt");
+    let content: Vec<u8> = (0..200_000u32).map(|n| (n % 251) as u8).collect();
+    std::fs::write(&source, &content).unwrap();
+    let mut seen = 0usize;
+    let hash = blobs
+        .put_file(&source, |bytes| seen += bytes.len())
+        .unwrap();
+    assert_eq!(hash, ContentHash::of(&content));
+    assert_eq!(seen, content.len(), "每一段都交出来");
+    assert_eq!(blobs.get(&hash).unwrap(), content);
+    assert_eq!(
+        blobs.put_file(&source, |_| {}).unwrap(),
+        hash,
+        "再存一次还是它"
+    );
+    assert!(
+        blobs
+            .put_file(&scratch.path().join("none"), |_| {})
+            .is_err()
+    );
+}

@@ -5,6 +5,7 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use tokio::sync::watch;
@@ -21,6 +22,8 @@ pub(super) struct Output {
     file: Mutex<Option<File>>,
     /// 写进一段、关上时叫一声（施工 V-6 上）。
     changes: Arc<watch::Sender<u64>>,
+    /// 写进去了多少字节（施工 7-12 下）：过了上限就停掉这条命令。
+    written: AtomicU64,
 }
 
 impl Output {
@@ -30,6 +33,7 @@ impl Output {
             path,
             file: Mutex::new(Some(file)),
             changes,
+            written: AtomicU64::new(0),
         }
     }
 
@@ -40,12 +44,22 @@ impl Output {
         let Some(open) = file.as_mut() else {
             return;
         };
-        if let Err(error) = open.write_all(text.as_bytes()) {
-            tracing::warn!(target: TARGET, error = %error, "job output not written");
-            *file = None;
+        match open.write_all(text.as_bytes()) {
+            Ok(()) => {
+                self.written.fetch_add(text.len() as u64, Ordering::Relaxed);
+            }
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "job output not written");
+                *file = None;
+            }
         }
         drop(file);
         bump(&self.changes);
+    }
+
+    /// 写进去了多少字节。
+    pub(super) fn written(&self) -> u64 {
+        self.written.load(Ordering::Relaxed)
     }
 
     /// 关上：之后读到的不再写。
@@ -57,10 +71,11 @@ impl Output {
     /// 整份存成 blob，交回它的哈希和有多少个字（Unicode 字符）。读不出来、存不下来的记一行，两样都没有：回报里不写
     /// 输出，她也就不会去读一份不在的。碰磁盘，在阻塞线程里调。
     pub(super) fn stored(&self, blobs: &Blobs) -> (Option<ContentHash>, Option<u64>) {
-        let stored = std::fs::read(&self.path).and_then(|bytes| {
-            let hash = blobs.put(&bytes)?;
-            Ok((hash, chars(&bytes)))
-        });
+        // 边读边存（施工 7-12 下）：输出最多 5 GB，不整份读进内存。
+        let mut chars = 0;
+        let stored = blobs
+            .put_file(&self.path, |bytes| chars += count(bytes))
+            .map(|hash| (hash, chars));
         match stored {
             Ok((hash, chars)) => (Some(hash), Some(chars)),
             Err(error) => {
@@ -81,6 +96,6 @@ pub(super) fn bump(changes: &watch::Sender<u64>) {
 }
 
 /// 有多少个字：写进去的都是解好的 UTF-8，不是接续字节的每个字节算一个字，和前台的数法一样。
-fn chars(bytes: &[u8]) -> u64 {
+fn count(bytes: &[u8]) -> u64 {
     bytes.iter().filter(|&&byte| byte & 0xC0 != 0x80).count() as u64
 }

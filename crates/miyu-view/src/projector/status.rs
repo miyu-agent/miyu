@@ -240,6 +240,8 @@ impl Projector {
             JobReason::Undone => (JobState::Stopped, Some("undone")),
             JobReason::Restarted => (JobState::Stopped, Some("restarted")),
             JobReason::Aborted => (JobState::Aborted, None),
+            JobReason::TimedOut => (JobState::Stopped, Some("timed_out")),
+            JobReason::TooLarge => (JobState::Stopped, Some("too_large")),
             _ => (JobState::Failed, None),
         };
         if let Some(row) = self.row(&reported.job) {
