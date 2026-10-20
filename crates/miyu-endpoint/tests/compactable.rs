@@ -1,5 +1,6 @@
 //! 有没有能压的（施工 W-12，网页要的：换人格、预设之前问不问「切换前会压缩」）：订阅的回应、视图状态都带 `compactable`，
-//! 和 `session.compact` 回不回 `nothing_to_compact` 一个判法；说了一大段以后变成能压，视图流跟着推。
+//! 和 `session.compact` 回不回 `nothing_to_compact` 一个判法；说了一大段以后变成能压，视图流跟着推，事件流推瞬时的
+//! `compactable.changed`（施工 W-12 补，终端要的）。
 
 use serde_json::{Value, json};
 
@@ -25,9 +26,14 @@ async fn status_until(client: &mut Client, want: bool) -> Value {
 #[tokio::test]
 async fn compactable_follows_what_session_compact_would_say() {
     let home = Home::new();
-    let mut client = Client::connect(home.core(&script()));
+    let core = home.core(&script());
+    let mut client = Client::connect(core.clone());
     client.hello().await;
     let session = client.create("c1", "~").await;
+    // 事件流另开一个连接订（同一个连接对一个会话只有一个订阅，`view` 也算）：变了推瞬时的 `compactable.changed`（施工 W-12 补）。
+    let mut events = Client::connect(core);
+    events.hello().await;
+    events.subscribe("e1", &session).await;
     let reply = client.subscribe("c2", &session).await;
     assert_eq!(
         reply["result"]["compactable"],
@@ -53,4 +59,13 @@ async fn compactable_follows_what_session_compact_would_say() {
     assert_eq!(status["compactable"], json!(true));
     let reply = client.subscribe("c4", &session).await;
     assert_eq!(reply["result"]["compactable"], json!(true), "{reply}");
+    loop {
+        let next = events.next().await.expect("没断开");
+        let event = &next["params"]["event"];
+        if event["kind"] == "compactable.changed" {
+            assert_eq!(event["body"], json!({"compactable": true}), "{next}");
+            assert_eq!(event["by"], json!({"kind": "kernel"}), "{next}");
+            break;
+        }
+    }
 }

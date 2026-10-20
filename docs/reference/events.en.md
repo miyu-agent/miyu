@@ -69,4 +69,5 @@ Not recorded, no `seq`, only pushed to heads subscribed at that moment, never re
 | `model.changed` | The model or limits for the next requests changed: `why` is `failover` or `turn` |
 | `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done |
 | `todos.changed` | The whole current to-do list |
+| `compactable.changed` | Whether there is anything to compact changed: `{"compactable": <bool>}`, same as `compactable` in the subscribe reply (whether `session.compact` would answer `nothing_to_compact`) |
 | `goal.changed` | The whole standing goal right now |

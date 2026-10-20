@@ -1046,7 +1046,7 @@
 
 **默认工作区** `default_workspace`（施工 5-14 中）：这个会话的默认工作区，同会话列表那一格；造好以后不变，不另推。
 
-**有没有能压的** `compactable`（施工 W-12）：`session.compact` 这一刻会不会回 `nothing_to_compact`，判法同内核；之后照视图流的会话状态（`view.md`）换，事件流不另推。
+**有没有能压的** `compactable`（施工 W-12）：`session.compact` 这一刻会不会回 `nothing_to_compact`，判法同内核；之后照视图流的会话状态（`view.md`）换；事件流上变了推瞬时的 `compactable.changed`（施工 W-12 补，`kernel/events.md`）。
 
 例子：会话照 `models.chat` 记下 `deepseek/deepseek-v4`，核心照 DeepSeek 的资料，窗口 1000000、最大输出 393216，压缩线 = 1000000 − min(393216, 20000) − 13000；没设默认人格，会话无人格，没有 `persona` 这一格（施工 P-4 上）（键照字母先后排）：
 

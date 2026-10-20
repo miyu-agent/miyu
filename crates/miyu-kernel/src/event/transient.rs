@@ -52,6 +52,16 @@ pub enum TransientBody {
     TodosChanged(TodosChanged),
     /// `tool.nested_started`：脚本里的一次 `miyu call` 过了链、派去跑了（施工 M-1）。
     NestedStarted(NestedStarted),
+    /// `compactable.changed`：有没有能压的变了（施工 W-12 补，终端要的）。会话 actor 每落一批盘重算，变了推；内核不推。
+    CompactableChanged(CompactableChanged),
+}
+
+/// `compactable.changed` 的 `body`（施工 W-12 补）：这一刻 `session.compact` 会不会回 `nothing_to_compact`，同会话状态的
+/// `compactable`。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct CompactableChanged {
+    /// 有能压的。
+    pub compactable: bool,
 }
 
 /// `tool.nested_started` 的 `body`（施工 M-1，设计 `39-脚本调工具.md` 第七节第 4 条）：头照它在那次 `shell`、那个任务的那一行
@@ -253,6 +263,7 @@ impl TransientBody {
             TransientBody::CompactionDone(_) => "compaction.done",
             TransientBody::ModelChanged(_) => "model.changed",
             TransientBody::TodosChanged(_) => "todos.changed",
+            TransientBody::CompactableChanged(_) => "compactable.changed",
         }
     }
 }
@@ -307,6 +318,7 @@ impl Serialize for TransientBody {
             TransientBody::CompactionDone(done) => done.serialize(s),
             TransientBody::ModelChanged(changed) => changed.serialize(s),
             TransientBody::TodosChanged(changed) => changed.serialize(s),
+            TransientBody::CompactableChanged(changed) => changed.serialize(s),
         }
     }
 }

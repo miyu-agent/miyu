@@ -2,8 +2,9 @@
 //! 更早的日志（`docs/blueprint/session/actor.md` 第 4 条）。写不进去、读不回来，会话都停下：内存里的会话和磁盘对不上了，
 //! 从磁盘重新载入最清楚（`07-存储.md` 第四节「写不进去」）。
 
-use miyu_kernel::event::Event;
+use miyu_kernel::event::{CompactableChanged, Event, Transient, TransientBody};
 use miyu_kernel::id::Seq;
+use miyu_kernel::origin::By;
 use miyu_kernel::session::Input;
 
 use super::{Actor, Stop};
@@ -34,6 +35,29 @@ impl Actor {
             preset: self.session.preset().map(str::to_string),
             compactable: self.session.compactable(),
         }
+    }
+
+    /// 送完一批以后推给头的（施工 X-8 补、W-12 补）：长期目标变了推一份；有没有能压的变了推一条 `compactable.changed`。头一回
+    /// 算只记下：订阅的回应带着这一刻的。
+    pub(super) fn push_now(&mut self) {
+        self.push_goal();
+        let now = self.session.compactable();
+        let before = self.counted().compactable.replace(now);
+        if before.is_none_or(|before| before == now) {
+            return;
+        }
+        let (turn, cause) = self
+            .session
+            .turn_cause()
+            .map_or((None, None), |(turn, cause)| (Some(turn), cause));
+        let at = self.clock.now();
+        self.push(crate::handle::Pushed::Transient(Transient {
+            at,
+            turn,
+            by: By::Kernel,
+            cause,
+            body: TransientBody::CompactableChanged(CompactableChanged { compactable: now }),
+        }));
     }
 
     /// 载入时照整份日志算的累计（施工 9-6 上）、长期目标（施工 X-6）：放进给头看的那一份，之后每落一批盘加上这一批。

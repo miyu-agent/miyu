@@ -69,4 +69,5 @@
 | `model.changed` | 会话接下来请求的模型、限额变了：`why` 是 `failover` 或 `turn` |
 | `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了 |
 | `todos.changed` | 当前的待办整份 |
+| `compactable.changed` | 有没有能压的变了：`{"compactable": <布尔>}`，同订阅回应的 `compactable`（`session.compact` 会不会回 `nothing_to_compact`） |
 | `goal.changed` | 长期目标现在的整份 |

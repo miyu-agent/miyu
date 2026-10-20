@@ -27,6 +27,8 @@ pub struct Shown {
     pub tally: Tally,
     /// 长期目标现在的样子（施工 X-6）：喂法同 `tally`。
     pub goals: Goals,
+    /// 上一次推给头的有没有能压的（施工 W-12 补，`actor/store.rs` 的 `push_now`）：还没算过的没有。
+    pub compactable: Option<bool>,
 }
 
 impl Shown {
@@ -39,6 +41,7 @@ impl Shown {
             todos_done: Vec::new(),
             tally: Tally::default(),
             goals: Goals::default(),
+            compactable: None,
         }
     }
 }

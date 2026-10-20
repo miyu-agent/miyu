@@ -12,7 +12,7 @@
 |---|---|
 | `crates/miyu-kernel/src/event.rs` | 外壳 `Event`；种类表 `Body`（宏 `bodies!`，加一种只加一行）；`Body::KINDS`、`Body::kind`；一行怎么读写 |
 | `crates/miyu-kernel/src/event/session.rs`、`turn.rs`、`restore.rs`、`message.rs`、`tool.rs`、`question.rs`、`context.rs`、`model.rs`、`effect.rs`、`job.rs`、`peer.rs`、`image.rs`（施工 8-17）、`venue.rs`（施工 O-13 上：`message.user` 的 `venue` 格、`venue.recalled`、`venue.delivered`） | 各种 `body`（`kernel/events-bodies.md`） |
-| `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和八种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加；`tool.nested_started` 施工 M-1 加） |
+| `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和九种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加；`tool.nested_started` 施工 M-1 加；`compactable.changed` 施工 W-12 补加，由会话 actor 造） |
 | `crates/miyu-kernel/src/format_error.rs` | 编号、名字、时刻写法不对时的报错 `FormatError` |
 | `docs/designs/samples/events/`、`docs/designs/samples/transient/` | 样本：每一种一份 |
 
@@ -85,7 +85,7 @@
 | 格 | 类型 | JSON 里 |
 |---|---|---|
 | `at` | 时刻 | 必有 |
-| `kind` | `model.delta`、`tool.progress`、`status`、`compaction.progress`、`compaction.started`、`compaction.done`、`model.changed`、`todos.changed`、`tool.nested_started` 九种之一；事件流上另有 `goal.changed`（下表最后一行，不是内核的） | 必有 |
+| `kind` | `model.delta`、`tool.progress`、`status`、`compaction.progress`、`compaction.started`、`compaction.done`、`model.changed`、`todos.changed`、`tool.nested_started`、`compactable.changed` 十种之一；事件流上另有 `goal.changed`（下表最后一行，不是内核的） | 必有 |
 | `turn` | 回合编号 | 没有就不写 |
 | `by` | 「谁」 | 必有 |
 | `cause` | 命令编号 | 没有就不写 |
@@ -105,6 +105,7 @@
 | `compaction.done` | 压好了（施工 6-3 下）：`seen` 哪一次摘要请求；`trigger` 哪一种压缩，`auto`、`manual`，和那一条 `context.compacted` 一样（施工 6-8：运行日志照它写）；`before` 压之前的用量（自动的是过了线的那一次主请求算出的，手动的是那一轮开头落了盘时照有效历史组装一次算的）、`after` 压完的用量（照这时的有效历史组装一次算的），都是估算，和压缩线同一个算法；`usage` 摘要请求的用量、`duration_ms` 它的用时，照它的 `model.called`，没有就不写；`prepared` 换上的是提前压好的那一份（施工 6-11 上，`compaction.md` 第十五条：前面没推过进度，用量、用时是提前那一次的），当场压的不写 | 内核 |
 | `model.changed` | 会话接下来请求的模型、限额变了（施工 8-9，`models.md`「瞬时事件」）：`ref` 会话的引用；`endpoint`、`model` 接下来发给谁；`effort` 接下来那个模型真用的思考强度 `{"level", "from"}`（施工 8-18，`from` 是配置的哪一层，`system` 或 `personal`，8-18（补）起；轮换的池、什么都不带的没有）；`limits` 和 `subscribe` 回应里的一样（`window`、`compaction_line`，没有的不写）；`why` 为什么：`turn` 回合开始时重新解析，头看得到的变了（施工 8-10）；`failover` 出错换到了池里别的模型，成了才推（施工 8-9）。没有的格不写 | 内核（会话 actor 造，`turn`、`cause` 照内核这时的回合） |
 | `todos.changed` | 当前的待办变了（施工 D-3，`kernel/session.md`「待办」）：`todos` 现在的整份，照 `todo.written` 的写法，清空了、写过的都撤掉了的是空列表。因为全部做完而清空的多一格 `done`（做完的那一份，施工 D-3 补，`kernel/session.md`「待办」第 3 条）。写了、撤销、恢复都推；和上次告诉头的一样的不推。头照它换掉手里的那份 | 内核（`turn` 照这时的回合，没有 `cause`） |
+| `compactable.changed` | 有没有能压的变了（施工 W-12 补，终端要的：它走事件流，看不到视图流的会话状态）：`compactable`，同订阅回应、会话状态的那一格。会话 actor 每落一批盘照内核重算一次（`Session::compactable`），和上一次推的不一样才推；头一回算只记下，订阅的回应带着这一刻的。`by` 是内核，`turn`、`cause` 照内核这时的回合 |
 | `goal.changed` | 长期目标的样子变了（施工 X-8 补，`goal.md`「在新的架构里怎么放」第 7 条）：`goal` 现在的整份，写法同视图流会话状态的 `goal`（原文、状态、第几轮、上限、卡在哪、设下的时刻、花了多少），没有目标了的是 `null`。设、改、停、继续、结束，每开一轮，等人开口、人说了话，花的钱变了，都推；和上一次一样的不推。不进日志、不是内核的：会话 actor 每送完一批比一次、交给推送（`Pushed::Goal`），事件流照瞬时事件的写法写出去；视图流照会话状态推，不推它 | 会话 actor（`by` 是模块 `goal`，没有 `turn`、`cause`） |
 
 `model.delta` 的那一段增量：

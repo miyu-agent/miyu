@@ -37,6 +37,10 @@ impl Watch {
             TransientBody::CompactionDone(done) => self.compaction_done(transient.turn, done),
             // 换模型的通知由会话 actor 推（施工 8-9），内核不推。
             TransientBody::ModelChanged(_) => panic!("种子 {seed}：内核推了 model.changed"),
+            // 有没有能压的变了也由会话 actor 推（施工 W-12 补），内核不推。
+            TransientBody::CompactableChanged(_) => {
+                panic!("种子 {seed}：内核推了 compactable.changed")
+            }
             TransientBody::NestedStarted(started) => self.nested_started(started),
             // 随机测试里没有工具写待办（施工 D-3）：清单一直是空的，不该推。
             TransientBody::TodosChanged(_) => {

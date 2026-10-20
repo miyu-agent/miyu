@@ -58,9 +58,9 @@ pub use session::{
 };
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
 pub use transient::{
-    ChangeWhy, CompactionDone, CompactionProgress, CompactionStarted, EffortInUse, EffortSource,
-    ModelChanged, ModelDelta, NestedStarted, Piece, Retry, Status, TodosChanged, ToolProgress,
-    Transient, TransientBody,
+    ChangeWhy, CompactableChanged, CompactionDone, CompactionProgress, CompactionStarted,
+    EffortInUse, EffortSource, ModelChanged, ModelDelta, NestedStarted, Piece, Retry, Status,
+    TodosChanged, ToolProgress, Transient, TransientBody,
 };
 pub use turn::{EndReason, TurnEnded, TurnJoined, TurnReverted, TurnStarted, TurnUnreverted};
 pub use venue::{
