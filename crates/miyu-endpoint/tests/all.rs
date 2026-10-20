@@ -175,6 +175,7 @@ mod secrets;
 mod sessions;
 mod sessions_changed;
 mod skill_list;
+mod skill_remove;
 mod skills;
 mod slash_extension;
 mod slash_templates;

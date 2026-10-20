@@ -26,6 +26,7 @@ fn extensions_cannot_switch_extensions_or_write_personas_and_presets() {
         "mcp.restart",
         "mcp.set",
         "mcp.remove",
+        "skill.remove",
         "tool.set_loading",
         "feature.set",
         "config.trust",

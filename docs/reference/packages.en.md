@@ -1,4 +1,4 @@
-# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `script.list`, `tool.set_loading`, `feature.set`, `command.*`, `check`
+# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `skill.remove`, `script.list`, `tool.set_loading`, `feature.set`, `command.*`, `check`
 
 Manage packages, extension processes and the MCP servers in personal settings; list skills and scripts; change how tools load and the global switches of skills, scripts and MCP servers; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
 
@@ -16,6 +16,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in personal settings: list, restart, add or replace, remove |
 | [`skill.list`](#skilllist) | List the skills that can be used |
+| [`skill.remove`](#skillremove) | Delete skills the admin placed |
 | [`script.list`](#scriptlist) | List the registered scripts |
 | [`tool.set_loading`, `feature.set`](#toolset_loading-featureset) | Change how a tool or an MCP server loads; change the global switch of a skill, script or MCP server |
 | [`command.run`](#commandrun) | Run a slash command |
@@ -217,6 +218,12 @@ Fields left out are not written: replacing drops what was there before and is no
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
 | `on` | Global switch (`features.skill-<name>`, see `feature.set`); `true` when unset |
+
+## `skill.remove`
+
+**Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills the admin placed (`from` is `home`; the whole `home/admin/skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
+
+**Errors**: no names or repeated names: `bad_params`. No such skill: `unknown_skill`; one that comes with a package: `skill_from_package` (both with `data.name`; if any name fails, nothing is deleted). Could not move to the trash: `trash_failed`.
 
 ## `script.list`
 

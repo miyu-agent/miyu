@@ -1,4 +1,4 @@
-# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`script.list`、`tool.set_loading`、`feature.set`、`command.*`、`check`
+# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`skill.remove`、`script.list`、`tool.set_loading`、`feature.set`、`command.*`、`check`
 
 管理软件包、扩展进程、个人设置里的 MCP 服务，列出技能、脚本，改工具的加载方式和技能、脚本、MCP 服务的全局开关，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
 
@@ -16,6 +16,7 @@
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 个人设置里的 MCP 服务：列、重启、加或换、删 |
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
+| [`skill.remove`](#skillremove) | 删管理员自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
 | [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 改一件工具、一个 MCP 服务的加载方式；改技能、脚本、MCP 服务的全局开关 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
@@ -217,6 +218,12 @@
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
 | `on` | 全局开关（`features.skill-<名字>`，见 `feature.set`）：没写的是 `true` |
+
+## `skill.remove`
+
+**参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删管理员自己放的（`from` 是 `home`，`home/admin/skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
+
+**出错**：没写名字、名字重复：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`（两种都带 `data.name`，几个名字里有一个不行就一个都不删）。挪不进回收站：`trash_failed`。
 
 ## `script.list`
 

@@ -34,6 +34,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "This MCP server comes with a package and cannot be changed here.",
         ),
         "mcp_invalid" => ("MCP 服务写法有误。", "Invalid MCP server."),
+        "unknown_skill" => ("技能不存在。", "Skill not found."),
+        "skill_from_package" => (
+            "这个技能随软件包提供，不能删除。",
+            "This skill comes with a package and cannot be deleted.",
+        ),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",

@@ -52,6 +52,7 @@ pub(crate) async fn call(
         "mcp.set" => crate::mcp::editing::set(core, peer, &request.id, params(request)?),
         "mcp.remove" => crate::mcp::editing::remove(core, peer, &request.id, params(request)?),
         "skill.list" => crate::skills::list(core, peer).await,
+        "skill.remove" => crate::skills::remove(core, params(request)?).await,
         "script.list" => Ok(crate::scripts::list::list(core, peer)),
         "tool.set_loading" => {
             crate::toggles::set_loading(core, peer, &request.id, params(request)?)

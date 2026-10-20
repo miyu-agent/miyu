@@ -175,6 +175,7 @@
 | `mcp.list`、`mcp.restart` | 管理员个人设置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「个人设置里的一张表」） |
 | `mcp.set`、`mcp.remove` | 管理员个人设置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
 | `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
+| `skill.remove` | 删管理员自己放的技能，几个一起，整个文件夹挪进回收站；随包来的不能删（施工 W-13，网页的技能页） |
 | `script.list` | 列出登记上的脚本：工具名、给人看的名字和说明、从哪来、文件在哪、时限、加载方式和谁定的、全局开关（施工 X-27，`skills.md`「脚本」） |
 | `tool.set_loading`、`feature.set` | 改个人设置的加载方式（`loading.tools.<工具名>`、`loading.mcp.<服务名>`）、全局开关（`features.<功能编号>`），`null` 删掉；只给人（施工 X-27，`presets.md`「全局开关」） |
 | `package.file`、`package.call` | 读一个包的后台页里的文件（吉祥物包读它的模型文件，施工 F-7）；调它的程序登记的方法，核心反向发 `method.call`，在后台答（施工 F-6 中，`package-pages.md`） |

@@ -55,6 +55,14 @@ impl Refusal {
         reason: "server_from_package",
         data: None,
     };
+    /// 没有这个名字的技能（施工 W-13，`skill.remove`）：`data.name`。
+    pub(crate) fn unknown_skill(name: &str) -> Refusal {
+        Refusal::with("unknown_skill", "name", serde_json::json!(name))
+    }
+    /// 随包来的技能不能删（施工 W-13，`skill.remove`）：`data.name`。
+    pub(crate) fn skill_from_package(name: &str) -> Refusal {
+        Refusal::with("skill_from_package", "name", serde_json::json!(name))
+    }
     /// 重启关着的包（施工 X-4，`package.restart`）。
     pub(crate) const PACKAGE_OFF: Refusal = Refusal {
         code: REFUSED,

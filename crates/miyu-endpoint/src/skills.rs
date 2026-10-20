@@ -11,6 +11,8 @@
 //!
 //! 碰磁盘，在阻塞线程里找。
 
+mod remove;
+
 use serde_json::{Value, json};
 
 use miyu_policy::skill::feature_id;
@@ -23,6 +25,7 @@ use crate::config::project::shown;
 use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
+pub(crate) use remove::remove;
 
 /// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是管理员自己放技能的文件夹（施工 X-27 补）。
 ///
