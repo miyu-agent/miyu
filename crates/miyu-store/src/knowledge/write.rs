@@ -142,6 +142,38 @@ impl Knowledge {
         Ok((file, location))
     }
 
+    /// 把库 `kb` 里的几样挪进系统回收站（施工 W-14，网页的知识库页按文件夹删、多选删）：每一样是一篇文档，或者一个文件夹
+    /// （库里的相对路径，整个挪）。先全查一遍，有一样不在就一样都不挪；交回每一样在回收站里的位置，照 `paths` 的先后。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个库、库是挂进来的（只读）；有一样不在、不是文档也不是文件夹；挪不进回收站（挪到一半挪不动的，前面的已经挪了）。
+    pub fn trash_all(
+        &self,
+        account: &AccountId,
+        kb: &str,
+        paths: &[String],
+        home: Option<&Path>,
+    ) -> Result<Vec<String>, KnowledgeError> {
+        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
+        let entries = paths
+            .iter()
+            .map(|path| entry(&dir, path))
+            .collect::<Result<Vec<PathBuf>, KnowledgeError>>()?;
+        entries
+            .iter()
+            .map(|entry| miyu_fs::trash::put(entry, home).map_err(trash_refused))
+            .collect()
+    }
+
+    /// `path` 合不合库里一样东西（文档或者文件夹）的写法：相对路径，每一段不空、不以 `.` 开头、没有 `\`、`:`（施工 W-14：
+    /// 删以前先看，不看在不在）。
+    #[must_use]
+    pub fn shaped(path: &str) -> bool {
+        path.split('/')
+            .all(|part| !part.is_empty() && !part.starts_with('.') && !part.contains(['\\', ':']))
+    }
+
     /// 文件名 `name` 是不是认的一种文档（扩展名在 [`super::EXTENSIONS`] 里，施工 K-7 修：命令行在传以前先看）。
     #[must_use]
     pub fn known(name: &str) -> bool {
@@ -183,6 +215,25 @@ pub(super) fn trash_refused(refused: miyu_fs::trash::Refused) -> KnowledgeError 
         miyu_fs::trash::Refused::Lost => "moved but not found in the trash".to_string(),
         miyu_fs::trash::Refused::Failed(error) => error.to_string(),
     })
+}
+
+/// 库 `dir` 里的 `path` 是一篇文档或者一个文件夹（不跟链接，库本身不算）：交回它在哪；别的都当不在。
+fn entry(dir: &Path, path: &str) -> Result<PathBuf, KnowledgeError> {
+    if !Knowledge::shaped(path) {
+        return Err(KnowledgeError::UnknownDocument);
+    }
+    let file = path
+        .split('/')
+        .fold(dir.to_path_buf(), |file, part| file.join(part));
+    match std::fs::symlink_metadata(&file) {
+        Ok(metadata) if metadata.is_dir() => Ok(file),
+        Ok(metadata) if metadata.is_file() && target(dir, path).is_some() => Ok(file),
+        Ok(_) => Err(KnowledgeError::UnknownDocument),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            Err(KnowledgeError::UnknownDocument)
+        }
+        Err(error) => Err(io(error)),
+    }
 }
 
 /// 一篇现在的内容：没有的是没有；有了却不是普通文件（目录、链接）的当不是文档。

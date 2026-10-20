@@ -145,7 +145,7 @@
 | `kb.mount` | `kb`、`folder`（绝对路径或 `~/`）；`name`、`description`、`auto` | 一个库：把一个现成的目录挂进来 |
 | `kb.delete` | `kb` | `{"trash"}`：挪进系统回收站的位置；挂进来的只拿掉登记，目录不动 |
 | `kb.add` | `kb`、`path`、`blob`（先 `blob.put`）、`replace`（布尔） | `{}`：加一篇，什么格式都行 |
-| `kb.remove` | `kb`、`path` | `{"trash"}` |
+| `kb.remove` | `kb`，`path`（一样）或者 `paths`（几样）：一篇文档，或者一个文件夹（库里的相对路径，整个删） | `path` 的回 `{"trash"}`，`paths` 的回 `{"trash": [...]}`，照先后；有一样不在就一样都不删；两样都写或都没写、重了、一样在另一样里面的 `bad_params` |
 | `kb.reindex` | `kb` | 一个库：删掉索引照文件重建 |
 
 **出错**

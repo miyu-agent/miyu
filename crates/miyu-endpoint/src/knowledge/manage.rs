@@ -43,11 +43,20 @@ struct Base {
 struct Document {
     kb: String,
     path: String,
-    /// 只有 `kb.add` 要。
-    #[serde(default)]
-    blob: Option<String>,
+    blob: String,
     #[serde(default)]
     replace: bool,
+}
+
+/// `kb.remove` 的参数（施工 W-14）：`path` 一样，或者 `paths` 几样；每一样是一篇文档或者一个文件夹。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Removal {
+    kb: String,
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    paths: Option<Vec<String>>,
 }
 
 /// 照方法名办一条管理的 `kb.*`；不是这几个的交回 `None`，由调的一方接着认。
@@ -60,7 +69,8 @@ pub(super) async fn call(
     Some(match method {
         "kb.create" | "kb.update" | "kb.mount" => named(core, knowledge, method, params).await,
         "kb.delete" | "kb.reindex" => whole(core, knowledge, method, params).await,
-        "kb.add" | "kb.remove" => document(core, knowledge, method, params).await,
+        "kb.add" => document(core, knowledge, params).await,
+        "kb.remove" => remove(core, knowledge, params).await,
         _ => return None,
     })
 }
@@ -120,30 +130,18 @@ async fn whole(
     Ok(shown_base(base))
 }
 
-/// 加一篇（照上传好的 blob）、删一篇（挪进回收站，交回回收站里的位置）。
+/// 加一篇（照上传好的 blob）。
 async fn document(
     core: &Core,
     knowledge: Arc<Knowledge>,
-    method: &str,
     params: &Value,
 ) -> Result<Value, Refusal> {
     let document: Document = read(params)?;
-    let adding = method == "kb.add";
-    if !valid(&document.kb)
-        || !Knowledge::document(&document.path)
-        || document.blob.is_some() != adding
-        || (document.replace && !adding)
-    {
+    if !valid(&document.kb) || !Knowledge::document(&document.path) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (account, home) = (core.admin.clone(), core.home.clone());
-    let Some(blob) = document.blob.as_deref() else {
-        let (_, trash) = blocking(move || {
-            knowledge.trash(&account, &document.kb, &document.path, home.as_deref())
-        })
-        .await?;
-        return Ok(json!({ "trash": trash }));
-    };
+    let account = core.admin.clone();
+    let blob = document.blob.as_str();
     let blob = ContentHash::parse(blob).map_err(|_| Refusal::BAD_PARAMS)?;
     let blobs = Blobs::new(core.root.blobs(&core.admin));
     let bytes = tokio::task::spawn_blocking(move || crate::attach::read_blob(&blobs, &blob))
@@ -160,4 +158,36 @@ async fn document(
     })
     .await?;
     Ok(json!({}))
+}
+
+/// 删（施工 W-14 起收文件夹、收几样）：`path` 的回 `{"trash": "<回收站里的位置>"}`，同以前删一篇；`paths` 的回
+/// `{"trash": [...]}`，照先后。先全查一遍，有一样不在就一样都不删。写法不对、两样都写或都没写、几样重了或者一样在另一样
+/// 里面：`bad_params`。
+async fn remove(core: &Core, knowledge: Arc<Knowledge>, params: &Value) -> Result<Value, Refusal> {
+    let Removal { kb, path, paths } = read(params)?;
+    let (single, paths) = match (path, paths) {
+        (Some(path), None) => (true, vec![path]),
+        (None, Some(paths)) if !paths.is_empty() => (false, paths),
+        _ => return Err(Refusal::BAD_PARAMS),
+    };
+    if !valid(&kb) || !paths.iter().all(|path| Knowledge::shaped(path)) || overlapping(&paths) {
+        return Err(Refusal::BAD_PARAMS);
+    }
+    let (account, home) = (core.admin.clone(), core.home.clone());
+    let trash =
+        blocking(move || knowledge.trash_all(&account, &kb, &paths, home.as_deref())).await?;
+    Ok(match single {
+        true => json!({ "trash": trash.first() }),
+        false => json!({ "trash": trash }),
+    })
+}
+
+/// 几样里有重了的，或者一样在另一样（文件夹）里面。
+fn overlapping(paths: &[String]) -> bool {
+    paths.iter().enumerate().any(|(i, one)| {
+        paths
+            .iter()
+            .enumerate()
+            .any(|(j, other)| i != j && (one == other || other.starts_with(&format!("{one}/"))))
+    })
 }

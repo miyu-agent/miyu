@@ -70,6 +70,7 @@ mod knowledge;
 mod knowledge_documents;
 mod knowledge_manage;
 mod knowledge_package;
+mod knowledge_remove;
 mod limits;
 mod list;
 mod list_tokens;

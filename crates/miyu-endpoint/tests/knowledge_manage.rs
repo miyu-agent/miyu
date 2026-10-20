@@ -11,7 +11,7 @@ use miyu_tool::Catalog;
 
 use crate::support::*;
 
-async fn client(home: &Home) -> Client {
+pub(crate) async fn client(home: &Home) -> Client {
     let core = home.core_full(
         &Script::new([]),
         Catalog::default(),
@@ -24,7 +24,7 @@ async fn client(home: &Home) -> Client {
 }
 
 /// 上传一份 `text`，交回 blob。
-async fn upload(client: &mut Client, id: &str, name: &str, text: &str) -> String {
+pub(crate) async fn upload(client: &mut Client, id: &str, name: &str, text: &str) -> String {
     use base64::Engine;
     let data = base64::engine::general_purpose::STANDARD.encode(text);
     let reply = client

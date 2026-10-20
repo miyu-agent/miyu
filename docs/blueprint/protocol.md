@@ -756,7 +756,7 @@
 | `kb.mount` | `kb`、`folder`（绝对路径或 `~/` 开头），必写；`name`、`description`、`auto` | 一个库（照挂的目录补完的） |
 | `kb.delete` | `kb` | `{"trash"}`：整个库目录在回收站里的位置 |
 | `kb.add` | `kb`、`path`、`blob`（`blob.put`、分块上传交回的），必写；`replace`（布尔，不写 `false`） | `{}` |
-| `kb.remove` | `kb`、`path` | `{"trash"}`：这一篇在回收站里的位置 |
+| `kb.remove` | `kb`，`path` 一样或者 `paths` 几样（施工 W-14：一篇文档或者一个文件夹，文件夹整个删） | `path` 的回 `{"trash"}`：在回收站里的位置；`paths` 的回 `{"trash": [...]}`，照先后。先全查一遍，有一样不在就一样都不删；两样都写或都没写、重了、一样在另一样里面的 `bad_params` |
 | `kb.reindex` | `kb` | 一个库（删掉照文件重建完的） |
 
 1. `kb.list`、`kb.search` 先照文件补要用的库（`knowledge.md`「怎么走」第三条），`documents`、`chunks` 是补完以后的数；跳过的文档记一行 `WARN knowledge document skipped`，不进回应。

@@ -145,7 +145,7 @@ In `kb.documents`, `kind` is `markdown`, `text`, `pdf` or `html`; `size` is in b
 | `kb.mount` | `kb`, `folder` (absolute or `~/`); `name`, `description`, `auto` | A knowledge base: mounts an existing folder |
 | `kb.delete` | `kb` | `{"trash"}`: where it went in the system trash; a mounted one only loses its registration, the folder stays |
 | `kb.add` | `kb`, `path`, `blob` (from `blob.put`), `replace` (boolean) | `{}`: add a document in any format |
-| `kb.remove` | `kb`, `path` | `{"trash"}` |
+| `kb.remove` | `kb`, and `path` (one) or `paths` (several): a document, or a folder (a path inside the base; the whole folder goes) | With `path`, `{"trash"}`; with `paths`, `{"trash": [...]}` in order. If any one is missing, nothing is removed; both or neither given, repeats, or one inside another: `bad_params` |
 | `kb.reindex` | `kb` | A knowledge base: the index is deleted and rebuilt from the files |
 
 **Errors**
