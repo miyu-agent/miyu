@@ -40,8 +40,15 @@ fn line(name: &str, nested: Nested) -> String {
     }
 }
 
-/// 放到后台交上了的（结果里报了 `job.started`）：端口挂到那个任务下面，在旁边调一次 `name`，答回来的记进 `heard`。
-pub(super) fn aside(call: &Call, done: &Done, name: &'static str, heard: Arc<Mutex<Vec<String>>>) {
+/// 放到后台交上了的（结果里报了 `job.started`）：端口挂到那个任务下面，等 `wait` 毫秒在旁边调一次 `name`，答回来的记进
+/// `heard`。
+pub(super) fn aside(
+    call: &Call,
+    done: &Done,
+    name: &'static str,
+    heard: Arc<Mutex<Vec<String>>>,
+    wait: u64,
+) {
     let job = done.effects.iter().find_map(|effect| match effect {
         Effect::JobStarted(started) => Some(started.job.clone()),
         _ => None,
@@ -51,6 +58,7 @@ pub(super) fn aside(call: &Call, done: &Done, name: &'static str, heard: Arc<Mut
     };
     port.adopt(job);
     tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(wait)).await;
         let line = line(name, port.call(name.to_string(), "{}".to_string()).await);
         heard
             .lock()

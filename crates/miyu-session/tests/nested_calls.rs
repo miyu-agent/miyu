@@ -218,7 +218,7 @@ async fn a_call_under_a_new_background_job_waits_for_the_job_to_be_logged() {
     let shell = Fake::new(
         "shell",
         Access::Read,
-        Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), true),
+        Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), true, 0),
     );
     let search = Fake::callable(
         "web_search",
@@ -273,39 +273,51 @@ async fn a_session_without_callable_tools_gives_the_shell_no_port() {
 }
 
 /// 派它的那次 `shell` 的结果没报这个任务（施工 M-3，内核那边审时提的）：等着的那一次再也等不到，当场答「父级不在了」，
-/// 不让脚本一直等；什么都不记。
+/// 不让脚本一直等；什么都不记。调用比结果先到（等 0 毫秒）、后到（等 300 毫秒，CI 上撞出来过：收下时就要认出来）都一样。
 #[tokio::test]
 async fn a_call_under_a_job_that_never_gets_logged_is_answered_gone() {
-    let held = Held::new(&[]);
-    let heard = Arc::new(Mutex::new(Vec::new()));
-    let shell = Fake::new(
-        "shell",
-        Access::Read,
-        Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), false),
-    );
-    let search = Fake::callable(
-        "web_search",
-        Access::Read,
-        Act::Gives("found", r#"{"links":[]}"#),
-    );
-    let home = Home::new();
-    let script = Script::new([
-        Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
-        Play::Says("好。"),
-    ]);
-    let handle = home
-        .create_with(&script, &catalog(&[&shell, &search]))
+    for wait in [0, 300] {
+        let held = Held::new(&[]);
+        let heard = Arc::new(Mutex::new(Vec::new()));
+        let shell = Fake::new(
+            "shell",
+            Access::Read,
+            Act::BackgroundCalls(
+                Arc::clone(&held),
+                "web_search",
+                Arc::clone(&heard),
+                false,
+                wait,
+            ),
+        );
+        let search = Fake::callable(
+            "web_search",
+            Access::Read,
+            Act::Gives("found", r#"{"links":[]}"#),
+        );
+        let home = Home::new();
+        let script = Script::new([
+            Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
+            Play::Says("好。"),
+        ]);
+        let handle = home
+            .create_with(&script, &catalog(&[&shell, &search]))
+            .await;
+        let mut pushes = watch(&handle).await;
+        ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
+        until_turn_ends(&mut pushes).await;
+        within("旁边那次答回来", async {
+            while heard.lock().unwrap().is_empty() {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
         .await;
-    let mut pushes = watch(&handle).await;
-    ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
-    until_turn_ends(&mut pushes).await;
-    within("旁边那次答回来", async {
-        while heard.lock().unwrap().is_empty() {
-            tokio::time::sleep(Duration::from_millis(5)).await;
-        }
-    })
-    .await;
-    assert_eq!(*heard.lock().unwrap(), ["web_search refused Gone"]);
-    assert!(nested(&home.log(handle.id())).is_empty(), "什么都不记");
-    held.end(Exit::Code(0));
+        assert_eq!(
+            *heard.lock().unwrap(),
+            ["web_search refused Gone"],
+            "等 {wait} 毫秒"
+        );
+        assert!(nested(&home.log(handle.id())).is_empty(), "什么都不记");
+        held.end(Exit::Code(0));
+    }
 }

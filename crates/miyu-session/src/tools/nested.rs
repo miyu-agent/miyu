@@ -38,6 +38,10 @@ pub(crate) struct Nesting {
     running: BTreeMap<NestedId, Running>,
     /// 记进了日志的后台命令（施工 M-3）：挂在它们下面的才交进内核。
     started: BTreeSet<JobId>,
+    /// 拿了端口、结果还没记进日志的 `shell` 调用（`port.rs`）。
+    ports: BTreeSet<CallId>,
+    /// 拿了端口、结果已经记进日志的：挂在它起的后台任务下面、那个任务又没报的，再也等不到。
+    closed: BTreeSet<CallId>,
     /// 挂在还没记进日志的后台命令下面的，等着（`port.rs` 的 `note_jobs`）。
     held: Vec<NestedBack>,
 }
@@ -106,6 +110,11 @@ impl Tools {
                 if let Parent::Job(job) = id.parent()
                     && !self.nested.started.contains(job)
                 {
+                    // 派它的那次 `shell` 的结果已经记了、却没报这个任务：再也等不到，当场答「父级不在了」。
+                    if self.nested.closed.contains(&origin) {
+                        port::gone(reply);
+                        return None;
+                    }
                     let held = NestedBack::Call {
                         id,
                         origin,

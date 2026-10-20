@@ -84,7 +84,7 @@ impl Tools {
     /// 直接调的 `shell` 第 `call_id` 次调用的端口：挂在这次调用下面。`clicall` 是这个会话脚本里能调的工具和参数格式（内核的
     /// `Session::clicall_tools`），说明照工具目录；目录里没有的不列。
     pub(crate) fn nested_port(
-        &self,
+        &mut self,
         call_id: CallId,
         clicall: Vec<(String, RawJson)>,
     ) -> Arc<dyn NestedPort> {
@@ -99,6 +99,7 @@ impl Tools {
                 Some((name, schema))
             })
             .collect();
+        self.nested.ports.insert(call_id);
         Arc::new(Nester {
             parent: Mutex::new(Parent::Call(call_id)),
             origin: call_id,
@@ -109,14 +110,16 @@ impl Tools {
     }
 
     /// 记了一批事件：报了开始的后台命令记下，挂在它们下面、等着的重新送回收件箱。派它的那次 `shell` 的结果记了、却没报这个
-    /// 任务的（调用被打断、任务没交上），等着的再也等不到：当场答「父级不在了」，脚本那头退出码 3，不一直等。
+    /// 任务的（调用被打断、任务没交上），等着的再也等不到：当场答「父级不在了」，脚本那头退出码 3，不一直等；之后才到的同样
+    /// （`nested.rs` 收下时看 `closed`）。拿了端口的 `shell` 结果记了，记进 `closed`。
     pub(crate) fn note_jobs(&mut self, events: &[Event]) {
-        let mut answered = Vec::new();
         for event in events {
             let Body::ToolResult(result) = &event.body else {
                 continue;
             };
-            answered.push(result.call_id);
+            if self.nested.ports.remove(&result.call_id) {
+                self.nested.closed.insert(result.call_id);
+            }
             for effect in &result.effects {
                 if let Effect::JobStarted(started) = effect
                     && started.what == JobKind::Command
@@ -132,7 +135,7 @@ impl Tools {
                 NestedBack::Call { id, origin, .. } => match id.parent() {
                     Parent::Job(job) => (
                         !self.nested.started.contains(job),
-                        answered.contains(origin),
+                        self.nested.closed.contains(origin),
                     ),
                     Parent::Call(_) => (false, false),
                 },
@@ -158,6 +161,6 @@ fn send(backs: &mpsc::UnboundedSender<Back>, back: NestedBack) {
 
 /// 答「父级不在了」。脚本那头不等了的不管。
 #[expect(clippy::let_underscore_must_use, reason = "脚本那头不等了：答了没人听")]
-fn gone(reply: oneshot::Sender<Nested>) {
+pub(super) fn gone(reply: oneshot::Sender<Nested>) {
     let _ = reply.send(Nested::Refused(miyu_kernel::session::NestedRefusal::Gone));
 }

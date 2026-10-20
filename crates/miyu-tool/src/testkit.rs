@@ -57,9 +57,10 @@ pub enum Act {
     /// `data`，丢了图的写 `images dropped`，拒绝的写原因。没有端口的回一句出错。
     Calls(Vec<(&'static str, &'static str)>),
     /// 照 [`Act::Background`] 放到后台，端口挂到那个任务下面，当场在旁边调一次这件工具（施工 M-3）：不等它答就交回结果，
-    /// 所以调用到的时候任务的 `job.started` 还没记进日志。答回来的照 [`Act::Calls`] 的写法记进第三格。最后一格是假的，结果里
-    /// 不报这个任务（像调用被打断、任务没交上）：等着的那一次再也等不到。
-    BackgroundCalls(Arc<Held>, &'static str, Arc<Mutex<Vec<String>>>, bool),
+    /// 所以调用到的时候任务的 `job.started` 还没记进日志。答回来的照 [`Act::Calls`] 的写法记进第三格。第四格是假的，结果里
+    /// 不报这个任务（像调用被打断、任务没交上）：等着的那一次再也等不到。最后一格是在旁边调之前先等几毫秒：等得够久，调用
+    /// 到的时候结果已经记进日志了。
+    BackgroundCalls(Arc<Held>, &'static str, Arc<Mutex<Vec<String>>>, bool, u64),
 }
 
 /// 一件假工具。
@@ -318,9 +319,9 @@ impl Tool for Fake {
                     Done::ok(text).data(serde_json::from_str(data).expect("data 是 JSON"))
                 }
                 Act::Calls(calls) => nested::calls(&call, calls).await,
-                Act::BackgroundCalls(held, name, heard, report) => {
+                Act::BackgroundCalls(held, name, heard, report, wait) => {
                     let mut done = background(&call, &held);
-                    nested::aside(&call, &done, name, heard);
+                    nested::aside(&call, &done, name, heard, wait);
                     if !report {
                         done.effects.clear();
                     }
