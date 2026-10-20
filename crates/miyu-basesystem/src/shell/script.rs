@@ -7,6 +7,8 @@
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
+//! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
+//!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
 
@@ -21,17 +23,24 @@ use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
 
-use super::process::{self, Guard};
+use super::process::{self, Ending, Guard};
 use super::{Results, env, workdir};
 use crate::blocking::blocking;
 use crate::common::said;
 use crate::load::{self, LoadError, say};
+
+mod images;
+
+use images::Folder;
 
 /// 参数交给脚本的环境变量（同旧版）。
 const ARGS: &str = "MIYU_ARGS_JSON";
 
 /// 能写缓存的目录交给脚本的环境变量（同旧版）。
 const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
+
+/// 交图的目录交给脚本的环境变量（施工 X-35）。
+const IMAGES: &str = "MIYU_SCRIPT_IMAGES_DIR";
 
 /// 一个脚本。
 pub(crate) struct Script {
@@ -90,8 +99,13 @@ impl Script {
         .said(said("shell/failed").with("error", error))
     }
 
-    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起。
-    fn command(&self, call: &Call, cache: &Path) -> io::Result<std::process::Command> {
+    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，建不成的没有。
+    fn command(
+        &self,
+        call: &Call,
+        cache: &Path,
+        images: Option<&Path>,
+    ) -> io::Result<std::process::Command> {
         let first = first_line(&self.file)?;
         let (program, args) = launcher(&self.file, &first, cfg!(windows));
         let (program, args) = match call.sandbox.as_deref() {
@@ -109,6 +123,9 @@ impl Script {
         let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
         vars.push((ARGS.into(), call.args.clone().into()));
         vars.push((CACHE.into(), cache.as_os_str().to_owned()));
+        if let Some(images) = images {
+            vars.push((IMAGES.into(), images.as_os_str().to_owned()));
+        }
         // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。
         vars.push(("PYTHONUTF8".into(), "1".into()));
         let mut command = std::process::Command::new(program);
@@ -145,10 +162,12 @@ impl Tool for Script {
             let cache = std::env::temp_dir()
                 .join("miyu-scripts")
                 .join(&self.spec.name);
-            let command =
-                std::fs::create_dir_all(&cache).and_then(|()| self.command(&call, &cache));
-            let command = match command {
-                Ok(command) => command,
+            let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
+            let (command, folder) = match command.and_then(|folder| {
+                let command = self.command(&call, &cache, folder.as_ref().map(Folder::path))?;
+                Ok((command, folder))
+            }) {
+                Ok(made) => made,
                 Err(error) => return self.failed(&error),
             };
             let input = Some(call.args.clone().into_bytes());
@@ -159,16 +178,31 @@ impl Tool for Script {
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_secs(self.timeout);
-            let finished = blocking(call.stop.clone(), move |_| started.wait(wait)).await;
+            let name = self.spec.name.clone();
+            // 收图也在阻塞线程里：读文件、删目录。到时被杀的不看，目录照样删（丢掉时）。
+            let finished = blocking(call.stop.clone(), move |_| {
+                let finished = started.wait(wait)?;
+                let pictures = match folder {
+                    Some(folder) if !matches!(finished.ending, Ending::TimedOut) => {
+                        folder.collect(&name)
+                    }
+                    _ => Vec::new(),
+                };
+                Ok::<_, io::Error>((finished, pictures))
+            })
+            .await;
             guard.disarm();
             let seconds = self.timeout.to_string();
             match finished {
-                Ok(finished) => self.results.ended(finished, || {
-                    (
-                        say(&self.timed_out, &[("seconds", &seconds)]),
-                        seconds.clone(),
-                    )
-                }),
+                Ok((finished, pictures)) => pictures.into_iter().fold(
+                    self.results.ended(finished, || {
+                        (
+                            say(&self.timed_out, &[("seconds", &seconds)]),
+                            seconds.clone(),
+                        )
+                    }),
+                    Done::image,
+                ),
                 Err(error) => self.failed(&error),
             }
         })

@@ -1,6 +1,7 @@
 //! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
 //! 都拿得到；在这一轮的工作目录里跑；有一个能写的缓存目录；退出码不是 0 的出错；到时整组杀掉、说一句；起不来的说清楚。
-//! Python 的那一条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的只在 Unix 上。
+//! 交图（施工 X-35）：拷进 `MIYU_SCRIPT_IMAGES_DIR` 的照文件名排、至多 4 张，链接、超大的不交，到时被杀的不看，跑完目录删掉。
+//! Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接的只在 Unix 上。
 
 use serde_json::json;
 
@@ -106,4 +107,93 @@ async fn a_script_gets_the_same_environment_as_shell() {
     let done = site.script("scripts/probe.sh", json!({})).await;
     assert!(!done.error, "{}", text(&done));
     assert_eq!(text(&done), "plain|unset|:probe|cat|unset\n{}\n");
+}
+
+/// 交图的脚本（施工 X-35）：往 `MIYU_SCRIPT_IMAGES_DIR` 里倒着写边长 `count` 到 1 的 PNG（`03.png` 先写，名字和写的先后
+/// 不一样），另放一份文本和一张 5×5 的 BMP（量得出尺寸、不是那四种格式，不交），印出目录的路径。`extra` 是接在后面的几行 Python。
+fn frames(extra: &str) -> String {
+    format!(
+        "#!/usr/bin/env python3\n# Description: Make frames.\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"count\": {{\"type\": \"integer\"}}}}}}\n# Timeout: 2\nimport json, os, struct\nargs = json.loads(os.environ['MIYU_ARGS_JSON'])\nout = os.environ['MIYU_SCRIPT_IMAGES_DIR']\ndef png(side, pad=0):\n    return b'\\x89PNG\\r\\n\\x1a\\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', side, side) + b'\\x08\\x06\\x00\\x00\\x00' + b'\\x00' * (4 + pad)\nfor side in range(args['count'], 0, -1):\n    with open(os.path.join(out, '%02d.png' % side), 'wb') as f:\n        f.write(png(side))\nwith open(os.path.join(out, 'notes.txt'), 'w') as f:\n    f.write('not an image')\nwith open(os.path.join(out, 'zz.bmp'), 'wb') as f:\n    f.write(b'BM' + b'\\x00' * 12 + struct.pack('<IiiHH', 40, 5, 5, 1, 24) + b'\\x00' * 24)\nprint('dir=' + out)\n{extra}"
+    )
+}
+
+/// 交上来的几张图的边长。
+fn sides(done: &Done) -> Vec<u32> {
+    done.images
+        .iter()
+        .map(|picture| {
+            assert_eq!(picture.width, picture.height);
+            picture.width
+        })
+        .collect()
+}
+
+/// 脚本印的目录。
+fn folder(done: &Done) -> std::path::PathBuf {
+    let text = text(done);
+    let dir = text
+        .lines()
+        .find_map(|line| line.strip_prefix("dir="))
+        .unwrap_or_else(|| panic!("印了目录：{text}"));
+    std::path::PathBuf::from(dir)
+}
+
+#[tokio::test]
+async fn images_put_in_the_folder_are_handed_over_in_name_order() {
+    let site = Site::new();
+    site.file("scripts/frames.py", frames("").as_bytes());
+    let done = site.script("scripts/frames.py", json!({"count": 2})).await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(sides(&done), [1, 2], "照文件名排，文本不交");
+    assert!(
+        text(&done).starts_with("dir="),
+        "字照脚本印的原样：{}",
+        text(&done)
+    );
+    assert!(!folder(&done).exists(), "跑完目录删掉了");
+}
+
+#[tokio::test]
+async fn at_most_four_images_are_handed_over() {
+    let site = Site::new();
+    site.file("scripts/frames.py", frames("").as_bytes());
+    let done = site.script("scripts/frames.py", json!({"count": 6})).await;
+    assert_eq!(sides(&done), [1, 2, 3, 4]);
+}
+
+#[tokio::test]
+async fn a_failing_script_still_hands_over_its_images() {
+    let site = Site::new();
+    site.file(
+        "scripts/frames.py",
+        frames("raise SystemExit(3)\n").as_bytes(),
+    );
+    let done = site.script("scripts/frames.py", json!({"count": 1})).await;
+    assert!(done.error);
+    assert_eq!(sides(&done), [1]);
+}
+
+#[tokio::test]
+async fn a_script_stopped_at_its_timeout_hands_over_nothing() {
+    let site = Site::new();
+    site.file(
+        "scripts/frames.py",
+        frames("import sys, time\nsys.stdout.flush()\ntime.sleep(30)\n").as_bytes(),
+    );
+    let done = site.script("scripts/frames.py", json!({"count": 1})).await;
+    assert!(done.error);
+    assert!(done.images.is_empty(), "到时被杀的不看");
+    assert!(!folder(&done).exists(), "目录照样删掉");
+}
+
+/// 链接不跟、超过 5 MiB 的不读（施工 X-35，主会话审时提）：`01.png` 是指向 `02.png` 的链接，`03.png` 头是 PNG、有 6 MiB。
+#[cfg(unix)]
+#[tokio::test]
+async fn links_and_oversized_files_are_not_handed_over() {
+    let site = Site::new();
+    let extra = "os.remove(os.path.join(out, '01.png'))\nos.symlink(os.path.join(out, '02.png'), os.path.join(out, '01.png'))\nwith open(os.path.join(out, '03.png'), 'wb') as f:\n    f.write(png(3, 6 * 1024 * 1024))\n";
+    site.file("scripts/frames.py", frames(extra).as_bytes());
+    let done = site.script("scripts/frames.py", json!({"count": 3})).await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(sides(&done), [2]);
 }

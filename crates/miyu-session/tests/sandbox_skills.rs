@@ -1,7 +1,7 @@
 //! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`docs/blueprint/skills.md`「技能」第 3 条）：数据根照旧藏着，技能的
 //! 文件夹在规格里单独放开只读（本机的会话写进 `reveal`，外部身份的会话加进只准读的名单）。Unix 上有收紧手段的，真的经
 //! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。家目录里放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样
-//! 读得到它自己。
+//! 读得到它自己；往交图的目录里写的图（施工 X-35）经真助手照样写得进、交得上来。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -204,4 +204,46 @@ async fn a_script_in_the_data_root_runs_in_the_sandbox() {
         .collect();
     assert_eq!(result.status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "ran\nblocked-data\n");
+}
+
+/// 脚本交图（施工 X-35）：经真助手跑，脚本写得进 `MIYU_SCRIPT_IMAGES_DIR`，那张图记进结果。macOS 的临时目录在链接下面，
+/// 规格里放开的是真实路径，这一条在 macOS 上守着它。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_script_in_the_sandbox_hands_over_images() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if probe.mechanisms.is_empty() {
+        return;
+    }
+    let home = Home::outside_temp();
+    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    std::fs::create_dir_all(&scripts).expect("建得了");
+    let file = scripts.join("snap.sh");
+    // 1×1 的 PNG 头：认格式、量尺寸只看这几个字节。
+    let text = "#!/bin/sh\n# Description: Snap.\nprintf '\\211PNG\\r\\n\\032\\n\\000\\000\\000\\rIHDR\\000\\000\\000\\001\\000\\000\\000\\001\\010\\006\\000\\000\\000\\000\\000\\000\\000' > \"$MIYU_SCRIPT_IMAGES_DIR/a.png\" && echo snapped\n";
+    std::fs::write(&file, text).expect("写得进");
+    let head = miyu_policy::script::read("snap.sh", text).expect("开头写对了");
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let tool = miyu_basesystem::script(&resources, &head, file).expect("资源读得出来");
+    let tools = Catalog::new([tool]).expect("合写法");
+    let call = Play::calls(&[("snap", "{}")]);
+    let handle = session(&home, (&tools, call), &helper, ("local", true)).await;
+    let result = home
+        .log(handle.id())
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ToolResult(result) => Some(result),
+            _ => None,
+        })
+        .expect("有结果");
+    assert_eq!(result.status, ToolStatus::Ok, "{:?}", result.blocks);
+    assert!(
+        result
+            .blocks
+            .iter()
+            .any(|block| matches!(block, miyu_kernel::block::Block::Image(_))),
+        "沙盒里写进去的图交上来了：{:?}",
+        result.blocks
+    );
 }

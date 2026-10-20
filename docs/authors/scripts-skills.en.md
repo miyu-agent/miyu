@@ -73,6 +73,21 @@ On Linux and macOS, `chmod +x dice.py`.
 - The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR`.
 - It runs under the same rules as commands the AI runs: in the sandbox (can only write the workspace, can't read Miyu's data directory, the script file itself is readable); without a sandbox, a person must approve.
 
+**Handing over images**
+
+To let the AI see images directly (screenshots, frames from a video), copy them into `MIYU_SCRIPT_IMAGES_DIR`: a new empty folder for each call, which Miyu collects after the run and then deletes.
+
+```python
+import os, shutil
+shutil.copy("frame-01.png", os.environ["MIYU_SCRIPT_IMAGES_DIR"])
+print("Grabbed 1 frame.")
+```
+
+- Taken in file-name order, at most 4; PNG, JPEG, GIF or WebP, each at most 5 MiB and at most 8000 pixels per side.
+- Only regular files directly in the folder count, and links are not followed: copy the images in, don't link them.
+- Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which file and why.
+- A call stopped at its timeout hands over no images; a non-zero exit code still does.
+
 ## Skills
 
 The public Agent Skills format (Claude Code, Codex and others read it too), so existing skills from the web just work. `skills/<name>/SKILL.md`:

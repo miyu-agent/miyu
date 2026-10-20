@@ -73,6 +73,21 @@ Linux、macOS 上 `chmod +x dice.py`。
 - 工作目录是会话的工作区；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`。
 - 跑的规矩同 AI 跑命令：在沙盒里跑（只写得了工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读）；沙盒用不了的要人确认。
 
+**交图**
+
+要让 AI 直接看到图（截图、视频抽的帧），把图拷进 `MIYU_SCRIPT_IMAGES_DIR`：每次调用一个新的空目录，跑完 Miyu 收走，再删掉。
+
+```python
+import os, shutil
+shutil.copy("frame-01.png", os.environ["MIYU_SCRIPT_IMAGES_DIR"])
+print("Grabbed 1 frame.")
+```
+
+- 照文件名排，至多 4 张；PNG、JPEG、GIF、WebP，一张不超过 5 MiB、每边不超过 8000 像素。
+- 只看这一层的普通文件，不跟链接：要交的图请拷进去，别放链接。
+- 不合的不交，AI 也不知道有它；运行日志里有一行 `script image dropped`，写着哪个文件、为什么。
+- 到时被停掉的那一次不交图；退出码不是 0 的照样交。
+
 ## 技能
 
 照公开的 Agent Skills 格式（Claude Code、Codex 这些都认），网上现成的技能放进来就能用。`skills/<名字>/SKILL.md`：

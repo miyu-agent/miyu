@@ -25,6 +25,7 @@
 | `crates/miyu-policy/src/script.rs` | 读脚本的开头注释（施工 X-12 上）：旧版的键（全角、半角冒号），`Parameters` 往下逐行拼成一份 JSON 为止，认、不用的键跳过；工具名照文件名 |
 | `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再找装了的包的 `scripts/`，出厂的先于家目录、同一层照编号（施工 F-8 六补）；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
 | `crates/miyu-basesystem/src/shell/script.rs`、`resources/software/basesystem/script/` | 脚本当一件工具（施工 X-12 上）：照 `#!` 起（Windows 上照解释器的名字、扩展名找），参数交给 `MIYU_ARGS_JSON` 和标准输入，缓存目录 `MIYU_SCRIPT_CACHE_DIR`，`PYTHONUTF8=1`；起进程、看门、截输出、跑完了的几句和 `shell` 同一套 |
+| `crates/miyu-basesystem/src/shell/script/images.rs` | 脚本交图（施工 X-35）：每次调用一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，跑完照文件名排、不跟链接、认得的至多 4 张交成图，读完删掉 |
 | `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）、管理员家目录的 `scripts/` 里有文件变了（`Core::watch_scripts`，施工 X-12 补，2026-10-13 项目主人照推荐定：没有的先建上，点开头的、子文件夹里的不算，200 毫秒合并一次；再找一遍的一次一个）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
 | `crates/miyu-endpoint/src/skills.rs` | `skill.list`（施工 X-26，网页设置页「技能」那一页）：照造会话的找法列核心这一刻用得上的技能，同名的只列实际用的那一份；给人看的两格照连接的语言挑，`from` 是 `home`、`shipped`、`package`，随包来的带包的编号，`SKILL.md` 的路径家目录下的写成 `~/…`；`on` 是全局开关（施工 X-27，`presets.md`「全局开关」）；`tests/skill_list.rs` 守着 |
 | `crates/miyu-endpoint/src/skills/remove.rs` | `skill.remove`（施工 W-13，网页的技能页单个删、多选删）：只删管理员自己放的，整个文件夹挪进系统回收站；找法同 `skill.list`，随包来的、没有的拒绝，一个不行就一个都不删；文件夹得正好在管理员的技能文件夹下面一层（兜底，不删到别处） |
@@ -65,7 +66,7 @@
 
    `Description` 给模型（英文），`描述`、`显示名称` 给人（双槽，同技能；`显示名称`、`Display name` 也是时间线上这件工具的名字，派它那一刻记进结果，施工 9-8 六补）；`Parameters` 是参数的 JSON Schema，没写的当没有参数；`Timeout` 是秒，没写的 60；`Need load: yes` 和没写的要先加载，`no` 全量（`25-工具加载.md` W9，施工 L-1；没写的先加载是施工 L-3，2026-10-20 项目主人改），个人设置的 `loading.tools.<工具名>` 盖过它（头经 `tool.set_loading` 改，`script.list` 的 `need_load.by` 说是来处还是人改的，施工 X-27）。`Clicall: no` 的脚本里不能经 `miyu call` 调，没写的、`yes` 的能（施工 M-2，设计 `39-脚本调工具.md` 第三节），写错的同 `Need load`；个人设置的 `clicall.tools.<工具名>` 盖过它。全局开关 `features.script-<工具名>`、`features.skill-<名字>`（`presets.md`「全局开关」）在头的三页上改，预设没写的照它。技能没有加载方式：工具面上只有技能目录，用到才读正文（`25-工具加载.md` W9）。
 2. **她看到的**：一件工具，名字是文件名（去掉扩展名，不合 `[A-Za-z0-9_-]` 的换成 `_`），说明、参数照开头注释。说明、参数多大都收，不按大小挡（2026-10-12 项目主人定）。开头写错的、同名被压掉的不登记，`miyu check` 报出来。
-3. **跑**：照开头的 `#!` 起程序（Windows 上照扩展名找解释器）；参数是一份 JSON，交给环境变量 `MIYU_ARGS_JSON` 和标准输入（同旧版）；工作目录是会话的工作区；另给它一个能写缓存的目录（`MIYU_SCRIPT_CACHE_DIR`）。输出照命令的输出交回，退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人（`session/guard.md`）；进沙盒的单独放开脚本这一个文件只读（在数据根里的，沙盒本来藏着）。
+3. **跑**：照开头的 `#!` 起程序（Windows 上照扩展名找解释器）；参数是一份 JSON，交给环境变量 `MIYU_ARGS_JSON` 和标准输入（同旧版）；工作目录是会话的工作区；另给它一个能写缓存的目录（`MIYU_SCRIPT_CACHE_DIR`）。输出照命令的输出交回，退出码不是 0 的算出错。要交图的（施工 X-35，2026-10-20 项目主人定走一个目录、不改输出格式）：每次调用另给一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，建在缓存目录旁边，随机名，Unix 上 `0700`，建好取真实路径（macOS 的临时目录在链接下面）；脚本把图拷进去。跑完（退出码不是 0 的也算，到时被杀的不看）照文件名排，只看这一层：照 `miyu_fs::open_file` 打开，路上不跟链接、不阻塞、只认普通文件，超过 5 MiB 的不读；照 `miyu_tool::picture` 认格式、量尺寸、查上限，至多 4 张，交成图（`Done.images`，执行器存成 blob、接在字后面，同 `read`）；别的不交，运行日志记一行 `WARN script image dropped tool=… file=… why=…`，不给她另写一句（J12）。读完整个目录删掉。建不成目录的，这一次不给这个环境变量，照常跑。访问类别是执行：照跑命令的规矩进沙盒、问人（`session/guard.md`）；进沙盒的单独放开脚本这一个文件只读（在数据根里的，沙盒本来藏着）。
 4. **技能里的脚本**不算工具，不进工具面：由技能正文写怎么跑（她用跑命令的那件工具跑）。
 
 ### 定了的（2026-10-11 项目主人照推荐定）
@@ -95,3 +96,4 @@
 | X-13 补 | 装之前的预览报读不成的技能、脚本：做完了（2026-10-12） |
 | X-12 补 | 脚本：家目录里放进去、改了、删了的当场再登记，下一轮的工具面跟着变（原来要核心重启或者装卸包）：做完了（2026-10-13） |
 | X-13 下 | 出厂的两个技能：写技能的、写脚本和写包的。她自己写的照设计 31 第六节第 2、3 条：在工作区里照包的样子写好，用 F-10 下的 `package` 装；家目录里的不另开口子：做完了（2026-10-12） |
+| X-35 | 脚本交图：每次调用一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，脚本拷进去，跑完认得的交成图（2026-10-20 项目主人定） |
