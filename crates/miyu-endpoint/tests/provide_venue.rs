@@ -38,7 +38,7 @@ async fn a_venue_tool_is_provided_and_refused_in_a_local_session() {
     let (path, step) = record(&home, "bridge");
     let tools = json!({"tools": [{"name": "kick", "description": "Kick someone.",
         "input_schema": {"type": "object"}, "access": "venue", "venues": ["local", "group"]}]});
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

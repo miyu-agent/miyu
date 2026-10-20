@@ -95,6 +95,34 @@ pub fn install_asking(
     );
 }
 
+/// 演桥的包声明、批过的能力（施工 X-30）：同接入QQ 的清单里经扩展连接用得到的那几项。
+pub const BRIDGE: [&str; 5] = [
+    "tools",
+    "sessions.drive",
+    "act_for_external",
+    "events.read",
+    "events.write",
+];
+
+/// 记下包 `id` 批过了 `capabilities`，并进 `system/extensions.json`（施工 X-30：管理员装的包声明了能力的，批过才拉起）。
+pub fn approve(home: &Home, id: &str, capabilities: &[&str]) {
+    let system = home.root.system();
+    std::fs::create_dir_all(&system).expect("建得了");
+    let path = system.join("extensions.json");
+    let mut switches: Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_else(|| json!({"version": 1, "on": {}}));
+    switches["approved"][id] = json!(capabilities);
+    std::fs::write(&path, format!("{switches}\n")).expect("写得进");
+}
+
+/// 同 [`install`]，登记工具的扩展照实声明 `tools`，算批过（施工 X-30）。
+pub fn install_providing(home: &Home, id: &str, program: &str, start: &str, args: &[String]) {
+    install_asking(home, id, program, start, args, &["tools"]);
+    approve(home, id, &["tools"]);
+}
+
 /// 短的等法：等 300 毫秒再杀，退避从 20 毫秒起、最多 100 毫秒；跑满 60 秒才算稳；回合开始的问话等 3 秒。
 pub fn quick() -> Timing {
     Timing {
@@ -196,7 +224,7 @@ pub async fn call(client: &mut Client, method: &str, id: &str) -> Value {
     client.call("c", method, json!({"package": id})).await
 }
 
-/// 包 `id` 的清单：程序 `program`、参数 `args`，`start`、`system_account` 照写。
+/// 包 `id` 的清单：程序 `program`、参数 `args`，`start`、`system_account` 照写；照桥声明 [`BRIDGE`] 那几项能力、算批过（施工 X-30）。
 pub fn install_serving(
     home: &Home,
     id: &str,
@@ -209,10 +237,11 @@ pub fn install_serving(
     home.write(
         &format!("home/alice/packages/{id}/package.toml"),
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\nsystem_account = {system_account}\n",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\nsystem_account = {system_account}\ncapabilities = {BRIDGE:?}\n",
             args.join(", ")
         ),
     );
+    approve(home, id, &BRIDGE);
 }
 
 /// 会话 `session` 在账号 `account` 名下的目录。

@@ -24,7 +24,7 @@
 | `hello_first` | -32010 | 握手以前调了别的方法 |
 | `local_only` | -32010 | 只给人的方法，扩展调了；或者登录方式不对 |
 | `not_a_provider`、`not_an_extension` | -32010 | 只给核心拉起的扩展的方法，别的连接调了 |
-| `needs_approval` | -32010 | 扩展要的能力还没批，`data.capabilities` |
+| `needs_approval` | -32010 | 扩展要的能力还没批，或者调的方法要的能力清单没声明，`data.capabilities` |
 | `no_system_account` | -32010 | 只给系统账号的连接的方法 |
 
 ## 连接与登录

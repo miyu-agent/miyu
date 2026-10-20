@@ -13,7 +13,7 @@
 | [`venue.records`](#venuerecords) | 判官看的群聊记录 |
 | [`events.append` 的 `venue.*`](#eventsappend-的-venue) | 记撤回、记她发出去的话 |
 
-**谁能调**：`venue.session`、`venue.sessions`、`venue.binding` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话要能力 `act_for_external`。
+**谁能调**：`venue.session`、`venue.sessions`、`venue.binding` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
 
 **场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
 

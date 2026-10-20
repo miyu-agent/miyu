@@ -70,16 +70,24 @@ pub(super) async fn create(
     Ok(reply)
 }
 
-/// `session.send`：说话。
-pub(super) async fn send(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+/// `session.send`：说话。`caller` 是核心拉起的扩展的，它不带 `as` 说的话记成它自己（施工 X-30）。
+pub(super) async fn send(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: SendParams = params(request)?;
     // 别的 harness 报的名字先查（施工 7-10）：不对的，会话里什么都不送。代表外部的人（施工 O-3）和它不能同时写。
     if params.from.is_some() && params.as_external.is_some() {
         return Err(Refusal::BAD_PARAMS);
     }
-    let mut by = match &params.from {
-        Some(name) => from::harness(name)?,
-        None => admin(core),
+    // 扩展的身份是它自己（`04-核心协议.md` 第四节）：记成名字是包编号的 harness，组装照「别的 harness 发来的话」告诉她这不是人说的；
+    // 自己报 `from` 的冒充不了。
+    let mut by = match (&params.from, caller.package.as_deref()) {
+        (Some(_), Some(_)) => return Err(Refusal::BAD_PARAMS),
+        (Some(name), None) => from::harness(name)?,
+        (None, Some(package)) => from::harness(package)?,
+        (None, None) => admin(core),
     };
     let mut blocks = said(params.text);
     let session = session(&params.session)?;

@@ -30,7 +30,7 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
         .expect("存得进");
     let program = Program::new();
     let (path, step) = record(&home, "memes");
-    install(
+    install_providing(
         &home,
         "memes",
         &program.name(),

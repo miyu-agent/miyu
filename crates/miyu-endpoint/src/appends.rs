@@ -10,7 +10,6 @@ use std::sync::{Arc, Mutex, PoisonError};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_config::package::Capability;
 use miyu_kernel::id::SessionId;
 use miyu_policy::APPEND_MAX;
 
@@ -78,22 +77,10 @@ pub(crate) fn append(
     caller: &Caller,
     params: AppendParams,
 ) -> Result<Value, Refusal> {
+    // 声明了 `context.system` 没有，连接那一头照表查过了（施工 X-30，`connection/rights.rs`）。
     let Some(package) = caller.package.as_deref() else {
         return Err(Refusal::NOT_A_PROVIDER);
     };
-    let declared = core.packages().iter().any(|found| {
-        found.id == package
-            && found.read.as_ref().is_ok_and(|manifest| {
-                manifest.process.as_ref().is_some_and(|process| {
-                    process.capabilities.contains(&Capability::ContextSystem)
-                })
-            })
-    });
-    if !declared {
-        return Err(Refusal::needs_approval(json!([
-            Capability::ContextSystem.as_str()
-        ])));
-    }
     if let Some(session) = &params.session {
         SessionId::parse(session).map_err(|_| Refusal::BAD_PARAMS)?;
     }

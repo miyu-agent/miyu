@@ -35,7 +35,7 @@ async fn an_extension_tool_detail_in_a_known_shape_reaches_the_log() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bridge");
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

@@ -29,7 +29,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调；扩展照它的账号能看到的会话调（没声明系统账号的扩展就是管理员）。
+- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：

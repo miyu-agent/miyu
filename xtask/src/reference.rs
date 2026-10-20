@@ -12,13 +12,13 @@ use std::path::Path;
 pub const PATH: &str = "docs/reference";
 
 /// 找方法的代码目录。
-const SOURCES: [&str; 2] = ["crates/miyu-endpoint/src", "crates/miyu-core/src"];
+pub const SOURCES: [&str; 2] = ["crates/miyu-endpoint/src", "crates/miyu-core/src"];
 
 /// 查参考，交回问题。
 pub fn check(root: &Path) -> Vec<String> {
     let mut code = BTreeSet::new();
     for dir in SOURCES {
-        if let Err(e) = scan_dir(&root.join(dir), &mut code) {
+        if let Err(e) = scan_dir(&root.join(dir), &mut code, true) {
             return vec![format!("读不了 {dir}：{e}")];
         }
     }
@@ -45,8 +45,13 @@ pub fn check(root: &Path) -> Vec<String> {
     problems
 }
 
-/// 读一个目录下的 `.rs`，测试的文件、目录跳过。
-fn scan_dir(dir: &Path, found: &mut BTreeSet<String>) -> std::io::Result<()> {
+/// 读一个目录下的 `.rs`，测试的文件、目录跳过。`sent` 是不是也算核心发出去的（`"method": "…"` 那种写法）：参考要写它们，
+/// 扩展能调什么的表不要（`rights.rs`）。
+///
+/// # Errors
+///
+/// 目录、文件读不了。
+pub fn scan_dir(dir: &Path, found: &mut BTreeSet<String>, sent: bool) -> std::io::Result<()> {
     let mut entries: Vec<_> = std::fs::read_dir(dir)?.collect::<Result<_, _>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
@@ -54,19 +59,19 @@ fn scan_dir(dir: &Path, found: &mut BTreeSet<String>) -> std::io::Result<()> {
         let name = entry.file_name().to_string_lossy().into_owned();
         if path.is_dir() {
             if name != "tests" {
-                scan_dir(&path, found)?;
+                scan_dir(&path, found, sent)?;
             }
         } else if name.ends_with(".rs")
             && !matches!(name.as_str(), "tests.rs" | "test_support.rs" | "testkit.rs")
         {
-            scan(&std::fs::read_to_string(&path)?, found);
+            scan(&std::fs::read_to_string(&path)?, found, sent);
         }
     }
     Ok(())
 }
 
-/// 一份代码里分发的方法名。
-pub fn scan(text: &str, found: &mut BTreeSet<String>) {
+/// 一份代码里分发的方法名；`sent` 见 [`scan_dir`]。
+fn scan(text: &str, found: &mut BTreeSet<String>, sent: bool) {
     let text = text
         .split("#[cfg(test)]\nmod tests {")
         .next()
@@ -80,7 +85,7 @@ pub fn scan(text: &str, found: &mut BTreeSet<String>) {
         let literal = &after[..end];
         let at = offset + start;
         let close = at + 1 + end + 1;
-        if is_method(literal) && dispatched(text, at, close, listing) {
+        if is_method(literal) && dispatched(text, at, close, listing, sent) {
             found.insert(literal.to_string());
         }
         offset = close;
@@ -89,15 +94,15 @@ pub fn scan(text: &str, found: &mut BTreeSet<String>) {
 }
 
 /// `xxx.yyy`：小写字母、`_`，至少一个点，点两边不空。
-fn is_method(text: &str) -> bool {
+pub fn is_method(text: &str) -> bool {
     text.contains('.')
         && text.split('.').all(|part| {
             !part.is_empty() && part.chars().all(|c| c.is_ascii_lowercase() || c == '_')
         })
 }
 
-/// 从 `at`（开头的引号）到 `close`（结尾引号后面）的字面量是不是在分发的位置。
-fn dispatched(text: &str, at: usize, close: usize, listing: bool) -> bool {
+/// 从 `at`（开头的引号）到 `close`（结尾引号后面）的字面量是不是在分发的位置；`sent` 的另算 `"method": "…"`。
+fn dispatched(text: &str, at: usize, close: usize, listing: bool, sent: bool) -> bool {
     let before = text[..at].trim_end();
     let after = text[close..].trim_start();
     let line_start = text[..at].rfind('\n').map_or(0, |n| n + 1);
@@ -107,7 +112,7 @@ fn dispatched(text: &str, at: usize, close: usize, listing: bool) -> bool {
         || (before.ends_with('|') && !before.ends_with("||"))
         || (before.ends_with('(') && after.starts_with(','))
         || (before.ends_with('{') && after.starts_with('}'))
-        || before.ends_with("\"method\":")
+        || (sent && before.ends_with("\"method\":"))
         || (listing && alone && after.starts_with(",\n"))
 }
 

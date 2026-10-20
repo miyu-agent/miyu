@@ -294,7 +294,7 @@
 | `urgent` | 布尔，不写是 `false` | 急着插话 |
 | `cwd`、`dirs` | 可以不写 | 施工 9-7 上起照收不理：工作区是会话的属性，换它走 `session.set_workspace`。一个连接第一次收到带它们的，记一行运行日志 `WARN session.send cwd ignored`，看得出谁还在发 |
 | `attachments` | 数组，可以不写 | 附件（施工 3-9 三补）：`blob.put` 的回应，照先后。每一项要 `blob`、`name`、`media_type`；可以另写 `path`：这个附件原来在本机的哪儿，就是 `blob.put` 传的那个路径（施工 3-9 五补，剪贴板贴的、传 `data` 的不写），绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头）、没有控制字符、最多 4096 字节，不对的 `bad_params`；核心只查写法、不碰磁盘，记进块里，模型看不了这个附件时占位那一句带上它。没写 `path` 的（施工 3-9 六补）：核心把它拷成会话目录 `attachments/` 里的一个文件（`store.md`「会话目录」），块里记那个路径；她读得到（`fs.md` 第一节第 2 行），删会话时跟着走。别的格不看 |
-| `from` | 字符串，可以不写 | 别的 harness 报的自己的名字（施工 7-10，`agents.md` 第十一条第 4 条）：写了的，这一句是它说的，不是本人 |
+| `from` | 字符串，可以不写 | 别的 harness 报的自己的名字（施工 7-10，`agents.md` 第十一条第 4 条）：写了的，这一句是它说的，不是本人。核心拉起的扩展不能写（`bad_params`，冒充不了）：它不带 `as` 说的话记成 `harness`、名字是包的编号，组装照「别的 harness 发来的话」告诉她这不是人说的（施工 X-30，`04-核心协议.md` 第四节；不用 `By::Module`：它当一句人话的作者要动内核的追加检查和组装） |
 | `as` | 对象，可以不写 | 代表通讯平台上的人（施工 O-3，`venues.md`）：`{"external": <平台身份>, "role": "manager"|"member"}`。只给场所会话，场所会话也只收带它的（不带的回 `venue_session`）；和 `from` 不能一起写 |
 | `venue` | 对象，可以不写 | 通讯平台上的一条消息的那几格（施工 O-13 上，`venues.md`「场所的格」）：只跟着 `as` 来，原样记进 `message.user` 的 `venue`；`ambient` 的只记下，不开回合，回合进行中也不排进这一轮。可选的 `forwards` 是合并转发的内容（施工 O-34）：`[{nodes: [{name, text, media?, forwards?}], more?}]`，套最多 3 层、一个最多 100 条、一条正文最多 4096 字节；整条消息合起来最多 100 条、名字和正文最多 16 KiB，超了的 `bad_params` 带 `data.limit`（`forward_nodes`、`forward_bytes`）。不带 `as` 的、格写错的 `bad_params`，什么都不记 |
 

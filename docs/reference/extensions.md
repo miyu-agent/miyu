@@ -15,7 +15,7 @@
 | [`content.list`、`content.read`、`content.changed`](#contentlistcontentreadcontentchanged) | 两个方向 | 读别的包给它带的内容 |
 | [`events.append`](#eventsappend) | 扩展 → 核心 | 往会话里记一条自己的事件 |
 
-别的方法扩展照人的规矩调（`session.*`、`blob.*`、`model.call`……）；改配置、装卸软件包这类只给人的回 `local_only`，表在 [软件包](packages.md) 和各页的「谁能调」里。
+别的方法照一张表挡：只给人的（替人回答确认、改权限级别和工作目录、删会话、改配置、装卸软件包……）回 `local_only`；要某项能力的，清单没声明回 `needs_approval`（见下面「能力」）；别的照常。每个方法归哪一种写在各页的「谁能调」里，表里没有的方法当只给人。
 
 ## 拉起
 
@@ -40,10 +40,17 @@
 | `context.system` | 往系统提示词末尾放一段（`system.append`） |
 | `packages.call` | 调别的包导出的方法（`package.call`） |
 | `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
-| `act_for_external` | 代表平台上的人说话：只给通讯平台的桥 |
-| `events.read`、`events.write`、`sessions.drive` | 读会话的原始事件、往会话里记自己的事件、驱动会话（发话、开会话）。还没照声明挡，以后会挡：用到的照实写上 |
-| `network`、`fs.read`、`fs.write` | 联网、读写指定的路径：扩展进沙盒以后照它放行，现在不挡 |
+| `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
+| `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`、`job.stop` |
+| `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output` |
+| `events.write` | 往会话里记自己的事件（`events.append`） |
+| `memory.write` | 写记忆、知识库：`memory.remember`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
+| `fs.read` | 经核心读文件（`fs.*`） |
+| `network` | 经核心抓链接（`link.preview`） |
+| `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |
 | `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
+
+没声明的，调对应的方法回 `needs_approval`，`data.capabilities` 是缺的那一项。`network`、`fs.*` 管的是经核心做的；你的程序自己联网、读写文件，等扩展进沙盒以后才照它们挡。
 
 ## `provide`
 

@@ -295,7 +295,7 @@ async fn a_provider_cannot_take_an_mcp_name() {
     let (path, step) = record(&home, "bridge");
     let tools = json!({"tools": [{"name": "mcp__x__y", "description": "Y.",
         "input_schema": {"type": "object"}, "access": "read", "venues": ["local"]}]});
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

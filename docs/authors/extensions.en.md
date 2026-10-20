@@ -186,5 +186,5 @@ Text only: no Markdown, HTML or color codes. Full pages (`place = "page"`) can a
 ## Don't
 
 - Don't read or write elsewhere in the data root (sessions, other packages, config files, the secrets file): ask through the protocol.
-- Methods for local people only (changing config, installing packages, `extension.*` and so on) are refused for extensions (`local_only`).
-- **Declare capabilities honestly**: not everything is enforced yet, but undeclared ones will be blocked later.
+- Methods for people only (answering for the person, changing the permission level, deleting sessions, changing config, installing packages, `extension.*` and so on) are refused for extensions (`local_only`).
+- **Declare capabilities honestly**: calling a method whose capability isn't declared returns `needs_approval`, with the missing one in `data.capabilities`. What you say without `as` is recorded as you (named after the package), not as the person.

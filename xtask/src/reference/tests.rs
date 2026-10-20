@@ -2,7 +2,7 @@ use super::*;
 
 fn found(text: &str) -> Vec<String> {
     let mut found = BTreeSet::new();
-    scan(text, &mut found);
+    scan(text, &mut found, true);
     found.into_iter().collect()
 }
 

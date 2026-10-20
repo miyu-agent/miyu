@@ -13,7 +13,7 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 | [`venue.records`](#venuerecords) | Group chat records for the judge |
 | [`venue.*` in `events.append`](#venue-in-eventsappend) | Record recalls and messages she delivered |
 
-**Who can call**: `venue.session`, `venue.sessions` and `venue.binding` are for system account connections only (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform requires the `act_for_external` capability.
+**Who can call**: `venue.session`, `venue.sessions` and `venue.binding` are for system account connections only (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 

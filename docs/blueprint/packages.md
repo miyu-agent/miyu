@@ -67,7 +67,7 @@ pages_dir = "web/pages"          # 页面文件的目录，相对资源目录；
 [process]                        # 有它的是核心拉起的扩展，要有 [command]
 args = ["serve"]                 # 拉起时带的参数，没写的是空的
 start = "manual"                 # manual：开关打开才拉起（默认）；always：核心起来就拉起
-capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那十六个名字，可以不写
+capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那十七个名字，可以不写
 system_account = true            # 有没有自己的系统账号（施工 O-4 下）：账号名就是包的编号；不写是没有
 
 [check]                          # 要有 [command]

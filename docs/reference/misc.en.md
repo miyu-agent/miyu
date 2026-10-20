@@ -10,7 +10,7 @@ Chinese version: [misc.md](misc.md).
 | [`link.preview`](#linkpreview) | A card for a link |
 | [`mermaid.render`](#mermaidrender) | Render Mermaid source to SVG |
 
-**Who can call**: people, extensions.
+**Who can call**: people, extensions; extensions need the `events.read` capability for `job.output` and `network` for `link.preview`.
 
 ## `job.stop`
 

@@ -501,6 +501,8 @@
     "extensions/capabilities/fs.read/summary": "读指定的文件和目录",
     "extensions/capabilities/fs.write": "写入文件",
     "extensions/capabilities/fs.write/summary": "写指定的文件和目录",
+    "extensions/capabilities/memory.write": "写入记忆和知识库",
+    "extensions/capabilities/memory.write/summary": "替 AI 记住、改、忘掉记忆，往知识库里加、改、删",
     "persona-problems/syntax": "读不成 TOML：{detail}",
     "persona-problems/unknown_table": "不认识的表 [{detail}]：persona.toml 里只能有 [persona]、[memory]、[appearance]",
     "persona-problems/not_a_table": "{detail} 要写成一张表 [{detail}]",

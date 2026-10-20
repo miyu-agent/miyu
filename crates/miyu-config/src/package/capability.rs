@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，管理员
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十六个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十七个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`），先后照这张表。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -36,11 +36,13 @@ pub enum Capability {
     FsRead,
     /// 写指定的路径。
     FsWrite,
+    /// 写记忆、知识库：记住、改、忘、恢复记忆，往知识库加、改、删（施工 X-30，2026-10-20 项目主人定一项管两样）。
+    MemoryWrite,
 }
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 16] = [
+    pub const ALL: [Capability; 17] = [
         Capability::Tools,
         Capability::Commands,
         Capability::Widgets,
@@ -57,6 +59,7 @@ impl Capability {
         Capability::Network,
         Capability::FsRead,
         Capability::FsWrite,
+        Capability::MemoryWrite,
     ];
 
     /// 清单、协议上的写法。
@@ -78,6 +81,7 @@ impl Capability {
             Capability::Network => "network",
             Capability::FsRead => "fs.read",
             Capability::FsWrite => "fs.write",
+            Capability::MemoryWrite => "memory.write",
         }
     }
 

@@ -92,7 +92,7 @@ Makes it an extension; needs `[command]`.
 | `capabilities` | What it needs, see below |
 | `system_account` | `true`: it has its own system account, named after the package. Only chat platform bridges need it: group sessions belong to this account |
 
-**Capabilities**: only these sixteen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly.**
+**Capabilities**: only these seventeen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
@@ -104,8 +104,12 @@ Makes it an extension; needs `[command]`.
 | `context.system` | Putting a section at the end of the system prompt |
 | `packages.call` | Calling methods other packages export |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
-| `events.read`, `events.write`, `sessions.drive` | Reading a session's raw events, recording your own events in a session, driving sessions (sending, creating). Not enforced yet; they will be, so declare the ones you use |
-| `network`, `fs.read`, `fs.write` | Network access, reading and writing given paths: granted once extensions run in a sandbox; not enforced now |
+| `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
+| `events.read` | Reading sessions: subscribing to events, reading history and background command output |
+| `events.write` | Recording your own events in a session |
+| `memory.write` | Writing memories and knowledge bases |
+| `fs.read`, `network` | Reading files and fetching links through the core |
+| `fs.write` | Writing given paths: granted once extensions run in a sandbox |
 | `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
 
 ## `[settings.<name>]`

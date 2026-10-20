@@ -55,7 +55,7 @@ async fn an_extension_tool_can_end_the_turn() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bridge");
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

@@ -122,7 +122,7 @@ async fn an_extension_tool_step_is_titled_with_the_name_it_registered() {
     bare["input_schema"] = json!({"type": "object", "properties": {"x": {"type": "string"}}});
     bare["subject"] = json!("x");
     let tools = json!({"tools": [greet, spec("plain"), bare]});
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

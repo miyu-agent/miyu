@@ -1,7 +1,7 @@
 //! 项目（施工 H-1，设计 `38-项目.md`）：`project.list`、`project.create`、`project.update`、`project.delete`，存在这个账号家目录的
 //! `projects.json`（`miyu_store::projects`）。改的几个排着做（[`Core`] 的 `projects` 锁）：读、改、照读到的版本写，写成了报一声
-//! 「这个账号的这个项目变了」（[`changes`]），订阅 `projects` 的连接照它推（`subscriptions/listed.rs`）。只给人（`connection.rs`
-//! 的 `people_only`）。
+//! 「这个账号的这个项目变了」（[`changes`]），订阅 `projects` 的连接照它推（`subscriptions/listed.rs`）。只给人（`connection/rights.rs`
+//! 的表，施工 X-30）。
 
 pub(crate) mod changes;
 pub(crate) mod sessions;

@@ -70,7 +70,7 @@ async fn an_extension_provides_tools_and_answers_the_calls() {
         spec("garbled", json!(["local"])), spec("oops", json!(["local"])),
         spec("group_only", json!(["group"])), silent,
     ]});
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

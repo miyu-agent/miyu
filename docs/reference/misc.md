@@ -10,7 +10,7 @@
 | [`link.preview`](#linkpreview) | 一个链接的卡片 |
 | [`mermaid.render`](#mermaidrender) | Mermaid 源码画成 SVG |
 
-**谁能调**：人、扩展。
+**谁能调**：人、扩展；扩展调 `job.output` 要能力 `events.read`，`link.preview` 要 `network`。
 
 ## `job.stop`
 

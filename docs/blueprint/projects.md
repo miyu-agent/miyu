@@ -22,7 +22,7 @@
 1. 改的几个方法先拿 `projects` 锁，读、改、照读到的版本写：两个连接同时改不会互相盖掉；有人这一瞬间手改了文件的写不进、回 `internal_error`。
 2. 建、改都先查：各格写法不对的 `bad_params` 带 `data.field`，人格、预设照造会话的找法（`personas::resolve`、`presets::resolve`），没有的照它们的原因码；拒了的什么都不写。
 3. 写空字符串的格当清掉；`unset` 列的回到「没写」；名称不能清。
-4. 只给人（`connection.rs` 的 `people_only`：方法名 `project.` 开头的）。
+4. 只给人（`connection/rights.rs` 的表，施工 X-30：`project.list`、`create`、`update`、`delete`，订阅 `projects` 流也是）。
 5. 会话在哪个项目只记在会话日志里（H-2）：`session.set_meta` 的 `project` 换成内核的 `SetMeta`，`null` 记成空的；移进的项目要在，会话要是本机的主会话（分叉出来的也有父会话）。`session.create` 带 `project` 的，没写的人格、预设照项目的，建好了再交一条 `SetMeta`（命令编号是请求的编号接 `/project`），回应的 `events` 是 `[1, 2]`。
 6. 删项目（H-2）：照会话列表的扫法找出在这个项目里的本机会话，一个个移出来，再从文件里拿掉，回 `moved`。
 7. 附加提示词（H-3）：回合开始照内核记的这个会话在哪个项目（`Session::project`），读那个项目现在的 `prompt` 拼一块，和快照里的比，变了整段 system 重算一次（下一轮生效）；读不成的照旧用快照里的、记一行。

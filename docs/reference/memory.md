@@ -12,7 +12,7 @@
 | [`kb.list`、`kb.search`、`kb.read`、`kb.documents`](#kblistkbsearchkbreadkbdocuments) | 列知识库、搜、读一页、列一个库里的文档 |
 | [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
 
-**谁能调**：人、扩展。人经协议是主人这一边：全部列得出、搜得到、改得了。
+**谁能调**：人、扩展；扩展写的（记住、改、忘、恢复、整理，知识库加、改、挂、删、重建索引）要能力 `memory.write`。人经协议是主人这一边：全部列得出、搜得到、改得了。
 
 ## 记忆的「一间」
 

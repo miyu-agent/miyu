@@ -9,8 +9,6 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_config::package::Capability;
-
 use crate::Core;
 use crate::hello::Caller;
 use crate::refusal::Refusal;
@@ -97,8 +95,8 @@ pub(crate) fn register(
     Ok(json!({ "methods": count }))
 }
 
-/// `package.call`：照登记的转给扩展，回什么交回什么。`from` 是调的扩展的包（施工 X-18）：它要声明了 `packages.call`，只调得到
-/// 对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。回应里对方拿得到的 blob，
+/// `package.call`：照登记的转给扩展，回什么交回什么。`from` 是调的扩展的包（施工 X-18）：它要声明了 `packages.call`（连接那一头照
+/// `connection/rights.rs` 的表查，施工 X-30），只调得到对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。回应里对方拿得到的 blob，
 /// `from` 也拿得到（施工 W-6 三补，[`crate::attach::Grants::pass`]）。
 pub(crate) async fn call(
     core: &Core,
@@ -115,18 +113,9 @@ pub(crate) async fn call(
     let Some(target) = manifest(&params.package) else {
         return Err(Refusal::UNKNOWN_PACKAGE);
     };
-    if let Some(from) = from {
-        let declared = manifest(from)
-            .and_then(|caller| caller.process.as_ref())
-            .is_some_and(|process| process.capabilities.contains(&Capability::PackagesCall));
-        if !declared {
-            return Err(Refusal::needs_approval(json!([
-                Capability::PackagesCall.as_str()
-            ])));
-        }
-        if !target.export.contains(&params.method) {
-            return Err(Refusal::not_exported(&params.method));
-        }
+    // 扩展调的：声明了 `packages.call` 没有，连接那一头照表查过了（施工 X-30，`connection/rights.rs`）；这里只看对方给没给出来。
+    if from.is_some() && !target.export.contains(&params.method) {
+        return Err(Refusal::not_exported(&params.method));
     }
     let (peer, timeout) = {
         let table = core

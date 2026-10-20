@@ -25,8 +25,7 @@ use tokio::task::JoinSet;
 
 use miyu_kernel::id::SessionId;
 
-mod people;
-use people::people_only;
+mod rights;
 mod streams;
 #[cfg(test)]
 mod tests;
@@ -103,6 +102,10 @@ async fn read_all<R: AsyncRead + Unpin>(
     let from_core = spawned.is_some();
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
     let package = spawned.as_ref().map(|(_, package)| package.clone());
+    // 它声明了哪些能力（施工 X-30）：升级会重新拉起，一个连接算一次就够。
+    let declared = package
+        .as_deref()
+        .map_or_else(Vec::new, |package| rights::declared(&core, package));
     // 这个连接是谁（施工 O-4 下）：声明了系统账号的包的扩展是它，别的是管理员。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
@@ -208,11 +211,13 @@ async fn read_all<R: AsyncRead + Unpin>(
             told_cwd = true;
             tracing::warn!(target: "miyu::endpoint", "session.send cwd ignored");
         }
-        // 扩展不能开关、重启扩展（施工 9-4 上），也不能改、删人格和预设（施工 P-3 中），不能改配置、存删密钥（施工 T-9）：那是人的事。
-        if via == Some(Via::Spawned) && people_only(&request.method) {
+        // 扩展照它声明的能力挡（施工 X-30，`rights.rs`）：只给人的、缺能力的当场拒，参数都不看。
+        if via == Some(Via::Spawned)
+            && let Some(refusal) = rights::refuse(&request, &declared)
+        {
             let refused = wire::error(
                 Value::String(request.id.as_str().to_string()),
-                Refusal::LOCAL_ONLY,
+                refusal,
                 locale,
             );
             if !send(&out, refused).await {

@@ -18,6 +18,7 @@ mod perf;
 mod prompts;
 mod purity;
 mod reference;
+mod rights;
 mod samples;
 mod size;
 mod test_targets;
@@ -109,10 +110,11 @@ fn check() -> ExitCode {
     ];
     println!("\n── 文档：登记簿 {} 第十节 ──", ledger::PATH);
     println!(
-        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法 ──",
+        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法；{} 扩展能调什么的表 ──",
         prompts::PATH,
         heads::PATH,
-        reference::PATH
+        reference::PATH,
+        rights::PATH
     );
     if let Some(docs) = outcomes.last_mut() {
         docs.problems.extend(ledger::check(&root));
@@ -120,6 +122,7 @@ fn check() -> ExitCode {
         docs.problems.extend(samples::check(&root));
         docs.problems.extend(heads::check(&root));
         docs.problems.extend(reference::check(&root));
+        docs.problems.extend(rights::check(&root));
     }
     outcomes.extend(gates(&cargo, &root));
     println!(

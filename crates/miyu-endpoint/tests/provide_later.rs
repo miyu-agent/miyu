@@ -84,7 +84,7 @@ async fn a_session_made_before_provide_gets_the_tools_at_its_next_turn() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bridge");
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),
@@ -140,7 +140,7 @@ async fn after_a_restart_the_cached_tools_are_there_before_the_extension_provide
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bridge");
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),
@@ -165,7 +165,7 @@ async fn after_a_restart_the_cached_tools_are_there_before_the_extension_provide
 
     // 重启以后扩展握了手、不登记：工具照缓存在目录里，调到的暂时不可用。
     let (_, step) = record(&home, "bridge-again");
-    install(
+    install_providing(
         &home,
         "bridge",
         &program.name(),

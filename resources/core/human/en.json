@@ -505,6 +505,8 @@
     "extensions/capabilities/fs.read/summary": "Read specified files and folders",
     "extensions/capabilities/fs.write": "Write files",
     "extensions/capabilities/fs.write/summary": "Write to specified files and folders",
+    "extensions/capabilities/memory.write": "Write memories and knowledge bases",
+    "extensions/capabilities/memory.write/summary": "Remember, change and forget memories; add, change and remove knowledge bases",
     "persona-problems/syntax": "Not valid TOML: {detail}",
     "persona-problems/unknown_table": "Unknown table [{detail}]: persona.toml only takes [persona], [memory] and [appearance]",
     "persona-problems/not_a_table": "{detail} must be a table [{detail}]",

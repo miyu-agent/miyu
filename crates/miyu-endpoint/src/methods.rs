@@ -204,7 +204,7 @@ pub(crate) fn call<'a>(
             let params: venues::SessionsParams = params(request)?;
             venues::sessions(core, &caller.account, params).await
         }),
-        "session.send" => answer(move || session::send(core, request)),
+        "session.send" => answer(move || session::send(core, caller, request)),
         "session.interrupt" => answer(move || session::interrupt(core, request)),
         "session.revert" => answer(move || session::revert(core, request)),
         "session.unrevert" => answer(move || session::unrevert(core, request)),

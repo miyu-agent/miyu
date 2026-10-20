@@ -15,7 +15,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`content.list`, `content.read`, `content.changed`](#contentlist-contentread-contentchanged) | both | Read content other packages bring for it |
 | [`events.append`](#eventsappend) | extension → core | Record an event of its own in a session |
 
-Extensions call other methods under the same rules as people (`session.*`, `blob.*`, `model.call`…); methods for people only, such as changing config or installing packages, return `local_only`. The list is in [Packages and commands](packages.en.md) and in each page's "Who can call".
+Other methods go through one table: those for people only (answering for the person, changing the permission level or workspace, deleting sessions, changing config, installing packages…) return `local_only`; those needing a capability return `needs_approval` when the manifest doesn't declare it (see "Capabilities" below); the rest work as usual. Each page's "Who can call" says which kind a method is; methods missing from the table count as people only.
 
 ## Launch
 
@@ -40,10 +40,17 @@ The manifest's `[process] capabilities` declares what it needs. Packages the adm
 | `context.system` | Putting a section at the end of the system prompt (`system.append`) |
 | `packages.call` | Calling methods other packages export (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
-| `act_for_external` | Speaking for people on a chat platform: for chat platform bridges only |
-| `events.read`, `events.write`, `sessions.drive` | Reading a session's raw events, recording your own events in a session, driving sessions (sending, creating). Not enforced yet; they will be, so declare the ones you use |
-| `network`, `fs.read`, `fs.write` | Network access, reading and writing given paths: granted once extensions run in a sandbox; not enforced now |
+| `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*`, recording `venue.*` events: for platform bridges only |
+| `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
+| `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output` |
+| `events.write` | Recording your own events in a session (`events.append`) |
+| `memory.write` | Writing memories and knowledge bases: `memory.remember`, `update`, `forget`, `restore`, `dream`, `dream_stop`, `kb.add`, `create`, `update`, `mount`, `remove`, `delete`, `reindex` |
+| `fs.read` | Reading files through the core (`fs.*`) |
+| `network` | Fetching links through the core (`link.preview`) |
+| `fs.write` | Writing given paths: granted once extensions run in a sandbox |
 | `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
+
+Calling a method whose capability isn't declared returns `needs_approval`, with the missing one in `data.capabilities`. `network` and `fs.*` cover what goes through the core; your program's own network and file access is only checked once extensions run in a sandbox.
 
 ## `provide`
 

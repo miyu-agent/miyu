@@ -9,7 +9,7 @@
 | [`fs.realpath`](#fsrealpath) | 一个路径换成真实的位置 |
 | [`fs.read`](#fsread) | 分块读一份本机文件 |
 
-**谁能调**：人、扩展。
+**谁能调**：人；扩展要能力 `fs.read`。
 
 **边界**：Miyu 的数据目录（默认 `~/.miyu`）里只有这个账号自己的默认工作区能列、能找、能读，别处回 `path_forbidden`。`fs.realpath` 只说位置、不读内容，不查边界。
 

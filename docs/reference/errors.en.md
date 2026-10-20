@@ -24,7 +24,7 @@ Chinese version: [errors.md](errors.md).
 | `hello_first` | -32010 | Another method before the handshake |
 | `local_only` | -32010 | A method for people only, called by an extension; or the wrong way of logging in |
 | `not_a_provider`, `not_an_extension` | -32010 | A method only for extensions the core launched, called by another connection |
-| `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, `data.capabilities` |
+| `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, or the method it called needs one its manifest doesn't declare, `data.capabilities` |
 | `no_system_account` | -32010 | A method only for system account connections |
 
 ## Connecting and logging in

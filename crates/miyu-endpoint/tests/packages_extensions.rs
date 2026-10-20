@@ -70,7 +70,7 @@ async fn an_installed_extension_starts_and_a_removed_one_stops() {
     let program = Program::new();
     let (path, step) = record(&home, "xbridge");
     // 先装到家目录里拿到清单的写法，再挪到工作目录当要装的那一份。
-    install(
+    install_providing(
         &home,
         "xbridge",
         &program.name(),

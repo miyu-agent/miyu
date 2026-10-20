@@ -96,7 +96,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 
 Subscribe to a push stream: from now on its pushes go to this connection.
 
-**Who can call**: people, extensions.
+**Who can call**: people, extensions; extensions need the `events.read` capability for the `events`, `view` and `sessions` streams, and the `projects` stream is for people only (`local_only`).
 
 **Params**
 

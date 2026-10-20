@@ -12,7 +12,7 @@ Chinese version: [memory.md](memory.md).
 | [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
 | [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
 
-**Who can call**: people, extensions. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
+**Who can call**: people, extensions; extensions writing (remembering, changing, forgetting, restoring, consolidating; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
 
 ## Which memory
 

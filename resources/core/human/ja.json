@@ -501,6 +501,8 @@
     "extensions/capabilities/fs.read/summary": "指定したファイルとフォルダを読む",
     "extensions/capabilities/fs.write": "ファイルを書き込み",
     "extensions/capabilities/fs.write/summary": "指定したファイルとフォルダに書き込む",
+    "extensions/capabilities/memory.write": "記憶とナレッジベースを書き込み",
+    "extensions/capabilities/memory.write/summary": "記憶を覚える・変える・忘れる、ナレッジベースを追加・変更・削除する",
     "persona-problems/syntax": "TOML として読めません：{detail}",
     "persona-problems/unknown_table": "知らない表 [{detail}]：persona.toml に書けるのは [persona]、[memory]、[appearance] だけです",
     "persona-problems/not_a_table": "{detail} は表 [{detail}] として書きます",

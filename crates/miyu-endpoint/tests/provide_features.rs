@@ -25,10 +25,11 @@ fn install_featured(home: &Home, id: &str, program: &str, steps: &[String], feat
     home.write(
         &format!("home/alice/packages/{id}/package.toml"),
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Echo\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"E\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\n\n{features}",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Echo\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"E\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = [\"tools\"]\n\n{features}",
             args.join(", ")
         ),
     );
+    approve(home, id, &["tools"]);
 }
 
 /// 等到 `path` 里记下的有 `n` 行，交回它们。
