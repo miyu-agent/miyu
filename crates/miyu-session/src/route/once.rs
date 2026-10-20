@@ -107,8 +107,10 @@ pub struct Answer {
 /// 边收边看的一样（施工 R-21，[`OneShot::call_watching`]）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Watched<'a> {
-    /// 正文的一段（思考的不交）。
+    /// 正文的一段。
     Text(&'a str),
+    /// 思考的一段（施工 R-26）：不出思考的模型没有。
+    Thinking(&'a str),
     /// 换了端点，从头再来：之前交的那几段作废。
     Restart,
 }
@@ -189,7 +191,8 @@ impl OneShot {
         self.call_watching(config, blobs, ask, &mut |_| {}).await
     }
 
-    /// 同 [`OneShot::call`]，正文的每一段边收边交给 `watch`，换了端点重来的先交一个 `Watched::Restart`（施工 R-21）。
+    /// 同 [`OneShot::call`]，正文的每一段边收边交给 `watch`，换了端点重来的先交一个 `Watched::Restart`（施工 R-21）；思考的每一段
+    /// 交 `Watched::Thinking`（施工 R-26）。
     ///
     /// # Errors
     ///
@@ -300,8 +303,8 @@ impl OneShot {
                 watch(Watched::Restart);
             }
             let mut reply = Reply::default();
-            // 正文是哪几块：思考的字不交出去。
-            let mut texts = BTreeSet::new();
+            // 正文、思考各是哪几块（施工 R-26：思考的字另交）。
+            let (mut texts, mut thoughts) = (BTreeSet::new(), BTreeSet::new());
             let exchanged = exchange(
                 &ready,
                 &request,
@@ -316,8 +319,17 @@ impl OneShot {
                             } => {
                                 texts.insert(*index);
                             }
+                            Delta::Start {
+                                index,
+                                kind: Kind::Reasoning,
+                            } => {
+                                thoughts.insert(*index);
+                            }
                             Delta::Text { index, text } if texts.contains(index) => {
                                 watch(Watched::Text(text));
+                            }
+                            Delta::Text { index, text } if thoughts.contains(index) => {
+                                watch(Watched::Thinking(text));
                             }
                             _ => {}
                         }

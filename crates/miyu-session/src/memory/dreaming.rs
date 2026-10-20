@@ -7,24 +7,89 @@
 //! - 一个核心一路广播（[`Dreams`]），带着哪一间；订阅的一头（[`DreamFeed`]）只要自己那一间的、说的那一条这次的听众听得见的
 //!   （同 `follow` 的挑法）。读得慢掉了队的跳过掉的那几条，接着收。
 //! - 推以前遮过 key（同落的）。
+//! - 模型出思考的另推思考（施工 R-26，第 12 款）：开始想、一段段的字（[`Thoughts`] 攒一攒、在空白处切再推，一个 key 不会被切成
+//!   两半漏遮）、想完了。思考里会提到这一批交的所有条目，只推给听众是主人的。
 
 use miyu_kernel::id::Seq;
 use miyu_recall::merge::Seen;
 use miyu_store::recall::Room;
 use tokio::sync::broadcast;
 
-use super::Keeper;
+use super::{Keeper, Listener};
 
 /// 一路广播最多攒几条没读走的：一批写出来的几十条够了，再慢的掉队。
 const ROOM: usize = 256;
 
-/// 正在合的那一批（照 `upto` 对上它的 `ext.memory.merging`）她刚写完的一样。
+/// 思考攒到几个字以上才推（推到最后一个空白为止）。
+const THOUGHT_CHARS: usize = 64;
+
+/// 正在合的那一批（照 `upto` 对上它的 `ext.memory.merging`）她刚写完的一样，或者她在想的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dreaming {
     /// 哪一批：同它的 `merging`、`merged` 的 `upto`。
     pub upto: Seq,
-    /// 写完的那一样（遮过 key 的）。
-    pub seen: Seen,
+    /// 是什么（遮过 key 的）。
+    pub what: Dreamt,
+}
+
+/// 推的一样。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Dreamt {
+    /// 写完的一条改的、作废的，或者摘要写到哪（施工 R-21）。
+    Seen(Seen),
+    /// 开始想了（施工 R-26）：同一批又来一次是换了端点从头来，之前的思考作废。
+    ThinkingStarted,
+    /// 思考的一段字：照先后接起来是全文。
+    Thinking(String),
+    /// 想完了：开始写正文，或者答完了。
+    ThinkingEnded,
+}
+
+/// 一批的思考怎么推（施工 R-26）：第一段字来时先推开始；攒够 [`THOUGHT_CHARS`] 个字推到最后一个空白为止，剩下的留着；正文
+/// 来了、答完了推剩下的和想完了。交回的字还没遮 key。
+#[derive(Debug, Default)]
+pub(crate) struct Thoughts {
+    started: bool,
+    ended: bool,
+    held: String,
+}
+
+impl Thoughts {
+    /// 收到思考的一段：交回要推的。
+    pub(crate) fn thinking(&mut self, text: &str) -> Vec<Dreamt> {
+        let mut out = Vec::new();
+        if !self.started {
+            self.started = true;
+            out.push(Dreamt::ThinkingStarted);
+        }
+        self.held.push_str(text);
+        if self.held.chars().count() >= THOUGHT_CHARS
+            && let Some((at, space)) = self.held.char_indices().rfind(|(_, c)| c.is_whitespace())
+        {
+            let rest = self.held.split_off(at + space.len_utf8());
+            out.push(Dreamt::Thinking(std::mem::replace(&mut self.held, rest)));
+        }
+        out
+    }
+
+    /// 正文来了、答完了：想过的推剩下的和想完了，只推一次。
+    pub(crate) fn done(&mut self) -> Vec<Dreamt> {
+        if !self.started || self.ended {
+            return Vec::new();
+        }
+        self.ended = true;
+        let mut out = Vec::new();
+        if !self.held.is_empty() {
+            out.push(Dreamt::Thinking(std::mem::take(&mut self.held)));
+        }
+        out.push(Dreamt::ThinkingEnded);
+        out
+    }
+
+    /// 换了端点从头来：之前的作废，下一段思考再推开始。
+    pub(crate) fn restart(&mut self) {
+        *self = Thoughts::default();
+    }
 }
 
 /// 一个核心一路：带着哪一间。
@@ -81,12 +146,15 @@ impl Keeper {
         }
     }
 
-    /// 这次的听众听不听得见：说的那一条照 `follow` 的挑法（底账里没有的、摘要照给）。
+    /// 这次的听众听不听得见：说的那一条照 `follow` 的挑法（底账里没有的、摘要照给）；思考只给主人（施工 R-26）。
     fn hears_dreaming(&self, dreaming: &Dreaming) -> bool {
-        let id = match &dreaming.seen {
-            Seen::Revised(revised) => revised.id,
-            Seen::Retired(retired) => retired.id,
-            Seen::Summary { .. } => return true,
+        let id = match &dreaming.what {
+            Dreamt::Seen(Seen::Revised(revised)) => revised.id,
+            Dreamt::Seen(Seen::Retired(retired)) => retired.id,
+            Dreamt::Seen(Seen::Summary { .. }) => return true,
+            Dreamt::ThinkingStarted | Dreamt::Thinking(_) | Dreamt::ThinkingEnded => {
+                return matches!(self.listener, Listener::Owner(_));
+            }
         };
         let Ok(log) = self.log() else {
             return false;
