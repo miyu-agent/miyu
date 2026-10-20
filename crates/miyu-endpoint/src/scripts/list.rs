@@ -21,7 +21,7 @@ use crate::config::project::shown;
 use crate::hello::Peer;
 use crate::personas::pick;
 
-/// `script.list`：`{"scripts": [...]}`。
+/// `script.list`：`{"scripts": [...], "dir"}`；`dir` 是管理员自己放脚本的文件夹（施工 X-27 补）。
 pub(crate) fn list(core: &Core, peer: Peer) -> Value {
     let values = core.config_now().borrow().resolved().values();
     let loading = Loading::of(&values);
@@ -57,5 +57,6 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Value {
             one
         })
         .collect();
-    json!({ "scripts": listed })
+    let dir = miyu_store::scripts::own_dir(&core.root, &core.admin);
+    json!({ "scripts": listed, "dir": shown(&dir, core.home.as_deref()) })
 }

@@ -8,6 +8,7 @@ mod goal_command;
 mod goal_heads;
 mod model_embed;
 mod package_call_ext;
+mod page_extras;
 mod profile;
 mod projects;
 mod projects_scope;

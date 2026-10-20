@@ -71,7 +71,7 @@ env = { GITHUB_TOKEN = { secret = "github" } }
 5. 挂在 `~home` 下（同家目录里放的脚本）：工具 `mcp__<名字>__…`，功能 `mcp-<名字>`，预设照它开关。写进去就算开着，没有包的开关；不想用的删掉，或者在预设里关。
 6. 当场生效（施工 F-9 下）：核心起来时和包里带的一起起；个人设置手改了、核心重读时，新写的起，删掉的停下、工具出目录，改了的（命令、环境变量、给哪种会话、时限）停下再起、重新列；只动了注释、行号的不动。包里带的服务都被盖住了的包，软件包列表上照关着算（不卡在「起着」）。
 7. 程序照命令第一项找：绝对路径照它；`~/` 开头的照系统的家目录换成绝对路径；带路径分隔符的相对路径照家目录接；只有名字的先找家目录下的 `bin/`，再照 `PATH`。工作目录、标准错误、目录缓存同包里带的：`state/mcp/<名字>/`、日志目录里的一份、`state/mcp/<名字>.json`。
-8. 头上的状态（施工 F-9 补，网页的会话要的）：它们不是包，`package.list` 不列；另给 `mcp.list`（状态同软件包列表上服务的那一格，另带 `covers`；知道有哪些工具的带 `tools`，施工 X-26）、`mcp.restart`，状态变了推 `mcp.changed`（订阅软件包列表的连接收）。包里被盖住的那一格、全被盖住的包带 `covered: true`，头照它写「被个人设置里的同名服务替代」，分得出是被盖住还是关着（`protocol.md`「`mcp.*`」）。
+8. 头上的状态（施工 F-9 补，网页的会话要的）：它们不是包，`package.list` 不列；另给 `mcp.list`（状态同软件包列表上服务的那一格，另带 `covers`；知道有哪些工具的带 `tools`，施工 X-26；编辑页要的原来写的 `env`、`timeout_ms`，施工 X-27 补）、`mcp.restart`，状态变了推 `mcp.changed`（订阅软件包列表的连接收）。包里被盖住的那一格、全被盖住的包带 `covered: true`，头照它写「被个人设置里的同名服务替代」，分得出是被盖住还是关着（`protocol.md`「`mcp.*`」）。
 
 **她看到的工具**：
 
@@ -145,6 +145,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-endpoint/tests/mcp_settings.rs` | 个人设置里的服务（施工 F-9）：`miyu check` 报写错的、被盖住的，`[mcp.<名字>]` 不算不认识的键；真起测试用的服务：写了就起、调到的是它、包里同名的不起、那个包照关着算、预设里一个功能；手改个人设置当场换：新写的起、包里同名的停，改了的照新写的重起，删掉的停、包里的照开关起回来 |
 | `crates/miyu-endpoint/tests/mcp_settings_status.rs` | 头上的状态（施工 F-9 补）：被盖住的服务、全被盖住的包带 `covered`；`mcp.list` 列状态和盖住了谁，`mcp.restart` 换一个进程、失败从零数，没有的拒；订阅的连接收 `mcp.changed`，删掉的 `server` 是 `null`，不推叫 `~home` 的包 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_moves_the_source_to_the_setting_and_the_next_face`（施工 X-27） | `mcp.list` 的 `need_load` 照 `loading.mcp.<服务名>` 从 `source` 变 `setting`，`on` 照 `features.mcp-<服务名>` |
+| `crates/miyu-endpoint/tests/page_extras.rs`（施工 X-27 补） | 软件包列表上包带的服务带 `need_load`、`on`，改了跟着变；`mcp.list` 带回原来写的 `env`、`timeout_ms`，照它存回去个人设置一个字不变，没写的不带 |
 | `crates/miyu-endpoint/tests/mcp_edit.rs`、`src/mcp/written/tests.rs` | 头改个人设置里的服务（施工 X-26）：`mcp.set` 加上、整条换掉，别的字不动、正在跑的照新写的换；写错的、随包来的拒、什么都不写；`mcp.remove` 删掉、没有的拒；`mcp.list` 起好列完的、照缓存登记的带 `tools`，不知道的不带；表写成点号、行内表、子表的照样换、删，`mcp` 写成放不下的样子的不改 |
 | `crates/miyu-endpoint/tests/mcp_status.rs` | 软件包列表上每个服务一格的状态：起不来的停下带原因、失败几次、标准错误，推送里也是；`package.restart` 把停下的拉回来、失败从零数，在跑的换个进程、工具照常；关着的、没有能重启的、没有的拒；预设整个关掉、单件关掉照常换工具面、写进「装了没开」那一行，`preset.get` 列出服务的工具（施工 X-4） |
 

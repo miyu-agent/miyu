@@ -24,7 +24,7 @@ use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
 
-/// `skill.list`：`{"skills": [...]}`，照名字排。
+/// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是管理员自己放技能的文件夹（施工 X-27 补）。
 ///
 /// # Errors
 ///
@@ -47,7 +47,8 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             one
         })
         .collect();
-    Ok(json!({ "skills": skills }))
+    let dir = miyu_store::skills::own_dir(&core.root, &core.admin);
+    Ok(json!({ "skills": skills, "dir": shown(&dir, core.home.as_deref()) }))
 }
 
 /// 一项。

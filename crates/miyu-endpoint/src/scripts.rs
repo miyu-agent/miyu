@@ -43,7 +43,7 @@ impl Core {
     /// 跟着管理员家目录里的 `scripts/`（施工 X-12 补）：没有的先建上；里面点开头的以外哪个文件变了，照 `follow_scripts`
     /// 再找一遍。交回监视，丢掉就停。建不了、监视起不来的记一行 `WARN`，交回空的：照旧只在起来时、装卸包时找。
     pub fn watch_scripts(self: &Arc<Self>) -> Option<Watch> {
-        let dir = self.root.account_dir(&self.admin).join("scripts");
+        let dir = miyu_store::scripts::own_dir(&self.root, &self.admin);
         if let Err(error) = std::fs::create_dir_all(&dir) {
             tracing::warn!(target: TARGET, path = %dir.display(), error = %error, "scripts not watched");
             return None;

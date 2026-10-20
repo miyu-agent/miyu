@@ -8,7 +8,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_config::package::McpServer;
+use miyu_config::package::{EnvValue, MCP_TIMEOUT_DEFAULT, McpServer};
 use miyu_session::loading::Loading;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::mcp_prefix;
@@ -59,9 +59,6 @@ pub(crate) async fn restart(core: &Arc<Core>, params: RestartParams) -> Result<V
 /// 服务的锁：推 `mcp.changed` 时也调它。
 fn one(core: &Core, server: &McpServer) -> Value {
     let status = core.mcp.service(HOME_PACKAGE, &server.name);
-    let values = core.config_now().borrow().resolved().values();
-    let set = Loading::of(&values).server(&server.name);
-    let switches = miyu_session::switches::of(&values);
     let mut one = json!({
         "name": server.name,
         "command": server.command,
@@ -69,12 +66,9 @@ fn one(core: &Core, server: &McpServer) -> Value {
         "state": status.state.as_str(),
         "failures": status.failures,
         "covers": super::home::carrying(core, &server.name),
-        "need_load": {
-            "value": set.unwrap_or(server.need_load),
-            "by": if set.is_some() { "setting" } else { "source" },
-        },
-        "on": miyu_session::switches::on(&switches, &server.feature_id()),
     });
+    written(server, &mut one);
+    toggles(core, server, &mut one);
     details(
         &mut one,
         status.state,
@@ -85,6 +79,45 @@ fn one(core: &Core, server: &McpServer) -> Value {
         one["tools"] = json!(tools);
     }
     one
+}
+
+/// 编辑页要先填上原来写的（施工 X-27 补，网页的 MCP 页要）：`env` 照写的（字照原样，引用写成 `{"secret": 名字}`、`{"env": 变量}`，
+/// 只是名字、不是值），没写的不带；`timeout_ms` 不是默认的才带。`command` 照旧是程序加参数，`mcp.set` 的 `command`、`args` 照它拆。
+/// 字照原样给：它本来就明文写在这个人的个人设置里，只有本机的人列得到；要藏的值该写成密钥的引用。
+fn written(server: &McpServer, one: &mut Value) {
+    if !server.env.is_empty() {
+        let env: serde_json::Map<String, Value> = server
+            .env
+            .iter()
+            .map(|(name, value)| {
+                let value = match value {
+                    EnvValue::Text(text) => json!(text),
+                    EnvValue::Reference(reference) => {
+                        let (key, name) = reference.parts();
+                        json!({ key: name })
+                    }
+                };
+                (name.clone(), value)
+            })
+            .collect();
+        one["env"] = Value::Object(env);
+    }
+    if server.timeout_ms != MCP_TIMEOUT_DEFAULT {
+        one["timeout_ms"] = json!(server.timeout_ms);
+    }
+}
+
+/// 给服务 `server` 的那一格填上 `need_load`、`on`（施工 X-27；软件包列表上包带的服务同样，X-27 补）。配置照最近换上的那一份
+/// 读，不拿配置服务的锁：推送时也调它。
+pub(crate) fn toggles(core: &Core, server: &McpServer, one: &mut Value) {
+    let values = core.config_now().borrow().resolved().values();
+    let set = Loading::of(&values).server(&server.name);
+    let switches = miyu_session::switches::of(&values);
+    one["need_load"] = json!({
+        "value": set.unwrap_or(server.need_load),
+        "by": if set.is_some() { "setting" } else { "source" },
+    });
+    one["on"] = json!(miyu_session::switches::on(&switches, &server.feature_id()));
 }
 
 /// 服务 `service` 这时在工具目录里的工具（施工 X-26），照目录的先后：起好列完的、核心起来时照缓存先登记的都算（同 `preset.get`

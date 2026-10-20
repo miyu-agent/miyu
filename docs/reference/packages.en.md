@@ -42,7 +42,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `page` | Has a package page |
-| `mcp` | Its MCP servers: `name`, `command`, `venues`, `state`, `failures`… |
+| `mcp` | Its MCP servers: `name`, `command`, `venues`, `state`, `failures`…; `need_load` and `on` as in `mcp.list` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
 | `removed` | A removed built-in package |
@@ -185,7 +185,7 @@ To keep up to date, subscribe to the `extensions` stream.
 
 MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/settings.toml`). Editing personal settings by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
 
-**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; left out while unknown (never started, no cache). `need_load` is `{"value", "by"}`: whether the server's tools load on demand; `by` is `source` (as the server table says; unset loads on demand) or `setting` (overridden by `loading.mcp.<server>` in personal settings, see `tool.set_loading`). `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset.
+**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; left out while unknown (never started, no cache). `need_load` is `{"value", "by"}`: whether the server's tools load on demand; `by` is `source` (as the server table says; unset loads on demand) or `setting` (overridden by `loading.mcp.<server>` in personal settings, see `tool.set_loading`). `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset. For editing, what was written comes back too: `env` (each value text, or `{"secret": …}`, `{"env": …}`; left out when none) and `timeout_ms` (only when not the default); `command` is the program and its arguments, split into `command` and `args` when sent back to `mcp.set`; change `need_load` with `tool.set_loading`.
 
 **`mcp.restart`**: param `name`. Response: that server. **Errors**: `unknown_server`.
 
@@ -207,7 +207,7 @@ Fields left out are not written: replacing drops what was there before and is no
 
 ## `skill.list`
 
-**Params**: none. **Response**: `{"skills": [...]}`, the skills the core can use right now, sorted by `name`; when several places have the same name, only the one the core actually uses is listed (your own wins; among packages, built-in before ones the admin installed, then by id). An item:
+**Params**: none. **Response**: `{"skills": [...], "dir"}` (`dir` is the folder where the admin places skills, given even before it exists, written `~/…` under the home directory), the skills the core can use right now, sorted by `name`; when several places have the same name, only the one the core actually uses is listed (your own wins; among packages, built-in before ones the admin installed, then by id). An item:
 
 | Name | Notes |
 |---|---|
@@ -220,7 +220,7 @@ Fields left out are not written: replacing drops what was there before and is no
 
 ## `script.list`
 
-**Params**: none. **Response**: `{"scripts": [...]}`, the scripts registered as tools right now, sorted by `tool`. An item:
+**Params**: none. **Response**: `{"scripts": [...], "dir"}` (`dir` is the folder where the admin places scripts, written as in `skill.list`), the scripts registered as tools right now, sorted by `tool`. An item:
 
 | Name | Notes |
 |---|---|

@@ -32,6 +32,11 @@ pub struct Script {
     pub package: Option<String>,
 }
 
+/// 账号 `account` 自己放脚本的文件夹：`home/<账号>/scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
+pub fn own_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
+    root.account_dir(account).join("scripts")
+}
+
 /// 找脚本：装了的软件包 `packages` 里的，加数据根 `root` 里账号 `account` 自己放的。照工具名排。
 pub fn find(
     packages: &[Found],
@@ -40,7 +45,7 @@ pub fn find(
 ) -> (Vec<Script>, Vec<Skipped>) {
     let mut scripts: Vec<Script> = Vec::new();
     let mut skipped = Vec::new();
-    let own = root.account_dir(account).join("scripts");
+    let own = own_dir(root, account);
     let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
     // 出厂的先于家目录，同一层照编号（施工 F-8 六补）：核心升级后出厂的新带了同名的，出厂的赢（设计 31 定了的 J）。

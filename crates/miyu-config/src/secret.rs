@@ -65,8 +65,8 @@ impl Reference {
         self.parts().1
     }
 
-    /// 哪一种、名字。
-    fn parts(&self) -> (&'static str, &str) {
+    /// 哪一种（`secret`、`env`）、名字（施工 X-27 补起 `mcp.list` 照它把引用交给头）。
+    pub fn parts(&self) -> (&'static str, &str) {
         match self {
             Reference::Secret(name) => ("secret", name),
             Reference::Env(name) => ("env", name),

@@ -1,15 +1,18 @@
 //! 软件包列表上每个 MCP 服务这时的状态（施工 X-4，`docs/blueprint/mcp.md`「头上的状态」）：`mcp` 的每一格同 `extension.status`
 //! 的一项多 `state`、`failures`，在跑的带 `pid`，在等的带 `retry_in`，停下的带 `reason` 和标准错误的最后几行 `stderr`。服务的
-//! 状态变了照扩展那样报一声（`mcp.rs` 的 `Shared::set`），订阅着软件包列表的连接收到这个包的新一项。
+//! 状态变了照扩展那样报一声（`mcp.rs` 的 `Shared::set`），订阅着软件包列表的连接收到这个包的新一项。每一格另带加载方式
+//! `need_load` 和全局开关 `on`，同 `mcp.list` 的一项（施工 X-27 补，网页的 MCP 页要）。
 
 use serde_json::{Value, json};
+
+use miyu_config::package::Manifest;
 
 use crate::Core;
 use crate::extensions::methods::details;
 
-/// 给包 `id` 那一项的 `mcp` 每一格填上这时的状态：没有 `mcp` 的不动。服务全被个人设置里同名的盖住的，包那一项也带
-/// `covered: true`（施工 F-9 补）。
-pub(super) fn fill(core: &Core, id: &str, item: &mut Value) {
+/// 给包 `id`（清单是 `manifest`）那一项的 `mcp` 每一格填上这时的状态、加载方式、全局开关：没有 `mcp` 的不动。服务全被
+/// 个人设置里同名的盖住的，包那一项也带 `covered: true`（施工 F-9 补）。
+pub(super) fn fill(core: &Core, id: &str, manifest: &Manifest, item: &mut Value) {
     let Some(servers) = item.get_mut("mcp").and_then(Value::as_array_mut) else {
         return;
     };
@@ -31,6 +34,9 @@ pub(super) fn fill(core: &Core, id: &str, item: &mut Value) {
         server["state"] = json!(status.state.as_str());
         server["failures"] = json!(status.failures);
         details(server, status.state, &crate::mcp::stderr_file(core, &name));
+        if let Some(written) = manifest.mcp.iter().find(|written| written.name == name) {
+            crate::mcp::methods::toggles(core, written, server);
+        }
     }
     if all_covered {
         item["covered"] = json!(true);

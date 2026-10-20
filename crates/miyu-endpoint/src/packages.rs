@@ -155,7 +155,7 @@ fn listed(
         Ok(manifest) => {
             fill::fill(&mut item, &found.id, manifest, language);
             item["from"] = json!(fill::from(found, places).as_str());
-            services::fill(core, &found.id, &mut item);
+            services::fill(core, &found.id, manifest, &mut item);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
             // 依赖的包缺了（施工 F-11）：不起，写明缺谁。
