@@ -36,6 +36,7 @@ pub(crate) fn whole(
         context["used"] = json!(used);
     }
     status["context"] = context;
+    status["default_workspace"] = json!(handle.default_workspace().to_string_lossy());
     if let Some(model) = crate::models::next(&handle.next()) {
         status["model"] = model;
     }

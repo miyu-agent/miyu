@@ -237,6 +237,8 @@ async fn view(
 /// 两种流的回应都带的：会话的限额、接下来请求的模型、人格、预设、待办。
 async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
     let mut reply = json!({"limits": handle.limits()});
+    // 这个会话的默认工作区（施工 5-14 中）：头拿 `workspace.cwd` 和它比，一样的写「默认工作区」；造好以后不变，不另推。
+    reply["default_workspace"] = json!(handle.default_workspace().to_string_lossy());
     if let Some(model) = crate::models::next(&handle.next()) {
         reply["model"] = model;
     }

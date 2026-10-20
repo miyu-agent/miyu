@@ -1,6 +1,7 @@
 //! 拿着一个会话：发命令、订阅、有计划地停下（施工 3-7 中）。拿着它的都放下了，actor 就退出。
 
 use std::fmt;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -36,6 +37,8 @@ pub struct Handle {
     venue: VenueId,
     /// 会话的属主（施工 O-4 上）：日志、blob、回收处在它的家目录下。造好以后不变。
     owner: AccountId,
+    /// 这个会话的默认工作区（施工 5-14 中）：`home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。
+    workspace: PathBuf,
     inbox: mpsc::UnboundedSender<Message>,
     /// 有没有在跑的回合：actor 每送完一批输入就写一次（施工 3-9 上）。
     busy: Arc<AtomicBool>,
@@ -146,6 +149,8 @@ pub(crate) struct Ids {
     pub(crate) id: SessionId,
     pub(crate) venue: VenueId,
     pub(crate) owner: AccountId,
+    /// 这个会话的默认工作区（施工 5-14 中）：工作目录太宽时能写的那一个，头照它认「默认工作区」。
+    pub(crate) workspace: PathBuf,
 }
 
 impl Handle {
@@ -157,11 +162,17 @@ impl Handle {
         watched: Arc<AtomicBool>,
         shown: Arc<Mutex<Shown>>,
     ) -> Handle {
-        let Ids { id, venue, owner } = ids;
+        let Ids {
+            id,
+            venue,
+            owner,
+            workspace,
+        } = ids;
         Handle {
             id,
             venue,
             owner,
+            workspace,
             inbox,
             busy,
             oneshot,
@@ -219,6 +230,11 @@ impl Handle {
     /// 会话的属主（施工 O-4 上）：日志、blob、回收处在 `home/<它>/` 下。
     pub fn owner(&self) -> &AccountId {
         &self.owner
+    }
+
+    /// 这个会话的默认工作区（施工 5-14 中）：头照它认「默认工作区」，`session.set_workspace` 交账号的工作区本身时换成它。
+    pub fn default_workspace(&self) -> &Path {
+        &self.workspace
     }
 
     /// 会话的场所：`session.created` 的 `venue`（施工 O-3）。本机的是 `local`，通讯平台的场所会话只收代表外部的人说的话。

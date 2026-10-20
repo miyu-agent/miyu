@@ -166,6 +166,7 @@ async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
             .filter(|listed| listed.venue == crate::list::LOCAL)?;
         crate::list::tokens::fill(std::slice::from_mut(&mut listed), &index);
         crate::list::context::fill(std::slice::from_mut(&mut listed), &window);
+        crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root, &admin);
         Some(listed.to_json())
     })
     .await

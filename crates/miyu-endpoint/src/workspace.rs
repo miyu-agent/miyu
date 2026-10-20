@@ -12,13 +12,14 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::session::Command;
+use miyu_session::Handle;
 
 use crate::Core;
 use crate::methods::command_to;
 use crate::refusal::Refusal;
-use crate::sessions::{Found, Picked, check_dirs, wide};
+use crate::sessions::{Found, Picked, check_dirs, to_default, wide};
 use crate::wire::Request;
 
 /// `session.set_workspace` 的参数。
@@ -54,7 +55,7 @@ pub(crate) async fn set(
     let picked = params
         .cwd
         .as_deref()
-        .map(|cwd| checked(core, found.handle.owner(), cwd))
+        .map(|cwd| checked(core, &found.handle, cwd))
         .transpose()?;
     let wide = picked.as_ref().is_some_and(|picked| picked.wide);
     // 没写工作目录的：照会话现在的。
@@ -86,7 +87,7 @@ pub(crate) async fn follow(
     found: &mut Found,
     cwd: &str,
 ) -> Result<bool, Refusal> {
-    let picked = checked(core, found.handle.owner(), cwd)?;
+    let picked = checked(core, &found.handle, cwd)?;
     if picked.cwd == found.cwd {
         return Ok(false);
     }
@@ -116,8 +117,13 @@ pub(crate) fn home(core: &Core) -> Option<PathBuf> {
 }
 
 /// 查一个人明着要换去的工作目录，交回实际用的：见模块的说明。`/workspace` 也照它查（施工 9-7 下）。账号自己的工作区照会话的
-/// 属主 `owner`（施工 O-4 下）。人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。
-pub(crate) fn checked(core: &Core, owner: &AccountId, cwd: &str) -> Result<Picked, Refusal> {
+/// 属主（施工 O-4 下）。人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。账号的工作区本身换成会话 `handle` 自己的默认
+/// 工作区（施工 5-14 中：网页的「默认工作区」交的是它）。
+pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked, Refusal> {
+    let owner = handle.owner();
+    if let Some(picked) = to_default(core, owner, cwd, handle.default_workspace()) {
+        return Ok(picked);
+    }
     let home = home(core);
     let real = miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd)
         .map_err(|_| Refusal::PATH_UNREADABLE)?;

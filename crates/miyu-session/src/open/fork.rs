@@ -19,7 +19,7 @@ use miyu_store::index::SessionIndex;
 use miyu_store::log::{OpenError, SEGMENT_LIMIT, SessionLog, abandon, read_events};
 use miyu_store::root::DataRoot;
 
-use super::load::remembered;
+use super::scan::remembered;
 use crate::blocking::blocking;
 use crate::store::{Indexed, Store};
 

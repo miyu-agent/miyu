@@ -118,6 +118,17 @@ pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId)
     }
 }
 
+/// 人明着要换去账号的工作区本身（网页的「默认工作区」交的就是它，握手的 `host.workspace`）：换成这个会话自己的默认工作区
+/// `default`，建好（施工 5-14 中）。别的交回空。
+pub(crate) fn to_default(
+    core: &Core,
+    owner: &AccountId,
+    cwd: &str,
+    default: &Path,
+) -> Option<Picked> {
+    account_workspace(core, owner, cwd).then(|| prepared(core, owner, default))
+}
+
 /// 工作目录是不是账号的工作区本身。
 fn account_workspace(core: &Core, owner: &AccountId, cwd: &str) -> bool {
     let home = crate::workspace::home(core);

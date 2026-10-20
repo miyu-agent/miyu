@@ -208,6 +208,7 @@ async fn a_write_that_fails_stops_the_session() {
         id: session.clone(),
         venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
         owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
+        workspace: std::env::temp_dir().join("miyu-no-workspace"),
     };
     let handle = Handle::new(ids, inbox, busy, false, watched, shown);
     assert!(!handle.busy(), "刚造出来，没有回合");

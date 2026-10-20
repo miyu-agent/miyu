@@ -2,11 +2,13 @@
 
 use std::fmt;
 use std::io;
+use std::path::PathBuf;
 
+use miyu_kernel::id::SessionId;
 use miyu_kernel::session::LoadError as Broken;
 use miyu_policy::{BuildError, SnapshotError};
 use miyu_store::blob::BlobError;
-use miyu_store::log::OpenError;
+use miyu_store::log::{OpenError, abandon};
 use miyu_store::resources::SourceError;
 
 /// 造不成。
@@ -72,3 +74,16 @@ impl fmt::Display for LoadError {
 }
 
 impl std::error::Error for LoadError {}
+
+/// 造会话那一条没落盘：只剩空的第一段的会话目录 `dir` 删掉；快照的 blob 留着，按内容存，别的会话可能也在用（施工 4-9 再补四
+/// 下：原来都留在磁盘上）。删不掉的记一行。
+pub(super) async fn abandoned(dir: PathBuf, id: &SessionId) {
+    if let Err(error) = crate::blocking::blocking(move || abandon(&dir)).await {
+        tracing::warn!(
+            target: crate::TARGET,
+            session = id.as_str(),
+            error = %error,
+            "abandoned session not removed"
+        );
+    }
+}

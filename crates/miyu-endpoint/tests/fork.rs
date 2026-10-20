@@ -80,6 +80,16 @@ async fn a_fork_shares_the_prefix_and_loads_back_after_a_restart() {
         Some(session.as_str()),
         "默认工作区用来源会话的（施工 5-14）"
     );
+    // 会话列表里分叉出来的那一个，默认工作区是来源会话的那一个（施工 5-14 中）。
+    let listed = client.call("l1", "session.list", json!({})).await;
+    let rows = listed["result"]["sessions"].as_array().expect("列得出");
+    let of = |id: &str| {
+        rows.iter()
+            .find(|row| row["session"] == json!(id))
+            .map(|row| row["default_workspace"].clone())
+    };
+    assert_eq!(of(&child), of(&session), "{listed}");
+    assert!(of(&session).is_some_and(|dir| dir.is_string()), "{listed}");
 
     client.say("s2", &child, "再来").await;
     home.until_turns(&child, 1).await;

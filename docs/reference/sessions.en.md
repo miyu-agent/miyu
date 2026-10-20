@@ -58,6 +58,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `oneshot` | boolean, default `false` | A one-shot session (the `miyu ask` kind) |
 | `images` | boolean, default `true` | Whether you can display images |
 | `project` | string | Create it in this project ([Projects](projects.en.md)): `persona` and `preset` default to the project's, and a `session.meta_changed` follows (`events` is `[1, 2]`) |
+| `default_workspace` | The session's default workspace, an absolute path: a main session has its own `…/home/<account>/workspace/<session id>/`; children and forks use their main session's. When `cwd` equals it, it can be shown as "default workspace" |
 
 **Response**
 
@@ -257,6 +258,8 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 ## `session.set_workspace`
 
 **Params**: `session`; `cwd`: the new working directory (absolute or starting with `~`); `dirs`: the new extra directories, replacing them all (empty removes all). Give at least one.
+
+A `cwd` that is the account workspace itself (the handshake's `host.workspace`) means going back to this session's own default workspace: it is replaced by it (`default_workspace` in the session list and the subscribe reply).
 
 **Response**: `{"cwd", "dirs"}`, plus `wide: true` when too wide. A change is pushed as `session.workspace_changed`; this turn keeps the old one, the next starts with the new one.
 

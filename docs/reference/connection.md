@@ -109,7 +109,7 @@
 
 | `stream` | 推什么 | `subscribe` 的回应 |
 |---|---|---|
-| `events` | 一个会话的事件，原样 | 会话这一刻的样子：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`，有的另带 `persona`、`preset`、`todos`、`goal`、`nested`（在跑的 `miyu call`：`[{id, name}]`）；写了 `after` 的多 `upto` |
+| `events` | 一个会话的事件，原样 | 会话这一刻的样子：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（这个会话的默认工作区），有的另带 `persona`、`preset`、`todos`、`goal`、`nested`（在跑的 `miyu call`：`[{id, name}]`）；写了 `after` 的多 `upto` |
 | `view` | 一个会话的视图投影（给界面直接画的条目） | 上一格那些，加最新一页的条目、整份会话状态 `status` |
 | `config` | 配置变了 | `{}` |
 | `sessions` | 会话列表的一项变了 | `{"sessions": [<一项>…]}`，全部 |

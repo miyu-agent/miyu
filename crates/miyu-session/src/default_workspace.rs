@@ -57,6 +57,13 @@ impl DefaultWorkspace {
     }
 }
 
+impl DefaultWorkspace {
+    /// 这个会话的默认工作区，没换成真实的位置（施工 5-14 中：头照它认「默认工作区」）。
+    pub(crate) fn dir(&self) -> PathBuf {
+        self.fallback.clone()
+    }
+}
+
 /// 换成真实的位置；换不成的（还没建）照原样。
 fn real(path: &Path) -> PathBuf {
     std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())

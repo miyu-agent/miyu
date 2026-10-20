@@ -268,7 +268,7 @@
 | `oneshot` | 布尔，不写是 `false` | `true` 只要一次性的 |
 | `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
 
-回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上；只在空会话里 `/goal` 开的照目标原文的第一行，施工 X-8 补修：第一句是续轮消息，以前露出 `<goal_round>` 标签），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
+回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上；只在空会话里 `/goal` 开的照目标原文的第一行，施工 X-8 补修：第一句是续轮消息，以前露出 `<goal_round>` 标签），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`default_workspace` 是这个会话的默认工作区（施工 5-14 中）：主会话是它自己的 `<数据根>/home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的顺着 `parent` 一路追到主会话的那一个（同 `session.created` 的 `workspace_from`），绝对路径；头拿 `cwd` 和它比，一样的写「默认工作区」（`list/defaults.rs`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写；会话列表的推送 `sessions.changed` 的一项同样带它：
 
 ```json
 {"busy":true,"cwd":"~/src/miyu","last_active":"2026-10-01T06:03:12.345Z","oneshot":false,"parent":null,"session":"0192f3a0-2222-7abc-8def-5566778899aa","title":"修 CI"}
@@ -912,7 +912,8 @@
 回应 `{"cwd", "dirs"}`：实际用的工作目录、现在加进来的目录。
 
 1. 工作区是会话的属性：新会话开在哪就记哪（`session.create` 的 `cwd`、`dirs`），之后哪个头打开都照它，只有人明确换（这个方法、`/workspace`）才变。说话（`session.send`）带的目录照收不理。
-2. `cwd`、`dirs` 都没写、写了别的格：`bad_params`。工作目录换不成真实位置、读不了：`path_unreadable`；是文件：`not_a_directory`；落在数据根里、又不是账号自己的默认工作区：`path_forbidden`；太宽的（系统的家目录、根目录、包含数据根的）不拒，照人选的用，回应多 `wide: true`（施工 9-7 补，2026-10-09 项目主人定；原来退回账号的默认工作区）；核心读不出家目录时的 `~` 照不了，`path_unreadable`。加进来的目录照造会话的规矩查（`dir_too_wide`）。拒了的什么都不记。
+2. `cwd` 写的是账号的工作区本身（网页的「默认工作区」交的就是握手的 `host.workspace`）：换成这个会话自己的默认工作区（订阅回应、会话列表的 `default_workspace`），建好（施工 5-14 中）；`/workspace`、`session.send` 带的 `cwd` 同样。
+2½. `cwd`、`dirs` 都没写、写了别的格：`bad_params`。工作目录换不成真实位置、读不了：`path_unreadable`；是文件：`not_a_directory`；落在数据根里、又不是账号自己的默认工作区：`path_forbidden`；太宽的（系统的家目录、根目录、包含数据根的）不拒，照人选的用，回应多 `wide: true`（施工 9-7 补，2026-10-09 项目主人定；原来退回账号的默认工作区）；核心读不出家目录时的 `~` 照不了，`path_unreadable`。加进来的目录照造会话的规矩查（`dir_too_wide`）。拒了的什么都不记。
 3. 和现在一样的：接受，什么都不记。不一样的：会话记一条 `session.workspace_changed`（`kernel/events-bodies.md`），订阅着的头照推送跟着换；会话列表那一项的 `cwd` 跟着变（`sessions.changed`）。这一轮里照旧，下一轮开始照新的。
 4. `subscribe`（events）的回应带 `workspace: {"cwd", "dirs"}`，接进来就知道她在哪干活。
 
@@ -1042,10 +1043,12 @@
 | `window` | 非负整数，可以没有 | 上下文窗口。模型的资料没报的没有（`compaction.md`「对外的样子」模型的资料） |
 | `compaction_line` | 非负整数，可以没有 | 压缩线：用量过了它，发下一次请求之前自动压（`compaction.md` 第二条第 2 条）。没有窗口的、窗口太小算不出正数的没有 |
 
+**默认工作区** `default_workspace`（施工 5-14 中）：这个会话的默认工作区，同会话列表那一格；造好以后不变，不另推。
+
 例子：会话照 `models.chat` 记下 `deepseek/deepseek-v4`，核心照 DeepSeek 的资料，窗口 1000000、最大输出 393216，压缩线 = 1000000 − min(393216, 20000) − 13000；没设默认人格，会话无人格，没有 `persona` 这一格（施工 P-4 上）（键照字母先后排）：
 
 ```json
-{"id":"c2","jsonrpc":"2.0","result":{"jobs":[],"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"permission":{"level":"workspace","read_only":false},"preset":"full","usage":{"amounts":[],"cache_breaks":0,"compactions":0,"main":{"cache_read":0,"cache_write":0,"output":0,"uncached":0},"requests":0,"unpriced":0,"usage":{"cache_read":0,"cache_write":0,"output":0,"uncached":0}},"workspace":{"cwd":"<工作区>","dirs":[]}}}
+{"id":"c2","jsonrpc":"2.0","result":{"default_workspace":"<默认工作区>","jobs":[],"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"permission":{"level":"workspace","read_only":false},"preset":"full","usage":{"amounts":[],"cache_breaks":0,"compactions":0,"main":{"cache_read":0,"cache_write":0,"output":0,"uncached":0},"requests":0,"unpriced":0,"usage":{"cache_read":0,"cache_write":0,"output":0,"uncached":0}},"workspace":{"cwd":"<工作区>","dirs":[]}}}
 ```
 
 （`<工作区>` 是在 `~` 里造的会话退回的账号的默认工作区，照真实的那个写，施工 9-7 上。）

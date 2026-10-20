@@ -109,7 +109,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 
 | `stream` | Pushes | `subscribe` response |
 |---|---|---|
-| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, and when present `persona`, `preset`, `todos`, `goal`, `nested` (running `miyu call`s: `[{id, name}]`); with `after` also `upto` |
+| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, `default_workspace` (the session's default workspace), and when present `persona`, `preset`, `todos`, `goal`, `nested` (running `miyu call`s: `[{id, name}]`); with `after` also `upto` |
 | `view` | A session's view projection (entries ready to draw) | The above, plus the latest page of entries and the full session `status` |
 | `config` | Config changes | `{}` |
 | `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, all of them |

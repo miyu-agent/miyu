@@ -4,7 +4,7 @@
 
 use serde_json::json;
 
-use crate::support::{Client, Home};
+use crate::support::{Client, Home, alice};
 use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::Script;
 
@@ -39,12 +39,20 @@ async fn sessions_are_listed_newest_first_and_oneshot_ones_can_be_picked() {
         let when = when.as_str().expect("是字符串");
         assert!(Timestamp::parse(when).is_ok(), "时刻的写法：{when}");
     }
+    // 每个主会话的默认工作区是它自己的那一个（施工 5-14 中）。
+    let own = |session: &str| {
+        let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号");
+        home.root
+            .session_workspace(&alice(), &id)
+            .to_string_lossy()
+            .into_owned()
+    };
     assert_eq!(
         listed,
         json!([
-            {"session": plain, "oneshot": false, "parent": null, "cwd": "/work", "preset": "full"},
-            {"session": second, "oneshot": true, "parent": null, "cwd": "/work", "preset": "full"},
-            {"session": first, "oneshot": true, "parent": null, "cwd": "/work", "preset": "full"},
+            {"session": plain, "oneshot": false, "parent": null, "cwd": "/work", "preset": "full", "default_workspace": own(&plain)},
+            {"session": second, "oneshot": true, "parent": null, "cwd": "/work", "preset": "full", "default_workspace": own(&second)},
+            {"session": first, "oneshot": true, "parent": null, "cwd": "/work", "preset": "full", "default_workspace": own(&first)},
         ]),
         "从新到旧，闲着的不写 busy"
     );

@@ -25,6 +25,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         context,
         context_model: model.map(str::to_string),
         window: None,
+        default_workspace: None,
     }
 }
 

@@ -18,7 +18,7 @@ use miyu_store::usage::Who;
 use miyu_tool::Log;
 
 use super::place;
-use super::scan::{current_policy, last_sent};
+use super::scan::{current_policy, last_sent, remembered};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
@@ -412,7 +412,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             attachments: miyu_store::attachments::dir(root, &owner, &id),
-            workplace: Some(default_workspace),
+            workplace: Some(default_workspace.clone()),
             names: skill_names,
             packages,
             hooks,
@@ -466,7 +466,12 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         wake_children(port, waiting, &span);
     }
     actor::spawn(actor, first, span);
-    let ids = Ids { id, venue, owner };
+    let ids = Ids {
+        id,
+        venue,
+        owner,
+        workspace: default_workspace.dir(),
+    };
     let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
         .with_memory(room)
         .with_goals(on_face);
@@ -476,24 +481,4 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
 /// 毫秒，一位小数：运行日志里写载入各段用了多久（施工 V-2 中）。
 fn millis(took: Duration) -> f64 {
     (took.as_secs_f64() * 10_000.0).round() / 10.0
-}
-
-/// 日志里最后一次记下的工作目录、加进来的目录（施工 4-9 再补三上、5-10 上、9-7 上；V-2 三补从会话表挪来）：工作目录照列会话的
-/// 同一个认法（`miyu_store::index::cwd`：最后一条带 `cwd` 的 `turn.started`、换工作区，没有就照 `session.created`）；加进来的
-/// 目录照最后一条 `turn.started` 的，换工作区写了的照它，都没有的是空的。
-pub(super) fn remembered(events: &[Event]) -> (Option<String>, Vec<String>) {
-    let cwd = events
-        .iter()
-        .rev()
-        .find_map(|event| miyu_store::index::cwd(event).map(str::to_string));
-    let dirs = events
-        .iter()
-        .rev()
-        .find_map(|event| match &event.body {
-            Body::TurnStarted(started) => Some(started.dirs.clone()),
-            Body::WorkspaceChanged(changed) => changed.dirs.clone(),
-            _ => None,
-        })
-        .unwrap_or_default();
-    (cwd, dirs)
 }

@@ -58,6 +58,7 @@ pub(crate) async fn list(
         )?;
         tokens::fill(&mut listed, &index);
         context::fill(&mut listed, &window);
+        defaults::fill(&mut listed, &index, &root, &admin);
         Ok::<_, std::io::Error>(listed)
     })
     .await;
@@ -108,6 +109,8 @@ pub(crate) struct Listed {
     pub(crate) context: Option<u64>,
     pub(crate) context_model: Option<String>,
     pub(crate) window: Option<u64>,
+    /// 这个会话的默认工作区（施工 5-14 中，[`defaults::fill`]）：没填的不写。
+    pub(crate) default_workspace: Option<String>,
 }
 
 impl Listed {
@@ -132,6 +135,7 @@ impl Listed {
             context: row.context,
             context_model: row.context_model,
             window: None,
+            default_workspace: None,
         }
     }
 
@@ -145,6 +149,9 @@ impl Listed {
             "cwd": self.cwd,
             "last_active": self.last_active,
         });
+        if let Some(dir) = &self.default_workspace {
+            item["default_workspace"] = json!(dir);
+        }
         if !self.title.is_empty() {
             item["title"] = json!(self.title);
             if self.named {
@@ -349,6 +356,7 @@ pub(crate) fn windows(core: &Core) -> impl Fn(&str, &str) -> Option<u64> + Send 
 }
 
 pub(crate) mod context;
+pub(crate) mod defaults;
 pub(crate) mod tokens;
 
 #[cfg(test)]

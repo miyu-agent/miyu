@@ -295,3 +295,42 @@ async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
     assert_eq!(created.cwd.as_deref().map(Path::new), Some(mine.as_path()));
     assert!(mine.is_dir());
 }
+
+#[tokio::test]
+async fn the_account_workspace_means_the_session_s_own_and_replies_say_which_it_is() {
+    let home = Home::new();
+    let outside = Outside::new();
+    let project = outside.0.join("proj").to_string_lossy().into_owned();
+    let core = home.core_at_home(&Script::new([]), outside.0.join("home"));
+    let mut client = Client::connect(std::sync::Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", &project).await;
+    let own = own_of(&home, &session).to_string_lossy().into_owned();
+    // 订阅（另一个连接：订阅着的连接先收推送）、会话列表都说这个会话的默认工作区（施工 5-14 中）。
+    let mut watcher = Client::connect(core);
+    watcher.hello().await;
+    let reply = watcher.subscribe("s1", &session).await;
+    assert_eq!(reply["result"]["default_workspace"], json!(own), "{reply}");
+    let listed = client.call("l1", "session.list", json!({})).await;
+    let row = &listed["result"]["sessions"][0];
+    assert_eq!(
+        (&row["cwd"], &row["default_workspace"]),
+        (&json!(project), &json!(own)),
+        "{listed}"
+    );
+    // 网页的「默认工作区」交账号的工作区本身：换成会话自己的那一个，建好。
+    let account = home.root.workspace(&alice()).to_string_lossy().into_owned();
+    let reply = client
+        .call(
+            "w1",
+            "session.set_workspace",
+            json!({"session": session, "cwd": account}),
+        )
+        .await;
+    assert_eq!(reply["result"]["cwd"], json!(own), "{reply}");
+    assert!(reply["result"].get("wide").is_none(), "{reply}");
+    assert!(Path::new(&own).is_dir());
+    let listed = client.call("l2", "session.list", json!({})).await;
+    let row = &listed["result"]["sessions"][0];
+    assert_eq!(row["cwd"], row["default_workspace"], "{listed}");
+}
