@@ -4292,13 +4292,14 @@ Placeholder for a tool this client is expected to send with the request; it is n
 
 - 什么时候加进来：会话的工具面里有 `history`（每次请求都带）
 - token：224（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；原来 197，多 27，就是 `session` 这一格）
-- 为什么加：`history` 的说明和参数（施工 6-4）：说明两句，是什么、压缩换出去的也找得回；参数照图纸，`limit` 只写默认值。量法同上，八件一起时的边际份量（2026-09-29 照项目主人给的端点、`deepseek-v4.1-flash` 量）。施工 C-4 加 `session`（`cross-session.md` 第二条）：写了就读别的会话的日志，不是这次调用自己的
-- 指纹：`a194ba84`
+- 为什么加：`history` 的说明和参数（施工 6-4）：说明两句，是什么、压缩换出去的也找得回；参数照图纸，`limit` 只写默认值。量法同上，八件一起时的边际份量（2026-09-29 照项目主人给的端点、`deepseek-v4.1-flash` 量）。施工 C-4 加 `session`（`cross-session.md` 第二条）：写了就读别的会话的日志，不是这次调用自己的；2026-10-21 施工 M-2 补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`c26d5edf`
 
 ```json
 {
   "description": "Search or read back earlier parts of this conversation, including what compaction moved out of context. Entries are numbered in log order.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Words to look for. Without it, entries are listed in order."},"from":{"type":"integer","description":"First entry number."},"to":{"type":"integer","description":"Last entry number."},"since":{"type":"string","description":"Earliest time, like 2026-09-29 14:00."},"until":{"type":"string","description":"Latest time."},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id, to read that session instead of this one."}}}
+  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Words to look for. Without it, entries are listed in order."},"from":{"type":"integer","description":"First entry number."},"to":{"type":"integer","description":"Last entry number."},"since":{"type":"string","description":"Earliest time, like 2026-09-29 14:00."},"until":{"type":"string","description":"Latest time."},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id, to read that session instead of this one."}}},
+  "clicall": true
 }
 ```
 
