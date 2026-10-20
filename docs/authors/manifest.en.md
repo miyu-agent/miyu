@@ -92,7 +92,7 @@ Makes it an extension; needs `[command]`.
 | `capabilities` | What it needs, see below |
 | `system_account` | `true`: it has its own system account, named after the package. Only chat platform bridges need it: group sessions belong to this account |
 
-**Capabilities**: only these fifteen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly.**
+**Capabilities**: only these sixteen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly.**
 
 | Capability | Allows |
 |---|---|
@@ -104,7 +104,9 @@ Makes it an extension; needs `[command]`.
 | `context.system` | Putting a section at the end of the system prompt |
 | `packages.call` | Calling methods other packages export |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
-| `tool.guard`, `tool.rewrite`, `events.read`, `events.write`, `sessions.drive`, `network`, `fs.read`, `fs.write` | Declared and approved now; what they unlock comes in later versions |
+| `events.read`, `events.write`, `sessions.drive` | Reading a session's raw events, recording your own events in a session, driving sessions (sending, creating). Not enforced yet; they will be, so declare the ones you use |
+| `network`, `fs.read`, `fs.write` | Network access, reading and writing given paths: granted once extensions run in a sandbox; not enforced now |
+| `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
 
 ## `[settings.<name>]`
 

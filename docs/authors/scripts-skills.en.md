@@ -62,7 +62,7 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Display name`, `显示名称` | The name for people (English, Chinese); the timeline shows it |
 | `Parameters` | The parameters' JSON Schema, from the next line on, may span lines; none when omitted |
 | `Timeout` | Seconds, default 60 |
-| `Need load` | `yes`: the AI normally sees only the name and one line and loads it when needed. Saves money for rarely used ones |
+| `Need load` | Loaded on demand unless you write it: the AI normally sees only the name and one line and loads the full parameters when needed, which saves money. `no`: always send the full parameters; write it for ones used often |
 | `Clicall` | `no`: the AI cannot call it with `miyu call` inside a command, only directly. Unset means it can |
 
 **How it runs**

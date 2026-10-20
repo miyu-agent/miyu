@@ -62,7 +62,7 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Display name`、`显示名称` | 给人看的名字（英文、中文），时间线上照它写 |
 | `Parameters` | 参数的 JSON Schema，从下一行起，可以写几行；不写是没有参数 |
 | `Timeout` | 秒，默认 60 |
-| `Need load` | `yes`：AI 平时只看到名字和一行说明，要用时先加载。不常用的写上，省钱 |
+| `Need load` | 不写是先加载：AI 平时只看到名字和一行说明，要用时先加载完整的参数，省钱。`no`：一直给完整的参数，常用的写上 |
 | `Clicall` | `no`：AI 在命令里不能用 `miyu call` 调它，只能直接调。不写是能 |
 
 **怎么跑**

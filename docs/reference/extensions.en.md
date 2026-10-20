@@ -20,7 +20,7 @@ Extensions call other methods under the same rules as people (`session.*`, `blob
 ## Launch
 
 - **Program**: looked up in the package folder's `bin/` first, then next to `miyu`, never on `PATH`; arguments are the manifest's `[process] args`.
-- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder).
+- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder), `MIYU_PACKAGE_STATE` (this package's state directory, already created).
 - **Working directory**: the package's state directory `state/packages/<id>/`.
 - **Stderr**: appended to `state/logs/<id>.stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `account` is its account (the system account if it declares one, otherwise `admin`), and `config` holds the final values of its own settings (secrets as real values).
@@ -41,7 +41,9 @@ The manifest's `[process] capabilities` declares what it needs. Packages the adm
 | `packages.call` | Calling methods other packages export (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
 | `act_for_external` | Speaking for people on a chat platform: for chat platform bridges only |
-| `tool.guard`, `tool.rewrite`, `events.read`, `events.write`, `sessions.drive`, `network`, `fs.read`, `fs.write` | Declared and approved now; what they unlock comes in later versions |
+| `events.read`, `events.write`, `sessions.drive` | Reading a session's raw events, recording your own events in a session, driving sessions (sending, creating). Not enforced yet; they will be, so declare the ones you use |
+| `network`, `fs.read`, `fs.write` | Network access, reading and writing given paths: granted once extensions run in a sandbox; not enforced now |
+| `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
 
 ## `provide`
 

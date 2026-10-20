@@ -30,7 +30,7 @@ command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/srv/notes"]
 env = { TOKEN = { secret = "notes" } }            # 可以不写；值能写字，也能引用密钥 { secret = … }、环境变量 { env = … }
 venues = ["local"]                                # 可以不写：给哪种会话，不写是只给本机的
 timeout_ms = 600000                               # 可以不写：一次调用最多等多久，1000 到 3600000
-need_load = true                                  # 可以不写：这个服务的工具都要先加载
+need_load = false                                 # 可以不写：不写是先加载，写 false 一直给完整的参数
 clicall = false                                   # 可以不写：AI 在命令里用 miyu call 不能调这个服务的工具
 ```
 
@@ -47,7 +47,7 @@ clicall = false                                   # 可以不写：AI 在命令�
 | `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu login` 或设置页存进去），别把值写在清单里 |
 | `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
 | `timeout_ms` | 一次调用最多等多久 |
-| `need_load` | `true`：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数。工具多、平时用得少的服务写上，省钱 |
+| `need_load` | 不写是先加载：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数，工具多的服务省钱。`false`：一直给完整的参数，工具少、天天用的服务写上 |
 | `clicall` | AI 在命令里写脚本时能不能用 `miyu call` 调这个服务的工具，不写是能。服务会写东西、发东西的，写 `false` |
 
 ## AI 看到的样子

@@ -61,7 +61,7 @@
 
 **能力**（施工 9-4 下上，`05-内核接口.md` 第三节、I5；项目主人 2026-10-08 照推荐定）：
 
-1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十三个名字（施工 X-15 上加了 `widgets`，`widgets.md`）：`tools`、`commands`、`widgets`、`context.inject`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`act_for_external`、`network`、`fs.read`、`fs.write`。
+1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十六个名字（`crates/miyu-config/src/package/capability.rs` 的 `ALL`；施工 X-15 上加了 `widgets`，`widgets.md`；X-20 加了 `context.system`，X-18 加了 `packages.call`，N-5 加了 `search`）：`tools`、`commands`、`widgets`、`context.inject`、`context.system`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`packages.call`、`search`、`act_for_external`、`network`、`fs.read`、`fs.write`。
 2. 管理员自己装的（`home/<管理员>/packages/`）要批：在 `extension.enable` 那一下带上 `approve`。批的时候记下它这时声明的全部；还没批的是「声明的减批过的」，升级以后多了的只问多的；关掉不清批准。
 3. 出厂的（资源目录里随 Miyu 一起装的，通讯平台的桥）算批过的：和编译进核心的模块一样本来就被信任（05 第三节「内置模块」）。
 4. 开着、还有没批的（开关文件里开着的，`start = "always"` 没写开关的）不拉起：`stopped`、`needs_approval`，不拦核心空闲退出；批了就拉起。

@@ -20,7 +20,7 @@
 ## 拉起
 
 - **程序**：先找包文件夹的 `bin/`，再找 `miyu` 旁边，不走 `PATH`；参数是清单的 `[process] args`。
-- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PACKAGE_DIR`（这个包的文件夹）。
+- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PACKAGE_DIR`（这个包的文件夹）、`MIYU_PACKAGE_STATE`（这个包的状态目录，已经建好）。
 - **工作目录**：这个包放状态的目录 `state/packages/<编号>/`。
 - **标准错误**：追加到 `state/logs/<编号>.stderr`，超过 1 MiB 的先挪成 `.old`。
 - **握手**：照常发 `hello`，不出示凭据。回应的 `account` 是它的账号（声明了系统账号的是那个账号，别的是 `admin`），`config` 是它自己的配置项的最终值（密钥是真值）。
@@ -41,7 +41,9 @@
 | `packages.call` | 调别的包导出的方法（`package.call`） |
 | `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
 | `act_for_external` | 代表平台上的人说话：只给通讯平台的桥 |
-| `tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`network`、`fs.read`、`fs.write` | 声明了先批，具体放开随以后的版本 |
+| `events.read`、`events.write`、`sessions.drive` | 读会话的原始事件、往会话里记自己的事件、驱动会话（发话、开会话）。还没照声明挡，以后会挡：用到的照实写上 |
+| `network`、`fs.read`、`fs.write` | 联网、读写指定的路径：扩展进沙盒以后照它放行，现在不挡 |
+| `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
 
 ## `provide`
 

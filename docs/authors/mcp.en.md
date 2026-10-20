@@ -30,7 +30,7 @@ command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/srv/notes"]
 env = { TOKEN = { secret = "notes" } }            # optional; values can be text, or refer to a secret { secret = … } or an environment variable { env = … }
 venues = ["local"]                                # optional: which sessions; local sessions only by default
 timeout_ms = 600000                               # optional: how long one call may take, 1000 to 3600000
-need_load = true                                  # optional: this server's tools must be loaded first
+need_load = false                                 # optional: loaded on demand unless written; false always sends full parameters
 clicall = false                                   # optional: the AI cannot call this server's tools with miyu call inside a command
 ```
 
@@ -47,7 +47,7 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 | `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu login` or the settings screen); don't put values in the manifest |
 | `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms |
 | `timeout_ms` | How long one call may take |
-| `need_load` | `true`: the AI normally sees only each tool's name and one line, and loads the full parameters when it needs them. Saves money for servers with many rarely used tools |
+| `need_load` | Loaded on demand unless written: the AI normally sees only each tool's name and one line, and loads the full parameters when it needs them, which saves money for servers with many tools. `false`: always send the full parameters; write it for small servers used every day |
 | `clicall` | Whether the AI can call this server's tools with `miyu call` from a script it runs; unset means it can. Write `false` for servers that write or send things |
 
 ## What the AI sees

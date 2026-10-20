@@ -92,7 +92,7 @@ place = "status"
 | `capabilities` | 要的能力，见下 |
 | `system_account` | `true`：有自己的系统账号，账号名就是包的编号。接聊天平台的桥才要：群会话归这个账号 |
 
-**能力**：只认这十五个。管理员自己装的包，打开时要人批；升级以后多要的，只问多的那几个。**照实声明**。
+**能力**：只认这十六个。管理员自己装的包，打开时要人批；升级以后多要的，只问多的那几个。**照实声明**。
 
 | 能力 | 能做什么 |
 |---|---|
@@ -104,7 +104,9 @@ place = "status"
 | `context.system` | 往系统提示词末尾放一段 |
 | `packages.call` | 调别的包导出的方法 |
 | `act_for_external` | 代表聊天平台上的人说话：只给平台的桥 |
-| `tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`network`、`fs.read`、`fs.write` | 先声明、先批，具体放开随以后的版本 |
+| `events.read`、`events.write`、`sessions.drive` | 读会话的原始事件、往会话里记自己的事件、驱动会话（发话、开会话）。还没照声明挡，以后会挡：用到的照实写上 |
+| `network`、`fs.read`、`fs.write` | 联网、读写指定的路径：扩展进沙盒以后照它放行，现在不挡 |
+| `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
 
 ## `[settings.<名字>]`
 
