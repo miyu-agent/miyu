@@ -730,7 +730,7 @@
 | `memory.update` | `id`、`text`，必写 | `{"id"}`：新记的那一条 |
 | `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
-| `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22） |
+| `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22）；跑在整理会话里的多 `"session"`（这一趟的整理会话，施工 D-2 上） |
 | `memory.dream_stop` | 只有 `persona`、`session`（施工 R-23） | `{"stopped": true}` |
 
 1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上。
@@ -738,7 +738,7 @@
 3. `id` 没有这一条、听众不合：`unknown_memory`；已经改掉、作废、清掉了：`memory_not_current`（恢复的是已经改掉、清掉了）。
 4. 记、改、作废、清空、恢复落了盘才回应；写不进记忆日志的 `internal_error`，原因记一行 `WARN memory failed`。
 5. 记、改、作废、清空、恢复，同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样（编号记在记忆事件的 `cause` 里，`memory.md`）。先认编号，再查参数。清空的 `cleared` 不算改掉的旧版本。
-6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；带 `session` 的叫那个会话 `/stop`、`/dream stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（施工 R-22，`memory.md` 第七条第 13 款）；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。
+6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；带 `session` 的叫那个会话 `/stop`、`/dream stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（施工 R-22，`memory.md` 第七条第 13 款）；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。人叫的、后台的整理都跑在一个整理会话里（施工 D-2 上，设计 41，`memory.md` 第七条第 14 款）：回应的 `session` 是这一趟的会话，头照它跳到那个会话的时间线；没有要整理的、核心没接会话表的不写。记忆日志的 `ext.memory.merging` 也带它。
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 9. `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这一间这时人叫的整理，不管是哪一路叫的（带 `persona`、`session` 的 `memory.dream`，会话里的 `/dream`）；定时的不停。合完了的批留着，正在合的那一批放弃（记 `merge_failed`，`why: stopped`）、下次再合；被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。回 `{"stopped": true}`；这时没有人叫的整理（定时的在合也算没有）回 `not_dreaming`。照顺序答：`memory.dream` 在后台答，同一条连接上接着发它就行。

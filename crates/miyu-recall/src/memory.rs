@@ -271,6 +271,10 @@ pub struct Merging {
     /// R-21 以前的没有。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub given: Vec<MemoryId>,
+    /// 这一趟跑在哪个整理会话里（施工 D-2，设计 `41-整理会话.md`）：头照它跳到那个会话的时间线。走一次性入口的（没接会话表的
+    /// 核心）、D-2 以前的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<SessionId>,
 }
 
 /// `ext.memory.merge_failed` 的 `body`：`upto` 那一批这一次没合成（施工 R-17）。连着第三次的后面另跟一条 `merged`（`failed`），

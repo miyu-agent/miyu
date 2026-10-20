@@ -73,6 +73,7 @@ fn merging(upto: u64, fresh: u32, left: u32, manual: bool, given: &[u64]) -> Mem
         left,
         manual,
         given: given.iter().map(|n| id(*n)).collect(),
+        session: None,
     })
 }
 

@@ -55,6 +55,7 @@ fn starting_a_batch_and_failing_it_round_trip() {
         left: 5,
         manual: true,
         given: vec![MemoryId::new(seq(1)), MemoryId::new(seq(4))],
+        session: None,
     });
     assert!(
         line(6, &merging).contains(
@@ -102,6 +103,7 @@ fn the_book_knows_the_batch_that_has_not_ended() {
             left: 1,
             manual: false,
             given: Vec::new(),
+            session: None,
         })
     };
     let failed = |upto| {
@@ -130,4 +132,24 @@ fn the_book_knows_the_batch_that_has_not_ended() {
     see(&mut book, merging(5));
     see(&mut book, failed(5));
     assert_eq!(book.merging(), None, "没合成也是收尾");
+}
+
+/// 跑在整理会话里的一批带 `session`（施工 D-2），读回来照旧；没有的不写这一格。
+#[test]
+fn a_batch_in_a_dream_session_names_it() {
+    let session = SessionId::parse("0192f3a0-2222-7abc-8def-001122334455").expect("合写法");
+    let merging = MemoryEvent::Merging(Merging {
+        upto: seq(4),
+        fresh: 1,
+        left: 1,
+        manual: false,
+        given: Vec::new(),
+        session: Some(session.clone()),
+    });
+    let written = line(6, &merging);
+    assert!(
+        written.contains(&format!(r#""session":"{session}""#)),
+        "{written}"
+    );
+    round_trip(&merging);
 }

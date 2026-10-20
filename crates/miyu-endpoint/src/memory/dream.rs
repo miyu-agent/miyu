@@ -17,7 +17,7 @@ use crate::refusal::Refusal;
 use crate::sessions::offset;
 
 /// `memory.dream`：照参数找哪一间（同 `memory.*`），现在就整理，交回 `{"given", "revised", "retired", "summary"}`；会话的
-/// `/stop` 叫停了的多一个 `"stopped": true`（施工 R-22），前面几样是叫停以前合完了的。
+/// `/stop` 叫停了的多一个 `"stopped": true`（施工 R-22），前面几样是叫停以前合完了的；跑在整理会话里的多 `"session"`（施工 D-2）。
 pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
     if !installed(core) {
         return Err(Refusal::MEMORY_NOT_INSTALLED);
@@ -45,6 +45,10 @@ pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refu
     });
     if dreamed.stopped {
         answer["stopped"] = Value::Bool(true);
+    }
+    // 这一趟跑在哪个整理会话里（施工 D-2，设计 41）：头照它跳到那个会话；没有要整理的、没接会话表的不写。
+    if let Some(session) = &dreamed.session {
+        answer["session"] = Value::String(session.to_string());
     }
     Ok(answer)
 }
@@ -94,3 +98,6 @@ pub(crate) async fn stop(core: &Arc<Core>, params: &Value) -> Result<Value, Refu
         false => Err(Refusal::NOT_DREAMING),
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -20,26 +20,21 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, Seq};
-use miyu_kernel::request::Message;
+use miyu_kernel::id::{AccountId, Seq, SessionId};
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
-use miyu_recall::merge::{Seen, Watch, decisions};
-use miyu_recall::redact::redact;
-use miyu_recall::{Entry, MemoryId, Swept};
-use miyu_tool::TEXT_CHARS;
+use miyu_recall::{Entry, MemoryId, Merging, Swept};
+use miyu_store::recall::Room;
 use miyu_tool::load::{self, LoadError};
 
-use super::extract::secrets;
-use super::{Dreaming, Extraction, Keeper, Using};
+use super::{DreamRoom, DreamSpec, Extraction, Keeper};
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
-use crate::route::{Ask, Watched};
 use crate::settings::MemorySettings;
 
+mod ask;
 mod compose;
 mod hush;
 mod land;
@@ -116,7 +111,7 @@ pub(super) fn made_by_merge(entry: &Entry) -> bool {
 
 /// 现在就整理一次的结果（施工 R-7 补，`memory.md` 第七条第 9 款）：交进去几条（新记的加相关的，几次合的加起来）、改了几条、
 /// 作废几条、摘要换没换。没有要整理的四样都是零。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Dreamed {
     /// 交进去几条。
     pub given: u32,
@@ -128,6 +123,8 @@ pub struct Dreamed {
     pub summary: bool,
     /// 人叫停了（施工 R-22）：前面几样是叫停以前合完了的。
     pub stopped: bool,
+    /// 这一趟跑在哪个整理会话里（施工 D-2，设计 41）：没有要整理的、走一次性入口的没有。
+    pub session: Option<SessionId>,
 }
 
 /// 没整理成。
@@ -178,6 +175,7 @@ impl Keeper {
             owner,
             offset,
             hush,
+            from: None,
         }
         .now()
         .await
@@ -198,6 +196,8 @@ pub(crate) struct MergeJob {
     pub(crate) offset: UtcOffset,
     /// 人叫停了就停（施工 R-22）；定时的听不见。
     pub(crate) hush: Hush,
+    /// 人在哪个会话里叫的（设计 41 DS1 的 `dream.from`）：抽完起的是那个会话；不经会话的没有。只有人叫的那一趟记它。
+    pub(crate) from: Option<SessionId>,
 }
 
 /// 一批：现在的摘要、上次合并以后新记的（旧的在前）。
@@ -272,13 +272,32 @@ impl MergeJob {
     /// # Errors
     ///
     /// 记忆日志读不了、有一次没成：英文的一句为什么，当场记了 `WARN`。
-    async fn run(&self, mut check: Option<(Duration, usize)>) -> Result<Dreamed, String> {
+    async fn run(&self, check: Option<(Duration, usize)>) -> Result<Dreamed, String> {
+        let mut trip = None;
+        let done = self.batches(check, &mut trip).await;
+        if let Some(trip) = trip {
+            self.close_trip(trip).await;
+        }
+        done
+    }
+
+    /// 一批一批合到没有剩下的（[`MergeJob::run`]）：开了的整理会话放在 `trip` 里，跑完由 `run` 收。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`MergeJob::run`]。
+    async fn batches(
+        &self,
+        mut check: Option<(Duration, usize)>,
+        trip: &mut Option<ask::Trip>,
+    ) -> Result<Dreamed, String> {
         let (manual, started, mut batches) = (check.is_none(), Instant::now(), 0_u32);
         // 轮到的旧记忆（施工 R-19）：一趟开头照底账挑一次，头一个放得下的批带上；新记的塞满了的照这一份往后挪，不重挑（重挑会把
         // 这一趟刚合完的算成旧的）。
         let mut sweep = Sweep::Pick;
         let room = self.keeper.room().to_string();
         let mut done = Dreamed::default();
+        // 这一趟的整理会话（设计 41）：真有要合的批时才开，一趟一个；没接会话表的走一次性入口。
         loop {
             if self.hush.heard() {
                 done.stopped = true;
@@ -299,7 +318,7 @@ impl MergeJob {
                             revised,
                             retired,
                             ..
-                        } = done;
+                        } = &done;
                         tracing::info!(target: TARGET, room = room.as_str(), batches, given, revised, retired, took_ms, "memory merging ended");
                     }
                     return Ok(done);
@@ -320,174 +339,83 @@ impl MergeJob {
             if asked.swept.is_none() && !carried.is_empty() {
                 sweep = Sweep::Carry(carried);
             }
-            // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度；带上这一批交的是哪几条（施工 R-21）。
-            let (keeper, upto, fresh) = (self.keeper.clone(), asked.upto, asked.fresh);
-            let given = asked.given.iter().copied().collect();
-            blocking(move || keeper.record_merging(wall_now(), upto, fresh, left, manual, given))
+            if trip.is_none()
+                && let Some(opened) = self.open_trip(manual).await?
+            {
+                done.session = Some(opened.session.clone());
+                *trip = Some(opened);
+            }
+            // 发以前先记一行开始合（施工 R-17）：订阅着的头照它画进度；带上这一批交的是哪几条（施工 R-21）、跑在哪个整理会话里
+            // （施工 D-2）。
+            let keeper = self.keeper.clone();
+            let merging = Merging {
+                upto: asked.upto,
+                fresh: asked.fresh,
+                left,
+                manual,
+                given: asked.given.iter().copied().collect(),
+                session: trip.as_ref().map(|trip| trip.session.clone()),
+            };
+            blocking(move || keeper.record_merging(wall_now(), merging))
                 .await
                 .map_err(|refused| format!("{refused:?}"))?;
-            let round = self.ask(&asked).await?;
+            let round = self.ask(&asked, trip.as_ref(), batches).await?;
             done.given += round.given;
             done.revised += round.revised;
             done.retired += round.retired;
             done.summary |= round.summary;
-            done.stopped |= round.stopped;
+            if round.stopped {
+                // 放弃了这一批（人叫停、整理会话自己停了）：这一趟到此为止，下次从它接着合。
+                done.stopped = true;
+                tracing::info!(target: TARGET, room = room.as_str(), batches, "memory merging stopped");
+                return Ok(done);
+            }
         }
     }
 
-    /// 发、读、遮、记；交回这一次合了多少。
+    /// 开这一趟的整理会话（设计 41 第二节）：接了会话表的才开；人叫的记是哪个会话叫的。
     ///
     /// # Errors
     ///
-    /// 发不出去、交回读不成、记忆日志写不进：英文的一句为什么，当场记了 `WARN`。
-    async fn ask(&self, asked: &Asked) -> Result<Dreamed, String> {
-        let started = Instant::now();
-        let room = self.keeper.room().to_string();
-        let secrets = secrets(&self.config);
-        let shapes = &self.extraction.shapes;
-        let organizer = MemorySettings::from(&self.config.resolved.values()).organizer;
-        tracing::info!(target: TARGET, room = room.as_str(), given = asked.given.len(), fresh = asked.fresh, "memory merge started");
-        let ask = Ask {
-            model: organizer,
-            purpose: PURPOSE.to_string(),
-            system: String::new(),
-            messages: vec![Message::User {
-                blocks: vec![Block::Text(Text {
-                    text: redact(&asked.text, &secrets, shapes),
-                })],
-            }],
-            max_tokens: None,
-            owner: self.owner.clone(),
+    /// 开不了（核心在停、写不进）：这一趟停，下次再合。
+    async fn open_trip(&self, manual: bool) -> Result<Option<ask::Trip>, String> {
+        let Some(sessions) = self.keeper.memory.dream_sessions() else {
+            return Ok(None);
         };
-        // 边收边读，写完一条推一条（施工 R-21）：遮过 key，不落盘。
-        let mut watch = Watch::new(asked.given.clone(), TEXT_CHARS);
-        let mut tell = |watched: Watched<'_>| {
-            let seen = match watched {
-                Watched::Text(text) => watch.feed(text),
-                Watched::Restart => {
-                    watch.restart();
-                    return;
-                }
-            };
-            for seen in seen {
-                let seen = match seen {
-                    Seen::Revised(mut revised) => {
-                        revised.text = redact(&revised.text, &secrets, shapes);
-                        Seen::Revised(revised)
-                    }
-                    Seen::Retired(mut retire) => {
-                        retire.why = redact(&retire.why, &secrets, shapes);
-                        Seen::Retired(retire)
-                    }
-                    summary @ Seen::Summary { .. } => summary,
-                };
-                let dreaming = Dreaming {
-                    upto: asked.upto,
-                    seen,
-                };
-                self.keeper.memory.dreams.tell(self.keeper.room(), dreaming);
+        let (owner, room) = match self.keeper.room() {
+            Room::Persona { account, persona } => {
+                (account.clone(), DreamRoom::Persona(persona.clone()))
+            }
+            Room::Session { account, session } => {
+                (account.clone(), DreamRoom::Session(session.clone()))
             }
         };
-        let calling =
-            self.extraction
-                .ask
-                .call_watching(&self.config, &self.extraction.blobs, ask, &mut tell);
-        // 人叫停了：这一批放弃（施工 R-22），请求跟着丢掉，同打断一轮。
-        let answered = tokio::select! {
-            answered = calling => answered,
-            () = self.hush.wait() => return self.hushed(asked.upto).await,
+        let spec = DreamSpec {
+            owner,
+            room,
+            manual,
+            from: if manual { self.from.clone() } else { None },
+            model: MemorySettings::from(&self.config.resolved.values()).organizer,
         };
-        let answered = answered
-            .map_err(|unanswered| unanswered.reason().to_string())
-            .and_then(|answer| decisions(&answer.text, &asked.given, TEXT_CHARS, SUMMARY_CHARS));
-        let merges = &self.keeper.memory.merges;
-        let given = u32::try_from(asked.given.len()).unwrap_or(u32::MAX);
-        match answered {
-            Ok(mut decided) => {
-                for revised in &mut decided.revised {
-                    revised.text = redact(&revised.text, &secrets, shapes);
-                }
-                for retire in &mut decided.retired {
-                    retire.why = redact(&retire.why, &secrets, shapes);
-                }
-                if let Some(summary) = &mut decided.summary {
-                    *summary = redact(summary, &secrets, shapes);
-                }
-                let summary = decided.summary.is_some();
-                let (keeper, upto, swept) = (self.keeper.clone(), asked.upto, asked.swept.clone());
-                let recorded = blocking(move || {
-                    keeper.record_merge(wall_now(), &decided, upto, given, swept.as_ref())
-                })
-                .await;
-                merges.record(self.keeper.room(), true);
-                match recorded {
-                    Ok((revised, retired)) => {
-                        let took_ms =
-                            u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
-                        tracing::info!(target: TARGET, room = room.as_str(), revised, retired, took_ms, "memory merged");
-                        // 顺带补这一间还没有关键词的（施工 R-15 下，项目主人定旧的整理时慢慢补）：这一次交进去的在前。
-                        let tagged = tokio::select! {
-                            tagged = self.tag(&asked.given) => tagged,
-                            () = self.hush.wait() => 0,
-                        };
-                        if revised > 0 || tagged > 0 {
-                            // 改出来的、换了关键词的几条在后台补向量（施工 R-5 五补）。
-                            let keeper = self.keeper.clone();
-                            let using = Using {
-                                config: Arc::clone(&self.config),
-                                owner: self.owner.clone(),
-                            };
-                            blocking(move || keeper.fill(&using)).await;
-                        }
-                        Ok(Dreamed {
-                            given,
-                            revised,
-                            retired,
-                            summary,
-                            stopped: false,
-                        })
-                    }
-                    Err(refused) => {
-                        tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
-                        Err(format!("{refused:?}"))
-                    }
-                }
-            }
+        match sessions.open(spec).await {
+            Ok(session) => Ok(Some(ask::Trip {
+                sessions: Arc::clone(sessions),
+                session,
+            })),
             Err(why) => {
-                let tries = merges.record(self.keeper.room(), false);
-                tracing::warn!(target: TARGET, room = room.as_str(), tries, error = why.as_str(), "memory merge failed");
-                // 每一次没成都记一行（施工 R-17），连着第三次的另记跳过这一批。
-                let (keeper, upto) = (self.keeper.clone(), asked.upto);
-                let said = redact(&why, &secrets, shapes);
-                let failed = blocking(move || {
-                    keeper.record_merge_failed(
-                        wall_now(),
-                        upto,
-                        given,
-                        &said,
-                        tries,
-                        tries >= TRIES,
-                    )
-                })
-                .await;
-                if let Err(refused) = failed {
-                    tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
-                }
+                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session not opened");
                 Err(why)
             }
         }
     }
 
-    /// 人叫停了这一批（施工 R-22）：记一条 `stopped`，交回什么都没合。写不进的记一行，照样算停了。
-    async fn hushed(&self, upto: Seq) -> Result<Dreamed, String> {
-        let keeper = self.keeper.clone();
-        if let Err(refused) = blocking(move || keeper.record_merge_stopped(wall_now(), upto)).await
-        {
-            tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory merge not recorded");
+    /// 这一趟跑完了（设计 41 DS9，施工 D-1 下的 `close`）：照 `memory.dream_keep` 只留这一间最近几趟。收不成的记一行，不影响
+    /// 回执。
+    async fn close_trip(&self, trip: ask::Trip) {
+        let keep = MemorySettings::from(&self.config.resolved.values()).dream_keep;
+        let keep = usize::try_from(keep).unwrap_or(0);
+        if let Err(why) = trip.sessions.close(trip.session, keep).await {
+            tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session not closed");
         }
-        Ok(Dreamed {
-            stopped: true,
-            ..Dreamed::default()
-        })
     }
 }

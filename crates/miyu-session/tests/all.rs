@@ -52,6 +52,7 @@ mod memory_backfill;
 mod memory_digest;
 mod memory_dream;
 mod memory_dream_eval;
+mod memory_dream_session;
 mod memory_dream_stop;
 mod memory_dreaming;
 mod memory_eval;

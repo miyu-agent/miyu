@@ -166,29 +166,14 @@ impl Keeper {
         Ok((revised, retired))
     }
 
-    /// 开始合一批（施工 R-17，第七条第 10 款）：发请求以前记，合到第 `upto` 条，这一批 `fresh` 条新记的，连它在内还有 `left`
-    /// 条，是不是人叫的，交的是 `given` 这几条（施工 R-21）。
+    /// 开始合一批（施工 R-17，第七条第 10 款）：发请求以前记 `merging`（合到第几条、这一批几条新记的、连它在内还有几条、是不是
+    /// 人叫的、交的是哪几条（施工 R-21）、跑在哪个整理会话里（施工 D-2 上））。
     ///
     /// # Errors
     ///
     /// 记忆日志开不了、写不进。
-    pub(super) fn record_merging(
-        &self,
-        at: Timestamp,
-        upto: Seq,
-        fresh: u32,
-        left: u32,
-        manual: bool,
-        given: Vec<MemoryId>,
-    ) -> Result<(), Refused> {
+    pub(super) fn record_merging(&self, at: Timestamp, merging: Merging) -> Result<(), Refused> {
         let log = self.log()?;
-        let merging = Merging {
-            upto,
-            fresh,
-            left,
-            given,
-            manual,
-        };
         let stamp = Stamp {
             at,
             by: by(),

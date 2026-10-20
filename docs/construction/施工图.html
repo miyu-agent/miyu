@@ -848,6 +848,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-22c"><span class="n">R-22 三补</span>命令行整理回执跟着改<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sD-1a"><span class="n">D-1 上</span>整理会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sD-1b"><span class="n">D-1 下</span>整理会话列出来和留多久<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sD-2a"><span class="n">D-2 上</span>合并跑在整理会话里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-25"><span class="n">R-25</span>miyu check 印语义模型的状态<span class="st">✓</span></a></li>
@@ -26016,6 +26017,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/D-1上-整理会话.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sD-2a" aria-labelledby="h-sD2a">
+  <div class="sheet-head"><h2 id="h-sD2a"><span class="no">D-2 上</span>合并跑在整理会话里</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定整理就是一个特殊的会话：人叫的、后台的整理都开整理会话，思考、用量、用时都在会话里，记忆的真相照旧在记忆日志里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/merge.rs、merge/ask.rs　miyu-recall · Merging　miyu-endpoint · memory/dream.rs</span><span class="dir-note">D-2 上</span></div>
+            <ol class="pipe" aria-label="一趟整理">
+              <li>真有要合的批时开一个整理会话（人叫的记从哪个会话叫的）</li>
+              <li>一批一轮：遮过 key 的原文，记 <code>merging</code>（带会话）</li>
+              <li>答了的照旧读、核对、落；出错数一次，断了、停了不数</li>
+              <li>叫停就是打断那一轮</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">merging.session</span><span class="rl">这一趟的整理会话</span></div>
+          <div class="tile new"><span class="nm">memory.dream 回应</span><span class="rl">多 session</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">D-2 上</dd></div>
+        <div><dt>名称</dt><dd>合并跑在整理会话里</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>假的会话表、真的会话表加脚本模型的测试，变异，真模型，CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一趟一个会话、一批一轮；出错数到三次跳过，断了、停了不数；叫停打断那一轮；回应、merging 带会话</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/D-2上-合并跑在整理会话里.md</code>；设计 <code>41-整理会话.md</code>；蓝图 <code>memory.md</code> 第七条第 14 款，<code>protocol.md</code> 的 <code>memory.dream</code>。</li>
       </ul>
     </div>
   </div>

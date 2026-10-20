@@ -63,6 +63,7 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
             retired,
             summary,
             stopped,
+            session: None,
         };
         crate::commands::sentence(&human, &super::slash::dreamed_said(&dreamed, took))
     };

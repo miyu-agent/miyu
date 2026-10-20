@@ -244,6 +244,7 @@ impl Job {
             owner: self.owner.clone(),
             offset: self.offset,
             hush: self.hush.clone(),
+            from: Some(self.session.clone()),
         }
     }
 
