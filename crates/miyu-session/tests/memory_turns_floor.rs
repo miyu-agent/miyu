@@ -128,7 +128,10 @@ fn a_keyword_hit_must_be_close_enough_unless_it_has_no_vector() {
 #[test]
 fn the_shipped_table_reads() {
     let home = Home::new();
-    let text = home.resources.memory_turns().expect("出厂的读得出来");
+    let text = home
+        .resources
+        .memory_table("turns")
+        .expect("出厂的读得出来");
     let floors = Thresholds::parse(&text).expect("合写法");
     assert_eq!(
         floors.of("local:granite-embedding-97m-multilingual-r2"),

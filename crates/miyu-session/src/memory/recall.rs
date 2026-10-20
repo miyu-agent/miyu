@@ -42,7 +42,8 @@ const WIDE: usize = 32;
 
 /// 联想要的几样（`resources/software/memory/recall/` 的外壳，登记簿；一行照 `memory_search/memory.txt`；门槛表
 /// `core/memory/recall.toml`，数据），连同她主动搜时的关键词下限表（`core/memory/search.toml`，施工 R-14；搜以前的对话也照它，
-/// 施工 R-20）、搜以前的对话时只照意思找到的下限表（`core/memory/turns.toml`，施工 R-20）。
+/// 施工 R-20）、搜以前的对话时只照意思找到的下限表（`core/memory/turns.toml`，施工 R-20）、搜记下的时只照意思找到的下限表
+/// （`core/memory/near.toml`，施工 R-24）。
 #[derive(Debug, Clone)]
 pub struct RecallTexts {
     open: Template,
@@ -52,14 +53,16 @@ pub struct RecallTexts {
     search: Thresholds,
     /// 搜以前的对话时只照意思找到的那一路的下限（施工 R-20，`core/memory/turns.toml`）。
     turns: Thresholds,
+    /// 搜记下的时只照意思找到的那一路的下限（施工 R-24，`core/memory/near.toml`）。
+    near: Thresholds,
 }
 
 impl RecallTexts {
-    /// 从资源目录 `resources` 读：外壳、一行、门槛表、关键词下限表。
+    /// 从资源目录 `resources` 读：外壳、一行、门槛表、几张下限表。
     ///
     /// # Errors
     ///
-    /// 字读不出来、不是合写法的模板、要了别的字段；两张表读不出来、写错了：交回为什么。
+    /// 字读不出来、不是合写法的模板、要了别的字段；几张表读不出来、写错了：交回为什么。
     pub fn load(resources: &ResourceRoot) -> Result<RecallTexts, String> {
         let thresholds = resources
             .memory_recall()
@@ -67,22 +70,33 @@ impl RecallTexts {
             .and_then(|text| {
                 Thresholds::parse(&text).map_err(|why| format!("core/memory/recall.toml：{why}"))
             })?;
-        let search = resources
-            .memory_search()
-            .map_err(|error| error.to_string())
-            .and_then(|text| {
-                Thresholds::parse(&text).map_err(|why| format!("core/memory/search.toml：{why}"))
-            })?;
-        let turns = resources
-            .memory_turns()
-            .map_err(|error| error.to_string())
-            .and_then(|text| {
-                Thresholds::parse(&text).map_err(|why| format!("core/memory/turns.toml：{why}"))
-            })?;
+        let table = |name: &str| {
+            resources
+                .memory_table(name)
+                .map_err(|error| error.to_string())
+                .and_then(|text| {
+                    Thresholds::parse(&text)
+                        .map_err(|why| format!("core/memory/{name}.toml：{why}"))
+                })
+        };
+        let (search, turns, near) = (table("search")?, table("turns")?, table("near")?);
         Ok(RecallTexts::with(resources.path(), thresholds)
             .map_err(|error| error.to_string())?
             .searching(search)
-            .searching_turns(turns))
+            .searching_turns(turns)
+            .searching_near(near))
+    }
+
+    /// 搜记下的时只照意思找到的那一路的下限换成 `near`（施工 R-24；[`RecallTexts::with`] 造的是空表：照
+    /// [`miyu_recall::FLOOR`]）。
+    #[must_use]
+    pub fn searching_near(self, near: Thresholds) -> RecallTexts {
+        RecallTexts { near, ..self }
+    }
+
+    /// 模型 `model` 搜记下的时只照意思找到的那一路的下限：表里没有的照 [`miyu_recall::FLOOR`]。
+    pub(crate) fn near_floor(&self, model: &str) -> f32 {
+        self.near.of(model).unwrap_or(miyu_recall::FLOOR)
     }
 
     /// 搜以前的对话时只照意思找到的那一路的下限换成 `turns`（施工 R-20；[`RecallTexts::with`] 造的是空表：照
@@ -127,6 +141,7 @@ impl RecallTexts {
             thresholds,
             search: Thresholds::default(),
             turns: Thresholds::default(),
+            near: Thresholds::default(),
         })
     }
 }

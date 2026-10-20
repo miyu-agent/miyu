@@ -1,0 +1,11 @@
+# 记忆主动搜时只照意思找到的那一路的下限（施工 R-24，`docs/blueprint/recall.md` 第三条第 3 款）：照模型，问句和那一条记下的相似度
+# （点积，-1 到 1）不到下限、关键词那一路又没找到的不要。表里没有的模型照 0.40（`miyu_recall::FLOOR`）。只照关键词找到的那一路照
+# `search.toml`。写法同联想的那一张（`recall.toml`）。数据，不给模型看，不进登记簿。
+#
+# granite-embedding-97m-multilingual-r2 的 0.80 是 2026-10-20 量的（施工 R-24，规矩同核心：两路各找 20、关键词那一路照
+# `search.toml`、取前 5）：测评集（`docs/blueprint/memory/eval.md`）上 hit@1 60%、recall@5 88%、换了说法的 hit@1 42% 都不变，
+# 平常的话 13 句每句交回从 5 条降到 1.0 条；项目主人旧版的真记忆（200 句、判过的）上头一条对 39%、找回@5 42% 都不变，没得找的
+# 86 句每句从 5.0 条降到 4.4 条。再严（0.82）两份上都开始丢找对的。
+
+[thresholds]
+"local:granite-embedding-97m-multilingual-r2" = 0.80

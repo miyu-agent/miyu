@@ -818,6 +818,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-21"><span class="n">R-21</span>整理时她正在写什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-22"><span class="n">R-22</span>叫停整理<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -24596,6 +24597,54 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-23-不经会话的整理也停得下.md</code>；蓝图 <code>memory.md</code> 第七条第 13 款，<code>protocol.md</code>「<code>memory.*</code>」第 9 条，<code>cli/memory.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-24" aria-labelledby="h-sR24">
+  <div class="sheet-head"><h2 id="h-sR24"><span class="no">R-24</span>记忆搜只照意思的下限</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">内置语义模型换成 granite 以后，记忆搜什么都把全部列出来：只照意思找到的那一路还照 bge 时的 0.40，对 granite 等于不设。改成照模型的表。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/keeper/search.rs、recall.rs　resources · core/memory/near.toml</span><span class="dir-note">R-24</span></div>
+            <ol class="pipe" aria-label="记忆搜">
+              <li>照关键词找，只关键词找到的不够像的不要（R-14）</li>
+              <li>照意思找，只照意思找到的不到 <code>near.toml</code> 的下限不要（granite 0.80，表里没有的 0.40）</li>
+              <li>两路照名次合，取前几条</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">near.toml</span><span class="rl">只照意思那一路的下限，照模型</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-24</dd></div>
+        <div><dt>名称</dt><dd>记忆搜只照意思的下限</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>测评集、真记忆量数，测试、变异、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>测评集、项目主人旧版的真记忆上找对的一句不少；测评集平常的话每句 5 → 1 条，真记忆没得找的 5.0 → 4.4 条</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-24-记忆搜只照意思的下限.md</code>；蓝图 <code>recall.md</code> 第三条第 3 款，<code>memory/eval.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -112,3 +112,23 @@ fn the_shipped_search_floors_come_from_their_own_table() {
         "with 造的是空表"
     );
 }
+
+/// 搜记下的时只照意思找到的那一路照 `core/memory/near.toml`（施工 R-24），不是搜以前的对话那一张；表里没有的、`with` 造的空表
+/// 照 [`miyu_recall::FLOOR`]。
+#[test]
+fn the_shipped_near_floor_comes_from_its_own_table() {
+    let resources = miyu_store::resources::ResourceRoot::at(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"),
+    );
+    let granite = "local:granite-embedding-97m-multilingual-r2";
+    let texts = RecallTexts::load(&resources).expect("出厂的读得出来");
+    assert_eq!(texts.near_floor(granite), 0.80);
+    assert_eq!(texts.turns_floor(granite), 0.84, "两张表各是各的");
+    assert_eq!(texts.near_floor("local:other"), miyu_recall::FLOOR);
+    let empty = RecallTexts::with(resources.path(), Thresholds::default()).expect("读得出来");
+    assert_eq!(
+        empty.near_floor(granite),
+        miyu_recall::FLOOR,
+        "with 造的是空表"
+    );
+}

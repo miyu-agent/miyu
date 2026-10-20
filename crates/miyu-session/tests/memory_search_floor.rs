@@ -139,7 +139,10 @@ async fn a_model_not_in_the_table_or_without_the_vector_keeps_it() {
 #[test]
 fn the_shipped_table_reads() {
     let home = Home::new();
-    let text = home.resources.memory_search().expect("出厂的读得出来");
+    let text = home
+        .resources
+        .memory_table("search")
+        .expect("出厂的读得出来");
     let floors = Thresholds::parse(&text).expect("合写法");
     assert_eq!(
         floors.of("local:granite-embedding-97m-multilingual-r2"),

@@ -404,24 +404,15 @@ impl ResourceRoot {
         self.read(&["core", "memory", "recall.toml"])
     }
 
-    /// 记忆主动搜的关键词下限表的原文（`core/memory/search.toml`，施工 R-14）：照模型，只有关键词找到的那几条和问句不够像的
-    /// 不要；写法同 [`ResourceRoot::memory_recall`]。
+    /// 记忆的一张下限表的原文（`core/memory/<name>.toml`）：`search` 是主动搜时只有关键词找到的那几条的下限（施工 R-14），
+    /// `turns` 是搜以前的对话时只照意思找到的那几段的（施工 R-20），`near` 是搜记下的时只照意思找到的那几条的（施工 R-24）；
+    /// 写法同 [`ResourceRoot::memory_recall`]。
     ///
     /// # Errors
     ///
     /// 读不出来：写明是哪个文件。
-    pub fn memory_search(&self) -> Result<String, SourceError> {
-        self.read(&["core", "memory", "search.toml"])
-    }
-
-    /// 搜以前的对话时只照意思找到的那一路的下限表的原文（`core/memory/turns.toml`，施工 R-20）；写法同
-    /// [`ResourceRoot::memory_recall`]。
-    ///
-    /// # Errors
-    ///
-    /// 读不了。
-    pub fn memory_turns(&self) -> Result<String, SourceError> {
-        self.read(&["core", "memory", "turns.toml"])
+    pub fn memory_table(&self, name: &str) -> Result<String, SourceError> {
+        self.read(&["core", "memory", &format!("{name}.toml")])
     }
 
     /// 知识库的一张门槛表的原文（`core/knowledge/<name>.toml`）：`recall` 是自动想起的门槛（施工 K-6 下），`search` 是搜的时候

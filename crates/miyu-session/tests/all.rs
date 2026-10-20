@@ -64,6 +64,7 @@ mod memory_lanes;
 mod memory_listener;
 mod memory_merge;
 mod memory_merge_trace;
+mod memory_near_floor;
 mod memory_owner;
 mod memory_recall;
 mod memory_remote;
