@@ -184,6 +184,8 @@ async fn a_fork_taken_during_a_turn_starts_before_it_and_answers_an_inherited_me
             .any(|event| matches!(event.body, Body::TurnStarted(_)))
     })
     .await;
+    // 主线的请求真发出去了才分叉：两边共用一份剧本，支线的请求抢先就拿到 `Holds`，一轮都说不完（CI 偶发红，2026-10-20）。
+    until("主线发出了请求", || !script.requests().is_empty()).await;
     let started = home
         .log(&session)
         .iter()

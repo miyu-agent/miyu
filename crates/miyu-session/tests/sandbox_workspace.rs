@@ -202,7 +202,7 @@ async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
     let tools = Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来"))
         .expect("合写法");
     // 先编好会话的编号：命令里要写它的默认工作区。
-    let session = id_now();
+    let session = miyu_session::new_id(now());
     let mine = own(&home, &session);
     let command = format!(
         "pwd -P; touch '{}' 2>/dev/null && echo wrote-home || echo blocked-home; touch '{}' && echo wrote-own",
@@ -252,9 +252,4 @@ async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
         format!("{}\nblocked-home\nwrote-own\n", real(&home.home).display())
     );
     assert!(!home.home.join("a.txt").exists());
-}
-
-/// 这一刻新编的会话编号。
-fn id_now() -> SessionId {
-    miyu_session::new_id(now())
 }
