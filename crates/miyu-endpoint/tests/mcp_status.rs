@@ -200,6 +200,15 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
         Some(json!(true)),
         "{probe}"
     );
+    // 给人看的名字（施工 X-27 再补）：服务给了 `title` 的照它，没给的去掉 `mcp__probe__`。
+    assert_eq!(
+        (
+            echo.map(|tool| tool["label"].clone()),
+            env.map(|tool| tool["label"].clone())
+        ),
+        (Some(json!("Echo back")), Some(json!("env"))),
+        "{probe}"
+    );
 
     let mut faces = Vec::new();
     for (n, preset) in ["full", "nomcp", "noecho"].into_iter().enumerate() {

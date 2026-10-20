@@ -54,7 +54,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             let tools = tools_of(&catalog, &table, (package, &feature.id), |name| {
                 json!({
                     "name": name,
-                    "label": label(words.as_ref(), name),
+                    "label": label(words.as_ref(), &catalog, name, language),
                     "on": on && !file.tools_off.contains(name),
                 })
             });
@@ -103,7 +103,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         let tools = tools_of(&catalog, &table, (HOME_PACKAGE, &id), |name| {
             json!({
                 "name": name,
-                "label": label(words.as_ref(), name),
+                "label": label(words.as_ref(), &catalog, name, language),
                 "on": on && !file.tools_off.contains(name),
             })
         });
@@ -223,9 +223,24 @@ fn tools_of(
         .collect()
 }
 
-/// 工具 `name` 给人看的显示名：给人看的字里有的照它，没有的照工具名。
-fn label(words: Option<&Human>, name: &str) -> String {
-    words
-        .and_then(|words| words.tool(name))
-        .map_or_else(|| name.to_string(), |face| face.name.clone())
+/// 工具 `name` 给人看的显示名：给人看的字里有的照它；工具自己登记了的（MCP 服务给的 `title`、扩展、脚本写的）照连接的语言
+/// `language` 挑；都没有的，MCP 的去掉 `mcp__<服务名>__` 只留工具自己的名字（施工 X-27 再补，网页报的），别的照工具名。
+fn label(
+    words: Option<&Human>,
+    catalog: &miyu_tool::Catalog,
+    name: &str,
+    language: &str,
+) -> String {
+    if let Some(face) = words.and_then(|words| words.tool(name)) {
+        return face.name.clone();
+    }
+    if let Some(picked) = catalog
+        .get(name)
+        .and_then(|tool| pick(&tool.display_name(), language))
+    {
+        return picked;
+    }
+    name.strip_prefix(miyu_tool::MCP_PREFIX)
+        .and_then(|rest| rest.split_once("__"))
+        .map_or_else(|| name.to_string(), |(_, tool)| tool.to_string())
 }
