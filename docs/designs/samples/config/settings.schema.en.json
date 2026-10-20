@@ -12,6 +12,14 @@
       },
       "type": "object"
     },
+    "features": {
+      "additionalProperties": {
+        "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+        "title": "Turn this skill, script or MCP server on",
+        "type": "boolean"
+      },
+      "type": "object"
+    },
     "loading": {
       "properties": {
         "mcp": {

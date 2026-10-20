@@ -11,8 +11,10 @@ use serde::{Deserialize, Serialize};
 use crate::features::Features;
 
 mod read;
+mod switches;
 
 pub use read::{Code, DEFAULT_PERSONA, Problem, read};
+pub use switches::{By, switchable};
 
 /// 工具名最多几个字符。
 const TOOL_CHARS: usize = 64;
@@ -67,6 +69,9 @@ pub struct PresetFile {
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
     /// （[`Chosen::blind`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
+    /// 人设的全局开关（施工 X-27，`switches.rs`）：功能编号到开不开，只认技能、脚本、MCP 三类。不是文件里写的：核心照这一轮的
+    /// 配置放进来（[`PresetFile::following`]），不进 [`PresetFile::digest`]、不叠层。
+    pub global: BTreeMap<String, bool>,
 }
 
 impl PresetFile {
@@ -89,18 +94,14 @@ impl PresetFile {
         self.unlisted.unwrap_or(Unlisted::On)
     }
 
-    /// 包 `package` 里的功能 `feature` 开不开（施工 F-3 上）：扣下的包都不开（施工 X-25）；`[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能
-    /// 的编号、再认包的编号；都没写的照 `unlisted`。
+    /// 包 `package` 里的功能 `feature` 开不开（施工 F-3 上）：扣下的包都不开（施工 X-25）；别的照 [`PresetFile::decided`]：
+    /// `[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能的编号、再认包的编号；都没写的照人设的全局开关（施工
+    /// X-27）；再没有的照 `unlisted`。
     pub fn opens_in(&self, feature: &str, package: &str) -> bool {
         if self.withheld.contains(package) {
             return false;
         }
-        self.features
-            .get(feature)
-            .or_else(|| self.software.get(feature))
-            .or_else(|| self.software.get(package))
-            .copied()
-            .unwrap_or(self.unlisted() == Unlisted::On)
+        self.decided(feature, package).0
     }
 
     /// 编号和包一样的功能 `feature` 开不开：人格记忆、人设遵循提醒这种没写功能、整个包算一个的（[`PresetFile::opens_in`]）。

@@ -172,7 +172,7 @@ async fn a_preset_can_turn_one_off() {
         .unwrap_or_else(|| panic!("列出来了：{preset}"));
     assert_eq!(
         feature,
-        json!({"id": "command-review", "name": "/review", "summary": "审一个文件", "on": false, "installed": true, "tools": []})
+        json!({"id": "command-review", "name": "/review", "summary": "审一个文件", "on": false, "by": "preset", "installed": true, "tools": []})
     );
 }
 

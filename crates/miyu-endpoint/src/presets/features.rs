@@ -20,11 +20,12 @@ use crate::config::methods::words;
 use crate::personas::pick;
 
 /// 一个个功能：
-/// - 装了的：`{"id", "name", "summary", "on", "installed": true, "tools"}`，名字、说明照它的清单、照语言挑，没说明的没有
-///   `summary`；`on` 是叠好以后开不开；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件
+/// - 装了的：`{"id", "name", "summary", "on", "by", "installed": true, "tools"}`，名字、说明照它的清单、照语言挑，没说明的没有
+///   `summary`；`on` 是叠好以后开不开，`by` 是谁定的（施工 X-27）：`preset` 预设里写了，`global` 照技能、脚本、MCP 三页的
+///   全局开关，`default` 都没写、照 `unlisted`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件
 ///   `{"name", "label", "on"}`：`label` 照给人看的字里这件工具的显示名，没有的照工具名；功能关着的都是关着，开着的照
 ///   `[tools]` 关没关。
-/// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "installed": false, "tools": []}`，
+/// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "by", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
 pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
@@ -32,7 +33,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     let catalog = core.tools();
     let found_packages = core.packages();
     let table = crate::scripts::features(core);
-    let file = &found.file;
+    let file = &found.file.clone().following(super::switches(core));
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
     // 程序不在的扩展当没装（施工 F-6 上）：它的功能照「写了没装」列。
@@ -49,7 +50,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
                 .as_ref()
                 .is_none_or(|service| !core.home_mcp.covers(service))
         }) {
-            let on = file.opens_in(&feature.id, package);
+            let (on, by) = file.decided(&feature.id, package);
             let tools = tools_of(&catalog, &table, (package, &feature.id), |name| {
                 json!({
                     "name": name,
@@ -61,6 +62,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
                 "id": feature.id,
                 "name": pick(&feature.name, language),
                 "on": on,
+                "by": by.as_str(),
                 "installed": true,
                 "tools": tools,
             });
@@ -74,13 +76,14 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     // 带着同一个名字，开不开照功能和 `[tools]`。
     for script in core.scripts().iter() {
         let id = script_feature(&script.head.name);
-        let on = file.opens_in(&id, crate::scripts::package(script));
+        let (on, by) = file.decided(&id, crate::scripts::package(script));
         let name =
             pick(&script.head.display_name, language).unwrap_or_else(|| script.head.name.clone());
         let mut one = json!({
             "id": id,
             "name": name,
             "on": on,
+            "by": by.as_str(),
             "installed": true,
             "tools": [{
                 "name": script.head.name,
@@ -96,7 +99,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     // 个人设置里的 MCP 服务各算一个功能（施工 F-9 下）：名字是服务名；工具是目录里挂在 `~home` 下、归它的。
     for server in core.home_mcp.now().iter() {
         let id = server.feature_id();
-        let on = file.opens_in(&id, HOME_PACKAGE);
+        let (on, by) = file.decided(&id, HOME_PACKAGE);
         let tools = tools_of(&catalog, &table, (HOME_PACKAGE, &id), |name| {
             json!({
                 "name": name,
@@ -108,6 +111,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             "id": id,
             "name": server.name,
             "on": on,
+            "by": by.as_str(),
             "installed": true,
             "tools": tools,
         }));
@@ -117,10 +121,12 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     let mut carried_ids = BTreeSet::new();
     for skill in &carried.skills {
         let id = feature_id(&skill.head.name);
+        let (on, by) = file.decided(&id, skill.package.as_deref().unwrap_or_default());
         let mut one = json!({
             "id": id,
             "name": pick(&skill.head.display_name, language).unwrap_or_else(|| skill.head.name.clone()),
-            "on": file.opens_in(&id, skill.package.as_deref().unwrap_or_default()),
+            "on": on,
+            "by": by.as_str(),
             "installed": true,
             "tools": [],
         });
@@ -135,10 +141,12 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     for command in &carried.commands {
         let id = command_feature(&command.name);
         let package = command.package.as_deref().unwrap_or(HOME_PACKAGE);
+        let (on, by) = file.decided(&id, package);
         let mut one = json!({
             "id": id,
             "name": format!("/{}", command.name),
-            "on": file.opens_in(&id, package),
+            "on": on,
+            "by": by.as_str(),
             "installed": true,
             "tools": [],
         });
@@ -156,10 +164,12 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         .filter(|one| !carried.commands.iter().any(|t| t.name == one.command.name))
     {
         let id = one.command.feature_id();
+        let (on, by) = file.decided(&id, &one.package);
         let mut item = json!({
             "id": id,
             "name": format!("/{}", one.command.name),
-            "on": file.opens_in(&id, &one.package),
+            "on": on,
+            "by": by.as_str(),
             "installed": true,
             "tools": [],
         });
@@ -182,10 +192,12 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             .as_ref()
             .and_then(|words| Words::sentence(words, &format!("software/{id}"), &[]))
             .unwrap_or_else(|| id.clone());
+        let (on, by) = file.decided(id, id);
         listed.push(json!({
             "id": id,
             "name": name,
-            "on": file.opens(id),
+            "on": on,
+            "by": by.as_str(),
             "installed": false,
             "tools": [],
         }));

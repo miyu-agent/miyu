@@ -1,6 +1,6 @@
-# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `command.*`, `check`
+# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `script.list`, `tool.set_loading`, `feature.set`, `command.*`, `check`
 
-Manage packages, extension processes and the MCP servers in personal settings; list skills; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
+Manage packages, extension processes and the MCP servers in personal settings; list skills and scripts; change how tools load and the global switches of skills, scripts and MCP servers; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
 
 | Method | What it does |
 |---|---|
@@ -16,11 +16,13 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in personal settings: list, restart, add or replace, remove |
 | [`skill.list`](#skilllist) | List the skills that can be used |
+| [`script.list`](#scriptlist) | List the registered scripts |
+| [`tool.set_loading`, `feature.set`](#toolset_loading-featureset) | Change how a tool or an MCP server loads; change the global switch of a skill, script or MCP server |
 | [`command.run`](#commandrun) | Run a slash command |
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*` and `mcp.*` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed in the admin's home (`home/admin/packages/`). Installing the same id in the home layer upgrades and replaces it; removing a built-in package records that in the home layer, and it can be installed back.
 
@@ -183,7 +185,7 @@ To keep up to date, subscribe to the `extensions` stream.
 
 MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/settings.toml`). Editing personal settings by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
 
-**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; left out while unknown (never started, no cache).
+**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command`, `venues`, `state`, `failures`, `pid` while running, `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; left out while unknown (never started, no cache). `need_load` is `{"value", "by"}`: whether the server's tools load on demand; `by` is `source` (as the server table says; unset loads on demand) or `setting` (overridden by `loading.mcp.<server>` in personal settings, see `tool.set_loading`). `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset.
 
 **`mcp.restart`**: param `name`. Response: that server. **Errors**: `unknown_server`.
 
@@ -214,6 +216,44 @@ Fields left out are not written: replacing drops what was there before and is no
 | `from` | Where it comes from: `home` (placed by the admin, `home/admin/skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed) |
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
+| `on` | Global switch (`features.skill-<name>`, see `feature.set`); `true` when unset |
+
+## `script.list`
+
+**Params**: none. **Response**: `{"scripts": [...]}`, the scripts registered as tools right now, sorted by `tool`. An item:
+
+| Name | Notes |
+|---|---|
+| `tool` | Tool name |
+| `display_name`, `description` | Name and one-line description for people (the script head's `Display name`, `显示名称`, `描述`), picked by the connection's language as in `skill.list`; left out when none is written |
+| `from`, `package` | As in `skill.list`; `home` is placed by the admin (`home/admin/scripts/`) |
+| `path` | Where the script file is, written as in `skill.list` |
+| `timeout` | Seconds one call waits |
+| `need_load` | `{"value", "by"}`: whether it loads on demand; `by` is `source` (as the script head says; unset loads on demand) or `setting` (overridden by `loading.tools.<tool>` in personal settings) |
+| `on` | Global switch (`features.script-<tool>`); `true` when unset |
+
+## `tool.set_loading`, `feature.set`
+
+The two things the skill, script and MCP pages change. Both write the admin's personal settings the way `config.set` changes one item (with the version, never over a hand edit made at the same time, pushing `config.changed` once written). They take effect from the next turn. Response `{}`.
+
+**`tool.set_loading`**: whether one tool (`loading.tools.<tool>`) or one MCP server (`loading.mcp.<server>`) loads on demand. A tool's own setting comes first, an MCP tool then follows its server's, and with neither it follows where it came from.
+
+| Name | Type | Notes |
+|---|---|---|
+| `tool` | string | Tool name: 1 to 128 characters without `.` or control characters |
+| `server` | string | MCP server name |
+| `need_load` | boolean or `null`, required | `null` removes the setting and goes back to the source |
+
+Give exactly one of `tool` and `server`.
+
+**`feature.set`**: the global switch of one skill, script or MCP server (`features.<feature id>`). Presets whose `unlisted` is `on` follow it, except where the preset turns that feature on or off itself (`by` of each feature in `preset.get`). Presets whose `unlisted` is `off` ignore it: what they leave out stays off.
+
+| Name | Type | Notes |
+|---|---|---|
+| `feature` | string, required | Feature id: `skill-<name>`, `script-<tool>`, `mcp-<server>` |
+| `on` | boolean or `null`, required | `null` removes the switch and goes back to following the presets |
+
+**Errors**: `bad_params` (not exactly one of `tool` and `server`, a name that does not fit the key, a feature that is none of the three kinds, `need_load` or `on` missing); `config_file_broken`; `config_conflict`.
 
 ## `command.run`
 

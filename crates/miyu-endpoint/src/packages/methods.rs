@@ -1,6 +1,7 @@
 //! 软件包的几个方法（`protocol.md` 的 `package.*`）：从端点的方法表挪出来（施工 F-8 中上，方法表放不下了），照方法名分给各处。
 //! 在后台答的 `package.call` 不在这里（`methods::call_later`）。个人设置里的 MCP 服务的 `mcp.*`（施工 F-9 补）也从这里分：
-//! 方法表到了行数上限。`mcp.set`、`mcp.remove`、列技能的 `skill.list`（施工 X-26）同样从这里分。
+//! 方法表到了行数上限。`mcp.set`、`mcp.remove`、列技能的 `skill.list`（施工 X-26），列脚本的 `script.list`、改加载方式的
+//! `tool.set_loading`、改全局开关的 `feature.set`（施工 X-27）同样从这里分。
 
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use crate::methods::params;
 use crate::refusal::Refusal;
 use crate::wire::Request;
 
-/// 答一条 `package.*`、`mcp.*`、`skill.*`；不认识的 `unknown_method`。
+/// 答一条 `package.*`、`mcp.*`、`skill.*`、`script.*`、`tool.*`、`feature.*`；不认识的 `unknown_method`。
 pub(crate) async fn call(
     core: &Arc<Core>,
     peer: Peer,
@@ -51,6 +52,11 @@ pub(crate) async fn call(
         "mcp.set" => crate::mcp::editing::set(core, peer, &request.id, params(request)?),
         "mcp.remove" => crate::mcp::editing::remove(core, peer, &request.id, params(request)?),
         "skill.list" => crate::skills::list(core, peer).await,
+        "script.list" => Ok(crate::scripts::list::list(core, peer)),
+        "tool.set_loading" => {
+            crate::toggles::set_loading(core, peer, &request.id, params(request)?)
+        }
+        "feature.set" => crate::toggles::set_feature(core, peer, &request.id, params(request)?),
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }

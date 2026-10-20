@@ -26,7 +26,9 @@
 | `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：家目录 `home/<账号>/scripts/` 先，再找装了的包的 `scripts/`，出厂的先于家目录、同一层照编号（施工 F-8 六补）；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |
 | `crates/miyu-basesystem/src/shell/script.rs`、`resources/software/basesystem/script/` | 脚本当一件工具（施工 X-12 上）：照 `#!` 起（Windows 上照解释器的名字、扩展名找），参数交给 `MIYU_ARGS_JSON` 和标准输入，缓存目录 `MIYU_SCRIPT_CACHE_DIR`，`PYTHONUTF8=1`；起进程、看门、截输出、跑完了的几句和 `shell` 同一套 |
 | `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）、管理员家目录的 `scripts/` 里有文件变了（`Core::watch_scripts`，施工 X-12 补，2026-10-13 项目主人照推荐定：没有的先建上，点开头的、子文件夹里的不算，200 毫秒合并一次；再找一遍的一次一个）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
-| `crates/miyu-endpoint/src/skills.rs` | `skill.list`（施工 X-26，网页设置页「技能」那一页）：照造会话的找法列核心这一刻用得上的技能，同名的只列实际用的那一份；给人看的两格照连接的语言挑，`from` 是 `home`、`shipped`、`package`，随包来的带包的编号，`SKILL.md` 的路径家目录下的写成 `~/…`；`tests/skill_list.rs` 守着 |
+| `crates/miyu-endpoint/src/skills.rs` | `skill.list`（施工 X-26，网页设置页「技能」那一页）：照造会话的找法列核心这一刻用得上的技能，同名的只列实际用的那一份；给人看的两格照连接的语言挑，`from` 是 `home`、`shipped`、`package`，随包来的带包的编号，`SKILL.md` 的路径家目录下的写成 `~/…`；`on` 是全局开关（施工 X-27，`presets.md`「全局开关」）；`tests/skill_list.rs` 守着 |
+| `crates/miyu-endpoint/src/scripts/list.rs` | `script.list`（施工 X-27，网页设置页「脚本」那一页）：登记上的脚本照工具名排，给人看的两格（`display_name`、`description`）照连接的语言挑，`from`、`package`、`path` 同 `skill.list`，`timeout`，`need_load` 带 `by`（`source` 来处、`setting` 个人设置盖过的），`on` 是全局开关；`tests/script_pages.rs` 守着 |
+| `crates/miyu-endpoint/src/toggles.rs` | 三页上改的两样（施工 X-27）：`tool.set_loading` 写个人设置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>`，`feature.set` 写 `features.<功能编号>`（只收 `skill-`、`script-`、`mcp-`），`null` 删掉；写法照 `config.set` 改一项；只给人 |
 | `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`） |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
@@ -60,7 +62,7 @@
    # { "type": "object", "properties": { "query": { "type": "string" } } }
    ```
 
-   `Description` 给模型（英文），`描述`、`显示名称` 给人（双槽，同技能；`显示名称`、`Display name` 也是时间线上这件工具的名字，派它那一刻记进结果，施工 9-8 六补）；`Parameters` 是参数的 JSON Schema，没写的当没有参数；`Timeout` 是秒，没写的 60；`Need load: yes` 和没写的要先加载，`no` 全量（`25-工具加载.md` W9，施工 L-1；没写的先加载是施工 L-3，2026-10-20 项目主人改），个人设置的 `loading.tools.<工具名>` 盖过它。
+   `Description` 给模型（英文），`描述`、`显示名称` 给人（双槽，同技能；`显示名称`、`Display name` 也是时间线上这件工具的名字，派它那一刻记进结果，施工 9-8 六补）；`Parameters` 是参数的 JSON Schema，没写的当没有参数；`Timeout` 是秒，没写的 60；`Need load: yes` 和没写的要先加载，`no` 全量（`25-工具加载.md` W9，施工 L-1；没写的先加载是施工 L-3，2026-10-20 项目主人改），个人设置的 `loading.tools.<工具名>` 盖过它（头经 `tool.set_loading` 改，`script.list` 的 `need_load.by` 说是来处还是人改的，施工 X-27）。全局开关 `features.script-<工具名>`、`features.skill-<名字>`（`presets.md`「全局开关」）在头的三页上改，预设没写的照它。技能没有加载方式：工具面上只有技能目录，用到才读正文（`25-工具加载.md` W9）。
 2. **她看到的**：一件工具，名字是文件名（去掉扩展名，不合 `[A-Za-z0-9_-]` 的换成 `_`），说明、参数照开头注释。说明、参数多大都收，不按大小挡（2026-10-12 项目主人定）。开头写错的、同名被压掉的不登记，`miyu check` 报出来。
 3. **跑**：照开头的 `#!` 起程序（Windows 上照扩展名找解释器）；参数是一份 JSON，交给环境变量 `MIYU_ARGS_JSON` 和标准输入（同旧版）；工作目录是会话的工作区；另给它一个能写缓存的目录（`MIYU_SCRIPT_CACHE_DIR`）。输出照命令的输出交回，退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人（`session/guard.md`）；进沙盒的单独放开脚本这一个文件只读（在数据根里的，沙盒本来藏着）。
 4. **技能里的脚本**不算工具，不进工具面：由技能正文写怎么跑（她用跑命令的那件工具跑）。

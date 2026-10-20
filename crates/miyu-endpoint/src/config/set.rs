@@ -55,6 +55,26 @@ pub(crate) struct SetParams {
     version: Option<Option<String>>,
 }
 
+impl SetParams {
+    /// 改个人设置里的一项（施工 X-27 的 `tool.set_loading`、`feature.set`）：真的键 `key` 改成开关 `value`，`None` 是从个人
+    /// 设置里删掉。
+    pub(crate) fn personal(key: String, value: Option<bool>) -> SetParams {
+        let change = ChangeParam {
+            key,
+            value: value.map(Json::Bool),
+            input: None,
+            unset: value.is_none().then_some(true),
+            expect: None,
+        };
+        SetParams {
+            layer: WriteLayer::Personal,
+            changes: Some(vec![change]),
+            text: None,
+            version: None,
+        }
+    }
+}
+
 /// 能改的两层。
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]

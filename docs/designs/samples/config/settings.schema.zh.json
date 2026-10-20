@@ -12,6 +12,14 @@
       },
       "type": "object"
     },
+    "features": {
+      "additionalProperties": {
+        "description": "默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
+        "title": "这个技能、脚本或 MCP 服务开着",
+        "type": "boolean"
+      },
+      "type": "object"
+    },
     "loading": {
       "properties": {
         "mcp": {

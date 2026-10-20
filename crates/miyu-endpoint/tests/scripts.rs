@@ -38,6 +38,7 @@ impl Builtins for Kit {
             miyu_endpoint::settings::PermissionSettings::ITEMS,
             miyu_endpoint::settings::EXTERNAL_BINDINGS,
             miyu_session::loading::ITEMS,
+            miyu_session::switches::ITEMS,
         ]
         .concat();
         let packaged = miyu_endpoint::packages::settle(found, &own);
@@ -58,14 +59,14 @@ impl Builtins for Kit {
 }
 
 /// 一个 Python 脚本：把收到的参数原样印出来。
-fn echo(name: &str) -> String {
+pub(crate) fn echo(name: &str) -> String {
     format!(
         "#!/usr/bin/env python3\n# 显示名称：回声\n# Description: Echo {name}.\n# 描述：原样印出参数。\n# Need load: no\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"say\": {{\"type\": \"string\"}}}}}}\nimport os\nprint('{name}:' + os.environ['MIYU_ARGS_JSON'])\n"
     )
 }
 
 /// 读系统配置、个人设置的核心，工具目录里有基础系统的 `read`，装着造脚本的端口；照起来时那样登记脚本。
-fn core(home: &Home, script: &Script) -> Arc<Core> {
+pub(crate) fn core(home: &Home, script: &Script) -> Arc<Core> {
     let read: Arc<dyn Tool> = Fake::new("read", Access::Read, Act::Echo);
     let core = configured_core(home, script, Catalog::new([read]).expect("合写法"));
     let core = Arc::new(
@@ -78,7 +79,7 @@ fn core(home: &Home, script: &Script) -> Arc<Core> {
 }
 
 /// 照 `params` 造一个会话、说一句，交回会话编号。
-async fn session(client: &mut Client, home: &Home, id: &str, params: Value) -> String {
+pub(crate) async fn session(client: &mut Client, home: &Home, id: &str, params: Value) -> String {
     let reply = client.call(id, "session.create", params).await;
     let session = reply["result"]["session"]
         .as_str()
@@ -89,7 +90,7 @@ async fn session(client: &mut Client, home: &Home, id: &str, params: Value) -> S
     session
 }
 
-fn feature<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
+pub(crate) fn feature<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
     reply["result"]["features"]
         .as_array()
         .expect("是一个个功能")
@@ -178,6 +179,7 @@ async fn each_script_is_a_feature_the_preset_switches() {
             "name": "回声",
             "summary": "原样印出参数。",
             "on": true,
+            "by": "default",
             "installed": true,
             "tools": [{"name": "weather", "label": "回声", "on": true}],
         }))

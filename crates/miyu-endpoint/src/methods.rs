@@ -86,9 +86,11 @@ pub(crate) fn call<'a>(
             .await
         }),
         // 软件包的几个方法（施工 F-8 中上挪出去：这里放不下了）。
-        name if ["package.", "mcp.", "widget.", "skill."]
-            .iter()
-            .any(|at| name.starts_with(at)) =>
+        name if [
+            "package.", "mcp.", "widget.", "skill.", "script.", "tool.", "feature.",
+        ]
+        .iter()
+        .any(|at| name.starts_with(at)) =>
         {
             answer(move || async move {
                 crate::packages::methods::call(core, peer, caller, request).await

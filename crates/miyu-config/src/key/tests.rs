@@ -166,3 +166,42 @@ fn an_external_identity_is_short_text() {
         Fit::Yes(vec!["qq:10001".to_string()])
     );
 }
+
+/// 长一些的名字的占位（施工 X-27）：工具名、功能编号，128 个字以内，大写、冒号、汉字都行；空的、太长的、带 `.` 的、有控制字符
+/// 的不行。
+#[test]
+fn a_name_is_long_text_without_dots() {
+    let long = format!("mcp__{}", "a".repeat(123));
+    let wide = "名".repeat(128);
+    for good in [
+        "skill-weather",
+        "mcp__GitHub__create_issue",
+        "a",
+        long.as_str(),
+        wide.as_str(),
+    ] {
+        assert!(valid(NAME, good), "{good}");
+    }
+    let over = "a".repeat(129);
+    for bad in ["", "a.b", "web.fetch", "a\u{7}b", over.as_str()] {
+        assert!(!valid(NAME, bad), "{bad}");
+    }
+    assert!(is_placeholder(NAME));
+    assert_eq!(
+        fit(
+            "loading.tools.<name>",
+            &segments(&["loading", "tools", "mcp__GitHub__create_issue"])
+        ),
+        Fit::Yes(vec!["mcp__GitHub__create_issue".to_string()])
+    );
+    assert_eq!(
+        fit(
+            "loading.tools.<name>",
+            &segments(&["loading", "tools", "a.b"])
+        ),
+        Fit::BadName {
+            at: 2,
+            placeholder: NAME
+        }
+    );
+}

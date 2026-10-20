@@ -1,11 +1,11 @@
 //! 键（`docs/blueprint/config.md`「配置清单」，施工 8-6）：清单里的键可以有一段是人起的名字，例如
 //! `providers.<id>.base_url`、`providers.<id>.models.<model>.window`（`models.md`「对外的样子」）。
 //!
-//! - 清单里写的是「样子」：每一段用 `.` 隔开，人起的名字那一段写成占位 [`ID`] 或 [`MODEL`]。
+//! - 清单里写的是「样子」：每一段用 `.` 隔开，人起的名字那一段写成占位 [`ID`]、[`MODEL`]、[`EXTERNAL`] 或 [`NAME`]。
 //! - 文件里、协议上、最终值里的是「真的键」：照 TOML 点号连着的键的写法，裸着能写的一段（只有字母、数字、`-`、`_`）
 //!   照写，别的写成带双引号的一段：`providers.dev.models."deepseek-v4.1-flash".window`。[`split`]、[`join`] 互为来回。
 //! - 一个真的键对不对得上一个样子：[`fit`]。占位照它的写法查：[`ID`] 是「路径里的名字」（`kernel/ids.md`），[`MODEL`] 是
-//!   「短名字」（1 到 128 字节，没有控制字符）。
+//!   「短名字」（1 到 128 字节，没有控制字符），[`NAME`] 是长一些的名字（1 到 128 个字符，没有 `.` 和控制字符）。
 
 use crate::value::Value;
 
@@ -20,6 +20,10 @@ pub const MODEL: &str = "<model>";
 /// 和 [`MODEL`] 一个规矩（`kernel/ids.md` 的 `ExternalId`）。
 pub const EXTERNAL: &str = "<external>";
 
+/// 占位：工具名、功能编号这类比 [`ID`] 长的名字（施工 X-27：MCP 工具的全名 `mcp__<服务>__<工具>`、带前缀的功能编号
+/// 常超过 32 个字）：1 到 128 个字符，没有 `.` 和控制字符。不当文件名用，大小写、别的字都照收。
+pub const NAME: &str = "<name>";
+
 /// Windows 上这些名字建不了同名的文件（`kernel/ids.md`）。
 const WINDOWS_RESERVED: [&str; 22] = [
     "con", "nul", "aux", "prn", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
@@ -28,7 +32,7 @@ const WINDOWS_RESERVED: [&str; 22] = [
 
 /// 一段是不是占位。
 pub fn is_placeholder(segment: &str) -> bool {
-    segment == ID || segment == MODEL || segment == EXTERNAL
+    segment == ID || segment == MODEL || segment == EXTERNAL || segment == NAME
 }
 
 /// 样子 `pattern` 里有没有占位：没有的是写死的键，一项只有一个值。
@@ -49,6 +53,11 @@ pub fn valid(placeholder: &str, name: &str) -> bool {
         }
         MODEL | EXTERNAL => {
             !name.is_empty() && name.len() <= 128 && !name.chars().any(char::is_control)
+        }
+        NAME => {
+            !name.is_empty()
+                && name.chars().count() <= 128
+                && !name.chars().any(|c| c == '.' || c.is_control())
         }
         _ => false,
     }

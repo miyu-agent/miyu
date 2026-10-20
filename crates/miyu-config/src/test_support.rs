@@ -147,6 +147,10 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ("config/expected/list", "{item} 的列表"),
         ("config/expected/id", "小写字母开头的编号"),
         ("config/expected/model-name", "1 到 128 个字节的模型名"),
+        (
+            "config/expected/long-name",
+            "1 到 128 个字符，没有 . 和控制字符",
+        ),
         ("config/bad-format", "{key} 要写 {expected}，写的是 {got}"),
         (
             "config/out-of-range",

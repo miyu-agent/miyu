@@ -87,7 +87,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
 
     assert_eq!(
         named(&skills, "notes"),
-        &json!({"name": "notes", "from": "home", "path": "~/home/alice/skills/notes/SKILL.md"}),
+        &json!({"name": "notes", "from": "home", "path": "~/home/alice/skills/notes/SKILL.md", "on": true}),
         "自己放的：没有包，没写给人看的两格的不带"
     );
     let mine = named(&skills, "package-creator");
@@ -122,6 +122,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
             "display_name": "キットメモ",
             "summary": "只有中文的说明",
             "path": "~/home/alice/packages/kit/skills/kit-notes/SKILL.md",
+            "on": true,
         }),
         "装的包带的：照日文挑，没写日文、英文的说明照中文"
     );

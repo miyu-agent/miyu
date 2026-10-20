@@ -1,7 +1,7 @@
 //! 个人设置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
 //! `mcp.restart` 重启一个；状态变了推 `mcp.changed`（订阅软件包列表的连接收，`subscriptions/listed.rs`）。一项同软件包列表上
-//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）。只给本机的
-//! 人用。加、换、删在 `editing.rs`（施工 X-26）。
+//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）；加载方式
+//! `need_load` 和全局开关 `on`（施工 X-27）。只给本机的人用。加、换、删在 `editing.rs`（施工 X-26）。
 
 use std::sync::Arc;
 
@@ -9,6 +9,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::McpServer;
+use miyu_session::loading::Loading;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::mcp_prefix;
 
@@ -53,8 +54,14 @@ pub(crate) async fn restart(core: &Arc<Core>, params: RestartParams) -> Result<V
 }
 
 /// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务，知道了的另带工具。
+/// `need_load` 是服务那一级要不要先加载、谁定的（施工 X-27）：`source` 是服务表写的（没写的先加载），`setting` 是个人设置的
+/// `loading.mcp.<服务名>` 盖过的；`on` 是全局开关 `features.mcp-<服务名>`，没写的算开。配置照最近换上的那一份读，不拿配置
+/// 服务的锁：推 `mcp.changed` 时也调它。
 fn one(core: &Core, server: &McpServer) -> Value {
     let status = core.mcp.service(HOME_PACKAGE, &server.name);
+    let values = core.config_now().borrow().resolved().values();
+    let set = Loading::of(&values).server(&server.name);
+    let switches = miyu_session::switches::of(&values);
     let mut one = json!({
         "name": server.name,
         "command": server.command,
@@ -62,6 +69,11 @@ fn one(core: &Core, server: &McpServer) -> Value {
         "state": status.state.as_str(),
         "failures": status.failures,
         "covers": super::home::carrying(core, &server.name),
+        "need_load": {
+            "value": set.unwrap_or(server.need_load),
+            "by": if set.is_some() { "setting" } else { "source" },
+        },
+        "on": miyu_session::switches::on(&switches, &server.feature_id()),
     });
     details(
         &mut one,

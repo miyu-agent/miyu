@@ -145,8 +145,8 @@ impl Actor {
         }
         let values = self.config.current().resolved.values();
         let prepare = CompactionSettings::from(&values).prepare;
-        let policy = self.refresh_persona(values).await;
-        let skills = self.skills_turn(&present).await;
+        let policy = self.refresh_persona(values.clone()).await;
+        let skills = self.skills_turn(&present, &values).await;
         let config = Arc::clone(self.config.current());
         let knowledge = self.recalling();
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。

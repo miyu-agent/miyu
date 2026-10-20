@@ -165,6 +165,7 @@ mod respond;
 mod restart;
 mod retire;
 mod revert;
+mod script_pages;
 mod scripts;
 mod search_extension;
 mod secrets;

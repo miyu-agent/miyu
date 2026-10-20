@@ -31,7 +31,7 @@ MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP
 | `crates/miyu-endpoint/src/mcp/tool.rs` | 一件 MCP 工具（`Tool` 的实现）：照这时连着的客户端调，时限、暂时不可用、出错（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/content.rs` | 回来的内容换成结果块、截断（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/switch.rs` | `bundle` 的开关：和扩展同一份文件、同一把锁（施工 X-3 上） |
-| `crates/miyu-endpoint/src/mcp/methods.rs` | `mcp.list`、`mcp.restart` 和推送 `mcp.changed` 的那一项（施工 F-9 补） |
+| `crates/miyu-endpoint/src/mcp/methods.rs` | `mcp.list`、`mcp.restart` 和推送 `mcp.changed` 的那一项（施工 F-9 补）；每一项带服务那一级的 `need_load`（`by` 是 `source` 或 `setting`）和全局开关 `on`（施工 X-27） |
 | `crates/miyu-endpoint/src/mcp/editing.rs`、`mcp/written.rs`、`config/rewrite.rs` | `mcp.set`、`mcp.remove`：查写法、在个人设置的字上加上、换掉、删掉一张，照 `config.set` 的规矩写（施工 X-26） |
 | `crates/miyu-endpoint/src/mcp/home.rs` | 个人设置里的服务：起来时定下谁盖住谁、挂在 `~home` 下起，跟着配置换（新写的起、删掉的停、改了的重起、包里被盖住的停下或起回来）（施工 F-9 下） |
 | `crates/miyu-config/src/package/mcp/personal.rs` | 个人设置的 `[mcp.<名字>]` 读成服务，写错的那一个不收（施工 F-9 上） |
@@ -144,6 +144,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-endpoint/tests/mcp_cache.rs`、`src/mcp/cache/tests.rs` | 核心重启以后服务起不来，照缓存登记的在工具面上、调到暂时不可用；缓存记着旧时代的直接握手不再探；命令、环境变量的写法变了不用缓存，坏了的不用；`ttlMs` 过了用一次就再列；扩展开着服务就起、关了停下出目录；卸包清掉缓存和工作目录，用过的会话调到说已卸载（施工 X-3 下） |
 | `crates/miyu-endpoint/tests/mcp_settings.rs` | 个人设置里的服务（施工 F-9）：`miyu check` 报写错的、被盖住的，`[mcp.<名字>]` 不算不认识的键；真起测试用的服务：写了就起、调到的是它、包里同名的不起、那个包照关着算、预设里一个功能；手改个人设置当场换：新写的起、包里同名的停，改了的照新写的重起，删掉的停、包里的照开关起回来 |
 | `crates/miyu-endpoint/tests/mcp_settings_status.rs` | 头上的状态（施工 F-9 补）：被盖住的服务、全被盖住的包带 `covered`；`mcp.list` 列状态和盖住了谁，`mcp.restart` 换一个进程、失败从零数，没有的拒；订阅的连接收 `mcp.changed`，删掉的 `server` 是 `null`，不推叫 `~home` 的包 |
+| `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_moves_the_source_to_the_setting_and_the_next_face`（施工 X-27） | `mcp.list` 的 `need_load` 照 `loading.mcp.<服务名>` 从 `source` 变 `setting`，`on` 照 `features.mcp-<服务名>` |
 | `crates/miyu-endpoint/tests/mcp_edit.rs`、`src/mcp/written/tests.rs` | 头改个人设置里的服务（施工 X-26）：`mcp.set` 加上、整条换掉，别的字不动、正在跑的照新写的换；写错的、随包来的拒、什么都不写；`mcp.remove` 删掉、没有的拒；`mcp.list` 起好列完的、照缓存登记的带 `tools`，不知道的不带；表写成点号、行内表、子表的照样换、删，`mcp` 写成放不下的样子的不改 |
 | `crates/miyu-endpoint/tests/mcp_status.rs` | 软件包列表上每个服务一格的状态：起不来的停下带原因、失败几次、标准错误，推送里也是；`package.restart` 把停下的拉回来、失败从零数，在跑的换个进程、工具照常；关着的、没有能重启的、没有的拒；预设整个关掉、单件关掉照常换工具面、写进「装了没开」那一行，`preset.get` 列出服务的工具（施工 X-4） |
 
@@ -164,7 +165,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 ### 还没有的
 
-- 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load` 的照它，这个服务的工具都算（施工 L-1）；没写的先加载，要全量的写 `false` 或 `"no"`（施工 L-3，2026-10-20 项目主人改，原来没写的全量）。个人设置的 `loading.mcp.<服务名>` 盖过它，单件工具的 `loading.tools.<工具名>` 再盖过服务那一项。
+- 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load` 的照它，这个服务的工具都算（施工 L-1）；没写的先加载，要全量的写 `false` 或 `"no"`（施工 L-3，2026-10-20 项目主人改，原来没写的全量）。个人设置的 `loading.mcp.<服务名>` 盖过它，单件工具的 `loading.tools.<工具名>` 再盖过服务那一项；头经 `tool.set_loading` 改，`mcp.list` 的 `need_load.by` 说是服务表写的（`source`）还是人改的（`setting`）（施工 X-27）。每个服务还有全局开关 `features.mcp-<服务名>`（`presets.md`「全局开关」），经 `feature.set` 改，`mcp.list` 的 `on` 是它现在的值。
 
 - 远程的 MCP 服务（Streamable HTTP，要登录的走 OAuth）：先只接本机拉起的。
 - 服务的 `instructions`、资源（`resources/*`）、提示词（`prompts/*`）、Tasks 扩展、MCP Apps：都先不接。

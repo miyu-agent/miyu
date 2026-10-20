@@ -35,3 +35,19 @@ fn only_the_two_prefixes_count() {
     let loading = Loading::of(&values(&[("compaction.prepare", true)]));
     assert_eq!(loading, Loading::default());
 }
+
+/// 工具名那一段照样子拆（施工 X-27）：大写、带引号写的长名字也认得，各项照 `tool`、`server` 读得回来。
+#[test]
+fn quoted_and_long_names_are_read() {
+    let long = format!("mcp__github__{}", "x".repeat(60));
+    let long_key = format!("loading.tools.{long}");
+    let loading = Loading::of(&values(&[
+        ("loading.tools.\"my tool\"", false),
+        (long_key.as_str(), true),
+        ("loading.mcp.github", false),
+    ]));
+    assert_eq!(loading.tool("my tool"), Some(false));
+    assert_eq!(loading.tool(&long), Some(true));
+    assert_eq!(loading.server("github"), Some(false));
+    assert_eq!(loading.tool("github"), None);
+}

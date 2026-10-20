@@ -34,7 +34,7 @@
 
 | 名字 | 说明 |
 |---|---|
-| `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`，例如 `providers.<id>.base_url` |
+| `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
 | `options` | 选项：`value`、给人看的 `name`；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
 | `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型 |
 | `default` | 默认值 |

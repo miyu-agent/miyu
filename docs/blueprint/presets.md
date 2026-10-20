@@ -11,6 +11,8 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-policy/src/preset.rs` | 一份预设文件读成样子：每一格的写法，写错的报第一处，带代码、第几行；逐格叠（纯逻辑） |
+| `crates/miyu-policy/src/preset/switches.rs` | 全局开关（施工 X-27）：预设明写的、全局开关、`unlisted` 的先后（`PresetFile::decided`），只认技能、脚本、MCP 三类功能 |
+| `crates/miyu-session/src/switches.rs` | 配置项 `features.<name>`，照这一轮的配置读出全局开关（施工 X-27） |
 | `crates/miyu-store/src/presets.rs` | 三层在哪、怎么叠、列出编号、`miyu check` 查每一份 |
 | `crates/miyu-store/src/layers.rs` | 人格、预设共用的四层、包那一层认哪一份（`covered`，施工 P-11 上）和编号的写法 |
 | `crates/miyu-endpoint/src/presets.rs` | 造会话时照默认找、算装了哪些软件和没开的、`preset.list`、`preset.get` |
@@ -58,7 +60,7 @@ shell = false
 1. `name`、`summary` 照人格的写法：一句字，名字去掉前后空白不能是空的，说明可以是空的字、就是没有说明（施工 P-3 补、再补）；以前写成语言表（`zh`、`en`、`ja`）的照样认，出厂的两个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。叠好的文件的指纹照以前的写法算（没写的是空表、语言表照原样）：以前造的快照照旧对得上。
 2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）：以前写了的认出来当没写，指纹照没写算，下一次 `preset.set` 写这份文件时去掉；`preset.set` 写这个键是 `bad_params`。
 3. `unlisted`：几层都没写的照 `on`。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
-4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号；都没写的照 `unlisted`（`PresetFile::opens_in`）。写了没装的不报错。
+4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。写了没装的不报错。
    以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统 `basesystem`、记忆 `memory`（三件工具和回合开始的召回）、知识库 `knowledge`（两件工具，施工 K-1 下）、角色扮演 `roleplay`（人格的角色扮演提示和风格锁），和清单装的 `process` 包（桥）；联网 `net`、长期目标 `goal` 等它们做出来。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
@@ -74,6 +76,8 @@ shell = false
 
 **配置**：`preset.default`，名字，出厂 `full`，系统配置、个人设置，以后开的会话照它（`config.md`）。设置页在「通用」那一页的「预设」一组。
 
+**全局开关**（施工 X-27，2026-10-20 项目主人定）：每个技能、脚本、MCP 服务在头的三页上有一个开关，记在配置项 `features.<功能编号>`（开关，系统配置、个人设置，设置页不画，下一个回合生效；`<name>` 占位，`config.md`「人起的名字」），预设照它（默认关的除外，见下）。预设里对这个功能明写了开或关的（`[features]` 写了它，或者以前的 `[software]` 写了它、它所在的包）照预设，三页只是方便管理；预设没写的照全局开关；全局开关也没写的照 `unlisted`。全局开关只管 `unlisted = "on"` 的预设（2026-10-20 项目主人定）：`unlisted = "off"` 的（出厂的 `dev`）没写的照旧关着，全局开关打开的也不开，`by` 记 `default`，预设明写的照旧照预设；在默认开的预设里全局开关关掉的就没有。只接技能 `skill-`、脚本 `script-`、MCP 服务 `mcp-` 三类功能编号，包自己的功能不接。开关不是预设文件里的：核心造会话、回合开始找预设时照这一轮的配置放进叠好的文件（`PresetFile::following`），不进指纹、不叠层；改了以后快照里记的没开的功能变了，开着的会话下一个回合换上（第 6 条）。头经 `feature.set` 改（`protocol.md`），`preset.get` 每个功能的 `by` 说是谁定的。
+
 **协议**（`protocol.md`）：
 
 - `session.create`、`venue.session` 多 `preset`：不写的照默认找；`venue.session` 找回已有的会话时不看。
@@ -88,20 +92,20 @@ shell = false
 4. **钉在会话上**：`session.created` 记下预设的编号；子会话照父会话的，她派子代理时挑不了预设（只挑得了池和人格，2026-10-08 项目主人定，`tools/subagent.md`）：照编号重新找，找不到、写错了的不派，同人格；父会话是以前造的、没有预设的，子会话也没有。
 5. **照预设挑**（施工 P-2 中）：
    - 装了的功能（施工 F-3 上）：读成了的内置包、扩展包带的功能（`miyu_endpoint::packages::features`，没写功能的包整个算一个），加上每个登记上的脚本一个（施工 X-12 中，`script-<工具名>`，端点的 `scripts::features`），随预设的几层交给会话。工具归哪个功能：MCP 服务的、脚本的照它们自己的功能，清单写明了的照写的，包只有一个功能的归它，都不是的照它的包的编号（`Features::of_tool`）。施工 F-3 上以前是：工具目录里有工具的包、`roleplay`、清单装的 `process` 包。
-   - 一个功能开着：照「格式」第 4 条的先后（`PresetFile::opens_in`）。
+   - 一个功能开着：照「格式」第 4 条的先后（`PresetFile::opens_in`），全局开关照这一刻的配置（施工 X-27）。
    - 工具面：归的功能开着的工具，减去 `[tools]` 关掉的（`PresetFile::keeps`），再照原来的几道筛（场所、子会话、能不能确认）。关了「后台运行」（`basesystem` 的 `background`）的：快照记 `foreground`，`shell` 拿掉 `run_in_background`（`ToolEntry::without`，别的字节不动），执行器不给任务端口（施工 T-1 上，设计 30 第三节第 7 条）；换预设时照新的预设定，以前就有的 `shell` 照旧快照里的原样，调到放到后台的照「这里不能放到后台」说。
    - 记忆：人格记忆 `memory` 没开的、没装的（施工 F-3 上），范围一律 `off`，不管 `session.create` 的 `memory`（走查 E2：开不开归预设，范围归开会话时）。
    - 人设遵循提醒：`roleplay` 没开的、没装的（施工 F-3 上），快照里没有提醒短语、system 没有风格锁。
    - 装了没开的那一行（Y8，走查 C4）：装了、没开的软件里只列有工具的（照完整的工具目录算，不照这次的预设筛：某个包在目录里有工具就算）。没有工具的她用不上：`roleplay`；通讯平台的桥是核心拉起的，不随会话的预设，写进来是假话（2026-10-08 主会话定，施工 O-18）。照编号逗号隔开，`core/preset-off.txt` 写成一行接在核心的几行后面、风格锁前面。都开着、没开的都没有工具的不写，功能全开的会话 system、工具面和以前一个字节都不差。快照里的 `preset.off` 照旧记全部没开的软件（`preset.get`、设置页照它）。 施工 F-3 上起列的是功能的编号：快照的 `preset.off` 记装了、没开的功能，那一行只列下面有工具的。以前造的快照记的是包的编号，换快照时照现在的功能读（是装了的包、又不是功能编号的换成它的全部功能），一样的算没改，不换（`PresetPin::means_the_same`）。
    - 场所显示不了图片的会话（施工 X-25，`venues.md`「`venue.session`」的 `images`）：清单写了 `needs = ["images"]` 的包整包扣下，和预设关了一样不进工具面、回合开始不问、`system.append` 那一段不拼；不列进上面那一行（那一行是说换个预设就有，这里换了也没有），不进预设的指纹、快照的 `preset.off`。换快照时照旧扣着（`PresetFile::withheld`、`Chosen::blind`）。
    - 快照记 `preset`：编号、没开的软件和文件的指纹（`policy.md`「拼」第 6 条）。
-6. **改了文件**（施工 P-2 下，K3）：每个回合开始，执行器照快照里预设的编号把几层重新找一遍，指纹或者没开的那几个变了的照新的重拼，下一轮用上，日志里一条内核记的 `session.policy_changed`（`session/actor.md`「换快照」，人格、预设一起改了的换一次）：
+6. **改了文件**（施工 P-2 下，K3）：每个回合开始，执行器照快照里预设的编号把几层重新找一遍、放进这一轮配置里的全局开关（施工 X-27），指纹或者没开的那几个变了的照新的重拼，下一轮用上，日志里一条内核记的 `session.policy_changed`（`session/actor.md`「换快照」，人格、预设一起改了的换一次）：
    - 工具面照新的预设重新筛；以前就有的那几件照旧快照里的原样（描述、`subagent` 能选的池都不跟着变），新打开的照现在的目录拿。
    - 记忆不跟着换：开不开记忆在开会话时定（L3），新预设里 `memory` 改了也照开会话时的。
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
 7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是管理员用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是管理员用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
@@ -157,6 +161,9 @@ shell = false
 | `crates/miyu-session/src/actor/persona/tests.rs` | 角色扮演没开的换人格以后照旧没有提示和风格锁，换过以后不再换 |
 | `crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 P-2 下） | 改了预设重新筛工具面、留着的那一件是快照里的原样、换过以后不再换、整包关掉的写进那一行、重新打开的照现在的目录拿；记忆照开会话时的（开着的照开，关着的照关）；角色扮演打开了提示回来；写错了的、没有指纹的不换 |
 | `crates/miyu-endpoint/tests/preset_background.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`、`crates/miyu-policy/src/snapshot/tests.rs`（施工 T-1 上） | 关了后台运行的预设：工具面上 `shell` 没有 `run_in_background`、别的参数不动，没有 `jobs`，快照记 `foreground`；硬写放到后台的回「这里不能放到后台」、不派任务；开着的照旧；换成关着的预设记下、以前就有的 `shell` 原样，改回来不记；`foreground` 写在快照最后、读得回来，开着的不写 |
+| `crates/miyu-policy/src/preset/switches/tests.rs`、`crates/miyu-session/src/switches/tests.rs`（施工 X-27） | 预设明写的（`[features]`、`[software]` 的包）先，全局开关其次，`unlisted` 最后；`unlisted = "off"` 的预设不照全局开关；只认三类功能；不进指纹；配置项只读三类 |
+| `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_leaves_an_off_preset_alone`（施工 X-27） | 真核心：全局开关打开的在 `unlisted = "off"` 的预设里照旧没有、`by` 是 `default`；默认开的预设里全局关掉的没有 |
+| `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_rules_where_the_preset_says_nothing`（施工 X-27） | 真核心：`feature.set` 关掉以后 `preset.get` 的 `by` 从 `default` 变 `global`、明写的照旧 `preset`；开着的会话下一个回合没有那件，新会话没有、明写开的预设照样有；删掉以后回到默认；`skill.list`、`script.list` 的 `on` 跟着变 |
 | `crates/miyu-endpoint/tests/preset_swap.rs`（施工 P-2 下） | 真核心：改了预设下一轮的工具面变、日志一条内核记的换快照；没改的不换；写错了的不换；重启以后照换上的那一份，载入的会话改了也换 |
 
 ### 起草时定的

@@ -331,19 +331,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             let (root, owner) = (root.clone(), owner.clone());
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
             let places = presets.clone();
+            let switches = crate::switches::of(&config.current().resolved.values());
             blocking(move || {
-                let features = places.as_ref().map(|places| places.features.clone());
                 let file = wanted
-                    .zip(places.map(|places| places.presets))
-                    .and_then(|(id, presets)| presets.find(&id).ok())
-                    .map(|found| found.file);
-                // 显示不了图片的会话，要图的包照旧扣下（施工 X-25）。
-                let file = file.map(|mut file| {
-                    if let Some(features) = features.filter(|_| !images) {
-                        file.withheld = features.image_packages().clone();
-                    }
-                    file
-                });
+                    .zip(places)
+                    .and_then(|(id, places)| places.file(&id, images, switches));
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 (skills::shelves(&found), skills::names(&found))

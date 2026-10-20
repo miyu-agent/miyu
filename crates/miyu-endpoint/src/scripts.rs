@@ -5,7 +5,7 @@
 //!
 //! 家目录里自己放的不归哪个包，登记时挂在 [`miyu_store::scripts::HOME_PACKAGE`] 下。核心跟着管理员家目录里的 `scripts/`
 //! （[`Core::watch_scripts`]，施工 X-12 补，2026-10-13 项目主人照推荐定）：新放的、改了的、删了的当场再找一遍，下一轮的工具面
-//! 跟着变，和个人设置里的 MCP 服务一样。不每轮重找：没动的时候工具面一字不变。
+//! 跟着变，和个人设置里的 MCP 服务一样。不每轮重找：没动的时候工具面一字不变。列给头看的 `script.list` 在 `list.rs`（施工 X-27）。
 
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
@@ -15,6 +15,8 @@ use miyu_store::scripts::{HOME_PACKAGE, Script};
 use miyu_store::watch::{Watch, watch_dir};
 
 use crate::Core;
+
+pub(crate) mod list;
 
 /// 运行日志的来处。
 const TARGET: &str = "scripts";

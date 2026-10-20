@@ -54,9 +54,15 @@ pub(crate) fn places(core: &Core) -> PresetPlaces {
     }
 }
 
-/// 找好的预设换成造会话要的：算好装了、没开的功能（施工 F-3 上）。
+/// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
 pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
-    Chosen::new(found.id, found.file, &crate::scripts::features(core))
+    let file = found.file.following(switches(core));
+    Chosen::new(found.id, file, &crate::scripts::features(core))
+}
+
+/// 这时配置里写了的全局开关（施工 X-27，`miyu_session::switches`）：照配置服务最近换上的那一份读，不拿配置服务的锁。
+pub(crate) fn switches(core: &Core) -> std::collections::BTreeMap<String, bool> {
+    miyu_session::switches::of(&core.config_now().borrow().resolved().values())
 }
 
 /// 找预设出的错照协议说：编号不合写法的参数不对，哪一层都没有的 `unknown_preset`，写错了的 `preset_invalid`（`data.problem`

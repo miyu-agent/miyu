@@ -172,8 +172,8 @@ fn look(
         },
     };
     let preset = match &wanted.preset {
-        Some(id) => recast::preset(refresh, id).map(Preset::Changed),
-        None => preset(refresh),
+        Some(id) => recast::preset(refresh, id, values).map(Preset::Changed),
+        None => preset(refresh, values),
     };
     let preset = match preset {
         Ok(preset) => preset,
@@ -361,8 +361,8 @@ fn features(refresh: &Refresh) -> Option<&Features> {
     refresh.presets.as_ref().map(|places| &places.features)
 }
 
-/// 照快照里预设的编号重新找一遍（施工 P-2 下）。
-fn preset(refresh: &Refresh) -> Result<Preset, String> {
+/// 照快照里预设的编号重新找一遍（施工 P-2 下），全局开关照这一轮的配置 `values`（施工 X-27）。
+fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
     let Some(pin) = &refresh.snapshot.preset else {
         return Ok(Preset::Nothing);
     };
@@ -378,7 +378,8 @@ fn preset(refresh: &Refresh) -> Result<Preset, String> {
         .map_err(|error| error.to_string())?;
     let features = &places.features;
     let memory = !pin.off.iter().any(|feature| feature == MEMORY);
-    let chosen = Chosen::new(found.id, found.file, features).keeping_memory(memory, features);
+    let file = found.file.following(crate::switches::of(values));
+    let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     let chosen = match refresh.images {
         true => chosen,
         false => chosen.blind(features),

@@ -3,21 +3,22 @@
 //! 它自己那一项，没写的是 MCP 的工具再照它的服务那一项，都没写的照来处。
 //!
 //! 造工具面时照这一轮的配置算（`agents.rs` 的 `Offers`）：改了从下一个回合开始生效，记成一次有原因的前缀改写，
-//! 和工具面的别的变化一样。键里的名字照配置的写法（小写字母开头，小写字母、数字、`-`、`_`）：写不进键的工具名（例如带大写的
-//! MCP 工具）只能照服务那一项改。
+//! 和工具面的别的变化一样。工具名那一段是占位 `<name>`（施工 X-27：MCP 工具的全名常超过 `<id>` 的 32 个字），大写、长名字都
+//! 写得进；服务名照 `<id>`。头的脚本、MCP 两页照 [`Loading::tool`]、[`Loading::server`] 说是来处定的还是人改的。
 
 use std::collections::BTreeMap;
 
-use miyu_config::{Applies, Control, Item, Kind, Layer, Ui, Value, Values};
+use miyu_config::{Applies, Control, Item, Kind, Layer, Ui, Value, Values, key};
 
-/// 一件工具的那一项。
-const TOOL: &str = "loading.tools.";
+/// 一件工具那一项的样子。
+pub const TOOL: &str = "loading.tools.<name>";
 
-/// 一个 MCP 服务的那一项。
-const MCP: &str = "loading.mcp.";
+/// 一个 MCP 服务那一项的样子。
+pub const MCP: &str = "loading.mcp.<id>";
 
-/// 登记的两项：最后一段是人起的名字，`settings!` 写不了，手写。设置页不画：技能、脚本、MCP 那几页另给写法。
-pub const ITEMS: &[Item] = &[item("loading.tools.<id>"), item("loading.mcp.<id>")];
+/// 登记的两项：最后一段是人起的名字，`settings!` 写不了，手写。设置页不画：脚本、MCP 那两页另给写法（`tool.set_loading`，
+/// 施工 X-27）。
+pub const ITEMS: &[Item] = &[item(TOOL), item(MCP)];
 
 const fn item(key: &'static str) -> Item {
     Item {
@@ -39,32 +40,49 @@ const fn item(key: &'static str) -> Item {
     }
 }
 
-/// 这一轮配置里写了的那几项：键（去掉前缀以后的名字）到要不要先加载。
+/// 这一轮配置里写了的那几项：键里的名字到要不要先加载。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(crate) struct Loading {
+pub struct Loading {
     tools: BTreeMap<String, bool>,
     servers: BTreeMap<String, bool>,
 }
 
 impl Loading {
-    /// 照这一轮的配置 `values` 读。
-    pub(crate) fn of(values: &Values) -> Loading {
+    /// 照这一轮的配置 `values` 读：真的键照样子拆开（名字那一段带了引号的也认得）。
+    pub fn of(values: &Values) -> Loading {
         let mut loading = Loading::default();
-        for key in values.keys() {
-            let Some(Value::Bool(set)) = values.get(key) else {
+        for real in values.keys() {
+            let Some(Value::Bool(set)) = values.get(real) else {
                 continue;
             };
-            if let Some(tool) = key.strip_prefix(TOOL) {
-                loading.tools.insert(tool.to_string(), *set);
-            } else if let Some(server) = key.strip_prefix(MCP) {
-                loading.servers.insert(server.to_string(), *set);
+            let Some(segments) = key::split(real) else {
+                continue;
+            };
+            if let key::Fit::Yes(names) = key::fit(TOOL, &segments) {
+                loading
+                    .tools
+                    .extend(names.into_iter().map(|name| (name, *set)));
+            } else if let key::Fit::Yes(names) = key::fit(MCP, &segments) {
+                loading
+                    .servers
+                    .extend(names.into_iter().map(|name| (name, *set)));
             }
         }
         loading
     }
 
+    /// 工具 `name` 自己那一项：没写的没有。
+    pub fn tool(&self, name: &str) -> Option<bool> {
+        self.tools.get(name).copied()
+    }
+
+    /// MCP 服务 `server` 那一项：没写的没有。
+    pub fn server(&self, server: &str) -> Option<bool> {
+        self.servers.get(server).copied()
+    }
+
     /// 工具 `name` 要不要先加载：它自己那一项，MCP 的工具再照服务那一项，都没写的照来处写的 `registered`。
-    pub(crate) fn need_load(&self, name: &str, registered: bool) -> bool {
+    pub fn need_load(&self, name: &str, registered: bool) -> bool {
         self.tools
             .get(name)
             .or_else(|| server_of(name).and_then(|server| self.servers.get(server)))

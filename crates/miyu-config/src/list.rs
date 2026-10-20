@@ -55,7 +55,7 @@ pub fn check(items: &[Item]) -> Vec<String> {
 }
 
 /// 键的写法（第一条第 2 条）：至少两段；每一段小写字母开头，只有小写字母、数字、`_`，或者是人起的名字的占位
-/// `<id>`、`<model>`、`<external>`（施工 8-6、O-3，不能是第一段；O-3 起可以是最后一段）；第一段不是 `ext`。
+/// `<id>`、`<model>`、`<external>`、`<name>`（施工 8-6、O-3、X-27，不能是第一段；O-3 起可以是最后一段）；第一段不是 `ext`。
 fn key_problem(key: &str) -> Option<&'static str> {
     let segments: Vec<&str> = key.split('.').collect();
     if segments.len() < 2 {

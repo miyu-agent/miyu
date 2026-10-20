@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 
+use miyu_config::Values;
 use miyu_kernel::session::Session;
 use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::Chosen;
@@ -56,8 +57,9 @@ pub(super) fn texts(refresh: &Refresh, persona: Option<&str>) -> Result<PersonaT
     }
 }
 
-/// 新预设 `id`：照现在的几层找；记忆开不开照开会话时的（快照里的范围），场所显示不了图片的照旧扣下要图的包。
-pub(super) fn preset(refresh: &Refresh, id: &str) -> Result<Chosen, String> {
+/// 新预设 `id`：照现在的几层找；记忆开不开照开会话时的（快照里的范围），场所显示不了图片的照旧扣下要图的包；全局开关照这一轮
+/// 的配置 `values`（施工 X-27）。
+pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Chosen, String> {
     let places = refresh
         .presets
         .as_ref()
@@ -65,7 +67,8 @@ pub(super) fn preset(refresh: &Refresh, id: &str) -> Result<Chosen, String> {
     let found = places.presets.find(id).map_err(|error| error.to_string())?;
     let features = &places.features;
     let memory = refresh.snapshot.memory_scope() != MemoryScope::Off;
-    let chosen = Chosen::new(found.id, found.file, features).keeping_memory(memory, features);
+    let file = found.file.following(crate::switches::of(values));
+    let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     Ok(match refresh.images {
         true => chosen,
         false => chosen.blind(features),

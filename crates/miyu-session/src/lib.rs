@@ -59,6 +59,7 @@ mod skills;
 mod snapshot;
 mod spawn;
 mod store;
+pub mod switches;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 mod tools;

@@ -57,7 +57,7 @@ async fn preset_get_lists_each_skill_as_a_feature() {
     let full = client.call("g1", "preset.get", get("full")).await;
     assert_eq!(
         feature(&full, "skill-notes"),
-        &json!({"id": "skill-notes", "name": "笔记", "summary": "照格式记笔记", "on": true, "installed": true, "tools": []})
+        &json!({"id": "skill-notes", "name": "笔记", "summary": "照格式记笔记", "on": true, "by": "default", "installed": true, "tools": []})
     );
     assert_eq!(
         feature(&full, "skill-plain")["name"],

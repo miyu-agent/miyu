@@ -115,13 +115,17 @@
         "name": "Start new sessions read-only",
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."
       },
-      "loading.tools.<id>": {
+      "loading.tools.<name>": {
         "name": "Load this tool on demand",
         "description": "When on, only the tool's name and description are sent, and its full parameters load before use; when off, it is sent in full. Unset follows how it was registered (scripts and MCP servers load on demand, built-in and extension tools go in full)."
       },
       "loading.mcp.<id>": {
         "name": "Load this MCP server's tools on demand",
         "description": "When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one."
+      },
+      "features.<name>": {
+        "name": "Turn this skill, script or MCP server on",
+        "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."
       },
       "terminal.persona": {
         "name": "Terminal session persona",
@@ -341,6 +345,7 @@
       "log": "Runtime log",
       "sessions": "Sessions",
       "loading": "Tool loading",
+      "features": "Feature switches",
       "terminal": "Terminal session",
       "profile": "About you",
       "uses": "Uses",
@@ -657,6 +662,7 @@
     "config/expected/list": "a list of {item}",
     "config/expected/id": "start with a lowercase letter and use only lowercase letters, digits, - and _, up to 32 characters",
     "config/expected/model-name": "1 to 128 bytes without control characters",
+    "config/expected/long-name": "1 to 128 characters without . or control characters",
     "config/bad-format": "{key} needs {expected}, not {got}",
     "config/out-of-range": "{key} must be between {min} and {max}, not {got}",
     "config/bad-segment": "{name} in {key} cannot be a name: {expected}",

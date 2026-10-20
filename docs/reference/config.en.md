@@ -34,7 +34,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 
 | Name | Notes |
 |---|---|
-| `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, e.g. `providers.<id>.base_url` |
+| `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
 | `options` | Options: `value` and a display `name`; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type |
 | `default` | Default value |

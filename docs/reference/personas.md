@@ -103,7 +103,7 @@
 |---|---|
 | `preset`、`name`、`summary`、`icon` | 同上 |
 | `unlisted` | 叠好以后的 `on` 或 `off`：没列出来的功能默认开不开 |
-| `features` | 一个个功能：`{"id", "name", "summary", "on", "installed", "tools"}`；`tools` 是归它的工具 `{"name", "label", "on"}`。写了、没装的接在后面，`installed: false` |
+| `features` | 一个个功能：`{"id", "name", "summary", "on", "by", "installed", "tools"}`；`by` 是开不开谁定的：`preset`（预设里写了）、`global`（预设没写，照技能、脚本、MCP 服务的全局开关，见 [`feature.set`](packages.md#toolset_loadingfeatureset)；只在 `unlisted` 是 `on` 的预设里有）、`default`（照 `unlisted`：`unlisted` 是 `off` 的预设没写的都是它，全局开关打开的也不开）；`tools` 是归它的工具 `{"name", "label", "on"}`。写了、没装的接在后面，`installed: false` |
 | `remove` | 同 `persona.get` |
 
 `features[].id` 是 `preset.set` 写 `features.<id>` 用的，`tools[].name` 是写 `tools.<name>` 用的，别露在界面上。

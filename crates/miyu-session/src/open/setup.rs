@@ -1,5 +1,6 @@
 //! 造会话、载入要交进来的几样（施工 8-8 从 `open.rs` 挪来：那一页长过了行数的上限）。
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -10,7 +11,7 @@ use miyu_kernel::origin::By;
 use miyu_kernel::time::UtcOffset;
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
-use miyu_policy::preset::Chosen;
+use miyu_policy::preset::{Chosen, PresetFile};
 use miyu_policy::{PersonaTexts, Profile};
 use miyu_store::index::SessionIndex;
 use miyu_store::personas::Personas;
@@ -33,6 +34,23 @@ pub struct PresetPlaces {
     pub presets: Presets,
     /// 装了的功能（设计 `30-插件框架.md` 第三节）。
     pub features: Features,
+}
+
+impl PresetPlaces {
+    /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。显示不了图片的（`images` 是假）要图的包
+    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）。
+    pub(crate) fn file(
+        &self,
+        id: &str,
+        images: bool,
+        switches: BTreeMap<String, bool>,
+    ) -> Option<PresetFile> {
+        let mut file = self.presets.find(id).ok()?.file.following(switches);
+        if !images {
+            file.withheld = self.features.image_packages().clone();
+        }
+        Some(file)
+    }
 }
 
 /// 取这一刻装了的软件包（施工 X-11 下）：协议端点给的拿着核心的弱引用，核心没了的交空的。

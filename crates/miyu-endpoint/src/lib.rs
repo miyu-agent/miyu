@@ -78,6 +78,7 @@ mod terminal;
 #[cfg(test)]
 mod test_support;
 mod timing;
+mod toggles;
 mod toml_changes;
 mod undo;
 mod uploads;
@@ -253,6 +254,7 @@ impl Core {
             settings::PermissionSettings::ITEMS,
             settings::TerminalSettings::ITEMS,
             miyu_session::loading::ITEMS,
+            miyu_session::switches::ITEMS,
             miyu_session::settings::ProfileSettings::ITEMS,
             settings::EXTERNAL_BINDINGS,
         ]

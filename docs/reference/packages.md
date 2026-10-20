@@ -1,6 +1,6 @@
-# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`command.*`、`check`
+# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`script.list`、`tool.set_loading`、`feature.set`、`command.*`、`check`
 
-管理软件包、扩展进程、个人设置里的 MCP 服务，列出技能，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
+管理软件包、扩展进程、个人设置里的 MCP 服务，列出技能、脚本，改工具的加载方式和技能、脚本、MCP 服务的全局开关，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
 
 | 方法 | 做什么 |
 |---|---|
@@ -16,11 +16,13 @@
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 个人设置里的 MCP 服务：列、重启、加或换、删 |
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
+| [`script.list`](#scriptlist) | 列出登记上的脚本 |
+| [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 改一件工具、一个 MCP 服务的加载方式；改技能、脚本、MCP 服务的全局开关 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **两层**：出厂的（随 Miyu 装的）、管理员家目录里装的（`home/admin/packages/`）。家目录里装了同编号的就是升级、换掉原来的；出厂的卸掉是在家目录记一笔，能装回来。
 
@@ -183,7 +185,7 @@
 
 管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改个人设置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 
@@ -214,6 +216,44 @@
 | `from` | 从哪来：`home`（管理员自己放的，`home/admin/skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的） |
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
+| `on` | 全局开关（`features.skill-<名字>`，见 `feature.set`）：没写的是 `true` |
+
+## `script.list`
+
+**参数**：没有。**回应**：`{"scripts": [...]}`，这一刻登记成工具的脚本，照 `tool` 排。一项：
+
+| 名字 | 说明 |
+|---|---|
+| `tool` | 工具名 |
+| `display_name`、`description` | 给人看的名字、一句说明（脚本开头的 `Display name`、`显示名称`、`描述`），照连接的语言挑，挑法同 `skill.list`；都没写的没有这一格 |
+| `from`、`package` | 同 `skill.list`：`home` 是管理员自己放的（`home/admin/scripts/`） |
+| `path` | 脚本文件在哪，写法同 `skill.list` |
+| `timeout` | 一次等多少秒 |
+| `need_load` | `{"value", "by"}`：要不要先加载；`by` 是 `source`（脚本开头写的，没写的先加载）或 `setting`（个人设置的 `loading.tools.<工具名>` 盖过的） |
+| `on` | 全局开关（`features.script-<工具名>`）：没写的是 `true` |
+
+## `tool.set_loading`、`feature.set`
+
+技能、脚本、MCP 服务那几页改的两样，都写管理员的个人设置，写法同 `config.set` 改一项（带版本，不覆盖同时的手改，写成了推 `config.changed`）。从下一个回合开始生效。回应 `{}`。
+
+**`tool.set_loading`**：改一件工具（`loading.tools.<工具名>`）或一个 MCP 服务（`loading.mcp.<服务名>`）要不要先加载。工具自己那一项先，MCP 的工具再照服务那一项，都没写的照来处。
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `tool` | 字符串 | 工具名：1 到 128 个字符，没有 `.` 和控制字符 |
+| `server` | 字符串 | MCP 服务名 |
+| `need_load` | 布尔或 `null`，必写 | `null` 删掉这一项，回到来处写的 |
+
+`tool`、`server` 正好写一个。
+
+**`feature.set`**：改一个技能、脚本、MCP 服务的全局开关（`features.<功能编号>`）。`unlisted` 是 `on` 的预设照它；预设里单独写了开或关的照预设（`preset.get` 每个功能的 `by`）。`unlisted` 是 `off` 的预设不照它：没写的照旧关着。
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `feature` | 字符串，必写 | 功能编号：`skill-<名字>`、`script-<工具名>`、`mcp-<服务名>` |
+| `on` | 布尔或 `null`，必写 | `null` 删掉这一项，回到跟着预设 |
+
+**出错**：`bad_params`（`tool`、`server` 不是正好一个，名字写不进键，不是这三类功能，少了 `need_load`、`on`）；`config_file_broken`；`config_conflict`。
 
 ## `command.run`
 
