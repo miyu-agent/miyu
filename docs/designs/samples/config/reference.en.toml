@@ -1,6 +1,16 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
 # Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.
 
+[clicall.mcp]
+# Callable from scripts: this MCP server's tools: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.
+# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# "<id>" =
+
+[clicall.tools]
+# Callable from scripts: When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on.
+# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# "<name>" =
+
 [commands."<id>"]
 # Who can use this command: Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins.
 # Allowed: admin, anyone or off. Only in the system config. Takes effect immediately.

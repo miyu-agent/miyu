@@ -18,6 +18,7 @@ fn tool(name: &str) -> ToolEntry {
         parameters: serde_json::from_str("{}").expect("是 JSON"),
         access: Access::Read,
         need_load: false,
+        clicall: false,
     }
 }
 

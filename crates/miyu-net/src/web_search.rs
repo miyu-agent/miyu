@@ -81,8 +81,10 @@ impl WebSearch {
     fn found(&self, query: &str, found: Found) -> Done {
         let texts = &self.texts;
         if found.hits.is_empty() {
+            // 给脚本的搜不到也交同一个样子，列表是空的（施工 M-2）：脚本照 JSON 解析不会崩。
             return Done::ok(line(&texts.nothing, &[("query", query)]))
-                .said(said("web_search/nothing", &[("via", &found.source)]));
+                .said(said("web_search/nothing", &[("via", &found.source)]))
+                .data(Detail::Links { links: Vec::new() }.to_value());
         }
         let blocks: Vec<String> = found
             .hits
@@ -137,6 +139,7 @@ impl WebSearch {
         };
         Done::ok(blocks.join("\n\n"))
             .said(said(key, &[("hits", &count), ("via", &found.source)]))
+            .data(detail.to_value())
             .detail(detail.to_value())
     }
 

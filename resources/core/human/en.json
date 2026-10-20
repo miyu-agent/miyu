@@ -127,6 +127,14 @@
         "name": "Load this MCP server's tools on demand",
         "description": "When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one."
       },
+      "clicall.tools.<name>": {
+        "name": "Callable from scripts",
+        "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on."
+      },
+      "clicall.mcp.<id>": {
+        "name": "Callable from scripts: this MCP server's tools",
+        "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one."
+      },
       "features.<name>": {
         "name": "Turn this skill, script or MCP server on",
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."
@@ -349,6 +357,7 @@
       "log": "Runtime log",
       "sessions": "Sessions",
       "loading": "Tool loading",
+      "clicall": "Calling tools from scripts",
       "features": "Feature switches",
       "terminal": "Terminal session",
       "profile": "About you",

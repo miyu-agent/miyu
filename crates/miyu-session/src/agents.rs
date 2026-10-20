@@ -110,6 +110,8 @@ pub(crate) struct Offers {
     pub(crate) personas: Vec<Choice>,
     /// 人改的加载方式（施工 L-3）：照这时的配置。
     pub(crate) loading: Loading,
+    /// 脚本里能不能调，人改的那一层（施工 M-2）。
+    pub(crate) clicall: Loading,
 }
 
 impl Offers {
@@ -119,6 +121,7 @@ impl Offers {
             pools: choices(values),
             personas,
             loading: Loading::of(values),
+            clicall: Loading::clicall_of(values),
         }
     }
 }
@@ -261,6 +264,7 @@ impl Agents {
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
                     need_load: offers.loading.need_load(&spec.name, spec.need_load),
+                    clicall: offers.clicall.clicall(&spec.name, spec.clicall),
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {

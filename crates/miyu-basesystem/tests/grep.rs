@@ -78,6 +78,7 @@ fn grep_comes_from_the_resources() {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     });

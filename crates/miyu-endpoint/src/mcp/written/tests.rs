@@ -12,6 +12,7 @@ fn entry(name: &str, command: &[&str]) -> Entry {
         venues: None,
         timeout_ms: None,
         need_load: None,
+        clicall: None,
     }
 }
 

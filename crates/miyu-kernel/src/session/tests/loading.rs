@@ -21,6 +21,7 @@ fn loading_policy() -> Policy {
                 r#"{"type":"object","properties":{"tools":{"type":"array","items":{"type":"string"}}}}"#,
             )
             .unwrap(),
+            clicall: false,
         },
     );
     let contracts = BTreeMap::from([(

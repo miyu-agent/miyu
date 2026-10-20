@@ -117,7 +117,7 @@ pub enum NestedRefusal {
     Gone,
     /// 工具面上没有这个名字。
     Unknown,
-    /// 访问类别不准：只准 `read`、`network`、`execute`（设计 39 MC2）。
+    /// 不准脚本里调：访问类别不是 `read`、`network`、`execute`（设计 39 MC2），或者这件工具的 `clicall` 没开（施工 M-2）。
     NotAllowed,
     /// 参数修正不了。
     NotAnObject,

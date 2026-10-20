@@ -70,6 +70,8 @@ fn the_registered_list_is_well_formed() {
             "terminal.idle_new_after",
             "loading.tools.<name>",
             "loading.mcp.<id>",
+            "clicall.tools.<name>",
+            "clicall.mcp.<id>",
             "features.<name>",
             "commands.<id>.access",
             "profile.preferred_reply_language",

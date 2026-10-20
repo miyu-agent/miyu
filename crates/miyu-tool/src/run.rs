@@ -74,6 +74,9 @@ pub struct Call {
     /// 长期目标的端口（施工 X-8 上）：执行器照这一次调用造一个，只给本机的主会话，只有 `goal` 用。别的会话、测试里的假调用
     /// 没有，`goal` 说这个会话用不了。
     pub goals: Option<Arc<dyn GoalPort>>,
+    /// 脚本调工具的端口（施工 M-2，设计 `39-脚本调工具.md`）：执行器照每一次直接调的 `shell` 造一个，挂在这次调用下面；
+    /// `shell` 交给通道的那一头（施工 M-3）。别的工具、嵌套调用里跑的、测试里的假调用没有。
+    pub nested: Option<Arc<dyn crate::NestedPort>>,
     /// 这次调用是哪个会话的哪一次（施工 O-2 上）：提供者的工具照它发 `tool.call`。测试里的假调用、执行前的链报路径时没有。
     pub ids: Option<CallIds>,
     /// 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项、取密钥。会话交；测试里的假调用、会话外面的调用没有，照默认值。
@@ -142,6 +145,10 @@ pub struct Done {
     pub sent: Vec<miyu_kernel::event::Sent>,
     /// 给头看的结构化结果（施工 W-11）：一个对象，形状由这件工具定（写在它的图纸里）；记进 `tool.result` 的 `detail`，不发给模型。
     pub detail: Option<serde_json::Value>,
+    /// 给脚本的结构化结果（施工 M-2，`39-脚本调工具.md` 第六节第 3 条）：脚本里经 `miyu call` 调的，成功了把它印成一行 JSON；
+    /// 不进上下文、不进 `tool.result`。和 `detail` 分开：`detail` 跟着界面改，这一格是给脚本的接口，要稳。搜不到的也交，
+    /// 列表是空的；出错的不交。
+    pub data: Option<serde_json::Value>,
 }
 
 /// 工具交回的一张图片：字节本身，和量好的媒体类型、宽高（`03-事件模型.md` 第四节：量不出尺寸的不当图片）。
@@ -242,6 +249,7 @@ impl Done {
             end_turn: false,
             sent: Vec::new(),
             detail: None,
+            data: None,
         }
     }
 
@@ -257,6 +265,7 @@ impl Done {
             end_turn: false,
             sent: Vec::new(),
             detail: None,
+            data: None,
         }
     }
 
@@ -272,6 +281,7 @@ impl Done {
             end_turn: false,
             sent: Vec::new(),
             detail: None,
+            data: None,
         }
     }
 
@@ -279,6 +289,13 @@ impl Done {
     #[must_use]
     pub fn detail(mut self, detail: serde_json::Value) -> Done {
         self.detail = Some(detail);
+        self
+    }
+
+    /// 带上给脚本的结构化结果（施工 M-2）：`data` 是一个对象。
+    #[must_use]
+    pub fn data(mut self, data: serde_json::Value) -> Done {
+        self.data = Some(data);
         self
     }
 

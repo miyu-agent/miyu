@@ -44,6 +44,7 @@ fn read_comes_from_the_resources_with_its_schema_as_written() {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     });

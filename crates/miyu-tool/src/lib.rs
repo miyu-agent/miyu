@@ -31,6 +31,7 @@ pub mod load;
 mod log;
 mod memory;
 mod messages;
+mod nested;
 mod packages;
 pub mod picture;
 mod questions;
@@ -68,6 +69,7 @@ pub use memory::{
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
 };
+pub use nested::{Calling, Nested, NestedPort, Settled};
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{
@@ -103,6 +105,9 @@ pub struct Spec {
     /// 要先加载（施工 L-1，`25-工具加载.md` W9）：登记的一方说的。是的，工具面上只给名字、说明和空的参数外壳，她用之前
     /// `load_tools` 拿完整的格式；不是的全量。四个来处各写一处：内置工具的说明文件、脚本开头、扩展 `provide`、MCP 服务。
     pub need_load: bool,
+    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：登记的一方说的默认，人在个人设置里能改（`clicall.*`）。内置工具、
+    /// 软件包、扩展默认关，MCP、脚本工具默认开；访问类别不是读、联网、执行的，写了也调不成（内核拦）。
+    pub clicall: bool,
 }
 
 /// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。

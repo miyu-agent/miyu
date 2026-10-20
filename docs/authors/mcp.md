@@ -31,6 +31,7 @@ env = { TOKEN = { secret = "notes" } }            # 可以不写；值能写字�
 venues = ["local"]                                # 可以不写：给哪种会话，不写是只给本机的
 timeout_ms = 600000                               # 可以不写：一次调用最多等多久，1000 到 3600000
 need_load = true                                  # 可以不写：这个服务的工具都要先加载
+clicall = false                                   # 可以不写：AI 在命令里用 miyu call 不能调这个服务的工具
 ```
 
 只带服务、不带程序的包不用写 `protocol`、`[command]`、`[process]`。一个包能带几个服务；扩展包也能带，服务跟着扩展起停。
@@ -47,6 +48,7 @@ need_load = true                                  # 可以不写：这个服务�
 | `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
 | `timeout_ms` | 一次调用最多等多久 |
 | `need_load` | `true`：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数。工具多、平时用得少的服务写上，省钱 |
+| `clicall` | AI 在命令里写脚本时能不能用 `miyu call` 调这个服务的工具，不写是能。服务会写东西、发东西的，写 `false` |
 
 ## AI 看到的样子
 

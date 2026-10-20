@@ -73,6 +73,7 @@ fn edit_comes_from_the_resources_and_names_what_it_writes() {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     });

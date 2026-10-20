@@ -91,6 +91,7 @@ impl Tools {
             knowledge: None,
             packages: self.packages.clone(),
             goals: None,
+            nested: None,
             ids: None,
             settings: None,
         };

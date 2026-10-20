@@ -45,6 +45,9 @@ pub(crate) struct SetParams {
     /// 这个服务的工具要先加载；不写的不写进去，照读服务表时的默认。
     #[serde(default)]
     need_load: Option<bool>,
+    /// 这个服务的工具脚本里能调（施工 M-2）；不写的照原来写的留着，原来没写的照读服务表时的默认（能）。
+    #[serde(default)]
+    clicall: Option<bool>,
 }
 
 /// `mcp.remove` 的参数。
@@ -76,6 +79,7 @@ pub(crate) fn set(
         venues: params.venues,
         timeout_ms: params.timeout_ms,
         need_load: params.need_load,
+        clicall: params.clicall,
     };
     let block = written::block(&entry).ok_or(Refusal::BAD_PARAMS)?;
     if let Some(problem) = personal_mcp(&block).1.first() {
@@ -88,6 +92,14 @@ pub(crate) fn set(
             Some(false) if carried => return Err(Refusal::SERVER_FROM_PACKAGE.into()),
             Some(_) => {}
         }
+        let block = match (entry.clicall, written::kept_clicall(text, &name)) {
+            (None, Some(kept)) => written::block(&Entry {
+                clicall: Some(kept),
+                ..entry.clone()
+            })
+            .ok_or(Unwritten::Blocked)?,
+            _ => block.clone(),
+        };
         written::put(text, &name, &block)
             .map(Some)
             .ok_or(Unwritten::Blocked)

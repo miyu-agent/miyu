@@ -63,6 +63,7 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Parameters` | The parameters' JSON Schema, from the next line on, may span lines; none when omitted |
 | `Timeout` | Seconds, default 60 |
 | `Need load` | `yes`: the AI normally sees only the name and one line and loads it when needed. Saves money for rarely used ones |
+| `Clicall` | `no`: the AI cannot call it with `miyu call` inside a command, only directly. Unset means it can |
 
 **How it runs**
 

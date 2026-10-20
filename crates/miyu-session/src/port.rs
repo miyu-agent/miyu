@@ -337,6 +337,8 @@ pub(crate) enum Back {
     Woke { seen: Seq },
     /// 跑工具的任务送回来的（施工 4-2）。
     Tool(crate::tools::ToolBack),
+    /// 脚本里调工具的端口、跑它的任务送回来的（施工 M-2，`tools/nested.rs`）。
+    Nested(crate::tools::NestedBack),
     /// 第 `call_id` 次调用交来的长期目标的事（施工 X-8 上，`tools/goals.rs`）：答了从 `reply` 送回去。
     Goal {
         call_id: miyu_kernel::id::CallId,

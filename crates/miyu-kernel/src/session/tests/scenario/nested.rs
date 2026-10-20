@@ -206,6 +206,22 @@ fn the_chain_and_the_checks_settle_or_refuse_on_the_spot() {
     assert!(stage.nested_ran().is_empty(), "一个都没跑");
 }
 
+/// `clicall` 没开的（施工 M-2）：类别准也不收，当场答「不准」，什么都不记、不交给链。
+#[test]
+fn a_tool_without_clicall_is_refused_on_the_spot() {
+    let make = || {
+        let mut made = policy();
+        made.tools.get_mut("read").unwrap().clicall = false;
+        made
+    };
+    let mut stage = Stage::new(make, environment("~/src/miyu"), at(0));
+    running_shell(&mut stage);
+    stage.nested_call("call_6_1#1", "read", "{}");
+    assert_eq!(answered(&stage), ["call_6_1#1 refused NotAllowed"]);
+    assert!(settled(&stage).is_empty(), "没收下的不记");
+    assert!(stage.nested_ran().is_empty());
+}
+
 #[test]
 fn the_limits_queue_the_rest_without_refusing() {
     let mut stage = stage_with(2, 16);

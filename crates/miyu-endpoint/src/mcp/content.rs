@@ -1,7 +1,8 @@
 //! 服务回来的内容换成结果块（施工 X-3 上，`mcp.md`「怎么走」第四条第 3、4 款）：文字照原文；图照 `read` 认的四种、量得出
 //! 尺寸、不超上限的交回成图（执行器存成 blob、接在块后面），别的写一行说没给她；声音、二进制的资源同样写一行；链接写成
 //! `[名字](地址)`；带文字的资源照文字；认不出的照紧凑的 JSON；一段文字都没有、有结构化结果的照紧凑的 JSON。文字加起来超过
-//! [`LIMIT`] 个字符的留前面那么多，末尾写一行截掉了多少。
+//! [`LIMIT`] 个字符的留前面那么多，末尾写一行截掉了多少。结构化结果不管有没有文字，都原样交给脚本（`Done.data`，施工 M-2，
+//! 设计 `39-脚本调工具.md` 第六节第 3 条：原来有文字时它被丢掉）；出错的不交。
 
 use base64::Engine as _;
 
@@ -56,9 +57,10 @@ pub(super) fn done(called: Called, texts: &Texts) -> Done {
             Content::Other(raw) => pieces.push(raw.to_string()),
         }
     }
-    if !texted && let Some(structured) = called.structured {
+    if !texted && let Some(structured) = &called.structured {
         pieces.push(structured.to_string());
     }
+    let data = called.structured.filter(|_| !called.is_error);
     let pieces = cut(pieces, texts);
     let blocks = match (pieces.is_empty(), images.is_empty()) {
         (true, true) => vec![Block::Text(Text {
@@ -73,6 +75,7 @@ pub(super) fn done(called: Called, texts: &Texts) -> Done {
         error: called.is_error,
         blocks,
         images,
+        data,
         ..Done::ok("")
     }
 }

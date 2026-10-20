@@ -80,6 +80,10 @@ struct ToolParams {
     /// 写法 `bad_tool`，`problem` 是 `need_load`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     need_load: Option<Value>,
+    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：`true` 的开，不写、写 `false` 的关；别的写法 `bad_tool`，`problem` 是
+    /// `clicall`。访问类别不是读、联网、执行的，写了也调不成。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    clicall: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -240,6 +244,11 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         Some(Value::Bool(need)) => *need,
         Some(_) => return Err(bad_tool(&tool.name, "need_load")),
     };
+    let clicall = match &tool.clicall {
+        None => false,
+        Some(Value::Bool(on)) => *on,
+        Some(_) => return Err(bad_tool(&tool.name, "clicall")),
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -247,6 +256,7 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             parameters,
             access,
             need_load,
+            clicall,
         },
         venues,
         timeout: Duration::from_millis(timeout),

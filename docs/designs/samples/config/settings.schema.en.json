@@ -1,6 +1,27 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
+    "clicall": {
+      "properties": {
+        "mcp": {
+          "additionalProperties": {
+            "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+            "title": "Callable from scripts: this MCP server's tools",
+            "type": "boolean"
+          },
+          "type": "object"
+        },
+        "tools": {
+          "additionalProperties": {
+            "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+            "title": "Callable from scripts",
+            "type": "boolean"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "compaction": {
       "properties": {
         "prepare": {

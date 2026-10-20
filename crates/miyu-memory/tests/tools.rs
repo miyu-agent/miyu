@@ -98,6 +98,7 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     };
@@ -407,6 +408,7 @@ async fn searching_lists_memories_then_past_conversations() {
         [("显卡".to_string(), true)]
     );
     // 给头看的那一份（施工 W-11）：日期照会话的时区，对话片段是原文、不截，会话写整个编号，作废的带 `forgotten`。
+    assert_eq!(done.data, done.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(
         done.detail,
         Some(serde_json::json!({
@@ -431,6 +433,7 @@ async fn searching_lists_memories_then_past_conversations() {
         (done.error, text(&done)),
         (false, "Nothing found.".to_string())
     );
+    assert_eq!(done.data, done.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(
         done.detail,
         Some(serde_json::json!({"memories": [], "turns": []})),

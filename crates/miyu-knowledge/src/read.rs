@@ -73,6 +73,7 @@ impl Tool for Read {
                     "kb_read/page",
                     &[("path", &path), ("page", &number), ("pages", &pages)],
                 ))
+                .data(detail.clone())
                 .detail(detail)
         })
     }

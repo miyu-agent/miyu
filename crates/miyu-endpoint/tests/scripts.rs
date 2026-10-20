@@ -19,6 +19,7 @@ use miyu_tool::{Catalog, Tool};
 use crate::support::venues::configured_core;
 use crate::support::*;
 
+mod clicall;
 mod follow;
 mod loading;
 

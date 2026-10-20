@@ -61,6 +61,7 @@ impl Tool for Search {
             if found.memories.is_empty() && found.turns.is_empty() {
                 return Done::ok(line(&all.nothing, &[]))
                     .said(said("memory_search/nothing", &[]))
+                    .data(shown.clone())
                     .detail(shown);
             }
             let mut lines = Vec::new();
@@ -103,7 +104,10 @@ impl Tool for Search {
                     ("turns", counts[1].1.as_str()),
                 ],
             );
-            Done::ok(lines.join("\n")).said(human).detail(shown)
+            Done::ok(lines.join("\n"))
+                .said(human)
+                .data(shown.clone())
+                .detail(shown)
         })
     }
 }

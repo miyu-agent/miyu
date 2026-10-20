@@ -1,8 +1,7 @@
 //! actor 本身（`docs/designs/02-内核.md` 第七节「会话 actor 怎么跑」）：一个会话一个异步任务。
 //!
-//! 人的命令、执行器的回报进收件箱，一条一条送进内核，内核交出的动作照 02 第四节「执行器怎么回动作」
-//! 的表回。当场就能回的（落盘了、挂接点跑完了）放进本地的队列，先于收件箱里的送：和执行器替身
-//! （`miyu-kernel` 的 `testkit`）一个先后。
+//! 人的命令、执行器的回报进收件箱，一条一条送进内核，内核交出的动作照 02 第四节「执行器怎么回动作」的表回。当场就能回的
+//! （落盘了、挂接点跑完了）放进本地的队列，先于收件箱里的送：和执行器替身（`miyu-kernel` 的 `testkit`）一个先后。
 
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::AtomicBool;
@@ -42,6 +41,7 @@ mod life;
 mod listing;
 mod mail;
 mod model;
+mod nested;
 pub(crate) mod persona;
 mod skills;
 mod stop;
@@ -303,7 +303,7 @@ impl Actor {
         }
         Ok(match action {
             Action::Append(events) => self.append(events).await?,
-            Action::Nested(_) => None, // 没有通道（施工 M-3）就不送嵌套调用，内核也就不出它
+            Action::Nested(action) => self.nested(action).await, // 脚本里调的（施工 M-2，`actor/nested.rs`）
             Action::Reply { id, outcome } => {
                 self.reply(id, outcome);
                 None

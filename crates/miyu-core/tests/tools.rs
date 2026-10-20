@@ -259,3 +259,37 @@ fn the_builtin_port_sets_up_the_local_model_from_the_list() {
     assert_eq!(setup.dir, embed.files_dir());
     assert_eq!(setup.manifest, embed.files_dir().join("model.toml"));
 }
+
+/// 出厂的工具里，脚本里能调的正好这五件（施工 M-2，设计 39 第三节第 2 条），别的都不能；能调的都是读、联网的。
+#[test]
+fn exactly_five_shipped_tools_are_callable_from_scripts() {
+    let resources = shipped_resources();
+    let catalog =
+        miyu_core::tools(&resources, &installed(&resources, &[])).expect("出厂的资源读得出来");
+    let on: Vec<&str> = catalog
+        .specs()
+        .filter(|spec| spec.clicall)
+        .map(|spec| spec.name.as_str())
+        .collect();
+    assert_eq!(
+        on,
+        [
+            "kb_read",
+            "kb_search",
+            "memory_search",
+            "web_fetch",
+            "web_search"
+        ]
+    );
+    for spec in catalog.specs().filter(|spec| spec.clicall) {
+        assert!(
+            matches!(
+                spec.access,
+                miyu_kernel::tool::Access::Read | miyu_kernel::tool::Access::Network
+            ),
+            "{} 是 {:?}",
+            spec.name,
+            spec.access
+        );
+    }
+}

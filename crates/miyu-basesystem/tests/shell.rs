@@ -41,6 +41,7 @@ fn bare(args: serde_json::Value) -> Call {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     }
@@ -380,6 +381,7 @@ async fn the_output_is_pushed_to_the_heads_as_it_comes() {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     };
@@ -425,6 +427,7 @@ async fn a_tilde_working_directory_means_home() {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     };

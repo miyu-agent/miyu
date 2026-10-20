@@ -53,6 +53,8 @@ pub struct ScriptHead {
     pub summary: BTreeMap<String, String>,
     /// 要先加载（`Need load`，施工 L-1）。
     pub need_load: bool,
+    /// 脚本里能调（`Clicall`，施工 M-2）：没写的能。
+    pub clicall: bool,
 }
 
 /// 哪里不对。
@@ -70,6 +72,8 @@ pub enum ScriptProblem {
     NotAnObject,
     /// `Need load` 不是 `yes`、`no`（施工 L-1）：写的原样。
     BadNeedLoad(String),
+    /// `Clicall` 不是 `yes`、`no`（施工 M-2）：写的原样。
+    BadClicall(String),
 }
 
 impl fmt::Display for ScriptProblem {
@@ -83,6 +87,7 @@ impl fmt::Display for ScriptProblem {
             ScriptProblem::BadParameters(why) => write!(f, "Parameters is not valid JSON: {why}"),
             ScriptProblem::NotAnObject => f.write_str("Parameters must be a JSON object schema"),
             ScriptProblem::BadNeedLoad(text) => write!(f, "Need load {text:?} is not yes or no"),
+            ScriptProblem::BadClicall(text) => write!(f, "Clicall {text:?} is not yes or no"),
         }
     }
 }
@@ -103,6 +108,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         display_name: BTreeMap::new(),
         summary: BTreeMap::new(),
         need_load: true,
+        clicall: true,
     };
     let mut rest = lines.iter();
     while let Some(line) = rest.next() {
@@ -122,7 +128,8 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                     .ok_or_else(|| ScriptProblem::BadTimeout(value.to_string()))?;
             }
             "Parameters" => head.parameters = parameters(value, &mut rest)?,
-            "Need load" => head.need_load = yes_or_no(value)?,
+            "Need load" => head.need_load = yes_or_no(value, ScriptProblem::BadNeedLoad)?,
+            "Clicall" => head.clicall = yes_or_no(value, ScriptProblem::BadClicall)?,
             _ => {}
         }
     }
@@ -133,11 +140,11 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
 }
 
 /// `Need load` 的值：`yes`、`true` 是要，`no`、`false` 是不要，大小写不论（施工 L-1）。
-fn yes_or_no(value: &str) -> Result<bool, ScriptProblem> {
+fn yes_or_no(value: &str, bad: fn(String) -> ScriptProblem) -> Result<bool, ScriptProblem> {
     match value.to_ascii_lowercase().as_str() {
         "yes" | "true" => Ok(true),
         "no" | "false" => Ok(false),
-        _ => Err(ScriptProblem::BadNeedLoad(value.to_string())),
+        _ => Err(bad(value.to_string())),
     }
 }
 

@@ -15,6 +15,7 @@
 | `crates/miyu-tool/src/sessions.rs` | 列会话的端口 `SessionsPort`、列出来的一个 `MainSession`，那件工具的名字 `SESSIONS`；认会话编号的 `find_session`、`Found`（施工 C-3） |
 | `crates/miyu-tool/src/usage.rs` | 查用量的端口 `UsagePort`、上下文 `ContextUse`、用量和金额 `Spent`，那件工具的名字 `SESSION_USAGE`（施工 8-15） |
 | `crates/miyu-tool/src/questions.rs` | 提问的端口 `QuestionPort`、等回答的 `Answering`，那件工具的名字 `ASK_USER`（施工 D-2） |
+| `crates/miyu-tool/src/nested.rs` | 脚本调工具的端口 `NestedPort`、等它了结的 `Calling`、结局 `Nested`（`Settled`、`Refused`）（施工 M-2，设计 `39-脚本调工具.md`） |
 | `crates/miyu-tool/src/todos.rs` | 待办那件工具的名字 `TODOWRITE`（施工 D-3）：执行器照它定工具面；工具不用端口，只报效果 `todo.written` |
 | `crates/miyu-tool/src/catalog.rs` | 工具目录，登记时查的几条；改过名的照以前的名字也找得到（施工 7-5 再补） |
 | `crates/miyu-tool/src/jobs.rs` | 任务端口 `JobPort`、交出去的后台命令 `Background`、它的进程 `Process`、怎么结束的 `Exit`（施工 7-3）；列出来的 `Listed`、读到的 `Output`、读不了停不了的 `JobError`（施工 7-4） |
@@ -38,6 +39,8 @@
 | `description` | 给模型看的说明，英文，原样进 tools 数组 |
 | `parameters` | 参数的 JSON Schema，原样进 tools 数组，一个字节不改（`RawJson`）；必须是 `{"type":"object",…}` |
 | `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
+| `need_load` | 要先加载（施工 L-1，`25-工具加载.md` W9）：登记的一方说的，人能在个人设置里改（`loading.*`） |
+| `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在个人设置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`；扩展 `provide` 写 `true` 才开；MCP 服务、脚本工具默认开（`clicall = false`、`# Clicall: no` 关）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
 
 **接口** `Tool`（`Send + Sync`）：
 
@@ -70,6 +73,7 @@
 | `usage` | 查用量的端口（`Arc<dyn UsagePort>`，施工 8-15）：执行器照这一次调用抄好这个会话的编号、属主、派出去那一刻内核算的上下文、这一轮的 `usage.currency`（`tools/session_usage.md`）。只有派的是 `session_usage`、核心开着用量汇总的才有；没有的是空的，`session_usage` 照什么都没花答 |
 | `packages` | 看软件包的端口（`Arc<dyn PackagesPort>`，施工 F-10 上）：协议端点造会话、载入时交进来，执行器原样带进每一次调用（`tools/packages.md`）。只有 `packages` 用；测试里的假调用、核心没交的没有，`packages` 说看不了 |
 | `questions` | 提问的端口（`Arc<dyn QuestionPort>`，施工 D-2）：执行器照这一次调用造，交来的题经它送进内核、回答落了盘送回来（`session/tools.md`「1e. 问人」）。只有能问人的会话有（有人能回答的本机主会话），只有 `ask_user` 用；没有的（测试里的假调用、子会话、`miyu ask` 开的、场所会话）是空的，`ask_user` 照这里没人能回答出错 |
+| `nested` | 脚本调工具的端口（`Arc<dyn NestedPort>`，施工 M-2）：执行器照每一次直接调的 `shell` 造一个，挂在这次调用下面；`shell` 交给通道的那一头（施工 M-3），通道每收一个请求 `call(工具名, 参数原文)` 一次，等内核记过、落了盘答回来（`Nested`：`Settled` 带结局、拒绝的那一句、跑完的字和 `data`、有没有丢掉图，`Refused` 带没收下的原因）。别的工具、嵌套调用里跑的、测试里的假调用没有。嵌套调用里跑的 `Call` 没有 `jobs`、`agents`、`messages`、`sessions`、`usage`、`questions`、`goals`、`packages`、`nested`，有记忆、知识库、设置 |
 
 - `Seen`：换成真实位置以后的路径 → 她最后一次看到的整份文件的内容哈希（`sha256:` 加 64 位小写十六进制）。
 - 任务端口（施工 7-3）：`start(Background)` 把起好的后台命令交给执行器的任务表，交回编号，当场返回；收不下的（输出的文件建不起来、会话已经停了），任务表整组杀掉它，交回出错。`Background` 两格：`output` 是一段段交出来的输出（已经照前台的规矩合法化，读完了就没有了），`process` 是 `Process`：`wait()` 等它结束、交回 `Exit`（退出码或者信号），`kill()` 整组杀、已经结束了的什么都不做。两个端口比的是不是同一个（`Call` 照格子比较时用）。
@@ -88,9 +92,10 @@
 | `stopped` | 看到旗，停在改之前，什么都没改；执行器照「已取消，跑到一半」交给内核 |
 | `end_turn` | 要结束这一轮（施工 4-14）：这一步齐了内核不再请求模型；出错的、停了的不认 |
 | `detail` | 给头看的结构化结果（施工 W-11）：一个对象，形状由这件工具定、写在它的图纸里；`Done::detail` 设，执行器原样记进 `tool.result` 的 `detail`，不发给模型 |
+| `data` | 给脚本的结构化结果（施工 M-2，设计 39 第六节第 3 条）：脚本里经 `miyu call` 调的，成功了印成一行 JSON；不进上下文、不进 `tool.result`。和 `detail` 分开：`detail` 跟着界面改，这一格是给脚本的接口。出厂四件照它们的 `detail` 填（`web_search` 搜不到的也交空的链接列表），MCP 交 `structuredContent`；出错的不交。`Done::data` 设 |
 
 - `Done::ok(字)`、`Done::error(字)`：一段字的内容块，`error` 各是假、真。`Done::stopped()`：停在改之前。
-- `.said(说法)`：带上给人看的说法，再调一次就换成新的那一个；`.effect(效果)`：再报一样效果，接在后面；`.image(图片)`：再交一张图片，接在后面；`.ending()`：要结束这一轮（施工 4-14）。
+- `.said(说法)`：带上给人看的说法，再调一次就换成新的那一个；`.effect(效果)`：再报一样效果，接在后面；`.image(图片)`：再交一张图片，接在后面；`.ending()`：要结束这一轮（施工 4-14）；`.data(对象)`：给脚本的结构化结果（施工 M-2）。
 
 **效果** `Effect`：路径都是换成真实位置以后的。
 

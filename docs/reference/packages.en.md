@@ -201,6 +201,7 @@ MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/sett
 | `venues` | array of strings | Which sessions get it: `local`, `private`, `group`; local sessions only when left out |
 | `timeout_ms` | integer | How long one call may take, 1000 to 3600000; 600000 when left out |
 | `need_load` | boolean | The server's tools must be loaded first; when left out, as if not written in personal settings |
+| `clicall` | boolean | Whether the AI can call this server's tools with `miyu call` inside a command; when left out, what was written stays, and unwritten means it can |
 
 Fields left out are not written: replacing drops what was there before and is not sent again. It is checked by the same rules as reading personal settings and written the way `config.set` writes (with a version, never over a concurrent hand edit). Response `{"name"}`; the server then follows what was written, and state changes push `mcp.changed`. **Errors**: `mcp_invalid` (badly written; `data.problem` says what is wrong); `server_from_package` (personal settings have no server by that name and a package brings one: servers from packages are not changed here); `config_file_broken` (personal settings can't be read, or `mcp` is written in a shape that can't hold a server); `config_conflict`.
 

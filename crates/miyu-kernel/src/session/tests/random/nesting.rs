@@ -1,6 +1,6 @@
 //! 脚本里的 `miyu call`（施工 M-1）：三个种子里有一个，另用一串随机数，夹在原来的输入之间、不占名额，原来那串输入不跟着
 //! 错开。父级多半是在跑的调用、还在跑的后台命令，偶尔是一个不在跑的（答 `gone`）；编号偶尔重来一个（不理）；工具偶尔
-//! 不准、不认识，参数偶尔修不了；在过链的多半很快有结论，在跑的多半很快跑完。看守在 `watch/nested.rs`。
+//! 不准、不认识、`clicall` 没开（施工 M-2），参数偶尔修不了；在过链的多半很快有结论，在跑的多半很快跑完。看守在 `watch/nested.rs`。
 
 use super::*;
 use crate::id::{NestedId, Parent};
@@ -68,8 +68,8 @@ pub(super) fn some_nested(rng: &mut Rng, watch: &mut Watch) -> Option<Input> {
                     *next
                 }
             };
-            let name =
-                ["read", "read", "shell", "write", "nope"][usize::try_from(rng.below(5)).unwrap()];
+            let name = ["read", "read", "shell", "write", "nope", "ask_user"]
+                [usize::try_from(rng.below(6)).unwrap()];
             let args = if rng.below(10) == 0 { "[1]" } else { "{}" };
             NestedInput::Call {
                 at: at(50),

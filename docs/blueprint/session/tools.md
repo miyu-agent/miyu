@@ -10,6 +10,8 @@
 |---|---|
 | `crates/miyu-session/src/tools.rs` | 执行工具的端口：找、派、量用时、叫停、收回报 |
 | `crates/miyu-session/src/sandbox.rs` | 照这一刻实际生效的级别给一次调用写沙盒的规格（施工 5-4 上） |
+| `crates/miyu-session/src/tools/nested.rs`、`actor/nested.rs` | 脚本调工具（施工 M-2）：直接调的 `shell` 的端口、收下来送进内核、判、跑、掐、落了盘答回去（「1g. 脚本调工具」） |
+| `crates/miyu-session/src/tools/sandboxed.rs` | 给一次调用写上沙盒（施工 M-2 从 `tools.rs` 挪来）：直接调用、嵌套调用都经它 |
 | `crates/miyu-session/src/agents.rs` | 派子代理：一个会话一份要照抄的，每一次调用一个端口（施工 7-5）；子会话用哪个模型（`Inherit`，施工 8-8）；造会话时定的工具面（施工 7-7 从 `open.rs` 挪来），`subagent` 的 `pool` 那一格照那时的配置拼、列着的池照快照读回（施工 8-8 补） |
 | `crates/miyu-session/src/messages.rs` | 父子之间留言：每一次调用照内核交的派出去的子代理造一个端口（施工 7-7） |
 | `crates/miyu-session/src/peers.rs` | 「空了告诉我」等的这一边：照内核在等的去订、计时（施工 C-6，「1c2. 订、计时、再订」） |
@@ -153,6 +155,15 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 2. 工具交来要做的：经回传的通道送回 actor（`Back::Goal`，带一个回信的口子），actor 照 `session/actor.md` 那一行办：看的当场答，改的交内核、把等内核回应的口子交回来，端口接着等到。
 3. 没答到就了结（这次调用叫停了、掐掉了，会话停了）：口子丢掉，工具拿到「停了」。
 
+**1g. 脚本调工具**（`crates/miyu-session/src/tools/nested.rs`、`actor/nested.rs`，施工 M-2；设计 `39-脚本调工具.md` 第四节，`kernel/session.md`「嵌套调用」）
+
+1. 每一次直接调的 `shell` 给一个端口（`Call::nested`），挂在这次调用下面；`shell` 交给通道的那一头（施工 M-3）。端口在父级下面从 1 编号，一次调用经回传的通道送回 actor（`Back::Nested`，带一个回信的口子和派它的那次调用），记下口子，交给内核 `Nested(Call)`。会话停了、没答就丢了的，端口那一头拿到「已取消」。
+2. 内核出 `Nested(Guard)`：照直接调用的链在阻塞线程里判，不先看一眼（嵌套调用不问人），交回 `Nested(Guarded)`。
+3. 内核出 `Nested(Run)`：照直接调用跑，但 `Call` 里没有任务、子代理、留言、列会话、用量、提问、目标、软件包的端口，不再给端口；记忆、知识库、设置照这一轮的，工具要的调用编号、记忆的出处是派它的那次调用。沙盒照这一刻的级别写（`tools/sandboxed.rs`）。跑完的报了效果、发出去的、结束回合的记一行 `ERROR`、丢掉；图不交给脚本，记下丢了。交给脚本的那一份（有 `data` 的是它的一行 JSON，没有的是字）存成 blob，交回 `Nested(Done)`（出没出错、用时、哈希、字节数）；崩了的照「崩了」那一句。目录里没有的当场照出错交回。
+4. 内核出 `Nested(Cancel)`：举旗、掐任务；之后到的不理。
+5. 内核出 `Nested(Answer)`：记过的那一条落了盘才出。了结的照内核的结局答：跑完的（`ok`、`error`）带字、`data`、丢没丢图，别的只带结局和拒绝的那一句；没收下的照原因答。等着的那一头没了（脚本被杀）的不理。
+6. `tools.rs`、`actor.rs` 都到了 500 行：端口和跑在 `tools/nested.rs`，动作在 `actor/nested.rs`，写沙盒挪进 `tools/sandboxed.rs`。
+
 **会话表那一头**（`crates/miyu-endpoint/src/spawn.rs`、`sessions.rs`）：造会话、载入时交给会话一份端口，拿着核心的弱引用（会话由会话表拿着，再强拿着核心就成了环）；核心没了的说 `the core is shutting down`。造子会话照交来的填：`by` 是父会话，`oneshot` 是假的，时区是核心所在机器这一刻的，模型、工具目录、家目录、沙盒照核心的，沙盒的缓存照属主；造好了放进会话表，工作目录记成交来的那一个（父会话这一轮实际干活的，已经定过宽不宽）。发命令照会话表找会话（没在跑的先载入），停了的从表里拿掉。停下子会话（施工 7-4）：照会话表找它（没在跑的先载入），先发打断（排着的退回；没有在跑的回合被拒不要紧），再 `stop_jobs`；停了的从表里拿掉，交回出错。看子会话（施工 7-4）：在阻塞线程里只读地读它的日志（属主是管理员），照 `peek.rs` 算，不载入它。列主会话（施工 C-3）：先拿着表的锁记下这时忙着的（`Sessions::busy_ids`），再在阻塞线程里照 `session.list` 的 `scan` 读属主的会话，只要 `session.created` 不带 `parent` 的（`protocol.md`「`session.list`」）；放会话的目录读不了交回 `sessions not listed: <原因>`。认一个会话这时是不是没人看着的一次性会话（施工 C-5，`SessionPort::held`）：对方刚经 `command` 载入过，再经会话表查一次它的 `Handle`，`oneshot() && !watched()`；核心正在停、这个会话不在表里的，当不是。订「空了告诉我」（施工 C-6，`SessionPort::watch`）：见「1c2. 订、计时、再订」第 6 条。
 
 **工具面**（`crates/miyu-session/src/agents.rs` 的 `Agents::face`，造会话时 `open.rs` 叫它）：造会话时，只有本机（场所 `local`）、还没到深度上限（`jobs.depth`，第几层小于它）的会话，工具面里有 `subagent`（以前叫 `agent`，施工 7-5 再补改名：以前造的会话照快照发 `agent`，`tools/subagent.md`「以前的名字」）；本机的会话都有 `send_message`，到了深度上限的也有，只能发给父（施工 7-7）；场所会话（群）两件都拿掉：派不了子代理，也没有父。只有本机的主会话有 `sessions`（施工 C-3，`cross-session.md` 第九条）：子会话的事经它的父会话，群里的人不可信。本机的会话（主会话、子会话）都有 `session_usage`，群里的没有（施工 8-15，`tools/session_usage.md`）：花了多少钱是属主的事。`ask_user` 只给能问人的会话（施工 D-2，「1e. 问人」第 1 条）：子会话问父会话，`miyu ask` 开的、群里没有提问的界面。`todowrite` 只给本机的会话（主会话、子会话各管各的清单），群里没有（施工 D-3）。`goal` 只给本机的主会话（施工 X-8 上，同 `sessions`）：群里、私聊、子代理开不了长期目标。别的工具照给。`subagent` 的 `pool` 那一格照造会话时的配置拼（施工 8-8 补，`tools/subagent.md`「会话开局时拼 `pool`」）：开着开关、有认得出的成员的池照名字排进 `enum`，一个都没有的拿掉 `pool`；配置照 `create` 取的那一份（`Turning::start`），子会话造的时候照它那时的配置拼它自己的。子会话（带着父会话）的 system 在人设后面接上场所说明（`policy.md`「拼」）。
@@ -229,6 +240,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 |---|---|
 | `crates/miyu-session/tests/tools.rs` | 请求里的工具照名字排，载入以后照快照发；没有工具的不发；调用在这一轮的工作目录里跑、结果落盘、她接着说；出错的工具给出错的结果；执行中的输出推送、不落盘；两件只读的同时跑；打断掐掉在跑的；目录里没有的说现在用不了；panic 的给出错的结果、会话照常；停下会话、没人拿着了，在跑的都掐掉；工具交回的图片成了图片块、接在字后面、blob 存下了、下一次请求带着它（施工 4-13） |
 | `crates/miyu-session/tests/display_name.rs`（施工 9-8 六补） | 写了显示名的工具，结果里记下派它那一刻的；没写的不记 |
+| `crates/miyu-session/tests/nested_calls.rs`（施工 M-2） | 假 `shell` 经端口调：落了盘才答；拒了的不记；编号照调的先后；有 `data` 的存它的一行 JSON；出错的带字；图丢掉；结束回合不算；都记在 `shell` 的结果前面。打断：在跑的掐掉、记「已取消」；嵌套调用里跑的没有任务、子代理、提问、目标、端口 |
 | `crates/miyu-session/tests/tool_log.rs` | 开始跑、跑完、出错、叫停、崩了、目录里没有各一行；停在改之前的带 `stopped=true`；叫它停过又掐掉的多一行 `WARN`；参数、工具交回的字不进日志 |
 | `crates/miyu-session/tests/stop.rs` | 打断时在跑的写：叫它停只举旗、不掐，停在改之前的记「已取消」；叫它停的时候已经改完的照记；不停的，又打断一次就掐掉 |
 | `crates/miyu-session/src/effects/tests.rs` | 改前改后存成 blob、别的照原样过去；存不成的照样有哈希；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |

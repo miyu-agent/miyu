@@ -42,6 +42,9 @@ struct SpecFile {
     /// 要先加载（施工 L-1）：出厂的都不写，全量。
     #[serde(default)]
     need_load: bool,
+    /// 脚本里能调（施工 M-2）：出厂只有几件写 `true`，没写的关。
+    #[serde(default)]
+    clicall: bool,
 }
 
 /// 读软件包 `package` 的工具 `name` 的说明和参数格式，访问类别是 `access`。
@@ -76,6 +79,7 @@ pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError
         parameters: parsed.parameters,
         access,
         need_load: parsed.need_load,
+        clicall: parsed.clicall,
     })
 }
 

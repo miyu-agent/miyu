@@ -71,6 +71,7 @@ impl Tool for Search {
             if hits.is_empty() {
                 return Done::ok(line(&all.nothing, &[]))
                     .said(said("kb_search/nothing", &[]))
+                    .data(detail.clone())
                     .detail(detail);
             }
             let passages: Vec<String> = hits
@@ -102,6 +103,7 @@ impl Tool for Search {
             let count = hits.len().to_string();
             Done::ok(passages.join("\n\n"))
                 .said(said("kb_search/found", &[("hits", &count)]))
+                .data(detail.clone())
                 .detail(detail)
         })
     }

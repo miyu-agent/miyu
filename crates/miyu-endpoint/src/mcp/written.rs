@@ -21,6 +21,7 @@ use miyu_config::key::join;
 use miyu_config::package::{McpServer, personal_mcp};
 
 /// 要写的一个服务：几格照协议交来的，还没查过写法（查法照读服务表的，[`personal_mcp`]）。
+#[derive(Clone)]
 pub(super) struct Entry {
     /// 服务名：表名。
     pub(super) name: String,
@@ -34,6 +35,8 @@ pub(super) struct Entry {
     pub(super) timeout_ms: Option<i64>,
     /// 要先加载（`25-工具加载.md` W9）；没交的不写，照读服务表时的默认。
     pub(super) need_load: Option<bool>,
+    /// 脚本里能调（施工 M-2）；没交的不写，照读服务表时的默认。
+    pub(super) clicall: Option<bool>,
 }
 
 /// 这个服务的一张表的字，换行是 `\n`；环境变量的值写不成 TOML 的（JSON 的 `null`）是空的。
@@ -68,6 +71,9 @@ pub(super) fn block(entry: &Entry) -> Option<String> {
     if let Some(need_load) = entry.need_load {
         lines.push(format!("need_load = {need_load}"));
     }
+    if let Some(clicall) = entry.clicall {
+        lines.push(format!("clicall = {clicall}"));
+    }
     Some(lines.iter().map(|line| format!("{line}\n")).collect())
 }
 
@@ -95,6 +101,16 @@ fn literal(value: &Json) -> Option<String> {
                 .join(", ")
         ),
     })
+}
+
+/// 字 `text` 里服务 `name` 写了脚本里不能调（`clicall = false`，施工 M-2）：网页的编辑页还不认这一格，`mcp.set` 没交它的
+/// 时候照原来写的留着，编辑一次别的格不会把它丢了。
+pub(super) fn kept_clicall(text: &str, name: &str) -> Option<bool> {
+    let (servers, _) = personal_mcp(text);
+    servers
+        .into_iter()
+        .find(|server| server.name == name && !server.clicall)
+        .map(|_| false)
 }
 
 /// 字 `text` 里写没写服务 `name`（写错了的也算写了）；`mcp` 写成了放不下的样子的是空的。

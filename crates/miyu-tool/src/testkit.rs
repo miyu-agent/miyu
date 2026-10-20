@@ -16,6 +16,7 @@ use tokio::sync::Barrier;
 use crate::{Call, Done, Effect, Picture, Progress, Running, Spec, Stop, Target, Tool, Venues};
 
 mod held;
+mod nested;
 mod renamed;
 
 pub use held::Held;
@@ -50,6 +51,11 @@ pub enum Act {
     /// 经提问的端口问这组题（施工 D-2）：答了回一句成功 `answered <回答>`（回答写成 JSON）；没答到就了结的交回 `stopped`；
     /// 没有端口的回一句出错。
     Asks(Vec<Question>),
+    /// 回一句成功，带给脚本的结构化结果（施工 M-2）：字、`data` 的 JSON 原文。
+    Gives(&'static str, &'static str),
+    /// 经脚本调工具的端口一件一件调（施工 M-2）：都了结了回一句成功，一行一件，写成 `<工具> <结局>`；跑完的再写字和
+    /// `data`，丢了图的写 `images dropped`，拒绝的写原因。没有端口的回一句出错。
+    Calls(Vec<(&'static str, &'static str)>),
 }
 
 /// 一件假工具。
@@ -86,6 +92,7 @@ impl Fake {
                 parameters: serde_json::from_str::<RawJson>(parameters).expect("参数格式是 JSON"),
                 access,
                 need_load: false,
+                clicall: false,
             },
             act,
         )
@@ -120,6 +127,15 @@ impl Fake {
                 .iter()
                 .map(|(language, name)| ((*language).to_string(), (*name).to_string()))
                 .collect();
+        }
+        fake
+    }
+
+    /// 脚本里能调的假工具（施工 M-2）：规格的 `clicall` 是真的。
+    pub fn callable(name: &str, access: Access, act: Act) -> Arc<Fake> {
+        let mut fake = Fake::new(name, access, act);
+        if let Some(fake) = Arc::get_mut(&mut fake) {
+            fake.spec.clicall = true;
         }
         fake
     }
@@ -174,6 +190,7 @@ pub fn call(args: &str) -> Call {
         knowledge: None,
         packages: None,
         goals: None,
+        nested: None,
         ids: None,
         settings: None,
     }
@@ -293,6 +310,10 @@ impl Tool for Fake {
                     },
                     None => Done::error("no one to ask"),
                 },
+                Act::Gives(text, data) => {
+                    Done::ok(text).data(serde_json::from_str(data).expect("data 是 JSON"))
+                }
+                Act::Calls(calls) => nested::calls(&call, calls).await,
             };
             guard.finished = true;
             done

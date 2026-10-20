@@ -10,6 +10,12 @@ use super::*;
 /// `isolate` 是快照里有没有隔离式那句 system（施工 6-6 下）：没有的，摘要回复里调了工具照失败算，连续失败才走得到。
 pub(super) fn random_policy(attended: bool, isolate: bool) -> Policy {
     let mut limited = policy();
+    // 问人的那一件脚本里不能调（施工 M-2）：看守断言调它的都当场拒、一条都不记（`watch/nested.rs`）。
+    limited
+        .tools
+        .get_mut(super::watch::nested::CLICALL_OFF)
+        .unwrap()
+        .clicall = false;
     limited.step_limit = Some(STEP_LIMIT);
     limited.peers = super::peering::LIMITS;
     limited.attended = attended;

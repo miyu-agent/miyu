@@ -51,3 +51,27 @@ fn quoted_and_long_names_are_read() {
     assert_eq!(loading.server("github"), Some(false));
     assert_eq!(loading.tool("github"), None);
 }
+
+/// 脚本里能不能调（施工 M-2）：`clicall.*` 两项照同一个先后，和加载方式那两项互不相干。
+#[test]
+fn clicall_reads_its_own_two_keys_the_same_way() {
+    let set = values(&[
+        ("clicall.tools.mcp__github__create_issue", false),
+        ("clicall.mcp.github", true),
+        ("clicall.tools.read", true),
+        ("loading.tools.web_fetch", true),
+    ]);
+    let clicall = Loading::clicall_of(&set);
+    assert!(
+        !clicall.clicall("mcp__github__create_issue", true),
+        "工具自己那一项先"
+    );
+    assert!(
+        clicall.clicall("mcp__github__list_issues", false),
+        "再照服务"
+    );
+    assert!(clicall.clicall("read", false), "自带的也能开");
+    assert!(!clicall.clicall("web_fetch", false), "加载方式那一项不算");
+    assert!(clicall.clicall("mcp__other__x", true), "没写的照来处");
+    assert_eq!(Loading::of(&set).tool("read"), None, "反过来也不算");
+}

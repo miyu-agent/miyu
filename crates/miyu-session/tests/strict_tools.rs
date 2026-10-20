@@ -27,6 +27,7 @@ fn catalog() -> Catalog {
             parameters: serde_json::from_str::<RawJson>(FULL).expect("是 JSON"),
             access: Access::Read,
             need_load: true,
+            clicall: false,
         },
         Act::Echo,
     );

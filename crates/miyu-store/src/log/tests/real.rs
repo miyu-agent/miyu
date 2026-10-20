@@ -73,6 +73,7 @@ fn policy() -> Policy {
             ToolRule {
                 access: Access::Read,
                 parameters: serde_json::from_str(r#"{"type":"object"}"#).unwrap(),
+                clicall: false,
             },
         )]),
         step_limit: None,

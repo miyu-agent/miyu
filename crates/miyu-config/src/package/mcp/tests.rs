@@ -169,6 +169,10 @@ fn every_mistake_is_bad_mcp_at_its_server() {
             "name = \"g\"\ncommand = [\"x\"]\nneed_load = \"maybe\"",
             "mcp.g.need_load",
         ),
+        (
+            "name = \"g\"\ncommand = [\"x\"]\nclicall = 1",
+            "mcp.g.clicall",
+        ),
     ] {
         let problem = read(&one(body)).expect_err(body);
         assert_eq!(problem.code, Code::BadMcp, "{body}：{problem}");
@@ -203,5 +207,23 @@ fn need_load_takes_yes_and_no_and_defaults_to_on_demand() {
         );
         let manifest = read(&text).expect(line);
         assert_eq!(manifest.mcp[0].need_load, need, "{line}");
+    }
+}
+
+/// 脚本里能调（施工 M-2）：不写、`"yes"` 都能，`false`、`"no"` 不能，大小写不论，写法同 `need_load`。
+#[test]
+fn clicall_takes_yes_and_no_and_defaults_to_on() {
+    for (line, on) in [
+        ("", true),
+        ("clicall = \"YES\"", true),
+        ("clicall = \"no\"", false),
+        ("clicall = false", false),
+        ("clicall = true", true),
+    ] {
+        let text = format!(
+            "[package]\nname = {{ en = \"P\" }}\n\n[[mcp]]\nname = \"g\"\ncommand = [\"x\"]\n{line}\n"
+        );
+        let manifest = read(&text).expect(line);
+        assert_eq!(manifest.mcp[0].clicall, on, "{line}");
     }
 }

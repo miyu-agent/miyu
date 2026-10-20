@@ -43,6 +43,9 @@ pub struct McpServer {
     /// 这个服务的工具都要先加载（施工 L-1，`25-工具加载.md` W9）：没写的先加载（施工 L-3，2026-10-20 项目主人改：一个服务常有
     /// 十几件工具），`false`、`"no"` 全量；`"yes"`、`"no"` 大小写不论。个人设置的 `loading.mcp.<服务名>` 盖过它。
     pub need_load: bool,
+    /// 这个服务的工具脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：没写的能，`false`、`"no"` 不能，写法同 `need_load`。
+    /// 个人设置的 `clicall.mcp.<服务名>`、`clicall.tools.<工具名>` 盖过它。
+    pub clicall: bool,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -99,7 +102,7 @@ fn one(
         table,
         "mcp",
         &[
-            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4],
+            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4], FIELDS[5],
         ],
     )?;
     let name = match table.get("name").and_then(Item::as_str) {
@@ -125,7 +128,14 @@ fn one(
 }
 
 /// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）。
-const FIELDS: [&str; 5] = ["command", "env", "venues", "timeout_ms", "need_load"];
+const FIELDS: [&str; 6] = [
+    "command",
+    "env",
+    "venues",
+    "timeout_ms",
+    "need_load",
+    "clicall",
+];
 
 /// 叫 `name` 的服务的几格，表是 `table`，写在第 `line` 行。
 fn fields(
@@ -183,25 +193,8 @@ fn fields(
             })?,
         None => TIMEOUT_DEFAULT,
     };
-    let need_load = match table.get("need_load") {
-        Some(item) => item
-            .as_bool()
-            .or_else(
-                || match item.as_str().map(str::to_ascii_lowercase).as_deref() {
-                    Some("yes") => Some(true),
-                    Some("no") => Some(false),
-                    _ => None,
-                },
-            )
-            .ok_or_else(|| {
-                bad(
-                    line,
-                    &format!("{at}.need_load"),
-                    format!("{at}.need_load must be true, false, \"yes\" or \"no\""),
-                )
-            })?,
-        None => true,
-    };
+    let need_load = switch(table, "need_load", &at, line)?;
+    let clicall = switch(table, "clicall", &at, line)?;
     Ok(McpServer {
         name,
         command,
@@ -209,8 +202,36 @@ fn fields(
         venues,
         timeout_ms,
         need_load,
+        clicall,
         line,
     })
+}
+
+/// 一格开关 `key`：`true`、`false`，或者 `"yes"`、`"no"`（大小写不论）；没写的开。
+fn switch(
+    table: &dyn toml_edit::TableLike,
+    key: &str,
+    at: &str,
+    line: Option<usize>,
+) -> Result<bool, Problem> {
+    let Some(item) = table.get(key) else {
+        return Ok(true);
+    };
+    item.as_bool()
+        .or_else(
+            || match item.as_str().map(str::to_ascii_lowercase).as_deref() {
+                Some("yes") => Some(true),
+                Some("no") => Some(false),
+                _ => None,
+            },
+        )
+        .ok_or_else(|| {
+            bad(
+                line,
+                &format!("{at}.{key}"),
+                format!("{at}.{key} must be true, false, \"yes\" or \"no\""),
+            )
+        })
 }
 
 /// 服务名合不合写法。

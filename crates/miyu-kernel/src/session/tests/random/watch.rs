@@ -18,7 +18,7 @@ mod load;
 mod lookup;
 mod manual;
 pub(super) mod model;
-mod nested;
+pub(super) mod nested;
 mod overflow;
 mod peers;
 mod permission;

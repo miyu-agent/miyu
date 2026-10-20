@@ -140,6 +140,22 @@ fn need_load_is_yes_or_no() {
     }
 }
 
+/// `Clicall`（施工 M-2）：没写的、`yes` 能在脚本里调，`no` 不能；写错的照 `Need load` 一样报。
+#[test]
+fn clicall_is_yes_or_no() {
+    for (line, on) in [
+        ("# Clicall: no\n", false),
+        ("# Clicall: Yes\n", true),
+        ("", true),
+    ] {
+        let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
+        assert_eq!(head.clicall, on, "{line}");
+    }
+    let bad = read("a.py", "# Description: Hi.\n# Clicall: sometimes\n").unwrap_err();
+    assert_eq!(bad, ScriptProblem::BadClicall("sometimes".to_string()));
+    assert_eq!(bad.to_string(), "Clicall \"sometimes\" is not yes or no");
+}
+
 /// 脚本算的功能的编号（施工 X-12 中）：`script-<工具名>`。
 #[test]
 fn a_script_is_the_feature_script_dash_name() {

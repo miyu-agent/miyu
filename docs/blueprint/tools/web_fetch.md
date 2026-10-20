@@ -30,7 +30,8 @@
 ```json
 {
   "description": "Fetch a web page or text file by URL and read it as Markdown, a page at a time.",
-  "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]}
+  "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]},
+  "clicall": true
 }
 ```
 

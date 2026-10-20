@@ -45,11 +45,15 @@ mod back;
 mod goals;
 mod halt;
 mod kit;
+mod nested;
 mod preview;
 mod questions;
+mod sandboxed;
 
 pub(crate) use goals::GoalBack;
 pub(crate) use kit::ToolKit;
+pub(crate) use nested::{NestedBack, NestedRun};
+use sandboxed::confine;
 
 /// 执行工具的端口：一个会话一份。
 pub(crate) struct Tools {
@@ -95,6 +99,8 @@ pub(crate) struct Tools {
     preset: Option<String>,
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
+    /// 脚本里调的（施工 M-2，`nested.rs`）。
+    nested: nested::Nesting,
     backs: mpsc::UnboundedSender<Back>,
 }
 
@@ -127,7 +133,7 @@ pub(crate) enum ToolBack {
     /// 跑完了：工具交回的，和它报的效果（改前改后已经存成了 blob）。
     Done {
         call_id: CallId,
-        done: Done,
+        done: Box<Done>,
         effects: Vec<Effect>,
     },
     /// 工具自己崩了（panic）。
@@ -246,6 +252,7 @@ impl Tools {
             packages: kit.packages,
             hooks: kit.hooks,
             running: BTreeMap::new(),
+            nested: nested::Nesting::default(),
             backs,
         }
     }
@@ -328,6 +335,7 @@ impl Tools {
             usage: crate::usage::for_call(self.ledger.as_ref(), usage),
             questions: questions::port(self.asks, call_id, &self.backs),
             goals: goals::port(self.goals, call_id, &self.backs),
+            nested: (name == miyu_tool::SHELL).then(|| self.nested_port(call_id)),
             memory: self
                 .memory
                 .as_ref()
@@ -412,7 +420,7 @@ impl Tools {
                                     &backs,
                                     ToolBack::Done {
                                         call_id,
-                                        done,
+                                        done: Box::new(done),
                                         effects,
                                     },
                                 );
@@ -452,35 +460,6 @@ impl Drop for Tools {
         for running in self.running.values() {
             running.stop.raise();
             running.task.abort();
-        }
-    }
-}
-
-/// 照实际生效的那一级 `permission` 给调用写上沙盒（第 1a 条）：这台机器上的沙盒用不了的，照原样。在阻塞线程里算。
-/// 写不成的不跑：记一行 `ERROR`，交回空的，照崩了算，不在沙盒外跑。
-async fn confine(
-    mut call: Call,
-    sandbox: Option<Sandbox>,
-    (permission, dirs, grants): (Permission, Vec<String>, Vec<RawJson>),
-    call_id: CallId,
-) -> Option<Call> {
-    let Some(sandbox) = sandbox else {
-        return Some(call);
-    };
-    let cwd = call.cwd.clone();
-    match blocking(move || sandbox.for_call(&permission, &cwd, &dirs, &grants)).await {
-        Ok(sandboxed) => {
-            call.sandbox = sandboxed.map(Arc::new);
-            Some(call)
-        }
-        Err(error) => {
-            tracing::error!(
-                target: TARGET,
-                call = call_id.to_string().as_str(),
-                error = %error,
-                "sandbox not set up"
-            );
-            None
         }
     }
 }

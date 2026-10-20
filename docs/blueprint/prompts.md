@@ -4348,13 +4348,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `memory_search`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
 - token：70（2026-10-07 照开发端点量，十八件一起时的边际份量）
-- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起
-- 指纹：`a8acd902`
+- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`7f5a3f19`
 
 ```json
 {
   "description": "Search your memories and your past conversations in other sessions.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string"},"forgotten":{"type":"boolean","description":"Include retired memories."}},"required":["query"]}
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"forgotten":{"type":"boolean","description":"Include retired memories."}},"required":["query"]},
+  "clicall": true
 }
 ```
 
@@ -4376,13 +4377,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
 - token：75（2026-10-12 照开发端点量，二十一件一起时的边际份量）
-- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）
-- 指纹：`684f5684`
+- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`9e9b6247`
 
 ```json
 {
   "description": "Search your knowledge bases: notes and documents kept for you to look things up.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]}
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]},
+  "clicall": true
 }
 ```
 
@@ -4390,13 +4392,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：同上，`kb_read`
 - token：87（2026-10-12 量，同上）
-- 为什么加：搜到的一块不够时读整篇，分页（19 N4，施工 K-1 下）
-- 指纹：`691fd3de`
+- 为什么加：搜到的一块不够时读整篇，分页（19 N4，施工 K-1 下）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`353cc36d`
 
 ```json
 {
   "description": "Read a document from your knowledge bases, a page at a time.",
-  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]}
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]},
+  "clicall": true
 }
 ```
 
@@ -4460,13 +4463,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `web_fetch`：联网包装着、预设开着「抓取网页」的会话，本机的、场所的、子会话都有（施工 N-1，每次请求都带）
 - token：84（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
-- 为什么加：她能读网页、文档站、接口回的 JSON（设计 36 第一节，项目主人 2026-10-18 定）
-- 指纹：`40a13369`
+- 为什么加：她能读网页、文档站、接口回的 JSON（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`026c4986`
 
 ```json
 {
   "description": "Fetch a web page or text file by URL and read it as Markdown, a page at a time.",
-  "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]}
+  "parameters": {"type":"object","properties":{"url":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["url"]},
+  "clicall": true
 }
 ```
 
@@ -4474,13 +4478,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `web_search`：联网包装着、预设开着「网络搜索」的会话，本机的、场所的、子会话都有（施工 N-2 上，每次请求都带）
 - token：107（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
-- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）
-- 指纹：`78321628`
+- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`cd8eabf8`
 
 ```json
 {
   "description": "Search the web and get titles, URLs and excerpts of matching pages. Read a page in full with web_fetch.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]}
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]},
+  "clicall": true
 }
 ```
 

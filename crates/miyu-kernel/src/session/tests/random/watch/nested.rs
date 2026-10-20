@@ -1,7 +1,7 @@
 //! 看守查嵌套调用（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：
 //!
 //! - 两条不变式：父调用的 `tool.result`、任务的 `job.reported` 之前，挂在下面收下了的都已了结；
-//! - 每个收下的只了结一次；前台的带回合，后台的不带；
+//! - 每个收下的只了结一次；前台的带回合，后台的不带；`clicall` 没开的当场拒、一条都不记（施工 M-2）；
 //! - 交给链的是收下了、还排着的，一个父级、整个会话同时过链和在跑的不超过上限；派去跑的是链刚放行的；掐掉的是在跑的；
 //! - 推给头的开始了是在跑的；答脚本那头的「了结了」都记过、落了盘。
 
@@ -39,6 +39,9 @@ pub(super) fn of(input: &Input) -> Option<NestedInput> {
     }
 }
 
+/// 随机测试里脚本不能调的那一件（施工 M-2，`random_policy`）：类别准（读），`clicall` 关。
+pub(in super::super) const CLICALL_OFF: &str = "ask_user";
+
 /// 随机测试的上限：照 [`policy`] 的。
 const LIMITS: NestedLimits = NestedLimits {
     per_parent: 8,
@@ -53,7 +56,7 @@ impl Watch {
             return;
         };
         match &nested {
-            NestedInput::Call { id, .. } => {
+            NestedInput::Call { id, name, .. } => {
                 let refused = actions.iter().find_map(|action| match action {
                     Action::Nested(NestedAction::Answer {
                         id: answered,
@@ -62,6 +65,20 @@ impl Watch {
                     _ => None,
                 });
                 let known = self.nesting.queued.contains(id) || self.nesting.settled.contains(id);
+                // 同一个编号再来的内核不理、什么都不答（`known`），只查头一回来的。
+                if name == CLICALL_OFF && !known {
+                    assert!(
+                        matches!(
+                            refused,
+                            Some(NestedRefusal::NotAllowed | NestedRefusal::Gone)
+                        ),
+                        "种子 {}：{id} 调的 {name} 没开 clicall，应该当场拒：{actions:?}",
+                        self.seed
+                    );
+                    if refused == Some(NestedRefusal::NotAllowed) {
+                        self.seen_paths.insert("clicall 没开的当场拒");
+                    }
+                }
                 match refused {
                     // 父级不在了的不算来过；用法不对的来过了，再来内核不理。
                     Some(refusal) => {
@@ -92,6 +109,10 @@ impl Watch {
         match &event.body {
             Body::ToolNested(nested) => {
                 let id = &nested.id;
+                assert_ne!(
+                    nested.name, CLICALL_OFF,
+                    "种子 {seed}：{id} 调的工具没开 clicall，却记了一条"
+                );
                 assert!(
                     self.nesting.queued.remove(id),
                     "种子 {seed}：{id} 没收下、或者了结过了，又记了一条"

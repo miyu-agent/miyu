@@ -15,6 +15,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         parameters: serde_json::from_str::<RawJson>(parameters).unwrap(),
         access,
         need_load: false,
+        clicall: false,
     }
 }
 
@@ -85,6 +86,35 @@ fn the_policy_gets_the_face_and_the_rules() {
     );
     assert_eq!(request.tools[1].description, "The read tool.");
     assert_eq!(request.tools[1].parameters.get(), READ_PARAMETERS);
+}
+
+/// 脚本里能调（施工 M-2）：开的写 `"clicall":true`、交给内核的规则；以前的快照没有这一格，读成不能，写回去一字不差。
+#[test]
+fn clicall_is_written_only_when_on_and_old_snapshots_keep_their_bytes() {
+    let old = engineer().with_tools(two());
+    let bytes = old.to_bytes();
+    assert!(
+        !String::from_utf8(bytes.clone())
+            .unwrap()
+            .contains("clicall")
+    );
+    let back = Snapshot::from_bytes(&bytes).unwrap();
+    assert!(back.tools.iter().all(|tool| !tool.clicall));
+    assert_eq!(back.to_bytes(), bytes);
+    assert!(!back.policy().unwrap().tools["read"].clicall);
+
+    let mut tools = two();
+    tools[0].clicall = true;
+    let on = engineer().with_tools(tools);
+    let text = String::from_utf8(on.to_bytes()).unwrap();
+    assert!(
+        text.contains(r#""access":"read","clicall":true}"#),
+        "{text}"
+    );
+    assert_eq!(Snapshot::from_bytes(&on.to_bytes()).unwrap(), on);
+    let policy = on.policy().unwrap();
+    assert!(policy.tools["read"].clicall);
+    assert!(!policy.tools["edit"].clicall);
 }
 
 #[test]

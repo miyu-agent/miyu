@@ -34,6 +34,10 @@ pub struct ToolEntry {
     /// 造的快照读成没有：字节和以前一样。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub need_load: bool,
+    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：来处写的、人在个人设置里改过的，算好了写进来。没有的不写，以前造
+    /// 的快照读成不能：字节和以前一样，以前的会话里一件都不开（2026-10-20 项目主人定）。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub clicall: bool,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时
@@ -119,6 +123,7 @@ pub(crate) fn split(
         let rule = ToolRule {
             access: tool.access.clone(),
             parameters: tool.parameters.clone(),
+            clicall: tool.clicall,
         };
         if rules.insert(tool.name.clone(), rule).is_some() {
             return Err(BuildError::DuplicateTool(tool.name.clone()));

@@ -60,6 +60,7 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
     );
     assert_eq!(said(&done), "software/knowledge/kb_search/found");
     // 给头看的那一份（施工 W-11）：没有标题的、不是 PDF 的不写那一格，字去掉末尾的换行。
+    assert_eq!(done.data, done.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(
         done.detail,
         Some(serde_json::json!({"hits": [
@@ -82,6 +83,7 @@ async fn searching_gives_a_passage_per_hit_with_where_it_came_from() {
     assert!(!none.error, "没搜到不算出错");
     assert_eq!(text(&none), "Nothing found.");
     assert_eq!(said(&none), "software/knowledge/kb_search/nothing");
+    assert_eq!(none.data, none.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(none.detail, Some(serde_json::json!({"hits": []})));
 }
 
@@ -102,6 +104,7 @@ async fn reading_gives_the_page_and_says_where_it_is_when_there_are_more() {
     )
     .await;
     assert_eq!(text(&done), "第二页的字\n(Page 2 of 3.)");
+    assert_eq!(done.data, done.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(
         done.detail,
         Some(

@@ -48,13 +48,15 @@ impl Access {
     }
 }
 
-/// 内核要知道的一件工具：访问类别和参数格式。
+/// 内核要知道的一件工具：访问类别、参数格式、脚本里能不能调。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolRule {
     /// 访问类别。
     pub access: Access,
     /// 参数的 JSON Schema，和工具面上的一样。
     pub parameters: RawJson,
+    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：嵌套调用在访问类别之外再查它，不是 `true` 的当场拒。
+    pub clicall: bool,
 }
 
 /// 参数不是一个 JSON 对象，修正不了。

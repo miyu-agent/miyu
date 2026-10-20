@@ -112,6 +112,7 @@ async fn search_with(
         memory: None,
         knowledge: None,
         goals: None,
+        nested: None,
         packages: None,
         ids: None,
         settings,
@@ -177,6 +178,7 @@ async fn the_first_source_answers_and_the_result_is_written_for_her_people_and_h
         ("web_search/found/one".to_string(), Some("Exa".to_string())),
         "一条的说单数，写是哪一家"
     );
+    assert_eq!(done.data, done.detail, "给脚本的是同一份（施工 M-2）");
     assert_eq!(
         done.detail,
         Some(json!({"kind": "links", "links": [{
@@ -477,6 +479,11 @@ async fn nothing_found_is_not_an_error() {
 
     assert!(!done.error);
     assert_eq!(text(&done), "No results for zzzz.");
+    assert_eq!(
+        done.data,
+        Some(json!({"kind": "links", "links": []})),
+        "给脚本的搜不到也是同一个样子（施工 M-2）"
+    );
     assert_eq!(
         said(&done),
         ("web_search/nothing".to_string(), Some("Exa".to_string()))

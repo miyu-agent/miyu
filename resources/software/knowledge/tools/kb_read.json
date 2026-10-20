@@ -1,4 +1,5 @@
 {
   "description": "Read a document from your knowledge bases, a page at a time.",
-  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]}
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]},
+  "clicall": true
 }

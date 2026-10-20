@@ -63,6 +63,7 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Parameters` | 参数的 JSON Schema，从下一行起，可以写几行；不写是没有参数 |
 | `Timeout` | 秒，默认 60 |
 | `Need load` | `yes`：AI 平时只看到名字和一行说明，要用时先加载。不常用的写上，省钱 |
+| `Clicall` | `no`：AI 在命令里不能用 `miyu call` 调它，只能直接调。不写是能 |
 
 **怎么跑**
 

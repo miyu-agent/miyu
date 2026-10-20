@@ -15,6 +15,7 @@ fn entry(name: &str, need_load: bool) -> ToolEntry {
         .unwrap(),
         access: Access::Read,
         need_load,
+        clicall: false,
     }
 }
 

@@ -100,6 +100,7 @@ pub(super) fn register(
                 parameters,
                 access: access(tool),
                 need_load: server.need_load,
+                clicall: server.clicall,
             },
             original: tool.name.clone(),
             title: tool

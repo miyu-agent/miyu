@@ -144,6 +144,7 @@ pub async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) 
         memory: None,
         knowledge: port.map(|port| port as Arc<dyn KnowledgePort>),
         goals: None,
+        nested: None,
         packages: None,
         ids: None,
         settings: None,

@@ -71,6 +71,7 @@ pub fn policy() -> Policy {
     let rule = |access: Access| ToolRule {
         access,
         parameters: serde_json::from_str(r#"{"type":"object"}"#).expect("参数格式是 JSON"),
+        clicall: false,
     };
     Policy {
         nested: miyu_kernel::session::NestedLimits {

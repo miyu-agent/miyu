@@ -1,8 +1,7 @@
 //! 探针和随机日志共用的（`docs/designs/08-上下文投影.md` 第七节「测试门禁」，施工 1-14、2-9 下）。
 //!
-//! 会话由真内核跑出来：执行器替身（`miyu_kernel::testkit`）照剧本回模型、回工具，组装用出厂的
-//! 那一套。替身发过的每一次请求，连同发它时的情形（[`Sent`]），交给 [`check`] 查五条性质。
-//! 1-14 那时还没有回合状态机，这里是一个照图纸推日志的假内核；2-9（下）换成了真会话。
+//! 会话由真内核跑出来：执行器替身（`miyu_kernel::testkit`）照剧本回模型、回工具，组装用出厂的那一套。替身发过的每一次请求，
+//! 连同发它时的情形（[`Sent`]），交给 [`check`] 查五条性质。1-14 那时还没有回合状态机，这里是一个照图纸推日志的假内核；2-9（下）换成了真会话。
 
 #![allow(dead_code, unused_imports, reason = "几个测试各用其中一部分")]
 
@@ -73,6 +72,7 @@ fn policy_with(system: String) -> Policy {
     let rule = |access: Access| ToolRule {
         access,
         parameters: serde_json::from_str(PATH).expect("参数格式是 JSON"),
+        clicall: true,
     };
     Policy {
         nested: miyu_kernel::session::NestedLimits {

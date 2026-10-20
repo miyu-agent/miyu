@@ -12,6 +12,7 @@ fn server(name: &str, command: &[&str], line: usize) -> McpServer {
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
         need_load: false,
+        clicall: true,
         line: Some(line),
     }
 }
@@ -35,6 +36,16 @@ fn only_the_line_may_differ() {
     assert!(
         !same(&a, &McpServer { env, ..a.clone() }),
         "环境变量变了算变了"
+    );
+    assert!(
+        !same(
+            &a,
+            &McpServer {
+                clicall: !a.clicall,
+                ..a.clone()
+            }
+        ),
+        "只改脚本里能不能调也重起（施工 M-2）"
     );
     assert!(!same(
         &a,

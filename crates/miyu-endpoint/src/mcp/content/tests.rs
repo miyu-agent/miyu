@@ -134,7 +134,7 @@ fn links_resources_and_unknown_content_become_lines() {
     );
 }
 
-/// 一段文字都没有的照结构化结果写紧凑的 JSON；有文字的不另写；什么都没有的交一段空的。
+/// 一段文字都没有的照结构化结果写紧凑的 JSON；有文字的不另写；什么都没有的交一段空的。结构化结果另外原样交给脚本。
 #[test]
 fn structured_content_stands_in_only_when_there_is_no_text() {
     let structured = done(
@@ -154,6 +154,19 @@ fn structured_content_stands_in_only_when_there_is_no_text() {
     );
     assert_eq!(words(&both), ["42"]);
     assert_eq!(words(&done(called(Vec::new()), &texts())), [""]);
+    // 给脚本的（施工 M-2）：有没有文字都原样交；没有的不交，出错的不交。
+    assert_eq!(structured.data, Some(json!({"answer": 42})));
+    assert_eq!(both.data, Some(json!({"answer": 42})));
+    assert_eq!(done(called(Vec::new()), &texts()).data, None);
+    let failed = done(
+        Called {
+            structured: Some(json!({"answer": 42})),
+            is_error: true,
+            ..called(vec![Content::Text("boom".to_string())])
+        },
+        &texts(),
+    );
+    assert_eq!(failed.data, None);
 }
 
 /// 文字加起来超过 10 万个字符的，留前 10 万个（截在中间的那一段截短，后面的不要），末尾写一行截掉了多少。

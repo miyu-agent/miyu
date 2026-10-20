@@ -12,6 +12,7 @@ fn server(command: &[&str], env: Vec<(String, EnvValue)>) -> McpServer {
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
         need_load: false,
+        clicall: true,
         line: None,
     }
 }

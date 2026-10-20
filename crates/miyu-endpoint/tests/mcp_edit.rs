@@ -230,3 +230,41 @@ async fn listed_servers_carry_their_tools_once_known() {
     );
     down.stop_extensions().await;
 }
+
+/// 脚本里能不能调（施工 M-2）：网页的编辑页还不认 `clicall`，没交它的照原来写的留着；交了的照交的写。
+#[tokio::test]
+async fn an_edit_without_clicall_keeps_what_was_written() {
+    let home = Home::new();
+    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.write(
+        "home/alice/settings.toml",
+        "[mcp.probe]\ncommand = [\"probe\"]\nclicall = false\n",
+    );
+    let core = configured(&home, &Script::new([]));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let set = |id: &'static str, extra: Value| {
+        let mut params = json!({"name": "probe", "command": "probe", "timeout_ms": 2000});
+        params
+            .as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        (id, params)
+    };
+    let (id, params) = set("s1", json!({}));
+    let kept = client.call(id, "mcp.set", params).await;
+    assert_eq!(kept["result"], json!({"name": "probe"}), "{kept}");
+    let text = settings(&home);
+    assert!(
+        text.contains("timeout_ms = 2000") && text.contains("clicall = false"),
+        "{text}"
+    );
+    let (id, params) = set("s2", json!({"clicall": true}));
+    let on = client.call(id, "mcp.set", params).await;
+    assert_eq!(on["result"], json!({"name": "probe"}), "{on}");
+    let text = settings(&home);
+    assert!(
+        text.contains("clicall = true") && !text.contains("clicall = false"),
+        "{text}"
+    );
+}

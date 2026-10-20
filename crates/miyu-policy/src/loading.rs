@@ -68,6 +68,7 @@ pub(crate) fn stub(
         ToolRule {
             access: Access::Read,
             parameters: texts.parameters.clone(),
+            clicall: false,
         },
     );
     face.push(ToolSpec {

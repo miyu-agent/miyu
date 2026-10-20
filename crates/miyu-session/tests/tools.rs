@@ -117,6 +117,7 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).expect("是 JSON"),
             access: Access::Read,
             need_load: false,
+            clicall: false,
         },
         Act::Echo,
     );
@@ -143,6 +144,7 @@ async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contra
             parameters: serde_json::from_str::<RawJson>(schema).expect("是 JSON"),
             access: Access::Read,
             need_load: true,
+            clicall: false,
         },
         Act::Echo,
     );

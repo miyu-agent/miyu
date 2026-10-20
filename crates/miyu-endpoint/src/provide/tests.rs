@@ -167,6 +167,30 @@ fn need_load_is_a_boolean() {
     }
 }
 
+/// 脚本里能调（施工 M-2）：`true` 的开，不写、`false` 的关；不是布尔的拒，`problem` 是 `clicall`。
+#[test]
+fn clicall_is_a_boolean() {
+    let marked = |on: Value| {
+        let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
+        params["clicall"] = on;
+        serde_json::from_value::<ToolParams>(params).unwrap()
+    };
+    assert!(checked(marked(json!(true))).expect("合写法").spec.clicall);
+    assert!(!checked(marked(json!(false))).expect("合写法").spec.clicall);
+    assert!(
+        !checked(tool("read", json!(["local"])))
+            .expect("合写法")
+            .spec
+            .clicall
+    );
+    for bad in [json!("yes"), json!(1)] {
+        assert_eq!(
+            refused_for(marked(bad)),
+            json!({"tool": "send_group", "problem": "clicall"}),
+        );
+    }
+}
+
 mod remote_tests;
 
 /// 给人看的名字（施工 9-8 六补）：照语言收下，派出去那一刻交给执行器；不写的是空的；语言、名字是空白的拒。

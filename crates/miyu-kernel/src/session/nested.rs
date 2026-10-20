@@ -127,7 +127,10 @@ impl Session {
         }
         let checked = match self.policy.tools.get(&name) {
             None => Err(NestedRefusal::Unknown),
-            Some(rule) if !callable(&rule.access) => Err(NestedRefusal::NotAllowed),
+            // 两道都过才行（设计 39 第三节第 1 条）：类别是硬规矩，`clicall` 是登记的一方、人说的（施工 M-2）。
+            Some(rule) if !callable(&rule.access) || !rule.clicall => {
+                Err(NestedRefusal::NotAllowed)
+            }
             Some(rule) => repair(&rule.parameters, &args)
                 .map(|args| (args, rule.access.clone()))
                 .map_err(|_| NestedRefusal::NotAnObject),
