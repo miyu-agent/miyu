@@ -17,6 +17,7 @@ mod manage;
 mod mount;
 mod place;
 mod read;
+mod watch;
 mod write;
 
 use std::collections::BTreeMap;
@@ -34,6 +35,7 @@ pub use extract::{EXTENSIONS, Kind as DocumentKind, beside as extractor_beside};
 pub use listing::{Document, Listing};
 pub use manage::BaseFields;
 pub use read::Page;
+pub use watch::IndexWatch;
 pub use write::Written;
 
 /// 包文件夹 `dir` 带的库的编号（施工 F-8 六补：装之前查冲突，`docs/blueprint/packages.md`「冲突」），照编号排。
@@ -57,6 +59,8 @@ pub struct Knowledge {
     /// 只照意思找到的那一路的下限，照模型（施工 K-2 修）：表里没有的照 [`miyu_recall::FLOOR`]。
     floors: Thresholds,
     open: Mutex<Open>,
+    /// 建索引的进度报给谁（施工 W-15）：没登记的不报。
+    watcher: Option<watch::Watcher>,
 }
 
 /// 开着的索引：账号、库的编号 → 那一份。
@@ -101,6 +105,10 @@ pub struct Base {
     pub package: Option<String>,
     /// 挂进来的库挂的是哪个目录（施工 K-10）：`kb.toml` 里写的原样，`~/` 不展开；自己的、软件包带来的没有。
     pub mount: Option<String>,
+    /// 上次建好（有文档重建过、补完）的时刻（施工 W-15）：没建过的、索引删掉重建过还没建好的没有。
+    pub indexed_at: Option<String>,
+    /// 这时有没有在建（施工 W-15）：别的线程正在补它。
+    pub indexing: bool,
 }
 
 /// 搜到的一块。
@@ -246,6 +254,7 @@ impl Knowledge {
             packages: Mutex::default(),
             floors: Thresholds::default(),
             open: Mutex::new(BTreeMap::new()),
+            watcher: None,
         }
     }
 
@@ -261,6 +270,15 @@ impl Knowledge {
         Knowledge { extractor, ..self }
     }
 
+    /// 建索引的进度报给 `watch`（施工 W-15，`watch.rs`）。
+    #[must_use]
+    pub fn with_watch(self, watch: Arc<dyn IndexWatch>) -> Knowledge {
+        Knowledge {
+            watcher: Some(watch::Watcher(watch)),
+            ..self
+        }
+    }
+
     /// 只照意思找到的那一路的下限照这张表（施工 K-2 修，`core/knowledge/search.toml`）；没交的、表里没有的模型照
     /// [`miyu_recall::FLOOR`]。
     #[must_use]
@@ -274,7 +292,8 @@ impl Knowledge {
         self.floors.of(model).unwrap_or(miyu_recall::FLOOR)
     }
 
-    /// 账号 `account` 下的知识库，照编号排；每个先照文件补。目录不在的当一个都没有。
+    /// 账号 `account` 下的知识库，照编号排；每个先照文件补，别处正在补的不等它，照索引现有的样子列、带 `indexing`（施工 W-15：
+    /// 不然列表一直等到建完，「在建」永远看不到）。目录不在的当一个都没有。
     ///
     /// # Errors
     ///
@@ -283,6 +302,10 @@ impl Knowledge {
         let mut bases = Vec::new();
         let mut skipped = Vec::new();
         for id in self.ids(account)? {
+            if self.shelf(account, &id).catching_up.try_lock().is_err() {
+                bases.push(self.counted(account, &id, None)?);
+                continue;
+            }
             match self.catch_up(account, &id) {
                 Ok((base, mut dropped)) => {
                     skipped.append(&mut dropped);

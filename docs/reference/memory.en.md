@@ -125,7 +125,7 @@ Knowledge bases belong to the admin account; each is a folder of documents (Mark
 
 | Method | Params | Response |
 |---|---|---|
-| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, by id; `auto` is whether automatic recall is on; unreadable ones have `error`, ones from packages have `package`, mounted ones have `mount` (the folder as written) |
+| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, by id; `auto` is whether automatic recall is on; unreadable ones have `error`, ones from packages have `package`, mounted ones have `mount` (the folder as written); `indexing` is whether it is being built right now (one being built elsewhere is not waited for; it is listed as the index stands), and one built before has `indexed_at` (when it last finished); subscribe to the `kb` stream for build progress |
 | `kb.search` | `query` (required), `kb` (only this one), `limit` (1 to 50, default 10) | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`, most relevant first; PDF hits also have `page` |
 | `kb.read` | `kb`, `path` (required), `page` (from 1, default 1) | `{"text", "page", "pages"}`: 32 KiB per page; PDFs use their own pages |
 | `kb.documents` | `kb` (required) | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`, by path: every document in the base; ones that couldn't be read this time also have `reason` and `why` |

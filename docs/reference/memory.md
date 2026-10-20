@@ -125,7 +125,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package`，挂进来的另带 `mount`（写的那个目录） |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package`，挂进来的另带 `mount`（写的那个目录）；`indexing` 是这时在不在建（别处正在建的不等它，照索引现有的样子列），建好过的另带 `indexed_at`（上次建好的时刻，施工 W-15）；建的进度订阅 `kb` 流 |
 | `kb.search` | `query`（必写）、`kb`（只搜这一个）、`limit`（1 到 50，默认 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的多 `page` |
 | `kb.read` | `kb`、`path`（必写）、`page`（从 1 起，默认 1） | `{"text", "page", "pages"}`：一页 32 KiB；PDF 照它自己的页 |
 | `kb.documents` | `kb`（必写） | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`，照路径排：库里的每一篇；这一回读不了的另带 `reason`、`why` |

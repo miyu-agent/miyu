@@ -12,6 +12,8 @@
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |
 | `package.progress` | 不用订阅：只推给发起 `package.install {"source"}` 的那个连接 | `{"package", "done", "total"}`：从软件源下包文件下了多少字节、一共多少（开始、结束各一次，中间最多 200 毫秒一次） |
 | `projects.changed` | `projects` | `{"project": <一项>}`：这个账号的一个项目整个换掉（同 `project.list` 的一项）；删了的 `{"project": <编号>, "deleted": true}` |
+| `kb.indexing` | `kb` | `{"kb", "done", "total"}`：这个账号的一个知识库在建索引，要重建的 `total` 篇里做完了 `done` 篇；开头是 0，最后一篇照推，中间至多 0.1 秒一次（施工 W-15） |
+| `kb.indexed` | `kb` | `{"kb"}`：建好了；那个库这一刻的样子照 `kb.list` 重读 |
 | `mcp.changed` | `packages` | `{"name", "server"}`：个人设置里的一个 MCP 服务，删了的 `server` 是 `null` |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`：一块界面块整个换掉，关掉、卸掉的是 `null` |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`：一间记忆的日志里新的一行 |

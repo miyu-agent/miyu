@@ -12,6 +12,8 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 | `package.changed` | `packages` | `{"package", "entry"}`: one item of the package list; `entry` is `null` when gone |
 | `package.progress` | No subscription: sent only to the connection that called `package.install {"source"}` | `{"package", "done", "total"}`: bytes downloaded so far and in all (once at the start and the end, at most every 200 ms in between) |
 | `projects.changed` | `projects` | `{"project": <item>}`: one of this account's projects, replaced whole (same as an item of `project.list`); a deleted one is `{"project": <id>, "deleted": true}` |
+| `kb.indexing` | `kb` | `{"kb", "done", "total"}`: one of this account's knowledge bases is building its index; `done` of the `total` documents to rebuild are done. The first is 0, the last is always sent, at most one every 0.1 s in between |
+| `kb.indexed` | `kb` | `{"kb"}`: the build finished; read that base again with `kb.list` |
 | `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in personal settings; `server` is `null` when removed |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`: one widget replaced whole; `null` when turned off or removed |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`: a new line in one memory's log |

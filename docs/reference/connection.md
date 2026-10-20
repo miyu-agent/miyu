@@ -116,12 +116,13 @@
 | `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
 | `packages` | 软件包列表的一项变了 | `{"packages": […]}` |
 | `projects` | 这个账号的一个项目变了（施工 H-1） | `{"projects": […]}`，全部 |
+| `kb` | 这个账号的知识库建索引的进度（施工 W-15）：`kb.indexing`、`kb.indexed` | `{}`：这一刻的样子照 `kb.list` |
 | `memory` | 一间记忆的日志 | `{"upto": <那一刻最后一条的序号>}` |
 | `widgets` | 界面块 | 见 [软件包与扩展](packages.md) |
 
 各条流的推送长什么样见 [推送](pushes.md)。
 
-1. 一个连接对一个会话只有一个订阅（`events` 和 `view` 也算同一个）；再订阅换一个新的。`sessions`、`config`、`extensions`、`packages`、`projects`、`widgets` 一个连接各一个。
+1. 一个连接对一个会话只有一个订阅（`events` 和 `view` 也算同一个）；再订阅换一个新的。`sessions`、`config`、`extensions`、`packages`、`projects`、`kb`、`widgets` 一个连接各一个。
 2. **补发**：写了 `after` 的，先把日志里序号大于它、订阅那一刻已经落了盘的事件一条条推过来，再回应（带 `upto`），之后从 `upto + 1` 接着推，不丢不重。会话正有一次模型请求在流的，补完以后另推一遍这次请求到目前为止的增量（`model.delta`），接得上后面实时推的。不带序号的瞬时事件不补。
 3. **掉队**：你读得太慢，会话给一个订阅最多攒 1024 份（配置 16 份、记忆 64 条），再多就推一条 `resync`，这个订阅停了。会话停了也推 `resync`。重新订阅，带上最后看到的序号（`after`）就能补回来。
 4. 订阅着一个会话，就算你在看着它：没人看着的会话，子代理报回来只记下、不叫醒她。

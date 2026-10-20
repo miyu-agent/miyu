@@ -3,6 +3,7 @@
 //! 账号（和 `memory.*` 一样）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
 
 mod manage;
+pub(crate) mod progress;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,6 +32,17 @@ pub(crate) fn shelf(
     resources: &ResourceRoot,
     found: &[Found],
 ) -> Arc<Knowledge> {
+    Arc::new(built(root, home, extractor, resources, found))
+}
+
+/// 同 [`shelf`]，不包进 `Arc`：核心起来时还要登记建索引的进度（[`of_core`]）。
+fn built(
+    root: &DataRoot,
+    home: Option<PathBuf>,
+    extractor: Option<PathBuf>,
+    resources: &ResourceRoot,
+    found: &[Found],
+) -> Knowledge {
     let floors = resources
         .knowledge_table("search")
         .map_err(|error| error.to_string())
@@ -39,23 +51,24 @@ pub(crate) fn shelf(
             tracing::warn!(target: "miyu::endpoint", error = error.as_str(), "knowledge search floors unreadable");
         })
         .unwrap_or_default();
-    Arc::new(
-        Knowledge::new(root)
-            .with_home(home)
-            .with_extractor(extractor)
-            .with_floors(floors)
-            .with_packages(carried(found)),
-    )
+    Knowledge::new(root)
+        .with_home(home)
+        .with_extractor(extractor)
+        .with_floors(floors)
+        .with_packages(carried(found))
 }
 
-/// 核心起来时的那一份知识库：家目录 `home`，主程序旁边的抽字小程序，资源目录 `resources`，读成的清单 `found`。
+/// 核心起来时的那一份知识库：家目录 `home`，主程序旁边的抽字小程序，资源目录 `resources`，读成的清单 `found`；连同它建索引的
+/// 进度的广播（施工 W-15，`progress.rs`）一起交回。
 pub(crate) fn of_core(
     root: &DataRoot,
     home: Option<PathBuf>,
     resources: &ResourceRoot,
     found: &[Found],
-) -> Arc<Knowledge> {
-    shelf(root, home, extractor(), resources, found)
+) -> (Arc<Knowledge>, Arc<progress::Progress>) {
+    let progress = Arc::new(progress::Progress::default());
+    let knowledge = built(root, home, extractor(), resources, found).with_watch(progress.clone());
+    (Arc::new(knowledge), progress)
 }
 
 /// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`），出厂的先于家目录、同一层照编号（施工 F-8 六补：
@@ -222,7 +235,12 @@ fn shown_base(base: Base) -> Value {
         "documents": base.documents,
         "chunks": base.chunks,
         "auto": base.auto,
+        // 施工 W-15：这时在不在建；上次建好的时刻，没建过的不写。
+        "indexing": base.indexing,
     });
+    if let Some(at) = base.indexed_at {
+        value["indexed_at"] = Value::String(at);
+    }
     if let Some(error) = base.error {
         value["error"] = Value::String(error);
     }

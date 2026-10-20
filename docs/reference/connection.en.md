@@ -116,6 +116,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `extensions` | An extension's status changed | `{"extensions": […]}` |
 | `packages` | One item of the package list changed | `{"packages": […]}` |
 | `projects` | One of this account's projects changed | `{"projects": […]}`, all of them |
+| `kb` | Index-building progress of this account's knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 

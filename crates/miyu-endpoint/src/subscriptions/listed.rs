@@ -26,6 +26,8 @@ pub(super) enum Listed {
     Packages,
     /// 这个账号的项目：推 `projects.changed`，别的账号的不推。
     Projects(AccountId),
+    /// 这个账号的知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`，别的账号的不推。
+    Knowledge(AccountId),
 }
 
 impl Listed {
@@ -35,6 +37,7 @@ impl Listed {
             Listed::Extensions => "extensions",
             Listed::Packages => "packages",
             Listed::Projects(_) => "projects",
+            Listed::Knowledge(_) => "kb",
         }
     }
 
@@ -53,12 +56,17 @@ impl Listed {
                 Some(core.extensions.subscribe()),
             ),
             Listed::Projects(_) => (core.project_changes.subscribe(), None),
+            Listed::Knowledge(_) => (core.kb_progress.subscribe(), None),
         }
     }
 
     /// 包 `id` 变了推的那一行。扩展的状态里没有这个包的不推；软件包列表里没有了的推 `entry: null`。
     fn line(&self, core: &Core, id: &str, shaken: Shaken) -> Option<String> {
         let line = match self {
+            // 进度那一行广播时就写好了（施工 W-15）：只挑自己账号的。
+            Listed::Knowledge(account) => {
+                return crate::knowledge::progress::mine(id, account).map(str::to_string);
+            }
             Listed::Projects(account) => {
                 let project = crate::projects::changes::mine(id, account)?;
                 let params = crate::projects::item(core, account, project)?;
@@ -236,5 +244,27 @@ impl Subscriptions {
     /// 取消订阅项目的推送。
     pub(crate) fn remove_projects(&mut self) {
         self.projects = None;
+    }
+
+    /// 订阅这个账号 `account` 的知识库建索引的进度（施工 W-15）：回应是空的，这一刻的样子照 `kb.list`（`indexing`、`indexed_at`）。
+    pub(crate) fn add_kb(
+        &mut self,
+        core: &Arc<Core>,
+        account: AccountId,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> serde_json::Value {
+        self.kb = Some(ListedForwarder::start(
+            Arc::clone(core),
+            Listed::Knowledge(account),
+            shaken,
+            out.clone(),
+        ));
+        json!({})
+    }
+
+    /// 取消订阅知识库建索引的进度：转发任务当场停。
+    pub(crate) fn remove_kb(&mut self) {
+        self.kb = None;
     }
 }

@@ -12,7 +12,11 @@ use miyu_kernel::time::Timestamp;
 use miyu_recall::chunk;
 
 use super::extract::{self, Kind};
+use super::watch::Progress;
 use super::{Base, Hit, Knowledge, KnowledgeError, Reason, Skipped};
+
+/// 上次建好的时刻记在索引的哪一格（施工 W-15，`recall/meta.rs`）。
+const INDEXED_AT: &str = "indexed_at";
 
 /// 一个文字的文档最大几个字节：再大的多半不是写给人看的笔记（日志、导出的数据），切出来几千块淹掉别的。PDF、网页抽出来的字
 /// 也照它封顶（施工 K-5）。
@@ -69,11 +73,16 @@ impl Knowledge {
             });
         });
         let stamps = shelf.index.stamps()?;
-        for document in &documents {
-            let stamp = format!("{}:{}", document.size, document.modified);
-            if stamps.get(&document.source) == Some(&stamp) {
-                continue;
-            }
+        let stamp_of = |document: &Document| format!("{}:{}", document.size, document.modified);
+        // 要重建的先数出来，好报进度（施工 W-15）：指纹没变的跳过，不算。
+        let changed: Vec<&Document> = documents
+            .iter()
+            .filter(|document| stamps.get(&document.source) != Some(&stamp_of(document)))
+            .collect();
+        let mut progress = Progress::start(self.watcher.as_ref(), account, id, changed.len());
+        for document in changed {
+            progress.one();
+            let stamp = stamp_of(document);
             let skip = |(reason, why): (Reason, String)| Skipped {
                 kb: id.to_string(),
                 path: document.source.clone(),
@@ -125,8 +134,15 @@ impl Knowledge {
         {
             shelf.index.drop_source(source)?;
         }
+        if progress.rebuilt() {
+            shelf.index.set_meta(INDEXED_AT, &now().to_string())?;
+        }
+        progress.finish();
+        let mut base = self.counted(account, id, None)?;
+        // 补的锁还拿在这一趟手里：补完了，不算在建。
+        base.indexing = false;
         Ok(Caught {
-            base: self.counted(account, id, None)?,
+            base,
             skipped,
             documents,
         })
@@ -154,8 +170,22 @@ impl Knowledge {
             auto: switched.or(about.auto).unwrap_or(false),
             package: place.package().map(str::to_string),
             mount: about.mount,
+            indexed_at: shelf.index.meta(INDEXED_AT)?,
+            indexing: shelf.catching_up.try_lock().is_err(),
         })
     }
+}
+
+/// 这一刻。系统时钟读不出来的（早于 1970 年）照 1970 年记：只影响「上次建好」显示的时刻。
+fn now() -> Timestamp {
+    let millis = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| {
+            i64::try_from(since.as_millis()).unwrap_or(i64::MAX)
+        });
+    Timestamp::from_unix_millis(millis)
+        .or_else(|| Timestamp::from_unix_millis(0))
+        .expect("1970 年合写法")
 }
 
 /// 读 `kb.toml`：没有的照空的；读不出来的照空的、交回为什么。

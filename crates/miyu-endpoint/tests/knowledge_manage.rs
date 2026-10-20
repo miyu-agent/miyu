@@ -49,7 +49,7 @@ async fn creating_renaming_adding_and_reindexing() {
         .await;
     assert_eq!(
         created["result"],
-        json!({"id": "notes", "name": "笔记", "description": "学日语的", "documents": 0, "chunks": 0, "auto": false}),
+        json!({"id": "notes", "name": "笔记", "description": "学日语的", "documents": 0, "chunks": 0, "auto": false, "indexing": false}),
         "{created}"
     );
     let again = client.call("c2", "kb.create", json!({"kb": "notes"})).await;

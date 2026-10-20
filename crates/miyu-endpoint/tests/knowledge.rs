@@ -50,9 +50,21 @@ async fn list_search_and_read() {
         bases[0]["error"].is_string(),
         "kb.toml 写错的带为什么：{listed}"
     );
+    // 施工 W-15：建好了的带上次建好的时刻（这一刻的，另查），这时没在建。
+    let mut notes = bases[1].clone();
+    let indexed_at = notes
+        .as_object_mut()
+        .and_then(|notes| notes.remove("indexed_at"));
+    assert!(
+        indexed_at
+            .as_ref()
+            .and_then(|at| at.as_str())
+            .is_some_and(|at| at.ends_with('Z')),
+        "{listed}"
+    );
     assert_eq!(
-        bases[1],
-        json!({"id": "notes", "name": "日语笔记", "description": "学日语的笔记", "documents": 1, "chunks": 1, "auto": false}),
+        notes,
+        json!({"id": "notes", "name": "日语笔记", "description": "学日语的笔记", "documents": 1, "chunks": 1, "auto": false, "indexing": false}),
         "{listed}"
     );
 

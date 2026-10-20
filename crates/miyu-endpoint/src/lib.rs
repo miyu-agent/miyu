@@ -159,6 +159,8 @@ pub struct Core {
     memory: Arc<Memory>,
     /// 知识库（施工 K-1 上，`knowledge.md`）：开过的库的索引留着，一个库一把补的锁。
     knowledge: Arc<miyu_store::knowledge::Knowledge>,
+    /// 建索引的进度（施工 W-15）：订阅着 `kb` 的连接收。
+    kb_progress: Arc<knowledge::progress::Progress>,
     /// 执行器的任务表（施工 7-3）：所有会话的后台命令，核心里一张。
     jobs: Arc<Jobs>,
     /// 斜杠命令的登记表（施工 O-6 三补，`commands/registry.rs`）：起来时登记好内置的。
@@ -278,8 +280,10 @@ impl Core {
         if let Some(extraction) = memory::extraction(&*models, &resources, &root, &admin) {
             memory.give_extraction(extraction);
         }
+        let (knowledge, kb_progress) = knowledge::of_core(&root, home.clone(), &resources, &found);
         Core {
-            knowledge: knowledge::of_core(&root, home.clone(), &resources, &found),
+            knowledge,
+            kb_progress,
             memory,
             index,
             system_indexes: std::sync::Mutex::default(),

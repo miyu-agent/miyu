@@ -44,6 +44,8 @@ pub(super) enum Stream {
     Packages,
     /// 这个账号的项目（施工 H-1）。
     Projects,
+    /// 这个账号的知识库建索引的进度（施工 W-15）。
+    Knowledge,
     /// 一间的记忆日志（施工 R-12 上，`memory.md`「协议」）。
     Memory(MemoryAt),
     /// 界面块（施工 X-15 中，`widgets.md`「头」）：头这一刻在看什么。
@@ -103,6 +105,10 @@ pub(super) async fn subscribe(
             let listed = subscriptions.add_projects(core, account, shook, out).await;
             (listed, Some(Target::Projects))
         }
+        (Ok(Stream::Knowledge), Some(shook)) => {
+            let reply = subscriptions.add_kb(core, caller.account.clone(), shook, out);
+            (Ok(reply), Some(Target::Knowledge))
+        }
         (Ok(Stream::Events(session)), _) => {
             session_reply(events(core, subscriptions, request, session, out).await)
         }
@@ -122,6 +128,7 @@ pub(super) async fn subscribe(
                 Stream::Extensions
                 | Stream::Packages
                 | Stream::Projects
+                | Stream::Knowledge
                 | Stream::View(_)
                 | Stream::Widgets(_),
             ),
@@ -375,6 +382,7 @@ pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
         ("extensions", None) if request.params.get("after").is_none() => Ok(Stream::Extensions),
         ("packages", None) if request.params.get("after").is_none() => Ok(Stream::Packages),
         ("projects", None) if request.params.get("after").is_none() => Ok(Stream::Projects),
+        ("kb", None) if request.params.get("after").is_none() => Ok(Stream::Knowledge),
         _ => Err(Refusal::BAD_PARAMS),
     }
 }

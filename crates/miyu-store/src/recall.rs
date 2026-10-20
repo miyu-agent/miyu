@@ -25,6 +25,7 @@ pub use indexes::{Opener, RecallIndexes};
 pub use room::{NO_PERSONA, Room};
 
 mod indexes;
+mod meta;
 mod places;
 mod room;
 mod stamps;
@@ -483,5 +484,6 @@ fn add(db: &Connection) -> rusqlite::Result<()> {
     db.execute_batch(vectors::ADD)?;
     db.execute_batch(uses::ADD)?;
     db.execute_batch(places::ADD)?;
-    db.execute_batch(stamps::ADD)
+    db.execute_batch(stamps::ADD)?;
+    db.execute_batch(meta::ADD)
 }
