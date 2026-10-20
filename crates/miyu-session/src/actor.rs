@@ -16,13 +16,12 @@ use miyu_kernel::session::{Action, Input, Limits, Outcome, Session};
 use miyu_kernel::time::Timestamp;
 
 use crate::TARGET;
-use crate::agents::Inherit;
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
 use crate::guard::Guard;
 use crate::handle::{Message, Pushed};
-use crate::jobs::{JobLimits, SessionJobs};
+use crate::jobs::SessionJobs;
 use crate::kinds;
 use crate::lines::note;
 use crate::peers::Watches;
@@ -30,7 +29,7 @@ use crate::port::{Back, ModelPort};
 use crate::report::Reporter;
 use crate::shown::{Next, Shown};
 use crate::store::Store;
-use crate::tools::{Dispatch, ToolKit, Tools};
+use crate::tools::{ToolKit, Tools};
 
 mod back;
 mod extract;
@@ -43,6 +42,7 @@ mod mail;
 mod model;
 mod nested;
 pub(crate) mod persona;
+mod run;
 mod skills;
 mod stop;
 mod store;
@@ -382,46 +382,7 @@ impl Actor {
                     verdict,
                 })
             }
-            Action::RunTool {
-                call_id,
-                name,
-                args,
-                cwd,
-                dirs,
-                permission,
-                grants,
-                cause,
-                asked,
-            } => {
-                let at = self.clock.now();
-                // 后台运行关着的会话不给任务端口（施工 T-1 上）：`shell` 要放到后台的照「这里不能放到后台」说。任务的上限照这一轮
-                // 的配置（施工 7-12 下）。
-                let (config, persona) = (self.config.current(), self.persona.as_ref());
-                let background = !persona.is_some_and(|refresh| refresh.snapshot.foreground);
-                let jobs =
-                    background.then(|| self.jobs.port(call_id, cause, JobLimits::of(config)));
-                let usage = crate::usage::asked(&name, &self.session, self.config.current());
-                self.tools.run(
-                    at,
-                    Dispatch {
-                        call_id,
-                        name,
-                        args,
-                        cwd,
-                        dirs,
-                        permission,
-                        grants,
-                        jobs,
-                        subagents: self.session.subagents(),
-                        inherit: Inherit::of(&*self.model),
-                        usage,
-                        turn: self.session.turn_cause().map(|(turn, _)| turn),
-                        compacted: self.session.compacted_upto(),
-                        asked,
-                        config: Arc::clone(self.config.current()),
-                    },
-                )
-            }
+            action @ Action::RunTool { .. } => self.run_tool(action), // `actor/run.rs`
             // 叫它停（施工 4-9 再补一）：只举旗，工具交回来照常送回。
             Action::StopTool { call_id } => {
                 self.tools.stop(call_id);

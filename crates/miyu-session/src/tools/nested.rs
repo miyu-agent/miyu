@@ -1,32 +1,33 @@
 //! 脚本调工具的执行器这一头（施工 M-2，设计 `39-脚本调工具.md` 第四节，蓝图 `kernel/session.md`「嵌套调用」）：
 //!
-//! - 端口：每一次直接调的 `shell` 造一个（[`Tools::nested_port`]），交给 [`miyu_tool::Call::nested`]；通道（施工 M-3）每收一个
-//!   请求调它一次。端口在父级下面从 1 编号，送进收件箱，等内核答。
+//! - 端口：每一次直接调的 `shell` 造一个（`port.rs`），交给 [`miyu_tool::Call::nested`]；通道（施工 M-3）每收一个请求调它
+//!   一次。端口在父级下面从 1 编号，送进收件箱，等内核答；命令放到后台以后挂到那个任务下面。
 //! - 跑：照直接调用的 `run`，但没有任务、子代理、留言、列会话、用量、提问、目标、软件包的端口，不开通道；记忆、知识库、
 //!   设置照这一轮的。跑完的结果先存成 blob（交给脚本的那一份：有 `data` 的是它的一行 JSON，没有的是字），再送回去。
 //! - 嵌套调用不带效果、不发消息、不结束回合（第四节第 7 条）：报了的记一行 `ERROR`、丢掉，结果照常交回；图片不交给脚本。
 //! - 答：内核记过、落了盘才出 `Answer`，这时才把结果交给等着的那一头。等着的那一头没了（脚本被杀）的，不理。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
 
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 use tokio::task::AbortHandle;
 use tracing::Instrument;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{NestedStatus, Permission};
-use miyu_kernel::id::{CallId, ContentHash, NestedId, Parent, Seq, TurnId};
+use miyu_kernel::id::{CallId, ContentHash, JobId, NestedId, Parent, Seq, TurnId};
 use miyu_kernel::session::{Input, NestedAnswer, NestedInput};
 use miyu_kernel::time::Timestamp;
-use miyu_tool::{Call, CallIds, Calling, Done, Nested, NestedPort, Progress, Settled, Stop};
+use miyu_tool::{Call, CallIds, Done, Nested, Progress, Settled, Stop};
 
 use super::{Tools, confine};
 use crate::TARGET;
 use crate::config::TurnConfig;
 use crate::port::Back;
+
+mod port;
 
 /// 执行器手里的嵌套调用。
 #[derive(Default)]
@@ -35,6 +36,10 @@ pub(crate) struct Nesting {
     waiting: BTreeMap<NestedId, Waiting>,
     /// 在跑的。
     running: BTreeMap<NestedId, Running>,
+    /// 记进了日志的后台命令（施工 M-3）：挂在它们下面的才交进内核。
+    started: BTreeSet<JobId>,
+    /// 挂在还没记进日志的后台命令下面的，等着（`port.rs` 的 `note_jobs`）。
+    held: Vec<NestedBack>,
 }
 
 struct Waiting {
@@ -86,52 +91,7 @@ pub(crate) struct NestedRun {
     pub(crate) config: TurnConfig,
 }
 
-/// 挂在一个父级下面的端口。
-struct Nester {
-    parent: Parent,
-    origin: CallId,
-    /// 上一个编到几号。
-    last: AtomicU32,
-    backs: mpsc::UnboundedSender<Back>,
-}
-
-impl NestedPort for Nester {
-    fn call(&self, name: String, args: String) -> Calling<'_> {
-        Box::pin(async move {
-            let n = self.last.fetch_add(1, Ordering::AcqRel) + 1;
-            let Some(id) = NestedId::new(self.parent.clone(), n) else {
-                return Nested::Settled(Settled::without_result(NestedStatus::Cancelled, None));
-            };
-            let (reply, answer) = oneshot::channel();
-            let back = NestedBack::Call {
-                id,
-                origin: self.origin,
-                name,
-                args,
-                reply,
-            };
-            if self.backs.send(Back::Nested(back)).is_err() {
-                return Nested::Settled(Settled::without_result(NestedStatus::Cancelled, None));
-            }
-            // 会话停了、没答就丢了：当没跑完。
-            answer.await.unwrap_or_else(|_| {
-                Nested::Settled(Settled::without_result(NestedStatus::Cancelled, None))
-            })
-        })
-    }
-}
-
 impl Tools {
-    /// 直接调的 `shell` 第 `call_id` 次调用的端口：挂在这次调用下面。
-    pub(crate) fn nested_port(&self, call_id: CallId) -> Arc<dyn NestedPort> {
-        Arc::new(Nester {
-            parent: Parent::Call(call_id),
-            origin: call_id,
-            last: AtomicU32::new(0),
-            backs: self.backs.clone(),
-        })
-    }
-
     /// 端口和跑它的任务送回来的，写成内核的输入。不在跑的（掐掉了的）跑完了不理。
     pub(crate) fn nested_back(&mut self, at: Timestamp, back: NestedBack) -> Option<Input> {
         match back {
@@ -142,6 +102,20 @@ impl Tools {
                 args,
                 reply,
             } => {
+                // 后台任务下面的，等那个任务的 `job.started` 记进日志再交（`port.rs`）：不然内核认不出这个父级。
+                if let Parent::Job(job) = id.parent()
+                    && !self.nested.started.contains(job)
+                {
+                    let held = NestedBack::Call {
+                        id,
+                        origin,
+                        name,
+                        args,
+                        reply,
+                    };
+                    self.nested.held.push(held);
+                    return None;
+                }
                 let waiting = Waiting {
                     reply,
                     origin,

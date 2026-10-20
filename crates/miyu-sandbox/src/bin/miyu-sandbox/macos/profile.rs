@@ -127,6 +127,14 @@ pub(crate) fn rules(paths: &Resolved) -> Profile {
         ));
         params.push((name, path.to_path_buf()));
     }
+    // 脚本调工具的通道（施工 M-3）：只放行连这一个套接字，写在最后、照字面：比底子和藏起来的那几条都细、都靠后，压得过。
+    for (index, path) in paths.sockets.iter().enumerate() {
+        let name = format!("SOCKET_{index}");
+        text.push_str(&format!(
+            "(allow network-outbound (remote unix-socket (literal (param \"{name}\"))))\n"
+        ));
+        params.push((name, path.clone()));
+    }
     Profile { text, params }
 }
 

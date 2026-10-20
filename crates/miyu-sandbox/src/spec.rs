@@ -28,6 +28,10 @@ pub struct Spec {
     /// 那几层也不冻住。没写的照旧只用 Landlock，规格的字节和以前一样。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub mount: bool,
+    /// 这条命令要连的 Unix 套接字（施工 M-3，脚本调工具的通道，设计 `39-脚本调工具.md` 第五节第 5 条）：别的套接字照旧连不上，
+    /// 这几个放行，只读一级也放行。没有的不写，规格的字节和以前一样。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sockets: Vec<PathBuf>,
 }
 
 impl Spec {

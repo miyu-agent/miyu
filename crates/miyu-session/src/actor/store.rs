@@ -84,6 +84,8 @@ impl Actor {
         let reseen = effects::reverts(&events);
         // 派出去的任务、回报记进名册（施工 7-4）：写不进去的，会话照样停下，记了也不要紧。
         self.jobs.note(&events);
+        // 挂在刚报了开始的后台命令下面、等着的脚本调用，这时交进内核（施工 M-3，`tools/nested/port.rs`）。
+        self.tools.note_jobs(&events);
         // 累计的也是（施工 9-6 上）：写完、内核记下「落了盘」之前收件箱不动，订阅插不进来，和它拿到的落盘到哪一条对得上。
         {
             let mut counted = self.counted();

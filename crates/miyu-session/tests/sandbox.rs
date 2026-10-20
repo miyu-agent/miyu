@@ -108,6 +108,7 @@ async fn each_level_gets_its_own_spec() {
                 read: None,
                 reveal: Vec::new(),
                 mount: false,
+                sockets: Vec::new(),
             },
             env: Vec::new(),
         }),
@@ -121,6 +122,7 @@ async fn each_level_gets_its_own_spec() {
             read: None,
             reveal: Vec::new(),
             mount: false,
+            sockets: Vec::new(),
         },
         env: Vec::new(),
     };

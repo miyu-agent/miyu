@@ -24,6 +24,7 @@ use crate::event::{
 };
 use crate::id::{CommandId, ContentHash, NestedId, Parent, Seq};
 use crate::origin::By;
+use crate::raw::RawJson;
 use crate::time::Timestamp;
 use crate::tool::{Access, repair};
 
@@ -64,6 +65,17 @@ enum Phase {
 }
 
 impl Session {
+    /// 脚本里能调的工具：访问类别准、`clicall` 开着的，照名字，带参数格式（施工 M-3）。执行器照它定开不开通道、答
+    /// `miyu call --schema`。纯查询。
+    pub fn clicall_tools(&self) -> Vec<(String, RawJson)> {
+        self.policy
+            .tools
+            .iter()
+            .filter(|(_, rule)| rule.clicall && callable(&rule.access))
+            .map(|(name, rule)| (name.clone(), rule.parameters.clone()))
+            .collect()
+    }
+
     /// 在跑的嵌套调用，照编号（施工 M-1，`docs/blueprint/protocol.md` 的订阅）：头断了重连时照它接着画 `#序号 显示名`。纯查询。
     pub fn nested_running(&self) -> Vec<NestedStarted> {
         let mut running: Vec<NestedStarted> = self

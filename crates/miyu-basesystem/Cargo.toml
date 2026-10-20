@@ -32,7 +32,7 @@ miyu-tool = { path = "../miyu-tool" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 读文件在阻塞线程里做，不占着跑异步任务的线程。
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "time"] }
 # edit 宽松那一层的 NFKC 规范化（施工 4-6 中）：Rust 里通用的那一个。
 unicode-normalization = "0.1"
 # 运行日志的门面：shell 收拾命令时出的岔子记一条（施工 4-8）。

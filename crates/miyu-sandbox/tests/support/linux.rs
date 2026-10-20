@@ -15,6 +15,7 @@ pub fn spec(write: &[&Path], hidden: &[&Path]) -> Spec {
         read: None,
         reveal: Vec::new(),
         mount: false,
+        sockets: Vec::new(),
     }
 }
 

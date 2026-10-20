@@ -21,19 +21,19 @@ use super::process::{self, Group};
 /// 运行日志的来处，和前台一样（`process.rs`）。
 const TARGET: &str = "miyu::shell";
 
-/// 起一条后台命令：交回它的输出和进程，交给任务端口。
+/// 起一条后台命令：交回它的输出和进程（交给任务端口），和整组杀时认的那一组（脚本调工具的通道照它认人，施工 M-3）。
 ///
 /// # Errors
 ///
 /// 同前台：管道建不起来，或者程序起不来。
-pub(super) fn start(command: Command) -> io::Result<Background> {
+pub(super) fn start(command: Command) -> io::Result<(Background, Group)> {
     let process::Spawned {
         child,
         group,
         pipe,
         watch,
     } = process::spawn(command, None)?;
-    Ok(Background {
+    let background = Background {
         output: Box::new(Output {
             pipe,
             decoder: Decoder::default(),
@@ -46,7 +46,8 @@ pub(super) fn start(command: Command) -> io::Result<Background> {
             exited: Mutex::new(false),
             _watch: watch,
         }),
-    })
+    };
+    Ok((background, group))
 }
 
 /// 读输出：一次读 8192 字节，解成字、换好行尾交出去。读完了（管道关了）、读不了的，把剩下的交出去就没有了。

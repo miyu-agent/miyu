@@ -75,6 +75,14 @@ fn mounts(spec: &Spec) -> Vec<OsString> {
     for path in spec.reveal.iter().filter(|path| path.exists()) {
         same(&mut args, "--ro-bind", path);
     }
+    // 脚本调工具的通道（施工 M-3）：落在藏起来的里面的，挂回来才连得上。
+    for path in spec
+        .sockets
+        .iter()
+        .filter(|path| path.exists() && inside_hidden(path))
+    {
+        same(&mut args, "--bind", path);
+    }
     for path in dirs {
         args.extend([OsString::from("--remount-ro"), path.as_os_str().to_owned()]);
     }
@@ -88,7 +96,8 @@ fn same(args: &mut Vec<OsString>, flag: &str, path: &Path) {
     args.push(path.as_os_str().to_owned());
 }
 
-/// 里面那一次的规格：藏起来的、放开只读的挂载已经办了，只留能写的给 Landlock（拦系统服务的套接字、能写的以外写不了）。
+/// 里面那一次的规格：藏起来的、放开只读的挂载已经办了，只留能写的给 Landlock（拦系统服务的套接字、能写的以外写不了），和
+/// 要连的套接字（施工 M-3：Landlock 照样只放行它们）。
 fn inner(spec: &Spec) -> Spec {
     Spec {
         write: spec.write.clone(),
@@ -96,6 +105,7 @@ fn inner(spec: &Spec) -> Spec {
         read: None,
         reveal: Vec::new(),
         mount: false,
+        sockets: spec.sockets.clone(),
     }
 }
 
@@ -153,6 +163,7 @@ fn try_once(bwrap: &Path, base: &Path) -> std::io::Result<bool> {
         read: None,
         reveal: Vec::new(),
         mount: true,
+        sockets: Vec::new(),
     };
     let script = format!(
         "test ! -e '{h}/secret' && ! touch '{h}/x' 2>/dev/null && touch '{w}/ok'",

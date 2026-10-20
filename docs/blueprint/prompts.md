@@ -3284,6 +3284,161 @@ Make one concrete step of progress now, or end the goal — both calls are compl
 which you set yourself with the goal tool
 ```
 
+#### `software/basesystem/shell/call/bad-args.txt`
+
+- 什么时候加进来：脚本里调的参数不是 JSON 对象（退出码 2），后面跟上这件的 `schema.txt`（施工 M-3）
+- token：12（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，同上）
+- 为什么加：说哪件、哪里不对，跟上格式省得她再查一次（设计 39 第六节第 4 条）
+- 指纹：`f92c7579`
+
+```text
+Bad args for {name}: not a JSON object.
+```
+
+#### `software/basesystem/shell/call/bad-json.txt`
+
+- 什么时候加进来：`miyu call --json` 给的不是一个对象（退出码 2，命令行那头编进程序）（施工 M-3）
+- token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：说 `--json` 要什么
+- 指纹：`fa61fb58`
+
+```text
+--json takes one JSON object.
+```
+
+#### `software/basesystem/shell/call/bad-request.txt`
+
+- 什么时候加进来：连上来的发的不是 `miyu call` 的请求（退出码 2）（施工 M-3）
+- token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：兜底：版本对上了还发错，是脚本自己拼的帧
+- 指纹：`11d97dd9`
+
+```text
+Bad request from miyu call.
+```
+
+#### `software/basesystem/shell/call/ended.txt`
+
+- 什么时候加进来：所属的命令已经结束，端点关了（退出码 3；命令行连不上时也说它）（施工 M-3）
+- token：10（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：她要知道不是工具出错，是这条命令已经没了（设计 39 第五节第 7 条）
+- 指纹：`4255caf5`
+
+```text
+The command this call belongs to has ended.
+```
+
+#### `software/basesystem/shell/call/guess.txt`
+
+- 什么时候加进来：接在 `unknown.txt` 后面：能调的里面有只差一两个字的（施工 M-3）
+- token：7（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
+- 为什么加：写错名字时直接给出对的（设计 39 第六节第 4 条的例子）
+- 指纹：`dfe515cb`
+
+```text
+Did you mean {name}?
+```
+
+#### `software/basesystem/shell/call/images.txt`
+
+- 什么时候加进来：脚本里调的工具交回了图（退出码 0，写在标准错误）（施工 M-3）
+- token：9（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：图不交给脚本，告诉她少了什么（设计 39 第六节第 3 条）
+- 指纹：`364b2ab4`
+
+```text
+Images were not passed to the script.
+```
+
+#### `software/basesystem/shell/call/interrupted.txt`
+
+- 什么时候加进来：被打断、父级先结束时还没跑完（退出码 3）（施工 M-3）
+- token：4（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：和出错分开
+- 指纹：`967eceb1`
+
+```text
+Interrupted.
+```
+
+#### `software/basesystem/shell/call/not-allowed.txt`
+
+- 什么时候加进来：调的工具脚本里调不了（类别不准、`clicall` 没开，退出码 2）（施工 M-3）
+- token：39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search`、`{tools}` 按出厂五件填）
+- 为什么加：告诉她直接调，列出能调的（设计 39 第三节第 4 条：拦在内核，名单要说清）
+- 指纹：`5a82db00`
+
+```text
+miyu call does not work for {name}; call it directly. Tools that work with miyu call: {tools}.
+```
+
+#### `software/basesystem/shell/call/outside.txt`
+
+- 什么时候加进来：不在 Miyu 跑的命令里调（没有那两个变量、连不上；退出码 2，命令行那头编进程序）（施工 M-3）
+- token：13（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：设计 39 第五节第 8 条（MC11）：不退回协议，说清只能在哪用
+- 指纹：`98c2d69f`
+
+```text
+miyu call only works inside a command Miyu runs.
+```
+
+#### `software/basesystem/shell/call/schema.txt`
+
+- 什么时候加进来：`miyu call --schema` 印的样子：名字、说明、参数格式（施工 M-3）
+- token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，说明、参数格式按空的算（它们是工具面上的原样，不另记））
+- 为什么加：她要格式时一次拿全（设计 39 第六节第 2 条）
+- 指纹：`71b7a28d`
+
+```text
+{name}: {description}
+Parameters: {parameters}
+```
+
+#### `software/basesystem/shell/call/stranger.txt`
+
+- 什么时候加进来：令牌不对、连上来的进程不在这条命令的进程组里（退出码 2）（施工 M-3）
+- token：16（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：设计 39 第五节第 3 条：`setsid` 出去的调不成，说清为什么
+- 指纹：`ad32f6fc`
+
+```text
+miyu call only works from processes started by the command Miyu ran.
+```
+
+#### `software/basesystem/shell/call/unknown.txt`
+
+- 什么时候加进来：工具面上没有这个名字（退出码 2）（施工 M-3）
+- token：7（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
+- 为什么加：说哪个名字不对
+- 指纹：`dad01d42`
+
+```text
+No tool named {name}.
+```
+
+#### `software/basesystem/shell/call/usage.txt`
+
+- 什么时候加进来：`miyu call` 写法不对（退出码 2，命令行那头编进程序）（施工 M-3）
+- token：39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：一行说全几种写法（设计 39 第六节）
+- 指纹：`acb16e8c`
+
+```text
+Usage: miyu call <tool> --<param> <value>... | miyu call <tool> --json '<object>' | miyu call --schema <tool>...
+```
+
+#### `software/basesystem/shell/call/version.txt`
+
+- 什么时候加进来：`miyu call` 和在跑的核心不是同一个版本（退出码 2）（施工 M-3）
+- token：21（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：告诉她用 `PATH` 最前面的那一个（设计 39 第五节第 4 条）
+- 指纹：`a624d8b4`
+
+```text
+This miyu does not match the running Miyu. Use the miyu found first on PATH.
+```
+
 #### `software/basesystem/shell/hazard/delete-home.txt`
 
 - 什么时候加进来：删家目录或者它上面的（施工 5-17）
@@ -4603,6 +4758,19 @@ Make one concrete step of progress now. Never spend a round only reporting that 
 
 ```text
 set by the user with `/goal`
+```
+
+### 工具结果（`shell` 的输出）
+
+#### `software/basesystem/shell/call/approval.txt`
+
+- 什么时候加进来：脚本里调的工具判出要问人（退出码 4）（施工 M-3）
+- token：18（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
+- 为什么加：脚本里问不了人，告诉她改成直接调那一件（设计 39 第六节第 4 条，MC4）
+- 指纹：`b5f4e521`
+
+```text
+This call needs approval, which a script cannot ask for. Call {name} directly.
 ```
 
 ### 填进 `hazard.txt` 的 `{reason}`

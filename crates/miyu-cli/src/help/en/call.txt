@@ -1,0 +1,16 @@
+Usage: miyu call <tool> --<param> <value>...
+       miyu call <tool> --json '<object>'
+       miyu call <tool> --json -
+       miyu call --schema <tool>...
+
+Call one of this session's tools from a command the AI runs, so a script
+can use tools like functions. It only works inside a command Miyu runs:
+from your own terminal it exits with 2.
+
+Each --<param> value is sent as text and fixed up to the tool's types;
+give a param more than once for a list. --json takes a JSON object, or
+reads it from stdin with -; named params override keys in it.
+
+Output: one line of JSON for tools with structured results, text for the
+rest. Exit codes: 0 done, 1 the tool failed or was denied, 2 bad usage,
+3 interrupted or the command has ended, 4 needs approval.

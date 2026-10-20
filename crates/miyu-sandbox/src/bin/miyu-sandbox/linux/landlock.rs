@@ -60,6 +60,10 @@ pub(super) fn confine(spec: &Spec) -> Result<(), String> {
         }
     }
     created = add(created, Path::new("/dev/null"), AccessFs::from_all(LATEST))?;
+    // 脚本调工具的通道（施工 M-3）：只放行连这几个套接字。管不了连套接字的旧内核本来就不拦，库照最宽松的兼容级别去掉这一样。
+    for socket in &spec.sockets {
+        created = add(created, socket, AccessFs::ResolveUnix.into())?;
+    }
     let status = created
         .restrict_self()
         .map_err(|error| format!("landlock: {error}"))?;

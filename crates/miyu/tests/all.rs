@@ -6,6 +6,7 @@
 mod support;
 
 mod ask;
+mod call;
 mod commands;
 mod compact;
 mod config;

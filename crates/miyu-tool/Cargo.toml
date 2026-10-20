@@ -24,8 +24,9 @@ serde = { version = "1.0", features = ["derive"] }
 imagesize = "0.15"
 # 一次调用带的沙盒：助手在哪、规格是什么（施工 5-1）。
 miyu-sandbox = { path = "../miyu-sandbox" }
-# 测试用的假工具：几件一起跑的等凑齐（施工 4-2）、等叫它停（施工 4-9 再补一），只在 testkit 开关打开时要。
-tokio = { version = "1", features = ["sync", "time"], optional = true }
+# 测试用的假工具：几件一起跑的等凑齐（施工 4-2）、等叫它停（施工 4-9 再补一）、在旁边调一次脚本调工具的端口（施工 M-3），
+# 只在 testkit 开关打开时要。
+tokio = { version = "1", features = ["sync", "time", "rt"], optional = true }
 
 [features]
 # 测试用的假工具（`src/testkit.rs`，施工 4-2）：会话、协议端点的测试要用它，在自己的 dev-dependencies

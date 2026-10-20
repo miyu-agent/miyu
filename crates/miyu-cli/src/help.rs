@@ -42,6 +42,8 @@ pub enum Page {
     Pkg,
     /// `miyu kb -h`，各个子命令的 `-h` 也印它（施工 K-7 下）。
     Kb,
+    /// `miyu call -h`（施工 M-3）：脚本里调这个会话的工具。
+    Call,
 }
 
 /// 有子命令的那几个命令照名字是哪一页（施工 K-7 修：少了参数时照它说子命令怎么写）；别的没有。
@@ -95,6 +97,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Kb) => include_str!("help/en/kb.txt"),
         (Language::Chinese, Page::Pkg) => include_str!("help/zh/pkg.txt"),
         (Language::English, Page::Pkg) => include_str!("help/en/pkg.txt"),
+        (Language::Chinese, Page::Call) => include_str!("help/zh/call.txt"),
+        (Language::English, Page::Call) => include_str!("help/en/call.txt"),
     }
 }
 

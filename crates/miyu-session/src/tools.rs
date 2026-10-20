@@ -174,6 +174,9 @@ pub(crate) struct Dispatch {
     pub(crate) asked: Option<By>,
     /// 这一轮的配置（施工 R-5 补）：记忆的端口照它的 `models.embedding` 算向量。
     pub(crate) config: TurnConfig,
+    /// 这个会话脚本里能调的工具和参数格式（施工 M-3，内核的 `Session::clicall_tools`）：直接调的 `shell` 照它开通道，一件
+    /// 都没有的不开。
+    pub(crate) clicall: Vec<(String, RawJson)>,
 }
 
 impl Tools {
@@ -298,6 +301,7 @@ impl Tools {
             compacted,
             asked,
             config,
+            clicall,
         } = dispatch;
         let stop = Stop::default();
         // 派子代理的端口照这一轮的目录、这一刻的权限抄（施工 7-5）：沙盒下面照样要用它们。
@@ -335,7 +339,8 @@ impl Tools {
             usage: crate::usage::for_call(self.ledger.as_ref(), usage),
             questions: questions::port(self.asks, call_id, &self.backs),
             goals: goals::port(self.goals, call_id, &self.backs),
-            nested: (name == miyu_tool::SHELL).then(|| self.nested_port(call_id)),
+            nested: (name == miyu_tool::SHELL && !clicall.is_empty())
+                .then(|| self.nested_port(call_id, clicall)),
             memory: self
                 .memory
                 .as_ref()

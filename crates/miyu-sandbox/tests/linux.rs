@@ -135,6 +135,7 @@ fn a_revealed_path_inside_a_hidden_one_is_read_only() {
     let spec = Spec {
         reveal: vec![skill.clone()],
         mount: false,
+        sockets: Vec::new(),
         ..spec(&[work.path()], &[data.path()])
     };
     if refused_without_landlock(&spec) {
@@ -335,6 +336,7 @@ fn system_service_sockets_outside_the_spec_cannot_be_connected() {
     if bwrap() {
         let mounted = Spec {
             mount: true,
+            sockets: Vec::new(),
             ..spec.clone()
         };
         assert_eq!(
@@ -346,6 +348,56 @@ fn system_service_sockets_outside_the_spec_cannot_be_connected() {
             connects(&mounted, &format!("@{name}")),
             Some(version < (6, 12)),
             "挂载时沙盒外建的抽象套接字"
+        );
+    }
+}
+
+/// 脚本调工具的通道（施工 M-3）：规格的 `sockets` 写了的那一个，不在能写的地方、落在藏起来的里面，照样连得上；旁边别的照旧
+/// 拦（内核 7.1 起）。用挂载收紧的同样。
+#[test]
+fn a_socket_named_in_the_spec_can_be_connected() {
+    use std::os::unix::net::UnixListener;
+    let _serial = serial();
+    let work = Dir::new();
+    let other = Dir::new();
+    let hidden = Dir::new();
+    let named = other.path().join("call.sock");
+    let _named = UnixListener::bind(&named).expect("听得了");
+    let beside = other.path().join("beside.sock");
+    let _beside = UnixListener::bind(&beside).expect("听得了");
+    let secret = hidden.path().join("call.sock");
+    let _secret = UnixListener::bind(&secret).expect("听得了");
+    let spec = Spec {
+        sockets: vec![named.clone(), secret.clone()],
+        ..spec(&[work.path()], &[hidden.path()])
+    };
+    if refused_without_landlock(&spec) {
+        return;
+    }
+    let Some(named_ok) = connects(&spec, &named.to_string_lossy()) else {
+        return;
+    };
+    assert!(named_ok, "写了的连得上");
+    assert_eq!(
+        connects(&spec, &beside.to_string_lossy()),
+        Some(kernel() < (7, 1)),
+        "旁边的照旧拦"
+    );
+    assert_eq!(
+        connects(&spec, &secret.to_string_lossy()),
+        Some(true),
+        "藏起来的里面写了的也连得上"
+    );
+    if bwrap() {
+        let mounted = Spec {
+            mount: true,
+            ..spec.clone()
+        };
+        assert_eq!(connects(&mounted, &named.to_string_lossy()), Some(true));
+        assert_eq!(
+            connects(&mounted, &secret.to_string_lossy()),
+            Some(true),
+            "挂回来了"
         );
     }
 }
@@ -383,6 +435,7 @@ fn a_read_list_keeps_everything_else_unreadable() {
         read: Some(read),
         reveal: Vec::new(),
         mount: false,
+        sockets: Vec::new(),
     };
     if refused_without_landlock(&spec) {
         return;

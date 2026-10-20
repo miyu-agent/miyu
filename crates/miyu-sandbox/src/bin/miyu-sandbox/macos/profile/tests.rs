@@ -20,6 +20,7 @@ fn paths(write: &[&str], hidden: &[&str]) -> Resolved {
         hidden: owned(hidden),
         read: None,
         reveal: Vec::new(),
+        sockets: Vec::new(),
     }
 }
 
@@ -50,6 +51,7 @@ fn the_example_gives_the_sample_rules_and_parameters() {
         hidden: example.hidden,
         read: None,
         reveal: Vec::new(),
+        sockets: Vec::new(),
     });
     assert_eq!(rules.text, sample("macos.sb"));
     let expected: Vec<(String, PathBuf)> = [
@@ -205,6 +207,7 @@ fn at_the_same_depth_read_comes_before_write_and_hidden() {
 fn a_revealed_folder_inside_a_hidden_one_comes_after_it() {
     let revealed = Resolved {
         reveal: vec![PathBuf::from("/d/home/a/skills/notes")],
+        sockets: Vec::new(),
         ..paths(&["/w"], &["/d"])
     };
     let rules = rules(&revealed);
@@ -220,5 +223,29 @@ fn a_revealed_folder_inside_a_hidden_one_comes_after_it() {
         build(&revealed).text,
         format!("{BASE}{READ_ALL}{}", rules.text),
         "照旧整盘能读"
+    );
+}
+
+/// 脚本调工具的端点（施工 M-3）：每个一条照字面的放行，写在最后，压得过前面藏起来的那几条。
+#[test]
+fn sockets_are_allowed_last_by_literal_path() {
+    let mut resolved = paths(&["/w"], &["/w/h"]);
+    resolved.sockets = vec![PathBuf::from("/w/h/call.sock")];
+    let rules = rules(&resolved);
+    assert_eq!(names(&rules).last(), Some(&"SOCKET_0"));
+    assert_eq!(
+        rules.params.last().map(|(_, path)| path.as_path()),
+        Some(Path::new("/w/h/call.sock"))
+    );
+    assert!(
+        rules.text.ends_with(
+            "(allow network-outbound (remote unix-socket (literal (param \"SOCKET_0\"))))\n"
+        ),
+        "{}",
+        rules.text
+    );
+    assert!(
+        !rules.text[..rules.text.len() - 80].contains("SOCKET_"),
+        "只写一条，在最后"
     );
 }

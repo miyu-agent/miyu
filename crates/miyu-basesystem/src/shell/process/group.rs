@@ -13,6 +13,11 @@ use super::TARGET;
 pub(in crate::shell) struct Group(pub(super) u32);
 
 impl Group {
+    /// 认它的编号：Unix 上是进程组号（脚本调工具的通道照它认连上来的进程，施工 M-3）。
+    pub(in crate::shell) fn id(self) -> u32 {
+        self.0
+    }
+
     /// 整组杀掉。
     pub(in crate::shell) fn kill(self) {
         kill(self.0);

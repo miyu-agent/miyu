@@ -1,0 +1,1 @@
+--json takes one JSON object.

@@ -25,6 +25,7 @@
 //! - [`language`]：给人看的话跟着界面语言。
 
 mod ask;
+mod call;
 mod compact;
 mod config;
 pub mod head;
@@ -48,6 +49,7 @@ mod undo;
 mod web;
 
 pub use ask::{Ask, Format, Plan, Screen, Target, ask, exit, talk};
+pub use call::call;
 pub use compact::{Compact, CompactPlan, compact, compact_on};
 pub use config::{
     Check, Config, ConfigCommand, ConfigPlan, Console, Terminal, check, config, config_on,

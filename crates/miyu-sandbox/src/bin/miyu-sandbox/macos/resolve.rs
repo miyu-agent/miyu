@@ -22,6 +22,8 @@ pub(crate) struct Resolved {
     pub(crate) read: Option<Vec<PathBuf>>,
     /// 藏起来的里面单独放开只读的（施工 X-10 中）：只用换过的，同只准读的。
     pub(crate) reveal: Vec<PathBuf>,
+    /// 要连的 Unix 套接字（施工 M-3）：只用换过的。
+    pub(crate) sockets: Vec<PathBuf>,
 }
 
 /// 查、换规格里的每一条路径。同一样里重复的只写一次。
@@ -49,6 +51,9 @@ pub(crate) fn resolve(spec: &Spec) -> Result<Resolved, String> {
     }
     for path in &spec.reveal {
         push(&mut resolved.reveal, real(&checked(path)?));
+    }
+    for path in &spec.sockets {
+        push(&mut resolved.sockets, real(&checked(path)?));
     }
     Ok(resolved)
 }

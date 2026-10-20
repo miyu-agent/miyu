@@ -47,6 +47,7 @@ macOS 上助手怎么收紧自己（`sandbox.md`「怎么走」第 4 条第 3 �
 | `write` 的一条 | `(allow file-read* file-read-metadata file-test-existence file-map-executable process-exec file-write* (subpath (param "WRITE_<n>")))`，接着 `(allow network-outbound (remote unix-socket (subpath (param "WRITE_<n>"))))` |
 | `hidden` 的一条 | `(deny file-read* file-read-metadata file-write* file-test-existence file-map-executable process-exec (literal (param "HIDDEN_<n>")) (subpath (param "HIDDEN_<n>")))`，接着 `(deny network-outbound (remote unix-socket (subpath (param "HIDDEN_<n>"))))` |
 | 删不掉、改不了名的目录 | 每个一条 `(deny file-write-unlink (require-all (vnode-type DIRECTORY) (literal (param "KEEP_<n>"))))` |
+| `sockets` 的一条（施工 M-3） | `(allow network-outbound (remote unix-socket (literal (param "SOCKET_<n>"))))`，写在最后：照字面、又最靠后，压得过底子和藏起来的那几条；路径只用换过的 |
 
 - `literal` 连同 `subpath` 一起写：藏起来的那一处自己也挡住，还不存在的也不许新建。
 - 只准读的、能写的、藏起来的照路径的深浅一起排，深的在后；一样深的，只准读的最前、藏起来的最后（越严的越后）。只准读的、放开只读的路径同能写的，只用换过的（`resolve.rs`）。

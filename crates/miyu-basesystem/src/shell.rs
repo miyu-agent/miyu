@@ -7,6 +7,7 @@
 //! 沙盒的，经沙盒的助手起（施工 5-1），别的都照旧。
 
 mod background;
+mod channel;
 mod env;
 mod moved;
 mod output;
@@ -18,6 +19,7 @@ mod tests;
 
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde::Deserialize;
@@ -48,6 +50,8 @@ const MAX: u64 = 600_000;
 pub(crate) struct Shell {
     spec: Spec,
     texts: Texts,
+    /// 脚本调工具的通道给她的几句（施工 M-3）。
+    call: Arc<channel::Texts>,
     program: Program,
 }
 
@@ -122,6 +126,7 @@ impl Shell {
                     })
                     .collect::<Result<_, LoadError>>()?,
             },
+            call: channel::Texts::load(resources)?,
             program,
         })
     }
@@ -143,16 +148,29 @@ impl Shell {
             return Done::error(say(&self.texts.no_background, &[]))
                 .said(said("shell/no-background"));
         };
-        let started = self
-            .program
-            .command(
-                &args.command,
-                &workdir(call),
-                env::passed(std::env::vars_os(), call.sandbox.is_some()),
-                call.sandbox.as_deref(),
-            )
-            .and_then(background::start)
-            .and_then(|command| jobs.start(command));
+        let (command, channel) = match self.prepare(call, &args.command) {
+            Ok(prepared) => prepared,
+            Err(error) => return self.failed(&error),
+        };
+        let started = background::start(command).and_then(|(background, group)| {
+            // 通道跟着进程交给任务表，挂到任务下面以后才认人：之前连上来的等着（施工 M-3）。
+            let binder = channel.as_ref().map(channel::Channel::binder);
+            let background = Background {
+                output: background.output,
+                process: match channel {
+                    Some(channel) => channel::keep(background.process, channel),
+                    None => background.process,
+                },
+            };
+            let job = jobs.start(background)?;
+            if let Some(port) = &call.nested {
+                port.adopt(job.clone());
+            }
+            if let Some(binder) = binder {
+                binder.bind(group.id());
+            }
+            Ok(job)
+        });
         match started {
             Ok(job) => {
                 let id = job.to_string();
@@ -174,7 +192,13 @@ impl Shell {
     /// 端口收不下的（会话已经停了），任务表整组杀掉了它，照起不来说。
     /// 给她的照放到后台的那一句（`started.txt`）：实测（2026-10-20）另写「到时挪过去了」那一句，她下一步一样，都去看输出、
     /// 没有一次重跑，不另加。
-    fn moved(&self, call: &Call, handover: Handover, title: String) -> Done {
+    fn moved(
+        &self,
+        call: &Call,
+        handover: Handover,
+        title: String,
+        channel: Option<channel::Channel>,
+    ) -> Done {
         let Some(jobs) = &call.jobs else {
             handover.process.kill();
             return self.failed(&io::Error::other("no job port"));
@@ -185,12 +209,20 @@ impl Shell {
             process,
         } = handover;
         let first = self.texts.results.so_far(&output);
+        let process: Box<dyn miyu_tool::Process> = Box::new(process);
         let background = Background {
             output: Box::new(moved::Rest::new(first, rest)),
-            process: Box::new(process),
+            // 通道跟着进程交给任务表（施工 M-3）：脚本接着调，挂到任务下面。
+            process: match channel {
+                Some(channel) => channel::keep(process, channel),
+                None => process,
+            },
         };
         match jobs.start(background) {
             Ok(job) => {
+                if let Some(port) = &call.nested {
+                    port.adopt(job.clone());
+                }
                 let id = job.to_string();
                 Done::ok(say(&self.texts.started, &[("job", &id)]))
                     .said(said("shell/moved").with("job", id))
@@ -362,19 +394,17 @@ impl Tool for Shell {
                 return self.background(&call, args);
             }
             let timeout = limit(args.timeout);
-            let command = match self.program.command(
-                &args.command,
-                &workdir(&call),
-                env::passed(std::env::vars_os(), call.sandbox.is_some()),
-                call.sandbox.as_deref(),
-            ) {
-                Ok(command) => command,
+            let (command, channel) = match self.prepare(&call, &args.command) {
+                Ok(prepared) => prepared,
                 Err(error) => return self.failed(&error),
             };
             let started = match process::start(command, None, move |text| progress.push(text)) {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };
+            if let Some(channel) = &channel {
+                channel.binder().bind(started.group().id());
+            }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_millis(timeout);
@@ -388,7 +418,9 @@ impl Tool for Shell {
             guard.disarm();
             match waited {
                 Ok(Waited::Finished(finished)) => self.finished(finished, timeout),
-                Ok(Waited::Moved(handover)) => self.moved(&call, handover, args.description),
+                Ok(Waited::Moved(handover)) => {
+                    self.moved(&call, handover, args.description, channel)
+                }
                 Err(error) => self.failed(&error),
             }
         })

@@ -379,3 +379,24 @@ fn the_script_hears_back_only_after_the_settling_lands() {
     stage.release_stores();
     assert_eq!(answered(&stage), ["call_6_1#1 ok", "call_6_1#2 ok"]);
 }
+
+/// 执行器照它开通道、答 `--schema`（施工 M-3）：`clicall` 开着、类别准的才列，照名字，带参数格式；写的（`write`）开着也不列，
+/// `clicall` 关的不列。
+#[test]
+fn the_tools_a_script_may_call_are_listed_by_name() {
+    let mut made = policy();
+    made.tools
+        .get_mut("ask_user")
+        .expect("替身的策略有 ask_user")
+        .clicall = false;
+    let session = session_with(made);
+    let listed: Vec<String> = session
+        .clicall_tools()
+        .into_iter()
+        .map(|(name, parameters)| {
+            assert!(parameters.get().starts_with('{'));
+            name
+        })
+        .collect();
+    assert_eq!(listed, ["read", "shell"]);
+}

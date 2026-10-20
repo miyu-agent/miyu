@@ -68,6 +68,7 @@ impl Sandbox {
                 read: Some(read),
                 reveal: Vec::new(),
                 mount: false,
+                sockets: Vec::new(),
             },
             env: vec![(OsString::from("TMPDIR"), temp.into_os_string())],
         })

@@ -3,7 +3,7 @@
 //! 结果存成 blob（有 `data` 的是它的一行 JSON），交给脚本的有字、`data`，图不交；报了结束回合的丢掉。父调用被打断，在跑的
 //! 掐掉、记「已取消」，答回去的也是「已取消」。
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use miyu_kernel::block::Block;
@@ -12,7 +12,8 @@ use miyu_kernel::session::{Command, Queued};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
 use miyu_store::blob::Blobs;
-use miyu_tool::testkit::{Act, Fake};
+use miyu_tool::Exit;
+use miyu_tool::testkit::{Act, Fake, Held};
 use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
@@ -206,4 +207,105 @@ async fn interrupting_the_shell_cancels_what_runs_under_it() {
             .any(|event| matches!(event.body, Body::ToolNested(_))),
         "取消的记在 shell 的结果前面"
     );
+}
+
+/// 放到后台、当场在旁边调的（施工 M-3）：调用到的时候任务的 `job.started` 还没记进日志，等它记进了再交进内核，挂在任务下面
+/// 调成；不等的话内核认不出这个父级，当它不在了。
+#[tokio::test]
+async fn a_call_under_a_new_background_job_waits_for_the_job_to_be_logged() {
+    let held = Held::new(&[]);
+    let heard = Arc::new(Mutex::new(Vec::new()));
+    let shell = Fake::new(
+        "shell",
+        Access::Read,
+        Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), true),
+    );
+    let search = Fake::callable(
+        "web_search",
+        Access::Read,
+        Act::Gives("found", r#"{"links":[]}"#),
+    );
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
+        Play::Says("放出去了。"),
+    ]);
+    let handle = home
+        .create_with(&script, &catalog(&[&shell, &search]))
+        .await;
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    within("旁边那次答回来", async {
+        while heard.lock().unwrap().is_empty() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await;
+    assert_eq!(
+        *heard.lock().unwrap(),
+        [r#"web_search ok text=found data={"links":[]}"#]
+    );
+    let log = home.log(handle.id());
+    let settled = nested(&log);
+    assert_eq!(settled.len(), 1);
+    assert_eq!(settled[0].id.to_string(), "j1#1", "挂在任务下面");
+    held.end(Exit::Code(0));
+}
+
+/// 工具面上一件脚本里能调的都没有的会话：`shell` 拿不到端口，不开通道（施工 M-3）。
+#[tokio::test]
+async fn a_session_without_callable_tools_gives_the_shell_no_port() {
+    let shell = Fake::new("shell", Access::Read, Act::Echo);
+    let lookup = Fake::new("lookup", Access::Read, Act::Echo);
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[("shell", r#"{"command":"ls"}"#)]),
+        Play::Says("好。"),
+    ]);
+    let handle = home
+        .create_with(&script, &catalog(&[&shell, &lookup]))
+        .await;
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    assert!(shell.calls()[0].nested.is_none());
+}
+
+/// 派它的那次 `shell` 的结果没报这个任务（施工 M-3，内核那边审时提的）：等着的那一次再也等不到，当场答「父级不在了」，
+/// 不让脚本一直等；什么都不记。
+#[tokio::test]
+async fn a_call_under_a_job_that_never_gets_logged_is_answered_gone() {
+    let held = Held::new(&[]);
+    let heard = Arc::new(Mutex::new(Vec::new()));
+    let shell = Fake::new(
+        "shell",
+        Access::Read,
+        Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), false),
+    );
+    let search = Fake::callable(
+        "web_search",
+        Access::Read,
+        Act::Gives("found", r#"{"links":[]}"#),
+    );
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
+        Play::Says("好。"),
+    ]);
+    let handle = home
+        .create_with(&script, &catalog(&[&shell, &search]))
+        .await;
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    within("旁边那次答回来", async {
+        while heard.lock().unwrap().is_empty() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await;
+    assert_eq!(*heard.lock().unwrap(), ["web_search refused Gone"]);
+    assert!(nested(&home.log(handle.id())).is_empty(), "什么都不记");
+    held.end(Exit::Code(0));
 }

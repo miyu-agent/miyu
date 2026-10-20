@@ -13,10 +13,12 @@
 | `crates/miyu-basesystem/src/shell/env.rs` | 命令拿得到哪些环境变量 |
 | `crates/miyu-basesystem/src/shell/process.rs` | 起命令、读输出、等它结束、整组杀 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
+| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/unix.rs`、`channel/reply.rs`、`channel/other.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`），Unix 的套接字、令牌、进程组、一问一答，结局写成退出码和字；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/output.rs` | 输出：边读边解成字、内存里只留头尾、截成头尾两段；后台的边读边换行尾（`Crlf`） |
 | `crates/miyu-basesystem/src/load.rs` | 说明是一段模板，核心起来时换进 shell 的名字 |
 | `resources/software/basesystem/tools/shell.json` | 说明和参数格式 |
 | `resources/software/basesystem/shell/*.txt`、`common/bad-args.txt` | 输出里给她看的几句 |
+| `resources/software/basesystem/shell/call/*.txt` | `miyu call` 退出码 1 到 4 的说法、`--schema` 印的样子（施工 M-3）；命令行那头说的四句也在这里 |
 | `resources/software/basesystem/human/{zh,en}.json` | 显示名、结果那一句 |
 
 ### 对外的样子
@@ -99,6 +101,22 @@
 6. 交出去的输出一段一段读：一次读 8192 字节，照 UTF-8 边读边解，一个字切在两段中间的留到下一段，读完了剩下的换成 `�`；`\r\n` 换成 `\n`，一段以 `\r` 结尾的留着它看下一段，单独的 `\r` 不动；不截。读不了的当读完了，记一行 `DEBUG` `command output not readable`。
 7. 交出去的进程：等它结束交回退出码，没有退出码的（Unix 上被信号杀掉）交回信号的编号。等到了先记下它结束了、再放下句柄，Unix 上组里还在跑的（`&` 放到后台的）也杀掉，和前台一样。整组杀照前台：Unix `kill(-pgid, SIGKILL)`，Windows `taskkill /T /F /PID`；已经结束了的不再按编号杀，可能杀错：杀的那一头拿着「结束了没有」那把锁杀，杀完之前句柄放不下，Windows 上编号也就不会被别的进程拿去。
 8. 之后的事是任务表的：输出写进会话目录的 `jobs/<编号>.out`，结束了记 `job.reported`（`session/tools.md`「后台命令」）。
+
+**脚本调工具**（施工 M-3，设计 `39-脚本调工具.md` 第五节，`cli/call.md`）
+
+1. 哪些命令开：拿到了端口的（`Call.nested`，执行器只给直接调的 `shell`，这个会话的工具面上有 `clicall` 开着的工具才给，`session/tools.md`「1g」）。前台、放到后台、到时挪到后台都开。开不成的（目录建不成、套接字绑不上、Windows 上）记一行 `WARN`，命令照旧跑、没有端点。
+2. 端点：一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`。令牌 128 位，从 `/dev/urandom` 读。第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。
+3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`，是指向核心自己的符号链接：脚本里调到的一定是同一个版本。
+4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个套接字（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。
+5. 认人：请求里的令牌对得上，连上来的进程（`SO_PEERCRED` / `LOCAL_PEERPID` 拿进程号）的进程组等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）。命令起来以后才记下这一组：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
+6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
+7. 结局写成退出码和字（`channel/reply.rs`）：
+   - 跑完成了：0，标准输出是 `data` 的一行 JSON（中文不转义），没有的是工具交回的字，都以换行结尾；丢了图的标准错误写 `images.txt`。
+   - 工具出错：1，工具的原话；被拒：1，拒绝的原话；要问人：4，`approval.txt`；被打断、父级先结束：3，`interrupted.txt`。
+   - 没收下：父级不在了 3，`ended.txt`；不认识 2，`unknown.txt`，能调的里面只差一两个字的接上 `guess.txt`；调不了 2，`not-allowed.txt` 列出能调的；参数不是对象 2，`bad-args.txt` 接上这件的 `schema.txt`。
+   - `schema.txt` 换进名字、说明、参数格式，说明和参数不转义：是工具面上的原样，她在 tools 数组里看到的也是原样。
+8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`channel::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。
+9. 关：丢掉端点就掐掉服务、删掉套接字，令牌跟着作废，等着的 `miyu call` 读到结尾（退出码 3）。前台的命令结束时丢。
 
 **用哪个 shell**（核心起来时找一次，照核心环境里的 `PATH`）：
 
@@ -261,6 +279,8 @@ Exit code 2
 | `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
 | `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_when_it_wants_out_and_what_to_show`（施工 D-4） | 写了 `outside_sandbox` 的报要在沙盒外跑，没写的、写了假的、参数不对的不报；问人时交 `command`、`title`，参数不对的交空的 |
 | `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4） | 工作区问人、允许一次的那一次不套沙盒；只读拒绝；完全放开不问；真经助手跑：允许以后写得进工作区以外 |
+| `crates/miyu-basesystem/src/shell/channel/reply/tests.rs`（施工 M-3） | 结局写成退出码和字：一行 JSON、中文不转义；丢了图的说一句；出错、被拒、要问人、被打断、父级不在了各自的码和话；写错名字的指出对的；调不了的列出能调的；参数不对的跟上格式；`--schema` 的样子 |
+| `crates/miyu/tests/call.rs`（施工 M-3，Unix） | 真核心、真 `shell`：能调的一行 JSON、退出码 0，子 shell 里再起一层照样；调不了的、写错名字的退出码 2；`--schema`；`setsid` 出去的退出码 2（Linux）；命令结束以后同一个端点连不上，退出码 3；没有那两个变量的退出码 2；每次调用记 `tool.nested`、挂在那次 `shell` 下面、排在它的结果前面。放到后台的挂在任务下面（`j1#1`）、不带回合、排在任务报告前面；到时挪到后台的，挪过去以后的调用挂到任务下面 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |
 
 ### 出处

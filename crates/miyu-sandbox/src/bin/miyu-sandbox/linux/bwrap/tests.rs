@@ -8,6 +8,7 @@ fn spec(write: &[&Path], hidden: &[&Path], reveal: &[&Path]) -> Spec {
         read: None,
         reveal: list(reveal),
         mount: true,
+        sockets: Vec::new(),
     }
 }
 

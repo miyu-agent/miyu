@@ -10,6 +10,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use miyu_kernel::event::NestedStatus;
+use miyu_kernel::id::JobId;
 use miyu_kernel::session::NestedRefusal;
 
 /// 调这个会话的工具：一次一件，等它了结。
@@ -17,6 +18,24 @@ pub trait NestedPort: Send + Sync {
     /// 调工具 `name`，参数是 `args`（一个 JSON 对象的原文，内核照工具的格式修）。父级结束、核心停了还没答的，交回
     /// [`Nested::Settled`] 的 `cancelled`。
     fn call(&self, name: String, args: String) -> Calling<'_>;
+
+    /// 这条命令放到了后台、成了任务 `job`（一起来就放到后台的，到时挪到后台的，施工 M-3）：之后的调用挂到这个任务下面。
+    fn adopt(&self, job: JobId);
+
+    /// 脚本里能调的工具名，照名字排：报错里列出来。
+    fn callable(&self) -> Vec<String>;
+
+    /// `miyu call --schema`：这件工具的说明和参数格式，照这个会话的工具面；脚本里调不了的没有。
+    fn schema(&self, name: &str) -> Option<Schema>;
+}
+
+/// 一件工具给脚本看的样子。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Schema {
+    /// 给模型看的说明，原样。
+    pub description: String,
+    /// 参数的 JSON Schema，原样的字。
+    pub parameters: String,
 }
 
 /// 等它了结的 future。

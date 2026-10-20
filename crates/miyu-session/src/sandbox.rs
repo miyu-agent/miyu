@@ -155,6 +155,8 @@ impl Sandbox {
                     .map(|dir| real(dir))
                     .collect(),
                 mount,
+                // 脚本调工具的通道由 `shell` 起命令时加（施工 M-3）。
+                sockets: Vec::new(),
             },
             env,
         }))

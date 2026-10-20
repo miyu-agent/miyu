@@ -27,6 +27,7 @@ fn spec() -> String {
         read: None,
         reveal: Vec::new(),
         mount: false,
+        sockets: Vec::new(),
     }
     .to_json()
     .expect("写得成")
@@ -228,6 +229,7 @@ fn a_read_list_is_refused_where_reads_cannot_be_confined() {
         read: Some(Vec::new()),
         reveal: Vec::new(),
         mount: false,
+        sockets: Vec::new(),
     }
     .to_json()
     .expect("写得成");
