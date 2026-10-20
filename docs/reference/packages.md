@@ -186,7 +186,7 @@
 
 管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改个人设置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在个人设置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 
@@ -195,15 +195,18 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `name` | 字符串，必写 | 服务名：小写字母开头，只有小写字母、数字、`-`，最多 32 个 |
-| `command` | 字符串，必写 | 程序 |
-| `args` | 字符串数组 | 程序后面的参数 |
-| `env` | 对象 | 环境变量：值是字，或者 `{"secret": …}`、`{"env": …}` |
+| `command` | 字符串 | 程序；和 `url` 写一个 |
+| `args` | 字符串数组 | 程序后面的参数；要有 `command` |
+| `env` | 对象 | 环境变量：值是字，或者 `{"secret": …}`、`{"env": …}`；跟着 `command` |
+| `url` | 字符串 | 网址的服务：`https://` 开头，本机的可以是 `http://`；和 `command` 写一个 |
+| `bearer` | 字或对象 | 令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值；跟着 `url` |
+| `headers` | 对象 | 别的请求头，值的写法同 `env` 的；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version` 留给核心；跟着 `url` |
 | `venues` | 字符串数组 | 给哪种会话：`local`、`private`、`group`；不写是只给本机的会话 |
 | `timeout_ms` | 整数 | 一次调用等多久，1000 到 3600000；不写是 600000 |
 | `need_load` | 布尔 | 这个服务的工具要先加载；不写的照个人设置里没写的算 |
 | `clicall` | 布尔 | 这个服务的工具 AI 在命令里用 `miyu call` 能不能调；不写的照原来写的留着，原来没写的能 |
 
-没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对）；`server_from_package`（个人设置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（个人设置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
+没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对：`command`、`url` 都没写、两样混写的也是）；`bad_params`（交了 `args` 没交 `command`）；`server_from_package`（个人设置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（个人设置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
 
 **`mcp.remove`**：参数 `name`。从个人设置里删掉这个服务（连同它的子表），回应 `{}`。包里被它盖住的同名服务照包的开关起回来。**出错**：`unknown_server`；`config_file_broken`；`config_conflict`。
 

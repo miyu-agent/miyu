@@ -139,6 +139,27 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
             "环境变量",
             json!({"name": "ok", "command": "x", "env": {"A": 3}}),
         ),
+        ("命令、网址都没写", json!({"name": "ok"})),
+        (
+            "命令、网址混写",
+            json!({"name": "ok", "command": "x", "url": "https://mcp.example.com/mcp"}),
+        ),
+        (
+            "网址",
+            json!({"name": "ok", "url": "ftp://mcp.example.com"}),
+        ),
+        (
+            "网址的服务写环境变量",
+            json!({"name": "ok", "url": "https://mcp.example.com/mcp", "env": {"A": "b"}}),
+        ),
+        (
+            "留给核心的请求头",
+            json!({"name": "ok", "url": "https://mcp.example.com/mcp", "headers": {"Authorization": "x"}}),
+        ),
+        (
+            "令牌跟着命令",
+            json!({"name": "ok", "command": "x", "bearer": "t0k"}),
+        ),
     ] {
         let reply = client.call("s", "mcp.set", params).await;
         assert_eq!(reason(&reply), "mcp_invalid", "{wrong}：{reply}");
@@ -157,6 +178,15 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
         )
         .await;
     assert_eq!(reason(&unknown), "bad_params", "{unknown}");
+    // 参数接在程序后面：没有程序的写不进去（施工 X-32 下）。
+    let orphan = client
+        .call(
+            "s",
+            "mcp.set",
+            json!({"name": "ok", "url": "https://mcp.example.com/mcp", "args": ["x"]}),
+        )
+        .await;
+    assert_eq!(reason(&orphan), "bad_params", "{orphan}");
     let carried = client
         .call("s", "mcp.set", json!({"name": "carried", "command": "x"}))
         .await;

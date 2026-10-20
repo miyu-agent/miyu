@@ -25,10 +25,16 @@ use miyu_config::package::{McpServer, personal_mcp};
 pub(super) struct Entry {
     /// 服务名：表名。
     pub(super) name: String,
-    /// 命令：程序在前，参数在后。
+    /// 命令：程序在前，参数在后；没交的（网址的服务）是空的，不写。
     pub(super) command: Vec<String>,
     /// 环境变量，照交来的先后。
     pub(super) env: Vec<(String, Json)>,
+    /// 网址（施工 X-32 下）；没交的不写。
+    pub(super) url: Option<String>,
+    /// 令牌；没交的不写。
+    pub(super) bearer: Option<Json>,
+    /// 别的请求头，照交来的先后。
+    pub(super) headers: Vec<(String, Json)>,
     /// 给哪种会话；没交的不写。
     pub(super) venues: Option<Vec<String>>,
     /// 一次调用等多久；没交的不写。
@@ -50,17 +56,21 @@ pub(super) fn block(entry: &Entry) -> Option<String> {
         )
         .toml()
     };
-    let mut lines = vec![
-        format!("[{}]", join(&["mcp", entry.name.as_str()])),
-        format!("command = {}", list(&entry.command)),
-    ];
+    let mut lines = vec![format!("[{}]", join(&["mcp", entry.name.as_str()]))];
+    if !entry.command.is_empty() {
+        lines.push(format!("command = {}", list(&entry.command)));
+    }
+    if let Some(url) = &entry.url {
+        lines.push(format!("url = {}", Value::Text(url.clone().into()).toml()));
+    }
     if !entry.env.is_empty() {
-        let pairs = entry
-            .env
-            .iter()
-            .map(|(name, value)| Some(format!("{} = {}", join(&[name]), literal(value)?)))
-            .collect::<Option<Vec<_>>>()?;
-        lines.push(format!("env = {{ {} }}", pairs.join(", ")));
+        lines.push(format!("env = {}", table(&entry.env)?));
+    }
+    if let Some(bearer) = &entry.bearer {
+        lines.push(format!("bearer = {}", literal(bearer)?));
+    }
+    if !entry.headers.is_empty() {
+        lines.push(format!("headers = {}", table(&entry.headers)?));
     }
     if let Some(venues) = &entry.venues {
         lines.push(format!("venues = {}", list(venues)));
@@ -75,6 +85,15 @@ pub(super) fn block(entry: &Entry) -> Option<String> {
         lines.push(format!("clicall = {clicall}"));
     }
     Some(lines.iter().map(|line| format!("{line}\n")).collect())
+}
+
+/// 几对名字和值写成一行行内表：`{ A = "b", C = { secret = "d" } }`。值写不成的是空的。
+fn table(pairs: &[(String, Json)]) -> Option<String> {
+    let pairs = pairs
+        .iter()
+        .map(|(name, value)| Some(format!("{} = {}", join(&[name]), literal(value)?)))
+        .collect::<Option<Vec<_>>>()?;
+    Some(format!("{{ {} }}", pairs.join(", ")))
 }
 
 /// JSON 的值写成 TOML：字、数、开关照样；数组、对象写成数组、行内表。`null` 写不成。写出来对不对由读的一方查。

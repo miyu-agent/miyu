@@ -9,6 +9,9 @@ fn entry(name: &str, command: &[&str]) -> Entry {
         name: name.to_string(),
         command: command.iter().map(ToString::to_string).collect(),
         env: Vec::new(),
+        url: None,
+        bearer: None,
+        headers: Vec::new(),
         venues: None,
         timeout_ms: None,
         need_load: None,
@@ -38,6 +41,21 @@ fn a_block_is_written_in_the_settings_shape() {
     let mut null = entry("x", &["x"]);
     null.env = vec![("A".to_string(), json!(null))];
     assert!(block(&null).is_none());
+}
+
+/// 网址的服务（施工 X-32 下）：不写 `command`，`bearer`、`headers` 的值同 `env` 的写法。
+#[test]
+fn a_url_block_has_no_command() {
+    let mut remote = entry("github", &[]);
+    remote.url = Some("https://api.example.com/mcp".to_string());
+    remote.bearer = Some(json!({"secret": "github"}));
+    remote.headers = vec![("X-Team".to_string(), json!("core"))];
+    assert_eq!(
+        block(&remote).unwrap(),
+        "[mcp.github]\nurl = \"https://api.example.com/mcp\"\nbearer = { secret = \"github\" }\nheaders = { X-Team = \"core\" }\n"
+    );
+    remote.bearer = Some(json!(null));
+    assert!(block(&remote).is_none(), "写不成 TOML 的令牌");
 }
 
 #[test]

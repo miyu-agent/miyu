@@ -41,6 +41,7 @@ struct State {
     received: Mutex<Vec<Received>>,
     refuse: AtomicU16,
     expire: AtomicBool,
+    oversize: AtomicBool,
 }
 
 impl HttpServer {
@@ -59,6 +60,7 @@ impl HttpServer {
             received: Mutex::new(Vec::new()),
             refuse: AtomicU16::new(0),
             expire: AtomicBool::new(false),
+            oversize: AtomicBool::new(false),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -86,6 +88,11 @@ impl HttpServer {
     /// 下一个带会话编号的请求回 `404`（会话过期），之后照常。
     pub fn expire(&self) {
         self.state.expire.store(true, Ordering::Relaxed);
+    }
+
+    /// 下一个调工具的请求回一段比管道一行的上限还长一个字节的正文（施工 X-32 下），之后照常。握手以后的通知可能晚到，不算。
+    pub fn oversize(&self) {
+        self.state.oversize.store(true, Ordering::Relaxed);
     }
 }
 
@@ -159,6 +166,9 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
     }
     if request.header("mcp-session-id").is_some() && state.expire.swap(false, Ordering::Relaxed) {
         return (404, String::new(), String::new());
+    }
+    if request.body["method"] == "tools/call" && state.oversize.swap(false, Ordering::Relaxed) {
+        return (200, String::new(), " ".repeat(crate::wire::LINE_LIMIT + 1));
     }
     let message = &request.body;
     let Some(id) = message.get("id") else {

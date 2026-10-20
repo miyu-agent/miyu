@@ -28,14 +28,24 @@ use crate::refusal::Refusal;
 pub(crate) struct SetParams {
     /// 服务名：表名。
     name: String,
-    /// 程序。
-    command: String,
-    /// 程序后面的参数。
+    /// 程序；网址的服务不写（施工 X-32 下），两样写一样，查法照读服务表的。
+    #[serde(default)]
+    command: Option<String>,
+    /// 程序后面的参数：没有程序的不收。
     #[serde(default)]
     args: Vec<String>,
     /// 环境变量：值是字，或者 `{"secret": …}`、`{"env": …}`。
     #[serde(default)]
     env: Option<Map<String, Value>>,
+    /// 网址（施工 X-32 下）：写了的不起进程，经 Streamable HTTP 连。
+    #[serde(default)]
+    url: Option<String>,
+    /// 令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值。
+    #[serde(default)]
+    bearer: Option<Value>,
+    /// 别的请求头；值的写法同 `env` 的。
+    #[serde(default)]
+    headers: Option<Map<String, Value>>,
     /// 给哪种会话；不写的照读服务表时的默认。
     #[serde(default)]
     venues: Option<Vec<String>>,
@@ -62,7 +72,7 @@ pub(crate) struct RemoveParams {
 ///
 /// # Errors
 ///
-/// 写错了的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对）；个人设置里没写、有包带着同名服务的
+/// 写错了的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对）；交了参数、没交程序的 `bad_params`；个人设置里没写、有包带着同名服务的
 /// `server_from_package`；个人设置读不进来、`mcp` 写成了放不下的样子的 `config_file_broken`；别的同 `config.set`。
 pub(crate) fn set(
     core: &Core,
@@ -72,10 +82,18 @@ pub(crate) fn set(
 ) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let name = params.name.clone();
+    let command = match params.command {
+        Some(program) => std::iter::once(program).chain(params.args).collect(),
+        None if params.args.is_empty() => Vec::new(),
+        None => return Err(Refusal::BAD_PARAMS),
+    };
     let entry = Entry {
         name: params.name,
-        command: std::iter::once(params.command).chain(params.args).collect(),
+        command,
         env: params.env.unwrap_or_default().into_iter().collect(),
+        url: params.url,
+        bearer: params.bearer,
+        headers: params.headers.unwrap_or_default().into_iter().collect(),
         venues: params.venues,
         timeout_ms: params.timeout_ms,
         need_load: params.need_load,

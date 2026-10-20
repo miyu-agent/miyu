@@ -4,7 +4,7 @@
 //! - 客户端写出的每一行 POST 到网址，几条同时在路上的各发各的；`Accept` 两种都要，带上服务给过的 `Mcp-Session-Id`、认出来的协议
 //!   版本（`MCP-Protocol-Version`），和清单写的请求头。
 //! - 回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去；`202` 的（通知、回应）什么都不写。整段读完再写：一次
-//!   调用的回应本来就要等它说完，不另开流式读。
+//!   调用的回应本来就要等它说完，不另开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错。
 //! - 对方回错的（4xx、5xx、连不上）：有编号的请求回一条 JSON-RPC 错误，客户端照常了结这次请求；往 `log` 写一行。日志里不写网址：
 //!   有的服务把密钥放在网址的查询串里。
 //! - 会话过期（带着会话编号回 `404`）：关掉这一对读写，客户端当服务断了，看管的那一头退避着重连、从认时代重来。
@@ -19,6 +19,8 @@ use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 
 use miyu_http::Client;
+
+use crate::wire::LINE_LIMIT;
 
 /// 内存管道的缓冲：够放几条大的回应，放不下的写的一头等着读。
 const PIPE: usize = 1 << 20;
@@ -195,14 +197,9 @@ impl Remote {
             .get("content-type")
             .and_then(|value| value.to_str().ok())
             .is_some_and(|kind| kind.starts_with("text/event-stream"));
-        let body = match response.text().await {
+        let body = match body(response).await {
             Ok(body) => body,
-            Err(error) => {
-                return self.failed(
-                    id,
-                    &format!("the answer broke off: {}", error.without_url()),
-                );
-            }
+            Err(why) => return self.failed(id, &why),
         };
         if !(200..300).contains(&status) {
             return self.failed(
@@ -249,6 +246,22 @@ impl Remote {
             *self.version.lock().unwrap_or_else(PoisonError::into_inner) = Some(version);
         }
     }
+}
+
+/// 读完一段回应：读断了的、超过 [`LINE_LIMIT`] 的交回原因（再长的一条客户端也收不下，不往内存里一直读）。
+async fn body(mut response: miyu_http::Response) -> Result<String, String> {
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| format!("the answer broke off: {}", error.without_url()))?
+    {
+        if bytes.len() + chunk.len() > LINE_LIMIT {
+            return Err(format!("the answer is longer than {LINE_LIMIT} bytes"));
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 /// SSE 的正文拆成一条条消息：空行分开一个事件，一个事件里的几行 `data:` 接起来；`\r\n` 也算换行。

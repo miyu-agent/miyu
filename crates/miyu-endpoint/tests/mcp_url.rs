@@ -124,3 +124,63 @@ async fn an_expiring_session_reconnects_without_counting_failures() {
         .count();
     assert_eq!(shakes, 4, "起来一次，过期三次各重连一次");
 }
+
+/// 头经 `mcp.set` 加上网址的服务（施工 X-32 下）：写进个人设置、连上；`mcp.list` 照写的交回 `url`、`bearer`、`headers`，编辑页
+/// 照它填，再交回 `mcp.set` 一字不变。
+#[tokio::test]
+async fn a_url_server_is_set_and_listed_as_written() {
+    let server = HttpServer::start(false).await;
+    let home = Home::new();
+    home.root.prepare_home(&alice()).expect("建得了家目录");
+    let core = configured(&home, &Script::new([]));
+    let _watching = core.watch_config().expect("监视得了");
+    core.start_extensions();
+    let _following = core.follow_home_mcp();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+
+    let params = serde_json::json!({
+        "name": "remote",
+        "url": server.url,
+        "bearer": "t0k",
+        "headers": {"X-Team": "core"},
+    });
+    let set = client.call("s1", "mcp.set", params.clone()).await;
+    assert_eq!(
+        set["result"],
+        serde_json::json!({"name": "remote"}),
+        "{set}"
+    );
+    let path = home.root.path().join("home/alice/settings.toml");
+    let text = std::fs::read_to_string(&path).expect("写了个人设置");
+    let block = format!(
+        "\n[mcp.remote]\nurl = \"{}\"\nbearer = \"t0k\"\nheaders = {{ X-Team = \"core\" }}\n",
+        server.url
+    );
+    assert!(text.ends_with(&block), "接在末尾：{text}");
+    let running = until_listed(&mut client, "remote", |one| one["state"] == "running").await;
+    assert_eq!(running["url"], server.url.as_str(), "{running}");
+    assert_eq!(running["bearer"], "t0k", "{running}");
+    assert_eq!(
+        running["headers"],
+        serde_json::json!({"X-Team": "core"}),
+        "{running}"
+    );
+    assert!(
+        server
+            .received()
+            .iter()
+            .all(|request| request.header("authorization") == Some("Bearer t0k")),
+        "照写的令牌连"
+    );
+
+    // 编辑页照列出来的填，原样交回：字一个不变。
+    let again = client.call("s2", "mcp.set", params).await;
+    assert_eq!(
+        again["result"],
+        serde_json::json!({"name": "remote"}),
+        "{again}"
+    );
+    assert_eq!(std::fs::read_to_string(&path).expect("还在"), text);
+    core.stop_extensions().await;
+}

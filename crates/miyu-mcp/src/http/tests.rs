@@ -152,3 +152,28 @@ async fn an_expired_session_closes_the_connection() {
     assert!(expired.happened(), "看管的一头认得出是过期断的");
     assert!(logged(&lines, "session expired"));
 }
+
+#[tokio::test]
+async fn an_oversized_answer_fails_the_request_instead_of_filling_memory() {
+    let server = HttpServer::start(false).await;
+    let (log, lines) = log();
+    let client = connect(&server, log).await.0.expect("连得上");
+    server.oversize();
+    let called = tokio::time::timeout(
+        Duration::from_secs(30),
+        client.call("echo", json!({"text": "hi"})),
+    )
+    .await
+    .expect("马上回，不干等");
+    match called {
+        Err(Failed::Rpc { message, .. }) => {
+            assert!(message.starts_with("the answer is longer"), "{message}");
+        }
+        other => panic!("该是太长的错：{other:?}"),
+    }
+    assert!(logged(&lines, "the answer is longer"));
+    assert!(
+        client.call("echo", json!({"text": "hi"})).await.is_ok(),
+        "连接照旧能用"
+    );
+}

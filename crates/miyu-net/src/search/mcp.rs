@@ -6,7 +6,8 @@
 //! - 只要 `tools/call` 的文字：几段文字内容接起来。`isError` 的、JSON-RPC 出错的当失败，原话交给 [`Failure::from_text`] 认
 //!   是不是限额。
 //!
-//! 管道那一路的 MCP 客户端在 `miyu-mcp`（扩展、用户配的服务用它），这里只说 HTTP、只调一件工具，不另起依赖。
+//! 用户配的服务用 `miyu-mcp` 的客户端和网址转接（施工 X-32 上）；这里只调一件工具、只要文字，不改走那一条（施工 X-32 下，
+//! 2026-10-20 项目主人定，`mcp.md`「施工时定的」），也不另加功能。
 
 use std::collections::HashMap;
 use std::sync::{Mutex, PoisonError};
