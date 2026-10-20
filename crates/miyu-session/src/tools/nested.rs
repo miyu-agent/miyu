@@ -42,7 +42,7 @@ impl Nester {
     /// 能不能从脚本调：名字在名单上（或是 MCP 的），访问类别是读、联网、执行。
     fn callable(&self, name: &str) -> Option<Arc<dyn Tool>> {
         let tool = self.catalog.get(name)?;
-        let listed = OPEN.contains(&name) || name.starts_with(MCP_PREFIX);
+        let listed = open().iter().any(|open| open == name) || name.starts_with(MCP_PREFIX);
         let access = &tool.spec().access;
         let kind = matches!(access, Access::Read | Access::Network | Access::Execute);
         (listed && kind).then_some(tool)
@@ -51,7 +51,16 @@ impl Nester {
 
 /// 能调的名单，写进报错里。
 fn listed() -> String {
-    format!("{}, mcp__*", OPEN.join(", "))
+    format!("{}, mcp__*", open().join(", "))
+}
+
+/// 出厂的名单，加上实测时 `MIYU_PROTO_OPEN_EXTRA`（逗号分开）多开的几件。
+fn open() -> Vec<String> {
+    let extra = std::env::var("MIYU_PROTO_OPEN_EXTRA").unwrap_or_default();
+    OPEN.iter()
+        .map(|name| (*name).to_string())
+        .chain(extra.split(',').map(str::trim).filter(|name| !name.is_empty()).map(str::to_string))
+        .collect()
 }
 
 impl NestedPort for Nester {
