@@ -19,7 +19,7 @@ fn defaults_fill_the_numbers() {
     );
     assert_eq!(
         (args.reloads, args.appends, args.reply_bytes),
-        (5, 2000, 3500)
+        (20, 2000, 3500)
     );
     assert_eq!(args.idle_wait, Duration::from_secs(200));
 }
