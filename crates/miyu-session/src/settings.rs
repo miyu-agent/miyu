@@ -26,6 +26,23 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
+    /// 沙盒的配置（施工 5-16 下，`designs/11-权限与沙盒.md` 第四节「设置页「隐私与安全」」）：回合开始照这一轮的配置读，下一轮生效。
+    pub struct SandboxSettings in "sandbox" {
+        /// 沙盒强度：`auto` 有能用的 bubblewrap 就用它（能写的范围里的私密目录也藏），`weak` 只用 Landlock。只在 Linux 上起作用：
+        /// 三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标成不画。
+        strength: String = "auto" {
+            kind: option ["auto", "weak"],
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "privacy", group: "sandbox", control: select },
+        },
+    }
+}
+
+/// 沙盒强度设成只用 Landlock 的那一档（施工 5-16 下）。
+pub const WEAK: &str = "weak";
+
+miyu_config::settings! {
     /// 后台命令的配置（施工 7-12 下）：派活时照这一轮的配置读，下一轮生效。
     pub struct JobSettings in "jobs" {
         /// 后台命令最多跑多久，到了整组停掉（照 Claude Code：默认 30 分钟，最多 2 小时）。

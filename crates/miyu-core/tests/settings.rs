@@ -80,6 +80,7 @@ fn the_registered_list_is_well_formed() {
             "permission.level",
             "sandbox.private.add",
             "sandbox.private.remove",
+            "sandbox.strength",
             "external.bindings.<external>",
             "models.chat",
             "models.vision",

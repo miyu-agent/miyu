@@ -202,7 +202,7 @@ fn schema_item(
     if let Some(said) = said.filter(|said| !said.suggestions.is_empty()) {
         map.insert("suggestions".to_string(), json!(said.suggestions));
     }
-    if item.ui.hidden {
+    if item.ui.hidden || super::private::hidden_here(item.key) {
         map.insert("hidden".to_string(), json!(true));
     }
     Value::Object(map)

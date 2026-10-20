@@ -255,6 +255,7 @@ miyu_config::settings! {
 | `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2 |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
+| `sandbox.strength` | 选项 `auto`、`weak` | `auto` | 系统、个人 | 不能写 | `next_turn` | 5-16 下：沙盒强度。`auto` 有能用的 bubblewrap 就用它，`weak` 只用 Landlock（有挂载也不用）。回合开始照这一轮的配置读。只在 Linux 上起作用：三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标 `hidden`。「隐私与安全」那一页的「沙盒」一组，下拉 |
 | `external.bindings.<external>` | 名字（本机账号） | 没有 | 系统 | 不能写 | `now` | O-3：终端管理员的平台账号（`venues.md`），一个号一行；对着不存在的账号的认的时候当没写、记一行运行日志。头在平台接入那个软件的信息页上画成「终端管理员的 QQ 号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统、个人 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
 | `ui.head` | 名字（软件包的编号） | `tui` | 系统、个人 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
@@ -1288,6 +1289,11 @@ default = "full"
 # 能写：0 到 1000000 之间的数。只能写在系统配置或个人设置里。下一轮生效。
 # output =
 
+[sandbox]
+# 沙盒强度：自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。
+# 能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。
+strength = "auto"
+
 [sandbox.private]
 # 加的私密目录：命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
@@ -2155,6 +2161,16 @@ currency = "USD"
             }
           },
           "type": "object"
+        },
+        "strength": {
+          "default": "auto",
+          "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
+          "enum": [
+            "auto",
+            "weak"
+          ],
+          "title": "沙盒强度",
+          "type": "string"
         }
       },
       "type": "object"
@@ -2310,6 +2326,8 @@ currency = "USD"
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下） | 去掉的出厂私密目录 | Removed built-in private folders | 外した組み込みの非公開フォルダ |
+| `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
+| 选项 | `auto` 自动、`weak` 弱沙盒 | Automatic、Weak | 自動、弱い |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |
 | 说明（8-28 改成不点名哪个头） | 打开终端界面或网页时，开一个新会话，还是接着最近的那一个。 | Whether a terminal interface or the web page opens a new session or picks up the most recent one. | 端末画面やウェブを開いたときに、新しいセッションを始めるか、最近のセッションを続けるかです。 |
 | 选项 | `new` 新会话、`recent` 最近的会话 | A new session、The most recent session | 新しいセッション、最近のセッション |

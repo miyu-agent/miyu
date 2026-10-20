@@ -107,6 +107,14 @@
           "off": "停用"
         }
       },
+      "sandbox.strength": {
+        "name": "沙盒强度",
+        "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。",
+        "options": {
+          "auto": "自动",
+          "weak": "弱沙盒"
+        }
+      },
       "sandbox.private.add": {
         "name": "加的私密目录",
         "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。"
@@ -361,6 +369,7 @@
       "models": "模型"
     },
     "groups": {
+      "sandbox": "沙盒",
       "permission": "权限",
       "private": "私密目录",
       "commands": "命令",

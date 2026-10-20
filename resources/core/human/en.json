@@ -107,6 +107,14 @@
           "off": "Off"
         }
       },
+      "sandbox.strength": {
+        "name": "Sandbox strength",
+        "description": "Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only.",
+        "options": {
+          "auto": "Automatic",
+          "weak": "Weak"
+        }
+      },
       "sandbox.private.add": {
         "name": "Added private folders",
         "description": "Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted."
@@ -361,6 +369,7 @@
       "models": "Models"
     },
     "groups": {
+      "sandbox": "Sandbox",
       "permission": "Permissions",
       "private": "Private folders",
       "commands": "Commands",

@@ -40,6 +40,11 @@ pub(super) fn problem(key: &str, value: &Value, home: Option<&Path>) -> Option<(
     })
 }
 
+/// `config.schema` 里这一项在这个系统上不画（施工 5-16 下）：沙盒强度只在 Linux 上起作用。
+pub(super) fn hidden_here(key: &str) -> bool {
+    key == "sandbox.strength" && !cfg!(target_os = "linux")
+}
+
 /// `config.schema` 里这一项的选项：去掉的出厂项交这台机器的出厂清单，别的没有。
 pub(super) fn options(key: &str) -> Option<&'static [&'static str]> {
     (key == miyu_tool::private::REMOVE).then_some(miyu_fs::SHIPPED_PRIVATE)

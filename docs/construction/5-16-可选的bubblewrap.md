@@ -1,6 +1,6 @@
 ## 施工单 5-16：系统里有 bubblewrap 就用它
 
-状态：上已合（2026-10-20，4c9636f2）；下待开工。2026-10-20 开工时拆成两半：上是探测、挂载、执行器；下是沙盒强度设置、起不来发系统通知、当场重探。2026-10-20 项目主人定（有就用、不自带，沙盒强度自动、弱沙盒两档）；图纸 `docs/designs/11-权限与沙盒.md` 第四节「有 bubblewrap 就用它」「设置页「隐私与安全」」、A7 的 2026-10-20 补。
+状态：上已合（2026-10-20，4c9636f2）；下拆成两半（2026-10-21 主会话定）：下上半（沙盒强度）做完，施工分支 `step/5-16下-沙盒强度`；下下半（起不来当场重探、改用 Landlock、发系统通知）待开工：要动命令跑完看退出码的几处（`shell/` 下前台、后台、脚本、通道），通道、进程那几个文件 M-3 下正在改，等它合了再和 shorin-dd 对边界；系统通知是协议上新的推送，形状那时定。2026-10-20 开工时拆成两半：上是探测、挂载、执行器；下是沙盒强度设置、起不来发系统通知、当场重探。2026-10-20 项目主人定（有就用、不自带，沙盒强度自动、弱沙盒两档）；图纸 `docs/designs/11-权限与沙盒.md` 第四节「有 bubblewrap 就用它」「设置页「隐私与安全」」、A7 的 2026-10-20 补。
 
 ### 做什么
 
@@ -31,3 +31,14 @@
 - `linux/bwrap/tests.rs`：挂载的先后、文件拿 `/dev/null` 盖、不在的跳过、里面的规格只留 `write`。
 - `crates/miyu-session/src/sandbox/tests.rs`：能写的里面的私密目录只在有挂载时藏。
 - `cargo xtask check` 八项。
+
+### 下上半：做了什么（2026-10-21）
+
+1. 配置项 `sandbox.strength`（`miyu-session` 的 `SandboxSettings`）：`auto`（默认）、`weak`，系统、个人两层，下一轮生效，「隐私与安全」页的「沙盒」组，下拉。
+2. 三个系统都登记：只在 Linux 上登记的话生成的 Schema、参考文件照系统不同（5-15 下撞过一回）。别的系统上 `config.schema` 照这台机器标 `hidden`（端点 `config/private.rs` 的 `hidden_here`）。
+3. 回合开始照这一轮的配置换（`Tools::set_weak` → `Sandbox::set_weak`）：`weak` 的写规格时不写 `mount`（`Sandbox::mount`），能写范围里的私密目录照 5-13 不藏。
+
+### 下上半：验收
+
+- `miyu-session` 的 `sandbox/tests.rs` 的 `weak_strength_turns_mounts_off`、`a_weak_turn_writes_no_mount_into_the_spec`（机器能用挂载时弱沙盒的规格不写 `mount`）；变异 3 个全抓住；端点 `config/private/tests.rs` 的 `the_strength_is_drawn_only_on_linux`。
+- 配置清单、三份字表、生成的样本跟着改。`cargo xtask check` 八项；先推 step 分支过三台。

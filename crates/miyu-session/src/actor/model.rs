@@ -149,6 +149,9 @@ impl Actor {
             self.guard.set_private(private.clone());
             self.tools.set_private(private);
         }
+        // 沙盒强度照这一轮的配置（施工 5-16 下）。
+        let strength = crate::settings::SandboxSettings::from(&values).strength;
+        self.tools.set_weak(strength == crate::settings::WEAK);
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values.clone()).await;
         let skills = self.skills_turn(&present, &values).await;

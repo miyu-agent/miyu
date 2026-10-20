@@ -901,6 +901,16 @@
           },
           "type": "object"
         },
+        "strength": {
+          "default": "auto",
+          "description": "Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only. Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.",
+          "enum": [
+            "auto",
+            "weak"
+          ],
+          "title": "Sandbox strength",
+          "type": "string"
+        },
         "tools": {
           "additionalProperties": {
             "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only. Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.",

@@ -40,6 +40,13 @@ impl Tools {
         }
     }
 
+    /// 换上这一轮的沙盒强度（施工 5-16 下）。
+    pub(crate) fn set_weak(&mut self, weak: bool) {
+        if let Some(sandbox) = self.sandbox.as_mut() {
+            sandbox.set_weak(weak);
+        }
+    }
+
     /// 换上这一轮管理员放行出沙盒的（施工 X-36）：之后派的调用照新的写不写沙盒的规格。
     pub(crate) fn set_unsandboxed(&mut self, unsandboxed: crate::unsandboxed::Unsandboxed) {
         self.unsandboxed = unsandboxed;

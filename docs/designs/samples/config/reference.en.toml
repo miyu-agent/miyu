@@ -313,6 +313,11 @@ default = "full"
 # Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
 # output =
 
+[sandbox]
+# Sandbox strength: Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only.
+# Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.
+strength = "auto"
+
 [sandbox.private]
 # Added private folders: Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted.
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.

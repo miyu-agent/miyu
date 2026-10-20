@@ -59,6 +59,12 @@ fn home_and_above_are_refused_by_name() {
 }
 
 #[test]
+fn the_strength_is_drawn_only_on_linux() {
+    assert_eq!(hidden_here("sandbox.strength"), !cfg!(target_os = "linux"));
+    assert!(!hidden_here("sandbox.private.add"));
+}
+
+#[test]
 fn only_shipped_dirs_can_be_removed() {
     let remove = miyu_tool::private::REMOVE;
     let shipped = miyu_fs::SHIPPED_PRIVATE[0];

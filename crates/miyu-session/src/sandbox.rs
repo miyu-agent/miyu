@@ -37,6 +37,8 @@ pub(crate) struct Sandbox {
     workplace: Option<DefaultWorkspace>,
     /// 这一轮的私密目录（施工 5-15 下）：回合开始照配置换；还没换过的照出厂的。
     private: Option<Vec<PathBuf>>,
+    /// 这一轮的沙盒强度是只用 Landlock（施工 5-16 下）：有挂载也不用。
+    weak: bool,
 }
 
 impl Sandbox {
@@ -58,6 +60,7 @@ impl Sandbox {
             attachments: None,
             workplace: None,
             private: None,
+            weak: false,
         }
     }
 
@@ -90,6 +93,16 @@ impl Sandbox {
     /// 换上这一轮的私密目录（施工 5-15 下）：回合开始照配置换。
     pub(crate) fn set_private(&mut self, private: Vec<PathBuf>) {
         self.private = Some(private);
+    }
+
+    /// 换上这一轮的沙盒强度（施工 5-16 下）：`weak` 的只用 Landlock。
+    pub(crate) fn set_weak(&mut self, weak: bool) {
+        self.weak = weak;
+    }
+
+    /// 这一次用不用挂载（施工 5-16 下）：这台机器能用（`available`，核心探的），这一轮又没设成只用 Landlock。
+    fn mount(&self, available: bool) -> bool {
+        available && !self.weak
     }
 
     /// 照实际生效的那一级 `permission`、这一轮的工作目录 `cwd` 和加进来的目录 `dirs`（施工 5-10 上）写一次调用的沙盒：
@@ -147,8 +160,8 @@ impl Sandbox {
         } else {
             Vec::new()
         };
-        // 有能用的挂载（施工 5-16）：能写的里面的私密目录也藏，助手用挂载盖住；没有的照旧不藏（Landlock 挖不掉，施工 5-13）。
-        let mount = miyu_sandbox::mounts();
+        // 有能用的挂载、这一轮没设成只用 Landlock（施工 5-16、5-16 下）：能写的里面的私密目录也藏，助手用挂载盖住；没有的照旧不藏（Landlock 挖不掉，施工 5-13）。
+        let mount = self.mount(miyu_sandbox::mounts());
         let hidden = self.hidden(data_root, &write, mount);
         Ok(Some(Sandboxed {
             helper: self.helper.clone(),

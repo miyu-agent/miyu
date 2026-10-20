@@ -812,6 +812,16 @@
             }
           },
           "type": "object"
+        },
+        "strength": {
+          "default": "auto",
+          "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
+          "enum": [
+            "auto",
+            "weak"
+          ],
+          "title": "沙盒强度",
+          "type": "string"
         }
       },
       "type": "object"

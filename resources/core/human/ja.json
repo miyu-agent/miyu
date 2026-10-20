@@ -107,6 +107,14 @@
           "off": "無効"
         }
       },
+      "sandbox.strength": {
+        "name": "サンドボックスの強さ",
+        "description": "自動では bubblewrap があれば使い、書き込める場所の中の非公開フォルダも隠します。弱いでは Landlock だけを使います。Linux のみです。",
+        "options": {
+          "auto": "自動",
+          "weak": "弱い"
+        }
+      },
       "sandbox.private.add": {
         "name": "追加した非公開フォルダ",
         "description": "コマンドが読み書きできず、ファイルツールが先に確認するフォルダです。組み込みのものに加わります。~/… か絶対パスで書きます。ホームフォルダとその上位は受け付けません。"
@@ -361,6 +369,7 @@
       "models": "モデル"
     },
     "groups": {
+      "sandbox": "サンドボックス",
       "permission": "権限",
       "private": "非公開フォルダ",
       "commands": "コマンド",

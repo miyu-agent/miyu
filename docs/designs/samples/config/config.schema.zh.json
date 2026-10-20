@@ -901,6 +901,16 @@
           },
           "type": "object"
         },
+        "strength": {
+          "default": "auto",
+          "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
+          "enum": [
+            "auto",
+            "weak"
+          ],
+          "title": "沙盒强度",
+          "type": "string"
+        },
         "tools": {
           "additionalProperties": {
             "description": "管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 basesystem；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。",

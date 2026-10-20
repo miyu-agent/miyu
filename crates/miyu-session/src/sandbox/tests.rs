@@ -82,3 +82,54 @@ fn the_turn_private_dirs_are_what_gets_hidden() {
     );
     std::fs::remove_dir_all(&scratch).expect("删得掉");
 }
+
+/// 沙盒强度（施工 5-16 下）：只用 Landlock 的那一档有挂载也不用；没设的照这台机器能不能用。
+#[test]
+fn weak_strength_turns_mounts_off() {
+    let mut sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        None,
+        PathBuf::from("data"),
+        (None, false),
+    );
+    assert!(sandbox.mount(true));
+    assert!(!sandbox.mount(false));
+    sandbox.set_weak(true);
+    assert!(!sandbox.mount(true), "弱沙盒不用挂载");
+}
+
+/// 写规格时照这一轮的强度（施工 5-16 下）：机器能用挂载，弱沙盒的规格也不写 `mount`。这个进程里的开关临时设上，测完放回去：
+/// 这个包的别的测试不看规格的 `mount`。
+#[test]
+fn a_weak_turn_writes_no_mount_into_the_spec() {
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-weak-{}", std::process::id()));
+    let home = scratch.join("home");
+    std::fs::create_dir_all(home.join(".miyu")).expect("建得了目录");
+    let mut sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        Some(home.clone()),
+        home.join(".miyu"),
+        (None, false),
+    );
+    let workspace = Permission {
+        level: Level::Workspace,
+        read_only: false,
+    };
+    let cwd = scratch.to_string_lossy().into_owned();
+    miyu_sandbox::set_mounts(true);
+    let spec = |sandbox: &Sandbox| {
+        sandbox
+            .for_call(&workspace, &cwd, &[], &[])
+            .expect("写得成")
+            .expect("进沙盒")
+            .spec
+            .mount
+    };
+    let strong = spec(&sandbox);
+    sandbox.set_weak(true);
+    let weak = spec(&sandbox);
+    miyu_sandbox::set_mounts(false);
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+    assert!(strong, "能用挂载、没设弱的写 mount");
+    assert!(!weak, "弱沙盒不写");
+}

@@ -812,6 +812,16 @@
             }
           },
           "type": "object"
+        },
+        "strength": {
+          "default": "auto",
+          "description": "Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only. Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.",
+          "enum": [
+            "auto",
+            "weak"
+          ],
+          "title": "Sandbox strength",
+          "type": "string"
         }
       },
       "type": "object"
