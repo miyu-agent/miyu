@@ -152,6 +152,10 @@ impl Actor {
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values.clone()).await;
         let skills = self.skills_turn(&present, &values).await;
+        // 管理员放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
+        let unsandboxed = crate::unsandboxed::Unsandboxed::of(&values);
+        self.guard.set_unsandboxed(unsandboxed.clone());
+        self.tools.set_unsandboxed(unsandboxed);
         let config = Arc::clone(self.config.current());
         let knowledge = self.recalling();
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。

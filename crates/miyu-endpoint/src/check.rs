@@ -30,6 +30,7 @@ mod embedding;
 mod mcp;
 mod run;
 mod skipped;
+mod unsandboxed;
 use crate::config::methods::{check_text, said_at, words};
 use crate::hello::Peer;
 use crate::personas::personas;
@@ -91,6 +92,8 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             problems.extend(run::packages(core, &words).await);
             // 跳过的脚本、技能（施工 X-12 下）。
             problems.extend(skipped::skipped(core, &words).await);
+            // 管理员放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
+            problems.extend(unsandboxed::unsandboxed(core, &words));
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。
             for (path, drift) in crate::packages::verify::drifted(core).await {
                 let file = shown(core, &path);

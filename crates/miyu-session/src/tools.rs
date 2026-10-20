@@ -101,6 +101,8 @@ pub(crate) struct Tools {
     running: BTreeMap<CallId, Running>,
     /// 脚本里调的（施工 M-2，`nested.rs`）。
     nested: nested::Nesting,
+    /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
+    unsandboxed: crate::unsandboxed::Unsandboxed,
     backs: mpsc::UnboundedSender<Back>,
 }
 
@@ -256,6 +258,7 @@ impl Tools {
             hooks: kit.hooks,
             running: BTreeMap::new(),
             nested: nested::Nesting::default(),
+            unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             backs,
         }
     }
@@ -387,11 +390,12 @@ impl Tools {
             Progress::new(move |text| send(&backs, ToolBack::Progress { call_id, text }))
         };
         let span = tracing::Span::current();
-        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。
+        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。管理员
+        // 放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
         let sandbox = self
             .sandbox
             .clone()
-            .filter(|_| !tool.outside_sandbox(&call));
+            .filter(|_| self.sandboxed(&name, &tool, &call));
         let inner = tokio::spawn(
             async move {
                 let call = confine(call, sandbox, (permission, dirs, grants), call_id).await?;

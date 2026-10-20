@@ -64,6 +64,7 @@ pub mod switches;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 mod tools;
+pub mod unsandboxed;
 mod usage;
 
 pub use agents::job_in;

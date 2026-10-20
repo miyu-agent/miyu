@@ -231,7 +231,7 @@ impl Tools {
         let sandbox = self
             .sandbox
             .clone()
-            .filter(|_| !tool.outside_sandbox(&call));
+            .filter(|_| self.sandboxed(&name, &tool, &call));
         let inner = tokio::spawn(
             async move {
                 let call = confine(call, sandbox, (permission, dirs, Vec::new()), origin).await?;

@@ -71,6 +71,7 @@ fn the_registered_list_is_well_formed() {
             "clicall.tools.<name>",
             "clicall.mcp.<id>",
             "features.<name>",
+            "sandbox.tools.<name>",
             "commands.<id>.access",
             "profile.preferred_reply_language",
             "profile.name",

@@ -126,6 +126,7 @@ mod tools;
 mod turn_config;
 mod undo_compaction;
 mod undo_files;
+mod unsandboxed;
 mod watch;
 mod watched;
 mod workplace;

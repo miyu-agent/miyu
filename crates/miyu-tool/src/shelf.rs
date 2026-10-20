@@ -59,6 +59,17 @@ impl Shelf {
             .cloned()
     }
 
+    /// 现在的目录里叫 `name` 的那一件归哪个包（[`Catalog::package_of`]）：管理员放行出沙盒的照它认来处（施工 X-36）。
+    #[must_use]
+    pub fn package_of(&self, name: &str) -> Option<String> {
+        self.inner
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .catalog
+            .package_of(name)
+            .map(str::to_string)
+    }
+
     /// 叫 `name` 的那一件是随包卸掉的（施工 F-5 中，[`Catalog::gone`]）。
     #[must_use]
     pub fn gone(&self, name: &str) -> bool {

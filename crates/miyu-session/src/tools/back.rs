@@ -40,6 +40,21 @@ impl Tools {
         }
     }
 
+    /// 换上这一轮管理员放行出沙盒的（施工 X-36）：之后派的调用照新的写不写沙盒的规格。
+    pub(crate) fn set_unsandboxed(&mut self, unsandboxed: crate::unsandboxed::Unsandboxed) {
+        self.unsandboxed = unsandboxed;
+    }
+
+    /// 这一次要不要套沙盒：工具报要在沙盒外跑的（施工 D-4）、管理员放行了的（施工 X-36）不套。
+    pub(crate) fn sandboxed(
+        &self,
+        name: &str,
+        tool: &Arc<dyn miyu_tool::Tool>,
+        call: &miyu_tool::Call,
+    ) -> bool {
+        !tool.outside_sandbox(call) && !self.unsandboxed.granted(name, &self.catalog)
+    }
+
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。
     pub(crate) fn back(&mut self, at: Timestamp, back: ToolBack) -> Option<Input> {
         match back {

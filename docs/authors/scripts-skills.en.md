@@ -88,6 +88,20 @@ print("Grabbed 1 frame.")
 - Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which file and why.
 - A call stopped at its timeout hands over no images; a non-zero exit code still does.
 
+**Scripts that must run outside the sandbox**
+
+Scripts that touch hardware or need root (`sudo`) don't work in the sandbox. A script can't ask for this itself, whatever its header says: the admin grants it in the system config `system/config.toml`, and the value is where the tool comes from.
+
+```toml
+[sandbox.tools]
+ceiling-light = "~home"   # a script you put in scripts/
+lights = "smart-home"     # from a package: the package's id
+```
+
+- A granted tool runs outside the sandbox without asking in the admin's own sessions (terminal, web, the owner's QQ private chat, desktop voice). Group chats and strangers' private chats still refuse it, and so does read-only; dangerous commands still ask.
+- A grant whose source doesn't match doesn't count: delete the script, or let another package bring a tool with the same name, and the grant lapses. `miyu check` lists every grant and prints the current source for those that don't match.
+- A granted tool has all of your own permissions: only grant scripts whose code you have read and whose arguments are safe.
+
 ## Skills
 
 The public Agent Skills format (Claude Code, Codex and others read it too), so existing skills from the web just work. `skills/<name>/SKILL.md`:

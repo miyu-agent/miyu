@@ -900,6 +900,16 @@
             }
           },
           "type": "object"
+        },
+        "tools": {
+          "additionalProperties": {
+            "description": "管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 basesystem；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "不套沙盒：这件工具",
+            "type": "string"
+          },
+          "type": "object"
         }
       },
       "type": "object"

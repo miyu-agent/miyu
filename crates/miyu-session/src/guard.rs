@@ -12,6 +12,9 @@
 //! 执行器照同一个报不写沙盒的规格。问人时的说明并进工具交的几格（`Tool::asking`），执行类的写明 `sandbox: false`。
 //!
 //! 施工 O-31 前：在场所里做的事（访问类别 `venue`）只看会话在不在场所里（[`Place`]）：在的放行、不问，不在的拒绝。
+//!
+//! 施工 X-36：管理员在系统配置里放行了的工具（[`Unsandboxed`]，`11-权限与沙盒.md` A15），只碰得到自己工作区的会话照拒，只读
+//! 拒，别的放行、不问；高危的照问。执行器照同一份放行表不写沙盒的规格。
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -30,10 +33,12 @@ use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
 use crate::default_workspace::DefaultWorkspace;
 use crate::lettering::Lettering;
+use crate::unsandboxed::Unsandboxed;
 
 mod asking;
 mod confined;
 mod levels;
+mod unsandboxed;
 
 pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
@@ -70,6 +75,8 @@ pub(crate) struct Guard {
     workplace: Option<DefaultWorkspace>,
     /// 别的程序的私密目录（施工 5-15 下）：造的时候是出厂的，回合开始照这一轮的配置换（人加的、去掉的），同技能文件夹上锁。
     private: RwLock<Vec<PathBuf>>,
+    /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
+    unsandboxed: RwLock<Unsandboxed>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -119,6 +126,7 @@ impl Guard {
             shelves: RwLock::default(),
             attachments: None,
             workplace: None,
+            unsandboxed: RwLock::default(),
         }
     }
 
@@ -228,9 +236,11 @@ impl Guard {
             return untargeted(level, name, Access::Outbound, self.sandboxed, &asking);
         }
         let verdict = self.paths(tool.as_ref(), name, level, &call, dirs, grants, &asking);
-        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）。
+        // 管理员放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
+        let granted = self.admin_granted(name);
+        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）。
         if let Some(confined) = &self.confined
-            && tool.outside_sandbox(&call)
+            && (tool.outside_sandbox(&call) || granted)
         {
             return deny(confined.no_commands());
         }
@@ -240,6 +250,14 @@ impl Guard {
             && let Some(hazard) = tool.hazard(&call)
         {
             return hazardous(verdict, (name, access), hazard, &asking);
+        }
+        // 管理员放行了的：只读拒，别的不问；报的路径判了拒绝的照拒（施工 X-36）。
+        if granted {
+            return match (verdict, level) {
+                (denied @ Verdict::Deny { .. }, _) => denied,
+                (_, Effective::ReadOnly) => deny(self.lettering.guard().read_only()),
+                _ => Verdict::Allow,
+            };
         }
         if tool.outside_sandbox(&call) || access == Access::Install {
             // 命令越过沙盒问人时另提「此目录不再询问」：放行工作目录的写（施工 5-15）。

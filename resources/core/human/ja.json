@@ -143,6 +143,10 @@
         "name": "この MCP サーバーのツールをスクリプトから呼び出せる",
         "description": "オンにすると、このサーバーのツールはすべて miyu call で呼び出せます。オフにすると直接呼び出すときだけ使えます。個別に設定したツールはその設定に従います。"
       },
+      "sandbox.tools.<name>": {
+        "name": "サンドボックスなし：このツール",
+        "description": "管理者がこのツールをサンドボックスの外で実行することを許可します（ハードウェアに触れる、root が必要なスクリプトなど）。値はツールの出どころです。自分で置いたスクリプトは ~home、インストールしたパッケージはその ID、組み込みの shell は basesystem。一致しなければ許可されません。許可したツールは管理者自身のセッションでは確認なしにサンドボックスの外で実行されます。グループチャットや知らない人の個別チャットでは引き続き拒否され、読み取り専用のときも拒否されます。"
+      },
       "features.<name>": {
         "name": "このスキル、スクリプト、MCP サーバーを使う",
         "description": "書かれていない機能をオンにするプリセットは、このスイッチに従ってスキル、スクリプト、MCP サーバーをオン・オフします。プリセットで個別にオン・オフを書いたものはプリセットに従います。書かれていない機能をオフにするプリセットはこのスイッチに従いません。"
@@ -369,6 +373,7 @@
       "sessions": "セッション",
       "loading": "ツールの読み込み",
       "clicall": "スクリプトからのツール呼び出し",
+      "sandbox": "サンドボックス",
       "features": "機能のオン・オフ",
       "terminal": "ターミナルセッション",
       "profile": "あなたについて",
@@ -614,6 +619,9 @@
     "package-problems/files_missing": "インストール時にあったファイルが {detail} 個ありません",
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
     "package-problems/script_clashed": "スクリプト {detail} は他のツールと同じ名前なので登録されませんでした",
+    "package-problems/sandbox_tool_missing": "sandbox.tools.{name} が許可したツールは今ありません。許可されません",
+    "package-problems/sandbox_tool_moved": "sandbox.tools.{name} の出どころは {wrote} ですが、今のツールは {now} から来ています。許可されません。正しければ {now} に書き換えてください",
+    "package-problems/sandbox_shell": "sandbox.tools.shell が shell を許可しています：AI が実行するすべてのコマンドが確認なしにサンドボックスの外で動きます",
     "package-problems/skill_skipped": "このスキルはスキップされました：{detail}",
     "package-problems/script_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/mcp_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",

@@ -205,3 +205,21 @@ pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {
         hidden: false,
     },
 }];
+
+/// 家底刚造出来、还没换上全部的清单时认的几项（[`crate::Core::new`]）：界面、人格、预设、权限、终端、工具加载和脚本里能不能调、
+/// 功能开关、管理员放行出沙盒的（施工 X-36）、档案、外部身份。
+pub(crate) fn core_items() -> Vec<miyu_config::Item> {
+    [
+        UiSettings::ITEMS,
+        PersonaSettings::ITEMS,
+        PresetSettings::ITEMS,
+        PermissionSettings::ITEMS,
+        TerminalSettings::ITEMS,
+        miyu_session::loading::ITEMS,
+        miyu_session::switches::ITEMS,
+        miyu_session::unsandboxed::ITEMS,
+        miyu_session::settings::ProfileSettings::ITEMS,
+        EXTERNAL_BINDINGS,
+    ]
+    .concat()
+}

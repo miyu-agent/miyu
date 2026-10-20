@@ -249,19 +249,7 @@ impl Core {
         admin: AccountId,
         token: String,
     ) -> Core {
-        let items = [
-            settings::UiSettings::ITEMS,
-            settings::PersonaSettings::ITEMS,
-            settings::PresetSettings::ITEMS,
-            settings::PermissionSettings::ITEMS,
-            settings::TerminalSettings::ITEMS,
-            miyu_session::loading::ITEMS,
-            miyu_session::switches::ITEMS,
-            miyu_session::settings::ProfileSettings::ITEMS,
-            settings::EXTERNAL_BINDINGS,
-        ]
-        .concat();
-        let mut config = Config::defaults(&root, &admin, items);
+        let mut config = Config::defaults(&root, &admin, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
         let index = Arc::new(list::open_index(&root, &admin));
