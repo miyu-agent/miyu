@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot};
 
 use miyu_kernel::event::SessionCreated;
-use miyu_kernel::id::{AccountId, SessionId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_kernel::session::{Input, Session};
 use miyu_models::provider::chat;
 use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
@@ -15,7 +15,7 @@ use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog, abandon};
 use miyu_store::recall::NO_PERSONA;
 use miyu_store::resources::{ResourceRoot, SourceError};
-use miyu_store::usage::{UsageIndex, Who};
+use miyu_store::usage::Who;
 use miyu_tool::{Log, Seen};
 
 use crate::TARGET;
@@ -25,6 +25,7 @@ use crate::agents::{Agents, Holds, Offers, Reach, Site, job_in, persona_choices}
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
+use crate::default_workspace::DefaultWorkspace;
 use crate::guard::{Confined, Guard, Place};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
@@ -36,6 +37,7 @@ use crate::port::ForSession;
 use crate::report::{Reporter, Upstream};
 use crate::skills;
 use crate::snapshot::{Parts, build, tooled};
+use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
 use crate::usage::Ledger;
@@ -292,6 +294,9 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         Some(&command),
         &id,
     );
+    // 默认工作区用哪个会话的（施工 5-14）：子会话照父会话的，主会话用自己的。
+    let workspace_from = lineage.as_ref().map(Lineage::workspace_of);
+    let workplace = DefaultWorkspace::new(root, &owner, workspace_from.as_ref().unwrap_or(&id));
     let agents = sessions.map(|port| {
         Arc::new(Agents {
             port,
@@ -301,6 +306,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             venue: venue.clone(),
             depth: Agents::depth_of(lineage.as_ref()),
             parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
+            workspace_from: workspace_from.clone(),
             attended,
             reports: policy.reports.clone(),
             pools,
@@ -315,6 +321,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         cwd: Some(environment.cwd.clone()),
         parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
         depth: lineage.as_ref().map(|lineage| lineage.depth),
+        workspace_from,
         model: reference,
         preset,
         images,
@@ -357,13 +364,14 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .with_attachments(miyu_store::attachments::dir(root, &owner, &id));
+    .with_attachments(miyu_store::attachments::dir(root, &owner, &id))
+    .with_workplace(workplace.clone());
     let who = Who {
         owner: owner.clone(),
         venue: venue.clone(),
         parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
     };
-    let ledger = ledger_of(usage.as_ref(), &id, &owner);
+    let ledger = Ledger::of(usage.as_ref(), &id, &owner);
     let mut actor = Actor::new(
         session,
         Box::new(Indexed::new(
@@ -397,6 +405,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             attachments: miyu_store::attachments::dir(root, &owner, &id),
+            workplace: Some(workplace),
             names: skill_names,
             packages,
             hooks,
@@ -459,15 +468,6 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             Err(CreateError::Stopped)
         }
     }
-}
-
-/// 用量汇总里的这个会话（施工 8-15）：`session_usage` 的端口照它造。没开汇总的没有。
-fn ledger_of(usage: Option<&Arc<UsageIndex>>, id: &SessionId, owner: &AccountId) -> Option<Ledger> {
-    usage.map(|index| Ledger {
-        index: Arc::clone(index),
-        session: id.clone(),
-        owner: owner.clone(),
-    })
 }
 
 #[cfg(test)]

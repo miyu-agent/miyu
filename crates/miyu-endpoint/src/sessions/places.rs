@@ -1,9 +1,11 @@
-//! 会话在哪干活（从 `sessions.rs` 挪出来，那边放不下了）：头报上来的工作目录太宽时退回属主的工作区，加进来的目录太宽的整条
-//! 命令都不收（`11-权限与沙盒.md` 第四节，施工 4-3 下、5-10 上）。
+//! 会话在哪干活（从 `sessions.rs` 挪出来，那边放不下了）：工作目录照人走，太宽的标上（能写的工作区由会话退回它的默认工作区，
+//! 施工 5-14），加进来的目录太宽的整条命令都不收（`11-权限与沙盒.md` 第四节，施工 4-3 下、5-10 上）。
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
+use miyu_kernel::id::{AccountId, SessionId};
+
+use super::Opening;
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -37,43 +39,25 @@ fn dir_too_wide(core: &Core, dir: &str) -> bool {
         || miyu_fs::too_wide(&real, home.as_deref(), &data_root, &data_root)
 }
 
-/// 挑好的工作区：实际用的目录，和它是不是太宽（施工 9-7 补）。
+/// 挑好的工作目录：实际用的写法，和它是不是太宽（施工 9-7 补；施工 5-14 起太宽的照样是工作目录，能写的工作区退回这个会话
+/// 的默认工作区，会话那边算）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Picked {
-    /// 实际用的目录：照原样的写法，退回的是属主的工作区。
+    /// 实际用的目录：照原样的写法，退回的是这个会话的默认工作区。
     pub(crate) cwd: String,
-    /// 太宽（`~` 本身、系统的家目录、根目录、包含数据根的），照人选的用着。
+    /// 太宽（`~` 本身、系统的家目录、根目录、包含数据根的）：照用，工作区是会话的默认工作区。
     pub(crate) wide: bool,
 }
 
-/// 拿头报上来的 `cwd` 当工作区，同 [`pick`]、不是人明着选的：太宽的退回属主的工作区。
-pub(crate) fn workspace(core: &Core, owner: &AccountId, cwd: &str) -> String {
-    pick(core, owner, cwd, false).cwd
-}
-
-/// 照 `cwd` 挑工作区（`11-权限与沙盒.md` 第四节，施工 4-3 下；施工 O-4 下起照属主 `owner`，系统账号的场所会话退回它自己的）。
-/// 落在数据根里、又不在属主的工作区 `home/<账号>/workspace/` 里的，退回属主的工作区。太宽的：人明着选的（`chosen`：
-/// `session.create` 带 `chosen`、`session.set_workspace`、`/workspace`）照用、标上 `wide`（施工 9-7 补，2026-10-09 项目主人：
-/// 「当然是我手动选择的，或者手动运行命令切换的，就别自动切工作区了」）；头自己带上的（终端启动时的当前目录）照旧退回。
-/// 换不成真实位置的照原样：说不清它宽不宽，用到时工具自己报错；`~` 本身读不出家目录的照旧退回。
-pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, chosen: bool) -> Picked {
-    let own = core.root.workspace(owner);
-    let fallback = || {
-        // 建家目录时就建了；老的数据根里可能还没有，补上。建不了的照样退回：用到时工具自己报错。
-        if let Err(error) = core.root.prepare_home(owner) {
-            tracing::warn!(target: "miyu::endpoint", kind = ?error.kind(), "workspace not prepared");
-        }
-        Picked {
-            cwd: own.to_string_lossy().into_owned(),
-            wide: false,
-        }
-    };
-    let home = core
-        .home
-        .as_deref()
-        .and_then(|home| std::fs::canonicalize(home).ok());
+/// 照 `cwd` 挑工作目录（`11-权限与沙盒.md` 第四节「工作目录和工作区分开」，施工 5-14）：人在哪就是哪，太宽的照用、标上
+/// `wide`（2026-10-20 项目主人定，原来头自己带上的太宽照旧退回、人明着选的才照用）。落在数据根里、又不在属主的工作区
+/// `home/<账号>/workspace/` 里的，`~` 本身读不出家目录的，退回这个会话的默认工作区 `fallback`（建好）。换不成真实位置的照原样：
+/// 说不清它宽不宽，用到时工具自己报错。
+pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -> Picked {
+    let fallback = || prepared(core, owner, fallback);
+    let home = crate::workspace::home(core);
     let Ok(real) = miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd) else {
-        // `~` 本身读不出家目录的：说不清在哪，照旧退回。
+        // `~` 本身读不出家目录的：说不清在哪，退回。
         return match cwd.trim() == "~" {
             true => fallback(),
             false => Picked {
@@ -82,18 +66,70 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, chosen: bool) -> P
             },
         };
     };
-    let data_root =
-        std::fs::canonicalize(core.root.path()).unwrap_or_else(|_| core.root.path().to_path_buf());
-    let own_real = std::fs::canonicalize(&own).unwrap_or_else(|_| own.clone());
-    if miyu_fs::within(&real, &data_root) && !miyu_fs::within(&real, &own_real) {
+    let (data_root, own) = places(core, owner);
+    if miyu_fs::within(&real, &data_root) && !miyu_fs::within(&real, &own) {
         return fallback();
     }
-    let wide = miyu_fs::too_wide(&real, home.as_deref(), &data_root, &own_real);
-    match (wide, chosen) {
-        (true, false) => fallback(),
-        (wide, _) => Picked {
-            cwd: cwd.to_string(),
-            wide,
-        },
+    Picked {
+        cwd: cwd.to_string(),
+        wide: miyu_fs::too_wide(&real, home.as_deref(), &data_root, &own),
     }
+}
+
+/// 真实位置 `real` 的工作目录太不太宽（施工 9-7 补；`workspace.rs` 查过人明着要换去的以后照它说 `wide`）。
+pub(crate) fn wide(core: &Core, owner: &AccountId, real: &Path) -> bool {
+    let (data_root, own) = places(core, owner);
+    miyu_fs::too_wide(
+        real,
+        crate::workspace::home(core).as_deref(),
+        &data_root,
+        &own,
+    )
+}
+
+/// 退回这个会话的默认工作区 `dir`：建好（建家目录时就建了账号的工作区，会话的那一个用到才建；建不了的照样退回，用到时工具
+/// 自己报错），交回它。
+fn prepared(core: &Core, owner: &AccountId, dir: &Path) -> Picked {
+    if let Err(error) = core
+        .root
+        .prepare_home(owner)
+        .and_then(|()| std::fs::create_dir_all(dir))
+    {
+        tracing::warn!(target: "miyu::endpoint", kind = ?error.kind(), "workspace not prepared");
+    }
+    Picked {
+        cwd: dir.to_string_lossy().into_owned(),
+        wide: false,
+    }
+}
+
+/// 造会话 `id` 时的工作目录（施工 5-14）：照 [`pick`] 挑；账号的工作区本身（网页不选目录时交的就是它，握手的
+/// `host.workspace`）换成这个会话的默认工作区；场所会话太宽的（没带目录的是 `~`）也用它：外部身份只碰得到自己的工作区。
+/// 交回工作目录和太不太宽。只在造会话时这样认：以前的会话记着的照旧。
+pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId) -> (String, bool) {
+    let fallback = core.root.session_workspace(&who.owner, id);
+    let picked = match account_workspace(core, &who.owner, cwd) {
+        true => prepared(core, &who.owner, &fallback),
+        false => pick(core, &who.owner, cwd, &fallback),
+    };
+    match picked.wide && who.venue.is_some() {
+        true => (prepared(core, &who.owner, &fallback).cwd, false),
+        false => (picked.cwd, picked.wide),
+    }
+}
+
+/// 工作目录是不是账号的工作区本身。
+fn account_workspace(core: &Core, owner: &AccountId, cwd: &str) -> bool {
+    let home = crate::workspace::home(core);
+    let (_, own) = places(core, owner);
+    miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd).is_ok_and(|real| real == own)
+}
+
+/// 数据根、属主的工作区，都换成真实的位置（换不成的照原样）。
+fn places(core: &Core, owner: &AccountId) -> (PathBuf, PathBuf) {
+    let data_root =
+        std::fs::canonicalize(core.root.path()).unwrap_or_else(|_| core.root.path().to_path_buf());
+    let own = core.root.workspace(owner);
+    let own = std::fs::canonicalize(&own).unwrap_or(own);
+    (data_root, own)
 }

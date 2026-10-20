@@ -1,8 +1,9 @@
-//! 工作目录太宽（施工 4-3 下）：家目录、根目录，包含数据根、落在数据根里而不在账号工作区里的，都太宽。
+//! 工作目录太宽（施工 4-3 下）：家目录、根目录，包含数据根、落在数据根里而不在账号工作区里的，都太宽。太宽的工作目录对应的
+//! 工作区是这个会话的默认工作区，别的就是它自己（施工 5-14）。
 
 use std::path::{Path, PathBuf};
 
-use miyu_fs::too_wide;
+use miyu_fs::{too_wide, workspace_of};
 
 fn root() -> PathBuf {
     PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" })
@@ -29,4 +30,23 @@ fn what_counts_as_too_wide() {
     let own = data.join("home").join("admin").join("workspace");
     assert!(too_wide(&home, Some(&home), &data, &own));
     assert!(!too_wide(&home, None, &data, &own));
+}
+
+#[test]
+fn a_too_wide_directory_works_in_the_session_s_own_folder() {
+    let home = root().join("home").join("me");
+    let data = home.join(".miyu");
+    let own = data.join("home").join("admin").join("workspace");
+    let fallback = own.join("0199-session");
+    let of = |cwd: &Path| workspace_of(cwd, Some(&home), &data, &own, &fallback);
+    assert_eq!(of(&home), fallback, "家目录");
+    assert_eq!(of(&root()), fallback, "根目录");
+    assert_eq!(of(&data.join("state")), fallback, "落在数据根里");
+    assert_eq!(
+        of(&home.join("proj")),
+        home.join("proj"),
+        "项目目录就是它自己"
+    );
+    assert_eq!(of(&own), own, "账号自己的工作区就是它自己");
+    assert_eq!(of(&fallback), fallback);
 }

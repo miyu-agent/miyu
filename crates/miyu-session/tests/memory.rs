@@ -134,6 +134,7 @@ async fn a_child_session_is_not_indexed() {
         lineage: Some(Lineage {
             parent: parent.id().clone(),
             depth: 1,
+            workspace_from: None,
         }),
         ..Lines::default()
     };

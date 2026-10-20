@@ -88,6 +88,8 @@ pub(crate) struct Agents {
     pub(crate) depth: u32,
     /// 父会话：子会话才有，留言发给它（施工 7-7）。
     pub(crate) parent: Option<SessionId>,
+    /// 这个会话的默认工作区用哪个会话的（施工 5-14）：`session.created` 的 `workspace_from`，子会话照抄进自己的。
+    pub(crate) workspace_from: Option<SessionId>,
     /// 有没有人能确认：快照里的。
     pub(crate) attended: bool,
     /// 回报的正文怎么截：快照里的（施工 7-4）。停掉子代理时交回的回报照它截，和子会话自己向上回报的一样。

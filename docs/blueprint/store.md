@@ -94,7 +94,7 @@
 │       ├── settings.toml               个人设置（config.md，施工 8-2 读，8-3 写）
 │       ├── journal.jsonl               账号日志：个人设置的改动、项目配置的信任（config.md，施工 8-3）
 │       ├── trust.toml                  项目配置的信任（config.md，施工 8-2 读，8-3 写）
-│       ├── workspace/                  头报来的工作目录太宽时，退回这里（protocol.md）
+│       ├── workspace/                  账号的工作区；每个会话的默认工作区是它下面的 <会话编号>/（施工 5-14，protocol.md「工作目录太宽」）
 │       ├── sessions/<会话编号>/         会话日志，一段一个文件；attachments/ 是落成文件的附件（施工 3-9 六补）
 │       │   ├── 000000000001.jsonl
 │       │   ├── …

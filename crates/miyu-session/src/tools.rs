@@ -203,16 +203,22 @@ impl Tools {
 
     /// 照 `kit` 跑，回报送进 `backs`。
     pub(crate) fn new(kit: ToolKit, backs: mpsc::UnboundedSender<Back>) -> Tools {
-        let sandbox = kit.sandbox.map(|helper| {
-            Sandbox::new(
-                helper,
-                kit.home.clone(),
-                kit.data_root.clone(),
-                (kit.sandbox_cache, kit.confined),
-            )
-            .with_shelves(kit.shelves.clone())
-            .with_attachments(kit.attachments.clone())
-        });
+        let sandbox = kit
+            .sandbox
+            .map(|helper| {
+                Sandbox::new(
+                    helper,
+                    kit.home.clone(),
+                    kit.data_root.clone(),
+                    (kit.sandbox_cache, kit.confined),
+                )
+                .with_shelves(kit.shelves.clone())
+                .with_attachments(kit.attachments.clone())
+            })
+            .map(|sandbox| match kit.workplace.clone() {
+                Some(workplace) => sandbox.with_workplace(workplace),
+                None => sandbox,
+            });
         Tools {
             session: kit.session,
             owner: kit.owner,

@@ -182,7 +182,6 @@ pub(crate) async fn session(
         memory: None,
         preset: params.preset,
         group: (params.kind == Kind::Group).then_some(miyu_session::GroupSettings { recent }),
-        chosen: false,
         profile: params.profile,
         images: params.images,
     };

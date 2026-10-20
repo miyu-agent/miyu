@@ -30,6 +30,7 @@ mod blocking;
 mod clock;
 mod config;
 mod current;
+mod default_workspace;
 mod effects;
 mod embed;
 mod goal;

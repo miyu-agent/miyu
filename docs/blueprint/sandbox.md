@@ -118,6 +118,7 @@
 | `crates/miyu-core/src/sandbox/tests.rs` | 旁边没有助手的、不知道主程序在哪的记 `helper not found`；助手跑不了的记原因；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和对应的原因（施工 5-4 上、下） |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的规格；Unix 上有收紧手段的，真的经助手跑 `shell`（`session/tools.md`，施工 5-4 上） |
 | `crates/miyu-session/tests/sandbox_private.rs` | 规格里藏的私密目录；真跑时私密目录里的读不到（`session/tools.md`，施工 5-13） |
+| `crates/miyu-session/tests/sandbox_workspace.rs` | 工作目录太宽的：能写的是会话的默认工作区（施工 5-14） |
 
 ### 出处
 

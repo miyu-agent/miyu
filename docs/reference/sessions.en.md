@@ -54,7 +54,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
 | `memory` | `persona`, `session`, `off` | Memory follows the persona, stays in this session, or is off; omitted follows the persona's setting |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |
-| `chosen` | boolean, default `false` | The person explicitly chose `cwd`: a too-wide one (home, root) is used anyway; otherwise a too-wide one falls back to the default workspace |
+| `chosen` | boolean, default `false` | Accepted and ignored (it used to mark a choice by the person): a too-wide `cwd` (home, root) is always used and the response has `wide`; what the session may freely write is then its own default workspace |
 | `oneshot` | boolean, default `false` | A one-shot session (the `miyu ask` kind) |
 | `images` | boolean, default `true` | Whether you can display images |
 | `project` | string | Create it in this project ([Projects](projects.en.md)): `persona` and `preset` default to the project's, and a `session.meta_changed` follows (`events` is `[1, 2]`) |

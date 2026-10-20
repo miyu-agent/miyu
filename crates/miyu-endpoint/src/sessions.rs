@@ -37,7 +37,7 @@ mod places;
 
 pub(crate) use opening::Opening;
 use opening::{opening_level, profile_for};
-pub(crate) use places::{Picked, check_dirs, pick, workspace};
+pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, wide};
 #[cfg(test)]
 mod tests;
 
@@ -147,13 +147,18 @@ impl Sessions {
                 open.created.pop_front();
             }
         }
-        let picked = pick(core, &who.owner, &cwd, who.chosen);
-        let (workspace, wide) = (picked.cwd, picked.wide);
+        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
+        let earlier = open
+            .created
+            .iter()
+            .find(|(id, _)| *id == command)
+            .map(|(_, session)| session.clone());
+        let id = earlier.clone().unwrap_or_else(|| new_id(now()));
+        let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
         let (resolved, project) = core.config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
-        if let Some((_, session)) = open.created.iter().find(|(id, _)| *id == command) {
-            let id = session.clone();
+        if let Some(id) = earlier {
             return Ok(Created {
                 id,
                 cwd: workspace,
@@ -171,7 +176,6 @@ impl Sessions {
         );
         let preset = presets::resolve(core, who.preset.as_deref()).await?;
         let persona = personas::resolve(core, persona).await?;
-        let id = new_id(now());
         let created = create(Create {
             root: &core.root,
             resources: &core.resources,
@@ -444,7 +448,7 @@ fn local() -> VenueId {
     VenueId::parse("local").unwrap_or_else(|e| unreachable!("「local」合场所的写法：{e}"))
 }
 
-/// 会话所在的环境：核心所在的机器现在的时区，实际干活的目录（[`workspace`] 定的），加进来的目录（施工 5-10 上）。
+/// 会话所在的环境：核心所在的机器现在的时区，实际干活的目录（[`opening_cwd`] 定的），加进来的目录（施工 5-10 上）。
 fn environment(workspace: String, dirs: Vec<String>) -> Environment {
     Environment {
         offset: offset(),

@@ -53,7 +53,11 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
     let hike = said(&home, Lines::default(), "周末去爬山").await;
     let parent = cat.id().clone();
     let child = Lines {
-        lineage: Some(Lineage { parent, depth: 1 }),
+        lineage: Some(Lineage {
+            parent,
+            depth: 1,
+            workspace_from: None,
+        }),
         ..Lines::default()
     };
     said(&home, child, "子代理查到了樱花").await;

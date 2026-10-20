@@ -75,6 +75,11 @@ async fn a_fork_shares_the_prefix_and_loads_back_after_a_restart() {
         created.parent.as_ref().map(|p| p.as_str()),
         Some(session.as_str())
     );
+    assert_eq!(
+        created.workspace_from.as_ref().map(|p| p.as_str()),
+        Some(session.as_str()),
+        "默认工作区用来源会话的（施工 5-14）"
+    );
 
     client.say("s2", &child, "再来").await;
     home.until_turns(&child, 1).await;

@@ -129,6 +129,7 @@ async fn the_log_says_where_it_went_and_why_not() {
         lineage: Some(Lineage {
             parent: SessionId::parse(PARENT).unwrap(),
             depth: 1,
+            workspace_from: None,
         }),
         ..Lines::default()
     };

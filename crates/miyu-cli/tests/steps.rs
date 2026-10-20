@@ -116,12 +116,18 @@ async fn a_directory_too_wide_is_said_first_and_once() {
         })
         .await;
     assert_eq!(code, 0, "{err}");
+    // 这个核心读不出家目录：`~` 说不清在哪，退回这个会话自己的默认工作区（施工 5-14），账号的工作区下面只有它一个。
     let workspace = home.root.workspace(&AccountIdOf::admin());
+    let own: Vec<_> = std::fs::read_dir(&workspace)
+        .expect("读得了")
+        .map(|entry| entry.expect("读得了").path())
+        .collect();
+    assert_eq!(own.len(), 1, "{own:?}");
     assert_eq!(
         screen,
         format!(
             "· 目录太宽（~），这次在 {} 里干活\n✱ 找文件 *.md · 一个都没找到\n\n没有。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
-            workspace.display()
+            own[0].display()
         )
     );
 }

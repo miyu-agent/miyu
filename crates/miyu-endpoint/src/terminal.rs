@@ -75,7 +75,6 @@ pub(crate) async fn get(
         memory: None,
         preset: settings.preset,
         group: None,
-        chosen: params.cwd.is_some(),
         profile: false,
         images: false,
     };

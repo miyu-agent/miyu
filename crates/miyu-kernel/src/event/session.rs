@@ -32,6 +32,10 @@ pub struct SessionCreated {
     /// 第几层：父会话的加一，主会话是第 0 层、不写。和 `parent` 同有同无、至少是 1，由账本查（`kernel/history.md`）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub depth: Option<u32>,
+    /// 默认工作区用哪个会话的（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话一个」）：子会话、分叉出来的照父会话、
+    /// 来源会话的那一个（它自己也是照别人的，就照它照的那个），一路追到主会话。主会话用自己的，不写；以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace_from: Option<SessionId>,
     /// 会话用哪个模型（施工 8-8，`models.md`「事件」）：造会话时解析好的引用，模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8
     /// 造的可能是挡位换成的那时的值）。协议造的照 `session.create` 的 `model`，没写的照那时的 `models.chat`；子会话的照
     /// `subagent` 的 `pool`（施工 8-8 补；8-8 是 `tier`），没写的照父会话那时的。那时连 `models.chat` 都没配的不写；以前的日志没有这一格，照没有读。内核只记不解读，

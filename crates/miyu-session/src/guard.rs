@@ -28,6 +28,7 @@ use miyu_kernel::tool::{Access, Worded};
 use miyu_policy::GuardTexts;
 use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
+use crate::default_workspace::DefaultWorkspace;
 use crate::lettering::Lettering;
 
 mod asking;
@@ -61,6 +62,8 @@ pub(crate) struct Guard {
     /// 这个会话的附件目录（施工 3-9 六补）：落成文件的附件放在这里，同技能文件夹单独放开只读；不和技能文件夹放在一起，
     /// 读它里面的 `SKILL.md` 不算读技能。
     attachments: Option<PathBuf>,
+    /// 工作目录太宽时退回哪（施工 5-14）：没有的工作区就是工作目录。
+    workplace: Option<DefaultWorkspace>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -132,6 +135,7 @@ impl Guard {
             confined,
             shelves: RwLock::default(),
             attachments: None,
+            workplace: None,
         }
     }
 
@@ -139,6 +143,13 @@ impl Guard {
     #[must_use]
     pub(crate) fn with_attachments(mut self, dir: PathBuf) -> Guard {
         self.attachments = Some(dir);
+        self
+    }
+
+    /// 工作目录太宽时退回的这个会话的默认工作区（施工 5-14）。
+    #[must_use]
+    pub(crate) fn with_workplace(mut self, workplace: DefaultWorkspace) -> Guard {
+        self.workplace = Some(workplace);
         self
     }
 
@@ -269,8 +280,10 @@ impl Guard {
                     .unwrap_or_else(|_| PathBuf::from(dir))
             })
             .collect();
+        // 能随便写的工作区：太宽的工作目录退回这个会话的默认工作区（施工 5-14）；相对路径照旧从工作目录算。
+        let workspace = self.workspace(&cwd);
         let places = Places {
-            workspace: cwd.clone(),
+            workspace: workspace.clone(),
             dirs,
             shelves: self
                 .shelves
@@ -298,7 +311,7 @@ impl Guard {
             let zone = boundary.zone(&real);
             // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12），读放开只读的技能文件夹除外（施工 X-10 上）。
             if let Some(confined) = &self.confined
-                && !confined::inside(&real, &cwd, &places.dirs)
+                && !confined::inside(&real, &workspace, &places.dirs)
                 && !(zone == Zone::Shelf && !target.write)
             {
                 return deny(confined.outside(&target.path));
@@ -325,6 +338,20 @@ impl Guard {
 }
 
 impl Guard {
+    /// 真实位置是 `cwd` 的工作目录对应的工作区（施工 5-14）：没交默认工作区的就是工作目录；建不成的照样用，写时工具自己报错。
+    fn workspace(&self, cwd: &Path) -> PathBuf {
+        let Some(place) = &self.workplace else {
+            return cwd.to_path_buf();
+        };
+        let root =
+            std::fs::canonicalize(&self.data_root).unwrap_or_else(|_| self.data_root.clone());
+        let home = self.real_home.as_deref();
+        place.made(cwd, home, &root).unwrap_or_else(|error| {
+            tracing::warn!(target: crate::TARGET, error = %error, "default workspace not made");
+            place.of(cwd, home, &root)
+        })
+    }
+
     /// 要碰的这一条换成真实的位置。碰的是这一条本身的（`trash`，施工 4-9 再补二）：最后一段不跟链接，和工具碰的是
     /// 同一个；没有名字可碰的（`.`、`..`、`~`），照整条换。
     fn real(&self, cwd: &Path, target: &Target) -> Result<PathBuf, ResolveError> {

@@ -131,12 +131,15 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
     };
     assert_eq!(created.owner, bot());
     let workspace = home.root.workspace(&bot());
+    assert!(workspace.is_dir(), "起来时建了它的工作区");
+    let id = miyu_kernel::id::SessionId::parse(&session).expect("会话编号");
+    let mine = home.root.session_workspace(&bot(), &id);
     assert_eq!(
         created.cwd.as_deref().map(Path::new),
-        Some(workspace.as_path()),
-        "没写 cwd 的是它自己的工作区"
+        Some(mine.as_path()),
+        "没写 cwd 的是这个会话自己的那一个（施工 5-14）"
     );
-    assert!(workspace.is_dir(), "起来时建了它的工作区");
+    assert!(mine.is_dir(), "建好了");
     // 群会话（施工 O-13 中）：快照钉下时区、system 接上格式说明。
     let note =
         std::fs::read_to_string(default_resources().join("core/venues/group.txt")).expect("读得到");

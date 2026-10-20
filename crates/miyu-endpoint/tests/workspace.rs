@@ -1,6 +1,7 @@
-//! 工作目录太宽（施工 4-3 下，`11-权限与沙盒.md` 第四节）：头报来的是 `~`、系统的家目录、根目录，或者包含
-//! 数据根、落在数据根里的，退回管理员的工作区 `home/<账号>/workspace/`；项目目录照旧。造会话、说话的回应
-//! 说会话实际在哪个目录里干活（施工 4-5 下）。施工 9-7 上起换工作区的是 `session.set_workspace`；说话带的 `cwd` 9-7 再补起
+//! 工作目录（施工 4-3 下，`11-权限与沙盒.md` 第四节；施工 5-14 起工作目录和工作区分开）：头报来的是 `~`、系统的家目录、
+//! 根目录、包含数据根的，照样是工作目录、回应带 `wide`（能写的工作区由会话退回它的默认工作区）；落在数据根里的、读不出家目录
+//! 的 `~`，退回这个会话的默认工作区 `home/<账号>/workspace/<会话>/`；账号的工作区本身（网页不选目录时交的）造会话时也换成
+//! 它；项目目录照旧。造会话、说话的回应说会话实际在哪个目录里（施工 4-5 下）。施工 9-7 上起换工作区的是 `session.set_workspace`；说话带的 `cwd` 9-7 再补起
 //! 先换过去（`workspace_send.rs`）。
 
 use std::path::{Path, PathBuf};
@@ -50,7 +51,7 @@ fn words(value: &Value, out: &mut String) {
 
 /// 头报来的工作目录是 `cwd`：她看到的请求里的字。每次起一个新的核心，数据根是同一个：命令编号要全局不撞
 /// （`04-核心协议.md` 第六节第 1 条），核心重启以后照样认得出重发的造会话，所以每次换一对编号。
-async fn seen(home: &Home, outside: &Outside, cwd: &str) -> String {
+async fn seen(home: &Home, outside: &Outside, cwd: &str) -> (String, String) {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let script = Script::new([Play::Says("好。")]);
@@ -69,7 +70,18 @@ async fn seen(home: &Home, outside: &Outside, cwd: &str) -> String {
     let value: Value = serde_json::from_slice(&request.canonical_bytes()).expect("请求是 JSON");
     let mut text = String::new();
     words(&value, &mut text);
-    text
+    (session, text)
+}
+
+/// 会话 `session` 的默认工作区。
+fn own_of(home: &Home, session: &str) -> PathBuf {
+    let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号");
+    home.root.session_workspace(&alice(), &id)
+}
+
+/// 环境事实里那一格。
+fn cwd_fact(path: &Path) -> String {
+    format!("cwd=\"{}\"", written(path))
 }
 
 /// 环境事实里写的工作目录：照事实模板转义过。
@@ -78,24 +90,35 @@ fn written(path: &Path) -> String {
 }
 
 #[tokio::test]
-async fn a_directory_too_wide_falls_back_to_the_account_workspace() {
+async fn a_too_wide_directory_stays_where_the_person_is() {
     let home = Home::new();
     let outside = Outside::new();
-    let own = home.root.workspace(&alice());
     let root = if cfg!(windows) { "C:\\" } else { "/" };
-    let inside_data = home.root.path().join("state");
     for cwd in [
         "~".to_string(),
         outside.0.join("home").to_string_lossy().into_owned(),
         root.to_string(),
-        home.root.path().to_string_lossy().into_owned(),
-        inside_data.to_string_lossy().into_owned(),
+        home.root
+            .path()
+            .parent()
+            .expect("数据根有上一级")
+            .to_string_lossy()
+            .into_owned(),
     ] {
-        let text = seen(&home, &outside, &cwd).await;
-        assert!(text.contains(&written(&own)), "{cwd}：{text}");
+        let (_, text) = seen(&home, &outside, &cwd).await;
+        assert!(text.contains(&cwd_fact(Path::new(&cwd))), "{cwd}：{text}");
     }
-    assert!(own.is_dir(), "退回的工作区建好了");
-    // 核心读不出家目录：`~` 本身照样太宽。
+    // 数据根本身、落在数据根里的：退回这个会话的默认工作区，建好。
+    for inside_data in [
+        home.root.path().to_path_buf(),
+        home.root.path().join("state"),
+    ] {
+        let (session, text) = seen(&home, &outside, &inside_data.to_string_lossy()).await;
+        let own = own_of(&home, &session);
+        assert!(text.contains(&cwd_fact(&own)), "{text}");
+        assert!(own.is_dir(), "退回的工作区建好了");
+    }
+    // 核心读不出家目录：`~` 说不清在哪，也退回。
     let script = Script::new([Play::Says("好。")]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
@@ -112,29 +135,32 @@ async fn a_directory_too_wide_falls_back_to_the_account_workspace() {
         serde_json::from_slice(&script.requests()[0].1.canonical_bytes()).expect("请求是 JSON");
     let mut text = String::new();
     words(&value, &mut text);
-    assert!(text.contains(&written(&own)), "{text}");
+    assert!(text.contains(&cwd_fact(&own_of(&home, &session))), "{text}");
 }
 
 #[tokio::test]
-async fn a_project_directory_or_the_account_workspace_stays() {
+async fn a_project_directory_stays_and_the_account_workspace_becomes_the_session_s() {
     let home = Home::new();
     let outside = Outside::new();
     let project = outside.0.join("proj");
-    let text = seen(&home, &outside, &project.to_string_lossy()).await;
-    assert!(text.contains(&written(&project)), "{text}");
+    let (_, text) = seen(&home, &outside, &project.to_string_lossy()).await;
+    assert!(text.contains(&cwd_fact(&project)), "{text}");
+    // 账号的工作区本身（网页不选目录时交的）：换成这个会话自己的那一个，建好（施工 5-14）。
     let own = home.root.workspace(&alice());
-    assert!(!text.contains(&written(&own)), "{text}");
-    // 账号自己的工作区在数据根里，照样当工作区。
     std::fs::create_dir_all(&own).expect("建得了");
-    let text = seen(&home, &outside, &own.to_string_lossy()).await;
-    assert!(text.contains(&written(&own)), "{text}");
+    let (session, text) = seen(&home, &outside, &own.to_string_lossy()).await;
+    let mine = own_of(&home, &session);
+    assert!(text.contains(&cwd_fact(&mine)), "{text}");
+    assert!(mine.is_dir(), "{}", mine.display());
+    // 账号的工作区里面别的目录（以前的会话、别的会话的那一个）照原样。
+    let (_, text) = seen(&home, &outside, &mine.to_string_lossy()).await;
+    assert!(text.contains(&cwd_fact(&mine)), "{text}");
 }
 
 #[tokio::test]
 async fn the_replies_say_where_the_session_works() {
     let home = Home::new();
     let outside = Outside::new();
-    let own = home.root.workspace(&alice()).to_string_lossy().into_owned();
     let project = outside.0.join("proj").to_string_lossy().into_owned();
     let script = Script::new([Play::Says("好。"), Play::Says("好。")]);
     let mut client = Client::connect(home.core_at_home(&script, outside.0.join("home")));
@@ -182,21 +208,21 @@ async fn the_replies_say_where_the_session_works() {
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
     home.until_turns(&session, 2).await;
-    // 造会话时就太宽的、头自己带上的：照旧退回；同一个命令编号重发的，说的一样。
+    // 造会话时就太宽的、头自己带上的：照用，带 `wide`（施工 5-14，原来退回账号的工作区）；同一个命令编号重发的，说的一样。
     for _ in 0..2 {
         let reply = client
             .call("c4", "session.create", json!({"cwd": "~"}))
             .await;
-        assert_eq!(reply["result"]["cwd"], json!(own), "{reply}");
-        assert!(reply["result"].get("wide").is_none(), "{reply}");
+        assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
+        assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
     }
-    // 人明着选的：照用，带 `wide`。
+    // 带 `chosen` 的照收，说的一样。
     let reply = client
         .call("c5", "session.create", json!({"cwd": "~", "chosen": true}))
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
     assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
-    // 明着选了数据根里面、又不是账号自己的工作区的：照不了，照旧退回。
+    // 明着选了数据根里面、又不是账号自己的工作区的：照不了，退回这个会话的默认工作区。
     let state = home.root.state().to_string_lossy().into_owned();
     let reply = client
         .call(
@@ -205,7 +231,9 @@ async fn the_replies_say_where_the_session_works() {
             json!({"cwd": state, "chosen": true}),
         )
         .await;
-    assert_eq!(reply["result"]["cwd"], json!(own), "{reply}");
+    let session = reply["result"]["session"].as_str().expect("造出来了");
+    let mine = own_of(&home, session).to_string_lossy().into_owned();
+    assert_eq!(reply["result"]["cwd"], json!(mine), "{reply}");
     assert!(reply["result"].get("wide").is_none(), "{reply}");
     // 不太宽的明着选，和不选一样，不带 `wide`。
     let reply = client
@@ -217,4 +245,53 @@ async fn the_replies_say_where_the_session_works() {
         .await;
     assert_eq!(reply["result"]["cwd"], json!(project), "{reply}");
     assert!(reply["result"].get("wide").is_none(), "{reply}");
+}
+
+#[tokio::test]
+async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
+    let home = Home::new();
+    let outside = Outside::new();
+    home.write("system/config.toml", crate::support::venues::BINDINGS);
+    let items = [
+        miyu_endpoint::settings::PermissionSettings::ITEMS,
+        miyu_endpoint::settings::EXTERNAL_BINDINGS,
+    ]
+    .concat();
+    let config = miyu_endpoint::config::Config::load(
+        &home.root,
+        &alice(),
+        None,
+        items,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    // 核心读得出家目录：场所会话没写 `cwd` 的 `~` 太宽，不照用，用这个会话自己的那一个（施工 5-14）。
+    let core = std::sync::Arc::new(
+        home.core_full(
+            &Script::new([]),
+            miyu_tool::Catalog::default(),
+            Some(outside.0.join("home")),
+            crate::support::TOKEN,
+        )
+        .with_config(config),
+    );
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let made = client
+        .call(
+            "v1",
+            "venue.session",
+            json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001"}),
+        )
+        .await;
+    let session = made["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{made}"))
+        .to_string();
+    let created = home.log(&session);
+    let miyu_kernel::event::Body::SessionCreated(created) = &created[0].body else {
+        panic!("第一条是 session.created");
+    };
+    let mine = own_of(&home, &session);
+    assert_eq!(created.cwd.as_deref().map(Path::new), Some(mine.as_path()));
+    assert!(mine.is_dir());
 }

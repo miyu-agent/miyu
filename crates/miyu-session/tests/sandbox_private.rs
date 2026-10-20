@@ -1,5 +1,6 @@
 //! 沙盒藏起别的程序的私密目录（施工 5-13，`docs/blueprint/sandbox.md` 的 `hidden`）：这台机器上有的才写，排在数据根后面，
-//! 照清单的先后；落在能写的里面的不藏（工作区开在家目录、加进来的目录装着它）。Unix 上有收紧手段的，真的经助手跑
+//! 照清单的先后；落在能写的里面的不藏（工作区装着它、加进来的目录装着它；工作目录是家目录的，能写的退回会话的默认工作区，
+//! 施工 5-14，照藏）。Unix 上有收紧手段的，真的经助手跑
 //! `shell`：私密目录里的读不到，家目录别处照读。场地的假家目录是 `home/`。
 
 use std::path::{Path, PathBuf};
@@ -73,18 +74,37 @@ async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
     for dir in [".ssh", ".claude"] {
         std::fs::create_dir_all(home.home.join(dir)).expect("建得了目录");
     }
+    // 工作目录是家目录（太宽）：能写的是这个会话的默认工作区（施工 5-14），私密目录不在里面，照藏。
     let sandboxed = attached(&home, &home.home, false, Vec::new()).await;
+    let ssh_claude = [
+        real(home.root.path()),
+        real(&home.home.join(".ssh")),
+        real(&home.home.join(".claude")),
+    ];
+    assert_eq!(sandboxed.spec.hidden, ssh_claude, "家目录太宽：照藏");
+    let workspace = home.root.workspace(&alice_account());
+    assert!(
+        sandboxed.spec.write[0].starts_with(real(&workspace)),
+        "能写的是会话的默认工作区：{:?}",
+        sandboxed.spec.write
+    );
+    // 工作区开在 `~/.config`：里面的 `gh` 照人给的算，不藏。
+    std::fs::create_dir_all(home.home.join(".config/gh")).expect("建得了目录");
+    let sandboxed = attached(&home, &home.home.join(".config"), false, Vec::new()).await;
     assert_eq!(
-        sandboxed.spec.hidden,
-        [real(home.root.path())],
-        "工作区开在家目录：照人给的算"
+        sandboxed.spec.hidden, ssh_claude,
+        "工作区装着它：照人给的算"
     );
     let work = home.scratch.0.join("work");
     let claude = home.home.join(".claude").to_string_lossy().into_owned();
     let sandboxed = attached(&home, &work, false, vec![claude]).await;
     assert_eq!(
         sandboxed.spec.hidden,
-        [real(home.root.path()), real(&home.home.join(".ssh"))],
+        [
+            real(home.root.path()),
+            real(&home.home.join(".ssh")),
+            real(&home.home.join(".config/gh")),
+        ],
         "加进来的目录就是它：不藏"
     );
 }

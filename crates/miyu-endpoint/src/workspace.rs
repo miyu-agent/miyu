@@ -18,7 +18,7 @@ use miyu_kernel::session::Command;
 use crate::Core;
 use crate::methods::command_to;
 use crate::refusal::Refusal;
-use crate::sessions::{Found, Picked, check_dirs, pick};
+use crate::sessions::{Found, Picked, check_dirs, wide};
 use crate::wire::Request;
 
 /// `session.set_workspace` 的参数。
@@ -132,5 +132,8 @@ pub(crate) fn checked(core: &Core, owner: &AccountId, cwd: &str) -> Result<Picke
     if real.starts_with(&data_root) && !real.starts_with(&own) {
         return Err(Refusal::PATH_FORBIDDEN);
     }
-    Ok(pick(core, owner, cwd, true))
+    Ok(Picked {
+        cwd: cwd.to_string(),
+        wide: wide(core, owner, &real),
+    })
 }

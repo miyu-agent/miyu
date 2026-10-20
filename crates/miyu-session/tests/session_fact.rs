@@ -78,6 +78,7 @@ async fn a_child_session_carries_its_own_id() {
         lineage: Some(Lineage {
             parent: parent.clone(),
             depth: 1,
+            workspace_from: None,
         }),
         ..Lines::default()
     };

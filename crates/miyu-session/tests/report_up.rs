@@ -172,6 +172,7 @@ async fn child_answers(home: &Home, table: &Arc<Table>) -> Handle {
         lineage: Some(Lineage {
             parent: parent.clone(),
             depth: 1,
+            workspace_from: None,
         }),
         sessions: Some(Arc::clone(table) as Arc<dyn SessionPort>),
         command: Some(CommandId::parse(&format!("{PARENT}/j3")).expect("合写法")),

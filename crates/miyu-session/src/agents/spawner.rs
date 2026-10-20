@@ -46,6 +46,7 @@ impl AgentPort for Spawner {
                 lineage: Lineage {
                     parent: parent.clone(),
                     depth: agents.depth + 1,
+                    workspace_from: agents.workspace_from.clone(),
                 },
                 command: command_id(parent, &job, ""),
                 persona: persona.map(str::to_string),

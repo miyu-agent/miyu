@@ -101,7 +101,11 @@ async fn a_main_session_with_memory_has_the_three_wherever_it_is() {
         (Lines::default(), true),
         (
             Lines {
-                lineage: Some(Lineage { parent, depth: 1 }),
+                lineage: Some(Lineage {
+                    parent,
+                    depth: 1,
+                    workspace_from: None,
+                }),
                 ..Lines::default()
             },
             false,

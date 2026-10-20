@@ -10,6 +10,7 @@ fn child_at(depth: u32) -> Lines {
         lineage: Some(Lineage {
             parent: child_id(9),
             depth,
+            workspace_from: None,
         }),
         ..Lines::default()
     }

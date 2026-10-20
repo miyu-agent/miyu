@@ -160,7 +160,7 @@ impl Home {
         let created = create(Create {
             root: &self.root,
             resources: &self.resources,
-            id: new_id(now()),
+            id: lines.id.clone().unwrap_or_else(|| new_id(now())),
             persona: Some("engineer"),
             persona_texts: miyu_session::testkit::sample_persona_texts(),
             profile: lines.profile,

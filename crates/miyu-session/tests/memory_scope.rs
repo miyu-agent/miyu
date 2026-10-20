@@ -167,6 +167,7 @@ async fn a_child_is_off_whatever_it_was_given() {
         lineage: Some(Lineage {
             parent: parent.id().clone(),
             depth: 1,
+            workspace_from: None,
         }),
         memory: MemoryScope::Persona,
         ..Lines::default()

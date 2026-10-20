@@ -108,6 +108,18 @@ pub struct Lineage {
     pub parent: SessionId,
     /// 第几层：父会话的加一，至少是 1。
     pub depth: u32,
+    /// 父会话的默认工作区用的是哪个会话的（施工 5-14）：父会话自己 `session.created` 的 `workspace_from`，主会话没有。子会话照
+    /// 它，没有的照父会话自己的。
+    pub workspace_from: Option<SessionId>,
+}
+
+impl Lineage {
+    /// 子会话的默认工作区用哪个会话的（施工 5-14）：父会话照别人的就照那个，不然是父会话自己。
+    pub fn workspace_of(&self) -> SessionId {
+        self.workspace_from
+            .clone()
+            .unwrap_or_else(|| self.parent.clone())
+    }
 }
 
 /// 造一个子会话要的（`agents.md` 第一条第 1 条）：执行器照父会话这一刻的样子填好，会话表照它造。

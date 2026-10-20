@@ -40,7 +40,6 @@ pub(super) async fn create(
         memory,
         preset: params.preset,
         group: None,
-        chosen: params.chosen,
         profile: false,
         images: params.images,
     };

@@ -52,6 +52,8 @@ pub struct Lines {
     pub recent: Option<u64>,
     /// 「关于你」那两项（施工 P-9；R-6 再修照它判抽取写不写称呼）：默认都空，快照里没有那一块。
     pub profile: miyu_policy::Profile,
+    /// 会话编号（施工 5-14：命令里要写会话的默认工作区）：默认照这一刻新编一个。
+    pub id: Option<SessionId>,
 }
 
 impl Default for Lines {
@@ -73,6 +75,7 @@ impl Default for Lines {
             owner_is_admin: true,
             images: true,
             profile: miyu_policy::Profile::default(),
+            id: None,
         }
     }
 }

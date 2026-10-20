@@ -15,6 +15,7 @@ use miyu_fs::{private_dirs, resolve, within};
 use miyu_kernel::event::Permission;
 use miyu_sandbox::{Sandboxed, Spec};
 
+use crate::default_workspace::DefaultWorkspace;
 use crate::guard::{Effective, effective};
 
 /// 给调用写沙盒要的：助手在哪、系统的家目录、数据根、沙盒的缓存。一个会话一份，这台机器上的沙盒能用才有。
@@ -31,6 +32,8 @@ pub(crate) struct Sandbox {
     /// 这个会话的附件目录（施工 3-9 六补）：同技能文件夹单独放开只读；还没建（没存过附件）的不放：Landlock 认不得
     /// 不在的路径。
     attachments: Option<PathBuf>,
+    /// 工作目录太宽时退回哪（施工 5-14）：没有的能写的就是工作目录。
+    workplace: Option<DefaultWorkspace>,
 }
 
 impl Sandbox {
@@ -50,7 +53,15 @@ impl Sandbox {
             confined,
             shelves: Vec::new(),
             attachments: None,
+            workplace: None,
         }
+    }
+
+    /// 工作目录太宽时退回的这个会话的默认工作区（施工 5-14）。
+    #[must_use]
+    pub(crate) fn with_workplace(mut self, workplace: DefaultWorkspace) -> Sandbox {
+        self.workplace = Some(workplace);
+        self
     }
 
     /// 这个会话的附件目录（施工 3-9 六补）。
@@ -107,8 +118,10 @@ impl Sandbox {
             } else {
                 temp
             };
-            // 加进来的目录排在工作目录后面，照同一个办法换（施工 5-10 上）。
-            let mut write = vec![cwd];
+            // 能写的是工作区：太宽的工作目录退回这个会话的默认工作区，用到时建（施工 5-14）。
+            let workspace = self.workspace(&cwd, &data_root)?;
+            // 加进来的目录排在工作区后面，照同一个办法换（施工 5-10 上）。
+            let mut write = vec![workspace];
             write.extend(dirs.iter().map(|dir| {
                 resolve(Path::new(dir), home, dir).unwrap_or_else(|_| PathBuf::from(dir))
             }));
@@ -156,6 +169,17 @@ impl Sandbox {
             }
         }
         hidden
+    }
+}
+
+impl Sandbox {
+    /// 真实位置是 `cwd` 的工作目录对应的工作区（施工 5-14）：退回默认工作区的，还没建的建上（Landlock 认不得不在的路径）。
+    fn workspace(&self, cwd: &Path, data_root: &Path) -> io::Result<PathBuf> {
+        let Some(workplace) = &self.workplace else {
+            return Ok(cwd.to_path_buf());
+        };
+        let home = self.home.as_deref().map(real);
+        workplace.made(cwd, home.as_deref(), data_root)
     }
 }
 

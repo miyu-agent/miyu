@@ -343,6 +343,7 @@ fn child_lines(depth: u32, job: &str) -> Lines {
         lineage: Some(miyu_session::Lineage {
             parent: parent.clone(),
             depth,
+            workspace_from: None,
         }),
         command: Some(id(&format!("{parent}/{job}"))),
         ..Lines::default()

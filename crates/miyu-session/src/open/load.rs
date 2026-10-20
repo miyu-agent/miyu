@@ -43,7 +43,8 @@ use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
 
-use super::{Load, LoadError, Workplace, ledger_of};
+use super::{Load, LoadError, Workplace};
+use crate::default_workspace::DefaultWorkspace;
 
 /// 从磁盘载入一个会话：打开日志（自检、截尾），照第 1 条的策略哈希取快照、造策略，交给内核载入。
 /// 内核吐出来的动作照样回：有计划的重启打断了的一轮，接着干。
@@ -232,6 +233,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let refresh_lineage = tasked.clone().map(|parent| Lineage {
         parent,
         depth: created.depth.unwrap_or(1),
+        workspace_from: created.workspace_from.clone(),
     });
     let asks = Agents::asks(&created.venue, tasked.as_ref(), attended);
     let has_goals = Agents::lists_sessions(&created.venue, tasked.as_ref());
@@ -241,6 +243,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         .tools
         .iter()
         .any(|tool| tool.name == miyu_tool::GOAL);
+    // 默认工作区用哪个会话的（施工 5-14）：照 `session.created` 记的，没记的用自己的。
+    let default_workspace =
+        DefaultWorkspace::new(root, &owner, created.workspace_from.as_ref().unwrap_or(&id));
     let agents = sessions.map(|port| {
         Arc::new(Agents {
             port,
@@ -250,6 +255,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             venue: created.venue,
             depth: tasked.as_ref().map_or(0, |_| created.depth.unwrap_or(0)),
             parent: tasked.clone(),
+            workspace_from: created.workspace_from.clone(),
             attended,
             reports: policy.reports.clone(),
             pools,
@@ -352,8 +358,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .with_attachments(miyu_store::attachments::dir(root, &owner, &id));
-    let ledger = ledger_of(usage.as_ref(), &id, &owner);
+    .with_attachments(miyu_store::attachments::dir(root, &owner, &id))
+    .with_workplace(default_workspace.clone());
+    let ledger = crate::usage::Ledger::of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
         Some(knowledge) => Some(
@@ -405,6 +412,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             attachments: miyu_store::attachments::dir(root, &owner, &id),
+            workplace: Some(default_workspace),
             names: skill_names,
             packages,
             hooks,

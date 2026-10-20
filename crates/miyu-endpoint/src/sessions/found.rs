@@ -8,7 +8,7 @@ use miyu_kernel::id::SessionId;
 use miyu_session::{Load, LoadError, Workplace, load_placed};
 use miyu_store::log::OpenError;
 
-use super::{Found, Open, Running, offset, workspace};
+use super::{Found, Open, Running, offset};
 use crate::Core;
 use crate::list::NO_CWD;
 use crate::refusal::Refusal;
@@ -33,13 +33,12 @@ impl Open {
             return Err(Refusal::NOT_FOUND);
         };
         // 照日志里最后一次记下的工作目录，都没有才退回 `~`（施工 4-9 再补三上）；加进来的目录照最后一次记下的（施工 5-10
-        // 上）。施工 9-7 上起换工作区的事件也算。记下的是当时挑好的：太宽的是人选的、照用（施工 9-7 补：原来载入时再判一次，
-        // 重启以后人选的 `~` 被换掉），落在数据根里的照旧退回；什么都没记下的照头自己带上的判。施工 V-2 三补起载入读日志时
-        // 顺手认，不另读一遍。
+        // 上）。施工 9-7 上起换工作区的事件也算。记下的是当时挑好的：太宽的照用（施工 9-7 补、5-14），落在数据根里的退回这个
+        // 会话的默认工作区；什么都没记下的照 `~` 判。施工 V-2 三补起载入读日志时顺手认，不另读一遍。
         let (picking, owner_of) = (Arc::clone(core), owner.clone());
-        let pick = Box::new(move |last: Option<&str>| match last {
-            Some(cwd) => super::pick(&picking, &owner_of, cwd, true).cwd,
-            None => workspace(&picking, &owner_of, NO_CWD),
+        let fallback = core.root.session_workspace(&owner, id);
+        let pick = Box::new(move |last: Option<&str>| {
+            super::pick(&picking, &owner_of, last.unwrap_or(NO_CWD), &fallback).cwd
         });
         let loaded = load_placed(Load {
             root: &core.root,

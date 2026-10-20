@@ -294,7 +294,11 @@ async fn only_a_local_main_session_has_it() {
     let home = Home::new();
     let parent = SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d99").expect("合写法");
     let child = Lines {
-        lineage: Some(Lineage { parent, depth: 1 }),
+        lineage: Some(Lineage {
+            parent,
+            depth: 1,
+            workspace_from: None,
+        }),
         ..Lines::default()
     };
     let group = Lines {

@@ -64,7 +64,6 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         memory: None,
         preset: None,
         group: None,
-        chosen: false,
         profile: false,
         images: true,
     };

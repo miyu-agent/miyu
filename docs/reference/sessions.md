@@ -54,7 +54,7 @@
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
 | `memory` | `persona`、`session`、`off` | 记忆跟着人格、只在这个会话里、不用；不写照人格的设置 |
 | `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
-| `chosen` | 布尔，默认 `false` | `cwd` 是人明着选的：太宽（家目录、根目录）也照用；不写的太宽了退回默认工作区 |
+| `chosen` | 布尔，默认 `false` | 照收不看（以前用来区分人选的）：太宽的 `cwd`（家目录、根目录）一律照用、回应带 `wide`，能随便写的范围是这个会话自己的默认工作区 |
 | `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
 | `images` | 布尔，默认 `true` | 你显示得了图片吗 |
 | `project` | 字符串 | 在哪个项目里建（[项目](projects.md)）：没写的 `persona`、`preset` 照项目的，建好了记一条 `session.meta_changed`（回应的 `events` 是 `[1, 2]`） |

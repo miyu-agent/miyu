@@ -116,6 +116,13 @@ impl DataRoot {
         self.account_dir(account).join("workspace")
     }
 
+    /// 一个会话的默认工作区：`home/<账号>/workspace/<会话编号>/`（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话
+    /// 一个」）。网页不选目录的、工作目录太宽的照它；子会话、分叉出来的用父会话、来源会话的那一个（`session.created` 的
+    /// `workspace_from`）。不在这里建：用到的一方自己建。
+    pub fn session_workspace(&self, account: &AccountId, session: &SessionId) -> PathBuf {
+        self.workspace(account).join(session.as_str())
+    }
+
     /// 一个账号有哪些会话，从新到旧：会话编号是 UUIDv7，照编号倒着排就是照造的先后倒着（施工 3-9 下）。
     /// 不合会话编号写法的目录不算；还没有会话的是空的。
     ///

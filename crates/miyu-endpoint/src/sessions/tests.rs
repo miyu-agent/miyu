@@ -35,7 +35,11 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
     let parent = SessionId::parse("01900000-0000-7000-8000-000000000001").expect("合写法");
     let child = Child {
         command: CommandId::parse(&format!("{parent}/j1")).expect("合写法"),
-        lineage: Lineage { parent, depth: 1 },
+        lineage: Lineage {
+            parent,
+            depth: 1,
+            workspace_from: None,
+        },
         persona: Some("engineer".to_string()),
         owner: admin.clone(),
         venue: local(),
@@ -87,7 +91,6 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
         memory: None,
         preset: None,
         group: None,
-        chosen: true,
         profile: false,
         images: true,
     };

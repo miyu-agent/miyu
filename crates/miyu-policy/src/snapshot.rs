@@ -215,6 +215,7 @@ impl Snapshot {
             cwd: None,
             parent: None,
             depth: None,
+            workspace_from: None,
             model: None,
             persona: self.persona.clone(),
             preset: None,

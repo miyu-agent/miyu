@@ -129,6 +129,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             cwd: cwd.clone().or(created.cwd),
             parent: Some(parent.clone()),
             depth: Some(1),
+            workspace_from: created.workspace_from.or_else(|| Some(parent.clone())),
             model: plan.model,
             persona: plan.persona,
             preset: plan.preset.or(created.preset),

@@ -297,7 +297,8 @@ async fn the_child_copies_the_parent_and_gets_the_task_from_it() {
         Child {
             lineage: Lineage {
                 parent: parent.clone(),
-                depth: 1
+                depth: 1,
+                workspace_from: None,
             },
             command: CommandId::parse(&format!("{parent}/j1")).unwrap(),
             persona: None,

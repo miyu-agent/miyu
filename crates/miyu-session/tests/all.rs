@@ -104,6 +104,7 @@ mod sandbox;
 mod sandbox_confined;
 mod sandbox_private;
 mod sandbox_skills;
+mod sandbox_workspace;
 mod search;
 mod session_fact;
 mod session_usage;

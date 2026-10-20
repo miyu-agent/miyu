@@ -65,6 +65,8 @@ pub(crate) struct ToolKit {
     pub(crate) shelves: Vec<std::path::PathBuf>,
     /// 这个会话的附件目录（施工 3-9 六补）：沙盒里单独放开只读。
     pub(crate) attachments: PathBuf,
+    /// 工作目录太宽时退回的默认工作区（施工 5-14）：沙盒能写的照它；没有的照工作目录。
+    pub(crate) workplace: Option<crate::default_workspace::DefaultWorkspace>,
     /// 开着的技能给人看的名字（施工 9-8 五补）：读它们的 `SKILL.md` 时记进效果。
     pub(crate) names: crate::skills::Names,
     /// 会话用的预设的编号（施工 F-10 下下）：每次调用带上，她装的包在这一份预设里打开。

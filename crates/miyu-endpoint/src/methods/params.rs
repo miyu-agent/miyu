@@ -33,9 +33,10 @@ pub(super) struct CreateParams {
     /// 记忆的范围（施工 R-3 下）：`persona`、`session`、`off`；不写、写 `null` 的照人格的 `persona.toml`。
     #[serde(default)]
     pub(super) memory: Option<String>,
-    /// `cwd` 是人明着选的（施工 9-7 补）：太宽的照用、回应带 `wide`；不写的是头自己带上的，太宽照旧退回。
-    #[serde(default)]
-    pub(super) chosen: bool,
+    /// `cwd` 是人明着选的（施工 9-7 补）。施工 5-14 起照收不看：太宽的一律照用、回应带 `wide`，能写的工作区由会话退回它的
+    /// 默认工作区。
+    #[serde(default, rename = "chosen")]
+    pub(super) _chosen: bool,
     /// 这个头显示得了图片吗（施工 X-25）：语音这类写 `false`；不写的是显示得了。
     #[serde(default = "crate::venues::shows_images")]
     pub(super) images: bool,

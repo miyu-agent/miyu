@@ -153,7 +153,11 @@ async fn session(home: &Home, script: &Script, table: Option<&Arc<Table>>, lines
 /// 父会话 `parent` 派出来的第 `depth` 层子会话。
 fn child_of(parent: SessionId, depth: u32) -> Lines {
     Lines {
-        lineage: Some(Lineage { parent, depth }),
+        lineage: Some(Lineage {
+            parent,
+            depth,
+            workspace_from: None,
+        }),
         ..Lines::default()
     }
 }

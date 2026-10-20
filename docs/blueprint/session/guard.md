@@ -16,6 +16,7 @@
 | `resources/core/permissions/not-in-venue.txt`（施工 O-31 前） | 本机的会话里拒绝在场所里做的事的那一句：不进策略快照，本机的会话造、载入时读（`crates/miyu-session/src/open.rs` 的 `place`） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
+| `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
 
 ### 对外的样子
@@ -78,7 +79,7 @@
 **2. 边界表**
 
 1. 几片：工作区每判一次照这一轮的工作目录；别的几片造权限策略时（造会话、载入时）照那时的环境读一次，以后照它（施工 4-9 再补四下：原来每判一次重读环境变量）：
-   - 工作区：这一轮的工作目录。头报来的太宽的，协议端点已经退回了账号的默认工作区（`protocol.md`）。
+   - 工作区：这一轮的工作目录；太宽的（`miyu_fs::too_wide`）是这个会话的默认工作区（施工 5-14，`default_workspace.rs`；子会话、分叉出来的用 `session.created` 的 `workspace_from` 那一个），用到时建好：边界表不算不存在的那一片。相对路径照旧从工作目录算。
    - 加进来的目录：这一轮的，每一个都照工作区算（施工 5-10 上）。太宽的，协议端点已经拒绝了。
    - 数据根。
    - 临时目录：系统的临时目录。
@@ -210,6 +211,7 @@
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 问人，人点头以前扩展收不到 `tool.call`。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |
 | `crates/miyu-session/tests/guard_grants.rs`（施工 D-1） | 选了本会话都允许，同一个目录下面的写不再问、名字只是开头一样的旁边的目录照旧问；家目录里的一个文件只放它本身、同在家目录里的别的照旧问；家目录在链接后面也照真实的位置比（只在 Unix 上） |
 | `crates/miyu-session/tests/guard_dirs.rs` | 加进来的目录（施工 5-10 上）：里面写不用问、里面的 `.git/hooks` 只能读、只读照旧拒绝 |
+| `crates/miyu-session/tests/sandbox_workspace.rs`（施工 5-14） | 工作目录是家目录的：沙盒能写的是会话的默认工作区（用到时建好）、命令照旧从家目录起；子会话、孙会话写主会话的那一个，`workspace_from` 记下；载入以后文件工具写会话的那一个放行、家目录别处要问；Unix 上有收紧手段的真跑：`pwd` 是家目录，家目录写不了，会话的那一个写得了 |
 | `crates/miyu-session/tests/guard_private.rs`（施工 5-13） | 私密目录：工作区、只读两级的读都问人，说明里是 `private`、规则放行整个目录；没人能确认的不跑；只读的写不问直接拒；完全放开读写都不问；工作区、加进来的目录在里面的照工作区 |
 | `crates/miyu-fs/tests/boundary.rs` | 工作区能读能写、git 钩子和配置只能读；数据根在临时目录里也不能碰；工作区退回到数据根里照样是工作区；临时目录能读能写、系统和工具链只能读、别的在边界以外；不存在的一片不算；大小写不分的平台上数据根不分大小写；这一片自己也算；这台机器的系统目录、临时目录 |
 | `crates/miyu-fs/tests/resolve.rs` | 相对路径、`~`、还不存在的照上级、链接照指向的地方、Windows 的两种分隔符和目录联接 |
