@@ -39,9 +39,15 @@ impl Folder {
         let parent = cache.parent()?;
         for _ in 0..TRIES {
             let path = parent.join(format!("images-{:016x}", random()));
-            let mut builder = std::fs::DirBuilder::new();
+            // 只给本人（Unix 上 0700）；Windows 照它自己的权限，不设。
             #[cfg(unix)]
-            std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+            let builder = {
+                let mut builder = std::fs::DirBuilder::new();
+                std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+                builder
+            };
+            #[cfg(not(unix))]
+            let builder = std::fs::DirBuilder::new();
             match builder.create(&path) {
                 Ok(()) => {
                     // 先包起来：取不到真实路径的，丢掉时删掉刚建的。
