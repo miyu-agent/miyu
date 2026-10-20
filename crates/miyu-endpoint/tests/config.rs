@@ -178,7 +178,8 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(all["result"]["items"][9]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
-        json!([{"id":"general","name":"通用"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}])
+        json!([{"id":"general","name":"通用"},{"id":"privacy","name":"隐私与安全"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}]),
+        "端点自己那一份清单照它的先后：权限在关于你前面（核心登记的那一份「隐私与安全」排在「用户」下面）"
     );
 }
 

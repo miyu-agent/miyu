@@ -33,6 +33,7 @@ pub fn items() -> Vec<Item> {
         miyu_session::settings::JobSettings::ITEMS,
         miyu_session::settings::MemorySettings::ITEMS,
         miyu_session::settings::ProfileSettings::ITEMS,
+        miyu_tool::private::ITEMS,
     ]
     .concat()
 }

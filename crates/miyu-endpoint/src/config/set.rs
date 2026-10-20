@@ -192,7 +192,7 @@ pub(crate) fn set_by(
         WriteLayer::Personal => Layer::Personal,
     };
     let mut config = core.config();
-    let plan = plan(&config, layer, params, &words)?;
+    let plan = plan(&config, layer, params, &words, core.home.as_deref())?;
     let via = match &plan {
         Plan::Changes(_) => Via::Set,
         Plan::Text(..) => Via::Edit,
@@ -234,7 +234,13 @@ pub(crate) fn set_by(
 }
 
 /// 查参数、认键、照类型读值，交回这一次改什么。
-fn plan(config: &Config, layer: Layer, params: SetParams, words: &Human) -> Result<Plan, Refusal> {
+fn plan(
+    config: &Config,
+    layer: Layer,
+    params: SetParams,
+    words: &Human,
+    home: Option<&std::path::Path>,
+) -> Result<Plan, Refusal> {
     match (params.changes, params.text) {
         (Some(changes), None) if !changes.is_empty() => {
             let mut keys: Vec<&str> = changes.iter().map(|change| change.key.as_str()).collect();
@@ -244,7 +250,7 @@ fn plan(config: &Config, layer: Layer, params: SetParams, words: &Human) -> Resu
             }
             let named: Vec<String> = changes.iter().map(|change| change.key.clone()).collect();
             selected(config, Some(named.as_slice()), words)?;
-            wanted(config, layer, changes, words).map(Plan::Changes)
+            wanted(config, layer, changes, (words, home)).map(Plan::Changes)
         }
         (None, Some(text)) => match params.version {
             Some(version) => Ok(Plan::Text(text, version)),
@@ -259,7 +265,7 @@ fn wanted(
     config: &Config,
     layer: Layer,
     changes: Vec<ChangeParam>,
-    words: &Human,
+    (words, home): (&Human, Option<&std::path::Path>),
 ) -> Result<Vec<Wanted>, Refusal> {
     let mut wanted = Vec::new();
     let mut problems = Vec::new();
@@ -287,7 +293,12 @@ fn wanted(
                     None => Some(Code::WrongType),
                     Some(read) => item.kind.check(read).err(),
                 };
-                if let Some(code) = code {
+                // 私密目录多查一道（施工 5-15 下）：写错的那一个照原样说。
+                let code = match (code, &read) {
+                    (None, Some(read)) => super::private::problem(&change.key, read, home),
+                    (code, _) => code.map(|code| (code, raw.clone())),
+                };
+                if let Some((code, raw)) = code {
                     problems.push(request_problem(
                         config,
                         code,

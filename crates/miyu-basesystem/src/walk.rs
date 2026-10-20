@@ -49,10 +49,14 @@ impl Fence {
                 .as_deref()
                 .and_then(|dir| std::fs::canonicalize(dir).ok()),
             workspace: resolve(Path::new(&call.cwd), call.home.as_deref(), &call.cwd).ok(),
+            // 照这一轮的配置（施工 5-15 下）：人加的、去掉的；没有配置端口的照出厂的。
             private: call
                 .home
                 .as_deref()
-                .map(private_dirs)
+                .map(|home| match &call.settings {
+                    Some(settings) => miyu_tool::private::dirs(&settings.values(), home),
+                    None => private_dirs(home),
+                })
                 .unwrap_or_default()
                 .iter()
                 .filter_map(|dir| std::fs::canonicalize(dir).ok())

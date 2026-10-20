@@ -65,6 +65,8 @@ pub enum Code {
     /// 模型默认的温度这个模型用不了（施工 8-22，`miyu_models::temperature::unusable` 查）：目录说它不收温度的，`name` 没有；
     /// 超过这个模型走的驱动的上限的，`name` 是上限（`anthropic` 是 `1`）。只报不丢，请求照没写发。
     UnusableTemperature,
+    /// 私密目录写了家目录本身或它的上级（施工 5-15 下）：藏了它什么命令都跑不了，不收。
+    PrivateTooBroad,
 }
 
 impl Code {
@@ -90,6 +92,7 @@ impl Code {
             Code::NoProvider | Code::NoPool => "bad_reference",
             Code::UnknownEffort => "unknown_effort",
             Code::UnusableTemperature => "unusable_temperature",
+            Code::PrivateTooBroad => "private_too_broad",
         }
     }
 

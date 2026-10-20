@@ -39,7 +39,7 @@ pub struct Places {
     pub readable: Vec<PathBuf>,
     /// 数据根里单独放开只读的目录（施工 X-10 上）：开着的技能文件夹。
     pub shelves: Vec<PathBuf>,
-    /// 别的程序的私密目录（施工 5-13，[`private_dirs`]）。
+    /// 别的程序的私密目录（施工 5-13，[`crate::private_dirs`]）。
     pub private: Vec<PathBuf>,
 }
 
@@ -69,58 +69,6 @@ const SYSTEM: &[&str] = &[];
 /// 家目录下的工具链目录（11 第四节）。
 const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 
-/// 家目录下别的程序的私密目录，三个平台都有的（施工 5-13，11 第四节）：钥匙、登录、旧版 Miyu 的数据。
-const PRIVATE: &[&str] = &[".ssh", ".gnupg", ".claude", ".miyu", ".config/gh"];
-
-/// 浏览器的配置（施工 5-13）：Linux 上的。
-#[cfg(target_os = "linux")]
-const PRIVATE_HERE: &[&str] = &[
-    ".mozilla",
-    ".config/google-chrome",
-    ".config/chromium",
-    ".config/BraveSoftware",
-    ".config/microsoft-edge",
-];
-
-/// 浏览器的配置、钥匙串（施工 5-13）：macOS 上的。
-#[cfg(target_os = "macos")]
-const PRIVATE_HERE: &[&str] = &[
-    "Library/Application Support/Google/Chrome",
-    "Library/Application Support/Firefox",
-    "Library/Application Support/BraveSoftware",
-    "Library/Application Support/Microsoft Edge",
-    "Library/Safari",
-    "Library/Cookies",
-    "Library/Keychains",
-];
-
-/// 浏览器的配置、GitHub CLI 的登录（施工 5-13）：Windows 上的。
-#[cfg(windows)]
-const PRIVATE_HERE: &[&str] = &[
-    "AppData/Local/Google/Chrome/User Data",
-    "AppData/Roaming/Mozilla/Firefox",
-    "AppData/Local/Microsoft/Edge/User Data",
-    "AppData/Roaming/GitHub CLI",
-];
-
-/// 别的 Unix：只有三个平台都有的那几个。
-#[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
-const PRIVATE_HERE: &[&str] = &[];
-
-/// 家目录 `home` 下别的程序的私密目录（施工 5-13，11 第四节）：照原样拼，不管在不在，一段一段接上（Windows 上分隔符照
-/// 它自己的）。权限策略、沙盒、往下走目录的工具都照它。
-pub fn private_dirs(home: &Path) -> Vec<PathBuf> {
-    PRIVATE
-        .iter()
-        .chain(PRIVATE_HERE)
-        .map(|relative| {
-            relative
-                .split('/')
-                .fold(home.to_path_buf(), |dir, part| dir.join(part))
-        })
-        .collect()
-}
-
 impl Places {
     /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方。
     /// 家目录读不出来的，工具链目录只算环境变量指到的。
@@ -141,7 +89,7 @@ impl Places {
             temp: std::env::temp_dir(),
             readable,
             shelves: Vec::new(),
-            private: home.map(private_dirs).unwrap_or_default(),
+            private: home.map(crate::private_dirs).unwrap_or_default(),
         }
     }
 }

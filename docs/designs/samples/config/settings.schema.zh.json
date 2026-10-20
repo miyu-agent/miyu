@@ -786,6 +786,46 @@
       },
       "type": "object"
     },
+    "sandbox": {
+      "properties": {
+        "private": {
+          "properties": {
+            "add": {
+              "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "加的私密目录",
+              "type": "array"
+            },
+            "remove": {
+              "description": "出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。能写：~/.ssh、~/.gnupg、~/.claude、~/.miyu、~/.config/gh、~/.mozilla、~/.config/google-chrome、~/.config/chromium、~/.config/BraveSoftware 或 ~/.config/microsoft-edge 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "enum": [
+                  "~/.ssh",
+                  "~/.gnupg",
+                  "~/.claude",
+                  "~/.miyu",
+                  "~/.config/gh",
+                  "~/.mozilla",
+                  "~/.config/google-chrome",
+                  "~/.config/chromium",
+                  "~/.config/BraveSoftware",
+                  "~/.config/microsoft-edge"
+                ],
+                "type": "string"
+              },
+              "title": "去掉的出厂私密目录",
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "terminal": {
       "properties": {
         "idle_new_after": {

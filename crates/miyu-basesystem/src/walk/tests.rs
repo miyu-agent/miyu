@@ -5,6 +5,12 @@ use std::time::{Duration, Instant};
 
 use miyu_tool::Stop;
 
+use std::borrow::Cow;
+use std::sync::Arc;
+
+use miyu_config::secret::{Reference, Secret};
+use miyu_config::{Value, Values};
+
 use super::{Fence, files};
 use crate::blocking::blocking;
 
@@ -65,4 +71,40 @@ async fn dropping_the_call_stops_the_walk() {
             .expect("活停下了");
     assert!(stopped, "丢掉 future，旗就举起来");
     assert_eq!(count, 0, "举了旗，一步都不往下走");
+}
+
+/// 这一轮的配置：最终值是 `values`，没有密钥。
+struct Turn(Values);
+
+impl miyu_tool::SettingsPort for Turn {
+    fn values(&self) -> Values {
+        self.0.clone()
+    }
+
+    fn secret(&self, _: &Reference) -> Option<Secret> {
+        None
+    }
+}
+
+/// 人在配置里加的私密目录（施工 5-15 下）：往下走目录时同出厂的一样不进；没有配置端口的照出厂的。
+#[test]
+fn a_private_dir_added_in_the_settings_is_kept_out() {
+    let dir = Temp(std::env::temp_dir().join(format!("miyu-walk-private-{}", std::process::id())));
+    let diary = dir.0.join("home").join("diary");
+    std::fs::create_dir_all(&diary).expect("建得了目录");
+    let mut values = Values::default();
+    values.set(
+        miyu_tool::private::ADD,
+        Value::List(vec![Value::Text(Cow::Borrowed("~/diary"))]),
+    );
+    std::fs::create_dir_all(dir.0.join("work")).expect("建得了目录");
+    let mut call = miyu_tool::testkit::call("{}");
+    // 工作目录在家目录外面：工作目录那一片里的照旧不挡。
+    call.cwd = dir.0.join("work").to_string_lossy().into_owned();
+    call.home = Some(dir.0.join("home"));
+    call.settings = Some(Arc::new(Turn(values)) as Arc<dyn miyu_tool::SettingsPort>);
+    let real = std::fs::canonicalize(&diary).expect("在");
+    assert!(Fence::of(&call).keeps_out(&real), "加的私密目录不进");
+    call.settings = None;
+    assert!(!Fence::of(&call).keeps_out(&real), "没有配置的照出厂的");
 }

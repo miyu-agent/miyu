@@ -12,6 +12,8 @@ publish.workspace = true
 miyu-kernel = { path = "../miyu-kernel" }
 # 这一轮的配置的端口（施工 N-2 下）：最终值、密钥引用的类型。
 miyu-config = { path = "../miyu-config" }
+# 出厂的私密目录、照人加的去掉的拼（施工 5-15 下）。
+miyu-fs = { path = "../miyu-fs" }
 # 记忆的端口交回的编号（施工 R-3 中）。
 miyu-recall = { path = "../miyu-recall" }
 # 认附件是不是文本，和驱动照字发文本文件是同一条（施工 C-9 把认附件挪来）。

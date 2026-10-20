@@ -19,16 +19,18 @@ mod list;
 #[cfg(unix)]
 mod nofollow;
 mod open;
+mod private;
 mod range;
 mod replace;
 mod resolve;
 pub mod trash;
 mod wide;
 
-pub use boundary::{Boundary, Places, Zone, private_dirs, system_dirs, within};
+pub use boundary::{Boundary, Places, Zone, system_dirs, within};
 pub use find::{Built, CAP, DEPTH, FRESH_SECS, Found, Index, MAX_INDEXES, SHOWN, score};
 pub use list::{Entry, list_dir};
 pub use open::{Kind, OpenError, open_file};
+pub use private::{SHIPPED_PRIVATE, private_dirs, private_dirs_with, too_broad, written};
 pub use range::{MAX_LENGTH, Segment, read_range};
 pub use replace::replace;
 pub use resolve::{ResolveError, resolve, resolve_itself, tilde};

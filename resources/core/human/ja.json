@@ -107,12 +107,20 @@
           "off": "無効"
         }
       },
+      "sandbox.private.add": {
+        "name": "追加した非公開フォルダ",
+        "description": "コマンドが読み書きできず、ファイルツールが先に確認するフォルダです。組み込みのものに加わります。~/… か絶対パスで書きます。ホームフォルダとその上位は受け付けません。"
+      },
+      "sandbox.private.remove": {
+        "name": "外した組み込みの非公開フォルダ",
+        "description": "組み込みの非公開フォルダのうち隠したくないものです。外すとコマンドから読め、ファイルツールも確認しなくなります。既定に戻すとこの一覧を空にします。"
+      },
       "permission.level": {
         "name": "新しいセッションの権限レベル",
         "description": "新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。",
         "options": {
           "workspace": "ワークスペース（サンドボックス）",
-          "full": "フルアクセス"
+          "full": "フルアクセス（サンドボックスなし）"
         }
       },
       "permission.start_read_only": {
@@ -341,6 +349,7 @@
       }
     },
     "pages": {
+      "privacy": "プライバシーとセキュリティ",
       "packages": "パッケージ",
       "general": "一般",
       "user": "ユーザー",
@@ -348,6 +357,8 @@
       "models": "モデル"
     },
     "groups": {
+      "permission": "権限",
+      "private": "非公開フォルダ",
       "commands": "コマンド",
       "display": "表示",
       "persona": "ペルソナ",
@@ -657,6 +668,7 @@
     "config/wrong-layer": "{key} は{layers}にだけ書けます。{layer}に書いても効きません",
     "config/not-tightening": "プロジェクト設定では制限を厳しくすることしかできません。{key} は今 {current} で、ここに書かれた {got} のほうが緩いので効きません",
     "config/untrusted-project": "プロジェクト設定は未信頼のため無視しました",
+    "config/private-too-broad": "{got} はホームフォルダかその上位なので非公開にできません。隠すとコマンドがツールや設定を読めず、何も実行できなくなります",
     "config/fix-example": "どれかに直してください。例：{example}",
     "config/fix-write": "{example} に直してください",
     "config/fix-move": "{layers}に移してください",

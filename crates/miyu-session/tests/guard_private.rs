@@ -1,6 +1,6 @@
 //! 别的程序的私密目录（施工 5-13，`docs/blueprint/session/guard.md` 判法表）：文件工具读、写都问人，完全放开不问，只读时写
 //! 照拒；问人的说明里这一片写 `private`，提的规则放行整个目录。工作区、加进来的目录落在里面的照人给的算。场地的假家目录
-//! 是 `home/`。
+//! 是 `home/`。人在配置里加的、去掉的出厂项照这一轮的配置算（施工 5-15 下）。
 
 use std::sync::Arc;
 
@@ -219,4 +219,44 @@ async fn a_workspace_or_added_dir_inside_a_private_dir_goes_as_given() {
         ToolStatus::Ok,
         "加进来的目录：照工作区"
     );
+}
+
+#[tokio::test]
+async fn the_private_dirs_follow_the_settings() {
+    let mut home = Home::outside_temp();
+    file(&home, "home/diary/today.md");
+    file(&home, "home/.ssh/id_ed25519");
+    home.configs = crate::support::routing::configs_with(
+        "",
+        "[sandbox.private]\nadd = [\"~/diary\"]\nremove = [\"~/.ssh\"]\n",
+        &[],
+    );
+    let kit = Kit::new();
+    let diary = at(&home, "home/diary/today.md");
+    let handle = called(
+        &home,
+        &kit,
+        ("work", Vec::new()),
+        (Level::Workspace, false, true),
+        ("read", &diary),
+    )
+    .await;
+    assert!(kit.read.calls().is_empty(), "人加的：问人");
+    let asked = request(&home, &handle).expect("问了人");
+    let detail: serde_json::Value =
+        serde_json::from_str(asked.detail.expect("有说明").get()).expect("是 JSON");
+    assert_eq!(detail["paths"][0]["zone"], "private");
+
+    let kit = Kit::new();
+    let key = at(&home, "home/.ssh/id_ed25519");
+    let handle = called(
+        &home,
+        &kit,
+        ("work", Vec::new()),
+        (Level::Workspace, false, true),
+        ("read", &key),
+    )
+    .await;
+    assert!(request(&home, &handle).is_none(), "去掉的出厂项：不问");
+    assert_eq!(kit.read.calls().len(), 1, "照常读");
 }

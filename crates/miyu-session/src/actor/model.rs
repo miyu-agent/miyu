@@ -144,6 +144,11 @@ impl Actor {
             self.announce(ChangeWhy::Turn);
         }
         let values = self.config.current().resolved.values();
+        // 私密目录照这一轮的配置（施工 5-15 下）：权限策略、沙盒都换上。
+        if let Some(private) = self.guard.private_of(&values) {
+            self.guard.set_private(private.clone());
+            self.tools.set_private(private);
+        }
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values.clone()).await;
         let skills = self.skills_turn(&present, &values).await;

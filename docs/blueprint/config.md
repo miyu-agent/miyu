@@ -253,6 +253,8 @@ miyu_config::settings! {
 | `usage.currency` | 文字，最多 3 个字符 | `USD` | 系统、个人 | 不能写 | `now`：下一次 `usage.query` 照新的排；`session_usage` 照这一轮冻结的 | 8-15（`models.md`「对外的样子」） |
 | `log.level` | 选项 `error`、`warn`、`info`、`debug`、`trace`、`off` | `info` | 系统 | 不能写 | `now`，`MIYU_LOG` 压过 | 8-1 声明，8-2 读，8-4 当场换 |
 | `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2 |
+| `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
+| `sandbox.private.remove` | 选项的列表，选项是这台机器的出厂私密目录 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
 | `external.bindings.<external>` | 名字（本机账号） | 没有 | 系统 | 不能写 | `now` | O-3：终端管理员的平台账号（`venues.md`），一个号一行；对着不存在的账号的认的时候当没写、记一行运行日志。头在平台接入那个软件的信息页上画成「终端管理员的 QQ 号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统、个人 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
 | `ui.head` | 名字（软件包的编号） | `tui` | 系统、个人 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
@@ -308,7 +310,8 @@ miyu_config::settings! {
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
 - `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）、`profile.preferred_reply_language`（施工 P-9 补，2026-10-16 项目主人定：回复语言，默认用它、对话里明说换就换）：只写在个人设置里，可以不写（不写就没有，没有默认值），最多 64、2000、64 个字，新会话生效；更多描述是几行字（`lines`，控件 `textarea`，P-9 三补），能分行，拼进 `<user>` 块时照原样。回复语言的控件是 `combo`，建议值在字表里，照这种界面语言的人最常用的排在前面，都写语言自己的名字（简体中文、English、日本語……），十五个；「其他」的那一行字头自己写。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；抽取、合并照这一次的配置读称呼写人（`memory.md` 第六条第 4 款、第七条第 2 款，施工 R-6 再修；声明从端点挪到 `miyu-session/src/settings.rs`，同记忆那几项）；设置页单独一页「用户」（`user`，施工 P-9 再补，2026-10-16 项目主人定：关于人自己的不放在「通用」里）里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。三项的说明不再写「新会话生效」：生效时机头另有一行写（P-9 再补，原来重复了）。
 - `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
-- `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。
+- `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。设置页挪到「隐私与安全」（`privacy` 页的 `permission` 组，施工 5-15 下），完全放开的选项名写上「不启用沙盒」。
+- `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（选项就是这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同，选项照原样给人看、不另起名字）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。系统、个人两层，下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记（`settings!` 的选项只收写死的字）。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
 - 蓝图里写着「配置那一步能改」的几个数（压缩的几个数、`jobs.*`、回收处留几天、空闲多久退出）这次不挪：只挪真要调的（2026-10-01 主会话定）。有人要改哪一个，再为它开一张小单。
@@ -359,6 +362,7 @@ miyu_config::settings! {
 | `unknown_key` | 警告，`config.set` 里是错误 | 清单里没有这一项 | 8-2 |
 | `wrong_type` | 错误 | 类型不对，例如开关写成了 `"yes"`，还有一组键下面写成了一个值，例如 `ui = "zh"` | 8-2 |
 | `not_an_option` | 错误 | 选项不在列出的几个里 | 8-2 |
+| `private_too_broad` | 错误 | `sandbox.private.add` 写了家目录本身或它的上级（`got` 是那一个）：藏了它什么命令都跑不了。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-15 下 |
 | `out_of_range` | 错误 | 数不在范围里，字太长 | 8-6（整数） |
 | `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对 | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
@@ -1284,6 +1288,15 @@ default = "full"
 # 能写：0 到 1000000 之间的数。只能写在系统配置或个人设置里。下一轮生效。
 # output =
 
+[sandbox.private]
+# 加的私密目录：命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。
+# 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
+# add =
+
+# 去掉的出厂私密目录：出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。
+# 能写：~/.ssh、~/.gnupg、~/.claude、~/.miyu、~/.config/gh、~/.mozilla、~/.config/google-chrome、~/.config/chromium、~/.config/BraveSoftware 或 ~/.config/microsoft-edge 的列表。只能写在系统配置或个人设置里。下一轮生效。
+# remove =
+
 [terminal]
 # 闲置多久开新会话：上一次说话以后闲置超过这么多分钟，下一句开一个新的终端会话，旧会话保留。0 表示不开新的。
 # 能写：0 到 525600 之间的整数。只能写在系统配置或个人设置里。立即生效。
@@ -2111,6 +2124,46 @@ currency = "USD"
       },
       "type": "object"
     },
+    "sandbox": {
+      "properties": {
+        "private": {
+          "properties": {
+            "add": {
+              "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "加的私密目录",
+              "type": "array"
+            },
+            "remove": {
+              "description": "出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。能写：~/.ssh、~/.gnupg、~/.claude、~/.miyu、~/.config/gh、~/.mozilla、~/.config/google-chrome、~/.config/chromium、~/.config/BraveSoftware 或 ~/.config/microsoft-edge 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "enum": [
+                  "~/.ssh",
+                  "~/.gnupg",
+                  "~/.claude",
+                  "~/.miyu",
+                  "~/.config/gh",
+                  "~/.mozilla",
+                  "~/.config/google-chrome",
+                  "~/.config/chromium",
+                  "~/.config/BraveSoftware",
+                  "~/.config/microsoft-edge"
+                ],
+                "type": "string"
+              },
+              "title": "去掉的出厂私密目录",
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "terminal": {
       "properties": {
         "idle_new_after": {
@@ -2259,7 +2312,9 @@ currency = "USD"
 | 选项 | `admin` 管理员、`anyone` 所有人、`off` 停用 | Admins、Everyone、Off | 管理者、全員、無効 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
 | 说明 | 新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。 | Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. | 新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。 |
-| 选项 | `workspace` 工作区（沙盒）、`full` 完全放开 | Workspace (sandbox)、Full access | ワークスペース（サンドボックス）、フルアクセス |
+| 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |
+| `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
+| `sandbox.private.remove` 名字（5-15 下） | 去掉的出厂私密目录 | Removed built-in private folders | 外した組み込みの非公開フォルダ |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |
 | 说明（8-28 改成不点名哪个头） | 打开终端界面或网页时，开一个新会话，还是接着最近的那一个。 | Whether a terminal interface or the web page opens a new session or picks up the most recent one. | 端末画面やウェブを開いたときに、新しいセッションを始めるか、最近のセッションを続けるかです。 |
 | 选项 | `new` 新会话、`recent` 最近的会话 | A new session、The most recent session | 新しいセッション、最近のセッション |

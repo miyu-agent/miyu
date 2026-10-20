@@ -34,6 +34,7 @@ mod messages;
 mod nested;
 mod packages;
 pub mod picture;
+pub mod private;
 mod questions;
 mod run;
 mod sessions;

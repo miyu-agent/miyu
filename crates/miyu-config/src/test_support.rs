@@ -127,6 +127,10 @@ pub(crate) fn words(items: &[Item]) -> Fake {
             "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算",
         ),
         ("config/untrusted-project", "项目配置未信任，已忽略"),
+        (
+            "config/private-too-broad",
+            "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
+        ),
         ("config/fix-example", "改成其中一个，例如 {example}"),
         ("config/fix-write", "改成 {example}"),
         ("config/fix-move", "挪到{layers}里去"),

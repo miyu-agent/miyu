@@ -49,6 +49,9 @@ miyu-store = { path = "../miyu-store" }
 miyu-log = { path = "../miyu-log" }
 # 测试里的调用在异步里跑。
 tokio = { version = "1", features = ["macros", "rt", "time"] }
+# 往下走目录照这一轮的配置挑私密目录（施工 5-15 下）：假的调用、配置的值。
+miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
+miyu-config = { path = "../miyu-config" }
 
 [lints]
 workspace = true

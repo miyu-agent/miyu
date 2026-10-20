@@ -58,3 +58,27 @@ fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
     );
     std::fs::remove_dir_all(&scratch).expect("删得掉");
 }
+
+/// 这一轮的私密目录（施工 5-15 下）：换上了的照它藏，出厂的去掉了的不藏、人加的藏。
+#[test]
+fn the_turn_private_dirs_are_what_gets_hidden() {
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-turn-{}", std::process::id()));
+    let home = scratch.join("home");
+    for dir in [".miyu", ".ssh", "diary"] {
+        std::fs::create_dir_all(home.join(dir)).expect("建得了目录");
+    }
+    let mut sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        Some(home.clone()),
+        home.join(".miyu"),
+        (None, false),
+    );
+    sandbox.set_private(vec![home.join("diary")]);
+    let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
+    assert_eq!(
+        sandbox.hidden(real(".miyu"), &[], false),
+        [real(".miyu"), real("diary")],
+        "数据根照藏，.ssh 去掉了不藏，人加的藏"
+    );
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+}

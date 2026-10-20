@@ -1,5 +1,7 @@
 //! 判法表的每一格（`11-权限与沙盒.md` 第二节，施工 4-3 下）：纯的判法，不碰磁盘。
 
+use miyu_kernel::event::Level;
+
 use super::*;
 
 #[test]

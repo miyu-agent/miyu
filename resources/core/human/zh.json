@@ -107,12 +107,20 @@
           "off": "停用"
         }
       },
+      "sandbox.private.add": {
+        "name": "加的私密目录",
+        "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。"
+      },
+      "sandbox.private.remove": {
+        "name": "去掉的出厂私密目录",
+        "description": "出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。"
+      },
       "permission.level": {
         "name": "新会话的权限级别",
         "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。",
         "options": {
           "workspace": "工作区（沙盒）",
-          "full": "完全放开"
+          "full": "完全放开（不启用沙盒）"
         }
       },
       "permission.start_read_only": {
@@ -341,6 +349,7 @@
       }
     },
     "pages": {
+      "privacy": "隐私与安全",
       "packages": "软件包",
       "general": "通用",
       "user": "用户",
@@ -348,6 +357,8 @@
       "models": "模型"
     },
     "groups": {
+      "permission": "权限",
+      "private": "私密目录",
       "commands": "命令",
       "display": "显示",
       "persona": "人格",
@@ -657,6 +668,7 @@
     "config/wrong-layer": "{key} 只能写在{layers}里，写在{layer}里不算",
     "config/not-tightening": "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算",
     "config/untrusted-project": "项目配置未信任，已忽略",
+    "config/private-too-broad": "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
     "config/fix-example": "改成其中一个，例如 {example}",
     "config/fix-write": "改成 {example}",
     "config/fix-move": "挪到{layers}里去",

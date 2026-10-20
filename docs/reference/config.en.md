@@ -100,7 +100,7 @@ All changes are checked and written together: one bad item refuses the whole req
 |---|---|
 | `bad_params` (`-32602`) | Not exactly one of `changes` and `text`; a change without exactly one of `value`, `input`, `unset`; the same key twice; `text` without `version` |
 | `unknown_config_key` | A key not in the list, `data.problems` |
-| `config_invalid` | A bad value, or not allowed in this layer; `data.problems` lists each |
+| `config_invalid` | A bad value, or not allowed in this layer; `data.problems` lists each. Where `sandbox.private.add` names your home folder or a folder above it, that problem's `code` is `private_too_broad` and `got` is that folder |
 | `config_conflict` | `expect` doesn't match (`data.current`); `version` doesn't match or someone keeps editing by hand (`data.version`) |
 | `config_file_broken` | The file can't be read right now, so single settings can't be changed; `data.problems` |
 | `local_only` | An extension changed something it may not |

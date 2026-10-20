@@ -107,12 +107,20 @@
           "off": "Off"
         }
       },
+      "sandbox.private.add": {
+        "name": "Added private folders",
+        "description": "Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted."
+      },
+      "sandbox.private.remove": {
+        "name": "Removed built-in private folders",
+        "description": "Built-in private folders you don't want hidden. Once removed, commands can read them and file tools stop asking; restoring the default clears this list."
+      },
       "permission.level": {
         "name": "Permission level for new sessions",
         "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.",
         "options": {
           "workspace": "Workspace (sandbox)",
-          "full": "Full access"
+          "full": "Full access (no sandbox)"
         }
       },
       "permission.start_read_only": {
@@ -341,6 +349,7 @@
       }
     },
     "pages": {
+      "privacy": "Privacy & security",
       "packages": "Packages",
       "general": "General",
       "user": "User",
@@ -348,6 +357,8 @@
       "models": "Models"
     },
     "groups": {
+      "permission": "Permissions",
+      "private": "Private folders",
       "commands": "Commands",
       "display": "Display",
       "persona": "Persona",
@@ -661,6 +672,7 @@
     "config/wrong-layer": "{key} belongs in {layers}. It does not count in {layer}",
     "config/not-tightening": "A project config can only make limits stricter. {key} is {current}, and {got} here is looser, so it does not count",
     "config/untrusted-project": "Project config not trusted, ignored",
+    "config/private-too-broad": "{got} is your home folder or above it, so it can't be private: hidden, it would keep every command from reading its tools and settings",
     "config/fix-example": "Write one of them, e.g. {example}",
     "config/fix-write": "Write {example}",
     "config/fix-move": "Move it to {layers}",

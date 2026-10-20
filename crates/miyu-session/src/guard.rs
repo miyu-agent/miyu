@@ -19,7 +19,7 @@ use std::sync::{Arc, RwLock};
 use serde_json::{Value, json};
 
 use miyu_fs::{Boundary, Places, ResolveError, Zone, resolve, resolve_itself};
-use miyu_kernel::event::{Level, Permission, Said};
+use miyu_kernel::event::{Permission, Said};
 use miyu_kernel::id::ModuleId;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Verdict;
@@ -33,6 +33,10 @@ use crate::lettering::Lettering;
 
 mod asking;
 mod confined;
+mod levels;
+
+pub(crate) use levels::{Effective, effective};
+use levels::{Mark, mark};
 
 use asking::{Asked, ask, granted, hazardous, this_dir};
 pub(crate) use confined::Confined;
@@ -64,6 +68,8 @@ pub(crate) struct Guard {
     attachments: Option<PathBuf>,
     /// 工作目录太宽时退回哪（施工 5-14）：没有的工作区就是工作目录。
     workplace: Option<DefaultWorkspace>,
+    /// 别的程序的私密目录（施工 5-15 下）：造的时候是出厂的，回合开始照这一轮的配置换（人加的、去掉的），同技能文件夹上锁。
+    private: RwLock<Vec<PathBuf>>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -85,30 +91,6 @@ impl Place {
     }
 }
 
-/// 实际生效的那一级。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Effective {
-    /// 完全放开。
-    Full,
-    /// 工作区。
-    Workspace,
-    /// 只读：开着只读开关，或者常用的那一级不认识（按最严的算）。
-    ReadOnly,
-}
-
-/// 一条路径判下来是什么。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Mark {
-    /// 放行。
-    Allow,
-    /// 要问人。
-    Ask,
-    /// 拒绝：碰到了数据根。
-    Forbidden,
-    /// 拒绝：只读的时候要写。
-    ReadOnly,
-}
-
 impl Guard {
     /// 照目录 `catalog` 找工具，数据根是 `data_root`，家目录是 `home`，拒绝时的话照 `lettering`，这台机器上的沙盒能不能用
     /// 是 `sandboxed`，会话在 `place`（施工 O-31 前），只碰得到自己工作区的有 `confined`（施工 5-12）。
@@ -128,6 +110,7 @@ impl Guard {
             data_root,
             home,
             real_home,
+            private: RwLock::new(places.private.clone()),
             places,
             lettering,
             sandboxed,
@@ -166,6 +149,20 @@ impl Guard {
             .shelves
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = shelves;
+    }
+
+    /// 照这一轮的配置 `values` 拼出私密目录（施工 5-15 下）：家目录不知道的没有（照造的时候的算）。
+    pub(crate) fn private_of(&self, values: &miyu_config::Values) -> Option<Vec<PathBuf>> {
+        let home = self.home.as_deref()?;
+        Some(miyu_tool::private::dirs(values, home))
+    }
+
+    /// 换上这一轮的私密目录（施工 5-15 下）：回合开始照配置换，下一次判照新的。
+    pub(crate) fn set_private(&self, private: Vec<PathBuf>) {
+        *self
+            .private
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = private;
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
@@ -297,6 +294,11 @@ impl Guard {
                 .chain(&self.attachments)
                 .cloned()
                 .collect(),
+            private: self
+                .private
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone(),
             ..self.places.clone()
         };
         let boundary = Boundary::new(&places);
@@ -366,33 +368,6 @@ impl Guard {
             return Ok(real);
         }
         resolve(cwd, home, &target.path)
-    }
-}
-
-/// 实际生效的那一级：执行器照同一个算法给命令写沙盒的规格。
-pub(crate) fn effective(permission: &Permission) -> Effective {
-    if permission.read_only {
-        return Effective::ReadOnly;
-    }
-    match permission.level {
-        Level::Full => Effective::Full,
-        Level::Workspace => Effective::Workspace,
-        Level::Other(_) => Effective::ReadOnly,
-    }
-}
-
-/// 一条路径照级别判（11 第二节的判法表）：读哪儿都放行，数据根除外（施工 5-4 上，原来边界以外的读要问人）；别的程序的私密
-/// 目录读写都问人，完全放开不问，只读时写照拒（施工 5-13）。
-fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
-    match (zone, level, write) {
-        (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
-        (_, Effective::Full, _) => Mark::Allow,
-        (Zone::Private, Effective::ReadOnly, true) => Mark::ReadOnly,
-        (Zone::Private, _, _) => Mark::Ask,
-        (_, _, false) => Mark::Allow,
-        (_, Effective::ReadOnly, true) => Mark::ReadOnly,
-        (Zone::Writable, Effective::Workspace, true) => Mark::Allow,
-        (Zone::Readable | Zone::Outside, Effective::Workspace, true) => Mark::Ask,
     }
 }
 

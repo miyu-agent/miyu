@@ -30,6 +30,7 @@ pub(crate) mod journal;
 pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
+mod private;
 pub(crate) mod project;
 pub(crate) mod push;
 pub(crate) mod refit;

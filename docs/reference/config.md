@@ -100,7 +100,7 @@
 |---|---|
 | `bad_params`（`-32602`） | `changes`、`text` 不是正好一个；一项里 `value`、`input`、`unset` 不是正好一个；同一个键写两次；写了 `text` 没写 `version` |
 | `unknown_config_key` | 清单里没有的键，`data.problems` |
-| `config_invalid` | 值不对、不能写在这一层，`data.problems` 是每一处 |
+| `config_invalid` | 值不对、不能写在这一层，`data.problems` 是每一处。`sandbox.private.add` 写了家目录本身或它的上级的那一处 `code` 是 `private_too_broad`，`got` 是那一个目录 |
 | `config_conflict` | `expect` 对不上（`data.current`）；`version` 对不上，或者一直有人在手改（`data.version`） |
 | `config_file_broken` | 这份文件现在读不进来，没法只改几项，`data.problems` |
 | `local_only` | 扩展改了不许它改的 |

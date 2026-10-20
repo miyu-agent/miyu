@@ -35,6 +35,8 @@ pub(crate) struct Sandbox {
     attachments: Option<PathBuf>,
     /// 工作目录太宽时退回哪（施工 5-14）：没有的能写的就是工作目录。
     workplace: Option<DefaultWorkspace>,
+    /// 这一轮的私密目录（施工 5-15 下）：回合开始照配置换；还没换过的照出厂的。
+    private: Option<Vec<PathBuf>>,
 }
 
 impl Sandbox {
@@ -55,6 +57,7 @@ impl Sandbox {
             shelves: Vec::new(),
             attachments: None,
             workplace: None,
+            private: None,
         }
     }
 
@@ -82,6 +85,11 @@ impl Sandbox {
     /// 换上这一刻开着的技能文件夹（施工 X-11 下）：回合开始照它换。
     pub(crate) fn set_shelves(&mut self, shelves: Vec<PathBuf>) {
         self.shelves = shelves;
+    }
+
+    /// 换上这一轮的私密目录（施工 5-15 下）：回合开始照配置换。
+    pub(crate) fn set_private(&mut self, private: Vec<PathBuf>) {
+        self.private = Some(private);
     }
 
     /// 照实际生效的那一级 `permission`、这一轮的工作目录 `cwd` 和加进来的目录 `dirs`（施工 5-10 上）写一次调用的沙盒：
@@ -164,11 +172,14 @@ impl Sandbox {
 }
 
 impl Sandbox {
-    /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节）。私密目录落在能写的 `write` 里面的
+    /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节；这一轮的配置加的、去掉的照它，施工 5-15 下）。私密目录落在能写的 `write` 里面的
     /// 只在能用挂载时（`mount`，施工 5-16）藏，不然照人给的算（同权限策略的先后），Landlock 一级级绕开会冻住工作区那一层。
     fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
         let mut hidden = vec![data_root];
-        let private = self.home.as_deref().map(private_dirs).unwrap_or_default();
+        let private = match &self.private {
+            Some(private) => private.clone(),
+            None => self.home.as_deref().map(private_dirs).unwrap_or_default(),
+        };
         for dir in private
             .iter()
             .filter_map(|dir| std::fs::canonicalize(dir).ok())

@@ -33,6 +33,13 @@ impl Tools {
         self.names = names;
     }
 
+    /// 换上这一轮的私密目录（施工 5-15 下）：沙盒照它藏。
+    pub(crate) fn set_private(&mut self, private: Vec<PathBuf>) {
+        if let Some(sandbox) = self.sandbox.as_mut() {
+            sandbox.set_private(private);
+        }
+    }
+
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。
     pub(crate) fn back(&mut self, at: Timestamp, back: ToolBack) -> Option<Input> {
         match back {

@@ -113,6 +113,13 @@ pub fn tell(
             )?);
         }
         Code::UntrustedProject => parts.push(sentence(words, "config/untrusted-project", &[])?),
+        Code::PrivateTooBroad => {
+            parts.push(sentence(
+                words,
+                "config/private-too-broad",
+                &[("got", got)],
+            )?);
+        }
         Code::UnknownSecret
         | Code::EnvNotSet
         | Code::NoProvider
