@@ -2,6 +2,9 @@
 
 #![allow(dead_code, reason = "几份测试各用其中几样")]
 
+#[cfg(target_os = "linux")]
+pub mod linux;
+
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard, PoisonError};

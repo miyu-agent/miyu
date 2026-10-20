@@ -9,7 +9,8 @@
 //! - [`Availability`]：这台机器上的沙盒能不能用、为什么（[`Unusable`]，施工 5-4 下）；
 //! - [`lifeline`]：核心没了，它起的命令跟着没（施工 7-8）：Unix 上每个组一个看门的，Windows 上核心进作业对象；
 //! - [`install`]：装沙盒要管理员权限的那一次，Windows 上建、撤专用的沙盒用户（施工 5-8，`docs/blueprint/sandbox/windows.md`）；
-//! - `testkit`：测试用的，cargo 编出来的助手在哪（施工 5-4 上）。
+//! - `testkit`：测试用的，cargo 编出来的助手在哪（施工 5-4 上）；
+//! - [`set_mounts`]、[`mounts`]：这台机器的命令能不能用挂载收紧（施工 5-16）：核心探完设一次，执行器写规格时读。
 //!
 //! 助手本身在 `src/bin/miyu-sandbox/`：共用的在 `main.rs`，收紧和换成命令各平台一个文件。
 //!
@@ -30,6 +31,20 @@ pub use locate::{HELPER, locate};
 pub use probe::{Platform, Probe, ProbeError, VERSION, probe};
 pub use spec::Spec;
 pub use wrap::{Sandboxed, argv};
+
+/// 这台机器的命令能不能用挂载收紧（施工 5-16，Linux 上有能用的 bubblewrap）：进程里一份，核心起来时照探测设、沙盒强度改了
+/// 跟着设；会话写规格时照它决定写不写 [`Spec::mount`]。没设过的是不能。
+static MOUNTS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// 设这台机器的命令能不能用挂载收紧（施工 5-16）。
+pub fn set_mounts(on: bool) {
+    MOUNTS.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// 这台机器的命令能不能用挂载收紧（施工 5-16）。
+pub fn mounts() -> bool {
+    MOUNTS.load(std::sync::atomic::Ordering::Relaxed)
+}
 
 /// 这个平台的沙盒能不能把读也关住（规格的 `read`，施工 5-12 下）：Linux 的 Landlock、macOS 的 Seatbelt（施工 5-12 再补）做了；
 /// Windows 的沙盒还没有（施工 5-9 停着），助手收到写了 `read` 的规格不跑，核心照它决定外部身份的会话能不能跑命令。

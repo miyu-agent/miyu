@@ -24,6 +24,7 @@ fn the_sample_reads_and_writes_back_byte_for_byte() {
             hidden: paths(&["/home/me/.miyu"]),
             read: None,
             reveal: Vec::new(),
+            mount: false,
         }
     );
     assert_eq!(spec.to_json().expect("写得成") + "\n", sample);

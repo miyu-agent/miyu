@@ -8,75 +8,10 @@
 mod support;
 
 use std::path::Path;
-use std::process::{Command, Output, Stdio};
 
-use miyu_sandbox::{EXIT_HELPER, Probe, Spec};
-use support::{Dir, HELPER, serial};
-
-/// 一份规格：`write` 能写，`hidden` 藏起来。
-fn spec(write: &[&Path], hidden: &[&Path]) -> Spec {
-    Spec {
-        write: write.iter().map(|path| path.to_path_buf()).collect(),
-        hidden: hidden.iter().map(|path| path.to_path_buf()).collect(),
-        read: None,
-        reveal: Vec::new(),
-    }
-}
-
-/// 经助手跑 `sh -c <script>`。报错照英文说（`LC_ALL=C`），不跟着跑测试的机器的语言。
-fn run(spec: &Spec, script: &str) -> Output {
-    Command::new(HELPER)
-        .env("LC_ALL", "C")
-        .args([
-            "run",
-            "--spec",
-            &spec.to_json().expect("写得成"),
-            "--",
-            "/bin/sh",
-            "-c",
-            script,
-        ])
-        .stdin(Stdio::null())
-        .output()
-        .expect("起得来")
-}
-
-/// 这台机器的内核有没有能用的 Landlock：问助手自己。
-fn landlock() -> bool {
-    let out = Command::new(HELPER).arg("probe").output().expect("起得来");
-    let probe: Probe = serde_json::from_slice(&out.stdout).expect("读得懂");
-    probe.mechanisms.iter().any(|name| name == "landlock")
-}
-
-/// 没有 Landlock 的机器上：拒绝执行，交回 `true`，这个测试到此为止。
-fn refused_without_landlock(spec: &Spec) -> bool {
-    if landlock() {
-        return false;
-    }
-    let out = run(spec, "echo ran");
-    assert_eq!(out.status.code(), Some(i32::from(EXIT_HELPER)), "{out:?}");
-    let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(
-        stderr.starts_with("miyu-sandbox: cannot confine: landlock is not available: "),
-        "{stderr}"
-    );
-    assert!(out.stdout.is_empty(), "没跑");
-    true
-}
-
-fn text(bytes: &[u8]) -> String {
-    String::from_utf8_lossy(bytes).into_owned()
-}
-
-/// 跑 `script`，要它失败，报的是被拦（`Permission denied`）。
-fn denied(spec: &Spec, script: &str) {
-    let out = run(spec, script);
-    assert_ne!(out.status.code(), Some(0), "{script}: {out:?}");
-    assert!(
-        text(&out.stderr).contains("Permission denied"),
-        "{script}: {out:?}"
-    );
-}
+use miyu_sandbox::Spec;
+use support::linux::{bwrap, denied, landlock, refused_without_landlock, run, spec, text};
+use support::{Dir, serial};
 
 #[test]
 fn everything_is_readable_but_only_the_writable_paths_can_be_written() {
@@ -199,6 +134,7 @@ fn a_revealed_path_inside_a_hidden_one_is_read_only() {
     std::fs::write(&file, b"steps\n").expect("写得进");
     let spec = Spec {
         reveal: vec![skill.clone()],
+        mount: false,
         ..spec(&[work.path()], &[data.path()])
     };
     if refused_without_landlock(&spec) {
@@ -395,6 +331,23 @@ fn system_service_sockets_outside_the_spec_cannot_be_connected() {
         Some(version < (6, 12)),
         "沙盒外建的抽象套接字，内核 {version:?}"
     );
+    // 用挂载收紧的照样拦（施工 5-16：挂好以后里面那一次照旧是 Landlock）。
+    if bwrap() {
+        let mounted = Spec {
+            mount: true,
+            ..spec.clone()
+        };
+        assert_eq!(
+            connects(&mounted, &outside.to_string_lossy()),
+            Some(version < (7, 1)),
+            "挂载时规格外路径上的套接字"
+        );
+        assert_eq!(
+            connects(&mounted, &format!("@{name}")),
+            Some(version < (6, 12)),
+            "挂载时沙盒外建的抽象套接字"
+        );
+    }
 }
 
 /// CI 上一定要真跑 Landlock：没有的话，上面几条只测了拒绝执行，Linux 的沙盒等于没测到。GitHub 的机器设了 `CI`。
@@ -429,6 +382,7 @@ fn a_read_list_keeps_everything_else_unreadable() {
         hidden: Vec::new(),
         read: Some(read),
         reveal: Vec::new(),
+        mount: false,
     };
     if refused_without_landlock(&spec) {
         return;

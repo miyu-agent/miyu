@@ -139,7 +139,9 @@ impl Sandbox {
         } else {
             Vec::new()
         };
-        let hidden = self.hidden(data_root, &write);
+        // 有能用的挂载（施工 5-16）：能写的里面的私密目录也藏，助手用挂载盖住；没有的照旧不藏（Landlock 挖不掉，施工 5-13）。
+        let mount = miyu_sandbox::mounts();
+        let hidden = self.hidden(data_root, &write, mount);
         Ok(Some(Sandboxed {
             helper: self.helper.clone(),
             spec: Spec {
@@ -152,6 +154,7 @@ impl Sandbox {
                     .chain(self.attachments.iter().filter(|dir| dir.is_dir()))
                     .map(|dir| real(dir))
                     .collect(),
+                mount,
             },
             env,
         }))
@@ -160,15 +163,15 @@ impl Sandbox {
 
 impl Sandbox {
     /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节）。私密目录落在能写的 `write` 里面的
-    /// 不藏：人把工作区开在了那里、加进来的目录装着它，照人给的算（同权限策略的先后），Landlock 也挖不掉。
-    fn hidden(&self, data_root: PathBuf, write: &[PathBuf]) -> Vec<PathBuf> {
+    /// 只在能用挂载时（`mount`，施工 5-16）藏，不然照人给的算（同权限策略的先后），Landlock 一级级绕开会冻住工作区那一层。
+    fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
         let mut hidden = vec![data_root];
         let private = self.home.as_deref().map(private_dirs).unwrap_or_default();
         for dir in private
             .iter()
             .filter_map(|dir| std::fs::canonicalize(dir).ok())
         {
-            if !hidden.contains(&dir) && !write.iter().any(|base| within(&dir, base)) {
+            if !hidden.contains(&dir) && (mount || !write.iter().any(|base| within(&dir, base))) {
                 hidden.push(dir);
             }
         }

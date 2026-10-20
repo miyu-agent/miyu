@@ -107,6 +107,7 @@ async fn each_level_gets_its_own_spec() {
                 hidden: vec![data.clone()],
                 read: None,
                 reveal: Vec::new(),
+                mount: false,
             },
             env: Vec::new(),
         }),
@@ -119,6 +120,7 @@ async fn each_level_gets_its_own_spec() {
             hidden: vec![data],
             read: None,
             reveal: Vec::new(),
+            mount: false,
         },
         env: Vec::new(),
     };

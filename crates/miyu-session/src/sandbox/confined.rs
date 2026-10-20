@@ -67,6 +67,7 @@ impl Sandbox {
                 hidden: vec![real(&self.data_root)],
                 read: Some(read),
                 reveal: Vec::new(),
+                mount: false,
             },
             env: vec![(OsString::from("TMPDIR"), temp.into_os_string())],
         })

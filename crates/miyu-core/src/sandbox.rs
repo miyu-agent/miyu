@@ -78,8 +78,10 @@ fn log(helper: &Path, probe: &miyu_sandbox::Probe, remembered: bool) {
     }
 }
 
-/// 探到了手段的能用，带着助手；手段是空的用不了。
+/// 探到了手段的能用，带着助手；手段是空的用不了。报了 `bwrap` 的，这个进程里的命令用挂载收紧（施工 5-16，
+/// [`miyu_sandbox::set_mounts`]）。
 fn availability(helper: PathBuf, probe: &miyu_sandbox::Probe) -> Availability {
+    miyu_sandbox::set_mounts(probe.mechanisms.iter().any(|name| name == "bwrap"));
     if probe.mechanisms.is_empty() {
         Availability::Unusable(Unusable::NoMechanism)
     } else {

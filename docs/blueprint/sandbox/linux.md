@@ -10,7 +10,8 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs` | `mechanisms`、`run`：查规格收不收得住，照规格收紧，再换成命令 |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs` | `mechanisms`、`run`：照规格收紧（写着 `mount` 的换成 bubblewrap），再换成命令 |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/bwrap.rs` | 用 bubblewrap 的挂载收紧（施工 5-16）：找可信的 bwrap、真起一次验、照规格拼挂载、挂好以后在里面再跑一次助手 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/landlock.rs` | 建 Landlock 的规则集、加规则、收紧自己 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的 |
 
@@ -46,19 +47,21 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 ### 怎么走
 
 1. **`run`**：
-   1. 查规格：`hidden` 的每一条，是某条 `write` 本身或者在它下面的，拒绝。照路径一段段比，不照字符串的开头比（`/a/bc` 不在 `/a/b` 下面）。
+   1. 规格写着 `mount` 的（施工 5-16）：换成 bubblewrap（`bwrap.rs`），见第 3 条；没有能用的 bwrap 的说 `cannot confine: bubblewrap is not available`、退出 125、不跑，不悄悄退回 Landlock。没写的往下（施工 5-15 起不再查「藏起来的落在能写的里面」，写照第 4 条一级级绕开）。
    2. 建规则集：第 2 版的全部文件操作必须管得住，管不住就拒绝；更新的版本多出来的（截断、设备的 ioctl、连路径上的 Unix 套接字）能管就管；抽象套接字的范围（第 6 版起）能管就管。
    3. 读：根目录放「列目录、执行」。再从根目录起一级级走：这一级目录里的每一样，是藏起来的，跳过；是通向藏起来的那条路上的目录，走进去接着看；是链接，跳过；别的放「读取文件」（它下面都带上）。没有藏起来的，就是根目录整个放「读」。打开了却查不了它是什么的（断开的 FUSE 挂载，`fstat` 报 ENOTCONN 这类），跳过这一条：它本来就读不了，不跳过的话整个规则集加不上、沙盒起不来（施工 5-4 补）。
    4. 每条 `write` 加「全部」的规则，`/dev/null` 加「写」的规则。打不开的：不在的跳过，别的拒绝。
    5. 设 `no_new_privs`，收紧自己（助手这时只有一个线程）。
    6. 换成命令（`unix.rs`）。
-2. **`mechanisms`**：建一个要求第 2 版文件操作的规则集，建得成就报 `landlock`。只建不收紧，探测的进程不受影响。
+2. **`mechanisms`**：建一个要求第 2 版文件操作的规则集，建得成就报 `landlock`。只建不收紧，探测的进程不受影响。Landlock 能用、bubblewrap 也能用的再报 `bwrap`（施工 5-16）：只在 `/usr/bin`、`/bin`、`/usr/local/bin` 找，跟链接以后要是属于 root、组和别人都写不了的普通文件（不照 `PATH`：沙盒里的命令写得了 `~/.local/bin`，放个假的进去以后每条命令都等于没关）；找到了在临时目录里照正式的挂载真起一次（能写的 `w`、它里面藏起来的 `w/h`），里面藏起来的是空的、写进去报错、能写的写得进，都对才算（起得来不等于挂上了）。
+3. **挂载**（施工 5-16，2026-10-20 项目主人定：有就用、不自带）：`--ro-bind / /`、`--dev-bind /dev /dev`、`--die-with-parent`；不在藏起来的里面的 `write` 照原样可写挂回；`hidden` 是目录的盖一层空的 tmpfs、是文件的拿 `/dev/null` 盖；藏起来的里面的 `write`（工作区在数据根里）可写挂回、`reveal` 只读挂回；最后藏起来的那几层 `--remount-ro`，写进去报只读，不会写进一层用完就丢的内存。不在的跳过。挂好以后在里面跑 `miyu-sandbox run --spec <里面的规格> -- <命令>`：里面的规格只留 `write`（藏、放开只读已经由挂载办了），照第 1 条以下用 Landlock 收紧，系统服务的套接字照旧拦。进程多一层 bwrap（一直在，约 2.3 MB），同一个进程组，整组杀照旧。本机量（2026-10-20，release 的助手，`/usr/bin/true` 300 次的 p50）：放开 `~` 时挂载约 2.4 ms，只用 Landlock 约 1.2 ms。
 
 ### 守着它的
 
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-sandbox/tests/linux.rs` | 真跑助手：规格外的哪儿都读得了（家目录、系统目录），写不了、删不了；能写的读得了、写得了、跨目录改名和硬链接得了；一条能写的都没有时哪儿都写不了，只有 `/dev/null` 写得进；藏起来的读不了、写不了，名字看得到；藏起来的落在能写的里面一级级绕开（已有的文件改得了、旁边的目录写得了，那一层新建、删除、把藏起来的挪走都不行，施工 5-15）；能写的落在藏起来的里面照样能写；放开只读的落在藏起来的里面读得到、列得出、写不进，旁边的照旧藏着（施工 X-10 中）；藏起来的落在能写的里面拒绝执行（125、那一句）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；规格外路径上的 Unix 套接字连不上（内核 7.1 起），沙盒外建的抽象套接字连不上（6.12 起），更老的内核上照连得上测；内核启用了 Landlock 的，探测报它。内核没有 Landlock 的机器上，只测拒绝执行；CI 上（设了 `CI`）必须探测到 Landlock |
+| `crates/miyu-sandbox/tests/linux_mounts.rs`（施工 5-16）、`linux/bwrap/tests.rs` | 有 bwrap 的机器上挂载收紧：那一层新建、删除都行，藏起来的列出来是空的、读不到、写不进、挪不走；没有的规格要挂载就拒绝执行。挂载的先后、文件拿 `/dev/null` 盖、不在的跳过、里面的规格只留 `write` |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/tests.rs` | 查规格：本身、下面、旁边（`/a/bc` 和 `/a/b`）、上一级各算不算落在里面 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
 

@@ -24,6 +24,10 @@ pub struct Spec {
     /// 规格的字节和以前一样。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reveal: Vec<PathBuf>,
+    /// 用挂载收紧（施工 5-16，Linux 上有能用的 bubblewrap 时执行器写上）：能写的里面藏着的用挂载盖住，连名字都看不到，路上
+    /// 那几层也不冻住。没写的照旧只用 Landlock，规格的字节和以前一样。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub mount: bool,
 }
 
 impl Spec {
