@@ -40,7 +40,14 @@ $ miyu check
 ~/.miyu/system/config.toml:2:9 错误：log.level 只能是 error、warn、info、debug、trace 或 off，写的是 "verbose"。改成其中一个，例如 log.level = "info"。暂用 "info"（默认值）。
 ~/.miyu/home/admin/personas/miyu/prompts/examples.md:12 错误：user 和 assistant 要一问一答交替
 2 处错误
+语义模型：local:granite-embedding-97m-multilingual-r2，补着
+  记忆：engineer 3/3
+  以前的对话：engineer 0/0
+  知识库：笔记 10/202
 ```
+
+（语义模型那一段是 2026-10-20 施工 R-25 时 release 版在沙箱里真跑的：刚往库里加了一篇 200 节的文档、搜过一回，后台正在补；
+过几秒再查是 `笔记 202/202`、不写「补着」。）
 
 ### 守着它的
 
