@@ -1,7 +1,7 @@
 //! 整页里能改的两种段（施工 X-15 再补，设计 `33-界面扩展.md` 第十节）：`sections`、`form` 的每一格、值的类型、上限、只在整页、
 //! 不嵌套、编号不重；照语言挑字挑到里面。
 
-use miyu_config::package::WidgetPlace;
+use crate::package::WidgetPlace;
 use serde_json::{Value, json};
 
 use super::super::{Problem, check, localize};

@@ -12,7 +12,7 @@ impl Refusal {
         )
     }
     /// 内容写法不对：`data.path` 是错在哪，`data.problem` 是哪一种。
-    pub(crate) fn bad_widget_content(bad: &miyu_policy::widget::Bad) -> Refusal {
+    pub(crate) fn bad_widget_content(bad: &miyu_config::widget::Bad) -> Refusal {
         let mut refusal = Refusal::with(
             "bad_widget_content",
             "path",

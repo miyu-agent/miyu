@@ -1,5 +1,5 @@
 //! 程序推内容（施工 X-15 中，`widgets.md`「程序发给核心」）：`widget.set`、`widget.clear`，只在核心拉起的那个连接上。块要在这个
-//! 包的清单里；全局的不写会话，跟着会话的要写；内容、换掉的标题照 `miyu_policy::widget` 查，写法不对的整块不收、原来的不动。
+//! 包的清单里；全局的不写会话，跟着会话的要写；内容、换掉的标题照 `miyu_config::widget` 查，写法不对的整块不收、原来的不动。
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -37,11 +37,11 @@ pub(crate) struct ClearParams {
 pub(crate) fn set(core: &Core, caller: &Caller, params: SetParams) -> Result<Value, Refusal> {
     let (key, place, pages) = locate(core, caller, &params.widget, params.session)?;
     let pages: Vec<&str> = pages.iter().map(String::as_str).collect();
-    let checked = miyu_policy::widget::check(place, &pages, &params.content).and_then(|()| {
+    let checked = miyu_config::widget::check(place, &pages, &params.content).and_then(|()| {
         params
             .title
             .as_ref()
-            .map_or(Ok(()), miyu_policy::widget::check_title)
+            .map_or(Ok(()), miyu_config::widget::check_title)
     });
     if let Err(bad) = checked {
         tracing::warn!(target: "miyu::endpoint", package = key.package.as_str(), widget = key.widget.as_str(), problem = bad.problem.as_str(), "widget content rejected");

@@ -1857,6 +1857,7 @@ dependencies = [
  "serde",
  "serde_json",
  "toml_edit",
+ "unicode-width",
 ]
 
 [[package]]
@@ -2145,7 +2146,6 @@ dependencies = [
  "serde",
  "serde_json",
  "toml_edit",
- "unicode-width",
  "yaml-rust2",
 ]
 

@@ -22,8 +22,6 @@ yaml-rust2 = { version = "0.13", default-features = false }
 # 快照写成规范的 JSON、读回来。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
-# 界面块底栏那一段的显示宽度（施工 X-15 中，`widgets.md`：宽字算两列）。
-unicode-width = "0.2"
 
 [lints]
 workspace = true

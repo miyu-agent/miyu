@@ -87,7 +87,7 @@ pub(super) fn one(
         .and_then(|shown| shown.title.clone())
         .or_else(|| widget.title.as_ref().map(|title| json!(title)));
     if let Some(title) = title {
-        one["title"] = miyu_policy::widget::pick(&title, language);
+        one["title"] = miyu_config::widget::pick(&title, language);
     }
     if let Some(command) = &widget.command {
         one["command"] = json!(command);
@@ -97,7 +97,7 @@ pub(super) fn one(
     }
     if content {
         one["content"] = shown.map_or(Value::Null, |shown| {
-            miyu_policy::widget::localize(&shown.content, language)
+            miyu_config::widget::localize(&shown.content, language)
         });
     }
     one

@@ -1,7 +1,7 @@
 //! 界面块的内容（施工 X-15 中）：六种段的每一格、上限、字里不许有的、语言表、三种动作、底栏和首页的限制、错在哪的路径；
 //! 照语言挑字。
 
-use miyu_config::package::WidgetPlace;
+use crate::package::WidgetPlace;
 use serde_json::{Value, json};
 
 use super::{Problem, check, check_title, localize};

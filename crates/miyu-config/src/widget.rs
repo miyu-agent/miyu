@@ -6,8 +6,8 @@
 
 use std::collections::BTreeSet;
 
-use miyu_config::package::WidgetPlace;
-use miyu_config::phrases::LANGUAGES;
+use crate::package::WidgetPlace;
+use crate::phrases::LANGUAGES;
 use serde_json::{Map, Value};
 use unicode_width::UnicodeWidthStr;
 

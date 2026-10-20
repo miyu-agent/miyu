@@ -13,7 +13,7 @@
 | `crates/miyu-config/src/package/widget.rs` | 清单的 `[[widget]]`、`Manifest::slash_names`（这个包占的斜杠命令名：`[[slash]]` 的加整页的）（X-15 上） |
 | `crates/miyu-endpoint/src/packages.rs` | `package.list` 的 `widgets`（X-15 上） |
 | `crates/miyu-config/src/package/capability.rs` | 扩展能力多一个 `widgets`（X-15 上） |
-| `crates/miyu-policy/src/widget.rs` | 内容的写法：六种段、上限、字里不许有的、三种动作、换掉的标题；照语言挑字（X-15 中，纯逻辑） |
+| `crates/miyu-config/src/widget.rs`（施工 X-28 从 `miyu-policy` 挪来，门面 `miyu-client` 的 `widgets` 转出去给接入QQ） | 内容的写法：六种段、上限、字里不许有的、三种动作、换掉的标题；照语言挑字（X-15 中，纯逻辑） |
 | `crates/miyu-endpoint/src/widgets.rs` | 记内容、记谁在看，变了广播（X-15 中） |
 | `crates/miyu-endpoint/src/widgets/set.rs` | `widget.set`、`widget.clear`（X-15 中） |
 | `crates/miyu-endpoint/src/widgets/head.rs`、`entry.rs`、`crates/miyu-endpoint/src/subscriptions/widgets.rs` | 头的订阅：读参数、记成在看、推 `widget.changed`、限速；推给头的一块（X-15 中） |
@@ -153,10 +153,10 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 |---|---|
 | `crates/miyu-config/src/package/widget/tests.rs`（X-15 上） | 每一格、每一种写错、报在那一段、没声明能力、只有扩展能写、最多 16 块、整页的命令名和自己的斜杠命令、别的整页不重 |
 | `crates/miyu-store/src/packages/conflicts/tests.rs` 的 `page_commands_count_like_slash_commands`、`crates/miyu-endpoint/tests/widgets.rs`（X-15 上） | 整页的命令名和别的包的斜杠命令撞了不装；`package.list` 列出来、标题照语言、没声明的不带；能力名照语言；`miyu check` 报撞了内置的 |
-| `crates/miyu-policy/src/widget/tests.rs`、`crates/miyu-endpoint/src/widgets/tests.rs`（X-15 中） | 六种段的每一格、上限、控制字符和改方向的字符、语言表、两种动作、`status` 和 `home` 的限制、错在哪的路径 |
+| `crates/miyu-config/src/widget/tests.rs`、`crates/miyu-endpoint/src/widgets/tests.rs`（X-15 中） | 六种段的每一格、上限、控制字符和改方向的字符、语言表、两种动作、`status` 和 `home` 的限制、错在哪的路径 |
 | `crates/miyu-endpoint/tests/widget_content.rs`（X-15 中） | 真核心、测试用的扩展：头订阅以后程序收到 `widget.watch`，推的内容转到头、照语言挑；换会话、换版面照新的算，最后一个走了 `widget.unwatch`；没人看的会话不留；限速只推最新的；写法不对的拒、原来的不动；程序停了内容清空、新的程序握了手又被告诉一遍；关掉推 `null`；订阅的参数不对 `bad_params`；登记表：只有第一个人来、最后一个人走时说，跟着会话的没人看不留 |
 | `crates/miyu-endpoint/tests/widget_commands.rs`（X-15 下） | 菜单列出整页的命令、带 `opens`，会话里照样列；打了回 `opens`、日志一条不多；自己放的模板盖住它；关着的扩展不列不认；场所会话里 `unknown_command`（装包时撞名在 X-15 上守着） |
-| `crates/miyu-policy/src/widget/form/tests.rs`（X-15 再补） | 整页收两种段、别的位置不收、表单也能直接放；格的值照控件的类型、下拉的值在选项里、只有下拉有选项、只有数字有上下限、字太长、列表里不是字；`sections` 不嵌套、一块一个、项和表单的编号不重；项、格、选项、段太多；里面的字照语言挑 |
+| `crates/miyu-config/src/widget/form/tests.rs`（X-15 再补） | 整页收两种段、别的位置不收、表单也能直接放；格的值照控件的类型、下拉的值在选项里、只有下拉有选项、只有数字有上下限、字太长、列表里不是字；`sections` 不嵌套、一块一个、项和表单的编号不重；项、格、选项、段太多；里面的字照语言挑 |
 
 ### 起草时定的
 

@@ -18,6 +18,7 @@
 //! - [`events`]：会话日志里的事件（`miyu-kernel`）。
 //! - `tooltext`：工具的字怎么读（`miyu-tool`；feature `tool`，默认不开，所以这里不写成链接）。
 //! - [`settings`]：配置的类型、读法和问题（`miyu-config`）。
+//! - [`widgets`]：界面块内容的查验和挑语言（`miyu-config`，施工 X-28）。
 //! - `http`：HTTP 客户端（`miyu-http`；feature `http`，同上）。
 
 pub mod open;
@@ -109,6 +110,13 @@ pub mod protocol {
     pub use miyu_kernel::event::Said;
     pub use miyu_kernel::id::SessionId;
     pub use miyu_kernel::template::Template;
+}
+
+/// 界面块的内容（施工 X-28，接入QQ 的插件往它的页面加卡片、浮窗、整页要的）：查写法（`check`、`check_title`），照连接的
+/// 语言挑字（`localize`、`pick`）。和核心收 `widget.set` 时查的是同一份（`docs/blueprint/widgets.md`「内容」）。
+pub mod widgets {
+    pub use miyu_config::package::WidgetPlace;
+    pub use miyu_config::widget::{Bad, Problem, check, check_title, localize, pick};
 }
 
 /// 读自己的软件包清单、清单里的值。

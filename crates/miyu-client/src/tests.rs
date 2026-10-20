@@ -28,6 +28,8 @@ use crate::{
     },
     texts::{Face, Human, HumanError, clean},
     time::{Timestamp, UtcOffset},
+    // 施工 X-28：接入QQ 查插件给的界面块。
+    widgets::{Bad, Problem, WidgetPlace, check, check_title, localize, pick},
 };
 
 #[cfg(feature = "http")]
@@ -65,6 +67,18 @@ fn the_face_lists_what_the_heads_use() {
         std::any::type_name::<crate::CoreCommand>(),
     ];
     assert!(kinds[0].starts_with("miyu_client::open::"), "{kinds:?}");
+}
+
+/// 界面块的查验和挑语言是核心收 `widget.set` 时用的那一份（施工 X-28）：写对的收，写错的说错在哪，字照语言挑。
+#[test]
+fn widget_content_is_checked_and_localized_as_the_core_does() {
+    use crate::widgets::{WidgetPlace, check, localize};
+    let content = serde_json::json!([{"type": "text", "text": {"zh": "你好", "en": "Hi"}}]);
+    assert_eq!(check(WidgetPlace::Sidebar, &[], &content), Ok(()));
+    let bad = serde_json::json!([{"type": "nope"}]);
+    assert!(check(WidgetPlace::Sidebar, &[], &bad).is_err());
+    let picked = localize(&content, "en");
+    assert_eq!(picked[0]["text"], "Hi", "{picked}");
 }
 
 /// 核心的拒绝照 `data.reason` 认、原话照留，登录被挡的带还要等多久（施工 W-8 再补）；没有原因的写 `refused`。

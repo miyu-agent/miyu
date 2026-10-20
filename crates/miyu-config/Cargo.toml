@@ -14,6 +14,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 读配置的 TOML，记下每一项在第几行（施工 8-2）；8-3 改一项时照它记的位置换字，只开 `parse` 就够。
 toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
+# 界面块底栏那一段的显示宽度（施工 X-15 中，`widgets.md`：宽字算两列；施工 X-28 从 miyu-policy 挪来）。
+unicode-width = "0.2"
 
 [lints]
 workspace = true

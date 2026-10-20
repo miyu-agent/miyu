@@ -36,6 +36,7 @@ pub mod reference;
 pub mod schema;
 pub mod secret;
 mod value;
+pub mod widget;
 pub mod words;
 
 #[cfg(test)]
