@@ -90,7 +90,7 @@ Sending the same `id` again returns the session created the first time.
 
 ## `session.list`
 
-**Params**: `oneshot` (boolean, `true` lists only one-shot sessions), `limit` (at most this many; all when omitted).
+**Params**: `oneshot` (boolean, `true` lists only one-shot sessions), `dream` (boolean, `true` lists only consolidation sessions, `false` leaves them out, all when omitted), `limit` (at most this many; all when omitted).
 
 **Response** `{"sessions": [<item>…]}`, newest first. An item:
 
@@ -110,6 +110,7 @@ Sending the same `id` again returns the session created the first time.
 | `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
 | `context` | `{"used", "window"?}`: tokens in context (the input of the latest main request: uncached, cache read, cache write, the same figure as the terminal footer and the session status); omitted before the first request and right after a compaction. `window` is the context window of that request's model under the current config, omitted when unknown |
 | `project` | Which project it is in; omitted when none |
+| `kind`, `dream` | Only on consolidation sessions (the sessions memory consolidation runs in): `kind` is `"dream"`, `dream` is `{"persona"?, "session"?, "manual"?, "from"?}`: whose memory (a persona or a session), `manual: true` when a person asked for it, `from` the session it was asked from. A main session list usually leaves them out (pass `dream: false`); a memory page lists those of its memory by `dream` |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
 

@@ -267,6 +267,7 @@ miyu_config::settings! {
 | `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
+| `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统、个人 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
 | `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
 | `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「搜索服务供应商」分开画） |
 | `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
@@ -1028,6 +1029,10 @@ max_running = "30m"
 level = "info"
 
 [memory]
+# 保留几次整理过程：每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。
+# 能写：0 到 1000 之间的整数。只能写在系统配置或个人设置里。下一轮生效。
+dream_keep = 20
+
 # 整理记忆前等多久：聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。
 # 能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。
 extract_idle = "5m"
@@ -1425,6 +1430,14 @@ currency = "USD"
     },
     "memory": {
       "properties": {
+        "dream_keep": {
+          "default": 20,
+          "description": "每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。能写：0 到 1000 之间的整数。只能写在系统配置或个人设置里。下一轮生效。",
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "保留几次整理过程",
+          "type": "integer"
+        },
         "extract_idle": {
           "default": "5m",
           "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。",
@@ -2365,6 +2378,8 @@ currency = "USD"
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
 | `memory.merge_sessions` 名字（R-7 上） | 攒几次聊天再归纳 | Chats before consolidating | まとめる前の会話数 |
 | 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
+| `memory.dream_keep` 名字（D-1 下） | 保留几次整理过程 | Consolidation runs to keep | 残す整理の回数 |
+| 说明 | 每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。 | Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. | 記憶ごとに、最新のこの回数分の整理の経過だけを残します。古いものはゴミ箱へ移します。0 は整理が終わるたびに削除します。 |
 | `net.search.source` 名字（N-2 下） | 搜索服务供应商 | Search provider | 検索プロバイダー |
 | 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel, which then receive the address. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させ、その URL も送られます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |

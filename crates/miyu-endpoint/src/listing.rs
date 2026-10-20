@@ -143,7 +143,7 @@ async fn work(
             }
             Job::Removed(session) => push(json!({"session": session.as_str(), "removed": true})),
             Job::List(reply) => {
-                let sessions = list(&core, false, None).await;
+                let sessions = list(&core, false, None, None).await;
                 let at = number.load(Ordering::Relaxed);
                 drop(reply.send(sessions.map(|sessions| Snapshot {
                     number: at,

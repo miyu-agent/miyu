@@ -5,7 +5,7 @@
 use rusqlite::Row as SqlRow;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event};
+use miyu_kernel::event::{Body, Dream, Event};
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
@@ -58,6 +58,8 @@ pub struct Row {
     pub context: Option<u64>,
     /// 那一次请求的模型：`<供应商>/<模型>`。列会话时照它查窗口。
     pub context_model: Option<String>,
+    /// 整理会话的（施工 D-1 下，设计 41）：`session.created` 的 `dream`，哪一间、怎么来的。别的会话没有。表里存成它的 JSON。
+    pub dream: Option<Dream>,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -94,6 +96,7 @@ impl Row {
             tokens: 0,
             context: None,
             context_model: None,
+            dream: created.dream.clone(),
         })
     }
 
@@ -199,11 +202,15 @@ impl Row {
                 .map(|n| u64::try_from(n).map_err(|_| bad("context")))
                 .transpose()?,
             context_model: row.get(20)?,
+            dream: row
+                .get::<_, Option<String>>(21)?
+                .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream")))
+                .transpose()?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 21], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 22], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -234,6 +241,12 @@ impl Row {
             number(self.tokens)?,
             self.context.map_or(Ok(Value::Null), number)?,
             optional(self.context_model.as_deref()),
+            match &self.dream {
+                Some(dream) => text(&serde_json::to_string(dream).map_err(|error| {
+                    IndexError::Bad(format!("row {}: dream: {error}", self.id.as_str()))
+                })?),
+                None => Value::Null,
+            },
         ])
     }
 }

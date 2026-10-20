@@ -13,6 +13,7 @@ use std::path::Path;
 
 use serde_json::{Value, json};
 
+use miyu_kernel::event::Dream;
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_store::index::{FILE, Opened, Row, SessionIndex};
@@ -34,10 +35,12 @@ pub(crate) fn local(row: &Row) -> bool {
     row.venue == LOCAL
 }
 
-/// 管理员的会话，从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。
+/// 管理员的会话，从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。`dream`
+/// 写了的照它挑整理会话（施工 D-1 下）：`true` 只要整理会话，`false` 不要。
 pub(crate) async fn list(
     core: &Core,
     oneshot: bool,
+    dream: Option<bool>,
     limit: Option<usize>,
 ) -> Result<Vec<Value>, Refusal> {
     let root = core.root.clone();
@@ -45,7 +48,11 @@ pub(crate) async fn list(
     let index = core.index.clone();
     let busy = core.sessions.busy_ids().await;
     let window = windows(core);
-    let pick = move |row: &Row| local(row) && (!oneshot || row.oneshot);
+    let pick = move |row: &Row| {
+        local(row)
+            && (!oneshot || row.oneshot)
+            && dream.is_none_or(|dream| dream == row.dream.is_some())
+    };
     let scanned = tokio::task::spawn_blocking(move || {
         let mut listed = scan(
             &root,
@@ -111,6 +118,8 @@ pub(crate) struct Listed {
     pub(crate) window: Option<u64>,
     /// 这个会话的默认工作区（施工 5-14 中，[`defaults::fill`]）：没填的不写。
     pub(crate) default_workspace: Option<String>,
+    /// 整理会话的哪一间、怎么来的（施工 D-1 下）：别的会话没有。
+    pub(crate) dream: Option<Dream>,
 }
 
 impl Listed {
@@ -136,6 +145,7 @@ impl Listed {
             context_model: row.context_model,
             window: None,
             default_workspace: None,
+            dream: row.dream,
         }
     }
 
@@ -177,6 +187,11 @@ impl Listed {
         }
         if self.tokens > 0 {
             item["tokens"] = json!(self.tokens);
+        }
+        // 整理会话（施工 D-1 下，设计 41 DS7）：头的主列表照 `kind` 不列，记忆页照 `dream` 的那一间列。
+        if let Some(dream) = &self.dream {
+            item["kind"] = json!("dream");
+            item["dream"] = json!(dream);
         }
         context::write(&mut item, self);
         item

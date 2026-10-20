@@ -157,7 +157,7 @@ pub(crate) fn call<'a>(
         }),
         "session.list" => answer(move || async move {
             let params: ListParams = params(request)?;
-            let sessions = list::list(core, params.oneshot, params.limit).await?;
+            let sessions = list::list(core, params.oneshot, params.dream, params.limit).await?;
             Ok(json!({"sessions": sessions}))
         }),
         "events.append" => answer(move || async move {

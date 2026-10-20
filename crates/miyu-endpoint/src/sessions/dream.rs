@@ -5,19 +5,21 @@
 use std::sync::{Arc, Weak};
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Body, Dream, EndReason, Level, Permission};
+use miyu_kernel::event::{Body, Dream, EndReason, Level, Permission, TransientBody};
 use miyu_kernel::id::{CommandId, ModuleId, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
-    Create, DreamBatch, DreamRoom, DreamSessions, DreamSpec, Pending, Pushed, create, new_id,
+    Create, DreamBatch, DreamRoom, DreamSessions, DreamSpec, Pending, Pushed, Watched, create,
+    new_id,
 };
 
 use super::{Running, Sessions, environment, now};
 use crate::Core;
 use crate::{personas, spawn};
+use stream::Stream;
 
 /// 整理会话里说话的模块：记忆。
 const MODULE: &str = "memory";
@@ -139,12 +141,13 @@ impl DreamSessions for Table {
         })
     }
 
-    fn batch(
-        &self,
+    fn batch<'a>(
+        &'a self,
         session: SessionId,
         id: CommandId,
         text: String,
-    ) -> Pending<'_, Result<DreamBatch, String>> {
+        watch: &'a mut (dyn FnMut(Watched<'_>) + Send),
+    ) -> Pending<'a, Result<DreamBatch, String>> {
         Box::pin(async move {
             let core = self.core()?;
             let found = core
@@ -183,10 +186,21 @@ impl DreamSessions for Table {
                 .ok_or_else(|| "nothing was recorded".to_string())?;
             let mut turn: Option<TurnId> = None;
             let (mut answer, mut error) = (String::new(), None);
+            let mut stream = Stream::default();
             loop {
                 let pushed = pushes.next().await.map_err(|_| gone())?;
-                let Pushed::Events(events) = &*pushed else {
-                    continue;
+                let events = match &*pushed {
+                    Pushed::Events(events) => events,
+                    Pushed::Transient(transient) => {
+                        if let TransientBody::ModelDelta(delta) = &transient.body
+                            && turn.is_some()
+                            && transient.turn == turn
+                        {
+                            stream.see(delta, watch);
+                        }
+                        continue;
+                    }
+                    Pushed::Goal { .. } => continue,
                 };
                 for event in events {
                     match &event.body {
@@ -223,6 +237,13 @@ impl DreamSessions for Table {
         })
     }
 
+    fn close(&self, session: SessionId, keep: usize) -> Pending<'_, Result<usize, String>> {
+        Box::pin(async move {
+            let core = self.core()?;
+            Ok(keep::prune(&core, &session, keep).await)
+        })
+    }
+
     fn stop(&self, session: SessionId, id: CommandId) -> Pending<'_, Result<(), String>> {
         Box::pin(async move {
             let core = self.core()?;
@@ -243,6 +264,9 @@ impl DreamSessions for Table {
         })
     }
 }
+
+mod keep;
+mod stream;
 
 #[cfg(test)]
 mod tests;

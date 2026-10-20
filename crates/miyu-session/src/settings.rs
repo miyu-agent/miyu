@@ -93,6 +93,13 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
+        /// 每一间留最近几趟整理会话（施工 D-1 下，设计 41 DS9）：一趟跑完删多的，`0` 是跑完就删。
+        dream_keep: i64 = 20 {
+            kind: int [0, 1000],
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "packages", group: "memory", package: "memory", control: number },
+        },
     }
 }
 

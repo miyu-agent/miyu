@@ -76,6 +76,14 @@
     },
     "memory": {
       "properties": {
+        "dream_keep": {
+          "default": 20,
+          "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. Allowed: a whole number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.",
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Consolidation runs to keep",
+          "type": "integer"
+        },
         "extract_idle": {
           "default": "5m",
           "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories. Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.",

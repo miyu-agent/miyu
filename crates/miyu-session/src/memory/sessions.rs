@@ -3,6 +3,7 @@
 
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 
+use crate::route::Watched;
 use crate::spawn::Pending;
 
 /// 整理会话是哪一间的（设计 41 DS1）。
@@ -40,19 +41,25 @@ pub enum DreamBatch {
     Failed(String),
 }
 
-/// 会话表那边替合并任务做的三样。
+/// 会话表那边替合并任务做的四样。
 pub trait DreamSessions: Send + Sync + std::fmt::Debug {
-    /// 开一趟：`session.created` 落了盘才交回编号。顺手照 `memory.dream_keep` 删掉这一间最旧的几趟（正在跑的不删）。
+    /// 开一趟：`session.created` 落了盘才交回编号。
     fn open(&self, spec: DreamSpec) -> Pending<'_, Result<SessionId, String>>;
 
     /// 跑一批：先清空（同 `/clear`），再以记忆模块的名义发 `text`（原样），等这一轮结束（`turn.ended` 落了盘）。`id` 是这一批
-    /// 的命令编号，重发只算一次。核心在停、会话没了、日志写不进的交回 `Err`。
-    fn batch(
-        &self,
+    /// 的命令编号，重发只算一次。正文边流边交给 `watch`（施工 D-1 下，同一次性入口的 `call_watching`：思考不交；换了一次请求
+    /// 从头再来的先交 [`Watched::Restart`]），R-21 照它边合边推。核心在停、会话没了、日志写不进的交回 `Err`。
+    fn batch<'a>(
+        &'a self,
         session: SessionId,
         id: CommandId,
         text: String,
-    ) -> Pending<'_, Result<DreamBatch, String>>;
+        watch: &'a mut (dyn FnMut(Watched<'_>) + Send),
+    ) -> Pending<'a, Result<DreamBatch, String>>;
+
+    /// 这一趟跑完了（施工 D-1 下，设计 41 DS9）：照删会话的路删掉这一间最旧的几趟（进回收处），只留最近 `keep` 趟（这一趟
+    /// 也算；`0` 是连它一起删）。有回合在跑的不删。交回删了几个；没了的、删不成的记一行运行日志，不算错。
+    fn close(&self, session: SessionId, keep: usize) -> Pending<'_, Result<usize, String>>;
 
     /// 叫停：打断这个会话在跑的那一轮，[`DreamSessions::batch`] 那一头交回 [`DreamBatch::Stopped`]。
     fn stop(&self, session: SessionId, id: CommandId) -> Pending<'_, Result<(), String>>;
