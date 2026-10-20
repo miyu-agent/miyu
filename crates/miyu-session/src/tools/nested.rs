@@ -65,6 +65,13 @@ fn open() -> Vec<String> {
 
 impl NestedPort for Nester {
     fn call(&self, name: String, args: String) -> Calling {
+        // 实测（第六轮）：一次调用记一行「工作目录\t工具名」，看脚本里到底调了哪几件。
+        if let Ok(path) = std::env::var("MIYU_PROTO_NESTED_LOG") {
+            use std::io::Write as _;
+            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                let _ = writeln!(file, "{}\t{name}", self.template.cwd);
+            }
+        }
         let Some(tool) = self.callable(&name) else {
             let why = match self.catalog.get(&name) {
                 None => format!("No tool named {name}."),
