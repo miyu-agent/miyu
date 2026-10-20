@@ -25125,7 +25125,7 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
             <div class="dir-label"><span class="path">miyu-session · memory.rs、memory/backfill.rs</span><span class="dir-note">R-28</span></div>
             <ol class="pipe" aria-label="等后台">
               <li>回合库新建、重建以后起的补齐线程登记着</li>
-              <li><code>Memory::settle</code> 先等这时在跑的补齐，再等回合索引那一条道</li>
+              <li><code>Memory::settle</code> 先等回合索引那一条道（回合库是那边头一次写时开的、补齐那时才起），再等在跑的补齐</li>
             </ol>
           </div>
         </div>
@@ -25149,7 +25149,7 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
     <div>
       <h3>验收</h3>
       <ul class="checks">
-        <li><span class="ok">✓</span><span>开了新的回合库马上等一次，旧会话都补上了；原来的偶发红负载下 400 次 2 次 → 0 次</span></li>
+        <li><span class="ok">✓</span><span>开了新的回合库马上等一次，旧会话都补上了；原来的偶发红负载下 720 次 16 次 → 0 次</span></li>
         <li><span class="ok">✓</span><span>手写变异全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
       </ul>
     </div>
