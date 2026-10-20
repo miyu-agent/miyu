@@ -64,7 +64,8 @@
 5. 读输出：另一个线程一次读 8192 字节，读到的一段照 UTF-8 解，一个字切在两段中间的留到下一段再解，解不开的字节换成 `�`，推给头（瞬时的 `tool.progress`，不落盘）；读完了剩下没配齐的也换成 `�` 推出去。内存里只留最前 64 KiB 和最后 64 KiB，另外数一共多少字节、多少个字、多少个换行，输出再多内存也不涨。读的线程带着派活时的 span（施工 4-9 再补四上）。
 6. 等它结束，最多等超时那么久：
    - 自己结束了：记下退出码（Unix 上被信号杀掉的，记下信号）。
-   - 到时了：整组杀掉，再等它最多 5 秒，算超时。5 秒还不结束的（Windows 上 `taskkill` 没杀掉之类）也算超时，记一行 `WARN` `command still running after kill`，不再等它（施工 4-9 再补二）。
+   - 到时了、这次调用有任务端口（后台运行开着的会话里）、命令开头不是 `sleep`（照 Claude Code）的：不杀，挪到后台（施工 7-12）。读的线程把之后解好的一段段改送进一根通道；到这一刻读到的照给她看的截法（太长的头尾两段、中间说省了多少，不写末尾那一句）先交，接着交通道里的，`\r\n` 换成 `\n`，和一开始就放到后台的同一种输出；进程连同在等它的线程交给任务端口，照「后台」第 3、4 条交回编号、记 `job.started`，给她的字照放到后台的那一句（`started.txt`），说法 `shell/moved`（字段 `job`）。挪过去的结束了照后台命令报（`job.reported`），组里剩下的照样杀掉；人、她照样停得掉。一个字正好切在挪过去那一刻两边的，那个字可能成 `�`。
+   - 到时了，挪不了的（没有任务端口、开头是 `sleep`）：整组杀掉，再等它最多 5 秒，算超时。5 秒还不结束的（Windows 上 `taskkill` 没杀掉之类）也算超时，记一行 `WARN` `command still running after kill`，不再等它（施工 4-9 再补二）。
    - 等不了（系统报错）：执行不了。
 7. 结束以后：Unix 上把组里还在跑的（`&` 放到后台的）也杀掉；Windows 上不杀，退出以后按编号杀可能杀错。再等读输出的线程最多 0.5 秒：还有东西拿着管道的（Windows 上它放出去的孙进程，Unix 上 `setsid` 出了组的），不等它，读到多少算多少，记一行 `DEBUG` `command output still open after the command ended`。这几行运行日志的来源是 `shell`，带会话编号（`log.md` 第 8 条；施工 4-9 再补四上：原来来源写 `basesystem`，也没有会话编号）。
 8. 截给她看的（最多 30000 个字）：
@@ -223,6 +224,7 @@ Exit code 2
 | `shell/hazard-disk_format` | 没有执行：会格式化磁盘 | not run: would format a disk |
 | `shell/hazard-disk_write` | 没有执行：会直接写磁盘设备 | not run: would write to a disk device |
 | `shell/background`（`job`） | `放到后台了：{job}` | `running in the background as {job}` |
+| `shell/moved`（`job`） | `超时，挪到后台了：{job}` | `timed out, moved to the background as {job}` |
 | `common/bad-args`（`error`） | `参数不对：{error}` | `bad arguments: {error}` |
 
 ### 三个平台
@@ -242,6 +244,7 @@ Exit code 2
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量和前台一样（4-8 补：带着探针重新拉起测试程序）；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
+| `crates/miyu-session/tests/jobs_moved.rs`（施工 7-12） | 真的 `shell`、三个平台：前台到时挪到后台，调用当场交回编号、`job.started`，跑完了记 `job.reported`，输出是挪过去以前读到的接上以后的（`\r\n` 换好）；挪过去以前输出太长的照给她看的截在中间；人停得掉；开头是 `sleep` 的照旧杀、不进任务表；Linux 上结束了组里放出去的也杀掉 |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` 的 `line_ends_are_made_unix_across_pieces`（施工 7-3） | `\r\n` 切在两段中间也换，和一整段换出来的一样 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` 的 `a_sandboxed_background_command_runs_through_the_helper`（施工 7-3） | 后台命令一样经沙盒的助手起 |
 | `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉；照命令里的词 `pkill -f` 杀不到自己所在的 shell、命令看不到 `MIYU_COMMAND`（施工 4-8 再补） |

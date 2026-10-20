@@ -10,6 +10,8 @@
 //!   按编号杀可能杀错。
 //! - 命令退出以后，管道最多再读 [`DRAIN`]：还有东西拿着管道的（Windows 上它放出去的孙进程），不等它。
 //! - 到时杀了以后最多再等 [`KILL_WAIT`]：还不结束的也算超时，不再等它（施工 4-9 再补二）。
+//! - 前台到时也可以不杀、交出去接着跑（施工 7-12，[`Started::wait_or_move`]）：读到的那一段和进程交回去，读的线程把
+//!   后面的输出改送进一根通道，见 `moved.rs`。
 
 use std::io::{self, Read, Write};
 use std::process::{Child, Command, ExitStatus, Stdio};
@@ -19,6 +21,10 @@ use std::thread;
 use std::time::Duration;
 
 use super::output::{Capture, Decoder};
+
+mod group;
+
+pub(super) use group::{Group, Guard};
 
 /// 命令退出以后，管道最多再读多久。
 const DRAIN: Duration = Duration::from_millis(500);
@@ -52,11 +58,36 @@ pub(super) struct Finished {
     pub(super) output: Capture,
 }
 
+/// 等到的：结束了，或者到时交出去接着跑（施工 7-12）。
+pub(super) enum Waited {
+    /// 结束了，或者到时杀掉了。
+    Finished(Finished),
+    /// 到时没杀，交出去接着跑。
+    Moved(Handover),
+}
+
+/// 到时交出去的一条命令（施工 7-12）：到这一刻读到的、之后的输出、进程。
+pub(super) struct Handover {
+    /// 到这一刻读到的。
+    pub(super) output: Capture,
+    /// 之后的输出：读的线程解好一段送一段，读完了关掉。
+    pub(super) rest: mpsc::Receiver<String>,
+    /// 进程：等它结束、整组杀。
+    pub(super) process: super::moved::Moved,
+}
+
+/// 读到的输出往哪送：交出去以前进内存（[`Capture`]）、推给头；交出去以后送进通道。
+#[derive(Default)]
+struct Sink {
+    capture: Capture,
+    moved: Option<mpsc::Sender<String>>,
+}
+
 /// 起好的一条命令：它的进程、整组杀的时候认它的那个编号、读输出的线程、看门的。
 pub(super) struct Started {
     child: Child,
     group: Group,
-    output: Arc<Mutex<Capture>>,
+    output: Arc<Mutex<Sink>>,
     read: mpsc::Receiver<()>,
     /// 等完了、整组杀过了才丢掉：丢掉时收掉它（施工 7-8）。
     _watch: Watch,
@@ -148,7 +179,7 @@ pub(super) fn start(
         pipe,
         watch,
     } = spawn(command, input)?;
-    let output = Arc::new(Mutex::new(Capture::default()));
+    let output = Arc::new(Mutex::new(Sink::default()));
     let (done, read) = mpsc::channel();
     let theirs = Arc::clone(&output);
     // 读的线程带着派活时的 span：它发的行也有会话编号（施工 4-9 再补四上）。
@@ -186,6 +217,48 @@ impl Started {
         self.wait_or_kill(timeout, KILL_WAIT, Group::kill)
     }
 
+    /// 同 [`Self::wait`]，只是到时不杀：读到的那一段、之后的输出、进程交回去，接着跑（施工 7-12）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Self::wait`]。
+    pub(super) fn wait_or_move(self, timeout: Duration) -> io::Result<Waited> {
+        let Started {
+            child,
+            group,
+            output,
+            read,
+            _watch,
+        } = self;
+        let waited = waiting(child);
+        match waited.recv_timeout(timeout) {
+            Ok((status, child)) => {
+                let ending = Ending::Exited(status?);
+                Ok(Waited::Finished(done(
+                    ending,
+                    Some(child),
+                    group,
+                    &output,
+                    &read,
+                )))
+            }
+            Err(RecvTimeoutError::Timeout) => {
+                let (sender, rest) = mpsc::channel();
+                let output = {
+                    let mut sink = lock(&output);
+                    sink.moved = Some(sender);
+                    std::mem::take(&mut sink.capture)
+                };
+                Ok(Waited::Moved(Handover {
+                    output,
+                    rest,
+                    process: super::moved::Moved::new(waited, group, _watch),
+                }))
+            }
+            Err(RecvTimeoutError::Disconnected) => Err(gone()),
+        }
+    }
+
     /// 同 [`Self::wait`]：到时用 `kill` 整组杀，杀了以后最多再等 `patience`，还不结束的也算超时，不再等它。测试里
     /// 换成杀不掉的、等得短的。
     fn wait_or_kill(
@@ -195,23 +268,13 @@ impl Started {
         kill: impl FnOnce(Group),
     ) -> io::Result<Finished> {
         let Started {
-            mut child,
+            child,
             group,
             output,
             read,
             _watch,
         } = self;
-        let (exited, waited) = mpsc::channel();
-        thread::spawn(move || {
-            let status = child.wait();
-            // 进程的句柄跟着交回去：Windows 上它还开着，编号就不会被别的进程拿去。
-            #[expect(
-                clippy::let_underscore_must_use,
-                reason = "等的那一头走了，结局就没人要了"
-            )]
-            let _ = exited.send((status, child));
-        });
-        let gone = || io::Error::other("the thread waiting for the command stopped");
+        let waited = waiting(child);
         let (ending, child) = match waited.recv_timeout(timeout) {
             Ok((status, child)) => (Ending::Exited(status?), Some(child)),
             Err(RecvTimeoutError::Timeout) => {
@@ -230,29 +293,72 @@ impl Started {
             }
             Err(RecvTimeoutError::Disconnected) => return Err(gone()),
         };
-        group.leftovers();
-        drop(child);
-        if read.recv_timeout(DRAIN).is_err() {
-            tracing::debug!(target: TARGET, "command output still open after the command ended");
-        }
-        let output = std::mem::take(&mut *lock(&output));
-        Ok(Finished { ending, output })
+        Ok(done(ending, child, group, &output, &read))
     }
 }
 
-/// 读管道，直到读完或者读不了。
-fn pump(mut pipe: io::PipeReader, output: &Mutex<Capture>, progress: &impl Fn(String)) {
+/// 等它结束交回来：另起一个线程等，结局连同进程的句柄送回来。句柄跟着送：Windows 上它还开着，编号就不会被别的进程拿去。
+pub(super) type Exited = mpsc::Receiver<(io::Result<ExitStatus>, Child)>;
+
+/// 另起一个线程等 `child` 结束。
+fn waiting(mut child: Child) -> Exited {
+    let (exited, waited) = mpsc::channel();
+    thread::spawn(move || {
+        let status = child.wait();
+        #[expect(
+            clippy::let_underscore_must_use,
+            reason = "等的那一头走了，结局就没人要了"
+        )]
+        let _ = exited.send((status, child));
+    });
+    waited
+}
+
+/// 等的线程没了。
+fn gone() -> io::Error {
+    io::Error::other("the thread waiting for the command stopped")
+}
+
+/// 结束了：组里剩下的杀掉，放下句柄，管道最多再读 [`DRAIN`]，交回读到的。
+fn done(
+    ending: Ending,
+    child: Option<Child>,
+    group: Group,
+    output: &Mutex<Sink>,
+    read: &mpsc::Receiver<()>,
+) -> Finished {
+    group.leftovers();
+    drop(child);
+    if read.recv_timeout(DRAIN).is_err() {
+        tracing::debug!(target: TARGET, "command output still open after the command ended");
+    }
+    let output = std::mem::take(&mut lock(output).capture);
+    Finished { ending, output }
+}
+
+/// 读管道，直到读完或者读不了。交出去以前进内存、推给头；交出去以后解好的一段段送进通道（施工 7-12）。读完了这个线程
+/// 一退出、等的那一头早就放下了 [`Sink`]，留在里面的那一头跟着丢掉，通道就关了。
+fn pump(mut pipe: io::PipeReader, output: &Mutex<Sink>, progress: &impl Fn(String)) {
     let mut decoder = Decoder::default();
     let mut buffer = [0u8; 8192];
+    let mut moved = None;
     loop {
         match pipe.read(&mut buffer) {
             Ok(0) => break,
             Ok(count) => {
                 let chunk = &buffer[..count];
-                lock(output).push(chunk);
                 let text = decoder.push(chunk);
-                if !text.is_empty() {
-                    progress(text);
+                if moved.is_none() {
+                    let mut sink = lock(output);
+                    match &sink.moved {
+                        Some(sender) => moved = Some(sender.clone()),
+                        None => sink.capture.push(chunk),
+                    }
+                }
+                match &moved {
+                    Some(sender) => send(sender, text),
+                    None if !text.is_empty() => progress(text),
+                    None => {}
                 }
             }
             Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
@@ -262,68 +368,31 @@ fn pump(mut pipe: io::PipeReader, output: &Mutex<Capture>, progress: &impl Fn(St
             }
         }
     }
+    // 读完以后才交出去的：最后半个字已经进了内存，在交出去的那一段里，不再送。一个字正好切在交出去那一刻两边的，那个字
+    // 可能成了 `\u{FFFD}`。
     let rest = decoder.finish();
-    if !rest.is_empty() {
-        progress(rest);
+    match moved {
+        Some(sender) => send(&sender, rest),
+        None if !rest.is_empty() => progress(rest),
+        None => {}
+    }
+}
+
+/// 交出去以后的一段送进通道：空的不送；收的那一头不要了也不要紧。
+fn send(sender: &mpsc::Sender<String>, text: String) {
+    if !text.is_empty() {
+        #[expect(
+            clippy::let_underscore_must_use,
+            reason = "任务表不读了（停了、核心在停），读到的就没人要了"
+        )]
+        let _ = sender.send(text);
     }
 }
 
 /// 读到的输出：读的线程 panic 了也照样拿。
-fn lock(output: &Mutex<Capture>) -> MutexGuard<'_, Capture> {
+fn lock(output: &Mutex<Sink>) -> MutexGuard<'_, Sink> {
     output.lock().unwrap_or_else(PoisonError::into_inner)
 }
-
-/// 一条命令和它起的：Unix 上是它的进程组，Windows 上是它的进程树。认的是命令的进程编号。
-#[derive(Debug, Clone, Copy)]
-pub(super) struct Group(u32);
-
-impl Group {
-    /// 整组杀掉。
-    pub(super) fn kill(self) {
-        kill(self.0);
-    }
-
-    /// 命令退出以后，组里还在跑的也杀掉。Windows 上不杀：退出以后按编号杀可能杀错。
-    pub(super) fn leftovers(self) {
-        if cfg!(unix) {
-            kill(self.0);
-        }
-    }
-}
-
-/// Unix：`kill(-pgid, SIGKILL)`。组里已经没有进程的，不算出错。
-#[cfg(unix)]
-fn kill(id: u32) {
-    use rustix::process::{Pid, Signal, kill_process_group};
-    let Some(pid) = i32::try_from(id).ok().and_then(Pid::from_raw) else {
-        return;
-    };
-    match kill_process_group(pid, Signal::KILL) {
-        Ok(()) => {}
-        Err(error) if error == rustix::io::Errno::SRCH => {}
-        Err(error) => tracing::warn!(target: TARGET, error = %error, "command group not killed"),
-    }
-}
-
-/// Windows：`taskkill /T /F /PID`，整棵进程树。
-#[cfg(windows)]
-fn kill(id: u32) {
-    use std::os::windows::process::CommandExt;
-    let killed = Command::new("taskkill")
-        .args(["/T", "/F", "/PID", &id.to_string()])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .creation_flags(CREATE_NO_WINDOW)
-        .status();
-    if let Err(error) = killed {
-        tracing::warn!(target: TARGET, error = %error, "command tree not killed");
-    }
-}
-
-/// 别的系统：只能杀它自己，这里拿不到它，不杀。
-#[cfg(not(any(unix, windows)))]
-fn kill(_id: u32) {}
 
 /// 让命令自成一组，整组杀得掉：Unix 上先起看门的，命令进它的组（施工 7-8），起不来的照旧自成一组。Windows 上不弹控制台
 /// 窗口。
@@ -362,30 +431,6 @@ fn alone(command: &mut Command) -> Watch {
 #[cfg(not(any(unix, windows)))]
 fn alone(_command: &mut Command) -> Watch {
     Watch {}
-}
-
-/// 掐掉时整组杀掉：丢掉它就杀；跑完了先 [`Guard::disarm`]。掐掉就是丢掉这次调用的 future（施工 4-2）；执行命令
-/// 不会被「叫它停」，那只给改文件的（施工 4-9 再补一）。
-pub(super) struct Guard(Option<Group>);
-
-impl Guard {
-    /// 看着 `group`。
-    pub(super) fn new(group: Group) -> Guard {
-        Guard(Some(group))
-    }
-
-    /// 跑完了，丢掉它也不杀。
-    pub(super) fn disarm(mut self) {
-        self.0 = None;
-    }
-}
-
-impl Drop for Guard {
-    fn drop(&mut self) {
-        if let Some(group) = self.0.take() {
-            group.kill();
-        }
-    }
 }
 
 #[cfg(all(test, unix))]

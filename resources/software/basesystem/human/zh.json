@@ -169,6 +169,7 @@
     "shell/hazard-disk_format": "没有执行：会格式化磁盘",
     "shell/hazard-disk_write": "没有执行：会直接写磁盘设备",
     "shell/background": "放到后台了：{job}",
+    "shell/moved": "超时，挪到后台了：{job}",
     "history/found": "找到 {count} 条",
     "history/read": "读了第 {from}–{to} 条",
     "history/none": "没有找到",

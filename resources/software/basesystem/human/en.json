@@ -184,6 +184,7 @@
     "shell/hazard-disk_format": "not run: would format a disk",
     "shell/hazard-disk_write": "not run: would write to a disk device",
     "shell/background": "running in the background as {job}",
+    "shell/moved": "timed out, moved to the background as {job}",
     "history/found": "Found {count} entries",
     "history/found/one": "Found {count} entry",
     "history/read": "Read entries {from}–{to}",

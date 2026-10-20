@@ -37,6 +37,7 @@ mod history_other;
 mod history_speed;
 mod http;
 mod jobs;
+mod jobs_moved;
 mod jobs_stop;
 mod kb_eval;
 mod knowledge_formats;

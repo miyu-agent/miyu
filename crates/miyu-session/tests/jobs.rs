@@ -4,11 +4,10 @@
 //! 再载入时补 `aborted`。假的后台命令（`miyu_tool::testkit::Held`）三个平台一样；真的 `shell` 三个平台都跑，沙盒那一条
 //! 只在 Unix 上有收紧手段时跑。
 
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use miyu_kernel::event::{Body, Event, JobReason, JobReported, Level, Permission, ToolResult};
+use miyu_kernel::event::{Body, Event, JobReason, Level, Permission};
 use miyu_kernel::id::{JobId, TurnId};
 use miyu_kernel::origin::{By, Tool as ByTool};
 use miyu_kernel::session::Command;
@@ -18,68 +17,13 @@ use miyu_store::blob::Blobs;
 use miyu_tool::testkit::{Act, Fake, Held};
 use miyu_tool::{Catalog, Exit, Tool};
 
+use crate::support::jobs::*;
 use crate::support::*;
-
-/// 真的基础系统。
-fn base_system() -> Catalog {
-    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来")).expect("合写法")
-}
 
 /// 只有一件假工具 `start`：把 `held` 交给任务端口。
 fn starting(held: &Arc<Held>) -> Catalog {
     let tool = Fake::new("start", Access::Read, Act::Background(Arc::clone(held)));
     Catalog::new([tool as Arc<dyn Tool>]).expect("合写法")
-}
-
-/// 完全放开这一级、没人能确认，在场地的 `work/` 里：执行命令不问、不进沙盒。
-fn full(home: &Home) -> Opening {
-    Opening {
-        permission: Permission {
-            level: Level::Full,
-            read_only: false,
-        },
-        attended: false,
-        cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
-        ..Opening::default()
-    }
-}
-
-/// 说一句，等这一轮结束。
-async fn talk(handle: &miyu_session::Handle, id: &str, words: &str) {
-    let mut pushes = watch(handle).await;
-    ask(handle, id, say(words)).await.expect("会话在跑");
-    until_turn_ends(&mut pushes).await;
-}
-
-/// 日志里的 `job.reported`，和那一条事件。
-fn reports(log: &[Event]) -> Vec<(&Event, &JobReported)> {
-    log.iter()
-        .filter_map(|event| match &event.body {
-            Body::JobReported(reported) => Some((event, reported)),
-            _ => None,
-        })
-        .collect()
-}
-
-/// 日志里的工具结果。
-fn results(log: &[Event]) -> Vec<&ToolResult> {
-    log.iter()
-        .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result),
-            _ => None,
-        })
-        .collect()
-}
-
-/// 等任务表空了，最多十秒。
-async fn until_idle(home: &Home) {
-    within("任务表空了", async {
-        while home.jobs.running() {
-            tokio::time::sleep(Duration::from_millis(5)).await;
-        }
-    })
-    .await;
 }
 
 #[tokio::test]

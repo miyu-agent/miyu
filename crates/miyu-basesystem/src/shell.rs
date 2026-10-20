@@ -8,6 +8,7 @@
 
 mod background;
 mod env;
+mod moved;
 mod output;
 mod process;
 mod program;
@@ -26,13 +27,15 @@ use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::{Access, Worded};
 use miyu_policy::hazard::{Kind, Places, assess};
-use miyu_tool::{Call, Done, Effect, Hazard, Progress, Running, Spec, Tool};
+use miyu_tool::{
+    Background, Call, Done, Effect, Hazard, Process as _, Progress, Running, Spec, Tool,
+};
 
 use crate::blocking::blocking;
 use crate::common::{Common, said, said_n};
 use crate::load::{self, LoadError, say};
 use output::{Capture, Shown};
-use process::{Ending, Finished, Guard};
+use process::{Ending, Finished, Guard, Handover, Waited};
 use program::Program;
 
 /// 不写 `timeout` 的等多久，毫秒（照 Claude Code）。改它要跟着改参数格式里的那一句。
@@ -167,6 +170,42 @@ impl Shell {
         }
     }
 
+    /// 到时挪到了后台（施工 7-12）：到这一刻读到的和之后的输出、进程交给任务端口，当场交回编号，报 `job.started`。
+    /// 端口收不下的（会话已经停了），任务表整组杀掉了它，照起不来说。
+    /// 给她的照放到后台的那一句（`started.txt`）：实测（2026-10-20）另写「到时挪过去了」那一句，她下一步一样，都去看输出、
+    /// 没有一次重跑，不另加。
+    fn moved(&self, call: &Call, handover: Handover, title: String) -> Done {
+        let Some(jobs) = &call.jobs else {
+            handover.process.kill();
+            return self.failed(&io::Error::other("no job port"));
+        };
+        let Handover {
+            output,
+            rest,
+            process,
+        } = handover;
+        let first = self.texts.results.so_far(&output);
+        let background = Background {
+            output: Box::new(moved::Rest::new(first, rest)),
+            process: Box::new(process),
+        };
+        match jobs.start(background) {
+            Ok(job) => {
+                let id = job.to_string();
+                Done::ok(say(&self.texts.started, &[("job", &id)]))
+                    .said(said("shell/moved").with("job", id))
+                    .effect(Effect::JobStarted(JobStarted {
+                        foreground: false,
+                        job,
+                        what: JobKind::Command,
+                        title,
+                        session: None,
+                    }))
+            }
+            Err(error) => self.failed(&error),
+        }
+    }
+
     /// 跑完了：输出，加上它怎么结束的；到时被杀的照 `shell` 的那一句。
     fn finished(&self, finished: Finished, timeout: u64) -> Done {
         self.texts.results.ended(finished, || {
@@ -217,6 +256,20 @@ impl Results {
                         .said(said("shell/signal").with("signal", signal))
                 }
             },
+        }
+    }
+
+    /// 挪到后台那一刻读到的，写进任务的输出（施工 7-12）：太长的照给她看的截成头尾两段，中间说省了多少；不说怎么看全，
+    /// 读的就是全的那一份。
+    fn so_far(&self, output: &Capture) -> String {
+        match output.shown() {
+            Shown::Whole(text) => text,
+            Shown::Cut {
+                head,
+                tail,
+                omitted,
+                ..
+            } => line(head) + &say(&self.omitted, &[("count", &omitted.to_string())]) + &tail,
         }
     }
 
@@ -325,10 +378,17 @@ impl Tool for Shell {
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_millis(timeout);
-            let finished = blocking(call.stop.clone(), move |_| started.wait(wait)).await;
+            // 后台运行开着的，到时不杀、挪到后台（施工 7-12）；开头是 `sleep` 的照旧杀：等着本来就是它要做的。
+            let movable = call.jobs.is_some() && !sleeps(&args.command);
+            let waited = blocking(call.stop.clone(), move |_| match movable {
+                true => started.wait_or_move(wait),
+                false => started.wait(wait).map(Waited::Finished),
+            })
+            .await;
             guard.disarm();
-            match finished {
-                Ok(finished) => self.finished(finished, timeout),
+            match waited {
+                Ok(Waited::Finished(finished)) => self.finished(finished, timeout),
+                Ok(Waited::Moved(handover)) => self.moved(&call, handover, args.description),
                 Err(error) => self.failed(&error),
             }
         })
@@ -342,6 +402,11 @@ fn workdir(call: &Call) -> PathBuf {
         (Some(rest), Some(home)) => home.join(rest),
         _ => PathBuf::from(&call.cwd),
     }
+}
+
+/// 开头是 `sleep` 的（照 Claude Code）：到时照旧杀，不挪到后台（施工 7-12）。
+fn sleeps(command: &str) -> bool {
+    command.split_whitespace().next() == Some("sleep")
 }
 
 /// 她写的 `timeout`：没写、写 0 的按默认，超过上限的按上限。

@@ -169,6 +169,7 @@
     "shell/hazard-disk_format": "実行していません：ディスクをフォーマットします",
     "shell/hazard-disk_write": "実行していません：ディスクデバイスに直接書き込みます",
     "shell/background": "バックグラウンドで実行：{job}",
+    "shell/moved": "タイムアウト、バックグラウンドに移動：{job}",
     "history/found": "{count} 件見つかりました",
     "history/read": "{from}–{to} 件目を読みました",
     "history/none": "見つかりません",

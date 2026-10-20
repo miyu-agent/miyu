@@ -122,7 +122,7 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 /// 怎么结束的：有退出码的照退出码；没有的是被信号杀掉的（Unix）。
-fn exit(status: ExitStatus) -> Exit {
+pub(super) fn exit(status: ExitStatus) -> Exit {
     match status.code() {
         Some(code) => Exit::Code(code),
         None => Exit::Signal(signal(status)),
