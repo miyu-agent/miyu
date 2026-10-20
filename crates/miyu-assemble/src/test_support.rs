@@ -182,6 +182,8 @@ fn job_texts() -> JobTexts {
         stopped_by_user: "by user\n".to_string(),
         subagent_message_open: template("<message {job} {title}>\n"),
         subagent_message_close: "</message>\n".to_string(),
+        command_tail: "output\n".to_string(),
+        command_tail_cut: template("last {shown} of {chars}\n"),
     }
 }
 

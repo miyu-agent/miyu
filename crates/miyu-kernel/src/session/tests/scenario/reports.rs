@@ -382,5 +382,6 @@ fn reported(job: u64, reason: JobReason) -> JobReported {
         duration_ms: None,
         output: None,
         chars: None,
+        tail: None,
     }
 }

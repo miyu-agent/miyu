@@ -379,7 +379,9 @@
 | `jobs/command-exit.txt` | `Exit code {code}.` | 有退出码 |
 | `jobs/command-signal.txt` | `Killed by signal {signal}.` | 被信号杀掉 |
 | `jobs/command-duration.txt` | `Ran for {ms} ms.` | 有用时 |
-| `jobs/command-output.txt` | `The output has {chars} characters. Read it with jobs output.` | 存下了输出 |
+| `jobs/command-output.txt` | `The output has {chars} characters. Read it with jobs output.` | 存下了输出、回报没带最后一段（以前的日志、以前的快照） |
+| `jobs/command-tail.txt` | `Output:`，后面紧跟整份输出 | 回报带了整份输出（不超过 2000 个字，施工 7-13） |
+| `jobs/command-tail-cut.txt` | `Output, the last {shown} of {chars} characters (read all of it with jobs output):`，后面紧跟最后一段 | 回报带了最后一段、整份比它长（施工 7-13） |
 | `jobs/command-close.txt` | `</command-ended>` | 收尾 |
 | `jobs/subagent-open.txt` | `<subagent-report job="{job}" title="{title}" reason="{reason}">` | 子代理的回报，开头 |
 | `jobs/subagent-person.txt` | `The user also talked to this subagent during the task.` | 人插过话 |
@@ -469,6 +471,28 @@ No notice came within 12 hours, so the request was dropped.
 Exit code 0.
 Ran for 81234 ms.
 The output has 48213 characters. Read it with jobs output.
+</command-ended>
+```
+
+样本 `docs/designs/samples/reports/command-tail.txt`（输出短，带整份，施工 7-13；输出没以换行结尾的补一个）：
+
+```text
+<command-ended job="j1" title="跑全部测试" reason="exited">
+Exit code 0.
+Ran for 1200 ms.
+Output:
+test result: ok. 12 passed
+</command-ended>
+```
+
+样本 `docs/designs/samples/reports/command-tail-cut.txt`（输出长，带最后一段，施工 7-13）：
+
+```text
+<command-ended job="j1" title="跑全部测试" reason="exited">
+Exit code 101.
+Ran for 81234 ms.
+Output, the last 51 of 48213 characters (read all of it with jobs output):
+test result: FAILED. 11 passed; 1 failed; 0 ignored
 </command-ended>
 ```
 

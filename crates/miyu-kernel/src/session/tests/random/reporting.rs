@@ -77,6 +77,7 @@ fn job_ended(rng: &mut Rng, watch: &Watch) -> Input {
             duration_ms: Some(rng.below(100_000)),
             output: exited.then(|| ContentHash::of(b"output")),
             chars: exited.then(|| rng.below(1000)),
+            tail: None,
         },
     }
 }

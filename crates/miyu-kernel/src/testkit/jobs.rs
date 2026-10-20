@@ -136,6 +136,7 @@ impl Stage {
             duration_ms: Some(81_234),
             output: exited.then(|| ContentHash::of(b"output")),
             chars: exited.then_some(48_213),
+            tail: None,
         };
         self.job_ends_with(by, cause, reported);
     }

@@ -205,7 +205,11 @@ impl Watch {
             tracing::debug!(target: TARGET, "job output still open after the command ended");
         }
         sink.close();
-        let (output, chars) = sink.stored(&self.shared.blobs);
+        let super::output::Stored {
+            output,
+            chars,
+            tail,
+        } = sink.stored(&self.shared.blobs);
         let (exit_code, signal) = match exit {
             Ok(Exit::Code(code)) => (Some(code), None),
             Ok(Exit::Signal(signal)) => (None, Some(signal)),
@@ -223,6 +227,7 @@ impl Watch {
             duration_ms: Some(millis(took)),
             output,
             chars,
+            tail,
         };
         self.shared.report(Ended {
             key: self.key,

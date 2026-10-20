@@ -1,0 +1,6 @@
+<command-ended job="j1" title="跑全部测试" reason="exited">
+Exit code 101.
+Ran for 81234 ms.
+Output, the last 51 of 48213 characters (read all of it with jobs output):
+test result: FAILED. 11 passed; 1 failed; 0 ignored
+</command-ended>

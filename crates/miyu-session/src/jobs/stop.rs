@@ -87,7 +87,11 @@ impl Shared {
         };
         process.kill();
         output.close();
-        let (output, chars) = output.stored(&self.blobs);
+        let super::output::Stored {
+            output,
+            chars,
+            tail,
+        } = output.stored(&self.blobs);
         tracing::info!(target: TARGET, job = job.to_string().as_str(), "job stopped");
         let (reason, by_model) = who.why.command();
         Some(Ended {
@@ -103,6 +107,7 @@ impl Shared {
                 duration_ms: Some(millis(Instant::now().duration_since(started))),
                 output,
                 chars,
+                tail,
             },
         })
     }

@@ -3677,6 +3677,30 @@ The subagent ended without saying anything.
 The user stopped this.
 ```
 
+### 人这边：任务的回报
+
+#### `core/jobs/command-tail.txt`
+
+- 什么时候加进来：回报带着整份输出（不超过 2000 个字，施工 7-13）
+- token：3（2026-10-20 量），后面另接整份输出
+- 为什么加：同下一行，项目主人定；整份都在就不说怎么看，替掉 `command-output.txt` 那一句
+- 指纹：`031e7f0d`
+
+```text
+Output:
+```
+
+#### `core/jobs/command-tail-cut.txt`
+
+- 什么时候加进来：回报带着输出的最后一段、整份比它长（施工 7-13；`shown`、`chars` 照 `2000`、`48213` 量）
+- token：22（2026-10-20 量），后面另接最后一段（最多 2000 个字）
+- 为什么加：2026-10-20 项目主人定：「输出很少的话给一定的额度」，超出的给怎么看。说带了最后几个、一共多少、全文用 `jobs output` 读，替掉 `command-output.txt` 那一句；输出本身照原样接在后面
+- 指纹：`6b003e69`
+
+```text
+Output, the last {shown} of {chars} characters (read all of it with jobs output):
+```
+
 ### 人这边：任务的回报（一块带标签的事实），正文中间
 
 #### `core/jobs/subagent-omitted.txt`

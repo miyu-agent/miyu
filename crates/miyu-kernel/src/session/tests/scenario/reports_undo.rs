@@ -178,6 +178,7 @@ fn a_report_after_unreverting_an_edit_opens_a_turn_at_once() {
             duration_ms: None,
             output: None,
             chars: None,
+            tail: None,
         },
     });
     let events = appended_events(&ended);
@@ -277,6 +278,7 @@ fn a_command_ending_while_reading_back_waits_for_the_undo() {
             duration_ms: Some(5),
             output: None,
             chars: None,
+            tail: None,
         },
     };
     assert_eq!(logged.session.handle(ended), [], "读回的时候先放着");

@@ -57,6 +57,8 @@ fn shipped() -> JobTexts {
         stopped_by_user: job!("stopped-by-user.txt"),
         subagent_message_open: template(job!("subagent-message-open.txt")),
         subagent_message_close: job!("subagent-message-close.txt"),
+        command_tail: job!("command-tail.txt"),
+        command_tail_cut: template(job!("command-tail-cut.txt")),
     }
 }
 
@@ -77,6 +79,7 @@ fn ended(
         duration_ms: ms,
         output: chars.map(|_| ContentHash::of(b"output")),
         chars,
+        tail: None,
     }
 }
 
@@ -273,6 +276,44 @@ fn an_old_snapshot_writes_a_stop_by_the_user_as_before() {
         subagent(log.history(), &subagent_stopped, &old).as_deref(),
         Some(sample!("subagent-stopped.txt"))
     );
+}
+
+/// 带着输出的最后一段（施工 7-13）：整份的写开头一句、带上，不写字数；截过的说带了最后几个、一共多少字、全文怎么看；以前的
+/// 快照没有那两份字的照旧只写字数。
+#[test]
+fn a_command_with_its_tail_brings_the_output_along() {
+    let log = dispatched();
+    let texts = shipped();
+    let whole = JobReported {
+        tail: Some("test result: ok. 12 passed\n".to_string()),
+        ..ended(JobReason::Exited, Some(0), None, Some(1_200), Some(27))
+    };
+    assert_eq!(
+        command(log.history(), &whole, &texts).as_deref(),
+        Some(sample!("command-tail.txt"))
+    );
+    let cut = JobReported {
+        tail: Some("test result: FAILED. 11 passed; 1 failed; 0 ignored".to_string()),
+        ..ended(
+            JobReason::Exited,
+            Some(101),
+            None,
+            Some(81_234),
+            Some(48_213),
+        )
+    };
+    assert_eq!(
+        command(log.history(), &cut, &texts).as_deref(),
+        Some(sample!("command-tail-cut.txt")),
+        "没以换行结尾的补一个"
+    );
+    let old = JobTexts {
+        command_tail: String::new(),
+        ..shipped()
+    };
+    let before = command(log.history(), &whole, &old).expect("渲染得出");
+    assert!(before.contains("The output has 27 characters."), "{before}");
+    assert!(!before.contains("test result"), "{before}");
 }
 
 #[test]

@@ -1,0 +1,6 @@
+<command-ended job="j1" title="跑全部测试" reason="exited">
+Exit code 0.
+Ran for 1200 ms.
+Output:
+test result: ok. 12 passed
+</command-ended>

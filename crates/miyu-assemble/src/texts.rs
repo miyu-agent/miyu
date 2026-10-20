@@ -234,6 +234,10 @@ pub struct JobTexts {
     pub subagent_message_open: Template,
     /// 留言的收尾（`subagent-message-close.txt`，施工 7-7）。以前造的快照里没有，是空的。
     pub subagent_message_close: String,
+    /// 后台命令的输出整段带上时的开头（`command-tail.txt`，施工 7-13）。以前造的快照里没有，是空的：照原来只写有多少字。
+    pub command_tail: String,
+    /// 只带最后一段时的开头（`command-tail-cut.txt`，施工 7-13）：字段 `shown`、`chars`。以前造的快照里没有，是空的。
+    pub command_tail_cut: Template,
 }
 
 /// 别的 harness 发来的话的标签（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，

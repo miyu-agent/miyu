@@ -251,6 +251,7 @@ impl Session {
                 duration_ms: None,
                 output: None,
                 chars: None,
+                tail: None,
             };
             match self.arrive(at, By::Kernel, None, Body::JobReported(reported)) {
                 Ok(recorded) => events.extend(recorded),

@@ -271,6 +271,9 @@ fn jobs() -> crate::JobTexts {
             "../../../resources/core/jobs/subagent-message-close.txt"
         )
         .to_string(),
+        command_tail: include_str!("../../../resources/core/jobs/command-tail.txt").to_string(),
+        command_tail_cut: include_str!("../../../resources/core/jobs/command-tail-cut.txt")
+            .to_string(),
     }
 }
 

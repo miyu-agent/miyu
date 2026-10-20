@@ -4,8 +4,9 @@
 //! 标签带任务编号、标题、结束的原因，里面一行一句。标题照有效历史记着的派出去过的任务取（[`History::dispatched`]）：
 //! 派它的那一条压缩掉了也在。派它的那一轮撤掉了的不渲染：派它的调用已经不在上下文里了（`agents.md` 第七条第 2 条）。
 //!
-//! 后台命令结束只写结束了、退出码或者信号、用时、输出有多少字和怎么看，不带输出本身；子代理的回报带正文，原样放、不
-//! 转义：和检查点里的摘要一样，是模型写的多行正文。
+//! 后台命令结束写结束了、退出码或者信号、用时、输出有多少字和怎么看；回报带着输出的最后一段的（施工 7-13，最多 2000
+//! 个字），直接带上它，整份的只写一句开头，截过的说一共多少字、全文怎么看。子代理的回报带正文。输出、正文都原样放、不
+//! 转义：和检查点里的摘要一样，是多行正文。
 //!
 //! 人停的（`stopped`、不带 `by_model`：`job.stop`、删子会话），两种都在标签那一行后面先写一句是人停的（施工 7-2
 //! 补）：人停的叫醒她，不写她会当成任务自己停了。她自己用 `jobs` 停的不写：不叫醒她，停它的那次调用就在上下文里。以前
@@ -41,6 +42,12 @@ pub(crate) fn command(
     }
     // 输出没存下来的，字数也不写：她读不到。
     let chars = reported.chars.filter(|_| reported.output.is_some());
+    // 带着最后一段的（施工 7-13）：直接带上，不再写「有多少字、怎么看」那一句；以前的快照没有那两份字的照旧。
+    let tail = reported
+        .tail
+        .as_deref()
+        .zip(chars)
+        .filter(|_| !texts.command_tail.is_empty());
     let lines = [
         (
             &texts.command_exit,
@@ -57,11 +64,29 @@ pub(crate) fn command(
             "ms",
             reported.duration_ms.map(|n| n.to_string()),
         ),
-        (&texts.command_output, "chars", chars.map(|n| n.to_string())),
+        (
+            &texts.command_output,
+            "chars",
+            chars.filter(|_| tail.is_none()).map(|n| n.to_string()),
+        ),
     ];
     for (template, field, value) in lines {
         if let Some(value) = value {
             block.push_str(&fill(template, &[(field, &value)]));
+        }
+    }
+    if let Some((tail, chars)) = tail {
+        let shown = tail.chars().count() as u64;
+        match shown == chars {
+            true => block.push_str(&texts.command_tail),
+            false => block.push_str(&fill(
+                &texts.command_tail_cut,
+                &[("shown", &shown.to_string()), ("chars", &chars.to_string())],
+            )),
+        }
+        block.push_str(tail);
+        if !tail.ends_with('\n') {
+            block.push('\n');
         }
     }
     block.push_str(&texts.command_close);

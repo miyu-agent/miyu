@@ -25,6 +25,7 @@ fn job_reported_from_the_drawing_round_trips() {
                 duration_ms: Some(81234),
                 output: Some(ContentHash::parse(OUTPUT).unwrap()),
                 chars: Some(48213),
+                tail: None,
             }
         ),
         other => panic!("{other:?}"),

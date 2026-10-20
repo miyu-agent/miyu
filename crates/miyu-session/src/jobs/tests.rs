@@ -136,6 +136,11 @@ async fn a_job_counts_on_writes_its_output_and_reports_when_it_exits() {
     let whole = "第一行\nsecond\n".as_bytes();
     assert_eq!(reported.output, Some(ContentHash::of(whole)));
     assert_eq!(reported.chars, Some(11), "按字数，不按字节");
+    assert_eq!(
+        reported.tail.as_deref(),
+        Some("第一行\nsecond\n"),
+        "不长的整份带上（施工 7-13）"
+    );
     assert_eq!(scratch.blobs().get(&ContentHash::of(whole)).unwrap(), whole);
     assert!(table.running(), "落盘之前还算在跑");
     jobs.land();
@@ -366,4 +371,17 @@ async fn a_job_over_its_limits_is_stopped() {
     tokio::time::sleep(Duration::from_millis(400)).await;
     assert!(back.try_recv().is_err(), "结束了的不再报");
     assert_eq!(held.killed(), 0);
+}
+
+/// 回报带的最后一段（施工 7-13）：不长的整份；长的取最后几个字，切在行首；后一半里没有换行的照字切；开头切在一个字中间的
+/// 不出乱码。
+#[test]
+fn the_tail_is_the_last_lines() {
+    use super::output::tail_of;
+    assert_eq!(tail_of(b"a\nb\n", 10), "a\nb\n");
+    assert_eq!(tail_of(b"line one\nline two\n", 12), "line two\n");
+    assert_eq!(tail_of(b"abcdefghij", 4), "ghij");
+    // 末尾的字节从「猫」的第二个字节起：照字取最后两个，坏掉的那一个不在里面。
+    let cut = "猫狗".as_bytes()[1..].to_vec();
+    assert_eq!(tail_of(&cut, 1), "狗");
 }

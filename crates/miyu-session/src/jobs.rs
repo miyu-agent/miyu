@@ -256,7 +256,11 @@ impl SessionJobs {
                 .into_iter()
                 .map(|(job, output, started)| {
                     output.close();
-                    let (output, chars) = output.stored(&blobs);
+                    let output::Stored {
+                        output,
+                        chars,
+                        tail,
+                    } = output.stored(&blobs);
                     JobReported {
                         job,
                         reason: JobReason::Restarted,
@@ -266,6 +270,7 @@ impl SessionJobs {
                         duration_ms: Some(millis(started.elapsed())),
                         output,
                         chars,
+                        tail,
                     }
                 })
                 .collect::<Vec<_>>()

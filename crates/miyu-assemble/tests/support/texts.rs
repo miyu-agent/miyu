@@ -142,6 +142,8 @@ fn job_texts() -> JobTexts {
         stopped_by_user: job!("stopped-by-user.txt"),
         subagent_message_open: template(job!("subagent-message-open.txt")),
         subagent_message_close: job!("subagent-message-close.txt"),
+        command_tail: job!("command-tail.txt"),
+        command_tail_cut: template(job!("command-tail-cut.txt")),
     }
 }
 

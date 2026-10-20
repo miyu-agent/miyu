@@ -89,6 +89,13 @@ pub struct JobTexts {
     /// 留言的标签的收尾（施工 7-7）。以前造的快照里没有，读成空的。
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub subagent_message_close: String,
+    /// 后台命令的输出整段带上时的开头（施工 7-13）。以前造的快照里没有，读成空的：照原来只写有多少字、怎么看；空的不写，旧
+    /// 快照的字节不变。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub command_tail: String,
+    /// 只带最后一段时的开头：`shown`、`chars`（施工 7-13）。以前造的快照里没有，读成空的。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub command_tail_cut: String,
 }
 
 impl JobTexts {
@@ -114,6 +121,8 @@ impl JobTexts {
             stopped_by_user: self.stopped_by_user.clone(),
             subagent_message_open: template(&self.subagent_message_open, &["job", "title"])?,
             subagent_message_close: self.subagent_message_close.clone(),
+            command_tail: self.command_tail.clone(),
+            command_tail_cut: template(&self.command_tail_cut, &["shown", "chars"])?,
         })
     }
 }

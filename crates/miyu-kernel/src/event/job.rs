@@ -34,6 +34,10 @@ pub struct JobReported {
     /// 整份输出有多少个字（Unicode 字符），和 `output` 一起有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chars: Option<u64>,
+    /// 输出的最后一段（施工 7-13）：最多 2000 个字，切在行首；整份不超过的就是整份。回报照它直接带上，她不用再读一次。和
+    /// `output` 一起有，空的输出、以前的日志没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail: Option<String>,
 }
 
 text_enum!(
