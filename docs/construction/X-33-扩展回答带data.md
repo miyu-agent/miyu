@@ -1,6 +1,6 @@
 ## 施工单 X-33：扩展工具的回答带 `data`
 
-状态：主会话审过（2026-10-20）；碰 clicall（设计 39）和嵌套调用，等 M-3 合进 main 再开工。
+状态：主会话审过（2026-10-20）；M-3 上合进 main 后开工，在分支 `step/X-33-扩展回答带data` 上，等主会话审过合进 main。
 
 ### 目的
 
@@ -24,3 +24,11 @@
 ### 风险
 
 - 和 M-3 撞 `miyu-tool`、嵌套调用那几处：等 M-3 合进 main 再开工。
+
+### 怎么做的
+
+- `provide/remote.rs` 的回答多读一格 `data`（`#[serde(default)]`），`error` 是假的照收进 `Done.data`；嵌套调用、`tool.result` 那两头 M-2、M-3 已经接好，不动。
+- 测试扩展 `miyu-test-extension` 的 `serve` 多两件：`data` 回带 `data` 的结果，`data_error` 回 `error: true` 也带 `data`。
+- 契约测试 `tests/provide_data.rs`：假的 `shell` 经嵌套端口调这两件，再直接调一次 `data`。先红（脚本拿不到 `data`）后绿。
+- 契约测试看不出源头漏没漏出错时的 `data`（嵌套调用那头也拦），`provide/tests/remote_tests.rs` 另补一个：照收、原样交，出错的不交。
+- 手写变异 8 个全抓住：这一步只有两行代码，围着 `data` 走的这条路（读、出错不交、不进 `tool.result`、嵌套调用交给脚本）能改坏的就这么多，不硬凑 15 个。原来还有一个「去掉 `#[serde(default)]`」，`Option` 的格子缺了 serde 本来就当空的，等价，拿掉了。

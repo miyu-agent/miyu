@@ -120,7 +120,7 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 | `display_name` | Name for people, per language: `{"zh": "打招呼", "en": "Greet"}` |
 | `subject` | Which argument's value the timeline shows after the name: "Greet · Ann". Tools that search, or act on a particular file or id, should set it: without it the timeline shows only the name, and nobody can tell what was searched or which one was touched |
 | `need_load` | `true`: the AI normally sees only the name and one line, and loads it when needed |
-| `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Read-only and search tools that don't depend on the session itself should usually set it: the AI can call them in bulk from a script and skip many round trips |
+| `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Read-only and search tools that don't depend on the session itself should usually set it: the AI can call them in bulk from a script and skip many round trips. Put a structured result in the answer's `data` and the script gets one line of JSON |
 
 A mistake rejects the whole set; the response's `data` says which tool and what's wrong (`{"tool": "hello_greet", "problem": "name"}`).
 
@@ -141,6 +141,7 @@ Response:
 - On failure, still return a result with `error: true` and the reason written for the model; a JSON-RPC error also counts as failure.
 - To have her "send" an image (stickers and the like, drawn in the reply, sent as an image on chat platforms): add `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]` to the result, at most 4. The AI doesn't see `sent`.
 - To have heads draw the result as a card, add `detail` in one of the three common shapes: a link list `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`, a table `{"kind": "table", "columns": [...], "rows": [[...]]}`, or images `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`. The AI doesn't see `detail`; if the shape is wrong the core drops the field and logs `tool detail dropped`. Fields and limits are in the [protocol reference](../reference/extensions.en.md#toolcalltoolcancel).
+- For a tool with `clicall`, to give scripts a structured result, add `data` to the answer, any JSON (for example `{"items": [...]}`; when nothing is found, send the same shape with an empty list so scripts that parse it as JSON don't break). When the AI calls the tool with `miyu call` inside a command, the script gets that one line of JSON; without `data` it gets the text in `blocks`. The AI doesn't see `data`, and it isn't passed on when `error` is true.
 - Several `tool.call`s may be in flight at once; answer each by its `id`.
 - After `timeout_ms`, or when a person interrupts, the core sends the notification `tool.cancel {"session", "call_id"}`: drop that call.
 

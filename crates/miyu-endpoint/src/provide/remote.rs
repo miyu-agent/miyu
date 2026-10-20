@@ -72,6 +72,9 @@ struct Answer {
     /// 给头看的结构化结果（施工 W-11 补，`providers.md`）：照 [`miyu_tool::detail`] 的通用形状读，读不成的丢掉、记一行。
     #[serde(default)]
     detail: Option<Value>,
+    /// 给脚本的结构化结果（施工 X-33，`providers.md`）：任意 JSON，照收、交进 [`Done::data`]，出错的不交；不另截断。
+    #[serde(default)]
+    data: Option<Value>,
 }
 
 /// 一次至多发几张图。
@@ -134,6 +137,7 @@ impl RemoteTool {
                         .detail
                         .filter(|_| !answer.error)
                         .and_then(|detail| self.shaped(&detail)),
+                    data: answer.data.filter(|_| !answer.error),
                     error: answer.error,
                     blocks: answer.blocks,
                     end_turn: answer.end_turn && !answer.error,

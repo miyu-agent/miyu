@@ -67,7 +67,7 @@
 | `venues` | 给哪种会话：`local`、`private`、`group` 里的一个或几个 |
 | `timeout_ms` | 1000 到 600000，默认 60000 |
 | `need_load` | `true`：要先加载，工具列表里只给名字和说明 |
-| `clicall` | `true`：AI 在命令里用 `miyu call` 也能调它（只读、联网、执行类的才调得成），不写是不能 |
+| `clicall` | `true`：AI 在命令里用 `miyu call` 也能调它（只读、联网、执行类的才调得成），不写是不能。有结构化结果的写进回应的 `data`，脚本拿到一行 JSON |
 | `display_name` | 给人看的名字：`{"zh": "…", "en": "…"}` |
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
 
@@ -89,7 +89,7 @@
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
 
-**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?}}`：
+**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?}}`：
 
 | 名字 | 说明 |
 |---|---|
@@ -98,6 +98,7 @@
 | `end_turn` | 这一步的结果都到了以后，不再请求模型，这一轮结束 |
 | `sent` | 她「发出去」的图，至多 4 张：`[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`。不给模型看；头画在正文里，聊天平台照它发 |
 | `detail` | 给头看的结构化结果，照下面三种通用形状写一种；不给模型看。形状不对的、`error` 是真的，核心丢掉这一格、结果照常 |
+| `data` | 给脚本的结构化结果，任意 JSON：AI 在命令里用 `miyu call` 调到的（`clicall`），印成一行 JSON 交给脚本；不给模型看，不记进 `tool.result`。`error` 是真的不交 |
 
 `detail` 的三种形状（整份写成 JSON 至多 64 KiB）：
 

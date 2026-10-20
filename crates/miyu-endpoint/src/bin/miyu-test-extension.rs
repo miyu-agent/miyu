@@ -226,7 +226,8 @@ fn field(line: &str, name: &str) -> Option<String> {
 }
 
 /// 答编号是 `id`、工具是 `tool` 的那一次 `tool.call`（施工 O-2 上）；`silent` 不答，等核心超时、发 `tool.cancel`（施工 O-2 下）；
-/// `skip`、`skip_error` 带 `end_turn`（施工 4-14）；`links`、`bad_detail`、`detail_error` 带 `detail`（施工 W-11 补）。
+/// `skip`、`skip_error` 带 `end_turn`（施工 4-14）；`links`、`bad_detail`、`detail_error` 带 `detail`（施工 W-11 补）；`data`、
+/// `data_error` 带 `data`（施工 X-33）。
 fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
     Some(match tool {
         // 一次发五张，多了（施工 X-19）。
@@ -266,6 +267,13 @@ fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
         ),
         "detail_error" => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"failed"}}],"error":true,"detail":{{"kind":"links","links":[]}}}}}}"#
+        ),
+        // 给脚本的结构化结果（施工 X-33）：照收、交给嵌套调用；出错时带的，核心不交。
+        "data" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found data"}}],"data":{{"items":[{{"n":1}}],"empty":[]}}}}}}"#
+        ),
+        "data_error" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"failed"}}],"error":true,"data":{{"items":[]}}}}}}"#
         ),
         _ => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"served {tool}"}}]}}}}"#

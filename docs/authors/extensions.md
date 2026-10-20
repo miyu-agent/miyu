@@ -120,7 +120,7 @@ if __name__ == "__main__":
 | `display_name` | 给人看的名字，照语言：`{"zh": "打招呼", "en": "Greet"}` |
 | `subject` | 时间线上名字后面跟哪一个参数的值，显示成「打招呼 · Ann」。搜索的、对着某个文件或编号的工具应当写：不写的时间线上只有名字，看不出在搜什么、动的是哪个 |
 | `need_load` | `true`：AI 平时只看到名字和一行说明，要用时先加载 |
-| `clicall` | `true`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。只读、联网、执行类的才调得成，不写是不能。只读的、搜索类的、和会话本身无关的工具一般都该写上：AI 能在脚本里批量调，省下一轮轮来回 |
+| `clicall` | `true`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。只读、联网、执行类的才调得成，不写是不能。只读的、搜索类的、和会话本身无关的工具一般都该写上：AI 能在脚本里批量调，省下一轮轮来回。有结构化结果的写进回答的 `data`，脚本拿到一行 JSON |
 
 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool": "hello_greet", "problem": "name"}`）。
 
@@ -141,6 +141,7 @@ if __name__ == "__main__":
 - 失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算失败。
 - 想让她「发出去」一张图（表情包这类，画在正文里，聊天平台当图发）：回答里加 `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]`，至多 4 张。`sent` 不给 AI 看。
 - 想让头把结果画成卡片：回答里加 `detail`，照三种通用形状写一种：链接列表 `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`、表格 `{"kind": "table", "columns": [...], "rows": [[...]]}`、图片 `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`。`detail` 不给 AI 看；形状不对的核心丢掉这一格，运行日志里记一行 `tool detail dropped`。写法和上限见 [协议参考](../reference/extensions.md#toolcalltoolcancel)。
+- 写了 `clicall` 的工具，想让脚本拿到结构化的结果：回答里加 `data`，任意 JSON（比如 `{"items": [...]}`；搜不到的也交同一个样子，列表是空的，脚本照 JSON 解析不会崩）。AI 在命令里 `miyu call` 调到时，脚本拿到它的一行 JSON，没有 `data` 的拿到 `blocks` 里的字。`data` 不给 AI 看，`error` 是真的不交。
 - 同一时间可能来好几个 `tool.call`，照 `id` 对着回。
 - 过了 `timeout_ms`、人打断了，核心发通知 `tool.cancel {"session", "call_id"}`：放下那一件。
 

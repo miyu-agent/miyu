@@ -67,7 +67,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `venues` | Which sessions: one or more of `local`, `private`, `group` |
 | `timeout_ms` | 1000 to 600000, default 60000 |
 | `need_load` | `true`: must be loaded first; the tool list only carries its name and description |
-| `clicall` | `true`: the AI can also call it with `miyu call` inside a command (only read, network and execute tools can be); unset means it cannot |
+| `clicall` | `true`: the AI can also call it with `miyu call` inside a command (only read, network and execute tools can be); unset means it cannot. Put a structured result in the response's `data` and the script gets one line of JSON |
 | `display_name` | Name shown to people: `{"zh": "…", "en": "…"}` |
 | `subject` | Which argument's value is shown after the name; must be one of `input_schema.properties` |
 
@@ -89,7 +89,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
 
-**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?}}`:
+**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?}}`:
 
 | Name | Notes |
 |---|---|
@@ -98,6 +98,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `end_turn` | Once this step's results are all in, don't ask the model again; the turn ends |
 | `sent` | Images she "sends", at most 4: `[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`. Not shown to the model; heads draw them in the reply and chat platforms send them |
 | `detail` | A structured result for heads, in one of the three common shapes below; not shown to the model. If the shape is wrong or `error` is true, the core drops this field and keeps the rest of the result |
+| `data` | A structured result for scripts, any JSON: when the AI calls the tool with `miyu call` inside a command (`clicall`), the script gets it as one line of JSON. Not shown to the model, not kept in `tool.result`. Not passed on when `error` is true |
 
 The three shapes of `detail` (at most 64 KiB as JSON):
 

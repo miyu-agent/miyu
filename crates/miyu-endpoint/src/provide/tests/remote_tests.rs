@@ -264,3 +264,25 @@ fn the_blobs_a_result_references_include_detail_images() {
     );
     assert!(referenced(&done).is_empty(), "读不成的已经丢了，不拷");
 }
+
+/// 给脚本的结构化结果（施工 X-33）：照收、原样交进 `data`；出错的不交，同 MCP 的 `structuredContent`。
+#[tokio::test]
+async fn data_is_handed_over_unless_the_call_failed() {
+    for (error, wanted) in [(false, Some(json!({"items": [{"n": 1}]}))), (true, None)] {
+        let (remote, peer, mut lines) = remote(Duration::from_secs(60));
+        let running =
+            tokio::spawn(async move { remote.run(call_by(None), Progress::new(|_| {})).await });
+        let sent = next(&mut lines).await;
+        peer.answer(Response {
+            id: sent["id"].as_str().unwrap().to_string(),
+            outcome: Ok(json!({
+                "blocks": [{"type": "text", "text": "found"}],
+                "error": error,
+                "data": {"items": [{"n": 1}]},
+            })),
+        });
+        let done = running.await.unwrap();
+        assert_eq!(done.error, error);
+        assert_eq!(done.data, wanted, "error={error}");
+    }
+}
