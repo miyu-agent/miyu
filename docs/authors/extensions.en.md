@@ -120,7 +120,7 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 | `display_name` | Name for people, per language: `{"zh": "打招呼", "en": "Greet"}` |
 | `subject` | Which argument's value the timeline shows after the name: "Greet · Ann". Tools that search, or act on a particular file or id, should set it: without it the timeline shows only the name, and nobody can tell what was searched or which one was touched |
 | `need_load` | `true`: the AI normally sees only the name and one line, and loads it when needed |
-| `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Read-only and search tools that don't depend on the session itself should usually set it: the AI can call them in bulk from a script and skip many round trips. Put a structured result in the answer's `data` and the script gets one line of JSON |
+| `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Tools that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on tools that change or send things. Put a structured result in the answer's `data` and the script gets one line of JSON |
 
 A mistake rejects the whole set; the response's `data` says which tool and what's wrong (`{"tool": "hello_greet", "problem": "name"}`).
 

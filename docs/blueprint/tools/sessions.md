@@ -27,7 +27,8 @@
 ```json
 {
   "description": "List your other sessions, most recently active first. Each row gives the id to use with send_message and history, the title, working directory, whether it is busy and when it was last active.",
-  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}}
+  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}},
+  "clicall": true
 }
 ```
 

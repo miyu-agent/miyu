@@ -4416,13 +4416,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `sessions`：本机的主会话（每次请求都带）
 - token：95 → 101（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；C-5 第二句点名 `send_message`、`history`，多 6）
-- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）
-- 指纹：`8df0f13c`
+- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`01e5313b`
 
 ```json
 {
   "description": "List your other sessions, most recently active first. Each row gives the id to use with send_message and history, the title, working directory, whether it is busy and when it was last active.",
-  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}}
+  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}},
+  "clicall": true
 }
 ```
 
@@ -4430,13 +4431,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `session_usage`：本机的会话，主会话、子会话都有（每次请求都带）
 - token：48（2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十三件一起时的边际份量）
-- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）
-- 指纹：`40cc23af`
+- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`c03ded21`
 
 ```json
 {
   "description": "Show how many tokens and how much money this session has used so far, and how full your context is.",
-  "parameters": {"type":"object","properties":{}}
+  "parameters": {"type":"object","properties":{}},
+  "clicall": true
 }
 ```
 
@@ -4444,13 +4446,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `packages`：功能「软件包」开着的（基础系统，每次请求都带）
 - token：111（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 多 26）
-- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有
-- 指纹：`88459d8f`
+- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
+- 指纹：`c44288cd`
 
 ```json
 {
   "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}},
+  "clicall": true
 }
 ```
 

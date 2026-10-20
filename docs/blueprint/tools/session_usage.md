@@ -29,7 +29,8 @@
 ```json
 {
   "description": "Show how many tokens and how much money this session has used so far, and how full your context is.",
-  "parameters": {"type":"object","properties":{}}
+  "parameters": {"type":"object","properties":{}},
+  "clicall": true
 }
 ```
 

@@ -30,7 +30,8 @@
 ```json
 {
   "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}},
+  "clicall": true
 }
 ```
 
