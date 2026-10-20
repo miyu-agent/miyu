@@ -1,5 +1,6 @@
 //! 整理会话（施工 D-1 上，设计 41）：开一趟记 `session.created` 的 `dream`；一批一轮，请求只有这一批的原文（没有 system、
-//! 工具、事实，同原来的一次性请求）；批间清空；主请求的 `model.called` 用途是 `memory`；叫停交回 `Stopped`。
+//! 工具、事实，同原来的一次性请求）；批间清空；主请求的 `model.called` 用途是 `memory`；叫停交回 `Stopped`。D-1 下：正文边流边
+//! 交（思考不交）；`session.list` 带 `kind`、照 `dream` 挑，她的 `sessions` 工具不列；跑完一趟只留这一间最近几趟。
 
 use std::sync::Arc;
 
@@ -8,7 +9,7 @@ use miyu_kernel::event::{Body, Purpose};
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::request::Message;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{DreamBatch, DreamRoom, DreamSpec};
+use miyu_session::{DreamBatch, DreamRoom, DreamSpec, Watched};
 use miyu_store::log::read_events;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
@@ -39,9 +40,14 @@ fn core(script: &Script) -> (Arc<Core>, miyu_store::root::DataRoot, AccountId) {
 
 /// 开一趟人格那一间、人叫的。
 fn spec(admin: &AccountId) -> DreamSpec {
+    spec_of(admin, "engineer")
+}
+
+/// 开一趟人格 `persona` 那一间、人叫的。
+fn spec_of(admin: &AccountId, persona: &str) -> DreamSpec {
     DreamSpec {
         owner: admin.clone(),
-        room: DreamRoom::Persona("engineer".to_string()),
+        room: DreamRoom::Persona(persona.to_string()),
         manual: true,
         from: None,
         model: None,
@@ -78,7 +84,12 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
     let first = port
-        .batch(session.clone(), id(&session, 1), "第一批".to_string())
+        .batch(
+            session.clone(),
+            id(&session, 1),
+            "第一批".to_string(),
+            &mut |_| {},
+        )
         .await
         .expect("跑得成");
     assert_eq!(first, DreamBatch::Answered("第一批的回答".to_string()));
@@ -87,12 +98,22 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
         .replace(|catalog| Ok::<_, ()>(catalog.clone()))
         .expect("换得了");
     let second = port
-        .batch(session.clone(), id(&session, 2), "第二批".to_string())
+        .batch(
+            session.clone(),
+            id(&session, 2),
+            "第二批".to_string(),
+            &mut |_| {},
+        )
         .await
         .expect("跑得成");
     assert_eq!(second, DreamBatch::Answered("第二批的回答".to_string()));
     let third = port
-        .batch(session.clone(), id(&session, 3), "第三批".to_string())
+        .batch(
+            session.clone(),
+            id(&session, 3),
+            "第三批".to_string(),
+            &mut |_| {},
+        )
         .await
         .expect("跑得成");
     assert_eq!(third, DreamBatch::Answered("第三批的回答".to_string()));
@@ -152,8 +173,13 @@ async fn stopping_interrupts_the_batch() {
     let running = {
         let (port, session) = (port.clone(), session.clone());
         tokio::spawn(async move {
-            port.batch(session.clone(), id(&session, 1), "一批".to_string())
-                .await
+            port.batch(
+                session.clone(),
+                id(&session, 1),
+                "一批".to_string(),
+                &mut |_| {},
+            )
+            .await
         })
     };
     // 请求到了替身那里就停住了：等到那一次请求。
@@ -165,4 +191,92 @@ async fn stopping_interrupts_the_batch() {
     let stop = CommandId::parse(&format!("{session}/dream/stop")).expect("合写法");
     port.stop(session, stop).await.expect("停得了");
     assert_eq!(running.await.expect("没 panic"), Ok(DreamBatch::Stopped));
+}
+
+#[tokio::test]
+async fn the_answer_streams_to_the_watch_without_the_thinking() {
+    let script = Script::new([Play::Thinks {
+        thinking: "先想想",
+        text: "回答的原文",
+    }]);
+    let (core, _root, admin) = core(&script);
+    let port = core.memory.dream_sessions().expect("接上了").clone();
+    let session = port.open(spec(&admin)).await.expect("开得成");
+    let mut heard = String::new();
+    let answered = port
+        .batch(
+            session.clone(),
+            id(&session, 1),
+            "一批".to_string(),
+            &mut |watched| {
+                if let Watched::Text(text) = watched {
+                    heard.push_str(text);
+                }
+            },
+        )
+        .await
+        .expect("跑得成");
+    assert_eq!(answered, DreamBatch::Answered("回答的原文".to_string()));
+    assert_eq!(heard, "回答的原文", "边流边交的就是回答，思考不交");
+}
+
+#[tokio::test]
+async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
+    let (core, _root, admin) = core(&Script::new([]));
+    let port = core.memory.dream_sessions().expect("接上了").clone();
+    let session = port.open(spec(&admin)).await.expect("开得成");
+    let all = crate::list::list(&core, false, None, None)
+        .await
+        .expect("列得出");
+    let item = all
+        .iter()
+        .find(|item| item["session"] == session.as_str())
+        .expect("照常列");
+    assert_eq!(item["kind"], "dream");
+    assert_eq!(item["dream"]["persona"], "engineer");
+    assert_eq!(item["dream"]["manual"], true);
+    let only = crate::list::list(&core, false, Some(true), None)
+        .await
+        .expect("列得出");
+    assert_eq!(only.len(), 1, "只要整理会话：{only:?}");
+    let none = crate::list::list(&core, false, Some(false), None)
+        .await
+        .expect("列得出");
+    assert!(
+        none.iter().all(|item| item["session"] != session.as_str()),
+        "不要整理会话：{none:?}"
+    );
+    let hers = crate::spawn::port(&core)
+        .sessions(admin.clone(), miyu_tool::Stop::default())
+        .await
+        .expect("列得出");
+    assert!(
+        hers.iter().all(|main| main.id != session),
+        "她的 sessions 不列"
+    );
+}
+
+#[tokio::test]
+async fn closing_keeps_only_the_newest_of_the_room() {
+    let (core, root, admin) = core(&Script::new([]));
+    let port = core.memory.dream_sessions().expect("接上了").clone();
+    let mut engineer = Vec::new();
+    for _ in 0..3 {
+        engineer.push(port.open(spec(&admin)).await.expect("开得成"));
+    }
+    let other = port.open(spec_of(&admin, "other")).await.expect("开得成");
+    let exists = |session: &SessionId| root.session_dir(&admin, session).exists();
+
+    assert_eq!(port.close(engineer[2].clone(), 2).await, Ok(1));
+    assert!(!exists(&engineer[0]), "最旧的删了");
+    assert!(exists(&engineer[1]) && exists(&engineer[2]));
+    assert!(exists(&other), "别间的不动");
+
+    assert_eq!(
+        port.close(engineer[2].clone(), 0).await,
+        Ok(2),
+        "0 连它一起删"
+    );
+    assert!(!exists(&engineer[1]) && !exists(&engineer[2]));
+    assert!(exists(&other));
 }

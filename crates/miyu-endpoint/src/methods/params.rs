@@ -51,6 +51,9 @@ pub(super) struct ListParams {
     /// 最多几个。
     #[serde(default)]
     pub(super) limit: Option<usize>,
+    /// 整理会话（施工 D-1 下）：`true` 只要它们，`false` 不要它们，不写都列。
+    #[serde(default)]
+    pub(super) dream: Option<bool>,
 }
 
 /// `session.send` 的参数。

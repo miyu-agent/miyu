@@ -128,6 +128,7 @@ fn the_registered_list_is_well_formed() {
             "memory.organizer",
             "memory.merge_every",
             "memory.merge_sessions",
+            "memory.dream_keep",
             "net.search.source",
             "net.search.exa.key",
             "net.search.deepseek.key",
@@ -369,7 +370,11 @@ fn builtin_package_settings_follow_their_package() {
         .iter()
         .filter(|item| item.key.starts_with("memory."))
         .collect();
-    assert_eq!(owned.len(), 5, "抽取的三项、合并的两项（施工 R-7 上）");
+    assert_eq!(
+        owned.len(),
+        6,
+        "抽取的三项、合并的两项（施工 R-7 上）、整理会话留几趟（施工 D-1 下）"
+    );
     for item in owned {
         assert_eq!(
             (item.ui.page, item.ui.group, item.ui.package),

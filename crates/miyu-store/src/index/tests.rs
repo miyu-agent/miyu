@@ -484,3 +484,5 @@ fn nested_calls_are_not_activity() {
     assert_eq!(got.last_active, before);
     assert_eq!(got.mark, mark(200, 3), "照样往后读");
 }
+
+mod dream;

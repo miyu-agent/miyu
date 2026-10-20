@@ -155,8 +155,10 @@ impl SessionPort for Table {
             let busy = core.sessions.busy_ids().await;
             let root = core.root.clone();
             let index = core.index_for(&owner);
-            // 场所会话不列（施工 O-3）：群里、QQ 私聊里的会话不给本机的她看，`history` 也读不到。
-            let main = |row: &Row| row.parent.is_none() && crate::list::local(row);
+            // 场所会话不列（施工 O-3）：群里、QQ 私聊里的会话不给本机的她看，`history` 也读不到。整理会话不列（施工 D-1 下，
+            // 设计 41 DS7）：那是记忆模块的过程，不是她和人的对话。
+            let main =
+                |row: &Row| row.parent.is_none() && crate::list::local(row) && row.dream.is_none();
             let projects = root.account_dir(&owner).join(miyu_store::projects::FILE);
             let (listed, projects) = tokio::task::spawn_blocking(move || {
                 let listed = scan(&root, &owner, index.as_deref(), &busy, main, None, &stop);
