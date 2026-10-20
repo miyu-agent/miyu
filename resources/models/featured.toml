@@ -1,5 +1,5 @@
 # 第一次接入时先列的常用几家（施工 8-11 再补，2026-10-08 项目主人定；施工 T-12 照 2026-10-10 项目主人的意思改：照 opencode
-# 的常用供应商，国内外分开的各列一行，不再照界面语言自动换）：`miyu setup`、头的第一次引导照这个先后列，经
+# 的常用供应商，国内外分开的各列一行，不再照界面语言自动换；T-12 补加 ClinePass）：`miyu setup`、头的第一次引导照这个先后列，经
 # `provider.catalog {"featured": true}` 交出去。
 #
 # - `catalog`：目录、档案里的编号。目录里没有的跳过。（还认 `catalog_zh`：中文界面换成它，现在没有一家写。）
@@ -14,6 +14,11 @@ name = "OpenCode Zen"
 [[providers]]
 catalog = "opencode-go"
 name = "OpenCode Go"
+
+# 施工 T-12 补（2026-10-21 项目主人要的）：Cline 的包月，OpenAI 兼容，和 OpenCode 的两家排在一起。
+[[providers]]
+catalog = "cline-pass"
+name = "ClinePass"
 
 [[providers]]
 catalog = "deepseek"

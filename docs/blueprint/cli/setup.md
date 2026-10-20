@@ -70,21 +70,22 @@ $ miyu setup
 选一家：
   1   OpenCode Zen
   2   OpenCode Go
-  3   DeepSeek          已找到 key
-  4   Anthropic
-  5   OpenAI
-  6   OpenRouter
-  7   Moonshot 国际版
-  8   Moonshot 国内版
-  9   智谱 GLM 国内版
-  10  Z.AI 国际版
-  11  通义千问 国际版
-  12  通义千问 国内版
-  13  MiniMax 国际版
-  14  MiniMax 国内版
-  15  LMStudio          本机 http://127.0.0.1:1234/v1
-  16  自定义
-选一个编号：3
+  3   ClinePass
+  4   DeepSeek          已找到 key
+  5   Anthropic
+  6   OpenAI
+  7   OpenRouter
+  8   Moonshot 国际版
+  9   Moonshot 国内版
+  10  智谱 GLM 国内版
+  11  Z.AI 国际版
+  12  通义千问 国际版
+  13  通义千问 国内版
+  14  MiniMax 国际版
+  15  MiniMax 国内版
+  16  LMStudio          本机 http://127.0.0.1:1234/v1
+  17  自定义
+选一个编号：4
 试一下 DeepSeek……
 · 通了：列出 2 个模型。
 选主对话的模型：
