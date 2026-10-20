@@ -2,11 +2,12 @@
 //! 指针按账号记在 `home/<账号>/terminal.json`（`miyu_store::terminal`）。哪个算、什么时候换新的由核心定，不在头：头去建
 //! 会话、定规则，是向上依赖。
 //!
-//! - `session.terminal {cwd?}`：交回终端会话。指着的还在、是这个账号自己的本机主会话，就是它；闲置超过
+//! - `session.terminal {cwd?, fresh?}`：交回终端会话。指着的还在、是这个账号自己的本机主会话，就是它；闲置超过
 //!   `terminal.idle_new_after` 分钟的（0 是不换）开一个新的，回应带 `renewed: {last}`，旧的不动；没指过的、指着的删了、
 //!   不算数的开一个新的，回应带 `created: true`。新开的照 `terminal.persona`、`terminal.preset`（没设的跟随默认），在 `cwd`
-//!   （没写的照默认工作区）。同一时刻几个 shell 一起要的只开一个。
-//! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/new`、`/sessions`）。只收这个账号自己的本机主会话。
+//!   （没写的照默认工作区）。同一时刻几个 shell 一起要的只开一个。`fresh: true` 不管指着谁，照新开的规矩开一个、指过去，
+//!   回应带 `created: true`（shellhook 的 `/new`，施工 8-33 再补：怎么开归核心，头不照 `terminal.*` 再拼一遍）。
+//! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收这个账号自己的本机主会话。
 
 use std::sync::Arc;
 
@@ -33,6 +34,9 @@ pub(crate) struct TerminalParams {
     /// 要新开时在哪个目录：shell 这时的目录，人看到的写法。没写的照默认工作区。
     #[serde(default)]
     cwd: Option<String>,
+    /// 不管指着谁，开一个新的指过去（施工 8-33 再补）。
+    #[serde(default)]
+    fresh: bool,
 }
 
 /// `session.set_terminal` 的参数。
@@ -60,6 +64,7 @@ pub(crate) async fn get(
         .and_then(|id| SessionId::parse(id).ok())
         .and_then(|id| row(core, account, &id));
     let renewed = match &pointed {
+        _ if params.fresh => None,
         Some(row) if !idle(row.last_active, settings.idle_new_after, now()) => {
             return Ok(json!({"session": row.id.as_str()}));
         }

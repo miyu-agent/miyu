@@ -1,5 +1,6 @@
 //! 终端会话（施工 8-33，设计 `22-命令行.md` 第七节）：`session.terminal` 没有的开一个、之后一直是它；`session.set_terminal`
-//! 指到选中的会话，只收自己的本机主会话；闲置超过 `terminal.idle_new_after` 的开新的、回应带上次的时刻，旧的不动。
+//! 指到选中的会话，只收自己的本机主会话；闲置超过 `terminal.idle_new_after` 的开新的、回应带上次的时刻，旧的不动；带 `fresh` 的
+//! 不管指着谁都开新的（施工 8-33 再补）。
 
 use serde_json::{Value, json};
 
@@ -50,6 +51,26 @@ async fn the_terminal_session_is_made_once_and_can_be_pointed_elsewhere() {
     let fresh = terminal(&mut client, "t4", json!({})).await;
     assert_eq!(fresh["created"], json!(true), "{fresh}");
     assert_ne!(fresh["session"], json!(other));
+}
+
+#[tokio::test]
+async fn fresh_opens_a_new_one_whatever_is_pointed_at() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let cwd = home.work.to_string_lossy().into_owned();
+    let first = terminal(&mut client, "t1", json!({"cwd": cwd})).await;
+    let old = first["session"].as_str().expect("有编号").to_string();
+    let fresh = terminal(&mut client, "t2", json!({"cwd": cwd, "fresh": true})).await;
+    assert_eq!(fresh["created"], json!(true), "{fresh}");
+    assert_ne!(fresh["session"], json!(old), "指着的还新鲜也开新的");
+    assert_eq!(
+        terminal(&mut client, "t3", json!({})).await,
+        json!({"session": fresh["session"]}),
+        "指针挪过去了"
+    );
+    let kept = client.call("l1", "session.list", json!({})).await;
+    assert!(kept.to_string().contains(&old), "旧的不动：{kept}");
 }
 
 #[tokio::test]

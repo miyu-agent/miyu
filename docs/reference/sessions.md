@@ -277,7 +277,7 @@
 
 终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用，设计 `22-命令行.md` 第七节）。每个账号一个，哪个算、什么时候换新的由核心定。
 
-**`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区。回应 `{"session"}`：
+**`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区；`fresh`（可以不写，默认假）：真的不管指着谁，照下面第 3 条开一个新的、指过去（`/new`）。回应 `{"session"}`：
 
 1. 指着的会话还在、是这个账号自己的本机主会话（不是子会话、场所会话、一次性的），就是它。
 2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。
@@ -285,7 +285,7 @@
 
 新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要，只开一个。
 
-**`session.set_terminal`**：参数 `session`：把终端会话指到它（`/new`、`/sessions` 选中的）。只收这个账号自己的本机主会话，别的拒 `session_not_found`。回应 `{"session"}`。
+**`session.set_terminal`**：参数 `session`：把终端会话指到它（`/sessions` 选中的）。只收这个账号自己的本机主会话，别的拒 `session_not_found`。回应 `{"session"}`。
 
 ## `session.set_meta`
 
