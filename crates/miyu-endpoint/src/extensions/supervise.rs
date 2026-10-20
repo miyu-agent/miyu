@@ -226,7 +226,7 @@ impl Watched<'_> {
                     if done.is_ok() {
                         ready_at = Some(Instant::now());
                         tracing::info!(target: TARGET, package = self.id, pid = self.pid, "extension ready");
-                        set(self.shared, State::Running { pid: self.pid }, self.failures);
+                        set(self.shared, State::Running { pid: Some(self.pid) }, self.failures);
                     }
                 }
                 _ = asked.changed() => return (true, ready_at),

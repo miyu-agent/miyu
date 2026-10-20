@@ -43,7 +43,7 @@
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `page` | 有后台页的 |
-| `mcp` | 带的 MCP 服务：`name`、`command`、`venues`、`state`、`failures`……；`need_load`、`on` 同 `mcp.list` 的一项 |
+| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`need_load`、`on` 同 `mcp.list` 的一项 |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `removed` | 卸掉了的出厂包 |
@@ -186,7 +186,7 @@
 
 管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改个人设置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带）；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；还不知道的（没起过、没缓存）没有这一格。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 

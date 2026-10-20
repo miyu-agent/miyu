@@ -84,6 +84,7 @@ mod mcp_edit;
 mod mcp_settings;
 mod mcp_settings_status;
 mod mcp_status;
+mod mcp_url;
 mod memory;
 mod memory_api;
 mod memory_clear;

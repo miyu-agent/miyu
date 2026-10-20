@@ -16,8 +16,10 @@ fn listed(annotations: serde_json::Value) -> miyu_mcp::Tool {
 fn server(venues: &[&str]) -> McpServer {
     McpServer {
         name: "web".to_string(),
-        command: vec!["web-server".to_string()],
-        env: Vec::new(),
+        reach: miyu_config::package::Reach::Command {
+            command: vec!["web-server".to_string()],
+            env: Vec::new(),
+        },
         venues: venues.iter().map(|venue| (*venue).to_string()).collect(),
         timeout_ms: 600_000,
         need_load: false,

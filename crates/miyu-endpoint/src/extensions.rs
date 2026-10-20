@@ -45,8 +45,8 @@ pub(crate) enum State {
     },
     /// 握了手。
     Running {
-        /// 进程号。
-        pid: u32,
+        /// 进程号：网址的 MCP 服务没有进程，没有（施工 X-32 上）。
+        pid: Option<u32>,
     },
     /// 退避中：到点再拉起。
     Waiting {

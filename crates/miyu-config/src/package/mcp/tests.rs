@@ -30,29 +30,30 @@ fn a_package_with_only_mcp_servers_is_a_bundle_and_reads_every_field() {
     let github = &manifest.mcp[0];
     assert_eq!(github.name, "github");
     assert_eq!(
-        github.command,
-        ["npx", "-y", "@modelcontextprotocol/server-github"]
-    );
-    assert_eq!(
-        github.env,
-        [
-            (
-                "GITHUB_TOKEN".to_string(),
-                EnvValue::Reference(crate::secret::Reference::Secret("github".to_string()))
-            ),
-            ("LOG".to_string(), EnvValue::Text("quiet".to_string())),
-            (
-                "HOME_DIR".to_string(),
-                EnvValue::Reference(crate::secret::Reference::Env("HOME".to_string()))
-            ),
-        ]
+        github.reach,
+        Reach::Command {
+            command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+                .map(String::from)
+                .to_vec(),
+            env: vec![
+                (
+                    "GITHUB_TOKEN".to_string(),
+                    EnvValue::Reference(crate::secret::Reference::Secret("github".to_string()))
+                ),
+                ("LOG".to_string(), EnvValue::Text("quiet".to_string())),
+                (
+                    "HOME_DIR".to_string(),
+                    EnvValue::Reference(crate::secret::Reference::Env("HOME".to_string()))
+                ),
+            ],
+        }
     );
     assert_eq!(github.venues, ["local", "group"]);
     assert_eq!(github.timeout_ms, 120_000);
     assert!(github.need_load, "施工 L-1");
     assert_eq!(github.line, Some(4));
     let fetch = &manifest.mcp[1];
-    assert_eq!(fetch.env, []);
+    assert!(matches!(&fetch.reach, Reach::Command { env, .. } if env.is_empty()));
     assert_eq!(fetch.venues, ["local"], "没写的只给本机的会话");
     assert_eq!(fetch.timeout_ms, TIMEOUT_DEFAULT);
     assert!(fetch.need_load, "没写的先加载（施工 L-3）");
@@ -125,6 +126,43 @@ fn every_mistake_is_bad_mcp_at_its_server() {
             "mcp.name \"abcdefghijklmnopqrstuvwxyz1234567\"",
         ),
         ("name = \"g\"", "mcp.g.command"),
+        // 网址的（施工 X-32 上）：和命令混着写、写法不对、令牌和请求头不对。
+        (
+            "name = \"g\"\ncommand = [\"x\"]\nurl = \"https://a\"",
+            "mcp.g.command",
+        ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nenv = { A = \"b\" }",
+            "mcp.g.env",
+        ),
+        (
+            "name = \"g\"\ncommand = [\"x\"]\nbearer = \"t\"",
+            "mcp.g.bearer",
+        ),
+        (
+            "name = \"g\"\ncommand = [\"x\"]\nheaders = { A = \"b\" }",
+            "mcp.g.headers",
+        ),
+        ("name = \"g\"\nurl = \"ftp://a\"", "mcp.g.url"),
+        ("name = \"g\"\nurl = \"https://\"", "mcp.g.url"),
+        ("name = \"g\"\nurl = \"https://a b\"", "mcp.g.url"),
+        ("name = \"g\"\nurl = 1", "mcp.g.url"),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nbearer = 1",
+            "mcp.g.bearer",
+        ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nheaders = { \"X Y\" = \"b\" }",
+            "mcp.g.headers",
+        ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nheaders = { Authorization = \"b\" }",
+            "mcp.g.headers",
+        ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nheaders = { mcp-session-id = \"b\" }",
+            "mcp.g.headers",
+        ),
         ("name = \"g\"\ncommand = []", "mcp.g.command"),
         ("name = \"g\"\ncommand = [\"\"]", "mcp.g.command"),
         ("name = \"g\"\ncommand = \"npx\"", "mcp.g.command"),
@@ -226,4 +264,37 @@ fn clicall_takes_yes_and_no_and_defaults_to_on() {
         let manifest = read(&text).expect(line);
         assert_eq!(manifest.mcp[0].clicall, on, "{line}");
     }
+}
+
+#[test]
+fn a_server_can_be_a_url_with_a_token_and_headers() {
+    let manifest = read(
+        "[package]\nname = { en = \"P\" }\n\n[[mcp]]\nname = \"remote\"\nurl = \"https://mcp.example.com/mcp\"\nbearer = { secret = \"remote\" }\nheaders = { X-Team = \"core\", X-Key = { env = \"KEY\" } }\n\n[[mcp]]\nname = \"local\"\nurl = \"http://127.0.0.1:8931/mcp\"\n",
+    )
+    .expect("合写法");
+    assert_eq!(
+        manifest.mcp[0].reach,
+        Reach::Url {
+            url: "https://mcp.example.com/mcp".to_string(),
+            bearer: Some(EnvValue::Reference(crate::secret::Reference::Secret(
+                "remote".to_string()
+            ))),
+            headers: vec![
+                ("X-Team".to_string(), EnvValue::Text("core".to_string())),
+                (
+                    "X-Key".to_string(),
+                    EnvValue::Reference(crate::secret::Reference::Env("KEY".to_string()))
+                ),
+            ],
+        }
+    );
+    assert_eq!(
+        manifest.mcp[1].reach,
+        Reach::Url {
+            url: "http://127.0.0.1:8931/mcp".to_string(),
+            bearer: None,
+            headers: Vec::new()
+        },
+        "http:// 照收，本机不本机连的时候认"
+    );
 }

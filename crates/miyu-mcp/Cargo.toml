@@ -9,6 +9,8 @@ publish.workspace = true
 autotests = false
 
 [dependencies]
+# 网址的服务（施工 X-32 上，`src/http.rs`）：发 POST 用核心同一个 HTTP 客户端（同在第 3 层）。
+miyu-http = { path = "../miyu-http" }
 # 消息是一行一条的 JSON-RPC 2.0。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -19,11 +21,11 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 [features]
 # 测试用的假服务（`src/testkit.rs`）：照剧本演新旧两个时代。这个包自己的测试、接进核心那一步的测试打开。
-testkit = []
+testkit = ["tokio/net"]
 
 [dev-dependencies]
 miyu-mcp = { path = ".", features = ["testkit"] }
-tokio = { version = "1", features = ["io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true

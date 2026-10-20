@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use miyu_config::package::{EnvValue, McpServer};
+use miyu_config::package::{EnvValue, McpServer, Reach};
 use miyu_mcp::{Era, Tool};
 use miyu_store::generated;
 
@@ -35,23 +35,41 @@ pub(super) fn path(core: &Core, service: &str) -> PathBuf {
         .join(format!("{service}.json"))
 }
 
-/// 环境变量的写法：引用的照引用写，不取值。
-fn env_spec(server: &McpServer) -> Vec<String> {
-    server
-        .env
-        .iter()
-        .map(|(name, value)| match value {
-            EnvValue::Text(text) => format!("{name}={text}"),
-            EnvValue::Reference(reference) => format!("{name}={}", reference.toml()),
-        })
-        .collect()
+/// 缓存照什么认这个服务（施工 X-3 下、X-32 上）：命令的是命令和环境变量的写法（引用的照引用写，不取值）；网址的是网址和请求头的
+/// 名字（有令牌的另记一个 `Authorization`），不认值：换了令牌，目录照旧能用。记在缓存文件原来的两格里，以前的缓存照旧认得。
+fn key(server: &McpServer) -> (Vec<String>, Vec<String>) {
+    match &server.reach {
+        Reach::Command { command, env } => (
+            command.clone(),
+            env.iter()
+                .map(|(name, value)| match value {
+                    EnvValue::Text(text) => format!("{name}={text}"),
+                    EnvValue::Reference(reference) => format!("{name}={}", reference.toml()),
+                })
+                .collect(),
+        ),
+        Reach::Url {
+            url,
+            bearer,
+            headers,
+        } => (
+            vec![url.clone()],
+            bearer
+                .as_ref()
+                .map(|_| "Authorization".to_string())
+                .into_iter()
+                .chain(headers.iter().map(|(name, _)| name.clone()))
+                .collect(),
+        ),
+    }
 }
 
 /// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`。
 pub(super) fn write(core: &Core, server: &McpServer, era: &Era, tools: &[Tool]) {
+    let (command, env) = key(server);
     let cached = Cached {
-        command: server.command.clone(),
-        env: env_spec(server),
+        command,
+        env,
         era: era.clone(),
         tools: tools.iter().map(|tool| tool.raw.clone()).collect(),
     };
@@ -87,7 +105,7 @@ fn read_at(path: &Path, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
             return None;
         }
     };
-    if cached.command != server.command || cached.env != env_spec(server) {
+    if (cached.command.clone(), cached.env.clone()) != key(server) {
         tracing::info!(target: TARGET, service = server.name.as_str(), "mcp tools cache outdated");
         return None;
     }

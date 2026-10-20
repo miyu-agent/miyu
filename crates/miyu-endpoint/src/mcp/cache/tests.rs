@@ -7,8 +7,10 @@ use super::*;
 fn server(command: &[&str], env: Vec<(String, EnvValue)>) -> McpServer {
     McpServer {
         name: "web".to_string(),
-        command: command.iter().map(|part| (*part).to_string()).collect(),
-        env,
+        reach: Reach::Command {
+            command: command.iter().map(|part| (*part).to_string()).collect(),
+            env,
+        },
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
         need_load: false,
@@ -18,9 +20,10 @@ fn server(command: &[&str], env: Vec<(String, EnvValue)>) -> McpServer {
 }
 
 fn written(dir: &Path, server: &McpServer, tools: Vec<Value>) -> PathBuf {
+    let (command, env) = key(server);
     let cached = Cached {
-        command: server.command.clone(),
-        env: env_spec(server),
+        command,
+        env,
         era: Era::Legacy("2025-11-25".to_string()),
         tools,
     };
@@ -92,6 +95,30 @@ fn a_missing_or_broken_cache_is_not_used_and_secrets_are_not_kept() {
             EnvValue::Reference(Reference::Secret("github".to_string())),
         )],
     );
-    assert_eq!(env_spec(&secret), [r#"TOKEN={ secret = "github" }"#]);
+    assert_eq!(key(&secret).1, [r#"TOKEN={ secret = "github" }"#]);
     std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_url_server_is_keyed_by_its_url_and_header_names_not_values() {
+    let remote = |token: &str| McpServer {
+        reach: Reach::Url {
+            url: "https://mcp.example.com/mcp".to_string(),
+            bearer: Some(EnvValue::Text(token.to_string())),
+            headers: vec![("X-Team".to_string(), EnvValue::Text("core".to_string()))],
+        },
+        ..server(&["x"], Vec::new())
+    };
+    assert_eq!(
+        key(&remote("a")),
+        (
+            vec!["https://mcp.example.com/mcp".to_string()],
+            vec!["Authorization".to_string(), "X-Team".to_string()]
+        )
+    );
+    assert_eq!(
+        key(&remote("a")),
+        key(&remote("b")),
+        "换了令牌，目录照旧能用"
+    );
 }

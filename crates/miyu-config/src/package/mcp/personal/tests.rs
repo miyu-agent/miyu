@@ -30,18 +30,19 @@ fn every_table_under_mcp_is_one_server_named_by_its_key() {
     let github = &servers[0];
     assert_eq!(github.name, "github");
     assert_eq!(
-        github.command,
-        ["npx", "-y", "@modelcontextprotocol/server-github"]
-    );
-    assert_eq!(
-        github.env,
-        [
-            (
-                "GITHUB_TOKEN".to_string(),
-                EnvValue::Reference(Reference::Secret("github".to_string()))
-            ),
-            ("LOG".to_string(), EnvValue::Text("quiet".to_string())),
-        ]
+        github.reach,
+        super::super::Reach::Command {
+            command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+                .map(String::from)
+                .to_vec(),
+            env: vec![
+                (
+                    "GITHUB_TOKEN".to_string(),
+                    EnvValue::Reference(Reference::Secret("github".to_string()))
+                ),
+                ("LOG".to_string(), EnvValue::Text("quiet".to_string())),
+            ],
+        }
     );
     assert_eq!(github.venues, ["local", "private"]);
     assert_eq!(github.timeout_ms, 120_000);

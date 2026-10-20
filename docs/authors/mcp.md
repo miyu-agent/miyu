@@ -1,6 +1,6 @@
 # 接 MCP 服务
 
-现成的 MCP 服务（Model Context Protocol）能直接接进 Miyu：核心拉起服务的进程，经标准输入输出说 MCP，把服务的工具登记给 AI 用。两种接法：写进个人设置（只给自己用，最快），或者做成一个包（发给别人）。英文版：[mcp.en.md](mcp.en.md)。
+现成的 MCP 服务（Model Context Protocol）能直接接进 Miyu：核心拉起服务的进程，经标准输入输出说 MCP；只给一个网址的服务（Streamable HTTP），核心直接连那个网址。服务的工具登记给 AI 用。两种接法：写进个人设置（只给自己用，最快），或者做成一个包（发给别人）。英文版：[mcp.en.md](mcp.en.md)。
 
 ## 最快：写进个人设置
 
@@ -9,6 +9,14 @@
 ```toml
 [mcp.files]
 command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/me/notes"]
+```
+
+只给网址的服务（GitHub 这类）写 `url`，令牌写成 `bearer`：
+
+```toml
+[mcp.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer = { secret = "github" }       # 用 miyu login 或设置页存进去；发成 Authorization: Bearer …
 ```
 
 存了就生效，不用重启。终端、网页的「软件包」页里看得到它在跑没有；`miyu check` 查写没写错。
@@ -43,7 +51,10 @@ clicall = false                                   # 可以不写：AI 在命令�
 | 格 | 说明 |
 |---|---|
 | `name` | 服务名（个人设置里是表名），小写字母、数字、`-`，1 到 32 个；全局不重 |
-| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类） |
+| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
+| `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
+| `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
+| `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |
 | `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu login` 或设置页存进去），别把值写在清单里 |
 | `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
 | `timeout_ms` | 一次调用最多等多久 |

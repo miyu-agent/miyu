@@ -8,7 +8,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_config::package::{EnvValue, MCP_TIMEOUT_DEFAULT, McpServer};
+use miyu_config::package::{EnvValue, MCP_TIMEOUT_DEFAULT, McpServer, Reach};
 use miyu_session::loading::Loading;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::mcp_prefix;
@@ -61,12 +61,12 @@ fn one(core: &Core, server: &McpServer) -> Value {
     let status = core.mcp.service(HOME_PACKAGE, &server.name);
     let mut one = json!({
         "name": server.name,
-        "command": server.command,
         "venues": server.venues,
         "state": status.state.as_str(),
         "failures": status.failures,
         "covers": super::home::carrying(core, &server.name),
     });
+    reach(server, &mut one);
     written(server, &mut one);
     toggles(core, server, &mut one);
     details(
@@ -81,29 +81,59 @@ fn one(core: &Core, server: &McpServer) -> Value {
     one
 }
 
+/// 怎么到它：命令的带 `command`（程序加参数），网址的带 `url`（施工 X-32 上）。软件包列表上包带的服务同样。
+pub(crate) fn reach(server: &McpServer, one: &mut Value) {
+    match &server.reach {
+        Reach::Command { command, .. } => one["command"] = json!(command),
+        Reach::Url { url, .. } => one["url"] = json!(url),
+    }
+}
+
 /// 编辑页要先填上原来写的（施工 X-27 补，网页的 MCP 页要）：`env` 照写的（字照原样，引用写成 `{"secret": 名字}`、`{"env": 变量}`，
 /// 只是名字、不是值），没写的不带；`timeout_ms` 不是默认的才带。`command` 照旧是程序加参数，`mcp.set` 的 `command`、`args` 照它拆。
-/// 字照原样给：它本来就明文写在这个人的个人设置里，只有本机的人列得到；要藏的值该写成密钥的引用。
+/// 网址的服务（施工 X-32 上）带 `url`，`bearer`、`headers` 照 `env` 的写法。字照原样给：它本来就明文写在这个人的个人设置里，只有本机的
+/// 人列得到；要藏的值该写成密钥的引用。
 fn written(server: &McpServer, one: &mut Value) {
-    if !server.env.is_empty() {
-        let env: serde_json::Map<String, Value> = server
-            .env
-            .iter()
-            .map(|(name, value)| {
-                let value = match value {
-                    EnvValue::Text(text) => json!(text),
-                    EnvValue::Reference(reference) => {
-                        let (key, name) = reference.parts();
-                        json!({ key: name })
-                    }
-                };
-                (name.clone(), value)
-            })
-            .collect();
-        one["env"] = Value::Object(env);
+    match &server.reach {
+        Reach::Command { env, .. } => {
+            if !env.is_empty() {
+                one["env"] = as_written(env);
+            }
+        }
+        Reach::Url {
+            bearer, headers, ..
+        } => {
+            if let Some(bearer) = bearer {
+                one["bearer"] = value_written(bearer);
+            }
+            if !headers.is_empty() {
+                one["headers"] = as_written(headers);
+            }
+        }
     }
     if server.timeout_ms != MCP_TIMEOUT_DEFAULT {
         one["timeout_ms"] = json!(server.timeout_ms);
+    }
+}
+
+/// 名字到值的一张表，值照 [`value_written`]。
+fn as_written(pairs: &[(String, EnvValue)]) -> Value {
+    Value::Object(
+        pairs
+            .iter()
+            .map(|(name, value)| (name.clone(), value_written(value)))
+            .collect(),
+    )
+}
+
+/// 一个值照写的：字照原样，引用写成 `{"secret": 名字}`、`{"env": 变量}`。
+fn value_written(value: &EnvValue) -> Value {
+    match value {
+        EnvValue::Text(text) => json!(text),
+        EnvValue::Reference(reference) => {
+            let (key, name) = reference.parts();
+            json!({ key: name })
+        }
     }
 }
 

@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use tokio::task::JoinHandle;
 
-use miyu_config::package::{McpServer, PackageKind, personal_mcp};
+use miyu_config::package::{McpServer, PackageKind, Reach, personal_mcp};
 use miyu_store::scripts::HOME_PACKAGE;
 
 use super::TARGET;
@@ -186,10 +186,11 @@ fn home_dir(core: &Core) -> PathBuf {
     core.home.clone().unwrap_or_default()
 }
 
-/// 命令第一项写成 `~/` 开头的，换成家目录 `home` 下的绝对路径；不知道家目录的照原样。
+/// 命令第一项写成 `~/` 开头的，换成家目录 `home` 下的绝对路径；不知道家目录的、网址的照原样。
 fn tilde(server: &McpServer, home: &std::path::Path) -> McpServer {
     let mut server = server.clone();
-    if let Some(first) = server.command.first_mut()
+    if let Reach::Command { command, .. } = &mut server.reach
+        && let Some(first) = command.first_mut()
         && let Some(rest) = first.strip_prefix("~/")
         && home.is_absolute()
     {
@@ -201,8 +202,7 @@ fn tilde(server: &McpServer, home: &std::path::Path) -> McpServer {
 /// 两个服务一样：除了写在第几行，每一格都一样（加一行注释不重起）。
 fn same(a: &McpServer, b: &McpServer) -> bool {
     a.name == b.name
-        && a.command == b.command
-        && a.env == b.env
+        && a.reach == b.reach
         && a.venues == b.venues
         && a.timeout_ms == b.timeout_ms
         && a.need_load == b.need_load

@@ -204,11 +204,13 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
     item
 }
 
-/// 一个进程这时的细节（施工 X-4 从 `one` 挪出来，软件包列表上的 MCP 服务也用）：在跑的带 `pid`，在等的带 `retry_in`（还差几毫秒），
+/// 一个进程这时的细节（施工 X-4 从 `one` 挪出来，软件包列表上的 MCP 服务也用）：在跑的带 `pid`（网址的 MCP 服务没有，施工 X-32 上），在等的带 `retry_in`（还差几毫秒），
 /// 停下的带 `reason` 和标准错误 `stderr_file` 的最后几行 `stderr`。
 pub(crate) fn details(item: &mut Value, state: State, stderr_file: &Path) {
     match state {
-        State::Starting { pid: Some(pid) } | State::Running { pid } => item["pid"] = json!(pid),
+        State::Starting { pid: Some(pid) } | State::Running { pid: Some(pid) } => {
+            item["pid"] = json!(pid)
+        }
         State::Waiting { until } => {
             let left = until.saturating_duration_since(tokio::time::Instant::now());
             item["retry_in"] = json!(u64::try_from(left.as_millis()).unwrap_or(u64::MAX));
@@ -219,6 +221,6 @@ pub(crate) fn details(item: &mut Value, state: State, stderr_file: &Path) {
                 item["stderr"] = json!(tail);
             }
         }
-        State::Starting { pid: None } | State::Off => {}
+        State::Starting { pid: None } | State::Running { pid: None } | State::Off => {}
     }
 }

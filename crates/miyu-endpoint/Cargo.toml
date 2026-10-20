@@ -76,6 +76,8 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 similar = { version = "2", default-features = false, features = ["text"] }
 
 [dev-dependencies]
+# 测试里的假网址服务（施工 X-32 上）：照请求答的 Streamable HTTP MCP 服务。
+miyu-mcp = { path = "../miyu-mcp", features = ["testkit"] }
 # 人格头像的候选主色（施工 P-6 补）：测试里画一张真的 PNG 当头像。
 image = { version = "0.25", default-features = false, features = ["png"] }
 # 撤销的回应（施工 4-7 下）：她用真的写文件的工具改过文件。

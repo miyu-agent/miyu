@@ -1,5 +1,6 @@
 //! 怎么起一个服务（施工 X-3 上，`mcp.md`「怎么走」第二条第 2、5 条）：程序照命令第一项找，工作目录是状态目录里它的一格，
-//! 环境是核心的加上清单写的，标准错误接到日志目录里它的一份。不进沙盒。
+//! 环境是核心的加上清单写的，标准错误接到日志目录里它的一份。不进沙盒。网址的服务（施工 X-32 上）不起进程：计划里是网址和
+//! 请求头，令牌换成 `Authorization`，连的时候认它出错写进同一份日志。
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -8,7 +9,7 @@ use std::time::Duration;
 
 use tokio::process::{Child, Command};
 
-use miyu_config::package::{EnvValue, McpServer};
+use miyu_config::package::{EnvValue, McpServer, Reach};
 use miyu_store::packages::BIN;
 
 use super::TARGET;
@@ -28,12 +29,8 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 pub(super) struct Plan {
     /// 服务：名字、时限、给哪种会话。
     pub(super) server: McpServer,
-    /// 程序：找到的位置，只有名字的照 `PATH` 找。
-    pub(super) program: PathBuf,
-    /// 参数：命令第一项后面的。
-    pub(super) args: Vec<String>,
-    /// 另给的环境变量，引用的已经取出来了。
-    pub(super) env: Vec<(String, String)>,
+    /// 起进程，还是连网址。
+    pub(super) how: How,
     /// 工作目录：`state/mcp/<服务名>/`，没有的建。
     pub(super) dir: PathBuf,
     /// 标准错误接到哪个文件。
@@ -42,34 +39,96 @@ pub(super) struct Plan {
     pub(super) known: Option<miyu_mcp::Era>,
 }
 
+/// 怎么到一个服务。
+#[derive(Debug, Clone)]
+pub(super) enum How {
+    /// 起进程。
+    Spawn {
+        /// 程序：找到的位置，只有名字的照 `PATH` 找。
+        program: PathBuf,
+        /// 参数：命令第一项后面的。
+        args: Vec<String>,
+        /// 另给的环境变量，引用的已经取出来了。
+        env: Vec<(String, String)>,
+    },
+    /// 连网址（施工 X-32 上）。
+    Connect {
+        /// 网址。
+        url: String,
+        /// 每个请求都带的头，令牌已经换成 `Authorization: Bearer …`、引用的已经取出来了。
+        headers: Vec<(String, String)>,
+    },
+}
+
 /// 包 `package`（包目录 `dir`）带的服务 `server` 怎么起：引用的密钥、环境变量照这一刻的配置取，取不到的那一个不设、记一行
 /// `WARN`。
 pub(super) fn plan(core: &Core, package: &str, server: &McpServer, dir: &Path) -> Plan {
     let config = core.config_now().borrow().clone();
-    let mut env = Vec::new();
-    for (name, value) in &server.env {
-        match value {
-            EnvValue::Text(text) => env.push((name.clone(), text.clone())),
-            EnvValue::Reference(reference) => match config.secret(reference) {
-                Some(secret) => env.push((name.clone(), secret.expose().to_string())),
-                None => {
-                    tracing::warn!(target: TARGET, package, service = server.name.as_str(), variable = name.as_str(), reference = reference.name(), "mcp env not set");
+    let resolve = |pairs: &[(String, EnvValue)]| -> Vec<(String, String)> {
+        pairs
+            .iter()
+            .filter_map(|(name, value)| {
+                let resolved = resolved(&config, value);
+                if resolved.is_none() {
+                    tracing::warn!(target: TARGET, package, service = server.name.as_str(), variable = name.as_str(), "mcp env not set");
                 }
-            },
+                resolved.map(|value| (name.clone(), value))
+            })
+            .collect()
+    };
+    let how = match &server.reach {
+        Reach::Command { command, env } => {
+            let (first, rest) = command
+                .split_first()
+                .map_or(("", &[][..]), |(first, rest)| (first.as_str(), rest));
+            How::Spawn {
+                program: program(first, dir),
+                args: rest.to_vec(),
+                env: resolve(env),
+            }
         }
-    }
-    let (first, rest) = server
-        .command
-        .split_first()
-        .map_or(("", &[][..]), |(first, rest)| (first.as_str(), rest));
+        Reach::Url {
+            url,
+            bearer,
+            headers,
+        } => {
+            let bearer = bearer
+                .as_ref()
+                .map(|bearer| ("Authorization".to_string(), bearer.clone()));
+            let mut headers = resolve(
+                &bearer
+                    .into_iter()
+                    .chain(headers.iter().cloned())
+                    .collect::<Vec<_>>(),
+            );
+            if let Some((_, token)) = headers
+                .first_mut()
+                .filter(|(name, _)| name == "Authorization")
+            {
+                *token = format!("Bearer {token}");
+            }
+            How::Connect {
+                url: url.clone(),
+                headers,
+            }
+        }
+    };
     Plan {
-        program: program(first, dir),
-        args: rest.to_vec(),
-        env,
+        how,
         dir: work_dir(core, &server.name),
         log: stderr_file(core, &server.name),
         server: server.clone(),
         known: None,
+    }
+}
+
+/// 一个值：字照原样，引用的照这一刻的配置取（密钥文件、环境变量），取不到的没有。
+fn resolved(config: &crate::config::Config, value: &EnvValue) -> Option<String> {
+    match value {
+        EnvValue::Text(text) => Some(text.clone()),
+        EnvValue::Reference(reference) => config
+            .secret(reference)
+            .map(|secret| secret.expose().to_string()),
     }
 }
 
@@ -130,7 +189,8 @@ fn find(first: &str, dir: &Path, path_dirs: &[PathBuf], suffixes: &[&str]) -> Pa
     path.to_path_buf()
 }
 
-/// 起：程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次；别的错误照旧交回。
+/// 起：程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次；别的错误照旧交回。网址的服务不起进程，交回出错（调的一方先照
+/// [`How`] 分开走，不会走到这里）。
 pub(super) async fn spawn(plan: &Plan) -> io::Result<Child> {
     let mut tries = 1;
     loop {
@@ -148,12 +208,15 @@ pub(super) async fn spawn(plan: &Plan) -> io::Result<Child> {
 
 /// 起一次：工作目录没有的建，标准错误接到它的文件上，核心丢下它时杀掉。
 fn spawn_once(plan: &Plan) -> io::Result<Child> {
+    let How::Spawn { program, args, env } = &plan.how else {
+        return Err(io::Error::other("a URL server has no process"));
+    };
     std::fs::create_dir_all(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
-    let mut command = std::process::Command::new(&plan.program);
+    let mut command = std::process::Command::new(program);
     command
-        .args(&plan.args)
-        .envs(plan.env.iter().map(|(name, value)| (name, value)))
+        .args(args)
+        .envs(env.iter().map(|(name, value)| (name, value)))
         .current_dir(&plan.dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

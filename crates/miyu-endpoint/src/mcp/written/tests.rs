@@ -80,7 +80,10 @@ fn a_written_server_is_replaced_in_place_with_its_subtables() {
         ["fetch", "time"],
         "先后不变"
     );
-    assert!(servers[0].env.is_empty(), "整条换掉：子表也没了");
+    assert!(
+        matches!(&servers[0].reach, miyu_config::package::Reach::Command { env, .. } if env.is_empty()),
+        "整条换掉：子表也没了"
+    );
 }
 
 #[test]

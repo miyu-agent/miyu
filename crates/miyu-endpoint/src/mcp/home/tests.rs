@@ -7,8 +7,10 @@ use super::*;
 fn server(name: &str, command: &[&str], line: usize) -> McpServer {
     McpServer {
         name: name.to_string(),
-        command: command.iter().map(ToString::to_string).collect(),
-        env: Vec::new(),
+        reach: Reach::Command {
+            command: command.iter().map(ToString::to_string).collect(),
+            env: Vec::new(),
+        },
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
         need_load: false,
@@ -34,7 +36,16 @@ fn only_the_line_may_differ() {
         miyu_config::package::EnvValue::Text("x".to_string()),
     )];
     assert!(
-        !same(&a, &McpServer { env, ..a.clone() }),
+        !same(
+            &a,
+            &McpServer {
+                reach: Reach::Command {
+                    command: command_of(&a),
+                    env
+                },
+                ..a.clone()
+            }
+        ),
         "环境变量变了算变了"
     );
     assert!(
@@ -75,14 +86,26 @@ fn a_tilde_command_follows_the_home() {
     };
     let changed = tilde(&server("own", &["~/bin/server", "--flag"], 1), home);
     assert_eq!(
-        changed.command,
+        command_of(&changed),
         [
             home.join("bin/server").to_string_lossy().into_owned(),
             "--flag".to_string()
         ]
     );
     let plain = tilde(&server("own", &["npx", "~/x"], 1), home);
-    assert_eq!(plain.command, ["npx", "~/x"], "只换第一项");
+    assert_eq!(command_of(&plain), ["npx", "~/x"], "只换第一项");
     let unknown = tilde(&server("own", &["~/bin/server"], 1), Path::new(""));
-    assert_eq!(unknown.command, ["~/bin/server"], "不知道家目录的照原样");
+    assert_eq!(
+        command_of(&unknown),
+        ["~/bin/server"],
+        "不知道家目录的照原样"
+    );
+}
+
+/// 命令的那几项。
+fn command_of(server: &McpServer) -> Vec<String> {
+    match &server.reach {
+        Reach::Command { command, .. } => command.clone(),
+        Reach::Url { .. } => Vec::new(),
+    }
 }

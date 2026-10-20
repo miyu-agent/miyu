@@ -11,7 +11,7 @@ use tokio::time::Instant;
 
 use miyu_mcp::{Client, Failed, Hello, Waits};
 
-use super::launch::{self, Plan};
+use super::launch::{self, How, Plan};
 use super::{Shared, TARGET, cache, spec};
 use crate::Core;
 use crate::extensions::{Reason, State, Timing};
@@ -29,6 +29,9 @@ enum Ended {
     Stop(Reason),
     /// 失败了一次：握成了的有握成的那一刻。
     Failed(Option<Instant>),
+    /// 网址的服务跑起来以后会话过期了（施工 X-32 上）：不算失败、不退避，马上重连、从认时代重来。没跑起来就过期的照
+    /// [`Ended::Failed`] 算，一直回 `404` 的服务不会原地打转。
+    Expired,
 }
 
 /// 看管服务 `plan.server`，直到停下，或者 `asked` 来了（请它退出、等它退出以后交回，状态由叫停的一方记）。核心没了的也交回。
@@ -52,6 +55,10 @@ pub(super) async fn run(
         };
         let ready_at = match ended {
             Ended::Asked | Ended::Gone => return,
+            Ended::Expired => {
+                tracing::info!(target: TARGET, service = plan.server.name.as_str(), "mcp session expired");
+                continue;
+            }
             Ended::Stop(reason) => {
                 tracing::warn!(target: TARGET, service = plan.server.name.as_str(), reason = reason.as_str(), "mcp stopped");
                 shared.set(&owner, State::Stopped(reason), failures);
@@ -94,30 +101,22 @@ async fn once(
     known: &mut Option<miyu_mcp::Era>,
 ) -> Ended {
     let service = plan.server.name.as_str();
-    let mut child = match launch::spawn(plan).await {
-        Ok(child) => child,
-        Err(error) => {
-            tracing::warn!(target: TARGET, service, program = %plan.program.display(), error = %error, "mcp not started");
-            return Ended::Failed(None);
-        }
+    let (mut running, pid, output, input) = match start(plan).await {
+        Ok(started) => started,
+        Err(ended) => return ended,
     };
-    let pid = child.id().unwrap_or_default();
-    tracing::info!(target: TARGET, service, pid, "mcp started");
+    tracing::info!(target: TARGET, service, pid = ?pid, "mcp started");
     {
         let Some(owner) = core.upgrade() else {
             return Ended::Gone;
         };
-        shared.set(&owner, State::Starting { pid: Some(pid) }, failures);
+        shared.set(&owner, State::Starting { pid }, failures);
     }
-    let (Some(input), Some(output)) = (child.stdin.take(), child.stdout.take()) else {
-        // 两头都接了管道，不会没有。
-        return Ended::Stop(Reason::CannotStart);
-    };
     let connecting = Client::connect(output, input, hello(), known.clone(), Waits::default());
     let client = tokio::select! {
         connected = connecting => connected,
         _ = asked.changed() => {
-            finish(&mut child, timing.grace, service).await;
+            running.finish(timing.grace, service).await;
             return Ended::Asked;
         }
     };
@@ -125,7 +124,7 @@ async fn once(
         Ok(client) => Arc::new(client),
         Err(error) => {
             tracing::warn!(target: TARGET, service, error = %error, "mcp not connected");
-            finish(&mut child, timing.grace, service).await;
+            running.finish(timing.grace, service).await;
             return match error {
                 Failed::NoCommonVersion(_) => Ended::Stop(Reason::CannotStart),
                 _ => Ended::Failed(None),
@@ -136,7 +135,7 @@ async fn once(
     let mut changes = client.changes();
     if !list(core, plan, shared, &client).await {
         drop(client);
-        finish(&mut child, timing.grace, service).await;
+        running.finish(timing.grace, service).await;
         return Ended::Failed(None);
     }
     let ready_at = Instant::now();
@@ -145,7 +144,7 @@ async fn once(
             return Ended::Gone;
         };
         shared.connect(Some(Arc::clone(&client)));
-        tracing::info!(target: TARGET, service, pid, era = ?client.era(), "mcp ready");
+        tracing::info!(target: TARGET, service, pid = ?pid, era = ?client.era(), "mcp ready");
         shared.set(&owner, State::Running { pid }, failures);
     }
     let stopping = loop {
@@ -167,13 +166,106 @@ async fn once(
     };
     shared.connect(None);
     drop(client);
-    let status = finish(&mut child, timing.grace, service).await;
+    let status = running.finish(timing.grace, service).await;
     if stopping {
         tracing::info!(target: TARGET, service, status = status.as_str(), "mcp exited");
         return Ended::Asked;
     }
+    if running.expired() {
+        return Ended::Expired;
+    }
     tracing::warn!(target: TARGET, service, status = status.as_str(), "mcp exited");
     Ended::Failed(Some(ready_at))
+}
+
+/// 起来的那一头：进程，或者网址的服务（没有进程：丢下客户端，转接跟着停）。
+enum Running {
+    Child(Child),
+    Remote(miyu_mcp::http::Expired),
+}
+
+impl Running {
+    /// 收尾：进程照 [`finish`]；网址的没什么要等。交回怎么结束的，写成字。
+    async fn finish(&mut self, grace: Duration, service: &str) -> String {
+        match self {
+            Running::Child(child) => finish(child, grace, service).await,
+            Running::Remote(_) => "closed".to_string(),
+        }
+    }
+
+    /// 网址的服务这条连接是会话过期断的。
+    fn expired(&self) -> bool {
+        matches!(self, Running::Remote(expired) if expired.happened())
+    }
+}
+
+/// 读的一头，装箱以后两种起法一样交给 [`Client::connect`]。
+type Reader = Box<dyn tokio::io::AsyncRead + Unpin + Send>;
+
+/// 写的一头，同 [`Reader`]。
+type Writer = Box<dyn tokio::io::AsyncWrite + Unpin + Send>;
+
+/// 起一次：拉起进程，或者接上网址（施工 X-32 上）。交回在跑的那一头、进程号（网址的没有）、读写两头；起不来的交回结局。
+async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), Ended> {
+    let service = plan.server.name.as_str();
+    match &plan.how {
+        How::Spawn { program, .. } => {
+            let mut child = launch::spawn(plan).await.map_err(|error| {
+                tracing::warn!(target: TARGET, service, program = %program.display(), error = %error, "mcp not started");
+                Ended::Failed(None)
+            })?;
+            let pid = child.id();
+            let (Some(input), Some(output)) = (child.stdin.take(), child.stdout.take()) else {
+                // 两头都接了管道，不会没有。
+                return Err(Ended::Stop(Reason::CannotStart));
+            };
+            Ok((
+                Running::Child(child),
+                pid,
+                Box::new(output),
+                Box::new(input),
+            ))
+        }
+        How::Connect { url, headers } => {
+            let log = log_to(plan.log.clone());
+            let local = miyu_http::is_loopback_url(url);
+            // 令牌不明文发到别的机器上（`mcp.md`「网址的服务怎么说话」）：`http://` 只给本机地址。
+            if url.starts_with("http://") && !local {
+                log("http:// is only for this machine, use https://".to_string());
+                tracing::warn!(target: TARGET, service, "mcp url not https");
+                return Err(Ended::Stop(Reason::CannotStart));
+            }
+            let proxy = if local {
+                miyu_http::Proxy::Off
+            } else {
+                miyu_http::Proxy::FromEnvironment
+            };
+            let client = miyu_http::client(proxy).map_err(|error| {
+                tracing::warn!(target: TARGET, service, error = %error, "mcp not started");
+                Ended::Failed(None)
+            })?;
+            let opened = miyu_mcp::http::open(client, url.clone(), headers.clone(), log);
+            Ok((
+                Running::Remote(opened.expired),
+                None,
+                Box::new(opened.read),
+                Box::new(opened.write),
+            ))
+        }
+    }
+}
+
+/// 往服务的日志（`state/logs/mcp-<服务名>.stderr`）追加一行：网址的服务没有标准错误，对方回错这一类记在这里，软件包列表上停下了的
+/// 照旧给最后几行。写不进的不管：这只是给人看的线索。
+fn log_to(path: std::path::PathBuf) -> miyu_mcp::http::Log {
+    std::sync::Arc::new(move |line: String| {
+        if let Ok(mut file) = crate::extensions::stderr::open(&path) {
+            use std::io::Write;
+            if writeln!(file, "{line}").is_err() {
+                // 写不进日志：线索丢了，服务照常。
+            }
+        }
+    })
 }
 
 /// 列工具、登记：交回成没成。核心没了的算没成。

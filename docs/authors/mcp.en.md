@@ -11,6 +11,14 @@ Open `~/.miyu/home/admin/settings.toml` (or `miyu config edit`), one table per s
 command = ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/me/notes"]
 ```
 
+For a server that only gives a URL (GitHub and the like), write `url`, and the token as `bearer`:
+
+```toml
+[mcp.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer = { secret = "github" }       # store it with miyu login or the settings page; sent as Authorization: Bearer …
+```
+
 It takes effect when saved, no restart. The Packages page of the terminal or web UI shows whether it's running; `miyu check` checks for mistakes.
 
 ## As a package
@@ -43,7 +51,10 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 | Field | Notes |
 |---|---|
 | `name` | Server name (the table name in personal settings): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
-| `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like) |
+| `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
+| `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
+| `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
+| `headers` | With `url`: other request headers, like `{ X-Api-Key = { secret = "key" } }`, written like `env` |
 | `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu login` or the settings screen); don't put values in the manifest |
 | `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms |
 | `timeout_ms` | How long one call may take |

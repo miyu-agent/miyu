@@ -13,6 +13,8 @@ use tokio::io::{AsyncWriteExt, BufReader, DuplexStream, ReadHalf, WriteHalf};
 
 use crate::wire::{self, Read};
 
+pub mod http;
+
 /// 演哪个时代、怎么对待 `server/discover`。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {

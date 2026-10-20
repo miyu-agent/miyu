@@ -7,12 +7,14 @@
 //! - [`Client::tools`]：`tools/list`，翻页列全。
 //! - [`Client::call`]：`tools/call`；这个 future 没等到回应就被丢掉（超时、叫停），发 `notifications/cancelled`。
 //! - [`Client::changes`]：服务说工具变了（`notifications/tools/list_changed`）的次数。
+//! - [`http::open`]：网址的服务（施工 X-32 上，Streamable HTTP）：交回一对读写给 [`Client::connect`]。
 //! - 服务反过来要东西（`sampling/createMessage`、`roots/list`、`elicitation/create`……）一律回「没有这个方法」，`ping`
 //!   回空的。
 
 mod client;
 mod content;
 mod error;
+pub mod http;
 mod link;
 #[cfg(any(test, feature = "testkit"))]
 pub mod testkit;

@@ -14,6 +14,11 @@ fn every_extension_state_has_a_status() {
         "starting",
         "退避中的算启动中"
     );
-    assert_eq!(of_state(State::Running { pid: 7 }), "running");
+    assert_eq!(of_state(State::Running { pid: Some(7) }), "running");
+    assert_eq!(
+        of_state(State::Running { pid: None }),
+        "running",
+        "网址的服务没有进程号"
+    );
     assert_eq!(of_state(State::Stopped(Reason::NotInstalled)), "stopped");
 }

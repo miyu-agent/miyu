@@ -107,13 +107,16 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if let Some(mascot) = &manifest.mascot {
         item["mascot"] = json!({"model": mascot.model});
     }
-    // 带的 MCP 服务（施工 X-2）：名字、拉起它的命令（人看得到会在这台机器上跑什么）、给哪种会话；环境变量不列（可能引用密钥）。
+    // 带的 MCP 服务（施工 X-2）：名字、拉起它的命令（人看得到会在这台机器上跑什么）或者它的网址（施工 X-32 上）、给哪种会话；环境变量、
+    // 令牌、请求头不列（可能引用密钥）。
     if !manifest.mcp.is_empty() {
         let servers: Vec<Value> = manifest
             .mcp
             .iter()
             .map(|server| {
-                json!({"name": server.name, "command": server.command, "venues": server.venues})
+                let mut one = json!({"name": server.name, "venues": server.venues});
+                crate::mcp::methods::reach(server, &mut one);
+                one
             })
             .collect();
         item["mcp"] = json!(servers);

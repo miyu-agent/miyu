@@ -1,4 +1,5 @@
-//! 包带的 MCP 服务（施工 X-2，`docs/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。只查写法；
+//! 包带的 MCP 服务（施工 X-2，`docs/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。一个服务要么是本机
+//! 拉起的一条命令，要么是一个网址（施工 X-32 上，Streamable HTTP），见 [`Reach`]。只查写法；
 //! 怎么起、怎么登记工具在核心那一边（X-3）。一个服务一个功能（[`McpServer::feature_id`]），编号全局不重，两个包撞了照功能
 //! 编号撞了报（`miyu-store` 的 `feature_taken`）。个人设置里的 `[mcp.<名字>]` 照同样的格子读（施工 F-9 上，`personal.rs`）。
 
@@ -32,10 +33,8 @@ const VENUES: [&str; 3] = ["local", "private", "group"];
 pub struct McpServer {
     /// 服务名：小写字母开头，只有小写字母、数字、`-`，最多 32 个。
     pub name: String,
-    /// 拉起它的命令：第一项是程序，后面是参数，不经 shell。
-    pub command: Vec<String>,
-    /// 另给它的环境变量，照写的先后：值是字，或者引用一个密钥、一个环境变量。
-    pub env: Vec<(String, EnvValue)>,
+    /// 怎么到它：拉起一条命令，或者连一个网址。
+    pub reach: Reach,
     /// 给哪种会话用：`local`、`private`、`group`，照写的先后；没写的只给本机的会话（2026-10-11 项目主人照推荐定）。
     pub venues: Vec<String>,
     /// 一次调用等多久，毫秒。
@@ -50,7 +49,28 @@ pub struct McpServer {
     pub line: Option<usize>,
 }
 
-/// 环境变量的值。
+/// 怎么到一个服务（施工 X-32 上）：`command`、`url` 写一个。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Reach {
+    /// 本机拉起的进程，经标准输入输出说 MCP。
+    Command {
+        /// 命令：第一项是程序，后面是参数，不经 shell。
+        command: Vec<String>,
+        /// 另给它的环境变量，照写的先后：值是字，或者引用一个密钥、一个环境变量。
+        env: Vec<(String, EnvValue)>,
+    },
+    /// 一个网址，经 Streamable HTTP 说 MCP。
+    Url {
+        /// 网址：`https://`，或者本机地址的 `http://`（本机不本机由核心连的时候认，`mcp.md`「网址的服务怎么说话」）。
+        url: String,
+        /// 令牌：发成 `Authorization: Bearer <值>`。
+        bearer: Option<EnvValue>,
+        /// 别的请求头，照写的先后。
+        headers: Vec<(String, EnvValue)>,
+    },
+}
+
+/// 环境变量、令牌、请求头的值。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EnvValue {
     /// 照原样。
@@ -102,7 +122,8 @@ fn one(
         table,
         "mcp",
         &[
-            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4], FIELDS[5],
+            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4], FIELDS[5], FIELDS[6],
+            FIELDS[7], FIELDS[8],
         ],
     )?;
     let name = match table.get("name").and_then(Item::as_str) {
@@ -128,9 +149,12 @@ fn one(
 }
 
 /// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）。
-const FIELDS: [&str; 6] = [
+const FIELDS: [&str; 9] = [
     "command",
     "env",
+    "url",
+    "bearer",
+    "headers",
     "venues",
     "timeout_ms",
     "need_load",
@@ -144,29 +168,7 @@ fn fields(
     line: Option<usize>,
 ) -> Result<McpServer, Problem> {
     let at = format!("mcp.{name}");
-    let command = match table.get("command").and_then(Item::as_array) {
-        Some(array) => texts(array).filter(|command| !command.is_empty()),
-        None => None,
-    }
-    .ok_or_else(|| {
-        bad(
-            line,
-            &format!("{at}.command"),
-            format!("{at}.command must be a list of words, the program first, none of them empty"),
-        )
-    })?;
-    let env = match table.get("env") {
-        Some(item) => env(item).ok_or_else(|| {
-            bad(
-                line,
-                &format!("{at}.env"),
-                format!(
-                    "{at}.env must be a table of variables, each text or {{ secret = … }} or {{ env = … }}"
-                ),
-            )
-        })?,
-        None => Vec::new(),
-    };
+    let reach = reach(table, &at, line)?;
     let venues = match table.get("venues") {
         Some(item) => venues(item).ok_or_else(|| {
             bad(
@@ -197,14 +199,101 @@ fn fields(
     let clicall = switch(table, "clicall", &at, line)?;
     Ok(McpServer {
         name,
-        command,
-        env,
+        reach,
         venues,
         timeout_ms,
         need_load,
         clicall,
         line,
     })
+}
+
+/// 怎么到它：`command`（可以带 `env`）、`url`（可以带 `bearer`、`headers`）写一个，混着写、都没写的不收。
+fn reach(
+    table: &dyn toml_edit::TableLike,
+    at: &str,
+    line: Option<usize>,
+) -> Result<Reach, Problem> {
+    let wrong =
+        |key: &str, what: &str| bad(line, &format!("{at}.{key}"), format!("{at}.{key} {what}"));
+    let values = "must be a table, each value text or { secret = … } or { env = … }";
+    if table.get("url").is_none() {
+        for key in ["bearer", "headers"] {
+            if table.get(key).is_some() {
+                return Err(wrong(key, "goes with url, not command"));
+            }
+        }
+        let command = table
+            .get("command")
+            .and_then(Item::as_array)
+            .and_then(texts)
+            .filter(|command| !command.is_empty())
+            .ok_or_else(|| {
+                wrong(
+                    "command",
+                    "must be a list of words, the program first, none of them empty; or write url instead",
+                )
+            })?;
+        let env = match table.get("env") {
+            Some(item) => named(item, valid_variable).ok_or_else(|| wrong("env", values))?,
+            None => Vec::new(),
+        };
+        return Ok(Reach::Command { command, env });
+    }
+    for key in ["command", "env"] {
+        if table.get(key).is_some() {
+            return Err(wrong(key, "goes with command, not url: write one of them"));
+        }
+    }
+    let url = table
+        .get("url")
+        .and_then(Item::as_str)
+        .filter(|url| valid_url(url))
+        .ok_or_else(|| {
+            wrong(
+                "url",
+                "must start with https:// (or http:// for this machine), no spaces",
+            )
+        })?
+        .to_string();
+    let bearer = match table.get("bearer") {
+        Some(item) => Some(
+            value(item)
+                .ok_or_else(|| wrong("bearer", "must be text or { secret = … } or { env = … }"))?,
+        ),
+        None => None,
+    };
+    let headers = match table.get("headers") {
+        Some(item) => named(item, valid_header).ok_or_else(|| wrong("headers", values))?,
+        None => Vec::new(),
+    };
+    Ok(Reach::Url {
+        url,
+        bearer,
+        headers,
+    })
+}
+
+/// 网址的写法：`https://` 或 `http://` 开头，后面还有字，没有空白、控制字符。`http://` 只给本机地址，连的时候认。
+fn valid_url(url: &str) -> bool {
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"));
+    rest.is_some_and(|rest| !rest.is_empty())
+        && !url.chars().any(|c| c.is_whitespace() || c.is_control())
+}
+
+/// 环境变量名：不是空的，没有 `=` 和 NUL。
+fn valid_variable(name: &str) -> bool {
+    !name.is_empty() && !name.contains(['=', '\0'])
+}
+
+/// 请求头的名字：字母、数字、`-`，不是空的；`Authorization` 归 `bearer`，`Mcp-Session-Id`、`MCP-Protocol-Version` 归核心。
+fn valid_header(name: &str) -> bool {
+    !name.is_empty()
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        && !["authorization", "mcp-session-id", "mcp-protocol-version"]
+            .contains(&name.to_ascii_lowercase().as_str())
 }
 
 /// 一格开关 `key`：`true`、`false`，或者 `"yes"`、`"no"`（大小写不论）；没写的开。
@@ -256,25 +345,30 @@ fn texts(array: &toml_edit::Array) -> Option<Vec<String>> {
         .collect()
 }
 
-/// `env`：变量名不是空的、没有 `=` 和 NUL；值是字（没有 NUL），或者一个引用。
-fn env(item: &Item) -> Option<Vec<(String, EnvValue)>> {
-    let table = item.as_table_like()?;
-    table
+/// `env`、`headers`：名字合 `valid` 的，值照 [`value`]；有一项不合的没有。
+fn named(item: &Item, valid: fn(&str) -> bool) -> Option<Vec<(String, EnvValue)>> {
+    item.as_table_like()?
         .iter()
-        .map(|(key, value)| {
-            if key.is_empty() || key.contains(['=', '\0']) {
+        .map(|(key, item)| {
+            if !valid(key) {
                 return None;
             }
-            let value = match value {
-                Item::Value(Value::String(text)) => {
-                    let text = text.value();
-                    (!text.contains('\0')).then(|| EnvValue::Text(text.clone()))?
-                }
-                other => EnvValue::Reference(Reference::read(other.as_table_like()?)?),
-            };
-            Some((key.to_string(), value))
+            Some((key.to_string(), value(item)?))
         })
         .collect()
+}
+
+/// 一个值：字（没有 NUL），或者一个引用（`{ secret = … }`、`{ env = … }`）。
+fn value(item: &Item) -> Option<EnvValue> {
+    match item {
+        Item::Value(Value::String(text)) => {
+            let text = text.value();
+            (!text.contains('\0')).then(|| EnvValue::Text(text.clone()))
+        }
+        other => Some(EnvValue::Reference(Reference::read(
+            other.as_table_like()?,
+        )?)),
+    }
 }
 
 /// `venues`：至少一个，都是认的种类，不重。

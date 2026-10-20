@@ -34,7 +34,7 @@ pub use content::Content;
 pub use features::Feature;
 pub use links::{Connection, Worker};
 pub use mcp::{
-    EnvValue, McpServer, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
+    EnvValue, McpServer, Reach, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
 };
 pub use need::Need;
 pub use search::{SEARCH_SOURCE, SearchSource};
