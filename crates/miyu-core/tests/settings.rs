@@ -71,7 +71,6 @@ fn the_registered_list_is_well_formed() {
             "clicall.tools.<name>",
             "clicall.mcp.<id>",
             "features.<name>",
-            "sandbox.tools.<name>",
             "commands.<id>.access",
             "profile.preferred_reply_language",
             "profile.name",
@@ -81,6 +80,7 @@ fn the_registered_list_is_well_formed() {
             "sandbox.private.add",
             "sandbox.private.remove",
             "sandbox.strength",
+            "sandbox.tools.<name>",
             "external.bindings.<external>",
             "models.chat",
             "models.vision",
@@ -141,6 +141,21 @@ fn the_registered_list_is_well_formed() {
         ],
         "照登记的先后"
     );
+}
+
+/// 一个组只在一页上（施工 5-16 下补）：头照 `config.schema` 的 `groups` 挂项，组照先出现的那一项定页；同一个组名挂在两页上，
+/// 后一页的那几项就没地方挂（X-36 的放行表挂在「通用」的 `sandbox` 组上，「隐私与安全」的沙盒强度画不出来）。
+#[test]
+fn a_group_belongs_to_one_page() {
+    let mut pages = std::collections::BTreeMap::new();
+    for item in items() {
+        let page = *pages.entry(item.ui.group).or_insert(item.ui.page);
+        assert_eq!(
+            page, item.ui.page,
+            "{} 的组 {} 已经在 {page} 页上",
+            item.key, item.ui.group
+        );
+    }
 }
 
 #[test]

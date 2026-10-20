@@ -27,7 +27,8 @@ pub const ITEMS: &[Item] = &[Item {
     env: None,
     applies: Applies::NextTurn,
     ui: Ui {
-        page: "general",
+        // 和沙盒强度同一组（施工 5-16 下补）：组的编号哪一页都只算一回，挂在别的页上会把「隐私与安全」的沙盒组挤掉。
+        page: "privacy",
         group: "sandbox",
         package: None,
         common: false,

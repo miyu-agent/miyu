@@ -42,3 +42,7 @@
 
 - `miyu-session` 的 `sandbox/tests.rs` 的 `weak_strength_turns_mounts_off`、`a_weak_turn_writes_no_mount_into_the_spec`（机器能用挂载时弱沙盒的规格不写 `mount`）；变异 3 个全抓住；端点 `config/private/tests.rs` 的 `the_strength_is_drawn_only_on_linux`。
 - 配置清单、三份字表、生成的样本跟着改。`cargo xtask check` 八项；先推 step 分支过三台。
+
+### 下补（2026-10-21，网页实测报的）
+
+沙盒强度在「隐私与安全」页上没地方挂：X-36 的放行表（`sandbox.tools.<名字>`，不画）也用组 `sandbox`，却挂在「通用」页、登记得更早，`config.schema` 的组照先出现的那一项定页，被挤到了「通用」。放行表挪到「隐私与安全」、在清单里排到沙盒强度后面；两边各往三份字表的组名里加了一回 `sandbox`，删掉一份。核心的设置测试多一条 `a_group_belongs_to_one_page`：同一个组名挂在两页上当场报。
