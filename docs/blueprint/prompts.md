@@ -1326,6 +1326,17 @@ Could not run {name}: {error}.
 Running in the background is not available here. Run the command in the foreground, with a larger timeout if it is slow.
 ```
 
+#### `software/basesystem/shell/hazard.txt`
+
+- 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面六份之一）
+- token：整句 22 到 25，模板 20（2026-10-20 量）
+- 为什么加：拒了要告诉她为什么、换个办法：不说的话她会换个写法再试同一件事；说「never allowed」免得她以为点了就行
+- 指纹：`ab1a4c44`
+
+```text
+Not run: this command {reason}. That is never allowed, so do it another way.
+```
+
 #### `software/basesystem/shell/started.txt`
 
 - 什么时候加进来：放到后台了，调用当场返回
@@ -3262,6 +3273,61 @@ Make one concrete step of progress now, or end the goal — both calls are compl
 which you set yourself with the goal tool
 ```
 
+#### `software/basesystem/shell/hazard/delete-home.txt`
+
+- 什么时候加进来：删家目录或者它上面的（施工 5-17）
+- token：7（2026-10-20 量）
+- 为什么加：同上
+- 指纹：`da1b4891`
+
+```text
+would delete the home directory
+```
+
+#### `software/basesystem/shell/hazard/delete-system.txt`
+
+- 什么时候加进来：删根下的系统目录（施工 5-17）
+- token：9（2026-10-20 量）
+- 为什么加：同上
+- 指纹：`6695a453`
+
+```text
+would delete a top-level system directory
+```
+
+#### `software/basesystem/shell/hazard/delete-data-root.txt`
+
+- 什么时候加进来：删 Miyu 的数据根或者装着它的目录（施工 5-17）
+- token：9（2026-10-20 量）
+- 为什么加：同上
+- 指纹：`a8d194b2`
+
+```text
+would delete Miyu's own data
+```
+
+#### `software/basesystem/shell/hazard/disk-format.txt`
+
+- 什么时候加进来：格式化磁盘（施工 5-17）
+- token：6（2026-10-20 量）
+- 为什么加：同上
+- 指纹：`11c062f0`
+
+```text
+would format a disk
+```
+
+#### `software/basesystem/shell/hazard/disk-write.txt`
+
+- 什么时候加进来：往裸设备写（施工 5-17）
+- token：9（2026-10-20 量）
+- 为什么加：同上
+- 指纹：`47e264f7`
+
+```text
+would write to a raw disk device
+```
+
 #### `packages/authoring/skills/package-creator/SKILL.md`
 
 - 什么时候加进来：同上，`skill-package-creator`
@@ -4497,6 +4563,19 @@ Make one concrete step of progress now. Never spend a round only reporting that 
 
 ```text
 set by the user with `/goal`
+```
+
+### 填进 `hazard.txt` 的 `{reason}`
+
+#### `software/basesystem/shell/hazard/delete-root.txt`
+
+- 什么时候加进来：删根目录（施工 5-17）
+- token：7（2026-10-20 量）
+- 为什么加：说清拦的是哪一种
+- 指纹：`95a1800d`
+
+```text
+would delete the root directory
 ```
 
 ### 抽取、合并那一次请求的指令里，换进 `{owner}`

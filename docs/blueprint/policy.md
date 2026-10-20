@@ -29,6 +29,7 @@
 | `crates/miyu-policy/src/jobs.rs` | 回报的写法、任务用的数；子会话回报的正文怎么截（`reports()`，施工 3-8 五补从 `snapshot.rs` 挪来，那边放不下了） |
 | `crates/miyu-policy/src/memory.rs` | 记忆的范围 `MemoryScope`，快照的 `memory` 怎么写（`with_memory`）、怎么读（`memory_scope`，施工 R-3 下） |
 | `crates/miyu-policy/src/peers.rs` | 别的会话发来的话：防刷屏的数 `PeerNumbers` 和出厂的数 `PEERS`，交给内核的样子；标签的两份 `PeerTexts`，交给组装器的样子（施工 C-2）。「空了告诉我」的两个数和通知的五份字 `PeerIdleTexts`，作废那一句照快照的小时数换好（施工 C-6） |
+| `crates/miyu-policy/src/hazard.rs`（施工 5-17） | 高危命令照规则认，纯的判法，不进快照：`session/guard.md` 第四条末、`tools/shell.md`「高危」 |
 | `crates/miyu-store/src/resources.rs` | 从资源目录读原文（`store/resources.md`） |
 | `crates/miyu-store/src/blob.rs` | 存 blob、取 blob（`store.md`） |
 | `crates/miyu-session/src/open.rs` | 造会话时存、载入时取 |

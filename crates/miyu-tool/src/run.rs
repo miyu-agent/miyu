@@ -99,6 +99,16 @@ pub struct CallIds {
 /// 内容哈希。读过的（读了哪一段都算）、自己写过的都算。
 pub type Seen = BTreeMap<PathBuf, ContentHash>;
 
+/// 这次调用认出来的高危（施工 5-17，`docs/designs/11-权限与沙盒.md` 第四节「高危命令照规则拦」）：权限策略照它在工作区、完全放开
+/// 两级问人，灭顶的直接拒。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Hazard {
+    /// 哪一种：协议、日志里的写法（例如 `delete_home`），问人时放进说明的 `hazard`。
+    pub code: &'static str,
+    /// 灭顶的直接拒，拒的时候写给她的一句（连同给人看的说法）；没有的问人。
+    pub refused: Option<miyu_kernel::tool::Worded>,
+}
+
 /// 一次调用要碰的一条路径（施工 4-3 下）：她给的原样，是读是写，碰的是不是这一条本身。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {

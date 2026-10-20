@@ -34,7 +34,7 @@ use crate::lettering::Lettering;
 mod asking;
 mod confined;
 
-use asking::{Asked, ask, granted, this_dir};
+use asking::{Asked, ask, granted, hazardous, this_dir};
 pub(crate) use confined::Confined;
 
 /// 权限策略：一个会话一份。
@@ -237,6 +237,12 @@ impl Guard {
             return deny(confined.no_commands());
         }
         // 改装了什么的（施工 F-10 下）照沙盒外跑的同一张表：报的路径照判，再照级别：工作区每次问人、只读拒绝。
+        // 高危的（施工 5-17）：工作区、完全放开两级问人、灭顶的拒，先于别的放行；只读本来就拒一切写。
+        if level != Effective::ReadOnly
+            && let Some(hazard) = tool.hazard(&call)
+        {
+            return hazardous(verdict, (name, access), hazard, &asking);
+        }
         if tool.outside_sandbox(&call) || access == Access::Install {
             // 命令越过沙盒问人时另提「此目录不再询问」：放行工作目录的写（施工 5-15）。
             let offer =

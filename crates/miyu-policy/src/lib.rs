@@ -19,6 +19,7 @@ mod forward;
 mod group;
 mod guard;
 mod harness;
+pub mod hazard;
 mod image_name;
 mod jobs;
 mod loading;

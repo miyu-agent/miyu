@@ -1,0 +1,1 @@
+would write to a raw disk device

@@ -75,6 +75,31 @@ fn scope(real: &Path, home: Option<&Path>) -> PathBuf {
     }
 }
 
+/// 认出了高危的（施工 5-17）：原来就拒的照拒；灭顶的拒，写给她工具交的那一句；别的问人，不提规则（高危的不该一劳永逸），说明
+/// 照不报路径的那种（第五条第 4 款）再多 `hazard`。
+pub(super) fn hazardous(
+    verdict: Verdict,
+    (name, access): (&str, Access),
+    hazard: miyu_tool::Hazard,
+    asking: &[(&'static str, String)],
+) -> Verdict {
+    if matches!(verdict, Verdict::Deny { .. }) {
+        return verdict;
+    }
+    if let Some(worded) = hazard.refused {
+        return super::deny(worded);
+    }
+    let mut detail: Value = serde_json::from_str(super::described(name, &access, asking).get())
+        .unwrap_or_else(|_| json!({ "tool": name }));
+    detail["hazard"] = json!(hazard.code);
+    Verdict::Ask {
+        module: module(),
+        access,
+        rule: None,
+        detail: Some(raw(&detail)),
+    }
+}
+
 /// 命令越过沙盒问人时提的规则（施工 5-15，「此目录不再询问」）：放行工作目录 `cwd`（换成真实的位置）的写，连同下面的。
 /// 家目录本身也照放：人看得到放行的是哪个目录，私密目录照旧另问（[`granted`]），沙盒照旧藏数据根。
 pub(super) fn this_dir(name: &str, cwd: &str, home: Option<&Path>) -> RawJson {

@@ -181,3 +181,42 @@ fn a_venue_action_runs_only_in_a_venue() {
         }
     );
 }
+
+/// 高危的（施工 5-17）：路径已经判拒的照拒，不被改成问人；灭顶的拒，拿的是它那一句；别的问人，不提规则。
+#[test]
+fn a_hazard_never_softens_a_refusal() {
+    let worded = |text: &str| Worded {
+        text: text.to_string(),
+        said: None,
+    };
+    let ask = |refused| miyu_tool::Hazard {
+        code: "git_force_push",
+        refused,
+    };
+    let refused = deny(worded("forbidden"));
+    assert_eq!(
+        hazardous(refused.clone(), ("shell", Access::Execute), ask(None), &[]),
+        refused
+    );
+    assert_eq!(
+        hazardous(
+            Verdict::Allow,
+            ("shell", Access::Execute),
+            ask(Some(worded("never"))),
+            &[]
+        ),
+        deny(worded("never"))
+    );
+    let Verdict::Ask { rule, detail, .. } =
+        hazardous(Verdict::Allow, ("shell", Access::Execute), ask(None), &[])
+    else {
+        panic!("该问人");
+    };
+    assert_eq!(rule, None);
+    assert!(
+        detail
+            .expect("有说明")
+            .get()
+            .contains(r#""hazard":"git_force_push""#)
+    );
+}

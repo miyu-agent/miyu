@@ -24,8 +24,9 @@ use serde::Deserialize;
 use miyu_fs::tilde;
 use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::template::Template;
-use miyu_kernel::tool::Access;
-use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Tool};
+use miyu_kernel::tool::{Access, Worded};
+use miyu_policy::hazard::{Kind, Places, assess};
+use miyu_tool::{Call, Done, Effect, Hazard, Progress, Running, Spec, Tool};
 
 use crate::blocking::blocking;
 use crate::common::{Common, said, said_n};
@@ -55,6 +56,10 @@ struct Texts {
     failed: Template,
     no_background: Template,
     started: Template,
+    /// 认出灭顶的高危、直接拒时写给她的一句（施工 5-17），字段 `reason`。
+    hazard: Template,
+    /// 直接拒的那几种各自说它做了什么（`shell/hazard/<种类>.txt`），填进 `hazard`。
+    reasons: Vec<(Kind, Template)>,
 }
 
 /// 跑完了交回时的几句，`shell` 和脚本（施工 X-12 上，[`script`]）共用：没有输出、退出码、信号、省了多少、截了
@@ -102,6 +107,17 @@ impl Shell {
                 failed: text("failed", &["shell", "error"])?,
                 no_background: text("no-background", &[])?,
                 started: text("started", &["job"])?,
+                hazard: text("hazard", &["reason"])?,
+                reasons: Kind::ALL
+                    .into_iter()
+                    .filter(|kind| kind.refused())
+                    .map(|kind| {
+                        Ok((
+                            kind,
+                            text(&format!("hazard/{}", kind.code().replace('_', "-")), &[])?,
+                        ))
+                    })
+                    .collect::<Result<_, LoadError>>()?,
             },
             program,
         })
@@ -229,6 +245,46 @@ impl Tool for Shell {
 
     fn outside_sandbox(&self, call: &Call) -> bool {
         serde_json::from_str::<Args>(&call.args).is_ok_and(|args| args.outside_sandbox)
+    }
+
+    /// 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`）：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。
+    fn hazard(&self, call: &Call) -> Option<Hazard> {
+        let args = serde_json::from_str::<Args>(&call.args).ok()?;
+        let home = call
+            .home
+            .as_deref()
+            .map(|home| home.to_string_lossy().into_owned());
+        let cwd = miyu_fs::resolve(Path::new("/"), call.home.as_deref(), &call.cwd).map_or_else(
+            |_| call.cwd.clone(),
+            |cwd| cwd.to_string_lossy().into_owned(),
+        );
+        let data_root = call
+            .data_root
+            .as_deref()
+            .map(|root| root.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let places = Places {
+            cwd: &cwd,
+            home: home.as_deref(),
+            data_root: &data_root,
+        };
+        let kind = assess(&args.command, &places)?;
+        let refused = self
+            .texts
+            .reasons
+            .iter()
+            .find(|(known, _)| *known == kind)
+            .map(|(_, reason)| Worded {
+                text: say(
+                    &self.texts.hazard,
+                    &[("reason", say(reason, &[]).trim_end())],
+                ),
+                said: Some(said(&format!("shell/hazard-{}", kind.code()))),
+            });
+        Some(Hazard {
+            code: kind.code(),
+            refused,
+        })
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

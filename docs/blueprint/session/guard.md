@@ -16,6 +16,7 @@
 | `resources/core/permissions/not-in-venue.txt`（施工 O-31 前） | 本机的会话里拒绝在场所里做的事的那一句：不进策略快照，本机的会话造、载入时读（`crates/miyu-session/src/open.rs` 的 `place`） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
+| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里 |
 | `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
 
@@ -127,6 +128,7 @@
 | `read`、`write` | 放行 | 放行 | 放行 |
 | `execute` | 放行 | 沙盒能用：放行（在沙盒里跑）；用不了：问人 | 沙盒能用：放行（在只读沙盒里跑）；用不了：问人 |
 | `execute`，要在沙盒外跑（施工 D-4） | 放行 | 问人，提「此目录不再询问」：放行工作目录的写（施工 5-15） | 拒绝：只读 |
+| `execute`，工具报高危（施工 5-17） | 问人，不提规则；灭顶的拒绝 | 同左 | 不看：照上面两行 |
 | `network`、`outbound`、不认识的 | 放行 | 问人 | 问人 |
 | `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝（`venues` 有 `local` 的照 `outbound`，施工 O-31 补） | 同左 | 同左 |
 
@@ -135,6 +137,7 @@
 - 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」，2026-10-11 项目主人定）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊；协议端点造、载入时照属主填 `owner_is_admin`）。不看级别：文件类工具报的每一条路径换成真实的位置以后，要在这一轮的工作区或者加进来的目录里，外面的（连读）一律拒（放开只读的技能文件夹里的读除外，施工 X-10 上），`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/outside-workspace.txt`，字段 `path`），说法 `core/permissions/outside-workspace`；访问类别是执行命令的：沙盒能用、又关得住读（`miyu_sandbox::CONFINES_READS`，现在只有 Linux）的放行，在只准读名单里的沙盒里跑（施工 5-12 下，`session/tools.md` 第 1a 条）；别的一律拒（`no-commands.txt`，说法 `core/permissions/no-commands`）；要在沙盒外跑的一律拒。管理员本人的场所会话、本机的会话照旧。
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。
 - 要在沙盒外跑的执行（工具报 `Tool::outside_sandbox`，`shell` 写了 `outside_sandbox`，施工 D-4）：完全放开放行；工作区问人，不管沙盒能不能用，提的规则是「此目录不再询问」：`{"tool", "write": [工作目录的真实位置]}`，家目录本身也照放（施工 5-15，2026-10-20 项目主人定；原来不提规则）。选了的，这一次照「允许这一次」在沙盒外跑，以后的命令照旧在沙盒里跑、这个目录能写（`session/tools.md`），文件工具写它不再问；越过沙盒的照样每次问（规则只管路径，不放开整个沙盒）；只读拒绝，说只读开着、命令不能在沙盒外跑。本会话放行过的规则管不到它：规则只管路径。执行器照同一个报不写沙盒的规格，所以工作区一定问过人才跑得到。
+- 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：工作区、完全放开两级都管，判在报的路径之后、要在沙盒外跑之前，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。别的问人，不提规则（只能允许这一次或者拒绝），说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":true,"title":"Push","tool":"shell"}`。种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write` 拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell` 问人。
 - 访问类别是 `write` 或者不认识的，内核当成写入：只读时在交给链之前就拦下了，走不到这里（`kernel/session.md`）。
 
 **5. 问人时提的规则和说明**
@@ -206,6 +209,9 @@
 |---|---|
 | `crates/miyu-session/src/guard/tests.rs` | 判法表的每一格（边界以外的读哪一级都放行）；实际生效的那一级，不认识的按只读；不报路径的：执行命令沙盒能用时工作区、只读都放行，用不了时都问人、不提规则、说明是 `{"sandbox":false,"tool":"shell"}`（施工 D-4 起），读写放行，联网除了完全放开都问人（施工 5-4 上）；说明并进工具交的几格、工具名盖不过、执行类才写 `sandbox`，沙盒用不了时也带标题和命令（施工 D-4） |
 | `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4、5-15） | 要在沙盒外跑的：工作区问人、提的规则是放行工作目录的写、说明逐字节比；选了此目录不再询问的，以后的命令照旧在沙盒里、放行的目录能写，越过沙盒的照样问；在家目录里放行了的，文件工具写家目录别处不问、写私密目录照问（私密目录只认放在私密目录里的规则）；允许一次的那一次不带沙盒的规格、没报的照旧带、不问；拒绝的没跑、是拒绝；没人能确认的拒绝；只读不问、拒绝；完全放开不问、不带规格；碰数据根的照拒、不问；沙盒用不了时每条命令都问、说明带标题和命令；Unix 上真经助手跑 `shell`：没写的写不进工作区以外，写了的允许以后写得进 |
+| `crates/miyu-session/tests/hazard.rs`（施工 5-17） | 真的 `shell`：工作区、完全放开两级删家目录都拒、不问，结果是拒绝、带那一句；`git push --force` 两级都问、不提规则、说明带 `hazard`、`command`；只读不看；平常的命令完全放开照旧不问 |
+| `crates/miyu-session/src/guard/tests.rs` 的 `a_hazard_never_softens_a_refusal`（施工 5-17） | 报的路径已经拒了的照拒；灭顶的拒、拿工具交的那一句；别的问人、不提规则、说明带种类 |
+| `crates/miyu-policy/src/hazard/tests.rs`、`hazard/lex/tests.rs`（施工 5-17） | 三类各几条认得出、拒的和问的分对；连写、外壳、`sh -c`、`eval`、替换里的认得出；平常的删、git 不误报；拆命令的边界、引号、反斜杠、注释、替换、重定向（读进来的、文件描述符不是参数） |
 | `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读放行（施工 5-4 上）；越界的写问人，规则和说明写对了、`by` 是 `permissions`；没人能确认的拒绝；数据根哪一级都拒、写对了那一句和说法；完全放开越界的写不问；执行命令照沙盒能不能用：能用时工作区、只读都放行，用不了时问人（没人能确认就拒）；工作区里的 git 钩子只能读；几条路径照最严的，有一条在数据根里就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；写 git 钩子问人，说明里是 `read_only`、规则只有 `write`；`~` 照家目录换，写到边界以外要问人（没人能确认，是内核拒的，不是权限策略）；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，工作区没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 问人，人点头以前扩展收不到 `tool.call`。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |

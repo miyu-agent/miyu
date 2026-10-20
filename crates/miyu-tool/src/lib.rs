@@ -71,7 +71,8 @@ pub use messages::{
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{
-    Call, CallIds, Done, Effect, Picture, Previewing, Progress, Running, Seen, ShownFile, Target,
+    Call, CallIds, Done, Effect, Hazard, Picture, Previewing, Progress, Running, Seen, ShownFile,
+    Target,
 };
 pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,
@@ -147,6 +148,12 @@ pub trait Tool: Send + Sync {
     /// 沙盒的规格：工具自己从不决定套不套沙盒。默认否。
     fn outside_sandbox(&self, _call: &Call) -> bool {
         false
+    }
+
+    /// 这次调用认出来的高危（施工 5-17）：照参数算，不碰磁盘。权限策略照它在工作区、完全放开两级问人（说明多 `hazard`，不提
+    /// 规则），灭顶的直接拒；只读不看它。默认没有。
+    fn hazard(&self, _call: &Call) -> Option<Hazard> {
+        None
     }
 
     /// 问人时交给说明（`detail`）的几格，键和值（施工 D-4）：照参数算，例如 `shell` 的 `title`、`command`。权限策略并进
