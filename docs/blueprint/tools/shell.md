@@ -180,7 +180,7 @@ Exit code 2
 
 ### 高危（施工 5-17）
 
-报给权限策略（`Tool::hazard`，`session/guard.md` 第四条末），不进 `run`：
+报给权限策略（`Tool::hazard`，`session/guard.md` 第四条末），不进 `run`。只认 bash、zsh 的写法：用 PowerShell 的（Windows）不报，转义、删除命令、路径的写法都不一样，另排：
 
 1. 读参数，读不懂的不报。
 2. 照命令的字面认（`miyu_policy::hazard::assess`）：工作目录照家目录换成绝对路径，家目录、数据根照这次调用带的。
@@ -268,6 +268,8 @@ Exit code 2
 - `26-提示词.md` 第十节：登记簿里的 `tools/shell.json`、`shell/*.txt`。
 
 ### 还没有的
+
+- PowerShell 的高危规则（施工 5-17 只认 bash、zsh）：`Remove-Item -Recurse`、反引号转义、`C:\` 路径。
 
 - 沙盒：命令现在以本人的身份直接跑，碰得到任何地方；只读时每条都问人（`11-权限与沙盒.md` 第二节、第六节，M5）。放行规则照命令开头记，也随 M5（第二节）。
 - Windows 上改用 Git Bash 的配置（`10-自带软件.md` 第八节）。

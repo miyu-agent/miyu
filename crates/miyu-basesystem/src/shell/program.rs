@@ -45,6 +45,11 @@ impl Kind {
             Kind::WindowsPowerShell => "Windows PowerShell 5.1",
         }
     }
+
+    /// 照 POSIX shell 的写法拆命令（bash、zsh）：高危的规则只认这一种（施工 5-17）。
+    pub(super) fn posix(self) -> bool {
+        matches!(self, Kind::Bash | Kind::Zsh)
+    }
 }
 
 /// 这台机器上用的 shell：哪一种、程序在哪。

@@ -248,7 +248,12 @@ impl Tool for Shell {
     }
 
     /// 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`）：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。
+    /// 只认 bash、zsh 的命令。
     fn hazard(&self, call: &Call) -> Option<Hazard> {
+        // PowerShell 的写法（反引号转义、`Remove-Item`、`C:\` 路径）另排，第一版不认。
+        if !self.program.kind.posix() {
+            return None;
+        }
         let args = serde_json::from_str::<Args>(&call.args).ok()?;
         let home = call
             .home
