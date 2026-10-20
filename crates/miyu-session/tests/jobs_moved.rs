@@ -115,12 +115,16 @@ async fn a_moved_command_can_be_stopped() {
 #[tokio::test]
 async fn a_long_output_before_the_move_is_cut_in_the_middle() {
     let home = Home::outside_temp();
-    let command = if cfg!(windows) {
-        "1..20000 | ForEach-Object { $_ }; Start-Sleep -Milliseconds 1500; Write-Output after"
+    // Windows 上 PowerShell 起得慢：一次写完，超时也放宽，挪过去之前一定读到了超过 30000 个字。
+    let (command, timeout) = if cfg!(windows) {
+        (
+            "Write-Output ((1..20000) -join \"`n\"); Start-Sleep -Milliseconds 6000; Write-Output after",
+            4000,
+        )
     } else {
-        "seq 1 20000; sleep 1.5; echo after"
+        ("seq 1 20000; sleep 1.5; echo after", 800)
     };
-    let args = foreground(command, 800);
+    let args = foreground(command, timeout);
     let script = Script::new([
         Play::calls(&[("shell", args.as_str())]),
         Play::Says("在后台跑着。"),

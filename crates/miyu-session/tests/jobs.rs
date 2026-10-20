@@ -7,7 +7,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use miyu_kernel::event::{Body, Event, JobReason, Level, Permission};
+use miyu_kernel::event::{Body, Event, JobReason};
+#[cfg(unix)]
+use miyu_kernel::event::{Level, Permission};
 use miyu_kernel::id::{JobId, TurnId};
 use miyu_kernel::origin::{By, Tool as ByTool};
 use miyu_kernel::session::Command;
