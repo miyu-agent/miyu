@@ -91,8 +91,9 @@ Try it: `miyu pkg install ./hello`, answer yes to "Turn it on now?", then ask th
 ## Being started
 
 - The program is the one in `bin/`; its arguments are `[process] args`.
-- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PACKAGE_DIR` (your package folder: find files you bring from here; don't build paths yourself). `MIYU_PACKAGE_DIR` is also set when a person runs `miyu <your command>` in a terminal.
-- The working directory is your package's state directory `~/.miyu/state/packages/<id>/`: put your database and caches there; they're removed on uninstall.
+- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PACKAGE_DIR` (your package folder: find files you bring from here; don't build paths yourself) and `MIYU_PACKAGE_STATE` (your package's state directory, already created). `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set when a person runs `miyu <your command>` in a terminal.
+- Put your database and caches in the directory `MIYU_PACKAGE_STATE` names; it is removed on uninstall. Always find it through this variable: not through the working directory (it is the state directory when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
+- Only your program and the commands people run get this variable: scripts she runs in the sandbox can't read the state directory (it is inside the data root, which the sandbox hides).
 - Stderr goes to `~/.miyu/state/logs/<id>.stderr`; look there first when something goes wrong.
 
 ## Handshake and settings
@@ -113,7 +114,7 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 |---|---|
 | `name` | Letters, digits, `_`, `-`, 1 to 64; must not clash; prefixing with the package id helps |
 | `description`, `input_schema` | For the model: short English sentences, at most three per tool |
-| `access` | What it touches: `read` (only looks, stays inside Miyu), `write` (changes files), `execute` (runs commands), `network`, `outbound` (sends things out of Miyu), `venue` (actions on a chat platform: recall, mute). Permissions decide whether to ask a person from this, so **be honest** |
+| `access` | What it touches: `read` (only looks, stays inside Miyu), `write` (changes files), `execute` (runs commands), `network`, `outbound` (sends things out of Miyu), `venue` (actions on a chat platform: recall, mute). Permissions decide whether to ask a person from this, so **be honest**: a tool that changes your own data (adding or deleting a ledger entry) is `write` too, or read-only mode can't stop it |
 | `venues` | Which sessions: `local` (this machine), `private` (platform private chats), `group` (groups) |
 | `timeout_ms` | 1000 to 600000, default 60000 |
 | `display_name` | Name for people, per language: `{"zh": "打招呼", "en": "Greet"}` |

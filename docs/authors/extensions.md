@@ -91,8 +91,9 @@ if __name__ == "__main__":
 ## 被拉起
 
 - 程序是 `bin/` 下那一个，参数是 `[process] args`。
-- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PACKAGE_DIR`（你这个包的文件夹：包里带的文件照它找，别自己拼路径）。人在终端敲 `miyu <你的命令>` 时也设 `MIYU_PACKAGE_DIR`。
-- 工作目录是这个包放状态的目录 `~/.miyu/state/packages/<编号>/`：你的数据库、缓存放这里，卸载时一起删。
+- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PACKAGE_DIR`（你这个包的文件夹：包里带的文件照它找，别自己拼路径）、`MIYU_PACKAGE_STATE`（你这个包的状态目录，已经建好）。人在终端敲 `miyu <你的命令>` 时也设 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE`。
+- 你的数据库、缓存放在 `MIYU_PACKAGE_STATE` 指的目录里，卸载时一起删。一律照这个变量找，别靠工作目录（被拉起时工作目录也是它，可人敲命令时工作目录是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
+- 这个变量只给扩展本身和人敲的命令用：她在沙盒里跑的脚本读不到状态目录（它在数据根里，沙盒整个藏着）。
 - 标准错误接到 `~/.miyu/state/logs/<编号>.stderr`，出了问题先看它。
 
 ## 握手和配置
@@ -113,7 +114,7 @@ if __name__ == "__main__":
 |---|---|
 | `name` | 英文字母、数字、`_`、`-`，1 到 64 个；不能和别的撞，建议带包的编号做前缀 |
 | `description`、`input_schema` | 给模型看的：英文短句，一件最多三句 |
-| `access` | 会碰什么：`read`（只看，不出 Miyu）、`write`（改文件）、`execute`（跑命令）、`network`（上网）、`outbound`（往 Miyu 外面发东西）、`venue`（在聊天平台上做动作：撤回、禁言）。权限策略照它决定问不问人，**照实写** |
+| `access` | 会碰什么：`read`（只看，不出 Miyu）、`write`（改文件）、`execute`（跑命令）、`network`（上网）、`outbound`（往 Miyu 外面发东西）、`venue`（在聊天平台上做动作：撤回、禁言）。权限策略照它决定问不问人，**照实写**：改你自己数据的工具（记账、删一条记录）也写 `write`，只读级别才拦得住 |
 | `venues` | 给哪种会话：`local`（本机的）、`private`（平台私聊）、`group`（群） |
 | `timeout_ms` | 1000 到 600000，默认 60000 |
 | `display_name` | 给人看的名字，照语言：`{"zh": "打招呼", "en": "Greet"}` |

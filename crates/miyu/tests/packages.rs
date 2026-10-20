@@ -89,7 +89,7 @@ fn a_package_command_runs_the_program_in_its_bin() {
     );
 }
 
-/// 转交时环境多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上）：包里带的程序是指向系统的 `printenv` 的链接，印出它
+/// 转交时环境多 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上），和 `MIYU_PACKAGE_STATE`，状态目录（施工 F-15）：包里带的程序是指向系统的 `printenv` 的链接，印出它
 /// 看到的值。只在 Unix 上测（Windows 上没有现成的 `printenv`；设环境变量那一步由 miyu-cli 的单元测试守着，两个平台一条路）。
 #[cfg(unix)]
 #[test]
@@ -104,6 +104,12 @@ fn a_package_command_is_told_its_package_folder() {
     let printed = miyu(&home, "C", &["own", "MIYU_PACKAGE_DIR"]);
     assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
     assert_eq!(text(&printed.stdout), format!("{}\n", dir.display()));
+    // 状态目录（施工 F-15）：跑之前建好，交真实的位置。
+    let printed = miyu(&home, "C", &["own", "MIYU_PACKAGE_STATE"]);
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    let state =
+        std::fs::canonicalize(home.root.path().join("state/packages/own")).expect("跑之前建好了");
+    assert_eq!(text(&printed.stdout), format!("{}\n", state.display()));
 }
 
 #[test]

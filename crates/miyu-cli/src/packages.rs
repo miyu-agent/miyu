@@ -1,6 +1,7 @@
 //! 软件包加的子命令（施工 9-2，`docs/blueprint/packages.md`「转交」，`cli/main.md`「分发」）：`miyu <名字> …` 不是内置的
 //! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的；环境
-//! 只多一个 `MIYU_PACKAGE_DIR`，是这个包的文件夹（施工 S-6 上，同核心拉起扩展）。
+//! 只多 `MIYU_PACKAGE_DIR`（这个包的文件夹，施工 S-6 上）、`MIYU_PACKAGE_STATE`（这个包的状态目录，跑之前建好，施工 F-15），
+//! 同核心拉起扩展。
 //! `miyu help <名字>` 转成 `<程序> --help`：帮助由包自己说。`miyu -h` 多一节「软件包加的命令」。
 //!
 //! 和内置的撞名：内置的优先，不转交、不列（装包时拦随装包那一步）。清单照磁盘现读，不连核心：转交不该为了找一个程序拉起
@@ -44,6 +45,8 @@ pub struct Added {
     pub manifest: PathBuf,
     /// 读到这份清单时的资源目录：转交时设成 `MIYU_RESOURCES`（施工 S-6 中查出来的）。
     pub resources: PathBuf,
+    /// 这个包的状态目录 `<数据根>/state/packages/<编号>/`：转交时建好、设成 `MIYU_PACKAGE_STATE`（施工 F-15，2026-10-20 项目主人定）。
+    pub state: PathBuf,
 }
 
 /// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排，一个包加几个的照写的先后（施工 F-13）。写错的、子命令名被先读到的占了的（`command_taken`）不算；
@@ -52,11 +55,12 @@ pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
         return Vec::new();
     };
-    Packages::new(&resources, &root, admin)
+    let places = Packages::new(&resources, &root, admin);
+    places
         .read()
         .into_iter()
-        .filter_map(|found| Some((found.read.ok()?, found.path)))
-        .flat_map(|(manifest, path)| {
+        .filter_map(|found| Some((found.read.ok()?, found.path, places.state_dir(&found.id))))
+        .flat_map(|(manifest, path, state)| {
             let resources = resources.path().to_path_buf();
             manifest
                 .commands
@@ -69,6 +73,7 @@ pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
                     about: command.about,
                     manifest: path.clone(),
                     resources: resources.clone(),
+                    state: state.clone(),
                 })
         })
         .collect()
@@ -135,7 +140,20 @@ pub fn forward(
         say(err, &not_installed(one, language));
         return Some(1);
     };
-    Some(run(command(&program, &rest, dir, &one.resources), err))
+    // 状态目录跑之前建好，交真实的位置（施工 F-15）；建不成的不跑。
+    let state = match std::fs::create_dir_all(&one.state)
+        .and_then(|()| std::fs::canonicalize(&one.state))
+    {
+        Ok(state) => state,
+        Err(error) => {
+            say(err, &no_state(one, &error, language));
+            return Some(1);
+        }
+    };
+    Some(run(
+        command(&program, &rest, (dir, &state), &one.resources),
+        err,
+    ))
 }
 
 /// 命令行 `args` 转交给哪一个、交给它的参数；不该转交的没有。清单写的参数在前（施工 F-13）：`miyu shellhook install` 转交成
@@ -156,20 +174,37 @@ fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<O
 }
 
 /// 跑包的程序 `program` 的命令：参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
-/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局），`MIYU_RESOURCES` 设成找到它的那份
-/// 资源目录 `resources`（施工 S-6 中：自己装的包程序在包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个）。
+/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局），`MIYU_PACKAGE_STATE` 设成状态目录
+/// `state`（施工 F-15：同核心拉起扩展），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在
+/// 包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个）。
 fn command(
     program: &Path,
     args: &[OsString],
-    dir: &Path,
+    (dir, state): (&Path, &Path),
     resources: &Path,
 ) -> std::process::Command {
     let mut command = std::process::Command::new(program);
     command
         .args(args)
         .env("MIYU_PACKAGE_DIR", dir)
+        .env("MIYU_PACKAGE_STATE", state)
         .env("MIYU_RESOURCES", resources);
     command
+}
+
+/// 状态目录建不成：转交不成，说是哪个目录、系统的原话（施工 F-15）。
+fn no_state(one: &Added, error: &std::io::Error, language: Language) -> String {
+    let state = one.state.display();
+    match language {
+        Language::Chinese => format!(
+            "没能转交 miyu {}：建不了状态目录 {state}（{error}）。",
+            one.name
+        ),
+        Language::English => format!(
+            "Could not hand miyu {} over: cannot create the state directory {state} ({error}).",
+            one.name
+        ),
+    }
 }
 
 /// 没装程序：哪一份清单说这个子命令由谁跑。
