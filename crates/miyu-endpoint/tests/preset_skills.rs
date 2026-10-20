@@ -1,5 +1,5 @@
 //! 技能照预设开关（施工 X-11 上，`docs/blueprint/skills.md`「定了的」）：每个技能算一个功能 `skill-<名字>`。`preset.get` 列出
-//! 它（名字、说明照技能写给人看的两格），基础功能（没列出来的关着）里关着、全部功能里开着、写了关的关着，写过的不再当没装的
+//! 它（名字、说明照技能写给人看的两格），常规开发（没列出来的关着）里关着、全部功能里开着、写了关的关着，写过的不再当没装的
 //! 另列一遍；照预设造的会话只列开着的、只放开开着的文件夹，换一份核心像重启过，载入的会话照样只放开开着的。
 
 use std::sync::Arc;
@@ -69,7 +69,7 @@ async fn preset_get_lists_each_skill_as_a_feature() {
     assert_eq!(
         feature(&dev, "skill-notes")["on"],
         false,
-        "基础功能：没列出来的关着"
+        "常规开发：没列出来的关着"
     );
     let lean = client.call("g3", "preset.get", get("lean")).await;
     assert_eq!(feature(&lean, "skill-notes")["on"], false, "写了关的关着");

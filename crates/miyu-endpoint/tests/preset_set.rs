@@ -106,21 +106,22 @@ async fn a_new_preset_gets_its_id_from_the_core_and_a_session_can_use_it() {
 async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_the_file() {
     let home = Home::new();
     let mut client = connected(&home).await;
+    // 出厂的常规开发开着记忆（施工 P-15）：关掉才是改了。
     let got = set(
         &mut client,
         "s1",
         "dev",
-        json!([{"key": "software.memory", "value": true}]),
+        json!([{"key": "software.memory", "value": false}]),
     )
     .await;
-    assert_eq!(on(&got, "memory"), Some(true), "{got}");
+    assert_eq!(on(&got, "memory"), Some(false), "{got}");
     assert_eq!(
         got["result"]["remove"], "restore",
         "改过的出厂：删了回到出厂的"
     );
     assert_eq!(
         mine(&home, "dev").as_deref(),
-        Some("[software]\nmemory = true\n")
+        Some("[software]\nmemory = false\n")
     );
     let untouched = client
         .call("g0", "preset.get", json!({"preset": "full"}))
@@ -164,8 +165,8 @@ async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_t
     .await;
     assert_eq!(
         on(&unset, "memory"),
-        Some(false),
-        "删了回到下面那一层：基础功能没写记忆，照 unlisted 关着（施工 F-3 下起人格记忆随出厂的清单装着，一直列）：{unset}"
+        Some(true),
+        "删了回到下面那一层：出厂的常规开发开着记忆（施工 P-15）：{unset}"
     );
 }
 
@@ -272,7 +273,7 @@ async fn deleting_your_layer_goes_back_to_what_is_below() {
         &mut client,
         "s1",
         "dev",
-        json!([{"key": "software.memory", "value": true}]),
+        json!([{"key": "software.memory", "value": false}]),
     )
     .await;
     let made = client
@@ -297,8 +298,8 @@ async fn deleting_your_layer_goes_back_to_what_is_below() {
         .await;
     assert_eq!(
         on(&got, "memory"),
-        Some(false),
-        "回到出厂的：出厂的基础功能没写记忆，照 unlisted 关着"
+        Some(true),
+        "回到出厂的：出厂的常规开发开着记忆（施工 P-15）"
     );
     assert_eq!(got["result"]["remove"], Value::Null);
 

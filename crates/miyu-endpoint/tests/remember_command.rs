@@ -117,18 +117,20 @@ async fn remember_saves_in_the_sessions_room_without_asking_the_model() {
 #[tokio::test]
 async fn a_refused_remember_says_exactly_why() {
     let home = Home::new();
+    // 出厂的两个预设都开着记忆（施工 P-15）：另写一个没开的。
+    home.write(
+        "home/alice/presets/quiet.toml",
+        "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\n",
+    );
     let script = Script::new([]);
     let mut client = Client::connect(with_persona(&home, &script, Catalog::default()));
     client.hello().await;
     let session = client
-        .create_with("c1", json!({"cwd": "~", "preset": "dev"}))
+        .create_with("c1", json!({"cwd": "~", "preset": "quiet"}))
         .await;
     let reply = run(&mut client, "k2", &session, "/remember 用户喜欢猫").await;
     assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
-    assert_eq!(
-        reply["error"]["data"]["why"],
-        "预设「基础功能」未启用记忆。"
-    );
+    assert_eq!(reply["error"]["data"]["why"], "预设「安静」未启用记忆。");
 }
 
 #[tokio::test]

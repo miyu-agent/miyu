@@ -333,7 +333,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("web-search", "网络搜索", true, true),
             ("web-fetch", "抓取网页", true, true),
             ("roleplay", "人设遵循提醒", false, true),
-            // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言；「基础功能」开着它（施工 P-8）。
+            // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言；「常规开发」开着它（施工 P-8）。
             ("skill-package-creator", "写脚本和包", true, true),
             ("skill-skill-creator", "写技能", true, true),
             ("kb", "kb", true, false),

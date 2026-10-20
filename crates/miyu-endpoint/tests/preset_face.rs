@@ -32,18 +32,18 @@ fn catalog() -> Catalog {
     .expect("合写法")
 }
 
-fn configured(home: &Home, script: &Script) -> Arc<Core> {
+pub(crate) fn configured(home: &Home, script: &Script) -> Arc<Core> {
     configured_core(home, script, catalog())
 }
 
-async fn connected(core: Arc<Core>) -> Client {
+pub(crate) async fn connected(core: Arc<Core>) -> Client {
     let mut client = Client::connect(core);
     client.hello().await;
     client
 }
 
 /// 照 `params` 造一个会话、说一句，交回会话编号和它发出的那一次请求。
-async fn first_request(home: &Home, params: Value) -> (String, Request) {
+pub(crate) async fn first_request(home: &Home, params: Value) -> (String, Request) {
     let script = Script::new([Play::Says("嗯。")]);
     let mut client = connected(configured(home, &script)).await;
     // 每次一个新的命令编号：同一个数据根上再起的核心认得以前的编号，会交回上一次造的那个。
@@ -63,7 +63,7 @@ async fn first_request(home: &Home, params: Value) -> (String, Request) {
     (session, request)
 }
 
-fn tool_names(request: &Request) -> Vec<&str> {
+pub(crate) fn tool_names(request: &Request) -> Vec<&str> {
     request
         .tools
         .iter()
@@ -72,7 +72,7 @@ fn tool_names(request: &Request) -> Vec<&str> {
 }
 
 /// 会话的策略快照。
-fn snapshot(home: &Home, session: &str) -> Snapshot {
+pub(crate) fn snapshot(home: &Home, session: &str) -> Snapshot {
     let log = home.log(session);
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
@@ -100,39 +100,7 @@ async fn everything_on_keeps_every_tool_and_no_line() {
     assert_eq!((pin.id.as_str(), pin.off.len()), ("full", 0));
 }
 
-#[tokio::test]
-async fn the_dev_preset_drops_memory_and_says_so() {
-    let home = Home::new();
-    let (session, request) = first_request(&home, json!({"cwd": "~", "preset": "dev"})).await;
-    assert_eq!(tool_names(&request), ["read", "shell"], "记忆没开");
-    assert!(
-        request
-            .system
-            .ends_with("Installed but off in this session's preset: memory."),
-        "角色扮演不进这一行：{}",
-        request.system
-    );
-    let snapshot = snapshot(&home, &session);
-    assert_eq!(
-        snapshot.memory.as_deref(),
-        Some("off"),
-        "记忆没开的范围是 off"
-    );
-    let pin = snapshot.preset.expect("记了预设");
-    assert_eq!(pin.id, "dev");
-    // 施工 F-3 上起记的是功能的编号；装了、没开、没有工具的包快照照记，见下一条。知识库（施工 K-1 下）在基础功能里关着。接入QQ
-    // 的功能 qq 随施工 S-6 下搬出核心仓库，出厂的不再有它。
-    assert_eq!(pin.off, ["knowledge", "memory", "roleplay"]);
-    // 开会话时要了记忆也没用：开不开归预设。
-    let (session, _) = first_request(
-        &home,
-        json!({"cwd": "~", "preset": "dev", "memory": "session"}),
-    )
-    .await;
-    assert_eq!(memory_of(&home, &session).as_deref(), Some("off"));
-}
-
-fn memory_of(home: &Home, session: &str) -> Option<String> {
+pub(crate) fn memory_of(home: &Home, session: &str) -> Option<String> {
     snapshot(home, session).memory
 }
 
@@ -256,7 +224,10 @@ async fn preset_get_lists_features_with_their_tools() {
         [("files", true, true), ("commands", true, true)],
         "{dev}"
     );
-    assert!(listed.contains(&("memory", false, true)));
+    assert!(
+        listed.contains(&("memory", true, true)),
+        "常规开发开着记忆（施工 P-15）"
+    );
     assert!(
         listed.contains(&("goal", true, true)),
         "长期目标装了（施工 X-8 上）"
@@ -270,11 +241,11 @@ async fn preset_get_lists_features_with_their_tools() {
     assert_eq!(
         feature(&dev, "memory")["tools"],
         json!([
-            {"name": "forget", "label": "忘掉", "on": false},
-            {"name": "memory_search", "label": "翻记忆", "on": false},
-            {"name": "remember", "label": "记住", "on": false},
+            {"name": "forget", "label": "忘掉", "on": true},
+            {"name": "memory_search", "label": "翻记忆", "on": true},
+            {"name": "remember", "label": "记住", "on": true},
         ]),
-        "功能关着的工具都是关着"
+        "功能开着的工具都开着（常规开发开着记忆，施工 P-15）；关着的见 `preset_memory.rs`"
     );
     let nosh = client
         .call("g2", "preset.get", json!({"preset": "nosh"}))
@@ -312,7 +283,7 @@ async fn preset_get_lists_features_with_their_tools() {
 }
 
 /// 回应里编号是 `id` 的那个功能。
-fn feature<'a>(reply: &'a serde_json::Value, id: &str) -> &'a serde_json::Value {
+pub(crate) fn feature<'a>(reply: &'a serde_json::Value, id: &str) -> &'a serde_json::Value {
     reply["result"]["features"]
         .as_array()
         .expect("是一个个功能")
