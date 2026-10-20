@@ -66,7 +66,7 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
             },
         };
     };
-    let (data_root, own) = places(core, owner);
+    let (data_root, own) = roots(core, owner);
     if miyu_fs::within(&real, &data_root) && !miyu_fs::within(&real, &own) {
         return fallback();
     }
@@ -78,7 +78,7 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
 
 /// 真实位置 `real` 的工作目录太不太宽（施工 9-7 补；`workspace.rs` 查过人明着要换去的以后照它说 `wide`）。
 pub(crate) fn wide(core: &Core, owner: &AccountId, real: &Path) -> bool {
-    let (data_root, own) = places(core, owner);
+    let (data_root, own) = roots(core, owner);
     miyu_fs::too_wide(
         real,
         crate::workspace::home(core).as_deref(),
@@ -132,15 +132,19 @@ pub(crate) fn to_default(
 /// 工作目录是不是账号的工作区本身。
 fn account_workspace(core: &Core, owner: &AccountId, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
-    let (_, own) = places(core, owner);
+    let (_, own) = roots(core, owner);
     miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd).is_ok_and(|real| real == own)
 }
 
-/// 数据根、属主的工作区，都换成真实的位置（换不成的照原样）。
-fn places(core: &Core, owner: &AccountId) -> (PathBuf, PathBuf) {
-    let data_root =
-        std::fs::canonicalize(core.root.path()).unwrap_or_else(|_| core.root.path().to_path_buf());
-    let own = core.root.workspace(owner);
-    let own = std::fs::canonicalize(&own).unwrap_or(own);
-    (data_root, own)
+/// 数据根、属主的工作区，都换成真实的位置：和人交来的路径同一个换法（`miyu_fs::resolve`：还不存在的照最近的、已经存在的
+/// 上级目录算），两边才比得上（施工 5-14 中修：macOS 的 `/var` 是链接、Windows 有短名，原来不存在的照原样，对不上）。
+/// 换不成的照原样。
+pub(crate) fn roots(core: &Core, owner: &AccountId) -> (PathBuf, PathBuf) {
+    let real = |path: PathBuf| {
+        miyu_fs::resolve(Path::new("/"), None, &path.to_string_lossy()).unwrap_or(path)
+    };
+    (
+        real(core.root.path().to_path_buf()),
+        real(core.root.workspace(owner)),
+    )
 }

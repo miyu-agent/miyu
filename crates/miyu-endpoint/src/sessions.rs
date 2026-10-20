@@ -37,7 +37,7 @@ mod places;
 
 pub(crate) use opening::Opening;
 use opening::{opening_level, profile_for};
-pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, to_default, wide};
+pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
 #[cfg(test)]
 mod tests;
 

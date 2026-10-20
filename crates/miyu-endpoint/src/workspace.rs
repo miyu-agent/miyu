@@ -19,7 +19,7 @@ use miyu_session::Handle;
 use crate::Core;
 use crate::methods::command_to;
 use crate::refusal::Refusal;
-use crate::sessions::{Found, Picked, check_dirs, to_default, wide};
+use crate::sessions::{Found, Picked, check_dirs, roots, to_default, wide};
 use crate::wire::Request;
 
 /// `session.set_workspace` 的参数。
@@ -131,10 +131,7 @@ pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked,
     if !meta.is_dir() {
         return Err(Refusal::NOT_A_DIRECTORY);
     }
-    let data_root =
-        std::fs::canonicalize(core.root.path()).unwrap_or_else(|_| core.root.path().to_path_buf());
-    let own = core.root.workspace(owner);
-    let own = std::fs::canonicalize(&own).unwrap_or(own);
+    let (data_root, own) = roots(core, owner);
     if real.starts_with(&data_root) && !real.starts_with(&own) {
         return Err(Refusal::PATH_FORBIDDEN);
     }
