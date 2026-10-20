@@ -5,7 +5,7 @@ use serde_json::json;
 use miyu_kernel::time::UtcOffset;
 
 use super::shown::listed;
-use crate::language::Language;
+use crate::language::{Language, Organized};
 
 fn memory(id: &str, at: &str, text: &str, retired: Option<&str>) -> serde_json::Value {
     json!({"id": id, "at": at, "text": text, "retired": retired, "by": "person", "class": "user", "sources": []})
@@ -63,18 +63,38 @@ fn nothing_says_so() {
     assert_eq!(Language::Chinese.changed("m5"), "改好了：m5");
     assert_eq!(Language::Chinese.cleared(3), "清掉了 3 条。");
     assert_eq!(Language::English.cleared(3), "Cleared 3.");
-    assert_eq!(Language::Chinese.dreamed(0, 0, 0, false), "无需整理。");
+    // 同 `/dream` 的回执（施工 R-22 三补）：是 0 的不写、都是 0 的说没有要改的，末尾写用时。
+    let organized = |given, revised, retired, summary, took_ms| Organized {
+        given,
+        revised,
+        retired,
+        summary,
+        took_ms,
+    };
     assert_eq!(
-        Language::Chinese.dreamed(4, 1, 2, false),
-        "整理完成：检查 4 条，修改 1 条，作废 2 条。"
+        Language::Chinese.dreamed(&organized(0, 0, 0, false, 2_000)),
+        "无需整理，用时 2s。"
     );
     assert_eq!(
-        Language::English.dreamed(4, 1, 2, true),
-        "Memory organized: 4 checked, 1 revised, 2 retired; summary updated."
+        Language::Chinese.dreamed(&organized(4, 1, 2, false, 65_000)),
+        "整理完成：检查 4 条，修改 1 条，作废 2 条，用时 1m 05s。"
     );
     assert_eq!(
-        Language::English.dreamed(0, 0, 0, true),
-        "Nothing to organize."
+        Language::Chinese.dreamed(&organized(9, 0, 0, true, 12_000)),
+        "整理完成：检查 9 条，没有要改的，摘要已更新，用时 12s。"
+    );
+    assert_eq!(
+        Language::English.dreamed(&organized(4, 0, 2, true, 12_000)),
+        "Memory organized: 4 checked, 2 retired, summary updated; took 12s."
+    );
+    assert_eq!(
+        Language::English.dreamed(&organized(0, 0, 0, true, 1_000)),
+        "Nothing to organize; took 1s."
+    );
+    assert_eq!(
+        Language::Chinese.dream_stopped(&organized(4, 0, 1, true, 400)),
+        "整理已中断：检查 4 条，作废 1 条，用时 1s，其余下次再整理。",
+        "叫停的不说摘要"
     );
 }
 

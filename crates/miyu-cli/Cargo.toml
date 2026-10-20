@@ -19,6 +19,8 @@ jiff = "0.2"
 miyu-ipc = { path = "../miyu-ipc" }
 # 工具结果里给人看的说法（施工 4-5 下）。
 miyu-kernel = { path = "../miyu-kernel" }
+# 用时照运行状态行的读秒写（`miyu memory dream` 的回执，施工 R-22 三补）。
+miyu-view = { path = "../miyu-view" }
 # 值写成 TOML：`miyu config get`、`explain` 印的值（施工 8-2）。
 miyu-config = { path = "../miyu-config" }
 # 数据根、环境快照；给人看的字。

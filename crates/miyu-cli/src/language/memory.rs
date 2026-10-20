@@ -43,25 +43,70 @@ impl Language {
         }
     }
 
-    /// `dream` 整理完了（施工 R-7 补，和 `/dream` 的回执同一句）：看了 `given` 条、改了 `revised` 条、作废 `retired` 条，
-    /// `summary` 是摘要更新了；一条都没看的说没有要整理的。
-    pub fn dreamed(&self, given: u64, revised: u64, retired: u64, summary: bool) -> String {
-        match (self, given, summary) {
-            (Language::Chinese, 0, _) => "无需整理。".to_string(),
-            (Language::English, 0, _) => "Nothing to organize.".to_string(),
-            (Language::Chinese, _, false) => {
-                format!("整理完成：检查 {given} 条，修改 {revised} 条，作废 {retired} 条。")
+    /// `dream` 整理完了（施工 R-7 补，和 `/dream` 的回执同一句；R-22 三补照它改成是 0 的不写、末尾写用时）：一条都没看的说
+    /// 没有要整理的。
+    pub fn dreamed(&self, organized: &Organized) -> String {
+        let took = miyu_view::clock(organized.took_ms);
+        match (self, organized.given) {
+            (Language::Chinese, 0) => format!("无需整理，用时 {took}。"),
+            (Language::English, 0) => format!("Nothing to organize; took {took}."),
+            (Language::Chinese, _) => {
+                format!(
+                    "整理完成：{}，用时 {took}。",
+                    self.organized(organized, true)
+                )
             }
-            (Language::Chinese, _, true) => format!(
-                "整理完成：检查 {given} 条，修改 {revised} 条，作废 {retired} 条，摘要已更新。"
-            ),
-            (Language::English, _, false) => {
-                format!("Memory organized: {given} checked, {revised} revised, {retired} retired.")
-            }
-            (Language::English, _, true) => format!(
-                "Memory organized: {given} checked, {revised} revised, {retired} retired; summary updated."
+            (Language::English, _) => format!(
+                "Memory organized: {}; took {took}.",
+                self.organized(organized, true)
             ),
         }
+    }
+
+    /// 几样数拼成几段（同 `/dream` 的回执，施工 R-22 再补、三补）：检查几条照写；改了的、作废的是 0 的不写，都是 0 的说没有
+    /// 要改的；`summary` 是摘要换了的多一段（叫停的不说）。
+    fn organized(&self, organized: &Organized, summary: bool) -> String {
+        let zh = matches!(self, Language::Chinese);
+        let mut parts = vec![if zh {
+            format!("检查 {} 条", organized.given)
+        } else {
+            format!("{} checked", organized.given)
+        }];
+        if organized.revised > 0 {
+            parts.push(if zh {
+                format!("修改 {} 条", organized.revised)
+            } else {
+                format!("{} revised", organized.revised)
+            });
+        }
+        if organized.retired > 0 {
+            parts.push(if zh {
+                format!("作废 {} 条", organized.retired)
+            } else {
+                format!("{} retired", organized.retired)
+            });
+        }
+        if organized.revised == 0 && organized.retired == 0 {
+            parts.push(
+                if zh {
+                    "没有要改的"
+                } else {
+                    "nothing to change"
+                }
+                .to_string(),
+            );
+        }
+        if summary && organized.summary {
+            parts.push(
+                if zh {
+                    "摘要已更新"
+                } else {
+                    "summary updated"
+                }
+                .to_string(),
+            );
+        }
+        parts.join(if zh { "，" } else { ", " })
     }
 
     /// `dream` 第一次按 Ctrl+C（施工 R-23）：在叫停，再按一次直接退。
@@ -72,18 +117,22 @@ impl Language {
         }
     }
 
-    /// `dream` 叫停了（施工 R-23，和 `/dream` 叫停了的回执同一句）：叫停以前合完了的几样数；一批都没合完的只说中断了。
-    pub(crate) fn dream_stopped(&self, given: u64, revised: u64, retired: u64) -> String {
-        match (self, given) {
-            (Language::Chinese, 0) => "整理已中断，下次再整理。".to_string(),
+    /// `dream` 叫停了（施工 R-23，和 `/dream` 叫停了的回执同一句）：叫停以前合完了的几样数，末尾写用时；一批都没合完的只说
+    /// 中断了。
+    pub(crate) fn dream_stopped(&self, organized: &Organized) -> String {
+        let took = miyu_view::clock(organized.took_ms);
+        match (self, organized.given) {
+            (Language::Chinese, 0) => format!("整理已中断，用时 {took}，下次再整理。"),
             (Language::English, 0) => {
-                "Memory organizing stopped; it will continue next time.".to_string()
+                format!("Memory organizing stopped after {took}; it will continue next time.")
             }
             (Language::Chinese, _) => format!(
-                "整理已中断：检查 {given} 条，修改 {revised} 条，作废 {retired} 条，其余下次再整理。"
+                "整理已中断：{}，用时 {took}，其余下次再整理。",
+                self.organized(organized, false)
             ),
             (Language::English, _) => format!(
-                "Memory organizing stopped: {given} checked, {revised} revised, {retired} retired; the rest next time."
+                "Memory organizing stopped: {}; took {took}; the rest next time.",
+                self.organized(organized, false)
             ),
         }
     }
@@ -109,4 +158,19 @@ impl Language {
             (Language::English, false) => format!(" (forgotten: {why})"),
         }
     }
+}
+
+/// 一趟整理的几样数（施工 R-22 三补）：`memory.dream` 回应里的，加上命令行自己量的用时。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Organized {
+    /// 检查了几条。
+    pub given: u64,
+    /// 改了几条。
+    pub revised: u64,
+    /// 作废几条。
+    pub retired: u64,
+    /// 摘要换了。
+    pub summary: bool,
+    /// 用了多久，毫秒。
+    pub took_ms: u64,
 }

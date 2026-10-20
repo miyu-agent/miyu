@@ -1823,6 +1823,7 @@ dependencies = [
  "miyu-source",
  "miyu-store",
  "miyu-tool",
+ "miyu-view",
  "rustix",
  "serde_json",
  "sha2 0.11.0",

@@ -43,6 +43,16 @@ fn home() -> Home {
     )
 }
 
+/// 整理的回执（施工 R-22 三补）：退出码是 `code`，印的一行照 `head` 起、照 `tail` 收；用时每次不同，不比中间。
+fn receipt(asked: &Asked, code: u8, head: &str, tail: &str) {
+    assert_eq!(asked.code, code, "{}", asked.screen);
+    assert!(
+        asked.out.starts_with(head) && asked.out.ends_with(tail),
+        "{}",
+        asked.screen
+    );
+}
+
 /// 在真的套接字上连上核心，照 `words`（`memory` 后面的）跑一次；界面是中文，时区是零时区。
 async fn run(home: &Home, words: &[&str]) -> Asked {
     let (_, presses) = mpsc::channel(1);
@@ -292,23 +302,15 @@ async fn dream_organizes_now_and_says_how_much() {
     run(&home, &["add", "用户养了一只猫"]).await;
     run(&home, &["add", "用户养了一只猫，叫团子"]).await;
     let dreamed = run(&home, &["dream"]).await;
-    assert_eq!(
-        (dreamed.code, dreamed.out.as_str()),
-        (
-            0,
-            "整理完成：检查 2 条，修改 0 条，作废 1 条，摘要已更新。\n"
-        ),
-        "{}",
-        dreamed.err
+    receipt(
+        &dreamed,
+        0,
+        "整理完成：检查 2 条，作废 1 条，摘要已更新，用时 ",
+        "s。\n",
     );
     // 没有新记的照样重看轮到的旧记忆（施工 R-19）：留下的那一条。
     let again = run(&home, &["dream"]).await;
-    assert_eq!(
-        (again.code, again.out.as_str()),
-        (0, "整理完成：检查 1 条，修改 0 条，作废 0 条。\n"),
-        "{}",
-        again.err
-    );
+    receipt(&again, 0, "整理完成：检查 1 条，没有要改的，用时 ", "s。\n");
     let forgotten = run(&home, &["list", "--forgotten"]).await;
     assert!(
         forgotten.out.contains("（已作废：重复）"),
@@ -345,26 +347,19 @@ async fn ctrl_c_stops_the_dream() {
         press.send(()).await.expect("还在听");
     };
     let stopped = run_pressing(&home, &["dream"], presses, pressing).await;
-    assert_eq!(
-        (stopped.code, stopped.out.as_str()),
-        (3, "整理已中断，下次再整理。\n"),
-        "{}",
-        stopped.screen
-    );
+    receipt(&stopped, 3, "整理已中断，用时 ", "s，下次再整理。\n");
     assert!(
         stopped.err.contains("再按一次 Ctrl+C 直接退出"),
         "{}",
         stopped.err
     );
     let next = run(&home, &["dream"]).await;
-    assert_eq!(
-        (next.code, next.out.as_str()),
-        (
-            0,
-            "整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。\n"
-        ),
-        "接着合放弃的那一条：{}",
-        next.screen
+    // 接着合放弃的那一条。
+    receipt(
+        &next,
+        0,
+        "整理完成：检查 1 条，没有要改的，摘要已更新，用时 ",
+        "s。\n",
     );
     // 按两次：不等回应，直接退。
     run(&home, &["add", "用户养了一只橘猫"]).await;

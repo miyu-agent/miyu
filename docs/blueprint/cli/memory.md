@@ -48,7 +48,7 @@
 3. **发**：照上面的表。
 4. **印**（标准输出）：
    - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「还没有记忆。」，`search` 说「没找到。」。
-   - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条。」，摘要换了的句号前多「，摘要已更新」，一条都没看的「无需整理。」（R-22 再补以前和 `/dream` 的回执同一句：`/dream` 起改成是 0 的不写、末尾写用时，命令行这一处还是原样，跟不跟着改等项目主人定；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「整理已中断：检查 <几> 条，修改 <几> 条，作废 <几> 条，其余下次再整理。」，一批都没合完的「整理已中断，下次再整理。」（和 `/dream` 叫停了的回执同一句），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
+   - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条，用时 <用时>。」，是 0 的那一项不写、都是 0 的写「没有要改的」，摘要换了的多「，摘要已更新」，一条都没看的「无需整理，用时 <用时>。」（和 `/dream` 的回执同一句，R-22 三补起也是 0 的不写、末尾写用时：用时从发出 `memory.dream` 量到收到回应，照运行状态行的读秒写；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「整理已中断：检查 <几> 条，修改 <几> 条，作废 <几> 条，其余下次再整理。」，一批都没合完的「整理已中断，下次再整理。」（和 `/dream` 叫停了的回执同一句），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
 5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `memory.*`）。太长的（`memory_too_long`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.chars`、`data.limit` 说「太长了：这一条 121 个字，一条最多 120 个字。」。核心给了为什么的（`data.message`：整理没成的 `dream_failed`，施工 R-7 修，验收手册待定 10），原话去掉句号接「：」和它（英文的一句，照原样），同 `miyu kb` 挂不上的目录：「整理记忆失败：model request failed: HTTP 401」。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
@@ -80,9 +80,10 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
 | 清掉了 | 清掉了 {n} 条。 | Cleared {n}. |
 | 作废了 | （已作废：{why}）、（已作废） | (forgotten: {why}), (forgotten) |
 | 太长了 | 太长了：这一条 {chars} 个字，一条最多 {limit} 个字。 | Too long: this one has {chars} characters, a memory takes at most {limit}. |
-| 整理完了 | 整理完成：检查 {given} 条，修改 {revised} 条，作废 {retired} 条。 | Memory organized: {given} checked, {revised} revised, {retired} retired. |
-| 整理完了，摘要换了 | 整理完成：检查 {given} 条，修改 {revised} 条，作废 {retired} 条，摘要已更新。 | Memory organized: {given} checked, {revised} revised, {retired} retired; summary updated. |
-| 没有要整理的 | 无需整理。 | Nothing to organize. |
+| 整理完了 | 整理完成：{几段}，用时 {took}。 | Memory organized: {几段}; took {took}. |
+| 几段（照先后，中文「，」、英文「, 」连起来） | 检查 {given} 条；修改 {revised} 条（是 0 不写）；作废 {retired} 条（是 0 不写）；没有要改的（改、作废都是 0）；摘要已更新（摘要换了，叫停的不写） | {given} checked; {revised} revised; {retired} retired; nothing to change; summary updated |
+| 没有要整理的 | 无需整理，用时 {took}。 | Nothing to organize; took {took}. |
+| 叫停了 | 整理已中断：{几段}，用时 {took}，其余下次再整理。一批都没合完的：整理已中断，用时 {took}，下次再整理。 | Memory organizing stopped: {几段}; took {took}; the rest next time. / Memory organizing stopped after {took}; it will continue next time. |
 
 核心拒绝时说的话照核心写的原样印；没有一次性会话、核心断开照 `cli/undo.md`。
 

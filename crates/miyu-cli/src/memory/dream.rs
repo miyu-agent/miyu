@@ -10,6 +10,7 @@ use tokio::sync::mpsc;
 use super::refused;
 use crate::exit;
 use crate::language::Language;
+use crate::language::Organized;
 use crate::rpc::Rpc;
 use crate::shown::say;
 
@@ -30,6 +31,8 @@ pub(super) async fn dream(
         say(err, &error.to_string());
         exit::ERROR
     };
+    // 用时从发出去量到收到回应（施工 R-22 三补，同 `/dream` 的回执）。
+    let began = std::time::Instant::now();
     let id = rpc
         .send("memory.dream", params.clone())
         .await
@@ -50,7 +53,8 @@ pub(super) async fn dream(
                     say(err, &refused(error, language));
                     return Err(exit::ERROR);
                 }
-                return said(&message["result"], language, out);
+                let took_ms = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
+                return said(&message["result"], took_ms, language, out);
             }
             press = presses.recv(), if listening => match press {
                 None => listening = false,
@@ -67,15 +71,20 @@ pub(super) async fn dream(
     }
 }
 
-/// 整理的回应印一句：叫停了的说中断了、退出码 3。
-fn said(result: &Value, language: &Language, out: &mut dyn Write) -> Result<(), u8> {
+/// 整理的回应印一句，末尾写用时 `took_ms`：叫停了的说中断了、退出码 3。
+fn said(result: &Value, took_ms: u64, language: &Language, out: &mut dyn Write) -> Result<(), u8> {
     let count = |field: &str| result[field].as_u64().unwrap_or(0);
-    let (given, revised, retired) = (count("given"), count("revised"), count("retired"));
+    let organized = Organized {
+        given: count("given"),
+        revised: count("revised"),
+        retired: count("retired"),
+        summary: result["summary"].as_bool().unwrap_or(false),
+        took_ms,
+    };
     if result["stopped"].as_bool().unwrap_or(false) {
-        say(out, &language.dream_stopped(given, revised, retired));
+        say(out, &language.dream_stopped(&organized));
         return Err(exit::INTERRUPTED);
     }
-    let summary = result["summary"].as_bool().unwrap_or(false);
-    say(out, &language.dreamed(given, revised, retired, summary));
+    say(out, &language.dreamed(&organized));
     Ok(())
 }

@@ -12,6 +12,7 @@ mod harness;
 mod kb;
 mod login;
 mod memory;
+pub use memory::Organized;
 mod pkg;
 mod sandbox;
 mod setup;
