@@ -62,7 +62,7 @@ async fn a_feature_that_is_off_has_all_its_tools_off() {
         feature(&quiet, "memory")["tools"],
         json!([
             {"name": "forget", "label": "忘掉", "on": false},
-            {"name": "memory_search", "label": "翻记忆", "on": false},
+            {"name": "memory_search", "label": "回忆", "on": false},
             {"name": "remember", "label": "记住", "on": false},
         ]),
         "功能关着的工具都是关着"

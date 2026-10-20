@@ -242,7 +242,7 @@ async fn preset_get_lists_features_with_their_tools() {
         feature(&dev, "memory")["tools"],
         json!([
             {"name": "forget", "label": "忘掉", "on": true},
-            {"name": "memory_search", "label": "翻记忆", "on": true},
+            {"name": "memory_search", "label": "回忆", "on": true},
             {"name": "remember", "label": "记住", "on": true},
         ]),
         "功能开着的工具都开着（常规开发开着记忆，施工 P-15）；关着的见 `preset_memory.rs`"
@@ -254,7 +254,7 @@ async fn preset_get_lists_features_with_their_tools() {
         feature(&nosh, "memory")["tools"],
         json!([
             {"name": "forget", "label": "忘掉", "on": false},
-            {"name": "memory_search", "label": "翻记忆", "on": true},
+            {"name": "memory_search", "label": "回忆", "on": true},
             {"name": "remember", "label": "记住", "on": true},
         ]),
         "[tools] 单件关掉的"
