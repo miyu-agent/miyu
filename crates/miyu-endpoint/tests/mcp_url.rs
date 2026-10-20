@@ -184,3 +184,97 @@ async fn a_url_server_is_set_and_listed_as_written() {
     assert_eq!(std::fs::read_to_string(&path).expect("还在"), text);
     core.stop_extensions().await;
 }
+
+/// 先配服务、后存令牌（施工 X-32 补，GitHub 的远程服务撞出来的）：密钥存了、换了、删了，引用它的、开着的服务停下再起，连续失败
+/// 从零数；没引用它的不动；包没开的、带着引用它的服务的，不因此被拉起来。现在只有管理员一个账号、一份密钥文件；多用户那一段照
+/// 账号分开。
+#[tokio::test]
+async fn a_server_follows_the_secret_it_uses() {
+    let server = HttpServer::start(false).await;
+    server.demand(Some("t1"));
+    let other = HttpServer::start(false).await;
+    let packaged = HttpServer::start(false).await;
+    let home = Home::new();
+    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.write(
+        "home/alice/settings.toml",
+        &format!(
+            "[mcp.remote]\nurl = \"{}\"\nbearer = {{ secret = \"t\" }}\n\n[mcp.other]\nurl = \"{}\"\n",
+            server.url, other.url
+        ),
+    );
+    home.write(
+        "home/alice/packages/kit/package.toml",
+        &format!(
+            "[package]\nname = {{ en = \"kit\" }}\n\n[[mcp]]\nname = \"kitted\"\nurl = \"{}\"\nbearer = {{ secret = \"t\" }}\n",
+            packaged.url
+        ),
+    );
+    let core = configured(&home, &Script::new([]));
+    let _watching = core.watch_config().expect("监视得了");
+    core.start_extensions();
+    let _following = core.follow_home_mcp();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    until_listed(&mut client, "other", |one| one["state"] == "running").await;
+    until_listed(&mut client, "remote", |one| {
+        one["failures"]
+            .as_u64()
+            .is_some_and(|failures| failures > 0)
+    })
+    .await;
+
+    let set = client
+        .call(
+            "s1",
+            "secret.set",
+            serde_json::json!({"name": "t", "value": "t1"}),
+        )
+        .await;
+    assert!(set.get("error").is_none(), "{set}");
+    until_listed(&mut client, "remote", |one| {
+        one["state"] == "running" && one["failures"] == 0
+    })
+    .await;
+
+    // 在跑的、换了值的也停下再起：照新的令牌连。
+    server.demand(Some("t2"));
+    client
+        .call(
+            "s2",
+            "secret.set",
+            serde_json::json!({"name": "t", "value": "t2"}),
+        )
+        .await;
+    until("照新的令牌重连", || {
+        server
+            .received()
+            .iter()
+            .any(|request| request.header("authorization") == Some("Bearer t2"))
+    })
+    .await;
+    until_listed(&mut client, "remote", |one| one["state"] == "running").await;
+
+    // 删了：停下重连，又连不上。
+    client
+        .call("s3", "secret.delete", serde_json::json!({"name": "t"}))
+        .await;
+    until_listed(&mut client, "remote", |one| {
+        one["failures"]
+            .as_u64()
+            .is_some_and(|failures| failures > 0)
+    })
+    .await;
+
+    let shakes = other
+        .received()
+        .iter()
+        .filter(|request| request.body["method"] == "initialize")
+        .count();
+    assert_eq!(shakes, 1, "没引用这个密钥的不动");
+    assert!(
+        packaged.received().is_empty(),
+        "包没开的不因为密钥变了被拉起来"
+    );
+    core.stop_extensions().await;
+}

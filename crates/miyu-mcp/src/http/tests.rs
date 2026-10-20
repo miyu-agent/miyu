@@ -83,6 +83,15 @@ async fn a_url_server_is_discovered_listed_and_called() {
                 .iter()
                 .all(|request| request.header("x-team") == Some("core"))
         );
+        let shake = received
+            .iter()
+            .find(|request| request.body["method"] == "initialize")
+            .expect("握了手");
+        assert_eq!(
+            shake.header("mcp-protocol-version"),
+            None,
+            "老时代的握手那一次不带版本头（施工 X-32 补）"
+        );
         let after = received
             .iter()
             .skip_while(|request| request.body["method"] != "initialize")
@@ -176,4 +185,38 @@ async fn an_oversized_answer_fails_the_request_instead_of_filling_memory() {
         client.call("echo", json!({"text": "hi"})).await.is_ok(),
         "连接照旧能用"
     );
+}
+
+/// 新时代经网址（施工 X-32 补，GitHub 的远程服务撞出来的）：每个请求照它 `_meta` 里的版本带 `MCP-Protocol-Version`，认成新时代、
+/// 列、调都通；服务的日志里没有 `400`。
+#[tokio::test]
+async fn a_modern_url_server_gets_the_version_header_on_every_request() {
+    for sse in [false, true] {
+        let server = HttpServer::modern(sse).await;
+        let (log, lines) = log();
+        let client = connect(&server, log).await.0.expect("连得上");
+        assert_eq!(
+            client.era(),
+            &Era::Modern(crate::MODERN[0].to_string()),
+            "认成新时代：{:?}",
+            lines.lock().unwrap()
+        );
+        let listed = client.tools().await.expect("列得出");
+        assert_eq!(listed.tools[0].name, "echo");
+        let called = client
+            .call("echo", json!({"text": "hi"}))
+            .await
+            .expect("调得到");
+        assert_eq!(called.content.len(), 1, "{called:?}");
+        for request in server.received() {
+            let meta =
+                request.body["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].as_str();
+            assert_eq!(request.header("mcp-protocol-version"), meta, "{request:?}");
+        }
+        assert!(
+            !logged(&lines, "HTTP 400"),
+            "没有被拒的：{:?}",
+            lines.lock().unwrap()
+        );
+    }
 }

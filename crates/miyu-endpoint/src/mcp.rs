@@ -14,6 +14,7 @@ pub(crate) mod editing;
 pub(crate) mod home;
 mod launch;
 pub(crate) mod methods;
+mod secrets;
 mod spec;
 mod supervise;
 mod switch;

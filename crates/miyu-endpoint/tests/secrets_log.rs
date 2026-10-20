@@ -1,6 +1,7 @@
 //! 密钥的运行日志（施工 8-5，`docs/blueprint/config.md`「出错」）：写、换、删、手改被看到的各记一条
 //! `INFO secret changed`，只有名字；Unix 上组、别人读得到的记 `WARN secrets readable by others`；把能走的路都走一遍
-//! （写、换、删、列、查、手改、改坏了再写），整份运行日志里搜不到 key，`TRACE` 也搜不到。
+//! （写、换、删、列、查、手改、改坏了再写），整份运行日志里搜不到 key，`TRACE` 也搜不到。个人设置里一个网址的 MCP 服务引用着
+//! 这个密钥（施工 X-32 补）：密钥变了它停下再起，记一行 `mcp restarted`，只有名字；令牌经它发出去的那一路也搜不到 key。
 //!
 //! 全局装一个写进内存的订阅者：监视在它自己的线程上。全局的一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。
 
@@ -40,6 +41,14 @@ async fn the_runtime_log_has_names_and_never_a_key() {
         let path = home.root.path().join(SECRETS);
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
     }
+    let server = miyu_mcp::testkit::http::HttpServer::start(false).await;
+    home.write(
+        "home/alice/settings.toml",
+        &format!(
+            "[mcp.remote]\nurl = \"{}\"\nbearer = {{ secret = \"deepseek\" }}\n",
+            server.url
+        ),
+    );
     let core = home.core_configured(&Script::new([]), None, &[]);
     if cfg!(unix) {
         assert!(
@@ -49,6 +58,8 @@ async fn the_runtime_log_has_names_and_never_a_key() {
         );
     }
     let _watching = core.watch_config().expect("监视得了");
+    core.start_extensions();
+    let _following = core.follow_home_mcp();
     let mut client = Client::connect(core);
     client.hello().await;
     let calls = [
@@ -83,6 +94,19 @@ async fn the_runtime_log_has_names_and_never_a_key() {
     assert_eq!(reason(&reply), Some("config_file_broken"));
     assert!(!reply.to_string().contains("FAKE"), "{reply}");
 
+    until("引用它的服务跟着重起", || {
+        memory
+            .lines()
+            .iter()
+            .any(|line| line.contains("mcp restarted") && line.contains("secret=deepseek"))
+    })
+    .await;
+    assert!(
+        server.received().iter().any(|request| request
+            .header("authorization")
+            .is_some_and(|value| value.starts_with("Bearer sk-FAKE"))),
+        "令牌照新存的发出去了"
+    );
     for line in [
         "INFO  config   secret changed name=deepseek action=set via=set",
         "INFO  config   secret changed name=deepseek action=replaced via=set",

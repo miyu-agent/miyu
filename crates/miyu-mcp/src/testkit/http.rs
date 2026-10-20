@@ -1,5 +1,10 @@
-//! 假的网址服务（施工 X-32 上）：本机一个端口上演旧时代的 Streamable HTTP MCP 服务，测试照 [`HttpServer::received`] 查客户端发了
-//! 什么。`server/discover` 回「没有这个方法」，`initialize` 给会话编号 `s-1`，通知回 `202`；一件工具 `echo` 照参数 `text` 回文字。
+//! 假的网址服务（施工 X-32 上）：本机一个端口上演 Streamable HTTP MCP 服务，测试照 [`HttpServer::received`] 查客户端发了
+//! 什么。一件工具 `echo` 照参数 `text` 回文字，通知回 `202`。
+//!
+//! - 旧时代的（[`HttpServer::start`]）：`server/discover` 回「没有这个方法」，`initialize` 给会话编号 `s-1`。
+//! - 新时代的（[`HttpServer::modern`]，施工 X-32 补）：照 GitHub 的远程服务，请求 `_meta` 里写了版本、`MCP-Protocol-Version`
+//!   头里没有同一个的回 `400`（正文是 `-32020` 的 JSON-RPC 错）；对得上的照新时代答，不认 `initialize`。
+//!
 //! 每个回应都带 `Connection: close`：一个请求一条连接，不用演长连接。
 
 use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
@@ -38,8 +43,12 @@ pub struct HttpServer {
 
 struct State {
     sse: bool,
+    /// 演新时代的（施工 X-32 补）。
+    modern: bool,
     received: Mutex<Vec<Received>>,
     refuse: AtomicU16,
+    /// 要的令牌（施工 X-32 补）：有的话，请求不带 `Authorization: Bearer <它>` 的回 `401`。
+    demand: Mutex<Option<String>>,
     expire: AtomicBool,
     oversize: AtomicBool,
 }
@@ -51,14 +60,29 @@ impl HttpServer {
     ///
     /// 本机的端口开不了。
     pub async fn start(sse: bool) -> HttpServer {
+        HttpServer::open(sse, false).await
+    }
+
+    /// 起一个演新时代的（施工 X-32 补）：版本写在每个请求的 `_meta` 和 `MCP-Protocol-Version` 头里，两处对不上的回 `400`。
+    ///
+    /// # Panics
+    ///
+    /// 本机的端口开不了。
+    pub async fn modern(sse: bool) -> HttpServer {
+        HttpServer::open(sse, true).await
+    }
+
+    async fn open(sse: bool, modern: bool) -> HttpServer {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("本机的端口开得了");
         let url = format!("http://{}/mcp", listener.local_addr().expect("有地址"));
         let state = Arc::new(State {
             sse,
+            modern,
             received: Mutex::new(Vec::new()),
             refuse: AtomicU16::new(0),
+            demand: Mutex::new(None),
             expire: AtomicBool::new(false),
             oversize: AtomicBool::new(false),
         });
@@ -83,6 +107,15 @@ impl HttpServer {
     /// 之后的请求一律回 HTTP `status`（`0` 是照常答）。
     pub fn refuse(&self, status: u16) {
         self.state.refuse.store(status, Ordering::Relaxed);
+    }
+
+    /// 之后的请求要带 `Authorization: Bearer <token>`，没带对的回 `401`；`None` 是不查（施工 X-32 补）。
+    pub fn demand(&self, token: Option<&str>) {
+        *self
+            .state
+            .demand
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = token.map(str::to_string);
     }
 
     /// 下一个带会话编号的请求回 `404`（会话过期），之后照常。
@@ -160,6 +193,16 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
 
 /// 照请求答：状态、另加的头、正文。
 fn reply(state: &State, request: &Received) -> (u16, String, String) {
+    let demand = state
+        .demand
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
+    if let Some(token) = demand
+        && request.header("authorization") != Some(format!("Bearer {token}").as_str())
+    {
+        return (401, String::new(), "bad credentials".to_string());
+    }
     let refuse = state.refuse.load(Ordering::Relaxed);
     if refuse != 0 {
         return (refuse, String::new(), "nope".to_string());
@@ -174,6 +217,9 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
     let Some(id) = message.get("id") else {
         return (202, String::new(), String::new());
     };
+    if state.modern {
+        return modern(state, request, id);
+    }
     let (result, extra) = match message["method"].as_str() {
         Some("initialize") => (
             Ok(
@@ -208,4 +254,41 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
         answer.to_string()
     };
     (200, extra, text)
+}
+
+/// 新时代的答法（施工 X-32 补）：`_meta` 里的版本要和 `MCP-Protocol-Version` 头一样，不然照 GitHub 回 `400`；认 `server/discover`、
+/// `tools/list`、`tools/call`，结果带 `resultType`；`initialize` 回「没有这个方法」。
+fn modern(state: &State, request: &Received, id: &Value) -> (u16, String, String) {
+    let message = &request.body;
+    let asked = message["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].as_str();
+    if asked.is_some() && request.header("mcp-protocol-version") != asked {
+        let refused = json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32020, "message":
+            "Mcp-Protocol-Version header is required for requests carrying \"io.modelcontextprotocol/protocolVersion\""}});
+        return (400, String::new(), refused.to_string());
+    }
+    let result = match message["method"].as_str() {
+        Some("server/discover") => Ok(
+            json!({"resultType": "complete", "supportedVersions": crate::MODERN,
+            "capabilities": {"tools": {}}, "_meta": {"io.modelcontextprotocol/serverInfo": {"name": "fake", "version": "1"}}}),
+        ),
+        Some("tools/list") => Ok(
+            json!({"resultType": "complete", "tools": [{"name": "echo", "description": "Say it back.",
+            "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}}}]}),
+        ),
+        Some("tools/call") if message["params"]["name"] == "echo" => {
+            Ok(json!({"resultType": "complete",
+            "content": [{"type": "text", "text": message["params"]["arguments"]["text"]}]}))
+        }
+        _ => Err(json!({"code": -32601, "message": "method not found"})),
+    };
+    let answer = match result {
+        Ok(result) => json!({"jsonrpc": "2.0", "id": id, "result": result}),
+        Err(error) => json!({"jsonrpc": "2.0", "id": id, "error": error}),
+    };
+    let text = if state.sse {
+        format!("event: message\ndata: {answer}\n\n")
+    } else {
+        answer.to_string()
+    };
+    (200, String::new(), text)
 }

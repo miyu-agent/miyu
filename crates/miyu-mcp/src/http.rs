@@ -1,8 +1,9 @@
 //! 网址的服务（施工 X-32 上，`docs/blueprint/mcp.md`「网址的服务怎么说话」）：把一行一条的 JSON-RPC 接到 Streamable HTTP 上，
 //! 交回一对读写，[`crate::Client::connect`] 照常用，认时代、列工具、调工具、取消都不用改。
 //!
-//! - 客户端写出的每一行 POST 到网址，几条同时在路上的各发各的；`Accept` 两种都要，带上服务给过的 `Mcp-Session-Id`、认出来的协议
-//!   版本（`MCP-Protocol-Version`），和清单写的请求头。
+//! - 客户端写出的每一行 POST 到网址，几条同时在路上的各发各的；`Accept` 两种都要，带上服务给过的 `Mcp-Session-Id`、协议版本
+//!   （`MCP-Protocol-Version`），和清单写的请求头。版本先照这一条自己 `_meta` 里写的（新时代，施工 X-32 补：GitHub 的远程服务
+//!   没有它就回 `400`），没写的照握手认出来的（老时代），握手那一次还没有，不带。
 //! - 回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去；`202` 的（通知、回应）什么都不写。整段读完再写：一次
 //!   调用的回应本来就要等它说完，不另开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错。
 //! - 对方回错的（4xx、5xx、连不上）：有编号的请求回一条 JSON-RPC 错误，客户端照常了结这次请求；往 `log` 写一行。日志里不写网址：
@@ -142,9 +143,16 @@ async fn relay(ours: DuplexStream, remote: Arc<Remote>) {
 impl Remote {
     /// 发一行，交回要写回去的。
     async fn post(&self, line: &str) -> Answered {
-        let id = serde_json::from_str::<Value>(line)
-            .ok()
+        let message = serde_json::from_str::<Value>(line).ok();
+        let id = message
+            .as_ref()
             .and_then(|message| message.get("id").cloned());
+        // 新时代的请求自己带着版本（施工 X-32 补）。
+        let asked = message.as_ref().and_then(|message| {
+            message["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"]
+                .as_str()
+                .map(str::to_string)
+        });
         let mut request = self
             .client
             .post(&self.url)
@@ -159,12 +167,13 @@ impl Remote {
         if let Some(session) = &session {
             request = request.header("Mcp-Session-Id", session);
         }
-        if let Some(version) = self
-            .version
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
-        {
+        let version = asked.or_else(|| {
+            self.version
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .clone()
+        });
+        if let Some(version) = version {
             request = request.header("MCP-Protocol-Version", version);
         }
         for (name, value) in &self.headers {

@@ -1,6 +1,7 @@
 //! 管理员个人设置里的 MCP 服务（施工 F-9 下，`docs/blueprint/mcp.md`「个人设置里的一张表」第 4 到 7 条）：挂在 `~home` 下，
 //! 写进去就算开着，盖住包里同名的（包里那个不起、它的功能不算）。核心起来时和包里带的一起起；配置服务换上新的一份（个人设置
-//! 手改了被看到）时照新写的换：新写的起，删掉的停下、工具出目录、包里被它盖住的照包的开关起回来，改了的停下再起。
+//! 手改了被看到）时照新写的换：新写的起，删掉的停下、工具出目录、包里被它盖住的照包的开关起回来，改了的停下再起。密钥变了的，
+//! 引用它的服务停下再起（施工 X-32 补，`secrets.rs`）。
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -53,18 +54,28 @@ impl Core {
         }
     }
 
-    /// 跟着配置换：配置服务每换上一份新的，照个人设置的字换上，只动变了的。开始时先照手里的这一份对一遍：
-    /// 起来和开始跟着之间的手改也认得。核心没了就停。
+    /// 跟着配置换：配置服务每换上一份新的，照个人设置的字换上，只动变了的；密钥变了的，引用它的服务停下再起（施工 X-32 补）。
+    /// 开始时先照手里的这一份对一遍：起来和开始跟着之间的手改也认得。核心没了就停。
     pub fn follow_home_mcp(self: &Arc<Self>) -> JoinHandle<()> {
         let mut config = self.config_now();
         let core = Arc::downgrade(self);
         tokio::spawn(async move {
+            let mut before = None;
             loop {
-                let text = config.borrow_and_update().personal.text.clone();
+                let (text, prints) = {
+                    let now = config.borrow_and_update();
+                    (now.personal.text.clone(), super::secrets::prints(&now))
+                };
                 let Some(alive) = core.upgrade() else {
                     break;
                 };
                 alive.apply_home_mcp(read(&text)).await;
+                if let Some(before) = before.replace(prints.clone()) {
+                    let changed = super::secrets::changed(&before, &prints);
+                    if !changed.is_empty() {
+                        alive.follow_secrets(&changed).await;
+                    }
+                }
                 drop(alive);
                 if config.changed().await.is_err() {
                     break;
