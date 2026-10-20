@@ -67,6 +67,10 @@ pub enum Code {
     UnusableTemperature,
     /// 私密目录写了家目录本身或它的上级（施工 5-15 下）：藏了它什么命令都跑不了，不收。
     PrivateTooBroad,
+    /// 私密目录的写法不对（施工 5-15 下补）：不是 `~/…`、也不是绝对路径。协议上写 `bad_format`，说的话单给一句，说该怎么写。
+    PrivatePath,
+    /// 去掉的不是这台机器出厂的私密目录（施工 5-15 下补）。协议上写 `not_an_option`，说的话单给一句。
+    PrivateNotShipped,
 }
 
 impl Code {
@@ -93,6 +97,8 @@ impl Code {
             Code::UnknownEffort => "unknown_effort",
             Code::UnusableTemperature => "unusable_temperature",
             Code::PrivateTooBroad => "private_too_broad",
+            Code::PrivatePath => "bad_format",
+            Code::PrivateNotShipped => "not_an_option",
         }
     }
 

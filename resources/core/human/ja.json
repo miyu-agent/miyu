@@ -668,6 +668,8 @@
     "config/wrong-layer": "{key} は{layers}にだけ書けます。{layer}に書いても効きません",
     "config/not-tightening": "プロジェクト設定では制限を厳しくすることしかできません。{key} は今 {current} で、ここに書かれた {got} のほうが緩いので効きません",
     "config/untrusted-project": "プロジェクト設定は未信頼のため無視しました",
+    "config/private-not-shipped": "{got} は組み込みの非公開フォルダではありません。外せるのは組み込みのものだけです",
+    "config/private-bad-path": "{got} の書き方が違います。~/… か絶対パスで書いてください",
     "config/private-too-broad": "{got} はホームフォルダかその上位なので非公開にできません。隠すとコマンドがツールや設定を読めず、何も実行できなくなります",
     "config/fix-example": "どれかに直してください。例：{example}",
     "config/fix-write": "{example} に直してください",

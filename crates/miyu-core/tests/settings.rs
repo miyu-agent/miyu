@@ -169,9 +169,6 @@ fn every_language_names_every_item_and_nothing_more() {
             .collect();
         let mut problems = miyu_config::words::check(&listed, &config);
         problems.retain(|problem| !own.iter().any(|own| problem.contains(own.as_str())));
-        // 去掉的出厂私密目录（施工 5-15 下）：选项就是路径，照原样给人看，清单还照系统不同，资源里不写名字。
-        let shipped = format!("{}：选项 ", miyu_tool::private::REMOVE);
-        problems.retain(|problem| !problem.starts_with(&shipped));
         assert_eq!(problems, Vec::<String>::new(), "{language}");
     }
 }

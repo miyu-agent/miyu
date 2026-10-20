@@ -22,20 +22,3 @@ fn the_setting_adds_and_removes() {
     assert!(got.contains(&home.join("diary")));
     assert!(!got.contains(&home.join(".ssh")));
 }
-
-#[test]
-fn only_shipped_ones_can_be_removed() {
-    let remove = &ITEMS[1];
-    assert!(
-        remove
-            .kind
-            .check(&Value::List(vec![text(miyu_fs::SHIPPED_PRIVATE[1])]))
-            .is_ok()
-    );
-    assert!(
-        remove
-            .kind
-            .check(&Value::List(vec![text("~/elsewhere")]))
-            .is_err()
-    );
-}

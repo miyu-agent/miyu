@@ -131,7 +131,7 @@ fn schema_item(
         Kind::Option(options) | Kind::List(&Kind::Option(options)) | Kind::ModelOr(options) => {
             Some(options)
         }
-        _ => None,
+        _ => super::private::options(item.key),
     };
     if let Some(options) = options {
         let named: Vec<Value> = options

@@ -1,8 +1,9 @@
 //! 私密目录可配（施工 5-15 下，`docs/designs/11-权限与沙盒.md` 第四节「设置页「隐私与安全」」）：`sandbox.private.add`（人加的）、
 //! `sandbox.private.remove`（去掉的出厂项）。记两份、不记整份：以后的版本加了出厂项照样生效，人去掉的不会随升级回来。
 //!
-//! 「去掉的出厂项」的选项就是这台机器的出厂清单（[`miyu_fs::SHIPPED_PRIVATE`]，照系统不同），`settings!` 只收写死的字，这两项
-//! 手写。权限策略、沙盒、往下走目录的工具、头浏览文件都照这一轮（头的照这一刻）的配置拼（[`dirs`]）。
+//! 「去掉的出厂项」能写的就是这台机器的出厂清单（[`miyu_fs::SHIPPED_PRIVATE`]，照系统不同）。清单里登记成文字的列表：生成的
+//! Schema、参考文件哪个系统都一样（写成选项的话 macOS、Windows 上和样本对不上，CI 撞见）；出厂清单由端点在 `config.schema` 里当
+//! 选项交给头、`config.set` 时查（施工 5-15 下补）。两项手写，同 `settings!` 以外的写法一致。权限策略、沙盒、往下走目录的工具、头浏览文件都照这一轮（头的照这一刻）的配置拼（[`dirs`]）。
 
 use std::path::{Path, PathBuf};
 
@@ -41,7 +42,7 @@ pub const ITEMS: &[Item] = &[
     },
     Item {
         key: REMOVE,
-        kind: Kind::List(&Kind::Option(miyu_fs::SHIPPED_PRIVATE)),
+        kind: Kind::List(&Kind::Text { max: LONGEST }),
         default: None,
         layers: &[Layer::System, Layer::Personal],
         tighten: None,

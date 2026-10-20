@@ -319,7 +319,7 @@ default = "full"
 # add =
 
 # Removed built-in private folders: Built-in private folders you don't want hidden. Once removed, commands can read them and file tools stop asking; restoring the default clears this list.
-# Allowed: a list of ~/.ssh, ~/.gnupg, ~/.claude, ~/.miyu, ~/.config/gh, ~/.mozilla, ~/.config/google-chrome, ~/.config/chromium, ~/.config/BraveSoftware or ~/.config/microsoft-edge. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # remove =
 
 [terminal]

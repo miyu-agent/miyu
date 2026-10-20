@@ -12,12 +12,21 @@ fn list(dirs: &[&str]) -> Value {
     )
 }
 
+/// 家目录、它的上级、别处的一个绝对路径，照这个系统的写法（Windows 上 `/srv/x` 不算绝对路径，CI 撞见）。
+fn places() -> (&'static Path, &'static str, &'static str) {
+    if cfg!(windows) {
+        (Path::new(r"C:\Users\alice"), r"C:\Users", r"D:\srv\x")
+    } else {
+        (Path::new("/home/alice"), "/home", "/srv/x")
+    }
+}
+
 #[test]
 fn home_and_above_are_refused_by_name() {
-    let home = Path::new("/home/alice");
+    let (home, above, elsewhere) = places();
     let add = miyu_tool::private::ADD;
     assert_eq!(
-        problem(add, &list(&["~/notes", "/srv/x"]), Some(home)),
+        problem(add, &list(&["~/notes", elsewhere]), Some(home)),
         None
     );
     assert_eq!(
@@ -25,12 +34,17 @@ fn home_and_above_are_refused_by_name() {
         Some((Code::PrivateTooBroad, "~/".to_string()))
     );
     assert_eq!(
-        problem(add, &list(&["/home"]), Some(home)).map(|(code, _)| code),
+        problem(add, &list(&[above]), Some(home)).map(|(code, _)| code),
         Some(Code::PrivateTooBroad)
     );
     assert_eq!(
         problem(add, &list(&["notes"]), Some(home)),
-        Some((Code::BadFormat, "notes".to_string()))
+        Some((Code::PrivatePath, "notes".to_string()))
+    );
+    assert_eq!(
+        problem(add, &list(&["~"]), Some(home)).map(|(code, _)| code),
+        Some(Code::PrivateTooBroad),
+        "只写 ~ 也是家目录"
     );
     assert_eq!(
         problem("ui.language", &list(&["~/"]), Some(home)),
@@ -42,4 +56,21 @@ fn home_and_above_are_refused_by_name() {
         None,
         "家目录不知道的只查写法"
     );
+}
+
+#[test]
+fn only_shipped_dirs_can_be_removed() {
+    let remove = miyu_tool::private::REMOVE;
+    let shipped = miyu_fs::SHIPPED_PRIVATE[0];
+    assert_eq!(problem(remove, &list(&[shipped]), None), None);
+    assert_eq!(
+        problem(remove, &list(&[shipped, "~/elsewhere"]), None),
+        Some((Code::PrivateNotShipped, "~/elsewhere".to_string()))
+    );
+    assert_eq!(
+        options(remove),
+        Some(miyu_fs::SHIPPED_PRIVATE),
+        "选项是出厂清单"
+    );
+    assert_eq!(options(miyu_tool::private::ADD), None);
 }

@@ -79,8 +79,11 @@ pub fn private_dirs_with(home: &Path, add: &[String], remove: &[String]) -> Vec<
     dirs
 }
 
-/// 人写的一个目录：`~/…` 照家目录拼（一段一段接上），绝对路径照原样；别的写法没有。
+/// 人写的一个目录：`~`、`~/…` 照家目录拼（一段一段接上），绝对路径照原样；别的写法没有。
 pub fn written(home: &Path, text: &str) -> Option<PathBuf> {
+    if text == "~" {
+        return Some(home.to_path_buf());
+    }
     if let Some(rest) = text.strip_prefix("~/") {
         let joined = rest
             .split('/')

@@ -672,6 +672,8 @@
     "config/wrong-layer": "{key} belongs in {layers}. It does not count in {layer}",
     "config/not-tightening": "A project config can only make limits stricter. {key} is {current}, and {got} here is looser, so it does not count",
     "config/untrusted-project": "Project config not trusted, ignored",
+    "config/private-not-shipped": "{got} isn't a built-in private folder: only built-in ones can be removed",
+    "config/private-bad-path": "{got} isn't written right: use ~/… or an absolute path",
     "config/private-too-broad": "{got} is your home folder or above it, so it can't be private: hidden, it would keep every command from reading its tools and settings",
     "config/fix-example": "Write one of them, e.g. {example}",
     "config/fix-write": "Write {example}",

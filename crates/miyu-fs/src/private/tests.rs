@@ -58,7 +58,12 @@ fn home_and_above_are_too_broad() {
     assert!(too_broad(&home(), &home()));
     assert!(too_broad(&home(), home().parent().expect("有上级")));
     assert!(!too_broad(&home(), &home().join(".ssh")));
-    let dirs = private_dirs_with(&home(), &["~/".to_string()], &[]);
+    assert_eq!(
+        written(&home(), "~"),
+        Some(home()),
+        "只写 ~ 也是家目录（施工 5-15 下补）"
+    );
+    let dirs = private_dirs_with(&home(), &["~/".to_string(), "~".to_string()], &[]);
     assert_eq!(dirs.len(), SHIPPED_PRIVATE.len(), "家目录本身不算");
     if !cfg!(windows) {
         assert!(too_broad(&home(), Path::new("/")));

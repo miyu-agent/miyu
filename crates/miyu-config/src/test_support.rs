@@ -128,6 +128,14 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ),
         ("config/untrusted-project", "项目配置未信任，已忽略"),
         (
+            "config/private-not-shipped",
+            "{got} 不是出厂的私密目录：只能去掉出厂清单里的",
+        ),
+        (
+            "config/private-bad-path",
+            "{got} 写法不对：要写成 ~/… 或绝对路径",
+        ),
+        (
             "config/private-too-broad",
             "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
         ),

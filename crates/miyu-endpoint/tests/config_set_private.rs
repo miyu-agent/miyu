@@ -49,4 +49,20 @@ async fn a_private_dir_as_wide_as_home_is_refused() {
     )
     .await;
     assert!(fine.get("error").is_none(), "{fine}");
+    // 写法不对的（施工 5-15 下补）：协议上照旧 `bad_format`，说的话说该怎么写。
+    let wrong = set(
+        &mut client,
+        "c3",
+        json!({"layer": "personal", "changes": [
+            {"key": "sandbox.private.add", "value": ["relative/dir"]},
+        ]}),
+    )
+    .await;
+    let problem = &wrong["error"]["data"]["problems"][0];
+    assert_eq!(problem["code"], "bad_format", "{wrong}");
+    let message = problem["message"].as_str().unwrap_or_default();
+    assert!(
+        message.contains("relative/dir") && message.contains("~/"),
+        "{message}"
+    );
 }
