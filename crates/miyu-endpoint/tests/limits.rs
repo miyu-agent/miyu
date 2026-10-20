@@ -11,10 +11,10 @@ use miyu_models::settings::{ProviderSettings, UseSettings};
 use miyu_session::testkit::Script;
 
 /// 限额是 `limits` 的那一份回应：模型是替身的 deepseek 的 deepseek-v4，没有引用。新会话的「当前的」几格（施工 9-6 上）：
-/// 什么都没花、权限是出厂的、没有在跑的任务；在 `~` 里造的会话（这个核心读不出家目录）在它自己的默认工作区里干活（施工 9-7 上、
+/// 什么都没花、权限是出厂的、没有在跑的任务、没有能压的（施工 W-12）；在 `~` 里造的会话（这个核心读不出家目录）在它自己的默认工作区里干活（施工 9-7 上、
 /// 5-14）。
 fn reply_of(home: &Home, session: &str, limits: serde_json::Value) -> serde_json::Value {
-    json!({"default_workspace": workspace(home, session), "jobs": [], "limits": limits, "model": {"endpoint": "deepseek", "model": "deepseek-v4"},
+    json!({"compactable": false, "default_workspace": workspace(home, session), "jobs": [], "limits": limits, "model": {"endpoint": "deepseek", "model": "deepseek-v4"},
         "permission": {"level": "workspace", "read_only": false}, "preset": "full",
         "usage": {"amounts": [], "cache_breaks": 0, "compactions": 0, "requests": 0, "unpriced": 0,
             "main": {"cache_read": 0, "cache_write": 0, "output": 0, "uncached": 0},
@@ -51,7 +51,7 @@ async fn the_reply_is_the_drawing_example() {
     let reply = client.subscribe("c2", &session).await;
     // 蓝图里工作区写成 `<工作区>`、默认工作区写成 `<默认工作区>`：这个会话读不出家目录，两个都是它自己的默认工作区（照 JSON
     // 的写法转义，Windows 上有反斜杠）。
-    let example = r#"{"id":"c2","jsonrpc":"2.0","result":{"default_workspace":"<默认工作区>","jobs":[],"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"permission":{"level":"workspace","read_only":false},"preset":"full","usage":{"amounts":[],"cache_breaks":0,"compactions":0,"main":{"cache_read":0,"cache_write":0,"output":0,"uncached":0},"requests":0,"unpriced":0,"usage":{"cache_read":0,"cache_write":0,"output":0,"uncached":0}},"workspace":{"cwd":"<工作区>","dirs":[]}}}"#;
+    let example = r#"{"id":"c2","jsonrpc":"2.0","result":{"compactable":false,"default_workspace":"<默认工作区>","jobs":[],"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"permission":{"level":"workspace","read_only":false},"preset":"full","usage":{"amounts":[],"cache_breaks":0,"compactions":0,"main":{"cache_read":0,"cache_write":0,"output":0,"uncached":0},"requests":0,"unpriced":0,"usage":{"cache_read":0,"cache_write":0,"output":0,"uncached":0}},"workspace":{"cwd":"<工作区>","dirs":[]}}}"#;
     let quoted = serde_json::to_string(&workspace(&home, &session)).expect("写得成 JSON");
     assert_eq!(
         serde_json::to_string(&reply).expect("写得成 JSON"),

@@ -50,6 +50,8 @@ pub(crate) fn whole(
         status["usage"] = crate::usage::tallied(core, &current.tally);
         status["permission"] = json!(current.permission);
         status["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
+        // 有没有能压的（施工 W-12）：每落一批盘重取「当前的」，变了跟着推。
+        status["compactable"] = json!(current.compactable);
         if let Some(goal) = &current.goal {
             status["goal"] = goal_of(core, goal);
         }

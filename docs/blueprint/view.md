@@ -133,6 +133,7 @@
 | `cooling_until` | 候选都在冷却时最早恢复的时刻（照 `class: cooling` 的重试算），说成了一次就不写。只认订阅以后看到的 |
 | `preparing` | 后台在提前压：`{seen, since}`（施工 6-11 三补）。起压时（`compaction.started`）有，那一次说完了（成没成都算）、换上了、压过了以后不写。头看它从没有变成有，弹一句「已触发上下文压缩」。只认订阅以后看到的，重连的不补 |
 | `usage` | 本会话累计，写法同 `usage.query` 的一行（含子代理的随 9-8 补下） |
+| `compactable` | 这一刻有没有能压的（施工 W-12，网页要的：换人格、预设之前问不问「切换前会压缩」）：`session.compact` 会不会回 `nothing_to_compact`，判法同内核（`Session::compactable`）。向会话要，每落一批盘重取，变了跟着推；不由投影算 |
 | `model` | 同订阅回应的 `model`（带思考强度 `effort`） |
 | `permission`、`todos`、`workspace` | 同订阅回应的那几格 |
 | `todos_done` | 因为全部做完而清空了待办（`todos` 是空的）时，清空前那一份，同事件流 `todos.changed` 的 `done`；头照它全打勾停一下再收（施工 9-8 九补，网页的会话要的）。别的时候不写，再写一份没做完的就没了 |

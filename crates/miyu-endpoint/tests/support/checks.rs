@@ -17,8 +17,9 @@ pub async fn until(what: &str, done: impl Fn() -> bool) {
 }
 
 /// 订阅的回应去掉「当前的」几格（施工 9-6 上：`usage`、`permission`、`jobs`；施工 9-7 上：`workspace`）和会话的默认工作区
-/// （施工 5-14 中：`default_workspace`，照数据根的位置变）：只看限额、模型、补发这些的测试用，这几格另有
-/// `tests/subscribe_now.rs`、`tests/limits.rs`、`tests/workspace_property.rs` 守着。
+/// （施工 5-14 中：`default_workspace`，照数据根的位置变）、有没有能压的（施工 W-12：`compactable`）：只看限额、模型、补发
+/// 这些的测试用，这几格另有 `tests/subscribe_now.rs`、`tests/limits.rs`、`tests/workspace_property.rs`、`tests/compactable.rs`
+/// 守着。
 pub fn apart_from_now(result: &Value) -> Value {
     let mut result = result.clone();
     if let Some(fields) = result.as_object_mut() {
@@ -28,6 +29,7 @@ pub fn apart_from_now(result: &Value) -> Value {
             "jobs",
             "workspace",
             "default_workspace",
+            "compactable",
         ] {
             fields.remove(key);
         }

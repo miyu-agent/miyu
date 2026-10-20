@@ -31,6 +31,8 @@ pub struct Current {
     pub persona: Option<String>,
     /// 会话现在要用的预设（施工 P-13）：同上，以前的日志没记的没有。
     pub preset: Option<String>,
+    /// 这一刻有没有能压的（施工 W-12）：`session.compact` 会不会回 `nothing_to_compact`，判法同内核。
+    pub compactable: bool,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

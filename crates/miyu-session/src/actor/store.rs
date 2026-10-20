@@ -32,6 +32,7 @@ impl Actor {
                 .map(|goal| self.goal_run.shown(goal)),
             persona: self.session.persona().map(str::to_string),
             preset: self.session.preset().map(str::to_string),
+            compactable: self.session.compactable(),
         }
     }
 

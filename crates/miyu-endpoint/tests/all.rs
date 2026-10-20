@@ -41,6 +41,7 @@ mod command_access;
 mod command_catalog;
 mod commands;
 mod compact;
+mod compactable;
 mod config;
 mod config_lines;
 mod config_option_state;

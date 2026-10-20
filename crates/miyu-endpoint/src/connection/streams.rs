@@ -289,6 +289,8 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     if let Some(preset) = &current.preset {
         reply["preset"] = json!(preset);
     }
+    // 有没有能压的（施工 W-12）：同会话状态的 `compactable`。
+    reply["compactable"] = json!(current.compactable);
 }
 
 /// 带 `after` 订阅（施工 3-8 六补）：总是换一个新的。原来有一个的，先等它把交给它的推送、回应都放完、拿回它的订阅，补的
