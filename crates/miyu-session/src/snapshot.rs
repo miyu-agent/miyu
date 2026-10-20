@@ -37,6 +37,8 @@ pub(crate) struct Parts {
     pub(crate) project: Option<String>,
     /// 扩展放在 system 尾部的那几段（施工 X-20，[`crate::appended::resolve`]）：包的编号到原文。
     pub(crate) appended: std::collections::BTreeMap<String, String>,
+    /// 裸的（施工 D-1 上，整理会话，`miyu_policy::Snapshot::bare`）：拼好以后去掉 system、工具和几样开关。
+    pub(crate) bare: bool,
 }
 
 /// 工具目录 `catalog` 里有工具的功能（施工 O-18；施工 F-3 上起照装了的功能 `features` 认工具归哪个功能）：不照这次的预设筛，
@@ -80,11 +82,16 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
         .with_profile(parts.profile)
         .with_project(parts.project);
     let lines = resources.core_lines()?;
-    Ok(snapshot
+    let snapshot = snapshot
         .with_core_lines(&lines, miyu_store::env::os_name())
         .with_skills(parts.skills)
         .with_knowledge(parts.knowledge)
         .with_preset(parts.preset, &lines.preset_off, &parts.tooled)
         .with_style_lock(&lines.style_lock)
-        .with_appended(parts.appended))
+        .with_appended(parts.appended);
+    Ok(if parts.bare {
+        snapshot.bare()
+    } else {
+        snapshot
+    })
 }

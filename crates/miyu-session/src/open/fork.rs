@@ -134,6 +134,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             persona: plan.persona,
             preset: plan.preset.or(created.preset),
             images: created.images,
+            // 分叉出来的是普通会话，不算整理会话（施工 D-1 上）。
+            dream: None,
             forked: Some(Forked {
                 from: parent,
                 upto: plan.upto,

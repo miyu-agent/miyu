@@ -181,7 +181,8 @@ impl Session {
                 .map(|recapping| &mut recapping.aside),
             Purpose::Title => self.titling.as_mut(),
             Purpose::Compaction => self.prepare.aside(upto),
-            Purpose::Other(_) => None,
+            // 整理会话的主请求不是辅助请求（施工 D-1 上），不走这一路。
+            Purpose::Memory | Purpose::Other(_) => None,
         };
         aside.filter(|aside| aside.upto == upto)
     }
@@ -232,7 +233,7 @@ impl Session {
             Purpose::Recap => self.recap_ended(at, upto, spent, error),
             Purpose::Title => self.title_ended(at, upto, spent, error),
             Purpose::Compaction => self.prepare_ended(at, upto, spent, error),
-            Purpose::Other(_) => Vec::new(),
+            Purpose::Memory | Purpose::Other(_) => Vec::new(),
         }
     }
 

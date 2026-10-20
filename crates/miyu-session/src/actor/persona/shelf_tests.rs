@@ -221,6 +221,7 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         profile: None,
         project: None,
         appended: Default::default(),
+        bare: false,
     };
     refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert!(matches!(look_now(&refresh), Seen::Same), "没换代的不换");

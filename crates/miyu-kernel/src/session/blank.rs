@@ -36,6 +36,7 @@ impl Session {
             reading: None,
             limits: None,
             oneshot: created.oneshot,
+            dream: created.dream.is_some(),
             watched: false,
             deferred: Vec::new(),
             restarting: false,

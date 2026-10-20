@@ -76,6 +76,8 @@ struct Replay {
     causes: BTreeMap<Seq, Option<CommandId>>,
     /// 一次性的会话（`session.created` 的 `oneshot`，施工 7-2）。
     oneshot: bool,
+    /// 整理会话（`session.created` 的 `dream`，施工 D-1 上）。
+    dream: bool,
     /// 这时有回合开着：回报到的时候闲不闲（施工 7-2）。
     open: bool,
     /// 记在一边的回报、子代理的留言：最后一次开回合以后、闲着时到的、会叫醒她的（施工 7-2，`jobs.rs`；施工 7-7）。
@@ -230,6 +232,7 @@ impl Session {
             reading: None,
             limits: None,
             oneshot: replay.oneshot,
+            dream: replay.dream,
             watched: false,
             deferred: std::mem::take(&mut replay.deferred),
             restarting: false,
@@ -345,6 +348,7 @@ impl Replay {
             Body::SessionCreated(created) => {
                 self.permission = Some(created.permission.clone());
                 self.oneshot = created.oneshot;
+                self.dream = created.dream.is_some();
             }
             Body::PolicyChanged(PolicyChanged {
                 permission: Some(permission),

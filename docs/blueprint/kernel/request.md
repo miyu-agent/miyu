@@ -105,7 +105,7 @@
 
 - `FactTemplates::new(env, permission, reply_cut, session, permission_changed)`：五份模板的原文；`session`、`permission_changed` 是 `Option`，以前造的快照没有这两份，是 `None`（施工 1-13 再补、2-7 补）。`with_output_limit(Option)` 再带上写到输出上限那一份（施工 3-10），造的时候同样试换；以前造的快照没有，是 `None`，`output_limit()` 交回空的。
 - `env(此刻, &Environment)`、`permission(&Permission)`、`reply_cut()`：各交回一块 `ContextInjected { kind, text }`，`kind` 是 `env`、`permission`、`reply_cut`。`session(&SessionId)` 交回 `kind` 是 `session` 的一块，没有这份模板的交回 `None`。`permission_changed(&Permission, 上一级)` 交回切换那一份写的一块，`kind` 也是 `permission`，没有这份模板的交回 `None`（施工 2-7 补）。
-- `boundary(有效历史, 此刻, &Environment, &Permission, &SessionId)`：一个边界上该注入的几块，照环境、权限、会话编号的先后，没有编号模板的不查编号。环境、编号交给 `changed` 比；权限比级别、挑模板（「事实」第 2 条，施工 2-7 补）。回合开始、这一轮切过级别以后的边界都用它。
+- `boundary(有效历史, 此刻, &Environment, &Permission, &SessionId)`：一个边界上该注入的几块，照环境、权限、会话编号的先后，没有编号模板的不查编号。环境、编号交给 `changed` 比；权限比级别、挑模板（「事实」第 2 条，施工 2-7 补）。回合开始、这一轮切过级别以后的边界都用它。安静下来的模板（`quiet()`，整理会话的裸快照，施工 D-1 上）一块都不交，角色扮演提示也不交。
 - `effective_level(&Permission)`：实际生效的那一级的写法（「事实」第 6 条）。`history` 列切权限的那一条也用它（`tools/history.md`，施工 2-7 补）。
 - `Environment { offset, cwd }`：时区（`UtcOffset`，按分钟，−14:00 到 +14:00，东边是正的）；工作目录，头报上来的写法，例如 `~/src/miyu`，内核不改写。造会话、载入时交进来，执行器报「环境变了」就整个换掉。
 - `changed(有效历史, by, 几块)`：这几块里该注入的，照原来的先后，逐字节比原文。边界上的权限那一块不走它。

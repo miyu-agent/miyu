@@ -102,7 +102,7 @@ impl Stage {
                     self.prepare.asked.push((upto, request));
                     self.prepare.lines.pop_front()
                 }
-                Purpose::Other(_) => None,
+                Purpose::Memory | Purpose::Other(_) => None,
             };
         let Some(line) = line else {
             return Vec::new();

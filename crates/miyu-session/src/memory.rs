@@ -19,6 +19,7 @@ mod port;
 mod recall;
 mod recast;
 mod restore;
+mod sessions;
 mod summary;
 mod tag;
 mod used;
@@ -40,6 +41,7 @@ pub(crate) const MODULE: &str = "memory";
 pub(crate) use port::Calls;
 pub use recall::RecallTexts;
 pub(crate) use recast::{RoomCell, room_cell};
+pub use sessions::{DreamBatch, DreamRoom, DreamSessions, DreamSpec};
 pub use summary::SummaryTexts;
 pub use tag::TagTexts;
 pub use vectors::{LOCAL as EMBED_LOCAL, Query, Using, Vectors};
@@ -83,6 +85,8 @@ pub struct Memory {
     lanes: lane::Lanes,
     /// 整理的时候她正在写什么（施工 R-21）：一个核心一路广播。
     dreams: dreaming::Dreams,
+    /// 整理会话（施工 D-1 上）：核心起来时装上会话表（[`Memory::give_dream_sessions`]），没装的照旧走一次性入口。
+    dream_sessions: OnceLock<Arc<dyn DreamSessions>>,
 }
 
 impl Memory {
@@ -117,6 +121,7 @@ impl Memory {
             logs: Arc::new(MemoryLogs::new(root)),
             summary,
             vectors: OnceLock::new(),
+            dream_sessions: OnceLock::new(),
             extraction: OnceLock::new(),
             recall: OnceLock::new(),
             installed: AtomicBool::new(true),
@@ -141,6 +146,16 @@ impl Memory {
     /// 照意思找的那一路：没接的没有。
     pub fn vectors(&self) -> Option<&Arc<Vectors>> {
         self.vectors.get()
+    }
+
+    /// 装上整理会话的端口（施工 D-1 上）。交回装没装上：装过一次的不再换。
+    pub fn give_dream_sessions(&self, sessions: Arc<dyn DreamSessions>) -> bool {
+        self.dream_sessions.set(sessions).is_ok()
+    }
+
+    /// 整理会话的端口：没装的没有。
+    pub fn dream_sessions(&self) -> Option<&Arc<dyn DreamSessions>> {
+        self.dream_sessions.get()
     }
 
     /// 交上抽取要的几样（施工 R-6 上）：核心起来、造好一次性入口以后交一次；交过的再交不算，交回 `false`。

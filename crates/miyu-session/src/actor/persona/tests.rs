@@ -62,6 +62,7 @@ fn setup_with(
         profile: None,
         project: None,
         appended: Default::default(),
+        bare: false,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

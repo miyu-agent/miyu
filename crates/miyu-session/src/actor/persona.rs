@@ -90,7 +90,11 @@ impl Actor {
     /// 回合开始：看人格、预设的文件改了没有，工具目录换没换代。改了、换得了的，新策略交给内核放着，交回新快照的哈希。
     /// `values` 是这一轮冻结的配置：新打开的 `subagent` 照它填能选的池。
     pub(super) async fn refresh_persona(&mut self, values: Values) -> Option<ContentHash> {
-        let refresh = self.persona.clone()?;
+        // 裸的（整理会话，施工 D-1 上）不换：换了就拼回 system 和工具。
+        let refresh = self
+            .persona
+            .clone()
+            .filter(|refresh| !refresh.snapshot.bare)?;
         let persona = refresh.snapshot.persona.clone();
         let now = refresh.tools.edition();
         let seen = now.clone();
@@ -287,6 +291,7 @@ fn look(
         profile: old.profile.clone(),
         project: projected,
         appended,
+        bare: false,
     };
     let new = match build(&refresh.resources, parts) {
         Ok(new) => new,

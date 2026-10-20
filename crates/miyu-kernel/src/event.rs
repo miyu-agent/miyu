@@ -53,7 +53,7 @@ pub use peer::{IdleReason, PeerIdle};
 pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, fits};
 pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
 pub use session::{
-    CommandRan, Forked, Level, MetaChanged, Permission, PolicyChanged, SessionCreated,
+    CommandRan, Dream, Forked, Level, MetaChanged, Permission, PolicyChanged, SessionCreated,
     SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
 };
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};

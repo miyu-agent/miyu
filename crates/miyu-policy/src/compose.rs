@@ -99,6 +99,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         profile: None,
         project: None,
         appended: BTreeMap::new(),
+        bare: false,
     }
 }
 

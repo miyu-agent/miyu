@@ -100,7 +100,7 @@ impl Tally {
         for event in events {
             match &event.body {
                 Body::ModelCalled(called) => {
-                    if called.purpose.is_none() {
+                    if !called.aside() {
                         self.watch(called);
                     }
                     if called.endpoint.is_none() || called.model.is_none() {
@@ -109,7 +109,7 @@ impl Tally {
                     self.requests += 1;
                     if let Some(usage) = called.usage {
                         plus(&mut self.usage, usage);
-                        if called.purpose.is_none() {
+                        if !called.aside() {
                             plus(&mut self.main, usage);
                         }
                     }

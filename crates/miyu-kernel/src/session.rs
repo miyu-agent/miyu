@@ -133,6 +133,8 @@ pub struct Session {
     limits: Option<Limits>,
     /// 一次性的会话：`miyu ask` 开的（`session.created` 的 `oneshot`）。没人看着的时候回报不叫醒她（施工 7-2）。
     oneshot: bool,
+    /// 整理会话（`session.created` 的 `dream`，施工 D-1 上）：主请求的 `model.called` 用途记 `memory`。
+    dream: bool,
     /// 有头订阅着（施工 7-2，[`Input::Watched`]）：只在内存里，造会话、载入以后当没人看着。
     watched: bool,
     /// 闲着时到的、会叫醒她、这时却开不了一轮的回报，照先后（施工 7-2，`jobs.rs`）：随便哪一轮开了就清掉；恢复了撤销、

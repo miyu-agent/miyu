@@ -29,6 +29,7 @@ use crate::spawn;
 use miyu_session::settings::ProfileSettings;
 
 mod delete;
+mod dream;
 mod found;
 mod idle;
 mod opening;
@@ -229,6 +230,7 @@ impl Sessions {
             group: who.group,
             owner_is_admin: who.owner == core.admin,
             images: who.images,
+            dream: None,
         })
         .await;
         let handle = match created {
@@ -366,6 +368,7 @@ impl Sessions {
             group: None,
             owner_is_admin,
             images: child.images,
+            dream: None,
         })
         .await
         .map_err(|error| error.to_string())?;

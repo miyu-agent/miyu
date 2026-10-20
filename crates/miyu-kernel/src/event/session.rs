@@ -58,6 +58,27 @@ pub struct SessionCreated {
     /// 清单写了 `needs = ["images"]` 的包整包当没开。显示得了的不写，以前的日志没有这一格，照显示得了读。
     #[serde(default = "shows_images", skip_serializing_if = "Clone::clone")]
     pub images: bool,
+    /// 整理会话（施工 D-1 上，设计 `41-整理会话.md` DS1）：记忆模块为一趟整理开的会话，哪一间的、怎么来的。不是的不写，以前的
+    /// 日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dream: Option<Dream>,
+}
+
+/// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`，会话那一间写 `session`，两样有一样。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Dream {
+    /// 人格那一间：人格的编号。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub persona: Option<String>,
+    /// 会话那一间：哪个会话的记忆。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<SessionId>,
+    /// 人叫的（`/dream`、`memory.dream`、`miyu memory dream`）；后台自己合的不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub manual: bool,
+    /// 人在哪个会话里叫的（`/dream`）：那个会话的 `/stop` 照它叫停这一趟。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<SessionId>,
 }
 
 /// 没写 `images` 的会话显示得了图片（施工 X-25）。

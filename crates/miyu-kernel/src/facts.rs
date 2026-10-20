@@ -50,6 +50,9 @@ pub struct FactTemplates {
     /// 回复写到了输出上限、调用没派的那一句，没有字段（施工 3-10）。以前造的快照里没有：那些会话照样不派、接着请求，不加
     /// 这一句。
     output_limit: Option<Template>,
+    /// 安静（施工 D-1 上，设计 41：整理会话的请求和原来的一次性请求逐字节一样）：回合开始的环境、权限、会话编号、角色扮演提示
+    /// 一块都不注入。
+    quiet: bool,
 }
 
 /// 角色扮演提示这一类的名字。组装照它把回合开始时注入的这一块排在触发的那句后面（`08-上下文投影.md` C2 唯一的例外）。
@@ -96,6 +99,7 @@ impl FactTemplates {
             permission_changed: permission_changed.map(Template::parse).transpose()?,
             reminder: None,
             output_limit: None,
+            quiet: false,
         };
         templates.env.render(&env_fields("", "", ""))?;
         templates.permission.render(&permission_fields(""))?;
@@ -120,6 +124,9 @@ impl FactTemplates {
         permission: &Permission,
         session: &SessionId,
     ) -> Vec<ContextInjected> {
+        if self.quiet {
+            return Vec::new();
+        }
         let fresh = |fact: ContextInjected| unseen(history, &By::Kernel, &fact).then_some(fact);
         [
             fresh(self.env(now, environment)),
@@ -145,6 +152,14 @@ impl FactTemplates {
         Ok(self)
     }
 
+    /// 安静下来（施工 D-1 上，整理会话）：回合开始一块事实都不注入（[`FactTemplates::boundary`]、[`FactTemplates::reminder`]
+    /// 都交回没有）。
+    #[must_use]
+    pub fn quiet(mut self) -> FactTemplates {
+        self.quiet = true;
+        self
+    }
+
     /// 带上角色扮演提示那一块的原文（施工 P-1 补）：造策略时拼好交进来，冻结在会话上。`None` 的不注入。
     #[must_use]
     pub fn with_reminder(mut self, text: Option<String>) -> FactTemplates {
@@ -156,7 +171,7 @@ impl FactTemplates {
     /// 注入；有的，数它后面开了几轮（这一轮的 `turn.started` 已经记下），到 [`REMINDER_EVERY`] 注入。压缩替掉的、撤掉的
     /// 不在有效历史里，下一轮重来。不比原文：同一段字隔几轮再说一次，就是它的用处。
     pub fn reminder(&self, history: &History) -> Option<ContextInjected> {
-        let text = self.reminder.as_ref()?;
+        let text = self.reminder.as_ref().filter(|_| !self.quiet)?;
         let kind = kind(REMINDER);
         let mut turns = 0;
         for event in history.events().iter().rev() {

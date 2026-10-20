@@ -29,6 +29,7 @@
 | `crates/miyu-policy/src/jobs.rs` | 回报的写法、任务用的数；子会话回报的正文怎么截（`reports()`，施工 3-8 五补从 `snapshot.rs` 挪来，那边放不下了） |
 | `crates/miyu-policy/src/memory.rs` | 记忆的范围 `MemoryScope`，快照的 `memory` 怎么写（`with_memory`）、怎么读（`memory_scope`，施工 R-3 下） |
 | `crates/miyu-policy/src/peers.rs` | 别的会话发来的话：防刷屏的数 `PeerNumbers` 和出厂的数 `PEERS`，交给内核的样子；标签的两份 `PeerTexts`，交给组装器的样子（施工 C-2）。「空了告诉我」的两个数和通知的五份字 `PeerIdleTexts`，作废那一句照快照的小时数换好（施工 C-6） |
+| `crates/miyu-policy/src/bare.rs`（施工 D-1 上） | 裸的快照：整理会话用，下面「裸的快照」 |
 | `crates/miyu-policy/src/hazard.rs`（施工 5-17） | 高危命令照规则认，纯的判法，不进快照：`session/guard.md` 第四条末、`tools/shell.md`「高危」 |
 | `crates/miyu-store/src/resources.rs` | 从资源目录读原文（`store/resources.md`） |
 | `crates/miyu-store/src/blob.rs` | 存 blob、取 blob（`store.md`） |
@@ -164,6 +165,8 @@
 | `guard_texts` 的 `read_only` | 没有，用的是 `tool_results.read_only` | `core/tool-results/read-only` |
 
 给模型看的那一句，字段照模板的规矩转义；给人看的说法里，字段原样（`kernel/tools.md`）。
+
+**裸的快照**（施工 D-1 上，设计 `41-整理会话.md` 第二节第 2 条）：整理会话用，`Snapshot::bare()` 在拼好的那一份上去掉人格、system、示范、工具，记忆、知识库、技能、「关于你」、项目、扩展的几段，不压缩、不起标题、不复述、不跨会话、没有任务的字；随核心附带的字照留（回合没走完的几句、驱动的占位这些照样用得上）。字节里多一格 `bare: true`（不裸的不写，以前的快照字节不变）；`policy()` 照它让事实模板安静（`quiet()`：回合开始一块事实都不注入）。请求就只有日志里的消息，和原来记忆整理的一次性请求逐字节一样（没有 system、没有工具，一条 user）。裸的快照不随人格、预设、工具架换（`actor/persona.rs` 照旧快照的 `bare` 跳过），换了就拼回 system 和工具。
 
 **为什么能逐字节重现**
 

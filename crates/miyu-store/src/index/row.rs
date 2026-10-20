@@ -128,7 +128,7 @@ impl Row {
             && let Some(usage) = &called.usage
         {
             self.tokens += usage.uncached + usage.cache_read + usage.cache_write + usage.output;
-            if called.purpose.is_none() && called.compaction.is_none() {
+            if !called.aside() && called.compaction.is_none() {
                 self.context = Some(usage.uncached + usage.cache_read + usage.cache_write);
                 self.context_model = match (&called.endpoint, &called.model) {
                     (Some(endpoint), Some(model)) => Some(format!("{endpoint}/{model}")),

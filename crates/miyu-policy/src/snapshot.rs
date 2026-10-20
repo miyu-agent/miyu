@@ -113,6 +113,10 @@ pub struct Snapshot {
     /// 不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub appended: BTreeMap<String, String>,
+    /// 裸的（施工 D-1 上，设计 `41-整理会话.md`，[`Snapshot::bare`]）：整理会话用，回合开始不注入事实。不是的不写，字节和以前
+    /// 一样。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub bare: bool,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。
@@ -221,6 +225,7 @@ impl Snapshot {
             preset: None,
             forked: None,
             images: true,
+            dream: None,
         }
     }
 
@@ -292,6 +297,8 @@ impl Snapshot {
             demos: self.demos.iter().flat_map(Demo::messages).collect(),
         };
         let facts = core.facts.templates()?.with_reminder(self.reminder.clone());
+        // 裸的回合开始不注入事实（施工 D-1 上）：请求和原来的一次性请求逐字节一样。
+        let facts = if self.bare { facts.quiet() } else { facts };
         Ok(Policy {
             assembler: Box::new(DefaultAssembler::new(stable, texts)),
             facts,

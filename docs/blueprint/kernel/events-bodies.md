@@ -54,6 +54,7 @@
 | `persona` | 字符串 | 可以没有 | 会话用哪个人格的编号（施工 P-1 下，`personas.md`）：造会话时钉上，之后不换（`16-人格与预设.md` Y5）。头照它显示用的是谁，拼请求照快照、不看它；以前的日志没有这一格 |
 | `preset` | 字符串 | 可以没有 | 会话用哪个预设的编号（施工 P-2 上，`presets.md`）：造会话时钉上，之后不换（Y5）；子会话照父会话的。头照它显示；这一步预设还不改变请求。以前的日志没有这一格 |
 | `images` | 布尔 | 可以没有 | 这个会话的场所显示得了图片吗（施工 X-25，`venues.md`「`venue.session`」）：显示不了的写 `false`，显示得了的不写，以前的日志没有这一格，照显示得了读。造的时候定、以后不变；分叉、子会话照父会话的 |
+| `dream` | 对象 | 可以没有 | 整理会话（施工 D-1 上，设计 `41-整理会话.md`）：记忆模块为一趟整理开的会话，`{persona?, session?, manual?, from?}`：哪一间（人格那一间写人格的编号，会话那一间写会话编号，有一样）、人叫的（`manual`，后台自己合的不写）、人在哪个会话里叫的（`from`）。快照是裸的（`policy.md`「裸的快照」），主请求的 `model.called` 用途记 `memory`。不是的不写，以前的日志没有这一格 |
 | `forked` | `{from, upto, seal_after?}` | 可以没有 | 分叉出来的（施工 C-8 上，`session/fork.md`）：从哪个会话（`from`）的第几条为止（`upto`，含）分叉，这一条的序号是 `upto` 的下一个；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，不封存的不写。不是分叉出来的不写 |
 
 子会话不写 `oneshot`：`--continue`、`miyu undo` 找「最近一次 `miyu ask` 开的」不会找到它（`agents.md`）。以前的日志没有 `parent`、`depth`、`model` 几格，原样一个字节不变；没有 `model` 的，路由照载入那一刻的 `models.chat`（`models.md`「怎么走」第一条第 7 条）。样本两条都带 `model`（施工 8-8）。
@@ -414,10 +415,10 @@
 | `result` | 取值 | 必有 | `ok` 说完了；`error` 出错；`interrupted` 被人打断；`superseded` 一个字都还没回就来了人的消息，撤掉重发了（施工 4-15） |
 | `error` | 出错 | 可以没有 | 出错的分类、原话，有的话还有 HTTP 状态码；只在出错时有 |
 | `compaction` | `auto`、`manual`、`overflow` | 可以没有 | 这是哪一种压缩的摘要请求；主请求没有。以前的日志没有这一格（施工 6-6 上） |
-| `purpose` | `recap`、`title`、`compaction` | 可以没有 | 辅助请求的用途（施工 3-8 四补，`26-提示词.md` J6）：回顾，起标题（施工 3-8 五补），提前压好的摘要（施工 6-11 上，`compaction.md` 第十五条：不带 `compaction` 那一格，不数进熔断）。主请求、摘要请求没有；以前的日志没有这一格。不认识的原样留着，也算辅助请求 |
+| `purpose` | `recap`、`title`、`compaction`、`memory` | 可以没有 | 辅助请求的用途（施工 3-8 四补，`26-提示词.md` J6）：回顾，起标题（施工 3-8 五补），提前压好的摘要（施工 6-11 上，`compaction.md` 第十五条：不带 `compaction` 那一格，不数进熔断）；`memory` 是整理会话的主请求（施工 D-1 上），不算辅助请求，照会话记用量时用途记成记忆。主请求、摘要请求没有；以前的日志没有这一格。不认识的原样留着，也算辅助请求 |
 | `truncated` | `true` | 可以没有 | 回复写到了输出上限、没写完（施工 3-10）：驱动报的照写，出错收的那一次（连着到了次数）也写；没有的不写，以前的日志没有这一格 |
 
-- 带 `purpose` 的是辅助请求（`ModelCalled::aside()`）：它和主对话无关，她没在这次请求里听到什么，它报的用量也不是主对话的大小。所以用量的锚（`compaction.md` 第一条）、排着的话她听到没有（`kernel/history.md`）、压缩的边界（`compaction.md` 第三条第 2 条）、渲染时回合开始的那几块（`kernel/request.md`「组装」）都不看它。它不带 `turn`、没有回复，`seen` 是它照到的那一条，`first_difference`、`blocks` 没有。回顾的 `cause` 是要它的命令；起标题、提前压好的没有 `cause`（内核自己要的）。
+- 带 `purpose` 的是辅助请求（`ModelCalled::aside()`；`memory` 除外，那是整理会话的主请求）：它和主对话无关，她没在这次请求里听到什么，它报的用量也不是主对话的大小。所以用量的锚（`compaction.md` 第一条）、排着的话她听到没有（`kernel/history.md`）、压缩的边界（`compaction.md` 第三条第 2 条）、渲染时回合开始的那几块（`kernel/request.md`「组装」）都不看它。它不带 `turn`、没有回复，`seen` 是它照到的那一条，`first_difference`、`blocks` 没有。回顾的 `cause` 是要它的命令；起标题、提前压好的没有 `cause`（内核自己要的）。
 - `first_difference` 在代码里装在盒子里（施工 3-8 四补）：它多半没有；`purpose` 加进来以后 `model.called` 比别的种类大出两百字节，clippy 的 `large_enum_variant` 拦下了。JSON 的写法不变。`cost` 照样装在盒子里（施工 8-15）。
 
 金额（施工 8-15，代码在 `event/cost.rs`）：

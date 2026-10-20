@@ -209,6 +209,7 @@ impl Home {
             }),
             owner_is_admin: lines.owner_is_admin,
             images: lines.images,
+            dream: None,
         });
         within("造会话", created).await.expect("造得出会话")
     }

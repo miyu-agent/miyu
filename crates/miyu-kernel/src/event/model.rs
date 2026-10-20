@@ -67,10 +67,13 @@ pub struct ModelCalled {
 }
 
 impl ModelCalled {
-    /// 是一次辅助请求（施工 3-8 四补）：带着用途的，不认识的用途也算。它和主对话无关：她没在这次请求里听到什么、它报的用量
-    /// 也不是主对话的大小，所以用量的锚、排队的消息听到没有、压缩的边界、渲染时回合开始的那几块，都不看它。
+    /// 是一次辅助请求（施工 3-8 四补）：带着用途的，不认识的用途也算；整理会话的主请求（`memory`，施工 D-1 上）不算。它和主
+    /// 对话无关：她没在这次请求里听到什么、它报的用量也不是主对话的大小，所以用量的锚、排队的消息听到没有、压缩的边界、渲染时
+    /// 回合开始的那几块，都不看它。
     pub fn aside(&self) -> bool {
-        self.purpose.is_some()
+        self.purpose
+            .as_ref()
+            .is_some_and(|purpose| *purpose != Purpose::Memory)
     }
 }
 
@@ -83,6 +86,9 @@ text_enum!(
         Title = "title",
         /// 提前压好：用量过了起压线，内核在后台先要的摘要（施工 6-11 上，`docs/blueprint/compaction.md` 第十五条）。
         Compaction = "compaction",
+        /// 整理会话的主请求（施工 D-1 上，设计 `41-整理会话.md` DS5）：不是辅助请求，照会话记用量时用途记成记忆，和原来合并的
+        /// 一次性请求一样。
+        Memory = "memory",
     }
 );
 

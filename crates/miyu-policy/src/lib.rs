@@ -11,6 +11,7 @@
 
 mod appended;
 mod attached_path;
+mod bare;
 mod compose;
 mod drivers;
 mod facts;

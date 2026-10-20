@@ -235,6 +235,21 @@ fn a_boundary_checks_the_env_the_permission_and_the_session_in_that_order() {
 }
 
 #[test]
+fn quiet_templates_inject_nothing_at_a_boundary() {
+    // 整理会话（施工 D-1 上）：请求和原来的一次性请求逐字节一样，环境、权限、编号、角色扮演提示一块都不注入。
+    let quiet = templates().with_reminder(Some("<r/>".to_string())).quiet();
+    let facts = quiet.boundary(
+        &History::default(),
+        now(),
+        &environment("~/src/miyu"),
+        &permission(Level::Workspace, false),
+        &session(),
+    );
+    assert!(facts.is_empty(), "{facts:?}");
+    assert_eq!(quiet.reminder(&History::default()), None);
+}
+
+#[test]
 fn older_templates_without_the_session_one_have_no_session_block() {
     let older = FactTemplates::new(
         r#"<e t="{time}" z="{timezone}" d="{cwd}"/>"#,

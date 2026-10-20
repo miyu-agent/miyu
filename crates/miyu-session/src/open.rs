@@ -104,6 +104,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         group,
         owner_is_admin,
         images,
+        dream,
     } = setup;
     let span = actor::span(&id);
     let config = Turning::start(configs, environment.cwd.clone()).await;
@@ -229,6 +230,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
+    let bare = dream.is_some();
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
         let skilled = skills::listing(&resources, &face, &found).map_err(CreateError::Shipped)?;
         let parts = Parts {
@@ -252,6 +254,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             profile: profile.block(&resources.profile().map_err(CreateError::Shipped)?),
             project: None,
             appended,
+            bare,
         };
         let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;
@@ -325,6 +328,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         model: reference,
         preset,
         images,
+        dream,
         ..snapshot.session_created(owner.clone(), venue.clone(), permission)
     };
     let (mut session, first) = Session::create(

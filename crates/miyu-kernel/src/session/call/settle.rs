@@ -5,7 +5,7 @@ use super::Call;
 use crate::block::{Block, ToolCall};
 use crate::event::{
     Body, CallError, CallResult, Cost, ErrorClass, Event, FirstDifference, MessageAssistant,
-    ModelCalled, Usage,
+    ModelCalled, Purpose, Usage,
 };
 use crate::id::{CommandId, Seq};
 use crate::origin::By;
@@ -217,7 +217,8 @@ impl Session {
             compaction: compaction
                 .as_ref()
                 .map(|compacting| compacting.trigger().clone()),
-            purpose: None,
+            // 整理会话的主请求记成记忆的用途（施工 D-1 上）：照会话记用量时分得出。
+            purpose: self.dream.then_some(Purpose::Memory),
             truncated: limited,
         };
         let summary = summary

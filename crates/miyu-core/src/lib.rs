@@ -417,6 +417,8 @@ async fn run(
     }
     core = core.with_vectors(embedder);
     let core = Arc::new(core);
+    // 整理记忆跑在整理会话里（施工 D-1 上）：会话表接上记忆。
+    core.give_dream_sessions();
     #[cfg(feature = "net")]
     searching.attach(&core);
     tokio::spawn(settings::follow(
