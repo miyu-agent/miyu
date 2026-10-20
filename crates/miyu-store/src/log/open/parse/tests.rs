@@ -26,13 +26,14 @@ fn joined(texts: &[String]) -> Vec<u8> {
 fn many_lines_come_back_in_order() {
     let texts = many();
     let parsed = lines(&joined(&texts));
-    assert_eq!(parsed.len(), texts.len());
-    for (k, one) in parsed.iter().enumerate() {
-        let event = one
-            .as_ref()
-            .unwrap_or_else(|(n, why)| panic!("第 {n} 行：{why}"));
+    if let Some((n, why)) = &parsed.broken {
+        panic!("第 {n} 行：{why}");
+    }
+    assert_eq!(parsed.events.len(), texts.len());
+    for (k, event) in parsed.events.iter().enumerate() {
         assert_eq!(event.seq.get(), k as u64 + 1);
     }
+    assert_eq!(parsed.events.capacity(), texts.len(), "一次留够，不多要");
 }
 
 #[test]
@@ -58,9 +59,8 @@ fn reading_stops_at_the_first_broken_line() {
     texts[broken - 1] = "{not json".to_string();
     texts[broken + 100] = "{also not json".to_string();
     let parsed = lines(&joined(&texts));
-    assert_eq!(parsed.len(), broken, "第一处读不成的后面的不交");
-    let (number, why) = parsed.last().expect("有").as_ref().expect_err("读不成");
-    assert_eq!(*number, broken);
+    assert_eq!(parsed.events.len(), broken - 1, "第一处读不成的后面的不交");
+    let (number, why) = parsed.broken.expect("读不成");
+    assert_eq!(number, broken);
     assert!(why.starts_with("not readable"), "{why}");
-    assert!(parsed[..broken - 1].iter().all(Result::is_ok));
 }

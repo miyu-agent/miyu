@@ -190,9 +190,10 @@ async fn leaving_tells_the_program_and_drops_what_followed_the_session() {
     )
     .await;
     until_filled(&mut client, &["today", "temp"]).await;
-    let gone = client
-        .call("u1", "unsubscribe", json!({"stream": "widgets"}))
-        .await;
+    // 填好以后还可能推来别的 `widget.changed`：等这一条的回应。
+    let request = json!({"jsonrpc": "2.0", "id": "u1", "method": "unsubscribe", "params": {"stream": "widgets"}});
+    client.line(&request.to_string()).await;
+    let gone = client.until_reply("u1").await.1;
     assert_eq!(gone["result"], json!({}), "{gone}");
     until("程序收到不看了", || {
         read(&path).matches(r#""method":"widget.unwatch""#).count() == 2
@@ -287,10 +288,10 @@ async fn wrong_content_is_refused_and_the_old_one_stays() {
     assert_eq!(reason(&replies[7]), Some("bad_params"), "会话编号写法不对");
     let reply = subscribe(&mut client, "w1", json!({"showing": ["status"]})).await;
     assert_eq!(text(&widget(&reply, "temp")), "23°C", "写错的没动原来的");
-    // 头的连接推不了。
-    let head = client
-        .call("x1", "widget.set", json!({"widget": "temp", "content": []}))
-        .await;
+    // 头的连接推不了。订阅以后扩展推的 `widget.changed` 可能先到，等这一条的回应（Windows CI 上撞见过，施工 V-14）。
+    let request = json!({"jsonrpc": "2.0", "id": "x1", "method": "widget.set", "params": {"widget": "temp", "content": []}});
+    client.line(&request.to_string()).await;
+    let head = client.until_reply("x1").await.1;
     assert_eq!(reason(&head), Some("not_an_extension"), "{head}");
 }
 

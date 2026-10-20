@@ -34,7 +34,7 @@ impl RecallIndex {
     ///
     /// 读不了；记着的时刻、次数不对。
     pub fn uses(&self) -> Result<BTreeMap<String, Used>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(BTreeMap::new());
         };

@@ -34,7 +34,7 @@ impl RecallIndex {
     ///
     /// 读不了。
     pub fn meta(&self, key: &str) -> Result<Option<String>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(None);
         };

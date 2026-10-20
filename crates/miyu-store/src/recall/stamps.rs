@@ -58,7 +58,7 @@ impl RecallIndex {
     ///
     /// 读不了。
     pub fn stamps(&self) -> Result<BTreeMap<String, String>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(BTreeMap::new());
         };

@@ -2,28 +2,30 @@
 //! `terms` 只存倒排索引，rowid 就是 `items.id`。照关键词找，bm25 最相关的在前。
 //!
 //! 库是派生的：真相在会话日志、记忆日志、知识库的文件里，库随时能删掉重建（`docs/designs/07-存储.md` S1、S3）。怎么开、坏了
-//! 和版本不对怎么删掉重建，和会话列表的索引、用量汇总共用（[`crate::sqlite`]）。一个库一个核心开一个连接、一直开着，拿锁
-//! 护着：同一个进程里开了又关同一个库文件会丢掉 SQLite 的文件锁（07 第六节）。
+//! 和版本不对怎么删掉重建，和会话列表的索引、用量汇总共用（[`crate::sqlite`]）。一个库一个核心开两个连接、一直开着，各拿各的锁
+//! 护着：写的一个，读的一个（`conn.rs`，施工 V-14）。同一个进程里在 SQLite 外面开了又关同一个库文件会丢掉它的文件锁（07 第六节），
+//! 两个连接都由 SQLite 开、一直开着，不碰这一条。
 //!
 //! 一段字怎么切成词、查询怎么拼，是纯逻辑，在 `miyu-recall`。
 //!
 //! 每个来源（例如一个会话）照到了哪个序号记在 `marks` 里，和那一批放进、拿掉在同一个事务里写（[`RecallIndex::apply`]，
 //! 施工 R-2 上）：没往前挪的，下次照真相补。键以 `来源/` 开头，拿掉一个来源照它（[`RecallIndex::forget`]）。
 
-use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard};
+use std::path::PathBuf;
+use std::sync::Mutex;
 
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 use miyu_kernel::id::Seq;
 use miyu_kernel::time::Timestamp;
 
-use crate::sqlite::{self, connect, integer, remove};
+use crate::sqlite::integer;
 
 pub use crate::sqlite::{DbError, Opened};
 pub use indexes::{Opener, RecallIndexes};
 pub use room::{NO_PERSONA, Room};
 
+mod conn;
 mod indexes;
 mod meta;
 mod places;
@@ -65,8 +67,11 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 pub struct RecallIndex {
     /// 库文件在哪。
     path: PathBuf,
-    /// 开着的连接：用不了的（删了重建也打不开）是空的，这时找不到任何一条、写什么都不写。
+    /// 写的连接：用不了的（删了重建也打不开）是空的，这时什么都不写。
     db: Mutex<Option<Connection>>,
+    /// 读的连接（施工 V-14）：WAL 里读不等写，回合开始找记忆不用等后台那一批写完、等它提交时顺手做的检查点（一次十几到二十几
+    /// 毫秒）。用不了的是空的，这时找不到任何一条。
+    reader: Mutex<Option<Connection>>,
 }
 
 /// 一批里的一处改动（[`RecallIndex::apply`]）。
@@ -121,50 +126,6 @@ pub struct Hit {
 }
 
 impl RecallIndex {
-    /// 打开 `path` 这一份库，没有就建（目录一起建，Unix 上 0700）。读不了、坏了、版本不对的，连同 SQLite 的 `-wal`、
-    /// `-shm` 删掉，建一份空的，调的一方照真相补。删了重建也打不开的，这一回用不了（[`Opened::Unusable`]）。
-    pub fn open(path: &Path) -> (RecallIndex, Opened) {
-        let (db, opened) = sqlite::open(path, SCHEMA, VERSION);
-        // 以前的库（同一个版本、没有向量表、用到的表）补上这两张表；补不上的这一回用不了。
-        let (db, opened) = match db.map(|db| add(&db).map(|()| db)) {
-            Some(Ok(db)) => (Some(db), opened),
-            Some(Err(error)) => (None, Opened::Unusable(error.into())),
-            None => (None, opened),
-        };
-        let index = RecallIndex {
-            path: path.to_path_buf(),
-            db: Mutex::new(db),
-        };
-        (index, opened)
-    }
-
-    /// 删掉重建：用着用着读出坏了的，关上连接，连同 `-wal`、`-shm` 删掉，建一份空的。
-    ///
-    /// # Errors
-    ///
-    /// 删不掉、建不成：这之后用不了这个库。
-    pub fn reset(&self) -> Result<(), DbError> {
-        let mut db = self.lock();
-        drop(db.take());
-        remove(&self.path)?;
-        let fresh = connect(&self.path, SCHEMA, VERSION)?.0;
-        add(&fresh)?;
-        *db = Some(fresh);
-        Ok(())
-    }
-
-    /// 关上连接，连同 `-wal`、`-shm` 删掉，以后什么都不写（施工 K-7 上：删知识库）。还拿着这一份的（会话在后台补向量）照
-    /// 「库用不了的不写」。
-    ///
-    /// # Errors
-    ///
-    /// 删不掉。
-    pub fn discard(&self) -> Result<(), DbError> {
-        let mut db = self.lock();
-        drop(db.take());
-        remove(&self.path)
-    }
-
     /// 放进一条：`key` 已经有的整条换掉（字、时刻、词都换），在一个事务里。
     ///
     /// # Errors
@@ -245,7 +206,7 @@ impl RecallIndex {
     ///
     /// 读不了；记着的不是一个序号。
     pub fn mark(&self, source: &str) -> Result<Option<Seq>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(None);
         };
@@ -283,7 +244,7 @@ impl RecallIndex {
     ///
     /// 读不了。
     pub fn is_buried(&self, key: &str) -> Result<bool, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(false);
         };
@@ -330,7 +291,7 @@ impl RecallIndex {
     ///
     /// 读不了。`MATCH` 的写法是 `miyu-recall` 拼好的，SQLite 照样报错的也如实交回。
     pub fn search(&self, text: &str, limit: usize) -> Result<Vec<Hit>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let (Some(db), Some(query)) = (db.as_ref(), miyu_recall::query(text)) else {
             return Ok(Vec::new());
         };
@@ -367,7 +328,7 @@ impl RecallIndex {
     ///
     /// 读不了。
     pub fn entries(&self) -> Result<Vec<(String, String, Timestamp)>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(Vec::new());
         };
@@ -395,35 +356,13 @@ impl RecallIndex {
     ///
     /// 读不了。
     pub fn keys(&self) -> Result<Vec<String>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(Vec::new());
         };
         let mut select = db.prepare("SELECT key FROM items ORDER BY key")?;
         let keys = select.query_map([], |row| row.get::<_, String>(0))?;
         Ok(keys.collect::<Result<_, _>>()?)
-    }
-
-    /// 在一个事务里写；库用不了的什么都不做。
-    fn write(
-        &self,
-        body: impl FnOnce(&Transaction<'_>) -> Result<(), DbError>,
-    ) -> Result<(), DbError> {
-        let mut db = self.lock();
-        let Some(db) = db.as_mut() else {
-            return Ok(());
-        };
-        let tx = db.transaction()?;
-        body(&tx)?;
-        tx.commit()?;
-        Ok(())
-    }
-
-    /// 拿锁。别的线程拿着锁崩了，库还是好的（写都在事务里），照常用。
-    fn lock(&self) -> MutexGuard<'_, Option<Connection>> {
-        self.db
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 

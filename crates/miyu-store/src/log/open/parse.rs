@@ -4,7 +4,7 @@
 //! 分块照字节分（施工 V-12）：每块从一行开头起、到一行末尾止，切行也在各自的线程里（`memchr` 找换行）。原来先在一个线程里
 //! 把整段切成一行行再分，一万条的会话切行就占 4 到 18 ms。
 //!
-//! 交回的和一行行读的一样：照先后每一行一项，读不成的那一行是第几行（从 1 数）、为什么；第一处读不成的后面的不交（一块里读不
+//! 交回的和一行行读的一样：读成的事件照先后，读不成的那一行是第几行（从 1 数）、为什么；第一处读不成的后面的不交（一块里读不
 //! 成就不往下读了）。
 
 use miyu_kernel::event::Event;
@@ -15,11 +15,19 @@ const SPLIT_AT: usize = 1024 * 1024;
 /// 最多分几块。
 const MOST: usize = 8;
 
-/// 读成的一行是事件；读不成的是第几行和为什么。
-pub(super) type Parsed = Result<Event, (usize, String)>;
+/// 一块（或者整段）读成的：读成的事件照先后；读不成的那一行是第几行（从 1 数）、为什么，它后面的不读。
+pub(super) struct Lines {
+    /// 读成的事件，第 `k` 项是第 `k + 1` 行。
+    pub(super) events: Vec<Event>,
+    /// 读不成的那一行：在 `events` 后面紧跟着的那一行。
+    pub(super) broken: Option<(usize, String)>,
+}
 
-/// `bytes` 是整行（每行以 `\n` 结尾，最后一行也是），每一行读成事件，照先后交回：第 `k` 项是第 `k + 1` 行。
-pub(super) fn lines(bytes: &[u8]) -> Vec<Parsed> {
+/// `bytes` 是整行（每行以 `\n` 结尾，最后一行也是），每一行读成事件，照先后交回。
+///
+/// 一条事件占几百字节，一万条就是好几 MB（施工 V-14）：一块里照换行数一次留够，几块并起来也只搬一遍。原来照行数一路翻倍
+/// 长大、读成以后再照先后拷两遍，每一遍都是向系统新要的页（大块的门槛定在 128 KiB，`miyu-heap`），刚起的核心里一页缺一次。
+pub(super) fn lines(bytes: &[u8]) -> Lines {
     let cuts = cuts(bytes, parts(bytes.len()));
     if cuts.len() <= 2 {
         return chunk(bytes);
@@ -32,20 +40,25 @@ pub(super) fn lines(bytes: &[u8]) -> Vec<Parsed> {
                 scope.spawn(move || chunk(part))
             })
             .collect();
-        let mut all: Vec<Parsed> = Vec::new();
-        for handle in handles {
-            // 读一行不会 panic；真的 panic 了，照原样抛出去，和一个线程读的时候一样。
-            let part = handle
-                .join()
-                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+        // 读一行不会 panic；真的 panic 了，照原样抛出去，和一个线程读的时候一样。
+        let parts: Vec<Lines> = handles
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+            })
+            .collect();
+        let mut all = Lines {
+            events: Vec::with_capacity(parts.iter().map(|part| part.events.len()).sum()),
+            broken: None,
+        };
+        for part in parts {
             // 块里的行号从 1 数：接上前面几块读成的行数。前面的块都读完了（读不成的那一块之后的不接），行数是准的。
-            let before = all.len();
-            let stop = part.last().is_some_and(Result::is_err);
-            all.extend(
-                part.into_iter()
-                    .map(|one| one.map_err(|(number, why)| (before + number, why))),
-            );
-            if stop {
+            let before = all.events.len();
+            all.events.extend(part.events);
+            if let Some((number, why)) = part.broken {
+                all.broken = Some((before + number, why));
                 break;
             }
         }
@@ -80,26 +93,33 @@ fn cuts(bytes: &[u8], parts: usize) -> Vec<usize> {
     cuts
 }
 
-/// 一块整行：第一行是第 1 行。读不成的那一行交了就停。
-fn chunk(part: &[u8]) -> Vec<Parsed> {
-    let mut parsed = Vec::new();
+/// 一块整行：第一行是第 1 行。读不成的那一行记下就停。
+fn chunk(part: &[u8]) -> Lines {
+    let mut events = Vec::with_capacity(memchr::memchr_iter(b'\n', part).count());
     let mut start = 0;
     for end in memchr::memchr_iter(b'\n', part) {
         let line = &part[start..end];
         start = end + 1;
-        let number = parsed.len() + 1;
+        let number = events.len() + 1;
         let one = std::str::from_utf8(line)
             .map_err(|_| (number, "not UTF-8".to_string()))
             .and_then(|text| {
                 Event::from_line(text).map_err(|error| (number, format!("not readable: {error}")))
             });
-        let stop = one.is_err();
-        parsed.push(one);
-        if stop {
-            break;
+        match one {
+            Ok(event) => events.push(event),
+            Err(broken) => {
+                return Lines {
+                    events,
+                    broken: Some(broken),
+                };
+            }
         }
     }
-    parsed
+    Lines {
+        events,
+        broken: None,
+    }
 }
 
 #[cfg(test)]

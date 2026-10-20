@@ -128,7 +128,12 @@ enum HalfLine {
 fn read_all(dir: &Path, half: HalfLine) -> Result<(Vec<Event>, Mark), OpenError> {
     let mut events = Vec::new();
     let end = walk(dir, half, None, |read| {
-        events.extend(read);
+        // 只有一段的（多半是这样）整份搬过来，不再拷一遍（施工 V-14）。
+        if events.is_empty() {
+            events = read;
+        } else {
+            events.extend(read);
+        }
         true
     })?
     .ok_or_else(|| OpenError::Missing(dir.to_path_buf()))?;
@@ -240,20 +245,23 @@ fn read_segment(
             truncate(path, end)?;
         }
     }
-    let parsed = parse::lines(&bytes[..complete]);
-    let mut events = Vec::with_capacity(parsed.len());
-    for (k, parsed) in parsed.into_iter().enumerate() {
-        let number = k + 1;
-        let event = parsed.map_err(|(number, why)| broken(path, number, why))?;
+    let parse::Lines {
+        events,
+        broken: bad,
+    } = parse::lines(&bytes[..complete]);
+    // 读成的都在读不成的那一行前面：先照先后查序号，都接上了再报那一行。
+    for (k, event) in events.iter().enumerate() {
         if event.seq != *next {
             return Err(broken(
                 path,
-                number,
+                k + 1,
                 format!("seq should be {next}, got {}", event.seq),
             ));
         }
         *next = next.next();
-        events.push(event);
+    }
+    if let Some((number, why)) = bad {
+        return Err(broken(path, number, why));
     }
     Ok(Some((events, end)))
 }

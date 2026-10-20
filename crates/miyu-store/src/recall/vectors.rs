@@ -64,7 +64,7 @@ impl RecallIndex {
         after: i64,
         limit: usize,
     ) -> Result<Vec<(i64, String, String)>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(Vec::new());
         };
@@ -93,7 +93,7 @@ impl RecallIndex {
         query: &[f32],
         keys: &[String],
     ) -> Result<BTreeMap<String, f32>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(BTreeMap::new());
         };
@@ -116,7 +116,7 @@ impl RecallIndex {
     ///
     /// 读不了；条目的时刻读不出。
     pub fn nearest(&self, model: &str, query: &[f32], limit: usize) -> Result<Vec<Near>, DbError> {
-        let db = self.lock();
+        let db = self.reading();
         let Some(db) = db.as_ref() else {
             return Ok(Vec::new());
         };

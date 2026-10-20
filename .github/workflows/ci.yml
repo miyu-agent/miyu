@@ -130,3 +130,12 @@ jobs:
       - name: 表贴进摘要
         if: always() && (needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true')
         run: cat "$GITHUB_WORKSPACE"/target/perf-out/*.md | tee -a "$GITHUB_STEP_SUMMARY" || true
+      # 原始数据留下（施工 V-14）：表里只有分位，查尾巴是哪几轮冒尖、跟着什么，要看每一次的数。
+      - name: 原始数据
+        if: always() && (needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true')
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-raw
+          path: target/perf-out/*.json
+          if-no-files-found: ignore
