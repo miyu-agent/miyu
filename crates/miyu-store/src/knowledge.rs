@@ -17,6 +17,7 @@ mod manage;
 mod mount;
 mod place;
 mod read;
+mod skip_stamp;
 mod watch;
 mod write;
 

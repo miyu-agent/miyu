@@ -27,7 +27,7 @@
 | `crates/miyu-store/src/recall/vectors.rs` | 向量表：放、照模型列出缺的、读出来逐条算最像的（第三条第 1、2 款） | R-5 下 |
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
 | `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款） | R-13 下 |
-| `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源（`knowledge.md`「怎么走」第三条） | K-1 上 |
+| `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源、只记指纹不动块（跳过的文档，W-15 再补；`knowledge.md`「怎么走」第三条） | K-1 上 |
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
 | `crates/miyu-recall/src/embedding.rs` | 本机模型的清单：照原文读、查（第四条第 2 款；R-5 中从 `miyu-embed` 挪进来，核心不能依赖 `miyu-embed`） | R-5 上、中 |

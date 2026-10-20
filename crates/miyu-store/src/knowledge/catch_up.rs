@@ -13,7 +13,7 @@ use miyu_recall::chunk;
 
 use super::extract::{self, Kind};
 use super::watch::Progress;
-use super::{Base, Hit, Knowledge, KnowledgeError, Reason, Skipped};
+use super::{Base, Hit, Knowledge, KnowledgeError, Reason, Skipped, skip_stamp};
 
 /// 上次建好的时刻记在索引的哪一格（施工 W-15，`recall/meta.rs`）。
 const INDEXED_AT: &str = "indexed_at";
@@ -74,58 +74,44 @@ impl Knowledge {
         });
         let stamps = shelf.index.stamps()?;
         let stamp_of = |document: &Document| format!("{}:{}", document.size, document.modified);
-        // 要重建的先数出来，好报进度（施工 W-15）：指纹没变的跳过，不算。
-        let changed: Vec<&Document> = documents
-            .iter()
-            .filter(|document| stamps.get(&document.source) != Some(&stamp_of(document)))
-            .collect();
+        // 要重建的先数出来，好报进度（施工 W-15）：指纹没变的跳过，不算。上次跳过的、文件没变的照记下的原因报跳过，不重读、不
+        // 算（施工 W-15 再补：不记的话每次列库都当它变了，重读一遍、推一遍进度）。
+        let extractor = self.extractor.is_some();
+        let mut changed: Vec<&Document> = Vec::new();
+        for document in &documents {
+            let stamp = stamp_of(document);
+            match stamps.get(&document.source) {
+                Some(recorded) if *recorded == stamp => {}
+                Some(recorded) => match skip_stamp::read(recorded, &stamp, extractor) {
+                    Some((reason, why)) => skipped.push(Skipped {
+                        kb: id.to_string(),
+                        path: document.source.clone(),
+                        reason,
+                        why,
+                        folder: false,
+                    }),
+                    None => changed.push(document),
+                },
+                None => changed.push(document),
+            }
+        }
         let mut progress = Progress::start(self.watcher.as_ref(), account, id, changed.len());
         for document in changed {
             progress.one();
             let stamp = stamp_of(document);
-            let skip = |(reason, why): (Reason, String)| Skipped {
-                kb: id.to_string(),
-                path: document.source.clone(),
-                reason,
-                why,
-                folder: false,
-            };
-            let biggest = document.kind.biggest();
-            if document.size > biggest {
-                skipped.push(skip((
-                    Reason::TooLarge,
-                    format!("larger than {biggest} bytes"),
-                )));
-                continue;
+            if let Some((reason, why)) = self.rebuild(&shelf.index, document, &stamp)? {
+                // 跳过的也记下指纹，连同为什么：原来的块照留。
+                shelf
+                    .index
+                    .stamp_only(&document.source, &skip_stamp::skipped(&stamp, reason, &why))?;
+                skipped.push(Skipped {
+                    kb: id.to_string(),
+                    path: document.source.clone(),
+                    reason,
+                    why,
+                    folder: false,
+                });
             }
-            let pages = extract::pages(document.kind, &document.path, self.extractor.as_deref());
-            let pages = match pages {
-                Ok(pages) => pages,
-                Err(why) => {
-                    skipped.push(skip(why));
-                    continue;
-                }
-            };
-            if pages.iter().map(String::len).sum::<usize>() as u64 > BIGGEST {
-                skipped.push(skip((
-                    Reason::TooLarge,
-                    format!("text larger than {BIGGEST} bytes"),
-                )));
-                continue;
-            }
-            let chunks = chunks(document.kind, &pages);
-            if document.kind == Kind::Pdf && chunks.is_empty() {
-                skipped.push(skip((
-                    Reason::NoText,
-                    "no text in the PDF (scanned or only pictures)".to_string(),
-                )));
-                continue;
-            }
-            // 改的时刻读不出来的（很少见）照 1970 年记：只影响搜到时带的时刻。
-            let at = Timestamp::from_unix_millis(document.modified)
-                .or_else(|| Timestamp::from_unix_millis(0))
-                .ok_or_else(|| KnowledgeError::Io("no usable time".to_string()))?;
-            shelf.index.replace(&document.source, &chunks, at, &stamp)?;
         }
         let present: BTreeSet<&str> = documents.iter().map(|doc| doc.source.as_str()).collect();
         for source in stamps
@@ -148,6 +134,45 @@ impl Knowledge {
         })
     }
 
+    /// 读一个变了的文档、切块、整份换掉，记下指纹 `stamp`；跳过的（太大、读不成、PDF 里没有字）交回原因和为什么，什么都不写。
+    fn rebuild(
+        &self,
+        index: &crate::recall::RecallIndex,
+        document: &Document,
+        stamp: &str,
+    ) -> Result<Option<(Reason, String)>, KnowledgeError> {
+        let biggest = document.kind.biggest();
+        if document.size > biggest {
+            return Ok(Some((
+                Reason::TooLarge,
+                format!("larger than {biggest} bytes"),
+            )));
+        }
+        let pages = match extract::pages(document.kind, &document.path, self.extractor.as_deref()) {
+            Ok(pages) => pages,
+            Err(why) => return Ok(Some(why)),
+        };
+        if pages.iter().map(String::len).sum::<usize>() as u64 > BIGGEST {
+            return Ok(Some((
+                Reason::TooLarge,
+                format!("text larger than {BIGGEST} bytes"),
+            )));
+        }
+        let chunks = chunks(document.kind, &pages);
+        if document.kind == Kind::Pdf && chunks.is_empty() {
+            return Ok(Some((
+                Reason::NoText,
+                "no text in the PDF (scanned or only pictures)".to_string(),
+            )));
+        }
+        // 改的时刻读不出来的（很少见）照 1970 年记：只影响搜到时带的时刻。
+        let at = Timestamp::from_unix_millis(document.modified)
+            .or_else(|| Timestamp::from_unix_millis(0))
+            .ok_or_else(|| KnowledgeError::Io("no usable time".to_string()))?;
+        index.replace(&document.source, &chunks, at, stamp)?;
+        Ok(None)
+    }
+
     /// 库 `id` 列出来的样子：名字、说明照 `kb.toml`，数照索引里现有的；`unavailable` 是挂的目录用不了的为什么（施工 K-4），
     /// 没有的照 `kb.toml` 读不读得出。
     pub(super) fn counted(
@@ -160,12 +185,13 @@ impl Knowledge {
         let (about, error) = about(place.dir());
         let switched = self.switched(account, id, &place);
         let shelf = self.shelf(account, id);
+        let keys = shelf.index.keys()?;
         Ok(Base {
             id: id.to_string(),
             name: about.name.unwrap_or_else(|| id.to_string()),
             description: about.description.unwrap_or_default(),
-            documents: shelf.index.stamps()?.len(),
-            chunks: shelf.index.keys()?.len(),
+            documents: skip_stamp::indexed(&shelf.index.stamps()?, &keys),
+            chunks: keys.len(),
             error: unavailable.or(error),
             auto: switched.or(about.auto).unwrap_or(false),
             package: place.package().map(str::to_string),

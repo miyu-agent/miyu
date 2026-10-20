@@ -43,6 +43,21 @@ impl RecallIndex {
         })
     }
 
+    /// 只记下来源 `source` 的指纹 `stamp`，块照留（施工 W-15 再补：跳过的文档也记，原来的块不动）。库用不了的不写。
+    ///
+    /// # Errors
+    ///
+    /// 写不进。
+    pub fn stamp_only(&self, source: &str, stamp: &str) -> Result<(), DbError> {
+        self.write(|tx| {
+            tx.execute(
+                "INSERT OR REPLACE INTO stamps (source, stamp) VALUES (?1, ?2)",
+                params![source, stamp],
+            )?;
+            Ok(())
+        })
+    }
+
     /// 拿掉来源 `source` 的全部块和它的指纹，在一个事务里（文档没了）。没有的不要紧。
     ///
     /// # Errors

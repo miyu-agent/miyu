@@ -16,6 +16,7 @@
 |---|---|---|
 | `crates/miyu-recall/src/chunk.rs` | 切块（纯逻辑）：Markdown 照标题、纯文本照段落，每块封顶（「怎么走」第二条） | K-1 上 |
 | `crates/miyu-store/src/recall/stamps.rs` | 检索库里每个来源的指纹、整份换掉一个来源（「怎么走」第三条） | K-1 上 |
+| `crates/miyu-store/src/knowledge/skip_stamp.rs` | 跳过的文档记的指纹：写法、认回来、库的文档数（「怎么走」第三条第 4 款） | W-15 再补 |
 | `crates/miyu-store/src/knowledge.rs` | 知识库：列出账号下的、读 `kb.toml`、开索引、照文件补、搜（K-2 起关键词、照意思两路合，`Meaning`、`index_of`）、读文档 | K-1 上 |
 | `crates/miyu-endpoint/src/knowledge.rs`、`refusal/knowledge.rs` | 协议 `kb.*`：读参数、在阻塞线程里调、写回应；`unknown_kb`、`unknown_document` | K-1 上 |
 | `crates/miyu-tool/src/knowledge.rs` | 两件工具的名字、最多给几块、知识库的端口 `KnowledgePort` 和它交回的几样；`Call` 多一格 `knowledge` | K-1 下 |
@@ -163,7 +164,7 @@ Knowledge bases you can search:
 1. 列出库里的文档，每个算指纹（大小、改的时刻），和 `stamps` 里记着的比。
 2. 新的、变了的：读出来、切块，在一个事务里拿掉它原来的块（连同它们的向量，K-2：下一次搜完照新的补）、放进新的、记下新的指纹（`RecallIndex::replace`）。
 3. 没了的（`stamps` 里有、目录里没有）：拿掉它的块（连同向量）和指纹。
-4. 一个文档读不了、太大、不是 UTF-8：跳过它（原来的块照留），记一行 `WARN knowledge document skipped kb=… path=… why=…`，别的照补。
+4. 一个文档读不了、太大、不是 UTF-8：跳过它（原来的块照留），记一行 `WARN knowledge document skipped kb=… path=… why=…`，别的照补。跳过的也记指纹（W-15 再补，`knowledge/skip_stamp.rs`）：文件指纹后面接原因和为什么；下一次文件没变的照记下的报跳过，不重读、不算进建索引的进度（「没有抽字的小程序」那一种装上了就重读）。库的文档数只数正常的指纹和跳过了还留着旧块的。
 5. 一个库同一时刻只有一个在补（库一把锁，核心一份登记）：两个请求同时来，后来的等前面的补完。
 6. 挂进来的照挂的目录补（K-4）。挂的目录用不了（不在、不是目录、读不了，写的不是绝对路径也不是 `~/` 开头、家目录不知道）：不补，索引不动（U 盘拔了再插回来不用重建），`kb.list` 里这个库带 `error`、数照索引里现有的，搜的时候跳过它（第四条），读里面的文档是没有这个文档；她的 system 里照旧列着（只有这一刻才知道用不了，跟着变就每回断一次缓存）。
 7. 不另监视文件（K-4 量过）：每次列、搜之前照指纹补就跟得上原处的改动。3000 篇（24000 块）的库不变的重扫 8 到 10 毫秒、改了一篇 8 到 13 毫秒、头一次补 0.6 秒上下（Linux、release，`measure_three_thousand_documents`）；监视省下的只有这 10 毫秒和「改过的块下一次搜完才补上向量」。量出重扫成了瓶颈再加。
