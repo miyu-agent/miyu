@@ -128,6 +128,11 @@ impl Decoder {
                 .collect();
             open.sort_unstable();
             deltas.extend(open.into_iter().map(|index| Delta::End { index }));
+            // 写到了输出上限（施工 3-10）：照常说完，再报一声。
+            if matches!(&self.ended, Some(End::Incomplete(reason)) if reason == "max_output_tokens")
+            {
+                deltas.push(Delta::Truncated);
+            }
         }
         Ending {
             deltas,

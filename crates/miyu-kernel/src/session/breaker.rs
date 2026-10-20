@@ -102,6 +102,7 @@ impl Session {
             error: Some(error),
             compaction: None,
             purpose: None,
+            truncated: false,
         };
         let mut events =
             vec![self.record(at, By::Kernel, cause.clone(), Body::ModelCalled(called))];

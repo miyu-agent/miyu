@@ -170,7 +170,7 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | 没有 `stop_reason`，见到了 `message_stop` | 正常说完 |
 | 两样都没见到 | `retryable`，「流断了：没等到 stop_reason，也没等到 message_stop」 |
 
-2. 正常说完的，开始了的块照编号一块块 `End`；出了错的不收。
+2. 正常说完的，开始了的块照编号一块块 `End`；`stop_reason` 是 `max_tokens`、`model_context_window_exceeded` 的，收完再交一段 `Truncated`（写到了输出上限，施工 3-10，`kernel/session.md`「写到输出上限」）。出了错的不收。
 3. 用量取记下的那一份。
 
 **用量**，归成内核的四项（`message_start` 的 `message.usage` 先记，`message_delta` 的 `usage` 里有哪项盖哪项）：

@@ -716,6 +716,7 @@
     "view/error/class/content_policy": "Blocked by content policy",
     "view/error/class/bad_stream": "Malformed response stream",
     "view/error/class/empty_reply": "Empty response",
+    "view/error/class/output_limit": "Reply exceeded the output limit",
     "view/error/class/bad_summary": "Summary extraction failed",
     "view/error/class/compaction_paused": "Auto-compaction paused",
     "view/error/class/other": "Model error",

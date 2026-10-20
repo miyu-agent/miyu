@@ -271,7 +271,8 @@
    5. 有的写成 `message.assistant`：`seen` 是这次请求的，出错的多写 `"interrupted":true`，`by` 是那个模型，`cause` 是回合的。
    6. 接着追加 `model.called`（下表），`by` 是内核，`cause` 是回合的。
    7. 出错的：摘要请求报 `context_too_long` 的，先截掉最老的几组再发（`compaction.md` 第三条第 10 条，施工 6-6 中）；fork 式的摘要回复里调了工具、快照里有隔离式那句 system、还没改走过的，改发隔离式（第三条第 7 条，施工 6-6 下），两样都记在回合上、落了盘再发；主请求报 `context_too_long`、一个字都没收到、这一步还没被动压过的，落了盘先压再重发（被动压缩，`compaction.md` 第六条，施工 6-7）；能再来就等着再来（「出错再来」），不能的结束回合，`error`。收到的半截照样留在日志里。自动压缩的摘要请求这样结束的，是一次失败：最近一次压缩以后写下的数到 3 次，在 `turn.ended` 前面写 `context.compaction_paused`（`compaction.md` 第十条第 4 条）。
-   8. 正常说完的：这一步连着出错的次数清零。回复里有工具调用，调工具；没有，结束回合，`completed`。
+   8. 正常说完、驱动报了写到输出上限的（`Delta::Truncated`，施工 3-10）：照下面「写到输出上限」。
+   9. 正常说完的：这一步连着出错的次数、连着写到上限的次数清零。回复里有工具调用，调工具；没有，结束回合，`completed`。
 
 | `model.called` 的格 | 写什么 |
 |---|---|
@@ -287,6 +288,15 @@
 | `result` | `interrupted` 被打断，`superseded` 撤掉重发（「排队的消息」第 5 条），`error` 出错，别的 `ok` |
 | `error` | 出错的分类和原话 |
 | `compaction` | 摘要请求的：哪一种压缩（现在有 `auto`、`manual`）；主请求没有 |
+| `truncated` | 驱动报了写到输出上限的（施工 3-10）写 `true` |
+
+**写到输出上限**（施工 3-10，`session/truncated.rs`）：驱动照常说完，却是写到上限停的（openai-chat 的 `length`、anthropic 的 `max_tokens`、`model_context_window_exceeded`、openai-responses 的 `max_output_tokens`），收块以后多交一段 `Delta::Truncated`。
+
+1. 回复里的工具调用一个都不派：最后一个只有半截参数，前面的是一整件事的前半。拼回复照出错的规矩去掉全部工具调用，写成的回复多写 `"interrupted":true`。一块都没有的不写回复，也不按 `empty_reply` 算。
+2. 只截在正文里的（留下了正文块、没去掉调用）：追加事实 `reply_cut`，照被打断的回复接着写，会接着写的供应商从断处续写（`kernel/request.md` 第 7 条）。截掉了调用的、没写出正文的：追加事实 `output_limit`（`resources/core/facts/output-limit.txt`），以前造的快照没有这份模板的不追加。
+3. 回合回到 `Ready`，落了盘照有效历史再组装、马上请求，不等；不算进请求数（不占步数），连着出错的次数清零。
+4. 一轮里连着 3 次（`TRUNCATION_LIMIT`，照 Claude Code 的恢复次数）以后，下一次再写到上限照出错收：分类 `output_limit`，原话「回复连着 4 次写到了输出上限」，不再来，结束回合，`error`。照常说完、没写到上限的一次就清零。
+5. 摘要请求写到上限的不看它，照常取摘要。
 
 **出错再来**：
 
@@ -607,6 +617,12 @@
 <reply-cut>The reply above was cut off before it was finished. The user has already seen it. Continue from exactly where it stopped, without repeating it.</reply-cut>
 ```
 
+回复写到输出上限、调用没派以后再来的那一块事实（`resources/core/facts/output-limit.txt`，`kind` 是 `output_limit`，施工 3-10）：
+
+```text
+<output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>
+```
+
 ### 出错
 
 | 什么时候 | 怎么说 |
@@ -622,6 +638,7 @@
 | `bad_stream` | 请求还没发出去就来了增量；请求还没发出去就说完了 |
 | `bad_stream` | 模型的增量对不上，第 <n> 块：这一块已经开始过了、跳过了编号，块要一块接一块地开始、这一块还没开始、这一块已经收全了、正文块没有私有数据、私有数据来了两次 |
 | `empty_reply` | 回复里一个块都没有；the recap reply has no text（回顾的回复里没有正文，施工 3-8 四补） |
+| `output_limit` | 回复连着 4 次写到了输出上限（施工 3-10） |
 
 ### 给人看的字
 
@@ -688,6 +705,7 @@
 | `crates/miyu-kernel/src/session/tests/load.rs` | 走完的载入一样往下走；坏日志拒绝；崩在哪都收尾、等你开口；崩之前的命令不再生效；生效的权限回来；检查点重读过文件的，第一个动作是 `Recall`（施工 6-9；撤掉压缩的撤销载入以后见 `history.md`「守着它的」） |
 | `crates/miyu-kernel/src/session/tests/spans.rs`、`scenario/spans.rs`（施工 2-3 补） | 回复每一块的起止：思考、正文、工具调用各一块照增量的时刻，收块不算；驱动流完了才一起收块、字交错着来、私有数据、时钟往回拨；出错收的半截、打断收的半截只记留下的，空块不记；出错没收到字的没有这一格 |
 | `crates/miyu-kernel/src/session/tests/scenario.rs`、`scenario/retrying.rs`、`scenario/stopping.rs` | 执行器替身（`testkit`）把真会话一整轮一整轮地跑：两个读一起跑、中间来一句；只读拦写入；步数上限和失败的请求；重试的每一种（原样再来、半截接着说、半截的调用丢掉、带着 HTTP 状态码、照供应商等、5 次放弃、不该再来的、等的时候打断、重启、切级别、不算步数、说完清零）；打断接着发、重启接着干、崩了等你；停着的写：停在改之前、改完了、到 10 秒、又打断一次、等的时候来的消息排队和撤销被拒、等的时候重启（退回的不再接着干，接着发的交给下一轮） |
+| `crates/miyu-kernel/src/session/tests/scenario/truncated.rs`（施工 3-10） | 写到输出上限：截掉的调用一个不派、回复记成被打断的、`model.called` 带 `truncated`、跟 `output_limit` 马上再请求；只截在正文里的跟 `reply_cut`；只有思考、什么都没写出来的跟 `output_limit`，空的不算 `empty_reply`；连着 3 次接着、第 4 次出错 `output_limit` 结束；中间照常说完一次清零；不占步数；以前的快照没有那一句照样不派、再请求 |
 | `crates/miyu-kernel/src/session/tests/random.rs` 和 `random/` | 三百例随机输入（CI 另跑两万例），每一步查：不变量（第 5 条一个会话查不了）；块的起止写了回复的才有、和回复的块一块一项，摘要请求没有（施工 2-3 补）；挂接点、请求、派工具、步数上限、只读的规矩；打断时停着的（叫它停只在打断里、停着的交回来才收尾、到点和又打断就不等，十个种子里一个多调写文件的专走这里）；崩了、重启了载入以后照规矩走；回报（施工 7-2，另一串随机数，七个种子里一个是一次性的会话）：对不上的拒绝、不理，开轮、排着、只记下、回合结束接着开、恢复撤销以后接着开照「回报」的规矩（`random/watch/reports.rs`）；清空（施工 6-8 补，另一串随机数）：照规矩收下或者拒绝，收下的一批三条（`random/watch/clear.rs`）；重做（施工 4-7 再补，和撤销同一串随机数）：照规矩收下或者拒绝，收下的撤最后一轮、重发撤掉的人的话、由最后一句开一轮（`random/watch/redo.rs`）；改标题、置顶（施工 3-8 三补，另一串随机数，每一例最后喂一次：夹在中间会让难得走到的几条路走不到）；打断时排着的留着（施工 O-6，种子除以 4 余 1 的退回换成留着，别的种子的输入不变，订别的会话的那批种子不在里面）：那一轮结束以后不接着开、不撤回；记下斜杠命令（施工 O-6，跟在改标题后面喂）；回顾（施工 3-8 四补，另一串随机数，四个种子里一个）：照落了盘的有效历史判出拒绝、交回、并进、请求，请求照重建的有效历史组装，替身送的回报照内核的规矩算出写没写成，两条不带回合编号、回应照判出来的，排着的、回报、压缩的边界都不看它；有回顾在路上时不崩，跑完以前让它说完（`random/watch/recap.rs`、`random/recapping.rs`）；别的会话发来的话（施工 C-2，另一串随机数，三个发话方、四句话，随机的策略把数调小成 3 句、20 秒、5 句）：防刷屏照看守自己数的拒、原因对得上，收下的不带回合编号、同一批里不作废不撤回，叫不叫醒她照回报的规矩（`random/watch/peers.rs`、`random/peering.rs`）；出错再来（施工 8-9 加换端点、全在冷却）：再来的只有能再来的分类和端口说换了端点的，换了端点、全在冷却的没到 5 次、要等的不超过 2 分钟就一定再来，推的 `status` 带的 `failover` 照端口说的，换了端点又没说等多久的等 0 毫秒（`random/watch/model.rs`、`random/endings.rs`）；撤掉重发（施工 4-15，`random/watch/supersede.rs`）：撤掉的只有一个字都还没回的主请求，没有用量、金额，紧跟在撤掉它的那条回合里的消息后面，重发不算步数；请求在路上、还没回字时，常发消息的那三格先来增量，不然常常撤掉，走不到调工具的那些路；空了的通知（施工 C-6）订会话的种子是除以 8 余 7 的，闲着、又在等别的会话时每回都送通知（施工 4-15 放宽：闲着时到的那几条路原来两万例里只有一例）；换模型（施工 8-10，另一串随机数、另一串命令编号，四个种子里一个）：一样的不记，不一样的只记一条，回合开始交的是看守照日志算的引用，挂接点结果里的退回对得上才记、记在注入前面，熔断只看换过去以后的（`random/watch/configure.rs`、`random/configuring.rs`；施工 8-18 曾在这个种子里再多生成一串思考强度的命令，8-18（补）去掉了）；每条路、每一种输入都走到过 |
 | `crates/miyu-kernel/src/tool/tests.rs`、`tool/texts/tests.rs` | 参数修正的每一种，嵌套的对象、数组里的也修；访问类别不认识的算写入；那几句的字段转义、每句带说法 |
 | `crates/miyu-kernel/src/accumulate/tests.rs` | 拼回复、调用编号、空块、交错的字、截断只留收全的调用、增量对不上的六种；每一块带着它在流里是第几块（施工 2-3 补） |

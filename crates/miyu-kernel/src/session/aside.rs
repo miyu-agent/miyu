@@ -161,6 +161,7 @@ impl Aside {
             error: error.clone(),
             compaction: None,
             purpose: Some(purpose),
+            truncated: false,
         };
         let blocks = match error {
             Some(error) => Err(error),

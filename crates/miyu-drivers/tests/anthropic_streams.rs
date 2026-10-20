@@ -17,7 +17,7 @@ use miyu_kernel::request::{Message, Request};
 use serde_json::{Value, json};
 
 /// 流的样本，一份一种情形。
-const STREAMS: [&str; 15] = [
+const STREAMS: [&str; 16] = [
     "text",
     "thinking-signature",
     "thinking-omitted",
@@ -26,6 +26,7 @@ const STREAMS: [&str; 15] = [
     "usage-in-delta",
     "refusal",
     "max-tokens",
+    "window-exceeded",
     "stream-error",
     "ping-and-unknown",
     "server-tool-ignored",
@@ -76,6 +77,7 @@ fn render((deltas, ending): &(Vec<Delta>, Ending)) -> String {
                 format!("private {index} {} {}", private.driver, private.data.get())
             }
             Delta::End { index } => format!("end {index}"),
+            Delta::Truncated => "truncated".to_string(),
         })
         .collect();
     lines.push(match &ending.usage {

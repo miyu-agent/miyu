@@ -92,7 +92,7 @@ fn pushed(at: &str, delta: &Delta) -> Transient {
         Delta::Start { index, kind } => (*index, Piece::Start(kind.clone())),
         Delta::Text { index, text } => (*index, Piece::Text(text.clone())),
         Delta::End { index } => (*index, Piece::End),
-        Delta::Private { .. } => panic!("私有数据不推"),
+        Delta::Private { .. } | Delta::Truncated => panic!("私有数据、写到上限都不推"),
     };
     Transient {
         at: Timestamp::parse(at).expect("样本的时刻合写法"),

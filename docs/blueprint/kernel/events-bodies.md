@@ -365,7 +365,7 @@
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|
-| `kind` | 事实块的类别 | 必有 | 这一块的类别。内核注入的有 `env`、`permission`、`session`（施工 1-13 再补）、`reply_cut` 四类（`kernel/request.md`）；模块交的有记忆的 `memory`（施工 R-4 上，`memory.md` 第三条）；扩展经 `session.respond`、`session.note` 交的，类别由它定（施工 O-14 上、补） |
+| `kind` | 事实块的类别 | 必有 | 这一块的类别。内核注入的有 `env`、`permission`、`session`（施工 1-13 再补）、`reply_cut`、`output_limit`（施工 3-10）五类（`kernel/request.md`）；模块交的有记忆的 `memory`（施工 R-4 上，`memory.md` 第三条）；扩展经 `session.respond`、`session.note` 交的，类别由它定（施工 O-14 上、补） |
 | `text` | 字符串 | 必有 | 发给模型的原文：标签外壳、转义都已经做好，以后一字不改地回放 |
 | `refs` | 字符串的数组 | 可以没有 | 交它的模块记下的编号（施工 R-4 上：记忆写这一块里那几条的编号）。内核不解读、不进请求，原样记，回合开始原样交回给挂接点（`RunTurnStartHooks` 的 `present`）；空的不写，以前的没有这一格，读进来写出去一字不差 |
 
@@ -415,6 +415,7 @@
 | `error` | 出错 | 可以没有 | 出错的分类、原话，有的话还有 HTTP 状态码；只在出错时有 |
 | `compaction` | `auto`、`manual`、`overflow` | 可以没有 | 这是哪一种压缩的摘要请求；主请求没有。以前的日志没有这一格（施工 6-6 上） |
 | `purpose` | `recap`、`title`、`compaction` | 可以没有 | 辅助请求的用途（施工 3-8 四补，`26-提示词.md` J6）：回顾，起标题（施工 3-8 五补），提前压好的摘要（施工 6-11 上，`compaction.md` 第十五条：不带 `compaction` 那一格，不数进熔断）。主请求、摘要请求没有；以前的日志没有这一格。不认识的原样留着，也算辅助请求 |
+| `truncated` | `true` | 可以没有 | 回复写到了输出上限、没写完（施工 3-10）：驱动报的照写，出错收的那一次（连着到了次数）也写；没有的不写，以前的日志没有这一格 |
 
 - 带 `purpose` 的是辅助请求（`ModelCalled::aside()`）：它和主对话无关，她没在这次请求里听到什么，它报的用量也不是主对话的大小。所以用量的锚（`compaction.md` 第一条）、排着的话她听到没有（`kernel/history.md`）、压缩的边界（`compaction.md` 第三条第 2 条）、渲染时回合开始的那几块（`kernel/request.md`「组装」）都不看它。它不带 `turn`、没有回复，`seen` 是它照到的那一条，`first_difference`、`blocks` 没有。回顾的 `cause` 是要它的命令；起标题、提前压好的没有 `cause`（内核自己要的）。
 - `first_difference` 在代码里装在盒子里（施工 3-8 四补）：它多半没有；`purpose` 加进来以后 `model.called` 比别的种类大出两百字节，clippy 的 `large_enum_variant` 拦下了。JSON 的写法不变。`cost` 照样装在盒子里（施工 8-15）。
@@ -460,6 +461,7 @@
 | `empty_reply` | 回复里一个块都没有；回顾的回复里没有正文（施工 3-8 四补） | 内核 |
 | `bad_summary` | 摘要请求的回复里取不出摘要：空的，或者调了工具（施工 6-2 上） | 内核 |
 | `compaction_paused` | 自动压缩暂停着，这一次请求明知放不下，没发（施工 6-6 上） | 内核 |
+| `output_limit` | 回复连着几次写到输出上限（施工 3-10）：第 4 次照出错收，不再来 | 内核 |
 | `no_model` | 没有能用的模型：`models.chat` 没配、会话的引用解析不出也退不回去、那一家用不了、key 一个都取不到。没发出去，没有 `endpoint`、`model`、`request`，不再来（施工 8-6，`models.md`「事件」） | 执行器（会话的路由） |
 | `cooling` | 候选不止一个，全在冷却：没发出去，没有 `endpoint`、`model`、`request`；原话写每个候选为什么、到什么时候。能再来：等到最早恢复的那一个（施工 8-9，`models.md`「怎么走」第五条第 6 条） | 执行器（会话的路由） |
 

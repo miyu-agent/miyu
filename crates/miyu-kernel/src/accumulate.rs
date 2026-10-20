@@ -1,7 +1,7 @@
 //! 流式累积器：模型的输出一段一段地来，拼成完整的内容块（`docs/designs/03-事件模型.md`
 //! 第五节「增量和累积器怎么写」）。
 //!
-//! 驱动把各家的响应分片解码成四种统一的增量（[`Delta`]），累积器照块收下来。正常说完，
+//! 驱动把各家的响应分片解码成五种统一的增量（[`Delta`]），累积器照块收下来。正常说完，
 //! 拼成一条回复的全部内容（[`Accumulator::finish`]）；被打断，只留收全了的部分
 //! （[`Accumulator::cut_off`]）。一次响应一个累积器。
 
@@ -42,6 +42,8 @@ pub enum Delta {
         /// 第几块。
         index: usize,
     },
+    /// 回复写到了输出上限，没写完（施工 3-10）：照常说完，内核照它不派里面的工具调用。驱动在收块以后交，至多一次。
+    Truncated,
 }
 
 /// 一块的种类。
@@ -63,6 +65,8 @@ pub enum Kind {
 pub struct Accumulator {
     /// 已经开始的块，照开始的先后。
     blocks: Vec<Building>,
+    /// 驱动说写到了输出上限（施工 3-10）。
+    truncated: bool,
 }
 
 /// 拼到一半的一块。
@@ -113,8 +117,14 @@ impl Accumulator {
                 block.private = Some(private);
             }
             Delta::End { index } => self.open(index)?.ended = true,
+            Delta::Truncated => self.truncated = true,
         }
         Ok(())
+    }
+
+    /// 驱动说写到了输出上限、没写完（施工 3-10）。
+    pub fn truncated(&self) -> bool {
+        self.truncated
     }
 
     /// 到目前为止的每一块（施工 9-8 八补，中途订阅的补推）：是什么、拼好的字、收全了没有，照开始的先后。私有数据不给。

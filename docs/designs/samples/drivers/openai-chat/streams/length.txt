@@ -2,5 +2,6 @@ start 0 tool_call read
 private 0 openai-chat {"id":"call_l"}
 text 0 "{\"path\":\"sr"
 end 0
+truncated
 usage none
 ok

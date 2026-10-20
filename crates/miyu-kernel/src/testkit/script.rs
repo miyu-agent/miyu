@@ -33,6 +33,8 @@ pub struct Line {
     pub usage: Option<Usage>,
     /// 出错时端口说换了端点（施工 8-9）。
     pub failover: bool,
+    /// 写到了输出上限（施工 3-10）：收全以后再送一声。
+    pub truncated: bool,
 }
 
 impl Line {
@@ -57,6 +59,7 @@ impl Line {
             partway: None,
             usage: None,
             failover: false,
+            truncated: false,
         }
     }
 
@@ -127,6 +130,14 @@ impl Line {
                 output: 0,
                 reasoning: None,
             }),
+            ..self
+        }
+    }
+
+    /// 同样的回复，写到了输出上限（施工 3-10）：照常说完，收全以后驱动多报一声。
+    pub fn truncated(self) -> Line {
+        Line {
+            truncated: true,
             ..self
         }
     }

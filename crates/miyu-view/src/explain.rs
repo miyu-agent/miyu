@@ -6,13 +6,14 @@ use miyu_kernel::event::CallError;
 use crate::words::{self, Words, keys};
 
 /// 内核自己查出来的分类：原话是给运行日志的英文诊断，只写人话。
-const KERNEL_CLASSES: [&str; 6] = [
+const KERNEL_CLASSES: [&str; 7] = [
     "no_model",
     "cooling",
     "bad_stream",
     "empty_reply",
     "bad_summary",
     "compaction_paused",
+    "output_limit",
 ];
 
 /// 限速的分类：没给状态码的当 429。

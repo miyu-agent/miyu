@@ -703,6 +703,7 @@
     "view/error/class/content_policy": "コンテンツポリシーによりブロック",
     "view/error/class/bad_stream": "応答ストリームが異常です",
     "view/error/class/empty_reply": "応答が空です",
+    "view/error/class/output_limit": "応答が出力上限を超えました",
     "view/error/class/bad_summary": "要約の取得に失敗しました",
     "view/error/class/compaction_paused": "自動圧縮は一時停止中です",
     "view/error/class/other": "モデルエラー",

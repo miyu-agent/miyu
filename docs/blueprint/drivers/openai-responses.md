@@ -130,7 +130,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | `response.incomplete`，别的原因 | `other`，原话 `incomplete: <它>` |
 | 没见到收尾的事件 | `retryable`，「流断了：没等到 response.completed」 |
 
-正常说完的，开始了的块照编号一块块 `End`；出了错的不收。
+正常说完的，开始了的块照编号一块块 `End`；原因是 `max_output_tokens` 的，收完再交一段 `Truncated`（施工 3-10，同 openai-chat）。出了错的不收。
 
 **用量**，取收尾那个事件的 `response.usage`：
 

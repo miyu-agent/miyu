@@ -12,8 +12,8 @@
 //! 带上上一块的级别，她看得出这是人切的、从哪一级切过来；没有上一块的（第一轮、压缩以后、撤掉了带着它们的几轮以后）照旧
 //! 用平常那一份。
 //!
-//! 还有一块不是环境和状态，是发生了的事：回复被出错打断了（`reply_cut`，施工 3-5 下）。它跟在
-//! 半截回复后面，每次都注入，不和以前的比。
+//! 还有两块不是环境和状态，是发生了的事：回复被出错打断了（`reply_cut`，施工 3-5 下），回复写到了输出上限、调用没派
+//! （`output_limit`，施工 3-10）。它们跟在半截回复后面，每次都注入，不和以前的比。
 //!
 //! 有角色扮演提示的人格还有一块 `reminder`（施工 P-1 补，`08-上下文投影.md` C3、`26-提示词.md` J10）：只在回合开始查，
 //! 隔几轮一条，不比原文。组装把回合开始时注入的这一块排在触发的那句后面（C2 唯一的例外）。
@@ -47,6 +47,9 @@ pub struct FactTemplates {
     permission_changed: Option<Template>,
     /// 角色扮演提示那一块的原文，拼好的（施工 P-1 补）。没有的不注入。
     reminder: Option<String>,
+    /// 回复写到了输出上限、调用没派的那一句，没有字段（施工 3-10）。以前造的快照里没有：那些会话照样不派、接着请求，不加
+    /// 这一句。
+    output_limit: Option<Template>,
 }
 
 /// 角色扮演提示这一类的名字。组装照它把回合开始时注入的这一块排在触发的那句后面（`08-上下文投影.md` C2 唯一的例外）。
@@ -92,6 +95,7 @@ impl FactTemplates {
             session: session.map(Template::parse).transpose()?,
             permission_changed: permission_changed.map(Template::parse).transpose()?,
             reminder: None,
+            output_limit: None,
         };
         templates.env.render(&env_fields("", "", ""))?;
         templates.permission.render(&permission_fields(""))?;
@@ -125,6 +129,20 @@ impl FactTemplates {
         .into_iter()
         .flatten()
         .collect()
+    }
+
+    /// 带上回复写到了输出上限的那一句（施工 3-10）：`None` 的不加。读好以后试换一次。
+    ///
+    /// # Errors
+    ///
+    /// 写法坏了、要了字段，返回 [`TemplateError`]。
+    pub fn with_output_limit(mut self, text: Option<&str>) -> Result<FactTemplates, TemplateError> {
+        let template = text.map(Template::parse).transpose()?;
+        if let Some(template) = &template {
+            template.render(&BTreeMap::new())?;
+        }
+        self.output_limit = template;
+        Ok(self)
     }
 
     /// 带上角色扮演提示那一块的原文（施工 P-1 补）：造策略时拼好交进来，冻结在会话上。`None` 的不注入。
@@ -176,6 +194,23 @@ impl FactTemplates {
                 .render(&BTreeMap::new())
                 .expect("造的时候试换过，没有字段"),
         }
+    }
+
+    /// 回复写到了输出上限、调用没派的那一块（施工 3-10）：跟在记成被打断的回复后面。以前造的快照没有这份模板，没有这一块。
+    ///
+    /// # Panics
+    ///
+    /// 实际不会 panic：造的时候已经试换过；`output_limit` 这个类别名也合写法。
+    pub fn output_limit(&self) -> Option<ContextInjected> {
+        let template = self.output_limit.as_ref()?;
+        Some(ContextInjected {
+            refs: Vec::new(),
+            after: false,
+            kind: kind("output_limit"),
+            text: template
+                .render(&BTreeMap::new())
+                .expect("造的时候试换过，没有字段"),
+        })
     }
 
     /// 环境那一块：此刻 `now` 到十分钟（施工 1-13 三补，原来到小时），时区，工作目录。

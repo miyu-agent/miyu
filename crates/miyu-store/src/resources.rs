@@ -241,6 +241,7 @@ impl ResourceRoot {
                 reply_cut: fact("reply-cut.txt")?,
                 session: Some(fact("session.txt")?),
                 permission_changed: Some(fact("permission-changed.txt")?),
+                output_limit: Some(fact("output-limit.txt")?),
             },
             tool_results: ToolResultTexts {
                 unknown: result("unknown.txt")?,

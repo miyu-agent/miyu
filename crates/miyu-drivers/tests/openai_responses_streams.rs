@@ -76,6 +76,7 @@ fn render((deltas, ending): &(Vec<Delta>, Ending)) -> String {
                 format!("private {index} {} {}", private.driver, private.data.get())
             }
             Delta::End { index } => format!("end {index}"),
+            Delta::Truncated => "truncated".to_string(),
         })
         .collect();
     lines.push(match &ending.usage {

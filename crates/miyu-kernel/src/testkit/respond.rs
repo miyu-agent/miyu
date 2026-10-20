@@ -347,6 +347,9 @@ pub(super) fn deltas(line: &Line) -> Vec<Delta> {
         deltas.extend(block(index, kind, args, ends));
         index += 1;
     }
+    if ends && line.truncated {
+        deltas.push(Delta::Truncated);
+    }
     deltas
 }
 

@@ -61,6 +61,9 @@ pub struct ModelCalled {
     /// `compaction`（施工 6-11 上）；主请求、当场压的摘要请求没有。以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub purpose: Option<Purpose>,
+    /// 回复写到了输出上限、没写完（施工 3-10）：驱动报的，照写；没有的不写，以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub truncated: bool,
 }
 
 impl ModelCalled {
@@ -222,6 +225,8 @@ text_enum!(
         /// 候选不止一个，全在冷却（施工 8-9，`models.md`「怎么走」第五条第 6 条）：端口当场说完，没发出去。能再来：等到
         /// 最早恢复的那一个（`wait_ms`）。
         Cooling = "cooling",
+        /// 回复连着几次写到输出上限（施工 3-10，`session/truncated.rs`）：内核当场查出的，不再来。
+        OutputLimit = "output_limit",
     }
 );
 

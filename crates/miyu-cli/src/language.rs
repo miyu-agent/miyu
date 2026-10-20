@@ -196,6 +196,7 @@ impl Language {
             "compaction_paused" => ("自动压缩已暂停", "auto-compaction paused"),
             "no_model" => ("没有可用的模型", "no model available"),
             "cooling" => ("模型冷却中", "models cooling down"),
+            "output_limit" => ("回复超过输出上限", "reply exceeded the output limit"),
             _ => ("模型错误", "model error"),
         };
         match self {

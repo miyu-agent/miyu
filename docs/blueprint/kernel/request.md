@@ -103,7 +103,7 @@
 
 **事实**：
 
-- `FactTemplates::new(env, permission, reply_cut, session, permission_changed)`：五份模板的原文；`session`、`permission_changed` 是 `Option`，以前造的快照没有这两份，是 `None`（施工 1-13 再补、2-7 补）。
+- `FactTemplates::new(env, permission, reply_cut, session, permission_changed)`：五份模板的原文；`session`、`permission_changed` 是 `Option`，以前造的快照没有这两份，是 `None`（施工 1-13 再补、2-7 补）。`with_output_limit(Option)` 再带上写到输出上限那一份（施工 3-10），造的时候同样试换；以前造的快照没有，是 `None`，`output_limit()` 交回空的。
 - `env(此刻, &Environment)`、`permission(&Permission)`、`reply_cut()`：各交回一块 `ContextInjected { kind, text }`，`kind` 是 `env`、`permission`、`reply_cut`。`session(&SessionId)` 交回 `kind` 是 `session` 的一块，没有这份模板的交回 `None`。`permission_changed(&Permission, 上一级)` 交回切换那一份写的一块，`kind` 也是 `permission`，没有这份模板的交回 `None`（施工 2-7 补）。
 - `boundary(有效历史, 此刻, &Environment, &Permission, &SessionId)`：一个边界上该注入的几块，照环境、权限、会话编号的先后，没有编号模板的不查编号。环境、编号交给 `changed` 比；权限比级别、挑模板（「事实」第 2 条，施工 2-7 补）。回合开始、这一轮切过级别以后的边界都用它。
 - `effective_level(&Permission)`：实际生效的那一级的写法（「事实」第 6 条）。`history` 列切权限的那一条也用它（`tools/history.md`，施工 2-7 补）。
@@ -112,7 +112,7 @@
 
 **模板** `Template`：`parse(原文)`、`render(字段)`、`fill(字段, 清理)`、`fields()`；另有 `escape(值)`。字段用 `BTreeMap<&str, &str>` 交进来。
 
-**累积器** `Accumulator`：`apply(增量)`、`finish(回复的序号)`、`cut_off(回复的序号)`。增量 `Delta` 四种，都带 `index`（第几块）：
+**累积器** `Accumulator`：`apply(增量)`、`finish(回复的序号)`、`cut_off(回复的序号)`。增量 `Delta` 五种，前四种带 `index`（第几块）：
 
 | 增量 | 另外带着 |
 |---|---|
@@ -120,6 +120,7 @@
 | `Text` | `text`：正文、思考、或者工具调用参数原文的一段 |
 | `Private` | `private`：驱动私有数据 |
 | `End` | 没有 |
+| `Truncated`（施工 3-10） | 不带 `index`：回复写到了输出上限，驱动在收块以后交，至多一次；累积器记下（`truncated()`），不推给头、不算块的起止 |
 
 ### 怎么走
 
@@ -246,6 +247,7 @@
 | `session` | 同上；快照里没有这份模板的不查（施工 1-13 再补） | `id` |
 | `reminder` | 只在回合开始；快照里没有 `reminder` 的不查（施工 P-1 补） | 没有：快照里拼好的一块，原样 |
 | `reply_cut` | 说到一半断了、要带着半截再请求 | 没有 |
+| `output_limit` | 回复写到输出上限、调用没派，要再请求（施工 3-10，`kernel/session.md`「写到输出上限」） | 没有 |
 
    `reminder` 是角色扮演提示（`08-上下文投影.md` C3、`26-提示词.md` J10）：有效历史里没有内核记的这一类，注入；有的，数它后面的 `turn.started`（这一轮的算在内），到 3 注入，所以是第 1、4、7……轮。压缩替掉的、撤掉的不在有效历史里，下一轮重来；模块注入的同类块不算。它不比原文，排在同一批的环境、权限、编号后面（`FactTemplates::reminder`）。
 
@@ -338,6 +340,7 @@
 | `facts/session.txt` | `<session id="{id}"/>` | 事实 `session`（施工 1-13 再补） |
 | `facts/permission-changed.txt` | `<permission level="{level}" previous="{previous}">The user changed the permission level.</permission>` | 事实 `permission`：人切了级别以后的边界、她看到过上一块的（施工 2-7 补；原文等主会话 A/B 定） |
 | `facts/reply-cut.txt` | `<reply-cut>The reply above was cut off before it was finished. The user has already seen it. Continue from exactly where it stopped, without repeating it.</reply-cut>` | 事实 `reply_cut` |
+| `facts/output-limit.txt`（施工 3-10） | `<output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>` |
 | `facts/reminder-open.txt`、`facts/reminder-close.txt` | `<persona-reminder>`、`</persona-reminder>`，各一行 | 事实 `reminder` 的开头、收尾：拼快照时和人格的原文拼成一块（施工 P-1 补，`policy.md`「拼」第 4 条） |
 | `turn-ended/interrupted.txt` | `<turn-ended reason="interrupted">The user interrupted this turn.</turn-ended>` | 人这一边 |
 | `turn-ended/error.txt` | `<turn-ended reason="error">This turn stopped on an error.</turn-ended>` | 人这一边 |

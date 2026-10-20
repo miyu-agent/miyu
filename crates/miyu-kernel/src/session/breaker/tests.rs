@@ -21,6 +21,7 @@ fn called(compaction: Option<CompactTrigger>, result: CallResult) -> ModelCalled
         error: None,
         compaction,
         purpose: None,
+        truncated: false,
     }
 }
 

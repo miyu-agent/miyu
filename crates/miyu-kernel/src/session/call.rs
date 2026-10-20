@@ -22,6 +22,7 @@ use crate::origin::{By, Model};
 use crate::request::Difference;
 use crate::time::Timestamp;
 use settle::Ending;
+pub(super) use settle::Truncation;
 
 /// 在路上的一次请求。
 #[derive(Debug)]
@@ -106,6 +107,11 @@ impl Call {
 }
 
 impl Call {
+    /// 驱动说写到了输出上限（施工 3-10）。
+    pub(super) fn truncated(&self) -> bool {
+        self.accumulator.truncated()
+    }
+
     /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 八补）：每块先 `start`，有字的再一段拼好的字，收全了的再 `end`。
     /// 还没发出去的、摘要请求（推的是进度）没有。
     fn so_far(&self) -> Option<(By, Vec<(usize, Piece)>)> {
@@ -253,6 +259,8 @@ impl Session {
         };
         let compacting = call.compaction.is_some();
         let cost = cost.map(Box::new);
+        // 连着写到输出上限到了次数（施工 3-10）：这一次照出错收，不再接着。
+        let error = error.or_else(|| self.output_limit(&call));
         let settled = self.settle(at, call, cause.clone(), Ending::Said { usage, cost, error });
         let mut events = settled.events;
         if let Some(error) = settled.error {
@@ -318,9 +326,12 @@ impl Session {
             actions.extend(done.map(Action::PushTransient));
             return actions;
         }
+        if let Some(truncation) = settled.truncated {
+            return self.truncated(at, cause, events, truncation);
+        }
         if let Some(turn) = self.turn.as_mut() {
-            turn.retries = 0;
-            turn.overflowed = false;
+            turn.answered();
+            turn.truncations = 0;
         }
         match settled.reply {
             Some(reply) if !settled.calls.is_empty() => {
@@ -356,7 +367,7 @@ fn piece(delta: &Delta) -> Option<(usize, Piece)> {
     match delta {
         Delta::Start { index, kind } => Some((*index, Piece::Start(kind.clone()))),
         Delta::Text { index, text } => Some((*index, Piece::Text(text.clone()))),
-        Delta::Private { .. } => None,
+        Delta::Private { .. } | Delta::Truncated => None,
         Delta::End { index } => Some((*index, Piece::End)),
     }
 }

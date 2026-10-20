@@ -359,6 +359,7 @@ C 也查完了。
 | `content_policy` | 内容被拦截 | blocked by content policy |
 | `bad_stream` | 响应流异常 | malformed response stream |
 | `empty_reply` | 响应为空 | empty reply |
+| `output_limit` | 回复超过输出上限 | reply exceeded the output limit |
 | `bad_summary` | 摘要提取失败 | summary extraction failed |
 | 别的 | 模型出错 | model error |
 

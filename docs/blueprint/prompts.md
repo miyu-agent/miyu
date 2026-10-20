@@ -381,6 +381,17 @@ Installed but off in this session's preset: {packages}.
 <reply-cut>The reply above was cut off before it was finished. The user has already seen it. Continue from exactly where it stopped, without repeating it.</reply-cut>
 ```
 
+#### `core/facts/output-limit.txt`
+
+- 什么时候加进来：回复写到输出上限、截掉了工具调用或者什么正文都没写出来，再请求的那一次（施工 3-10）；以前造的快照没有
+- token：34（2026-10-20 量）
+- 为什么加：不说的话她多半写一个短得多的版本就收，或者照原样再写一遍又截；说了写到上限、调用没跑、拆小了接着做，5 次都分段写（量法和对照见第十节上面那一条）
+- 指纹：`bfbee41e`
+
+```text
+<output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>
+```
+
 ### 事实：角色扮演提示那一块的开头，排在触发的那句后面（08 C2 唯一的例外）
 
 #### `core/facts/reminder-open.txt`

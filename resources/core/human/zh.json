@@ -703,6 +703,7 @@
     "view/error/class/content_policy": "内容被拦截",
     "view/error/class/bad_stream": "响应流异常",
     "view/error/class/empty_reply": "响应为空",
+    "view/error/class/output_limit": "回复超过了输出上限",
     "view/error/class/bad_summary": "摘要提取失败",
     "view/error/class/compaction_paused": "自动压缩已暂停",
     "view/error/class/other": "模型错误",

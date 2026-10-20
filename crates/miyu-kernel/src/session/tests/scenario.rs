@@ -45,6 +45,7 @@ mod stopping;
 mod swap;
 mod tail;
 mod title;
+mod truncated;
 mod undo_jobs;
 mod upward;
 mod upward_load;

@@ -42,6 +42,17 @@ pub(super) struct Settled {
     pub(super) compaction: Option<Box<Compacting>>,
     /// 摘要回复里调了工具、要改走隔离式（施工 6-6 下）。
     pub(super) isolating: bool,
+    /// 主请求照常说完，回复却写到了输出上限（施工 3-10，`truncated.rs`）：怎么接着。
+    pub(super) truncated: Option<Truncation>,
+}
+
+/// 写到输出上限的回复怎么接着（施工 3-10）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::session) enum Truncation {
+    /// 只截在正文里：照被打断的回复接着写（`reply_cut`）。
+    Text,
+    /// 截掉了工具调用，或者什么正文都没写出来：调用一个都不派，告诉她拆小了接着做（`output_limit`）。
+    Work,
 }
 
 impl Session {
@@ -91,6 +102,8 @@ impl Session {
             Ending::Superseded => (None, None, None, Some(CallResult::Superseded)),
         };
         let cut = stopped.is_some();
+        let limited = accumulator.truncated();
+        let mut truncated = None;
         let mut events = Vec::new();
         let mut reply = None;
         let mut calls = Vec::new();
@@ -122,13 +135,27 @@ impl Session {
                 // 出错断了的，照打断的规矩留下半截，工具调用一个不留：没收全的执行不了，收全了的
                 // 也不派，回复没说完（02 第六节「回复怎么收」第 4 条）。
                 let failed = error.is_some();
+                // 照常说完、写到了输出上限的（施工 3-10）：同样一个调用都不派，最后一个只有半截参数，前面的是一整件事的
+                // 前半。
+                let short = limited && !cut && !failed;
                 let mut numbered = accumulator.numbered(seq, !cut && !failed);
-                if failed {
+                let calling = numbered
+                    .iter()
+                    .any(|(_, block)| matches!(block, Block::ToolCall(_)));
+                if failed || short {
                     numbered.retain(|(_, block)| !matches!(block, Block::ToolCall(_)));
                 }
+                let said = numbered
+                    .iter()
+                    .any(|(_, block)| matches!(block, Block::Text(_)));
+                truncated = short.then_some(if said && !calling {
+                    Truncation::Text
+                } else {
+                    Truncation::Work
+                });
                 let (kept, blocks): (Vec<usize>, Vec<Block>) = numbered.into_iter().unzip();
                 if blocks.is_empty() {
-                    if !cut && !failed {
+                    if !cut && !failed && !short {
                         error = Some(CallError {
                             class: ErrorClass::EmptyReply,
                             message: "回复里一个块都没有".to_string(),
@@ -146,7 +173,7 @@ impl Session {
                     let body = MessageAssistant {
                         blocks,
                         seen,
-                        interrupted: cut || failed,
+                        interrupted: cut || failed || short,
                         indexes: MessageAssistant::indexes_for(&kept),
                     };
                     let by = By::Model(sent.model.clone());
@@ -191,6 +218,7 @@ impl Session {
                 .as_ref()
                 .map(|compacting| compacting.trigger().clone()),
             purpose: None,
+            truncated: limited,
         };
         let summary = summary
             .zip(compaction.as_ref())
@@ -220,6 +248,7 @@ impl Session {
             summary,
             compaction,
             isolating,
+            truncated,
         }
     }
 }

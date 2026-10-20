@@ -41,6 +41,8 @@ pub(super) struct Turn {
     pub(super) retries: u32,
     /// 下一次请求是重试：不算步数。
     pub(super) retrying: bool,
+    /// 连着几次回复写到了输出上限（施工 3-10，`truncated.rs`）：照常说完、没写到上限的一次就清零。
+    pub(super) truncations: u32,
     /// 急着插话的那句话是谁说的、哪个命令：下一次请求之前，还没跑的调用都跳过。
     pub(super) interjected: Option<Interjection>,
     /// 排着队的消息：回合进行中来的，还没被请求看到过。序号和它的命令，照先后。
@@ -73,6 +75,12 @@ pub(super) struct Turn {
 }
 
 impl Turn {
+    /// 主请求照常说完了一次：这一步连着出错的次数清零，被动压过的记号拿掉（写到输出上限的也算，施工 3-10）。
+    pub(super) fn answered(&mut self) {
+        self.retries = 0;
+        self.overflowed = false;
+    }
+
     /// 派工具时带上的这一轮的几样（施工 O-2 下收成一处）。
     pub(super) fn round(&self) -> super::tools::Round {
         super::tools::Round {
@@ -151,6 +159,7 @@ impl Session {
             requests: 0,
             retries: 0,
             retrying: false,
+            truncations: 0,
             interjected: None,
             queued: Vec::new(),
             heard: Vec::new(),

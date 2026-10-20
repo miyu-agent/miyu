@@ -24,6 +24,10 @@ pub struct FactTexts {
     /// `permission`；没有的不写，旧快照的字节不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_changed: Option<String>,
+    /// 回复写到了输出上限、调用没派（`output-limit.txt`，施工 3-10）。以前造的快照里没有，读成没有：那些会话不加这一句；
+    /// 没有的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_limit: Option<String>,
 }
 
 impl FactTexts {
@@ -40,6 +44,7 @@ impl FactTexts {
             self.session.as_deref(),
             self.permission_changed.as_deref(),
         )
+        .and_then(|templates| templates.with_output_limit(self.output_limit.as_deref()))
         .map_err(|error| BuildError::Texts {
             which: "fact templates",
             error,

@@ -100,6 +100,10 @@ impl Decoder {
             open.extend(self.calls.iter().filter_map(|call| call.block));
             open.sort_unstable();
             deltas.extend(open.into_iter().map(|index| Delta::End { index }));
+            // 写到了输出上限（施工 3-10）：照常说完，再报一声。
+            if self.finish_reason.as_deref() == Some("length") {
+                deltas.push(Delta::Truncated);
+            }
         }
         Ending {
             deltas,

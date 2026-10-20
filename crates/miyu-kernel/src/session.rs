@@ -61,6 +61,7 @@ mod supersede;
 mod title;
 mod todos;
 mod tools;
+mod truncated;
 mod turn;
 mod workspace;
 

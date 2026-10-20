@@ -95,6 +95,13 @@ impl Decoder {
                 .collect();
             open.sort_unstable();
             deltas.extend(open.into_iter().map(|index| Delta::End { index }));
+            // 写到了输出上限、输入加输出撑满了窗口（施工 3-10）：照常说完，再报一声。
+            if matches!(
+                self.stop_reason.as_deref(),
+                Some("max_tokens" | "model_context_window_exceeded")
+            ) {
+                deltas.push(Delta::Truncated);
+            }
         }
         Ending {
             deltas,
