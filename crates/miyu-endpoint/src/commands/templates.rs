@@ -70,6 +70,7 @@ pub(super) async fn opened(
     let said = Said {
         key: "commands/unavailable/command-preset-off",
         fields: vec![("preset", label), ("command", name.to_string())],
+        lists: Vec::new(),
     };
     Err(Refusal::COMMAND_NOT_ALLOWED.because(words(core, peer, &said).await))
 }

@@ -81,14 +81,23 @@ pub(crate) struct Said {
     pub(crate) key: &'static str,
     /// 要填的字。
     pub(crate) fields: Vec<(&'static str, String)>,
+    /// 照这个连接的语言拼成的几段（施工 R-22 再补）：每段是一句，照 `commands/joiner` 连起来填进同名的字。有的项是 0 不写时，
+    /// 不用把每种组合都开成一个键。
+    pub(crate) lists: Vec<(&'static str, Vec<Said>)>,
 }
 
 impl Said {
     /// 不用填字的一句。
     pub(crate) fn plain(key: &'static str) -> Said {
+        Said::with(key, Vec::new())
+    }
+
+    /// 填字的一句。
+    pub(crate) fn with(key: &'static str, fields: Vec<(&'static str, String)>) -> Said {
         Said {
             key,
-            fields: Vec::new(),
+            fields,
+            lists: Vec::new(),
         }
     }
 }
@@ -204,6 +213,7 @@ async fn turned_off(core: &Core, peer: &Peer, name: &str) -> Refusal {
     let said = Said {
         key: "commands/unavailable/off",
         fields: vec![("name", name.to_string())],
+        lists: Vec::new(),
     };
     Refusal::COMMAND_NOT_ALLOWED.because(words(core, peer, &said).await)
 }
@@ -252,18 +262,33 @@ async fn words(core: &Core, peer: &Peer, said: &Said) -> String {
     let resources = core.resources.clone();
     let language = peer.language.to_string();
     let loaded = tokio::task::spawn_blocking(move || Human::load(&resources, &language)).await;
-    let fields: Vec<(&str, &str)> = said
-        .fields
-        .iter()
-        .map(|(name, value)| (*name, value.as_str()))
-        .collect();
     match loaded {
-        Ok(Ok(human)) => Words::sentence(&human, said.key, &fields).unwrap_or_default(),
+        Ok(Ok(human)) => sentence(&human, said),
         _ => {
             tracing::warn!(target: "miyu::endpoint", "command receipt words not read");
             String::new()
         }
     }
+}
+
+/// 一句：先把几段照这门语言拼好（每段照 `commands/joiner` 连起来），再和别的字一起填。缺字的是空的。
+pub(crate) fn sentence(human: &Human, said: &Said) -> String {
+    let joiner = Words::sentence(human, "commands/joiner", &[]).unwrap_or_default();
+    let lists: Vec<(&str, String)> = said
+        .lists
+        .iter()
+        .map(|(name, parts)| {
+            let parts: Vec<String> = parts.iter().map(|part| sentence(human, part)).collect();
+            (*name, parts.join(&joiner))
+        })
+        .collect();
+    let fields: Vec<(&str, &str)> = said
+        .fields
+        .iter()
+        .map(|(name, value)| (*name, value.as_str()))
+        .chain(lists.iter().map(|(name, value)| (*name, value.as_str())))
+        .collect();
+    Words::sentence(human, said.key, &fields).unwrap_or_default()
 }
 
 mod basic;

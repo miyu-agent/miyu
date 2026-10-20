@@ -65,9 +65,13 @@ async fn a_held_one_shot_is_dropped_when_the_dream_is_stopped() {
             .expect("回了")
     };
     assert_eq!(reply("k2")["result"]["said"], "已停止整理。", "{replies:?}");
-    assert_eq!(
-        reply("k1")["result"]["said"],
-        "整理已中断，下次再整理。",
+    // 末尾写用时（施工 R-22 再补），每次不同，只看头尾。
+    let said = reply("k1")["result"]["said"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    assert!(
+        said.starts_with("整理已中断，用时 ") && said.ends_with("s，下次再整理。"),
         "{replies:?}"
     );
 }

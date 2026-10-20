@@ -118,6 +118,7 @@ async fn shown(core: &Core, peer: &Peer, todos: &[Todo]) -> Said {
     Said {
         key: "commands/todo-list",
         fields: vec![("items", lines.join(&separator))],
+        lists: Vec::new(),
     }
 }
 

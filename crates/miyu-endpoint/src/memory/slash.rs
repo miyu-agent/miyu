@@ -71,6 +71,7 @@ impl Slash for Remember {
                 said: Said {
                     key: "commands/remembered",
                     fields: vec![("text", remembered.replace(char::is_control, " "))],
+                    lists: Vec::new(),
                 },
             })
         })
@@ -116,9 +117,11 @@ impl Slash for Dream {
         Box::pin(async move {
             let said = match call.rest {
                 "" => {
+                    let began = std::time::Instant::now();
                     let dreamed =
                         super::dream::in_session(call.core, call.session, call.handle()).await?;
-                    dreamed_said(&dreamed)
+                    let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
+                    dreamed_said(&dreamed, took)
                 }
                 "stop" => match call.handle().stop_dream().await {
                     Ok(true) => Said::plain("commands/dream-stopped"),
@@ -181,32 +184,62 @@ pub(super) fn cleared_said(cleared: usize) -> Said {
         1 => Said {
             key: "commands/cleared-memory/one",
             fields: vec![("count", "1".to_string())],
+            lists: Vec::new(),
         },
         _ => Said {
             key: "commands/cleared-memory",
             fields: vec![("count", cleared.to_string())],
+            lists: Vec::new(),
         },
     }
 }
 
-/// `/dream` 的回执：几样数；摘要换了的多半句，什么都没交进去的说没有要整理的。叫停了的说中断了、剩下的下次整理（施工
-/// R-22），一批都没合完的不报数。
-fn dreamed_said(dreamed: &miyu_session::Dreamed) -> Said {
+/// `/dream` 的回执：检查了几条，改了的、作废的是 0 的不写（都是 0 的说没有要改的），摘要换了的多一段，末尾写这一趟用了多久
+/// （施工 R-22 再补，2026-10-20 项目主人定：「0 条的就不用显示了」、要用时）。什么都没交进去的说没有要整理的。叫停了的说中断了、
+/// 剩下的下次整理（施工 R-22），一批都没合完的不报数。`took` 是毫秒，照运行状态行的读秒写。
+pub(super) fn dreamed_said(dreamed: &miyu_session::Dreamed, took: u64) -> Said {
+    let took = ("took", miyu_view::clock(took));
     match (dreamed.stopped, dreamed.given) {
-        (true, 0) => return Said::plain("commands/dreamed-stopped-nothing"),
-        (false, 0) => return Said::plain("commands/dreamed-nothing"),
+        (true, 0) => return Said::with("commands/dreamed-stopped-nothing", vec![took]),
+        (false, 0) => return Said::with("commands/dreamed-nothing", vec![took]),
         _ => {}
     }
+    // 一条的发 `/one`（同 `/clear-memory`）：英文另有单数的那一句，别的语言退回不带 `/one` 的。
+    let count = |[many, one]: [&'static str; 2], n: u32| {
+        Said::with(
+            if n == 1 { one } else { many },
+            vec![("count", n.to_string())],
+        )
+    };
+    let mut parts = vec![count(
+        ["commands/dreamed/given", "commands/dreamed/given/one"],
+        dreamed.given,
+    )];
+    if dreamed.revised > 0 {
+        parts.push(count(
+            ["commands/dreamed/revised", "commands/dreamed/revised/one"],
+            dreamed.revised,
+        ));
+    }
+    if dreamed.retired > 0 {
+        parts.push(count(
+            ["commands/dreamed/retired", "commands/dreamed/retired/one"],
+            dreamed.retired,
+        ));
+    }
+    if dreamed.revised == 0 && dreamed.retired == 0 {
+        parts.push(Said::plain("commands/dreamed/unchanged"));
+    }
+    if dreamed.summary && !dreamed.stopped {
+        parts.push(Said::plain("commands/dreamed/summary"));
+    }
     Said {
-        key: match (dreamed.stopped, dreamed.summary) {
-            (true, _) => "commands/dreamed-stopped",
-            (false, true) => "commands/dreamed-summary",
-            (false, false) => "commands/dreamed",
+        key: if dreamed.stopped {
+            "commands/dreamed-stopped"
+        } else {
+            "commands/dreamed"
         },
-        fields: vec![
-            ("given", dreamed.given.to_string()),
-            ("revised", dreamed.revised.to_string()),
-            ("retired", dreamed.retired.to_string()),
-        ],
+        fields: vec![took],
+        lists: vec![("parts", parts)],
     }
 }

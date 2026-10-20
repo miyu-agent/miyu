@@ -33,6 +33,7 @@ pub(super) async fn run(
         let said = Said {
             key: "commands/workspace-is",
             fields: vec![("cwd", found.cwd.clone())],
+            lists: Vec::new(),
         };
         return Ok((Vec::new(), said));
     }
@@ -52,6 +53,7 @@ pub(super) async fn run(
     let said = Said {
         key,
         fields: vec![("cwd", cwd)],
+        lists: Vec::new(),
     };
     Ok((events, said))
 }

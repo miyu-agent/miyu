@@ -74,6 +74,7 @@ async fn preset_off(
     Some(Said {
         key,
         fields: vec![("preset", name)],
+        lists: Vec::new(),
     })
 }
 

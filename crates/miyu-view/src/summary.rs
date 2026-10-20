@@ -319,8 +319,9 @@ fn toned(text: String, tone: Tone) -> Part {
     }
 }
 
-/// 用时：四舍五入到整秒，不到一秒的写 `1s`；照运行状态行的读秒写 `12s`、`1m 05s`、`1h 02m 05s`。
-pub(crate) fn clock(ms: u64) -> String {
+/// 用时：四舍五入到整秒，不到一秒的写 `1s`；照运行状态行的读秒写 `12s`、`1m 05s`、`1h 02m 05s`。核心的回执也照它写
+/// （`/dream` 的用时，施工 R-22 再补）。
+pub fn clock(ms: u64) -> String {
     let secs = (ms.saturating_add(500) / 1000).max(1);
     let (h, m, s) = (secs / 3600, secs / 60 % 60, secs % 60);
     match (h, m) {

@@ -230,6 +230,7 @@ fn receipt(change: &GoalChange) -> Said {
     let with_text = |key, text: &str| Said {
         key,
         fields: vec![("text", text.replace(char::is_control, " "))],
+        lists: Vec::new(),
     };
     match change {
         GoalChange::Set { text, .. } => with_text("commands/goal-set", text),
@@ -254,6 +255,7 @@ async fn shown(
         (GoalState::Blocked, Some(reason)) => Said {
             key: "commands/goal-state/blocked-why",
             fields: vec![("reason", reason.replace(char::is_control, " "))],
+            lists: Vec::new(),
         },
         (state, _) => Said::plain(state_key(state)),
     };
@@ -264,10 +266,12 @@ async fn shown(
                 ("round", goal.round.to_string()),
                 ("limit", limit.to_string()),
             ],
+            lists: Vec::new(),
         },
         None => Said {
             key: "commands/goal-rounds",
             fields: vec![("round", goal.round.to_string())],
+            lists: Vec::new(),
         },
     };
     Ok(Said {
@@ -277,6 +281,7 @@ async fn shown(
             ("state", words(core, peer, &state).await),
             ("rounds", words(core, peer, &rounds).await),
         ],
+        lists: Vec::new(),
     })
 }
 

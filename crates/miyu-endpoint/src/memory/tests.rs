@@ -49,3 +49,63 @@ fn clearing_says_how_many_and_one_in_the_singular() {
     assert_eq!(say("en", 3), "Cleared 3 memories this session made.");
     assert_eq!(say("ja", 1), "この会話で覚えた記憶を 1 件消しました。");
 }
+
+#[test]
+fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
+    // `/dream` 的回执（施工 R-22 再补，2026-10-20 项目主人定）：是 0 的不写，都是 0 的说没有要改的，末尾写用时。
+    let resources = ResourceRoot::at(resources());
+    let say = |language: &str, dreamed: [u32; 3], summary: bool, stopped: bool, took: u64| {
+        let human = miyu_store::human::Human::load(&resources, language).expect("读得出");
+        let [given, revised, retired] = dreamed;
+        let dreamed = miyu_session::Dreamed {
+            given,
+            revised,
+            retired,
+            summary,
+            stopped,
+        };
+        crate::commands::sentence(&human, &super::slash::dreamed_said(&dreamed, took))
+    };
+    assert_eq!(
+        say("zh", [9, 2, 0], false, false, 65_000),
+        "整理完成：检查 9 条，修改 2 条，用时 1m 05s。"
+    );
+    assert_eq!(
+        say("zh", [9, 0, 0], false, false, 12_000),
+        "整理完成：检查 9 条，没有要改的，用时 12s。"
+    );
+    assert_eq!(
+        say("zh", [9, 1, 3], true, false, 3_723_000),
+        "整理完成：检查 9 条，修改 1 条，作废 3 条，摘要已更新，用时 1h 02m 03s。"
+    );
+    assert_eq!(
+        say("zh", [4, 0, 1], true, true, 400),
+        "整理已中断：检查 4 条，作废 1 条，用时 1s，其余下次再整理。",
+        "叫停的不说摘要"
+    );
+    assert_eq!(
+        say("zh", [0, 0, 0], false, false, 2_000),
+        "无需整理，用时 2s。"
+    );
+    assert_eq!(
+        say("zh", [0, 0, 0], false, true, 2_000),
+        "整理已中断，用时 2s，下次再整理。"
+    );
+    assert_eq!(
+        say("en", [9, 0, 2], false, false, 65_000),
+        "Memory organized: 9 checked, 2 retired; took 1m 05s."
+    );
+    assert_eq!(
+        say("en", [1, 1, 0], false, false, 1_000),
+        "Memory organized: 1 checked, 1 revised; took 1s."
+    );
+    assert_eq!(
+        say("zh", [1, 1, 0], false, false, 1_000),
+        "整理完成：检查 1 条，修改 1 条，用时 1s。",
+        "中文没有单数的那一句，退回原来的"
+    );
+    assert_eq!(
+        say("ja", [9, 2, 0], false, false, 65_000),
+        "整理完了：9 件を確認、2 件を修正。所要時間 1m 05s。"
+    );
+}

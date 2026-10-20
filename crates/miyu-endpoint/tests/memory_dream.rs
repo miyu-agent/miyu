@@ -236,9 +236,12 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
         "{catalog}"
     );
     assert_eq!(dreamed["result"]["command"], "dream", "{dreamed}");
-    assert_eq!(
-        dreamed["result"]["said"],
-        "整理完成：检查 1 条，修改 0 条，作废 0 条，摘要已更新。"
+    // 是 0 的不写、末尾写用时（施工 R-22 再补），用时每次不同，只看头尾。
+    let said = dreamed["result"]["said"].as_str().unwrap_or_default();
+    assert!(
+        said.starts_with("整理完成：检查 1 条，没有要改的，摘要已更新，用时 ")
+            && said.ends_with("s。"),
+        "{dreamed}"
     );
     assert_eq!(
         server.received().len(),
@@ -258,8 +261,9 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
         ))
         .await;
     let (pushed, again) = client.until_reply("k3").await;
-    assert_eq!(
-        again["result"]["said"], "整理完成：检查 1 条，修改 0 条，作废 0 条。",
+    let said = again["result"]["said"].as_str().unwrap_or_default();
+    assert!(
+        said.starts_with("整理完成：检查 1 条，没有要改的，用时 ") && said.ends_with("s。"),
         "没有新记的照样重看（施工 R-19）：{again}"
     );
     assert!(
@@ -418,8 +422,9 @@ async fn hushed_by(stop: &str) -> Hushed {
             .clone()
     };
     let (stop, dreamed) = (reply("k2"), reply("k1"));
-    assert_eq!(
-        dreamed["result"]["said"], "整理已中断，下次再整理。",
+    let said = dreamed["result"]["said"].as_str().unwrap_or_default();
+    assert!(
+        said.starts_with("整理已中断，用时 ") && said.ends_with("s，下次再整理。"),
         "{dreamed}"
     );
     // 记忆流的推送另走转发任务，可能晚于回应到。
