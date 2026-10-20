@@ -1,6 +1,6 @@
 //! Linux 上真跑助手（`docs/blueprint/sandbox/linux.md`，施工 5-2、5-3）：整盘能读，只管写；一条能写的都没有时只有
-//! `/dev/null` 写得进；藏起来的读写都不行，名字看得到；能写的落在藏起来的里面照样能写；藏起来的落在能写的里面拒绝
-//! 执行；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；系统服务的套接字连不上；探测报 `landlock`。
+//! `/dev/null` 写得进；藏起来的读写都不行，名字看得到；能写的落在藏起来的里面照样能写；藏起来的落在能写的里面
+//! 一级级绕开（施工 5-15，原来拒绝执行）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；系统服务的套接字连不上；探测报 `landlock`。
 //! 内核没有 Landlock 的机器上，只测拒绝执行。
 
 #![cfg(target_os = "linux")]
@@ -215,20 +215,39 @@ fn a_revealed_path_inside_a_hidden_one_is_read_only() {
 }
 
 #[test]
-fn a_hidden_path_inside_a_writable_one_is_refused_before_running() {
+fn a_hidden_path_inside_a_writable_one_is_walked_around() {
     let _serial = serial();
     let work = Dir::new();
-    let spec = spec(&[work.path()], &[&work.path().join("data")]);
-    let out = run(&spec, "echo ran");
-    assert_eq!(out.status.code(), Some(i32::from(EXIT_HELPER)), "{out:?}");
-    assert_eq!(
-        text(&out.stderr),
-        format!(
-            "miyu-sandbox: cannot confine: cannot hide {}/data inside a writable path\n",
-            work.path().display()
-        )
+    let data = work.path().join("data");
+    std::fs::create_dir_all(&data).expect("建得了");
+    std::fs::write(data.join("token"), "secret").expect("写得进");
+    std::fs::write(work.path().join("note.txt"), "note\n").expect("写得进");
+    std::fs::create_dir_all(work.path().join("other")).expect("建得了");
+    let spec = spec(&[work.path()], &[&data]);
+    if refused_without_landlock(&spec) {
+        return;
+    }
+    let at = |name: &str| work.path().join(name).display().to_string();
+    // 施工 5-15：已有的文件能改，旁边的目录整个能写。
+    let out = run(
+        &spec,
+        &format!(
+            "echo more >> '{}' && touch '{}' && echo ok",
+            at("note.txt"),
+            at("other/x")
+        ),
     );
-    assert!(out.stdout.is_empty(), "没跑");
+    assert_eq!(text(&out.stdout), "ok\n", "{out:?}");
+    // 路上的这一层本身不能新建、删除、改名：不然把藏起来的挪出去就绕过了。
+    denied(&spec, &format!("touch '{}'", at("new")));
+    denied(&spec, &format!("rm '{}'", at("note.txt")));
+    denied(
+        &spec,
+        &format!("mv '{}' '{}'", at("data"), at("other/stolen")),
+    );
+    // 藏起来的读写都不行。
+    denied(&spec, &format!("cat '{}'", at("data/token")));
+    denied(&spec, &format!("touch '{}'", at("data/x")));
 }
 
 #[test]

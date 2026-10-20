@@ -6,7 +6,7 @@
 //! 项目主人定：沙盒不管网络，但这类系统服务照样挡）。
 
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use landlock::{
     ABI, Access, AccessFs, BitFlags, CompatLevel, Compatible, PathBeneath, PathFd, PathFdError,
@@ -15,7 +15,7 @@ use landlock::{
 
 use miyu_sandbox::Spec;
 
-use super::reads::plan;
+use super::reads::{around, plan};
 
 /// 至少要管得住的那一版。
 const REQUIRED: ABI = ABI::V2;
@@ -28,8 +28,8 @@ pub(super) fn available() -> Result<(), String> {
     ruleset().map(drop)
 }
 
-/// 照规格收紧自己：根目录往下都能列目录、执行；读照 [`plan`] 一级级放，绕开藏起来的；`write` 和 `/dev/null` 放行
-/// 全部。写了 `read` 的（施工 5-12 下）：只有它列的能读、列目录、执行，根目录不再整个放，`hidden` 不另算。规格里的路径不在
+/// 照规格收紧自己：根目录往下都能列目录、执行；读照 [`plan`] 一级级放，绕开藏起来的；`write` 照 [`around`] 放行全部，
+/// 里面藏着的同样绕开（施工 5-15）；`/dev/null` 放行全部。写了 `read` 的（施工 5-12 下）：只有它列的能读、列目录、执行，根目录不再整个放，`hidden` 不另算。规格里的路径不在
 /// 的跳过。
 pub(super) fn confine(spec: &Spec) -> Result<(), String> {
     let mut created = ruleset()?;
@@ -54,10 +54,12 @@ pub(super) fn confine(spec: &Spec) -> Result<(), String> {
     for path in &spec.reveal {
         created = add_readable(created, path)?;
     }
-    let null = PathBuf::from("/dev/null");
-    for path in spec.write.iter().chain([&null]) {
-        created = add(created, path, AccessFs::from_all(LATEST))?;
+    for base in &spec.write {
+        for path in around(base, &spec.hidden)? {
+            created = add(created, &path, AccessFs::from_all(LATEST))?;
+        }
     }
+    created = add(created, Path::new("/dev/null"), AccessFs::from_all(LATEST))?;
     let status = created
         .restrict_self()
         .map_err(|error| format!("landlock: {error}"))?;

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
 
-use miyu_fs::Zone;
+use miyu_fs::{Boundary, Zone, resolve};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Verdict;
 use miyu_kernel::tool::Access;
@@ -75,20 +75,27 @@ fn scope(real: &Path, home: Option<&Path>) -> PathBuf {
     }
 }
 
+/// 命令越过沙盒问人时提的规则（施工 5-15，「此目录不再询问」）：放行工作目录 `cwd`（换成真实的位置）的写，连同下面的。
+/// 家目录本身也照放：人看得到放行的是哪个目录，私密目录照旧另问（[`granted`]），沙盒照旧藏数据根。
+pub(super) fn this_dir(name: &str, cwd: &str, home: Option<&Path>) -> RawJson {
+    let real = resolve(Path::new("/"), home, cwd).unwrap_or_else(|_| PathBuf::from(cwd));
+    raw(&json!({ "tool": name, "write": [text(&real)] }))
+}
+
 /// 要问人的一条落在放行过的规则里没有（施工 D-1）：规则里照是读是写（`read`、`write`）列着放行的范围，这一条是其中一个
-/// 本身、或者在它下面。按路径的段比（`Path::starts_with`），`/a/b` 不放行 `/a/bc`。读不懂的规则不算。
-pub(super) fn granted(grants: &[RawJson], asked: &Asked) -> bool {
+/// 本身、或者在它下面。按路径的段比（`Path::starts_with`），`/a/b` 不放行 `/a/bc`。读不懂的规则不算。私密目录里的那一条只认
+/// 放行范围本身也在私密目录里的规则（施工 5-15）：放行了家目录不等于放行了 `~/.ssh`。
+pub(super) fn granted(grants: &[RawJson], asked: &Asked, boundary: &Boundary) -> bool {
     let key = if asked.write { "write" } else { "read" };
+    let covers = |scope: &str| {
+        asked.real.starts_with(scope)
+            && (asked.zone != Zone::Private || boundary.zone(Path::new(scope)) == Zone::Private)
+    };
     grants.iter().any(|rule| {
         serde_json::from_str::<Value>(rule.get())
             .ok()
             .and_then(|rule| rule.get(key).and_then(Value::as_array).cloned())
-            .is_some_and(|scopes| {
-                scopes
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .any(|scope| asked.real.starts_with(scope))
-            })
+            .is_some_and(|scopes| scopes.iter().filter_map(Value::as_str).any(covers))
     })
 }
 

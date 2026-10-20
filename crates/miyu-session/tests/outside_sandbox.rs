@@ -1,5 +1,7 @@
 //! 越过沙盒问人放行一次（施工 D-4，`docs/blueprint/session/guard.md` 第四条、`tools/shell.md`）：工具报「这一次要在沙盒外跑」的
-//! 调用，工作区这一级问人、不提规则，允许了这一次不套沙盒，拒绝了她拿到平常的拒绝；只读不问、拒绝；完全放开不问、本来就不套。
+//! 调用，工作区这一级问人，提的规则是「此目录不再询问」：放行工作目录的写（施工 5-15，原来不提规则），允许了这一次不套沙盒，
+//! 选了此目录不再询问的，以后的命令照旧在沙盒里跑、工作目录能写，越过沙盒的照样每次问；拒绝了她拿到平常的拒绝；只读不问、
+//! 拒绝；完全放开不问、本来就不套。
 //! 没报的照旧在沙盒里跑、不问。Unix 上有收紧手段的，真的经助手跑 `shell`：允许以后写得进工作区以外。
 
 use std::path::PathBuf;
@@ -78,6 +80,14 @@ async fn asked(home: &Home, handle: &Handle) -> ApprovalRequested {
     requests(&home.log(&session)).remove(0)
 }
 
+/// 工作目录（建好、换成真实的位置）放行写的那条规则的原文（施工 5-15）。
+fn this_dir(home: &Home) -> String {
+    let work = home.scratch.0.join("work");
+    std::fs::create_dir_all(&work).expect("建得了");
+    let real = std::fs::canonicalize(&work).expect("在");
+    serde_json::json!({ "tool": "run", "write": [real.to_string_lossy()] }).to_string()
+}
+
 async fn answer(handle: &Handle, request: &ApprovalRequested, decision: Decision) {
     let answer = Answer::Approval {
         decision,
@@ -99,8 +109,9 @@ async fn allowing_once_runs_that_call_outside_the_sandbox() {
     let request = asked(&home, &handle).await;
     assert_eq!(request.access, Access::Execute);
     assert_eq!(
-        request.rule, None,
-        "不提规则：一次放开整个沙盒，不该一劳永逸"
+        request.rule.as_ref().map(|rule| rule.get().to_string()),
+        Some(this_dir(&home)),
+        "提的规则只放行工作目录的写，不放开整个沙盒"
     );
     assert_eq!(
         request.detail.as_ref().map(|detail| detail.get()),
@@ -115,6 +126,67 @@ async fn allowing_once_runs_that_call_outside_the_sandbox() {
     assert!(calls[0].sandbox.is_none(), "允许了的那一次不套沙盒");
     assert!(calls[1].sandbox.is_some(), "没报的照旧在沙盒里跑");
     assert_eq!(requests(&home.log(handle.id())).len(), 1, "没报的不问");
+}
+
+#[tokio::test]
+async fn not_asking_again_here_makes_the_folder_writable_in_the_sandbox_only() {
+    // 在家目录里开的：工作区是会话自己的那一个（施工 5-14），放行的是家目录，两个不一样才看得出放行起了作用。
+    let home = Home::outside_temp();
+    let real_home = std::fs::canonicalize(&home.home).expect("在");
+    let fake = Fake::new("run", Access::Execute, Act::Echo);
+    let script = Script::new([run(true), run(false), run(true), Play::Says("好。")]);
+    let opening = Opening {
+        permission: Permission {
+            level: Level::Workspace,
+            read_only: false,
+        },
+        attended: true,
+        cwd: home.home.to_string_lossy().into_owned(),
+        dirs: Vec::new(),
+        sandbox: Some(PathBuf::from(HELPER)),
+        sandbox_cache: None,
+    };
+    let catalog = Catalog::new([Arc::clone(&fake) as Arc<dyn Tool>]).expect("合写法");
+    let handle = home.create_as(&script, &catalog, opening).await;
+    let mut pushes = watch(&handle).await;
+    let request = asked(&home, &handle).await;
+    assert_eq!(
+        request.rule.as_ref().map(|rule| rule.get().to_string()),
+        Some(
+            serde_json::json!({ "tool": "run", "write": [real_home.to_string_lossy()] })
+                .to_string()
+        ),
+        "家目录本身也照放：人看得到放行的是哪个"
+    );
+    answer(&handle, &request, Decision::Session).await;
+    // 第三次又要越过沙盒：照样问。
+    let session_id = handle.id().clone();
+    until_logged(&home, &session_id, |log| requests(log).len() >= 2).await;
+    let call_id = requests(&home.log(&session_id)).remove(1).call_id;
+    let deny = Answer::Approval {
+        decision: Decision::Deny,
+        reason: None,
+    };
+    ask(
+        &handle,
+        "cmd-3",
+        Command::Answer {
+            call_id,
+            answer: deny,
+        },
+    )
+    .await
+    .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    let calls = fake.calls();
+    assert_eq!(calls.len(), 2, "第三次拒了：{calls:?}");
+    assert!(calls[0].sandbox.is_none(), "放行的那一次不套沙盒");
+    let sandboxed = calls[1].sandbox.as_ref().expect("之后照旧在沙盒里跑");
+    assert!(
+        sandboxed.spec.write.contains(&real_home),
+        "放行过的目录能写：{:?}",
+        sandboxed.spec.write
+    );
 }
 
 #[tokio::test]
@@ -290,4 +362,56 @@ async fn without_a_sandbox_every_command_asks_with_its_title_and_command() {
     answer(&handle, &request, Decision::Once).await;
     until_turn_ends(&mut pushes).await;
     assert_eq!(fake.calls().len(), 1);
+}
+
+/// 在家目录里放行了「此目录不再询问」（施工 5-15）：文件工具写家目录别处不再问，写私密目录照旧问。
+#[tokio::test]
+async fn a_granted_home_still_asks_before_a_private_dir() {
+    let home = Home::outside_temp();
+    std::fs::create_dir_all(home.home.join(".ssh")).expect("建得了");
+    let fake = Fake::new("run", Access::Execute, Act::Echo);
+    let edit = Fake::new("edit", Access::Write, Act::Echo);
+    let path = |name: &str| home.home.join(name).to_string_lossy().into_owned();
+    let script = Script::new([
+        run(true),
+        Play::calls(&[(
+            "edit",
+            &serde_json::json!({ "path": path("notes.md") }).to_string(),
+        )]),
+        Play::calls(&[(
+            "edit",
+            &serde_json::json!({ "path": path(".ssh/x") }).to_string(),
+        )]),
+        Play::Says("好。"),
+    ]);
+    let opening = Opening {
+        permission: Permission {
+            level: Level::Workspace,
+            read_only: false,
+        },
+        attended: true,
+        cwd: home.home.to_string_lossy().into_owned(),
+        dirs: Vec::new(),
+        sandbox: Some(PathBuf::from(HELPER)),
+        sandbox_cache: None,
+    };
+    let catalog = Catalog::new([
+        Arc::clone(&fake) as Arc<dyn Tool>,
+        Arc::clone(&edit) as Arc<dyn Tool>,
+    ])
+    .expect("合写法");
+    let handle = home.create_as(&script, &catalog, opening).await;
+    let request = asked(&home, &handle).await;
+    answer(&handle, &request, Decision::Session).await;
+    let session_id = handle.id().clone();
+    until_logged(&home, &session_id, |log| requests(log).len() >= 2).await;
+    let again = requests(&home.log(&session_id)).remove(1);
+    assert_eq!(again.access, Access::Write, "{again:?}");
+    let detail = again
+        .detail
+        .as_ref()
+        .map(|detail| detail.get().to_string())
+        .unwrap_or_default();
+    assert!(detail.contains("private"), "问的是私密目录那一次：{detail}");
+    assert_eq!(edit.calls().len(), 1, "家目录别处的那一次没问就写了");
 }

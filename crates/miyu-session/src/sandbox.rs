@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 
 use miyu_fs::{private_dirs, resolve, within};
 use miyu_kernel::event::Permission;
+use miyu_kernel::raw::RawJson;
 use miyu_sandbox::{Sandboxed, Spec};
 
 use crate::default_workspace::DefaultWorkspace;
@@ -84,7 +85,8 @@ impl Sandbox {
     }
 
     /// 照实际生效的那一级 `permission`、这一轮的工作目录 `cwd` 和加进来的目录 `dirs`（施工 5-10 上）写一次调用的沙盒：
-    /// 完全放开的不带。碰磁盘（换真实的位置、建沙盒自己的临时目录），在阻塞线程里调。
+    /// 完全放开的不带。本会话放行过的规则 `grants` 里放行写的目录也能写（施工 5-15，「此目录不再询问」）。碰磁盘（换真实的
+    /// 位置、建沙盒自己的临时目录），在阻塞线程里调。
     ///
     /// # Errors
     ///
@@ -94,6 +96,7 @@ impl Sandbox {
         permission: &Permission,
         cwd: &str,
         dirs: &[String],
+        grants: &[RawJson],
     ) -> io::Result<Option<Sandboxed>> {
         // 外部身份的会话不看级别，读写都只限工作区（施工 5-12 下）。
         if self.confined {
@@ -125,6 +128,7 @@ impl Sandbox {
             write.extend(dirs.iter().map(|dir| {
                 resolve(Path::new(dir), home, dir).unwrap_or_else(|_| PathBuf::from(dir))
             }));
+            write.extend(granted_writes(grants));
             write.push(temp);
             if let Some(cache) = &self.cache {
                 let (dir, variables) = cache.prepare(&data_root)?;
@@ -181,6 +185,21 @@ impl Sandbox {
         let home = self.home.as_deref().map(real);
         workplace.made(cwd, home.as_deref(), data_root)
     }
+}
+
+/// 放行过的规则里放行写的目录（施工 5-15）：每条规则的 `write`（问人时写的就是真实的位置）。读不懂的规则不算，同权限策略。
+fn granted_writes(grants: &[RawJson]) -> Vec<PathBuf> {
+    grants
+        .iter()
+        .filter_map(|rule| serde_json::from_str::<serde_json::Value>(rule.get()).ok())
+        .filter_map(|rule| {
+            rule.get("write")
+                .and_then(serde_json::Value::as_array)
+                .cloned()
+        })
+        .flatten()
+        .filter_map(|scope| scope.as_str().map(PathBuf::from))
+        .collect()
 }
 
 /// 换成真实的位置；换不成的照原样，助手会再换一次，换不成就不跑。

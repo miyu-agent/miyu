@@ -34,7 +34,7 @@ use crate::lettering::Lettering;
 mod asking;
 mod confined;
 
-use asking::{Asked, ask, granted};
+use asking::{Asked, ask, granted, this_dir};
 pub(crate) use confined::Confined;
 
 /// 权限策略：一个会话一份。
@@ -238,14 +238,11 @@ impl Guard {
         }
         // 改装了什么的（施工 F-10 下）照沙盒外跑的同一张表：报的路径照判，再照级别：工作区每次问人、只读拒绝。
         if tool.outside_sandbox(&call) || access == Access::Install {
-            beyond(
-                verdict,
-                level,
-                name,
-                access,
-                &asking,
-                &self.lettering.guard(),
-            )
+            // 命令越过沙盒问人时另提「此目录不再询问」：放行工作目录的写（施工 5-15）。
+            let offer =
+                (access == Access::Execute).then(|| this_dir(name, &cwd, self.home.as_deref()));
+            let texts = self.lettering.guard();
+            beyond(verdict, level, (name, access, offer), &asking, &texts)
         } else {
             verdict
         }
@@ -328,7 +325,7 @@ impl Guard {
             }
         }
         // 放行过的不问（施工 D-1）：只读、数据根上面已经拦下了，走不到这里。
-        asked.retain(|asked| !granted(grants, asked));
+        asked.retain(|asked| !granted(grants, asked, &boundary));
         if asked.is_empty() {
             Verdict::Allow
         } else {
@@ -431,8 +428,7 @@ fn in_venue(place: &Place) -> Verdict {
 fn beyond(
     verdict: Verdict,
     level: Effective,
-    name: &str,
-    access: Access,
+    (name, access, rule): (&str, Access, Option<RawJson>),
     asking: &[(&'static str, String)],
     texts: &GuardTexts,
 ) -> Verdict {
@@ -445,7 +441,7 @@ fn beyond(
             Verdict::Ask {
                 module: module(),
                 access,
-                rule: None,
+                rule,
                 detail: Some(detail),
             }
         }

@@ -1,7 +1,6 @@
 //! 执行工具的端口（`02-内核.md` 第四节「执行工具」「停下工具」，`05-内核接口.md` 第六节「执行这一步」，
 //! 施工 4-2）：照工具名在目录里找到那一件，一件一个任务地跑，量用时。叫停有两种：「叫它停」只举这次调用的旗，
-//! 工具自己停在改之前或者做完（施工 4-9 再补一）；「掐掉」掐掉那个任务。回报送回 actor 的收件箱，由它写成内核的
-//! 输入。
+//! 工具自己停在改之前或者做完（施工 4-9 再补一）；「掐掉」掐掉那个任务。回报送回 actor 的收件箱，由它写成内核的输入。
 //!
 //! 工具报的效果（施工 4-6 上）：跑完以后在阻塞线程里把改前改后存成 blob，再送回来；送回来的先记下她看过的，
 //! 再交进内核。她看过的交给以后每一次调用。
@@ -23,6 +22,7 @@ use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Effect, Permission, Question, Response};
 use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::By;
+use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Input, Reread, Subagent};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_store::blob::Blobs;
@@ -149,6 +149,8 @@ pub(crate) struct Dispatch {
     pub(crate) dirs: Vec<String>,
     /// 派出去那一刻实际生效的那一级：沙盒照它写规格。
     pub(crate) permission: Permission,
+    /// 本会话放行过的规则（施工 5-15）：放行写的目录沙盒也放进能写的。
+    pub(crate) grants: Vec<RawJson>,
     /// 这次调用的任务端口（施工 7-3）：`shell` 把后台命令交给它。后台运行关着的会话没有（施工 T-1 上）。
     pub(crate) jobs: Option<Arc<dyn JobPort>>,
     /// 这个会话这一刻派出去的子代理（施工 7-7）：`send_message` 照它认 `to`。
@@ -280,6 +282,7 @@ impl Tools {
             cwd,
             dirs,
             permission,
+            grants,
             jobs,
             subagents,
             inherit,
@@ -378,7 +381,7 @@ impl Tools {
             .filter(|_| !tool.outside_sandbox(&call));
         let inner = tokio::spawn(
             async move {
-                let call = confine(call, sandbox, permission, dirs, call_id).await?;
+                let call = confine(call, sandbox, (permission, dirs, grants), call_id).await?;
                 Some(tool.run(call, progress).await)
             }
             .instrument(span.clone()),
@@ -458,15 +461,14 @@ impl Drop for Tools {
 async fn confine(
     mut call: Call,
     sandbox: Option<Sandbox>,
-    permission: Permission,
-    dirs: Vec<String>,
+    (permission, dirs, grants): (Permission, Vec<String>, Vec<RawJson>),
     call_id: CallId,
 ) -> Option<Call> {
     let Some(sandbox) = sandbox else {
         return Some(call);
     };
     let cwd = call.cwd.clone();
-    match blocking(move || sandbox.for_call(&permission, &cwd, &dirs)).await {
+    match blocking(move || sandbox.for_call(&permission, &cwd, &dirs, &grants)).await {
         Ok(sandboxed) => {
             call.sandbox = sandboxed.map(Arc::new);
             Some(call)

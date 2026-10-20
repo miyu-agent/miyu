@@ -184,6 +184,8 @@ pub enum Action {
         dirs: Vec<String>,
         /// 派出去那一刻实际生效的那一级（施工 5-4 上）：执行器照它给这次调用写沙盒的规格。
         permission: Permission,
+        /// 本会话放行过的规则（施工 5-15）：原样交，执行器把放行写的目录也放进沙盒能写的（「此目录不再询问」）。
+        grants: Vec<RawJson>,
         /// 这一轮的 `cause`，也是这次调用的结果的（施工 7-3）：它起的后台命令自己退出了，执行器照它填 `job.reported` 的
         /// `cause`（`kernel/session.md`「回报」第 2 条）。
         cause: Option<CommandId>,

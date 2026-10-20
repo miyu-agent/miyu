@@ -22,7 +22,7 @@ fn a_data_root_that_is_also_a_private_dir_is_hidden_once() {
         read_only: true,
     };
     let sandboxed = sandbox
-        .for_call(&read_only, &scratch.to_string_lossy(), &[])
+        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
         .expect("写得成")
         .expect("进沙盒");
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");

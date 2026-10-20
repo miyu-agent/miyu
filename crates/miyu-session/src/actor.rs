@@ -52,8 +52,7 @@ use back::answer_back;
 pub(crate) use life::{span, spawn};
 use mail::Mail;
 
-/// 推送的队列：一个会话最多攒这么多份还没被读走的。读得慢的订阅者被挤掉，掉了队
-/// （`04-核心协议.md` 第七节）。
+/// 推送的队列：一个会话最多攒这么多份还没被读走的。读得慢的订阅者被挤掉，掉了队（`04-核心协议.md` 第七节）。
 pub(crate) const PUSH_QUEUE: usize = 1024;
 
 /// 一个会话的 actor：内核的状态机，和回它的动作要用的。
@@ -89,8 +88,7 @@ pub(crate) struct Actor {
     reporter: Option<Reporter>,
     /// 配置（施工 8-4）：从哪取，和这一轮的那一份；回合开始时换，这一轮的请求都照它。
     config: Turning,
-    /// 拿着订阅的头有几个（施工 7-9）：从没有到有、从有到没有时交内核 `Watched`。造会话、载入时是 0，和内核一样当没人
-    /// 看着。
+    /// 拿着订阅的头有几个（施工 7-9）：从没有到有、从有到没有时交内核 `Watched`。造会话、载入时是 0，和内核一样当没人看着。
     watchers: usize,
     /// 这时有没有至少一个头订阅着，和 `Handle` 共用（施工 C-5，照 `busy` 的做法）：`watchers` 从 0 到有、从有到 0 时写一次。
     /// `send_message` 发给这个会话的时候，别的会话照它和这个会话是不是一次性的，决定说 `sent` 还是 `held`。
@@ -391,6 +389,7 @@ impl Actor {
                 cwd,
                 dirs,
                 permission,
+                grants,
                 cause,
                 asked,
             } => {
@@ -411,6 +410,7 @@ impl Actor {
                         cwd,
                         dirs,
                         permission,
+                        grants,
                         jobs,
                         subagents: self.session.subagents(),
                         inherit: Inherit::of(&*self.model),

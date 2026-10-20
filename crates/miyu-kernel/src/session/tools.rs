@@ -15,6 +15,7 @@ use crate::event::{
 };
 use crate::id::{CallId, CommandId, Seq};
 use crate::origin::{By, Tool};
+use crate::raw::RawJson;
 use crate::time::Timestamp;
 use crate::tool::{Access, Worded, repair};
 
@@ -34,7 +35,7 @@ pub(super) fn run_tool(
     name: &str,
     args: &str,
     round: &Round,
-    permission: &Permission,
+    (permission, grants): (&Permission, Vec<RawJson>),
 ) -> Action {
     Action::RunTool {
         call_id,
@@ -43,6 +44,7 @@ pub(super) fn run_tool(
         cwd: round.cwd.clone(),
         dirs: round.dirs.clone(),
         permission: permission.clone(),
+        grants,
         cause: round.cause.clone(),
         asked: round.asked.clone(),
     }
@@ -174,7 +176,7 @@ impl Session {
                         &call.name,
                         &call.args,
                         &round,
-                        &self.effective,
+                        (&self.effective, self.grants.granted()),
                     ));
                 }
                 State::Answered { answered } if answered <= stored => {
