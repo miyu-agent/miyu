@@ -98,6 +98,33 @@ fn scratch_dir(scratch: &Scratch) -> PathBuf {
 }
 
 #[test]
+fn content_for_other_packages_is_listed_under_provides() {
+    let scratch = Scratch::new();
+    let mut net = Net::default();
+    let (name, bytes) = package(
+        scratch.path(),
+        "stickers",
+        "1.0.0",
+        "\n[content.im]\ndir = \"skills\"\n\n[content.memes]\ndir = \"personas\"\n",
+        None,
+    );
+    net.release("miyu-agent/miyu-stickers", &[(name, bytes)]);
+    let got = collect(
+        &rules(&["miyu-agent/miyu-stickers"]),
+        &net,
+        API,
+        &scratch_dir(&scratch),
+        "2026-10-20T03:00:00Z",
+    );
+    assert_eq!(got.index.packages.len(), 1, "{:?}", got.notes);
+    assert_eq!(
+        got.index.packages[0].provides["content"],
+        ["im", "memes"],
+        "给哪几个包带了内容（施工 G-9）"
+    );
+}
+
+#[test]
 fn an_official_release_becomes_an_entry_and_claims_its_id() {
     let scratch = Scratch::new();
     let mut net = Net::default();

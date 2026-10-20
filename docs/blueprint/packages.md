@@ -189,6 +189,7 @@ program = "miyu-embed"
 | `page` | 有后台页的（施工 F-6 上） | `true` |
 | `status` | 读成了的（施工 F-6 上） | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，算法见 `package-pages.md`；依赖的包缺了的（卸掉的出厂的不算）是 `depends_missing`（施工 F-11） |
 | `enabled` | 有开关的（施工 F-6 上） | 开关现在开没开：扩展照它的开关，出厂的、不是必需的内置包照有没有卸掉 |
+| `contents` | 给别的包带了内容的（施工 G-9） | 给哪几个包带了内容：清单里 `[content.<包>]` 的编号，照编号排。im 的商城照它挑 im 的插件 |
 | `removed` | 卸掉了的出厂包（施工 F-5 上） | `true`，接在后面 |
 | `code`、`problem`、`line` | 写错的、撞了的、读不了的、协议版本对不上的 | 代码；给人看的一句（照连接的语言，`core/human` 的 `package-problems/<code>`，读不了的是 `config/unreadable`）；第几行，有的才有。写错的、撞了的、读不了的只有 `package`、`layer` 和这几格；协议版本对不上的（`code` 是 `protocol_mismatch`）照样带全，头自己决定用不用 |
 

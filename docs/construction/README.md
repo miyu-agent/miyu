@@ -654,6 +654,7 @@ flowchart LR
 | S-7 上 | 核心的测试不再用 `miyu-embed` | 测试用的小程序 `miyu-test-embed` 手算小模型、量尺照真的 `embed` 包（`MIYU_EMBED_PACKAGE`）。施工单见 `S-7-语义模型拆出去（上）.md` |
 | S-7 下 | `miyu-embed` 搬进自己的仓库 | 新仓库 `miyu-agent/miyu-embed` 带着历史、四种系统发包进软件源，核心删掉 crate。施工单见 `S-7-语义模型拆出去（下）.md` |
 | G-8 | 引导里下载内置语义模型走软件源 | 核心不加方法，两个头照 `package.install {"source": "embed"}`、`package.progress` 接。施工单见 `G-8-引导里下语义模型.md` |
+| G-9 | 包带给谁的内容 | `package.search`、`package.list` 每一项多 `contents`（清单里 `[content.<包>]` 的编号），索引 `provides` 多 `content`；im 的商城照它挑 im 的插件。施工单见 `G-9-包带给谁的内容.md` |
 | H-1 | 项目这一样东西 | 设计 `38-项目.md`：`projects.json`、`project.*`、`projects` 流。施工单见 `H-1-项目这一样东西.md` |
 | H-2 | 会话在项目里 | 会话的 `project`：建、移进移出、列表、删项目挪出来。施工单见 `H-2-会话在项目里.md` |
 | H-3 | 附加提示词和留言的范围 | 项目的附加提示词进 system、下一轮跟着换；列会话照项目筛。施工单见 `H-3-附加提示词和留言.md` |

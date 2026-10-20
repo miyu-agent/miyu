@@ -46,6 +46,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `need_load` and `on` as in `mcp.list` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
+| `contents` | Which packages it carries content for (the ids under `[content.<package>]` in its manifest); absent when none |
 | `removed` | A removed built-in package |
 
 Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `problem` (in the connection's language) and `line`. To keep up to date, subscribe to the `packages` stream.
@@ -107,7 +108,7 @@ Response `{"generated", "fetched", "packages", "stale"?}`: when the index was ge
 
 Search the package source. Param `query` (optional): words separated by spaces, each of which must appear in the id, name or summary (any language), case-insensitive; empty or absent lists everything. Fetches the index as `package.sync` does first (a local copy younger than 24 hours is used as is).
 
-Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked"}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't. Errors as in `package.sync`.
+Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents"}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't; `contents` lists which packages it carries content for (as in `package.list`), an empty array when none. Errors as in `package.sync`.
 
 ## `package.clean`
 

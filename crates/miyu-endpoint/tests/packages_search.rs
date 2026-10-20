@@ -28,12 +28,15 @@ fn ids(reply: &Value) -> Vec<String> {
 async fn the_index_is_searched_by_id_name_and_summary() {
     let home = Home::new();
     let (secret, trusted) = keys();
+    // 给 im 带了内容的（施工 G-9）：索引的 `provides` 里有 `content`。
+    let mut memes = entry("memes", json!({"en": "Memes", "zh": "表情包"}), json!({}));
+    memes["provides"] = json!({"content": ["im"]});
     let index = serde_json::to_vec(&json!({
         "version": 1,
         "generated": "2026-10-19T03:00:00Z",
         "packages": [
             entry("embed", json!({"en": "Embedding model", "zh": "语义模型"}), json!({"en": "Local embeddings"})),
-            entry("memes", json!({"en": "Memes", "zh": "表情包"}), json!({})),
+            memes,
             entry("evil", json!({"en": "Evil"}), json!({})),
         ],
         "blocked": [{"id": "evil", "reason": "malware"}],
@@ -47,9 +50,10 @@ async fn the_index_is_searched_by_id_name_and_summary() {
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(
         folder.join("package.toml"),
-        "[package]\nversion = \"0.9\"\nname = { en = \"Memes\" }\n",
+        "[package]\nversion = \"0.9\"\nname = { en = \"Memes\" }\n\n[content.im]\ndir = \"stickers\"\n",
     )
     .expect("写得进");
+    std::fs::create_dir_all(folder.join("stickers")).expect("建得了");
     let mut client = Client::connect(core(&home, &server.base_url, &[], trusted));
     client.hello().await;
     let installed = client
@@ -72,6 +76,23 @@ async fn the_index_is_searched_by_id_name_and_summary() {
     assert_eq!(rows[1]["installed"], "0.9", "装着的版本");
     assert_eq!(rows[2]["blocked"], "malware");
     assert_eq!(rows[0]["blocked"], Value::Null);
+    assert_eq!(rows[1]["contents"], json!(["im"]), "给 im 带了内容的");
+    assert_eq!(rows[0]["contents"], json!([]), "没带的是空的");
+    // 装着的那一份照它自己的清单（施工 G-9）。
+    let listed = client.call("l", "package.list", json!({})).await;
+    let packages = listed["result"]["packages"].as_array().expect("有");
+    let memes = packages
+        .iter()
+        .find(|one| one["package"] == "memes")
+        .expect("装着");
+    assert_eq!(memes["contents"], json!(["im"]), "{memes}");
+    assert!(
+        packages
+            .iter()
+            .filter(|one| one["package"] != "memes" && one.get("code").is_none())
+            .all(|one| one.get("contents").is_none()),
+        "别的没带：{listed}"
+    );
 
     assert_eq!(ids(&search(&mut client, "语义").await), ["embed"]);
     assert_eq!(

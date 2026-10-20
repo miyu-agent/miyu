@@ -246,7 +246,8 @@ fn entry_of(
     }
 }
 
-/// 带了哪几样：清单里写的（子命令、功能、MCP 服务、斜杠命令），文件夹里放的（技能、脚本、人格、预设）。空的种类不写。
+/// 带了哪几样：清单里写的（子命令、功能、MCP 服务、斜杠命令、给哪几个包带了内容），文件夹里放的（技能、脚本、人格、预设）。空的
+/// 种类不写。带的内容照被带的包的编号列在 `content` 下（施工 G-9：`package.search` 交 `contents`，im 的商城照它挑）。
 fn provides(manifest: &Manifest, folder: &Path) -> BTreeMap<String, Vec<String>> {
     let mut provides = BTreeMap::new();
     let mut put = |kind: &str, mut names: Vec<String>| {
@@ -275,6 +276,14 @@ fn provides(manifest: &Manifest, folder: &Path) -> BTreeMap<String, Vec<String>>
             .mcp
             .iter()
             .map(|server| server.name.clone())
+            .collect(),
+    );
+    put(
+        "content",
+        manifest
+            .content
+            .iter()
+            .map(|content| content.target.clone())
             .collect(),
     );
     put(
