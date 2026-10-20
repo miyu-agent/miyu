@@ -83,7 +83,7 @@ fn one(
             let venue = message
                 .venue
                 .as_ref()
-                .filter(|venue| venue.ambient && !venue.asleep)?;
+                .filter(|venue| venue.ambient && !venue.asleep && !venue.backfill)?;
             let mark = recalled
                 .get(venue.msg.as_str())
                 .map(|by| recall_mark(&event.by, by, venue.show_ids))

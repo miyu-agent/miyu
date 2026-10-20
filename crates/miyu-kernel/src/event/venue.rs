@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::id::{ContentHash, ExternalId, SessionId, TurnId};
 use crate::text_enum::text_enum;
+use crate::time::Timestamp;
 
 /// `message.user` 的 `venue`：通讯平台上的一条消息。旁听的（`ambient`）只记下，不开回合，回合进行中也不排进这一轮。
 /// 假的、空的、没写的不写。
@@ -41,6 +42,13 @@ pub struct VenueMessage {
     /// 睡着时收到的：不进群聊近况。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub asleep: bool,
+    /// 补拉回来的（施工 O-40，设计 18 第十一节）：桥断线时漏掉、重连以后从平台补回来的，只进聊天记录：同睡着时收到的，不进
+    /// 群聊近况、判官看的记录，带着 `ambient`。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub backfill: bool,
+    /// 平台给的时刻（施工 O-40）：补拉回来的比记下的时刻早，`history` 照它显示。没写的照记下的时刻。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sent: Option<Timestamp>,
     /// 渲染这一条时写不写发的人的平台身份（施工 O-13 中）：桥照这时的场所规则每条带上，规则改了从下一条起照新的。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub show_ids: bool,

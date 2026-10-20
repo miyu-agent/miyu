@@ -50,7 +50,10 @@ pub fn records(
         .iter()
         .filter_map(|event| match &event.body {
             Body::MessageUser(said) => {
-                let venue = said.venue.as_ref().filter(|venue| !venue.asleep)?;
+                let venue = said
+                    .venue
+                    .as_ref()
+                    .filter(|venue| !venue.asleep && !venue.backfill)?;
                 let mark = recalled
                     .get(venue.msg.as_str())
                     .map(|by| recall_mark(&event.by, by, venue.show_ids))

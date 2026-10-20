@@ -77,6 +77,8 @@
 | `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，套最多 3 层；整条最多 100 条、名字和正文合起来 16 KiB（超了 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`）。正文里要有占位（例如 `[forward]`） |
 | `ambient` | 旁听：只记下，不开回合 |
 | `asleep` | 睡着时收到的 |
+| `backfill` | 补拉回来的（桥断线时漏掉、从平台补回来的）：只进聊天记录，不进群聊近况、判官看的记录；要带着 `ambient` |
+| `sent` | 平台给的时刻，写法同事件的 `at`（`2026-10-20T04:30:00.000Z`）；`history` 照它显示。日志照记下的先后，序号不往前挪 |
 | `show_ids` | 渲染这一条时写不写发的人的平台身份 |
 
 **记成谁**：私聊里对应表认出的本人是 `{"kind": "person", "account", "via"}`；别的是 `{"kind": "external", "venue", "id", "role"}`，群里的主人另带 `account`。

@@ -196,6 +196,7 @@ mod undo;
 mod undo_jobs;
 mod uploads;
 mod usage;
+mod venue_backfill;
 mod venue_binding;
 mod venue_forwards;
 mod venue_judge;

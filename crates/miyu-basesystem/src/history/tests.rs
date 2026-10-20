@@ -11,6 +11,7 @@ mod other;
 mod peers;
 mod permission;
 mod read;
+mod venue;
 
 use std::path::{Path, PathBuf};
 

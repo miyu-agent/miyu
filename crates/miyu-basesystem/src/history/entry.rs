@@ -103,8 +103,15 @@ pub(super) fn entries(kept: &Kept, placeholders: &Placeholders, own: &str) -> Ve
     events
         .iter()
         .filter_map(|event| {
+            // 平台给了时刻的（补拉回来的比记下的早，施工 O-40）照它显示。
+            let mut at = event.at;
             let (who, text) = match &event.body {
-                Body::MessageUser(message) => (Who::User, written(&message.blocks)),
+                Body::MessageUser(message) => {
+                    if let Some(sent) = message.venue.as_ref().and_then(|venue| venue.sent) {
+                        at = sent;
+                    }
+                    (Who::User, written(&message.blocks))
+                }
                 Body::MessageAssistant(reply) => (Who::Assistant, written(&reply.blocks)),
                 Body::ToolResult(result) if lookups.contains(&result.call_id) => return None,
                 Body::ToolResult(result) => (Who::Tool, written(&result.blocks)),
@@ -114,7 +121,7 @@ pub(super) fn entries(kept: &Kept, placeholders: &Placeholders, own: &str) -> Ve
             let text = text.trim_end();
             (!text.trim_start().is_empty()).then(|| Entry {
                 seq: event.seq.get(),
-                at: event.at,
+                at,
                 who,
                 from: from(kept, event, placeholders),
                 text: text.to_string(),

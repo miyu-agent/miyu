@@ -43,6 +43,12 @@ fn chatted() -> (Log, Seq) {
         "梦话",
         r#"{"msg":"8802","name":"小林","ambient":true,"asleep":true}"#,
     );
+    // 补拉回来的同睡着时收到的，判官不看（施工 O-40）。
+    said(
+        &mut log,
+        "断线时说的",
+        r#"{"msg":"8799","name":"小林","ambient":true,"backfill":true}"#,
+    );
     delivered(&mut log, OWN, "8803", "在");
     delivered(&mut log, BRANCH, "8804", "我来");
     said(

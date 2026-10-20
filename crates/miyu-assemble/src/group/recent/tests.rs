@@ -54,6 +54,13 @@ fn the_block_holds_what_was_overheard_between_two_triggers() {
     let mut log = Log::new();
     ambient(&mut log, "早", "8801", "");
     ambient(&mut log, "梦话", "8802", r#","asleep":true"#);
+    // 补拉回来的同睡着时收到的，不进近况（施工 O-40）。
+    ambient(
+        &mut log,
+        "断线时说的",
+        "8799",
+        r#","backfill":true,"sent":"2026-10-20T06:58:00.000Z""#,
+    );
     opens(&mut log, "在吗", "8803");
     // 回合进行中到的旁听归下一块；排进这一轮的不算旁听，不进近况。
     ambient(&mut log, "她来了", "8804", "");

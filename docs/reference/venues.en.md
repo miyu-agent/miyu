@@ -77,6 +77,8 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 | `forwards` | Merged forwards: `[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`, nested at most 3 deep; at most 100 nodes and 16 KiB of names and text per message (over that, `bad_params` with `data.limit` of `forward_nodes` or `forward_bytes`). The text must contain a placeholder (e.g. `[forward]`) |
 | `ambient` | Listening only: recorded, doesn't start a turn |
 | `asleep` | Received while asleep |
+| `backfill` | Fetched back after the bridge was disconnected: kept in the chat record only, left out of the recent chat and the judge's records; requires `ambient` |
+| `sent` | The time the platform gives, written like an event's `at` (`2026-10-20T04:30:00.000Z`); `history` shows it. The log keeps the order things were recorded in, sequence numbers don't move back |
 | `show_ids` | Whether to show the sender's platform identity when rendering it |
 
 **Recorded as**: the owner recognized in a private chat is `{"kind": "person", "account", "via"}`; anyone else is `{"kind": "external", "venue", "id", "role"}`, plus `account` for the owner in a group.

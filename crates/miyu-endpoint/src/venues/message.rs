@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use miyu_kernel::event::{Forward, ForwardNode, Media, MediaKind, VenueMessage};
 use miyu_kernel::id::ExternalId;
+use miyu_kernel::time::Timestamp;
 
 use crate::refusal::Refusal;
 
@@ -50,6 +51,12 @@ pub(crate) struct VenueMessageParams {
     ambient: bool,
     #[serde(default)]
     asleep: bool,
+    /// 补拉回来的（施工 O-40）：要带着 `ambient`。
+    #[serde(default)]
+    backfill: bool,
+    /// 平台给的时刻（施工 O-40），写法同事件的 `at`。
+    #[serde(default)]
+    sent: Option<String>,
     #[serde(default)]
     show_ids: bool,
 }
@@ -135,6 +142,15 @@ impl VenueMessageParams {
             forwards,
             ambient: self.ambient,
             asleep: self.asleep,
+            // 补拉回来的只记下：不带 `ambient` 的会开回合，写错了（施工 O-40）。
+            backfill: match (self.backfill, self.ambient) {
+                (true, false) => return Err(Refusal::BAD_PARAMS),
+                (backfill, _) => backfill,
+            },
+            sent: self
+                .sent
+                .map(|sent| Timestamp::parse(&sent).map_err(|_| Refusal::BAD_PARAMS))
+                .transpose()?,
             show_ids: self.show_ids,
         })
     }
