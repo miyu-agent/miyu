@@ -18,6 +18,7 @@ impl Session {
         cause: Option<CommandId>,
         body: Body,
     ) -> Event {
+        self.close_nested(at, &body);
         let seq = self.ledger.next_seq();
         let turn = match body {
             Body::TurnStarted(_) => Some(TurnId::new(seq)),
@@ -34,6 +35,7 @@ impl Session {
         cause: Option<CommandId>,
         body: Body,
     ) -> Event {
+        self.close_nested(at, &body);
         let seq = self.ledger.next_seq();
         self.stamped(seq, at, None, (by, cause), body)
     }

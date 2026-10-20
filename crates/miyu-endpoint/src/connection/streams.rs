@@ -267,6 +267,10 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     reply["usage"] = crate::usage::tallied(core, &current.tally);
     reply["permission"] = json!(current.permission);
     reply["jobs"] = json!(current.jobs);
+    // 在跑的嵌套调用（施工 M-1）：没有的不写，以前的回应字节不变。
+    if !current.nested.is_empty() {
+        reply["nested"] = json!(current.nested);
+    }
     // 会话在哪个目录干活（施工 9-7 上）：之后照推过来的 `session.workspace_changed` 换。
     reply["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
     // 长期目标（施工 X-8 补）：同会话状态的 `goal`，没有的不写；之后照推过来的 `goal.changed` 换。

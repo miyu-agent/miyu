@@ -39,6 +39,7 @@
 | `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用 |
 | `model.called` | 一次模型请求的记录：用了谁、用量、花了多少、出错的 `error` |
 | `tool.result` | 一次工具调用的结果：`status` 是 `ok`、`error`、`denied`、`cancelled`、`skipped` |
+| `tool.nested` | 脚本里的一次 `miyu call` 了结了：`id`（前台调用下面的写成 `call_12_1#3`，后台任务下面的写成 `j7#3`）、`name`、`args`、`status`（`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另带 `duration_ms`、`result`（blob）、`bytes`、`reason`。不进她的上下文；任务下面的不带 `turn` |
 | `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用、人的决定 |
 | `question.asked`、`question.answered` | 她问了一组题、人的回答 |
 | `context.injected` | 注入进上下文的一块事实（记忆、扩展交的……） |
@@ -63,6 +64,7 @@
 |---|---|
 | `model.delta` | 模型输出的一段增量：`seen`、`index`（第几块），再加 `start`（`name` 是块的种类）、`text`、`end` 之一 |
 | `tool.progress` | 工具执行中的一段输出：`call_id`、`text` |
+| `tool.nested_started` | 脚本里的一次 `miyu call` 过了检查、派去跑了：`id`、`name`；了结以 `tool.nested` 为准 |
 | `status` | 请求在重试、换了供应商 |
 | `model.changed` | 会话接下来请求的模型、限额变了：`why` 是 `failover` 或 `turn` |
 | `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了 |

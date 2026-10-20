@@ -50,6 +50,18 @@ pub enum TransientBody {
     ModelChanged(Box<ModelChanged>),
     /// `todos.changed`：当前的待办变了（施工 D-3，`docs/blueprint/kernel/session.md`「待办」）：写了、撤销、恢复。
     TodosChanged(TodosChanged),
+    /// `tool.nested_started`：脚本里的一次 `miyu call` 过了链、派去跑了（施工 M-1）。
+    NestedStarted(NestedStarted),
+}
+
+/// `tool.nested_started` 的 `body`（施工 M-1，设计 `39-脚本调工具.md` 第七节第 4 条）：头照它在那次 `shell`、那个任务的那一行
+/// 后面接 `#序号 显示名`；了结以 `tool.nested` 为准。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct NestedStarted {
+    /// 嵌套调用编号。
+    pub id: crate::id::NestedId,
+    /// 调的哪件工具。
+    pub name: String,
 }
 
 /// `model.changed` 的 `body`（施工 8-9）：会话接下来请求的模型、限额变了，头照它换底栏、限额，`why` 是 `failover` 的在
@@ -234,6 +246,7 @@ impl TransientBody {
         match self {
             TransientBody::ModelDelta(_) => "model.delta",
             TransientBody::ToolProgress(_) => "tool.progress",
+            TransientBody::NestedStarted(_) => "tool.nested_started",
             TransientBody::Status(_) => "status",
             TransientBody::CompactionProgress(_) => "compaction.progress",
             TransientBody::CompactionStarted(_) => "compaction.started",
@@ -287,6 +300,7 @@ impl Serialize for TransientBody {
         match self {
             TransientBody::ModelDelta(delta) => delta.serialize(s),
             TransientBody::ToolProgress(progress) => progress.serialize(s),
+            TransientBody::NestedStarted(started) => started.serialize(s),
             TransientBody::Status(status) => status.serialize(s),
             TransientBody::CompactionProgress(progress) => progress.serialize(s),
             TransientBody::CompactionStarted(started) => started.serialize(s),

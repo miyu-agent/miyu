@@ -116,6 +116,8 @@ kinds! {
     Recalled,
     /// 到点了：重试前等的那一会儿到了（施工 3-5 下）。
     Woke,
+    /// 脚本里的 `miyu call`：来了、链判完了、跑完了（施工 M-1）。
+    Nested,
 }
 
 impl InputKind {
@@ -165,6 +167,7 @@ impl InputKind {
                 Command::PeerIdle { .. } => InputKind::PeerIdle,
                 Command::Recap => InputKind::Recap,
             },
+            Input::Nested(_) => InputKind::Nested,
             Input::Stored { .. } => InputKind::Stored,
             Input::Environment(_) => InputKind::Environment,
             Input::Limits(_) => InputKind::Limits,

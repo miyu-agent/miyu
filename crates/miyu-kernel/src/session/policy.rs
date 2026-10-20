@@ -47,11 +47,23 @@ pub struct Policy {
     /// 别的会话发来的话怎么防刷屏（施工 C-2，`peers.rs`）。以前造的快照里没有的，执行器照出厂的数交进来：防刷屏不能因为
     /// 会话旧就不管（`docs/blueprint/cross-session.md`「对外的样子」）。
     pub peers: Peers,
+    /// 嵌套调用的两道上限（施工 M-1，`nested.rs`）。以前造的快照里没有的，执行器照出厂的数交进来。
+    pub nested: NestedLimits,
     /// 后台运行关着（施工 T-1 上、下）：派的子代理前台跑，派它的那一步等它报回来。
     pub foreground: bool,
     /// 要先加载的工具（施工 L-1，`docs/designs/25-工具加载.md` W9）：工具面上有要先加载的才有。`load_tools` 由内核当场答，
     /// 没加载直接调、出错了的附上完整格式（`tool::Loading`）。
     pub loading: Option<crate::tool::Loading>,
+}
+
+/// 嵌套调用的两道上限（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」第 2 条）：同时过链、在跑的最多几个，到了的排着，
+/// 不拒。数是策略数据，放在策略快照里。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NestedLimits {
+    /// 一个父级（前台的调用、后台的任务）下面：策略数据 `jobs.nested_per_parent`，出厂 8。
+    pub per_parent: usize,
+    /// 整个会话：策略数据 `jobs.nested_per_session`，出厂 16。
+    pub per_session: usize,
 }
 
 /// 起标题的两个数（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）：数值是数据，放在策略快照里。
@@ -217,6 +229,7 @@ impl fmt::Debug for Policy {
             .field("notes", &self.notes)
             .field("reports", &self.reports)
             .field("peers", &self.peers)
+            .field("nested", &self.nested)
             .finish_non_exhaustive()
     }
 }

@@ -19,6 +19,7 @@ mod image;
 mod job;
 mod message;
 mod model;
+mod nested;
 mod peer;
 mod question;
 mod read;
@@ -47,6 +48,7 @@ pub use model::{
     BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, MessageRole, ModelCalled, Part,
     Purpose, Usage,
 };
+pub use nested::{NestedStatus, ToolNested};
 pub use peer::{IdleReason, PeerIdle};
 pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, fits};
 pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
@@ -57,8 +59,8 @@ pub use session::{
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
 pub use transient::{
     ChangeWhy, CompactionDone, CompactionProgress, CompactionStarted, EffortInUse, EffortSource,
-    ModelChanged, ModelDelta, Piece, Retry, Status, TodosChanged, ToolProgress, Transient,
-    TransientBody,
+    ModelChanged, ModelDelta, NestedStarted, Piece, Retry, Status, TodosChanged, ToolProgress,
+    Transient, TransientBody,
 };
 pub use turn::{EndReason, TurnEnded, TurnJoined, TurnReverted, TurnStarted, TurnUnreverted};
 pub use venue::{
@@ -187,6 +189,8 @@ bodies! {
     MessageWithdrawn = "message.withdrawn",
     /// 一个工具调用的结果。
     ToolResult = "tool.result",
+    /// 脚本里的一次 `miyu call` 了结了（施工 M-1）。
+    ToolNested = "tool.nested",
     /// 请人确认一次工具调用。
     ApprovalRequested = "tool.approval_requested",
     /// 人对确认请求的决定。

@@ -305,6 +305,7 @@ impl Actor {
         }
         Ok(match action {
             Action::Append(events) => self.append(events).await?,
+            Action::Nested(_) => None, // 没有通道（施工 M-3）就不送嵌套调用，内核也就不出它
             Action::Reply { id, outcome } => {
                 self.reply(id, outcome);
                 None

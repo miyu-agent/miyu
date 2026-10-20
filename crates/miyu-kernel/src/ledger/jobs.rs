@@ -27,6 +27,11 @@ impl Ledger {
         self.jobs.last()
     }
 
+    /// `job` 是还没报过结束的后台命令（施工 M-1：嵌套调用挂在它下面才收）。
+    pub fn command_running(&self, job: &JobId) -> bool {
+        self.jobs.command_running(job)
+    }
+
     /// 还没报过结束的后台命令，照编号（施工 7-3：载入时给它们补 `aborted`）。
     pub fn running_commands(&self) -> Vec<JobId> {
         self.jobs.running_commands()
@@ -173,6 +178,11 @@ impl Jobs {
             ));
         }
         Ok(())
+    }
+
+    /// `job` 是还没报过结束的后台命令（施工 M-1：嵌套调用挂在它下面才收）。
+    pub(super) fn command_running(&self, job: &JobId) -> bool {
+        matches!(self.0.get(job), Some(Job::Command { ended: false }))
     }
 
     /// 还没报过结束的后台命令，照编号（施工 7-3）。

@@ -2,7 +2,7 @@
 
 ### 是什么
 
-事件是已经发生的一件事，追加进会话的日志，一条一行 JSON，以后不改、不删；撤销、压缩也是追加一条新的。内核认识 29 种，每一种有自己的 `body`；不认识的原样留着。另有六种瞬时事件，只推给连着的头，不进日志。
+事件是已经发生的一件事，追加进会话的日志，一条一行 JSON，以后不改、不删；撤销、压缩也是追加一条新的。内核认识 38 种，每一种有自己的 `body`；不认识的原样留着。另有九种瞬时事件，只推给连着的头，不进日志。
 
 这一页写外壳、一行怎么读写、有哪些种类、瞬时事件、格式出错。每一种 `body` 的每一格见 `kernel/events-bodies.md`。
 
@@ -12,7 +12,7 @@
 |---|---|
 | `crates/miyu-kernel/src/event.rs` | 外壳 `Event`；种类表 `Body`（宏 `bodies!`，加一种只加一行）；`Body::KINDS`、`Body::kind`；一行怎么读写 |
 | `crates/miyu-kernel/src/event/session.rs`、`turn.rs`、`restore.rs`、`message.rs`、`tool.rs`、`question.rs`、`context.rs`、`model.rs`、`effect.rs`、`job.rs`、`peer.rs`、`image.rs`（施工 8-17）、`venue.rs`（施工 O-13 上：`message.user` 的 `venue` 格、`venue.recalled`、`venue.delivered`） | 各种 `body`（`kernel/events-bodies.md`） |
-| `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和七种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加） |
+| `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和八种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加；`tool.nested_started` 施工 M-1 加） |
 | `crates/miyu-kernel/src/format_error.rs` | 编号、名字、时刻写法不对时的报错 `FormatError` |
 | `docs/designs/samples/events/`、`docs/designs/samples/transient/` | 样本：每一种一份 |
 
@@ -58,6 +58,7 @@
 | `message.assistant` | 模型一次响应的完整内容，工具调用也在里面 | 模型 | 必带 | `message.assistant.jsonl` |
 | `message.withdrawn` | 撤回排着队、她还没听到的消息 | 打断的人 | 必带 | `message.withdrawn.jsonl` |
 | `tool.result` | 一个工具调用的结果 | 那次调用、内核、人或者模块（`kernel/tools.md`） | 必带 | `tool.result.jsonl` |
+| `tool.nested` | 脚本里的一次 `miyu call` 了结了：挂在前台那次调用或后台任务下面的嵌套调用（施工 M-1，设计 `39-脚本调工具.md` 第七节）。不进上下文 | 内核；挂在谁下面看 body 的 `id`（`By::Tool` 只装得下调用编号） | 父级是调用的必带，要是那次调用所在的回合；父级是任务的不带（和 `job.reported` 一样，撤销照任务算） | `tool.nested.jsonl` |
 | `tool.approval_requested` | 请人确认一次工具调用 | 提问的模块 | 必带 | `tool.approval_requested.jsonl` |
 | `tool.approval_decided` | 人对确认请求的决定 | 回答的人 | 必带 | `tool.approval_decided.jsonl` |
 | `question.asked` | 一个在跑的调用请人回答一组题 | 那次调用 | 必带 | `question.asked.jsonl` |
@@ -84,7 +85,7 @@
 | 格 | 类型 | JSON 里 |
 |---|---|---|
 | `at` | 时刻 | 必有 |
-| `kind` | `model.delta`、`tool.progress`、`status`、`compaction.progress`、`compaction.started`、`compaction.done`、`model.changed`、`todos.changed` 八种之一；事件流上另有 `goal.changed`（下表最后一行，不是内核的） | 必有 |
+| `kind` | `model.delta`、`tool.progress`、`status`、`compaction.progress`、`compaction.started`、`compaction.done`、`model.changed`、`todos.changed`、`tool.nested_started` 九种之一；事件流上另有 `goal.changed`（下表最后一行，不是内核的） | 必有 |
 | `turn` | 回合编号 | 没有就不写 |
 | `by` | 「谁」 | 必有 |
 | `cause` | 命令编号 | 没有就不写 |
@@ -97,6 +98,7 @@
 |---|---|---|
 | `model.delta` | 模型输出的一段增量：`seen` 这次请求看到了第几条为止，和这次响应最后写成的回复的 `seen` 一样；`index` 第几块，从 0 数起；再加下面五种写法之一 | 模型 |
 | `tool.progress` | 工具执行中的一段输出：`call_id` 哪一次调用，`text` 一段输出。结果以 `tool.result` 为准，这些只给人看着它在跑 | 那次调用 |
+| `tool.nested_started` | 脚本里的一次 `miyu call` 过了链、派去跑了（施工 M-1，设计 `39-脚本调工具.md` 第七节第 4 条）：`id` 嵌套调用编号，`name` 工具名。了结以 `tool.nested` 为准；头照它在那次 `shell`、那个任务的那一行后面接 `#序号 显示名` | 内核（前台的 `turn`、`cause` 照这一轮，后台的都没有） |
 | `status` | 出了错，等着重试：`seen` 哪一次请求；`retry` 里 `attempt` 这是第几次重试（从 1 数起）、`limit` 一共最多几次（现在是 5，`kernel/session.md`）、`wait_ms` 等多久（毫秒）、`class` 出错的分类、`message` 出错的原话、`status` 出错的 HTTP 状态码（照那一次的 `model.called` 带过来，没有的不写；施工 3-5 三补）、`failover` 换了端点当场再来（是 `true` 才写，施工 8-9） | 内核 |
 | `compaction.progress` | 摘要写到哪了（施工 6-2 上）：`seen` 哪一次摘要请求（它替代到的那一条）、`trigger` 哪一种压缩（`auto`、`manual`、`overflow`，和压好了写的 `context.compacted` 一样，施工 6-11 再补）、`written` 到这时收到的正文字数（草稿加摘要，照 Unicode 字符数）、`expected` 估计要写多少字（压缩前的用量，夹在 20000 到 80000 之间） | 内核 |
 | `compaction.started` | 在后台提前压的那一次摘要请求发出去了（施工 6-11 再补，`compaction.md` 第十五条第 1 条）：`seen` 它的 N（换上时 `compaction.done` 的 `seen` 也是它）、`prepared` 现在总是 `true`。当场压的不推它 | 内核（`turn`、`cause` 照这时的回合） |

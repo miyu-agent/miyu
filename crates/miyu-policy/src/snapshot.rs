@@ -304,6 +304,7 @@ impl Snapshot {
             reports: self.reports()?,
             titles: self.titles(),
             peers: self.peers(),
+            nested: self.nested_limits(),
             foreground: self.foreground,
             loading,
         })

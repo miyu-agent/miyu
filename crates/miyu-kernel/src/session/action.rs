@@ -167,6 +167,8 @@ pub enum Action {
         /// 统一的请求：一条 user，没有 system、工具面。
         request: Request,
     },
+    /// 嵌套调用的动作（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：过链、跑、掐掉、答脚本那头。
+    Nested(super::NestedAction),
     /// 执行一次工具调用。执行中的输出、执行完了，都带着调用编号回报
     /// （`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。
     RunTool {

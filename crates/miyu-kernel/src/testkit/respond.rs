@@ -22,7 +22,8 @@ impl Stage {
                     self.order.push((true, self.log.len()));
                     self.log.push(event);
                 }
-                upto.map(|upto| Input::Stored { at: self.now, upto })
+                upto.filter(|_| !self.holding_stores())
+                    .map(|upto| Input::Stored { at: self.now, upto })
                     .into_iter()
                     .collect()
             }
@@ -73,6 +74,8 @@ impl Stage {
                 self.held_model.take_if(|(held, _)| *held == seen);
                 Vec::new()
             }
+            // 嵌套调用（施工 M-1）：`nested.rs`。
+            Action::Nested(nested) => self.act_nested(nested),
             Action::GuardTool { call_id, .. } => vec![Input::ToolGuarded {
                 at: self.tick(),
                 call_id,

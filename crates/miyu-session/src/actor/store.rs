@@ -21,6 +21,7 @@ impl Actor {
         Current {
             permission: self.session.permission().clone(),
             jobs: self.session.running_started(),
+            nested: self.session.nested_running(),
             cwd: self.session.cwd().to_string(),
             dirs: self.session.dirs().to_vec(),
             tally: counted.tally.clone(),

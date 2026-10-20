@@ -27,6 +27,31 @@ fn report_numbers_and_the_omitted_line_go_in_and_older_snapshots_lack_them() {
     assert_eq!(reports.omitted.render(&count).unwrap(), "");
     // 快照里的数照快照的。
     let mut smaller = snapshot.clone();
-    smaller.jobs = Some(crate::JobNumbers { report_chars: 7 });
+    smaller.jobs = Some(crate::JobNumbers {
+        report_chars: 7,
+        nested_per_parent: None,
+        nested_per_session: None,
+    });
     assert_eq!(smaller.policy().unwrap().reports.chars, 7);
+    // 嵌套调用的两道上限（施工 M-1）：出厂 8、16；以前的快照没有这两格，照出厂的；快照里写了的照写的。
+    let nested = snapshot.policy().unwrap().nested;
+    assert_eq!((nested.per_parent, nested.per_session), (8, 16));
+    let nested = smaller.policy().unwrap().nested;
+    assert_eq!((nested.per_parent, nested.per_session), (8, 16));
+    let older_numbers = text.replace(JOB_NUMBERS, r#","jobs":{"report_chars":30000}"#);
+    let read = Snapshot::from_bytes(older_numbers.as_bytes()).unwrap();
+    assert_eq!(
+        read.to_bytes(),
+        older_numbers.as_bytes(),
+        "读进来再写出去一字不差"
+    );
+    let nested = read.policy().unwrap().nested;
+    assert_eq!((nested.per_parent, nested.per_session), (8, 16));
+    smaller.jobs = Some(crate::JobNumbers {
+        report_chars: 7,
+        nested_per_parent: Some(2),
+        nested_per_session: Some(3),
+    });
+    let nested = smaller.policy().unwrap().nested;
+    assert_eq!((nested.per_parent, nested.per_session), (2, 3));
 }

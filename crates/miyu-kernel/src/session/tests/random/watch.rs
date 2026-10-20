@@ -18,6 +18,7 @@ mod load;
 mod lookup;
 mod manual;
 pub(super) mod model;
+mod nested;
 mod overflow;
 mod peers;
 mod permission;
@@ -124,6 +125,7 @@ pub(super) struct Watch {
     models: configure::Models,
     /// 替它看图（施工 8-17）：在路上的、转述过的、每一轮没成的。
     pub(super) sight: sight::Sight,
+    pub(super) nesting: nested::Nesting,
 }
 
 impl Watch {
@@ -177,6 +179,7 @@ impl Watch {
             prepares: prepare::Prepares::default(),
             models: configure::Models::default(),
             sight: sight::Sight::default(),
+            nesting: nested::Nesting::default(),
         }
     }
 
@@ -262,7 +265,9 @@ impl Watch {
             Input::Limits(limits) => self.compactions.limits = Some(limits.clone()),
             _ => {}
         }
+        let nested = nested::of(&input);
         let actions = session.handle(input);
+        self.nested_fed(nested, &actions);
         if let Some(id) = &repeated {
             self.applied_once(id, &actions);
         }
@@ -315,6 +320,7 @@ impl Watch {
         self.compactions.reread = None;
         match action {
             Action::Append(events) => self.appended(events),
+            Action::Nested(nested) => self.nested_action(nested),
             Action::Reread { seen, paths, .. } => self.reread_issued(seen, &paths),
             Action::Push(events) => self.pushed.extend(events.iter().map(|event| event.seq)),
             Action::Reply { id, outcome } => {
@@ -397,6 +403,7 @@ impl Watch {
         let seed = self.seed;
         for (k, event) in events.iter().enumerate() {
             assert_eq!(event.seq.get(), self.last() + 1, "种子 {seed}：序号要连着");
+            self.nested_event(event);
             match &event.body {
                 Body::TurnStarted(_) => {
                     if !self.hooked.is_empty() {

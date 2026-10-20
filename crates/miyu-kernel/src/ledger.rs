@@ -12,13 +12,14 @@
 use std::collections::BTreeSet;
 
 use crate::event::{Body, CompactTrigger, ContextCompacted, Event};
-use crate::id::{CallId, Seq, TurnId};
+use crate::id::{CallId, Parent, Seq, TurnId};
 use crate::origin::By;
 
 mod error;
 mod goal;
 pub use goal::GoalStage;
 mod jobs;
+mod nested;
 mod peers;
 mod seal;
 mod shape;
@@ -26,6 +27,7 @@ mod triggers;
 mod undo;
 
 use jobs::Jobs;
+use nested::Settled;
 use peers::Peers;
 pub(crate) use peers::digest;
 use seal::Sealing;
@@ -78,6 +80,8 @@ pub struct Ledger {
     sealing: Sealing,
     /// 长期目标在不在、停没停（施工 X-6，`ledger/goal.rs`）。
     goals: GoalStage,
+    /// 还活着的父级下面了结过的嵌套调用（施工 M-1，`ledger/nested.rs`）。
+    nested: Settled,
 }
 
 impl Default for Ledger {
@@ -99,6 +103,7 @@ impl Default for Ledger {
             triggers: Triggers::default(),
             sealing: Sealing::default(),
             goals: GoalStage::default(),
+            nested: Settled::default(),
         }
     }
 }
@@ -273,6 +278,26 @@ impl Ledger {
                 )),
                 None => Ok(()),
             },
+            Body::ToolNested(nested) => {
+                match nested.id.parent() {
+                    Parent::Call(call) => {
+                        if event.turn.is_none() {
+                            return Err("a nested call under a call happens only in its turn and needs turn"
+                                .to_string());
+                        }
+                        self.check_pending(*call)?;
+                    }
+                    Parent::Job(job) => {
+                        if event.turn.is_some() {
+                            return Err("a nested call under a job has no turn".to_string());
+                        }
+                        if !self.jobs.command_running(job) {
+                            return Err(format!("job {job} is not a running background command"));
+                        }
+                    }
+                }
+                self.nested.check(nested)
+            }
             Body::JobReported(reported) => self.jobs.check_reported(reported),
             Body::ChildReported(reported) => self.jobs.check_child(reported, &event.by),
             Body::PeerIdle(idle) => self.check_idle(idle, &event.by),
@@ -389,6 +414,7 @@ impl Ledger {
         self.triggers.record(event);
         self.sealing.record(event);
         self.goals.record(event);
+        self.nested.record(event);
         match &event.body {
             Body::TurnStarted(_) => {
                 let turn = TurnId::new(event.seq);

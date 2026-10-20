@@ -108,6 +108,7 @@ impl Watch {
         self.forget_limits();
         self.forget_prepares();
         self.sight_reloaded();
+        self.nested_reloaded();
         self.next_block = 0;
         self.open_block = None;
         let appended: Vec<Event> = actions

@@ -20,10 +20,10 @@ use std::path::PathBuf;
 use miyu_kernel::accumulate::{Accumulator, Delta, Kind};
 use miyu_kernel::event::{
     Body, ChangeWhy, CompactTrigger, CompactionDone, CompactionProgress, CompactionStarted,
-    EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta, Piece, Retry, Status,
-    Todo, TodoStatus, TodosChanged, ToolProgress, Transient, TransientBody, Usage,
+    EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta, NestedStarted, Piece,
+    Retry, Status, Todo, TodoStatus, TodosChanged, ToolProgress, Transient, TransientBody, Usage,
 };
-use miyu_kernel::id::{CallId, CommandId, ModelName, ProviderId, Seq, TurnId};
+use miyu_kernel::id::{CallId, CommandId, ModelName, NestedId, ProviderId, Seq, TurnId};
 use miyu_kernel::origin::{By, Model, Tool};
 use miyu_kernel::session::ContextLimits;
 use miyu_kernel::time::Timestamp;
@@ -388,5 +388,24 @@ fn the_todos_changed_sample_is_written_exactly() {
     assert_eq!(
         lines("transient/todos.changed.jsonl"),
         [changed.to_line(), cleared.to_line()]
+    );
+}
+
+/// 后台任务 `j1` 下面的第一次 `miyu call` 派去跑了（施工 M-1）：后台的不带回合、没有 `cause`，`by` 是内核。
+#[test]
+fn the_nested_started_sample_is_written_exactly() {
+    let started = Transient {
+        at: Timestamp::parse("2026-09-25T07:52:40.062Z").expect("样本的时刻合写法"),
+        turn: None,
+        by: By::Kernel,
+        cause: None,
+        body: TransientBody::NestedStarted(NestedStarted {
+            id: NestedId::parse("j1#1").expect("样本里的嵌套调用编号合写法"),
+            name: "kb_search".to_string(),
+        }),
+    };
+    assert_eq!(
+        lines("transient/tool.nested_started.jsonl"),
+        [started.to_line()]
     );
 }

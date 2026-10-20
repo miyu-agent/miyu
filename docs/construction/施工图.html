@@ -1076,6 +1076,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sS-6a"><span class="n">S-6 上</span>接入QQ 只依赖门面、读自己的包文件夹<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-6b"><span class="n">S-6 中</span>开 miyu-agent/miyu-onebot<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sS-6c"><span class="n">S-6 下</span>核心仓库删掉接入QQ<span class="st">✓</span></a></li>
+        <li><a class="step review" href="#sM-1"><span class="n">M-1</span>嵌套调用（内核）<span class="st">…</span></a></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
       </ol>
@@ -36279,6 +36280,41 @@ section class="sheet" id="sC-9" aria-labelledby="h-sC9">
       </ul>
     </div>
   </div>
+</section>
+<section class="sheet" id="sM-1" aria-labelledby="h-sM1">
+  <div class="sheet-head"><h2 id="h-sM1"><span class="no">M-1</span>嵌套调用（内核）</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">脚本里的一次 <code>miyu call</code> 是挂在前台调用或后台任务下面的嵌套调用：内核照直接调用的同一条链查、判、派，记 <code>tool.nested</code>，父级结束之前收完。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">M-1</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>编号 <code>call_12_1#3</code>、<code>j7#3</code>；事件 <code>tool.nested</code>、瞬时 <code>tool.nested_started</code></li>
+              <li>一个父级一条队，不进这一步的调度；两道上限，到了排队</li>
+              <li>父级记结果、报告之前先收尾，同一批排在前面</li>
+              <li>账本、组装跳过、索引不算动静、订阅带在跑的</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">请求逐字节不变</span><span class="rl">嵌套调用不进上下文，真组装的探针证明</span></div>
+          <div class="tile new"><span class="nm">崩了不补</span><span class="rl">嵌套调用只在内存里，没有「开始」的事件</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">M-1</dd></div>
+        <div><dt>名称</dt><dd>嵌套调用（内核）</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">—</dd></div>
+        <div><dt>验收</dt><dd>待验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
 </section>
 
 <footer class="foot">

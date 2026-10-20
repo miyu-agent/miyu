@@ -9,6 +9,7 @@ mod goal;
 mod jobs;
 mod manual;
 mod model;
+mod nested;
 mod peers;
 mod said;
 mod seal;

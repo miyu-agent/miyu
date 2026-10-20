@@ -27,6 +27,8 @@
 | `crates/miyu-kernel/src/session/limits.rs` | 给头看的限额 `ContextLimits`：窗口、压缩线（施工 6-3 补）；在跑的回合和它的 `cause`（`turn_cause()`，施工 8-9）；还算数的最近一次压缩、清空替代到哪（`compacted_upto()`，施工 R-13 补） |
 | `crates/miyu-kernel/src/session/tools.rs`、`step.rs` | 这一步的调用：先查、派、收结果、补结果；每个调用走到了哪、轮到谁 |
 | `crates/miyu-kernel/src/session/queue.rs`、`supersede.rs`、`interrupt.rs` | 排队的消息；一个字都还没回就撤掉重发（施工 4-15）；打断 |
+| `crates/miyu-kernel/src/session/nested.rs`、`nested/types.rs` | 嵌套调用（施工 M-1）：来了先查、排进父级的队、轮到的交给链、派、了结；父级结束时收尾、放进同一批；落了盘答执行器；在跑的给订阅；输入、动作、答脚本那头的几种 |
+| `crates/miyu-kernel/src/testkit/nested.rs` | 执行器替身扮脚本那头：送 `miyu call`、交链的结论、交跑完了，记下派过的、掐掉的、答过的（施工 M-1） |
 | `crates/miyu-kernel/src/session/jobs.rs` | 回报到了：记下，开一轮、排着还是只记下（施工 7-2，`agents.md` 第三条）；子会话重交的认出来（施工 7-6） |
 | `crates/miyu-kernel/src/session/messages.rs` | 子代理的留言到了：认出是这个会话派的哪个子代理，照回报的规矩记下、开不开一轮；交给执行器的派出去的子代理（施工 7-7，`agents.md` 第六条）；别的 harness 发来的话照同一条路走（施工 7-10） |
 | `crates/miyu-kernel/src/session/peers.rs` | 别的会话发来的话过防刷屏：一字不差的、限速、没听到的上限（施工 C-2，`cross-session.md` 第五条），过了的照同一条路走。空了的通知：收、作废、不在了，「空了」、通知那一行、在等哪几个（施工 C-6，`cross-session.md` 第六条） |
@@ -79,6 +81,7 @@
 | `Woke { at, seen }` | 为哪一次请求等的；等停着的，是那一步回复的序号 | 「出错再来」「打断」第 7 条 |
 | `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped, end_turn, display_name }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的；要结束这一轮的（施工 4-14）；这件工具给人看的名字，派它那一刻取的（施工 9-8 六补） | 「调工具」「打断」第 7 条 |
 | `ToolProgress { at, call_id, text }` | 一段输出 | 「调工具」 |
+| `Nested(NestedInput)`：`Call { at, id, name, args }`、`Guarded { at, id, verdict }`、`Done { at, id, error, duration_ms, result, bytes }` | 脚本里的一次 `miyu call`：编号、工具名、参数原文；链的结论；跑完了：出没出错、用时、交给脚本的那份结果的 blob 和字节数（施工 M-1，归成一种输入，`nested/types.rs`） | 「嵌套调用」 |
 | `ToolGuarded { at, call_id, verdict }`、`ToolAsks { at, call_id, questions }` | 链的结论；一组题 | `asking.md` |
 | `ReadBack { at, from, events }` | 从第 `from` 条读回的日志，连到最后一条（施工 6-9） | 对得上正在读回的那一次，才记撤销（`history.md`「撤掉压缩」）；对不上的不理 |
 | `Reread { at, seen, files }` | 哪一次摘要请求；压完要重读的文件，一个一项，照交出去的先后：读到了（`blob`、原文）、太大、读不到（施工 6-5） | 记在那次摘要请求上，什么都不出（`compaction.md` 第九条） |
@@ -131,6 +134,9 @@
 | `RunTool { call_id, name, args, cwd, dirs, permission, cause, asked }` | 修正过的参数、这一轮的工作目录和加进来的目录（施工 5-10 上）、派出去那一刻实际生效的那一级（施工 5-4 上：执行器照它写沙盒的规格）、这一轮的 `cause`（施工 7-3：它起的后台命令自己退出了，`job.reported` 的 `cause` 照它，「回报」第 2 条）、是谁要她做的（施工 O-2 下，`asked.rs`：开回合的触发那一条的 `by`，请求新看到的排队消息、并进来的群消息、别的 harness 和别的会话发来的话里最新的那一条换上它，后台命令、子代理的回报不换；`providers.md`「是谁要的」） | 跑；送回 `ToolProgress`、`ToolAsks`、`ToolDone` |
 | `AnswerTool { call_id, answers }` | 人的回答 | 交给在等的调用（`asking.md`） |
 | `CancelTool { call_id }` | 哪次调用 | 掐掉，不送回；之后到的不理 |
+| `Nested(NestedAction)`：`Guard { id, name, args, cwd, dirs, permission, grants }`、`Run { id, name, args, cwd, dirs, permission }` | 同 `GuardTool`、`RunTool`，编号是嵌套调用的（施工 M-1，归成一种动作） | 过链送回 `Nested(Guarded)`；跑，送回 `Nested(Done)`（「嵌套调用」） |
+| `Nested(NestedAction::Cancel { id })` | 哪个嵌套调用 | 掐掉，不送回；之后到的不理 |
+| `Nested(NestedAction::Answer { id, answer })` | 了结了：`Settled { status, reason }`（落了盘才出）；没收下：`Refused`（`Gone`、`Unknown`、`NotAllowed`、`NotAnObject`） | 交给脚本那头的 `miyu call`（设计 39 第六节第 4 条的退出码） |
 | `StopTool { call_id }` | 哪次改文件的调用 | 叫它停：停在改之前，或者做完；照常送回 `ToolDone`，停在改之前的带 `stopped`（「打断」第 7 条） |
 | `Reread { seen, paths, limit }` | 哪一次摘要请求（排在它的「请求模型」前面）；要重读的文件，真实的位置，照先后；单个最多多少字节（施工 6-5） | 读完、存成 blob 再做下一个动作，送回 `Reread`（`compaction.md` 第九条） |
 | `ReadBack { from }` | 从第几条起（施工 6-9） | 只读地读日志，从第 `from` 条到最后一条，读完才收收件箱，送回 `ReadBack`；读不了的，会话停下（`history.md`「撤掉压缩」） |
@@ -186,6 +192,7 @@
 | `reports` | 子会话回报的正文怎么截（`Reports`，施工 7-6）：`chars` 最多几个字，`omitted` 截在中间的那一行（字段 `count`） | 快照里的 `jobs.report_chars`（出厂 30000）、`core/jobs/subagent-omitted.txt`；以前造的快照没有的，照出厂的数、空的那一行 |
 | `compaction` | 压缩用的数：`reserve_cap` 输出预留的上限、`margin` 余量、`line_percent`、`margin_percent` 压缩线、余量各至多窗口的百分之几（施工 6-11 再补，压缩线照 `Compaction::line` 算）、`tail` 尾巴的上限、`price` 估算时一张图、一个文件各算多少；`None` 不主动压 | 20000、13000、85、5、16000、各 2000（`miyu-policy` 的 `compose`，施工 6-2）；以前造的快照里没有的是 `None` |
 | `titles` | 起标题的两个数（`Titles`，施工 3-8 五补）：`tries` 一个会话最多试几次，`chars` 标题最多几个字；`None` 不起标题 | 快照里的 `title.tries`、`title.chars`（出厂 2、50），快照里还得有起标题的字；以前造的快照里没有的是 `None` |
+| `nested` | 嵌套调用的两道上限（`NestedLimits`，施工 M-1）：`per_parent` 一个父级、`per_session` 整个会话同时过链、在跑的最多几个 | 快照里的 `jobs.nested_per_parent`、`jobs.nested_per_session`（出厂 8、16）；以前造的快照没有的，照出厂的数 |
 | `peers` | 别的会话发来的话怎么防刷屏（`Peers`，施工 C-2）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句 | 快照里的 `peers`（出厂 5、600、50，`cross-session.md`「对外的样子」）；以前造的快照没有的，照出厂的数 |
 
 ### 怎么走
@@ -308,6 +315,25 @@
 6. **输出**（`ToolProgress`）：只收在跑的调用的，推一条 `tool.progress`，`by` 是那次调用，`cause` 是回合的。
 7. **这一步齐了**：调用都有了结果，这一步派出去的前台子代理（策略的 `foreground`，施工 T-1 下：记结果时 `subagent` 那次的 `job.started` 填上 `foreground`；给前台子代理留了言的那次也算，等它再报）也都报回来了。等它们不设时限，等的时候来的消息照排队，人要停就打断。这一步里有工具交回 `end_turn` 的（施工 4-14，`Step::ending` 记头一件），结束回合，`completed`，`by` 是那一次调用，同一步别的照常跑完，排着、并进来的照常接着开下一轮；有计划的重启碰上这样的一步，照 `completed` 收、再起来不接着干（崩了的本来就不再请求）。请求数到了步数上限，结束回合，`step_limit`；不然回到 `Ready`，这一轮里切过权限级别的先查一遍事实，落了盘请求下一次。上限只在一步齐了时查：第一次请求总会发，上限是 0 和 1 一样。
 8. **内核写的结果**：`blocks` 是一块文字（那一句），`human` 是那一句的说法，没有用时、没有效果。
+
+**嵌套调用**（施工 M-1，设计 `39-脚本调工具.md` 第四节，`nested.rs`）：脚本里的一次 `miyu call`，挂在前台那次调用或后台任务下面（`kernel/ids.md` 的 `NestedId`）。不进这一步的调度：父 `shell` 在这一步里独占着，嵌套的要是也排进去，会自己等自己。
+
+1. **来了**（`Nested(Call)`，执行器交）：照这一刻查，前一条不过的不往下查：
+   1. 父级不在了：前台的不是这一步里在跑的调用（派出去了的、问着人的；打断着、停着的不算），后台的不是还没报过结束的后台命令（账本的 `running_commands`）：答 `gone`。
+   2. 这个编号来过（排着、在跑、了结过）：不理。
+   3. 工具面上没有这个名字：答 `unknown`。访问类别不是 `read`、`network`、`execute` 的：答 `not_allowed`（设计 39 MC2，第一版的嵌套调用不改长期的东西、不在场所里留下后果）。参数修正不了（「调工具」第 2 条）：答 `not_an_object`。这三种是用法不对，执行器给脚本退出码 2。
+   4. 1 到 3 什么都不记。实际生效的是只读、工具要写入的：记 `denied`，那一句是 `read-only`（名单以后会变，照样查）。
+   5. 别的修正好参数，排进这个父级的队。
+2. **轮到谁**：一个父级一条队，照到的先后：只读（`read`）的，前面没有还没了结的非只读的就轮到；非只读的，前面的都了结了才轮到。另有两道上限（策略的 `nested`）：同一个父级过链、在跑的不超过 `per_parent`，整个会话不超过 `per_session`；到了的排着，不拒，空出来照先后派（父级的先后照编号）。
+3. **过链**：轮到的出 `Nested(Guard)`，带工作目录和加进来的目录（前台的照这一轮的，后台的照会话现在的环境）、实际生效的那一级、本会话放行过的规则。回合外也照实际生效的那一级：放宽的要等下一次请求才生效，所以回合外只会更严、不会更松。
+4. **结论**（`Nested(Guarded)`）：放行的派去跑（`Nested(Run)`，带的同上），推一条瞬时事件 `tool.nested_started`（`kernel/events.md`）；拒绝的记 `denied`，`reason` 是链的那一句；要问人的不问，记 `needs_approval`（设计 39 MC4）。不是在过链的，不理。
+5. **跑完**（`Nested(Done)`）：只收在跑的，记 `ok` 或 `error`，用时、结果的 blob 和字节数照交的。别的不理。
+6. **记**：`tool.nested` 的 `by` 是内核；前台的带这一轮、`cause` 是回合的，后台的不带回合、没有 `cause`。落了盘才答执行器（`Nested(Answer)`：了结成什么样、拒绝的那一句），执行器这时才把结果交给脚本（「回答落了盘再交」）。
+7. **父级结束**：前台的调用要记结果之前（跑完、被打断、有计划的重启），后台的任务要记 `job.reported` 之前：挂在下面还没了结的都记 `cancelled`，`by` 是内核；在跑的出 `Nested(Cancel)`，排着的、过链的直接了结。同一批，排在父级那一条前面：造事件的那几处（`record`、`record_outside`、回报的 `land`）给父级那一条编序号之前先收，送完这条输入时放进同一批（`Session::handle` 的 `splice_nested`）。之后才到的结论、结果不理。
+   - 每送完一条输入，看一次有没有轮到的（`dispatch_nested`）：父级结束空出来的位子、上限空出来的位子，当场派。
+   - 订阅时交给头的在跑的（`nested_running`，`protocol.md` 订阅回应的 `nested`）。
+8. **崩了**：嵌套调用只在内存里，载入以后没有，不补；脚本那头随父级的进程一起没了。
+9. 嵌套调用不算步数、不叫醒她、不开回合；后台的在回合外照样来、照样记。撤销见 `history.md`「拿走什么」。
 
 **排队的消息**：
 

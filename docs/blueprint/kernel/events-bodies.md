@@ -17,6 +17,7 @@
 | `crates/miyu-kernel/src/event/question.rs` | `question.asked`、`question.answered`；回答对不对得上 `fits` |
 | `crates/miyu-kernel/src/event/context.rs` | `context.injected`、`context.compacted`、`context.compaction_paused`（`PauseReason`） |
 | `crates/miyu-kernel/src/event/model.rs` | `model.called`（`FirstDifference`、`Usage`、`BlockSpan`、`CallResult`、`CallError`、`ErrorClass`，辅助请求的用途 `Purpose`、是不是辅助请求 `aside()`，施工 3-8 四补） |
+| `crates/miyu-kernel/src/event/nested.rs` | `tool.nested`（`NestedStatus`）（施工 M-1） |
 | `crates/miyu-kernel/src/event/job.rs` | `job.reported`（`JobReason`）、`child.reported`（`ChildReason`）（施工 7-1） |
 | `crates/miyu-kernel/src/event/peer.rs` | `peer.idle`（`PeerIdle`、`IdleReason`，施工 C-1） |
 | `crates/miyu-kernel/src/event/image.rs` | `image.described`（`ImageDescribed`，施工 8-17） |
@@ -250,6 +251,27 @@
 | `skipped` | 已跳过：人急着插话；等人回答的时候来了一句话；这里没有人能回答 |
 
 执行器交回的只有 `ok` 和 `error`，另外三种是内核写的。哪一种情况写哪一句、`by` 是谁，见 `kernel/tools.md`。
+
+**`tool.nested`**（施工 M-1，设计 `39-脚本调工具.md` 第四节、第七节）：脚本里的一次 `miyu call` 了结了。了结时记一条，开始时不记（开始只推一条瞬时事件，`kernel/events.md`「瞬时事件」）；崩了以后不补。不进上下文。
+
+| 格 | 写法 | 有没有 | 是什么 |
+|---|---|---|---|
+| `id` | 嵌套调用编号 | 必有 | `<父级>#<序号>`（`kernel/ids.md`）：挂在哪一次调用或哪一个任务下面、是第几个 |
+| `name` | 字符串 | 必有 | 调的哪件工具 |
+| `args` | 字符串 | 必有 | 修正过的参数，JSON 原文 |
+| `status` | 取值 | 必有 | 了结成什么样，下表 |
+| `duration_ms` | 整数 | 可以没有 | 执行用了多少毫秒，执行器量的。没真执行过的没有 |
+| `result` | 内容哈希 | 可以没有 | 交给脚本的那份结果存成的 blob（一行 JSON，或者文字）。没执行过的、没存下来的没有 |
+| `bytes` | 整数 | 可以没有 | 那份结果有多少字节，和 `result` 一起有 |
+| `reason` | 字符串 | 可以没有 | `denied` 的：拒绝的那一句，照直接调用的原话 |
+
+| `status` | 是什么 | 谁写 |
+|---|---|---|
+| `ok` | 成功 | 执行器交回的 |
+| `error` | 工具执行了，但是出了错 | 执行器交回的 |
+| `denied` | 执行前的链、内核拦下了（类别不准的、只读开着时写的） | 内核 |
+| `needs_approval` | 链判出要问人：不问，当场了结（设计 39 MC4） | 内核 |
+| `cancelled` | 父级先结束了（前台的调用交回、被打断，后台的任务结束），还在跑的、还在排队的 | 内核 |
 
 **说法**（`tool.result` 的 `human`）：
 

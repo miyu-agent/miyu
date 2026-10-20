@@ -148,6 +148,8 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
             | Body::ApprovalDecided(_)
             | Body::QuestionAsked(_)
             | Body::QuestionAnswered(_)
+            // 脚本里的 `miyu call`：结果只交给脚本，她看到的是那次 `shell` 的输出（施工 M-1，设计 39 第七节第 2 条）。
+            | Body::ToolNested(_)
             | Body::ContextCompacted(_)
             | Body::CompactionPaused(_)
             // 场所的撤回、她实际发出去的话：O-13 下渲染进群聊近况（施工 O-13 上）。
@@ -417,7 +419,7 @@ impl Group {
 /// 最后，是一条带 `interrupted` 的回复，后面只有一条内核记的 `reply_cut` 事实，中间只隔着
 /// `model.called`、`session.recapped`（施工 3-8 四补：回顾不进上下文，中途要了也照样接着写）、`session.meta_changed`（施工 3-8
 /// 五补：上一轮起的标题可能在这一轮中途回来，改标题也不进上下文）、`image.described`（施工 8-17：图的转述不渲染，打断以前发出去的
-/// 转述可能这时才回来）。这时渲染出来的最后一条 user 消息里只有被打断的那一句，前面那条 assistant 是
+/// 转述可能这时才回来）、`tool.nested`（施工 M-1：后台任务的嵌套调用回合外也会落盘）。这时渲染出来的最后一条 user 消息里只有被打断的那一句，前面那条 assistant 是
 /// 半截。那一句之后又来了别的（人的消息、切了级别以后的事实），不算：最后那条 user 里不只有那一句，
 /// 去不掉。
 pub(crate) fn continues(history: &History) -> bool {
@@ -431,6 +433,7 @@ pub(crate) fn continues(history: &History) -> bool {
                 | Body::CommandRan(_)
                 | Body::TodosCleared(_)
                 | Body::ImageDescribed(_)
+                | Body::ToolNested(_)
         )
     });
     let noticed = tail.next().is_some_and(|event| {

@@ -459,3 +459,28 @@ fn the_context_follows_the_last_main_request() {
         (None, Some("deepseek/deepseek-flash"))
     );
 }
+
+/// 脚本里调的工具不算会话的动静（施工 M-1，`store/index.md` 的 `last_active`）：后台任务的嵌套调用在回合外落盘，算了的话终端
+/// 会话「闲置多久开新的」就被往后推了。
+#[test]
+fn nested_calls_are_not_activity() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    assert!(
+        index
+            .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
+            .unwrap()
+    );
+    let before = row(&index).unwrap().last_active;
+    let nested = event(
+        r#"{"seq":2,"at":"2026-09-25T11:00:00.000Z","kind":"tool.nested","by":{"kind":"kernel"},"body":{"id":"j1#1","name":"kb_search","args":"{}","status":"ok"}}"#,
+    );
+    assert!(
+        index
+            .advance(&id(), &mark(100, 2), &[nested], &mark(200, 3))
+            .unwrap()
+    );
+    let got = row(&index).unwrap();
+    assert_eq!(got.last_active, before);
+    assert_eq!(got.mark, mark(200, 3), "照样往后读");
+}

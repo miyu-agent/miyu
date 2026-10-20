@@ -53,6 +53,10 @@ impl Assembler for Nothing {
 /// 替身用的策略：一件读的工具，句子短，一眼认得出。
 fn policy() -> Policy {
     Policy {
+        nested: miyu_kernel::session::NestedLimits {
+            per_parent: 8,
+            per_session: 16,
+        },
         foreground: false,
         loading: None,
         assembler: Box::new(Nothing),

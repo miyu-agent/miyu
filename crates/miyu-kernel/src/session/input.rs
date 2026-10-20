@@ -265,6 +265,8 @@ pub enum Input {
         /// 成了的：替它看的端点和模型、转述的原文（去掉了前后空白，不是空的）。没成的没有：原因执行器记在运行日志里。
         seen: Option<(Model, String)>,
     },
+    /// 嵌套调用的回报（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：来了、链判完了、跑完了。
+    Nested(super::NestedInput),
     /// 执行前的链判完了（`02-内核.md` 第六节「确认怎么走」）。
     ToolGuarded {
         /// 到的时刻，取自执行器的时钟。

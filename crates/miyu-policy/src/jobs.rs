@@ -8,7 +8,7 @@ use miyu_assemble::JobTexts as Rendered;
 use miyu_kernel::template::Template;
 use serde::{Deserialize, Serialize};
 
-use miyu_kernel::session::Reports;
+use miyu_kernel::session::{NestedLimits, Reports};
 
 use crate::snapshot::{BuildError, Snapshot};
 
@@ -21,16 +21,32 @@ pub const DEPTH: u32 = 2;
 /// 各一半。
 pub const REPORT_CHARS: u64 = 30_000;
 
+/// 一个父级（前台的调用、后台的任务）下面同时过链、在跑的嵌套调用最多几个（策略数据 `jobs.nested_per_parent` 的出厂值，施工 M-1，
+/// 设计 `39-脚本调工具.md` 第四节第 5 条）。
+pub const NESTED_PER_PARENT: u32 = 8;
+
+/// 整个会话同时过链、在跑的嵌套调用最多几个（策略数据 `jobs.nested_per_session` 的出厂值，施工 M-1）：几个后台脚本一起跑，不把
+/// 搜索的额度打满。
+pub const NESTED_PER_SESSION: u32 = 16;
+
 /// 任务用的数（`agents.md`「对外的样子」的策略数据，施工 7-6）：造会话时冻结在快照里。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JobNumbers {
     /// 子会话回报的正文最多几个字。
     pub report_chars: u64,
+    /// 一个父级下面同时过链、在跑的嵌套调用最多几个（施工 M-1）。以前造的快照里没有，读成出厂的数；没有的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested_per_parent: Option<u32>,
+    /// 整个会话同时过链、在跑的嵌套调用最多几个（施工 M-1）。同上。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested_per_session: Option<u32>,
 }
 
 /// 出厂的任务用的数。
 pub(crate) const JOB_NUMBERS: JobNumbers = JobNumbers {
     report_chars: REPORT_CHARS,
+    nested_per_parent: Some(NESTED_PER_PARENT),
+    nested_per_session: Some(NESTED_PER_SESSION),
 };
 
 /// 两种回报的写法（`jobs/` 下，文件名是下划线换成 `-` 的同名 `.txt`）。
@@ -116,6 +132,16 @@ pub(crate) fn template(source: &str, fields: &[&str]) -> Result<Template, BuildE
 
 impl Snapshot {
     /// 子会话回报的正文怎么截（施工 7-6）：快照里的数，以前造的没有照出厂的；截在中间的那一行，以前造的没有是空的。
+    /// 嵌套调用的两道上限（施工 M-1）：快照里没写的照出厂的数。
+    pub(crate) fn nested_limits(&self) -> NestedLimits {
+        let jobs = self.jobs.unwrap_or(JOB_NUMBERS);
+        let wide = |n: u32| usize::try_from(n).unwrap_or(usize::MAX);
+        NestedLimits {
+            per_parent: wide(jobs.nested_per_parent.unwrap_or(NESTED_PER_PARENT)),
+            per_session: wide(jobs.nested_per_session.unwrap_or(NESTED_PER_SESSION)),
+        }
+    }
+
     pub(crate) fn reports(&self) -> Result<Reports, BuildError> {
         let chars = self.jobs.map_or(REPORT_CHARS, |jobs| jobs.report_chars);
         let omitted = self

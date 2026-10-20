@@ -29,6 +29,7 @@ mod loading;
 mod manual;
 mod messages;
 mod meta;
+mod nested;
 mod note;
 mod overflow;
 mod peers;
@@ -73,8 +74,10 @@ pub use input::{
 pub use limits::ContextLimits;
 pub use load::LoadError;
 pub use messages::Subagent;
+pub use nested::{NestedAction, NestedAnswer, NestedInput, NestedRefusal};
 pub use policy::{
-    Compaction, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, SkillRebuild, Titles,
+    Compaction, NestedLimits, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, SkillRebuild,
+    Titles,
 };
 pub use report::Upward;
 
@@ -160,6 +163,8 @@ pub struct Session {
     told_todos: Vec<crate::event::Todo>,
     /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。
     told_done: Vec<crate::event::Todo>,
+    /// 嵌套调用（施工 M-1，`nested.rs`）：只在内存里，载入以后没有。
+    nested: nested::Nested,
 }
 
 impl Session {
@@ -229,6 +234,14 @@ impl Session {
     ///
     /// 内核自己造出的事件过不了账本时 panic：那是内核的 bug，不是命令的拒绝。
     pub fn handle(&mut self, input: Input) -> Vec<Action> {
+        let mut actions = self.react(input);
+        self.splice_nested(&mut actions);
+        actions.extend(self.dispatch_nested());
+        actions
+    }
+
+    /// 照输入的种类分派。嵌套调用的收尾、派发在 [`Self::handle`] 里统一做（施工 M-1，`nested.rs`）。
+    fn react(&mut self, input: Input) -> Vec<Action> {
         match input {
             Input::Command(received) => self.receive(received),
             Input::Stored { at, upto } => self.stored(at, upto),
@@ -355,6 +368,7 @@ impl Session {
                 reason,
             } => self.watch_ended(at, session, reason),
             Input::Described { at, blob, seen } => self.described(at, blob, seen),
+            Input::Nested(nested) => self.nested(nested),
         }
     }
 
@@ -437,6 +451,7 @@ impl Session {
         let pushed: Vec<Event> = self.unstored.drain(..split).collect();
         self.stored = pushed.last().map(|event| event.seq);
         let mut actions = vec![Action::Push(pushed)];
+        actions.extend(self.answer_nested(upto));
         actions.extend(self.todos_changed(at));
         for (id, events, outcome) in std::mem::take(&mut self.waiting) {
             if self.is_stored(&events) {

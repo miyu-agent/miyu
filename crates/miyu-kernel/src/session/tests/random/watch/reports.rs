@@ -10,8 +10,8 @@
 //!   通知（施工 C-6）也是，作废、不在了的只记下。
 
 use super::*;
-use crate::event::{ChildReason, Effect, JobKind, JobReason};
-use crate::id::{JobId, SessionId};
+use crate::event::{ChildReason, Effect, JobKind, JobReason, NestedStatus};
+use crate::id::{JobId, Parent, SessionId};
 use crate::origin::Session as Child;
 
 /// 看守记着的回报。
@@ -129,10 +129,17 @@ impl Watch {
                 self.reports.watched = watched;
             }
             Some(Expect::Recorded(by, cause)) => {
-                let first = actions.iter().find_map(|action| match action {
-                    Action::Append(events) => events.first(),
+                // 前面可以先排着挂在这个任务下面、收尾记的已取消的嵌套调用（施工 M-1）；子代理下面没有。
+                let events = actions.iter().find_map(|action| match action {
+                    Action::Append(events) => Some(events.as_slice()),
                     _ => None,
                 });
+                let events = events.unwrap_or_default();
+                let k = events
+                    .iter()
+                    .take_while(|event| matches!(event.body, Body::ToolNested(_)))
+                    .count();
+                let first = events.get(k);
                 assert!(
                     first.is_some_and(|event| {
                         matches!(event.body, Body::JobReported(_) | Body::ChildReported(_))
@@ -140,6 +147,19 @@ impl Watch {
                             && event.cause == cause
                     }),
                     "种子 {seed}：回报记一条，by、cause 照交来的：{actions:?}"
+                );
+                let job = match first.map(|event| &event.body) {
+                    Some(Body::JobReported(reported)) => Some(Parent::Job(reported.job.clone())),
+                    _ => None,
+                };
+                assert!(
+                    events[..k].iter().all(|event| match &event.body {
+                        Body::ToolNested(nested) =>
+                            Some(nested.id.parent()) == job.as_ref()
+                                && nested.status == NestedStatus::Cancelled,
+                        _ => false,
+                    }),
+                    "种子 {seed}：回报前面只能是这个任务下面收尾取消的嵌套调用：{actions:?}"
                 );
             }
         }

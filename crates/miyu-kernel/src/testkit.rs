@@ -14,6 +14,7 @@ mod compact;
 mod disk;
 mod jobs;
 mod limits;
+mod nested;
 mod opening;
 mod peers;
 mod prepare;

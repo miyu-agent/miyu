@@ -102,7 +102,10 @@ impl Row {
     /// 撤掉的回合里改的也算：改名不是对话的一部分。`policy.changed` 写了 `persona`、`preset` 的换成它（中途换人格、预设，施工
     /// P-13；空的人格是无人格）：人换了就算，不等下一个回合真换上。
     pub fn see(&mut self, event: &Event) {
-        self.last_active = event.at;
+        // 脚本里调的工具（施工 M-1）不算动静：不是人和她的对话，后台任务的会在回合外落盘，会把终端会话的闲置往后推。
+        if !matches!(event.body, Body::ToolNested(_)) {
+            self.last_active = event.at;
+        }
         if let Some(cwd) = cwd(event) {
             self.cwd = Some(cwd.to_string());
         }

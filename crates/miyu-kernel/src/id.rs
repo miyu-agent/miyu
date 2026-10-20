@@ -2,7 +2,7 @@
 //!
 //! - 数字：[`Seq`] 序号、[`TurnId`] 回合编号；
 //! - 内核分配的：[`CallId`] 调用编号，写成 `call_44_1`（`id/call.rs`）；[`JobId`] 任务编号，写成 `j1`（`id/job.rs`，
-//!   施工 7-1）；
+//!   施工 7-1）；[`NestedId`] 嵌套调用编号，写成 `call_44_1#3`、`j7#3`（`id/nested.rs`，施工 M-1）；
 //! - 字符串：会话编号、命令编号、账号、内容哈希、模块、驱动家族、场所、外部身份、供应商、模型、
 //!   媒体类型、文件名、事件种类、别的 harness 的名字。
 //!
@@ -20,9 +20,11 @@ use crate::format_error::FormatError;
 
 mod call;
 mod job;
+mod nested;
 
 pub use call::CallId;
 pub use job::JobId;
+pub use nested::{NestedId, Parent};
 
 /// 生成一种用字符串存的编号或名字。每一种只是检查的规则不同，其余都一样：
 /// `parse` 按规则检查；JSON 里写成字符串；从 JSON 读的时候照样检查。

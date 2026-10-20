@@ -11,6 +11,7 @@
 | `crates/miyu-kernel/src/id.rs` | 十五种用字符串写的编号和名字；序号 `Seq`、回合编号 `TurnId`；内容哈希怎么算（`ContentHash::of`、`Hasher`）；会话的短编号 `SessionId::short`（施工 C-1） |
 | `crates/miyu-kernel/src/id/call.rs` | 调用编号 `CallId` |
 | `crates/miyu-kernel/src/id/job.rs` | 任务编号 `JobId`（施工 7-1；带上父会话的编号，施工 7-1 补） |
+| `crates/miyu-kernel/src/id/nested.rs` | 嵌套调用编号 `NestedId` 和它的父级 `Parent`（施工 M-1） |
 | `crates/miyu-kernel/src/time.rs` | 时刻 `Timestamp`；时区 `UtcOffset`；给模型看的当地钟点 `local_ten_minutes` |
 | `crates/miyu-kernel/src/origin.rs` | `by`：八种，加上不认识的 |
 | `crates/miyu-kernel/src/format_error.rs` | 写法不对时报的 `FormatError`（它的样子见 `kernel/events.md`「出错」） |
@@ -80,6 +81,12 @@
 - `JobId::new(n)` 是只有一段的 `j<n>`，给 0 得到空的；`under(n)` 在这个编号后面接一段：`j2` 的 `under(1)` 是 `j2.1`，给 0 得到空的；`last()` 是最后一段的数。每一段最大到 `u64` 的上限，段数不限（深度上限管着，`agents.md`「上限」的 `jobs.depth`）。
 - JSON 里是字符串。排序一段一段照数比，前面的段都一样的，段少的在前：`j2` 在 `j10` 前面，`j2` 在 `j2.1` 前面，`j2.9` 在 `j10` 前面。
 - 短，她写得对；头要找子会话，看 `job.started` 里的会话编号。
+
+**嵌套调用编号** `NestedId`（施工 M-1，设计 `39-脚本调工具.md` 第四节第 1 条）：`<父级>#<序号>`。父级是前台那次调用的调用编号，或者后台命令的任务编号；序号从 1 数，是这个父级下面的第几个嵌套调用（脚本里的一次 `miyu call`）。例如 `call_44_1#3`、`j7#3`、`j2.1#1`。
+
+- `NestedId::new(parent, n)` 给 n 0 得到空的；`parent()` 是父级（`Parent::Call(CallId)` 或 `Parent::Job(JobId)`），`n()` 是序号，最大到 `u32` 的上限。
+- JSON 里是字符串。排序先照父级（调用在任务前面，各自照自己的排法），再照序号。
+- 用 `#` 不用 `.`：任务编号里的 `.` 已经是子会话的一层（`j7.3` 是 `j7` 派的第 3 个任务）；`#` 也和头上画的 `#序号` 一样（设计 39 第七节第 4 条）。
 
 **时刻** `Timestamp`：UTC，到毫秒。
 
@@ -223,6 +230,12 @@
 
 25. 不以 `j` 开头（`J1` 也不行）：「must start with j」。
 26. 后面照 `.` 切成段，每一段要是十进制的正整数，全是数字，不带正负号，不以 `0` 开头，不超出 `u64`：有一段不合的「needs decimal numbers from 1 after j, joined by dots」。`j`、`j0`、`j01`、`j+1`、`j1x`、`j18446744073709551616`、`j1.0`、`j1.`、`j.1`、`j1..2`、`j1.01`、`j1.x` 都是这一句（施工 7-1 补）。
+
+**嵌套调用编号**（`NestedId::parse`，JSON 里读的时候也走它，施工 M-1）：只认内核自己写出去的样子，报错里叫它 `nested id`。
+
+27. 照最后一个 `#` 切不成两截：「write it as <call id or job id>#<n>」。
+28. 前一截以 `call_` 开头的照调用编号读（第 9 到 12 条），别的照任务编号读（第 25、26 条）；读不成的：「parent must be a call id or a job id」。
+29. 序号那一截照第 12 条查（十进制、从 1 起、不超出 `u32`）：不合的「n must be a decimal number from 1」。`j7#0`、`j7#01`、`j7#`、`j7#4294967296` 都是这一句。`call_44_1#3#1` 照最后一个 `#` 切，父级是 `call_44_1#3`，读不成，是第 28 条那一句。
 
 ### 出错
 

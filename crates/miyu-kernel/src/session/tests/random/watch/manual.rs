@@ -61,7 +61,14 @@ impl Watch {
     }
 
     /// 推给头的都是开着的那一轮的；压好了照写下压缩时的回合对（`watch/compaction.rs`）：手动压缩的那一轮同一批就结束了。
+    /// 后台任务下面的嵌套调用开始了不带回合（施工 M-1）。
     pub(super) fn transient_turn(&self, transient: &Transient) {
+        if let TransientBody::NestedStarted(started) = &transient.body
+            && matches!(started.id.parent(), crate::id::Parent::Job(_))
+        {
+            assert_eq!(transient.turn, None, "种子 {}", self.seed);
+            return;
+        }
         if !matches!(transient.body, TransientBody::CompactionDone(_)) {
             assert_eq!(transient.turn, Some(self.open_turn()), "种子 {}", self.seed);
         }

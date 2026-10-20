@@ -39,6 +39,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `message.assistant` | One complete model response: text, thinking, tool calls |
 | `model.called` | One model request: which model, usage, cost, `error` on failure |
 | `tool.result` | One tool call's result: `status` is `ok`, `error`, `denied`, `cancelled`, `skipped` |
+| `tool.nested` | A `miyu call` from a script finished: `id` (`call_12_1#3` under a foreground call, `j7#3` under a background job), `name`, `args`, `status` (`ok`, `error`, `denied`, `needs_approval`, `cancelled`), and when present `duration_ms`, `result` (blob), `bytes`, `reason`. Not in her context; ones under a job carry no `turn` |
 | `tool.approval_requested`, `tool.approval_decided` | A person was asked to approve a call; their decision |
 | `question.asked`, `question.answered` | She asked a set of questions; the person's answers |
 | `context.injected` | A block of facts injected into the context (memory, something an extension returned…) |
@@ -63,6 +64,7 @@ Not recorded, no `seq`, only pushed to heads subscribed at that moment, never re
 |---|---|
 | `model.delta` | A piece of model output: `seen`, `index` (which block), plus one of `start` (with `name`, the block kind), `text`, `end` |
 | `tool.progress` | A piece of a running tool's output: `call_id`, `text` |
+| `tool.nested_started` | A `miyu call` from a script passed the checks and is running: `id`, `name`; it ends with `tool.nested` |
 | `status` | A request is retrying or switched provider |
 | `model.changed` | The model or limits for the next requests changed: `why` is `failover` or `turn` |
 | `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done |

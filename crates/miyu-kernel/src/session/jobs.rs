@@ -181,6 +181,8 @@ impl Session {
         body: Body,
         wake: Option<Waker>,
     ) -> Result<Vec<Event>, LedgerError> {
+        // 任务要报告了：挂在它下面还没了结的嵌套调用先收（施工 M-1）。
+        self.close_nested(at, &body);
         let event = Event {
             seq: self.ledger.next_seq(),
             at,

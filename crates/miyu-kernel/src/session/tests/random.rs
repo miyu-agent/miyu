@@ -53,6 +53,7 @@ mod configuring;
 mod endings;
 mod kinds;
 mod naming;
+mod nesting;
 mod paths;
 mod peering;
 mod preparing;
@@ -357,6 +358,8 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         watch.prepares.seeded = preparing;
         // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
         let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
+        // 三个种子里有一个跑脚本里的 `miyu call`（施工 M-1）：另一串随机数。
+        let (mut nests, nesting) = (Rng(seed ^ 0x2E57_ED00), seed % 3 == 0);
         for _ in 0..300 {
             // 有回顾在路上的不崩：崩了它就丢了，等着的命令收不到回应（施工 3-8 四补）。
             if watch.all_stored() && crashes.below(200) == 0 && watch.recaps_idle() {
@@ -424,6 +427,9 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
                 watch.feed(&mut session, input);
             }
             if preparing && let Some(input) = preparing::some_prepare(&mut prepares, &watch) {
+                watch.feed(&mut session, input);
+            }
+            if nesting && let Some(input) = nesting::some_nested(&mut nests, &mut watch) {
                 watch.feed(&mut session, input);
             }
             let mut input = some_input(&mut rng, &mut watch, &mut next_id);

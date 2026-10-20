@@ -245,6 +245,7 @@ impl Session {
             rounds,
             told_todos: Vec::new(),
             told_done: Vec::new(),
+            nested: super::nested::Nested::default(),
         };
         // 头订阅时从回应里拿当前的待办（施工 D-3）：当已经告诉过它这一份，变了再推。
         session.told_todos = session.todos();

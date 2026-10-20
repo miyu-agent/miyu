@@ -333,3 +333,55 @@ fn hashing_piece_by_piece_is_the_same_as_all_at_once() {
         "什么都没喂的，是空内容的哈希"
     );
 }
+
+/// 嵌套调用编号（施工 M-1，`kernel/ids.md` 第 27 到 29 条）：父级是调用编号或任务编号，`#` 后面是序号；父级本身带 `.`
+/// 的（子会话的任务）照最后一个 `#` 切，读回来一样。
+#[test]
+fn nested_ids_round_trip_under_a_call_or_a_job() {
+    round_trip::<NestedId>(r#""call_12_1#3""#);
+    round_trip::<NestedId>(r#""j7#3""#);
+    round_trip::<NestedId>(r#""j7.3#2""#);
+    round_trip::<NestedId>(r#""j7#4294967295""#);
+    let call = CallId::new(Seq::new(12).unwrap(), 1).unwrap();
+    let nested = NestedId::new(Parent::Call(call), 3).unwrap();
+    assert_eq!(nested.to_string(), "call_12_1#3");
+    assert_eq!(nested.parent(), &Parent::Call(call));
+    assert_eq!(nested.n(), 3);
+    assert_eq!(NestedId::parse("call_12_1#3"), Ok(nested.clone()));
+    let job = JobId::new(7).unwrap().under(3).unwrap();
+    let under_job = NestedId::new(Parent::Job(job.clone()), 2).unwrap();
+    assert_eq!(under_job.to_string(), "j7.3#2");
+    assert_eq!(NestedId::parse("j7.3#2"), Ok(under_job.clone()));
+    assert_eq!(under_job.parent(), &Parent::Job(job));
+    assert_eq!(NestedId::new(Parent::Call(call), 0), None, "从 1 数起");
+    assert!(nested < under_job, "调用在任务前面");
+    let later = NestedId::new(Parent::Call(call), 10).unwrap();
+    assert!(nested < later, "同一个父级照序号，不照字");
+}
+
+/// 嵌套调用编号的每一条规则各一个坏例子（`kernel/ids.md` 第 27 到 29 条）。
+#[test]
+fn nested_ids_reject_what_the_kernel_never_writes() {
+    const SPLIT: &str = "write it as <call id or job id>#<n>";
+    const PARENT: &str = "parent must be a call id or a job id";
+    const N: &str = "n must be a decimal number from 1";
+    for (bad, why) in [
+        ("call_12_1", SPLIT),
+        ("j7", SPLIT),
+        ("#3", PARENT),
+        ("x7#3", PARENT),
+        ("call_12#3", PARENT),
+        ("j0#1", PARENT),
+        ("call_44_1#3#1", PARENT),
+        ("j7#0", N),
+        ("j7#01", N),
+        ("j7#", N),
+        ("j7#+1", N),
+        ("j7#4294967296", N),
+    ] {
+        rejected::<NestedId>(&format!("\"{bad}\""), why);
+        let err = NestedId::parse(bad).unwrap_err();
+        assert_eq!(err.what, "nested id", "{bad}");
+    }
+    rejected::<NestedId>("1", "invalid type");
+}

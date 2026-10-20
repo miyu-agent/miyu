@@ -73,6 +73,10 @@ pub fn policy() -> Policy {
         parameters: serde_json::from_str(r#"{"type":"object"}"#).expect("参数格式是 JSON"),
     };
     Policy {
+        nested: miyu_kernel::session::NestedLimits {
+            per_parent: 8,
+            per_session: 16,
+        },
         foreground: false,
         loading: None,
         assembler: Box::new(Nothing),

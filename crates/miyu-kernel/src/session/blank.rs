@@ -51,6 +51,7 @@ impl Session {
             rounds: super::seal::Rounds::default(),
             told_todos: Vec::new(),
             told_done: Vec::new(),
+            nested: super::nested::Nested::default(),
         }
     }
 }

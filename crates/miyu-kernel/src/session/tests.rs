@@ -205,6 +205,10 @@ fn policy() -> Policy {
         parameters: serde_json::from_str(parameters).unwrap(),
     };
     Policy {
+        nested: NestedLimits {
+            per_parent: 8,
+            per_session: 16,
+        },
         foreground: false,
         loading: None,
         assembler: Box::new(Listing),

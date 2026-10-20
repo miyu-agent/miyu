@@ -205,6 +205,8 @@ async fn events_append_refuses_wrong_kinds_sizes_and_fields() {
     let before = home.log(&session).len();
     for (n, params) in [
         json!({"session": session, "kind": "message.user", "body": {}}),
+        // 嵌套调用只有内核能记（施工 M-1）。
+        json!({"session": session, "kind": "tool.nested", "body": {"id": "j1#1", "name": "kb_search", "args": "{}", "status": "ok"}}),
         json!({"session": session, "kind": "ext.onebot", "body": {}}),
         json!({"session": session, "kind": "ext.Onebot.x", "body": {}}),
         json!({"session": session, "kind": "ext.onebot..x", "body": {}}),

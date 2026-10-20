@@ -212,6 +212,7 @@ impl Stage {
             held_title: None,
             prepare: super::prepare::Prepares::default(),
             routing: super::routing::Routing::default(),
+            nested: super::nested::Bench::default(),
             sight: super::sight::Sight::default(),
             swap: None,
         };

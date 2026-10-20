@@ -90,6 +90,8 @@ pub struct Stage {
     pub(super) prepare: super::prepare::Prepares,
     /// 路由：回合开始时交来的引用、解析不出的（施工 8-10，`routing.rs`）。
     pub(super) routing: super::routing::Routing,
+    /// 嵌套调用（施工 M-1，`nested.rs`）。
+    pub(super) nested: super::nested::Bench,
     /// 替它看图：剧本、交出来的转述请求、扣着的（施工 8-17，`sight.rs`）。
     pub(super) sight: super::sight::Sight,
     /// 下一个回合开始时换上的策略和它的快照哈希（施工 P-1 再补，`swap.rs`）。
@@ -451,6 +453,7 @@ impl Stage {
         self.held_model = None;
         self.held_tools.clear();
         self.held_wake = None;
+        self.drop_nested();
         let at = self.tick();
         let (session, actions) = self
             .load(at)

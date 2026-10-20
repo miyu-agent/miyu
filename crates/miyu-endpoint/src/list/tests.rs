@@ -48,6 +48,10 @@ fn last_active_is_the_time_of_the_last_event_of_any_kind() {
     let got = read(&[CREATED, renamed]);
     assert_eq!(got.last_active.to_string(), "2026-09-25T09:30:00.000Z");
     assert_eq!(got.title, "发版");
+    // 脚本里调的工具不算动静（施工 M-1）。
+    let nested = r#"{"seq":3,"at":"2026-09-25T10:00:00.000Z","kind":"tool.nested","by":{"kind":"kernel"},"body":{"id":"j1#1","name":"kb_search","args":"{}","status":"ok"}}"#;
+    let got = read(&[CREATED, renamed, nested]);
+    assert_eq!(got.last_active.to_string(), "2026-09-25T09:30:00.000Z");
 }
 
 /// 一个临时的数据根，里面照 `logs` 写好几个会话的第一段日志：编号、一行行事件。

@@ -7,6 +7,7 @@ mod support;
 
 mod probe;
 mod probe_harness;
+mod probe_nested;
 mod probe_peers;
 mod probe_permission;
 mod probe_recap;

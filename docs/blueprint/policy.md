@@ -47,7 +47,7 @@
 | `attended` | 布尔 | 有没有人能确认 |
 | `resumes` | 整数 | 有计划的重启打断了一轮，再起来时连着接着干几次，现在是 3 |
 | `compaction` | 对象 | 压缩用的数：`reserve_cap` 输出预留的上限、`margin` 余量、`image`、`file` 估算时一张图、一个文件各算多少 token、`tail` 尾巴的上限，现在是 20000、13000、2000、2000、16000（施工 6-2）。以前造的快照里没有，读成没有；没有的不写。6-2（上）造的没有 `tail`，读成 16000。`rebuild` 压后重建的数（施工 6-5）。`pause` 熔断的数：`failures` 连续失败几次、`turns` 几个回合内又到线算快、`refills` 连着快几次，现在都是 3（施工 6-6 上）；以前造的没有，读成没有：不熔断。`shorten` 截短重试的数：`tries` 最多再试几次、`percent` 没说超多少时截百分之几，现在是 3、20（施工 6-6 中）；以前造的没有，或者只有数、没有字的，不截短。`line_percent`、`margin_percent` 压缩线、余量各至多窗口的百分之几，现在是 85、5，排在 `margin` 后面（施工 6-11 再补，`compaction.md` 第二条第 2 条）；以前造的没有，读成 85、5：老会话也照它 |
-| `jobs` | 对象 | 任务用的数（施工 7-6）：`report_chars` 子会话回报的正文最多几个字，现在是 30000（`agents.md`「对外的样子」）。以前造的快照里没有，读成没有、不写：照出厂的 30000 截 |
+| `jobs` | 对象 | 任务用的数（施工 7-6）：`report_chars` 子会话回报的正文最多几个字，现在是 30000（`agents.md`「对外的样子」）。以前造的快照里没有，读成没有、不写：照出厂的 30000 截。施工 M-1 多两格：`nested_per_parent`、`nested_per_session` 嵌套调用一个父级、整个会话同时过链、在跑的最多几个（出厂 8、16，设计 `39-脚本调工具.md` 第四节第 5 条）；以前造的快照里没有，读成没有、不写，照出厂的数 |
 | `recap` | 对象 | 回顾用的数（施工 3-8 四补，`kernel/request.md`「回顾的请求」）：`turns` 最多喂几轮她答过的、`tokens` 整份最多约多少 token，现在是 8、8192（2026-10-01 项目主人定，照 codex）。以前造的快照里没有，读成没有、不写：不做回顾 |
 | `title` | 对象 | 起标题用的数（施工 3-8 五补，`kernel/request.md`「起标题的请求」、`kernel/session.md`「起标题」）：`tokens` 整份请求最多约多少 token、`chars` 标题最多几个字、`tries` 一个会话最多试几次，现在是 1024、50、2（1024 照回顾的截法施工时定；50 是 2026-10-01 项目主人定；2 是施工单定的）。以前造的快照里没有，读成没有、不写：不起标题 |
 | `peers` | 对象 | 别的会话发来的话怎么防刷屏（施工 C-2，`cross-session.md`「对外的样子」）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句，现在是 5、600、50（数是估的，待 C-7 实测）。排在 `title` 后面。以前造的快照里没有，读成没有、不写：照出厂的数，防刷屏不能因为会话旧就不管。施工 C-6 加两格，排在后面：`watch_hours` 订了多久没等到就作废（小时，出厂 12）、`status_chars` 通知那一行最多几个字（出厂 200）；C-2 时造的快照里没有这两格，读成没有、不写，照出厂的数 |
@@ -89,6 +89,7 @@
 | `Snapshot::with_preset(预设, 那一行)` | 带上预设（施工 P-2 中）：记进快照的 `preset`（编号、装了没开的软件）；没开角色扮演的去掉 `reminder`；装了没开的软件（角色扮演除外）写成一行接在 system 后面（`26-提示词.md` 第四节第 5 块，`core/preset-off.txt`）。在 `with_core_lines` 以后、`with_style_lock` 以前调；没有预设、都开着的 system 一字不变 |
 | `Snapshot::with_style_lock(风格锁)` | 带上风格锁（施工 P-1 补）：system 的最后一块（`26-提示词.md` 第四节第 7 块），在 `with_core_lines` 以后调。快照有 `reminder` 的才带，别的 system 一字不变 |
 | `REPORT_CHARS` | 策略数据 `jobs.report_chars` 的出厂值 30000（施工 7-6）：拼快照时写进 `jobs` |
+| `NESTED_PER_PARENT`、`NESTED_PER_SESSION` | 策略数据 `jobs.nested_per_parent`、`jobs.nested_per_session` 的出厂值 8、16（施工 M-1）：拼快照时写进 `jobs`，造策略时交进内核的 `NestedLimits` |
 | `JOB_DEPTH` | 策略数据 `jobs.depth` 的出厂值 2（`agents.md`「对外的样子」，施工 7-5）：造会话定工具面时用，不进快照 |
 | `RECAP` | 回顾用的数的出厂值：8 轮、8192 个 token（施工 3-8 四补）：拼快照时写进 `recap` |
 | `TITLE` | 起标题用的数的出厂值：1024 个 token、50 个字、试 2 次（施工 3-8 五补）：拼快照时写进 `title` |
