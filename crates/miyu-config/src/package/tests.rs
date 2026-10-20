@@ -403,3 +403,25 @@ fn targets_are_read_in_order_and_unknown_ones_are_refused() {
         assert_eq!(Target::parse(target.as_str()), Some(target));
     }
 }
+
+#[test]
+fn a_newer_miyu_is_said_instead_of_unknown_keys() {
+    let text = "[package]\nname = { en = \"N\" }\nmiyu = \"99.0.0\"\nfuture = true\n";
+    let problem = read_for(text, "0.1.0").expect_err("要更新");
+    assert_eq!(
+        (problem.code, problem.detail.as_str()),
+        (Code::NeedsNewerMiyu, "99.0.0")
+    );
+    assert_eq!(wrong(text).0, Code::UnknownKey, "不比的照旧报不认识的键");
+    let fits = "[package]\nname = { en = \"N\" }\nmiyu = \"0.1.0\"\n";
+    assert!(read_for(fits, "0.1.0").is_ok(), "一样的照常读");
+    assert!(read(fits).is_ok(), "不比的也认这一格");
+    assert_eq!(
+        wrong("[package]\nname = { en = \"N\" }\nmiyu = \"1.2\"\n"),
+        (Code::BadMiyu, Some(3))
+    );
+    assert_eq!(
+        wrong("[package]\nname = { en = \"N\" }\nmiyu = 1\n").0,
+        Code::BadMiyu
+    );
+}

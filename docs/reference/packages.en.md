@@ -80,7 +80,7 @@ Install and remove take effect at once: processes start or stop per their switch
 |---|---|
 | `bad_params` (`-32602`) | Both given; a path that isn't absolute |
 | `path_unreadable` | The folder can't be read |
-| `package_invalid` | The manifest is wrong, `data.problem`, `data.line` |
+| `package_invalid` | The manifest is wrong, `data.problem`, `data.line`; for a package that needs a newer Miyu, `data.problem` is `needs_newer_miyu` |
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
 | `package_exists` | Same id as a built-in package |
 | `package_file_bad` | The package file can't be unpacked |

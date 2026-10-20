@@ -589,6 +589,8 @@
     "package-problems/bad_content": "给别的包带的内容写法不对：{detail}",
     "package-problems/bad_needs": "要求的写法不对，现在只认 images：{detail}",
     "package-problems/bad_targets": "系统的写法不对，只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，不能重复：{detail}",
+    "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 0.2.0",
+    "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",
     "package-problems/page_missing": "{detail} 里没有 index.html",
     "package-problems/depends_missing": "缺少依赖的软件包：{detail}",
     "package-problems/mascot_missing": "包目录里没有 {detail}",

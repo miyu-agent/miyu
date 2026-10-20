@@ -92,9 +92,12 @@ impl Reader<'_> {
             "package",
             &[
                 "version", "protocol", "name", "summary", "required", "icon", "needs", "targets",
-                "author", "upstream",
+                "author", "upstream", "miyu",
             ],
         )?;
+        if let Some(item) = table.get("miyu") {
+            super::version::checked(self, item)?;
+        }
         let version = match table.get("version") {
             Some(item) => Some(self.text(item, "package.version")?),
             None => None,

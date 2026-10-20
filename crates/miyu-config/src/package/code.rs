@@ -107,6 +107,10 @@ pub enum Code {
     BadNeeds,
     /// `[package] targets` 里有不认识的、重复的系统（施工 G-1）。
     BadTargets,
+    /// `[package] miyu` 不是三段数字的版本（施工 X-31）。
+    BadMiyu,
+    /// 要比这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。读清单时先比它，比不过的不再往下读。
+    NeedsNewerMiyu,
 }
 
 impl Code {
@@ -165,6 +169,8 @@ impl Code {
             Code::BadContent => "bad_content",
             Code::BadNeeds => "bad_needs",
             Code::BadTargets => "bad_targets",
+            Code::BadMiyu => "bad_miyu",
+            Code::NeedsNewerMiyu => "needs_newer_miyu",
         }
     }
 

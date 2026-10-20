@@ -25,6 +25,7 @@ pub mod settings;
 mod slash;
 mod target;
 mod upgrade;
+mod version;
 mod widget;
 
 pub use capability::Capability;
@@ -259,7 +260,19 @@ const TABLES: [&str; 20] = [
     "content",
 ];
 
-/// 读一份清单。
+/// 照正在跑的这一版 Miyu `running` 读一份清单（施工 X-31）：清单 `[package] miyu` 要更新的 Miyu 的，先报 `needs_newer_miyu`，
+/// 不再往下读（不然新版本加的格在这里都是不认识的键）；给得了的照 [`read`]。装包、读装了的包用它；打包、软件源收录不比，用
+/// [`read`]。
+///
+/// # Errors
+///
+/// 要更新的 Miyu；别的同 [`read`]。
+pub fn read_for(text: &str, running: &str) -> Result<Manifest, Problem> {
+    version::required(text, running)?;
+    read(text)
+}
+
+/// 读一份清单，不比 `[package] miyu`（只查它的写法）。
 ///
 /// # Errors
 ///

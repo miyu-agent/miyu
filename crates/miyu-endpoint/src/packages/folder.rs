@@ -33,7 +33,9 @@ pub(super) fn source(
     let text =
         std::fs::read_to_string(folder.join(MANIFEST)).map_err(|_| Refusal::PATH_UNREADABLE)?;
     let words = words(core, peer.language)?;
-    let manifest = package::read(&text).map_err(|problem| invalid(&words, &problem))?;
+    // 要更新的 Miyu 的照这一版报（施工 X-31）。
+    let manifest = package::read_for(&text, env!("CARGO_PKG_VERSION"))
+        .map_err(|problem| invalid(&words, &problem))?;
     if !fits_here(&manifest.targets, Target::here()) {
         return Err(Refusal::WRONG_TARGET);
     }

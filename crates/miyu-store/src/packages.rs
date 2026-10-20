@@ -20,6 +20,9 @@ use miyu_kernel::id::AccountId;
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
 
+/// 正在跑的这一版 Miyu（施工 X-31）：读清单时照它比 `[package] miyu`（`miyu_config::package::read_for`）。
+const RUNNING: &str = env!("CARGO_PKG_VERSION");
+
 pub mod conflicts;
 pub mod install;
 pub mod leftovers;
@@ -136,7 +139,7 @@ impl Packages {
             .map(|(layer, id, path)| Found {
                 read: std::fs::read_to_string(&path)
                     .map_err(Issue::Unreadable)
-                    .and_then(|text| package::read(&text).map_err(Issue::Wrong)),
+                    .and_then(|text| package::read_for(&text, RUNNING).map_err(Issue::Wrong)),
                 id,
                 layer,
                 path,
@@ -166,7 +169,7 @@ impl Packages {
             .map(|(id, path)| Found {
                 read: std::fs::read_to_string(&path)
                     .map_err(Issue::Unreadable)
-                    .and_then(|text| package::read(&text).map_err(Issue::Wrong)),
+                    .and_then(|text| package::read_for(&text, RUNNING).map_err(Issue::Wrong)),
                 id,
                 layer: Layer::Shipped,
                 path,

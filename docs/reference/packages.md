@@ -80,7 +80,7 @@
 |---|---|
 | `bad_params`（`-32602`） | 两个都写；路径不是绝对的 |
 | `path_unreadable` | 读不了那个文件夹 |
-| `package_invalid` | 清单写错了，`data.problem`、`data.line` |
+| `package_invalid` | 清单写错了，`data.problem`、`data.line`；要更新的 Miyu 才能用的，`data.problem` 是 `needs_newer_miyu` |
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令 |
 | `package_exists` | 和出厂的同编号 |
 | `package_file_bad` | 包文件解不开 |

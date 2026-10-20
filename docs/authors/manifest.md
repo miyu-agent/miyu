@@ -73,6 +73,7 @@ place = "status"
 | `upstream` | 上游：这个包的源码仓库，`https://` 开头。软件包信息页上露出来 |
 | `icon` | Lucide 的图标名 |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
+| `miyu` | 最低要哪一版 Miyu：三段数字，例如 `"0.2.0"`。用了新加的格、新的方法时写上；旧版本的 Miyu 读到会说清要更新，不会报看不懂的键 |
 | `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |
 
 ## `[command]`
