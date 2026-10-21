@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>701</b><span>/ 721 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>703</b><span>/ 723 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">68252963</b><span>最近一步（T-8 补 行数不写「输出」）的提交</span></li>
+    <li><b class="mono">136104fe</b><span>最近一步（X-43 脚本的场所和调用的人）的提交</span></li>
   </ul>
 </header>
 
@@ -497,6 +497,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sX-39b"><span class="n">X-39 补</span>真服务走出来的<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-40"><span class="n">X-40</span>参数认双引号<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-41"><span class="n">X-41</span>MCP 服务的资源<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-42a"><span class="n">X-42 上</span>网址的服务登录<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sX-43"><span class="n">X-43</span>脚本的场所和调用的人<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s515a"><span class="n">5-15 上</span>命令也能此目录不再询问<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s515b"><span class="n">5-15 下</span>私密目录可配<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s516a"><span class="n">5-16 上</span>有 bubblewrap 就用它<span class="st">✓</span></a></li>
@@ -10725,6 +10727,110 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/blueprint/mcp.md</code>，施工单 <code>docs/construction/X-41-MCP资源.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-42a" aria-labelledby="h-sX42a">
+  <div class="sheet-head"><h2 id="h-sX42a"><span class="no">X-42 上</span>网址的服务登录</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">只认浏览器授权的远程 MCP 服务接得上：人打一条 <code>miyu mcp login</code>、点一下同意，服务就连上了（项目主人 2026-10-21 定命令行先）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">网址的服务登录</span><span class="dir-note">X-42 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>回 401 的停在「要登录」，不算失败</li>
+              <li>发现授权服务器、注册客户端</li>
+              <li>浏览器点同意，回调只听本机</li>
+              <li>令牌存进密钥，连的时候带上</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">照「要批准」那一路停</span><span class="rl">不另开状态</span></div>
+          <div class="tile new"><span class="nm">回调照服务记住端口</span><span class="rl">和客户端同进退</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-42 上</dd></div>
+        <div><dt>名称</dt><dd>网址的服务登录</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">7d5e3aff</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项、Windows 版 clippy、三台 CI；变异 20 个全报红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>state、iss 对不上的不认，不支持 S256 的拒</span></li>
+        <li><span class="ok">✓</span><span>自己写了令牌的不走登录</span></li>
+        <li><span class="ok">✓</span><span>日志、回应里搜不到令牌</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/blueprint/mcp.md</code> 第八条，施工单 <code>docs/construction/X-42上-网址的服务登录.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sX-43" aria-labelledby="h-sX43">
+  <div class="sheet-head"><h2 id="h-sX43"><span class="no">X-43</span>脚本的场所和调用的人</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">群里有人叫她改直播标题，用的是主人的账号：脚本能限定在哪种会话里有，跑的时候知道是在哪、开口的是不是主人（主会话 2026-10-22 排）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">脚本的场所和调用的人</span><span class="dir-note">X-43</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>开头写 Venues，只上那几种会话的工具面</li>
+              <li>回合开始照开口的人记下是不是主人</li>
+              <li>脚本拿到场所、是不是主人两个环境变量</li>
+              <li>脚本里调到的照派它的那一轮</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">门只有 Venues</span><span class="rl">环境变量只是事实</span></div>
+          <div class="tile new"><span class="nm">拿不到的照最严</span><span class="rl">重启后接着干的那一轮不是主人</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">X-43</dd></div>
+        <div><dt>名称</dt><dd>脚本的场所和调用的人</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">136104fe</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项、Windows 版 clippy、三台 CI；变异 16 个全报红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>写了 local 的群里看不到</span></li>
+        <li><span class="ok">✓</span><span>陌生人开口是 0、主人开口是 1</span></li>
+        <li><span class="ok">✓</span><span>核心环境里残留的带不进去</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/blueprint/skills.md</code>「脚本」，施工单 <code>docs/construction/X-43-脚本的场所和调用的人.md</code>。</li>
       </ul>
     </div>
   </div>
