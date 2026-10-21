@@ -70,7 +70,7 @@ On Linux and macOS, `chmod +x dice.py`.
 **How it runs**
 
 - Started by its `#!` line (on Windows, the interpreter is found by extension: `.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
-- The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 32 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
+- The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 30 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
 - Stdout is the result handed to the AI; a non-zero exit code counts as failure, so write the reason to the output.
 - The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR`.
 - It runs under the same rules as commands the AI runs: in the sandbox (can only write the workspace, can't read Miyu's data directory, the script file itself is readable); without a sandbox, a person must approve.

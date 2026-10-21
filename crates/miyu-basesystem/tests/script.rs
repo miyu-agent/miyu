@@ -239,6 +239,30 @@ async fn long_arguments_come_only_on_stdin() {
     );
 }
 
+/// 参数正好在上限上（施工 X-37 补）：30720 个字节的两处都有，多一个字节的只在标准输入里。Windows 上整条环境变量最多 32767 个
+/// 字，32 KiB 的会超；三个平台都跑。
+#[tokio::test]
+async fn arguments_right_at_the_limit_still_come_both_ways() {
+    let site = Site::new();
+    site.file(
+        "scripts/size.py",
+        b"#!/usr/bin/env python3\n# Description: Report argument sizes.\n# Parameters: {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}}}\nimport os, sys\nprint('env=' + str(len(os.environ.get('MIYU_ARGS_JSON', ''))))\nprint('stdin=' + str(len(sys.stdin.read())))\n",
+    );
+    // `{"text":"…"}` 的外壳 11 个字节。
+    let limit = 30 * 1024;
+    for (size, env) in [(limit, limit), (limit + 1, 0)] {
+        let args = json!({ "text": "x".repeat(size - 11) });
+        assert_eq!(args.to_string().len(), size);
+        let done = site.script("scripts/size.py", args).await;
+        assert!(!done.error, "{}", text(&done));
+        assert_eq!(
+            text(&done),
+            format!("env={env}\nstdin={size}\n"),
+            "{size} 个字节"
+        );
+    }
+}
+
 /// 脚本是链接（施工 X-37）：照它指到的真实位置起，`$0` 是真实的路径。沙盒只放开那一个文件，链接本身在藏着的数据根里，照链接
 /// 起的话 macOS 上解释器读不到（Linux 上的两种手段照链接也读得到，这一条在三处都守着「照真实位置起」）。
 #[cfg(unix)]
