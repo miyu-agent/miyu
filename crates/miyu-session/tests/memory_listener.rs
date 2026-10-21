@@ -120,7 +120,11 @@ async fn everywhere_recalls_everything() {
             .collect::<Vec<String>>()
     };
     assert_eq!(found(&first, "日语"), ["小林在学日语"]);
-    assert_eq!(found(&first, "猫"), ["主人养了一只猫"], "主人的事群里也想得起");
+    assert_eq!(
+        found(&first, "猫"),
+        ["主人养了一只猫"],
+        "主人的事群里也想得起"
+    );
     assert_eq!(found(&first, "读书会"), ["二群在办读书会"], "别的群的也是");
     first
         .retire(stamp(), mine, "不对".into())
@@ -302,7 +306,11 @@ async fn in_a_group_what_she_extracts_says_who_spoke_and_stays_in_that_group() {
     assert_eq!(entry.text, "小林在学日语");
     assert_eq!(entry.venue, Some(place(1)), "记下的带着这个群");
     let elsewhere = Keeper::new(&home.memory, room(), Listener::Place(place(2)));
-    assert_eq!(texts(&elsewhere), ["小林在学日语"], "别的群里也想得起（施工 R-29）");
+    assert_eq!(
+        texts(&elsewhere),
+        ["小林在学日语"],
+        "别的群里也想得起（施工 R-29）"
+    );
     stop(&handle).await;
 }
 
@@ -349,7 +357,11 @@ async fn past_turns_from_any_place_are_found_anywhere() {
     };
     let mut both: Vec<String> = sessions.iter().map(ToString::to_string).collect();
     both.sort();
-    assert_eq!(found(Listener::Place(place(1))), both, "一群里也搜得到二群的");
+    assert_eq!(
+        found(Listener::Place(place(1))),
+        both,
+        "一群里也搜得到二群的"
+    );
     assert_eq!(found(owner()), both, "主人那边全部");
 }
 

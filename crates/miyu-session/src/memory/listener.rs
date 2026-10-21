@@ -32,5 +32,4 @@ impl Listener {
             Listener::Place(venue) => (Vec::new(), Some(venue.clone())),
         }
     }
-
 }

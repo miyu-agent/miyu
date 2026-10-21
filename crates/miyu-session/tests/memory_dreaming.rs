@@ -155,7 +155,8 @@ async fn a_place_sees_it_all_too() {
         "主人那边记的场所里也推（施工 R-29：记忆是一个整体）：{seen:?}"
     );
     assert!(
-        seen.iter().any(|one| matches!(one, Seen::Retired(retired) if retired.id.to_string() == "m2")),
+        seen.iter()
+            .any(|one| matches!(one, Seen::Retired(retired) if retired.id.to_string() == "m2")),
         "{seen:?}"
     );
 }
