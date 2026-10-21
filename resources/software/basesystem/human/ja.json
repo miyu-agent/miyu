@@ -155,7 +155,7 @@
     "trash/failed": "削除できません：{error}",
     "show/shown": "ユーザーに表示しました",
     "show/too-big": "20 MiB を超えるため表示できません",
-    "shell/done": "出力 {count} 行",
+    "shell/done": "{count} 行",
     "shell/quiet": "出力なし",
     "shell/exited": "終了コード {code}",
     "shell/signal": "シグナル {signal} で停止しました",

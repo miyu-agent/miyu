@@ -233,7 +233,7 @@ Exit code 2
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `shell/done`（`count`） | `输出 {count} 行` | `{count} lines of output` |
+| `shell/done`（`count`） | `{count} 行`（施工 T-8 补：「输出」两个字多余，项目主人 2026-10-22 定） | `{count} lines` |
 | `shell/quiet` | 没有输出 | no output |
 | `shell/exited`（`code`） | `退出码 {code}` | `exit code {code}` |
 | `shell/signal`（`signal`） | `被信号 {signal} 停掉了` | `killed by signal {signal}` |

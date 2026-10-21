@@ -169,7 +169,7 @@
     "trash/failed": "can't delete: {error}",
     "show/shown": "Shown to the user",
     "show/too-big": "Larger than 20 MiB, not shown",
-    "shell/done": "{count} lines of output",
+    "shell/done": "{count} lines",
     "shell/done/one": "{count} line of output",
     "shell/quiet": "no output",
     "shell/exited": "exit code {code}",
