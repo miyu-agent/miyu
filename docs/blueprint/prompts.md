@@ -45,6 +45,19 @@ Carry on from where the summary leaves off, without redoing work it records as d
 </conversation-checkpoint>
 ```
 
+### system，核心的几行后面单成一段
+
+#### `core/clicall.txt`
+
+- 什么时候加进来：工具面上有 `shell`、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的快照不带，一个字节不变）
+- token：92（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：设计 39 第九节 MC12：什么时候写成程序、什么时候直接调；第二轮只写 shell 说明的用得少
+- 指纹：`e4636fa1`
+
+```text
+You can write programs that call tools. When a task takes many tool calls or real logic around them (branches, loops, one tool's results feeding another, tool results mixed with local files or programs) and you only need the outcome, write it as one script with miyu call (see the shell tool) and print only the answer. For one or two calls, or when you need to read the results yourself, call the tools directly.
+```
+
 ### 摘要请求的最后一块，人这边：摘要指令的正文
 
 #### `core/compaction/summarize-task.txt`
@@ -3328,6 +3341,28 @@ Bad request from miyu call.
 The command this call belongs to has ended.
 ```
 
+#### `software/basesystem/shell/call/example-powershell.txt`
+
+- 什么时候加进来：PowerShell 5.1、7（施工 M-4）
+- token：算在 `example.txt` 里
+- 为什么加：同上；PowerShell 自带的写法，不靠别的程序（设计 39 第九节第 2 条）
+- 指纹：`ce7ac615`
+
+```text
+miyu call web_search --query niri | ConvertFrom-Json | ForEach-Object { $_.links.site } | Group-Object | Sort-Object Count
+```
+
+#### `software/basesystem/shell/call/example-python.txt`
+
+- 什么时候加进来：bash、zsh，`PATH` 上没有 `jq`、有 `python3`（施工 M-4）
+- token：算在 `example.txt` 里
+- 为什么加：同上
+- 指纹：`5fa87e6f`
+
+```text
+miyu call web_search --query niri | python3 -c 'import sys,json,collections; print(collections.Counter(l["site"] for l in json.load(sys.stdin)["links"]))'
+```
+
 #### `software/basesystem/shell/call/guess.txt`
 
 - 什么时候加进来：接在 `unknown.txt` 后面：能调的里面有只差一两个字的（施工 M-3）
@@ -4559,14 +4594,15 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `memory_search`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
 - token：70（2026-10-07 照开发端点量，十八件一起时的边际份量）
-- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`7f5a3f19`
+- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
+- 指纹：`0c271672`
 
 ```json
 {
   "description": "Search your memories and your past conversations in other sessions.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"forgotten":{"type":"boolean","description":"Include retired memories."}},"required":["query"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"memories\":[{\"id\",\"class\",\"date\",\"text\"}],\"turns\":[{\"date\",\"session\",\"text\"}]}"
 }
 ```
 
@@ -4588,14 +4624,15 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
 - token：75（2026-10-12 照开发端点量，二十一件一起时的边际份量）
-- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`9e9b6247`
+- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
+- 指纹：`98ac0ead`
 
 ```json
 {
   "description": "Search your knowledge bases: notes and documents kept for you to look things up.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"hits\":[{\"kb\",\"path\",\"heading\",\"snippet\",\"page\"}]}"
 }
 ```
 
@@ -4603,14 +4640,15 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：同上，`kb_read`
 - token：87（2026-10-12 量，同上）
-- 为什么加：搜到的一块不够时读整篇，分页（19 N4，施工 K-1 下）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`353cc36d`
+- 为什么加：搜到的一块不够时读整篇，分页（19 N4，施工 K-1 下）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
+- 指纹：`183075b4`
 
 ```json
 {
   "description": "Read a document from your knowledge bases, a page at a time.",
   "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"page":{"type":"integer","description":"From 1. Default 1."}},"required":["kb","path"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"kb\",\"path\",\"page\",\"pages\",\"text\"}"
 }
 ```
 
@@ -4689,14 +4727,15 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 
 - 什么时候加进来：会话的工具面里有 `web_search`：联网包装着、预设开着「网络搜索」的会话，本机的、场所的、子会话都有（施工 N-2 上，每次请求都带）
 - token：107（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
-- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`cd8eabf8`
+- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
+- 指纹：`7f10f57e`
 
 ```json
 {
   "description": "Search the web and get titles, URLs and excerpts of matching pages. Read a page in full with web_fetch.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"kind\":\"links\",\"links\":[{\"title\",\"url\",\"snippet\",\"site\",\"date\"}]}"
 }
 ```
 
@@ -4818,6 +4857,71 @@ set by the user with `/goal`
 
 ```text
 This call needs approval, which a script cannot ask for. Call {name} directly.
+```
+
+### tools 数组，`shell` 说明的末尾
+
+#### `software/basesystem/shell/call/describe.txt`
+
+- 什么时候加进来：工具面上有 `shell`、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的会话不带，一个字节不变）。`{tools}` 照会话的工具面填
+- token：256，`{tools}` 按出厂九件填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：设计 39 第九节：她不知道就不会用（第十节第一轮 27 次只用了 4 次）；写法照第四重跑、第五轮
+- 指纹：`27c6beca`
+
+```text
+Commands and scripts you run here can call tools: miyu call <tool> --<param> <value>... (or --json '<object>'; --json - reads it from stdin). It works from any language that can run a command (bash, Python, ...), so tools become functions in real programs: branch on their results, chain and combine several tools, run calls in parallel, mix them with local files and programs, and keep only what matters. Write the whole program at once: call, process and print the answer in one script, rather than saving results and inspecting them step by step. Each call prints its result to stdout: one line of JSON in the shape below, or text for tools without one. Tool results stay inside the script; only its final output comes back to you, so print just what you need. Exit codes: 1 the tool failed or was denied, 2 bad usage, 3 interrupted, 4 needs approval (call that tool directly instead). miyu call --schema <tool>... prints the parameters of one or more tools. Tools that work with miyu call: {tools}.
+```
+
+### 换进 `example.txt` 的 `{example}`
+
+#### `software/basesystem/shell/call/example-jq.txt`
+
+- 什么时候加进来：bash、zsh，`PATH` 上有 `jq`（施工 M-4）
+- token：算在 `example.txt` 里
+- 为什么加：同上；jq 和 Python 两行实测一样（第五轮）
+- 指纹：`328e4313`
+
+```text
+miyu call web_search --query niri | jq -r '.links[].site' | sort | uniq -c
+```
+
+### 同上，接在 `describe.txt` 后面一行
+
+#### `software/basesystem/shell/call/example.txt`
+
+- 什么时候加进来：同上，这台机器挑得出例子的（PowerShell，或 bash、zsh 的 `PATH` 上有 `jq`、`python3`）；都没有的不带
+- token：31～47，`{example}` 按三行各填一次：jq 31、PowerShell 38、Python 47（含这一行本身）（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：一行例子比口头叮嘱管用（第十节第四重跑：164k 对 199k）
+- 指纹：`53493b51`
+
+```text
+Example: {example}
+```
+
+### `miyu call --schema` 的输出（脚本的标准输出，不进上下文，除非她印出来）
+
+#### `software/basesystem/shell/call/result.txt`
+
+- 什么时候加进来：`--schema` 查的那件写了 `result` 的（施工 M-4）
+- token：14，`{result}` 按 `kb_read` 的填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：M-3 拍板延到 M-4：查格式时一起看结果的样子
+- 指纹：`fb06b497`
+
+```text
+Result: {result}
+```
+
+### 同上，接在例子后面一行
+
+#### `software/basesystem/shell/call/shapes.txt`
+
+- 什么时候加进来：同上，能调的工具里有写了 `result` 的（施工 M-4）；一件都没有的不带
+- token：94，`{shapes}` 按出厂四件填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：脚本里直接取字段，不用先试格式（设计 39 第九节第 3 条；写在这一段末尾，第十节第七轮比过不写、写在各工具说明里，2026-10-22 项目主人定）
+- 指纹：`042363af`
+
+```text
+JSON shapes: {shapes}. Other tools print text.
 ```
 
 ### 填进 `hazard.txt` 的 `{reason}`

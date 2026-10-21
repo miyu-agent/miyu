@@ -164,7 +164,7 @@ fn choose(os: &str, path: Option<&OsStr>, system_root: Option<&OsStr>) -> Progra
 }
 
 /// 在 `path` 列的目录里找叫 `name` 的程序。
-fn which(path: Option<&OsStr>, name: &str) -> Option<PathBuf> {
+pub(super) fn which(path: Option<&OsStr>, name: &str) -> Option<PathBuf> {
     std::env::split_paths(path?)
         .map(|dir| dir.join(name))
         .find(|candidate| candidate.is_file())

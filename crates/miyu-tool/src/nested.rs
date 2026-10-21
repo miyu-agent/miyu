@@ -36,6 +36,8 @@ pub struct Schema {
     pub description: String,
     /// 参数的 JSON Schema，原样的字。
     pub parameters: String,
+    /// 结构化结果的样子（施工 M-4，[`crate::Spec::result`]）：`--schema` 印 `Result:` 那一行；没有的不印。
+    pub result: Option<String>,
 }
 
 /// 等它了结的 future。

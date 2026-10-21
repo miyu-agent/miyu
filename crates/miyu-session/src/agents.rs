@@ -36,6 +36,7 @@ use crate::job_ids::JobIds;
 use crate::loading::Loading;
 use crate::spawn::{Lineage, SessionPort};
 
+pub(crate) mod clicall;
 mod spawner;
 
 use spawner::Spawner;
@@ -190,6 +191,7 @@ impl Agents {
     /// 看她的清单。有预设的照它筛（施工 P-2 中；施工 F-3 上起照功能）：工具归的功能没开的、单件关掉的不给
     /// （[`PresetFile::keeps`]）；归哪个功能照预设旁边交来的装了的功能认，认不出的照它的包；目录里没记包的当基础系统。
     /// 后台运行关着的（[`Agents::foreground`]，施工 T-1 上）`shell` 拿掉放到后台那一项，`subagent` 换前台的说明（施工 T-1 下）。
+    /// 有脚本里能调的工具的，`shell` 的说明末尾接上怎么用的那一段（施工 M-4，[`clicall::describe`]）。
     pub(crate) fn face(
         tools: &Catalog,
         site: Site<'_>,
@@ -205,7 +207,7 @@ impl Agents {
         let asks = Agents::asks(venue, lineage.map(|lineage| &lineage.parent), attended);
         let lists = Agents::lists_sessions(venue, lineage.map(|lineage| &lineage.parent));
         let foreground = Agents::foreground(preset.map(|(file, _)| file));
-        tools
+        let mut face = tools
             .specs()
             .filter(|spec| spawns || spec.name != SUBAGENT)
             .filter(|spec| local || spec.name != SEND_MESSAGE)
@@ -284,7 +286,9 @@ impl Agents {
                 }
                 entry
             })
-            .collect()
+            .collect::<Vec<_>>();
+        clicall::describe(tools, &mut face);
+        face
     }
 
     /// 预设 `preset` 关了后台运行没有（施工 T-1 上，设计 30 第三节第 7 条）：关了的会话没有后台，快照记 `foreground`、`shell`

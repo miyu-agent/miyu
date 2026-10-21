@@ -37,7 +37,8 @@
 {
   "description": "Search the web and get titles, URLs and excerpts of matching pages. Read a page in full with web_fetch.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"kind\":\"links\",\"links\":[{\"title\",\"url\",\"snippet\",\"site\",\"date\"}]}"
 }
 ```
 

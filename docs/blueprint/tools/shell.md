@@ -107,7 +107,7 @@
 1. 哪些命令开：拿到了端口的（`Call.nested`，执行器只给直接调的 `shell`，这个会话的工具面上有 `clicall` 开着的工具才给，`session/tools.md`「1g」）。前台、放到后台、到时挪到后台都开。开不成的（目录建不成、套接字绑不上、Windows 上）记一行 `WARN`，命令照旧跑、没有端点。
 2. 端点：Unix 上一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`；第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。Windows 上一根命名管道 `\\.\pipe\miyu-call-<令牌的前 16 个字符>`，访问控制开给本人，另给本人沙盒里的命令（MXC 的基础容器，令牌带 `ALL APPLICATION PACKAGES`）只够连上、读写的权限（`miyu_pipe::create_for_containers`，`miyu call` 照同样几样权限开），一个连上来就建下一个实例接着等（施工 M-3 下）。容器里的命令由助手起、放进 MXC 自己的作业对象，嵌在这条命令的作业对象里，认人照旧过得了；别的进程连得上也过不了令牌、作业对象两关。令牌 128 位，系统给的随机字节（`getrandom`）。
 3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上）把核心所在的目录放到最前面。脚本里调到的一定是同一个版本。
-4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个端点（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。Windows 上放进去的是管道名：现在的助手什么都不收紧，这一格先不起作用；施工 5-9 改上把沙盒里的命令放进 AppContainer 以后，助手照它给容器开连接这根管道的权限（2026-10-20 和内核那边对过，不写死沙盒用户那一套）。
+4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个端点（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。Windows 上放进去的是管道名，助手不看它：容器里连得上靠管道自己的访问控制（第 2 条，施工 M-3 下）。
 5. 认人：请求里的令牌对得上，连上来的进程是这条命令的。Unix 上照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组，要等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）；Windows 上照对方的进程号（`GetNamedPipeClientProcessId`）查它在不在这条命令的作业对象里（`IsProcessInJob`）：命令起来以后马上放进它自己的作业对象（`miyu_sandbox::lifeline::Job`，套在核心那个里面；只用来认人，不设限制，整组杀照旧 `taskkill /T`，2026-10-20 照推荐定），起来到放进去之间它起的不在里面，PowerShell 起来要上百毫秒，碰不到。命令起来以后才记下这一组、这个作业对象：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
 6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
 7. 结局写成退出码和字（`channel/reply.rs`）：
@@ -117,6 +117,11 @@
    - `schema.txt` 换进名字、说明、参数格式，说明和参数不转义：是工具面上的原样，她在 tools 数组里看到的也是原样。
 8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`channel::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。
 9. 关：丢掉端点就掐掉服务、删掉套接字，令牌跟着作废，等着的 `miyu call` 读到结尾（退出码 3）。前台的命令结束时丢。
+10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有 `shell`、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`）的，`shell` 的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`shell/section.rs`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
+    - `call/describe.txt`：怎么用，`{tools}` 换成能调的名单，照名字排，一个 MCP 服务的几件并成 `mcp__<服务>__*`。
+    - `call/example.txt`：`Example: {example}`，核心起来时和 `{shell}` 一起挑一次：PowerShell 的用 `call/example-powershell.txt`；bash、zsh 的 `PATH` 上有 `jq` 用 `example-jq.txt`，没有、有 `python3` 用 `example-python.txt`；都没有的不带这一行。
+    - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。
+    - 换进去的都是登记来的字，照原样、不转义（同 `--schema`）。工具面在一个会话里不变，这一段也不变；人改了预设、装了包，下一个回合工具面重算时一起换。
 
 **用哪个 shell**（核心起来时找一次，照核心环境里的 `PATH`）：
 

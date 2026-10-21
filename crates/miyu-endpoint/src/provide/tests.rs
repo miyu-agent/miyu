@@ -191,6 +191,37 @@ fn clicall_is_a_boolean() {
     }
 }
 
+/// 结构化结果的样子（施工 M-4）：一行字收下，不写的没有；不是字的、空白的拒，`problem` 是 `result`。
+#[test]
+fn result_is_a_line_of_text() {
+    let marked = |shape: Value| {
+        let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
+        params["result"] = shape;
+        serde_json::from_value::<ToolParams>(params).unwrap()
+    };
+    assert_eq!(
+        checked(marked(json!(r#"{"memes":[{"id","tags"}]}"#)))
+            .expect("合写法")
+            .spec
+            .result
+            .as_deref(),
+        Some(r#"{"memes":[{"id","tags"}]}"#)
+    );
+    assert_eq!(
+        checked(tool("read", json!(["local"])))
+            .expect("合写法")
+            .spec
+            .result,
+        None
+    );
+    for bad in [json!("  "), json!(1), json!({"memes": []})] {
+        assert_eq!(
+            refused_for(marked(bad)),
+            json!({"tool": "send_group", "problem": "result"}),
+        );
+    }
+}
+
 mod remote_tests;
 
 /// 给人看的名字（施工 9-8 六补）：照语言收下，派出去那一刻交给执行器；不写的是空的；语言、名字是空白的拒。

@@ -28,10 +28,19 @@ impl NestedPort for Port {
     }
 
     fn schema(&self, name: &str) -> Option<Schema> {
-        (name == "web_search").then(|| Schema {
-            description: "Search the web.\n".to_string(),
-            parameters: r#"{"type":"object"}"#.to_string(),
-        })
+        match name {
+            "web_search" => Some(Schema {
+                description: "Search the web.\n".to_string(),
+                parameters: r#"{"type":"object"}"#.to_string(),
+                result: None,
+            }),
+            "kb_read" => Some(Schema {
+                description: "Read a page.".to_string(),
+                parameters: r#"{"type":"object"}"#.to_string(),
+                result: Some(r#"{"kb","path","text"} "#.to_string()),
+            }),
+            _ => None,
+        }
     }
 }
 
@@ -163,6 +172,11 @@ fn schema_prints_the_description_and_parameters() {
     assert_eq!(
         schema(&Port, &texts, "web_search").stdout,
         "web_search: Search the web.\nParameters: {\"type\":\"object\"}\n"
+    );
+    assert_eq!(
+        schema(&Port, &texts, "kb_read").stdout,
+        "kb_read: Read a page.\nParameters: {\"type\":\"object\"}\nResult: {\"kb\",\"path\",\"text\"}\n",
+        "有结构化结果的跟一行样子，照原样"
     );
     assert_eq!(schema(&Port, &texts, "web_serch").code, 2);
     assert!(

@@ -1,0 +1,1 @@
+JSON shapes: {shapes}. Other tools print text.

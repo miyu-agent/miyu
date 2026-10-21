@@ -85,6 +85,7 @@ impl Script {
                 access: Access::Execute,
                 need_load: head.need_load,
                 clicall: head.clicall,
+                result: None,
             },
             display_name: head.display_name.clone(),
             timeout: head.timeout,

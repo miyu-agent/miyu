@@ -14,6 +14,7 @@ mod output;
 mod process;
 mod program;
 pub(crate) mod script;
+mod section;
 #[cfg(test)]
 mod tests;
 
@@ -52,6 +53,8 @@ pub(crate) struct Shell {
     texts: Texts,
     /// 脚本调工具的通道给她的几句（施工 M-3）。
     call: Arc<channel::Texts>,
+    /// 说明末尾讲脚本调工具的那一段（施工 M-4）。
+    section: section::Section,
     program: Program,
 }
 
@@ -127,6 +130,10 @@ impl Shell {
                     .collect::<Result<_, LoadError>>()?,
             },
             call: channel::Texts::load(resources)?,
+            section: section::Section::load(
+                resources,
+                section::Example::pick(program.kind, std::env::var_os("PATH").as_deref()),
+            )?,
             program,
         })
     }
@@ -326,6 +333,10 @@ impl Results {
 impl Tool for Shell {
     fn spec(&self) -> &Spec {
         &self.spec
+    }
+
+    fn clicall_section(&self, tools: &str, shapes: &str) -> Option<String> {
+        Some(self.section.render(tools, shapes))
     }
 
     fn outside_sandbox(&self, call: &Call) -> bool {

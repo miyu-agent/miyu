@@ -1,5 +1,6 @@
 {
   "description": "Search your knowledge bases: notes and documents kept for you to look things up.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]},
-  "clicall": true
+  "clicall": true,
+  "result": "{\"hits\":[{\"kb\",\"path\",\"heading\",\"snippet\",\"page\"}]}"
 }

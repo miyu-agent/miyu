@@ -1285,7 +1285,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_asking` | -32010 | `session.answer` 回答的调用没在等回答：答过了、了结了、等的不是这一种（施工 D-1） |
 | `not_exported` | -32010 | 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法；`data.method` 是哪一个（施工 X-18） |
 | `not_a_provider` | -32010 | `provide` 不是核心拉起的扩展发的（施工 O-2 上） |
-| `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`need_load`（施工 L-1）、`clicall`（施工 M-2）之一（施工 O-2 上） |
+| `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`need_load`（施工 L-1）、`clicall`（施工 M-2）、`result`（施工 M-4：不是字、空白的）之一（施工 O-2 上） |
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
 | `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
 | `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |

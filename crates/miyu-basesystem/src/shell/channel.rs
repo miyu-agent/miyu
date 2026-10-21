@@ -59,6 +59,7 @@ pub(super) struct Texts {
     approval: Template,
     images: Template,
     schema: Template,
+    result: Template,
 }
 
 impl Texts {
@@ -80,6 +81,7 @@ impl Texts {
             approval: text("approval", &["name"])?,
             images: text("images", &[])?,
             schema: text("schema", &["name", "description", "parameters"])?,
+            result: text("result", &["result"])?,
         }))
     }
 }

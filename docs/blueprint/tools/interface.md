@@ -42,6 +42,7 @@
 | `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
 | `need_load` | 要先加载（施工 L-1，`25-工具加载.md` W9）：登记的一方说的，人能在个人设置里改（`loading.*`） |
 | `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在个人设置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`、`history`、`sessions`、`session_usage`、`packages`（施工 M-2 补、再补：要读、要查、shell 原本不方便做到的就开）；扩展 `provide` 写 `true` 才开；MCP 服务、脚本工具默认开（`clicall = false`、`# Clicall: no` 关）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
+| `result` | 脚本里调到时交回的结构化结果（`Done.data`）的样子（施工 M-4，设计 `39-脚本调工具.md` 第九节第 3 条）：一行紧凑的字，例如 `{"hits":[{"kb","path","snippet"}]}`。只有交结构化结果的写：内置、软件包的说明文件写 `"result"`（出厂 `web_search`、`memory_search`、`kb_search`、`kb_read`），扩展 `provide` 写；MCP、脚本工具没有。不直接发给模型：换进 `shell` 说明末尾那一段（`tools/shell.md`「脚本调工具」第 10 条）、`miyu call --schema` 的 `Result:` |
 
 **接口** `Tool`（`Send + Sync`）：
 
@@ -53,6 +54,7 @@
 | `venues()` | 给哪种会话（`Venues`：本机的、私聊、群）：提供者的工具照它挑；核心自带的没有，照工具面自己的规矩挑（施工 O-2 上，`providers.md`） |
 | `preview(Call)` | 问人之前先看一眼（施工 F-10 下，`tools/package.md`）：权限策略要问人时，执行器带着端口调它；成了的整份放进确认请求的说明 `preview`，不成的不问、照拒绝交给她；默认不看 |
 | `formerly()` | 以前的名字：改过名的工具，改名以前造的会话快照里冻着旧名字，她照旧名字调；默认没有（施工 7-5 再补，`tools/subagent.md`「以前的名字」） |
+| `clicall_section(tools, shapes)` | 说明末尾讲脚本调工具的那一段（施工 M-4，`tools/shell.md`「脚本调工具」第 10 条）：组工具面时，有脚本里能调的工具才照它接上，`tools` 是能调的名单、`shapes` 是结果的样子；只有 `shell` 有，默认没有 |
 
 **一次调用交给工具的** `Call`：
 

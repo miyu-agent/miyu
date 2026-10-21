@@ -71,7 +71,7 @@ impl Session {
         self.policy
             .tools
             .iter()
-            .filter(|(_, rule)| rule.clicall && callable(&rule.access))
+            .filter(|(_, rule)| rule.clicall && rule.access.scriptable())
             .map(|(name, rule)| (name.clone(), rule.parameters.clone()))
             .collect()
     }
@@ -140,7 +140,7 @@ impl Session {
         let checked = match self.policy.tools.get(&name) {
             None => Err(NestedRefusal::Unknown),
             // 两道都过才行（设计 39 第三节第 1 条）：类别是硬规矩，`clicall` 是登记的一方、人说的（施工 M-2）。
-            Some(rule) if !callable(&rule.access) || !rule.clicall => {
+            Some(rule) if !rule.access.scriptable() || !rule.clicall => {
                 Err(NestedRefusal::NotAllowed)
             }
             Some(rule) => repair(&rule.parameters, &args)
@@ -462,11 +462,6 @@ impl Outcome {
             ..Outcome::kernel(NestedStatus::Denied)
         }
     }
-}
-
-/// 第一版的嵌套调用只准这几类（设计 39 MC2）。
-fn callable(access: &Access) -> bool {
-    matches!(access, Access::Read | Access::Network | Access::Execute)
 }
 
 /// 答脚本那头的动作。

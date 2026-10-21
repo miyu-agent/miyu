@@ -61,6 +61,7 @@ fn provided_tools_join_change_and_leave_the_face() {
         access: Access::Read,
         need_load: false,
         clicall: false,
+        result: None,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     let snapshot = swap(&mut refresh);
@@ -272,6 +273,7 @@ fn a_changed_preset_takes_provided_tools_as_registered_now() {
         access: Access::Read,
         need_load: false,
         clicall: false,
+        result: None,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     super::test_support::write_preset(&root, "[tools]\nshell = false\n");

@@ -68,12 +68,13 @@
 | `timeout_ms` | 1000 到 600000，默认 60000 |
 | `need_load` | `true`：要先加载，工具列表里只给名字和说明 |
 | `clicall` | `true`：AI 在命令里用 `miyu call` 也能调它（只读、联网、执行类的才调得成），不写是不能。有结构化结果的写进回应的 `data`，脚本拿到一行 JSON |
+| `result` | 有结构化结果的写它的样子，一行字，例如 `{"memes":[{"id","tags"}]}`：告诉 AI 脚本里能直接取哪几格（`miyu call --schema` 也印）。不写是没有 |
 | `display_name` | 给人看的名字：`{"zh": "…", "en": "…"}` |
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`need_load`、`clicall`、`display_name`、`subject`、`feature`。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`need_load`、`clicall`、`result`、`display_name`、`subject`、`feature`。
 
 ## `tool.call`、`tool.cancel`
 

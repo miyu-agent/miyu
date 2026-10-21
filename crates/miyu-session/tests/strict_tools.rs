@@ -28,6 +28,7 @@ fn catalog() -> Catalog {
             access: Access::Read,
             need_load: true,
             clicall: false,
+            result: None,
         },
         Act::Echo,
     );

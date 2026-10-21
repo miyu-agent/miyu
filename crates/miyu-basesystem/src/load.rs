@@ -39,3 +39,8 @@ pub(crate) fn text(
 ) -> Result<Template, LoadError> {
     load::text(resources, PACKAGE, tool, name, fields)
 }
+
+/// 读工具 `tool` 的一份字 `name` 的原文，不当模板读（施工 M-4）。
+pub(crate) fn raw(resources: &Path, tool: &str, name: &str) -> Result<String, LoadError> {
+    load::raw(resources, PACKAGE, tool, name)
+}

@@ -98,7 +98,8 @@ pub(super) fn schema(port: &dyn NestedPort, texts: &Texts, name: &str) -> Reply 
     }
 }
 
-/// 这件的说明和参数格式写成的字。不转义：两样都是工具面上的原样，她在 tools 数组里看到的也是原样，转了反而看不懂。
+/// 这件的说明和参数格式写成的字，有结构化结果的再跟一行它的样子（`Result:`，施工 M-4）。不转义：几样都是登记来的原样，她在
+/// tools 数组里看到的也是原样，转了反而看不懂。
 fn schema_text(port: &dyn NestedPort, texts: &Texts, name: &str) -> Option<String> {
     let schema = port.schema(name)?;
     let fields = std::collections::BTreeMap::from([
@@ -106,7 +107,22 @@ fn schema_text(port: &dyn NestedPort, texts: &Texts, name: &str) -> Option<Strin
         ("description", schema.description.trim_end()),
         ("parameters", schema.parameters.as_str()),
     ]);
-    texts.schema.fill(&fields, str::to_string).ok()
+    let mut text = texts.schema.fill(&fields, str::to_string).ok()?;
+    if let Some(result) = &schema.result {
+        let result = texts
+            .result
+            .fill(
+                &std::collections::BTreeMap::from([("result", result.trim())]),
+                str::to_string,
+            )
+            .ok()?;
+        text = format!(
+            "{}
+{result}",
+            text.trim_end()
+        );
+    }
+    Some(text)
 }
 
 /// 不认识：名字差一两个字的指出来。

@@ -84,6 +84,10 @@ struct ToolParams {
     /// `clicall`。访问类别不是读、联网、执行的，写了也调不成。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     clicall: Option<Value>,
+    /// 脚本里调到时交回的结构化结果的样子（施工 M-4，`39-脚本调工具.md` 第九节第 3 条）：一行字，照出厂工具说明文件的写法；
+    /// 不写的没有。别的写法、空白的 `bad_tool`，`problem` 是 `result`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    result: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -249,6 +253,11 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         Some(Value::Bool(on)) => *on,
         Some(_) => return Err(bad_tool(&tool.name, "clicall")),
     };
+    let result = match &tool.result {
+        None => None,
+        Some(Value::String(shape)) if !shape.trim().is_empty() => Some(shape.clone()),
+        Some(_) => return Err(bad_tool(&tool.name, "result")),
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -257,6 +266,7 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             access,
             need_load,
             clicall,
+            result,
         },
         venues,
         timeout: Duration::from_millis(timeout),

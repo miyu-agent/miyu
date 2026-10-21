@@ -60,6 +60,7 @@ pub(super) fn tools(
                 access: Access::Read,
                 need_load: server.need_load,
                 clicall: server.clicall,
+                result: None,
             },
             what,
             title: None,

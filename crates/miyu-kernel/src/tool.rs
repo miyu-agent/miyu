@@ -46,6 +46,12 @@ impl Access {
     pub fn writes(&self) -> bool {
         matches!(self, Access::Write | Access::Install | Access::Other(_))
     }
+
+    /// 脚本里能不能调（施工 M-1，设计 `39-脚本调工具.md` 第三节第 1 条）：只读、联网、执行三类；`clicall` 开着也得是这三类。
+    /// 内核收嵌套调用时照它拦，给她看的名单（施工 M-4）照它列。
+    pub fn scriptable(&self) -> bool {
+        matches!(self, Access::Read | Access::Network | Access::Execute)
+    }
 }
 
 /// 内核要知道的一件工具：访问类别、参数格式、脚本里能不能调。

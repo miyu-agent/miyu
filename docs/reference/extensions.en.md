@@ -68,12 +68,13 @@ Register every tool this package provides now, replacing the previous registrati
 | `timeout_ms` | 1000 to 600000, default 60000 |
 | `need_load` | `true`: must be loaded first; the tool list only carries its name and description |
 | `clicall` | `true`: the AI can also call it with `miyu call` inside a command (only read, network and execute tools can be); unset means it cannot. Put a structured result in the response's `data` and the script gets one line of JSON |
+| `result` | For a tool with a structured result, its shape on one line, for example `{"memes":[{"id","tags"}]}`: tells the AI which fields a script can take directly (`miyu call --schema` prints it too). Unset means none |
 | `display_name` | Name shown to people: `{"zh": "…", "en": "…"}` |
 | `subject` | Which argument's value is shown after the name; must be one of `input_schema.properties` |
 
 **Response**: `{"tools": <count>}`. If the connection drops, the tools stay in the catalog and answer "temporarily unavailable" when called.
 
-**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `need_load`, `clicall`, `display_name`, `subject`, `feature`.
+**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `need_load`, `clicall`, `result`, `display_name`, `subject`, `feature`.
 
 ## `tool.call`, `tool.cancel`
 

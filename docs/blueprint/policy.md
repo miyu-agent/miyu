@@ -85,7 +85,8 @@
 | `Snapshot::with_tools(工具)` | 带上工具面 |
 | `Snapshot::with_venue(说明)` | 带上场所说明：system 的第二块，接在人设后面（施工 7-5）。子会话有 |
 | `Snapshot::with_group(说明, GroupChat)` | 带上群会话（施工 O-13 中）：格式说明照 `with_venue` 接在人设后面（`core/venues/group.txt`），快照记下 `group` |
-| `Snapshot::with_core_lines(&CoreLines, os)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有这几格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`machine`（`machine.txt`，施工 2-7 再补，`{os}` 换成 `os`）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）、`preset_off`（交给 `with_preset`）。一行一句，先权限、再路径、最后本机是什么系统；工具面是空的不带权限、系统那两句 |
+| `Snapshot::with_core_lines(&CoreLines, os)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有这几格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`machine`（`machine.txt`，施工 2-7 再补，`{os}` 换成 `os`）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）、`preset_off`（交给 `with_preset`）、`clicall`（`core/clicall.txt`，施工 M-4，交给 `with_clicall`）。一行一句，先权限、再路径、最后本机是什么系统；工具面是空的不带权限、系统那两句 |
+| `Snapshot::with_clicall(&CoreLines, tells)` | 什么时候写成调工具的程序的那一段（施工 M-4，设计 39 第九节）：`tells` 是工具面上有 `shell`、有脚本里能调的工具（会话那一层照 `clicall`、`Access::scriptable` 算），接在核心的几行后面单成一段；没有的不带，system 一字不变 |
 | `Snapshot::swappable(新的)` | 能不能换成 `新的`（施工 P-1 再补）：除了 `system`、`demos`、`tools`、`reminder`、`persona_digest`、`preset`（后两格施工 P-2 下：换预设时工具面重新筛过，留着的那几件是原样），别的格都一样 |
 | `Snapshot::with_knowledge(那一块)` | 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（`26-提示词.md` 第四节），记进快照的 `knowledge`。在 `with_core_lines` 以后、`with_preset` 以前调；没有的 system 一字不变 |
 | `Snapshot::with_preset(预设, 那一行)` | 带上预设（施工 P-2 中）：记进快照的 `preset`（编号、装了没开的软件）；没开角色扮演的去掉 `reminder`；装了没开的软件（角色扮演除外）写成一行接在 system 后面（`26-提示词.md` 第四节第 5 块，`core/preset-off.txt`）。在 `with_core_lines` 以后、`with_style_lock` 以前调；没有预设、都开着的 system 一字不变 |

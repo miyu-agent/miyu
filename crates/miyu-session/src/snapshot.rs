@@ -61,6 +61,7 @@ pub(crate) fn tooled(catalog: &Catalog, features: Option<&Features>) -> BTreeSet
 /// 资源目录里哪一份读不了。
 pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, SourceError> {
     let sources = resources.sources_with(parts.texts)?;
+    let tells = crate::agents::clicall::tells(&parts.face);
     let mut snapshot =
         compose(parts.name.as_deref(), sources, parts.attended).with_tools(parts.face);
     snapshot.memory = parts.memory;
@@ -84,6 +85,7 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
     let lines = resources.core_lines()?;
     let snapshot = snapshot
         .with_core_lines(&lines, miyu_store::env::os_name())
+        .with_clicall(&lines, tells)
         .with_skills(parts.skills)
         .with_knowledge(parts.knowledge)
         .with_preset(parts.preset, &lines.preset_off, &parts.tooled)

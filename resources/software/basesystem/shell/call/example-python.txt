@@ -1,0 +1,1 @@
+miyu call web_search --query niri | python3 -c 'import sys,json,collections; print(collections.Counter(l["site"] for l in json.load(sys.stdin)["links"]))'

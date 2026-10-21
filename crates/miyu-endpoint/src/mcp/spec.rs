@@ -109,6 +109,7 @@ pub(super) fn register(
                 access: access(tool),
                 need_load: server.need_load,
                 clicall: server.clicall,
+                result: None,
             },
             what: What::Tool(tool.name.clone()),
             title: tool

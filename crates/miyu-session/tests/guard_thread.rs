@@ -88,6 +88,7 @@ async fn the_async_thread_is_free_while_the_guard_judges() {
             access: Access::Read,
             need_load: false,
             clicall: false,
+            result: None,
         },
         entered: entered_tx,
         release: Mutex::new(release_rx),

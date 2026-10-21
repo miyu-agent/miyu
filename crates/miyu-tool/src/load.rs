@@ -45,6 +45,9 @@ struct SpecFile {
     /// 脚本里能调（施工 M-2）：出厂只有几件写 `true`，没写的关。
     #[serde(default)]
     clicall: bool,
+    /// 结构化结果的样子（施工 M-4）：只有交结构化结果的写。
+    #[serde(default)]
+    result: Option<String>,
 }
 
 /// 读软件包 `package` 的工具 `name` 的说明和参数格式，访问类别是 `access`。
@@ -80,6 +83,7 @@ pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError
         access,
         need_load: parsed.need_load,
         clicall: parsed.clicall,
+        result: parsed.result,
     })
 }
 
@@ -144,6 +148,19 @@ pub fn text_in(dir: &Path, tool: &str, name: &str, fields: &[&str]) -> Result<Te
     Ok(template)
 }
 
+/// 读软件包 `package` 的工具 `tool` 的一份字 `name` 的原文，不当模板读（施工 M-4：`shell` 说明里的例子，里面有花括号）。
+///
+/// # Errors
+///
+/// 读不出来。
+pub fn raw(resources: &Path, package: &str, tool: &str, name: &str) -> Result<String, LoadError> {
+    read(
+        &package_dir(resources, package)
+            .join(tool)
+            .join(format!("{name}.txt")),
+    )
+}
+
 /// 照模板 `template` 换进字段 `fields`。
 ///
 /// # Panics
@@ -171,3 +188,6 @@ fn read(file: &Path) -> Result<String, LoadError> {
         why: error.to_string(),
     })
 }
+
+#[cfg(test)]
+mod tests;

@@ -137,6 +137,9 @@ pub struct CoreLines {
     /// 装了、这个预设没开的那一行（`core/preset-off.txt`，施工 P-2 中，Y8）：`{packages}` 换成逗号隔开的编号；施工 F-3 上起是功能
     /// 的编号（以前造的快照记的包编号照原样）。
     pub preset_off: String,
+    /// 什么时候写成调工具的程序（`core/clicall.txt`，施工 M-4，设计 39 第九节）：工具面上有脚本里能调的工具才带
+    /// （[`Snapshot::with_clicall`]）。
+    pub clicall: String,
 }
 
 impl Snapshot {
@@ -158,6 +161,16 @@ impl Snapshot {
             .collect::<Vec<_>>()
             .join("\n");
         self.system = system(&[&self.system, &block]);
+        self
+    }
+
+    /// 带上什么时候写成调工具的程序的那一段（施工 M-4，设计 39 第九节）：`tells` 是工具面上有脚本里能调的工具（会话那一层照
+    /// `shell` 在不在、`clicall`、访问类别算好交来）。接在核心的几行后面单成一段；没有的不带，system 一字不变。
+    #[must_use]
+    pub fn with_clicall(mut self, lines: &CoreLines, tells: bool) -> Snapshot {
+        if tells {
+            self.system = system(&[&self.system, lines.clicall.trim_end()]);
+        }
         self
     }
 

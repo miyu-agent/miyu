@@ -94,6 +94,9 @@ async fn the_request_carries_the_tools_by_name() {
     let request = script.requests()[0].1.clone();
     assert_eq!(names(&request), ["edit", "read"]);
     assert_eq!(request.tools[0].description, "The edit tool.");
+    // 工具面上没有 `shell`：system 里不带脚本调工具的那一句（施工 M-4）。
+    let clicall = include_str!("../../../resources/core/clicall.txt").trim_end();
+    assert!(!request.system.contains(clicall), "{}", request.system);
     assert_eq!(
         request.tools[1].parameters.get(),
         r#"{ "type": "object", "properties": {"path": {"type": "string"}} }"#
@@ -118,6 +121,7 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             access: Access::Read,
             need_load: false,
             clicall: false,
+            result: None,
         },
         Act::Echo,
     );
@@ -145,6 +149,7 @@ async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contra
             access: Access::Read,
             need_load: true,
             clicall: false,
+            result: None,
         },
         Act::Echo,
     );

@@ -95,6 +95,7 @@ impl Tools {
                 let schema = Schema {
                     description: tool.spec().description.clone(),
                     parameters: parameters.get().to_string(),
+                    result: tool.spec().result.clone(),
                 };
                 Some((name, schema))
             })

@@ -114,6 +114,10 @@ pub struct Spec {
     /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：登记的一方说的默认，人在个人设置里能改（`clicall.*`）。内置工具、
     /// 软件包、扩展默认关，MCP、脚本工具默认开；访问类别不是读、联网、执行的，写了也调不成（内核拦）。
     pub clicall: bool,
+    /// 脚本里调到时交回的结构化结果（`Done.data`）的样子（施工 M-4，`39-脚本调工具.md` 第九节第 3 条）：一行紧凑的字，例如
+    /// `{"hits":[{"kb","path","snippet"}]}`，给她看、`miyu call --schema` 印。只有交结构化结果的写；内置工具的说明文件、扩展
+    /// `provide` 写，MCP、脚本工具没有。
+    pub result: Option<String>,
 }
 
 /// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。
@@ -201,6 +205,13 @@ pub trait Tool: Send + Sync {
     /// 后台运行关着的会话里用的说明（施工 T-1 下）：在后台跑的工具换一种说法，`subagent` 有（派出去等它报回来）。别的没有，
     /// 照规格的。
     fn foreground_description(&self) -> Option<&str> {
+        None
+    }
+
+    /// 说明末尾讲脚本调工具的那一段（施工 M-4，设计 `39-脚本调工具.md` 第九节）：这个会话的工具面上有脚本里能调的工具时，组
+    /// 工具面的一方把它接在说明后面。`tools` 是能调的名单（一个 MCP 服务的几件并成 `mcp__<服务>__*`），`shapes` 是有结构化结果
+    /// 的那几件的样子（`名字 样子`，`; ` 隔开；一件都没有的是空的）。只有 `shell` 有，别的没有。
+    fn clicall_section(&self, _tools: &str, _shapes: &str) -> Option<String> {
         None
     }
 }

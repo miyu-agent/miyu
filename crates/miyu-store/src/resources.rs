@@ -205,6 +205,7 @@ impl ResourceRoot {
             machine: self.read(&["core", "machine.txt"])?,
             style_lock: self.read(&["core", "style-lock.txt"])?,
             preset_off: self.read(&["core", "preset-off.txt"])?,
+            clicall: self.read(&["core", "clicall.txt"])?,
         })
     }
 

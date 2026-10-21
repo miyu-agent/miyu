@@ -100,6 +100,7 @@ impl Fake {
                 access,
                 need_load: false,
                 clicall: false,
+                result: None,
             },
             act,
         )

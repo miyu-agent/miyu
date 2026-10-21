@@ -31,6 +31,7 @@ fn lines() -> CoreLines {
         machine: "Runs {os}.\n".to_string(),
         style_lock: String::new(),
         preset_off: String::new(),
+        clicall: String::new(),
     }
 }
 
@@ -203,6 +204,7 @@ fn without_the_core_lines_the_system_is_as_before() {
         machine: String::new(),
         style_lock: String::new(),
         preset_off: String::new(),
+        clicall: String::new(),
     };
     assert_eq!(
         tooled.clone().with_core_lines(&empty, "Arch Linux").system,
@@ -236,4 +238,25 @@ fn without_a_persona_the_snapshot_names_none_and_says_no_character() {
     assert_eq!(created.persona, None);
     let named = String::from_utf8(crate::test_support::engineer().to_bytes()).expect("是字");
     assert!(named.starts_with("{\"persona\":\"engineer\","), "{named}");
+}
+
+#[test]
+fn the_clicall_line_is_its_own_paragraph_only_when_told() {
+    let tooled = crate::test_support::engineer()
+        .with_tools(vec![a_tool()])
+        .with_core_lines(&lines(), "Arch Linux");
+    let mut with = lines();
+    with.clicall = "You can write programs that call tools.\n".to_string();
+    assert_eq!(
+        tooled.clone().with_clicall(&with, false).system,
+        tooled.system,
+        "没有能调的不带"
+    );
+    assert_eq!(
+        tooled.clone().with_clicall(&with, true).system,
+        format!(
+            "{}\n\nYou can write programs that call tools.",
+            tooled.system
+        )
+    );
 }
