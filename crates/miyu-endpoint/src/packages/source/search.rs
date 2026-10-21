@@ -60,7 +60,7 @@ pub(crate) async fn search(
         .iter()
         .filter(|entry| matches(entry, &words))
         .map(|entry| {
-            json!({
+            let mut row = json!({
                 "package": entry.id,
                 "version": entry.version,
                 "name": pick(&entry.name, peer.language),
@@ -73,7 +73,12 @@ pub(crate) async fn search(
                 "depends": entry.depends,
                 "installed": installed.get(&entry.id).map(|version| version.clone().unwrap_or_default()),
                 "blocked": synced.index.blocked(&entry.id, &entry.origin).map(|blocked| blocked.reason.clone()),
-            })
+            });
+            // 包的种类（施工 G-11）：索引里的原样，以前生成的索引没有的不写。
+            if let Some(kind) = &entry.kind {
+                row["kind"] = json!(kind);
+            }
+            row
         })
         .collect();
     let mut answer = json!({"packages": rows, "generated": synced.index.generated});

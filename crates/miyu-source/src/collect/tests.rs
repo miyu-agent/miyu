@@ -146,6 +146,11 @@ fn an_official_release_becomes_an_entry_and_claims_its_id() {
     assert_eq!(entry.name["zh"], "包");
     assert_eq!(entry.provides["skills"], ["sweet"]);
     assert_eq!(entry.provides["personas"], ["cat"]);
+    assert_eq!(
+        entry.kind.as_deref(),
+        Some("bundle"),
+        "包的种类照清单（施工 G-11）"
+    );
     assert_eq!(entry.files.len(), 1);
     assert_eq!(entry.files[0].target, None);
     assert_eq!(entry.files[0].size, bytes.len() as u64);

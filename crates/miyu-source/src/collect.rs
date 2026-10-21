@@ -235,6 +235,7 @@ fn entry_of(
         summary: manifest.summary.clone(),
         origin: origin.to_string(),
         official,
+        kind: Some(manifest.kind.as_str().to_string()),
         provides: provides(manifest, folder),
         capabilities: manifest
             .process

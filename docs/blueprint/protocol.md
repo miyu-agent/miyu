@@ -673,7 +673,7 @@
 **`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
 
 - 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
-- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends"}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
+- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
 - 拒绝、谁能调同 `package.sync`。
 
 **`package.clean`**（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条，照 pacman 的 `-Sc`）

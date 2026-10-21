@@ -48,6 +48,10 @@ pub struct Entry {
     /// 来源仓库是不是项目主人自己的（`official.toml`）。
     #[serde(default)]
     pub official: bool,
+    /// 包的种类（施工 G-11，网页的软件市场照它筛）：清单里 `[package] kind` 的原样写法（`process`、`theme`、`bundle` 这些），
+    /// 以后多了的照样原样。以前生成的索引没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
     /// 带了哪几样：种类（`features`、`skills`、`personas` 这些）到名字。
     #[serde(default)]
     pub provides: BTreeMap<String, Vec<String>>,
