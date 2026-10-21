@@ -20,7 +20,7 @@ pub struct Pointer {
     /// 终端会话的编号。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session: Option<String>,
-    /// 指过去的时刻（施工 T-1，2026-10-21 项目主人定：`/sessions` 主动切过去的不该再被闲置规则换掉）：算这个终端会话的一次
+    /// 指过去的时刻（施工 8-33 三补，2026-10-21 项目主人定：`/sessions` 主动切过去的不该再被闲置规则换掉）：算这个终端会话的一次
     /// 动静，闲置从这一刻起算。以前写的没有，照会话自己的最后一次动静。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub at: Option<Timestamp>,
