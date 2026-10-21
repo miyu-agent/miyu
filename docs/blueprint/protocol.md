@@ -241,6 +241,7 @@
 | `oneshot` | 布尔，不写是 `false` | 一次性的：`miyu ask` 开的写 `true`，记进 `session.created` |
 | `chosen` | 布尔，不写是 `false` | `cwd` 是人明着选的（施工 9-7 补）。施工 5-14 起照收不看：太宽的一律照用、回应带 `wide`（「工作目录太宽」） |
 | `images` | 布尔，不写是 `true` | 这个头显示得了图片吗（施工 X-25，同 `venue.session` 的 `images`，`venues.md`）：以后的语音头写 `false`；终端、网页不写（终端在不支持图片的终端里也不写：同一个会话换个地方就看得了） |
+| `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43，同 `venue.session` 的 `titles`，`venues.md`）：`false` 的记进 `session.created`，从此不自动起 |
 | `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
 | `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat`，那也没配的不写 |
 | `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的照人格的 `persona.toml` 的 `[memory] scope`，那也没写的是 `persona` |

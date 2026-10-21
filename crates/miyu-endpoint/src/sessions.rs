@@ -230,6 +230,7 @@ impl Sessions {
             group: who.group,
             owner_is_admin: who.owner == core.admin,
             images: who.images,
+            titles: who.titles,
             dream: None,
             origin: who.origin.clone(),
         })
@@ -369,6 +370,7 @@ impl Sessions {
             group: None,
             owner_is_admin,
             images: child.images,
+            titles: true,
             dream: None,
             origin: None,
         })

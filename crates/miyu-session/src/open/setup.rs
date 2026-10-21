@@ -153,6 +153,8 @@ pub struct Create<'a> {
     pub owner_is_admin: bool,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::blind`]），记进 `session.created`。
     pub images: bool,
+    /// 自动起标题吗（施工 O-43）：假的记进 `session.created`，这个会话从此不自动起标题。
+    pub titles: bool,
     /// 整理会话（施工 D-1 上，设计 41）：记进 `session.created`；快照是裸的（没有 system、工具，回合开始不注入事实），之后不随
     /// 人格、预设、工具架换。不是的没有。造的一方另把记忆、知识库、技能、预设都交成关着的。
     pub dream: Option<miyu_kernel::event::Dream>,

@@ -7,14 +7,12 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot};
 
 use miyu_kernel::event::SessionCreated;
-use miyu_kernel::id::VenueId;
 use miyu_kernel::session::{Input, Session};
 use miyu_models::provider::chat;
 use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
 use miyu_store::recall::NO_PERSONA;
-use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_store::usage::Who;
 use miyu_tool::{Log, Seen};
 
@@ -26,7 +24,7 @@ use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
 use crate::default_workspace::DefaultWorkspace;
-use crate::guard::{Confined, Guard, Place};
+use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
@@ -45,6 +43,8 @@ use crate::usage::Ledger;
 mod error;
 mod fork;
 mod load;
+mod place;
+use place::place;
 mod scan;
 mod setup;
 
@@ -104,6 +104,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         group,
         owner_is_admin,
         images,
+        titles,
         dream,
         origin,
     } = setup;
@@ -326,6 +327,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         model: reference,
         preset,
         images,
+        titles,
         dream,
         origin,
         ..snapshot.session_created(owner.clone(), venue.clone(), permission)
@@ -471,29 +473,3 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
 
 #[cfg(test)]
 mod tests;
-
-/// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：场所是 `local` 的是本机的会话，读出厂的那一句拒绝在场所里做的事；别的
-/// 是场所会话，属主不是管理员的只碰得到自己的工作区（施工 5-12，[`Confined`]）。造会话、载入时各读一次，不进策略快照
-/// （[`ResourceRoot::not_in_venue`]、[`ResourceRoot::confined_texts`]）。
-pub(super) fn place(
-    venue: &VenueId,
-    resources: &ResourceRoot,
-    owner_is_admin: bool,
-) -> Result<(Place, Option<Confined>), SourceError> {
-    if venue.as_str() == crate::agents::LOCAL {
-        return Ok((Place::local(resources.not_in_venue()?), None));
-    }
-    if owner_is_admin {
-        return Ok((Place::Venue, None));
-    }
-    let (outside, no_commands) = resources.confined_texts()?;
-    let confined = Confined::new(&outside, no_commands).map_err(|error| SourceError::Read {
-        path: resources
-            .path()
-            .join("core")
-            .join("permissions")
-            .join("outside-workspace.txt"),
-        error: std::io::Error::new(std::io::ErrorKind::InvalidData, error.to_string()),
-    })?;
-    Ok((Place::Venue, Some(confined)))
-}

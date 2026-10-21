@@ -26,6 +26,8 @@ use crate::time::Timestamp;
 pub(super) struct Naming {
     /// 子会话（`session.created` 带 `parent`）：不起。
     child: bool,
+    /// 造会话时说了不自动起（`session.created` 的 `titles` 是 `false`，施工 O-43）：不起。
+    quiet: bool,
     /// 标题动过：有过带 `title` 的 `session.meta_changed`，人改的、去掉的、内核起的都算。
     named: bool,
     /// 试过几次：`purpose` 是 `title` 的 `model.called` 有几条。
@@ -42,7 +44,10 @@ impl Naming {
     /// 记下追加的一条。
     pub(super) fn note(&mut self, event: &Event) {
         match &event.body {
-            Body::SessionCreated(created) => self.child = created.parent.is_some(),
+            Body::SessionCreated(created) => {
+                self.child = created.parent.is_some();
+                self.quiet = !created.titles;
+            }
             Body::MetaChanged(changed) if changed.title.is_some() => self.named = true,
             Body::ModelCalled(called) if called.purpose == Some(Purpose::Title) => self.tries += 1,
             Body::MessageAssistant(reply) if said(&reply.blocks) => self.answered = event.turn,
@@ -52,9 +57,9 @@ impl Naming {
         }
     }
 
-    /// 还要起：不是子会话，标题没动过，试过的不到 `tries` 次。
+    /// 还要起：不是子会话，没说不起，标题没动过，试过的不到 `tries` 次。
     fn wanted(&self, tries: u32) -> bool {
-        !self.child && !self.named && self.tries < tries
+        !self.child && !self.quiet && !self.named && self.tries < tries
     }
 
     /// 只有续轮的会话的目标原文（施工 X-8 补）：设过目标、还没有谁说过话。

@@ -32,6 +32,8 @@ pub(crate) struct Opening {
     pub(crate) profile: bool,
     /// 场所显示得了图片吗（施工 X-25）：`session.create`、`venue.session` 的 `images`，不写的是显示得了。
     pub(crate) images: bool,
+    /// 自动起标题吗（施工 O-43）：`session.create`、`venue.session` 的 `titles`，不写的起。
+    pub(crate) titles: bool,
     /// 从哪开的（施工 8-33 四补）：`session.terminal` 开的是 `terminal`，别的没有。
     pub(crate) origin: Option<String>,
 }

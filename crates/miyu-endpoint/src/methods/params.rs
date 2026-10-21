@@ -40,6 +40,9 @@ pub(super) struct CreateParams {
     /// 这个头显示得了图片吗（施工 X-25）：语音这类写 `false`；不写的是显示得了。
     #[serde(default = "crate::venues::shows_images")]
     pub(super) images: bool,
+    /// 这个会话自动起标题吗（施工 O-43）：不写的起。
+    #[serde(default = "crate::venues::shows_images")]
+    pub(super) titles: bool,
 }
 
 /// `session.list` 的参数（施工 3-9 下）。

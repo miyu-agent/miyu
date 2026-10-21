@@ -66,6 +66,10 @@ pub struct SessionCreated {
     /// 别的不写，以前的日志没有这一格。照原样存字：以后多了别的来源，旧核心照样读得了。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// 自动起标题（施工 O-43，2026-10-21 项目主人：场所会话的标题没人看得到，白花一次请求）：`false` 的这个会话不自动起，人照旧
+    /// 改得了。起的不写，以前的日志没有这一格，照起读。
+    #[serde(default = "titled", skip_serializing_if = "Clone::clone")]
+    pub titles: bool,
 }
 
 /// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`，会话那一间写 `session`，两样有一样。
@@ -83,6 +87,11 @@ pub struct Dream {
     /// 人在哪个会话里叫的（`/dream`）：那个会话的 `/stop` 照它叫停这一趟。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<SessionId>,
+}
+
+/// 没写 `titles` 的会话自动起标题（施工 O-43）。
+fn titled() -> bool {
+    true
 }
 
 /// 没写 `images` 的会话显示得了图片（施工 X-25）。

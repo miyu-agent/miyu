@@ -113,6 +113,52 @@ fn it_asks_once_the_turn_end_is_stored() {
 }
 
 #[test]
+fn a_session_created_without_titles_never_asks() {
+    // 施工 O-43：`session.created` 的 `titles` 是 `false`，答完了、`turn.ended` 落盘了也不起；没写的照旧起。
+    let created = format!(r#"{},"titles":false}}"#, CREATED.strip_suffix('}').unwrap());
+    let created: SessionCreated = serde_json::from_str(&created).unwrap();
+    assert!(!created.titles);
+    let written = serde_json::to_string(&created).unwrap();
+    assert!(
+        written.ends_with(r#""titles":false}"#),
+        "假的才记：{written}"
+    );
+    let plain: SessionCreated = serde_json::from_str(CREATED).unwrap();
+    assert!(plain.titles, "以前的日志没有这一格，照起读");
+    assert!(
+        !serde_json::to_string(&plain).unwrap().contains("titles"),
+        "起的不写，字节不变"
+    );
+    let (mut session, _) = Session::create(
+        session_id(),
+        id(0),
+        alice(),
+        at(0),
+        created,
+        Policy {
+            titles: Some(Titles {
+                tries: 2,
+                chars: 50,
+            }),
+            ..policy()
+        },
+        environment("~/src/miyu"),
+    );
+    session.handle(stored(1));
+    session.handle(send(1, "hi"));
+    session.handle(stored(5));
+    session.handle(hooks_done(turn3(), Vec::new()));
+    answer(&mut session, 5, "好。");
+    let ended = session.handle(stored(8));
+    assert!(
+        !ended
+            .iter()
+            .any(|action| matches!(action, Action::Aside { .. })),
+        "说了不起的不起：{ended:?}"
+    );
+}
+
+#[test]
 fn reports_for_another_request_are_ignored() {
     let mut session = answered();
     session.handle(stored(8));

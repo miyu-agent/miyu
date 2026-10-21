@@ -54,6 +54,9 @@ pub(crate) struct VenueParams {
     /// 找回已有的会话时不看。
     #[serde(default = "shows_images")]
     images: bool,
+    /// 这个会话自动起标题吗（施工 O-43）：机器人这类不要标题的写 `false`；不写的起。找回已有的会话时不看。
+    #[serde(default = "shows_images")]
+    titles: bool,
     /// 群聊近况最多带几条（施工 O-13 再补，接入通讯平台要的）：只给群，1 到 [`RECENT_MOST`]；不写的只照字节预算。
     #[serde(default)]
     recent: Option<u64>,
@@ -184,6 +187,7 @@ pub(crate) async fn session(
         group: (params.kind == Kind::Group).then_some(miyu_session::GroupSettings { recent }),
         profile: params.profile,
         images: params.images,
+        titles: params.titles,
         origin: None,
     };
     let cwd = params

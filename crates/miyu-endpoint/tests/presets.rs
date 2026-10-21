@@ -265,6 +265,46 @@ async fn a_venue_that_cannot_show_images_says_so_when_its_session_is_made() {
     assert!(!created(&home, &session).images, "显示不了的记下");
 }
 
+/// 不要自动起标题的（施工 O-43）：`venue.session`、`session.create` 的 `titles: false` 记进 `session.created`，没写的不写这一格；
+/// 找回已有的会话时不看。
+#[tokio::test]
+async fn a_session_made_without_titles_says_so() {
+    let home = Home::new();
+    home.write("system/config.toml", BINDINGS);
+    let script = Script::new([]);
+    let mut client = connected(configured(&home, &script)).await;
+    let bot = json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001", "titles": false});
+    let made = client.call("v1", "venue.session", bot).await;
+    let session = made["result"]["session"]
+        .as_str()
+        .expect("造出来了")
+        .to_string();
+    assert!(!created(&home, &session).titles, "场所说不起的记下");
+    let again = client
+        .call(
+            "v2",
+            "venue.session",
+            json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001"}),
+        )
+        .await;
+    assert_eq!(again["result"]["session"], json!(session), "找回的是同一个");
+
+    let quiet = create(&mut client, "c1", json!({"cwd": "~", "titles": false})).await;
+    let quiet = quiet["result"]["session"].as_str().expect("造出来了");
+    assert!(!created(&home, quiet).titles, "本机说不起的也记下");
+    let plain = create(&mut client, "c2", json!({"cwd": "~"})).await;
+    let plain = plain["result"]["session"].as_str().expect("造出来了");
+    assert!(created(&home, plain).titles, "没写的照起");
+    let first = home.log(plain).into_iter().next().expect("有第一条");
+    assert!(
+        serde_json::to_value(&first.body)
+            .unwrap()
+            .get("titles")
+            .is_none(),
+        "起的不写，以前的字节不变"
+    );
+}
+
 #[tokio::test]
 async fn presets_are_listed_and_read_by_layer() {
     let home = Home::new();

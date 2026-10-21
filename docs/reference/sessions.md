@@ -57,6 +57,7 @@
 | `chosen` | 布尔，默认 `false` | 照收不看（以前用来区分人选的）：太宽的 `cwd`（家目录、根目录）一律照用、回应带 `wide`，能随便写的范围是这个会话自己的默认工作区 |
 | `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
 | `images` | 布尔，默认 `true` | 你显示得了图片吗 |
+| `titles` | 布尔，默认 `true` | 自动起标题吗：`false` 的从此不自动起，人手改照旧改得了 |
 | `project` | 字符串 | 在哪个项目里建（[项目](projects.md)）：没写的 `persona`、`preset` 照项目的，建好了记一条 `session.meta_changed`（回应的 `events` 是 `[1, 2]`） |
 
 **回应**

@@ -225,6 +225,7 @@ impl Snapshot {
             preset: None,
             forked: None,
             images: true,
+            titles: true,
             dream: None,
             origin: None,
         }

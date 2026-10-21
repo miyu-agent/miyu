@@ -212,6 +212,7 @@ impl Home {
             }),
             owner_is_admin: lines.owner_is_admin,
             images: lines.images,
+            titles: true,
             dream: None,
             origin: None,
         });

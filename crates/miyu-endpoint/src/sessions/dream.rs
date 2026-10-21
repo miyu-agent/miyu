@@ -93,6 +93,7 @@ impl Sessions {
             presets: None,
             group: None,
             images: true,
+            titles: true,
             dream: Some(Dream {
                 persona,
                 session,

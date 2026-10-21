@@ -42,6 +42,7 @@ pub(super) async fn create(
         group: None,
         profile: false,
         images: params.images,
+        titles: params.titles,
         origin: None,
     };
     let created = core
