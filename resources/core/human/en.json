@@ -119,6 +119,10 @@
           "weak": "Weak"
         }
       },
+      "sandbox.private.enabled": {
+        "name": "Private folders",
+        "description": "When off, neither the default nor the added private folders are hidden and file tools stop asking; Miyu's own data stays hidden."
+      },
       "sandbox.private.add": {
         "name": "Added private folders",
         "description": "Folders commands can't read or write and file tools ask about first."

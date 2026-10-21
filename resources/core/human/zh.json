@@ -119,6 +119,10 @@
           "weak": "弱沙盒"
         }
       },
+      "sandbox.private.enabled": {
+        "name": "私密目录",
+        "description": "关掉以后出厂的和加的私密目录都不藏，文件工具也不再问；Miyu 自己的数据照旧藏着。"
+      },
       "sandbox.private.add": {
         "name": "加的私密目录",
         "description": "命令读写不到、文件工具要先问的目录。"

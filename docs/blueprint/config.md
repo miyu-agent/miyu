@@ -1305,6 +1305,10 @@ strength = "auto"
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # add =
 
+# 私密目录：关掉以后出厂的和加的私密目录都不藏，文件工具也不再问；Miyu 自己的数据照旧藏着。
+# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
+enabled = true
+
 # 默认私密目录：出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # remove =
@@ -2163,6 +2167,12 @@ currency = "USD"
               "title": "加的私密目录",
               "type": "array"
             },
+            "enabled": {
+              "default": true,
+              "description": "关掉以后出厂的和加的私密目录都不藏，文件工具也不再问；Miyu 自己的数据照旧藏着。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
+              "title": "私密目录",
+              "type": "boolean"
+            },
             "remove": {
               "description": "出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
               "items": {
@@ -2338,6 +2348,7 @@ currency = "USD"
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
 | 说明 | 调整新会话开启时的默认权限模式，修改后开新会话生效。 | The default permission mode new sessions start in. Changes apply to sessions opened afterwards. | 新しいセッションを開いたときの既定の権限モードです。変更は次に開くセッションから効きます。 |
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |
+| `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
 | `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
