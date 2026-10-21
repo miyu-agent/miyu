@@ -286,6 +286,13 @@ async fn check_packages(
                     let message = crate::packages::sentence(words, code, &mascot.model);
                     problems.push(json!({"kind": "package", "file": file, "code": code, "level": "error", "message": message.unwrap_or_default()}));
                 }
+                // 主题包的主题文件（施工 F-16）：同吉祥物。
+                if let Some(theme) = &manifest.theme
+                    && let Some(code) = crate::packages::status::theme_problem(one, theme)
+                {
+                    let message = crate::packages::sentence(words, code, &theme.file);
+                    problems.push(json!({"kind": "package", "file": file, "code": code, "level": "error", "message": message.unwrap_or_default()}));
+                }
             }
             Err(Issue::Wrong(problem)) => {
                 let message =

@@ -155,7 +155,10 @@ fn carries(
     if let Some(version) = &manifest.version {
         answer.insert("version".into(), json!(version));
     }
-    if !matches!(manifest.kind, PackageKind::Mascot | PackageKind::Bundle) {
+    if !matches!(
+        manifest.kind,
+        PackageKind::Mascot | PackageKind::Theme | PackageKind::Bundle
+    ) {
         answer.insert("program".into(), json!(manifest.kind.as_str()));
     }
     // 带的 MCP 服务（施工 X-2）：装上以后会在这台机器上跑它们的命令，装之前给人看名字。
@@ -182,6 +185,9 @@ fn carries(
     }
     if manifest.mascot.is_some() {
         answer.insert("mascot".into(), json!(true));
+    }
+    if manifest.theme.is_some() {
+        answer.insert("theme".into(), json!(true));
     }
     if let Some(connection) = &manifest.connection {
         answer.insert("connection".into(), json!(connection.platform));

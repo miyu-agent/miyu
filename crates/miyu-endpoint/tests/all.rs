@@ -125,6 +125,7 @@ mod package_mascot;
 mod package_personas;
 mod package_settings;
 mod package_switch;
+mod package_theme;
 mod package_tool;
 mod package_tool_open;
 mod packages;

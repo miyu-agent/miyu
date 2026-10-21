@@ -34,7 +34,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | Name | Notes |
 |---|---|
 | `package`, `layer` | Id; `shipped` or `home` |
-| `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `bundle` (no program; only MCP servers, skills, scripts and the like) |
+| `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a terminal theme, with `theme: {"file"}`; `package.file` gives only that file), `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
 | `from` | Where it came from: `shipped`, `official` (installed from the official software source), `local` (a local folder or package file); `community` will join once community sources exist |
@@ -71,7 +71,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 | `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
-Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command` (the first subcommand name), `commands` (every subcommand name), `page`, `mascot`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
+Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command` (the first subcommand name), `commands` (every subcommand name), `page`, `mascot`, `theme`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
 
 Install and remove take effect at once: processes start or stop per their switches, their tools enter or leave the tool catalog, and open sessions pick that up at the next turn.
 
@@ -138,7 +138,7 @@ Upgrade from the package source. Only packages installed from the source are tou
 |---|---|
 | `unknown_package` | No such package |
 | `package_required` | Turning off a required one |
-| `not_switchable` | UI, worker and mascot packages have no switch |
+| `not_switchable` | UI, worker, mascot and theme packages have no switch |
 | `program_missing` | The package's program wasn't found (neither in the package folder's `bin/` nor next to `miyu`) |
 | `needs_approval` | Capabilities still need approval, `data.capabilities` |
 | `package_depended` | Turning off one another package depends on |
@@ -146,7 +146,7 @@ Upgrade from the package source. Only packages installed from the source are tou
 
 ## `package.file`, `package.call`
 
-**`package.file`**: params `package`, `path` (relative, inside its page folder), `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages and mascot model files are read this way.
+**`package.file`**: params `package`, `path` (relative, inside its page folder), `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages, mascot model files and theme files are read this way.
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
 

@@ -1,5 +1,5 @@
 //! `package.file`（施工 F-6 中，`package-pages.md`「`package.file`」）：读一个包的后台页目录里的一份文件，一次最多 512 KiB。
-//! 吉祥物包（施工 F-7）只给 `[mascot] model` 指的那一份。
+//! 吉祥物包（施工 F-7）只给 `[mascot] model` 指的那一份，主题包（施工 F-16）只给 `[theme] file` 那一份。
 //! 媒体类型不给：网页软件照扩展名查它自己的那张表（同它给自己页面的那一套），核心不另放一份。
 
 use std::path::{Path, PathBuf};
@@ -49,6 +49,13 @@ fn located(core: &Core, id: &str, path: &str) -> Result<(PathBuf, Vec<String>), 
     let manifest = found.read.as_ref().map_err(|_| Refusal::UNKNOWN_PACKAGE)?;
     if let Some(mascot) = &manifest.mascot {
         return match path == mascot.model {
+            true => Ok((found.files_dir(), segments)),
+            false => Err(Refusal::FILE_NOT_FOUND),
+        };
+    }
+    // 主题包只给 `[theme] file` 那一份（施工 F-16）。
+    if let Some(theme) = &manifest.theme {
+        return match path == theme.file {
             true => Ok((found.files_dir(), segments)),
             false => Err(Refusal::FILE_NOT_FOUND),
         };

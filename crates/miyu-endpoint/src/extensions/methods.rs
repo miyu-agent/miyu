@@ -160,6 +160,7 @@ fn extension(core: &Core, id: &str) -> Result<Manifest, Refusal> {
         | PackageKind::Builtin
         | PackageKind::Worker
         | PackageKind::Mascot
+        | PackageKind::Theme
         | PackageKind::Bundle => Err(Refusal::NOT_AN_EXTENSION),
     }
 }
