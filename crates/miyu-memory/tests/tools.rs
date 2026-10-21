@@ -15,12 +15,12 @@ use miyu_tool::{
 
 /// 一个假端口：记下她要做的，照预先定好的交回。
 #[derive(Default)]
-struct Fake {
-    saved: Mutex<Vec<Remember>>,
-    retired: Mutex<Vec<(MemoryId, String)>>,
-    searched: Mutex<Vec<(String, bool)>>,
-    refuse: Option<Refused>,
-    found: Searched,
+pub(crate) struct Fake {
+    pub(crate) saved: Mutex<Vec<Remember>>,
+    pub(crate) retired: Mutex<Vec<(MemoryId, String)>>,
+    pub(crate) searched: Mutex<Vec<(String, bool)>>,
+    pub(crate) refuse: Option<Refused>,
+    pub(crate) found: Searched,
 }
 
 impl MemoryPort for Fake {
@@ -59,11 +59,11 @@ impl MemoryPort for Fake {
     }
 }
 
-fn id(n: u64) -> MemoryId {
+pub(crate) fn id(n: u64) -> MemoryId {
     MemoryId::new(Seq::new(n).expect("从 1 起"))
 }
 
-fn at(day: u32) -> Timestamp {
+pub(crate) fn at(day: u32) -> Timestamp {
     Timestamp::parse(&format!("2026-10-{day:02}T08:00:00.000Z")).expect("合写法")
 }
 
@@ -73,7 +73,7 @@ fn tools() -> Vec<Arc<dyn Tool>> {
 }
 
 /// 用假端口 `port`（没有的是记忆没开）调一次 `name`。
-async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> Done {
+pub(crate) async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> Done {
     let tool = tools()
         .into_iter()
         .find(|tool| tool.spec().name == name)
@@ -88,7 +88,7 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
     tool.run(call, Progress::new(|_| {})).await
 }
 
-fn text(done: &Done) -> String {
+pub(crate) fn text(done: &Done) -> String {
     done.blocks
         .iter()
         .map(|block| match block {
@@ -182,12 +182,14 @@ async fn remembering_saves_and_says_the_id() {
                 text: "用户用 N 卡".into(),
                 replaces: None,
                 keywords: None,
+                who: None,
             },
             Remember {
                 class: "feedback".into(),
                 text: "别叫我主人，听着别扭".into(),
                 replaces: Some(id(1)),
                 keywords: None,
+                who: None,
             },
         ]
     );
@@ -227,7 +229,7 @@ async fn too_long_or_an_unknown_class_is_not_saved() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "Unknown class mood; use user, feedback, episode or reference."
+        "Unknown class mood; use user, feedback, episode, reference or person."
     );
     let done = call(
         Some(Arc::clone(&port)),
@@ -346,6 +348,7 @@ async fn searching_lists_memories_then_past_conversations() {
                     text: "用户用 N 卡".into(),
                     at: at(5),
                     retired: false,
+                    who: None,
                 },
                 FoundMemory {
                     id: id(1),
@@ -353,6 +356,7 @@ async fn searching_lists_memories_then_past_conversations() {
                     text: "用户用 A 卡".into(),
                     at: at(1),
                     retired: true,
+                    who: None,
                 },
             ],
             turns: vec![

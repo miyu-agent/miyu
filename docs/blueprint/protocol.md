@@ -760,8 +760,8 @@
 | `memory.list` | `class`（字符串）、`from`（会话编号：出处在它里面的）、`forgotten`（布尔，不写是 `false`）、`limit`（1 到 500，不写 50），都可以不写 | `{"memories": [...]}`，新的在前 |
 | `memory.search` | `query`（字符串，必写、不能是空白）、`forgotten`、`limit`（1 到 500，不写 10） | `{"memories": [...]}`，最相关的在前 |
 | `memory.turns` | `query`（字符串，必写、不能是空白）、`limit`（1 到 500，不写 10）（施工 R-12 下） | `{"turns": [{"at", "session", "text", "turn"}…]}`，最相关的在前（第 7 条） |
-| `memory.remember` | `class`（`user`、`feedback`、`episode`、`reference`，必写）、`text`（必写） | `{"id": "m<序号>"}` |
-| `memory.update` | `id`、`text`，必写 | `{"id"}`：新记的那一条 |
+| `memory.remember` | `class`（`user`、`feedback`、`episode`、`reference`、`person`，必写；`person` 施工 E-1 上）、`text`（必写）、`keywords`（施工 R-15 上）、`who`（`person` 必写，别的类不收，施工 E-1 上） | `{"id": "m<序号>"}` |
+| `memory.update` | `id` 必写；`text`、`keywords`、`who` 至少一个（施工 R-15 上、E-1 上） | `{"id"}`：新记的那一条（只写 `keywords` 的是原来那一条） |
 | `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
 | `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22）；跑在整理会话里的多 `"session"`（这一趟的整理会话，施工 D-2 上） |

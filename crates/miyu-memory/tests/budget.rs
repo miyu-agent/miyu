@@ -5,12 +5,13 @@
 //! 的边际份量 `remember` 149、`forget` 66、`memory_search` 70，合计 285 个 token，说明合计 1006 字节；预算是实测加一成，
 //! 314 个 token，合 1100 字节。施工 R-15 上 `remember` 多一格 `keywords`：2026-10-19 照同一个网关的
 //! `group/auto-deepseek-v4-1-flash` 量，`remember` 149 → 184，三件合计 320 个 token、1143 字节；预算照实测加一成改成 352 个
-//! token，合 1260 字节。加工具、改说明超了，重新量过再改这里和设计。
+//! token，合 1260 字节。施工 E-1 上 `remember` 多一类 `person`、一格 `who`：2026-10-21 照同一个网关量，184 → 225，三件合计
+//! 361 个 token、1298 字节；预算照实测加一成改成 397 个 token，合 1430 字节。加工具、改说明超了，重新量过再改这里和设计。
 
 use std::path::Path;
 
 /// 预算：字节，回车 `\r` 不算（Windows 上检出的可能多出回车）。
-const BUDGET: usize = 1260;
+const BUDGET: usize = 1430;
 
 #[test]
 fn the_memory_tool_face_stays_within_its_budget() {

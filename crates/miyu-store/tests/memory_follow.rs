@@ -25,6 +25,7 @@ fn saved(text: &str) -> MemoryEvent {
         about: None,
         venue: None,
         keywords: None,
+        who: None,
     })
 }
 

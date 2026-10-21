@@ -96,6 +96,7 @@ fn remember(home: &Home, memories: &[&Memory], ids: &mut BTreeMap<String, Memory
             about: None,
             venue: None,
             keywords: None,
+            who: None,
         };
         let appended = log
             .append(day(&memory.date), alice(), None, &MemoryEvent::Saved(saved))

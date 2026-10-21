@@ -21,6 +21,7 @@
     "remember/replaced": "{id} として記憶（{old} を置き換え）",
     "remember/too-long": "長すぎる（{chars} 文字）",
     "remember/unknown-class": "知らない分類 {class}",
+    "remember/no-who": "知り合いの記憶は誰のことか書いてください",
     "forget/retired": "{id} を忘れた",
     "memory_search/found": "記憶 {memories} 件、会話 {turns} 件",
     "memory_search/nothing": "見つからない",

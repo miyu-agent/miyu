@@ -94,7 +94,10 @@ impl Tagging {
                     &texts.line,
                     &[
                         ("id", &entry.id.to_string()),
-                        ("class", &entry.class),
+                        (
+                            "class",
+                            &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                        ),
                         ("date", &entry.at.local_date(self.offset)),
                         ("text", &entry.text.replace('\n', " ")),
                     ],

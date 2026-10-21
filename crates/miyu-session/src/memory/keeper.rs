@@ -12,7 +12,7 @@ use miyu_kernel::origin::{By, Module, Person};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::extract::Candidate;
 use miyu_recall::{
-    Cleared, Entry, Extracted, MemoryEvent, MemoryId, Retired, Saved, Skipped, Source,
+    Cleared, Entry, Extracted, MemoryEvent, MemoryId, PERSON, Retired, Saved, Skipped, Source,
 };
 use miyu_store::memory::{MemoryLog, Report};
 use miyu_store::recall::{Opened, Room};
@@ -89,11 +89,17 @@ impl Keeper {
         sources: Vec<Source>,
     ) -> Result<MemoryId, Refused> {
         let log = self.log()?;
-        // 改一条没给关键词的，带上旧的（施工 R-15 上）：说的还是那件事。
-        let carried = match remember.replaces {
-            Some(old) => self.current(&log, old)?.keywords,
-            None => None,
+        // 改一条没给关键词、是谁的，带上旧的（施工 R-15 上、E-1 上）：说的还是那件事、那个人。
+        let (carried, carried_who) = match remember.replaces {
+            Some(old) => {
+                let old = self.current(&log, old)?;
+                (old.keywords, old.who)
+            }
+            None => (None, None),
         };
+        let who = (remember.class == PERSON)
+            .then(|| remember.who.filter(|who| !who.is_empty()).or(carried_who))
+            .flatten();
         let (audience, venue) = self.listener.heard();
         let saved = Saved {
             class: remember.class,
@@ -108,6 +114,7 @@ impl Keeper {
                 Some(keywords) => Some(keywords),
                 None => carried,
             },
+            who,
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -169,6 +176,7 @@ impl Keeper {
                 about: candidate.about,
                 venue,
                 keywords: None,
+                who: candidate.who,
             };
             let stamp = Stamp {
                 at,

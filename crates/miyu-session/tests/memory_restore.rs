@@ -26,6 +26,7 @@ async fn it_can_be_restored_anywhere() {
         about: None,
         venue: Some(place(1)),
         keywords: None,
+        who: None,
     };
     log.append(now(), stranger(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

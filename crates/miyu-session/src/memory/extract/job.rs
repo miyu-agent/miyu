@@ -1,7 +1,7 @@
 //! 派出去抽的那一件活（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 6 到 8 款；施工 R-7 补从 `extract.rs` 挪出来）：照
 //! 定好的办法跳过、发、读、遮、记，记下以后看一眼够不够合并。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -75,9 +75,10 @@ impl Job {
                 turns,
                 more,
                 since,
+                names,
             } => {
                 let recorded = match self.dropped(text, since).await {
-                    Some(text) => self.ask(upto, text, turns).await,
+                    Some(text) => self.ask(upto, text, turns, &names).await,
                     None => false,
                 };
                 if recorded && more {
@@ -124,7 +125,10 @@ impl Job {
                     &texts.line,
                     &[
                         ("id", &entry.id.to_string()),
-                        ("class", &entry.class),
+                        (
+                            "class",
+                            &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                        ),
                         ("date", &entry.at.local_date(self.offset)),
                         ("text", &entry.text.replace('\n', " ")),
                     ],
@@ -141,7 +145,13 @@ impl Job {
     }
 
     /// 发、读、遮、记；交回记成了没有。
-    async fn ask(&self, upto: Seq, text: String, turns: BTreeSet<u64>) -> bool {
+    async fn ask(
+        &self,
+        upto: Seq,
+        text: String,
+        turns: BTreeSet<u64>,
+        names: &BTreeMap<String, Option<String>>,
+    ) -> bool {
         let started = Instant::now();
         let secrets = secrets(&self.config);
         let shapes = self.extraction.shapes.clone();
@@ -169,6 +179,7 @@ impl Job {
             .and_then(|answer| candidates(&answer.text, &turns, TEXT_CHARS));
         match answered {
             Ok(mut found) => {
+                super::place_people(&mut found, names);
                 for candidate in &mut found {
                     candidate.text = redact(&candidate.text, &secrets, &shapes);
                 }

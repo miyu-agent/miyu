@@ -48,6 +48,7 @@ fn save(home: &Home, text: &str, venue: Option<VenueId>) -> MemoryId {
         about: None,
         venue,
         keywords: None,
+        who: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")
@@ -135,6 +136,7 @@ async fn everywhere_recalls_everything() {
         text: "小林下周考试".into(),
         replaces: None,
         keywords: None,
+        who: None,
     };
     let id = first.save(stamp(), remember, Vec::new()).expect("记得下");
     let (log, _) = home.logs.open(&room()).expect("开得了");

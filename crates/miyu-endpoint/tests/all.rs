@@ -109,6 +109,7 @@ mod memory_installed;
 mod memory_keywords;
 mod memory_meaning;
 mod memory_no_persona;
+mod memory_person;
 mod memory_restore;
 mod memory_scope;
 mod memory_turns;

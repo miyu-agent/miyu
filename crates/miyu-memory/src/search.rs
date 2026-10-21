@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
+use miyu_recall::shown_class;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{Call, Done, MEMORY_SEARCH, Progress, Running, Searched, Spec, Tool};
 
@@ -72,11 +73,12 @@ impl Tool for Search {
                     &all.memory
                 };
                 let (id, date) = (memory.id.to_string(), memory.at.local_date(call.offset));
+                let class = shown_class(&memory.class, memory.who.as_deref());
                 lines.push(line(
                     template,
                     &[
                         ("id", &id),
-                        ("class", &memory.class),
+                        ("class", &class),
                         ("date", &date),
                         ("text", &memory.text),
                     ],
@@ -125,6 +127,9 @@ fn detail(found: &Searched, offset: UtcOffset) -> serde_json::Value {
                 "date": memory.at.local_date(offset),
                 "text": memory.text,
             });
+            if let Some(who) = &memory.who {
+                item["who"] = serde_json::Value::String(who.clone());
+            }
             if memory.retired {
                 item["forgotten"] = serde_json::Value::Bool(true);
             }

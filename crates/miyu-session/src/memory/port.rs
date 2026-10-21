@@ -239,6 +239,7 @@ impl Inner {
                 text: entry.text,
                 at: entry.at,
                 retired: entry.retired.is_some(),
+                who: entry.who,
             })
             .collect();
         let seen = (&self.calls.session, self.compacted);

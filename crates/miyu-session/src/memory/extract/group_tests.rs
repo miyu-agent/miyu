@@ -19,6 +19,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         said: (1..=5).map(|n| (seq(n), Voice::Line)).collect(),
         budget: Some(budget),
         limit: None,
+        names: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -54,6 +55,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         said: (1..=5).map(|n| (seq(n), Voice::Line)).collect(),
         budget: Some(4096),
         limit: Some(2),
+        names: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -74,6 +76,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         said: [(seq(1), Voice::Line)].into_iter().collect(),
         budget: Some(4096),
         limit: None,
+        names: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,

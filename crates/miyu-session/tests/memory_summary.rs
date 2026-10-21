@@ -44,6 +44,7 @@ fn save(
         about: None,
         venue: None,
         keywords: None,
+        who: None,
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))
         .expect("记得下")

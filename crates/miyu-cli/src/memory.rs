@@ -26,8 +26,9 @@ use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{offset, say};
 
-/// 出厂认识的四类（`memory.md` 的记忆日志）：`add --class` 只收它们，`list --class` 照它们挑。
-const CLASSES: [&str; 4] = ["user", "feedback", "episode", "reference"];
+/// 出厂认识的几类（`memory.md` 的记忆日志；`person` 是施工 E-1 上的认识的人）：`add --class` 只收它们，`list --class`
+/// 照它们挑。
+const CLASSES: [&str; 5] = ["user", "feedback", "episode", "reference", "person"];
 
 /// `miyu memory` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。选项写在子命令前后都行。
 #[derive(Debug, Clone, Args)]
@@ -53,6 +54,9 @@ pub struct Memory {
     /// `add`、`edit`：只用来检索的关键词，逗号隔开（施工 R-15 上）；`edit` 写空的是去掉。
     #[arg(long, global = true, value_name = "WORDS")]
     pub keywords: Option<String>,
+    /// `add`、`edit`：认识的人那一类说的是谁（施工 E-1 上）：平台编号（`qq:10086`）或名字；`add --class person` 要写。
+    #[arg(long, global = true, value_name = "WHO")]
+    pub who: Option<String>,
     /// `list`、`search` 输出的格式。
     #[arg(long, global = true, value_enum, default_value_t = Format::Text)]
     pub format: Format,
@@ -79,8 +83,8 @@ pub enum MemoryCommand {
     Edit {
         /// 改哪一条，`m<序号>`。
         id: String,
-        /// 改成什么；不写的只换 `--keywords`（两样都没写的是少了参数）。
-        #[arg(num_args = 0.., required_unless_present = "keywords")]
+        /// 改成什么；不写的只换 `--keywords`、`--who`（都没写的是少了参数）。
+        #[arg(num_args = 0.., required_unless_present_any = ["keywords", "who"])]
         words: Vec<String>,
     },
     /// 忘掉一条。
@@ -202,6 +206,19 @@ async fn act(
 ) -> Result<(), u8> {
     let (args, language) = (&plan.args, &plan.language);
     let command = args.command.clone().unwrap_or(MemoryCommand::List);
+    // 认识的人要写是谁（施工 E-1 上）：这里就说清，不让核心回一句泛泛的「参数错误。」。
+    let who = args
+        .who
+        .as_deref()
+        .map(str::trim)
+        .filter(|who| !who.is_empty());
+    if matches!(command, MemoryCommand::Add { .. })
+        && args.class.as_deref() == Some("person")
+        && who.is_none()
+    {
+        say(err, language.memory_needs_who());
+        return Err(exit::MISUSE);
+    }
     let mut params = room(args);
     let (method, extra) = match &command {
         MemoryCommand::List => (
@@ -214,13 +231,13 @@ async fn act(
         ),
         MemoryCommand::Add { words } => (
             "memory.remember",
-            json!({"class": args.class.as_deref().unwrap_or("user"), "text": words.join(" "), "keywords": args.keywords}),
+            json!({"class": args.class.as_deref().unwrap_or("user"), "text": words.join(" "), "keywords": args.keywords, "who": args.who}),
         ),
         MemoryCommand::Edit { id, words } => {
             let text = (!words.is_empty()).then(|| words.join(" "));
             (
                 "memory.update",
-                json!({"id": id, "text": text, "keywords": args.keywords}),
+                json!({"id": id, "text": text, "keywords": args.keywords, "who": args.who}),
             )
         }
         MemoryCommand::Forget { id } => ("memory.forget", json!({"id": id, "why": args.why})),

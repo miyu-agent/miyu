@@ -1,5 +1,6 @@
 //! 一条记忆印成一行（`docs/blueprint/cli/memory.md`「样子」）：`<编号>  <日期>  <正文>`，编号照最长的那个对齐；日期照这台
-//! 机器此刻的时区换成那一天；作废的后面接一截。只放人要的：出处、谁记的、类不印（2026-10-08 项目主人定的设计原则）。
+//! 机器此刻的时区换成那一天；作废的后面接一截。只放人要的：出处、谁记的、类不印（2026-10-08 项目主人定的设计原则）。认识的人
+//! 那一类正文前面写是谁（施工 E-1 上）：`<编号>  <日期>  [<是谁>] <正文>`。
 
 use serde_json::Value;
 
@@ -22,7 +23,11 @@ pub(crate) fn listed(memories: &[Value], offset: UtcOffset, language: &Language)
             let day =
                 Timestamp::parse(at).map_or_else(|_| at.to_string(), |at| at.local_date(offset));
             let text = memory["text"].as_str().unwrap_or_default();
-            let mut row = format!("{:width$}  {day}  {text}", id(memory));
+            let mut row = match memory["who"].as_str() {
+                // 认识的人那一类先写是谁（施工 E-1 上）。
+                Some(who) => format!("{:width$}  {day}  [{who}] {text}", id(memory)),
+                None => format!("{:width$}  {day}  {text}", id(memory)),
+            };
             if let Some(why) = memory["retired"].as_str() {
                 row.push_str(&language.forgotten_mark(why));
             }

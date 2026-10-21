@@ -14,7 +14,7 @@
 //!   key（配置里引用的密钥的原文、常见的写法），交回来的再遮一遍。
 //! - **出错**：这一段不往前挪，下次闲了再抽；同一段连着三次不成的跳过，记 `WARN memory extraction failed`。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Mutex, PoisonError};
 
@@ -24,6 +24,8 @@ use miyu_kernel::assemble::Spoken;
 use miyu_kernel::id::{Seq, TurnId};
 use miyu_kernel::template::{Template, escape};
 use miyu_kernel::time::{Timestamp, UtcOffset};
+use miyu_recall::PERSON;
+use miyu_recall::extract::Candidate;
 use miyu_recall::redact::KeyShapes;
 use miyu_store::blob::Blobs;
 use miyu_tool::load::{self, LoadError, say};
@@ -300,6 +302,8 @@ pub(crate) enum Plan {
         more: bool,
         /// 这一段第一句话的时刻：这以后忘掉的接在后面（施工 R-6 修）。
         since: Timestamp,
+        /// 这一段里说话的人怎么叫（施工 E-1 上，[`Voices::names`]）连同主人的称呼：抽出来的认识的人照它换成平台编号。
+        names: BTreeMap<String, Option<String>>,
     },
 }
 
@@ -352,12 +356,34 @@ pub(crate) fn plan(
     }
     let owner = super::owner::owner(name, &texts.unnamed);
     let instruction = say(&texts.instruction, &[("owner", &owner)]);
+    let mut names = voices.names.clone();
+    names.insert(owner, None);
     Plan::Ask {
         upto,
         text: format!("{}\n{}", instruction.trim_end(), blocks.join(GAP)),
         turns,
         more: upto != last,
         since: first.at,
+        names,
+    }
+}
+
+/// 抽出来的认识的人说的是谁（施工 E-1 上，设计 42 PN2）：模型照这一段写的名字，说话的人里有他的换成平台编号（`names`，
+/// [`Plan::Ask`] 的那一格）；说的是主人的改记成 `user`、不写是谁；对不上的照名字留着。别的类不带是谁。
+pub(crate) fn place_people(found: &mut [Candidate], names: &BTreeMap<String, Option<String>>) {
+    for candidate in found {
+        if candidate.class != PERSON {
+            candidate.who = None;
+            continue;
+        }
+        match candidate.who.as_deref().and_then(|who| names.get(who)) {
+            Some(Some(id)) => candidate.who = Some(id.clone()),
+            Some(None) => {
+                candidate.class = "user".to_string();
+                candidate.who = None;
+            }
+            None => {}
+        }
     }
 }
 

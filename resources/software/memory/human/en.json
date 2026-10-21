@@ -21,6 +21,7 @@
     "remember/replaced": "Saved as {id}, replacing {old}",
     "remember/too-long": "Too long, {chars} characters",
     "remember/unknown-class": "Unknown class {class}",
+    "remember/no-who": "Say who a person memory is about",
     "forget/retired": "Forgot {id}",
     "memory_search/found": "Memories: {memories}, past turns: {turns}",
     "memory_search/nothing": "Nothing found",

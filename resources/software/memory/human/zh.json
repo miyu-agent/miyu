@@ -21,6 +21,7 @@
     "remember/replaced": "记成 {id}，替换 {old}",
     "remember/too-long": "太长，{chars} 个字",
     "remember/unknown-class": "不认识的类 {class}",
+    "remember/no-who": "认识的人要写是谁",
     "forget/retired": "忘掉了 {id}",
     "memory_search/found": "找到 {memories} 条记忆、{turns} 段对话",
     "memory_search/nothing": "没找到",

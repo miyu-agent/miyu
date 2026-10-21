@@ -258,7 +258,10 @@ fn render(texts: &RecallTexts, entries: &[&Entry], offset: UtcOffset) -> Option<
             &texts.line,
             &[
                 ("id", &id),
-                ("class", &entry.class),
+                (
+                    "class",
+                    &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                ),
                 ("date", &date),
                 ("text", &text),
             ],

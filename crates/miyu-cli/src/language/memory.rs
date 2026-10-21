@@ -109,6 +109,14 @@ impl Language {
         parts.join(if zh { "，" } else { ", " })
     }
 
+    /// `add --class person` 没写 `--who`（施工 E-1 上）：认识的人要写是谁。
+    pub(crate) fn memory_needs_who(&self) -> &'static str {
+        match self {
+            Language::Chinese => "认识的人要写 --who（平台编号或名字）。",
+            Language::English => "A person memory needs --who (a platform id or a name).",
+        }
+    }
+
     /// `dream` 第一次按 Ctrl+C（施工 R-23）：在叫停，再按一次直接退。
     pub(crate) fn dream_stopping(&self) -> &'static str {
         match self {

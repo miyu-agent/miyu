@@ -36,12 +36,12 @@
 
 ## 一条记忆
 
-`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords"}`：
+`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`：
 
 | 名字 | 说明 |
 |---|---|
 | `id` | `m<序号>` |
-| `class` | `user`（关于人）、`feedback`（人对她的要求）、`episode`（发生过的事）、`reference`（资料在哪） |
+| `class` | `user`（关于主人）、`feedback`（人对她的要求）、`episode`（发生过的事）、`reference`（资料在哪）、`person`（她认识的别人，界面上叫「认识的人」） |
 | `text` | 那一条，最多 120 个字 |
 | `by` | `person`（人记的）或 `tool`（她记的） |
 | `at` | 记下的时刻 |
@@ -50,6 +50,7 @@
 | `used`、`used_at` | 用到几次、最近一次的时刻 |
 | `venue` | 在哪个场所说的，本机的 `null` |
 | `keywords` | 只用来检索的关键词（一行、逗号隔开，最多 200 字），没有的 `null`：照它也搜得到、想得起，她看不到这一行 |
+| `who` | `person` 那一类说的是谁：平台编号（`qq:10086`）或名字；别的类是 `null` |
 
 ## `memory.list`、`memory.search`
 
@@ -68,8 +69,8 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `memory.remember` | `class`、`text`（都必写）；`keywords` 可以不写 | `{"id"}` |
-| `memory.update` | `id`，`text`、`keywords` 至少写一个 | `{"id"}`：写了 `text` 的是改完的新那一条（旧的作废，没写 `keywords` 的关键词带过去）；只写 `keywords` 的是同一条，编号不变；`keywords` 写空的是去掉 |
+| `memory.remember` | `class`、`text`（都必写）；`keywords` 可以不写；`who`：`class` 是 `person` 的必写，别的类写了不收 | `{"id"}` |
+| `memory.update` | `id`，`text`、`keywords`、`who` 至少写一个 | `{"id"}`：写了 `text` 的是改完的新那一条（旧的作废，没写 `keywords`、`who` 的带过去）；只写 `keywords` 的是同一条，编号不变；只写 `who` 的照旧文新记一条；`keywords` 写空的是去掉 |
 | `memory.forget` | `id`（可带 `why`）；或者 `clear`：`session`（清掉这个会话记下的，这时 `session` 必写）、`me`（清空整间） | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id` | `{}`：作废了的那一条重新算数 |
 
@@ -79,7 +80,7 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 字是空的；`class` 不对；`id` 写法不对；`id`、`clear` 不是正好一个；`memory.update` 的 `text`、`keywords` 都没写 |
+| `bad_params`（`-32602`） | 字是空的；`class` 不对；`person` 没写 `who`；`id` 写法不对；`id`、`clear` 不是正好一个；`memory.update` 的 `text`、`keywords`、`who` 都没写 |
 | `memory_too_long` | 正文超过 120 个字、关键词超过 200 个字，`data.chars`、`data.limit`，`data.field` 是 `text` 或 `keywords` |
 | `unknown_memory` | 没有这一条 |
 | `memory_not_current` | 那一条已经改掉、作废、清掉了 |

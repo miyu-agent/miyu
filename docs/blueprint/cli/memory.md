@@ -20,8 +20,8 @@
 |---|---|---|
 | `list`（不写子命令也是它） | 列出来，新的在前 | `memory.list`，带 `forgotten`、`class` |
 | `search <词>` | 搜，最相关的在前 | `memory.search`，带 `query`、`forgotten` |
-| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user`；带 `--keywords` 的另带 `keywords`（施工 R-15 上） |
-| `edit <编号> [<话>]` | 改一条 | `memory.update`；带 `--keywords` 的另带 `keywords`；不写话的只换关键词，编号不变（施工 R-15 上） |
+| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user`；带 `--keywords` 的另带 `keywords`（施工 R-15 上）；带 `--who` 的另带 `who`（`--class person` 要写：没写的、只有空白的不发，标准错误说「认识的人要写 --who（平台编号或名字）。」，退出码 2，施工 E-1 上） |
+| `edit <编号> [<话>]` | 改一条 | `memory.update`；带 `--keywords`、`--who` 的另带 `keywords`、`who`；不写话的只换关键词（编号不变）、是谁（新编号）（施工 R-15 上、E-1 上） |
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
 | `clear me` | 清掉她关于你的全部记忆 | `memory.forget`，`clear: "me"` |
@@ -32,9 +32,10 @@
 | `--persona <编号>` | 哪个人格的记忆；不写照核心的默认人格 |
 | `-s`、`--session <编号>` | 这个会话用的那一份记忆；和 `--persona` 只能写一个 |
 | `--forgotten` | `list`、`search`：连作废的一起 |
-| `--class user\|feedback\|episode\|reference` | `list`：只要这一类；`add`：记成这一类，不写是 `user`；别的值参数不对 |
+| `--class user\|feedback\|episode\|reference\|person` | `list`：只要这一类；`add`：记成这一类，不写是 `user`；`person` 是认识的人（施工 E-1 上）；别的值参数不对 |
 | `--why <原因>` | `forget`：为什么忘 |
 | `--keywords <词>` | `add`、`edit`：只用来检索的关键词，逗号隔开；`edit` 写空的是去掉（施工 R-15 上） |
+| `--who <是谁>` | `add`、`edit`：认识的人说的是谁，平台编号（`qq:10086`）或名字（施工 E-1 上） |
 | `--format text\|json` | `list`、`search`：`json` 原样印核心回的那一串，给脚本 |
 
 - 几个词用一个空格连起来（照 `miyu rename`）；以 `-` 开头的写在 `--` 后面。
@@ -47,7 +48,7 @@
 2. **找哪一间**：写了 `--persona` 的带 `persona`，写了 `-s` 的带 `session`，都不写的都不带（核心照默认人格；没设默认人格的回 `memory_unavailable`，照原话说）。`clear session` 的会话：写了的照写的；没写的照 `-s`；都没写的照 `miyu rename` 找上一次 `miyu ask` 开的那个，一个都没有说「还没有 miyu ask 开过的会话」，退出码 1。
 3. **发**：照上面的表。
 4. **印**（标准输出）：
-   - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「还没有记忆。」，`search` 说「没找到。」。
+   - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；认识的人那一类正文前面写 `[<是谁>] `（施工 E-1 上）；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「还没有记忆。」，`search` 说「没找到。」。
    - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条，用时 <用时>。」，是 0 的那一项不写、都是 0 的写「没有要改的」，摘要换了的多「，摘要已更新」，一条都没看的「无需整理，用时 <用时>。」（和 `/dream` 的回执同一句，R-22 三补起也是 0 的不写、末尾写用时：用时从发出 `memory.dream` 量到收到回应，照运行状态行的读秒写；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「整理已中断：检查 <几> 条，修改 <几> 条，作废 <几> 条，其余下次再整理。」，一批都没合完的「整理已中断，下次再整理。」（和 `/dream` 叫停了的回执同一句），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
 5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `memory.*`）。太长的（`memory_too_long`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.chars`、`data.limit` 说「太长了：这一条 121 个字，一条最多 120 个字。」。核心给了为什么的（`data.message`：整理没成的 `dream_failed`，施工 R-7 修，验收手册待定 10），原话去掉句号接「：」和它（英文的一句，照原样），同 `miyu kb` 挂不上的目录：「整理记忆失败：model request failed: HTTP 401」。核心断开、请求写不出去照 `miyu rename`。
 
@@ -57,6 +58,7 @@
 m12  2026-10-08  用户住在上海
 m8   2026-10-07  回答要短，先说结论
 m3   2026-10-07  用户养了两只猫（已作废：试一下）
+m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 ```
 
 编号照最长的那个对齐，后面空两格。
@@ -67,7 +69,7 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
 |---|---|
 | 0 | 做成了，列、搜一条都没有的也是 |
 | 1 | 找不到数据根、连不上核心；被拒绝；核心断开；`clear session` 一个会话都没有 |
-| 2 | 参数不对：子命令写错、`--persona` 和 `-s` 一起写、`--class` 写错、少了编号或话（`cli/main.md`） |
+| 2 | 参数不对：子命令写错、`--persona` 和 `-s` 一起写、`--class` 写错、少了编号或话（`cli/main.md`）；`add --class person` 没写 `--who`（施工 E-1 上） |
 
 ### 给人看的字
 
@@ -111,10 +113,13 @@ m3   2026-10-07  用户养了两只猫（已作废：试一下）
       --persona <编号>    哪个人格的记忆；不写是默认人格
   -s, --session <编号>    这个会话用的那一份记忆
       --forgotten         list、search：连忘掉的一起
-      --class user|feedback|episode|reference
-                          list：只要这一类；add：记成这一类，不写是 user
+      --class user|feedback|episode|reference|person
+                          list：只要这一类；add：记成这一类，不写是 user；
+                          person 是认识的人
       --why <原因>        forget：为什么忘
       --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
+      --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
+                          add --class person 要写
       --format text|json  list、search：json 给脚本
   -h, --help              印帮助
 ```
@@ -146,10 +151,13 @@ Options:
       --persona <id>      Whose memory; default is the default persona
   -s, --session <id>      The memory this session uses
       --forgotten         list, search: include forgotten ones
-      --class user|feedback|episode|reference
-                          list: only this class; add: save as it (default user)
+      --class user|feedback|episode|reference|person
+                          list: only this class; add: save as it (default
+                          user); person is someone the AI knows
       --why <reason>      forget: why
       --keywords <words>  add, edit: comma-separated words to find it by
+      --who <who>         add, edit: who a person memory is about, a platform
+                          id or a name; add --class person needs it
       --format text|json  list, search: json for scripts
   -h, --help              Print help
 ```

@@ -51,7 +51,7 @@ pub type Pending<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 /// 记一条要的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Remember {
-    /// 类：四类之一，工具查过。
+    /// 类：出厂几类之一（`miyu_recall::CLASSES`），工具查过。
     pub class: String,
     /// 正文：工具查过长度。
     pub text: String,
@@ -59,6 +59,8 @@ pub struct Remember {
     pub replaces: Option<MemoryId>,
     /// 只用来检索的关键词（施工 R-15 上）：整理过的（`miyu_recall::keywords_of`）；没有的，改一条时带上旧的。
     pub keywords: Option<String>,
+    /// 说的是谁（施工 E-1 上）：认识的人那一类（`person`）才看，去掉了前后空白；没有的，改一条时带上旧的。
+    pub who: Option<String>,
 }
 
 /// 记不下、作废不了。
@@ -94,6 +96,8 @@ pub struct FoundMemory {
     pub at: Timestamp,
     /// 作废了（`forgotten` 时才会有）。
     pub retired: bool,
+    /// 说的是谁（施工 E-1 上）：认识的人那一类才有。
+    pub who: Option<String>,
 }
 
 /// 搜到的一轮以前的对话。

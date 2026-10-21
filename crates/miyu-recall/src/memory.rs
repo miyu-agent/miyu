@@ -79,7 +79,19 @@ pub fn indexed(text: &str, keywords: Option<&str>) -> String {
 
 /// 出厂认识的四类（2026-10-07 项目主人定）：关于你、你要她怎样、经历、长期有效的事实。日志里别的类原样留着、照常列出；
 /// 她经工具记的照这张名单查（R-3 中）。
-pub const CLASSES: [&str; 4] = ["user", "feedback", "episode", "reference"];
+pub const CLASSES: [&str; 5] = ["user", "feedback", "episode", "reference", "person"];
+
+/// 认识的人那一类（施工 E-1 上，设计 42）：一条记一件关于某个人的事，带着是谁（[`Saved::who`]）。主人的事照旧是 `user`。
+pub const PERSON: &str = "person";
+
+/// 一条记忆在给她看的那一行里的类（施工 E-1 上）：认识的人那一类后面接是谁（`person qq:10086`），别的照类。
+#[must_use]
+pub fn shown_class(class: &str, who: Option<&str>) -> String {
+    match who {
+        Some(who) if class == PERSON => format!("{class} {who}"),
+        _ => class.to_string(),
+    }
+}
 
 /// 一条记忆的编号：它在记忆日志里的序号前面加 `m`，例如 `m42`。从序号算，不写进 `body`。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -159,6 +171,10 @@ pub struct Saved {
     /// 只用来检索的关键词（施工 R-15 上）：一行，逗号隔开，最多 [`KEYWORD_CHARS`] 字；没有的不写（以前记的都没有）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keywords: Option<String>,
+    /// 说的是谁（施工 E-1 上，设计 42 PN2）：[`PERSON`] 那一类写，平台上的人是平台编号（`qq:10086`），没有平台号的是名字；别的
+    /// 类、以前记的没有，不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub who: Option<String>,
 }
 
 /// `ext.memory.tagged` 的 `body`：只换一条的关键词，编号不变（施工 R-15 上）。空的是去掉。

@@ -17,6 +17,7 @@ pub(crate) mod slash;
 #[cfg(test)]
 mod tests;
 mod turns;
+mod write;
 
 use std::sync::Arc;
 
@@ -25,7 +26,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::origin::By;
-use miyu_recall::{CLASSES, MemoryId};
+use miyu_recall::MemoryId;
 use miyu_session::{
     ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Memory, Stamp, Turn,
     Using, Vectors,
@@ -39,8 +40,8 @@ use crate::personas;
 use crate::refusal::Refusal;
 use crate::sessions::{admin, now};
 
-use checks::{checked, keywords, limit};
-use params::{Forget, List, Restore, Search, Update, Where};
+use checks::{checked, limit};
+use params::{Forget, List, Restore, Search, Where};
 use shown::shown_all;
 
 impl Core {
@@ -93,8 +94,8 @@ pub(crate) async fn call(
         "memory.list" => list(core, read(params)?).await,
         "memory.search" => search(core, read(params)?).await,
         "memory.turns" => turns::turns(core, read(params)?).await,
-        "memory.remember" => remember(core, stamp(core, id), read(params)?).await,
-        "memory.update" => update(core, stamp(core, id), read(params)?).await,
+        "memory.remember" => write::remember(core, stamp(core, id), read(params)?).await,
+        "memory.update" => write::update(core, stamp(core, id), read(params)?).await,
         "memory.forget" => forget(core, stamp(core, id), read(params)?).await,
         "memory.restore" => restore(core, stamp(core, id), read(params)?).await,
         "memory.dream_stop" => dream::stop(core, params).await,
@@ -122,6 +123,7 @@ pub(crate) async fn remember_in(
         text: text.clone(),
         replaces: None,
         keywords: None,
+        who: None,
     };
     let stamp = Stamp {
         at: now(),
@@ -206,48 +208,6 @@ async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
         .await?;
     }
     Ok(json!({"memories": shown_all(&found, &used)}))
-}
-
-async fn remember(
-    core: &Arc<Core>,
-    stamp: Stamp,
-    params: params::Remember,
-) -> Result<Value, Refusal> {
-    if !CLASSES.contains(&params.class.as_str()) {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    let keywords = params.keywords.as_deref().map(keywords).transpose()?;
-    let remember = Remember {
-        class: params.class,
-        text: checked(&params.text)?,
-        replaces: None,
-        keywords: keywords.filter(|keywords| !keywords.is_empty()),
-    };
-    let keeper = find(core, params.at).await?;
-    let id = blocking({
-        let keeper = keeper.clone();
-        move || keeper.save(stamp, remember, Vec::new())
-    })
-    .await?;
-    fill(core, keeper).await;
-    Ok(json!({"id": id.to_string()}))
-}
-
-async fn update(core: &Arc<Core>, stamp: Stamp, params: Update) -> Result<Value, Refusal> {
-    let id = memory_id(&params.id)?;
-    let text = params.text.as_deref().map(checked).transpose()?;
-    let keywords = params.keywords.as_deref().map(keywords).transpose()?;
-    if text.is_none() && keywords.is_none() {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    let keeper = find(core, params.at).await?;
-    let id = blocking({
-        let keeper = keeper.clone();
-        move || keeper.update(stamp, id, text, keywords)
-    })
-    .await?;
-    fill(core, keeper).await;
-    Ok(json!({"id": id.to_string()}))
 }
 
 async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value, Refusal> {

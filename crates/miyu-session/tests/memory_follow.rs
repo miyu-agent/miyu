@@ -37,6 +37,7 @@ fn said_in(home: &Home, n: u32, text: &str) {
             about: None,
             venue: Some(place(n)),
             keywords: None,
+            who: None,
         }),
     );
 }
@@ -165,6 +166,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
             about: None,
             venue: None,
             keywords: None,
+            who: None,
         })
     };
     append(&home, alice(), from(&cleared_one));
@@ -210,6 +212,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
             about: None,
             venue: None,
             keywords: None,
+            who: None,
         }),
     );
     save(&home, "人记的");

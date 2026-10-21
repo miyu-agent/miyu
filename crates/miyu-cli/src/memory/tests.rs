@@ -39,6 +39,18 @@ fn one_line_each_ids_aligned_and_forgotten_ones_marked() {
     );
 }
 
+/// 认识的人那一类正文前面写是谁（施工 E-1 上）。
+#[test]
+fn a_person_shows_who() {
+    let mut person = memory("m4", "2026-10-21T03:00:00.000Z", "小林用 RX 7800 XT", None);
+    person["class"] = json!("person");
+    person["who"] = json!("qq:2");
+    assert_eq!(
+        listed(&[person], UtcOffset::UTC, &Language::Chinese),
+        ["m4  2026-10-21  [qq:2] 小林用 RX 7800 XT"]
+    );
+}
+
 #[test]
 fn the_day_follows_the_time_zone() {
     let late = [memory("m1", "2026-10-07T20:30:00.000Z", "晚上记的", None)];

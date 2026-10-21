@@ -17,9 +17,12 @@
       --persona <编号>    哪个人格的记忆；不写是默认人格
   -s, --session <编号>    这个会话用的那一份记忆
       --forgotten         list、search：连忘掉的一起
-      --class user|feedback|episode|reference
-                          list：只要这一类；add：记成这一类，不写是 user
+      --class user|feedback|episode|reference|person
+                          list：只要这一类；add：记成这一类，不写是 user；
+                          person 是认识的人
       --why <原因>        forget：为什么忘
       --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
+      --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
+                          add --class person 要写
       --format text|json  list、search：json 给脚本
   -h, --help              印帮助

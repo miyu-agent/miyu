@@ -31,6 +31,8 @@ pub struct Entry {
     pub venue: Option<VenueId>,
     /// 只用来检索的关键词（施工 R-15 上）；没有的没有。
     pub keywords: Option<String>,
+    /// 说的是谁（施工 E-1 上）：认识的人那一类才有。
+    pub who: Option<String>,
     /// 记下的时刻。
     pub at: Timestamp,
     /// 谁记的。
@@ -181,6 +183,7 @@ impl MemoryBook {
                         about: saved.about,
                         venue: saved.venue,
                         keywords: saved.keywords,
+                        who: saved.who,
                         replaces: saved.replaces,
                         at: event.at,
                         by: event.by.clone(),

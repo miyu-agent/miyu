@@ -48,6 +48,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         about: None,
         venue: None,
         keywords: None,
+        who: None,
     }
 }
 

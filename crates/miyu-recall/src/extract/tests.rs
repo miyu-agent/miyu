@@ -16,6 +16,7 @@ fn the_object_is_found_inside_extra_words_and_fences() {
             text: "用户养了一只猫".into(),
             turn: 5,
             about: Some("2026-10-09".into()),
+            who: None,
         }]
     );
     assert_eq!(
@@ -72,4 +73,27 @@ fn an_unreadable_answer_fails_as_a_whole() {
     ] {
         assert!(candidates(answer, &turns(), 120).is_err(), "{answer}");
     }
+}
+
+/// 认识的人那一类带是谁（施工 E-1 上）：去掉前后空白，空的当没写；别的类写了也不收。
+#[test]
+fn a_person_says_who_and_other_classes_do_not() {
+    let answer = r#"{"memories": [
+        {"class": "person", "text": "小林用 RX 7800 XT", "turn": 5, "who": " 小林 "},
+        {"class": "person", "text": "没说是谁", "turn": 5, "who": "  "},
+        {"class": "user", "text": "主人养猫", "turn": 9, "who": "小林"}
+    ]}"#;
+    let who: Vec<(String, Option<String>)> = candidates(answer, &turns(), 120)
+        .expect("读得成")
+        .into_iter()
+        .map(|candidate| (candidate.class, candidate.who))
+        .collect();
+    assert_eq!(
+        who,
+        [
+            ("person".to_string(), Some("小林".to_string())),
+            ("person".to_string(), None),
+            ("user".to_string(), None),
+        ]
+    );
 }

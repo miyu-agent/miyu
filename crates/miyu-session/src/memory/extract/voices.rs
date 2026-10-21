@@ -30,12 +30,37 @@ pub(crate) struct Voices {
     pub(crate) budget: Option<usize>,
     /// 群会话的群聊近况最多几条（施工 O-13 再补）：每一轮也最多带这么多句。没写的、不是群会话的没有。
     pub(crate) limit: Option<usize>,
+    /// 这一段里说话的人怎么叫（施工 E-1 上）：名字、平台编号对着他的平台编号；主人（`Owner`、对应表认出的本人在群里的名字）
+    /// 对着没有。抽出来的认识的人照它把名字换成平台编号。
+    pub(crate) names: BTreeMap<String, Option<String>>,
 }
 
 impl Voices {
     /// 照这一段的事件 `events` 认：人（主人）说的写 `Owner`，平台上的人写他在场所里的名字、没有的写平台编号；`group` 是群
     /// 会话的群聊近况预算，群会话里人说的都原样放。
     pub(crate) fn of(events: &[Event], group: Option<usize>) -> Voices {
+        let mut names = BTreeMap::from([(OWNER.to_string(), None)]);
+        for event in events {
+            let Body::MessageUser(message) = &event.body else {
+                continue;
+            };
+            let name = message.venue.as_ref().and_then(|venue| venue.name.clone());
+            match &event.by {
+                By::External(external) => {
+                    let id = external.id.as_str().to_string();
+                    if let Some(name) = name {
+                        names.insert(name, Some(id.clone()));
+                    }
+                    names.insert(id.clone(), Some(id));
+                }
+                By::Person(_) => {
+                    if let Some(name) = name {
+                        names.insert(name, None);
+                    }
+                }
+                _ => {}
+            }
+        }
         let said = events
             .iter()
             .filter_map(|event| {
@@ -61,6 +86,10 @@ impl Voices {
             said,
             budget: group,
             limit: None,
+            names,
         }
     }
 }
+
+/// 拼给抽取的那一段里主人那一行的记号（`extract/owner.txt`）。
+const OWNER: &str = "Owner";

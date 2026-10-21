@@ -316,6 +316,7 @@ async fn measure_the_eval_set() {
             text: memory.text.clone(),
             replaces: None,
             keywords: None,
+            who: None,
         };
         let id = keeper
             .save(stamp.clone(), remember, Vec::new())

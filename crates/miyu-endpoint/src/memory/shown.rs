@@ -38,5 +38,6 @@ fn shown(entry: &Entry) -> Value {
         "retired": entry.retired,
         "venue": entry.venue,
         "keywords": entry.keywords,
+        "who": entry.who,
     })
 }

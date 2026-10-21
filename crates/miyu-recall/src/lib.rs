@@ -31,8 +31,9 @@ pub mod vector;
 pub use fuse::{FLOOR, fuse, fuse_above};
 pub use memory::{
     CLASSES, Cleared, Entry, Extracted, INTERRUPTED, KEYWORD_CHARS, MemoryBook, MemoryEvent,
-    MemoryId, MergeFailed, Merged, Merging, Restored, RetireKind, Retired, STOPPED, Saved, Skipped,
-    Source, Summary, Swept, Tagged, from_event, indexed, keywords_of, to_event,
+    MemoryId, MergeFailed, Merged, Merging, PERSON, Restored, RetireKind, Retired, STOPPED, Saved,
+    Skipped, Source, Summary, Swept, Tagged, from_event, indexed, keywords_of, shown_class,
+    to_event,
 };
 pub use terms::{MAX_QUERY_TERMS, index_terms, query};
 pub use turns::{Change, TurnFeed, TurnItem, key, replay};

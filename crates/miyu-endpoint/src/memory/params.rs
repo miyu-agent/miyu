@@ -64,6 +64,9 @@ pub(super) struct Remember {
     /// 只用来检索的关键词（施工 R-15 上），可以不写。
     #[serde(default)]
     pub(super) keywords: Option<String>,
+    /// 说的是谁（施工 E-1 上）：类是 `person` 的要写，别的类不看。
+    #[serde(default)]
+    pub(super) who: Option<String>,
 }
 
 /// `memory.update`：`text`、`keywords` 至少写一个（施工 R-15 上）。
@@ -76,6 +79,9 @@ pub(super) struct Update {
     pub(super) text: Option<String>,
     #[serde(default)]
     pub(super) keywords: Option<String>,
+    /// 换是谁（施工 E-1 上）：认识的人那一类才看。
+    #[serde(default)]
+    pub(super) who: Option<String>,
 }
 
 /// `memory.forget`：`id`（可以带 `why`）和 `clear` 两样只能写一样。

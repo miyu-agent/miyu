@@ -372,3 +372,32 @@ async fn ctrl_c_stops_the_dream() {
     let quit = run_pressing(&home, &["dream"], presses, pressing).await;
     assert_eq!((quit.code, quit.out.as_str()), (3, ""), "{}", quit.screen);
 }
+
+/// 认识的人没写 `--who`（施工 E-1 上）：命令行这边就说清、退出码 2，什么都不记；写了的照记。
+#[tokio::test]
+async fn a_person_needs_who() {
+    let home = home();
+    let missing = run(&home, &["add", "--class", "person", "小林用 4090"]).await;
+    assert_eq!(
+        (missing.code, missing.err.as_str()),
+        (2, "认识的人要写 --who（平台编号或名字）。\n"),
+        "{}",
+        missing.screen
+    );
+    let blank = run(
+        &home,
+        &["add", "--class", "person", "--who", "  ", "小林用 4090"],
+    )
+    .await;
+    assert_eq!(blank.code, 2, "{}", blank.screen);
+    let listed = run(&home, &["list"]).await;
+    assert_eq!(listed.out, "还没有记忆。\n", "什么都没记");
+    let added = run(
+        &home,
+        &["add", "--class", "person", "--who", "qq:2", "小林用 4090"],
+    )
+    .await;
+    assert_eq!(added.code, 0, "{}", added.screen);
+    let listed = run(&home, &["list"]).await;
+    assert!(listed.out.contains("[qq:2] 小林用 4090"), "{}", listed.out);
+}

@@ -36,12 +36,12 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 
 ## A memory
 
-`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords"}`:
+`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`:
 
 | Name | Notes |
 |---|---|
 | `id` | `m<number>` |
-| `class` | `user` (about the person), `feedback` (what the person wants from her), `episode` (something that happened), `reference` (where to find something) |
+| `class` | `user` (about the owner), `feedback` (what the person wants from her), `episode` (something that happened), `reference` (where to find something), `person` (someone else she knows, shown as "people you know") |
 | `text` | The memory, at most 120 characters |
 | `by` | `person` (a person remembered it) or `tool` (she did) |
 | `at` | When it was remembered |
@@ -50,6 +50,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 | `used`, `used_at` | How many times it was used, the last time |
 | `venue` | Which venue it was said in, `null` for local |
 | `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters), `null` if none: searches and recall match them, she never sees this line |
+| `who` | Who a `person` memory is about: a platform id (`qq:10086`) or a name; `null` for other classes |
 
 ## `memory.list`, `memory.search`
 
@@ -68,8 +69,8 @@ Search this memory's past conversations: one entry per turn a person started, ma
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.remember` | `class`, `text` (both required); optional `keywords` | `{"id"}` |
-| `memory.update` | `id`, and at least one of `text`, `keywords` | `{"id"}`: with `text`, the new version (the old one is retired; without `keywords` the keywords carry over); with only `keywords`, the same memory, same id; empty `keywords` removes them |
+| `memory.remember` | `class`, `text` (both required); optional `keywords`; `who`, required when `class` is `person` and ignored otherwise | `{"id"}` |
+| `memory.update` | `id`, and at least one of `text`, `keywords`, `who` | `{"id"}`: with `text`, the new version (the old one is retired; without `keywords` or `who` they carry over); with only `keywords`, the same memory, same id; empty `keywords` removes them; with only `who`, a new version with the same text |
 | `memory.forget` | `id` (optionally `why`); or `clear`: `session` (clear what this session remembered; `session` is then required), `me` (clear the whole memory) | `{}` when retiring, `{"cleared": <count>}` when clearing |
 | `memory.restore` | `id` | `{}`: a retired memory counts again |
 
@@ -79,7 +80,7 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Empty text; wrong `class`; malformed `id`; not exactly one of `id` and `clear`; `memory.update` with neither `text` nor `keywords` |
+| `bad_params` (`-32602`) | Empty text; wrong `class`; `person` without `who`; malformed `id`; not exactly one of `id` and `clear`; `memory.update` with none of `text`, `keywords`, `who` |
 | `memory_too_long` | Text over 120 characters or keywords over 200, `data.chars`, `data.limit`, `data.field` is `text` or `keywords` |
 | `unknown_memory` | No such memory |
 | `memory_not_current` | Already changed, retired or cleared |

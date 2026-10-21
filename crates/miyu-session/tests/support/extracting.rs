@@ -203,3 +203,37 @@ pub fn ended_turns(home: &Home, session: &SessionId) -> Vec<TurnId> {
         .filter_map(|event| event.turn)
         .collect()
 }
+
+/// `dir` 下记忆日志的每一行（照文件名排）。
+pub fn log_lines(dir: &std::path::Path) -> Vec<String> {
+    let mut files: Vec<_> = walk(dir);
+    files.sort();
+    files
+        .iter()
+        .flat_map(|file| {
+            std::fs::read_to_string(file)
+                .unwrap_or_default()
+                .lines()
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let Ok(read) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    read.flatten()
+        .flat_map(|entry| {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path)
+            } else if path.extension().is_some_and(|ext| ext == "jsonl") {
+                vec![path]
+            } else {
+                Vec::new()
+            }
+        })
+        .collect()
+}

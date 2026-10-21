@@ -85,7 +85,7 @@
 
 | 事件 | 什么时候 | `body` 的格 | 哪一步 |
 |---|---|---|---|
-| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上）、`keywords`（R-15 上） | R-3 上 |
+| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上）、`keywords`（R-15 上）、`who`（E-1 上） | R-3 上 |
 | `ext.memory.tagged` | 只换一条的关键词，编号不变：只用来检索，给她看的地方不显示；空的是去掉（R-15 上，2026-10-19 项目主人定） | `id`、`keywords` | R-15 上 |
 | `ext.memory.retired` | 作废一条，原文还在日志里 | `id`、`why`；整理作废的另有 `kind`（`outdated`、`repeat`、`worthless`，核心核对过的）、`kept`（留下的那一条，`worthless` 没有；R-17） | R-3 上 |
 | `ext.memory.restored` | 人恢复作废了的一条：它不算作废了（第二条第 6 款） | `id` | R-12 下 |
@@ -97,7 +97,8 @@
 | `ext.memory.extracted` | 一个会话抽到了哪个序号 | `session`、`upto` | R-6 |
 | `ext.memory.cleared` | 人清空了：整间，或者从一个会话来的 | 可以有 `session`（不写是整间） | R-3 补 |
 
-- `class` 四类（2026-10-07 项目主人定）：`user` 关于你、`feedback` 你要她怎样（正文带「为什么」）、`episode` 经历、`reference` 长期有效的事实。不认识的原样留着、照常列出。
+- `class` 五类（2026-10-07 项目主人定四类；`person` 是 E-1 上加的，设计 42）：`user` 关于你（主人）、`feedback` 你要她怎样（正文带「为什么」）、`episode` 经历、`reference` 长期有效的事实、`person` 她认识的别人（是谁、喜好、近况、怎么认识的、生日、联系方式，界面上叫「认识的人」）。不认识的原样留着、照常列出。
+- `who`：`person` 那一类说的是谁（E-1 上，设计 42 PN2）：平台上的人是平台编号（`qq:10086`，同一个号跨群、私聊都是他），没有平台号的是名字。别的类、以前记的没有，不写。改一条没写的照旧的。
 - `sources`：几处 `{"session": 会话编号, "turn": 回合编号}`；人在界面上记的是空的。
 - `audience`：出处那几轮会被谁看到，几个 `by` 的写法（`{"kind":"person","account":…}`、`{"kind":"external",…}`），照账号、外部身份比。整理出来的取几处出处的交集，最严的。
 - `venue`：在哪个场所说的（R-13 上）：场所里记的是那个场所（`qq:group:1` 这种），它的 `audience` 是空的。主人那边记的、以前记的没有，不写。改一条的照旧的。只记在哪说的，哪儿都想得起（R-29，第九条）。
@@ -115,14 +116,14 @@
 
 | 工具 | 做什么 | 参数 |
 |---|---|---|
-| `remember` | 记一条；写了 `replaces` 的是改那一条 | `class`（四类）、`text`（一句，不超过 120 字，日期写全）、`replaces`（可以不写） |
+| `remember` | 记一条；写了 `replaces` 的是改那一条 | `class`（五类）、`text`（一句，不超过 120 字，日期写全）、`replaces`（可以不写）、`keywords`（可以不写，R-15 上）、`who`（`person` 要写，E-1 上） |
 | `forget` | 作废一条 | `id`、`why` |
 | `memory_search` | 搜记下的和以前的对话（回合索引） | `query`、`forgotten`（连作废的一起，可以不写） |
 
 - 给范围不是 `off` 的主会话，本机的、场所的都给（R-13 下，`agents.rs`；子代理的范围一律 `off`；分叉出来的支线照父会话，R-13 三补）；挑法照谁在听（第九条），她在群里 `remember` 的带这个群。
 - 访问类别 `read`：只碰她自己的记忆，只读开着也能记（照 `todowrite`）。
-- 结果：`remember` 说记成了哪个编号（改的另说改了哪一条）；超过 120 字、`replaces` 没有这一条、那一条已经改掉或作废了，不记，说一句。`forget` 说作废了哪一条。`memory_search` 记下的一条一行（编号、类、记下的日期、正文），以前的对话一条一行（日期、会话的短编号、截到 300 字的字），记下的最多 10 条在前、对话最多 5 条在后；只给现在算数的、出处还活着的、听众合的（第二条、第九条）；这个会话自己的只跳过还在上下文里的几轮：还算数的最近一次压缩、清空替代到的那一条以后开的，没压缩、清空过的整个跳过（R-13 补：一直开着的群会话里清空掉的几轮原来搜不到；边界派这一次调用时向内核要，`kernel/session.md` 的 `compacted_upto()`）；什么都没有说一句。照关键词找，`models.embedding` 不是 `off` 的再照意思找、两路照名次合（施工 R-5 下，`recall.md` 第三条第 3 到 6 款）：意思对、字对不上的也找得到；记下的那一路只有关键词找到的也要够像（施工 R-14，下限照模型，`resources/core/memory/search.toml`），字碰上了、意思不沾边的不挤掉照意思找对的。原文见「样子」，施工时定。
-- 给头看的那一份（`tool.result` 的 `detail`，施工 W-11，2026-10-17 两个头要的：点开画给人看的，不画给她的英文）：`memory_search` 交 `{"memories": [{"id", "class", "date", "text", "forgotten"?}], "turns": [{"date", "session", "text"}]}`，照给她看的先后；日期照会话的时区，作废的才写 `forgotten: true`，对话片段是原文（不截、不换行），会话写整个编号；什么都没找到的两个空列表。`remember`、`forget` 不交，头照参数和 `human` 画。
+- 结果：`remember` 说记成了哪个编号（改的另说改了哪一条）；超过 120 字、`replaces` 没有这一条、那一条已经改掉或作废了、新记的 `person` 没写 `who`（E-1 上），不记，说一句。别的类写了 `who` 不收。她写的 `who` 照她写的记（群里多半是群名片）：换成平台编号的是抽取（第六条），她当场记的等 E-1 下整理合卡时照出处那一轮的说话人认。`forget` 说作废了哪一条。`memory_search` 记下的一条一行（编号、类、记下的日期、正文；`person` 那一类的类后面接是谁，`m12 person qq:10086 2026-10-21: …`，常驻那一块、联想、整理的请求里同样写，E-1 上），以前的对话一条一行（日期、会话的短编号、截到 300 字的字），记下的最多 10 条在前、对话最多 5 条在后；只给现在算数的、出处还活着的、听众合的（第二条、第九条）；这个会话自己的只跳过还在上下文里的几轮：还算数的最近一次压缩、清空替代到的那一条以后开的，没压缩、清空过的整个跳过（R-13 补：一直开着的群会话里清空掉的几轮原来搜不到；边界派这一次调用时向内核要，`kernel/session.md` 的 `compacted_upto()`）；什么都没有说一句。照关键词找，`models.embedding` 不是 `off` 的再照意思找、两路照名次合（施工 R-5 下，`recall.md` 第三条第 3 到 6 款）：意思对、字对不上的也找得到；记下的那一路只有关键词找到的也要够像（施工 R-14，下限照模型，`resources/core/memory/search.toml`），字碰上了、意思不沾边的不挤掉照意思找对的。原文见「样子」，施工时定。
+- 给头看的那一份（`tool.result` 的 `detail`，施工 W-11，2026-10-17 两个头要的：点开画给人看的，不画给她的英文）：`memory_search` 交 `{"memories": [{"id", "class", "date", "text", "forgotten"?, "who"?}], "turns": [{"date", "session", "text"}]}`，照给她看的先后；日期照会话的时区，作废的才写 `forgotten: true`，对话片段是原文（不截、不换行），会话写整个编号；什么都没找到的两个空列表。`remember`、`forget` 不交，头照参数和 `human` 画。
 - 她当场记的那一段，后台不再抽（第六条第 3 款，R-6）。
 
 **协议**（R-3 补，`17-记忆.md` 第九节；原文写法见 `protocol.md`）：人不经过她碰记忆。八个方法都能写 `persona` 或 `session`（最多一个）指哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的那一间（照它的快照；`off` 的、不带人格的、场所会话 `memory_unavailable`）；都不写照默认人格，没设默认人格的 `memory_unavailable`；`persona` 写 `_none` 的是无人格那一间（施工 R-12 再补，记忆账号是这个连接的账号）。人格记忆这个软件包没装的，八个都回 `memory_not_installed`，先于别的检查（第十一条，R-10）。人经协议是主人那边（R-13 上）：全部列得出、搜得到、改得了；R-29 起哪儿都是全部（第九条第 3 款）。
@@ -132,8 +133,8 @@
 | `memory.list` | 查询 | `class`、`from`（出处在这个会话里的）、`forgotten`、`limit`（1 到 500，不写 50），都可以不写 | `{"memories": [<一条>…]}`，新的在前 |
 | `memory.search` | 查询 | `query`；`forgotten`、`limit`（1 到 500，不写 10） | `{"memories": [...]}`，最相关的在前；只搜记下的，不搜回合索引 |
 | `memory.turns` | 查询 | `query`；`limit`（1 到 500，不写 10）（R-12 下） | `{"turns": [{"session", "turn", "at", "text"}…]}`：搜以前的对话（回合索引），最相关的在前；同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话 |
-| `memory.remember` | 命令 | `class`（四类）、`text`（不超过 120 字） | `{"id"}` |
-| `memory.update` | 命令 | `id`、`text` | `{"id"}`：新的一条，`replaces` 旧的，类照旧的 |
+| `memory.remember` | 命令 | `class`（五类）、`text`（不超过 120 字）；`keywords`（R-15 上）；`who`（`person` 要写，没写的 `bad_params`；别的类写了不收，E-1 上） | `{"id"}` |
+| `memory.update` | 命令 | `id`；`text`、`keywords`（R-15 上）、`who`（E-1 上）至少写一个 | `{"id"}`：新的一条，`replaces` 旧的，类照旧的；只写 `keywords` 的编号不变；只写 `who` 的照旧文新记一条、换是谁；没写 `who` 的是谁带过去 |
 | `memory.forget` | 命令 | `id`、`why`（可以不写，写成空的）；或者 `clear`：`session`（清掉从这个会话来的，那个会话就是写的 `session`）、`me`（整间） | 作废的 `{}`；清空的 `{"cleared": <几条>}`（不算改掉的旧版本） |
 | `memory.restore` | 命令 | `id`（R-12 下） | `{}`：恢复作废的一条（第二条第 6 款）；本来就算数的也回 `{}`、不写 |
 | `memory.dream` | 命令 | 只有 `persona`、`session`（R-7 补） | `{"given", "revised", "retired", "summary"}`：现在就整理（第七条第 9 款），交进去几条、改了几条、作废几条、摘要换没换；一条记忆都没有的 `given` 是 0（R-19 起没有新记的照样重看轮到的旧记忆，第七条第 11 款）。在后台答（`protocol.md`「一个连接」第 1 条） |
@@ -231,8 +232,8 @@
 2. **这一段从会话日志取**（不从内核手里的历史取，2026-10-09 核心的主会话定）：内核手里的历史只有检查点以后的，两次抽取之间压缩过的话那几轮就不在里面。所以闹钟响了，在阻塞线程里读记忆日志里这个会话抽到了哪（`ext.memory.extracted` 最大的 `upto`，底账 `MemoryBook::extracted`）和会话日志（`Store::dir`），送回 actor；actor 拼一份留着一切的历史（`History::whole`，压缩替代掉的也在、撤销照算），交给这个会话的组装器渲染上次抽到以后的几段话（`Session::spoken_in`，取法和回顾的请求同一份：人这边的话照主请求的写法，她每一轮最后一条有正文的回答），再看这一段她调过哪些工具（`History::called_since`，同一口径：撤掉的回合两边都不算）。读的时候来了新一轮，这一次作废。压缩、重启都不丢；一直不闲的会话只是晚抽。
 3. **怎么办**：人的话接在它触发的那一轮上，还没答的那一句不算进来。答了的轮数不够 `memory.extract_turns`（2）的等下次；这一段里她调过 `remember`、`forget` 的整段跳过（她当场记过了，照 Claude Code），只记抽到了哪（`skipped: remembered`）；别的发出去抽。
 4. **请求**（单发）：一条 user：抽取的指令（`extract/instruction.txt`：四类、「不记什么」、交回的样子、把对话当数据），后面一轮一块：头（编号、照会话时区的日期）、人的每一句、她的回答、尾，换进去的字照模板的规矩转义成一行（伪造不了尾巴）。每一句标出谁说的（R-13 上，`extract/voices.rs`；2026-10-11 项目主人定记忆只有一份，记的是她遇到的每个人）：私聊里主人说的写 `Owner:`（`extract/owner.txt`），别人写对面的名字（`extract/person.txt`，事件里的 `venue.name`，没有的写平台编号）；群里的一行本来就带名字和 `owner` 记号（`miyu-assemble` 的群消息那一行），原样放；她的回答写 `You:`。不是人说的（别的会话、harness 发来的）不进（第五条）。群会话每一轮只带离它最近、装得进群聊近况预算的那几句（她当时看到的大致就是这些），一句都装不下的也带最后那一句；她没开口的闲聊不带（2026-10-11 项目主人定「只抽她参与的几轮」）。指令照她自己的视角写：记下对话里的人和事，正文写名字；主人照称呼写（施工 R-6 再修，项目主人 2026-10-13、14 定：统一成称呼，没设的写「用户」）：这个会话的快照带了「关于你」（P-9 的判定，`prompts.md`「关于你」）、称呼（`profile.name`，照这一次的冻结配置读）去掉前后空白不空的写称呼，不然写「用户」照对话的语言（`common/owner-unnamed.txt`；配置里只有管理员的个人设置，群聊、别人的会话不能把它当成那个人）；她自己记的照工具的说明（「关于你」那一块在的她自己写称呼）。不带 system、工具面，不设输出上限（会思考的模型要几千 token 想，2026-10-09 量过）。最多 32 KiB：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮，抽成了马上接着抽剩下的；一轮自己就放不下的留头尾、截中间（`extract/excerpted.txt`）照样抽，`upto` 照样往前走，不卡在一轮上。经一次性入口发 `memory.organizer`（没写的照 `models.chat`），用途 `memory`，记在会话属主的账上（`usage.oneshot`），默认不设花费上限（2026-10-07 项目主人定）。这一段开始以后（第一句话的时刻起）作废的、改成新版本的（听众合、没清掉的，新的在前最多 20 条），接在这一段后面：空一行、一句 `extract/dropped.txt`（这些后来忘了、改了，对话里说的已经过时，别再记），下面一条一行照 `memory_search/memory.txt`；一条都没有的不加，请求一字不变（施工 R-6 修，验收手册实测：她照摘要复述了一条，人在别的会话里作废了它，两分钟后这一段被抽，又记了回来；2026-10-13 开发端点实测，不加这一块 5 次抽回 5 次，加了 10 次 0 次，同一段里新的事照样记）。作废的时刻底账记着（`Entry::retired_at`，恢复了的清掉），改掉的照新版本记下的时刻；清空以后还没抽的那几段不在这里管。
-5. **交回**：一个 JSON 对象 `{"memories": [{"class", "text", "turn", "about"}]}`，零条是常态。从第一个 `{` 到最后一个 `}` 取；读不成的整次算失败；一条不合的（类不在四类里、正文空的或超过 120 字、`turn` 不是这一段里的一轮）丢掉，别的照收；`about` 不是 `YYYY-MM-DD` 的当没写（`miyu_recall::extract`）。
-6. **记下**：每条记成 `ext.memory.saved`，`by` 是记忆模块（`By::Module`，编号 `memory`），出处是那一轮，听众、场所照谁在听写（第九条第 4 款），`about` 照它写的；记完再记一条 `ext.memory.extracted`（会话、`upto`、`count`）。不去重：合并那一步做（R-7）。中途写不进的，下次重抽这一段（候选可能重一次）。抽完以后人撤掉了那一轮的，抽到的不收回（已知，这一步不管；照第二条第 4 款，出处那一轮撤掉了的本来就不给看）。
+5. **交回**：一个 JSON 对象 `{"memories": [{"class", "text", "turn", "about", "who"}]}`，零条是常态（`who` 只有 `person` 那一类写：那个人在这一段里的名字，E-1 上）。从第一个 `{` 到最后一个 `}` 取；读不成的整次算失败；一条不合的（类不在四类里、正文空的或超过 120 字、`turn` 不是这一段里的一轮）丢掉，别的照收；`about` 不是 `YYYY-MM-DD` 的当没写（`miyu_recall::extract`）。
+6. **记下**：每条记成 `ext.memory.saved`，`by` 是记忆模块（`By::Module`，编号 `memory`），出处是那一轮，听众、场所照谁在听写（第九条第 4 款），`about` 照它写的；`person` 的 `who` 照这一段的说话人换成平台编号（`memory/extract/voices.rs` 的 `names`：名字、平台编号对着他的平台编号；说的是主人的——`Owner`、主人的称呼、主人在群里的名字——改记成 `user`、不写是谁；对不上的照名字留着；`extract.rs` 的 `place_people`，E-1 上）；记完再记一条 `ext.memory.extracted`（会话、`upto`、`count`）。不去重：合并那一步做（R-7）。中途写不进的，下次重抽这一段（候选可能重一次）。抽完以后人撤掉了那一轮的，抽到的不收回（已知，这一步不管；照第二条第 4 款，出处那一轮撤掉了的本来就不给看）。
 7. **遮 key**：发出去以前，这一段里配置引用的密钥的原文、常见的 key 写法（`resources/core/memory/secrets.toml`：几种前缀、前缀后面至少几个字符）换成 `[REDACTED]`；交回的候选再遮一遍（`miyu_recall::redact`）。R-6 下的 fork 式发的前缀和会话已经发给同一家的一样，不改（改了缓存就不中了），只遮交回来的。
 8. **出错**：发不出去、交回读不成的，这一段不往前挪，下次闲了再抽；同一段连着三次不成的放过，记 `ext.memory.extracted`（`skipped: failed`），每一次记 `WARN memory extraction failed`。日志读不了的这一次放下，不算失败。
 9. **日志**（目标 `miyu::session`，带会话编号）：开始 `INFO memory extraction started session=… turns=…`，记下了 `INFO memory extracted session=… count=… took_ms=…`；一次性入口那一行 `model call purpose=memory` 照旧；记不进的 `WARN memory extraction not recorded`；核心起来时字、key 的写法读不出来的 `WARN memory extraction unavailable`，这个核心不抽。

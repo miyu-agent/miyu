@@ -1,5 +1,5 @@
 //! 抽取交回来的怎么读（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 4 款）：模型交回一个 JSON 对象
-//! `{"memories": [{"class", "text", "turn", "about"}]}`，零条是常态。纯逻辑：调的一方把这一段有哪几轮、一条最多几个字交进来。
+//! `{"memories": [{"class", "text", "turn", "about", "who"}]}`，零条是常态（`who` 是认识的人那一类说的是谁，施工 E-1 上）。纯逻辑：调的一方把这一段有哪几轮、一条最多几个字交进来。
 //!
 //! - 照规矩取：从第一个 `{` 到最后一个 `}`，前后多说的话不管（模型爱包一层说明、代码块）；这一段读不成 JSON 对象、没有
 //!   `memories` 列表的，整次算失败。
@@ -26,6 +26,9 @@ pub struct Candidate {
     pub turn: u64,
     /// 说的是哪天的事（`YYYY-MM-DD`）；没写的、写法不对的没有。
     pub about: Option<String>,
+    /// 说的是谁（施工 E-1 上）：认识的人那一类（`person`）交回的名字，去掉了前后空白；调的一方照这一段的说话人换成平台编号。
+    /// 别的类、没写的没有。
+    pub who: Option<String>,
 }
 
 /// 读交回来的字：这一段有 `turns` 这几轮，一条最多 `max_chars` 个字。
@@ -67,11 +70,16 @@ fn one(item: &Value, turns: &BTreeSet<u64>, max_chars: usize) -> Option<Candidat
     }
     let turn = item["turn"].as_u64().filter(|turn| turns.contains(turn))?;
     let about = item["about"].as_str().filter(|about| is_date(about));
+    let who = item["who"]
+        .as_str()
+        .map(str::trim)
+        .filter(|who| class == crate::memory::PERSON && !who.is_empty());
     Some(Candidate {
         class: class.to_string(),
         text: text.to_string(),
         turn,
         about: about.map(str::to_string),
+        who: who.map(str::to_string),
     })
 }
 

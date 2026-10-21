@@ -22,9 +22,12 @@ Options:
       --persona <id>      Whose memory; default is the default persona
   -s, --session <id>      The memory this session uses
       --forgotten         list, search: include forgotten ones
-      --class user|feedback|episode|reference
-                          list: only this class; add: save as it (default user)
+      --class user|feedback|episode|reference|person
+                          list: only this class; add: save as it (default
+                          user); person is someone the AI knows
       --why <reason>      forget: why
       --keywords <words>  add, edit: comma-separated words to find it by
+      --who <who>         add, edit: who a person memory is about, a platform
+                          id or a name; add --class person needs it
       --format text|json  list, search: json for scripts
   -h, --help              Print help

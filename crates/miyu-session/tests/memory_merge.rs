@@ -64,40 +64,6 @@ fn entry(home: &Home, id: MemoryId) -> Entry {
     book(home, |book| book.get(id).cloned()).expect("有这一条")
 }
 
-/// `dir` 下记忆日志的每一行（照文件名排）。
-fn log_lines(dir: &std::path::Path) -> Vec<String> {
-    let mut files: Vec<_> = walk(dir);
-    files.sort();
-    files
-        .iter()
-        .flat_map(|file| {
-            std::fs::read_to_string(file)
-                .unwrap_or_default()
-                .lines()
-                .map(str::to_string)
-                .collect::<Vec<_>>()
-        })
-        .collect()
-}
-
-fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
-    let Ok(read) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    read.flatten()
-        .flat_map(|entry| {
-            let path = entry.path();
-            if path.is_dir() {
-                walk(&path)
-            } else if path.extension().is_some_and(|ext| ext == "jsonl") {
-                vec![path]
-            } else {
-                Vec::new()
-            }
-        })
-        .collect()
-}
-
 fn id(n: u64) -> MemoryId {
     MemoryId::new(Seq::new(n).expect("从 1 起"))
 }
@@ -240,6 +206,7 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
         about: None,
         venue: Some(miyu_kernel::id::VenueId::parse("qq:group:1").expect("合写法")),
         keywords: None,
+        who: None,
     };
     log.append(long_ago, alice(), None, &MemoryEvent::Saved(elsewhere))
         .expect("记得下");
@@ -367,7 +334,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         every_turn("用户养了一只猫"),
         merged(serde_json::json!({
             "revised": [
-                {"id": "m1", "text": "回答要短，先说结论"},
+                {"id": "m1", "text": "小林用 RX 7800 XT"},
                 {"id": "m2", "text": "用户养了一只猫"}
             ],
             "summary": "用户养猫。"
@@ -379,15 +346,17 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     let mut home = Home::new();
     organizer(&mut home, &server, "merge_sessions = 1\n");
     let (log, _) = home.logs.open(&persona()).expect("开得了");
+    // 认识的人那一条（施工 E-1 上）：改写的照旧是这一类、是谁带过去。
     let feedback = Saved {
-        class: "feedback".into(),
-        text: "回答要短".into(),
+        class: "person".into(),
+        text: "小林用 N 卡".into(),
         sources: Vec::new(),
         audience: vec![alice()],
         replaces: None,
         about: None,
         venue: None,
         keywords: None,
+        who: Some("qq:2".into()),
     };
     log.append(
         Timestamp::parse("2026-10-01T00:00:00.000Z").expect("合写法"),
@@ -407,7 +376,11 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
             .cloned()
     })
     .expect("改了 m1");
-    assert_eq!(revised.class, "feedback", "类照旧");
+    assert_eq!(
+        (revised.class.as_str(), revised.who.as_deref()),
+        ("person", Some("qq:2")),
+        "类、是谁照旧"
+    );
     assert!(
         book(&home, |book| book
             .all()
