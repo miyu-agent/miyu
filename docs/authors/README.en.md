@@ -15,7 +15,7 @@ For third-party authors. Chinese version: [README.md](README.md). Every protocol
 | A long-running program: a set of tools, a chat platform bridge, content in the UI, your own slash commands | an extension (`[process]`) | [Writing an extension](extensions.en.md) |
 | A settings page in the web UI | a package page (`[page]`) | [Writing an extension](extensions.en.md) |
 
-Every manifest field is in [The manifest](manifest.en.md).
+Every manifest field is in [The manifest](manifest.en.md). For extensions in Python or Rust there are ready-made development kits ([Using a development kit](extensions.en.md#using-a-development-kit)).
 
 **Without a package**: put skills, scripts and command templates straight into `~/.miyu/home/admin/skills/`, `scripts/`, `commands/`, and MCP servers into personal settings. They work the same; they just aren't managed as a package.
 

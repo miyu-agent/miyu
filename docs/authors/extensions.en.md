@@ -88,6 +88,60 @@ if __name__ == "__main__":
 
 Try it: `miyu pkg install ./hello`, answer yes to "Turn it on now?", then ask the AI to "say hello to Ann". Python works as is on all three platforms: start `bin/miyu-hello` with `#!/usr/bin/env python3`, make it executable on Linux and macOS, and on Windows the core finds `python` from that line. If your package needs Python 3, say so in its description.
 
+## Using a development kit
+
+The example above is written by hand: the protocol doesn't care about the language, so any language works this way. For Python and Rust there are ready-made development kits, [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk) (MIT). They handle the handshake, sending and receiving one line per message, answering concurrent calls by their ids, cancellation, settings pushes, quitting when standard input ends, and the exit-code-1 rule. They add no powers: what an extension can do is still set by the protocol. Each comes with a fake core, so you can test without starting Miyu.
+
+**Python**: a single file, `miyu_ext.py`, standard library only, Python 3.9 or later, no pip. Copy it into the package's `bin/`, next to your program; the manifest is the same as above:
+
+```text
+hello/
+├── package.toml
+└── bin/
+    ├── miyu-hello        # your program, first line #!/usr/bin/env python3
+    └── miyu_ext.py       # the copied kit
+```
+
+```python
+#!/usr/bin/env python3
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from miyu_ext import Extension
+
+ext = Extension("hello", "0.1.0")
+
+@ext.tool("hello_greet", "Greet someone by name.",
+          {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+          access="read")
+def greet(args, call):
+    return f"{ext.config.get('hello.greeting', 'Hello')}, {args['name']}!"
+
+if __name__ == "__main__":
+    ext.run()
+```
+
+This one file runs on all three platforms, like the hand-written one above. Settings are in `ext.config`; call core methods with `ext.call(method, params)`.
+
+**Rust**: the crate `miyu-ext`, synchronous, depending only on `serde_json`. It isn't on crates.io yet, so depend on the repository:
+
+```toml
+[dependencies]
+miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk" }
+```
+
+To pin a version, add `rev = "<commit>"`. Put the built program in the package's `bin/`; on Windows it is `miyu-hello.exe`.
+
+**Testing**: without starting Miyu, the fake core `FakeCore` plays the core inside your process:
+
+```python
+from miyu_ext import FakeCore
+core = FakeCore(ext, config={"hello.greeting": "Hi"})
+assert core.call_tool("hello_greet", {"name": "Ann"})["blocks"][0]["text"] == "Hi, Ann!"
+core.close()
+```
+
+Slash commands, methods, pushes, the Rust example and the full example package are in the kit's own guide; they aren't copied here.
+
 ## Being started
 
 - The program is the one in `bin/`; its arguments are `[process] args`.

@@ -15,7 +15,7 @@
 | 常驻的程序：一组工具、接一个聊天平台、往界面上放东西、自己的斜杠命令 | 扩展（`[process]`） | [写扩展](extensions.md) |
 | 网页里的一个设置页 | 后台页（`[page]`） | [写扩展](extensions.md) |
 
-清单里每一格怎么写见 [清单](manifest.md)。
+清单里每一格怎么写见 [清单](manifest.md)。用 Python、Rust 写扩展的，有现成的开发包（[用开发包写](extensions.md#用开发包写)）。
 
 **不想做成包的**：技能、脚本、命令模板直接放进 `~/.miyu/home/admin/skills/`、`scripts/`、`commands/`，MCP 服务写进个人设置，一样能用，只是不归包管理。
 

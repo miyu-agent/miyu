@@ -88,6 +88,60 @@ if __name__ == "__main__":
 
 装上试：`miyu pkg install ./hello`，答「现在打开？」是；然后对 AI 说「跟 Ann 打个招呼」。Python 写的照这样直接用，三个平台都行：`bin/miyu-hello` 第一行写 `#!/usr/bin/env python3`，Linux、macOS 上给它可执行权限，Windows 上核心照这一行找 `python`。要求装了 Python 3 的，写进包的说明。
 
+## 用开发包写
+
+上面是手写的：协议不挑语言，什么语言都能照这样写。用 Python、Rust 的，有现成的开发包 [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk)（MIT）：握手、一行一条的收发、几个调用同时来时照编号对着回、取消、配置推送、标准输入读到头就退、退出码 1 的规矩都包好了。它不多给本事，扩展能做什么照旧由协议定；另带一个假核心，不起 Miyu 也能测。
+
+**Python**：一个文件 `miyu_ext.py`，只用标准库，Python 3.9 起，不用 pip。拷进包的 `bin/`，和程序放在一起；清单同上面那份：
+
+```text
+hello/
+├── package.toml
+└── bin/
+    ├── miyu-hello        # 程序，第一行 #!/usr/bin/env python3
+    └── miyu_ext.py       # 拷过来的开发包
+```
+
+```python
+#!/usr/bin/env python3
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from miyu_ext import Extension
+
+ext = Extension("hello", "0.1.0")
+
+@ext.tool("hello_greet", "Greet someone by name.",
+          {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+          access="read")
+def greet(args, call):
+    return f"{ext.config.get('hello.greeting', 'Hello')}, {args['name']}!"
+
+if __name__ == "__main__":
+    ext.run()
+```
+
+三个平台都照这一个文件跑，同上面手写的那份。配置在 `ext.config`，调核心的方法用 `ext.call(method, params)`。
+
+**Rust**：crate `miyu-ext`，同步、只依赖 `serde_json`。它还没发到 crates.io，照仓库依赖：
+
+```toml
+[dependencies]
+miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk" }
+```
+
+要锁版本的写 `rev = "<提交>"`。编出来的程序放进包的 `bin/`，Windows 上是 `miyu-hello.exe`。
+
+**测**：不起 Miyu，假核心 `FakeCore` 在进程里演核心：
+
+```python
+from miyu_ext import FakeCore
+core = FakeCore(ext, config={"hello.greeting": "Hi"})
+assert core.call_tool("hello_greet", {"name": "Ann"})["blocks"][0]["text"] == "Hi, Ann!"
+core.close()
+```
+
+斜杠命令、方法、推送怎么写，Rust 的例子，完整的例子包，见开发包的说明，这里不抄。
+
 ## 被拉起
 
 - 程序是 `bin/` 下那一个，参数是 `[process] args`。
