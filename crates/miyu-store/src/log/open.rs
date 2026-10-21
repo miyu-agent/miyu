@@ -4,15 +4,19 @@
 
 use std::fmt;
 use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom};
+use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::Seq;
 
 use super::{Mark, SessionLog};
 
 mod parse;
+mod walk;
+
+pub use parse::Flow;
+
+use walk::{Piece, walk};
 
 /// 打开不了会话日志。
 #[derive(Debug)]
@@ -61,19 +65,47 @@ impl SessionLog {
     ///
     /// 没有这个会话；日志坏了；读写出错。
     pub fn open(dir: &Path, limit: u64) -> Result<(SessionLog, Vec<Event>), OpenError> {
-        let (events, end) = read_all(dir, HalfLine::Cut)?;
+        let mut events = Vec::new();
+        let log = SessionLog::open_each(dir, limit, |read| {
+            gather(&mut events, read);
+            Flow::Go
+        })?;
+        Ok((log, events))
+    }
+
+    /// 同 [`SessionLog::open`]，只是读出来的事件照先后一块块交给 `each`，不攒成一整份（施工 V-15：载入时边读边重放，
+    /// 前面的用完就放掉）。`each` 交回 [`Flow::Stop`] 的不读下去，交回没有这个会话。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`SessionLog::open`]；`each` 叫停了的是没有这个会话。
+    pub fn open_each(
+        dir: &Path,
+        limit: u64,
+        mut each: impl FnMut(Vec<Event>) -> Flow,
+    ) -> Result<SessionLog, OpenError> {
+        let mut stopped = false;
+        let end = walk(dir, HalfLine::Cut, None, &mut |piece| match piece {
+            Piece::Events(read) => {
+                let flow = each(read);
+                stopped = matches!(flow, Flow::Stop);
+                flow
+            }
+            Piece::SegmentEnd => Flow::Go,
+        })?
+        .filter(|_| !stopped)
+        .ok_or_else(|| OpenError::Missing(dir.to_path_buf()))?;
         let last = dir.join(super::segment_name_of(end.segment));
         let size = fs::metadata(&last)?.len();
         let file = OpenOptions::new().append(true).open(&last)?;
-        let log = SessionLog {
+        Ok(SessionLog {
             dir: dir.to_path_buf(),
             file,
             segment: end.segment,
             size,
             next: end.next,
             limit,
-        };
-        Ok((log, events))
+        })
     }
 }
 
@@ -85,7 +117,15 @@ impl SessionLog {
 ///
 /// 没有这个会话（目录没有，或者一段都还没有）；日志坏了；读写出错。
 pub fn read_events(dir: &Path) -> Result<Vec<Event>, OpenError> {
-    read_all(dir, HalfLine::Skip).map(|(events, _)| events)
+    let mut events = Vec::new();
+    walk(dir, HalfLine::Skip, None, &mut |piece| {
+        if let Piece::Events(read) = piece {
+            gather(&mut events, read);
+        }
+        Flow::Go
+    })?
+    .ok_or_else(|| OpenError::Missing(dir.to_path_buf()))?;
+    Ok(events)
 }
 
 /// 同 [`read_events`]，只是读一段交一段给 `each`，它交回 `false` 就不读下去（施工 6-4：`history` 翻长会话，叫停了
@@ -95,7 +135,7 @@ pub fn read_events(dir: &Path) -> Result<Vec<Event>, OpenError> {
 ///
 /// 同 [`read_events`]。
 pub fn read_segments(dir: &Path, each: impl FnMut(Vec<Event>) -> bool) -> Result<(), OpenError> {
-    walk(dir, HalfLine::Skip, None, each).map(|_| ())
+    walk(dir, HalfLine::Skip, None, &mut by_segment(each)).map(|_| ())
 }
 
 /// 同 [`read_segments`]，只是从 `from` 读起（施工 3-8 七补：列会话照索引记的位置，只读多出来的那一截），交回读到了哪里：
@@ -112,7 +152,7 @@ pub fn read_marked(
     from: Option<&Mark>,
     each: impl FnMut(Vec<Event>) -> bool,
 ) -> Result<Option<Mark>, OpenError> {
-    walk(dir, HalfLine::Skip, from, each)
+    walk(dir, HalfLine::Skip, from, &mut by_segment(each))
 }
 
 /// 最后一段末尾没写完的半行怎么办。
@@ -124,153 +164,28 @@ enum HalfLine {
     Skip,
 }
 
-/// 照段的先后一行行读、自检：交回事件、读到了哪里。
-fn read_all(dir: &Path, half: HalfLine) -> Result<(Vec<Event>, Mark), OpenError> {
-    let mut events = Vec::new();
-    let end = walk(dir, half, None, |read| {
-        // 只有一段的（多半是这样）整份搬过来，不再拷一遍（施工 V-14）。
-        if events.is_empty() {
-            events = read;
-        } else {
-            events.extend(read);
-        }
-        true
-    })?
-    .ok_or_else(|| OpenError::Missing(dir.to_path_buf()))?;
-    Ok((events, end))
+/// 一块块收进一整份：头一块整个搬过来，不再拷一遍（施工 V-14）。
+fn gather(events: &mut Vec<Event>, read: Vec<Event>) {
+    if events.is_empty() {
+        *events = read;
+    } else {
+        events.extend(read);
+    }
 }
 
-/// 照段的先后一段段读、自检，每读完一段交给 `each`，它交回 `false` 就停。`from` 是空的从第一段开头读，不是空的从它记的
-/// 那一段、那个字节读起（[`read_marked`]）。交回读到了哪里（停下的，是停在哪一段后面）；`from` 和日志对不上的交回空的。
-fn walk(
-    dir: &Path,
-    half: HalfLine,
-    from: Option<&Mark>,
-    mut each: impl FnMut(Vec<Event>) -> bool,
-) -> Result<Option<Mark>, OpenError> {
-    let segments = segments(dir)?;
-    if segments.is_empty() {
-        return Err(OpenError::Missing(dir.to_path_buf()));
-    }
-    let (start, mut offset, mut next) = match from {
-        // 从第一段读起：第一条照第一段的名字（分叉出来的会话接着分叉点往下数，施工 C-8 上），不是 1。
-        None => (0, 0, Seq::new(segments[0].0).unwrap_or(Seq::FIRST)),
-        Some(mark) => match segments
-            .iter()
-            .position(|(first, _)| *first == mark.segment)
-        {
-            Some(k) => (k, mark.bytes, mark.next),
-            None => return Ok(None),
+/// 照段收：一段读完了才把这一段的事件一起交给 `each`，它交回 `false` 就停（同施工 V-15 以前）。
+fn by_segment(mut each: impl FnMut(Vec<Event>) -> bool) -> impl FnMut(Piece) -> Flow {
+    let mut segment = Vec::new();
+    move |piece| match piece {
+        Piece::Events(read) => {
+            gather(&mut segment, read);
+            Flow::Go
+        }
+        Piece::SegmentEnd => match each(std::mem::take(&mut segment)) {
+            true => Flow::Go,
+            false => Flow::Stop,
         },
-    };
-    let mut end = Mark {
-        segment: segments[start].0,
-        bytes: offset,
-        next,
-    };
-    for (k, (first, path)) in segments.iter().enumerate().skip(start) {
-        let is_last = k + 1 == segments.len();
-        let Some((read, bytes)) = read_segment(path, offset, is_last, &mut next, half)? else {
-            return Ok(None);
-        };
-        // 从一段中间读起的，读到的第一条不是这一段的第一条，这一段也不是空的：名字不在这里查。
-        let whole = offset == 0;
-        offset = 0;
-        match read.first() {
-            Some(event) if whole && event.seq.get() != *first => {
-                return Err(broken(
-                    path,
-                    1,
-                    format!("the segment is named {first} but starts with {}", event.seq),
-                ));
-            }
-            None if whole && is_last && *first != next.get() => {
-                return Err(broken(
-                    path,
-                    1,
-                    format!("the empty last segment is named {first} but the next event is {next}"),
-                ));
-            }
-            _ => {
-                end = Mark {
-                    segment: *first,
-                    bytes,
-                    next,
-                };
-                if !each(read) {
-                    break;
-                }
-            }
-        }
     }
-    Ok(Some(end))
-}
-
-/// 读一段，从第 `from` 个字节读起：每一行读成事件，序号要接着 `next`。最后一段末尾没写完的半行照 `half` 截掉或者跳过；
-/// 别的段末尾有半行，报错。交回读出来的事件、照到的整行末尾；`from` 前面一个字节不是 `\n` 的（这一段比 `from` 短的也是），
-/// 交回空的（对不上）。
-fn read_segment(
-    path: &Path,
-    from: u64,
-    is_last: bool,
-    next: &mut Seq,
-    half: HalfLine,
-) -> Result<Option<(Vec<Event>, u64)>, OpenError> {
-    let mut file = fs::File::open(path)?;
-    // 从一行中间读起的不算数：多读前面那一个字节，看它是不是 `\n`。这一段比记的短了的，那个字节读不到，也算对不上。
-    let skip = u64::from(from > 0);
-    file.seek(SeekFrom::Start(from - skip))?;
-    // 照文件的大小一次留够（施工 V-12）：原来一路翻倍长大，十兆的日志多搬好几遍。读的时候还在往后写的，照样读到末尾。
-    let size = file.metadata()?.len().saturating_sub(from - skip);
-    let mut read = Vec::with_capacity(usize::try_from(size).unwrap_or(0).saturating_add(1));
-    file.read_to_end(&mut read)?;
-    if skip == 1 && read.first() != Some(&b'\n') {
-        return Ok(None);
-    }
-    let bytes = &read[usize::from(skip == 1)..];
-    let complete = bytes
-        .iter()
-        .rposition(|&byte| byte == b'\n')
-        .map_or(0, |at| at + 1);
-    let end = from + complete as u64;
-    if complete < bytes.len() {
-        if !is_last {
-            return Err(broken(
-                path,
-                memchr::memchr_iter(b'\n', &bytes[..complete]).count() + 1,
-                "ends in a partial line, yet more segments follow".to_string(),
-            ));
-        }
-        if half == HalfLine::Cut {
-            truncate(path, end)?;
-        }
-    }
-    let parse::Lines {
-        events,
-        broken: bad,
-    } = parse::lines(&bytes[..complete]);
-    // 读成的都在读不成的那一行前面：先照先后查序号，都接上了再报那一行。
-    for (k, event) in events.iter().enumerate() {
-        if event.seq != *next {
-            return Err(broken(
-                path,
-                k + 1,
-                format!("seq should be {next}, got {}", event.seq),
-            ));
-        }
-        *next = next.next();
-    }
-    if let Some((number, why)) = bad {
-        return Err(broken(path, number, why));
-    }
-    Ok(Some((events, end)))
-}
-
-/// 截到 `len` 字节，再同步。
-fn truncate(path: &Path, len: u64) -> io::Result<()> {
-    let file = OpenOptions::new().write(true).open(path)?;
-    file.set_len(len)?;
-    file.sync_all()
 }
 
 /// 只读地拿会话日志的第一条（`session.created`）：列出会话时用（施工 3-9 下）。只读第一段开头那一行，

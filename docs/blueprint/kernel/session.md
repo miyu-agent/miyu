@@ -51,6 +51,7 @@
 |---|---|
 | `Session::create(session, id, by, at, created, policy, environment)` | 造会话：追加第 1 条 `session.created`，`cause` 是 `id`，出来一个 `Append`；落了盘回应 `id`。开始时的权限取自 `created.permission`。`session` 是这个会话自己的编号（日志所在的目录就叫它），事实 `session` 写它（施工 1-13 再补） |
 | `Session::load(session, events, at, policy, environment)` | 从日志载入会话 `session`，出来会话和要补的动作；载入不了的是 `LoadError`（「载入和崩溃」） |
+| `Session::loader(session, base, first, reports)`、`Loader::feed(events)`、`needs_whole(policy)`、`finish(at, policy, environment)` | 一块块载入（施工 V-15）：头一块、向上回报的截法开始，照先后一块块喂（账本、记账一条条过，有效历史的起点往前挪了，挪过去的只记派出去的任务、待办，放掉），喂完收尾，同 `Session::load`。`needs_whole` 是真的不收尾，照整份走 `Session::load`：压缩被撤到放掉的前面了，或者读完才认得出的策略向上回报的截法和开头的不一样。`load`、`load_forked` 就是整份当一块喂 |
 | `handle(input)` | 送进一条输入，出来一串动作 |
 | `last_job_number()` | 日志里用过的任务编号最后一段最大的数（施工 7-5；照最后一段数，施工 7-1 补）：撤掉的回合里派的、不认识的种类也算，一个都没派过的是 0。只读。执行器照它往下领号，派子代理、后台命令共用一串（`session/tools.md`「派子代理」、第 5 条，施工 7-3） |
 | `waiting_children()` | 欠着一份回报的子代理的子会话，照任务编号：派出去、一次都还没回报过的（施工 7-6），最近一次回报以后又留过言的（`job.messaged`，施工 7-7）。撤掉的回合里派的也在，被停掉的报过了、不在。只读。执行器载入以后照它叫起子会话（`session/actor.md` 第 2 条） |

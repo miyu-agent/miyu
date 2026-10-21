@@ -117,6 +117,24 @@ fn a_fork_loads_back_the_same() {
         environment("~/src/miyu"),
     )
     .unwrap();
+    // 一块块喂（施工 V-15）：一条一块喂，底子照样先收，载入出来的一字不差。
+    let mut first = logged.log.iter().take(1).cloned().collect::<Vec<_>>();
+    let mut loader = Session::loader(
+        child_id(),
+        Some(parent.log.clone()),
+        &first,
+        policy().reports,
+    )
+    .unwrap();
+    loader.feed(std::mem::take(&mut first)).unwrap();
+    for event in logged.log.iter().skip(1) {
+        loader.feed(vec![event.clone()]).unwrap();
+    }
+    assert!(!loader.needs_whole(&policy()));
+    let fed = loader
+        .finish(at(55), policy(), environment("~/src/miyu"))
+        .unwrap();
+    assert_eq!(format!("{fed:?}"), format!("{:?}", (&loaded, &actions)));
     assert!(
         actions.is_empty(),
         "走完了的，载入时什么都不补：{actions:?}"

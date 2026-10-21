@@ -124,27 +124,50 @@ pub(crate) fn saw(seen: &mut Seen, effects: &[Effect]) {
 /// 从日志里重建她看过的文件：照先后过一遍每一条工具结果的效果，现在还撤着的回合里的不算（有效历史，
 /// `03-事件模型.md` 第七节）。
 pub(crate) fn seen_in(events: &[Event]) -> Seen {
-    let mut reverted = BTreeSet::<TurnId>::new();
+    let mut scan = SeenScan::default();
     for event in events {
+        scan.note(event);
+    }
+    scan.seen()
+}
+
+/// 边读日志边记她看过的文件（施工 V-15：载入时一块块读，读过的放掉）：工具结果的效果连同它的回合照先后记下，撤销、恢复
+/// 照先后认；读完了 [`SeenScan::seen`] 照现在还撤着的回合挑，同 [`seen_in`]。
+#[derive(Debug, Default)]
+pub(crate) struct SeenScan {
+    /// 现在还撤着的回合。
+    reverted: BTreeSet<TurnId>,
+    /// 带了效果的工具结果：回合、效果，照先后。
+    results: Vec<(Option<TurnId>, Vec<Effect>)>,
+}
+
+impl SeenScan {
+    /// 记下一条。
+    pub(crate) fn note(&mut self, event: &Event) {
         match &event.body {
-            Body::TurnReverted(undone) => reverted.extend(undone.turns.iter().copied()),
+            Body::TurnReverted(undone) => self.reverted.extend(undone.turns.iter().copied()),
             Body::TurnUnreverted(redone) => {
                 for turn in &redone.turns {
-                    reverted.remove(turn);
+                    self.reverted.remove(turn);
                 }
+            }
+            Body::ToolResult(result) if !result.effects.is_empty() => {
+                self.results.push((event.turn, result.effects.clone()));
             }
             _ => {}
         }
     }
-    let mut seen = Seen::new();
-    for event in events {
-        if let Body::ToolResult(result) = &event.body
-            && !event.turn.is_some_and(|turn| reverted.contains(&turn))
-        {
-            saw(&mut seen, &result.effects);
+
+    /// 她看过的文件：现在还撤着的回合里的不算。
+    pub(crate) fn seen(&self) -> Seen {
+        let mut seen = Seen::new();
+        for (turn, effects) in &self.results {
+            if !turn.is_some_and(|turn| self.reverted.contains(&turn)) {
+                saw(&mut seen, effects);
+            }
         }
+        seen
     }
-    seen
 }
 
 /// 这一批里有没有撤销、恢复：有的，她看过的要照日志重算。

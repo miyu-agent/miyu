@@ -18,7 +18,7 @@ fn stage() -> Stage {
 }
 
 /// 说完两轮（3 号、10 号），替身单开一轮压缩（14 号，压到 13），再说一轮（18 号）。
-fn compacted_once() -> Stage {
+pub(super) fn compacted_once() -> Stage {
     let mut s = stage();
     s.model([Line::says("好"), Line::says("又好"), Line::says("接着好")]);
     s.say("hi");

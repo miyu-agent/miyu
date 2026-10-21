@@ -5,6 +5,7 @@
 //! [`compaction`]（施工 6-9）。
 
 mod compaction;
+mod loading;
 
 use super::executor::*;
 use super::load::{Logged, load};

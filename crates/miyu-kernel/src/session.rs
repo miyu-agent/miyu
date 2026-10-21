@@ -73,7 +73,7 @@ pub use input::{
     Reread, Verdict,
 };
 pub use limits::ContextLimits;
-pub use load::LoadError;
+pub use load::{LoadError, Loader};
 pub use messages::Subagent;
 pub use nested::{NestedAction, NestedAnswer, NestedInput, NestedRefusal};
 pub use policy::{

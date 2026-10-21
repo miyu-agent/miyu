@@ -7,18 +7,14 @@ use std::time::{Duration, Instant};
 
 use tokio::sync::mpsc;
 
-use miyu_kernel::event::{Body, Event};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::session::{Input, Session};
-use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
-use miyu_store::log::{SEGMENT_LIMIT, SessionLog, read_events};
 use miyu_store::recall::NO_PERSONA;
 use miyu_store::usage::Who;
 use miyu_tool::Log;
 
 use super::place;
-use super::scan::{current_policy, last_sent, remembered};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
@@ -26,13 +22,9 @@ use crate::agents::{Agents, job_in};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
-use crate::current::Tally;
-use crate::effects;
-use crate::goal::Goals;
 use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
-use crate::jobs::Roster;
 use crate::knowledge::{Shelves, Shelving};
 use crate::lettering::Lettering;
 use crate::memory::{self, TurnLane, connect};
@@ -45,6 +37,8 @@ use crate::tools::ToolKit;
 
 use super::{Load, LoadError, Workplace};
 use crate::default_workspace::DefaultWorkspace;
+
+mod stream;
 
 /// 从磁盘载入一个会话：打开日志（自检、截尾），照第 1 条的策略哈希取快照、造策略，交给内核载入。
 /// 内核吐出来的动作照样回：有计划的重启打断了的一轮，接着干。
@@ -109,7 +103,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (parents, parent_owner) = (root.clone(), owner.clone());
     let (
         log,
-        (events, base),
+        (loaded, base, scan),
         (created, command),
         (snapshot, pools),
         policy,
@@ -120,37 +114,19 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         (read, snapshotted, connected),
         remembered,
     ) = blocking(move || {
-        // 载入各段用了多久（施工 V-2 中）：读、解日志，接上记忆，记进 `loaded` 那一行。
+        // 载入各段用了多久（施工 V-2 中）：读、解日志（施工 V-15 起连着过账本），接上记忆，记进 `loaded` 那一行。
         let began = Instant::now();
-        let (log, events) = SessionLog::open(&dir, SEGMENT_LIMIT).map_err(LoadError::Log)?;
-        let read = began.elapsed();
+        let stream::Read {
+            log,
+            created: (created, command),
+            base,
+            snapshot: (snapshot, policy),
+            loaded,
+            scan,
+            snapshotted,
+        } = stream::read(&dir, &id_of, &store, (&parents, &parent_owner))?;
+        let read = began.elapsed().saturating_sub(snapshotted);
         let snapshotting = Instant::now();
-        let (created, command) = match events.first() {
-            Some(Event {
-                body: Body::SessionCreated(created),
-                cause,
-                ..
-            }) => (created.clone(), cause.clone()),
-            _ => return Err(LoadError::NotCreated),
-        };
-        // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。
-        let base = match &created.forked {
-            Some(forked) => {
-                let parent_dir = parents.session_dir(&parent_owner, &forked.from);
-                let parent_log = read_events(&parent_dir).map_err(LoadError::Log)?;
-                let base: Vec<Event> = parent_log
-                    .into_iter()
-                    .take_while(|event| event.seq <= forked.upto)
-                    .collect();
-                Some(Arc::new(base))
-            }
-            None => None,
-        };
-        let bytes = store
-            .get(current_policy(&events).unwrap_or(&created.policy))
-            .map_err(LoadError::Blob)?;
-        let snapshot = Snapshot::from_bytes(&bytes).map_err(LoadError::Snapshot)?;
-        let policy = snapshot.policy().map_err(LoadError::Policy)?;
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
         let run = snapshot.run_texts().map_err(LoadError::Policy)?;
         let guard = snapshot.guard_texts().map_err(LoadError::Policy)?;
@@ -162,7 +138,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         // （施工 R-13 三补）。
         let persona = snapshot.persona.as_deref().unwrap_or(NO_PERSONA);
         let scope = memory::scope(memory::subagent(&created), true, snapshot.memory_scope());
-        let snapshotted = snapshotting.elapsed();
+        let snapshotted = snapshotted + snapshotting.elapsed();
         let connecting = Instant::now();
         let turns = connect(
             memory.as_ref(),
@@ -173,14 +149,14 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             &id_of,
             &created.venue,
             (
-                memory::Laid::Read(&events),
+                memory::Laid::Read(&scan.recasts),
                 memory::Source::of(&log, base.clone()),
             ),
         );
-        let remembered = remembered(&events);
+        let remembered = scan.remembered();
         Ok((
             log,
-            (events, base),
+            (loaded, base, scan),
             (created, command),
             (snapshot, pools),
             policy,
@@ -267,29 +243,24 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let kept = blobs.clone();
     models.ready().await;
     // 系统时间比日志里最后一条还早（往回拨过），照最后一条的：时刻不往回走。
-    let mut clock = events
-        .last()
-        .map_or_else(Clock::default, |event| Clock::since(event.at));
-    let count = events.len();
+    let mut clock = scan.last.map_or_else(Clock::default, Clock::since);
+    let count = scan.count;
     let scanning = Instant::now();
-    // 她看过的文件（施工 4-6 上）、派出去的任务（施工 7-4）、最近发给了谁（施工 8-8）从日志里重建：内核收走日志之前。
-    let seen = match &base {
-        Some(base) => effects::seen_in(&[base.as_slice(), events.as_slice()].concat()),
-        None => effects::seen_in(&events),
-    };
-    let roster = Roster::from_events(&events);
-    let sent = last_sent(&events);
-    // 累计的用量和计数（施工 9-6 上）、长期目标（施工 X-6）：订阅的回应照它答，之后每落一批盘加上这一批。
-    let tally = Tally::of(&events);
-    let goals = Goals::of(&events);
+    // 她看过的文件（施工 4-6 上）、派出去的任务（施工 7-4）、最近发给了谁（施工 8-8）、累计的用量和计数（施工 9-6 上）、长期
+    // 目标（施工 X-6）读日志时一路记下了（施工 V-15）：订阅的回应照它答，之后每落一批盘加上这一批。
+    let seen = scan.seen.seen();
+    let (roster, sent, tally, goals) = (scan.roster, scan.sent, scan.tally, scan.goals);
     let scanned = scanning.elapsed();
     let replaying = Instant::now();
     let placed = environment.clone();
-    let (mut session, first) = match &base {
-        Some(base) => {
-            Session::load_forked(id.clone(), base, events, clock.now(), policy, environment)
-        }
-        None => Session::load(id.clone(), events, clock.now(), policy, environment),
+    let (mut session, first) = match loaded {
+        stream::Loaded::Fed(loader) => loader.finish(clock.now(), policy, environment),
+        stream::Loaded::Whole(events) => match &base {
+            Some(base) => {
+                Session::load_forked(id.clone(), base, events, clock.now(), policy, environment)
+            }
+            None => Session::load(id.clone(), events, clock.now(), policy, environment),
+        },
     }
     .map_err(LoadError::Kernel)?;
     let replayed = replaying.elapsed();

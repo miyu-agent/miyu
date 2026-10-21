@@ -405,3 +405,40 @@ fn a_log_can_start_after_one() {
     assert!(abandon(&empty).unwrap(), "只有一段空的第一段，照样收拾掉");
     assert!(!empty.exists());
 }
+
+/// 一段里不止一处不对的，照以前的先后报（施工 V-15 一块块读以后照旧）：段名不对、后面又有一行读不成的，报读不成的那一行。
+#[test]
+fn a_misnamed_segment_with_a_broken_line_reports_the_line() {
+    let scratch = Scratch::new();
+    let dir = dir(&scratch);
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("000000000001.jsonl"), line_of(&said(1))).unwrap();
+    let text = format!("{}{}not json\n", line_of(&said(2)), line_of(&said(3)));
+    fs::write(dir.join("000000000005.jsonl"), text).unwrap();
+    assert_broken(&dir, "000000000005.jsonl", 3, "not readable");
+}
+
+/// 一块块收的叫停了（施工 V-15）：不当打开了，交回没有这个会话。
+#[test]
+fn a_stopped_open_each_opens_nothing() {
+    let scratch = Scratch::new();
+    let dir = dir(&scratch);
+    let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).unwrap();
+    log.append(&said_range(1, 3)).unwrap();
+    drop(log);
+    let mut seen = 0;
+    let opened = SessionLog::open_each(&dir, SEGMENT_LIMIT, |events| {
+        seen += events.len();
+        Flow::Stop
+    });
+    assert!(matches!(opened, Err(OpenError::Missing(_))), "{opened:?}");
+    assert_eq!(seen, 3);
+    let mut all = Vec::new();
+    let log = SessionLog::open_each(&dir, SEGMENT_LIMIT, |events| {
+        all.extend(events);
+        Flow::Go
+    })
+    .unwrap();
+    assert_eq!(all, said_range(1, 3));
+    assert_eq!(log.next_seq().get(), 4);
+}

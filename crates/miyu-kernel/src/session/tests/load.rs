@@ -97,16 +97,50 @@ impl Logged {
     }
 }
 
-/// 在 07:00:55 载入这份日志。
+/// 在 07:00:55 载入这份日志。顺带核对一块块喂（施工 V-15）：一条一块、三条一块喂，载入出来的会话、交回的动作和一次喂完
+/// 的一字不差。
 pub(super) fn load(log: Vec<Event>) -> (Session, Vec<Action>) {
-    Session::load(
+    let whole = Session::load(
         session_id(),
-        log,
+        log.clone(),
         at(55),
         policy(),
         environment("~/src/miyu"),
     )
-    .unwrap()
+    .unwrap();
+    for size in [1, 3] {
+        let fed = load_in_pieces(&log, size);
+        assert_eq!(
+            format!("{:?}", fed),
+            format!("{whole:?}"),
+            "{size} 条一块喂的和一次喂完的不一样"
+        );
+    }
+    whole
+}
+
+/// 照 `size` 条一块喂这份日志；对不上的（压缩被撤到放掉的前面）照整份走 [`Session::load`]。
+pub(super) fn load_in_pieces(log: &[Event], size: usize) -> (Session, Vec<Action>) {
+    let mut pieces = log.chunks(size).map(<[Event]>::to_vec);
+    let first = pieces.next().unwrap_or_default();
+    let mut loader = Session::loader(session_id(), None, &first, policy().reports).unwrap();
+    loader.feed(first).unwrap();
+    for piece in pieces {
+        loader.feed(piece).unwrap();
+    }
+    if loader.needs_whole(&policy()) {
+        return Session::load(
+            session_id(),
+            log.to_vec(),
+            at(55),
+            policy(),
+            environment("~/src/miyu"),
+        )
+        .unwrap();
+    }
+    loader
+        .finish(at(55), policy(), environment("~/src/miyu"))
+        .unwrap()
 }
 
 pub(super) fn ended_with(event: &Event) -> &EndReason {
@@ -336,4 +370,18 @@ fn a_command_sent_again_gets_the_same_reply_before_and_after_a_reload() {
     let (mut loaded, _) = load(logged.log.clone());
     assert_eq!(loaded.handle(send(1, "hi")), said);
     assert_eq!(loaded.handle(clear(2)), cleared);
+}
+
+/// 一块块载入（施工 V-15）：策略是读完才认得出的，向上回报的截法和开头照着过账本的不一样的，要照整份走。
+#[test]
+fn a_changed_report_cut_needs_the_whole_log() {
+    let mut logged = Logged::new();
+    let seen = logged.ask(1, "hi");
+    logged.say(seen, "好");
+    let mut other = policy();
+    other.reports.chars += 1;
+    let loader =
+        Session::loader(session_id(), None, &logged.log[..1], other.reports.clone()).unwrap();
+    assert!(!loader.needs_whole(&other));
+    assert!(loader.needs_whole(&policy()));
 }

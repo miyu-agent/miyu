@@ -66,7 +66,8 @@ pub struct Goals {
 }
 
 impl Goals {
-    /// 照 `events` 从头算。
+    /// 照 `events` 从头算（测试里核对一批批加的和它一样；载入时一路加，施工 V-15）。
+    #[cfg(test)]
     pub(crate) fn of(events: &[Event]) -> Goals {
         let mut goals = Goals::default();
         goals.add(events);

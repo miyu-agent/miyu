@@ -25,7 +25,7 @@
 | `crates/miyu-kernel/src/session/jobs.rs` 的 `stop_undone` | 撤销时停哪几个（施工 7-8）：撤掉的那几轮里派的、还在跑的 |
 | `crates/miyu-kernel/src/session/revert.rs` | 撤销、恢复两个命令，撤掉压缩时读回日志的来回，取回重读的原文 |
 | `crates/miyu-kernel/src/session/redo.rs` | 重做（施工 4-7 再补）：能不能重做，撤销记下以后重发开那一轮的话、开新的一轮 |
-| `crates/miyu-kernel/src/session/load.rs` | 载入：整份过账本，从还算数的最近一次压缩起重建有效历史（`kernel/session.md`） |
+| `crates/miyu-kernel/src/session/load.rs`、`session/load/loader.rs` | 载入：一块块过账本，有效历史只留还算数的最近一次压缩起的，挪过去的当场只记、放掉；压缩被撤到放掉的前面的照整份重建（施工 V-15，`kernel/session.md`） |
 | `crates/miyu-kernel/src/event/restore.rs` | `files.restored` 的每一格：只为读以前的日志（施工 U-1） |
 
 ### 对外的样子

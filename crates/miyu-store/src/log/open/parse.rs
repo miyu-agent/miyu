@@ -1,4 +1,4 @@
-//! 一段日志的每一行读成事件（施工 V-2 下补）：多的分几块在几个线程里一起读，读完照先后交回。一万条事件的会话读、解日志
+//! 一段日志的每一行读成事件（施工 V-2 下补）：多的分几块在几个线程里一起读，解好一块照先后交一块（施工 V-15，`stream.rs`）。一万条事件的会话读、解日志
 //! 约 23 ms，是重启以后打开大会话的大头；读成事件和别的行不相干，序号接没接上留给调的一方照先后查。
 //!
 //! 分块照字节分（施工 V-12）：每块从一行开头起、到一行末尾止，切行也在各自的线程里（`memchr` 找换行）。原来先在一个线程里
@@ -9,11 +9,19 @@
 
 use miyu_kernel::event::Event;
 
+mod stream;
+
+pub use stream::Flow;
+pub(super) use stream::stream;
+
 /// 字节到了这么多才分块：少的一个线程读完比起线程还快。
 const SPLIT_AT: usize = 1024 * 1024;
 
-/// 最多分几块。
+/// 最多几个线程一起解。
 const MOST: usize = 8;
+
+/// 一块块交的时候（[`stream()`]），每个线程平均分到几块：块小了，交出去的一方等第一块等得短，留在内存里的也少。
+const PER_THREAD: usize = 8;
 
 /// 一块（或者整段）读成的：读成的事件照先后；读不成的那一行是第几行（从 1 数）、为什么，它后面的不读。
 pub(super) struct Lines {
@@ -23,51 +31,8 @@ pub(super) struct Lines {
     pub(super) broken: Option<(usize, String)>,
 }
 
-/// `bytes` 是整行（每行以 `\n` 结尾，最后一行也是），每一行读成事件，照先后交回。
-///
-/// 一条事件占几百字节，一万条就是好几 MB（施工 V-14）：一块里照换行数一次留够，几块并起来也只搬一遍。原来照行数一路翻倍
-/// 长大、读成以后再照先后拷两遍，每一遍都是向系统新要的页（大块的门槛定在 128 KiB，`miyu-heap`），刚起的核心里一页缺一次。
-pub(super) fn lines(bytes: &[u8]) -> Lines {
-    let cuts = cuts(bytes, parts(bytes.len()));
-    if cuts.len() <= 2 {
-        return chunk(bytes);
-    }
-    std::thread::scope(|scope| {
-        let handles: Vec<_> = cuts
-            .windows(2)
-            .map(|pair| {
-                let part = &bytes[pair[0]..pair[1]];
-                scope.spawn(move || chunk(part))
-            })
-            .collect();
-        // 读一行不会 panic；真的 panic 了，照原样抛出去，和一个线程读的时候一样。
-        let parts: Vec<Lines> = handles
-            .into_iter()
-            .map(|handle| {
-                handle
-                    .join()
-                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-            })
-            .collect();
-        let mut all = Lines {
-            events: Vec::with_capacity(parts.iter().map(|part| part.events.len()).sum()),
-            broken: None,
-        };
-        for part in parts {
-            // 块里的行号从 1 数：接上前面几块读成的行数。前面的块都读完了（读不成的那一块之后的不接），行数是准的。
-            let before = all.events.len();
-            all.events.extend(part.events);
-            if let Some((number, why)) = part.broken {
-                all.broken = Some((before + number, why));
-                break;
-            }
-        }
-        all
-    })
-}
-
-/// 分几块：少的不分；多的照机器的核数，最多 [`MOST`]。
-fn parts(bytes: usize) -> usize {
+/// 几个线程一起解：少的一个；多的照机器的核数，最多 [`MOST`]。
+fn threads(bytes: usize) -> usize {
     if bytes < SPLIT_AT {
         return 1;
     }

@@ -50,7 +50,8 @@ pub(crate) struct End {
 }
 
 impl Roster {
-    /// 从日志里的全部事件建起来：载入时。
+    /// 从日志里的全部事件建起来（测试里用；载入时一路记，施工 V-15）。
+    #[cfg(test)]
     pub(crate) fn from_events(events: &[Event]) -> Roster {
         let mut roster = Roster::default();
         for event in events {

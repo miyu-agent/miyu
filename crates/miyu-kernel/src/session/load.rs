@@ -11,25 +11,21 @@ use std::fmt;
 
 use super::Session;
 use super::action::Action;
-use super::configure::Reference;
-use super::fork::{Base, forked_of};
-use super::grants::Grants;
-use super::jobs::{self, Arrived, Waker};
+use super::jobs::{Arrived, Waker};
 use super::meta::Meta;
 use super::policy::Policy;
 use super::recent::Recent;
-use super::report::Duty;
-use super::seal::Rounds;
-use super::sight::Sight;
-use super::title::Naming;
 use super::turn::Stage;
 use crate::event::{Body, EndReason, Event, Permission, PolicyChanged, ToolStatus};
 use crate::facts::Environment;
-use crate::history::History;
 use crate::id::{CommandId, Seq, SessionId};
-use crate::ledger::{Ledger, LedgerError};
+use crate::ledger::LedgerError;
 use crate::origin::By;
 use crate::time::Timestamp;
+
+mod loader;
+
+pub use loader::Loader;
 
 /// 载入不了。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +49,7 @@ impl std::error::Error for LoadError {}
 
 /// 载入时边读边记的几样：日志里没有现成的，要一路算。
 #[derive(Default)]
-struct Replay {
+pub(super) struct Replay {
     /// 现在的权限：创建时定的，被后来切过的盖掉。
     permission: Option<Permission>,
     /// 最后一条的序号。
@@ -144,7 +140,8 @@ impl Session {
         Session::load_on(session, Some(base), events, at, policy, environment)
     }
 
-    /// [`Session::load`]、[`Session::load_forked`] 共用的：`base` 是分叉出来的会话的底子，别的没有。
+    /// [`Session::load`]、[`Session::load_forked`] 共用的：`base` 是分叉出来的会话的底子，别的没有。整份当一块喂
+    /// （[`Loader`]）。
     fn load_on(
         session: SessionId,
         base: Option<&[Event]>,
@@ -153,49 +150,51 @@ impl Session {
         policy: Policy,
         environment: Environment,
     ) -> Result<(Session, Vec<Action>), LoadError> {
-        let first = events.first().map_or(Seq::FIRST, |event| event.seq);
-        let base = base
-            .map(|base| Base::of(base, forked_of(&events)?))
-            .transpose()?;
-        let mut ledger = Ledger::for_session(session.clone()).starting_at(first);
-        if let Some(base) = &base {
-            ledger = ledger.heard_from(&base.ledger);
-        }
-        let mut replay = Replay::default();
-        let mut duty = Duty::default();
-        let mut naming = Naming::default();
-        let mut reference = Reference::default();
-        let mut sight = Sight::default();
-        let mut grants = Grants::default();
-        let mut rounds = Rounds::default();
-        for event in &events {
-            // 向上回报照活着时的算（施工 7-6）：活着时落了盘就报，接着开的一轮和结束在同一批里，那时不该报。
-            if !matches!(event.body, Body::TurnStarted(_)) && duty.due(&ledger) {
-                duty.take(&policy.reports);
-            }
-            let queued = ledger.queued();
-            ledger.append(event).map_err(LoadError::Broken)?;
-            duty.note(event);
-            naming.note(event);
-            reference.note(event);
-            sight.note(event);
-            grants.note(event);
-            rounds.note(event);
-            replay.note(event, queued, jobs::waking(&ledger, event));
-        }
+        let mut loader = Session::loader(
+            session,
+            base.map(<[Event]>::to_vec),
+            &events,
+            policy.reports.clone(),
+        )?;
+        loader.feed(events)?;
+        loader.finish(at, policy, environment)
+    }
+}
+
+impl Loader {
+    /// 喂完了，收尾（同 [`Session::load`]）：`policy` 是会话的策略，有效历史落到检查点上，崩了的那一轮收尾、被重启打断的
+    /// 接着干。[`Loader::needs_whole`] 是真的不该收尾，照整份走 [`Session::load`]。
+    ///
+    /// # Errors
+    ///
+    /// 日志是空的。
+    pub fn finish(
+        self,
+        at: Timestamp,
+        policy: Policy,
+        environment: Environment,
+    ) -> Result<(Session, Vec<Action>), LoadError> {
+        let from = self.from();
+        let Loader {
+            session,
+            parent,
+            ledger,
+            mut replay,
+            mut duty,
+            naming,
+            reference,
+            sight,
+            grants,
+            rounds,
+            mut history,
+            kept,
+            ..
+        } = self;
         if duty.due(&ledger) {
             duty.take(&policy.reports);
         }
-        let from = ledger
-            .compacted()
-            .map(Seq::next)
-            .or_else(|| base.as_ref().map(|base| base.from))
-            .unwrap_or(Seq::FIRST);
-        let mut history = History::whole();
-        let parent = base.as_ref().map(|base| base.parent.clone());
         // 那一段以前的只记派出去的任务：回报的标题、派它的那一轮撤掉了没有照它（施工 7-2）。分叉出来的先收底子（施工 C-8 上）。
-        let base_events = base.into_iter().flat_map(|base| base.events.to_vec());
-        for event in base_events.chain(events) {
+        for event in kept {
             match event.seq >= from {
                 true => history.append(event),
                 false => history.note(&event),
@@ -211,7 +210,7 @@ impl Session {
         }
         let history = history.owned_by(session.clone());
         let history = match parent {
-            Some(parent) => history.forked_from(parent),
+            Some((parent, _)) => history.forked_from(parent),
             None => history,
         };
         let mut session = Session {
@@ -272,7 +271,9 @@ impl Session {
         }
         Ok((session, actions))
     }
+}
 
+impl Session {
     /// 载入以后：崩了的那一轮收尾；被有计划的重启打断的，接着干。返回追加的事件。
     fn recover(&mut self, at: Timestamp, replay: Replay) -> Vec<Event> {
         if let Some(id) = self.ledger.open_turn() {
@@ -333,7 +334,7 @@ impl Replay {
 
     /// 读进来一条：记下它带来的变化。`queued` 是这一条之前还排着队的消息；`waking` 是它会叫醒她时是谁的（会叫醒她
     /// 的回报、子代理的留言、别的 harness 发来的话）。
-    fn note(&mut self, event: &Event, queued: Vec<Seq>, waking: Option<Waker>) {
+    pub(super) fn note(&mut self, event: &Event, queued: Vec<Seq>, waking: Option<Waker>) {
         self.last = Some(event.seq);
         if !self.open
             && let Some(waker) = waking

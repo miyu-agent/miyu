@@ -88,7 +88,8 @@ impl Default for Tally {
 }
 
 impl Tally {
-    /// 照 `events` 从头算。
+    /// 照 `events` 从头算（测试里核对一批批加的和它一样；载入时一路加，施工 V-15）。
+    #[cfg(test)]
     pub(crate) fn of(events: &[Event]) -> Tally {
         let mut tally = Tally::default();
         tally.add(events);
