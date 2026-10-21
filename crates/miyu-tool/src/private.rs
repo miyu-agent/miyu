@@ -9,6 +9,10 @@ use std::path::{Path, PathBuf};
 
 use miyu_config::{Applies, Control, Item, Kind, Layer, Setting, Ui, Values};
 
+/// 私密目录整个开不开（施工 5-17 上，2026-10-21 项目主人定，出厂开）：关了出厂的、人加的都不藏、文件工具不问；数据根照旧藏
+/// （沙盒、权限策略另算，设计 11 第五节：数据根是 Miyu 自己的状态和密钥）。
+pub const ENABLED: &str = "sandbox.private.enabled";
+
 /// 人加的私密目录。
 pub const ADD: &str = "sandbox.private.add";
 
@@ -28,8 +32,21 @@ const UI: Ui = Ui {
     hidden: false,
 };
 
-/// 这两项：系统、个人两层，下一轮生效；没写的是空的。
+/// 这三项：系统、个人两层，下一轮生效；开关出厂开，两份目录没写的是空的。开关排在组里最上面。
 pub const ITEMS: &[Item] = &[
+    Item {
+        key: ENABLED,
+        kind: Kind::Bool,
+        default: Some(miyu_config::Value::Bool(true)),
+        layers: &[Layer::System, Layer::Personal],
+        tighten: None,
+        env: None,
+        applies: Applies::NextTurn,
+        ui: Ui {
+            control: Control::Toggle,
+            ..UI
+        },
+    },
     Item {
         key: ADD,
         kind: Kind::List(&Kind::Text { max: LONGEST }),
@@ -52,10 +69,23 @@ pub const ITEMS: &[Item] = &[
     },
 ];
 
-/// 照最终值 `values` 拼出家目录 `home` 下这一刻的私密目录：出厂的去掉人去掉的，加上人加的（[`miyu_fs::private_dirs_with`]）。
+/// 照最终值 `values` 拼出家目录 `home` 下这一刻的私密目录：出厂的去掉人去掉的，加上人加的，出厂项跟着核心进程的环境变量挪去的
+/// 也算（[`miyu_fs::private_dirs_with`]）；关了的（[`ENABLED`]）是空的。
 pub fn dirs(values: &Values, home: &Path) -> Vec<PathBuf> {
+    dirs_in(values, home, &|name| std::env::var_os(name))
+}
+
+/// 同 [`dirs`]，环境变量照 `env` 读（测试里不碰这台机器的环境）。
+pub fn dirs_in(
+    values: &Values,
+    home: &Path,
+    env: &dyn Fn(&str) -> Option<std::ffi::OsString>,
+) -> Vec<PathBuf> {
+    if <Option<bool>>::read(values.get(ENABLED)) == Some(false) {
+        return Vec::new();
+    }
     let read = |key: &str| <Option<Vec<String>>>::read(values.get(key)).unwrap_or_default();
-    miyu_fs::private_dirs_with(home, &read(ADD), &read(REMOVE))
+    miyu_fs::private_dirs_with(home, &read(ADD), &read(REMOVE), env)
 }
 
 #[cfg(test)]

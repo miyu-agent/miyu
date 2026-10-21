@@ -896,6 +896,12 @@
               "title": "Added private folders",
               "type": "array"
             },
+            "enabled": {
+              "default": true,
+              "description": "When off, neither the default nor the added private folders are hidden and file tools stop asking; Miyu's own data stays hidden. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",
+              "title": "Private folders",
+              "type": "boolean"
+            },
             "remove": {
               "description": "Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
               "items": {
