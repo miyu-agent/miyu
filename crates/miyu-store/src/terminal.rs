@@ -4,6 +4,7 @@
 
 use std::path::Path;
 
+use miyu_kernel::time::Timestamp;
 use serde::{Deserialize, Serialize};
 
 use crate::config_file::WriteError;
@@ -13,13 +14,16 @@ pub use crate::private_json::BadFile;
 /// 文件名：在账号的家目录里。
 pub const FILE: &str = "terminal.json";
 
-/// 读好的一份：没有文件的、还没指过的没有会话。
+/// 读好的一份：没有文件的、还没指过的没有会话。不认识的格不拦（以后的版本加的，旧核心照样读得了）。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Pointer {
     /// 终端会话的编号。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session: Option<String>,
+    /// 指过去的时刻（施工 T-1，2026-10-21 项目主人定：`/sessions` 主动切过去的不该再被闲置规则换掉）：算这个终端会话的一次
+    /// 动静，闲置从这一刻起算。以前写的没有，照会话自己的最后一次动静。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub at: Option<Timestamp>,
 }
 
 /// 读 `path`：交回指针和读到的版本（写回时交给 [`write()`]）。没有这个文件的是空的、版本是空的。

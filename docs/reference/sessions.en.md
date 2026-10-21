@@ -281,7 +281,7 @@ The terminal session: the one long-running session that what you say in the shel
 **`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). Response `{"session"}`:
 
 1. The session pointed at still exists and is this account's own local main session (not a child, venue or one-shot session): it's that one.
-2. It has been idle longer than `terminal.idle_new_after` minutes (0 never replaces): a new one starts, the pointer moves, and the response adds `renewed: {"last"}` (when the old one last had an event); the old one is left alone.
+2. It has been idle longer than `terminal.idle_new_after` minutes (0 never replaces): a new one starts, the pointer moves, and the response adds `renewed: {"last"}` (when the old one last had an event); the old one is left alone. Being pointed at (`session.set_terminal`, or being started) counts as activity: switching to a session that has been quiet for hours starts the idle time from the switch.
 3. Nothing pointed at yet, or it was deleted or doesn't count: a new one starts and the response adds `created: true`.
 
 A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.default` and `preset.default`). Several connections asking at once get one session.

@@ -8,6 +8,8 @@
 //!   （没写的照默认工作区）。同一时刻几个 shell 一起要的只开一个。`fresh: true` 不管指着谁，照新开的规矩开一个、指过去，
 //!   回应带 `created: true`（shellhook 的 `/new`，施工 8-33 再补：怎么开归核心，头不照 `terminal.*` 再拼一遍）。
 //! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收这个账号自己的本机主会话。
+//! - 指过去（`set_terminal`、新开的）的那一刻记在指针上，算这个终端会话的一次动静：闲置照会话的最后一次动静和它里晚的那个算
+//!   （施工 T-1，2026-10-21 项目主人定：主动切过去的不该再被闲置规则换掉）。
 
 use std::sync::Arc;
 
@@ -65,7 +67,7 @@ pub(crate) async fn get(
         .and_then(|id| row(core, account, &id));
     let renewed = match &pointed {
         _ if params.fresh => None,
-        Some(row) if !idle(row.last_active, settings.idle_new_after, now()) => {
+        Some(row) if !idle(touched(row, &pointer), settings.idle_new_after, now()) => {
             return Ok(json!({"session": row.id.as_str()}));
         }
         Some(row) => Some(row.last_active),
@@ -91,6 +93,7 @@ pub(crate) async fn get(
         .await?;
     let pointer = Pointer {
         session: Some(created.id.as_str().to_string()),
+        at: Some(now()),
     };
     terminal::write(&path, &pointer, version.as_deref()).map_err(|error| {
         tracing::warn!(target: "miyu::endpoint", error = %error, "terminal session not recorded");
@@ -119,12 +122,21 @@ pub(crate) async fn set(
     let (_, version) = read(&path)?;
     let pointer = Pointer {
         session: Some(id.as_str().to_string()),
+        at: Some(now()),
     };
     terminal::write(&path, &pointer, version.as_deref()).map_err(|error| {
         tracing::warn!(target: "miyu::endpoint", error = %error, "terminal session not recorded");
         Refusal::INTERNAL
     })?;
     Ok(json!({"session": id.as_str()}))
+}
+
+/// 终端会话最后一次动静：会话自己的，和指过去的那一刻里晚的那个。
+fn touched(row: &Row, pointer: &Pointer) -> Timestamp {
+    pointer
+        .at
+        .filter(|at| *at > row.last_active)
+        .unwrap_or(row.last_active)
 }
 
 /// 读指针：读不成的（手改坏了）当没指过，记一行，下一回写成好的。

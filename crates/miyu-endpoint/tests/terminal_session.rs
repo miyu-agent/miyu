@@ -1,6 +1,6 @@
 //! 终端会话（施工 8-33，设计 `22-命令行.md` 第七节）：`session.terminal` 没有的开一个、之后一直是它；`session.set_terminal`
 //! 指到选中的会话，只收自己的本机主会话；闲置超过 `terminal.idle_new_after` 的开新的、回应带上次的时刻，旧的不动；带 `fresh` 的
-//! 不管指着谁都开新的（施工 8-33 再补）。
+//! 不管指着谁都开新的（施工 8-33 再补）；切过去的那一刻算一次动静，切回闲置了很久的不再被换掉（施工 T-1）。
 
 use serde_json::{Value, json};
 
@@ -97,10 +97,11 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
         }
     }
     let pointer = home.root.account_dir(&alice()).join("terminal.json");
+    // 指针上指过去的时刻也挪到那时（施工 T-1）。
     let written = std::fs::read_to_string(&pointer).expect("记下了指针");
     std::fs::write(
         later.root.account_dir(&alice()).join("terminal.json"),
-        written,
+        regex_lite_at(&written),
     )
     .expect("写得进");
 
@@ -115,6 +116,17 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
         "{renewed}"
     );
     assert!(to.is_dir(), "旧的不动");
+
+    // 主动切回那个闲置了很久的（施工 T-1）：切过去那一刻算一次动静，下一次要的还是它，不换。
+    let pointed = client
+        .call("p1", "session.set_terminal", json!({"session": session}))
+        .await;
+    assert_eq!(pointed["result"], json!({"session": session}), "{pointed}");
+    assert_eq!(
+        terminal(&mut client, "t3", json!({})).await,
+        json!({"session": session}),
+        "切过去的不再被闲置换掉"
+    );
 }
 
 /// 每一行的 `"at":"…"` 都换成 2026-01-01 零点。

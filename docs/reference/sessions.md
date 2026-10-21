@@ -281,7 +281,7 @@
 **`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区；`fresh`（可以不写，默认假）：真的不管指着谁，照下面第 3 条开一个新的、指过去（`/new`）。回应 `{"session"}`：
 
 1. 指着的会话还在、是这个账号自己的本机主会话（不是子会话、场所会话、一次性的），就是它。
-2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。
+2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。指过去（`session.set_terminal`、新开的）的那一刻也算一次动静：主动切到一个很久没说话的会话，闲置从切过去时算起。
 3. 没指过、指着的删了、不算数的：开一个新的，回应多 `created: true`。
 
 新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要，只开一个。
