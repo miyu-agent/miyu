@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>694</b><span>/ 717 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>695</b><span>/ 718 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">1503d098</b><span>最近一步（B-6 换一篇只动它自己的块）的提交</span></li>
+    <li><b class="mono">70d56cb4</b><span>最近一步（M-4 给她看的字）的提交</span></li>
   </ul>
 </header>
 
@@ -1146,6 +1146,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sM-2"><span class="n">M-2</span>脚本能调哪些工具、交回什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sM-3a"><span class="n">M-3 上</span>通道和 miyu call（Linux、macOS）<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sM-3b"><span class="n">M-3 下</span>通道在 Windows 上<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sM-4"><span class="n">M-4</span>给她看的字<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
       </ol>
@@ -39846,6 +39847,43 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
         <div><dt>日期</dt><dd class="mono">2026-10-21</dd></div>
         <div><dt>提交</dt><dd class="mono">240b0abc</dd></div>
         <div><dt>验收</dt><dd>变异、端到端、虚拟机桌面会话、内核审、CI · 通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="sheet" id="sM-4" aria-labelledby="h-sM4">
+  <div class="sheet-head"><h2 id="h-sM4"><span class="no">M-4</span>给她看的字</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她知道跑的命令、脚本里能用 <code>miyu call</code> 调哪些工具、怎么写、交回来的 JSON 长什么样。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">M-4</span><span class="dir-note">做了什么</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>shell</code> 说明末尾一段：能调的名单（MCP 照服务并成一项）、一行例子、写了的 JSON 样子</li>
+              <li>例子照 shell 和 <code>PATH</code> 挑：PowerShell、jq、python3，都没有就不写</li>
+              <li>system 里核心的几行后面单成一段的一句</li>
+              <li>说明文件、扩展 <code>provide</code> 加 <code>result</code>；<code>--schema</code> 印 <code>Result:</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">样子写在 shell 那一段</span><span class="rl">三种写法各跑 20 次：写了少查格式、少出错；写进各工具说明没更好、还更贵</span></div>
+          <div class="tile new"><span class="nm">没得调就一字不加</span><span class="rl">工具面上没有 shell 或没有能调的，说明和 system 都不变</span></div>
+          <div class="tile"><span class="nm">另记</span><span class="rl">知识库列不出一个库里有哪几篇，她会去翻磁盘</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">M-4</dd></div>
+        <div><dt>名称</dt><dd>给她看的字</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">70d56cb4</dd></div>
+        <div><dt>验收</dt><dd>真模型实测 60 次、回归、变异、虚拟机 PowerShell、CI · 通过</dd></div>
       </dl>
     </figcaption>
   </figure>
