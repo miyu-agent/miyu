@@ -27,5 +27,9 @@ miyu-http = { path = "../miyu-http" }
 reqwest = { version = "0.12", default-features = false }
 tokio = { version = "1", features = ["rt"] }
 
+[dev-dependencies]
+# 读仓库里 `.miyu` 的类型定义（施工 G-14，`packaging/mime/miyu.xml`）：依赖图里本来就有的那一版。MIT 或 Apache-2.0。
+roxmltree = "0.20"
+
 [lints]
 workspace = true

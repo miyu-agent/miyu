@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  .miyu 包文件的类型（施工 G-14，docs/designs/37-软件源.md 第二节第 6 条）：.miyu 就是 zstd 压的 tar，
+  直接挂在 application/x-zstd-compressed-tar 名下，解压软件能打开看里面；不另开类型（File Roller 只认精确的
+  类型名，不认子类）。装到 share/mime/packages/，装完照 docs/designs/12-进程形态与分发.md 第四节跑 update-mime-database。
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-zstd-compressed-tar">
+    <glob pattern="*.miyu" weight="80"/>
+  </mime-type>
+</mime-info>
