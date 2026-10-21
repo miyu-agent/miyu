@@ -4677,7 +4677,7 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `core/mcp/instructions.txt`
 
 - 什么时候加进来：会话用得上的 MCP 服务交了说明（`instructions`）：工具面上有这个服务的工具才带，一个服务一段，服务名、原文换进去（施工 X-39）
-- token：约 15（估的：外壳两行，服务名按 `github` 填；仓库里没有分词器，合时照开发端点量）
+- token：14（2026-10-21 照项目主人给的端点量：服务名按 `github` 填、原文空，连同前面空的一行）
 - 为什么加：服务的说明告诉她什么时候去拿这个服务的工具（工具先加载以后她只看得到名字和一句说明，设计 25 W9）；外壳带服务名、分得出是哪个服务的、圈住第三方的原文（Claude Code 同样把服务的说明放进 system，`mcp.md`「怎么走」第三条第 5 条）
 - 指纹：`39baed4e`
 
