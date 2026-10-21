@@ -1,6 +1,6 @@
 ## 施工单 X-41：MCP 服务的资源
 
-状态：在分支 `step/X-41-MCP资源` 上，等主会话审。代码等 X-39 补合了再变基开工（都改 `mcp/supervise.rs`）。
+状态：在分支 `step/X-41-MCP资源` 上，主会话审过（2026-10-21：照服务登记一对、同前缀，不加特例）。「MCP 服务挂在哪个包」照现在的写，主会话的 F-17（技能、脚本、MCP 各做成一个内置包）合的时候统一挪。代码等 X-39 补合了再变基开工（都改 `mcp/supervise.rs`）。
 
 ### 目的
 
@@ -19,14 +19,14 @@ MCP 服务除了工具、提示词，还能开放「资源」：可以读的资�
    - 说明文件 `core/mcp/list_resources.json`、`core/mcp/read_resource.json`（同内置工具的写法：`description`、`parameters`），进登记簿。
    - 不另做一对全局的、带服务名参数的工具（Claude Code 是那样）：那要给执行器开一条到 MCP 的端口、工具面另开特例（同知识库那一对），照服务登记全用现成的。
 3. **`list_resources {cursor?}`**：一次一页。回一行 JSON：`{"resources": [...], "resourceTemplates": [...], "nextCursor": ...}`。资源每项只留 `uri`、`name`、`title`、`description`、`mimeType`、`size`，模板每项只留 `uriTemplate`、`name`、`title`、`description`、`mimeType`，服务多写的丢掉。模板只在第一页（不带 `cursor` 的那一次）列，没有下一页的不写 `nextCursor`。不另写给她看的话：结构照 MCP 原样，她认得。
-4. **`read_resource {uri}`**：`resources/read`，`contents` 每一项照工具结果的规矩换成块（`content::done`）：文字原样；四种图（`image/png`、`jpeg`、`gif`、`webp`）照工具结果的图收；别的二进制写成 `core/mcp/not-shown.txt` 那一行，不灌原文；加起来超过 10 万个字截。服务回错的照工具出错，原话交回。
+4. **`read_resource {uri}`**：`resources/read`，`contents` 每一项照工具结果的规矩换成块（`content::done`）：文字原样；四种图（`image/png`、`jpeg`、`gif`、`webp`）照工具结果的图收，受同样的张数、尺寸上限（主会话定：「不灌原文」管的是二进制原文，图照别的工具交图）；别的二进制写成 `core/mcp/not-shown.txt` 那一行，不灌原文；加起来超过 10 万个字截。服务回错的照工具出错，原话交回。
 5. **不做**：订阅（`resources/subscribe`、`notifications/resources/updated`）；资源变了的通知（`notifications/resources/list_changed`：列是现取的，不用记）；参数补全（`completion/complete`）；人在输入框里 `@服务:地址` 附资源。
 
 别的几处（中英各改一遍）：作者文档 `mcp`「服务的说明和提示词」加一条「资源」；协议参考 `packages` 的 `mcp.list`：`tools` 里会有这两件。
 
 ### 工具面多多少
 
-每个声明了资源的服务多两件。先加载（默认）时工具面上每件只有名字和说明，两件合计估 60 token；加载了另加参数格式，估 40 token。都是估的，合时请照惯例量。说明照规矩：一句说干什么，每个参数一句。
+每个声明了资源的服务多两件。先加载（默认）时工具面上每件只有名字和说明：每多一个声明了资源的服务，工具面多两件、估 60 token；加载了另加参数格式，估 40 token。都是估的，合时主会话照惯例量。说明照规矩：一句说干什么，每个参数一句。
 
 ### 不做什么
 
