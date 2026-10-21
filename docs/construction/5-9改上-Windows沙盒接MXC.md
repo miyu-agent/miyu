@@ -1,6 +1,6 @@
 ## 施工单 5-9 改上：Windows 沙盒接 MXC
 
-状态：排着（2026-10-20 项目主人定：Windows 沙盒改用 MXC，「要做的」）。原来的 5-9（`5-9-Windows：跑.md`）停在单独的桌面上；这一张换路子。下半是 `5-9改下-Windows沙盒收尾.md`。
+状态：做完（2026-10-21，施工分支 `step/5-9改上-MXC`）。2026-10-20 项目主人定：Windows 沙盒改用 MXC，「要做的」。原来的 5-9（`5-9-Windows：跑.md`）停在单独的桌面上；这一张换路子。下半是 `5-9改下-Windows沙盒收尾.md`。
 
 ### 目的
 
@@ -69,3 +69,27 @@ Windows 上沙盒里的命令照规格管住读写，和 Linux（bubblewrap、La
 - 读整盘的代价（第 0 步）。
 - `mxc-sdk` 体积、编译时间：只在 Windows 上编进去，Linux、macOS 不受影响。
 - MXC 的仓库自己写着策略不该当安全边界：我们的定位同设计 11（控制读写，不是完全隔离），数据根照旧靠禁止路径和本机令牌两层（A6）。
+
+### 第二轮试验（2026-10-21，同一台虚拟机）
+
+- `v1::probe` 报的档是 `base-container`，不用补访问控制（`needs_dacl_augmentation: false`），禁止路径基础容器自己就支持。
+- `v1::spawn` 给三根管道：喂进去的读得回来，退出码照原样（`Exited(3)`），76 ms。
+- 跑完、跑到一半把起容器的进程杀掉：工作区、禁止路径上一条访问控制项都没多；容器里的 `ping` 跟着停，不留。
+- MXC 在基础容器起不来时会退到「AppContainer 加访问控制」那几档（`dispatcher.rs`）：加的项靠管理器 `Drop` 时撤，助手被杀撤不回去。所以只认 `base-container`。
+
+### 做了什么
+
+1. `mxc-sdk = "=1.0.1"` 只在 `cfg(windows)` 下进 `miyu-sandbox`；新拉进来的 17 个包许可证都是 MIT、Apache-2.0 一类。
+2. 助手的 `windows.rs` 拆成几块（`request.rs`、`pump.rs`、`resolve.rs`、`desktop.rs`、`drives.rs`），程序、参数拼成一行的 `cmdline.rs` 放进库里（纯算字，哪个系统都测）。怎么走写在新的蓝图页 `sandbox/windows-run.md`。
+3. 和施工单原文不一样的：
+   - **没有桌面会话不是探测的事**：探测只看基础容器，跑的时候没有桌面会话的每条命令照实拒绝、说怎么办（这一句就是命令的输出）。原文写「探测报这一条手段用不了」：那样核心照沙盒用不了办，工作区一级会转去每条问人，不是「拒绝并说清楚」。
+   - **读整盘写盘根**（第 0 步定的）；`reveal` 进只读路径。
+   - **`read`、`sockets` 不在这一步**：见蓝图「怎么走」第 4、5 条。
+4. `main.rs`：`cannot_run` 各平台都用（Windows 上先认程序）；只为它导入的几样改成写全路径。
+
+### 验收（做下来的）
+
+- Linux：`cargo xtask check` 八项；`cmdline` 的单元测试。
+- 虚拟机 SSH 会话（收不住）：`cargo test -p miyu-sandbox` 全过，`windows.rs`、`run.rs` 照拒绝断言；探测报 `processcontainer`，跑命令退 125、说没有桌面会话。
+- 虚拟机桌面会话（收得住，临时计划任务以登录的身份跑）：`cargo test -p miyu-sandbox` 全过，`windows.rs` 真进了容器（0.6 秒）；另手跑：工作区写得进、外面拒绝访问、私密目录读不到、家目录的文件读得到、退出码 7、标准输入、`git --version`、`curl https://example.com` 200、带空格的参数；规格路径带 `\\?\` 前缀的照样认。
+- 三台 CI：先推 step 分支过了再合（Windows 上收不住，只测拒绝）。第一趟 Windows 红在 `miyu-cli` 的 `steps`：GitHub 的 Windows 机器有桌面会话、MXC 只能退到 `appcontainer-dacl`，助手照规矩拒绝；会话、命令行的测试场地不看探测、直接塞编出来的助手。加 `testkit` 里的直通（蓝图「守着它的」末段），正式的助手没有。

@@ -8,9 +8,9 @@
 
 它是单独的一个小程序（`11-权限与沙盒.md` 第六节 A7）。
 
-现在 Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）上照规格收紧；Windows 还不收紧（5-9），探测报的手段是空的，核心照沙盒用不了办（施工 5-4 上）。
+现在 Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）、Windows（MXC 的基础容器，施工 5-9 改上，`sandbox/windows-run.md`）上照规格收紧；Windows 上起不了基础容器的机器探测报的手段是空的，核心照沙盒用不了办（施工 5-4 上）。
 
-这一页管各平台共用的：规格、助手的命令行和退出码、探测、找助手、`shell` 怎么经助手起。各平台怎么收紧各有一页，随那一步的施工写：Linux `sandbox/linux.md`（5-2 起），macOS `sandbox/macos.md`（5-7），Windows `sandbox/windows.md`（5-8 起）。沙盒只管读写权限，不管网络（2026-09-29 项目主人定）。助手里收紧的代码也是各平台一个文件，几条线可以同时施工，各改各的（2026-09-28 项目主人同意分线并行）。
+这一页管各平台共用的：规格、助手的命令行和退出码、探测、找助手、`shell` 怎么经助手起。各平台怎么收紧各有一页，随那一步的施工写：Linux `sandbox/linux.md`（5-2 起），macOS `sandbox/macos.md`（5-7），Windows `sandbox/windows.md`（装，5-8）、`sandbox/windows-run.md`（跑，5-9 改上）。沙盒只管读写权限，不管网络（2026-09-29 项目主人定）。助手里收紧的代码也是各平台一个文件，几条线可以同时施工，各改各的（2026-09-28 项目主人同意分线并行）。
 
 ### 在哪
 
@@ -99,8 +99,8 @@
 4. **助手的 `run`**：
    1. 读参数：不是 `run --spec <JSON> -- <程序> …` 的样子，印 `miyu-sandbox: usage: miyu-sandbox run --spec <json> -- <program> [args...]`，退出 125。
    2. 读规格：读不懂的，印 `miyu-sandbox: bad spec: <原话>`，退出 125。
-   3. 收紧：交给这个平台的文件（`linux.rs`、`macos.rs`、`windows.rs`，别的 Unix 是 `other.rs`），怎么收紧写在各平台那一页；Windows、别的 Unix 还什么都不做。收紧不成的，一律印 `miyu-sandbox: cannot confine: <原话>`，退出 125，不跑命令。
-   4. 换成命令。Unix 上 `exec`，找不到的印 `miyu-sandbox: cannot run <程序>: <原话>`、退出 127，别的原因执行不了的一样印、退出 126。Windows 上起子进程：起不来的照这两条；起来了就等它，照它的退出码退出。
+   3. 收紧：交给这个平台的文件（`linux.rs`、`macos.rs`、`windows.rs`，别的 Unix 是 `other.rs`），怎么收紧写在各平台那一页；别的 Unix 还什么都不做。收紧不成的，一律印 `miyu-sandbox: cannot confine: <原话>`，退出 125，不跑命令。
+   4. 换成命令。Unix 上 `exec`，找不到的印 `miyu-sandbox: cannot run <程序>: <原话>`、退出 127，别的原因执行不了的一样印、退出 126。Windows 上先认程序（找不到 127、不是程序 126），再交 MXC 在基础容器里起，等它，照它的退出码退出（`sandbox/windows-run.md`）。
 5. **助手的 `probe`**：印那一行 JSON，退出 0。手段（`mechanisms`）由这个平台的文件报，各平台自己定写什么，写进它那一页。
 6. 助手的字一律英文：它印在命令的输出里，她看得到（`26-提示词.md` 第三节：给模型看的机械文字用英文）。这几句只在出错时出现，不常驻，不进登记簿。
 
@@ -129,6 +129,5 @@
 
 ### 还没有的
 
-- Windows 上以沙盒用户的身份起命令、受限令牌（5-9；沙盒用户由 `miyu sandbox setup` 装，5-8，`sandbox/windows.md`）。
 - Windows 上的「只准读名单里的」（2026-10-11 主会话评估，施工 5-12 再补时）：做得到，用 AppContainer：容器进程只读得到访问控制里给了「所有应用包」或者给了这个容器的对象，系统目录本来就给了「所有应用包」读，用户的文件没给，名单里的（工作区、`.tmp`）照规格给这个容器加一条读写的访问控制。它是 Windows 沙盒的一部分，随 5-9 一起做；之前外部身份的会话在 Windows 上照旧拒命令。
 - Windows 上主程序的真实位置（`std::fs::canonicalize`）带 `\\?\` 的前缀，日志里助手的路径跟着带：5-9 起看要不要去掉。

@@ -43,10 +43,14 @@ windows-sys = { version = "0.61", features = [
     "Win32_Storage_FileSystem",
     "Win32_System_JobObjects",
     "Win32_System_Registry",
+    "Win32_System_StationsAndDesktops",
     "Win32_System_Threading",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
 ] }
+# 微软的 MXC（施工 5-9 改上）：Windows 上把命令关进基础容器（ProcessContainer），照规格管读写；不用沙盒用户、不要管理员。
+# 钉死版本：策略的写法、档位的探测随版本变，升级照虚拟机上重走一遍。MIT。
+mxc-sdk = "=1.0.1"
 # 沙盒用户的随机密码：系统给的随机字节。MIT OR Apache-2.0。
 getrandom = { version = "0.4", features = ["std"] }
 # 加密过的密码写进记录用 base64。MIT OR Apache-2.0。

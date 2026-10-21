@@ -17,6 +17,7 @@
 //! Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）上照规格收紧；Windows 还不收紧（5-9）。
 
 mod availability;
+mod cmdline;
 pub mod install;
 pub mod lifeline;
 mod locate;
@@ -27,6 +28,7 @@ pub mod testkit;
 mod wrap;
 
 pub use availability::{Availability, Unusable};
+pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
 pub use probe::{Platform, Probe, ProbeError, VERSION, probe};
 pub use spec::Spec;

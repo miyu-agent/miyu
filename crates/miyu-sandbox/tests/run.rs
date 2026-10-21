@@ -33,6 +33,27 @@ fn spec() -> String {
     .expect("写得成")
 }
 
+/// 这台机器上的助手收得住命令（施工 5-9 改上）：Windows 上要有桌面会话、MXC 起得了基础容器，不然助手照实拒绝（125）。真跑一条
+/// 试：探测报手段、却没有桌面会话的也照实拒绝。CI 的 Windows 机器多半收不住，照拒绝断言；虚拟机的桌面会话里照收得住的断言。
+/// 别的平台照旧都跑。
+fn confines_here() -> bool {
+    if !cfg!(windows) {
+        return true;
+    }
+    let out = helper(&["run", "--spec", &spec(), "--", "cmd", "/c", "echo hi"]);
+    out.status.code() != Some(i32::from(EXIT_HELPER))
+}
+
+/// Windows 上收不住时的样子：退出 125，说一句 `cannot confine: …`，命令没跑。
+fn refused(out: &Output) {
+    assert_eq!(out.status.code(), Some(i32::from(EXIT_HELPER)), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stderr).starts_with("miyu-sandbox: cannot confine: "),
+        "{out:?}"
+    );
+    assert!(out.stdout.is_empty(), "没跑");
+}
+
 /// 跑助手，参数是 `args`。
 fn helper(args: &[&str]) -> Output {
     Command::new(HELPER)
@@ -82,6 +103,10 @@ fn a_command_runs_as_if_it_ran_directly() {
     wrapped.push(program.into());
     wrapped.extend(args.into_iter().map(OsString::from));
     let through = run(Command::new(HELPER).args(&wrapped));
+    if !confines_here() {
+        refused(&through);
+        return;
+    }
     assert_eq!(direct.status.code(), Some(3), "{direct:?}");
     assert_eq!(through.status.code(), direct.status.code());
     assert_eq!(through.stdout, direct.stdout);
@@ -97,6 +122,10 @@ fn a_command_that_succeeds_exits_zero_and_prints_only_its_own() {
     let program = if cfg!(windows) { "cmd" } else { "sh" };
     let script = if cfg!(windows) { "/c" } else { "-c" };
     let out = helper(&["run", "--spec", &spec(), "--", program, script, "echo hi"]);
+    if !confines_here() {
+        refused(&out);
+        return;
+    }
     assert_eq!(out.status.code(), Some(0), "{out:?}");
     assert_eq!(String::from_utf8_lossy(&out.stdout).trim_end(), "hi");
     assert!(out.stderr.is_empty(), "{out:?}");

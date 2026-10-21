@@ -32,11 +32,11 @@ use other as platform;
 #[cfg(windows)]
 use windows as platform;
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 use std::io::{self, Write};
 use std::process::ExitCode;
 
-use miyu_sandbox::{EXIT_CANNOT_RUN, EXIT_HELPER, EXIT_NOT_FOUND, Probe, Spec};
+use miyu_sandbox::{EXIT_HELPER, Probe, Spec};
 
 /// 参数不对时说的。
 const USAGE: &str = "usage: miyu-sandbox run --spec <json> -- <program> [args...]";
@@ -71,15 +71,15 @@ fn run(args: &[OsString]) -> ExitCode {
 }
 
 /// 执行不了：找不到的 127，别的 126。
-fn cannot_run(program: &OsStr, error: &io::Error) -> ExitCode {
+fn cannot_run(program: &std::ffi::OsStr, error: &io::Error) -> ExitCode {
     say(&format!(
         "cannot run {}: {error}",
         program.to_string_lossy()
     ));
     ExitCode::from(if error.kind() == io::ErrorKind::NotFound {
-        EXIT_NOT_FOUND
+        miyu_sandbox::EXIT_NOT_FOUND
     } else {
-        EXIT_CANNOT_RUN
+        miyu_sandbox::EXIT_CANNOT_RUN
     })
 }
 
