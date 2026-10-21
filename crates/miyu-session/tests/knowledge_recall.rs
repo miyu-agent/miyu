@@ -243,7 +243,7 @@ async fn recall_fills_the_vectors_itself() {
         !index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
         "开头还没有向量"
     );
-    let handle = session(&home, 2, Lines::default()).await;
+    let handle = session(&home, 3, Lines::default()).await;
     chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
     for _ in 0..600 {
         if index.missing(MODEL, 0, 10).expect("读得了").is_empty() {
@@ -255,7 +255,12 @@ async fn recall_fills_the_vectors_itself() {
         index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
         "后台补上了"
     );
-    let log = chat(&home, &handle, 2, "那个守灯的姑娘到底怕什么").await;
+    let mut log = chat(&home, &handle, 2, "那个守灯的姑娘到底怕什么").await;
+    // 这一轮照意思那一路也会冷：Windows 的 CI 上头一回走这条路的那一问会过 `MEANING`（2026-10-22 run 39673453755），照规矩只走
+    // 标题名（这句话里没有）。同 `by_meaning_over_the_threshold_and_only_for_a_model_in_the_table`：同一句再说一轮，热了赶得上。
+    if recalled(&log).is_empty() {
+        log = chat(&home, &handle, 3, "那个守灯的姑娘到底怕什么").await;
+    }
     assert_eq!(recalled(&log)[0].refs, ["world/people.md#0"]);
 }
 
