@@ -234,16 +234,15 @@ impl MergeJob {
     pub(crate) fn start(self) {
         tokio::spawn(async move {
             let room = self.keeper.room().clone();
-            if !self.keeper.memory.merges.start(&room) {
+            let Some(_running) = Merges::begin(&self.keeper.memory, &room) else {
                 return;
-            }
+            };
             let settings = MemorySettings::from(&self.config.resolved.values());
             let sessions = usize::try_from(settings.merge_sessions).unwrap_or(usize::MAX);
             // 出错的当场记了 `WARN`：真相没动，下次抽完再来。
             if let Err(why) = self.run(Some((settings.merge_every, sessions))).await {
                 tracing::debug!(target: TARGET, room = %room, error = why.as_str(), "memory merge stopped");
             }
-            self.keeper.memory.merges.finish(&room);
         });
     }
 
@@ -258,12 +257,14 @@ impl MergeJob {
             return Err(NotDreamed::Off);
         }
         let room = self.keeper.room().clone();
-        if !self.keeper.memory.merges.start(&room) {
-            return Err(NotDreamed::Busy);
-        }
-        let done = self.run(None).await.map_err(NotDreamed::Failed);
-        self.keeper.memory.merges.finish(&room);
-        done
+        let running = Merges::begin(&self.keeper.memory, &room).ok_or(NotDreamed::Busy)?;
+        // 在自己的任务里合（施工 R-30）：叫的那一头半路不等了（连接断了）照样合完、放锁，不然这一间一直忙。
+        let task = tokio::spawn(async move {
+            let _running = running;
+            self.run(None).await.map_err(NotDreamed::Failed)
+        });
+        task.await
+            .unwrap_or_else(|_| Err(NotDreamed::Failed("memory merge task failed".to_string())))
     }
 
     /// 合到没有剩下的，交回合了多少：`check` 是头一批看的间隔和会话数（没有的不看），接着合的只看还有没有新记的（放不下的、

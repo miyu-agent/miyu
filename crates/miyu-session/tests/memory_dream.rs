@@ -149,3 +149,40 @@ async fn without_the_package_there_is_no_dream() {
     assert_eq!(dream(&home).await, Err(NotDreamed::Off));
     assert!(server.received().is_empty());
 }
+
+/// 叫的那一头半路不等了（网页关了、连接断了，施工 R-30）：这一趟照样合完、放锁，再叫的不会一直忙。原来锁是等完了才放的，
+/// 等的那一头一丢，这一间就一直 `memory_busy`（网页 8787 撞见）。
+#[tokio::test]
+async fn a_dream_nobody_waits_for_still_finishes_and_lets_go() {
+    let server = Server::start(vec![
+        slow(serde_json::json!({}), Duration::from_millis(400)),
+        stream("{}"),
+    ])
+    .await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "");
+    save(&home, "用户养了一只猫");
+    let gone = tokio::time::timeout(Duration::from_millis(100), dream(&home)).await;
+    assert!(gone.is_err(), "叫的那一头先不等了");
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let again = loop {
+        match dream(&home).await {
+            Err(NotDreamed::Busy) if tokio::time::Instant::now() < deadline => {
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            other => break other,
+        }
+    };
+    assert!(again.is_ok(), "前一趟合完放了锁：{again:?}");
+    assert_eq!(server.received().len(), 2, "没人等的那一趟照样发完");
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
+    let merged = keeper
+        .follow(Some(0), 4096)
+        .expect("跟得上")
+        .filled
+        .iter()
+        .filter_map(|event| miyu_recall::from_event(event)?.ok())
+        .filter(|event| matches!(event, miyu_recall::MemoryEvent::Merged(_)))
+        .count();
+    assert_eq!(merged, 2, "没人等的那一趟也合完、记下了：不是半路丢了");
+}
