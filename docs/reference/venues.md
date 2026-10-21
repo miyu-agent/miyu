@@ -107,7 +107,7 @@
 
 **参数**：`session`；`msg`：要判的那一条的序号（带 `venue` 的 `message.user`）；`count`：1 到 100。
 
-**回应**：`{"records": "<之前的几条，一行一条>", "current": "<那一条>"}`。她回过的话写成 `[you]` 行；撤回的照样标。
+**回应**：`{"records": "<之前的几条，一行一条>", "current": "<那一条>"}`。她回过的话写成 `[you]` 行；撤回的照样标。`current` 引用了别的，编号后面写引用的那条的发的人和内容（`reply-to: msg=8805 小林: @Miyu 在吗`）；日志里没有那一条的只写编号。
 
 **出错**：`bad_params`；`session_not_found`。
 

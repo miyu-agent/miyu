@@ -117,3 +117,112 @@ fn only_a_venue_message_can_be_judged() {
         records(fresh.history(), Seq::new(first).unwrap(), 20, &chat(), None).expect("是场所消息");
     assert_eq!(got.records, "");
 }
+
+/// 老王引用 `reply_to` 的一条，编号 `msg`。
+fn quoting(log: &mut Log, msg: &str, reply_to: &str) -> Seq {
+    let seq = said(
+        log,
+        "接着说",
+        &format!(r#"{{"msg":"{msg}","name":"老王","ambient":true,"reply_to":"{reply_to}"}}"#),
+    );
+    Seq::new(seq).expect("合写法")
+}
+
+#[test]
+fn the_judged_line_quotes_the_message_it_replies_to() {
+    // 施工 O-41：要判的那一条写出引用的那条的发的人和内容，照日志里那一行的写法；她发的写 `[you]`；睡着时收到的、
+    // 补拉回来的也认（不进记录，但日志里有）。
+    let (mut log, _) = chatted();
+    let msg = quoting(&mut log, "8901", "8805");
+    let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+    assert_eq!(
+        got.current,
+        "[15:00] 老王 [msg=8901]: 接着说\n  reply-to: msg=8805 小林: @Miyu 在吗"
+    );
+    for (quoted, shown) in [
+        ("8803", "8803 [you]: 在"),
+        ("8804", "8804 [you]: 我来"),
+        ("8802", "8802 小林: 梦话"),
+        ("8799", "8799 小林: 断线时说的"),
+    ] {
+        let msg = quoting(&mut log, "8902", quoted);
+        let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+        assert!(
+            got.current.ends_with(&format!("\n  reply-to: msg={shown}")),
+            "{quoted}: {}",
+            got.current
+        );
+    }
+}
+
+#[test]
+fn a_quote_reads_like_its_own_line() {
+    // 身份照引用的那条的 `show_ids`；名字、内容照不可信的转义；内容截到一行正文的上限；带的东西照记号写。
+    let mut log = Log::new();
+    let long = "长".repeat(2000);
+    said(
+        &mut log,
+        &format!("  {long}\n"),
+        r#"{"msg":"8001","name":"小林","show_ids":true,"media":[{"kind":"image","id":"i"}]}"#,
+    );
+    said(&mut log, "x\ny", r#"{"msg":"8002","name":"a\nb"}"#);
+    let msg = quoting(&mut log, "8003", "8001");
+    let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+    let cut = "长".repeat(4096 / 3);
+    assert_eq!(
+        got.current,
+        format!(
+            "[15:00] 老王 [msg=8003]: 接着说\n  reply-to: msg=8001 小林 (id=qq:20017): {cut} [image]"
+        )
+    );
+    let msg = quoting(&mut log, "8004", "8002");
+    let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+    let b = '\\';
+    assert!(
+        got.current
+            .ends_with(&format!("\n  reply-to: msg=8002 a{b}nb: x{b}ny")),
+        "{}",
+        got.current
+    );
+}
+
+#[test]
+fn a_quote_not_before_the_judged_line_is_only_its_number() {
+    // 日志里没有的、在要判的那一条以后才记下的，照旧只写编号；之前的记录里引用的那几行也照旧只写编号。
+    let (mut log, _) = chatted();
+    let missing = quoting(&mut log, "8901", "7777");
+    let later = quoting(&mut log, "8902", "8903");
+    said(&mut log, "后来的", r#"{"msg":"8903","name":"小林"}"#);
+    let judged = quoting(&mut log, "8904", "8805");
+    let got = records(log.history(), missing, 20, &chat(), None).expect("是场所消息");
+    assert_eq!(
+        got.current,
+        "[15:00] 老王 [msg=8901]: 接着说\n  reply-to: msg=7777"
+    );
+    let got = records(log.history(), later, 20, &chat(), None).expect("是场所消息");
+    assert!(
+        got.current.ends_with("\n  reply-to: msg=8903"),
+        "{}",
+        got.current
+    );
+    let got = records(log.history(), judged, 20, &chat(), None).expect("是场所消息");
+    assert!(
+        got.records
+            .contains("[15:00] 老王 [msg=8901]: 接着说\n  reply-to: msg=7777\n")
+            && got
+                .records
+                .contains("[15:00] 老王 [msg=8902]: 接着说\n  reply-to: msg=8903\n"),
+        "{}",
+        got.records
+    );
+}
+
+#[test]
+fn a_repeated_number_quotes_the_newest() {
+    let mut log = Log::new();
+    said(&mut log, "旧的", r#"{"msg":"8001","name":"小林"}"#);
+    said(&mut log, "新的", r#"{"msg":"8001","name":"小林"}"#);
+    let msg = quoting(&mut log, "8002", "8001");
+    let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+    assert!(got.current.ends_with(" 小林: 新的"), "{}", got.current);
+}

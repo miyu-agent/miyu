@@ -94,7 +94,7 @@ fn one(
                 venue,
                 &message.blocks,
                 (texts, forward),
-                &mark,
+                (&mark, ""),
             ))
         }
         Body::VenueDelivered(delivered) if !history.is_own(&delivered.line) => {

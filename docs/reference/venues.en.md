@@ -107,7 +107,7 @@ Group chat records for the judge (the small request that decides whether to answ
 
 **Params**: `session`; `msg`: the number of the message being judged (a `message.user` with `venue`); `count`: 1 to 100.
 
-**Response**: `{"records": "<earlier messages, one per line>", "current": "<that message>"}`. Her own replies are `[you]` lines; recalled ones are marked.
+**Response**: `{"records": "<earlier messages, one per line>", "current": "<that message>"}`. Her own replies are `[you]` lines; recalled ones are marked. When `current` quotes another message, its sender and content follow the number (`reply-to: msg=8805 小林: @Miyu 在吗`); if that message is not in the log, only the number is written.
 
 **Errors**: `bad_params`; `session_not_found`.
 

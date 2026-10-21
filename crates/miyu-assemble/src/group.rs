@@ -41,21 +41,22 @@ pub(crate) fn line(
     let (words, rest): (Vec<Block>, Vec<Block>) = blocks
         .into_iter()
         .partition(|block| matches!(block, Block::Text(_)));
-    let line = record(at, by, venue, &words, (texts, forward), "");
+    let line = record(at, by, venue, &words, (texts, forward), ("", ""));
     let mut out = vec![Block::Text(Text { text: line })];
     out.extend(rest);
     out
 }
 
 /// 一条的字：`[时刻] 发的人 [msg=编号]<mark>: 内容`，下面可选缩进的两行，再下面是转发那几行（有那几句的字才写）。`mark` 是
-/// 编号后面的可信记号（撤回的，`recent.rs`），没有的是空的。`words` 里只看文本块。
+/// 编号后面的可信记号（撤回的，`recent.rs`），`quote` 接在引用的编号后面（判官看的那一条，`records.rs`），没有的是空的。
+/// `words` 里只看文本块。
 fn record(
     at: Timestamp,
     by: &By,
     venue: &VenueMessage,
     words: &[Block],
     (texts, forward): (&GroupChat, Option<&ForwardTexts>),
-    mark: &str,
+    (mark, quote): (&str, &str),
 ) -> String {
     let mut line = format!(
         "[{}] {} [msg={}]{mark}: {}",
@@ -67,6 +68,7 @@ fn record(
     if let Some(reply_to) = &venue.reply_to {
         line.push_str("\n  reply-to: msg=");
         line.push_str(&escape(reply_to));
+        line.push_str(quote);
     }
     if let Some(mentions) = mentions(venue) {
         line.push_str("\n  @mentions: ");
@@ -224,22 +226,27 @@ fn recall_mark(sender: &By, by: &ExternalId, show_ids: bool) -> String {
 
 /// 别的线替她发进群里的一条：`[时刻] [you] [msg=编号]: 正文`，带的图每张一个 `[image]`。
 fn you(event: &Event, delivered: &VenueDelivered, texts: &GroupChat) -> String {
+    format!(
+        "[{}] [you] [msg={}]: {}",
+        event.at.local_clock(texts.offset),
+        escape(&delivered.msg),
+        you_said(delivered, texts),
+    )
+}
+
+/// 她发进群里的一条的内容：正文，带的图每张一个 `[image]`；都没有的写 `no_text`。
+fn you_said(delivered: &VenueDelivered, texts: &GroupChat) -> String {
     let mut parts = Vec::new();
     let text = cut(delivered.text.trim(), TEXT_LIMIT);
     if !text.is_empty() {
         parts.push(escape(text));
     }
     parts.extend(delivered.images.iter().map(|_| "[image]".to_string()));
-    let content = if parts.is_empty() {
+    if parts.is_empty() {
         texts.no_text.clone()
     } else {
         parts.join(" ")
-    };
-    format!(
-        "[{}] [you] [msg={}]: {content}",
-        event.at.local_clock(texts.offset),
-        escape(&delivered.msg),
-    )
+    }
 }
 
 mod forward;

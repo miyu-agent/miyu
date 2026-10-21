@@ -3,14 +3,18 @@
 //!
 //! 收场所的 `message.user`（旁听的、开过回合的都收，睡着时收到的不收）和 `venue.delivered` 的 `[you]` 行（判官看不到她的回复，
 //! 主线的也收）；撤回只认要判的那一条以前记下的。从新往旧取 `count` 条，照日志的先后排。
+//!
+//! 要判的那一条引用了别的（施工 O-41，照旧版判官看的）：引用的编号后面空一格写那一条的发的人和内容，照日志里那一行的写法
+//! （`reply-to: msg=8805 小林: @Miyu 在吗`，她发的写 `[you]`）；认要判的那一条以前日志里最后一条这个编号的，睡着时收到的、
+//! 补拉回来的也认。日志里没有的照旧只写编号。之前的记录、她看到的一行照旧只写编号。
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::event::Body;
+use miyu_kernel::event::{Body, Event};
 use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 
-use super::{recall_mark, record, you};
+use super::{content, recall_mark, record, sender, you, you_said};
 use crate::texts::{ForwardTexts, GroupChat};
 
 /// 判官看的两样：之前的记录（一行一条，每行以换行结尾，没有的是空的）和要判的那一条。
@@ -64,7 +68,7 @@ pub fn records(
                     venue,
                     &said.blocks,
                     (texts, forward),
-                    &mark,
+                    (&mark, ""),
                 ))
             }
             Body::VenueDelivered(delivered) => Some(you(event, delivered, texts)),
@@ -76,6 +80,11 @@ pub fn records(
         kept.push_str(line);
         kept.push('\n');
     }
+    let quote = venue
+        .reply_to
+        .as_deref()
+        .map(|reply_to| quote_of(&events[..at], reply_to, texts))
+        .unwrap_or_default();
     Some(Records {
         records: kept,
         current: record(
@@ -84,9 +93,34 @@ pub fn records(
             venue,
             &message.blocks,
             (texts, forward),
-            "",
+            ("", &quote),
         ),
     })
+}
+
+/// `events` 里最后一条编号是 `reply_to` 的：` 发的人: 内容`，她发的 ` [you]: 内容`；没有的是空的。
+fn quote_of(events: &[Event], reply_to: &str, texts: &GroupChat) -> String {
+    events
+        .iter()
+        .rev()
+        .find_map(|event| match &event.body {
+            Body::MessageUser(said) => said
+                .venue
+                .as_ref()
+                .filter(|venue| venue.msg == reply_to)
+                .map(|venue| {
+                    format!(
+                        " {}: {}",
+                        sender(&event.by, venue),
+                        content(&said.blocks, &venue.media, texts)
+                    )
+                }),
+            Body::VenueDelivered(delivered) if delivered.msg == reply_to => {
+                Some(format!(" [you]: {}", you_said(delivered, texts)))
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
