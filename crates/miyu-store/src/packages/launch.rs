@@ -2,7 +2,7 @@
 //! 共用这一份。交回 [`Launch`]：程序，和接在别的参数前面的几个。
 //!
 //! - 有 `#!` 的：Unix 上照写的起（解释器、它后面那几个参数、文件）；Windows 上解释器写的是这台机器上在的绝对路径的照它，
-//!   别的取解释器的名字（`env` 的取它后面那个，`python3` 换成 `python`），照 `PATH` 找。
+//!   别的取解释器的名字（`env` 的取它后面第一个不带 `-` 的，`python3` 换成 `python`），照 `PATH` 找。
 //! - 没有的：Unix 上直接起文件；Windows 上照扩展名：`.py` 的 `python`，`.ps1` 的 PowerShell（不读配置、不管执行策略），`.js` 的
 //!   `node`，`.cmd`、`.bat` 的 `cmd /C`，别的直接起。
 
@@ -71,8 +71,10 @@ pub fn launcher(file: &Path, first: &str, windows: bool) -> Launch {
                 || interpreter.to_string(),
                 |name| name.to_string_lossy().into_owned(),
             );
-            let (found, rest) = match (name.as_str(), extra.split_first()) {
-                ("env", Some((found, rest))) => ((*found).to_string(), rest.to_vec()),
+            // `env` 取它后面第一个不带 `-` 的：`env -S python3 -u` 是 `python3`，`-u` 接在脚本前面（主会话审 X-34 时提）。
+            let after_env = extra.iter().position(|word| !word.starts_with('-'));
+            let (found, rest) = match (name.as_str(), after_env) {
+                ("env", Some(at)) => (extra[at].to_string(), extra[at + 1..].to_vec()),
                 _ => (name, extra),
             };
             // Windows 上的 Python 叫 `python`：`python3` 常常是应用商店的占位程序。

@@ -2,7 +2,7 @@
 //! （`miyu_policy::script`）。起进程、看门、截输出和 `shell` 同一套（[`super::process`]、[`super::Results`]）。
 //!
 //! - 照开头的 `#!` 起程序：`#!/usr/bin/env python3` 起 `/usr/bin/env`，参数是 `python3` 和脚本；没有 `#!` 的直接起脚本本身。
-//!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面那个）找，没有 `#!` 的照扩展名找（施工 X-34 起和
+//!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面第一个不带 `-` 的）找，没有 `#!` 的照扩展名找（施工 X-34 起和
 //!   包里的程序共用 [`miyu_store::packages::launcher`]）。
 //! - 参数是她给的那份 JSON，写进标准输入，不超过 32 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：长的放进环境
 //!   变量起都起不来）。

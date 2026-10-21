@@ -48,6 +48,11 @@ fn windows_finds_the_interpreter_by_name_or_extension() {
         launch("node", &["--no-warnings", r"C:\s\weather.py"])
     );
     assert_eq!(
+        launcher(py, "#!/usr/bin/env -S python3 -u", true),
+        launch("python", &["-u", r"C:\s\weather.py"]),
+        "env 后面带 - 的跳过"
+    );
+    assert_eq!(
         launcher(py, "#!/bin/bash", true),
         launch("bash", &[r"C:\s\weather.py"])
     );
