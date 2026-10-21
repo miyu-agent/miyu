@@ -111,9 +111,15 @@ async fn a_script_gets_the_same_environment_as_shell() {
 
 /// 交图的脚本（施工 X-35）：往 `MIYU_SCRIPT_IMAGES_DIR` 里倒着写边长 `count` 到 1 的 PNG（`03.png` 先写，名字和写的先后
 /// 不一样），另放一份文本和一张 5×5 的 BMP（量得出尺寸、不是那四种格式，不交），印出目录的路径。`extra` 是接在后面的几行 Python。
+/// 超时 30 秒（施工 X-35 补）：Windows 上一整套测试并着跑时 Python 起来要好几秒，2 秒的还没印出目录就被杀了。
 fn frames(extra: &str) -> String {
+    timed(extra, 30)
+}
+
+/// 同 [`frames`]，超时 `timeout` 秒。
+fn timed(extra: &str, timeout: u32) -> String {
     format!(
-        "#!/usr/bin/env python3\n# Description: Make frames.\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"count\": {{\"type\": \"integer\"}}}}}}\n# Timeout: 2\nimport json, os, struct\nargs = json.loads(os.environ['MIYU_ARGS_JSON'])\nout = os.environ['MIYU_SCRIPT_IMAGES_DIR']\ndef png(side, pad=0):\n    return b'\\x89PNG\\r\\n\\x1a\\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', side, side) + b'\\x08\\x06\\x00\\x00\\x00' + b'\\x00' * (4 + pad)\nfor side in range(args['count'], 0, -1):\n    with open(os.path.join(out, '%02d.png' % side), 'wb') as f:\n        f.write(png(side))\nwith open(os.path.join(out, 'notes.txt'), 'w') as f:\n    f.write('not an image')\nwith open(os.path.join(out, 'zz.bmp'), 'wb') as f:\n    f.write(b'BM' + b'\\x00' * 12 + struct.pack('<IiiHH', 40, 5, 5, 1, 24) + b'\\x00' * 24)\nprint('dir=' + out)\n{extra}"
+        "#!/usr/bin/env python3\n# Description: Make frames.\n# Parameters: {{\"type\": \"object\", \"properties\": {{\"count\": {{\"type\": \"integer\"}}}}}}\n# Timeout: {timeout}\nimport json, os, struct\nargs = json.loads(os.environ['MIYU_ARGS_JSON'])\nout = os.environ['MIYU_SCRIPT_IMAGES_DIR']\ndef png(side, pad=0):\n    return b'\\x89PNG\\r\\n\\x1a\\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', side, side) + b'\\x08\\x06\\x00\\x00\\x00' + b'\\x00' * (4 + pad)\nfor side in range(args['count'], 0, -1):\n    with open(os.path.join(out, '%02d.png' % side), 'wb') as f:\n        f.write(png(side))\nwith open(os.path.join(out, 'notes.txt'), 'w') as f:\n    f.write('not an image')\nwith open(os.path.join(out, 'zz.bmp'), 'wb') as f:\n    f.write(b'BM' + b'\\x00' * 12 + struct.pack('<IiiHH', 40, 5, 5, 1, 24) + b'\\x00' * 24)\nprint('dir=' + out)\n{extra}"
     )
 }
 
@@ -178,7 +184,12 @@ async fn a_script_stopped_at_its_timeout_hands_over_nothing() {
     let site = Site::new();
     site.file(
         "scripts/frames.py",
-        frames("import sys, time\nsys.stdout.flush()\ntime.sleep(30)\n").as_bytes(),
+        // 20 秒：Windows CI 上整套并着跑时 Python 印出目录要好几秒，8 秒的也到时被杀过；睡 120 秒，到时一定还在跑。
+        timed(
+            "import sys, time\nsys.stdout.flush()\ntime.sleep(120)\n",
+            20,
+        )
+        .as_bytes(),
     );
     let done = site.script("scripts/frames.py", json!({"count": 1})).await;
     assert!(done.error);
