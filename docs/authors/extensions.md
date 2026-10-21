@@ -122,14 +122,14 @@ if __name__ == "__main__":
 
 三个平台都照这一个文件跑，同上面手写的那份。配置在 `ext.config`，调核心的方法用 `ext.call(method, params)`。
 
-**Rust**：crate `miyu-ext`，同步、只依赖 `serde_json`。它还没发到 crates.io，照仓库依赖：
+**Rust**：crate `miyu-ext`，同步、只依赖 `serde_json`。它没发到 crates.io，照仓库的版本标签依赖：
 
 ```toml
 [dependencies]
-miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk" }
+miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk", tag = "v0.1.0" }
 ```
 
-要锁版本的写 `rev = "<提交>"`。编出来的程序放进包的 `bin/`，Windows 上是 `miyu-hello.exe`。
+有哪些版本见开发包的说明。编出来的程序放进包的 `bin/`，Windows 上是 `miyu-hello.exe`。
 
 **测**：不起 Miyu，假核心 `FakeCore` 在进程里演核心：
 

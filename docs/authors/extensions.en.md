@@ -122,14 +122,14 @@ if __name__ == "__main__":
 
 This one file runs on all three platforms, like the hand-written one above. Settings are in `ext.config`; call core methods with `ext.call(method, params)`.
 
-**Rust**: the crate `miyu-ext`, synchronous, depending only on `serde_json`. It isn't on crates.io yet, so depend on the repository:
+**Rust**: the crate `miyu-ext`, synchronous, depending only on `serde_json`. It isn't on crates.io, so depend on a version tag of the repository:
 
 ```toml
 [dependencies]
-miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk" }
+miyu-ext = { git = "https://github.com/miyu-agent/miyu-sdk", tag = "v0.1.0" }
 ```
 
-To pin a version, add `rev = "<commit>"`. Put the built program in the package's `bin/`; on Windows it is `miyu-hello.exe`.
+The kit's own guide lists the versions. Put the built program in the package's `bin/`; on Windows it is `miyu-hello.exe`.
 
 **Testing**: without starting Miyu, the fake core `FakeCore` plays the core inside your process:
 
