@@ -32,10 +32,22 @@ fn a_tool_is_read_with_its_hints() {
 
 #[test]
 fn a_tool_needs_a_name_and_an_object_schema() {
-    assert!(Tool::read(&json!({"inputSchema": {}})).is_err());
-    assert!(Tool::read(&json!({"name": "", "inputSchema": {}})).is_err());
-    assert!(Tool::read(&json!({"name": "x"})).is_err());
-    assert!(Tool::read(&json!({"name": "x", "inputSchema": "object"})).is_err());
+    assert!(matches!(
+        Tool::read(&json!({"inputSchema": {}})),
+        Err(Unread::Nameless(_))
+    ));
+    assert!(matches!(
+        Tool::read(&json!({"name": "", "inputSchema": {}})),
+        Err(Unread::Nameless(_))
+    ));
+    assert_eq!(
+        Tool::read(&json!({"name": "x"})),
+        Err(Unread::Parameters("x".to_string()))
+    );
+    assert_eq!(
+        Tool::read(&json!({"name": "x", "inputSchema": "object"})),
+        Err(Unread::Parameters("x".to_string()))
+    );
 }
 
 #[test]

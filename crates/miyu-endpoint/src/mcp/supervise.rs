@@ -12,7 +12,7 @@ use tokio::time::Instant;
 use miyu_mcp::{Client, Failed, Hello, Waits};
 
 use super::launch::{self, How, Plan};
-use super::{Shared, TARGET, cache, spec};
+use super::{Shared, Skipped, TARGET, cache, spec};
 use crate::Core;
 use crate::extensions::{Reason, State, Timing};
 
@@ -279,13 +279,24 @@ async fn list(core: &Weak<Core>, plan: &Plan, shared: &Arc<Shared>, client: &Cli
             return false;
         }
     };
+    // 认不出来的、登记时查不过的，记进看管那一格（施工 X-37）。
+    let mut skipped: Vec<Skipped> = listed.skipped.iter().map(Skipped::unread).collect();
     for problem in &listed.skipped {
-        tracing::warn!(target: TARGET, service, problem = problem.as_str(), "mcp tool skipped");
+        tracing::warn!(target: TARGET, service, problem = %problem, "mcp tool skipped");
     }
     let Some(owner) = core.upgrade() else {
         return false;
     };
-    spec::register(&owner, &shared.package, &plan.server, &listed.tools, shared);
+    skipped.extend(spec::register(
+        &owner,
+        &shared.package,
+        &plan.server,
+        &listed.tools,
+        shared,
+    ));
+    // 照原名排：每次列完说的一样。
+    skipped.sort();
+    shared.set_skipped(skipped);
     shared.listed(listed.fresh_for);
     cache::write(&owner, &plan.server, client.era(), &listed.tools);
     true

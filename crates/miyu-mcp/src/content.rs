@@ -1,6 +1,7 @@
 //! 列出来的工具、调用回来的内容（`docs/blueprint/mcp.md`「对外的样子」「怎么走」第四条）：照 MCP 的写法读成几种，认不出的
 //! 原样留着。换成 Miyu 的工具规格、结果块是核心那一边的事。
 
+use std::fmt;
 use std::time::Duration;
 
 use serde_json::Value;
@@ -41,9 +42,27 @@ pub struct Listed {
     /// 认得出的工具，照服务给的先后。
     pub tools: Vec<Tool>,
     /// 认不出来、没收的几项：说哪一项哪里不对。
-    pub skipped: Vec<String>,
+    pub skipped: Vec<Unread>,
     /// 新时代的服务说这份目录多久内不用再问（`ttlMs`）；没说的、旧时代的没有。
     pub fresh_for: Option<Duration>,
+}
+
+/// `tools/list` 里认不出来、没收的一项（施工 X-37：核心照它给人说哪几件没登记）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Unread {
+    /// 没写名字：这一项的原文。
+    Nameless(String),
+    /// 参数的格式不是对象：工具的名字。
+    Parameters(String),
+}
+
+impl fmt::Display for Unread {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Unread::Nameless(raw) => write!(f, "a tool without a name: {raw}"),
+            Unread::Parameters(name) => write!(f, "tool {name}: inputSchema is not an object"),
+        }
+    }
 }
 
 /// 一次调用回来的。
@@ -104,14 +123,14 @@ impl Tool {
     /// # Errors
     ///
     /// 说哪里不对。
-    pub fn read(raw: &Value) -> Result<Tool, String> {
+    pub fn read(raw: &Value) -> Result<Tool, Unread> {
         let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_string);
         let Some(name) = text("name").filter(|name| !name.is_empty()) else {
-            return Err(format!("a tool without a name: {raw}"));
+            return Err(Unread::Nameless(raw.to_string()));
         };
         let input_schema = match raw.get("inputSchema") {
             Some(schema @ Value::Object(_)) => schema.clone(),
-            _ => return Err(format!("tool {name}: inputSchema is not an object")),
+            _ => return Err(Unread::Parameters(name)),
         };
         let hints = raw.get("annotations");
         let hint = |key: &str| {

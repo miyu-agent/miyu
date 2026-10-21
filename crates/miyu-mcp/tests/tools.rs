@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
+use miyu_mcp::Unread;
 use miyu_mcp::testkit::{Kind, Script, tools};
 
 use crate::support::connected;
@@ -52,8 +53,10 @@ async fn a_broken_tool_is_skipped_and_named() {
     let (client, _) = connected(script).await;
     let listed = client.tools().await.expect("列得出");
     assert_eq!(listed.tools.len(), 8);
-    assert_eq!(listed.skipped.len(), 1);
-    assert!(listed.skipped[0].contains("broken"), "{:?}", listed.skipped);
+    assert_eq!(
+        listed.skipped,
+        vec![Unread::Parameters("broken".to_string())]
+    );
 }
 
 #[tokio::test]

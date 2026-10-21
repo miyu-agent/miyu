@@ -21,7 +21,7 @@ pub mod testkit;
 mod wire;
 
 pub use client::{Client, Era, Hello, Waits};
-pub use content::{Annotations, Called, Content, Listed, Tool};
+pub use content::{Annotations, Called, Content, Listed, Tool, Unread};
 pub use error::Failed;
 
 /// 新时代我们说的版本，挑的时候从新往旧排。

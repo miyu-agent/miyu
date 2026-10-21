@@ -60,6 +60,27 @@ pub(crate) struct Shared {
     stale_at: Mutex<Option<Instant>>,
     /// 叫看管的任务再列一次。
     relist: Notify,
+    /// 这一次列出来却没登记的（施工 X-37）：照目录缓存先登记的那一回不算，每次列完照新的换。
+    skipped: Mutex<Vec<Skipped>>,
+}
+
+/// 列出来却没登记的一件工具（施工 X-37）：服务那边的原名（没写名字的是空的），和为什么（`name_taken` 名字被占了：截短以后撞了，
+/// 或者别的工具已经叫这个；`name` 没写名字、名字不合写法；`parameters` 参数格式不对）。
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct Skipped {
+    pub(crate) tool: String,
+    pub(crate) why: &'static str,
+}
+
+impl Skipped {
+    /// 列的时候就认不出来的那一项。
+    fn unread(unread: &miyu_mcp::Unread) -> Skipped {
+        let (tool, why) = match unread {
+            miyu_mcp::Unread::Nameless(_) => (String::new(), "name"),
+            miyu_mcp::Unread::Parameters(name) => (name.clone(), "parameters"),
+        };
+        Skipped { tool, why }
+    }
 }
 
 impl Shared {
@@ -74,7 +95,21 @@ impl Shared {
             client: Mutex::new(None),
             stale_at: Mutex::new(None),
             relist: Notify::new(),
+            skipped: Mutex::new(Vec::new()),
         }
+    }
+
+    /// 换上这一次列完没登记的。
+    fn set_skipped(&self, skipped: Vec<Skipped>) {
+        *self.skipped.lock().unwrap_or_else(PoisonError::into_inner) = skipped;
+    }
+
+    /// 这一次列完没登记的。
+    fn skipped(&self) -> Vec<Skipped> {
+        self.skipped
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     /// 列完了：目录 `fresh_for` 以后过期，没说的不过期。
@@ -156,6 +191,14 @@ impl Servers {
             .any(|slot| slot.shared.get().state.busy())
     }
 
+    /// 包 `package` 的服务 `service` 这一次列完没登记的（施工 X-37）：没起过的没有。
+    pub(crate) fn skipped(&self, package: &str, service: &str) -> Vec<Skipped> {
+        let key = (package.to_string(), service.to_string());
+        self.slots()
+            .get(&key)
+            .map_or_else(Vec::new, |slot| slot.shared.skipped())
+    }
+
     /// 包 `package` 的服务 `service` 这时的状态（施工 X-4，软件包列表上一个服务一格）：没起过的关着。
     pub(crate) fn service(&self, package: &str, service: &str) -> Status {
         let key = (package.to_string(), service.to_string());
@@ -232,7 +275,8 @@ impl Servers {
             return;
         }
         let mut plan = launch::plan(core, package, server, dir);
-        // 照缓存先登记（施工 X-3 下）：服务好以前调到的说暂时不可用；连的时候照记着的时代直接说。
+        // 照缓存先登记（施工 X-3 下）：服务好以前调到的说暂时不可用；连的时候照记着的时代直接说。没登记的不记（施工 X-37）：
+        // 只说这一次列出来的。
         if let Some((era, tools)) = cache::read(core, server) {
             spec::register(core, package, server, &tools, &slot.shared);
             plan.known = Some(era);

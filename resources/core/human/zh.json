@@ -635,6 +635,7 @@
     "package-problems/files_missing": "装的时候有的文件少了 {detail} 个",
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
     "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
+    "package-problems/mcp_tool_skipped": "MCP 服务列出来的工具有几件没登记上：{detail}。name_taken 是名字被占了（截短以后撞了，或者别的工具已经叫这个），name 是名字不合写法，parameters 是参数格式不对",
     "package-problems/sandbox_tool_missing": "sandbox.tools.{name} 放行的工具现在没有，不算放行",
     "package-problems/sandbox_tool_moved": "sandbox.tools.{name} 写的来处是 {wrote}，这件工具现在来自 {now}，不算放行；没错的话改成 {now}",
     "package-problems/sandbox_shell": "sandbox.tools.shell 放行了 shell：AI 跑的每条命令都在沙盒外跑、不问人",

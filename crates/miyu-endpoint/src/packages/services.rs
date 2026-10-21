@@ -34,6 +34,7 @@ pub(super) fn fill(core: &Core, id: &str, manifest: &Manifest, item: &mut Value)
         server["state"] = json!(status.state.as_str());
         server["failures"] = json!(status.failures);
         details(server, status.state, &crate::mcp::stderr_file(core, &name));
+        crate::mcp::methods::skipped(core, id, &name, server);
         if let Some(written) = manifest.mcp.iter().find(|written| written.name == name) {
             crate::mcp::methods::toggles(core, written, server);
         }

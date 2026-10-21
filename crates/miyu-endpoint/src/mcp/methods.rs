@@ -78,7 +78,19 @@ fn one(core: &Core, server: &McpServer) -> Value {
     if !tools.is_empty() {
         one["tools"] = json!(tools);
     }
+    skipped(core, HOME_PACKAGE, &server.name, &mut one);
     one
+}
+
+/// 这一次列完没登记的（施工 X-37）：`skipped: [{"tool", "why"}]`，没有的不写这一格。软件包列表上包带的服务同样。
+pub(crate) fn skipped(core: &Core, package: &str, service: &str, one: &mut Value) {
+    let skipped = core.mcp.skipped(package, service);
+    if !skipped.is_empty() {
+        one["skipped"] = skipped
+            .iter()
+            .map(|skipped| json!({"tool": skipped.tool, "why": skipped.why}))
+            .collect();
+    }
 }
 
 /// 怎么到它：命令的带 `command`（程序加参数），网址的带 `url`（施工 X-32 上）。软件包列表上包带的服务同样。

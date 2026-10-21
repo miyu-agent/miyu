@@ -7,6 +7,8 @@
 //! - `record:<路径>`：收到的每一行原样追加进这个文件，读到头了再记一行 `eof`；
 //! - `changed`：第一次列完以后说一次工具变了，再列时多一件 `later`；
 //! - `ttl:<毫秒>`：列的结果带 `ttlMs`（新时代），再列时多一件 `later`；
+//! - `odd`：列的时候多几件登记不上的（施工 X-37）：没写参数格式的 `loose`、参数格式不是对象的 `stringly`、截到 64 个字以后
+//!   撞名的 `long-x…x-one`、`long-x…x-two`（60 个 `x`），和一件没写名字的；
 //! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
 //! - `exit:<数>`：一起来就以这个退出码退出（演起不来、一直崩）；
 //! - `stray:<字>`：一起来先往标准错误写一行。
@@ -46,6 +48,7 @@ fn main() {
     let mut record: Option<File> = None;
     let mut changed = false;
     let mut ttl: Option<u64> = None;
+    let mut odd = false;
     for arg in std::env::args().skip(1) {
         if arg == "legacy" {
             legacy = true;
@@ -58,6 +61,8 @@ fn main() {
             record = Some(file);
         } else if arg == "changed" {
             changed = true;
+        } else if arg == "odd" {
+            odd = true;
         } else if let Some(ms) = arg.strip_prefix("ttl:") {
             ttl = Some(ms.parse().expect("毫秒是数"));
         } else if let Some(path) = arg.strip_prefix("exit-if:") {
@@ -104,8 +109,11 @@ fn main() {
                 if (changed || ttl.is_some()) && lists > 1 {
                     names.push("later");
                 }
-                let mut result =
-                    json!({"tools": names.iter().map(|name| tool(name)).collect::<Vec<_>>()});
+                let mut tools: Vec<Value> = names.iter().map(|name| tool(name)).collect();
+                if odd {
+                    tools.extend(odd_tools());
+                }
+                let mut result = json!({ "tools": tools });
                 if let Some(ttl) = ttl {
                     result["ttlMs"] = json!(ttl);
                 }
@@ -155,6 +163,19 @@ fn tool(name: &str) -> Value {
         tool["title"] = json!("Echo back");
     }
     tool
+}
+
+/// `odd` 多列的几件（施工 X-37）：都登记不上。
+fn odd_tools() -> Vec<Value> {
+    let long = |end: &str| format!("long-{}-{end}", "x".repeat(60));
+    let object = json!({"type": "object"});
+    vec![
+        json!({"name": "loose"}),
+        json!({"name": "stringly", "inputSchema": {"type": "string"}}),
+        json!({"name": long("one"), "inputSchema": object}),
+        json!({"name": long("two"), "inputSchema": object}),
+        json!({"description": "no name", "inputSchema": object}),
+    ]
 }
 
 /// 调一件：交回结果或错误；不回的（`slow`）没有。`die` 当场退出。
