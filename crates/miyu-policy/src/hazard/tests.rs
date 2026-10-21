@@ -193,3 +193,27 @@ fn the_corners_of_reading_a_command() {
         Some("delete_data_root")
     );
 }
+
+/// 鲁棒性（2026-10-22）：外壳的选项要带值、命令却在这里结束（`sudo -u`、`xargs -I` 这些），剥外壳时下标一次跳过结尾，
+/// `&words[at..]` 越界 panic（`rules.rs` 的 `unwrap`）。shell 每次调用都经 `Tool::hazard` 判它，模型写出这样一条就崩。
+/// 期望：不 panic，照不高危算。修之前这条是红的。
+#[test]
+fn a_wrapper_option_missing_its_value_does_not_panic() {
+    let commands = [
+        "sudo -u",
+        "doas -u",
+        "env -u",
+        "nice -n",
+        "timeout -s",
+        "stdbuf -o",
+        "xargs -n",
+        "ls | xargs -I",
+        "FOO=1 sudo -g",
+        "sudo -u root env -C",
+    ];
+    let panicked: Vec<&str> = commands
+        .into_iter()
+        .filter(|command| std::panic::catch_unwind(|| kind(command)).is_err())
+        .collect();
+    assert!(panicked.is_empty(), "这几条 panic 了：{panicked:?}");
+}

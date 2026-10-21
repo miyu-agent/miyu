@@ -109,8 +109,9 @@ fn unwrap(words: &[Word]) -> &[Word] {
         at += 1;
     }
     loop {
+        // 外壳的选项要带值、命令却在这里结束的（`sudo -u`），下面一次跳过两个，`at` 会越过结尾（鲁棒性 B-1）。
         let Some(word) = words.get(at) else {
-            return &words[at..];
+            return words.get(at..).unwrap_or_default();
         };
         let name = base(&word.text);
         if !matches!(
