@@ -83,7 +83,6 @@ fn bad_usage_says_how_to_write_it() {
     }
 }
 
-#[cfg(unix)]
 #[test]
 fn outside_a_command_miyu_runs_it_exits_two() {
     // 测试进程自己没有这两个变量：照「只能在 Miyu 跑的命令里用」说，不连核心。

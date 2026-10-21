@@ -14,7 +14,7 @@ use windows_sys::Win32::Security::{
     GetTokenInformation, PSECURITY_DESCRIPTOR, PSID, SECURITY_ATTRIBUTES, TOKEN_QUERY, TOKEN_USER,
     TokenUser,
 };
-use windows_sys::Win32::System::Pipes::GetNamedPipeServerProcessId;
+use windows_sys::Win32::System::Pipes::{GetNamedPipeClientProcessId, GetNamedPipeServerProcessId};
 use windows_sys::Win32::System::Threading::{
     GetCurrentProcess, OpenProcess, OpenProcessToken, PROCESS_QUERY_LIMITED_INFORMATION,
 };
@@ -28,7 +28,25 @@ use windows_sys::Win32::System::Threading::{
 ///
 /// 取不到当前用户；安全描述符拼不出来；建不成。
 pub fn create(name: &OsStr, first: bool) -> io::Result<NamedPipeServer> {
-    let descriptor = descriptor(&crate::owner_only(&current_user()?))?;
+    create_with(name, first, &crate::owner_only(&current_user()?))
+}
+
+/// 同 [`create`]，另让当前用户沙盒里的命令连得上（[`crate::reachable_from_containers`]，施工 M-3 下）。
+///
+/// # Errors
+///
+/// 同 [`create`]。
+pub fn create_for_containers(name: &OsStr, first: bool) -> io::Result<NamedPipeServer> {
+    create_with(
+        name,
+        first,
+        &crate::reachable_from_containers(&current_user()?),
+    )
+}
+
+/// 照 SDDL `sddl` 建管道 `name` 的一个实例。
+fn create_with(name: &OsStr, first: bool, sddl: &str) -> io::Result<NamedPipeServer> {
+    let descriptor = descriptor(sddl)?;
     let mut attributes = SECURITY_ATTRIBUTES {
         nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
         lpSecurityDescriptor: descriptor.0,
@@ -52,6 +70,20 @@ pub fn current_user() -> io::Result<String> {
     // SAFETY: 没有参数，给的是当前进程的伪句柄，不用关。
     let process = unsafe { GetCurrentProcess() };
     process_user(process)
+}
+
+/// 管道另一头（客户端）进程的编号（施工 M-3 下，脚本调工具的通道照它查连上来的是不是这条命令的进程）。
+///
+/// # Errors
+///
+/// 系统问不出：管道还没连上，或者另一头已经走了。
+pub fn client_process(pipe: &NamedPipeServer) -> io::Result<u32> {
+    let mut pid = 0u32;
+    // SAFETY: 管道的句柄在借用期间一直有效；`pid` 是给系统写的出参。
+    if unsafe { GetNamedPipeClientProcessId(pipe.as_raw_handle(), &mut pid) } == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(pid)
 }
 
 /// 管道另一头（服务端）进程的用户 SID。

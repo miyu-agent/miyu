@@ -93,12 +93,45 @@ pub(super) struct Started {
     _watch: Watch,
 }
 
-/// 组里看门的（施工 7-8，`miyu_sandbox::lifeline`）：Unix 上一个组一个，丢掉时收掉；别的平台没有（Windows 上核心自己在
-/// 作业对象里），是空的。
+/// 组里看门的（施工 7-8，`miyu_sandbox::lifeline`）：Unix 上一个组一个，丢掉时收掉；Windows 上核心自己在作业对象里，这里
+/// 拿着这条命令自己的作业对象（施工 M-3 下，只用来认人）。
 pub(super) struct Watch {
     /// 看门的：起不来的没有。
     #[cfg(unix)]
     watcher: Option<miyu_sandbox::lifeline::Watcher>,
+    /// 这条命令的作业对象：建不成的没有。
+    #[cfg(windows)]
+    job: Option<miyu_sandbox::lifeline::Job>,
+}
+
+/// 脚本调工具的通道认人时照它（施工 M-3）：Unix 上是命令的进程组号，Windows 上是命令的作业对象。
+#[cfg(unix)]
+pub(in crate::shell) type Member = u32;
+
+/// 同上：Windows 上是命令的作业对象。
+#[cfg(windows)]
+pub(in crate::shell) type Member = miyu_sandbox::lifeline::Job;
+
+/// 同上：别的系统没有通道。
+#[cfg(not(any(unix, windows)))]
+pub(in crate::shell) type Member = ();
+
+/// 一条命令的 [`Member`]：Windows 上作业对象建不成的没有。
+#[cfg(unix)]
+pub(super) fn member(group: Group, _watch: &Watch) -> Option<Member> {
+    Some(group.id())
+}
+
+/// 同上：Windows 上是 `watch` 拿着的作业对象。
+#[cfg(windows)]
+pub(super) fn member(_group: Group, watch: &Watch) -> Option<Member> {
+    watch.job.clone()
+}
+
+/// 同上：别的系统没有。
+#[cfg(not(any(unix, windows)))]
+pub(super) fn member(_group: Group, _watch: &Watch) -> Option<Member> {
+    None
 }
 
 /// 起好的一条命令的几样：进程、整组杀时认的编号、管道读的一头、看门的。
@@ -126,9 +159,10 @@ pub(super) fn spawn(mut command: Command, input: Option<Vec<u8>>) -> io::Result<
         .stdin(stdin)
         .stdout(writer.try_clone()?)
         .stderr(writer);
-    let watch = alone(&mut command);
+    let mut watch = alone(&mut command);
     // 父进程手里的写端在 `command` 里，这个函数一返回就跟着它关掉：留着的话，命令都退出了读的一头也读不到结尾。
     let mut child = command.spawn()?;
+    joined(&mut watch, &child);
     // 另起一个线程写完就关：在这里写，它不读的话管道满了会卡住起它的这一头。
     if let (Some(bytes), Some(mut stdin)) = (input, child.stdin.take()) {
         thread::spawn(move || {
@@ -206,6 +240,11 @@ impl Started {
     /// 整组杀的时候认它。
     pub(super) fn group(&self) -> Group {
         self.group
+    }
+
+    /// 脚本调工具的通道认人时照它（施工 M-3）。
+    pub(super) fn member(&self) -> Option<Member> {
+        member(self.group, &self._watch)
     }
 
     /// 等它结束，最多等 `timeout`：到时整组杀掉。
@@ -424,8 +463,23 @@ fn alone(command: &mut Command) -> Watch {
 fn alone(command: &mut Command) -> Watch {
     use std::os::windows::process::CommandExt;
     command.creation_flags(CREATE_NO_WINDOW);
-    Watch {}
+    Watch { job: None }
 }
+
+/// 命令起来了，马上放进它自己的作业对象（Windows，施工 M-3 下）：放不进去的记一行，命令照旧跑，只是通道认不出它的进程。
+#[cfg(windows)]
+fn joined(watch: &mut Watch, child: &Child) {
+    match miyu_sandbox::lifeline::Job::for_child(child) {
+        Ok(job) => watch.job = Some(job),
+        Err(error) => {
+            tracing::warn!(target: TARGET, error = %error, "command job object not set up")
+        }
+    }
+}
+
+/// 同上：别的系统不用。
+#[cfg(not(windows))]
+fn joined(_watch: &mut Watch, _child: &Child) {}
 
 /// 同上：别的系统什么都不做。
 #[cfg(not(any(unix, windows)))]

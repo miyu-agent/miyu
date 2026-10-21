@@ -8,9 +8,8 @@
 //! - 命令结束以后，同一个端点再连不上；在自己的终端里（没有那两个变量）退出码 2。
 //! - 每次调用都记一条 `tool.nested`，挂在那次 `shell` 下面，排在它的结果前面。
 //!
-//! Windows 的通道在施工 M-3 下，这里只在 Unix 上跑。
-
-#![cfg(unix)]
+//! 三个平台都跑（Windows 的通道施工 M-3 下）：Unix 上命令是 bash、zsh，Windows 上是 PowerShell，几步照各自的写法拼；
+//! Windows 上用 `Start-Process` 接住输出和退出码，免得 PowerShell 把程序的输出换了编码。
 
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -44,26 +43,77 @@ fn replies(args: &Value) -> Vec<Reply> {
     vec![stream(&[call, done]), stream(&[said])]
 }
 
+/// 进工作目录 `work`：工作目录在数据根里，会话照 5-14 换成它自己的工作区，命令里自己进。
+#[cfg(unix)]
+fn enter(work: &Path) -> String {
+    format!("cd '{}' || exit 1\n", work.display())
+}
+
+/// 同上，PowerShell。
+#[cfg(windows)]
+fn enter(work: &Path) -> String {
+    format!("Set-Location -LiteralPath '{}'\n", work.display())
+}
+
 /// 一次 `miyu call`：参数是 `args`，结果写进 `<name>.out`、`<name>.err`、`<name>.code`。
+#[cfg(unix)]
 fn step(name: &str, args: &str) -> String {
     format!("miyu call {args} > {name}.out 2> {name}.err; echo $? > {name}.code\n")
 }
 
-/// 命令：先进 `work`（工作目录在数据根里，会话照 5-14 换成它自己的工作区），几次调用挨着跑，最后把端点的两个变量记下来
-/// （命令结束以后测试自己连），写一个结束的记号。
+/// 同上，PowerShell：输出原样接进文件，退出码自己写。
+#[cfg(windows)]
+fn step(name: &str, args: &str) -> String {
+    format!(
+        "$p = Start-Process -FilePath (Get-Command miyu).Source -ArgumentList 'call {args}' -NoNewWindow -Wait -PassThru -RedirectStandardOutput {name}.out -RedirectStandardError {name}.err; [IO.File]::WriteAllText(\"$PWD\\{name}.code\", \"$($p.ExitCode)\")\n"
+    )
+}
+
+/// 子进程里再起一层调：退出码写进 `child.code`。
+#[cfg(unix)]
+fn child() -> &'static str {
+    "bash -c 'miyu call memory_search --query nested' > child.out 2> child.err; echo $? > child.code\n"
+}
+
+/// 同上，经 `cmd` 再起一层。
+#[cfg(windows)]
+fn child() -> &'static str {
+    "cmd /c \"miyu call memory_search --query nested >NUL 2>NUL\"; [IO.File]::WriteAllText(\"$PWD\\child.code\", \"$LASTEXITCODE\")\n"
+}
+
+/// 等三秒。
+fn pause() -> &'static str {
+    if cfg!(windows) {
+        "Start-Sleep -Seconds 3\n"
+    } else {
+        "sleep 3\n"
+    }
+}
+
+/// 收尾：端点的两个变量记进 `endpoint.txt`（命令结束以后测试自己连），写一个结束的记号。
+#[cfg(unix)]
+fn finish() -> &'static str {
+    "printf '%s\\n%s\\n' \"$MIYU_CALL_SOCK\" \"$MIYU_CALL_TOKEN\" > endpoint.txt\necho done > done.flag\n"
+}
+
+/// 同上，PowerShell。
+#[cfg(windows)]
+fn finish() -> &'static str {
+    "[IO.File]::WriteAllText(\"$PWD\\endpoint.txt\", \"$env:MIYU_CALL_SOCK`n$env:MIYU_CALL_TOKEN\")\n[IO.File]::WriteAllText(\"$PWD\\done.flag\", 'done')\n"
+}
+
+/// 命令：进 `work`，几次调用挨着跑，收尾。
 fn script(work: &Path) -> String {
-    let mut script = format!("cd '{}' || exit 1\n", work.display());
+    let mut script = enter(work);
     script.push_str(&step("found", "memory_search --query zzz"));
     script.push_str(&step("itself", "shell --command ls"));
     script.push_str(&step("typo", "memory_serch --query zzz"));
     script.push_str(&step("schema", "--schema memory_search"));
-    script.push_str("bash -c 'miyu call memory_search --query nested' > child.out 2> child.err; echo $? > child.code\n");
+    script.push_str(child());
     if cfg!(target_os = "linux") {
         script.push_str("setsid miyu call memory_search --query away > away.out 2> away.err; echo $? > away.code\n");
     }
-    script
-        .push_str("printf '%s\\n%s\\n' \"$MIYU_CALL_SOCK\" \"$MIYU_CALL_TOKEN\" > endpoint.txt\n");
-    script.push_str("echo done > done.flag\n");
+    script.push_str(finish());
     script
 }
 
@@ -334,9 +384,10 @@ async fn a_background_command_calls_under_its_job() {
     let work = home.dir.join("work");
     std::fs::create_dir_all(&work).expect("建得了");
     let command = format!(
-        "cd '{}' || exit 1\n{}echo done > done.flag\n",
-        work.display(),
-        step("bg", "memory_search --query bg")
+        "{}{}{}",
+        enter(&work),
+        step("bg", "memory_search --query bg"),
+        finish()
     );
     let args = json!({"command": command, "description": "后台", "run_in_background": true});
     let (mut core, session, _server) = run(&home, &work, &args).await;
@@ -370,9 +421,11 @@ async fn a_command_moved_to_the_background_keeps_calling() {
     let work = home.dir.join("work");
     std::fs::create_dir_all(&work).expect("建得了");
     let command = format!(
-        "cd '{}' || exit 1\nsleep 3\n{}echo done > done.flag\n",
-        work.display(),
-        step("late", "memory_search --query late")
+        "{}{}{}{}",
+        enter(&work),
+        pause(),
+        step("late", "memory_search --query late"),
+        finish()
     );
     let args = json!({"command": command, "description": "挪过去", "timeout": 1000});
     let (mut core, session, _server) = run(&home, &work, &args).await;

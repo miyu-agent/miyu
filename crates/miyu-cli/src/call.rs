@@ -1,5 +1,5 @@
 //! `miyu call`（施工 M-3，设计 `39-脚本调工具.md` 第六节，`docs/blueprint/cli/main.md`「miyu call」）：在 Miyu 跑的命令里调
-//! 这个会话的工具。连上环境变量 `MIYU_CALL_SOCK` 说的套接字，带上 `MIYU_CALL_TOKEN` 发一个请求，照答回来的印、退出。
+//! 这个会话的工具。连上环境变量 `MIYU_CALL_SOCK` 说的端点（Unix 套接字、Windows 命名管道），带上 `MIYU_CALL_TOKEN` 发一个请求，照答回来的印、退出。
 //!
 //! 不读清单、不连核心的协议、不读本机令牌：没有这两个变量的、连不上的一律退出码 2，不退回去经协议调（MC11：会话里跑在沙盒
 //! 外的命令读得到本机令牌，改走协议就绕过了这个会话的权限）。
@@ -21,7 +21,10 @@ use crate::language::Language;
 const USAGE: u8 = 2;
 
 /// 所属的命令已经结束、被打断。
-#[cfg_attr(not(unix), expect(dead_code, reason = "Windows 的通道在施工 M-3 下"))]
+#[cfg_attr(
+    not(any(unix, windows)),
+    expect(dead_code, reason = "别的系统没有通道")
+)]
 const ENDED: u8 = 3;
 
 /// 协议版本，和核心那一头一样。
@@ -31,7 +34,10 @@ const VERSION: u32 = 1;
 const OUTSIDE: &str = include_str!("../../../resources/software/basesystem/shell/call/outside.txt");
 
 /// 所属的命令已经结束。
-#[cfg_attr(not(unix), expect(dead_code, reason = "Windows 的通道在施工 M-3 下"))]
+#[cfg_attr(
+    not(any(unix, windows)),
+    expect(dead_code, reason = "别的系统没有通道")
+)]
 const ENDED_TEXT: &str =
     include_str!("../../../resources/software/basesystem/shell/call/ended.txt");
 
@@ -175,17 +181,15 @@ fn parse(args: &[String]) -> Result<Vec<Value>, String> {
     ])
 }
 
-/// 连上环境变量里的套接字，带上令牌发请求、收回答：4 字节大端长度加 JSON，一次连接一个。
-#[cfg(unix)]
+/// 连上环境变量里的端点，带上令牌发请求、收回答：4 字节大端长度加 JSON，一次连接一个。端点不在了、没人听的是所属的命令
+/// 结束了（退出码 3）；没有那两个变量、别的连不上的不在 Miyu 跑的命令里（退出码 2）。
+#[cfg(any(unix, windows))]
 fn send(request: &Value) -> Result<Map<String, Value>, (u8, String)> {
-    use std::os::unix::net::UnixStream;
-
     let outside = || (USAGE, OUTSIDE.to_string());
     let ended = || (ENDED, ENDED_TEXT.to_string());
-    let path = std::env::var_os("MIYU_CALL_SOCK").ok_or_else(outside)?;
+    let endpoint = std::env::var_os("MIYU_CALL_SOCK").ok_or_else(outside)?;
     let token = std::env::var("MIYU_CALL_TOKEN").map_err(|_| outside())?;
-    // 套接字不在了、没人听：端点已经关了，所属的命令结束了。
-    let mut stream = UnixStream::connect(&path).map_err(|error| match error.kind() {
+    let mut stream = connect(&endpoint).map_err(|error| match error.kind() {
         std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused => ended(),
         _ => outside(),
     })?;
@@ -205,8 +209,37 @@ fn send(request: &Value) -> Result<Map<String, Value>, (u8, String)> {
     }
 }
 
-/// 别的系统还没有通道（Windows 的在施工 M-3 下）：照不在 Miyu 跑的命令里说。
-#[cfg(not(unix))]
+/// Unix：连套接字。
+#[cfg(unix)]
+fn connect(endpoint: &std::ffi::OsStr) -> std::io::Result<std::os::unix::net::UnixStream> {
+    std::os::unix::net::UnixStream::connect(endpoint)
+}
+
+/// Windows：命名管道当文件开，只要连上、读写的权限（`miyu_pipe::CONNECT_ACCESS`：沙盒里的命令只给了这些）。几个实例都忙着的
+/// （`ERROR_PIPE_BUSY`），等一会儿再试，最多两秒。
+#[cfg(windows)]
+fn connect(endpoint: &std::ffi::OsStr) -> std::io::Result<std::fs::File> {
+    use std::os::windows::fs::OpenOptionsExt;
+    const PIPE_BUSY: i32 = 231;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        match std::fs::OpenOptions::new()
+            .access_mode(miyu_pipe::CONNECT_ACCESS)
+            .open(endpoint)
+        {
+            Err(error)
+                if error.raw_os_error() == Some(PIPE_BUSY)
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            opened => return opened,
+        }
+    }
+}
+
+/// 别的系统没有通道：照不在 Miyu 跑的命令里说。
+#[cfg(not(any(unix, windows)))]
 fn send(_request: &Value) -> Result<Map<String, Value>, (u8, String)> {
     Err((USAGE, OUTSIDE.to_string()))
 }

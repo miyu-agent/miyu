@@ -152,7 +152,7 @@ impl Shell {
             Ok(prepared) => prepared,
             Err(error) => return self.failed(&error),
         };
-        let started = background::start(command).and_then(|(background, group)| {
+        let started = background::start(command).and_then(|(background, member)| {
             // 通道跟着进程交给任务表，挂到任务下面以后才认人：之前连上来的等着（施工 M-3）。
             let binder = channel.as_ref().map(channel::Channel::binder);
             let background = Background {
@@ -166,8 +166,8 @@ impl Shell {
             if let Some(port) = &call.nested {
                 port.adopt(job.clone());
             }
-            if let Some(binder) = binder {
-                binder.bind(group.id());
+            if let (Some(binder), Some(member)) = (binder, member) {
+                binder.bind(member);
             }
             Ok(job)
         });
@@ -402,8 +402,8 @@ impl Tool for Shell {
                 Ok(started) => started,
                 Err(error) => return self.failed(&error),
             };
-            if let Some(channel) = &channel {
-                channel.binder().bind(started.group().id());
+            if let (Some(channel), Some(member)) = (&channel, started.member()) {
+                channel.binder().bind(member);
             }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());

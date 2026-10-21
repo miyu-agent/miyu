@@ -1,4 +1,4 @@
-//! 别的系统还没有通道（Windows 的命名管道在施工 M-3 下）：开不成，命令照旧跑。类型照 Unix 那一半的写，用的地方不分平台。
+//! 别的系统（不是 Unix、不是 Windows）没有通道：开不成，命令照旧跑。类型照另两半的写，用的地方不分平台。
 
 use std::ffi::OsString;
 use std::io;
@@ -42,7 +42,7 @@ impl Channel {
 }
 
 impl Binder {
-    pub(in crate::shell) fn bind(self, _group: u32) {
+    pub(in crate::shell) fn bind(self, _member: crate::shell::process::Member) {
         match self {}
     }
 }

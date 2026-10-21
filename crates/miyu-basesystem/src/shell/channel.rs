@@ -10,7 +10,7 @@
 //! - 丢掉 [`Channel`] 就关：服务的任务掐掉、套接字删掉，令牌跟着作废，脚本里等着的 `miyu call` 读到结尾（退出码 3）。前台的
 //!   命令结束时丢；放到后台的跟着进程交给任务表，任务结束时丢（[`keep`]）。
 //!
-//! Windows 的命名管道在施工 M-3 下：那边现在不开通道，`miyu call` 照「只能在 Miyu 跑的命令里用」退出码 2。
+//! Windows 上是命名管道、照作业对象认人（施工 M-3 下，`channel/windows.rs`）；协议、令牌、退出码两边一样（`channel/serve.rs`）。
 
 use std::io;
 use std::sync::Arc;
@@ -22,24 +22,29 @@ use miyu_tool::Call;
 use super::{Shell, env, workdir};
 use crate::load::{self, LoadError};
 
-#[cfg(unix)]
+#[cfg(not(any(unix, windows)))]
+mod other;
+#[cfg(any(unix, windows))]
 mod reply;
+#[cfg(any(unix, windows))]
+mod serve;
 #[cfg(unix)]
 mod unix;
+#[cfg(windows)]
+mod windows;
 
-#[cfg(not(unix))]
-mod other;
-
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 pub(super) use other::{Channel, keep};
 #[cfg(unix)]
 pub(super) use unix::{Channel, keep};
+#[cfg(windows)]
+pub(super) use windows::{Channel, keep};
 
 /// 给她看的几句（`software/basesystem/shell/call/`）：退出码 1 到 4 的说法，`--schema` 印的样子。英文，一句，能指个改法的
 /// 跟一个（设计 39 第六节第 4 条）。
 #[cfg_attr(
-    not(unix),
-    expect(dead_code, reason = "Windows 的通道在施工 M-3 下，这几句那时才用")
+    not(any(unix, windows)),
+    expect(dead_code, reason = "别的系统没有通道，这几句用不上")
 )]
 pub(super) struct Texts {
     stranger: Template,

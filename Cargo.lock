@@ -1815,6 +1815,7 @@ name = "miyu-basesystem"
 version = "0.0.0"
 dependencies = [
  "base64 0.22.1",
+ "getrandom 0.4.3",
  "globset",
  "grep-matcher",
  "grep-regex",
@@ -1824,6 +1825,7 @@ dependencies = [
  "miyu-fs",
  "miyu-kernel",
  "miyu-log",
+ "miyu-pipe",
  "miyu-policy",
  "miyu-sandbox",
  "miyu-store",

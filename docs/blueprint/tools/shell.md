@@ -13,7 +13,7 @@
 | `crates/miyu-basesystem/src/shell/env.rs` | 命令拿得到哪些环境变量 |
 | `crates/miyu-basesystem/src/shell/process.rs` | 起命令、读输出、等它结束、整组杀 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
-| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/unix.rs`、`channel/reply.rs`、`channel/other.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`），Unix 的套接字、令牌、进程组、一问一答，结局写成退出码和字；别的系统开不成 |
+| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/output.rs` | 输出：边读边解成字、内存里只留头尾、截成头尾两段；后台的边读边换行尾（`Crlf`） |
 | `crates/miyu-basesystem/src/load.rs` | 说明是一段模板，核心起来时换进 shell 的名字 |
 | `resources/software/basesystem/tools/shell.json` | 说明和参数格式 |
@@ -105,10 +105,10 @@
 **脚本调工具**（施工 M-3，设计 `39-脚本调工具.md` 第五节，`cli/call.md`）
 
 1. 哪些命令开：拿到了端口的（`Call.nested`，执行器只给直接调的 `shell`，这个会话的工具面上有 `clicall` 开着的工具才给，`session/tools.md`「1g」）。前台、放到后台、到时挪到后台都开。开不成的（目录建不成、套接字绑不上、Windows 上）记一行 `WARN`，命令照旧跑、没有端点。
-2. 端点：一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`。令牌 128 位，从 `/dev/urandom` 读。第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。
-3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`，是指向核心自己的符号链接：脚本里调到的一定是同一个版本。
-4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个套接字（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。
-5. 认人：请求里的令牌对得上，连上来的进程（`SO_PEERCRED` / `LOCAL_PEERPID` 拿进程号）的进程组等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）。命令起来以后才记下这一组：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
+2. 端点：Unix 上一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`；第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。Windows 上一根命名管道 `\\.\pipe\miyu-call-<令牌的前 16 个字符>`，访问控制开给本人，另给本人沙盒里的命令（MXC 的基础容器，令牌带 `ALL APPLICATION PACKAGES`）只够连上、读写的权限（`miyu_pipe::create_for_containers`，`miyu call` 照同样几样权限开），一个连上来就建下一个实例接着等（施工 M-3 下）。容器里的命令由助手起、放进 MXC 自己的作业对象，嵌在这条命令的作业对象里，认人照旧过得了；别的进程连得上也过不了令牌、作业对象两关。令牌 128 位，系统给的随机字节（`getrandom`）。
+3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上）把核心所在的目录放到最前面。脚本里调到的一定是同一个版本。
+4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个端点（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。Windows 上放进去的是管道名：现在的助手什么都不收紧，这一格先不起作用；施工 5-9 改上把沙盒里的命令放进 AppContainer 以后，助手照它给容器开连接这根管道的权限（2026-10-20 和内核那边对过，不写死沙盒用户那一套）。
+5. 认人：请求里的令牌对得上，连上来的进程是这条命令的。Unix 上照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组，要等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）；Windows 上照对方的进程号（`GetNamedPipeClientProcessId`）查它在不在这条命令的作业对象里（`IsProcessInJob`）：命令起来以后马上放进它自己的作业对象（`miyu_sandbox::lifeline::Job`，套在核心那个里面；只用来认人，不设限制，整组杀照旧 `taskkill /T`，2026-10-20 照推荐定），起来到放进去之间它起的不在里面，PowerShell 起来要上百毫秒，碰不到。命令起来以后才记下这一组、这个作业对象：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
 6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
 7. 结局写成退出码和字（`channel/reply.rs`）：
    - 跑完成了：0，标准输出是 `data` 的一行 JSON（中文不转义），没有的是工具交回的字，都以换行结尾；丢了图的标准错误写 `images.txt`。

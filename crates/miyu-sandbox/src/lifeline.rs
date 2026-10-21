@@ -19,6 +19,8 @@ mod windows;
 
 #[cfg(unix)]
 pub use unix::{Lifeline, Watcher, watcher};
+#[cfg(windows)]
+pub use windows::Job;
 
 /// 把核心自己放进一个作业对象，核心没了，它起的子进程都跟着结束（Windows）。核心起来时调一次。别的平台什么都不做：
 /// 那里靠每条命令组里看门的（`watcher`）。

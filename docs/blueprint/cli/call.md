@@ -4,7 +4,7 @@
 
 在 AI 跑的命令里调这个会话的工具：脚本里把工具当函数用，结果交给脚本，不进她的上下文（设计 `39-脚本调工具.md`，施工 M-3）。连的是这条命令自己的端点（`tools/shell.md`「脚本调工具」），不连核心的协议、不读本机令牌：没有端点的一律退出码 2，不退回去经协议调（MC11）。
 
-Windows 的端点在施工 M-3 下；那之前 Windows 上的 `miyu call` 照「只能在 Miyu 跑的命令里用」退出码 2。
+Unix 上端点是套接字，Windows 上是命名管道（施工 M-3 下），写法、协议、退出码一样。
 
 ### 在哪
 
@@ -42,7 +42,7 @@ miyu call <工具> --schema
 
 1. 写法照上面拆成一个或几个请求；写错的印 `usage.txt`、退出码 2，`--json` 不是对象的印 `bad-json.txt`。
 2. 读 `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN`：没有的照 `outside.txt` 退出码 2。
-3. 连套接字：不在、没人听的是端点关了，照 `ended.txt` 退出码 3；别的连不上照 `outside.txt` 退出码 2。
+3. 连端点：Unix 上连套接字，Windows 上把管道当文件开（几个实例都忙着的等一会儿再试，最多两秒）。不在、没人听的是端点关了，照 `ended.txt` 退出码 3；别的连不上照 `outside.txt` 退出码 2。
 4. 一次连接一个请求：4 字节大端长度加 JSON（`{v, op, tool, args, token}`，`op` 是 `call` 或 `schema`，`args` 是参数对象的原文）；收回 `{code, stdout, stderr}`，照原样印、照 `code` 退出。读写断了的照 `ended.txt` 退出码 3。
 
 ### 守着它的

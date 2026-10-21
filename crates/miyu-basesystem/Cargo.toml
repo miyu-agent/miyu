@@ -41,6 +41,13 @@ unicode-normalization = "0.1"
 # 运行日志的门面：shell 收拾命令时出的岔子记一条（施工 4-8）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 
+# 脚本调工具的令牌（施工 M-3）：系统给的随机字节。MIT OR Apache-2.0，工作区里本来就有。
+getrandom = { version = "0.4", features = ["std"] }
+
+[target.'cfg(windows)'.dependencies]
+# 脚本调工具的命名管道（施工 M-3 下）：只开给本人的管道、问另一头的进程编号，同核心自己的管道。
+miyu-pipe = { path = "../miyu-pipe" }
+
 [target.'cfg(unix)'.dependencies]
 # shell 超时、叫停时整组杀掉命令：kill(-pgid, SIGKILL) 的安全接口（施工 4-8）。
 rustix = { version = "1", features = ["process"] }
