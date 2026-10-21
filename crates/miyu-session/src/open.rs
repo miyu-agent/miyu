@@ -105,6 +105,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         owner_is_admin,
         images,
         dream,
+        origin,
     } = setup;
     let span = actor::span(&id);
     let config = Turning::start(configs, environment.cwd.clone()).await;
@@ -326,6 +327,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         preset,
         images,
         dream,
+        origin,
         ..snapshot.session_created(owner.clone(), venue.clone(), permission)
     };
     let (mut session, first) = Session::create(

@@ -231,6 +231,7 @@ impl Sessions {
             owner_is_admin: who.owner == core.admin,
             images: who.images,
             dream: None,
+            origin: who.origin.clone(),
         })
         .await;
         let handle = match created {
@@ -369,6 +370,7 @@ impl Sessions {
             owner_is_admin,
             images: child.images,
             dream: None,
+            origin: None,
         })
         .await
         .map_err(|error| error.to_string())?;

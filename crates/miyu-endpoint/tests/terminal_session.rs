@@ -24,6 +24,22 @@ async fn the_terminal_session_is_made_once_and_can_be_pointed_elsewhere() {
     let session = first["session"].as_str().expect("有编号").to_string();
     let again = terminal(&mut client, "t2", json!({})).await;
     assert_eq!(again, json!({"session": session}), "之后一直是它");
+    // 终端集成开的会话在列表里带 `origin`（施工 8-33 四补）；别处开的不带。
+    let other_made = client.create("c0", &cwd).await;
+    let listed = client.call("l0", "session.list", json!({})).await;
+    let items = listed["result"]["sessions"]
+        .as_array()
+        .expect("有会话")
+        .clone();
+    let origin = |id: &str| {
+        items
+            .iter()
+            .find(|item| item["session"] == id)
+            .map(|item| item.get("origin").cloned())
+            .expect("列出来了")
+    };
+    assert_eq!(origin(&session), Some(json!("terminal")));
+    assert_eq!(origin(&other_made), None);
 
     let other = client.create("c1", &cwd).await;
     let pointed = client

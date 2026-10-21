@@ -226,6 +226,7 @@ impl Snapshot {
             forked: None,
             images: true,
             dream: None,
+            origin: None,
         }
     }
 

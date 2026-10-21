@@ -110,6 +110,7 @@
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
 | `project` | 在哪个项目，不在的不写 |
 | `kind`、`dream` | 整理会话（整理记忆跑在里面的会话）才有：`kind` 是 `"dream"`，`dream` 是 `{"persona"?, "session"?, "manual"?, "from"?}`：哪个人格、哪个会话的记忆，人叫的写 `manual: true`，在哪个会话里叫的写 `from`。主列表一般不列它们（传 `dream: false`），记忆页照 `dream` 列那一份记忆的 |
+| `origin` | 终端集成开的会话（`session.terminal` 开的）才有，是 `"terminal"`：头的会话列表照它写「终端集成」。以前开的没有 |
 | `default_workspace` | 这个会话的默认工作区，绝对路径：主会话是它自己的 `…/home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。`cwd` 和它一样的可以写「默认工作区」 |
 
 只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。

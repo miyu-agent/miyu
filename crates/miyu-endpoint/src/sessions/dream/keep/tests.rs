@@ -32,6 +32,7 @@ fn listed(n: u8, persona: &str, busy: bool) -> Listed {
             manual: false,
             from: None,
         }),
+        origin: None,
     }
 }
 

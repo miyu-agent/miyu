@@ -184,6 +184,7 @@ pub(crate) async fn session(
         group: (params.kind == Kind::Group).then_some(miyu_session::GroupSettings { recent }),
         profile: params.profile,
         images: params.images,
+        origin: None,
     };
     let cwd = params
         .cwd

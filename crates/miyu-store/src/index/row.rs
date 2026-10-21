@@ -60,6 +60,8 @@ pub struct Row {
     pub context_model: Option<String>,
     /// 整理会话的（施工 D-1 下，设计 41）：`session.created` 的 `dream`，哪一间、怎么来的。别的会话没有。表里存成它的 JSON。
     pub dream: Option<Dream>,
+    /// 从哪开的（施工 8-33 四补）：`session.created` 的 `origin`，终端集成开的是 `terminal`。别的会话没有。
+    pub origin: Option<String>,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -97,6 +99,7 @@ impl Row {
             context: None,
             context_model: None,
             dream: created.dream.clone(),
+            origin: created.origin.clone(),
         })
     }
 
@@ -206,11 +209,12 @@ impl Row {
                 .get::<_, Option<String>>(21)?
                 .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream")))
                 .transpose()?,
+            origin: row.get(22)?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 22], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 23], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -247,6 +251,7 @@ impl Row {
                 })?),
                 None => Value::Null,
             },
+            optional(self.origin.as_deref()),
         ])
     }
 }

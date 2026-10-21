@@ -27,6 +27,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         window: None,
         default_workspace: None,
         dream: None,
+        origin: None,
     }
 }
 

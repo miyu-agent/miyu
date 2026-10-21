@@ -156,6 +156,8 @@ pub struct Create<'a> {
     /// 整理会话（施工 D-1 上，设计 41）：记进 `session.created`；快照是裸的（没有 system、工具，回合开始不注入事实），之后不随
     /// 人格、预设、工具架换。不是的没有。造的一方另把记忆、知识库、技能、预设都交成关着的。
     pub dream: Option<miyu_kernel::event::Dream>,
+    /// 从哪开的（施工 8-33 四补）：`session.terminal` 开的是 `terminal`，记进 `session.created`；别的没有。
+    pub origin: Option<String>,
 }
 
 /// 照最后一次记下的工作目录（没有的是空的）定实际在哪干活。

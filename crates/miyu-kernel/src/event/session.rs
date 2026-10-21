@@ -62,6 +62,10 @@ pub struct SessionCreated {
     /// 日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dream: Option<Dream>,
+    /// 从哪开的（施工 8-33 四补，2026-10-21 项目主人：会话列表里分得出终端集成开的）：`session.terminal` 开的写 `terminal`，
+    /// 别的不写，以前的日志没有这一格。照原样存字：以后多了别的来源，旧核心照样读得了。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<String>,
 }
 
 /// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`，会话那一间写 `session`，两样有一样。

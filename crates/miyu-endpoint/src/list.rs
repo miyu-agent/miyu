@@ -120,6 +120,8 @@ pub(crate) struct Listed {
     pub(crate) default_workspace: Option<String>,
     /// 整理会话的哪一间、怎么来的（施工 D-1 下）：别的会话没有。
     pub(crate) dream: Option<Dream>,
+    /// 从哪开的（施工 8-33 四补）：终端集成开的是 `terminal`，别的会话没有。
+    pub(crate) origin: Option<String>,
 }
 
 impl Listed {
@@ -146,6 +148,7 @@ impl Listed {
             window: None,
             default_workspace: None,
             dream: row.dream,
+            origin: row.origin,
         }
     }
 
@@ -192,6 +195,10 @@ impl Listed {
         if let Some(dream) = &self.dream {
             item["kind"] = json!("dream");
             item["dream"] = json!(dream);
+        }
+        // 终端集成开的（施工 8-33 四补）：头的会话列表照它写「终端集成」。别的不写，字节不变。
+        if let Some(origin) = &self.origin {
+            item["origin"] = json!(origin);
         }
         context::write(&mut item, self);
         item
