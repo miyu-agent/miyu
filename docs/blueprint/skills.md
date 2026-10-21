@@ -32,7 +32,7 @@
 | `crates/miyu-endpoint/src/skills/remove.rs` | `skill.remove`（施工 W-13，网页的技能页单个删、多选删）：只删管理员自己放的，整个文件夹挪进系统回收站；找法同 `skill.list`，随包来的、没有的拒绝，一个不行就一个都不删；文件夹得正好在管理员的技能文件夹下面一层（兜底，不删到别处）；链接成的只挪链接本身，链接得正好在那一层（施工 X-37，`tests/skill_remove.rs` 守着） |
 | `crates/miyu-endpoint/src/scripts/list.rs` | `script.list`（施工 X-27，网页设置页「脚本」那一页）：登记上的脚本照工具名排，给人看的两格（`display_name`、`description`）照连接的语言挑，`from`、`package`、`path` 同 `skill.list`，`timeout`，`need_load` 带 `by`（`source` 来处、`setting` 个人设置盖过的），`on` 是全局开关；`tests/script_pages.rs` 守着 |
 | `crates/miyu-endpoint/src/toggles.rs` | 三页上改的两样（施工 X-27）：`tool.set_loading` 写个人设置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>`，`feature.set` 写 `features.<功能编号>`（只收 `skill-`、`script-`、`mcp-`），`null` 删掉；写法照 `config.set` 改一项；只给人 |
-| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`）；链接指到数据根里不认的地方的报 `script_link_outside`、`skill_link_outside`、`slash_link_outside`，说指到了哪一片（施工 X-37，`tests/scripts.rs` 的 `check_reports_links_out_of_the_accounts_folders` 守着） |
+| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能（`script_skipped`、`skill_skipped`）和撞名没登记上的脚本（`script_clashed`）（施工 X-12 下），被盖住的报 `script_covered`、`skill_covered`（施工 X-13 中）：照这一刻装了的包和管理员家目录再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`）；链接指到数据根里不认的地方的报 `script_link_outside`、`skill_link_outside`、`slash_link_outside`，说指到了哪一片（施工 X-37，`tests/scripts.rs` 的 `check_reports_links_out_of_the_accounts_folders` 守着） |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
 做法上定的（施工 X-10 上，主会话照推荐定）：

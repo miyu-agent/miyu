@@ -29,7 +29,7 @@
 
 ## 连接与登录
 
-`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`login_throttled`（都回完就断开）、`setup_first`。见 [连接](connection.md)。
+`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`login_throttled`（都回完就断开）、`setup_first`；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
 
 ## 会话
 
@@ -96,6 +96,12 @@
 | `nothing_to_delete` | 你那一层本来就没有 | |
 | `avatar_not_image`、`avatar_too_big`、`background_not_image`、`background_too_big` | 头像、背景图不是图、太大 | 量到的和上限 |
 
+## 项目
+
+| `reason` | 什么时候 | `data` |
+|---|---|---|
+| `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
+
 ## 软件包、扩展、命令
 
 | `reason` | 什么时候 | `data` |
@@ -103,6 +109,8 @@
 | `unknown_package` | 没有这个包 | |
 | `package_invalid` | 清单写错了 | `problem`、`line` |
 | `package_conflict`、`package_exists`、`package_required` | 带的名字撞了；和出厂的同编号；卸必需的 | |
+| `package_file_bad`、`wrong_target` | 包文件解不开；清单写的 `targets` 里没有本机这一种系统 | |
+| `download_failed`、`source_unreachable` | 从软件源装：包文件哪一处都没下成；软件源一处都没连上，本机也没有索引 | `why` |
 | `depends_missing`、`package_depended` | 依赖没装；别的包依赖它 | `missing`、`by` |
 | `program_missing`、`not_switchable` | 程序没找到；没有开关 | |
 | `not_restartable`、`package_off` | 没有能重启的；关着 | |
@@ -118,7 +126,7 @@
 | `bad_tool` | `provide` 的一件工具不对 | `tool`、`problem` |
 | `unknown_widget`、`bad_widget_content` | 界面块不在清单里；内容写法不对 | `widget`；`path`、`problem` |
 | `unknown_command`、`command_not_allowed`、`owner_only` | 没有这个命令；这个人不能用；只给主人本人 | `why` |
-| `command_unavailable`、`command_failed` | 扩展的命令没答、答了错 | `why` |
+| `command_unavailable`、`command_failed` | 扩展的命令、MCP 服务的提示词用不上、出了错，各是哪几种见 [`command.run`](packages.md#commandrun) | `why` |
 
 ## 记忆与知识库
 

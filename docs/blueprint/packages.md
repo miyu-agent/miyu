@@ -235,7 +235,7 @@ name = { zh = "布丁", en = "Pudding" }
 model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 ```
 
-1. **清单**：只带吉祥物的包只能写 `[package]`、`[mascot]`，`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`，写了别的表照样 `wrong_kind`。`[mascot]` 只有 `model`、必写，写法同 `[page] dir`：包目录里的相对路径，不许 `..`、开头的 `/`，写错 `bad_mascot_model`。施工 F-8 上补起带程序的包也能多带一张 `[mascot]`：`kind` 照程序那一种，多一格 `mascot`。
+1. **清单**：只带吉祥物的包只能写 `[package]`、`[mascot]`（另可写依赖），`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`，写了别的表照样 `wrong_kind`。`[mascot]` 只有 `model`、必写，写法同 `[page] dir`：包目录里的相对路径，不许 `..`、开头的 `/`，写错 `bad_mascot_model`。施工 F-8 上补起带程序的包也能多带一张 `[mascot]`：`kind` 照程序那一种，多一格 `mascot`。
 2. **列出来**：`package.list` 的一项多 `mascot: {"model"}`，没有 `protocol`。
 3. **读模型**：`package.file {"package", "path"}` 对吉祥物包只给 `model` 那一份（`path` 照原样写），照真实路径找，链接出了包目录的不认；别的路径 `file_not_found`。分块、512 KiB 一块照旧。
 4. **`miyu check`**：模型文件不在（照真实路径，出了包目录的也算不在）`mascot_missing`，超过 256 KiB `mascot_too_big`，不是 JSON 的对象 `mascot_not_json`，都是错误，写清哪个包、哪个文件。模型里面写得对不对由终端查。

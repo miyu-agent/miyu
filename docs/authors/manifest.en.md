@@ -4,7 +4,7 @@ Every table and field of a package manifest. Only these are accepted; unknown ta
 
 **Text for people** (`name`, `summary`, `about`, a setting's `name` and `description`…) is written as "language to sentence": `{ en = "Hello", zh = "打招呼" }`. Only `zh`, `en`, `ja` are recognized; the UI picks the person's language and falls back to `en`, `zh`, `ja`.
 
-**The kind of package** isn't written; it follows from the tables present: `[process]` makes an extension; no program but `[[mcp]]` makes an MCP server package; only `[package]` makes a package of skills, scripts and command templates.
+**The kind of package** isn't written; it follows from the tables present: `[process]` makes an extension; no program but `[[mcp]]` makes an MCP server package; `[mascot]` makes a mascot package and `[theme]` a theme package (both at the end of this page); only `[package]` makes a package of skills, scripts and command templates. The UI, built-in and worker kinds are for Miyu's own use and aren't covered here.
 
 ## A complete extension manifest
 
@@ -141,7 +141,7 @@ Feature ids are global; prefixing them with the package id helps.
 
 ## `[check]`
 
-`miyu check` runs `<program> <args…>`. Report problems on stdout, one JSON per line (`kind`, `file`, `level`, `message` required; `line`, `column`, `code`, `key` optional); exit 0 with only warnings, 1 with errors. At most 30 seconds. Needs `[command]`.
+`miyu check` runs `<program> <args…>`. Report problems on stdout, one JSON per line (`kind`, `file`, `level`, `message` required; optional `line` and `column` as positive integers and `code`, `key`, `rule`, `source` as strings; other fields are dropped); exit 0 with only warnings, 1 with errors. At most 30 seconds. Needs `[command]`.
 
 ## `[page]`
 
@@ -204,3 +204,38 @@ Bring a folder of content for another package (sticker content packs work this w
 ## `[depends]`, `[recommends]`
 
 `packages`: ids of packages it depends on or recommends. A missing dependency blocks installing and starting; a missing recommendation doesn't, it just loses some abilities.
+
+## `[mascot]`
+
+The mascot on the terminal's home screen, as a package:
+
+```toml
+[package]
+name = { zh = "布丁", en = "Pudding" }
+icon = "cat"            # optional
+
+[mascot]
+model = "mascot.json"   # relative path inside the package folder
+```
+
+- `model` is required: a relative path inside the package folder, no `..` and no leading `/`. Nothing else is accepted.
+- A mascot-only package has just `[package]` and `[mascot]`, plus optionally `[depends]` and `[recommends]`. It speaks no protocol: `protocol` or any other table is `wrong_kind`. An extension package may also carry a `[mascot]`.
+- `miyu check` checks the model file: missing, over 256 KiB, or not a JSON object is an error. What goes inside is defined and checked by the terminal, see [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md) (`mascot.json`) in the terminal repository.
+- No switch, settings or program; the terminal picks one by its setting `tui.mascot`.
+
+## `[theme]`
+
+A terminal theme (box lines, symbols, text styles), as a package:
+
+```toml
+[package]
+name = { zh = "纯字符", en = "ASCII" }
+
+[theme]
+file = "theme.json"     # relative path inside the package folder
+```
+
+- `file` is required, written like `[mascot] model`.
+- A theme package has just `[package]` and `[theme]`, plus optionally `[depends]` and `[recommends]`. `protocol`, `[command]`, `[mascot]` or any other table is `wrong_kind`: a theme package carries no mascot, and no other package can carry a theme.
+- `miyu check` checks the theme file the same way as a mascot's. What goes inside is in [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md) ("主题", themes) in the terminal repository.
+- No switch, settings or program; the terminal picks one by its setting `tui.look`.

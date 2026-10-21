@@ -4,7 +4,7 @@
 
 **给人看的字**（`name`、`summary`、`about`、配置项的 `name`、`description`……）写成「语言到一句话」：`{ en = "Hello", zh = "打招呼" }`，只认 `zh`、`en`、`ja`，界面照人的语言挑，没有的退到 `en`、`zh`、`ja`。
 
-**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；只有 `[package]` 的是只带技能、脚本、命令模板的包。
+**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是主题包（这两种见文末）；只有 `[package]` 的是只带技能、脚本、命令模板的包。还有界面、内置、小程序几种是 Miyu 自己用的，这里不写。
 
 ## 一份完整的扩展清单
 
@@ -141,7 +141,7 @@ tools = ["hello_greet"]
 
 ## `[check]`
 
-`miyu check` 时跑 `<程序> <args…>`。你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有，`line`、`column`、`code`、`key` 可以有），只有警告时退出码 0，有错误 1。最多跑 30 秒。要有 `[command]`。
+`miyu check` 时跑 `<程序> <args…>`。你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有；`line`、`column` 是正整数，`code`、`key`、`rule`、`source` 是字，可以有；别的格不收），只有警告时退出码 0，有错误 1。最多跑 30 秒。要有 `[command]`。
 
 ## `[page]`
 
@@ -204,3 +204,38 @@ tools = ["hello_greet"]
 ## `[depends]`、`[recommends]`
 
 `packages`：依赖的、推荐的包的编号。依赖的缺了装不上、装着的不起；推荐的缺了照装、照起，少一部分本事。
+
+## `[mascot]`
+
+终端首页的吉祥物，做成一个包：
+
+```toml
+[package]
+name = { zh = "布丁", en = "Pudding" }
+icon = "cat"            # 可以不写
+
+[mascot]
+model = "mascot.json"   # 包文件夹里的相对路径
+```
+
+- `model` 必写：包文件夹里的相对路径，不能有 `..`、开头的 `/`。别的格不收。
+- 只带吉祥物的包只写 `[package]`、`[mascot]`，另可写 `[depends]`、`[recommends]`；不说协议，写了 `protocol` 或别的表都报 `wrong_kind`。扩展包也能多带一张 `[mascot]`。
+- `miyu check` 查模型文件：不在、超过 256 KiB、不是 JSON 的对象都报错。文件里面怎么写由终端定、终端查，见终端仓库的 [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md)（`mascot.json`）。
+- 没有开关、配置项、程序；终端照它的配置项 `tui.mascot` 挑用哪一个。
+
+## `[theme]`
+
+终端的主题（框线、记号、字的修饰），做成一个包：
+
+```toml
+[package]
+name = { zh = "纯字符", en = "ASCII" }
+
+[theme]
+file = "theme.json"     # 包文件夹里的相对路径
+```
+
+- `file` 必写，写法同 `[mascot] model`。
+- 主题包只写 `[package]`、`[theme]`，另可写 `[depends]`、`[recommends]`；写了 `protocol`、`[command]`、`[mascot]` 或别的表都报 `wrong_kind`：主题包不带吉祥物，别的包也带不了主题。
+- `miyu check` 查主题文件，规矩同吉祥物。文件里面怎么写见终端仓库的 [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md)（「主题」）。
+- 没有开关、配置项、程序；终端照它的配置项 `tui.look` 挑用哪一个。

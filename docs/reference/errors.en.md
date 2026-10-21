@@ -29,7 +29,7 @@ Chinese version: [errors.md](errors.md).
 
 ## Connecting and logging in
 
-`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `login_throttled` (all close the connection after answering), `setup_first`. See [Connection](connection.en.md).
+`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `login_throttled` (all close the connection after answering), `setup_first`; `bad_ticket` when the ticket for `login.redeem` doesn't exist, has expired or was already used. See [Connection](connection.en.md).
 
 ## Sessions
 
@@ -96,6 +96,12 @@ Chinese version: [errors.md](errors.md).
 | `nothing_to_delete` | You have no layer to delete | |
 | `avatar_not_image`, `avatar_too_big`, `background_not_image`, `background_too_big` | The avatar or background isn't an image, or is too big | measured size and limit |
 
+## Projects
+
+| `reason` | When | `data` |
+|---|---|---|
+| `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |
+
 ## Packages, extensions, commands
 
 | `reason` | When | `data` |
@@ -103,6 +109,8 @@ Chinese version: [errors.md](errors.md).
 | `unknown_package` | No such package | |
 | `package_invalid` | The manifest is wrong | `problem`, `line` |
 | `package_conflict`, `package_exists`, `package_required` | A name it brings clashes; same id as a built-in; removing a required one | |
+| `package_file_bad`, `wrong_target` | The package file can't be unpacked; the manifest lists `targets` and this system isn't one of them | |
+| `download_failed`, `source_unreachable` | Installing from a source: the package file couldn't be downloaded from anywhere; no source could be reached and there is no local index | `why` |
 | `depends_missing`, `package_depended` | A dependency is missing; another package depends on it | `missing`, `by` |
 | `program_missing`, `not_switchable` | The program wasn't found; no switch | |
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
@@ -118,7 +126,7 @@ Chinese version: [errors.md](errors.md).
 | `bad_tool` | A tool in `provide` is wrong | `tool`, `problem` |
 | `unknown_widget`, `bad_widget_content` | The widget isn't in the manifest; the content is malformed | `widget`; `path`, `problem` |
 | `unknown_command`, `command_not_allowed`, `owner_only` | No such command; this person can't use it; owner only | `why` |
-| `command_unavailable`, `command_failed` | An extension's command didn't answer, or answered with an error | `why` |
+| `command_unavailable`, `command_failed` | An extension's command or an MCP server's prompt can't be used right now, or failed; which cases are which is in [`command.run`](packages.en.md#commandrun) | `why` |
 
 ## Memory and knowledge bases
 

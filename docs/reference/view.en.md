@@ -31,7 +31,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `media` | An image she sent: `image`, `alt`, `sticker` |
 | `group` | A stretch of the timeline (thoughts and tool steps): `steps`, `open`, `summary`, `summary_en` (the collapsed line), `took_ms`, `failed` |
 | `thought` | A thought step: `group`, `text`, `open`, `took_ms` |
-| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcalltoolcancel)) |
+| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcall-toolcancel)) |
 | `end` | A turn's end: `reason`, `model`, `endpoint`, `took_ms`, `usage`; on error `error`, `explain` |
 | `notice` | An aside: `what` below |
 

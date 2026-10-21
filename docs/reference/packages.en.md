@@ -327,8 +327,8 @@ Heads add their own commands (like `/help`) to the menu themselves.
 
 **Params**: `cwd` (look for a project config from here), `file` (check only this one).
 
-**Response**: `{"problems": [...]}`, one per issue: `kind` (`config`, `secrets`, `persona`, `preset`, `package`, `script`, `skill`, `mcp`), `file`, `code`, `level`, `message`, `line` and `column` when known, and for config `key`, `got`, `suggest`, `using`.
+**Response**: `{"problems": [...]}`, one per issue: `kind` (`config`, `secrets`, `persona`, `preset`, `package`, `script`, `skill`, `slash`, `mcp`; a package's own check passes on whatever it reported, e.g. `venue`), `file`, `code`, `level`, `message`, `line` and `column` when known, for config `key`, `got`, `suggest`, `using`, and from a package's own check optionally `key`, `rule`, `source`.
 
-Without `file` it checks everything: system config, personal settings, the project config of `cwd`, the secrets file, personas and presets in every layer, package manifests, and packages' own checks.
+Without `file` it checks everything: system config, personal settings, the project config of `cwd`, the secrets file, personas and presets in every layer, package manifests, and packages' own checks; scripts, skills and command templates that can't be read, are covered, or are links into a part of the data root that isn't recognized, scripts not registered because of a name clash, and command templates named like a built-in command; tools and prompts an MCP server listed that weren't registered; `sandbox.tools` grants whose tool is gone, comes from somewhere else or is a link, and a grant for `shell`; installed files that changed or went missing. It also returns `embedding`, the state of the semantic model, which is not a problem: `model` (`null` with `why` when it can't be used), `filling` while it backfills, `memory` and `turns` with one `{persona, have, total}` per persona, and `kb` with one `{id, name, have, total}` per knowledge base.
 
 **Errors**: `unknown_file`: `file` isn't one of the kinds Miyu reads.

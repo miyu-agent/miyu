@@ -9,7 +9,8 @@
 //!
 //! 个人设置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。不写文件的另带语义模型的状态（施工 R-25，`embedding.rs`）。
 //!
-//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`mcp`）、`file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
+//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`；包自己的检查照它报的）、
+//! `file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
 //! 项目配置写成 `~/…`，出厂的人格写真的路径）、`code`、`level`、`message`（照这个连接的语言），有行列的带上。
 
 use std::path::{Path, PathBuf};
