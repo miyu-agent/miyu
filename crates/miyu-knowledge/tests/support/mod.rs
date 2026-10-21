@@ -8,7 +8,7 @@ use miyu_kernel::block::Block;
 use miyu_kernel::time::UtcOffset;
 use miyu_tool::{
     Call, Done, KbHit, KbPage, KbRefused, KbSave, KbTrashed, KbWritten, KnowledgePort, Pending,
-    Progress, Stop, Tool,
+    Progress, Tool,
 };
 
 /// 一个假端口：记下她要做的，照预先定好的交回。
@@ -128,27 +128,9 @@ pub async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) 
     let call = Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Arc::default(),
-        stop: Stop::default(),
-        sandbox: None,
-        log: None,
         offset: UtcOffset::from_minutes(0).expect("零时区"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
         knowledge: port.map(|port| port as Arc<dyn KnowledgePort>),
-        goals: None,
-        nested: None,
-        packages: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     };
     tool.run(call, Progress::new(|_| {})).await
 }

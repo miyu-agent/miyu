@@ -243,6 +243,7 @@ impl Tools {
             }),
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
             checked: Some(checked),
+            caller: Some(self.callers.of(turn)), // 照派它的那一轮（施工 X-43）
         };
         let shown = id.to_string();
         tracing::info!(target: TARGET, nested = shown.as_str(), tool = name.as_str(), "running nested");

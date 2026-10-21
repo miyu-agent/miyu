@@ -61,27 +61,7 @@ fn write_comes_from_the_resources_and_names_what_it_writes() {
     let targets = tool.targets(&Call {
         args: json!({"file_path": "src/a.rs", "content": ""}).to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     });
     assert_eq!(targets.len(), 1);
     assert_eq!(targets[0].path, "src/a.rs");

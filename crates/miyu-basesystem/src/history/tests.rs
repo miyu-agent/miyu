@@ -94,27 +94,9 @@ fn call(args: Value, log: Option<Log>, minutes: i32) -> Call {
     Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Stop::default(),
-        sandbox: None,
         log,
         offset: UtcOffset::from_minutes(minutes).expect("在范围里"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     }
 }
 

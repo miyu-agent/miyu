@@ -14,7 +14,7 @@ use miyu_kernel::block::Block;
 use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_net::{Pages, Search, WEB_SEARCH};
-use miyu_tool::{Call, Done, Progress, SettingsPort, Stop, Tool};
+use miyu_tool::{Call, Done, Progress, SettingsPort, Tool};
 
 use crate::support::{Reply, Site, resources};
 
@@ -96,27 +96,9 @@ async fn search_with(
     let call = Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Arc::default(),
-        stop: Stop::default(),
-        sandbox: None,
-        log: None,
         offset: UtcOffset::from_minutes(0).expect("零时区"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        goals: None,
-        nested: None,
-        packages: None,
-        ids: None,
         settings,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     };
     tokio::time::timeout(
         Duration::from_secs(60),

@@ -9,6 +9,9 @@
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
+//! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
+//!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
+//!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
 //! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
@@ -22,7 +25,7 @@ use std::time::Duration;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
-use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
+use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
 
 use super::process::{self, Ending, Guard};
 use super::{Results, env, workdir};
@@ -48,11 +51,19 @@ const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
 /// 交图的目录交给脚本的环境变量（施工 X-35）。
 const IMAGES: &str = "MIYU_SCRIPT_IMAGES_DIR";
 
+/// 调用的场所交给脚本的环境变量（施工 X-43）。
+const CALLER_VENUE: &str = "MIYU_CALLER_VENUE";
+
+/// 这一轮开口的是不是机器主人交给脚本的环境变量（施工 X-43）：`1`、`0`。
+const CALLER_OWNER: &str = "MIYU_CALLER_OWNER";
+
 /// 一个脚本。
 pub(crate) struct Script {
     spec: Spec,
     /// 开头写的给人看的名字，照语言（施工 9-8 六补）。
     display_name: BTreeMap<String, String>,
+    /// 开头写的给哪种会话（`Venues`，施工 X-43）：没写的没有。
+    venues: Option<Venues>,
     file: PathBuf,
     timeout: u64,
     results: Results,
@@ -88,6 +99,7 @@ impl Script {
                 result: None,
             },
             display_name: head.display_name.clone(),
+            venues: head.venues.as_deref().map(Venues::of),
             timeout: head.timeout,
             results: Results::load(resources)?,
             timed_out: text("timed-out", &["seconds"])?,
@@ -143,6 +155,11 @@ impl Script {
         if let Some(images) = images {
             vars.push((IMAGES.into(), images.as_os_str().to_owned()));
         }
+        if let Some(caller) = &call.caller {
+            vars.push((CALLER_VENUE.into(), caller.venue.as_str().into()));
+            let owner = if caller.owner { "1" } else { "0" };
+            vars.push((CALLER_OWNER.into(), owner.into()));
+        }
         // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。
         vars.push(("PYTHONUTF8".into(), "1".into()));
         let mut command = std::process::Command::new(program);
@@ -165,6 +182,11 @@ impl Tool for Script {
 
     fn display_name(&self) -> BTreeMap<String, String> {
         self.display_name.clone()
+    }
+
+    /// 开头写了 `Venues` 的照它给哪种会话（施工 X-43）；没写的照工具面自己的规矩，哪种会话都有。
+    fn venues(&self) -> Option<Venues> {
+        self.venues
     }
 
     /// 脚本文件（施工 X-37 补）：放行出沙盒时照它判那一刻的真实位置。

@@ -66,6 +66,9 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Timeout` | 秒，默认 60 |
 | `Need load` | 不写是先加载：AI 平时只看到名字和一行说明，要用时先加载完整的参数，省钱。`no`：一直给完整的参数，常用的写上 |
 | `Clicall` | `no`：AI 在命令里不能用 `miyu call` 调它，只能直接调。不写是能 |
+| `Venues` | 给哪种会话：`local`（本机的终端、网页这些）、`private`（通讯平台的私聊）、`group`（群）里的几个，逗号隔开，例如 `Venues: local, private`。不写是哪种会话都有；写错的整个脚本不登记，`miyu check` 报出来 |
+
+开头是文件开头连着的那一段注释，遇到第一行不是注释的就完。开头写完空一行再写别的注释，不然说明里一句「Timeout: …」也会被当成开头读。
 
 **怎么跑**
 
@@ -73,6 +76,15 @@ Linux、macOS 上 `chmod +x dice.py`。
 - 参数是一份 JSON，标准输入里有完整的一份；不超过 30 KiB 的，环境变量 `MIYU_ARGS_JSON` 里也有一份。长的参数只在标准输入里，所以稳妥的写法是读标准输入。
 - 标准输出就是交给 AI 的结果；退出码不是 0 的算失败，把原因写进输出。
 - 工作目录是会话的工作区；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`。
+- 谁调的：`MIYU_CALLER_VENUE` 是在哪种会话里调的（本机的是 `local`，群、私聊是场所编号，例如 `qq:group:123`），`MIYU_CALLER_OWNER` 是这一轮开口的是不是机器主人（`1`、`0`；群里几个人有一个不是主人的、说不清的都是 `0`）。
+- 这两个只是事实，不是门：AI 自己在命令里写 `MIYU_CALLER_OWNER=1 ./脚本` 挡不了。要让脚本只在某几种会话里有，写开头的 `Venues`；环境变量只用来调整行为，比如群里只读、不改东西：
+
+  ```python
+  import os
+  if os.environ.get("MIYU_CALLER_OWNER") != "1":
+      print("Read-only here: only the owner can change the title.")
+  ```
+
 - 跑的规矩同 AI 跑命令：在沙盒里跑（只写得了工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读）；沙盒用不了的要人确认。
 
 **交图**

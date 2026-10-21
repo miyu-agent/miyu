@@ -364,6 +364,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             session: id.clone(),
             owner: owner.clone(),
             confined,
+            venue: venue.clone(),
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

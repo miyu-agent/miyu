@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::{AccountId, SessionId, VenueId};
 use miyu_kernel::time::UtcOffset;
 use miyu_store::blob::Blobs;
 use miyu_tool::{Log, Seen, Shelf};
@@ -22,6 +22,8 @@ pub(crate) struct ToolKit {
     pub(crate) owner: AccountId,
     /// 外部身份的会话（施工 5-12 下）：命令的沙盒读写都只限工作区。
     pub(crate) confined: bool,
+    /// 会话的场所（施工 X-43）：每次调用带上，交给脚本（`MIYU_CALLER_VENUE`）。
+    pub(crate) venue: VenueId,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。
     pub(crate) catalog: Shelf,
     /// 替工具写的两句，和权限策略同一份（施工 P-1 三补：换快照时跟着换）。

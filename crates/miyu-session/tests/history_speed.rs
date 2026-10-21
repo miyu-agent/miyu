@@ -5,7 +5,6 @@ use std::path::Path;
 use std::time::Instant;
 
 use miyu_kernel::event::Event;
-use miyu_kernel::time::UtcOffset;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog, read_segments};
 use miyu_tool::{Call, Log, Progress, ReadLog};
 
@@ -68,27 +67,8 @@ async fn how_long_fifty_thousand_events_take() {
         let call = Call {
             args: args.to_string(),
             cwd: String::new(),
-            home: None,
-            data_root: None,
-            seen: Default::default(),
-            stop: Default::default(),
-            sandbox: None,
             log: Some(Log::new(Dir(dir.clone()))),
-            offset: UtcOffset::UTC,
-            agents: None,
-            messages: None,
-            jobs: None,
-            sessions: None,
-            usage: None,
-            questions: None,
-            memory: None,
-            knowledge: None,
-            packages: None,
-            goals: None,
-            nested: None,
-            ids: None,
-            settings: None,
-            checked: None,
+            ..miyu_tool::testkit::call("{}")
         };
         let started = Instant::now();
         let done = history.run(call, Progress::new(|_| {})).await;

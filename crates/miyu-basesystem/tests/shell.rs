@@ -24,27 +24,7 @@ fn bare(args: serde_json::Value) -> Call {
     Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     }
 }
 
@@ -239,6 +219,31 @@ async fn the_core_environment_reaches_the_command_but_secrets_do_not() {
     assert_eq!(text(&done), "plain|unset|:probe|cat|unset\n");
 }
 
+/// 核心的环境里残留的调用事实（施工 X-43）不进命令：`MIYU_*` 本来就不传（施工 4-8），在命令里自己写的也进不了脚本工具。
+#[tokio::test]
+async fn left_over_caller_facts_do_not_reach_a_command() {
+    if !in_child(
+        "shell::left_over_caller_facts_do_not_reach_a_command",
+        &[
+            ("MIYU_CALLER_VENUE", "qq:group:9"),
+            ("MIYU_CALLER_OWNER", "1"),
+        ],
+    ) {
+        return;
+    }
+    let site = Site::new();
+    let done = run(
+        &site,
+        script(
+            "printf '%s|%s\\n' \"${MIYU_CALLER_VENUE-unset}\" \"${MIYU_CALLER_OWNER-unset}\"",
+            "Write-Output ((@($env:MIYU_CALLER_VENUE, $env:MIYU_CALLER_OWNER) | ForEach-Object { if ($_) { $_ } else { 'unset' } }) -join '|')",
+        ),
+    )
+    .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(text(&done), "unset|unset\n");
+}
+
 #[tokio::test]
 async fn chinese_comes_through_as_it_is() {
     let site = Site::new();
@@ -365,27 +370,7 @@ async fn the_output_is_pushed_to_the_heads_as_it_comes() {
     let call = Call {
         args: json!({ "command": command, "description": "Test" }).to_string(),
         cwd: site.0.join("work").to_string_lossy().into_owned(),
-        home: None,
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     };
     let done = tool("shell").run(call, progress).await;
     assert!(!done.error, "{}", text(&done));
@@ -413,26 +398,7 @@ async fn a_tilde_working_directory_means_home() {
             .to_string(),
         cwd: "~/proj".to_string(),
         home: Some(site.0.join("home")),
-        data_root: None,
-        seen: Default::default(),
-        stop: Default::default(),
-        sandbox: None,
-        log: None,
-        offset: miyu_kernel::time::UtcOffset::UTC,
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     };
     let done = tool("shell")
         .run(call, miyu_tool::Progress::new(|_| {}))

@@ -10,7 +10,7 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::MemoryId;
 use miyu_tool::{
     Call, Done, FoundMemory, FoundTurn, MemoryPort, Pending, Progress, Refused, Remember, Searched,
-    Stop, Tool,
+    Tool,
 };
 
 /// 一个假端口：记下她要做的，照预先定好的交回。
@@ -81,27 +81,9 @@ async fn call(port: Option<Arc<Fake>>, name: &str, args: serde_json::Value) -> D
     let call = Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Arc::default(),
-        stop: Stop::default(),
-        sandbox: None,
-        log: None,
         offset: UtcOffset::from_minutes(0).expect("零时区"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
         memory: port.map(|port| port as Arc<dyn MemoryPort>),
-        knowledge: None,
-        packages: None,
-        goals: None,
-        nested: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     };
     tool.run(call, Progress::new(|_| {})).await
 }

@@ -10,6 +10,8 @@
 //!   没有参数；
 //! - `Need load`：`yes` 和没写的要先加载，`no` 是全量（施工 L-3，`25-工具加载.md` W9，2026-10-20 项目主人改：脚本默认先加载，
 //!   原来没写的全量）；大小写不论，`true`、`false` 也认。个人设置的 `loading.tools.<工具名>` 盖过它。
+//! - `Venues`：给哪种会话（施工 X-43）：`local`、`private`、`group` 里的几个，逗号隔开，同清单的 `venues`（同一份查法
+//!   [`miyu_config::package::venues_fit`]）；没写的哪种会话都有。只有英文的键名，同上面这些给机器读的格。
 //!
 //! 别的键（`Id`、`Group`、`Trust`、`Permission`、编码声明……）照旧版留着的，认、不用。工具名照文件名（[`tool_name`]）。纯逻辑：
 //! 进来的是文件名和文件里的字，出去的是读好的样子，或者哪里不对。
@@ -17,6 +19,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use miyu_config::package::venues_fit;
 use serde_json::Value;
 
 /// 没写 `Timeout` 的等多少秒（同旧版）。
@@ -55,6 +58,8 @@ pub struct ScriptHead {
     pub need_load: bool,
     /// 脚本里能调（`Clicall`，施工 M-2）：没写的能。
     pub clicall: bool,
+    /// 给哪种会话（`Venues`，施工 X-43）：照写的先后；没写的没有，哪种会话都有。
+    pub venues: Option<Vec<String>>,
 }
 
 /// 哪里不对。
@@ -74,6 +79,8 @@ pub enum ScriptProblem {
     BadNeedLoad(String),
     /// `Clicall` 不是 `yes`、`no`（施工 M-2）：写的原样。
     BadClicall(String),
+    /// `Venues` 不是认的几种（施工 X-43）：空的、不认识的、重了的。写的原样。
+    BadVenues(String),
 }
 
 impl fmt::Display for ScriptProblem {
@@ -88,6 +95,10 @@ impl fmt::Display for ScriptProblem {
             ScriptProblem::NotAnObject => f.write_str("Parameters must be a JSON object schema"),
             ScriptProblem::BadNeedLoad(text) => write!(f, "Need load {text:?} is not yes or no"),
             ScriptProblem::BadClicall(text) => write!(f, "Clicall {text:?} is not yes or no"),
+            ScriptProblem::BadVenues(text) => write!(
+                f,
+                "Venues {text:?} must list some of local, private, group, each once"
+            ),
         }
     }
 }
@@ -109,6 +120,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         summary: BTreeMap::new(),
         need_load: true,
         clicall: true,
+        venues: None,
     };
     let mut rest = lines.iter();
     while let Some(line) = rest.next() {
@@ -130,6 +142,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
             "Parameters" => head.parameters = parameters(value, &mut rest)?,
             "Need load" => head.need_load = yes_or_no(value, ScriptProblem::BadNeedLoad)?,
             "Clicall" => head.clicall = yes_or_no(value, ScriptProblem::BadClicall)?,
+            "Venues" => head.venues = Some(venues(value)?),
             _ => {}
         }
     }
@@ -145,6 +158,18 @@ fn yes_or_no(value: &str, bad: fn(String) -> ScriptProblem) -> Result<bool, Scri
         "yes" | "true" => Ok(true),
         "no" | "false" => Ok(false),
         _ => Err(bad(value.to_string())),
+    }
+}
+
+/// `Venues` 的值（施工 X-43）：逗号隔开的几种，各自去掉两头的空白，照清单的 [`venues_fit`] 查。
+fn venues(value: &str) -> Result<Vec<String>, ScriptProblem> {
+    let list: Vec<String> = value
+        .split(',')
+        .map(|venue| venue.trim().to_string())
+        .collect();
+    match venues_fit(&list) {
+        true => Ok(list),
+        false => Err(ScriptProblem::BadVenues(value.to_string())),
     }
 }
 

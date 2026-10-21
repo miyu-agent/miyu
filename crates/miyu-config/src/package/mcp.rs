@@ -371,16 +371,21 @@ fn value(item: &Item) -> Option<EnvValue> {
     }
 }
 
-/// `venues`：至少一个，都是认的种类，不重。
+/// `venues`：照 [`venues_fit`] 查。
 fn venues(item: &Item) -> Option<Vec<String>> {
     let list = texts(item.as_array()?)?;
-    let fits = !list.is_empty()
+    venues_fit(&list).then_some(list)
+}
+
+/// 一串会话种类合不合：至少一个，都是认的种类（`local`、`private`、`group`），不重。清单的 `venues`、脚本开头的 `Venues`
+/// （施工 X-43）共用这一份。
+pub fn venues_fit(list: &[String]) -> bool {
+    !list.is_empty()
         && list.iter().all(|venue| VENUES.contains(&venue.as_str()))
         && list
             .iter()
             .enumerate()
-            .all(|(n, venue)| !list[..n].contains(venue));
-    fits.then_some(list)
+            .all(|(n, venue)| !list[..n].contains(venue))
 }
 
 /// 写错了的一处。
