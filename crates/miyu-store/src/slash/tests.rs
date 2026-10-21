@@ -7,7 +7,7 @@ use super::*;
 use crate::env::{Env, Platform};
 use crate::packages::Packages;
 use crate::resources::ResourceRoot;
-use crate::test_support::Scratch;
+use crate::test_support::{Scratch, link};
 
 struct Places {
     scratch: Scratch,
@@ -189,4 +189,37 @@ fn a_package_folder_says_which_commands_it_carries() {
     let (names, skipped) = carried(&places.scratch.path().join("kit"));
     assert_eq!(names, ["fix-bug", "review"]);
     assert_eq!(skipped.len(), 1);
+}
+
+/// 模板是链接（施工 X-37）：照它指到的读；指到 `system/` 的跳过、带真实位置。
+#[test]
+fn a_linked_template_is_read_through() {
+    let places = Places::new();
+    places.write("elsewhere/notes.md", "Linked.\n");
+    places.write("data/system/secrets.toml", "token = \"no\"\n");
+    places.write("data/home/admin/commands/own.md", "Mine.\n");
+    let own = places.root.account_dir(&places.admin).join("commands");
+    let leak = own.join("leak.md");
+    if !(link(
+        &places.scratch.path().join("elsewhere/notes.md"),
+        &own.join("notes.md"),
+    ) && link(
+        &places.scratch.path().join("data/system/secrets.toml"),
+        &leak,
+    )) {
+        return;
+    }
+    let (commands, skipped) = places.found();
+    assert_eq!(
+        brief(&commands),
+        [("notes", "Linked.\n", None), ("own", "Mine.\n", None)]
+    );
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert_eq!(
+        (skipped[0].path.clone(), skipped[0].outside.clone()),
+        (
+            leak,
+            fs::canonicalize(places.scratch.path().join("data/system/secrets.toml")).ok()
+        )
+    );
 }

@@ -70,6 +70,7 @@ pub struct Fake {
     act: Act,
     venues: Option<Venues>,
     display_name: BTreeMap<String, String>,
+    linked: bool,
     calls: Mutex<Vec<Call>>,
     dropped: Arc<AtomicUsize>,
 }
@@ -110,6 +111,7 @@ impl Fake {
             act,
             venues: None,
             display_name: BTreeMap::new(),
+            linked: false,
             calls: Mutex::new(Vec::new()),
             dropped: Arc::new(AtomicUsize::new(0)),
         })
@@ -141,6 +143,15 @@ impl Fake {
         let mut fake = Fake::new(name, access, act);
         if let Some(fake) = Arc::get_mut(&mut fake) {
             fake.spec.clicall = true;
+        }
+        fake
+    }
+
+    /// 文件是链接的假工具，像链接成的脚本（施工 X-37）。
+    pub fn linked(name: &str, access: Access, act: Act) -> Arc<Fake> {
+        let mut fake = Fake::new(name, access, act);
+        if let Some(fake) = Arc::get_mut(&mut fake) {
+            fake.linked = true;
         }
         fake
     }
@@ -244,6 +255,10 @@ impl Tool for Fake {
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(false)
         })
+    }
+
+    fn linked(&self) -> bool {
+        self.linked
     }
 
     /// 参数里有字的 `command`、`title`，照原样交给说明（施工 D-4）。

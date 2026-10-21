@@ -59,11 +59,13 @@ impl Unsandboxed {
         Unsandboxed(granted)
     }
 
-    /// 工具 `name` 放行了：写了它，写的来处和架子 `shelf` 上这件工具现在归的包一样。
+    /// 工具 `name` 放行了：写了它，写的来处和架子 `shelf` 上这件工具现在归的包一样，它的文件这时不是链接（施工 X-37：链接能
+    /// 指到她改得了的工作区，等于改了一件在沙盒外跑的工具）。
     pub fn granted(&self, name: &str, shelf: &Shelf) -> bool {
         self.0
             .get(name)
             .is_some_and(|source| shelf.package_of(name).as_deref() == Some(source.as_str()))
+            && !shelf.get(name).is_some_and(|tool| tool.linked())
     }
 
     /// 写了的每一条：工具名、写的来处，照工具名排（`miyu check` 照它列）。

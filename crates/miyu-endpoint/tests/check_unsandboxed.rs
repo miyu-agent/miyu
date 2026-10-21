@@ -1,5 +1,6 @@
 //! `miyu check` 查管理员放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15）：系统配置的 `sandbox.tools.<名字>` 每一条照现在的
-//! 工具目录查，目录里没有的、来处对不上的（印出现在的来处）、放行了 `shell` 的各报一条警告，对得上的不报。
+//! 工具目录查，目录里没有的、来处对不上的（印出现在的来处）、文件是链接的（施工 X-37）、放行了 `shell` 的各报一条警告，对得上的
+//! 不报。
 
 use std::sync::Arc;
 
@@ -18,11 +19,17 @@ async fn each_grant_is_checked_against_the_catalog() {
     let home = Home::new();
     home.write(
         "system/config.toml",
-        "[sandbox.tools]\nlight = \"~home\"\nlamp = \"~home\"\nshell = \"basesystem\"\ngone = \"~home\"\n",
+        "[sandbox.tools]\nlight = \"~home\"\nlamp = \"~home\"\nshell = \"basesystem\"\ngone = \"~home\"\nlinked = \"~home\"\n",
     );
     let fake = |name: &str| Fake::new(name, Access::Execute, Act::Echo) as Arc<dyn Tool>;
     let catalog = Catalog::in_packages([
-        ("~home", vec![fake("light")]),
+        (
+            "~home",
+            vec![
+                fake("light"),
+                Fake::linked("linked", Access::Execute, Act::Echo) as Arc<dyn Tool>,
+            ],
+        ),
         ("smart-home", vec![fake("lamp")]),
         ("basesystem", vec![fake("shell")]),
     ])
@@ -50,9 +57,10 @@ async fn each_grant_is_checked_against_the_catalog() {
         [
             "sandbox_tool_missing",
             "sandbox_tool_moved",
+            "sandbox_tool_linked",
             "sandbox_shell"
         ],
-        "照工具名排：gone、lamp、shell；light 对得上不报：{problems:?}"
+        "照工具名排：gone、lamp、linked、shell；light 对得上不报：{problems:?}"
     );
     assert!(problems.iter().all(|problem| problem["level"] == "warning"
         && problem["kind"] == "config"

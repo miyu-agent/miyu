@@ -4,13 +4,15 @@
 //! - 装了的软件包（清单读成了的）的 `commands/`，出厂的先于家目录、同一层照编号（同技能，`skills.rs`）。
 //!
 //! 同名的先找到的赢：自己放的盖住包里的，后来的跳过、记下被谁盖住。名字不合写法的、开头写错的、读不了的跳过，交回给调的
-//! 一方记。子文件夹、点开头的、不是 `.md` 的不算。和核心内置的撞名由调的一方判。碰磁盘，调的一方放在阻塞线程里。
+//! 一方记。子文件夹、点开头的、不是 `.md` 的不算。模板可以是链接（施工 X-37，`links.rs`）：照它指到的读。和核心内置
+//! 的撞名由调的一方判。碰磁盘，调的一方放在阻塞线程里。
 
 use std::path::{Path, PathBuf};
 
 use miyu_kernel::id::AccountId;
 use miyu_policy::slash::{self, Template};
 
+use crate::links::{self, Fence, Kind};
 use crate::packages::Found;
 use crate::root::DataRoot;
 use crate::skills::Skipped;
@@ -48,22 +50,23 @@ pub fn find(
     );
     let mut commands: Vec<Command> = Vec::new();
     let mut skipped = Vec::new();
+    let fence = Fence::of(root, account);
     for (place, package) in places {
-        for (file, name) in files(&place) {
+        let (files, unlisted) = files(&place, &fence);
+        skipped.extend(unlisted);
+        for (file, name) in files {
             match read(&file, &name) {
-                Err(why) => skipped.push(Skipped {
-                    path: file,
-                    why,
-                    by: None,
-                }),
+                Err(why) => skipped.push(Skipped::new(file, why)),
                 Ok(template) => match commands.iter().find(|found| found.name == name) {
                     Some(winner) => skipped.push(Skipped {
-                        why: format!(
-                            "command {name:?} is already provided by {}",
-                            winner.file.display()
-                        ),
                         by: Some(winner.file.clone()),
-                        path: file,
+                        ..Skipped::new(
+                            file,
+                            format!(
+                                "command {name:?} is already provided by {}",
+                                winner.file.display()
+                            ),
+                        )
                     }),
                     None => commands.push(Command {
                         name,
@@ -83,14 +86,12 @@ pub fn find(
 pub fn carried(dir: &Path) -> (Vec<String>, Vec<Skipped>) {
     let mut names = Vec::new();
     let mut skipped = Vec::new();
-    for (file, name) in files(&dir.join("commands")) {
+    let (files, unlisted) = files(&dir.join("commands"), &Fence::anywhere());
+    skipped.extend(unlisted);
+    for (file, name) in files {
         match read(&file, &name) {
             Ok(_) => names.push(name),
-            Err(why) => skipped.push(Skipped {
-                path: file,
-                why,
-                by: None,
-            }),
+            Err(why) => skipped.push(Skipped::new(file, why)),
         }
     }
     (names, skipped)
@@ -107,25 +108,20 @@ fn read(file: &Path, name: &str) -> Result<Template, String> {
     slash::read(&text).map_err(|problem| problem.to_string())
 }
 
-/// `place` 下面的 `.md` 文件和去掉扩展名的名字，照名字排；没有这个目录的是空的。点开头的、子文件夹不算。
-fn files(place: &Path) -> Vec<(PathBuf, String)> {
-    let Ok(entries) = std::fs::read_dir(place) else {
-        return Vec::new();
-    };
-    let mut files: Vec<(PathBuf, String)> = entries
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
+/// `place` 下面的 `.md` 文件和去掉扩展名的名字，照名字排；没有这个目录的是空的。点开头的、子文件夹不算；链接照 `fence`
+/// 认（施工 X-37），断了的、指出去的另交回跳过。
+fn files(place: &Path, fence: &Fence) -> (Vec<(PathBuf, String)>, Vec<Skipped>) {
+    let (entries, skipped) = links::list(place, Kind::File, fence, |name| {
+        Path::new(name).extension().and_then(|ext| ext.to_str()) == Some(EXTENSION)
+    });
+    let files = entries
+        .into_iter()
         .filter_map(|entry| {
-            let path = entry.path();
-            if path.extension().and_then(|ext| ext.to_str()) != Some(EXTENSION) {
-                return None;
-            }
-            let name = path.file_stem()?.to_str()?.to_string();
-            (!name.starts_with('.')).then_some((path, name))
+            let name = Path::new(&entry.name).file_stem()?.to_str()?.to_string();
+            Some((entry.path, name))
         })
         .collect();
-    files.sort_by(|a, b| a.1.cmp(&b.1));
-    files
+    (files, skipped)
 }
 
 #[cfg(test)]

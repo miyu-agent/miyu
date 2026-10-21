@@ -3,7 +3,7 @@
 //! 只删管理员家目录里放的（`home/<管理员>/skills/<文件夹>/`）；随包来的（出厂的、装的包带的）不能删，拒绝
 //! `skill_from_package`。找法同 `skill.list`：同名的照核心实际用的那一份认，自己放的盖住了包里的，删的就是自己放的那一份，
 //! 删了包里的那一份重新露出来。几个名字先全查一遍，有一个不行就一个都不删；查过了才挪，挪到一半挪不动的，前面挪了的
-//! 已经在回收站里，拒绝 `trash_failed`。
+//! 已经在回收站里，拒绝 `trash_failed`。技能文件夹是链接的（施工 X-37）只挪链接本身，不碰它指到的文件夹。
 
 use std::path::{Path, PathBuf};
 
@@ -48,7 +48,11 @@ pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, R
                 if skill.package.is_some() {
                     return Err(Refusal::skill_from_package(name));
                 }
-                folder(&skill.file, own.as_deref()).ok_or_else(|| Refusal::unknown_skill(name))
+                match &skill.link {
+                    Some(link) => own_link(link, own.as_deref()),
+                    None => folder(&skill.file, own.as_deref()),
+                }
+                .ok_or_else(|| Refusal::unknown_skill(name))
             })
             .collect::<Result<Vec<PathBuf>, Refusal>>()?;
         let trash = folders
@@ -76,4 +80,13 @@ pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, R
 fn folder(file: &Path, own: Option<&Path>) -> Option<PathBuf> {
     let folder = std::fs::canonicalize(file.parent()?).ok()?;
     (folder.parent()? == own?).then_some(folder)
+}
+
+/// 链接成的技能（施工 X-37）：链接本身，它得正好在管理员自己放技能的文件夹 `own` 下面一层。
+fn own_link(link: &Path, own: Option<&Path>) -> Option<PathBuf> {
+    let (place, name) = (
+        std::fs::canonicalize(link.parent()?).ok()?,
+        link.file_name()?,
+    );
+    (place == own?).then(|| place.join(name))
 }

@@ -6,7 +6,7 @@
 //!
 //! 同名的自己放的赢；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
 //! 撞得上的只剩核心升级后出厂的新带了同名的）；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
-//! 跳过，交回给调的一方记（[`Skipped`]）。
+//! 跳过，交回给调的一方记（[`Skipped`]）。技能文件夹可以是链接（施工 X-37，`links.rs`）：照它指到的真实位置记。
 //! 碰磁盘，调的一方放在阻塞线程里。
 
 use std::path::{Path, PathBuf};
@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::AccountId;
 use miyu_policy::skill::{self, SkillHead};
 
+use crate::links::{self, Fence, Kind};
 use crate::packages::Found;
 use crate::root::DataRoot;
 
@@ -27,10 +28,13 @@ pub struct Skill {
     pub head: SkillHead,
     /// `SKILL.md` 在哪：她照它读。
     pub file: PathBuf,
-    /// 技能的文件夹：开着的单独放开只读（`session/guard.md`）。
+    /// 技能的文件夹：开着的单独放开只读（`session/guard.md`）。是链接的照它指到的真实位置（施工 X-37）：沙盒只放开那一个
+    /// 文件夹，她照真实的位置读得到。
     pub dir: PathBuf,
     /// 哪个软件包带的；自己放的没有。
     pub package: Option<String>,
+    /// 技能文件夹是链接的（施工 X-37）：链接本身的位置（删的时候只删它，不碰指到的文件夹）。不是的没有。
+    pub link: Option<PathBuf>,
 }
 
 /// 跳过的一个：在哪、为什么（英文一句，运行日志、`miyu check` 用）。
@@ -42,6 +46,20 @@ pub struct Skipped {
     pub why: String,
     /// 同名被盖住的（施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）：盖住它的那一份（`SKILL.md`、脚本文件）。
     pub by: Option<PathBuf>,
+    /// 链接指到数据根里不认的地方的（施工 X-37）：它的真实位置。
+    pub outside: Option<PathBuf>,
+}
+
+impl Skipped {
+    /// 在 `path`、为什么是 `why`，没被谁盖住、不是链接指出去的。
+    pub(crate) fn new(path: PathBuf, why: String) -> Skipped {
+        Skipped {
+            path,
+            why,
+            by: None,
+            outside: None,
+        }
+    }
 }
 
 /// 账号 `account` 自己放技能的文件夹：`home/<账号>/skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
@@ -67,10 +85,17 @@ pub fn find(
             .into_iter()
             .map(|found| (found.files_dir().join("skills"), Some(found.id.clone()))),
     );
+    let fence = Fence::of(root, account);
     for (place, package) in places {
-        for (dir, name) in folders(&place) {
+        let (entries, unlisted) = links::list(&place, Kind::Dir, &fence, |_| true);
+        skipped.extend(unlisted);
+        for entry in entries {
+            // 跳过的照它在 `skills/` 里的位置说，人认得出是哪一项；读、放开照真实的位置。
+            let at = entry.path;
+            let dir = entry.real.clone().unwrap_or_else(|| at.clone());
+            let link = entry.real.is_some().then(|| at.clone());
             let file = dir.join(FILE);
-            let head = match head(&file, &name) {
+            let head = match head(&file, &entry.name) {
                 None => continue,
                 Some(Ok(head)) => Ok(head),
                 Some(Err(why)) => Err(why),
@@ -78,26 +103,25 @@ pub fn find(
             match head {
                 Ok(head) => match skills.iter().find(|found| found.head.name == head.name) {
                     Some(winner) => skipped.push(Skipped {
-                        path: dir,
-                        why: format!(
-                            "skill {:?} is already provided by {}",
-                            head.name,
-                            winner.file.display()
-                        ),
                         by: Some(winner.file.clone()),
+                        ..Skipped::new(
+                            at,
+                            format!(
+                                "skill {:?} is already provided by {}",
+                                head.name,
+                                winner.file.display()
+                            ),
+                        )
                     }),
                     None => skills.push(Skill {
                         head,
                         file,
                         dir,
                         package: package.clone(),
+                        link,
                     }),
                 },
-                Err(why) => skipped.push(Skipped {
-                    path: file,
-                    why,
-                    by: None,
-                }),
+                Err(why) => skipped.push(Skipped::new(at.join(FILE), why)),
             }
         }
     }
@@ -110,16 +134,15 @@ pub fn find(
 pub fn carried(dir: &Path) -> (Vec<String>, Vec<Skipped>) {
     let mut names = Vec::new();
     let mut skipped = Vec::new();
-    for (folder, name) in folders(&dir.join("skills")) {
-        let file = folder.join(FILE);
-        match head(&file, &name) {
+    let (entries, unlisted) =
+        links::list(&dir.join("skills"), Kind::Dir, &Fence::anywhere(), |_| true);
+    skipped.extend(unlisted);
+    for entry in entries {
+        let file = entry.path.join(FILE);
+        match head(&file, &entry.name) {
             None => {}
             Some(Ok(head)) => names.push(head.name),
-            Some(Err(why)) => skipped.push(Skipped {
-                path: file,
-                why,
-                by: None,
-            }),
+            Some(Err(why)) => skipped.push(Skipped::new(file, why)),
         }
     }
     (names, skipped)
@@ -132,23 +155,6 @@ fn head(file: &Path, name: &str) -> Option<Result<SkillHead, String>> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
         Err(error) => Some(Err(format!("not readable: {error}"))),
     }
-}
-
-/// `place` 下面的子文件夹和它的名字，照名字排；没有这个目录的是空的。点开头的不算。
-fn folders(place: &Path) -> Vec<(PathBuf, String)> {
-    let Ok(entries) = std::fs::read_dir(place) else {
-        return Vec::new();
-    };
-    let mut folders: Vec<(PathBuf, String)> = entries
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
-        .filter_map(|entry| {
-            let name = entry.file_name().into_string().ok()?;
-            (!name.starts_with('.')).then(|| (entry.path(), name))
-        })
-        .collect();
-    folders.sort_by(|a, b| a.1.cmp(&b.1));
-    folders
 }
 
 #[cfg(test)]

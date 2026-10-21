@@ -16,12 +16,13 @@ fn values(pairs: &[(&str, &str)]) -> Values {
     values
 }
 
-/// 架子上：`~home` 的 `light`、`basesystem` 的 `shell`、`smart-home` 的 `lamp`。
+/// 架子上：`~home` 的 `light`、链接成的 `linked`，`basesystem` 的 `shell`、`smart-home` 的 `lamp`。
 fn shelf() -> Shelf {
     let fake = |name: &str| Fake::new(name, Access::Execute, Act::Echo) as Arc<dyn Tool>;
+    let linked = Fake::linked("linked", Access::Execute, Act::Echo) as Arc<dyn Tool>;
     Shelf::new(
         Catalog::in_packages([
-            ("~home", vec![fake("light")]),
+            ("~home", vec![fake("light"), linked]),
             ("basesystem", vec![fake("shell")]),
             ("smart-home", vec![fake("lamp")]),
         ])
@@ -52,6 +53,13 @@ fn a_grant_counts_only_when_the_source_matches() {
             ("shell", "basesystem"),
         ]
     );
+}
+
+/// 文件是链接的不算放行（施工 X-37）：链接能指到她改得了的地方。
+#[test]
+fn a_linked_tool_is_not_granted() {
+    let table = Unsandboxed::of(&values(&[("sandbox.tools.linked", "~home")]));
+    assert!(!table.granted("linked", &shelf()));
 }
 
 #[test]

@@ -7,13 +7,15 @@
 //! 同一个工具名的自己放的赢；两个包撞了，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补），
 //! 后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、不是字的、
 //! 开头写错的跳过，交回给调的一方记。子文件夹、
-//! 点开头的不算。碰磁盘，调的一方放在阻塞线程里。
+//! 点开头的不算。脚本可以是链接（施工 X-37，`links.rs`）：照它指到的认，[`Script::file`] 记链接本身（放行出沙盒时
+//! 照它看是不是链接）。碰磁盘，调的一方放在阻塞线程里。
 
 use std::path::{Path, PathBuf};
 
 use miyu_kernel::id::AccountId;
 use miyu_policy::script::{self, ScriptHead};
 
+use crate::links::{self, Fence, Kind};
 use crate::packages::Found;
 use crate::root::DataRoot;
 use crate::skills::Skipped;
@@ -26,7 +28,7 @@ pub const HOME_PACKAGE: &str = "~home";
 pub struct Script {
     /// 开头读出来的。
     pub head: ScriptHead,
-    /// 脚本文件。
+    /// 脚本文件：是链接的就是链接本身（施工 X-37：执行器照它看是不是链接，起的时候照它指到的）。
     pub file: PathBuf,
     /// 哪个软件包带的；自己放的没有。
     pub package: Option<String>,
@@ -55,18 +57,24 @@ pub fn find(
             .into_iter()
             .map(|found| (found.files_dir().join("scripts"), Some(found.id.clone()))),
     );
+    let fence = Fence::of(root, account);
     for (place, package) in places {
-        for (file, name) in files(&place) {
-            match head(&file, &name) {
+        let (entries, unlisted) = links::list(&place, Kind::File, &fence, |_| true);
+        skipped.extend(unlisted);
+        for entry in entries {
+            let file = entry.path;
+            match head(&file, &entry.name) {
                 Ok(head) => match scripts.iter().find(|found| found.head.name == head.name) {
                     Some(winner) => skipped.push(Skipped {
-                        path: file,
-                        why: format!(
-                            "script {:?} is already provided by {}",
-                            head.name,
-                            winner.file.display()
-                        ),
                         by: Some(winner.file.clone()),
+                        ..Skipped::new(
+                            file,
+                            format!(
+                                "script {:?} is already provided by {}",
+                                head.name,
+                                winner.file.display()
+                            ),
+                        )
                     }),
                     None => scripts.push(Script {
                         head,
@@ -74,11 +82,7 @@ pub fn find(
                         package: package.clone(),
                     }),
                 },
-                Err(why) => skipped.push(Skipped {
-                    path: file,
-                    why,
-                    by: None,
-                }),
+                Err(why) => skipped.push(Skipped::new(file, why)),
             }
         }
     }
@@ -91,14 +95,15 @@ pub fn find(
 pub fn carried(dir: &Path) -> (Vec<String>, Vec<Skipped>) {
     let mut names = Vec::new();
     let mut skipped = Vec::new();
-    for (file, name) in files(&dir.join("scripts")) {
-        match head(&file, &name) {
+    let (entries, unlisted) =
+        links::list(&dir.join("scripts"), Kind::File, &Fence::anywhere(), |_| {
+            true
+        });
+    skipped.extend(unlisted);
+    for entry in entries {
+        match head(&entry.path, &entry.name) {
             Ok(head) => names.push(head.name),
-            Err(why) => skipped.push(Skipped {
-                path: file,
-                why,
-                by: None,
-            }),
+            Err(why) => skipped.push(Skipped::new(entry.path, why)),
         }
     }
     (names, skipped)
@@ -109,23 +114,6 @@ fn head(file: &Path, name: &str) -> Result<ScriptHead, String> {
     let bytes = std::fs::read(file).map_err(|error| format!("not readable: {error}"))?;
     let text = String::from_utf8(bytes).map_err(|_| "not text".to_string())?;
     script::read(name, &text).map_err(|problem| problem.to_string())
-}
-
-/// `place` 下面的文件和它的名字，照名字排；没有这个目录的是空的。子文件夹、点开头的不算。
-fn files(place: &Path) -> Vec<(PathBuf, String)> {
-    let Ok(entries) = std::fs::read_dir(place) else {
-        return Vec::new();
-    };
-    let mut files: Vec<(PathBuf, String)> = entries
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().is_ok_and(|kind| !kind.is_dir()))
-        .filter_map(|entry| {
-            let name = entry.file_name().into_string().ok()?;
-            (!name.starts_with('.')).then(|| (entry.path(), name))
-        })
-        .collect();
-    files.sort_by(|a, b| a.1.cmp(&b.1));
-    files
 }
 
 #[cfg(test)]

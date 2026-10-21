@@ -1,5 +1,5 @@
 //! `skill.remove`（施工 W-13，网页的技能页）：管理员自己放的整个文件夹挪进回收站，几个一起删；随包来的、没有的拒绝，带名字；
-//! 有一个不行就一个都不删；盖住了包里同名的，删了包里的露出来。
+//! 有一个不行就一个都不删；盖住了包里同名的，删了包里的露出来。链接成的只挪链接（施工 X-37）。
 
 use serde_json::{Value, json};
 
@@ -107,27 +107,46 @@ async fn own_skills_go_to_the_trash_and_what_they_covered_shows_again() {
     );
 }
 
-/// 技能文件夹是指到别处的链接：找技能不跟链接，删也删不到别处（Unix；Windows 上建链接要权限）。删的那一头另查文件夹得正好在
-/// 管理员的技能文件夹下面一层，是兜底：找法以后变了也不会删到别处。
+/// 技能文件夹是链接（施工 X-37，原来找技能不跟链接）：指到数据根外面的照它指到的认，删的时候只挪链接本身、指到的文件夹不动；
+/// 指到数据根里别处的不认，也删不到（Unix；Windows 上建链接要权限，找法的测试在 `miyu-store` 里三个平台都跑）。删的那一头
+/// 另查链接、文件夹得正好在管理员的技能文件夹下面一层，是兜底。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_linked_folder_is_not_followed() {
+async fn a_linked_folder_is_followed_but_only_the_link_is_removed() {
     let home = Home::new();
-    let outside = home.root.path().join("elsewhere/linked");
+    let outside = home.work.join("linked");
     std::fs::create_dir_all(&outside).expect("建得了");
     std::fs::write(outside.join("SKILL.md"), skill("linked")).expect("写得进");
-    std::fs::create_dir_all(home.root.path().join("home/alice/skills")).expect("建得了");
-    std::os::unix::fs::symlink(&outside, home.root.path().join("home/alice/skills/linked"))
-        .expect("建得了链接");
+    let inside = home.root.path().join("elsewhere/hidden");
+    std::fs::create_dir_all(&inside).expect("建得了");
+    std::fs::write(inside.join("SKILL.md"), skill("hidden")).expect("写得进");
+    let skills = home.root.path().join("home/alice/skills");
+    std::fs::create_dir_all(&skills).expect("建得了");
+    std::os::unix::fs::symlink(&outside, skills.join("linked")).expect("建得了链接");
+    std::os::unix::fs::symlink(&inside, skills.join("hidden")).expect("建得了链接");
     let mut client = connected(&home).await;
+    assert_eq!(from(&mut client, "linked").await, Some(json!("home")));
     assert_eq!(
-        from(&mut client, "linked").await,
+        from(&mut client, "hidden").await,
         None,
-        "找技能本来就不跟链接"
+        "指到数据根里别处的不认"
     );
+    let reply = client
+        .call("r", "skill.remove", json!({"names": ["hidden"]}))
+        .await;
+    assert_eq!(reason(&reply), Some("unknown_skill"), "{reply}");
     let reply = client
         .call("r", "skill.remove", json!({"names": ["linked"]}))
         .await;
-    assert_eq!(reason(&reply), Some("unknown_skill"), "{reply}");
-    assert!(outside.join("SKILL.md").is_file(), "别处的没动");
+    if reason(&reply) == Some("trash_failed") {
+        return;
+    }
+    assert!(reply["result"]["trash"].is_array(), "{reply}");
+    assert!(
+        std::fs::symlink_metadata(skills.join("linked")).is_err(),
+        "链接挪走了"
+    );
+    assert!(outside.join("SKILL.md").is_file(), "指到的文件夹没动");
+    assert!(inside.join("SKILL.md").is_file(), "数据根里别处的没动");
+    assert_eq!(from(&mut client, "linked").await, None);
 }

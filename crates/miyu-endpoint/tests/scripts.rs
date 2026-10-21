@@ -1,6 +1,7 @@
 //! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：真核心走一遍。核心起来时把管理员家目录里放的脚本
 //! 登记成工具，会话的工具面里有它；她调它照跑命令的规矩（这个核心没有能用的沙盒、没人能确认：拒绝，真跑在基础系统那边测）；每个脚本一个功能 `script-<名字>`，`preset.get` 列出来，预设关掉的会话里没有；
-//! 撞了别的工具名字的不登记；装上一个带脚本的包，当场登记上；`check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）。
+//! 撞了别的工具名字的不登记；装上一个带脚本的包，当场登记上；`check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下），
+//! 链接指到数据根里不认的地方的脚本、技能、斜杠模板（施工 X-37）。
 //! 时间线上写开头的显示名（施工 9-8 六补）。
 
 use std::sync::Arc;
@@ -19,6 +20,7 @@ use miyu_tool::{Catalog, Tool};
 use crate::support::venues::configured_core;
 use crate::support::*;
 
+mod check;
 mod clicall;
 mod follow;
 mod loading;
@@ -262,56 +264,6 @@ async fn a_package_with_scripts_registers_them_when_installed() {
         ["read"],
         "挂在包 kit 下：整个包关掉的，脚本跟着关"
     );
-}
-
-#[tokio::test]
-async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
-    let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
-    home.write("home/alice/scripts/read.py", &echo("read"));
-    home.write("home/alice/scripts/broken.py", "#!/bin/sh\necho hi\n");
-    home.write(
-        "home/alice/skills/notes/SKILL.md",
-        "---\nname: notes\n---\nbody\n",
-    );
-    let mut client = Client::connect(core(&home, &Script::new([])));
-    client.hello().await;
-    let reply = client.call("k1", "check", json!({})).await;
-    let problems: Vec<(String, String, String, String)> = reply["result"]["problems"]
-        .as_array()
-        .unwrap_or_else(|| panic!("{reply}"))
-        .iter()
-        .map(|one| {
-            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
-            (text("kind"), text("file"), text("code"), text("level"))
-        })
-        .collect();
-    let row = |kind: &str, file: &str, code: &str| {
-        (
-            kind.to_string(),
-            file.to_string(),
-            code.to_string(),
-            "warning".to_string(),
-        )
-    };
-    assert_eq!(
-        problems,
-        [
-            row("script", "home/alice/scripts/broken.py", "script_skipped"),
-            row("script", "home/alice/scripts/read.py", "script_clashed"),
-            row("skill", "home/alice/skills/notes/SKILL.md", "skill_skipped"),
-        ],
-        "{reply}"
-    );
-    let messages: Vec<&str> = reply["result"]["problems"]
-        .as_array()
-        .expect("是一处处")
-        .iter()
-        .map(|one| one["message"].as_str().unwrap_or_default())
-        .collect();
-    assert!(messages[0].contains("Description is missing"), "{reply}");
-    assert!(messages[1].contains("read"), "{reply}");
-    assert!(messages[2].contains("description"), "{reply}");
 }
 
 /// 只带技能、脚本的包（施工 X-13 上）：清单只写 `[package]`；装之前的预览列出它带的技能、脚本；装上以后没有开关（状态是

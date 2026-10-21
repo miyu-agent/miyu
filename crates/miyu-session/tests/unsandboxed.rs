@@ -1,6 +1,7 @@
 //! 管理员事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，`docs/blueprint/session/guard.md`）：系统配置的
 //! `sandbox.tools.<名字>` 写的来处和工具目录里这件工具归的包一样，才算放行。放行了的，工作区这一级不问、执行器不给沙盒的规格；
-//! 只读拒；只碰得到自己工作区的会话（群聊）拒；来处对不上的、没写的照旧在沙盒里跑。脚本里调到的（嵌套调用）走同一条链。
+//! 只读拒；只碰得到自己工作区的会话（群聊）拒；来处对不上的、没写的、文件是链接的（施工 X-37）照旧在沙盒里跑。脚本里调到的
+//! （嵌套调用）走同一条链。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -128,6 +129,29 @@ async fn a_grant_naming_another_source_does_not_count() {
     assert!(
         fake.calls()[0].sandbox.is_some(),
         "来处对不上：照旧在沙盒里跑"
+    );
+}
+
+/// 文件是链接的不算放行（施工 X-37）：照旧在沙盒里跑，照工作区这一级的规矩。
+#[tokio::test]
+async fn a_granted_tool_whose_file_is_a_link_stays_in_the_sandbox() {
+    let mut home = Home::outside_temp();
+    let fake = Fake::linked("run", Access::Execute, Act::Echo);
+    let call = Play::calls(&[("run", "{}")]);
+    let log = turn(
+        &mut home,
+        &granting("~home"),
+        &[&fake],
+        call,
+        WORKSPACE,
+        LOCAL,
+        true,
+    )
+    .await;
+    assert!(!asked(&log));
+    assert!(
+        fake.calls()[0].sandbox.is_some(),
+        "是链接的：照旧在沙盒里跑"
     );
 }
 

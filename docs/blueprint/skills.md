@@ -19,6 +19,7 @@
 |---|---|
 | `crates/miyu-policy/src/skill.rs` | 读 `SKILL.md` 的开头：`---` 之间的 YAML（`yaml-rust2`），名字合不合写法、和文件夹同不同名，说明并成一行、截到 1024 个字，`metadata` 里给人看的两格；写错了的说哪里不对（英文一句） |
 | `crates/miyu-store/src/skills.rs` | 找：家目录 `home/<账号>/skills/` 先，再找装了的（清单读成了的）软件包的 `skills/`，出厂的先于家目录、同一层照编号（施工 F-8 六补；装的时候撞了名的装不上，`packages.md`「冲突」）；同名的先找到的赢，后来的、开头写错的、读不了的跳过并说为什么；点开头的文件夹、没有 `SKILL.md` 的不算；照名字排 |
+| `crates/miyu-store/src/links.rs` | 找技能、脚本、斜杠模板时列一层目录（施工 X-37）：认链接，照指到的东西认种类；断了的、绕回自己的跳过说为什么；真实位置落在数据根里的只认这个账号家目录的 `scripts`、`skills`、`commands`、`packages` 下面，别处的跳过、带真实位置（`*_link_outside`） |
 | `crates/miyu-store/src/resources/skills.rs`、`resources/core/skills/open.txt`、`line.txt` | 列出来的那一块的两份字（26 第十节登记） |
 | `crates/miyu-session/src/skills.rs` | 造会话时找（跳过的记一行运行日志）、拼 system 里那一块（工具面上没有 `read` 的、一个技能都没有的不拼）；放开只读的文件夹 |
 | `crates/miyu-session/src/skills/watch.rs`、`crates/miyu-session/src/actor/skills.rs`、`resources/core/skills/changed-open.txt`、`changed-close.txt`、`none.txt` | 会话中途列表变了（施工 X-11 下）：回合开始再找一遍、换放开的文件夹、和她最后看到的比，变了交一块 `<skills-changed>`（`context.injected`，模块 `skills`） |
@@ -28,10 +29,10 @@
 | `crates/miyu-basesystem/src/shell/script/images.rs` | 脚本交图（施工 X-35）：每次调用一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，跑完照文件名排、不跟链接、认得的至多 4 张交成图，读完删掉 |
 | `crates/miyu-endpoint/src/scripts.rs`、`crates/miyu-tool/src/catalog.rs` 的 `replacing_scripts`、`miyu_policy::features::Feature` 的 `script` | 登记进工具目录（施工 X-12 中）：核心起来时（`start_extensions`）、装卸包以后（`reload_packages`）、管理员家目录的 `scripts/` 里有文件变了（`Core::watch_scripts`，施工 X-12 补，2026-10-13 项目主人照推荐定：没有的先建上，点开头的、子文件夹里的不算，200 毫秒合并一次；再找一遍的一次一个）照这一刻装了的包、管理员家目录再找一遍，经内置包的端口造工具（`Builtins::script`），整份换进目录，撞名的不登记、记一行；家目录里的挂在 `~home` 下；每个脚本一个功能 `script-<工具名>`，工具照它归 |
 | `crates/miyu-endpoint/src/skills.rs` | `skill.list`（施工 X-26，网页设置页「技能」那一页）：照造会话的找法列核心这一刻用得上的技能，同名的只列实际用的那一份；给人看的两格照连接的语言挑，`from` 是 `home`、`shipped`、`package`，随包来的带包的编号，`SKILL.md` 的路径家目录下的写成 `~/…`；`on` 是全局开关（施工 X-27，`presets.md`「全局开关」）；`tests/skill_list.rs` 守着 |
-| `crates/miyu-endpoint/src/skills/remove.rs` | `skill.remove`（施工 W-13，网页的技能页单个删、多选删）：只删管理员自己放的，整个文件夹挪进系统回收站；找法同 `skill.list`，随包来的、没有的拒绝，一个不行就一个都不删；文件夹得正好在管理员的技能文件夹下面一层（兜底，不删到别处） |
+| `crates/miyu-endpoint/src/skills/remove.rs` | `skill.remove`（施工 W-13，网页的技能页单个删、多选删）：只删管理员自己放的，整个文件夹挪进系统回收站；找法同 `skill.list`，随包来的、没有的拒绝，一个不行就一个都不删；文件夹得正好在管理员的技能文件夹下面一层（兜底，不删到别处）；链接成的只挪链接本身，链接得正好在那一层（施工 X-37，`tests/skill_remove.rs` 守着） |
 | `crates/miyu-endpoint/src/scripts/list.rs` | `script.list`（施工 X-27，网页设置页「脚本」那一页）：登记上的脚本照工具名排，给人看的两格（`display_name`、`description`）照连接的语言挑，`from`、`package`、`path` 同 `skill.list`，`timeout`，`need_load` 带 `by`（`source` 来处、`setting` 个人设置盖过的），`on` 是全局开关；`tests/script_pages.rs` 守着 |
 | `crates/miyu-endpoint/src/toggles.rs` | 三页上改的两样（施工 X-27）：`tool.set_loading` 写个人设置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>`，`feature.set` 写 `features.<功能编号>`（只收 `skill-`、`script-`、`mcp-`），`null` 删掉；写法照 `config.set` 改一项；只给人 |
-| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`） |
+| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能和撞名没登记上的脚本（施工 X-12 下）：照这一刻装了的包和管理员家目录再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`）；链接指到数据根里不认的地方的报 `script_link_outside`、`skill_link_outside`、`slash_link_outside`，说指到了哪一片（施工 X-37，`tests/scripts.rs` 的 `check_reports_links_out_of_the_accounts_folders` 守着） |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
 做法上定的（施工 X-10 上，主会话照推荐定）：
@@ -44,7 +45,7 @@
 ### 技能
 
 1. **写法**：照公开的 Agent Skills 格式（Anthropic 起的头，现在 Claude Code、Codex、Gemini CLI、Cursor 这些都认）：`SKILL.md` 开头的 YAML 写 `name`（小写字母、数字、`-`，和文件夹同名）、`description`（给模型看，英文，说清是什么、什么时候用，可以带人会说的几个中文触发词）；正文随意。给人看的名字、一句说明放在格式自带的 `metadata` 里（`display_name`、`summary` 算英文，`display_name_zh`、`summary_zh`、`_ja` 是另两种：格式的 `metadata` 只收字到字的表，语言写进键里，施工 X-13 下）：给模型的和给人的分开两格（旧版吃过一格两用的亏，设置页中英混杂）。别的格子照格式认、不用。
-2. **她看到的**：system 里技能那一段一行一个：名字、一句说明、`SKILL.md` 的路径。只列这个会话的预设里开着的。说明超过 1024 个字的截断（格式的上限）。
+2. **她看到的**：system 里技能那一段一行一个：名字、一句说明、`SKILL.md` 的路径。只列这个会话的预设里开着的。说明超过 1024 个字的截断（格式的上限）。技能文件夹可以是链接（施工 X-37，2026-10-21 项目主人照别家的做法定：Codex 官方文档写明跟着链接走，Claude Code、opencode 社区里普遍用链接接技能）：指到目录的照它指到的真实位置记，写给她的也是真实的路径（沙盒只放开那一个文件夹，链接本身在藏着的数据根里）；指到文件的不算；断了的、绕回自己的跳过，`miyu check` 照「跳过」报原因。真实位置落在数据根里的，只认这个账号家目录的 `scripts`、`skills`、`commands`、`packages` 下面，落在 `system/`、`state/`、别的账号下的不认，`miyu check` 报 `skill_link_outside`、说指到了哪一片（不收窄的话一个链接就能把 `system/` 下的本机令牌、密钥文件拉进她读得到的地方）；技能文件夹所在的 `skills/` 本身是链接的同样照真实位置查。删链接成的技能（`skill.remove`）只挪链接本身，不碰它指到的文件夹。
 3. **读**：她用 `read` 读那个路径，读技能文件夹里别的文件（参考资料）也一样。技能文件夹在数据根里，文件工具平时碰不到（`11-权限与沙盒.md`），开着的技能文件夹单独放开只读（`session/guard.md` 加一条），不问人。技能里带的脚本照她跑命令的规矩跑（沙盒里能读这个文件夹）。
 4. **用过的技能**：她读了某个技能的 `SKILL.md`，执行器在效果里记上（`10-自带软件.md` 的 `file.read`），压缩以后照它重读回来（09 第四节）。
 5. **会话中途列表变了**（装了、卸了、她自己写了一个）：见「定了的」第 2 条。
@@ -65,8 +66,8 @@
    ```
 
    `Description` 给模型（英文），`描述`、`显示名称` 给人（双槽，同技能；`显示名称`、`Display name` 也是时间线上这件工具的名字，派它那一刻记进结果，施工 9-8 六补）；`Parameters` 是参数的 JSON Schema，没写的当没有参数；`Timeout` 是秒，没写的 60；`Need load: yes` 和没写的要先加载，`no` 全量（`25-工具加载.md` W9，施工 L-1；没写的先加载是施工 L-3，2026-10-20 项目主人改），个人设置的 `loading.tools.<工具名>` 盖过它（头经 `tool.set_loading` 改，`script.list` 的 `need_load.by` 说是来处还是人改的，施工 X-27）。`Clicall: no` 的脚本里不能经 `miyu call` 调，没写的、`yes` 的能（施工 M-2，设计 `39-脚本调工具.md` 第三节），写错的同 `Need load`；个人设置的 `clicall.tools.<工具名>` 盖过它。全局开关 `features.script-<工具名>`、`features.skill-<名字>`（`presets.md`「全局开关」）在头的三页上改，预设没写的照它。技能没有加载方式：工具面上只有技能目录，用到才读正文（`25-工具加载.md` W9）。
-2. **她看到的**：一件工具，名字是文件名（去掉扩展名，不合 `[A-Za-z0-9_-]` 的换成 `_`），说明、参数照开头注释。说明、参数多大都收，不按大小挡（2026-10-12 项目主人定）。开头写错的、同名被压掉的不登记，`miyu check` 报出来。
-3. **跑**：照开头的 `#!` 起程序（Windows 上照扩展名找解释器）；参数是一份 JSON，写进标准输入，不超过 32 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：Linux 上一个环境变量最多 128 KiB、Windows 上 32767 个字，超了起都起不来，长的只在标准输入里）；工作目录是会话的工作区；另给它一个能写缓存的目录（`MIYU_SCRIPT_CACHE_DIR`）。输出照命令的输出交回，退出码不是 0 的算出错。要交图的（施工 X-35，2026-10-20 项目主人定走一个目录、不改输出格式）：每次调用另给一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，建在缓存目录旁边，随机名，Unix 上 `0700`，建好取真实路径（macOS 的临时目录在链接下面）；脚本把图拷进去。跑完（退出码不是 0 的也算，到时被杀的不看）照文件名排，只看这一层：照 `miyu_fs::open_file` 打开，路上不跟链接、不阻塞、只认普通文件，超过 5 MiB 的不读；照 `miyu_tool::picture` 认格式、量尺寸、查上限，至多 4 张，交成图（`Done.images`，执行器存成 blob、接在字后面，同 `read`）；别的不交，运行日志记一行 `WARN script image dropped tool=… file=… why=…`，不给她另写一句（J12）。读完整个目录删掉。建不成目录的，这一次不给这个环境变量，照常跑。访问类别是执行：照跑命令的规矩进沙盒、问人（`session/guard.md`）；进沙盒的单独放开脚本这一个文件只读（在数据根里的，沙盒本来藏着）。
+2. **她看到的**：一件工具，名字是文件名（去掉扩展名，不合 `[A-Za-z0-9_-]` 的换成 `_`），说明、参数照开头注释。说明、参数多大都收，不按大小挡（2026-10-12 项目主人定）。开头写错的、同名被压掉的不登记，`miyu check` 报出来。脚本可以是链接（施工 X-37，同技能）：指到文件的照它指到的读开头、名字照链接的文件名，指到目录的不算（原来收了、读的时候才报错）；断了的、绕回自己的跳过；真实位置落在数据根里别处的跳过，`miyu check` 报 `script_link_outside`。
+3. **跑**：照开头的 `#!` 起程序（Windows 上照扩展名找解释器）；参数是一份 JSON，写进标准输入，不超过 32 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：Linux 上一个环境变量最多 128 KiB、Windows 上 32767 个字，超了起都起不来，长的只在标准输入里）；工作目录是会话的工作区；另给它一个能写缓存的目录（`MIYU_SCRIPT_CACHE_DIR`）。输出照命令的输出交回，退出码不是 0 的算出错。要交图的（施工 X-35，2026-10-20 项目主人定走一个目录、不改输出格式）：每次调用另给一个空目录 `MIYU_SCRIPT_IMAGES_DIR`，建在缓存目录旁边，随机名，Unix 上 `0700`，建好取真实路径（macOS 的临时目录在链接下面）；脚本把图拷进去。跑完（退出码不是 0 的也算，到时被杀的不看）照文件名排，只看这一层：照 `miyu_fs::open_file` 打开，路上不跟链接、不阻塞、只认普通文件，超过 5 MiB 的不读；照 `miyu_tool::picture` 认格式、量尺寸、查上限，至多 4 张，交成图（`Done.images`，执行器存成 blob、接在字后面，同 `read`）；别的不交，运行日志记一行 `WARN script image dropped tool=… file=… why=…`，不给她另写一句（J12）。读完整个目录删掉。建不成目录的，这一次不给这个环境变量，照常跑。访问类别是执行：照跑命令的规矩进沙盒、问人（`session/guard.md`）；进沙盒的单独放开脚本这一个文件只读（在数据根里的，沙盒本来藏着）。是链接的照它指到的真实位置起、放开（施工 X-37）：链接本身在藏着的数据根里，照它起解释器读不到；只放开指到的那一个文件，不放开它的上级。管理员放行出沙盒的（`sandbox.tools.<名字>`），文件是链接的不算放行，照旧在沙盒里跑，`miyu check` 报 `sandbox_tool_linked`：链接能指到她改得了的工作区，等于改了一件在沙盒外跑的工具（X-36「改它的只有管理员」碰上链接就不成立）；判的那一刻再看一眼文件，载入以后被换成链接的，下一次重新登记以前也不放行。普通脚本照旧认链接：在沙盒里跑，被改了也越不出沙盒。
 4. **技能里的脚本**不算工具，不进工具面：由技能正文写怎么跑（她用跑命令的那件工具跑）。
 
 ### 定了的（2026-10-11 项目主人照推荐定）

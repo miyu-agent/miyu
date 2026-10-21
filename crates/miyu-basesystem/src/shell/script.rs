@@ -113,8 +113,13 @@ impl Script {
         cache: &Path,
         images: Option<&Path>,
     ) -> io::Result<std::process::Command> {
-        let first = miyu_store::packages::first_line(&self.file)?;
-        let launch = miyu_store::packages::launcher(&self.file, &first, cfg!(windows));
+        // 是链接的照它指到的真实位置起（施工 X-37）：沙盒只放开那一个文件，链接本身在藏着的数据根里，照它起解释器读不到。
+        let file = match std::fs::symlink_metadata(&self.file) {
+            Ok(metadata) if metadata.file_type().is_symlink() => std::fs::canonicalize(&self.file)?,
+            _ => self.file.clone(),
+        };
+        let first = miyu_store::packages::first_line(&file)?;
+        let launch = miyu_store::packages::launcher(&file, &first, cfg!(windows));
         let (program, args) = (launch.program.into_os_string(), launch.args);
         let (program, args) = match call.sandbox.as_deref() {
             None => (program, args),
@@ -122,7 +127,7 @@ impl Script {
                 // 脚本可能在数据根里（家目录里放的、自己装的包带的），沙盒藏着那一片：单独放开它这一个文件只读，解释器才
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
                 let mut sandboxed = sandboxed.clone();
-                sandboxed.spec.reveal.push(self.file.clone());
+                sandboxed.spec.reveal.push(file.clone());
                 miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
                     .map(|(helper, args)| (helper.into_os_string(), args))
                     .map_err(io::Error::other)?
@@ -158,6 +163,12 @@ impl Tool for Script {
 
     fn display_name(&self) -> BTreeMap<String, String> {
         self.display_name.clone()
+    }
+
+    /// 脚本文件这时是链接（施工 X-37）：看不了的也当是，放行宁可不算。
+    fn linked(&self) -> bool {
+        std::fs::symlink_metadata(&self.file)
+            .map_or(true, |metadata| metadata.file_type().is_symlink())
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

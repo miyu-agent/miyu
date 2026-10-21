@@ -10,6 +10,8 @@ None of these need a long-running program; one file is enough. Chinese version: 
 
 Where: in a package, under the package folder's `scripts/`, `skills/`, `commands/`, with a manifest of just `[package]`; just for you, straight into `~/.miyu/home/admin/scripts/`, `skills/`, `commands/` (same names there win). The next session sees them; each script, skill and template is switched separately in presets. Broken ones aren't registered, and `miyu check` says which and why.
 
+Links work too, pointing at files or folders elsewhere (say, kept together in a repository of your own): what the link points at counts, and the AI sees the real path; broken links are skipped. Links into other parts of Miyu's data folder (`system/`, other accounts) don't count, and `miyu check` says where they point.
+
 ```text
 dice/
 ├── package.toml          # only [package]
@@ -101,6 +103,7 @@ lights = "smart-home"     # from a package: the package's id
 - A granted tool runs outside the sandbox without asking in the admin's own sessions (terminal, web, the owner's QQ private chat, desktop voice). Group chats and strangers' private chats still refuse it, and so does read-only; dangerous commands still ask.
 - A grant whose source doesn't match doesn't count: delete the script, or let another package bring a tool with the same name, and the grant lapses. `miyu check` lists every grant and prints the current source for those that don't match.
 - A granted tool has all of your own permissions: only grant scripts whose code you have read and whose arguments are safe.
+- A script whose file is a link isn't granted and still runs in the sandbox (a link can point somewhere the AI can change): put the real file there to grant it; `miyu check` reminds you.
 
 ## Skills
 

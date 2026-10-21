@@ -7,7 +7,7 @@ use super::*;
 use crate::env::{Env, Platform};
 use crate::packages::Packages;
 use crate::resources::ResourceRoot;
-use crate::test_support::Scratch;
+use crate::test_support::{Scratch, link};
 
 struct Places {
     scratch: Scratch,
@@ -190,4 +190,37 @@ fn a_package_folder_says_which_scripts_it_carries() {
         carried(&places.scratch.path().join("nothing")),
         (Vec::new(), Vec::new())
     );
+}
+
+/// 脚本是链接（施工 X-37）：照它指到的读开头，记链接本身（放行时照它看）；断了的跳过、说为什么；指到目录的不算。
+#[test]
+fn a_linked_script_is_read_through_and_kept_as_the_link() {
+    let places = Places::new();
+    places.write("elsewhere/weather.py", &script("Weather."));
+    places.write("elsewhere/sub/inner.sh", &script("Inner."));
+    let own = own_dir(&places.root, &places.admin);
+    fs::create_dir_all(&own).unwrap();
+    let (weather, gone) = (own.join("weather.py"), own.join("gone.py"));
+    if !(link(
+        &places.scratch.path().join("elsewhere/weather.py"),
+        &weather,
+    ) && link(&places.scratch.path().join("nowhere.py"), &gone)
+        && link(
+            &places.scratch.path().join("elsewhere/sub"),
+            &own.join("sub"),
+        ))
+    {
+        return;
+    }
+    let (scripts, skipped) = places.found();
+    assert_eq!(
+        scripts
+            .iter()
+            .map(|script| (script.head.name.as_str(), script.file.clone()))
+            .collect::<Vec<_>>(),
+        [("weather", weather)]
+    );
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert_eq!(skipped[0].path, gone);
+    assert!(skipped[0].why.starts_with("broken link: "), "{skipped:?}");
 }

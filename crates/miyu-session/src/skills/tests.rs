@@ -34,6 +34,7 @@ fn skill(name: &str, description: &str) -> Skill {
         file: dir.join("SKILL.md"),
         dir,
         package: None,
+        link: None,
     }
 }
 
@@ -95,4 +96,22 @@ fn shelves_are_real_places() {
     let wanted = std::fs::canonicalize(&real).expect("在");
     std::fs::remove_dir_all(&base).expect("删得了");
     assert_eq!(found, [wanted]);
+}
+
+/// 换真实位置时加上的 `\\?\` 写给她看时去掉（施工 X-37：链接成的技能照真实的位置记）；Windows 上反斜杠再换成 `/`。
+#[test]
+fn a_verbatim_prefix_is_not_shown() {
+    let windows = |text: &str| match cfg!(windows) {
+        true => text.replace('\\', "/"),
+        false => text.to_string(),
+    };
+    assert_eq!(
+        shown(Path::new(r"\\?\C:\skills\notes\SKILL.md")),
+        windows(r"C:\skills\notes\SKILL.md")
+    );
+    assert_eq!(
+        shown(Path::new(r"\\?\UNC\host\share\notes\SKILL.md")),
+        windows(r"\\host\share\notes\SKILL.md")
+    );
+    assert_eq!(shown(Path::new("/data/notes")), "/data/notes");
 }

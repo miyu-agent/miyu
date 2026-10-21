@@ -35,6 +35,7 @@ pub mod jobs;
 pub mod journal;
 pub mod knowledge;
 pub mod layers;
+mod links;
 pub mod log;
 pub mod logins;
 pub mod memory;

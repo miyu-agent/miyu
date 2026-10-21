@@ -7,7 +7,7 @@ use super::*;
 use crate::env::{Env, Platform};
 use crate::packages::Packages;
 use crate::resources::ResourceRoot;
-use crate::test_support::Scratch;
+use crate::test_support::{Scratch, link};
 
 struct Places {
     scratch: Scratch,
@@ -204,4 +204,44 @@ fn a_package_folder_says_which_skills_it_carries() {
         carried(&places.scratch.path().join("nothing")),
         (Vec::new(), Vec::new())
     );
+}
+
+/// 技能文件夹是链接（施工 X-37）：照它指到的真实位置记，链接本身另记（删的时候只删它）；指到 `system/` 的跳过、带真实位置；
+/// 开头写错的照它在 `skills/` 里的位置报。
+#[test]
+fn a_linked_skill_folder_is_found_where_it_really_is() {
+    let places = Places::new();
+    places.write("elsewhere/notes/SKILL.md", &skill("notes", "Take notes."));
+    places.write("data/system/keys/SKILL.md", &skill("keys", "Not mine."));
+    places.write("elsewhere/bad/SKILL.md", &skill("other", "Wrong name."));
+    let skills_dir = places.root.account_dir(&places.admin).join("skills");
+    fs::create_dir_all(&skills_dir).unwrap();
+    let (notes, keys) = (skills_dir.join("notes"), skills_dir.join("keys"));
+    if !(link(&places.scratch.path().join("elsewhere/notes"), &notes)
+        && link(&places.scratch.path().join("data/system/keys"), &keys)
+        && link(
+            &places.scratch.path().join("elsewhere/bad"),
+            &skills_dir.join("bad"),
+        ))
+    {
+        return;
+    }
+    let (skills, skipped) = places.found();
+    let real = fs::canonicalize(places.scratch.path().join("elsewhere/notes")).unwrap();
+    assert_eq!(
+        skills
+            .iter()
+            .map(|skill| (skill.dir.clone(), skill.file.clone(), skill.link.clone()))
+            .collect::<Vec<_>>(),
+        [(real.clone(), real.join("SKILL.md"), Some(notes))]
+    );
+    assert_eq!(skipped.len(), 2, "{skipped:?}");
+    assert_eq!(
+        (skipped[0].path.clone(), skipped[0].outside.clone()),
+        (
+            keys,
+            fs::canonicalize(places.scratch.path().join("data/system/keys")).ok()
+        )
+    );
+    assert_eq!(skipped[1].path, skills_dir.join("bad").join("SKILL.md"));
 }

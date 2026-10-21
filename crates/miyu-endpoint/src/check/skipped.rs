@@ -2,7 +2,8 @@
 //! 开头写错的、读不了的各一条警告，`message` 带上为什么（英文一句：给作者看的，同编译器的报错）；同名被盖住的说被谁盖住
 //! （`script_covered`、`skill_covered`，施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）；找到了、却因为撞了别的工具的名字
 //! 没登记上的脚本另报一条。斜杠命令模板同样报（施工 X-14 上补，`slash.md`）：`slash_skipped`、`slash_covered`，和核心内置的
-//! 同名、用不上的 `slash_builtin`。
+//! 同名、用不上的 `slash_builtin`。链接指到数据根里不认的地方的（施工 X-37）：`script_link_outside`、`skill_link_outside`、
+//! `slash_link_outside`，说指到了哪一片。
 
 use std::path::Path;
 
@@ -31,14 +32,20 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         let message = crate::packages::sentence(words, code, detail).unwrap_or_default();
         json!({"kind": kind, "file": shown(core, path), "code": code, "level": "warning", "message": message})
     };
-    let one = |kind: &str, skipped: &Skipped| match &skipped.by {
-        Some(by) => warn(
+    let one = |kind: &str, skipped: &Skipped| match (&skipped.by, &skipped.outside) {
+        (Some(by), _) => warn(
             kind,
             &format!("{kind}_covered"),
             &skipped.path,
             &shown(core, by),
         ),
-        None => warn(
+        (None, Some(outside)) => warn(
+            kind,
+            &format!("{kind}_link_outside"),
+            &skipped.path,
+            &shown(core, outside),
+        ),
+        (None, None) => warn(
             kind,
             &format!("{kind}_skipped"),
             &skipped.path,

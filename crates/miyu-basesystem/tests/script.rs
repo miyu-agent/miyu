@@ -1,7 +1,8 @@
 //! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
 //! 都拿得到；在这一轮的工作目录里跑；有一个能写的缓存目录；退出码不是 0 的出错；到时整组杀掉、说一句；起不来的说清楚。
 //! 交图（施工 X-35）：拷进 `MIYU_SCRIPT_IMAGES_DIR` 的照文件名排、至多 4 张，链接、超大的不交，到时被杀的不看，跑完目录删掉。
-//! Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接的只在 Unix 上。
+//! 链接成的脚本照它指到的真实位置起（施工 X-37）。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接
+//! 的只在 Unix 上。
 
 use serde_json::json;
 
@@ -219,11 +220,45 @@ async fn long_arguments_come_only_on_stdin() {
         b"#!/usr/bin/env python3\n# Description: Report argument sizes.\n# Parameters: {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}}}\nimport os, sys\nprint('env=' + str(len(os.environ.get('MIYU_ARGS_JSON', ''))))\nprint('stdin=' + str(len(sys.stdin.read())))\n",
     );
     let long = "x".repeat(40 * 1024);
-    let done = site.script("scripts/size.py", json!({ "text": long })).await;
+    let done = site
+        .script("scripts/size.py", json!({ "text": long }))
+        .await;
     assert!(!done.error, "{}", text(&done));
     let full = json!({ "text": long }).to_string().len();
-    assert_eq!(text(&done), format!("env=0\nstdin={full}\n"), "长的只在标准输入里");
+    assert_eq!(
+        text(&done),
+        format!("env=0\nstdin={full}\n"),
+        "长的只在标准输入里"
+    );
     let done = site.script("scripts/size.py", json!({"text": "hi"})).await;
     let small = json!({"text": "hi"}).to_string().len();
-    assert_eq!(text(&done), format!("env={small}\nstdin={small}\n"), "小的两处都有");
+    assert_eq!(
+        text(&done),
+        format!("env={small}\nstdin={small}\n"),
+        "小的两处都有"
+    );
+}
+
+/// 脚本是链接（施工 X-37）：照它指到的真实位置起，`$0` 是真实的路径。沙盒只放开那一个文件，链接本身在藏着的数据根里，照链接
+/// 起的话 macOS 上解释器读不到（Linux 上的两种手段照链接也读得到，这一条在三处都守着「照真实位置起」）。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_linked_script_starts_where_it_really_is() {
+    let site = Site::new();
+    site.file(
+        "elsewhere/where.sh",
+        b"#!/bin/sh\n# Description: Where.\necho \"$0\"\n",
+    );
+    std::fs::create_dir_all(site.0.join("scripts")).expect("建得了");
+    std::os::unix::fs::symlink(
+        site.0.join("elsewhere/where.sh"),
+        site.0.join("scripts/where.sh"),
+    )
+    .expect("建得了链接");
+    let done = site.script("scripts/where.sh", json!({})).await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(
+        text(&done),
+        format!("{}\n", site.real("elsewhere/where.sh").display())
+    );
 }
