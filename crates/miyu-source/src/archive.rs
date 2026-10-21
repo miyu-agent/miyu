@@ -3,7 +3,9 @@
 //!
 //! - **可重现**：同一个文件夹打出来逐字节一样。文件照路径的字节排序，时间写 0，属主写 0，权限只留「能不能执行」：
 //!   Unix 上有执行位的、`bin/` 下的（Windows 上没有执行位，包里的程序约定放 `bin/`）写 `755`，别的 `644`。压缩单线程、
-//!   级别固定。`.git` 文件夹不打进去。
+//!   级别固定。
+//! - **不打进去的**（施工 G-13）：`.git`、`.github`、`.hg`、`.svn`、`__pycache__`、`.DS_Store`、名字以 `.pyc` 结尾的，
+//!   在哪一层都跳过，是文件夹还是文件都一样、不往里走。本地打的和包仓库的 `pack.yml` 剔过再打的是同一个包。
 //! - **只有文件和文件夹**：链接、设备这些打的时候拒、解的时候也拒（解开的东西不能指到包外面去）。
 //! - **解的时候查路径**：每一项都在同一个最上层文件夹里，不许绝对路径、`..`；最多 [`MOST_ENTRIES`] 项、[`MOST_BYTES`]
 //!   字节（防压缩炸弹）。
@@ -22,6 +24,12 @@ pub const EXTENSION: &str = "miyu";
 
 /// 压缩的级别：发出去的包下载的人多，压得狠一点，打包慢一点不要紧。
 const LEVEL: i32 = 19;
+
+/// 在哪一层都不打进去的名字（施工 G-13）：版本库、Python 的缓存、macOS 的文件夹信息。照名字比，分大小写。
+const SKIPPED: [&str; 6] = [".git", ".github", ".hg", ".svn", "__pycache__", ".DS_Store"];
+
+/// 名字以它结尾的也不打进去：Python 编好的字节码（施工 G-13）。
+const SKIPPED_SUFFIX: &str = ".pyc";
 
 /// 解开最多几项。
 pub const MOST_ENTRIES: usize = 100_000;
@@ -128,7 +136,7 @@ struct Item {
     executable: bool,
 }
 
-/// 文件夹里的每一项，照相对路径的字节排好；`.git` 文件夹不要。
+/// 文件夹里的每一项，照相对路径的字节排好；不打进去的（[`skipped`]）不要、也不往里走。
 fn walk(folder: &Path) -> Result<Vec<Item>, Error> {
     let mut items = Vec::new();
     let mut stack = vec![(folder.to_path_buf(), String::new())];
@@ -142,12 +150,12 @@ fn walk(folder: &Path) -> Result<Vec<Item>, Error> {
                     name.to_string_lossy()
                 )));
             };
+            if skipped(name) {
+                continue;
+            }
             let relative = format!("{prefix}{name}");
             let meta = fs::symlink_metadata(entry.path())?;
             if meta.is_dir() {
-                if name == ".git" {
-                    continue;
-                }
                 stack.push((entry.path(), format!("{relative}/")));
             } else if !meta.is_file() {
                 return Err(Error::NotPlain(relative));
@@ -163,6 +171,11 @@ fn walk(folder: &Path) -> Result<Vec<Item>, Error> {
     }
     items.sort_by(|a, b| a.relative.cmp(&b.relative));
     Ok(items)
+}
+
+/// 名字是 `name` 的这一项不打进去（施工 G-13）：在 [`SKIPPED`] 里，或者以 [`SKIPPED_SUFFIX`] 结尾。
+fn skipped(name: &str) -> bool {
+    SKIPPED.contains(&name) || name.ends_with(SKIPPED_SUFFIX)
 }
 
 /// Unix 上有没有执行位；别的系统上没有。

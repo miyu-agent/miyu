@@ -50,7 +50,7 @@ hello/
 
 ## 发到软件源
 
-1. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`。
+1. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`。版本库和缓存不打进去：`.git`、`.github`、`.hg`、`.svn`、`__pycache__`、`.DS_Store`、`*.pyc`，在哪一层都一样；别的都进，要留在包外面的打包前挪走。
 2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
 3. **收录**：软件源每天收一次各仓库最新的 Release，签名后发出去。现在只收官方仓库，社区包的自动收录以后再开。
 

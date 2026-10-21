@@ -1,4 +1,5 @@
-//! 包文件（施工 G-1）：打出来可重现；解开和原来一样；链接、跑出去的路径、不止一个最上层、太大的都拒。
+//! 包文件（施工 G-1）：打出来可重现；解开和原来一样；链接、跑出去的路径、不止一个最上层、太大的都拒。版本库、缓存在哪一层
+//! 都不打进去（施工 G-13）。
 
 use super::*;
 use crate::test_support::{Scratch, put};
@@ -259,4 +260,105 @@ fn entries_are_sorted_with_zero_times_and_owners() {
         ],
         "照路径的字节排，文件夹在里面的东西前面"
     );
+}
+
+/// 包文件里每一项的路径（去掉文件夹末尾的 `/`），照写进去的先后。
+fn listed(file: &Path) -> Vec<String> {
+    let decoder = zstd::Decoder::new(File::open(file).expect("在")).expect("解得了");
+    let mut archive = tar::Archive::new(decoder);
+    archive
+        .entries()
+        .expect("读得了")
+        .map(|entry| {
+            let entry = entry.expect("读得了");
+            let name = entry.path().expect("有").display().to_string();
+            name.trim_end_matches('/').to_string()
+        })
+        .collect()
+}
+
+/// 版本库、缓存（施工 G-13）：在哪一层都不进包，是文件夹还是文件都一样（工作树里的 `.git` 是文件）；名字差一点的、大小写
+/// 不同的照旧进。大小写不同的放在 `keep/` 里：macOS 的盘不分大小写，和上面的放在一起会是同一个。
+#[test]
+fn version_control_and_caches_are_left_out_at_any_depth() {
+    let scratch = Scratch::new();
+    let folder = scratch.path().join("pudding");
+    put(
+        &folder,
+        "package.toml",
+        b"[package]\nname = { en = \"Pudding\" }\n",
+    );
+    for skipped in [
+        ".git/HEAD",
+        ".github/workflows/pack.yml",
+        ".hg/store/data",
+        ".svn/entries",
+        "__pycache__/a.cpython-312.pyc",
+        "scripts/__pycache__/b.cpython-312.pyc",
+        "scripts/c.pyc",
+        ".DS_Store",
+        "skills/sweet/.DS_Store",
+        "vendor/lib/.git",
+    ] {
+        put(&folder, skipped, b"x");
+    }
+    for kept in [
+        "scripts/d.py",
+        "scripts/pyc",
+        "scripts/e.pyc.txt",
+        ".gitignore",
+        "keep/.GitHub/readme",
+        "keep/.ds_store",
+        "keep/f.PYC",
+    ] {
+        put(&folder, kept, b"x");
+    }
+    let packed = pack(&folder, "pudding", &scratch.path().join("p.miyu")).expect("打得成");
+    assert_eq!(
+        listed(&packed.path),
+        [
+            "pudding",
+            "pudding/.gitignore",
+            "pudding/keep",
+            "pudding/keep/.GitHub",
+            "pudding/keep/.GitHub/readme",
+            "pudding/keep/.ds_store",
+            "pudding/keep/f.PYC",
+            "pudding/package.toml",
+            "pudding/scripts",
+            "pudding/scripts/d.py",
+            "pudding/scripts/e.pyc.txt",
+            "pudding/scripts/pyc",
+            "pudding/skills",
+            "pudding/skills/sweet",
+            "pudding/vendor",
+            "pudding/vendor/lib",
+        ]
+    );
+}
+
+/// 多了缓存的同一个文件夹打出来逐字节一样（施工 G-13）：本地打的和 CI 剔过再打的是同一个包。
+#[test]
+fn caches_do_not_change_the_package() {
+    let scratch = Scratch::new();
+    let clean = sample(&scratch.path().join("clean"));
+    let first = pack(&clean, "pudding", &scratch.path().join("a.miyu")).expect("打得成");
+    let messy = sample(&scratch.path().join("messy"));
+    put(&messy, "__pycache__/x.cpython-312.pyc", b"\0\0");
+    put(&messy, "skills/sweet/.DS_Store", b"\0");
+    put(&messy, ".github/workflows/pack.yml", b"on: push\n");
+    let second = pack(&messy, "pudding", &scratch.path().join("b.miyu")).expect("打得成");
+    assert_eq!(first.sha256, second.sha256);
+}
+
+/// 跳过的文件夹里有链接的照样打得成（施工 G-13）：不往里走，「只有文件和文件夹」那一查碰不到它。
+#[cfg(unix)]
+#[test]
+fn a_link_inside_a_skipped_folder_does_not_stop_packing() {
+    let scratch = Scratch::new();
+    let folder = sample(scratch.path());
+    put(&folder, ".hg/store/data", b"x");
+    std::os::unix::fs::symlink("/etc/passwd", folder.join(".hg/link")).expect("建得了链接");
+    std::os::unix::fs::symlink("/etc/passwd", folder.join(".DS_Store")).expect("建得了链接");
+    pack(&folder, "pudding", &scratch.path().join("p.miyu")).expect("打得成");
 }
