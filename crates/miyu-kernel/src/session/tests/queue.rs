@@ -60,6 +60,7 @@ fn a_message_during_the_last_reply_opens_the_next_turn() {
                 model: None,
                 present: Vec::new(),
                 said: Some("顺便也看下 tests".to_string()),
+                speakers: Vec::new(),
             }
     });
     assert!(

@@ -40,6 +40,9 @@ pub enum Action {
         present: Vec<Present>,
         /// 触发这一轮的人话（施工 R-8，[`crate::facts::said`]）：记忆照它联想。不是人开的一轮没有。原样，长短由挂接点截。
         said: Option<String>,
+        /// 开这一轮的人话是哪几个人说的（施工 E-0，[`crate::facts::speakers`]）：记忆照它认人（设计 42）。本机的头上开的、不是
+        /// 人开的是空的。
+        speakers: Vec<crate::facts::Speaker>,
     },
     /// 请求模型：把这份请求交给驱动编码、发出去（`05-内核接口.md` 第七节）。发出去了、
     /// 每一段增量、说完了，都带着 `seen` 回报（`02-内核.md` 第六节「回复怎么收、回合怎么结束」）。

@@ -42,9 +42,11 @@ impl Stage {
                 model,
                 present,
                 said,
+                speakers,
             } => {
                 self.presents.push(present);
                 self.saids.push(said);
+                self.speakers.push(speakers);
                 let replaced = self.routing.resolve(model);
                 let policy = self.swapped();
                 vec![Input::TurnStartHooksDone {

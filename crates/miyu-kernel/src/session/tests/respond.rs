@@ -173,3 +173,33 @@ impl Logged {
         calls(&actions).remove(0).0.get()
     }
 }
+
+/// 照记下的几条开的一轮（施工 E-0）：回合开始交给挂接点的说话的人照那几条，最近开口的在最后。
+#[test]
+fn the_hooks_hear_who_opened_the_turn() {
+    let heard = |n: u64, who: &str| {
+        let by: By = serde_json::from_str(&format!(
+            r#"{{"kind":"external","venue":"qq:group:1","id":"{who}","role":"member"}}"#
+        ))
+        .unwrap();
+        match overheard(n) {
+            Input::Command(received) => Input::Command(Received { by, ..received }),
+            other => other,
+        }
+    };
+    let mut logged = Logged::new();
+    logged.handle(heard(1, "qq:20017"));
+    logged.handle(heard(2, "qq:20018"));
+    logged.handle(stored(3));
+    logged.handle(respond(5, &[2, 3]));
+    let actions = logged.handle(stored(logged.last()));
+    let speakers = actions
+        .iter()
+        .find_map(|action| match action {
+            Action::RunTurnStartHooks { speakers, .. } => Some(speakers.clone()),
+            _ => None,
+        })
+        .expect("开了一轮");
+    let ids: Vec<&str> = speakers.iter().map(|speaker| speaker.id.as_str()).collect();
+    assert_eq!(ids, ["qq:20017", "qq:20018"]);
+}

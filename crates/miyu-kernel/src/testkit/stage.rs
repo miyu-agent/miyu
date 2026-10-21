@@ -54,6 +54,8 @@ pub struct Stage {
     pub(super) presents: Vec<Vec<Present>>,
     /// 同上，带的 `said`：触发那一轮的人话（施工 R-8）。
     pub(super) saids: Vec<Option<String>>,
+    /// 每次回合开始交给挂接点的说话的人（施工 E-0），照先后。
+    pub(super) speakers: Vec<Vec<crate::facts::Speaker>>,
     /// 停住的请求（它的 `seen` 和剩下的回复）、停住的调用。
     pub(super) held_model: Option<(Seq, Line)>,
     pub(super) held_tools: Vec<(CallId, Play)>,
@@ -359,6 +361,11 @@ impl Stage {
     /// 回合开始每次叫挂接点时内核带的 `said`（触发那一轮的人话，不是人开的没有），照先后（施工 R-8）。
     pub fn saids(&self) -> &[Option<String>] {
         &self.saids
+    }
+
+    /// 每次回合开始交给挂接点的说话的人（施工 E-0），照先后。
+    pub fn speakers(&self) -> &[Vec<crate::facts::Speaker>] {
+        &self.speakers
     }
 
     /// 推给头的瞬时事件，照先后。

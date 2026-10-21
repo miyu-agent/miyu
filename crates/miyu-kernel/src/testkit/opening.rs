@@ -191,6 +191,7 @@ impl Stage {
             injections: VecDeque::new(),
             presents: Vec::new(),
             saids: Vec::new(),
+            speakers: Vec::new(),
             held_model: None,
             hold_wakes: false,
             held_wake: None,

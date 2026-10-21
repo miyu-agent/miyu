@@ -4,6 +4,7 @@
 
 mod permission;
 mod reminder;
+mod speakers;
 
 use super::*;
 use crate::event::Event;

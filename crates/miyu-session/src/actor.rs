@@ -324,6 +324,8 @@ impl Actor {
                 model,
                 present,
                 said,
+                // 说话的人（施工 E-0）由记忆线的 E-1 补接上，这一步先不用。
+                ..
             } => Some(self.turn_start(turn, model, present, said).await),
             Action::CallModel {
                 seen,

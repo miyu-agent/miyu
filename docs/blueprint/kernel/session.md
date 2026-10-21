@@ -126,7 +126,7 @@
 | `Reply { id, outcome }` | 命令编号、结局 | 交给发命令的连接 |
 | `Push(事件)` | 落了盘的事件 | 推给订阅了的头 |
 | `PushTransient(Transient)` | 一条瞬时事件 | 推给头，不落盘，不等 |
-| `RunTurnStartHooks { turn, model, present, said }` | 回合；会话现在的引用，没有记下的是没有（施工 8-10）；有效历史里由模块注入的每一块（`Present { module, kind, refs }`，照日志的先后，`facts::present`，施工 R-4 上）；触发这一轮的人话（`facts::said`，施工 R-8：`turn.started` 的 `trigger` 那条 `message.user` 是人说的（`By::is_person`）才有，字块照先后用换行连、去掉前后空白（`block::words`），原样不截；回报、别的会话、子代理、harness 开的，只有附件没有字的，没有。排着的几句一起开的一轮只取触发的那一句。重启以后接着干的那一轮照原来那句，有） | 先照这一轮的配置重新解析引用（`session/actor.md` 第 8 条），再叫各模块，模块照 `present` 看这一段上下文里已经有了什么，等齐或超时，送回 `TurnStartHooksDone`，退回了默认的带着 `replaced`；一个模块都没挂也回一次 |
+| `RunTurnStartHooks { turn, model, present, said, speakers }` | 回合；会话现在的引用，没有记下的是没有（施工 8-10）；有效历史里由模块注入的每一块（`Present { module, kind, refs }`，照日志的先后，`facts::present`，施工 R-4 上）；触发这一轮的人话（`facts::said`，施工 R-8：`turn.started` 的 `trigger` 那条 `message.user` 是人说的（`By::is_person`）才有，字块照先后用换行连、去掉前后空白（`block::words`），原样不截；回报、别的会话、子代理、harness 开的，只有附件没有字的，没有。排着的几句一起开的一轮只取触发的那一句。重启以后接着干的那一轮照原来那句，有） | 先照这一轮的配置重新解析引用（`session/actor.md` 第 8 条），再叫各模块，模块照 `present` 看这一段上下文里已经有了什么，等齐或超时，送回 `TurnStartHooksDone`，退回了默认的带着 `replaced`；一个模块都没挂也回一次；开这一轮的人话是哪几个人说的（`facts::speakers`，施工 E-0，设计 42）：照记下的几条开的一轮照 `triggers`、别的照 `trigger`，每人 `Speaker { id, owner }`：通讯平台上的人交平台身份，对应表认出的主人 `owner` 是真，私聊里认出的本人交它经的平台身份；本机的头上说的、不是人开的没有；同一个人只交一次，照最后一次开口排 |
 | `RunTurnEndHooks { turn }` | 回合 | 广播，不等，不送回 |
 | `CallModel { seen, request, changed }` | 看到第几条（也是这次请求的名字）、统一的请求、和上一次比第一处不同 | 交给驱动发出去；送回 `RequestSent`、`ModelDelta`、`ModelEnded` |
 | `CancelModel { seen }` | 哪次请求 | 掐掉，不送回；之后到的不理 |

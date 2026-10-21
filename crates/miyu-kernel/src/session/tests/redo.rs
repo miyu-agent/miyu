@@ -73,6 +73,7 @@ fn a_redo_is_one_batch_and_replies_when_it_is_stored() {
             model: None,
             present: Vec::new(),
             said: Some("换个说法".to_string()),
+            speakers: Vec::new(),
         }),
         "新的一轮照常往下走"
     );

@@ -339,6 +339,7 @@ impl Watch {
                 model,
                 present,
                 said,
+                ..
             } => self.turn_start_hooks(turn, &present, said.as_deref(), model.as_deref()),
             Action::CallModel { seen, request, .. } => self.called(seen, &request),
             Action::Aside {
