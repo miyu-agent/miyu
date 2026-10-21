@@ -10,7 +10,7 @@ use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_net::testkit::Testing;
 use miyu_net::{Pages, WEB_FETCH};
-use miyu_tool::{Call, Done, Progress, Stop, Tool};
+use miyu_tool::{Call, Done, Progress, Tool};
 
 use crate::support::{PNG, Reply, Site, local, resources};
 
@@ -39,27 +39,8 @@ pub(crate) fn call(args: serde_json::Value) -> Call {
     Call {
         args: args.to_string(),
         cwd: String::new(),
-        home: None,
-        data_root: None,
-        seen: Arc::default(),
-        stop: Stop::default(),
-        sandbox: None,
-        log: None,
         offset: UtcOffset::from_minutes(0).expect("零时区"),
-        agents: None,
-        messages: None,
-        jobs: None,
-        sessions: None,
-        usage: None,
-        questions: None,
-        memory: None,
-        knowledge: None,
-        goals: None,
-        nested: None,
-        packages: None,
-        ids: None,
-        settings: None,
-        checked: None,
+        ..miyu_tool::testkit::call("{}")
     }
 }
 

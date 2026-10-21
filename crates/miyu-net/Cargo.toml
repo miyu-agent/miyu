@@ -55,6 +55,8 @@ testkit = []
 miyu-config = { path = "../miyu-config" }
 # 自己的集成测试用上测试的口子。
 miyu-net = { path = ".", features = ["testkit"] }
+# 测试里的调用照 `miyu_tool::testkit::call` 的默认补齐（施工 X-43）。
+miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
 # 测试里本机的假服务器、假代理。
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
 # 测试用的假服务器压一份 gzip 的页面：reqwest 的 gzip 特性带进来的同一个包，本来就在依赖图里。MIT 或 Apache-2.0。

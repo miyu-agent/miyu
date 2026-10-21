@@ -324,9 +324,13 @@ impl Actor {
                 model,
                 present,
                 said,
-                // 说话的人（施工 E-0）由记忆线的 E-1 补接上，这一步先不用。
+                speakers,
                 ..
-            } => Some(self.turn_start(turn, model, present, said).await),
+            } => {
+                // 这一轮开口的是不是主人记在这一轮上，派工具时交给脚本（施工 X-43）；记忆照说话的人认人由 E-1 补接上。
+                self.tools.round_started(turn, &speakers);
+                Some(self.turn_start(turn, model, present, said).await)
+            }
             Action::CallModel {
                 seen,
                 request,

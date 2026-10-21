@@ -66,6 +66,9 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Timeout` | Seconds, default 60 |
 | `Need load` | Loaded on demand unless you write it: the AI normally sees only the name and one line and loads the full parameters when needed, which saves money. `no`: always send the full parameters; write it for ones used often |
 | `Clicall` | `no`: the AI cannot call it with `miyu call` inside a command, only directly. Unset means it can |
+| `Venues` | Which sessions get it: some of `local` (this machine: the terminal, the web page and so on), `private` (private chats on a messaging platform), `group` (groups), comma separated, e.g. `Venues: local, private`. Unset means every kind of session; if it is wrong the whole script is not registered and `miyu check` reports it |
+
+The header is the run of comment lines at the very top of the file; it ends at the first line that is not a comment. Leave a blank line after the header before any other comment, or a sentence like "Timeout: …" in your notes is read as part of the header.
 
 **How it runs**
 
@@ -73,6 +76,15 @@ On Linux and macOS, `chmod +x dice.py`.
 - The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 30 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
 - Stdout is the result handed to the AI; a non-zero exit code counts as failure, so write the reason to the output.
 - The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR`.
+- Who called: `MIYU_CALLER_VENUE` is the kind of session it was called in (`local` on this machine, the venue id for a group or private chat, e.g. `qq:group:123`); `MIYU_CALLER_OWNER` says whether the person speaking this turn is the machine's owner (`1` or `0`; `0` when one of several people in a group is not the owner, or when it can't be told).
+- These two are facts, not a gate: they can't stop the AI from writing `MIYU_CALLER_OWNER=1 ./script` in a command itself. To keep a script to some kinds of session, write `Venues` in the header; use the variables only to adjust what the script does, for example read-only in groups:
+
+  ```python
+  import os
+  if os.environ.get("MIYU_CALLER_OWNER") != "1":
+      print("Read-only here: only the owner can change the title.")
+  ```
+
 - It runs under the same rules as commands the AI runs: in the sandbox (can only write the workspace, can't read Miyu's data directory, the script file itself is readable); without a sandbox, a person must approve.
 
 **Handing over images**

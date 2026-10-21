@@ -1,13 +1,14 @@
 //! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
 //! 都拿得到；在这一轮的工作目录里跑；有一个能写的缓存目录；退出码不是 0 的出错；到时整组杀掉、说一句；起不来的说清楚。
 //! 交图（施工 X-35）：拷进 `MIYU_SCRIPT_IMAGES_DIR` 的照文件名排、至多 4 张，链接、超大的不交，到时被杀的不看，跑完目录删掉。
-//! 链接成的脚本照它指到的真实位置起（施工 X-37）。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接
+//! 链接成的脚本照它指到的真实位置起（施工 X-37）。调用的事实进 `MIYU_CALLER_*`，开头的 `Venues` 定给哪种会话（施工 X-43）。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接
 //! 的只在 Unix 上。
 
 use serde_json::json;
 
 use miyu_kernel::block::Block;
-use miyu_tool::Done;
+use miyu_kernel::id::VenueId;
+use miyu_tool::{Caller, Done, Venues};
 
 use crate::support::Site;
 
@@ -285,4 +286,58 @@ async fn a_linked_script_starts_where_it_really_is() {
         text(&done),
         format!("{}\n", site.real("elsewhere/where.sh").display())
     );
+}
+
+/// 调用的事实（施工 X-43）：派它的那一轮交的场所、是不是主人进 `MIYU_CALLER_VENUE`、`MIYU_CALLER_OWNER`；没有的（会话外面的
+/// 调用）两个都没有；核心自己的环境里残留的不带进去（`MIYU_*` 本来就不传，施工 4-8）。Python 的，三个平台都跑。
+#[tokio::test]
+async fn a_script_gets_who_called_it_and_nothing_left_over() {
+    if !crate::support::in_child(
+        "script::a_script_gets_who_called_it_and_nothing_left_over",
+        &[
+            ("MIYU_CALLER_VENUE", "qq:group:9"),
+            ("MIYU_CALLER_OWNER", "1"),
+        ],
+    ) {
+        return;
+    }
+    let site = Site::new();
+    site.file(
+        "scripts/who.py",
+        b"#!/usr/bin/env python3\n# Description: Who.\nimport os\nget = lambda name: os.environ.get(name, 'unset')\nprint(get('MIYU_CALLER_VENUE') + '|' + get('MIYU_CALLER_OWNER'))\n",
+    );
+    for (caller, printed) in [
+        (Some(("qq:group:1", false)), "qq:group:1|0\n"),
+        (Some(("qq:private:10001", true)), "qq:private:10001|1\n"),
+        (Some(("local", true)), "local|1\n"),
+        (None, "unset|unset\n"),
+    ] {
+        let caller = caller.map(|(venue, owner)| Caller {
+            venue: VenueId::parse(venue).expect("场所合写法"),
+            owner,
+        });
+        let done = site.script_as("scripts/who.py", json!({}), caller).await;
+        assert!(!done.error, "{}", text(&done));
+        assert_eq!(text(&done), printed);
+    }
+}
+
+/// 开头写了 `Venues` 的（施工 X-43）：工具照它给哪种会话；没写的没有，照工具面自己的规矩（哪种会话都有）。
+#[test]
+fn a_script_is_offered_where_its_head_says() {
+    let site = Site::new();
+    site.file(
+        "scripts/near.py",
+        b"# Description: Near.\n# Venues: local, private\n",
+    );
+    site.file("scripts/any.py", b"# Description: Anywhere.\n");
+    assert_eq!(
+        site.script_tool("scripts/near.py").venues(),
+        Some(Venues {
+            local: true,
+            private: true,
+            group: false,
+        })
+    );
+    assert_eq!(site.script_tool("scripts/any.py").venues(), None);
 }

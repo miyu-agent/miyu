@@ -161,3 +161,38 @@ fn clicall_is_yes_or_no() {
 fn a_script_is_the_feature_script_dash_name() {
     assert_eq!(feature_id("get_weather"), "script-get_weather");
 }
+
+/// `Venues`（施工 X-43）：同清单的 `venues`，逗号隔开的几种，照写的先后；没写的没有（哪种会话都有）；空的、不认识的、重了的
+/// 报 `BadVenues`；只有英文的键名，中文的 `场所` 不是键。
+#[test]
+fn venues_read_like_the_manifest() {
+    for (line, venues) in [
+        ("# Venues: local\n", vec!["local"]),
+        ("# Venues: local, group\n", vec!["local", "group"]),
+        (
+            "# Venues：private,group ,local\n",
+            vec!["private", "group", "local"],
+        ),
+    ] {
+        let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
+        let venues: Vec<String> = venues.into_iter().map(str::to_string).collect();
+        assert_eq!(head.venues, Some(venues), "{line}");
+    }
+    let head = read("a.py", "# Description: Hi.\n").expect("读得出");
+    assert_eq!(head.venues, None, "没写的哪种会话都有");
+    let head = read("a.py", "# Description: Hi.\n# 场所：local\n").expect("读得出");
+    assert_eq!(head.venues, None, "中文的不是键名");
+    for value in ["", "room", "local, local", "local,", "local group", "Local"] {
+        let text = format!("# Description: Hi.\n# Venues: {value}\n");
+        let bad = read("a.py", &text).unwrap_err();
+        assert_eq!(
+            bad,
+            ScriptProblem::BadVenues(value.to_string()),
+            "{value:?}"
+        );
+    }
+    assert_eq!(
+        ScriptProblem::BadVenues("room".to_string()).to_string(),
+        "Venues \"room\" must list some of local, private, group, each once"
+    );
+}

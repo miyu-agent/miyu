@@ -21,6 +21,7 @@
 
 mod agents;
 pub mod attachment;
+mod caller;
 mod catalog;
 mod checked;
 pub mod detail;
@@ -50,6 +51,7 @@ mod usage;
 pub use agents::{
     AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
 };
+pub use caller::Caller;
 pub use catalog::{
     BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix, mcp_service,
 };
@@ -129,6 +131,22 @@ pub struct Venues {
     pub private: bool,
     /// 群。
     pub group: bool,
+}
+
+impl Venues {
+    /// 照会话种类的名字拼一份（清单的 `venues`、脚本开头的 `Venues`，读的时候查过了）：不认识的不算。
+    pub fn of(names: &[String]) -> Venues {
+        let mut venues = Venues::default();
+        for name in names {
+            match name.as_str() {
+                "local" => venues.local = true,
+                "private" => venues.private = true,
+                "group" => venues.group = true,
+                _ => {}
+            }
+        }
+        venues
+    }
 }
 
 /// 一件工具。

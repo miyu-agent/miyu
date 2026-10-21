@@ -55,16 +55,7 @@ pub(super) fn access(tool: &miyu_mcp::Tool) -> Access {
 
 /// 给哪种会话：照清单的 `venues`（读清单时查过了，只有这三种）。
 pub(super) fn venues(server: &McpServer) -> Venues {
-    let mut venues = Venues::default();
-    for venue in &server.venues {
-        match venue.as_str() {
-            "local" => venues.local = true,
-            "private" => venues.private = true,
-            "group" => venues.group = true,
-            _ => {}
-        }
-    }
-    venues
+    Venues::of(&server.venues)
 }
 
 /// 照服务 `server` 列出来的 `tools` 换掉包 `package` 里这个服务的工具：截断后撞名的后一件、目录查不过的（撞了别的包的、

@@ -95,6 +95,7 @@ impl Tools {
             ids: None,
             settings: None,
             checked: None,
+            caller: None,
         };
         Some(tool.preview(call)?.await)
     }

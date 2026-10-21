@@ -41,27 +41,7 @@ fn trash_comes_from_the_resources_and_names_what_it_writes() {
         let targets = tool.targets(&Call {
             args: args.to_string(),
             cwd: String::new(),
-            home: None,
-            data_root: None,
-            seen: Default::default(),
-            stop: Default::default(),
-            sandbox: None,
-            log: None,
-            offset: miyu_kernel::time::UtcOffset::UTC,
-            agents: None,
-            messages: None,
-            jobs: None,
-            sessions: None,
-            usage: None,
-            questions: None,
-            memory: None,
-            knowledge: None,
-            packages: None,
-            goals: None,
-            nested: None,
-            ids: None,
-            settings: None,
-            checked: None,
+            ..miyu_tool::testkit::call("{}")
         });
         assert_eq!(targets.len(), 1, "{args}");
         assert_eq!(targets[0].path, "old.txt");
@@ -290,26 +270,7 @@ mod linux {
             args: json!({ "file_path": site.real("home") }).to_string(),
             cwd: site.0.join("work").to_string_lossy().into_owned(),
             home: Some(site.0.join("home-link")),
-            data_root: None,
-            seen: Default::default(),
-            stop: Default::default(),
-            sandbox: None,
-            log: None,
-            offset: miyu_kernel::time::UtcOffset::UTC,
-            agents: None,
-            messages: None,
-            jobs: None,
-            sessions: None,
-            usage: None,
-            questions: None,
-            memory: None,
-            knowledge: None,
-            packages: None,
-            goals: None,
-            nested: None,
-            ids: None,
-            settings: None,
-            checked: None,
+            ..miyu_tool::testkit::call("{}")
         };
         let done = tool("trash").run(call, Progress::new(|_| {})).await;
         assert_eq!(done.human, Some(said("trash/protected")), "{}", text(&done));
