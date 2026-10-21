@@ -122,6 +122,10 @@ pub(crate) async fn run(
         if name.is_empty() {
             return Err(Refusal::UNKNOWN_COMMAND);
         }
+        // 名字里有 `:` 的是 MCP 服务的提示词（施工 X-39）：模板、内置命令的名字里都没有。
+        if name.contains(':') {
+            return prompts::run(core, peer, id, &params, (name, rest)).await;
+        }
         return templates::run(core, peer, id, &params, (name, rest)).await;
     };
     let noted = CommandId::parse(&format!("{id}/ran")).map_err(|_| Refusal::BAD_PARAMS)?;
@@ -296,6 +300,7 @@ mod catalog;
 mod declared;
 mod goal;
 mod pages;
+mod prompts;
 mod registry;
 mod templates;
 #[cfg(test)]

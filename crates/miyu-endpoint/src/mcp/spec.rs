@@ -91,18 +91,12 @@ pub(super) fn register(
         let name = name(service, &tool.name);
         if !seen.insert(name.clone()) {
             tracing::warn!(target: TARGET, service, tool = tool.name.as_str(), taken_by = name.as_str(), "mcp tool skipped");
-            skipped.push(Skipped {
-                tool: tool.name.clone(),
-                why: "name_taken",
-            });
+            skipped.push(Skipped::tool(tool.name.clone(), "name_taken"));
             continue;
         }
         let Ok(parameters) = serde_json::from_str::<RawJson>(&tool.input_schema.to_string()) else {
             tracing::warn!(target: TARGET, service, tool = tool.name.as_str(), problem = "parameters", "mcp tool skipped");
-            skipped.push(Skipped {
-                tool: tool.name.clone(),
-                why: "parameters",
-            });
+            skipped.push(Skipped::tool(tool.name.clone(), "parameters"));
             continue;
         };
         originals.insert(name.clone(), tool.name.clone());
@@ -147,7 +141,7 @@ pub(super) fn register(
             Problem::Parameters => "parameters",
         };
         let tool = originals.remove(&error.tool).unwrap_or(error.tool);
-        skipped.push(Skipped { tool, why });
+        skipped.push(Skipped::tool(tool, why));
     }
     skipped
 }

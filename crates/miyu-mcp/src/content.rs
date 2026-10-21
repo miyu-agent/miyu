@@ -175,8 +175,8 @@ impl Called {
 }
 
 impl Content {
-    /// 读一项：照 `type` 认，缺了要的格子的当认不出来。
-    fn read(raw: &Value) -> Content {
+    /// 读一项：照 `type` 认，缺了要的格子的当认不出来。工具结果、提示词的消息（施工 X-39）共用。
+    pub(crate) fn read(raw: &Value) -> Content {
         let text =
             |value: &Value, key: &str| value.get(key).and_then(Value::as_str).map(str::to_string);
         let read = match raw.get("type").and_then(Value::as_str) {

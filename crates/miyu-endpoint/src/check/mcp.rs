@@ -53,12 +53,13 @@ pub(super) fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         if skipped.is_empty() {
             return None;
         }
-        // 没写名字的只说为什么。
+        // 没写名字的只说为什么；提示词写成 `/<原名>`（施工 X-39）。
         let tools: Vec<String> = skipped
             .iter()
-            .map(|skipped| match skipped.tool.as_str() {
-                "" => format!("({})", skipped.why),
-                tool => format!("{tool} ({})", skipped.why),
+            .map(|skipped| match (skipped.name.as_str(), skipped.prompt) {
+                ("", _) => format!("({})", skipped.why),
+                (name, true) => format!("/{name} ({})", skipped.why),
+                (name, false) => format!("{name} ({})", skipped.why),
             })
             .collect();
         let detail = format!("{service}: {}", tools.join(", "));

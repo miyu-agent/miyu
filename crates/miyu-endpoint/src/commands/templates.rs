@@ -54,6 +54,16 @@ pub(super) async fn opened(
     handle: &Handle,
     (name, package): (&str, &str),
 ) -> Result<(), Refusal> {
+    opened_by(core, peer, handle, (name, &feature_id(name), package)).await
+}
+
+/// 同 [`opened`]，照功能 `feature` 判（施工 X-39：MCP 的提示词跟着服务的 `mcp-<服务名>` 走），拒的时候说命令 `name`。
+pub(super) async fn opened_by(
+    core: &Core,
+    peer: &Peer,
+    handle: &Handle,
+    (name, feature, package): (&str, &str, &str),
+) -> Result<(), Refusal> {
     let Some(preset) = why::listed(core, handle)
         .await
         .and_then(|listed| listed.preset)
@@ -63,7 +73,7 @@ pub(super) async fn opened(
     let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
         return Ok(());
     };
-    if found.file.opens_in(&feature_id(name), package) {
+    if found.file.opens_in(feature, package) {
         return Ok(());
     }
     let label = crate::personas::label(found.file.name.as_ref(), peer.language).unwrap_or(preset);

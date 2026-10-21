@@ -33,6 +33,16 @@ impl ResourceRoot {
         self.read(&["core", "mcp", "cut.txt"])
     }
 
+    /// MCP 服务交的说明放进 system 尾部那一段的外壳（施工 X-39，`mcp.md`「怎么走」第三条第 5 条）：`core/mcp/instructions.txt`
+    /// 的原文，字段 `name`（服务名）、`text`（说明的原文）。不进快照：拼好的那一段随 system 记进快照。
+    ///
+    /// # Errors
+    ///
+    /// 读不出来：写明是哪个文件。
+    pub fn mcp_instructions(&self) -> Result<String, SourceError> {
+        self.read(&["core", "mcp", "instructions.txt"])
+    }
+
     /// 权限策略拒绝在场所里做的事（访问类别 `venue`）的那一句：会话不在场所里（施工 O-31 前，`session/guard.md` 第四条）。
     /// 不进策略快照：本机的会话造、载入时读（同 [`ResourceRoot::tool_timed_out`]），进了快照以前造的会话换不了快照。
     ///

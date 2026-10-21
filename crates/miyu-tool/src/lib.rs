@@ -49,7 +49,9 @@ mod usage;
 pub use agents::{
     AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
 };
-pub use catalog::{BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix};
+pub use catalog::{
+    BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix, mcp_service,
+};
 pub use goals::{
     BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
 };

@@ -4,6 +4,9 @@
 //! 几件工具：`echo` 照参数 `text` 回文字；`picture` 回一张图和一句话；`fail` 说自己出错了；`structured` 只回结构化的；
 //! `slow` 不回（等取消）；`ask` 先反过来问客户端要东西，等它回了再答；`pinged` 先反过来 `ping` 客户端，照它回没回成答；
 //! `input` 要补信息（新时代）；`die` 一收到就退出。别的名字回「不认识这件工具」（`-32602`）。
+//!
+//! 剧本带了提示词的（施工 X-39），本事里声明 `prompts`：`review` 要参数 `code`（必填）、`focus`（可选），回一句、一张图、她说的
+//! 一句；`hello` 不要参数，回一句；缺必填的、别的名字回 `-32602`。
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -47,6 +50,10 @@ pub struct Script {
     pub change_after_list: bool,
     /// 给模型的说明。
     pub instructions: Option<String>,
+    /// `prompts/list` 列的，原样（施工 X-39）；空的不声明 `prompts`。
+    pub prompts: Vec<Value>,
+    /// 第一次列完提示词以后说一次提示词变了（施工 X-39）。
+    pub change_prompts_after_list: bool,
 }
 
 impl Script {
@@ -60,6 +67,8 @@ impl Script {
             ttl_ms: None,
             change_after_list: false,
             instructions: None,
+            prompts: Vec::new(),
+            change_prompts_after_list: false,
         }
     }
 
@@ -95,6 +104,23 @@ pub fn tools() -> Vec<Value> {
         })
     })
     .collect()
+}
+
+/// 剧本里的几个提示词（施工 X-39）：`review`、`hello`，外加一项没有名字的（写法不对，客户端不收）。
+pub fn prompts() -> Vec<Value> {
+    vec![
+        json!({
+            "name": "review",
+            "title": "Review code",
+            "description": "Review a piece of code.",
+            "arguments": [
+                {"name": "code", "description": "The code", "required": true},
+                {"name": "focus", "description": "What to look at"},
+            ],
+        }),
+        json!({"description": "No name."}),
+        json!({"name": "hello"}),
+    ]
 }
 
 /// 演着的假服务：查它收到了什么、演完了没有。
@@ -181,6 +207,8 @@ async fn play(stream: DuplexStream, script: Script, fake: &Fake) {
 struct Stage {
     /// 说过工具变了。
     changed: bool,
+    /// 说过提示词变了（施工 X-39）。
+    prompts_changed: bool,
     /// `ask` 那一次在等客户端回的调用编号。
     asking: Option<Value>,
 }
@@ -218,7 +246,7 @@ impl Stage {
                     &id,
                     Ok(json!({
                         "protocolVersion": script.versions[0],
-                        "capabilities": {"tools": {"listChanged": true}},
+                        "capabilities": capabilities(script),
                         "serverInfo": {"name": "fake", "version": "0"},
                         "instructions": script.instructions,
                     })),
@@ -232,6 +260,10 @@ impl Stage {
         match method {
             "tools/list" => Some(self.list(script, &id, &params)),
             "tools/call" => self.call(script, &id, &params),
+            "prompts/list" if !script.prompts.is_empty() => {
+                Some(self.prompts(script, &id, &params))
+            }
+            "prompts/get" if !script.prompts.is_empty() => Some(vec![prompt(script, &id, &params)]),
             _ => Some(vec![wire::answer(&id, Err((-32601, "Method not found")))]),
         }
     }
@@ -244,7 +276,7 @@ impl Stage {
                     Ok(json!({
                         "resultType": "complete",
                         "supportedVersions": script.versions,
-                        "capabilities": {"tools": {"listChanged": true}},
+                        "capabilities": capabilities(script),
                         "_meta": {"io.modelcontextprotocol/serverInfo": {"name": "fake", "version": "0"}},
                         "instructions": script.instructions,
                     })),
@@ -283,6 +315,37 @@ impl Stage {
         out
     }
 
+    /// `prompts/list`：同工具翻页；第一次列完照剧本说一次提示词变了。
+    fn prompts(&mut self, script: &Script, id: &Value, params: &Value) -> Vec<Vec<u8>> {
+        let start = params
+            .get("cursor")
+            .and_then(Value::as_str)
+            .and_then(|cursor| cursor.parse::<usize>().ok())
+            .unwrap_or(0);
+        let size = match script.page {
+            0 => script.prompts.len(),
+            page => page,
+        };
+        let end = (start + size).min(script.prompts.len());
+        let mut result = json!({"prompts": script.prompts.get(start..end).unwrap_or_default()});
+        if end < script.prompts.len() {
+            result["nextCursor"] = json!(end.to_string());
+        }
+        if let Some(ttl) = script.ttl_ms {
+            result["ttlMs"] = json!(ttl);
+        }
+        let mut out = vec![complete(script, id, result)];
+        if script.change_prompts_after_list && !self.prompts_changed && end >= script.prompts.len()
+        {
+            self.prompts_changed = true;
+            out.push(wire::notice(
+                "notifications/prompts/list_changed",
+                json!({}),
+            ));
+        }
+        out
+    }
+
     fn call(&mut self, script: &Script, id: &Value, params: &Value) -> Option<Vec<Vec<u8>>> {
         let said = params["arguments"]["text"].as_str().unwrap_or_default();
         let result = match params["name"].as_str().unwrap_or_default() {
@@ -308,6 +371,45 @@ impl Stage {
         };
         Some(vec![complete(script, id, result)])
     }
+}
+
+/// 声明的本事：工具，带了提示词的另有 `prompts`（施工 X-39）。
+fn capabilities(script: &Script) -> Value {
+    let mut capabilities = json!({"tools": {"listChanged": true}});
+    if !script.prompts.is_empty() {
+        capabilities["prompts"] = json!({"listChanged": true});
+    }
+    capabilities
+}
+
+/// `prompts/get`：照名字和参数回几条消息；缺必填的、别的名字回 `-32602`。
+fn prompt(script: &Script, id: &Value, params: &Value) -> Vec<u8> {
+    let arguments = &params["arguments"];
+    let said =
+        |role: &str, text: String| json!({"role": role, "content": {"type": "text", "text": text}});
+    let messages = match params["name"].as_str().unwrap_or_default() {
+        "review" => {
+            let Some(code) = arguments["code"].as_str() else {
+                return wire::answer(id, Err((-32602, "Missing required argument: code")));
+            };
+            let focus = arguments["focus"]
+                .as_str()
+                .map(|focus| format!(" for {focus}"))
+                .unwrap_or_default();
+            json!([
+                said("user", format!("Review this code{focus}:\n{code}")),
+                {"role": "user", "content": {"type": "image", "data": "aGk=", "mimeType": "image/png"}},
+                said("assistant", "Sure.".to_string()),
+            ])
+        }
+        "hello" => json!([said("user", "Say hello.".to_string())]),
+        _ => return wire::answer(id, Err((-32602, "Unknown prompt"))),
+    };
+    complete(
+        script,
+        id,
+        json!({"description": "A prompt.", "messages": messages}),
+    )
 }
 
 /// 一段文字的结果。

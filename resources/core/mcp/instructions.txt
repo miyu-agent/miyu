@@ -1,0 +1,3 @@
+<mcp-instructions server="{name}">
+{text}
+</mcp-instructions>

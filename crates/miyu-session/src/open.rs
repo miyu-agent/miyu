@@ -195,16 +195,13 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let pin = preset.as_ref().map(Chosen::pin);
     let foreground = Agents::foreground(preset.as_ref().map(|chosen| &chosen.file));
     let tooled = tooled(&edition.catalog, features);
-    // 扩展这时说过要放在 system 尾部的（施工 X-20）。
-    let appended = crate::appended::resolve(
-        &edition.catalog,
-        &face,
-        &Default::default(),
-        &hooks
-            .as_ref()
-            .map(|port| port.appended(id.as_str()))
-            .unwrap_or_default(),
-    );
+    // 扩展这时说过要放在 system 尾部的（施工 X-20），MCP 服务这时的说明（施工 X-39）。
+    let asked = hooks
+        .as_ref()
+        .map(|port| port.appended(id.as_str()))
+        .unwrap_or_default();
+    let appended =
+        crate::appended::resolve(&edition.catalog, &face, (&Default::default(), &asked), true);
     let roleplay = installed(ROLEPLAY);
     let preset = preset.map(|chosen| chosen.id);
     let asks = Agents::asks(

@@ -636,7 +636,7 @@
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
     "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",
     "package-problems/script_clashed": "スクリプト {detail} は他のツールと同じ名前なので登録されませんでした",
-    "package-problems/mcp_tool_skipped": "MCP サーバーが挙げたツールのうち登録されなかったものがあります：{detail}。name_taken は名前が使われている（短くしたら重なった、またはほかのツールがその名前）、name は名前が使えない、parameters はパラメーターの形式が違う",
+    "package-problems/mcp_tool_skipped": "MCP サーバーが挙げたツールやプロンプトのうち登録されなかったものがあります：{detail}（プロンプトは /名前 と書きます）。name_taken は名前が使われている（短くしたり整えたりしたら重なった、またはほかのツールがその名前）、name は名前が使えない、parameters はパラメーターの形式が違う",
     "package-problems/sandbox_tool_missing": "sandbox.tools.{name} が許可したツールは今ありません。許可されません",
     "package-problems/sandbox_tool_moved": "sandbox.tools.{name} の出どころは {wrote} ですが、今のツールは {now} から来ています。許可されません。正しければ {now} に書き換えてください",
     "package-problems/sandbox_tool_linked": "sandbox.tools.{name} が許可したツールのファイルは Miyu が管理できる場所の外にあります（実際の場所 {real}）。許可されません：リンクやリンクになっているフォルダーは、彼女が変更できる場所を指せます。許可するには、実ファイルをホームフォルダーの scripts/ に戻すか、パッケージとしてインストールしてください",

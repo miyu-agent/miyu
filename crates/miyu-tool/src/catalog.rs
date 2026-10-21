@@ -41,6 +41,13 @@ pub fn mcp_prefix(service: &str) -> String {
     format!("{MCP_PREFIX}{service}__")
 }
 
+/// MCP 工具名 `name` 是哪个服务的（施工 X-39）：`mcp__<服务名>__<工具名>` 的服务名；不是这个样子的没有。服务名里没有 `_`
+/// （只有小写字母、数字、`-`），照第一个 `__` 切得开。
+pub fn mcp_service(name: &str) -> Option<&str> {
+    let (service, _) = name.strip_prefix(MCP_PREFIX)?.split_once("__")?;
+    (!service.is_empty()).then_some(service)
+}
+
 /// 一件工具登记不上：是哪一件，哪一条没过。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogError {

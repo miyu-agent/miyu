@@ -32,10 +32,15 @@ pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn HooksPort> {
 struct Hooks(Weak<Core>);
 
 impl HooksPort for Hooks {
+    /// 扩展经 `system.append` 放的（施工 X-20），加 MCP 服务这时的说明（施工 X-39，键是 `mcp:<服务名>`）。
     fn appended(&self, session: &str) -> BTreeMap<String, Option<String>> {
         self.0
             .upgrade()
-            .map(|core| core.appends.of(session))
+            .map(|core| {
+                let mut appended = core.appends.of(session);
+                appended.extend(crate::mcp::instructions::appended(&core));
+                appended
+            })
             .unwrap_or_default()
     }
 

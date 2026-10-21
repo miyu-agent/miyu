@@ -636,7 +636,7 @@
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
     "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
     "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
-    "package-problems/mcp_tool_skipped": "MCP 服务列出来的工具有几件没登记上：{detail}。name_taken 是名字被占了（截短以后撞了，或者别的工具已经叫这个），name 是名字不合写法，parameters 是参数格式不对",
+    "package-problems/mcp_tool_skipped": "MCP 服务列出来的工具、提示词有几件没登记上：{detail}（提示词写成 /名字）。name_taken 是名字被占了（截短、清理以后撞了，或者别的工具已经叫这个），name 是名字不合写法，parameters 是参数格式不对",
     "package-problems/sandbox_tool_missing": "sandbox.tools.{name} 放行的工具现在没有，不算放行",
     "package-problems/sandbox_tool_moved": "sandbox.tools.{name} 写的来处是 {wrote}，这件工具现在来自 {now}，不算放行；没错的话改成 {now}",
     "package-problems/sandbox_tool_linked": "sandbox.tools.{name} 放行的工具，它的文件不在 Miyu 管得住的地方（真实位置 {real}），不算放行：链接、所在的目录是链接，都能指到她改得了的地方；要放行请把真文件放回家目录的 scripts/ 或装成包",

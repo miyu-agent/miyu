@@ -158,9 +158,10 @@ fn look(
     };
     let reprojected = projected != old.project;
     // 扩展说的和钉的不一样（施工 X-20）：这一轮要换。
-    let said = asked
-        .iter()
-        .any(|(package, text)| old.appended.get(package) != text.as_ref());
+    // 只看扩展放的：MCP 服务的说明跟着工具面变（施工 X-39），说明自己变了不算。
+    let said = asked.iter().any(|(key, text)| {
+        crate::appended::from_extension(key) && old.appended.get(key) != text.as_ref()
+    });
     // 无人格的（施工 P-4 上）只看预设；人格的文件没了的照快照里的接着用，不换也不报。人换了人格的照新的（施工 P-13）。
     let (name, texts) = match (&wanted.persona, &old.persona, &old.persona_digest) {
         (Some(to), _, _) => match recast::texts(refresh, to.as_deref()) {
@@ -261,7 +262,12 @@ fn look(
         Some(fresh) => reshelved(face, fresh),
         None => face,
     };
-    let appended = crate::appended::resolve(catalog, &face, &old.appended, &asked);
+    let refaced = face.len() != old.tools.len()
+        || face
+            .iter()
+            .zip(&old.tools)
+            .any(|(now, was)| now.name != was.name);
+    let appended = crate::appended::resolve(catalog, &face, (&old.appended, &asked), refaced);
     let reappended = appended != old.appended;
     let parts = Parts {
         name,

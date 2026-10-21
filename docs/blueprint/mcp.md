@@ -28,6 +28,8 @@ MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP
 | `crates/miyu-endpoint/src/mcp.rs` | 服务的表：一个服务一格（状态、连着的客户端、看管的任务）；核心起来时起开着的 `bundle` 的服务、停时一起关；装卸时跟着停、起；包的状态照它的服务合起来算（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/launch.rs` | 怎么起一个：程序照命令第一项找（「怎么走」第二条第 2 条）、环境变量取出引用的、工作目录、标准错误的文件（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/supervise.rs` | 看管一个：起、认时代、列、登记、等退出或叫停；工具变了再列；退避着重启、停下（施工 X-3 上） |
+| `crates/miyu-mcp/src/prompt.rs`、`crates/miyu-endpoint/src/mcp/prompts.rs`、`src/commands/prompts.rs` | 提示词（施工 X-39）：适配器读 `prompts/list` 的一项、`prompts/get` 的消息（`Client::prompts`、`Client::prompt`，`offers_prompts` 看本事）；端点清理成命令名、撞名的进 `skipped`、取回来的照工具结果换块；斜杠命令那一头的菜单和 `command.run` |
+| `crates/miyu-endpoint/src/mcp/instructions.rs` | 服务的说明拼成 system 尾部的一段（施工 X-39）：外壳、截到 `APPEND_MAX`、结束标签转掉；`hooks.rs` 的 `appended` 照它和扩展放的一起交给会话，会话照工具面挑（`miyu-session` 的 `appended.rs`） |
 | `crates/miyu-endpoint/src/mcp/spec.rs` | 列出来的换成目录里的工具：名字、说明、访问类别、给哪种会话；查不过的那一件不登记（施工 X-3 上），交回没登记的几件，列完的记进看管那一格（施工 X-37） |
 | `crates/miyu-endpoint/src/mcp/tool.rs` | 一件 MCP 工具（`Tool` 的实现）：照这时连着的客户端调，时限、暂时不可用、出错（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/content.rs` | 回来的内容换成结果块、截断（施工 X-3 上） |
@@ -123,6 +125,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 2. 服务发 `notifications/tools/list_changed`（旧时代），或者新时代的 `ttlMs` 过了、下一次要用它时：重新列，变了换掉这个服务的那几件、写缓存。开着的会话下一个回合换工具面（`30-插件框架.md` 第九节），不在回合中间换。
 3. 关掉（包的开关关掉、卸包、个人设置里删掉）：它的工具出目录，进程停掉。预设里关掉只管那个会话的工具面（整个关掉 `[features] mcp-<服务名> = false`，单件关掉 `[tools]`），不停进程：服务一个核心一份、所有会话共用，别的会话的预设可能开着它（施工 X-4 更正，原来写的是预设里关也停进程）。
 4. **没登记的给人看**（施工 X-37：原来只在运行日志里记一行，人只会发现工具少了）：这一次列出来却没登记的，照原名排记在看管那一格。为什么三种：`name`（没写名字）、`parameters`（参数格式不是对象：列的时候就不收的，和登记时查出 `type` 不是 `object` 的）、`name_taken`（名字被占了：截到 64 个字以后和同一个服务的撞了，或者别的包、自带的工具已经叫这个）。`mcp.list` 的一项、软件包列表上服务那一格带 `skipped: [{"tool", "why"}]`（`tool` 是服务那边的原名，没写名字的是空的），没有的不写；`miyu check` 一个服务有没登记的报一条警告 `mcp_tool_skipped`，说哪几件、为什么，个人设置里的报在个人设置上，包带的报在那个包的清单上。只说这一次列出来的：照缓存先登记的那一回不记，每次列完照新的换；停下了的留着上一次列的（它的工具也留在目录里，第二条第 4 条）。
+5. **服务的说明**（施工 X-39，2026-10-21 项目主人定重开）：连上以后服务交的 `instructions`（新时代在 `server/discover` 的回应里，旧时代在 `initialize` 的回应里，空白的当没有）记在看管那一格、写进目录缓存（多一格 `instructions`，以前的缓存没有照样认得），照缓存先登记的那一回也有。照扩展经 `system.append` 放的那几段走（`26-提示词.md` 第四节第 8 块）：一个服务一段，键是 `mcp:<服务名>`（包的编号里没有 `:`），核心的外壳 `core/mcp/instructions.txt` 圈着服务的原文（`<mcp-instructions server="…">`）；原文截到 4000 个字符（`APPEND_MAX`，按字符），原文里出现外壳的结束标签的，那一处的 `<` 写成 `\u003c`（同技能列表的转义），别的照原样。工具面上有这个服务的工具（先加载的也算）的会话才带；只跟工具面一起变：工具面变了的那一轮照这一刻的说明换，没变的照快照里钉的，服务升级换了说明原文也不读（appended 在 system 里，变了整个前缀的缓存都断）。Claude Code 同样把服务的说明放进 system（每个截到 4096 个字），工具先加载以后她照它知道什么时候去拿这个服务的工具。
 
 **四、调用**
 
@@ -140,6 +143,14 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 4. **不另开 GET 的长连接**：服务主动推的只在 SSE 回应里收得到；工具变了靠新时代的 `ttlMs`、重连时重列。
 5. **`http://` 只给本机地址**（`miyu_http::is_loopback_url`）：别的机器的不连，令牌一个字节都不发出去，日志里写 `http:// is only for this machine, use https://`，记成停下 `cannot_start`。日志里一律不写网址：有的服务把密钥放在网址的查询串里。本机地址不走代理，别的照环境变量（同下载软件包）。
 6. **状态**：没有进程号（`State::Running`、`Starting` 的 `pid` 是空的），`mcp.list`、软件包列表上不带 `pid`；带 `url`，不带 `command`。
+
+**六、提示词**（施工 X-39，2026-10-21 项目主人定重开，`slash.md`「是什么」第三种）
+
+1. **列**：服务的本事里声明了 `prompts` 的（新时代看 `server/discover` 的回应，旧时代看 `initialize` 的回应），列完工具接着 `prompts/list`（照 `nextCursor` 翻页）；跟着工具一起再列（服务说工具或者提示词变了，适配器数成同一个；`ttlMs` 照工具的）。列不出来的记一行 `WARN mcp prompts not listed`，照没有算，不拖垮工具。不进目录缓存：服务不在时提示词也取不了。没有名字、参数没有名字的那一项不收（适配器那一层，名字照原样交上来）。
+2. **名字**：`<服务名>:<提示词名>`，恰好一个 `:`（两个头的斜杠菜单照这个形状认）。提示词名照工具名的办法清理：不合 `[A-Za-z0-9_-]` 的字（空白、斜杠、`:`）换成 `_`，整个超过 64 个字符的截到 64 个；清理以后撞了同一个服务前面那个的不登记，记一行 `WARN mcp prompt skipped`，进看管那一格的 `skipped`（`{"prompt", "why": "name_taken"}`，第三条第 4 条）。取的时候照原名问服务。
+3. **菜单、跑**：`command.catalog` 列在跑的服务的（`protocol` 参考 `packages`）；`command.run` 名字里有 `:` 的照它跑（`commands/prompts.rs`）：只在本机的会话里认（服务默认只给本机，通讯平台那边也没有菜单），谁能用同模板，预设跟着服务的功能 `mcp-<服务名>`，不另设功能；人跟的字照空白切开、照声明的先后对上，最后一个参数拿剩下的整段，没声明参数的接在末尾；缺必填的 `command_failed`、说缺哪几个。照服务的 `timeout_ms` 等 `prompts/get`。
+4. **取回来的**：`messages` 照工具结果的规矩换成块（第四条第 3、4 款：文字照原文、太长的截、四种图存成会话属主的 blob、声音和二进制的资源写一行），`assistant` 的照原文并进来、前面不另加标记（会丢掉谁说的，Claude Code 也是这么并的），并成这个人说的一句，之后同模板命令（`message.user` 带 `command`，时间线上是人敲的那一行）。
+5. **出错**：服务不在跑、没列出这一个的 `command_unavailable`；服务回错（`-32602` 这类）、回 `input_required`、到时没答的 `command_failed`，`data.why` 照原话；没有这个服务的 `unknown_command`。
 
 ### 出错
 
@@ -168,6 +179,8 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-endpoint/tests/mcp_settings.rs` | 个人设置里的服务（施工 F-9）：`miyu check` 报写错的、被盖住的，`[mcp.<名字>]` 不算不认识的键；真起测试用的服务：写了就起、调到的是它、包里同名的不起、那个包照关着算、预设里一个功能；手改个人设置当场换：新写的起、包里同名的停，改了的照新写的重起，删掉的停、包里的照开关起回来 |
 | `crates/miyu-endpoint/tests/mcp_settings_status.rs` | 头上的状态（施工 F-9 补）：被盖住的服务、全被盖住的包带 `covered`；`mcp.list` 列状态和盖住了谁，`mcp.restart` 换一个进程、失败从零数，没有的拒；订阅的连接收 `mcp.changed`，删掉的 `server` 是 `null`，不推叫 `~home` 的包 |
 | `crates/miyu-endpoint/tests/mcp_skipped.rs`（施工 X-37） | 测试用的服务列几件登记不上的（没名字、没参数格式、参数不是对象、截断以后撞名）：软件包列表上那一格、`mcp.list` 带 `skipped`，照原名排，都登记上了的不写；`miyu check` 一个服务一条 `mcp_tool_skipped`，个人设置里的、包带的各报在自己的文件上；核心重启以后服务起不来、照缓存登记的不带 |
+| `crates/miyu-endpoint/tests/mcp_instructions.rs`、`src/mcp/instructions/tests.rs`、`crates/miyu-session/src/appended/tests.rs`、`src/mcp/cache/tests.rs` 的 `an_older_cache_without_instructions_still_reads`（施工 X-39） | 服务的说明在 system 的最后、外壳带服务名、伪造的结束标签转掉、截到上限；工具面没变时换了说明原文，请求的 system 逐字节不变，工具面变了的那一轮换上；照缓存先登记的会话里也有；以前的缓存没有说明那一格照样认得；MCP 工具照服务带那一段，扩展放的照旧照说的 |
+| `crates/miyu-mcp/tests/prompts.rs`、`src/prompt/tests.rs`、`crates/miyu-endpoint/tests/mcp_prompts.rs`、`src/mcp/prompts/tests.rs`、`src/commands/prompts/tests.rs`（施工 X-39） | 声明了 `prompts` 的才认，翻页列全、`ttlMs`，旧时代握手里的也认，提示词变了和工具变了同一个数；取回来的照 `role` 收；命令名恰好一个 `:`、清理、截到 64、撞名的进 `skipped`；参数照先后对上、最后一个拿剩下的、缺必填的说缺哪几个；真核心：菜单列出、参数拼好，跑出来的字和图并成一句、她说的照原文并进来、时间线是人敲的那一行，缺参数、服务回错的 `command_failed`，没列出的 `command_unavailable`，没有的服务 `unknown_command`，服务停了不列，预设关了服务的拒 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_moves_the_source_to_the_setting_and_the_next_face`（施工 X-27） | `mcp.list` 的 `need_load` 照 `loading.mcp.<服务名>` 从 `source` 变 `setting`，`on` 照 `features.mcp-<服务名>` |
 | `crates/miyu-endpoint/tests/page_extras.rs`（施工 X-27 补） | 软件包列表上包带的服务带 `need_load`、`on`，改了跟着变；`mcp.list` 带回原来写的 `env`、`timeout_ms`，照它存回去个人设置一个字不变，没写的不带 |
 | `crates/miyu-endpoint/tests/mcp_edit.rs`、`src/mcp/written/tests.rs` | 头改个人设置里的服务（施工 X-26）：`mcp.set` 加上、整条换掉，别的字不动、正在跑的照新写的换；写错的、随包来的拒、什么都不写；`mcp.remove` 删掉、没有的拒；`mcp.list` 起好列完的、照缓存登记的带 `tools`，不知道的不带；表写成点号、行内表、子表的照样换、删，`mcp` 写成放不下的样子的不改；网址的服务（施工 X-32 下，`tests/mcp_url.rs`）经 `mcp.set` 写进去、连上，`mcp.list` 照写的交回 `url`、`bearer`、`headers`，原样交回一字不变；混写的、留给核心的头拒 `mcp_invalid`，有参数没程序的拒 `bad_params` |
@@ -196,7 +209,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 - 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`[[mcp]]`、个人设置的服务写 `clicall` 的照它，这个服务的工具都算；没写的能，写 `false`、`"no"` 不能（写法同 `need_load`）。个人设置的 `clicall.mcp.<服务名>` 盖过它，单件工具的 `clicall.tools.<工具名>` 再盖过服务那一项。只改这一格也算改了，那个服务照旧重起。工具交回的 `structuredContent` 不管有没有文字都原样交给脚本（`Done.data`），出错的不交。`mcp.set` 没交 `clicall` 的照原来写的 `clicall = false` 留着：网页的编辑页还不认这一格，编辑一次别的格不会把它丢了。
 
 - 网址的服务要浏览器登录的（OAuth）：推迟到有一个真要它的服务（2026-10-20 项目主人定）；令牌、请求头那一种施工 X-32 上做了。
-- 服务的 `instructions`、资源（`resources/*`）、提示词（`prompts/*`）、Tasks 扩展、MCP Apps：都先不接。
+- 资源（`resources/*`）、补全参数（`completion/complete`）、Tasks 扩展、MCP Apps：都先不接。服务的 `instructions`、提示词施工 X-39 接了（「怎么走」第三条第 5 条、第六条，2026-10-21 项目主人定重开）。
 - 每个账号各一份服务进程（`24-威胁模型.md`）：等多用户那一段。
 
 ### 施工时定的（主会话，技术题照推荐）

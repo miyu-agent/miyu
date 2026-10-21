@@ -239,7 +239,8 @@ async fn read<R: AsyncRead + Unpin>(
                 }
             }
             Incoming::Notice(method, _) => match method.as_str() {
-                "notifications/tools/list_changed" => {
+                // 工具、提示词（施工 X-39）变了数同一个：变了就都再列一次。
+                "notifications/tools/list_changed" | "notifications/prompts/list_changed" => {
                     shared.changes.send_modify(|count| *count += 1);
                 }
                 _ => tracing::trace!(target: TARGET, method = method.as_str(), "MCP notice"),

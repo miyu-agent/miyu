@@ -67,11 +67,16 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 - In presets each server is one feature (`mcp-<server>`): switch it off whole, or tool by tool.
 - **Whether people are asked**: tools annotated `readOnlyHint: true` are never asked about; the rest are treated like network access and need approval at the "workspace" level. If you write servers, mark read-only tools.
 
+## Server instructions and prompts
+
+- **Instructions** (`instructions`): the text your server gives goes at the end of the AI's system prompt, one section per server with its name, up to 4000 characters. Only servers whose tools are in that session get one. Say when your tools should be used: tools often show only their name and one line at first, and the AI uses your instructions to decide when to fetch the full tool. Instructions that change mid-session take effect on the next turn where the tools change (so the cache isn't broken every turn).
+- **Prompts** (`prompts`): they become slash commands `/<server>:<prompt>`, shown in the command menu. The words a person types after the name are split on whitespace and matched to your declared arguments in order, the last argument taking the rest; the text and images that come back are sent to the AI as that person's message. Characters outside `[A-Za-z0-9_-]` in a name become `_`; a name that clashes after that isn't registered, and `miyu check` says so. Only usable in local sessions.
+
 ## While running
 
 - The working directory is `~/.miyu/state/mcp/<server>/`, outside the sandbox; stderr goes to `~/.miyu/state/logs/mcp-<server>.stderr`. Look there first when it won't start.
 - Servers that fail to start or crash are retried with backoff and stopped after 5 failures in a row; the Packages page shows the reason and the last lines of stderr, and restarting tries again.
-- Both old and new MCP versions are understood. Only tools are used: resources, prompts, `sampling` and the like aren't.
+- Both old and new MCP versions are understood. Tools, the server's instructions and its prompts are used; resources, `sampling` and the like aren't.
 - Miyu doesn't install Node or Python for people: for servers started with `npx` or `uvx`, say what must be installed first.
 
 ## Same name in personal settings and a package

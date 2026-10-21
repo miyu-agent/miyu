@@ -68,6 +68,7 @@ pub mod unsandboxed;
 mod usage;
 
 pub use agents::job_in;
+pub use appended::mcp_key;
 pub use backlog::Backlog;
 pub use clock::new_id;
 pub use config::{ConfigSource, Configs, Turn, TurnConfig, fixed, fixed_with};

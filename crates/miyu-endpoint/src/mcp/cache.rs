@@ -25,6 +25,20 @@ struct Cached {
     era: Era,
     /// 每件工具的原文。
     tools: Vec<Value>,
+    /// 服务给模型的说明（施工 X-39）：没给的不写，以前的缓存没有这一格照样认得。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    instructions: Option<String>,
+}
+
+/// 缓存里记着的（施工 X-39 起多了说明）。
+#[derive(Debug, PartialEq)]
+pub(super) struct Remembered {
+    /// 认出来的时代和版本。
+    pub(super) era: Era,
+    /// 读得成的工具。
+    pub(super) tools: Vec<Tool>,
+    /// 服务给模型的说明，没给的没有。
+    pub(super) instructions: Option<String>,
 }
 
 /// 服务 `service` 的缓存在哪。
@@ -64,14 +78,20 @@ fn key(server: &McpServer) -> (Vec<String>, Vec<String>) {
     }
 }
 
-/// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`。
-pub(super) fn write(core: &Core, server: &McpServer, era: &Era, tools: &[Tool]) {
+/// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`、给模型的说明 `instructions`（施工 X-39）。
+pub(super) fn write(
+    core: &Core,
+    server: &McpServer,
+    era: &Era,
+    (tools, instructions): (&[Tool], Option<&str>),
+) {
     let (command, env) = key(server);
     let cached = Cached {
         command,
         env,
         era: era.clone(),
         tools: tools.iter().map(|tool| tool.raw.clone()).collect(),
+        instructions: instructions.map(str::to_string),
     };
     let path = path(core, &server.name);
     let written = serde_json::to_vec_pretty(&cached)
@@ -82,14 +102,14 @@ pub(super) fn write(core: &Core, server: &McpServer, era: &Era, tools: &[Tool]) 
     }
 }
 
-/// 服务 `server` 的缓存：命令、环境变量的写法和它记着的一样才算，交回时代和工具（读不成的那一件不要）。没有的、对不上的
+/// 服务 `server` 的缓存：命令、环境变量的写法和它记着的一样才算，交回时代、工具（读不成的那一件不要）、说明。没有的、对不上的
 /// 没有；读不成的记一行。
-pub(super) fn read(core: &Core, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
+pub(super) fn read(core: &Core, server: &McpServer) -> Option<Remembered> {
     read_at(&path(core, &server.name), server)
 }
 
 /// 同 [`read`]，缓存在 `path`。
-fn read_at(path: &Path, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
+fn read_at(path: &Path, server: &McpServer) -> Option<Remembered> {
     let bytes = match std::fs::read(path) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return None,
@@ -114,7 +134,11 @@ fn read_at(path: &Path, server: &McpServer) -> Option<(Era, Vec<Tool>)> {
         .iter()
         .filter_map(|raw| Tool::read(raw).ok())
         .collect();
-    Some((cached.era, tools))
+    Some(Remembered {
+        era: cached.era,
+        tools,
+        instructions: cached.instructions,
+    })
 }
 
 /// 卸包时清掉服务 `service` 的缓存和工作目录（施工 X-3 下：卸就是清干净）。本来就没有的不算错，删不成的记一行。

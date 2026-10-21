@@ -12,9 +12,12 @@ mod cache;
 mod content;
 pub(crate) mod editing;
 pub(crate) mod home;
+pub(crate) mod instructions;
 mod launch;
 pub(crate) mod methods;
+pub(crate) mod prompts;
 mod secrets;
+mod skipped;
 mod spec;
 mod supervise;
 mod switch;
@@ -24,6 +27,8 @@ mod written;
 pub(crate) use cache::forget;
 pub(crate) use home::HomeMcp;
 pub(crate) use launch::stderr_file;
+pub(crate) use prompts::Prompts;
+pub(crate) use skipped::Skipped;
 pub(crate) use switch::{turn_off, turn_on};
 
 use std::collections::BTreeMap;
@@ -62,25 +67,10 @@ pub(crate) struct Shared {
     relist: Notify,
     /// 这一次列出来却没登记的（施工 X-37）：照目录缓存先登记的那一回不算，每次列完照新的换。
     skipped: Mutex<Vec<Skipped>>,
-}
-
-/// 列出来却没登记的一件工具（施工 X-37）：服务那边的原名（没写名字的是空的），和为什么（`name_taken` 名字被占了：截短以后撞了，
-/// 或者别的工具已经叫这个；`name` 没写名字、名字不合写法；`parameters` 参数格式不对）。
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Skipped {
-    pub(crate) tool: String,
-    pub(crate) why: &'static str,
-}
-
-impl Skipped {
-    /// 列的时候就认不出来的那一项。
-    fn unread(unread: &miyu_mcp::Unread) -> Skipped {
-        let (tool, why) = match unread {
-            miyu_mcp::Unread::Nameless(_) => (String::new(), "name"),
-            miyu_mcp::Unread::Parameters(name) => (name.clone(), "parameters"),
-        };
-        Skipped { tool, why }
-    }
+    /// 服务给模型的说明（施工 X-39）：照缓存先登记时照缓存的，列完照这一次连上交的换。
+    instructions: Mutex<Option<String>>,
+    /// 登记成斜杠命令的提示词（施工 X-39）：每次列完照新的换，不进缓存。
+    prompts: Mutex<Vec<prompts::Offered>>,
 }
 
 impl Shared {
@@ -96,7 +86,31 @@ impl Shared {
             stale_at: Mutex::new(None),
             relist: Notify::new(),
             skipped: Mutex::new(Vec::new()),
+            instructions: Mutex::new(None),
+            prompts: Mutex::new(Vec::new()),
         }
+    }
+
+    /// 换上服务这时给模型的说明（施工 X-39）：空白的当没有。
+    fn set_instructions(&self, instructions: Option<&str>) {
+        let instructions = instructions.filter(|text| !text.trim().is_empty());
+        *self
+            .instructions
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = instructions.map(str::to_string);
+    }
+
+    /// 服务这时给模型的说明。
+    fn instructions(&self) -> Option<String> {
+        self.instructions
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// 换上这一次列完登记成斜杠命令的提示词（施工 X-39）。
+    fn set_prompts(&self, offered: Vec<prompts::Offered>) {
+        *self.prompts.lock().unwrap_or_else(PoisonError::into_inner) = offered;
     }
 
     /// 换上这一次列完没登记的。
@@ -191,6 +205,39 @@ impl Servers {
             .any(|slot| slot.shared.get().state.busy())
     }
 
+    /// 在跑的服务登记成斜杠命令的提示词（施工 X-39）：包的编号、服务名、和它的客户端，照包、服务排。没在跑的不列：服务不在时
+    /// 提示词也取不了。
+    pub(crate) fn prompts(&self) -> Vec<Prompts> {
+        self.slots()
+            .iter()
+            .filter_map(|((package, service), slot)| {
+                let offered = slot
+                    .shared
+                    .prompts
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .clone();
+                if offered.is_empty() || !matches!(slot.shared.get().state, State::Running { .. }) {
+                    return None;
+                }
+                Some(Prompts {
+                    package: package.clone(),
+                    service: service.clone(),
+                    client: slot.shared.client()?,
+                    offered,
+                })
+            })
+            .collect()
+    }
+
+    /// 交了说明的服务和它的说明（施工 X-39，`instructions.rs` 照它拼 system 尾部的那几段）：照服务名排。
+    pub(crate) fn instructions(&self) -> Vec<(String, String)> {
+        self.slots()
+            .iter()
+            .filter_map(|((_, service), slot)| Some((service.clone(), slot.shared.instructions()?)))
+            .collect()
+    }
+
     /// 包 `package` 的服务 `service` 这一次列完没登记的（施工 X-37）：没起过的没有。
     pub(crate) fn skipped(&self, package: &str, service: &str) -> Vec<Skipped> {
         let key = (package.to_string(), service.to_string());
@@ -277,8 +324,14 @@ impl Servers {
         let mut plan = launch::plan(core, package, server, dir);
         // 照缓存先登记（施工 X-3 下）：服务好以前调到的说暂时不可用；连的时候照记着的时代直接说。没登记的不记（施工 X-37）：
         // 只说这一次列出来的。
-        if let Some((era, tools)) = cache::read(core, server) {
+        if let Some(cache::Remembered {
+            era,
+            tools,
+            instructions,
+        }) = cache::read(core, server)
+        {
             spec::register(core, package, server, &tools, &slot.shared);
+            slot.shared.set_instructions(instructions.as_deref());
             plan.known = Some(era);
         }
         // 任务跑起来之前就算在干活：刚起的那一瞬间核心不算空闲。

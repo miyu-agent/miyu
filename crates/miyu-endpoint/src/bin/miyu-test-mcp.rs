@@ -7,6 +7,10 @@
 //! - `record:<路径>`：收到的每一行原样追加进这个文件，读到头了再记一行 `eof`；
 //! - `changed`：第一次列完以后说一次工具变了，再列时多一件 `later`；
 //! - `ttl:<毫秒>`：列的结果带 `ttlMs`（新时代），再列时多一件 `later`；
+//! - `instructions:<字>`：探、握手的回应里交这段给模型的说明（施工 X-39）；
+//! - `instructions-file:<路径>`：同上，起来的时候从这个文件读（没有的不交），测试改了文件、重启服务就换了说明；
+//! - `prompts`：本事里声明 `prompts`（施工 X-39）：`review`（`code` 必填、`focus` 可选）回一句字、一张图、她说的一句；`hello` 不要
+//!   参数，回一句；`two words` 和 `two_words` 清理以后撞名（后一个不登记）。缺必填的、不认识的名字回 `-32602`；
 //! - `odd`：列的时候多几件登记不上的（施工 X-37）：没写参数格式的 `loose`、参数格式不是对象的 `stringly`、截到 64 个字以后
 //!   撞名的 `long-x…x-one`、`long-x…x-two`（60 个 `x`），和一件没写名字的；
 //! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
@@ -49,6 +53,8 @@ fn main() {
     let mut changed = false;
     let mut ttl: Option<u64> = None;
     let mut odd = false;
+    let mut instructions: Option<String> = None;
+    let mut prompts = false;
     for arg in std::env::args().skip(1) {
         if arg == "legacy" {
             legacy = true;
@@ -63,6 +69,12 @@ fn main() {
             changed = true;
         } else if arg == "odd" {
             odd = true;
+        } else if arg == "prompts" {
+            prompts = true;
+        } else if let Some(text) = arg.strip_prefix("instructions:") {
+            instructions = Some(text.to_string());
+        } else if let Some(path) = arg.strip_prefix("instructions-file:") {
+            instructions = std::fs::read_to_string(path).ok();
         } else if let Some(ms) = arg.strip_prefix("ttl:") {
             ttl = Some(ms.parse().expect("毫秒是数"));
         } else if let Some(path) = arg.strip_prefix("exit-if:") {
@@ -96,11 +108,13 @@ fn main() {
             "server/discover" => Ok(json!({
                 "resultType": "complete",
                 "supportedVersions": ["2026-07-28"],
-                "capabilities": {"tools": {"listChanged": true}},
+                "capabilities": capabilities(prompts),
+                "instructions": instructions,
             })),
             "initialize" if legacy => Ok(json!({
                 "protocolVersion": "2025-11-25",
-                "capabilities": {"tools": {"listChanged": true}},
+                "capabilities": capabilities(prompts),
+                "instructions": instructions,
                 "serverInfo": {"name": "miyu-test-mcp", "version": "0"},
             })),
             "tools/list" => {
@@ -123,6 +137,8 @@ fn main() {
                 Some(result) => result,
                 None => continue,
             },
+            "prompts/list" if prompts => Ok(json!({"prompts": listed_prompts()})),
+            "prompts/get" if prompts => prompt(&message["params"]),
             _ => Err((-32601, "Method not found")),
         };
         let reply = match answer {
@@ -163,6 +179,53 @@ fn tool(name: &str) -> Value {
         tool["title"] = json!("Echo back");
     }
     tool
+}
+
+/// 声明的本事：工具，带了 `prompts` 的另有提示词（施工 X-39）。
+fn capabilities(prompts: bool) -> Value {
+    let mut capabilities = json!({"tools": {"listChanged": true}});
+    if prompts {
+        capabilities["prompts"] = json!({"listChanged": true});
+    }
+    capabilities
+}
+
+/// `prompts` 列的几个（施工 X-39）。
+fn listed_prompts() -> Value {
+    json!([
+        {"name": "review", "title": "Review code", "description": "Review a piece of code.",
+         "arguments": [{"name": "code", "required": true}, {"name": "focus"}]},
+        {"name": "hello", "description": "Say hello."},
+        {"name": "two words"},
+        {"name": "two_words"},
+    ])
+}
+
+/// `prompts/get`（施工 X-39）。
+fn prompt(params: &Value) -> Result<Value, (i64, &'static str)> {
+    let arguments = &params["arguments"];
+    let said =
+        |role: &str, text: String| json!({"role": role, "content": {"type": "text", "text": text}});
+    let messages = match params["name"].as_str().unwrap_or_default() {
+        "review" => {
+            let Some(code) = arguments["code"].as_str() else {
+                return Err((-32602, "Missing required argument: code"));
+            };
+            let focus = arguments["focus"]
+                .as_str()
+                .map(|focus| format!(" for {focus}"))
+                .unwrap_or_default();
+            json!([
+                said("user", format!("Review this code{focus}:\n{code}")),
+                {"role": "user", "content": {"type": "image", "data": PNG, "mimeType": "image/png"}},
+                said("assistant", "Sure.".to_string()),
+            ])
+        }
+        "hello" => json!([said("user", "Say hello.".to_string())]),
+        "two words" => json!([said("user", "Two.".to_string())]),
+        _ => return Err((-32602, "Unknown prompt")),
+    };
+    Ok(json!({"messages": messages}))
 }
 
 /// `odd` 多列的几件（施工 X-37）：都登记不上。

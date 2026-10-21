@@ -82,13 +82,17 @@ fn one(core: &Core, server: &McpServer) -> Value {
     one
 }
 
-/// 这一次列完没登记的（施工 X-37）：`skipped: [{"tool", "why"}]`，没有的不写这一格。软件包列表上包带的服务同样。
+/// 这一次列完没登记的（施工 X-37）：`skipped: [{"tool", "why"}]`，提示词是 `{"prompt", "why"}`（施工 X-39），没有的不写这一格。
+/// 软件包列表上包带的服务同样。
 pub(crate) fn skipped(core: &Core, package: &str, service: &str, one: &mut Value) {
     let skipped = core.mcp.skipped(package, service);
     if !skipped.is_empty() {
         one["skipped"] = skipped
             .iter()
-            .map(|skipped| json!({"tool": skipped.tool, "why": skipped.why}))
+            .map(|skipped| match skipped.prompt {
+                true => json!({"prompt": skipped.name, "why": skipped.why}),
+                false => json!({"tool": skipped.name, "why": skipped.why}),
+            })
             .collect();
     }
 }

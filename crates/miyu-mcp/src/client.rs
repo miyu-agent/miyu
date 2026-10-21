@@ -4,6 +4,7 @@
 //! `-32022`）的是新时代，每个请求在 `_meta` 里带版本、自己是谁、本事；答了别的错、限定时间里没答的是旧时代，退回
 //! `initialize` 握手。MCP 规范留给规范自己用的错误码（`-32099` 到 `-32020`）算新时代的错：照它报，不退回。
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,7 @@ use tokio::sync::watch;
 use crate::content::{Called, Listed, Tool};
 use crate::error::Failed;
 use crate::link::Link;
+use crate::prompt::{Message, Prompt, Prompts};
 use crate::{LEGACY, MODERN};
 
 /// 版本不对（新时代的 `UnsupportedProtocolVersionError`）。
@@ -70,6 +72,8 @@ pub struct Client {
     hello: Hello,
     waits: Waits,
     instructions: Option<String>,
+    /// 服务声明了提示词（施工 X-39）。
+    prompts: bool,
 }
 
 impl Client {
@@ -97,6 +101,7 @@ impl Client {
             hello,
             waits,
             instructions: None,
+            prompts: false,
         };
         let legacy_first = matches!(known, Some(Era::Legacy(_)));
         if !legacy_first || client.shake().await.is_err() {
@@ -113,6 +118,11 @@ impl Client {
     /// 服务给模型的说明（`instructions`），没给的没有。
     pub fn instructions(&self) -> Option<&str> {
         self.instructions.as_deref()
+    }
+
+    /// 服务在本事里声明了提示词（`prompts`，施工 X-39）：声明了的才列。
+    pub fn offers_prompts(&self) -> bool {
+        self.prompts
     }
 
     /// 列全工具（`tools/list`，照 `nextCursor` 翻页）。写法不对的那几项不收，记在 [`Listed::skipped`]。
@@ -158,6 +168,71 @@ impl Client {
         Err(Failed::Malformed(format!(
             "tools/list went past {MOST_PAGES} pages"
         )))
+    }
+
+    /// 列全提示词（`prompts/list`，照 `nextCursor` 翻页，施工 X-39）。写法不对的那几项不收，记在 [`Prompts::skipped`]。
+    ///
+    /// # Errors
+    ///
+    /// 断了、等不到、服务报错、回的写法不对。
+    pub async fn prompts(&self) -> Result<Prompts, Failed> {
+        let mut listed = Prompts {
+            prompts: Vec::new(),
+            skipped: Vec::new(),
+            fresh_for: None,
+        };
+        let mut cursor: Option<String> = None;
+        for page in 0..MOST_PAGES {
+            let mut params = Map::new();
+            if let Some(cursor) = cursor.take() {
+                params.insert("cursor".to_string(), Value::String(cursor));
+            }
+            let result = self
+                .ask("prompts/list", params, Some(self.waits.answer))
+                .await?;
+            let Some(prompts) = result.get("prompts").and_then(Value::as_array) else {
+                return Err(Failed::Malformed(
+                    "prompts/list without prompts".to_string(),
+                ));
+            };
+            for raw in prompts {
+                match Prompt::read(raw) {
+                    Ok(prompt) => listed.prompts.push(prompt),
+                    Err(problem) => listed.skipped.push(problem),
+                }
+            }
+            if page == 0 {
+                listed.fresh_for = result
+                    .get("ttlMs")
+                    .and_then(Value::as_u64)
+                    .map(Duration::from_millis);
+            }
+            match result.get("nextCursor").and_then(Value::as_str) {
+                Some(next) if !next.is_empty() => cursor = Some(next.to_string()),
+                _ => return Ok(listed),
+            }
+        }
+        Err(Failed::Malformed(format!(
+            "prompts/list went past {MOST_PAGES} pages"
+        )))
+    }
+
+    /// 取提示词 `name`，参数 `arguments`（名字到字，施工 X-39）：交回几条消息，照先后。不限时：同 [`Client::call`]，调的一方
+    /// 自己限。
+    ///
+    /// # Errors
+    ///
+    /// 断了、服务报错（名字不对、缺参数）、回的写法不对、要补信息再问。
+    pub async fn prompt(
+        &self,
+        name: &str,
+        arguments: &BTreeMap<String, String>,
+    ) -> Result<Vec<Message>, Failed> {
+        let mut params = Map::new();
+        params.insert("name".to_string(), Value::String(name.to_string()));
+        params.insert("arguments".to_string(), json!(arguments));
+        let result = self.ask("prompts/get", params, None).await?;
+        Ok(Message::read_all(&result))
     }
 
     /// 调工具 `name`，参数 `arguments`（一个对象）。不限时：调的一方自己限，限到了丢掉这个 future，服务收到取消。
@@ -225,6 +300,7 @@ impl Client {
             let offered = match probed {
                 Ok(result) => {
                     self.instructions = text(&result, "instructions");
+                    self.prompts = offers_prompts(&result);
                     versions(result.get("supportedVersions"))
                 }
                 Err(Failed::Rpc { code, data, .. }) if code == UNSUPPORTED_VERSION => {
@@ -273,6 +349,7 @@ impl Client {
             return Err(Failed::NoCommonVersion(vec![version]));
         }
         self.instructions = text(&result, "instructions");
+        self.prompts = offers_prompts(&result);
         self.link.tell("notifications/initialized", json!({}));
         self.era = Era::Legacy(version);
         Ok(())
@@ -282,6 +359,11 @@ impl Client {
 /// 一格字，没有的、不是字的没有。
 fn text(value: &Value, key: &str) -> Option<String> {
     value.get(key).and_then(Value::as_str).map(str::to_string)
+}
+
+/// 回应的本事里有没有 `prompts`（施工 X-39）：是一张表就算。
+fn offers_prompts(result: &Value) -> bool {
+    result["capabilities"]["prompts"].is_object()
 }
 
 /// 一串版本：不是数组的当空的，不是字的不算。

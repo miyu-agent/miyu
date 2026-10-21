@@ -2,8 +2,8 @@
 //! `/help`。不写会话的列全部；写了的只列这个连接在这个会话里打了不会被拒的，和 `command.run` 同一份判法（[`super::allowed`]）。
 //! 只收本机的会话：场所会话的命令由桥代表外部的人说，桥自己知道。列表不推送，头换会话、打开菜单时问。
 //!
-//! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）、整页的命令（施工 X-15 下，
-//! [`super::pages`]，带 `opens`）一起列，照名字排进去：
+//! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）、MCP 服务的提示词（施工
+//! X-39，[`super::prompts`]）、整页的命令（施工 X-15 下，[`super::pages`]，带 `opens`）一起列，照名字排进去：
 //! 不写会话的照管理员的家目录、装了的包找全部；写了的照会话属主找，只列预设开着的。自己放的模板盖住扩展声明的同名的。
 
 use std::sync::Arc;
@@ -13,15 +13,24 @@ use serde_json::{Value, json};
 
 use miyu_config::package::Access;
 use miyu_kernel::id::SessionId;
+use miyu_session::Handle;
 use miyu_store::slash::Command as Template;
 
 use super::declared::{self, Declared};
-use super::{Said, Slash, access, allowed, pages, templates, words};
+use super::{Said, Slash, access, allowed, pages, prompts, templates, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 use crate::sessions::admin;
+
+/// 照会话挑出来的：核心登记的、模板、扩展声明的，和会话（不写会话的没有，MCP 的提示词照它看预设，施工 X-39）。
+type Found<'a> = (
+    Vec<&'a Arc<dyn Slash>>,
+    Vec<Template>,
+    Vec<Declared>,
+    Option<Handle>,
+);
 
 /// `command.catalog` 的参数。
 #[derive(Debug, Deserialize)]
@@ -39,41 +48,41 @@ pub(crate) async fn catalog(
 ) -> Result<Value, Refusal> {
     let all = core.commands.all();
     let declared = declared::found(core);
-    let (listed, templates, declared): (Vec<&Arc<dyn Slash>>, Vec<Template>, Vec<Declared>) =
-        match params.session {
-            None => (
-                all.collect(),
-                templates::found(core, &core.admin).await,
-                declared,
-            ),
-            Some(text) => {
-                let session = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
-                let found = core.sessions.get(core, &session).await?;
-                let handle = &found.handle;
-                if handle.venue().as_str() != LOCAL {
-                    return Err(Refusal::VENUE_SESSION);
-                }
-                let by = admin(core);
-                let listed = all
-                    .filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
-                    .collect();
-                let mut opened = Vec::new();
-                for template in templates::found(core, handle.owner()).await {
-                    let key = (template.name.as_str(), templates::package(&template));
-                    if templates::opened(core, peer, handle, key).await.is_ok() {
-                        opened.push(template);
-                    }
-                }
-                let mut usable = Vec::new();
-                for one in declared {
-                    let key = (one.command.name.as_str(), one.package.as_str());
-                    if templates::opened(core, peer, handle, key).await.is_ok() {
-                        usable.push(one);
-                    }
-                }
-                (listed, opened, usable)
+    let (listed, templates, declared, handle): Found<'_> = match params.session {
+        None => (
+            all.collect(),
+            templates::found(core, &core.admin).await,
+            declared,
+            None,
+        ),
+        Some(text) => {
+            let session = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
+            let found = core.sessions.get(core, &session).await?;
+            let handle = &found.handle;
+            if handle.venue().as_str() != LOCAL {
+                return Err(Refusal::VENUE_SESSION);
             }
-        };
+            let by = admin(core);
+            let listed = all
+                .filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
+                .collect();
+            let mut opened = Vec::new();
+            for template in templates::found(core, handle.owner()).await {
+                let key = (template.name.as_str(), templates::package(&template));
+                if templates::opened(core, peer, handle, key).await.is_ok() {
+                    opened.push(template);
+                }
+            }
+            let mut usable = Vec::new();
+            for one in declared {
+                let key = (one.command.name.as_str(), one.package.as_str());
+                if templates::opened(core, peer, handle, key).await.is_ok() {
+                    usable.push(one);
+                }
+            }
+            (listed, opened, usable, Some(handle.clone()))
+        }
+    };
     let mut commands = Vec::with_capacity(listed.len() + templates.len());
     for slash in listed {
         let summary = words(core, peer, &Said::plain(slash.summary())).await;
@@ -116,6 +125,25 @@ pub(crate) async fn catalog(
             .filter(|one| !templates.iter().any(|t| t.name == one.command.name))
             .map(|one| declared::listed(one, peer.language)),
     );
+    // MCP 服务的提示词（施工 X-39）：在跑的服务登记的，排在模板后面；写了会话的只列预设开着这个服务的。
+    for entry in prompts::usable(core) {
+        let opened = match &handle {
+            None => true,
+            Some(handle) => {
+                let key = (
+                    entry.offered.command.as_str(),
+                    entry.feature(),
+                    entry.package.as_str(),
+                );
+                templates::opened_by(core, peer, handle, (key.0, &key.1, key.2))
+                    .await
+                    .is_ok()
+            }
+        };
+        if opened {
+            commands.push(prompts::listed(&entry.offered));
+        }
+    }
     // 整页的命令（施工 X-15 下）：不归预设管；自己放的同名模板盖住它。
     commands.extend(
         pages::found(core)
