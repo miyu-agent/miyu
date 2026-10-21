@@ -13,7 +13,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-basesystem/src/history.rs` | 参数、读日志、筛；`session` 认出来的不是她自己的，只读地开那个会话的日志再读（施工 C-4） |
-| `crates/miyu-basesystem/src/history/entry.rs` | 哪些算一条、一条的原文怎么写、「谁」那一格（别的 harness 发来的写名字，施工 7-10；别的会话发来的写短编号，施工 C-2）；人切权限级别的那一条（施工 2-7 补） |
+| `crates/miyu-basesystem/src/history/entry.rs` | 哪些算一条、一条的原文怎么写、「谁」那一格（别的 harness 发来的写名字，施工 7-10；别的会话发来的写短编号，施工 C-2；场所里的人写发的人，施工 O-42）；人切权限级别的那一条（施工 2-7 补） |
 | `crates/miyu-basesystem/src/history/page.rs` | 找、读：一页怎么写、往下翻、整页上限、摘一段 |
 | `crates/miyu-basesystem/src/history/time.rs` | `since`、`until` 的写法 |
 | `crates/miyu-kernel/src/history.rs` | `History::whole()`：留着压缩替代掉的，撤销、恢复、撤回照有效历史的规矩算（`kernel/history.md`） |
@@ -65,7 +65,7 @@
 
 | 事件 | 算不算 | `by` |
 |---|---|---|
-| `message.user` | 算。`by` 是 `harness` 的（别的 harness 发来的话，施工 7-10），「谁」那一格照 `history/agent.txt` 写成 `agent "<名字>"`，名字照模板的规矩转义，和请求里那块标签是同一个名字（`kernel/request.md`「别的 harness 发来的话」）；筛的时候照样算 `user`。`by` 是别的会话的（既不是父会话、也不是这个会话派的子代理，照 `History::whole()` 记着的认，施工 C-2），「谁」那一格照 `history/session.txt` 写成 `session <短编号>`，和请求里那块标签是同一个编号（`kernel/request.md`「别的会话发来的话」）；筛的时候照样算 `user`。父会话的交代、留言，子代理的留言照旧写 `user` | `user` |
+| `message.user` | 算。`by` 是 `harness` 的（别的 harness 发来的话，施工 7-10），「谁」那一格照 `history/agent.txt` 写成 `agent "<名字>"`，名字照模板的规矩转义，和请求里那块标签是同一个名字（`kernel/request.md`「别的 harness 发来的话」）；筛的时候照样算 `user`。`by` 是别的会话的（既不是父会话、也不是这个会话派的子代理，照 `History::whole()` 记着的认，施工 C-2），「谁」那一格照 `history/session.txt` 写成 `session <短编号>`，和请求里那块标签是同一个编号（`kernel/request.md`「别的会话发来的话」）；筛的时候照样算 `user`。父会话的交代、留言，子代理的留言照旧写 `user` | `user`。场所会话里人说的话（带 `venue` 的，施工 O-42，通讯平台的会话 2026-10-21 实测查出：她查「刚才谁推荐了 bitwarden」只看得到 `user`）：「谁」写发的人，同群里那一行（`chat.md`）：名字，没有的写平台身份；这一条 `show_ids` 又有名字的带 `id=`；对应表里有的标 `owner`、桥报的管理员标 `manager`；名字、平台身份照模板的规矩转义成一行。筛的时候照样算 `user` |
 | `message.assistant` | 算：正文和工具调用；思考不给 | `assistant` |
 | `tool.result` | 算 | `tool` |
 | `context.compacted` | 算：以前的摘要，以前压缩掉的也找得到。清空的摘要是空的，一个字都没有，不算（施工 6-8 补）；清空以前的照样找得到 | `assistant` |
@@ -82,7 +82,7 @@
 4. 照 `from`、`to`、`since`、`until`、`by` 筛。
 5. **找**（有 `query`）：
    1. 每个词都出现的算命中，不分大小写，照原样比，中文不分词。
-   2. 新的在前。一条一行：`#<序号> <时刻> <谁>: <摘出来的一段>`（`<谁>` 是 `by` 的那三种写法，别的 harness 发来的是 `agent "<名字>"`，别的会话发来的是 `session <短编号>`），摘第一处命中前后，一共最多 200 个字；连着的空白（换行也算）换成一个空格，前后截掉了的写 `…`。比的是「读」时这一条下面的原文。
+   2. 新的在前。一条一行：`#<序号> <时刻> <谁>: <摘出来的一段>`（`<谁>` 是 `by` 的那三种写法，别的 harness 发来的是 `agent "<名字>"`，别的会话发来的是 `session <短编号>`，场所里的人是发的人，同群里那一行：`小林`、`老王 (id=qq:20018, manager)`），摘第一处命中前后，一共最多 200 个字；连着的空白（换行也算）换成一个空格，前后截掉了的写 `…`。比的是「读」时这一条下面的原文。
    3. 还有更早的：末尾接 `(Showing {n} of {total} results. Use to={next} to see older ones.)`，`next` 是这一页最早那一条的序号减一。
 6. **读**（没有 `query`）：
    1. 照先后，从范围的第一条起。每条头一行 `#<序号> <时刻> <谁>`（`<谁>` 同第 5 条），下面是原文：工具调用写成 `→ <工具名> <参数原文>`；图片、文件写占位。
@@ -180,6 +180,7 @@ This session cannot read other sessions.
 | `crates/miyu-basesystem/src/history/tests/permission.rs`（施工 2-7 补） | 人切权限级别：找、读都列出，「谁」是 `user`、原文写切成的那一级；筛 `user` 时在里面，筛 `assistant`、`tool` 时不在；撤掉的回合里切的照样列，只读开着写只读，只换了策略快照的不算。样本会话里的 52、63 两条跟着出现在 `tests.rs`、`read.rs` 的清单里 |
 | `crates/miyu-basesystem/src/history/tests/harness.rs`（施工 7-10） | 别的 harness 发来的话：找、读的「谁」那一格写名字、名字照规矩转义；筛 `user` 时在里面，筛 `assistant`、`tool` 时不在 |
 | `crates/miyu-basesystem/src/history/tests/peers.rs`（施工 C-2） | 别的会话发来的话：找、读的「谁」那一格写 `session <短编号>`，父会话的话照旧是 `user`；筛 `user` 时在里面，筛 `assistant`、`tool` 时不在 |
+| `crates/miyu-basesystem/src/history/tests/venue.rs` 的 `a_venue_message_names_who_said_it`（施工 O-42） | 场所会话里人说的话：「谁」写名字、`show_ids` 的带 `id=`、主人和管理员标出来、没名字的写平台身份、名字转义；筛 `user` 时都在 |
 | `crates/miyu-basesystem/src/history/tests/other.rs`（施工 C-4） | 读别的会话：`session` 认出来的读的是那个会话的日志，不是这次调用自己的；认成她自己的照没写、不开任何别的日志；找不到、对得上不止一个、没有列会话的端口各拒一句，一条日志都不读；列会话、开日志失败都照「读不了日志」；时刻照这个会话自己的时区，和读的是哪一份日志无关 |
 | `crates/miyu-session/tests/history_other.rs`（施工 C-4） | 真的会话 actor：读别的会话磁盘上真实的日志、不载入它、在跑的也读得到；子会话、场所会话（群）写了 `session` 都拒 |
 | `crates/miyu-basesystem/tests/human_history.rs` | 每一种结果的说法，两种语言都换得出字，显示名也有；C-4 的三种拒绝也在内 |

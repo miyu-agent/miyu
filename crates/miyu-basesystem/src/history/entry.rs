@@ -9,12 +9,12 @@
 use std::collections::BTreeSet;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event, PolicyChanged};
+use miyu_kernel::event::{Body, Event, PolicyChanged, VenueMessage};
 use miyu_kernel::facts::effective_level;
 use miyu_kernel::history::History as Kept;
 use miyu_kernel::id::CallId;
-use miyu_kernel::origin::By;
-use miyu_kernel::template::Template;
+use miyu_kernel::origin::{By, Role};
+use miyu_kernel::template::{Template, escape};
 use miyu_kernel::time::Timestamp;
 
 use crate::load::say;
@@ -58,7 +58,7 @@ pub(super) struct Entry {
     /// 谁说的：筛的时候照它。
     pub(super) who: Who,
     /// 「谁」那一格另写的：别的 harness 发来的话写 `agent "<名字>"`（施工 7-10），别的会话发来的话写 `session <短编号>`
-    /// （施工 C-2）；没有的照 `who` 写。
+    /// （施工 C-2），场所会话里人说的话写发的人（施工 O-42）；没有的照 `who` 写。
     pub(super) from: Option<String>,
     /// 「读」时这一条下面的原文；「找」也比它。
     pub(super) text: String,
@@ -175,9 +175,14 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
 
 /// 别的 harness 发来的话（`message.user`，`by` 是 `harness`，施工 7-10）：「谁」那一格照 `history/agent.txt` 写它的名字，
 /// 名字照模板的规矩转义，和请求里那块标签是同一个名字。别的会话发来的话（`by` 是会话，既不是父会话、也不是派的子代理，
-/// 施工 C-2）：照 `history/session.txt` 写它的短编号，和请求里那块标签是同一个编号。别的没有。
+/// 施工 C-2）：照 `history/session.txt` 写它的短编号，和请求里那块标签是同一个编号。场所会话里人说的话（施工 O-42，通讯
+/// 平台的会话 2026-10-21 实测查出：她查「刚才谁推荐了 bitwarden」只看到 `user`）：照群里那一行的写法写发的人（[`sender`]）。
+/// 别的没有。
 fn from(kept: &Kept, event: &Event, placeholders: &Placeholders) -> Option<String> {
     match (&event.body, &event.by) {
+        (Body::MessageUser(message), by) if message.venue.is_some() => {
+            message.venue.as_ref().and_then(|venue| sender(by, venue))
+        }
         (Body::MessageUser(_), By::Harness(harness)) => Some(inline(say(
             &placeholders.agent,
             &[("name", harness.name.as_str())],
@@ -187,6 +192,34 @@ fn from(kept: &Kept, event: &Event, placeholders: &Placeholders) -> Option<Strin
         )),
         _ => None,
     }
+}
+
+/// 场所里发的人，同群里那一行（`miyu-assemble` 的 `group::sender`，`docs/blueprint/chat.md`）：名字（没有的写平台身份），后面
+/// 括号里是 `id=`（这一条 `show_ids`、又有名字的才写）和身份（`owner` 对应表里有的、`manager` 桥报的）。名字、平台身份是
+/// 不可信的，照模板的规矩转义成一行。不是外部身份、不是认出来的本人的没有。
+fn sender(by: &By, venue: &VenueMessage) -> Option<String> {
+    let (id, role) = match by {
+        By::External(external) => {
+            let role = match (&external.account, external.role) {
+                (Some(_), _) => Some("owner"),
+                (None, Some(Role::Manager)) => Some("manager"),
+                (None, _) => None,
+            };
+            (&external.id, role)
+        }
+        By::Person(person) => (person.via.as_ref()?, Some("owner")),
+        _ => return None,
+    };
+    let name = venue.name.as_deref().unwrap_or(id.as_str());
+    let mut notes = Vec::new();
+    if venue.show_ids && venue.name.is_some() {
+        notes.push(format!("id={}", escape(id.as_str())));
+    }
+    notes.extend(role.map(str::to_string));
+    Some(match notes.is_empty() {
+        true => escape(name),
+        false => format!("{} ({})", escape(name), notes.join(", ")),
+    })
 }
 
 /// 占位写在一行里：去掉字的文件末尾那个换行。
