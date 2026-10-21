@@ -93,6 +93,8 @@ pub(crate) enum Reason {
     ProtocolMismatch,
     /// 要的能力还有没批的（施工 9-4 下上）：批了（`extension.enable` 带 `approve`）才拉起。
     NeedsApproval,
+    /// 网址的 MCP 服务要浏览器登录（施工 X-42 上）：人登录了（`mcp.login`）、令牌存进密钥文件才重连。
+    NeedsLogin,
 }
 
 impl Reason {
@@ -105,6 +107,7 @@ impl Reason {
             Reason::CannotStart => "cannot_start",
             Reason::ProtocolMismatch => "protocol_mismatch",
             Reason::NeedsApproval => "needs_approval",
+            Reason::NeedsLogin => "needs_login",
         }
     }
 }

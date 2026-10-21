@@ -105,6 +105,8 @@ impl Core {
             .filter(|server| !new.iter().any(|now| now.name == server.name))
         {
             self.uncover(&server.name);
+            // 删掉的服务，登录存的那一份连同端口一起清掉（施工 X-42 上）。
+            crate::secrets::discard(self, &super::login::secret_name(&server.name));
         }
         for server in new
             .iter()

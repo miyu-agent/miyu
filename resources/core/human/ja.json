@@ -778,6 +778,8 @@
     "commands/failed/missing-arguments": "引数が足りません：{names}",
     "commands/failed/argument": "{name}",
     "commands/failed/no-reply": "/{name} から返答がありません",
+    "mcp/login-done": "ログインできました。このページを閉じて Miyu に戻ってください。",
+    "mcp/login-failed": "ログインできませんでした。Miyu に戻って理由を確認してください。",
     "commands/unavailable/off": "/{name} は無効になっています。",
     "commands/unavailable/not-installed": "ペルソナの記憶は未インストールです。",
     "commands/unavailable/preset-off": "プリセット「{preset}」は記憶がオフです。",

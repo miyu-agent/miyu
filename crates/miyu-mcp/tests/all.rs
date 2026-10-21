@@ -4,6 +4,7 @@ mod support;
 
 mod calls;
 mod era;
+mod oauth;
 mod prompts;
 mod resources;
 mod tools;

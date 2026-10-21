@@ -794,6 +794,8 @@
     "commands/failed/missing-arguments": "Missing arguments: {names}",
     "commands/failed/argument": "{name}",
     "commands/failed/no-reply": "/{name} gave no reply",
+    "mcp/login-done": "You're logged in. You can close this page and go back to Miyu.",
+    "mcp/login-failed": "Login didn't work. Go back to Miyu to see why.",
     "commands/unavailable/off": "/{name} is turned off.",
     "commands/unavailable/not-installed": "Persona memory not installed.",
     "commands/unavailable/preset-off": "Preset \"{preset}\" has memory off.",

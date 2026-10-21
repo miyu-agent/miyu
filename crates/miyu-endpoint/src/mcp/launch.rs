@@ -107,6 +107,15 @@ pub(super) fn plan(core: &Core, package: &str, server: &McpServer, dir: &Path) -
             {
                 *token = format!("Bearer {token}");
             }
+            // 登录换来的令牌（施工 X-42 上）：这张表自己没写令牌的照它带。
+            if !super::login::explicit(server)
+                && let Some(stored) = super::login::stored(&config, &server.name)
+            {
+                headers.push((
+                    "Authorization".to_string(),
+                    format!("Bearer {}", stored.access_token),
+                ));
+            }
             How::Connect {
                 url: url.clone(),
                 headers,

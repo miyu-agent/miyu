@@ -149,8 +149,17 @@ fn read_at(path: &Path, server: &McpServer) -> Option<Remembered> {
     })
 }
 
-/// 卸包时清掉服务 `service` 的缓存和工作目录（施工 X-3 下：卸就是清干净）。本来就没有的不算错，删不成的记一行。
+/// 卸包时清掉服务 `service` 的缓存和工作目录（施工 X-3 下：卸就是清干净），登录存的那一份（施工 X-42 上；个人设置里还有同名
+/// 服务的不清：那是它的）。本来就没有的不算错，删不成的记一行。
 pub(crate) fn forget(core: &Core, service: &str) {
+    if !core
+        .home_mcp
+        .now()
+        .iter()
+        .any(|server| server.name == service)
+    {
+        crate::secrets::discard(core, &super::login::secret_name(service));
+    }
     let cache = path(core, service);
     if let Err(error) = std::fs::remove_file(&cache)
         && error.kind() != std::io::ErrorKind::NotFound

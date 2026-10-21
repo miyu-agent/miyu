@@ -118,6 +118,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "package.file"
         | "mcp.list"
         | "mcp.restart"
+        | "mcp.login"
         | "mcp.set"
         | "mcp.remove"
         | "skill.remove"

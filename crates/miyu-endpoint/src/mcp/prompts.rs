@@ -2,7 +2,7 @@
 //! 名字清理成斜杠命令名 `<服务名>:<提示词名>`，记在看管那一格；撞名的不登记，进 `skipped`。菜单、`command.run` 照它
 //! （`commands/prompts.rs`）。
 
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 use std::time::Duration;
 
 use miyu_kernel::block::Block;
@@ -12,6 +12,7 @@ use miyu_tool::Picture;
 use super::tool::Texts;
 use super::{Shared, Skipped, TARGET, content};
 use crate::Core;
+use crate::extensions::State;
 
 /// 命令名最多几个字符（同工具名的上限）。
 const NAME_LIMIT: usize = 64;
@@ -130,6 +131,33 @@ pub(crate) fn said(core: &Core, messages: Vec<Message>) -> Option<(Vec<Block>, V
         .filter(|block| !matches!(block, Block::Text(text) if text.text.is_empty()))
         .collect();
     Some((blocks, done.images))
+}
+
+impl super::Servers {
+    /// 在跑的服务登记成斜杠命令的提示词（施工 X-39）：包的编号、服务名、和它的客户端，照包、服务排。没在跑的不列：服务不在时
+    /// 提示词也取不了。
+    pub(crate) fn prompts(&self) -> Vec<Prompts> {
+        self.slots()
+            .iter()
+            .filter_map(|((package, service), slot)| {
+                let offered = slot
+                    .shared
+                    .prompts
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .clone();
+                if offered.is_empty() || !matches!(slot.shared.get().state, State::Running { .. }) {
+                    return None;
+                }
+                Some(Prompts {
+                    package: package.clone(),
+                    service: service.clone(),
+                    client: slot.shared.client()?,
+                    offered,
+                })
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]

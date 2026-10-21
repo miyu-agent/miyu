@@ -29,6 +29,8 @@ enum Ended {
     Stop(Reason),
     /// 失败了一次：握成了的有握成的那一刻。
     Failed(Option<Instant>),
+    /// 网址的服务回 `401` 要登录（施工 X-42 上）：挑战记进看管那一格，停下等人登录，不算失败、不退避。
+    NeedsLogin(miyu_mcp::oauth::Challenge),
     /// 网址的服务跑起来以后会话过期了（施工 X-32 上）：不算失败、不退避，马上重连、从认时代重来。没跑起来就过期的照
     /// [`Ended::Failed`] 算，一直回 `404` 的服务不会原地打转。
     Expired,
@@ -58,6 +60,12 @@ pub(super) async fn run(
             Ended::Expired => {
                 tracing::info!(target: TARGET, service = plan.server.name.as_str(), "mcp session expired");
                 continue;
+            }
+            Ended::NeedsLogin(challenge) => {
+                tracing::info!(target: TARGET, service = plan.server.name.as_str(), "mcp needs login");
+                shared.set_login(Some(challenge));
+                shared.set(&owner, State::Stopped(Reason::NeedsLogin), 0);
+                return;
             }
             Ended::Stop(reason) => {
                 tracing::warn!(target: TARGET, service = plan.server.name.as_str(), reason = reason.as_str(), "mcp stopped");
@@ -125,6 +133,9 @@ async fn once(
         Err(error) => {
             tracing::warn!(target: TARGET, service, error = %error, "mcp not connected");
             running.finish(timing.grace, service).await;
+            if let Some(challenge) = super::login::needed(&plan.server, running.challenge()) {
+                return Ended::NeedsLogin(challenge);
+            }
             return match error {
                 Failed::NoCommonVersion(_) => Ended::Stop(Reason::CannotStart),
                 _ => Ended::Failed(None),
@@ -144,6 +155,7 @@ async fn once(
             return Ended::Gone;
         };
         shared.connect(Some(Arc::clone(&client)));
+        shared.set_login(None);
         tracing::info!(target: TARGET, service, pid = ?pid, era = ?client.era(), "mcp ready");
         shared.set(&owner, State::Running { pid }, failures);
     }
@@ -182,7 +194,7 @@ async fn once(
 /// 旗大得多，clippy 的 `large_enum_variant` 只在 Windows 上报。
 enum Running {
     Child(Box<Child>),
-    Remote(miyu_mcp::http::Expired),
+    Remote(miyu_mcp::http::Expired, miyu_mcp::http::Challenged),
 }
 
 impl Running {
@@ -190,13 +202,21 @@ impl Running {
     async fn finish(&mut self, grace: Duration, service: &str) -> String {
         match self {
             Running::Child(child) => finish(child, grace, service).await,
-            Running::Remote(_) => "closed".to_string(),
+            Running::Remote(..) => "closed".to_string(),
         }
     }
 
     /// 网址的服务这条连接是会话过期断的。
     fn expired(&self) -> bool {
-        matches!(self, Running::Remote(expired) if expired.happened())
+        matches!(self, Running::Remote(expired, _) if expired.happened())
+    }
+
+    /// 网址的服务回过 `401` 的：它的 `WWW-Authenticate`（施工 X-42 上）。
+    fn challenge(&self) -> Option<String> {
+        match self {
+            Running::Remote(_, challenged) => challenged.header(),
+            Running::Child(_) => None,
+        }
     }
 }
 
@@ -247,7 +267,7 @@ async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), En
             })?;
             let opened = miyu_mcp::http::open(client, url.clone(), headers.clone(), log);
             Ok((
-                Running::Remote(opened.expired),
+                Running::Remote(opened.expired, opened.challenged),
                 None,
                 Box::new(opened.read),
                 Box::new(opened.write),

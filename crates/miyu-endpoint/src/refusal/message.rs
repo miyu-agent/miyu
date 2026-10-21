@@ -29,6 +29,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "个人设置里没有这个 MCP 服务。",
             "No such MCP server in the personal settings.",
         ),
+        "oauth_unregistered" => (
+            "这个服务要先在它那边注册客户端。",
+            "Register a client with this server first.",
+        ),
+        "oauth_failed" => ("登录没成。", "Login failed."),
         "server_from_package" => (
             "这个 MCP 服务随软件包提供，不能在这里修改。",
             "This MCP server comes with a package and cannot be changed here.",

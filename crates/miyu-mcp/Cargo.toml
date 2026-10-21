@@ -11,11 +11,17 @@ autotests = false
 [dependencies]
 # 网址的服务（施工 X-32 上，`src/http.rs`）：发 POST 用核心同一个 HTTP 客户端（同在第 3 层）。
 miyu-http = { path = "../miyu-http" }
+# 网址的服务登录（施工 X-42 上，`src/oauth.rs`）：PKCE 的 S256、base64url、随机数，拼、读网址，回调只听 127.0.0.1。都是工作区里
+# 已经有的同一版（url 是 reqwest 带进来的那一份）。
+base64 = "0.22"
+getrandom = { version = "0.4", features = ["std"] }
+sha2 = { version = "0.11", default-features = false }
+url = "2"
 # 消息是一行一条的 JSON-RPC 2.0。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-# 读写管道、等回应、限时。
-tokio = { version = "1", features = ["io-util", "macros", "rt", "sync", "time"] }
+# 读写管道、等回应、限时；登录的回调只听 127.0.0.1（`net`，施工 X-42 上）。
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
 # 运行日志：服务反过来要东西、读到写法不对的行。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 

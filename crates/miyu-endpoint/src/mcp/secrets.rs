@@ -51,8 +51,15 @@ pub(super) fn changed(
         .collect()
 }
 
-/// 服务 `server` 引用了 `names` 里的哪一个：`env`、`bearer`、`headers` 里写的 `{ secret = … }`。没引用的没有。
+/// 服务 `server` 引用了 `names` 里的哪一个：`env`、`bearer`、`headers` 里写的 `{ secret = … }`；网址的服务自己没写令牌的，
+/// 登录存的那一个（`mcp-oauth-<服务名>`，施工 X-42 上）也算。没引用的没有。
 fn uses<'a>(server: &McpServer, names: &'a BTreeSet<String>) -> Option<&'a str> {
+    if matches!(server.reach, Reach::Url { .. })
+        && !super::login::explicit(server)
+        && let Some(name) = names.get(&super::login::secret_name(&server.name))
+    {
+        return Some(name.as_str());
+    }
     let values: Vec<&EnvValue> = match &server.reach {
         Reach::Command { env, .. } => env.iter().map(|(_, value)| value).collect(),
         Reach::Url {

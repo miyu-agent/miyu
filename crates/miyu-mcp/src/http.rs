@@ -8,6 +8,8 @@
 //!   调用的回应本来就要等它说完，不另开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错。
 //! - 对方回错的（4xx、5xx、连不上）：有编号的请求回一条 JSON-RPC 错误，客户端照常了结这次请求；往 `log` 写一行。日志里不写网址：
 //!   有的服务把密钥放在网址的查询串里。
+//! - 要登录（回 `401`，施工 X-42 上）：`WWW-Authenticate` 的原文记下来（[`Opened::challenged`]），看管的一头照它判要不要登录；
+//!   回给客户端的照对方回错一样。
 //! - 会话过期（带着会话编号回 `404`）：关掉这一对读写，客户端当服务断了，看管的那一头退避着重连、从认时代重来。
 //! - 服务主动推的只在 SSE 回应里收得到，不另开 GET 那条长连接（工具变了靠新时代的 `ttlMs`、重连时重列）。
 
@@ -40,11 +42,27 @@ pub struct Opened {
     pub write: WriteHalf<DuplexStream>,
     /// 会话过期断的：看管的一头照它重连，不当一次失败（`mcp.md`「网址的服务怎么说话」第 3 条）。
     pub expired: Expired,
+    /// 回过 `401` 的：它的 `WWW-Authenticate`（施工 X-42 上）。
+    pub challenged: Challenged,
 }
 
 /// 这条连接是不是因为会话过期断的。
 #[derive(Debug, Clone, Default)]
 pub struct Expired(Arc<AtomicBool>);
+
+/// 对方回过 `401`：最近那一次的 `WWW-Authenticate` 原文（施工 X-42 上）。
+#[derive(Debug, Clone, Default)]
+pub struct Challenged(Arc<Mutex<Option<String>>>);
+
+impl Challenged {
+    /// 最近那一次 `401` 的 `WWW-Authenticate`，没回过的没有。
+    pub fn header(&self) -> Option<String> {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+}
 
 impl Expired {
     /// 会话过期了，转接关了这一对读写。
@@ -58,6 +76,7 @@ pub fn open(client: Client, url: String, headers: Vec<(String, String)>, log: Lo
     let (theirs, ours) = tokio::io::duplex(PIPE);
     let (read, write) = tokio::io::split(theirs);
     let expired = Expired::default();
+    let challenged = Challenged::default();
     tokio::spawn(relay(
         ours,
         Arc::new(Remote {
@@ -68,12 +87,14 @@ pub fn open(client: Client, url: String, headers: Vec<(String, String)>, log: Lo
             session: Mutex::new(None),
             version: Mutex::new(None),
             expired: expired.clone(),
+            challenged: challenged.clone(),
         }),
     ));
     Opened {
         read,
         write,
         expired,
+        challenged,
     }
 }
 
@@ -86,6 +107,7 @@ struct Remote {
     session: Mutex<Option<String>>,
     version: Mutex<Option<String>>,
     expired: Expired,
+    challenged: Challenged,
 }
 
 /// 一条 POST 的结局：写回去的几行；会话过期的要关掉这一对读写。
@@ -189,6 +211,18 @@ impl Remote {
             }
         };
         let status = response.status().as_u16();
+        if status == 401
+            && let Some(header) = response
+                .headers()
+                .get("www-authenticate")
+                .and_then(|value| value.to_str().ok())
+        {
+            *self
+                .challenged
+                .0
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner) = Some(header.to_string());
+        }
         if status == 404 && session.is_some() {
             (self.log)("session expired".to_string());
             self.expired.0.store(true, Ordering::Relaxed);

@@ -14,6 +14,7 @@ pub(crate) mod editing;
 pub(crate) mod home;
 pub(crate) mod instructions;
 mod launch;
+pub(crate) mod login;
 pub(crate) mod methods;
 pub(crate) mod prompts;
 mod resources;
@@ -28,7 +29,6 @@ mod written;
 pub(crate) use cache::forget;
 pub(crate) use home::HomeMcp;
 pub(crate) use launch::stderr_file;
-pub(crate) use prompts::Prompts;
 pub(crate) use skipped::Skipped;
 pub(crate) use switch::{turn_off, turn_on};
 
@@ -72,6 +72,8 @@ pub(crate) struct Shared {
     instructions: Mutex<Option<String>>,
     /// 登记成斜杠命令的提示词（施工 X-39）：每次列完照新的换，不进缓存。
     prompts: Mutex<Vec<prompts::Offered>>,
+    /// 要登录时那一次 `401` 的挑战（施工 X-42 上，`login.rs`）：连上了的清掉。
+    login: Mutex<Option<miyu_mcp::oauth::Challenge>>,
 }
 
 impl Shared {
@@ -89,6 +91,7 @@ impl Shared {
             skipped: Mutex::new(Vec::new()),
             instructions: Mutex::new(None),
             prompts: Mutex::new(Vec::new()),
+            login: Mutex::new(None),
         }
     }
 
@@ -185,6 +188,8 @@ struct Slot {
 pub(crate) struct Servers {
     slots: Mutex<BTreeMap<(String, String), Slot>>,
     timing: Timing,
+    /// 正在等回调的登录（施工 X-42 上，`login/flow.rs`）：服务名到等着的那个任务，又登录的停掉上一个。
+    logins: Mutex<BTreeMap<String, JoinHandle<()>>>,
 }
 
 impl Servers {
@@ -192,6 +197,7 @@ impl Servers {
         Servers {
             slots: Mutex::new(BTreeMap::new()),
             timing,
+            logins: Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -204,39 +210,6 @@ impl Servers {
         self.slots()
             .values()
             .any(|slot| slot.shared.get().state.busy())
-    }
-
-    /// 在跑的服务登记成斜杠命令的提示词（施工 X-39）：包的编号、服务名、和它的客户端，照包、服务排。没在跑的不列：服务不在时
-    /// 提示词也取不了。
-    pub(crate) fn prompts(&self) -> Vec<Prompts> {
-        self.slots()
-            .iter()
-            .filter_map(|((package, service), slot)| {
-                let offered = slot
-                    .shared
-                    .prompts
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .clone();
-                if offered.is_empty() || !matches!(slot.shared.get().state, State::Running { .. }) {
-                    return None;
-                }
-                Some(Prompts {
-                    package: package.clone(),
-                    service: service.clone(),
-                    client: slot.shared.client()?,
-                    offered,
-                })
-            })
-            .collect()
-    }
-
-    /// 交了说明的服务和它的说明（施工 X-39，`instructions.rs` 照它拼 system 尾部的那几段）：照服务名排。
-    pub(crate) fn instructions(&self) -> Vec<(String, String)> {
-        self.slots()
-            .iter()
-            .filter_map(|((_, service), slot)| Some((service.clone(), slot.shared.instructions()?)))
-            .collect()
     }
 
     /// 包 `package` 的服务 `service` 这一次列完没登记的（施工 X-37）：没起过的没有。

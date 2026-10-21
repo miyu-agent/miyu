@@ -15,6 +15,7 @@
 | [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 个人设置里的 MCP 服务：列、重启、加或换、删 |
+| [`mcp.login`](#mcplogin) | 网址的 MCP 服务要浏览器登录的：拿授权页 |
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
 | [`skill.remove`](#skillremove) | 删管理员自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
@@ -176,7 +177,7 @@
 | `failures` | 连续失败几次 |
 | `pid` | 在跑的进程号 |
 | `retry_in` | 在等的：多少毫秒以后再拉起 |
-| `reason`、`stderr` | 停下的：为什么（`failed_repeatedly`、`config_error`、`needs_approval`……）、标准错误的最后几行 |
+| `reason`、`stderr` | 停下的：为什么（`failed_repeatedly`、`config_error`、`needs_approval`、网址的服务要浏览器登录的 `needs_login`……）、标准错误的最后几行 |
 | `capabilities`、`unapproved` | 声明的能力 `[{id, name, summary}]`、还没批的 |
 
 要一直跟着最新的，订阅 `extensions` 流。
@@ -210,6 +211,16 @@
 没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对：`command`、`url` 都没写、两样混写的也是）；`bad_params`（交了 `args` 没交 `command`）；`server_from_package`（个人设置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（个人设置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
 
 **`mcp.remove`**：参数 `name`。从个人设置里删掉这个服务（连同它的子表），回应 `{}`。包里被它盖住的同名服务照包的开关起回来。**出错**：`unknown_server`；`config_file_broken`；`config_conflict`。
+
+## `mcp.login`
+
+网址的 MCP 服务回 `401` 要浏览器登录的（`reason` 是 `needs_login`，这张表自己没写令牌）：拿授权页，人在浏览器里点同意，核心换令牌、存进密钥文件（`mcp-oauth-<服务名>`，值不经协议交出去），服务自己连上（`mcp.changed`、软件包列表的推送照常）。只给本机的人。
+
+**参数**：`service`（服务名：个人设置里的，或者包里带的）。
+
+**回应**：`{"url"}`：授权页的地址，头打开它。核心在本机 `127.0.0.1` 上等回调，最多 10 分钟；同一个服务又登录的，上一次在等的停掉。
+
+**出错**：`unknown_server`：没有这个服务；`bad_params`：不是网址的服务，或者这张表自己写了令牌（`bearer`、`headers` 里的 `Authorization`）；`oauth_unregistered`：没有客户端、授权服务器又不认动态注册，要人去服务那边注册、把 `client_id` 写进这张表；`oauth_failed`：找不到、用不了授权服务器，或者它拒了，`data.why` 说为什么（授权服务器的原话截过）。
 
 ## `skill.list`
 

@@ -51,6 +51,8 @@ enum Command {
     Rename(miyu_cli::Rename),
     /// 装好、撤掉沙盒用户（Windows，要管理员权限）。
     Sandbox(miyu_cli::Sandbox),
+    /// 登录要浏览器授权的网址 MCP 服务（施工 X-42 上）。
+    Mcp(miyu_cli::Mcp),
     /// 看配置、改配置、信任项目配置（施工 8-2、8-3）。
     Config(miyu_cli::Config),
     /// 查手写的文件有没有写错：配置、密钥文件、人格（施工 8-30）。
@@ -181,6 +183,11 @@ fn main() -> ExitCode {
                 kb.mut_subcommand(name, |sub| sub.override_help(help))
             })
         })
+        .mut_subcommand("mcp", |mcp| {
+            let help = page(language, Page::Mcp);
+            mcp.override_help(help)
+                .mut_subcommand("login", |login| login.override_help(help))
+        })
         .mut_subcommand("sandbox", |sandbox| {
             let help = page(language, Page::Sandbox);
             sandbox
@@ -204,6 +211,7 @@ fn main() -> ExitCode {
         Some(Command::Recap(args)) => miyu_cli::recap(args, core),
         Some(Command::Rename(args)) => miyu_cli::rename(args, core),
         Some(Command::Sandbox(args)) => miyu_cli::sandbox(args),
+        Some(Command::Mcp(args)) => miyu_cli::mcp(args, core),
         // 不带子命令、在终端里：打开界面的设置页（施工 9-3，原来的 8-24）；界面不认设置页的照旧印帮助。
         Some(Command::Config(args)) if args.command.is_none() && terminal() => {
             match miyu_cli::head::open(Some("config"), &miyu_core::admin(), core) {
