@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>690</b><span>/ 714 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>691</b><span>/ 715 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">52880acc</b><span>最近一步（B-1 剥外壳不越界）的提交</span></li>
+    <li><b class="mono">a8926817</b><span>最近一步（5-20 登录限流先占位）的提交</span></li>
   </ul>
 </header>
 
@@ -502,6 +502,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s516a"><span class="n">5-16 上</span>有 bubblewrap 就用它<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s516b"><span class="n">5-16 下上</span>沙盒强度<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s517"><span class="n">5-17</span>高危命令照规则拦<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s520"><span class="n">5-20</span>登录限流先占位<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s310"><span class="n">3-10</span>回复写到输出上限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s712a"><span class="n">7-12 上</span>前台命令到时挪到后台<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s712b"><span class="n">7-12 下</span>后台命令的最长时间和输出上限<span class="st">✓</span></a></li>
@@ -10974,6 +10975,57 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/5-17-高危命令照规则拦.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s520" aria-labelledby="h-s520">
+  <div class="sheet-head"><h2 id="h-s520"><span class="no">5-20</span>登录限流先占位</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">同时开一批连接猜密码，也和一个一个来一样：同一个用户名 60 秒内至多真的验 5 次，别的回 <code>login_throttled</code>。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">登录限流先占位</span><span class="dir-note">5-20</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>查「错满了没有」和记一次失败放进同一把锁</li>
+              <li>能试的进来先记一次失败，验对了清零</li>
+              <li>一次性码照常数时间比（加固）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">验着的也算一次</span><span class="rl">对的也先占着，验对了才清零</span></div>
+          <div class="tile new"><span class="nm">次数、窗口不变</span><span class="rl">5 次、60 秒，U4 的初值</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">5-20</dd></div>
+        <div><dt>名称</dt><dd>登录限流先占位</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">a8926817</dd></div>
+        <div><dt>验收</dt><dd>本地门禁全过；手写变异 3 个都红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>20 个并发的错密码，真的去验的不超过 5 个</span></li>
+        <li><span class="ok">✓</span><span>一个一个来的照旧：错 5 次先拒、对了清零</span></li>
+        <li><span class="ok">✓</span><span>改回验完才记、对了不清零、一次性码比反了，都红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>设计 <code>docs/designs/06-多用户与身份.md</code> U4，施工单 <code>docs/construction/5-20-登录限流先占位.md</code>。</li>
       </ul>
     </div>
   </div>
