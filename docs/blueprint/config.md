@@ -400,6 +400,7 @@ miyu_config::settings! {
 ```
 
 - 每一项的格：`key`、`type`，照类型带 `options`（选项：`value` 和给人看的 `name`；核心查得出的再带 `note`，头接在名字后面暗色写，施工 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字，照核心手里的本机清单的 `id`，本机的那一路用不上的没有，不进给人看的字；`net.search.source` 冷却着的那一家写「冷却到 15:30」（施工 N-2 下：内置包的端口 `Builtins::option_state` 说冷却到什么时候，照连接的语言 `core/config/option-cooling`、核心这台机器的时区拼，只写时、分）；核心查得出用不了的再带 `available: false`，只写 `false`，头照样列着、画成灰的、选不了，为什么用不了的那一句头自己写，施工 R-5 三补：现在只有 `local`，本机的那一路没有时，就是没装内置语义模型的包）、`min`、`max`、`max_chars`、`element`，再是 `default`、`layers`、`tighten`（没有不写）、`env`（没有不写）、`applies`、`name`、`description`、`page`、`group`、`common`、`control`，控件是 `combo` 的再带 `suggestions`（字表里这种语言的建议值，照先后，施工 P-9 补），设置页不画的再带 `hidden: true`（施工 9-1 下：网页的空闲、票据那几项）。包的配置项（页是 `packages`）再带 `package`：归哪个包，就是组的编号（施工 F-6 上，`package-pages.md`）。
+- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove` 带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
 
@@ -1150,7 +1151,7 @@ mirrors = []
 source = "https://miyu-agent.github.io/packages/"
 
 [permission]
-# 新会话的权限级别：新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。
+# 新会话的权限级别：调整新会话开启时的默认权限模式，修改后开新会话生效。
 # 能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。
 level = "workspace"
 
@@ -1295,16 +1296,16 @@ default = "full"
 # output =
 
 [sandbox]
-# 沙盒强度：自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。
+# 沙盒强度：自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。
 # 能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。
 strength = "auto"
 
 [sandbox.private]
-# 加的私密目录：命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。
+# 加的私密目录：命令读写不到、文件工具要先问的目录。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # add =
 
-# 去掉的出厂私密目录：出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。
+# 默认私密目录：出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # remove =
 
@@ -1812,7 +1813,7 @@ currency = "USD"
       "properties": {
         "level": {
           "default": "workspace",
-          "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。",
+          "description": "调整新会话开启时的默认权限模式，修改后开新会话生效。能写：workspace 或 full。只能写在系统配置或个人设置里。新会话生效。",
           "enum": [
             "workspace",
             "full"
@@ -2153,7 +2154,7 @@ currency = "USD"
         "private": {
           "properties": {
             "add": {
-              "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "description": "命令读写不到、文件工具要先问的目录。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
               "items": {
                 "maxLength": 4096,
                 "minLength": 1,
@@ -2163,13 +2164,13 @@ currency = "USD"
               "type": "array"
             },
             "remove": {
-              "description": "出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "description": "出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
               "items": {
                 "maxLength": 4096,
                 "minLength": 1,
                 "type": "string"
               },
-              "title": "去掉的出厂私密目录",
+              "title": "默认私密目录",
               "type": "array"
             }
           },
@@ -2177,7 +2178,7 @@ currency = "USD"
         },
         "strength": {
           "default": "auto",
-          "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
+          "description": "自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
           "enum": [
             "auto",
             "weak"
@@ -2335,10 +2336,10 @@ currency = "USD"
 | 说明 | 这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。 | Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins. | このスラッシュコマンドを使える人。管理者はターミナルの管理者とグループの管理者、全員はチャットの誰でも、無効は誰も使えません。設定しない場合はコマンド自身の設定、それもなければ管理者です。 |
 | 选项 | `admin` 管理员、`anyone` 所有人、`off` 停用 | Admins、Everyone、Off | 管理者、全員、無効 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
-| 说明 | 新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。 | Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. | 新しいセッションをどのレベルで始めるか。ワークスペースではワークスペース内の読み書きができ、コマンドはサンドボックスで実行します。フルアクセスは確認せず、サンドボックスも使いません。このマシンで開いたセッションだけに効きます。 |
+| 说明 | 调整新会话开启时的默认权限模式，修改后开新会话生效。 | The default permission mode new sessions start in. Changes apply to sessions opened afterwards. | 新しいセッションを開いたときの既定の権限モードです。変更は次に開くセッションから効きます。 |
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
-| `sandbox.private.remove` 名字（5-15 下） | 去掉的出厂私密目录 | Removed built-in private folders | 外した組み込みの非公開フォルダ |
+| `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
 | `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
 | 选项 | `auto` 自动、`weak` 弱沙盒 | Automatic、Weak | 自動、弱い |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |

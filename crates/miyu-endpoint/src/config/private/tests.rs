@@ -80,3 +80,11 @@ fn only_shipped_dirs_can_be_removed() {
     );
     assert_eq!(options(miyu_tool::private::ADD), None);
 }
+
+/// 去掉的出厂项照反着画勾（施工 5-15 再补）：勾着的是不在值里的；别的项没有这一格。
+#[test]
+fn removed_dirs_tick_what_is_not_listed() {
+    assert_eq!(ticks(miyu_tool::private::REMOVE), Some("unlisted"));
+    assert_eq!(ticks(miyu_tool::private::ADD), None);
+    assert_eq!(ticks("sandbox.strength"), None);
+}

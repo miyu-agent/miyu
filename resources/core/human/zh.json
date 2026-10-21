@@ -113,7 +113,7 @@
       },
       "sandbox.strength": {
         "name": "沙盒强度",
-        "description": "自动：有 bubblewrap 就用它，能写的地方里的私密目录也藏起来；弱沙盒：只用 Landlock。只在 Linux 上有。",
+        "description": "自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。",
         "options": {
           "auto": "自动",
           "weak": "弱沙盒"
@@ -121,15 +121,15 @@
       },
       "sandbox.private.add": {
         "name": "加的私密目录",
-        "description": "命令读写不到、文件工具要先问的目录，叠在出厂的那几个上面。写成 ~/… 或绝对路径；家目录和它的上级不收。"
+        "description": "命令读写不到、文件工具要先问的目录。"
       },
       "sandbox.private.remove": {
-        "name": "去掉的出厂私密目录",
-        "description": "出厂的私密目录里不想藏的那几个。去掉以后命令读得到、文件工具不再问；恢复默认就清空它。"
+        "name": "默认私密目录",
+        "description": "出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。"
       },
       "permission.level": {
         "name": "新会话的权限级别",
-        "description": "新会话一开始照哪一级：工作区里能读能写、执行命令在沙盒里跑；完全放开不问、也不进沙盒。只管本机开的会话。",
+        "description": "调整新会话开启时的默认权限模式，修改后开新会话生效。",
         "options": {
           "workspace": "工作区（沙盒）",
           "full": "完全放开（不启用沙盒）"

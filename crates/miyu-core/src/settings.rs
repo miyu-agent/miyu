@@ -50,11 +50,12 @@ const MODULES: [&[Item]; 35] = [
     miyu_session::switches::ITEMS,
     CommandSettings::ITEMS,
     ProfileSettings::ITEMS,
-    // 「隐私与安全」那一页排在「用户」下面（施工 5-15 下，项目主人定）：页照先出现的项排。
+    // 「隐私与安全」那一页排在「用户」下面（施工 5-15 下，项目主人定）：页照先出现的项排；组照先出现的项排：权限、沙盒、
+    // 私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）。
     PermissionSettings::ITEMS,
-    miyu_tool::private::ITEMS,
     miyu_session::settings::SandboxSettings::ITEMS,
     miyu_session::unsandboxed::ITEMS,
+    miyu_tool::private::ITEMS,
     EXTERNAL_BINDINGS,
     UseSettings::ITEMS,
     PoolSettings::ITEMS,

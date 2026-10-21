@@ -113,7 +113,7 @@
       },
       "sandbox.strength": {
         "name": "Sandbox strength",
-        "description": "Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only.",
+        "description": "Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run.",
         "options": {
           "auto": "Automatic",
           "weak": "Weak"
@@ -121,15 +121,15 @@
       },
       "sandbox.private.add": {
         "name": "Added private folders",
-        "description": "Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted."
+        "description": "Folders commands can't read or write and file tools ask about first."
       },
       "sandbox.private.remove": {
-        "name": "Removed built-in private folders",
-        "description": "Built-in private folders you don't want hidden. Once removed, commands can read them and file tools stop asking; restoring the default clears this list."
+        "name": "Default private folders",
+        "description": "Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back."
       },
       "permission.level": {
         "name": "Permission level for new sessions",
-        "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.",
+        "description": "The default permission mode new sessions start in. Changes apply to sessions opened afterwards.",
         "options": {
           "workspace": "Workspace (sandbox)",
           "full": "Full access (no sandbox)"

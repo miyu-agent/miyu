@@ -66,3 +66,41 @@ async fn a_private_dir_as_wide_as_home_is_refused() {
         "{message}"
     );
 }
+
+/// 默认私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）：`config.schema` 里叫这个名字，选项是出厂清单，带
+/// `ticks: "unlisted"`（勾着的是不在值里的）；加的那一项不带。
+#[tokio::test]
+async fn the_default_private_dirs_are_ticked_when_unlisted() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core_with_items(
+        &Script::new([]),
+        None,
+        &[],
+        miyu_tool::private::ITEMS,
+    ));
+    client.hello().await;
+    let reply = client
+        .call(
+            "s1",
+            "config.schema",
+            json!({"keys": ["sandbox.private.add", "sandbox.private.remove"]}),
+        )
+        .await;
+    let items = reply["result"]["items"].as_array().expect("有项");
+    let remove = items
+        .iter()
+        .find(|item| item["key"] == "sandbox.private.remove")
+        .expect("有去掉的那一项");
+    assert_eq!(remove["ticks"], "unlisted", "{remove}");
+    assert_eq!(remove["name"], "默认私密目录", "{remove}");
+    assert!(
+        remove["options"]
+            .as_array()
+            .is_some_and(|options| !options.is_empty())
+    );
+    let add = items
+        .iter()
+        .find(|item| item["key"] == "sandbox.private.add")
+        .expect("有加的那一项");
+    assert!(add.get("ticks").is_none(), "{add}");
+}

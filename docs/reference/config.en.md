@@ -36,6 +36,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 |---|---|
 | `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
 | `options` | Options: `value` and a display `name`; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
+| `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value); without it, ticked ones are those in the value |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type |
 | `default` | Default value |
 | `layers` | Where it may be written: `system`, `personal`, `project` |

@@ -572,7 +572,7 @@
       "properties": {
         "level": {
           "default": "workspace",
-          "description": "Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine. Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.",
+          "description": "The default permission mode new sessions start in. Changes apply to sessions opened afterwards. Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.",
           "enum": [
             "workspace",
             "full"
@@ -887,7 +887,7 @@
         "private": {
           "properties": {
             "add": {
-              "description": "Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
+              "description": "Folders commands can't read or write and file tools ask about first. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
               "items": {
                 "maxLength": 4096,
                 "minLength": 1,
@@ -897,13 +897,13 @@
               "type": "array"
             },
             "remove": {
-              "description": "Built-in private folders you don't want hidden. Once removed, commands can read them and file tools stop asking; restoring the default clears this list. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
+              "description": "Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
               "items": {
                 "maxLength": 4096,
                 "minLength": 1,
                 "type": "string"
               },
-              "title": "Removed built-in private folders",
+              "title": "Default private folders",
               "type": "array"
             }
           },
@@ -911,7 +911,7 @@
         },
         "strength": {
           "default": "auto",
-          "description": "Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only. Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.",
+          "description": "Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run. Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.",
           "enum": [
             "auto",
             "weak"

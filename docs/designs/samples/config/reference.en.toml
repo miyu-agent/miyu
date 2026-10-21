@@ -173,7 +173,7 @@ mirrors = []
 source = "https://miyu-agent.github.io/packages/"
 
 [permission]
-# Permission level for new sessions: Which level new sessions start at: the workspace lets the AI read and write in the workspace and runs commands in the sandbox; full access asks nothing and skips the sandbox. Applies to sessions opened on this machine.
+# Permission level for new sessions: The default permission mode new sessions start in. Changes apply to sessions opened afterwards.
 # Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.
 level = "workspace"
 
@@ -318,16 +318,16 @@ default = "full"
 # output =
 
 [sandbox]
-# Sandbox strength: Automatic uses bubblewrap when it's installed and also hides private folders inside writable places; weak uses only Landlock. Linux only.
+# Sandbox strength: Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run.
 # Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.
 strength = "auto"
 
 [sandbox.private]
-# Added private folders: Folders commands can't read or write and file tools ask about first, on top of the built-in ones. Write ~/… or an absolute path; your home folder and the folders above it aren't accepted.
+# Added private folders: Folders commands can't read or write and file tools ask about first.
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # add =
 
-# Removed built-in private folders: Built-in private folders you don't want hidden. Once removed, commands can read them and file tools stop asking; restoring the default clears this list.
+# Default private folders: Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back.
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # remove =
 

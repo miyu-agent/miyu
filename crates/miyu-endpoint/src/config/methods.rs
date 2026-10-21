@@ -125,8 +125,7 @@ fn schema_item(
     let mut map = Map::new();
     map.insert("key".to_string(), json!(item.key));
     map.insert("type".to_string(), json!(item.kind.as_str()));
-    // 选项的列表（施工 8-7：模型能收哪些输入）也列出能选的几个；几个字之一或者一个模型的（`model_or`，施工 R-5 补）列出
-    // 那几个字，别的照模型的写法手写。
+    // 选项的列表也列出能选的几个（施工 8-7）；几个字之一或者一个模型的（`model_or`，施工 R-5 补）列出那几个字。
     let options = match item.kind {
         Kind::Option(options) | Kind::List(&Kind::Option(options)) | Kind::ModelOr(options) => {
             Some(options)
@@ -152,6 +151,7 @@ fn schema_item(
             .collect();
         map.insert("options".to_string(), json!(named));
     }
+    super::private::tick(item.key, &mut map);
     if let Some(default) = &item.default {
         map.insert("default".to_string(), default.json());
     }

@@ -45,6 +45,19 @@ pub(super) fn hidden_here(key: &str) -> bool {
     key == "sandbox.strength" && !cfg!(target_os = "linux")
 }
 
+/// `config.schema` 里这一项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：去掉的出厂项交 `unlisted`，勾着的是不在值
+/// 里的（照旧私密），头照它反着画，不认键名；别的没有（勾着的是值里的）。
+pub(super) fn ticks(key: &str) -> Option<&'static str> {
+    (key == miyu_tool::private::REMOVE).then_some("unlisted")
+}
+
+/// 照 [`ticks`] 给 `config.schema` 里的这一项 `map` 写上 `ticks`，没有的不写。
+pub(super) fn tick(key: &str, map: &mut serde_json::Map<String, serde_json::Value>) {
+    if let Some(ticks) = ticks(key) {
+        map.insert("ticks".to_string(), serde_json::json!(ticks));
+    }
+}
+
 /// `config.schema` 里这一项的选项：去掉的出厂项交这台机器的出厂清单，别的没有。
 pub(super) fn options(key: &str) -> Option<&'static [&'static str]> {
     (key == miyu_tool::private::REMOVE).then_some(miyu_fs::SHIPPED_PRIVATE)
