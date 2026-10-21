@@ -42,6 +42,7 @@ use crate::sessions;
 use crate::usage::{Asked, Ledger};
 
 mod back;
+mod checked;
 mod goals;
 mod halt;
 mod kit;
@@ -99,6 +100,8 @@ pub(crate) struct Tools {
     preset: Option<String>,
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
+    /// 判过的真实位置（施工 5-18，`checked.rs`）：照调用编号记着，派的时候交给工具。
+    checked: BTreeMap<CallId, Arc<[PathBuf]>>,
     /// 脚本里调的（施工 M-2，`nested.rs`）。
     nested: nested::Nesting,
     /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
@@ -257,6 +260,7 @@ impl Tools {
             packages: kit.packages,
             hooks: kit.hooks,
             running: BTreeMap::new(),
+            checked: BTreeMap::new(),
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             backs,
@@ -359,6 +363,7 @@ impl Tools {
             }),
             // 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项，例如搜索来源。
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
+            checked: Some(self.take_checked(call_id)),
         };
         let call_text = call_id.to_string();
         let Some(tool) = self.catalog.get(&name) else {

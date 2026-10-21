@@ -6,8 +6,10 @@
 mod support;
 
 mod ask_user;
+mod audit_data_root;
 mod background;
 mod budget;
+mod checked;
 mod edit;
 mod glob;
 mod grep;

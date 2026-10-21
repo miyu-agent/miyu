@@ -19,7 +19,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use miyu_fs::{Places, ResolveError, Zone, resolve, resolve_itself};
 use miyu_kernel::event::{Permission, Said};
@@ -28,7 +28,6 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Verdict;
 use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::{Access, Worded};
-use miyu_policy::GuardTexts;
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
@@ -41,6 +40,7 @@ mod bounds;
 mod confined;
 mod levels;
 mod unsandboxed;
+mod untargeted;
 
 use bounds::Bounds;
 pub(crate) use levels::{Effective, effective};
@@ -48,6 +48,7 @@ use levels::{Mark, mark};
 
 use asking::{Asked, ask, granted, hazardous, this_dir};
 pub(crate) use confined::Confined;
+use untargeted::{beyond, described, in_venue, untargeted};
 
 /// 权限策略：一个会话一份。
 pub(crate) struct Guard {
@@ -198,7 +199,8 @@ impl Guard {
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
-    /// 规则 `grants`（施工 D-1）。
+    /// 规则 `grants`（施工 D-1）。交回判下来的，连同报的路径判的时候换成的真实位置（施工 5-18）：执行器交给工具，工具只碰
+    /// 这几个。
     pub(crate) fn judge(
         &self,
         name: &str,
@@ -207,6 +209,20 @@ impl Guard {
         dirs: &[String],
         permission: &Permission,
         grants: &[RawJson],
+    ) -> (Verdict, Vec<PathBuf>) {
+        let mut checked = Vec::new();
+        let verdict = self.verdict((name, args, cwd), dirs, permission, grants, &mut checked);
+        (verdict, checked)
+    }
+
+    /// 同 [`Guard::judge`]，换成的真实位置记进 `checked`。
+    fn verdict(
+        &self,
+        (name, args, cwd): (&str, String, String),
+        dirs: &[String],
+        permission: &Permission,
+        grants: &[RawJson],
+        checked: &mut Vec<PathBuf>,
     ) -> Verdict {
         // 目录里没有的：放行，执行时报现在用不了（施工 4-2）。
         let Some(tool) = self.catalog.get(name) else {
@@ -254,12 +270,21 @@ impl Guard {
             nested: None,
             ids: None,
             settings: None,
+            checked: None,
         };
         let asking = tool.asking(&call);
         if local_venue {
             return untargeted(level, name, Access::Outbound, self.sandboxed, &asking);
         }
-        let verdict = self.paths(tool.as_ref(), name, level, &call, dirs, grants, &asking);
+        let verdict = self.paths(
+            tool.as_ref(),
+            (name, level),
+            &call,
+            dirs,
+            grants,
+            &asking,
+            checked,
+        );
         // 管理员放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
         let granted = self.admin_granted(name, &call.cwd, dirs, grants);
         // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）。
@@ -294,17 +319,17 @@ impl Guard {
         }
     }
 
-    /// 照报的路径判；一条都没报的照访问类别判（第四条）。
+    /// 照报的路径判；一条都没报的照访问类别判（第四条）。每一条换成的真实位置记进 `checked`（施工 5-18）。
     #[allow(clippy::too_many_arguments)]
     fn paths(
         &self,
         tool: &dyn Tool,
-        name: &str,
-        level: Effective,
+        (name, level): (&str, Effective),
         call: &Call,
         dirs: &[String],
         grants: &[RawJson],
         asking: &[(&'static str, String)],
+        checked: &mut Vec<PathBuf>,
     ) -> Verdict {
         let access = tool.spec().access.clone();
         let targets = tool.targets(call);
@@ -329,6 +354,7 @@ impl Guard {
                     );
                 }
             };
+            checked.push(real.clone());
             let zone = boundary.zone(&real);
             // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12），读放开只读的技能文件夹除外（施工 X-10 上）。
             if let Some(confined) = &self.confined
@@ -384,79 +410,6 @@ impl Guard {
         }
         resolve(cwd, home, &target.path)
     }
-}
-
-/// 不报路径的调用：执行命令，沙盒能用（`sandboxed`）就工作区、只读都放行，在沙盒里跑；用不了的问人（施工 5-4 上）。
-/// 读写放行（查不到路径的执行时自己报错），联网、对外发消息这些还没有的，除了完全放开都问人。问人时的说明并进工具交的
-/// `asking`（施工 D-4）。
-fn untargeted(
-    level: Effective,
-    name: &str,
-    access: Access,
-    sandboxed: bool,
-    asking: &[(&'static str, String)],
-) -> Verdict {
-    let fine = matches!(
-        (&access, level),
-        (_, Effective::Full) | (Access::Read | Access::Write, _)
-    ) || (access == Access::Execute && sandboxed);
-    if fine {
-        return Verdict::Allow;
-    }
-    let detail = described(name, &access, asking);
-    Verdict::Ask {
-        module: module(),
-        access,
-        rule: None,
-        detail: Some(detail),
-    }
-}
-
-/// 在场所里做的事（访问类别 `venue`，施工 O-31 前，第四条）：场所会话里放行、不问人；本机的会话拒绝。
-fn in_venue(place: &Place) -> Verdict {
-    match place {
-        Place::Venue => Verdict::Allow,
-        Place::Local(worded) => deny(worded.clone()),
-    }
-}
-
-/// 要在沙盒外跑的（施工 D-4，第四条）：拒绝的照拒（数据根这些），完全放开照判的（本来就不套沙盒），只读拒绝，工作区问人、
-/// 不提规则（一次放开整个沙盒，不该一劳永逸；本会话放行过的规则只管路径，管不到它）。
-fn beyond(
-    verdict: Verdict,
-    level: Effective,
-    (name, access, rule): (&str, Access, Option<RawJson>),
-    asking: &[(&'static str, String)],
-    texts: &GuardTexts,
-) -> Verdict {
-    match (verdict, level) {
-        (denied @ Verdict::Deny { .. }, _) => denied,
-        (verdict, Effective::Full) => verdict,
-        (_, Effective::ReadOnly) => deny(texts.read_only()),
-        (_, Effective::Workspace) => {
-            let detail = described(name, &access, asking);
-            Verdict::Ask {
-                module: module(),
-                access,
-                rule,
-                detail: Some(detail),
-            }
-        }
-    }
-}
-
-/// 不报路径的调用问人时的说明（第五条第 4 款，施工 D-4）：工具交的几格，再写上工具名；执行类的写明这一次不在沙盒里跑
-/// （走到问人的执行，不是要在沙盒外跑，就是沙盒用不了）。键照字母排。
-fn described(name: &str, access: &Access, asking: &[(&'static str, String)]) -> RawJson {
-    let mut detail = json!({});
-    for (key, value) in asking {
-        detail[*key] = json!(value);
-    }
-    detail["tool"] = json!(name);
-    if *access == Access::Execute {
-        detail["sandbox"] = json!(false);
-    }
-    raw(&detail)
 }
 
 /// 拒绝，写给她这一句，连同给人看的说法。

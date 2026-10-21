@@ -178,3 +178,37 @@ async fn attachments_need_a_message() {
     );
     assert!(port.asked().is_empty());
 }
+
+/// 附件只读权限策略判过的位置（施工 5-18）：判过的只有 `ok.txt`，另一个换出来不在里面，整句不发；只带判过的照发。
+#[tokio::test]
+async fn an_attachment_that_was_not_judged_stops_the_message() {
+    let site = Site::new();
+    site.file("work/ok.txt", b"fine");
+    site.file("work/other.txt", b"other");
+    let judged = vec![site.real("work/ok.txt")];
+    let port = Port::new(Ok(Delivered::Sent));
+    let done = site
+        .done_checked(
+            "send_message",
+            with(&["ok.txt", "other.txt"]),
+            Some(port.clone()),
+            Some(judged.clone()),
+        )
+        .await;
+    assert!(done.error);
+    assert!(
+        text(&done).contains("changed after the permission check"),
+        "{}",
+        text(&done)
+    );
+    assert!(port.asked().is_empty(), "整句不发");
+    let done = site
+        .done_checked(
+            "send_message",
+            with(&["ok.txt"]),
+            Some(port.clone()),
+            Some(judged),
+        )
+        .await;
+    assert!(!done.error, "{}", text(&done));
+}

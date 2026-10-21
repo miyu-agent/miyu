@@ -81,6 +81,7 @@ fn write_comes_from_the_resources_and_names_what_it_writes() {
         nested: None,
         ids: None,
         settings: None,
+        checked: None,
     });
     assert_eq!(targets.len(), 1);
     assert_eq!(targets[0].path, "src/a.rs");

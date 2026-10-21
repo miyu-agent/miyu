@@ -10,7 +10,7 @@ use std::path::Path;
 use serde::Deserialize;
 
 use miyu_fs::trash::{Refused, put};
-use miyu_fs::{resolve, resolve_itself, within};
+use miyu_fs::{resolve, within};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
@@ -94,13 +94,13 @@ impl Tool for Trash {
     }
 }
 
-/// 删：照 [`resolve_itself`] 换成真实的位置（最后一段不跟链接），不许删的不删，照平台移进回收站。移之前看一眼旗（施工 4-9 再补一）：
-/// 叫停了就不移，交回 `stopped`。
+/// 删：照 [`Call::real_itself`] 换成真实的位置（最后一段不跟链接，要是权限策略判过的，施工 5-18），不许删的不删，照平台
+/// 移进回收站。移之前看一眼旗（施工 4-9 再补一）：叫停了就不移，交回 `stopped`。
 fn trash(texts: &Texts, call: &Call, path: &str, stop: &Stop) -> Done {
     let refuse = |template: &Template, key: &str| {
         Done::error(say(template, &[("path", path)])).said(said(key))
     };
-    let real = match resolve_itself(Path::new(&call.cwd), call.home.as_deref(), path) {
+    let real = match call.real_itself(path) {
         Ok(Some(real)) => real,
         Ok(None) => return refuse(&texts.protected, "trash/protected"),
         Err(error) => return texts.common.failed(path, &error),

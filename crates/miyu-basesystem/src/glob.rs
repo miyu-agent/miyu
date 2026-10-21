@@ -5,7 +5,6 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use miyu_fs::resolve;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Stop, Target, Tool};
@@ -110,7 +109,7 @@ fn find(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
         Err(error) => return texts.common.bad_glob(&args.pattern, &error),
     };
     let shown = Shown::here(call);
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), &dir) {
+    let real = match call.real(&dir) {
         Ok(real) => real,
         Err(error) => return texts.common.failed(&dir, &error),
     };

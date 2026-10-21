@@ -8,6 +8,7 @@
 //! - 答：内核记过、落了盘才出 `Answer`，这时才把结果交给等着的那一头。等着的那一头没了（脚本被杀）的，不理。
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -52,6 +53,8 @@ struct Waiting {
     origin: CallId,
     /// 跑完了：交给脚本的那一份，等答的时候交。
     result: Option<Settled>,
+    /// 权限策略判过的真实位置（施工 5-18）：判的时候记下，跑的时候交给工具。
+    checked: Option<Arc<[PathBuf]>>,
 }
 
 struct Running {
@@ -129,6 +132,7 @@ impl Tools {
                     reply,
                     origin,
                     result: None,
+                    checked: None,
                 };
                 self.nested.waiting.insert(id.clone(), waiting);
                 Some(Input::Nested(NestedInput::Call { at, id, name, args }))
@@ -156,6 +160,13 @@ impl Tools {
         }
     }
 
+    /// 记下嵌套调用 `id` 判过的真实位置 `checked`（施工 5-18）：不在等着的（掐掉了的）不记。
+    pub(crate) fn checked_nested(&mut self, id: &NestedId, checked: Vec<PathBuf>) {
+        if let Some(waiting) = self.nested.waiting.get_mut(id) {
+            waiting.checked = Some(Arc::from(checked));
+        }
+    }
+
     /// 跑一次嵌套调用：在自己的任务里跑，马上返回。目录里没有这件工具的，当场照出错交回。
     pub(crate) fn run_nested(&mut self, at: Timestamp, run: NestedRun) -> Option<Input> {
         let NestedRun {
@@ -169,8 +180,15 @@ impl Tools {
             compacted,
             config,
         } = run;
-        // 内核只派收下了的：收下时一定记了派它的那次调用。没有的是 bug，不跑；父级结束时照「已取消」收掉。
-        let Some(origin) = self.nested.waiting.get(&id).map(|waiting| waiting.origin) else {
+        // 内核只派收下了的：收下时一定记了派它的那次调用。没有的是 bug，不跑；父级结束时照「已取消」收掉。判过的真实位置
+        // 没记下的（不该有）按一个都没判过算，工具换出来的一律不碰（施工 5-18）。
+        let Some((origin, checked)) = self.nested.waiting.get_mut(&id).map(|waiting| {
+            let checked = waiting.checked.take();
+            (
+                waiting.origin,
+                checked.unwrap_or_else(|| Arc::from(Vec::new())),
+            )
+        }) else {
             tracing::error!(target: TARGET, nested = id.to_string().as_str(), "nested call run before it came");
             return None;
         };
@@ -224,6 +242,7 @@ impl Tools {
                 preset: self.preset.clone(),
             }),
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
+            checked: Some(checked),
         };
         let shown = id.to_string();
         tracing::info!(target: TARGET, nested = shown.as_str(), tool = name.as_str(), "running nested");

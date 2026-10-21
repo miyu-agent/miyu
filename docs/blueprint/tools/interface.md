@@ -10,6 +10,7 @@
 |---|---|
 | `crates/miyu-tool/src/lib.rs` | 规格 `Spec`、接口 `Tool` |
 | `crates/miyu-tool/src/run.rs` | 一次调用：`Call`、`Seen`、`Target`、`Done`、`Effect`、`Progress`、`Running` |
+| `crates/miyu-tool/src/checked.rs` | 工具执行时换路径：`Call::real`、`Call::real_itself`，换出来的不是判过的报 `Unchecked`（施工 5-18） |
 | `crates/miyu-tool/src/agents.rs` | 派子代理的端口 `AgentPort`、`Spawned`、`NotSpawned`，那件工具的名字 `SUBAGENT`、以前的名字 `SUBAGENT_FORMERLY`、两个都认的 `is_subagent`（施工 7-5，7-5 再补） |
 | `crates/miyu-tool/src/messages.rs` | 留言的端口 `MessagePort`、发给谁 `Recipient`、没送出去 `NotSent`，那件工具的名字 `MESSAGE_AGENT`（施工 7-7） |
 | `crates/miyu-tool/src/sessions.rs` | 列会话的端口 `SessionsPort`、列出来的一个 `MainSession`，那件工具的名字 `SESSIONS`；认会话编号的 `find_session`、`Found`（施工 C-3） |
@@ -62,6 +63,7 @@
 | `home` | 系统的家目录；读不出来的是空的 |
 | `data_root` | Miyu 的数据根；不知道的是空的（会话里总有） |
 | `seen` | 她这个会话里看过的文件（`Arc<Seen>`） |
+| `checked` | 权限策略判过的真实位置（`Arc<[PathBuf]>`，施工 5-18）：工具报的每一条 `Target` 判的时候换成的那一个。执行器照这一次调用放进来，工具经 `Call::real`、`Call::real_itself` 换路径时核对（第三节第 4 条）。测试里直接造的调用、执行前的链报路径时没有，照换出来的碰 |
 | `stop` | 叫停的旗（`Stop`）：执行器「叫它停」时举起来，future 被丢掉时也举起来 |
 | `sandbox` | 要关进沙盒的：助手的路径、规格、要设的环境变量（`Sandboxed`，`sandbox.md`）；空的照旧直接跑。施工 5-1 加的，5-4（上）起执行器照这一刻实际生效的级别带（`session/tools.md`） |
 | `log` | 这个会话日志的只读入口（`Log`，里面是一个 `ReadLog`）：一段一段交出事件，交给的函数说不读了就停。只有 `history` 用（施工 6-4，`tools/history.md`）；没有的是空的 |
@@ -138,9 +140,9 @@
 #### 二、一次调用
 
 1. 内核先查（`kernel/`）：工具面上没有这个名字的、参数不是 JSON 对象的，当场记出错的结果；只读时写文件的（访问类别是 `write` 和不认识的）当场拦下。别的照参数格式修正参数：被写成字符串的数组、对象、整数、数字、布尔还原回去，声明成字符串的一个字节不碰，什么都没写的当成 `{}`。
-2. 轮到的先过权限策略（`crates/miyu-session/src/guard.rs`）：目录里没有这件工具的放行（执行时报用不了）；照 `targets` 报的路径判；一条都不报的，照访问类别判。交给 `targets` 的 `Call` 里 `seen` 是空的：报路径只看参数。要问人、工具要先看一眼的（`preview`，施工 F-10 下）：执行器带着端口看，成了的放进说明，看不了的换成拒绝（`crates/miyu-session/src/tools/preview.rs`）。
+2. 轮到的先过权限策略（`crates/miyu-session/src/guard.rs`）：目录里没有这件工具的放行（执行时报用不了）；照 `targets` 报的路径判；一条都不报的，照访问类别判。判的时候换成的真实位置一并交回，执行器照调用编号记下（施工 5-18，`session/tools.md` 第 1 条）。交给 `targets` 的 `Call` 里 `seen` 是空的：报路径只看参数。要问人、工具要先看一眼的（`preview`，施工 F-10 下）：执行器带着端口看，成了的放进说明，看不了的换成拒绝（`crates/miyu-session/src/tools/preview.rs`）。
 3. 派出去（`crates/miyu-session/src/tools.rs`）：
-   1. 造 `Call`：`args` 是修正过的参数；`cwd` 是回合开始时的工作目录；`home` 是核心起来时读的系统家目录；`data_root` 是数据根；`seen` 是这个会话她看过的文件，共享一份；`log` 照会话的目录造，`offset` 是会话现在的时区（施工 6-4）；`agents` 照这一轮的工作目录、加进来的目录、派出去那一刻的权限造（施工 7-5，会话表交进来了端口才有）；`messages` 照内核这一刻交的派出去的子代理造（施工 7-7，同上）；`sessions` 本机的主会话才造（施工 C-3，同上）；`usage` 派的是 `session_usage`、开着用量汇总的才造（施工 8-15）。
+   1. 造 `Call`：`args` 是修正过的参数；`cwd` 是回合开始时的工作目录；`home` 是核心起来时读的系统家目录；`data_root` 是数据根；`seen` 是这个会话她看过的文件，共享一份；`log` 照会话的目录造，`offset` 是会话现在的时区（施工 6-4）；`agents` 照这一轮的工作目录、加进来的目录、派出去那一刻的权限造（施工 7-5，会话表交进来了端口才有）；`messages` 照内核这一刻交的派出去的子代理造（施工 7-7，同上）；`sessions` 本机的主会话才造（施工 C-3，同上）；`usage` 派的是 `session_usage`、开着用量汇总的才造（施工 8-15）；`checked` 是第 2 步记下的那几个（施工 5-18）。
    2. 快照里有、核心的目录里没有这件（核心升级拿掉了，老会话照样调）：不派，当场交回出错的结果（下面「执行器替工具写的两句」），没有用时。
    3. 在自己的任务里跑 `run` 交回的 future，记下开始跑的那一刻。
    4. `push` 的每一段，这次调用还在跑的，送回会话，推给头（瞬时的 `tool.progress`），不落盘；叫停了的不理。
@@ -172,6 +174,7 @@
    | `subagent` | 一条都不报：访问类别是读，放行（`tools/subagent.md`） |
    | `send_message` | 一条都不报：访问类别是读，放行（`tools/send_message.md`） |
    | `sessions` | 一条都不报：访问类别是读，放行（`tools/sessions.md`） |
+4. 执行时换路径（施工 5-18，`11-权限与沙盒.md` 第七节）：工具不自己调 `miyu_fs::resolve`，照 `Call::real`（碰的是这一条本身的照 `Call::real_itself`）换：换法和权限策略的一样，换出来的要在 `checked` 里，不在的不碰，交回出错 `Could not read "<path>": the path changed after the permission check.`（`common/failed.txt`，原因是 `miyu_tool::Unchecked` 的写法），说法 `common/failed`。判完到跑之前路径上的链接被换掉（沙盒里的命令就换得了工作区里的链接），工具换出来的就不是判过的那一个，可能落进数据根、私密目录，或者工作区一级不问人写到工作区外，所以照判过的核，不只守数据根。换出来以后到打开之间，照旧由逐层不跟链接地打开挡（`fs.md` 第四节）。`read`、`write`、`edit`、`trash`、`show`、`glob`、`grep`，`send_message`、`subagent` 的附件都照这一条；`glob`、`grep` 只核搜的那个目录，往下照走目录的不跟链接走，读文件照旧逐层不跟链接地打开。
 
 #### 四、效果和她看过的
 
@@ -254,6 +257,7 @@
 | `crates/miyu-basesystem/tests/human.rs` | 基础系统每一种结果都带说法，两种语言都换得出字 |
 | `xtask/src/ledger.rs`（`cargo xtask check` 的「文档」） | 给模型看的每一份字在登记簿里、指纹对得上 |
 | `crates/miyu-basesystem/tests/budget.rs` | 工具面的几份说明加起来不超过预算的字节数 |
+| `crates/miyu-tool/src/checked/tests.rs`、`crates/miyu-basesystem/tests/checked.rs`、`audit_data_root.rs`、`send_message/attachments.rs` 的 `an_attachment_that_was_not_judged_stops_the_message`（施工 5-18） | 换出来的要是判过的：没带判过的照原样，带了的不在里面就拒、还不存在的照上级判过的、碰本身的照本身、没名字可碰的不核；判完上级被换成链接的拒（只在 Unix 上）；每件文件工具（连附件）不在判过的就不碰、说变了，在的照常；判过的是工作区、要碰的落在数据根里的读、写都不碰 |
 
 ### 出处
 

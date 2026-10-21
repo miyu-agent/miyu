@@ -52,6 +52,7 @@ fn glob_comes_from_the_resources() {
             nested: None,
             ids: None,
             settings: None,
+            checked: None,
         })
     };
     assert_eq!(target(r#"{"pattern":"*.rs"}"#)[0].path, ".");

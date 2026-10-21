@@ -116,6 +116,7 @@ async fn search_with(
         packages: None,
         ids: None,
         settings,
+        checked: None,
     };
     tokio::time::timeout(
         Duration::from_secs(60),

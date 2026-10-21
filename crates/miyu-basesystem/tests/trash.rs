@@ -61,6 +61,7 @@ fn trash_comes_from_the_resources_and_names_what_it_writes() {
             nested: None,
             ids: None,
             settings: None,
+            checked: None,
         });
         assert_eq!(targets.len(), 1, "{args}");
         assert_eq!(targets[0].path, "old.txt");
@@ -308,6 +309,7 @@ mod linux {
             nested: None,
             ids: None,
             settings: None,
+            checked: None,
         };
         let done = tool("trash").run(call, Progress::new(|_| {})).await;
         assert_eq!(done.human, Some(said("trash/protected")), "{}", text(&done));

@@ -11,7 +11,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use miyu_fs::{Kind, OpenError, open_file, resolve};
+use miyu_fs::{Kind, OpenError, open_file};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::picture;
@@ -122,7 +122,7 @@ impl Tool for Read {
 /// 读：换成真实的位置，是目录就列，是文件就按行读。
 fn read(texts: &Texts, call: &Call, args: &Args) -> Done {
     let path = args.file_path.as_str();
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), path) {
+    let real = match call.real(path) {
         Ok(real) => real,
         Err(error) => return texts.common.failed(path, &error),
     };

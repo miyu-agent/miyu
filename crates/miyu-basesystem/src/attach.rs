@@ -6,7 +6,7 @@
 use std::io::Read as _;
 use std::path::Path;
 
-use miyu_fs::{Kind, OpenError, open_file, resolve};
+use miyu_fs::{Kind, OpenError, open_file};
 use miyu_kernel::id::{FileName, SourcePath};
 use miyu_kernel::template::Template;
 use miyu_tool::attachment::{Attached, LIMIT, kind};
@@ -76,8 +76,7 @@ pub(crate) async fn read(
 fn one(texts: &Texts, call: &Call, path: &str) -> Result<Attached, Box<Done>> {
     let common = &texts.common;
     let failed = |error: &dyn std::fmt::Display| Box::new(common.failed(path, error));
-    let real = resolve(Path::new(&call.cwd), call.home.as_deref(), path)
-        .map_err(|error| failed(&error))?;
+    let real = call.real(path).map_err(|error| failed(&error))?;
     let file = match open_file(&real) {
         Ok(file) => file,
         Err(OpenError::NotFound) => {

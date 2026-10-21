@@ -11,7 +11,6 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-use miyu_fs::resolve;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Stop, Target, Tool};
@@ -184,7 +183,7 @@ fn grep(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     };
     let shown = Shown::here(call);
     let path = args.path();
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), &path) {
+    let real = match call.real(&path) {
         Ok(real) => real,
         Err(error) => return texts.common.failed(&path, &error),
     };

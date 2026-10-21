@@ -9,7 +9,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use miyu_fs::{Kind as FileKind, OpenError, open_file, resolve};
+use miyu_fs::{Kind as FileKind, OpenError, open_file};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::attachment::LIMIT;
@@ -94,7 +94,7 @@ impl Tool for Show {
 fn show(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     let path = args.path.as_str();
     let common = &texts.common;
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), path) {
+    let real = match call.real(path) {
         Ok(real) => real,
         Err(error) => return common.failed(path, &error),
     };

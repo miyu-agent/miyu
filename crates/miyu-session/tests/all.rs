@@ -25,6 +25,7 @@ mod goal_rounds;
 mod goal_tool;
 mod group;
 mod guard;
+mod guard_checked;
 mod guard_confined;
 mod guard_dirs;
 mod guard_grants;

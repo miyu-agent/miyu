@@ -356,7 +356,11 @@ impl Actor {
                 self.describe(blob, request);
                 None
             }
-            Action::RunTurnEndHooks { .. } => None,
+            // 回合结束：判过却没派出去的真实位置扔掉（施工 5-18）。
+            Action::RunTurnEndHooks { .. } => {
+                self.tools.forget_checked();
+                None
+            }
             Action::GuardTool {
                 call_id,
                 name,
@@ -370,9 +374,11 @@ impl Actor {
                 // 自己等（施工 4-9 再补四下：原来当场在这里判）。
                 let guard = Arc::clone(&self.guard);
                 let (asked, looked) = ((name.clone(), args.clone()), cwd.clone());
-                let verdict =
+                let (verdict, checked) =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
+                // 判过的真实位置派的时候交给工具（施工 5-18）。
+                self.tools.checked(call_id, checked);
                 // 要问人的先看一眼（施工 F-10 下）：装包问人的卡片照看一眼的那一份。
                 let verdict = self
                     .tools

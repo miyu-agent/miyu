@@ -6,7 +6,7 @@
 //!
 //! - [`Spec`]：一件工具的规格，第一批四格；
 //! - [`Tool`]：一件工具：报规格，报一次调用要碰的路径（[`Target`]，施工 4-3 下），执行一次调用（[`Call`] 进、
-//!   [`Done`] 出，施工 4-2）；
+//!   [`Done`] 出，施工 4-2）；工具执行时经 [`Call::real`] 换路径，换出来的要是权限策略判过的（[`Unchecked`]，施工 5-18）；
 //! - [`Catalog`]：工具目录，登记时查重名、名字和参数格式的写法；
 //! - [`Log`]：这个会话日志的只读入口（施工 6-4），`history` 用；
 //! - [`AgentPort`]：派子代理的端口（施工 7-5），`subagent` 用；
@@ -22,6 +22,7 @@
 mod agents;
 pub mod attachment;
 mod catalog;
+mod checked;
 pub mod detail;
 mod goals;
 mod hooks;
@@ -52,6 +53,7 @@ pub use agents::{
 pub use catalog::{
     BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix, mcp_service,
 };
+pub use checked::Unchecked;
 pub use goals::{
     BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
 };

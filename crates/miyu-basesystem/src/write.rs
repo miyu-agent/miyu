@@ -10,7 +10,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use miyu_fs::{Kind, OpenError, replace, resolve};
+use miyu_fs::{Kind, OpenError, replace};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
@@ -95,7 +95,7 @@ impl Tool for Write {
 fn write(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     let path = args.file_path.as_str();
     let failed = |error: &dyn std::fmt::Display| texts.common.write_failed(path, error);
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), path) {
+    let real = match call.real(path) {
         Ok(real) => real,
         Err(error) => return failed(&error),
     };

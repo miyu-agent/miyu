@@ -11,7 +11,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use miyu_fs::{Kind, OpenError, replace, resolve};
+use miyu_fs::{Kind, OpenError, replace};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
@@ -166,7 +166,7 @@ fn edit(texts: &Texts, call: &Call, path: &str, changes: &[Change], stop: &Stop)
     if changes.is_empty() {
         return Done::error(say(&texts.no_edits, &[])).said(said("edit/no-edits"));
     }
-    let real = match resolve(Path::new(&call.cwd), call.home.as_deref(), path) {
+    let real = match call.real(path) {
         Ok(real) => real,
         Err(error) => return texts.common.failed(path, &error),
     };

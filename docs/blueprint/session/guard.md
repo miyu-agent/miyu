@@ -14,6 +14,7 @@
 | `crates/miyu-policy/src/guard.rs` | 拒绝时写给她的三句，造会话、载入时从策略快照里拿 |
 | `resources/core/permissions/forbidden.txt`、`unresolvable.txt`，`resources/core/tool-results/read-only.txt` | 三句的原文 |
 | `resources/core/permissions/not-in-venue.txt`（施工 O-31 前） | 本机的会话里拒绝在场所里做的事的那一句：不进策略快照，本机的会话造、载入时读（`crates/miyu-session/src/open.rs` 的 `place`） |
+| `crates/miyu-session/src/guard/untargeted.rs` | 不报路径的调用（第四条）：照访问类别、在场所里做的事、要在沙盒外跑的（施工 5-18 从 `guard.rs` 挪出来：那边到了 500 行） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
 | `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里 |
@@ -68,6 +69,7 @@
 8. 都判完了：有要问人的，问人（第 5 条）；没有，放行。
 9. 所以拒绝胜过问人，问人胜过放行；拒绝时说的是照先后第一条被拒的那一条。
 10. 在阻塞线程里判，actor 等它判完，再把「链判完了」送进内核（`session/actor.md`）：换真实的位置、造边界表都碰磁盘，不占跑异步任务的线程，慢盘上只让这个会话自己等（施工 4-9 再补四下：原来当场在 actor 的异步线程里判）。
+11. 第 6 条换成的真实位置（照判的先后，判到拒绝的那一条为止）连同结论一起交回（施工 5-18）：actor 交给执行器记下，派的时候放进 `Call.checked`，工具只碰这几个（`session/tools.md` 第 1 条、`tools/interface.md`「三、要碰的路径」第 4 条）。判的和碰的是同一次换出来的：工具自己再换一次、和判过的对不上，就是判完以后路径上的链接被换过，不碰。
 
 | 工具 | 报的路径 | 读还是写 |
 |---|---|---|
@@ -218,6 +220,7 @@
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，工作区没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 问人，人点头以前扩展收不到 `tool.call`。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |
 | `crates/miyu-session/tests/guard_grants.rs`（施工 D-1） | 选了本会话都允许，同一个目录下面的写不再问、名字只是开头一样的旁边的目录照旧问；家目录里的一个文件只放它本身、同在家目录里的别的照旧问；家目录在链接后面也照真实的位置比（只在 Unix 上） |
+| `crates/miyu-session/tests/guard_checked.rs`（施工 5-18） | 判过的真实位置交到工具手里：报的几条照先后（相对的、外面的、还不存在的），不报路径的是空的；脚本里调的一样带；工作区里的链接在问人时被换成指进数据根，人点了允许，`write` 不写、说路径在判过以后变了（只在 Unix 上） |
 | `crates/miyu-session/tests/guard_dirs.rs` | 加进来的目录（施工 5-10 上）：里面写不用问、里面的 `.git/hooks` 只能读、只读照旧拒绝 |
 | `crates/miyu-session/tests/sandbox_workspace.rs`（施工 5-14） | 工作目录是家目录的：沙盒能写的是会话的默认工作区（用到时建好）、命令照旧从家目录起；子会话、孙会话写主会话的那一个，`workspace_from` 记下；载入以后文件工具写会话的那一个放行、家目录别处要问；Unix 上有收紧手段的真跑：`pwd` 是家目录，家目录写不了，会话的那一个写得了 |
 | `crates/miyu-session/tests/guard_private.rs`（施工 5-13） | 私密目录：工作区、只读两级的读都问人，说明里是 `private`、规则放行整个目录；没人能确认的不跑；只读的写不问直接拒；完全放开读写都不问；工作区、加进来的目录在里面的照工作区 |

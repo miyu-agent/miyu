@@ -23,9 +23,11 @@ impl Actor {
                 grants,
             } => {
                 let guard = Arc::clone(&self.guard);
-                let verdict =
+                let (verdict, checked) =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
+                // 判过的真实位置跑的时候交给工具（施工 5-18）。
+                self.tools.checked_nested(&id, checked);
                 Some(Input::Nested(NestedInput::Guarded {
                     at: self.clock.now(),
                     id,

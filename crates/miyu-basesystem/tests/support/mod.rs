@@ -171,8 +171,20 @@ impl Site {
         args: serde_json::Value,
         messages: Option<Arc<dyn MessagePort>>,
     ) -> Done {
+        self.done_checked(name, args, messages, None).await
+    }
+
+    /// 同 [`Site::done_with_messages`]，权限策略判过的真实位置是 `checked`（施工 5-18）。
+    pub async fn done_checked(
+        &self,
+        name: &str,
+        args: serde_json::Value,
+        messages: Option<Arc<dyn MessagePort>>,
+        checked: Option<Vec<PathBuf>>,
+    ) -> Done {
         let call = Call {
             messages,
+            checked: checked.map(Arc::from),
             ..self.call_for("work", args, Seen::new(), Stop::default())
         };
         tool(name).run(call, Progress::new(|_| {})).await
@@ -325,6 +337,7 @@ impl Site {
             nested: None,
             ids: None,
             settings: None,
+            checked: None,
         }
     }
 }
