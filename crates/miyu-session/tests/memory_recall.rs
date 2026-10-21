@@ -240,6 +240,21 @@ async fn in_the_owners_own_private_chat_too() {
     );
 }
 
+/// 群里也联想主人那边记的（施工 R-29：记忆是一个整体，原来场所里只冒出在那里说过的）：会话的属主不是记忆归的那个账号（系统
+/// 账号开的群会话那种），记下时没写场所的照样带上。
+#[tokio::test]
+async fn in_a_group_what_was_remembered_elsewhere_too() {
+    let lines = Lines {
+        venue: VenueId::parse("qq:group:5550").expect("合写法"),
+        owner_is_admin: true,
+        ..Lines::default()
+    };
+    assert!(
+        recalled_after(|home| meaning(home, &table("-1.0")), lines).await > 0,
+        "群里也想得起别处记的"
+    );
+}
+
 /// 只带现在算数的（照 `Keeper::shown`，同搜、同列）：作废了的，字面、意思都对得上也不带。
 #[tokio::test]
 async fn what_is_forgotten_is_not_brought() {

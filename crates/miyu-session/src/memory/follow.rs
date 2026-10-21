@@ -97,11 +97,11 @@ impl Keeper {
         })
     }
 
-    /// 这一行给不给这次的听众看：记下的、作废的照那一条判，清掉了的、听众不合的不给（底账里没有的照给）；别的是整间的、照给。
+    /// 这一行给不给看：记下的、作废的照那一条判，清掉了的不给（底账里没有的照给）；别的是整间的、照给。哪儿都给（施工 R-29）。
     fn followed(&self, event: &Event, book: &MemoryBook) -> bool {
         about(event)
             .and_then(|id| book.get(id))
-            .is_none_or(|entry| !entry.cleared && self.hears(entry))
+            .is_none_or(|entry| !entry.cleared)
     }
 }
 

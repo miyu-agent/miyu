@@ -152,8 +152,8 @@ pub struct Saved {
     /// 说的是哪天的事，写法自由；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub about: Option<String>,
-    /// 在哪个场所说的（施工 R-13 上，`memory.md` 第九条）：场所里记的是那个场所，只在那个场所和主人那边冒出来；主人那边记的、
-    /// 以前记的没有，不写。
+    /// 在哪个场所说的（施工 R-13 上，`memory.md` 第九条）：场所里记的是那个场所；主人那边记的、以前记的没有，不写。只记在哪说的，
+    /// 哪儿都想得起（施工 R-29）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venue: Option<VenueId>,
     /// 只用来检索的关键词（施工 R-15 上）：一行，逗号隔开，最多 [`KEYWORD_CHARS`] 字；没有的不写（以前记的都没有）。

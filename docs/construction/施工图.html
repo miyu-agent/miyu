@@ -856,6 +856,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-25"><span class="n">R-25</span>miyu check 印语义模型的状态<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-28"><span class="n">R-28</span>等后台也等补齐<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-29"><span class="n">R-29</span>记忆是一个整体<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -26418,6 +26419,54 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-28-等后台也等补齐.md</code>；蓝图 <code>memory.md</code> 第一条第 9 款。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sR-29" aria-labelledby="h-sR29">
+  <div class="sheet-head"><h2 id="h-sR29"><span class="no">R-29</span>记忆是一个整体</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人 2026-10-21：「记忆只有一份，AI的记忆是一个整体。就像人类一样」。不再照场所挡：哪个群、私聊、终端记的，在哪儿都想得起。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/listener.rs、keeper.rs、summary.rs、follow.rs、restore.rs、dreaming.rs、past.rs</span><span class="dir-note">R-29</span></div>
+            <ol class="pipe" aria-label="谁在听">
+              <li>谁在听只管记下时写什么：听众、在哪个场所说的</li>
+              <li>列、搜、常驻那一块（连摘要）、联想、跟着看、改作废恢复、以前的对话都不照场所挑</li>
+              <li>不加分寸规矩：说不说全凭她自己</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步拿掉的</p>
+          <div class="tile new"><span class="nm">场所挡法</span><span class="rl">R-13 上的「场所里只冒本场所的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-29</dd></div>
+        <div><dt>名称</dt><dd>记忆是一个整体</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">待合</dd></div>
+        <div><dt>验收</dt><dd>测试、变异、im 实测回归、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>A 群记的显卡型号、搬家，B 群里同一个人问答得出；群会话一段多约 710 token，缓存照旧</span></li>
+        <li><span class="ok">✓</span><span>手写变异六个全被逮住；门禁八项全过；三台机器的 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-29-记忆是一个整体.md</code>；蓝图 <code>memory.md</code> 第九条，设计 <code>17-记忆.md</code> L6、L18。</li>
       </ul>
     </div>
   </div>

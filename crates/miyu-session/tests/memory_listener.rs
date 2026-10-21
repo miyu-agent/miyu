@@ -13,7 +13,7 @@ use miyu_recall::{MemoryEvent, MemoryId, Retired, Saved, Summary};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Filter, Keeper, Listener, Stamp};
 use miyu_store::recall::Room;
-use miyu_tool::{Refused, Remember};
+use miyu_tool::Remember;
 
 use crate::support::extracting::*;
 use crate::support::meaning::{catalog, chat};
@@ -94,7 +94,7 @@ fn whoever_the_memory_belongs_to_is_the_owner_and_anyone_else_is_a_place() {
 }
 
 #[tokio::test]
-async fn the_owner_recalls_everything_and_a_place_only_its_own() {
+async fn everywhere_recalls_everything() {
     let home = Home::new();
     let mine = save(&home, "主人养了一只猫", None);
     let theirs = save(&home, "小林在学日语", Some(place(1)));
@@ -108,8 +108,8 @@ async fn the_owner_recalls_everything_and_a_place_only_its_own() {
     );
     assert_eq!(
         texts(&first),
-        ["小林在学日语"],
-        "这个场所只冒出在这里说过的"
+        texts(&owner),
+        "记忆是一个整体：场所里也是全部（施工 R-29）"
     );
     let found = |keeper: &Keeper, query: &str| {
         keeper
@@ -120,14 +120,11 @@ async fn the_owner_recalls_everything_and_a_place_only_its_own() {
             .collect::<Vec<String>>()
     };
     assert_eq!(found(&first, "日语"), ["小林在学日语"]);
-    assert!(found(&first, "猫").is_empty(), "主人的事在群里冒不出来");
-    assert!(
-        matches!(
-            first.retire(stamp(), mine, "不对".into()),
-            Err(Refused::NoSuch(_))
-        ),
-        "冒不出来的当没有"
-    );
+    assert_eq!(found(&first, "猫"), ["主人养了一只猫"], "主人的事群里也想得起");
+    assert_eq!(found(&first, "读书会"), ["二群在办读书会"], "别的群的也是");
+    first
+        .retire(stamp(), mine, "不对".into())
+        .expect("群里也碰得到主人那边记的");
 
     let remember = Remember {
         class: "user".into(),
@@ -162,7 +159,7 @@ fn said(request: &Request) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn a_place_gets_only_its_own_lines_and_no_digest() {
+async fn a_place_gets_the_digest_and_every_line() {
     let home = Home::new();
     let mine = save(&home, "主人养了一只猫", None);
     save(&home, "小林在学日语", Some(place(1)));
@@ -188,8 +185,8 @@ async fn a_place_gets_only_its_own_lines_and_no_digest() {
         .expect("有那一块");
     assert!(block.contains("小林在学日语"), "{block}");
     assert!(
-        !block.contains("主人"),
-        "没有摘要那一行、没有主人的事：{block}"
+        block.contains("主人的私事"),
+        "摘要那一行哪儿都交（施工 R-29）：{block}"
     );
     stop(&handle).await;
 }
@@ -305,13 +302,13 @@ async fn in_a_group_what_she_extracts_says_who_spoke_and_stays_in_that_group() {
     assert_eq!(entry.text, "小林在学日语");
     assert_eq!(entry.venue, Some(place(1)), "记下的带着这个群");
     let elsewhere = Keeper::new(&home.memory, room(), Listener::Place(place(2)));
-    assert!(texts(&elsewhere).is_empty(), "别的群里冒不出来");
+    assert_eq!(texts(&elsewhere), ["小林在学日语"], "别的群里也想得起（施工 R-29）");
     stop(&handle).await;
 }
 
-/// 以前的对话照谁在听挑（施工 R-13 下）：两个群各说一轮，一群里只搜得到一群的，主人那边两个都有。
+/// 以前的对话哪儿都搜得到全部（施工 R-29；R-13 下到 R-29 之间照场所挑）：两个群各说一轮，一群里、主人那边都两个都有。
 #[tokio::test]
-async fn past_turns_from_a_place_stay_in_that_place() {
+async fn past_turns_from_any_place_are_found_anywhere() {
     let home = Home::new();
     let mut sessions = Vec::new();
     for n in [1, 2] {
@@ -350,16 +347,15 @@ async fn past_turns_from_a_place_stay_in_that_place() {
         sessions.sort();
         sessions
     };
-    assert_eq!(found(Listener::Place(place(1))), [sessions[0].to_string()]);
     let mut both: Vec<String> = sessions.iter().map(ToString::to_string).collect();
     both.sort();
+    assert_eq!(found(Listener::Place(place(1))), both, "一群里也搜得到二群的");
     assert_eq!(found(owner()), both, "主人那边全部");
 }
 
-/// 群里那一段开始以后忘掉的，抽取只列这个群里的（施工 R-6 修，`memory.md` 第六条第 4 款）：主人那边的私事作废了，群里的抽取
-/// 请求里不出现。
+/// 群里那一段开始以后忘掉的，抽取全列出来（施工 R-6 修，`memory.md` 第六条第 4 款；R-29 起不照场所挑）：主人那边作废的也在。
 #[tokio::test]
-async fn in_a_group_only_what_was_dropped_there_follows_the_slice() {
+async fn in_a_group_everything_dropped_follows_the_slice() {
     let server = Server::start(vec![every_turn("不要紧")]).await;
     let mut home = Home::new();
     organizer(&mut home, &server, "extract_turns = 1\n");
@@ -407,8 +403,8 @@ async fn in_a_group_only_what_was_dropped_there_follows_the_slice() {
         "这个群里忘掉的列出来：{text}"
     );
     assert!(
-        !text.contains("主人下周三去体检"),
-        "主人那边的私事不在群里冒出来：{text}"
+        text.contains("主人下周三去体检"),
+        "主人那边作废的也列出来（施工 R-29）：{text}"
     );
     stop(&handle).await;
 }

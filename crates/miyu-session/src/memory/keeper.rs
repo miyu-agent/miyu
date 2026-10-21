@@ -2,8 +2,7 @@
 //! 都在这里。她的三件工具（`port.rs`）和协议（端点的 `memory.*`、`/remember`）都调它，只是 `by`、出处、听众不一样。碰记忆日志
 //! 和检索库，调的一方放在阻塞线程里。
 //!
-//! - 谁在听（施工 R-13 上，[`Listener`]）：主人那边全部冒得出来；一个场所里只有在这个场所说过的（17 L6）。冒不出来的当没有，
-//!   不让人知道有。
+//! - 谁在听（施工 R-13 上，[`Listener`]）只管记下时写什么；哪儿都想得起全部（施工 R-29，2026-10-21 项目主人：记忆是一个整体）。
 //! - 出处活不活照回合库的墓碑（第二条第 4 款）：一处都没有（人记的）的算活；有的，活着一处就算。
 
 use std::sync::Arc;
@@ -276,7 +275,7 @@ impl Keeper {
                 })
                 .collect()
         });
-        dropped.retain(|(_, entry)| !entry.cleared && self.hears(entry));
+        dropped.retain(|(_, entry)| !entry.cleared);
         // 同一个时刻忘掉的照编号：后记的在前。
         dropped.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.id.cmp(&a.1.id)));
         Ok(dropped
@@ -312,12 +311,11 @@ impl Keeper {
         self.memory.vectors()
     }
 
-    /// 这一条给不给看：没改掉、没清掉（`forgotten` 时作废的也给）、听众合、出处活着。
+    /// 这一条给不给看：没改掉、没清掉（`forgotten` 时作废的也给）、出处活着。哪儿都给（施工 R-29）。
     pub(super) fn shown(&self, entry: &Entry, forgotten: bool) -> bool {
         entry.replaced_by.is_none()
             && !entry.cleared
             && (forgotten || entry.retired.is_none())
-            && self.hears(entry)
             && self.alive(entry)
     }
 
@@ -335,10 +333,10 @@ impl Keeper {
         Ok(log)
     }
 
-    /// 编号 `id` 的那一条现在算数、听众合，交回它：没有的、听众不合的当没有；改掉的、作废的、清掉的说已经不算了。
+    /// 编号 `id` 的那一条现在算数，交回它：没有的当没有；改掉的、作废的、清掉的说已经不算了。
     fn current(&self, log: &MemoryLog, id: MemoryId) -> Result<Entry, Refused> {
         match log.book(|book| book.get(id).cloned()) {
-            Some(entry) if self.hears(&entry) => {
+            Some(entry) => {
                 if entry.current() {
                     Ok(entry)
                 } else {
@@ -363,21 +361,6 @@ impl Keeper {
             tracing::warn!(target: TARGET, error = %error, "memory index not updated");
         }
         Ok((appended.id, appended.cleared))
-    }
-
-    /// 这一条在这一次冒不冒得出来（[`Listener`]）。
-    pub(super) fn hears(&self, entry: &Entry) -> bool {
-        self.listener.hears(entry)
-    }
-
-    /// 在场所 `venue`（本机的没有）开的那几轮，这一次搜不搜得到（以前的对话，施工 R-13 下，[`Listener`]）。
-    pub(super) fn hears_place(&self, venue: Option<&str>) -> bool {
-        self.listener.hears_place(venue)
-    }
-
-    /// 这一次是不是主人那边（摘要那一行只在这里交，施工 R-13 上）。
-    pub(super) fn owner_listens(&self) -> bool {
-        self.listener.is_owner()
     }
 
     /// 同一间、主人那边在听的一份（施工 R-13 上）：合并照全部合，不管是哪个会话抽完以后起的。

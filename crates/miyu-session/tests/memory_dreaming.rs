@@ -132,7 +132,7 @@ async fn what_she_writes_comes_out_as_she_writes_it() {
 }
 
 #[tokio::test]
-async fn a_place_does_not_see_what_it_cannot_hear() {
+async fn a_place_sees_it_all_too() {
     let server = Server::start(vec![stream(&answer())]).await;
     let mut home = Home::new();
     organizer(&mut home, &server, "");
@@ -150,13 +150,13 @@ async fn a_place_does_not_see_what_it_cannot_hear() {
         .into_iter()
         .map(|one| one.seen)
         .collect();
-    assert_eq!(
-        seen,
-        [Seen::Summary {
-            chars: SUMMARY.chars().count(),
-            done: true
-        }],
-        "主人那边记的场所里听不见：改的、作废的不推，摘要照推"
+    assert!(
+        matches!(seen.first(), Some(Seen::Revised(revised)) if revised.id.to_string() == "m1"),
+        "主人那边记的场所里也推（施工 R-29：记忆是一个整体）：{seen:?}"
+    );
+    assert!(
+        seen.iter().any(|one| matches!(one, Seen::Retired(retired) if retired.id.to_string() == "m2")),
+        "{seen:?}"
     );
 }
 

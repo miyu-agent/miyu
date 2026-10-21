@@ -85,11 +85,8 @@ impl Keeper {
             forgotten: false,
             limit: usize::MAX,
         };
-        // 摘要那一行是照全部记忆写的一份（第七条），只在主人那边交；场所里只列这里冒得出来的条目（施工 R-13 上）。
+        // 摘要那一行是照全部记忆写的一份（第七条），哪儿都交（施工 R-29：原来只在主人那边交）。
         let read = self.list(&filter).and_then(|entries| {
-            if !self.owner_listens() {
-                return Ok((entries, None));
-            }
             let digest = self
                 .log()
                 .map_err(|refused| format!("{refused:?}"))?

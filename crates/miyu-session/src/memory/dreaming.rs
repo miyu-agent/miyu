@@ -91,9 +91,6 @@ impl Keeper {
         let Ok(log) = self.log() else {
             return false;
         };
-        log.book(|book| {
-            book.get(id)
-                .is_none_or(|entry| !entry.cleared && self.hears(entry))
-        })
+        log.book(|book| book.get(id).is_none_or(|entry| !entry.cleared))
     }
 }

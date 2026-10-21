@@ -5,7 +5,6 @@
 use miyu_kernel::id::VenueId;
 use miyu_recall::{MemoryEvent, MemoryId, Retired, Saved};
 use miyu_session::{Keeper, Listener, Stamp};
-use miyu_tool::Refused;
 
 use crate::support::meaning::persona;
 use crate::support::*;
@@ -15,7 +14,7 @@ fn place(n: u32) -> VenueId {
 }
 
 #[tokio::test]
-async fn only_where_it_can_come_up_can_it_be_restored() {
+async fn it_can_be_restored_anywhere() {
     let home = Home::new();
     let (log, _) = home.logs.open(&persona()).expect("开得了");
     let saved = Saved {
@@ -50,11 +49,11 @@ async fn only_where_it_can_come_up_can_it_be_restored() {
     let retired = || log.book(|book| book.get(id).and_then(|entry| entry.retired.clone()));
 
     let elsewhere = Keeper::new(&home.memory, persona(), Listener::Place(place(2)));
-    assert!(
-        matches!(elsewhere.restore(stamp(), id), Err(Refused::NoSuch(_))),
-        "别的群里冒不出来，当没有"
-    );
-    assert!(retired().is_some(), "什么都没写");
+    elsewhere
+        .restore(stamp(), id)
+        .expect("别的群里也恢复得了（施工 R-29：记忆是一个整体）");
+    assert_eq!(retired(), None);
+    retire();
     let there = Keeper::new(&home.memory, persona(), Listener::Place(place(1)));
     there.restore(stamp(), id).expect("在那个群里恢复得了");
     assert_eq!(retired(), None);

@@ -46,7 +46,7 @@ fn seqs(events: &[miyu_kernel::event::Event]) -> Vec<u64> {
 }
 
 #[tokio::test]
-async fn only_what_the_hearer_may_hear_and_the_whole_room() {
+async fn every_line_follows_anywhere() {
     let home = Home::new();
     said_in(&home, 1, "小林养了一只猫");
     said_in(&home, 2, "只有群里那个人听得到的");
@@ -74,8 +74,8 @@ async fn only_what_the_hearer_may_hear_and_the_whole_room() {
     let mut following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
-        [1, 4],
-        "这里冒不出来的那一条和作废它的不补，整间的照补"
+        [1, 2, 3, 4],
+        "别的群里记的、作废它的、整间的都补（施工 R-29：记忆是一个整体）"
     );
     assert_eq!(following.upto, 4);
 
@@ -86,7 +86,7 @@ async fn only_what_the_hearer_may_hear_and_the_whole_room() {
     while let Ok(event) = following.live.try_recv() {
         live.push(event);
     }
-    assert_eq!(seqs(&live), [5, 7], "之后的一个挑法");
+    assert_eq!(seqs(&live), [5, 6, 7], "之后的一个挑法");
     assert!(!following.lagged.load(Ordering::SeqCst));
 }
 
@@ -232,7 +232,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
     );
 }
 
-/// 恢复的说的是一条（施工 R-12 下）：挑法同作废，听不到的那一条的恢复不给。
+/// 恢复的说的是一条（施工 R-12 下）：挑法同作废，别的群里记的那一条的恢复照给（施工 R-29）。
 #[tokio::test]
 async fn a_restoration_is_heard_like_a_retirement() {
     let home = Home::new();
@@ -256,12 +256,12 @@ async fn a_restoration_is_heard_like_a_retirement() {
     let following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
-        [1, 3, 4],
-        "这里冒不出来的那一条的作废、恢复不补"
+        [1, 2, 3, 4, 5, 6],
+        "别的群里记的那一条的作废、恢复也补"
     );
 }
 
-/// 换关键词的说的是一条（施工 R-15 上）：挑法同作废，听不到的那一条换的关键词不给。
+/// 换关键词的说的是一条（施工 R-15 上）：挑法同作废，别的群里记的那一条换的关键词照给（施工 R-29）。
 #[tokio::test]
 async fn a_tagging_is_heard_like_a_retirement() {
     let home = Home::new();
@@ -282,7 +282,7 @@ async fn a_tagging_is_heard_like_a_retirement() {
     let following = keeper.follow(Some(0), 8).expect("跟得上");
     assert_eq!(
         seqs(&following.filled),
-        [1, 3],
-        "这里冒不出来的那一条换的关键词不补"
+        [1, 2, 3, 4],
+        "别的群里记的那一条换的关键词也补"
     );
 }

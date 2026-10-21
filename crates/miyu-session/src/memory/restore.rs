@@ -20,7 +20,6 @@ impl Keeper {
         }
         let entry = log
             .book(|book| book.get(id).cloned())
-            .filter(|entry| self.hears(entry))
             .ok_or(Refused::NoSuch(id))?;
         if entry.replaced_by.is_some() || entry.cleared {
             return Err(Refused::NotCurrent(id));
