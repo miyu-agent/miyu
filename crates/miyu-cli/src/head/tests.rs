@@ -47,12 +47,12 @@ fn the_head_runs_with_no_arguments_or_with_the_page_it_opens() {
         .join(format!("miyu-tui{}", std::env::consts::EXE_SUFFIX));
     assert_eq!(
         plan("tui", None, &found, &main),
-        Plan::Run(program.clone(), Vec::new())
+        Plan::Run(Launch::direct(program.clone()), Vec::new())
     );
     assert_eq!(
         plan("tui", Some("config"), &found, &main),
         Plan::Run(
-            program,
+            Launch::direct(program),
             vec![OsString::from("--page"), OsString::from("config")]
         )
     );
@@ -139,7 +139,7 @@ fn a_head_runs_the_program_its_package_brings() {
     let found = [own];
     assert_eq!(
         plan("own", None, &found, &main),
-        Plan::Run(program, Vec::new())
+        Plan::Run(Launch::direct(program), Vec::new())
     );
     assert_eq!(installed(&found, &main), ["own"]);
     std::fs::remove_dir_all(&dir).expect("删得掉");

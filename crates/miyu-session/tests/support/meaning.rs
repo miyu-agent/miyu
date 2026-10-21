@@ -168,7 +168,7 @@ pub fn real_package(dir: &Path) -> EmbedSetup {
         .join(format!("miyu-embed{}", std::env::consts::EXE_SUFFIX));
     assert!(program.is_file(), "{} 不在", program.display());
     EmbedSetup {
-        program: Some(program),
+        program: Some(miyu_store::packages::Launch::direct(program)),
         manifest: dir.join("model.toml"),
         dir: dir.to_path_buf(),
         idle: Duration::from_secs(600),

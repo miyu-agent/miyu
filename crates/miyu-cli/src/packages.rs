@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use miyu_config::phrases::Phrases;
 use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
-use miyu_store::packages::{Packages, locate};
+use miyu_store::packages::{Launch, Packages, locate};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -136,7 +136,7 @@ pub fn forward(
     let (one, rest) = target(args, added)?;
     // 包文件夹就是清单所在的那一层（施工 F-8 上再补：程序先找它的 `bin/`）。
     let dir = one.manifest.parent().unwrap_or(Path::new(""));
-    let Some(program) = locate(&one.program, dir, main) else {
+    let Some(launch) = locate(&one.program, dir, main) else {
         say(err, &not_installed(one, language));
         return Some(1);
     };
@@ -151,7 +151,7 @@ pub fn forward(
         }
     };
     Some(run(
-        command(&program, &rest, (dir, &state), &one.resources),
+        command(&launch, &rest, (dir, &state), &one.resources),
         err,
     ))
 }
@@ -173,17 +173,17 @@ fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<O
     ))
 }
 
-/// 跑包的程序 `program` 的命令：参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
+/// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
 /// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局），`MIYU_PACKAGE_STATE` 设成状态目录
 /// `state`（施工 F-15：同核心拉起扩展），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在
 /// 包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个）。
 fn command(
-    program: &Path,
+    launch: &Launch,
     args: &[OsString],
     (dir, state): (&Path, &Path),
     resources: &Path,
 ) -> std::process::Command {
-    let mut command = std::process::Command::new(program);
+    let mut command = launch.command();
     command
         .args(args)
         .env("MIYU_PACKAGE_DIR", dir)

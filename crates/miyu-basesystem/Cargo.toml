@@ -28,6 +28,9 @@ miyu-policy = { path = "../miyu-policy" }
 miyu-sandbox = { path = "../miyu-sandbox" }
 # 工具的接口。
 miyu-tool = { path = "../miyu-tool" }
+# 脚本照 `#!` 找解释器：和包里的程序共用一份（施工 X-34，`miyu_store::packages::launcher`）；测试里核对工具会说的每一种
+# 中文、英文都换得出字（施工 4-5 上）。
+miyu-store = { path = "../miyu-store" }
 # 读说明和参数格式、读参数。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -43,8 +46,6 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 rustix = { version = "1", features = ["process"] }
 
 [dev-dependencies]
-# 核对工具会说的每一种，中文、英文都换得出字（施工 4-5 上）。
-miyu-store = { path = "../miyu-store" }
 # 接住运行日志，看阻塞线程里发的行带没带会话编号（施工 4-9 再补四上）。
 miyu-log = { path = "../miyu-log" }
 # 测试里的调用在异步里跑。

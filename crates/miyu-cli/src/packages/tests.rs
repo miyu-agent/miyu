@@ -106,13 +106,24 @@ fn the_program_gets_its_package_folder() {
     let state = Path::new("/data/state/packages/tui");
     let resources = Path::new("/usr/share/miyu");
     let command = command(
-        Path::new("/bin/miyu-tui"),
+        &Launch::direct(std::path::PathBuf::from("/bin/miyu-tui")),
         &[OsString::from("--x")],
         (dir, state),
         resources,
     );
     assert_eq!(command.get_program(), "/bin/miyu-tui");
     assert_eq!(command.get_args().collect::<Vec<_>>(), ["--x"]);
+    // Windows 上照 `#!` 起的（施工 X-34）：解释器是程序，脚本排在人敲的参数前面。
+    let script = Launch {
+        program: std::path::PathBuf::from("python"),
+        args: vec![OsString::from("/pkg/bin/miyu-tui")],
+    };
+    let shebang = super::command(&script, &[OsString::from("--x")], (dir, state), resources);
+    assert_eq!(shebang.get_program(), "python");
+    assert_eq!(
+        shebang.get_args().collect::<Vec<_>>(),
+        ["/pkg/bin/miyu-tui", "--x"]
+    );
     let envs: Vec<_> = command.get_envs().collect();
     assert_eq!(
         envs,

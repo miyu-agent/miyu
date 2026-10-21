@@ -29,6 +29,8 @@
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出。
 //!
+//! 照 `#!` 起的（包里的程序是一个脚本、第一行 `#!` 指着它，施工 X-34），第一个参数是脚本本身：是一个在的文件的跳过。
+//!
 //! 做完了以退出码 0 退出。
 
 use std::fs::{File, OpenOptions};
@@ -47,7 +49,12 @@ fn main() {
     let mut sent = String::new();
     // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
     let mut give = String::new();
-    for (n, step) in std::env::args().skip(1).enumerate() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let script = usize::from(
+        args.first()
+            .is_some_and(|first| std::path::Path::new(first).is_file()),
+    );
+    for (n, step) in args.into_iter().skip(script).enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
             let mut file = OpenOptions::new()
                 .create(true)

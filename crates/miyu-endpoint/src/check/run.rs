@@ -5,13 +5,13 @@
 //! 警告。
 
 use std::io::Read;
-use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::time::{Duration, Instant};
 
 use serde_json::{Map, Value, json};
 
 use miyu_store::human::Human;
+use miyu_store::packages::Launch;
 
 use crate::Core;
 
@@ -44,12 +44,12 @@ pub(super) async fn packages(core: &Core, words: &Human) -> Vec<Value> {
             continue;
         };
         let file = super::shown(core, &found.path);
-        let Some(program) = found.program(&command.program, &main) else {
+        let Some(launch) = found.program(&command.program, &main) else {
             problems.push(trouble(words, &file, "check_unavailable", &command.program));
             continue;
         };
         let args = check.args.clone();
-        let ran = tokio::task::spawn_blocking(move || run(&program, &args, LIMIT))
+        let ran = tokio::task::spawn_blocking(move || run(&launch, &args, LIMIT))
             .await
             .unwrap_or_else(|_| Ran::Failed("the check did not finish".to_string()));
         problems.extend(read(words, &file, ran));
@@ -128,9 +128,11 @@ fn trouble(words: &Human, file: &str, code: &str, detail: &str) -> Value {
     json!({"kind": "package", "file": file, "code": code, "level": "warning", "message": message})
 }
 
-/// 跑 `program args…`：标准输入是空的，标准错误不要，标准输出最多收 [`OUTPUT_BYTES`]；最多等 `limit`，到时杀掉。
-fn run(program: &Path, args: &[String], limit: Duration) -> Ran {
-    let spawned = Command::new(program)
+/// 照 `launch` 跑、后面接 `args…`（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34）：标准输入是空的，标准错误不要，标准输出
+/// 最多收 [`OUTPUT_BYTES`]；最多等 `limit`，到时杀掉。
+fn run(launch: &Launch, args: &[String], limit: Duration) -> Ran {
+    let spawned = launch
+        .command()
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

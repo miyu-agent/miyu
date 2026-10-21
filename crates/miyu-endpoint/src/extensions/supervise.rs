@@ -63,8 +63,8 @@ impl Default for Timing {
 pub(super) struct Plan {
     /// 包的编号。
     pub(super) id: String,
-    /// 程序：`miyu` 旁边的。
-    pub(super) program: PathBuf,
+    /// 怎么起程序：包的 `bin/` 里的、`miyu` 旁边的，Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。
+    pub(super) launch: miyu_store::packages::Launch,
     /// 参数：清单的 `[process] args`。
     pub(super) args: Vec<String>,
     /// 工作目录：包放状态的目录，没有的建。
@@ -137,6 +137,8 @@ pub(super) async fn run(
             Ok(child) => child,
             Err(error) => {
                 tracing::warn!(target: TARGET, package = id, error = %error, "extension not started");
+                // 起不来的原话写进它的标准错误（施工 X-34）：停下的带最后几行照它说，例如 Windows 上解释器没装。
+                noted(&plan, &error);
                 set(&shared, State::Stopped(Reason::CannotStart), failures);
                 return;
             }
@@ -235,6 +237,18 @@ impl Watched<'_> {
     }
 }
 
+/// 起不来：往这个包的标准错误文件里写一行哪个程序、为什么。写不进去的不管。
+fn noted(plan: &Plan, error: &io::Error) {
+    use std::io::Write as _;
+    if let Ok(mut file) = stderr::open(&plan.log) {
+        drop(writeln!(
+            file,
+            "cannot start {}: {error}",
+            plan.launch.program.display()
+        ));
+    }
+}
+
 /// 拉起（[`spawn`]）；程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次。别的错误照旧交回。
 async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
     let mut tries = 1;
@@ -256,7 +270,7 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
     std::fs::create_dir_all(&plan.dir)?;
     let state = std::fs::canonicalize(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
-    let mut command = std::process::Command::new(&plan.program);
+    let mut command = plan.launch.command();
     // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
     // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼家目录的布局（施工 S-6 上）；状态目录的真实位置照
     // `MIYU_PACKAGE_STATE` 给，工作目录照旧也是它（施工 F-15，2026-10-20 项目主人定：作者说明改成以变量为准）。

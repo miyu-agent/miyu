@@ -47,7 +47,7 @@ pub fn package(dir: &Path, model: &[u8]) -> EmbedSetup {
     std::fs::write(dir.join("model.onnx"), model).expect("写得进");
     std::fs::write(dir.join("vocab.txt"), &vocab).expect("写得进");
     EmbedSetup {
-        program: Some(program()),
+        program: Some(miyu_store::packages::Launch::direct(program())),
         manifest: dir.join("model.toml"),
         dir: dir.to_path_buf(),
         idle: Duration::from_secs(600),

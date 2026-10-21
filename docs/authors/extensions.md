@@ -86,7 +86,7 @@ if __name__ == "__main__":
         sys.exit(2)
 ```
 
-装上试：`miyu pkg install ./hello`，答「现在打开？」是；然后对 AI 说「跟 Ann 打个招呼」。Windows 上 `bin/` 里要放 `.exe`：用 PyInstaller 打包，或者换一种编得出可执行文件的语言。
+装上试：`miyu pkg install ./hello`，答「现在打开？」是；然后对 AI 说「跟 Ann 打个招呼」。Python 写的照这样直接用，三个平台都行：`bin/miyu-hello` 第一行写 `#!/usr/bin/env python3`，Linux、macOS 上给它可执行权限，Windows 上核心照这一行找 `python`。要求装了 Python 3 的，写进包的说明。
 
 ## 被拉起
 

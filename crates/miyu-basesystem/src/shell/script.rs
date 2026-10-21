@@ -2,7 +2,8 @@
 //! （`miyu_policy::script`）。起进程、看门、截输出和 `shell` 同一套（[`super::process`]、[`super::Results`]）。
 //!
 //! - 照开头的 `#!` 起程序：`#!/usr/bin/env python3` 起 `/usr/bin/env`，参数是 `python3` 和脚本；没有 `#!` 的直接起脚本本身。
-//!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面那个）找，没有 `#!` 的照扩展名找（[`launcher`]）。
+//!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面那个）找，没有 `#!` 的照扩展名找（施工 X-34 起和
+//!   包里的程序共用 [`miyu_store::packages::launcher`]）。
 //! - 参数是她给的那份 JSON，交给环境变量 `MIYU_ARGS_JSON`，也写进标准输入（同旧版）。
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
@@ -13,8 +14,7 @@
 //!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
 
 use std::collections::BTreeMap;
-use std::ffi::OsString;
-use std::io::{self, BufRead};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -100,14 +100,17 @@ impl Script {
     }
 
     /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，建不成的没有。
+    ///
+    /// [`launcher`]: miyu_store::packages::launcher
     fn command(
         &self,
         call: &Call,
         cache: &Path,
         images: Option<&Path>,
     ) -> io::Result<std::process::Command> {
-        let first = first_line(&self.file)?;
-        let (program, args) = launcher(&self.file, &first, cfg!(windows));
+        let first = miyu_store::packages::first_line(&self.file)?;
+        let launch = miyu_store::packages::launcher(&self.file, &first, cfg!(windows));
+        let (program, args) = (launch.program.into_os_string(), launch.args);
         let (program, args) = match call.sandbox.as_deref() {
             None => (program, args),
             Some(sandboxed) => {
@@ -208,70 +211,3 @@ impl Tool for Script {
         })
     }
 }
-
-/// 脚本的第一行（读不了的是空的那种就是空的）。
-fn first_line(file: &Path) -> io::Result<String> {
-    let mut line = String::new();
-    io::BufReader::new(std::fs::File::open(file)?).read_line(&mut line)?;
-    Ok(line.trim_end().to_string())
-}
-
-/// 起脚本 `file` 的程序和参数，第一行是 `first`。`windows` 是 Windows 上的找法。
-///
-/// - 有 `#!` 的：Unix 上照写的起（解释器、它后面那一个参数、脚本）；Windows 上取解释器的名字（`env` 的取它后面那个，
-///   `python3` 换成 `python`），照 `PATH` 找。
-/// - 没有的：Unix 上直接起脚本；Windows 上照扩展名：`.py` 的 `python`，`.ps1` 的 PowerShell（不读配置、不管执行策略），`.js` 的
-///   `node`，`.cmd`、`.bat` 的 `cmd /C`，别的直接起。
-pub(super) fn launcher(file: &Path, first: &str, windows: bool) -> (OsString, Vec<OsString>) {
-    let script = file.as_os_str().to_owned();
-    if let Some(rest) = first.strip_prefix("#!") {
-        let mut words = rest.split_whitespace();
-        if let Some(interpreter) = words.next() {
-            let extra: Vec<&str> = words.collect();
-            if !windows {
-                let mut args: Vec<OsString> = extra.iter().map(OsString::from).collect();
-                args.push(script);
-                return (interpreter.into(), args);
-            }
-            let name = Path::new(interpreter).file_name().map_or_else(
-                || interpreter.to_string(),
-                |name| name.to_string_lossy().into_owned(),
-            );
-            let (program, rest) = match (name.as_str(), extra.split_first()) {
-                ("env", Some((program, rest))) => (program.to_string(), rest.to_vec()),
-                _ => (name, extra),
-            };
-            // Windows 上的 Python 叫 `python`：`python3` 常常是应用商店的占位程序。
-            let program = if program == "python3" {
-                "python".to_string()
-            } else {
-                program
-            };
-            let mut args: Vec<OsString> = rest.iter().map(OsString::from).collect();
-            args.push(script);
-            return (program.into(), args);
-        }
-    }
-    if !windows {
-        return (script, Vec::new());
-    }
-    let extension = file
-        .extension()
-        .map(|extension| extension.to_string_lossy().to_ascii_lowercase());
-    let (program, before): (&str, &[&str]) = match extension.as_deref() {
-        Some("py") => ("python", &[]),
-        Some("ps1") => (
-            "powershell",
-            &["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"],
-        ),
-        Some("js") => ("node", &[]),
-        Some("cmd" | "bat") => ("cmd", &["/C"]),
-        _ => return (script, Vec::new()),
-    };
-    let mut args: Vec<OsString> = before.iter().map(OsString::from).collect();
-    args.push(script);
-    (program.into(), args)
-}
-
-#[cfg(test)]
-mod tests;

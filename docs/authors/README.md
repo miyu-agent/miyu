@@ -25,7 +25,7 @@
 hello/
 ├── package.toml          # 清单
 ├── bin/
-│   └── miyu-hello        # 扩展的程序；Windows 上是 miyu-hello.exe
+│   └── miyu-hello        # 扩展的程序：编出来的程序（Windows 上是 miyu-hello.exe），或者带 #! 的脚本
 ├── scripts/
 │   └── dice.py           # 脚本
 ├── skills/
@@ -56,7 +56,7 @@ hello/
 
 ## 三个平台
 
-1. 扩展的程序名照清单写，Windows 上核心找的是 `<名字>.exe`；脚本在 Windows 上照扩展名找解释器（`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。
+1. 扩展的程序名照清单写，`bin/<名字>` 可以是编出来的程序，也可以是第一行写了 `#!` 的脚本（`#!/usr/bin/env python3` 这样）。Windows 上核心先找 `<名字>.exe`，没有的照 `bin/<名字>` 的 `#!` 找解释器（`python3` 找的是 `python`，写了这台机器上在的绝对路径的照它），三个平台一份文件、一份清单。Miyu 不带解释器：要哪个写进包的说明，请人自己装。脚本工具在 Windows 上没有 `#!` 的照扩展名找（`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。
 2. Linux、macOS 上程序、脚本要有可执行权限和 `#!` 那一行；装的时候照原样拷，权限跟着走。
 3. macOS（只考虑 Apple 芯片）：从网上下载的程序带隔离标记，没签名、没公证的会被 Gatekeeper 拦。发出去的程序请签名并公证。
 4. 「请退出」三个平台都是标准输入读到头，别靠信号。

@@ -25,9 +25,12 @@ const RUNNING: &str = env!("CARGO_PKG_VERSION");
 
 pub mod conflicts;
 pub mod install;
+mod launch;
 pub mod leftovers;
 pub mod local;
 pub mod migrate;
+
+pub use launch::{Launch, first_line, launcher};
 
 /// 清单在包文件夹里的名字（施工 F-8 上）。
 pub const MANIFEST: &str = "package.toml";
@@ -76,8 +79,8 @@ impl Found {
             .map_or_else(PathBuf::new, Path::to_path_buf)
     }
 
-    /// 这个包的程序 `program` 在哪：见 [`locate`]。
-    pub fn program(&self, program: &str, main: &Path) -> Option<PathBuf> {
+    /// 怎么起这个包的程序 `program`：见 [`locate`]。
+    pub fn program(&self, program: &str, main: &Path) -> Option<Launch> {
         locate(program, &self.files_dir(), main)
     }
 }
@@ -230,21 +233,39 @@ fn declares_account(found: &Found) -> bool {
     })
 }
 
-/// 包里的程序 `program` 在哪（施工 9-2，`packages.md`「转交」）：先找包文件夹 `dir` 里的 `bin/`（施工 F-8 上再补：别人做的包
+/// 怎么起包里的程序 `program`（施工 9-2，`packages.md`「转交」）：先找包文件夹 `dir` 里的 `bin/`（施工 F-8 上再补：别人做的包
 /// 自己带程序，装的时候随包拷进来），再找主程序 `main` 真实位置旁边的（随 Miyu 装的那几个；和 `miyu web` 找 `miyu-web` 一个
-/// 办法）；Windows 加 `.exe`。都没有的是没有。不找 `PATH`：别的程序冒充不了（2026-10-01 项目主人定，第二节「拆 M9 时另带四样」
-/// 第 4 条）。
-pub fn locate(program: &str, dir: &Path, main: &Path) -> Option<PathBuf> {
-    let file = format!("{program}{}", std::env::consts::EXE_SUFFIX);
+/// 办法）；Windows 加 `.exe`。Windows 上这两处都没有的，再找 `bin/<program>`（没有后缀），照它第一行的 `#!` 起（施工 X-34，
+/// [`launcher`]），没有 `#!` 的不算；Linux、macOS 上 `bin/<program>` 本来就是第一处，系统认 `#!`。都没有的是没有。程序本身不找
+/// `PATH`：别的程序冒充不了（2026-10-01 项目主人定，第二节「拆 M9 时另带四样」第 4 条）；照 `#!` 找的解释器照名字找。
+pub fn locate(program: &str, dir: &Path, main: &Path) -> Option<Launch> {
+    locate_on(program, dir, main, cfg!(windows))
+}
+
+/// 同 [`locate`]，`windows` 是 Windows 上的找法（测试在别的平台上也走一遍）。
+fn locate_on(program: &str, dir: &Path, main: &Path, windows: bool) -> Option<Launch> {
+    let suffix = if windows { ".exe" } else { "" };
+    let file = format!("{program}{suffix}");
     // 相对的不认：那是照当前目录找，谁在当前目录放一个 `bin/` 都能冒充。
     let own = dir.join(BIN).join(&file);
     if dir.is_absolute() && own.is_file() {
-        return Some(own);
+        return Some(Launch::direct(own));
     }
     let real = std::fs::canonicalize(main).unwrap_or_else(|_| main.to_path_buf());
-    real.parent()
-        .map(|dir| dir.join(&file))
-        .filter(|path| path.is_file())
+    let beside = real.parent().map(|dir| dir.join(&file));
+    if let Some(beside) = beside.filter(|path| path.is_file()) {
+        return Some(Launch::direct(beside));
+    }
+    let script = dir.join(BIN).join(program);
+    if !windows || !dir.is_absolute() || !script.is_file() {
+        return None;
+    }
+    // `#!` 后面什么都没写的，照它起的还是文件本身，Windows 上起不了：当没有。
+    let first = first_line(&script).ok()?;
+    first
+        .starts_with("#!")
+        .then(|| launcher(&script, &first, true))
+        .filter(|launch| launch.program != script)
 }
 
 /// 一层目录里的清单：编号（包文件夹的名字）和清单的路径。读不了的目录当没有；点开头的（装到一半的暂存、备份）编号不合

@@ -10,7 +10,9 @@ use super::*;
 fn embedder(checked: bool) -> Embedder {
     let tiny = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/embed-tiny");
     let embedder = Embedder::new(EmbedSetup {
-        program: Some(tiny.join("no-such-miyu-embed")),
+        program: Some(miyu_store::packages::Launch::direct(
+            tiny.join("no-such-miyu-embed"),
+        )),
         manifest: tiny.join("manifest.toml"),
         dir: tiny,
         idle: IDLE,

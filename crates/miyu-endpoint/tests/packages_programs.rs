@@ -1,6 +1,6 @@
 //! 包自己带的程序（施工 F-8 上再补，`docs/blueprint/packages.md`「转交」第 5 条、`extensions.md`「怎么走」第 1 条）：程序放在
 //! 包文件夹的 `bin/` 里，装的时候随包拷进来，核心照它拉起，不用放到 `miyu` 旁边。刚拷进来的程序还被别的进程开着写的，等它
-//! 放开再拉起，不当起不来。
+//! 放开再拉起，不当起不来。程序可以是一个带 `#!` 的脚本（施工 X-34）：三个平台都照它起，起不来的原话写进标准错误。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -128,4 +128,77 @@ async fn a_busy_program_starts_once_it_is_let_go() {
     drop(writer);
     until_state(&mut client, id, |entry| entry["state"] == "running").await;
     core.stop_extensions().await;
+}
+
+/// 包里的程序是一个带 `#!` 的脚本（施工 X-34）：Linux、macOS 上系统认 `#!`；Windows 上没有 `.exe`，核心照这一行找解释器，这里写的是
+/// 测试用的扩展的绝对路径，照它起。脚本本身排在参数最前面，测试用的扩展认得、跳过。照常握手、跑起来。
+#[tokio::test]
+async fn a_package_program_can_be_a_script() {
+    let home = Home::new();
+    let id = "xscript";
+    let program = own_name("script");
+    let (path, step) = record(&home, id);
+    install(
+        &home,
+        id,
+        &program,
+        "always",
+        &steps(&[&step, "hello", "serve"]),
+    );
+    let bin = home
+        .root
+        .path()
+        .join(format!("home/alice/packages/{id}/bin"));
+    std::fs::create_dir_all(&bin).expect("建得了");
+    write_script(&bin.join(&program), &format!("#!{BUILT}\n"));
+
+    let core = Arc::new(
+        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    until_state(&mut client, id, |entry| entry["state"] == "running").await;
+    until("照 #! 起来、记下了", || path.is_file()).await;
+    core.stop_extensions().await;
+}
+
+/// 照 `#!` 起不来（写的解释器不在）：停下 `cannot_start`，原话写进它的标准错误，软件包列表上照它说。
+#[tokio::test]
+async fn a_script_whose_interpreter_is_missing_says_why() {
+    let home = Home::new();
+    let id = "xnointerp";
+    let program = own_name("nointerp");
+    install(&home, id, &program, "always", &steps(&["hello", "serve"]));
+    let bin = home
+        .root
+        .path()
+        .join(format!("home/alice/packages/{id}/bin"));
+    std::fs::create_dir_all(&bin).expect("建得了");
+    let gone = home.work.join("no-such-interpreter");
+    write_script(&bin.join(&program), &format!("#!{}\n", gone.display()));
+
+    let core = Arc::new(
+        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let stopped = until_state(&mut client, id, |entry| entry["state"] == "stopped").await;
+    assert_eq!(stopped["reason"], "cannot_start", "{stopped}");
+    let said = stopped["stderr"].as_str().unwrap_or_default();
+    assert!(said.contains("cannot start"), "原话写进标准错误：{stopped}");
+    core.stop_extensions().await;
+}
+
+/// 写一个脚本：Unix 上给可执行权限。
+fn write_script(path: &Path, text: &str) {
+    std::fs::write(path, text).expect("写得进");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).expect("改得了权限");
+    }
 }

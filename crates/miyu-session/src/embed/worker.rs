@@ -142,11 +142,11 @@ impl Worker {
     /// 拉起 `program`（照清单 `manifest`、模型目录 `dir`），等它说 `ready`：交回它和它报的模型编号。标准错误接核心的：它只在
     /// 标准输出也写不了时才往那里写。
     pub(super) async fn start(
-        program: &Path,
+        program: &miyu_store::packages::Launch,
         manifest: &Path,
         dir: &Path,
     ) -> Result<(Worker, String), String> {
-        let mut command = std::process::Command::new(program);
+        let mut command = program.command();
         command
             .arg("--manifest")
             .arg(manifest)

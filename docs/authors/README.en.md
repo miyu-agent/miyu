@@ -25,7 +25,7 @@ Every manifest field is in [The manifest](manifest.en.md).
 hello/
 ├── package.toml          # the manifest
 ├── bin/
-│   └── miyu-hello        # the extension's program; miyu-hello.exe on Windows
+│   └── miyu-hello        # the extension's program: a compiled program (miyu-hello.exe on Windows) or a script with #!
 ├── scripts/
 │   └── dice.py           # a script
 ├── skills/
@@ -56,7 +56,7 @@ hello/
 
 ## Three platforms
 
-1. The extension's program is named in the manifest; on Windows the core looks for `<name>.exe`. Scripts on Windows find their interpreter by extension (`.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
+1. The extension's program is named in the manifest. `bin/<name>` can be a compiled program or a script whose first line is `#!` (like `#!/usr/bin/env python3`). On Windows the core looks for `<name>.exe` first, and otherwise finds the interpreter from the `#!` line of `bin/<name>` (`python3` means `python`; an absolute path that exists on this machine is used as is), so one file and one manifest work on all three platforms. Miyu doesn't ship interpreters: say which one your package needs in its description, and people install it themselves. Script tools without a `#!` line find their interpreter by extension on Windows (`.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
 2. On Linux and macOS, programs and scripts need the executable bit and a `#!` line; installing copies them as they are, permissions included.
 3. macOS (Apple silicon only): programs downloaded from the internet are quarantined, and Gatekeeper blocks unsigned, unnotarized ones. Sign and notarize programs you distribute.
 4. On every platform, "please exit" is stdin reaching its end; don't rely on signals.

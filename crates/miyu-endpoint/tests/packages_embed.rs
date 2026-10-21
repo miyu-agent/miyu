@@ -46,7 +46,9 @@ impl Builtins for Port {
             .find(|one| one.id == "xembed" && one.read.is_ok())?;
         let dir = package.files_dir();
         Some(EmbedSetup {
-            program: std::env::current_exe().ok(),
+            program: std::env::current_exe()
+                .ok()
+                .map(miyu_store::packages::Launch::direct),
             manifest: dir.join("model.toml"),
             dir,
             idle: Duration::from_secs(600),

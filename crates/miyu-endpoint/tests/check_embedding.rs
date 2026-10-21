@@ -53,7 +53,7 @@ fn core(home: &Home, system: &str, local: Option<EmbedSetup>) -> Arc<miyu_endpoi
 
 fn local() -> EmbedSetup {
     EmbedSetup {
-        program: Some(program()),
+        program: Some(miyu_store::packages::Launch::direct(program())),
         manifest: tiny().join("manifest.toml"),
         dir: tiny(),
         idle: Duration::from_secs(600),

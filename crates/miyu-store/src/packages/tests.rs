@@ -314,7 +314,7 @@ fn a_program_is_found_in_the_package_bin_then_beside_main() {
     let real = fs::canonicalize(&beside).unwrap();
     assert_eq!(
         own.program("miyu-own", &main),
-        Some(real.join(file("miyu-own"))),
+        Some(Launch::direct(real.join(file("miyu-own")))),
         "只有主程序旁边有的照旁边的"
     );
 
@@ -323,7 +323,7 @@ fn a_program_is_found_in_the_package_bin_then_beside_main() {
     fs::write(bin.join(file("miyu-own")), "").unwrap();
     assert_eq!(
         own.program("miyu-own", &main),
-        Some(bin.join(file("miyu-own"))),
+        Some(Launch::direct(bin.join(file("miyu-own")))),
         "包自己带的先"
     );
     // 相对的包文件夹不找 `bin/`：拼一个从当前目录走得到同一个 `bin/` 的相对路径，照样不认。
@@ -335,10 +335,58 @@ fn a_program_is_found_in_the_package_bin_then_beside_main() {
         assert!(relative.join(BIN).join(file("miyu-own")).is_file());
         assert_eq!(
             locate("miyu-own", &relative, &main),
-            Some(real.join(file("miyu-own"))),
+            Some(Launch::direct(real.join(file("miyu-own")))),
             "相对的包文件夹不找 bin/"
         );
     }
+}
+
+/// Windows 上包里的程序可以是带 `#!` 的脚本（施工 X-34）：`.exe` 先；都没有的照 `bin/<名字>` 的 `#!` 起；没有 `#!`、`#!` 后面
+/// 什么都没写的不算；Linux、macOS 上 `bin/<名字>` 本来就直接起。照 Windows 的找法在哪个平台上都走一遍。
+#[test]
+fn on_windows_a_script_in_bin_starts_by_its_shebang() {
+    let places = Places::new();
+    let dir = places.scratch.path().join("pkg");
+    let bin = dir.join(BIN);
+    fs::create_dir_all(&bin).unwrap();
+    let main = places.scratch.path().join("usr/bin/miyu.exe");
+    let script = bin.join("miyu-hello");
+    fs::write(&script, "#!/usr/bin/env python3\nprint('hi')\n").unwrap();
+    assert_eq!(
+        locate_on("miyu-hello", &dir, &main, true),
+        Some(Launch {
+            program: PathBuf::from("python"),
+            args: vec![script.clone().into_os_string()],
+        }),
+        "照 #! 找解释器"
+    );
+    assert_eq!(
+        locate_on("miyu-hello", &dir, &main, false),
+        Some(Launch::direct(script.clone())),
+        "Linux、macOS 上直接起"
+    );
+    fs::write(bin.join("miyu-hello.exe"), "").unwrap();
+    assert_eq!(
+        locate_on("miyu-hello", &dir, &main, true),
+        Some(Launch::direct(bin.join("miyu-hello.exe"))),
+        ".exe 先"
+    );
+    fs::remove_file(bin.join("miyu-hello.exe")).unwrap();
+    for first in ["print('hi')\n", "#!\n"] {
+        fs::write(&script, first).unwrap();
+        assert_eq!(
+            locate_on("miyu-hello", &dir, &main, true),
+            None,
+            "第一行是 {first:?} 的不算"
+        );
+    }
+    // 程序名带 `.py` 的也照 `#!`：没有的不照扩展名找解释器。
+    fs::write(bin.join("miyu-hello.py"), "print('hi')\n").unwrap();
+    assert_eq!(
+        locate_on("miyu-hello.py", &dir, &main, true),
+        None,
+        "没有 #! 的不照扩展名起"
+    );
 }
 
 /// 两个包带了同名的 MCP 服务（施工 X-2）：功能编号 `mcp-<服务名>` 撞了，照功能编号撞了报，后到的整份不收、报在那一段。

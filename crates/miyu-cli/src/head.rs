@@ -17,7 +17,7 @@ use miyu_config::package::{Manifest, PackageKind};
 use miyu_ipc::connect_or_start;
 use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
-use miyu_store::packages::{Found, Packages};
+use miyu_store::packages::{Found, Launch, Packages};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -63,8 +63,8 @@ pub fn open(page: Option<&str>, admin: &AccountId, start: impl FnOnce() -> Comma
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
     match plan(&head, page, &found, &main) {
-        Plan::Run(program, args) => {
-            let mut command = Command::new(&program);
+        Plan::Run(launch, args) => {
+            let mut command = launch.command();
             command.args(&args);
             Opened::Ran(packages::run(command, &mut io::stderr()))
         }
@@ -117,8 +117,8 @@ async fn head(env: &Env, start: impl FnOnce() -> Command) -> Result<(String, Lan
 /// 照清单定怎么开。
 #[derive(Debug, PartialEq, Eq)]
 enum Plan {
-    /// 跑这个程序，带这几个参数。
-    Run(PathBuf, Vec<OsString>),
+    /// 照这个起（施工 X-34：Windows 上照 `#!` 起的是解释器加脚本），带这几个参数。
+    Run(Launch, Vec<OsString>),
     /// 界面不认那一页。
     NoPage,
     /// 没有这个界面：没有清单、不是界面、没有子命令。
@@ -145,13 +145,13 @@ fn plan(head: &str, page: Option<&str>, found: &[Found], main: &Path) -> Plan {
     let Some(command) = manifest.command() else {
         return Plan::Missing;
     };
-    let Some(program) = one.program(&command.program, main) else {
+    let Some(launch) = one.program(&command.program, main) else {
         return Plan::NoProgram(command.program.clone());
     };
     let args = page.map_or_else(Vec::new, |page| {
         vec![OsString::from("--page"), OsString::from(page)]
     });
-    Plan::Run(program, args)
+    Plan::Run(launch, args)
 }
 
 /// 界面的清单认不认 `page` 这一页。

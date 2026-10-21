@@ -69,19 +69,23 @@ fn exits_other_than_zero_and_one_and_unreadable_lines_are_reported() {
 #[cfg(unix)]
 #[test]
 fn a_real_program_runs_and_a_slow_one_is_stopped() {
-    let sh = Path::new("/bin/sh");
+    let sh = Launch::direct(std::path::PathBuf::from("/bin/sh"));
     let ran = run(
-        sh,
+        &sh,
         &["-c".to_string(), "echo one; echo two; exit 1".to_string()],
         LIMIT,
     );
     assert_eq!(ran, Ran::Exited(Some(1), "one\ntwo\n".to_string()));
     let slow = run(
-        sh,
+        &sh,
         &["-c".to_string(), "sleep 5".to_string()],
         Duration::from_millis(200),
     );
     assert_eq!(slow, Ran::TimedOut);
-    let missing = run(Path::new("/no/such/program"), &[], LIMIT);
+    let missing = run(
+        &Launch::direct(std::path::PathBuf::from("/no/such/program")),
+        &[],
+        LIMIT,
+    );
     assert!(matches!(missing, Ran::Failed(_)));
 }

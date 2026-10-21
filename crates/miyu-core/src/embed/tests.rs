@@ -86,7 +86,7 @@ fn an_installed_embed_worker_recommended_by_memory_is_set_up_from_its_package() 
     .expect("拼得出");
     assert_eq!(setup.dir, packages.join("embed"));
     assert_eq!(setup.manifest, packages.join("embed").join("model.toml"));
-    let program = setup.program.expect("在主程序旁边");
+    let program = setup.program.expect("在主程序旁边").program;
     assert_eq!(
         program.file_stem().and_then(|stem| stem.to_str()),
         Some("miyu-embed")

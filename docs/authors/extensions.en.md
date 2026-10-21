@@ -86,7 +86,7 @@ if __name__ == "__main__":
         sys.exit(2)
 ```
 
-Try it: `miyu pkg install ./hello`, answer yes to "Turn it on now?", then ask the AI to "say hello to Ann". On Windows, `bin/` needs an `.exe`: package it with PyInstaller, or use a language that compiles to an executable.
+Try it: `miyu pkg install ./hello`, answer yes to "Turn it on now?", then ask the AI to "say hello to Ann". Python works as is on all three platforms: start `bin/miyu-hello` with `#!/usr/bin/env python3`, make it executable on Linux and macOS, and on Windows the core finds `python` from that line. If your package needs Python 3, say so in its description.
 
 ## Being started
 

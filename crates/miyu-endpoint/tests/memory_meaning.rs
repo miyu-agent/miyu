@@ -49,7 +49,7 @@ fn core(home: &Home) -> Arc<miyu_endpoint::Core> {
 /// 本机的那一路：小模型的测试数据目录当包目录（核对只读，不改它）。
 fn local() -> EmbedSetup {
     EmbedSetup {
-        program: Some(program()),
+        program: Some(miyu_store::packages::Launch::direct(program())),
         manifest: tiny().join("manifest.toml"),
         dir: tiny(),
         idle: Duration::from_secs(600),

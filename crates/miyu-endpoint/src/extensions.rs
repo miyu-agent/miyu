@@ -475,7 +475,7 @@ fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, R
     }
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
     let dir = crate::packages::dir_of(core, id);
-    let program = manifest
+    let launch = manifest
         .command()
         .and_then(|command| locate(&command.program, &dir, &main))
         .ok_or(Reason::NotInstalled)?;
@@ -486,7 +486,7 @@ fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, R
         .unwrap_or_default();
     Ok(supervise::Plan {
         id: id.to_string(),
-        program,
+        launch,
         args,
         dir: crate::packages::packages(core).state_dir(id),
         home: core.root.path().to_path_buf(),

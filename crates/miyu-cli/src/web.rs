@@ -7,7 +7,7 @@ mod tests;
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 
 use clap::Args;
 
@@ -106,19 +106,20 @@ pub fn web_on(
     language: Language,
     err: &mut dyn Write,
 ) -> u8 {
-    let Some(program) = locate(program, dir, main) else {
+    let Some(launch) = locate(program, dir, main) else {
         if writeln!(err, "{}", not_installed(language)).is_err() {
             // 标准错误关了：没有别处可说。
         }
         return 1;
     };
-    match Command::new(&program).args(args.args()).status() {
+    // 照 `launch` 起：Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。
+    match launch.command().args(args.args()).status() {
         Ok(status) => status
             .code()
             .and_then(|code| u8::try_from(code).ok())
             .unwrap_or(1),
         Err(error) => {
-            if writeln!(err, "miyu web: {}: {error}", program.display()).is_err() {
+            if writeln!(err, "miyu web: {}: {error}", launch.program.display()).is_err() {
                 // 标准错误关了：没有别处可说。
             }
             1
