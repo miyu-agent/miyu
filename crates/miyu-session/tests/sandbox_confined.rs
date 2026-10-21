@@ -64,6 +64,7 @@ async fn a_confined_command_reads_and_writes_only_its_workspace() {
         let [Some(sandboxed)] = sandboxes.as_slice() else {
             panic!("{level:?}：跑一次、带着沙盒：{sandboxes:?}");
         };
+        let sandboxed = on_site(&home, Arc::clone(sandboxed));
         let temp = work.join(".tmp");
         assert!(temp.is_dir(), "工作区里的临时目录建好了");
         assert_eq!(

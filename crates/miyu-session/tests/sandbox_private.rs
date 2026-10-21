@@ -43,7 +43,7 @@ async fn attached(home: &Home, cwd: &Path, read_only: bool, dirs: Vec<String>) -
     until_turn_ends(&mut pushes).await;
     let calls = run.calls();
     assert_eq!(calls.len(), 1, "跑了一次");
-    calls[0].sandbox.clone().expect("进了沙盒")
+    on_site(home, calls[0].sandbox.clone().expect("进了沙盒"))
 }
 
 #[tokio::test]

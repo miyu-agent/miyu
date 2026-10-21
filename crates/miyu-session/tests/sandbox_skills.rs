@@ -76,7 +76,11 @@ async fn spec_of(home: &Home, venue: (&str, bool)) -> Option<Arc<Sandboxed>> {
     let tools = Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
     let call = Play::calls(&[("run", "{}")]);
     session(home, (&tools, call), Path::new("miyu-sandbox"), venue).await;
-    run.calls().into_iter().next().and_then(|call| call.sandbox)
+    run.calls()
+        .into_iter()
+        .next()
+        .and_then(|call| call.sandbox)
+        .map(|sandboxed| on_site(home, sandboxed))
 }
 
 #[tokio::test]

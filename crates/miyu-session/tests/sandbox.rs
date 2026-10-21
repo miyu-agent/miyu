@@ -65,7 +65,10 @@ async fn added(
     turn(&handle).await;
     let calls = run.calls();
     assert_eq!(calls.len(), 1, "跑了一次");
-    calls[0].sandbox.clone()
+    calls[0]
+        .sandbox
+        .clone()
+        .map(|sandboxed| on_site(home, sandboxed))
 }
 
 /// 说一句，等这一轮说完。
