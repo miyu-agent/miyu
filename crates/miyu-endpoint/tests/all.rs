@@ -87,6 +87,7 @@ mod mcp;
 mod mcp_cache;
 mod mcp_edit;
 mod mcp_instructions;
+mod mcp_login;
 mod mcp_prompts;
 mod mcp_resources;
 mod mcp_settings;

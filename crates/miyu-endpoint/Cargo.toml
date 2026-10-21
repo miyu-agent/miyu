@@ -78,6 +78,8 @@ similar = { version = "2", default-features = false, features = ["text"] }
 [dev-dependencies]
 # 测试里的假网址服务（施工 X-32 上）：照请求答的 Streamable HTTP MCP 服务。
 miyu-mcp = { path = "../miyu-mcp", features = ["testkit"] }
+# 网址的服务登录（施工 X-42 上）：读授权页网址里的几格。工作区里本来就有的那一份。
+url = "2"
 # 人格头像的候选主色（施工 P-6 补）：测试里画一张真的 PNG 当头像。
 image = { version = "0.25", default-features = false, features = ["png"] }
 # 撤销的回应（施工 4-7 下）：她用真的写文件的工具改过文件。
@@ -132,3 +134,8 @@ path = "tests/providers_log.rs"
 [[test]]
 name = "secrets_log"
 path = "tests/secrets_log.rs"
+
+# 网址的服务登录的运行日志（施工 X-42 上）：同 secrets_log，全局订阅者一个程序只装一次。
+[[test]]
+name = "oauth_log"
+path = "tests/oauth_log.rs"

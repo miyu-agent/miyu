@@ -782,6 +782,8 @@
     "commands/failed/missing-arguments": "缺少参数：{names}",
     "commands/failed/argument": "{name}",
     "commands/failed/no-reply": "/{name} 没有给出回复",
+    "mcp/login-done": "登录好了，可以关掉这一页，回到 Miyu。",
+    "mcp/login-failed": "登录没成，回到 Miyu 看看原因。",
     "commands/unavailable/off": "/{name} 已停用。",
     "commands/unavailable/not-installed": "人格记忆未安装。",
     "commands/unavailable/preset-off": "预设「{preset}」未启用记忆。",

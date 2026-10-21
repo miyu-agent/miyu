@@ -12,6 +12,7 @@ mod embedding;
 mod harness;
 mod kb;
 mod login;
+mod mcp;
 mod memory;
 pub use memory::Organized;
 mod pkg;

@@ -30,6 +30,8 @@ pub use loopback::{is_loopback_host, is_loopback_url};
 pub use post::{Post, post};
 /// HTTP 客户端：[`client()`] 造的那一个，连接跨请求复用。上层照这个名字拿着它，不用直接依赖 reqwest。
 pub use reqwest::Client;
+/// 拼着的一个请求：要自己加头、正文再发的（`miyu-mcp` 的登录，施工 X-42 上）照这个名字拿。
+pub use reqwest::RequestBuilder;
 /// 它发出去交回的回应：要自己一段段读、限着长度的（`miyu-mcp` 的网址转接，施工 X-32 下）照这个名字拿。
 pub use reqwest::Response;
 pub use send::{Attempt, Outcome, Progress, send};

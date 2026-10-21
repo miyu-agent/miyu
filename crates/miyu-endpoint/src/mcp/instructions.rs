@@ -78,5 +78,15 @@ fn guarded(text: &str) -> String {
     out
 }
 
+impl super::Servers {
+    /// 交了说明的服务和它的说明（施工 X-39，`instructions.rs` 照它拼 system 尾部的那几段）：照服务名排。
+    pub(crate) fn instructions(&self) -> Vec<(String, String)> {
+        self.slots()
+            .iter()
+            .filter_map(|((_, service), slot)| Some((service.clone(), slot.shared.instructions()?)))
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests;

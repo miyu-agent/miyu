@@ -49,6 +49,19 @@ impl Refusal {
         reason: "unknown_server",
         data: None,
     };
+    /// 网址的服务登录（施工 X-42 上，`mcp.login`）：没有客户端，授权服务器又不认动态注册，要人去服务那边注册、把 `client_id`
+    /// 写进这张表。
+    pub(crate) const OAUTH_UNREGISTERED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "oauth_unregistered",
+        data: None,
+    };
+    /// 网址的服务登录走不下去（施工 X-42 上）：找不到、用不了授权服务器，或者授权服务器拒了，`data.why` 说为什么。
+    pub(crate) const OAUTH_FAILED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "oauth_failed",
+        data: None,
+    };
     /// 个人设置里没写这个名字、有包带着同名的 MCP 服务（施工 X-26，`mcp.set`）：随包来的不经它改。
     pub(crate) const SERVER_FROM_PACKAGE: Refusal = Refusal {
         code: REFUSED,

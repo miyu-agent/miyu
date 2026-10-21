@@ -66,6 +66,15 @@ struct SecretChanged<'a> {
     via: &'static str,
 }
 
+/// 谁改的：人经协议改的记在这个账号名下、带这条命令；核心自己清的（施工 X-42 上：删服务时清登录的令牌）记在内核名下。
+#[derive(Clone, Copy)]
+enum Who<'a> {
+    /// 人，和这一条命令。
+    Person(&'a CommandId),
+    /// 核心自己。
+    Core,
+}
+
 /// 改一个密钥：写入还是删掉。
 enum Edit {
     /// 写入或者换掉。
@@ -85,8 +94,50 @@ pub(crate) fn set(
         return Err(Refusal::BAD_PARAMS);
     }
     let value = Secret::new(&params.value).map_err(|_| Refusal::BAD_PARAMS)?;
-    let action = change(core, peer, cause, &params.name, Edit::Set(value))?;
+    let action = change(
+        core,
+        peer.language,
+        Who::Person(cause),
+        &params.name,
+        Edit::Set(value),
+    )?;
     Ok(json!({ "replaced": action == "replaced" }))
+}
+
+/// 核心自己替人存一个密钥（施工 X-42 上：网址的服务登录换来的令牌）：同 [`set`]，名字、值都是核心拼的，记在 `peer` 名下。
+///
+/// # Errors
+///
+/// 同 [`set`]。
+pub(crate) fn store(
+    core: &Core,
+    peer: Peer,
+    cause: &CommandId,
+    name: &str,
+    value: &str,
+) -> Result<(), Refusal> {
+    if !secret::valid_name(name) {
+        return Err(Refusal::BAD_PARAMS);
+    }
+    let value = Secret::new(value).map_err(|_| Refusal::BAD_PARAMS)?;
+    change(
+        core,
+        peer.language,
+        Who::Person(cause),
+        name,
+        Edit::Set(value),
+    )
+    .map(|_| ())
+}
+
+/// 核心自己清掉一个密钥（施工 X-42 上：删服务时清登录的令牌）：没有的什么都不做；清不成的记一行。
+pub(crate) fn discard(core: &Core, name: &str) {
+    if !core.config().secrets.has(name) {
+        return;
+    }
+    if change(core, "en", Who::Core, name, Edit::Delete).is_err() {
+        tracing::warn!(target: TARGET, name, "secret not discarded");
+    }
 }
 
 /// `secret.delete`：删掉一个密钥，落了盘回 `{}`。没有这个密钥：`unknown_secret`。
@@ -96,19 +147,25 @@ pub(crate) fn delete(
     cause: &CommandId,
     params: DeleteParams,
 ) -> Result<Value, Refusal> {
-    change(core, peer, cause, &params.name, Edit::Delete)?;
+    change(
+        core,
+        peer.language,
+        Who::Person(cause),
+        &params.name,
+        Edit::Delete,
+    )?;
     Ok(json!({}))
 }
 
 /// 改一个密钥：重读、改那一行、写盘，重来最多三次。交回做了什么（`set`、`replaced`、`deleted`）。
 fn change(
     core: &Core,
-    peer: Peer,
-    cause: &CommandId,
+    language: &str,
+    who: Who<'_>,
     name: &str,
     edit: Edit,
 ) -> Result<&'static str, Refusal> {
-    let words = words(core, peer.language)?;
+    let words = words(core, language)?;
     let Some(header) = miyu_config::Words::sentence(&words, "config/secrets-header", &[]) else {
         tracing::warn!(target: TARGET, error = "no words for config/secrets-header", "config words missing");
         return Err(Refusal::INTERNAL);
@@ -164,8 +221,14 @@ fn change(
             Ok(()) => {
                 let written = file.written(text, config_file::version(&bytes));
                 config.secrets = written;
-                let by = By::Person(Person::new(config.places.account.clone()));
-                record(&config, name, action, "set", by, Some(cause));
+                let (by, cause) = match who {
+                    Who::Person(cause) => (
+                        By::Person(Person::new(config.places.account.clone())),
+                        Some(cause),
+                    ),
+                    Who::Core => (By::Kernel, None),
+                };
+                record(&config, name, action, "set", by, cause);
                 core.hub.publish(&config, None);
                 return Ok(action);
             }

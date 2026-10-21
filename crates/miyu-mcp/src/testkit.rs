@@ -19,6 +19,7 @@ use tokio::io::{AsyncWriteExt, BufReader, DuplexStream, ReadHalf, WriteHalf};
 use crate::wire::{self, Read};
 
 pub mod http;
+pub mod oauth;
 mod resources;
 
 pub use resources::{resources, templates};

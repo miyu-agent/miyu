@@ -15,6 +15,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in personal settings: list, restart, add or replace, remove |
+| [`mcp.login`](#mcplogin) | A URL MCP server that needs a browser login: get the authorization page |
 | [`skill.list`](#skilllist) | List the skills that can be used |
 | [`skill.remove`](#skillremove) | Delete skills the admin placed |
 | [`script.list`](#scriptlist) | List the registered scripts |
@@ -176,7 +177,7 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `failures` | Consecutive failures |
 | `pid` | Process id while running |
 | `retry_in` | While waiting: milliseconds until the next start |
-| `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`…), the last lines of stderr |
+| `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`, `needs_login` for a URL server that needs a browser login…), the last lines of stderr |
 | `capabilities`, `unapproved` | Declared capabilities `[{id, name, summary}]`, those not yet approved |
 
 To keep up to date, subscribe to the `extensions` stream.
@@ -210,6 +211,16 @@ MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/sett
 Fields left out are not written: replacing drops what was there before and is not sent again. It is checked by the same rules as reading personal settings and written the way `config.set` writes (with a version, never over a concurrent hand edit). Response `{"name"}`; the server then follows what was written, and state changes push `mcp.changed`. **Errors**: `mcp_invalid` (badly written; `data.problem` says what is wrong, including neither or both of `command` and `url`); `bad_params` (`args` without `command`); `server_from_package` (personal settings have no server by that name and a package brings one: servers from packages are not changed here); `config_file_broken` (personal settings can't be read, or `mcp` is written in a shape that can't hold a server); `config_conflict`.
 
 **`mcp.remove`**: param `name`. Removes the server (with its sub-tables) from personal settings; response `{}`. A package server it covered starts again according to the package's switch. **Errors**: `unknown_server`; `config_file_broken`; `config_conflict`.
+
+## `mcp.login`
+
+For a URL MCP server that answered `401` and needs a browser login (`reason` is `needs_login`, and its table has no token of its own): get the authorization page. The person agrees in the browser, the core exchanges the code, stores the token in the secrets file (`mcp-oauth-<server>`, never handed out over the protocol), and the server connects by itself (`mcp.changed` and the package list pushes as usual). Local people only.
+
+**Params**: `service` (the server name, from personal settings or carried by a package).
+
+**Response**: `{"url"}`: the authorization page for the head to open. The core waits for the callback on `127.0.0.1`, up to 10 minutes; logging in again to the same server stops the earlier wait.
+
+**Errors**: `unknown_server`: no such server; `bad_params`: not a URL server, or its table has its own token (`bearer`, or `Authorization` in `headers`); `oauth_unregistered`: no client, and the authorization server doesn't take dynamic registration, so register a client with the service and put its `client_id` in the table; `oauth_failed`: the authorization server can't be found or used, or it refused; `data.why` says why (the server's own words, shortened).
 
 ## `skill.list`
 

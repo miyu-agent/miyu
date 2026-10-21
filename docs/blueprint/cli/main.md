@@ -27,6 +27,7 @@
 | `redo` | 撤掉当前会话的最后一轮，把你那句话（或者换成写的话）再发一次，让她重新做（施工 4-7 再补，2026-09-30 项目主人定） | `cli/redo.md` |
 | `compact` | 把当前会话的上下文压缩成摘要，可以附上要求（施工 6-8，命令名 2026-09-29 项目主人定） | `cli/compact.md` |
 | `recap` | 一句话回顾当前会话：在做什么、做完了什么、卡在哪（施工 3-8 四补） | `cli/recap.md` |
+| `mcp login` | 登录要浏览器授权的网址 MCP 服务（施工 X-42 上） | `cli/mcp.md` |
 | `rename` | 给当前会话起名（施工 3-8 五补） | `cli/rename.md` |
 | `memory` | 看她记了你什么，搜、记、改、忘、清空（施工 R-3 再补） | `cli/memory.md` |
 | `kb` | 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下） | `cli/kb.md` |
@@ -67,7 +68,7 @@
 3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上说没装哪一个、装了的界面有哪几个、`miyu config set ui.head <编号>` 换一个（一个都没装的说先用 `miyu ask`），退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：说这个界面的程序叫什么、不在 `miyu` 旁边，后半句同上，退出码 1。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。
    - `config` 不写它的子命令（原来的 8-24）：在终端里、`ui.head` 那个界面的清单 `[ui] opens` 里有 `config` 的，同上拉起它、带 `--page config`；没有这一页的、不在终端里的，把 `config` 的帮助页印在标准输出上，退出码 2。
    - `web`：照清单找网页软件（`web-ui.md`「怎么走」第二条）。
-4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`、`pkg`、`kb`、`config`、`login`、`logout`、`setup`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`），连同拉起核心用的命令。
+4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`、`pkg`、`kb`、`config`、`login`、`logout`、`setup`、`mcp`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/mcp.md`），连同拉起核心用的命令。
 5. 拉起核心用的命令：自己这个程序（`std::env::current_exe`，拿不到的用 `miyu`，照 `PATH` 找），加上 `core`。别的参数、环境变量不加；工作目录、标准输入输出、跟终端脱开，由拉起的那一边接（`ipc.md`）。
 6. `core`：跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写是 600（`core.md`）。
 7. `sandbox setup`、`sandbox remove`：交给命令行的头（`sandbox/windows.md`）。
@@ -90,6 +91,7 @@
   memory [命令]         看 AI 记了你什么，搜、记、改、忘、清空
   kb [命令]             管知识库：列、搜、读、建、加、删、挂目录
   pkg [命令]            看装了哪些软件包，装、卸
+  mcp login <服务>      登录要浏览器授权的网址 MCP 服务
   config <命令>         看配置、改配置、信任项目配置
   check [文件]          查手写的文件有没有写错：配置、密钥、人格、预设、清单
   login [名字]          存一个供应商的 key；--list 列出哪几家设了
@@ -141,6 +143,7 @@ Commands:
   memory [command]      What the AI remembers: search, add, edit, forget, clear
   kb [command]          Knowledge bases: list, search, read, add, remove, mount
   pkg [command]         See installed packages; install, remove
+  mcp login <server>    Log in to a URL MCP server needing a browser login
   config <command>      See and change settings, trust a project config
   check [file]          Check config, secrets, personas, presets and packages
   login [name]          Save a provider's key; --list shows which are set

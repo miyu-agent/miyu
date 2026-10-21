@@ -5,6 +5,9 @@
 //! - 新时代的（[`HttpServer::modern`]，施工 X-32 补）：照 GitHub 的远程服务，请求 `_meta` 里写了版本、`MCP-Protocol-Version`
 //!   头里没有同一个的回 `400`（正文是 `-32020` 的 JSON-RPC 错）；对得上的照新时代答，不认 `initialize`。
 //!
+//! - 要登录的（[`HttpServer::protect`]，施工 X-42 上）：没带对令牌的回 `401`，`WWW-Authenticate` 里写受保护资源元数据在哪、要的
+//!   范围 `files:read`；`GET` 那个 well-known 回元数据，授权服务器是给的那一个。
+//!
 //! 每个回应都带 `Connection: close`：一个请求一条连接，不用演长连接。
 
 use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
@@ -14,9 +17,13 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 
-/// 收到的一个请求：头（名字小写）和正文。
+/// 收到的一个请求：方法、路径（施工 X-42 上）、头（名字小写）和正文。
 #[derive(Debug, Clone)]
 pub struct Received {
+    /// 方法，例如 `POST`。
+    pub method: String,
+    /// 路径，带查询串。
+    pub path: String,
     /// 请求头，名字都写成小写。
     pub headers: Vec<(String, String)>,
     /// 正文，读成 JSON。
@@ -51,6 +58,8 @@ struct State {
     demand: Mutex<Option<String>>,
     expire: AtomicBool,
     oversize: AtomicBool,
+    /// 要登录的（施工 X-42 上）：授权服务器的 `issuer`，和服务自己的网址。
+    protected: Mutex<Option<(String, String)>>,
 }
 
 impl HttpServer {
@@ -85,6 +94,7 @@ impl HttpServer {
             demand: Mutex::new(None),
             expire: AtomicBool::new(false),
             oversize: AtomicBool::new(false),
+            protected: Mutex::new(None),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -118,6 +128,17 @@ impl HttpServer {
             .unwrap_or_else(PoisonError::into_inner) = token.map(str::to_string);
     }
 
+    /// 要登录（施工 X-42 上）：之后的请求要带 `Authorization: Bearer <token>`，没带对的回 `401`、`WWW-Authenticate` 指到受保护资源
+    /// 元数据；元数据说授权服务器是 `issuer`。
+    pub fn protect(&self, issuer: &str, token: &str) {
+        self.demand(Some(token));
+        *self
+            .state
+            .protected
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some((issuer.to_string(), self.url.clone()));
+    }
+
     /// 下一个带会话编号的请求回 `404`（会话过期），之后照常。
     pub fn expire(&self) {
         self.state.expire.store(true, Ordering::Relaxed);
@@ -143,6 +164,9 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
     if reader.read_line(&mut line).await.is_err() {
         return;
     }
+    let mut words = line.split_whitespace();
+    let method = words.next().unwrap_or_default().to_string();
+    let path = words.next().unwrap_or_default().to_string();
     loop {
         line.clear();
         if reader.read_line(&mut line).await.unwrap_or(0) == 0 || line.trim().is_empty() {
@@ -162,7 +186,12 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
         return;
     }
     let body: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
-    let request = Received { headers, body };
+    let request = Received {
+        method,
+        path,
+        headers,
+        body,
+    };
     state
         .received
         .lock()
@@ -193,6 +222,20 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
 
 /// 照请求答：状态、另加的头、正文。
 fn reply(state: &State, request: &Received) -> (u16, String, String) {
+    let protected = state
+        .protected
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
+    if let Some((issuer, url)) = &protected
+        && request.method == "GET"
+        && request
+            .path
+            .starts_with("/.well-known/oauth-protected-resource")
+    {
+        let metadata = json!({"resource": url, "authorization_servers": [issuer], "scopes_supported": ["files:read"]});
+        return (200, String::new(), metadata.to_string());
+    }
     let demand = state
         .demand
         .lock()
@@ -201,7 +244,16 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
     if let Some(token) = demand
         && request.header("authorization") != Some(format!("Bearer {token}").as_str())
     {
-        return (401, String::new(), "bad credentials".to_string());
+        let challenge = match &protected {
+            Some((_, url)) => {
+                let origin = url.trim_end_matches("/mcp");
+                format!(
+                    "WWW-Authenticate: Bearer resource_metadata=\"{origin}/.well-known/oauth-protected-resource/mcp\", scope=\"files:read\"\r\n"
+                )
+            }
+            None => String::new(),
+        };
+        return (401, challenge, "bad credentials".to_string());
     }
     let refuse = state.refuse.load(Ordering::Relaxed);
     if refuse != 0 {

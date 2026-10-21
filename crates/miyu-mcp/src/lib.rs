@@ -16,6 +16,7 @@ mod content;
 mod error;
 pub mod http;
 mod link;
+pub mod oauth;
 mod prompt;
 mod resource;
 #[cfg(any(test, feature = "testkit"))]

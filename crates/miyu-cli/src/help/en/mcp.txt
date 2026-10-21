@@ -1,0 +1,9 @@
+Usage: miyu mcp login <server>
+
+Log in to a URL MCP server that only accepts browser authorization (one in
+your personal settings with a url and no token). Prints the authorization
+address and tries to open a browser; once you agree there, the token goes
+into the secrets file and the server connects by itself. Waits up to 10 minutes.
+
+Options:
+  -h, --help  Print help

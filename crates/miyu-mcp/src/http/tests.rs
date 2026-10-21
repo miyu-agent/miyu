@@ -220,3 +220,28 @@ async fn a_modern_url_server_gets_the_version_header_on_every_request() {
         );
     }
 }
+
+/// 要登录的服务（施工 X-42 上）：没带对令牌的回 `401`，`WWW-Authenticate` 的原文记下来，看管的一头照它判。
+#[tokio::test]
+async fn a_401_keeps_its_challenge() {
+    let server = HttpServer::start(false).await;
+    server.protect("http://127.0.0.1:1", "right");
+    let (log, _lines) = log();
+    let opened = open(
+        miyu_http::client(miyu_http::Proxy::Off).expect("客户端"),
+        server.url.clone(),
+        vec![("Authorization".to_string(), "Bearer wrong".to_string())],
+        log,
+    );
+    let challenged = opened.challenged.clone();
+    assert_eq!(challenged.header(), None, "没回过 401 的没有");
+    let connected =
+        Client::connect(opened.read, opened.write, hello(), None, Waits::default()).await;
+    assert!(connected.is_err(), "令牌不对连不上");
+    let header = challenged.header().expect("记下了挑战");
+    assert!(
+        header.starts_with("Bearer resource_metadata=")
+            && header.contains("/.well-known/oauth-protected-resource/mcp"),
+        "{header}"
+    );
+}

@@ -44,6 +44,8 @@ pub enum Page {
     Kb,
     /// `miyu call -h`（施工 M-3）：脚本里调这个会话的工具。
     Call,
+    /// `miyu mcp -h`，`miyu mcp login -h` 也印它（施工 X-42 上）。
+    Mcp,
 }
 
 /// 有子命令的那几个命令照名字是哪一页（施工 K-7 修：少了参数时照它说子命令怎么写）；别的没有。
@@ -99,6 +101,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Pkg) => include_str!("help/en/pkg.txt"),
         (Language::Chinese, Page::Call) => include_str!("help/zh/call.txt"),
         (Language::English, Page::Call) => include_str!("help/en/call.txt"),
+        (Language::Chinese, Page::Mcp) => include_str!("help/zh/mcp.txt"),
+        (Language::English, Page::Mcp) => include_str!("help/en/mcp.txt"),
     }
 }
 

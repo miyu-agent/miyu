@@ -10,6 +10,7 @@
 //!   进程里走一遍（施工 4-7 再补）；
 //! - [`Compact`]：`miyu compact` 的参数；[`compact()`]：压一次，交回退出码；[`compact_on`]：在连上了的连接上压一次，
 //!   测试照它在进程里走一遍（施工 6-8）；
+//! - [`Mcp`]：`miyu mcp` 的参数；[`mcp()`]：登录要浏览器授权的网址 MCP 服务，交回退出码（施工 X-42 上）。
 //! - [`Recap`]：`miyu recap` 的参数；[`recap()`]：要一句回顾，印出来，交回退出码；[`recap_on`]：在连上了的连接上要一次，
 //!   测试照它在进程里走一遍（施工 3-8 四补）；
 //! - [`Rename`]：`miyu rename` 的参数；[`rename()`]：给会话起名，交回退出码；[`rename_on`]：在连上了的连接上起一次名，
@@ -34,6 +35,7 @@ mod kb;
 pub mod language;
 mod link;
 mod login;
+mod mcp;
 mod memory;
 mod misuse;
 pub mod packages;
@@ -56,6 +58,7 @@ pub use config::{
 };
 pub use kb::{Kb, KbCommand, KbPlan, kb, kb_on};
 pub use login::{KeyCommand, Login, LoginPlan, Logout, login, login_on};
+pub use mcp::{Mcp, McpCommand, mcp};
 pub use memory::{Clear as MemoryClear, Memory, MemoryCommand, MemoryPlan, memory, memory_on};
 pub use misuse::misuse;
 pub use pkg::{Pkg, PkgCommand, PkgPlan, pkg, pkg_on};
