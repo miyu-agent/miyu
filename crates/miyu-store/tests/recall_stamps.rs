@@ -89,3 +89,67 @@ fn replacing_or_dropping_a_source_drops_its_vectors() {
         "只剩 b.md 的"
     );
 }
+
+/// 鲁棒性（2026-10-22）：清一个来源的块照键的范围删（`stamps.rs` 的 `clear`：`[<来源>#, <来源>$)`），文档名里带 `#` 的另一篇
+/// （知识库的路径写法允许 `#`）它的块 `notes.md#2.md#0` 也落在 `notes.md` 的范围里，换 `notes.md` 时被一起删掉，那一篇就搜不到了，
+/// 直到它自己再变。期望：换一个来源只动它自己的块。修之前这条是红的。
+#[test]
+fn replacing_a_source_leaves_a_source_whose_name_extends_it_with_a_hash() {
+    let scratch = Scratch::new("recall-stamps-hash");
+    let (index, _) = RecallIndex::open(&place(&scratch));
+    let one = |text: &str| vec![text.to_string()];
+    index
+        .replace("notes.md#2.md", &one("第二篇"), at(1), "1:1")
+        .expect("写得进");
+    index
+        .replace("notes.md", &one("第一篇"), at(1), "1:1")
+        .expect("写得进");
+    index
+        .put_vector("notes.md#2.md#0", "m", &[1.0, 0.0])
+        .expect("写得进");
+    index
+        .replace("notes.md", &one("第一篇改过"), at(2), "2:2")
+        .expect("写得进");
+    assert!(
+        keys(&index).contains(&"notes.md#2.md#0".to_string()),
+        "换 notes.md 时把 notes.md#2.md 的块也删了：{:?}",
+        keys(&index)
+    );
+    let found = index.search("第二篇", 10).expect("搜得了");
+    assert_eq!(
+        found.first().map(|hit| hit.key.as_str()),
+        Some("notes.md#2.md#0"),
+        "它的词也还在"
+    );
+    let missing = index.missing("m", 0, 10).expect("读得了");
+    assert!(
+        missing.iter().all(|(_, key, _)| key != "notes.md#2.md#0"),
+        "它的向量也还在：{missing:?}"
+    );
+}
+
+/// 中文名的来源也一样（鲁棒性 B-6）：SQLite 的 `substr` 照字符数，起点照字节算的话中文名的起点落到后面去，`#a#0` 被当成自己的块删掉。
+#[test]
+fn a_chinese_named_source_leaves_its_neighbour_too() {
+    let scratch = Scratch::new("recall-stamps-chinese");
+    let (index, _) = RecallIndex::open(&place(&scratch));
+    let one = |text: &str| vec![text.to_string()];
+    index
+        .replace("很长的中文名字.md#a", &one("旁边那一篇"), at(1), "1:1")
+        .expect("写得进");
+    index
+        .replace("很长的中文名字.md", &one("第一篇"), at(1), "1:1")
+        .expect("写得进");
+    index
+        .replace("很长的中文名字.md", &one("第一篇改过"), at(2), "2:2")
+        .expect("写得进");
+    let keys = keys(&index);
+    assert!(
+        keys.contains(&"很长的中文名字.md#a#0".to_string()),
+        "{keys:?}"
+    );
+    assert!(
+        keys.contains(&"很长的中文名字.md#0".to_string()),
+        "{keys:?}"
+    );
+}

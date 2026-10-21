@@ -91,7 +91,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 - R-3 上加一张 `buried(key TEXT PRIMARY KEY)`：墓碑，版本加一成 3。
 - 向量表随 R-5 加，版本跟着加一：派生的，删掉重建，不写迁移。
 - R-13 下加一张 `places(source TEXT PRIMARY KEY, venue TEXT)`：回合库里场所会话在哪个场所（`place`、`places`），本机的会话不记；搜以前的对话照它挑（`memory.md` 第一条第 1 款、第九条）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上。
-- K-1 上加一张 `stamps(source TEXT PRIMARY KEY, stamp TEXT NOT NULL)`：知识库的索引里每个文档的指纹（`knowledge.md`「对外的样子」索引那一段）。来源和块的键照 `#` 分（`a.md` 是 `a.md.bak` 的前缀也不碍事）；整份换掉、拿掉一个来源照键的范围删（`<来源>#` 到 `<来源>$`，走 `key` 上的索引；K-4 前照 `substr` 比，每个来源扫一遍整张表，3000 篇的知识库头一次补 5 秒上下，改了以后 0.6 秒上下）。同向量表不换版本，开库、重建以后补上。
+- K-1 上加一张 `stamps(source TEXT PRIMARY KEY, stamp TEXT NOT NULL)`：知识库的索引里每个文档的指纹（`knowledge.md`「对外的样子」索引那一段）。来源和块的键照 `#` 分（`a.md` 是 `a.md.bak` 的前缀也不碍事）；整份换掉、拿掉一个来源照键的范围删（`<来源>#` 到 `<来源>$`，走 `key` 上的索引；K-4 前照 `substr` 比，每个来源扫一遍整张表，3000 篇的知识库头一次补 5 秒上下，改了以后 0.6 秒上下），范围里只删 `#` 后面全是数字的：名字是它加 `#` 开头的另一篇（`a.md#2.md`，块是 `a.md#2.md#0`）也落在范围里，不是它的（鲁棒性 B-6）。同向量表不换版本，开库、重建以后补上。
 - R-4 下加一张 `uses(key TEXT, memory TEXT, at INTEGER, PRIMARY KEY (key, memory))`：回合库里记一条记忆用到过的每一次，键是 `会话/事件的序号`，`at` 是那一条事件的时刻（毫秒）。同向量表不换版本，每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上（`memory.md` 第八条）。
 
 ### 怎么走
@@ -202,7 +202,7 @@ K-1 上做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-store/tests/recall_stamps.rs` | 「库的结构」的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），前缀相同的别的来源不动；列出指纹；拿掉一个来源连指纹一起；换掉、拿掉的连向量一起（施工 K-2） |
+| `crates/miyu-store/tests/recall_stamps.rs` | 「库的结构」的 `stamps`：整份换掉一个来源（原来的块拿掉、新的放进去、指纹记下），前缀相同的别的来源不动；列出指纹；拿掉一个来源连指纹一起；换掉、拿掉的连向量一起（施工 K-2）；名字是它加 `#` 开头的另一篇不动（鲁棒性 B-6） |
 
 R-5 四补做好的：
 

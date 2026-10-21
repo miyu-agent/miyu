@@ -90,22 +90,25 @@ impl RecallIndex {
     }
 }
 
-/// 拿掉来源 `source` 的块（连同词、向量）和指纹。照 `#` 分：一个来源是另一个的前缀（`a.md`、`a.md.bak`）也不碍事。
+/// 拿掉来源 `source` 的块（连同词、向量）和指纹。照 `#` 分：一个来源是另一个的前缀（`a.md`、`a.md.bak`）也不碍事；名字是它
+/// 加 `#` 开头的另一篇（`a.md#2.md`，块是 `a.md#2.md#0`）也落在范围里，`#` 后面只认数字（鲁棒性 B-6）。
 fn clear(tx: &Transaction<'_>, source: &str) -> Result<(), DbError> {
     // 照键的范围删（`#` 的下一个字符是 `$`）：走 `key` 上的索引。原来照 `substr` 比，每个来源都扫一遍整张表，三千篇的库头一次补
-    // 要 5 秒上下，改了以后 0.6 秒上下（施工 K-4 量的）。
+    // 要 5 秒上下，改了以后 0.6 秒上下（施工 K-4 量的）。范围里再挑 `#` 后面全是数字的（SQLite 的 `substr` 照字符数）。
     let (from, to) = (format!("{source}#"), format!("{source}$"));
+    let after = i64::try_from(from.chars().count() + 1).unwrap_or(i64::MAX);
+    let own = "key >= ?1 AND key < ?2 AND substr(key, ?3) NOT GLOB '*[^0-9]*'";
     tx.execute(
-        "DELETE FROM terms WHERE rowid IN (SELECT id FROM items WHERE key >= ?1 AND key < ?2)",
-        params![from, to],
+        &format!("DELETE FROM terms WHERE rowid IN (SELECT id FROM items WHERE {own})"),
+        params![from, to, after],
     )?;
     tx.execute(
-        "DELETE FROM items WHERE key >= ?1 AND key < ?2",
-        params![from, to],
+        &format!("DELETE FROM items WHERE {own}"),
+        params![from, to, after],
     )?;
     tx.execute(
-        "DELETE FROM vectors WHERE key >= ?1 AND key < ?2",
-        params![from, to],
+        &format!("DELETE FROM vectors WHERE {own}"),
+        params![from, to, after],
     )?;
     tx.execute("DELETE FROM stamps WHERE source = ?1", [source])?;
     Ok(())
