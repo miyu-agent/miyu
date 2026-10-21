@@ -114,6 +114,7 @@
 4. 空行结束一条：有 `data` 的交出来，名字跟着清掉。
 5. 流完了，没收全的最后一行、最后一条照样交出来。
 6. 分片从哪里切开都一样。
+7. 一条事件连同还没收全的那一行最多攒 64 MiB（`sse::MOST`，鲁棒性 B-3）：攒过了清掉、再来的都不收，`overflowed()` 是真；三家的解码器喂完一片看它，照可重试的出错收尾（`流里一条事件超过 64 MiB，不再往下读`），`done()` 是真，执行器不再读。供应商、中转站一直发、不换行或者一直不空行时，读流那一头只有空闲超时，不停地发就永远不超时：靠这一条挡住。一条事件里一整张 base64 的大图可能就是一行，单行不另设更小的上限。
 
 **一条事件**：
 
@@ -288,7 +289,8 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/tests/openai_chat_effort.rs` | 思考强度（施工 8-18）：没写的不加；档位发 `reasoning_effort`、接在最后；`off`、`on` 照开关；没有开关的 `off` 发 `none`、`on` 不加；前面的字节一个不动 |
 | `crates/miyu-drivers/tests/openai_chat_continuation.rs` | DeepSeek 接着写（样本、路径、半截带思考）；没有开关或者没有记号一字不变；`partial` 的写法 |
 | `crates/miyu-drivers/tests/openai_chat_streams.rs` | 十三份流的样本；从哪里切开喂都一样；累积器一条都不拒；解出来的编码回去用供应商的编号；驱动的接口走一遍；`error` 是 `false`、`0`、`[]` 的是噪声，有内容的照旧出错；流里的限速连同要等多久交回；`finished()` 在 `finish_reason` 到了以后才说是 |
-| `crates/miyu-drivers/src/sse/tests.rs` | 三种换行、切开的 CRLF、几行 data 和注释、只有注释、事件名、切开的汉字、断在半条上、从哪里切开都一样 |
+| `crates/miyu-drivers/src/sse/tests.rs` | 三种换行、切开的 CRLF、几行 data 和注释、只有注释、事件名、切开的汉字、断在半条上、从哪里切开都一样；正好 64 MiB 还收、多一个字节就不收，一条事件一直不空行的也停（鲁棒性 B-3） |
+| `crates/miyu-drivers/tests/robust_streams.rs`（鲁棒性 B-3） | 三家的解码器喂一行一直不换行的、一条一直不空行的，都停下、收尾带错 |
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs` | 列模型：名字和报了的窗口、三种窗口的写法先后、坏的跳过；回应坏了说是模型列表（施工 8-7） |
 | `crates/miyu-drivers/src/classify/excess/tests.rs` | 超了多少的几种写法；报了的上限单独读，后半段说不出也交、0 不交（施工 8-7） |
 | `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度算认证失败；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |

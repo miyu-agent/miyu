@@ -98,3 +98,31 @@ fn every_cut_gives_the_same_events() {
     let bytes: Vec<&[u8]> = stream.chunks(1).collect();
     assert_eq!(events(&bytes), whole);
 }
+
+/// 攒到正好 [`MOST`] 还收，多一个字节就不收了：清掉攒的，后面再来完整的事件也不交（鲁棒性 B-3）。
+#[test]
+fn a_line_longer_than_the_limit_stops_the_stream() {
+    let mut sse = Sse::new();
+    let mut line = b"data: ".to_vec();
+    line.resize(MOST, b'a');
+    assert!(sse.feed(&line).is_empty());
+    assert!(!sse.overflowed(), "正好 MOST 还收");
+    assert!(sse.feed(b"a\n\ndata: next\n\n").is_empty());
+    assert!(sse.overflowed());
+    assert!(sse.finish().is_empty(), "攒的清掉了");
+}
+
+/// 一行一行都不长，一条事件一直不空行，`data` 攒过了上限也一样。
+#[test]
+fn an_event_longer_than_the_limit_stops_the_stream() {
+    let mut sse = Sse::new();
+    let mut line = b"data: ".to_vec();
+    line.extend(std::iter::repeat_n(b'a', 1024 * 1024));
+    line.push(b'\n');
+    let mut fed = 0;
+    while !sse.overflowed() {
+        assert!(sse.feed(&line).is_empty());
+        fed += line.len();
+        assert!(fed <= MOST + 2 * line.len(), "攒过了上限还在收");
+    }
+}

@@ -65,6 +65,10 @@ impl Decoder {
         for event in events {
             self.event(&event, false, &mut out);
         }
+        // 一条事件攒过了上限：可重试的出错收尾（鲁棒性 B-3）。
+        if self.sse.overflowed() && self.error.is_none() {
+            self.error = Some(crate::sse::overflow_error());
+        }
         out
     }
 

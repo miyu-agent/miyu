@@ -6,8 +6,15 @@
 //! - `data:` 后面的一个空格去掉，几行 `data` 用换行接起来；`event:` 记下名字；`:` 开头的是注释；
 //!   `id:`、`retry:` 和不认识的字段不理。空行结束一条，有 `data` 的才交出来。
 //! - 流断在半条上：[`Sse::finish`] 把最后一条照样交出来。
+//! - 一条事件连同还没收全的那一行攒过上限（64 MiB）：不再往下收，[`Sse::overflowed`] 为真，解码器照可重试的出错收尾（鲁棒性 B-3）。
 
 use std::mem;
+
+use miyu_kernel::event::{CallError, ErrorClass};
+
+/// 一条事件（连同还没收全的那一行）最多攒多少字节（鲁棒性 B-3）：供应商、中转站一直发、不换行或者一直不空行，读流那一头
+/// 只有空闲超时，不停地发就永远不超时，缓冲不能一直涨到内存用完。64 MiB：一条事件里塞一整张 base64 的大图也装得下。
+pub(crate) const MOST: usize = 64 * 1024 * 1024;
 
 /// 一条事件。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +36,8 @@ pub struct Sse {
     data: String,
     /// 这一条的名字。
     event: Option<String>,
+    /// 攒过了 [`MOST`]：清掉了攒的，再来的都不收。
+    overflowed: bool,
 }
 
 impl Sse {
@@ -41,14 +50,28 @@ impl Sse {
     pub fn feed(&mut self, bytes: &[u8]) -> Vec<Event> {
         let mut out = Vec::new();
         for &byte in bytes {
+            if self.overflowed {
+                break;
+            }
             let after_cr = mem::replace(&mut self.after_cr, byte == b'\r');
             match byte {
                 b'\n' if after_cr => {}
                 b'\n' | b'\r' => self.end_line(&mut out),
                 _ => self.line.push(byte),
             }
+            if self.line.len() + self.data.len() > MOST {
+                *self = Sse {
+                    overflowed: true,
+                    ..Sse::default()
+                };
+            }
         }
         out
+    }
+
+    /// 攒过了上限（64 MiB）：这一条不收了，再喂的也不收。
+    pub fn overflowed(&self) -> bool {
+        self.overflowed
     }
 
     /// 流完了：没收全的最后一行、最后一条，照样交出来。
@@ -94,6 +117,15 @@ impl Sse {
         let mut data = mem::take(&mut self.data);
         data.pop();
         out.push(Event { event, data });
+    }
+}
+
+/// 攒过了 [`MOST`] 的出错：可重试，断开这一次（鲁棒性 B-3）。三家的解码器喂完一片看 [`Sse::overflowed`]，照它收尾。
+pub(crate) fn overflow_error() -> CallError {
+    CallError {
+        class: ErrorClass::Retryable,
+        message: format!("流里一条事件超过 {} MiB，不再往下读", MOST >> 20),
+        status: None,
     }
 }
 
