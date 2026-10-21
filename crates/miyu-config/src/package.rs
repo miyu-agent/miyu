@@ -88,6 +88,8 @@ pub struct Manifest {
     pub page: Option<String>,
     /// 吉祥物（`kind = "mascot"`，施工 F-7）：模型文件在包目录里的相对路径。
     pub mascot: Option<Mascot>,
+    /// 终端的主题（`[theme]`，施工 F-16）：主题文件在包目录里的相对路径。只有主题包能写。
+    pub theme: Option<Theme>,
     /// 带的 MCP 服务（施工 X-2，`[[mcp]]`）：照写的先后；没有的是空的。只有扩展包、`bundle` 能写。
     pub mcp: Vec<McpServer>,
     /// 声明的斜杠命令（施工 X-14 下，`[[slash]]`）：交给包的程序办；照写的先后，没有的是空的。只有扩展包能写。
@@ -118,6 +120,13 @@ pub struct Mascot {
     pub model: String,
 }
 
+/// 主题包的 `[theme]`（施工 F-16，`packages.md`「主题包」）：主题文件的格式由终端定，核心只认它在哪，同吉祥物。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Theme {
+    /// 主题文件：包目录里的相对路径，例如 `theme.json`。
+    pub file: String,
+}
+
 /// 包的种类：只说它跑在哪（设计 `30-插件框架.md` 第二节）；施工 F-8 上补起照带的表认（`kinds::of`），清单不写。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PackageKind {
@@ -131,6 +140,8 @@ pub enum PackageKind {
     Worker,
     /// 吉祥物（施工 F-7）：只有数据，终端照它画；不说协议、不跑程序、没有开关和配置项。
     Mascot,
+    /// 终端的主题（施工 F-16）：同吉祥物只有数据，终端照它画框线、记号、留白；选哪个是终端自己的配置项。
+    Theme,
     /// 一组东西、不带程序（施工 X-2，设计 `31-软件包.md` 第二节第 1 条）：MCP 服务（`[[mcp]]`）、技能、脚本（包文件夹里的
     /// `skills/`、`scripts/`，施工 X-13 上）。不说协议；带了服务的开关同扩展，默认关着；不带服务的没有开关（技能、脚本照预设开关）。
     Bundle,
@@ -145,6 +156,7 @@ impl PackageKind {
             PackageKind::Builtin => "builtin",
             PackageKind::Worker => "worker",
             PackageKind::Mascot => "mascot",
+            PackageKind::Theme => "theme",
             PackageKind::Bundle => "bundle",
         }
     }
@@ -237,7 +249,7 @@ impl fmt::Display for Problem {
 }
 
 /// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 20] = [
+const TABLES: [&str; 21] = [
     "package",
     "builtin",
     "command",
@@ -252,6 +264,7 @@ const TABLES: [&str; 20] = [
     "worker",
     "page",
     "mascot",
+    "theme",
     "mcp",
     "slash",
     "search",
@@ -379,6 +392,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(table) => Some(look::mascot(&reader, table, &root["mascot"])?),
         None => None,
     };
+    let theme = match root.get("theme").and_then(Item::as_table_like) {
+        Some(table) => Some(look::theme(&reader, table, &root["theme"])?),
+        None => None,
+    };
     let mcp = match root.get("mcp") {
         Some(node) => mcp::read(&reader, node)?,
         None => Vec::new(),
@@ -429,6 +446,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         icon: head.icon,
         page,
         mascot,
+        theme,
         mcp,
         slash,
         search,

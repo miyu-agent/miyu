@@ -114,6 +114,9 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if let Some(icon) = &manifest.icon {
         item["icon"] = json!(icon);
     }
+    if let Some(theme) = &manifest.theme {
+        item["theme"] = json!({"file": theme.file});
+    }
     if let Some(mascot) = &manifest.mascot {
         item["mascot"] = json!({"model": mascot.model});
     }

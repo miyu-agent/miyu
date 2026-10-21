@@ -26,6 +26,7 @@ pub(super) fn of(reader: &Reader<'_>, root: &Table) -> Result<PackageKind, Probl
         [(_, kind)] => Ok(*kind),
         [] if root.contains_key("mcp") => Ok(PackageKind::Bundle),
         [] if root.contains_key("mascot") => Ok(PackageKind::Mascot),
+        [] if root.contains_key("theme") => Ok(PackageKind::Theme),
         [] if root.contains_key("command") || speaks_protocol(root) => Err(reader.problem(
             None,
             Code::MissingKey,
@@ -93,6 +94,8 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
         ],
         PackageKind::Worker => &["package", "worker", "mascot", "depends", "recommends"],
         PackageKind::Mascot => &["package", "mascot", "depends", "recommends"],
+        // 主题包（施工 F-16）：只有主题，不带吉祥物、程序。
+        PackageKind::Theme => &["package", "theme", "depends", "recommends"],
         PackageKind::Bundle => &[
             "package",
             "mcp",

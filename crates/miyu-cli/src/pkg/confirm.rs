@@ -116,6 +116,9 @@ fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     if preview["mascot"] == true {
         carried(Carried::Mascot);
     }
+    if preview["theme"] == true {
+        carried(Carried::Theme);
+    }
     if let Some(platform) = preview["connection"].as_str() {
         carried(Carried::Connection(platform));
     }

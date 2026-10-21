@@ -69,6 +69,29 @@ pub(super) fn mascot(
         })
 }
 
+/// `[theme]`（施工 F-16）：只有 `file`，必写，包目录里的相对路径（写法同 `[mascot] model`）。
+pub(super) fn theme(
+    reader: &Reader<'_>,
+    table: &dyn TableLike,
+    at: &Item,
+) -> Result<super::Theme, Problem> {
+    reader.only(table, "theme", &["file"])?;
+    let item = reader.required(table, at, "theme", "file")?;
+    item.as_str()
+        .filter(|file| relative_dir(file))
+        .map(|file| super::Theme {
+            file: file.to_string(),
+        })
+        .ok_or_else(|| {
+            reader.problem(
+                Some(item),
+                Code::BadThemeFile,
+                "theme.file",
+                "theme.file must be a relative path inside the package directory".to_string(),
+            )
+        })
+}
+
 /// `[package] protocol`：带程序的必写；只带吉祥物的只有数据、不说协议，写了报 `wrong_kind`（施工 F-7）；`bundle` 同样（施工
 /// X-2：带的 MCP 服务说的是 MCP，不是 Miyu 的协议）。
 pub(super) fn protocol(
@@ -77,7 +100,10 @@ pub(super) fn protocol(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<Option<[u32; 2]>, Problem> {
-    if matches!(kind, PackageKind::Mascot | PackageKind::Bundle) {
+    if matches!(
+        kind,
+        PackageKind::Mascot | PackageKind::Theme | PackageKind::Bundle
+    ) {
         return match table.get("protocol") {
             None => Ok(None),
             Some(item) => Err(reader.problem(

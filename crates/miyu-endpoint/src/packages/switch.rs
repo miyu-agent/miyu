@@ -93,6 +93,7 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
         | PackageKind::Ui
         | PackageKind::Worker
         | PackageKind::Mascot
+        | PackageKind::Theme
         | PackageKind::Bundle => Err(Refusal::NOT_SWITCHABLE),
     }
 }

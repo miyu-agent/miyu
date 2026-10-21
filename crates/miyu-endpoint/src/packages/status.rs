@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_config::package::{Manifest, Mascot, PackageKind};
+use miyu_config::package::{Manifest, Mascot, PackageKind, Theme};
 use miyu_store::packages::{Found, locate};
 
 use crate::Core;
@@ -15,7 +15,11 @@ pub(crate) fn runs(manifest: &Manifest) -> bool {
     match manifest.kind {
         PackageKind::Process => true,
         PackageKind::Bundle => !manifest.mcp.is_empty(),
-        PackageKind::Builtin | PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot => false,
+        PackageKind::Builtin
+        | PackageKind::Ui
+        | PackageKind::Worker
+        | PackageKind::Mascot
+        | PackageKind::Theme => false,
     }
 }
 
@@ -30,7 +34,9 @@ fn program(manifest: &Manifest) -> Option<&str> {
             .worker
             .as_ref()
             .map(|worker| worker.program.as_str()),
-        PackageKind::Builtin | PackageKind::Mascot | PackageKind::Bundle => None,
+        PackageKind::Builtin | PackageKind::Mascot | PackageKind::Theme | PackageKind::Bundle => {
+            None
+        }
     }
 }
 
@@ -61,27 +67,52 @@ pub(crate) fn page(found: &Found, manifest: &Manifest) -> bool {
         .is_some_and(|dir| found.files_dir().join(dir).join("index.html").is_file())
 }
 
-/// 吉祥物包的模型文件最大几个字节（施工 F-7）。
-const MASCOT_MAX: u64 = 256 * 1024;
+/// 吉祥物包的模型文件、主题包的主题文件最大几个字节（施工 F-7、F-16）。
+const DATA_MAX: u64 = 256 * 1024;
 
 /// 吉祥物包的模型文件（施工 F-7，`packages.md`「吉祥物包」）：不在（照真实路径找，顺着链接出了包目录的也算不在）、超过
 /// 256 KiB、不是 JSON 的对象，交回 `miyu check` 报的代码；好的没有。模型里面写得对不对由终端查。
 pub(crate) fn mascot_problem(found: &Found, mascot: &Mascot) -> Option<&'static str> {
+    data_problem(found, &mascot.model).map(|problem| match problem {
+        Data::Missing => "mascot_missing",
+        Data::TooBig => "mascot_too_big",
+        Data::NotJson => "mascot_not_json",
+    })
+}
+
+/// 主题包的主题文件（施工 F-16，`packages.md`「主题包」）：同吉祥物的模型文件，代码换成 `theme_…`。
+pub(crate) fn theme_problem(found: &Found, theme: &Theme) -> Option<&'static str> {
+    data_problem(found, &theme.file).map(|problem| match problem {
+        Data::Missing => "theme_missing",
+        Data::TooBig => "theme_too_big",
+        Data::NotJson => "theme_not_json",
+    })
+}
+
+/// 包里一份数据文件的毛病。
+enum Data {
+    Missing,
+    TooBig,
+    NotJson,
+}
+
+/// 包 `found` 里 `path` 那一份：在包目录里（照真实路径）、不超过 [`DATA_MAX`]、是 JSON 的对象。
+fn data_problem(found: &Found, path: &str) -> Option<Data> {
     let root = std::fs::canonicalize(found.files_dir()).ok();
-    let real = std::fs::canonicalize(found.files_dir().join(&mascot.model)).ok();
+    let real = std::fs::canonicalize(found.files_dir().join(path)).ok();
     let Some(real) = real
         .filter(|real| root.as_ref().is_some_and(|root| real.starts_with(root)) && real.is_file())
     else {
-        return Some("mascot_missing");
+        return Some(Data::Missing);
     };
-    if std::fs::metadata(&real).map_or(true, |meta| meta.len() > MASCOT_MAX) {
-        return Some("mascot_too_big");
+    if std::fs::metadata(&real).map_or(true, |meta| meta.len() > DATA_MAX) {
+        return Some(Data::TooBig);
     }
     let object = std::fs::read(&real)
         .ok()
         .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
         .is_some_and(|value| value.is_object());
-    (!object).then_some("mascot_not_json")
+    (!object).then_some(Data::NotJson)
 }
 
 /// `status`：`program_missing`、`off`、`running`、`starting`、`stopped`、`ready` 之一。`removed` 是出厂的包卸掉了。`bundle`

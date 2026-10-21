@@ -34,7 +34,7 @@
 | 名字 | 说明 |
 |---|---|
 | `package`、`layer` | 编号，`shipped` 或 `home` |
-| `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
+| `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（终端的主题，带 `theme: {"file"}`，`package.file` 只给那一份）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
 | `from` | 从哪来：`shipped`（出厂）、`official`（从官方软件源装的）、`local`（本机文件夹、包文件装的）；以后有了社区软件源再多 `community` |
@@ -71,7 +71,7 @@
 | `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接 | 同上，一起装了依赖的多 `with` |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
 
 装、卸当场生效：带进程的照开关拉起、停下，它的工具进出工具目录，开着的会话下一轮换上。
 
@@ -138,7 +138,7 @@
 |---|---|
 | `unknown_package` | 没有这个包 |
 | `package_required` | 关必需的 |
-| `not_switchable` | 界面、小程序、吉祥物包没有开关 |
+| `not_switchable` | 界面、小程序、吉祥物包、主题包没有开关 |
 | `program_missing` | 包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有） |
 | `needs_approval` | 要的能力还有没批的，`data.capabilities` |
 | `package_depended` | 关一个别的包依赖的 |

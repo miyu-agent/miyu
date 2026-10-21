@@ -45,7 +45,11 @@ impl Manifest {
             }],
             (
                 None,
-                PackageKind::Ui | PackageKind::Worker | PackageKind::Mascot | PackageKind::Bundle,
+                PackageKind::Ui
+                | PackageKind::Worker
+                | PackageKind::Mascot
+                | PackageKind::Theme
+                | PackageKind::Bundle,
             ) => Vec::new(),
         };
         features.extend(self.mcp.iter().map(|server| Feature {
