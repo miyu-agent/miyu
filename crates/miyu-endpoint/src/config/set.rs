@@ -135,7 +135,7 @@ pub(crate) fn set(
 }
 
 /// 核心拉起的扩展改配置（施工 T-9 补，接入QQ 的会话 2026-10-17 要的、项目主人定）：只收系统配置里、键以自己的包编号
-/// `package` 开头的几项，逐项改（不收整份换）；密钥类的项、写成引用（`{ secret = … }`、`{ env = … }`）的值不收：不然能把
+/// `package` 开头、是这个包清单里声明的几项（施工 5-19），逐项改（不收整份换）；密钥类的项、写成引用（`{ secret = … }`、`{ env = … }`）的值不收：不然能把
 /// 自己的项指到别人的密钥、环境里的 key 再读回去。不合的照旧 `local_only`。改的人记成这个包（`by`）。
 pub(crate) fn set_from_package(
     core: &Core,
@@ -146,10 +146,12 @@ pub(crate) fn set_from_package(
 ) -> Result<Json, Refusal> {
     let config = core.config();
     let prefix = format!("{package}.");
+    // 键以包编号开头还不够：包编号和核心模块同名的包（叫 `ui`、`sandbox` 的）没声明配置项也装得上，`ui.*` 却是核心自己的项
+    // （施工 5-19）。只认这个包清单里声明的项（`ui.package` 是它）。
     let own = |change: &ChangeParam| {
         change.key.starts_with(&prefix)
             && miyu_config::key::item_of(config.items(), &change.key)
-                .is_some_and(|item| !holds_secret(&item.kind))
+                .is_some_and(|item| item.ui.package == Some(package) && !holds_secret(&item.kind))
             && !change.value.as_ref().is_some_and(Json::is_object)
             && !change
                 .input
