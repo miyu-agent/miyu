@@ -30,6 +30,7 @@ mod turn_inject;
 mod answer;
 mod attach;
 mod attach_send;
+mod audit_login_race;
 mod backstage;
 mod blind_venue;
 mod blob_grants;

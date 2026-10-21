@@ -3,7 +3,8 @@
 //! - 一次性码（`account.setup_code`）：只给出示本机令牌连上的连接；5 分钟、一次；只在内存里，最多 16 个。
 //! - 用一次性码连上的连接只能设用户名和密码（`account.setup`）：设好了写 `system/accounts.json`，这个账号以前的登录令牌
 //!   全部作废，造一个新的交回；这个连接从此是完整的管理员。
-//! - 用户名、密码握手：对上了造一个登录令牌交回；同一个用户名 60 秒内错 5 次，剩下的时间里先拒、不验。
+//! - 用户名、密码握手：对上了造一个登录令牌交回；同一个用户名 60 秒内试 5 次（验着的也算，对了清零），剩下的时间里先拒、
+//!   不验（施工 5-20）。
 //! - 登录令牌握手：哈希在这个账号的 `logins.json` 里、没过期。
 //! - `account.logout`：作废一个、全部；用登录令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
 //! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台要的）在 [`ticket`]。
@@ -226,7 +227,7 @@ pub(crate) async fn password(
     user: &str,
     password: String,
 ) -> Result<(Value, Via), Refusal> {
-    if let Some(wait) = throttled(&core.identity, user) {
+    if let Err(wait) = admit(&core.identity, user) {
         return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
     }
     let phc = files::read_accounts(core)
@@ -243,8 +244,8 @@ pub(crate) async fn password(
     })
     .await
     .unwrap_or(false);
+    // 错了的进来时已经记过（`admit`）。
     if !right {
-        failed(&core.identity, user);
         return Err(Refusal::BAD_PASSWORD);
     }
     core.identity
@@ -308,28 +309,22 @@ fn announce(identity: &Identity, revoked: Revoked) {
     identity.revoked.send(revoked).unwrap_or(0);
 }
 
-/// 这个用户名还要等多久才能再试：60 秒内错满 5 次的，等到最早那一次满 60 秒。
-fn throttled(identity: &Identity, user: &str) -> Option<Duration> {
+/// 这个用户名能不能再试：60 秒内已经试了 5 次的，交回还要等多久（等到最早那一次满 60 秒）；能试的当场先记一次失败，验对了
+/// 再清零。先查、验完才记的话，同时进来的握手都看到「还没错满」、都去验，60 秒 5 次挡不住并发，每个还各占一份 argon2 的
+/// 内存（施工 5-20）：查和记在同一把锁里。
+fn admit(identity: &Identity, user: &str) -> Result<(), Duration> {
     let mut failures = identity
         .failures
         .lock()
         .unwrap_or_else(PoisonError::into_inner);
     let now = Instant::now();
-    let tries = failures.get_mut(user)?;
+    let tries = failures.entry(user.to_string()).or_default();
     tries.retain(|at| now.duration_since(*at) < WINDOW);
-    (tries.len() >= TRIES).then(|| WINDOW - now.duration_since(tries[tries.len() - TRIES]))
-}
-
-/// 记一次失败。
-fn failed(identity: &Identity, user: &str) {
-    let mut failures = identity
-        .failures
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
-    failures
-        .entry(user.to_string())
-        .or_default()
-        .push(Instant::now());
+    if tries.len() >= TRIES {
+        return Err(WINDOW - now.duration_since(tries[tries.len() - TRIES]));
+    }
+    tries.push(now);
+    Ok(())
 }
 
 /// 密码写得合不合：8 到 1024 个字节，不能全是空白。
