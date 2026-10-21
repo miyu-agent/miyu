@@ -322,3 +322,21 @@ fn only_the_latest_finished_jobs_are_kept() {
     assert_eq!(jobs.len(), miyu_view::FINISHED_KEPT);
     assert_eq!(jobs[0].title, "Job 3", "最早做完的两个拿掉了");
 }
+
+/// 整理会话的主请求（施工 D-1 下补）：`purpose: memory` 的照主请求算上下文用了多少。
+#[test]
+fn a_dream_sessions_requests_count_toward_the_context() {
+    use miyu_kernel::event::{Body, Purpose};
+    let mut stage = stage();
+    stage.model([Line::says("Done.").reports(2_048)]);
+    stage.say("tidy up");
+    let mut projector = Projector::new(Arc::new(texts("en")), None);
+    for event in stage.log() {
+        let mut event = event.clone();
+        if let Body::ModelCalled(called) = &mut event.body {
+            called.purpose = Some(Purpose::Memory);
+        }
+        drop(projector.event(&event));
+    }
+    assert_eq!(projector.status().used, Some(2_048));
+}

@@ -230,3 +230,32 @@ fn a_reply_carries_the_persona_that_spoke_it() {
         "{entries:#?}"
     );
 }
+
+/// 整理会话的主请求（施工 D-1 下补，网页报的）：`model.called` 带着 `purpose: memory`，照主请求投影，和普通会话的一样：收尾那一条
+/// 带模型和用量，思考用时照请求里记的时刻算。
+#[test]
+fn a_dream_sessions_requests_project_like_main_ones() {
+    use miyu_kernel::event::{Body as EventBody, Purpose};
+    use miyu_view::Projector;
+    let mut stage = stage();
+    stage.model([Line::says("ok").thinking("hmm").reports(1200)]);
+    stage.say("tidy up");
+    let plain = page(&stage);
+    let end = json(of_kind(&plain, "end")[0]);
+    assert_eq!(
+        end["usage"]["uncached"], 1200,
+        "普通会话的收尾带用量：{end}"
+    );
+    let mut projector = Projector::new(std::sync::Arc::new(texts("en")), None);
+    let mut marked = 0;
+    for event in stage.log() {
+        let mut event = event.clone();
+        if let EventBody::ModelCalled(called) = &mut event.body {
+            called.purpose = Some(Purpose::Memory);
+            marked += 1;
+        }
+        projector.event(&event);
+    }
+    assert_eq!(marked, 1, "一次主请求");
+    assert_eq!(projector.entries(), plain.as_slice());
+}

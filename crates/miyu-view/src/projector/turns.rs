@@ -114,9 +114,10 @@ impl Projector {
         self.turns.last().copied()
     }
 
-    /// 一次模型请求记下了。辅助请求（回顾、起标题）不算；摘要请求记在压缩那一条上。
+    /// 一次模型请求记下了。辅助请求（回顾、起标题）不算，整理会话的主请求（`memory`）照主请求算（施工 D-1 下补）；摘要请求记在
+    /// 压缩那一条上。
     pub(super) fn called(&mut self, event: &Event, called: &ModelCalled) {
-        if called.purpose.is_some() {
+        if called.aside() {
             // 后台提前压的那一次（施工 6-11 三补）：用量、用时记下，换上时接在压缩那一条上。
             if called.purpose == Some(Purpose::Compaction) {
                 self.prepared

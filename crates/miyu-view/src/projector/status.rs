@@ -173,7 +173,7 @@ impl Projector {
 
     /// 主请求说完了：上下文用了多少、速度；说成了的不再冷却、不再等重试。
     fn track_called(&mut self, called: &ModelCalled) {
-        if called.purpose.is_some() || called.compaction.is_some() {
+        if called.aside() || called.compaction.is_some() {
             return;
         }
         if let Some(usage) = &called.usage {
