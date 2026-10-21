@@ -297,7 +297,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 
 Anything else is looked up, in order, among your own command templates (`home/admin/commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
 
-A name of the form `<server>:<prompt>` (exactly one `:`) is an MCP server's prompt: the core fetches it with `prompts/get`, splitting the words that follow on whitespace and matching them to the prompt's declared arguments in order, the last argument taking the rest. The text and images that come back are sent as one message from this person, as with a template. Only in local sessions; it is switched with the server's feature `mcp-<server>`.
+A name of the form `<server>:<prompt>` (exactly one `:`) is an MCP server's prompt: the core fetches it with `prompts/get`, splitting the words that follow on whitespace (a pair of English double quotes makes one word, without the quotes) and matching them to the prompt's declared arguments in order, the last argument taking the rest. The text and images that come back are sent as one message from this person, as with a template. Only in local sessions; it is switched with the server's feature `mcp-<server>`.
 
 **Who can use them**: anyone in local sessions; in venue sessions, the owner and managers. The system setting `commands.<name>.access` can change that to `anyone` or `off` (disabled). `/workspace` is for the owner only.
 

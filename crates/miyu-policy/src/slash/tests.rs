@@ -99,3 +99,84 @@ fn arguments_without_a_placeholder_go_at_the_end() {
     assert_eq!(expand("Summarize the diff.\n", ""), "Summarize the diff.");
     assert_eq!(expand("   \n", ""), "");
 }
+
+#[test]
+fn words_are_cut_at_whitespace_and_a_quoted_pair_is_one_word() {
+    assert_eq!(
+        words("  a  b\tc\n"),
+        ["a", "b", "c"],
+        "照空白切，前后空白、换行不算"
+    );
+    assert_eq!(
+        words("\"San Francisco\" CA"),
+        ["San Francisco", "CA"],
+        "第 1 条：成对的英文双引号中间是一个词，引号去掉"
+    );
+    assert_eq!(
+        words("\"\" CA"),
+        ["", "CA"],
+        "第 1 条：空的引号是一个空的词"
+    );
+    assert_eq!(
+        words("\"a\" \"b c\""),
+        ["a", "b c"],
+        "第 1 条：到下一个引号为止，不是最后一个"
+    );
+    assert_eq!(
+        next_word("  a   b c "),
+        Some(("a", "b c ")),
+        "交回的剩下的去掉开头的空白"
+    );
+    assert_eq!(next_word("\"a b\"   c"), Some(("a b", "c")));
+    assert_eq!(
+        words("a\"b c\" d\""),
+        ["a\"b", "c\"", "d\""],
+        "第 2 条：词中间、末尾的引号照原样"
+    );
+    assert_eq!(
+        words("\"open ended"),
+        ["\"open", "ended"],
+        "第 2 条：开头的引号没有配对的照原样"
+    );
+    assert_eq!(
+        words("\\\"a b\\\""),
+        ["\\\"a", "b\\\""],
+        "第 3 条：不做转义"
+    );
+    assert_eq!(
+        words("“上海 浦东” 「北京」"),
+        ["“上海", "浦东”", "「北京」"],
+        "第 3 条：中文引号照普通的字"
+    );
+    assert_eq!(
+        words("\"a b\"c"),
+        ["a b", "c"],
+        "第 4 条：右引号后面紧跟着的是下一个词"
+    );
+    assert_eq!(words("   "), Vec::<&str>::new());
+}
+
+#[test]
+fn the_rest_drops_its_quotes_only_when_it_is_one_quoted_word() {
+    assert_eq!(rest_word("  \"naming and tests\" "), "naming and tests");
+    assert_eq!(rest_word("naming and tests"), "naming and tests");
+    assert_eq!(
+        rest_word("\"a b\" and more"),
+        "\"a b\" and more",
+        "几个词照原文"
+    );
+    assert_eq!(rest_word(" one "), "one");
+}
+
+#[test]
+fn indexed_arguments_follow_the_quotes_and_the_whole_keeps_them() {
+    assert_eq!(
+        expand("[$ARGUMENTS[0]] [$ARGUMENTS[1]]", "\"San Francisco\" CA"),
+        "[San Francisco] [CA]"
+    );
+    assert_eq!(
+        expand("All: $ARGUMENTS", "\"San Francisco\" CA"),
+        "All: \"San Francisco\" CA",
+        "整段照原文，引号照留"
+    );
+}

@@ -45,6 +45,40 @@ fn words_go_to_arguments_in_order_and_the_last_takes_the_rest() {
     );
 }
 
+/// 带引号的（施工 X-40）：成对的双引号中间是一个参数；最后一个只剩一个带引号的词去掉引号，剩几个词照原文；空的引号当没给。
+#[test]
+fn quoted_words_go_to_one_argument_and_empty_quotes_are_not_given() {
+    let city = [argument("city", true), argument("state", false)];
+    assert_eq!(
+        arguments(&city, "\"San Francisco\" CA"),
+        Ok((given(&[("city", "San Francisco"), ("state", "CA")]), None))
+    );
+    assert_eq!(
+        arguments(&city, "Tokyo \"Kanto region\""),
+        Ok((given(&[("city", "Tokyo"), ("state", "Kanto region")]), None)),
+        "最后一个只剩一个带引号的词，去掉引号"
+    );
+    assert_eq!(
+        arguments(&city, "Tokyo \"Kanto\" region"),
+        Ok((
+            given(&[("city", "Tokyo"), ("state", "\"Kanto\" region")]),
+            None
+        )),
+        "剩几个词照原文"
+    );
+    assert_eq!(
+        arguments(&city, "\"\" CA"),
+        Err(vec!["city".to_string()]),
+        "空的引号当没给，必填的照缺"
+    );
+    let one = [argument("code", true)];
+    assert_eq!(
+        arguments(&one, " \"fn main() {}\" "),
+        Ok((given(&[("code", "fn main() {}")]), None)),
+        "只有一个的拿全部，正好一个带引号的词去掉引号"
+    );
+}
+
 #[test]
 fn without_declared_arguments_the_words_come_after() {
     assert_eq!(

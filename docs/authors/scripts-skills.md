@@ -149,7 +149,7 @@ metadata:
 Review the uncommitted changes in this repository. Focus on: $ARGUMENTS
 ```
 
-- `$ARGUMENTS` 换成名字后面跟的全部字，`$ARGUMENTS[0]` 是第一个；正文里没写 `$ARGUMENTS` 的，参数接在末尾。
+- `$ARGUMENTS` 换成名字后面跟的全部字，`$ARGUMENTS[0]` 是第一个（照空白切；带空格的值用英文双引号括起来，`/review "my file.rs"` 的 `$ARGUMENTS[0]` 是 `my file.rs`）；正文里没写 `$ARGUMENTS` 的，参数接在末尾。
 - `description` 是命令菜单里那一句（英文），中文、日文写在 `metadata` 的 `summary_zh`、`summary_ja`；`argument-hint` 是名字后面跟什么的提示。
 - 名字的写法：小写字母开头，只用小写字母、数字、`-`。和 Miyu 自带的命令同名的不算（自带的赢）。
 - 时间线上显示人敲的那一行。谁能用和 Miyu 自带的命令一样。

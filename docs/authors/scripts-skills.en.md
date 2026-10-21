@@ -149,7 +149,7 @@ metadata:
 Review the uncommitted changes in this repository. Focus on: $ARGUMENTS
 ```
 
-- `$ARGUMENTS` becomes everything after the name, `$ARGUMENTS[0]` the first word; if the body doesn't use `$ARGUMENTS`, the arguments are appended.
+- `$ARGUMENTS` becomes everything after the name, `$ARGUMENTS[0]` the first word (split on whitespace; a value with spaces goes in English double quotes, so for `/review "my file.rs"` `$ARGUMENTS[0]` is `my file.rs`); if the body doesn't use `$ARGUMENTS`, the arguments are appended.
 - `description` is the line in the command menu (English); Chinese and Japanese go in `metadata` as `summary_zh`, `summary_ja`. `argument-hint` hints at what follows the name.
 - Names: start with a lowercase letter; only lowercase letters, digits, `-`. A template with the same name as a Miyu built-in command doesn't count (the built-in wins).
 - The timeline shows the line the person typed. Who can use it is the same as for built-in commands.

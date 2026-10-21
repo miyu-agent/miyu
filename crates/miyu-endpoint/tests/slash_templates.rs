@@ -105,7 +105,7 @@ async fn ones_own_covers_a_packages_and_a_builtin_name_stays_builtin() {
     let session = client.create("c1", "~").await;
     run(&mut client, "k1", &session, "/review").await;
     home.until_turns(&session, 1).await;
-    run(&mut client, "k2", &session, "/lint a.rs b.rs").await;
+    run(&mut client, "k2", &session, "/lint \"my file.rs\" b.rs").await;
     home.until_turns(&session, 2).await;
     let stopped = run(&mut client, "k3", &session, "/stop").await;
     assert_eq!(stopped["result"]["command"], "stop");
@@ -114,7 +114,10 @@ async fn ones_own_covers_a_packages_and_a_builtin_name_stays_builtin() {
         said(&home.log(&session)),
         [
             ("My own review.".to_string(), typed("review", "/review")),
-            ("Lint a.rs.".to_string(), typed("lint", "/lint a.rs b.rs")),
+            (
+                "Lint my file.rs.".to_string(),
+                typed("lint", "/lint \"my file.rs\" b.rs")
+            ),
         ]
     );
 }

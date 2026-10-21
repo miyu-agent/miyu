@@ -35,7 +35,8 @@
 
 1. **写法**：开头可以有一段 `---` 包起来的 YAML，照 Claude Code 认 `description`（一句说明，命令菜单里给人看的，算英文那一份，也是别的语言没写时退回的那一份）、`argument-hint`（名字后面跟什么的提示，例如 `<路径>`，照原样）；中文、日文的说明另写在 `metadata` 的 `summary_zh`、`summary_ja`（同技能，`skills.md`「技能」第 1 条）。Claude Code 的别的键（`allowed-tools`、`model`、`disable-model-invocation`）认、不用。没有开头那一段的（第一行不是 `---`、或者没有收尾的 `---`）整份都是正文。开头不是一张表、YAML 读不懂的算写错了。
 2. **名字**：文件名去掉 `.md`，写法同 `[command]` 的子命令名：小写字母开头，只用小写字母、数字、`-`，最多 32 个。不合写法的跳过、说为什么。
-3. **展开**：正文里的 `$ARGUMENTS[<第几个>]` 换成名字后面跟的字照空白切开的第几个（从 0 数，没有的换成空的），`$ARGUMENTS` 换成整段字（去掉前后空白）；参数里带的记号不再展开。正文里一处都没写、人又跟了字的，末尾空一行接上那段字（Claude Code 另加一个 `ARGUMENTS:` 标签，这里不加：给模型的字非必要不加）。Claude Code 的 `$1` 这些简写各版本数法不一，不认，照原样留着；`` !`命令` ``、`@文件` 也不认：展开不跑命令、不读文件。展开完去掉前后空白，只剩空的照内核拒 `empty_message`。
+3. **展开**：正文里的 `$ARGUMENTS[<第几个>]` 换成名字后面跟的字照「切词」（下一条）切开的第几个（从 0 数，没有的换成空的），`$ARGUMENTS` 换成整段字（去掉前后空白，引号照留）；参数里带的记号不再展开。正文里一处都没写、人又跟了字的，末尾空一行接上那段字（Claude Code 另加一个 `ARGUMENTS:` 标签，这里不加：给模型的字非必要不加）。Claude Code 的 `$1` 这些简写各版本数法不一，不认，照原样留着；`` !`命令` ``、`@文件` 也不认：展开不跑命令、不读文件。展开完去掉前后空白，只剩空的照内核拒 `empty_message`。
+   - **切词**（施工 X-40，2026-10-21 项目主人定，`miyu-policy` 的 `slash::next_word`，MCP 提示词的参数同用这一个）：先去掉开头的空白；英文双引号 `"` 开头、后面还有一个 `"` 的，两个引号中间是一个词（引号去掉，里面的空白照留，可以是空的）；别的到下一个空白为止是一个词，词中间的 `"`、开头没有配对的 `"` 照原样当字；右引号后面紧跟着的字是下一个词（`"a b"c` 是 `a b`、`c`）。只认英文双引号，不做转义，中文引号照普通的字。
 4. **发出去**：展开的那段成一块文字，当这个人说的一句进会话，和 `session.send` 一样（闲着开一轮，正忙的排进这一轮，不急着插话；`by` 是说命令的人）。`message.user` 多一格 `command`：`{"name", "text"}`，`text` 是人敲的那一行原文（去掉前后空白）；`blocks` 是展开的那段，模型照它看。展开的那段记在事件里，以后改了、删了模板，历史照旧。
 5. **给人看的照那一行**：视图里这一条的 `text`（`view.md` 的 `user`，撤回放回输入框的也是它）、撤销的回执 `said`（`protocol/undo.md`）、会话列表的预览（`protocol.md` 的 `session.list`）。
 6. **回应**：`command.run` 回 `{"command": "<名字>", "events": [<这一句 message.user 的序号>], "said": ""}`：时间线上已经有人敲的那一行，没有回执；不另记 `command.ran`。同一个编号再发照内核只算一次。
@@ -79,7 +80,7 @@
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-endpoint/tests/command_access.rs`、`slash_extension.rs` 的 `a_shipped_access_off_turns_the_command_off`、`crates/miyu-config/src/package/slash/tests.rs` 的 `a_command_may_ship_who_can_use_it`（施工 O-6 六补） | `anyone` 群员也行、`off` 主人也不行（说「/<名字> 已停用。」）、`admin` 照旧、`/workspace` 照旧只给主人；本机也停用、菜单不列；清单写 `off` 的谁都用不了、不交给扩展、不列；三种写法认得、写错的 `bad_slash` |
-| `crates/miyu-policy/src/slash/tests.rs` | 名字的写法、功能编号；开头给人看的几格、Claude Code 别的键不碍事；没有开头、只有开头一行、空开头；开头写错、不是表；`$ARGUMENTS`、`$ARGUMENTS[N]`、不是数字的方括号、参数里带记号、没跟字；没写记号的接在末尾 |
+| `crates/miyu-policy/src/slash/tests.rs` | 名字的写法、功能编号；开头给人看的几格、Claude Code 别的键不碍事；没有开头、只有开头一行、空开头；开头写错、不是表；`$ARGUMENTS`、`$ARGUMENTS[N]`、不是数字的方括号、参数里带记号、没跟字；没写记号的接在末尾；切词的四条规矩各一条（中文引号照普通的字、空的 `""`），`$ARGUMENTS[N]` 照引号切、`$ARGUMENTS` 照原文（施工 X-40） |
 | `crates/miyu-store/src/slash/tests.rs` | 两处找、照名字排、自己放的盖住包里的、记被谁盖住；出厂的先于家目录；读坏了的清单不算；点开头、不是 `.md`、子文件夹不算；名字不合写法、开头写错的跳过说为什么；包文件夹带了哪几条；链接成的照它指到的读、指到 `system/` 的跳过带真实位置（施工 X-37） |
 | `crates/miyu-kernel/src/session/tests/typed.rs` | 闲着照 `session.send` 开一轮、`message.user` 带上那一行；正忙的排进这一轮、不插话；重做照原样的带着它、不重读，换了字的不带 |
 | `crates/miyu-view/tests/lines.rs` 的 `a_typed_command_shows_the_line_that_was_typed` | 时间线那一条是人敲的那一行 |

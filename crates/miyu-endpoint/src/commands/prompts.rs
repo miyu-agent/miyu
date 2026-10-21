@@ -14,6 +14,7 @@ use miyu_kernel::event::TypedCommand;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::session::Command;
 use miyu_mcp::{Argument, Client};
+use miyu_policy::slash::{next_word, rest_word};
 use miyu_store::blob::Blobs;
 use miyu_tool::Picture;
 
@@ -89,8 +90,9 @@ pub(super) fn listed(offered: &Offered) -> Value {
 /// 对上的参数（名字到字），和没声明参数时接在末尾的字。
 pub(super) type Matched = (BTreeMap<String, String>, Option<String>);
 
-/// 人跟的字 `rest` 照声明的参数 `declared` 的先后对上：照空白切开一个一个对，最后一个参数拿剩下的整段（只有一个参数的拿全部）。
-/// 没声明参数的交回空的，字照模板的规矩接在末尾（交回的第二格）。必填的没给的交回缺哪几个。
+/// 人跟的字 `rest` 照声明的参数 `declared` 的先后对上：照切词（[`miyu_policy::slash::next_word`]，带引号的是一个词，施工 X-40）
+/// 一个一个对，最后一个参数拿剩下的整段（只有一个参数的拿全部；正好是一个带引号的词的去掉引号）。空的值（`""`）当没给。没声明
+/// 参数的交回空的，字照模板的规矩接在末尾（交回的第二格）。必填的没给的交回缺哪几个。
 pub(super) fn arguments(declared: &[Argument], rest: &str) -> Result<Matched, Vec<String>> {
     let mut left = rest.trim();
     let mut given = BTreeMap::new();
@@ -101,17 +103,16 @@ pub(super) fn arguments(declared: &[Argument], rest: &str) -> Result<Matched, Ve
         if left.is_empty() {
             break;
         }
-        let value = match (
-            n + 1 == declared.len(),
-            left.split_once(char::is_whitespace),
-        ) {
+        let value = match (n + 1 == declared.len(), next_word(left)) {
             (false, Some((word, more))) => {
-                left = more.trim_start();
+                left = more;
                 word
             }
-            _ => std::mem::take(&mut left),
+            _ => rest_word(std::mem::take(&mut left)),
         };
-        given.insert(argument.name.clone(), value.to_string());
+        if !value.is_empty() {
+            given.insert(argument.name.clone(), value.to_string());
+        }
     }
     let missing: Vec<String> = declared
         .iter()

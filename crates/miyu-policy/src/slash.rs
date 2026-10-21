@@ -101,12 +101,12 @@ pub fn read(text: &str) -> Result<Template, TemplateProblem> {
     })
 }
 
-/// 照参数展开（照 Claude Code）：`$ARGUMENTS[<第几个>]` 换成照空白切开的第几个（从 0 数，没有的换成空的），`$ARGUMENTS`
+/// 照参数展开（照 Claude Code）：`$ARGUMENTS[<第几个>]` 换成照 [`next_word`] 切开的第几个（从 0 数，没有的换成空的），`$ARGUMENTS`
 /// 换成整段 `arguments`（去掉前后空白）；正文里一处都没写、又跟了字的，末尾空一行接上那段字（Claude Code 另加一个
 /// `ARGUMENTS:` 标签，这里不加：给模型的字非必要不加）。展开完去掉前后空白。
 pub fn expand(body: &str, arguments: &str) -> String {
     let arguments = arguments.trim();
-    let parts: Vec<&str> = arguments.split_whitespace().collect();
+    let parts = words(arguments);
     let mut out = String::with_capacity(body.len() + arguments.len());
     let mut used = false;
     let mut rest = body;
@@ -130,6 +130,42 @@ pub fn expand(body: &str, arguments: &str) -> String {
         out = format!("{}\n\n{arguments}", out.trim_end());
     }
     out.trim().to_string()
+}
+
+/// 切词（施工 X-40，`docs/blueprint/slash.md`「切词」）：去掉开头的空白，切出第一个词，交回它和剩下的（开头的空白去掉）；没字了
+/// 的没有。英文双引号开头、后面还有一个的，两个引号中间是一个词（可以是空的，里面的空白照留）；别的到下一个空白为止，词中间的
+/// 引号、开头没有配对的引号照原样。不做转义，中文引号照普通的字。命令模板的 `$ARGUMENTS[N]`、MCP 提示词的参数都照它切。
+pub fn next_word(text: &str) -> Option<(&str, &str)> {
+    let text = text.trim_start();
+    if text.is_empty() {
+        return None;
+    }
+    if let Some(inner) = text.strip_prefix('"')
+        && let Some(end) = inner.find('"')
+    {
+        return Some((&inner[..end], inner[end + 1..].trim_start()));
+    }
+    let end = text.find(char::is_whitespace).unwrap_or(text.len());
+    Some((&text[..end], text[end..].trim_start()))
+}
+
+/// 照 [`next_word`] 切出全部的词。
+pub fn words(mut text: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    while let Some((word, rest)) = next_word(text) {
+        out.push(word);
+        text = rest;
+    }
+    out
+}
+
+/// 最后一个参数拿的剩下的整段（施工 X-40）：正好是一个带引号的词的去掉引号，别的照原文（去掉前后的空白）。
+pub fn rest_word(text: &str) -> &str {
+    let text = text.trim();
+    match next_word(text) {
+        Some((word, "")) if text.starts_with('"') => word,
+        _ => text,
+    }
 }
 
 /// `$ARGUMENTS` 后面紧跟着的 `[<数字>]`：第几个、占了几个字节；不是的没有。

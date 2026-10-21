@@ -92,7 +92,7 @@ async fn a_prompt_is_said_as_one_line_with_its_arguments() {
         &mut client,
         "k1",
         &session,
-        "/probe:review main.rs naming and tests",
+        "/probe:review \"fn main() {}\" naming and tests",
     )
     .await;
     assert_eq!(reply["result"]["command"], "probe:review", "{reply}");
@@ -114,7 +114,7 @@ async fn a_prompt_is_said_as_one_line_with_its_arguments() {
         command,
         &Some(TypedCommand {
             name: "probe:review".to_string(),
-            text: "/probe:review main.rs naming and tests".to_string(),
+            text: "/probe:review \"fn main() {}\" naming and tests".to_string(),
         })
     );
     let texts: Vec<&str> = blocks
@@ -126,8 +126,11 @@ async fn a_prompt_is_said_as_one_line_with_its_arguments() {
         .collect();
     assert_eq!(
         texts,
-        ["Review this code for naming and tests:\nmain.rs", "Sure."],
-        "第一个参数照空白切出一个词，最后一个拿剩下的；她说的照原文并进来"
+        [
+            "Review this code for naming and tests:\nfn main() {}",
+            "Sure."
+        ],
+        "第一个参数照切词切出一个词（带引号的是一个，施工 X-40），最后一个拿剩下的；她说的照原文并进来"
     );
     assert!(
         blocks.iter().any(|block| matches!(block, Block::Image(_))),
