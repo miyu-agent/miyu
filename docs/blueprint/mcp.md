@@ -218,9 +218,34 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 - 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load` 的照它，这个服务的工具都算（施工 L-1）；没写的先加载，要全量的写 `false` 或 `"no"`（施工 L-3，2026-10-20 项目主人改，原来没写的全量）。个人设置的 `loading.mcp.<服务名>` 盖过它，单件工具的 `loading.tools.<工具名>` 再盖过服务那一项；头经 `tool.set_loading` 改，`mcp.list` 的 `need_load.by` 说是服务表写的（`source`）还是人改的（`setting`）（施工 X-27）。每个服务还有全局开关 `features.mcp-<服务名>`（`presets.md`「全局开关」），经 `feature.set` 改，`mcp.list` 的 `on` 是它现在的值。
 - 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`[[mcp]]`、个人设置的服务写 `clicall` 的照它，这个服务的工具都算；没写的能，写 `false`、`"no"` 不能（写法同 `need_load`）。个人设置的 `clicall.mcp.<服务名>` 盖过它，单件工具的 `clicall.tools.<工具名>` 再盖过服务那一项。只改这一格也算改了，那个服务照旧重起。工具交回的 `structuredContent` 不管有没有文字都原样交给脚本（`Done.data`），出错的不交。`mcp.set` 没交 `clicall` 的照原来写的 `clicall = false` 留着：网页的编辑页还不认这一格，编辑一次别的格不会把它丢了。
 
-- 网址的服务要浏览器登录的（OAuth）：推迟到有一个真要它的服务（2026-10-20 项目主人定）；令牌、请求头那一种施工 X-32 上做了。
+- 网址的服务要浏览器登录的（OAuth）：2026-10-20 项目主人定推迟，2026-10-21 重开（「命令行先，头也做」），设计见下面「待定（施工 X-42）」；令牌、请求头那一种施工 X-32 上做了。
 - 补全参数（`completion/complete`）、Tasks 扩展、MCP Apps、资源的订阅：都先不接。服务的 `instructions`、提示词施工 X-39 接了（「怎么走」第三条第 5 条、第六条），资源施工 X-41 接了（第七条），都是 2026-10-21 项目主人定重开。
 - 每个账号各一份服务进程（`24-威胁模型.md`）：等多用户那一段。
+
+### 待定（施工 X-42：网址的服务的 OAuth）
+
+照 MCP 规范 2026-07-28 的「Authorization」（OAuth 2.1、RFC 9728 受保护资源元数据、RFC 8414 / OIDC 发现、RFC 8707 `resource`、RFC 9207 `iss`、PKCE）。每一题附推荐，主会话审过、要项目主人定的问项目主人。
+
+1. **怎么知道要登录**。推荐：网址的服务回 `401`、`WWW-Authenticate: Bearer`，这张表又没写 `bearer`、也没在 `headers` 里写 `Authorization` 的，照规范找受保护资源元数据：先用头里的 `resource_metadata`，没有的依次试 `/.well-known/oauth-protected-resource/<服务网址的路径>`、`/.well-known/oauth-protected-resource`。找到了的，服务记成新的一种状态 `needs_login`：不重连、不算失败次数，`mcp.list`、软件包列表写出来，推 `mcp.changed`。写了 `bearer` 的照旧当令牌不对，回 401 就停（人写了令牌就是不走 OAuth）。
+2. **登录从哪发起、回调谁收**。推荐：核心收。新方法 `mcp.login {service}`（只给人）：核心做发现、注册，起一个只听 `127.0.0.1` 的随机端口等回调，回 `{url}`（授权页）。头打开浏览器：命令行 `miyu mcp login <服务>` 用系统的打开命令，打不开的印出网址叫人自己点。核心最多等 10 分钟，收到回调就换令牌、存、重连服务、推 `mcp.changed`。浏览器不在核心那台机器上的（网页从别的机器连进来）回调到不了：授权完浏览器跳到打不开的 `http://127.0.0.1:…` 那一页，把地址栏整段贴回来（`mcp.login_finish {service, url}`）。
+3. **客户端注册**。推荐照规范的先后：
+   - 个人设置这张表写了 `oauth = { client_id = "…", client_secret = { secret = "…" } }` 的照用（预先注册，`client_secret` 可以不写）；
+   - 授权服务器有 `registration_endpoint` 的动态注册（RFC 7591）：`application_type: "native"`、`token_endpoint_auth_method: "none"`、`grant_types` 带 `refresh_token`、`redirect_uris` 写 `http://127.0.0.1/callback`；拿到的照授权服务器的 `issuer` 记，授权服务器换了重新注册；
+   - 都没有的，`mcp.login` 回 `oauth_unregistered`，说请人去服务那边注册、把 `client_id` 写进这张表。
+   - 规范更推荐的「客户端元数据文档」（CIMD：一个固定的 https 网址放 Miyu 的客户端信息）**这一步不做**：要先定网址、开项目的 GitHub Pages，是对外发布的事，项目主人定了再单开一步。规范把动态注册标成了旧办法，但现在的服务多半还认它。
+4. **令牌存哪**。推荐：存进密钥文件（`system/secrets.toml`，0600，同 `miyu login` 存的），名字 `mcp-oauth-<服务名>`，值是一段 JSON：`access_token`、`refresh_token`、`expires_at`、`scope`、`issuer`、`client_id`、`client_secret`（动态注册给了的）。服务表里不用写引用，核心照名字找。日志、事件、协议的回应里都不出现令牌、授权码、`code_verifier`；`secret.list` 照旧只列名字，扩展读不到值。
+5. **续期**。推荐：`access_token` 到期前 60 秒、或者服务回 401 时，拿 `refresh_token` 换新的（同一个 `resource`、`scope`），成了存回、重发那一次请求。没有 `refresh_token` 或换不成的（`invalid_grant` 这类），服务记成 `needs_login`，推 `mcp.changed`，日志写一行 `WARN mcp oauth refresh failed service=… error=<OAuth 的 error 码>`，不写令牌。
+6. **权限范围不够**（服务回 `403`、`error="insufficient_scope"`）。推荐：记成 `needs_login`，下次登录要的 `scope` 是以前要的加上这次要的（规范的 step-up），不自动弹浏览器：核心不能替人点同意。第一次登录的 `scope` 照规范：`WWW-Authenticate` 里写了的照它，没写的照受保护资源元数据的 `scopes_supported`，都没有的不写。授权服务器的 `scopes_supported` 里有 `offline_access` 的加上（要 `refresh_token`）。
+7. **安全**。推荐全照规范，不降级：
+   - PKCE 只用 `S256`；授权服务器元数据的 `code_challenge_methods_supported` 里没有 `S256` 的拒。
+   - `state` 随机 32 字节，一次一用；回调里的 `state` 对不上的不认。
+   - `iss` 照 RFC 9207 那张表校验；对不上的不换令牌，也不显示它带回来的错误说明。
+   - 授权服务器元数据的 `issuer` 和拼网址用的一样才认。
+   - `resource` 写服务的规范网址：去掉 fragment、末尾的 `/`，主机名小写。
+   - 授权服务器只认 `https`（测试用的 `127.0.0.1` 例外）。
+   - 回调只听 `127.0.0.1`、随机端口、只收一次，10 分钟后关。令牌只放 `Authorization` 头，不进网址。
+8. **登出**。推荐：`mcp.logout {service}`（只给人），删掉密钥里的那一份，服务记成 `needs_login`；命令行 `miyu mcp logout <服务>`。
+9. **头**。推荐：施工 X-42 只做核心和命令行。终端、网页的「软件包」页上 `needs_login` 的服务显示「登录」，点了调 `mcp.login`、打开回来的网址，由主会话和两个头排期另做。
 
 ### 施工时定的（主会话，技术题照推荐）
 
