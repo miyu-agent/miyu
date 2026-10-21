@@ -137,7 +137,7 @@ impl Identity {
         let now = Instant::now();
         codes.retain(|each| each.expires > now);
         let before = codes.len();
-        codes.retain(|each| each.value != code);
+        codes.retain(|each| !crate::hello::same(&each.value, code));
         codes.len() < before
     }
 }

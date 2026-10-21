@@ -291,8 +291,8 @@ fn sandbox(availability: &Availability) -> Value {
     }
 }
 
-/// 两份令牌一样不一样：每个字节都比，比到哪一个不一样都用一样长的时间。
-fn same(given: &str, expected: &str) -> bool {
+/// 两份令牌一样不一样：每个字节都比，比到哪一个不一样都用一样长的时间。本机令牌、一次性码都照它比（`login.rs`）。
+pub(crate) fn same(given: &str, expected: &str) -> bool {
     given.len() == expected.len()
         && given
             .bytes()
