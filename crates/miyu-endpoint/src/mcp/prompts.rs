@@ -57,6 +57,12 @@ pub(crate) fn command_name(service: &str, prompt: &str) -> String {
 }
 
 /// 列出来的 `prompts` 换成登记的几个：清理以后撞了同一个服务前面那个的不登记，交回进 `skipped` 的那几个。
+/// 等 `prompts/get` 多久（施工 X-39 补）：照服务的 `timeout_ms`，最多 [`crate::commands::ANSWER_WAIT`]（同扩展的命令）。
+/// `timeout_ms` 是给调工具的，可以长到一小时；人敲了命令在等。
+pub(super) fn wait(timeout_ms: u64) -> Duration {
+    Duration::from_millis(timeout_ms).min(crate::commands::ANSWER_WAIT)
+}
+
 pub(super) fn offered(
     service: &str,
     prompts: Vec<Prompt>,

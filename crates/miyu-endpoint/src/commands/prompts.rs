@@ -126,8 +126,8 @@ pub(super) fn arguments(declared: &[Argument], rest: &str) -> Result<Matched, Ve
 
 /// `command.run` 打的是 `<服务名>:<提示词名>`：找会话、认说话的人、找提示词（服务配着没在跑、没列出这一个的
 /// `command_unavailable`，没有这个服务的 `unknown_command`），判身份、预设，对上参数（缺必填的 `command_failed`，说缺哪几个），
-/// 照服务的 `timeout_ms` 取（回错、要补信息、到时没答的 `command_failed`，`data.why` 照原话），并成一句发出去，交回
-/// `{"command", "events", "said": ""}`。
+/// 照服务的 `timeout_ms` 取、最多一分钟（到时没答的 `command_unavailable`；回错、要补信息的 `command_failed`，`data.why` 照原话），
+/// 并成一句发出去，交回 `{"command", "events", "said": ""}`。
 pub(super) async fn run(
     core: &Arc<Core>,
     peer: &Peer,
@@ -160,12 +160,13 @@ pub(super) async fn run(
     let feature = entry.feature();
     templates::opened_by(core, peer, &handle, (name, &feature, &entry.package)).await?;
     let prompt = &entry.offered.prompt;
-    let (arguments, tail) = arguments(&prompt.arguments, rest).map_err(|missing| {
-        Refusal::COMMAND_FAILED.because(format!(
-            "missing required arguments: {}",
-            missing.join(", ")
-        ))
-    })?;
+    let (arguments, tail) = match arguments(&prompt.arguments, rest) {
+        Ok(matched) => matched,
+        Err(missing) => {
+            let why = super::words(core, peer, &super::why::missing_arguments(missing)).await;
+            return Err(Refusal::COMMAND_FAILED.because(why));
+        }
+    };
     let asked = tokio::time::timeout(
         entry.offered.wait,
         entry.client.prompt(&prompt.name, &arguments),
@@ -173,12 +174,8 @@ pub(super) async fn run(
     let messages = match asked.await {
         Ok(Ok(messages)) => messages,
         Ok(Err(error)) => return Err(Refusal::COMMAND_FAILED.because(error.to_string())),
-        Err(_) => {
-            let waited = entry.offered.wait.as_millis();
-            return Err(
-                Refusal::COMMAND_FAILED.because(format!("{name}: no answer within {waited} ms"))
-            );
-        }
+        // 到时没答同扩展的命令（施工 X-39 补）。
+        Err(_) => return Err(Refusal::COMMAND_UNAVAILABLE),
     };
     let (mut blocks, pictures) =
         crate::mcp::prompts::said(core, messages).ok_or(Refusal::INTERNAL)?;

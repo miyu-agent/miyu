@@ -311,7 +311,7 @@
 | `unknown_command` | 没有这个命令 |
 | `command_not_allowed` | 这个人不能用，或者停用了、预设没开，`data.why` 是给人看的一句 |
 | `owner_only` | 只有主人本人能用 |
-| `command_unavailable`、`command_failed` | 扩展的命令：扩展没连上、一分钟没答；扩展答了错（`data.why`）。MCP 的提示词：服务没在跑、没列出这一个、不是本机的会话；缺必填的参数、服务回错、到时没答（`data.why` 照原话） |
+| `command_unavailable`、`command_failed` | 扩展的命令：扩展没连上、一分钟没答；扩展答了错（`data.why` 照原话）、回答里没有 `said`（`data.why` 照连接的语言）。MCP 的提示词：服务没在跑、没列出这一个、不是本机的会话、到时没答（照服务的 `timeout_ms`，最多一分钟）；缺必填的参数（`data.why` 照连接的语言说缺哪几个）、服务回错（`data.why` 照原话） |
 | `memory_unavailable`、`goal_unavailable` | 这个会话没有记忆、没有长期目标，`data.why` |
 | 命令自己的 | `/clear` 的 `turn_running`、`nothing_to_clear`，`/workspace` 的 `path_unreadable`……，同对应的方法 |
 

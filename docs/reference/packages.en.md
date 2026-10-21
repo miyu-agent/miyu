@@ -311,7 +311,7 @@ The same `id` sent again counts once.
 | `unknown_command` | No such command |
 | `command_not_allowed` | This person can't use it, or it's disabled or off in the preset; `data.why` is a sentence for people |
 | `owner_only` | Only the owner can use it |
-| `command_unavailable`, `command_failed` | An extension's command: the extension isn't connected or didn't answer within a minute; it answered with an error (`data.why`). An MCP prompt: the server isn't running, didn't list that prompt, or the session isn't local; a required argument is missing, the server answered with an error, or it didn't answer in time (`data.why` is its own words) |
+| `command_unavailable`, `command_failed` | An extension's command: the extension isn't connected or didn't answer within a minute; it answered with an error (`data.why` is its own words) or without `said` (`data.why` in the connection's language). An MCP prompt: the server isn't running, didn't list that prompt, the session isn't local, or it didn't answer in time (the server's `timeout_ms`, at most a minute); a required argument is missing (`data.why` names them in the connection's language), or the server answered with an error (`data.why` is its own words) |
 | `memory_unavailable`, `goal_unavailable` | No memory or no standing goal in this session, `data.why` |
 | the command's own | `/clear`'s `turn_running`, `nothing_to_clear`; `/workspace`'s `path_unreadable`…, as for the matching method |
 

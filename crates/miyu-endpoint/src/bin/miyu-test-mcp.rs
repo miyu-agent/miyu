@@ -10,7 +10,8 @@
 //! - `instructions:<字>`：探、握手的回应里交这段给模型的说明（施工 X-39）；
 //! - `instructions-file:<路径>`：同上，起来的时候从这个文件读（没有的不交），测试改了文件、重启服务就换了说明；
 //! - `prompts`：本事里声明 `prompts`（施工 X-39）：`review`（`code` 必填、`focus` 可选）回一句字、一张图、她说的一句；`hello` 不要
-//!   参数，回一句；`two words` 和 `two_words` 清理以后撞名（后一个不登记）。缺必填的、不认识的名字回 `-32602`；
+//!   参数，回一句；`two words` 和 `two_words` 清理以后撞名（后一个不登记）；`slow` 不回（施工 X-39 补）。缺必填的、不认识的名字
+//!   回 `-32602`；
 //! - `odd`：列的时候多几件登记不上的（施工 X-37）：没写参数格式的 `loose`、参数格式不是对象的 `stringly`、截到 64 个字以后
 //!   撞名的 `long-x…x-one`、`long-x…x-two`（60 个 `x`），和一件没写名字的；
 //! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
@@ -138,7 +139,10 @@ fn main() {
                 None => continue,
             },
             "prompts/list" if prompts => Ok(json!({"prompts": listed_prompts()})),
-            "prompts/get" if prompts => prompt(&message["params"]),
+            "prompts/get" if prompts => match prompt(&message["params"]) {
+                Some(result) => result,
+                None => continue,
+            },
             _ => Err((-32601, "Method not found")),
         };
         let reply = match answer {
@@ -198,18 +202,19 @@ fn listed_prompts() -> Value {
         {"name": "hello", "description": "Say hello."},
         {"name": "two words"},
         {"name": "two_words"},
+        {"name": "slow"},
     ])
 }
 
-/// `prompts/get`（施工 X-39）。
-fn prompt(params: &Value) -> Result<Value, (i64, &'static str)> {
+/// `prompts/get`（施工 X-39）：`slow` 不回，是 `None`。
+fn prompt(params: &Value) -> Option<Result<Value, (i64, &'static str)>> {
     let arguments = &params["arguments"];
     let said =
         |role: &str, text: String| json!({"role": role, "content": {"type": "text", "text": text}});
     let messages = match params["name"].as_str().unwrap_or_default() {
         "review" => {
             let Some(code) = arguments["code"].as_str() else {
-                return Err((-32602, "Missing required argument: code"));
+                return Some(Err((-32602, "Missing required argument: code")));
             };
             let focus = arguments["focus"]
                 .as_str()
@@ -223,9 +228,10 @@ fn prompt(params: &Value) -> Result<Value, (i64, &'static str)> {
         }
         "hello" => json!([said("user", "Say hello.".to_string())]),
         "two words" => json!([said("user", "Two.".to_string())]),
-        _ => return Err((-32602, "Unknown prompt")),
+        "slow" => return None,
+        _ => return Some(Err((-32602, "Unknown prompt"))),
     };
-    Ok(json!({"messages": messages}))
+    Some(Ok(json!({"messages": messages})))
 }
 
 /// `odd` 多列的几件（施工 X-37）：都登记不上。

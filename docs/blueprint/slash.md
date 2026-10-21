@@ -71,7 +71,7 @@
 
 1. **声明**：扩展包的清单一段一条 `[[slash]]`：`name`（写法同子命令名）、`summary`（一句说明，语言到一句话，必写）、`argument`（名字后面跟什么的提示，语言到一句话，不跟字的不写）、`access`（出厂的谁能用，`admin`、`anyone`、`off`，不写的是 `admin`；施工 O-6 六补，写错的 `bad_slash`）。要在 `[process] capabilities` 里声明 `commands`，没声明的整份 `bad_slash`。只有扩展包能写，别的种类 `wrong_kind`（`packages.md`「出错」）。不分会话种类：和内置命令同一关（定了的第 3 条），扩展收到 `by`、`owner` 自己再挡。
 2. **认**：登记表、自己放的模板、扩展声明的、包里的模板，照这个先后；包里的两种装包时查过（`packages.md`「冲突」，和模板一个名字空间 `slash`），撞不上。和内置的撞名的不算（定了的第 4 条）。每条一个功能 `command-<名字>`，挂在它的包下，预设能关（同模板）。
-3. **办**：核心经扩展 `provide` 过的那个连接反向调用 `command.call {command, argument, text, session, by, owner, language}`（`protocol.md` 的 `command.run` 第 14 条），等它答 `{"said"}` 最多一分钟；答了的记一条 `command.ran`，`said` 原样当回执（可以多行）。没连上、断了、到时没答的拒 `command_unavailable`；答了错、没有 `said` 的拒 `command_failed`，`data.why` 是它的原话。在后台答。只声明命令、不提供工具的扩展照样 `provide` 一次（`tools` 写空的），核心照它认连接。
+3. **办**：核心经扩展 `provide` 过的那个连接反向调用 `command.call {command, argument, text, session, by, owner, language}`（`protocol.md` 的 `command.run` 第 14 条），等它答 `{"said"}` 最多一分钟；答了的记一条 `command.ran`，`said` 原样当回执（可以多行）。没连上、断了、到时没答的拒 `command_unavailable`；答了错、没有 `said` 的拒 `command_failed`：答了错的 `data.why` 是它的原话，没有 `said` 的照连接的语言说（`commands/failed/no-reply`，施工 X-39 补）。在后台答。只声明命令、不提供工具的扩展照样 `provide` 一次（`tools` 写空的），核心照它认连接。
 4. **列出来**：`command.catalog`、`preset.get` 同模板（说明、提示照连接的语言挑，没写这种语言的照 `en`、`zh`、`ja`）；自己放的同名模板盖住它的不列。看一眼（`preview: true`）的 `slash` 连它一起列。`miyu check` 和内置同名的报 `slash_builtin`，报在清单上。
 
 ### 守着它的

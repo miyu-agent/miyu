@@ -4,7 +4,11 @@
 use miyu_kernel::id::{AccountId, ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 
-use super::{builtin, may_run, split};
+use miyu_store::human::Human;
+use miyu_store::resources::ResourceRoot;
+
+use super::why::{missing_arguments, no_reply};
+use super::{builtin, may_run, sentence, split};
 use crate::refusal::Refusal;
 
 fn external(account: Option<&str>, role: Option<Role>) -> By {
@@ -65,4 +69,23 @@ fn only_dream_is_answered_later() {
         .map(|slash| slash.name())
         .collect();
     assert_eq!(later, ["dream"]);
+}
+
+/// 核心自己说的为什么（施工 X-39 补）：三种语言都有，几个参数名照这门语言连起来。
+#[test]
+fn reasons_the_core_gives_itself_are_in_every_language() {
+    let root = ResourceRoot::at(crate::test_support::resources());
+    for language in ["zh", "en", "ja"] {
+        let human = Human::load(&root, language).expect("读得出");
+        let missing = sentence(
+            &human,
+            &missing_arguments(vec!["code".to_string(), "focus".to_string()]),
+        );
+        assert!(
+            missing.contains("code") && missing.contains("focus") && !missing.contains('{'),
+            "{language}：{missing}"
+        );
+        let no_reply = sentence(&human, &no_reply("weather"));
+        assert!(no_reply.contains("/weather"), "{language}：{no_reply}");
+    }
 }

@@ -2,6 +2,9 @@
 //! 不知道为什么）：`command.run` 拒绝的 `data.why`，照连接的语言。记忆用不了的说具体：人格记忆没装（施工 R-10）；会话没有
 //! 人格；会话的预设没开记忆，带上预设的名字，人才知道去哪改。长期目标用不了的（施工 X-8 下）同样说具体：没装、预设没开；
 //! 群里、私聊、子代理照拒绝的那一句。别的照拒绝的那一句。
+//!
+//! 核心自己说的出错原因同样照连接的语言（施工 X-39 补）：提示词缺了哪几个参数，扩展的命令回答里没有 `said`。服务、扩展回的原话
+//! 照原样，不在这里。
 
 use miyu_policy::preset::MEMORY;
 use miyu_session::Handle;
@@ -13,6 +16,24 @@ use crate::refusal::Refusal;
 
 /// 长期目标这个包、功能的编号（同 `miyu_goal::PACKAGE`；端点不依赖软件包的 crate）。
 pub(super) const GOAL_PACKAGE: &str = "goal";
+
+/// 提示词缺了必填的参数：几个名字照这门语言的 `commands/joiner` 连起来。
+pub(super) fn missing_arguments(missing: Vec<String>) -> Said {
+    let names = missing
+        .into_iter()
+        .map(|name| Said::with("commands/failed/argument", vec![("name", name)]))
+        .collect();
+    Said {
+        key: "commands/failed/missing-arguments",
+        fields: Vec::new(),
+        lists: vec![("names", names)],
+    }
+}
+
+/// 扩展的命令 `name` 的回答里没有 `said`。
+pub(super) fn no_reply(name: &str) -> Said {
+    Said::with("commands/failed/no-reply", vec![("name", name.to_string())])
+}
 
 /// `refused` 这一句拒绝，说成给人看的为什么。
 pub(super) async fn why(core: &Core, peer: &Peer, handle: &Handle, refused: &Refusal) -> String {

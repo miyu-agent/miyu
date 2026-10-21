@@ -1,10 +1,12 @@
 //! MCP 服务的提示词当斜杠命令（施工 X-39 之二，`docs/construction/X-39-MCP的说明和提示词.md`）：真核心真起 `miyu-test-mcp`。
 //! `command.catalog` 列出 `<服务名>:<提示词名>`、参数照必填可选拼，名字清理以后撞了的不登记、软件包列表的 `skipped` 里有它；
 //! `command.run` 照先后对上参数、最后一个拿剩下的，取回来的字、图并成这个人说的一句（`assistant` 的照原文并进来），时间线是人敲
-//! 的那一行；缺必填的、服务回错的 `command_failed` 带原话，没列出的 `command_unavailable`，没有的服务 `unknown_command`；预设
+//! 的那一行；缺必填的 `command_failed`，说缺哪几个照连接的语言（施工 X-39 补），服务回错的 `command_failed` 带原话，没列出的、
+//! 到时没答的 `command_unavailable`（等服务的 `timeout_ms`，最多一分钟，施工 X-39 补），没有的服务 `unknown_command`；预设
 //! 关了这个服务的拒；服务停了不列。
 
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
 
@@ -141,8 +143,24 @@ async fn refusals_say_why() {
     let session = open(&mut client).await;
     let missing = run(&mut client, "k1", &session, "/probe:review").await;
     assert_eq!(reason(&missing), Some("command_failed"), "{missing}");
-    let why = missing["error"]["data"]["why"].as_str().unwrap_or_default();
-    assert!(why.contains("code"), "说缺哪个：{missing}");
+    assert_eq!(
+        missing["error"]["data"]["why"], "缺少参数：code",
+        "说缺哪个，照连接的语言：{missing}"
+    );
+    let mut english = Client::connect(Arc::clone(&core));
+    let hello = english
+        .call(
+            "hello-1",
+            "hello",
+            json!({"protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"}, "locale": "en-US", "token": TOKEN}),
+        )
+        .await;
+    assert!(hello["result"].is_object(), "{hello}");
+    let missing = run(&mut english, "e1", &session, "/probe:review").await;
+    assert_eq!(
+        missing["error"]["data"]["why"], "Missing arguments: code",
+        "{missing}"
+    );
     let unlisted = run(&mut client, "k2", &session, "/probe:nope").await;
     assert_eq!(reason(&unlisted), Some("command_unavailable"), "{unlisted}");
     let unknown = run(&mut client, "k3", &session, "/nobody:review").await;
@@ -167,6 +185,25 @@ async fn refusals_say_why() {
     );
     let stopped = run(&mut client, "k4", &session, "/probe:hello").await;
     assert_eq!(reason(&stopped), Some("command_unavailable"), "{stopped}");
+    core.stop_extensions().await;
+}
+
+#[tokio::test]
+async fn a_prompt_that_never_answers_is_unavailable() {
+    let home = Home::new();
+    let (core, mut client) = running(&home, &Script::new([])).await;
+    let session = open(&mut client).await;
+    let asked = Instant::now();
+    let reply = run(&mut client, "k1", &session, "/probe:slow").await;
+    assert_eq!(reason(&reply), Some("command_unavailable"), "{reply}");
+    assert!(
+        reply["error"]["data"].get("why").is_none(),
+        "不带 why：{reply}"
+    );
+    assert!(
+        asked.elapsed() < Duration::from_secs(30),
+        "照服务的 timeout_ms（1 秒）等，不等满一分钟"
+    );
     core.stop_extensions().await;
 }
 

@@ -4,7 +4,6 @@
 //! `command_failed`，`data.why` 是它的原话。和核心登记的撞名的不算（内置的赢）。
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use serde_json::{Value, json};
 
@@ -14,13 +13,11 @@ use miyu_kernel::origin::By;
 use miyu_kernel::session::Command;
 use miyu_session::Handle;
 
-use super::{RunParams, accepted, command};
+use super::why::no_reply;
+use super::{ANSWER_WAIT, RunParams, accepted, command, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
-
-/// 等扩展答多久。
-const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// 一个扩展声明的一条命令。
 #[derive(Debug, Clone)]
@@ -80,18 +77,18 @@ pub(super) async fn run(
         "owner": handle.owner().as_str(),
         "language": peer.language,
     });
-    let answer = tokio::time::timeout(TIMEOUT, connection.call("command.call", asked))
+    let answer = tokio::time::timeout(ANSWER_WAIT, connection.call("command.call", asked))
         .await
         .map_err(|_| Refusal::COMMAND_UNAVAILABLE)?
         .map_err(|_| Refusal::COMMAND_UNAVAILABLE)?;
     let said = match answer {
-        Ok(result) => result
-            .get("said")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-            .ok_or_else(|| {
-                Refusal::COMMAND_FAILED.because(format!("{name}: the answer has no said"))
-            })?,
+        Ok(result) => match result.get("said").and_then(Value::as_str) {
+            Some(said) => said.to_string(),
+            None => {
+                let why = words(core, peer, &no_reply(name)).await;
+                return Err(Refusal::COMMAND_FAILED.because(why));
+            }
+        },
         Err(error) => {
             let why = error
                 .get("message")

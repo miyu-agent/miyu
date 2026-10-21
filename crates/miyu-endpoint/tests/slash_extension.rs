@@ -116,6 +116,10 @@ async fn an_error_or_a_wrong_answer_is_command_failed_and_nothing_is_noted() {
     assert_eq!(reply["error"]["data"]["why"], "boom");
     let reply = run(&mut client, "k2", &session, "/weather garbled").await;
     assert_eq!(reason(&reply), Some("command_failed"), "{reply}");
+    assert_eq!(
+        reply["error"]["data"]["why"], "/weather 没有给出回复",
+        "核心自己说的照连接的语言（施工 X-39 补）：{reply}"
+    );
     assert!(
         !home
             .log(&session)

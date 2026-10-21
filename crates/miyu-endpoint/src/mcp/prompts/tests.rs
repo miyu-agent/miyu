@@ -37,3 +37,14 @@ fn a_name_taken_after_cleaning_is_skipped() {
         [Skipped::prompt("pr_review".to_string(), "name_taken")]
     );
 }
+
+#[test]
+fn a_prompt_waits_the_service_timeout_but_at_most_a_minute() {
+    assert_eq!(wait(1000), Duration::from_secs(1));
+    assert_eq!(wait(60_000), Duration::from_secs(60));
+    assert_eq!(
+        wait(600_000),
+        Duration::from_secs(60),
+        "调工具的上限不管提示词"
+    );
+}

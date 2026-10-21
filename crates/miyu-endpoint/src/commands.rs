@@ -75,6 +75,9 @@ pub(crate) fn builtin() -> Commands {
     commands
 }
 
+/// 等扩展的命令、MCP 服务的提示词答多久（施工 X-14 下；X-39 补起提示词也最多等这么久）。
+pub(crate) const ANSWER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
+
 /// 回执那一句：`core/human/<语言>.json` 的键，和要填的字。
 pub(crate) struct Said {
     /// 键。

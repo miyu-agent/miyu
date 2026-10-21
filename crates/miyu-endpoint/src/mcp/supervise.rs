@@ -295,7 +295,7 @@ async fn list(core: &Weak<Core>, plan: &Plan, shared: &Arc<Shared>, client: &Cli
         shared,
     ));
     // 提示词跟着工具一起列（施工 X-39）：撞名的同样进没登记的那一份。
-    let wait = Duration::from_millis(plan.server.timeout_ms);
+    let wait = super::prompts::wait(plan.server.timeout_ms);
     skipped.extend(super::prompts::list(shared, client, wait).await);
     // 照原名排：每次列完说的一样。
     skipped.sort();
