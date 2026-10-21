@@ -208,3 +208,22 @@ async fn links_and_oversized_files_are_not_handed_over() {
     assert!(!done.error, "{}", text(&done));
     assert_eq!(sides(&done), [2]);
 }
+
+/// 参数太长（施工 X-37）：超过 32 KiB 的不放进环境变量（Linux 上一个环境变量最多 128 KiB、Windows 上 32767 个字，超了起都
+/// 起不来），只在标准输入里；小的照旧两处都有。Python 写的，三个平台都跑。
+#[tokio::test]
+async fn long_arguments_come_only_on_stdin() {
+    let site = Site::new();
+    site.file(
+        "scripts/size.py",
+        b"#!/usr/bin/env python3\n# Description: Report argument sizes.\n# Parameters: {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}}}\nimport os, sys\nprint('env=' + str(len(os.environ.get('MIYU_ARGS_JSON', ''))))\nprint('stdin=' + str(len(sys.stdin.read())))\n",
+    );
+    let long = "x".repeat(40 * 1024);
+    let done = site.script("scripts/size.py", json!({ "text": long })).await;
+    assert!(!done.error, "{}", text(&done));
+    let full = json!({ "text": long }).to_string().len();
+    assert_eq!(text(&done), format!("env=0\nstdin={full}\n"), "长的只在标准输入里");
+    let done = site.script("scripts/size.py", json!({"text": "hi"})).await;
+    let small = json!({"text": "hi"}).to_string().len();
+    assert_eq!(text(&done), format!("env={small}\nstdin={small}\n"), "小的两处都有");
+}

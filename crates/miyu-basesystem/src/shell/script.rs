@@ -4,7 +4,8 @@
 //! - 照开头的 `#!` 起程序：`#!/usr/bin/env python3` 起 `/usr/bin/env`，参数是 `python3` 和脚本；没有 `#!` 的直接起脚本本身。
 //!   Windows 上没有 `/usr/bin/env` 这种：照 `#!` 里的解释器的名字（`env` 后面那个）找，没有 `#!` 的照扩展名找（施工 X-34 起和
 //!   包里的程序共用 [`miyu_store::packages::launcher`]）。
-//! - 参数是她给的那份 JSON，交给环境变量 `MIYU_ARGS_JSON`，也写进标准输入（同旧版）。
+//! - 参数是她给的那份 JSON，写进标准输入，不超过 32 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：长的放进环境
+//!   变量起都起不来）。
 //! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
 //!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
@@ -35,6 +36,10 @@ use images::Folder;
 
 /// 参数交给脚本的环境变量（同旧版）。
 const ARGS: &str = "MIYU_ARGS_JSON";
+
+/// 参数至多多长还放进环境变量（施工 X-37）：Linux 上一个环境变量最多 128 KiB、Windows 上 32767 个字（UTF-16 计），超了起都
+/// 起不来；按字节算 32 KiB 两边都在以内。长的只在标准输入里。
+const ARGS_IN_ENV: usize = 32 * 1024;
 
 /// 能写缓存的目录交给脚本的环境变量（同旧版）。
 const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
@@ -124,7 +129,9 @@ impl Script {
             }
         };
         let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
-        vars.push((ARGS.into(), call.args.clone().into()));
+        if call.args.len() <= ARGS_IN_ENV {
+            vars.push((ARGS.into(), call.args.clone().into()));
+        }
         vars.push((CACHE.into(), cache.as_os_str().to_owned()));
         if let Some(images) = images {
             vars.push((IMAGES.into(), images.as_os_str().to_owned()));
