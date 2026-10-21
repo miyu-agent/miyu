@@ -27,6 +27,7 @@ fn written(dir: &Path, server: &McpServer, tools: Vec<Value>) -> PathBuf {
         era: Era::Legacy("2025-11-25".to_string()),
         tools,
         instructions: Some("Use fetch for pages.".to_string()),
+        resources: true,
     };
     let path = dir.join("web.json");
     std::fs::write(&path, serde_json::to_vec(&cached).unwrap()).unwrap();
@@ -63,7 +64,9 @@ fn a_cache_is_used_only_while_the_command_and_env_are_the_same() {
         era,
         tools,
         instructions,
+        resources,
     } = read_at(&path, &old).expect("一样的用");
+    assert!(resources, "声明了资源跟着记（施工 X-41）");
     assert_eq!(era, Era::Legacy("2025-11-25".to_string()));
     assert_eq!(
         instructions.as_deref(),
@@ -133,7 +136,7 @@ fn a_url_server_is_keyed_by_its_url_and_header_names_not_values() {
     );
 }
 
-/// 以前的缓存没有说明那一格（施工 X-39 以前写的）：照样认得，说明是空的。
+/// 以前的缓存没有说明那一格（施工 X-39 以前写的）、资源那一格（施工 X-41 以前写的）：照样认得，说明是空的、资源照没声明。
 #[test]
 fn an_older_cache_without_instructions_still_reads() {
     let dir = scratch("older");
@@ -149,5 +152,6 @@ fn an_older_cache_without_instructions_still_reads() {
     std::fs::write(&path, raw.to_string()).unwrap();
     let remembered = read_at(&path, &old).expect("认得");
     assert_eq!(remembered.instructions, None);
+    assert!(!remembered.resources, "以前的缓存照没声明资源（施工 X-41）");
     assert_eq!(remembered.tools.len(), 1);
 }

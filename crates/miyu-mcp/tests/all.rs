@@ -5,4 +5,5 @@ mod support;
 mod calls;
 mod era;
 mod prompts;
+mod resources;
 mod tools;

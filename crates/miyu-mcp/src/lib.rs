@@ -17,6 +17,7 @@ mod error;
 pub mod http;
 mod link;
 mod prompt;
+mod resource;
 #[cfg(any(test, feature = "testkit"))]
 pub mod testkit;
 mod wire;
@@ -25,6 +26,7 @@ pub use client::{Client, Era, Hello, Waits};
 pub use content::{Annotations, Called, Content, Listed, Tool, Unread};
 pub use error::Failed;
 pub use prompt::{Argument, Message, Prompt, Prompts, Role};
+pub use resource::{Page, RESOURCE_FIELDS, TEMPLATE_FIELDS};
 
 /// 新时代我们说的版本，挑的时候从新往旧排。
 pub const MODERN: &[&str] = &["2026-07-28"];

@@ -67,10 +67,11 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 - In presets each server is one feature (`mcp-<server>`): switch it off whole, or tool by tool.
 - **Whether people are asked**: tools annotated `readOnlyHint: true` are never asked about; the rest are treated like network access and need approval at the "workspace" level. If you write servers, mark read-only tools.
 
-## Server instructions and prompts
+## Server instructions, prompts and resources
 
 - **Instructions** (`instructions`): the text your server gives goes at the end of the AI's system prompt, one section per server with its name, up to 4000 characters. Only servers whose tools are in that session get one. Say when your tools should be used: tools often show only their name and one line at first, and the AI uses your instructions to decide when to fetch the full tool. Instructions that change mid-session take effect on the next turn where the tools change (so the cache isn't broken every turn).
 - **Prompts** (`prompts`): they become slash commands `/<server>:<prompt>`, shown in the command menu. The words a person types after the name are split on whitespace (a value with spaces goes in English double quotes, e.g. `/weather:forecast "San Francisco" CA`) and matched to your declared arguments in order, the last argument taking the rest; the text and images that come back are sent to the AI as that person's message. Characters outside `[A-Za-z0-9_-]` in a name become `_`; a name that clashes after that isn't registered, and `miyu check` says so. Only usable in local sessions.
+- **Resources** (`resources`): material your server makes available (files, documents, table schemas…), one URI each, or URI templates such as `file:///logs/{day}.txt`. A server that declares `resources` gives the AI two more tools: `mcp__<server>__list_resources` lists resources and templates a page at a time, and `mcp__<server>__read_resource` reads one by URI. Text comes back to the AI as is, images are taken like images from tools, and other binary content is reduced to one line with its type and size. They follow the server's switch, venues and load-on-demand; if your server has its own tool with the same name, yours is used. A server with only resources and no tools works too.
 
 ## While running
 

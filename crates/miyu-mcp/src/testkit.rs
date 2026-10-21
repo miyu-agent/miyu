@@ -5,6 +5,8 @@
 //! `slow` 不回（等取消）；`ask` 先反过来问客户端要东西，等它回了再答；`pinged` 先反过来 `ping` 客户端，照它回没回成答；
 //! `input` 要补信息（新时代）；`die` 一收到就退出。别的名字回「不认识这件工具」（`-32602`）。
 //!
+//! 剧本带了资源的（施工 X-41）照 `resources.rs`。
+//!
 //! 剧本带了提示词的（施工 X-39），本事里声明 `prompts`：`review` 要参数 `code`（必填）、`focus`（可选），回一句、一张图、她说的
 //! 一句；`hello` 不要参数，回一句；缺必填的、别的名字回 `-32602`。
 
@@ -17,6 +19,9 @@ use tokio::io::{AsyncWriteExt, BufReader, DuplexStream, ReadHalf, WriteHalf};
 use crate::wire::{self, Read};
 
 pub mod http;
+mod resources;
+
+pub use resources::{resources, templates};
 
 /// 演哪个时代、怎么对待 `server/discover`。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,6 +59,10 @@ pub struct Script {
     pub prompts: Vec<Value>,
     /// 第一次列完提示词以后说一次提示词变了（施工 X-39）。
     pub change_prompts_after_list: bool,
+    /// `resources/list` 列的，原样（施工 X-41）；和模板都是空的不声明 `resources`。
+    pub resources: Vec<Value>,
+    /// `resources/templates/list` 列的，原样（施工 X-41）。
+    pub resource_templates: Vec<Value>,
 }
 
 impl Script {
@@ -69,6 +78,8 @@ impl Script {
             instructions: None,
             prompts: Vec::new(),
             change_prompts_after_list: false,
+            resources: Vec::new(),
+            resource_templates: Vec::new(),
         }
     }
 
@@ -264,6 +275,20 @@ impl Stage {
                 Some(self.prompts(script, &id, &params))
             }
             "prompts/get" if !script.prompts.is_empty() => Some(vec![prompt(script, &id, &params)]),
+            "resources/list" if resources::offered(script) => {
+                Some(vec![resources::page(script, &id, &params, "resources")])
+            }
+            "resources/templates/list" if resources::offered(script) => {
+                Some(vec![resources::page(
+                    script,
+                    &id,
+                    &params,
+                    "resourceTemplates",
+                )])
+            }
+            "resources/read" if resources::offered(script) => {
+                Some(vec![resources::read(script, &id, &params)])
+            }
             _ => Some(vec![wire::answer(&id, Err((-32601, "Method not found")))]),
         }
     }
@@ -373,11 +398,14 @@ impl Stage {
     }
 }
 
-/// 声明的本事：工具，带了提示词的另有 `prompts`（施工 X-39）。
+/// 声明的本事：工具，带了提示词的另有 `prompts`（施工 X-39），带了资源的另有 `resources`（施工 X-41）。
 fn capabilities(script: &Script) -> Value {
     let mut capabilities = json!({"tools": {"listChanged": true}});
     if !script.prompts.is_empty() {
         capabilities["prompts"] = json!({"listChanged": true});
+    }
+    if resources::offered(script) {
+        capabilities["resources"] = json!({});
     }
     capabilities
 }

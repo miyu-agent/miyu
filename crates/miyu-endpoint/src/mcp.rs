@@ -16,6 +16,7 @@ pub(crate) mod instructions;
 mod launch;
 pub(crate) mod methods;
 pub(crate) mod prompts;
+mod resources;
 mod secrets;
 mod skipped;
 mod spec;
@@ -328,9 +329,10 @@ impl Servers {
             era,
             tools,
             instructions,
+            resources,
         }) = cache::read(core, server)
         {
-            spec::register(core, package, server, &tools, &slot.shared);
+            spec::register(core, package, server, (&tools, resources), &slot.shared);
             slot.shared.set_instructions(instructions.as_deref());
             plan.known = Some(era);
         }

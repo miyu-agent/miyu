@@ -291,7 +291,7 @@ async fn list(core: &Weak<Core>, plan: &Plan, shared: &Arc<Shared>, client: &Cli
         &owner,
         &shared.package,
         &plan.server,
-        &listed.tools,
+        (&listed.tools, client.offers_resources()),
         shared,
     ));
     // 提示词跟着工具一起列（施工 X-39）：撞名的同样进没登记的那一份。
@@ -306,7 +306,11 @@ async fn list(core: &Weak<Core>, plan: &Plan, shared: &Arc<Shared>, client: &Cli
         &owner,
         &plan.server,
         client.era(),
-        (&listed.tools, client.instructions()),
+        (
+            &listed.tools,
+            client.instructions(),
+            client.offers_resources(),
+        ),
     );
     true
 }

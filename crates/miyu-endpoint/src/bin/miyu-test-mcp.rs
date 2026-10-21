@@ -12,6 +12,11 @@
 //! - `prompts`：本事里声明 `prompts`（施工 X-39）：`review`（`code` 必填、`focus` 可选）回一句字、一张图、她说的一句；`hello` 不要
 //!   参数，回一句；`two words` 和 `two_words` 清理以后撞名（后一个不登记）；`slow` 不回（施工 X-39 补）。缺必填的、不认识的名字
 //!   回 `-32602`；
+//! - `resources`：本事里声明 `resources`（施工 X-41）：三份资源（`file:///notes.txt` 一段字、`file:///dot.png` 一张 PNG、
+//!   `file:///blob.bin` 一段别的二进制）一页两份，一个模板 `file:///logs/{day}.txt`，读模板的回 `Log of <day>.`，别的地址回
+//!   `-32002`；
+//! - `no-tools`：列工具时一件都不列（施工 X-41：只开放资源的服务）；
+//! - `clash`：多列一件自己的 `read_resource`，回 `the server's own`（施工 X-41：同名的服务赢）；
 //! - `odd`：列的时候多几件登记不上的（施工 X-37）：没写参数格式的 `loose`、参数格式不是对象的 `stringly`、截到 64 个字以后
 //!   撞名的 `long-x…x-one`、`long-x…x-two`（60 个 `x`），和一件没写名字的；
 //! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
@@ -56,6 +61,9 @@ fn main() {
     let mut odd = false;
     let mut instructions: Option<String> = None;
     let mut prompts = false;
+    let mut resources = false;
+    let mut no_tools = false;
+    let mut clash = false;
     for arg in std::env::args().skip(1) {
         if arg == "legacy" {
             legacy = true;
@@ -72,6 +80,12 @@ fn main() {
             odd = true;
         } else if arg == "prompts" {
             prompts = true;
+        } else if arg == "resources" {
+            resources = true;
+        } else if arg == "no-tools" {
+            no_tools = true;
+        } else if arg == "clash" {
+            clash = true;
         } else if let Some(text) = arg.strip_prefix("instructions:") {
             instructions = Some(text.to_string());
         } else if let Some(path) = arg.strip_prefix("instructions-file:") {
@@ -109,18 +123,21 @@ fn main() {
             "server/discover" => Ok(json!({
                 "resultType": "complete",
                 "supportedVersions": ["2026-07-28"],
-                "capabilities": capabilities(prompts),
+                "capabilities": capabilities(prompts, resources),
                 "instructions": instructions,
             })),
             "initialize" if legacy => Ok(json!({
                 "protocolVersion": "2025-11-25",
-                "capabilities": capabilities(prompts),
+                "capabilities": capabilities(prompts, resources),
                 "instructions": instructions,
                 "serverInfo": {"name": "miyu-test-mcp", "version": "0"},
             })),
             "tools/list" => {
                 lists += 1;
-                let mut names: Vec<&str> = TOOLS.to_vec();
+                let mut names: Vec<&str> = if no_tools { Vec::new() } else { TOOLS.to_vec() };
+                if clash {
+                    names.push("read_resource");
+                }
                 if (changed || ttl.is_some()) && lists > 1 {
                     names.push("later");
                 }
@@ -139,6 +156,11 @@ fn main() {
                 None => continue,
             },
             "prompts/list" if prompts => Ok(json!({"prompts": listed_prompts()})),
+            "resources/list" if resources => Ok(resource_page(&message["params"])),
+            "resources/templates/list" if resources => Ok(json!({"resourceTemplates": [
+                {"uriTemplate": "file:///logs/{day}.txt", "name": "day log", "mimeType": "text/plain"},
+            ]})),
+            "resources/read" if resources => read_resource(&message["params"]),
             "prompts/get" if prompts => match prompt(&message["params"]) {
                 Some(result) => result,
                 None => continue,
@@ -185,13 +207,60 @@ fn tool(name: &str) -> Value {
     tool
 }
 
-/// 声明的本事：工具，带了 `prompts` 的另有提示词（施工 X-39）。
-fn capabilities(prompts: bool) -> Value {
+/// 声明的本事：工具，带了 `prompts` 的另有提示词（施工 X-39），带了 `resources` 的另有资源（施工 X-41）。
+fn capabilities(prompts: bool, resources: bool) -> Value {
     let mut capabilities = json!({"tools": {"listChanged": true}});
     if prompts {
         capabilities["prompts"] = json!({"listChanged": true});
     }
+    if resources {
+        capabilities["resources"] = json!({});
+    }
     capabilities
+}
+
+/// `resources/list` 的一页（施工 X-41）：三份，一页两份，`cursor` 是从第几份起。
+fn resource_page(params: &Value) -> Value {
+    let all = [
+        json!({"uri": "file:///notes.txt", "name": "notes", "mimeType": "text/plain"}),
+        json!({"uri": "file:///dot.png", "name": "dot", "mimeType": "image/png"}),
+        json!({"uri": "file:///blob.bin", "name": "blob", "mimeType": "application/octet-stream"}),
+    ];
+    let start = params["cursor"]
+        .as_str()
+        .and_then(|cursor| cursor.parse().ok())
+        .unwrap_or(0_usize)
+        .min(all.len());
+    let end = (start + 2).min(all.len());
+    let mut page = json!({"resources": all[start..end]});
+    if end < all.len() {
+        page["nextCursor"] = json!(end.to_string());
+    }
+    page
+}
+
+/// `resources/read`（施工 X-41）：照地址答。
+fn read_resource(params: &Value) -> Result<Value, (i64, &'static str)> {
+    let uri = params["uri"].as_str().unwrap_or_default();
+    let content = match uri {
+        "file:///notes.txt" => {
+            json!({"uri": uri, "mimeType": "text/plain", "text": "Remember the milk."})
+        }
+        "file:///dot.png" => json!({"uri": uri, "mimeType": "image/png", "blob": PNG}),
+        "file:///blob.bin" => {
+            json!({"uri": uri, "mimeType": "application/octet-stream", "blob": "AAECAw=="})
+        }
+        _ => match uri
+            .strip_prefix("file:///logs/")
+            .and_then(|rest| rest.strip_suffix(".txt"))
+        {
+            Some(day) => {
+                json!({"uri": uri, "mimeType": "text/plain", "text": format!("Log of {day}.")})
+            }
+            None => return Err((-32002, "Resource not found")),
+        },
+    };
+    Ok(json!({"contents": [content]}))
 }
 
 /// `prompts` 列的几个（施工 X-39）。
@@ -253,6 +322,7 @@ fn call(params: &Value) -> Option<Result<Value, (i64, &'static str)>> {
     let text = |text: &str| json!({"content": [{"type": "text", "text": text}]});
     let result = match params["name"].as_str().unwrap_or_default() {
         "echo" | "later" => text(said),
+        "read_resource" => text("the server's own"),
         "env" => text(&std::env::var(said).unwrap_or_default()),
         "cwd" => text(
             &std::env::current_dir()

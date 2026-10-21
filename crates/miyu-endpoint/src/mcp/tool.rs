@@ -1,7 +1,8 @@
 //! 一件 MCP 工具（施工 X-3 上，`mcp.md`「怎么走」第四条）：调用时照服务这时连着的客户端发 `tools/call`，照清单的时限等。
 //! 服务不在的（起着、退避着、停下了）、等着时进程退出了的说暂时不可用；到了时限没回的丢掉这次调用（客户端发取消），说没在
 //! N 秒内答完；被掐掉的（人停了这一轮）同样丢掉、发取消。服务回 JSON-RPC 的错照它的原话交；写法不对、要补信息的照工具出了
-//! 内部错误说。回来的内容换块在 `content.rs`。
+//! 内部错误说。回来的内容换块在 `content.rs`。同一个服务列资源、读资源那两件（施工 X-41）也是它，发的是 `resources/*`
+//! （`resources.rs`），别的照同一套说。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -51,8 +52,8 @@ impl Texts {
 pub(super) struct McpTool {
     /// 目录里的规格：名字是 `mcp__<服务名>__<工具名>`。
     pub(super) spec: Spec,
-    /// 服务给的名字，原样：发 `tools/call` 用它。
-    pub(super) original: String,
+    /// 调的是什么。
+    pub(super) what: What,
     /// 服务给的给人看的名字（`title`），没写的、空白的没有（施工 9-8 六补）。
     pub(super) title: Option<String>,
     /// 给哪种会话。
@@ -63,6 +64,16 @@ pub(super) struct McpTool {
     pub(super) shared: Arc<Shared>,
     /// 替它写的几句。
     pub(super) texts: Texts,
+}
+
+/// 一件 MCP 工具调的是什么。
+pub(super) enum What {
+    /// 服务的一件工具：服务给的名字，原样，发 `tools/call` 用它。
+    Tool(String),
+    /// 列资源（`resources/list`，施工 X-41）。
+    ListResources,
+    /// 读资源（`resources/read`，施工 X-41）。
+    ReadResource,
 }
 
 impl McpTool {
@@ -128,8 +139,14 @@ impl Tool for McpTool {
             };
             let arguments: Value = serde_json::from_str(&call.args).unwrap_or_else(|_| json!({}));
             // 到点、被掐掉，这个调用的 future 都被丢掉：客户端那一刻发 `notifications/cancelled`。
-            let called =
-                tokio::time::timeout(self.timeout, client.call(&self.original, arguments)).await;
+            let asked = async {
+                match &self.what {
+                    What::Tool(original) => client.call(original, arguments).await,
+                    What::ListResources => super::resources::list(&client, &arguments).await,
+                    What::ReadResource => super::resources::read(&client, &arguments).await,
+                }
+            };
+            let called = tokio::time::timeout(self.timeout, asked).await;
             match called {
                 Err(_) => self.timed_out(),
                 Ok(Ok(called)) => content::done(called, &self.texts),

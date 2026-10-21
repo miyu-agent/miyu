@@ -28,6 +28,9 @@ struct Cached {
     /// 服务给模型的说明（施工 X-39）：没给的不写，以前的缓存没有这一格照样认得。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     instructions: Option<String>,
+    /// 服务声明了资源（施工 X-41）：没声明的不写，以前的缓存没有这一格的照没声明。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    resources: bool,
 }
 
 /// 缓存里记着的（施工 X-39 起多了说明）。
@@ -39,6 +42,8 @@ pub(super) struct Remembered {
     pub(super) tools: Vec<Tool>,
     /// 服务给模型的说明，没给的没有。
     pub(super) instructions: Option<String>,
+    /// 服务声明了资源（施工 X-41）。
+    pub(super) resources: bool,
 }
 
 /// 服务 `service` 的缓存在哪。
@@ -78,12 +83,13 @@ fn key(server: &McpServer) -> (Vec<String>, Vec<String>) {
     }
 }
 
-/// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`、给模型的说明 `instructions`（施工 X-39）。
+/// 记下服务 `server` 这一次认出来的时代 `era`、列出来的 `tools`、给模型的说明 `instructions`（施工 X-39）、声明了资源没有
+/// `resources`（施工 X-41）。
 pub(super) fn write(
     core: &Core,
     server: &McpServer,
     era: &Era,
-    (tools, instructions): (&[Tool], Option<&str>),
+    (tools, instructions, resources): (&[Tool], Option<&str>, bool),
 ) {
     let (command, env) = key(server);
     let cached = Cached {
@@ -92,6 +98,7 @@ pub(super) fn write(
         era: era.clone(),
         tools: tools.iter().map(|tool| tool.raw.clone()).collect(),
         instructions: instructions.map(str::to_string),
+        resources,
     };
     let path = path(core, &server.name);
     let written = serde_json::to_vec_pretty(&cached)
@@ -138,6 +145,7 @@ fn read_at(path: &Path, server: &McpServer) -> Option<Remembered> {
         era: cached.era,
         tools,
         instructions: cached.instructions,
+        resources: cached.resources,
     })
 }
 

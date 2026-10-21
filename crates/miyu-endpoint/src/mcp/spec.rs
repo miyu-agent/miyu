@@ -10,7 +10,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::tool::Access;
 use miyu_tool::{Problem, Spec, Tool, Venues, mcp_prefix};
 
-use super::tool::{McpTool, Texts};
+use super::tool::{McpTool, Texts, What};
 use super::{Shared, Skipped, TARGET};
 use crate::Core;
 
@@ -69,12 +69,13 @@ pub(super) fn venues(server: &McpServer) -> Venues {
 
 /// 照服务 `server` 列出来的 `tools` 换掉包 `package` 里这个服务的工具：截断后撞名的后一件、目录查不过的（撞了别的包的、
 /// 参数不是对象的）不登记，各记一行 `WARN mcp tool skipped`，交回这几件（施工 X-37：列完的记进看管那一格，`mcp.list`、软件包
-/// 列表、`miyu check` 照它说；照缓存登记的不记）。资源目录读不出来的（安装坏了）一件都不登记。
+/// 列表、`miyu check` 照它说；照缓存登记的不记）。资源目录读不出来的（安装坏了）一件都不登记。`resources` 是服务声明了资源：
+/// 另登记列资源、读资源那两件（施工 X-41，`resources.rs`）。
 pub(super) fn register(
     core: &Core,
     package: &str,
     server: &McpServer,
-    tools: &[miyu_mcp::Tool],
+    (tools, resources): (&[miyu_mcp::Tool], bool),
     shared: &Arc<Shared>,
 ) -> Vec<Skipped> {
     let service = server.name.as_str();
@@ -109,7 +110,7 @@ pub(super) fn register(
                 need_load: server.need_load,
                 clicall: server.clicall,
             },
-            original: tool.name.clone(),
+            what: What::Tool(tool.name.clone()),
             title: tool
                 .title
                 .as_deref()
@@ -121,6 +122,9 @@ pub(super) fn register(
             shared: Arc::clone(shared),
             texts: texts.clone(),
         }));
+    }
+    if resources {
+        built.extend(super::resources::tools(core, server, shared, &texts, &seen));
     }
     let count = built.len();
     let mut refused = Vec::new();

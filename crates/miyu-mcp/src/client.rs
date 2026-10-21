@@ -12,10 +12,11 @@ use serde_json::{Map, Value, json};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::watch;
 
-use crate::content::{Called, Listed, Tool};
+use crate::content::{Called, Content, Listed, Tool};
 use crate::error::Failed;
 use crate::link::Link;
 use crate::prompt::{Message, Prompt, Prompts};
+use crate::resource::{self, Page, RESOURCE_FIELDS, TEMPLATE_FIELDS};
 use crate::{LEGACY, MODERN};
 
 /// 版本不对（新时代的 `UnsupportedProtocolVersionError`）。
@@ -74,6 +75,8 @@ pub struct Client {
     instructions: Option<String>,
     /// 服务声明了提示词（施工 X-39）。
     prompts: bool,
+    /// 服务声明了资源（施工 X-41）。
+    resources: bool,
 }
 
 impl Client {
@@ -102,6 +105,7 @@ impl Client {
             waits,
             instructions: None,
             prompts: false,
+            resources: false,
         };
         let legacy_first = matches!(known, Some(Era::Legacy(_)));
         if !legacy_first || client.shake().await.is_err() {
@@ -123,6 +127,67 @@ impl Client {
     /// 服务在本事里声明了提示词（`prompts`，施工 X-39）：声明了的才列。
     pub fn offers_prompts(&self) -> bool {
         self.prompts
+    }
+
+    /// 服务在本事里声明了资源（`resources`，施工 X-41）：声明了的才有列、读资源那两件工具。
+    pub fn offers_resources(&self) -> bool {
+        self.resources
+    }
+
+    /// 资源的一页（`resources/list`，施工 X-41）：`cursor` 是上一页交的，第一页不写；每项只留 [`crate::RESOURCE_FIELDS`]，
+    /// 没有地址的不收。不限时：同 [`Client::call`]，调的一方自己限。
+    ///
+    /// # Errors
+    ///
+    /// 断了、服务报错、回的写法不对。
+    pub async fn resources(&self, cursor: Option<&str>) -> Result<Page, Failed> {
+        self.page("resources/list", "resources", cursor, &RESOURCE_FIELDS)
+            .await
+    }
+
+    /// 地址模板的一页（`resources/templates/list`，施工 X-41）：同 [`Client::resources`]，每项只留 [`crate::TEMPLATE_FIELDS`]。
+    ///
+    /// # Errors
+    ///
+    /// 断了、服务报错、回的写法不对。
+    pub async fn resource_templates(&self, cursor: Option<&str>) -> Result<Page, Failed> {
+        self.page(
+            "resources/templates/list",
+            "resourceTemplates",
+            cursor,
+            &TEMPLATE_FIELDS,
+        )
+        .await
+    }
+
+    /// 读资源 `uri`（`resources/read`，施工 X-41）：交回几段内容，都是 [`Content::Resource`]。不限时，调的一方自己限。
+    ///
+    /// # Errors
+    ///
+    /// 断了、服务报错（没有这个资源）、回的写法不对。
+    pub async fn read_resource(&self, uri: &str) -> Result<Vec<Content>, Failed> {
+        let mut params = Map::new();
+        params.insert("uri".to_string(), Value::String(uri.to_string()));
+        let result = self.ask("resources/read", params, None).await?;
+        resource::contents(&result)
+            .ok_or_else(|| Failed::Malformed("resources/read without contents".to_string()))
+    }
+
+    /// `method` 的一页：`key` 那一列，每项只留 `fields`。
+    async fn page(
+        &self,
+        method: &str,
+        key: &str,
+        cursor: Option<&str>,
+        fields: &[&str],
+    ) -> Result<Page, Failed> {
+        let mut params = Map::new();
+        if let Some(cursor) = cursor {
+            params.insert("cursor".to_string(), Value::String(cursor.to_string()));
+        }
+        let result = self.ask(method, params, None).await?;
+        resource::page(&result, key, fields)
+            .ok_or_else(|| Failed::Malformed(format!("{method} without {key}")))
     }
 
     /// 列全工具（`tools/list`，照 `nextCursor` 翻页）。写法不对的那几项不收，记在 [`Listed::skipped`]。
@@ -301,6 +366,7 @@ impl Client {
                 Ok(result) => {
                     self.instructions = text(&result, "instructions");
                     self.prompts = offers_prompts(&result);
+                    self.resources = offers_resources(&result);
                     versions(result.get("supportedVersions"))
                 }
                 Err(Failed::Rpc { code, data, .. }) if code == UNSUPPORTED_VERSION => {
@@ -350,6 +416,7 @@ impl Client {
         }
         self.instructions = text(&result, "instructions");
         self.prompts = offers_prompts(&result);
+        self.resources = offers_resources(&result);
         self.link.tell("notifications/initialized", json!({}));
         self.era = Era::Legacy(version);
         Ok(())
@@ -364,6 +431,11 @@ fn text(value: &Value, key: &str) -> Option<String> {
 /// 回应的本事里有没有 `prompts`（施工 X-39）：是一张表就算。
 fn offers_prompts(result: &Value) -> bool {
     result["capabilities"]["prompts"].is_object()
+}
+
+/// 回应的本事里有没有 `resources`（施工 X-41）：是一张表就算。
+fn offers_resources(result: &Value) -> bool {
+    result["capabilities"]["resources"].is_object()
 }
 
 /// 一串版本：不是数组的当空的，不是字的不算。

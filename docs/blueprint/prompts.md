@@ -4235,6 +4235,34 @@ Reply with OK.
 }
 ```
 
+#### `core/mcp/list_resources.json`
+
+- 什么时候加进来：会话的工具面上有声明了 `resources` 的 MCP 服务（施工 X-41）：每个这样的服务一件 `mcp__<服务名>__list_resources`，跟着它的工具登记、预设、先加载
+- token：估 30（先加载时只有名字和说明；加载了另加参数格式估 20），合时量
+- 为什么加：列出服务开放的资料和地址模板，她才知道能读什么：两句，列什么、一次一页；一个参数一句（`mcp.md`「怎么走」第七条）
+- 指纹：`3fc4a4fc`
+
+```json
+{
+  "description": "List the resources this MCP server offers, such as files or documents, and the URI templates you can fill in. One page at a time; pass the nextCursor it gives for the next page.",
+  "parameters": {"type":"object","properties":{"cursor":{"type":"string","description":"The nextCursor from the previous page."}}}
+}
+```
+
+#### `core/mcp/read_resource.json`
+
+- 什么时候加进来：同上，一件 `mcp__<服务名>__read_resource`
+- token：估 30（同上，参数格式估 20），合时量
+- 为什么加：照地址读一份资料：一句，读什么、地址从哪来；一个参数一句
+- 指纹：`e7985429`
+
+```json
+{
+  "description": "Read one of this MCP server's resources by its URI, as listed by list_resources or filled into one of its URI templates.",
+  "parameters": {"type":"object","properties":{"uri":{"type":"string","description":"The resource's URI."}},"required":["uri"]}
+}
+```
+
 #### `software/basesystem/tools/read.json`
 
 - 什么时候加进来：会话的工具面里有 `read`（每次请求都带）
