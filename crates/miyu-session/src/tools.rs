@@ -392,13 +392,13 @@ impl Tools {
         let span = tracing::Span::current();
         // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。管理员
         // 放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
-        let sandbox = self
-            .sandbox
-            .clone()
-            .filter(|_| self.sandboxed(&name, &tool, &call));
+        let wrap = self.wrap(&name, &tool, &call);
+        let sandbox = self.sandbox.clone().filter(|_| wrap.needs_spec());
+        let unless = wrap.unless();
         let inner = tokio::spawn(
             async move {
-                let call = confine(call, sandbox, (permission, dirs, grants), call_id).await?;
+                let call =
+                    confine(call, sandbox, (permission, dirs, grants), (call_id, unless)).await?;
                 Some(tool.run(call, progress).await)
             }
             .instrument(span.clone()),

@@ -165,10 +165,9 @@ impl Tool for Script {
         self.display_name.clone()
     }
 
-    /// 脚本文件这时是链接（施工 X-37）：看不了的也当是，放行宁可不算。
-    fn linked(&self) -> bool {
-        std::fs::symlink_metadata(&self.file)
-            .map_or(true, |metadata| metadata.file_type().is_symlink())
+    /// 脚本文件（施工 X-37 补）：放行出沙盒时照它判那一刻的真实位置。
+    fn file(&self) -> Option<&Path> {
+        Some(&self.file)
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

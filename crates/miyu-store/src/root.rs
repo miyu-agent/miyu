@@ -16,6 +16,9 @@ use miyu_kernel::id::{AccountId, SessionId};
 use crate::durable::{create_dir, sync_dir};
 use crate::env::{Env, Platform};
 
+/// 账号家目录里自己放东西的几处（[`DataRoot::own_places`]）。
+const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
+
 /// 第一次用时建的四个顶层目录：系统区、家目录、状态区、运行时（`07-存储.md` 第二节）。
 /// 别的用到时再建。
 const SKELETON: [&str; 4] = ["system", "home", "state", "run"];
@@ -97,6 +100,17 @@ impl DataRoot {
     /// 一个账号的家目录：`home/<账号>/`，这个人产生的一切都在里面。
     pub fn account_dir(&self, account: &AccountId) -> PathBuf {
         self.homes().join(account.as_str())
+    }
+
+    /// 账号 `account` 自己放脚本、技能、命令模板、装包的几处（`scripts`、`skills`、`commands`、`packages`）的真实位置（施工
+    /// X-37、X-37 补）：找的时候认链接指到这几处下面的，管理员放行出沙盒的文件得落在这几处下面。照数据根的真实位置接上家目录的
+    /// 相对路径，不一处处换成真实位置：家目录的 `skills/` 本身是指到 `system/` 的链接时，换了就把 `system/` 当成自己的地方了。
+    /// 数据根本身是链接的（macOS 的临时目录在 `/var` 下面）照样对。碰磁盘。
+    pub fn own_places(&self, account: &AccountId) -> Vec<PathBuf> {
+        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
+        let account_dir = self.account_dir(account);
+        let home = base.join(account_dir.strip_prefix(&self.path).unwrap_or(&account_dir));
+        OWN_PLACES.iter().map(|dir| home.join(dir)).collect()
     }
 
     /// 建一个账号的家目录和里面的工作区，已经有的不动：核心起来时给管理员建（施工 3-9 上；工作区施工 4-3 下）。

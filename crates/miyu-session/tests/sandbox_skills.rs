@@ -236,8 +236,12 @@ async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
     std::os::unix::fs::symlink(real.join("peek.sh"), &file).expect("建得了链接");
     let head = miyu_policy::script::read("peek.sh", &text).expect("开头写对了");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    let tool = miyu_basesystem::script(&resources, &head, file).expect("资源读得出来");
-    assert!(tool.linked(), "文件是链接");
+    let tool = miyu_basesystem::script(&resources, &head, file.clone()).expect("资源读得出来");
+    assert_eq!(
+        tool.file(),
+        Some(file.as_path()),
+        "交的是链接本身，放行时照它的真实位置判"
+    );
     let tools = Catalog::new([tool]).expect("合写法");
     let call = Play::calls(&[("peek", "{}")]);
     let handle = session(&home, (&tools, call), &helper, ("local", true)).await;

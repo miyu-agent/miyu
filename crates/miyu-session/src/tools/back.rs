@@ -12,6 +12,33 @@ use super::{ToolBack, Tools, text};
 use crate::TARGET;
 use crate::effects;
 use crate::lines::millis;
+use crate::unsandboxed::Grant;
+
+/// 一次调用怎么套沙盒（施工 X-37 补）。
+pub(crate) enum Wrap {
+    /// 套。
+    Sandbox,
+    /// 不套：工具报要在沙盒外跑的（权限策略照同一个报判过了），管理员放行了的、不是一个文件的工具。
+    Bare,
+    /// 管理员放行了的、带文件的工具：文件（真实的位置）落在这一次沙盒的规格写得了的地方（`write`）的照旧套，不在的不套。权限
+    /// 策略照它的边界表判过同一条（`guard/unsandboxed.rs`）。
+    BareUnlessWritable(PathBuf),
+}
+
+impl Wrap {
+    /// 要先写出沙盒的规格（套的、要看规格才定的）。
+    pub(crate) fn needs_spec(&self) -> bool {
+        !matches!(self, Wrap::Bare)
+    }
+
+    /// 看规格才定的那个文件。
+    pub(crate) fn unless(self) -> Option<PathBuf> {
+        match self {
+            Wrap::BareUnlessWritable(real) => Some(real),
+            Wrap::Sandbox | Wrap::Bare => None,
+        }
+    }
+}
 
 impl Tools {
     /// 结果没人要了（调用已经被掐掉）里派出去的子代理（施工 7-5 补）：没记成任务，没人管，停掉它。
@@ -52,14 +79,22 @@ impl Tools {
         self.unsandboxed = unsandboxed;
     }
 
-    /// 这一次要不要套沙盒：工具报要在沙盒外跑的（施工 D-4）、管理员放行了的（施工 X-36）不套。
-    pub(crate) fn sandboxed(
+    /// 这一次怎么套沙盒：工具报要在沙盒外跑的（施工 D-4）、管理员放行了的（施工 X-36）不套；放行了的带文件的，文件落在这一次
+    /// 沙盒写得了的地方的照旧套（施工 X-37 补，[`Wrap::BareUnlessWritable`]）。
+    pub(crate) fn wrap(
         &self,
         name: &str,
         tool: &Arc<dyn miyu_tool::Tool>,
         call: &miyu_tool::Call,
-    ) -> bool {
-        !tool.outside_sandbox(call) && !self.unsandboxed.granted(name, &self.catalog)
+    ) -> Wrap {
+        if tool.outside_sandbox(call) {
+            return Wrap::Bare;
+        }
+        match self.unsandboxed.grant(name, &self.catalog) {
+            Grant::No => Wrap::Sandbox,
+            Grant::Whole => Wrap::Bare,
+            Grant::File(real) => Wrap::BareUnlessWritable(real),
+        }
     }
 
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。

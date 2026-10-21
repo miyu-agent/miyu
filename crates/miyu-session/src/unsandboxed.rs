@@ -9,8 +9,11 @@
 //! 只碰得到自己工作区的会话、只读那一级照旧拒（`guard.rs`）。
 
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 use miyu_config::{Applies, Control, Item, Kind, Layer, Ui, Value, Values, key};
+use miyu_kernel::id::AccountId;
+use miyu_store::root::DataRoot;
 use miyu_tool::Shelf;
 
 /// 一件工具那一项的样子。工具名那一段照 `<name>`（同 `clicall.tools.<name>`）：MCP 工具的全名常超过 `<id>` 的 32 个字。
@@ -37,9 +40,52 @@ pub const ITEMS: &[Item] = &[Item {
     },
 }];
 
-/// 这一轮放行了的：工具名到写的来处。
+/// 这一轮放行了的：工具名到写的来处，和管理员管得住的地方（施工 X-37 补，[`Confines`]）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct Unsandboxed(BTreeMap<String, String>);
+pub struct Unsandboxed {
+    granted: BTreeMap<String, String>,
+    confines: Confines,
+}
+
+/// 管理员管得住的地方（施工 X-37 补）：放行出沙盒的工具，它的文件判那一刻的真实位置落在这几处下面的才算。这个账号家目录自己
+/// 放东西的几处（`DataRoot::own_places`）、资源目录（出厂的包），都是真实的位置。会话开的时候定下，回合开始随放行表交出去。
+/// 空的（没给的）哪里都不算：带文件的工具一律不放行。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Confines(Vec<PathBuf>);
+
+impl Confines {
+    /// 这几处（给的是真实的位置）。
+    pub fn new(places: Vec<PathBuf>) -> Confines {
+        Confines(places)
+    }
+
+    /// 数据根 `root` 里账号 `account` 自己放东西的几处，加资源目录 `resources`（出厂的包），都换成真实的位置。碰磁盘。
+    pub fn of(root: &DataRoot, account: &AccountId, resources: &Path) -> Confines {
+        let mut places = root.own_places(account);
+        places.push(std::fs::canonicalize(resources).unwrap_or_else(|_| resources.to_path_buf()));
+        Confines(places)
+    }
+
+    /// 文件 `file` 这一刻的真实位置，落在这几处下面的才交回；不在的、换不成真实位置的没有。碰磁盘。
+    pub fn hold(&self, file: &Path) -> Option<PathBuf> {
+        let real = std::fs::canonicalize(file).ok()?;
+        self.0
+            .iter()
+            .any(|place| real.starts_with(place))
+            .then_some(real)
+    }
+}
+
+/// 一件工具放行了没有（施工 X-37 补）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Grant {
+    /// 没放行。
+    No,
+    /// 放行了，不是一个文件的工具（例如 `shell`）。
+    Whole,
+    /// 放行了，它的文件在这里（真实的位置，落在管得住的地方）：落在她这一轮写得了的地方的，调的一方照旧不算。
+    File(PathBuf),
+}
 
 impl Unsandboxed {
     /// 照这一轮的配置 `values` 读：真的键照样子拆开（名字那一段带了引号的也认得）。
@@ -56,21 +102,39 @@ impl Unsandboxed {
                 granted.extend(names.into_iter().map(|name| (name, source.to_string())));
             }
         }
-        Unsandboxed(granted)
+        Unsandboxed {
+            granted,
+            confines: Confines::default(),
+        }
     }
 
-    /// 工具 `name` 放行了：写了它，写的来处和架子 `shelf` 上这件工具现在归的包一样，它的文件这时不是链接（施工 X-37：链接能
-    /// 指到她改得了的工作区，等于改了一件在沙盒外跑的工具）。
-    pub fn granted(&self, name: &str, shelf: &Shelf) -> bool {
-        self.0
+    /// 带上管理员管得住的地方（施工 X-37 补）。
+    #[must_use]
+    pub fn within(self, confines: Confines) -> Unsandboxed {
+        Unsandboxed { confines, ..self }
+    }
+
+    /// 工具 `name` 放行了没有：写了它，写的来处和架子 `shelf` 上这件工具现在归的包一样；带文件的，文件这一刻的真实位置还得落在
+    /// 管得住的地方（施工 X-37 补：链接、所在的目录是链接，都能指到她改得了的工作区，等于改了一件在沙盒外跑的工具）。落没落在
+    /// 她这一轮写得了的地方，由调的一方照它手上的边界看（[`Grant::File`]）。
+    pub fn grant(&self, name: &str, shelf: &Shelf) -> Grant {
+        let named = self
+            .granted
             .get(name)
-            .is_some_and(|source| shelf.package_of(name).as_deref() == Some(source.as_str()))
-            && !shelf.get(name).is_some_and(|tool| tool.linked())
+            .is_some_and(|source| shelf.package_of(name).as_deref() == Some(source.as_str()));
+        if !named {
+            return Grant::No;
+        }
+        let tool = shelf.get(name);
+        match tool.as_deref().and_then(|tool| tool.file()) {
+            None => Grant::Whole,
+            Some(file) => self.confines.hold(file).map_or(Grant::No, Grant::File),
+        }
     }
 
     /// 写了的每一条：工具名、写的来处，照工具名排（`miyu check` 照它列）。
     pub fn entries(&self) -> impl Iterator<Item = (&str, &str)> {
-        self.0
+        self.granted
             .iter()
             .map(|(name, source)| (name.as_str(), source.as_str()))
     }

@@ -368,7 +368,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .with_attachments(miyu_store::attachments::dir(root, &owner, &id))
+    .for_session(root, (&owner, &id), shipped.path())
     .with_workplace(workplace.clone());
     let who = Who {
         owner: owner.clone(),

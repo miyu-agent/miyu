@@ -27,7 +27,12 @@ async fn each_grant_is_checked_against_the_catalog() {
             "~home",
             vec![
                 fake("light"),
-                Fake::linked("linked", Access::Execute, Act::Echo) as Arc<dyn Tool>,
+                Fake::with_file(
+                    "linked",
+                    Access::Execute,
+                    home.work.join("elsewhere.py"),
+                    Act::Echo,
+                ) as Arc<dyn Tool>,
             ],
         ),
         ("smart-home", vec![fake("lamp")]),
@@ -65,9 +70,49 @@ async fn each_grant_is_checked_against_the_catalog() {
     assert!(problems.iter().all(|problem| problem["level"] == "warning"
         && problem["kind"] == "config"
         && problem["file"] == "system/config.toml"));
+    let linked = problems[2]["message"].as_str().unwrap_or_default();
+    assert!(linked.contains("elsewhere.py"), "印出它的位置：{linked}");
     let moved = problems[1]["message"].as_str().unwrap_or_default();
     assert!(
         moved.contains("~home") && moved.contains("smart-home"),
         "写的和现在的来处都印出来：{moved}"
+    );
+}
+
+/// 整个 `scripts/` 是指到工作区的链接（施工 X-37 补）：里面的脚本文件本身不是链接，放行照样不算，报 `sandbox_tool_linked`、
+/// 印出真实位置（在工作区里）。Unix 上（Windows 上建链接要权限，判法的单元测试在 `miyu-session` 里）。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_scripts_folder_that_links_out_is_not_granted() {
+    let home = Home::new();
+    home.write("system/config.toml", "[sandbox.tools]\nrun = \"~home\"\n");
+    let real = home.work.join("scripts");
+    std::fs::create_dir_all(&real).expect("建得了");
+    std::fs::write(real.join("run.py"), "x").expect("写得进");
+    let own = home.root.path().join("home/alice");
+    std::fs::create_dir_all(&own).expect("建得了");
+    std::os::unix::fs::symlink(&real, own.join("scripts")).expect("建得了链接");
+    let tool = Fake::with_file(
+        "run",
+        Access::Execute,
+        own.join("scripts/run.py"),
+        Act::Echo,
+    ) as Arc<dyn Tool>;
+    let catalog = Catalog::in_packages([("~home", vec![tool])]).expect("合写法");
+    let mut client = Client::connect(configured_core(&home, &Script::new([]), catalog));
+    client.hello().await;
+    let reply = client.call("k", "check", json!({})).await;
+    let linked: Vec<&Value> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|problem| problem["code"] == "sandbox_tool_linked")
+        .collect();
+    assert_eq!(linked.len(), 1, "{reply}");
+    let message = linked[0]["message"].as_str().unwrap_or_default();
+    let shown = std::fs::canonicalize(real.join("run.py")).expect("在");
+    assert!(
+        message.contains(&shown.display().to_string()),
+        "印出真实位置：{message}"
     );
 }

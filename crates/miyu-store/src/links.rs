@@ -13,9 +13,6 @@ use miyu_kernel::id::AccountId;
 use crate::root::DataRoot;
 use crate::skills::Skipped;
 
-/// 家目录里认的几处：链接的真实位置落在数据根里的，只认这几处下面。
-const OWN: [&str; 4] = ["scripts", "skills", "commands", "packages"];
-
 /// 一层里认了的一项。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Entry {
@@ -46,19 +43,11 @@ pub(crate) struct Fence {
 }
 
 impl Fence {
-    /// 数据根 `root` 里账号 `account` 的：家目录的 [`OWN`] 几处。照数据根的真实位置接上家目录的相对路径，不一处处换：
-    /// 家目录的 `skills/` 本身是指到 `system/` 的链接时，换了就把 `system/` 当成认的地方了。
+    /// 数据根 `root` 里账号 `account` 的：家目录自己放东西的几处（[`DataRoot::own_places`]）。
     pub(crate) fn of(root: &DataRoot, account: &AccountId) -> Fence {
-        let base = real(root.path());
-        let account_dir = root.account_dir(account);
-        let home = base.join(
-            account_dir
-                .strip_prefix(root.path())
-                .unwrap_or(&account_dir),
-        );
         Fence {
-            own: OWN.iter().map(|dir| home.join(dir)).collect(),
-            root: Some(base),
+            own: root.own_places(account),
+            root: Some(real(root.path())),
         }
     }
 

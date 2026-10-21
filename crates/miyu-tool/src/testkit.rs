@@ -3,6 +3,7 @@
 //! 另有换了名字的一件 [`Renamed`]：造改名以前的核心的目录（施工 7-5 再补）。
 
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
@@ -70,7 +71,7 @@ pub struct Fake {
     act: Act,
     venues: Option<Venues>,
     display_name: BTreeMap<String, String>,
-    linked: bool,
+    file: Option<PathBuf>,
     calls: Mutex<Vec<Call>>,
     dropped: Arc<AtomicUsize>,
 }
@@ -111,7 +112,7 @@ impl Fake {
             act,
             venues: None,
             display_name: BTreeMap::new(),
-            linked: false,
+            file: None,
             calls: Mutex::new(Vec::new()),
             dropped: Arc::new(AtomicUsize::new(0)),
         })
@@ -147,11 +148,11 @@ impl Fake {
         fake
     }
 
-    /// 文件是链接的假工具，像链接成的脚本（施工 X-37）。
-    pub fn linked(name: &str, access: Access, act: Act) -> Arc<Fake> {
+    /// 带着一个文件的假工具，像脚本（施工 X-37 补）：管理员放行出沙盒时照这个文件的真实位置判。
+    pub fn with_file(name: &str, access: Access, file: PathBuf, act: Act) -> Arc<Fake> {
         let mut fake = Fake::new(name, access, act);
         if let Some(fake) = Arc::get_mut(&mut fake) {
-            fake.linked = true;
+            fake.file = Some(file);
         }
         fake
     }
@@ -257,8 +258,8 @@ impl Tool for Fake {
         })
     }
 
-    fn linked(&self) -> bool {
-        self.linked
+    fn file(&self) -> Option<&Path> {
+        self.file.as_deref()
     }
 
     /// 参数里有字的 `command`、`title`，照原样交给说明（施工 D-4）。

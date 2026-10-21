@@ -87,6 +87,7 @@ pub use todos::TODOWRITE;
 pub use usage::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::tool::Access;
@@ -156,10 +157,11 @@ pub trait Tool: Send + Sync {
         false
     }
 
-    /// 它的文件这时是链接（施工 X-37）：管理员放行出沙盒的，是链接的不算放行（链接能指到她改得了的地方）。判的那一刻再看
-    /// 一眼磁盘，载入以后被换成链接的也认得出；权限策略、执行器判放行时照它。默认否：不是一个文件的工具没有这回事。
-    fn linked(&self) -> bool {
-        false
+    /// 它的文件（施工 X-37 补，原来的 `linked`）：管理员放行出沙盒的，判的那一刻照这个文件的真实位置看，落在管理员管得住的
+    /// 地方、又不在她这一轮写得了的地方的才算放行（链接、所在的目录是链接，都能指到她改得了的地方）。工具自己不判：它不知道
+    /// 数据根、账号在哪。默认没有：不是一个文件的工具没有这回事。
+    fn file(&self) -> Option<&Path> {
+        None
     }
 
     /// 这次调用认出来的高危（施工 5-17）：照参数算，不碰磁盘。权限策略照它在工作区、完全放开两级问人（说明多 `hazard`，不提

@@ -639,7 +639,7 @@
     "package-problems/mcp_tool_skipped": "MCP サーバーが挙げたツールのうち登録されなかったものがあります：{detail}。name_taken は名前が使われている（短くしたら重なった、またはほかのツールがその名前）、name は名前が使えない、parameters はパラメーターの形式が違う",
     "package-problems/sandbox_tool_missing": "sandbox.tools.{name} が許可したツールは今ありません。許可されません",
     "package-problems/sandbox_tool_moved": "sandbox.tools.{name} の出どころは {wrote} ですが、今のツールは {now} から来ています。許可されません。正しければ {now} に書き換えてください",
-    "package-problems/sandbox_tool_linked": "sandbox.tools.{name} が許可したツールのファイルはリンクなので、許可されません（リンクは彼女が変更できる場所を指せます）。許可するには実ファイルにしてください",
+    "package-problems/sandbox_tool_linked": "sandbox.tools.{name} が許可したツールのファイルは Miyu が管理できる場所の外にあります（実際の場所 {real}）。許可されません：リンクやリンクになっているフォルダーは、彼女が変更できる場所を指せます。許可するには、実ファイルをホームフォルダーの scripts/ に戻すか、パッケージとしてインストールしてください",
     "package-problems/sandbox_shell": "sandbox.tools.shell が shell を許可しています：AI が実行するすべてのコマンドが確認なしにサンドボックスの外で動きます",
     "package-problems/skill_skipped": "このスキルはスキップされました：{detail}",
     "package-problems/skill_link_outside": "このスキルフォルダーはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",

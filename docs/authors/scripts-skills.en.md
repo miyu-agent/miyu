@@ -103,7 +103,7 @@ lights = "smart-home"     # from a package: the package's id
 - A granted tool runs outside the sandbox without asking in the admin's own sessions (terminal, web, the owner's QQ private chat, desktop voice). Group chats and strangers' private chats still refuse it, and so does read-only; dangerous commands still ask.
 - A grant whose source doesn't match doesn't count: delete the script, or let another package bring a tool with the same name, and the grant lapses. `miyu check` lists every grant and prints the current source for those that don't match.
 - A granted tool has all of your own permissions: only grant scripts whose code you have read and whose arguments are safe.
-- A script whose file is a link isn't granted and still runs in the sandbox (a link can point somewhere the AI can change): put the real file there to grant it; `miyu check` reminds you.
+- A grant only counts for a real file kept in `scripts/` in your home folder (or installed as a package): if the file is a link, if `scripts/` itself is a link, or if the file sits somewhere the AI can write this time (such as the workspace), it isn't granted and still runs in the sandbox (the AI could change those). `miyu check` reminds you and prints where the file really is.
 
 ## Skills
 

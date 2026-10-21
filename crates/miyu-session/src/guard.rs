@@ -21,25 +21,28 @@ use std::sync::{Arc, RwLock};
 
 use serde_json::{Value, json};
 
-use miyu_fs::{Boundary, Places, ResolveError, Zone, resolve, resolve_itself};
+use miyu_fs::{Places, ResolveError, Zone, resolve, resolve_itself};
 use miyu_kernel::event::{Permission, Said};
-use miyu_kernel::id::ModuleId;
+use miyu_kernel::id::{AccountId, ModuleId, SessionId};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Verdict;
 use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::{Access, Worded};
 use miyu_policy::GuardTexts;
+use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
 use crate::default_workspace::DefaultWorkspace;
 use crate::lettering::Lettering;
-use crate::unsandboxed::Unsandboxed;
+use crate::unsandboxed::{Confines, Unsandboxed};
 
 mod asking;
+mod bounds;
 mod confined;
 mod levels;
 mod unsandboxed;
 
+use bounds::Bounds;
 pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
 
@@ -77,6 +80,8 @@ pub(crate) struct Guard {
     private: RwLock<Vec<PathBuf>>,
     /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
     unsandboxed: RwLock<Unsandboxed>,
+    /// 管理员管得住的地方（施工 X-37 补）：会话开的时候定下，回合开始随放行表交出去。
+    confines: Confines,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -127,7 +132,26 @@ impl Guard {
             attachments: None,
             workplace: None,
             unsandboxed: RwLock::default(),
+            confines: Confines::default(),
         }
+    }
+
+    /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），管理员管得住的地方（[`Confines`]：
+    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`）。
+    #[must_use]
+    pub(crate) fn for_session(
+        mut self,
+        root: &DataRoot,
+        (owner, id): (&AccountId, &SessionId),
+        resources: &Path,
+    ) -> Guard {
+        self.confines = Confines::of(root, owner, resources);
+        self.with_attachments(miyu_store::attachments::dir(root, owner, id))
+    }
+
+    /// 管理员管得住的地方：回合开始照它和这一轮的放行表拼一份。
+    pub(crate) fn confines(&self) -> &Confines {
+        &self.confines
     }
 
     /// 这个会话的附件目录（施工 3-9 六补）：能读，写一律拒；别的会话的附件目录照数据根，谁都不能碰。
@@ -237,7 +261,7 @@ impl Guard {
         }
         let verdict = self.paths(tool.as_ref(), name, level, &call, dirs, grants, &asking);
         // 管理员放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
-        let granted = self.admin_granted(name);
+        let granted = self.admin_granted(name, &call.cwd, dirs, grants);
         // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）。
         if let Some(confined) = &self.confined
             && (tool.outside_sandbox(&call) || granted)
@@ -287,39 +311,12 @@ impl Guard {
         if targets.is_empty() {
             return untargeted(level, name, access, self.sandboxed, asking);
         }
-        let cwd = &call.cwd;
-        // 工作目录本身也换成真实的位置：头报来的可能是 `~`。
-        let cwd = resolve(Path::new(cwd), self.home.as_deref(), cwd)
-            .unwrap_or_else(|_| PathBuf::from(cwd));
-        // 加进来的目录照工作目录的办法换（施工 5-10 上）：边界表照工作区算。
-        let dirs = dirs
-            .iter()
-            .map(|dir| {
-                resolve(Path::new(dir), self.home.as_deref(), dir)
-                    .unwrap_or_else(|_| PathBuf::from(dir))
-            })
-            .collect();
-        // 能随便写的工作区：太宽的工作目录退回这个会话的默认工作区（施工 5-14）；相对路径照旧从工作目录算。
-        let workspace = self.workspace(&cwd);
-        let places = Places {
-            workspace: workspace.clone(),
-            dirs,
-            shelves: self
-                .shelves
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .iter()
-                .chain(&self.attachments)
-                .cloned()
-                .collect(),
-            private: self
-                .private
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone(),
-            ..self.places.clone()
-        };
-        let boundary = Boundary::new(&places);
+        let Bounds {
+            cwd,
+            workspace,
+            places,
+            boundary,
+        } = self.bounds(&call.cwd, dirs);
         let mut asked = Vec::new();
         for target in targets {
             let real = match self.real(&cwd, &target) {

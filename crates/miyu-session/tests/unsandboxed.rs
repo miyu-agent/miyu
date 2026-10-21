@@ -1,7 +1,7 @@
 //! 管理员事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，`docs/blueprint/session/guard.md`）：系统配置的
 //! `sandbox.tools.<名字>` 写的来处和工具目录里这件工具归的包一样，才算放行。放行了的，工作区这一级不问、执行器不给沙盒的规格；
-//! 只读拒；只碰得到自己工作区的会话（群聊）拒；来处对不上的、没写的、文件是链接的（施工 X-37）照旧在沙盒里跑。脚本里调到的
-//! （嵌套调用）走同一条链。
+//! 只读拒；只碰得到自己工作区的会话（群聊）拒；来处对不上的、没写的照旧在沙盒里跑。带文件的（施工 X-37 补）：文件的真实位置
+//! 落在管得住的地方（家目录自己放东西的几处、资源目录）、又不在她这一轮写得了的地方的才算。脚本里调到的（嵌套调用）走同一条链。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -49,12 +49,34 @@ async fn turn(
     (venue, owner_is_admin): (&str, bool),
     sandboxed: bool,
 ) -> Vec<Event> {
-    home.configs = configs(config, &[]);
     let work = home.scratch.0.join("work");
-    std::fs::create_dir_all(&work).expect("建得了工作区");
+    let level = (level, read_only);
+    let venue = (venue, owner_is_admin);
+    turn_in(
+        home,
+        &work,
+        (config, tools, call),
+        level,
+        venue,
+        (sandboxed, true),
+    )
+    .await
+}
+
+/// 同 [`turn`]，工作目录是 `work`、有没有人能确认照 `attended`（施工 X-37 补：资源目录就在工作区里的那两条要）。
+async fn turn_in(
+    home: &mut Home,
+    work: &std::path::Path,
+    (config, tools, call): (&str, &[&Arc<Fake>], Play),
+    (level, read_only): (Level, bool),
+    (venue, owner_is_admin): (&str, bool),
+    (sandboxed, attended): (bool, bool),
+) -> Vec<Event> {
+    home.configs = configs(config, &[]);
+    std::fs::create_dir_all(work).expect("建得了工作区");
     let opening = Opening {
         permission: Permission { level, read_only },
-        attended: true,
+        attended,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: sandboxed.then(|| PathBuf::from(HELPER)),
@@ -132,11 +154,14 @@ async fn a_grant_naming_another_source_does_not_count() {
     );
 }
 
-/// 文件是链接的不算放行（施工 X-37）：照旧在沙盒里跑，照工作区这一级的规矩。
+/// 放行了的、带文件的（施工 X-37 补）：文件落在管得住的地方以外的（这里是临时目录里的别处）照旧在沙盒里跑。
 #[tokio::test]
-async fn a_granted_tool_whose_file_is_a_link_stays_in_the_sandbox() {
+async fn a_granted_tool_whose_file_is_elsewhere_stays_in_the_sandbox() {
     let mut home = Home::outside_temp();
-    let fake = Fake::linked("run", Access::Execute, Act::Echo);
+    let file = home.scratch.0.join("elsewhere/run.py");
+    std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
+    std::fs::write(&file, "x").expect("写得进");
+    let fake = Fake::with_file("run", Access::Execute, file, Act::Echo);
     let call = Play::calls(&[("run", "{}")]);
     let log = turn(
         &mut home,
@@ -151,8 +176,126 @@ async fn a_granted_tool_whose_file_is_a_link_stays_in_the_sandbox() {
     assert!(!asked(&log));
     assert!(
         fake.calls()[0].sandbox.is_some(),
-        "是链接的：照旧在沙盒里跑"
+        "不在管得住的地方：照旧在沙盒里跑"
     );
+}
+
+/// 文件在家目录的 `scripts/` 里的照常放行：不问、不给沙盒的规格。
+#[tokio::test]
+async fn a_granted_script_in_the_home_folder_runs_outside() {
+    let mut home = Home::outside_temp();
+    let file = home
+        .root
+        .account_dir(&alice_account())
+        .join("scripts/run.py");
+    std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
+    std::fs::write(&file, "x").expect("写得进");
+    let fake = Fake::with_file("run", Access::Execute, file, Act::Echo);
+    let call = Play::calls(&[("run", "{}")]);
+    let log = turn(
+        &mut home,
+        &granting("~home"),
+        &[&fake],
+        call,
+        WORKSPACE,
+        LOCAL,
+        true,
+    )
+    .await;
+    assert!(!asked(&log));
+    assert!(
+        fake.calls()[0].sandbox.is_none(),
+        "家目录里的：不给沙盒的规格"
+    );
+}
+
+/// 纵深防御（施工 X-37 补，主会话审时加）：开发时资源目录是仓库检出，她的工作区就是它的时候，落在资源目录里的照旧在沙盒里跑；
+/// 工作区换到别处，同一件就放行。
+#[tokio::test]
+async fn a_granted_file_in_her_workspace_stays_in_the_sandbox() {
+    let resources = std::fs::canonicalize(home_resources()).expect("在");
+    let file = resources.join("core/mcp/cut.txt");
+    let fake = Fake::with_file("run", Access::Execute, file.clone(), Act::Echo);
+    let mut home = Home::outside_temp();
+    let call = Play::calls(&[("run", "{}")]);
+    let config = granting("~home");
+    turn_in(
+        &mut home,
+        &resources,
+        (&config, &[&fake], call),
+        WORKSPACE,
+        LOCAL,
+        (true, true),
+    )
+    .await;
+    assert!(
+        fake.calls()[0].sandbox.is_some(),
+        "资源目录就是工作区：照旧在沙盒里跑"
+    );
+    let elsewhere = Fake::with_file("run", Access::Execute, file, Act::Echo);
+    let mut home = Home::outside_temp();
+    let call = Play::calls(&[("run", "{}")]);
+    turn(
+        &mut home,
+        &config,
+        &[&elsewhere],
+        call,
+        WORKSPACE,
+        LOCAL,
+        true,
+    )
+    .await;
+    assert!(
+        elsewhere.calls()[0].sandbox.is_none(),
+        "工作区在别处：资源目录里的放行"
+    );
+}
+
+/// 同上，这台机器的沙盒用不了时（施工 X-37 补）：执行器本来就不套，权限策略照「写得了的地方不算」判：她的工作区里的不算放行，
+/// 照没放行的问人，这里没人能确认，拒；工作区在别处的放行、照常跑。
+#[tokio::test]
+async fn without_a_sandbox_a_granted_file_in_her_workspace_is_not_granted() {
+    let resources = std::fs::canonicalize(home_resources()).expect("在");
+    let file = resources.join("core/mcp/cut.txt");
+    let config = granting("~home");
+    let fake = Fake::with_file("run", Access::Execute, file.clone(), Act::Echo);
+    let mut home = Home::outside_temp();
+    let call = Play::calls(&[("run", "{}")]);
+    let log = turn_in(
+        &mut home,
+        &resources,
+        (&config, &[&fake], call),
+        WORKSPACE,
+        LOCAL,
+        (false, false),
+    )
+    .await;
+    assert_eq!(
+        results(&log)[0].status,
+        ToolStatus::Denied,
+        "工作区里的：不算放行，没人能确认就拒"
+    );
+    assert!(fake.calls().is_empty(), "没跑");
+    let elsewhere = Fake::with_file("run", Access::Execute, file, Act::Echo);
+    let mut home = Home::outside_temp();
+    let call = Play::calls(&[("run", "{}")]);
+    let log = turn(
+        &mut home,
+        &config,
+        &[&elsewhere],
+        call,
+        WORKSPACE,
+        LOCAL,
+        false,
+    )
+    .await;
+    assert!(!asked(&log), "工作区在别处：放行，不问");
+    assert_eq!(results(&log)[0].status, ToolStatus::Ok);
+}
+
+/// 测试用的核心资源目录：仓库的 `resources/`（同 `Home` 用的那一份）。
+fn home_resources() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources")
 }
 
 #[tokio::test]
