@@ -15,6 +15,7 @@
 | `crates/miyu-endpoint/src/listen.rs` | `run`：在监听器上一个个接连接 |
 | `crates/miyu-endpoint/src/activity.rs` | 数着几个连接（`Connected`）；来请求了的信号 `Activity`：连接每读到一个请求叫一声，核心照它安静下来以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
 | `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
+| `crates/miyu-endpoint/src/connection/reach.rs` | 连接从哪来（`Reach`：本机、本机的另一个人、远程）、握手之前的 `connection.remote`、本机才能用的方法（`local_machine_only`）、远程的握手回应不给 `host`；`serve_with` 照来处开一个连接（施工 Y-1 下） |
 | `crates/miyu-endpoint/src/wire.rs` | 读一行、认成请求、回应写成一行 |
 | `crates/miyu-endpoint/src/hello.rs` | 握手 |
 | `crates/miyu-endpoint/src/methods.rs` | 握手以后的方法 |
@@ -66,13 +67,13 @@
 | `method` 没有，或者不是字符串 | `invalid_request` |
 | `jsonrpc` 不是 `"2.0"` | `invalid_request` |
 | `params` 写了，不是对象也不是数组 | `invalid_request` |
-| 没有 `id` | 通知：不回应，不理 |
+| 没有 `id` | 通知：不回应；只认握手之前的 `connection.remote`（下面「本机和远程」），别的不理 |
 | `id` 不是字符串（数字、`null`……） | `invalid_request` |
 | `id` 不合命令编号的写法：1 到 128 字节，不含控制字符 | `invalid_request` |
 | 别的 | 一条请求：`id` 就是命令编号；没写 `params` 的当空对象 |
 
 - 认不成请求的，回应里的 `id`：这一行的 `id` 是字符串或数字的照原样带回，别的（没有、`null`、对象……）写 `null`。
-- 头发来的通知现在一种都不认。
+- 头发来的通知只认一种：握手之前的 `connection.remote`（施工 Y-1 下）。
 - `params` 是数组的：`bad_params`（施工 4-9 再补三上）。方法都照名字取参数；照位置读的话，回应找不到该交给哪个订阅，破了「先见结果，后见回应」。
 - 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。
 
@@ -91,6 +92,23 @@
 ```
 
 有的拒绝在 `data` 里多几格，和 `reason` 排在一起（施工 8-2 起：`unknown_config_key` 多 `problems`；施工 8-3：`config_invalid`、`config_file_broken` 多 `problems`，`config_conflict` 多 `current` 或 `version`）。
+
+#### 本机和远程（施工 Y-1 下，设计 `06-多用户与身份.md` 第八补第 5 条、U18）
+
+一个连接从哪来（`connection/reach.rs` 的 `Reach`）：
+
+| 来处 | 怎么来 | 本机才能用的方法 |
+|---|---|---|
+| 本机（`Local`） | 主入口（只有核心的主人连得上的本机套接字、命名管道）、核心拉起的扩展 | 能用 |
+| 本机的另一个人（`Public`） | 第二个本机入口（谁都能连；施工 Y-1 下下半） | 拒 |
+| 远程（`Remote { from }`） | 网页软件替远程的人开的连接：握手之前先写一行通知 `connection.remote {from}`（来自哪个地址），再原样转浏览器的字节 | 拒 |
+
+1. `connection.remote` 只在握手之前收、只能往下标：本机的标成远程，标了就变不回本机；远程的再说一次照旧是第一次说的地址；握手以后说的不理。标了记一行运行日志 `connection marked remote`（不记地址）。
+2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`mcp.login`（OAuth 回调听核心的 `127.0.0.1`）、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`。
+3. 不是本机来的调这些：回 `local_machine_only`（「只能在核心所在的机器上用。」），什么都不做，参数都不看。闸在分发的最前面那一段（`connection.rs`，扩展的能力闸旁边），后台答的（`fs.find` 带 `wait`）、`login.*`、`account.*`、`subscribe` 都过它。
+4. 握手回应：不是本机来的不给 `host`。
+5. 只在回应里带本机路径的（`session.list` 的 `cwd`、`skill.list` 的 `dir`、`config.get` 的 `files` 这些）这一步不动：路径本身不是能力，看得到哪些归 Y-2 照属主过滤。
+6. 网页的选目录、打开本机文件夹（`reveal`）不是核心的方法，是网页软件的 HTTP 端点：网页软件照它的连接是不是本机决定开不开。
 
 #### 握手 `hello`
 
@@ -237,7 +255,7 @@
 |---|---|---|
 | `persona` | 字符串或 `null`，可以不写 | 照哪个人格造；写 `null` 的明着无人格，不写的照这时的 `persona.default`（施工 P-1 上，`personas.md`），没设的、指着没有的无人格（施工 P-4 上：预设不再管默认人格，出厂不设默认人格）。无人格的会话 system 里没有人设；记忆照样有，跟着人格的落在无人格那一间（施工 P-12） |
 | `preset` | 字符串，可以不写 | 照哪个预设造（施工 P-2 上，`presets.md`）：不写、写 `null` 的照这时的 `preset.default`，都没写是出厂的 `full`。记进 `session.created` 的 `preset`，以后不改 |
-| `cwd` | 字符串，必写 | 头的工作目录，人看到的那种写法，例如 `~/src/miyu` |
+| `cwd` | 字符串，可以不写 | 头的工作目录，人看到的那种写法，例如 `~/src/miyu`。不写的照账号的工作区，也就是这个会话自己的默认工作区（施工 Y-1 下：远程、本机的另一个人连进来的不能写，「本机和远程」） |
 | `oneshot` | 布尔，不写是 `false` | 一次性的：`miyu ask` 开的写 `true`，记进 `session.created` |
 | `chosen` | 布尔，不写是 `false` | `cwd` 是人明着选的（施工 9-7 补）。施工 5-14 起照收不看：太宽的一律照用、回应带 `wide`（「工作目录太宽」） |
 | `images` | 布尔，不写是 `true` | 这个头显示得了图片吗（施工 X-25，同 `venue.session` 的 `images`，`venues.md`）：以后的语音头写 `false`；终端、网页不写（终端在不支持图片的终端里也不写：同一个会话换个地方就看得了） |

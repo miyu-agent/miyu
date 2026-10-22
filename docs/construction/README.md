@@ -730,6 +730,7 @@ flowchart LR
 | X-43 | 脚本的场所和调用的人 | 脚本开头 `Venues`（查法同清单的 `venues`）照 `Tool::venues` 只上那几种会话的工具面；`miyu_tool::Call` 多 `caller`（场所、这一轮开口的是不是主人），执行器回合开始照 `speakers` 记、派工具时交，脚本拿到 `MIYU_CALLER_VENUE`、`MIYU_CALLER_OWNER`，只是事实、不是门；测试里的 `Call` 照 `..miyu_tool::testkit::call("{}")` 补齐。施工单见 `X-43-脚本的场所和调用的人.md` |
 | X-44 | 脚本的状态目录 | `MIYU_SCRIPT_STATE_DIR` 是 `<数据根>/state/scripts/<会话属主账号>/<来处>/<工具名>/` 的真实位置，跑之前建好（Unix 上 0700），建不成的、没有属主的不给；按账号分开，群里的会话拿不到管理员的那一份；沙盒照旧藏数据根、只放开这一格写；卸包时清，家目录里删了的脚本 `miyu check` 报 `script_state_left`。施工单见 `X-44-脚本的状态目录.md` |
 | X-45 | 脚本的进度 | 脚本工具的输出里一整行以 `miyu-progress: ` 开头的（标准输出、标准错误都认）照旧推给头、不进交给她的结果；按行滤，内存不涨；`shell` 照旧。施工单见 `X-45-脚本的进度.md` |
+| Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | M-1 | 嵌套调用（内核） | 脚本里调的工具挂在父调用或后台任务下面，编号 `<父级>#<n>`；`tool.nested`（不进上下文）、瞬时 `tool.nested_started`；每个父级、整个会话的上限 `jobs.nested_per_parent`、`nested_per_session`；父级结束前收尾记已取消。施工单见 `M-1-嵌套调用.md` |
 | M-2 | 脚本能调哪些工具、交回什么 | 工具的 `clicall`（说明文件、扩展、MCP、脚本开头，个人设置 `clicall.tools.<name>`、`clicall.mcp.<id>`），出厂开五件；`Done.data`；执行器接上嵌套调用。施工单见 `M-2-字段和结果.md` |
 | M-3 上 | 通道和 miyu call（Linux、macOS） | `shell` 起命令前开只给这条命令的端点（Unix 套接字、令牌、进程组），`miyu call` 经它调这个会话的工具；放到后台、到时挪到后台的跟着走；沙盒只放行这一个套接字。施工单见 `M-3-通道和命令.md` |

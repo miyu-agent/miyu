@@ -12,14 +12,15 @@
 
 - **本机的头**：核心在本机的套接字上等连接，只有本人连得上。套接字在哪写在数据根的 `run/socket` 里（一行，路径原样），本机令牌在 `run/token` 里（64 位小写十六进制）。Linux、macOS 是 Unix 域套接字，Windows 是命名管道 `\\.\pipe\miyu-<指纹>`。核心没在跑的，头自己拉起 `miyu core`。
 - **扩展**：核心照软件包清单拉起的程序，经标准输入、标准输出说同一套协议，不用凭据（`hello` 里写了也不看）。
-- **网页**：浏览器连的是网页软件，网页软件再按上面本机的头的办法连核心。
+- **网页**：浏览器连的是网页软件，网页软件再按上面本机的头的办法连核心。替远程的人开的连接，网页软件在握手之前先写一行通知 `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<来自哪个地址>}}`，再原样转浏览器的字节：这个连接就是远程的（施工 Y-1 下）。只能往下标：标了就变不回本机，握手以后说的不理。
+- **本机才能用的**（施工 Y-1 下）：读核心那台机器的文件、交本机路径、选本机的目录这一类，只给本机的连接，远程的回 `local_machine_only`，什么都不做：`fs.*`、`session.terminal`、`session.set_terminal`、`mcp.login`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；会话的 `cwd`、`dirs`、附件的 `path`、`command.run` 的 `cwd` 和 `/workspace <路径>`、项目的 `workspace`。会话不写 `cwd` 的用它自己的默认工作区。远程的握手回应不给 `host`。
 
 ## 一行一条
 
 - 每条消息一行 JSON，UTF-8，`\n` 结尾（读的时候 `\r\n` 也认）。一行最长 1 MiB，太长的回 `parse_error` 并断开。
 - 核心写出的 JSON 是紧凑的，对象的格照名字的字母先后排。
 
-**请求**是 JSON-RPC 2.0：`jsonrpc` 写 `"2.0"`，`method` 是方法名，`params` 是对象（不写当 `{}`，写成数组回 `bad_params`），`id` 是 1 到 128 字节、不含控制字符的字符串。没有 `id` 的是通知，核心不理。参数里不认识的格不理；写 `null` 等于没写。
+**请求**是 JSON-RPC 2.0：`jsonrpc` 写 `"2.0"`，`method` 是方法名，`params` 是对象（不写当 `{}`，写成数组回 `bad_params`），`id` 是 1 到 128 字节、不含控制字符的字符串。没有 `id` 的是通知，核心不理，只认握手之前的 `connection.remote`（上面「网页」）。参数里不认识的格不理；写 `null` 等于没写。
 
 **回应**：成了的在 `result`；拒了的在 `error`：`code` 是错误码，`message` 是给人看的一句（照这个连接的语言），`data.reason` 是给程序看的原因码，有的另带几格。
 
@@ -64,7 +65,7 @@
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
 | `account` | 你是谁：本机的人是 `admin`；声明了系统账号的包的扩展是那个系统账号（账号名同包的编号），别的扩展也是 `admin` |
-| `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区 |
+| `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。远程的连接没有（施工 Y-1 下） |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
 | `view` | 视图投影的版本，现在是 `1`（见 [会话](sessions.md) 的 `view.page`） |
 | `sandbox` | `{"usable": true}`，或者 `{"usable": false, "reason"}`：`helper_missing`、`helper_failed`、`no_mechanism` |

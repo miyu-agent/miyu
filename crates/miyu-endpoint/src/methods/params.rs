@@ -20,7 +20,10 @@ pub(super) struct CreateParams {
     /// 在哪个项目里建（施工 H-2）：没写的人格、预设照项目的；建好了记一条 `session.meta_changed`。
     #[serde(default)]
     pub(super) project: Option<String>,
-    pub(super) cwd: String,
+    /// 在哪个目录里干活：不写的照账号的工作区，也就是这个会话自己的默认工作区（施工 Y-1 下：远程、本机的另一个人连进来的不能写，
+    /// `connection/reach.rs`）。
+    #[serde(default)]
+    pub(super) cwd: Option<String>,
     /// 一次性的：`miyu ask` 开的（施工 3-9 下）。
     #[serde(default)]
     pub(super) oneshot: bool,

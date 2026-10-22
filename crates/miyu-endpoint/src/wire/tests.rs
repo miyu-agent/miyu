@@ -38,10 +38,19 @@ fn only_json_rpc_requests_with_string_ids_count() {
         (json!(""), Refusal::INVALID),
         "空的不合命令编号的写法"
     );
-    assert!(matches!(
-        parse(br#"{"jsonrpc":"2.0","method":"hello"}"#),
-        Incoming::Notification
-    ));
+    let Incoming::Notification(notice) =
+        parse(br#"{"jsonrpc":"2.0","method":"connection.remote","params":{"from":"10.0.0.7"}}"#)
+    else {
+        panic!("应该是通知");
+    };
+    assert_eq!(
+        notice,
+        Notice {
+            method: "connection.remote".to_string(),
+            params: serde_json::json!({"from": "10.0.0.7"}),
+        },
+        "通知带着方法和参数（施工 Y-1 下）"
+    );
     let Incoming::Request(request) = parse(br#"{"jsonrpc":"2.0","id":"c1","method":"hello"}"#)
     else {
         panic!("应该是请求");

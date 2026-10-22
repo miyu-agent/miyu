@@ -82,6 +82,7 @@ mod knowledge_remove;
 mod limits;
 mod list;
 mod list_tokens;
+mod local_machine;
 mod login;
 mod mcp;
 mod mcp_cache;

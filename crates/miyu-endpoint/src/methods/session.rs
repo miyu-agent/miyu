@@ -51,7 +51,10 @@ pub(super) async fn create(
             core,
             request.id.clone(),
             params.persona.as_ref().map(Option::as_deref),
-            params.cwd,
+            params.cwd.unwrap_or_else(|| {
+                let (_, own) = crate::sessions::roots(core, &caller.account);
+                own.to_string_lossy().into_owned()
+            }),
             params.dirs,
             who,
         )

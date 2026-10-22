@@ -23,6 +23,7 @@
 | `internal_error` | -32603 | 核心自己出了问题（磁盘、坏了的文件……），原因记在核心的运行日志里 |
 | `hello_first` | -32010 | 握手以前调了别的方法 |
 | `local_only` | -32010 | 只给人的方法，扩展调了；或者登录方式不对 |
+| `local_machine_only` | -32010 | 只能在核心所在的机器上用：远程、本机的另一个人连进来的调了读本机文件、交本机路径这一类（施工 Y-1 下，[连接](connection.md)「本机才能用的」） |
 | `not_a_provider`、`not_an_extension` | -32010 | 只给核心拉起的扩展的方法，别的连接调了 |
 | `needs_approval` | -32010 | 扩展要的能力还没批，或者调的方法要的能力清单没声明，`data.capabilities` |
 | `no_system_account` | -32010 | 只给系统账号的连接的方法 |

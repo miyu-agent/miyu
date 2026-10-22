@@ -12,14 +12,15 @@ Chinese version: [connection.md](connection.md).
 
 - **Local heads**: the core listens on a local socket only you can reach. Its path is in `run/socket` under the data root (one line, the path as-is) and the local token is in `run/token` (64 lowercase hex digits). Linux and macOS use a Unix domain socket, Windows a named pipe `\\.\pipe\miyu-<fingerprint>`. If no core is running, the head starts `miyu core` itself.
 - **Extensions**: programs the core launches from a package manifest speak the same protocol over stdin and stdout, with no credentials (any given in `hello` are ignored).
-- **Web**: the browser talks to the web app, which connects to the core like a local head.
+- **Web**: the browser talks to the web app, which connects to the core like a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello, then passes the browser's bytes through: that connection is remote (Y-1 下). It only goes one way: once marked it never becomes local again, and the notification is ignored after the hello.
+- **Local machine only** (Y-1 下): reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `mcp.login`, `account.setup_code`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
 
 ## One message per line
 
 - Each message is one line of JSON, UTF-8, ending in `\n` (`\r\n` is accepted when reading). At most 1 MiB per line; a longer line gets `parse_error` and the connection closes.
 - The core writes compact JSON with object fields sorted by name.
 
-**Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it. Unknown params are ignored; `null` means omitted.
+**Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.
 
 **Responses**: success in `result`; refusal in `error`: `code` is the error code, `message` a sentence for people (in the connection's language), `data.reason` the reason code for programs, sometimes with more fields.
 
@@ -64,7 +65,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, or `user` plus `p
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
 | `account` | Who you are: local people are `admin`; an extension of a package that declares a system account is that account (named after the package), other extensions are `admin` too |
-| `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace |
+| `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace. Not given to remote connections (Y-1 下) |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
 | `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |

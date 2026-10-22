@@ -29,12 +29,21 @@ pub(crate) struct Request {
 pub(crate) enum Incoming {
     /// 一条请求。
     Request(Request),
-    /// 一条通知：头发来的通知现在一种都不认，不回应。
-    Notification,
+    /// 一条通知：不回应。现在只认握手之前的 `connection.remote`（施工 Y-1 下，`connection/reach.rs`），别的不理。
+    Notification(Notice),
     /// 对核心发出去的请求的回应（施工 O-2 上，`reverse.rs`）。
     Response(Response),
     /// 读不懂，或者不是请求：回这个拒绝，`id` 能认出来的照原样带回去。
     Bad(Value, Refusal),
+}
+
+/// 一条通知：方法和参数。
+#[derive(Debug, PartialEq)]
+pub(crate) struct Notice {
+    /// 方法名。
+    pub(crate) method: String,
+    /// 参数：没写的是空对象。
+    pub(crate) params: Value,
 }
 
 /// 对核心发出去的请求的回应。
@@ -113,7 +122,7 @@ pub(crate) fn parse(line: &[u8]) -> Incoming {
         Some(_) => return Incoming::Bad(echo, Refusal::INVALID),
     };
     let id = match id {
-        None => return Incoming::Notification,
+        None => return Incoming::Notification(Notice { method, params }),
         Some(Value::String(id)) => match CommandId::parse(&id) {
             Ok(id) => id,
             Err(_) => return Incoming::Bad(echo, Refusal::INVALID),

@@ -298,6 +298,13 @@ impl Refusal {
         reason: "local_only",
         data: None,
     };
+    /// 只能在核心所在的机器上用（施工 Y-1 下，`connection/reach.rs`）：读核心那台机器的文件、交本机路径、选本机的目录这一类，
+    /// 远程、本机的另一个人连进来的不给。
+    pub(crate) const LOCAL_MACHINE_ONLY: Refusal = Refusal {
+        code: REFUSED,
+        reason: "local_machine_only",
+        data: None,
+    };
     /// 这个用户名 60 秒内错了 5 次（施工 W-8）：`data.retry_after_ms` 还要等多久。
     pub(crate) fn login_throttled(retry_after_ms: u64) -> Refusal {
         Refusal::with(

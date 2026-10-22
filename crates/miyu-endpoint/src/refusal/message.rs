@@ -250,6 +250,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Set a username and password first.",
         ),
         "local_only" => ("仅限本机。", "Local only."),
+        "local_machine_only" => (
+            "只能在核心所在的机器上用。",
+            "Only available on the machine running the core.",
+        ),
         _ => ("已拒绝。", "Refused."),
     }
 }

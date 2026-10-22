@@ -48,7 +48,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 
 | Name | Type | Notes |
 |---|---|---|
-| `cwd` | string, required | The head's working directory as a person sees it, e.g. `~/src/miyu` |
+| `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it (Y-1 下) |
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
 | `preset` | string | Which preset; omitted follows `preset.default`, else `full` |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |

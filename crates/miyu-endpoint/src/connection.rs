@@ -25,8 +25,11 @@ use tokio::task::JoinSet;
 
 use miyu_kernel::id::SessionId;
 
+mod reach;
 mod rights;
 mod streams;
+
+pub use reach::{Reach, serve_with};
 #[cfg(test)]
 mod tests;
 
@@ -52,7 +55,7 @@ pub async fn serve<S>(stream: S, core: Arc<Core>)
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    serve_from(stream, core, None).await;
+    serve_with(stream, core, Reach::Local).await;
 }
 
 /// 同 [`serve`]，对面是核心亲手拉起的扩展（施工 9-4 上）：握手不看凭据，握成了往 `shook` 说一声。
@@ -64,18 +67,25 @@ pub(crate) async fn serve_spawned<S>(
 ) where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    serve_from(stream, core, Some((shook, package))).await;
+    serve_from(stream, core, Some((shook, package)), Reach::Local).await;
 }
 
 /// 两种连接共用的：`spawned` 有的是核心亲手拉起的扩展：握成了告诉看管的那一头，和它是哪个包（施工 9-4 下下）。
-async fn serve_from<S>(stream: S, core: Arc<Core>, spawned: Option<(oneshot::Sender<()>, String)>)
-where
+async fn serve_from<S>(
+    stream: S,
+    core: Arc<Core>,
+    spawned: Option<(oneshot::Sender<()>, String)>,
+    reach: Reach,
+) where
     S: AsyncRead + AsyncWrite + Unpin,
 {
     let _connected = Connected::new(Arc::clone(&core));
     let (read, write) = tokio::io::split(stream);
     let (out, lines) = mpsc::channel(QUEUE);
-    tokio::join!(read_all(read, core, out, spawned), write_all(write, lines));
+    tokio::join!(
+        read_all(read, core, out, (spawned, reach)),
+        write_all(write, lines)
+    );
 }
 
 /// 写的一头：一行行写出去，写不出去就停。
@@ -92,12 +102,12 @@ async fn write_all<W: AsyncWrite + Unpin>(mut write: W, mut lines: mpsc::Receive
     }
 }
 
-/// 读的一头：一条条办请求，回应放进写队列（订阅了的会话，经它的转发任务）。`spawned` 见 [`serve_from`]。
+/// 读的一头：一条条办请求，回应放进写队列（订阅了的会话，经它的转发任务）。`spawned`、`reach` 见 [`serve_from`]。
 async fn read_all<R: AsyncRead + Unpin>(
     read: R,
     core: Arc<Core>,
     out: mpsc::Sender<String>,
-    mut spawned: Option<(oneshot::Sender<()>, String)>,
+    (mut spawned, mut reach): (Option<(oneshot::Sender<()>, String)>, Reach),
 ) {
     let from_core = spawned.is_some();
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
@@ -115,8 +125,6 @@ async fn read_all<R: AsyncRead + Unpin>(
         package: package.clone(),
     };
     let mut handing: Option<Handing> = None;
-    // 这个连接说话时还带着工作目录（施工 9-7 上：不再换工作区，照收不理）：第一次记一行，看得出谁还在发。
-    let mut told_cwd = false;
     let mut reader = BufReader::new(read);
     let mut shaken: Option<Shaken> = None;
     // 这个连接是怎么认出来的（施工 W-8）：用登录令牌、密码连上的另收作废的广播。
@@ -172,7 +180,10 @@ async fn read_all<R: AsyncRead + Unpin>(
         let locale = peer.map_or(Locale::En, |peer| peer.locale);
         let request = match wire::parse(&line) {
             Incoming::Request(request) => request,
-            Incoming::Notification => continue,
+            Incoming::Notification(notice) => {
+                reach.heard(&notice, shaken.is_some());
+                continue;
+            }
             Incoming::Response(response) => {
                 reverse.answer(response);
                 continue;
@@ -204,12 +215,13 @@ async fn read_all<R: AsyncRead + Unpin>(
             }
             continue;
         }
-        if !told_cwd
-            && request.method == "session.send"
-            && (request.params.get("cwd").is_some() || request.params.get("dirs").is_some())
-        {
-            told_cwd = true;
-            tracing::warn!(target: "miyu::endpoint", "session.send cwd ignored");
+        // 本机才能用的（施工 Y-1 下，`reach.rs`）：远程、本机的另一个人来的当场拒，参数都不看。
+        if let Some(refusal) = reach::refuse(&reach, &request) {
+            let id = Value::String(request.id.as_str().to_string());
+            if !send(&out, wire::error(id, refusal, locale)).await {
+                break;
+            }
+            continue;
         }
         // 扩展照它声明的能力挡（施工 X-30，`rights.rs`）：只给人的、缺能力的当场拒，参数都不看。
         if via == Some(Via::Spawned)
@@ -257,6 +269,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             ("hello", _) => {
                 match hello(&core, request.params.clone(), from_core, &caller.account).await {
                     Ok((shook, by, mut result)) => {
+                        reach::strip(&reach, &mut result);
                         if let Some((ready, _)) = spawned.take()
                             && ready.send(()).is_err()
                         {
