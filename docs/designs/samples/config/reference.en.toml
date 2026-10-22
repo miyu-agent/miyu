@@ -340,6 +340,10 @@ enabled = true
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # add =
 
+# Protected paths: When off, neither the default nor the added protected paths apply, and file tools stop asking before changing them; Miyu's own data stays protected.
+# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+enabled = true
+
 # Default protected paths: Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back.
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # remove =

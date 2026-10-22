@@ -256,6 +256,7 @@ miyu_config::settings! {
 | `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2 |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
+| `sandbox.readonly.enabled` | 真假 | 真 | 系统、个人 | 不能写 | `next_turn` | 5-17 下上补（项目主人 2026-10-22 验收网页时定）：受保护的路径整个开不开，关了出厂的、人加的都不生效，文件工具改之前不再因为它们问；数据根照旧。「受保护的路径」一组的最上面一行 |
 | `sandbox.readonly.add` | 文字的列表，一个最多 4096 个字符：`~/…`、绝对路径，或者工作区里不带 `..` 的相对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-17 下：人加的受保护路径（只禁写），家目录和它的上级不收（`readonly_too_broad`）。设置页「隐私与安全」那一页的「受保护的路径」一组，排在私密目录后面 |
 | `sandbox.readonly.remove` | 文字的列表，只收这台机器的出厂只禁写清单（`config.schema` 交成 `options`） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-17 下：去掉的出厂项，同上一组 |
 | `sandbox.strength` | 选项 `auto`、`weak` | `auto` | 系统、个人 | 不能写 | `next_turn` | 5-16 下：沙盒强度。`auto` 有能用的 bubblewrap 就用它，`weak` 只用 Landlock（有挂载也不用）。回合开始照这一轮的配置读。只在 Linux 上起作用：三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标 `hidden`。「隐私与安全」那一页的「沙盒」一组，下拉 |
@@ -1323,6 +1324,10 @@ enabled = true
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # add =
 
+# 受保护的路径：关掉以后出厂的和加的受保护路径都不生效，文件工具改之前不再因为它们问；Miyu 自己的数据照旧护着。
+# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
+enabled = true
+
 # 默认受保护路径：出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # remove =
@@ -2212,6 +2217,12 @@ currency = "USD"
               "title": "加的受保护路径",
               "type": "array"
             },
+            "enabled": {
+              "default": true,
+              "description": "关掉以后出厂的和加的受保护路径都不生效，文件工具改之前不再因为它们问；Miyu 自己的数据照旧护着。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
+              "title": "受保护的路径",
+              "type": "boolean"
+            },
             "remove": {
               "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
               "items": {
@@ -2390,6 +2401,7 @@ currency = "USD"
 | `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
+| `sandbox.readonly.enabled` 名字（5-17 下上补） | 受保护的路径 | Protected paths | 保護パス |
 | `sandbox.readonly.add` 名字（5-17 下） | 加的受保护路径 | Added protected paths | 追加した保護パス |
 | `sandbox.readonly.remove` 名字（5-17 下） | 默认受保护路径 | Default protected paths | 既定の保護パス |
 | `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |

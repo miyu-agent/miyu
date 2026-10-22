@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>734</b><span>/ 751 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>735</b><span>/ 752 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">8-34</b><span>最近一步（8-34 供应商改名）</span></li>
+    <li><b class="mono">5-17下上补</b><span>最近一步（5-17 下上补 受保护路径总开关）</span></li>
   </ul>
 </header>
 
@@ -525,6 +525,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#s517"><span class="n">5-17</span>高危命令照规则拦<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s517a"><span class="n">5-17 上</span>默认私密目录补齐<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s517b"><span class="n">5-17 下上</span>受保护的路径<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#s517c"><span class="n">5-17 下上补</span>受保护路径总开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s517z"><span class="n">5-17 再补</span>完全放开只拦灭顶的<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s518"><span class="n">5-18</span>只碰判过的位置<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s519"><span class="n">5-19</span>包只改自己声明的项<span class="st">✓</span></a></li>
@@ -12208,6 +12209,56 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>设计 <code>docs/designs/11-权限与沙盒.md</code> 第四节「只禁写」，施工单 <code>docs/construction/5-17下-只禁写.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="s517c" aria-labelledby="h-s517c">
+  <div class="sheet-head"><h2 id="h-s517c"><span class="no">5-17 下上补</span>受保护路径总开关</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">「受保护的路径」也要一个总开关，跟私密目录的一样（项目主人 2026-10-22 验收网页时定）：<code>sandbox.readonly.enabled</code>，出厂开，关了出厂的、人加的名单都不生效，文件工具改之前不再因为它们问；数据根照旧。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">受保护路径总开关</span><span class="dir-note">5-17 下上补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>登记 sandbox.readonly.enabled：真假、出厂开、系统和个人两层、下一轮生效，排在组里最上面</li>
+              <li>关了名单交空的，文件工具不再问</li>
+              <li>三种语言的名字、说明；生成的 Schema、参考文件的样本重生成</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">关了</span><span class="rl">出厂的、人加的都不生效；数据根照旧</span></div>
+          <div class="tile new"><span class="nm">命令</span><span class="rl">只禁写名单现在只管文件工具，命令那一半是下下的事</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">5-17 下上补</dd></div>
+        <div><dt>名称</dt><dd>受保护路径总开关</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">5-17下上补</dd></div>
+        <div><dt>验收</dt><dd>本地门禁全过；手写变异都红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>开着照旧，关了名单是空的</span></li>
+        <li><span class="ok">✓</span><span>开关排在组里最上面</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>设计 <code>docs/designs/11-权限与沙盒.md</code> 第四节「只禁写」，施工单 <code>docs/construction/5-17下-只禁写.md</code>「下上补」。</li>
       </ul>
     </div>
   </div>

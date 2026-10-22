@@ -131,6 +131,10 @@
         "name": "Default private folders",
         "description": "Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back."
       },
+      "sandbox.readonly.enabled": {
+        "name": "Protected paths",
+        "description": "When off, neither the default nor the added protected paths apply, and file tools stop asking before changing them; Miyu's own data stays protected."
+      },
       "sandbox.readonly.add": {
         "name": "Added protected paths",
         "description": "Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts)."
