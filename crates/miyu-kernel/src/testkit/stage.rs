@@ -183,6 +183,7 @@ impl Stage {
             answer: Answer::Approval {
                 decision,
                 reason: reason.map(str::to_string),
+                attachments: Vec::new(),
             },
         })
     }

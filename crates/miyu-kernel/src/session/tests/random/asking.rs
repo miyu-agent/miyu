@@ -120,6 +120,7 @@ pub(super) fn some_reply(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Inp
                 picked: picked.into_iter().map(str::to_string).collect(),
                 text: (rng.below(4) == 0).then(|| " ".to_string()),
                 notes: None,
+                attachments: Vec::new(),
             }
         })
         .collect();

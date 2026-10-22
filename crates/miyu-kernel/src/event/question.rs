@@ -65,6 +65,10 @@ pub struct Response {
     /// 补的一句备注，不选「其他」也能写（施工 D-2，照 Claude Code，2026-09-29 项目主人定）；可以不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+    /// 这道题附的图、文件（施工 Q-A，2026-10-22 项目主人：「回答的时候用户需要图片辅助表达」）：同用户消息的附件，跟着
+    /// 结果交给她。以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<crate::block::Block>,
 }
 
 /// 一组回答对不对得上这组题：几道题几条；选的都是那道题的选项，不重复；单选的至多选一项。

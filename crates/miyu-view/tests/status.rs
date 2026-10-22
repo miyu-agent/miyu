@@ -130,6 +130,7 @@ fn an_approval_and_a_question_are_waited_for_until_settled() {
             picked: vec!["A".to_string()],
             text: None,
             notes: None,
+            attachments: Vec::new(),
         }],
     );
     let done = paged(&stage);

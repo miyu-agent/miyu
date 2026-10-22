@@ -266,8 +266,40 @@ pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Resu
     let params: AnswerParams = params(request)?;
     let call_id = CallId::parse(&params.call).map_err(|_| Refusal::BAD_PARAMS)?;
     let session = session(&params.session)?;
-    let answer = params.answer()?;
+    let wanted = params.wanted()?;
+    // 附件先查，再找会话：不对的什么都不送（同 `session.send`，施工 Q-A）。
+    let mut answer = match wanted {
+        Wanted::Approval {
+            decision,
+            reason,
+            attachments,
+        } => miyu_kernel::session::Answer::Approval {
+            decision,
+            reason,
+            attachments: attach::blocks(core, attachments).await?,
+        },
+        Wanted::Questions(items) => {
+            let mut answers = Vec::with_capacity(items.len());
+            for (mut response, attachments) in items {
+                response.attachments = attach::blocks(core, attachments).await?;
+                answers.push(response);
+            }
+            miyu_kernel::session::Answer::Questions(answers)
+        }
+    };
     let found = core.sessions.get(core, &session).await?;
+    let owner = found.handle.owner();
+    let lists: Vec<&mut Vec<miyu_kernel::block::Block>> = match &mut answer {
+        miyu_kernel::session::Answer::Approval { attachments, .. } => vec![attachments],
+        miyu_kernel::session::Answer::Questions(answers) => answers
+            .iter_mut()
+            .map(|answer| &mut answer.attachments)
+            .collect(),
+    };
+    for blocks in lists {
+        attach::hand_over(core, owner, blocks).await?;
+        attach::keep(core, owner, &session, blocks).await?;
+    }
     let command = Command::Answer { call_id, answer };
     let events = command_to(core, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))

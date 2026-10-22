@@ -31,6 +31,8 @@ struct Texts {
     answer: Template,
     no_answer: Template,
     note: Template,
+    /// 这道题附了图、文件（施工 Q-A）：接在回答后面说几个，东西本身跟在结果后面。
+    attached: Template,
     end: Template,
     unattended: Template,
 }
@@ -74,6 +76,7 @@ impl AskUser {
                 answer: text("answer", &["question", "answer"])?,
                 no_answer: text("no-answer", &[])?,
                 note: text("note", &["notes"])?,
+                attached: text("attached", &["count"])?,
                 end: text("end", &[])?,
                 unattended: text("unattended", &[])?,
             },
@@ -105,7 +108,15 @@ impl Tool for AskUser {
             let Some(answers) = port.ask(questions.clone()).await else {
                 return Done::stopped();
             };
-            Done::ok(texts.answered(&questions, &answers)).said(said("ask_user/answered"))
+            // 附的图、文件照题目的先后跟在字后面（施工 Q-A），同用户消息里的附件那样交给她。
+            let mut done =
+                Done::ok(texts.answered(&questions, &answers)).said(said("ask_user/answered"));
+            done.blocks.extend(
+                answers
+                    .into_iter()
+                    .flat_map(|response| response.attachments),
+            );
+            done
         })
     }
 }
@@ -152,10 +163,19 @@ impl Texts {
         if let Some(text) = response.text.as_deref() {
             parts.push(text);
         }
-        let mut answer = match parts.is_empty() {
-            true => say(&self.no_answer, &[]),
-            false => parts.join(", "),
+        let mut answer = match (parts.is_empty(), response.attachments.is_empty()) {
+            (true, true) => say(&self.no_answer, &[]),
+            _ => parts.join(", "),
         };
+        if !response.attachments.is_empty() {
+            let count = response.attachments.len().to_string();
+            let attached = say(&self.attached, &[("count", &count)]);
+            let attached = match answer.is_empty() {
+                true => attached.trim_start(),
+                false => attached.as_str(),
+            };
+            answer.push_str(attached);
+        }
         if let Some(notes) = response.notes.as_deref() {
             answer.push_str(&say(&self.note, &[("notes", notes)]));
         }

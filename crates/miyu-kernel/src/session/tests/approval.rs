@@ -2,6 +2,8 @@
 //! 占着位置；人允许、人拒绝，拒绝以后她接着干；回答被拒的几种；没人能确认的会话；收紧成只读；
 //! 打断、急着插话；过时的结论。
 
+mod attached;
+
 use super::executor::*;
 use super::*;
 use crate::event::{
@@ -23,6 +25,7 @@ pub(super) fn answer(n: u64, call_id: CallId, decision: Decision, reason: Option
             answer: Answer::Approval {
                 decision,
                 reason: reason.map(str::to_string),
+                attachments: Vec::new(),
             },
         },
     })

@@ -139,6 +139,9 @@ pub struct ApprovalDecided {
     /// 拒绝的理由，会写进给她看的结果。只跟着拒绝，没写就没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    /// 拒绝时附的图、文件（施工 Q-A）：接在理由后面进给她看的结果。只跟着拒绝，以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<Block>,
 }
 
 text_enum!(

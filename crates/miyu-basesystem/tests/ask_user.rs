@@ -47,6 +47,7 @@ fn response(picked: &[&str], text: Option<&str>, notes: Option<&str>) -> Respons
         picked: picked.iter().map(|label| label.to_string()).collect(),
         text: text.map(str::to_string),
         notes: notes.map(str::to_string),
+        attachments: Vec::new(),
     }
 }
 
@@ -159,4 +160,50 @@ async fn settled_without_answers_ends_like_a_stop() {
 #[test]
 fn it_only_reads() {
     assert_eq!(tool("ask_user").spec().access, Access::Read);
+}
+
+/// 回答时附了图（施工 Q-A）：那道题的回答后面说附了几个，图照题目的先后跟在字后面；只附了图的那道不算没答。
+#[tokio::test]
+async fn attached_pictures_follow_the_answers() {
+    use miyu_kernel::block::Image;
+    use miyu_kernel::id::{ContentHash, MediaType};
+    let picture = |bytes: &[u8]| {
+        Block::Image(Image {
+            blob: ContentHash::of(bytes),
+            name: None,
+            media_type: MediaType::parse("image/png").unwrap(),
+            width: 10,
+            height: 10,
+            path: None,
+        })
+    };
+    let mut first = response(&["甲 (Recommended)"], None, None);
+    first.attachments = vec![picture(b"a")];
+    let mut third = response(&[], None, None);
+    third.attachments = vec![picture(b"b"), picture(b"c")];
+    let port = port(Some(vec![
+        first,
+        response(&["乙"], None, None),
+        third,
+        response(&[], None, None),
+    ]));
+    let done = site_done(port).await;
+    let Some(Block::Text(Text { text: words })) = done.blocks.first() else {
+        panic!("先是一段字：{:?}", done.blocks);
+    };
+    assert_eq!(
+        words,
+        "\"用哪个？\" = 甲 (Recommended) (attached below: 1)\n\"要哪些？\" = 乙\n\"叫什么？\" = (attached below: 2)\n\"还有吗？\" = (no answer)\nGo on with these answers in mind.\n"
+    );
+    assert_eq!(
+        done.blocks[1..],
+        [picture(b"a"), picture(b"b"), picture(b"c")],
+        "照题目的先后跟在字后面"
+    );
+}
+
+async fn site_done(port: Arc<Port>) -> Done {
+    Site::new()
+        .done_with_questions("ask_user", args(), Some(port))
+        .await
 }

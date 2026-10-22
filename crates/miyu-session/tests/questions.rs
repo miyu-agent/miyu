@@ -95,6 +95,7 @@ async fn the_answer_comes_back_to_the_tool_as_its_result() {
         picked: vec!["甲".to_string()],
         text: None,
         notes: Some("先这样".to_string()),
+        attachments: Vec::new(),
     }];
     ask(
         &handle,

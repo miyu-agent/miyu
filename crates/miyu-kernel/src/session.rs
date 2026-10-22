@@ -424,8 +424,8 @@ impl Session {
             }
             Command::Answer {
                 call_id,
-                answer: Answer::Approval { decision, reason },
-            } => self.answer(id, by, at, call_id, decision, reason),
+                answer: answer @ Answer::Approval { .. },
+            } => self.answer(id, by, at, call_id, answer),
             Command::Answer {
                 call_id,
                 answer: Answer::Questions(answers),

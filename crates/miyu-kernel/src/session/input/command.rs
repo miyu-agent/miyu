@@ -196,6 +196,8 @@ pub enum Answer {
         decision: Decision,
         /// 拒绝的理由；只有拒绝能带，空的当没写。
         reason: Option<String>,
+        /// 拒绝时附的图、文件（施工 Q-A）；只有拒绝能带。
+        attachments: Vec<crate::block::Block>,
     },
     /// 回答一组题：照题目的先后，每道题选了哪几项、自己写了什么。
     Questions(Vec<Response>),

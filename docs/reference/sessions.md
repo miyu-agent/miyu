@@ -199,7 +199,8 @@
 | `call` | 字符串，必写 | 那一次调用的 `call_id` |
 | `decision` | `once`、`session`、`deny` | 回答确认：允许这一次、这个会话都允许、拒绝 |
 | `reason` | 字符串 | 拒绝的理由，她看得到；只有拒绝能带 |
-| `answers` | 数组 | 回答提问：照题目先后一题一项 `{"picked": [选的选项标题…], "text": <自己写的>}`，两格都可不写 |
+| `attachments` | 数组 | 拒绝时附的图、文件，写法同 `session.send`（`blob.put` 交回的 `blob`、`name`、`media_type`，可带 `path`）；跟着理由给她；只有拒绝能带 |
+| `answers` | 数组 | 回答提问：照题目先后一题一项 `{"picked": [选的选项标题…], "text": <自己写的>, "notes": <备注>, "attachments": [<同上>]}`，几格都可不写；附件跟着那一题给她 |
 
 `decision`、`answers` 正好写一个。**回应**：`{"events": [序号…]}`。
 
@@ -207,10 +208,11 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 两样都写或都不写；提问带了 `reason`；`decision` 不是那三种 |
+| `bad_params`（`-32602`） | 两样都写或都不写；提问带了 `reason` 或外面的 `attachments`；`decision` 不是那三种；附件缺格、写法不对 |
+| `unknown_attachment`、`attachment_too_big` | 同 `session.send`：附件的 blob 没有、太大 |
 | `not_asking` | 这个调用没在等回答：答过了、结束了、等的不是这一种 |
 | `no_rule` | 选了 `session`，这次确认却没有能记住的范围 |
-| `unexpected_reason` | 允许却带了理由 |
+| `unexpected_reason` | 允许却带了理由、附件 |
 | `bad_answer` | 回答和题目对不上：条数不对、选了没有的、单选选了几项 |
 
 ## `session.revert`、`session.unrevert`

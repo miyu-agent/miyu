@@ -27,6 +27,7 @@ fn she_asks_and_the_tool_gets_the_answer() {
             picked: vec!["保留".to_string()],
             text: None,
             notes: None,
+            attachments: Vec::new(),
         }],
     );
     assert_eq!(

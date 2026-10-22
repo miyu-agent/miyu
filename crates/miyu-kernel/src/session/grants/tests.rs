@@ -46,6 +46,7 @@ fn decided(n: u64, asked: u64, decision: Decision) -> Event {
             call_id: call(asked),
             decision,
             reason: None,
+            attachments: Vec::new(),
         }),
     )
 }

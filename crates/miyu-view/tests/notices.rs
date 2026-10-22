@@ -145,6 +145,7 @@ fn answered_questions_carry_what_was_asked() {
             picked: vec!["A".to_string()],
             text: None,
             notes: None,
+            attachments: Vec::new(),
         }],
     );
     let entries = same(&stage);

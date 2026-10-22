@@ -2285,6 +2285,17 @@ Packages cannot be installed or removed here.
  (note: {notes})
 ```
 
+#### `software/basesystem/ask_user/attached.txt`
+
+- 什么时候加进来：`ask_user`：这道附了图、文件，接在回答后面说几个，东西本身跟在结果后面（施工 Q-A）
+- token：7（`{count}` 按 `1` 算，2026-10-23 估）
+- 为什么加：人回答时贴了图（2026-10-22 项目主人：「回答的时候用户需要图片辅助表达自己的信息」）：她要知道哪道题附了几个，好对上后面的图
+- 指纹：`6a6190ad`
+
+```text
+ (attached below: {count})
+```
+
 #### `software/basesystem/ask_user/end.txt`
 
 - 什么时候加进来：`ask_user` 答了：最后一行

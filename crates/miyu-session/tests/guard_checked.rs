@@ -147,6 +147,7 @@ async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
     let answer = Answer::Approval {
         decision: Decision::Once,
         reason: None,
+        attachments: Vec::new(),
     };
     ask(&handle, "cmd-2", Command::Answer { call_id, answer })
         .await

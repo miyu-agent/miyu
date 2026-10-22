@@ -4,11 +4,12 @@
 //! 再派；拒绝的，记一条被拒绝的结果，这一步照常往下走，她接着干（`11-权限与沙盒.md` A13）。
 
 use super::action::{Action, Reason};
-use super::input::Verdict;
+use super::input::{Answer, Verdict};
 use super::step::{Asked, State};
 use super::tools::run_tool;
 use super::turn::Stage;
 use super::{Session, rejected};
+use crate::block::Block;
 use crate::event::{ApprovalDecided, ApprovalRequested, Body, Decision, Event, ToolStatus};
 use crate::id::{CallId, CommandId};
 use crate::origin::{By, Module};
@@ -121,17 +122,24 @@ impl Session {
     /// 再派；拒绝的，再记一条被拒绝的结果，写了理由的带上理由，这一步照常往下走。回应附上这一次
     /// 追加的全部事件的序号。
     ///
-    /// 不在等确认的、选项不认识的、请求没提规则却选了记住的、允许却带了理由的，拒绝这个命令。
-    /// 空的理由当没写。
+    /// 不在等确认的、选项不认识的、请求没提规则却选了记住的、允许却带了理由、附件的，拒绝这个命令。
+    /// 空的理由当没写。拒绝时附的图、文件接在理由后面进结果（施工 Q-A）。
     pub(super) fn answer(
         &mut self,
         id: CommandId,
         by: By,
         at: Timestamp,
         call_id: CallId,
-        decision: Decision,
-        reason: Option<String>,
+        answer: Answer,
     ) -> Vec<Action> {
+        let Answer::Approval {
+            decision,
+            reason,
+            attachments,
+        } = answer
+        else {
+            return vec![rejected(id, Reason::NotAsking)];
+        };
         let reason = reason.filter(|reason| !reason.trim().is_empty());
         let Some(rule) = self.asking(call_id) else {
             return vec![rejected(id, Reason::NotAsking)];
@@ -142,13 +150,16 @@ impl Session {
                 return vec![rejected(id, Reason::NoRule)];
             }
             Decision::Deny => true,
-            _ if reason.is_some() => return vec![rejected(id, Reason::UnexpectedReason)],
+            _ if reason.is_some() || !attachments.is_empty() => {
+                return vec![rejected(id, Reason::UnexpectedReason)];
+            }
             _ => false,
         };
         let body = ApprovalDecided {
             call_id,
             decision,
             reason: reason.clone(),
+            attachments: attachments.clone(),
         };
         let decided = self.record(
             at,
@@ -159,7 +170,7 @@ impl Session {
         let seq = decided.seq;
         let mut events = vec![decided];
         if deny {
-            events.extend(self.denied_by(at, by, &id, call_id, reason.as_deref()));
+            events.extend(self.denied_by(at, by, &id, call_id, (reason.as_deref(), attachments)));
         } else {
             self.set_state(call_id, State::Approved { decided: seq });
         }
@@ -177,12 +188,16 @@ impl Session {
         by: By,
         id: &CommandId,
         call_id: CallId,
-        reason: Option<&str>,
+        (reason, attachments): (Option<&str>, Vec<Block>),
     ) -> Vec<Event> {
         let finished = self.set_state(call_id, State::Done);
         let text = self.policy.tool_texts.denied(reason);
-        let mut events =
-            vec![self.written_result(at, by, Some(id.clone()), call_id, ToolStatus::Denied, text)];
+        let mut event =
+            self.written_result(at, by, Some(id.clone()), call_id, ToolStatus::Denied, text);
+        if let Body::ToolResult(result) = &mut event.body {
+            result.blocks.extend(attachments);
+        }
+        let mut events = vec![event];
         if finished {
             let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
             events.extend(self.finish_step(at, cause));

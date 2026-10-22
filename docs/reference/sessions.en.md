@@ -199,7 +199,8 @@ When she does something that needs approval she stops and asks (pushed as `tool.
 | `call` | string, required | That call's `call_id` |
 | `decision` | `once`, `session`, `deny` | Answer an approval: allow once, allow for this session, deny |
 | `reason` | string | Why it was denied, shown to her; only with deny |
-| `answers` | array | Answer questions: one item per question in order, `{"picked": [chosen option labels…], "text": <written answer>}`, both optional |
+| `attachments` | array | Images or files attached to a denial, same shape as in `session.send` (`blob`, `name`, `media_type` from `blob.put`, optional `path`); she gets them with the reason; denials only |
+| `answers` | array | Answer questions: one item per question in order, `{"picked": [chosen option labels…], "text": <written answer>, "notes": <note>, "attachments": [<as above>]}`, all optional; attachments go to her with that question |
 
 Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers…]}`.
 

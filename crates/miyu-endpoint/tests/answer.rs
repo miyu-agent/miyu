@@ -199,3 +199,61 @@ async fn the_kernel_refusals_come_back_with_their_reasons() {
     // 测试的头握手时说中文。
     assert_eq!(reply["error"]["message"], json!("不在等待回答。"));
 }
+
+/// 拒绝时附图（施工 Q-A）：传上去的图跟着理由进结果，图在她的结果里；回答提问带外面的附件是 `bad_params`；附件的 blob 没有
+/// 是 `unknown_attachment`，什么都不送。
+#[tokio::test]
+async fn a_denial_can_carry_pictures() {
+    let home = Home::new();
+    let plays = vec![edit(&nowhere("a.txt")), Play::Says("看到图了。")];
+    let (mut client, session, _) = started(&home, plays).await;
+    let call = nth_request(&home, &session, 1).await;
+
+    let png = {
+        let mut bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR".to_vec();
+        bytes.extend_from_slice(&4u32.to_be_bytes());
+        bytes.extend_from_slice(&3u32.to_be_bytes());
+        bytes.extend_from_slice(&[8, 6, 0, 0, 0, 0, 0, 0, 0]);
+        bytes
+    };
+    let path = home.work.join("shot.png");
+    std::fs::write(&path, &png).expect("写得了");
+    let put = client.call("p", "blob.put", json!({"path": path})).await;
+    let picture = put["result"].clone();
+
+    let wrong = [
+        (
+            json!({"session": session, "call": call, "answers": [], "attachments": [picture]}),
+            "bad_params",
+        ),
+        (
+            json!({"session": session, "call": call, "decision": "deny", "attachments": [{"blob": miyu_kernel::id::ContentHash::of(b"never put").as_str(), "name": "x.png", "media_type": "image/png"}]}),
+            "unknown_attachment",
+        ),
+    ];
+    for (k, (params, expected)) in wrong.into_iter().enumerate() {
+        let reply = answer(&mut client, &format!("wrong-{k}"), params).await;
+        assert_eq!(reason_of(&reply), &json!(expected), "{reply}");
+    }
+
+    let params = json!({"session": session, "call": call, "decision": "deny", "reason": "看图", "attachments": [picture]});
+    let reply = answer(&mut client, "answer-1", params).await;
+    assert!(reply["result"]["events"].is_array(), "{reply}");
+    home.until_turns(&session, 1).await;
+    let result = home
+        .log(&session)
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ToolResult(result) => Some(result),
+            _ => None,
+        })
+        .expect("有一条工具结果");
+    assert_eq!(result.status, ToolStatus::Denied);
+    assert!(
+        result.blocks.iter().any(
+            |block| matches!(block, miyu_kernel::block::Block::Image(image) if image.width == 4)
+        ),
+        "{:?}",
+        result.blocks
+    );
+}

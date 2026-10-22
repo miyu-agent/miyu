@@ -92,6 +92,7 @@ async fn answer(handle: &Handle, request: &ApprovalRequested, decision: Decision
     let answer = Answer::Approval {
         decision,
         reason: None,
+        attachments: Vec::new(),
     };
     let call_id = request.call_id;
     ask(handle, "cmd-2", Command::Answer { call_id, answer })
@@ -166,6 +167,7 @@ async fn not_asking_again_here_makes_the_folder_writable_in_the_sandbox_only() {
     let deny = Answer::Approval {
         decision: Decision::Deny,
         reason: None,
+        attachments: Vec::new(),
     };
     ask(
         &handle,

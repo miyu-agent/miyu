@@ -30,6 +30,7 @@ fn picked(labels: &[&str]) -> Response {
         picked: labels.iter().map(|label| label.to_string()).collect(),
         text: None,
         notes: None,
+        attachments: Vec::new(),
     }
 }
 

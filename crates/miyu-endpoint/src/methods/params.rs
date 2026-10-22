@@ -3,7 +3,6 @@
 use serde::Deserialize;
 
 use miyu_kernel::event::{Decision, Response};
-use miyu_kernel::session::Answer;
 
 use crate::attach::Attachment;
 use crate::refusal::Refusal;
@@ -157,8 +156,8 @@ pub(super) struct PermissionParams {
     pub(super) read_only: Option<bool>,
 }
 
-/// `session.answer` 的参数（施工 D-1，`protocol.md` 的 `session.answer`）：回答确认的写 `decision`，拒绝的可以带 `reason`；
-/// 回答提问的写 `answers`，照题目的先后一道一条。
+/// `session.answer` 的参数（施工 D-1，`protocol.md` 的 `session.answer`）：回答确认的写 `decision`，拒绝的可以带 `reason`、
+/// `attachments`（施工 Q-A）；回答提问的写 `answers`，照题目的先后一道一条，每道可以带 `attachments`。附件同 `session.send`。
 #[derive(Debug, Deserialize)]
 pub(super) struct AnswerParams {
     pub(super) session: String,
@@ -168,18 +167,60 @@ pub(super) struct AnswerParams {
     #[serde(default)]
     reason: Option<String>,
     #[serde(default)]
-    answers: Option<Vec<Response>>,
+    attachments: Option<Vec<Attachment>>,
+    #[serde(default)]
+    answers: Option<Vec<AnswerItem>>,
+}
+
+/// 一道题的回答：同内核的 [`Response`]，附件是 `blob.put` 交回的那几格（施工 Q-A）。
+#[derive(Debug, Deserialize)]
+pub(super) struct AnswerItem {
+    #[serde(default)]
+    picked: Vec<String>,
+    #[serde(default)]
+    text: Option<String>,
+    #[serde(default)]
+    notes: Option<String>,
+    #[serde(default)]
+    attachments: Option<Vec<Attachment>>,
+}
+
+/// 查过写法的回答：附件还是协议上的样子，找会话之前照 `session.send` 那一套换成块（`methods/session.rs`）。
+pub(super) enum Wanted {
+    Approval {
+        decision: Decision,
+        reason: Option<String>,
+        attachments: Vec<Attachment>,
+    },
+    Questions(Vec<(Response, Vec<Attachment>)>),
 }
 
 impl AnswerParams {
-    /// 交给内核的回答。`decision`、`answers` 两样都写、都不写，回答提问却带了 `reason`：参数不对。
-    pub(super) fn answer(self) -> Result<Answer, Refusal> {
+    /// 交给内核的回答，附件另放。`decision`、`answers` 两样都写、都不写，回答提问却带了 `reason`、外面的 `attachments`：
+    /// 参数不对。
+    pub(super) fn wanted(self) -> Result<Wanted, Refusal> {
         match (self.decision, self.answers) {
-            (Some(decision), None) => Ok(Answer::Approval {
+            (Some(decision), None) => Ok(Wanted::Approval {
                 decision: decision.into(),
                 reason: self.reason,
+                attachments: self.attachments.unwrap_or_default(),
             }),
-            (None, Some(answers)) if self.reason.is_none() => Ok(Answer::Questions(answers)),
+            (None, Some(answers)) if self.reason.is_none() && self.attachments.is_none() => {
+                Ok(Wanted::Questions(
+                    answers
+                        .into_iter()
+                        .map(|item| {
+                            let response = Response {
+                                picked: item.picked,
+                                text: item.text,
+                                notes: item.notes,
+                                attachments: Vec::new(),
+                            };
+                            (response, item.attachments.unwrap_or_default())
+                        })
+                        .collect(),
+                ))
+            }
             _ => Err(Refusal::BAD_PARAMS),
         }
     }

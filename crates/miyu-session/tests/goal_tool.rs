@@ -385,6 +385,7 @@ async fn blocked_after_the_person_answered_skips_the_three_rounds() {
         picked: vec!["没有".to_string()],
         text: None,
         notes: Some("照实报卡住就行".to_string()),
+        attachments: Vec::new(),
     }];
     let answer = Command::Answer {
         call_id,

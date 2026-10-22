@@ -75,6 +75,7 @@ async fn allow_for_the_session(handle: &Handle, id: &str, call_id: CallId) {
     let answer = Answer::Approval {
         decision: Decision::Session,
         reason: None,
+        attachments: Vec::new(),
     };
     ask(handle, id, Command::Answer { call_id, answer })
         .await

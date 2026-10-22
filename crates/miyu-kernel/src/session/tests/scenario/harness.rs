@@ -124,6 +124,7 @@ fn it_does_not_void_a_question_waiting_for_the_person() {
             picked: vec!["删".to_string()],
             text: None,
             notes: None,
+            attachments: Vec::new(),
         }],
     );
     let answered = s.log().iter().any(|event| {

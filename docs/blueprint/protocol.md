@@ -549,12 +549,14 @@
 | `call` | 字符串，必写 | 回答的是哪一次调用：`tool.approval_requested`、`question.asked` 里的 `call_id` |
 | `decision` | `"once"`、`"session"` 或 `"deny"`，可以不写 | 回答确认：允许这一次、本会话都允许、拒绝 |
 | `reason` | 字符串，可以不写 | 拒绝的理由，她看得到；只有拒绝能带 |
-| `answers` | 数组，可以不写 | 回答提问：照题目的先后一道一条 `{"picked": [选项的标题], "text": 自己写的}`，两格都可以不写（这道没答） |
+| `attachments` | 数组，可以不写 | 拒绝时附的图、文件（施工 Q-A），写法同 `session.send`；只有拒绝能带 |
+| `answers` | 数组，可以不写 | 回答提问：照题目的先后一道一条 `{"picked": [选项的标题], "text": 自己写的, "notes": 备注, "attachments": [同上]}`，几格都可以不写（`picked`、`text`、`attachments` 都没有的这道没答） |
 
 回应：`{"events": [序号]}`，这一次追加的事件（决定、拒绝时的工具结果，回答）都落了盘才回。
 
-1. 先查参数，再找会话：`decision`、`answers` 两样都写、都不写；回答提问却带了 `reason`；`call` 不合调用编号的写法；`decision` 不是这三种（`workspace`、大写的也算）：`bad_params`。「这个工作区以后都允许」以后再加（2026-09-28 项目主人定），协议先不认：内核的 `unknown_decision` 因此从协议上碰不到。
-2. 交给内核（`Command::Answer`），`by` 取自连接（现在都是管理员），`cause` 是这一条的 `id`。内核拒的：这个调用没在等回答（答过了、了结了、不是这一种），`not_asking`；请求没提放行规则却选了本会话都允许，`no_rule`；允许却带了理由，`unexpected_reason`；回答和题目对不上，`bad_answer`（`kernel/asking.md`）。空的理由当没写。
+1. 先查参数，再找会话：`decision`、`answers` 两样都写、都不写；回答提问却带了 `reason`、外面的 `attachments`；`call` 不合调用编号的写法；`decision` 不是这三种（`workspace`、大写的也算）：`bad_params`。「这个工作区以后都允许」以后再加（2026-09-28 项目主人定），协议先不认：内核的 `unknown_decision` 因此从协议上碰不到。
+   附件（施工 Q-A，2026-10-22 项目主人：「回答的时候用户需要图片辅助表达自己的信息」）照 `session.send` 那一套：找会话之前换成块（`unknown_attachment`、`attachment_too_big`、写法不对的 `bad_params`，什么都不送），找到会话以后照属主拷过去、没有本机路径的落成会话里的文件。拒绝的附件记在 `tool.approval_decided` 的 `attachments`，接在理由后面进 `denied` 的结果；回答的附件记在 `question.answered` 那一道的 `attachments`，`ask_user` 在那道的回答后面写一句附了几个（`ask_user/attached.txt`），东西照题目的先后跟在结果的字后面。给她的办法同用户消息的附件：看不了图的模型照旧替看。
+2. 交给内核（`Command::Answer`），`by` 取自连接（现在都是管理员），`cause` 是这一条的 `id`。内核拒的：这个调用没在等回答（答过了、了结了、不是这一种），`not_asking`；请求没提放行规则却选了本会话都允许，`no_rule`；允许却带了理由、附件，`unexpected_reason`；回答和题目对不上，`bad_answer`（`kernel/asking.md`）。空的理由当没写。
 3. 允许的，决定落了盘这个调用才跑；本会话都允许的，这个会话以后落在同一个范围里的写入不再问（`session/guard.md`「判一次调用」第 7 条）。拒绝的，再记一条 `denied` 的结果，写了理由的带上，她接着干（`11-权限与沙盒.md` A13）。
 4. 头收起抽屉照推送：这个调用有了结果（`tool.result`），或者回答落了盘（`tool.approval_decided`、`question.answered`）。
 
