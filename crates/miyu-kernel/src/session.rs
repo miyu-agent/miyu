@@ -75,7 +75,7 @@ pub use input::{
 pub use limits::ContextLimits;
 pub use load::{LoadError, Loader};
 pub use messages::Subagent;
-pub use nested::{NestedAction, NestedAnswer, NestedInput, NestedRefusal};
+pub use nested::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};
 pub use policy::{
     Compaction, NestedLimits, Notes, Pause, Peers, Policy, Rebuild, Reports, Shorten, SkillRebuild,
     Titles,

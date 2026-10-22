@@ -8,7 +8,8 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::event::{Body, Event, JobStarted, ModelCalled, NestedStarted, Permission, Usage};
+use miyu_kernel::event::{Body, Event, JobStarted, ModelCalled, Permission, Usage};
+use miyu_kernel::session::NestedRunning;
 
 /// 订阅那一刻的几样。
 #[derive(Debug, Clone, PartialEq)]
@@ -18,7 +19,7 @@ pub struct Current {
     /// 还在跑的后台命令和子代理，照编号。
     pub jobs: Vec<JobStarted>,
     /// 在跑的嵌套调用，照编号（施工 M-1）：脚本里的 `miyu call`，头重连时接着画。
-    pub nested: Vec<NestedStarted>,
+    pub nested: Vec<NestedRunning>,
     /// 会话在哪个目录干活（施工 9-7 上）：工作目录。
     pub cwd: String,
     /// 加进来的目录。

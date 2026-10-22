@@ -182,6 +182,9 @@ pub struct JobRow {
     /// 停了的为什么：`stopped`（人停或她自己停的）、`undone`（撤销时停的）、`restarted`（有计划的重启停的）。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub why: Option<&'static str>,
+    /// 后台命令下面脚本里调过的工具（施工 M-5 上）：个数和最近一个。没调过的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nested: Option<crate::entry::Nested>,
 }
 
 /// 任务的状态。

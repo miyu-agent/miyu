@@ -16,6 +16,8 @@
 |---|---|
 | `crates/miyu-view/src/projector.rs`、`projector/`（新） | 投影这台小机器：喂一条事件交出它引起的变化（`Change`）；`users.rs` 消息和排着的话，`turns.rs` 开轮、收尾、每次请求，`blocks.rs` 回复的一块块和起止，`tools.rs` 调工具的一步、确认、提问，`notices.rs` 旁白，`undo.rs` 撤销恢复 |
 | `crates/miyu-view/src/entry.rs`、`notice.rs`、`change.rs`、`id.rs` | 条目、旁白、变化、编号的格 |
+| `crates/miyu-view/src/projector/nested.rs`、`entry/nested.rs`、`nested.rs` | 脚本里调的工具（施工 M-5 上）：`tool.nested_started`、`tool.nested` 照编号认父级，那一步、那一行任务、任务了结的旁白带 `nested`；订阅时补上在跑的（`Projector::nested_running`）；点开时的整份（`listed`） |
+| `crates/miyu-view/tests/nested.rs`（施工 M-5 上） | 前台 `shell` 下面调三次（成、拒、出错）个数和最近一个跟着变，在跑的带开始时刻；没调过的没有；后台命令那一行、了结的旁白带上；订阅时补上在跑的 |
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
 | `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补）、工具的名字照记下的、照这一刻工具目录里的、照工具名（9-8 六补）；`outputs.rs` 一步带结果原文的前面一段，切在 100 行、8 KiB、字的边界上（9-8 十四补） |
 | `crates/miyu-endpoint/tests/view_entries.rs`、`view_page.rs`、`view_detail.rs` | 真核心走一遍（9-8 中）：握手报版本；交条目的页、边界照旧、字照连接的语言；更早派出的任务照样有标题；调用的结果原文、压缩的摘要 |
@@ -65,7 +67,7 @@
 | `media` | 她发出去的一张图（施工 X-19，`tool.result.sent`）：`image`（同 `user` 的附件那一格，宽高一定有）、`alt`?、`sticker`?。一张一条，排在那一步工具后面，和 `reply` 一样把前面那段 `group` 收起（那一步照旧在 `group` 里） |
 | `group` | 时间线的一段：`steps`（几步的编号，照先后；多了一步，这一段跟着 `view.update`，`steps` 和收起那一行一起变）；`open: true`（还在进行：她没开口、这一轮没结束）；`summary`、`summary_en`（收起那一行，下面「收起那一行」）；`took_ms`（从第一步开始到最后一步结束，刨掉中间等人的，见「会话状态」的 `waited_ms`） |
 | `thought` | 一步思考：`group`；`text`；`open: true`（还在想）；`took_ms` |
-| `tool` | 一步工具：`group`；`call`（调用编号，流式时还没有）；`name`；`title`（下面「标题那一句」）；`state`；`args`（参数原文，流式时边收边接）；`diff`（编辑、写入的 `{added, removed}`，有了结果以后是真数，之前照参数估、带 `estimated: true`）；`images`（结果里的图：`[{blob, media_type, width, height}]`，照先后，头照 `blob.get` 取；`read` 读了图片的那一步）；`job`（派子代理、后台命令的任务编号）；`to_title`（留言发给子代理的，那个子代理的标题：派它那一步的 `description`）；`approval`（要人确认的：`access`、`rule`、`detail` 照 `tool.approval_requested` 原样，定了以后多 `decision`、`reason`、`by`；确认记在这一步上，不另起旁白）；`took_ms`；`files`（改了哪些文件，照结果的效果：`[{path, action}]`，`path` 是换成真实位置以后的绝对路径，`action` 是 `created`（改之前没有这个文件）、`changed`（改了已有的）或 `trashed`（移进回收站），照先后；读的不算，没有的不写。施工 9-8 三补，网页的预览工作区照它认产物、差异卡片照它写「新建」「修改」）；`skill`（读的是技能的 `SKILL.md` 的那一步：`{name, title}`，名字照结果的 `file.read` 效果，`title` 是给人看的名字，照连接的语言挑，同 `preset.get` 里 `skill-<名字>` 那个功能的 `name`，没写的照名字；施工 9-8 四补，网页照它写「使用技能 · 写技能」。施工 9-8 五补起照读的那一刻记在效果里的 `display_name` 挑（这种语言没写的照英文、中文、日文的先后），卸了包、改了名字历史照旧；以前的日志没记的照这一刻装着的查）；`shown`（`show` 给人看的文件：格同结果的 `file.shown` 效果，`path`、`blob`、`name`、`media_type`、`size`，有的再带 `title`、`language`、`width`、`height`；施工 D-5，`tools/show.md`，头照 `media_type` 选怎么显示，同一个 `path` 再来一张换掉那一张；没有的不写）；`detail`（给头看的结构化结果：照结果的 `detail` 原样带上，形状由那件工具定，施工 W-11；没有的不写）；`output`（结果原文的前面一段，施工 9-8 十四补，终端换视图流要的：写法同 `view.detail` 的 `output`，最多 100 行、8 KiB，先到的算，切在字的边界上；切了的多 `output_cut: true`，整份照 `view.detail` 要；没有字的、还没结果的不写；有了结果那一次带上）；`questions`（提问那一步问的那一组，照 `question.asked` 的 `questions`，问的时候就带上、答了照旧留着，施工 9-8 十四补；答案在 `answered` 旁白） |
+| `tool` | 一步工具：`group`；`call`（调用编号，流式时还没有）；`name`；`title`（下面「标题那一句」）；`state`；`args`（参数原文，流式时边收边接）；`diff`（编辑、写入的 `{added, removed}`，有了结果以后是真数，之前照参数估、带 `estimated: true`）；`images`（结果里的图：`[{blob, media_type, width, height}]`，照先后，头照 `blob.get` 取；`read` 读了图片的那一步）；`job`（派子代理、后台命令的任务编号）；`to_title`（留言发给子代理的，那个子代理的标题：派它那一步的 `description`）；`approval`（要人确认的：`access`、`rule`、`detail` 照 `tool.approval_requested` 原样，定了以后多 `decision`、`reason`、`by`；确认记在这一步上，不另起旁白）；`took_ms`；`files`（改了哪些文件，照结果的效果：`[{path, action}]`，`path` 是换成真实位置以后的绝对路径，`action` 是 `created`（改之前没有这个文件）、`changed`（改了已有的）或 `trashed`（移进回收站），照先后；读的不算，没有的不写。施工 9-8 三补，网页的预览工作区照它认产物、差异卡片照它写「新建」「修改」）；`skill`（读的是技能的 `SKILL.md` 的那一步：`{name, title}`，名字照结果的 `file.read` 效果，`title` 是给人看的名字，照连接的语言挑，同 `preset.get` 里 `skill-<名字>` 那个功能的 `name`，没写的照名字；施工 9-8 四补，网页照它写「使用技能 · 写技能」。施工 9-8 五补起照读的那一刻记在效果里的 `display_name` 挑（这种语言没写的照英文、中文、日文的先后），卸了包、改了名字历史照旧；以前的日志没记的照这一刻装着的查）；`shown`（`show` 给人看的文件：格同结果的 `file.shown` 效果，`path`、`blob`、`name`、`media_type`、`size`，有的再带 `title`、`language`、`width`、`height`；施工 D-5，`tools/show.md`，头照 `media_type` 选怎么显示，同一个 `path` 再来一张换掉那一张；没有的不写）；`detail`（给头看的结构化结果：照结果的 `detail` 原样带上，形状由那件工具定，施工 W-11；没有的不写）；`output`（结果原文的前面一段，施工 9-8 十四补，终端换视图流要的：写法同 `view.detail` 的 `output`，最多 100 行、8 KiB，先到的算，切在字的边界上；切了的多 `output_cut: true`，整份照 `view.detail` 要；没有字的、还没结果的不写；有了结果那一次带上）；`questions`（提问那一步问的那一组，照 `question.asked` 的 `questions`，问的时候就带上、答了照旧留着，施工 9-8 十四补；答案在 `answered` 旁白）；`nested`（下面「脚本里调的工具」，前台那次 `shell` 下面的） |
 | `end` | 一轮的收尾：`reason`（`completed`、`interrupted`、`error`、`restarted`……同 `turn.ended`）；`model`、`endpoint`；`took_ms`；`usage`（这一轮加起来，写法同 `model.called`；回顾、起标题这些辅助请求不算，整理会话的主请求 `purpose: memory` 照主请求算，施工 D-1 下补）；出错的 `error`（`class`、`status`、`message`）和 `explain`（出错说明，照连接的语言） |
 | `notice` | 旁白：`what` 是下面几种之一，带各自的格 |
 
@@ -79,7 +81,7 @@
 | `cleared` | 上下文清空了；那一轮不另起 `end` |
 | `paused` | 暂停了自动压缩（`context.compaction_paused`）：`reason`、`failures`、`entry`，原样 |
 | `reverted` | 撤销了几轮：`turns`、`said`（撤掉的第一句的头一行）；（施工 U-1 拿掉了 `files`：撤销不再改回文件；以前日志里的 `files.restored` 不进视图）；`jobs`（停掉的后台任务的编号）；撤掉的条目另外 `hidden` |
-| `job` | 一件后台任务了结了：`job`、`job_kind`（`agent`、`command`；不叫 `what`，旁白的种类占了那个名字）、`title`、`mark`（`done`、`failed`、`stopped`）、`reason`（回报里的原样）、`report`（子代理的报告全文）；后台命令的 `command`（派它那次调用的命令原文）、`output`（`{blob, chars}`，照回报，头点开时照 `blob.get` 取）、`exit_code`、`signal`、`took_ms`（照回报，没有的不写；施工 9-8 三补） |
+| `job` | 一件后台任务了结了：`job`、`job_kind`（`agent`、`command`；不叫 `what`，旁白的种类占了那个名字）、`title`、`mark`（`done`、`failed`、`stopped`）、`reason`（回报里的原样）、`report`（子代理的报告全文）；后台命令的 `command`（派它那次调用的命令原文）、`output`（`{blob, chars}`，照回报，头点开时照 `blob.get` 取）、`exit_code`、`signal`、`took_ms`（照回报，没有的不写；施工 9-8 三补）；`nested`（这个后台命令下面最后那一份，下面「脚本里调的工具」） |
 | `answered` | 一组题答了：`questions`（问的那一组，照 `question.asked`）、`answers`（照 `question.answered`）、`by` |
 | `persona` | 中途换了人格、预设（施工 9-8 十四补，P-13）：`persona: {from, to}`、`preset: {from, to}`，换了哪样写哪样；写编号，无人格、没有预设的是 `null`，显示名头照列表查。人换的那一下（带 `persona`、`preset` 的 `session.policy_changed`）先记着，快照真换上（下一条带 `policy` 的）时出这一条，同 `reply` 的 `persona` 起算的时机 |
 | `recap` | 一段回顾：`text`、`covers`（讲到的最后一轮，撤了那一轮跟着藏） |
@@ -105,7 +107,13 @@
 
 **`view.page`**（9-8 中）多一格 `view`：写 `true` 的回应把 `events` 换成 `entries`（这一页的条目，照显示的先后，读的那一刻的状态），别的格照旧。排着队的 `user` 照它被听到的位置排；撤销藏起的照样在、带 `hidden`。更早的一页拼上来，头照 `id` 去重。
 
-**`view.detail`**（9-8 中）多交 `output`：这次调用的结果原文（工具的输出，整份）。另认 `{session, compaction: <序号>}`：交回那一次压缩的 `summary`（检查点的摘要原文）。
+**`view.detail`**（9-8 中）多交 `output`：这次调用的结果原文（工具的输出，整份）。另认 `{session, compaction: <序号>}`：交回那一次压缩的 `summary`（检查点的摘要原文）。施工 M-5 上多交 `nested`（整份嵌套调用），另认 `{session, job}`、`nested_after`（`protocol.md`「`view.detail`」）。
+
+**脚本里调的工具**（施工 M-5 上，设计 `39-脚本调工具.md` 第七节第 4 条，项目主人 2026-10-22 定只做视图这一层、两个头都照它画）：`nested` 是 `{count, last}`。`count` 是这个父级下面到这一刻见过几个（开始了的、了结的，照序号去重）；`last` 是序号最大的那一个 `{n, name, title, state, started?}`：`title` 同「标题那一句」的显示名、对象（照参数挑，结果那一句不写；开始了的瞬时事件没带参数，在跑时只有显示名），`state` 是 `running` 或 `tool.nested` 的 `status`，`started` 只有在跑的有（开始了的瞬时事件的时刻）。头在那一行后面接 `· #n 显示名`。
+1. 父级照编号认：`call_…#n` 是前台那次调用，改它那一步（`calls` 里找得到才改）；`j…#n` 是后台任务，改会话状态 `jobs` 里那一行，任务了结时的旁白带最后那一份（内核把还没了结的记成 `cancelled`，排在 `job.reported` 前面）。
+2. 只带个数和最近一个：`view.update` 推整条、`view.status` 推整份，一个脚本调几百次时整份列表会越推越长（施工单 M-5 拍板第 1 条）。整份点开时照 `view.detail` 要。
+3. 翻页：前台的和那一步在同一轮、同一页；后台任务的照切点前的日志也学（`learn_rows`），那一行的个数照整份日志算。开始了的只在视图流里有，翻页的样子只有了结的；视图流和翻页最后一样。
+4. 订阅（头重连）：日志里还没有在跑的，订阅时照会话交的 `Current.nested`（`{id, name, args, at}`）补上，回应的条目照补过的写。
 
 **视图流**（9-8 下）：`subscribe {session, stream: "view"}`，回应带最新一页的条目（同 `view.page`），之后的推送和这份在会话 actor 的同一步里拿，不重不漏：
 
@@ -141,7 +149,7 @@
 | `todos_done` | 因为全部做完而清空了待办（`todos` 是空的）时，清空前那一份，同事件流 `todos.changed` 的 `done`；头照它全打勾停一下再收（施工 9-8 九补，网页的会话要的）。别的时候不写，再写一份没做完的就没了 |
 | `persona`、`preset` | 同订阅回应的那几格；中途换了的（P-13）照会话这一刻的跟着推（施工 9-8 十四补对齐蓝图，代码 P-13 起就是这样） |
 | `goal` | 长期目标（施工 X-6，`goal.md`）：`{text, limit?, state, reason?, round, since, usage}`。`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting`（跑着、在等人开口：续轮开的一轮没调工具，施工 X-7；核心重启以后载入的目标记成停着，是 `paused`）；`reason` 卡住的才有；`round` 是设下以后开过几轮（停着时开的不算）；`since` 设下的时刻；`usage` 是这个目标花了多少，写法同 `usage`（跑着时的请求）。没设过、清掉了的不写；结束了的照最后的样子留着，再设一个时换掉。向会话要（会话层照整份日志算），不由投影算 |
-| `jobs` | 这个会话直接派出去的任务：在跑的和最近做完的 20 个，照派出的先后。一项 `{job, what, title, state, started, ended?, session?, command?, exit_code?, signal?, why?}`：`what` 是 `command`、`agent`；`state` 是 `running`、`done`（命令退出码 0；子代理那一轮结束了，还能留言叫醒，叫醒了回到 `running`）、`failed`（退出码不是 0、被信号杀了）、`stopped`（`why` 是 `stopped` 人停或她自己停的、`undone` 撤销时停的、`restarted` 有计划重启时停的、`timed_out` 跑到最长时间停的、`too_large` 输出太多停的，施工 7-12 下）、`aborted`（核心崩了，断了）。翻页、订阅时切点前派出、了结的照日志补上 |
+| `jobs` | 这个会话直接派出去的任务：在跑的和最近做完的 20 个，照派出的先后。一项 `{job, what, title, state, started, ended?, session?, command?, exit_code?, signal?, why?, nested?}`（`nested` 是后台命令下面脚本里调过的工具，「脚本里调的工具」，施工 M-5 上）：`what` 是 `command`、`agent`；`state` 是 `running`、`done`（命令退出码 0；子代理那一轮结束了，还能留言叫醒，叫醒了回到 `running`）、`failed`（退出码不是 0、被信号杀了）、`stopped`（`why` 是 `stopped` 人停或她自己停的、`undone` 撤销时停的、`restarted` 有计划重启时停的、`timed_out` 跑到最长时间停的、`too_large` 输出太多停的，施工 7-12 下）、`aborted`（核心崩了，断了）。翻页、订阅时切点前派出、了结的照日志补上 |
 
 | `running_deep` | 这个会话在跑的任务一共几个，连子孙的（施工 9-8 补下） |
 | `usage_tree` | 连子代理一起累计用了多少，写法同 `usage`：自己的加上每个子代理那一支的（施工 9-8 补下） |

@@ -31,7 +31,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `media` | An image she sent: `image`, `alt`, `sticker` |
 | `group` | A stretch of the timeline (thoughts and tool steps): `steps`, `open`, `summary`, `summary_en` (the collapsed line), `took_ms`, `failed` |
 | `thought` | A thought step: `group`, `text`, `open`, `took_ms` |
-| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcall-toolcancel)), `output` (the start of the result text: at most 100 lines or 8 KiB; when cut, `output_cut: true`, and `view.detail` gives the whole), `questions` (the set asked by a question step, present as soon as it is asked) |
+| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcall-toolcancel)), `output` (the start of the result text: at most 100 lines or 8 KiB; when cut, `output_cut: true`, and `view.detail` gives the whole), `questions` (the set asked by a question step, present as soon as it is asked), `nested` (a `shell` whose script called tools: `{count, last}`, `last` being the highest-numbered `{n, name, title, state, started?}`; heads append `· #n display name` to the line and fetch the full list with `view.detail`) |
 | `end` | A turn's end: `reason`, `model`, `endpoint`, `took_ms`, `usage`; on error `error`, `explain` |
 | `notice` | An aside: `what` below |
 
@@ -49,7 +49,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `cleared` | The context was cleared |
 | `paused` | Automatic compaction paused: `reason`, `failures` |
 | `reverted` | Turns were undone: `turns`, `said`, `jobs` |
-| `job` | A background job finished: `job`, `job_kind`, `title`, `mark` (`done`, `failed`, `stopped`), `report`, `command`, `output` (`{blob, chars}`), `exit_code`, `signal`, `took_ms` |
+| `job` | A background job finished: `job`, `job_kind`, `title`, `mark` (`done`, `failed`, `stopped`), `report`, `command`, `output` (`{blob, chars}`), `exit_code`, `signal`, `took_ms`, `nested` (when the command's script called tools, as on `tool`) |
 | `answered` | A set of questions was answered: `questions`, `answers`, `by` |
 | `persona` | The persona or preset changed mid-session, at the moment it takes effect: `persona: {from, to}`, `preset: {from, to}`, only the ones that changed; ids, `null` for none |
 | `recap` | A recap: `text`, `covers` |
@@ -75,4 +75,4 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed |
 | `todos_done` | When the to-do list was cleared because everything was done, the list before clearing (heads tick everything, pause, then collapse) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, `state` being `running`, `paused`, `completed`, `blocked`, `waiting` |
-| `jobs` | Jobs this session started directly (running ones and the last 20 finished): `{job, what, title, state, started, ended, session, command, exit_code, signal, why}`, `state` being `running`, `done`, `failed`, `stopped`, `aborted` |
+| `jobs` | Jobs this session started directly (running ones and the last 20 finished): `{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested}` (`nested` as on `tool`, only for a command whose script called tools), `state` being `running`, `done`, `failed`, `stopped`, `aborted` |

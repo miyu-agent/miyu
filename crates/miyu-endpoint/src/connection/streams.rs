@@ -209,12 +209,20 @@ async fn view(
     let resources = core.resources.clone();
     let skills = crate::view::Titles::of(core);
     let blobs = miyu_store::blob::Blobs::new(core.root.blobs(&owner));
-    let (page, projector) = tokio::task::spawn_blocking(move || {
+    let (mut page, mut projector) = tokio::task::spawn_blocking(move || {
         crate::view::texts(&resources, language, &skills)
             .map(|texts| crate::view::newest(&events, texts, blobs))
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;
+    // 这一刻在跑的嵌套调用（施工 M-5 上）：日志里还没有，照会话交的补进条目和任务行，头重连以后接着刷新。
+    if let Some(current) = current
+        .as_ref()
+        .filter(|current| !current.nested.is_empty())
+    {
+        drop(projector.nested_running(&current.nested));
+        page["entries"] = json!(projector.entries());
+    }
     // 那一页的 `jobs`（切点前派出、这一页报完的）条目里已经写了；回应的 `jobs` 是「当前的」在跑的任务（[`now`]）。
     if let (Some(reply), Value::Object(mut page)) = (reply.as_object_mut(), page) {
         page.remove("jobs");

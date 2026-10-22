@@ -354,6 +354,7 @@ impl Projector {
                 exit_code: reported.exit_code,
                 signal: reported.signal,
                 took_ms: reported.duration_ms,
+                nested: self.tracking.nested.of_job(&reported.job),
             }),
         );
     }
@@ -388,6 +389,7 @@ impl Projector {
                 exit_code: None,
                 signal: None,
                 took_ms: None,
+                nested: None,
             }),
         );
     }

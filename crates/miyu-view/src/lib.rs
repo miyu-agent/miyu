@@ -9,6 +9,7 @@ mod entry;
 mod estimate;
 mod explain;
 mod id;
+mod nested;
 mod notice;
 mod projector;
 mod status;
@@ -22,9 +23,10 @@ pub const VERSION: u32 = 1;
 pub use change::Change;
 pub use entry::{
     Answered, Approval, Attachment, Body, Diff, End, Entry, EntryId, Group, JobDone, JobEnd, Mark,
-    Media, ModelSwap, Output, Part, Peer, Picture, Recast, Reply, SkillUsed, Swapped, Thought,
-    Title, Tone, Tool, ToolState, TouchKind, Touched, User, Was,
+    Media, ModelSwap, Nested, NestedCall, Output, Part, Peer, Picture, Recast, Reply, SkillUsed,
+    Swapped, Thought, Title, Tone, Tool, ToolState, TouchKind, Touched, User, Was,
 };
+pub use nested::{NestedItem, Stored, listed};
 pub use notice::{Compaction, CompactionState, Notice};
 pub use projector::{Lines, Projector};
 pub use status::{

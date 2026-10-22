@@ -206,17 +206,7 @@ fn log(home: &Home, session: &str) -> Vec<Value> {
 async fn run(home: &Home, work: &Path, args: &Value) -> (Child, String, Server) {
     let server = Server::start(replies(args)).await;
     let core = start(home, &server);
-    let (connection, token) = within("连上", miyu_ipc::connect(&home.root))
-        .await
-        .expect("连得上");
-    let (reader, write) = tokio::io::split(connection);
-    let mut rpc = Rpc {
-        read: AsyncReader::new(reader),
-        write,
-    };
-    let hello = json!({"protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"},
-        "caps": {"input": false}, "token": token});
-    rpc.call("hello-1", "hello", hello).await;
+    let mut rpc = connect(home).await;
     let created = rpc
         .call(
             "c1",
@@ -238,6 +228,22 @@ async fn run(home: &Home, work: &Path, args: &Value) -> (Child, String, Server) 
     )
     .await;
     (core, session, server)
+}
+
+/// 连上核心、握过手（说中文）。
+async fn connect(home: &Home) -> Rpc {
+    let (connection, token) = within("连上", miyu_ipc::connect(&home.root))
+        .await
+        .expect("连得上");
+    let (reader, write) = tokio::io::split(connection);
+    let mut rpc = Rpc {
+        read: AsyncReader::new(reader),
+        write,
+    };
+    let hello = json!({"protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"},
+        "caps": {"input": false}, "token": token, "locale": "zh-CN"});
+    rpc.call("hello-1", "hello", hello).await;
+    rpc
 }
 
 /// 等到工作目录里有了 `done.flag`，最多一分钟；没等到的说 `shell` 交回了什么。
@@ -372,6 +378,31 @@ async fn a_script_calls_this_sessions_tools_through_its_own_endpoint() {
         .rposition(|event| event["kind"] == "tool.nested")
         .expect("有");
     assert!(last < result, "都在 shell 的结果前面");
+    // 头上看得到（施工 M-5 上）：那一步带个数和最近一个，点开是整份。
+    let mut rpc = connect(&home).await;
+    let detail = rpc
+        .call(
+            "d",
+            "view.detail",
+            json!({"session": session, "call": call}),
+        )
+        .await;
+    let listed = detail["nested"].as_array().expect("有整份");
+    assert_eq!(listed.len(), nested.len(), "{detail}");
+    assert!(
+        listed
+            .iter()
+            .all(|item| item["state"] == "ok" && item["title"]["name"] == "回忆"),
+        "{detail}"
+    );
+    let page = rpc
+        .call("p", "view.page", json!({"session": session, "view": true}))
+        .await;
+    let step = page["entries"]
+        .as_array()
+        .and_then(|entries| entries.iter().find(|entry| entry["call"] == call))
+        .expect("有那一步");
+    assert_eq!(step["nested"]["count"], nested.len(), "{step}");
 
     core.kill().expect("杀得了核心");
     core.wait().expect("收得了");
@@ -410,6 +441,21 @@ async fn a_background_command_calls_under_its_job() {
         .position(|event| event["kind"] == "tool.nested")
         .expect("有");
     assert!(at < reported);
+    // 头上看得到（施工 M-5 上）：任务了结那条旁白带最后那一份，点开照任务要整份。
+    let mut rpc = connect(&home).await;
+    let detail = rpc
+        .call("d", "view.detail", json!({"session": session, "job": "j1"}))
+        .await;
+    assert_eq!(detail["nested"][0]["n"], 1, "{detail}");
+    assert_eq!(detail["nested"][0]["name"], "memory_search");
+    let page = rpc
+        .call("p", "view.page", json!({"session": session, "view": true}))
+        .await;
+    let notice = page["entries"]
+        .as_array()
+        .and_then(|entries| entries.iter().find(|entry| entry["what"] == "job"))
+        .expect("有任务的旁白");
+    assert_eq!(notice["nested"]["count"], 1, "{notice}");
     core.kill().expect("杀得了核心");
     core.wait().expect("收得了");
 }

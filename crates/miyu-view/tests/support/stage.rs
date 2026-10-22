@@ -99,7 +99,14 @@ pub fn policy() -> Policy {
             ("remember".to_string(), rule(Access::Read)),
             ("memory_search".to_string(), rule(Access::Read)),
             ("web_search".to_string(), rule(Access::Read)),
-            ("web_fetch".to_string(), rule(Access::Read)),
+            // 脚本里调得了（施工 M-5 上的测试要）。
+            (
+                "web_fetch".to_string(),
+                ToolRule {
+                    clicall: true,
+                    ..rule(Access::Read)
+                },
+            ),
         ]),
         step_limit: None,
         tool_texts: ToolTexts::new(ToolTextSources {

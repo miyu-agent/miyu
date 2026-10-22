@@ -31,7 +31,7 @@
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |
-| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有） |
+| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有）、`nested`（脚本里调过工具的 `shell`：`{count, last}`，`last` 是序号最大的那一个 `{n, name, title, state, started?}`；头在那一行后面写 `· #n 显示名`，整份用 `view.detail` 取） |
 | `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`，出错的 `error`、`explain` |
 | `notice` | 旁白：`what` 见下 |
 
@@ -49,7 +49,7 @@
 | `cleared` | 上下文清空了 |
 | `paused` | 暂停了自动压缩：`reason`、`failures` |
 | `reverted` | 撤销了几轮：`turns`、`said`、`jobs` |
-| `job` | 一件后台任务了结了：`job`、`job_kind`、`title`、`mark`（`done`、`failed`、`stopped`）、`report`、`command`、`output`（`{blob, chars}`）、`exit_code`、`signal`、`took_ms` |
+| `job` | 一件后台任务了结了：`job`、`job_kind`、`title`、`mark`（`done`、`failed`、`stopped`）、`report`、`command`、`output`（`{blob, chars}`）、`exit_code`、`signal`、`took_ms`、`nested`（后台命令的脚本调过工具的，同 `tool` 的） |
 | `answered` | 一组提问答了：`questions`、`answers`、`by` |
 | `persona` | 会话中途换了人格、预设，真换上的那一刻：`persona: {from, to}`、`preset: {from, to}`，换了哪样写哪样；写编号，没有的是 `null` |
 | `recap` | 一段回顾：`text`、`covers` |
@@ -75,4 +75,4 @@
 | `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推 |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |
-| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why}`，`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |
+| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |

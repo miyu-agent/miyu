@@ -380,13 +380,14 @@
 
 ## `view.detail`
 
-**参数**：`session`；`call`（一次工具调用的 `call_id`）或 `compaction`（一次压缩替代到的序号），正好写一个。
+**参数**：`session`；`call`（一次工具调用的 `call_id`）、`job`（一个后台任务的编号）或 `compaction`（一次压缩替代到的序号），正好写一个；可以另写 `nested_after`（整数）：嵌套调用只要序号比它大的，加上它以前还在跑的。
 
 **回应**
 
 - 调用：`{"files": [...], "output"}`。`output` 是结果原文，不截；`files` 一个文件一项：`path`、`action`（`write` 或 `trash`）、`diff`（统一格式，上下文 3 行）、`added`、`removed`，算不出差异的写 `skipped`（`too_big`、`binary`、`missing`）。
 - 压缩：`{"summary"}`：那一次的摘要原文。
+- 脚本里调过工具的（`miyu call`）：调用的回应多 `nested`，后台任务的回应只有 `{"nested"}`。照序号一项一个：`n`（序号）、`name`、`title`（`{name, object}`，显示名照连接的语言）、`args`（参数原文）、`state`（`running`、`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另带 `started`（在跑的开始时刻）、`took_ms`、`reason`（拒绝、出错的那一句）、`result`（`{blob, bytes}`，交给脚本的那份结果，用 `blob.get` 取）。那次 `shell` 还在跑、还没结果的，也交 `{"nested"}`。
 
-同一次调用的结果不会变，问一次就够。
+同一次调用的结果不会变，问一次就够；下面调的工具在跑时会多，用 `nested_after` 只拿新的。
 
 **出错**：`bad_params`；`session_not_found`；`unknown_call`（没有这次调用的结果，或者没有这次压缩）；`session_broken`。

@@ -12,9 +12,11 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 
+mod nested;
 mod swap;
 mod touched;
 
+pub use nested::{Nested, NestedCall};
 pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
 
@@ -250,6 +252,9 @@ pub struct Tool {
     /// 提问那一步问的那一组（施工 9-8 十四补）：问的时候就带上，答了照旧留着。
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub questions: Vec<miyu_kernel::event::Question>,
+    /// 脚本里调过的工具（施工 M-5 上）：前台那次 `shell` 下面的。没调过的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nested: Option<Nested>,
 }
 
 /// 标题那一句，照连接的语言。
@@ -433,6 +438,9 @@ pub struct JobDone {
     /// 后台命令从起到结束的毫秒数（施工 9-8 三补）：照回报，核心崩了补的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub took_ms: Option<u64>,
+    /// 后台命令下面脚本里调过的工具（施工 M-5 上）：最后那一份。没调过的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nested: Option<Nested>,
 }
 
 /// 后台任务了结的原因：后台命令的、子代理的。

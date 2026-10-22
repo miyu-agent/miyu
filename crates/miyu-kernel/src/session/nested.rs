@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 mod types;
 
-pub use types::{NestedAction, NestedAnswer, NestedInput, NestedRefusal};
+pub use types::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};
 
 use super::Session;
 use super::action::Action;
@@ -51,6 +51,8 @@ struct Call {
     args: String,
     access: Access,
     phase: Phase,
+    /// 派去跑的时刻（施工 M-5 上）；还没派的没有。
+    started: Option<Timestamp>,
 }
 
 /// 走到了哪。
@@ -77,15 +79,18 @@ impl Session {
     }
 
     /// 在跑的嵌套调用，照编号（施工 M-1，`docs/blueprint/protocol.md` 的订阅）：头断了重连时照它接着画 `#序号 显示名`。纯查询。
-    pub fn nested_running(&self) -> Vec<NestedStarted> {
-        let mut running: Vec<NestedStarted> = self
+    pub fn nested_running(&self) -> Vec<NestedRunning> {
+        let mut running: Vec<NestedRunning> = self
             .nested
             .calls
             .iter()
-            .filter(|call| call.phase == Phase::Running)
-            .map(|call| NestedStarted {
-                id: call.id.clone(),
-                name: call.name.clone(),
+            .filter_map(|call| {
+                Some(NestedRunning {
+                    id: call.id.clone(),
+                    name: call.name.clone(),
+                    args: call.args.clone(),
+                    at: call.started.filter(|_| call.phase == Phase::Running)?,
+                })
             })
             .collect();
         running.sort_by(|a, b| a.id.cmp(&b.id));
@@ -161,6 +166,7 @@ impl Session {
                     args,
                     access,
                     phase: Phase::Waiting,
+                    started: None,
                 });
                 Vec::new()
             }
@@ -183,6 +189,7 @@ impl Session {
                     return Vec::new();
                 };
                 call.phase = Phase::Running;
+                call.started = Some(at);
                 vec![
                     Action::Nested(NestedAction::Run {
                         id: call.id.clone(),

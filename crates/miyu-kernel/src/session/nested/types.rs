@@ -1,6 +1,8 @@
 //! 嵌套调用和执行器之间的几样（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：执行器交来的回报，交给执行器的
 //! 动作，答脚本那头的话。
 
+use serde::Serialize;
+
 use super::super::input::Verdict;
 use crate::event::{NestedStatus, Permission};
 use crate::id::{ContentHash, NestedId};
@@ -121,4 +123,17 @@ pub enum NestedRefusal {
     NotAllowed,
     /// 参数修正不了。
     NotAnObject,
+}
+
+/// 一个在跑的嵌套调用（施工 M-5 上）：订阅时交给头的那一份，头重连以后照它接着画、接着计时。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct NestedRunning {
+    /// 嵌套调用编号。
+    pub id: NestedId,
+    /// 调的哪件工具。
+    pub name: String,
+    /// 修正过的参数，JSON 原文。
+    pub args: String,
+    /// 派去跑的时刻。
+    pub at: Timestamp,
 }

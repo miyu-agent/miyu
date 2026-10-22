@@ -100,6 +100,7 @@ impl Projector {
             output: None,
             output_cut: false,
             questions: Vec::new(),
+            nested: None,
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());

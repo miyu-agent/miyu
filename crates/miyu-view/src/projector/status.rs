@@ -27,6 +27,8 @@ pub(super) struct Tracking {
     jobs: Vec<JobRow>,
     /// 这一轮等人的那几段（施工 9-8 十四补）：起、止，还在等的没有止。等的从没有到有时起一段，全了结时止，同时等几件只算一段。
     waits: Vec<(Timestamp, Option<Timestamp>)>,
+    /// 脚本里调的工具（施工 M-5 上）：每个父级下面见过的。
+    pub(super) nested: super::nested::Seen,
 }
 
 impl Projector {
@@ -81,6 +83,7 @@ impl Projector {
             }
             EventBody::JobReported(reported) => self.job_ended(event.at, reported),
             EventBody::ChildReported(reported) => self.child_ended(event.at, reported),
+            EventBody::ToolNested(nested) => self.nested_settled(nested),
             EventBody::TurnStarted(_) => {
                 self.tracking.doing = None;
                 self.tracking.waits.clear();
@@ -155,6 +158,7 @@ impl Projector {
                 self.tracking.doing = None;
                 self.tracking.preparing = None;
             }
+            TransientBody::NestedStarted(started) => self.nested_started(transient.at, started),
             TransientBody::CompactionStarted(started) => {
                 self.tracking.preparing = Some(Preparing {
                     seen: started.seen.get(),
@@ -172,6 +176,8 @@ impl Projector {
                 EventBody::ToolResult(result) => self.track_effects(event.at, &result.effects),
                 EventBody::JobReported(reported) => self.job_ended(event.at, reported),
                 EventBody::ChildReported(reported) => self.child_ended(event.at, reported),
+                // 切点前就开始的后台任务下面调过的（施工 M-5 上）：那一行的个数照整份日志算。
+                EventBody::ToolNested(nested) => self.nested_settled(nested),
                 _ => {}
             }
         }
@@ -266,6 +272,7 @@ impl Projector {
                         exit_code: None,
                         signal: None,
                         why: None,
+                        nested: None,
                     });
                 }
                 Effect::JobMessaged(messaged) => {
@@ -321,7 +328,7 @@ impl Projector {
         self.trim_rows();
     }
 
-    fn row(&mut self, job: &JobId) -> Option<&mut JobRow> {
+    pub(super) fn row(&mut self, job: &JobId) -> Option<&mut JobRow> {
         self.tracking.jobs.iter_mut().find(|row| &row.job == job)
     }
 

@@ -103,7 +103,7 @@ pub(crate) fn call<'a>(
             answer(move || async move { crate::view::page(core, peer, params(request)?).await })
         }
         "view.detail" => {
-            answer(move || async move { crate::view::detail(core, params(request)?).await })
+            answer(move || async move { crate::view::detail(core, peer, params(request)?).await })
         }
         "extension.status" => {
             answer(move || async move { Ok(crate::extensions::status(core, peer)) })

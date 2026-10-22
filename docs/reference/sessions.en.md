@@ -379,13 +379,14 @@ The newest page's `last` is the last event right now: then `subscribe {"after": 
 
 ## `view.detail`
 
-**Params**: `session`; `call` (a tool call's `call_id`) or `compaction` (the number a compaction replaced up to), exactly one.
+**Params**: `session`; `call` (a tool call's `call_id`), `job` (a background job's id) or `compaction` (the number a compaction replaced up to), exactly one; optionally `nested_after` (an integer): only the nested calls numbered above it, plus earlier ones still running.
 
 **Response**
 
 - A call: `{"files": [...], "output"}`. `output` is the full result text; `files` has one item per file: `path`, `action` (`write` or `trash`), `diff` (unified, 3 lines of context), `added`, `removed`; when no diff can be computed, `skipped` (`too_big`, `binary`, `missing`).
 - A compaction: `{"summary"}`: its summary text.
+- When a script called tools (`miyu call`): a call's response also has `nested`, and a job's response is just `{"nested"}`. One item per call, by number: `n`, `name`, `title` (`{name, object}`, the display name in the connection's language), `args` (the raw arguments), `state` (`running`, `ok`, `error`, `denied`, `needs_approval`, `cancelled`), and when present `started` (when a running one started), `took_ms`, `reason` (the refusal or error), `result` (`{blob, bytes}`, what the script got back, fetched with `blob.get`). A `shell` still running with no result yet also answers `{"nested"}`.
 
-A call's result never changes; asking once is enough.
+A call's result never changes; asking once is enough. Nested calls grow while they run; use `nested_after` to get only the new ones.
 
 **Errors**: `bad_params`; `session_not_found`; `unknown_call` (no result for that call, or no such compaction); `session_broken`.
