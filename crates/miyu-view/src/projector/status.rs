@@ -8,6 +8,7 @@ use miyu_kernel::event::{
 };
 use miyu_kernel::id::{CallId, JobId};
 use miyu_kernel::time::Timestamp;
+use miyu_kernel::waits::Waits;
 
 use super::Projector;
 use crate::entry::EntryId;
@@ -25,8 +26,8 @@ pub(super) struct Tracking {
     cooling_until: Option<Timestamp>,
     preparing: Option<Preparing>,
     jobs: Vec<JobRow>,
-    /// 这一轮等人的那几段（施工 9-8 十四补）：起、止，还在等的没有止。等的从没有到有时起一段，全了结时止，同时等几件只算一段。
-    waits: Vec<(Timestamp, Option<Timestamp>)>,
+    /// 这一轮等人的那几段（施工 9-8 十四补；9-8 十四补修起用内核的 [`Waits`]，内核记用时也照它，一个口径）。
+    waits: Waits,
     /// 脚本里调的工具（施工 M-5 上）：每个父级下面见过的。
     pub(super) nested: super::nested::Seen,
 }
@@ -45,20 +46,12 @@ impl Projector {
             state,
             waiting: tracking.waiting.clone(),
             since: self.turn.as_ref().map(|turn| turn.started),
-            waited_ms: if self.turn.is_some() {
-                tracking
-                    .waits
-                    .iter()
-                    .filter_map(|(start, end)| Some(millis(*start, (*end)?)))
-                    .sum()
-            } else {
-                0
-            },
-            waiting_since: self
-                .turn
-                .as_ref()
-                .and(tracking.waits.last())
-                .and_then(|(start, end)| end.is_none().then_some(*start)),
+            // 等完了的那几段：正在等的那一段从 `waiting_since` 起，不算在里面。
+            waited_ms: self.turn.as_ref().map_or(0, |turn| {
+                let to = tracking.waits.waiting_since().unwrap_or(self.now);
+                tracking.waits.waited_ms(turn.started, to)
+            }),
+            waiting_since: self.turn.as_ref().and(tracking.waits.waiting_since()),
             doing: self.turn.as_ref().and(tracking.doing.clone()),
             used: tracking.used,
             speed: tracking.speed,
@@ -188,42 +181,21 @@ impl Projector {
         if let Some(entry) = self.calls.get(&call).cloned()
             && !self.tracking.waiting.iter().any(|w| w.call == call)
         {
-            if self.tracking.waiting.is_empty() {
-                self.tracking.waits.push((at, None));
-            }
+            self.tracking.waits.wait(&call, at);
             self.tracking.waiting.push(Waiting { what, entry, call });
         }
     }
 
     /// 那一次调用了结了：不再等人。全了结了，止住这一段等人。
     fn settled(&mut self, call: CallId, at: Timestamp) {
-        let before = self.tracking.waiting.len();
         self.tracking.waiting.retain(|waiting| waiting.call != call);
-        if before > 0
-            && self.tracking.waiting.is_empty()
-            && let Some((_, end)) = self.tracking.waits.last_mut()
-        {
-            *end = Some(at);
-        }
+        self.tracking.waits.settled(&call, at);
     }
 
     /// `from` 到 `to` 刨掉这一轮等人的那几段，多少毫秒（施工 9-8 十四补，项目主人 2026-10-23 定等人不算用时）：一步、一段、
     /// 一轮的用时都照它算。还在等的那一段算到 `to`。
     pub(super) fn busy_ms(&self, from: Timestamp, to: Timestamp) -> u64 {
-        let waited: u64 = self
-            .tracking
-            .waits
-            .iter()
-            .map(|(start, end)| {
-                let start = start.unix_millis().max(from.unix_millis());
-                let end = end
-                    .map_or(to, |end| end)
-                    .unix_millis()
-                    .min(to.unix_millis());
-                u64::try_from(end - start).unwrap_or(0)
-            })
-            .sum();
-        millis(from, to).saturating_sub(waited)
+        self.tracking.waits.busy_ms(from, to)
     }
 
     /// 主请求说完了：上下文用了多少、速度；说成了的不再冷却、不再等重试。
@@ -365,9 +337,4 @@ impl Projector {
 fn later(at: Timestamp, ms: u64) -> Timestamp {
     let ms = i64::try_from(ms).unwrap_or(i64::MAX);
     Timestamp::from_unix_millis(at.unix_millis().saturating_add(ms)).unwrap_or(at)
-}
-
-/// `from` 到 `to` 多少毫秒，倒着的算 0。
-fn millis(from: Timestamp, to: Timestamp) -> u64 {
-    u64::try_from(to.unix_millis() - from.unix_millis()).unwrap_or(0)
 }

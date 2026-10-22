@@ -136,7 +136,7 @@
 | `state` | `idle`、`running`、`waiting`（有没了结的确认、提问） |
 | `waiting` | `[{what: "approve"\|"ask", entry, call}]`：没了结的确认、提问，照先后；要确认的工具和参数、题目在那一步的条目里（`args`、`approval`）。没有的不写 |
 | `since` | 这一轮开始的时刻；用时由头算。没在跑的不写 |
-| `waited_ms`、`waiting_since` | 等人不算用时（施工 9-8 十四补，项目主人 2026-10-23 定，各处统一）：`waited_ms` 是这一轮等人等完了的那几段一共多少毫秒，没等过的不写；`waiting_since` 是正在等的这一段从什么时候起，没在等的不写。等人照内核的事件认：`tool.approval_requested` 起、定了或有了结果止，`question.asked` 起、答了或有了结果止；等的从没有到有时起一段、全了结时止，同时等几件只算一段。头照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时计时停住。条目里的用时（`tool`、`group`、`end` 的 `took_ms`）照同一个函数刨掉这几段（`projector/status.rs` 的 `busy_ms`） |
+| `waited_ms`、`waiting_since` | 等人不算用时（施工 9-8 十四补，项目主人 2026-10-23 定，各处统一）：`waited_ms` 是这一轮等人等完了的那几段一共多少毫秒，没等过的不写；`waiting_since` 是正在等的这一段从什么时候起，没在等的不写。等人照内核的事件认：`tool.approval_requested` 起、定了或有了结果止，`question.asked` 起、答了或有了结果止；等的从没有到有时起一段、全了结时止，同时等几件只算一段。头照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时计时停住。条目里的用时（`tool`、`group`、`end` 的 `took_ms`）照同一个函数刨掉这几段（内核的 `miyu_kernel::waits::Waits`，施工 E-M 下挪进内核，9-8 十四补修起视图也调它，内核记的用时一个口径） |
 | `doing` | 在跑时正在做什么：`{what: "thinking"\|"writing"\|"tool", entry}`；`{what: "retrying", attempt, limit, at, class, message, status?, failover?}`（`at` 是再试的时刻，照 `status` 瞬时事件）；`{what: "compacting", entry, trigger, written, expected}`（`trigger` 是 `auto`、`manual`、`overflow`，施工 6-11 三补：头照它分，自动的只写一行，手动的画进度）。没在跑的不写 |
 | `context` | `{window?, compaction_line?, used?}`：限额同订阅回应的 `limits`；`used` 是最近一次主请求的输入（三项加起来）加输出（施工 9-8 十四补，终端、核心主会话 2026-10-22 定：她回的下一次请求要带上，算上更接近这一刻占了多少），压完的照 `compaction.done` 的 `after`，压缩落了盘还没有新请求的不写 |
 | `speed` | `{output, ms}`：最近一次主请求的输出 token、首字到结束的毫秒数（没报首字的照整次）；每秒多少由头算 |
