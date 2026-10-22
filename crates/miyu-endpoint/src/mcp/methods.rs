@@ -1,7 +1,8 @@
 //! 个人设置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
 //! `mcp.restart` 重启一个；状态变了推 `mcp.changed`（订阅软件包列表的连接收，`subscriptions/listed.rs`）。一项同软件包列表上
 //! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）；加载方式
-//! `need_load` 和全局开关 `on`（施工 X-27）。只给本机的人用。加、换、删在 `editing.rs`（施工 X-26）。
+//! `need_load` 和全局开关 `on`（施工 X-27）；浏览器登录过的带 `logged_in`（施工 X-42 下再补）。只给本机的人用。加、换、删在
+//! `editing.rs`（施工 X-26）。
 
 use std::sync::Arc;
 
@@ -53,7 +54,8 @@ pub(crate) async fn restart(core: &Arc<Core>, params: RestartParams) -> Result<V
     entry(core, &params.name).ok_or(Refusal::UNKNOWN_SERVER)
 }
 
-/// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务，知道了的另带工具。
+/// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务，知道了的另带工具，浏览器登录过的
+/// 带 `logged_in`（施工 X-42 下再补）。
 /// `need_load` 是服务那一级要不要先加载、谁定的（施工 X-27）：`source` 是服务表写的（没写的先加载），`setting` 是个人设置的
 /// `loading.mcp.<服务名>` 盖过的；`on` 是全局开关 `features.mcp-<服务名>`，没写的算开。配置照最近换上的那一份读，不拿配置
 /// 服务的锁：推 `mcp.changed` 时也调它。
@@ -69,6 +71,7 @@ fn one(core: &Core, server: &McpServer) -> Value {
     reach(server, &mut one);
     written(server, &mut one);
     toggles(core, server, &mut one);
+    logged_in(core, &server.name, &mut one);
     details(
         &mut one,
         status.state,
@@ -164,6 +167,15 @@ pub(crate) fn toggles(core: &Core, server: &McpServer, one: &mut Value) {
         "by": if set.is_some() { "setting" } else { "source" },
     });
     one["on"] = json!(miyu_session::switches::on(&switches, &server.feature_id()));
+}
+
+/// 浏览器登录过的（施工 X-42 下再补）：存着 `mcp-oauth-<服务名>` 的带 `logged_in: true`，没有的不写这一格，头照它把「登录」换成
+/// 「登出」。只看密钥文件里有没有这个名字，不读值；配置照最近换上的那一份读（同 [`toggles`]），推送时也调它。
+fn logged_in(core: &Core, service: &str, one: &mut Value) {
+    let name = super::login::secret_name(service);
+    if core.config_now().borrow().secrets.has(&name) {
+        one["logged_in"] = json!(true);
+    }
 }
 
 /// 服务 `service` 这时在工具目录里的工具（施工 X-26），照目录的先后：起好列完的、核心起来时照缓存先登记的都算（同 `preset.get`

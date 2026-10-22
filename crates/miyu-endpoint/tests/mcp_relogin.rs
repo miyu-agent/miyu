@@ -35,7 +35,8 @@ async fn logged_in(
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut client, kept) = running_with(home, script).await;
-    until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
+    let waiting = until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
+    assert_eq!(waiting.get("logged_in"), None, "没登录的不带：{waiting}");
     let url = login_url(&mut client, "l1").await;
     let (status, page) = browse(&url).await;
     assert_eq!(status, 200, "{page}");
@@ -221,6 +222,9 @@ async fn logging_out_forgets_the_login() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     let (_core, mut client, _kept) = logged_in(&home, &server, &Script::new([])).await;
+    // 登录过的看得出（施工 X-42 下再补）：头照它把「登录」换成「登出」。
+    let running = until_listed(&mut client, "notes", |one| one["state"] == "running").await;
+    assert_eq!(running["logged_in"], true, "{running}");
     let out = client
         .call("o1", "mcp.logout", json!({"service": "notes"}))
         .await;
@@ -228,7 +232,8 @@ async fn logging_out_forgets_the_login() {
     let secrets =
         std::fs::read_to_string(home.root.system().join("secrets.toml")).unwrap_or_default();
     assert!(!secrets.contains("mcp-oauth-notes"), "{secrets}");
-    until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
+    let out = until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
+    assert_eq!(out.get("logged_in"), None, "登出了就不带：{out}");
     let again = client
         .call("o2", "mcp.logout", json!({"service": "notes"}))
         .await;
