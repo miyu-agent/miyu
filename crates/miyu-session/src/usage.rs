@@ -129,7 +129,7 @@ impl Ledger {
         let usage = total.usage;
         Ok(Spent {
             requests: total.requests,
-            input: usage.uncached + usage.cache_read + usage.cache_write,
+            input: usage.input(),
             cached: usage.cache_read,
             output: usage.output,
             amounts,

@@ -151,10 +151,11 @@ impl Tally {
 
 /// 四项各加各的。
 fn plus(total: &mut Usage, usage: Usage) {
-    total.uncached += usage.uncached;
-    total.cache_read += usage.cache_read;
-    total.cache_write += usage.cache_write;
-    total.output += usage.output;
+    let reasoning = total.reasoning;
+    *total = Usage {
+        reasoning,
+        ..total.plus(&usage)
+    };
 }
 
 #[cfg(test)]

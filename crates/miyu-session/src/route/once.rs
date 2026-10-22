@@ -205,9 +205,7 @@ impl OneShot {
         let answered = self.answer(config, blobs, ask, watch).await;
         match &answered {
             Ok(answer) => {
-                let input = answer
-                    .usage
-                    .map(|usage| usage.uncached + usage.cache_read + usage.cache_write);
+                let input = answer.usage.map(|usage| usage.input());
                 tracing::info!(
                     target: TARGET,
                     purpose = purpose.as_str(),

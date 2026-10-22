@@ -161,10 +161,11 @@ impl Default for Adding {
 
 /// 用量四项各自加上。
 fn add(sum: &mut Usage, more: &Usage) {
-    sum.uncached += more.uncached;
-    sum.cache_read += more.cache_read;
-    sum.cache_write += more.cache_write;
-    sum.output += more.output;
+    let reasoning = sum.reasoning;
+    *sum = Usage {
+        reasoning,
+        ..sum.plus(more)
+    };
 }
 
 impl Purged {

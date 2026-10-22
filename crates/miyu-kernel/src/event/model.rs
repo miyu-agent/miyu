@@ -175,6 +175,35 @@ pub struct Usage {
     pub reasoning: Option<u64>,
 }
 
+impl Usage {
+    /// 输入一共多少：三种输入加起来。供应商报的是任意数，加起来封顶不溢出（施工 B-5）。
+    pub fn input(&self) -> u64 {
+        self.uncached
+            .saturating_add(self.cache_read)
+            .saturating_add(self.cache_write)
+    }
+
+    /// 输入、输出一共多少，封顶不溢出。
+    pub fn total(&self) -> u64 {
+        self.input().saturating_add(self.output)
+    }
+
+    /// 两份各项加起来，封顶不溢出；思考两份都没报的照旧没有。
+    #[must_use]
+    pub fn plus(&self, more: &Usage) -> Usage {
+        Usage {
+            uncached: self.uncached.saturating_add(more.uncached),
+            cache_read: self.cache_read.saturating_add(more.cache_read),
+            cache_write: self.cache_write.saturating_add(more.cache_write),
+            output: self.output.saturating_add(more.output),
+            reasoning: match (self.reasoning, more.reasoning) {
+                (None, None) => None,
+                (a, b) => Some(a.unwrap_or(0).saturating_add(b.unwrap_or(0))),
+            },
+        }
+    }
+}
+
 text_enum!(
     /// 一次请求的结果。
     CallResult {

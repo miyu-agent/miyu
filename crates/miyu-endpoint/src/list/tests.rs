@@ -147,3 +147,25 @@ fn a_raised_flag_stops_before_the_next_session() {
     .expect("读得了");
     assert!(listed.is_empty(), "一个都不读");
 }
+
+/// 鲁棒性（2026-10-22）：会话列表算「连同子孙一共多少 token」（`tokens.rs` 的 `family`）没有记走过哪些，索引里父子关系一旦
+/// 成环（一行的父会话是它自己；索引、日志坏了才会有），就一直转下去，`session.list` 永远不回。期望：几秒内算完。修之前这条是红的。
+#[test]
+fn a_parent_cycle_in_the_index_does_not_spin_forever() {
+    let mut row = read(&[]);
+    row.parent = Some(row.id.clone());
+    row.tokens = 1;
+    let id = row.id.clone();
+    let rows = std::collections::BTreeMap::from([(id.clone(), row)]);
+    let (done, finished) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let total = tokens::family(&rows, &id);
+        done.send(total).unwrap_or(());
+    });
+    assert!(
+        finished
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .is_ok(),
+        "父会话是自己的一行：5 秒还没算完"
+    );
+}

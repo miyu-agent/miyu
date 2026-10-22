@@ -230,14 +230,7 @@ pub(crate) fn total_row(core: &Core, total: Total) -> Value {
 /// 两份加起来：请求数、四项、金额（同一币种相加）、没价格的次数。
 pub(crate) fn plus(mut one: Total, other: &Total) -> Total {
     one.requests += other.requests;
-    one.usage.uncached += other.usage.uncached;
-    one.usage.cache_read += other.usage.cache_read;
-    one.usage.cache_write += other.usage.cache_write;
-    one.usage.output += other.usage.output;
-    one.usage.reasoning = match (one.usage.reasoning, other.usage.reasoning) {
-        (None, None) => None,
-        (a, b) => Some(a.unwrap_or(0) + b.unwrap_or(0)),
-    };
+    one.usage = one.usage.plus(&other.usage);
     one.unpriced += other.unpriced;
     for (currency, amount) in &other.amounts {
         match one.amounts.iter_mut().find(|(have, _)| have == currency) {

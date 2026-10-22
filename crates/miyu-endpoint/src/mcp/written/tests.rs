@@ -158,3 +158,20 @@ fn shapes_that_cannot_hold_a_server_are_refused() {
         "写错的一张不写"
     );
 }
+
+/// 鲁棒性（2026-10-22）：同一个服务混着写——点号键写在前面、子表写在后面（合法的 TOML）——换掉它时，插入的位置照原文算，
+/// 前面的点号那几行已经删了、字变短了，`&cut[..at]` 越界 panic（`written.rs` 的 `put`）。`mcp.set` 改个人设置就走这里。
+/// 期望：不 panic；换得了就换，换不了交回空的。修之前这条是红的。
+#[test]
+fn a_server_written_both_dotted_and_as_tables_does_not_panic() {
+    let block = block(&entry("fetch", &["new"])).unwrap();
+    let texts = [
+        "[mcp]\nfetch.command = [\"old\"]\n\n[mcp.fetch.env]\nK = \"v\"\n",
+        "mcp.fetch.command = [\"old\"]\n\n[mcp.fetch.env]\nK = \"v\"\n",
+        "[mcp]\nfetch.command = [\"old\"]\n\n[mcp.fetch.env]\nK = \"v\"\n\n# 后面的注释\n[mcp.time]\ncommand = [\"time\"]\n",
+    ];
+    for text in texts {
+        let outcome = std::panic::catch_unwind(|| put(text, "fetch", &block));
+        assert!(outcome.is_ok(), "panic 了：{text}");
+    }
+}

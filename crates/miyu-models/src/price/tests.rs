@@ -261,3 +261,11 @@ fn the_preferred_currency_comes_first_then_by_code() {
     let codes: Vec<&str> = amounts.iter().map(|(code, _)| code.as_str()).collect();
     assert_eq!(codes, ["CNY", "EUR", "USD"]);
 }
+
+/// 鲁棒性（2026-10-22）：用量是供应商报的任意 u64，`cost` 把三种输入直接相加（`price.rs` 的 `cost`），报得离谱就溢出：debug 下
+/// panic（每次回报都算一次金额），release 下绕回去、挑错价格档。期望：不 panic；算不出的交回空的或者封顶。修之前这条是红的。
+#[test]
+fn a_huge_usage_report_does_not_overflow() {
+    let outcome = std::panic::catch_unwind(|| tariff(flash()).cost(&usage(u64::MAX, 1, 1, 1)));
+    assert!(outcome.is_ok(), "用量报成 u64::MAX 时算金额 panic 了");
+}

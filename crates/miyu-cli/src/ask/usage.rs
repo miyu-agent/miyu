@@ -26,15 +26,18 @@ impl Sum {
         }
         self.seen = true;
         let field = |name: &str| usage[name].as_u64().unwrap_or(0);
-        self.uncached += field("uncached");
-        self.cache_read += field("cache_read");
-        self.cache_write += field("cache_write");
-        self.output += field("output");
+        // 供应商报的是任意数：封顶不溢出（施工 B-5）。
+        self.uncached = self.uncached.saturating_add(field("uncached"));
+        self.cache_read = self.cache_read.saturating_add(field("cache_read"));
+        self.cache_write = self.cache_write.saturating_add(field("cache_write"));
+        self.output = self.output.saturating_add(field("output"));
     }
 
     /// 输入一共多少。
     pub(crate) fn input(&self) -> u64 {
-        self.uncached + self.cache_read + self.cache_write
+        self.uncached
+            .saturating_add(self.cache_read)
+            .saturating_add(self.cache_write)
     }
 
     /// 命中率，四舍五入到百分之一；没有输入的没有。

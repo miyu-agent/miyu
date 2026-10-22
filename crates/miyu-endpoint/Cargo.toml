@@ -128,6 +128,10 @@ name = "model_call_log"
 path = "tests/model_call_log.rs"
 
 [[test]]
+name = "robust_methods"
+path = "tests/robust_methods.rs"
+
+[[test]]
 name = "providers_log"
 path = "tests/providers_log.rs"
 

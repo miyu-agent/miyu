@@ -177,7 +177,7 @@ impl Projector {
             return;
         }
         if let Some(usage) = &called.usage {
-            self.tracking.used = Some(usage.uncached + usage.cache_read + usage.cache_write);
+            self.tracking.used = Some(usage.input());
             if let Some(duration) = called.duration_ms {
                 let ms = duration.saturating_sub(called.first_token_ms.unwrap_or(0));
                 self.tracking.speed = Some(Speed {

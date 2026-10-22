@@ -52,7 +52,7 @@ impl Tariff {
 
     /// 这一次的用量 `usage` 花了多少；算不出的没有（见模块的说明）。
     pub fn cost(&self, usage: &Usage) -> Option<Cost> {
-        let input = usage.uncached + usage.cache_read + usage.cache_write;
+        let input = usage.input();
         let (above, rates) = match tier(&self.price, input) {
             Some((size, rates)) => (Some(size), over(&self.price.rates, rates)),
             None => (None, self.price.rates),

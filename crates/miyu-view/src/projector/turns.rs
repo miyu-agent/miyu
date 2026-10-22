@@ -148,20 +148,7 @@ impl Projector {
     }
 }
 
-/// 两份用量加起来。
+/// 两份用量加起来，封顶不溢出（施工 B-5）。
 fn add(total: Option<Usage>, more: &Usage) -> Usage {
-    let Some(total) = total else {
-        return *more;
-    };
-    let reasoning = match (total.reasoning, more.reasoning) {
-        (None, None) => None,
-        (a, b) => Some(a.unwrap_or(0) + b.unwrap_or(0)),
-    };
-    Usage {
-        uncached: total.uncached + more.uncached,
-        cache_read: total.cache_read + more.cache_read,
-        cache_write: total.cache_write + more.cache_write,
-        output: total.output + more.output,
-        reasoning,
-    }
+    total.map_or(*more, |total| total.plus(more))
 }

@@ -133,9 +133,9 @@ impl Row {
         if let Body::ModelCalled(called) = &event.body
             && let Some(usage) = &called.usage
         {
-            self.tokens += usage.uncached + usage.cache_read + usage.cache_write + usage.output;
+            self.tokens = self.tokens.saturating_add(usage.total());
             if !called.aside() && called.compaction.is_none() {
-                self.context = Some(usage.uncached + usage.cache_read + usage.cache_write);
+                self.context = Some(usage.input());
                 self.context_model = match (&called.endpoint, &called.model) {
                     (Some(endpoint), Some(model)) => Some(format!("{endpoint}/{model}")),
                     _ => None,

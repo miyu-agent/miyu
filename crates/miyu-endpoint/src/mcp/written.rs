@@ -156,6 +156,15 @@ pub(super) fn put(text: &str, name: &str, block: &str) -> Option<String> {
         piece.range.end = blank_after(text, piece.range.end);
     }
     let cut = cut(text, &found);
+    // 第一张表的位置照删过以后的字算：前面删掉的几段（点号写的键）挪走了它们的长度（施工 B-2）。
+    let at = at.map(|at| {
+        let before: usize = found
+            .iter()
+            .filter(|piece| piece.range.end <= at)
+            .map(|piece| piece.range.len())
+            .sum();
+        at - before
+    });
     let edited = match at {
         Some(at) => format!("{}{block}{}", &cut[..at], &cut[at..]),
         None => appended(&cut, &block, nl),
