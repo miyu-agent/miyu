@@ -35,6 +35,8 @@ pub enum Group {
     Session,
     /// 用途。
     Purpose,
+    /// 拿来干什么（施工 CX-1 上）：`main`、`compaction`、`subagent`、`recap`、`title`、`memory`、`other`。
+    Use,
 }
 
 impl Group {
@@ -47,6 +49,7 @@ impl Group {
             Group::Day => "day",
             Group::Session => "session",
             Group::Purpose => "purpose",
+            Group::Use => "use",
         }
     }
 
@@ -59,6 +62,7 @@ impl Group {
             Group::Day,
             Group::Session,
             Group::Purpose,
+            Group::Use,
         ]
         .into_iter()
         .find(|group| group.name() == name)
@@ -73,6 +77,14 @@ impl Group {
             Group::Day => "(at + ?1) / 86400000",
             Group::Session => "session",
             Group::Purpose => "purpose",
+            // 子代理先认（它自己的压缩、回顾也算在子代理里）；当场压的摘要请求记在 `summary`，提前压的是 `compaction` 用途。
+            Group::Use => {
+                "CASE WHEN parent IS NOT NULL THEN 'subagent' \
+                 WHEN summary = 1 OR purpose = 'compaction' THEN 'compaction' \
+                 WHEN purpose IS NULL THEN 'main' \
+                 WHEN purpose IN ('recap', 'title', 'memory') THEN purpose \
+                 ELSE 'other' END"
+            }
         }
     }
 }

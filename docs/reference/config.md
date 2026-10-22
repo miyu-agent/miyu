@@ -234,7 +234,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `from`、`until` | 时刻 | 只算这一段，左闭右开 |
-| `group` | 数组 | 照这几样分组：`account`、`venue`、`model`、`day`、`session`、`purpose`；不写是一行总计 |
+| `group` | 数组 | 照这几样分组：`account`、`venue`、`model`、`day`、`session`、`purpose`、`use`（用途：`main` 主对话、`compaction` 压缩、`subagent` 子代理、`recap`、`title`、`memory`、`other`）；不写是一行总计 |
 | `session` | 字符串 | 只算这个会话；`tree: true` 连它派的子会话 |
 | `offset` | 时区，例如 `+09:00` | 分天照哪个时区，不写是核心所在机器的 |
 

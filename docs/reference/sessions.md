@@ -10,6 +10,7 @@
 | [`session.interrupt`](#sessioninterrupt) | 打断在进行的回合 |
 | [`session.withdraw`](#sessionwithdraw) | 不打断，退回一条排着队的话 |
 | [`session.tools`](#sessiontools) | 她下一轮能用的工具 |
+| [`session.context`](#sessioncontext) | 上下文一块块各占多少 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -31,7 +32,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -186,6 +187,22 @@
 ```
 
 **出错**：`bad_params`（写了 `session` 又写了 `persona`、`preset`）；找会话的那几种。
+
+## `session.context`
+
+这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少。只在调用时算，不影响会话。
+
+**参数**：`session`（必写）。
+
+**回应**：`{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。`window`、`line` 是上下文窗口和压缩线（没交过限额的不写）；`used` 是这时用了多少，口径同底栏；`basis` 是 `measured`（照最近一次请求供应商报的 `anchor` 起算）或 `estimated`（全是本地估的）。`parts` 每块 `{"part", "label", "tokens", "children"?}`，`part` 是稳定的编号，`label` 照连接的语言，是 0 的块不交。各块是本地估的原值，加起来是 `estimated_total`；要和 `used` 对上，照 `used / estimated_total` 摊。
+
+块的编号：`system`（下面 `system.skills`、`system.knowledge`、`system.profile`、`system.project`、`system.appended:<包>`、`system.other`）、`tools`（下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`、`tools.scripts`、`tools.deferred`）、`demos`、`summary`、`messages`（下面 `messages.user`、`messages.assistant`、`messages.memory`（下面 `messages.memory.resident`、`messages.memory.recall`）、`messages.knowledge`、`messages.facts`、`messages.tool_results`）。包、服务的 `label` 是原名。
+
+```json
+{"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"系统提示","tokens":6100,"children":[{"part":"system.skills","label":"技能目录","tokens":900},{"part":"system.other","label":"人设和其余说明","tokens":5200}]},{"part":"messages","label":"对话","tokens":37700,"children":[{"part":"messages.user","label":"你说的","tokens":4200},{"part":"messages.assistant","label":"AI 说的","tokens":33500}]}]}
+```
+
+**出错**：`bad_params`（没写 `session`、写了别的参数）；找会话的那几种。新会话预览以后加。
 
 ## `session.answer`
 

@@ -401,6 +401,9 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
     })
 }
 
+mod context;
+#[cfg(test)]
+mod context_tests;
 mod face;
 mod next;
 #[cfg(test)]

@@ -1,5 +1,6 @@
 //! 拿着一个会话：发命令、订阅、有计划地停下（施工 3-7 中）。拿着它的都放下了，actor 就退出。
 
+pub(crate) mod context;
 mod tools;
 
 use std::fmt;
@@ -75,6 +76,8 @@ pub(crate) enum Message {
     Current(oneshot::Sender<crate::current::Current>),
     /// 下一次请求会发的工具（施工 S-T，`handle/tools.rs`）。
     Tools(oneshot::Sender<Vec<miyu_policy::Offered>>),
+    /// 这时的上下文一块块的（施工 CX-1 上，`handle/context.rs`）。
+    Context(oneshot::Sender<context::Context>),
     /// 放下了一个订阅（施工 7-9）：订阅被丢掉时由它自己送来，连同要订阅、没等到回答就不等了的。
     Unsubscribed,
     /// 有计划地停下：它的事件都落了盘，actor 退出以前交回一声。

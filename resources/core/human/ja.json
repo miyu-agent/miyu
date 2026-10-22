@@ -810,6 +810,27 @@
     "commands/unavailable/off": "/{name} は無効になっています。",
     "commands/unavailable/not-installed": "ペルソナの記憶は未インストールです。",
     "commands/unavailable/preset-off": "プリセット「{preset}」は記憶がオフです。",
-    "commands/workspace-wide": "ワークスペースを {cwd} に切り替えました（範囲の広いディレクトリ）。"
+    "commands/workspace-wide": "ワークスペースを {cwd} に切り替えました（範囲の広いディレクトリ）。",
+    "context/part/system": "システムプロンプト",
+    "context/part/system.skills": "スキル",
+    "context/part/system.knowledge": "ナレッジベース",
+    "context/part/system.profile": "あなたについて",
+    "context/part/system.project": "プロジェクトの指示",
+    "context/part/system.other": "人格とその他の指示",
+    "context/part/tools": "ツールの説明",
+    "context/part/tools.builtin": "内蔵ツール",
+    "context/part/tools.scripts": "スクリプト",
+    "context/part/tools.deferred": "未読み込みのツール",
+    "context/part/demos": "会話の例",
+    "context/part/summary": "チェックポイントの要約",
+    "context/part/messages": "会話",
+    "context/part/messages.user": "あなたの発言",
+    "context/part/messages.assistant": "AIの返事",
+    "context/part/messages.tool_results": "ツールの結果",
+    "context/part/messages.memory": "記憶",
+    "context/part/messages.memory.resident": "常駐の記憶",
+    "context/part/messages.memory.recall": "思い出した記憶",
+    "context/part/messages.knowledge": "ナレッジから思い出したこと",
+    "context/part/messages.facts": "その他のメモ"
   }
 }

@@ -5,7 +5,8 @@
 
 use super::*;
 use crate::estimate::Flat;
-use crate::session::{Compaction, ContextLimits};
+use crate::id::ModuleId;
+use crate::session::{Breakdown, Compaction, ContextLimits, Said};
 
 /// 出厂的四个数；尾巴、图片的数这里用不上。
 const COMPACTION: Compaction = Compaction {
@@ -144,5 +145,111 @@ fn the_context_used_follows_the_compaction_estimate() {
     assert!(
         (total..total + 50).contains(&used),
         "照供应商报的那一次起算：{used}，报的 {total}"
+    );
+}
+
+/// 模块 `module` 注入的一块，类别是 `kind`。
+fn fact(module: &str, kind: &str, text: &str) -> Injection {
+    let mut injected = super::executor::injection(module, text);
+    injected.fact.kind = crate::id::FactKind::parse(kind).unwrap();
+    injected
+}
+
+/// 这时的上下文一块块的（施工 CX-1 上，`protocol.md` 的 `session.context`）：system、每件工具、示范对话、检查点摘要、
+/// 对话里每条照是谁的、事实照模块和类别归，各自本地估；用量同 `context_used`，答过以后有锚（供应商报的那一次）。
+#[test]
+fn the_breakdown_splits_the_context_by_who_put_it_there() {
+    let mut session = compacting();
+    let before = session.breakdown();
+    assert_eq!(
+        (before.used, before.anchor),
+        (None, None),
+        "没交过限额：算不了用量"
+    );
+    hand(&mut session, Some(1_000_000), None);
+    session.handle(send(1, "hi"));
+    session.handle(stored(5));
+    session.handle(hooks_done(
+        turn3(),
+        vec![
+            fact("memory", "memory", "常驻的几条记忆"),
+            fact("memory", "recall", "想起来的一段"),
+        ],
+    ));
+    // 内核自己的两条事实加这两条：落了盘，请求是第 7 条。
+    session.handle(stored(7));
+    let asked = session.breakdown();
+    assert_eq!(asked.used, session.context_used());
+    assert_eq!(asked.anchor, None, "还没答过：全是估的");
+    assert_eq!(asked.limits, session.context_limits());
+    let of = |breakdown: &Breakdown, said: &Said| {
+        breakdown
+            .said
+            .iter()
+            .find(|(which, _)| which == said)
+            .map(|(_, tokens)| *tokens)
+    };
+    let memory = |kind: &str| Said::Fact {
+        module: Some(ModuleId::parse("memory").unwrap()),
+        kind: crate::id::FactKind::parse(kind).unwrap(),
+    };
+    assert!(
+        of(&asked, &Said::User).is_some_and(|tokens| tokens > 0),
+        "{:?}",
+        asked.said
+    );
+    assert_eq!(
+        of(&asked, &memory("memory")),
+        Some(crate::estimate::text("常驻的几条记忆"))
+    );
+    assert_eq!(
+        of(&asked, &memory("recall")),
+        Some(crate::estimate::text("想起来的一段"))
+    );
+    assert_eq!(of(&asked, &Said::Assistant), None, "还没回复");
+    let request = session.policy.assembler.assemble(&session.history);
+    assert_eq!(asked.system, crate::estimate::text(&request.system));
+    assert_eq!(asked.tools.len(), request.tools.len());
+    super::executor::call_tools(&mut session, 7, &[("read", "{}")]);
+    super::executor::allowing(&mut session, stored(9));
+    session.handle(super::executor::done(
+        super::executor::call(8, 1),
+        "读到的一页",
+    ));
+    let answered = session.breakdown();
+    let reported = super::executor::usage();
+    let total = reported.uncached + reported.cache_read + reported.cache_write + reported.output;
+    assert_eq!(
+        answered.anchor,
+        Some(total),
+        "答过了：用量照供应商报的那一次起算"
+    );
+    assert!(of(&answered, &Said::Assistant).is_some_and(|tokens| tokens > 0));
+    assert!(
+        of(&answered, &Said::ToolResult).is_some_and(|tokens| tokens > 0),
+        "{:?}",
+        answered.said
+    );
+    let parts = answered.system
+        + answered.tools.iter().map(|(_, tokens)| tokens).sum::<u64>()
+        + answered.demos
+        + answered.summary
+        + answered.said.iter().map(|(_, tokens)| tokens).sum::<u64>();
+    assert_eq!(answered.estimated_total(), parts);
+    session.handle(Input::Limits(Limits {
+        model: crate::origin::Model {
+            endpoint: crate::id::ProviderId::parse("other").unwrap(),
+            model: crate::id::ModelName::parse("other-1").unwrap(),
+        },
+        window: Some(1_000_000),
+        max_output: None,
+        images: None,
+        blind: false,
+        identity: None,
+    }));
+    assert_eq!(
+        session.breakdown().anchor,
+        None,
+        "换了模型：锚是别的模型报的，不算"
     );
 }

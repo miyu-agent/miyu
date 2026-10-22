@@ -234,7 +234,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | Name | Type | Notes |
 |---|---|---|
 | `from`, `until` | time | Only this range, start inclusive, end exclusive |
-| `group` | array | Group by: `account`, `venue`, `model`, `day`, `session`, `purpose`; one total row when omitted |
+| `group` | array | Group by: `account`, `venue`, `model`, `day`, `session`, `purpose`, `use` (what for: `main` conversation, `compaction`, `subagent`, `recap`, `title`, `memory`, `other`); one total row when omitted |
 | `session` | string | Only this session; `tree: true` includes the child sessions it spawned |
 | `offset` | time zone, e.g. `+09:00` | Which time zone splits days; the core machine's when omitted |
 

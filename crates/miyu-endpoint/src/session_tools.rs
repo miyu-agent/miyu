@@ -113,7 +113,7 @@ fn entry(core: &Core, language: &str, offered: &Offered) -> Value {
 }
 
 /// 来处，和给人看的一句说明。
-fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
+pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
     if let Some(service) = miyu_tool::mcp_service(name) {
         return (json!({"kind": "mcp", "id": service, "name": service}), None);
     }
@@ -130,6 +130,12 @@ fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
         .tools()
         .package_of(name)
         .map_or_else(|| miyu_tool::BASESYSTEM.to_string(), str::to_string);
+    let (kind, shown) = package_of(core, language, &package);
+    (json!({"kind": kind, "id": package, "name": shown}), None)
+}
+
+/// 包是内置的（`builtin`）还是装的（`package`），和照连接的语言的名字；清单读不出的算内置、名字照编号。
+pub(crate) fn package_of(core: &Core, language: &str, package: &str) -> (&'static str, String) {
     let packages = core.packages();
     let manifest = packages
         .iter()
@@ -141,6 +147,6 @@ fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
     };
     let shown = manifest
         .and_then(|manifest| pick(&manifest.name, language))
-        .unwrap_or_else(|| package.clone());
-    (json!({"kind": kind, "id": package, "name": shown}), None)
+        .unwrap_or_else(|| package.to_string());
+    (kind, shown)
 }

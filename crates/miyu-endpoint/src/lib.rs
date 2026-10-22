@@ -68,6 +68,7 @@ mod reverse;
 mod scripts;
 pub mod search_sources;
 mod secrets;
+mod session_context;
 mod session_tools;
 mod sessions;
 pub mod settings;

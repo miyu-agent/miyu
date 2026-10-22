@@ -171,6 +171,7 @@
 | `session.interrupt` | 打断在进行的回合 |
 | `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
 | `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
+| `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上） |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -495,6 +496,30 @@
 1. 写了 `session` 的：会话照回合开始换快照那一套看一遍（人格、预设、工具目录、知识库换了的照换了以后的），只看不换。
 2. 没写的：和 `session.create` 照同一份拼（找预设、人格，拼工具面），只拼不造。
 3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
+
+**`session.context`**（施工 CX-1 上，2026-10-23 项目主人要的「上下文明细」，形状和协调会话对过）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应 `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`：
+
+- `window`、`line`：上下文窗口、压缩线，同订阅的 `limits`（`window`、`compaction_line`）；没交过限额的不写。
+- `used`：这时用了多少，口径同终端底栏：有锚的是锚加上锚以后的本地估算，没有的整份估；算不了的不写。`basis` 是 `measured`（照锚起算）或 `estimated`（全是估的：没答过、换了模型）。`anchor` 是 `measured` 时那一下供应商报的（最近一次主请求的四项用量之和）。
+- `parts`：一块一个 `{"part", "label", "tokens", "children"?}`，照下面的先后，是 0 的块不交。`part` 是稳定的编号，给头认；`label` 照连接的语言（`core/human/<语言>.json` 的 `context/part/<编号>`），包、MCP 服务的照原名。各块用同一个本地估算器（和压缩线同一个），交原值；`estimated_total` 是各块加起来的，和 `used` 对不上时头照 `used / estimated_total` 摊。
+
+| `part` | 是什么 |
+|---|---|
+| `system` | system 一整段；下面 `system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.profile`（关于你）、`system.project`（项目说明）、`system.appended:<包>`（扩展追加的，`label` 是包名）、`system.other`（人设、场所说明、核心的几行和其余的）。前几块是快照里单存了原文、在拼好的 system 里找得到的；找不到的（快照和发的对不上）不认，算进其余的 |
+| `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`、`tools.deferred`（要先加载、只露名字的） |
+| `demos` | 示范对话 |
+| `summary` | 检查点的摘要 |
+| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.tool_results` |
+
+1. 只在被问时算：会话照有效历史组装一次请求、各块估一次，只看不动，不碰回合的热路径（`session/actor.md`）。
+2. 新会话预览（不写 `session`）、system 拆全（人设、场所说明、风格锁等各成一块）在 CX-1 下。
+3. 没写 `session`、写了别的参数、`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 
@@ -950,7 +975,7 @@
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `from`、`until` | 时刻，可以不写 | 只算这一段，左闭右开 |
-| `group` | 字符串的数组，可以不写 | `account`、`venue`、`model`、`day`、`session`、`purpose` 里的几样；不写是一行总计 |
+| `group` | 字符串的数组，可以不写 | `account`、`venue`、`model`、`day`、`session`、`purpose`、`use` 里的几样；不写是一行总计。`use` 是用途（施工 CX-1 上）：`main` 主对话、`compaction` 压缩（当场压的、提前压的）、`subagent` 子代理（派出去的子会话的，连同它们的辅助请求）、`recap`、`title`、`memory`，认不出的 `other` |
 | `session` | 字符串，可以不写 | 只算这个会话 |
 | `tree` | 布尔，不写是 `false` | 写了 `session` 的，连它派的子会话一起算 |
 | `offset` | 字符串，可以不写 | 分天照哪个时区，`+09:00` 这样写，`±14:00` 以内；不写是核心所在机器此刻的 |

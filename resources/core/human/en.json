@@ -826,6 +826,27 @@
     "commands/unavailable/off": "/{name} is turned off.",
     "commands/unavailable/not-installed": "Persona memory not installed.",
     "commands/unavailable/preset-off": "Preset \"{preset}\" has memory off.",
-    "commands/workspace-wide": "Workspace switched to {cwd} (broad directory)."
+    "commands/workspace-wide": "Workspace switched to {cwd} (broad directory).",
+    "context/part/system": "System prompt",
+    "context/part/system.skills": "Skills",
+    "context/part/system.knowledge": "Knowledge bases",
+    "context/part/system.profile": "About you",
+    "context/part/system.project": "Project instructions",
+    "context/part/system.other": "Persona and other instructions",
+    "context/part/tools": "Tool definitions",
+    "context/part/tools.builtin": "Built-in tools",
+    "context/part/tools.scripts": "Scripts",
+    "context/part/tools.deferred": "Tools not yet loaded",
+    "context/part/demos": "Example dialogue",
+    "context/part/summary": "Checkpoint summary",
+    "context/part/messages": "Conversation",
+    "context/part/messages.user": "Your messages",
+    "context/part/messages.assistant": "AI replies",
+    "context/part/messages.tool_results": "Tool results",
+    "context/part/messages.memory": "Memory",
+    "context/part/messages.memory.resident": "Resident memory",
+    "context/part/messages.memory.recall": "Recalled memory",
+    "context/part/messages.knowledge": "Knowledge recalled",
+    "context/part/messages.facts": "Other notes"
   }
 }

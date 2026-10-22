@@ -75,6 +75,7 @@ pub use config::{ConfigSource, Configs, Turn, TurnConfig, fixed, fixed_with};
 pub use current::{Current, Tally};
 pub use embed::{EmbedSetup, Embedder, IDLE as EMBED_IDLE, Unavailable};
 pub use goal::{Goal, GoalState, Goals};
+pub use handle::context::{Context, SystemPart};
 pub use handle::{Ended, Handle, Pushed, Retire, Stopped, Subscription};
 pub use jobs::{Jobs, Peek, Unreadable, peek};
 pub use memory::{

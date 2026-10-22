@@ -72,7 +72,7 @@ pub use input::{
     Answer, Appended, Command, ExtEvent, GoalChange, Injection, Input, Limits, Queued, Received,
     Reread, Verdict,
 };
-pub use limits::ContextLimits;
+pub use limits::{Breakdown, ContextLimits, Said};
 pub use load::{LoadError, Loader};
 pub use messages::Subagent;
 pub use nested::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};

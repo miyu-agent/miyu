@@ -74,6 +74,10 @@ impl Actor {
                 self.next_tools(reply);
                 Mail::Done
             }
+            Message::Context(reply) => {
+                answer(reply, self.context());
+                Mail::Done
+            }
             Message::Unsubscribed => self.watch(false),
             Message::Stop(reply) => Mail::Stop(reply),
             Message::Halt(halt) => Mail::Halt(halt),

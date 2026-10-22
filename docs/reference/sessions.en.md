@@ -10,6 +10,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.interrupt`](#sessioninterrupt) | Interrupt the running turn |
 | [`session.withdraw`](#sessionwithdraw) | Take back one queued message without interrupting |
 | [`session.tools`](#sessiontools) | The tools she can use next turn |
+| [`session.context`](#sessioncontext) | What the context is made of |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -31,7 +32,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -186,6 +187,22 @@ The tools her next request will carry.
 ```
 
 **Errors**: `bad_params` (`session` together with `persona` or `preset`); the session lookup errors.
+
+## `session.context`
+
+What this session's context is made of right now: how much the system prompt, tool definitions, example dialogue, checkpoint summary and conversation each take. Computed only when called; it doesn't affect the session.
+
+**Params**: `session` (required).
+
+**Response**: `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`. `window` and `line` are the context window and the compaction line (absent before limits are known); `used` is how much is in use, as in the status bar; `basis` is `measured` (counted from the provider-reported `anchor` of the latest request) or `estimated` (all local estimates). Each of `parts` is `{"part", "label", "tokens", "children"?}`: `part` is a stable id, `label` follows the connection's language, and parts of 0 are left out. Parts carry raw local estimates summing to `estimated_total`; to match `used`, scale by `used / estimated_total`.
+
+Part ids: `system` (with `system.skills`, `system.knowledge`, `system.profile`, `system.project`, `system.appended:<package>`, `system.other`), `tools` (with `tools.builtin`, `tools.package:<package>`, `tools.mcp:<service>`, `tools.scripts`, `tools.deferred`), `demos`, `summary`, `messages` (with `messages.user`, `messages.assistant`, `messages.memory` (with `messages.memory.resident`, `messages.memory.recall`), `messages.knowledge`, `messages.facts`, `messages.tool_results`). Packages and services are labelled by name.
+
+```json
+{"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"System prompt","tokens":6100,"children":[{"part":"system.skills","label":"Skills","tokens":900},{"part":"system.other","label":"Persona and other instructions","tokens":5200}]},{"part":"messages","label":"Conversation","tokens":37700,"children":[{"part":"messages.user","label":"Your messages","tokens":4200},{"part":"messages.assistant","label":"AI replies","tokens":33500}]}]}
+```
+
+**Errors**: `bad_params` (no `session`, or other params); the session lookup errors. Previewing a new session comes later.
 
 ## `session.answer`
 

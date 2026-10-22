@@ -7,6 +7,9 @@ use serde::Serialize;
 use super::{Action, Limits, Session};
 use crate::id::{CommandId, Seq, TurnId};
 
+mod breakdown;
+pub use breakdown::{Breakdown, Said};
+
 /// 给头看的限额：头照它画「用量 / 窗口」、算离压缩还有多少。写成 JSON 就是协议里 `subscribe` 回应的 `limits`：
 /// 没有的格不写，从不写 `null`（`protocol.md`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

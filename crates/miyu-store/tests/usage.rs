@@ -330,3 +330,97 @@ fn a_later_segment_is_caught_up_too() {
     .unwrap();
     assert_eq!(total(&index).requests, 2, "换了段的接着读");
 }
+
+/// 照用途分（施工 CX-1 上，`usage.query` 的 `group: ["use"]`）：主对话、当场和提前压的摘要并成压缩、子代理（有父会话的）、
+/// 回顾、起标题、记忆各一类；认不出的用途归 `other`，不丢。配 `session` + `tree` 就是「这个会话连子代理 × 用途」。
+#[test]
+fn use_sorts_rows_into_main_compaction_subagent_and_helpers() {
+    let scratch = Scratch::new("usage-use");
+    let root = root_in(&scratch);
+    let (index, _) = UsageIndex::open(&root);
+    let mut log = spoken(&root, &index);
+    let parent = session(1);
+    land(
+        &index,
+        &mut log,
+        &parent,
+        &who(None),
+        &[
+            called(
+                7,
+                at(6),
+                "deepseek-flash",
+                Some([4, 0, 0, 1]),
+                "",
+                r#","compaction":"auto""#,
+            ),
+            called(
+                8,
+                at(7),
+                "deepseek-flash",
+                Some([4, 0, 0, 1]),
+                "",
+                r#","purpose":"compaction""#,
+            ),
+            called(
+                9,
+                at(8),
+                "deepseek-flash",
+                Some([4, 0, 0, 1]),
+                "",
+                r#","purpose":"recap""#,
+            ),
+            called(
+                10,
+                at(9),
+                "deepseek-flash",
+                Some([4, 0, 0, 1]),
+                "",
+                r#","purpose":"memory""#,
+            ),
+            called(
+                11,
+                at(10),
+                "deepseek-flash",
+                Some([4, 0, 0, 1]),
+                "",
+                r#","purpose":"future""#,
+            ),
+        ],
+    );
+    let child = session(3);
+    let mut child_log = write_log(&root.session_dir(&admin(), &child), &[]);
+    land(
+        &index,
+        &mut child_log,
+        &child,
+        &who(Some(&parent)),
+        &[
+            created(at(20), Some(&parent)),
+            called(2, at(21), "deepseek-pro", Some([1, 0, 0, 1]), "", ""),
+        ],
+    );
+    let query = Query {
+        session: Some((parent.clone(), true)),
+        ..query(&[Group::Use])
+    };
+    let shown: Vec<(Option<String>, u64)> = totals(&index, &query)
+        .iter()
+        .map(|total| (total.keys[0].clone(), total.requests))
+        .collect();
+    let row = |name: &str, requests: u64| (Some(name.to_string()), requests);
+    assert_eq!(
+        shown,
+        [
+            row("compaction", 2),
+            row("main", 2),
+            row("memory", 1),
+            row("other", 1),
+            row("recap", 1),
+            row("subagent", 1),
+            row("title", 1),
+        ]
+    );
+    assert_eq!(Group::parse("use"), Some(Group::Use));
+    assert_eq!(Group::Use.name(), "use");
+}

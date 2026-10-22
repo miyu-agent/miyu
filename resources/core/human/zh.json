@@ -810,6 +810,27 @@
     "commands/unavailable/off": "/{name} 已停用。",
     "commands/unavailable/not-installed": "人格记忆未安装。",
     "commands/unavailable/preset-off": "预设「{preset}」未启用记忆。",
-    "commands/workspace-wide": "工作区已切换到 {cwd}（范围较大）。"
+    "commands/workspace-wide": "工作区已切换到 {cwd}（范围较大）。",
+    "context/part/system": "系统提示",
+    "context/part/system.skills": "技能目录",
+    "context/part/system.knowledge": "知识库",
+    "context/part/system.profile": "关于你",
+    "context/part/system.project": "项目说明",
+    "context/part/system.other": "人设和其余说明",
+    "context/part/tools": "工具说明",
+    "context/part/tools.builtin": "内置工具",
+    "context/part/tools.scripts": "脚本",
+    "context/part/tools.deferred": "待加载的工具",
+    "context/part/demos": "示范对话",
+    "context/part/summary": "检查点摘要",
+    "context/part/messages": "对话",
+    "context/part/messages.user": "你说的",
+    "context/part/messages.assistant": "AI 说的",
+    "context/part/messages.tool_results": "工具结果",
+    "context/part/messages.memory": "记忆",
+    "context/part/messages.memory.resident": "常驻记忆",
+    "context/part/messages.memory.recall": "召回的记忆",
+    "context/part/messages.knowledge": "知识库想起的",
+    "context/part/messages.facts": "其他提示"
   }
 }
