@@ -77,3 +77,27 @@ fn revealed_paths_are_written_only_when_there_are_some() {
     );
     assert_eq!(Spec::from_json(&json).expect("读得懂"), spec);
 }
+
+#[test]
+fn a_path_under_a_hidden_one_is_hidden_unless_a_writable_one_brings_it_back() {
+    let spec = Spec {
+        write: paths(&["/home/a/work", "/home/a/Documents/proj"]),
+        hidden: paths(&["/home/a/Documents", "/home/a/work/.secret"]),
+        read: None,
+        reveal: Vec::new(),
+        mount: true,
+        sockets: Vec::new(),
+    };
+    // 私密目录包住了装的位置：看不到。
+    assert!(spec.hides(Path::new(
+        "/home/a/Documents/miyu/target/debug/miyu-sandbox"
+    )));
+    assert!(spec.hides(Path::new("/home/a/Documents")));
+    // 能写的里面藏着的：照样看不到（能写的先挂，藏的盖在上面）。
+    assert!(spec.hides(Path::new("/home/a/work/.secret/bin/miyu")));
+    // 藏起来的里面挂回来的能写的：看得到。
+    assert!(!spec.hides(Path::new("/home/a/Documents/proj/target/debug/miyu")));
+    // 不在藏起来的里面：看得到。
+    assert!(!spec.hides(Path::new("/home/a/.local/bin/miyu")));
+    assert!(!spec.hides(Path::new("/home/a/Documents2/miyu")));
+}

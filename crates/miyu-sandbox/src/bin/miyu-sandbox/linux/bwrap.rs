@@ -123,7 +123,12 @@ pub(super) fn exec(spec: &Spec, program: &OsStr, args: &[OsString]) -> ExitCode 
         Ok(inner) => inner,
         Err(error) => return crate::fail(&format!("cannot confine: {error}")),
     };
-    let mut command: Vec<OsString> = mounts(spec);
+    // 助手自己被藏起来的盖住了（私密目录包住了装的位置、工作树）：只读挂回来，bwrap 才在里面找得到它（施工 5-15 下再修）。
+    let mut outer = spec.clone();
+    if spec.hides(&helper) {
+        outer.reveal.push(helper.clone());
+    }
+    let mut command: Vec<OsString> = mounts(&outer);
     command.push(OsString::from("--"));
     command.push(helper.into_os_string());
     command.extend(["run", "--spec"].map(OsString::from));

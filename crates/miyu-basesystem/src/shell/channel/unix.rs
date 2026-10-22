@@ -73,13 +73,20 @@ impl Channel {
         );
     }
 
-    /// 沙盒的规格放行这个套接字；只准读名单里的（外部身份的会话），再放开读 `miyu` 和它指着的程序。
+    /// 沙盒的规格放行这个套接字；只准读名单里的（外部身份的会话），再放开读 `miyu` 和它指着的程序。核心的程序被藏起来的盖住了
+    /// 的（私密目录包住了装的位置），单独只读放开，`miyu call` 才起得来（施工 5-15 下再修）。
     pub(in crate::shell) fn sandboxed(&self, sandboxed: &Sandboxed) -> Sandboxed {
         let mut sandboxed = sandboxed.clone();
         sandboxed.spec.sockets.push(self.path.clone());
+        let exe = std::env::current_exe().ok();
         if let Some(read) = sandboxed.spec.read.as_mut() {
             read.extend(bin_dir());
-            read.extend(std::env::current_exe().ok());
+            read.extend(exe.clone());
+        }
+        if let Some(exe) = exe
+            && sandboxed.spec.hides(&exe)
+        {
+            sandboxed.spec.reveal.push(exe);
         }
         sandboxed
     }

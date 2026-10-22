@@ -212,3 +212,36 @@ async fn the_sandbox_lets_the_command_reach_this_socket_only() {
         "放 `miyu` 的目录排在最前"
     );
 }
+
+#[tokio::test]
+async fn the_core_s_own_program_under_a_hidden_place_is_let_through_read_only() {
+    // 施工 5-15 下再修：私密目录包住了核心装的位置，脚本里的 `miyu call` 找不到核心的程序。只在藏住了它的时候放开，
+    // 能写的里面的（在自己的工作树里开发 Miyu）不另挂，不然换不掉它。
+    let channel = open(Arc::new(Port::default()));
+    let exe = std::env::current_exe().expect("找得到");
+    let place = exe.parent().expect("有上一层").to_path_buf();
+    let spec = |write: Vec<PathBuf>| miyu_sandbox::Spec {
+        write,
+        hidden: vec![place.clone()],
+        read: None,
+        reveal: Vec::new(),
+        mount: true,
+        sockets: Vec::new(),
+    };
+    let base = |write| Sandboxed {
+        helper: "/helper".into(),
+        spec: spec(write),
+        env: Vec::new(),
+    };
+    let hidden = channel.sandboxed(&base(Vec::new()));
+    assert_eq!(hidden.spec.reveal, vec![exe.clone()]);
+    let writable = channel.sandboxed(&base(vec![place.clone()]));
+    assert!(
+        writable.spec.reveal.is_empty(),
+        "{:?}",
+        writable.spec.reveal
+    );
+    let mut elsewhere = base(Vec::new());
+    elsewhere.spec.hidden = vec!["/nowhere".into()];
+    assert!(channel.sandboxed(&elsewhere).spec.reveal.is_empty());
+}

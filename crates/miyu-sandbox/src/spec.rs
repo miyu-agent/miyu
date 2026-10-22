@@ -2,7 +2,7 @@
 //! 都是真实的位置。写成 JSON 经命令行交给助手，里面只有路径，没有密钥。照 DeepSeek 的 dsh：整盘能读，只管写；
 //! 沙盒只管读写权限，不管网络（2026-09-29 项目主人定）。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -51,6 +51,19 @@ impl Spec {
     /// 不是 JSON、有认不得的格、类型不对。
     pub fn from_json(text: &str) -> Result<Spec, serde_json::Error> {
         serde_json::from_str(text)
+    }
+
+    /// `path` 在命令里看不到：落在藏起来的里面，又不在那里面挂回来的能写的里面（施工 5-15 下再修：私密目录包住了助手、
+    /// 核心自己装的位置，要单独放开）。
+    #[must_use]
+    pub fn hides(&self, path: &Path) -> bool {
+        self.hidden.iter().any(|hidden| {
+            path.starts_with(hidden)
+                && !self
+                    .write
+                    .iter()
+                    .any(|write| write.starts_with(hidden) && path.starts_with(write))
+        })
     }
 }
 
