@@ -95,7 +95,14 @@ fn check() -> ExitCode {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
     let mut outcomes = vec![
-        cargo_step(&cargo, &root, "格式", &["fmt", "--all", "--check"], &[]),
+        cargo_step(
+            &cargo,
+            &root,
+            "格式",
+            &["fmt", "--all", "--check"],
+            &[],
+            false,
+        ),
         cargo_step(
             &cargo,
             &root,
@@ -110,6 +117,7 @@ fn check() -> ExitCode {
                 "warnings",
             ],
             &[],
+            true,
         ),
         // 注释里的链接断了、写法坏了，生成文档时才看得出来，所以警告也当错。
         // 私有的也要生成：只生成公开的，私有代码注释里的断链查不出来。
@@ -125,6 +133,7 @@ fn check() -> ExitCode {
                 "--quiet",
             ],
             &[("RUSTDOCFLAGS", "-D warnings")],
+            true,
         ),
     ];
     println!("\n── 文档：登记簿 {} 第十节 ──", ledger::PATH);
@@ -152,31 +161,59 @@ fn check() -> ExitCode {
         name: "许可证",
         problems: licenses::check(&root, &cargo),
     });
+    // 先在锁里把测试程序都编好，再出锁跑（2026-10-22 项目主人定：锁只管编译）。编不过的不再跑。
     let mut tests = cargo_step(
         &cargo,
         &root,
         "测试",
-        &["test", "--workspace", "--quiet"],
+        &["test", "--workspace", "--no-run", "--quiet"],
         &[],
+        true,
     );
+    if tests.problems.is_empty() {
+        tests = cargo_step(
+            &cargo,
+            &root,
+            "测试",
+            &["test", "--workspace", "--quiet"],
+            &[],
+            false,
+        );
+    }
     println!("\n── 测试：每个测试文件都进了测试程序（autotests = false 的 crate）──");
     tests.problems.extend(test_crates(&cargo, &root));
     outcomes.push(tests);
     report(&outcomes)
 }
 
+/// 几个会话共用一台机器时的编译锁（2026-10-22 项目主人定）：设了这个环境变量（锁文件的路径）的，编译那几步照
+/// `flock <锁文件>` 排队，跑测试、查格式这些不占锁。没设的照旧直接跑（CI、别的机器）。
+const BUILD_LOCK: &str = "MIYU_BUILD_LOCK";
+
 /// 跑一条 cargo 命令，输出照常打在终端上。`env` 是只加给这一条命令的环境变量，
-/// 标题里照样打出来，方便照着手动重跑。
+/// 标题里照样打出来，方便照着手动重跑。`compiles` 的（要编译的那几步）照 [`BUILD_LOCK`] 排队。
 fn cargo_step(
     cargo: &str,
     root: &Path,
     name: &'static str,
     args: &[&str],
     env: &[(&str, &str)],
+    compiles: bool,
 ) -> Outcome {
     let shown: String = env.iter().map(|(k, v)| format!("{k}=\"{v}\" ")).collect();
     println!("\n── {name}：{shown}cargo {} ──", args.join(" "));
-    let problems = match Command::new(cargo)
+    let lock = std::env::var(BUILD_LOCK)
+        .ok()
+        .filter(|lock| compiles && !lock.is_empty());
+    let mut command = match &lock {
+        Some(lock) => {
+            let mut flock = Command::new("flock");
+            flock.arg(lock).arg(cargo);
+            flock
+        }
+        None => Command::new(cargo),
+    };
+    let problems = match command
         .args(args)
         .envs(env.iter().copied())
         .current_dir(root)
