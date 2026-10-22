@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>707</b><span>/ 727 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>711</b><span>/ 728 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">a1980344</b><span>最近一步（5-15 下修 藏起来的不重叠）的提交</span></li>
+    <li><b class="mono">e009ab26</b><span>最近一步（B-2、B-4、B-5 改写不越界、成环不打转、用量不溢出）的提交</span></li>
   </ul>
 </header>
 
@@ -864,6 +864,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-22c"><span class="n">R-22 三补</span>命令行整理回执跟着改<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sD-1a"><span class="n">D-1 上</span>整理会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sD-1b"><span class="n">D-1 下</span>整理会话列出来和留多久<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sD-1c"><span class="n">D-1 下补</span>整理会话的主请求照主请求投影<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sD-2a"><span class="n">D-2 上</span>合并跑在整理会话里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-23"><span class="n">R-23</span>不经会话的整理也停得下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-24"><span class="n">R-24</span>记忆搜只照意思的下限<span class="st">✓</span></a></li>
@@ -1165,10 +1166,10 @@ a.step:hover{border-color:var(--primary)}
       <div class="ms-head"><span class="ms-id">B</span><span class="ms-name">鲁棒性</span><span class="ms-goal">漏洞排查会话 2026-10-22 交来的边缘输入测试：喂坏的输入不崩、不卡、不攒爆</span></div>
       <ol class="chips">
         <li><a class="step done" href="#sB-1"><span class="n">B-1</span>剥外壳不越界<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">B-2</span>mcp.set 改写不越界</span></li>
+        <li><a class="step done" href="#sB-2"><span class="n">B-2</span>mcp.set 改写不越界<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sB-3"><span class="n">B-3</span>流式回应有上限<span class="st">✓</span></a></li>
-        <li><span class="step"><span class="n">B-4</span>会话父子成环不打转</span></li>
-        <li><span class="step"><span class="n">B-5</span>用量相加不溢出</span></li>
+        <li><a class="step done" href="#sB-2"><span class="n">B-4</span>会话父子成环不打转<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sB-2"><span class="n">B-5</span>用量相加不溢出<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sB-6"><span class="n">B-6</span>换一篇只动它自己的块<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sB-7"><span class="n">B-7</span>附件的临时名不固定<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sB-7"><span class="n">B-8</span>附件名照字节截<span class="st">✓</span></a></li>
@@ -26879,6 +26880,57 @@ a.step:hover{border-color:var(--primary)}
   </div>
 </section>
 
+<section class="sheet" id="sD-1c" aria-labelledby="h-sD1c">
+  <div class="sheet-head"><h2 id="h-sD1c"><span class="no">D-1 下补</span>整理会话的主请求照主请求投影</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">网页画整理会话时，收尾那一条没有模型和用量，思考写「1s」（实际快一分钟）。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">整理会话的主请求照主请求投影</span><span class="dir-note">D-1 下补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>视图投影改用内核的 aside()</li>
+              <li>purpose: memory 的主请求照主请求算</li>
+              <li>收尾带模型、用量</li>
+              <li>思考用时照请求里的时刻</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">回顾、起标题照旧是辅助请求</span><span class="rl">不进收尾</span></div>
+          <div class="tile new"><span class="nm">不改协议形状</span><span class="rl">以前缺的格有了</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">D-1 下补</dd></div>
+        <div><dt>名称</dt><dd>整理会话的主请求照主请求投影</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">234428b0</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项；变异 2 个都报红；网页在 8787 真跑过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>标成 memory 的投影和普通会话一模一样</span></li>
+        <li><span class="ok">✓</span><span>状态里算上下文</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/blueprint/view.md</code> 的 <code>end</code> 一行，施工单 <code>docs/construction/D-1下补-整理会话的视图.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 section class="sheet" id="sR-23" aria-labelledby="h-sR23">
   <div class="sheet-head"><h2 id="h-sR23"><span class="no">R-23</span>不经会话的整理也停得下</h2><span class="pill done">已完成</span></div>
   <p class="purpose">R-22 只让会话里的整理停得下；项目主人说命令行的 <code>miyu memory dream</code> 停不下来不合理。一间另有一份叫停的那一头，协议加 <code>memory.dream_stop</code>，命令行按 Ctrl+C 叫停。</p>
@@ -40558,6 +40610,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>蓝图 <code>docs/blueprint/store.md</code> 第 13 步，施工单 <code>docs/construction/B-7-附件存得进.md</code>（B-7、B-8 一张）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sB-2" aria-labelledby="h-sB2">
+  <div class="sheet-head"><h2 id="h-sB2"><span class="no">B-2、B-4、B-5</span>改写不越界、成环不打转、用量不溢出</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">漏洞排查会话的鲁棒性测试复现的三处：mcp.set 混写 panic、会话列表死循环、用量相加溢出。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">改写不越界、成环不打转、用量不溢出</span><span class="dir-note">B-2、B-4、B-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>mcp.set 插入位置照删过的字算</li>
+              <li>走子孙记走过的</li>
+              <li>内核 Usage 多 input、total、plus</li>
+              <li>十来处相加改用封顶的方法</li>
+              <li>robust_methods 单独一个测试程序</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">供应商报的用量是任意数</span><span class="rl">加起来一律封顶</span></div>
+          <div class="tile new"><span class="nm">装全进程钩子的测试</span><span class="rl">单独一个测试程序</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">B-2、B-4、B-5</dd></div>
+        <div><dt>名称</dt><dd>改写不越界、成环不打转、用量不溢出</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">e009ab26</dd></div>
+        <div><dt>验收</dt><dd>本地门禁八项；变异 3 个都报红；补丁里三条修前红、修后绿</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>点号键、子表混写不 panic</span></li>
+        <li><span class="ok">✓</span><span>父会话是自己 5 秒内算完</span></li>
+        <li><span class="ok">✓</span><span>用量报成 u64::MAX 不 panic</span></li>
+        <li><span class="ok">✓</span><span>148 个方法各喂怪参数不 panic</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/B-2-mcp改写不越界.md</code>、<code>B-4-会话父子成环不打转.md</code>、<code>B-5-用量相加不溢出.md</code>。</li>
       </ul>
     </div>
   </div>
