@@ -74,7 +74,14 @@ Linux、macOS 上 `chmod +x dice.py`。
 
 - 照 `#!` 那一行起（Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。
 - 参数是一份 JSON，标准输入里有完整的一份；不超过 30 KiB 的，环境变量 `MIYU_ARGS_JSON` 里也有一份。长的参数只在标准输入里，所以稳妥的写法是读标准输入。
-- 标准输出就是交给 AI 的结果；退出码不是 0 的算失败，把原因写进输出。
+- 标准输出、标准错误都交给 AI，照写出来的先后；退出码不是 0 的算失败，把原因写进输出。
+- 跑得久的想说到哪了：印一整行以 `miyu-progress: ` 开头的，人在界面上看得到，AI 看不到、不进结果。写到标准错误、马上冲出去（标准输出接管道时 Python 整块缓冲，进度会攒到最后才出来）：
+
+  ```python
+  import sys
+  print("miyu-progress: 3/10 downloaded", file=sys.stderr, flush=True)
+  ```
+
 - 工作目录是会话的工作区；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`（在系统的临时目录下，重启、清临时文件就没了）。
 - 要一直留着的（登录态、上一次跑到哪）写进 `MIYU_SCRIPT_STATE_DIR`：每个账号、每个脚本一格，下一次还在；群里、陌生人私聊的会话和你自己的会话不是一个账号，各是各的一格。装成包的，卸包时跟着删；自己放在 `scripts/` 里的，删了脚本状态目录还留着，`miyu check` 会提醒、印出在哪。
 - 谁调的：`MIYU_CALLER_VENUE` 是在哪种会话里调的（本机的是 `local`，群、私聊是场所编号，例如 `qq:group:123`），`MIYU_CALLER_OWNER` 是这一轮开口的是不是机器主人（`1`、`0`；群里几个人有一个不是主人的、说不清的都是 `0`）。

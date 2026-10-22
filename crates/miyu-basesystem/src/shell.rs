@@ -409,10 +409,11 @@ impl Tool for Shell {
                 Ok(prepared) => prepared,
                 Err(error) => return self.failed(&error),
             };
-            let started = match process::start(command, None, move |text| progress.push(text)) {
-                Ok(started) => started,
-                Err(error) => return self.failed(&error),
-            };
+            let started =
+                match process::start(command, None, move |text| progress.push(text), false) {
+                    Ok(started) => started,
+                    Err(error) => return self.failed(&error),
+                };
             if let (Some(channel), Some(member)) = (&channel, started.member()) {
                 channel.binder().bind(member);
             }

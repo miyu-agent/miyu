@@ -244,6 +244,22 @@ async fn left_over_caller_facts_do_not_reach_a_command() {
     assert_eq!(text(&done), "unset|unset\n");
 }
 
+/// 命令里印的进度行照旧进结果（施工 X-45）：只有脚本工具去掉。
+#[tokio::test]
+async fn a_command_keeps_progress_lines_in_its_result() {
+    let site = Site::new();
+    let done = run(
+        &site,
+        script(
+            "printf 'a\\nmiyu-progress: 1\\n'",
+            "Write-Output 'a'; Write-Output 'miyu-progress: 1'",
+        ),
+    )
+    .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(text(&done), "a\nmiyu-progress: 1\n");
+}
+
 #[tokio::test]
 async fn chinese_comes_through_as_it_is() {
     let site = Site::new();

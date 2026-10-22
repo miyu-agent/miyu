@@ -204,3 +204,53 @@ fn line_ends_are_made_unix_across_pieces() {
     assert_eq!(got, "a\nb\rc\r\nd\r");
     assert_eq!(crlf.finish(), "", "交回过了就没有了");
 }
+
+/// 进度行（施工 X-45）：脚本的输出里一整行以 `miyu-progress: ` 开头的不进结果，切在几段里的、最后一行没有换行的都认；前缀在
+/// 行中间的、少了空格的、大小写不同的照旧留着。行数照去掉以后的算。
+#[test]
+fn progress_lines_are_left_out_of_a_scripts_output() {
+    let mut capture = Capture::new(true);
+    for chunk in [
+        &b"start\nmiyu-pro"[..],
+        b"gress: 1/3\nmiyu\nmiyu-progress: 2/3\nhalf ",
+        b"miyu-progress: no\nmiyu-progress:x\nMiyu-progress: y\r\nmiyu-progress: 3/3",
+    ] {
+        capture.push(chunk);
+    }
+    let capture = capture.finished();
+    assert_eq!(
+        capture.shown(),
+        Shown::Whole(
+            "start\nmiyu\nhalf miyu-progress: no\nmiyu-progress:x\nMiyu-progress: y\n".into()
+        )
+    );
+    assert_eq!(capture.lines(), 5);
+}
+
+/// 读完时还攒着的开头（施工 X-45）：比前缀短、看不出来的照一整行留着。
+#[test]
+fn a_short_last_line_is_kept_when_reading_ends() {
+    let mut capture = Capture::new(true);
+    capture.push(b"ok\nmiyu");
+    assert_eq!(capture.finished().shown(), Shown::Whole("ok\nmiyu".into()));
+}
+
+/// 不是进度行的长行不攒着（施工 X-45）：一读到就记下，内存照旧只留头尾。
+#[test]
+fn a_long_line_is_not_held_back() {
+    let mut capture = Capture::new(true);
+    capture.push(&vec![b'a'; 3 * KEEP]);
+    assert_eq!(capture.bytes, 3 * KEEP as u64, "读到就记下了");
+    assert!(capture.head.len() + capture.tail.len() <= 2 * KEEP);
+}
+
+/// 命令的输出照旧（施工 X-45）：进度行也留着。
+#[test]
+fn a_commands_output_keeps_progress_lines() {
+    let mut capture = Capture::new(false);
+    capture.push(b"miyu-progress: 1\n");
+    assert_eq!(
+        capture.finished().shown(),
+        Shown::Whole("miyu-progress: 1\n".into())
+    );
+}

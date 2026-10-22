@@ -10,7 +10,7 @@ use super::*;
 fn a_command_that_will_not_die_is_left_behind() {
     let mut command = Command::new("sleep");
     command.arg("30");
-    let started = start(command, None, |_| {}).expect("起得来");
+    let started = start(command, None, |_| {}, false).expect("起得来");
     let begin = Instant::now();
     // 杀的办法换成什么都不做：它还在跑，等够了就不等了。
     let finished = started

@@ -408,3 +408,26 @@ async fn a_script_runs_without_state_when_the_folder_cannot_be_made() {
     assert!(!done.error, "{}", text(&done));
     assert_eq!(text(&done), "unset\n");
 }
+
+/// 进度行（施工 X-45）：一整行以 `miyu-progress: ` 开头的，写在标准错误、标准输出都一样，跑的时候推给头、不进结果；别的行照写
+/// 的先后在。Python 的，三个平台都跑。
+#[tokio::test]
+async fn progress_lines_reach_the_head_but_not_the_result() {
+    let site = Site::new();
+    site.file(
+        "scripts/slow.py",
+        b"#!/usr/bin/env python3\n# Description: Slow.\nimport sys\nprint('start', flush=True)\nprint('miyu-progress: 1/2', file=sys.stderr, flush=True)\nprint('miyu-progress: 2/2', flush=True)\nprint('done', flush=True)\nsys.stdout.write('mi')\n",
+    );
+    let (done, pushed) = site.script_progress("scripts/slow.py").await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(
+        text(&done),
+        "start\ndone\nmi\n",
+        "读完时攒着的开头照一整行留着"
+    );
+    let pushed = pushed.concat();
+    assert!(
+        pushed.contains("miyu-progress: 1/2") && pushed.contains("miyu-progress: 2/2"),
+        "推给头的有进度行：{pushed:?}"
+    );
+}

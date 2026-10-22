@@ -12,6 +12,18 @@ impl Site {
         self.script_as(file, args, None).await
     }
 
+    /// 同 [`Site::script`]，没有参数，另交回跑的时候推给头的那几段（施工 X-45）。
+    pub async fn script_progress(&self, file: &str) -> (Done, Vec<String>) {
+        let tool = self.script_tool(file);
+        let pushed = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let into = Arc::clone(&pushed);
+        let call = self.call_for("work", serde_json::json!({}), Seen::new(), Stop::default());
+        let progress = Progress::new(move |text| into.lock().expect("没毒").push(text));
+        let done = tool.run(call, progress).await;
+        let pushed = pushed.lock().expect("没毒").clone();
+        (done, pushed)
+    }
+
     /// 同 [`Site::script`]，带上调用的事实 `caller`（施工 X-43）。
     pub async fn script_as(
         &self,

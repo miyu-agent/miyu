@@ -250,10 +250,11 @@ impl Tool for Script {
                 Err(error) => return self.failed(&error),
             };
             let input = Some(call.args.clone().into_bytes());
-            let started = match process::start(command, input, move |text| progress.push(text)) {
-                Ok(started) => started,
-                Err(error) => return self.failed(&error),
-            };
+            let started =
+                match process::start(command, input, move |text| progress.push(text), true) {
+                    Ok(started) => started,
+                    Err(error) => return self.failed(&error),
+                };
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());
             let wait = Duration::from_secs(self.timeout);

@@ -197,7 +197,7 @@ fn group_of(_watch: &Watch, child: &Child) -> u32 {
     child.id()
 }
 
-/// 起前台的命令：读到的一段段解成字交给 `progress`。
+/// 起前台的命令：读到的一段段解成字交给 `progress`。`progress_lines` 说结果里去不去掉进度行（施工 X-45，只有脚本工具去掉）。
 ///
 /// # Errors
 ///
@@ -206,6 +206,7 @@ pub(super) fn start(
     command: Command,
     input: Option<Vec<u8>>,
     progress: impl Fn(String) + Send + 'static,
+    progress_lines: bool,
 ) -> io::Result<Started> {
     let Spawned {
         child,
@@ -213,7 +214,11 @@ pub(super) fn start(
         pipe,
         watch,
     } = spawn(command, input)?;
-    let output = Arc::new(Mutex::new(Sink::default()));
+    let capture = Capture::new(progress_lines);
+    let output = Arc::new(Mutex::new(Sink {
+        capture,
+        ..Sink::default()
+    }));
     let (done, read) = mpsc::channel();
     let theirs = Arc::clone(&output);
     // 读的线程带着派活时的 span：它发的行也有会话编号（施工 4-9 再补四上）。
@@ -371,7 +376,7 @@ fn done(
     if read.recv_timeout(DRAIN).is_err() {
         tracing::debug!(target: TARGET, "command output still open after the command ended");
     }
-    let output = std::mem::take(&mut lock(output).capture);
+    let output = std::mem::take(&mut lock(output).capture).finished();
     Finished { ending, output }
 }
 

@@ -74,7 +74,14 @@ The header is the run of comment lines at the very top of the file; it ends at t
 
 - Started by its `#!` line (on Windows, the interpreter is found by extension: `.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
 - The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 30 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
-- Stdout is the result handed to the AI; a non-zero exit code counts as failure, so write the reason to the output.
+- Stdout and stderr both go to the AI, in the order they were written; a non-zero exit code counts as failure, so write the reason to the output.
+- To report progress on a long run, print a whole line starting with `miyu-progress: `: people see it in the interface, the AI doesn't, and it stays out of the result. Write it to stderr and flush (Python buffers stdout in blocks when it goes to a pipe, so progress would only show up at the end):
+
+  ```python
+  import sys
+  print("miyu-progress: 3/10 downloaded", file=sys.stderr, flush=True)
+  ```
+
 - The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR` (under the system temp folder, gone after a reboot or a temp cleanup).
 - Anything that must last (a login, where the last run stopped) goes in `MIYU_SCRIPT_STATE_DIR`: one folder per account and script, still there next time. Group chats and strangers' private chats run under a different account from your own sessions, so each gets its own folder. For a script in a package, it is deleted when the package is removed; for one you put in `scripts/` yourself, it stays after you delete the script, and `miyu check` points it out.
 - Who called: `MIYU_CALLER_VENUE` is the kind of session it was called in (`local` on this machine, the venue id for a group or private chat, e.g. `qq:group:123`); `MIYU_CALLER_OWNER` says whether the person speaking this turn is the machine's owner (`1` or `0`; `0` when one of several people in a group is not the owner, or when it can't be told).
