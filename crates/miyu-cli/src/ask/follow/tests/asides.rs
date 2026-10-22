@@ -250,39 +250,3 @@ fn a_session_working_elsewhere_is_said_once() {
     );
     assert_eq!(screen.matches("这个会话在").count(), 1, "{screen}");
 }
-
-/// 说话的回应说在这里打开护不住 Miyu 自己的数据（施工 5-14 改）：说一次，弱沙盒说是弱沙盒；给脚本的不说。
-#[test]
-fn an_unguarded_place_is_said_once() {
-    let used = under(&["home"]);
-    let plan = Plan {
-        cwd: used.to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
-    };
-    let unguarded = |why: &str| json!({"jsonrpc": "2.0", "id": "ask-4", "result": {"events": [5], "cwd": used.to_string_lossy(), "unguarded": why}});
-    let mut messages = vec![unguarded("no_bwrap"), unguarded("no_bwrap")];
-    messages.extend(a_turn("completed"));
-    let Fed { screen, .. } = feed(&plan, false, &messages);
-    assert_eq!(
-        screen
-            .matches("这台机器没有 bubblewrap，在这里打开护不住 Miyu 自己的数据")
-            .count(),
-        1,
-        "{screen}"
-    );
-    let mut messages = vec![unguarded("weak")];
-    messages.extend(a_turn("completed"));
-    let Fed { screen, .. } = feed(&plan, false, &messages);
-    assert!(
-        screen.contains("· 沙盒强度是弱沙盒，在这里打开护不住 Miyu 自己的数据"),
-        "{screen}"
-    );
-    let json = super::super::Plan {
-        format: Format::Json,
-        ..plan
-    };
-    let mut messages = vec![unguarded("weak")];
-    messages.extend(a_turn("completed"));
-    let Fed { screen, .. } = feed(&json, false, &messages);
-    assert!(!screen.contains("护不住"), "{screen}");
-}

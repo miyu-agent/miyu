@@ -69,7 +69,6 @@
 | `cwd` | 会话实际在哪个目录干活，人看到的写法（家目录下的写成 `~/…`，同 `session.list`） |
 | `wide` | `true`：目录太宽（根目录；Windows 上还有家目录、包含数据目录的）、照人选的用着，能随便写的是这个会话的默认工作区 |
 | `untrusted_project` | 这个目录有项目配置、还没决定信不信任的，写它在哪 |
-| `unguarded` | Linux 上这一轮只用 Landlock、工作目录又包住数据目录：护不住 Miyu 自己的数据，写为什么：`no_bwrap`（这台机器没有能用的 bubblewrap）、`weak`（设了弱沙盒）。头说一句 |
 
 ```json
 → {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
@@ -133,7 +132,7 @@
 | `cwd` | 字符串 | 先换到这个工作目录再说（终端无缝集成：每一轮的工作目录跟着 shell 走）：查法、太宽的 `wide` 同 [`session.set_workspace`](#sessionset_workspace)；和现在一样的什么都不记，换了的推 `session.workspace_changed`。场所会话不收 |
 | `as`、`venue` | 对象 | 只给场所会话，见 [场所](venues.md) |
 
-**回应**：`events`（这一句的序号）、`cwd`（换过以后的）、`untrusted_project`（同 `session.create`）；换到太宽的目录多 `wide: true`；带了 `cwd` 的，`unguarded` 同 `session.create`。`cwd` 写错的（`path_unreadable`、`not_a_directory`、`path_forbidden`）整句不收。
+**回应**：`events`（这一句的序号）、`cwd`（换过以后的）、`untrusted_project`（同 `session.create`）；换到太宽的目录多 `wide: true`。`cwd` 写错的（`path_unreadable`、`not_a_directory`、`path_forbidden`）整句不收。
 
 1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。
@@ -265,7 +264,7 @@
 
 `cwd` 写账号的工作区本身（握手的 `host.workspace`）就是回到这个会话自己的默认工作区：换成它（会话列表、订阅回应的 `default_workspace`）。
 
-**回应**：`{"cwd", "dirs"}`，太宽的另带 `wide: true`，换了目录、护不住 Miyu 自己的数据的另带 `unguarded`（同 `session.create`）。变了的推 `session.workspace_changed`；这一轮照旧，下一轮开始照新的。
+**回应**：`{"cwd", "dirs"}`，太宽的另带 `wide: true`。变了的推 `session.workspace_changed`；这一轮照旧，下一轮开始照新的。
 
 **出错**
 

@@ -70,7 +70,6 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `cwd` | Where the session actually works, as people write it (`~/…` under the home directory, same as `session.list`) |
 | `wide` | `true`: the directory is too wide (root; on Windows also home or a folder holding the data directory) and is used because the person chose it; the session may freely write only its own default workspace |
 | `untrusted_project` | The directory has a project config not yet trusted or rejected: where it is |
-| `unguarded` | On Linux, this turn has only Landlock and the working directory holds the data directory, so Miyu's own data can't be protected: why, `no_bwrap` (no usable bubblewrap on this machine) or `weak` (sandbox strength set to weak). Heads say it once |
 
 ```json
 → {"jsonrpc":"2.0","id":"c1","method":"session.create","params":{"cwd":"~/src/miyu"}}
@@ -133,7 +132,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 | `cwd` | string | Move to this working directory first (shell integration: each turn's directory follows the shell): checked like [`session.set_workspace`](#sessionset_workspace), `wide` included; the same directory records nothing, a change pushes `session.workspace_changed`. Not for venue sessions |
 | `as`, `venue` | object | Venue sessions only; see [Venues](venues.en.md) |
 
-**Response**: `events` (this message's number), `cwd` (after any move), `untrusted_project` (as in `session.create`); `wide: true` when moved somewhere too wide; with `cwd`, `unguarded` as in `session.create`. A bad `cwd` (`path_unreadable`, `not_a_directory`, `path_forbidden`) refuses the whole message.
+**Response**: `events` (this message's number), `cwd` (after any move), `untrusted_project` (as in `session.create`); `wide: true` when moved somewhere too wide. A bad `cwd` (`path_unreadable`, `not_a_directory`, `path_forbidden`) refuses the whole message.
 
 1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
@@ -265,7 +264,7 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 A `cwd` that is the account workspace itself (the handshake's `host.workspace`) means going back to this session's own default workspace: it is replaced by it (`default_workspace` in the session list and the subscribe reply).
 
-**Response**: `{"cwd", "dirs"}`, plus `wide: true` when too wide, and `unguarded` (as in `session.create`) when moved somewhere Miyu's own data can't be protected. A change is pushed as `session.workspace_changed`; this turn keeps the old one, the next starts with the new one.
+**Response**: `{"cwd", "dirs"}`, plus `wide: true` when too wide. A change is pushed as `session.workspace_changed`; this turn keeps the old one, the next starts with the new one.
 
 **Errors**
 

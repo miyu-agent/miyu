@@ -35,12 +35,10 @@ mod idle;
 mod opening;
 mod orphans;
 mod places;
-mod unguarded;
 
 pub(crate) use opening::Opening;
 use opening::{opening_level, profile_for};
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
-pub(crate) use unguarded::{unguarded, unguarded_at};
 #[cfg(test)]
 mod tests;
 
@@ -116,8 +114,6 @@ pub(crate) struct Created {
     /// 太宽、照人选的用着（施工 9-7 补）。
     pub(crate) wide: bool,
     pub(crate) untrusted: Option<String>,
-    /// 这一轮只用 Landlock、工作目录又包住数据根，护不住 Miyu 自己的数据：为什么（施工 5-14 改，[`unguarded()`]）。
-    pub(crate) unguarded: Option<&'static str>,
 }
 
 /// 找到的会话：把手，和它这会儿实际在哪个目录里干活（施工 4-5 下）。
@@ -163,14 +159,12 @@ impl Sessions {
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
         let (resolved, project) = core.config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
-        let unguarded = unguarded(core, &workspace, &resolved.values());
         if let Some(id) = earlier {
             return Ok(Created {
                 id,
                 cwd: workspace,
                 wide,
                 untrusted,
-                unguarded,
             });
         }
         let permission = PermissionSettings::from(&resolved.values());
@@ -267,7 +261,6 @@ impl Sessions {
             cwd: workspace,
             wide,
             untrusted,
-            unguarded,
         })
     }
 

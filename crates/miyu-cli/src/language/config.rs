@@ -158,21 +158,6 @@ impl Language {
         }
     }
 
-    /// `miyu ask` 起头：这一轮只用 Landlock、工作目录又包住数据根，护不住 Miyu 自己的数据（施工 5-14 改）；`why` 是协议上的
-    /// `no_bwrap`、`weak`，认不出的照 `no_bwrap` 说。
-    pub(crate) fn unguarded(&self, why: &str) -> &'static str {
-        match (self, why) {
-            (Language::Chinese, "weak") => "· 沙盒强度是弱沙盒，在这里打开护不住 Miyu 自己的数据",
-            (Language::Chinese, _) => "· 这台机器没有 bubblewrap，在这里打开护不住 Miyu 自己的数据",
-            (Language::English, "weak") => {
-                "· The sandbox strength is weak, so opening here can't protect Miyu's own data"
-            }
-            (Language::English, _) => {
-                "· This machine has no bubblewrap, so opening here can't protect Miyu's own data"
-            }
-        }
-    }
-
     /// `miyu ask` 起头：配置里有几处错误。
     pub(crate) fn config_errors(&self, errors: u64) -> String {
         match (self, errors) {

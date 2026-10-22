@@ -95,10 +95,6 @@ pub async fn talk(
     if let Some(file) = created["untrusted_project"].as_str() {
         follow.untrusted(file, screen);
     }
-    // 这一轮只用 Landlock、工作目录又包住数据根：接着说一句（施工 5-14 改）。
-    if let Some(why) = created["unguarded"].as_str() {
-        follow.unguarded(why, screen);
-    }
     // 握手的回应说沙盒用不了：执行命令都要确认，这里确认不了，最先说一句（施工 5-4 下）。
     if let Some(reason) = &unsandboxed {
         follow.unsandboxed(reason, screen);

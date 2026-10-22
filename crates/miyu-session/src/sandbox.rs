@@ -190,8 +190,8 @@ impl Sandbox {
     /// 先后），数据根照 dsh 不挖洞（施工 5-14 改，原来 Landlock 一级级绕开、冻住工作区那一层）。
     fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
         let mut hidden = Vec::new();
-        // 数据根落在能写的里面（工作目录是 `~`，施工 5-14 改）：藏得住的照藏；只有 Landlock 的照 dsh 不挖洞，开会话时说一句
-        // （端点的 `unguarded`）；能写的以外照旧藏。Windows 照旧藏（MXC 的禁止压过读写）。
+        // 数据根落在能写的里面（工作目录是 `~`，施工 5-14 改）：藏得住的照藏；只有 Landlock 的照 dsh 不挖洞（开会话时不提示，
+        // 2026-10-22 项目主人定）；能写的以外照旧藏。Windows 照旧藏（MXC 的禁止压过读写）。
         if hides_inside(mount)
             || cfg!(windows)
             || !write.iter().any(|base| within(&data_root, base))
