@@ -58,7 +58,7 @@ dream_keep = 20
 
 # Wait before organizing memories: Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories.
 # Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
-extract_idle = "5m"
+extract_idle = "30m"
 
 # Turns before organizing: The AI organizes only after at least this many turns since the last time.
 # Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.
