@@ -9,6 +9,7 @@
 //! - 听众是这个连接的人：本机的令牌、网页登录都是管理员。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
+mod cards;
 mod checks;
 pub(crate) mod dream;
 mod params;
@@ -69,7 +70,7 @@ const LIST: usize = 50;
 const SEARCH: usize = 10;
 
 /// 按顺序答的 `memory.*`（`methods.rs` 照它转过来）；`memory.dream` 在后台答，另走。
-pub(crate) const METHODS: [&str; 8] = [
+pub(crate) const METHODS: [&str; 11] = [
     "memory.list",
     "memory.search",
     "memory.turns",
@@ -78,6 +79,9 @@ pub(crate) const METHODS: [&str; 8] = [
     "memory.forget",
     "memory.restore",
     "memory.dream_stop",
+    "memory.cards",
+    "memory.card_update",
+    "memory.card_forget",
 ];
 
 /// 照方法名办一条 `memory.*`，命令编号是 `id`；不是 [`METHODS`] 里的没有这个方法。
@@ -99,6 +103,9 @@ pub(crate) async fn call(
         "memory.forget" => forget(core, stamp(core, id), read(params)?).await,
         "memory.restore" => restore(core, stamp(core, id), read(params)?).await,
         "memory.dream_stop" => dream::stop(core, params).await,
+        "memory.cards" => cards::cards(core, read(params)?).await,
+        "memory.card_update" => cards::update(core, stamp(core, id), read(params)?).await,
+        "memory.card_forget" => cards::forget(core, stamp(core, id), read(params)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -391,11 +398,14 @@ async fn blocking<T: Send + 'static>(
             tracing::warn!(target: "miyu::endpoint", error = %error, "memory failed");
             Err(Refusal::INTERNAL)
         }
-        Err(error) => {
-            tracing::warn!(target: "miyu::endpoint", panic = error.is_panic(), "memory failed");
-            Err(Refusal::INTERNAL)
-        }
+        Err(error) => Err(memory_failed(error.is_panic())),
     }
+}
+
+/// 碰记忆在阻塞线程里出了错（人卡，施工 E-1 下）：记一行，是内部出错。
+fn memory_failed(panic: bool) -> Refusal {
+    tracing::warn!(target: "miyu::endpoint", panic, "memory failed");
+    Refusal::INTERNAL
 }
 
 /// 联想要的几样（施工 R-8，`memory.md` 第四条）：外壳的字、门槛表照资源目录读好交给记忆；读不出来的（安装坏了）记一行，这个

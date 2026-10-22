@@ -25,18 +25,19 @@
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
 | `clear me` | 清掉她关于你的全部记忆 | `memory.forget`，`clear: "me"` |
+| `cards` | 列出认识的人的卡，照是谁排 | `memory.cards`，带 `forgotten`（施工 E-1 下）；一张一行：`<是谁> (<叫法>, …)  <日期>  <正文>`，是谁照最长的对齐，没有叫法的不写括号，作废的同一条记忆 |
 | `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒。等的时候按一次 Ctrl+C 发 `memory.dream_stop`（同一间、同一条连接），标准错误印「正在停止整理……再按一次 Ctrl+C 直接退出。」，接着等原来那一条回应；再按一次不等，直接退（施工 R-23） |
 
 | 选项 | 做什么 |
 |---|---|
 | `--persona <编号>` | 哪个人格的记忆；不写照核心的默认人格 |
 | `-s`、`--session <编号>` | 这个会话用的那一份记忆；和 `--persona` 只能写一个 |
-| `--forgotten` | `list`、`search`：连作废的一起 |
+| `--forgotten` | `list`、`search`、`cards`：连作废的一起 |
 | `--class user\|feedback\|episode\|reference\|person` | `list`：只要这一类；`add`：记成这一类，不写是 `user`；`person` 是认识的人（施工 E-1 上）；别的值参数不对 |
 | `--why <原因>` | `forget`：为什么忘 |
 | `--keywords <词>` | `add`、`edit`：只用来检索的关键词，逗号隔开；`edit` 写空的是去掉（施工 R-15 上） |
 | `--who <是谁>` | `add`、`edit`：认识的人说的是谁，平台编号（`qq:10086`）或名字（施工 E-1 上） |
-| `--format text\|json` | `list`、`search`：`json` 原样印核心回的那一串，给脚本 |
+| `--format text\|json` | `list`、`search`、`cards`：`json` 原样印核心回的那一串，给脚本 |
 
 - 几个词用一个空格连起来（照 `miyu rename`）；以 `-` 开头的写在 `--` 后面。
 - 清空不问（2026-10-07 项目主人定）：清空只是追加一条事件，日志里原文还在。
@@ -77,6 +78,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 |---|---|---|
 | 一条都没有（`list`） | 还没有记忆。 | No memories yet. |
 | 没找到（`search`） | 没找到。 | Nothing found. |
+| 一张卡都没有（`cards`，施工 E-1 下） | 还没有认识的人的卡。 | No person cards yet. |
 | 记下了 | 记下了：{id} | Remembered as {id} |
 | 改好了 | 改好了：{id} | Changed; now {id} |
 | 清掉了 | 清掉了 {n} 条。 | Cleared {n}. |
@@ -108,11 +110,12 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
   clear me                清掉 AI 关于你的全部记忆
   dream                   现在就整理：合掉重复的、改掉过时的、更新摘要；
                           按 Ctrl+C 停下，合完的留着
+  cards                   列出认识的人的卡：整理时一人合一张
 
 选项：
       --persona <编号>    哪个人格的记忆；不写是默认人格
   -s, --session <编号>    这个会话用的那一份记忆
-      --forgotten         list、search：连忘掉的一起
+      --forgotten         list、search、cards：连忘掉的一起
       --class user|feedback|episode|reference|person
                           list：只要这一类；add：记成这一类，不写是 user；
                           person 是认识的人
@@ -120,7 +123,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
       --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
       --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
                           add --class person 要写
-      --format text|json  list、search：json 给脚本
+      --format text|json  list、search、cards：json 给脚本
   -h, --help              印帮助
 ```
 
@@ -146,11 +149,13 @@ Commands:
   dream                   Organize now: merge duplicates, fix stale ones,
                           refresh the summary; Ctrl+C stops it, keeping
                           what's done
+  cards                   List person cards: one per person you know,
+                          written when memories are organized
 
 Options:
       --persona <id>      Whose memory; default is the default persona
   -s, --session <id>      The memory this session uses
-      --forgotten         list, search: include forgotten ones
+      --forgotten         list, search, cards: include forgotten ones
       --class user|feedback|episode|reference|person
                           list: only this class; add: save as it (default
                           user); person is someone the AI knows
@@ -158,7 +163,7 @@ Options:
       --keywords <words>  add, edit: comma-separated words to find it by
       --who <who>         add, edit: who a person memory is about, a platform
                           id or a name; add --class person needs it
-      --format text|json  list, search: json for scripts
+      --format text|json  list, search, cards: json for scripts
   -h, --help              Print help
 ```
 
@@ -166,8 +171,8 @@ Options:
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/src/memory/tests.rs` | 一行的写法：编号对齐、日期照时区换天、作废的带原因、没原因的只写作废；一条都没有的两句；`dream` 的几句（R-7 补）；整理没成的原话接上为什么、中英文，没给为什么的照原话（R-7 修） |
-| `crates/miyu-cli/tests/memory.rs` | 真的核心：每个子命令发什么、印什么、退出码；`--persona`、`-s` 找哪一间；`clear session` 不写会话的照上一次 `miyu ask`；没设默认人格、核心拒的照原话、退出码 1。`dream`（R-7 补）在请求模型是真路由的核心上：合了印几样数、作废的 `list --forgotten` 看得到，再叫一次没有要整理的、不发，没有的人格退出码 1；按一次 Ctrl+C 叫停、印中断了、退出码 3，下次接着合，按两次的直接退（R-23） |
+| `crates/miyu-cli/src/memory/tests.rs` | 一行的写法：编号对齐、日期照时区换天、作废的带原因、没原因的只写作废；人卡一张一行、带叫法、对齐（E-1 下）；一条都没有的两句；`dream` 的几句（R-7 补）；整理没成的原话接上为什么、中英文，没给为什么的照原话（R-7 修） |
+| `crates/miyu-cli/tests/memory.rs` | 真的核心：每个子命令发什么、印什么、退出码；`--persona`、`-s` 找哪一间；`clear session` 不写会话的照上一次 `miyu ask`；没设默认人格、核心拒的照原话、退出码 1。`dream`（R-7 补）在请求模型是真路由的核心上：合了印几样数、作废的 `list --forgotten` 看得到，再叫一次没有要整理的、不发，没有的人格退出码 1；按一次 Ctrl+C 叫停、印中断了、退出码 3，下次接着合，按两次的直接退（R-23）；`cards` 一张都没有的那一句、`--format json` 印那一串（E-1 下） |
 | `crates/miyu/tests/memory.rs` | 真跑主程序：`memory -h`、`--help`、`help memory`、几个子命令的 `-h` 印的都是这一页，跟着界面语言；参数写错的八种退出码 2 |
 | `crates/miyu-cli/src/help/tests.rs` | 这一页列的选项和程序真有的对得上 |
 

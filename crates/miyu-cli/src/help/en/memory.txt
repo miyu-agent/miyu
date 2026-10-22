@@ -17,11 +17,13 @@ Commands:
   dream                   Organize now: merge duplicates, fix stale ones,
                           refresh the summary; Ctrl+C stops it, keeping
                           what's done
+  cards                   List person cards: one per person you know,
+                          written when memories are organized
 
 Options:
       --persona <id>      Whose memory; default is the default persona
   -s, --session <id>      The memory this session uses
-      --forgotten         list, search: include forgotten ones
+      --forgotten         list, search, cards: include forgotten ones
       --class user|feedback|episode|reference|person
                           list: only this class; add: save as it (default
                           user); person is someone the AI knows
@@ -29,5 +31,5 @@ Options:
       --keywords <words>  add, edit: comma-separated words to find it by
       --who <who>         add, edit: who a person memory is about, a platform
                           id or a name; add --class person needs it
-      --format text|json  list, search: json for scripts
+      --format text|json  list, search, cards: json for scripts
   -h, --help              Print help

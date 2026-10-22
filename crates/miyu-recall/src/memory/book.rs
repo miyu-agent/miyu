@@ -54,6 +54,23 @@ impl Entry {
     }
 }
 
+/// 一张人卡现在的样子（施工 E-1 下，设计 42）：一个人（`who`）最新的那一张。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PersonCard {
+    /// 是谁。
+    pub who: String,
+    /// 正文。
+    pub text: String,
+    /// 几个叫法。
+    pub names: Vec<String>,
+    /// 写下的时刻。
+    pub at: Timestamp,
+    /// 谁写的：整理写的是记忆模块，人改的是那个人。
+    pub by: By,
+    /// 作废了的为什么；没作废的没有。
+    pub retired: Option<String>,
+}
+
 /// 照记忆日志算出的底账。
 #[derive(Debug, Default)]
 pub struct MemoryBook {
@@ -74,6 +91,8 @@ pub struct MemoryBook {
     merging: Option<Seq>,
     /// 整理顺带重看的旧记忆轮到第几条（施工 R-19）：最后一条 `ext.memory.swept` 的 `upto`。
     swept: Option<Seq>,
+    /// 人卡（施工 E-1 下）：一个人最新的那一张，照是谁排。整间清空时一起拿掉。
+    cards: BTreeMap<String, PersonCard>,
 }
 
 impl MemoryBook {
@@ -135,6 +154,16 @@ impl MemoryBook {
     /// 整理顺带重看的旧记忆轮到第几条（施工 R-19，`ext.memory.swept`）；还没轮过的没有。
     pub fn swept(&self) -> Option<Seq> {
         self.swept
+    }
+
+    /// 是 `who` 的那张人卡（施工 E-1 下），作废了的也交回（看 [`PersonCard::retired`]）；没有的没有。
+    pub fn card(&self, who: &str) -> Option<&PersonCard> {
+        self.cards.get(who)
+    }
+
+    /// 全部人卡，照是谁排：作废了的也在。
+    pub fn cards(&self) -> impl Iterator<Item = &PersonCard> {
+        self.cards.values()
     }
 
     /// 最后一次合并以后抽过几个会话（施工 R-7 上，`memory.md` 第七条第 1 款）；没合并过的照全部，同一个会话算一个。
@@ -223,6 +252,10 @@ impl MemoryBook {
                 if self.summary.take().is_some() {
                     self.stale = true;
                 }
+                // 人卡照这一间的全部记忆合：整间清空了一起拿掉；只清一个会话的不动（卡里的事可能还有别处说的）。
+                if cleared.session.is_none() {
+                    self.cards.clear();
+                }
                 // 交回的条数不算改掉的旧版本：它们本来就看不见，人数的是看得见的那些（作废的带 `forgotten` 看得见）。
                 let mut shown = 0;
                 for id in self.clears(&cleared) {
@@ -264,6 +297,24 @@ impl MemoryBook {
             }
             Some(Ok(MemoryEvent::Swept(swept))) => {
                 self.swept = Some(swept.upto);
+                Ok(Some(0))
+            }
+            Some(Ok(MemoryEvent::Card(card))) => {
+                let card = PersonCard {
+                    who: card.who,
+                    text: card.text,
+                    names: card.names,
+                    at: event.at,
+                    by: event.by.clone(),
+                    retired: None,
+                };
+                self.cards.insert(card.who.clone(), card);
+                Ok(Some(0))
+            }
+            Some(Ok(MemoryEvent::CardRetired(retired))) => {
+                if let Some(card) = self.cards.get_mut(&retired.who) {
+                    card.retired = Some(retired.why);
+                }
                 Ok(Some(0))
             }
         }

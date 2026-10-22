@@ -100,6 +100,7 @@ mod mcp_url;
 mod members;
 mod memory;
 mod memory_api;
+mod memory_cards;
 mod memory_clear;
 mod memory_dream;
 mod memory_dream_hold;

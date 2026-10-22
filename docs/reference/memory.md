@@ -7,12 +7,13 @@
 | [`memory.list`、`memory.search`](#memorylistmemorysearch) | 列、搜记忆 |
 | [`memory.turns`](#memoryturns) | 搜以前的对话 |
 | [`memory.remember`、`memory.update`、`memory.forget`、`memory.restore`](#memoryremembermemoryupdatememoryforgetmemoryrestore) | 记、改、作废和清空、恢复 |
+| [`memory.cards`、`memory.card_update`、`memory.card_forget`](#人卡memorycardsmemorycard_updatememorycard_forget) | 认识的人的卡：列、改、作废 |
 | [`memory.dream`](#memorydream) | 现在就整理记忆 |
 | [`memory.dream_stop`](#memorydream_stop) | 叫停正在进行的整理 |
 | [`kb.list`、`kb.search`、`kb.read`、`kb.documents`](#kblistkbsearchkbreadkbdocuments) | 列知识库、搜、读一页、列一个库里的文档 |
 | [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
 
-**谁能调**：人、扩展；扩展写的（记住、改、忘、恢复、整理，知识库加、改、挂、删、重建索引）要能力 `memory.write`。人经协议是主人这一边：全部列得出、搜得到、改得了。
+**谁能调**：人、扩展；扩展写的（记住、改、忘、恢复、整理、改和作废人卡，知识库加、改、挂、删、重建索引）要能力 `memory.write`。人经协议是主人这一边：全部列得出、搜得到、改得了。
 
 ## 记忆的「一间」
 
@@ -85,6 +86,35 @@
 | `unknown_memory` | 没有这一条 |
 | `memory_not_current` | 那一条已经改掉、作废、清掉了 |
 
+## 人卡：`memory.cards`、`memory.card_update`、`memory.card_forget`
+
+她认识的人一人一张卡：他是谁、怎么认识的、喜好、近况、生日、联系方式，最多 300 个字。整理记忆时照这一批里关于他的记忆（`class` 是 `person` 的）合，人也能改。一张卡：
+
+| 名字 | 说明 |
+|---|---|
+| `who` | 是谁：平台编号（`qq:10086`）或名字，同一条记忆的 `who` |
+| `text` | 卡的正文，最多 300 个字 |
+| `names` | 他的几个叫法（群名片、外号），最多 8 个；搜得到，不拿来认人 |
+| `at` | 写下的时刻 |
+| `by` | `module`（整理写的）或 `person`（人改的） |
+| `retired` | 作废的原因，没作废的 `null` |
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `memory.cards` | `forgotten`（布尔，连作废的一起） | `{"cards": [...]}`，照 `who` 排，一人一张（最新的那一张） |
+| `memory.card_update` | `who`、`text`（都必写），`names` 可以不写 | `{}`：写一张新的，这个人以它为准；作废了的也重新算数 |
+| `memory.card_forget` | `who`，可带 `why` | `{}`：这张卡作废；已经作废的什么都不写 |
+
+整间清空（`memory.forget` 的 `clear: me`）以后卡也没了；只清一个会话的不动卡。落了盘才回应，同一个请求编号再发只算一次。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | `who`、`text` 是空的；叫法有空的、超过 40 个字的、超过 8 个 |
+| `memory_too_long` | 正文超过 300 个字，`data.chars`、`data.limit`，`data.field` 是 `text` |
+| `unknown_memory` | `memory.card_forget` 的这个人没有卡 |
+
 ## `memory.dream`
 
 现在就整理：带 `session` 的先把这个会话还没抽的抽了，再把新记的和以前的合一遍（重复的合掉，过时的作废，写一段对人的了解）。在后台答，几秒到十几秒。
@@ -101,6 +131,8 @@
 | `ext.memory.saved` | 写了 `replaces` 的 | 改了一条：新的正文；旧的是 `replaces` 那一条 |
 | `ext.memory.retired` | `id`、`why`、`kind`、`kept` | 删了一条：`kind` 是 `outdated`（被后记的取代）、`repeat`（重复）、`worthless`（用不着），`kept` 是留下的那一条（`worthless` 没有）。人删的没有 `kind`、`kept` |
 | `ext.memory.summary` | `text` | 新的对人的了解 |
+| `ext.memory.card` | `who`、`text`、`names`? | 这一批里有认识的人的，合出来的他的卡（和现在那一张一样的不写）；人改的也是这一条，`by` 是那个人 |
+| `ext.memory.card_retired` | `who`、`why` | 人作废了一张卡 |
 | `ext.memory.tagged` | `id`、`keywords` | 补了关键词：在这一批的 `merged` 后面 |
 | `ext.memory.merged` | `upto`、`given`、`revised`、`retired`、`failed`? | 这一批合完了（`failed` 是连着三次没成、跳过了） |
 | `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了，`stopped` 的是人叫停了（R-22），这两种不写 `tries` |

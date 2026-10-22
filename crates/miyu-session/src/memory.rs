@@ -6,6 +6,7 @@
 //! 回合库是派生的：更新失败记一行 `WARN memory index not updated`，会话照常；照到的位置没往前挪，下次载入照日志补。
 
 mod backfill;
+mod cards;
 mod dreaming;
 mod extract;
 mod follow;
@@ -25,6 +26,7 @@ mod tag;
 mod used;
 mod vectors;
 
+pub use cards::CardRefused;
 pub use dreaming::{DreamFeed, Dreaming};
 pub use extract::{ExtractTexts, Extraction};
 pub(crate) use extract::{Extractor, Job, Voices, plan};
@@ -67,6 +69,8 @@ use crate::agents::LOCAL;
 pub struct Memory {
     /// 回合库的登记（施工 R-2 上）。
     pub turns: Arc<RecallIndexes>,
+    /// 数据根（施工 E-1 下）：整理合人卡时读出处那几轮的会话日志，认出她记的名字是谁。
+    root: DataRoot,
     /// 记忆日志的登记（施工 R-3 上）。
     pub logs: Arc<MemoryLogs>,
     /// 常驻的摘要那一块的字（施工 R-4 上）：读不出来的（安装坏了）这个核心不交摘要。
@@ -116,6 +120,7 @@ impl Memory {
         debug_assert!(registered, "一份新的登记只登记这一次");
         Arc::new(Memory {
             turns,
+            root: root.clone(),
             logs: Arc::new(MemoryLogs::new(root)),
             summary,
             vectors: OnceLock::new(),

@@ -5284,6 +5284,39 @@ Older related memories:
 Other older memories to look over again:
 ```
 
+#### `software/memory/merge/people.txt`
+
+- 什么时候加进来：这一批（新记的、相关的、顺带重看的）里有 `person` 的才接在最后（施工 E-1 下，`memory.md` 第七条第 15 款）：`{people}` 是这一批里的人
+- token：131（2026-10-22 照 magpie 网关的 `group/auto-claude-haiku-4-5` 单量，`group/auto-hy3` 129；deepseek flash 那几条这天 key 过期、限流，用不了）；同一个分词器量整条请求，没有现在的卡的一批多 127 到 135（hy3 127 到 132）
+- 为什么加：人卡由整理合（设计 42 PN3）：照这一批里关于他的记忆接着现在的卡写、过时的换掉、只照记忆写、300 字以内（PN4）、不提不知道的（hy3 原来 9 次里 2 次写「生日未知」「其余未知」，加了以后 0 次），交回多 `cards` 的样子；没有这一句模型不知道要交卡
+- 指纹：`55c4b3c1`
+
+```text
+People you know in these memories: {people}. Keep a card for each of them: who they are, how you met, what they like, how they are doing lately, their birthday and contacts. Build on their current card, drop what is out of date, use only what the memories and the card say, never mention what is missing, at most 300 characters, in the language of the memories. Add "cards" to the JSON: [{{"who": "qq:10086", "text": "...", "names": ["what they are called"]}}], one for each of these people whose card changes.
+```
+
+#### `software/memory/merge/cards.txt`
+
+- 什么时候加进来：这一批里的人有现在的卡时，接在 `people.txt` 后面那一块的标题（施工 E-1 下）
+- token：5（同上）
+- 为什么加：接着现在的卡写，不从头来（同摘要）
+- 指纹：`681e86b6`
+
+```text
+Their current cards:
+```
+
+#### `software/memory/merge/card.txt`
+
+- 什么时候加进来：现在的卡一张一行（`{who}: {text}`，施工 E-1 下）
+- token：7（同上，不算换进去的字）；有一张卡的一批整条请求多 151 到 167
+- 为什么加：同上
+- 指纹：`a5e85589`
+
+```text
+{who}: {text}
+```
+
 ### 写关键词那一次请求，不进主对话
 
 #### `software/memory/tag/instruction.txt`

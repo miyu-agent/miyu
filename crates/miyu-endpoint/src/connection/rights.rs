@@ -69,8 +69,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"
         | "venue.records" | "venue.session" | "venue.sessions" => Needs(ActForExternal),
         "memory.remember" | "memory.update" | "memory.forget" | "memory.restore"
-        | "memory.dream" | "memory.dream_stop" | "kb.add" | "kb.create" | "kb.update"
-        | "kb.mount" | "kb.remove" | "kb.delete" | "kb.reindex" => Needs(MemoryWrite),
+        | "memory.dream" | "memory.dream_stop" | "memory.card_update" | "memory.card_forget"
+        | "kb.add" | "kb.create" | "kb.update" | "kb.mount" | "kb.remove" | "kb.delete"
+        | "kb.reindex" => Needs(MemoryWrite),
         "fs.list" | "fs.find" | "fs.realpath" | "fs.read" => Needs(FsRead),
         "link.preview" => Needs(Network),
         "widget.set" | "widget.clear" => Needs(Widgets),
@@ -81,11 +82,11 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "blob.open" | "blob.write" | "blob.close" | "command.catalog" | "config.check"
         | "config.get" | "config.schema" | "config.set" | "secret.list" | "content.list"
         | "content.read" | "kb.documents" | "kb.list" | "kb.read" | "kb.search"
-        | "login.redeem" | "memory.list" | "memory.search" | "memory.turns" | "mermaid.render"
-        | "model.call" | "model.embed" | "model.list" | "package.check" | "package.files"
-        | "package.info" | "package.list" | "package.methods" | "package.owns"
-        | "persona.avatar" | "persona.background" | "persona.get" | "persona.list"
-        | "persona.read" | "preset.get" | "preset.list" | "provider.catalog"
+        | "login.redeem" | "memory.cards" | "memory.list" | "memory.search" | "memory.turns"
+        | "mermaid.render" | "model.call" | "model.embed" | "model.list" | "package.check"
+        | "package.files" | "package.info" | "package.list" | "package.methods"
+        | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
+        | "persona.list" | "persona.read" | "preset.get" | "preset.list" | "provider.catalog"
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
         }

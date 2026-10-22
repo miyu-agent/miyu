@@ -207,6 +207,7 @@
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
 | `memory.dream_stop` | 叫停这一间这时人叫的整理（施工 R-23，`memory.md` 第七条第 13 款） |
+| `memory.cards`、`memory.card_update`、`memory.card_forget` | 认识的人的卡：列、人写一张、作废一张（施工 E-1 下，`memory.md` 第七条第 15 款） |
 | `kb.list`、`kb.search`、`kb.read`、`kb.documents` | 列知识库、搜、读一个文档的一页、列一个库里的文档（施工 K-1 上，K-10；`knowledge.md`「对外的样子」） |
 | `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6）；登记表里没有的照命令模板展开成一句发给 AI（施工 X-14 上，`slash.md`） |
 | `command.catalog` | 列核心认的斜杠命令（连命令模板），给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补、X-14 上） |
@@ -770,7 +771,7 @@
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 
-人格记忆这个软件包没装的，八个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。八个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，会话那一间没有（范围 `off`、不带人格、场所会话）的 `memory_unavailable`。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。
+人格记忆这个软件包没装的，十一个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十一个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，会话那一间没有（范围 `off`、不带人格、场所会话）的 `memory_unavailable`。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
@@ -783,6 +784,9 @@
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
 | `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22）；跑在整理会话里的多 `"session"`（这一趟的整理会话，施工 D-2 上） |
 | `memory.dream_stop` | 只有 `persona`、`session`（施工 R-23） | `{"stopped": true}` |
+| `memory.cards` | `forgotten`（布尔，不写是 `false`）（施工 E-1 下） | `{"cards": [{"at", "by", "names", "retired", "text", "who"}…]}`，照 `who` 排（第 10 条） |
+| `memory.card_update` | `who`、`text` 必写，`names`（字符串的列表）可以不写（施工 E-1 下） | `{}`（第 10 条） |
+| `memory.card_forget` | `who` 必写，`why` 可以不写（施工 E-1 下） | `{}`（第 10 条） |
 
 1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上。
 2. `text` 去掉前后空白再记；空的 `bad_params`，超过 120 字（数 Unicode 字符）的 `memory_too_long`，`data.chars`、`data.limit`。`class` 不是那四种、`id` 不合 `m<序号>` 的写法、`limit` 出了范围、`id` 和 `clear` 都写或都不写、`clear` 不是那两种：`bad_params`。
@@ -793,6 +797,7 @@
 7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 9. `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这一间这时人叫的整理，不管是哪一路叫的（带 `persona`、`session` 的 `memory.dream`，会话里的 `/dream`）；定时的不停。合完了的批留着，正在合的那一批放弃（记 `merge_failed`，`why: stopped`）、下次再合；被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。回 `{"stopped": true}`；这时没有人叫的整理（定时的在合也算没有）回 `not_dreaming`。照顺序答：`memory.dream` 在后台答，同一条连接上接着发它就行。
+10. 人卡（施工 E-1 下，`memory.md` 第七条第 15 款）：一人一张，照最新的那一张；`memory.cards` 不写 `forgotten` 的不列作废的，整间清空以前的没有。一张：`who`（平台编号或名字）、`text`、`names`、`at`（写下的时刻）、`by`（`module` 是整理写的，`person` 是人写的）、`retired`（作废的原因，没作废的 `null`）。`memory.card_update` 去掉前后空白再写一张 `ext.memory.card`（作废了的也重新算数）：`who`、`text` 空的，叫法有空的、超过 40 字的、超过 8 个的 `bad_params`；正文超过 300 字的 `memory_too_long`（`data.field` 是 `text`）。`memory.card_forget` 追加 `ext.memory.card_retired`：没有这个人的卡 `unknown_memory`，已经作废了的回 `{}`、什么都不写。同一个 `id` 再发只算一次（第 5 条）。
 
 **`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
 
@@ -1174,7 +1179,7 @@
 1. `subscribe {"stream": "memory", "persona"? | "session"?, "after"?}`：找哪一间、装没装、听众同 `memory.*`（上面「`memory.*`」第一段）：人格记忆没装的 `memory_not_installed`，两样都写的 `bad_params`，没有记忆的 `memory_unavailable`，找不到的照那边。`after` 照「补发」第 8 条，写错了 `bad_params`、先于找那一间。记忆日志开不了、补的那一截读不出来：`internal_error`，记一行 `memory failed`，什么都没订阅。
 2. 写了 `after` 的：记忆日志里序号大于它、订阅那一刻落了盘的，照先后一条条推过来，再回应 `{"upto": <那一刻的最后一条，一条都没有的是 0>}`，之后从 `upto + 1` 接着推，中间不丢不重（读和登记在记忆日志的同一把锁里）。不写的不补，只推之后的。补的那一截在阻塞线程里一次读完。
 3. 推 `memory.event`：`{"event": <日志里那一行>, "persona"? | "session"?}`。`event` 是记忆日志里的事件原样（外壳同会话日志：`seq`、`at`、`kind`、`by`，人经协议、斜杠命令写的带 `cause`；`body` 照 `memory.md`「记忆日志」那张表），`persona`、`session` 照订阅时写的原样带回去（都没写的都不带）。
-4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`，R-19 起还有 `swept`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
+4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`，R-19 起还有 `swept`，E-1 下起还有人卡 `card`、`card_retired`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要、整间清空以前的人卡（施工 E-1 下）（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
 5. 一个连接一间至多一个，照订阅时写的原样认（写法不同的，例如不写人格和写了默认人格，算两个）：再订阅同一间换一个新的；`unsubscribe {"stream": "memory", "persona"? | "session"?}` 停掉它，没订阅过的也回 `{}`，不找那一间。
 6. 读得太慢、掉了队：之后的最多攒 64 条没写出去的（「慢和掉队」第 1 条），再多推 `resync`（`{"stream": "memory", "persona"? | "session"?}`），这个订阅停了；头带上最后看到的序号（`after`）重新订阅，掉的那一截补回来。
 7. 整理时她正在写什么（施工 R-21，`memory.md` 第七条第 12 款；2026-10-19 项目主人要「能实时把当前处理的条目显示出来」）：订阅回应以后，这一间整理的每一批，模型写完一条改的、作废的就推一条 `memory.dreaming`，摘要推写到第几个字。不落盘、不补、掉了就掉了（同压缩的 `compaction.progress`）：落的照全部核对过，可能少几条，真相是之后那几行 `memory.event`。说的那一条这个连接听不见的不推（同第 4 条）；推以前遮过 key。

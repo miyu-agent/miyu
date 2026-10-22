@@ -3,6 +3,8 @@
 
 use super::*;
 
+mod cards;
+
 fn id(n: u64) -> MemoryId {
     MemoryId::parse(&format!("m{n}")).expect("合写法")
 }

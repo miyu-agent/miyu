@@ -895,6 +895,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-31"><span class="n">R-31</span>抽取前闲 30 分钟<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-32"><span class="n">R-32</span>撤销了马上看不见<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1上"><span class="n">E-1 上</span>认识的人的类和 who<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sE-1下"><span class="n">E-1 下</span>人卡<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -28431,6 +28432,57 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/E-1上-认识的人的类和who.md</code>；设计 <code>42-认识的人.md</code>；蓝图 <code>memory.md</code>（类、第六条、「工具」「协议」），<code>protocol.md</code>，<code>cli/memory.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sE-1下" aria-labelledby="h-sE1b">
+  <div class="sheet-head"><h2 id="h-sE1b"><span class="no">E-1 下</span>人卡</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她认识的人一人一张卡：是谁、怎么认识的、喜好、近况、生日、联系方式，另记几个叫法。整理时照这一批里关于他的记忆合，同摘要；人能看、能改、能作废。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-recall · memory/book.rs、merge/cards.rs　miyu-session · memory/merge/people.rs、compose.rs、land.rs、memory/cards.rs　miyu-endpoint · memory/cards.rs　miyu-cli · memory.rs</span><span class="dir-note">E-1 下</span></div>
+            <ol class="pipe" aria-label="合人卡">
+              <li>这一批里有认识的人：她记的名字照会话日志认成平台编号</li>
+              <li>请求最后接合卡的那一段和他们现在的卡</li>
+              <li>交回的卡只收这一批里的人，截到 300 字，记成 <code>ext.memory.card</code>；一样的不记</li>
+              <li>协议列、写、作废；<code>miyu memory cards</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">ext.memory.card</span><span class="rl">一人一张，照最新的</span></div>
+          <div class="tile new"><span class="nm">memory.cards</span><span class="rl">列、写、作废</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">E-1 下</dd></div>
+        <div><dt>名称</dt><dd>人卡</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">E-1下</dd></div>
+        <div><dt>验收</dt><dd>测试、变异、量 token、真模型合卡、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>只收这一批里的人、叫法接上认出来的和旧卡上的、一样的不再记；没有认识的人的批不多字</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁九项全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/E-1下-人卡.md</code>；设计 <code>42-认识的人.md</code>；蓝图 <code>memory.md</code>（记忆日志、第七条第 15 款、「协议」），<code>protocol.md</code>，<code>cli/memory.md</code>。</li>
       </ul>
     </div>
   </div>

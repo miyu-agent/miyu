@@ -77,7 +77,7 @@
 | 要 `events.read` | 同上 | `subscribe` 的 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`、`job.output` |
 | 要 `events.write` | 同上 | `events.append`（`ext.<包>.*`） |
 | 要 `act_for_external` | 同上 | 带 `as` 的 `session.send`、`command.run`，`session.note`，`venue.*`，`events.append` 的 `venue.*` |
-| 要 `memory.write` | 同上 | `memory.remember`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
+| 要 `memory.write` | 同上 | `memory.remember`、`update`、`forget`、`restore`、`dream`、`dream_stop`、`card_update`、`card_forget`（施工 E-1 下），`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | 要 `fs.read`、`network` | 同上 | `fs.*`；`link.preview` |
 | 要 `tools`、`widgets`、`context.system`、`packages.call` | 同上 | 有工具的 `provide`（空的照收：斜杠命令、搜索要先 `provide` 一次）；`widget.set`、`widget.clear`；`system.append`；`package.call`（照旧另查对方的 `[export]`） |
 | 都能调 | 照常 | 别的：读配置和密钥的名字、`blob.*`、`model.*`、`human.get`、读软件包的、`content.*`、人格和预设读的、技能、脚本、记忆和知识库读的、`subscribe` 的别的流、`login.redeem` |

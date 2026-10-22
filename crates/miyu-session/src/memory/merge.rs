@@ -39,6 +39,7 @@ mod compose;
 mod hush;
 mod land;
 mod merges;
+mod people;
 
 pub(crate) use hush::{Hush, Hushes};
 pub(crate) use merges::Merges;
@@ -69,13 +70,18 @@ pub struct MergeTexts {
     related: Template,
     /// 顺带重看的旧记忆那一块的标题（施工 R-19）。
     sweep: Template,
+    /// 这一批里有认识的人时接在最后的那一段（施工 E-1 下）：有谁、怎么合他们的卡、交回的样子。
+    people: Template,
+    /// 他们现在的卡那一块的标题，和一张一行（施工 E-1 下）。
+    cards: Template,
+    card: Template,
     line: Template,
     unnamed: Template,
 }
 
 impl MergeTexts {
     /// 从资源目录 `resources` 读：`merge/instruction.txt`（`{owner}`）、`summary.txt`（`{text}`）、`none.txt`、`new.txt`、
-    /// `related.txt`、`sweep.txt`（施工 R-19），一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），没有称呼时主人写的那一句
+    /// `related.txt`、`sweep.txt`（施工 R-19）、`people.txt`（`{people}`）、`cards.txt`、`card.txt`（`{who}`、`{text}`，施工 E-1 下），一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`），没有称呼时主人写的那一句
     /// `common/owner-unnamed.txt`（施工 R-6 再修）。
     ///
     /// # Errors
@@ -91,6 +97,9 @@ impl MergeTexts {
             new: text("new", &[])?,
             related: text("related", &[])?,
             sweep: text("sweep", &[])?,
+            people: text("people", &["people"])?,
+            cards: text("cards", &[])?,
+            card: text("card", &["who", "text"])?,
             line: load::text(
                 resources,
                 PACKAGE,
@@ -220,13 +229,16 @@ enum Sweep {
     Done,
 }
 
-/// 交出去的一次：请求的字、交进去的编号、合到第几条、其中新记的几条、顺带重看到哪（施工 R-19）。
+/// 交出去的一次：请求的字、交进去的编号、合到第几条、其中新记的几条、顺带重看到哪（施工 R-19）、这一批里的认识的人（施工
+/// E-1 下：照是谁，交回的卡只收他们的；认出来的名字记进卡的叫法）。
 struct Asked {
     text: String,
     given: BTreeSet<MemoryId>,
     upto: Seq,
     fresh: u32,
     swept: Option<Swept>,
+    people: BTreeSet<String>,
+    known: people::People,
 }
 
 impl MergeJob {

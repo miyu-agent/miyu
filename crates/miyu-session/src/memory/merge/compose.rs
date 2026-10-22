@@ -1,5 +1,6 @@
 //! 拼合并的那一次请求（施工 R-7 上；R-19 从 `merge.rs` 挪出来、加上顺带重看的旧记忆）：新记的照先后一条条加，每条带上相关的
-//! 旧记忆；一趟里头一个放得下的批再接上轮到的旧记忆（`memory.md` 第七条第 11 款）；放不下的留给下一次。
+//! 旧记忆；一趟里头一个放得下的批再接上轮到的旧记忆（`memory.md` 第七条第 11 款）；放不下的留给下一次。这一批里有认识的人
+//! 的，最后接上合他们的卡的那一段（施工 E-1 下，第七条第 15 款）。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -15,17 +16,21 @@ use crate::TARGET;
 use crate::blocking::blocking;
 
 impl MergeJob {
-    /// 拼这一次：新记的照先后一条条加，每条带上相关的旧记忆，放不下的留给下一次（一条都放不下也至少交一条）。
+    /// 拼这一次：新记的照先后一条条加，每条带上相关的旧记忆，放不下的留给下一次（一条都放不下也至少交一条）。这一批里有认识的
+    /// 人的（施工 E-1 下），认出她记的名字是谁，最后接上合他们的卡的那一段和他们现在的卡。
     pub(super) async fn compose(&self, batch: Batch) -> Asked {
         let texts = &self.extraction.merge;
-        let row = |entry: &Entry| {
+        let row = |entry: &Entry, who: Option<String>| {
             say(
                 &texts.line,
                 &[
                     ("id", &entry.id.to_string()),
                     (
                         "class",
-                        &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                        &miyu_recall::shown_class(
+                            &entry.class,
+                            who.as_deref().or(entry.who.as_deref()),
+                        ),
                     ),
                     ("date", &entry.at.local_date(self.offset)),
                     ("text", &entry.text.replace('\n', " ")),
@@ -50,7 +55,7 @@ impl MergeJob {
         let related_head = say(&texts.related, &[]).trim_end().to_string();
         let sweep_head = say(&texts.sweep, &[]).trim_end().to_string();
         let fresh_ids: BTreeSet<MemoryId> = batch.fresh.iter().map(|entry| entry.id).collect();
-        let (mut new_rows, mut old_rows) = (Vec::new(), Vec::new());
+        let (mut news, mut olds) = (Vec::new(), Vec::new());
         let mut given = BTreeSet::new();
         let mut bytes = head.len() + new_head.len() + related_head.len() + sweep_head.len() + 6;
         let mut upto = None;
@@ -58,22 +63,22 @@ impl MergeJob {
             let related = self.related(entry, &fresh_ids, &given).await;
             let added: usize = std::iter::once(entry)
                 .chain(&related)
-                .map(|one| row(one).len() + 1)
+                .map(|one| row(one, None).len() + 1)
                 .sum();
             if upto.is_some() && bytes + added > ROOM {
                 break;
             }
             bytes += added;
-            new_rows.push(row(entry));
+            news.push(entry.clone());
             given.insert(entry.id);
-            for one in &related {
-                old_rows.push(row(one));
+            for one in related {
                 given.insert(one.id);
+                olds.push(one);
             }
             upto = Some(entry.id.seq());
         }
         // 顺带重看的（施工 R-19）：照编号接在后面，已经交进去的不重复，放不下的这一趟不看了。
-        let mut sweep_rows = Vec::new();
+        let mut sweeps = Vec::new();
         let mut swept = None;
         for entry in &batch.sweep {
             // 已经当相关的交进去的也算看过了：轮到的照样往前走。
@@ -81,29 +86,64 @@ impl MergeJob {
                 swept = Some(entry.id.seq());
                 continue;
             }
-            let added = row(entry).len() + 1;
+            let added = row(entry, None).len() + 1;
             // 只重看的一批至少交一条，同新记的。
-            if bytes + added > ROOM && !(new_rows.is_empty() && sweep_rows.is_empty()) {
+            if bytes + added > ROOM && !(news.is_empty() && sweeps.is_empty()) {
                 break;
             }
             bytes += added;
-            sweep_rows.push(row(entry));
+            sweeps.push(entry.clone());
             given.insert(entry.id);
             swept = Some(entry.id.seq());
         }
-        // 只重看的一批（人叫的整理、没有新记的）合到哪照旧：上次合到的那一条。
+        // 认识的人（施工 E-1 下）：认出她记的名字是谁，照平台编号列；再拿他们现在的卡。
+        let all: Vec<Entry> = news.iter().chain(&olds).chain(&sweeps).cloned().collect();
+        let keeper = self.keeper.clone();
+        let (known, people, cards) = blocking(move || {
+            let known = keeper.people(&all.iter().collect::<Vec<_>>());
+            let people: BTreeSet<String> =
+                all.iter().filter_map(|entry| known.who(entry)).collect();
+            let cards = keeper.cards_of(&people);
+            (known, people, cards)
+        })
+        .await;
+        // 只重看的一批合到哪照旧：上次合到的那一条。
         let upto = upto.or(batch.after).unwrap_or(Seq::FIRST);
         let mut text = head;
-        for (title, rows) in [
-            (&new_head, &new_rows),
-            (&related_head, &old_rows),
-            (&sweep_head, &sweep_rows),
+        for (title, entries) in [
+            (&new_head, &news),
+            (&related_head, &olds),
+            (&sweep_head, &sweeps),
         ] {
-            if !rows.is_empty() {
+            if !entries.is_empty() {
+                let rows: Vec<String> = entries
+                    .iter()
+                    .map(|entry| row(entry, known.who(entry)))
+                    .collect();
                 text.push_str(&format!("\n\n{title}\n{}", rows.join("\n")));
             }
         }
-        let fresh = u32::try_from(new_rows.len()).unwrap_or(u32::MAX);
+        if !people.is_empty() {
+            let named = people.iter().cloned().collect::<Vec<_>>().join(", ");
+            text.push_str(&format!(
+                "\n\n{}",
+                say(&texts.people, &[("people", &named)]).trim_end()
+            ));
+            if !cards.is_empty() {
+                let rows: Vec<String> = cards
+                    .iter()
+                    .map(|(who, card)| {
+                        say(
+                            &texts.card,
+                            &[("who", who), ("text", &card.replace('\n', " "))],
+                        )
+                    })
+                    .collect();
+                let title = say(&texts.cards, &[]);
+                text.push_str(&format!("\n{}\n{}", title.trim_end(), rows.join("\n")));
+            }
+        }
+        let fresh = u32::try_from(news.len()).unwrap_or(u32::MAX);
         Asked {
             text,
             given,
@@ -111,8 +151,10 @@ impl MergeJob {
             fresh,
             swept: swept.map(|upto| Swept {
                 upto,
-                count: u32::try_from(sweep_rows.len()).unwrap_or(u32::MAX),
+                count: u32::try_from(sweeps.len()).unwrap_or(u32::MAX),
             }),
+            people,
+            known,
         }
     }
 

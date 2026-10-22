@@ -12,11 +12,12 @@
   clear me                清掉 AI 关于你的全部记忆
   dream                   现在就整理：合掉重复的、改掉过时的、更新摘要；
                           按 Ctrl+C 停下，合完的留着
+  cards                   列出认识的人的卡：整理时一人合一张
 
 选项：
       --persona <编号>    哪个人格的记忆；不写是默认人格
   -s, --session <编号>    这个会话用的那一份记忆
-      --forgotten         list、search：连忘掉的一起
+      --forgotten         list、search、cards：连忘掉的一起
       --class user|feedback|episode|reference|person
                           list：只要这一类；add：记成这一类，不写是 user；
                           person 是认识的人
@@ -24,5 +25,5 @@
       --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
       --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
                           add --class person 要写
-      --format text|json  list、search：json 给脚本
+      --format text|json  list、search、cards：json 给脚本
   -h, --help              印帮助

@@ -13,10 +13,12 @@
 //!   又作废的照作废（不留一条马上要作废的新版本）。
 //! - 摘要：去掉前后空白，空的当没写（不换掉现在的）；超过字数的截在最后一个句号、问号、叹号、换行上，一句都放不下的照字截。
 
+mod cards;
 #[cfg(test)]
 mod tests;
 mod watch;
 
+pub use cards::{CARD_CHARS, Drafted, NAME_CHARS, NAMES, cards, names};
 pub use watch::{SUMMARY_STEP, Seen, Watch};
 
 use std::collections::BTreeSet;

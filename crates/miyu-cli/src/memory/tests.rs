@@ -4,7 +4,7 @@ use serde_json::json;
 
 use miyu_kernel::time::UtcOffset;
 
-use super::shown::listed;
+use super::shown::{cards, listed};
 use crate::language::{Language, Organized};
 
 fn memory(id: &str, at: &str, text: &str, retired: Option<&str>) -> serde_json::Value {
@@ -49,6 +49,26 @@ fn a_person_shows_who() {
         listed(&[person], UtcOffset::UTC, &Language::Chinese),
         ["m4  2026-10-21  [qq:2] 小林用 RX 7800 XT"]
     );
+}
+
+/// 人卡一张一行（施工 E-1 下）：是谁后面括号里接叫法，照最长的对齐；作废的带原因。
+#[test]
+fn a_card_shows_who_and_names() {
+    let shown = cards(
+        &[
+            json!({"who": "qq:2", "names": ["小林", "林林"], "text": "群友，喜欢拍照。", "at": "2026-10-22T03:00:00.000Z", "retired": null}),
+            json!({"who": "老王", "names": [], "text": "大学室友。", "at": "2026-10-21T03:00:00.000Z", "retired": "认错了"}),
+        ],
+        UtcOffset::UTC,
+        &Language::Chinese,
+    );
+    assert_eq!(shown[0], "qq:2 (小林, 林林)  2026-10-22  群友，喜欢拍照。");
+    assert!(
+        shown[1].starts_with(&format!("老王{}  2026-10-21  大学室友。", " ".repeat(11))),
+        "{}",
+        shown[1]
+    );
+    assert!(shown[1].contains("认错了"), "{}", shown[1]);
 }
 
 #[test]

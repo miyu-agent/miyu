@@ -7,12 +7,13 @@ Chinese version: [memory.md](memory.md).
 | [`memory.list`, `memory.search`](#memorylist-memorysearch) | List and search memories |
 | [`memory.turns`](#memoryturns) | Search past conversations |
 | [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remember, change, retire or clear, restore |
+| [`memory.cards`, `memory.card_update`, `memory.card_forget`](#person-cards-memorycards-memorycard_update-memorycard_forget) | Cards of the people she knows: list, change, retire |
 | [`memory.dream`](#memorydream) | Organize memory now |
 | [`memory.dream_stop`](#memorydream_stop) | Stop the organizing in progress |
 | [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
 | [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
 
-**Who can call**: people, extensions; extensions writing (remembering, changing, forgetting, restoring, consolidating; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
+**Who can call**: people, extensions; extensions writing (remembering, changing, forgetting, restoring, consolidating, changing and retiring person cards; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
 
 ## Which memory
 
@@ -85,6 +86,35 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 | `unknown_memory` | No such memory |
 | `memory_not_current` | Already changed, retired or cleared |
 
+## Person cards: `memory.cards`, `memory.card_update`, `memory.card_forget`
+
+She keeps one card per person she knows: who they are, how they met, what they like, how they are doing lately, birthday and contacts, at most 300 characters. Organizing memory writes it from the memories about them in that batch (`class` `person`); people can change it too. A card:
+
+| Name | Meaning |
+|---|---|
+| `who` | Who it is: a platform id (`qq:10086`) or a name, as a memory's `who` |
+| `text` | The card, at most 300 characters |
+| `names` | What they are called (group nicknames, aliases), at most 8; searchable, never used to tell people apart |
+| `at` | When it was written |
+| `by` | `module` (written by organizing) or `person` (changed by a person) |
+| `retired` | Why it was retired; `null` if it wasn't |
+
+| Method | Params | Response |
+|---|---|---|
+| `memory.cards` | `forgotten` (boolean, include retired ones) | `{"cards": [...]}`, sorted by `who`, one per person (the latest) |
+| `memory.card_update` | `who`, `text` (both required), `names` optional | `{}`: writes a new card that counts for this person, a retired one counts again |
+| `memory.card_forget` | `who`, optionally `why` | `{}`: the card is retired; an already retired one writes nothing |
+
+Clearing the whole room (`memory.forget` with `clear: me`) removes the cards too; clearing one session leaves them. Answers come after the write hits disk; the same request id counts once.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | `who` or `text` is empty; a name is empty, over 40 characters, or there are more than 8 |
+| `memory_too_long` | The text is over 300 characters; `data.chars`, `data.limit`, `data.field` is `text` |
+| `unknown_memory` | `memory.card_forget`: this person has no card |
+
 ## `memory.dream`
 
 Organize now: with `session`, first extract what that session hasn't had extracted yet, then merge the new with the old (duplicates merged, outdated ones retired, a summary of the person written). Answered in the background; takes a few seconds to a dozen or so.
@@ -101,6 +131,8 @@ Organize now: with `session`, first extract what that session hasn't had extract
 | `ext.memory.saved` | with `replaces` | A memory revised: the new text; the old one is the `replaces` memory |
 | `ext.memory.retired` | `id`, `why`, `kind`, `kept` | A memory removed: `kind` is `outdated` (superseded by a later one), `repeat` (a duplicate) or `worthless` (not needed later); `kept` is the one kept instead (none for `worthless`). A person's removal has no `kind` or `kept` |
 | `ext.memory.summary` | `text` | The new summary about the person |
+| `ext.memory.card` | `who`, `text`, `names`? | A card merged for someone in this batch (not written when it equals the current one); a person's change is this event too, with `by` that person |
+| `ext.memory.card_retired` | `who`, `why` | A person retired a card |
 | `ext.memory.tagged` | `id`, `keywords` | Keywords filled in: after the batch's `merged` |
 | `ext.memory.merged` | `upto`, `given`, `revised`, `retired`, `failed`? | The batch is done (`failed`: three failures in a row, skipped) |
 | `ext.memory.merge_failed` | `upto`, `why`, `tries`? | The batch failed this time; `why` `interrupted` means the core stopped midway, `stopped` that the person stopped it (R-22); neither has `tries` |

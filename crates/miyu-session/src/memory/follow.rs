@@ -68,6 +68,14 @@ impl Keeper {
             .filter(|event| matches!(from_event(event), Some(Ok(MemoryEvent::Cleared(_)))))
             .map(|event| event.seq)
             .max();
+        // 人卡只有整间清空才拿掉（施工 E-1 下）：那以前的不给。
+        let cleared_all = filled
+            .iter()
+            .filter(|event| {
+                matches!(from_event(event), Some(Ok(MemoryEvent::Cleared(cleared))) if cleared.session.is_none())
+            })
+            .map(|event| event.seq)
+            .max();
         // 出处活不活要读回合库：拿出说的那一条，出了锁再看（同 `list`）。
         let filled: Vec<(Event, Option<Entry>)> = log.book(|book| {
             filled
@@ -76,6 +84,12 @@ impl Keeper {
                 .filter(|event| {
                     !matches!(from_event(event), Some(Ok(MemoryEvent::Summary(_))))
                         || cleared.is_none_or(|cleared| event.seq > cleared)
+                })
+                .filter(|event| {
+                    !matches!(
+                        from_event(event),
+                        Some(Ok(MemoryEvent::Card(_) | MemoryEvent::CardRetired(_)))
+                    ) || cleared_all.is_none_or(|cleared| event.seq > cleared)
                 })
                 .map(|event| {
                     let entry = about(&event).and_then(|id| book.get(id).cloned());

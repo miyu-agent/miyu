@@ -11,7 +11,7 @@ mod book;
 #[cfg(test)]
 mod tests;
 
-pub use book::{Entry, MemoryBook};
+pub use book::{Entry, MemoryBook, PersonCard};
 
 use std::fmt;
 
@@ -45,6 +45,10 @@ const MERGING: &str = "ext.memory.merging";
 const MERGE_FAILED: &str = "ext.memory.merge_failed";
 /// 整理顺带重看的旧记忆轮到了哪（施工 R-19）。
 const SWEPT: &str = "ext.memory.swept";
+/// 一张人卡（施工 E-1 下）。
+const CARD: &str = "ext.memory.card";
+/// 作废一张人卡（施工 E-1 下）。
+const CARD_RETIRED: &str = "ext.memory.card_retired";
 
 /// 一条的关键词最多几个字（施工 R-15 上）：一行，逗号隔开，十来个词。
 pub const KEYWORD_CHARS: usize = 200;
@@ -316,6 +320,28 @@ pub struct Swept {
     pub count: u32,
 }
 
+/// `ext.memory.card` 的 `body`：一张人卡（施工 E-1 下，设计 42 第三节第 2 条）：整理时照这一批里关于这个人的记忆合的，或者人
+/// 改的。一个人（`who`）以最新的那一张为准，前面的原文还在日志里。不是一条记忆，不进记忆库。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Card {
+    /// 是谁：同 [`Saved::who`]，平台上的人是平台编号，没有平台号的是名字。
+    pub who: String,
+    /// 正文：他是谁、怎么认识的、喜好、近况、生日、联系方式，最多 300 字（设计 42 PN4）。
+    pub text: String,
+    /// 他的几个叫法（群名片、外号）：搜得到，不拿来认人（PN2）；没有的不写。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub names: Vec<String>,
+}
+
+/// `ext.memory.card_retired` 的 `body`：作废一张人卡（施工 E-1 下）：这个人的卡不算了，下次整理照这一批里关于他的记忆重新合。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CardRetired {
+    /// 是谁。
+    pub who: String,
+    /// 为什么。
+    pub why: String,
+}
+
 /// 核心半路停了，`merging` 没有收尾（施工 R-17）。
 pub const INTERRUPTED: &str = "interrupted";
 
@@ -357,6 +383,10 @@ pub enum MemoryEvent {
     MergeFailed(MergeFailed),
     /// 整理顺带重看的旧记忆轮到了哪（施工 R-19）。
     Swept(Swept),
+    /// 一张人卡（施工 E-1 下）。
+    Card(Card),
+    /// 作废一张人卡（施工 E-1 下）。
+    CardRetired(CardRetired),
 }
 
 /// 写成记忆日志里的一条事件：第 `seq` 条，时刻 `at`，`by` 写它的那一方。
@@ -377,6 +407,8 @@ pub fn to_event(seq: Seq, at: Timestamp, by: By, event: &MemoryEvent) -> Result<
         MemoryEvent::Merging(merging) => (MERGING, serde_json::to_string(merging)),
         MemoryEvent::MergeFailed(failed) => (MERGE_FAILED, serde_json::to_string(failed)),
         MemoryEvent::Swept(swept) => (SWEPT, serde_json::to_string(swept)),
+        MemoryEvent::Card(card) => (CARD, serde_json::to_string(card)),
+        MemoryEvent::CardRetired(retired) => (CARD_RETIRED, serde_json::to_string(retired)),
     };
     let json = json.map_err(|error| error.to_string())?;
     let body: RawJson = serde_json::from_str(&json).map_err(|error| error.to_string())?;
@@ -408,6 +440,8 @@ pub fn from_event(event: &Event) -> Option<Result<MemoryEvent, String>> {
         MERGING => serde_json::from_str(body.get()).map(MemoryEvent::Merging),
         MERGE_FAILED => serde_json::from_str(body.get()).map(MemoryEvent::MergeFailed),
         SWEPT => serde_json::from_str(body.get()).map(MemoryEvent::Swept),
+        CARD => serde_json::from_str(body.get()).map(MemoryEvent::Card),
+        CARD_RETIRED => serde_json::from_str(body.get()).map(MemoryEvent::CardRetired),
         _ => return None,
     };
     Some(read.map_err(|error| format!("body of {kind} not readable: {error}")))

@@ -255,7 +255,7 @@ impl MemoryLog {
                 None => Ok(()),
             },
             // 作废的不用改记忆库：搜得到，挑不挑是用的一方照底账判，恢复的也是（施工 R-12 下）；抽到哪、合并的摘要和记号不是
-            // 一条记忆（施工 R-6 上、R-7 上、R-17）。
+            // 一条记忆（施工 R-6 上、R-7 上、R-17）；人卡也不是（施工 E-1 下）。
             MemoryEvent::Retired(_)
             | MemoryEvent::Restored(_)
             | MemoryEvent::Extracted(_)
@@ -263,7 +263,9 @@ impl MemoryLog {
             | MemoryEvent::Merged(_)
             | MemoryEvent::Merging(_)
             | MemoryEvent::Swept(_)
-            | MemoryEvent::MergeFailed(_) => Ok(()),
+            | MemoryEvent::MergeFailed(_)
+            | MemoryEvent::Card(_)
+            | MemoryEvent::CardRetired(_) => Ok(()),
             // 清掉的人不要了：字不留在派生的库里。
             MemoryEvent::Cleared(_) => self.index.apply(SOURCE, &removals(&cleared), seq),
         };

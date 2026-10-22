@@ -12,7 +12,7 @@ use std::time::Instant;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{CommandId, Seq, SessionId};
 use miyu_kernel::request::Message;
-use miyu_recall::merge::{Seen, Watch, decisions};
+use miyu_recall::merge::{Seen, Watch, cards, decisions, names};
 use miyu_recall::redact::{KeyShapes, redact};
 use miyu_tool::TEXT_CHARS;
 
@@ -61,14 +61,15 @@ impl MergeJob {
             None => self.at_once(asked, text).await,
         };
         let answered = match asking {
-            Asking::Answered(text) => decisions(&text, &asked.given, TEXT_CHARS, SUMMARY_CHARS),
+            Asking::Answered(text) => decisions(&text, &asked.given, TEXT_CHARS, SUMMARY_CHARS)
+                .and_then(|decided| Ok((decided, cards(&text, &asked.people)?))),
             Asking::Failed(why) => Err(why),
             Asking::Stopped => return self.hushed(asked.upto).await,
         };
         let merges = &self.keeper.memory.merges;
         let given = u32::try_from(asked.given.len()).unwrap_or(u32::MAX);
         match answered {
-            Ok(mut decided) => {
+            Ok((mut decided, mut drafted)) => {
                 for revised in &mut decided.revised {
                     revised.text = redact(&revised.text, &secrets, shapes);
                 }
@@ -78,10 +79,25 @@ impl MergeJob {
                 if let Some(summary) = &mut decided.summary {
                     *summary = redact(summary, &secrets, shapes);
                 }
+                // 人卡（施工 E-1 下）：遮过 key；这一批里认出来的名字接在交回的叫法后面。
+                for card in &mut drafted {
+                    card.text = redact(&card.text, &secrets, shapes);
+                    let known = asked.known.names_of(&card.who);
+                    card.names = names(&card.who, &card.names, &known)
+                        .iter()
+                        .map(|name| redact(name, &secrets, shapes))
+                        .collect();
+                }
                 let summary = decided.summary.is_some();
                 let (keeper, upto, swept) = (self.keeper.clone(), asked.upto, asked.swept.clone());
                 let recorded = blocking(move || {
-                    keeper.record_merge(wall_now(), &decided, upto, given, swept.as_ref())
+                    keeper.record_merge(
+                        wall_now(),
+                        &decided,
+                        &drafted,
+                        (upto, given),
+                        swept.as_ref(),
+                    )
                 })
                 .await;
                 merges.record(self.keeper.room(), true);

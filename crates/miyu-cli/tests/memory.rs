@@ -401,3 +401,23 @@ async fn a_person_needs_who() {
     let listed = run(&home, &["list"]).await;
     assert!(listed.out.contains("[qq:2] 小林用 4090"), "{}", listed.out);
 }
+
+/// 人卡（施工 E-1 下）：`cards` 发 `memory.cards`，一张都没有的说一句，`--format json` 印那一串。一张一行的样子在单元测试里。
+#[tokio::test]
+async fn cards_are_listed() {
+    let home = home();
+    let none = run(&home, &["cards"]).await;
+    assert_eq!(
+        (none.code, none.out.as_str()),
+        (0, "还没有认识的人的卡。\n"),
+        "{}",
+        none.screen
+    );
+    let json = run(&home, &["cards", "--forgotten", "--format", "json"]).await;
+    assert_eq!(
+        (json.code, json.out.as_str()),
+        (0, "[]\n"),
+        "{}",
+        json.screen
+    );
+}

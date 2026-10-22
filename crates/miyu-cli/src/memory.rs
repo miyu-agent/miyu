@@ -100,6 +100,8 @@ pub enum MemoryCommand {
     },
     /// 现在就整理：合掉重复的、改掉过时的、更新摘要（`memory.md` 第七条第 9 款）。
     Dream,
+    /// 列出认识的人的卡（施工 E-1 下）：整理时一人合一张。
+    Cards,
 }
 
 /// 清空的两种（`memory.md` 第二条第 5 款，一般知识那一层随 O 线）。
@@ -256,6 +258,7 @@ async fn act(
         MemoryCommand::Dream => {
             return dream::dream(rpc, params, language, out, err, presses).await;
         }
+        MemoryCommand::Cards => ("memory.cards", json!({"forgotten": args.forgotten})),
     };
     merge(&mut params, extra);
     let result = link::request_saying(rpc, method, params, language, err, |error| {
@@ -266,6 +269,7 @@ async fn act(
         MemoryCommand::List | MemoryCommand::Search { .. } => {
             return print(&result, plan, &command, out);
         }
+        MemoryCommand::Cards => return print_cards(&result, plan, out),
         MemoryCommand::Add { .. } => language.remembered(id_of(&result)),
         MemoryCommand::Edit { .. } => language.changed(id_of(&result)),
         MemoryCommand::Forget { .. } => return Ok(()),
@@ -297,6 +301,23 @@ fn print(
         return Ok(());
     }
     for row in shown::listed(&memories, plan.offset, &plan.language) {
+        say(out, &row);
+    }
+    Ok(())
+}
+
+/// `cards` 的回应印出来（施工 E-1 下）：`json` 的原样印那一串；`text` 的一张一行，一张都没有的说一句。
+fn print_cards(result: &Value, plan: &MemoryPlan, out: &mut dyn Write) -> Result<(), u8> {
+    let cards = result["cards"].as_array().cloned().unwrap_or_default();
+    if plan.args.format == Format::Json {
+        say(out, &Value::Array(cards).to_string());
+        return Ok(());
+    }
+    if cards.is_empty() {
+        say(out, plan.language.no_cards());
+        return Ok(());
+    }
+    for row in shown::cards(&cards, plan.offset, &plan.language) {
         say(out, &row);
     }
     Ok(())

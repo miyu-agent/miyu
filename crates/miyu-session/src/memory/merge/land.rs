@@ -6,9 +6,9 @@ use std::time::Duration;
 use miyu_kernel::id::{ModuleId, Seq};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::time::Timestamp;
-use miyu_recall::merge::Decisions;
+use miyu_recall::merge::{Decisions, Drafted, names};
 use miyu_recall::{
-    Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired, Saved,
+    Card, Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired, Saved,
     Summary, Swept,
 };
 use miyu_store::memory::MemoryLog;
@@ -89,7 +89,8 @@ impl Keeper {
     }
 
     /// 记下一次合并（第七条第 4 款）：落的时候还算数、听众合的才落；改的指着旧的、类出处听众照旧，和原文一样的不记；作废的带
-    /// 为什么；有摘要的记摘要；最后记合到第 `upto` 条、交了 `given` 条。交回改了几条、作废几条。
+    /// 为什么；有摘要的记摘要；人卡（施工 E-1 下，第 15 款）一人一张，叫法接上旧卡的，和现在那一张一样的不记；最后记合到第
+    /// `upto` 条、交了 `given` 条。交回改了几条、作废几条。
     ///
     /// # Errors
     ///
@@ -98,8 +99,8 @@ impl Keeper {
         &self,
         at: Timestamp,
         decided: &Decisions,
-        upto: Seq,
-        given: u32,
+        drafted: &[Drafted],
+        (upto, given): (Seq, u32),
         swept: Option<&Swept>,
     ) -> Result<(u32, u32), Refused> {
         let log = self.log()?;
@@ -151,6 +152,24 @@ impl Keeper {
                 upto,
             };
             self.append(&log, stamp(), &MemoryEvent::Summary(summary))?;
+        }
+        for one in drafted {
+            let old = log
+                .book(|book| book.card(&one.who).cloned())
+                .filter(|card| card.retired.is_none());
+            let known = old
+                .as_ref()
+                .map(|card| card.names.clone())
+                .unwrap_or_default();
+            let card = Card {
+                who: one.who.clone(),
+                text: one.text.clone(),
+                names: names(&one.who, &one.names, &known),
+            };
+            if old.is_some_and(|old| old.text == card.text && old.names == card.names) {
+                continue;
+            }
+            self.append(&log, stamp(), &MemoryEvent::Card(card))?;
         }
         let mark = Merged {
             upto,

@@ -11,6 +11,14 @@ impl Language {
         }
     }
 
+    /// `cards` 一张都没有（施工 E-1 下）。
+    pub fn no_cards(&self) -> &'static str {
+        match self {
+            Language::Chinese => "还没有认识的人的卡。",
+            Language::English => "No person cards yet.",
+        }
+    }
+
     /// `search` 一条都没找到。
     pub fn nothing_found(&self) -> &'static str {
         match self {
