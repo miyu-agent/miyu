@@ -19,6 +19,7 @@ Commands:
   logout [name]         Delete a provider's key
   setup                 Connect the first model: pick a provider and try it
   web                   Open the web UI
+  service <command>     Start the core at boot or login: enable, disable, status
   sandbox setup|remove  Set up or remove the sandbox user (Windows, needs admin)
 
 ask options:
