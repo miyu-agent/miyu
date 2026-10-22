@@ -11,6 +11,7 @@ mod dreaming;
 mod extract;
 mod follow;
 mod keeper;
+mod known;
 mod lane;
 mod listener;
 mod merge;

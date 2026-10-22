@@ -1,0 +1,4 @@
+<person>
+Talking to you: {who}
+{text}
+</person>

@@ -40,11 +40,14 @@ pub struct SummaryTexts {
     more: Template,
     close: Template,
     digest: Template,
+    /// 认出来那一块（施工 E-1 补，`known.rs`）：`card/person.txt`（`{who}`、`{text}`）。
+    pub(super) card: Template,
 }
 
 impl SummaryTexts {
     /// 从资源目录 `resources` 读：`summary/open.txt`、`summary/close.txt`、`summary/more.txt`（`{count}`）、`summary/digest.txt`
-    /// （`{text}`），一行照 `memory_search/memory.txt`（`{id}`、`{class}`、`{date}`、`{text}`）。
+    /// （`{text}`），认出来那一块 `card/person.txt`（`{who}`、`{text}`，施工 E-1 补），一行照 `memory_search/memory.txt`
+    /// （`{id}`、`{class}`、`{date}`、`{text}`）。
     ///
     /// # Errors
     ///
@@ -62,6 +65,7 @@ impl SummaryTexts {
             more: load::text(resources, PACKAGE, "summary", "more", &["count"])?,
             close: load::text(resources, PACKAGE, "summary", "close", &[])?,
             digest: load::text(resources, PACKAGE, "summary", "digest", &["text"])?,
+            card: load::text(resources, PACKAGE, "card", "person", &["who", "text"])?,
         })
     }
 }

@@ -12,7 +12,7 @@ use tokio::sync::oneshot;
 use miyu_kernel::event::{
     CallError, ChangeWhy, ModelChanged, Purpose, Transient, TransientBody, Usage,
 };
-use miyu_kernel::facts::Present;
+use miyu_kernel::facts::{Present, Speaker};
 use miyu_kernel::id::{ContentHash, Seq, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::request::{Difference, Request};
@@ -135,6 +135,7 @@ impl Actor {
         reference: Option<String>,
         present: Vec<Present>,
         said: Option<String>,
+        speakers: Vec<Speaker>,
     ) -> Input {
         self.config.turn(self.session.cwd().to_string()).await;
         let before = self.shown_now();
@@ -167,7 +168,13 @@ impl Actor {
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
         let extensions = self.extension_injections(said.clone());
         let (mut injected, extended) = tokio::join!(
-            hooks(self.tools.memory(), knowledge, present, said, config),
+            hooks(
+                self.tools.memory(),
+                knowledge,
+                (present, speakers),
+                said,
+                config
+            ),
             extensions
         );
         injected.extend(extended);
@@ -380,7 +387,7 @@ fn finished(
 async fn hooks(
     memory: Option<(Calls, UtcOffset)>,
     knowledge: Option<Arc<Shelves>>,
-    present: Vec<Present>,
+    (present, speakers): (Vec<Present>, Vec<Speaker>),
     said: Option<String>,
     config: TurnConfig,
 ) -> Vec<Injection> {
@@ -394,24 +401,34 @@ async fn hooks(
         )
         .await
     };
-    let remembered = remember(memory, present.clone(), said.clone(), Arc::clone(&config));
+    let remembered = remember(
+        memory,
+        (present.clone(), speakers),
+        said.clone(),
+        Arc::clone(&config),
+    );
     let (known, remembered) = tokio::join!(known, remembered);
     known.into_iter().chain(remembered).collect()
 }
 
-/// 记忆那一个挂接点：先问摘要、再问联想（联想要知道这一轮摘要列了哪几条，不重复带）。
+/// 记忆那一个挂接点：先问摘要、和她说话的那个人的卡（施工 E-1 补，照这一轮开口的人 `speakers`），再问联想（联想要知道这一轮
+/// 摘要列了哪几条，不重复带）。照这个先后排：摘要、卡、联想。
 async fn remember(
     memory: Option<(Calls, UtcOffset)>,
-    present: Vec<Present>,
+    (present, speakers): (Vec<Present>, Vec<Speaker>),
     said: Option<String>,
     config: TurnConfig,
 ) -> Vec<Injection> {
     let Some((memory, offset)) = memory else {
         return Vec::new();
     };
-    let summary = timed("memory", "summary", memory.summary(offset, present.clone())).await;
+    let (summary, card) = tokio::join!(
+        timed("memory", "summary", memory.summary(offset, present.clone())),
+        timed("memory", "card", memory.card(speakers, present.clone())),
+    );
+    let summary: Vec<Injection> = summary.into_iter().chain(card).collect();
     let Some(said) = said else {
-        return summary.into_iter().collect();
+        return summary;
     };
     // 这一轮摘要列的几条，联想当已经交过的。
     let mut seen = present;
@@ -429,7 +446,7 @@ async fn remember(
     summary.into_iter().chain(recall).collect()
 }
 
-/// 限时 [`HOOKS`] 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`recall`）；过了的没有，记一行 `DEBUG`。
+/// 限时 [`HOOKS`] 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`card`、`recall`）；过了的没有，记一行 `DEBUG`。
 async fn timed(
     module: &'static str,
     part: &'static str,

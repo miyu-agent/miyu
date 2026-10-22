@@ -106,6 +106,16 @@ impl Calls {
         blocking(move || keeper.summary(offset, &present)).await
     }
 
+    /// 这一轮带谁的人卡（施工 E-1 补，`known.rs`）：照这一轮开口的人 `speakers`，在阻塞线程里读。
+    pub(crate) async fn card(
+        &self,
+        speakers: Vec<miyu_kernel::facts::Speaker>,
+        present: Vec<Present>,
+    ) -> Option<Injection> {
+        let keeper = self.keeper.clone();
+        blocking(move || keeper.card(&speakers, &present)).await
+    }
+
     /// 这一轮联想带什么（施工 R-8，`recall.rs`）：场所会话里也联想，挑法照谁在听（施工 R-13 下）；`said` 是这一轮人说的话，照意思找照这一轮的配置 `config`
     /// （`models.embedding`，远程的用量记在属主名下），日期照会话的时区 `offset`。
     pub(crate) async fn recall(

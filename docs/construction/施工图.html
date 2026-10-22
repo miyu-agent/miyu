@@ -897,6 +897,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-32"><span class="n">R-32</span>撤销了马上看不见<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1上"><span class="n">E-1 上</span>认识的人的类和 who<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1下"><span class="n">E-1 下</span>人卡<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sE-1补"><span class="n">E-1 补</span>认出来<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
         <li><a class="step done" href="#sR-6f"><span class="n">R-6</span>不抽回忘掉的（修）<span class="st">✓</span></a></li>
@@ -28537,6 +28538,57 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/E-1下-人卡.md</code>；设计 <code>42-认识的人.md</code>；蓝图 <code>memory.md</code>（记忆日志、第七条第 15 款、「协议」），<code>protocol.md</code>，<code>cli/memory.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sE-1补" aria-labelledby="h-sE1c">
+  <div class="sheet-head"><h2 id="h-sE1c"><span class="no">E-1 补</span>认出来</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">那个人一开口她就认出来：和她说话的那个人有人卡的，回合开始带上他的卡，她知道对面是谁、怎么相处。一段上下文里一个人只带一次。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · memory/known.rs、memory/port.rs、actor/model.rs、actor.rs　resources · software/memory/card/person.txt</span><span class="dir-note">E-1 补</span></div>
+            <ol class="pipe" aria-label="认出来">
+              <li>回合开始：内核交 <code>speakers</code>，取最后一个不是主人的</li>
+              <li>他有人卡、这一段 <code>present</code> 里还没带过</li>
+              <li>一块 <code>&lt;person&gt;</code>（模块 <code>memory</code>、类别 <code>card</code>），排在常驻摘要后面、联想前面</li>
+              <li>以后原样回放；压缩、清空以后重新算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步加的</p>
+          <div class="tile new"><span class="nm">card</span><span class="rl">一轮一张，一段一人一次</span></div>
+          <div class="tile new"><span class="nm">card/person.txt</span><span class="rl">外壳 11 token</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">E-1 补</dd></div>
+        <div><dt>名称</dt><dd>认出来</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">E-1补</dd></div>
+        <div><dt>验收</dt><dd>测试、变异、量 token、CI · 自己验收</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>带对的人、排在摘要后面话前面；一段只带一次、前缀一字不动；换人带新的，清空以后重带；主人、没卡、作废的不带</span></li>
+        <li><span class="ok">✓</span><span>手写变异全被逮住；门禁九项全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/E-1补-认出来.md</code>；设计 <code>42-认识的人.md</code>；蓝图 <code>memory.md</code>（第三条第 7、8 款、第十条）。</li>
       </ul>
     </div>
   </div>

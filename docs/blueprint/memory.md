@@ -32,6 +32,7 @@
 | `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到） | V-9、R-32 |
 | `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照账号的会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
+| `crates/miyu-session/src/memory/known.rs` | 认出来（第三条第 8 款）：和她说话的是谁、这一段带过没有、拼那一块；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 和常驻那一块并着问，排在它后面、联想前面 | E-1 补 |
 | `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |
 | `crates/miyu-recall/src/extract.rs`、`redact.rs` | 抽取交回的怎么读（第六条第 5 款）；遮 key 和 key 写法的读法（第六条第 7 款） | R-6 上 |
 | `crates/miyu-session/src/memory/extract.rs`、`extract/job.rs` | 抽取：给模型看的字、一个会话的抽取状态（闹钟、在路上的、失败几次）、照这一段拼请求（几轮怎么接、放不下的分几次、截中间）；`job.rs` 是派出去的那一件活（发、读、遮、记，记下以后看够不够合并；人叫的现在就合，R-7 补挪出来；发之前接上这一段开始以后忘掉的几条，R-6 修，`Keeper::dropped_since`） | R-6 上 |
@@ -218,6 +219,19 @@
    - `RunTurnStartHooks` 多 `present`（`kernel/session.md`）：有效历史里由模块注入的每一块的模块、类别、`refs`，照日志的先后（`miyu_kernel::facts::present`）。
    - 挂接点交回几块 `ContextInjected`，照原来的 `TurnStartHooksDone`。
    - `RunTurnStartHooks` 多 `said`（施工 R-8，2026-10-10 和核心的主会话定）：触发这一轮的人话，人开的一轮才有（`miyu_kernel::facts::said`，判法和回合索引共用 `By::is_person`、`block::words`）。谁说的没有加：联想只在本机的会话里，听众是属主。
+   - `RunTurnStartHooks` 多 `speakers`（施工 E-0，主会话加）：开这一轮的人话是哪几个人说的，平台身份和是不是主人，同一个人只交一次、最近开口的在后（`miyu_kernel::facts::speakers`）；本机的头上说的、不是人开的一轮没有。认出来照它（第 8 款）。
+8. **认出来**（施工 E-1 补，设计 `42-认识的人.md` 第三节第 3 条、PN4，2026-10-21 项目主人定）：回合开始，和她说话的那个人（`speakers` 里最后一个不是主人的）有人卡（第七条第 15 款，底账里这个人最新的那张、没作废）的，带上他的卡：一块 `context.injected`，模块 `memory`、类别 `card`，`refs` 是他的平台编号。原文（`resources/software/memory/card/person.txt`，登记簿；叫法有的接在是谁后面，正文的换行换成空格）：
+
+   ```text
+   <person>
+   Talking to you: qq:20017 (小林, 林林)
+   小林是群友，喜欢拍照。
+   </person>
+   ```
+
+   - 一轮最多一张；这一段上下文里这个人的卡带过的（`present` 里模块 `memory`、类别 `card` 的 `refs` 有他）不再带，压缩、清空、撤掉带着它的那一轮以后重新算（同第 1 款）；换了人说话的，下一轮带新的那个人的。主人不带（他的事在常驻那一块），没有卡的、卡作废了的不带，话里提到的别人不带（她要知道的自己搜）。
+   - 排在常驻那一块后面、联想前面，都在触发那句话前面，以后原样回放，不改以前的前缀（第十条）。卡最多 300 字（整理、人改的时候已经查过，第七条第 15 款），一块常见的 50 token 上下、满 300 字的约 250（施工单量的）。
+   - 和常驻那一块同一个挂接点，并着问、各自限时 300 毫秒（`HOOKS`）：过了的记一行 `DEBUG turn start hook timed out module=memory part=card`；读不了记忆日志的这一轮不带，记一行 `WARN memory card not read error=…`。外壳和常驻那一块的字一起读（`SummaryTexts`），读不出来的照第 5 款都不交。
 
 **四、联想**（R-8，2026-10-10 做了；2026-10-07 项目主人定单独一步实测后再开，10-10 定要「严」，没有照意思那一路的不联想）
 
@@ -289,7 +303,7 @@
 **十、缓存和 token**（每一步都守，2026-10-07 项目主人提：旧版踩过坑）
 
 1. 记忆的东西不进 system、不改工具面、不改已经发过的话：摘要和联想都是事实，放在触发消息前面，原样回放。system 里只有几行固定的规则，会话开局拼进策略快照。
-2. 常驻的只有摘要（一段上下文一份）和联想（一轮最多 500 字节、一段累计 40 条，追加在这一轮的话前面，不改以前的前缀）。
+2. 常驻的只有摘要（一段上下文一份）、和她说话的那个人的卡（一段里一个人一张，第三条第 8 款，E-1 补）和联想（一轮最多 500 字节、一段累计 40 条），都追加在这一轮的话前面，不改以前的前缀。
 3. 抽取只在缓存还热的时候 fork；合并只交相关的。
 4. 每一步合并以前用真模型量两样，写进施工单：同一个会话连说几轮的缓存命中，有记忆和没有的一样；每轮多了多少 token。
 
