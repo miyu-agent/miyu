@@ -9,6 +9,12 @@ impl Refusal {
         reason: "not_permitted",
         data: None,
     };
+    /// 用户名、密码都对，账号停用了（施工 Y-1 上补）：回完断开。密码不对的照旧 `bad_password`。
+    pub(crate) const ACCOUNT_DISABLED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "account_disabled",
+        data: None,
+    };
     /// 用邀请码连上的，先注册。
     pub(crate) const REGISTER_FIRST: Refusal = Refusal {
         code: REFUSED,

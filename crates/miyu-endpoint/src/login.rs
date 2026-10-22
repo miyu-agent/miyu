@@ -245,14 +245,14 @@ pub(crate) async fn password(
     if let Err(wait) = admit(&core.identity, user) {
         return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
     }
-    // 停用了的当密码不对（施工 Y-1 上）：不透露停用。
+    // 停用了的照样验密码：密码对了才说停用了（施工 Y-1 上补，2026-10-22 项目主人验收时要的），不对的照旧 `bad_password`，
+    // 不透露停没停。
     let found = files::read_accounts(core)
         .accounts
         .find(user)
-        .filter(|account| !account.disabled)
         .and_then(|account| {
             let id = AccountId::parse(&account.id).ok()?;
-            Some((id, account.password.clone()))
+            Some(((id, account.disabled), account.password.clone()))
         });
     let (account, phc) = found.unzip();
     let right = tokio::task::spawn_blocking(move || match phc {
@@ -266,9 +266,12 @@ pub(crate) async fn password(
     .await
     .unwrap_or(false);
     // 错了的进来时已经记过（`admit`）。
-    let Some(account) = account.filter(|_| right) else {
+    let Some((account, disabled)) = account.filter(|_| right) else {
         return Err(Refusal::BAD_PASSWORD);
     };
+    if disabled {
+        return Err(Refusal::ACCOUNT_DISABLED);
+    }
     core.identity
         .failures
         .lock()

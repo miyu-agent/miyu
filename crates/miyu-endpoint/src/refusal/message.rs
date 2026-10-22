@@ -245,6 +245,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "bad_code" => ("一次性码已失效。", "One-time code expired."),
         "bad_invite" => ("邀请码无效。", "Invalid invite code."),
         "register_first" => ("请先注册。", "Register first."),
+        "account_disabled" => ("账号已停用。", "Account disabled."),
         "username_taken" => ("用户名已被使用。", "Username taken."),
         "not_permitted" => ("没有权限。", "Not permitted."),
         "unknown_account" => ("账号不存在。", "Account not found."),

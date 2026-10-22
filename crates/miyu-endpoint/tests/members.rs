@@ -209,7 +209,19 @@ async fn disabling_cuts_a_member_off_and_enabling_lets_them_back() {
         json!({"user": "bob", "password": "correct horse"}),
     )
     .await;
-    assert_eq!(why(&refused), "bad_password", "停用的当密码不对：{refused}");
+    assert_eq!(
+        why(&refused),
+        "account_disabled",
+        "密码对了才说停用了：{refused}"
+    );
+    assert!(is_closed(&mut typed).await, "回完断开");
+    let mut wrong = Client::connect(Arc::clone(&core));
+    let refused = hello_with(&mut wrong, json!({"user": "bob", "password": "wrong"})).await;
+    assert_eq!(
+        why(&refused),
+        "bad_password",
+        "密码不对的不透露停没停：{refused}"
+    );
     let listed = admin.call("a", "account.list", json!({})).await;
     let rows = listed["result"]["accounts"].as_array().expect("{listed}");
     let bob_row = rows

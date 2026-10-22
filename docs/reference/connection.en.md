@@ -91,7 +91,8 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `bad_params` (`-32602`) | A required field is missing or has the wrong type; more than one kind of credential, or only one of `user`/`password` (closes) |
 | `protocol_mismatch` | `1` is not in your range (closes) |
 | `bad_token` | No credential, or a wrong local token (closes) |
-| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes); a disabled account's password is also `bad_password` |
+| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes); a wrong password for a disabled account is also `bad_password` |
+| `account_disabled` | Right username and password, but the account is disabled (closes) |
 | `bad_invite` | Wrong, expired, used or revoked invite code (closes) |
 | `login_throttled` | Too many wrong passwords; wait a while (closes) |
 | `hello_first` | Another method before the handshake (does not close) |

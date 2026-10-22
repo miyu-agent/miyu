@@ -90,7 +90,8 @@
 | `bad_params`（`-32602`） | 缺了必写的、类型不对；凭据写了不止一种、`user`/`password` 只写一个（断开） |
 | `protocol_mismatch` | `1` 不在你给的范围里（断开） |
 | `bad_token` | 没写凭据，或者本机令牌不对（断开） |
-| `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开）；停用了的账号的密码也是 `bad_password` |
+| `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开）；停用了的账号密码不对的也是 `bad_password` |
+| `account_disabled` | 用户名、密码都对，账号停用了（断开） |
 | `bad_invite` | 邀请码不对、过期了、用过了、撤掉了（断开） |
 | `login_throttled` | 密码错太多次，先等一会儿（断开） |
 | `hello_first` | 握手以前调了别的方法（不断开） |

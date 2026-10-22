@@ -261,6 +261,7 @@ async fn credentials(
                 let said = match refusal.reason {
                     "login_throttled" => Some("login throttled"),
                     "bad_password" => Some("bad password"),
+                    "account_disabled" => Some("account disabled"),
                     _ => None,
                 };
                 (refusal, said)
