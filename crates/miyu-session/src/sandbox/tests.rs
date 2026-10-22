@@ -133,3 +133,96 @@ fn a_weak_turn_writes_no_mount_into_the_spec() {
     assert!(strong, "能用挂载、没设弱的写 mount");
     assert!(!weak, "弱沙盒不写");
 }
+
+/// 藏起来的不重叠（施工 5-15 下修）：私密目录里加了包住数据根的上级、包住别的私密目录的上级，只留外面那一层。bwrap 先盖外层，
+/// 里面那一条的挂载点就不在了，所有命令起不来；别的平台盖了外层也就藏了里面。有挂载、没有挂载都一样。
+#[test]
+fn a_hidden_dir_inside_another_is_left_to_the_outer_one() {
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-nested-{}", std::process::id()));
+    let home = scratch.join("home");
+    for dir in [".cache/miyu", ".config/gh", ".ssh"] {
+        std::fs::create_dir_all(home.join(dir)).expect("建得了目录");
+    }
+    let mut sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        Some(home.clone()),
+        home.join(".cache/miyu"),
+        (None, false),
+    );
+    sandbox.set_private(
+        [".config/gh", ".ssh", ".cache", ".config", ".ssh"]
+            .map(|dir| home.join(dir))
+            .to_vec(),
+    );
+    let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
+    for mount in [false, true] {
+        assert_eq!(
+            sandbox.hidden(real(".cache/miyu"), &[], mount),
+            [real(".ssh"), real(".cache"), real(".config")],
+            "挂载 {mount}：数据根、.config/gh 让给外层，.ssh 只写一次"
+        );
+    }
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+}
+
+/// 真的经助手跑（施工 5-15 下修，clicall 报的）：数据根的上级加成私密目录，有能用的 bubblewrap 的机器上命令照样起得来，上级
+/// 里面的读不到。规格的 `mount` 在这里设上，不动这个进程里的开关：这个包的别的测试会把它放回去。
+#[cfg(target_os = "linux")]
+#[test]
+fn a_command_runs_when_a_private_dir_holds_the_data_root() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if !probe
+        .mechanisms
+        .iter()
+        .any(|mechanism| mechanism == "bwrap")
+    {
+        return;
+    }
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-holds-{}", std::process::id()));
+    let home = scratch.join("home");
+    let work = scratch.join("work");
+    for dir in [home.join(".cache/miyu"), work.clone()] {
+        std::fs::create_dir_all(dir).expect("建得了目录");
+    }
+    std::fs::write(home.join(".cache/miyu/token"), "secret").expect("写得进");
+    let mut sandbox = Sandbox::new(
+        helper,
+        Some(home.clone()),
+        home.join(".cache/miyu"),
+        (None, false),
+    );
+    sandbox.set_private(vec![home.join(".cache")]);
+    let workspace = Permission {
+        level: Level::Workspace,
+        read_only: false,
+    };
+    let mut sandboxed = sandbox
+        .for_call(&workspace, &work.to_string_lossy(), &[], &[])
+        .expect("写得成")
+        .expect("进沙盒");
+    sandboxed.spec.mount = true;
+    let token = std::fs::canonicalize(home.join(".cache/miyu/token")).expect("在");
+    let script = format!(
+        "echo ran; cat '{}' 2>/dev/null || echo hidden",
+        token.display()
+    );
+    let (program, args) = miyu_sandbox::argv(
+        &sandboxed,
+        Path::new("/bin/sh"),
+        &["-c".into(), script.into()],
+    )
+    .expect("写得成 JSON");
+    let out = std::process::Command::new(program)
+        .args(args)
+        .current_dir(&work)
+        .envs(sandboxed.env.iter().map(|(name, value)| (name, value)))
+        .output()
+        .expect("起得来助手");
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        "ran\nhidden\n",
+        "{out:?}"
+    );
+}

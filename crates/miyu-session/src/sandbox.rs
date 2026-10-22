@@ -197,12 +197,22 @@ impl Sandbox {
             .iter()
             .filter_map(|dir| std::fs::canonicalize(dir).ok())
         {
-            if !hidden.contains(&dir) && (mount || !write.iter().any(|base| within(&dir, base))) {
-                hidden.push(dir);
+            if mount || !write.iter().any(|base| within(&dir, base)) {
+                outermost(&mut hidden, dir);
             }
         }
         hidden
     }
+}
+
+/// 藏起来的加上 `dir`，彼此不重叠（施工 5-15 下修）：落在已有的一条里面的（一样的也算）不加，已有的落在它里面的去掉。bwrap
+/// 先给外层盖了 tmpfs，里面那一条的挂载点就不在了，所有命令起不来；别的平台盖了外层也就藏了里面。
+fn outermost(hidden: &mut Vec<PathBuf>, dir: PathBuf) {
+    if hidden.iter().any(|outer| within(&dir, outer)) {
+        return;
+    }
+    hidden.retain(|inner| !within(inner, &dir));
+    hidden.push(dir);
 }
 
 impl Sandbox {
