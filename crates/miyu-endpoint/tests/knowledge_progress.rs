@@ -6,24 +6,32 @@ use serde_json::{Value, json};
 use crate::knowledge_manage::{client, upload};
 use crate::support::*;
 
-/// 一直读推送，直到 `kb.indexed`：交回读到的进度推送（`[done, total]`）。
-async fn progress_until_indexed(client: &mut Client) -> Vec<(u64, u64)> {
-    let mut seen = Vec::new();
-    loop {
+/// 一直读，直到 `kb.indexed` 和重建的回应（编号 `r`）都到了：交回读到的进度推送（`[done, total]`）和回应。推送经订阅的转发
+/// 任务写出去，回应由处理请求的那一头写，两条路谁先到不一定：macOS 的 CI 上回应先到过，原来读推送时跳过了它，再等回应就等满
+/// 六十秒（W-15 修）。
+async fn progress_and_answer(client: &mut Client) -> (Vec<(u64, u64)>, Value) {
+    let (mut seen, mut indexed, mut answer) = (Vec::new(), false, None);
+    while !indexed || answer.is_none() {
         let next: Value = client.next().await.expect("没断开");
+        if next["id"] == "r" {
+            answer = Some(next);
+            continue;
+        }
         match next["method"].as_str() {
             Some("kb.indexing") => {
+                assert!(!indexed, "建好了不再推进度：{next}");
                 assert_eq!(next["params"]["kb"], "own", "{next}");
                 let at = |field: &str| next["params"][field].as_u64().expect("是数");
                 seen.push((at("done"), at("total")));
             }
             Some("kb.indexed") => {
                 assert_eq!(next["params"], json!({"kb": "own"}), "{next}");
-                return seen;
+                indexed = true;
             }
             _ => {}
         }
     }
+    (seen, answer.expect("等到了回应"))
 }
 
 #[tokio::test]
@@ -46,17 +54,14 @@ async fn rebuilding_pushes_progress_and_the_list_says_when() {
     let request =
         json!({"jsonrpc": "2.0", "id": "r", "method": "kb.reindex", "params": {"kb": "own"}});
     client.line(&request.to_string()).await;
-    let seen = progress_until_indexed(&mut client).await;
+    let (seen, answer) = progress_and_answer(&mut client).await;
     assert_eq!(seen.first(), Some(&(0, 3)), "{seen:?}");
     assert_eq!(seen.last(), Some(&(3, 3)), "最后一篇照推：{seen:?}");
-    // 重建的回应在推送后面到（补完了才回）。
-    loop {
-        let next = client.next().await.expect("没断开");
-        if next["id"] == "r" {
-            assert_eq!(next["result"]["documents"], json!(3), "{next}");
-            break;
-        }
-    }
+    assert_eq!(
+        answer["result"]["documents"],
+        json!(3),
+        "补完了才回：{answer}"
+    );
 
     let listed = client.call("l", "kb.list", json!({})).await;
     let base = &listed["result"]["bases"][0];
