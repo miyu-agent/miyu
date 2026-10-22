@@ -56,7 +56,7 @@ pub struct ScriptHead {
     pub summary: BTreeMap<String, String>,
     /// 要先加载（`Need load`，施工 L-1）。
     pub need_load: bool,
-    /// 脚本里能调（`Clicall`，施工 M-2）：没写的能。
+    /// 脚本里能调（`Clicall`，施工 M-2）：写了 `yes` 的能，没写的不能（施工 M-2 三补）。
     pub clicall: bool,
     /// 给哪种会话（`Venues`，施工 X-43）：照写的先后；没写的没有，哪种会话都有。
     pub venues: Option<Vec<String>>,
@@ -119,7 +119,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         display_name: BTreeMap::new(),
         summary: BTreeMap::new(),
         need_load: true,
-        clicall: true,
+        clicall: false,
         venues: None,
     };
     let mut rest = lines.iter();

@@ -65,7 +65,7 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Parameters` | The parameters' JSON Schema, from the next line on, may span lines; none when omitted |
 | `Timeout` | Seconds, default 60 |
 | `Need load` | Loaded on demand unless you write it: the AI normally sees only the name and one line and loads the full parameters when needed, which saves money. `no`: always send the full parameters; write it for ones used often |
-| `Clicall` | `no`: the AI cannot call it with `miyu call` inside a command, only directly. Unset means it can |
+| `Clicall` | `yes`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Unset means it cannot, and it can only be called directly. Scripts that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on scripts that change or send things or spend quota |
 | `Venues` | Which sessions get it: some of `local` (this machine: the terminal, the web page and so on), `private` (private chats on a messaging platform), `group` (groups), comma separated, e.g. `Venues: local, private`. Unset means every kind of session; if it is wrong the whole script is not registered and `miyu check` reports it |
 
 The header is the run of comment lines at the very top of the file; it ends at the first line that is not a comment. Leave a blank line after the header before any other comment, or a sentence like "Timeout: …" in your notes is read as part of the header.

@@ -140,13 +140,13 @@ fn need_load_is_yes_or_no() {
     }
 }
 
-/// `Clicall`（施工 M-2）：没写的、`yes` 能在脚本里调，`no` 不能；写错的照 `Need load` 一样报。
+/// `Clicall`（施工 M-2）：`yes` 能在脚本里调，没写的、`no` 不能（施工 M-2 三补）；写错的照 `Need load` 一样报。
 #[test]
 fn clicall_is_yes_or_no() {
     for (line, on) in [
         ("# Clicall: no\n", false),
         ("# Clicall: Yes\n", true),
-        ("", true),
+        ("", false),
     ] {
         let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
         assert_eq!(head.clicall, on, "{line}");

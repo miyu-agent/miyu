@@ -1,5 +1,5 @@
-//! 脚本里能不能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：脚本工具开头没写的能，写了 `# Clicall: no` 的不能；个人设置
-//! 写了 `clicall.tools.<名字>` 的盖过来处，之后开的会话照它，记进策略快照。
+//! 脚本里能不能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：脚本工具开头写了 `# Clicall: yes` 的能，没写的、写了 `no` 的
+//! 不能（施工 M-2 三补，原来没写的能）；个人设置写了 `clicall.tools.<名字>` 的盖过来处，之后开的会话照它，记进策略快照。
 
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
@@ -24,9 +24,13 @@ fn clicall(home: &Home, session: &str) -> Vec<(String, bool)> {
 }
 
 #[tokio::test]
-async fn scripts_are_callable_unless_they_or_the_settings_say_no() {
+async fn scripts_are_callable_only_when_they_or_the_settings_say_yes() {
     let home = Home::new();
     home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write(
+        "home/alice/scripts/lookup.py",
+        &echo("lookup").replace("# Need load: no\n", "# Need load: no\n# Clicall: yes\n"),
+    );
     home.write(
         "home/alice/scripts/secret.py",
         &echo("secret").replace("# Need load: no\n", "# Need load: no\n# Clicall: no\n"),
@@ -40,11 +44,12 @@ async fn scripts_are_callable_unless_they_or_the_settings_say_no() {
     assert_eq!(
         clicall(&home, &first),
         [
+            ("lookup".to_string(), true),
             ("read".to_string(), false),
             ("secret".to_string(), false),
-            ("weather".to_string(), true),
+            ("weather".to_string(), false),
         ],
-        "脚本没写的能，写了 no 的不能；自带的照它登记的"
+        "脚本写了 yes 的能，没写的、写了 no 的不能；自带的照它登记的"
     );
 
     let set = client
@@ -52,7 +57,8 @@ async fn scripts_are_callable_unless_they_or_the_settings_say_no() {
             "s1",
             "config.set",
             json!({"layer": "personal", "changes": [
-                {"key": "clicall.tools.weather", "value": false},
+                {"key": "clicall.tools.weather", "value": true},
+                {"key": "clicall.tools.lookup", "value": false},
                 {"key": "clicall.tools.read", "value": true},
             ]}),
         )
@@ -65,10 +71,11 @@ async fn scripts_are_callable_unless_they_or_the_settings_say_no() {
     assert_eq!(
         clicall(&home, &second),
         [
+            ("lookup".to_string(), false),
             ("read".to_string(), true),
             ("secret".to_string(), false),
-            ("weather".to_string(), false),
+            ("weather".to_string(), true),
         ],
-        "人改的盖过来处"
+        "人改的盖过来处：没写的能打开，写了 yes 的能关掉"
     );
 }
