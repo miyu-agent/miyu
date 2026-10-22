@@ -5,6 +5,9 @@
 //! 找，找到的照记下的换回原文里的位置。换回来的就是原文里要换掉的那一段，别的地方一个字节不碰。
 //!
 //! 哪一层对得上几个就是几个：精确的对上两个，就是不唯一，不往宽松那一层找。一个都对不上的，找最接近的那几行。
+//!
+//! 第三层（施工 E-D，空白兜底）：前两层都对不上、不是全部替换的，另外不管每一行开头的空白，从一行的开头对起，对上唯一
+//! 一处才算（[`Found::Indented`]）；新的那段照原文那几行的缩进对齐（[`reindent`]）。
 
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -28,6 +31,14 @@ pub(crate) enum Found {
     Many { count: usize, lines: Vec<usize> },
     /// 一个都对不上：最接近的那几行，没有像的是空的。
     Missing(Option<Closest>),
+    /// 不管行首的空白才对上的唯一一处（施工 E-D）：原文里的一段（从第一行头一个不是空白的字起），和原文那一行开头的
+    /// 空白。
+    Indented {
+        /// 原文里的一段。
+        range: Range<usize>,
+        /// 原文那一行开头的空白。
+        indent: String,
+    },
 }
 
 /// 最接近的那几行。
@@ -46,6 +57,8 @@ pub(crate) struct Closest {
 enum Level {
     Exact,
     Loose,
+    /// 宽松的之外，另外不管每一行开头的空白（施工 E-D）。
+    Indent,
 }
 
 /// 在原文 `text` 里找 `old`。`all` 的：对上的每个地方都要（不重叠的），用不着唯一。
@@ -86,7 +99,89 @@ pub(crate) fn find(text: &str, old: &str, all: bool) -> Found {
             }
         }
     }
+    if !all && let Some(found) = indented(text, old) {
+        return found;
+    }
     Found::Missing(closest(text, old))
+}
+
+/// 第三层：不管行首的空白，从一行的开头对起，唯一一处才算。`old` 第一行是空的不找（对上的会从换行起，缩进对不齐）。
+fn indented(text: &str, old: &str) -> Option<Found> {
+    if old
+        .lines()
+        .next()
+        .is_none_or(|first| first.trim().is_empty())
+    {
+        return None;
+    }
+    let view = View::of(text, Level::Indent);
+    let needle = View::of(old, Level::Indent).text;
+    if needle.trim().is_empty() {
+        return None;
+    }
+    let starts: Vec<usize> = view
+        .starts(&needle)
+        .into_iter()
+        .filter(|at| *at == 0 || view.text.as_bytes()[at - 1] == b'\n')
+        .collect();
+    let [at] = starts.as_slice() else {
+        return None;
+    };
+    let range = view.original(*at..*at + needle.len());
+    let line = text[..range.start].rfind('\n').map_or(0, |at| at + 1);
+    Some(Found::Indented {
+        indent: text[line..range.start].to_string(),
+        range,
+    })
+}
+
+/// 新的那段照原文的缩进对齐（施工 E-D）：`old` 是她给的原文，`matched` 是原文里对上的那一段（从第一行头一个不是空白的字
+/// 起），那一行开头的空白是 `indent`。每一行的缩进拆成「第一行的那份」加「几级」：她的一级是 `old` 里最窄的那一级，原文的
+/// 一级是 `matched` 里最窄的那一级，几级照她的数、每级换成原文的写法；拆不开的照原样接在原文的那份后面。第一行的缩进原文
+/// 里本来就在，去掉；空行照旧。
+pub(crate) fn reindent(new: &str, old: &str, matched: &str, indent: &str) -> String {
+    let theirs = lead(old.lines().next().unwrap_or(""));
+    let unit_theirs = unit(old.lines().skip(1), theirs);
+    let unit_file = unit(matched.lines().skip(1), indent);
+    let mut out = String::with_capacity(new.len());
+    for (i, line) in new.split_inclusive('\n').enumerate() {
+        if line.trim().is_empty() {
+            out.push_str(line);
+            continue;
+        }
+        let deeper = lead(line)
+            .strip_prefix(theirs)
+            .unwrap_or_else(|| lead(line));
+        let levels = match (unit_theirs, unit_file) {
+            (Some(theirs), Some(file))
+                if deeper.len().is_multiple_of(theirs.len())
+                    && deeper == theirs.repeat(deeper.len() / theirs.len()) =>
+            {
+                file.repeat(deeper.len() / theirs.len())
+            }
+            _ => deeper.to_string(),
+        };
+        if i > 0 {
+            out.push_str(indent);
+            out.push_str(&levels);
+        }
+        out.push_str(&line[lead(line).len()..]);
+    }
+    out
+}
+
+/// 一行开头的空白。
+fn lead(line: &str) -> &str {
+    &line[..line.len() - line.trim_start_matches([' ', '\t']).len()]
+}
+
+/// 一级缩进：`lines` 里不空的几行，开头去掉 `base` 以后剩下的空白，最窄的那份；都没有的是空的。
+fn unit<'a>(lines: impl Iterator<Item = &'a str>, base: &str) -> Option<&'a str> {
+    lines
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(|line| lead(line).strip_prefix(base))
+        .filter(|deeper| !deeper.is_empty())
+        .min_by_key(|deeper| deeper.len())
 }
 
 /// 一份看法：换过的字，和它每个字节来自原文的哪一段（起、止，都是原文里的字节位置）。
@@ -123,10 +218,14 @@ impl View {
             }
             match level {
                 Level::Exact => view.push(c, (at, end)),
-                Level::Loose => {
+                Level::Loose | Level::Indent => {
                     for folded in fold(c) {
                         if folded == ' ' || folded == '\t' {
-                            blanks.push((folded, (at, end)));
+                            // 第三层：一行开头的空白不要（这一行里还没写过别的字）。
+                            let fresh = view.text.is_empty() || view.text.ends_with('\n');
+                            if !(level == Level::Indent && fresh) {
+                                blanks.push((folded, (at, end)));
+                            }
                             continue;
                         }
                         for (blank, span) in blanks.drain(..) {

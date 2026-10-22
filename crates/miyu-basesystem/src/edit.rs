@@ -41,6 +41,8 @@ struct Texts {
     not_unique: Template,
     overlap: Template,
     not_text: Template,
+    /// 不管行首空白才对上的那一处（施工 E-D）：接在改好了那一句后面。
+    indented: Template,
 }
 
 /// 她给的参数。`file_path` 写成 `path`、`filePath` 的也认；照 Claude Code 写成一处的（顶层的 `old_string`、
@@ -113,6 +115,7 @@ impl Edit {
                 not_unique: text("not-unique", &["index", "path", "count", "lines"])?,
                 overlap: text("overlap", &["first", "second", "path"])?,
                 not_text: text("not-text", &["path"])?,
+                indented: text("indented", &["index"])?,
             },
         })
     }
@@ -158,6 +161,8 @@ struct Place {
     range: Range<usize>,
     index: usize,
     new: String,
+    /// 不管行首空白才对上的（施工 E-D）。
+    indented: bool,
 }
 
 /// 改：换成真实的位置，读原文，核对她看过的，找每一处，查重叠，从后往前换，写回去。写回去之前看一眼旗（施工
@@ -200,7 +205,14 @@ fn edit(texts: &Texts, call: &Call, path: &str, changes: &[Change], stop: &Stop)
     if let Err(error) = replace(&real, &after) {
         return texts.common.write_failed(path, &error);
     }
-    Done::ok(say(&texts.edited, &[("path", &shown.path(&real))]))
+    let mut message = say(&texts.edited, &[("path", &shown.path(&real))]);
+    for place in places.iter().filter(|place| place.indented) {
+        message.push_str(&say(
+            &texts.indented,
+            &[("index", &place.index.to_string())],
+        ));
+    }
+    Done::ok(message)
         .said(said_n("edit/edited", "count", places.len() as u64))
         .effect(Effect::Changed {
             path: real,
@@ -240,8 +252,20 @@ fn locate(
                     range,
                     index,
                     new: new.clone(),
+                    indented: false,
                 }));
             }
+            Found::Indented { range, indent } => places.push(Place {
+                new: style.lines(&find::reindent(
+                    &change.new_string,
+                    &change.old_string,
+                    &text[range.clone()],
+                    &indent,
+                )),
+                range,
+                index,
+                indented: true,
+            }),
             Found::Many { count, lines } => {
                 let lines: Vec<String> = lines.iter().map(ToString::to_string).collect();
                 let fields = [

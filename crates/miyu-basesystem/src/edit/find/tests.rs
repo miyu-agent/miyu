@@ -154,3 +154,85 @@ fn how_alike_two_lines_are() {
     assert!(alike("ab", "") < f64::EPSILON);
     assert!(alike("a", "b") < f64::EPSILON);
 }
+
+/// 空白兜底（施工 E-D）：前两层都对不上，不管行首空白才对上唯一一处。
+fn indented(text: &str, old: &str) -> (String, String) {
+    match find(text, old, false) {
+        Found::Indented { range, indent } => (text[range].to_string(), indent),
+        other => panic!("应该不管缩进对上：{other:?}"),
+    }
+}
+
+#[test]
+fn a_different_indentation_matches_from_the_first_word_of_the_line() {
+    let text = "fn a() {\n    if x {\n        go();\n    }\n}\n";
+    let (found, indent) = indented(text, "  if x {\n    go();\n  }");
+    assert_eq!(
+        found, "if x {\n        go();\n    }",
+        "从这一行头一个字起，别的照原文"
+    );
+    assert_eq!(indent, "    ");
+    // 制表符写的也认。
+    let (found, indent) = indented("\tlet a = 1;\n\tlet b = 2;\n", "let a = 1;\nlet b = 2;");
+    assert_eq!(
+        (found.as_str(), indent.as_str()),
+        ("let a = 1;\n\tlet b = 2;", "\t")
+    );
+}
+
+#[test]
+fn the_indentation_fallback_needs_one_match_from_a_line_start() {
+    // 两处都只差缩进：不唯一，照旧报找不到。
+    let text = "  a();\n    b();\n      a();\n    b();\n";
+    assert!(matches!(find(text, "a();\nb();", false), Found::Missing(_)));
+    // 不从一行的开头起的不算：`x = go()` 里的 `go()`。
+    assert!(matches!(
+        find("let x = go();\nstop();\n", " go();\n stop();", false),
+        Found::Missing(_)
+    ));
+    // 全部替换的不走这一层。
+    assert!(matches!(
+        find("  a();\n", "    a();", true),
+        Found::Missing(_)
+    ));
+    // 第一行是空的不找：对上的会从换行起，缩进对不齐。
+    assert!(matches!(
+        find("\n    a();\n", "\n  a();", false),
+        Found::Missing(_)
+    ));
+}
+
+#[test]
+fn the_new_text_takes_the_files_indentation() {
+    // 她每级两格、最外一层两格；原文每级四格、最外一层四格：几级照她的数，每级换成原文的写法。
+    let matched = "if x {\n        go();\n    }";
+    assert_eq!(
+        reindent(
+            "  if y {\n    stop();\n      deeper();\n  }",
+            "  if x {\n    go();\n  }",
+            matched,
+            "    "
+        ),
+        "if y {\n        stop();\n            deeper();\n    }"
+    );
+    // 原文用制表符。
+    assert_eq!(
+        reindent(
+            "a {\n  b();\n}",
+            "a {\n  c();\n}",
+            "a {\n\t\tc();\n\t}",
+            "\t"
+        ),
+        "a {\n\t\tb();\n\t}"
+    );
+    // 空行照旧；看不出一级多宽的（只有一行）照原样接在原文那份后面。
+    assert_eq!(
+        reindent("a();\n\n  b();\n", "a();", "a();", "\t"),
+        "a();\n\n\t  b();\n"
+    );
+    assert_eq!(
+        reindent(" c();", "  a();", "a();", "\t"),
+        "c();",
+        "第一行去掉开头的空白"
+    );
+}

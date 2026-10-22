@@ -1174,6 +1174,17 @@ Edits {first} and {second} overlap in "{path}". Merge them into one edit.
 "{path}" is not UTF-8 or UTF-16 text. To replace it whole, use write.
 ```
 
+#### `software/basesystem/edit/indented.txt`
+
+- 什么时候加进来：改好了、其中一处是不管行首空白才对上的（接在 `edited.txt` 后面，`{index}` 照 `1` 填）
+- token：20（2026-10-23 照 o200k 量）
+- 为什么加：空白兜底改了缩进，告诉她新的那段照文件的缩进对齐过，免得她以为原样写进去了（施工 E-D：验收数据根里 8 次找不到，2 次只差行首缩进）
+- 指纹：`ccb2218f`
+
+```text
+Edit {index} matched only after ignoring indentation; its new_string was re-indented to the file.
+```
+
 #### `software/basesystem/trash/trashed.txt`
 
 - 什么时候加进来：移进了回收站

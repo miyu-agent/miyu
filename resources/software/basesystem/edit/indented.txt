@@ -1,0 +1,1 @@
+Edit {index} matched only after ignoring indentation; its new_string was re-indented to the file.

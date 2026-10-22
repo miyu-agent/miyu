@@ -343,3 +343,30 @@ async fn what_is_not_edited() {
     assert_eq!(done.human, Some(said("edit/same").with("index", "1")));
     assert_eq!(bytes(&site, "c.txt"), b"c\n");
 }
+
+/// 空白兜底（施工 E-D）：她写的缩进和文件的不一样，不管行首空白才对上唯一一处的照样改，新的那几行照文件的缩进、换行，
+/// 结果里说一句用了兜底。
+#[tokio::test]
+async fn a_mismatched_indentation_is_forgiven_and_the_new_text_follows_the_file() {
+    let site = Site::new();
+    let original = b"fn a() {\r\n    if x {\r\n        go();\r\n    }\r\n}\r\n";
+    let seen = seen_file(&site, "a.rs", original);
+    let done = edit(
+        &site,
+        json!({"file_path": "a.rs", "old_string": "if x {\n  go();\n}", "new_string": "if y {\n  stop();\n}"}),
+        seen,
+    )
+    .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(
+        String::from_utf8(bytes(&site, "a.rs")).expect("UTF-8"),
+        "fn a() {\r\n    if y {\r\n        stop();\r\n    }\r\n}\r\n"
+    );
+    assert_eq!(
+        text(&done),
+        format!(
+            "Edited {}.\nEdit 1 matched only after ignoring indentation; its new_string was re-indented to the file.\n",
+            quoted("a.rs")
+        )
+    );
+}
