@@ -46,11 +46,7 @@ impl Guard {
     fn writable(&self, real: &Path, cwd: &str, dirs: &[String], grants: &[RawJson]) -> bool {
         let bounds = self.bounds(cwd, dirs);
         let zone = bounds.boundary.zone(real);
-        let asked = Asked {
-            real: real.to_path_buf(),
-            write: true,
-            zone,
-        };
+        let asked = Asked::new(real.to_path_buf(), true, zone, &bounds.boundary);
         zone == Zone::Writable || granted(grants, &asked, &bounds.boundary)
     }
 }

@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use miyu_fs::{Boundary, Places};
+use miyu_fs::{Boundary, Places, Readonly};
 
 /// 一个用完就删的临时目录。
 pub struct Scratch(pub PathBuf);
@@ -87,7 +87,8 @@ impl Site {
         fs::canonicalize(self.at(path)).expect("在")
     }
 
-    /// 照场地造的几个地方：工作区 `work`，数据根 `data`，临时目录 `tmp`，只能读的 `sys`、`home/.cargo`。
+    /// 照场地造的几个地方：工作区 `work`，数据根 `data`，临时目录 `tmp`，只能读的 `sys`、`home/.cargo`，出厂的只禁写名单
+    /// （家目录是 `home`，施工 5-17 下）。
     pub fn places(&self) -> Places {
         Places {
             workspace: self.at("work"),
@@ -97,6 +98,7 @@ impl Site {
             readable: vec![self.at("sys"), self.at("home/.cargo")],
             shelves: Vec::new(),
             private: Vec::new(),
+            readonly: Readonly::shipped(Some(&self.at("home"))),
         }
     }
 

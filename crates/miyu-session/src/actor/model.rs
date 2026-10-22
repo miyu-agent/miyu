@@ -149,6 +149,8 @@ impl Actor {
             self.guard.set_private(private.clone());
             self.tools.set_private(private);
         }
+        // 只禁写的名单照这一轮的配置（施工 5-17 下）：权限策略换上，文件工具写名单上的问人。
+        self.guard.set_readonly(self.guard.readonly_of(&values));
         // 沙盒强度照这一轮的配置（施工 5-16 下）。
         let strength = crate::settings::SandboxSettings::from(&values).strength;
         self.tools.set_weak(strength == crate::settings::WEAK);

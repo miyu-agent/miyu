@@ -88,3 +88,51 @@ fn removed_dirs_tick_what_is_not_listed() {
     assert_eq!(ticks(miyu_tool::private::ADD), None);
     assert_eq!(ticks("sandbox.strength"), None);
 }
+
+/// 受保护的路径（施工 5-17 下）：多收工作区里的相对路径，带 `..` 的、什么都没写的写法不对；家目录和上级太宽；去掉的只收出厂的，
+/// 选项是出厂清单，勾照反着画。
+#[test]
+fn readonly_paths_take_relative_ones_but_not_home_or_above() {
+    let (home, above, elsewhere) = places();
+    let add = miyu_tool::readonly::ADD;
+    assert_eq!(
+        problem(
+            add,
+            &list(&["Makefile", ".github/workflows", "~/bin", elsewhere]),
+            Some(home)
+        ),
+        None
+    );
+    assert_eq!(
+        problem(add, &list(&["Makefile", "../out"]), Some(home)),
+        Some((Code::ReadonlyPath, "../out".to_string()))
+    );
+    assert_eq!(
+        problem(add, &list(&["./"]), Some(home)).map(|(code, _)| code),
+        Some(Code::ReadonlyPath)
+    );
+    assert_eq!(
+        problem(add, &list(&["~"]), Some(home)),
+        Some((Code::ReadonlyTooBroad, "~".to_string()))
+    );
+    assert_eq!(
+        problem(add, &list(&[above]), Some(home)).map(|(code, _)| code),
+        Some(Code::ReadonlyTooBroad)
+    );
+    assert_eq!(
+        problem(add, &list(&["~/x"]), None),
+        None,
+        "家目录不知道的只查写法"
+    );
+    let remove = miyu_tool::readonly::REMOVE;
+    let shipped = miyu_fs::SHIPPED_READONLY[0];
+    assert_eq!(problem(remove, &list(&[shipped]), None), None);
+    assert_eq!(
+        problem(remove, &list(&[shipped, "Makefile"]), None),
+        Some((Code::ReadonlyNotShipped, "Makefile".to_string()))
+    );
+    assert_eq!(options(remove), Some(miyu_fs::SHIPPED_READONLY));
+    assert_eq!(options(add), None);
+    assert_eq!(ticks(remove), Some("unlisted"));
+    assert_eq!(ticks(add), None);
+}

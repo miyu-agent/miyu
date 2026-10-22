@@ -82,6 +82,8 @@ fn the_registered_list_is_well_formed() {
             "sandbox.private.enabled",
             "sandbox.private.add",
             "sandbox.private.remove",
+            "sandbox.readonly.add",
+            "sandbox.readonly.remove",
             "external.bindings.<external>",
             "models.chat",
             "models.vision",

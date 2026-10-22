@@ -40,7 +40,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 35] = [
+const MODULES: [&[Item]; 36] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -51,11 +51,12 @@ const MODULES: [&[Item]; 35] = [
     CommandSettings::ITEMS,
     ProfileSettings::ITEMS,
     // 「隐私与安全」那一页排在「用户」下面（施工 5-15 下，项目主人定）：页照先出现的项排；组照先出现的项排：权限、沙盒、
-    // 私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）。
+    // 私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）、只禁写（施工 5-17 下）。
     PermissionSettings::ITEMS,
     miyu_session::settings::SandboxSettings::ITEMS,
     miyu_session::unsandboxed::ITEMS,
     miyu_tool::private::ITEMS,
+    miyu_tool::readonly::ITEMS,
     EXTERNAL_BINDINGS,
     UseSettings::ITEMS,
     PoolSettings::ITEMS,

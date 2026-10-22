@@ -915,6 +915,31 @@
           },
           "type": "object"
         },
+        "readonly": {
+          "properties": {
+            "add": {
+              "description": "文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "加的受保护路径",
+              "type": "array"
+            },
+            "remove": {
+              "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "默认受保护路径",
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
         "strength": {
           "default": "auto",
           "description": "自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",

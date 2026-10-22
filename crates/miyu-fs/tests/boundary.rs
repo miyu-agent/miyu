@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use crate::support::Site;
-use miyu_fs::{Boundary, Places, Zone, within};
+use miyu_fs::{Boundary, Places, Readonly, Zone, within};
 
 #[test]
 fn the_workspace_is_writable_but_what_git_runs_outside_is_read_only() {
@@ -283,4 +283,109 @@ fn the_private_list_hangs_off_the_home() {
     assert_eq!(places.private, private, "照家目录拼上");
     let nowhere = Places::here(PathBuf::from("/w"), PathBuf::from("/d"), None);
     assert!(nowhere.private.is_empty(), "不知道家目录的没有");
+}
+
+/// 只禁写的名单（施工 5-17 下）：能写的那几片里落在名单上的只能读，相对的在工作区、加进来的目录里任一层都算；去掉的照能写；
+/// 不碰读：名单上的在能写的以外照原来那一片算。还不存在的也照位置算。
+#[test]
+fn the_readonly_list_turns_writable_places_read_only() {
+    let site = Site::new();
+    crate::support::file(&site.at("work/Makefile"), "all:");
+    crate::support::file(&site.at("work/sub/.vscode/tasks.json"), "{}");
+    crate::support::file(&site.at("work-other/.envrc"), "export A=1");
+    crate::support::file(&site.at("tmp/hook.sh"), "#!/bin/sh");
+    let list = Readonly::with(
+        Some(&site.at("home")),
+        &[
+            "Makefile".to_string(),
+            site.at("tmp/hook.sh").to_string_lossy().into_owned(),
+            "~/notes.txt".to_string(),
+        ],
+        &[".git/config".to_string()],
+    );
+    let boundary = Boundary::new(&Places {
+        dirs: vec![site.at("work-other")],
+        readonly: list.clone(),
+        ..site.places()
+    });
+    assert_eq!(boundary.zone(&site.real("work/Makefile")), Zone::Readable);
+    assert_eq!(
+        boundary.zone(&site.real("work/sub/.vscode/tasks.json")),
+        Zone::Readable,
+        "任一层"
+    );
+    assert_eq!(
+        boundary.zone(&site.real("work/.git/hooks/pre-commit")),
+        Zone::Readable
+    );
+    assert_eq!(
+        boundary.zone(&site.real("work/.git/config")),
+        Zone::Writable,
+        "去掉了"
+    );
+    assert_eq!(
+        boundary.zone(&site.real("work-other/.envrc")),
+        Zone::Readable,
+        "加进来的目录里"
+    );
+    assert_eq!(boundary.zone(&site.real("tmp/hook.sh")), Zone::Readable);
+    assert_eq!(boundary.zone(&site.real("tmp/t.txt")), Zone::Writable);
+    assert_eq!(
+        boundary.zone(&site.real("home/notes.txt")),
+        Zone::Outside,
+        "能写的以外照原来那一片：读不放开"
+    );
+    // 工作区就是家目录：家目录下的那几项只能读，还没有的也算。
+    let home = Boundary::new(&Places {
+        workspace: site.at("home"),
+        readonly: list,
+        ..site.places()
+    });
+    assert_eq!(home.zone(&site.real("home/notes.txt")), Zone::Readable);
+    assert_eq!(
+        home.zone(&site.real("home").join("todo.txt")),
+        Zone::Writable
+    );
+    let shipped = Boundary::new(&Places {
+        workspace: site.at("home"),
+        ..site.places()
+    });
+    assert_eq!(
+        shipped.zone(&site.real("home").join(".gitconfig")),
+        Zone::Readable,
+        "出厂的，还不存在"
+    );
+}
+
+/// 作为文件的 `.git`（worktree、子模块）：它说仓库在哪，钩子、配置就在哪，`.git/config` 在名单上时它也只能读（施工 5-17 下）。
+#[test]
+fn a_git_file_is_read_only_with_the_git_config() {
+    let site = Site::new();
+    crate::support::file(&site.at("work/tree/.git"), "gitdir: ../.git/worktrees/tree");
+    let boundary = site.boundary();
+    assert_eq!(boundary.zone(&site.real("work/tree/.git")), Zone::Readable);
+    assert_eq!(
+        boundary.zone(&site.real("work/.git")),
+        Zone::Writable,
+        "是目录的照里面那几样算"
+    );
+    let without = Boundary::new(&Places {
+        readonly: Readonly::with(Some(&site.at("home")), &[], &[".git/config".to_string()]),
+        ..site.places()
+    });
+    assert_eq!(without.zone(&site.real("work/tree/.git")), Zone::Writable);
+}
+
+/// 大小写不分的平台上，换个大小写还是同一处（施工 4-3 上起照这个比）。
+#[cfg(any(target_os = "macos", windows))]
+#[test]
+fn the_readonly_list_folds_case_where_case_does_not_matter() {
+    let site = Site::new();
+    let boundary = site.boundary();
+    let upper = site
+        .real("work")
+        .join(".GIT")
+        .join("HOOKS")
+        .join("pre-commit");
+    assert_eq!(boundary.zone(&upper), Zone::Readable);
 }

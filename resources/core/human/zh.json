@@ -131,6 +131,14 @@
         "name": "默认私密目录",
         "description": "出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。"
       },
+      "sandbox.readonly.add": {
+        "name": "加的受保护路径",
+        "description": "文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。"
+      },
+      "sandbox.readonly.remove": {
+        "name": "默认受保护路径",
+        "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。"
+      },
       "permission.level": {
         "name": "新会话的权限级别",
         "description": "调整新会话开启时的默认权限模式，修改后开新会话生效。",
@@ -380,6 +388,7 @@
       "sandbox": "沙盒",
       "permission": "权限",
       "private": "私密目录",
+      "readonly": "受保护的路径",
       "commands": "命令",
       "display": "显示",
       "persona": "人格",
@@ -705,6 +714,9 @@
     "config/private-not-shipped": "{got} 不是出厂的私密目录：只能去掉出厂清单里的",
     "config/private-bad-path": "{got} 写法不对：要写成 ~/… 或绝对路径",
     "config/private-too-broad": "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
+    "config/readonly-not-shipped": "{got} 不是出厂的受保护路径：只能去掉出厂清单里的",
+    "config/readonly-bad-path": "{got} 写法不对：要写成 ~/…、绝对路径，或者工作区里的相对路径（不能有 ..）",
+    "config/readonly-too-broad": "{got} 是家目录或它的上级，不能整个保护：家目录里改什么都要先问",
     "config/fix-example": "改成其中一个，例如 {example}",
     "config/fix-write": "改成 {example}",
     "config/fix-move": "挪到{layers}里去",

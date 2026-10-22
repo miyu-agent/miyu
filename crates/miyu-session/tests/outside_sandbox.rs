@@ -415,3 +415,57 @@ async fn a_granted_home_still_asks_before_a_private_dir() {
     assert!(detail.contains("private"), "问的是私密目录那一次：{detail}");
     assert_eq!(edit.calls().len(), 1, "家目录别处的那一次没问就写了");
 }
+
+/// 对工作区放行了「此目录不再询问」（施工 5-17 下，2026-10-22 定，同 Claude Code 的危险文件）：受保护的路径照旧问，同私密目录
+/// 只认放在它里面的规则；工作区别处不问。
+#[tokio::test]
+async fn a_granted_workspace_still_asks_before_a_protected_path() {
+    let home = Home::outside_temp();
+    let work = home.scratch.0.join("work");
+    std::fs::create_dir_all(work.join(".git/hooks")).expect("建得了");
+    let fake = Fake::new("run", Access::Execute, Act::Echo);
+    let edit = Fake::new("edit", Access::Write, Act::Echo);
+    let path = |name: &str| work.join(name).to_string_lossy().into_owned();
+    let script = Script::new([
+        run(true),
+        Play::calls(&[(
+            "edit",
+            &serde_json::json!({ "path": path(".git/hooks/pre-commit") }).to_string(),
+        )]),
+        Play::Says("好。"),
+    ]);
+    let catalog = Catalog::new([
+        Arc::clone(&fake) as Arc<dyn Tool>,
+        Arc::clone(&edit) as Arc<dyn Tool>,
+    ])
+    .expect("合写法");
+    let opening = Opening {
+        permission: Permission {
+            level: Level::Workspace,
+            read_only: false,
+        },
+        attended: true,
+        cwd: work.to_string_lossy().into_owned(),
+        dirs: Vec::new(),
+        sandbox: Some(PathBuf::from(HELPER)),
+        sandbox_cache: None,
+    };
+    let handle = home.create_as(&script, &catalog, opening).await;
+    let request = asked(&home, &handle).await;
+    assert_eq!(
+        request.rule.as_ref().map(|rule| rule.get().to_string()),
+        Some(this_dir(&home)),
+        "提的是放行整个工作目录"
+    );
+    answer(&handle, &request, Decision::Session).await;
+    let session_id = handle.id().clone();
+    until_logged(&home, &session_id, |log| requests(log).len() >= 2).await;
+    let again = requests(&home.log(&session_id)).remove(1);
+    let detail = again
+        .detail
+        .as_ref()
+        .map(|detail| detail.get().to_string())
+        .unwrap_or_default();
+    assert!(detail.contains("read_only"), "问的是钩子那一次：{detail}");
+    assert!(edit.calls().is_empty(), "还没回答，没写");
+}

@@ -139,6 +139,18 @@ pub(crate) fn words(items: &[Item]) -> Fake {
             "config/private-too-broad",
             "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
         ),
+        (
+            "config/readonly-not-shipped",
+            "{got} 不是出厂的受保护路径：只能去掉出厂清单里的",
+        ),
+        (
+            "config/readonly-bad-path",
+            "{got} 写法不对：要写成 ~/…、绝对路径，或者工作区里的相对路径（不能有 ..）",
+        ),
+        (
+            "config/readonly-too-broad",
+            "{got} 是家目录或它的上级，不能整个保护：家目录里改什么都要先问",
+        ),
         ("config/fix-example", "改成其中一个，例如 {example}"),
         ("config/fix-write", "改成 {example}"),
         ("config/fix-move", "挪到{layers}里去"),

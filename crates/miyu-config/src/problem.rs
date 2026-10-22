@@ -71,6 +71,13 @@ pub enum Code {
     PrivatePath,
     /// 去掉的不是这台机器出厂的私密目录（施工 5-15 下补）。协议上写 `not_an_option`，说的话单给一句。
     PrivateNotShipped,
+    /// 受保护的路径（只禁写，施工 5-17 下）写了家目录本身或它的上级：家目录里改什么都要先问，不收。
+    ReadonlyTooBroad,
+    /// 受保护的路径的写法不对（施工 5-17 下）：不是 `~/…`、绝对路径，也不是不带 `..` 的相对路径。协议上写 `bad_format`，说的
+    /// 话单给一句。
+    ReadonlyPath,
+    /// 去掉的不是这台机器出厂的受保护路径（施工 5-17 下）。协议上写 `not_an_option`，说的话单给一句。
+    ReadonlyNotShipped,
 }
 
 impl Code {
@@ -99,6 +106,9 @@ impl Code {
             Code::PrivateTooBroad => "private_too_broad",
             Code::PrivatePath => "bad_format",
             Code::PrivateNotShipped => "not_an_option",
+            Code::ReadonlyTooBroad => "readonly_too_broad",
+            Code::ReadonlyPath => "bad_format",
+            Code::ReadonlyNotShipped => "not_an_option",
         }
     }
 

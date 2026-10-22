@@ -4,6 +4,7 @@
 //!
 //! - [`resolve()`]：把她给的路径换成真实的位置，`~` 开头的照 [`tilde()`] 接家目录；
 //! - [`Boundary`]：真实的位置落在哪一片（[`Zone`]）：能读能写、只能读、谁都不能碰、边界以外；
+//! - [`Readonly`]：只禁写的名单，出厂的加上人加的、去掉的（施工 5-17 下）；
 //! - [`open_file`]：安全地打开一份要读的文件：不跟随链接（Unix 上路上一层都不跟，施工 5-10 下）、不阻塞、只开普通文件；
 //! - [`too_wide`]：头报来的工作目录太宽，不能拿它当工作区（施工 4-3 下）；[`workspace_of`]：工作目录对应的工作区（施工 5-14）；
 //! - [`within`]：一个真实的位置在不在某个目录里，往下走目录的工具照它跳过数据根（施工 4-4 下）；
@@ -21,6 +22,7 @@ mod nofollow;
 mod open;
 mod private;
 mod range;
+mod readonly;
 mod replace;
 mod resolve;
 pub mod trash;
@@ -32,6 +34,7 @@ pub use list::{Entry, list_dir};
 pub use open::{Kind, OpenError, open_file};
 pub use private::{SHIPPED_PRIVATE, private_dirs, private_dirs_with, too_broad, written};
 pub use range::{MAX_LENGTH, Segment, read_range};
+pub use readonly::{Readonly, ReadonlyEntry, SHIPPED_READONLY, readonly_entry};
 pub use replace::replace;
 pub use resolve::{ResolveError, resolve, resolve_itself, tilde};
 pub use wide::{too_wide, workspace_of};

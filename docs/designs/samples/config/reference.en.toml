@@ -335,6 +335,15 @@ enabled = true
 # Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
 # remove =
 
+[sandbox.readonly]
+# Added protected paths: Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts).
+# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# add =
+
+# Default protected paths: Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back.
+# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# remove =
+
 [sandbox.tools]
 # No sandbox: this tool: The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only.
 # Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.

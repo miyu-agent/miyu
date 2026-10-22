@@ -21,7 +21,7 @@ use std::sync::{Arc, RwLock};
 
 use serde_json::Value;
 
-use miyu_fs::{Places, ResolveError, Zone, resolve, resolve_itself};
+use miyu_fs::{Places, Readonly, ResolveError, Zone, resolve, resolve_itself};
 use miyu_kernel::event::{Permission, Said};
 use miyu_kernel::id::{AccountId, ModuleId, SessionId};
 use miyu_kernel::raw::RawJson;
@@ -79,6 +79,8 @@ pub(crate) struct Guard {
     workplace: Option<DefaultWorkspace>,
     /// 别的程序的私密目录（施工 5-15 下）：造的时候是出厂的，回合开始照这一轮的配置换（人加的、去掉的），同技能文件夹上锁。
     private: RwLock<Vec<PathBuf>>,
+    /// 只禁写的名单（施工 5-17 下）：同私密目录，造的时候是出厂的，回合开始照这一轮的配置换。
+    readonly: RwLock<Readonly>,
     /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
     unsandboxed: RwLock<Unsandboxed>,
     /// 管理员管得住的地方（施工 X-37 补）：会话开的时候定下，回合开始随放行表交出去。
@@ -124,6 +126,7 @@ impl Guard {
             home,
             real_home,
             private: RwLock::new(places.private.clone()),
+            readonly: RwLock::new(places.readonly.clone()),
             places,
             lettering,
             sandboxed,
@@ -196,6 +199,19 @@ impl Guard {
             .private
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = private;
+    }
+
+    /// 照这一轮的配置 `values` 拼出只禁写的名单（施工 5-17 下）：家目录不知道的，`~` 开头的不算。
+    pub(crate) fn readonly_of(&self, values: &miyu_config::Values) -> Readonly {
+        miyu_tool::readonly::list(values, self.home.as_deref())
+    }
+
+    /// 换上这一轮的只禁写名单（施工 5-17 下）：回合开始照配置换，下一次判照新的。
+    pub(crate) fn set_readonly(&self, readonly: Readonly) {
+        *self
+            .readonly
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = readonly;
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
@@ -366,11 +382,7 @@ impl Guard {
             }
             match mark(level, zone, target.write) {
                 Mark::Allow => {}
-                Mark::Ask => asked.push(Asked {
-                    real,
-                    write: target.write,
-                    zone,
-                }),
+                Mark::Ask => asked.push(Asked::new(real, target.write, zone, &boundary)),
                 Mark::Forbidden => return deny(self.lettering.guard().forbidden(&target.path)),
                 Mark::ReadOnly => return deny(self.lettering.guard().read_only()),
             }

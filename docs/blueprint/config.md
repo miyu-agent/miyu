@@ -255,6 +255,8 @@ miyu_config::settings! {
 | `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2 |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
+| `sandbox.readonly.add` | 文字的列表，一个最多 4096 个字符：`~/…`、绝对路径，或者工作区里不带 `..` 的相对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-17 下：人加的受保护路径（只禁写），家目录和它的上级不收（`readonly_too_broad`）。设置页「隐私与安全」那一页的「受保护的路径」一组，排在私密目录后面 |
+| `sandbox.readonly.remove` | 文字的列表，只收这台机器的出厂只禁写清单（`config.schema` 交成 `options`） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-17 下：去掉的出厂项，同上一组 |
 | `sandbox.strength` | 选项 `auto`、`weak` | `auto` | 系统、个人 | 不能写 | `next_turn` | 5-16 下：沙盒强度。`auto` 有能用的 bubblewrap 就用它，`weak` 只用 Landlock（有挂载也不用）。回合开始照这一轮的配置读。只在 Linux 上起作用：三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标 `hidden`。「隐私与安全」那一页的「沙盒」一组，下拉 |
 | `external.bindings.<external>` | 名字（本机账号） | 没有 | 系统 | 不能写 | `now` | O-3：终端管理员的平台账号（`venues.md`），一个号一行；对着不存在的账号的认的时候当没写、记一行运行日志。头在平台接入那个软件的信息页上画成「终端管理员的 QQ 号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统、个人 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
@@ -314,6 +316,7 @@ miyu_config::settings! {
 - `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写个人设置，默认开（`workspace`）。只写在系统配置、个人设置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。设置页挪到「隐私与安全」（`privacy` 页的 `permission` 组，施工 5-15 下），完全放开的选项名写上「不启用沙盒」。
 - `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（只收这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同；清单里登记成文字的列表，生成的 Schema、参考文件哪个系统都一样，`config.schema` 另把出厂清单交成 `options`、名字同值，`config.set` 写了别的拒 `not_an_option`，5-15 下补）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。系统、个人两层，下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记。
+- `sandbox.readonly.add`、`sandbox.readonly.remove`（施工 5-17 下，`designs/11-权限与沙盒.md` 第四节「只禁写」）：受保护的路径，读照常、写要问人，同私密目录记两份不记整份。一项写成 `~/…`、绝对路径，或者工作区里的相对路径（每个工作区、加进来的目录里任一层的那一处；带 `..` 的、什么都没写的 `config.set` 拒 `bad_format`，单给一句），家目录本身和它的上级拒 `readonly_too_broad`；去掉的只收这台机器的出厂清单 `miyu_fs::SHIPPED_READONLY`（`config.schema` 交成 `options`，带 `ticks: "unlisted"`，写了别的拒 `not_an_option`）。手改文件写了的照不写算。系统、个人两层，下一轮生效：权限策略照这一轮的配置拼（`miyu_tool::readonly::list`）。`privacy` 页的 `readonly` 组，列表，排在 `private` 组后面，没有总开关。两项手写登记（`miyu-tool` 的 `readonly.rs`）。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，一个人设了不能算数。
 - 蓝图里写着「配置那一步能改」的几个数（压缩的几个数、`jobs.*`、回收处留几天、空闲多久退出）这次不挪：只挪真要调的（2026-10-01 主会话定）。有人要改哪一个，再为它开一张小单。
@@ -365,8 +368,9 @@ miyu_config::settings! {
 | `wrong_type` | 错误 | 类型不对，例如开关写成了 `"yes"`，还有一组键下面写成了一个值，例如 `ui = "zh"` | 8-2 |
 | `not_an_option` | 错误 | 选项不在列出的几个里 | 8-2 |
 | `private_too_broad` | 错误 | `sandbox.private.add` 写了家目录本身（`~`、`~/` 都算）或它的上级（`got` 是那一个）：藏了它什么命令都跑不了。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-15 下 |
+| `readonly_too_broad` | 错误 | `sandbox.readonly.add` 写了家目录本身或它的上级（`got` 是那一个）：家目录里改什么都要先问。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-17 下 |
 | `out_of_range` | 错误 | 数不在范围里，字太长 | 8-6（整数） |
-| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补） | 8-6（网址、名字、引用、键里的名字） |
+| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`sandbox.readonly.add` 的一项不是 `~/…`、绝对路径、不带 `..` 的相对路径（单给一句，5-17 下） | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
 | `unusable_temperature` | 错误 | 模型的 `temperature` 这个模型用不了：目录说它不收温度（`temperature: false`），或者超过它真走的驱动的上限（`anthropic` 是 1，`name` 是上限）。照 `unknown_effort` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。目录读完以前、那一家用不了的不查（`models.md`「怎么走」第十四条） | 8-22 |
@@ -400,7 +404,7 @@ miyu_config::settings! {
 ```
 
 - 每一项的格：`key`、`type`，照类型带 `options`（选项：`value` 和给人看的 `name`；核心查得出的再带 `note`，头接在名字后面暗色写，施工 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字，照核心手里的本机清单的 `id`，本机的那一路用不上的没有，不进给人看的字；`net.search.source` 冷却着的那一家写「冷却到 15:30」（施工 N-2 下：内置包的端口 `Builtins::option_state` 说冷却到什么时候，照连接的语言 `core/config/option-cooling`、核心这台机器的时区拼，只写时、分）；核心查得出用不了的再带 `available: false`，只写 `false`，头照样列着、画成灰的、选不了，为什么用不了的那一句头自己写，施工 R-5 三补：现在只有 `local`，本机的那一路没有时，就是没装内置语义模型的包）、`min`、`max`、`max_chars`、`element`，再是 `default`、`layers`、`tighten`（没有不写）、`env`（没有不写）、`applies`、`name`、`description`、`page`、`group`、`common`、`control`，控件是 `combo` 的再带 `suggestions`（字表里这种语言的建议值，照先后，施工 P-9 补），设置页不画的再带 `hidden: true`（施工 9-1 下：网页的空闲、票据那几项）。包的配置项（页是 `packages`）再带 `package`：归哪个包，就是组的编号（施工 F-6 上，`package-pages.md`）。
-- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove` 带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
+- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove`、`sandbox.readonly.remove`（施工 5-17 下）带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密、照旧受保护），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
 
@@ -1313,6 +1317,15 @@ enabled = true
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
 # remove =
 
+[sandbox.readonly]
+# 加的受保护路径：文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。
+# 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
+# add =
+
+# 默认受保护路径：出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。
+# 能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。
+# remove =
+
 [sandbox.tools]
 # 不套沙盒：这件工具：管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 basesystem；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。
 # 能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。
@@ -2186,6 +2199,31 @@ currency = "USD"
           },
           "type": "object"
         },
+        "readonly": {
+          "properties": {
+            "add": {
+              "description": "文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "加的受保护路径",
+              "type": "array"
+            },
+            "remove": {
+              "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。能写：最多 4096 个字的文字 的列表。只能写在系统配置或个人设置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "默认受保护路径",
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
         "strength": {
           "default": "auto",
           "description": "自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。能写：auto 或 weak。只能写在系统配置或个人设置里。下一轮生效。",
@@ -2351,6 +2389,8 @@ currency = "USD"
 | `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
+| `sandbox.readonly.add` 名字（5-17 下） | 加的受保护路径 | Added protected paths | 追加した保護パス |
+| `sandbox.readonly.remove` 名字（5-17 下） | 默认受保护路径 | Default protected paths | 既定の保護パス |
 | `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
 | 选项 | `auto` 自动、`weak` 弱沙盒 | Automatic、Weak | 自動、弱い |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |

@@ -827,6 +827,31 @@
           },
           "type": "object"
         },
+        "readonly": {
+          "properties": {
+            "add": {
+              "description": "Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts). Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Added protected paths",
+              "type": "array"
+            },
+            "remove": {
+              "description": "Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back. Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Default protected paths",
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
         "strength": {
           "default": "auto",
           "description": "Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run. Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.",

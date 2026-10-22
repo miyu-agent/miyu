@@ -1,43 +1,70 @@
-//! 改私密目录时多查一道（施工 5-15 下，`docs/designs/11-权限与沙盒.md` 第四节）：`sandbox.private.add` 里每一个目录要写成
-//! `~/…` 或绝对路径；家目录本身和它的上级不收（藏了它什么命令都跑不了，2026-10-20 项目主人定），说清原因。
+//! 改「隐私与安全」那一页的目录时多查一道（施工 5-15 下，`docs/designs/11-权限与沙盒.md` 第四节）：`sandbox.private.add` 里每一个
+//! 目录要写成 `~/…` 或绝对路径；家目录本身和它的上级不收（藏了它什么命令都跑不了，2026-10-20 项目主人定），说清原因。
 //! `sandbox.private.remove` 只收这台机器的出厂清单，`config.schema` 照它给选项（施工 5-15 下补：清单里登记成文字的列表，生成的
-//! 文件哪个系统都一样）。类型照旧由清单查。
+//! 文件哪个系统都一样）。受保护的路径（只禁写，施工 5-17 下）同一个办法：`sandbox.readonly.add` 多收工作区里的相对路径（不带
+//! `..`），家目录和它的上级不收；`sandbox.readonly.remove` 只收出厂清单。类型照旧由清单查。
 
 use std::path::Path;
 
 use miyu_config::Value;
 use miyu_config::problem::Code;
 
-/// 这一项 `key` 写成 `value` 时的问题：哪一种、写错的是哪一个（照原样）。不是这一项、没问题的没有。家目录不知道（`home`）
+/// 这一项 `key` 写成 `value` 时的问题：哪一种、写错的是哪一个（照原样）。不是这几项、没问题的没有。家目录不知道（`home`）
 /// 的只查写法。
 pub(super) fn problem(key: &str, value: &Value, home: Option<&Path>) -> Option<(Code, String)> {
     let Value::List(dirs) = value else {
         return None;
     };
-    if key == miyu_tool::private::REMOVE {
-        return dirs.iter().find_map(|dir| match dir {
-            Value::Text(text) if !miyu_fs::SHIPPED_PRIVATE.contains(&text.as_ref()) => {
-                Some((Code::PrivateNotShipped, text.to_string()))
-            }
+    let texts: Vec<&str> = dirs
+        .iter()
+        .filter_map(|dir| match dir {
+            Value::Text(text) => Some(text.as_ref()),
             _ => None,
-        });
+        })
+        .collect();
+    let unshipped = |shipped: &[&str], code: Code| {
+        texts
+            .iter()
+            .find(|text| !shipped.contains(text))
+            .map(|text| (code, (*text).to_string()))
+    };
+    if key == miyu_tool::private::REMOVE {
+        unshipped(miyu_fs::SHIPPED_PRIVATE, Code::PrivateNotShipped)
+    } else if key == miyu_tool::readonly::REMOVE {
+        unshipped(miyu_fs::SHIPPED_READONLY, Code::ReadonlyNotShipped)
+    } else if key == miyu_tool::private::ADD {
+        texts.iter().find_map(|text| private_added(text, home))
+    } else if key == miyu_tool::readonly::ADD {
+        texts.iter().find_map(|text| readonly_added(text, home))
+    } else {
+        None
     }
-    if key != miyu_tool::private::ADD {
-        return None;
-    }
-    dirs.iter().find_map(|dir| {
-        let Value::Text(text) = dir else {
-            return None;
-        };
-        let written = miyu_fs::written(home.unwrap_or(Path::new("/")), text);
-        match written {
-            None => Some((Code::PrivatePath, text.to_string())),
-            Some(dir) if home.is_some_and(|home| miyu_fs::too_broad(home, &dir)) => {
-                Some((Code::PrivateTooBroad, text.to_string()))
-            }
-            Some(_) => None,
+}
+
+/// 人加的一个私密目录 `text` 的问题：不是 `~/…`、绝对路径的写法不对；家目录本身和它的上级太宽。
+fn private_added(text: &str, home: Option<&Path>) -> Option<(Code, String)> {
+    match miyu_fs::written(home.unwrap_or(Path::new("/")), text) {
+        None => Some((Code::PrivatePath, text.to_string())),
+        Some(dir) if home.is_some_and(|home| miyu_fs::too_broad(home, &dir)) => {
+            Some((Code::PrivateTooBroad, text.to_string()))
         }
-    })
+        Some(_) => None,
+    }
+}
+
+/// 人加的一个受保护的路径 `text` 的问题（施工 5-17 下）：`~/…`、绝对路径、不带 `..` 的相对路径以外的写法不对；家目录本身和它的
+/// 上级太宽。家目录不知道的，`~` 开头的照家目录是 `/` 查写法。
+fn readonly_added(text: &str, home: Option<&Path>) -> Option<(Code, String)> {
+    let assumed = home.or(Some(Path::new("/")));
+    match miyu_fs::readonly_entry(assumed, text) {
+        None => Some((Code::ReadonlyPath, text.to_string())),
+        Some(miyu_fs::ReadonlyEntry::Path(dir))
+            if home.is_some_and(|home| miyu_fs::too_broad(home, &dir)) =>
+        {
+            Some((Code::ReadonlyTooBroad, text.to_string()))
+        }
+        Some(_) => None,
+    }
 }
 
 /// `config.schema` 里这一项在这个系统上不画（施工 5-16 下）：沙盒强度只在 Linux 上起作用。
@@ -46,9 +73,9 @@ pub(super) fn hidden_here(key: &str) -> bool {
 }
 
 /// `config.schema` 里这一项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：去掉的出厂项交 `unlisted`，勾着的是不在值
-/// 里的（照旧私密），头照它反着画，不认键名；别的没有（勾着的是值里的）。
+/// 里的（照旧私密、照旧受保护，施工 5-17 下），头照它反着画，不认键名；别的没有（勾着的是值里的）。
 pub(super) fn ticks(key: &str) -> Option<&'static str> {
-    (key == miyu_tool::private::REMOVE).then_some("unlisted")
+    (key == miyu_tool::private::REMOVE || key == miyu_tool::readonly::REMOVE).then_some("unlisted")
 }
 
 /// 照 [`ticks`] 给 `config.schema` 里的这一项 `map` 写上 `ticks`，没有的不写。
@@ -58,9 +85,15 @@ pub(super) fn tick(key: &str, map: &mut serde_json::Map<String, serde_json::Valu
     }
 }
 
-/// `config.schema` 里这一项的选项：去掉的出厂项交这台机器的出厂清单，别的没有。
+/// `config.schema` 里这一项的选项：去掉的出厂项交这台机器的出厂清单（私密目录的、受保护路径的），别的没有。
 pub(super) fn options(key: &str) -> Option<&'static [&'static str]> {
-    (key == miyu_tool::private::REMOVE).then_some(miyu_fs::SHIPPED_PRIVATE)
+    if key == miyu_tool::private::REMOVE {
+        Some(miyu_fs::SHIPPED_PRIVATE)
+    } else if key == miyu_tool::readonly::REMOVE {
+        Some(miyu_fs::SHIPPED_READONLY)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

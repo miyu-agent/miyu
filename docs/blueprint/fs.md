@@ -21,6 +21,8 @@
 | `crates/miyu-fs/src/list.rs` | 列一层目录（`fs.list`，施工 W-2） |
 | `crates/miyu-fs/src/find.rs` | 模糊找文件的清单（`Index`）、打分（`score`），`fs.find` 用（施工 W-2） |
 | `crates/miyu-fs/src/range.rs` | 安全地打开以后读一段（`read_range`），`blob.get`、`fs.read` 用（施工 W-6） |
+| `crates/miyu-fs/src/readonly.rs` | 只禁写的名单（受保护的路径）：三种写法、出厂的加上人加的、去掉的（`Readonly`，施工 5-17 下） |
+| `crates/miyu-fs/src/readonly/shipped.rs` | 出厂的只禁写清单，照系统不同（施工 5-17 下） |
 
 用它的：基础系统的几件工具（`tools/`）；权限策略 `crates/miyu-session/src/guard.rs`（换成真实的位置、查边界；判 `trash` 时最后一段不跟链接）；开会话时挑工作区 `crates/miyu-endpoint/src/sessions.rs`（`resolve`、`too_wide`）；`blob.put` 读人附的文件 `crates/miyu-endpoint/src/attach.rs`（`resolve`、`tilde`、边界表只拦谁都不能碰的那一片、`open_file`，施工 3-9 三补，`protocol.md`）；`fs.list`、`fs.find` `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`list_dir`、`find::Index`、`find::score`，找文件的清单记几份住在 `files/cache.rs`，施工 W-2，`protocol.md`）；`fs.realpath` 同一个 `crates/miyu-endpoint/src/files.rs`（直接用 `resolve`，不查边界，施工 W-3，`protocol.md`）；握手回应的 `host.home`（施工 W-3，`crates/miyu-endpoint/src/hello.rs`）照原样不走这一层，`host.workspace` 只调 `std::fs::canonicalize`，没有 `~`、相对路径要接，不用 `resolve`。`fs.read` 也是 `crates/miyu-endpoint/src/files.rs`（`resolve`、边界表、`read_range`，施工 W-6，`protocol.md`）；`blob.get` 经 `crates/miyu-store/src/blob.rs` 的 `Blobs::read_range` 调同一个 `read_range`（`crates/miyu-endpoint/src/attach.rs`，施工 W-6）。
 
@@ -28,12 +30,16 @@
 
 | 名字 | 是什么 |
 |---|---|
-| `Zone` | 一个真实的位置落在哪一片：`Writable` 能读能写、`Readable` 只能读、`Forbidden` 谁都不能碰、`Shelf` 数据根里单独放开只读（施工 X-10 上）、`Private` 别的程序的私密目录（施工 5-13）、`Outside` 边界以外 |
-| `Places` | 造边界表要的几个地方，都是原样的路径：`workspace`、`dirs`（加进来的目录，一组（施工 5-10 上））、`data_root`、`temp`、`readable`（一组）、`shelves`（数据根里单独放开只读的，一组（施工 X-10 上））、`private`（别的程序的私密目录，一组（施工 5-13）） |
-| `Places::here(workspace, data_root, home)` | 照这台机器补上临时目录、系统目录、工具链目录、私密目录 |
+| `Zone` | 一个真实的位置落在哪一片：`Writable` 能读能写、`Readable` 只能读（系统目录、工具链目录，能写的那几片里落在只禁写名单上的，施工 5-17 下）、`Forbidden` 谁都不能碰、`Shelf` 数据根里单独放开只读（施工 X-10 上）、`Private` 别的程序的私密目录（施工 5-13）、`Outside` 边界以外 |
+| `Places` | 造边界表要的几个地方，都是原样的路径：`workspace`、`dirs`（加进来的目录，一组（施工 5-10 上））、`data_root`、`temp`、`readable`（一组）、`shelves`（数据根里单独放开只读的，一组（施工 X-10 上））、`private`（别的程序的私密目录，一组（施工 5-13））、`readonly`（只禁写的名单，施工 5-17 下） |
+| `Places::here(workspace, data_root, home)` | 照这台机器补上临时目录、系统目录、工具链目录、私密目录、出厂的只禁写名单 |
+| `Readonly`、`Readonly::shipped(home)`、`Readonly::with(home, add, remove)` | 只禁写的名单（施工 5-17 下）：`inside` 是相对路径的几项（每一项几段名字），`paths` 是 `~/…`、绝对路径拼好的；出厂的去掉 `remove` 里照写法对得上的，加上 `add`，写法不对的、家目录和它的上级不算，家目录不知道的 `~` 开头的不算，重复的只留一个 |
+| `readonly_entry(home, text)`、`ReadonlyEntry` | 人写的一项是哪一种：`~`、`~/…`、绝对路径照 `written` 拼；别的当相对路径，照 `/` 拆（Windows 上 `\` 也算），空的、`.` 跳过，有 `..` 的、一段都没有的不收（施工 5-17 下） |
+| `SHIPPED_READONLY` | 出厂的只禁写清单（施工 5-17 下）：前七个是工作区里的相对路径（`.git/hooks`、`.git/config`、`.miyu`、`.mcp.json`、`.vscode`、`.idea`、`.envrc`），后面是家目录下的 shell 启动文件、git 的全局配置、自启动，照系统不同 |
 | `private_dirs(home)` | 家目录下别的程序的私密目录，照清单拼，不管在不在（施工 5-13）：权限策略、沙盒、往下走目录的工具都照它 |
 | `Boundary::new(&places)` | 边界表：每一片换成真实的位置 |
 | `Boundary::zone(path)` | 真实的位置 `path` 落在哪一片 |
+| `Boundary::protected(path)` | 是不是受保护的路径：本来能写，落在只禁写名单上才只能读（施工 5-17 下）；放行规则照它挑（`session/guard.md`） |
 | `within(path, root)` | 真实的位置在不在目录 `root` 里 |
 | `Boundary::blocks_descent(dir)` | 走目录的工具（`fs.find`）要不要挡住往下走进 `dir`：落进「谁都不能碰」那一片、又没有工作区、加进来的目录藏在它底下（施工 W-2） |
 | `resolve(cwd, home, input)` | 她给的路径换成真实的位置 |
@@ -57,12 +63,12 @@
 
    | 先后 | 地方 | 哪一片 |
    |---|---|---|
-   | 1 | 工作区里（工作区自己也算） | 能读能写；其中哪一层叫 `.git`、下一层叫 `hooks` 或 `config` 的，它和它下面的只能读（子目录里的仓库也算） |
+   | 1 | 工作区里（工作区自己也算） | 能读能写；落在只禁写名单上的只能读（下面第 6 条） |
    | 2 | 单独放开只读的哪一个目录里（它自己也算）（施工 X-10 上） | 单独放开只读（`Shelf`）：数据根里开着的技能文件夹、这个会话自己的附件目录 `attachments/`（施工 3-9 六补；别的会话的照数据根），能读，写不行 |
    | 3 | 数据根里（数据根自己也算） | 谁都不能碰 |
-   | 4 | 加进来的哪一个目录里（它自己也算）（施工 5-10 上） | 照工作区：能读能写，`.git/hooks`、`.git/config` 只能读 |
+   | 4 | 加进来的哪一个目录里（它自己也算）（施工 5-10 上） | 照工作区：能读能写，落在只禁写名单上的只能读 |
    | 5 | 私密目录里（它自己也算）（施工 5-13） | 私密（`Private`）：文件工具读写都问人（`session/guard.md` 判法表） |
-   | 6 | 临时目录里 | 能读能写 |
+   | 6 | 临时目录里 | 能读能写，落在只禁写名单上的（`~/…`、绝对路径的那几项）只能读 |
    | 7 | 系统目录、工具链目录里 | 只能读 |
    | 8 | 别的 | 边界以外 |
 
@@ -87,9 +93,13 @@
 4. 交给 `zone` 的要是已经换成真实位置的路径。比的时候按路径一段一段比：`work-other` 不在 `work` 里。
 5. 大小写：
    - 「是不是在数据根里」「是不是在私密目录里」在 macOS、Windows 上不分大小写，免得换个大小写就绕过去；Linux 上分。
-   - 工作区里那一段的 `.git`、`hooks`、`config` 三个名字，在 macOS、Windows 上也不分大小写（`.GIT/HOOKS` 是同一处）。
+   - 工作区、加进来的目录里那一段对只禁写名单里相对的那几项，在 macOS、Windows 上也不分大小写（`.GIT/HOOKS` 是同一处）。
    - 「是不是在工作区里」「临时目录」「只能读的那几个」照原样比：换了大小写的对不上，往后落；落到边界以外的，多问一次人，不多放行。
-6. `within(path, root)`：`root` 自己也算在里面；一段一段比；macOS、Windows 上每一段换成小写再比。往下走目录的工具照它跳过数据根（`tools/glob.md`）。
+6. 只禁写的名单（施工 5-17 下，`11-权限与沙盒.md` 第四节「只禁写」）：只把能写的那几片（工作区、加进来的目录、临时目录）里落在名单上的降成只能读，读照旧；名单上的落在别的片里照那一片算（家目录下的 `.bashrc` 在工作区以外照旧是边界以外，读也要问）。
+   - 相对路径的那几项：工作区、加进来的目录里那一段，哪一层接得上都算，它和它下面的只能读（子目录里的仓库的 `.git/hooks` 也算，同原来写死的那两样）。
+   - `~/…`、绝对路径的那几项：造表时照 `resolve` 换成真实的位置，还不存在的照最近的、已经存在的上级换（`.zshrc` 还没有，建它也要问）；在它里面（它自己也算）的只能读，照 `within` 比。
+   - 名单上有 `.git/config` 的，作为文件的 `.git`（worktree、子模块：它说仓库在哪，钩子、配置就在哪）也只能读；是目录的照里面那几样算。
+7. `within(path, root)`：`root` 自己也算在里面；一段一段比；macOS、Windows 上每一段换成小写再比。往下走目录的工具照它跳过数据根（`tools/glob.md`）。
 
 #### 二、换成真实的位置（`resolve`）
 
@@ -282,7 +292,8 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-fs/tests/boundary.rs` | 几片的先后、私密目录排在数据根和加进来的目录后面、清单照家目录拼（这个平台的那几条也在，不知道家目录的没有）（施工 5-13）、加进来的目录照工作区算、落进数据根的照样不能碰、不存在的不算（施工 5-10 上）、工作区里的 `.git/hooks`、`.git/config` 只能读（子仓库里的也算）、数据根在临时目录里也不能碰、工作区挪进数据根的照工作区算、一段一段比、不存在的那一片不算、macOS 和 Windows 上数据根不分大小写、`within`、这台机器的清单 |
+| `crates/miyu-fs/tests/boundary.rs` | 几片的先后、私密目录排在数据根和加进来的目录后面、清单照家目录拼（这个平台的那几条也在，不知道家目录的没有）（施工 5-13）、加进来的目录照工作区算、落进数据根的照样不能碰、不存在的不算（施工 5-10 上）、工作区里的 `.git/hooks`、`.git/config` 只能读（子仓库里的也算）；只禁写的名单（施工 5-17 下）：人加的、去掉的照名单，任一层都算，加进来的目录、临时目录里也算，名单上的在能写的以外照原来那一片，家目录下还没有的也算，作为文件的 `.git` 跟着 `.git/config`，macOS、Windows 上不分大小写、数据根在临时目录里也不能碰、工作区挪进数据根的照工作区算、一段一段比、不存在的那一片不算、macOS 和 Windows 上数据根不分大小写、`within`、这台机器的清单 |
+| `crates/miyu-fs/src/readonly/tests.rs` | 只禁写的名单（施工 5-17 下）：三种写法、不收的写法、家目录不知道的；出厂的前七个是工作区里的、这个平台的那几条也在；去掉的、加的、太宽的、重复的 |
 | `crates/miyu-fs/tests/resolve.rs` | 相对的照工作目录接、`.` 和走过存在的目录再 `..`、绝对的照原样、`~` 和 `~alice`、没有家目录、还不存在的照上级算、还不存在的 `..`（Unix 报错、Windows 照字面消掉）、链接照指向的地方算、指向不存在处的链接、Windows 两种分隔符；最后一段不跟链接：指向不存在处的、指到别处的链接交回链接本身，`.`、`..`、`~` 交回空的，`src/.` 是 `src` |
 | `crates/miyu-fs/tests/open.rs` | 普通文件打得开、目录和不存在的、最后一层是链接不跟（Unix、Windows）、路上有链接的不开（Unix（施工 5-10 下））、FIFO 不卡住、设备和套接字 |
 | `crates/miyu-fs/tests/wide.rs` | 太宽的四样；家目录读不出来时 |

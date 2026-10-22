@@ -1,6 +1,6 @@
 //! 别的程序的私密目录（施工 5-13，`docs/blueprint/session/guard.md` 判法表）：文件工具读、写都问人，完全放开不问，只读时写
 //! 照拒；问人的说明里这一片写 `private`，提的规则放行整个目录。工作区、加进来的目录落在里面的照人给的算。场地的假家目录
-//! 是 `home/`。人在配置里加的、去掉的出厂项照这一轮的配置算（施工 5-15 下）。
+//! 是 `home/`。人在配置里加的、去掉的出厂项照这一轮的配置算（施工 5-15 下）；受保护的路径（只禁写）也是（施工 5-17 下）。
 
 use std::sync::Arc;
 
@@ -259,4 +259,77 @@ async fn the_private_dirs_follow_the_settings() {
     .await;
     assert!(request(&home, &handle).is_none(), "去掉的出厂项：不问");
     assert_eq!(kit.read.calls().len(), 1, "照常读");
+}
+
+/// 受保护的路径（只禁写，施工 5-17 下）照这一轮的配置：人加的（工作区里的相对路径）写要问人、说是只读的，读照常不问；去掉的出厂项
+/// 写不问；留着的出厂项照旧问。
+#[tokio::test]
+async fn the_readonly_list_follows_the_settings() {
+    let mut home = Home::outside_temp();
+    file(&home, "work/Makefile");
+    file(&home, "work/.vscode/settings.json");
+    file(&home, "work/.idea/workspace.xml");
+    home.configs = crate::support::routing::configs_with(
+        "",
+        "[sandbox.readonly]\nadd = [\"Makefile\"]\nremove = [\".vscode\"]\n",
+        &[],
+    );
+    for (path, asks) in [
+        ("work/Makefile", true),
+        ("work/.idea/workspace.xml", true),
+        ("work/.vscode/settings.json", false),
+    ] {
+        let kit = Kit::new();
+        let target = at(&home, path);
+        let handle = called(
+            &home,
+            &kit,
+            ("work", Vec::new()),
+            (Level::Workspace, false, true),
+            ("edit", &target),
+        )
+        .await;
+        match request(&home, &handle) {
+            Some(asked) if asks => {
+                let detail: serde_json::Value =
+                    serde_json::from_str(asked.detail.expect("有说明").get()).expect("是 JSON");
+                assert_eq!(detail["paths"][0]["zone"], "read_only", "{path}");
+                assert!(kit.edit.calls().is_empty(), "{path}：还没回答，没跑");
+            }
+            None if !asks => assert_eq!(kit.edit.calls().len(), 1, "{path}：照常写"),
+            other => panic!("{path}：该问 {asks}，{other:?}"),
+        }
+    }
+    let kit = Kit::new();
+    let makefile = at(&home, "work/Makefile");
+    let handle = called(
+        &home,
+        &kit,
+        ("work", Vec::new()),
+        (Level::Workspace, false, true),
+        ("read", &makefile),
+    )
+    .await;
+    assert!(request(&home, &handle).is_none(), "读照常");
+    assert_eq!(kit.read.calls().len(), 1);
+    // 受保护的文件、上级不受保护的：提的规则只放这一个文件，放它的上级盖不住它。
+    file(&home, "work/.mcp.json");
+    let kit = Kit::new();
+    let mcp = at(&home, "work/.mcp.json");
+    let handle = called(
+        &home,
+        &kit,
+        ("work", Vec::new()),
+        (Level::Workspace, false, true),
+        ("edit", &mcp),
+    )
+    .await;
+    let asked = request(&home, &handle).expect("问了人");
+    let rule: serde_json::Value =
+        serde_json::from_str(asked.rule.expect("提了规则").get()).expect("是 JSON");
+    let real = std::fs::canonicalize(&mcp).expect("在");
+    assert_eq!(
+        rule,
+        serde_json::json!({"tool": "edit", "write": [real.to_string_lossy()]})
+    );
 }

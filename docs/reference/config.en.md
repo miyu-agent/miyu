@@ -36,7 +36,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 |---|---|
 | `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
 | `options` | Options: `value` and a display `name`; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
-| `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value); without it, ticked ones are those in the value |
+| `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value; likewise `sandbox.readonly.remove`, where ticked stays protected); without it, ticked ones are those in the value |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type |
 | `default` | Default value |
 | `layers` | Where it may be written: `system`, `personal`, `project` |
@@ -101,7 +101,7 @@ All changes are checked and written together: one bad item refuses the whole req
 |---|---|
 | `bad_params` (`-32602`) | Not exactly one of `changes` and `text`; a change without exactly one of `value`, `input`, `unset`; the same key twice; `text` without `version` |
 | `unknown_config_key` | A key not in the list, `data.problems` |
-| `config_invalid` | A bad value, or not allowed in this layer; `data.problems` lists each. Where `sandbox.private.add` names your home folder or a folder above it, that problem's `code` is `private_too_broad` and `got` is that folder |
+| `config_invalid` | A bad value, or not allowed in this layer; `data.problems` lists each. Where `sandbox.private.add` names your home folder or a folder above it, that problem's `code` is `private_too_broad` and `got` is that folder; for `sandbox.readonly.add` it is `readonly_too_broad` |
 | `config_conflict` | `expect` doesn't match (`data.current`); `version` doesn't match or someone keeps editing by hand (`data.version`) |
 | `config_file_broken` | The file can't be read right now, so single settings can't be changed; `data.problems` |
 | `local_only` | An extension changed something it may not |

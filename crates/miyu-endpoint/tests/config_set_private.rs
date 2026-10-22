@@ -104,3 +104,66 @@ async fn the_default_private_dirs_are_ticked_when_unlisted() {
         .expect("有加的那一项");
     assert!(add.get("ticks").is_none(), "{add}");
 }
+
+/// 受保护的路径（施工 5-17 下）：工作区里的相对路径照收；家目录整个不收，问题是 `readonly_too_broad`；带 `..` 的写法不对，说的话
+/// 说该怎么写。`config.schema` 里默认的那一项选项是出厂清单、勾反着画，同私密目录。
+#[tokio::test]
+async fn readonly_paths_take_workspace_ones_and_refuse_home() {
+    let home = Home::new();
+    let system_home = home.work.join("system-home");
+    std::fs::create_dir_all(&system_home).expect("建得了目录");
+    let mut client = Client::connect(home.core_with_items(
+        &Script::new([]),
+        Some(system_home),
+        &[],
+        miyu_tool::readonly::ITEMS,
+    ));
+    client.hello().await;
+    let fine = set(
+        &mut client,
+        "c1",
+        json!({"layer": "personal", "changes": [
+            {"key": "sandbox.readonly.add", "value": ["Makefile", "~/bin"]},
+        ]}),
+    )
+    .await;
+    assert!(fine.get("error").is_none(), "{fine}");
+    let refused = set(
+        &mut client,
+        "c2",
+        json!({"layer": "personal", "changes": [
+            {"key": "sandbox.readonly.add", "value": ["Makefile", "~"]},
+        ]}),
+    )
+    .await;
+    assert_eq!(reason(&refused), Some("config_invalid"), "{refused}");
+    let problem = &refused["error"]["data"]["problems"][0];
+    assert_eq!(problem["code"], "readonly_too_broad", "{refused}");
+    assert_eq!(problem["got"], "~", "{refused}");
+    let wrong = set(
+        &mut client,
+        "c3",
+        json!({"layer": "personal", "changes": [
+            {"key": "sandbox.readonly.add", "value": ["../out"]},
+        ]}),
+    )
+    .await;
+    let problem = &wrong["error"]["data"]["problems"][0];
+    assert_eq!(problem["code"], "bad_format", "{wrong}");
+    let message = problem["message"].as_str().unwrap_or_default();
+    assert!(
+        message.contains("../out") && message.contains("相对路径"),
+        "{message}"
+    );
+    let reply = client
+        .call(
+            "s1",
+            "config.schema",
+            json!({"keys": ["sandbox.readonly.remove"]}),
+        )
+        .await;
+    let remove = &reply["result"]["items"][0];
+    assert_eq!(remove["ticks"], "unlisted", "{remove}");
+    assert_eq!(remove["name"], "默认受保护路径", "{remove}");
+    assert_eq!(remove["options"][0]["value"], ".git/hooks", "{remove}");
+}

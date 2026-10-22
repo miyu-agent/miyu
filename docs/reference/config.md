@@ -36,7 +36,7 @@
 |---|---|
 | `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
 | `options` | 选项：`value`、给人看的 `name`；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
-| `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里）；没有的勾着的是值里的 |
+| `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里；`sandbox.readonly.remove` 同理，勾着的照旧受保护）；没有的勾着的是值里的 |
 | `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型 |
 | `default` | 默认值 |
 | `layers` | 能写在哪几层：`system`、`personal`、`project` |
@@ -101,7 +101,7 @@
 |---|---|
 | `bad_params`（`-32602`） | `changes`、`text` 不是正好一个；一项里 `value`、`input`、`unset` 不是正好一个；同一个键写两次；写了 `text` 没写 `version` |
 | `unknown_config_key` | 清单里没有的键，`data.problems` |
-| `config_invalid` | 值不对、不能写在这一层，`data.problems` 是每一处。`sandbox.private.add` 写了家目录本身或它的上级的那一处 `code` 是 `private_too_broad`，`got` 是那一个目录 |
+| `config_invalid` | 值不对、不能写在这一层，`data.problems` 是每一处。`sandbox.private.add` 写了家目录本身或它的上级的那一处 `code` 是 `private_too_broad`，`got` 是那一个目录；`sandbox.readonly.add` 写了家目录本身或它的上级的是 `readonly_too_broad` |
 | `config_conflict` | `expect` 对不上（`data.current`）；`version` 对不上，或者一直有人在手改（`data.version`） |
 | `config_file_broken` | 这份文件现在读不进来，没法只改几项，`data.problems` |
 | `local_only` | 扩展改了不许它改的 |
