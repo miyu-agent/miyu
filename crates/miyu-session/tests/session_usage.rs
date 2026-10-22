@@ -102,6 +102,7 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
         lines.next(),
         Some("Usage so far: 2 requests, 200 input tokens (80 from cache), 20 output tokens.")
     );
+    assert_eq!(lines.next(), Some("Cache hit rate: 40%."));
     assert_eq!(lines.next(), Some("Cost: 0.0002 USD."));
     let context = lines.next().expect("有上下文");
     assert!(
@@ -109,6 +110,13 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
         "{text}"
     );
     assert_eq!(lines.next(), Some("Compaction starts at 75000."));
+    // 干活用了多久（施工 E-M 下）：照替身的钟，几秒以内。
+    let time = lines.next().expect("有用时");
+    assert!(
+        time.starts_with("Working time so far: ")
+            && time.ends_with("s, not counting waits for the user."),
+        "{text}"
+    );
     assert_eq!(lines.next(), None, "{text}");
     // 用量汇总里照日志记着三次（看完了的那一次也落了盘）：和会话写的是同一个连接。
     let query = Query {

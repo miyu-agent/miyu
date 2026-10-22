@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::session::Session;
-use miyu_kernel::time::UtcOffset;
+use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_models::price::ordered;
 use miyu_models::settings::UsageSettings;
 use miyu_store::usage::{Query, UsageIndex};
@@ -51,10 +51,18 @@ impl Ledger {
 pub(crate) struct Asked {
     context: Option<ContextUse>,
     currency: String,
+    /// 到派出去那一刻她干活的毫秒数，等人不算（施工 E-M 下，`Session::busy_ms`）。
+    busy_ms: u64,
 }
 
-/// 派出去的是 `session_usage` 的，照内核这一刻的 `session`、这一轮的配置 `config` 抄一份；别的工具没有（不白算一遍上下文）。
-pub(crate) fn asked(name: &str, session: &Session, config: &TurnConfig) -> Option<Asked> {
+/// 派出去的是 `session_usage` 的，照内核这一刻的 `session`、这一轮的配置 `config`、派出去的时刻 `at` 抄一份；别的工具没有（不白算
+/// 一遍上下文）。
+pub(crate) fn asked(
+    name: &str,
+    session: &Session,
+    config: &TurnConfig,
+    at: Timestamp,
+) -> Option<Asked> {
     if name != SESSION_USAGE {
         return None;
     }
@@ -65,7 +73,11 @@ pub(crate) fn asked(name: &str, session: &Session, config: &TurnConfig) -> Optio
         line: limits.compaction_line,
     });
     let currency = UsageSettings::from(&config.resolved.values()).currency;
-    Some(Asked { context, currency })
+    Some(Asked {
+        context,
+        currency,
+        busy_ms: session.busy_ms(at),
+    })
 }
 
 /// 交给一次调用的端口：有用量汇总、派的是 `session_usage` 的才有。
@@ -89,6 +101,10 @@ struct Port {
 impl UsagePort for Port {
     fn context(&self) -> Option<ContextUse> {
         self.asked.context
+    }
+
+    fn busy_ms(&self) -> Option<u64> {
+        Some(self.asked.busy_ms)
     }
 
     fn spent(&self) -> Spending<'_> {

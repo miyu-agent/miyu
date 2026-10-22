@@ -161,6 +161,8 @@ pub struct Session {
     grants: grants::Grants,
     /// 跑了几轮、跑满几轮封存（施工 C-8 下，`seal.rs`）：每追加一条记一次。
     rounds: seal::Rounds,
+    /// 她干活的时间，等人不算（施工 E-M 下，`waits.rs`）：每追加一条记一次。
+    busy: crate::waits::Busy,
     /// 上次告诉头的待办（施工 D-3，`todos.rs`）：变了才推 `todos.changed`。只在内存里。
     told_todos: Vec<crate::event::Todo>,
     /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。

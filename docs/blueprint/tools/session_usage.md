@@ -45,19 +45,23 @@
 4. 叫停的旗举起来了：交回「停下了」（`Done::stopped`）。
 5. 写，一句一行：
    1. `usage.txt`：请求数、输入（没命中、命中、写进缓存三项加起来）、其中命中缓存的、输出。
+   1. 有输入的：`cache.txt`，缓存命中了几成（命中的除以输入，取整，施工 E-M 下）。
    2. 有金额的：`cost.txt`，每种币种一段 `<金额> <币种>`，用 ` + ` 接起来。金额三位有效数字、至少两位小数，多出来的 0 去掉（`0.42`、`1.30`、`0.000292`、`1234.57`）：一次请求花的常常不到一分钱，两位小数会写成 0（「施工时定的」8-15）。
    3. 有用量、没价格的请求：`unpriced.txt`，几次。
    4. 上下文：派出去那一刻内核算的（和压缩线同一个算法，`compaction.md` 第一条）。算不了的（没交过限额、策略里没有压缩）不写。有窗口的写 `context.txt`，有压缩线的下一行再写 `compaction.txt`；没窗口的写 `context-no-window.txt`。
-   5. 说法 `session_usage/shown`。
+   5. 有的：`time.txt`，她在这个会话里干活用了多久（施工 E-M 下，2026-10-23 项目主人定「统一」）：每一轮从开始到结束，等人批准、等人回答的那几段不算，轮和轮中间闲着的不算，撤销、压缩不减；在跑的这一轮算到派出去那一刻。内核照日志算（`miyu_kernel::waits`，`Session::busy_ms`），载入以后一样。写成时分秒，零的那一截不写（`45s`、`2m 3s`、`1h 0m 5s`）。没有端口的不写。
+   6. 说法 `session_usage/shown`。
 
 ### 样子
 
 ```text
 Usage so far: 12 requests, 48210 input tokens (40122 from cache), 3120 output tokens.
+Cache hit rate: 83%.
 Cost: 0.0123 USD + 1.30 CNY.
 2 requests have no price, so the cost leaves them out.
 Context: 23110 of 128000 tokens.
 Compaction starts at 95000.
+Working time so far: 1h 2m 3s, not counting waits for the user.
 ```
 
 给她的字都在 `resources/software/basesystem/session_usage/` 下，每一份以一个换行结尾，登记在 `26-提示词.md` 第十节（token 照典型值，2026-10-02 主会话量）：
@@ -71,6 +75,8 @@ Compaction starts at 95000.
 | 有压缩线 | `compaction.txt` | `Compaction starts at {line}.` | 8 |
 | 没窗口 | `context-no-window.txt` | `Context: about {used} tokens. This model reports no window.` | 14 |
 | 查不了 | `failed.txt` | `Could not read the usage: {error}` | 10 |
+| 有输入 | `cache.txt` | `Cache hit rate: {percent}%.` | 约 8（按 o200k 估） |
+| 有端口 | `time.txt` | `Working time so far: {time}, not counting waits for the user.` | 约 15（按 o200k 估） |
 
 - 图纸草稿的 `context.txt` 一句带着压缩线，窗口有、压缩线没有的会话写不对，施工时拆成两份；查不了要有一句，多了 `failed.txt`（照 `sessions/failed.txt`）。
 

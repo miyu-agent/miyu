@@ -4,7 +4,8 @@
 //!
 //! 输出一句一行：用量总有；有金额的写金额（照币种各写一段，用 ` + ` 接起来，排好了先后）；有没价格的写几次；算得出上下文的
 //! 写上下文，有窗口的写几成、有压缩线的另写一句压缩线，没窗口的写大约多少。金额三位有效数字、至少两位小数：一次请求花的
-//! 常常不到一分钱（「施工时定的」8-15）。
+//! 常常不到一分钱（「施工时定的」8-15）。施工 E-M 下：用量后面接缓存命中了几成（有输入才写），最后写她干活用了多久（等人
+//! 批准、等人回答的不算，时分秒）。
 
 use std::path::Path;
 
@@ -31,6 +32,8 @@ struct Texts {
     compaction: Template,
     no_window: Template,
     failed: Template,
+    cache: Template,
+    time: Template,
 }
 
 impl SessionUsage {
@@ -47,6 +50,8 @@ impl SessionUsage {
                 compaction: text("compaction", &["line"])?,
                 no_window: text("context-no-window", &["used"])?,
                 failed: text("failed", &["error"])?,
+                cache: text("cache", &["percent"])?,
+                time: text("time", &["time"])?,
             },
         })
     }
@@ -62,7 +67,8 @@ impl Tool for SessionUsage {
         Box::pin(async move {
             // 参数一个都不认：写了什么都不报错。没有端口的（测试里的假调用）照什么都没花答。
             let Some(port) = call.usage.clone() else {
-                return Done::ok(texts.spent(&nothing(), None)).said(said("session_usage/shown"));
+                return Done::ok(texts.spent(&nothing(), None, None))
+                    .said(said("session_usage/shown"));
             };
             let spent = match port.spent().await {
                 Ok(spent) => spent,
@@ -74,14 +80,15 @@ impl Tool for SessionUsage {
             if call.stop.stopped() {
                 return Done::stopped();
             }
-            Done::ok(texts.spent(&spent, port.context())).said(said("session_usage/shown"))
+            Done::ok(texts.spent(&spent, port.context(), port.busy_ms()))
+                .said(said("session_usage/shown"))
         })
     }
 }
 
 impl Texts {
-    /// 用量、金额、没价格的几次、上下文，一句一行。
-    fn spent(&self, spent: &Spent, context: Option<ContextUse>) -> String {
+    /// 用量、缓存命中、金额、没价格的几次、上下文、干活用了多久，一句一行。
+    fn spent(&self, spent: &Spent, context: Option<ContextUse>, busy_ms: Option<u64>) -> String {
         let number = |n: u64| n.to_string();
         let mut text = say(
             &self.usage,
@@ -92,6 +99,9 @@ impl Texts {
                 ("output", &number(spent.output)),
             ],
         );
+        if let Some(percent) = spent.cached.saturating_mul(100).checked_div(spent.input) {
+            text.push_str(&say(&self.cache, &[("percent", &number(percent))]));
+        }
         if !spent.amounts.is_empty() {
             let amounts: Vec<String> = spent
                 .amounts
@@ -103,9 +113,18 @@ impl Texts {
         if spent.unpriced > 0 {
             text.push_str(&say(&self.unpriced, &[("count", &number(spent.unpriced))]));
         }
-        let Some(context) = context else {
-            return text;
-        };
+        if let Some(context) = context {
+            self.push_context(&mut text, context);
+        }
+        if let Some(ms) = busy_ms {
+            text.push_str(&say(&self.time, &[("time", &hms(ms))]));
+        }
+        text
+    }
+
+    /// 上下文那一两句接在 `text` 后面。
+    fn push_context(&self, text: &mut String, context: ContextUse) {
+        let number = |n: u64| n.to_string();
         let used = number(context.used);
         match context.window {
             Some(window) => {
@@ -119,7 +138,17 @@ impl Texts {
             }
             None => text.push_str(&say(&self.no_window, &[("used", &used)])),
         }
-        text
+    }
+}
+
+/// 毫秒写成时分秒，零的那一截不写：`45s`、`2m 3s`、`1h 0m 5s`（统一时分秒，2026-09-23 项目主人定）。不到一秒的写 `0s`。
+fn hms(ms: u64) -> String {
+    let seconds = ms / 1000;
+    let (h, m, s) = (seconds / 3600, seconds % 3600 / 60, seconds % 60);
+    match (h, m) {
+        (0, 0) => format!("{s}s"),
+        (0, _) => format!("{m}m {s}s"),
+        _ => format!("{h}h {m}m {s}s"),
     }
 }
 

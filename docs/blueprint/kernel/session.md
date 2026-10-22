@@ -62,6 +62,7 @@
 | `landed()` | 落了盘的最后一条（施工 3-8 六补）：`Stored` 送进来那一刻就推送了，所以也是推过的最后一条；还没落过盘的没有，载入的是日志里最后一条。只读。会话 actor 订阅时照它定补发补到哪一条（`session/actor.md` 第 6 条） |
 | `deletable()` | 删得了没有（施工 3-8 三补）：空闲的删得了；正在读回日志的是 `Restoring`；别的不空闲（有回合在进行、`turn.ended` 还没落盘）是 `TurnRunning`。只读。会话 actor 照它答应删、停下，挪目录是会话表的事（`protocol.md` 的 `session.delete`） |
 | `context_used()` | 这时的上下文用量（施工 8-15）：照有效历史组装这时的请求，用和压缩线同一个算法估（`compaction.md` 第一条）。没交过限额的、策略里没有压缩的没有。只读，不出动作。执行器派 `session_usage` 时向它要一份（`tools/session_usage.md`） |
+| `busy_ms(此刻)` | 到此刻她在这个会话里干活的毫秒数（施工 E-M 下）：每一轮从开始到结束，等人批准、等人回答的那几段不算（`miyu_kernel::waits`：起 `tool.approval_requested`、`question.asked`，止 `tool.approval_decided`、`question.answered`、`tool.result`，几件一起等算一段），轮间不算，撤销、压缩不减；在跑的这一轮算到此刻。提交、载入都喂，载入以后一样。只读，不出动作。执行器派 `session_usage` 时向它要一份 |
 | `context_limits()` | 给头看的限额 `ContextLimits`（施工 6-3 补）：`window` 上下文窗口，`compaction_line` 压缩线，和内核判到线用的是同一条（`compaction.md` 第二条第 2 条）。没交过限额的、没报窗口的，两格都没有；策略里没有压缩的、算不出正数的，没有压缩线。只读，不出动作。协议照它回 `subscribe`（`protocol.md`） |
 | `turn_cause()` | 在跑的回合的编号和它的 `cause`；没有在跑的回合的没有（施工 8-9）。只读，不出动作。会话 actor 推 `model.changed` 时照它写 `turn`、`cause`（`models.md`「瞬时事件」） |
 | `compacted_upto()` | 还算数的最近一次压缩、清空替代到哪（账本的 `compacted()`，施工 R-13 补）：这以后开的轮还原样在上下文里；没压缩、清空过的，都撤掉了的，没有。只读，不出动作。执行器派一次工具调用时向它要一份，交给记忆的端口：她搜以前的对话只跳过这个会话这以后的几轮（`memory.md`「工具」） |

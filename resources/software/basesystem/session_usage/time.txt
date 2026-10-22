@@ -1,0 +1,1 @@
+Working time so far: {time}, not counting waits for the user.

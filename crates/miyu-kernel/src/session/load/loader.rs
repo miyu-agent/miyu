@@ -39,6 +39,7 @@ pub struct Loader {
     pub(in crate::session) sight: Sight,
     pub(in crate::session) grants: Grants,
     pub(in crate::session) rounds: Rounds,
+    pub(in crate::session) busy: crate::waits::Busy,
     /// 有效历史：放掉的那一截只记了派出去的任务、待办。
     pub(in crate::session) history: History,
     /// 还没定进不进有效历史的，照先后：序号都不比 `noted` 小。
@@ -84,6 +85,7 @@ impl Session {
             sight: Sight::default(),
             grants: Grants::default(),
             rounds: Rounds::default(),
+            busy: crate::waits::Busy::default(),
             history: History::whole(),
             noted: Seq::FIRST,
         })
@@ -110,6 +112,7 @@ impl Loader {
             self.sight.note(&event);
             self.grants.note(&event);
             self.rounds.note(&event);
+            self.busy.note(&event);
             let waking = jobs::waking(&self.ledger, &event);
             self.replay.note(&event, queued, waking);
             self.kept.push(event);

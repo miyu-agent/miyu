@@ -18,11 +18,16 @@ struct Port {
     spent: Result<Spent, String>,
     context: Option<ContextUse>,
     asked: AtomicUsize,
+    busy: Option<u64>,
 }
 
 impl UsagePort for Port {
     fn context(&self) -> Option<ContextUse> {
         self.context
+    }
+
+    fn busy_ms(&self) -> Option<u64> {
+        self.busy
     }
 
     fn spent(&self) -> Spending<'_> {
@@ -49,6 +54,7 @@ fn port(spent: Result<Spent, String>, context: Option<ContextUse>) -> Arc<Port> 
         spent,
         context,
         asked: AtomicUsize::new(0),
+        busy: None,
     })
 }
 
@@ -84,16 +90,25 @@ fn it_reads_and_takes_no_parameters() {
 #[tokio::test]
 async fn everything_it_knows_one_sentence_a_line() {
     let mut checked = Vec::new();
-    let port = port(Ok(spent()), context(23_110, Some(128_000), Some(95_000)));
+    let port = Arc::new(Port {
+        busy: Some(3_723_400),
+        ..Arc::into_inner(port(
+            Ok(spent()),
+            context(23_110, Some(128_000), Some(95_000)),
+        ))
+        .expect("只有一份")
+    });
     let done = usage(&port, json!({"whatever": 1})).await;
     assert!(!done.error);
     assert_eq!(
         text(&done),
         "Usage so far: 12 requests, 48210 input tokens (40122 from cache), 3120 output tokens.\n\
+         Cache hit rate: 83%.\n\
          Cost: 0.0123 USD + 1.30 CNY.\n\
          2 requests have no price, so the cost leaves them out.\n\
          Context: 23110 of 128000 tokens.\n\
-         Compaction starts at 95000.\n"
+         Compaction starts at 95000.\n\
+         Working time so far: 1h 2m 3s, not counting waits for the user.\n"
     );
     assert_eq!(port.asked.load(Ordering::Relaxed), 1);
     check(&mut checked, human(done), said("session_usage/shown"));
@@ -123,7 +138,7 @@ async fn only_what_there_is() {
         assert_eq!(
             text(&done),
             format!(
-                "Usage so far: 12 requests, 48210 input tokens (40122 from cache), 3120 output tokens.\n{tail}"
+                "Usage so far: 12 requests, 48210 input tokens (40122 from cache), 3120 output tokens.\nCache hit rate: 83%.\n{tail}"
             )
         );
     }

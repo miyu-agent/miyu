@@ -63,6 +63,12 @@ impl Session {
         Vec::new()
     }
 
+    /// 到 `now` 为止她在这个会话里干活的毫秒数（施工 E-M 下）：每一轮从开始到结束，等人批准、等人回答的那几段不算；在跑的那一轮
+    /// 算到 `now`。`session_usage` 派出去时执行器向内核要一份。只读，不出动作。
+    pub fn busy_ms(&self, now: crate::time::Timestamp) -> u64 {
+        self.busy.total_ms(now)
+    }
+
     /// 这一轮发给谁（施工 E-M）：执行器交过的限额里的；没交过的没有。
     pub(super) fn identity(&self) -> Option<&crate::facts::Identity> {
         self.limits.as_ref()?.identity.as_ref()

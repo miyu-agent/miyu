@@ -186,6 +186,7 @@ impl Loader {
             sight,
             grants,
             rounds,
+            busy,
             mut history,
             kept,
             ..
@@ -245,6 +246,7 @@ impl Loader {
             sight,
             grants,
             rounds,
+            busy,
             told_todos: Vec::new(),
             told_done: Vec::new(),
             nested: super::nested::Nested::default(),

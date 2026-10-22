@@ -37,6 +37,11 @@ impl Stage {
         })
     }
 
+    /// 到替身的此刻为止她干活的毫秒数，等人不算（施工 E-M 下，`Session::busy_ms`）。
+    pub fn busy_ms(&self) -> u64 {
+        self.session.busy_ms(self.now)
+    }
+
     /// 清空上下文（施工 6-8 补，`session.clear`）。
     pub fn request_clear(&mut self) -> CommandId {
         self.command(Command::Clear)

@@ -2021,6 +2021,28 @@ Context: about {used} tokens. This model reports no window.
 Could not read the usage: {error}
 ```
 
+#### `software/basesystem/session_usage/cache.txt`
+
+- 什么时候加进来：`session_usage`：有输入的，接在用量那一行后面（施工 E-M 下）
+- token：约 8（`{percent}` 按 `83` 算，按 o200k 估）
+- 为什么加：缓存命中了几成（2026-10-22 项目主人要的），她自己除容易算错
+- 指纹：`0a5be8a6`
+
+```text
+Cache hit rate: {percent}%.
+```
+
+#### `software/basesystem/session_usage/time.txt`
+
+- 什么时候加进来：`session_usage`：有端口的，最后一行（施工 E-M 下）
+- token：约 15（`{time}` 按 `1h 2m 3s` 算，按 o200k 估）
+- 为什么加：她干活用了多久：等人批准、等人回答的不算（2026-10-23 项目主人定「统一」），后半句写明，免得她把挂着等人的那几分钟也当成自己慢
+- 指纹：`13d02bcf`
+
+```text
+Working time so far: {time}, not counting waits for the user.
+```
+
 #### `software/basesystem/packages/listed.txt`
 
 - 什么时候加进来：`packages`：列出来一个一行：装着、开着的

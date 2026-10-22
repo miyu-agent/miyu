@@ -2,6 +2,7 @@
 //! 不认识用量汇总和内核。执行器照这一次调用造一个，交给 [`crate::Call::usage`]：
 //!
 //! - 上下文（[`UsagePort::context`]）：派出去那一刻内核照压缩线的算法估的用量、窗口、压缩线（`Session::context_used()`）。
+//! - 干活的时间（[`UsagePort::busy_ms`]，施工 E-M 下）：内核照日志算的，等人不算。
 //! - 用量和金额（[`UsagePort::spent`]）：照用量汇总，只算这个会话、不带子会话，和头经 `usage.query` 读的是同一份；金额照
 //!   `usage.currency` 排好先后。
 //!
@@ -18,6 +19,12 @@ pub const SESSION_USAGE: &str = "session_usage";
 pub trait UsagePort: Send + Sync {
     /// 上下文：派出去那一刻内核算的。没交过限额、策略里没有压缩的会话算不了，没有。
     fn context(&self) -> Option<ContextUse>;
+
+    /// 派出去那一刻她在这个会话里干活的毫秒数（施工 E-M 下）：每一轮从开始到结束，等人批准、等人回答的那几段不算。拿不到的
+    /// （测试里的假端口）没有。
+    fn busy_ms(&self) -> Option<u64> {
+        None
+    }
 
     /// 这个会话到这时为止的用量和金额，不带子会话。查不了（汇总读不了、核心正在停）交回原因，英文的一句。
     fn spent(&self) -> Spending<'_>;

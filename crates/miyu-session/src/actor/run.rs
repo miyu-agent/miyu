@@ -32,7 +32,7 @@ impl Actor {
         let (config, persona) = (self.config.current(), self.persona.as_ref());
         let background = !persona.is_some_and(|refresh| refresh.snapshot.foreground);
         let jobs = background.then(|| self.jobs.port(call_id, cause, JobLimits::of(config)));
-        let usage = crate::usage::asked(&name, &self.session, self.config.current());
+        let usage = crate::usage::asked(&name, &self.session, self.config.current(), at);
         self.tools.run(
             at,
             Dispatch {

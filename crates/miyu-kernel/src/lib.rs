@@ -44,6 +44,7 @@ pub mod testkit;
 mod text_enum;
 pub mod time;
 pub mod tool;
+pub mod waits;
 
 #[cfg(test)]
 mod test_support;
