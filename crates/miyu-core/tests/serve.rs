@@ -35,7 +35,7 @@ async fn an_idle_core_stops_and_lets_go_of_everything() {
     let core = home.core(Arc::new(Script::new([])), &opened.token);
     let stopped = within(
         "空闲退出",
-        serve(opened.listener, core, IDLE, std::future::pending()),
+        serve(opened.listener, core, || Some(IDLE), std::future::pending()),
     )
     .await;
     assert_eq!(stopped, Stopped::Idle);
@@ -58,7 +58,12 @@ async fn a_head_keeps_it_running_until_it_goes() {
     let home = Home::new();
     let opened = home.open();
     let core = home.core(Arc::new(Script::new([])), &opened.token);
-    let running = tokio::spawn(serve(opened.listener, core, IDLE, std::future::pending()));
+    let running = tokio::spawn(serve(
+        opened.listener,
+        core,
+        || Some(IDLE),
+        std::future::pending(),
+    ));
     let head = Head::connect(&home.root).await;
     tokio::time::sleep(WAIT).await;
     assert!(!running.is_finished(), "有头连着，不退");
@@ -75,7 +80,12 @@ async fn the_idle_clock_starts_when_the_last_head_goes() {
     let opened = home.open();
     let core = home.core(Arc::new(Script::new([])), &opened.token);
     let idle = Duration::from_secs(1);
-    let running = tokio::spawn(serve(opened.listener, core, idle, std::future::pending()));
+    let running = tokio::spawn(serve(
+        opened.listener,
+        core,
+        move || Some(idle),
+        std::future::pending(),
+    ));
     // 起来就空闲着；过了大半个时限才来一个头，连着超过一个时限才走。
     tokio::time::sleep(Duration::from_millis(600)).await;
     let head = Head::connect(&home.root).await;
@@ -93,7 +103,12 @@ async fn a_running_turn_keeps_it_running_after_the_head_goes() {
     let home = Home::new();
     let opened = home.open();
     let core = home.core(Arc::new(Script::new([Play::Holds])), &opened.token);
-    let running = tokio::spawn(serve(opened.listener, core, IDLE, std::future::pending()));
+    let running = tokio::spawn(serve(
+        opened.listener,
+        core,
+        || Some(IDLE),
+        std::future::pending(),
+    ));
     let mut head = Head::connect(&home.root).await;
     let session = head.create().await;
     head.say(&session, "在吗").await;
@@ -116,7 +131,7 @@ async fn a_stop_signal_stops_the_running_sessions_first() {
     let running = tokio::spawn(serve(
         opened.listener,
         core,
-        Duration::from_secs(600),
+        || Some(Duration::from_secs(600)),
         async {
             if stopping.await.is_err() {
                 std::future::pending::<()>().await;
@@ -154,7 +169,12 @@ async fn a_running_background_command_keeps_it_running() {
         Play::Says("结束了。"),
     ]);
     let core = home.core_with(Arc::new(script), &opened.token, starting(&held));
-    let running = tokio::spawn(serve(opened.listener, core, IDLE, std::future::pending()));
+    let running = tokio::spawn(serve(
+        opened.listener,
+        core,
+        || Some(IDLE),
+        std::future::pending(),
+    ));
     let mut head = Head::connect(&home.root).await;
     let session = head.create().await;
     head.say(&session, "放一个").await;
@@ -189,7 +209,7 @@ async fn a_stop_signal_records_background_commands_as_restarted_then_kills_them(
     let running = tokio::spawn(serve(
         opened.listener,
         core,
-        Duration::from_secs(600),
+        || Some(Duration::from_secs(600)),
         async {
             if stopping.await.is_err() {
                 std::future::pending::<()>().await;
@@ -239,7 +259,12 @@ async fn without_a_model_every_request_says_there_is_no_model() {
     );
     let models = models::routes(&resources).expect("造得出");
     let core = home.core(models, &opened.token);
-    let running = tokio::spawn(serve(opened.listener, core, IDLE, std::future::pending()));
+    let running = tokio::spawn(serve(
+        opened.listener,
+        core,
+        || Some(IDLE),
+        std::future::pending(),
+    ));
     let mut head = Head::connect(&home.root).await;
     let session = head.create().await;
     head.say(&session, "在吗").await;
@@ -256,4 +281,43 @@ async fn without_a_model_every_request_says_there_is_no_model() {
     assert_eq!(called.endpoint, None, "没发出去");
     drop(head);
     within("空闲退出", running).await.expect("没 panic");
+}
+
+/// 没有空闲时限的（施工 Z-1 上，默认）：没有头、没有回合，过了原来的时限也不退，只等停的信号。
+#[tokio::test]
+async fn a_core_without_an_idle_limit_keeps_running() {
+    let home = Home::new();
+    let opened = home.open();
+    let core = home.core(Arc::new(Script::new([])), &opened.token);
+    // 头一次交回一个短的时限，看的间隔就短（最少 100 毫秒）；以后都交回没有：看了好几次、每次都空闲，照样不退。
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let idle = || (asked.fetch_add(1, std::sync::atomic::Ordering::Relaxed) == 0).then_some(IDLE);
+    let serving = serve(opened.listener, core, idle, std::future::pending());
+    let waited = tokio::time::timeout(IDLE * 5, serving).await;
+    assert!(
+        asked.load(std::sync::atomic::Ordering::Relaxed) > 3,
+        "真看过几次"
+    );
+    assert!(waited.is_err(), "没退：{waited:?}");
+}
+
+/// 空闲时限照系统配置（施工 Z-1 上）：`core.idle_exit` 写了分钟数的换成秒；写 0 的、没写的没有（不退）。
+#[test]
+fn the_idle_limit_comes_from_the_system_config_in_minutes() {
+    let limit = |written: Option<&str>| {
+        let home = Home::new();
+        if let Some(text) = written {
+            let system = home.root.system();
+            std::fs::create_dir_all(&system).expect("建得了");
+            std::fs::write(system.join("config.toml"), text).expect("写得进");
+        }
+        let core = home.core_configured(Arc::new(Script::new([])), "t");
+        miyu_core::idle_limit(&core)
+    };
+    assert_eq!(
+        limit(Some("[core]\nidle_exit = 2\n")),
+        Some(Duration::from_secs(120))
+    );
+    assert_eq!(limit(Some("[core]\nidle_exit = 0\n")), None, "0 是不退");
+    assert_eq!(limit(None), None, "默认不退");
 }

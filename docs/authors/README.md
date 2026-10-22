@@ -46,6 +46,7 @@ hello/
 3. **改了再装**：开发时改完再 `miyu pkg install ./hello` 一次就换上了（就是升级）。想在一份单独的数据里试，不碰自己平常用的：`MIYU_HOME=/tmp/miyu-try miyu …`。
 4. **看**：`miyu pkg info hello`（名称、版本、大小、装的时间）、`miyu pkg files hello`（装了哪些文件）、`miyu pkg check hello`（装好的文件改没改）、`miyu check`（清单、脚本、技能写没写错）。「软件包」页上看得到扩展在跑、在等着重启、还是停下了（停下的写原因、标准错误的最后几行）。
 5. **日志**：扩展的标准错误在 `~/.miyu/state/logs/<编号>.stderr`；核心的运行日志在 `~/.miyu/state/logs/core.log`。
+   - **让核心一直开着**：核心起来了就不因为空闲退出（施工 Z-1 上），扩展跟着它一直在，通讯平台的桥、定时的活不用等人打开 `miyu`。要开机、登录就起的，照仓库里 `packaging/README.md` 装一份服务（Linux 的 systemd 用户服务、macOS 的 launchd、Windows 的任务计划）；设计见 `docs/designs/12-进程形态与分发.md` 第二节。
 6. **卸**：`miyu pkg remove hello`。包文件夹、它放状态的目录、设置里它的项一起删；密钥文件里的条目不删（别处可能也在用）。
 
 ## 发到软件源

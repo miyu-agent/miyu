@@ -1,0 +1,16 @@
+# Miyu 核心的 systemd 用户服务（施工 Z-1 上，docs/designs/12-进程形态与分发.md 第二节）。个人机器上让核心一直开着用这一份。
+# 装进 ~/.config/systemd/user/（自己装的）或者 /usr/lib/systemd/user/（安装包装的），然后：
+#   systemctl --user enable --now miyu
+# 没人登录也要开着的：sudo loginctl enable-linger <账号>
+# miyu 不在 /usr/bin 的（安装脚本装在 ~/.local/lib/miyu/miyu），把 ExecStart 换成它的位置。
+[Unit]
+Description=Miyu core
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/miyu core
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

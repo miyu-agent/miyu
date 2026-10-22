@@ -79,6 +79,29 @@ impl Home {
         ))
     }
 
+    /// 同 [`Home::core`]，配置照数据根里写的读（核心自己登记的配置项，环境是空的；施工 Z-1 上：空闲时限照它）。
+    pub fn core_configured(&self, models: Arc<dyn Models>, token: &str) -> Arc<Core> {
+        let config = miyu_endpoint::config::Config::load(
+            &self.root,
+            &miyu_core::admin(),
+            None,
+            miyu_core::settings::items(),
+            miyu_endpoint::config::Environment::of(&[]),
+        );
+        Arc::new(
+            Core::new(
+                self.root.clone(),
+                resources(),
+                models,
+                Catalog::default(),
+                None,
+                miyu_core::admin(),
+                token.to_string(),
+            )
+            .with_config(config),
+        )
+    }
+
     /// 同 [`Home::core_with`]，可选软件包登记的查询表换成 `queries`（施工 W-4，`packages.rs`）：默认开的几个包
     /// 不是这里测的，用得上真的那张表的测试照 `miyu_core::packages::register` 造。
     pub fn core_with_queries(

@@ -1,0 +1,23 @@
+# Miyu 网页软件的 systemd 系统服务：样例，和 miyu.service 一起用（施工 Z-1 上）。同一个用户、同一个数据根，连同一个核心。
+# 现在只听 127.0.0.1：从别的机器进来等「开网络」那一段（局域网、TLS），之前可以用 ssh 的端口转发。
+# 跑的是网页软件自己的 miyu-web serve（miyu web 是替人开浏览器的那一层，不收 serve）。网页软件不在 /usr/bin 的，把 ExecStart
+# 换成它的位置。它默认空闲 600 秒就退、退出码 0，服务管理器不再起它：先在系统配置里写 web.idle_seconds = 0（不退，网页软件
+# W-349 起认），见 packaging/README.md「服务器」。
+# 装进 /etc/systemd/system/，然后：sudo systemctl enable --now miyu-web
+[Unit]
+Description=Miyu web (server)
+Requires=miyu.service
+After=miyu.service
+
+[Service]
+Type=simple
+User=miyu
+Group=miyu
+Environment=MIYU_HOME=/var/lib/miyu
+Environment=XDG_CACHE_HOME=/var/cache
+ExecStart=/usr/bin/miyu-web serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

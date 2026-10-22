@@ -11,6 +11,7 @@ mod embed_package;
 mod embedding_names;
 mod logos;
 mod packages;
+mod packaging;
 mod serve;
 mod settings;
 mod tools;

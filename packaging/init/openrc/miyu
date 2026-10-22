@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+# Miyu 核心的 OpenRC 服务：样例，给自己有服务器的人用（施工 Z-1 上，packaging/README.md「服务器」）。
+# 装进 /etc/init.d/miyu、chmod +x，然后：rc-update add miyu default && rc-service miyu start
+description="Miyu core"
+command="/usr/bin/miyu"
+command_args="core"
+command_user="miyu:miyu"
+command_background=true
+pidfile="/run/miyu.pid"
+export MIYU_HOME=/var/lib/miyu
+export XDG_CACHE_HOME=/var/cache
+
+depend() {
+	need net
+}
+
+start_pre() {
+	checkpath --directory --mode 0700 --owner miyu:miyu /var/lib/miyu /var/cache/miyu
+}

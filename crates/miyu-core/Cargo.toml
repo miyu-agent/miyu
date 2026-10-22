@@ -67,6 +67,8 @@ toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
+# 读 `packaging/` 里的 plist、任务计划的 XML（施工 Z-1 上）：依赖图里本来就有的那一版。MIT 或 Apache-2.0。
+roxmltree = "0.20"
 miyu-drivers = { path = "../miyu-drivers", features = ["testkit"] }
 # 测试里的假服务器：后台更新目录（施工 8-7），CI 不连外网。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
