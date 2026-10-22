@@ -382,11 +382,31 @@ async fn the_workspace_level_gets_its_own_toolchain_caches() {
         ("PIP_CACHE_DIR", dir.join("pip")),
         ("GOMODCACHE", dir.join("go").join("mod")),
         ("GOCACHE", dir.join("go").join("build")),
+        // 别的程序的缓存也有地方写，firefox 有一份自己的资料目录（施工 SB-1）：沙盒里 `~/.cache`、`~/.mozilla` 写不进。
+        ("XDG_CACHE_HOME", dir.join("xdg")),
+        ("XRE_PROFILE_PATH", dir.join("firefox")),
     ]
     .into_iter()
     .map(|(name, place)| (OsString::from(name), place.into_os_string()))
+    .chain(
+        // 浏览器在沙盒里起得来（施工 SB-1，2026-10-23 项目主人定）：gsettings 不碰 dconf，firefox 自己那几层沙盒关掉，
+        // 外面这层沙盒照旧关着它。
+        [
+            ("GSETTINGS_BACKEND", "memory"),
+            ("MOZ_DISABLE_CONTENT_SANDBOX", "1"),
+            ("MOZ_DISABLE_RDD_SANDBOX", "1"),
+            ("MOZ_DISABLE_GMP_SANDBOX", "1"),
+            ("MOZ_DISABLE_SOCKET_PROCESS_SANDBOX", "1"),
+            ("MOZ_DISABLE_UTILITY_SANDBOX", "1"),
+        ]
+        .map(|(name, value)| (OsString::from(name), OsString::from(value))),
+    )
     .collect();
     assert_eq!(sandboxed.env, expected);
+    assert!(
+        dir.join("firefox").is_dir(),
+        "firefox 的资料目录事先建好：没有的它起不来"
+    );
     // cargo 的配置带过去了，发布用的令牌没带。
     let carried = dir.join("cargo").join("config.toml");
     assert_eq!(

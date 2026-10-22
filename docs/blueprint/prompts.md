@@ -1295,6 +1295,17 @@ Killed by signal {signal}
 Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.
 ```
 
+#### `software/basesystem/shell/chromium-sandbox.txt`
+
+- 什么时候加进来：命令失败、输出里有 chromium 自己那层沙盒或资料目录起不来的原话（施工 SB-1，`shell.rs` 的 `CHROMIUM_SIGNS`），接在结果末尾
+- token：约 35（估的）
+- 为什么加：2026-10-23 项目主人定，同 Claude Code：沙盒里 chromium 要 `--no-sandbox --user-data-dir=<临时目录>`，外层沙盒还在、内层多余；只有撞上才花 token，不进 `shell` 的说明（调用之后才用得上的知识写进输出）
+- 指纹：`9c47b0cb`
+
+```text
+Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.
+```
+
 #### `software/basesystem/shell/omitted.txt`
 
 - 什么时候加进来：输出超过 30000 个字，截在中间的那一行

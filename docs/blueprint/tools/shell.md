@@ -86,6 +86,7 @@
    | 被信号杀掉（Unix） | 输出，接 `Killed by signal {signal}` | 是 | `shell/signal`，字段 `signal`（信号的编号） |
    | 到时了 | 输出，接 `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` | 是 | `shell/timed-out`，字段 `seconds` |
 
+   - chromium 在沙盒里起不来（施工 SB-1，2026-10-23 项目主人定）：退出码不是 0、被信号杀掉的，输出（截了的看头尾两段）里有 chromium 自己的这几句原话之一——`Failed to create a unique user data directory`、`The SUID sandbox helper binary was found, but is not configured correctly`、`Zygote process exited prematurely`、`No usable sandbox!`（`shell.rs` 的 `CHROMIUM_SIGNS`）——的，末尾再接 `chromium-sandbox.txt`：`Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.`。脚本工具共用这一套。只有撞上才花 token，不进说明。
    - 「几行」是换行的个数，最后一段没有换行的也算一行。
    - `{timeout}` 是这一次实际用的毫秒数，`{max}` 是 600000。`seconds` 是它换成秒：整秒的不带小数，不然带一位小数（`300` 毫秒写成 `0.3`）。
 10. 不报效果：改了哪些文件内核看不懂。
@@ -192,6 +193,7 @@ Exit code 2
 | 退出码 0、没有输出 | `empty.txt` | `No output` |
 | 退出码不是 0 | `exit.txt` | `Exit code {code}` |
 | 被信号杀掉 | `signal.txt` | `Killed by signal {signal}` |
+| chromium 在沙盒里起不来（施工 SB-1） | `chromium-sandbox.txt` | `Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.` |
 | 到时了 | `timed-out.txt` | `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` |
 | 放到后台了 | `started.txt` | `Started {job} in the background. You will be told when it ends. Read its output with jobs output.` |
 | 截在中间 | `omitted.txt` | `[... {count} characters omitted ...]` |

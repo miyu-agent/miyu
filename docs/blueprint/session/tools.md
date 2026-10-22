@@ -86,7 +86,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 4. 数据根落在临时目录里（测试、`MIYU_HOME` 指到那里）：不放整个临时目录（不然临时目录这一层不能新建，很多程序会坏，施工 5-15 前助手干脆拒绝），改放沙盒自己的一个：数据根旁边的 `<数据根>-sandbox-tmp`，环境变量 `TMPDIR` 指过去（`Sandboxed.env`）。
    - 放在数据根旁边，不放在临时目录下面：测试的场地删掉时一起删，也不和别的用户在共用的临时目录里抢名字。
    - 没有就建，只给本人（0700）。已经有的，要是目录、不是链接、和数据根同一个属主、组和别人一点权限都没有；Windows 上只看是不是目录（临时目录在本人的用户目录里）。
-5. 工具链的缓存用沙盒自己的一份（施工 5-4 下，`11-权限与沙盒.md` 第四节）：只在工作区这一级。造会话、载入时交进来了沙盒的缓存（`<缓存目录>/sandbox/<属主>`，`core.md`）的，多放它能写，没有就建（只给本人，和第 4 条一样查），再照挑好的之后设五个环境变量（`Sandboxed.env`，同名的盖掉）：
+5. 工具链的缓存用沙盒自己的一份（施工 5-4 下，`11-权限与沙盒.md` 第四节）：只在工作区这一级。造会话、载入时交进来了沙盒的缓存（`<缓存目录>/sandbox/<属主>`，`core.md`）的，多放它能写，没有就建（只给本人，和第 4 条一样查），再照挑好的之后设下面这些环境变量（`Sandboxed.env`，同名的盖掉）：
 
    | 变量 | 值 |
    |---|---|
@@ -95,6 +95,12 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
    | `PIP_CACHE_DIR` | `<沙盒的缓存>/pip` |
    | `GOMODCACHE` | `<沙盒的缓存>/go/mod` |
    | `GOCACHE` | `<沙盒的缓存>/go/build` |
+   | `XDG_CACHE_HOME` | `<沙盒的缓存>/xdg`（施工 SB-1：别的程序照 XDG 放缓存的，沙盒里 `~/.cache` 写不进） |
+   | `XRE_PROFILE_PATH` | `<沙盒的缓存>/firefox`（施工 SB-1：firefox 的资料目录，事先建好，没有的它不跑；`~/.mozilla` 写不进，桌面开着 firefox 时还锁着） |
+   | `GSETTINGS_BACKEND` | `memory`（施工 SB-1：不碰 dconf，写不进只会刷屏） |
+   | `MOZ_DISABLE_CONTENT_SANDBOX`、`MOZ_DISABLE_RDD_SANDBOX`、`MOZ_DISABLE_GMP_SANDBOX`、`MOZ_DISABLE_SOCKET_PROCESS_SANDBOX`、`MOZ_DISABLE_UTILITY_SANDBOX` | `1`（施工 SB-1：firefox 自己那几层子进程沙盒要往 `/proc/self/uid_map` 写，这里写不进，子进程段错误；外面这层沙盒照旧关着它） |
+
+   - 浏览器（施工 SB-1，2026-10-23 项目主人定，对齐 Claude Code）：家目录、`~/.config` 照旧只读，不换 `HOME`、`XDG_CONFIG_HOME`，不上叠加层。照上面这几个，`firefox --headless --screenshot` 一条就成，给她的字一个没加。chromium 自己那层沙盒照样起不来、没有环境变量能关，要 `--no-sandbox --user-data-dir=<临时目录>`：`shell` 的结果里认出它那几句原话时末尾接一句（`tools/shell.md`），不进说明。playwright 默认就带这两样，不用改。
 
    - cargo 的全局配置带过去：你的 cargo 目录（核心的环境里 `CARGO_HOME` 设了、不是空的照它，不然 `~/.cargo`）里有 `config.toml` 的，`<沙盒的缓存>/cargo/config.toml` 是指到它的链接，没有就建上、指错了的换掉；没有的不建。`credentials.toml` 不带：里面是发布用的令牌。
    - 只读这一级不设：哪儿都写不了，照你原来的缓存读。完全放开不进沙盒。没交进来沙盒的缓存的（核心算不出缓存目录、测试）：不放、不设。

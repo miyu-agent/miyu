@@ -17,12 +17,27 @@ pub struct SandboxCache {
 }
 
 /// 每个工具链的环境变量，和它在沙盒的缓存里的那一处。
-const VARIABLES: [(&str, &[&str]); 5] = [
+const VARIABLES: [(&str, &[&str]); 7] = [
     ("CARGO_HOME", &["cargo"]),
     ("npm_config_cache", &["npm"]),
     ("PIP_CACHE_DIR", &["pip"]),
     ("GOMODCACHE", &["go", "mod"]),
     ("GOCACHE", &["go", "build"]),
+    // 别的程序照 XDG 放缓存的、firefox 的资料目录（施工 SB-1，2026-10-23 项目主人定）：沙盒里 `~/.cache`、`~/.mozilla`
+    // 写不进。家目录、`~/.config` 照旧只读，不换（同 Claude Code）。
+    ("XDG_CACHE_HOME", &["xdg"]),
+    ("XRE_PROFILE_PATH", &["firefox"]),
+];
+
+/// 浏览器在沙盒里起得来要的几样（施工 SB-1）：gsettings 不碰 dconf（写不进，只会刷屏）；firefox 自己那几层子进程沙盒关掉
+/// （它们要往 `/proc/self/uid_map` 写，这里写不进，起不来），外面这层沙盒照旧关着它。
+const BROWSERS: [(&str, &str); 6] = [
+    ("GSETTINGS_BACKEND", "memory"),
+    ("MOZ_DISABLE_CONTENT_SANDBOX", "1"),
+    ("MOZ_DISABLE_RDD_SANDBOX", "1"),
+    ("MOZ_DISABLE_GMP_SANDBOX", "1"),
+    ("MOZ_DISABLE_SOCKET_PROCESS_SANDBOX", "1"),
+    ("MOZ_DISABLE_UTILITY_SANDBOX", "1"),
 ];
 
 impl SandboxCache {
@@ -39,6 +54,8 @@ impl SandboxCache {
         super::private_dir(&self.dir, owner_of)?;
         let dir = super::real(&self.dir);
         carry_cargo_config(&dir.join("cargo"), self.cargo_home.as_deref())?;
+        // firefox 的资料目录要事先在：没有的它说找不到、不跑。
+        std::fs::create_dir_all(dir.join("firefox"))?;
         let env = VARIABLES
             .iter()
             .map(|(name, parts)| {
@@ -46,6 +63,11 @@ impl SandboxCache {
                 place.extend(parts.iter());
                 (OsString::from(name), place.into_os_string())
             })
+            .chain(
+                BROWSERS
+                    .iter()
+                    .map(|(name, value)| (OsString::from(name), OsString::from(value))),
+            )
             .collect();
         Ok((dir, env))
     }

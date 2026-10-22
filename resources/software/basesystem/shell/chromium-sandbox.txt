@@ -1,0 +1,1 @@
+Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.

@@ -13,6 +13,7 @@ mod moved;
 mod output;
 mod process;
 mod program;
+mod results;
 pub(crate) mod script;
 mod section;
 #[cfg(test)]
@@ -35,11 +36,11 @@ use miyu_tool::{
 };
 
 use crate::blocking::blocking;
-use crate::common::{Common, said, said_n};
+use crate::common::{Common, said};
 use crate::load::{self, LoadError, say};
-use output::{Capture, Shown};
-use process::{Ending, Finished, Guard, Handover, Waited};
+use process::{Finished, Guard, Handover, Waited};
 use program::Program;
+use results::Results;
 
 /// 不写 `timeout` 的等多久，毫秒（照 Claude Code）。改它要跟着改参数格式里的那一句。
 const DEFAULT: u64 = 120_000;
@@ -70,16 +71,6 @@ struct Texts {
     hazard: Template,
     /// 直接拒的那几种各自说它做了什么（`shell/hazard/<种类>.txt`），填进 `hazard`。
     reasons: Vec<(Kind, Template)>,
-}
-
-/// 跑完了交回时的几句，`shell` 和脚本（施工 X-12 上，[`script`]）共用：没有输出、退出码、信号、省了多少、截了
-/// （`software/basesystem/shell/`）。
-struct Results {
-    empty: Template,
-    exit: Template,
-    signal: Template,
-    omitted: Template,
-    truncated: Template,
 }
 
 /// 她给的参数。
@@ -254,79 +245,6 @@ impl Shell {
             );
             (note, seconds(timeout))
         })
-    }
-}
-
-impl Results {
-    /// 照资源目录 `resources` 里 `shell/` 下的字造。
-    fn load(resources: &Path) -> Result<Results, LoadError> {
-        let text = |name: &str, fields: &[&str]| load::text(resources, "shell", name, fields);
-        Ok(Results {
-            empty: text("empty", &[])?,
-            exit: text("exit", &["code"])?,
-            signal: text("signal", &["signal"])?,
-            omitted: text("omitted", &["count"])?,
-            truncated: text("truncated", &["total"])?,
-        })
-    }
-
-    /// 跑完了：输出，加上它怎么结束的。到时被杀的接 `timed_out` 交的那一句和给人看的秒数（`shell`、脚本各一句）。
-    fn ended(&self, finished: Finished, timed_out: impl FnOnce() -> (String, String)) -> Done {
-        let Finished { ending, output } = finished;
-        let body = self.body(&output);
-        match ending {
-            Ending::TimedOut => {
-                let (note, seconds) = timed_out();
-                Done::error(body + &note).said(said("shell/timed-out").with("seconds", seconds))
-            }
-            Ending::Exited(status) => match status.code() {
-                Some(0) if output.is_empty() => {
-                    Done::ok(say(&self.empty, &[])).said(said("shell/quiet"))
-                }
-                Some(0) => Done::ok(body).said(said_n("shell/done", "count", output.lines())),
-                Some(code) => {
-                    let code = code.to_string();
-                    Done::error(body + &say(&self.exit, &[("code", &code)]))
-                        .said(said("shell/exited").with("code", code))
-                }
-                None => {
-                    let signal = signal(status);
-                    Done::error(body + &say(&self.signal, &[("signal", &signal)]))
-                        .said(said("shell/signal").with("signal", signal))
-                }
-            },
-        }
-    }
-
-    /// 挪到后台那一刻读到的，写进任务的输出（施工 7-12）：太长的照给她看的截成头尾两段，中间说省了多少；不说怎么看全，
-    /// 读的就是全的那一份。
-    fn so_far(&self, output: &Capture) -> String {
-        match output.shown() {
-            Shown::Whole(text) => text,
-            Shown::Cut {
-                head,
-                tail,
-                omitted,
-                ..
-            } => line(head) + &say(&self.omitted, &[("count", &omitted.to_string())]) + &tail,
-        }
-    }
-
-    /// 给她看的输出：太长的截成头尾两段，中间说省了多少，末尾说一共多少、怎么看全。每一段都以换行结尾。
-    fn body(&self, output: &Capture) -> String {
-        match output.shown() {
-            Shown::Whole(text) => line(text),
-            Shown::Cut {
-                head,
-                tail,
-                omitted,
-                total,
-            } => {
-                let omitted = say(&self.omitted, &[("count", &omitted.to_string())]);
-                let truncated = say(&self.truncated, &[("total", &total.to_string())]);
-                line(head) + &omitted + &line(tail) + &truncated
-            }
-        }
     }
 }
 
