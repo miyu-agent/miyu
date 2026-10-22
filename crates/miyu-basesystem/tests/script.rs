@@ -8,7 +8,7 @@ use serde_json::json;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::id::VenueId;
-use miyu_tool::{Caller, Done, Venues};
+use miyu_tool::{Caller, Done, Seen, Stop, Venues};
 
 use crate::support::Site;
 
@@ -430,4 +430,67 @@ async fn progress_lines_reach_the_head_but_not_the_result() {
         pushed.contains("miyu-progress: 1/2") && pushed.contains("miyu-progress: 2/2"),
         "推给头的有进度行：{pushed:?}"
     );
+}
+
+/// 工具登记的参数，读成 JSON。
+fn parameters_of(tool: &std::sync::Arc<dyn miyu_tool::Tool>) -> serde_json::Value {
+    serde_json::from_str(tool.spec().parameters.get()).expect("参数是 JSON")
+}
+
+/// 脚本也能这一次在沙盒外跑（施工 5-14 改下，同 `shell` 的 `outside_sandbox`）：登记时参数里多一格布尔，写了 `true` 的这次要在
+/// 沙盒外跑（权限策略照它问人）；交给脚本之前去掉这一格，脚本只拿到自己声明的参数。
+#[tokio::test]
+async fn a_script_can_ask_to_run_outside_the_sandbox_once() {
+    let site = Site::new();
+    site.file(
+        "scripts/echo.py",
+        b"#!/usr/bin/env python3\n# Description: Echo the arguments.\n# Parameters: {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"additionalProperties\": false}\nimport os, sys\nprint('env=' + os.environ['MIYU_ARGS_JSON'])\nprint('stdin=' + sys.stdin.read())\n",
+    );
+    let tool = site.script_tool("scripts/echo.py");
+    let parameters = parameters_of(&tool);
+    let property = &parameters["properties"]["outside_sandbox"];
+    assert_eq!(property["type"], "boolean", "{parameters}");
+    assert!(
+        property["description"]
+            .as_str()
+            .is_some_and(|text| text.contains("sandbox")),
+        "{property}"
+    );
+    let call = |args: serde_json::Value| site.call_for("work", args, Seen::new(), Stop::default());
+    assert!(tool.outside_sandbox(&call(json!({"city": "东京", "outside_sandbox": true}))));
+    assert!(!tool.outside_sandbox(&call(json!({"city": "东京", "outside_sandbox": false}))));
+    assert!(!tool.outside_sandbox(&call(json!({"city": "东京"}))));
+    let done = site
+        .script(
+            "scripts/echo.py",
+            json!({"city": "东京", "outside_sandbox": true}),
+        )
+        .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(
+        text(&done),
+        "env={\"city\":\"东京\"}\nstdin={\"city\":\"东京\"}\n",
+        "交给脚本的去掉了这一格"
+    );
+}
+
+/// 脚本自己的参数里本来就有 `outside_sandbox`（施工 5-14 改下，主会话定）：不加这一格、不覆盖，照原样交给脚本；它这一格不让她
+/// 越过沙盒。
+#[tokio::test]
+async fn a_script_s_own_outside_sandbox_parameter_is_left_alone() {
+    let site = Site::new();
+    site.file(
+        "scripts/own.py",
+        b"#!/usr/bin/env python3\n# Description: Has its own flag.\n# Parameters: {\"type\": \"object\", \"properties\": {\"outside_sandbox\": {\"type\": \"string\", \"description\": \"Where to look.\"}}}\nimport sys\nprint('stdin=' + sys.stdin.read())\n",
+    );
+    let tool = site.script_tool("scripts/own.py");
+    assert_eq!(
+        parameters_of(&tool)["properties"]["outside_sandbox"],
+        json!({"type": "string", "description": "Where to look."})
+    );
+    let args = json!({"outside_sandbox": true});
+    let call = site.call_for("work", args.clone(), Seen::new(), Stop::default());
+    assert!(!tool.outside_sandbox(&call), "脚本自己的那一格不算");
+    let done = site.script("scripts/own.py", args).await;
+    assert_eq!(text(&done), "stdin={\"outside_sandbox\":true}\n");
 }

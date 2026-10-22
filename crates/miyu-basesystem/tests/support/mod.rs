@@ -299,7 +299,7 @@ impl Site {
     }
 
     /// 在场地里的 `cwd` 这个工作目录里的一次调用，不关进沙盒。
-    fn call_for(&self, cwd: &str, args: serde_json::Value, seen: Seen, stop: Stop) -> Call {
+    pub fn call_for(&self, cwd: &str, args: serde_json::Value, seen: Seen, stop: Stop) -> Call {
         Call {
             args: args.to_string(),
             cwd: self.0.join(cwd).to_string_lossy().into_owned(),

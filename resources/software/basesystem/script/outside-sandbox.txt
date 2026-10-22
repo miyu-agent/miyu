@@ -1,0 +1,1 @@
+Rerun this script outside the sandbox. When the sandbox blocks the script, retry with this right away instead of asking first, because setting it is what asks the user.
