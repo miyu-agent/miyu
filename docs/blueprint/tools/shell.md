@@ -198,7 +198,7 @@ Exit code 2
 | 执行不了 | `failed.txt` | `Could not run {shell}: {error}.` |
 | 要放到后台，没有任务端口 | `no-background.txt` | `Running in the background is not available here. Run the command in the foreground, with a larger timeout if it is slow.` |
 | 认出灭顶的高危，拒了（施工 5-17） | `hazard.txt` | `Not run: this command {reason}. That is never allowed, so do it another way.` |
-| 同上，`{reason}` | `hazard/delete-root.txt`、`delete-home.txt`、`delete-system.txt`、`delete-data-root.txt`、`disk-format.txt`、`disk-write.txt` | `would delete the root directory`、`would delete the home directory`、`would delete a top-level system directory`、`would delete Miyu's own data`、`would format a disk`、`would write to a raw disk device` |
+| 同上，`{reason}` | `hazard/delete-root.txt`、`delete-home.txt`、`delete-system.txt`、`delete-data-root.txt`、`disk-format.txt`、`disk-write.txt`、`container-host.txt`（施工 5-17 三补） | `would delete the root directory`、`would delete the home directory`、`would delete a top-level system directory`、`would delete Miyu's own data`、`would format a disk`、`would write to a raw disk device`、`would give a container full access to this machine's devices` |
 
 输出本身不转义；换进这几句的字段照模板的规矩转义（`tools/read.md` 第 8 条）。
 
@@ -211,7 +211,7 @@ Exit code 2
 3. 拆命令：`&&`、`||`、`;`、`|`、`|&`、`&`、换行、括号是边界；去掉单双引号、反斜杠；`$( )`、反引号、`<( )`、`>( )` 里面的另认一遍，套到第 8 层以下的照删不清的问人；`>` 后面的是写到的地方，`<` 后面的、紧贴着重定向的纯数字不是参数。
 4. 剥外壳：开头的 `名字=值`，`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs` 连同它们的选项；`sh -c`、`bash -c` 这类和 `eval` 的里面另认。要带值的选项落在命令末尾的（`sudo -u`、`xargs -I`），照剥完了算，剩下的是空的、不报（鲁棒性 B-1：原来越界 panic，整个会话崩掉）。开头的 `if`、`then`、`elif`、`else`、`do`、`while`、`until`、`!` 也剥（施工 5-17 再补）。
    - 同一条命令里单独成句的赋值（`T=…`，`export`、`local`、`declare`、`typeset`、`readonly` 后面的）照先后记下，删的目标里的 `$名字`、`${名字}` 照记下的换（施工 5-17 再补）：值开头的 `~` 照家目录接，值里又引了别的变量的照记下的换，换不掉的忘掉这个名字；`for`、`select` 的循环变量和 `read`、`mapfile`、`unset` 碰过的名字也忘掉；只给一个命令的（`T=x rm …`）、管道里的不算。没赋过值的 `$HOME` 照家目录换。替换里、`sh -c` 里的另起一份。
-5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径（`dir/*`、`dir/.*` 照删 `dir` 算），是根、家目录或它上面的、根下一层、数据根或装着它的（各账号的工作区里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（不是 `--staged`），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`，`dd of=` 或者 `>` 写 `/dev/sd*` 这类裸设备；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`。
+5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径（`dir/*`、`dir/.*` 照删 `dir` 算），是根、家目录或它上面的、根下一层、数据根或装着它的（各账号的工作区里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（不是 `--staged`），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`，`dd of=` 或者 `>` 写 `/dev/sd*` 这类裸设备；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`；容器（施工 5-17 三补，`docker`、`podman`、`nerdctl` 的 `run`、`create`、`container run`）：`--privileged`、`--cap-add` 加 `ALL`/`SYS_ADMIN`、把宿主的 `/`、`/dev`、`/sys` 整个挂进去（`-v`、`--volume`、`--mount` 的 `source`）是 `container_host`（拒），`--device`、`--device-cgroup-rule`、`--pid`/`--net`/`--network`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的某一个是 `container_share`（问人）；入口是 systemd 本身不拦（不带特权的 `podman --systemd=always` 是测 systemd 单元该用的）。
 6. 几处都认出来的，交回拒的那一种，都是问的交回最先认出的；灭顶的那几种带写给她的一句和说法（上面的表）。
 
 只认字面，挡不住刻意绕的，防幻觉够用（2026-10-20 项目主人定）。
@@ -247,6 +247,7 @@ Exit code 2
 | `shell/hazard-delete_data_root` | 没有执行：会删掉 Miyu 自己的数据 | not run: would delete Miyu's own data |
 | `shell/hazard-disk_format` | 没有执行：会格式化磁盘 | not run: would format a disk |
 | `shell/hazard-disk_write` | 没有执行：会直接写磁盘设备 | not run: would write to a disk device |
+| `shell/hazard-container_host` | 没有执行：会让容器拿到整台机器的设备 | not run: would give a container full access to this machine's devices |
 | `shell/background`（`job`） | `放到后台了：{job}` | `running in the background as {job}` |
 | `shell/moved`（`job`） | `超时，挪到后台了：{job}` | `timed out, moved to the background as {job}` |
 | `common/bad-args`（`error`） | `参数不对：{error}` | `bad arguments: {error}` |

@@ -183,6 +183,7 @@
     "shell/hazard-delete_data_root": "not run: would delete Miyu's own data",
     "shell/hazard-disk_format": "not run: would format a disk",
     "shell/hazard-disk_write": "not run: would write to a disk device",
+    "shell/hazard-container_host": "not run: would give a container full access to this machine's devices",
     "shell/background": "running in the background as {job}",
     "shell/moved": "timed out, moved to the background as {job}",
     "history/found": "Found {count} entries",

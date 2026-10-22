@@ -168,6 +168,7 @@
     "shell/hazard-delete_data_root": "実行していません：Miyu 自身のデータを削除します",
     "shell/hazard-disk_format": "実行していません：ディスクをフォーマットします",
     "shell/hazard-disk_write": "実行していません：ディスクデバイスに直接書き込みます",
+    "shell/hazard-container_host": "実行していません：コンテナがこのマシンのデバイスを丸ごと使えるようになります",
     "shell/background": "バックグラウンドで実行：{job}",
     "shell/moved": "タイムアウト、バックグラウンドに移動：{job}",
     "history/found": "{count} 件見つかりました",

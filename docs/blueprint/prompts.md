@@ -1352,7 +1352,7 @@ Running in the background is not available here. Run the command in the foregrou
 
 #### `software/basesystem/shell/hazard.txt`
 
-- 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面六份之一）
+- 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面七份之一，第七份施工 5-17 三补）
 - token：整句 22 到 25，模板 20（2026-10-20 量）
 - 为什么加：拒了要告诉她为什么、换个办法：不说的话她会换个写法再试同一件事；说「never allowed」免得她以为点了就行
 - 指纹：`ab1a4c44`
@@ -3538,6 +3538,17 @@ would format a disk
 
 ```text
 would write to a raw disk device
+```
+
+#### `software/basesystem/shell/hazard/container-host.txt`
+
+- 什么时候加进来：容器把整个宿主交出去：`--privileged`、加 `ALL`/`SYS_ADMIN`、挂宿主的 `/`、`/dev`、`/sys`（施工 5-17 三补）
+- token：11（2026-10-22 估）
+- 为什么加：同上
+- 指纹：`e7c4f640`
+
+```text
+would give a container full access to this machine's devices
 ```
 
 #### `packages/authoring/skills/package-creator/SKILL.md`

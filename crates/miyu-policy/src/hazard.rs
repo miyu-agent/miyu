@@ -5,6 +5,7 @@
 //! `sudo`、`env`、`sh -c` 这类外壳；删什么照解析出的目标判（家目录、根目录、根下那几个系统目录、数据根），不照有没有 `-f`；
 //! git 跳过 `-C`、`-c` 这类全局选项再认子命令。纯逻辑：路径只照字面换（`~`、`$HOME`、相对的接工作目录、`..`），不碰磁盘。
 
+mod container;
 mod lex;
 mod rules;
 mod vars;
@@ -44,11 +45,15 @@ pub enum Kind {
     Power,
     /// 下载下来直接执行（`curl … | sh`）。
     PipeToShell,
+    /// 容器把整个宿主交出去（施工 5-17 三补）：`--privileged`、加 `ALL`/`SYS_ADMIN`、挂宿主的 `/`、`/dev`、`/sys`。
+    ContainerHost,
+    /// 容器拿到宿主的一部分（施工 5-17 三补）：`--device`、`--pid`/`--net`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的。
+    ContainerShare,
 }
 
 impl Kind {
     /// 每一种：直接拒的那几种各有一句说它做了什么，基础系统照这张表读。
-    pub const ALL: [Kind; 15] = [
+    pub const ALL: [Kind; 17] = [
         Kind::DeleteRoot,
         Kind::DeleteHome,
         Kind::DeleteSystem,
@@ -64,6 +69,8 @@ impl Kind {
         Kind::DiskWrite,
         Kind::Power,
         Kind::PipeToShell,
+        Kind::ContainerHost,
+        Kind::ContainerShare,
     ];
 
     /// 协议、日志里的写法（问人时说明里的 `hazard`）。
@@ -84,10 +91,13 @@ impl Kind {
             Kind::DiskWrite => "disk_write",
             Kind::Power => "power",
             Kind::PipeToShell => "pipe_to_shell",
+            Kind::ContainerHost => "container_host",
+            Kind::ContainerShare => "container_share",
         }
     }
 
-    /// 灭顶的直接拒，人点了也不跑（2026-10-20 项目主人定）：删根、家目录、系统目录、数据根，格式化、往裸设备写。别的问人。
+    /// 灭顶的直接拒，人点了也不跑（2026-10-20 项目主人定）：删根、家目录、系统目录、数据根，格式化、往裸设备写；容器把整个
+    /// 宿主交出去（施工 5-17 三补，2026-10-22 项目主人定）。别的问人。
     pub const fn refused(self) -> bool {
         matches!(
             self,
@@ -97,6 +107,7 @@ impl Kind {
                 | Kind::DeleteDataRoot
                 | Kind::DiskFormat
                 | Kind::DiskWrite
+                | Kind::ContainerHost
         )
     }
 }

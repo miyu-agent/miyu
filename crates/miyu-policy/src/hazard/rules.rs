@@ -73,6 +73,7 @@ fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, foun
         "rm" | "rmdir" | "unlink" | "shred" => deleting(rest, places, vars, recursive(rest), found),
         "find" => finding(rest, places, vars, found),
         "git" => git(rest, found),
+
         "dd" if rest
             .iter()
             .any(|word| word.text.strip_prefix("of=").is_some_and(device)) =>
@@ -99,7 +100,8 @@ fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, foun
         {
             found.push(Kind::Power);
         }
-        _ => {}
+        // 容器把宿主交出去（施工 5-17 三补）。
+        name => found.extend(super::container::container(name, rest)),
     }
 }
 

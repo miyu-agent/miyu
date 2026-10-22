@@ -257,3 +257,62 @@ fn variables_assigned_in_the_same_command_are_followed() {
         assert_eq!(kind(command), expected, "{command}");
     }
 }
+
+/// 容器把宿主交出去（施工 5-17 三补，2026-10-22 项目主人定）：整个交出去的拒，交一部分的问人，普通的不管。
+#[test]
+fn containers_that_take_the_host_are_refused_and_partial_ones_ask() {
+    for (command, expected) in [
+        (
+            "docker run --privileged -it arch /sbin/init",
+            Some("container_host"),
+        ),
+        (
+            "sudo podman run --rm --privileged=true img",
+            Some("container_host"),
+        ),
+        ("docker run --cap-add SYS_ADMIN img", Some("container_host")),
+        (
+            "docker run --cap-add=cap_sys_admin img",
+            Some("container_host"),
+        ),
+        ("podman create --cap-add=ALL img", Some("container_host")),
+        ("docker run -v /:/host img", Some("container_host")),
+        ("docker run -v /dev:/dev img", Some("container_host")),
+        (
+            "docker run --volume=/sys/:/sys:rw img",
+            Some("container_host"),
+        ),
+        (
+            "docker run --mount type=bind,source=/dev,target=/dev img",
+            Some("container_host"),
+        ),
+        (
+            "docker container run --privileged img",
+            Some("container_host"),
+        ),
+        ("docker run --device /dev/dri img", Some("container_share")),
+        (
+            "docker run --device-cgroup-rule='c 226:* rmw' img",
+            Some("container_share"),
+        ),
+        ("docker run --net=host img", Some("container_share")),
+        ("podman run --pid host img", Some("container_share")),
+        (
+            "docker run -v /dev/snd:/dev/snd img",
+            Some("container_share"),
+        ),
+        (
+            "docker run --device /dev/kvm --privileged img",
+            Some("container_host"),
+        ),
+        // 普通的、不是 run/create 的、别的程序的不管。
+        ("docker run -v ./data:/data -p 8080:80 img", None),
+        ("podman --systemd=always run img", None),
+        ("docker ps --filter privileged", None),
+        ("echo --privileged", None),
+    ] {
+        assert_eq!(kind(command), expected, "{command}");
+    }
+    assert!(Kind::ContainerHost.refused());
+    assert!(!Kind::ContainerShare.refused());
+}
