@@ -24,6 +24,29 @@ pub struct Records {
     pub records: String,
     /// 要判的那一条。
     pub current: String,
+    /// 之前的记录有几条。
+    pub count: usize,
+}
+
+/// 之前的记录取哪一段（施工 O-44）：最近的 `count` 条；写了步长 `grow` 的，起点照步长对齐（`(n − count) / grow × grow`，
+/// 不到 0 的从头），条数在 `count` 到 `count + grow − 1` 之间。起点一段时间不动，判官的请求前缀就稳，缓存命中得上。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Window {
+    /// 至少几条（前面不够的照有的）。
+    pub count: usize,
+    /// 起点对齐的步长；没有的就是最近的 `count` 条。
+    pub grow: Option<usize>,
+}
+
+impl Window {
+    /// 一共 `n` 条里从第几条起。
+    fn start(self, n: usize) -> usize {
+        let plain = n.saturating_sub(self.count);
+        match self.grow {
+            Some(grow) if grow > 0 => plain / grow * grow,
+            _ => plain,
+        }
+    }
 }
 
 /// 第 `msg` 条之前至多 `count` 条群里的话，和第 `msg` 条那一行；它不是带 `venue` 的 `message.user` 的，没有。合并转发照
@@ -32,6 +55,18 @@ pub fn records(
     history: &History,
     msg: Seq,
     count: usize,
+    texts: &GroupChat,
+    forward: Option<&ForwardTexts>,
+) -> Option<Records> {
+    let window = Window { count, grow: None };
+    records_in(history, msg, window, texts, forward)
+}
+
+/// 同 [`records`]，之前的记录照 `window` 取（施工 O-44）。
+pub fn records_in(
+    history: &History,
+    msg: Seq,
+    window: Window,
     texts: &GroupChat,
     forward: Option<&ForwardTexts>,
 ) -> Option<Records> {
@@ -76,7 +111,8 @@ pub fn records(
         })
         .collect();
     let mut kept = String::new();
-    for line in &lines[lines.len().saturating_sub(count)..] {
+    let shown = &lines[window.start(lines.len())..];
+    for line in shown {
         kept.push_str(line);
         kept.push('\n');
     }
@@ -86,6 +122,7 @@ pub fn records(
         .map(|reply_to| quote_of(&events[..at], reply_to, texts))
         .unwrap_or_default();
     Some(Records {
+        count: shown.len(),
         records: kept,
         current: record(
             judged.at,

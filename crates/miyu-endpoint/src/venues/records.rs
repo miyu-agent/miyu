@@ -1,7 +1,9 @@
 //! `venue.records {session, msg, count}`（施工 O-24，`docs/construction/O-24-判官看的群聊记录.md`）：判官看的群聊记录，回应
 //! `{"records": "…", "current": "…"}`。照会话日志读（同 `view.page`，不载入会话），留着一切的有效历史（撤掉的、撤回的不算，压缩
 //! 换出去的照样算），照会话快照里钉下的时区和字渲染（群会话）；快照里没有的（私聊）照核心这时的时区和出厂的字。
-//! `count` 1 到 100；`msg` 不是带 `venue` 的 `message.user` 的 `bad_params`。
+//! `count` 1 到 100；`msg` 不是带 `venue` 的 `message.user` 的 `bad_params`。写了 `grow`（施工 O-44）的，起点照步长对齐，条数在
+//! `count` 到 `count + grow − 1` 之间（[`miyu_assemble::group::Window`]）；`grow` 至少 1，`count + grow` 不过 100。回应另带
+//! `count`：之前的记录实际有几条。
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -26,6 +28,9 @@ pub(crate) struct RecordsParams {
     session: String,
     msg: u64,
     count: u64,
+    /// 起点对齐的步长（施工 O-44）；不写的是最近的 `count` 条。
+    #[serde(default)]
+    grow: Option<u64>,
 }
 
 /// `venue.records`：见模块的说明。
@@ -36,6 +41,14 @@ pub(crate) async fn records(core: &Core, params: RecordsParams) -> Result<Value,
         return Err(Refusal::BAD_PARAMS);
     }
     let count = usize::try_from(params.count).map_err(|_| Refusal::BAD_PARAMS)?;
+    let grow = match params.grow {
+        None => None,
+        Some(grow) if grow >= 1 && params.count + grow <= MOST => {
+            Some(usize::try_from(grow).map_err(|_| Refusal::BAD_PARAMS)?)
+        }
+        Some(_) => return Err(Refusal::BAD_PARAMS),
+    };
+    let window = miyu_assemble::group::Window { count, grow };
     let owner = core
         .sessions
         .owner(core, &session)
@@ -84,12 +97,12 @@ pub(crate) async fn records(core: &Core, params: RecordsParams) -> Result<Value,
         for event in events {
             history.append(event);
         }
-        miyu_assemble::group::records(&history, msg, count, &texts, forward.as_ref())
+        miyu_assemble::group::records_in(&history, msg, window, &texts, forward.as_ref())
             .ok_or(Refusal::BAD_PARAMS)
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;
-    Ok(json!({"records": rendered.records, "current": rendered.current}))
+    Ok(json!({"records": rendered.records, "current": rendered.current, "count": rendered.count}))
 }
 
 /// 群会话钉下的字和转发那几行的字（施工 O-34）。

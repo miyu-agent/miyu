@@ -61,12 +61,25 @@ async fn records_are_rendered_like_her_lines() {
         current.ends_with("] 主人 (owner) [msg=8802]: 判我"),
         "{current}"
     );
+    assert_eq!(reply["result"]["count"], 1, "回应带条数：{reply}");
+    // 照步长对齐起点（施工 O-44）：写了 grow 的照样回，条数照实写。
+    let stepped = client
+        .call(
+            "r2",
+            "venue.records",
+            json!({"session": session, "msg": seqs[1], "count": 20, "grow": 80}),
+        )
+        .await;
+    assert_eq!(stepped["result"]["count"], 1, "{stepped}");
+    assert_eq!(stepped["result"]["records"], reply["result"]["records"]);
     for (n, params) in [
         json!({"session": session, "msg": 1, "count": 20}),
         json!({"session": session, "msg": seqs[1], "count": 0}),
         json!({"session": session, "msg": seqs[1], "count": 101}),
         json!({"session": session, "msg": 0, "count": 20}),
         json!({"session": session, "msg": seqs[1]}),
+        json!({"session": session, "msg": seqs[1], "count": 20, "grow": 0}),
+        json!({"session": session, "msg": seqs[1], "count": 20, "grow": 81}),
     ]
     .into_iter()
     .enumerate()

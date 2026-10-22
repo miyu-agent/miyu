@@ -106,9 +106,9 @@ Record a few facts without starting a turn, interrupting or waking her (e.g. her
 
 Group chat records for the judge (the small request that decides whether to answer a group message), in the same line format she sees.
 
-**Params**: `session`; `msg`: the number of the message being judged (a `message.user` with `venue`); `count`: 1 to 100.
+**Params**: `session`; `msg`: the number of the message being judged (a `message.user` with `venue`); `count`: 1 to 100; `grow`: optional step for aligning the start, at least 1, with `count + grow` at most 100. With `grow`, the start sits on a multiple of it (`(earlier messages − count) / grow × grow`, from the beginning when below 0), so between `count` and `count + grow − 1` messages come back: the start stays put for a while, the judge's request prefix stays stable and the cache keeps hitting.
 
-**Response**: `{"records": "<earlier messages, one per line>", "current": "<that message>"}`. Her own replies are `[you]` lines; recalled ones are marked. When `current` quotes another message, its sender and content follow the number (`reply-to: msg=8805 小林: @Miyu 在吗`); if that message is not in the log, only the number is written.
+**Response**: `{"records": "<earlier messages, one per line>", "current": "<that message>", "count": <how many earlier messages>}`. Her own replies are `[you]` lines; recalled ones are marked. When `current` quotes another message, its sender and content follow the number (`reply-to: msg=8805 小林: @Miyu 在吗`); if that message is not in the log, only the number is written.
 
 **Errors**: `bad_params`; `session_not_found`.
 

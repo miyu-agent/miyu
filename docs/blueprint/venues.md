@@ -129,9 +129,10 @@
 
 写错的、不带 `as` 的：`bad_params`，什么都不记。
 
-**判官看的群聊记录**（施工 O-24，接入QQ 仓库的 chat.md 第六条 `Ask.records`、`Ask.current`，形状 2026-10-09 和通讯平台的会话对过）：`venue.records {session, msg, count}`，回应 `{"records": "…", "current": "…"}`。
+**判官看的群聊记录**（施工 O-24，接入QQ 仓库的 chat.md 第六条 `Ask.records`、`Ask.current`，形状 2026-10-09 和通讯平台的会话对过）：`venue.records {session, msg, count, grow?}`，回应 `{"records": "…", "current": "…", "count": N}`（`grow`、`count` 施工 O-44）。
 
 1. `msg` 是要判的那一条，必须是这个会话里带 `venue` 的 `message.user`；`count` 1 到 100。写错的、`msg` 不对的 `bad_params`；没有这个会话的 `session_not_found`。
+   - `grow`（施工 O-44，接入通讯平台 2026-10-21 要的）：可选，至少 1，`count + grow` 不过 100，不合的 `bad_params`。写了的，之前的记录起点照步长对齐：一共 n 条时从第 `max(0, (n − count) / grow × grow)` 条起（整除），条数在 `count` 到 `count + grow − 1` 之间。来了新消息起点不动，满一步才往前挪，判官的请求前缀一段时间不变，缓存命中得上。没写的照旧是最近的 `count` 条。回应的 `count` 是之前的记录实际有几条（`miyu_assemble::group::Window`）。
 2. `current` 是那一条的一行；`records` 是它之前的群里的话，一行一条（每行以换行结尾，没有的是空的），照日志的先后，从新往旧取 `count` 条：场所的 `message.user`（旁听的、开过回合的都收，睡着时收到的、补拉回来的不收），`venue.delivered` 写成 `[you]` 行（判官看不到她的回复，主线的也收）；`msg` 以前记下的撤回照样标。
 3. 写法和她看到的一行同一个函数（`miyu_assemble::group::records`），照会话快照里钉下的时区和字；快照里没有的（私聊）照核心这时的时区和出厂的字。合并转发那几行（施工 O-34）同样写在那一条下面：群会话照快照的 `core.forward`，O-34 以前造的没有就不写（和她看到的一样）；快照里没有群会话的字的照这时的。照会话日志读（同 `view.page`，不载入会话），撤掉的、撤回的不算，压缩换出去的照样算。
 4. 引用（施工 O-41，照旧版判官看的，2026-10-21 和通讯平台的会话对过）：`current` 那一条引用了别的，`reply-to: msg=编号` 后面空一格写引用的那条的发的人和内容，照日志里那一行的写法（名字、`id=`、身份同那一行；内容同一行正文的截法、转义，带的东西照记号；她发的写 `[you]`）：`reply-to: msg=8805 小林: @Miyu 在吗`。认 `msg` 以前日志里最后一条这个编号的，睡着时收到的、补拉回来的也认；日志里没有的照旧只写编号，不另加一句。`records` 里的行、她看到的一行照旧只写编号（前缀不变）。群名核心不记，不写。

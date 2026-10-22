@@ -226,3 +226,39 @@ fn a_repeated_number_quotes_the_newest() {
     let got = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
     assert!(got.current.ends_with(" 小林: 新的"), "{}", got.current);
 }
+
+/// 照步长对齐起点（施工 O-44）：起点停在步长的倍数上，条数在 `count` 到 `count + grow − 1` 之间；不够的从头。
+#[test]
+fn a_window_with_a_step_starts_on_a_multiple_of_it() {
+    let at = |count, grow, n| Window { count, grow }.start(n);
+    assert_eq!(at(20, None, 50), 30, "没有步长的是最近的 count 条");
+    assert_eq!(at(20, None, 5), 0);
+    assert_eq!(at(20, Some(10), 50), 30);
+    assert_eq!(at(20, Some(10), 59), 30, "又来了 9 条，起点不动");
+    assert_eq!(at(20, Some(10), 60), 40, "满一步才往前挪");
+    assert_eq!(at(20, Some(10), 19), 0, "不够 count 条的从头");
+    assert_eq!(at(20, Some(0), 50), 30, "步长 0 照没有");
+}
+
+#[test]
+fn records_in_a_window_say_how_many() {
+    let (log, msg) = chatted();
+    let got = records_in(
+        log.history(),
+        msg,
+        Window {
+            count: 1,
+            grow: Some(2),
+        },
+        &chat(),
+        None,
+    )
+    .expect("是场所消息");
+    assert_eq!(got.count, 2, "4 条里起点对齐到第 2 条：{}", got.records);
+    assert_eq!(
+        got.records,
+        "[15:00] [you] [msg=8804]: 我来\n[15:00] 小林 [msg=8805]: @Miyu 在吗\n  @mentions: [you]\n"
+    );
+    let plain = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
+    assert_eq!(plain.count, 4);
+}
