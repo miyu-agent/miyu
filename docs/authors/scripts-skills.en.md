@@ -75,7 +75,8 @@ The header is the run of comment lines at the very top of the file; it ends at t
 - Started by its `#!` line (on Windows, the interpreter is found by extension: `.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
 - The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 30 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
 - Stdout is the result handed to the AI; a non-zero exit code counts as failure, so write the reason to the output.
-- The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR`.
+- The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR` (under the system temp folder, gone after a reboot or a temp cleanup).
+- Anything that must last (a login, where the last run stopped) goes in `MIYU_SCRIPT_STATE_DIR`: one folder per account and script, still there next time. Group chats and strangers' private chats run under a different account from your own sessions, so each gets its own folder. For a script in a package, it is deleted when the package is removed; for one you put in `scripts/` yourself, it stays after you delete the script, and `miyu check` points it out.
 - Who called: `MIYU_CALLER_VENUE` is the kind of session it was called in (`local` on this machine, the venue id for a group or private chat, e.g. `qq:group:123`); `MIYU_CALLER_OWNER` says whether the person speaking this turn is the machine's owner (`1` or `0`; `0` when one of several people in a group is not the owner, or when it can't be told).
 - These two are facts, not a gate: they can't stop the AI from writing `MIYU_CALLER_OWNER=1 ./script` in a command itself. To keep a script to some kinds of session, write `Venues` in the header; use the variables only to adjust what the script does, for example read-only in groups:
 

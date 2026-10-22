@@ -310,8 +310,9 @@ impl miyu_endpoint::builtins::Builtins for BuiltinTools {
         &self,
         head: &miyu_policy::script::ScriptHead,
         file: std::path::PathBuf,
+        source: &str,
     ) -> Result<Arc<dyn miyu_tool::Tool>, String> {
-        miyu_basesystem::script(self.resources.path(), head, file)
+        miyu_basesystem::script(self.resources.path(), head, file, source)
             .map_err(|error| error.to_string())
     }
 

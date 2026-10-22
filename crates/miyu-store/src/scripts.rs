@@ -39,6 +39,79 @@ pub fn own_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
     root.account_dir(account).join("scripts")
 }
 
+/// 脚本的状态目录都在数据根 `data_root` 的这下面（施工 X-44）：`state/scripts/`。卸包、`miyu check` 照它找。
+pub fn state_root(data_root: &Path) -> PathBuf {
+    data_root.join("state").join("scripts")
+}
+
+/// 账号 `account` 跑来处是 `source`（包的编号，家目录里放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的状态目录
+/// （施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：`state/scripts/<账号>/<来处>/<工具名>/`。不建：跑之前脚本工具建。
+pub fn state_dir(data_root: &Path, account: &AccountId, source: &str, tool: &str) -> PathBuf {
+    state_root(data_root)
+        .join(account.as_str())
+        .join(source)
+        .join(tool)
+}
+
+/// 一格状态目录（施工 X-44）：`state/scripts/<账号>/<来处>/<工具名>/`。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct State {
+    /// 来处：包的编号，或者 [`HOME_PACKAGE`]。
+    pub source: String,
+    /// 工具名。
+    pub tool: String,
+    /// 目录。
+    pub path: PathBuf,
+}
+
+/// 数据根 `data_root` 里所有账号的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
+pub fn states(data_root: &Path) -> Vec<State> {
+    let mut found = Vec::new();
+    for account in folders(&state_root(data_root)) {
+        for from in folders(&account) {
+            for path in folders(&from) {
+                if let (Some(source), Some(tool)) = (name(&from), name(&path)) {
+                    found.push(State { source, tool, path });
+                }
+            }
+        }
+    }
+    found.sort_by(|a, b| a.path.cmp(&b.path));
+    found
+}
+
+/// 路径最后一段的名字。
+fn name(path: &Path) -> Option<String> {
+    path.file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+}
+
+/// 目录 `dir` 下一层的文件夹；读不了的没有。
+fn folders(dir: &Path) -> Vec<PathBuf> {
+    std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+        .map(|entry| entry.path())
+        .collect()
+}
+
+/// 卸掉来处是 `source` 的包（施工 X-44）：删掉每个账号下的 `state/scripts/<账号>/<来处>/`。本来就没有的不算错。
+///
+/// # Errors
+///
+/// 删不掉的那一个。
+pub fn forget_states(data_root: &Path, source: &str) -> std::io::Result<()> {
+    for account in folders(&state_root(data_root)) {
+        match std::fs::remove_dir_all(account.join(source)) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error),
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
 /// 找脚本：装了的软件包 `packages` 里的，加数据根 `root` 里账号 `account` 自己放的。照工具名排。
 pub fn find(
     packages: &[Found],

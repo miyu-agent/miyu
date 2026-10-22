@@ -224,3 +224,59 @@ fn a_linked_script_is_read_through_and_kept_as_the_link() {
     assert_eq!(skipped[0].path, gone);
     assert!(skipped[0].why.starts_with("broken link: "), "{skipped:?}");
 }
+
+/// 状态目录（施工 X-44）：照账号、来处、工具名分，在数据根的 `state/scripts/` 下面。
+#[test]
+fn a_scripts_state_lives_under_its_account_source_and_name() {
+    let root = Path::new("/data");
+    let alice = AccountId::parse("alice").expect("合写法");
+    assert_eq!(state_root(root), Path::new("/data/state/scripts"));
+    assert_eq!(
+        state_dir(root, &alice, HOME_PACKAGE, "dice"),
+        Path::new("/data/state/scripts/alice/~home/dice")
+    );
+    assert_eq!(
+        state_dir(root, &alice, "bilibili", "live"),
+        Path::new("/data/state/scripts/alice/bilibili/live")
+    );
+}
+
+/// 列出各账号的状态目录、卸包时删一个来处的（施工 X-44）：照路径排；不是文件夹的不算；删一个来处只删它，别的来处、别的账号的
+/// 同名来处都删、没有的不算错。
+#[test]
+fn states_are_listed_and_one_source_is_forgotten_everywhere() {
+    let scratch = Scratch::new();
+    let root = scratch.path();
+    for dir in [
+        "alice/~home/dice",
+        "alice/kit/live",
+        "bot/kit/watch",
+        "bot/other/x",
+    ] {
+        fs::create_dir_all(state_root(root).join(dir)).expect("建得了");
+    }
+    fs::write(state_root(root).join("alice/kit/stray"), "x").expect("写得进");
+    let listed: Vec<(String, String)> = states(root)
+        .into_iter()
+        .map(|state| (state.source, state.tool))
+        .collect();
+    let pair = |source: &str, tool: &str| (source.to_string(), tool.to_string());
+    assert_eq!(
+        listed,
+        [
+            pair("kit", "live"),
+            pair("~home", "dice"),
+            pair("kit", "watch"),
+            pair("other", "x"),
+        ]
+    );
+    assert_eq!(
+        states(root)[0].path,
+        state_root(root).join("alice/kit/live")
+    );
+    forget_states(root, "kit").expect("删得掉");
+    forget_states(root, "nothing").expect("没有的不算错");
+    let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
+    assert_eq!(left, ["dice", "x"]);
+    assert!(states(&root.join("missing")).is_empty());
+}

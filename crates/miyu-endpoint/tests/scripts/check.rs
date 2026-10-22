@@ -1,5 +1,5 @@
 //! `miyu check` 报脚本、技能、斜杠模板（施工 X-12 下）：跳过的脚本、技能，撞名没登记上的脚本；链接指到数据根里不认的地方的
-//! （施工 X-37）。
+//! （施工 X-37）；有状态目录却没有这个脚本的（施工 X-44）。
 
 use super::*;
 
@@ -115,4 +115,33 @@ async fn check_reports_links_out_of_the_accounts_folders() {
     ] {
         assert!(problems[n].3.contains(part), "说指到了哪一片：{reply}");
     }
+}
+
+/// 留下的状态目录（施工 X-44）：家目录里删了的脚本、没装的包的脚本（同名的家目录脚本在也算），状态目录还在的各报一条
+/// `script_state_left`，带目录；脚本还在的不报。
+#[tokio::test]
+async fn check_reports_state_left_by_scripts_that_are_gone() {
+    let home = Home::new();
+    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    for kept in ["~home/weather", "~home/gone", "kit/live", "kit/weather"] {
+        home.write(&format!("state/scripts/alice/{kept}/data"), "x");
+    }
+    let mut client = Client::connect(core(&home, &Script::new([])));
+    client.hello().await;
+    let reply = client.call("k1", "check", json!({})).await;
+    let left: Vec<(String, String)> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|one| one["code"] == "script_state_left")
+        .map(|one| {
+            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
+            (text("file"), text("message"))
+        })
+        .collect();
+    assert_eq!(left.len(), 3, "{reply}");
+    assert_eq!(left[0].0, "state/scripts/alice/kit/live");
+    assert!(left[0].1.contains("kit/live"), "{reply}");
+    assert_eq!(left[1].0, "state/scripts/alice/kit/weather");
+    assert_eq!(left[2].0, "state/scripts/alice/~home/gone");
 }

@@ -28,7 +28,8 @@ pub trait Builtins: Send + Sync {
     /// 端点交给 `Vectors::replace_local`，一样的不动。
     fn embed(&self, found: &[&Found]) -> Option<miyu_session::EmbedSetup>;
 
-    /// 一个脚本造成一件工具（施工 X-12 中，`miyu_basesystem::script`）：开头读好的 `head`、脚本文件 `file`。
+    /// 一个脚本造成一件工具（施工 X-12 中，`miyu_basesystem::script`）：开头读好的 `head`、脚本文件 `file`、来处 `source`（包的
+    /// 编号，家目录里放的是 `~home`；施工 X-44：状态目录照它分）。
     ///
     /// # Errors
     ///
@@ -37,6 +38,7 @@ pub trait Builtins: Send + Sync {
         &self,
         head: &miyu_policy::script::ScriptHead,
         file: std::path::PathBuf,
+        source: &str,
     ) -> Result<Arc<dyn Tool>, String>;
 
     /// 配置项 `key` 的选项 `option` 这一刻的状态（施工 N-2 下、N-3 上）：设置页的下拉里那个选项后面暗字写它，例如搜索来源的

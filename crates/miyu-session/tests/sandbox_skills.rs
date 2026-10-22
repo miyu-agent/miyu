@@ -187,7 +187,7 @@ async fn a_script_in_the_data_root_runs_in_the_sandbox() {
     std::fs::write(&file, &text).expect("写得进");
     let head = miyu_policy::script::read("peek.sh", &text).expect("开头写对了");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    let tool = miyu_basesystem::script(&resources, &head, file).expect("资源读得出来");
+    let tool = miyu_basesystem::script(&resources, &head, file, "~home").expect("资源读得出来");
     let tools = Catalog::new([tool]).expect("合写法");
     let call = Play::calls(&[("peek", "{}")]);
     let handle = session(&home, (&tools, call), &helper, ("local", true)).await;
@@ -240,7 +240,8 @@ async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
     std::os::unix::fs::symlink(real.join("peek.sh"), &file).expect("建得了链接");
     let head = miyu_policy::script::read("peek.sh", &text).expect("开头写对了");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    let tool = miyu_basesystem::script(&resources, &head, file.clone()).expect("资源读得出来");
+    let tool =
+        miyu_basesystem::script(&resources, &head, file.clone(), "~home").expect("资源读得出来");
     assert_eq!(
         tool.file(),
         Some(file.as_path()),
@@ -288,7 +289,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
     std::fs::write(&file, text).expect("写得进");
     let head = miyu_policy::script::read("snap.sh", text).expect("开头写对了");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    let tool = miyu_basesystem::script(&resources, &head, file).expect("资源读得出来");
+    let tool = miyu_basesystem::script(&resources, &head, file, "~home").expect("资源读得出来");
     let tools = Catalog::new([tool]).expect("合写法");
     let call = Play::calls(&[("snap", "{}")]);
     let handle = session(&home, (&tools, call), &helper, ("local", true)).await;
@@ -309,4 +310,54 @@ async fn a_script_in_the_sandbox_hands_over_images() {
         "沙盒里写进去的图交上来了：{:?}",
         result.blocks
     );
+}
+
+/// 状态目录（施工 X-44）：经真助手跑的脚本写得进自己的那一格（数据根照旧藏着，越深的越算数），下一次还在；别的脚本的那一格读
+/// 不到。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_script_in_the_sandbox_writes_only_its_own_state() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if probe.mechanisms.is_empty() {
+        return;
+    }
+    let home = Home::outside_temp();
+    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    std::fs::create_dir_all(&scripts).expect("建得了");
+    let other = home.root.path().join("state/scripts/alice/~home/other");
+    std::fs::create_dir_all(&other).expect("建得了");
+    std::fs::write(other.join("secret"), "secret\n").expect("写得进");
+    let file = scripts.join("keep.sh");
+    let text = format!(
+        "#!/bin/sh\n# Description: Keep.\necho kept > \"$MIYU_SCRIPT_STATE_DIR/n\" && cat \"$MIYU_SCRIPT_STATE_DIR/n\"\ncat '{}' 2>/dev/null || echo blocked-other\n",
+        other.join("secret").display()
+    );
+    std::fs::write(&file, &text).expect("写得进");
+    let head = miyu_policy::script::read("keep.sh", &text).expect("开头写对了");
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let tool = miyu_basesystem::script(&resources, &head, file, "~home").expect("资源读得出来");
+    let tools = Catalog::new([tool]).expect("合写法");
+    let call = Play::calls(&[("keep", "{}")]);
+    let handle = session(&home, (&tools, call), &helper, ("local", true)).await;
+    let result = home
+        .log(handle.id())
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ToolResult(result) => Some(result),
+            _ => None,
+        })
+        .expect("有结果");
+    let output: String = result
+        .blocks
+        .iter()
+        .map(|block| match block {
+            miyu_kernel::block::Block::Text(text) => text.text.clone(),
+            other => panic!("只该有字：{other:?}"),
+        })
+        .collect();
+    assert_eq!(result.status, ToolStatus::Ok, "{output}");
+    assert_eq!(output, "kept\nblocked-other\n");
+    let kept = home.root.path().join("state/scripts/alice/~home/keep/n");
+    assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }

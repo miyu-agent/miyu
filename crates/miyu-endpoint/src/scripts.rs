@@ -91,7 +91,7 @@ impl Core {
         let mut tools = Vec::new();
         let mut made = Vec::new();
         for script in found {
-            match builtins.script(&script.head, script.file.clone()) {
+            match builtins.script(&script.head, script.file.clone(), package(&script)) {
                 Ok(tool) => {
                     tools.push((package(&script).to_string(), tool));
                     made.push(script);

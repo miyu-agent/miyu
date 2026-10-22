@@ -266,7 +266,13 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     crate::config::forget::forget(core, &keys);
     // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
     crate::extensions::forget_switch(core, &removed).await;
-    if let Err(refusal) = blocking(move || remove_dir_if_there(&state)).await {
+    // 它的脚本在各账号下的状态目录（施工 X-44）：同包的状态目录一起删。
+    let (root, package) = (core.root.path().to_path_buf(), removed.clone());
+    let cleared = blocking(move || {
+        remove_dir_if_there(&state)?;
+        miyu_store::scripts::forget_states(&root, &package)
+    });
+    if let Err(refusal) = cleared.await {
         tracing::warn!(target: TARGET, package = removed.as_str(), reason = refusal.reason, "package state not removed");
     }
     for service in &services {

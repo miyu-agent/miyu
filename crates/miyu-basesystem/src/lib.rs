@@ -45,7 +45,7 @@ use miyu_tool::Tool;
 pub use load::LoadError;
 
 /// 一个脚本当一件工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」）：开头读好的 `head`、脚本文件 `file`，给她看的几句
-/// 照资源目录 `resources` 里的字。
+/// 照资源目录 `resources` 里的字。`source` 是它的来处：包的编号，家目录里放的是 `~home`（施工 X-44：状态目录照它分）。
 ///
 /// # Errors
 ///
@@ -54,9 +54,10 @@ pub fn script(
     resources: &Path,
     head: &miyu_policy::script::ScriptHead,
     file: PathBuf,
+    source: &str,
 ) -> Result<Arc<dyn Tool>, LoadError> {
     Ok(Arc::new(shell::script::Script::load(
-        resources, head, file,
+        resources, head, file, source,
     )?))
 }
 

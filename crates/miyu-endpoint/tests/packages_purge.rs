@@ -38,6 +38,15 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     let state = home.root.path().join("state/packages/xcfg");
     std::fs::create_dir_all(&state).expect("建得了");
     std::fs::write(state.join("data"), "x").expect("写得进");
+    // 它的脚本在各账号下的状态目录一起删，家目录里的脚本的、别的包的不动（施工 X-44）。
+    for script in [
+        "alice/xcfg/live",
+        "xbot/xcfg/watch",
+        "alice/~home/dice",
+        "alice/kit/x",
+    ] {
+        home.write(&format!("state/scripts/{script}/data"), "x");
+    }
     let removed = call(&mut client, "package.remove", json!({"package": "xcfg"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let system = read(&home, "system/config.toml");
@@ -52,6 +61,11 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     let personal = read(&home, "home/alice/settings.toml");
     assert!(!personal.contains("port"), "个人设置里的也删了：{personal}");
     assert!(!state.exists(), "状态目录删了");
+    let scripts = home.root.path().join("state/scripts");
+    assert!(!scripts.join("alice/xcfg").exists() && !scripts.join("xbot/xcfg").exists());
+    assert!(
+        scripts.join("alice/~home/dice/data").exists() && scripts.join("alice/kit/x/data").exists()
+    );
 }
 
 #[tokio::test]
