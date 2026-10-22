@@ -40,8 +40,6 @@ pub struct Decoder {
     ended: Option<End>,
     /// 流里报了错，或者流坏了。
     error: Option<CallError>,
-    /// 流里报的错，供应商说要等多久。
-    wait: Option<u64>,
 }
 
 /// 收尾的事件。
@@ -142,7 +140,6 @@ impl Decoder {
             deltas,
             usage: self.usage,
             error,
-            retry_after_ms: self.wait,
         }
     }
 
@@ -154,6 +151,7 @@ impl Decoder {
                     class: ErrorClass::Retryable,
                     message: "流断了：没等到 response.completed".to_string(),
                     status: None,
+                    retry_after_ms: None,
                 });
             }
             Some(End::Completed) => return None,
@@ -168,6 +166,7 @@ impl Decoder {
             class,
             message: format!("incomplete: {reason}"),
             status: None,
+            retry_after_ms: None,
         })
     }
 
@@ -191,6 +190,7 @@ impl Decoder {
                     class,
                     message: format!("{what}：{}", clip(data)),
                     status: None,
+                    retry_after_ms: None,
                 });
                 return;
             }
@@ -268,7 +268,6 @@ impl Decoder {
     fn stream_error(&mut self, body: &[u8]) {
         let classified = classify(&Failure::stream(body));
         self.error = Some(classified.error);
-        self.wait = classified.retry_after_ms;
     }
 
     /// `output_index` 指的那一块；没开的、不认的没有。

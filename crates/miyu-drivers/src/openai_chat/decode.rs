@@ -40,8 +40,6 @@ pub struct Decoder {
     done: bool,
     /// 流里报了错，或者流坏了。
     error: Option<CallError>,
-    /// 流里报的错，供应商说要等多久（施工 4-9 再补三下）。
-    wait: Option<u64>,
 }
 
 /// 一次工具调用解到哪了。
@@ -113,7 +111,6 @@ impl Decoder {
             deltas,
             usage: self.usage,
             error,
-            retry_after_ms: self.wait,
         }
     }
 
@@ -124,6 +121,7 @@ impl Decoder {
                 class: ErrorClass::Retryable,
                 message: "流断了：没等到 finish_reason，也没等到 [DONE]".to_string(),
                 status: None,
+                retry_after_ms: None,
             });
         };
         let class = match reason.as_str() {
@@ -136,6 +134,7 @@ impl Decoder {
             class,
             message: format!("finish_reason: {reason}"),
             status: None,
+            retry_after_ms: None,
         })
     }
 
@@ -163,6 +162,7 @@ impl Decoder {
                     class: ErrorClass::Retryable,
                     message: format!("流断在半段 JSON 上：{}", clip(data)),
                     status: None,
+                    retry_after_ms: None,
                 });
             }
             Err(_) => {
@@ -170,6 +170,7 @@ impl Decoder {
                     class: ErrorClass::BadStream,
                     message: format!("流里有一段不是 JSON：{}", clip(data)),
                     status: None,
+                    retry_after_ms: None,
                 });
             }
         }
@@ -179,7 +180,6 @@ impl Decoder {
     fn stream_error(&mut self, data: &str) {
         let classified = classify(&Failure::stream(data.as_bytes()));
         self.error = Some(classified.error);
-        self.wait = classified.retry_after_ms;
     }
 
     /// 一段 JSON。

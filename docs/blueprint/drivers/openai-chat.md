@@ -45,7 +45,7 @@
 
 **编码的结果** `Encoded`：`body`（请求字节，发出去的就是它）、`messages`（每条线上的消息在字节里的位置，照先后；system 和挪出来的那条 user 也各算一条）、`path`（发到地址后面的哪一截）。
 
-**说完了** `Ending`：`deltas`（流完了才冲刷出来的那一条解出的增量；正常说完的，再加上收块的 `End`）、`usage`（用量，没报的没有）、`error`（出错的分类和原话，正常说完的没有）、`retry_after_ms`（流里报的错，供应商说要等多久；施工 4-9 再补三下）。
+**说完了** `Ending`：`deltas`（流完了才冲刷出来的那一条解出的增量；正常说完的，再加上收块的 `End`）、`usage`（用量，没报的没有）、`error`（出错的分类和原话，正常说完的没有；流里报的错，供应商说要等多久在它的 `retry_after_ms` 里，施工 4-9 再补三下，3-5 四补起不另放一格）。
 
 **开关** `Compat`，跟着供应商定：来自供应商的档案（`resources/models/profiles.toml` 的 `compat`，施工 8-6，`models.md`「怎么走」第一条第 3 条），档案没有的用默认。`Continuation::Prefix` 的 `path` 是字（档案里写的），`Compat` 不再是 `Copy`。DeepSeek 那一套以前写在代码里（`Compat::deepseek()`），8-6 挪进档案；代码里那一份只在 `testkit` 开关打开时编进去，给请求形状探针和别的测试用，核心的测试守着它和档案一样。
 
@@ -60,7 +60,7 @@
 
 常量：`FAMILY` = `openai-chat`，`PATH` = `/chat/completions`，`MESSAGE_LIMIT` = 2000（原话最多几个字节，在 `classify.rs`）。
 
-**出错的输入** `Failure { status, headers, body }`：HTTP 状态（没有的是连不上、流里报的）、响应头（名字不分大小写）、响应体。`Failure::stream(body)` 是流里报的错，没有状态和头。**分好的类** `Classified { error, retry_after_ms, excess, limit }`：分类、原话和 HTTP 状态码，供应商说了要等多久（毫秒），超长的超了多少 token（施工 6-6 中），超长的报了的上限（施工 8-7）。分类是内核的 `ErrorClass`：`context_too_long`、`content_policy`、`auth`、`rate_limited`、`retryable`、`other`，解码时还会出 `bad_stream`。
+**出错的输入** `Failure { status, headers, body }`：HTTP 状态（没有的是连不上、流里报的）、响应头（名字不分大小写）、响应体。`Failure::stream(body)` 是流里报的错，没有状态和头。**分好的类** `Classified { error, excess, limit }`：分类、原话、HTTP 状态码和供应商说了要等多久（毫秒，`error.retry_after_ms`，施工 3-5 四补起放进出错、记进 `model.called`），超长的超了多少 token（施工 6-6 中），超长的报了的上限（施工 8-7）。分类是内核的 `ErrorClass`：`context_too_long`、`content_policy`、`auth`、`rate_limited`、`retryable`、`other`，解码时还会出 `bad_stream`。
 
 ### 怎么走：编码
 
@@ -195,7 +195,7 @@
    - 内容策略的说法：`violating our usage policy`、`blocked by content filtering policy`、`content policy`、`content-policy`、`content_policy`、`contentpolicy`、`rejected as a result of our safety system`。
    - 额度的说法（也找错误码、类型，因为它们在找说法的字里）：`insufficient_quota`、`insufficient quota`、`insufficient balance`、`insufficient_balance`、`exceeded your current quota`、`quota exceeded`、`billing_hard_limit_reached`、`credit balance is too low`、`usagelimiterror`。
 5. **原话**：有 HTTP 状态的写成 `HTTP <状态>: <原话>`，流里报的只写原话；最长 2000 字节，截在字的边界上。原话给查问题的人看，不进上下文。HTTP 状态码另写进 `status`，原话开头的 `HTTP <状态>: ` 照留；连不上的、流里报的没有，流里的 `code` 只拿来分类（施工 3-5 三补）。
-6. **要等多久**，先有的算：头 `retry-after-ms`（毫秒）；头 `retry-after`（秒，可以带小数；写成日期的不认）；找说法的字里的 `try again in <数>`，单位 `ms` 是毫秒、`s` 开头的是秒（`s`、`seconds`）。非负的数才算，四舍五入到毫秒。都没有就不写，由内核退避。头的名字不分大小写，值去掉前后空白。流里报的错，解码器连同要等多久一起留下，收尾时交给 HTTP 执行器（施工 4-9 再补三下）。
+6. **要等多久**，先有的算：头 `retry-after-ms`（毫秒）；头 `retry-after`（秒，可以带小数；写成日期的不认）；找说法的字里的 `try again in <数>`，单位 `ms` 是毫秒、`s` 开头的是秒（`s`、`seconds`）。非负的数才算，四舍五入到毫秒。都没有就不写，由内核退避。头的名字不分大小写，值去掉前后空白。流里报的错，解码器连同要等多久一起留下，收尾时交给 HTTP 执行器（施工 4-9 再补三下）。要等多久写进出错的 `retry_after_ms`，一路记进 `model.called`，头照它说什么时候回来（施工 3-5 四补）。
 7. **超了多少**（施工 6-6 中，`compaction.md` 第三条第 10 条）：分成 `context_too_long` 的，从找说法的字里解析，先对上的算：`maximum context length is <N>` 后面跟着 `resulted in <M>` 或者 `requested <M>`（OpenAI、DeepSeek 的写法）；`prompt is too long: <M> tokens > <N>`（Anthropic 的写法）。数可以带千分位的逗号。M 比 N 大才算，`excess` 是 M 减 N；别的分类、解析不出来的没有。
 8. **报了的上限**（施工 8-7，`models.md`「驱动要守的约定」第 7 条）：分成 `context_too_long` 的，同样的两种写法里说得出 N 的交出 `limit`，就是 N，后半段说不出、没超的也交；N 是 0 的、别的分类没有。执行器照它记下用出来的窗口（`models.md`「怎么走」第二条第 9 条）。
 
@@ -293,7 +293,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/tests/robust_streams.rs`（鲁棒性 B-3） | 三家的解码器喂一行一直不换行的、一条一直不空行的，都停下、收尾带错 |
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs` | 列模型：名字和报了的窗口、三种窗口的写法先后、坏的跳过；回应坏了说是模型列表（施工 8-7） |
 | `crates/miyu-drivers/src/classify/excess/tests.rs` | 超了多少的几种写法；报了的上限单独读，后半段说不出也交、0 不交（施工 8-7） |
-| `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度算认证失败；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |
+| `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度算认证失败（OpenCode Zen 免费档用完的 `FreeUsageLimitError` 照 2026-10-22 实测的原样，要等多久照头记，施工 3-5 四补）；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |
 | `crates/miyu-drivers/src/texts/tests.rs` | 文件名换进去、转义；以前的 `file-omitted` 没有大小照样换得出；文本文件带文件名、补换行、空的、截过的写明、文件名转义内容原样；没有那三句的交回空的；带名字的图片的标签、占位带名字、转义，不带名字的照旧，没有那三句的照不带名字的写（施工 3-9 四补）；不该有的字段报错 |
 | `crates/miyu-drivers/src/base64/tests.rs` | RFC 4648 的测试值，`+`、`/` |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比） |

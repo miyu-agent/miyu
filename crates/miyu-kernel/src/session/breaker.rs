@@ -185,6 +185,7 @@ impl Session {
                 "the request would not fit: {used} tokens used + {least} reserved for output > window {window}"
             ),
             status: None,
+            retry_after_ms: None,
         })
     }
 

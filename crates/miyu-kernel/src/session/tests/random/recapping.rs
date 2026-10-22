@@ -34,6 +34,7 @@ pub(super) fn some_recap(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opt
                 class: ErrorClass::Retryable,
                 message: "503".to_string(),
                 status: None,
+                retry_after_ms: None,
             }),
         )),
         6 | 7 => Some(delta(upto, flight.next_delta())),

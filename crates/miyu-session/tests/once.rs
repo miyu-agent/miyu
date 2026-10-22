@@ -159,6 +159,7 @@ async fn an_image_goes_out_as_its_bytes_and_a_model_without_images_is_not_sent()
             class: ErrorClass::Unclassified,
             message: "model \"a/m\" does not take images".to_string(),
             status: None,
+            retry_after_ms: None,
         }))
     );
     assert_eq!(first.received().len(), 1, "不收图的不发");

@@ -176,6 +176,7 @@ fn an_error_that_is_not_retried_ends_the_turn_and_keeps_the_half() {
             class: ErrorClass::Auth,
             message: "401 Unauthorized".to_string(),
             status: None,
+            retry_after_ms: None,
         })
     );
     assert_eq!(called.duration_ms, Some(5000));

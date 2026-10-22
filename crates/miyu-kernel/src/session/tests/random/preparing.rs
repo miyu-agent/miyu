@@ -35,6 +35,7 @@ pub(super) fn some_prepare(rng: &mut Rng, watch: &Watch) -> Option<Input> {
                 class: ErrorClass::Retryable,
                 message: "503".to_string(),
                 status: None,
+                retry_after_ms: None,
             }),
         )),
         5..=7 => Some(delta(upto, flight.next_delta())),

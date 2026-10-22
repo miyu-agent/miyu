@@ -450,7 +450,7 @@
 
 用量：`uncached` 没命中缓存的输入、`cache_read` 缓存读取、`cache_write` 缓存写入、`output` 输出（含思考），四格都必有，都是 token 数。另有一格可以没有的 `reasoning`（施工 2-3 再补）：输出里思考占了多少，已经算在 `output` 里；供应商报了、不是 0 才写（OpenAI 兼容对话接口的 `completion_tokens_details.reasoning_tokens`、Responses 的 `output_tokens_details.reasoning_tokens`；Anthropic 不另报），头照它写「思考 N 词元」。以前的日志没有这一格，读进来再写出去一字不差。
 
-出错：`class` 分类、`message` 原话，两格都必有；原话给查问题的人看，不进上下文。`status` 是供应商回的 HTTP 状态码，整数，可以没有：连不上的、流里报的错、内核自己查出来的都没有。形状 `{"class":"other","message":"HTTP 404: …","status":404}`。头照它分 429、402、404 说人话，不从原话里抠；分类不看它。以前的日志没有这一格，照读，写出去还是没有（施工 3-5 三补）。
+出错：`class` 分类、`message` 原话，两格都必有；原话给查问题的人看，不进上下文。`status` 是供应商回的 HTTP 状态码，整数，可以没有：连不上的、流里报的错、内核自己查出来的都没有。形状 `{"class":"other","message":"HTTP 404: …","status":404}`。头照它分 429、402、404 说人话，不从原话里抠；分类不看它。以前的日志没有这一格，照读，写出去还是没有（施工 3-5 三补）。`retry_after_ms` 是供应商说了还要等多久才能再来，毫秒，可以没有：照驱动认的那几种写法（头 `retry-after-ms`、`retry-after`，原话里的 `try again in …`）；池里的都在冷却的 `cooling` 是最早恢复的那一个还要多久。形状 `{"class":"auth","message":"HTTP 429: Free usage limit reached. …","status":429,"retry_after_ms":59321000}`（OpenCode Zen 免费档用完了，2026-10-22 实测）。给头告诉人什么时候回来，不拿来等：内核等不等照端口交的要等多久，最多 2 分钟（`kernel/session.md`），额度用完的（`auth`）不重试。以前的日志没有这一格，照读，写出去还是没有（施工 3-5 四补，项目主人 2026-10-22 要的）。
 
 | `class` | 是什么 | 谁分的 |
 |---|---|---|
@@ -594,7 +594,7 @@
 | `crates/miyu-kernel/src/event/peer/tests.rs`（施工 C-1） | `peer.idle`：图纸上的两行读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、`status` 写成 `null` 的不写、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/question/tests.rs` | 提问的两种：图纸上的写法、没写的格子不写、第 4 条对不对得上题目、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/context/tests.rs` | 上下文的几种：图纸上的写法、手动压缩带着要求（施工 6-8）、清空的空摘要照样写出 `summary`（施工 6-8 补）、坏的说是哪一种 |
-| `crates/miyu-kernel/src/event/model/tests.rs` | `model.called` 图纸上的写法；没发出去就失败的只有知道的几格；每种出错的分类；出错带着 HTTP 状态码、没有这一格的旧日志照读（施工 3-5 三补）；块的起止读写一字不差、没有这一格的旧日志照读（施工 2-3 补）；第一处不同的写法；`purpose` 读写一字不差、不认识的原样留着、带了的才是辅助请求（施工 3-8 四补） |
+| `crates/miyu-kernel/src/event/model/tests.rs` | `model.called` 图纸上的写法；没发出去就失败的只有知道的几格；每种出错的分类；出错带着 HTTP 状态码、没有这一格的旧日志照读（施工 3-5 三补）；出错带着还要等多久、十几个小时也照记、没有这一格的旧日志照读（施工 3-5 四补）；块的起止读写一字不差、没有这一格的旧日志照读（施工 2-3 补）；第一处不同的写法；`purpose` 读写一字不差、不认识的原样留着、带了的才是辅助请求（施工 3-8 四补） |
 | `crates/miyu-kernel/tests/samples.rs` | 每一种的样本读写一字不差；换模型的几条一条接一条：退回的带着回合、原来的正是前面换成的（施工 8-10） |
 | `crates/miyu-kernel/tests/resources.rs` 的 `the_sample_denial_is_the_sentence_with_the_reason` | 样本里 71 号被人拒绝的结果，就是资源里带理由的那一句 |
 

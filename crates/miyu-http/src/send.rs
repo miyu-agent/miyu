@@ -98,7 +98,7 @@ pub async fn send(
                 host = %host,
                 status,
                 class = failure.error.class.as_str(),
-                retry_after_ms = failure.retry_after_ms,
+                retry_after_ms = failure.error.retry_after_ms,
                 took_ms,
                 "failed"
             );
@@ -228,6 +228,7 @@ async fn exchange(
             class: ErrorClass::Retryable,
             message: format!("连接断了：{broken}"),
             status: None,
+            retry_after_ms: None,
         }),
         (error, _) => error,
     };
@@ -238,11 +239,10 @@ async fn exchange(
     }
     Outcome::Ended {
         usage: ending.usage,
-        // 流里报的错带着解码器留下的要等多久（施工 4-9 再补三下）。
+        // 流里报的错带着解码器留下的要等多久（施工 4-9 再补三下，3-5 四补起在出错里）。
         // 超了多少、上限只从 HTTP 的出错里解析：流里报超长的少见，报了照没有算。
         error: error.map(|error| Classified {
             error,
-            retry_after_ms: ending.retry_after_ms,
             excess: None,
             limit: None,
         }),
@@ -282,8 +282,8 @@ fn misconfigured(why: &str) -> Outcome {
                 class: ErrorClass::Unclassified,
                 message: format!("地址或者头写得不对：{why}"),
                 status: None,
+                retry_after_ms: None,
             },
-            retry_after_ms: None,
             excess: None,
             limit: None,
         }),
@@ -299,8 +299,8 @@ fn idle(idle: Duration) -> Outcome {
                 class: ErrorClass::Retryable,
                 message: format!("空闲超时：{} 秒没有收到新的内容", idle.as_secs_f64()),
                 status: None,
+                retry_after_ms: None,
             },
-            retry_after_ms: None,
             excess: None,
             limit: None,
         }),

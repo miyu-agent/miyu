@@ -37,8 +37,6 @@ pub struct Decoder {
     stopped: bool,
     /// 流里报了错，或者流坏了。
     error: Option<CallError>,
-    /// 流里报的错，供应商说要等多久。
-    wait: Option<u64>,
 }
 
 /// 开了的一块。
@@ -111,7 +109,6 @@ impl Decoder {
             deltas,
             usage: self.usage.usage(),
             error,
-            retry_after_ms: self.wait,
         }
     }
 
@@ -122,6 +119,7 @@ impl Decoder {
                 class: ErrorClass::Retryable,
                 message: "流断了：没等到 stop_reason，也没等到 message_stop".to_string(),
                 status: None,
+                retry_after_ms: None,
             });
         };
         let class = match reason.as_str() {
@@ -139,6 +137,7 @@ impl Decoder {
             class,
             message: format!("stop_reason: {reason}"),
             status: None,
+            retry_after_ms: None,
         })
     }
 
@@ -162,6 +161,7 @@ impl Decoder {
                     class,
                     message: format!("{what}：{}", clip(data)),
                     status: None,
+                    retry_after_ms: None,
                 });
                 return;
             }
@@ -191,7 +191,6 @@ impl Decoder {
             "error" => {
                 let classified = classify(&Failure::stream(data.as_bytes()));
                 self.error = Some(classified.error);
-                self.wait = classified.retry_after_ms;
             }
             _ => {}
         }

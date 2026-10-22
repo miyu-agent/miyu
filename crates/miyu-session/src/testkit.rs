@@ -343,6 +343,7 @@ impl ModelPort for Script {
                         class,
                         message: "HTTP 429: slow down".to_string(),
                         status: None,
+                        retry_after_ms: None,
                     }),
                     wait_ms,
                     None,

@@ -144,8 +144,6 @@ pub struct Ending {
     pub deltas: Vec<Delta>,
     /// 用量。供应商没报的，没有。
     pub usage: Option<Usage>,
-    /// 出错的分类和原话；正常说完的，没有。
+    /// 出错的分类和原话；正常说完的，没有。流里报的错，供应商说要等多久在它里面（施工 4-9 再补三下，3-5 四补起放进出错）。
     pub error: Option<CallError>,
-    /// 流里报的错，供应商说要等多久（毫秒，施工 4-9 再补三下）；没说的、别的出错，没有。
-    pub retry_after_ms: Option<u64>,
 }

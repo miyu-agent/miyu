@@ -222,7 +222,7 @@ fn the_driver_interface_goes_through_all_of_it() {
     };
     let classified = driver.classify(&failure);
     assert_eq!(classified.error.class, ErrorClass::RateLimited);
-    assert_eq!(classified.retry_after_ms, Some(3000));
+    assert_eq!(classified.error.retry_after_ms, Some(3000));
 }
 
 /// `needle` 头一次出现在哪。
@@ -258,11 +258,9 @@ fn a_failed_response_and_an_error_event_are_classified_without_a_status() {
     assert_eq!(error.status, None);
     let (_, ending) = decode(&[&stream("error-event")]);
     // 流里报的错没有状态：限速的说法也照可重试算（共用的分类），要等多久照原话。
-    assert_eq!(
-        ending.error.map(|error| error.class),
-        Some(ErrorClass::Retryable)
-    );
-    assert_eq!(ending.retry_after_ms, Some(1500));
+    let error = ending.error.expect("出错了");
+    assert_eq!(error.class, ErrorClass::Retryable);
+    assert_eq!(error.retry_after_ms, Some(1500));
 }
 
 #[test]

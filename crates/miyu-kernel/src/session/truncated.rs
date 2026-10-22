@@ -27,6 +27,7 @@ impl Session {
             class: ErrorClass::OutputLimit,
             message: format!("回复连着 {} 次写到了输出上限", TRUNCATION_LIMIT + 1),
             status: None,
+            retry_after_ms: None,
         })
     }
 

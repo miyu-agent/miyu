@@ -126,6 +126,7 @@ pub(crate) fn overflow_error() -> CallError {
         class: ErrorClass::Retryable,
         message: format!("流里一条事件超过 {} MiB，不再往下读", MOST >> 20),
         status: None,
+        retry_after_ms: None,
     }
 }
 

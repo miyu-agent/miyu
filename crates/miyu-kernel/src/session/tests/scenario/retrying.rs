@@ -68,6 +68,7 @@ fn the_retry_status_carries_the_http_status() {
             class: ErrorClass::RateLimited,
             message: "HTTP 429: Rate limit reached".to_string(),
             status: Some(429),
+            retry_after_ms: None,
         }),
         ..Line::says("")
     };
@@ -149,6 +150,7 @@ fn a_half_written_call_is_dropped() {
             class: ErrorClass::Retryable,
             message: "connection reset".to_string(),
             status: None,
+            retry_after_ms: None,
         }),
         ..Line::calls("我读一下。", &[("read", r#"{"pa"#)])
     };

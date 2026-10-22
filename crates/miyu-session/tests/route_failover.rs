@@ -258,6 +258,9 @@ async fn all_candidates_cooling_says_cooling_and_names_each_one() {
     let last = calls.last().expect("有一条");
     let error = last.error.as_ref().expect("出错");
     assert_eq!(error.class, ErrorClass::Cooling);
+    // 最早恢复的那一个还要多久也记上（施工 3-5 四补）：冷却 10 分钟起，差不多就是它。
+    let wait = error.retry_after_ms.expect("记了还要等多久");
+    assert!((540_000..=600_000).contains(&wait), "{wait}");
     assert_eq!(last.endpoint, None, "没发出去，没有端点");
     assert!(
         error.message.starts_with("all candidates cooling: a1/m "),

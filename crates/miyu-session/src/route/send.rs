@@ -130,7 +130,7 @@ async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel)
         .check_gone(&chosen.tried.config, classified.error.status);
     let switch = chosen
         .tried
-        .failed(class, classified.retry_after_ms, received);
+        .failed(class, classified.error.retry_after_ms, received);
     match switch.failover {
         true => reports.failed_over(usage, classified.error, switch.wait_ms),
         false => reports.ended(

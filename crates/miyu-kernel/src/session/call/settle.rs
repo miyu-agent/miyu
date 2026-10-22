@@ -160,6 +160,7 @@ impl Session {
                             class: ErrorClass::EmptyReply,
                             message: "回复里一个块都没有".to_string(),
                             status: None,
+                            retry_after_ms: None,
                         });
                     }
                 } else {

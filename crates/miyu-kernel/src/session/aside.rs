@@ -114,6 +114,7 @@ impl Aside {
                     class: ErrorClass::EmptyReply,
                     message: empty.to_string(),
                     status: None,
+                    retry_after_ms: None,
                 }),
                 false => Ok(text),
             }
@@ -277,5 +278,6 @@ pub(super) fn bad_stream(message: &str) -> CallError {
         class: ErrorClass::BadStream,
         message: message.to_string(),
         status: None,
+        retry_after_ms: None,
     }
 }

@@ -33,6 +33,7 @@ fn priced(seen: u64, cost: Option<Cost>, error: Option<ErrorClass>) -> Input {
             class,
             message: "boom".to_string(),
             status: None,
+            retry_after_ms: None,
         }),
         wait_ms: None,
         excess: None,

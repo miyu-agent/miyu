@@ -146,11 +146,42 @@ async fn a_rate_limit_waits_as_long_as_the_server_says() {
         calls[0].error.as_ref().map(|error| error.class.clone()),
         Some(ErrorClass::RateLimited)
     );
-    // HTTP 状态码一路带进日志（施工 3-5 三补）。
+    // HTTP 状态码一路带进日志（施工 3-5 三补），还要等多久也是（施工 3-5 四补）。
     assert_eq!(
         calls[0].error.as_ref().and_then(|error| error.status),
         Some(429)
     );
+    assert_eq!(
+        calls[0]
+            .error
+            .as_ref()
+            .and_then(|error| error.retry_after_ms),
+        Some(2000)
+    );
+}
+
+/// 额度用完了（Zen 免费档 2026-10-22 实测的原样，`retry-after` 十几个小时）：不重试、不照它睡，这一轮当场以出错结束；还要
+/// 等多久照记进 `model.called`，给头告诉人什么时候回来（施工 3-5 四补）。
+#[tokio::test]
+async fn used_up_quota_ends_at_once_and_records_when_it_comes_back() {
+    let mut home = Home::new();
+    let server = Server::start(vec![Reply::error(
+        429,
+        &[("retry-after", "59321")],
+        r#"{"type":"error","error":{"type":"FreeUsageLimitError","message":"Free usage limit reached."}}"#,
+    )])
+    .await;
+    let routes = models(&mut home, &server, Inputs::default(), false);
+    let handle = home.create(&routes).await;
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
+    within("当场结束", until_turn_ends(&mut pushes)).await;
+    assert_eq!(server.received().len(), 1, "不重试");
+    let log = home.log(handle.id());
+    let calls = called(&log);
+    let error = calls[0].error.as_ref().expect("出错了");
+    assert_eq!(error.class, ErrorClass::Auth);
+    assert_eq!(error.retry_after_ms, Some(59_321_000));
 }
 
 #[tokio::test]

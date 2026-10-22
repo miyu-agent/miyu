@@ -49,6 +49,7 @@ fn a_failed_call_before_it_was_sent_has_only_what_is_known() {
             class: ErrorClass::RateLimited,
             message: "429 Too Many Requests".to_string(),
             status: None,
+            retry_after_ms: None,
         })
     );
 }
@@ -64,6 +65,7 @@ fn an_error_keeps_its_http_status_and_old_logs_without_it_still_read() {
             class: ErrorClass::Unclassified,
             message: "HTTP 404: Model Not Exist".to_string(),
             status: Some(404),
+            retry_after_ms: None,
         })
     );
     let old = r#"{"seen":44,"messages":1,"result":"error","error":{"class":"rate_limited","message":"HTTP 429: Rate limit reached"}}"#;
@@ -73,6 +75,28 @@ fn an_error_keeps_its_http_status_and_old_logs_without_it_still_read() {
     assert_eq!(
         written,
         r#"{"class":"rate_limited","message":"HTTP 429: Rate limit reached"}"#
+    );
+}
+
+/// 出错带着还要等多久（施工 3-5 四补）：排在状态码后面，读写一字不差，值大到十几个小时也照样；以前的日志没有这一格，
+/// 照读，写出去还是没有，不写成 `null`。
+#[test]
+fn an_error_keeps_how_long_to_wait_and_old_logs_without_it_still_read() {
+    let body = r#"{"seen":44,"messages":1,"result":"error","error":{"class":"auth","message":"HTTP 429: Free usage limit reached.","status":429,"retry_after_ms":59321000}}"#;
+    let error = called(body).error.expect("出错的有 error");
+    assert_eq!(error.retry_after_ms, Some(59_321_000));
+    assert_eq!(error.status, Some(429));
+    assert!(
+        serde_json::to_string(&called(body))
+            .unwrap()
+            .contains(r#""status":429,"retry_after_ms":59321000}"#)
+    );
+    let old = r#"{"seen":44,"messages":1,"result":"error","error":{"class":"rate_limited","message":"HTTP 429: Rate limit reached","status":429}}"#;
+    let error = called(old).error.expect("出错的有 error");
+    assert_eq!(error.retry_after_ms, None);
+    assert_eq!(
+        serde_json::to_string(&error).unwrap(),
+        r#"{"class":"rate_limited","message":"HTTP 429: Rate limit reached","status":429}"#
     );
 }
 

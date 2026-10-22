@@ -70,6 +70,7 @@ impl Line {
                 class,
                 message: message.to_string(),
                 status: None,
+                retry_after_ms: None,
             }),
             ..Line::says("")
         }

@@ -86,6 +86,7 @@ pub(super) fn failed(seen: u64, class: ErrorClass, message: &str) -> Input {
             class,
             message: message.to_string(),
             status: None,
+            retry_after_ms: None,
         }),
         wait_ms: None,
         excess: None,

@@ -16,7 +16,7 @@ fn failure<'a>(
 
 fn class(status: Option<u16>, headers: &[(&str, &str)], body: &str) -> (ErrorClass, Option<u64>) {
     let got = classify(&failure(status, headers, body));
-    (got.error.class, got.retry_after_ms)
+    (got.error.class, got.error.retry_after_ms)
 }
 
 #[test]
@@ -165,6 +165,17 @@ fn auth_and_quota() {
     assert_eq!(class(Some(429), &[], quota).0, ErrorClass::Auth);
     let zen = r#"{"error":{"type":"FreeUsageLimitError","message":"Free usage limit reached."}}"#;
     assert_eq!(class(Some(429), &[], zen).0, ErrorClass::Auth);
+}
+
+/// OpenCode Zen 免费档用完了（2026-10-22 实测的原样：429，`retry-after` 是到 UTC 零点还有多少秒，`type` 包在
+/// `error` 里）：是额度用完（不重试），不是限速；还要等多久照头记进出错（施工 3-5 四补），十几个小时也照记。
+#[test]
+fn zen_s_free_tier_used_up_is_out_of_quota_and_says_when_it_comes_back() {
+    let body = r#"{"type":"error","error":{"type":"FreeUsageLimitError","message":"Free usage limit reached. Subscribe to OpenCode Go to keep going."}}"#;
+    assert_eq!(
+        class(Some(429), &[("retry-after", "59321")], body),
+        (ErrorClass::Auth, Some(59_321_000))
+    );
 }
 
 #[test]

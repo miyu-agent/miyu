@@ -34,6 +34,7 @@ pub(super) fn some_ending(rng: &mut Rng) -> (Option<CallError>, Option<u64>, boo
         class,
         message: message.to_string(),
         status: None,
+        retry_after_ms: None,
     };
     (Some(error), wait, failover)
 }

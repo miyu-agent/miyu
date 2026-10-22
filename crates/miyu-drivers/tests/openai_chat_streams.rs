@@ -218,7 +218,7 @@ fn the_driver_interface_goes_through_all_three() {
     };
     let classified = driver.classify(&failure);
     assert_eq!(classified.error.class, ErrorClass::RateLimited);
-    assert_eq!(classified.retry_after_ms, Some(3000));
+    assert_eq!(classified.error.retry_after_ms, Some(3000));
 }
 
 /// 一段有正文、说完了的流，`error` 那一格照给的写。
@@ -275,16 +275,15 @@ fn a_rate_limit_in_the_stream_keeps_how_long_to_wait() {
         format!("event: error\ndata: {said}\n\n"),
     ] {
         let (_, ending) = decode(&[bytes.as_bytes()]);
-        let class = ending.error.map(|error| error.class);
-        assert_eq!(class, Some(ErrorClass::RateLimited), "{bytes}");
-        assert_eq!(ending.retry_after_ms, Some(1500), "{bytes}");
+        let error = ending.error.expect("出错了");
+        assert_eq!(error.class, ErrorClass::RateLimited, "{bytes}");
+        assert_eq!(error.retry_after_ms, Some(1500), "{bytes}");
     }
-    // 没说要等多久的，没有；正常说完的也没有。
+    // 没说要等多久的，没有；正常说完的没有出错。
     let (_, ending) = decode(&[&stream("stream-error")]);
-    assert!(ending.error.is_some());
-    assert_eq!(ending.retry_after_ms, None);
+    assert_eq!(ending.error.expect("出错了").retry_after_ms, None);
     let (_, ending) = decode(&[&stream("openai-text")]);
-    assert_eq!(ending.retry_after_ms, None);
+    assert_eq!(ending.error, None);
 }
 
 #[test]

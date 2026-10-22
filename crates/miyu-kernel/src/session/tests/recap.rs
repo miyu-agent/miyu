@@ -96,6 +96,7 @@ fn ended(upto: u64, error: Option<ErrorClass>) -> Input {
             class,
             message: "503".to_string(),
             status: None,
+            retry_after_ms: None,
         }),
     }
 }

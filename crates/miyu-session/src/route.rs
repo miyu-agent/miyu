@@ -261,12 +261,12 @@ impl ModelPort for Route {
                 reports.ended(None, Some(unsent(ErrorClass::NoModel, message)), None, None);
             }
             Err(Unsent::Cooling { message, wait_ms }) => {
-                reports.ended(
-                    None,
-                    Some(unsent(ErrorClass::Cooling, message)),
-                    Some(wait_ms),
-                    None,
-                );
+                // 最早恢复的那一个还要多久也记进出错，给头说什么时候回来（施工 3-5 四补）。
+                let error = CallError {
+                    retry_after_ms: Some(wait_ms),
+                    ..unsent(ErrorClass::Cooling, message)
+                };
+                reports.ended(None, Some(error), Some(wait_ms), None);
             }
         }
     }
@@ -338,6 +338,7 @@ fn unsent(class: ErrorClass, message: String) -> CallError {
         class,
         message,
         status: None,
+        retry_after_ms: None,
     }
 }
 

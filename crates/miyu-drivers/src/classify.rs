@@ -34,10 +34,9 @@ impl<'a> Failure<'a> {
 /// 分好的类。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Classified {
-    /// 分类、原话和 HTTP 状态码，记进 `model.called`。
+    /// 分类、原话、HTTP 状态码和供应商说了要等多久（施工 3-5 四补：原来另放一格，记不进 `model.called`），记进
+    /// `model.called`。没说要等多久的，由执行器退避。
     pub error: CallError,
-    /// 供应商说了要等多久，毫秒。没说的没有，由执行器退避。
-    pub retry_after_ms: Option<u64>,
     /// 超长的超了多少 token（施工 6-6 中）：内核照它截短摘要请求。别的分类、原话里解析不出来的没有。
     pub excess: Option<u64>,
     /// 超长的报了的上限 N（`models.md`「驱动要守的约定」第 7 条，施工 8-7）：执行器照它记下用出来的窗口。别的分类、
@@ -176,8 +175,8 @@ pub fn classify(failure: &Failure<'_>) -> Classified {
             message: clip(&message, MESSAGE_LIMIT).to_string(),
             // 只记 HTTP 回的：流里报的 `code` 只拿来分类（施工 3-5 三补）。
             status: failure.status,
+            retry_after_ms: retry_after(failure.headers, &text),
         },
-        retry_after_ms: retry_after(failure.headers, &text),
         excess,
         limit,
     }

@@ -37,6 +37,7 @@ impl Session {
                 class: ErrorClass::EmptyReply,
                 message: "回复里一个块都没有".to_string(),
                 status: None,
+                retry_after_ms: None,
             });
         }
         if called_tool(blocks) {
@@ -48,6 +49,7 @@ impl Session {
                 class: ErrorClass::BadSummary,
                 message: message.to_string(),
                 status: None,
+                retry_after_ms: None,
             });
         }
         self.policy
@@ -57,6 +59,7 @@ impl Session {
                 class: ErrorClass::BadSummary,
                 message: "no summary in the reply".to_string(),
                 status: None,
+                retry_after_ms: None,
             })
     }
 }

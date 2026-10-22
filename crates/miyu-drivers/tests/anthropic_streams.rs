@@ -228,7 +228,7 @@ fn the_driver_interface_goes_through_all_of_it() {
     };
     let classified = driver.classify(&failure);
     assert_eq!(classified.error.class, ErrorClass::RateLimited);
-    assert_eq!(classified.retry_after_ms, Some(3000));
+    assert_eq!(classified.error.retry_after_ms, Some(3000));
     let listed = driver
         .parse_models(
             br#"{"data":[{"id":"claude-opus-5","max_input_tokens":1000000}],"has_more":false}"#,

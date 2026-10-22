@@ -229,6 +229,11 @@ pub struct CallError {
     /// 内核自己查出来的没有；以前的日志没有这一格，照读。分类不看它：分类管的是内核怎么办。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<u16>,
+    /// 供应商说了还要等多久才能再来，毫秒（施工 3-5 四补）：`retry-after-ms`、`retry-after` 头，原话里的 `try again in …`；
+    /// 池里的都在冷却的（`cooling`），是最早恢复的那一个还要多久。给头告诉人什么时候回来，不拿来等：内核等不等照端口交的
+    /// 要等多久，最多 2 分钟（`session/retry.rs`）。没说的没有；以前的日志没有这一格，照读。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retry_after_ms: Option<u64>,
 }
 
 text_enum!(

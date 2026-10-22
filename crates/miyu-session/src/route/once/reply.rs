@@ -50,6 +50,7 @@ impl Reply {
                 class: ErrorClass::BadStream,
                 message: error.to_string(),
                 status: None,
+                retry_after_ms: None,
             }));
         }
         let text = self

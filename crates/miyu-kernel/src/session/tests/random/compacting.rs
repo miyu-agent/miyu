@@ -81,6 +81,7 @@ pub(super) fn some_overflow(rng: &mut Rng, watch: &Watch) -> Option<Input> {
             class: ErrorClass::ContextTooLong,
             message: "413".to_string(),
             status: None,
+            retry_after_ms: None,
         }),
         wait_ms: None,
         excess,
