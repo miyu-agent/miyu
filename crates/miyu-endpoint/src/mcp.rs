@@ -385,7 +385,7 @@ async fn settle(core: &Core, shared: &Shared, task: Option<JoinHandle<()>>) {
     if let Some(task) = task
         && let Err(error) = task.await
     {
-        tracing::error!(target: TARGET, package = shared.package.as_str(), service = shared.service.as_str(), error = %error, "mcp task failed");
+        tracing::error!(target: TARGET, package = shared.package.as_str(), service = shared.service.as_str(), panic = error.is_panic(), "mcp task failed");
     }
     shared.connect(None);
     shared.set(core, State::Off, 0);

@@ -45,7 +45,7 @@ pub(crate) async fn reply(core: &Core, session: &SessionId, cwd: &str, events: V
     let (report, cwd) = match written {
         Ok(written) => written,
         Err(error) => {
-            tracing::error!(target: "miyu::endpoint", error = %error, "undo report panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "undo report panicked");
             (Report::default(), String::new())
         }
     };

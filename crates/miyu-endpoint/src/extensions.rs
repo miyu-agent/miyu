@@ -289,7 +289,7 @@ impl Extensions {
                 // 任务自己停下了，没人收：不用管。
             }
             if let Err(error) = task.await {
-                tracing::error!(target: TARGET, package = id, error = %error, "extension task failed");
+                tracing::error!(target: TARGET, package = id, panic = error.is_panic(), "extension task failed");
             }
         }
         self.mark_off(id);
@@ -310,7 +310,7 @@ impl Extensions {
             .collect();
         for (id, task) in tasks {
             if let Err(error) = task.await {
-                tracing::error!(target: TARGET, package = id.as_str(), error = %error, "extension task failed");
+                tracing::error!(target: TARGET, package = id.as_str(), panic = error.is_panic(), "extension task failed");
             }
             self.mark_off(&id);
         }

@@ -165,12 +165,12 @@ impl RemoteTool {
         }
     }
 
-    /// 照通用形状读扩展交的 `detail`：读不成的不要，记一行（原因是英文的一句）。
+    /// 照通用形状读扩展交的 `detail`：读不成的不要，记一行（原因转述了工具的结果，不写进运行日志）。
     fn shaped(&self, detail: &Value) -> Option<Value> {
         match miyu_tool::detail::read(detail) {
             Ok(shaped) => Some(shaped.to_value()),
-            Err(why) => {
-                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), why = why.as_str(), "tool detail dropped");
+            Err(_) => {
+                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), "tool detail dropped");
                 None
             }
         }

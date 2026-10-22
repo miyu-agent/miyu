@@ -248,12 +248,7 @@ impl LinkPreview {
             None => {
                 let outcome = self.fetch(ready, &url).await;
                 if let Err(why) = &outcome {
-                    tracing::warn!(
-                        target: TARGET,
-                        host = url.host_str().unwrap_or_default(),
-                        why = why.as_str(),
-                        "link preview failed"
-                    );
+                    tracing::warn!(target: TARGET, why = why.as_str(), "link preview failed");
                 }
                 ready.remember.put(key, outcome.clone(), Instant::now());
                 outcome
@@ -300,7 +295,7 @@ impl LinkPreview {
                 None
             }
             Err(error) => {
-                tracing::warn!(target: TARGET, error = %error, "link image not stored");
+                tracing::warn!(target: TARGET, panic = error.is_panic(), "link image not stored");
                 None
             }
         }

@@ -426,7 +426,7 @@ fn reap(background: &mut JoinSet<()>) {
         if let Err(error) = joined
             && error.is_panic()
         {
-            tracing::error!(target: "miyu::endpoint", error = %error, "background request panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "background request panicked");
         }
     }
 }

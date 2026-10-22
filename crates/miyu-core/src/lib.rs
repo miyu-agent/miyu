@@ -460,7 +460,7 @@ async fn run(
     let purging = trash::purge(trashed, admin());
     serve(opened.listener, core, options.idle, serve::signal()).await;
     if let Err(error) = purging.await {
-        tracing::error!(target: TARGET, error = %error, "trash purge panicked");
+        tracing::error!(target: TARGET, panic = error.is_panic(), "trash purge panicked");
     }
     ExitCode::SUCCESS
 }

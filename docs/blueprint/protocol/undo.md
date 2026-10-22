@@ -69,7 +69,7 @@
 | `nothing_to_unrevert` | 恢复时没有能恢复的撤销：没撤过，或者撤了以后开过回合、压缩过 |
 | `restoring` | 撤销还没做完：正在读回更早的日志（兜底，照常碰不到） |
 
-运行日志（目标 `miyu::endpoint`）：`WARN undo report not written error=…`（日志读不出来），`WARN undo report jobs not read seq=…`（撤销以前的日志过不了账本，施工 7-8），`ERROR undo report panicked error=…`（写的时候崩了）。
+运行日志（目标 `miyu::endpoint`）：`WARN undo report not written error=…`（日志读不出来），`WARN undo report jobs not read seq=…`（撤销以前的日志过不了账本，施工 7-8），`ERROR undo report panicked panic=…`（写的时候崩了）。
 
 ### 守着它的
 

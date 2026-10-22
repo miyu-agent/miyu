@@ -41,11 +41,11 @@ pub(super) async fn fill(
         return;
     };
     let Some(answer) = fetcher.json(&query(&api, &name, rules.thumbnail)).await else {
-        fell_back("mediawiki", page);
+        fell_back("mediawiki");
         return;
     };
     let Some(summary) = read_query(&answer) else {
-        fell_back("mediawiki", page);
+        fell_back("mediawiki");
         return;
     };
     let description = match summary.extract {

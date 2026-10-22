@@ -2357,7 +2357,7 @@ currency = "USD"
 | `WARN` | `config watch unavailable error=…` | 8-4 |
 | `WARN` | `secrets readable by others file=…` | 8-5 |
 | `INFO` | `secret changed name=… action=… via=…` | 8-5 |
-| `INFO` | `project trust path=… trusted=…`：经 `config.trust` 记的（8-3），手改被看到的（8-4） | 8-3、8-4 |
+| `INFO` | `project trust trusted=…`（仓库路径不写，施工 LG-1 上）：经 `config.trust` 记的（8-3），手改被看到的（8-4） | 8-3、8-4 |
 
 ### 给人看的字
 

@@ -70,7 +70,9 @@ impl Logos {
         let dir = self.dir.clone();
         match tokio::task::spawn_blocking(move || load(&dir)).await {
             Ok(cached) => self.data.set_logos(cached),
-            Err(error) => tracing::error!(target: TARGET, error = %error, "logos read panicked"),
+            Err(error) => {
+                tracing::error!(target: TARGET, panic = error.is_panic(), "logos read panicked")
+            }
         }
         let mut failed = None;
         loop {

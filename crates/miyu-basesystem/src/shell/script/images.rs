@@ -79,14 +79,13 @@ impl Folder {
         names.sort();
         let mut pictures = Vec::new();
         for name in names {
-            let file = name.to_string_lossy();
             if pictures.len() == MOST_IMAGES {
-                dropped(tool, &file, "more than 4 images");
+                dropped(tool, "more than 4 images");
                 continue;
             }
             match read(&self.path.join(&name)) {
                 Ok(picture) => pictures.push(picture),
-                Err(why) => dropped(tool, &file, &why),
+                Err(why) => dropped(tool, why),
             }
         }
         pictures
@@ -100,24 +99,25 @@ impl Drop for Folder {
     }
 }
 
-/// 读一张：不是图、超了上限的交回原因。
-fn read(path: &Path) -> Result<Picture, String> {
-    let file = miyu_fs::open_file(path).map_err(|error| error.to_string())?;
-    let size = file.metadata().map_err(|error| error.to_string())?.len();
+/// 读一张：不是图、超了上限的交回原因（写死的一句，不带文件名）。
+fn read(path: &Path) -> Result<Picture, &'static str> {
+    const UNREADABLE: &str = "not readable";
+    let file = miyu_fs::open_file(path).map_err(|_| UNREADABLE)?;
+    let size = file.metadata().map_err(|_| UNREADABLE)?.len();
     if size > picture::MAX_BYTES {
-        return Err("larger than 5 MiB".to_string());
+        return Err("larger than 5 MiB");
     }
     let mut bytes = Vec::new();
     // 开了以后还在长的，读到上限多一个字节就停，下面 `fits` 照字节数拦下。
     file.take(picture::MAX_BYTES + 1)
         .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
+        .map_err(|_| UNREADABLE)?;
     let head = &bytes[..bytes.len().min(picture::HEAD)];
     let kind = picture::kind(head).ok_or("not PNG, JPEG, GIF or WebP")?;
     let media_type = MediaType::parse(kind).map_err(|_| "not PNG, JPEG, GIF or WebP")?;
     let (width, height) = picture::measure(&bytes).ok_or("its size can't be read")?;
     if !picture::fits(bytes.len() as u64, width, height) {
-        return Err("larger than 5 MiB or 8000 pixels a side".to_string());
+        return Err("larger than 5 MiB or 8000 pixels a side");
     }
     Ok(Picture {
         bytes,
@@ -127,9 +127,9 @@ fn read(path: &Path) -> Result<Picture, String> {
     })
 }
 
-/// 没交的一个记一行。
-fn dropped(tool: &str, file: &str, why: &str) {
-    tracing::warn!(target: TARGET, tool, file, why, "script image dropped");
+/// 没交的一个记一行：工具名、原因。文件名是脚本起的，不写（施工 LG-1 上）。
+fn dropped(tool: &str, why: &str) {
+    tracing::warn!(target: TARGET, tool, why, "script image dropped");
 }
 
 /// 随机的 64 位：标准库的散列种子取自系统的随机数，每造一个换一个，三个平台一样，不另加依赖。

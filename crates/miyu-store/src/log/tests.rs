@@ -160,17 +160,17 @@ fn a_broken_log_is_reported_not_fixed() {
 
 #[test]
 fn a_broken_log_says_where_in_english() {
-    // 写进运行日志的一句：哪一段、第几行、为什么（施工 4-9 再补四中：原来是中文）。
-    let segment = PathBuf::from("sessions").join("000000000001.jsonl");
+    // 写进运行日志的一句：哪一段（只写段的文件名）、第几行（施工 4-9 再补四中：原来是中文）。目录带着账号，怎么坏的
+    // 可能转述了那一行的字，都不写（施工 LG-1 上）。
+    let segment = PathBuf::from("home")
+        .join("alice")
+        .join("000000000001.jsonl");
     let error = OpenError::Broken {
-        segment: segment.clone(),
+        segment,
         line: 3,
-        why: "not UTF-8".to_string(),
+        why: "invalid type: string \"秘密\"".to_string(),
     };
-    assert_eq!(
-        error.to_string(),
-        format!("{} line 3: not UTF-8", segment.display())
-    );
+    assert_eq!(error.to_string(), "000000000001.jsonl line 3 is broken");
 }
 
 #[test]
@@ -250,7 +250,7 @@ fn no_session_no_log() {
         .err()
         .map(|error| error.to_string())
         .unwrap_or_default();
-    assert_eq!(said, format!("no session log in {}", dir.display()));
+    assert_eq!(said, "no session log");
     fs::create_dir_all(&dir).unwrap();
     fs::write(dir.join("notes.txt"), "不是段").unwrap();
     assert!(matches!(

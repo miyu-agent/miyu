@@ -107,7 +107,7 @@ print("Grabbed 1 frame.")
 
 - Taken in file-name order, at most 4; PNG, JPEG, GIF or WebP, each at most 5 MiB and at most 8000 pixels per side.
 - Only regular files directly in the folder count, and links are not followed: copy the images in, don't link them.
-- Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which file and why.
+- Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which script and why (not the file name).
 - A call stopped at its timeout hands over no images; a non-zero exit code still does.
 
 **Scripts that must run outside the sandbox**

@@ -46,11 +46,8 @@ fn creating_says_it_in_english() {
 fn loading_says_it_in_english() {
     let missing = PathBuf::from("/data/sessions/x");
     assert_eq!(
-        LoadError::Log(OpenError::Missing(missing.clone())).to_string(),
-        format!(
-            "session log not opened: no session log in {}",
-            missing.display()
-        )
+        LoadError::Log(OpenError::Missing(missing)).to_string(),
+        "session log not opened: no session log"
     );
     assert_eq!(
         LoadError::NotCreated.to_string(),

@@ -91,7 +91,7 @@ fn stored(
         Refusal::INTERNAL
     })?;
     SourcePath::parse(&path.to_string_lossy()).map_err(|_| {
-        tracing::warn!(target: TARGET, path = %path.display(), "kept attachment path not usable");
+        tracing::warn!(target: TARGET, blob = blob.as_str(), "kept attachment path not usable");
         Refusal::INTERNAL
     })
 }

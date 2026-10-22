@@ -166,7 +166,7 @@ pub fn follow(reading: Reading, cache: Option<PathBuf>, settings: watch::Receive
         let table = match task.await {
             Ok(table) => table,
             Err(error) => {
-                tracing::error!(target: TARGET, error = %error, "catalog read panicked");
+                tracing::error!(target: TARGET, panic = error.is_panic(), "catalog read panicked");
                 data.loaded(None, Observed::default());
                 None
             }

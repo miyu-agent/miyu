@@ -36,12 +36,15 @@ pub enum OpenError {
     Io(io::Error),
 }
 
+/// 写进运行日志的那一句：不带目录（带着账号），不带怎么坏的（可能转述那一行的字），段只写文件名（施工 LG-1 上）。要细的看
+/// 字段。
 impl fmt::Display for OpenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OpenError::Missing(dir) => write!(f, "no session log in {}", dir.display()),
-            OpenError::Broken { segment, line, why } => {
-                write!(f, "{} line {line}: {why}", segment.display())
+            OpenError::Missing(_) => f.write_str("no session log"),
+            OpenError::Broken { segment, line, .. } => {
+                let name = segment.file_name().unwrap_or_default();
+                write!(f, "{} line {line} is broken", name.to_string_lossy())
             }
             OpenError::Io(error) => error.fmt(f),
         }

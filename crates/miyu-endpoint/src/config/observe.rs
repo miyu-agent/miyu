@@ -202,7 +202,7 @@ fn observe_trust(core: &Core, config: &mut Config) {
             "trust.changed",
             &body,
         );
-        tracing::info!(target: TARGET, path = %answer.path, trusted = answer.trusted, "project trust");
+        tracing::info!(target: TARGET, trusted = answer.trusted, "project trust");
     }
     config.trust = fresh;
     core.hub.publish(config, None);

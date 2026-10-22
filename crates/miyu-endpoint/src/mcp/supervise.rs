@@ -237,9 +237,9 @@ async fn start(
 ) -> Result<(Running, Option<u32>, Reader, Writer), Ended> {
     let service = plan.server.name.as_str();
     match &plan.how {
-        How::Spawn { program, .. } => {
+        How::Spawn { .. } => {
             let mut child = launch::spawn(plan).await.map_err(|error| {
-                tracing::warn!(target: TARGET, service, program = %program.display(), error = %error, "mcp not started");
+                tracing::warn!(target: TARGET, service, error = ?error.kind(), "mcp not started");
                 Ended::Failed(None)
             })?;
             let pid = child.id();

@@ -43,7 +43,7 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: Params) -> Result<Value
             return Err(Refusal::INTERNAL);
         }
         Err(error) => {
-            tracing::error!(target: TARGET, error = %error, "human panicked");
+            tracing::error!(target: TARGET, panic = error.is_panic(), "human panicked");
             return Err(Refusal::INTERNAL);
         }
     };

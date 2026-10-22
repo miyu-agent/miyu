@@ -432,7 +432,7 @@ async fn blocking<T: Send + 'static>(
             Err(Refusal::INTERNAL)
         }
         Err(error) => {
-            tracing::warn!(target: "miyu::endpoint", error = %error, "memory failed");
+            tracing::warn!(target: "miyu::endpoint", panic = error.is_panic(), "memory failed");
             Err(Refusal::INTERNAL)
         }
     }

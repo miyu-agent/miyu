@@ -36,7 +36,7 @@ pub fn spawn(
             match tokio::task::spawn_blocking(release).await {
                 Ok(released) => tracing::debug!(target: TARGET, released, "heap settled"),
                 Err(error) => {
-                    tracing::error!(target: TARGET, error = %error, "heap settle panicked")
+                    tracing::error!(target: TARGET, panic = error.is_panic(), "heap settle panicked")
                 }
             }
             then().await;

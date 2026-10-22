@@ -32,7 +32,7 @@ pub(super) fn sweep_later(core: &Arc<Core>, owner: AccountId, parent: SessionId)
         {
             Ok(orphans) => orphans,
             Err(error) => {
-                tracing::error!(target: "miyu::endpoint", error = %error, "orphan sweep panicked");
+                tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "orphan sweep panicked");
                 return;
             }
         };
@@ -82,7 +82,7 @@ impl Open {
         })
         .await;
         if let Err(error) = moved {
-            tracing::error!(target: "miyu::endpoint", error = %error, "orphan sweep panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "orphan sweep panicked");
         }
     }
 }

@@ -105,7 +105,7 @@ pub(crate) async fn read(core: &Arc<Core>, params: Params) -> Result<Value, Refu
         Some(text) => tokio::task::spawn_blocking(move || Tail::read(text, want, running))
             .await
             .map_err(|error| {
-                tracing::error!(target: TARGET, error = %error, "job output panicked");
+                tracing::error!(target: TARGET, panic = error.is_panic(), "job output panicked");
                 Refusal::INTERNAL
             })?,
     };
@@ -139,7 +139,7 @@ async fn read_after(
             Some(text) => tokio::task::spawn_blocking(move || after::read(text, after, running))
                 .await
                 .map_err(|error| {
-                    tracing::error!(target: TARGET, error = %error, "job output panicked");
+                    tracing::error!(target: TARGET, panic = error.is_panic(), "job output panicked");
                     Refusal::INTERNAL
                 })?,
         };

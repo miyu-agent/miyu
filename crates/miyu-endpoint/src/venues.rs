@@ -94,7 +94,7 @@ pub(crate) fn bound(core: &Core, id: &ExternalId) -> Option<AccountId> {
         .find(|(key, _)| key == id.as_str())?;
     let account = AccountId::parse(&found).ok()?;
     if account != core.admin {
-        tracing::warn!(target: "miyu::endpoint", external = id.as_str(), account = account.as_str(), "binding to an unknown account ignored");
+        tracing::warn!(target: "miyu::endpoint", account = account.as_str(), "binding to an unknown account ignored");
         return None;
     }
     Some(account)

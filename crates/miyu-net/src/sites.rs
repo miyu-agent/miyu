@@ -121,12 +121,7 @@ pub(crate) fn finish(draft: &Draft, page: &Url, clip: &Clip) -> Result<Texts, Wh
     })
 }
 
-/// 接口没成、退回读页面：记一条（`net.md`「出错」）。只写主机名。
-fn fell_back(site: &str, url: &Url) {
-    tracing::warn!(
-        target: TARGET,
-        site,
-        host = url.host_str().unwrap_or_default(),
-        "link site fallback"
-    );
+/// 接口没成、退回读页面：记一条（`net.md`「出错」）。只写哪一种接口，网址是会话里来的，不写。
+fn fell_back(api: &str) {
+    tracing::warn!(target: TARGET, api, "link site fallback");
 }

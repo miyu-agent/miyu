@@ -14,6 +14,7 @@ mod heads;
 mod layers;
 mod ledger;
 mod licenses;
+mod logs;
 mod perf;
 mod prompts;
 mod purity;
@@ -38,6 +39,24 @@ fn main() -> ExitCode {
             let extra: Vec<String> = std::env::args().skip(2).collect();
             perf::run(&cargo, &root(), &extra)
         }
+        Some("logs") => {
+            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            match logged(&cargo, &root()) {
+                Ok(problems) if problems.is_empty() => {
+                    println!("日志：没有要改的");
+                    ExitCode::SUCCESS
+                }
+                Ok(problems) => {
+                    problems.iter().for_each(|problem| println!("{problem}"));
+                    println!("日志：{} 处", problems.len());
+                    ExitCode::FAILURE
+                }
+                Err(e) => {
+                    eprintln!("{e}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
         Some("prompts") => match prompts::write(&root()) {
             Ok(()) => {
                 println!("写好了 {}", prompts::PATH);
@@ -50,7 +69,7 @@ fn main() -> ExitCode {
         },
         _ => {
             eprintln!(
-                "用法：cargo xtask check | cargo xtask prompts | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
+                "用法：cargo xtask check | cargo xtask logs | cargo xtask prompts | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
             );
             ExitCode::from(2)
         }
@@ -173,12 +192,12 @@ fn cargo_step(
     Outcome { name, problems }
 }
 
-/// 三道照图纸查的门禁。
+/// 照图纸、照源码查的四道门禁：分层、纯逻辑、行数、日志（施工 LG-1）。
 fn gates(cargo: &str, root: &Path) -> Vec<Outcome> {
     let (drawing, packages) = match load(cargo, root) {
         Ok(loaded) => loaded,
         Err(e) => {
-            return ["分层", "纯逻辑", "行数"]
+            return ["分层", "纯逻辑", "行数", "日志"]
                 .into_iter()
                 .map(|name| Outcome {
                     name,
@@ -190,11 +209,16 @@ fn gates(cargo: &str, root: &Path) -> Vec<Outcome> {
 
     let mut purity = Vec::new();
     let mut size = Vec::new();
+    let mut logged = Vec::new();
     for package in &packages {
         let pure = drawing.layer_of(&package.name).is_some_and(|l| l.pure);
         for (label, text) in sources(root, &package.dir, &mut size) {
-            if pure && Path::new(&label).starts_with(src_of(root, package)) {
+            let in_src = Path::new(&label).starts_with(src_of(root, package));
+            if pure && in_src {
                 purity.extend(purity::scan(&label, &text));
+            }
+            if in_src {
+                logged.extend(logs::scan(&label.replace('\\', "/"), &text));
             }
             size.extend(size::check(&label, &text, drawing.max_lines));
         }
@@ -212,7 +236,27 @@ fn gates(cargo: &str, root: &Path) -> Vec<Outcome> {
             name: "行数",
             problems: size,
         },
+        Outcome {
+            name: "日志",
+            problems: logged,
+        },
     ]
+}
+
+/// 只扫日志（`cargo xtask logs`，施工 LG-1）：门禁「日志」那一项，单独跑得快，改日志的时候用。
+fn logged(cargo: &str, root: &Path) -> Result<Vec<String>, String> {
+    let packages = layers::read_packages(root, cargo)?;
+    let mut problems = Vec::new();
+    let mut unreadable = Vec::new();
+    for package in &packages {
+        for (label, text) in sources(root, &package.dir, &mut unreadable) {
+            if Path::new(&label).starts_with(src_of(root, package)) {
+                problems.extend(logs::scan(&label.replace('\\', "/"), &text));
+            }
+        }
+    }
+    problems.extend(unreadable);
+    Ok(problems)
 }
 
 fn load(cargo: &str, root: &Path) -> Result<(Drawing, Vec<Package>), String> {

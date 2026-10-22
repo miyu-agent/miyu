@@ -90,7 +90,7 @@ async fn watching(
                 );
             });
             if let Err(error) = written.await {
-                tracing::error!(target: super::TARGET, error = %error, "config schema writer panicked");
+                tracing::error!(target: super::TARGET, panic = error.is_panic(), "config schema writer panicked");
             }
         }
         last = next;

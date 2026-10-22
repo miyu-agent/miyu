@@ -76,7 +76,7 @@ pub(crate) async fn list(
             Err(Refusal::INTERNAL)
         }
         Err(error) => {
-            tracing::error!(target: "miyu::endpoint", error = %error, "list panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "list panicked");
             Err(Refusal::INTERNAL)
         }
     }

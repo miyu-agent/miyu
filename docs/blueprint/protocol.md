@@ -1355,10 +1355,10 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `line too long, closed` | 一行太长 |
 | `INFO` | `disconnected` | 握过手的连接断了 |
 | `WARN` | `accept failed error=…` | 接不了连接 |
-| `WARN` | `memory failed error=…` | `memory.*`、`/remember` 写不进、读不了记忆日志（施工 R-3 补）；订阅记忆日志读不了（施工 R-12 上） |
-| `WARN` | `knowledge document skipped kb=… path=… why=…` | `kb.list`、`kb.search` 照文件补时跳过一个文档：太大、不是 UTF-8、读不了（施工 K-1 上） |
-| `WARN` | `knowledge failed error=…` | `kb.*` 读不了知识库的目录、索引（施工 K-1 上） |
-| `ERROR` | `connection task failed error=…` | 一个连接的任务崩了 |
+| `WARN` | `memory failed error=…`；崩了的是 `panic=…` | `memory.*`、`/remember` 写不进、读不了记忆日志（施工 R-3 补）；订阅记忆日志读不了（施工 R-12 上） |
+| `WARN` | `knowledge document skipped kb=… reason=…` | `kb.list`、`kb.search` 照文件补时跳过一个文档：太大、不是 UTF-8、读不了（施工 K-1 上） |
+| `WARN` | `knowledge failed error=…`；崩了的是 `panic=…` | `kb.*` 读不了知识库的目录、索引（施工 K-1 上） |
+| `ERROR` | `connection task failed panic=…` | 一个连接的任务崩了 |
 | `WARN` | `create failed error=…`、`load failed session=… error=…` | 造不成、载入不了 |
 | `WARN` | `lagged, resync session=…` | 掉了队 |
 | `WARN` | `lagged, resync stream=config` | 配置的订阅掉了队（施工 8-4） |
@@ -1366,7 +1366,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `replay not read session=… error=…` | 带 `after` 订阅，补发的那一截读不了（施工 3-8 六补） |
 | `INFO` | `session stopped, resync session=…` | 订阅着的会话停了（施工 4-9 再补三上） |
 | `WARN` | `sessions not listed error=…`、`first event not read session=… error=…` | 列会话读不了 |
-| `ERROR` | `list panicked error=…` | 列会话崩了 |
+| `ERROR` | `list panicked panic=…` | 列会话崩了 |
 | `WARN` | `meta not read session=… error=…` | 列会话时后面的日志读不下去，标题、置顶照坏的那一段以前的算（施工 3-8 三补） |
 | `INFO` | `session index created` | 起来时会话列表的索引没有，新建了一份（施工 3-8 七补，`store/index.md`） |
 | `WARN` | `session index rebuilt reason=…` | 起来时索引读不了、坏了、版本不对，删掉换了一份空的 |
@@ -1377,27 +1377,27 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `session index not updated session=… error=…` | 列会话时补好的一行写不回去 |
 | `WARN` | `session index row not removed session=… error=…` | 删会话时删不掉索引里那一行 |
 | `WARN` | `session not deleted session=… error=…` | 删会话时这一个挪不进回收处 |
-| `ERROR` | `delete panicked error=…` | 删会话崩了 |
+| `ERROR` | `delete panicked panic=…` | 删会话崩了 |
 | `WARN` | `workspace not prepared kind=…` | 退回的工作区建不成 |
 | `DEBUG` | `already stopped session=…` | 停下全部会话、删会话时，这一个已经停了 |
 | `DEBUG` | `stopped before deletion session=… job=…` | 删一个子会话时照人停掉了它，父会话（`session`）记了回报（施工 3-8 三补；施工 7-8 起在表的锁里） |
 | `INFO` | `orphan subagent removed session=… parent=…` | 载入父会话时收掉了一个派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
 | `WARN` | `orphan subagent not removed session=… error=…` | 这一个挪不进回收处 |
-| `ERROR` | `orphan sweep panicked error=…` | 认、挪空子会话时崩了 |
+| `ERROR` | `orphan sweep panicked panic=…` | 认、挪空子会话时崩了 |
 | `WARN` | `attachment not stored error=…` | `blob.put` 存不下来（施工 3-9 三补） |
 | `WARN` | `attachment not read blob=… error=…` | `session.send` 的附件读不出来：坏了、读不了 |
-| `ERROR` | `attachment panicked error=…` | 读、存附件时崩了 |
-| `ERROR` | `job output panicked error=…` | 读后台命令的输出时崩了（施工 7-4 补） |
+| `ERROR` | `attachment panicked panic=…` | 读、存附件时崩了 |
+| `ERROR` | `job output panicked panic=…` | 读后台命令的输出时崩了（施工 7-4 补） |
 | `WARN` | `human not read error=…` | `human.get` 给人看的字读不懂（施工 W-1） |
-| `ERROR` | `human panicked error=…` | 读给人看的字时崩了（施工 W-1，照别的 `spawn_blocking` 同一个写法） |
-| `WARN` | `files index failed dir=… error=…` | `fs.find` 建清单时读不了一层目录，跳过它接着建（施工 W-2） |
-| `ERROR` | `files panicked error=…` | `fs.list`、`fs.find` 在阻塞线程里崩了（施工 W-2） |
+| `ERROR` | `human panicked panic=…` | 读给人看的字时崩了（施工 W-1，照别的 `spawn_blocking` 同一个写法） |
+| `WARN` | `files index failed` | `fs.find` 建清单时读不了一层目录，跳过它接着建（施工 W-2）；哪一层、原话都带路径，不写（施工 LG-1 上） |
+| `ERROR` | `files panicked panic=…` | `fs.list`、`fs.find` 在阻塞线程里崩了（施工 W-2） |
 | `WARN` | `upload not stored error=…` | 分块上传暂存、改名进位置没成（施工 W-5） |
-| `ERROR` | `upload panicked error=…`、`upload cleanup panicked` | 分块上传在阻塞线程里崩了；连接断了、作废时删暂存那一步崩了（施工 W-5） |
+| `ERROR` | `upload panicked panic=…`、`upload cleanup panicked` | 分块上传在阻塞线程里崩了；连接断了、作废时删暂存那一步崩了（施工 W-5） |
 
 `mermaid.render` 的日志目标是 `miyu::mermaid`，不是 `miyu::endpoint`：`WARN not ready error=…`，画图的库初始化不了。见 `mermaid.md`「出错」。
 
-`link.preview` 的日志目标是 `miyu::net`：`WARN link preview failed host=… why=…`、`WARN link image not stored error=…`、`WARN not ready error=…`，见 `net.md`「出错」。在后台答的任务崩了（它的回应永远不会来了）记 `ERROR background request panicked error=…`，目标 `miyu::endpoint`（施工 W-7）。
+`link.preview` 的日志目标是 `miyu::net`：`WARN link preview failed why=…`、`WARN link image not stored error=…`、`WARN not ready error=…`，见 `net.md`「出错」。在后台答的任务崩了（它的回应永远不会来了）记 `ERROR background request panicked panic=…`，目标 `miyu::endpoint`（施工 W-7）。
 
 `model.call` 的 `model` 解析不出记 `DEBUG unknown model why=…`（目标 `miyu::endpoint`）；调一次记一行 `INFO model call …` 或 `INFO model call failed …`，目标 `miyu::session`，不带会话编号（施工 8-20，`models.md`「出错」）。
 

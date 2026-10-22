@@ -413,6 +413,6 @@ fn failed(error: &KnowledgeError) -> KbRefused {
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。
 pub(crate) fn report(skipped: &[Skipped]) {
     for one in skipped {
-        tracing::warn!(target: TARGET, kb = one.kb.as_str(), path = one.path.as_str(), reason = one.reason.code(), why = one.why.as_str(), "knowledge document skipped");
+        tracing::warn!(target: TARGET, kb = one.kb.as_str(), reason = one.reason.code(), "knowledge document skipped");
     }
 }

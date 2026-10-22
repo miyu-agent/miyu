@@ -481,7 +481,7 @@ async fn blocking<T: Send + 'static>(
     tokio::task::spawn_blocking(work)
         .await
         .unwrap_or_else(|error| {
-            tracing::error!(target: TARGET, error = %error, "attachment panicked");
+            tracing::error!(target: TARGET, panic = error.is_panic(), "attachment panicked");
             Err(Refusal::INTERNAL)
         })
 }

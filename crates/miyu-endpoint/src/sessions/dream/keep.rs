@@ -39,7 +39,7 @@ pub(super) async fn prune(core: &Arc<Core>, session: &SessionId, keep: usize) ->
             return 0;
         }
         Err(error) => {
-            tracing::error!(target: "miyu::endpoint", error = %error, "dream listing panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "dream listing panicked");
             return 0;
         }
     };

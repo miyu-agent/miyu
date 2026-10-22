@@ -196,9 +196,9 @@
 
 | 级别 | 行 | 什么时候 |
 |---|---|---|
-| `WARN` | `link preview failed host=… why=…` | 抓了、没做成卡片（`no_preview`、`unreachable`）：只写主机名，不写地址。记着的、读不成地址的、不是 http 的不记 |
-| `WARN` | `link site fallback site=… host=…` | 认得的站，接口没成、退回读页面（第 12 条）：现在只有 `site=mediawiki`。只写主机名 |
-| `WARN` | `link image not stored error=…` | 抓到的图存不进 blob：那一格交 `null` |
+| `WARN` | `link preview failed why=…` | 抓了、没做成卡片（`no_preview`、`unreachable`）：网址是会话里来的，主机名也不写（施工 LG-1 上）。记着的、读不成地址的、不是 http 的不记 |
+| `WARN` | `link site fallback api=…` | 认得的站，接口没成、退回读页面（第 12 条）：现在只有 `api=mediawiki`。网址、主机名都不写（施工 LG-1 上） |
+| `WARN` | `link image not stored error=…` | 抓到的图存不进 blob：那一格交 `null`；存的任务崩了的写 `panic=…`，不写原话 |
 | `WARN` | `not ready error=…` | `link_preview.json` 读不懂。只记第一次 |
 
 ### 给人看的字

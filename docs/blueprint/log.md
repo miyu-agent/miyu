@@ -120,7 +120,7 @@
 3. 供应商出错的原话：不写，只写分类（`class`）。原话里可能回显请求里的字。
 4. HTTP：只写主机名、字节数、状态码、分类、供应商说要等多久、用时；地址的路径和参数不写。
 5. 这几条靠发日志的地方只交编号、长度、状态：接口上没有写内容的口子。由测试查（「守着它的」）。
-6. 出错的原因（`error` 这一格）照原样写：系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
+6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
 
 **8. 每一行**
 
@@ -181,7 +181,7 @@
 | `http` | DEBUG | `cancelled` | `host`、`took_ms` | 被叫停 |
 | `endpoint` | DEBUG | `connected` | | 接到一个连接 |
 | `endpoint` | WARN | `accept failed` | `error` | 接连接出错 |
-| `endpoint` | ERROR | `connection task failed` | `error` | 服务一个连接的任务没正常结束 |
+| `endpoint` | ERROR | `connection task failed` | `panic`（是不是 panic；原话不写） | 服务一个连接的任务没正常结束 |
 | `endpoint` | WARN | `line too long, closed` | | 一行太长，断开 |
 | `endpoint` | DEBUG | `request` | `method` | 收到一个请求 |
 | `endpoint` | WARN | `protocol mismatch` | `head`、`low`、`high` | 握手时协议版本对不上 |
@@ -189,14 +189,14 @@
 | `endpoint` | INFO | `connected` | `head`、`version`、`protocol` | 握手成了 |
 | `endpoint` | INFO | `disconnected` | | 握过手的连接断开 |
 | `endpoint` | WARN | `lagged, resync` | 带会话编号 | 订阅掉了队 |
-| `endpoint` | ERROR | `list panicked` | `error` | 列会话的任务 panic 了 |
+| `endpoint` | ERROR | `list panicked` | `panic`（是不是 panic；原话不写） | 列会话的任务 panic 了 |
 | `endpoint` | WARN | `sessions not listed` | `error` | 列不出会话 |
 | `endpoint` | WARN | `first event not read` | 带会话编号；`error` | 列会话时一个会话的第一条读不出来：坏了、读写出错（还没造好的不算） |
 | `endpoint` | WARN | `create failed` | `error` | 造会话失败，人格读不出以外的原因 |
 | `endpoint` | WARN | `load failed` | 带会话编号；`error` | 载入失败，没有这个会话以外的原因 |
 | `endpoint` | DEBUG | `already stopped` | 带会话编号 | 有计划地停下时，会话已经停了 |
 | `endpoint` | WARN | `workspace not prepared` | `kind` | 退回账号的默认工作区时建不了它 |
-| `endpoint` | ERROR | `undo report panicked` | `error` | 撤销的回应里比改动的任务 panic 了 |
+| `endpoint` | ERROR | `undo report panicked` | `panic`（是不是 panic；原话不写） | 撤销的回应里比改动的任务 panic 了 |
 | `endpoint` | WARN | `undo report not written` | `error` | 撤销的回应里读不了会话日志 |
 | `ipc` | INFO | `listening` | `socket` | 在套接字上等连接 |
 | `ipc` | INFO | `stale socket removed` | `socket` | 删掉上一个核心崩了留下的套接字 |
@@ -211,10 +211,10 @@
 | `shell` | DEBUG | `command output not readable` | `error` | 读命令的输出出错 |
 | `shell` | WARN | `command group not killed`、`command tree not killed` | `error` | Unix 杀不掉进程组；Windows 杀不掉进程树 |
 | `mermaid` | WARN | `not ready` | `error` | 画图的库初始化不了：`style.json` 读不懂，或者这台机器上一种字体都读不到。只记第一次（施工 W-4，`mermaid.md`） |
-| `net` | WARN | `link preview failed` | `host`、`why` | 抓了、没做成卡片（`no_preview`、`unreachable`）：只写主机名，不写地址（施工 W-7，`net.md`） |
-| `net` | WARN | `link image not stored` | `error` | 卡片抓到的图存不进 blob，那一格交 `null`（施工 W-7） |
+| `net` | WARN | `link preview failed` | `why` | 抓了、没做成卡片（`no_preview`、`unreachable`）：网址是会话里来的，主机名也不写（施工 W-7，`net.md`；LG-1 上去掉 `host`） |
+| `net` | WARN | `link image not stored` | `error`；存的任务崩了的是 `panic` | 卡片抓到的图存不进 blob，那一格交 `null`（施工 W-7） |
 | `net` | WARN | `not ready` | `error` | `link_preview.json` 读不懂。只记第一次（施工 W-7） |
-| `endpoint` | ERROR | `background request panicked` | `error` | 在后台答的请求崩了，它的回应不会来了（施工 W-7，`protocol.md`「一个连接」第 1 条） |
+| `endpoint` | ERROR | `background request panicked` | `panic`（是不是 panic；原话不写） | 在后台答的请求崩了，它的回应不会来了（施工 W-7，`protocol.md`「一个连接」第 1 条） |
 
 `http` 的几行没有 `session` 这一格，可发它们的请求任务带着会话的 span，照第 5 条也带会话编号（`session/actor.md` 第 8 条）。
 

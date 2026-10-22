@@ -158,7 +158,7 @@
 | `WARN` | `ready line not written error=…` |
 | `INFO` | `trash purged removed=…`（施工 3-8 三补） |
 | `WARN` | `trash entry kept session=… error=…`、`trash not read error=…` |
-| `ERROR` | `trash purge panicked error=…` |
+| `ERROR` | `trash purge panicked panic=…` |
 | `WARN` | `SIGTERM not watched error=…`、`Ctrl+C not watched error=…` |
 | `INFO` | `stopped reason=idle`、`stopped reason=signal` |
 

@@ -47,7 +47,7 @@ pub(super) async fn install(
             super::manage::from_path(core, peer, &unpacked.folder, Some(path)).await
         }
         Ok(Err(error)) => {
-            tracing::info!(target: TARGET, file = %path.display(), error = %error, "package file not unpacked");
+            tracing::info!(target: TARGET, error = %error, "package file not unpacked");
             Err(Refusal::PACKAGE_FILE_BAD)
         }
         Err(refusal) => Err(refusal),

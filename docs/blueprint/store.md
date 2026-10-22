@@ -241,8 +241,8 @@
 | | `NoLocalAppData` | `找不到 LOCALAPPDATA，或者它不是绝对路径` |
 | `PrepareError` | `NotOurs` | `<数据根> 里有别的东西，认不出是 Miyu 的数据根（顶层没有 .miyu-root），不动它。设 MIYU_HOME 指到一个空目录` |
 | | `Io` | 系统的原话 |
-| `OpenError` | `Missing` | `no session log in <目录>` |
-| | `Broken` | `<段> line <行>: <为什么>`，为什么见下表 |
+| `OpenError` | `Missing` | `no session log`（目录带着账号，不写；施工 LG-1 上） |
+| | `Broken` | `<段的文件名> line <行> is broken`：目录、为什么都不写（为什么可能转述那一行的字，施工 LG-1 上）；为什么见下表，留在错误里给要的地方 |
 | | `Io` | 系统的原话 |
 | `BlobError` | `Missing` | `no blob <哈希>` |
 | | `Corrupt` | `blob <哈希> does not match its name; left as it is` |

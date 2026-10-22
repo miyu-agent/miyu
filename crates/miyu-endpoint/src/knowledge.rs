@@ -289,7 +289,7 @@ fn shown(hit: &Hit) -> Value {
 /// 跳过的文档记一行（`knowledge.md`「怎么走」第三条第 4 款）。
 fn report(skipped: &[Skipped]) {
     for one in skipped {
-        tracing::warn!(target: "miyu::endpoint", kb = one.kb.as_str(), path = one.path.as_str(), reason = one.reason.code(), why = one.why.as_str(), "knowledge document skipped");
+        tracing::warn!(target: "miyu::endpoint", kb = one.kb.as_str(), reason = one.reason.code(), "knowledge document skipped");
     }
 }
 
@@ -321,7 +321,7 @@ async fn blocking<T: Send + 'static>(
             Err(Refusal::INTERNAL)
         }
         Err(error) => {
-            tracing::warn!(target: "miyu::endpoint", error = %error, "knowledge failed");
+            tracing::warn!(target: "miyu::endpoint", panic = error.is_panic(), "knowledge failed");
             Err(Refusal::INTERNAL)
         }
     }

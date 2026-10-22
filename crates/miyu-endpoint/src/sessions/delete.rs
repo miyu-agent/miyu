@@ -100,7 +100,7 @@ impl Sessions {
                 Err(Refusal::INTERNAL)
             }
             Err(error) => {
-                tracing::error!(target: "miyu::endpoint", error = %error, "delete panicked");
+                tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "delete panicked");
                 Err(Refusal::INTERNAL)
             }
         }
@@ -158,7 +158,7 @@ async fn family(
     match tokio::task::spawn_blocking(move || descendants(&root, &account, &id, check)).await {
         Ok(found) => found,
         Err(error) => {
-            tracing::error!(target: "miyu::endpoint", error = %error, "delete panicked");
+            tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "delete panicked");
             Err(Refusal::INTERNAL)
         }
     }

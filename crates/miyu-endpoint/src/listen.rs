@@ -30,7 +30,7 @@ pub async fn run(mut listener: Listener, core: Arc<Core>) -> Infallible {
             },
             Some(done) = connections.join_next() => {
                 if let Err(error) = done {
-                    tracing::error!(target: "miyu::endpoint", error = %error, "connection task failed");
+                    tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "connection task failed");
                 }
             }
         }

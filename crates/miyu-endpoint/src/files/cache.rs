@@ -66,9 +66,9 @@ impl Cache {
 
 /// 新起一份清单：读不了一层目录的（没有权限这类），记一条运行日志。
 fn slot(cwd: &Path, boundary: &Boundary, now: Instant) -> Slot {
-    let dir = cwd.to_path_buf();
-    let index = Index::start(cwd.to_path_buf(), boundary.clone(), CAP, move |error| {
-        tracing::warn!(target: super::TARGET, dir = %dir.display(), error = %error, "files index failed");
+    // 原话带着读不了的那一层的路径：只记有一层没读成。
+    let index = Index::start(cwd.to_path_buf(), boundary.clone(), CAP, |_| {
+        tracing::warn!(target: super::TARGET, "files index failed");
     });
     Slot {
         cwd: cwd.to_path_buf(),

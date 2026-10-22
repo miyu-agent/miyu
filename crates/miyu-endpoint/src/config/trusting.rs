@@ -129,5 +129,5 @@ fn done(config: &Config, cause: &CommandId, answer: &Answer<'_>) {
         "trust.changed",
         &body,
     );
-    tracing::info!(target: TARGET, path = %answer.shown, trusted = answer.trusted, "project trust");
+    tracing::info!(target: TARGET, trusted = answer.trusted, "project trust");
 }
