@@ -369,6 +369,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("usage", "用量", true, true),
             ("packages", "软件包", true, true),
             ("show", "展示", true, true),
+            ("project-docs", "项目指令", true, true),
             ("goal", "长期目标", true, true),
             ("knowledge", "知识库", false, true),
             ("memory", "人格记忆", true, true),

@@ -42,6 +42,7 @@ mod mail;
 mod model;
 mod nested;
 pub(crate) mod persona;
+mod project_docs;
 mod run;
 mod skills;
 mod stop;

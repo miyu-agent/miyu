@@ -480,12 +480,14 @@ impl ResourceRoot {
 mod goal;
 mod loading;
 mod mcp_tools;
+mod project_docs;
 mod skills;
 mod tool_texts;
 mod venues;
 
 pub use goal::GoalRounds;
 pub use mcp_tools::ToolText;
+pub use project_docs::ProjectDocTexts;
 pub use skills::SkillTexts;
 
 #[cfg(test)]

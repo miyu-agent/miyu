@@ -93,6 +93,7 @@ mod once_shared;
 mod outside_sandbox;
 mod prepare;
 mod private_media;
+mod project_docs;
 mod questions;
 mod read;
 mod rebuild;

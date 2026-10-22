@@ -1,5 +1,6 @@
 //! 出厂的极简开发（施工 P-16 上，`docs/blueprint/presets.md`「出厂的几份」）：只开基础系统的「文件读写」「运行命令」两个功能，
-//! 再单独关掉 glob、grep、trash；基础系统别的功能、别的包都照 `unlisted = "off"` 关着。真核心走一遍：发出去的工具正好四件。
+//! 再单独关掉 glob、grep、trash；基础系统别的功能、别的包都照 `unlisted = "off"` 关着（项目指令也关着，施工 P-14）。真核心
+//! 走一遍：发出去的工具正好四件。
 
 use std::sync::Arc;
 
@@ -66,4 +67,35 @@ async fn the_minimal_preset_gives_only_the_shell_and_the_file_tools() {
     home.until_turns(&session, 1).await;
     let (_, request) = script.requests().into_iter().next().expect("发了请求");
     assert_eq!(tool_names(&request), ["edit", "read", "shell", "write"]);
+}
+
+/// 项目指令（施工 P-14，2026-10-23 项目主人定）：极简开发不读仓库里的 AGENTS.md，常规开发读。
+#[tokio::test]
+async fn the_minimal_preset_leaves_project_instructions_out() {
+    let home = Home::new();
+    let repo = home.work.join("repo");
+    std::fs::create_dir_all(repo.join(".git")).expect("建得了");
+    std::fs::write(repo.join("AGENTS.md"), "House rules.\n").expect("写得进");
+    let script = Script::new([Play::Says("嗯。"), Play::Says("嗯。")]);
+    let core: Arc<Core> = configured_core(&home, &script, catalog());
+    let mut client = connected(core).await;
+    for (n, preset) in ["minimal", "dev"].into_iter().enumerate() {
+        let reply = client
+            .call(
+                &format!("c{n}"),
+                "session.create",
+                json!({"cwd": repo.to_string_lossy(), "preset": preset}),
+            )
+            .await;
+        let session = reply["result"]["session"]
+            .as_str()
+            .unwrap_or_else(|| panic!("没造出来：{reply}"))
+            .to_string();
+        client.say(&format!("s{n}"), &session, "hi").await;
+        home.until_turns(&session, 1).await;
+    }
+    let requests = script.requests();
+    let told = |n: usize| format!("{:?}", requests[n].1).contains("House rules.");
+    assert!(!told(0), "极简开发不读");
+    assert!(told(1), "常规开发读");
 }

@@ -78,3 +78,10 @@ pub(crate) struct ToolKit {
     /// 会话用的预设的编号（施工 F-10 下下）：每次调用带上，她装的包在这一份预设里打开。
     pub(crate) preset: Option<String>,
 }
+
+impl super::Tools {
+    /// 系统的家目录：把头报上来的 `~/…` 换成真实的路径用（施工 P-14 的项目指令）。认不出的没有。
+    pub(crate) fn home(&self) -> Option<&std::path::Path> {
+        self.home.as_deref()
+    }
+}

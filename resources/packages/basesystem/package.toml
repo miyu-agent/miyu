@@ -53,4 +53,8 @@ tools = ["packages", "package"]
 name = { en = "Show", zh = "展示", ja = "表示" }
 tools = ["show"]
 
+# 项目指令（施工 P-14）：没有工具，回合开始把仓库里的 AGENTS.md 交给她。
+[features.project-docs]
+name = { en = "Project instructions", zh = "项目指令", ja = "プロジェクトの指示" }
+
 [builtin]

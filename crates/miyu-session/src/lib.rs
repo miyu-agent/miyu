@@ -49,6 +49,7 @@ mod open;
 mod peers;
 mod pictures;
 mod port;
+mod project_docs;
 mod report;
 mod reread;
 mod route;

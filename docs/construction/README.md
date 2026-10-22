@@ -701,7 +701,7 @@ flowchart LR
 | W-8 再补 | 照用户名密码连和拒绝原因 | `miyu-client` 的 `connect_password`、`Refused`。施工单见 `W-8再补-照用户名密码连和拒绝原因.md` |
 | 8-10 再补 | 会话回到跟着配置的模型 | `session.configure {model: null}`，回合开始照这一轮的 `models.chat`。施工单见 `8-10再补-会话回到跟着配置的模型.md` |
 | P-13 | 会话中途换人格、预设 | `session.configure` 的 `persona`、`preset`：先压缩一轮，下一个回合换上，跟着人格的记忆换到新人格那一间（设计 16 Y5）。施工单见 `P-13-会话中途换人格.md` |
-| P-14 | 自动读仓库里的 AGENTS.md | 基础系统的「项目指令」，预设开关；放在哪、找哪些、信任照推荐等项目主人拍板。施工单见 `P-14-读仓库里的AGENTS.md.md` |
+| P-14 | 自动读仓库里的 AGENTS.md | 基础系统的「项目指令」，预设开关（常规开发、全部功能开，极简开发关）：本机的会话回合开始从仓库根到工作目录逐层读 AGENTS.md（没有的读 CLAUDE.md，仓库外只读当层），作为一块事实交给她、不进 system；改了换一份，压缩以后再交。施工单见 `P-14-读仓库里的AGENTS.md.md` |
 | P-15 | 常规开发开记忆 | 出厂预设「基础功能」改名「常规开发」（Development、開発），打开人格记忆（2026-10-20 项目主人交代）。施工单见 `P-15-常规开发开记忆.md` |
 | P-16 上 | 预设的说明、极简开发 | 出厂的全部功能、常规开发写上三语的说明（原来不写）；新出厂预设 `minimal` 极简开发：`[features]` 只开基础系统的 `files`、`commands`，关 `glob`、`grep`、`trash`，留 `shell`、`read`、`write`、`edit`，没写的照 `unlisted = "off"`，基础系统以后新加的功能在这里也关着。施工单见 `P-16-预设的说明和无工具.md` |
 | P-16 下 | 无工具 | `preset.list` 末尾固定一项编号是 `null` 的「无工具」（三语）；`session.create`、`session.configure` 交 `preset: null` 的一件工具都不给，技能目录、知识库那一块跟着没有；`session.created`、快照记 `no_tools`，内核和会话索引记空的编号，会话信息写 `preset: null`、`no_tools: true`；`preset.default` 不能是它。施工单见 `P-16-预设的说明和无工具.md` |

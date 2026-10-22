@@ -158,6 +158,7 @@ impl Actor {
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values.clone()).await;
         let skills = self.skills_turn(&present, &values).await;
+        let docs = self.project_docs_turn(&present).await;
         // 管理员放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
         let unsandboxed =
             crate::unsandboxed::Unsandboxed::of(&values).within(self.guard.confines().clone());
@@ -179,6 +180,7 @@ impl Actor {
         );
         injected.extend(extended);
         injected.extend(skills);
+        injected.extend(docs);
         Input::TurnStartHooksDone {
             policy,
             prepare,

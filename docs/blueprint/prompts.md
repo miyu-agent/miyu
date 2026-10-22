@@ -5431,6 +5431,69 @@ Skills you can use (read the file before following one):
 - {name}: {description} ({path})
 ```
 
+### 回合开始的事实（`context.injected`，模块 `project-docs`），一份文件的外壳头
+
+#### `core/project-docs/open.txt`
+
+- 什么时候加进来：本机的会话、预设开着项目指令、工作目录（仓库）里有 AGENTS.md 或 CLAUDE.md 的：这一段上下文里没交过、或者文件改了的那一轮（施工 P-14）
+- token：约 10（`{path}` 按 `/home/me/src/miyu/AGENTS.md` 算，按 o200k 估）
+- 为什么加：写明是哪份文件，她分得清仓库作者的字和人说的话。照 Codex 进对话、不进 system：文件一变整段重算，缓存就断（2026-10-20 项目主人定）
+- 指纹：`6862867d`
+
+```text
+<project-instructions path="{path}">
+```
+
+### 同上，外壳尾
+
+#### `core/project-docs/close.txt`
+
+- 什么时候加进来：同上
+- token：约 4（按 o200k 估）
+- 为什么加：外壳收尾
+- 指纹：`d6271e6f`
+
+```text
+</project-instructions>
+```
+
+#### `core/skills/changed-close.txt`
+
+- 什么时候加进来：同上
+- token：6（2026-10-12 量）
+- 为什么加：同上
+- 指纹：`96881316`
+
+```text
+</skills-changed>
+```
+
+### 同上，头一句
+
+#### `core/project-docs/replaced.txt`
+
+- 什么时候加进来：交过以后文件改了、再交的那一轮
+- token：约 15（`{root}` 按 `/home/me/src/miyu` 算，按 o200k 估）
+- 为什么加：不说的话前后两份她当成都有效（Codex `agents_md.rs` 的替换声明）
+- 指纹：`4f1c6fe1`
+
+```text
+The project instructions below replace the earlier ones for {root}.
+```
+
+### 同上，末尾
+
+#### `core/project-docs/cut.txt`
+
+- 什么时候加进来：几份加起来超过 32 KiB、截断了的
+- token：约 15（按 o200k 估）
+- 为什么加：告诉她没读全、剩下的自己读文件
+- 指纹：`1f4f908f`
+
+```text
+Project instructions stop here at {limit} bytes. Read the files for the rest.
+```
+
 ### 回合尾巴（`context.injected`，模块 `skills`），外壳头
 
 #### `core/skills/changed-open.txt`
@@ -5442,19 +5505,6 @@ Skills you can use (read the file before following one):
 
 ```text
 <skills-changed>
-```
-
-### 同上，外壳尾
-
-#### `core/skills/changed-close.txt`
-
-- 什么时候加进来：同上
-- token：6（2026-10-12 量）
-- 为什么加：同上
-- 指纹：`96881316`
-
-```text
-</skills-changed>
 ```
 
 ### 同上，外壳里只有这一句
