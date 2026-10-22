@@ -1,0 +1,234 @@
+//! 成员（施工 Y-1 上，设计 06 第二版）：管理员发、列、撤邀请码；用邀请码握手只能注册；注册成了换出能用的登录令牌，用户名
+//! 密码也登得进；重名、保留名、用过的、撤掉的码拒，用户名占了的不用掉码；停用以后进不来、连着的断开，启用以后又能进；成员的
+//! 连接在 Y-2 以前只能管自己的账号；管理员列得出账号。
+
+use std::sync::Arc;
+
+use serde_json::{Value, json};
+
+use miyu_kernel::id::AccountId;
+use miyu_session::testkit::Script;
+use miyu_store::invites;
+
+use crate::support::login::*;
+use crate::support::*;
+
+/// 管理员发一个邀请码，交回 `result`。
+async fn invite(core: &Arc<miyu_endpoint::Core>) -> Value {
+    let mut admin = local(core).await;
+    admin.call("i", "account.invite", json!({})).await["result"].clone()
+}
+
+/// 用邀请码 `code` 连上的一个客户端。
+async fn invited(core: &Arc<miyu_endpoint::Core>, code: &str) -> Client {
+    let mut client = Client::connect(Arc::clone(core));
+    let reply = hello_with(&mut client, json!({"invite": code})).await;
+    assert_eq!(reply["result"]["register"], true, "{reply}");
+    assert_eq!(reply["result"]["account"], Value::Null, "还没注册，不是谁");
+    client
+}
+
+/// 用 `code` 注册 `username`、密码 `correct horse`，交回登录令牌。
+async fn register(core: &Arc<miyu_endpoint::Core>, code: &str, username: &str) -> String {
+    let mut client = invited(core, code).await;
+    let reply = client
+        .call(
+            "r",
+            "account.register",
+            json!({"username": username, "password": "correct horse"}),
+        )
+        .await;
+    assert_eq!(reply["result"]["account"], username, "{reply}");
+    reply["result"]["login"]["token"]
+        .as_str()
+        .expect("{reply}")
+        .to_string()
+}
+
+fn bob() -> AccountId {
+    AccountId::parse("bob").expect("合写法")
+}
+
+#[tokio::test]
+async fn the_admin_issues_lists_and_revokes_invites() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut admin = local(&core).await;
+    for days in [0, 31] {
+        let refused = admin
+            .call("d", "account.invite", json!({"days": days}))
+            .await;
+        assert_eq!(why(&refused), "bad_params", "{days}: {refused}");
+    }
+    let issued = admin.call("i", "account.invite", json!({"days": 3})).await["result"].clone();
+    let code = issued["code"].as_str().expect("有码");
+    let id = issued["id"].as_str().expect("有编号");
+    assert_eq!(code.len(), 32, "{issued}");
+    assert_eq!(id.len(), 8, "{issued}");
+    let text = std::fs::read_to_string(home.root.system().join(invites::FILE)).expect("写了");
+    assert!(!text.contains(code), "只存哈希：{text}");
+    let listed = admin.call("l", "account.invites", json!({})).await;
+    let rows = listed["result"]["invites"].as_array().expect("{listed}");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["id"], id);
+    assert!(rows[0].get("code").is_none(), "列出来不带码");
+    let revoked = admin
+        .call("v", "account.invite_revoke", json!({"id": id}))
+        .await;
+    assert_eq!(revoked["result"]["revoked"], true, "{revoked}");
+    let again = admin
+        .call("v", "account.invite_revoke", json!({"id": id}))
+        .await;
+    assert_eq!(why(&again), "unknown_invite", "{again}");
+    let mut stranger = Client::connect(Arc::clone(&core));
+    let refused = hello_with(&mut stranger, json!({"invite": code})).await;
+    assert_eq!(why(&refused), "bad_invite", "撤掉的码进不来：{refused}");
+}
+
+#[tokio::test]
+async fn an_invite_registers_a_member_once() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let code = invite(&core).await["code"]
+        .as_str()
+        .expect("有码")
+        .to_string();
+    let mut client = invited(&core, &code).await;
+    let refused = client.call("l", "session.list", json!({})).await;
+    assert_eq!(why(&refused), "register_first", "{refused}");
+    for (username, reason) in [
+        ("alice", "username_taken"),
+        ("users", "username_taken"),
+        ("Bob", "bad_params"),
+    ] {
+        let refused = client
+            .call(
+                "r",
+                "account.register",
+                json!({"username": username, "password": "correct horse"}),
+            )
+            .await;
+        assert_eq!(why(&refused), reason, "{username}: {refused}");
+    }
+    let refused = client
+        .call(
+            "r",
+            "account.register",
+            json!({"username": "bob", "password": "short"}),
+        )
+        .await;
+    assert_eq!(why(&refused), "bad_params", "{refused}");
+    // 用户名占了、写错了的都没用掉码：同一个连接照样注册得成。
+    let reply = client
+        .call(
+            "r",
+            "account.register",
+            json!({"username": "bob", "password": "correct horse"}),
+        )
+        .await;
+    assert_eq!(reply["result"]["account"], "bob", "{reply}");
+    let token = reply["result"]["login"]["token"].as_str().expect("{reply}");
+    assert!(home.root.workspace(&bob()).is_dir(), "家目录、工作区建好了");
+    // 码用掉了。
+    let mut late = Client::connect(Arc::clone(&core));
+    let refused = hello_with(&mut late, json!({"invite": code})).await;
+    assert_eq!(why(&refused), "bad_invite", "{refused}");
+    // 登录令牌、用户名密码都登得进，是 bob。
+    let mut back = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut back, json!({"login": token})).await;
+    assert_eq!(reply["result"]["account"], "bob", "{reply}");
+    let mut typed = Client::connect(Arc::clone(&core));
+    let reply = hello_with(
+        &mut typed,
+        json!({"user": "bob", "password": "correct horse"}),
+    )
+    .await;
+    assert_eq!(reply["result"]["account"], "bob", "{reply}");
+    // Y-2 以前成员只能管自己的账号。
+    for method in [
+        "session.list",
+        "account.invite",
+        "account.list",
+        "config.get",
+    ] {
+        let refused = back.call("m", method, json!({})).await;
+        assert_eq!(why(&refused), "not_permitted", "{method}: {refused}");
+    }
+    // 管理员列得出来。
+    let mut admin = local(&core).await;
+    let listed = admin.call("a", "account.list", json!({})).await;
+    let rows = listed["result"]["accounts"].as_array().expect("{listed}");
+    assert_eq!(rows[0]["account"], "alice");
+    assert_eq!(rows[0]["kind"], "admin");
+    let bob_row = rows
+        .iter()
+        .find(|row| row["account"] == "bob")
+        .expect("有 bob");
+    assert_eq!(bob_row["kind"], "member");
+    assert!(bob_row["created"].is_string(), "{bob_row}");
+    assert!(bob_row.get("disabled").is_none());
+}
+
+#[tokio::test]
+async fn disabling_cuts_a_member_off_and_enabling_lets_them_back() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let code = invite(&core).await["code"]
+        .as_str()
+        .expect("有码")
+        .to_string();
+    let token = register(&core, &code, "bob").await;
+    let mut connected = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut connected, json!({"login": token})).await;
+    assert_eq!(reply["result"]["account"], "bob", "{reply}");
+    let mut admin = local(&core).await;
+    // 管理员也用登录令牌连着一条：停用别人只断那个人的连接。
+    let admin_token = set_up(&core, "shorin", "correct horse").await;
+    let mut admin_web = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut admin_web, json!({"login": admin_token})).await;
+    assert_eq!(reply["result"]["account"], "alice", "{reply}");
+    for target in ["alice", "nobody"] {
+        let refused = admin
+            .call("d", "account.disable", json!({"account": target}))
+            .await;
+        assert_eq!(why(&refused), "unknown_account", "{target}: {refused}");
+    }
+    let off = admin
+        .call("d", "account.disable", json!({"account": "bob"}))
+        .await;
+    assert_eq!(off["result"]["disabled"], true, "{off}");
+    assert!(is_closed(&mut connected).await, "连着的断开");
+    let still = admin_web.call("s", "session.list", json!({})).await;
+    assert!(still.get("result").is_some(), "管理员的连接还在：{still}");
+    let mut again = Client::connect(Arc::clone(&core));
+    let refused = hello_with(&mut again, json!({"login": token})).await;
+    assert_eq!(why(&refused), "bad_login", "令牌作废了：{refused}");
+    let mut typed = Client::connect(Arc::clone(&core));
+    let refused = hello_with(
+        &mut typed,
+        json!({"user": "bob", "password": "correct horse"}),
+    )
+    .await;
+    assert_eq!(why(&refused), "bad_password", "停用的当密码不对：{refused}");
+    let listed = admin.call("a", "account.list", json!({})).await;
+    let rows = listed["result"]["accounts"].as_array().expect("{listed}");
+    let bob_row = rows
+        .iter()
+        .find(|row| row["account"] == "bob")
+        .expect("有 bob");
+    assert_eq!(bob_row["disabled"], true);
+    let on = admin
+        .call("e", "account.enable", json!({"account": "bob"}))
+        .await;
+    assert_eq!(on["result"]["disabled"], false, "{on}");
+    let mut back = Client::connect(Arc::clone(&core));
+    let reply = hello_with(
+        &mut back,
+        json!({"user": "bob", "password": "correct horse"}),
+    )
+    .await;
+    assert_eq!(reply["result"]["account"], "bob", "启用以后又能进：{reply}");
+    // 管理员照旧什么都能调。
+    let listed = admin.call("s", "session.list", json!({})).await;
+    assert!(listed.get("result").is_some(), "{listed}");
+}

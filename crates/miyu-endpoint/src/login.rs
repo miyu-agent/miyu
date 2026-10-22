@@ -8,11 +8,15 @@
 //! - 登录令牌握手：哈希在这个账号的 `logins.json` 里、没过期。
 //! - `account.logout`：作废一个、全部；用登录令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
 //! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台要的）在 [`ticket`]。
+//! - 多账号（施工 Y-1 上）：邀请码在 [`invites`]，注册、列出、停用在 [`members`]。用户名、密码照用户名找账号，登录令牌照令牌
+//!   找属于哪个账号（一个个账号的 `logins.json` 找）；停用了的进不来。连接带着认出来的账号。
 //!
 //! 一次性码、密码、登录令牌一个字都不进运行日志。凭据文件的读写在 `miyu-store`（`accounts.rs`、`logins.rs`），这里排着队
 //! 一件件改（[`Identity`] 的锁），argon2 放进阻塞线程。
 
 mod files;
+pub(crate) mod invites;
+pub(crate) mod members;
 pub(crate) mod ticket;
 
 use std::collections::BTreeMap;
@@ -58,10 +62,12 @@ pub(crate) enum Via {
     Token,
     /// 一次性码：只能设密码。
     Code,
-    /// 登录令牌：带着它的哈希。
-    Login(String),
-    /// 用户名、密码：带着这次造的登录令牌的哈希。
-    Password(String),
+    /// 邀请码（施工 Y-1 上）：只能注册，带着码的哈希。
+    Invite(String),
+    /// 登录令牌：带着它的哈希和它属于哪个账号。
+    Login(String, AccountId),
+    /// 用户名、密码：带着这次造的登录令牌的哈希和账号。
+    Password(String, AccountId),
     /// 核心亲手拉起的扩展（施工 9-4 上）：标准输入输出是核心给的，不看凭据。
     Spawned,
 }
@@ -72,8 +78,9 @@ impl Via {
         match self {
             Via::Token => "token",
             Via::Code => "code",
-            Via::Login(_) => "login",
-            Via::Password(_) => "password",
+            Via::Invite(_) => "invite",
+            Via::Login(..) => "login",
+            Via::Password(..) => "password",
             Via::Spawned => "spawned",
         }
     }
@@ -81,8 +88,16 @@ impl Via {
     /// 它靠的那个登录令牌的哈希：用登录令牌、密码连上的才有。
     pub(crate) fn login(&self) -> Option<&str> {
         match self {
-            Via::Login(hash) | Via::Password(hash) => Some(hash),
-            Via::Token | Via::Code | Via::Spawned => None,
+            Via::Login(hash, _) | Via::Password(hash, _) => Some(hash),
+            Via::Token | Via::Code | Via::Invite(_) | Via::Spawned => None,
+        }
+    }
+
+    /// 凭据认出来的账号（施工 Y-1 上）：用登录令牌、密码连上的才有；本机令牌、扩展的照连接原来的。
+    pub(crate) fn account(&self) -> Option<&AccountId> {
+        match self {
+            Via::Login(_, account) | Via::Password(_, account) => Some(account),
+            Via::Token | Via::Code | Via::Invite(_) | Via::Spawned => None,
         }
     }
 }
@@ -90,8 +105,8 @@ impl Via {
 /// 作废了哪些登录令牌：连着的连接照它断开。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Revoked {
-    /// 这个账号全部的。
-    All,
+    /// 这个账号全部的（施工 Y-1 上起带账号：只断这个账号的连接）。
+    All(AccountId),
     /// 哈希是它的那一个。
     One(String),
 }
@@ -205,20 +220,20 @@ pub(crate) async fn setup(
     let now = crate::sessions::now();
     let first = files::put_account(core, &params.username, hashed, now)?;
     tracing::info!(target: TARGET, first, "password set");
-    let revoked = files::revoke(core, None)?;
+    let revoked = files::revoke(core, &core.admin, None)?;
     if revoked > 0 {
         tracing::info!(target: TARGET, count = revoked, "logins revoked");
     }
     // 连着的旧登录一起断开（重设的时候把以前的浏览器踢出去）。
-    announce(&core.identity, Revoked::All);
-    let (token, hash, expires) = files::issue(core, now)?;
+    announce(&core.identity, Revoked::All(core.admin.clone()));
+    let (token, hash, expires) = files::issue(core, &core.admin, now)?;
     tracing::info!(target: TARGET, via = "setup", "login issued");
     files::journal(core, &params.username, first, now);
     let reply = json!({
         "username": params.username,
         "login": {"expires": expires, "token": token},
     });
-    Ok((reply, Via::Login(hash)))
+    Ok((reply, Via::Login(hash, core.admin.clone())))
 }
 
 /// 用户名 `user`、密码 `password` 握手：对上了交回登录令牌、它的过期时刻和这个连接怎么算。
@@ -230,10 +245,16 @@ pub(crate) async fn password(
     if let Err(wait) = admit(&core.identity, user) {
         return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
     }
-    let phc = files::read_accounts(core)
+    // 停用了的当密码不对（施工 Y-1 上）：不透露停用。
+    let found = files::read_accounts(core)
         .accounts
         .find(user)
-        .map(|account| account.password.clone());
+        .filter(|account| !account.disabled)
+        .and_then(|account| {
+            let id = AccountId::parse(&account.id).ok()?;
+            Some((id, account.password.clone()))
+        });
+    let (account, phc) = found.unzip();
     let right = tokio::task::spawn_blocking(move || match phc {
         Some(phc) => accounts::verify(&phc, &password),
         // 没有这个用户名也验一次，和密码不对花一样的时间。
@@ -245,30 +266,32 @@ pub(crate) async fn password(
     .await
     .unwrap_or(false);
     // 错了的进来时已经记过（`admit`）。
-    if !right {
+    let Some(account) = account.filter(|_| right) else {
         return Err(Refusal::BAD_PASSWORD);
-    }
+    };
     core.identity
         .failures
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .remove(user);
     let _queue = core.identity.files.lock().await;
-    let (token, hash, expires) = files::issue(core, crate::sessions::now())?;
+    let (token, hash, expires) = files::issue(core, &account, crate::sessions::now())?;
     tracing::info!(target: TARGET, via = "password", "login issued");
     Ok((
         json!({"expires": expires, "token": token}),
-        Via::Password(hash),
+        Via::Password(hash, account),
     ))
 }
 
 /// 登录令牌 `token` 握手：认得的交回这个连接怎么算。
 pub(crate) fn login(core: &Core, token: &str) -> Option<Via> {
     let hash = miyu_store::logins::digest(token);
-    files::read_logins(core)
-        .logins
-        .valid(&hash, crate::sessions::now())
-        .then_some(Via::Login(hash))
+    let now = crate::sessions::now();
+    // 照令牌找属于哪个账号（施工 Y-1 上）：管理员、没停用的成员一个个找。
+    files::login_accounts(core)
+        .into_iter()
+        .find(|account| files::read_logins(core, account).logins.valid(&hash, now))
+        .map(|account| Via::Login(hash, account))
 }
 
 /// `account.logout` 的参数。
@@ -291,14 +314,16 @@ pub(crate) async fn logout(
         (false, Some(hash)) => Some(hash.to_string()),
         (false, None) => return Err(Refusal::BAD_PARAMS),
     };
+    // 作废的是这个连接自己账号的（施工 Y-1 上）：本机令牌连上的是管理员。
+    let account = via.account().cloned().unwrap_or_else(|| core.admin.clone());
     let _queue = core.identity.files.lock().await;
-    let revoked = files::revoke(core, one.as_deref())?;
+    let revoked = files::revoke(core, &account, one.as_deref())?;
     tracing::info!(target: TARGET, count = revoked, "logins revoked");
     announce(
         &core.identity,
         match one {
             Some(hash) => Revoked::One(hash),
-            None => Revoked::All,
+            None => Revoked::All(account),
         },
     );
     Ok((json!({"revoked": revoked}), via.login().is_some()))
@@ -363,7 +388,7 @@ fn login_expires(now: Timestamp) -> Timestamp {
     Timestamp::from_unix_millis(now.unix_millis() + LOGIN_DAYS * 86_400_000).unwrap_or(now)
 }
 
-/// 记进系统日志的人：现在只有管理员。
-fn by(core: &Core) -> By {
-    By::Person(Person::new(core.admin.clone()))
+/// 记进系统日志的人：账号 `account`。
+fn by(account: &AccountId) -> By {
+    By::Person(Person::new(account.clone()))
 }

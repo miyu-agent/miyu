@@ -31,6 +31,7 @@ pub mod extensions;
 pub mod generated;
 pub mod human;
 pub mod index;
+pub mod invites;
 pub mod jobs;
 pub mod journal;
 pub mod knowledge;

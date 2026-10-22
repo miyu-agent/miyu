@@ -97,6 +97,7 @@ mod mcp_settings_status;
 mod mcp_skipped;
 mod mcp_status;
 mod mcp_url;
+mod members;
 mod memory;
 mod memory_api;
 mod memory_clear;

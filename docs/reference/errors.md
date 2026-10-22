@@ -30,7 +30,7 @@
 
 ## 连接与登录
 
-`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`login_throttled`（都回完就断开）、`setup_first`；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
+`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`bad_invite`、`login_throttled`（都回完就断开）、`setup_first`、`register_first`、`not_permitted`；成员那几个方法的 `username_taken`、`unknown_invite`、`unknown_account`；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
 
 ## 会话
 

@@ -1,5 +1,6 @@
 //! 网页登录用的凭据 `system/accounts.json`（`docs/blueprint/web-module.md`「怎么走」第一条第 1 条，照 Linux 的 `/etc/shadow`，
-//! 施工 W-8）：一个账号一行，登录用的用户名、argon2id 的整串（带参数和盐）、改的时刻。现在只有 `admin` 一行。
+//! 施工 W-8）：一个账号一行，登录用的用户名、argon2id 的整串（带参数和盐）、改的时刻。管理员设了密码才有他那一行；成员凭邀请码
+//! 注册时写一行，带注册的时刻，停用的标上（施工 Y-1 上，设计 06 第二版）。
 //!
 //! 密码哈希照设计 06 U4：argon2id，参数 `m=19456`（KiB）、`t=2`、`p=1`（OWASP 的推荐值之一，「起草时定的」第 43 条），
 //! 盐是 16 个系统给的随机字节。参数写进整串里，以后调了旧的照样验得过。算一次几十毫秒、占 19 MiB，调用的一方放进阻塞
@@ -54,6 +55,12 @@ pub struct Account {
     pub password: String,
     /// 什么时候设的。
     pub changed: Timestamp,
+    /// 什么时候注册的（施工 Y-1 上）：成员才有，管理员那一行没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created: Option<Timestamp>,
+    /// 停用了（施工 Y-1 上）：停用的登录不进来，数据留着。没停用的不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub disabled: bool,
 }
 
 /// 哈希不印。
@@ -63,6 +70,8 @@ impl std::fmt::Debug for Account {
             .field("id", &self.id)
             .field("username", &self.username)
             .field("changed", &self.changed)
+            .field("created", &self.created)
+            .field("disabled", &self.disabled)
             .finish_non_exhaustive()
     }
 }

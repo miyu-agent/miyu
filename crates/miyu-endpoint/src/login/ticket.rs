@@ -88,7 +88,7 @@ pub(crate) async fn call(
 
 /// `login.ticket`：交回 `{ticket, expires}`。
 fn issue(core: &Core, via: Option<&Via>, account: &AccountId) -> Result<Value, Refusal> {
-    if !matches!(via, Some(Via::Token | Via::Login(_) | Via::Password(_))) {
+    if !matches!(via, Some(Via::Token | Via::Login(..) | Via::Password(..))) {
         return Err(Refusal::LOCAL_ONLY);
     }
     let ticket = random_hex()?;
@@ -109,7 +109,7 @@ async fn redeem(core: &Core, ticket: &str) -> Result<Value, Refusal> {
         .take(ticket)
         .ok_or(Refusal::BAD_TICKET)?;
     let _queue = core.identity.files.lock().await;
-    let (token, _, expires) = files::issue(core, crate::sessions::now())?;
+    let (token, _, expires) = files::issue(core, &account, crate::sessions::now())?;
     tracing::info!(target: TARGET, via = "ticket", "login issued");
     Ok(json!({
         "account": account.as_str(),
