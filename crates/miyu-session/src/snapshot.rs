@@ -2,16 +2,11 @@
 //! 字、工具面、记忆的范围；子会话接场所说明，群会话接格式说明（施工 O-13 中）；再接「关于你」（施工 P-9）；最后是核心的几行和风格锁
 //! （`docs/designs/26-提示词.md` 第四节）。核心的几行里本机是什么系统照 [`miyu_store::env::os_name`] 写（施工 2-7 再补）。
 
-use std::collections::BTreeSet;
-
-use miyu_policy::features::Features;
 use miyu_policy::{PersonaTexts, PresetPin, Snapshot, ToolEntry, compose};
 use miyu_store::resources::{ResourceRoot, SourceError};
-use miyu_tool::Catalog;
 
 /// 拼一份快照的料：人格的编号和叠好的字、有没有人能确认、工具面、记忆的范围（快照里那一格的原样，没有的是没有），是不是
-/// 子会话，预设（施工 P-2 中，快照里那一格的原样；工具面、记忆的范围已经照它筛过），有工具的功能（施工 O-18：装了没开的那一行
-/// 只列它们，照完整的工具目录算，[`tooled`]；施工 F-3 上起是功能），人设遵循提醒装了没有（施工 F-3 上：没装的不带提醒短语、
+/// 子会话，预设（施工 P-2 中，快照里那一格的原样；工具面、记忆的范围已经照它筛过），人设遵循提醒装了没有（施工 F-3 上：没装的不带提醒短语、
 /// 风格锁），群会话钉下的时区（施工 O-13 中：比 UTC 早多少分钟；不是群会话的没有）。
 pub(crate) struct Parts {
     pub(crate) name: Option<String>,
@@ -21,7 +16,6 @@ pub(crate) struct Parts {
     pub(crate) memory: Option<String>,
     pub(crate) child: bool,
     pub(crate) preset: Option<PresetPin>,
-    pub(crate) tooled: BTreeSet<String>,
     pub(crate) roleplay: bool,
     /// 群会话：造会话时的时区（比 UTC 早多少分钟）、群聊近况最多带几条（施工 O-13 再补，没有的只照字节预算）。
     pub(crate) group: Option<(i32, Option<u64>)>,
@@ -39,19 +33,6 @@ pub(crate) struct Parts {
     pub(crate) appended: std::collections::BTreeMap<String, String>,
     /// 裸的（施工 D-1 上，整理会话，`miyu_policy::Snapshot::bare`）：拼好以后去掉 system、工具和几样开关。
     pub(crate) bare: bool,
-}
-
-/// 工具目录 `catalog` 里有工具的功能（施工 O-18；施工 F-3 上起照装了的功能 `features` 认工具归哪个功能）：不照这次的预设筛，
-/// 某个功能在目录里有工具就算。认不出功能的（没交功能的测试、没写进清单的工具）照它的包的编号。
-pub(crate) fn tooled(catalog: &Catalog, features: Option<&Features>) -> BTreeSet<String> {
-    catalog
-        .specs()
-        .filter_map(|spec| {
-            let package = catalog.package_of(&spec.name)?;
-            let feature = features.and_then(|features| features.of_tool(package, &spec.name));
-            Some(feature.unwrap_or(package).to_string())
-        })
-        .collect()
 }
 
 /// 照 `parts` 拼一份快照，随核心附带的字从 `resources` 读这一刻的。
@@ -88,7 +69,7 @@ pub(crate) fn build(resources: &ResourceRoot, parts: Parts) -> Result<Snapshot, 
         .with_clicall(&lines, tells)
         .with_skills(parts.skills)
         .with_knowledge(parts.knowledge)
-        .with_preset(parts.preset, &lines.preset_off, &parts.tooled)
+        .with_preset(parts.preset)
         .with_style_lock(&lines.style_lock)
         .with_appended(parts.appended);
     Ok(if parts.bare {

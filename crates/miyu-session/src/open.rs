@@ -34,7 +34,7 @@ use crate::memory::{self, connect};
 use crate::port::ForSession;
 use crate::report::{Reporter, Upstream};
 use crate::skills;
-use crate::snapshot::{Parts, build, tooled};
+use crate::snapshot::{Parts, build};
 use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
@@ -150,7 +150,6 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     };
     let pin = preset.as_ref().map(Chosen::pin);
     let foreground = Agents::foreground(preset.as_ref().map(|chosen| &chosen.file));
-    let tooled = tooled(&edition.catalog, features);
     // 扩展这时说过要放在 system 尾部的（施工 X-20），MCP 服务这时的说明（施工 X-39）。
     let asked = hooks
         .as_ref()
@@ -196,7 +195,6 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             memory: Some(scope.as_str().to_string()),
             child,
             preset: pin,
-            tooled,
             roleplay,
             group: group.map(|group| (offset.minutes(), group.recent)),
             foreground,

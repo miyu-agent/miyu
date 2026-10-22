@@ -371,9 +371,7 @@ async fn the_list_sits_before_the_preset_line_and_needs_the_two_tools() {
     chat(&home, &handle, 1, "在吗").await;
     let system = &script.requests()[0].1.system;
     assert!(
-        system.ends_with(
-            "\n\nKnowledge bases you can search:\n- notes\n\nInstalled but off in this session's preset: memory."
-        ),
+        system.ends_with("\n\nKnowledge bases you can search:\n- notes"),
         "{system}"
     );
 

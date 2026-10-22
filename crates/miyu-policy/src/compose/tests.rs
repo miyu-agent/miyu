@@ -31,7 +31,6 @@ fn lines() -> CoreLines {
         machine: "Runs {os}.\n".to_string(),
         harness: String::new(),
         style_lock: String::new(),
-        preset_off: String::new(),
         clicall: String::new(),
     }
 }
@@ -205,7 +204,6 @@ fn without_the_core_lines_the_system_is_as_before() {
         machine: String::new(),
         harness: String::new(),
         style_lock: String::new(),
-        preset_off: String::new(),
         clicall: String::new(),
     };
     assert_eq!(

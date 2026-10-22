@@ -121,7 +121,6 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
         memory: Some(scope.as_str().to_string()),
         child: false,
         preset: Some(chosen.pin()),
-        tooled: tooled(&tools, Some(&installed())),
         roleplay: true,
         group: None,
         foreground: false,

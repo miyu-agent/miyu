@@ -1,7 +1,7 @@
 //! 改了预设，下一个回合换上（施工 P-2 下）：工具面照新的预设重新筛，以前就有的照旧快照里的原样；记忆照开会话时的；装了没开
 //! 的那一行跟着变；写错了的照旧；P-2（中）造的没有指纹的不换。
 
-use super::test_support::{installed, look_now, names, setup, write_preset};
+use super::test_support::{look_now, names, setup, write_preset};
 use super::*;
 use miyu_policy::features::{Feature, Features};
 
@@ -28,11 +28,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["remember"]);
-    assert!(
-        snapshot.system.ends_with(&format!("{OFF} basesystem.")),
-        "{}",
-        snapshot.system
-    );
+    assert!(!snapshot.system.contains(OFF), "{}", snapshot.system);
     refresh.snapshot = *snapshot;
     write_preset(&root, "");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
@@ -70,7 +66,7 @@ fn memory_stays_as_it_was_when_the_session_was_made() {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["read", "shell"], "关着的也照旧关着");
-    assert!(snapshot.system.ends_with(&format!("{OFF} memory.")));
+    assert!(!snapshot.system.contains(OFF));
 }
 
 #[test]
@@ -112,7 +108,6 @@ fn without_a_persona_a_changed_preset_still_swaps() {
         memory: Some("off".to_string()),
         child: false,
         preset: refresh.snapshot.preset.clone(),
-        tooled: tooled(&refresh.tools.current(), Some(&installed())),
         roleplay: true,
         group: None,
         foreground: false,
@@ -213,11 +208,7 @@ fn a_feature_switched_off_takes_its_tools_away() {
         panic!("改了要换");
     };
     assert_eq!(names(&snapshot), ["read", "remember"]);
-    assert!(
-        snapshot.system.ends_with(&format!("{OFF} commands.")),
-        "{}",
-        snapshot.system
-    );
+    assert!(!snapshot.system.contains(OFF), "{}", snapshot.system);
 }
 
 /// 换快照时也照装没装（施工 F-3 上）：人格多了提醒短语，可人设遵循提醒没装，换上的快照里没有提醒。

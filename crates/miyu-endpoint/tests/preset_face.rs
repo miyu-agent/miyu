@@ -128,10 +128,8 @@ async fn software_without_tools_is_pinned_off_but_left_out_of_the_line() {
     )
     .await;
     assert!(
-        request
-            .system
-            .ends_with("Installed but off in this session's preset: memory."),
-        "有工具的照列，没有工具的不列：{}",
+        !request.system.contains("Installed but off"),
+        "没开的那一行不写（施工 P-OFF）：{}",
         request.system
     );
     let pin = snapshot(&home, &session).preset.expect("记了预设");
@@ -179,7 +177,7 @@ async fn roleplay_off_drops_the_reminder_and_the_style_lock_and_the_line_comes_b
     let lock = std::fs::read_to_string(default_resources().join("core/style-lock.txt"))
         .expect("读得出风格锁");
     let reminded = |request: &Request| format!("{request:?}").contains("Stay soft.");
-    // 角色扮演开着、记忆关着：没开的那一行在风格锁前面。
+    // 角色扮演开着、记忆关着：风格锁接在最后，没开的那一行不写（施工 P-OFF）。
     let (_, quiet) = first_request(
         &home,
         json!({"cwd": "~", "persona": "miyu", "preset": "quiet"}),
@@ -187,10 +185,7 @@ async fn roleplay_off_drops_the_reminder_and_the_style_lock_and_the_line_comes_b
     .await;
     assert!(reminded(&quiet), "角色扮演开着的有提示");
     assert!(
-        quiet.system.ends_with(&format!(
-            "Installed but off in this session's preset: memory.\n\n{}",
-            lock.trim_end()
-        )),
+        quiet.system.ends_with(lock.trim_end()) && !quiet.system.contains(OFF_LINE),
         "{}",
         quiet.system
     );
@@ -325,11 +320,8 @@ async fn a_package_turned_off_takes_all_its_tools_and_is_named() {
         ["forget", "memory_search", "remember"],
         "基础系统的两件都没了，记忆照开"
     );
-    // 施工 F-3 上起那一行写功能的编号：关掉的包，写它下面有工具的功能。
     assert!(
-        request
-            .system
-            .ends_with("Installed but off in this session's preset: commands, files."),
+        !request.system.contains("Installed but off"),
         "{}",
         request.system
     );
@@ -395,9 +387,7 @@ async fn a_feature_switched_off_takes_its_tools_and_is_named() {
         ["forget", "memory_search", "read", "remember"]
     );
     assert!(
-        request
-            .system
-            .ends_with("Installed but off in this session's preset: commands."),
+        !request.system.contains("Installed but off"),
         "{}",
         request.system
     );

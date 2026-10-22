@@ -14,16 +14,14 @@ use miyu_session::testkit::Script;
 const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nnet = true\ngoal = true\nauthoring = true\n";
 
 #[tokio::test]
-async fn a_preset_without_memory_drops_it_and_says_so() {
+async fn a_preset_without_memory_drops_it() {
     let home = Home::new();
     home.write("home/alice/presets/quiet.toml", QUIET);
     let (session, request) = first_request(&home, json!({"cwd": "~", "preset": "quiet"})).await;
     assert_eq!(tool_names(&request), ["read", "shell"], "记忆没开");
     assert!(
-        request
-            .system
-            .ends_with("Installed but off in this session's preset: memory."),
-        "角色扮演不进这一行：{}",
+        !request.system.contains("Installed but off"),
+        "没开的那一行不写（施工 P-OFF）：{}",
         request.system
     );
     let snapshot = snapshot(&home, &session);

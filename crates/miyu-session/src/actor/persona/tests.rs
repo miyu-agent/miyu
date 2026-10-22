@@ -52,7 +52,6 @@ fn setup_with(
         memory: None,
         child: false,
         preset,
-        tooled: tooled(&tools, None),
         roleplay: true,
         group: group.map(|offset| (offset, None)),
         foreground: false,
@@ -221,10 +220,8 @@ fn roleplay_stays_off_across_a_swap() {
     };
     assert_eq!(snapshot.reminder, None, "预设没开角色扮演");
     assert!(
-        snapshot
-            .system
-            .ends_with("Installed but off in this session's preset: memory."),
-        "没开的那一行照旧在最后，没有风格锁：{}",
+        !snapshot.system.contains("Installed but off"),
+        "没开的那一行不写（施工 P-OFF），没有风格锁：{}",
         snapshot.system
     );
     assert_eq!(snapshot.preset, Some(pin));

@@ -19,7 +19,6 @@
 | `crates/miyu-tool/src/catalog.rs` | 工具目录按包登记，记下每件工具归哪个包（施工 P-2 中） |
 | `crates/miyu-session/src/agents.rs`、`open.rs` | 造会话时照预设筛工具面、定记忆的范围（施工 P-2 中） |
 | `crates/miyu-policy/src/compose.rs` | `with_preset`：快照记预设、去掉角色扮演提示、写装了没开的那一行（施工 P-2 中） |
-| `resources/core/preset-off.txt` | 装了没开的那一行（给模型看，登记在 `26-提示词.md` 第十节） |
 | `crates/miyu-endpoint/src/settings.rs` | 配置项 `preset.default` |
 | `resources/presets/full.toml`、`dev.toml` | 出厂的两个 |
 
@@ -98,7 +97,7 @@ shell = false
    - 工具面：归的功能开着的工具，减去 `[tools]` 关掉的（`PresetFile::keeps`），再照原来的几道筛（场所、子会话、能不能确认）。关了「后台运行」（`basesystem` 的 `background`）的：快照记 `foreground`，`shell` 拿掉 `run_in_background`（`ToolEntry::without`，别的字节不动），执行器不给任务端口（施工 T-1 上，设计 30 第三节第 7 条）；换预设时照新的预设定，以前就有的 `shell` 照旧快照里的原样，调到放到后台的照「这里不能放到后台」说。
    - 记忆：人格记忆 `memory` 没开的、没装的（施工 F-3 上），范围一律 `off`，不管 `session.create` 的 `memory`（走查 E2：开不开归预设，范围归开会话时）。
    - 人设遵循提醒：`roleplay` 没开的、没装的（施工 F-3 上），快照里没有提醒短语、system 没有风格锁。
-   - 装了没开的那一行（Y8，走查 C4）：装了、没开的软件里只列有工具的（照完整的工具目录算，不照这次的预设筛：某个包在目录里有工具就算）。没有工具的她用不上：`roleplay`；通讯平台的桥是核心拉起的，不随会话的预设，写进来是假话（2026-10-08 主会话定，施工 O-18）。照编号逗号隔开，`core/preset-off.txt` 写成一行接在核心的几行后面、风格锁前面。都开着、没开的都没有工具的不写，功能全开的会话 system、工具面和以前一个字节都不差。快照里的 `preset.off` 照旧记全部没开的软件（`preset.get`、设置页照它）。 施工 F-3 上起列的是功能的编号：快照的 `preset.off` 记装了、没开的功能，那一行只列下面有工具的。以前造的快照记的是包的编号，换快照时照现在的功能读（是装了的包、又不是功能编号的换成它的全部功能），一样的算没改，不换（`PresetPin::means_the_same`）。
+   - 装了没开的那一行：2026-10-23 删掉（设计 16 Y8，施工 P-OFF）。新会话的 system 不提预设关掉的软件；以前造的快照里拼好的照旧发。快照里的 `preset.off` 照旧记全部没开的功能（`preset.get`、设置页照它）。以前造的快照记的是包的编号，换快照时照现在的功能读（是装了的包、又不是功能编号的换成它的全部功能），一样的算没改，不换（`PresetPin::means_the_same`）。
    - 场所显示不了图片的会话（施工 X-25，`venues.md`「`venue.session`」的 `images`）：清单写了 `needs = ["images"]` 的包整包扣下，和预设关了一样不进工具面、回合开始不问、`system.append` 那一段不拼；不列进上面那一行（那一行是说换个预设就有，这里换了也没有），不进预设的指纹、快照的 `preset.off`。换快照时照旧扣着（`PresetFile::withheld`、`Chosen::blind`）。
    - 快照记 `preset`：编号、没开的软件和文件的指纹（`policy.md`「拼」第 6 条）。
 6. **改了文件**（施工 P-2 下，K3）：每个回合开始，执行器照快照里预设的编号把几层重新找一遍、放进这一轮配置里的全局开关（施工 X-27），指纹或者没开的那几个变了的照新的重拼，下一轮用上，日志里一条内核记的 `session.policy_changed`（`session/actor.md`「换快照」，人格、预设一起改了的换一次）：

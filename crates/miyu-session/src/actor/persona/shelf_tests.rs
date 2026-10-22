@@ -9,7 +9,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::testkit::{Act, Fake};
 use miyu_tool::{Call, Progress, Running, Spec, Tool, Venues};
 
-use super::test_support::{installed, look_now, names, setup};
+use super::test_support::{look_now, names, setup};
 use super::*;
 use miyu_tool::Catalog;
 
@@ -212,7 +212,6 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         memory: refresh.snapshot.memory.clone(),
         child: false,
         preset: None,
-        tooled: tooled(&refresh.tools.current(), Some(&installed())),
         roleplay: true,
         group: None,
         foreground: false,
@@ -233,22 +232,15 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
 
 /// 关着的包登记了工具：工具面里没有，装了没开的那一行带上它。找不回预设的快照这一行也不跟。
 #[test]
-fn a_provided_package_that_is_off_joins_the_off_line() {
+fn a_provided_package_that_is_off_changes_nothing() {
+    // 关着的包登记了工具：工具面不变，system 也不再提它（施工 P-OFF），不换。
     let act = || provided("act", LOCAL);
-    let (_scratch, _root, mut refresh) = setup("shelf-off-line", "[software]\nroleplay = false\n");
+    let (_scratch, _root, refresh) = setup("shelf-off-line", "[software]\nroleplay = false\n");
     refresh
         .tools
         .replace(|catalog| catalog.replacing("roleplay", vec![act()]))
         .expect("登记得上");
-    let snapshot = swap(&mut refresh);
-    assert_eq!(names(&snapshot), ["read", "remember", "shell"]);
-    assert!(
-        snapshot
-            .system
-            .ends_with("Installed but off in this session's preset: roleplay."),
-        "{}",
-        snapshot.system
-    );
+    assert!(matches!(look_now(&refresh), Seen::Same));
     let (_scratch, _root, mut older) = setup("shelf-older-line", "[software]\nroleplay = false\n");
     if let Some(pin) = older.snapshot.preset.as_mut() {
         pin.digest = None;

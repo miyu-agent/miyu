@@ -237,10 +237,7 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
         "只少关掉的那一件：{faces:?}"
     );
     let system = &script.requests()[1].1.system;
-    assert!(
-        system.contains("Installed but off in this session's preset: mcp-probe."),
-        "{system}"
-    );
+    assert!(!system.contains("Installed but off"), "{system}");
     core.stop_extensions().await;
 }
 

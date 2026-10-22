@@ -4,7 +4,7 @@
 //! 施工 3-6（上）时只有人设。别的块跟着各自的功能来，按 J12 先实测证明不加不行：场所说明施工 7-5 加（子会话）；核心的
 //! 几行施工 2-7 补加，权限那一行和本机文件的路径那一行，2026-10-01 主会话 A/B 实测过（`26-提示词.md` 第十节）。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use miyu_kernel::id::ContentHash;
 
@@ -137,9 +137,6 @@ pub struct CoreLines {
     pub harness: String,
     /// 风格锁（`core/style-lock.txt`）：只有带角色扮演提示的人格带（[`Snapshot::with_style_lock`]）。
     pub style_lock: String,
-    /// 装了、这个预设没开的那一行（`core/preset-off.txt`，施工 P-2 中，Y8）：`{packages}` 换成逗号隔开的编号；施工 F-3 上起是功能
-    /// 的编号（以前造的快照记的包编号照原样）。
-    pub preset_off: String,
     /// 什么时候写成调工具的程序（`core/clicall.txt`，施工 M-4，设计 39 第九节）：工具面上有脚本里能调的工具才带
     /// （[`Snapshot::with_clicall`]）。
     pub clicall: String,
@@ -216,34 +213,16 @@ impl Snapshot {
         self
     }
 
-    /// 带上预设（施工 P-2 中，Y8）：记进快照；没开角色扮演的去掉角色扮演提示（人格的指纹照旧算原来的字，回合开始时不会
-    /// 当成改过）；装了没开的软件写成一行接在 system 后面（26 第四节第 5 块），在 [`Snapshot::with_core_lines`] 以后、
-    /// [`Snapshot::with_style_lock`] 以前调。这一行只列 `tooled` 里的：会给工具面带来工具的包（照完整的工具目录算，不照这次
-    /// 的预设筛）。没有工具的她用不上：角色扮演列出来反倒像是不许演；通讯平台的桥是核心拉起的，不随会话的预设，写「这次的
-    /// 预设里关着」是假话（施工 O-18，2026-10-08 主会话定，`presets.md`「照预设挑」）。快照记的 `pin.off` 照旧是全部没开的。
-    /// 都开着、没开的都没有工具的不写这一行，system 一字不变。
+    /// 带上预设（施工 P-2 中）：记进快照；没开角色扮演的去掉角色扮演提示（人格的指纹照旧算原来的字，回合开始时不会当成改过）。
+    /// system 一字不加：原来接在后面的「装了没开」那一行（Y8）2026-10-23 项目主人定整行删掉（施工 P-OFF），以前造的快照里
+    /// 拼好的照旧发。
     #[must_use]
-    pub fn with_preset(
-        mut self,
-        pin: Option<PresetPin>,
-        line: &str,
-        tooled: &BTreeSet<String>,
-    ) -> Snapshot {
+    pub fn with_preset(mut self, pin: Option<PresetPin>) -> Snapshot {
         let Some(pin) = pin else {
             return self;
         };
         if pin.off.iter().any(|software| software == ROLEPLAY) {
             self.reminder = None;
-        }
-        let listed: Vec<&str> = pin
-            .off
-            .iter()
-            .filter(|software| tooled.contains(*software))
-            .map(String::as_str)
-            .collect();
-        if !listed.is_empty() {
-            let line = line.replace("{packages}", &listed.join(", "));
-            self.system = system(&[&self.system, &line]);
         }
         self.preset = Some(pin);
         self

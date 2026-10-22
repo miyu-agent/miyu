@@ -30,7 +30,7 @@ use crate::agents::{Agents, Reach};
 use crate::blocking::blocking;
 use crate::knowledge::Shelves;
 use crate::open::PresetPlaces;
-use crate::snapshot::{Parts, build, tooled};
+use crate::snapshot::{Parts, build};
 use crate::spawn::Lineage;
 use face::{followed, offered, refaced, reshelved, shelf_tools};
 use recast::Wanted;
@@ -277,7 +277,6 @@ fn look(
         memory: old.memory.clone(),
         child: refresh.child,
         preset: pin,
-        tooled: tooled(catalog, features(refresh)),
         roleplay: features(refresh).is_none_or(|features| features.installed(ROLEPLAY)),
         // 群会话照旧快照钉下的时区（施工 O-13 中）：换了时区的机器上换人格，前缀里的钟点也不变。
         group: old.group.as_ref().map(|chat| {
