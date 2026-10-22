@@ -92,6 +92,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         reminder: reminder(&sources.persona.reminders, &sources.reminder),
         persona_digest: digest,
         preset: None,
+        no_tools: false,
         group: None,
         foreground: false,
         knowledge: None,

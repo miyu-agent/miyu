@@ -51,7 +51,11 @@ impl Setup {
             who.profile,
             who.owner == core.admin,
         );
-        let preset = presets::resolve(core, who.preset.as_deref()).await?;
+        // 空的编号是明着无工具（施工 P-16 下，`presets::opening`）：不找预设。
+        let preset = match who.preset.as_deref() {
+            Some("") => None,
+            wanted => Some(presets::resolve(core, wanted).await?),
+        };
         let persona = personas::resolve(core, persona).await?;
         Ok(Setup {
             id,
@@ -64,7 +68,7 @@ impl Setup {
                 read_only: permission.start_read_only,
             },
             profile,
-            preset: Some(preset),
+            preset,
             persona,
         })
     }
@@ -113,6 +117,7 @@ impl Setup {
             configs: core.hub.configs(),
             model: who.model.clone(),
             preset: self.preset.take().map(|found| presets::chosen(core, found)),
+            no_tools: who.preset.as_deref() == Some(""),
             presets: Some(presets::places(core)),
             group: who.group,
             owner_is_admin: who.owner == core.admin,

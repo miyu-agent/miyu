@@ -37,7 +37,11 @@ impl Reference {
             Body::SessionCreated(created) => {
                 self.model.clone_from(&created.model);
                 self.persona.clone_from(&created.persona);
-                self.preset.clone_from(&created.preset);
+                // 明着选了无工具的记成空的预设，同换预设时写的空编号（施工 P-16 下）。
+                self.preset = match created.no_tools {
+                    true => Some(String::new()),
+                    false => created.preset.clone(),
+                };
             }
             // 空的是回到跟着 `models.chat`（施工 8-10 再补）。
             Body::PolicyChanged(PolicyChanged {
@@ -69,7 +73,7 @@ impl Reference {
         self.persona.as_deref()
     }
 
-    /// 会话现在要用的预设：以前的日志没记的没有。
+    /// 会话现在要用的预设：以前的日志没记的没有，无工具的是空的（施工 P-16 下）。
     pub(super) fn preset(&self) -> Option<&str> {
         self.preset.as_deref()
     }

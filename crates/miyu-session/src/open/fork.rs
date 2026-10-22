@@ -133,6 +133,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             model: plan.model,
             persona: plan.persona,
             preset: plan.preset.or(created.preset),
+            // 无工具的会话分叉出来的照旧无工具（施工 P-16 下）：快照是同一份。
+            no_tools: created.no_tools,
             images: created.images,
             titles: created.titles,
             // 分叉出来的是普通会话，不算整理会话（施工 D-1 上）。

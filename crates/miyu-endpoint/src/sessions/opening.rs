@@ -24,7 +24,8 @@ pub(crate) struct Opening {
     pub(crate) venue: Option<VenueId>,
     /// 记忆的范围（施工 R-3 下）：`session.create` 的 `memory`；没写的照人格的 `persona.toml`，那也没写的跟着人格。
     pub(crate) memory: Option<MemoryScope>,
-    /// 用哪个预设（施工 P-2 上）：`session.create`、`venue.session` 的 `preset`；没写的照这时的 `preset.default`。
+    /// 用哪个预设（施工 P-2 上）：`session.create`、`venue.session` 的 `preset`；没写的照这时的 `preset.default`，空的是明着
+    /// 无工具（施工 P-16 下，[`crate::presets::opening`]）。
     pub(crate) preset: Option<String>,
     /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有，带群聊近况最多几条（施工 O-13 再补）。
     pub(crate) group: Option<miyu_session::GroupSettings>,

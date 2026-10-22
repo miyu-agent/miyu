@@ -306,6 +306,7 @@ impl Sessions {
             jobs: &core.jobs,
             model: child.model,
             preset,
+            no_tools: false,
             presets: Some(presets::places(core)),
             group: None,
             owner_is_admin,

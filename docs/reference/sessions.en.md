@@ -53,7 +53,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 |---|---|---|
 | `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it (Y-1 下) |
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
-| `preset` | string | Which preset; omitted follows `preset.default`, else `full` |
+| `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
 | `memory` | `persona`, `session`, `off` | Memory follows the persona, stays in this session, or is off; omitted follows the persona's setting |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |
@@ -110,7 +110,7 @@ Sending the same `id` again returns the session created the first time.
 | `preview` | When there's no title: the first line of the first message, at most 50 characters |
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
-| `persona`, `preset` | Which persona and preset; omitted when none |
+| `persona`, `preset` | Which persona and preset; omitted when none. With no tools `preset` is `null` and `no_tools: true` is added (step P-16) |
 | `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
 | `context` | `{"used", "window"?}`: tokens in context (the input of the latest main request: uncached, cache read, cache write, the same figure as the terminal footer and the session status); omitted before the first request and right after a compaction. `window` is the context window of that request's model under the current config, omitted when unknown |
 | `project` | Which project it is in; omitted when none |
@@ -349,7 +349,7 @@ Change the session's model, persona or preset; it applies from the next turn.
 **Params**: `session`; at least one of:
 - `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
 - `persona`: a persona id; `null` means no persona.
-- `preset`: a preset id.
+- `preset`: a preset id; `null` switches to no tools (step P-16).
 
 Changing the persona or preset compacts first: the core summarizes the conversation so far under the old persona right away, and the next turn switches over and continues from the summary. Memory that follows the persona is kept in the new persona's room from then on; earlier memories stay where they were.
 

@@ -7,6 +7,7 @@ pub mod calling;
 pub mod eval;
 pub mod extracting;
 pub mod jobs;
+mod logs;
 pub mod meaning;
 mod opening;
 pub mod package;
@@ -17,6 +18,11 @@ mod scratch;
 mod site;
 pub mod table;
 
+#[allow(
+    unused_imports,
+    reason = "挪进 logs.rs 的几样：每个测试程序用到的不一样"
+)]
+pub use logs::{LogDir, kinds, until_logged};
 pub use opening::{Lines, Opening};
 pub use scratch::Scratch;
 #[allow(unused_imports, reason = "只有沙盒那几个测试用")]
@@ -40,13 +46,13 @@ use miyu_session::{
 use miyu_session::{Memory, SummaryTexts, Workplace};
 use miyu_store::env::{Env, Platform};
 use miyu_store::index::{FILE, SessionIndex};
-use miyu_store::log::{read_events, read_segments};
+use miyu_store::log::read_events;
 use miyu_store::memory::MemoryLogs;
 use miyu_store::recall::RecallIndexes;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 use miyu_store::usage::UsageIndex;
-use miyu_tool::{Catalog, Log, ReadLog};
+use miyu_tool::{Catalog, Log};
 
 /// 一个临时的数据根，建好了骨架；源码树里的资源目录；一个假的系统家目录（施工 4-3 下）。
 pub struct Home {
@@ -206,6 +212,7 @@ impl Home {
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
+            no_tools: false,
             presets: None,
             group: lines.group.then_some(miyu_session::GroupSettings {
                 recent: lines.recent,
@@ -438,40 +445,6 @@ pub fn say(words: &str) -> Command {
         })],
         urgent: false,
         venue: None,
-    }
-}
-
-/// 等到磁盘上会话 `session` 的日志满足 `done`，最多 [`WAIT`]；交回那时的日志。
-pub async fn until_logged(
-    home: &Home,
-    session: &SessionId,
-    done: impl Fn(&[Event]) -> bool,
-) -> Vec<Event> {
-    let waited = tokio::time::timeout(WAIT, async {
-        loop {
-            let log = home.log(session);
-            if done(&log) {
-                return log;
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-        }
-    })
-    .await;
-    waited.unwrap_or_else(|_| panic!("六十秒内磁盘上没等到：{:?}", kinds(&home.log(session))))
-}
-
-/// 事件的种类，照先后。
-pub fn kinds(events: &[Event]) -> Vec<&str> {
-    events.iter().map(|event| event.body.kind()).collect()
-}
-
-/// 一个会话目录的只读入口（施工 C-4）：和生产里会话表那一头开别的会话日志的办法同一个读法
-/// （[`read_segments`]），测试里直接拿会话的真实目录造它，不载入那个会话。
-pub struct LogDir(pub PathBuf);
-
-impl ReadLog for LogDir {
-    fn read(&self, each: &mut dyn FnMut(Vec<Event>) -> bool) -> Result<(), String> {
-        read_segments(&self.0, each).map_err(|error| error.to_string())
     }
 }
 

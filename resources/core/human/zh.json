@@ -573,6 +573,8 @@
     "persona-problems/last_line": "最后一句要是 assistant 的",
     "persona-problems/empty_line": "这一句是空的",
     "persona-problems/pair_clash": "第 {pair} 对里有一行以 user: 或 assistant: 开头，存不进去",
+    "preset-none/name": "无工具",
+    "preset-none/summary": "不提供任何工具。",
     "preset-problems/syntax": "读不成 TOML：{detail}",
     "preset-problems/unknown_table": "不认识的表 [{detail}]：预设文件里只能有 [preset]、[features]、[software]、[tools]",
     "preset-problems/not_a_table": "{detail} 要写成一张表 [{detail}]",

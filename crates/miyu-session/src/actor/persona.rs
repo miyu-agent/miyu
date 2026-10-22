@@ -177,6 +177,8 @@ fn look(
         },
     };
     let preset = match &wanted.preset {
+        // 换成无工具（施工 P-16 下）：内核记的是空的编号。
+        Some(id) if id.is_empty() => Ok(Preset::NoTools { changed: true }),
         Some(id) => recast::preset(refresh, id, values).map(Preset::Changed),
         None => preset(refresh, values),
     };
@@ -212,6 +214,7 @@ fn look(
         .map_or(Reach::Save, |shelves| shelves.reach(&listed));
     let shelved = match &preset {
         Preset::Unknown => None,
+        Preset::NoTools { .. } => Some(Vec::new()),
         Preset::Nothing => Some(offered(refresh, values, catalog, None, reach)),
         Preset::Same(chosen) | Preset::Changed(chosen) => {
             Some(offered(refresh, values, catalog, Some(&chosen.file), reach))
@@ -239,11 +242,15 @@ fn look(
         && !relisted
         && !said
         && !reprojected
-        && !matches!(preset, Preset::Changed(_))
+        && !matches!(
+            preset,
+            Preset::Changed(_) | Preset::NoTools { changed: true }
+        )
     {
         return Seen::Same;
     }
     let (face, pin) = match &preset {
+        Preset::NoTools { .. } => (Vec::new(), None),
         Preset::Changed(chosen) => (
             refaced(refresh, values, catalog, &chosen.file, reach),
             Some(chosen.pin()),
@@ -291,24 +298,35 @@ fn look(
             _ => old.foreground,
         },
         knowledge: listing,
-        skills: old.skills.clone(),
+        // 无工具的没有技能那一块（施工 P-16 下）：没有 `read`，列出来也读不了。
+        skills: match &preset {
+            Preset::NoTools { .. } => None,
+            _ => old.skills.clone(),
+        },
         // 「关于你」造会话时钉下（施工 P-9）：换人格、换预设照旧，不重读配置。
         profile: old.profile.clone(),
         project: projected,
         appended,
         bare: false,
     };
-    let new = match build(&refresh.resources, parts) {
+    let mut new = match build(&refresh.resources, parts) {
         Ok(new) => new,
         Err(error) => return Seen::Kept(error.to_string()),
     };
+    new.no_tools = matches!(preset, Preset::NoTools { .. });
     // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。
     if new.hash() == old.hash() {
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
-    let edited =
-        !same || matches!(preset, Preset::Changed(_)) || relisted || reappended || reprojected;
+    let edited = !same
+        || matches!(
+            preset,
+            Preset::Changed(_) | Preset::NoTools { changed: true }
+        )
+        || relisted
+        || reappended
+        || reprojected;
     if !edited && !old.swappable(&new) && new.tools == old.tools {
         return Seen::Same;
     }
@@ -356,8 +374,10 @@ struct Retext {
 
 /// 快照里的预设现在是什么样（施工 P-2 下；O-2 中重新筛工具面也要它）。
 enum Preset {
-    /// 这个会话没有预设。
+    /// 这个会话没有预设：以前造的、测试里造的，不筛。
     Nothing,
+    /// 明着选了无工具（施工 P-16 下）：工具面是空的。`changed` 是这一轮刚换成它的。
+    NoTools { changed: bool },
     /// 找不回来：以前造的快照没有指纹，没交预设的几层。
     Unknown,
     /// 没改：现在找到的那一份。
@@ -373,6 +393,9 @@ fn features(refresh: &Refresh) -> Option<&Features> {
 
 /// 照快照里预设的编号重新找一遍（施工 P-2 下），全局开关照这一轮的配置 `values`（施工 X-27）。
 fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
+    if refresh.snapshot.no_tools {
+        return Ok(Preset::NoTools { changed: false });
+    }
     let Some(pin) = &refresh.snapshot.preset else {
         return Ok(Preset::Nothing);
     };

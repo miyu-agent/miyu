@@ -63,9 +63,9 @@ pub(crate) struct ConfigureParams {
     /// 换成的人格（施工 P-13）：写 `null` 的换成无人格，不写的不换。
     #[serde(default, deserialize_with = "crate::personas::written")]
     persona: Option<Option<String>>,
-    /// 换成的预设（施工 P-13）：不写的不换。
-    #[serde(default)]
-    preset: Option<String>,
+    /// 换成的预设（施工 P-13）：不写的不换，写 `null` 的换成无工具（施工 P-16 下）。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    preset: Option<Option<String>>,
     /// 以前收的思考强度；只用来判断写没写，内容不读。
     #[serde(default)]
     effort: Option<Value>,
@@ -84,7 +84,7 @@ impl ConfigureParams {
             || (self.model.is_none() && self.persona.is_none() && self.preset.is_none())
             || self.model.as_ref().is_some_and(empty)
             || self.persona.as_ref().is_some_and(empty)
-            || empty(&self.preset)
+            || self.preset.as_ref().is_some_and(empty)
         {
             return Err(Refusal::BAD_PARAMS);
         }
@@ -95,7 +95,10 @@ impl ConfigureParams {
     pub(crate) fn recast(&self) -> (Option<Option<&str>>, Option<&str>) {
         (
             self.persona.as_ref().map(Option::as_deref),
-            self.preset.as_deref(),
+            // 无工具的照内核的写法是空的编号（施工 P-16 下）。
+            self.preset
+                .as_ref()
+                .map(|preset| preset.as_deref().unwrap_or_default()),
         )
     }
 }

@@ -53,7 +53,7 @@
 |---|---|---|
 | `cwd` | 字符串 | 头的工作目录，人看到的写法，例如 `~/src/miyu`。不写的用这个会话自己的默认工作区；远程的连接不能写（施工 Y-1 下） |
 | `persona` | 字符串或 `null` | 用哪个人格；`null` 是不用人格；不写照配置 `persona.default` |
-| `preset` | 字符串 | 用哪个预设；不写照 `preset.default`，都没有是 `full` |
+| `preset` | 字符串或 `null` | 用哪个预设；不写照 `preset.default`，都没有是 `full`；`null` 是无工具：一件工具都不给（施工 P-16 下） |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
 | `memory` | `persona`、`session`、`off` | 记忆跟着人格、只在这个会话里、不用；不写照人格的设置 |
 | `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
@@ -109,7 +109,7 @@
 | `preview` | 没有标题时：第一句话的第一行，最多 50 个字 |
 | `pinned` | `true`：置顶了 |
 | `busy` | `true`：有回合在进行 |
-| `persona`、`preset` | 用哪个人格、预设，没有的不写 |
+| `persona`、`preset` | 用哪个人格、预设，没有的不写；无工具的 `preset` 是 `null`，另带 `no_tools: true`（施工 P-16 下） |
 | `tokens` | 连同它派出去的子会话（一层层往下）一共用了多少 token：每次模型调用（主请求、起标题、压缩都算）的输入（没命中、缓存读、缓存写）加输出，和终端底栏的 `Σ` 同一个算法；还是 0 的不写 |
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
 | `project` | 在哪个项目，不在的不写 |
@@ -350,11 +350,11 @@
 **参数**：`session`；下面三格至少写一格：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
 - `persona`：人格编号；`null` 是无人格。
-- `preset`：预设编号。
+- `preset`：预设编号；`null` 是换成无工具（施工 P-16 下）。
 
 换人格、预设时先压缩一轮：核心马上照旧人格把前面的对话压成摘要，下一轮换上新的，从摘要接着聊。跟着人格的记忆从这一轮起记在新人格那一间，以前的留在原来那一间。
 
-**回应**：`{}`。变了的推 `session.policy_changed`；换模型生效的那一刻推 `model.changed`。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写。
+**回应**：`{}`。变了的推 `session.policy_changed`；换模型生效的那一刻推 `model.changed`。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。
 
 **出错**：`bad_params`（三格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格）；`unknown_model`；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
 

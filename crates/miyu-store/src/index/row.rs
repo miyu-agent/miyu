@@ -93,7 +93,11 @@ impl Row {
             preview: String::new(),
             venue: created.venue.as_str().to_string(),
             persona: created.persona.clone(),
-            preset: created.preset.clone(),
+            // 明着无工具的记成空的编号，同换预设时内核记的（施工 P-16 下）。
+            preset: match created.no_tools {
+                true => Some(String::new()),
+                false => created.preset.clone(),
+            },
             project: None,
             tokens: 0,
             context: None,

@@ -3,7 +3,11 @@
 
 use super::test_support::{look_now, names, setup, write_preset};
 use super::*;
+use miyu_kernel::tool::Access;
 use miyu_policy::features::{Feature, Features};
+use miyu_tool::testkit::{Act, Fake};
+use miyu_tool::{Catalog, Tool};
+use std::sync::Arc;
 
 const OFF: &str = "Installed but off in this session's preset:";
 
@@ -259,4 +263,31 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
         panic!("改回来也换");
     };
     assert!(!snapshot.foreground, "开着的不记");
+}
+
+/// 明着无工具的（施工 P-16 下）：目录换了代、新装上一个内置包也照旧一件不给，不当成以前没记预设的（那种会把新装的包的工具
+/// 加进来）。
+#[test]
+fn a_no_tools_session_stays_empty_when_a_package_is_installed() {
+    let (_scratch, _root, mut refresh) = setup("preset-no-tools", "");
+    refresh.snapshot.tools.clear();
+    refresh.snapshot.preset = None;
+    refresh.snapshot.no_tools = true;
+    // 上一次对过的那一代里还没有人格记忆：这一轮看到它新装上了。
+    let before = Catalog::in_packages([(
+        "basesystem",
+        vec![Fake::new("read", Access::Read, Act::Echo) as Arc<dyn Tool>],
+    )])
+    .expect("合写法");
+    let mut seen = miyu_tool::Shelf::new(before).edition();
+    seen.generation = refresh.tools.edition().generation + 1;
+    refresh.seen = Some(seen);
+    match look_now(&refresh) {
+        Seen::Same => {}
+        Seen::Swapped(snapshot, ..) => {
+            assert!(names(&snapshot).is_empty(), "{:?}", names(&snapshot));
+            assert!(snapshot.no_tools, "照旧记着无工具");
+        }
+        _ => panic!("看得成"),
+    }
 }
