@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>737</b><span>/ 754 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>739</b><span>/ 756 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">MB-2</b><span>最近一步（MB-2 成员上网不碰本机和局域网）</span></li>
+    <li><b class="mono">Q-A</b><span>最近一步（Q-A 回答里贴图）</span></li>
   </ul>
 </header>
 
@@ -1207,6 +1207,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sY1x"><span class="n">Y-1 下上</span>本机才能用的方法<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLG1a"><span class="n">LG-1 上</span>运行日志不漏内容<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMB2"><span class="n">MB-2</span>成员上网不碰本机和局域网<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sST"><span class="n">S-T</span>会话的工具<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sQA"><span class="n">Q-A</span>回答里贴图<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -42195,6 +42197,111 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>蓝图 <code>docs/blueprint/tools/web_fetch.md</code>「怎么走」第 4 条、<code>docs/blueprint/net.md</code> 第 5 条，施工单 <code>docs/construction/MB-2-成员上网不碰本机.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sST" aria-labelledby="h-sST">
+  <div class="sheet-head"><h2 id="h-sST"><span class="no">S-T</span>会话的工具</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人要在终端里看这个会话她能用哪些工具。现在头能问核心：下一轮真会发给模型的那一份，按来源分组；没开会话的照新会话会拿到的列。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">会话的工具</span><span class="dir-note">S-T</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>session.tools：写了会话的问那个会话，照回合开始换快照那一套只看不换</li>
+              <li>没写会话的照 session.create 同一份拼，只拼不造</li>
+              <li>要先加载的写 loaded: false，有它们的多一件 load_tools</li>
+              <li>来处：MCP 照服务名，脚本照显示名，别的照包</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">先后</span><span class="rl">照发给模型的先后，就是名字的字节序</span></div>
+          <div class="tile new"><span class="nm">权限</span><span class="rl">同 session.recap：人都能调，扩展要 events.read</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">S-T</dd></div>
+        <div><dt>名称</dt><dd>会话的工具</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">S-T</dd></div>
+        <div><dt>验收</dt><dd>本机门禁全过；变异 5 条杀 4 条</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>会话的照名字排、带来处</span></li>
+        <li><span class="ok">✓</span><span>新会话的预览和真造出来的一样</span></li>
+        <li><span class="ok">✓</span><span>写了会话又写人格、预设的拒</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/S-T-会话的工具.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sQA" aria-labelledby="h-sQA">
+  <div class="sheet-head"><h2 id="h-sQA"><span class="no">Q-A</span>回答里贴图</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人：回答问题的时候用户需要图片辅助表达。现在拒绝确认、回答提问时都能贴图，图跟在工具结果里给她看。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">回答里贴图</span><span class="dir-note">Q-A</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>session.answer：拒绝时、回答提问的每一道可带附件，写法同 session.send</li>
+              <li>tool.approval_decided、question.answered 记下附件，空的不写</li>
+              <li>拒绝的结果是理由后面接图</li>
+              <li>ask_user 附了图的那道写 (attached below: N)，图照题目先后跟在后面</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">图放在工具结果里</span><span class="rl">不另起一条用户消息，调用和结果挨着</span></div>
+          <div class="tile new"><span class="nm">允许的带附件</span><span class="rl">同带理由，unexpected_reason</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">Q-A</dd></div>
+        <div><dt>名称</dt><dd>回答里贴图</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">Q-A</dd></div>
+        <div><dt>验收</dt><dd>本机门禁全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>拒绝带图进结果</span></li>
+        <li><span class="ok">✓</span><span>允许带图拒</span></li>
+        <li><span class="ok">✓</span><span>只附了图的那道不算没答</span></li>
+        <li><span class="ok">✓</span><span>附件不对的什么都不送</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/Q-A-回答带图.md</code>。</li>
       </ul>
     </div>
   </div>
