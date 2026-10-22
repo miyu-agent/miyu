@@ -403,6 +403,7 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
 }
 
 mod face;
+mod next;
 #[cfg(test)]
 mod preset_tests;
 mod project;

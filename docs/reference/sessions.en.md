@@ -9,6 +9,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.send`](#sessionsend) | Say something |
 | [`session.interrupt`](#sessioninterrupt) | Interrupt the running turn |
 | [`session.withdraw`](#sessionwithdraw) | Take back one queued message without interrupting |
+| [`session.tools`](#sessiontools) | The tools she can use next turn |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -30,7 +31,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -171,6 +172,20 @@ Takes back one queued message she hasn't heard yet, without interrupting the tur
 **Response**: `{"events": [<the seq of the message.withdrawn>]}`. The push is the same as when `session.interrupt` returns messages: one `message.withdrawn` whose `messages` holds just this one; the view marks that message `withdrawn: true`. The turn keeps running and, when it's done, the remaining queued messages open the next one.
 
 **Errors**: `already_heard`: the named message isn't queued, a request already took it (or it opened the next turn); `nothing_queued`: no message named and nothing queued.
+
+## `session.tools`
+
+The tools her next request will carry.
+
+**Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset`, as in `session.create`.
+
+**Response**: `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`, in the order sent to the model (byte order of names). `kind` is `builtin`, `package`, `mcp` or `script`; `source.name` follows the connection's language. Only scripts have `summary`. Tools that must be loaded first and show only their name have `loaded: false`, and then `load_tools` is listed too.
+
+```json
+{"tools":[{"name":"edit","source":{"kind":"builtin","id":"basesystem","name":"Base system"}},{"name":"mcp__notes__search","source":{"kind":"mcp","id":"notes","name":"notes"},"loaded":false}]}
+```
+
+**Errors**: `bad_params` (`session` together with `persona` or `preset`); the session lookup errors.
 
 ## `session.answer`
 

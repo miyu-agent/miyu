@@ -223,6 +223,9 @@ pub(crate) fn call<'a>(
         "session.answer" => answer(move || session::answer_question(core, request)),
         "session.clear" => answer(move || session::clear(core, request)),
         "session.recap" => answer(move || session::recap(core, request)),
+        "session.tools" => answer(move || async move {
+            crate::session_tools::tools(core, peer, &caller.account, params(request)?).await
+        }),
         "job.stop" => answer(move || session::stop_job(core, request)),
         "job.output" => {
             answer(move || async move { job_output::read(core, params(request)?).await })

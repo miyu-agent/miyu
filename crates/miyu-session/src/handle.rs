@@ -1,5 +1,7 @@
 //! 拿着一个会话：发命令、订阅、有计划地停下（施工 3-7 中）。拿着它的都放下了，actor 就退出。
 
+mod tools;
+
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -71,6 +73,8 @@ pub(crate) enum Message {
     Subscribe(oneshot::Sender<Taken>),
     /// 要这一刻「当前的」几样（施工 9-6 上）：已经订阅着的头再订阅一次时，不另起订阅。
     Current(oneshot::Sender<crate::current::Current>),
+    /// 下一次请求会发的工具（施工 S-T，`handle/tools.rs`）。
+    Tools(oneshot::Sender<Vec<miyu_policy::Offered>>),
     /// 放下了一个订阅（施工 7-9）：订阅被丢掉时由它自己送来，连同要订阅、没等到回答就不等了的。
     Unsubscribed,
     /// 有计划地停下：它的事件都落了盘，actor 退出以前交回一声。

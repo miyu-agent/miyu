@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use miyu_kernel::event::{Body, Permission};
+use miyu_kernel::event::Body;
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person, Session};
@@ -24,9 +24,7 @@ use crate::Core;
 use crate::personas;
 use crate::presets;
 use crate::refusal::Refusal;
-use crate::settings::PermissionSettings;
 use crate::spawn;
-use miyu_session::settings::ProfileSettings;
 
 mod delete;
 mod dream;
@@ -35,10 +33,11 @@ mod idle;
 mod opening;
 mod orphans;
 mod places;
+mod setup;
 
 pub(crate) use opening::Opening;
-use opening::{opening_level, profile_for};
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
+pub(crate) use setup::Setup;
 #[cfg(test)]
 mod tests;
 
@@ -157,7 +156,7 @@ impl Sessions {
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-        let (resolved, project) = core.config().with_project(&workspace);
+        let (_, project) = core.config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
         if let Some(id) = earlier {
             return Ok(Created {
@@ -167,74 +166,15 @@ impl Sessions {
                 untrusted,
             });
         }
-        let permission = PermissionSettings::from(&resolved.values());
-        let level = opening_level(&permission, who.venue.as_ref());
-        let profile = profile_for(
-            ProfileSettings::from(&resolved.values()),
-            who.venue.as_ref(),
-            who.profile,
-            who.owner == core.admin,
-        );
-        let preset = presets::resolve(core, who.preset.as_deref()).await?;
-        let persona = personas::resolve(core, persona).await?;
-        let created = create(Create {
-            root: &core.root,
-            resources: &core.resources,
-            id: id.clone(),
-            persona: persona.as_ref().map(|found| found.id.as_str()),
-            persona_texts: persona
-                .as_ref()
-                .map(|found| found.texts.clone())
-                .unwrap_or_default(),
-            profile,
-            personas: personas::personas(core),
-            memory_account: personas::memory_account(
-                persona.as_ref(),
-                &core.memory_owner(&who.owner),
-            ),
-            memory_scope: who
-                .memory
-                .or(persona.as_ref().and_then(|found| found.file.memory))
-                .unwrap_or(MemoryScope::Persona),
-            venue: who.venue.clone().unwrap_or_else(local),
-            owner: who.owner.clone(),
-            permission: Permission {
-                level,
-                read_only: permission.start_read_only,
-            },
-            attended: who.attended,
-            oneshot: who.oneshot,
-            environment: environment(workspace.clone(), dirs.clone()),
-            command: command.clone(),
-            by: admin(core),
-            models: &*core.models,
-            tools: &core.tools,
-            home: core.home.as_deref(),
-            sandbox: core.sandbox.helper(),
-            sandbox_cache: core.sandbox_cache_of(&who.owner),
-            lineage: None,
-            sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core)),
-            hooks: Some(crate::hooks::port(core)),
-            jobs: &core.jobs,
-            index: core.index_for(&who.owner),
-            usage: core.usage_for(&who.owner),
-            knowledge: Some(Arc::clone(&core.knowledge)),
-            vectors: core.memory.vectors().cloned(),
-            installed: Some(crate::packages::installed(core)),
-            memory: core.memory_for(&who.owner),
-            configs: core.hub.configs(),
-            model: who.model,
-            preset: Some(presets::chosen(core, preset)),
-            presets: Some(presets::places(core)),
-            group: who.group,
-            owner_is_admin: who.owner == core.admin,
-            images: who.images,
-            titles: who.titles,
-            dream: None,
-            origin: who.origin.clone(),
-        })
-        .await;
+        let mut setup = Setup::resolve(
+            core,
+            (id.clone(), command.clone()),
+            persona,
+            (workspace.clone(), dirs.clone()),
+            who,
+        )
+        .await?;
+        let created = create(setup.create(core)).await;
         let handle = match created {
             Ok(handle) => handle,
             // 人格已经找好了：`core/` 下哪一份读不了（安装坏了），是内部出错（施工 4-9 再补三上）。

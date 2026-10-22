@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, oneshot};
 use miyu_kernel::event::SessionCreated;
 use miyu_kernel::session::{Input, Session};
 use miyu_models::provider::chat;
-use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
+use miyu_policy::preset::{Chosen, ROLEPLAY};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
 use miyu_store::recall::NO_PERSONA;
@@ -19,7 +19,7 @@ use miyu_tool::{Log, Seen};
 use crate::TARGET;
 use crate::actor::persona::Refresh;
 use crate::actor::{self, Actor, JobKit};
-use crate::agents::{Agents, Holds, Offers, Reach, Site, job_in, persona_choices};
+use crate::agents::{Agents, job_in};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
@@ -28,7 +28,7 @@ use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
-use crate::knowledge::{Shelves, Shelving, listing};
+use crate::knowledge::listing;
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
@@ -41,6 +41,7 @@ use crate::tools::ToolKit;
 use crate::usage::Ledger;
 
 mod error;
+mod face;
 mod fork;
 mod load;
 mod place;
@@ -49,10 +50,10 @@ mod scan;
 mod setup;
 
 pub use error::{CreateError, LoadError};
+pub use face::preview;
 pub use fork::{Fork, ForkError, fork};
 pub use load::{load, load_placed};
 pub(crate) use scan::current_policy;
-use setup::blinded;
 pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace};
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
@@ -63,6 +64,15 @@ pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace}
 ///
 /// 人格、子会话的场所说明读不出来，策略造不出来、磁盘上建不成；造会话那一条没落盘。
 pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
+    let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
+    let face::Opened {
+        preset,
+        scope,
+        shelves,
+        listed,
+        face,
+        edition,
+    } = face::open(&setup, &config.current().resolved.values()).await;
     let Create {
         root,
         resources,
@@ -72,7 +82,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         profile,
         personas,
         memory_account,
-        memory_scope,
+        memory_scope: _,
         venue,
         owner,
         permission,
@@ -93,13 +103,13 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         jobs,
         index,
         usage,
-        configs,
+        configs: _,
         model,
-        knowledge,
-        vectors,
+        knowledge: _,
+        vectors: _,
         installed: packages_installed,
         memory,
-        preset,
+        preset: _,
         presets,
         group,
         owner_is_admin,
@@ -109,46 +119,13 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         origin,
     } = setup;
     let span = actor::span(&id);
-    let config = Turning::start(configs, environment.cwd.clone()).await;
     // 没指定的照这时的 `models.chat`：记进 `session.created`，以后照它（施工 8-8）。
     let reference = model.or_else(|| chat(&config.current().resolved.values()));
     let (resources, name) = (resources.clone(), persona.map(str::to_string));
     let shipped = resources.clone();
     // 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的）当都装着。
     let features = presets.as_ref().map(|places| &places.features);
-    let preset = blinded(preset, images, features);
     let installed = |feature| features.is_none_or(|features| features.installed(feature));
-    // 预设没开记忆的，范围一律 `off`（施工 P-2 中，走查 E2：开不开记忆归预设）。没装人格记忆的也是（施工 F-3 上）。
-    // 无人格的也有记忆（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：跟着人格的落在无人格那一间。
-    let opened = installed(MEMORY)
-        && preset
-            .as_ref()
-            .is_none_or(|chosen| chosen.file.opens(MEMORY));
-    let scope = memory::scope(lineage.is_some(), opened, memory_scope);
-    // 知识库照记忆的账号、人格查（施工 K-1 下）；一个都查不到的工具面上没有两件，回合开始再判。
-    let shelves = knowledge.map(|knowledge| {
-        let shelving = Shelving {
-            knowledge,
-            persona: name.clone(),
-            personas: personas.clone(),
-            owner: owner.clone(),
-            home: home.map(Path::to_path_buf),
-            vectors,
-            recall: crate::knowledge::recall::texts(&shipped),
-        };
-        Arc::new(Shelves::new(shelving, memory_account.clone()))
-    });
-    let (listed, reach) = match shelves.clone() {
-        Some(shelves) => {
-            blocking(move || {
-                let listed = shelves.listed();
-                let reach = shelves.reach(&listed);
-                (listed, reach)
-            })
-            .await
-        }
-        None => (Vec::new(), Reach::Save),
-    };
     // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
     // 只读。
     let watch = packages_installed.clone().map(|installed| skills::Watch {
@@ -171,29 +148,6 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         }
         None => (Vec::new(), Vec::new(), skills::Names::new()),
     };
-    // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
-    // 照预设筛（施工 P-2 中）。
-    let offers = Offers::of(
-        &config.current().resolved.values(),
-        persona_choices(&personas),
-    );
-    // 照架子上现在的那一代拼；记下第几代，回合开头看换没换（施工 O-2 中）。
-    let edition = tools.edition();
-    let face = Agents::face(
-        &edition.catalog,
-        Site {
-            venue: &venue,
-            group: group.is_some(),
-        },
-        lineage.as_ref(),
-        &offers,
-        attended,
-        Holds {
-            memory: scope,
-            knowledge: reach,
-        },
-        preset.as_ref().map(|chosen| (&chosen.file, features)),
-    );
     let pin = preset.as_ref().map(Chosen::pin);
     let foreground = Agents::foreground(preset.as_ref().map(|chosen| &chosen.file));
     let tooled = tooled(&edition.catalog, features);

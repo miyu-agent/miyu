@@ -70,6 +70,10 @@ impl Actor {
                 answer(reply, self.current());
                 Mail::Done
             }
+            Message::Tools(reply) => {
+                self.next_tools(reply);
+                Mail::Done
+            }
             Message::Unsubscribed => self.watch(false),
             Message::Stop(reply) => Mail::Stop(reply),
             Message::Halt(halt) => Mail::Halt(halt),

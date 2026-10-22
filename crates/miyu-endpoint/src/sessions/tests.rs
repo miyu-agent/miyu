@@ -12,7 +12,8 @@ use miyu_session::{Child, Lineage};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::{Opening, local, opening_level, profile_for};
+use super::opening::{opening_level, profile_for};
+use super::{Opening, local};
 use crate::Core;
 use crate::settings::PermissionSettings;
 use crate::test_support::{resources, temp_root};

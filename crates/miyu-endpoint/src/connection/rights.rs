@@ -62,9 +62,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.clear" | "session.configure" | "session.fork" | "session.set_meta"
         | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
         // 读会话里的东西。
-        "session.list" | "session.recap" | "view.page" | "view.detail" | "job.output" => {
-            Needs(EventsRead)
-        }
+        "session.list" | "session.recap" | "session.tools" | "view.page" | "view.detail"
+        | "job.output" => Needs(EventsRead),
         "events.append" => Needs(EventsWrite),
         // 代表平台上的人、场所的原语（`venue.delivered`、`venue.recalled` 是 `events.append` 里只给桥的两种事件）。
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"

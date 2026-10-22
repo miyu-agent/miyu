@@ -84,7 +84,7 @@ pub use memory::{
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError, PresetPlaces,
-    Workplace, create, fork, load, load_placed,
+    Workplace, create, fork, load, load_placed, preview,
 };
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{

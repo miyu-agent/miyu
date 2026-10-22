@@ -59,7 +59,7 @@ pub use guard::GuardTexts;
 pub use harness::HarnessTexts;
 pub use image_name::ImageNameTexts;
 pub use jobs::{DEPTH as JOB_DEPTH, JobNumbers, JobTexts, REPORT_CHARS};
-pub use loading::{LOAD_TOOLS, LoadingTexts, STUB};
+pub use loading::{LOAD_TOOLS, LoadingTexts, Offered, STUB, offered};
 pub use open_path::OpenPathTexts;
 pub use pause::{PAUSE, PauseNumbers};
 pub use peers::{PEERS, PeerIdleTexts, PeerNumbers, PeerTexts};

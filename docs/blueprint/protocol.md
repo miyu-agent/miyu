@@ -170,6 +170,7 @@
 | `session.send` | 说一句话 |
 | `session.interrupt` | 打断在进行的回合 |
 | `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
+| `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -479,6 +480,20 @@
 | `message` | 整数，可以不写 | 退哪一条：那句话的 `message.user` 的序号；不写的退回最新的一条 |
 
 不打断，内核追加一条 `message.withdrawn`（`by` 是退的人，`cause` 是这个命令，`messages` 只有这一条），这一轮照跑（`kernel/session.md`「排队的消息」）。回应：`events`，那一条的序号，落了盘才回。写的那一条不在队里（请求已经带上了、由它接着开了一轮、退过了）：`already_heard`；没写、又没有排着的：`nothing_queued`。权限同 `session.interrupt`（`sessions.drive`）。
+
+**`session.tools`**（施工 S-T，2026-10-22 项目主人要的 `/tool-list`）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算 |
+| `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create`（`null` 是无人格，不写的照 `persona.default`） |
+| `preset` | 字符串，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create` |
+
+回应 `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`，照发给模型的先后（名字的字节序）。`source.kind` 是 `builtin`（内置的包）、`package`、`mcp`、`script`；`source.name` 是包名、服务名、脚本的显示名，照连接的语言挑。`summary` 只有脚本有（脚本的 `# 描述：` 那一槽）。要先加载、只露名字的写 `loaded: false`，这时多一件 `load_tools`。
+
+1. 写了 `session` 的：会话照回合开始换快照那一套看一遍（人格、预设、工具目录、知识库换了的照换了以后的），只看不换。
+2. 没写的：和 `session.create` 照同一份拼（找预设、人格，拼工具面），只拼不造。
+3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 

@@ -9,6 +9,7 @@
 | [`session.send`](#sessionsend) | 说一句话 |
 | [`session.interrupt`](#sessioninterrupt) | 打断在进行的回合 |
 | [`session.withdraw`](#sessionwithdraw) | 不打断，退回一条排着队的话 |
+| [`session.tools`](#sessiontools) | 她下一轮能用的工具 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -30,7 +31,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -171,6 +172,20 @@
 **回应**：`{"events": [<那条 message.withdrawn 的序号>]}`。推送照 `session.interrupt` 退回的一样：一条 `message.withdrawn`，`messages` 里只有这一条；视图里那一句标 `withdrawn: true`。这一轮照跑，回完了由剩下排着的接着开。
 
 **出错**：`already_heard`：写的那一条不在队里，请求已经带上了（或者由它接着开了一轮）；`nothing_queued`：没写哪一条，又没有排着的。
+
+## `session.tools`
+
+她下一次请求会拿到的工具。
+
+**参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`，同 `session.create`。
+
+**回应**：`{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`，照发给模型的先后（名字的字节序）。`kind` 是 `builtin`、`package`、`mcp`、`script`；`source.name` 照连接的语言挑。`summary` 只有脚本有。要先加载、只露名字的写 `loaded: false`，这时还有一件 `load_tools`。
+
+```json
+{"tools":[{"name":"edit","source":{"kind":"builtin","id":"basesystem","name":"基础系统"}},{"name":"mcp__notes__search","source":{"kind":"mcp","id":"notes","name":"notes"},"loaded":false}]}
+```
+
+**出错**：`bad_params`（写了 `session` 又写了 `persona`、`preset`）；找会话的那几种。
 
 ## `session.answer`
 

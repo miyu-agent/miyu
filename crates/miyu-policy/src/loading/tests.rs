@@ -98,3 +98,39 @@ fn an_entry_without_need_load_keeps_its_old_bytes() {
     let back: ToolEntry = serde_json::from_str(&old).unwrap();
     assert!(!back.need_load, "以前的快照读成不用加载");
 }
+
+/// 发给模型的样子（施工 S-T）：照名字排，要先加载的只露名字，多 `load_tools`；没有要先加载的、没有那几句字的照原样。
+#[test]
+fn what_is_offered_follows_the_stub() {
+    let tools = [
+        entry("zeta", true),
+        entry("alpha", false),
+        entry("mcp__x__y", true),
+    ];
+    let offered = offered(&tools, Some(&texts()));
+    let shown: Vec<(&str, bool)> = offered
+        .iter()
+        .map(|o| (o.name.as_str(), o.loaded))
+        .collect();
+    assert_eq!(
+        shown,
+        [
+            ("alpha", true),
+            ("load_tools", true),
+            ("mcp__x__y", false),
+            ("zeta", false)
+        ]
+    );
+    let (mut face, mut rules) = split(&tools);
+    stub(&tools, Some(&texts()), &mut face, &mut rules).unwrap();
+    assert_eq!(
+        offered.iter().map(|o| o.name.clone()).collect::<Vec<_>>(),
+        face.iter()
+            .map(|spec| spec.name.clone())
+            .collect::<Vec<_>>(),
+        "和真发的先后一样"
+    );
+    let plain = super::offered(&tools, None);
+    assert!(plain.iter().all(|o| o.loaded), "没有那几句字的不加载");
+    assert_eq!(plain.len(), 3);
+}

@@ -89,5 +89,37 @@ pub(crate) fn stub(
     .map(Some)
 }
 
+/// 发给模型的一件工具（施工 S-T，`session.tools`）：名字，和是不是只露名字、要先加载（`loaded` 是假的）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Offered {
+    /// 工具名。
+    pub name: String,
+    /// 是假的：只露名字，要先加载。
+    pub loaded: bool,
+}
+
+/// 工具面 `tools` 照 `stub` 发出去的样子：照发的先后（名字的字节序），要先加载的那几件 `loaded` 是假的，有它们、又有
+/// `texts` 的多一件 [`LOAD_TOOLS`]。和 `stub` 走同一条路，不另算。
+pub fn offered(tools: &[ToolEntry], texts: Option<&LoadingTexts>) -> Vec<Offered> {
+    let Ok((mut face, mut rules)) = crate::tools::split(tools) else {
+        return Vec::new();
+    };
+    let stubbed = matches!(stub(tools, texts, &mut face, &mut rules), Ok(Some(_)));
+    face.sort_by(|one, other| one.name.cmp(&other.name));
+    face.into_iter()
+        .map(|spec| {
+            let loaded = !stubbed
+                || tools
+                    .iter()
+                    .find(|tool| tool.name == spec.name)
+                    .is_none_or(|tool| !tool.need_load);
+            Offered {
+                name: spec.name,
+                loaded,
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests;
