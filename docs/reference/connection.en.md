@@ -7,6 +7,8 @@ Chinese version: [connection.md](connection.md).
 | [`hello`](#hello) | Handshake: who you are, your credentials |
 | [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribe to or leave a push stream |
 | [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | One-time code for web login, setting the username and password, revoking logins |
+| [`account.invite`, `account.register` and the rest](#members) | Members: invite codes, registering, listing, disabling |
+| [`account.invite`, `account.register` and the rest](#members) | Members: invite codes, registering, listing, disabling |
 
 ## Connecting
 
@@ -54,9 +56,10 @@ The handshake. It must be the first message; before it every other method gets `
 | `token` | string | The local token |
 | `code` | string | A one-time code (first web password, password reset) |
 | `login` | string | A login token (a remembered web login) |
-| `user`, `password` | string | Web username and password, together |
+| `user`, `password` | string | Web username and password, together; the admin and members both use them |
+| `invite` | string | Invite code: someone not registered yet connects with it and can only register |
 
-Give exactly one kind of credential: `token`, `code`, `login`, or `user` plus `password`. Extensions give none.
+Give exactly one kind of credential: `token`, `code`, `login`, `invite`, or `user` plus `password`. Extensions give none. The reply's `account` is the account recognized: the one the login token or username belongs to; a connection made with an invite code hasn't registered yet, so it is `null`, with `"register": true`.
 
 **Response**
 
@@ -88,10 +91,13 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `bad_params` (`-32602`) | A required field is missing or has the wrong type; more than one kind of credential, or only one of `user`/`password` (closes) |
 | `protocol_mismatch` | `1` is not in your range (closes) |
 | `bad_token` | No credential, or a wrong local token (closes) |
-| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes) |
+| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes); a disabled account's password is also `bad_password` |
+| `bad_invite` | Wrong, expired, used or revoked invite code (closes) |
 | `login_throttled` | Too many wrong passwords; wait a while (closes) |
 | `hello_first` | Another method before the handshake (does not close) |
 | `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup` |
+| `register_first` | Connected with an invite code and called something other than `human.get` and `account.register` |
+| `not_permitted` | A member's connection called something other than `human.get` and `account.logout` (for now members can only manage their own account; permissions open up step by step) |
 
 ## `subscribe`, `unsubscribe`
 
@@ -163,6 +169,33 @@ A one-time code works once. Setting the password revokes every earlier browser l
 |---|---|
 | `bad_params` (`-32602`) | Wrong params; username or password not acceptable |
 | `local_only` | Called by an extension, or `account.setup_code` on a connection that didn't use the local token |
+## Members
+
+Several people can use one Miyu: the admin hands out invite codes, and whoever has one registers an account of their own (a member). Each person's sessions are visible only to them.
+
+**Who can call**: `account.register` on connections made with an invite code; the rest only the admin, members get `not_permitted`.
+
+| Method | Params | Response |
+|---|---|---|
+| `account.invite` | `days` (1 to 30, default 7) | `{"code", "id", "expires"}`: the code is given only here, later only its id is listed |
+| `account.invites` | none | `{"invites": [{"id", "created", "expires", "used"?}]}`: usable ones and recently used ones (`used` is `{"account", "at"}`) |
+| `account.invite_revoke` | `id` | `{"revoked": true}`: revokes one not yet used |
+| `account.register` | `username`, `password` | `{"account", "username", "login": {"expires", "token"}}`: registered; this connection is now that account |
+| `account.list` | none | `{"accounts": [{"account", "kind", "username"?, "created"?, "disabled"?}]}`: `kind` is `admin`, `member` or `system` |
+| `account.disable`, `account.enable` | `account` | `{"account", "disabled"}`: disabling revokes all its logins and closes its connections; data stays |
+
+The username is the account id: starts with a lowercase letter, only lowercase letters, digits and `-`, at most 32; it can't be the admin's, an existing account's or a system account's, nor `users`. Invite codes are single-use; if registering fails (say the username is taken) the code stays usable.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Wrong params; username or password not acceptable |
+| `username_taken` | The username is taken |
+| `unknown_invite` | No such invite code, or already used |
+| `unknown_account` | No such account, or it isn't a member |
+| `not_permitted` | Not the admin |
+
 ## `login.ticket`, `login.redeem`
 
 Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side redeems it for a login token and connects to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got).

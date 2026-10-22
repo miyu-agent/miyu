@@ -25,6 +25,8 @@ use tokio::task::JoinSet;
 
 use miyu_kernel::id::SessionId;
 
+mod accounts;
+mod gate;
 mod reach;
 mod rights;
 mod streams;
@@ -119,7 +121,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 这个连接是谁（施工 O-4 下）：声明了系统账号的包的扩展是它，别的是管理员。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
-    let caller = Caller {
+    let mut caller = Caller {
         reverse: reverse.clone(),
         account: core.account_of(package.as_deref()),
         package: package.clone(),
@@ -147,7 +149,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                     .to_string();
                 tokio::select! {
                     read = wire::read_line(&mut reader) => read,
-                    () = until_revoked(revoked, &mine) => {
+                    () = until_revoked(revoked, &mine, &caller.account) => {
                         tracing::info!(target: "miyu::endpoint", "login revoked, closed");
                         break;
                     }
@@ -198,16 +200,11 @@ async fn read_all<R: AsyncRead + Unpin>(
         tracing::debug!(target: "miyu::endpoint", method = request.method.as_str(), "request");
         core.activity.touch();
         reap(&mut background);
-        // 用一次性码连上的，先设密码（施工 W-8）。
-        if via == Some(Via::Code)
-            && !matches!(
-                request.method.as_str(),
-                "hello" | "human.get" | "account.setup"
-            )
-        {
+        // 凭据决定的闸（施工 W-8、Y-1 上）：一次性码先设密码，邀请码先注册，成员暂时只能管自己的账号。
+        if let Some(refusal) = gate::refuse(&core, via.as_ref(), &caller.account, &request.method) {
             let refused = wire::error(
                 Value::String(request.id.as_str().to_string()),
-                Refusal::SETUP_FIRST,
+                refusal,
                 locale,
             );
             if !send(&out, refused).await {
@@ -282,6 +279,10 @@ async fn read_all<R: AsyncRead + Unpin>(
                         }
                         shaken = Some(shook);
                         revoked = by.login().map(|_| core.identity.revoked());
+                        // 凭据认出来的账号就是这个连接（施工 Y-1 上）。
+                        if let Some(account) = by.account() {
+                            caller.account = account.clone();
+                        }
                         via = Some(by);
                         (wire::result(&request.id, result), None, false)
                     }
@@ -309,27 +310,20 @@ async fn read_all<R: AsyncRead + Unpin>(
                     login::ticket::call(&core, via.as_ref(), &caller.account, &request).await;
                 (answer(&request, result, locale), None, false)
             }
-            ("account.setup_code", Some(_)) => {
-                let result = login::setup_code(&core, via.as_ref().unwrap_or(&Via::Token));
-                (answer(&request, result, locale), None, false)
-            }
-            ("account.setup", Some(_)) => {
-                let now = via.clone().unwrap_or(Via::Token);
-                match login::setup(&core, &now, request.params.clone()).await {
-                    Ok((result, by)) => {
-                        revoked = Some(core.identity.revoked());
-                        via = Some(by);
-                        (wire::result(&request.id, result), None, false)
+            (name, Some(_)) if name.starts_with("account.") => {
+                let changed = accounts::call(&core, via.as_ref(), &caller.account, &request).await;
+                if let Some(by) = changed.via {
+                    revoked = Some(core.identity.revoked());
+                    if let Some(account) = by.account() {
+                        caller.account = account.clone();
                     }
-                    Err(refusal) => (answer(&request, Err(refusal), locale), None, false),
+                    via = Some(by);
                 }
-            }
-            ("account.logout", Some(_)) => {
-                let now = via.clone().unwrap_or(Via::Token);
-                match login::logout(&core, &now, request.params.clone()).await {
-                    Ok((result, close)) => (wire::result(&request.id, result), None, close),
-                    Err(refusal) => (answer(&request, Err(refusal), locale), None, false),
-                }
+                (
+                    answer(&request, changed.result, locale),
+                    None,
+                    changed.close,
+                )
             }
             ("unsubscribe", Some(_)) => {
                 let result = stream_of(&request).map(|stream| {
@@ -381,12 +375,17 @@ async fn read_all<R: AsyncRead + Unpin>(
     }
 }
 
-/// 等到作废了这个连接靠的登录令牌 `mine`（施工 W-8）：全部作废、作废的正是它；收慢了丢了几条的也当作废了（页面照登录令牌
-/// 重连，还认得的照常进来）。
-async fn until_revoked(revoked: &mut tokio::sync::broadcast::Receiver<Revoked>, mine: &str) {
+/// 等到作废了这个连接靠的登录令牌 `mine`（施工 W-8）：这个账号 `account` 的全部作废（施工 Y-1 上起只断这个账号的）、作废的
+/// 正是它；收慢了丢了几条的也当作废了（页面照登录令牌重连，还认得的照常进来）。
+async fn until_revoked(
+    revoked: &mut tokio::sync::broadcast::Receiver<Revoked>,
+    mine: &str,
+    account: &miyu_kernel::id::AccountId,
+) {
     loop {
         match revoked.recv().await {
             Ok(Revoked::One(hash)) if hash != mine => {}
+            Ok(Revoked::All(whose)) if whose != *account => {}
             Ok(_) | Err(_) => return,
         }
     }

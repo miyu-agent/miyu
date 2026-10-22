@@ -55,6 +55,9 @@ struct Params {
     /// 登录令牌（施工 W-8）。
     #[serde(default)]
     login: Option<String>,
+    /// 邀请码（施工 Y-1 上）：只能注册。
+    #[serde(default)]
+    invite: Option<String>,
     /// 用户名（施工 W-8）。
     #[serde(default)]
     user: Option<String>,
@@ -181,6 +184,8 @@ pub(crate) async fn hello(
         input: params.caps.input,
     };
     let language = shaken.now(core).language;
+    // 凭据认出来的账号（施工 Y-1 上）：登录令牌、密码连上的是那个账号；本机令牌、扩展的照连接原来的。
+    let account = via.account().unwrap_or(account);
     let mut result = json!({
         "protocol": PROTOCOL,
         "core": {"version": env!("CARGO_PKG_VERSION")},
@@ -198,6 +203,11 @@ pub(crate) async fn hello(
     if via == Via::Code {
         result["setup"] = json!(true);
     }
+    if matches!(via, Via::Invite(_)) {
+        // 还没注册，不是谁（施工 Y-1 上）：注册成了回应里才有账号。
+        result["account"] = Value::Null;
+        result["register"] = json!(true);
+    }
     if let Some(login) = login {
         result["login"] = login;
     }
@@ -214,6 +224,7 @@ async fn credentials(
         params.token.is_some(),
         params.code.is_some(),
         params.login.is_some(),
+        params.invite.is_some(),
         params.user.is_some() || params.password.is_some(),
     ];
     if written.iter().filter(|written| **written).count() > 1 {
@@ -235,6 +246,11 @@ async fn credentials(
         return login::login(core, token)
             .map(|via| (via, None))
             .ok_or((Refusal::BAD_LOGIN, Some("bad login")));
+    }
+    if let Some(code) = &params.invite {
+        return login::invites::admit(core, code)
+            .map(|via| (via, None))
+            .ok_or((Refusal::BAD_INVITE, Some("bad invite")));
     }
     match (&params.user, &params.password) {
         (None, None) => Err((Refusal::BAD_TOKEN, Some("bad token"))),

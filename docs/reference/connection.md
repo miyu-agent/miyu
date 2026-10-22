@@ -7,6 +7,7 @@
 | [`hello`](#hello) | 握手：说明你是谁、出示凭据 |
 | [`subscribe`、`unsubscribe`](#subscribeunsubscribe) | 订阅、取消订阅一条推送流 |
 | [`account.setup_code`、`account.setup`、`account.logout`](#accountsetup_codeaccountsetupaccountlogout) | 网页登录用的一次性码、设用户名和密码、作废登录 |
+| [`account.invite`、`account.register` 这几个](#成员) | 成员：邀请码、注册、列出、停用 |
 
 ## 怎么连
 
@@ -54,9 +55,10 @@
 | `token` | 字符串 | 本机令牌 |
 | `code` | 字符串 | 一次性码（网页第一次设密码、重设密码） |
 | `login` | 字符串 | 登录令牌（网页记住的登录） |
-| `user`、`password` | 字符串 | 网页登录的用户名、密码，一起写 |
+| `user`、`password` | 字符串 | 网页登录的用户名、密码，一起写；管理员、成员都用它 |
+| `invite` | 字符串 | 邀请码：还没注册的人凭它连上，只能注册 |
 
-凭据正好写一种：`token`、`code`、`login`，或者 `user` 加 `password`。扩展不写。
+凭据正好写一种：`token`、`code`、`login`、`invite`，或者 `user` 加 `password`。扩展不写。回应的 `account` 是认出来的账号：登录令牌、用户名密码连上的是那个账号；用邀请码连上的还没注册，是 `null`，另带 `"register": true`。
 
 **回应**
 
@@ -88,10 +90,13 @@
 | `bad_params`（`-32602`） | 缺了必写的、类型不对；凭据写了不止一种、`user`/`password` 只写一个（断开） |
 | `protocol_mismatch` | `1` 不在你给的范围里（断开） |
 | `bad_token` | 没写凭据，或者本机令牌不对（断开） |
-| `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开） |
+| `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开）；停用了的账号的密码也是 `bad_password` |
+| `bad_invite` | 邀请码不对、过期了、用过了、撤掉了（断开） |
 | `login_throttled` | 密码错太多次，先等一会儿（断开） |
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法 |
+| `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
+| `not_permitted` | 成员的连接调了 `human.get`、`account.logout` 以外的方法（现在成员只能管自己的账号，权限一样样放开） |
 
 ## `subscribe`、`unsubscribe`
 
@@ -163,6 +168,33 @@
 |---|---|
 | `bad_params`（`-32602`） | 参数不对；用户名、密码不合要求 |
 | `local_only` | 扩展调了，或者不是本机令牌连上的调了 `account.setup_code` |
+## 成员
+
+一个 Miyu 可以有几个人用：管理员发邀请码，拿到码的人自己注册一个账号（成员）。各自的会话只有自己看得到。
+
+**谁能调**：`account.register` 给用邀请码连上的；别的只给管理员，成员调了回 `not_permitted`。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `account.invite` | `days`（1 到 30，默认 7） | `{"code", "id", "expires"}`：邀请码只在这里给一次，以后只列得出编号 |
+| `account.invites` | 没有 | `{"invites": [{"id", "created", "expires", "used"?}]}`：还能用的、最近用掉的（`used` 是 `{"account", "at"}`） |
+| `account.invite_revoke` | `id` | `{"revoked": true}`：撤掉一个还没用的 |
+| `account.register` | `username`、`password` | `{"account", "username", "login": {"expires", "token"}}`：注册好了，这个连接从此是这个账号 |
+| `account.list` | 没有 | `{"accounts": [{"account", "kind", "username"?, "created"?, "disabled"?}]}`：`kind` 是 `admin`、`member`、`system` |
+| `account.disable`、`account.enable` | `account` | `{"account", "disabled"}`：停用的登录全部作废、连着的断开，数据留着 |
+
+用户名就是账号编号：小写字母开头，只用小写字母、数字、`-`，最多 32 个；不能和管理员、已有的账号、系统账号重名，也不能叫 `users`。邀请码一次性；注册没成（比如用户名被占了）码还在。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 参数不对；用户名、密码不合要求 |
+| `username_taken` | 用户名被占了 |
+| `unknown_invite` | 没有这个邀请码，或者已经用了 |
+| `unknown_account` | 没有这个账号，或者它不是成员 |
+| `not_permitted` | 不是管理员 |
+
 ## `login.ticket`、`login.redeem`
 
 交接票：已经登录的人从一个页面跳到另一个程序的页面（网页跳到接入通讯平台的页面），不用再登录一次。跳过去之前要一张票带在网址里，接的一方拿它换一个登录令牌，再照这个登录令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。

@@ -214,7 +214,10 @@
 | `account.setup_code` | 要一个一次性码：第一次给管理员设网页登录的用户名和密码、忘了密码重设；只给出示本机令牌的连接（施工 W-8） |
 | `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性、绑这个账号的票，接的一方换一个登录令牌；扩展要不了票。详见 `docs/reference/connection.md` |
 | `account.setup` | 用一次性码连上的设用户名和密码，换一个登录令牌（施工 W-8） |
-| `account.logout` | 作废登录令牌：这一个，或者 `all` 全部（施工 W-8） |
+| `account.logout` | 作废登录令牌：这一个，或者 `all` 全部（施工 W-8）；作废的是这个连接自己账号的（施工 Y-1 上） |
+| `account.invite`、`account.invites`、`account.invite_revoke` | 管理员发、列、撤邀请码：一次性、默认 7 天，`invites.json` 只存哈希（施工 Y-1 上，设计 06 U15） |
+| `account.register` | 用邀请码握手的连接注册成员：用户名就是账号编号，建家目录、用掉邀请码、换一个登录令牌（施工 Y-1 上） |
+| `account.list`、`account.disable`、`account.enable` | 管理员列账号（管理员、成员、系统账号）、停用启用成员：停用当场作废它的登录、断开它的连接（施工 Y-1 上） |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
 | `blob.get` | 分块读一个 blob：照管理员名下给；写了 `session` 的照那个会话的属主（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补） |
 | `fs.list` | 列一层目录：数据根只有账号自己的默认工作区能列（施工 W-2） |

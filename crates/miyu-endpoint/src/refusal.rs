@@ -3,6 +3,7 @@
 
 use miyu_kernel::session::Reason;
 
+mod account;
 mod commands;
 mod config;
 mod edits;

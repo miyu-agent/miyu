@@ -12,6 +12,8 @@ fn admin(username: &str, password: &str) -> Account {
         username: username.to_string(),
         password: hash(password).expect("算得出"),
         changed: Timestamp::parse("2026-10-04T06:00:00.000Z").expect("合写法"),
+        created: None,
+        disabled: false,
     }
 }
 
@@ -105,4 +107,29 @@ fn passwords_hash_with_argon2id_and_verify() {
     let account = admin("admin", "correct horse");
     let shown = format!("{account:?}");
     assert!(!shown.contains("argon2"), "{shown}");
+}
+
+/// 成员（施工 Y-1 上）：注册的时刻、停用照写照读；没有的两格不写，管理员那一行的字节不变（上面那条测的就是）。
+#[test]
+fn a_member_keeps_when_it_was_created_and_whether_it_is_disabled() {
+    let temp = Scratch::new();
+    let path = temp.path().join("system").join(FILE);
+    let mut member = admin("alice", "correct horse");
+    member.id = "alice".to_string();
+    member.created = Some(Timestamp::parse("2026-10-22T01:00:00.000Z").expect("合写法"));
+    member.disabled = true;
+    let accounts = Accounts {
+        version: 1,
+        accounts: vec![member.clone()],
+    };
+    write(&path, &accounts, None).expect("写得进");
+    let text = fs::read_to_string(&path).expect("在");
+    assert!(
+        text.ends_with("\"created\":\"2026-10-22T01:00:00.000Z\",\"disabled\":true}]}\n"),
+        "{text}"
+    );
+    assert_eq!(
+        read(&path).expect("读得回").accounts.of("alice"),
+        Some(&member)
+    );
 }
