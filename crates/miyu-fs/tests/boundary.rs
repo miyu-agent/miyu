@@ -389,3 +389,38 @@ fn the_readonly_list_folds_case_where_case_does_not_matter() {
         .join("pre-commit");
     assert_eq!(boundary.zone(&upper), Zone::Readable);
 }
+
+/// 工作区包住数据根、私密目录（施工 5-14 改：工作目录是 `~` 的就是工作区）：最深的那一片算，数据根照旧谁都不能碰、私密目录照旧
+/// 私密、开着的技能文件夹照旧只读；家目录别处能写。工作区落在私密目录里的照工作区（施工 5-13 起就这样）。
+#[test]
+fn a_workspace_holding_the_data_root_and_private_dirs_keeps_them() {
+    let site = Site::new();
+    let boundary = Boundary::new(&Places {
+        workspace: site.scratch.0.clone(),
+        private: vec![site.at("home/.ssh")],
+        shelves: vec![site.at("data/home/admin/skills/notes")],
+        ..site.places()
+    });
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Private);
+    assert_eq!(
+        boundary.zone(&site.real("data/home/admin/skills/notes/SKILL.md")),
+        Zone::Shelf
+    );
+    assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Writable);
+    assert!(
+        boundary.blocks_descent(&site.real("data")),
+        "往下走目录的工具不进数据根"
+    );
+    let inside = Boundary::new(&Places {
+        workspace: site.at("home/.ssh"),
+        private: vec![site.at("home/.ssh")],
+        ..site.places()
+    });
+    assert_eq!(
+        inside.zone(&site.real("home/.ssh/id")),
+        Zone::Writable,
+        "工作区开在私密目录里：照工作区"
+    );
+}

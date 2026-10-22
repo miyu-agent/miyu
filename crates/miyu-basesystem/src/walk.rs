@@ -5,7 +5,8 @@
 //!   不到了。pi 也是这样分的。
 //! - 隐藏文件照找；版本库自己的目录（[`VCS`]）不进；不跟着链接走。
 //! - Miyu 的数据根不进（[`Fence`]）：权限策略只核对搜的那个目录，从上面搜下来会走进去（`11-权限与沙盒.md` A9）。
-//!   这一轮的工作目录在数据根里面的（账号自己的工作区就在数据根里），照样进，和权限策略的先后一样。
+//!   这一轮的工作目录在数据根里面的（账号自己的工作区就在数据根里），照样进，和权限策略的先后一样；工作目录包住数据根的
+//!   （`~`，施工 5-14 改起它也是工作区）照样不进：最深的那一片算。
 //! - 别的程序的私密目录也不进（施工 5-13，`miyu_fs::private_dirs`）：读它们要问人，从上面搜下来不该绕过去。搜的那个
 //!   目录就在里面的（问过了）、工作目录那一片照样进。
 //! - 按修改时间排，新的在前，时间一样的照路径排。
@@ -70,18 +71,20 @@ impl Fence {
         self
     }
 
-    /// 目录 `dir` 不进：在数据根、私密目录里，又不在工作目录那一片里。
+    /// 目录 `dir` 不进：在数据根、私密目录里，除非工作目录就落在那一处里面、`dir` 又在工作目录那一片里（最深的那一片算，施工
+    /// 5-14 改：工作目录是 `~` 这种包住数据根、私密目录的，照样不进它们）。
     fn keeps_out(&self, dir: &Path) -> bool {
-        let fenced = self
-            .data_root
+        self.data_root
             .iter()
             .chain(&self.private)
-            .any(|fenced| within(dir, fenced));
-        fenced
-            && !self
-                .workspace
-                .as_deref()
-                .is_some_and(|workspace| within(dir, workspace))
+            .any(|fenced| within(dir, fenced) && !self.held(dir, fenced))
+    }
+
+    /// `dir` 在工作目录那一片里，工作目录又落在 `fenced` 里面（账号自己的工作区就在数据根里）。
+    fn held(&self, dir: &Path, fenced: &Path) -> bool {
+        self.workspace
+            .as_deref()
+            .is_some_and(|workspace| within(workspace, fenced) && within(dir, workspace))
     }
 }
 

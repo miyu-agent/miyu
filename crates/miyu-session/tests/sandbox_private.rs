@@ -1,6 +1,6 @@
 //! 沙盒藏起别的程序的私密目录（施工 5-13，`docs/blueprint/sandbox.md` 的 `hidden`）：这台机器上有的才写，排在数据根后面，
-//! 照清单的先后；落在能写的里面的不藏（工作区装着它、加进来的目录装着它；工作目录是家目录的，能写的退回会话的默认工作区，
-//! 施工 5-14，照藏）。Unix 上有收紧手段的，真的经助手跑
+//! 照清单的先后；落在能写的里面的不藏（工作区装着它、加进来的目录装着它；工作目录太宽（根目录）的，能写的退回会话的
+//! 默认工作区，施工 5-14，照藏；家目录施工 5-14 改起不再太宽，macOS 上照藏、Linux 上有挂载才藏）。Unix 上有收紧手段的，真的经助手跑
 //! `shell`：私密目录里的读不到，家目录别处照读。场地的假家目录是 `home/`。
 
 use std::path::{Path, PathBuf};
@@ -74,38 +74,53 @@ async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
     for dir in [".ssh", ".claude"] {
         std::fs::create_dir_all(home.home.join(dir)).expect("建得了目录");
     }
-    // 工作目录是家目录（太宽）：能写的是这个会话的默认工作区（施工 5-14），私密目录不在里面，照藏。
-    let sandboxed = attached(&home, &home.home, false, Vec::new()).await;
+    // 工作目录太宽（根目录）：能写的是这个会话的默认工作区（施工 5-14），私密目录不在里面，照藏。
+    let root = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+    let sandboxed = attached(&home, &root, false, Vec::new()).await;
     let ssh_claude = [
         real(home.root.path()),
         real(&home.home.join(".ssh")),
         real(&home.home.join(".claude")),
     ];
-    assert_eq!(sandboxed.spec.hidden, ssh_claude, "家目录太宽：照藏");
+    assert_eq!(sandboxed.spec.hidden, ssh_claude, "根目录太宽：照藏");
     let workspace = home.root.workspace(&alice_account());
     assert!(
         sandboxed.spec.write[0].starts_with(real(&workspace)),
         "能写的是会话的默认工作区：{:?}",
         sandboxed.spec.write
     );
-    // 工作区开在 `~/.config`：里面的 `gh` 照人给的算，不藏。
+    // 工作目录是家目录（施工 5-14 改：Linux、macOS 上不再太宽，家目录就是工作区）：落在里面的私密目录 macOS 上照藏（Seatbelt
+    // 藏得住），Linux 上没有挂载的不藏（这个测试的进程里没设挂载）。Windows 上照旧退回，照藏。
+    let sandboxed = attached(&home, &home.home, false, Vec::new()).await;
+    if cfg!(windows) || cfg!(target_os = "macos") {
+        assert_eq!(sandboxed.spec.hidden, ssh_claude, "家目录：照藏");
+    } else {
+        assert_eq!(
+            sandboxed.spec.hidden,
+            [real(home.root.path())],
+            "家目录就是工作区，没有挂载：落在里面的私密目录不藏"
+        );
+        assert_eq!(sandboxed.spec.write[0], real(&home.home));
+    }
+    // 工作区开在 `~/.config`：里面的 `gh` 藏得住的照藏（macOS，最深的那一片算，施工 5-14 改），Linux 没有挂载的不藏。
     std::fs::create_dir_all(home.home.join(".config/gh")).expect("建得了目录");
     let sandboxed = attached(&home, &home.home.join(".config"), false, Vec::new()).await;
+    let gh = real(&home.home.join(".config/gh"));
+    let mut config = ssh_claude.to_vec();
+    if cfg!(target_os = "macos") {
+        config.push(gh.clone());
+    }
     assert_eq!(
-        sandboxed.spec.hidden, ssh_claude,
-        "工作区装着它：照人给的算"
+        sandboxed.spec.hidden, config,
+        "工作区装着它：藏得住的照藏，藏不住的照人给的算"
     );
     let work = home.scratch.0.join("work");
     let claude = home.home.join(".claude").to_string_lossy().into_owned();
     let sandboxed = attached(&home, &work, false, vec![claude]).await;
     assert_eq!(
         sandboxed.spec.hidden,
-        [
-            real(home.root.path()),
-            real(&home.home.join(".ssh")),
-            real(&home.home.join(".config/gh")),
-        ],
-        "加进来的目录就是它：不藏"
+        [real(home.root.path()), real(&home.home.join(".ssh")), gh],
+        "加进来的目录就是它：不藏（macOS 上也一样，人给的优先）"
     );
 }
 

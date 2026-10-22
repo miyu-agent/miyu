@@ -138,5 +138,6 @@ pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked,
     Ok(Picked {
         cwd: cwd.to_string(),
         wide: wide(core, owner, &real),
+        broad: miyu_fs::broad(&real, home.as_deref(), &data_root, &own),
     })
 }

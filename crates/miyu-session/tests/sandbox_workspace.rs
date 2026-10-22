@@ -1,6 +1,7 @@
-//! 工作目录和工作区分开（施工 5-14，`docs/designs/11-权限与沙盒.md` 第四节）：工作目录太宽（系统的家目录）的会话，命令照旧
-//! 从那里起，能写的是这个会话的默认工作区 `home/<账号>/workspace/<会话>/`，用到时建好；子会话、子会话的子会话用主会话的
-//! 那一个，`session.created` 记下 `workspace_from`；载入以后权限策略照样只让写那里。场地的假家目录是 `home/`。
+//! 工作目录和工作区分开（施工 5-14，`docs/designs/11-权限与沙盒.md` 第四节）：工作目录太宽（根目录；施工 5-14 改起家目录只有
+//! Windows 上还太宽）的会话，命令照旧从那里起，能写的是这个会话的默认工作区 `home/<账号>/workspace/<会话>/`，用到时建好；
+//! 子会话、子会话的子会话用主会话的那一个，`session.created` 记下 `workspace_from`；载入以后权限策略照样只让写那里。Linux、
+//! macOS 上在家目录里开的，家目录就是工作区（施工 5-14 改）。场地的假家目录是 `home/`。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -26,9 +27,19 @@ fn own(home: &Home, session: &SessionId) -> PathBuf {
     home.root.session_workspace(&alice_account(), session)
 }
 
-/// 在家目录里造一个会话（工作区这一级，沙盒能用：假的助手，假工具不起它），父会话照 `lineage`：执行命令的假工具 `run`
-/// 跑一次，交回会话和它拿到的沙盒。
-async fn in_home(home: &Home, lineage: Option<Lineage>) -> (Handle, Arc<Sandboxed>) {
+/// 哪个平台都太宽的工作目录：根目录。
+fn wide() -> PathBuf {
+    PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" })
+}
+
+/// 在太宽的工作目录里造一个会话（工作区这一级，沙盒能用：假的助手，假工具不起它），父会话照 `lineage`：执行命令的假工具
+/// `run` 跑一次，交回会话和它拿到的沙盒。
+async fn in_wide(home: &Home, lineage: Option<Lineage>) -> (Handle, Arc<Sandboxed>) {
+    in_dir(home, &wide(), lineage).await
+}
+
+/// 在工作目录 `cwd` 里造一个会话，同 [`in_wide`]。
+async fn in_dir(home: &Home, cwd: &Path, lineage: Option<Lineage>) -> (Handle, Arc<Sandboxed>) {
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
     let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);
@@ -38,7 +49,7 @@ async fn in_home(home: &Home, lineage: Option<Lineage>) -> (Handle, Arc<Sandboxe
             read_only: false,
         },
         attended: false,
-        cwd: home.home.to_string_lossy().into_owned(),
+        cwd: cwd.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(PathBuf::from("miyu-sandbox")),
         sandbox_cache: None,
@@ -53,11 +64,7 @@ async fn in_home(home: &Home, lineage: Option<Lineage>) -> (Handle, Arc<Sandboxe
     until_turn_ends(&mut pushes).await;
     let calls = run.calls();
     assert_eq!(calls.len(), 1, "跑了一次");
-    assert_eq!(
-        Path::new(&calls[0].cwd),
-        home.home.as_path(),
-        "命令照旧从工作目录起"
-    );
+    assert_eq!(Path::new(&calls[0].cwd), cwd, "命令照旧从工作目录起");
     (handle, calls[0].sandbox.clone().expect("进了沙盒"))
 }
 
@@ -74,7 +81,7 @@ fn workspace_from(home: &Home, session: &SessionId) -> Option<SessionId> {
 #[tokio::test]
 async fn a_too_wide_directory_writes_only_in_the_session_s_own_folder() {
     let home = Home::outside_temp();
-    let (handle, sandboxed) = in_home(&home, None).await;
+    let (handle, sandboxed) = in_wide(&home, None).await;
     let mine = own(&home, handle.id());
     assert!(mine.is_dir(), "用到时建好了：{}", mine.display());
     assert_eq!(
@@ -84,8 +91,8 @@ async fn a_too_wide_directory_writes_only_in_the_session_s_own_folder() {
         sandboxed.spec.write
     );
     assert!(
-        !sandboxed.spec.write.contains(&real(&home.home)),
-        "家目录不能写：{:?}",
+        !sandboxed.spec.write.contains(&real(&wide())),
+        "根目录不能写：{:?}",
         sandboxed.spec.write
     );
     assert_eq!(
@@ -98,9 +105,9 @@ async fn a_too_wide_directory_writes_only_in_the_session_s_own_folder() {
 #[tokio::test]
 async fn children_write_in_the_main_session_s_folder() {
     let home = Home::outside_temp();
-    let (main, _) = in_home(&home, None).await;
+    let (main, _) = in_wide(&home, None).await;
     let parent = main.id().clone();
-    let (child, sandboxed) = in_home(
+    let (child, sandboxed) = in_wide(
         &home,
         Some(Lineage {
             parent: parent.clone(),
@@ -112,7 +119,7 @@ async fn children_write_in_the_main_session_s_folder() {
     assert_eq!(workspace_from(&home, child.id()), Some(parent.clone()));
     assert_eq!(sandboxed.spec.write[0], real(&own(&home, &parent)));
     // 子会话的子会话：照子会话记的那一个，追到主会话。
-    let (grandchild, sandboxed) = in_home(
+    let (grandchild, sandboxed) = in_wide(
         &home,
         Some(Lineage {
             parent: child.id().clone(),
@@ -156,7 +163,7 @@ async fn after_a_reload_file_tools_still_write_only_in_that_folder() {
             read_only: false,
         },
         attended: false,
-        cwd: home.home.to_string_lossy().into_owned(),
+        cwd: wide().to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
         sandbox_cache: None,
@@ -169,10 +176,10 @@ async fn after_a_reload_file_tools_still_write_only_in_that_folder() {
     let mine = own(&home, handle.id());
     let again = Script::new([
         one("edit", &mine.join("notes.md")),
-        one("edit", &home.home.join("notes.md")),
+        one("edit", &wide().join("miyu-not-here.md")),
         Play::Says("好。"),
     ]);
-    let cwd = home.home.to_string_lossy().into_owned();
+    let cwd = wide().to_string_lossy().into_owned();
     let loaded = home
         .load_full(handle.id(), &again, &catalog, &cwd, None)
         .await;
@@ -183,15 +190,15 @@ async fn after_a_reload_file_tools_still_write_only_in_that_folder() {
     assert_eq!(
         statuses(&log),
         [ToolStatus::Ok, ToolStatus::Denied],
-        "会话的那一个放行，家目录别处要问（没人能确认，拒）：{log:#?}"
+        "会话的那一个放行，根目录别处要问（没人能确认，拒）：{log:#?}"
     );
     assert_eq!(edit.calls().len(), 1);
 }
 
-/// 真的经助手跑 `shell`（Unix 上有收紧手段的）：命令在家目录里起，家目录里写不了，会话的那一个写得了。
+/// 真的经助手跑 `shell`（Unix 上有收紧手段的）：命令在根目录里起，根目录里写不了，会话的那一个写得了。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
+async fn a_real_command_starts_at_root_and_writes_in_the_session_s_folder() {
     let helper = miyu_sandbox::testkit::built_helper();
     let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
     if probe.mechanisms.is_empty() {
@@ -204,9 +211,10 @@ async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
     // 先编好会话的编号：命令里要写它的默认工作区。
     let session = miyu_session::new_id(now());
     let mine = own(&home, &session);
+    let outside = wide().join(format!("miyu-sandbox-workspace-{}.txt", std::process::id()));
     let command = format!(
-        "pwd -P; touch '{}' 2>/dev/null && echo wrote-home || echo blocked-home; touch '{}' && echo wrote-own",
-        home.home.join("a.txt").display(),
+        "pwd -P; touch '{}' 2>/dev/null && echo wrote-root || echo blocked-root; touch '{}' && echo wrote-own",
+        outside.display(),
         mine.join("b.txt").display(),
     );
     let args = serde_json::json!({ "command": command, "description": "Test" }).to_string();
@@ -217,7 +225,7 @@ async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
             read_only: false,
         },
         attended: false,
-        cwd: home.home.to_string_lossy().into_owned(),
+        cwd: wide().to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(helper),
         sandbox_cache: None,
@@ -247,9 +255,22 @@ async fn a_real_command_starts_at_home_and_writes_in_the_session_s_folder() {
             other => panic!("只该有字：{other:?}"),
         })
         .collect();
+    assert_eq!(text, "/\nblocked-root\nwrote-own\n");
+    assert!(!outside.exists());
+}
+
+/// 施工 5-14 改（2026-10-22 项目主人定）：Linux、macOS 上在家目录里开的，家目录就是工作区，命令照旧从那里起，不建会话的默认
+/// 工作区。Windows 上照旧退回。
+#[cfg(not(windows))]
+#[tokio::test]
+async fn a_home_directory_is_the_workspace() {
+    let home = Home::outside_temp();
+    let (handle, sandboxed) = in_dir(&home, &home.home, None).await;
     assert_eq!(
-        text,
-        format!("{}\nblocked-home\nwrote-own\n", real(&home.home).display())
+        sandboxed.spec.write[0],
+        real(&home.home),
+        "{:?}",
+        sandboxed.spec.write
     );
-    assert!(!home.home.join("a.txt").exists());
+    assert!(!own(&home, handle.id()).exists(), "没用到默认工作区，不建");
 }

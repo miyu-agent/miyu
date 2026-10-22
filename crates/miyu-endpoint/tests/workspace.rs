@@ -157,6 +157,16 @@ async fn a_project_directory_stays_and_the_account_workspace_becomes_the_session
     assert!(text.contains(&cwd_fact(&mine)), "{text}");
 }
 
+/// `~` 的回应：Windows 上太宽、带 `wide`，别处不再太宽、不带（施工 5-14 改）。
+fn home_wide(reply: &serde_json::Value) {
+    let wide = reply["result"].get("wide");
+    if cfg!(windows) {
+        assert_eq!(wide, Some(&json!(true)), "{reply}");
+    } else {
+        assert!(wide.is_none(), "{reply}");
+    }
+}
+
 #[tokio::test]
 async fn the_replies_say_where_the_session_works() {
     let home = Home::new();
@@ -177,7 +187,8 @@ async fn the_replies_say_where_the_session_works() {
         .as_str()
         .expect("造出来了")
         .to_string();
-    // 说话带着的目录先换过去（施工 9-7 再补，终端无缝集成；9-7 上那时照收不理）：太宽的照人选的用，回应带 `wide`。
+    // 说话带着的目录先换过去（施工 9-7 再补，终端无缝集成；9-7 上那时照收不理）：照人选的用，太宽的回应带 `wide`（`~` 只有
+    // Windows 上还太宽，施工 5-14 改）。
     let reply = client
         .call(
             "c2",
@@ -186,7 +197,7 @@ async fn the_replies_say_where_the_session_works() {
         )
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
-    assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
+    home_wide(&reply);
     home.until_turns(&session, 1).await;
     // 人明着换到太宽的目录：照人选的用，回应带 `wide`（施工 9-7 补，原来退回账号的工作区）。
     let reply = client
@@ -197,7 +208,7 @@ async fn the_replies_say_where_the_session_works() {
         )
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
-    assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
+    home_wide(&reply);
     // 之后说话的回应，是会话现在的。
     let reply = client
         .call(
@@ -214,14 +225,21 @@ async fn the_replies_say_where_the_session_works() {
             .call("c4", "session.create", json!({"cwd": "~"}))
             .await;
         assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
-        assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
+        home_wide(&reply);
     }
+    // 根目录哪儿都太宽：照用，带 `wide`。
+    let root = if cfg!(windows) { "C:\\" } else { "/" };
+    let reply = client
+        .call("c8", "session.create", json!({"cwd": root}))
+        .await;
+    assert_eq!(reply["result"]["cwd"], json!(root), "{reply}");
+    assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
     // 带 `chosen` 的照收，说的一样。
     let reply = client
         .call("c5", "session.create", json!({"cwd": "~", "chosen": true}))
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
-    assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
+    home_wide(&reply);
     // 明着选了数据根里面、又不是账号自己的工作区的：照不了，退回这个会话的默认工作区。
     let state = home.root.state().to_string_lossy().into_owned();
     let reply = client

@@ -29,7 +29,24 @@ fn a_too_wide_directory_works_in_the_session_s_own_folder() {
         .join("alice")
         .join("workspace")
         .join(main.as_str());
-    assert_eq!(place.of(&base, Some(&base), &data), fallback, "家目录太宽");
+    let root_dir = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+    assert_eq!(
+        place.of(&root_dir, Some(&base), &data),
+        fallback,
+        "根目录太宽"
+    );
+    assert_eq!(
+        place.of(&data.join("state"), Some(&base), &data),
+        fallback,
+        "落在数据根里太宽"
+    );
+    // 家目录（这里还包住数据根）：施工 5-14 改起只有 Windows 上还太宽。
+    let home_is = if cfg!(windows) {
+        fallback.clone()
+    } else {
+        base.clone()
+    };
+    assert_eq!(place.of(&base, Some(&base), &data), home_is, "家目录");
     let project = base.join("proj");
     assert_eq!(
         place.of(&project, Some(&base), &data),

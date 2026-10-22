@@ -228,7 +228,8 @@ async fn wrong_places_are_refused_and_too_wide_is_kept() {
     .await;
     assert_eq!(reason(&reply), Some("path_unreadable"), "{reply}");
 
-    // 读得出家目录的：`~` 太宽，照人选的用，回执说一声范围大（施工 9-7 补，原来退回账号的工作区）。
+    // 读得出家目录的：照人选的用（施工 9-7 补，原来退回账号的工作区）；Windows 上 `~` 太宽，回执说一声范围大，别处不再太宽
+    // （施工 5-14 改）。
     let home = Home::new();
     let own_home = home.work.join("home");
     std::fs::create_dir_all(&own_home).expect("建得了");
@@ -242,11 +243,12 @@ async fn wrong_places_are_refused_and_too_wide_is_kept() {
         json!({"session": session, "text": "/workspace ~"}),
     )
     .await;
-    assert_eq!(
-        reply["result"]["said"],
-        json!("工作区已切换到 ~（范围较大）。"),
-        "{reply}"
-    );
+    let said = if cfg!(windows) {
+        "工作区已切换到 ~（范围较大）。"
+    } else {
+        "工作区已切换到 ~。"
+    };
+    assert_eq!(reply["result"]["said"], json!(said), "{reply}");
     assert_eq!(moves(&home.log(&session)).last(), Some(&"~".to_string()));
 }
 

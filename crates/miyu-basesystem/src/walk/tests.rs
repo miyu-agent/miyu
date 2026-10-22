@@ -108,3 +108,32 @@ fn a_private_dir_added_in_the_settings_is_kept_out() {
     call.settings = None;
     assert!(!Fence::of(&call).keeps_out(&real), "没有配置的照出厂的");
 }
+
+/// 工作目录包住数据根、私密目录（施工 5-14 改：工作目录是 `~` 的也是工作区）：最深的那一片算，照样不进；工作目录落在数据根里的
+/// （账号自己的工作区）那一片照进，数据根别处不进。
+#[test]
+fn a_working_dir_holding_the_data_root_still_keeps_it_out() {
+    let dir = Temp(std::env::temp_dir().join(format!("miyu-walk-home-{}", std::process::id())));
+    let home = dir.0.join("home");
+    let data = home.join(".miyu");
+    let own = data.join("home").join("admin").join("workspace");
+    for path in [home.join(".ssh"), data.join("run"), own.clone()] {
+        std::fs::create_dir_all(path).expect("建得了目录");
+    }
+    let mut call = miyu_tool::testkit::call("{}");
+    call.cwd = home.to_string_lossy().into_owned();
+    call.home = Some(home.clone());
+    call.data_root = Some(data.clone());
+    let real = |path: &std::path::Path| std::fs::canonicalize(path).expect("在");
+    let fence = Fence::of(&call);
+    assert!(fence.keeps_out(&real(&data.join("run"))), "数据根不进");
+    assert!(fence.keeps_out(&real(&home.join(".ssh"))), "私密目录不进");
+    assert!(!fence.keeps_out(&real(&home)), "家目录别处照进");
+    call.cwd = own.to_string_lossy().into_owned();
+    let fence = Fence::of(&call);
+    assert!(
+        !fence.keeps_out(&real(&own)),
+        "工作目录在数据根里：那一片照进"
+    );
+    assert!(fence.keeps_out(&real(&data.join("run"))), "数据根别处不进");
+}

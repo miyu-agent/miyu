@@ -30,7 +30,7 @@ fn a_data_root_that_is_also_a_private_dir_is_hidden_once() {
     std::fs::remove_dir_all(&scratch).expect("删得掉");
 }
 
-/// 能写的里面的私密目录（施工 5-16）：能用挂载时照藏，不能时照人给的算（施工 5-13）。
+/// 能写的里面的私密目录（施工 5-16）：能用挂载时照藏，不能时照人给的算（施工 5-13）；macOS 上 Seatbelt 藏得住，照藏（施工 5-14 改）。
 #[test]
 fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
     let scratch = std::env::temp_dir().join(format!("miyu-sandbox-mounts-{}", std::process::id()));
@@ -46,10 +46,15 @@ fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
     );
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
     let write = [std::fs::canonicalize(&home).expect("在")];
+    let without: &[PathBuf] = if cfg!(target_os = "macos") {
+        &[real(".miyu"), real(".ssh")]
+    } else {
+        &[real(".miyu")]
+    };
     assert_eq!(
         sandbox.hidden(real(".miyu"), &write, false),
-        [real(".miyu")],
-        "没有挂载：落在能写的里面的私密目录不藏"
+        without,
+        "没有挂载：落在能写的里面的私密目录只有 macOS 上藏（施工 5-14 改）"
     );
     assert_eq!(
         sandbox.hidden(real(".miyu"), &write, true),

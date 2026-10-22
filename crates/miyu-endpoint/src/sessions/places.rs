@@ -19,9 +19,9 @@ pub(crate) fn check_dirs(core: &Core, dirs: &[String]) -> Result<(), Refusal> {
     }
 }
 
-/// 加进来的一个目录太不太宽：和工作目录同一套（`~` 本身、系统的家目录、根目录、包含数据根的），另外落在数据根里的
-/// 一律算太宽，账号的工作区也不例外：工作目录太宽时有地方可退，加进来的目录没有。换不成真实位置的照原样，边界表里
-/// 那一片不算。
+/// 加进来的一个目录太不太宽：`~` 本身、系统的家目录、根目录、包含数据根的（`miyu_fs::broad`：施工 5-14 改起工作目录不再
+/// 这样算，加进来的目录照旧，2026-10-22 主会话定），另外落在数据根里的一律算太宽，账号的工作区也不例外：工作目录太宽时有地方
+/// 可退，加进来的目录没有。换不成真实位置的照原样，边界表里那一片不算。
 fn dir_too_wide(core: &Core, dir: &str) -> bool {
     if dir.trim() == "~" {
         return true;
@@ -36,7 +36,7 @@ fn dir_too_wide(core: &Core, dir: &str) -> bool {
     let data_root =
         std::fs::canonicalize(core.root.path()).unwrap_or_else(|_| core.root.path().to_path_buf());
     miyu_fs::within(&real, &data_root)
-        || miyu_fs::too_wide(&real, home.as_deref(), &data_root, &data_root)
+        || miyu_fs::broad(&real, home.as_deref(), &data_root, &data_root)
 }
 
 /// 挑好的工作目录：实际用的写法，和它是不是太宽（施工 9-7 补；施工 5-14 起太宽的照样是工作目录，能写的工作区退回这个会话
@@ -45,8 +45,10 @@ fn dir_too_wide(core: &Core, dir: &str) -> bool {
 pub(crate) struct Picked {
     /// 实际用的目录：照原样的写法，退回的是这个会话的默认工作区。
     pub(crate) cwd: String,
-    /// 太宽（`~` 本身、系统的家目录、根目录、包含数据根的）：照用，工作区是会话的默认工作区。
+    /// 太宽（根目录；Windows 上还有 `~` 本身、系统的家目录、包含数据根的，施工 5-14 改）：照用，工作区是会话的默认工作区。
     pub(crate) wide: bool,
+    /// 宽（`miyu_fs::broad`：`~` 本身、系统的家目录、根目录、包含数据根的）：场所会话照它退回默认工作区（施工 5-14 改照旧）。
+    pub(crate) broad: bool,
 }
 
 /// 照 `cwd` 挑工作目录（`11-权限与沙盒.md` 第四节「工作目录和工作区分开」，施工 5-14）：人在哪就是哪，太宽的照用、标上
@@ -63,6 +65,7 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
             false => Picked {
                 cwd: cwd.to_string(),
                 wide: false,
+                broad: false,
             },
         };
     };
@@ -73,6 +76,7 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
     Picked {
         cwd: cwd.to_string(),
         wide: miyu_fs::too_wide(&real, home.as_deref(), &data_root, &own),
+        broad: miyu_fs::broad(&real, home.as_deref(), &data_root, &own),
     }
 }
 
@@ -100,11 +104,13 @@ fn prepared(core: &Core, owner: &AccountId, dir: &Path) -> Picked {
     Picked {
         cwd: dir.to_string_lossy().into_owned(),
         wide: false,
+        broad: false,
     }
 }
 
 /// 造会话 `id` 时的工作目录（施工 5-14）：照 [`pick`] 挑；账号的工作区本身（网页不选目录时交的就是它，握手的
-/// `host.workspace`）换成这个会话的默认工作区；场所会话太宽的（没带目录的是 `~`）也用它：外部身份只碰得到自己的工作区。
+/// `host.workspace`）换成这个会话的默认工作区；场所会话宽的（没带目录的是 `~`，照 [`Picked::broad`]：施工 5-14 改照旧）也用它：
+/// 外部身份只碰得到自己的工作区。
 /// 交回工作目录和太不太宽。只在造会话时这样认：以前的会话记着的照旧。
 pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId) -> (String, bool) {
     let fallback = core.root.session_workspace(&who.owner, id);
@@ -112,7 +118,7 @@ pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId)
         true => prepared(core, &who.owner, &fallback),
         false => pick(core, &who.owner, cwd, &fallback),
     };
-    match picked.wide && who.venue.is_some() {
+    match picked.broad && who.venue.is_some() {
         true => (prepared(core, &who.owner, &fallback).cwd, false),
         false => (picked.cwd, picked.wide),
     }

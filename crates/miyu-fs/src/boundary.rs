@@ -1,7 +1,8 @@
 //! 边界表（`11-权限与沙盒.md` 第四节，施工 4-3 上）：一个真实的位置落在哪一片。
 //!
-//! 几片重叠时照这个先后，先对上的算：工作区、数据根里单独放开只读的几个目录（开着的技能文件夹，施工 X-10 上）、数据根、
-//! 加进来的目录（照工作区算，施工 5-10 上）、别的程序的私密目录（施工 5-13）、临时目录、系统和工具链目录、边界以外。能写的
+//! 几片重叠时最深的那一片算（施工 5-14 改）：数据根里单独放开只读的几个目录（开着的技能文件夹，施工 X-10 上）、数据根、别的
+//! 程序的私密目录（施工 5-13）包在工作区、加进来的目录（照工作区算，施工 5-10 上）里面的照它们自己那一片；工作区落在数据根里、
+//! 工作区和加进来的目录落在私密目录里的照工作区。再往后是临时目录、系统和工具链目录、边界以外。能写的
 //! 那几片（工作区、加进来的目录、临时目录）里落在只禁写名单上的只能读（施工 5-17 下，[`Readonly`]）。
 
 use std::path::{Component, Path, PathBuf};
@@ -172,29 +173,39 @@ impl Boundary {
     }
 
     /// 同 [`Boundary::zone`]；`listed` 是假的不看只禁写名单。
+    ///
+    /// 最深的那一片算（施工 5-14 改）：工作区可以是 `~` 这种包住数据根、私密目录的，它们照旧是自己那一片；工作区、加进来的目录
+    /// 落在它们里面的（会话的默认工作区在数据根里、人把工作区开在 `~/.config` 里）才照工作区算。
     fn zone_with(&self, path: &Path, listed: bool) -> Zone {
-        if let Some(workspace) = &self.workspace
-            && let Ok(inside) = path.strip_prefix(workspace)
-        {
-            return self.writable(path, Some(inside), listed);
-        }
         if self.shelves.iter().any(|dir| within(path, dir)) {
             return Zone::Shelf;
         }
-        if self
-            .data_root
-            .as_ref()
-            .is_some_and(|root| within(path, root))
+        let workspace = self
+            .workspace
+            .as_deref()
+            .and_then(|root| Some((root, path.strip_prefix(root).ok()?)));
+        // 数据根：只有工作区落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样谁都不能碰。
+        if let Some(data_root) = &self.data_root
+            && within(path, data_root)
+            && !workspace.is_some_and(|(root, _)| within(root, data_root))
         {
             return Zone::Forbidden;
         }
-        // 加进来的目录排在数据根后面：落进了数据根的（报来以后被换成了链接），数据根照样谁都不能碰。
-        if let Some(inside) = self.dirs.iter().find_map(|dir| path.strip_prefix(dir).ok()) {
-            return self.writable(path, Some(inside), listed);
-        }
-        // 私密目录排在加进来的目录后面：人加进来的目录落在里面的，照人加的算（施工 5-13）。
-        if self.private.iter().any(|dir| within(path, dir)) {
+        let held = workspace.or_else(|| {
+            self.dirs
+                .iter()
+                .find_map(|root| Some((root.as_path(), path.strip_prefix(root).ok()?)))
+        });
+        // 私密目录：工作区、加进来的目录落在它里面的，照人给的算（施工 5-13）；包住它的不算。
+        if self
+            .private
+            .iter()
+            .any(|dir| within(path, dir) && !held.is_some_and(|(root, _)| within(root, dir)))
+        {
             return Zone::Private;
+        }
+        if let Some((_, inside)) = held {
+            return self.writable(path, Some(inside), listed);
         }
         if self
             .temp

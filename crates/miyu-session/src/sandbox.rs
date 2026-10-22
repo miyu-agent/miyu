@@ -186,7 +186,8 @@ impl Sandbox {
 
 impl Sandbox {
     /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节；这一轮的配置加的、去掉的照它，施工 5-15 下）。私密目录落在能写的 `write` 里面的
-    /// 只在能用挂载时（`mount`，施工 5-16）藏，不然照人给的算（同权限策略的先后），Landlock 一级级绕开会冻住工作区那一层。
+    /// 只在藏得住时（[`hides_inside`]：能用挂载，施工 5-16；macOS，施工 5-14 改）藏，不然照人给的算（同权限策略的先后），Landlock
+    /// 一级级绕开会冻住工作区那一层。
     fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
         let mut hidden = vec![data_root];
         let private = match &self.private {
@@ -197,12 +198,20 @@ impl Sandbox {
             .iter()
             .filter_map(|dir| std::fs::canonicalize(dir).ok())
         {
-            if mount || !write.iter().any(|base| within(&dir, base)) {
+            // 人给的能写的落在它里面（或者就是它）的不藏：照人给的算，最深的那一片算（施工 5-14 改，同权限策略的边界表）。
+            let given = write.iter().any(|base| within(base, &dir));
+            if !given && (hides_inside(mount) || !write.iter().any(|base| within(&dir, base))) {
                 outermost(&mut hidden, dir);
             }
         }
         hidden
     }
+}
+
+/// 能写的范围里的藏不藏得住（施工 5-14 改）：有挂载的（bubblewrap，这一轮不是弱沙盒，`mount`）盖得住；macOS 的 Seatbelt 深的
+/// 拒绝规则压得过浅的允许，也藏得住（工作目录可以是 `~` 以后，`~` 里的私密目录就落在能写的里面）。只有 Landlock 的挖不掉。
+fn hides_inside(mount: bool) -> bool {
+    mount || cfg!(target_os = "macos")
 }
 
 /// 藏起来的加上 `dir`，彼此不重叠（施工 5-15 下修）：落在已有的一条里面的（一样的也算）不加，已有的落在它里面的去掉。bwrap

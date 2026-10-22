@@ -37,4 +37,4 @@ pub use range::{MAX_LENGTH, Segment, read_range};
 pub use readonly::{Readonly, ReadonlyEntry, SHIPPED_READONLY, readonly_entry};
 pub use replace::replace;
 pub use resolve::{ResolveError, resolve, resolve_itself, tilde};
-pub use wide::{too_wide, workspace_of};
+pub use wide::{broad, too_wide, workspace_of};
