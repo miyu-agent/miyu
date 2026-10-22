@@ -236,7 +236,8 @@ async fn presets_carry_their_icons_and_one_can_be_changed() {
         icons,
         [
             ("dev".to_string(), json!("box")),
-            ("full".to_string(), json!("boxes"))
+            ("full".to_string(), json!("boxes")),
+            ("minimal".to_string(), json!("square-terminal"))
         ]
     );
     let changed = client
