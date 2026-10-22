@@ -19,12 +19,16 @@
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
+//! - 这一次在沙盒外跑（施工 5-14 改下，同 `shell`）：登记时参数里多一格布尔 `outside_sandbox`（说明是
+//!   `software/basesystem/script/outside-sandbox.txt`），写了 `true` 的照越过沙盒问人；交给脚本之前去掉这一格。脚本自己的参数里
+//!   本来就有这一格的不加、不覆盖，照原样交给它，这个脚本就只能在沙盒里跑。
 
 use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
@@ -57,6 +61,9 @@ const IMAGES: &str = "MIYU_SCRIPT_IMAGES_DIR";
 /// 状态目录交给脚本的环境变量（施工 X-44）。
 const STATE: &str = "MIYU_SCRIPT_STATE_DIR";
 
+/// 这一次在沙盒外跑的那一格（施工 5-14 改下，同 `shell`）。
+const OUTSIDE: &str = "outside_sandbox";
+
 /// 调用的场所交给脚本的环境变量（施工 X-43）。
 const CALLER_VENUE: &str = "MIYU_CALLER_VENUE";
 
@@ -72,6 +79,8 @@ pub(crate) struct Script {
     venues: Option<Venues>,
     /// 来处：包的编号，家目录里放的是 `~home`（施工 X-44：状态目录照它分）。
     source: String,
+    /// 参数里那一格 `outside_sandbox` 是不是登记时加的（施工 5-14 改下）：脚本自己声明了的不算。
+    outside: bool,
     file: PathBuf,
     timeout: u64,
     results: Results,
@@ -92,10 +101,18 @@ impl Script {
         file: PathBuf,
         source: &str,
     ) -> Result<Script, LoadError> {
-        let parameters = serde_json::from_str(&head.parameters).map_err(|error| LoadError {
+        let unreadable = |why: String| LoadError {
             file: file.clone(),
-            why: error.to_string(),
-        })?;
+            why,
+        };
+        let mut parameters: serde_json::Value = serde_json::from_str(&head.parameters)
+            .map_err(|error| unreadable(error.to_string()))?;
+        let outside = offer_outside(
+            &mut parameters,
+            load::raw(resources, "script", "outside-sandbox")?,
+        );
+        let parameters = RawJson::of(&parameters)
+            .ok_or_else(|| unreadable("parameters are not JSON".to_string()))?;
         let text = |name: &str, fields: &[&str]| load::text(resources, "script", name, fields);
         Ok(Script {
             spec: Spec {
@@ -110,6 +127,7 @@ impl Script {
             display_name: head.display_name.clone(),
             venues: head.venues.as_deref().map(Venues::of),
             source: source.to_string(),
+            outside,
             timeout: head.timeout,
             results: Results::load(resources)?,
             timed_out: text("timed-out", &["seconds"])?,
@@ -152,7 +170,7 @@ impl Script {
     fn command(
         &self,
         call: &Call,
-        cache: &Path,
+        (cache, args_json): (&Path, &str),
         (images, state): (Option<&Path>, Option<&Path>),
     ) -> io::Result<std::process::Command> {
         // 是链接的照它指到的真实位置起（施工 X-37）：沙盒只放开那一个文件，链接本身在藏着的数据根里，照它起解释器读不到。
@@ -178,8 +196,8 @@ impl Script {
             }
         };
         let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
-        if call.args.len() <= ARGS_IN_ENV {
-            vars.push((ARGS.into(), call.args.clone().into()));
+        if args_json.len() <= ARGS_IN_ENV {
+            vars.push((ARGS.into(), args_json.into()));
         }
         vars.push((CACHE.into(), cache.as_os_str().to_owned()));
         if let Some(images) = images {
@@ -208,6 +226,44 @@ impl Script {
     }
 }
 
+impl Script {
+    /// 交给脚本的参数（施工 5-14 改下）：登记时加了 `outside_sandbox` 的去掉这一格，脚本只拿到自己声明的；读不懂的、没写这一格的
+    /// 照原样。
+    fn passed(&self, call: &Call) -> String {
+        if !self.outside {
+            return call.args.clone();
+        }
+        match serde_json::from_str::<serde_json::Value>(&call.args) {
+            Ok(serde_json::Value::Object(mut args)) => match args.remove(OUTSIDE) {
+                Some(_) => serde_json::Value::Object(args).to_string(),
+                None => call.args.clone(),
+            },
+            _ => call.args.clone(),
+        }
+    }
+}
+
+/// 参数 `parameters` 里加上 `outside_sandbox`（说明是 `description`）：是对象、自己没声明这一格的才加（`properties` 没有的建上），
+/// 交回加了没有。
+fn offer_outside(parameters: &mut serde_json::Value, description: String) -> bool {
+    let Some(object) = parameters.as_object_mut() else {
+        return false;
+    };
+    let properties = object
+        .entry("properties")
+        .or_insert_with(|| serde_json::json!({}));
+    match properties.as_object_mut() {
+        Some(properties) if !properties.contains_key(OUTSIDE) => {
+            properties.insert(
+                OUTSIDE.to_string(),
+                serde_json::json!({"type": "boolean", "description": description}),
+            );
+            true
+        }
+        _ => false,
+    }
+}
+
 impl Tool for Script {
     fn spec(&self) -> &Spec {
         &self.spec
@@ -230,8 +286,15 @@ impl Tool for Script {
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
         vec![
             ("script", self.spec.name.clone()),
-            ("args", call.args.clone()),
+            ("args", self.passed(call)),
         ]
+    }
+
+    /// 这次调用要在沙盒外跑（施工 5-14 改下）：登记时加了那一格、参数里写了 `true` 的。
+    fn outside_sandbox(&self, call: &Call) -> bool {
+        self.outside
+            && serde_json::from_str::<serde_json::Value>(&call.args)
+                .is_ok_and(|args| args.get(OUTSIDE) == Some(&serde_json::Value::Bool(true)))
     }
 
     fn run(&self, call: Call, progress: Progress) -> Running<'_> {
@@ -239,17 +302,18 @@ impl Tool for Script {
             let cache = std::env::temp_dir()
                 .join("miyu-scripts")
                 .join(&self.spec.name);
+            let args_json = self.passed(&call);
             let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
             let (command, folder) = match command.and_then(|folder| {
                 let state = self.state(&call);
                 let dirs = (folder.as_ref().map(Folder::path), state.as_deref());
-                let command = self.command(&call, &cache, dirs)?;
+                let command = self.command(&call, (&cache, &args_json), dirs)?;
                 Ok((command, folder))
             }) {
                 Ok(made) => made,
                 Err(error) => return self.failed(&error),
             };
-            let input = Some(call.args.clone().into_bytes());
+            let input = Some(args_json.into_bytes());
             let started =
                 match process::start(command, input, move |text| progress.push(text), true) {
                     Ok(started) => started,

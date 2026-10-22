@@ -4708,6 +4708,17 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 }
 ```
 
+#### `software/basesystem/script/outside-sandbox.txt`
+
+- 什么时候加进来：会话的工具面里有脚本，登记时接进它参数里那一格 `outside_sandbox` 的说明（施工 5-14 改下；脚本自己声明了这一格的不加）
+- token：约 30（估的，同 `shell.json` 那一句）
+- 为什么加：同 `shell` 的 `outside_sandbox`（施工 D-4 补那一句）：被沙盒挡下就直接带上它重跑，不要先问，带上它本身就是问人；只把「命令」换成「脚本」
+- 指纹：`8c734bff`
+
+```text
+Rerun this script outside the sandbox. When the sandbox blocks the script, retry with this right away instead of asking first, because setting it is what asks the user.
+```
+
 #### `software/net/tools/web_fetch.json`
 
 - 什么时候加进来：会话的工具面里有 `web_fetch`：联网包装着、预设开着「抓取网页」的会话，本机的、场所的、子会话都有（施工 N-1，每次请求都带）
