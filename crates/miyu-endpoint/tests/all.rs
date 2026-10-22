@@ -171,6 +171,7 @@ mod personas;
 mod preset_background;
 mod preset_face;
 mod preset_memory;
+mod preset_minimal;
 mod preset_set;
 mod preset_skills;
 mod preset_swap;

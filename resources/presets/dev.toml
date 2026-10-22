@@ -1,6 +1,8 @@
 # 常规开发（施工 P-2 上，`16-人格与预设.md` 第八节、Y7，`10-自带软件.md` 第四节；原来叫「开发」，施工 P-4 下改名「基础功能」、不写说明，2026-10-20 项目主人改名「常规开发」、打开记忆，施工 P-15）：写代码常用的。预设不再管默认人格（施工 P-4 上）。
 [preset]
 name = { zh = "常规开发", en = "Development", ja = "開発" }
+# 说明（施工 P-16 上，2026-10-23 项目主人定）：给人看的，不发给模型。
+summary = { zh = "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", en = "Minimal plus the tools development often needs: memory, web search, subagents, talking to other agents.", ja = "ミニマル開発に、記憶、ウェブ検索、サブエージェント、エージェント間の会話など開発でよく使う道具を加えたもの。" }
 # 图标（施工 P-5）：和全部功能的 boxes 是一对，网页的会话 2026-10-10 挑的。
 icon = "box"
 unlisted = "off"

@@ -1,0 +1,19 @@
+# 极简开发（施工 P-16 上，2026-10-23 项目主人定）：只给 shell 和读写文件的四件，让 AI 照它原来会的做。
+# 不写 [software] basesystem：只开基础系统的「文件读写」「运行命令」两个功能，没写的功能照 unlisted 关着，基础系统以后新加的
+# 功能在这里也是关的。「文件读写」里另外几件单独关掉。
+[preset]
+name = { zh = "极简开发", en = "Minimal", ja = "ミニマル開発" }
+# 说明：给人看的，不发给模型。
+summary = { zh = "只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。", en = "Only the shell and the file read and write tools: the smallest tool set, so the AI works the way it already knows.", ja = "シェルとファイルの読み書きだけ。道具を最小にして、AI 本来の力をそのまま生かします。" }
+# 图标（施工 P-5 的写法）：一个终端窗口，和常规开发、全部功能的 box、boxes 一组。
+icon = "square-terminal"
+unlisted = "off"
+
+[features]
+files = true
+commands = true
+
+[tools]
+glob = false
+grep = false
+trash = false

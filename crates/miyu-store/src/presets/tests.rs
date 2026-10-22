@@ -217,25 +217,72 @@ fn the_shipped_presets_read_cleanly() {
             .collect::<Vec<_>>(),
         ["authoring", "basesystem", "goal", "memory", "net"]
     );
-    // 出厂的名字照旧写三种语言：界面照连接的语言显示（施工 P-3 补）；不写说明（施工 P-4 下，2026-10-08 项目主人：「描述
-    // 可以不要，没什么意义」）。
+    let minimal = presets.find("minimal").unwrap();
+    assert_eq!(minimal.file.unlisted(), Unlisted::Off);
+    assert!(
+        minimal.file.software.is_empty(),
+        "不开整个基础系统：以后新加的功能照 unlisted 关着"
+    );
+    assert_eq!(
+        minimal
+            .file
+            .features
+            .iter()
+            .map(|(id, on)| (id.as_str(), *on))
+            .collect::<Vec<_>>(),
+        [("commands", true), ("files", true)]
+    );
+    assert_eq!(
+        minimal
+            .file
+            .tools_off
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["glob", "grep", "trash"]
+    );
+    // 出厂的名字、说明都写三种语言：界面照连接的语言显示（施工 P-3 补）。说明原来不写（施工 P-4 下），项目主人 2026-10-23
+    // 定写上（施工 P-16 上）。
     let speaks = |label: &Option<miyu_config::phrases::Label>, language: &str| matches!(label, Some(miyu_config::phrases::Label::Each(phrases)) if phrases.contains_key(language));
-    for found in [&full, &dev] {
+    for found in [&full, &dev, &minimal] {
         for language in ["zh", "en", "ja"] {
             assert!(
                 speaks(&found.file.name, language),
                 "{} {language}",
                 found.id
             );
+            assert!(
+                speaks(&found.file.summary, language),
+                "{} {language}",
+                found.id
+            );
         }
-        assert_eq!(found.file.summary, None, "{}", found.id);
     }
+    let zh = |label: &Option<miyu_config::phrases::Label>| {
+        label
+            .as_ref()
+            .and_then(|label| label.pick("zh"))
+            .map(str::to_string)
+    };
     assert_eq!(
-        (
-            full.file.name.as_ref().and_then(|name| name.pick("zh")),
-            dev.file.name.as_ref().and_then(|name| name.pick("zh"))
-        ),
-        (Some("全部功能"), Some("常规开发"))
+        [&full, &dev, &minimal].map(|found| (zh(&found.file.name), zh(&found.file.summary))),
+        [
+            (Some("全部功能".into()), Some("开放全部工具。".into())),
+            (
+                Some("常规开发".into()),
+                Some(
+                    "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。"
+                        .into()
+                )
+            ),
+            (
+                Some("极简开发".into()),
+                Some(
+                    "只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。"
+                        .into()
+                )
+            ),
+        ]
     );
 }
 
