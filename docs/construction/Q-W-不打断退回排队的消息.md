@@ -1,6 +1,6 @@
 ## 施工单 Q-W：不打断，退回排队的消息
 
-状态：本机门禁过了，待合。终端会话转来项目主人定的界面（2026-10-22）：点排队的那条就撤回；`/undo` 有排队的时候先逐条撤，最新的先撤。原来只有 `session.interrupt` 带 `queued: "return"` 能退回，但它会打断这一轮。图纸 `docs/designs/02-内核.md` 第六节「排队的消息」第 3 条、`docs/blueprint/kernel/session.md`「排队的消息」第 6 条、`docs/blueprint/protocol.md`「`session.withdraw`」。
+状态：合了（2026-10-22）。终端会话转来项目主人定的界面（2026-10-22）：点排队的那条就撤回；`/undo` 有排队的时候先逐条撤，最新的先撤。原来只有 `session.interrupt` 带 `queued: "return"` 能退回，但它会打断这一轮。图纸 `docs/designs/02-内核.md` 第六节「排队的消息」第 3 条、`docs/blueprint/kernel/session.md`「排队的消息」第 6 条、`docs/blueprint/protocol.md`「`session.withdraw`」。
 
 ### 做了什么
 
