@@ -93,6 +93,8 @@ pub(crate) struct Follow<'p> {
     cwd: String,
     /// 说过这里的项目配置还没信任了（施工 8-3）：一次 `miyu ask` 只说一次。
     untrusted: bool,
+    /// 说过在这里打开护不住 Miyu 自己的数据了（施工 5-14 改）：一次 `miyu ask` 只说一次。
+    unguarded: bool,
     usage: Sum,
     failure: Option<Failure>,
     /// 因为要确认、这里没人能确认被拒的有几步（施工 4-9）。
@@ -140,6 +142,7 @@ impl<'p> Follow<'p> {
             steps: Steps::default(),
             cwd: plan.cwd.clone(),
             untrusted: false,
+            unguarded: false,
             usage: Sum::default(),
             failure: None,
             unattended: 0,

@@ -185,11 +185,19 @@ impl Sandbox {
 }
 
 impl Sandbox {
-    /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节；这一轮的配置加的、去掉的照它，施工 5-15 下）。私密目录落在能写的 `write` 里面的
-    /// 只在藏得住时（[`hides_inside`]：能用挂载，施工 5-16；macOS，施工 5-14 改）藏，不然照人给的算（同权限策略的先后），Landlock
-    /// 一级级绕开会冻住工作区那一层。
+    /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节；这一轮的配置加的、去掉的照它，施工 5-15 下）。落在能写的 `write` 里面的
+    /// 只在藏得住时（[`hides_inside`]：能用挂载，施工 5-16；macOS，施工 5-14 改）藏，不然不藏：私密目录照人给的算（同权限策略的
+    /// 先后），数据根照 dsh 不挖洞（施工 5-14 改，原来 Landlock 一级级绕开、冻住工作区那一层）。
     fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
-        let mut hidden = vec![data_root];
+        let mut hidden = Vec::new();
+        // 数据根落在能写的里面（工作目录是 `~`，施工 5-14 改）：藏得住的照藏；只有 Landlock 的照 dsh 不挖洞，开会话时说一句
+        // （端点的 `unguarded`）；能写的以外照旧藏。Windows 照旧藏（MXC 的禁止压过读写）。
+        if hides_inside(mount)
+            || cfg!(windows)
+            || !write.iter().any(|base| within(&data_root, base))
+        {
+            hidden.push(data_root);
+        }
         let private = match &self.private {
             Some(private) => private.clone(),
             None => self.home.as_deref().map(private_dirs).unwrap_or_default(),

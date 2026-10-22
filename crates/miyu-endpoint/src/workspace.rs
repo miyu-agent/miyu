@@ -74,6 +74,12 @@ pub(crate) async fn set(
     if wide {
         reply["wide"] = json!(true);
     }
+    // 换了目录的（施工 5-14 改）：护不住 Miyu 自己的数据的说为什么。
+    if params.cwd.is_some()
+        && let Some(why) = crate::sessions::unguarded_at(core, &cwd)
+    {
+        reply["unguarded"] = json!(why);
+    }
     Ok(reply)
 }
 

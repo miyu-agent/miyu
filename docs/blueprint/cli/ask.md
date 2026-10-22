@@ -56,7 +56,7 @@
    - `caps.input` 是 `false`：`miyu ask` 里没有确认的界面，要确认的那一步，核心当场拒绝。
    - 回应里的 `sandbox` 说用不了：执行命令都要确认，这里确认不了。第一步之前、目录太宽那一句之前说一句，照原因和这台机器的系统写（下面「给人看的字」），一次（施工 5-4 下）。
    - 之后给人看的字照回应的 `language` 说（施工 8-2，`cli/main.md`「界面语言」）：`zh` 的中文，`en`、`ja` 的英文，没回的照握手以前的；换了的，给人看的字（`human/<语言>.json`）照新的那种重读一份。
-   - 回应里有 `config_errors` 的：最先说一句配置里有几处错误，在沙盒用不了那一句前面，一次；`--format json` 的不说（施工 8-2，`config.md` 第十条第 10 条）。造会话、说话的回应里有 `untrusted_project` 的：接着说一句这里的项目配置还没信任、这次没用它，一次 `miyu ask` 只说一次；`--format json` 的不说（施工 8-3，`config.md` 第十条第 10 条）。新开的会话照造会话的回应说，接着说的会话照说话的回应说。
+   - 回应里有 `config_errors` 的：最先说一句配置里有几处错误，在沙盒用不了那一句前面，一次；`--format json` 的不说（施工 8-2，`config.md` 第十条第 10 条）。造会话、说话的回应里有 `untrusted_project` 的：接着说一句这里的项目配置还没信任、这次没用它，一次 `miyu ask` 只说一次；`--format json` 的不说（施工 8-3，`config.md` 第十条第 10 条）。新开的会话照造会话的回应说，接着说的会话照说话的回应说。造会话、说话的回应里有 `unguarded` 的：接着说一句在这里打开护不住 Miyu 自己的数据（`no_bwrap`、`weak` 各一句），一次 `miyu ask` 只说一次；`--format json` 的不说（施工 5-14 改，`protocol.md` 的 `unguarded`）。
 4. **传附件**（施工 3-9 三补）：`--file` 的每一个，读参数时相对的照敲命令时的目录接成绝对的（在不在、多大不查，由核心说），照写的先后发 `blob.put`，带 `{"path": <绝对路径>}`；写了几次附几次，不去重。
    - 被拒绝的：标准错误上印 `附不上 <绝对路径>：<核心照握手时的语言说的原因>`，退出码 1，不再往下：不造会话、不发话，也不留下空的会话。核心断开的，照第 11 条。
    - 在找会话之前传：`--continue`、`--session` 的，传不上也什么都不送进那个会话。
@@ -310,6 +310,8 @@ C 也查完了。
 |---|---|---|
 | 配置有错（施工 8-2） | `· 配置里有 <n> 处错误：miyu config check 看是哪里` | `· <n> errors in the config: run miyu config check to see them`（1 处：`· 1 error in the config: run miyu config check to see it`） |
 | 项目配置没信任（施工 8-3） | `· 这里的项目配置 <文件> 还没信任，这次没用它：miyu config trust 看一眼再定` | `· The project config at <file> is not trusted yet, so it was not used: run miyu config trust to review it` |
+| 护不住 Miyu 自己的数据，没有 bubblewrap（施工 5-14 改） | `· 这台机器没有 bubblewrap，在这里打开护不住 Miyu 自己的数据` | `· This machine has no bubblewrap, so opening here can't protect Miyu's own data` |
+| 护不住 Miyu 自己的数据，弱沙盒（施工 5-14 改） | `· 沙盒强度是弱沙盒，在这里打开护不住 Miyu 自己的数据` | `· The sandbox strength is weak, so opening here can't protect Miyu's own data` |
 | 目录太宽 | `· 目录太宽（<目录>），这次在 <目录> 里干活` | `· Working directory too wide (<dir>), using <dir> this time` |
 | 沙盒用不了（一行：括号里的原因，接着那半句后果） | `· 沙盒用不了（<原因>）：执行命令要你确认，miyu ask 里确认不了` | `· Sandbox unavailable (<reason>): commands need your approval, which cannot be given in miyu ask` |
 | 原因：Linux 上没有手段 | 内核没有能用的 Landlock：要 Linux 5.13 起，启动参数的 lsm= 里开着 | the kernel has no usable Landlock: Linux 5.13 or later, enabled in the lsm= boot parameter |

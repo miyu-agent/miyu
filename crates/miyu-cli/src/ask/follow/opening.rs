@@ -1,6 +1,6 @@
 //! 开头那几行旁白（`docs/blueprint/cli/ask.md`「起头那几行」，`config.md` 第十条第 10 条）：配置里有错（施工 8-2）、这里的
-//! 项目配置还没信任（施工 8-3）、沙盒用不了（施工 5-4 下）、目录太宽（施工 4-5 下），照这个先后，都是标准错误上的灰字，
-//! 只给人看的时候说（`--format json` 的不印）。
+//! 项目配置还没信任（施工 8-3）、在这里打开护不住 Miyu 自己的数据（施工 5-14 改）、沙盒用不了（施工 5-4 下）、目录太宽（施工
+//! 4-5 下），照这个先后，都是标准错误上的灰字，只给人看的时候说（`--format json` 的不印）。
 //!
 //! 造会话、说话的回应都带着会话实际在哪个目录里干活、这里的项目配置还没信任：一样的只说一次（[`Follow::opened`]）。
 
@@ -37,6 +37,18 @@ impl Follow<'_> {
         }
     }
 
+    /// 造会话、说话的回应说这一轮只用 Landlock、工作目录又包住数据根，护不住 Miyu 自己的数据，为什么是 `why`（`no_bwrap`、
+    /// `weak`，施工 5-14 改）：说一句。一次 `miyu ask` 只说一次。
+    pub(crate) fn unguarded(&mut self, why: &str, screen: &mut Screen<'_>) {
+        if self.unguarded {
+            return;
+        }
+        self.unguarded = true;
+        if self.plan.format == Format::Text {
+            self.aside(&Line::gray(self.plan.language.unguarded(why)), screen);
+        }
+    }
+
     /// 握手的回应说沙盒用不了，原因是 `reason`（协议上的写法）：执行命令都要确认，这里确认不了，说一句（施工 5-4 下）。
     /// 只给人看的时候说。
     pub(crate) fn unsandboxed(&mut self, reason: &str, screen: &mut Screen<'_>) {
@@ -62,6 +74,9 @@ impl Follow<'_> {
     pub(crate) fn opened(&mut self, result: &Value, screen: &mut Screen<'_>) {
         if let Some(file) = result["untrusted_project"].as_str() {
             self.untrusted(file, screen);
+        }
+        if let Some(why) = result["unguarded"].as_str() {
+            self.unguarded(why, screen);
         }
         if let Some(used) = result["cwd"].as_str()
             && used != self.cwd

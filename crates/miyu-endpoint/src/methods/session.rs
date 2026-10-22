@@ -69,6 +69,9 @@ pub(super) async fn create(
     if created.wide {
         reply["wide"] = json!(true);
     }
+    if let Some(why) = created.unguarded {
+        reply["unguarded"] = json!(why);
+    }
     Ok(reply)
 }
 
@@ -143,6 +146,13 @@ pub(super) async fn send(
     let untrusted = core.config().untrusted(&found.cwd);
     if let Some(file) = untrusted {
         reply["untrusted_project"] = json!(file);
+    }
+    // 换了目录的那一次（施工 5-14 改）：护不住 Miyu 自己的数据的说为什么。
+    if params.cwd.is_some()
+        && local
+        && let Some(why) = crate::sessions::unguarded_at(core, &found.cwd)
+    {
+        reply["unguarded"] = json!(why);
     }
     Ok(reply)
 }

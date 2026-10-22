@@ -15,7 +15,7 @@ use landlock::{
 
 use miyu_sandbox::Spec;
 
-use super::reads::{around, plan};
+use super::reads::plan;
 
 /// 至少要管得住的那一版。
 const REQUIRED: ABI = ABI::V2;
@@ -28,8 +28,8 @@ pub(super) fn available() -> Result<(), String> {
     ruleset().map(drop)
 }
 
-/// 照规格收紧自己：根目录往下都能列目录、执行；读照 [`plan`] 一级级放，绕开藏起来的；`write` 照 [`around`] 放行全部，
-/// 里面藏着的同样绕开（施工 5-15）；`/dev/null` 放行全部。写了 `read` 的（施工 5-12 下）：只有它列的能读、列目录、执行，根目录不再整个放，`hidden` 不另算。规格里的路径不在
+/// 照规格收紧自己：根目录往下都能列目录、执行；读照 [`plan`] 一级级放，绕开藏起来的；`write` 整个放行全部，里面不挖洞
+/// （施工 5-14 改，照 dsh：藏不住的会话那边不写进 `hidden`）；`/dev/null` 放行全部。写了 `read` 的（施工 5-12 下）：只有它列的能读、列目录、执行，根目录不再整个放，`hidden` 不另算。规格里的路径不在
 /// 的跳过。
 pub(super) fn confine(spec: &Spec) -> Result<(), String> {
     let mut created = ruleset()?;
@@ -55,9 +55,7 @@ pub(super) fn confine(spec: &Spec) -> Result<(), String> {
         created = add_readable(created, path)?;
     }
     for base in &spec.write {
-        for path in around(base, &spec.hidden)? {
-            created = add(created, &path, AccessFs::from_all(LATEST))?;
-        }
+        created = add(created, base, AccessFs::from_all(LATEST))?;
     }
     created = add(created, Path::new("/dev/null"), AccessFs::from_all(LATEST))?;
     // 脚本调工具的通道（施工 M-3）：只放行连这几个套接字。管不了连套接字的旧内核本来就不拦，库照最宽松的兼容级别去掉这一样。
