@@ -262,7 +262,9 @@ async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
         if let Some(persona) = created.persona {
             reply["persona"] = json!(persona);
         }
-        if let Some(preset) = created.preset {
+        if created.no_tools {
+            crate::presets::shown(&mut reply, "");
+        } else if let Some(preset) = created.preset {
             reply["preset"] = json!(preset);
         }
     }
@@ -302,7 +304,10 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
         };
     }
     if let Some(preset) = &current.preset {
-        reply["preset"] = json!(preset);
+        if let Some(reply) = reply.as_object_mut() {
+            reply.remove("no_tools");
+        }
+        crate::presets::shown(reply, preset);
     }
     // 有没有能压的（施工 W-12）：同会话状态的 `compactable`。
     reply["compactable"] = json!(current.compactable);

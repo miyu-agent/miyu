@@ -25,7 +25,8 @@ pub(super) async fn checked(
     if let Some(Some(id)) = persona {
         crate::personas::resolve(core, Some(Some(id))).await?;
     }
-    if let Some(id) = preset {
+    // 空的是换成无工具（施工 P-16 下）：不用找。
+    if let Some(id) = preset.filter(|id| !id.is_empty()) {
         crate::presets::resolve(core, Some(id)).await?;
     }
     if subagent(core, session).await? {

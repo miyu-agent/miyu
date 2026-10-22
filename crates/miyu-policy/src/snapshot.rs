@@ -85,6 +85,10 @@ pub struct Snapshot {
     /// 换人格重拼时照它去掉角色扮演提示、写「装了没开」那一行。以前造的没有：全开。没有的不写，旧快照的字节不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetPin>,
+    /// 明着选了无工具（施工 P-16 下）：工具面是空的、`preset` 没有，回合开始重新筛也照它。和以前造的没有预设（不筛）分开。
+    /// 没选的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub no_tools: bool,
     /// 群会话（施工 O-13 中，`group.rs`）：造会话时钉下的时区和空的一条写什么，群里的人说的照它渲染成一行一条。私聊、本机的
     /// 没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -223,6 +227,7 @@ impl Snapshot {
             model: None,
             persona: self.persona.clone(),
             preset: None,
+            no_tools: self.no_tools,
             forked: None,
             images: true,
             titles: true,

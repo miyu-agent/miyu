@@ -110,6 +110,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         installed: packages_installed,
         memory,
         preset: _,
+        no_tools,
         presets,
         group,
         owner_is_admin,
@@ -209,7 +210,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             appended,
             bare,
         };
-        let snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
+        let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
+        snapshot.no_tools = no_tools;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;
         let texts = snapshot.driver_texts().map_err(CreateError::Policy)?;
         let run = snapshot.run_texts().map_err(CreateError::Policy)?;

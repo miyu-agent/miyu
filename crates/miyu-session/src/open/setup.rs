@@ -143,6 +143,8 @@ pub struct Create<'a> {
     /// 会话用哪个预设（施工 P-2 上、中）：已经找好的，编号记进 `session.created` 的 `preset`；子会话照父会话的。工具面照它
     /// 筛，记忆没开的范围一律 `off`，记进快照（[`miyu_policy::PresetPin`]）。测试里自己造的可以没有：全开。
     pub preset: Option<Chosen>,
+    /// 明着选了无工具（施工 P-16 下）：一件工具都不给，`preset` 是空的；记进快照、`session.created` 的 `no_tools`。
+    pub no_tools: bool,
     /// 预设的几层和装了的软件（施工 P-2 下）：改了预设的文件下一个回合换上。没有的（测试里自己造的）不看。
     pub presets: Option<PresetPlaces>,
     /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有。有的 system 接上群聊的格式说明，快照钉下这时的

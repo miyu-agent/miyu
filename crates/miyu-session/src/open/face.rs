@@ -73,21 +73,25 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
     let offers = Offers::of(values, persona_choices(&setup.personas));
     // 照架子上现在的那一代拼；记下第几代，回合开头看换没换（施工 O-2 中）。
     let edition = setup.tools.edition();
-    let face = Agents::face(
-        &edition.catalog,
-        Site {
-            venue: &setup.venue,
-            group: setup.group.is_some(),
-        },
-        setup.lineage.as_ref(),
-        &offers,
-        setup.attended,
-        Holds {
-            memory: scope,
-            knowledge: reach,
-        },
-        preset.as_ref().map(|chosen| (&chosen.file, features)),
-    );
+    // 明着选了无工具的（施工 P-16 下）一件都不给。
+    let face = match setup.no_tools {
+        true => Vec::new(),
+        false => Agents::face(
+            &edition.catalog,
+            Site {
+                venue: &setup.venue,
+                group: setup.group.is_some(),
+            },
+            setup.lineage.as_ref(),
+            &offers,
+            setup.attended,
+            Holds {
+                memory: scope,
+                knowledge: reach,
+            },
+            preset.as_ref().map(|chosen| (&chosen.file, features)),
+        ),
+    };
     Opened {
         preset,
         scope,

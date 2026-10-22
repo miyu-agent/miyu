@@ -13,9 +13,9 @@ pub(super) struct CreateParams {
     /// 用哪个人格：不写的照 `persona.default`，写 `null` 的明着无人格（施工 P-4 上）。
     #[serde(default, deserialize_with = "crate::personas::written")]
     pub(super) persona: Option<Option<String>>,
-    /// 用哪个预设（施工 P-2 上）：不写、写 `null` 的照这时的 `preset.default`。
-    #[serde(default)]
-    pub(super) preset: Option<String>,
+    /// 用哪个预设（施工 P-2 上）：不写的照这时的 `preset.default`，写 `null` 的明着无工具（施工 P-16 下，同人格的 `null`）。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    pub(super) preset: Option<Option<String>>,
     /// 在哪个项目里建（施工 H-2）：没写的人格、预设照项目的；建好了记一条 `session.meta_changed`。
     #[serde(default)]
     pub(super) project: Option<String>,

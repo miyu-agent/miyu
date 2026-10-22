@@ -95,7 +95,7 @@
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`name`、`summary`。写错的只有 `preset`、`problem`、`line`。
+**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`name`、`summary`。写错的只有 `preset`、`problem`、`line`。末尾固定一项「无工具」（施工 P-16 下）：`{"preset": null, "name", "summary", "icon": "circle-off"}`，名字、说明照连接的语言；开会话、换预设交 `preset: null` 选它，`preset.default` 不能是它。
 
 **`preset.get`**：参数 `preset`。回应：
 

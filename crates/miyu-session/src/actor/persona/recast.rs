@@ -37,9 +37,14 @@ impl Wanted {
         }
         let persona = (session.persona() != snapshot.persona.as_deref())
             .then(|| session.persona().map(str::to_string));
+        // 快照现在的预设：无工具的照内核的写法是空的编号（施工 P-16 下）。
+        let now = match snapshot.no_tools {
+            true => Some(""),
+            false => snapshot.preset.as_ref().map(|pin| pin.id.as_str()),
+        };
         let preset = session
             .preset()
-            .filter(|id| snapshot.preset.as_ref().is_none_or(|pin| pin.id != *id))
+            .filter(|id| now.is_none_or(|now| now != *id))
             .map(str::to_string);
         Wanted { persona, preset }
     }

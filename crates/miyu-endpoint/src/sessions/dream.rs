@@ -90,6 +90,7 @@ impl Sessions {
             jobs: &core.jobs,
             model: spec.model,
             preset: None,
+            no_tools: false,
             presets: None,
             group: None,
             images: true,

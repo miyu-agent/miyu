@@ -183,7 +183,7 @@ impl Listed {
             item["persona"] = json!(persona);
         }
         if let Some(preset) = &self.preset {
-            item["preset"] = json!(preset);
+            crate::presets::shown(&mut item, preset);
         }
         if let Some(project) = &self.project {
             item["project"] = json!(project);

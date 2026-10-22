@@ -95,7 +95,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 
 ## `preset.list`, `preset.get`
 
-**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`. Broken ones have only `preset`, `problem`, `line`.
+**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`. Broken ones have only `preset`, `problem`, `line`. The list always ends with one fixed item, no tools (step P-16): `{"preset": null, "name", "summary", "icon": "circle-off"}`, named in the connection's language; pass `preset: null` when opening or switching to choose it. `preset.default` cannot be it.
 
 **`preset.get`**: param `preset`. Response:
 

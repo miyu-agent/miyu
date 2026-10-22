@@ -50,6 +50,10 @@ pub struct SessionCreated {
     /// 请求。以前的日志没有这一格，照没有读。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
+    /// 明着选了无工具（施工 P-16 下，`16-人格与预设.md`）：这个会话一件工具都不给，`preset` 是空的。和以前没记预设的（不筛）
+    /// 分开。没选的不写，以前的日志没有这一格，照没选读。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub no_tools: bool,
     /// 从哪个会话的第几条分叉出来的（施工 C-8 上，`session/fork.md`）：历史引用那个会话到 `upto` 为止的有效历史，这一条的
     /// 序号是 `upto` 的下一个。不是分叉出来的不写；以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -141,7 +145,7 @@ pub struct PolicyChanged {
     /// 不解读。以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub persona: Option<String>,
-    /// 要换成的预设（施工 P-13）：编号。同上。
+    /// 要换成的预设（施工 P-13）：编号，空的是无工具（施工 P-16 下，同人格的空的是无人格）。同上。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
 }

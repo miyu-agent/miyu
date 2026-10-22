@@ -20,7 +20,7 @@ pub(super) async fn create(
     };
     if let Some(project) = &project {
         params.persona = params.persona.or_else(|| project.persona.clone());
-        params.preset = params.preset.or_else(|| project.preset.clone());
+        params.preset = params.preset.or_else(|| project.preset.clone().map(Some));
     }
     // 解析不出的什么都不造（施工 8-8）。
     let model = params
@@ -38,7 +38,7 @@ pub(super) async fn create(
         model,
         venue: None,
         memory,
-        preset: params.preset,
+        preset: crate::presets::opening(params.preset)?,
         group: None,
         profile: false,
         images: params.images,
