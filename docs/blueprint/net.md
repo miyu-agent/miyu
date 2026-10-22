@@ -108,6 +108,9 @@
       "hosts": ["bilibili.com"],
       "short_hosts": ["b23.tv"],
       "site": "哔哩哔哩",
+      "api_host": "api.bilibili.com",
+      "api_path": "/x/web-interface/view",
+      "api_user_agent": "Miyu",
       "gone_titles": ["视频去哪了呢？_哔哩哔哩_bilibili"]
     },
     "youtube": {
@@ -163,11 +166,12 @@
     - 接口没成、退回读页面的，记一条 `WARN link site fallback`（「出错」）。
     1. **B 站**（`sites.bilibili`）：
        1. 认：主机是 `hosts` 里的，路径是 `/video/BV` 加 10 个字母数字，或者 `/video/av` 加数字（后面可以再跟 `/`、`?` 这些）。主机是 `short_hosts` 里的（`b23.tv`）：先照第 4 条跟完跳转，看落到的地址，再照前一句认；跟跳转出了错的，照那个错交。
-       2. 认出来的整页读完（不在 `</head>` 停：视频数据在页面后半截的脚本里，整页一二百 KB），最多 2 MiB。
-       3. 页面标题（收拢空白以后）在 `gone_titles` 里的（B 站「视频去哪了」的那一页，2026-10-03 项目主人实测）：`unreachable`。删了的视频是这一页，B 站拦下的请求也给这一页，视频其实还在（2026-10-14 主会话实测：同一个视频页给的是它，接口回 `-412 request was banned`）。项目主人同一天定：有时候取得到就出卡片，取不到照普通链接；所以当过会儿再试，只记 `unreachable_seconds`，头下次还会再要（原来是 `no_preview`，记 15 分钟、头也不再要）。
-       4. 页面脚本里 `window.__INITIAL_STATE__=` 后面那个 JSON 对象的 `videoData`：标题 `title`、简介 `desc`、图 `pic`（照第 8 条抓、存成 blob）、作者 `owner.name`、时长 `duration`（秒，正整数才写）。`title` 是空的、读不成 JSON 的，当没有这份数据。
-       5. 没有这份数据的、数据里没给的那几格：照页面（第 7 条），作者照 `<meta name="author">`。站名先照 `og:site_name`，再照 `site`。`kind` 总是 `video`；卡片的地址是落到的那一页。
-       6. 不调接口 `x/web-interface/view`：没登录的请求它回 HTTP 412，带不带 `buvid3` 都一样（2026-10-03 项目主人实测）。
+       2. 认出来的先调接口（施工 W-7 四补，2026-10-22）：地址是视频页换上 `api_host`、`api_path`（协议、端口照视频页的），查询只有 `bvid=BV…` 或 `aid=…`；`User-Agent` 用 `api_user_agent`（`Miyu`），不用第 6 条那个像浏览器的。回的是 `code: 0`、`data.title` 不空的，照第 4 条的几格（`data` 下面）做卡片，站名照 `site`，图标照视频页的 `/favicon.ico`，不读页面；封面地址是 `http:`、没写端口的换成 `https:`。风控拦下的（HTTP 412，`code` 是 `-412`、`-352`）：`unreachable`，不读页面（页面这时也只给拦截页；同第 4 条，过会儿再试）。别的都算接口没成，记 `link site fallback`、照下面几条读页面。
+       3. 接口没成的整页读完（不在 `</head>` 停：视频数据在页面后半截的脚本里，整页一二百 KB），最多 2 MiB。
+       4. 页面标题（收拢空白以后）在 `gone_titles` 里的（B 站「视频去哪了」的那一页，2026-10-03 项目主人实测）：`unreachable`。删了的视频是这一页，B 站拦下的请求也给这一页，视频其实还在（2026-10-14 主会话实测：同一个视频页给的是它，接口回 `-412 request was banned`）。项目主人同一天定：有时候取得到就出卡片，取不到照普通链接；所以当过会儿再试，只记 `unreachable_seconds`，头下次还会再要（原来是 `no_preview`，记 15 分钟、头也不再要）。
+       5. 页面脚本里 `window.__INITIAL_STATE__=` 后面那个 JSON 对象的 `videoData`：标题 `title`、简介 `desc`、图 `pic`（照第 8 条抓、存成 blob）、作者 `owner.name`、时长 `duration`（秒，正整数才写）。`title` 是空的、读不成 JSON 的，当没有这份数据。
+       6. 没有这份数据的、数据里没给的那几格：照页面（第 7 条），作者照 `<meta name="author">`。站名先照 `og:site_name`，再照 `site`。`kind` 总是 `video`；卡片的地址是落到的那一页。
+       7. 接口为什么要换 `User-Agent`：它对像浏览器、又没带登录 cookie 的请求回 HTTP 412（2026-10-03 项目主人实测、10-14 主会话实测的 `-412` 都是这样），`User-Agent` 不像浏览器的照常回 `code: 0`；而视频页这时对谁都只给一页 4.6 KB、没有数据的拦截页（2026-10-22 终端会话、主会话实测，项目主人的 B 站卡片出不来）。
     2. **YouTube**（`sites.youtube`）：
        1. 认：主机是 `hosts` 里的（`youtu.be` 跳到 `youtube.com`，照第 4 条跟）。
        2. 读页面不照第 6 条在 `</head>`、`<body` 那儿停：YouTube 的 `og:*`、时长、频道名都在 `</head>` 后面。读到不空的 `og:title`、`<meta itemprop="duration">`、`<link itemprop="name">` 三样都见到了为止，三样不齐的读到完或者读到 2 MiB。普通网页照旧，不为它们多读。
@@ -216,8 +220,9 @@
 | `crates/miyu-net/src/rules/tests.rs` | 出厂的 `link_preview.json` 读得进、数对得上（`document` 那一段也是）；多一格、是 0 的读不了 |
 | `web_fetch` 的几份 | 见 `tools/web_fetch.md`「守着它的」 |
 | `crates/miyu-net/tests/preview.rs` | 本机的假服务器上整条走通：钉住的地址（系统解析不了的名字照样到了）、元数据、图存成 blob、`blob` 没了交 `null`、记着的不再抓；跳转每一跳过闸（内网、`localhost`、`ftp`、云的元数据地址）、最多 5 跳、没写 `Location`；不是 HTML、没写类型、没有标题、4xx、5xx；读到 `</head>`、`<body` 就停，最多 2 MiB；图只收五种、不收 SVG、最多 3 MiB（报了长度的、没报的）；`link_preview.json` 读不了。gzip、br 压过的页面不带 `Accept-Encoding` 也解得开（W-7 补）；一个压得很小解开很大的包照上限停，标题在上限前面的找得到、后面的找不到；`og:title` 挪到 `</head>` 后面的找得到，挪到上限以后的找不到；`og:title` 排在 `<head>` 里靠前、别的字段排在后面隔着一截填料的，不会因为先找到 `og:title` 就提前收手丢了后面的字段 |
-| `crates/miyu-net/src/sites/*/tests.rs`、`crates/miyu-net/src/rules/tests.rs` | 认主机（一样的、子域名、像而不是的 `notbilibili.com`）；BV、av 的样子；B 站页面脚本里的 `videoData`（读不成的照页面的 `<meta name="author">`）；ISO 8601 的时长；`wgPageName` 的 JSON 字符串（转义、中文）；`EditURI`；第一段 `<p>`（空的、`<sup>` 去掉，框、表格里的不算）；接口回应读出来的几格；`sites`、`challenge` 多一格少一格读不了 |
-| `crates/miyu-net/tests/sites.rs` | 本机的假服务器当 B 站、YouTube、维基百科、别的 MediaWiki 站：B 站 BV、av、短链跟跳转都认，页面脚本里有视频数据的卡片带封面、UP 主、时长、`kind: video`，没有的照页面的 og 和 `<meta name="author">`、还是 `kind: video`，不调接口，「视频没了」那一页 `no_preview`、同样的标题不在 B 站视频页上的照常、模板那一格当没有；MediaWiki 照列着的主机、照 `generator` 都认，`api.php` 的简介、缩略图、站名，没有 TextExtracts 退回第一段，标题去尾巴，`kind: article`，接口没成照页面；YouTube 读过 `</head>`、时长换成秒、频道名、读不到时长的是 `page`；人机验证的标题、头、403 和 503 的 HTML 都 `no_preview`，403 不是 HTML 的照旧 `unreachable`；不认得的站照旧 `kind: page`、不调接口；MediaWiki 站的 `EditURI` 指到内网的被闸拦住、照页面合成卡片 |
+| `crates/miyu-net/src/sites/*/tests.rs`、`crates/miyu-net/src/rules/tests.rs` | 认主机（一样的、子域名、像而不是的 `notbilibili.com`）；BV、av 的样子；B 站页面脚本里的 `videoData`（读不成的照页面的 `<meta name="author">`）、接口的地址和封面换 `https:`（施工 W-7 四补）；ISO 8601 的时长；`wgPageName` 的 JSON 字符串（转义、中文）；`EditURI`；第一段 `<p>`（空的、`<sup>` 去掉，框、表格里的不算）；接口回应读出来的几格；`sites`、`challenge` 多一格少一格读不了 |
+| `crates/miyu-net/tests/sites.rs` | 本机的假服务器当 B 站、YouTube、维基百科、别的 MediaWiki 站：B 站 BV、av、短链跟跳转都认，页面脚本里有视频数据的卡片带封面、UP 主、时长、`kind: video`，没有的照页面的 og 和 `<meta name="author">`、还是 `kind: video`；每张卡先调一回接口（施工 W-7 四补，这里的假服务器没有它，回 404，照页面合成），「视频没了」那一页 `no_preview`、同样的标题不在 B 站视频页上的照常、模板那一格当没有；MediaWiki 照列着的主机、照 `generator` 都认，`api.php` 的简介、缩略图、站名，没有 TextExtracts 退回第一段，标题去尾巴，`kind: article`，接口没成照页面；YouTube 读过 `</head>`、时长换成秒、频道名、读不到时长的是 `page`；人机验证的标题、头、403 和 503 的 HTML 都 `no_preview`，403 不是 HTML 的照旧 `unreachable`；不认得的站照旧 `kind: page`、不调接口；MediaWiki 站的 `EditURI` 指到内网的被闸拦住、照页面合成卡片 |
+| `crates/miyu-net/tests/sites_api.rs`（施工 W-7 四补） | B 站先调接口：`User-Agent` 是 `Miyu`、主机 `api.bilibili.com`、`bvid`、`aid` 照路径，取到了照接口做卡片、不读页面；HTTP 412、`code` 是 `-352` 的 `unreachable`、不读页面；别的 `code`（`-404`，带着 `data` 也不用）退回读页面 |
 | `crates/miyu-net/tests/live.rs`（`#[ignore]`，还要设 `MIYU_NET_LIVE=1` 才连外网：CI 的长跑用 `--ignored` 跑所有标了的测试） | 真网络：B 站视频、YouTube 视频、中英维基、ArchWiki、一个普通网页各出像样的卡片（`kind` 对、有简介），卡片印出来给人看（W-7 再补，施工单验收第 3 条） |
 | `crates/miyu-net/tests/proxy.rs` | 代理（照测试的口子给的值）：页面和图都经假代理、请求行写着整个地址；本机解析不出来的照样交给代理；解析出内网的、写的就是内网和回环的一律不交；`NO_PROXY` 里的直连、钉地址；不走代理、解析不出来的 `unreachable`；没开测试的口子时，回环上真在听的服务器也不去 |
 | `crates/miyu-endpoint/src/queries.rs` 里的测试 | 在后台答的只有照 `register_background` 登记的；同一个名字两种登记也 panic |
@@ -258,7 +263,7 @@
 | 11 | `miyu-net` 开 reqwest 的 gzip/brotli/deflate/zstd 特性（整个工作区合起来的），`miyu-http` 的客户端明确关掉（`no_gzip`/`no_brotli`/`no_deflate`/`no_zstd`，这几个方法不管特性开没开都存在）。`</head>`、`<body` 这个记号的「要不要接着往下读」判断边读边做，一个标签只处理一次，不整段重扫（W-7 补，2026-10-02 施工时定） | B 站不管请求带不带 `Accept-Encoding` 都压着发；YouTube 把 `og:*` 放在 `</head>` 后面；请求模型那条路要一个字节不变；边读边判断才不会把一次判断变成对着攒大的 `<head>` 整段重扫几十万次（压缩炸弹、慢速攻击都靠它防） | 只给 `miyu-net` 单独开一份不同版本的 reqwest（两份证书栈、两套 TLS 初始化，没必要）；读完整个 `<head>` 再判断一次要不要接着读（正常页面也要等读完才能判断，变慢） |
 | 12 | MediaWiki 站都走 `api.php`（维基百科也是），不走维基百科的 REST `page/summary`；站名放在同一个请求里（`meta=siteinfo`）（W-7 再补，2026-10-02 施工时定，下同） | 一条路认所有 MediaWiki 站，少一份代码；REST 只有维基媒体的站有，又不给站名 | 维基百科走 REST、别的走 `api.php`（两份读法；维基百科的站名还得另找） |
 | 13 | 没装 TextExtracts 的，第一段照 `action=parse&section=0` 的回应找，不回头再读页面的正文 | 第一段在正文里，离 `</head>` 很远；为它把每个 MediaWiki 页面都多读一截，或者回头再抓一遍，都比多调一次接口贵。`parse` 是 MediaWiki 本身就有的，不靠扩展 | 读页面时认出是 MediaWiki 就接着读到第一段（每页都多读）；回头再抓一遍页面 |
-| 14 | B 站读页面脚本里的视频数据（`__INITIAL_STATE__.videoData`），不调接口；短链先跟完跳转再认（2026-10-03 照项目主人实测改） | 接口 `x/web-interface/view` 对没登录的请求回 412，带上 `buvid3` 也一样；页面照常给，脚本里那份数据和接口的字段一样 | 先调接口、不行再读页面（每张卡多一个必挂的请求）；带登录的 cookie（要人的账号）；接口的签名（wbi，跟着 B 站改） |
+| 14 | B 站读页面脚本里的视频数据（`__INITIAL_STATE__.videoData`），不调接口；短链先跟完跳转再认（2026-10-03 照项目主人实测改）。**施工 W-7 四补（2026-10-22）改成先调接口、不行再读页面**：接口换不像浏览器的 `User-Agent` 就给，页面却开始只给拦截页 | 接口 `x/web-interface/view` 对没登录的请求回 412，带上 `buvid3` 也一样；页面照常给，脚本里那份数据和接口的字段一样 | 先调接口、不行再读页面（每张卡多一个必挂的请求）；带登录的 cookie（要人的账号）；接口的签名（wbi，跟着 B 站改） |
 | 15 | YouTube 是不是视频照读没读到时长判，不照路径 | 读到了时长才是一个视频；`/watch`、`/shorts/`、`youtu.be` 这些路径以后还会变 | 照路径列一张表 |
 | 16 | 接口有自己的一份预算 `api`（时限、上限、`Accept`），数和页面一样 | 接口回的是 JSON，`Accept` 和页面的不一样；放一起改一个就动另一个 | 照页面的预算、`Accept` 写死在代码里 |
 | 17 | 真网络的实测是一个标了 `#[ignore]`、还要设 `MIYU_NET_LIVE=1` 的测试（`tests/live.rs`） | 站会变，CI 不该跟着外网红；要验的时候一条命令就能在人自己的机器上看到每张卡片 | 只靠人手点网页看（不留痕）；放进 CI（外网一抖就红） |

@@ -100,3 +100,50 @@ fn without_the_script_data_the_page_meta_is_used() {
         assert_eq!(draft.site_fallback, "哔哩哔哩");
     }
 }
+
+/// 接口的地址和封面（施工 W-7 四补）：协议、端口照视频页，主机、路径照规矩，`bvid`、`aid` 照路径，原来的查询、锚点不要；
+/// 封面的 `http:` 换成 `https:`，写了端口的照原样。
+#[test]
+fn the_api_address_and_the_cover() {
+    let rules = crate::rules::load(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"),
+    )
+    .unwrap()
+    .sites
+    .bilibili;
+    for (page, expected) in [
+        (
+            "https://www.bilibili.com/video/BV1tWnv6KEfn/?share=1#t=3",
+            "https://api.bilibili.com/x/web-interface/view?bvid=BV1tWnv6KEfn",
+        ),
+        (
+            "https://m.bilibili.com/video/av170001",
+            "https://api.bilibili.com/x/web-interface/view?aid=170001",
+        ),
+        (
+            "http://www.bilibili.com:8080/video/BV1tWnv6KEfn",
+            "http://api.bilibili.com:8080/x/web-interface/view?bvid=BV1tWnv6KEfn",
+        ),
+    ] {
+        assert_eq!(api(&rules, &url(page)), Some(url(expected)), "{page}");
+    }
+    for (picture, expected) in [
+        (
+            "http://i2.hdslb.com/bfs/a.jpg",
+            "https://i2.hdslb.com/bfs/a.jpg",
+        ),
+        (
+            "https://i2.hdslb.com/bfs/a.jpg",
+            "https://i2.hdslb.com/bfs/a.jpg",
+        ),
+        (
+            "http://i2.hdslb.com:9000/a.jpg",
+            "http://i2.hdslb.com:9000/a.jpg",
+        ),
+    ] {
+        let mut draft = Draft::default();
+        let data = json!({"title": "标题", "pic": picture});
+        apply(read(&data).unwrap(), &mut draft);
+        assert_eq!(draft.found.image, Some(url(expected)), "{picture}");
+    }
+}

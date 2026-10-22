@@ -40,7 +40,11 @@ pub(super) async fn fill(
     let (Some(name), Some(api)) = (page_name(text), api(rules, page, text)) else {
         return;
     };
-    let Some(answer) = fetcher.json(&query(&api, &name, rules.thumbnail)).await else {
+    let Some(answer) = fetcher
+        .json(&query(&api, &name, rules.thumbnail), None)
+        .await
+        .ok()
+    else {
         fell_back("mediawiki");
         return;
     };
@@ -51,12 +55,16 @@ pub(super) async fn fill(
     let description = match summary.extract {
         Some(extract) => Some(extract),
         // 没装 TextExtracts：第一段照 parse 回的正文找
-        None => fetcher.json(&parse(&api, &name)).await.and_then(|answer| {
-            answer
-                .pointer("/parse/text")
-                .and_then(Value::as_str)
-                .and_then(first_paragraph)
-        }),
+        None => fetcher
+            .json(&parse(&api, &name), None)
+            .await
+            .ok()
+            .and_then(|answer| {
+                answer
+                    .pointer("/parse/text")
+                    .and_then(Value::as_str)
+                    .and_then(first_paragraph)
+            }),
     };
     if !summary.title.trim().is_empty() {
         draft.found.title = summary.title;

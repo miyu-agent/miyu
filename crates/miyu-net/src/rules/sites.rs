@@ -21,6 +21,9 @@ struct BilibiliFile {
     hosts: Vec<String>,
     short_hosts: Vec<String>,
     site: String,
+    api_host: String,
+    api_path: String,
+    api_user_agent: String,
     gone_titles: Vec<String>,
 }
 
@@ -78,6 +81,11 @@ pub(crate) struct Bilibili {
     pub(crate) short_hosts: Hosts,
     /// 站名的退路：页面没写 `og:site_name` 时用它。
     pub(crate) site: String,
+    /// 视频接口的主机、路径（施工 W-7 四补）：协议、端口照视频页的。
+    pub(crate) api_host: String,
+    pub(crate) api_path: String,
+    /// 调接口用的 `User-Agent`：不像浏览器的才给（像浏览器、又没带登录的 cookie 的回 412）。
+    pub(crate) api_user_agent: String,
     /// 页面标题是这些的（收拢空白以后）：B 站「视频没了」的那一页。
     pub(crate) gone_titles: Vec<String>,
 }
@@ -133,6 +141,9 @@ pub(super) fn sites(file: SitesFile) -> Result<Sites, String> {
             hosts: hosts(file.bilibili.hosts),
             short_hosts: hosts(file.bilibili.short_hosts),
             site: file.bilibili.site,
+            api_host: file.bilibili.api_host.to_ascii_lowercase(),
+            api_path: file.bilibili.api_path,
+            api_user_agent: file.bilibili.api_user_agent,
             gone_titles: file.bilibili.gone_titles,
         },
         youtube: hosts(file.youtube.hosts),

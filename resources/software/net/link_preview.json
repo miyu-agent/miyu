@@ -46,6 +46,9 @@
       "hosts": ["bilibili.com"],
       "short_hosts": ["b23.tv"],
       "site": "哔哩哔哩",
+      "api_host": "api.bilibili.com",
+      "api_path": "/x/web-interface/view",
+      "api_user_agent": "Miyu",
       "gone_titles": ["视频去哪了呢？_哔哩哔哩_bilibili"]
     },
     "youtube": {

@@ -157,22 +157,35 @@ impl Fetcher {
         Ok(page)
     }
 
-    /// 调一个站的接口：照 `api` 的时限、上限、`Accept`；交回读成的 JSON。回的不是 2xx、读不成
-    /// JSON、超了上限、过不了闸、连不上，都是 `None`：调的一方退回读页面（第 12 条）。
-    pub(crate) async fn json(&self, url: &Url) -> Option<serde_json::Value> {
-        let (response, _) = self.get(url, &self.api).await.ok()?;
-        if !response.status().is_success() {
-            return None;
+    /// 调一个站的接口：照 `api` 的时限、上限、`Accept`；交回读成的 JSON。`user_agent` 写了的照它（B 站，施工 W-7 四补），
+    /// 没写的照规矩里的。
+    ///
+    /// # Errors
+    ///
+    /// 回的不是 2xx：那个状态码；读不成 JSON、超了上限、过不了闸、连不上：`None`。调的一方退回读页面（第 12 条）。
+    pub(crate) async fn json(
+        &self,
+        url: &Url,
+        user_agent: Option<&str>,
+    ) -> Result<serde_json::Value, Option<u16>> {
+        let user_agent = user_agent.unwrap_or(&self.user_agent);
+        let (response, _) = self
+            .get_as(url, &self.api, user_agent)
+            .await
+            .map_err(|_| None)?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(Some(status.as_u16()));
         }
         let max = self.api.max_bytes;
         // 多读一个字节：读满了说明超了
         let bytes = body::read_prefix(response, max.saturating_add(1))
             .await
-            .ok()?;
+            .map_err(|_| None)?;
         if bytes.len() > max {
-            return None;
+            return Err(None);
         }
-        serde_json::from_slice(&bytes).ok()
+        serde_json::from_slice(&bytes).map_err(|_| None)
     }
 
     /// 抓一张图：交回字节和照魔数认出来的媒体类型；抓不到、太大、认不出的都是 `None`（卡片照样成立，只是没图）。
@@ -245,9 +258,19 @@ impl Fetcher {
     /// GET 一个地址，自己跟跳转：每一跳过闸、挑怎么连。交回最后那一跳（不是跳转的那一跳）的回应和它的地址；
     /// 状态码由调的一方看。
     async fn get(&self, url: &Url, fetching: &Fetching) -> Result<(Response, Url), Hop> {
+        self.get_as(url, fetching, &self.user_agent).await
+    }
+
+    /// 同 [`Fetcher::get`]，`User-Agent` 照 `user_agent`。
+    async fn get_as(
+        &self,
+        url: &Url,
+        fetching: &Fetching,
+        user_agent: &str,
+    ) -> Result<(Response, Url), Hop> {
         let mut current = url.clone();
         for _ in 0..=self.redirects {
-            let response = self.hop(&current, fetching).await?;
+            let response = self.hop(&current, fetching, user_agent).await?;
             let status = response.status();
             if status.is_redirection() {
                 let location = response
@@ -265,7 +288,7 @@ impl Fetcher {
     }
 
     /// 一跳：过闸，挑怎么连，发出去，交回回应（还没读身子）。
-    async fn hop(&self, url: &Url, fetching: &Fetching) -> Result<Response, Hop> {
+    async fn hop(&self, url: &Url, fetching: &Fetching, user_agent: &str) -> Result<Response, Hop> {
         let deadline = Instant::now() + fetching.timeout;
         let resolved = self
             .guard
@@ -289,7 +312,7 @@ impl Fetcher {
         client
             .get(url.clone())
             .timeout(left)
-            .header(USER_AGENT, &self.user_agent)
+            .header(USER_AGENT, user_agent)
             .header(ACCEPT, &fetching.accept)
             .header(ACCEPT_LANGUAGE, &self.accept_language)
             .send()

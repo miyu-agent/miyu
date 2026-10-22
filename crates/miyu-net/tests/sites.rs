@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 /// 测试里当真的那几个主机名。
 const NAMES: &[&str] = &[
     "www.bilibili.com",
+    "api.bilibili.com",
     "b23.tv",
     "i2.hdslb.com",
     "www.youtube.com",
@@ -21,16 +22,16 @@ const NAMES: &[&str] = &[
 const JPEG: &[u8] = b"\xff\xd8\xff\xe0\x00\x10JFIF";
 
 /// 照出厂的规矩、打开测试的口子（`NAMES` 都解析到回环）的一份。
-fn previewer(store: &Store) -> LinkPreview {
+pub(crate) fn previewer(store: &Store) -> LinkPreview {
     LinkPreview::new(&resources(), store.blobs.clone()).testing(local_with(NAMES))
 }
 
-fn json_reply(body: &Value) -> Reply {
+pub(crate) fn json_reply(body: &Value) -> Reply {
     Reply::bytes("application/json", body.to_string().as_bytes())
 }
 
 /// 照路径找收到过的请求。
-fn find(site: &Site, prefix: &str) -> Vec<crate::support::Seen> {
+pub(crate) fn find(site: &Site, prefix: &str) -> Vec<crate::support::Seen> {
     site.seen()
         .into_iter()
         .filter(|seen| seen.target.starts_with(prefix))
@@ -39,7 +40,7 @@ fn find(site: &Site, prefix: &str) -> Vec<crate::support::Seen> {
 
 /// 一页 B 站视频页的样子（2026-10-03 项目主人实测的那一页，删短了）：`<head>` 里有 og 和 `<meta name="author">`，
 /// 视频数据在后面的脚本里；`state` 是空的就没有那段脚本。
-fn bilibili_page(state: &str) -> String {
+pub(crate) fn bilibili_page(state: &str) -> String {
     let script = if state.is_empty() {
         String::new()
     } else {
@@ -117,11 +118,12 @@ async fn a_bilibili_video_is_read_from_the_data_in_its_page() {
     let landed = card(&links, &format!("http://b23.tv:{}/abc", short.port)).await;
     assert_eq!(landed.title, "脚本里的标题");
     assert_eq!(landed.url, bv);
+    // 接口没成（这台假服务器没有它，回 404）：每次先调一回，再退回读页面（施工 W-7 四补）
+    let api = find(&bili, "/x/web-interface/view");
+    assert_eq!(api.len(), 3, "三张卡片各调一回");
     assert!(
-        bili.seen()
-            .iter()
-            .all(|seen| !seen.target.contains("web-interface")),
-        "不调接口"
+        api.iter()
+            .all(|seen| seen.host.starts_with("api.bilibili.com"))
     );
 }
 

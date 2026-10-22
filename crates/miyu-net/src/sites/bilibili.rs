@@ -1,9 +1,10 @@
-//! B 站（`net.md`「怎么走」第 12 条第 1 款，W-7 再补）：认出视频页（短链先跟完跳转再认），整页读完，照页面脚本里
-//! `window.__INITIAL_STATE__` 的 `videoData` 取标题、简介、封面、UP 主、时长；取不到的照 `og:*` 和
-//! `<meta name="author">`。`kind` 总是视频。
+//! B 站（`net.md`「怎么走」第 12 条第 1 款，W-7 再补）：认出视频页（短链先跟完跳转再认），先调接口 `x/web-interface/view`
+//! 取标题、简介、封面、UP 主、时长（施工 W-7 四补）；接口没成的整页读完，照页面脚本里 `window.__INITIAL_STATE__` 的
+//! `videoData` 取，再取不到的照 `og:*` 和 `<meta name="author">`。`kind` 总是视频。
 //!
-//! 不调接口 `x/web-interface/view`：它对没登录的请求回 HTTP 412（带不带 `buvid3` 都一样，2026-10-03 项目主人实测），
-//! 页面里的那份数据和接口给的是同一套字段（「起草时定的」第 14 条）。
+//! 接口对像浏览器、又没带登录 cookie 的请求回 HTTP 412（2026-10-03 项目主人实测的就是这个），`User-Agent` 不像浏览器的
+//! 照常回（2026-10-22 实测：`Miyu`、`curl/…`、不带都回 `code: 0`）；这时视频页本身却只回一页 4.6 KB、没有数据的拦截页。
+//! 所以调接口用规矩里的 `api_user_agent`，读页面照旧用像浏览器的那个。接口和页面里的是同一套字段。
 
 use reqwest::Url;
 use serde_json::Value;
@@ -49,6 +50,64 @@ pub(super) fn is_video(url: &Url) -> bool {
         .is_some_and(|digits| !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()))
 }
 
+/// 调接口取到的。
+#[derive(Debug)]
+pub(super) enum Api {
+    /// 填好的卡片。
+    Found(Box<Draft>),
+    /// 风控拦下了：HTTP 412，或者 `code` 是 `-412`、`-352`。视频多半还在，过会儿再要常常就有了。
+    Banned,
+    /// 别的：连不上、回的不是 2xx、`code` 不是 0、没有标题。调的一方退回读页面。
+    Missed,
+}
+
+/// 风控拦下时 `code` 是这几个（`-412` 请求被拦、`-352` 风控校验失败）。
+const BANNED_CODES: [i64; 2] = [-412, -352];
+
+/// 调接口取视频（施工 W-7 四补）：`page` 是认出来的视频页，接口的协议、端口照它，主机、路径照规矩，`bvid` 或 `aid` 照
+/// 路径。
+pub(super) async fn from_api(fetcher: &Fetcher, rules: &Bilibili, page: &Url) -> Api {
+    let Some(url) = api(rules, page) else {
+        return Api::Missed;
+    };
+    let answer = match fetcher.json(&url, Some(&rules.api_user_agent)).await {
+        Ok(answer) => answer,
+        Err(Some(412)) => return Api::Banned,
+        Err(_) => return Api::Missed,
+    };
+    match answer.get("code").and_then(Value::as_i64) {
+        Some(0) => {}
+        Some(code) if BANNED_CODES.contains(&code) => return Api::Banned,
+        _ => return Api::Missed,
+    }
+    let Some(video) = answer.get("data").and_then(read) else {
+        return Api::Missed;
+    };
+    let mut draft = Draft {
+        kind: Kind::Video,
+        site_fallback: rules.site.clone(),
+        ..Draft::default()
+    };
+    draft.found.icon = page.join("/favicon.ico").ok();
+    apply(video, &mut draft);
+    Api::Found(Box::new(draft))
+}
+
+/// 接口的地址：`page` 换上接口的主机、路径，查询只有 `bvid=BV…` 或者 `aid=…`。
+pub(super) fn api(rules: &Bilibili, page: &Url) -> Option<Url> {
+    let id = page.path_segments()?.nth(1)?.to_string();
+    let mut url = page.clone();
+    url.set_host(Some(&rules.api_host)).ok()?;
+    url.set_path(&rules.api_path);
+    url.set_fragment(None);
+    let query = match id.strip_prefix("av") {
+        Some(aid) => format!("aid={aid}"),
+        None => format!("bvid={id}"),
+    };
+    url.set_query(Some(&query));
+    Some(url)
+}
+
 /// 照读到的整页补上视频的几格：脚本里的 `videoData` 有的照它，没有的照页面的 `og:*`、`<meta name="author">`。
 pub(super) fn fill(text: &str, rules: &Bilibili, draft: &mut Draft) {
     draft.kind = Kind::Video;
@@ -57,11 +116,20 @@ pub(super) fn fill(text: &str, rules: &Bilibili, draft: &mut Draft) {
         draft.author = html::first(text, "meta", "name", "author", "content").unwrap_or_default();
         return;
     };
+    apply(video, draft);
+}
+
+/// 把取到的视频填进卡片：封面的 `http:` 换成 `https:`（B 站给的封面地址是 `http:` 的，图床两样都给）；写了端口的照原样，
+/// 换了协议端口就对不上。
+fn apply(video: Video, draft: &mut Draft) {
     draft.found.title = video.title;
     if !video.description.trim().is_empty() {
         draft.found.description = video.description;
     }
-    if let Some(picture) = video.picture.and_then(|picture| Url::parse(&picture).ok()) {
+    if let Some(mut picture) = video.picture.and_then(|picture| Url::parse(&picture).ok()) {
+        if picture.scheme() == "http" && picture.port().is_none() {
+            picture.set_scheme("https").unwrap_or(());
+        }
         draft.found.image = Some(picture);
     }
     draft.author = video.author;

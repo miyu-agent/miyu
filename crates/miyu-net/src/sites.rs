@@ -1,6 +1,6 @@
 //! 按站取（`net.md`「怎么走」第 12、13 条，W-7 再补）：认得的站照自己的办法取，不认得的照普通网页。
 //!
-//! - B 站（`bilibili.rs`）：认出视频页，整页读完，照页面脚本里的视频数据取。
+//! - B 站（`bilibili.rs`）：认出视频页，先调视频接口（施工 W-7 四补），没成的整页读完，照页面脚本里的视频数据取。
 //! - YouTube（`youtube.rs`）：读页面读过 `</head>`，多挖时长、频道名。
 //! - MediaWiki 站（`mediawiki.rs`）：先读页面认站，再调 `api.php` 补简介、图、站名。
 //! - 人机验证页：头和状态码在 `fetch.rs` 读页面时认，标题在这里认；认出来的都是 `no_preview`。
@@ -64,6 +64,14 @@ pub(crate) async fn draft(
     url: &Url,
 ) -> Result<(Url, Draft), Why> {
     let bilibili = bilibili::video_page(fetcher, &sites.bilibili, url).await?;
+    if let Some(page) = &bilibili {
+        match bilibili::from_api(fetcher, &sites.bilibili, page).await {
+            bilibili::Api::Found(draft) => return Ok((page.clone(), *draft)),
+            // 风控拦下的：页面这时也只给拦截页，当过会儿再试（同第 12 条第 1 款第 4 条）
+            bilibili::Api::Banned => return Err(Why::Unreachable),
+            bilibili::Api::Missed => fell_back("bilibili"),
+        }
+    }
     let target = bilibili.clone().unwrap_or_else(|| url.clone());
     let youtube = bilibili.is_none() && sites.youtube.matches(&target);
     let until = match (bilibili.is_some(), youtube) {
