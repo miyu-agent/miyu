@@ -29,7 +29,7 @@
 | `crates/miyu-recall/src/turns.rs` | 回合索引里的一条怎么从日志算：`TurnFeed`（增量、载入时铺回）、`replay`（整份）、`key` | R-2 上 |
 | `crates/miyu-store/src/recall/indexes.rs` | 回合库的登记：照房间开回合库、留着；删会话时拿掉人格那几间里它的（会话那一间跟着目录走） | R-2 上 |
 | `crates/miyu-session/src/memory.rs` | 执行器：会话写日志时顺手更新回合索引、载入时补上（R-2 上）；`Memory::new` 登记第一次开回合库时记日志、补齐（R-2 下）；以后后台抽取、合并 | R-2 起 |
-| `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等 | V-9 |
+| `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到） | V-9、R-32 |
 | `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照账号的会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
 | `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |

@@ -132,7 +132,8 @@ impl Indexed {
 
 impl Store for Indexed {
     /// 先落盘，再更新索引、写用量汇总、更新回合索引。更新失败只记一行 `session index not updated`、`usage not indexed`、
-    /// `memory index not updated`，照样算写成了：三样都是派生的，停在上一次照到的地方，下次照日志补上。
+    /// `memory index not updated`，照样算写成了：三样都是派生的，停在上一次照到的地方，下次照日志补上。回合索引在后台写，
+    /// 这一批里有撤销、恢复的等它写完再回（施工 R-32）：回来以后记下的照出处判活不活马上算数。
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
         let before = self.log.mark();
         self.log.append(events)?;
@@ -152,6 +153,9 @@ impl Store for Indexed {
         }
         if let Some(turns) = &mut self.turns {
             turns.advance(events);
+            if crate::effects::reverts(events) {
+                turns.flush();
+            }
         }
         Ok(())
     }

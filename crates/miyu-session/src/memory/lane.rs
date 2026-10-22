@@ -133,10 +133,7 @@ impl Lanes {
         if self.pending.load(Ordering::Acquire) == 0 {
             return;
         }
-        let (done, wait) = mpsc::channel();
-        if jobs.send(Job::Settle(done)).is_err() || wait.recv().is_err() {
-            tracing::warn!(target: TARGET, "memory index not updated");
-        }
+        settled(jobs);
     }
 }
 
@@ -162,6 +159,12 @@ impl TurnLane {
         }
     }
 
+    /// 等后台把这条道交过的、连同排在它前面的都写完（施工 R-32）：撤销、恢复了一轮，回合库里埋没埋要在回话以前算数，不然人刚撤
+    /// 了马上问，记下的照出处判活不活还是旧的（Windows CI 撞见）。只给撤销、恢复用：平常落一批不等。
+    pub(crate) fn flush(&self) {
+        settled(&self.jobs);
+    }
+
     /// 交一件，记一件没做完的（后台不在了的不记）。
     fn send(&self, job: Job) {
         self.pending.fetch_add(1, Ordering::AcqRel);
@@ -174,6 +177,14 @@ impl TurnLane {
 impl Drop for TurnLane {
     fn drop(&mut self) {
         self.send(Job::Close(self.id));
+    }
+}
+
+/// 交一个回一声的：排在它前面的都做完了才回。后台不在了的记一行。
+fn settled(jobs: &mpsc::Sender<Job>) {
+    let (done, wait) = mpsc::channel();
+    if jobs.send(Job::Settle(done)).is_err() || wait.recv().is_err() {
+        tracing::warn!(target: TARGET, "memory index not updated");
     }
 }
 
