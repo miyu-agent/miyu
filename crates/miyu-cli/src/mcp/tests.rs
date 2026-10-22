@@ -1,4 +1,5 @@
-//! `miyu mcp login`（施工 X-42 上）：照 `mcp.list` 认服务的状态；打开网址的程序照系统挑，网址原样一个参数交过去。
+//! `miyu mcp login`（施工 X-42 上）：照 `mcp.list` 认服务的状态；打开网址的程序照系统挑，网址原样一个参数交过去。贴回来的一行去掉
+//! 两头的空白，空的不算（施工 X-42 下）。
 
 use serde_json::json;
 
@@ -25,4 +26,14 @@ fn the_url_goes_whole_to_the_opener() {
         Some(url),
         "网址带着 & 也是一个参数"
     );
+}
+
+#[test]
+fn a_pasted_line_is_trimmed_and_an_empty_one_is_not_taken() {
+    assert_eq!(
+        pasted("  http://127.0.0.1:8/callback?code=c&state=s\r\n"),
+        Some("http://127.0.0.1:8/callback?code=c&state=s")
+    );
+    assert_eq!(pasted("   "), None);
+    assert_eq!(pasted(""), None);
 }

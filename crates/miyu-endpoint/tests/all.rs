@@ -90,6 +90,7 @@ mod mcp_edit;
 mod mcp_instructions;
 mod mcp_login;
 mod mcp_prompts;
+mod mcp_relogin;
 mod mcp_resources;
 mod mcp_settings;
 mod mcp_settings_status;

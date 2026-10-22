@@ -77,6 +77,7 @@ fn the_stored_login_reads_back_the_same() {
         client_secret: None,
         port: 33418,
         registered: true,
+        resource: Some("https://api.example.com/mcp".to_string()),
     };
     let text = serde_json::to_string(&stored).expect("写得成");
     assert!(!text.contains('\n'), "一行，进得了密钥文件");

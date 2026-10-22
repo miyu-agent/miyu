@@ -41,6 +41,7 @@ async fn connect(server: &HttpServer, log: Log) -> (Result<Client, Failed>, Expi
         server.url.clone(),
         headers,
         log,
+        None,
     );
     let expired = opened.expired.clone();
     let client = Client::connect(opened.read, opened.write, hello(), None, Waits::default()).await;
@@ -232,6 +233,7 @@ async fn a_401_keeps_its_challenge() {
         server.url.clone(),
         vec![("Authorization".to_string(), "Bearer wrong".to_string())],
         log,
+        None,
     );
     let challenged = opened.challenged.clone();
     assert_eq!(challenged.header(), None, "没回过 401 的没有");
@@ -245,3 +247,5 @@ async fn a_401_keeps_its_challenge() {
         "{header}"
     );
 }
+
+mod credentials;

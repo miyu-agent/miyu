@@ -30,12 +30,15 @@ pub(super) fn prints(config: &Config) -> BTreeMap<String, u64> {
         .stored
         .entries
         .iter()
-        .map(|(name, secret)| {
-            let mut hasher = DefaultHasher::new();
-            secret.expose().hash(&mut hasher);
-            (name.clone(), hasher.finish())
-        })
+        .map(|(name, secret)| (name.clone(), print(secret.expose())))
         .collect()
+}
+
+/// 一个密钥值的摘要：只在内存里比，不落盘、不进日志。续期写回时看管的一头照它记下自己写的那一份（施工 X-42 下）。
+pub(super) fn print(value: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    value.hash(&mut hasher);
+    hasher.finish()
 }
 
 /// 两刻之间变了的名字：新存的、删掉的、值改了的。

@@ -50,6 +50,8 @@ pub(crate) async fn call(
         "mcp.list" => Ok(crate::mcp::methods::list(core)),
         "mcp.restart" => crate::mcp::methods::restart(core, params(request)?).await,
         "mcp.login" => crate::mcp::login::login(core, peer, &request.id, params(request)?).await,
+        "mcp.login_finish" => crate::mcp::login::finish(core, params(request)?).await,
+        "mcp.logout" => crate::mcp::login::logout(core, peer, &request.id, params(request)?),
         "mcp.set" => crate::mcp::editing::set(core, peer, &request.id, params(request)?),
         "mcp.remove" => crate::mcp::editing::remove(core, peer, &request.id, params(request)?),
         "skill.list" => crate::skills::list(core, peer).await,

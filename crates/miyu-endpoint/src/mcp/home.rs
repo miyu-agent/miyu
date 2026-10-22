@@ -71,7 +71,9 @@ impl Core {
                 };
                 alive.apply_home_mcp(read(&text)).await;
                 if let Some(before) = before.replace(prints.clone()) {
-                    let changed = super::secrets::changed(&before, &prints);
+                    let mut changed = super::secrets::changed(&before, &prints);
+                    // 续期写回的（施工 X-42 下）：是看管的一头自己刚写进去的那一份，不重起。
+                    changed.retain(|name| !alive.mcp.wrote_now(name, prints.get(name)));
                     if !changed.is_empty() {
                         alive.follow_secrets(&changed).await;
                     }

@@ -27,7 +27,7 @@
 | `redo` | 撤掉当前会话的最后一轮，把你那句话（或者换成写的话）再发一次，让她重新做（施工 4-7 再补，2026-09-30 项目主人定） | `cli/redo.md` |
 | `compact` | 把当前会话的上下文压缩成摘要，可以附上要求（施工 6-8，命令名 2026-09-29 项目主人定） | `cli/compact.md` |
 | `recap` | 一句话回顾当前会话：在做什么、做完了什么、卡在哪（施工 3-8 四补） | `cli/recap.md` |
-| `mcp login` | 登录要浏览器授权的网址 MCP 服务（施工 X-42 上） | `cli/mcp.md` |
+| `mcp login`、`mcp logout` | 登录、登出要浏览器授权的网址 MCP 服务（施工 X-42 上、下） | `cli/mcp.md` |
 | `rename` | 给当前会话起名（施工 3-8 五补） | `cli/rename.md` |
 | `memory` | 看她记了你什么，搜、记、改、忘、清空（施工 R-3 再补） | `cli/memory.md` |
 | `kb` | 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下） | `cli/kb.md` |
@@ -92,6 +92,7 @@
   kb [命令]             管知识库：列、搜、读、建、加、删、挂目录
   pkg [命令]            看装了哪些软件包，装、卸
   mcp login <服务>      登录要浏览器授权的网址 MCP 服务
+  mcp logout <服务>     登出网址 MCP 服务
   config <命令>         看配置、改配置、信任项目配置
   check [文件]          查手写的文件有没有写错：配置、密钥、人格、预设、清单
   login [名字]          存一个供应商的 key；--list 列出哪几家设了
@@ -144,6 +145,7 @@ Commands:
   kb [command]          Knowledge bases: list, search, read, add, remove, mount
   pkg [command]         See installed packages; install, remove
   mcp login <server>    Log in to a URL MCP server needing a browser login
+  mcp logout <server>   Log out of a URL MCP server
   config <command>      See and change settings, trust a project config
   check [file]          Check config, secrets, personas, presets and packages
   login [name]          Save a provider's key; --list shows which are set

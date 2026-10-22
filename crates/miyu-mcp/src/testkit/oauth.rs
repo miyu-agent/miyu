@@ -47,6 +47,12 @@ struct State {
     issued: Mutex<u32>,
     /// 换令牌时收到的 `code_verifier`：测试查运行日志里搜不到它。
     verifiers: Mutex<Vec<String>>,
+    /// 给的令牌几秒过期（施工 X-42 下）：没改的一小时。
+    lifetime: std::sync::atomic::AtomicU64,
+    /// 续的时候拒（施工 X-42 下）。
+    refuse_refresh: std::sync::atomic::AtomicBool,
+    /// 续过的几次：带的 `resource`、`scope`（施工 X-42 下）。
+    refreshes: Mutex<Vec<(String, String)>>,
 }
 
 impl AuthServer {
@@ -81,6 +87,9 @@ impl AuthServer {
             received: Mutex::new(Vec::new()),
             issued: Mutex::new(0),
             verifiers: Mutex::new(Vec::new()),
+            lifetime: std::sync::atomic::AtomicU64::new(3600),
+            refuse_refresh: std::sync::atomic::AtomicBool::new(false),
+            refreshes: Mutex::new(Vec::new()),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -93,6 +102,29 @@ impl AuthServer {
             state,
             task,
         }
+    }
+
+    /// 之后给的令牌 `seconds` 秒就过期（施工 X-42 下）。
+    pub fn expire_after(&self, seconds: u64) {
+        self.state
+            .lifetime
+            .store(seconds, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// 之后续的时候都拒，回 `invalid_grant`（施工 X-42 下）。
+    pub fn refuse_refresh(&self) {
+        self.state
+            .refuse_refresh
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// 续过的几次：带的 `resource`、`scope`，照先后（施工 X-42 下）。
+    pub fn refreshes(&self) -> Vec<(String, String)> {
+        self.state
+            .refreshes
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     /// 收到的请求：方法和路径（带查询串），照先后。
@@ -144,6 +176,16 @@ pub async fn browse(url: &str) -> (u16, String) {
         }
         _ => (status, body),
     }
+}
+
+/// 打开授权页、不跟着跳：交回它要跳去的回调地址（施工 X-42 下：手贴回调，浏览器在别的机器上的那一种）。
+///
+/// # Panics
+///
+/// 连不上、写不出去。
+pub async fn redirect_of(url: &str) -> Option<String> {
+    let (status, location, _) = get(url).await;
+    location.filter(|_| (300..400).contains(&status))
 }
 
 /// 一次 `GET`：状态、`Location`、正文。
@@ -362,6 +404,9 @@ fn token(state: &State, body: &[u8]) -> (u16, String, String) {
         String::new(),
         json!({"error": "invalid_grant"}).to_string(),
     );
+    if get("grant_type") == "refresh_token" {
+        return refresh(state, &get, refused);
+    }
     if get("grant_type") != "authorization_code" {
         return refused;
     }
@@ -378,12 +423,48 @@ fn token(state: &State, body: &[u8]) -> (u16, String, String) {
     {
         return refused;
     }
+    issue(state)
+}
+
+/// 续（施工 X-42 下）：`refresh_token` 是发过的那一个、客户端对得上才给新的一对；拒的照 `refuse_refresh`。
+fn refresh(
+    state: &State,
+    get: &dyn Fn(&str) -> String,
+    refused: (u16, String, String),
+) -> (u16, String, String) {
+    if state
+        .refuse_refresh
+        .load(std::sync::atomic::Ordering::Relaxed)
+    {
+        return refused;
+    }
+    let issued = *state.issued.lock().unwrap_or_else(PoisonError::into_inner);
+    let known = (1..=issued).any(|n| get("refresh_token") == format!("refresh-{n}"));
+    let client = state
+        .clients
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .iter()
+        .any(|(id, _)| *id == get("client_id"));
+    if !known || !client {
+        return refused;
+    }
+    state
+        .refreshes
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .push((get("resource"), get("scope")));
+    issue(state)
+}
+
+/// 发新的一对令牌：`access-<n>`、`refresh-<n>`，照 `lifetime` 过期。
+fn issue(state: &State) -> (u16, String, String) {
     let mut issued = state.issued.lock().unwrap_or_else(PoisonError::into_inner);
     *issued += 1;
     let tokens = json!({
         "access_token": format!("access-{issued}"),
         "token_type": "Bearer",
-        "expires_in": 3600,
+        "expires_in": state.lifetime.load(std::sync::atomic::Ordering::Relaxed),
         "refresh_token": format!("refresh-{issued}"),
         "scope": "files:read offline_access",
     });

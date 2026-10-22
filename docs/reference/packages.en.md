@@ -16,6 +16,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in personal settings: list, restart, add or replace, remove |
 | [`mcp.login`](#mcplogin) | A URL MCP server that needs a browser login: get the authorization page |
+| [`mcp.login_finish`, `mcp.logout`](#mcplogin_finish-mcplogout) | Paste back the address the browser landed on when it isn't on the core's machine; log out |
 | [`skill.list`](#skilllist) | List the skills that can be used |
 | [`skill.remove`](#skillremove) | Delete skills the admin placed |
 | [`script.list`](#scriptlist) | List the registered scripts |
@@ -221,6 +222,14 @@ For a URL MCP server that answered `401` and needs a browser login (`reason` is 
 **Response**: `{"url"}`: the authorization page for the head to open. The core waits for the callback on `127.0.0.1`, up to 10 minutes; logging in again to the same server stops the earlier wait.
 
 **Errors**: `unknown_server`: no such server; `bad_params`: not a URL server, or its table has its own token (`bearer`, or `Authorization` in `headers`); `oauth_unregistered`: no client, and the authorization server doesn't take dynamic registration, so register a client with the service and put its `client_id` in the table; `oauth_failed`: the authorization server can't be found or used, or it refused; `data.why` says why (the server's own words, shortened).
+
+After logging in (build X-42 part two): when the token is about to expire or the server answers `401`, the core renews it with the `refresh_token` itself, and writing the renewed token back doesn't restart the server. If renewing fails, or the server says the scope isn't enough (`403 insufficient_scope`), the server stops at `needs_login`; call `mcp.login` again (it asks for the earlier scope plus the new one).
+
+## `mcp.login_finish`, `mcp.logout`
+
+**`mcp.login_finish`** (build X-42 part two): when the browser isn't on the core's machine (the web page connected from elsewhere), after agreeing it lands on an unreachable `http://127.0.0.1:<port>/callback?…`; hand back that whole address. Params `service`, `url`. `state` and `iss` are checked in the same place as a local callback. Local people only. **Response**: `{}`: the token is exchanged and stored, and the server connects by itself. **Errors**: `not_waiting`: no login is waiting for this server, call `mcp.login` first; `oauth_failed`: it doesn't match (the login keeps waiting, so you can paste again), or the token exchange was refused.
+
+**`mcp.logout`** (build X-42 part two): delete what's stored (token, client, callback port) and cancel a waiting login; the server restarts and stops at `needs_login`. The token is not revoked at the authorization server. Param `service`. Local people only. **Response**: `{}`. **Errors**: `not_logged_in`: never logged in.
 
 ## `skill.list`
 

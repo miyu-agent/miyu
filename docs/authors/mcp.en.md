@@ -21,7 +21,7 @@ bearer = { secret = "github" }       # store it with miyu login or the settings 
 
 It takes effect when saved, no restart. The Packages page of the terminal or web UI shows whether it's running; `miyu check` checks for mistakes.
 
-For a server that only accepts browser authorization and can't issue a personal token (Notion, Linear and the like): write only `url`, no `bearer`. It waits as "needs login" (`needs_login`); run `miyu mcp login <server>` and agree in the browser to connect. The token goes into the secrets file; you never handle it.
+For a server that only accepts browser authorization and can't issue a personal token (Notion, Linear and the like): write only `url`, no `bearer`. It waits as "needs login" (`needs_login`); run `miyu mcp login <server>` and agree in the browser to connect. The token goes into the secrets file; you never handle it, and the core renews it before it expires. If the browser is on another machine, paste the whole address it lands on back into the terminal. Run `miyu mcp logout <server>` when you no longer need it.
 
 ## As a package
 

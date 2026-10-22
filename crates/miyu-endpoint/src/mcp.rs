@@ -188,8 +188,11 @@ struct Slot {
 pub(crate) struct Servers {
     slots: Mutex<BTreeMap<(String, String), Slot>>,
     timing: Timing,
-    /// 正在等回调的登录（施工 X-42 上，`login/flow.rs`）：服务名到等着的那个任务，又登录的停掉上一个。
-    logins: Mutex<BTreeMap<String, JoinHandle<()>>>,
+    /// 正在等回调的登录（施工 X-42 上，`login/flow.rs`）：服务名到等着的那个任务和贴回来的地址交给它的那一头（施工 X-42 下），
+    /// 又登录的停掉上一个。
+    logins: Mutex<BTreeMap<String, login::Ongoing>>,
+    /// 续期刚写回去的那一份的摘要（施工 X-42 下）：密钥名到摘要，跟着个人设置的那一圈比到一样的不重起。
+    wrote: Mutex<BTreeMap<String, u64>>,
 }
 
 impl Servers {
@@ -198,6 +201,7 @@ impl Servers {
             slots: Mutex::new(BTreeMap::new()),
             timing,
             logins: Mutex::new(BTreeMap::new()),
+            wrote: Mutex::new(BTreeMap::new()),
         }
     }
 

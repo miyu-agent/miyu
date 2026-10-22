@@ -7,7 +7,10 @@ mod callback;
 mod flow;
 
 pub use callback::{Listener, Reply, listen};
-pub use flow::{Discovered, Exchange, Registered, Tokens, Trouble, discover, exchange, register};
+pub use flow::{
+    Discovered, Exchange, Refresh, Registered, Tokens, Trouble, authorization_of, discover,
+    exchange, refresh, register,
+};
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -362,6 +365,16 @@ pub enum Callback {
         /// 授权服务器带的 `iss`。
         iss: Option<String>,
     },
+}
+
+/// 贴回来的一整段回调地址（施工 X-42 下：浏览器不在核心那台机器上的）读成回调：取路径加查询串，照 [`callback()`] 读；不是网址的
+/// 没有。
+pub fn pasted(url: &str) -> Option<Callback> {
+    let parsed = url::Url::parse(url).ok()?;
+    match parsed.query() {
+        Some(query) => callback(&format!("{}?{query}", parsed.path())),
+        None => callback(parsed.path()),
+    }
 }
 
 /// 读回调请求的目标（路径加查询串）：路径是 [`CALLBACK_PATH`]，有 `code` 和 `state` 的是同意了，有 `error` 的是出错了；别的

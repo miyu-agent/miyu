@@ -3,8 +3,15 @@
 //! `mcp-oauth-<服务名>`（一段 JSON），连的时候当 `bearer` 带上。密钥变了照 X-32 补那一路重起服务。
 //!
 //! 这张表写了 `bearer`、或者 `headers` 里写了 `Authorization` 的是人自己给的令牌：不走登录，回 `401` 照旧当连不上。
+//!
+//! 施工 X-42 下：连的时候转接每个请求现场问令牌（`credentials.rs`），快过期的先续、回 `401` 的续一次，续期写回的那一份不重起服务；
+//! 登出、浏览器不在核心那台机器上时把跳到的地址贴回来（`manage.rs`）。
 
 use std::sync::PoisonError;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use tokio::sync::{mpsc, oneshot};
+use tokio::task::JoinHandle;
 
 use serde::{Deserialize, Serialize};
 
@@ -12,12 +19,17 @@ use miyu_config::package::{McpServer, Reach};
 use miyu_config::secret::Reference;
 use miyu_mcp::oauth::Challenge;
 
-use super::Shared;
+use super::{Servers, Shared};
 use crate::config::Config;
+use crate::refusal::Refusal;
 
+mod credentials;
 mod flow;
+mod manage;
 
+pub(crate) use credentials::Login;
 pub(crate) use flow::login;
+pub(crate) use manage::{finish, logout};
 
 /// 存令牌的密钥叫什么：`mcp-oauth-<服务名>`（服务名合密钥名字的写法）。
 pub(crate) fn secret_name(service: &str) -> String {
@@ -50,6 +62,49 @@ pub(crate) struct Stored {
     /// 客户端是动态注册来的：端口被占时照新端口重新注册一次。
     #[serde(default)]
     pub(crate) registered: bool,
+    /// 登录时的 `resource`（施工 X-42 下：续期带同一个）。X-42 上存的没有，照服务的规范网址。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) resource: Option<String>,
+}
+
+/// 这一刻（Unix 秒）。
+pub(super) fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| since.as_secs())
+}
+
+/// 一次在等回调的登录（施工 X-42 下）：等着的任务，和贴回来的地址交给它的那一头。
+pub(crate) struct Ongoing {
+    pub(super) task: JoinHandle<()>,
+    pub(super) pasted: mpsc::UnboundedSender<Pasted>,
+}
+
+/// 贴回来的一段地址（`mcp.login_finish`），和判完的结局交回去的那一头。
+pub(super) struct Pasted {
+    pub(super) url: String,
+    pub(super) answer: oneshot::Sender<Result<(), Refusal>>,
+}
+
+impl Servers {
+    /// 记下续期写回去的那一份（施工 X-42 下）：密钥 `name` 的值 `value`，只留摘要。
+    pub(super) fn wrote(&self, name: &str, value: &str) {
+        self.wrote
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(name.to_string(), super::secrets::print(value));
+    }
+
+    /// 密钥 `name` 这一刻的摘要 `now` 是不是续期刚写回去的那一份：是的不算人改的、不重起。删掉了的不算。
+    pub(super) fn wrote_now(&self, name: &str, now: Option<&u64>) -> bool {
+        now.is_some()
+            && self
+                .wrote
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .get(name)
+                == now
+    }
 }
 
 /// 服务 `service` 存着的那一份：没有的、读不成的没有。

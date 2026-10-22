@@ -35,6 +35,24 @@ impl Language {
         }
     }
 
+    /// 浏览器在别的机器上的（施工 X-42 下）：授权完把跳到的地址贴回来。
+    pub(crate) fn paste_here(&self) -> &'static str {
+        match self {
+            Language::Chinese => "浏览器在别的机器上的，授权完把地址栏里的整段地址贴到这里，回车。",
+            Language::English => {
+                "If the browser is on another machine, paste the whole address it lands on here after agreeing, then press Enter."
+            }
+        }
+    }
+
+    /// 登出了（施工 X-42 下）。
+    pub(crate) fn logged_out(&self, service: &str) -> String {
+        match self {
+            Language::Chinese => format!("{service} 登出了，下次要用得重新登录。"),
+            Language::English => format!("Logged out of {service}; log in again to use it."),
+        }
+    }
+
     /// 等到时还没连上。
     pub(crate) fn login_timed_out(&self, service: &str) -> String {
         match self {

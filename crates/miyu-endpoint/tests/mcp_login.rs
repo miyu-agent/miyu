@@ -16,8 +16,16 @@ use crate::support::*;
 
 /// 一份核心，看着配置、起了扩展、跟着个人设置（密钥变了重起、删了服务清掉都在这一路上）；交回核心、连好的头，和要留着的两样。
 async fn running(home: &Home) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
+    running_with(home, &Script::new([])).await
+}
+
+/// 同 [`running`]，模型照剧本 `script` 答（施工 X-42 下：会话里调服务的工具）。
+pub(crate) async fn running_with(
+    home: &Home,
+    script: &Script,
+) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.root.prepare_home(&alice()).expect("建得了家目录");
-    let core = configured(home, &Script::new([]));
+    let core = configured(home, script);
     let watching = core.watch_config().expect("监视得了");
     core.start_extensions();
     let following = core.follow_home_mcp();
@@ -43,7 +51,7 @@ async fn waiting_for_login(
 }
 
 /// 发 `mcp.login`，交回授权页的网址。
-async fn login_url(client: &mut Client, id: &str) -> String {
+pub(crate) async fn login_url(client: &mut Client, id: &str) -> String {
     let asked = client
         .call(id, "mcp.login", json!({"service": "notes"}))
         .await;
@@ -54,7 +62,7 @@ async fn login_url(client: &mut Client, id: &str) -> String {
 }
 
 /// 授权页网址里 `name` 那一格。
-fn query(url: &str, name: &str) -> Option<String> {
+pub(crate) fn query(url: &str, name: &str) -> Option<String> {
     url::Url::parse(url)
         .ok()?
         .query_pairs()

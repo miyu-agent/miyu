@@ -36,7 +36,7 @@ serde_json = "1.0"
 # 终端、控制台的设置写不回去时记一行，不吞掉也不 panic（施工 8-5 补）；工作区里本来就有。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 # 连接是异步的；Ctrl+C；`--timeout` 的钟（施工 7-9）。
-tokio = { version = "1", features = ["io-util", "macros", "rt", "signal", "sync", "time"] }
+tokio = { version = "1", features = ["io-std", "io-util", "macros", "rt", "signal", "sync", "time"] }
 
 [target.'cfg(windows)'.dependencies]
 # `miyu sandbox setup` 替谁装：当前用户的 SID（施工 5-8）。

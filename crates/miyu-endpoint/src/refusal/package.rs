@@ -62,6 +62,18 @@ impl Refusal {
         reason: "oauth_failed",
         data: None,
     };
+    /// 这个服务没登录过（施工 X-42 下，`mcp.logout`）：密钥里没有它那一份。
+    pub(crate) const NOT_LOGGED_IN: Refusal = Refusal {
+        code: REFUSED,
+        reason: "not_logged_in",
+        data: None,
+    };
+    /// 这个服务没有在等回调的登录（施工 X-42 下，`mcp.login_finish`）：先 `mcp.login`。
+    pub(crate) const NOT_WAITING: Refusal = Refusal {
+        code: REFUSED,
+        reason: "not_waiting",
+        data: None,
+    };
     /// 个人设置里没写这个名字、有包带着同名的 MCP 服务（施工 X-26，`mcp.set`）：随包来的不经它改。
     pub(crate) const SERVER_FROM_PACKAGE: Refusal = Refusal {
         code: REFUSED,
