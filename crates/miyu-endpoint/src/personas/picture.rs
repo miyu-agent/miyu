@@ -86,7 +86,7 @@ impl Picture {
     }
 
     /// 叠好的人格的这一种图。
-    fn of(self, found: &Found) -> Option<&Path> {
+    pub(super) fn of(self, found: &Found) -> Option<&Path> {
         match self {
             Picture::Avatar => found.avatar.as_deref(),
             Picture::Background => found.background.as_deref(),
@@ -193,11 +193,6 @@ pub(crate) fn apply(personas: &Personas, id: &str, checked: &Checked) -> Result<
 fn version_of(path: &Path) -> Option<String> {
     let bytes = std::fs::read(path).ok()?;
     Some(ContentHash::of(&bytes).hex()[..16].to_string())
-}
-
-/// 叠好的人格的这一种图的版本：没有的是 `None`（`persona.list`、`persona.get` 的 `avatar`、`background`）。
-pub(crate) fn version(found: &Found, picture: Picture) -> Option<String> {
-    picture.of(found).and_then(version_of)
 }
 
 /// `persona.avatar`、`persona.background` 的参数。

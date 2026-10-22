@@ -17,6 +17,7 @@
 | `crates/miyu-policy/src/compose.rs`、`snapshot.rs` | 人设进 system 第一块，示范对话进快照的 `demos`，组装时排在 system 后面、历史前面；角色扮演提示拼成快照的 `reminder`，有它的 system 最后带风格锁（施工 P-1 补） |
 | `crates/miyu-store/src/personas.rs` | 四层在哪、怎么叠、列出编号、包里被盖住的（施工 P-11 上）；记忆归哪个账号（认得系统账号，施工 O-4 下） |
 | `crates/miyu-endpoint/src/personas.rs` | 造会话时照默认找人格、记忆归哪个账号、`persona.list`、`persona.get` |
+| `crates/miyu-endpoint/src/personas/glance.rs`（施工 V-16） | 图的版本、头像的候选主色记在 `state/personas/pictures.json`：照位置、大小、修改时刻认，对得上的不读图，换了图重算；坏了、删了照空的算 |
 | `crates/miyu-endpoint/src/settings.rs` | 配置项 `persona.default`（`config.md`） |
 
 ### 对外的样子
@@ -144,6 +145,7 @@ assistant: 8640
 4. **头像的候选主色**（施工 P-6 补，2026-10-14 项目主人定：头像取色归核心，壁纸取色归头）：
    - `persona.list` 的每一格、`persona.get`（`persona.set` 的回应同它）多一格 `seeds`：从头像挑的最多 4 个候选，小写的 `#rrggbb`，打分最高的排第一。没有头像的、头像读不了、解不开的是 `null`；全透明的头像是空的列表。
    - 挑法在 `miyu-seeds`（模块层）：照 `image` 的 `thumbnail` 等比缩到边长 128，不透明度不到 200 的像素不算，MD3 的 Celebi 量化成 128 种，Score 挑最多 4 个（太灰、太少见的滤掉，一个都不合格的给 Google 蓝 `#4285f4`）。和终端原来取头像主色的做法一样，同一个头像的第一个候选不变。
+   - 算一次要整份读图、解图（debug 编的核心解一张 577 KB 的 JPEG 0.77 秒，release 0.04 秒），所以版本和候选主色记在 `state/personas/pictures.json`（施工 V-16）：照图的位置、大小、修改时刻认，三样都对得上的照记下的给，换了图重算写回；核心重启以后第一次 `persona.list` 不再现场算。`persona.list` 整个在阻塞线程里算。
    - 两个头算壁纸的候选经门面 `miyu_client::seeds` 用同一份（`client.md`），同一张图在哪里挑出来的都一样。网页原来用的 JS 版量化里有随机数，同一张图每次挑的会抖，和 Rust 版也对不上，所以一律在这里算。
    - 选哪个由头写进人格的 `seed`（第 1 条的 `persona.set`），两个头看到的是同一个；配色是不是跟随头像、怎么生成配色还是头的事。
    - 同一张图只算一次：照图的字节的哈希记在核心进程里，换了图哈希就变，记满 64 张整个清掉。读盘、解图在阻塞线程里做。
@@ -178,6 +180,7 @@ assistant: 8640
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
 | `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和系统区中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；只有出厂、系统区的不住在谁家，空目录也算住在家里；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |
 | `crates/miyu-endpoint/src/personas/tests.rs` | 记忆归哪个账号；名字照语言挑、退回的先后 |
+| `crates/miyu-endpoint/src/personas/glance/tests.rs`（施工 V-16） | 看一次记在盘上、换个进程照记下的给（图读不了也给）；大小变了、大小没变修改时刻变了都重算；先只要版本、后来要候选主色的补算；图不在的没有 |
 | `crates/miyu-endpoint/tests/personas.rs` | 家目录里的人格进 system、示范对话排在前面；不写人格照默认、个人设置压着系统配置；没有的、编号不对的、写错的拒绝，默认人格指着没有的也拒，什么都不造；场所会话带人格造、找回时不看、新场所指着没有的不造；`persona.list`、`persona.get`；角色扮演提示排在人说的那句后面、第二轮不再注入、system 带风格锁，软件工程师都没有（施工 P-1 补） |
 | `crates/miyu-policy/src/compose.rs` 的测试 | 角色扮演提示拼成一块、存得回来、造出的策略注入它；空白的算没有、软件工程师的快照不写这一格；风格锁只接在有提示的 system 最后（施工 P-1 补） |
 | `crates/miyu-kernel/src/facts/tests/reminder.rs`、`session/tests/scenario/reminder.rs` | 第 1、4、7 轮；压缩、撤销以后重来；模块的同类块不算；中途切级别不注入；载入以后接着数；没有的快照什么都不多（施工 P-1 补） |

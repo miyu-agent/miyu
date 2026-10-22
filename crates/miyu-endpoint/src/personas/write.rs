@@ -156,20 +156,21 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     }
     let personas = personas(core);
     let language = peer.language;
+    let state = core.root.state();
     tokio::task::spawn_blocking(move || {
         let found = match params.persona {
             Some(id) => write(&personas, &id, &wanted, &prompts, said.as_ref()),
             None => create(&personas, &wanted, &prompts, said.as_ref()),
         }?;
         if pictures.is_empty() {
-            return Ok(describe(&found, language));
+            return Ok(describe(&found, language, &state));
         }
         for checked in &pictures {
             super::picture::apply(&personas, &found.id, checked)?;
         }
         personas
             .find(&found.id)
-            .map(|found| describe(&found, language))
+            .map(|found| describe(&found, language, &state))
             .map_err(|error| super::told(&error, said.as_ref()))
     })
     .await

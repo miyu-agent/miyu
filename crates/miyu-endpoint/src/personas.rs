@@ -18,8 +18,8 @@ use crate::refusal::Refusal;
 use crate::settings::PersonaSettings;
 
 mod appearance;
+mod glance;
 pub(crate) mod picture;
-mod seeds;
 pub(crate) mod write;
 
 use picture::Picture;
@@ -149,14 +149,16 @@ pub(crate) fn memory_account(found: Option<&Found>, owner: &AccountId) -> Accoun
 pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
+    let state = core.root.state();
+    // 读盘、看图都在阻塞线程里（施工 V-16：原来算图片版本是在这外面直接读盘的）。
     let read = tokio::task::spawn_blocking(move || {
         personas
             .ids()
             .into_iter()
             .map(|id| {
                 let found = personas.find(&id);
-                let seeds = found.as_ref().ok().and_then(seeds::of);
-                (id, found, seeds)
+                let pictures = found.as_ref().ok().map(|found| Pictures::of(found, &state));
+                (id, found, pictures.unwrap_or_default())
             })
             .collect::<Vec<_>>()
     })
@@ -164,15 +166,15 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     .map_err(|_| Refusal::INTERNAL)?;
     let listed: Vec<Value> = read
         .into_iter()
-        .map(|(id, found, seeds)| match found {
+        .map(|(id, found, pictures)| match found {
             Ok(found) => json!({
                 "persona": id,
                 "name": label(found.file.name.as_ref(), peer.language),
                 "summary": label(found.file.summary.as_ref(), peer.language),
-                "avatar": picture::version(&found, Picture::Avatar),
-                "background": picture::version(&found, Picture::Background),
+                "avatar": pictures.avatar,
+                "background": pictures.background,
                 "seed": found.file.seed,
-                "seeds": seeds,
+                "seeds": pictures.seeds,
                 "background_opacity": found.file.background_opacity,
                 "background_focus": found.file.background_focus,
                 "background_blur": found.file.background_blur,
@@ -196,19 +198,21 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
     let said = words(core, peer.language).ok();
     let personas = personas(core);
     let language = peer.language;
+    let state = core.root.state();
     tokio::task::spawn_blocking(move || {
         personas
             .find(&params.persona)
-            .map(|found| describe(&found, language))
+            .map(|found| describe(&found, language, &state))
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?
     .map_err(|error| told(&error, said.as_ref()))
 }
 
-/// 叠好的一个人格照 `persona.get` 写（`persona.set` 的回应也是它，施工 P-3 下），名字、说明照语言 `language` 挑。头像的候选
-/// 主色要读盘、解图（施工 P-6 补），在阻塞线程里调。
-fn describe(found: &Found, language: &str) -> Value {
+/// 叠好的一个人格照 `persona.get` 写（`persona.set` 的回应也是它，施工 P-3 下），名字、说明照语言 `language` 挑。图片的版本、
+/// 头像的候选主色照 `state` 里记下的给（施工 V-16），要读盘、解图，在阻塞线程里调。
+fn describe(found: &Found, language: &str, state: &std::path::Path) -> Value {
+    let pictures = Pictures::of(found, state);
     json!({
         "persona": found.id,
         "name": label(found.file.name.as_ref(), language),
@@ -219,15 +223,40 @@ fn describe(found: &Found, language: &str) -> Value {
             "reminders": !found.texts.reminders.trim().is_empty(),
         },
         "examples": found.texts.examples.len(),
-        "avatar": picture::version(found, Picture::Avatar),
-        "background": picture::version(found, Picture::Background),
+        "avatar": pictures.avatar,
+        "background": pictures.background,
         "seed": found.file.seed,
-        "seeds": seeds::of(found),
+        "seeds": pictures.seeds,
         "background_opacity": found.file.background_opacity,
         "background_focus": found.file.background_focus,
         "background_blur": found.file.background_blur,
         "remove": remove(&found.layers),
     })
+}
+
+/// 一个人格的图片看出来的（施工 V-16）：头像、背景图的版本，头像的候选主色。
+#[derive(Debug, Default)]
+struct Pictures {
+    avatar: Option<String>,
+    background: Option<String>,
+    seeds: Option<Vec<String>>,
+}
+
+impl Pictures {
+    /// 照 `state` 里记下的看（[`glance::look`]）。
+    fn of(found: &Found, state: &std::path::Path) -> Pictures {
+        let avatar = Picture::Avatar
+            .of(found)
+            .and_then(|path| glance::look(state, path, true));
+        let background = Picture::Background
+            .of(found)
+            .and_then(|path| glance::look(state, path, false));
+        Pictures {
+            seeds: avatar.as_ref().and_then(|seen| seen.seeds.clone()),
+            avatar: avatar.map(|seen| seen.version),
+            background: background.map(|seen| seen.version),
+        }
+    }
 }
 
 /// 人格、预设的名字、说明照语言挑一句（施工 P-3 补）：一句字的就是它，以前的语言表照 [`pick`] 的先后挑，没写的是 `null`。
