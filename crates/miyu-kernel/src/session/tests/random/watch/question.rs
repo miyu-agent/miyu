@@ -174,7 +174,7 @@ impl Watch {
                     "question interrupted" => {
                         self.seen_paths.insert("打断时在等人回答");
                         assert!(
-                            self.interrupting.is_some(),
+                            self.queue.interrupting.is_some(),
                             "种子 {seed}：不是打断，却说被打断了"
                         );
                     }

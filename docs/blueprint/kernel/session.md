@@ -26,7 +26,7 @@
 | `crates/miyu-kernel/src/session/replies.rs` | 命令的回应什么时候回：记下编号、等事件落盘、接受过的编号再来（施工 3-8 四补从 `session.rs` 挪出来） |
 | `crates/miyu-kernel/src/session/limits.rs` | 给头看的限额 `ContextLimits`：窗口、压缩线（施工 6-3 补）；在跑的回合和它的 `cause`（`turn_cause()`，施工 8-9）；还算数的最近一次压缩、清空替代到哪（`compacted_upto()`，施工 R-13 补） |
 | `crates/miyu-kernel/src/session/tools.rs`、`step.rs` | 这一步的调用：先查、派、收结果、补结果；每个调用走到了哪、轮到谁 |
-| `crates/miyu-kernel/src/session/queue.rs`、`supersede.rs`、`interrupt.rs` | 排队的消息；一个字都还没回就撤掉重发（施工 4-15）；打断 |
+| `crates/miyu-kernel/src/session/queue.rs`、`supersede.rs`、`interrupt.rs` | 排队的消息、不打断退回一条（施工 Q-W）；一个字都还没回就撤掉重发（施工 4-15）；打断 |
 | `crates/miyu-kernel/src/session/nested.rs`、`nested/types.rs` | 嵌套调用（施工 M-1）：来了先查、排进父级的队、轮到的交给链、派、了结；父级结束时收尾、放进同一批；落了盘答执行器；在跑的给订阅；输入、动作、答脚本那头的几种 |
 | `crates/miyu-kernel/src/testkit/nested.rs` | 执行器替身扮脚本那头：送 `miyu call`、交链的结论、交跑完了，记下派过的、掐掉的、答过的（施工 M-1） |
 | `crates/miyu-kernel/src/session/jobs.rs` | 回报到了：记下，开一轮、排着还是只记下（施工 7-2，`agents.md` 第三条）；子会话重交的认出来（施工 7-6） |
@@ -358,6 +358,7 @@
    3. 这一批落了盘照有效历史再组装、发请求（第 5 步「发请求」），这条消息就在里面，队清空。
    4. 撤掉的那次迟到的 `RequestSent`、增量、说完了，`seen` 对不上，不理。
    5. 已经来过增量的不撤，照第 1 条排着队。子代理的留言、别的 harness 和别的会话发来的话、回报、旁听的不走这一条。
+6. **不打断退回一条**（施工 Q-W，`Command::Withdraw`，`session.withdraw`）：队里有写的那一条（不写的是最后那一条）的，从队里拿掉，追加只有它的 `message.withdrawn`，`by` 是退的人，`cause` 是这个命令；回合照跑，结束时照第 2 条由剩下的接着开。写了、不在队里的拒绝 `already_heard`（请求带上了、由它接着开了一轮、退过了）；没写、队里是空的（闲着的也算）拒绝 `nothing_queued`。封存了照收（同打断）。
 
 **回报**（施工 7-2，`agents.md` 第三条）：
 

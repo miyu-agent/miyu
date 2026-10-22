@@ -108,8 +108,7 @@ pub struct Session {
     unstored: Vec<Event>,
     /// 落了盘的最后一条；还没有落过盘就是没有。
     stored: Option<Seq>,
-    /// 等事件落了盘才回应的命令：编号、要等的事件的序号、回应的结局（施工 3-8 四补：回顾回的不是「接受了」）。照收到的
-    /// 先后。
+    /// 等事件落了盘才回应的命令：编号、要等的事件的序号、回应的结局，照收到的先后（施工 3-8 四补：回顾回的不是「接受了」）。
     waiting: Vec<(CommandId, Vec<Seq>, Outcome)>,
     /// 最近接受的命令编号。
     recent: Recent,
@@ -410,6 +409,7 @@ impl Session {
             Command::Respond { to, facts } => self.respond(id, by, at, to, facts),
             Command::Note { facts } => self.note(id, by, at, facts),
             Command::Interrupt { queued } => self.interrupt(id, by, at, queued),
+            Command::Withdraw { message } => self.withdraw(id, by, at, message),
             Command::SetMeta {
                 title,
                 pinned,

@@ -278,12 +278,14 @@ fn progress(call_id: CallId) -> Input {
 }
 
 /// 一次打断：一半接着发，一半退回。种子除以 4 余 1 的，退回换成留着（施工 O-6）：随机数照旧只取一次，别的种子的输入
-/// 一字不差，订别的会话的那批种子（除以 16 余 15，`random/peering.rs`）也不在里面，长跑里难得走到的路照样走得到。
+/// 一字不差，订别的会话的那批种子（除以 16 余 15，`random/peering.rs`）也不在里面，长跑里难得走到的路照样走得到。除以 4 余
+/// 2 的，编号是双数的退回换成不打断地退最新的一条（施工 Q-W），随机数也不多取。
 fn some_interrupt(rng: &mut Rng, seed: u64, next_id: &mut u64) -> Input {
     let n = next_command(next_id);
     match (rng.below(2), seed % 4) {
         (0, _) => interrupt(n),
         (_, 1) => stop_with(n, at(n % 60), Queued::Keep),
+        (_, 2) if n.is_multiple_of(2) => withdraw(n, None),
         _ => take_back(n),
     }
 }

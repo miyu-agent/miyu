@@ -1,8 +1,9 @@
 //! 排队的消息（`docs/designs/02-内核.md` 第六节「排队的消息」）：最后一步里排着的，回复完了接着
 //! 开一轮；由最后一条触发；出错、到步数上限的一样；还有下一步时来的不接着开；打断接着发、退回。一个字都还没回时来的撤掉
-//! 重发在 [`supersede`]（施工 4-15）。
+//! 重发在 [`supersede`]（施工 4-15）；不打断退回一条在 [`withdraw`]（施工 Q-W）。
 
 mod supersede;
+mod withdraw;
 
 use super::executor::*;
 use super::*;

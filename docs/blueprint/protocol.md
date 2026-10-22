@@ -168,6 +168,7 @@
 | `session.list` | 列出会话 |
 | `session.send` | 说一句话 |
 | `session.interrupt` | 打断在进行的回合 |
+| `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -467,6 +468,15 @@
 | `queued` | `"send"`、`"return"` 或 `"keep"`，必写 | 排着队的消息：打断以后马上发，退回来，还是留着（留在日志里、不撤回、不接着开新的一轮，施工 O-6） |
 
 回应：`events`，这一次追加的全部事件的序号。没有回合在进行：`not_running`。
+
+**`session.withdraw`**（施工 Q-W，2026-10-22 项目主人定终端的做法：点排队的那条撤回，`/undo` 有排队的先逐条撤）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `message` | 整数，可以不写 | 退哪一条：那句话的 `message.user` 的序号；不写的退回最新的一条 |
+
+不打断，内核追加一条 `message.withdrawn`（`by` 是退的人，`cause` 是这个命令，`messages` 只有这一条），这一轮照跑（`kernel/session.md`「排队的消息」）。回应：`events`，那一条的序号，落了盘才回。写的那一条不在队里（请求已经带上了、由它接着开了一轮、退过了）：`already_heard`；没写、又没有排着的：`nothing_queued`。权限同 `session.interrupt`（`sessions.drive`）。
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 

@@ -8,6 +8,7 @@
 | [`session.list`](#sessionlist) | 列出会话 |
 | [`session.send`](#sessionsend) | 说一句话 |
 | [`session.interrupt`](#sessioninterrupt) | 打断在进行的回合 |
+| [`session.withdraw`](#sessionwithdraw) | 不打断，退回一条排着队的话 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -160,6 +161,16 @@
 **回应**：`{"events": [<这一次追加的事件>…]}`。
 
 **出错**：`not_running`：没有回合在进行。
+
+## `session.withdraw`
+
+不打断这一轮，退回一条排着队、她还没听到的话。
+
+**参数**：`session`；`message`（可以不写）：退哪一条，那句话的 `message.user` 的序号；不写的退回最新的一条。
+
+**回应**：`{"events": [<那条 message.withdrawn 的序号>]}`。推送照 `session.interrupt` 退回的一样：一条 `message.withdrawn`，`messages` 里只有这一条；视图里那一句标 `withdrawn: true`。这一轮照跑，回完了由剩下排着的接着开。
+
+**出错**：`already_heard`：写的那一条不在队里，请求已经带上了（或者由它接着开了一轮）；`nothing_queued`：没写哪一条，又没有排着的。
 
 ## `session.answer`
 

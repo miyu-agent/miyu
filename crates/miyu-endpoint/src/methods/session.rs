@@ -1,5 +1,5 @@
 //! 会话的几个方法（施工 L-2 时从 `methods.rs` 挪出来：路由改成每个方法一个 future 以后那一份过了 500 行）：造会话、说话、打断、
-//! 撤销、恢复、重做、手动压缩、切权限级别、回答提问、清空、回顾、停任务、换模型、改标题、删除。
+//! 退回排着的、撤销、恢复、重做、手动压缩、切权限级别、回答提问、清空、回顾、停任务、换模型、改标题、删除。
 
 use super::*;
 
@@ -161,6 +161,20 @@ pub(super) async fn interrupt(core: &Arc<Core>, request: &Request) -> Result<Val
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Interrupt { queued };
+    let events = command_to(core, request, &session, &found.handle, command).await?;
+    Ok(json!({ "events": events }))
+}
+
+/// `session.withdraw`：不打断，退回一条排着队、她还没听到的消息（施工 Q-W）。
+pub(super) async fn withdraw(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+    let params: WithdrawParams = params(request)?;
+    let message = params
+        .message
+        .map(|message| Seq::new(message).ok_or(Refusal::BAD_PARAMS))
+        .transpose()?;
+    let session = session(&params.session)?;
+    let found = core.sessions.get(core, &session).await?;
+    let command = Command::Withdraw { message };
     let events = command_to(core, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))
 }

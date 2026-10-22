@@ -83,6 +83,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
     match command {
         Command::SetMeta { .. }
         | Command::Interrupt { .. }
+        | Command::Withdraw { .. }
         | Command::Answer { .. }
         | Command::Recap
         | Command::Report(_)

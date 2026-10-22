@@ -206,6 +206,7 @@ pub(crate) fn call<'a>(
         }),
         "session.send" => answer(move || session::send(core, caller, request)),
         "session.interrupt" => answer(move || session::interrupt(core, request)),
+        "session.withdraw" => answer(move || session::withdraw(core, request)),
         "session.revert" => answer(move || session::revert(core, request)),
         "session.unrevert" => answer(move || session::unrevert(core, request)),
         "command.run" => answer(move || async move {

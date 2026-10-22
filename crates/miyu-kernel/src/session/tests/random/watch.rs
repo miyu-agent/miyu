@@ -80,15 +80,8 @@ pub(super) struct Watch {
     pub(super) calm: bool,
     /// 多调写文件的、不开只读，写的在跑时常被打断（施工 4-9 再补一）。
     pub(super) writing: bool,
-    /// 排着队的消息：这一轮里来的，还没被请求看到过。
-    queued: Vec<Seq>,
-    /// 请求看到过、还没得到回答的消息（施工 4-15 补）：请求出错、被打断、被撤掉都还欠着，说完了才算回答过；「马上发」的打断
-    /// 以后由它们接着开一轮。
-    heard: Vec<Seq>,
-    /// 正在送进去的那次新的打断，排着队的怎么办。
-    interrupting: Option<Queued>,
-    /// 回合开着时收下的、最近一次打断是「留着」（施工 O-6）：等停着的那一批先清掉了 `stopping`，回合结束时照它认。
-    keeping: bool,
+    /// 排着队的消息、听到过没回答的、正在送进去的打断和退回（`watch/queue.rs`）。
+    queue: queue::Queue,
     /// 现在的权限，和看守照规矩推出来的实际生效的那一级。
     permission: Permission,
     effective: Permission,
@@ -156,10 +149,7 @@ impl Watch {
             open_block: None,
             calm: false,
             writing: false,
-            queued: Vec::new(),
-            heard: Vec::new(),
-            interrupting: None,
-            keeping: false,
+            queue: queue::Queue::default(),
             permission: lookup::created_permission(),
             effective: lookup::created_permission(),
             approvals: approval::Approvals::new(),
@@ -236,11 +226,12 @@ impl Watch {
             },
             _ => None,
         };
-        self.interrupting = fresh_interrupt;
+        self.queue.interrupting = fresh_interrupt;
+        self.before_withdraw(&input, refused);
         if let Some(queued) = fresh_interrupt
             && self.turn_open()
         {
-            self.keeping = queued == Queued::Keep;
+            self.queue.keeping = queued == Queued::Keep;
         }
         let was_open = self.turn_open();
         let command = match &input {
@@ -284,6 +275,7 @@ impl Watch {
         if let Some(queued) = fresh_interrupt {
             self.interrupted(&actions, was_open, queued);
         }
+        self.after_withdraw(&actions);
         self.after_stop(&actions, stop);
         self.after_approval(&actions, judged);
         self.after_question(&actions, replied);
@@ -302,7 +294,8 @@ impl Watch {
         }
         self.reread_unfollowed();
         self.prepare_announced();
-        self.interrupting = None;
+        self.queue.interrupting = None;
+        self.queue.withdrawing = None;
         // 取回原文：执行器做完才收收件箱，马上交回（施工 6-9）。
         if let Some(recalled) = self.recall_answer() {
             self.feed(session, recalled);

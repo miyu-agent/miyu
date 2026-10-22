@@ -159,6 +159,9 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         // 施工 W-6（`web-module.md`「给人看的字」）。
         "unknown_blob" => ("内容不存在。", "Content not found."),
         "not_running" => ("没有进行中的回合。", "No turn in progress."),
+        // 施工 Q-W（`session.withdraw`）。
+        "nothing_queued" => ("没有排队的消息。", "No queued messages."),
+        "already_heard" => ("消息已送达，无法撤回。", "Message already delivered."),
         "turn_running" => ("回合进行中。", "A turn is in progress."),
         "unknown_turn" => ("回合不存在。", "Turn not found."),
         "nothing_to_unrevert" => ("没有可恢复的撤销。", "Nothing to restore."),

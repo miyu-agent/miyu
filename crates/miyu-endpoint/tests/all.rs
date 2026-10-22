@@ -235,6 +235,7 @@ mod welcomed;
 mod widget_commands;
 mod widget_content;
 mod widgets;
+mod withdraw;
 mod workspace;
 mod workspace_command;
 mod workspace_property;

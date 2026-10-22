@@ -100,6 +100,11 @@ pub enum Command {
         /// 排着队的消息怎么办（`02-内核.md` 第六节「排队的消息」）。
         queued: Queued,
     },
+    /// `session.withdraw`：不打断，退回一条排着队、她还没听到的消息（施工 Q-W，`02-内核.md` 第六节「排队的消息」）。
+    Withdraw {
+        /// 哪一条（`message.user` 的序号）；不写的退回最新的一条。
+        message: Option<Seq>,
+    },
     /// `session.answer`：回答一次权限确认，或者一组题（`02-内核.md` 第六节「确认怎么走」第 3 条、
     /// 「提问怎么走」第 3 条）。
     Answer {

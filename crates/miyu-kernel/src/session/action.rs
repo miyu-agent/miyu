@@ -307,6 +307,10 @@ pub enum Reason {
     GoalPaused,
     /// 长期目标跑着，接着跑（施工 X-7）。
     GoalRunning,
+    /// 退回排着队的消息（施工 Q-W）：没写哪一条，队里又是空的。
+    NothingQueued,
+    /// 退回排着队的消息（施工 Q-W）：写的那一条不在队里，请求已经带上了（或者由它接着开了一轮）。
+    AlreadyHeard,
 }
 
 impl Reason {
@@ -343,6 +347,8 @@ impl Reason {
             Reason::NoGoal => "no_goal",
             Reason::GoalPaused => "goal_paused",
             Reason::GoalRunning => "goal_running",
+            Reason::NothingQueued => "nothing_queued",
+            Reason::AlreadyHeard => "already_heard",
         }
     }
 }

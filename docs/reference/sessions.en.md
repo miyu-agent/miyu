@@ -8,6 +8,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.list`](#sessionlist) | List sessions |
 | [`session.send`](#sessionsend) | Say something |
 | [`session.interrupt`](#sessioninterrupt) | Interrupt the running turn |
+| [`session.withdraw`](#sessionwithdraw) | Take back one queued message without interrupting |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -160,6 +161,16 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 **Response**: `{"events": [<the events appended>…]}`.
 
 **Errors**: `not_running`: no turn is running.
+
+## `session.withdraw`
+
+Takes back one queued message she hasn't heard yet, without interrupting the turn.
+
+**Params**: `session`; `message` (optional): which one, the seq of its `message.user`; leave it out for the latest.
+
+**Response**: `{"events": [<the seq of the message.withdrawn>]}`. The push is the same as when `session.interrupt` returns messages: one `message.withdrawn` whose `messages` holds just this one; the view marks that message `withdrawn: true`. The turn keeps running and, when it's done, the remaining queued messages open the next one.
+
+**Errors**: `already_heard`: the named message isn't queued, a request already took it (or it opened the next turn); `nothing_queued`: no message named and nothing queued.
 
 ## `session.answer`
 

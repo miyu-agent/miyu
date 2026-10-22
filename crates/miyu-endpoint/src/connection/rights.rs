@@ -57,10 +57,10 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
             _ => Anyone,
         },
         // 驱动会话。
-        "session.create" | "session.send" | "session.interrupt" | "session.revert"
-        | "session.unrevert" | "session.redo" | "session.compact" | "session.clear"
-        | "session.configure" | "session.fork" | "session.set_meta" | "session.respond"
-        | "command.run" | "job.stop" => Needs(SessionsDrive),
+        "session.create" | "session.send" | "session.interrupt" | "session.withdraw"
+        | "session.revert" | "session.unrevert" | "session.redo" | "session.compact"
+        | "session.clear" | "session.configure" | "session.fork" | "session.set_meta"
+        | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
         // 读会话里的东西。
         "session.list" | "session.recap" | "view.page" | "view.detail" | "job.output" => {
             Needs(EventsRead)

@@ -93,6 +93,14 @@ pub(super) struct InterruptParams {
     pub(super) queued: QueuedParam,
 }
 
+/// `session.withdraw` 的参数（施工 Q-W）：退回哪一条排着的，`message.user` 的序号；不写的退回最新的一条。
+#[derive(Debug, Deserialize)]
+pub(super) struct WithdrawParams {
+    pub(super) session: String,
+    #[serde(default)]
+    pub(super) message: Option<u64>,
+}
+
 /// `session.revert` 的参数（施工 4-7 上）：从哪一轮起撤，回合编号就是那一轮 `turn.started` 的序号；不写的撤
 /// 最后一轮（施工 4-7 下）。
 #[derive(Debug, Deserialize)]

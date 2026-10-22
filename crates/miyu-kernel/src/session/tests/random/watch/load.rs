@@ -35,7 +35,7 @@ impl Watch {
     pub(super) fn note_ended(&mut self, event: &Event, reason: &EndReason, resumable: bool) {
         if *reason == EndReason::Restarted {
             self.restarts.streak += 1;
-            self.restarts.last = resumable.then(|| (event.seq, self.queued.clone()));
+            self.restarts.last = resumable.then(|| (event.seq, self.queue.queued.clone()));
             if !resumable {
                 self.seen_paths.insert("重启打断的手动压缩不接着压");
             }

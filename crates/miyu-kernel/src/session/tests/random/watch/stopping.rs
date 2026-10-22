@@ -91,7 +91,7 @@ impl Watch {
         let seed = self.seed;
         self.seen_paths.insert("叫它停");
         assert!(
-            self.interrupting.is_some(),
+            self.queue.interrupting.is_some(),
             "种子 {seed}：不是打断，却叫 {call_id} 停"
         );
         assert!(

@@ -45,6 +45,7 @@
 | `empty_message` | 一句话一块内容都没有 | |
 | `dir_too_wide` | 加进来的目录太宽 | |
 | `not_running` | 打断时没有回合在进行 | |
+| `nothing_queued`、`already_heard` | 退回排着的（`session.withdraw`）：没有排着的；写的那一条请求已经带上了 | |
 | `turn_running` | 撤销、重做、压缩、清空、删会话、换人格预设时有回合在进行 | |
 | `unknown_turn` | 要撤的那一轮不在现在的历史里 | |
 | `nothing_to_revert`、`nothing_to_unrevert` | 没有能撤销、能恢复的 | |

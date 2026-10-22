@@ -40,6 +40,8 @@ kinds! {
     TakeBack,
     /// 打断，排着的留着（施工 O-6）。
     Keep,
+    /// 不打断，退回一条排着的（施工 Q-W）。
+    Withdraw,
     /// 切权限级别。
     SetPermission,
     /// 改标题、置顶（施工 3-8 三补）。
@@ -140,6 +142,7 @@ impl InputKind {
                 Command::Interrupt {
                     queued: Queued::Keep,
                 } => InputKind::Keep,
+                Command::Withdraw { .. } => InputKind::Withdraw,
                 Command::Respond { .. } => InputKind::Respond,
                 Command::Note { .. } => InputKind::Note,
                 Command::SetPermission { .. } => InputKind::SetPermission,

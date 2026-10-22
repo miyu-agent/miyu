@@ -106,6 +106,18 @@ fn take_back(n: u64) -> Input {
     stop_with(n, at(n % 60), Queued::Return)
 }
 
+/// 编号是 `n` 的命令：alice 不打断、退回排着的 `message`（不写的是最新的一条，施工 Q-W）。
+fn withdraw(n: u64, message: Option<u64>) -> Input {
+    Input::Command(Received {
+        id: id(n),
+        by: alice(),
+        at: at(n % 60),
+        command: Command::Withdraw {
+            message: message.map(seq),
+        },
+    })
+}
+
 /// alice 在 `at` 打断，排着队的照 `queued` 办。
 fn stop_with(n: u64, at: Timestamp, queued: Queued) -> Input {
     Input::Command(Received {
