@@ -85,7 +85,9 @@ fn called_ok(home: &Home, session: &str) -> bool {
 #[tokio::test]
 async fn a_token_about_to_expire_is_renewed_before_the_call_without_a_restart() {
     let auth = AuthServer::start().await;
-    auth.expire_after(61);
+    // 发出来 4 秒以内还新鲜（核心照整秒比，离到期不到 60 秒的先续）：登录完 3 秒内连上的都不先续，Windows 慢也够（施工 X-42
+    // 下修：原来只给一秒，CI 上连的时候就过了线）。
+    auth.expire_after(64);
     let server = HttpServer::start(false).await;
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
@@ -93,7 +95,7 @@ async fn a_token_about_to_expire_is_renewed_before_the_call_without_a_restart() 
     let (_core, mut client, _kept) = logged_in(&home, &server, &script).await;
     let before = shakes(&server);
     // 离到期不到 60 秒了：下一次请求前先续。
-    tokio::time::sleep(Duration::from_millis(1200)).await;
+    tokio::time::sleep(Duration::from_millis(4200)).await;
     server.protect(&auth.issuer, "access-2");
     let session = call_once(&home, &mut client, "s1").await;
     assert!(called_ok(&home, &session), "{:?}", results(&home, &session));
@@ -141,7 +143,6 @@ async fn a_refresh_that_is_refused_stops_at_needs_login() {
 #[tokio::test]
 async fn a_call_in_flight_outlives_a_refresh_and_a_person_s_change_still_restarts() {
     let auth = AuthServer::start().await;
-    auth.expire_after(61);
     let server = HttpServer::start(false).await;
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
@@ -153,13 +154,13 @@ async fn a_call_in_flight_outlives_a_refresh_and_a_person_s_change_still_restart
     ]);
     let (_core, mut client, _kept) = logged_in(&home, &server, &script).await;
     let before = shakes(&server);
-    // 第一个会话的调用还新鲜的令牌发出去、慢慢答。
+    // 第一个会话的调用拿着令牌发出去、慢慢答。
     server.slow(2500);
     let first = open(&mut client).await;
     client.say("s1", &first, "慢的").await;
     until(|| called_with(&server).len() == 1).await;
-    // 过了快到期的那条线：第二个会话的调用先续，写回密钥。
-    tokio::time::sleep(Duration::from_millis(1200)).await;
+    // 服务改认新的：第二个会话的调用回 401，续一次、写回密钥、重发（施工 X-42 下修：不靠时间，原来过快到期的那条线只有
+    // 一秒，Windows 的 CI 上第一次调用就过了线）。
     server.slow(0);
     server.protect(&auth.issuer, "access-2");
     let second = open(&mut client).await;
@@ -172,6 +173,11 @@ async fn a_call_in_flight_outlives_a_refresh_and_a_person_s_change_still_restart
         results(&home, &first)
     );
     assert!(called_ok(&home, &second), "{:?}", results(&home, &second));
+    assert_eq!(
+        called_with(&server),
+        ["Bearer access-1", "Bearer access-1", "Bearer access-2"],
+        "第二次被拒了续一次、重发"
+    );
     assert_eq!(auth.refreshes().len(), 1);
     assert_eq!(shakes(&server), before, "没重起");
     // 人自己改了那一份：照旧重起。
