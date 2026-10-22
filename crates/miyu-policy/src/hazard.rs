@@ -7,6 +7,7 @@
 
 mod lex;
 mod rules;
+mod vars;
 
 pub use rules::assess;
 

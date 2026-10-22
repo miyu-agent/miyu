@@ -1,5 +1,5 @@
 //! 高危命令（施工 5-17，`docs/blueprint/session/guard.md`）：真的 `shell`，工作区、完全放开两级里灭顶的直接拒（她拿到那一句，
-//! 人看不到确认），别的问人（说明多 `hazard`，不提规则）；只读不看它。
+//! 人看不到确认）；别的工作区问人（说明多 `hazard`，不提规则），完全放开不问（施工 5-17 再补）；只读不看它。
 
 use std::path::{Path, PathBuf};
 
@@ -76,23 +76,32 @@ async fn wiping_out_home_is_refused_in_workspace_and_full_alike() {
 }
 
 #[tokio::test]
-async fn a_force_push_asks_without_a_rule_even_in_full() {
-    for level in [Level::Workspace, Level::Full] {
-        let home = Home::outside_temp();
-        let handle = ran(&home, level.clone(), false, "git push --force").await;
-        let request = requests(&home.log(handle.id())).remove(0);
-        assert_eq!(request.rule, None, "高危的不该一劳永逸：{level:?}");
-        let detail = request
-            .detail
-            .as_ref()
-            .map(|detail| detail.get().to_string())
-            .unwrap_or_default();
-        assert!(detail.contains(r#""hazard":"git_force_push""#), "{detail}");
-        assert!(
-            detail.contains(r#""command":"git push --force""#),
-            "{detail}"
-        );
-    }
+async fn a_force_push_asks_without_a_rule_in_workspace() {
+    let home = Home::outside_temp();
+    let handle = ran(&home, Level::Workspace, false, "git push --force").await;
+    let request = requests(&home.log(handle.id())).remove(0);
+    assert_eq!(request.rule, None, "高危的不该一劳永逸");
+    let detail = request
+        .detail
+        .as_ref()
+        .map(|detail| detail.get().to_string())
+        .unwrap_or_default();
+    assert!(detail.contains(r#""hazard":"git_force_push""#), "{detail}");
+    assert!(
+        detail.contains(r#""command":"git push --force""#),
+        "{detail}"
+    );
+}
+
+/// 完全放开只拦灭顶的（施工 5-17 再补，2026-10-22 项目主人定）：问人的那几种照常放行，交给沙盒跑。临时家目录不是仓库，
+/// `git stash drop` 什么都丢不掉。
+#[tokio::test]
+async fn full_lets_the_asking_kinds_through() {
+    let home = Home::outside_temp();
+    let handle = ran(&home, Level::Full, false, "git stash drop").await;
+    let log = home.log(handle.id());
+    assert!(requests(&log).is_empty(), "完全放开不问");
+    assert_ne!(results(&log).remove(0).status, ToolStatus::Denied);
 }
 
 #[tokio::test]

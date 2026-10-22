@@ -209,7 +209,8 @@ Exit code 2
 1. 读参数，读不懂的不报。
 2. 照命令的字面认（`miyu_policy::hazard::assess`）：工作目录照家目录换成绝对路径，家目录、数据根照这次调用带的。
 3. 拆命令：`&&`、`||`、`;`、`|`、`|&`、`&`、换行、括号是边界；去掉单双引号、反斜杠；`$( )`、反引号、`<( )`、`>( )` 里面的另认一遍，套到第 8 层以下的照删不清的问人；`>` 后面的是写到的地方，`<` 后面的、紧贴着重定向的纯数字不是参数。
-4. 剥外壳：开头的 `名字=值`，`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs` 连同它们的选项；`sh -c`、`bash -c` 这类和 `eval` 的里面另认。要带值的选项落在命令末尾的（`sudo -u`、`xargs -I`），照剥完了算，剩下的是空的、不报（鲁棒性 B-1：原来越界 panic，整个会话崩掉）。
+4. 剥外壳：开头的 `名字=值`，`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs` 连同它们的选项；`sh -c`、`bash -c` 这类和 `eval` 的里面另认。要带值的选项落在命令末尾的（`sudo -u`、`xargs -I`），照剥完了算，剩下的是空的、不报（鲁棒性 B-1：原来越界 panic，整个会话崩掉）。开头的 `if`、`then`、`elif`、`else`、`do`、`while`、`until`、`!` 也剥（施工 5-17 再补）。
+   - 同一条命令里单独成句的赋值（`T=…`，`export`、`local`、`declare`、`typeset`、`readonly` 后面的）照先后记下，删的目标里的 `$名字`、`${名字}` 照记下的换（施工 5-17 再补）：值开头的 `~` 照家目录接，值里又引了别的变量的照记下的换，换不掉的忘掉这个名字；`for`、`select` 的循环变量和 `read`、`mapfile`、`unset` 碰过的名字也忘掉；只给一个命令的（`T=x rm …`）、管道里的不算。没赋过值的 `$HOME` 照家目录换。替换里、`sh -c` 里的另起一份。
 5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径（`dir/*`、`dir/.*` 照删 `dir` 算），是根、家目录或它上面的、根下一层、数据根或装着它的（各账号的工作区里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（不是 `--staged`），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`，`dd of=` 或者 `>` 写 `/dev/sd*` 这类裸设备；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`。
 6. 几处都认出来的，交回拒的那一种，都是问的交回最先认出的；灭顶的那几种带写给她的一句和说法（上面的表）。
 

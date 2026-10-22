@@ -2,6 +2,7 @@
 //! 都是问的交回最先认出的。
 
 use super::lex::{Simple, Word, parse};
+use super::vars::{Vars, after_keywords};
 use super::{Kind, Places};
 
 /// 替换套替换最多看这么多层：再深的照问人。
@@ -24,13 +25,15 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
         return;
     }
     let parsed = parse(text);
+    let mut vars = Vars::new(places.home);
     for pipeline in &parsed.pipelines {
         if fetch_into_shell(pipeline) {
             found.push(Kind::PipeToShell);
         }
         for simple in pipeline {
-            one(simple, places, depth, found);
+            one(simple, places, &vars, depth, found);
         }
+        vars.assign(pipeline);
     }
     for inner in &parsed.inner {
         if fetches(inner) && pipeline_feeds_shell(&parsed) {
@@ -41,7 +44,7 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
 }
 
 /// 一个简单命令：先看它往哪里写，再剥外壳认命令。
-fn one(simple: &Simple, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
+fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, found: &mut Vec<Kind>) {
     if simple.writes.iter().any(|target| device(&target.text)) {
         found.push(Kind::DiskWrite);
     }
@@ -67,8 +70,8 @@ fn one(simple: &Simple, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>
         return;
     }
     match name {
-        "rm" | "rmdir" | "unlink" | "shred" => deleting(rest, places, recursive(rest), found),
-        "find" => finding(rest, places, found),
+        "rm" | "rmdir" | "unlink" | "shred" => deleting(rest, places, vars, recursive(rest), found),
+        "find" => finding(rest, places, vars, found),
         "git" => git(rest, found),
         "dd" if rest
             .iter()
@@ -103,6 +106,7 @@ fn one(simple: &Simple, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>
 /// 剥掉外壳：`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`，连同它们的选项、
 /// `env` 的 `名字=值`、`timeout` 的时长。
 fn unwrap(words: &[Word]) -> &[Word] {
+    let words = after_keywords(words);
     let mut at = 0;
     // 开头的 `名字=值`（`FOO=1 rm …`）。
     while words.get(at).is_some_and(|word| assignment(&word.text)) {
@@ -185,7 +189,13 @@ fn recursive(rest: &[Word]) -> bool {
 }
 
 /// `rm` 这类：每个目标照字面换成绝对路径再判。
-fn deleting(rest: &[Word], places: &Places<'_>, recursive: bool, found: &mut Vec<Kind>) {
+fn deleting(
+    rest: &[Word],
+    places: &Places<'_>,
+    vars: &Vars<'_>,
+    recursive: bool,
+    found: &mut Vec<Kind>,
+) {
     let mut options = true;
     for word in rest {
         if options && word.text == "--" {
@@ -195,14 +205,14 @@ fn deleting(rest: &[Word], places: &Places<'_>, recursive: bool, found: &mut Vec
         if options && word.text.starts_with('-') && word.text.len() > 1 {
             continue;
         }
-        if let Some(kind) = target(word, places, recursive) {
+        if let Some(kind) = target(&vars.expand(word), places, recursive) {
             found.push(kind);
         }
     }
 }
 
 /// `find <路径…> … -delete` 或者 `-exec rm`：照删那几个起点算。
-fn finding(rest: &[Word], places: &Places<'_>, found: &mut Vec<Kind>) {
+fn finding(rest: &[Word], places: &Places<'_>, vars: &Vars<'_>, found: &mut Vec<Kind>) {
     let deletes = rest.iter().any(|word| word.text == "-delete")
         || rest.windows(2).any(|pair| {
             matches!(pair[0].text.as_str(), "-exec" | "-execdir")
@@ -215,7 +225,7 @@ fn finding(rest: &[Word], places: &Places<'_>, found: &mut Vec<Kind>) {
         .iter()
         .take_while(|word| !word.text.starts_with(['-', '(', '!']))
     {
-        if let Some(kind) = target(word, places, true) {
+        if let Some(kind) = target(&vars.expand(word), places, true) {
             found.push(kind);
         }
     }

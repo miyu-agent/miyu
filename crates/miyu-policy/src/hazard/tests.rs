@@ -217,3 +217,43 @@ fn a_wrapper_option_missing_its_value_does_not_panic() {
         .collect();
     assert!(panicked.is_empty(), "这几条 panic 了：{panicked:?}");
 }
+
+/// 同一条命令里赋过值的变量照展开后的判（施工 5-17 再补）：项目主人在完全放开下拿临时目录做测试，`T=/tmp/x; rm -rf $T` 一条条
+/// 问人；`if`、`do` 后面的命令照样认。
+#[test]
+fn variables_assigned_in_the_same_command_are_followed() {
+    for (command, expected) in [
+        // 赋过值的：照展开的判。
+        ("T=/tmp/zt; rm -rf $T; mkdir -p $T/home", None),
+        ("set -e\nT=/tmp/zt\nrm -rf \"${T}\"", None),
+        ("export T=/tmp/zt && rm -rf $T/*", None),
+        ("H=~/.cache/x; T=$H/y; rm -rf $T", None),
+        ("T=~; rm -rf $T", Some("delete_home")),
+        ("T=$HOME/..; rm -rf $T", Some("delete_home")),
+        ("T=/usr; find $T -delete", Some("delete_system")),
+        ("T=.; rm -rf $T", Some("delete_working_dir")),
+        // 用在赋值之前的、赋的值说不清的、被循环和 read 改过的：照说不清。
+        ("rm -rf $T; T=/tmp/zt", Some("delete_unresolved")),
+        ("T=$(mktemp -d); rm -rf $T", Some("delete_unresolved")),
+        (
+            "T=/tmp/zt; T=$(mktemp -d); rm -rf $T",
+            Some("delete_unresolved"),
+        ),
+        (
+            "T=/tmp/zt; for T in a b; do rm -rf $T; done",
+            Some("delete_unresolved"),
+        ),
+        ("T=/tmp/zt; read T; rm -rf $T", Some("delete_unresolved")),
+        // 只给一个命令的、管道里的不算赋值。
+        ("T=/tmp/zt rm -rf $T", Some("delete_unresolved")),
+        ("T=/tmp/zt | cat; rm -rf $T", Some("delete_unresolved")),
+        // 关键字后面的命令照样认。
+        ("if true; then rm -rf ~; fi", Some("delete_home")),
+        (
+            "while true; do git push --force; done",
+            Some("git_force_push"),
+        ),
+    ] {
+        assert_eq!(kind(command), expected, "{command}");
+    }
+}

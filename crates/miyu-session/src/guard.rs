@@ -311,9 +311,11 @@ impl Guard {
             return deny(confined.no_commands());
         }
         // 改装了什么的（施工 F-10 下）照沙盒外跑的同一张表：报的路径照判，再照级别：工作区每次问人、只读拒绝。
-        // 高危的（施工 5-17）：工作区、完全放开两级问人、灭顶的拒，先于别的放行；只读本来就拒一切写。
+        // 高危的（施工 5-17）：灭顶的拒、别的问人，先于别的放行；只读本来就拒一切写。完全放开只拦灭顶的，别的照常放行（施工
+        // 5-17 再补，2026-10-22 项目主人定）。
         if level != Effective::ReadOnly
             && let Some(hazard) = tool.hazard(&call)
+            && (level == Effective::Workspace || hazard.refused.is_some())
         {
             return hazardous(verdict, (name, access), hazard, &asking);
         }

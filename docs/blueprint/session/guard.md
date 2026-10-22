@@ -17,7 +17,7 @@
 | `crates/miyu-session/src/guard/untargeted.rs` | 不报路径的调用（第四条）：照访问类别、在场所里做的事、要在沙盒外跑的（施工 5-18 从 `guard.rs` 挪出来：那边到了 500 行） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
-| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里 |
+| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里 |
 | `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
 
@@ -133,7 +133,7 @@
 | `execute` | 放行 | 沙盒能用：放行（在沙盒里跑）；用不了：问人 | 沙盒能用：放行（在只读沙盒里跑）；用不了：问人 |
 | `execute`，要在沙盒外跑（施工 D-4） | 放行 | 问人，提「此目录不再询问」：放行工作目录的写（施工 5-15） | 拒绝：只读 |
 | 管理员在系统配置里放行了的（`sandbox.tools.<名字> = "<来处>"`，施工 X-36，`11-权限与沙盒.md` A15） | 放行，不带沙盒 | 放行，不问、不带沙盒 | 拒绝：只读 |
-| `execute`，工具报高危（施工 5-17） | 问人，不提规则；灭顶的拒绝 | 同左 | 不看：照上面两行 |
+| `execute`，工具报高危（施工 5-17） | 不问，照上面两行；灭顶的拒绝（施工 5-17 再补） | 问人，不提规则；灭顶的拒绝 | 不看：照上面两行 |
 | `network`、`outbound`、不认识的 | 放行 | 问人 | 问人 |
 | `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝（`venues` 有 `local` 的照 `outbound`，施工 O-31 补） | 同左 | 同左 |
 
@@ -143,7 +143,7 @@
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。
 - 要在沙盒外跑的执行（工具报 `Tool::outside_sandbox`，`shell` 写了 `outside_sandbox`，施工 D-4）：完全放开放行；工作区问人，不管沙盒能不能用，提的规则是「此目录不再询问」：`{"tool", "write": [工作目录的真实位置]}`，家目录本身也照放（施工 5-15，2026-10-20 项目主人定；原来不提规则）。选了的，这一次照「允许这一次」在沙盒外跑，以后的命令照旧在沙盒里跑、这个目录能写（`session/tools.md`），文件工具写它不再问；越过沙盒的照样每次问（规则只管路径，不放开整个沙盒）；只读拒绝，说只读开着、命令不能在沙盒外跑。本会话放行过的规则管不到它：规则只管路径。执行器照同一个报不写沙盒的规格，所以工作区一定问过人才跑得到。
 - 管理员放行了的工具（施工 X-36，`11-权限与沙盒.md` A15，2026-10-20 项目主人定）：系统配置的 `sandbox.tools.<名字>` 写的来处，和工具目录里这件工具这时归的包编号（`Catalog::package_of`）一样，才算放行；回合开始照这一轮的配置把放行表交给策略（同技能文件夹）。放行了的照要在沙盒外跑的判（只碰得到自己工作区的会话拒、只读拒），但工作区这一级不问；执行器不给沙盒的规格。高危的照下一条问，没人能确认的地方照拒。嵌套调用（`miyu call`）走同一条链。工具自己报不报 `outside_sandbox` 都一样：放行只认管理员写的。带文件的工具（脚本）照文件判那一刻的真实位置（施工 X-37 补，`Tool::file`、`unsandboxed::Confines`、`Grant`）：落在家目录自己放东西的几处、资源目录下面才算，落在她这一轮写得了的地方（边界表的 `Writable`、放行过的写的规则）的不算；执行器照沙盒规格的 `write` 列表再比一遍（`Wrap::BareUnlessWritable`），两边一样严。`miyu check`（`check/unsandboxed.rs`）每一条照现在的工具目录查，都是警告：没有这件工具的 `sandbox_tool_missing`，来处对不上的 `sandbox_tool_moved`（印出现在的来处），文件不在管理员管得住的地方的 `sandbox_tool_linked`（印出真实位置），这三种不算放行；放行了 `shell` 的 `sandbox_shell` 照算，提醒一声。
-- 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：工作区、完全放开两级都管，判在报的路径之后、要在沙盒外跑之前，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。别的问人，不提规则（只能允许这一次或者拒绝），说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":true,"title":"Push","tool":"shell"}`。种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write` 拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell` 问人。
+- 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：工作区、完全放开两级都管（完全放开只拦灭顶的、问人的那几种照常放行，施工 5-17 再补，2026-10-22 项目主人定），判在报的路径之后、要在沙盒外跑之前，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。别的在工作区问人，不提规则（只能允许这一次或者拒绝），说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":true,"title":"Push","tool":"shell"}`。种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write` 拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell` 问人。
 - 访问类别是 `write` 或者不认识的，内核当成写入：只读时在交给链之前就拦下了，走不到这里（`kernel/session.md`）。
 
 **5. 问人时提的规则和说明**
