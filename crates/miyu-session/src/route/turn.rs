@@ -3,6 +3,8 @@
 //!
 //! - 内核交了引用的，换成它（变了的，钉着的成员清掉）；没交的（人回到了跟着配置，以前的日志、造的时候连 `models.chat` 都
 //!   没配的）照这一轮的 `models.chat`（施工 8-10 再补；以前照路由记在内存里的）。
+//! - 解析不出、供应商改过名的（施工 8-34，`state/models/renamed.json`）：换成新编号再解析，解析出来的照下一条告诉内核
+//!   （`replaced` 是旧的），记一行 `INFO model renamed`；换了也解析不出的照下一条。
 //! - 解析不出的（供应商、池删了，池空了），退回这一轮的 `models.chat`，以后钉在它上面，记一行 `INFO model fallback`；内核
 //!   交了引用的，交回原来的和退回的，内核记一条 `session.policy_changed`。`models.chat` 也解析不出的不退，端口是「没有
 //!   模型」，这一轮的请求当场 `no_model`。
@@ -45,9 +47,25 @@ impl Route {
             pinned.member = None;
         }
         let mut replaced = None;
-        let resolved = match pinned.reference.as_deref().and_then(resolve) {
-            Some(resolved) => Some(resolved),
-            None => {
+        let renamed = pinned
+            .reference
+            .as_deref()
+            .and_then(|text| renamed(data, text))
+            .and_then(|text| resolve(&text).map(|resolved| (text, resolved)));
+        let direct = pinned.reference.as_deref().and_then(resolve);
+        let resolved = match (direct, renamed) {
+            (Some(resolved), _) => Some(resolved),
+            (None, Some((to, resolved))) => {
+                tracing::info!(target: TARGET, "model renamed");
+                replaced = recorded.map(|from| Replaced {
+                    from: from.to_string(),
+                    to: to.clone(),
+                });
+                pinned.reference = Some(to);
+                pinned.member = None;
+                Some(resolved)
+            }
+            (None, None) => {
                 let chat = provider::chat(&values);
                 let fallback = chat.as_deref().and_then(resolve);
                 if let (Some(_), Some(to)) = (&fallback, chat) {
@@ -77,6 +95,15 @@ impl Route {
         pinned.limits = limits;
         replaced
     }
+}
+
+/// 引用 `text` 指的供应商改过名的（施工 8-34）：换成新编号的引用；池、没改过名的没有。
+fn renamed(data: &super::ModelData, text: &str) -> Option<String> {
+    let (provider, model) = text.split_once('/')?;
+    if provider.starts_with('@') {
+        return None;
+    }
+    data.renamed(provider).map(|to| format!("{to}/{model}"))
 }
 
 /// 池里一个成员写成端点和模型：钉住的池照它认回钉着的那一个（[`super::Routes::pool_start`]）。

@@ -4,6 +4,7 @@
 //! - `learned.json`：`{"<供应商>/<模型>":{"window":{"value":…,"at":…}}}`。请求报上下文超长、报了上限的，记下真窗口；
 //!   只学窗口，一直留着，比现在的小才记。
 //! - `providers/<编号>.json`：`{"fetched":…,"models":[{"id":…,"window":…}]}`。供应商的模型列表。
+//! - `renamed.json`：`{"<旧编号>":"<新编号>"}`。改过名的供应商（施工 8-34，[`Renamed`]）：会话钉着旧编号的照它换。
 
 use std::collections::BTreeMap;
 
@@ -60,6 +61,23 @@ impl Learned {
         entry.window = Some(Stamped { value: window, at });
         true
     }
+
+    /// 供应商改名（施工 8-34）：`<from>/` 开头的键换成 `<to>/`。新编号下已经学到的照旧（不会有：改名时新编号还没配）。
+    pub fn rename_provider(&mut self, from: &str, to: &str) {
+        let prefix = format!("{from}/");
+        let moved: Vec<String> = self
+            .0
+            .keys()
+            .filter(|key| key.starts_with(&prefix))
+            .cloned()
+            .collect();
+        for old in moved {
+            if let Some(entry) = self.0.remove(&old) {
+                let model = &old[prefix.len()..];
+                self.0.entry(key(to, model)).or_insert(entry);
+            }
+        }
+    }
 }
 
 /// 键：`<供应商>/<模型>`。
@@ -104,6 +122,42 @@ impl ProviderList {
     /// 列表里的这个模型。
     pub fn find(&self, model: &str) -> Option<&ListedModel> {
         self.models.iter().find(|listed| listed.id == model)
+    }
+}
+
+/// 改过名的供应商（施工 8-34）：旧编号 → 现在的编号。连着改的拉平（a→b 以后 b→c，a、b 都指 c），改回去的那一条删掉。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Renamed(BTreeMap<String, String>);
+
+impl Renamed {
+    /// 读 `renamed.json`。
+    ///
+    /// # Errors
+    ///
+    /// 不是这个样子的 JSON：原话说是哪一份。
+    pub fn parse(text: &str) -> Result<Renamed, String> {
+        serde_json::from_str(text).map_err(|error| format!("renamed.json not readable: {error}"))
+    }
+
+    /// 写成 JSON，照键排。
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// 旧编号 `from` 现在叫什么；没改过名的没有。
+    pub fn current(&self, from: &str) -> Option<&str> {
+        self.0.get(from).map(String::as_str)
+    }
+
+    /// 记下 `from` 改成了 `to`：原来指 `from` 的都指 `to`，`to` 自己那一条（改回去的）删掉。
+    pub fn record(&mut self, from: &str, to: &str) {
+        for current in self.0.values_mut() {
+            if current == from {
+                *current = to.to_string();
+            }
+        }
+        self.0.insert(from.to_string(), to.to_string());
+        self.0.remove(to);
     }
 }
 

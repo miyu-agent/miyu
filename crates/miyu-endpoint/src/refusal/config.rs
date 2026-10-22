@@ -41,4 +41,10 @@ impl Refusal {
     pub(crate) fn config_conflict_version(version: Option<String>) -> Refusal {
         Refusal::with("config_conflict", "version", serde_json::json!(version))
     }
+    /// `provider.rename` 的新编号已经有了（施工 8-34）。
+    pub(crate) const PROVIDER_EXISTS: Refusal = Refusal {
+        code: super::REFUSED,
+        reason: "provider_exists",
+        data: None,
+    };
 }

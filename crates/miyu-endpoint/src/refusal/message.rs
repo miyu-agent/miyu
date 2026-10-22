@@ -235,6 +235,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "no_project_config" => ("未找到项目配置。", "Project config not found."),
         "unknown_secret" => ("密钥不存在。", "Secret not found."),
         "unknown_provider" => ("供应商不存在。", "Provider not found."),
+        "provider_exists" => ("供应商编号已存在。", "Provider ID already exists."),
         "unknown_model" => ("模型或模型池不存在。", "Model or pool not found."),
         "recap_failed" => ("生成回顾失败。", "Recap failed."),
         // 施工 8-20（`models.md`「给人看的字」）。

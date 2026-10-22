@@ -267,6 +267,9 @@ pub(crate) fn call<'a>(
         "provider.catalog" => {
             answer(move || async move { providers::catalog(core, peer, params(request)?).await })
         }
+        "provider.rename" => answer(move || async move {
+            providers::rename(core, peer, &request.id, params(request)?).await
+        }),
         "provider.test" => {
             answer(move || async move { providers::test(core, peer, params(request)?).await })
         }

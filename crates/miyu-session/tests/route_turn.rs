@@ -186,6 +186,34 @@ async fn a_gone_model_falls_back_to_models_chat_and_stays_there() {
     assert_eq!(endpoints(&home, &handle), ["a", "b", "b"]);
 }
 
+/// 供应商改了名（施工 8-34）：钉着旧编号的会话下一轮照新编号发，内核记一条（`replaced` 是旧的），不退回 `models.chat`。
+#[tokio::test]
+async fn a_renamed_provider_is_followed_from_the_next_turn() {
+    let (first, second) = (
+        Server::start(hellos(8)).await,
+        Server::start(hellos(8)).await,
+    );
+    let before = config(&first, &second, 64_000, "b/n", false);
+    let (switch, receiving) = channel::channel(source(&before));
+    let mut home = Home::new();
+    home.configs = receiving;
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = create(&home, &routes, "a/m").await;
+    turn(&handle, "cmd-1").await;
+    let after = before
+        .replace("providers.a", "providers.c")
+        .replace("\"a/m\"", "\"c/m\"");
+    switch.send_replace(source(&after));
+    routes.data.rename_provider("a", "c");
+    turn(&handle, "cmd-2").await;
+    assert_eq!(
+        model_changes(&home, &handle),
+        [("c/m".to_string(), Some("a/m".to_string()), true)],
+        "照新编号，内核记下旧的"
+    );
+    assert_eq!(endpoints(&home, &handle), ["a", "c"]);
+}
+
 #[tokio::test]
 async fn nothing_is_recorded_when_models_chat_is_gone_too() {
     let (first, second) = (

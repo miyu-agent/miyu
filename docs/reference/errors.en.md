@@ -83,6 +83,7 @@ Chinese version: [errors.md](errors.md).
 | `unknown_file` | `check`'s file isn't one Miyu reads | |
 | `unknown_secret` | No such secret | |
 | `unknown_provider`, `unknown_model` | Not a configured provider; the model can't be resolved | |
+| `provider_exists` | Renaming a provider (`provider.rename`): the new ID already exists | |
 | `no_model` | No usable model | `message` |
 | `cooling` | Every candidate is cooling down | `message`, `wait_ms` |
 | `model_failed` | The request was sent and failed | `class`, `status`, `message` |

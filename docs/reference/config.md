@@ -14,6 +14,7 @@
 | [`provider.detect`](#providerdetect) | 找现成的：环境里设了的 key、本机跑着的模型服务 |
 | [`provider.catalog`](#providercatalog) | 搜供应商目录 |
 | [`provider.test`](#providertest) | 试一家供应商通不通 |
+| [`provider.rename`](#providerrename) | 改一家供应商的编号 |
 | [`model.call`](#modelcall) | 叫一次模型，不进任何会话 |
 | [`model.embed`](#modelembed) | 算一批字的向量 |
 | [`usage.query`](#usagequery) | 查用量和金额 |
@@ -176,6 +177,16 @@
 ```
 
 **出错**：`bad_params`；`unknown_provider`。
+
+## `provider.rename`
+
+改一家供应商的编号，一次改完：两层配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、`memory.organizer`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
+
+**参数**：`from`、`to`。`to` 照编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 32 个。
+
+**回应**：`{}`；改了的那几层照 [`config.changed`](pushes.md) 推。
+
+**出错**：`bad_params`（`to` 写法不对、和 `from` 一样）；`unknown_provider`（没有 `from`）；`provider_exists`（已经有 `to`）。两层里后一层写不成的，前一层改了的不撤，照那一层的错回（`config_conflict`、`config_file_broken`），再调一次照剩下的改。
 
 ## `model.call`
 

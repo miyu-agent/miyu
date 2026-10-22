@@ -33,6 +33,7 @@ pub mod phrases;
 pub mod plain;
 pub mod problem;
 pub mod reference;
+pub mod rename;
 pub mod schema;
 pub mod secret;
 mod value;

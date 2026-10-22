@@ -37,6 +37,8 @@ use crate::TARGET;
 
 use super::retire::{Retirement, Retiring};
 
+mod renamed;
+
 /// 核心一份的模型资料。
 #[derive(Debug)]
 pub struct ModelData {
@@ -77,6 +79,8 @@ pub struct Observed {
     pub lists: BTreeMap<String, ProviderList>,
     /// 池的指针（施工 8-8）。
     pub pointers: Pointers,
+    /// 改过名的供应商（施工 8-34）。
+    pub renamed: miyu_models::observed::Renamed,
 }
 
 impl ModelData {
@@ -337,6 +341,7 @@ pub fn read_observed(dir: &Path) -> Observed {
         learned,
         lists,
         pointers,
+        renamed: renamed::read(read(&dir.join("renamed.json"))),
     }
 }
 

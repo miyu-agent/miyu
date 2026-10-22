@@ -14,6 +14,7 @@ Chinese version: [config.md](config.md).
 | [`provider.detect`](#providerdetect) | Find what's already there: keys in the environment, local model servers |
 | [`provider.catalog`](#providercatalog) | Search the provider catalog |
 | [`provider.test`](#providertest) | Check whether a provider works |
+| [`provider.rename`](#providerrename) | Change a provider's ID |
 | [`model.call`](#modelcall) | Call a model once, outside any session |
 | [`model.embed`](#modelembed) | Compute embeddings for some texts |
 | [`usage.query`](#usagequery) | Query usage and cost |
@@ -176,6 +177,16 @@ Being able to list models counts as working, with no request sent; only when lis
 ```
 
 **Errors**: `bad_params`; `unknown_provider`.
+
+## `provider.rename`
+
+Changes a provider's ID in one go: in both config layers the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding`, `memory.organizer` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
+
+**Params**: `from`, `to`. `to` follows the ID rule: starts with a lowercase letter; lowercase letters, digits, `-`, `_`; at most 32.
+
+**Response**: `{}`; each changed layer pushes [`config.changed`](pushes.md).
+
+**Errors**: `bad_params` (`to` malformed or equal to `from`); `unknown_provider` (no `from`); `provider_exists` (`to` already exists). If the second layer can't be written, the first stays changed and that layer's error is returned (`config_conflict`, `config_file_broken`); calling again finishes the rest.
 
 ## `model.call`
 

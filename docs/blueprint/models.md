@@ -21,7 +21,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-models/src/onboard.rs`、`onboard/` | 第一次接入的纯逻辑（8-11）：目录和档案里的每一家合起来（`Listed`：名字、驱动、地址、能不能用）、找哪些环境变量、探本机的哪几家（`listing.rs`）；`provider.catalog` 搜、排（`search`）；推荐哪个模型（`recommend.rs`）；还没写进配置的一家写成一份最终值（`candidate.rs`），和配好的一家走同一条路；常用的几家 `featured.toml` 的写法（`featured.rs`，8-11 再补） | 8-11、8-11 再补 |
 | `crates/miyu-models/src/matching.rs` | 四层对目录、名字规整、认供应商（`recognize`）、认原厂（`Vendors`） | 8-7 |
 | `crates/miyu-models/src/facts.rs`、`facts/source.rs` | 资料的每一格、来源、合起来，写成 `model.list` 的 `facts` | 8-7 |
-| `crates/miyu-models/src/observed.rs` | 用出来的（`learned.json`）、供应商的列表（`providers/<编号>.json`）的样子、读写、只记小的 | 8-7 |
+| `crates/miyu-models/src/observed.rs` | 用出来的（`learned.json`）、供应商的列表（`providers/<编号>.json`）的样子、读写、只记小的；改过名的供应商（`renamed.json`，8-34） | 8-7、8-34 |
 | `crates/miyu-models/src/knowledge.rs` | 查资料时手头的几份：档案、认原厂的表、目录、用出来的、列表（`Knowledge`） | 8-7 |
 | `crates/miyu-models/src/reference.rs` | 两种写法：读、哪里能写哪几种（8-6）；造会话记下的引用（`record`）、一个引用这一轮指到一个模型还是一个池（`resolve`）、用途池里点名的模型（`named`）（8-8；挡位 8-8 补去掉了） | 8-6、8-8 |
 | `crates/miyu-models/src/settings.rs` | 模型这一块的配置项：`UseSettings`（`models.chat`、`vision`、`embedding`）、`PoolSettings`（`pools.<id>` 的成员、分法，8-8；派子代理能不能选、给模型看的说明，8-8 补）、`ProviderSettings`（`providers.<id>` 的驱动、地址、key、`catalog`，8-8 加 `cache`）、`ModelSettings`（`providers.<id>.models.<model>` 的窗口，8-18 加 `effort`），核心登记进清单（`config.md`） | 8-6 起 |
@@ -40,6 +40,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-session/src/route/turn.rs` | 回合开始照这一轮的配置重新解析会话的引用：换成内核交的、解析不出的退回 `models.chat`、钉着的成员还在的照旧、限额重算（`ModelPort::turn`） | 8-10 |
 | `crates/miyu-session/src/shown.rs` | 给头看的那一份 `Shown`：限额和会话接下来请求的模型 `Next`（8-18 多 `effort`），actor 写、`Handle` 读，`subscribe` 照它答 | 8-10、8-18 |
 | `crates/miyu-session/src/route/lists.rs` | 拉一家供应商的模型列表：照驱动的 `models_path()` GET、`parse_models`，存 `state/models/providers/<编号>.json`（8-7）；GET 一家的列表那一段 `provider.test` 也用（`list_models`，8-11） | 8-7、8-11 |
+| `crates/miyu-session/src/route/shared/renamed.rs`（施工 8-34） | 供应商改名：用出来的、供应商的列表换编号，改名记进 `renamed.json`；回合开始照它换（`route/turn.rs`） |
 | `crates/miyu-session/src/route/probe.rs` | `provider.test` 试一次（8-11）：推驱动、地址、key，列模型；列得出的挑一个就算通，不发请求（8-11 五补）；写的模型不在列表里、列不出又不是认证错的才发一句，收到第一段正文就停；发的那一句照这个模型的驱动、带档案另配的头（8-14） | 8-11、8-14、8-11 五补 |
 | `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头（`reach`，R-5 补从 `probe.rs` 抽出来）：`provider.test` 和远程的 embedding（`recall.md` 第四条第 7 款）共用，不走路由、池、冷却；引用的密钥、环境变量取不到的带上缺的那一样（`Missing`，8-11 五补） | R-5 补、8-11 五补 |
 | `crates/miyu-session/src/route/local.rs` | `provider.detect` 探本机的服务（8-11）：几家一起发，各等 300 毫秒，不走代理 | 8-11 |
@@ -861,6 +862,17 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
 3. **拿掉**：端点照两层（系统配置、个人设置）的文件里写着它的 `pools.<名字>.models`，一层一次 `config.set` 那一条路写：拿掉它，别的成员照原样；手改保护、推 `config.changed`（`by` 是 `{"kind":"kernel"}`）、日志都照常。记一行 `INFO model retired model=… pools=…`；写不成的 `WARN model not retired`，下一次撞上再来。
 4. **删空了的池留着**：名字可能还被 `models.chat`、预设、派子代理引用着。`model.list` 的 `pools` 每个多一格 `usable`：成员是空的是假；照它挑的照旧 `no_model`。
 
+
+**十六、供应商改名**（施工 8-34；2026-10-22 终端会话转来项目主人的话：「最好是能改，方便一些」，做法主会话定）：
+
+1. **协议** `provider.rename {"from", "to"}`，只给人。`to` 照编号的写法（第一条第 1 条），和 `from` 一样的、写法不对的 `bad_params`；合出来的配置里没有 `from` 的 `unknown_provider`，已经有 `to` 的 `provider_exists`。回 `{}`。
+2. **配置**：先个人设置、再系统配置，每一层照 `config.set` 的规矩写（重读、先写临时文件再替换、撞上手改重来、记日志、推 `config.changed`）。
+   - 有 `[providers.<from>]` 的那一层换表名（`miyu_config::rename::rename_table`，照 `toml_edit` 的可改文档换：表头、点号连着的键、行内表都认，子表跟着走，密钥的引用在表里跟着走，别处的字照原样）。两层都有的两层都换：个人那一层是叠在系统那家上的，同一家。
+   - 两层里类型是引用、模型、模型或几个字、模型的列表的项，指着 `<from>/<模型>` 的换成 `<to>/<模型>`（`miyu_config::rename::retargeted`，照配置清单的类型找，同第三条第 2 条查悬空的那一套），照 `config.set` 那一套只换那一个值。
+   - 后一层写不成的，前一层改了的不撤，回那一层的错；再调一次照剩下的改（改过的那一层里已经没有 `from`）。
+3. **会话**：钉着的引用记在日志里（`session.created`、`session.policy_changed` 的 `model`），改不了。改名记进 `state/models/renamed.json`（`{"<旧编号>":"<新编号>"}`，`miyu_models::observed::Renamed`）：连着改的拉平（a→b 以后 b→c，a、b 都指 c），改回去的（c→a）删掉 a 那一条。回合开始（第六条）钉着的解析不出、供应商在这张表里的，换成新编号再解析：解析出来的照第六条第 4 条那条路告诉内核（`replaced` 是旧的），记一行 `INFO model renamed`，不退回 `models.chat`；换了也解析不出的照旧退回。以后又建了旧编号的，照新建的那家，表不看。开着的会话下一轮起就照新编号，不用通知会话。
+4. **用出来的、供应商的列表**：`learned.json` 里 `<from>/` 开头的键换成 `<to>/`，`providers/<from>.json` 改名成 `<to>.json`；在核心手里那一份上改，写盘照旧（写不成的记一行，内存里照样换）。用量账本照日志重算，不动。
+
 ### 样子
 
 配置（例子，地址用 `.invalid`）：
@@ -1091,6 +1103,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-models/src/matching/tests.rs` | 第二条第 7 条那张表的每一行，规整，单段通用名，几家同名先取第 2 层认出的那家、再原厂、再字节序且不借价格 | 8-7 |
 | `crates/miyu-models/src/facts/tests.rs` | 每一格各查各的，窗口照手写、用出来的、列表、目录的先后，价格整份不拼，第 3、4 层借哪些，本机的当免费，倍率谁盖谁，手写指定不存在的什么都不借，来源一字不差；来源是配置的带 `layer`（系统、个人两层都写时跟着真的来源走），别的来源不带这一格（8-7（补）） | 8-7；8-7（补） |
 | `crates/miyu-models/src/observed/tests.rs`、`provider/tests.rs`（8-7 那几条） | 用出来的只记小的、读写一字不差，列表读写；照目录推驱动、地址，本机的认法 | 8-7 |
+| `crates/miyu-models/src/observed/tests.rs`（8-34 那一条） | 改名：学到的跟着换、前缀像的不动；改名记下来，连着改的拉平，改回去的删掉，读写一字不差 | 8-34 |
 | `crates/miyu-config/src/item/kind/tests.rs` | 小数、文字、时长三种类型：查、从 TOML 和协议读、Schema、说成什么话、宏的写法、类型本身写坏了的（8-7）；给模型看的字：一行、最多几个字、没有控制字符、CJK 的字占一半以上的不收，话里说要英文（8-8 补，`english.rs`） | 8-7、8-8 补 |
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs`、`classify/tests.rs`、`classify/excess/tests.rs`，`crates/miyu-http/tests/get.rs` | 列模型的读法；超长交出上限；一次 GET | 8-7 |
 | `crates/miyu-session/tests/route_facts.rs`、`route_learned.rs`、`http.rs` | 目录读完以前造会话等着、窗口照目录、读不了照样造、换上的新目录新会话用；用出来的窗口记下、写盘、记一行、新会话用上、大的不记、手写的盖过；能收什么照手写的资料 | 8-7 |
@@ -1103,6 +1116,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/tests/route.rs`、`route_pools.rs` | 假服务器：收到这一家的 key、重启还是它、老的 `keys` 报不认识（8-25；8-6 那几条照会话编号挑 key 的删了），连同几种 `no_model` 不发、没写 key 不带认证头、开着的会话钉着造它时的模型、钉着的那一家没了退回这一轮的 `models.chat` 以后钉在它上面、造的时候没配的配好以后用上、窗口照配置）；池（8-8，`route_pools.rs`）：钉住的一个会话一直发给一个成员、新会话照指针分开、认不出的成员跳过，载入照日志认回钉着的、指针写进 `pools.json` 重启读回来，轮换的一次一个，这时用不了的跳过、钉到下一个，池没了退回 `chat` 以后钉在它上面，限额照钉着的、轮换的取小的，`session.created` 记下会话的引用；429 换池里的下一个、当场再来，说到一半断了还发给它，全在冷却交 `cooling`，只有一个候选照发，限额变了交内核、推 `model.changed`（8-9，放在 `route_failover.rs`：另有轮换的池跳过冷却的、不推，换端点数进 5 次，请求本身有错的不换不记；`failover_log.rs`：两行运行日志） | 8-6、8-8、8-9 |
 | `crates/miyu-kernel/src/session/tests/scenario/models.rs`、`session/tests/configure.rs`、`scenario/breaker.rs`、`scenario/manual.rs` | `Configure`：一样的不记、落了盘才回应、回合进行中的下一轮生效、撤掉的回合里的也算、载入照日志算，回合开始交引用，`replaced` 记在注入前面、对不上的不理，`models.chat` 也没有的不记，`failover` 不管分类当场再来、数进 5 次，`cooling`、`no_model`，换模型解除压缩的暂停、失败从 0 数（`breaker.rs`），手动压缩、清空那一轮不交引用（`manual.rs`） | 8-6、8-9、8-10 |
 | `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行 | 8-10 |
+| `crates/miyu-session/tests/route_turn.rs`（8-34 那一条） | 供应商改了名：钉着旧编号的下一轮照新编号发，内核记一条（`replaced` 是旧的），不退回 `models.chat` | 8-34 |
 | `crates/miyu-cli/tests/ask.rs` | `miyu ask --model`：新开的照它造，接着的先换（`@池`）再说，换不成的（连同以前的挡位名）退出码 1、不发话 | 8-10、8-8 补 |
 | `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/tests/samples.rs` | 新的几格读写一字不差，以前的日志照读，样本对得上（8-8：`session/tests.rs` 的 `session.created.model`，写在最后、`null` 当没有、不是字的读不进来） | 8-8、8-10、8-15 |
 | `crates/miyu-endpoint/tests/models.rs`、`models_pools.rs` | `model.list` 的形状、来源、状态，用不了的一家、手写指定不存在的、只看一家、`unknown_provider`，`refresh` 拉完再答、不写的在后台拉（8-7）；冷却：模型照能用的 key 里最好的那个、都在冷却的带最早恢复的、认证失败只停那个模型、key 照旧是 `ok`、取不到值的 key 不算（8-9，8-9 修）；`models_pools.rs`（8-8）：`pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses` 的形状，用途池里点名的模型也列，`session.create` 的 `model` 记下解析出的、几种 `unknown_model`（连同以前的挡位名）什么都不造、不是字的 `bad_params`，真核心派子代理时子会话照 `pool`、抄父会话记下的，`bad_reference` 的问题、话、`config_errors`，`config.check` 照新的字查；`session.configure` 记下解析出的、先推再回应、一样的不记、参数不对和解析不出的什么都不记，`subscribe` 的 `model` 照真路由（8-10，`models_pools.rs`；`limits.rs` 照蓝图的例子一字不差）；`model.list` 的 `facts` 里来源是配置的带 `layer`，个人设置压着系统配置（`models.rs`，8-7（补））；`models` 只列写到了的、没配的供应商不列、写法不对的 `bad_params`（`models_only.rs`，V-6 上） | 8-7 到 8-10；8-7（补）；V-6 上 |
@@ -1121,6 +1135,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-policy/src/tools/choice/tests.rs` | 拼 `pool`：一个都没有的拿掉、和资源去掉它一字不差，有的插 `enum`、说明一行一个，别的字节不动；照快照读回列着的，读回的和拼进去的一样，没有这一格的是空的（8-8 补） | 8-8 补 |
 | `crates/miyu-core/tests/settings.rs`（8-8 补那一条） | `models.tiers.*` 不认识了：警告、原样留着 | 8-8 补 |
 | `crates/miyu-config/src/dangling/tests.rs` | `bad_reference`：供应商、池没配的一处一条、带名字、指到值那一行，配了的、不算数的那一层不报，说成话；类型「模型」只收 `<供应商>/<模型>` | 8-8 |
+| `crates/miyu-config/src/rename/tests.rs`（8-34） | 表头、子表、点号连着的键、行内表跟着换名，别处的字一字不差；没有这张表、新编号已有、写法不对的；引用、列表里指着旧编号的换成新的，前缀像的、池、别家的不动 | 8-34 |
 | `crates/miyu-core/tests/catalog.rs` | 目录的地址写成环境变量的引用的照核心的环境取、后台照它拉，没设、设成空的没有地址、照失败算（8-8） | 8-7、8-8 |
 | `crates/miyu-basesystem/tests/session_usage.rs`、`src/session_usage/tests.rs`、`budget.rs` | 查用量的输出一字不差、几种情形（有没有金额、没价格的、窗口、压缩线，没有端口、查不了、叫停），金额的写法（8-15）；工具面的预算（8-8 加了 `tier`、8-8 补换成 `pool`，8-15 加了 `session_usage`，十三件，还在预算里） | 8-8、8-15 |
 | `crates/miyu-session/tests/sessions.rs`、`read.rs` | 工具面：群里的会话没有 `session_usage`，本机的有（8-15） | C-3、8-15 |

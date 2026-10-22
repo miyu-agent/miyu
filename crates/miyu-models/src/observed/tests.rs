@@ -2,7 +2,7 @@
 
 use miyu_kernel::time::Timestamp;
 
-use super::{Learned, ListedModel, ProviderList, Stamped};
+use super::{Learned, ListedModel, ProviderList, Renamed, Stamped};
 
 fn at(text: &str) -> Timestamp {
     Timestamp::parse(text).expect("时刻写法对")
@@ -61,4 +61,37 @@ fn a_provider_list_reads_back_the_same() {
     assert_eq!(list.find("x").map(|listed| listed.window), Some(None));
     assert!(list.find("y").is_none());
     assert!(ProviderList::parse("{}").is_err());
+}
+
+/// 供应商改名（施工 8-34）：学到的跟着换；改名记下来，连着改的拉平，改回去的删掉。
+#[test]
+fn renaming_a_provider_moves_what_was_learned_and_is_remembered() {
+    let at = at("2026-10-22T00:00:00.000Z");
+    let mut learned = Learned::default();
+    learned.learn("old", "m1", 1000, at);
+    learned.learn("oldish", "m2", 2000, at);
+    learned.rename_provider("old", "new");
+    assert_eq!(learned.window("new", "m1").map(|w| w.value), Some(1000));
+    assert_eq!(learned.window("old", "m1"), None);
+    assert_eq!(
+        learned.window("oldish", "m2").map(|w| w.value),
+        Some(2000),
+        "前缀像的不动"
+    );
+
+    let mut renamed = Renamed::default();
+    renamed.record("a", "b");
+    renamed.record("b", "c");
+    assert_eq!(
+        (renamed.current("a"), renamed.current("b")),
+        (Some("c"), Some("c"))
+    );
+    renamed.record("c", "a");
+    assert_eq!(renamed.current("a"), None, "改回去的删掉");
+    assert_eq!(
+        (renamed.current("b"), renamed.current("c")),
+        (Some("a"), Some("a"))
+    );
+    let again = Renamed::parse(&renamed.to_json()).unwrap();
+    assert_eq!(again, renamed);
 }

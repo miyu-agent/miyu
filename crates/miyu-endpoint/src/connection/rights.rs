@@ -135,6 +135,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "feature.set"
         | "config.trust"
         | "secret.set"
+        | "provider.rename"
         | "secret.delete"
         | "extension.enable"
         | "extension.disable"

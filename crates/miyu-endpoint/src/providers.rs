@@ -6,8 +6,10 @@
 //!   会话那一层一起探（`miyu_session::find_local`），探之前放开配置服务的锁。
 //! - 已经配好的：`key` 引用了这个变量的（施工 8-25：一家一个 key）、推出来的地址和本机服务的一样的，写上那一家的编号（编号照字节排第一的）。
 
+mod rename;
 mod trial;
 
+pub(crate) use rename::rename;
 pub(crate) use trial::test;
 
 use std::collections::BTreeMap;

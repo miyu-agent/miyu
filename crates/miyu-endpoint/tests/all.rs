@@ -173,6 +173,7 @@ mod preset_set;
 mod preset_skills;
 mod preset_swap;
 mod presets;
+mod provider_rename;
 mod providers;
 mod providers_test;
 mod questions;
