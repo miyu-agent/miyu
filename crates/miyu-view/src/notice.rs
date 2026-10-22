@@ -5,7 +5,7 @@ use serde::Serialize;
 use miyu_kernel::event::{CallError, CompactTrigger, PauseReason, Usage};
 use miyu_kernel::id::{JobId, Seq, TurnId};
 
-use crate::entry::{Answered, JobDone, ModelSwap, Peer, is_false};
+use crate::entry::{Answered, JobDone, ModelSwap, Peer, Recast, is_false};
 
 /// 一条旁白。
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -51,6 +51,8 @@ pub enum Notice {
     },
     /// 换了模型。
     Model(ModelSwap),
+    /// 中途换了人格、预设（施工 9-8 十四补）。
+    Persona(Recast),
     /// 换了工作区。
     Workspace {
         /// 新的工作目录，原样。

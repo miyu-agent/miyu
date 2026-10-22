@@ -5,6 +5,7 @@ mod support;
 mod lines;
 mod media;
 mod notices;
+mod outputs;
 mod preparing;
 mod queue;
 mod random;

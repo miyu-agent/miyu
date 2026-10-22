@@ -278,7 +278,7 @@ fn a_decided_approval_stops_waiting_while_the_tool_runs() {
 }
 
 #[test]
-fn the_context_counts_all_three_inputs() {
+fn the_context_counts_all_three_inputs_and_the_output() {
     let mut stage = stage();
     stage.model([Line {
         usage: Some(Usage {
@@ -291,7 +291,8 @@ fn the_context_counts_all_three_inputs() {
         ..Line::says("Hi.")
     }]);
     stage.say("hello");
-    assert_eq!(paged(&stage).used, Some(330));
+    // 输出也算（施工 9-8 十四补）：她回的下一次请求要带上。
+    assert_eq!(paged(&stage).used, Some(335));
 }
 
 #[test]
@@ -340,4 +341,115 @@ fn a_dream_sessions_requests_count_toward_the_context() {
         drop(projector.event(&event));
     }
     assert_eq!(projector.status().used, Some(2_048));
+}
+
+/// 等人不算用时（施工 9-8 十四补，项目主人 2026-10-23 定）：等确认两分钟、等回答三分钟，状态记着等完的和正在等的，这一步、
+/// 这一段、这一轮的用时都刨掉。
+#[test]
+fn time_spent_waiting_for_a_person_is_not_counted() {
+    let mut stage = stage();
+    stage.model([
+        Line::calls("", &[("write", r#"{"file_path":"a","content":"x"}"#)]),
+        Line::calls("", &[("ask_user", r#"{"questions":[]}"#)]),
+        Line::says("Thanks."),
+    ]);
+    stage.guards([Verdict::Ask {
+        module: ModuleId::parse("permissions").expect("合写法"),
+        access: Access::Write,
+        rule: None,
+        detail: None,
+    }]);
+    let question = Question {
+        header: None,
+        question: "Which one?".to_string(),
+        options: Vec::new(),
+        multiple: false,
+    };
+    stage.tools([Play::done("written"), Play::Asks(vec![question])]);
+    stage.say("write it");
+    let first = paged(&stage);
+    assert_eq!(first.waited_ms, 0);
+    assert!(first.waiting_since.is_some(), "在等确认：{first:?}");
+    stage.advance(2);
+    let call = first.waiting[0].call;
+    stage.decide(call, Decision::Once, None);
+    let asking = paged(&stage);
+    // 测试台的时钟每条事件走一秒：等完的那一段是拨的两分钟加上几秒。
+    assert!(
+        (120_000..130_000).contains(&asking.waited_ms),
+        "等完的那一段：{asking:?}"
+    );
+    assert!(asking.waiting_since.is_some(), "又在等回答");
+    stage.advance(3);
+    let question_call = asking.waiting[0].call;
+    stage.reply(
+        question_call,
+        vec![Response {
+            picked: Vec::new(),
+            text: Some("A".to_string()),
+            notes: None,
+            attachments: Vec::new(),
+        }],
+    );
+    let done = paged(&stage);
+    assert_eq!(
+        (done.waited_ms, done.waiting_since),
+        (0, None),
+        "一轮结束不写"
+    );
+    let entries = same(&stage);
+    for kind in ["tool", "group", "end"] {
+        for entry in of_kind(&entries, kind) {
+            let took = json(entry)["took_ms"].as_u64().expect("有用时");
+            assert!(took < 60_000, "{kind} 刨掉了等人的五分钟：{entry:?}");
+        }
+    }
+}
+
+/// 同时等两件确认只算一段（施工 9-8 十四补）：两件都定了以后，命令再跑四分钟，这四分钟照样算进这一轮。
+#[test]
+fn waiting_for_two_things_at_once_counts_once() {
+    let mut stage = stage();
+    stage.model([
+        Line::calls(
+            "",
+            &[
+                ("read", r#"{"file_path":"a"}"#),
+                ("read", r#"{"file_path":"b"}"#),
+            ],
+        ),
+        Line::says("ok"),
+    ]);
+    let ask = || Verdict::Ask {
+        module: ModuleId::parse("permissions").expect("合写法"),
+        access: Access::Read,
+        rule: None,
+        detail: None,
+    };
+    stage.guards([ask(), ask()]);
+    stage.tools([Play::done("A").held(), Play::done("B")]);
+    stage.say("read both");
+    let both = paged(&stage);
+    assert_eq!(both.waiting.len(), 2, "两件同时等：{both:?}");
+    stage.advance(2);
+    stage.decide(both.waiting[0].call, Decision::Once, None);
+    stage.advance(1);
+    stage.decide(both.waiting[1].call, Decision::Once, None);
+    let settled = paged(&stage);
+    assert_eq!(settled.waiting_since, None, "都定了：{settled:?}");
+    assert!(
+        (180_000..190_000).contains(&settled.waited_ms),
+        "{settled:?}"
+    );
+    stage.advance(4);
+    for call in stage.held_tools() {
+        stage.release_tool(call);
+    }
+    let entries = same(&stage);
+    let end = json(of_kind(&entries, "end")[0]);
+    let took = end["took_ms"].as_u64().expect("有用时");
+    assert!(
+        (240_000..260_000).contains(&took),
+        "跑的四分钟算、等的三分钟不算：{end}"
+    );
 }

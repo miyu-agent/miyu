@@ -56,8 +56,7 @@ impl Projector {
         self.settle_tools(event);
         self.close_group();
         self.drop_compacting();
-        let took =
-            u64::try_from(event.at.unix_millis() - running.started.unix_millis()).unwrap_or(0);
+        let took = self.busy_ms(running.started, event.at);
         if running.manual {
             self.manual_ended(took, running.usage);
             return;

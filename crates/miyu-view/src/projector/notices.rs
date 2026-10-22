@@ -12,7 +12,9 @@ use miyu_kernel::time::Timestamp;
 
 use super::Projector;
 use super::users::level;
-use crate::entry::{Body, EntryId, JobDone, JobEnd, Mark, ModelSwap, Output, Peer, Was};
+use crate::entry::{
+    Body, EntryId, JobDone, JobEnd, Mark, ModelSwap, Output, Peer, Recast, Swapped, Was,
+};
 use crate::explain::explain;
 use crate::notice::{Compaction, CompactionState, Notice};
 
@@ -30,14 +32,16 @@ impl Projector {
         if let Some(permission) = &changed.permission {
             self.level = Some(level(permission));
         }
-        // 人换的人格先记着，下一回换上快照（带 `policy` 的那一条）才算数（施工 9-8 十三补，同内核、会话那一层）。
+        // 人换的人格、预设先记着，下一回换上快照（带 `policy` 的那一条）才算数（施工 9-8 十三补，同内核、会话那一层）；
+        // 换上的那一刻出一条旁白（施工 9-8 十四补）。
         if let Some(persona) = &changed.persona {
             self.persona.1 = Some(Some(persona.clone()).filter(|persona| !persona.is_empty()));
         }
-        if changed.policy.is_some()
-            && let Some(persona) = self.persona.1.take()
-        {
-            self.persona.0 = persona;
+        if let Some(preset) = &changed.preset {
+            self.preset.1 = Some(preset.clone());
+        }
+        if changed.policy.is_some() {
+            self.recast(event);
         }
         let (Some(replaced), Some(model)) = (&changed.replaced, &changed.model) else {
             return;
@@ -55,6 +59,26 @@ impl Projector {
                 why: "replaced",
                 class: None,
             }),
+        );
+    }
+
+    /// 快照换上了：记着的人格、预设算数，真变了的出一条旁白。
+    fn recast(&mut self, event: &Event) {
+        let persona = self.persona.1.take().and_then(|to| {
+            let from = std::mem::replace(&mut self.persona.0, to.clone());
+            (from != to).then_some(Swapped { from, to })
+        });
+        let preset = self.preset.1.take().and_then(|to| {
+            let from = self.preset.0.replace(to.clone());
+            (from.as_ref() != Some(&to)).then_some(Swapped { from, to: Some(to) })
+        });
+        if persona.is_none() && preset.is_none() {
+            return;
+        }
+        self.notice(
+            EntryId::event(event.seq),
+            event.at,
+            Notice::Persona(Recast { persona, preset }),
         );
     }
 

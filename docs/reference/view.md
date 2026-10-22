@@ -31,7 +31,7 @@
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |
-| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)） |
+| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有） |
 | `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`，出错的 `error`、`explain` |
 | `notice` | 旁白：`what` 见下 |
 
@@ -51,6 +51,7 @@
 | `reverted` | 撤销了几轮：`turns`、`said`、`jobs` |
 | `job` | 一件后台任务了结了：`job`、`job_kind`、`title`、`mark`（`done`、`failed`、`stopped`）、`report`、`command`、`output`（`{blob, chars}`）、`exit_code`、`signal`、`took_ms` |
 | `answered` | 一组提问答了：`questions`、`answers`、`by` |
+| `persona` | 会话中途换了人格、预设，真换上的那一刻：`persona: {from, to}`、`preset: {from, to}`，换了哪样写哪样；写编号，没有的是 `null` |
 | `recap` | 一段回顾：`text`、`covers` |
 | `model` | 换了模型：`endpoint`、`model`、`from`、`why`（`failover`、`replaced`） |
 | `workspace` | 换了工作区：`cwd`、`dirs` |
@@ -63,13 +64,15 @@
 | `state` | `idle`、`running`、`waiting`（有没了结的确认、提问） |
 | `waiting` | `[{what: "approve" | "ask", entry, call}]` |
 | `since` | 这一轮开始的时刻 |
+| `waited_ms` | 这一轮等人（确认、回答提问）等完了的一共多少毫秒，同时等几件只算一次；没等过的不写。等人的时间不算用时 |
+| `waiting_since` | 正在等人的这一段从什么时候起；没在等的不写。用时照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时停住；条目里的 `took_ms` 也刨掉了等人的时间 |
 | `doing` | 正在做什么：`thinking`、`writing`、`tool`（带 `entry`）；`retrying`（`attempt`、`limit`、`at`、`class`、`message`）；`compacting`（`trigger`、`written`、`expected`） |
-| `context` | `{window, compaction_line, used}`：上下文窗口、压缩线、最近一次用了多少 |
+| `context` | `{window, compaction_line, used}`：上下文窗口、压缩线、最近一次用了多少（那次请求的输入加输出；刚压完的是压完的量） |
 | `speed` | `{output, ms}`：最近一次的输出 token 和毫秒 |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻 |
 | `preparing` | 后台在提前压缩：`{seen, since}` |
 | `usage` | 本会话累计用量 |
-| `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格 |
+| `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推 |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |
 | `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why}`，`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |

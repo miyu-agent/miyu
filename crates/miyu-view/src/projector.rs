@@ -63,6 +63,8 @@ pub struct Projector {
     level: Option<String>,
     /// 现在回话的人格、人要换成还没换上的（施工 9-8 十三补）：回复条目照前一个记。
     persona: (Option<String>, Option<Option<String>>),
+    /// 现在的预设、人要换成还没换上的（施工 9-8 十四补，换上时出旁白）。
+    preset: (Option<String>, Option<String>),
     /// 派出去的后台任务。
     jobs: BTreeMap<JobId, Job>,
     /// 一组题：调用编号到问的那一组。
@@ -151,6 +153,7 @@ impl Projector {
             users: BTreeMap::new(),
             level: None,
             persona: (None, None),
+            preset: (None, None),
             jobs: BTreeMap::new(),
             questions: BTreeMap::new(),
             reply: None,
@@ -173,6 +176,7 @@ impl Projector {
             EventBody::SessionCreated(created) => {
                 self.level = Some(users::level(&created.permission));
                 self.persona = (created.persona.clone(), None);
+                self.preset = (created.preset.clone(), None);
             }
             EventBody::PolicyChanged(changed) => self.policy(event, changed),
             EventBody::WorkspaceChanged(changed) => self.workspace(event, changed),
@@ -192,10 +196,7 @@ impl Projector {
             }
             EventBody::ApprovalRequested(requested) => self.approval_requested(requested),
             EventBody::ApprovalDecided(decided) => self.approval_decided(event, decided),
-            EventBody::QuestionAsked(asked) => {
-                self.questions
-                    .insert(asked.call_id, asked.questions.clone());
-            }
+            EventBody::QuestionAsked(asked) => self.asked(asked),
             EventBody::QuestionAnswered(answered) => self.answered(event, answered),
             EventBody::ContextCompacted(compacted) => self.compacted(event, compacted),
             EventBody::CompactionPaused(paused) => self.paused(event, paused),
@@ -389,7 +390,9 @@ impl Projector {
             .map(|t| t.unix_millis())
             .max();
         let took = match (first, last) {
-            (Some(first), Some(last)) if !open => Some(u64::try_from(last - first).unwrap_or(0)),
+            (Some(first), Some(last)) if !open => Timestamp::from_unix_millis(first)
+                .zip(Timestamp::from_unix_millis(last))
+                .map(|(first, last)| self.busy_ms(first, last)),
             _ => None,
         };
         let shown_took = took.unwrap_or(0);

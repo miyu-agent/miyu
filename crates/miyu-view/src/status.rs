@@ -23,6 +23,13 @@ pub struct Status {
     /// 这一轮开始的时刻；没在跑的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub since: Option<Timestamp>,
+    /// 这一轮等人等完了的那几段一共多少毫秒（施工 9-8 十四补，项目主人 2026-10-23 定等人不算用时）：确认、提问都算，同时等
+    /// 几件的不重复算；还在等的那一段不在里面，看 `waiting_since`。没等过的不写。
+    #[serde(skip_serializing_if = "is_zero")]
+    pub waited_ms: u64,
+    /// 正在等人的这一段从什么时候起；没在等的不写。头照「现在 − since − waited_ms − (现在 − waiting_since)」算用时。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub waiting_since: Option<Timestamp>,
     /// 正在做什么；没在跑的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doing: Option<Doing>,
@@ -199,4 +206,13 @@ impl JobState {
     pub fn running(self) -> bool {
         self == JobState::Running
     }
+}
+
+/// 是 0：序列化时不写。
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde 的 skip_serializing_if 只交引用"
+)]
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }

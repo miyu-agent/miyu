@@ -138,6 +138,10 @@ fn answered_questions_carry_what_was_asked() {
     ]);
     stage.tools([Play::Asks(vec![question])]);
     stage.say("ask me");
+    // 问的时候那一步就带上题目（施工 9-8 十四补，终端的抽屉要）。
+    let asking = page(&stage);
+    let step = json(of_kind(&asking, "tool")[0]);
+    assert_eq!(step["questions"][0]["question"], "Which one?", "{step}");
     let call = stage.ran()[0].0;
     stage.reply(
         call,
@@ -157,4 +161,9 @@ fn answered_questions_carry_what_was_asked() {
     );
     assert_eq!(notice["questions"][0]["question"], "Which one?");
     assert_eq!(notice["answers"][0]["picked"][0], "A");
+    let step = json(of_kind(&entries, "tool")[0]);
+    assert_eq!(
+        step["questions"][0]["options"][1]["label"], "B",
+        "答了照旧留着"
+    );
 }

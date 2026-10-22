@@ -74,6 +74,14 @@ async fn a_page_of_entries_is_drawn_in_the_connections_language() {
     let tool = &result["entries"][2];
     assert_eq!(tool["state"], "ok", "{tool}");
     assert_eq!(tool["title"]["name"], "读取", "握手说的中文：{tool}");
+    // 结果原文的前面一段（施工 9-8 十四补）：短的整份带上、不切。
+    assert!(
+        tool["output"]
+            .as_str()
+            .is_some_and(|output| output.contains("hello")),
+        "{tool}"
+    );
+    assert!(tool.get("output_cut").is_none(), "{tool}");
     assert_eq!(result["entries"][3]["text"], "读完了。");
 }
 

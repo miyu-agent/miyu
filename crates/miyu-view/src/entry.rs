@@ -15,7 +15,7 @@ use miyu_kernel::tool::Access;
 mod swap;
 mod touched;
 
-pub use swap::{ModelSwap, Was};
+pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
 
 pub use crate::id::EntryId;
@@ -241,6 +241,15 @@ pub struct Tool {
     /// 给头看的结构化结果（施工 W-11）：照结果的 `detail` 原样带上，形状由那件工具定。没有的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<miyu_kernel::raw::RawJson>,
+    /// 结果原文的前面一段（施工 9-8 十四补）：最多 100 行、8 KiB，切过的 `output_cut`；没有字的、还没结果的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
+    /// `output` 切过：整份照 `view.detail` 要。
+    #[serde(skip_serializing_if = "is_false")]
+    pub output_cut: bool,
+    /// 提问那一步问的那一组（施工 9-8 十四补）：问的时候就带上，答了照旧留着。
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub questions: Vec<miyu_kernel::event::Question>,
 }
 
 /// 标题那一句，照连接的语言。

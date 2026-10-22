@@ -1,4 +1,4 @@
-//! 换了模型的那一条（施工 9-8 十三补从 `entry.rs` 挪出来：那一份快到行数上限了）。
+//! 换了模型的那一条（施工 9-8 十三补从 `entry.rs` 挪出来：那一份快到行数上限了）；换了人格、预设的那一条（施工 9-8 十四补）。
 
 use serde::Serialize;
 
@@ -28,4 +28,24 @@ pub struct Was {
     pub endpoint: Option<String>,
     /// 模型。
     pub model: String,
+}
+
+/// 中途换了人格、预设（施工 9-8 十四补）：换了哪样写哪样。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Recast {
+    /// 人格。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub persona: Option<Swapped>,
+    /// 预设。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preset: Option<Swapped>,
+}
+
+/// 从哪个换成哪个：编号，没有的（无人格）是 `null`。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Swapped {
+    /// 换之前的。
+    pub from: Option<String>,
+    /// 换成的。
+    pub to: Option<String>,
 }

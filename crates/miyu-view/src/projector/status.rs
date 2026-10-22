@@ -25,6 +25,8 @@ pub(super) struct Tracking {
     cooling_until: Option<Timestamp>,
     preparing: Option<Preparing>,
     jobs: Vec<JobRow>,
+    /// 这一轮等人的那几段（施工 9-8 十四补）：起、止，还在等的没有止。等的从没有到有时起一段，全了结时止，同时等几件只算一段。
+    waits: Vec<(Timestamp, Option<Timestamp>)>,
 }
 
 impl Projector {
@@ -41,6 +43,20 @@ impl Projector {
             state,
             waiting: tracking.waiting.clone(),
             since: self.turn.as_ref().map(|turn| turn.started),
+            waited_ms: if self.turn.is_some() {
+                tracking
+                    .waits
+                    .iter()
+                    .filter_map(|(start, end)| Some(millis(*start, (*end)?)))
+                    .sum()
+            } else {
+                0
+            },
+            waiting_since: self
+                .turn
+                .as_ref()
+                .and(tracking.waits.last())
+                .and_then(|(start, end)| end.is_none().then_some(*start)),
             doing: self.turn.as_ref().and(tracking.doing.clone()),
             used: tracking.used,
             speed: tracking.speed,
@@ -54,21 +70,25 @@ impl Projector {
     pub(super) fn track(&mut self, event: &Event) {
         match &event.body {
             EventBody::ApprovalRequested(requested) => {
-                self.wait(Wait::Approve, requested.call_id);
+                self.wait(Wait::Approve, requested.call_id, event.at);
             }
-            EventBody::QuestionAsked(asked) => self.wait(Wait::Ask, asked.call_id),
-            EventBody::ApprovalDecided(decided) => self.settled(decided.call_id),
-            EventBody::QuestionAnswered(answered) => self.settled(answered.call_id),
+            EventBody::QuestionAsked(asked) => self.wait(Wait::Ask, asked.call_id, event.at),
+            EventBody::ApprovalDecided(decided) => self.settled(decided.call_id, event.at),
+            EventBody::QuestionAnswered(answered) => self.settled(answered.call_id, event.at),
             EventBody::ToolResult(result) => {
-                self.settled(result.call_id);
+                self.settled(result.call_id, event.at);
                 self.track_effects(event.at, &result.effects);
             }
             EventBody::JobReported(reported) => self.job_ended(event.at, reported),
             EventBody::ChildReported(reported) => self.child_ended(event.at, reported),
-            EventBody::TurnStarted(_) => self.tracking.doing = None,
+            EventBody::TurnStarted(_) => {
+                self.tracking.doing = None;
+                self.tracking.waits.clear();
+            }
             EventBody::TurnEnded(_) => {
                 self.tracking.waiting.clear();
                 self.tracking.doing = None;
+                self.tracking.waits.clear();
             }
             EventBody::ModelCalled(called) => {
                 // 后台提前压的那一次说完了（不论成没成）。
@@ -157,18 +177,47 @@ impl Projector {
         }
     }
 
-    /// 等人的一件：那一步的条目还在才记。
-    fn wait(&mut self, what: Wait, call: CallId) {
+    /// 等人的一件：那一步的条目还在才记。原来没在等的，起一段等人。
+    fn wait(&mut self, what: Wait, call: CallId, at: Timestamp) {
         if let Some(entry) = self.calls.get(&call).cloned()
             && !self.tracking.waiting.iter().any(|w| w.call == call)
         {
+            if self.tracking.waiting.is_empty() {
+                self.tracking.waits.push((at, None));
+            }
             self.tracking.waiting.push(Waiting { what, entry, call });
         }
     }
 
-    /// 那一次调用了结了：不再等人。
-    fn settled(&mut self, call: CallId) {
+    /// 那一次调用了结了：不再等人。全了结了，止住这一段等人。
+    fn settled(&mut self, call: CallId, at: Timestamp) {
+        let before = self.tracking.waiting.len();
         self.tracking.waiting.retain(|waiting| waiting.call != call);
+        if before > 0
+            && self.tracking.waiting.is_empty()
+            && let Some((_, end)) = self.tracking.waits.last_mut()
+        {
+            *end = Some(at);
+        }
+    }
+
+    /// `from` 到 `to` 刨掉这一轮等人的那几段，多少毫秒（施工 9-8 十四补，项目主人 2026-10-23 定等人不算用时）：一步、一段、
+    /// 一轮的用时都照它算。还在等的那一段算到 `to`。
+    pub(super) fn busy_ms(&self, from: Timestamp, to: Timestamp) -> u64 {
+        let waited: u64 = self
+            .tracking
+            .waits
+            .iter()
+            .map(|(start, end)| {
+                let start = start.unix_millis().max(from.unix_millis());
+                let end = end
+                    .map_or(to, |end| end)
+                    .unix_millis()
+                    .min(to.unix_millis());
+                u64::try_from(end - start).unwrap_or(0)
+            })
+            .sum();
+        millis(from, to).saturating_sub(waited)
     }
 
     /// 主请求说完了：上下文用了多少、速度；说成了的不再冷却、不再等重试。
@@ -177,7 +226,8 @@ impl Projector {
             return;
         }
         if let Some(usage) = &called.usage {
-            self.tracking.used = Some(usage.input());
+            // 输入加输出（施工 9-8 十四补）：她回的下一次请求要带上。
+            self.tracking.used = Some(usage.input().saturating_add(usage.output));
             if let Some(duration) = called.duration_ms {
                 let ms = duration.saturating_sub(called.first_token_ms.unwrap_or(0));
                 self.tracking.speed = Some(Speed {
@@ -308,4 +358,9 @@ impl Projector {
 fn later(at: Timestamp, ms: u64) -> Timestamp {
     let ms = i64::try_from(ms).unwrap_or(i64::MAX);
     Timestamp::from_unix_millis(at.unix_millis().saturating_add(ms)).unwrap_or(at)
+}
+
+/// `from` 到 `to` 多少毫秒，倒着的算 0。
+fn millis(from: Timestamp, to: Timestamp) -> u64 {
+    u64::try_from(to.unix_millis() - from.unix_millis()).unwrap_or(0)
 }

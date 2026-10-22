@@ -231,6 +231,67 @@ fn a_reply_carries_the_persona_that_spoke_it() {
     );
 }
 
+/// 中途换人格、预设（施工 9-8 十四补，终端要的）：记了还没换上的不出旁白，换上的那一刻出一条，换了哪样写哪样。
+#[test]
+fn a_recast_shows_once_it_takes_effect() {
+    let mut stage = stage();
+    stage.model([
+        Line::says("one"),
+        Line::says("two"),
+        Line::says("three"),
+        Line::says("four"),
+        Line::says("five"),
+    ]);
+    stage.say("first");
+    stage.recast(Some("miyu"));
+    stage.say("not yet");
+    let recasts = |entries: &[miyu_view::Entry]| -> Vec<serde_json::Value> {
+        entries
+            .iter()
+            .map(json)
+            .filter(|e| e["what"] == "persona")
+            .collect()
+    };
+    assert!(recasts(&same(&stage)).is_empty(), "记了还没换上");
+    stage.swap_policy(
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        policy,
+    );
+    stage.say("second");
+    let shown = recasts(&same(&stage));
+    assert_eq!(shown.len(), 1, "{shown:#?}");
+    assert_eq!(
+        shown[0]["persona"],
+        serde_json::json!({"from": null, "to": "miyu"})
+    );
+    assert!(shown[0].get("preset").is_none(), "只换了人格：{}", shown[0]);
+    stage.represet("coding");
+    stage.swap_policy(
+        "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        policy,
+    );
+    stage.say("third");
+    let shown = recasts(&same(&stage));
+    assert_eq!(shown.len(), 2, "{shown:#?}");
+    assert!(
+        shown[1].get("persona").is_none(),
+        "只换了预设：{}",
+        shown[1]
+    );
+    assert_eq!(shown[1]["preset"]["to"], "coding");
+    // 换上之前又换回原来的：等于没换，不出旁白。
+    stage.recast(None);
+    stage.recast(Some("miyu"));
+    stage.represet("writing");
+    stage.represet("coding");
+    stage.swap_policy(
+        "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        policy,
+    );
+    stage.say("fourth");
+    assert_eq!(recasts(&same(&stage)).len(), 2, "换回原样的不算");
+}
+
 /// 整理会话的主请求（施工 D-1 下补，网页报的）：`model.called` 带着 `purpose: memory`，照主请求投影，和普通会话的一样：收尾那一条
 /// 带模型和用量，思考用时照请求里记的时刻算。
 #[test]

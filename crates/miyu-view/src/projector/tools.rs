@@ -9,7 +9,7 @@ use serde_json::Value;
 use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{
     ApprovalDecided, ApprovalRequested, Body as EventBody, Effect, Event, QuestionAnswered,
-    ToolResult,
+    QuestionAsked, ToolResult,
 };
 use miyu_kernel::id::CallId;
 use miyu_kernel::time::Timestamp;
@@ -97,6 +97,9 @@ impl Projector {
             skill: None,
             shown: None,
             detail: None,
+            output: None,
+            output_cut: false,
+            questions: Vec::new(),
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());
@@ -284,6 +287,11 @@ impl Projector {
                 );
             }
         }
+        let (output, output_cut) = output_head(&result.blocks);
+        // 等人确认的那一段不算（施工 9-8 十四补）。
+        let took = self
+            .get(&id)
+            .map_or(0, |entry| self.busy_ms(entry.at, event.at));
         self.ended.insert(id.clone(), event.at);
         self.sent.insert(
             id.clone(),
@@ -310,13 +318,14 @@ impl Projector {
                 tool.skill = skill;
                 tool.shown = shown;
                 tool.detail = result.detail.clone();
+                tool.output = output;
+                tool.output_cut = output_cut;
                 if let Some(real) = real
                     && !state.failed()
                 {
                     tool.diff = Some(real);
                 }
-                let took = event.at.unix_millis() - entry.at.unix_millis();
-                tool.took_ms = Some(u64::try_from(took).unwrap_or(0));
+                tool.took_ms = Some(took);
             }
         });
         self.refresh_groups_of(vec![id]);
@@ -376,6 +385,20 @@ impl Projector {
         });
     }
 
+    /// 问了一组题：记着等答，那一步当场带上问的什么（施工 9-8 十四补，终端的抽屉要）。
+    pub(super) fn asked(&mut self, asked: &QuestionAsked) {
+        self.questions
+            .insert(asked.call_id, asked.questions.clone());
+        let Some(id) = self.calls.get(&asked.call_id).cloned() else {
+            return;
+        };
+        self.touch(&id, |entry| {
+            if let Body::Tool(tool) = &mut entry.body {
+                tool.questions.clone_from(&asked.questions);
+            }
+        });
+    }
+
     /// 一组题答了：另起一条旁白，带着问的那一组。
     pub(super) fn answered(&mut self, event: &Event, answered: &QuestionAnswered) {
         let questions = self.questions.remove(&answered.call_id).unwrap_or_default();
@@ -396,4 +419,38 @@ fn command_of(args: &str) -> Option<String> {
     serde_json::from_str::<Value>(args)
         .ok()
         .and_then(|a| a.get("command").and_then(Value::as_str).map(str::to_string))
+}
+
+/// 条目里的结果原文最多几行、几个字节（施工 9-8 十四补）：一页约 1 MiB，一步 8 KiB 放得下上百步。
+const OUTPUT_LINES: usize = 100;
+const OUTPUT_BYTES: usize = 8 * 1024;
+
+/// 结果原文的前面一段：文字块照先后、块之间空一行（同 `view.detail` 的 `output`），最多 [`OUTPUT_LINES`] 行、
+/// [`OUTPUT_BYTES`] 字节，先到的算，切在字的边界上；后面只剩空白的不算切。交回那一段和切没切，没有字的是 `None`。
+fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
+    let whole = blocks
+        .iter()
+        .filter_map(|block| match block {
+            Content::Text(text) => Some(text.text.as_str()),
+            _ => None,
+        })
+        .collect::<Vec<&str>>()
+        .join("\n\n");
+    if whole.is_empty() {
+        return (None, false);
+    }
+    let mut end = whole
+        .match_indices('\n')
+        .nth(OUTPUT_LINES - 1)
+        .map_or(whole.len(), |(at, _)| at);
+    if end > OUTPUT_BYTES {
+        end = OUTPUT_BYTES;
+        while !whole.is_char_boundary(end) {
+            end -= 1;
+        }
+    }
+    if whole[end..].trim_end().is_empty() {
+        return (Some(whole), false);
+    }
+    (Some(whole[..end].to_string()), true)
 }

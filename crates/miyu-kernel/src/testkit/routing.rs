@@ -43,6 +43,14 @@ impl Stage {
         })
     }
 
+    /// 换预设（施工 P-13；9-8 十四补的视图测试要）。返回这个命令的编号。
+    pub fn represet(&mut self, preset: &str) -> CommandId {
+        self.command(Command::Recast {
+            persona: None,
+            preset: Some(preset.to_string()),
+        })
+    }
+
     /// 从现在起，引用 `gone` 解析不出了（配置里删了）；这一轮的 `models.chat` 是 `chat`，没配的是 `None`。
     pub fn gone(&mut self, gone: &str, chat: Option<&str>) {
         self.routing.gone.push(gone.to_string());

@@ -31,7 +31,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `media` | An image she sent: `image`, `alt`, `sticker` |
 | `group` | A stretch of the timeline (thoughts and tool steps): `steps`, `open`, `summary`, `summary_en` (the collapsed line), `took_ms`, `failed` |
 | `thought` | A thought step: `group`, `text`, `open`, `took_ms` |
-| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcall-toolcancel)) |
+| `tool` | A tool step: `group`, `call`, `name`, `title`, `state`, `args`, `diff` (`{added, removed}`), `images`, `job`, `approval`, `took_ms`, `files` (`[{path, action}]`, `action` is `created`, `changed`, `trashed`), `skill`, `detail` (structured details from the tool, e.g. the items it found; one with `kind` is one of the three common shapes `links`, `table`, `images`, see [Extensions](extensions.en.md#toolcall-toolcancel)), `output` (the start of the result text: at most 100 lines or 8 KiB; when cut, `output_cut: true`, and `view.detail` gives the whole), `questions` (the set asked by a question step, present as soon as it is asked) |
 | `end` | A turn's end: `reason`, `model`, `endpoint`, `took_ms`, `usage`; on error `error`, `explain` |
 | `notice` | An aside: `what` below |
 
@@ -51,6 +51,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `reverted` | Turns were undone: `turns`, `said`, `jobs` |
 | `job` | A background job finished: `job`, `job_kind`, `title`, `mark` (`done`, `failed`, `stopped`), `report`, `command`, `output` (`{blob, chars}`), `exit_code`, `signal`, `took_ms` |
 | `answered` | A set of questions was answered: `questions`, `answers`, `by` |
+| `persona` | The persona or preset changed mid-session, at the moment it takes effect: `persona: {from, to}`, `preset: {from, to}`, only the ones that changed; ids, `null` for none |
 | `recap` | A recap: `text`, `covers` |
 | `model` | The model changed: `endpoint`, `model`, `from`, `why` (`failover`, `replaced`) |
 | `workspace` | The workspace changed: `cwd`, `dirs` |
@@ -63,13 +64,15 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `state` | `idle`, `running`, `waiting` (an approval or question is open) |
 | `waiting` | `[{what: "approve" | "ask", entry, call}]` |
 | `since` | When this turn started |
+| `waited_ms` | How long this turn has waited on a person (an approval, an answer) in finished stretches, in milliseconds, overlapping waits counted once; absent when it never waited. Waiting does not count as time spent |
+| `waiting_since` | When the current wait on a person began; absent when not waiting. Time spent is now − `since` − `waited_ms` − (now − `waiting_since`), so the clock stops while waiting; the `took_ms` of entries excludes waiting too |
 | `doing` | What's happening: `thinking`, `writing`, `tool` (with `entry`); `retrying` (`attempt`, `limit`, `at`, `class`, `message`); `compacting` (`trigger`, `written`, `expected`) |
-| `context` | `{window, compaction_line, used}`: context window, compaction line, latest usage |
+| `context` | `{window, compaction_line, used}`: context window, compaction line, latest usage (that request's input plus output; right after compaction, the compacted size) |
 | `speed` | `{output, ms}`: the latest output tokens and milliseconds |
 | `cooling_until` | When every candidate is cooling down, the earliest recovery time |
 | `preparing` | Compacting ahead in the background: `{seen, since}` |
 | `usage` | This session's total usage |
-| `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response |
+| `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed |
 | `todos_done` | When the to-do list was cleared because everything was done, the list before clearing (heads tick everything, pause, then collapse) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, `state` being `running`, `paused`, `completed`, `blocked`, `waiting` |
 | `jobs` | Jobs this session started directly (running ones and the last 20 finished): `{job, what, title, state, started, ended, session, command, exit_code, signal, why}`, `state` being `running`, `done`, `failed`, `stopped`, `aborted` |
