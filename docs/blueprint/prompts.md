@@ -279,6 +279,19 @@ When a reply links or embeds a local file, write its absolute path. Relative pat
 The local machine runs {os}.
 ```
 
+### system，核心的几行的最后一行（本机是什么系统那一句后面；没有工具的会话接在本机文件的路径那一句后面）
+
+#### `core/agent-version.txt`
+
+- 什么时候加进来：新会话的每次请求，有没有工具都带（施工 E-M 起；以前造的快照不带，一个字节不变）
+- token：约 11（`{version}` 按 `0.0.1` 算，按 o200k 估）
+- 为什么加：她跑在什么软件里、哪一版：`{version}` 换成核心编进去的版本。2026-10-22 项目主人定进 system：一个会话里不会变，跟着缓存走；被问到自己是什么、查 Miyu 的说明时用得上
+- 指纹：`9752b564`
+
+```text
+You run in miyu-agent {version}.
+```
+
 ### system 的最后一块（第四节第 7 块）
 
 #### `core/style-lock.txt`
@@ -403,6 +416,17 @@ Installed but off in this session's preset: {packages}.
 
 ```text
 <output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>
+```
+
+#### `core/facts/model.txt`
+
+- 什么时候加进来：回合开始的边界：第一轮，换了模型、思考强度、预设以后的下一个边界；压缩以后、撤掉了带着它的那一轮以后重新注入（施工 E-M；以前造的快照没有）
+- token：约 28（`deepseek-v4.1-flash`、`default`、`none`，供应商名 `DeepSeek`，按 o200k 估）
+- 为什么加：这一轮发给哪家的哪个模型、思考强度、预设的编号（2026-10-22、10-23 项目主人定：三样都要，没写的强度写 `default`，预设只写编号，不用预设的 `none`）。不放 system：换模型是会话中途的事，放 system 换一次掰一次缓存
+- 指纹：`4e40e181`
+
+```text
+<model provider="{provider}" name="{name}" effort="{effort}" preset="{preset}"/>
 ```
 
 ### 事实：角色扮演提示那一块的开头，排在触发的那句后面（08 C2 唯一的例外）

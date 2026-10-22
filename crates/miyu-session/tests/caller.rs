@@ -28,10 +28,29 @@ fn owner_in_group() -> By {
     })
 }
 
+/// 调用里的事实，日志目录另查（[`log_given`]）。
+fn seen(caller: &Option<Caller>) -> Option<Caller> {
+    caller.clone().map(|caller| Caller {
+        log: None,
+        ..caller
+    })
+}
+
+/// 交没交会话日志的目录：测试里的属主是管理员，都交，是这个会话自己的目录（施工 E-M）。
+fn log_given(caller: &Option<Caller>, session: &miyu_kernel::id::SessionId) {
+    let log = caller.as_ref().and_then(|caller| caller.log.as_ref());
+    assert!(
+        log.is_some_and(|log| log.ends_with(session.as_str())),
+        "{caller:?}"
+    );
+}
+
 fn caller(venue: &str, owner: bool) -> Option<Caller> {
     Some(Caller {
         venue: VenueId::parse(venue).expect("合写法"),
         owner,
+        model: None,
+        log: None,
     })
 }
 
@@ -79,8 +98,33 @@ async fn a_call_knows_where_it_is_and_whether_the_owner_spoke() {
         until_turn_ends(&mut pushes).await;
         let calls = note.calls();
         assert_eq!(calls.len(), 1, "{venue}：{:?}", home.log(handle.id()));
-        assert_eq!(calls[0].caller, caller(venue, owner), "{venue}");
+        assert_eq!(seen(&calls[0].caller), caller(venue, owner), "{venue}");
+        log_given(&calls[0].caller, handle.id());
     }
+}
+
+#[tokio::test]
+async fn a_session_whose_owner_is_not_an_admin_gets_no_log_dir() {
+    // 普通用户看不到运行它的那台电脑（施工 E-M，U25）：命令拿不到 `MIYU_SESSION_LOG`。
+    let home = Home::new();
+    let note = Fake::new("note", Access::Read, Act::Echo);
+    let script = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);
+    let lines = Lines {
+        owner_is_admin: false,
+        ..Lines::default()
+    };
+    let handle = home
+        .create_full(&script, &catalog(&[&note]), Opening::default(), lines)
+        .await;
+    let mut pushes = watch(&handle).await;
+    say_as(&handle, alice()).await;
+    until_turn_ends(&mut pushes).await;
+    let calls = note.calls();
+    assert_eq!(calls.len(), 1, "{:?}", home.log(handle.id()));
+    assert_eq!(
+        calls[0].caller.as_ref().map(|caller| &caller.log),
+        Some(&None)
+    );
 }
 
 #[tokio::test]
@@ -99,8 +143,12 @@ async fn a_call_made_from_a_script_carries_the_round_that_sent_it() {
         until_turn_ends(&mut pushes).await;
         let calls = note.calls();
         assert_eq!(calls.len(), 1, "脚本里调到了：{:?}", home.log(handle.id()));
-        assert_eq!(calls[0].caller, caller(GROUP, owner), "照派它的那一轮");
-        assert_eq!(shell.calls()[0].caller, caller(GROUP, owner));
+        assert_eq!(
+            seen(&calls[0].caller),
+            caller(GROUP, owner),
+            "照派它的那一轮"
+        );
+        assert_eq!(seen(&shell.calls()[0].caller), caller(GROUP, owner));
     }
 }
 
@@ -128,7 +176,12 @@ async fn the_round_resumed_after_a_restart_is_not_the_owners() {
     .await;
     let calls = note.calls();
     assert_eq!(calls.len(), 1);
-    assert_eq!(calls[0].caller, caller(GROUP, false), "拿不到的照最严");
+    assert_eq!(
+        seen(&calls[0].caller),
+        caller(GROUP, false),
+        "拿不到的照最严"
+    );
+    log_given(&calls[0].caller, &session_id);
 }
 
 /// 照开头 `text` 写一个脚本 `file`，当工具。

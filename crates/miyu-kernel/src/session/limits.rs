@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use super::Session;
+use super::{Action, Limits, Session};
 use crate::id::{CommandId, Seq, TurnId};
 
 /// 给头看的限额：头照它画「用量 / 窗口」、算离压缩还有多少。写成 JSON 就是协议里 `subscribe` 回应的 `limits`：
@@ -48,5 +48,23 @@ impl Session {
     /// 派这一次调用时向内核要一份（`memory.md`「工具」）。只读，不出动作。
     pub fn compacted_upto(&self) -> Option<Seq> {
         self.ledger.compacted()
+    }
+}
+
+impl Session {
+    /// 执行器交来的限额：换上。这一轮里发给谁变了的（施工 E-M：换了模型、档位、预设），下一次请求之前把事实查一遍，模型那一块
+    /// 跟着追加。
+    pub(super) fn take_limits(&mut self, limits: Limits) -> Vec<Action> {
+        let moved = self.limits.as_ref().map(|old| &old.identity) != Some(&limits.identity);
+        self.limits = Some(limits);
+        if let Some(turn) = self.turn.as_mut().filter(|_| moved) {
+            turn.refresh = true;
+        }
+        Vec::new()
+    }
+
+    /// 这一轮发给谁（施工 E-M）：执行器交过的限额里的；没交过的没有。
+    pub(super) fn identity(&self) -> Option<&crate::facts::Identity> {
+        self.limits.as_ref()?.identity.as_ref()
     }
 }

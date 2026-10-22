@@ -60,7 +60,7 @@ fn told(templates: &FactTemplates, log: &Log, permission: &Permission) -> Option
             now(),
             &environment("~/src/miyu"),
             permission,
-            &session(),
+            (&session(), None),
         )
         .into_iter()
         .find(|fact| fact.kind.as_str() == "permission")

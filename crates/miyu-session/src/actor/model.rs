@@ -195,7 +195,21 @@ impl Actor {
     }
 
     /// 限额 `limits` 变了的交给内核；给头看的照内核算的限额、端口的引用和模型写一次。
-    fn hand(&mut self, limits: Limits) {
+    fn hand(&mut self, mut limits: Limits) {
+        // 预设路由不知道，这里补上（施工 E-M）：不用预设的 `none`。
+        if let Some(identity) = limits.identity.as_mut() {
+            identity.preset = self
+                .persona
+                .as_ref()
+                .and_then(|refresh| refresh.snapshot.preset.as_ref())
+                .map_or_else(|| "none".to_string(), |pin| pin.id.clone());
+        }
+        // 命令、脚本拿到的 `MIYU_MODEL`、`MIYU_EFFORT` 照同一份（施工 E-M）。
+        self.tools
+            .model_in_use(limits.identity.as_ref().map(|identity| miyu_tool::InUse {
+                model: identity.model.clone(),
+                effort: identity.effort.clone(),
+            }));
         if limits != self.handed {
             self.session.handle(Input::Limits(limits.clone()));
             self.handed = limits;

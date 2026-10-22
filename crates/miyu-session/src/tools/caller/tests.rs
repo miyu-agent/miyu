@@ -17,7 +17,7 @@ fn turn(seq: u64) -> TurnId {
 }
 
 fn callers(venue: &str) -> Callers {
-    Callers::new(VenueId::parse(venue).expect("合写法"), true)
+    Callers::new(VenueId::parse(venue).expect("合写法"), true, None)
 }
 
 #[test]
@@ -50,9 +50,9 @@ fn another_round_or_none_recorded_is_not_the_owners() {
 /// 照的都是这一条。
 #[test]
 fn a_members_local_session_is_not_the_owners() {
-    let member = Callers::new(VenueId::parse("local").expect("合写法"), false);
+    let member = Callers::new(VenueId::parse("local").expect("合写法"), false, None);
     assert!(!member.of(None).owner);
-    let mut member = Callers::new(VenueId::parse("local").expect("合写法"), false);
+    let mut member = Callers::new(VenueId::parse("local").expect("合写法"), false, None);
     member.start(turn(5), &[]);
     assert!(!member.of(Some(turn(5))).owner);
 }
@@ -64,4 +64,23 @@ fn a_local_session_is_always_the_owners() {
     let mut local = callers("local");
     local.start(turn(5), &[]);
     assert!(local.of(Some(turn(5))).owner);
+}
+
+/// 交出去的调用带着现在的模型和日志目录（施工 E-M）：换了模型以后派的照新的。
+#[test]
+fn a_call_carries_the_model_in_use_and_the_log_dir() {
+    let log = std::path::PathBuf::from("/data/home/alice/sessions/s");
+    let mut callers = Callers::new(
+        VenueId::parse("local").expect("合写法"),
+        true,
+        Some(log.clone()),
+    );
+    assert_eq!(callers.of(None).model, None, "还没解析过模型");
+    assert_eq!(callers.of(None).log, Some(log));
+    let in_use = InUse {
+        model: "m".to_string(),
+        effort: "high".to_string(),
+    };
+    callers.model = Some(in_use.clone());
+    assert_eq!(callers.of(Some(turn(1))).model, Some(in_use));
 }

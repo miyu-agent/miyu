@@ -106,6 +106,7 @@ pub trait ModelPort: Send + Sync {
             max_output: None,
             images: None,
             blind: false,
+            identity: None,
         }
     }
 

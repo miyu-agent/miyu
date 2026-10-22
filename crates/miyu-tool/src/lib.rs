@@ -52,7 +52,7 @@ mod usage;
 pub use agents::{
     AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
 };
-pub use caller::Caller;
+pub use caller::{Caller, InUse};
 pub use catalog::{
     BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix, mcp_service,
 };

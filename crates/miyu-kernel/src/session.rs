@@ -251,10 +251,7 @@ impl Session {
                 self.environment = environment;
                 Vec::new()
             }
-            Input::Limits(limits) => {
-                self.limits = Some(limits);
-                Vec::new()
-            }
+            Input::Limits(limits) => self.take_limits(limits),
             Input::Reread { at, seen, files } => self.reread_done(at, seen, files),
             Input::Recalled { texts } => {
                 self.history.recall(texts);

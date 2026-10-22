@@ -16,6 +16,7 @@ mod harness;
 mod isolate;
 mod manual;
 mod messages;
+mod model_fact;
 mod models;
 mod nested;
 mod overflow;

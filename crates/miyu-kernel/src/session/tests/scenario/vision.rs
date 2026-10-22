@@ -45,6 +45,7 @@ fn see(stage: &mut Stage, blind: bool) {
         max_output: None,
         images: None,
         blind,
+        identity: None,
     });
 }
 

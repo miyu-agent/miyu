@@ -93,6 +93,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let span = actor::span(&id);
     let loading = Instant::now();
     let dir = root.session_dir(&owner, &id);
+    // 会话日志的目录只交给属主是管理员的会话（施工 E-M，U25）。
+    let session_log = owner_is_admin.then(|| dir.clone());
     let log_dir = LogDir(dir.clone());
     let blobs = Blobs::new(root.blobs(&owner));
     let store = blobs.clone();
@@ -366,6 +368,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             confined,
             venue: venue.clone(),
             admin: owner_is_admin,
+            session_log,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

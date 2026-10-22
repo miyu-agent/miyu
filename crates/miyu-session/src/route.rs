@@ -39,6 +39,7 @@ mod effort;
 mod ended;
 pub(crate) mod endpoint;
 mod exchange;
+mod identity;
 pub(crate) mod lists;
 mod local;
 mod once;
@@ -175,6 +176,7 @@ impl Routes {
             max_output: facts.max_output.value,
             images: images(target.provider.images),
             blind: !facts.driver_inputs().images,
+            identity: Some(identity::identity(config, target, &facts.effort)),
         }
     }
 }
@@ -361,6 +363,7 @@ fn nothing() -> Limits {
         max_output: None,
         images: None,
         blind: false,
+        identity: None,
     }
 }
 

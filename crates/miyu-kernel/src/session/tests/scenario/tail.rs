@@ -244,6 +244,7 @@ fn the_tail_counts_images_with_the_driver_price() {
             max_output: None,
             images,
             blind: false,
+            identity: None,
         });
         stage.say(&words(10));
         summaries(&stage)

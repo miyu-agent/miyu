@@ -14,6 +14,7 @@ impl Stage {
             max_output,
             images: None,
             blind: false,
+            identity: None,
         });
     }
 

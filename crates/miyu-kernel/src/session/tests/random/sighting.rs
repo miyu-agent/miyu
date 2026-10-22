@@ -57,6 +57,7 @@ pub(super) fn some_sight(rng: &mut Rng, watch: &Watch, ids: &mut u64) -> Option<
             max_output: None,
             images: None,
             blind: rng.below(4) > 0,
+            identity: None,
         })),
         8 => Some(Input::Described {
             at: at(47),

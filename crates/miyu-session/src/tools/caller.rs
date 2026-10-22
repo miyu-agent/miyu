@@ -1,28 +1,35 @@
 //! 调用的事实（施工 X-43，`docs/blueprint/skills.md`「脚本」第 2 条）：本机的会话属主是管理员的，开口的就是机器主人（施工
 //! MB-2：成员自己的本机会话不是）；场所会话回合开始照这一轮的 `speakers`（施工 E-0）算一次开口的是不是机器主人，记在这一轮
 //! 上；派工具（直接调的、脚本里调的）时照派它的那一轮交 [`Caller`]。内核不动。拿不到的照最严：回合中途核心重启、载入以后接着
-//! 干的那一轮由那一条结束开，没有人开口，场所会话里不是主人。
+//! 干的那一轮由那一条结束开，没有人开口，场所会话里不是主人。施工 E-M：另记这一轮的模型（交限额时换）和会话日志的目录
+//! （属主是管理员的才有），一起交出去。
+
+use std::path::PathBuf;
 
 use miyu_kernel::facts::Speaker;
 use miyu_kernel::id::{TurnId, VenueId};
-use miyu_tool::Caller;
+use miyu_tool::{Caller, InUse};
 
 use crate::agents::LOCAL;
 
-/// 一个会话的：它的场所，属主是不是管理员，最近开始的那一轮和那一轮开口的是不是主人。
+/// 一个会话的：它的场所，属主是不是管理员，最近开始的那一轮和那一轮开口的是不是主人，现在的模型，日志的目录。
 pub(crate) struct Callers {
     venue: VenueId,
     admin: bool,
     round: Option<(TurnId, bool)>,
+    model: Option<InUse>,
+    log: Option<PathBuf>,
 }
 
 impl Callers {
-    /// 场所是 `venue` 的会话：还没有开始的一轮。`admin`：会话的属主是管理员。
-    pub(crate) fn new(venue: VenueId, admin: bool) -> Callers {
+    /// 场所是 `venue` 的会话：还没有开始的一轮，还没解析过模型。`admin`：会话的属主是管理员；`log`：交出去的日志目录。
+    pub(crate) fn new(venue: VenueId, admin: bool, log: Option<PathBuf>) -> Callers {
         Callers {
             venue,
             admin,
             round: None,
+            model: None,
+            log,
         }
     }
 
@@ -39,6 +46,8 @@ impl Callers {
         Caller {
             venue: self.venue.clone(),
             owner,
+            model: self.model.clone(),
+            log: self.log.clone(),
         }
     }
 }
@@ -47,6 +56,11 @@ impl super::Tools {
     /// 回合 `turn` 开始了，开口的是 `speakers`：记下这一轮开口的是不是主人。
     pub(crate) fn round_started(&mut self, turn: TurnId, speakers: &[Speaker]) {
         self.callers.start(turn, speakers);
+    }
+
+    /// 交给内核的限额换了模型（施工 E-M）：以后派的调用照它。
+    pub(crate) fn model_in_use(&mut self, model: Option<InUse>) {
+        self.callers.model = model;
     }
 }
 

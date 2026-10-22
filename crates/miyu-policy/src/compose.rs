@@ -132,6 +132,9 @@ pub struct CoreLines {
     pub local_paths: String,
     /// 本机是什么系统（`core/machine.txt`，施工 2-7 再补）：`{os}` 换成系统的名字。没有工具的会话不带。
     pub machine: String,
+    /// 跑在哪个 harness 里、哪一版（`core/agent-version.txt`，施工 E-M，2026-10-22 项目主人定）：读的时候 `{version}` 已经换好。
+    /// 有没有工具都带，接在本机是什么系统后面。
+    pub harness: String,
     /// 风格锁（`core/style-lock.txt`）：只有带角色扮演提示的人格带（[`Snapshot::with_style_lock`]）。
     pub style_lock: String,
     /// 装了、这个预设没开的那一行（`core/preset-off.txt`，施工 P-2 中，Y8）：`{packages}` 换成逗号隔开的编号；施工 F-3 上起是功能
@@ -156,6 +159,7 @@ impl Snapshot {
             .into_iter()
             .chain([lines.local_paths.as_str()])
             .chain(tooled.then_some(machine.as_str()))
+            .chain([lines.harness.as_str()])
             .map(str::trim_end)
             .filter(|line| !line.is_empty())
             .collect::<Vec<_>>()

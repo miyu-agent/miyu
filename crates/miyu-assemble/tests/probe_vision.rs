@@ -51,6 +51,7 @@ fn script() -> Stage {
         max_output: None,
         images: None,
         blind: true,
+        identity: None,
     });
     // 1. 人附一张截图问第三行：先转述，再请求；她读了文件答。
     s.vision([Some(SHOT)]);

@@ -315,6 +315,8 @@ async fn a_script_gets_who_called_it_and_nothing_left_over() {
         let caller = caller.map(|(venue, owner)| Caller {
             venue: VenueId::parse(venue).expect("场所合写法"),
             owner,
+            model: None,
+            log: None,
         });
         let done = site.script_as("scripts/who.py", json!({}), caller).await;
         assert!(!done.error, "{}", text(&done));

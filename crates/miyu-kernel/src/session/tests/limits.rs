@@ -40,6 +40,7 @@ fn hand(session: &mut Session, window: Option<u64>, max_output: Option<u64>) {
         max_output,
         images: None,
         blind: false,
+        identity: None,
     }));
     assert!(actions.is_empty(), "交限额什么动作都不出：{actions:?}");
 }

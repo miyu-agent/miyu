@@ -41,6 +41,8 @@ fn asked(url: &str, owner: bool, internal: Vec<&'static str>) -> Call {
         caller: Some(Caller {
             venue: VenueId::parse("local").expect("合写法"),
             owner,
+            model: None,
+            log: None,
         }),
         settings: Some(Arc::new(Internal(internal))),
         ..call(json!({ "url": url }))

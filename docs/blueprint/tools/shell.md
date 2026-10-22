@@ -151,6 +151,7 @@
 | Miyu 自己的 | `MIYU_` 开头 |
 | 沙盒里另去掉的：桌面、D-Bus、ssh-agent | `DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`DBUS_SESSION_BUS_ADDRESS`、`XDG_RUNTIME_DIR`、`SSH_AUTH_SOCK`（2026-10-17 项目主人定：沙盒里的命令不开窗口） |
 | 另外设上的，原来的那一份不要 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`：不翻页、不上色（照 dsh）；`TERM=dumb`（施工 4-8 再补）：有的程序不认 `NO_COLOR`、也不看输出接没接终端，只照终端的种类上色（实测 `cargo fmt --check` 的 diff），`dumb` 的一律不上 |
+| 这一轮的事实（施工 E-M） | `MIYU_MODEL`、`MIYU_EFFORT`：这一轮发给的模型名、思考强度，同尾巴上模型那一块（还没解析过模型的不设）；`MIYU_SESSION_LOG`：会话日志的目录，只给属主是管理员的会话（`06-多用户与身份.md` U25）。核心环境里原有的 `MIYU_*` 照旧不传，这三个是另设的 |
 
 - 名字不是 UTF-8 的照能读出来的那部分判，不像密钥的照传。
 - 这只防不小心带出去（她跑一下 `env`，密钥就进了对话），不是安全边界：同一个系统用户的命令读得到核心的 `/proc/<pid>/environ`。

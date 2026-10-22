@@ -101,6 +101,7 @@ impl Shell {
                 .ok()
         });
         let mut env = env::passed(std::env::vars_os(), call.sandbox.is_some());
+        env.extend(env::told(call.caller.as_ref()));
         let sandbox = call.sandbox.as_deref().map(|sandboxed| match &channel {
             Some(channel) => channel.sandboxed(sandboxed),
             None => sandboxed.clone(),

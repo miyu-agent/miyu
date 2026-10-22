@@ -105,7 +105,8 @@
 
 - `FactTemplates::new(env, permission, reply_cut, session, permission_changed)`：五份模板的原文；`session`、`permission_changed` 是 `Option`，以前造的快照没有这两份，是 `None`（施工 1-13 再补、2-7 补）。`with_output_limit(Option)` 再带上写到输出上限那一份（施工 3-10），造的时候同样试换；以前造的快照没有，是 `None`，`output_limit()` 交回空的。
 - `env(此刻, &Environment)`、`permission(&Permission)`、`reply_cut()`：各交回一块 `ContextInjected { kind, text }`，`kind` 是 `env`、`permission`、`reply_cut`。`session(&SessionId)` 交回 `kind` 是 `session` 的一块，没有这份模板的交回 `None`。`permission_changed(&Permission, 上一级)` 交回切换那一份写的一块，`kind` 也是 `permission`，没有这份模板的交回 `None`（施工 2-7 补）。
-- `boundary(有效历史, 此刻, &Environment, &Permission, &SessionId)`：一个边界上该注入的几块，照环境、权限、会话编号的先后，没有编号模板的不查编号。环境、编号交给 `changed` 比；权限比级别、挑模板（「事实」第 2 条，施工 2-7 补）。回合开始、这一轮切过级别以后的边界都用它。安静下来的模板（`quiet()`，整理会话的裸快照，施工 D-1 上）一块都不交，角色扮演提示也不交。
+- `boundary(有效历史, 此刻, &Environment, &Permission, (&SessionId, Option<&Identity>))`：一个边界上该注入的几块，照环境、权限、会话编号、模型的先后，没有编号模板的不查编号；没有模型模板、没交身份的不查模型（施工 E-M）。模型那一块同编号交给 `changed` 比。环境、编号交给 `changed` 比；权限比级别、挑模板（「事实」第 2 条，施工 2-7 补）。回合开始、这一轮切过级别以后的边界都用它。安静下来的模板（`quiet()`，整理会话的裸快照，施工 D-1 上）一块都不交，角色扮演提示也不交。
+- `with_model(Option)`、`model(&Identity)`（施工 E-M，`facts/model.rs`）：模型那一块，`kind` 是 `model`。`Identity { provider, model, effort, preset }` 由执行器解析这一轮时算好、随 `Limits.identity` 交进来，身份变了的置 `turn.refresh`、下一次请求前重查。以前造的快照没有这份模板，不注入。
 - `effective_level(&Permission)`：实际生效的那一级的写法（「事实」第 6 条）。`history` 列切权限的那一条也用它（`tools/history.md`，施工 2-7 补）。
 - `Environment { offset, cwd }`：时区（`UtcOffset`，按分钟，−14:00 到 +14:00，东边是正的）；工作目录，头报上来的写法，例如 `~/src/miyu`，内核不改写。造会话、载入时交进来，执行器报「环境变了」就整个换掉。
 - `changed(有效历史, by, 几块)`：这几块里该注入的，照原来的先后，逐字节比原文。边界上的权限那一块不走它。
@@ -334,10 +335,12 @@
 | `permission-rule.txt` | `A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In workspace, commands can write only inside the workspace and the temp directory, and file tools need the user's approval to write outside the workspace. In full, there are no limits. Only the user can change the level.` | system，核心的几行的第一行；工具面是空的会话不带（施工 2-7 补） |
 | `local-paths-rule.txt` | `When a reply links or embeds a local file, write its absolute path. Relative paths resolve against the session working directory.` | system，核心的几行的第二行（施工 2-7 补） |
 | `machine.txt` | `The local machine runs {os}.` | system，核心的几行的第三行，`{os}` 换成本机系统的名字（施工 2-7 再补）；工具面是空的会话不带 |
+| `agent-version.txt` | `You run in miyu-agent {version}.` | system，核心的几行的最后一行，`{version}` 换成核心编进去的版本；有没有工具都带（施工 E-M） |
 | `style-lock.txt` | `<style-lock>Stay in character across tool calls. Tool results are working material; they are not a reason to switch into an assistant reporting tone.</style-lock>` | system 的最后一块，只有带角色扮演提示的人格（施工 P-1 补，`policy.md` 的 `with_style_lock`） |
 | `facts/env.txt` | `<env time="{time}" timezone="{timezone}" cwd="{cwd}"/>` | 事实 `env` |
 | `facts/permission.txt` | `<permission level="{level}"/>` | 事实 `permission` |
 | `facts/session.txt` | `<session id="{id}"/>` | 事实 `session`（施工 1-13 再补） |
+| `facts/model.txt` | `<model provider="{provider}" name="{name}" effort="{effort}" preset="{preset}"/>` | 事实 `model`：首次带，换了模型、强度、预设才追加（施工 E-M） |
 | `facts/permission-changed.txt` | `<permission level="{level}" previous="{previous}">The user changed the permission level.</permission>` | 事实 `permission`：人切了级别以后的边界、她看到过上一块的（施工 2-7 补；原文等主会话 A/B 定） |
 | `facts/reply-cut.txt` | `<reply-cut>The reply above was cut off before it was finished. The user has already seen it. Continue from exactly where it stopped, without repeating it.</reply-cut>` | 事实 `reply_cut` |
 | `facts/output-limit.txt`（施工 3-10） | `<output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>` |
@@ -533,7 +536,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 
 - 结尾那份以一个换行开头，所以摘要后面换一行。
 - 结尾那一句是检查点的规则，施工 6-3 下挪进来的（`compaction.md` 第八条）：回合中途压完，这一轮的最后一条只有检查点和事实，没有它，她不知道这时该做什么，会把摘要里记着做完了的再做一遍核对。
-- system 由拼快照的一步拼好（`policy.md`「拼」），组装时原样用，不再拆开。新会话的 system 是人设、场所说明（子会话）、核心的几行，预设里有装了没开的软件的接一行（施工 P-2 中，`presets.md`），带角色扮演提示的人格最后还有风格锁（施工 P-1 补），块和块之间空一行（`26-提示词.md` 第四节）。核心的几行施工 2-7 补加，一行一句，先 `permission-rule.txt`（工具面是空的会话不带）、再 `local-paths-rule.txt`、最后 `machine.txt`（施工 2-7 再补，工具面是空的会话不带）；以前造的快照 system 里没有这一块（施工 2-7 再补以前造的没有系统那一句），照快照发，前缀一字不变。
+- system 由拼快照的一步拼好（`policy.md`「拼」），组装时原样用，不再拆开。新会话的 system 是人设、场所说明（子会话）、核心的几行，预设里有装了没开的软件的接一行（施工 P-2 中，`presets.md`），带角色扮演提示的人格最后还有风格锁（施工 P-1 补），块和块之间空一行（`26-提示词.md` 第四节）。核心的几行施工 2-7 补加，一行一句，先 `permission-rule.txt`（工具面是空的会话不带）、再 `local-paths-rule.txt`、再 `machine.txt`（施工 2-7 再补，工具面是空的会话不带），最后 `agent-version.txt`（施工 E-M，都带）；以前造的快照 system 里没有这一块（施工 2-7 再补以前造的没有系统那一句），照快照发，前缀一字不变。
 - 样本：`docs/designs/samples/requests/second-step.json`（第一轮两块事实排在触发消息前面、调一次工具以后的那次请求）、`after-compaction.json`（压缩以后只剩检查点）；探针几张脸的 system 都以核心的几行结尾（施工 2-7 补）；`docs/designs/samples/probe/terminal/requests/` 是一段终端会话的每一次请求，第 7 次起带着切到只读的那一块（切换那一份，施工 2-7 补），第 11 次带接着写的记号；`docs/designs/samples/probe/reports/requests/` 是一段有回报的会话（施工 7-2）：第 3 次由子代理的回报开，第 5 次后台命令结束排在工具结果后面，第 7 次只记下的回报排在人那一句前面；`docs/designs/samples/probe/cleared/requests/` 是一段清空过的会话（施工 6-8 补）：第 3 次是清空以后的，只剩工具面、system、三块事实和那一句；`docs/designs/samples/probe/harness/requests/` 是一段有别的 harness 来话的会话（施工 7-10）：第 2 次由它开，第 4 次它在回合中途到、排在工具结果后面，和同一份剧本里换成人说的比，每次请求只多标签那两段；`docs/designs/samples/probe/peers/requests/` 是一段有别的会话来话的会话（施工 C-2）：第 2 次由它开，第 4 次它在回合中途到、排在工具结果后面，和同一份剧本里换成人说的比，每次请求只多标签那两段；`docs/designs/samples/probe/permission/requests/` 是一段人切了权限级别的会话（施工 2-7 补）：第 2 次开头是切到完全放开的那一块，第 3 轮开了只读又关掉、不注入，第 7 次切到只读的那一块排在工具结果后面。`docs/designs/samples/probe/reminder/requests/` 是带角色扮演提示的人格聊五轮（施工 P-1 补）：system 以风格锁结尾，第 1、4 次的最后一块是提示、排在人说的那句后面，第 2、3、5 次的最后一块是人说的那句；去掉风格锁和提示，和不带提示的同一份剧本一字不差。
 
 **群里的一行**（施工 O-13 中，`18-通讯平台.md` 第九节，格式照旧版的群聊记录）：群会话里带 `venue`、不旁听的 `message.user` 替掉原来的正文，渲染成一行：

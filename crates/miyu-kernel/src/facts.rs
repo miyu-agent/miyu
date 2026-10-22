@@ -20,6 +20,9 @@
 
 use std::collections::BTreeMap;
 
+mod model;
+pub use model::Identity;
+
 use crate::event::{Body, ContextInjected, Level, Permission};
 use crate::history::History;
 use crate::id::{FactKind, ModuleId, SessionId, TurnId};
@@ -50,6 +53,8 @@ pub struct FactTemplates {
     /// 回复写到了输出上限、调用没派的那一句，没有字段（施工 3-10）。以前造的快照里没有：那些会话照样不派、接着请求，不加
     /// 这一句。
     output_limit: Option<Template>,
+    /// 模型那一块，字段是 `provider`、`name`、`effort`、`preset`（施工 E-M，`facts/model.rs`）。以前造的快照里没有，没有这一块。
+    model: Option<Template>,
     /// 安静（施工 D-1 上，设计 41：整理会话的请求和原来的一次性请求逐字节一样）：回合开始的环境、权限、会话编号、角色扮演提示
     /// 一块都不注入。
     quiet: bool,
@@ -99,6 +104,7 @@ impl FactTemplates {
             permission_changed: permission_changed.map(Template::parse).transpose()?,
             reminder: None,
             output_limit: None,
+            model: None,
             quiet: false,
         };
         templates.env.render(&env_fields("", "", ""))?;
@@ -122,7 +128,7 @@ impl FactTemplates {
         now: Timestamp,
         environment: &Environment,
         permission: &Permission,
-        session: &SessionId,
+        (session, identity): (&SessionId, Option<&Identity>),
     ) -> Vec<ContextInjected> {
         if self.quiet {
             return Vec::new();
@@ -132,6 +138,9 @@ impl FactTemplates {
             fresh(self.env(now, environment)),
             self.permission_due(history, permission),
             self.session(session).and_then(fresh),
+            identity
+                .and_then(|identity| self.model(identity))
+                .and_then(fresh),
         ]
         .into_iter()
         .flatten()

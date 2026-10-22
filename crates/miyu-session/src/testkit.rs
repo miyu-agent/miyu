@@ -267,6 +267,7 @@ impl ModelPort for Script {
             max_output: None,
             images: None,
             blind: false,
+            identity: None,
         }
     }
 

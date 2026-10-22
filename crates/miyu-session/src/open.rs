@@ -174,6 +174,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let child = lineage.is_some();
     let count = face.len();
     let dir = root.session_dir(&owner, &id);
+    // 会话日志的目录只交给属主是管理员的会话（施工 E-M，U25）。
+    let session_log = owner_is_admin.then(|| dir.clone());
     let abandoned = dir.clone();
     let log_dir = LogDir(dir.clone());
     let offset = environment.offset;
@@ -347,6 +349,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             confined,
             venue: venue.clone(),
             admin: owner_is_admin,
+            session_log,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

@@ -8,6 +8,8 @@
 
 use std::ffi::{OsStr, OsString};
 
+use miyu_tool::Caller;
+
 #[cfg(test)]
 mod tests;
 
@@ -37,6 +39,27 @@ const SET: &[(&str, &str)] = &[
     ("NO_COLOR", "1"),
     ("TERM", "dumb"),
 ];
+
+/// 这一轮的模型、思考强度、会话日志的目录（施工 E-M）：命令、脚本都拿得到，查自己是什么模型、翻自己的日志时用。
+const MODEL: &str = "MIYU_MODEL";
+const EFFORT: &str = "MIYU_EFFORT";
+const SESSION_LOG: &str = "MIYU_SESSION_LOG";
+
+/// 照调用的事实 `caller` 另外设上的：没有的不设（日志目录只给属主是管理员的会话）。
+pub(super) fn told(caller: Option<&Caller>) -> Vec<(OsString, OsString)> {
+    let Some(caller) = caller else {
+        return Vec::new();
+    };
+    let mut vars = Vec::new();
+    if let Some(in_use) = &caller.model {
+        vars.push((MODEL.into(), in_use.model.clone().into()));
+        vars.push((EFFORT.into(), in_use.effort.clone().into()));
+    }
+    if let Some(log) = &caller.log {
+        vars.push((SESSION_LOG.into(), log.clone().into_os_string()));
+    }
+    vars
+}
 
 /// 从核心的环境 `vars` 里挑出命令拿得到的，再设上另外那几个。`sandboxed` 说命令进不进沙盒。名字在 Windows 上不分
 /// 大小写。

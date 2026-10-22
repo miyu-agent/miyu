@@ -112,6 +112,7 @@ pub(super) fn some_limits(rng: &mut Rng) -> Option<Input> {
         max_output,
         images: None,
         blind: false,
+        identity: None,
     }))
 }
 

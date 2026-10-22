@@ -217,7 +217,7 @@ impl Session {
             at,
             &self.environment,
             &self.permission,
-            &self.id,
+            (&self.id, self.identity()),
         );
         facts.extend(self.policy.facts.reminder(&self.history));
         let mut events = vec![started];

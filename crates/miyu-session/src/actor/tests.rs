@@ -153,6 +153,7 @@ async fn a_write_that_fails_stops_the_session() {
             confined: false,
             venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
             admin: true,
+            session_log: None,
             catalog: miyu_tool::Shelf::default(),
             lettering,
             home: None,

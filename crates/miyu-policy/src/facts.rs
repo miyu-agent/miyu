@@ -28,6 +28,10 @@ pub struct FactTexts {
     /// 没有的不写，旧快照的字节不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_limit: Option<String>,
+    /// 模型那一块（`model.txt`，施工 E-M）。以前造的快照里没有，读成没有：那些会话不注入这一块；没有的不写，旧快照的字节
+    /// 不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 impl FactTexts {
@@ -45,6 +49,7 @@ impl FactTexts {
             self.permission_changed.as_deref(),
         )
         .and_then(|templates| templates.with_output_limit(self.output_limit.as_deref()))
+        .and_then(|templates| templates.with_model(self.model.as_deref()))
         .map_err(|error| BuildError::Texts {
             which: "fact templates",
             error,

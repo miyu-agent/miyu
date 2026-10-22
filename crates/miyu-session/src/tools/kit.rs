@@ -26,6 +26,8 @@ pub(crate) struct ToolKit {
     pub(crate) venue: VenueId,
     /// 会话的属主是管理员（施工 MB-2）：本机的会话只有这样开口的才算机器主人（[`miyu_tool::Caller`]）。
     pub(crate) admin: bool,
+    /// 会话日志的目录（施工 E-M）：属主是管理员的才交给命令（`MIYU_SESSION_LOG`），别人的 `None`。
+    pub(crate) session_log: Option<PathBuf>,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。
     pub(crate) catalog: Shelf,
     /// 替工具写的两句，和权限策略同一份（施工 P-1 三补：换快照时跟着换）。

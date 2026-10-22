@@ -341,6 +341,8 @@ pub struct Limits {
     /// 看不了图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 1 条）：池里有一个成员看不了就算。是真的，请求里有
     /// 还没转述过的图就先转述。不知道的（测试的端口）是假的。
     pub blind: bool,
+    /// 这一轮发给谁（施工 E-M）：供应商、模型、思考强度、预设，写进模型那一块事实；没交的（测试的端口）不写。
+    pub identity: Option<crate::facts::Identity>,
 }
 
 /// 图片的算法是驱动交的对象，打印时只说有没有。
@@ -363,6 +365,7 @@ impl PartialEq for Limits {
             && self.window == other.window
             && self.max_output == other.max_output
             && self.blind == other.blind
+            && self.identity == other.identity
             && match (&self.images, &other.images) {
                 (None, None) => true,
                 (Some(a), Some(b)) => Arc::ptr_eq(a, b),

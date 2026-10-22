@@ -55,6 +55,7 @@ pub(super) fn loaded(
             max_output: None,
             images: None,
             blind: false,
+            identity: None,
         }));
     }
     session
@@ -174,6 +175,7 @@ fn a_model_without_a_window_can_still_be_compacted_by_hand() {
         max_output: None,
         images: None,
         blind: false,
+        identity: None,
     }));
     session.handle(compact(3, None));
     let actions = session.handle(stored(9));
@@ -204,6 +206,7 @@ fn the_tail_is_the_smaller_of_its_cap_and_a_quarter_of_the_line() {
         max_output: None,
         images: None,
         blind: false,
+        identity: None,
     }));
     let actions = session.handle(compact(3, None));
     assert_eq!(actions, [rejected_reply(3, Reason::NothingToCompact)]);

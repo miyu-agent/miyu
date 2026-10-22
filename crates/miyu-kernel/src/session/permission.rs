@@ -88,10 +88,13 @@ impl Session {
             dirs: turn.dirs.clone(),
         };
         self.effective = self.permission.clone();
-        let facts =
-            self.policy
-                .facts
-                .boundary(&self.history, at, &environment, &self.permission, &self.id);
+        let facts = self.policy.facts.boundary(
+            &self.history,
+            at,
+            &environment,
+            &self.permission,
+            (&self.id, self.identity()),
+        );
         facts
             .into_iter()
             .map(|fact| self.record(at, By::Kernel, cause.clone(), Body::ContextInjected(fact)))

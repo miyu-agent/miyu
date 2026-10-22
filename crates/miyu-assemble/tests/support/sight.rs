@@ -26,6 +26,7 @@ pub fn blind(window: Option<u64>) -> Limits {
         max_output: None,
         images: None,
         blind: true,
+        identity: None,
     }
 }
 

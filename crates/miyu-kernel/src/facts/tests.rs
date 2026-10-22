@@ -2,6 +2,7 @@
 //! 第一次、一样、变了、隔着边界变回去、别的来源和别的类不算、压缩以后、撤销以后。日志都先交给账本查过（[`Log`]）。
 //! 权限那一块比级别、切了用哪份模板在 `tests/permission.rs`（施工 2-7 补）；角色扮演提示在 `tests/reminder.rs`（施工 P-1 补）。
 
+mod model;
 mod permission;
 mod reminder;
 mod speakers;
@@ -228,7 +229,7 @@ fn a_boundary_checks_the_env_the_permission_and_the_session_in_that_order() {
         now(),
         &environment("~/src/miyu"),
         &permission(Level::Workspace, false),
-        &session(),
+        (&session(), None),
     );
     let kinds: Vec<&str> = facts.iter().map(|fact| fact.kind.as_str()).collect();
     assert_eq!(kinds, ["env", "permission", "session"]);
@@ -244,7 +245,7 @@ fn quiet_templates_inject_nothing_at_a_boundary() {
         now(),
         &environment("~/src/miyu"),
         &permission(Level::Workspace, false),
-        &session(),
+        (&session(), None),
     );
     assert!(facts.is_empty(), "{facts:?}");
     assert_eq!(quiet.reminder(&History::default()), None);
@@ -266,7 +267,7 @@ fn older_templates_without_the_session_one_have_no_session_block() {
         now(),
         &environment("~/src/miyu"),
         &permission(Level::Workspace, false),
-        &session(),
+        (&session(), None),
     );
     let kinds: Vec<&str> = facts.iter().map(|fact| fact.kind.as_str()).collect();
     assert_eq!(kinds, ["env", "permission"]);

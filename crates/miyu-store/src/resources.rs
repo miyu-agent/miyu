@@ -203,6 +203,10 @@ impl ResourceRoot {
             permission: self.read(&["core", "permission-rule.txt"])?,
             local_paths: self.read(&["core", "local-paths-rule.txt"])?,
             machine: self.read(&["core", "machine.txt"])?,
+            // 跑的是哪一版（施工 E-M）：照这一份核心编进去的版本。
+            harness: self
+                .read(&["core", "agent-version.txt"])?
+                .replace("{version}", env!("CARGO_PKG_VERSION")),
             style_lock: self.read(&["core", "style-lock.txt"])?,
             preset_off: self.read(&["core", "preset-off.txt"])?,
             clicall: self.read(&["core", "clicall.txt"])?,
@@ -243,6 +247,7 @@ impl ResourceRoot {
                 session: Some(fact("session.txt")?),
                 permission_changed: Some(fact("permission-changed.txt")?),
                 output_limit: Some(fact("output-limit.txt")?),
+                model: Some(fact("model.txt")?),
             },
             tool_results: ToolResultTexts {
                 unknown: result("unknown.txt")?,

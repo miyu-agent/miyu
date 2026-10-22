@@ -196,6 +196,7 @@ impl Script {
             }
         };
         let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
+        vars.extend(env::told(call.caller.as_ref()));
         if args_json.len() <= ARGS_IN_ENV {
             vars.push((ARGS.into(), args_json.into()));
         }

@@ -155,3 +155,39 @@ fn names_that_are_not_text_still_pass() {
     assert_eq!(passed[0].0, odd);
     assert_eq!(passed.len(), 1 + OURS.len());
 }
+
+/// 场所本机、主人的调用。
+fn caller(model: Option<(&str, &str)>, log: Option<&str>) -> Caller {
+    Caller {
+        venue: miyu_kernel::id::VenueId::parse("local").unwrap(),
+        owner: true,
+        model: model.map(|(model, effort)| miyu_tool::InUse {
+            model: model.to_owned(),
+            effort: effort.to_owned(),
+        }),
+        log: log.map(std::path::PathBuf::from),
+    }
+}
+
+#[test]
+fn the_model_the_effort_and_the_log_are_told_when_known() {
+    let told_all = told(Some(&caller(
+        Some(("deepseek-v4", "high")),
+        Some("/home/a/sessions/s"),
+    )));
+    assert_eq!(
+        told_all,
+        vars(&[
+            ("MIYU_MODEL", "deepseek-v4"),
+            ("MIYU_EFFORT", "high"),
+            ("MIYU_SESSION_LOG", "/home/a/sessions/s"),
+        ])
+    );
+    // 属主不是管理员的会话没有日志目录；还没解析过模型的没有模型。
+    assert_eq!(
+        told(Some(&caller(Some(("m", "default")), None))),
+        vars(&[("MIYU_MODEL", "m"), ("MIYU_EFFORT", "default")])
+    );
+    assert!(told(Some(&caller(None, None))).is_empty());
+    assert!(told(None).is_empty());
+}

@@ -47,6 +47,8 @@ fn core_lines() -> String {
     )
     .to_string()
         + &machine.replace("{os}", miyu_store::env::os_name())
+        + &include_str!("../../../resources/core/agent-version.txt")
+            .replace("{version}", env!("CARGO_PKG_VERSION"))
 }
 
 /// 工具面上有 `shell`、有脚本里能调的工具的会话，system 里核心的几行后面单成一段的那一句（施工 M-4）。
