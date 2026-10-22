@@ -1,7 +1,7 @@
 //! 登录以后（施工 X-42 下，`docs/construction/X-42下-登录的续期和登出.md`）：令牌快过期的请求前续、服务回 `401` 的续一次重发，
 //! 续期写回密钥不重起服务（在跑的调用不断），人自己改了那一份的照旧重起；续不成的停在 `needs_login`；服务要更多范围的停在
 //! `needs_login`、下次登录的范围并上；`mcp.logout` 删掉那一份；浏览器不在核心那台机器上的把跳到的地址贴回来
-//! （`mcp.login_finish`），和本机回调同一处判。
+//! （`mcp.login_finish`），和本机回调同一处判。远程连进来的人（施工 X-42 下补）照样能登录、贴回来、登出。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -294,4 +294,44 @@ fn secret_value(text: &str, name: &str) -> Value {
     let document: toml_edit::DocumentMut = text.parse().expect("密钥文件是 TOML");
     let value = document[name].as_str().expect("有这一份");
     serde_json::from_str(value).expect("是 JSON")
+}
+
+/// 网页软件替远程的人开的一条连接（施工 Y-1 下上）：握手之前先说一句来自哪个地址。
+async fn remote(core: &Arc<miyu_endpoint::Core>) -> Client {
+    let mut client = Client::connect(Arc::clone(core));
+    let notice =
+        json!({"jsonrpc": "2.0", "method": "connection.remote", "params": {"from": "203.0.113.9"}});
+    client.line(&notice.to_string()).await;
+    client.hello().await;
+    client
+}
+
+#[tokio::test]
+async fn a_remote_person_logs_in_by_pasting_the_callback_back_and_logs_out() {
+    let auth = AuthServer::start().await;
+    let server = HttpServer::start(false).await;
+    server.protect(&auth.issuer, "access-1");
+    let home = Home::new();
+    home.write(
+        "home/alice/settings.toml",
+        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+    );
+    let (core, mut local, _kept) = running_with(&home, &Script::new([])).await;
+    until_listed(&mut local, "notes", |one| one["reason"] == "needs_login").await;
+    let mut far = remote(&core).await;
+    let url = login_url(&mut far, "r1").await;
+    let back = redirect_of(&url).await.expect("授权页要跳回去");
+    let taken = far
+        .call(
+            "r2",
+            "mcp.login_finish",
+            json!({"service": "notes", "url": back}),
+        )
+        .await;
+    assert_eq!(taken["result"], json!({}), "{taken}");
+    until_listed(&mut local, "notes", |one| one["state"] == "running").await;
+    let out = far
+        .call("r3", "mcp.logout", json!({"service": "notes"}))
+        .await;
+    assert_eq!(out["result"], json!({}), "{out}");
 }

@@ -106,7 +106,6 @@ pub(crate) fn local_machine_only(method: &str, params: &Value) -> bool {
         | "fs.read"
         | "session.terminal"
         | "session.set_terminal"
-        | "mcp.login"
         | "account.setup_code" => true,
         "blob.put" | "package.install" => has("path"),
         "kb.mount" => has("folder"),

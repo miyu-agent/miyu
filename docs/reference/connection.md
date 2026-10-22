@@ -13,7 +13,7 @@
 - **本机的头**：核心在本机的套接字上等连接，只有本人连得上。套接字在哪写在数据根的 `run/socket` 里（一行，路径原样），本机令牌在 `run/token` 里（64 位小写十六进制）。Linux、macOS 是 Unix 域套接字，Windows 是命名管道 `\\.\pipe\miyu-<指纹>`。核心没在跑的，头自己拉起 `miyu core`。
 - **扩展**：核心照软件包清单拉起的程序，经标准输入、标准输出说同一套协议，不用凭据（`hello` 里写了也不看）。
 - **网页**：浏览器连的是网页软件，网页软件再按上面本机的头的办法连核心。替远程的人开的连接，网页软件在握手之前先写一行通知 `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<来自哪个地址>}}`，再原样转浏览器的字节：这个连接就是远程的（施工 Y-1 下）。只能往下标：标了就变不回本机，握手以后说的不理。
-- **本机才能用的**（施工 Y-1 下）：读核心那台机器的文件、交本机路径、选本机的目录这一类，只给本机的连接，远程的回 `local_machine_only`，什么都不做：`fs.*`、`session.terminal`、`session.set_terminal`、`mcp.login`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；会话的 `cwd`、`dirs`、附件的 `path`、`command.run` 的 `cwd` 和 `/workspace <路径>`、项目的 `workspace`。会话不写 `cwd` 的用它自己的默认工作区。远程的握手回应不给 `host`。
+- **本机才能用的**（施工 Y-1 下）：读核心那台机器的文件、交本机路径、选本机的目录这一类，只给本机的连接，远程的回 `local_machine_only`，什么都不做：`fs.*`、`session.terminal`、`session.set_terminal`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；会话的 `cwd`、`dirs`、附件的 `path`、`command.run` 的 `cwd` 和 `/workspace <路径>`、项目的 `workspace`。会话不写 `cwd` 的用它自己的默认工作区。远程的握手回应不给 `host`。
 
 ## 一行一条
 

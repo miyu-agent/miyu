@@ -215,7 +215,7 @@ Fields left out are not written: replacing drops what was there before and is no
 
 ## `mcp.login`
 
-For a URL MCP server that answered `401` and needs a browser login (`reason` is `needs_login`, and its table has no token of its own): get the authorization page. The person agrees in the browser, the core exchanges the code, stores the token in the secrets file (`mcp-oauth-<server>`, never handed out over the protocol), and the server connects by itself (`mcp.changed` and the package list pushes as usual). Local people only.
+For a URL MCP server that answered `401` and needs a browser login (`reason` is `needs_login`, and its table has no token of its own): get the authorization page. The person agrees in the browser, the core exchanges the code, stores the token in the secrets file (`mcp-oauth-<server>`, never handed out over the protocol), and the server connects by itself (`mcp.changed` and the package list pushes as usual). People only, remote ones too (build X-42 part two, follow-up): the core only hands back the address and the head opens it on its side; the callback listens on `127.0.0.1` of the core's machine, so when the browser is elsewhere, paste the address back with `mcp.login_finish`.
 
 **Params**: `service` (the server name, from personal settings or carried by a package).
 
@@ -227,9 +227,9 @@ After logging in (build X-42 part two): when the token is about to expire or the
 
 ## `mcp.login_finish`, `mcp.logout`
 
-**`mcp.login_finish`** (build X-42 part two): when the browser isn't on the core's machine (the web page connected from elsewhere), after agreeing it lands on an unreachable `http://127.0.0.1:<port>/callback?…`; hand back that whole address. Params `service`, `url`. `state` and `iss` are checked in the same place as a local callback. Local people only. **Response**: `{}`: the token is exchanged and stored, and the server connects by itself. **Errors**: `not_waiting`: no login is waiting for this server, call `mcp.login` first; `oauth_failed`: it doesn't match (the login keeps waiting, so you can paste again), or the token exchange was refused.
+**`mcp.login_finish`** (build X-42 part two): when the browser isn't on the core's machine (the web page connected from elsewhere), after agreeing it lands on an unreachable `http://127.0.0.1:<port>/callback?…`; hand back that whole address. Params `service`, `url`. `state` and `iss` are checked in the same place as a local callback. People only, remote ones too. **Response**: `{}`: the token is exchanged and stored, and the server connects by itself. **Errors**: `not_waiting`: no login is waiting for this server, call `mcp.login` first; `oauth_failed`: it doesn't match (the login keeps waiting, so you can paste again), or the token exchange was refused.
 
-**`mcp.logout`** (build X-42 part two): delete what's stored (token, client, callback port) and cancel a waiting login; the server restarts and stops at `needs_login`. The token is not revoked at the authorization server. Param `service`. Local people only. **Response**: `{}`. **Errors**: `not_logged_in`: never logged in.
+**`mcp.logout`** (build X-42 part two): delete what's stored (token, client, callback port) and cancel a waiting login; the server restarts and stops at `needs_login`. The token is not revoked at the authorization server. Param `service`. People only, remote ones too. **Response**: `{}`. **Errors**: `not_logged_in`: never logged in.
 
 ## `skill.list`
 
