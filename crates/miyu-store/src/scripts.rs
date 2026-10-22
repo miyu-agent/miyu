@@ -12,7 +12,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
+use miyu_kernel::id::{AccountId, VenueId};
 use miyu_policy::script::{self, ScriptHead};
 
 use crate::links::{self, Fence, Kind};
@@ -44,16 +44,78 @@ pub fn state_root(data_root: &Path) -> PathBuf {
     data_root.join("state").join("scripts")
 }
 
-/// 账号 `account` 跑来处是 `source`（包的编号，家目录里放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的状态目录
-/// （施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：`state/scripts/<账号>/<来处>/<工具名>/`。不建：跑之前脚本工具建。
-pub fn state_dir(data_root: &Path, account: &AccountId, source: &str, tool: &str) -> PathBuf {
-    state_root(data_root)
-        .join(account.as_str())
-        .join(source)
-        .join(tool)
+/// 场所会话的那一层目录名的开头（施工 X-44 补）：包的编号、[`HOME_PACKAGE`] 都不这样开头，分得清这一层是场所。
+const VENUE_MARK: char = '@';
+
+/// 场所写成的目录名最多几个字：再长的给不了状态目录（场所编号最长 128 字节，全要转写才会这么长）。
+const VENUE_DIR_MOST: usize = 200;
+
+/// 本机的会话的场所：状态目录不分场所。
+const LOCAL: &str = "local";
+
+/// 场所 `venue` 落到目录名（施工 X-44 补）：`@` 后面照字节写，小写字母、数字、`-` 原样，别的写成 `_` 加两位小写十六进制。
+/// 可逆、不会撞，大小写不分的盘上也撞不上，碰不到 Windows 的保留名、末尾的点和空格。写出来超过 200 个字的没有。
+pub fn venue_dir(venue: &VenueId) -> Option<String> {
+    let mut dir = String::from(VENUE_MARK);
+    for byte in venue.as_str().bytes() {
+        if kept(byte) {
+            dir.push(char::from(byte));
+        } else {
+            dir.push_str(&format!("_{byte:02x}"));
+        }
+    }
+    (dir.len() <= VENUE_DIR_MOST).then_some(dir)
 }
 
-/// 一格状态目录（施工 X-44）：`state/scripts/<账号>/<来处>/<工具名>/`。
+/// 反过来：照 [`venue_dir`] 的写法读回场所。不是 `@` 开头的、写法不对的、不是唯一那一种写法的没有。
+pub fn venue_of(dir: &str) -> Option<VenueId> {
+    let mut bytes = Vec::new();
+    let mut rest = dir.strip_prefix(VENUE_MARK)?.bytes();
+    while let Some(byte) = rest.next() {
+        let byte = match byte {
+            b'_' => {
+                let written = hex(rest.next()?)? << 4 | hex(rest.next()?)?;
+                (!kept(written)).then_some(written)?
+            }
+            byte => kept(byte).then_some(byte)?,
+        };
+        bytes.push(byte);
+    }
+    VenueId::parse(&String::from_utf8(bytes).ok()?).ok()
+}
+
+/// 场所写进目录名时原样留下的字节：小写字母、数字、`-`。
+fn kept(byte: u8) -> bool {
+    byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
+}
+
+/// 一位小写十六进制的值；大写的不认（只认 [`venue_dir`] 写出来的那一种）。
+fn hex(digit: u8) -> Option<u8> {
+    match digit {
+        b'0'..=b'9' => Some(digit - b'0'),
+        b'a'..=b'f' => Some(digit - b'a' + 10),
+        _ => None,
+    }
+}
+
+/// 账号 `account` 在场所 `venue` 跑来处是 `source`（包的编号，家目录里放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的
+/// 状态目录（施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：本机的会话、没说场所的是 `state/scripts/<账号>/<来处>/<工具名>/`；场所会话
+/// 多一层场所（施工 X-44 补）：`state/scripts/<账号>/@<场所>/<来处>/<工具名>/`。场所写不成目录名的没有。不建：跑之前脚本工具建。
+pub fn state_dir(
+    data_root: &Path,
+    account: &AccountId,
+    venue: Option<&VenueId>,
+    source: &str,
+    tool: &str,
+) -> Option<PathBuf> {
+    let mut dir = state_root(data_root).join(account.as_str());
+    if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
+        dir.push(venue_dir(venue)?);
+    }
+    Some(dir.join(source).join(tool))
+}
+
+/// 一格状态目录（施工 X-44）：`state/scripts/<账号>/<来处>/<工具名>/`，场所会话的多一层场所（施工 X-44 补）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
     /// 来处：包的编号，或者 [`HOME_PACKAGE`]。
@@ -67,17 +129,37 @@ pub struct State {
 /// 数据根 `data_root` 里所有账号的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
 pub fn states(data_root: &Path) -> Vec<State> {
     let mut found = Vec::new();
-    for account in folders(&state_root(data_root)) {
-        for from in folders(&account) {
-            for path in folders(&from) {
-                if let (Some(source), Some(tool)) = (name(&from), name(&path)) {
-                    found.push(State { source, tool, path });
-                }
+    for from in sources(data_root) {
+        for path in folders(&from) {
+            if let (Some(source), Some(tool)) = (name(&from), name(&path)) {
+                found.push(State { source, tool, path });
             }
         }
     }
     found.sort_by(|a, b| a.path.cmp(&b.path));
     found
+}
+
+/// 每个账号下放来处的那几层：账号那一层，加它下面每个场所那一层（施工 X-44 补）。
+fn places(data_root: &Path) -> Vec<PathBuf> {
+    let mut places = Vec::new();
+    for account in folders(&state_root(data_root)) {
+        let venues = folders(&account)
+            .into_iter()
+            .filter(|dir| name(dir).as_deref().and_then(venue_of).is_some());
+        places.extend(venues);
+        places.push(account);
+    }
+    places
+}
+
+/// 每个来处的文件夹：[`places`] 下面不是场所那一层的。
+fn sources(data_root: &Path) -> Vec<PathBuf> {
+    places(data_root)
+        .iter()
+        .flat_map(|place| folders(place))
+        .filter(|dir| !name(dir).is_some_and(|name| name.starts_with(VENUE_MARK)))
+        .collect()
 }
 
 /// 路径最后一段的名字。
@@ -97,14 +179,15 @@ fn folders(dir: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// 卸掉来处是 `source` 的包（施工 X-44）：删掉每个账号下的 `state/scripts/<账号>/<来处>/`。本来就没有的不算错。
+/// 卸掉来处是 `source` 的包（施工 X-44）：删掉每个账号下的 `state/scripts/<账号>/<来处>/`，场所那一层下面的
+/// `<账号>/@<场所>/<来处>/` 也删（施工 X-44 补）。本来就没有的不算错。
 ///
 /// # Errors
 ///
 /// 删不掉的那一个。
 pub fn forget_states(data_root: &Path, source: &str) -> std::io::Result<()> {
-    for account in folders(&state_root(data_root)) {
-        match std::fs::remove_dir_all(account.join(source)) {
+    for place in places(data_root) {
+        match std::fs::remove_dir_all(place.join(source)) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error),
             _ => {}
         }

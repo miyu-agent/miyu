@@ -1,7 +1,7 @@
 //! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
 //! 都拿得到；在这一轮的工作目录里跑；有一个能写的缓存目录；退出码不是 0 的出错；到时整组杀掉、说一句；起不来的说清楚。
 //! 交图（施工 X-35）：拷进 `MIYU_SCRIPT_IMAGES_DIR` 的照文件名排、至多 4 张，链接、超大的不交，到时被杀的不看，跑完目录删掉。
-//! 链接成的脚本照它指到的真实位置起（施工 X-37）。调用的事实进 `MIYU_CALLER_*`，开头的 `Venues` 定给哪种会话（施工 X-43）。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接
+//! 链接成的脚本照它指到的真实位置起（施工 X-37）。调用的事实进 `MIYU_CALLER_*`，开头的 `Venues` 定给哪种会话（施工 X-43）。状态目录（施工 X-44）在 `script_state.rs`。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接
 //! 的只在 Unix 上。
 
 use serde_json::json;
@@ -12,7 +12,8 @@ use miyu_tool::{Caller, Done, Seen, Stop, Venues};
 
 use crate::support::Site;
 
-fn text(done: &Done) -> String {
+/// 结果里的字（`script_state.rs` 也用）。
+pub(crate) fn text(done: &Done) -> String {
     done.blocks
         .iter()
         .map(|block| match block {
@@ -342,73 +343,6 @@ fn a_script_is_offered_where_its_head_says() {
         })
     );
     assert_eq!(site.script_tool("scripts/any.py").venues(), None);
-}
-
-/// 印出状态目录、在里面数一次跑了几回的脚本（施工 X-44）：没给的印 `unset`。
-const COUNT: &[u8] = b"#!/usr/bin/env python3\n# Description: Count.\nimport os, pathlib\nfolder = os.environ.get('MIYU_SCRIPT_STATE_DIR')\nif folder is None:\n    print('unset')\nelse:\n    mark = pathlib.Path(folder) / 'n'\n    n = int(mark.read_text()) + 1 if mark.exists() else 1\n    mark.write_text(str(n))\n    print(n, folder)\n";
-
-/// 状态目录（施工 X-44）：照会话属主、来处、工具名在数据根的 `state/scripts/` 下面建好交给 `MIYU_SCRIPT_STATE_DIR`，写进去的
-/// 下一次还在；换一个属主、换一个来处都是另一格；会话外面的调用（没有属主）不给。Python 的，三个平台都跑。
-#[tokio::test]
-async fn a_script_keeps_its_state_per_owner_and_source() {
-    let site = Site::new();
-    site.file("scripts/count.py", COUNT);
-    let state = |owner: &str, source: &str| {
-        let folder = site
-            .0
-            .join("data/state/scripts")
-            .join(owner)
-            .join(source)
-            .join("count");
-        std::fs::canonicalize(folder).expect("建好了")
-    };
-    let printed = |done: &Done| text(done).trim_end().to_string();
-    let first = site.script_by("scripts/count.py", "~home", "alice").await;
-    assert!(!first.error, "{}", text(&first));
-    assert_eq!(
-        printed(&first),
-        format!("1 {}", state("alice", "~home").display())
-    );
-    let again = site.script_by("scripts/count.py", "~home", "alice").await;
-    assert_eq!(
-        printed(&again),
-        format!("2 {}", state("alice", "~home").display()),
-        "下一次还在"
-    );
-    let bob = site.script_by("scripts/count.py", "~home", "bob").await;
-    assert_eq!(
-        printed(&bob),
-        format!("1 {}", state("bob", "~home").display()),
-        "另一个属主另一格"
-    );
-    let kit = site.script_by("scripts/count.py", "kit", "alice").await;
-    assert_eq!(
-        printed(&kit),
-        format!("1 {}", state("alice", "kit").display()),
-        "另一个来处另一格"
-    );
-    let outside = site.script("scripts/count.py", json!({})).await;
-    assert_eq!(printed(&outside), "unset", "没有属主的不给");
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mode = std::fs::metadata(state("alice", "~home"))
-            .expect("在")
-            .permissions()
-            .mode();
-        assert_eq!(mode & 0o777, 0o700, "只有本人进得去");
-    }
-}
-
-/// 状态目录建不成的（施工 X-44）：这一次不给，照常跑。
-#[tokio::test]
-async fn a_script_runs_without_state_when_the_folder_cannot_be_made() {
-    let site = Site::new();
-    site.file("scripts/count.py", COUNT);
-    site.file("data/state/scripts", b"not a folder");
-    let done = site.script_by("scripts/count.py", "~home", "alice").await;
-    assert!(!done.error, "{}", text(&done));
-    assert_eq!(text(&done), "unset\n");
 }
 
 /// 进度行（施工 X-45）：一整行以 `miyu-progress: ` 开头的，写在标准错误、标准输出都一样，跑的时候推给头、不进结果；别的行照写

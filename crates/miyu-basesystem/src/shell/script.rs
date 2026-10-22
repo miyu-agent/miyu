@@ -12,8 +12,9 @@
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
 //!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
-//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照会话属主、来处、工具名分，跑之前建好
-//!   （Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根照旧藏着）。建不成的、会话外面的调用（没有属主）不给，照常跑。
+//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照会话属主、来处、工具名分，场所会话
+//!   另照场所分（施工 X-44 补：几个群都归系统账号），跑之前建好（Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根
+//!   照旧藏着）。建不成的、场所写不成目录名的、会话外面的调用（没有属主）不给，照常跑。
 //!   能丢的放缓存目录，要留的（登录态）放这里。
 //! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
@@ -150,7 +151,14 @@ impl Script {
     /// 没有（建不成的记一行 `WARN`）。
     fn state(&self, call: &Call) -> Option<PathBuf> {
         let (root, ids) = (call.data_root.as_deref()?, call.ids.as_ref()?);
-        let dir = miyu_store::scripts::state_dir(root, &ids.owner, &self.source, &self.spec.name);
+        // 场所会话照场所分（施工 X-44 补）：几个群都归系统账号，不分的话 A 群读得到 B 群的。
+        let venue = call.caller.as_ref().map(|caller| &caller.venue);
+        let Some(dir) =
+            miyu_store::scripts::state_dir(root, &ids.owner, venue, &self.source, &self.spec.name)
+        else {
+            tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = "venue too long", "script state not prepared");
+            return None;
+        };
         let mut builder = std::fs::DirBuilder::new();
         builder.recursive(true);
         #[cfg(unix)]

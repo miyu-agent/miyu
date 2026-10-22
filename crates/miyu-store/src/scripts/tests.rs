@@ -232,12 +232,12 @@ fn a_scripts_state_lives_under_its_account_source_and_name() {
     let alice = AccountId::parse("alice").expect("合写法");
     assert_eq!(state_root(root), Path::new("/data/state/scripts"));
     assert_eq!(
-        state_dir(root, &alice, HOME_PACKAGE, "dice"),
-        Path::new("/data/state/scripts/alice/~home/dice")
+        state_dir(root, &alice, None, HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/state/scripts/alice/~home/dice"))
     );
     assert_eq!(
-        state_dir(root, &alice, "bilibili", "live"),
-        Path::new("/data/state/scripts/alice/bilibili/live")
+        state_dir(root, &alice, None, "bilibili", "live").as_deref(),
+        Some(Path::new("/data/state/scripts/alice/bilibili/live"))
     );
 }
 
@@ -279,4 +279,76 @@ fn states_are_listed_and_one_source_is_forgotten_everywhere() {
     let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
     assert_eq!(left, ["dice", "x"]);
     assert!(states(&root.join("missing")).is_empty());
+}
+
+fn venue(text: &str) -> VenueId {
+    VenueId::parse(text).expect("场所合写法")
+}
+
+/// 场所落到目录名（施工 X-44 补）：可逆；大小写不同的不撞；保留名、末尾的点和空格、中文都转写过；太长的没有；读回时不是唯一
+/// 那一种写法的不认。
+#[test]
+fn a_venue_turns_into_a_folder_name_and_back() {
+    for (text, dir) in [
+        ("qq:group:123", "@qq_3agroup_3a123"),
+        ("QQ", "@_51_51"),
+        ("con", "@con"),
+        ("a. ", "@a_2e_20"),
+        ("群", "@_e7_be_a4"),
+        ("x_y", "@x_5fy"),
+    ] {
+        assert_eq!(venue_dir(&venue(text)).as_deref(), Some(dir), "{text}");
+        assert_eq!(venue_of(dir), Some(venue(text)), "{dir}");
+    }
+    assert_ne!(venue_dir(&venue("A")), venue_dir(&venue("a")));
+    assert_eq!(venue_dir(&venue(&"Z".repeat(128))), None, "太长");
+    for not in ["qq", "@", "@A", "@_zz", "@_6", "@_61", "@a_2E", "@a.b"] {
+        assert_eq!(venue_of(not), None, "{not}");
+    }
+}
+
+/// 场所会话的状态目录多一层场所（施工 X-44 补）；本机的会话照旧；场所写不成目录名的没有。
+#[test]
+fn a_venue_session_gets_its_own_state_folder() {
+    let root = Path::new("/data");
+    let alice = AccountId::parse("alice").expect("合写法");
+    let bot = AccountId::parse("bridge").expect("合写法");
+    assert_eq!(
+        state_dir(root, &alice, Some(&venue("local")), HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/state/scripts/alice/~home/dice")),
+        "本机的会话照旧"
+    );
+    assert_eq!(
+        state_dir(root, &bot, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
+        Some(Path::new(
+            "/data/state/scripts/bridge/@qq_3agroup_3a1/kit/live"
+        ))
+    );
+    assert_eq!(
+        state_dir(root, &bot, Some(&venue(&"Z".repeat(128))), "kit", "live"),
+        None
+    );
+}
+
+/// 列出来、卸包时清（施工 X-44 补）：场所那一层下面的一样认。
+#[test]
+fn states_under_a_venue_are_listed_and_forgotten_too() {
+    let scratch = Scratch::new();
+    let root = scratch.path();
+    for dir in [
+        "bridge/@qq_3agroup_3a1/kit/live",
+        "bridge/@qq_3agroup_3a2/kit/live",
+        "bridge/@qq_3agroup_3a2/other/x",
+        "alice/kit/live",
+    ] {
+        fs::create_dir_all(state_root(root).join(dir)).expect("建得了");
+    }
+    let listed: Vec<String> = states(root)
+        .into_iter()
+        .map(|state| format!("{}/{}", state.source, state.tool))
+        .collect();
+    assert_eq!(listed, ["kit/live", "kit/live", "kit/live", "other/x"]);
+    forget_states(root, "kit").expect("删得掉");
+    let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
+    assert_eq!(left, ["x"]);
 }
