@@ -95,15 +95,42 @@ fn fake_helper(dir: &Dir, line: &str) {
     assert!(status.success());
 }
 
-/// 助手说的一行：这一版、这台机器的平台、手段 `mechanisms`。
+/// 助手说的一行：这一版、这台机器的平台、手段 `mechanisms`，和核心同一个构建 id（施工 5-16 再补）。
 #[cfg(unix)]
 fn said(mechanisms: &[&str]) -> String {
     serde_json::json!({
         "version": miyu_sandbox::VERSION,
         "platform": miyu_sandbox::Platform::current().name(),
         "mechanisms": mechanisms,
+        "build": miyu_sandbox::BUILD,
     })
     .to_string()
+}
+
+/// 助手和核心不是同一份源码编的（施工 5-16 再补，网页的 demo 树只编了 `-p miyu`，助手停在旧版）：用不了，记一行说清是哪个
+/// 文件、怎么重编；不再每条命令都报 bad spec 退出 125。
+#[cfg(unix)]
+#[test]
+fn a_helper_of_another_build_is_logged_with_how_to_rebuild() {
+    let dir = Dir::new();
+    let old = serde_json::json!({
+        "version": miyu_sandbox::VERSION,
+        "platform": miyu_sandbox::Platform::current().name(),
+        "mechanisms": ["landlock"],
+    });
+    fake_helper(&dir, &old.to_string());
+    let (found, lines) = probed(Some(&dir.exe()));
+    assert_eq!(found, Availability::Unusable(Unusable::HelperFailed));
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    let helper = dir.0.join(miyu_sandbox::HELPER).display().to_string();
+    assert!(
+        lines[0].contains(" WARN ")
+            && lines[0].contains(&format!(
+                " sandbox unavailable reason=\"helper {helper} is from another build"
+            ))
+            && lines[0].ends_with("rebuild it: cargo build -p miyu-sandbox\""),
+        "{lines:?}"
+    );
 }
 
 #[cfg(unix)]
@@ -313,7 +340,7 @@ fn a_changed_helper_is_probed_again_and_a_failed_probe_is_not_remembered() {
 }
 
 #[test]
-fn a_remembered_probe_is_only_recalled_for_the_same_helper_and_version() {
+fn a_remembered_probe_is_only_recalled_for_the_same_helper_version_and_build() {
     let dir = Dir::new();
     let state = dir.0.join("state");
     let helper = dir.0.join(miyu_sandbox::HELPER);
@@ -326,10 +353,14 @@ fn a_remembered_probe_is_only_recalled_for_the_same_helper_and_version() {
     let changed = remembered::key(&helper).expect("认得出");
     assert_ne!(changed, key, "助手换了，认不出");
     assert_eq!(remembered::recall(&state, &changed), None);
-    // 说法的版本不对、读不懂的都当没记过。
+    // 说法的版本不对、构建 id 不对（施工 5-16 再补：核心换了、助手没换）、读不懂的都当没记过。
     let mut old = miyu_sandbox::Probe::new(Vec::new());
     old.version = miyu_sandbox::VERSION + 1;
     remembered::remember(&state, &key, &old);
+    assert_eq!(remembered::recall(&state, &key), None);
+    let mut other = miyu_sandbox::Probe::new(vec!["landlock".to_string()]);
+    other.build = String::new();
+    remembered::remember(&state, &key, &other);
     assert_eq!(remembered::recall(&state, &key), None);
     std::fs::write(state.join(remembered::FILE), b"{not json").expect("写得进");
     assert_eq!(remembered::recall(&state, &key), None);

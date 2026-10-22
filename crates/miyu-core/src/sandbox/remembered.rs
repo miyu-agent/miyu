@@ -3,7 +3,8 @@
 //! 下一次起来用新的。
 //!
 //! 认不认得照四样：助手的路径、大小、改动时间，加上系统的版本（Linux 照内核的版本号：Landlock 跟着内核走；别的平台照
-//! 平台名和架构）。说法的版本 `miyu_sandbox::VERSION` 在记下的那一份里，对不上的当没记过。
+//! 平台名和架构）。说法的版本 `miyu_sandbox::VERSION`、构建 id `miyu_sandbox::BUILD`（施工 5-16 再补：核心换了、助手
+//! 没换）在记下的那一份里，对不上的当没记过。
 
 use std::path::Path;
 use std::time::UNIX_EPOCH;
@@ -63,11 +64,13 @@ fn system() -> String {
     base
 }
 
-/// 状态目录 `state` 里记着的、`key` 对得上、说法的版本也对得上的那一份；没有的、读不懂的交回空的。
+/// 状态目录 `state` 里记着的、`key` 对得上、说法的版本和构建 id 也对得上的那一份；没有的、读不懂的交回空的。
 pub(crate) fn recall(state: &Path, key: &Key) -> Option<Probe> {
     let bytes = std::fs::read(state.join(FILE)).ok()?;
     let remembered: Remembered = serde_json::from_slice(&bytes).ok()?;
-    (remembered.key == *key && remembered.probe.version == miyu_sandbox::VERSION)
+    (remembered.key == *key
+        && remembered.probe.version == miyu_sandbox::VERSION
+        && remembered.probe.build == miyu_sandbox::BUILD)
         .then_some(remembered.probe)
 }
 

@@ -5,7 +5,8 @@
 //! - [`Spec`]：规格；[`Sandboxed`]：一次调用带的，助手在哪、规格是什么；
 //! - [`argv`]：照规格把一条命令包成交给助手的样子；
 //! - [`locate()`]：找助手，在主程序旁边；
-//! - [`probe()`]：跑一次助手的 `probe`，读它说这台机器能收紧到什么程度（[`Probe`]、[`Platform`]）；
+//! - [`probe()`]：跑一次助手的 `probe`，读它说这台机器能收紧到什么程度（[`Probe`]、[`Platform`]），和核心是不是同一份源码编的
+//!   （[`BUILD`]，施工 5-16 再补）；
 //! - [`Availability`]：这台机器上的沙盒能不能用、为什么（[`Unusable`]，施工 5-4 下）；
 //! - [`lifeline`]：核心没了，它起的命令跟着没（施工 7-8）：Unix 上每个组一个看门的，Windows 上核心进作业对象；
 //! - [`install`]：装沙盒要管理员权限的那一次，Windows 上建、撤专用的沙盒用户（施工 5-8，`docs/blueprint/sandbox/windows.md`）；
@@ -30,7 +31,7 @@ mod wrap;
 pub use availability::{Availability, Unusable};
 pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
-pub use probe::{Platform, Probe, ProbeError, VERSION, probe};
+pub use probe::{BUILD, Platform, Probe, ProbeError, VERSION, probe};
 pub use spec::Spec;
 pub use wrap::{Sandboxed, argv};
 

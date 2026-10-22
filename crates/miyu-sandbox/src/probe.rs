@@ -1,12 +1,13 @@
 //! 探测（`docs/blueprint/sandbox.md`「怎么走」第 2 条）：跑一次助手的 `probe`，读它说这台机器能收紧到什么程度。
-//! 核心起来时探一次，只记日志。
+//! 核心起来时探一次，只记日志。助手报它的构建 id，和核心的对不上的不用（施工 5-16 再补）：规格多了一格旧的助手认不出，
+//! 每条命令都报 bad spec 退出 125，起来时就说清是哪个文件、怎么重编。
 //!
 //! 等它有上限：读输出、等它退出加起来不过 `timeout`，到时杀掉它。读输出在另一个线程里：它放出去的东西拿着管道不放
 //! 的，也不会一直等下去。
 
 use std::fmt;
 use std::io::{self, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::thread;
@@ -16,6 +17,9 @@ use serde::{Deserialize, Serialize};
 
 /// 这份说法的版本。改了写法就加一：核心只认它认得的。
 pub const VERSION: u32 = 1;
+
+/// 这一次编的构建 id（施工 5-16 再补）：照这个包的源码算的十六位十六进制（`build.rs`），核心和助手是同一份源码编的才一样。
+pub const BUILD: &str = env!("MIYU_SANDBOX_BUILD");
 
 /// 等它退出时多久看一次。
 const POLL: Duration = Duration::from_millis(10);
@@ -29,6 +33,9 @@ pub struct Probe {
     pub platform: Platform,
     /// 能用上的收紧手段。施工 5-1 是空的，5-2 起各平台往里加。
     pub mechanisms: Vec<String>,
+    /// 编它的构建 id：[`BUILD`]（施工 5-16 再补）。旧版的助手不报，读成空的。
+    #[serde(default)]
+    pub build: String,
 }
 
 /// 助手是为哪个平台编的。
@@ -77,6 +84,7 @@ impl Probe {
             version: VERSION,
             platform: Platform::current(),
             mechanisms,
+            build: BUILD.to_string(),
         }
     }
 
@@ -101,6 +109,13 @@ pub enum ProbeError {
     Exited(ExitStatus),
     /// 说的读不懂：不是那一行 JSON，或者版本不认得。
     Unreadable(String),
+    /// 和核心不是同一份源码编的（施工 5-16 再补）：助手 `helper` 报的构建 id 是 `build`（旧版的不报，是空的）。
+    Stale {
+        /// 助手在哪。
+        helper: PathBuf,
+        /// 它报的构建 id。
+        build: String,
+    },
 }
 
 impl fmt::Display for ProbeError {
@@ -110,6 +125,12 @@ impl fmt::Display for ProbeError {
             ProbeError::TimedOut => f.write_str("helper timed out"),
             ProbeError::Exited(status) => write!(f, "helper failed: {status}"),
             ProbeError::Unreadable(why) => write!(f, "helper output not understood: {why}"),
+            ProbeError::Stale { helper, build } => write!(
+                f,
+                "helper {} is from another build (helper {}, core {BUILD}); rebuild it: cargo build -p miyu-sandbox",
+                helper.display(),
+                if build.is_empty() { "none" } else { build },
+            ),
         }
     }
 }
@@ -120,7 +141,7 @@ impl std::error::Error for ProbeError {}
 ///
 /// # Errors
 ///
-/// 起不来、到时了、退出码不是 0、说的读不懂（[`ProbeError`]）。
+/// 起不来、到时了、退出码不是 0、说的读不懂、和核心不是同一份源码编的（[`ProbeError`]）。
 pub fn probe(helper: &Path, timeout: Duration) -> Result<Probe, ProbeError> {
     let deadline = Instant::now() + timeout;
     let mut child = Command::new(helper)
@@ -163,6 +184,12 @@ pub fn probe(helper: &Path, timeout: Duration) -> Result<Probe, ProbeError> {
         .map_err(|error| ProbeError::Unreadable(error.to_string()))?;
     if probe.version != VERSION {
         return Err(ProbeError::Unreadable(format!("version {}", probe.version)));
+    }
+    if probe.build != BUILD {
+        return Err(ProbeError::Stale {
+            helper: helper.to_path_buf(),
+            build: probe.build,
+        });
     }
     Ok(probe)
 }

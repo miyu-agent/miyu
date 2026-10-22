@@ -119,7 +119,7 @@
 | `config` | 只有核心拉起的扩展的连接有（施工 9-4 下下，`extensions.md`「配置」）：这个包自己的配置项的最终值，密钥是真值；之后变了推 `extension.config`（`{"keys": {键: 新值或 null}}`） |
 | `setup` | `true`：用一次性码连上的，只能设用户名和密码（施工 W-8）。别的不写 |
 | `login` | `{"expires": <时刻>, "token": <登录令牌>}`：用用户名、密码连上的才有（施工 W-8） |
-| `sandbox` | 这台机器上的沙盒能不能用（核心起来时探的，`sandbox.md`）：`{"usable": true}`，或者 `{"usable": false, "reason": <原因>}`。原因是 `helper_missing`（主程序旁边没有助手）、`helper_failed`（助手跑不起来、超时、说的读不懂）、`no_mechanism`（探成了，这台机器上却没有能用的手段）之一（施工 5-4 下） |
+| `sandbox` | 这台机器上的沙盒能不能用（核心起来时探的，`sandbox.md`）：`{"usable": true}`，或者 `{"usable": false, "reason": <原因>}`。原因是 `helper_missing`（主程序旁边没有助手）、`helper_failed`（助手跑不起来、超时、说的读不懂、和核心不是同一份源码编的）、`no_mechanism`（探成了，这台机器上却没有能用的手段）之一（施工 5-4 下） |
 
 1. 参数读不成（缺了必写的格、哪一格类型不对）：`bad_params`，连接不断。
 2. `1` 不在 `[最低, 最高]` 里：`protocol_mismatch`，回完断开。

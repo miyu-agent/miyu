@@ -1,12 +1,13 @@
 //! 探测（`docs/blueprint/sandbox.md`「怎么走」第 2 条）：真的助手说的是这台机器；假的助手（Unix 上的脚本）起不来、
-//! 到时、退出码不是 0、说的读不懂、版本不认得，各是各的原因。等它有上限：拿着管道不放的也不一直等。
+//! 到时、退出码不是 0、说的读不懂、版本不认得、和核心不是同一份源码编的（施工 5-16 再补），各是各的原因。等它有上限：拿着
+//! 管道不放的也不一直等。
 
 mod support;
 
 use std::path::Path;
 use std::time::Duration;
 
-use miyu_sandbox::{Platform, ProbeError, VERSION, probe};
+use miyu_sandbox::{BUILD, Platform, ProbeError, VERSION, probe};
 use support::{Dir, HELPER, serial};
 
 /// 平时等多久：够真的助手说完。
@@ -18,6 +19,7 @@ fn the_real_helper_says_this_machine() {
     let probe = probe(Path::new(HELPER), WAIT).expect("探得成");
     assert_eq!(probe.version, VERSION);
     assert_eq!(probe.platform, Platform::current());
+    assert_eq!(probe.build, BUILD, "同一份源码编的");
 }
 
 #[test]
@@ -54,7 +56,9 @@ mod fake {
     #[test]
     fn a_helper_that_says_the_same_line_is_understood() {
         let (result, _) = fake(
-            r#"echo '{"version":1,"platform":"linux","mechanisms":["landlock"],"later":true}'"#,
+            &format!(
+                r#"echo '{{"version":1,"platform":"linux","mechanisms":["landlock"],"build":"{BUILD}","later":true}}'"#
+            ),
             WAIT,
         );
         let probe = result.expect("读得懂");
@@ -123,5 +127,28 @@ mod fake {
         );
         let error = result.expect_err("版本不认得");
         assert_eq!(error.to_string(), "helper output not understood: version 2");
+    }
+
+    /// 和核心不是同一份源码编的（施工 5-16 再补，网页的 demo 树只编了 `-p miyu`）：旧版的助手不报构建 id，新的报了别的，都
+    /// 说清是哪个文件、怎么重编。
+    #[test]
+    fn a_helper_of_another_build_says_which_file_and_how_to_rebuild() {
+        for body in [
+            r#"echo '{"version":1,"platform":"linux","mechanisms":["landlock"]}'"#,
+            r#"echo '{"version":1,"platform":"linux","mechanisms":["landlock"],"build":"0123456789abcdef"}'"#,
+        ] {
+            let _serial = serial();
+            let dir = Dir::new();
+            let helper = dir.script("miyu-sandbox", body);
+            let error = probe(&helper, WAIT).expect_err(body);
+            assert!(matches!(error, ProbeError::Stale { .. }), "{error:?}");
+            let said = error.to_string();
+            assert!(
+                said.contains(&helper.display().to_string())
+                    && said.contains(BUILD)
+                    && said.ends_with("rebuild it: cargo build -p miyu-sandbox"),
+                "{said}"
+            );
+        }
     }
 }

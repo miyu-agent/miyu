@@ -20,7 +20,8 @@
 | `crates/miyu-sandbox/src/spec.rs` | 规格 |
 | `crates/miyu-sandbox/src/wrap.rs` | 照规格包一条命令：`miyu-sandbox run --spec … -- …` |
 | `crates/miyu-sandbox/src/locate.rs` | 找助手：主程序旁边 |
-| `crates/miyu-sandbox/src/probe.rs` | 探测：跑 `miyu-sandbox probe`，读它说的 |
+| `crates/miyu-sandbox/src/probe.rs` | 探测：跑 `miyu-sandbox probe`，读它说的；构建 id 对不上的不用（施工 5-16 再补） |
+| `crates/miyu-sandbox/build.rs` | 构建 id：照这个包的源码算的摘要（施工 5-16 再补） |
 | `crates/miyu-sandbox/src/availability.rs` | 这台机器上的沙盒能不能用、为什么（施工 5-4 下） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/main.rs` | 助手里各平台共用的：读参数、读规格、`probe`、出错时说的几句 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs`、`macos.rs`、`windows.rs`、`other.rs` | 各平台收紧、再换成命令（`run`），探测时报的手段（`mechanisms`）；`other.rs` 是别的 Unix |
@@ -64,7 +65,7 @@
   - Unix 上直接换成它（`exec`），进程还是同一个。
   - Windows 上起一个子进程，等它，照它的退出码退出。
   - 成了什么都不印：它的标准错误就是命令的标准错误，印了会混进给她看的输出。
-- `miyu-sandbox probe`：标准输出上一行 JSON，说这台机器能收紧到什么程度，例如 `{"version":1,"platform":"linux","mechanisms":[]}`。`platform` 是 `linux`、`macos`、`windows`、`other` 之一；`mechanisms` 是这台机器上能用上的收紧手段，各平台自己报（Linux 上是 `landlock`，`sandbox/linux.md`；macOS 上是 `seatbelt`，`sandbox/macos.md`），空的就是收紧不了。核心只认 `version` 是 1 的；多出来的格不管。
+- `miyu-sandbox probe`：标准输出上一行 JSON，说这台机器能收紧到什么程度，例如 `{"version":1,"platform":"linux","mechanisms":[],"build":"3f0c…"}`。`platform` 是 `linux`、`macos`、`windows`、`other` 之一；`mechanisms` 是这台机器上能用上的收紧手段，各平台自己报（Linux 上是 `landlock`，`sandbox/linux.md`；macOS 上是 `seatbelt`，`sandbox/macos.md`），空的就是收紧不了；`build` 是编它的构建 id（施工 5-16 再补）：照 `miyu-sandbox` 这个包的源码（`src/` 下的文件、`Cargo.toml`、`build.rs`）算的 64 位 FNV-1a 摘要，十六位十六进制，核心链进来的这个包和助手是同一份源码编的才一样。核心只认 `version` 是 1、`build` 和自己的一样的（旧版的助手不报 `build`，读成空的，也对不上）；多出来的格不管。
 
 **退出码**，照 `env`、`timeout` 的约定：
 
@@ -80,7 +81,7 @@
 | 原因 | 什么时候 | 协议上写成 |
 |---|---|---|
 | `HelperMissing` | 主程序旁边没有助手，或者不知道主程序在哪 | `helper_missing` |
-| `HelperFailed` | 助手跑不起来、超时、退出码不是 0、说的读不懂 | `helper_failed` |
+| `HelperFailed` | 助手跑不起来、超时、退出码不是 0、说的读不懂、和核心不是同一份源码编的（施工 5-16 再补） | `helper_failed` |
 | `NoMechanism` | 探成了，手段是空的 | `no_mechanism` |
 
 **一次调用带的** `Call.sandbox`（`tools/interface.md`）：`Some(Sandboxed { helper, spec, env })` 的，`shell` 经助手起命令，`env` 里的环境变量照核心挑好的之后设上（`tools/shell.md`「环境变量」）（同名的盖掉）；`None` 的照旧直接起。执行器照这一刻实际生效的级别带（施工 5-4 上，`session/tools.md`）。
@@ -90,10 +91,10 @@
 1. **找助手**（`locate`）：主程序真实位置旁边的 `miyu-sandbox`，Windows 上是 `miyu-sandbox.exe`。不是普通文件的、没有的，是空的。
 2. **核心起来时探一次**：
    - 主程序的真实位置照环境的快照（`core.md` 第 1 步）。
-   - **记下的先用**（施工 V-5 上）：状态目录里的 `sandbox-probe.json` 记着上一次探成的结果，认四样：助手的路径、大小、改动时间，加上系统的版本（Linux 是内核版本号，Landlock 跟着内核走；别的平台是平台名加架构）；说法的版本 `miyu_sandbox::VERSION` 也要对得上。都对得上的直接用，记的那一行多一个字段 `remembered=true`，再在另一个线程里照下面跑一遍、成了就照新的记，下一次起来用新的。对不上、没记过、读不懂的，照下面现探。探成了的（手段空不空都算）才记，没找到、跑不了、超时、读不懂的不记。写的时候先写临时文件再换名，写不成的记一行 `DEBUG`，不影响起来。代码在 `crates/miyu-core/src/sandbox/remembered.rs`。
+   - **记下的先用**（施工 V-5 上）：状态目录里的 `sandbox-probe.json` 记着上一次探成的结果，认四样：助手的路径、大小、改动时间，加上系统的版本（Linux 是内核版本号，Landlock 跟着内核走；别的平台是平台名加架构）；说法的版本 `miyu_sandbox::VERSION`、构建 id `miyu_sandbox::BUILD` 也要对得上（核心换了、助手没换的当没记过，施工 5-16 再补）。都对得上的直接用，记的那一行多一个字段 `remembered=true`，再在另一个线程里照下面跑一遍、成了就照新的记，下一次起来用新的。对不上、没记过、读不懂的，照下面现探。探成了的（手段空不空都算）才记，没找到、跑不了、超时、读不懂的不记。写的时候先写临时文件再换名，写不成的记一行 `DEBUG`，不影响起来。代码在 `crates/miyu-core/src/sandbox/remembered.rs`。
    - 找到了就跑 `miyu-sandbox probe`，最多等 5 秒：读它的输出、等它退出加起来不过 5 秒，到时杀掉它。读输出在另一个线程里，它放出去的东西拿着管道不放，也不一直等。
    - 成了：记一行 `INFO` `sandbox`，字段 `helper`（路径，家目录写成 `~`）、`platform`、`mechanisms`（逗号连起来，空的写 `none`）。
-   - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）。
+   - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）、`helper <路径> is from another build (helper <它报的，没报的写 none>, core <核心的>); rebuild it: cargo build -p miyu-sandbox`（构建 id 对不上，施工 5-16 再补：网页的 demo 树只编了 `-p miyu`，助手停在旧版，规格多了一格它认不出，原来每条沙盒命令都报 bad spec 退出 125）。
    - 探到了手段（`mechanisms` 不是空的）：能用，助手交给协议端点，造会话、载入时交给会话，权限策略照它判执行命令，执行器照它给每次调用写规格（施工 5-4 上，`core.md`）。手段是空的、探不成的：用不了，照上面的表记下原因，会话里工作区、只读两级执行命令都要问人（`session/guard.md`）。能不能用、为什么，握手时报给头（`protocol.md`，施工 5-4 下）。起不起得来不看它。
 3. **`shell` 带了规格的**：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`。工作目录、挑过的环境变量、标准输入输出、进程组、超时整组杀都和直接起一样：Unix 上助手换成了 shell，是同一个进程。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照「起不来」说，不会不经沙盒就跑。
 4. **助手的 `run`**：
@@ -110,9 +111,9 @@
 |---|---|
 | `crates/miyu-sandbox/src/spec/tests.rs` | 样本读进来、写回去逐字节一样；两格都能不写；`reveal` 没有的不写、有的照原样读回来（施工 X-10 中）；多格（包括原来的 `read`、`readonly`、`network`）、类型不对、不是 JSON 的读不了 |
 | `crates/miyu-sandbox/src/wrap/tests.rs` | 包出来的命令：助手、`run`、`--spec` 和 JSON、`--`、程序和参数，照先后；命令没有参数的，最后一个是程序 |
-| `crates/miyu-sandbox/src/probe/tests.rs` | 平台的名字和 JSON 里的一样；这次编的是哪个平台；说法是版本 1、一行；手段怎么连；探不成的每一种怎么说 |
+| `crates/miyu-sandbox/src/probe/tests.rs` | 平台的名字和 JSON 里的一样；这次编的是哪个平台；说法是版本 1、一行、带构建 id；构建 id 是十六位十六进制；手段怎么连；探不成的每一种怎么说 |
 | `crates/miyu-sandbox/tests/run.rs` | 真跑助手（规格什么都不限）：命令的输出、退出码、工作目录、环境变量和直接跑一样，它自己什么都不多印；Unix 上是同一个进程，被信号杀掉的照样是信号；参数不对、规格写坏了、没给命令、找不到命令、执行不了的退出码和那一句；`probe` 是一行、版本 1、这台机器的平台（手段各平台自己测） |
-| `crates/miyu-sandbox/tests/probe.rs` | 真的助手说的是这台机器；不是程序的起不来；假的助手（Unix 上的脚本）：多出来的格不管，到时杀掉，关了输出不退出的、拿着管道不放的也不等，退出码不是 0、说的读不懂、版本不认得各是各的原因 |
+| `crates/miyu-sandbox/tests/probe.rs` | 真的助手说的是这台机器；不是程序的起不来；假的助手（Unix 上的脚本）：多出来的格不管，到时杀掉，关了输出不退出的、拿着管道不放的也不等，退出码不是 0、说的读不懂、版本不认得、构建 id 对不上（说清是哪个文件、怎么重编，施工 5-16 再补）各是各的原因 |
 | `crates/miyu-sandbox/tests/locate.rs` | 主程序旁边有的找得到，没有的、是目录的找不到；Windows 上名字带 `.exe` |
 | `crates/miyu-basesystem/src/shell/program/tests.rs` | 带了规格的四种 shell 都经助手起：参数照先后，工作目录、环境变量照旧；规格写不成 JSON 的起不来 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` | 带了规格的真跑一次（Unix）：假助手 `/bin/echo` 收到的是 `run --spec <规格> -- <shell> <参数…>`；规格写不成 JSON 的说起不来，命令没跑；不带的照旧，见 `tests/shell.rs` |

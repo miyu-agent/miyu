@@ -46,3 +46,12 @@
 ### 下补（2026-10-21，网页实测报的）
 
 沙盒强度在「隐私与安全」页上没地方挂：X-36 的放行表（`sandbox.tools.<名字>`，不画）也用组 `sandbox`，却挂在「通用」页、登记得更早，`config.schema` 的组照先出现的那一项定页，被挤到了「通用」。放行表挪到「隐私与安全」、在清单里排到沙盒强度后面；两边各往三份字表的组名里加了一回 `sandbox`，删掉一份。核心的设置测试多一条 `a_group_belongs_to_one_page`：同一个组名挂在两页上当场报。
+
+### 再补（2026-10-22，网页的 demo 树报的）
+
+核心和沙盒助手版本对不上：网页的 demo 树只编了 `-p miyu`，助手停在旧版，新规格里的 `sockets`（施工 M-3）它认不出，所有沙盒命令报 bad spec 退出 125，看不出为什么。
+
+1. 构建 id（`miyu-sandbox` 的 `build.rs`）：照这个包自己的源码（`src/` 下的文件、`Cargo.toml`、`build.rs`）算 64 位 FNV-1a 摘要，十六位十六进制，代码里是 `miyu_sandbox::BUILD`。核心链进来的这个包和助手是同一份源码编的才一样；别的包改了不算。
+2. 助手的 `probe` 那一行多一格 `build`；核心探的时候对（`probe.rs`）：对不上的（旧版的不报，读成空的）是 `ProbeError::Stale`，记一行 `WARN sandbox unavailable reason="helper <路径> is from another build (helper <它的>, core <核心的>); rebuild it: cargo build -p miyu-sandbox"`，沙盒照「助手跑不起来」用不了（协议上照旧 `helper_failed`，头不用改）。
+3. 记下的探测（施工 V-5 上）照构建 id 认：核心换了、助手没换的当没记过，照常探，探出来对不上就照上一条说。
+4. 验收：`miyu-sandbox` 的 `probe/tests.rs`（那一行带 `build`、构建 id 是十六位十六进制、对不上的那一句）、`tests/probe.rs`（真的助手报的和核心一样；假的助手不报的、报了别的，都说出是哪个文件和 `cargo build -p miyu-sandbox`）；核心的 `sandbox/tests.rs`（旧版的助手用不了、记的那一行说清；记下的构建 id 不对当没记过）。变异全抓住。`cargo xtask check` 八项；先推 step 分支过三台。
