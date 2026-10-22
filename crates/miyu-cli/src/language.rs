@@ -17,6 +17,7 @@ mod memory;
 pub use memory::Organized;
 mod pkg;
 mod sandbox;
+mod service;
 mod setup;
 mod undo;
 

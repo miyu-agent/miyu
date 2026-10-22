@@ -36,6 +36,7 @@
 | `config` | `get`、`explain`、`path`：看配置（施工 8-2，`check` 施工 8-30 挪成 `miyu check`）；`set`、`unset`、`edit`、`trust`：改配置、信任项目配置（施工 8-3） | `cli/config.md` |
 | `login`、`logout` | 存、列、删供应商的 key（施工 8-5） | `cli/login.md` |
 | `setup` | 接上第一个模型：找现成的 key 和本机的服务，或者搜目录、贴 key，试通了写进系统配置（施工 8-11） | `cli/setup.md` |
+| `service` | `enable`、`disable`、`status`：让核心开机、登录就起，替本人装、卸、看本人这一层的服务（施工 Z-1 下） | `cli/service.md` |
 | `sandbox` | `setup`、`remove`：Windows 上装好、撤掉沙盒用户，要管理员权限；别的平台上说一句不用装 | `sandbox/windows.md` |
 | `web` | 打开网页界面：找主程序旁边的网页软件 `miyu-web`，参数交给它；没装的说怎么装（施工 W-9） | `web-ui.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
@@ -99,6 +100,7 @@
   logout [名字]         删掉一个供应商的 key
   setup                 接上第一个模型：选一家、贴 key，试通了写进配置
   web                   打开网页界面
+  service <命令>        让核心开机、登录就起：enable、disable、status
   sandbox setup|remove  装好、撤掉沙盒用户（Windows，要管理员权限）
 
 ask 的选项：
@@ -152,6 +154,7 @@ Commands:
   logout [name]         Delete a provider's key
   setup                 Connect the first model: pick a provider and try it
   web                   Open the web UI
+  service <command>     Start the core at boot or login: enable, disable, status
   sandbox setup|remove  Set up or remove the sandbox user (Windows, needs admin)
 
 ask options:

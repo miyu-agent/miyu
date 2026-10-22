@@ -1,6 +1,6 @@
 # packaging
 
-安装包、系统要用的文件（不编进二进制）。写打包脚本（PKGBUILD、deb、rpm、Homebrew、安装脚本）的那一步照这里装。设计见 `docs/designs/12-进程形态与分发.md` 第二、四节。
+安装包、系统要用的文件。个人机器上那四份（systemd 用户服务、XDG 自启动、launchd、Windows 任务计划）也是 `miyu service enable` 写的样子：它照这里的编进程序，换上 `miyu` 的真实位置（施工 Z-1 下），改了这里的跟着变。写打包脚本（PKGBUILD、deb、rpm、Homebrew、安装脚本）的那一步照这里装。设计见 `docs/designs/12-进程形态与分发.md` 第二、四节。
 
 | 目录 | 是什么 |
 |---|---|
@@ -21,7 +21,7 @@
 - **macOS**：`macos/miyu.plist` 改名成 `io.github.miyu-agent.core.plist` 放进 `~/Library/LaunchAgents/`，`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.github.miyu-agent.core.plist`。
 - **Windows**：`schtasks /Create /TN Miyu /XML windows\miyu.xml`。
 
-`miyu` 不在文件里写的那个位置的（安装脚本装在 `~/.local/lib/miyu/miyu`、Windows 的 `%LOCALAPPDATA%\Programs\Miyu\miyu.exe`），把路径换成它。以后 `miyu service enable` 替你装（施工 Z-1 下）。
+`miyu` 不在文件里写的那个位置的（安装脚本装在 `~/.local/lib/miyu/miyu`、Windows 的 `%LOCALAPPDATA%\Programs\Miyu\miyu.exe`），把路径换成它。或者直接 `miyu service enable`：替你写好、交给服务管理器，路径照这一个 `miyu`，设了 `MIYU_HOME` 的一并写上；`miyu service status` 看、`disable` 卸（施工 Z-1 下，`docs/blueprint/cli/service.md`）。
 
 已经有一个核心在跑（头先拉起了）时，服务管理器起的这一个说一句 `running`、退出码 0 就走，不会重起它；要服务马上接手的，先让头拉起的那一个退干净（`miyu` 里退出，或者等它停），再重启服务。
 

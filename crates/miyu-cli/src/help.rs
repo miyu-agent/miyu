@@ -30,6 +30,8 @@ pub enum Page {
     Logout,
     /// `miyu sandbox -h`，`miyu sandbox setup -h`、`miyu sandbox remove -h` 也印它（施工 5-8）。
     Sandbox,
+    /// `miyu service -h`，三个命令的 `-h` 也印它（施工 Z-1 下）。
+    Service,
     /// `miyu setup -h`（施工 8-11）。
     Setup,
     /// `miyu web -h`（施工 W-9）。
@@ -56,6 +58,7 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
         "pkg" => Some(Page::Pkg),
         "config" => Some(Page::Config),
         "sandbox" => Some(Page::Sandbox),
+        "service" => Some(Page::Service),
         _ => None,
     }
 }
@@ -88,6 +91,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::Chinese, Page::Logout) => include_str!("help/zh/logout.txt"),
         (Language::English, Page::Logout) => include_str!("help/en/logout.txt"),
         (Language::Chinese, Page::Sandbox) => include_str!("help/zh/sandbox.txt"),
+        (Language::Chinese, Page::Service) => include_str!("help/zh/service.txt"),
+        (Language::English, Page::Service) => include_str!("help/en/service.txt"),
         (Language::English, Page::Sandbox) => include_str!("help/en/sandbox.txt"),
         (Language::Chinese, Page::Setup) => include_str!("help/zh/setup.txt"),
         (Language::English, Page::Setup) => include_str!("help/en/setup.txt"),

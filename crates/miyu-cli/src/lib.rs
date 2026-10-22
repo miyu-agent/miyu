@@ -16,6 +16,7 @@
 //! - [`Rename`]：`miyu rename` 的参数；[`rename()`]：给会话起名，交回退出码；[`rename_on`]：在连上了的连接上起一次名，
 //!   测试照它在进程里走一遍（施工 3-8 五补）；
 //! - [`Sandbox`]：`miyu sandbox setup`、`remove` 的参数；[`sandbox()`]：Windows 上装好、撤掉沙盒用户，交回退出码
+//! - [`Service`]：`miyu service enable`、`disable`、`status` 的参数；[`service()`]：替本人装、卸、看开机或登录就起核心的服务，交回退出码（施工 Z-1 下）
 //!   （施工 5-8）；
 //! - [`Config`]：`miyu config` 的参数；[`config()`]：看配置一次，交回退出码；[`config_on`]：在连上了的连接上办一次，
 //!   测试照它在进程里走一遍（施工 8-2）；
@@ -45,6 +46,7 @@ mod redo;
 mod rename;
 mod rpc;
 mod sandbox;
+mod service;
 mod setup;
 mod shown;
 mod undo;
@@ -66,6 +68,7 @@ pub use recap::{Recap, RecapPlan, recap, recap_on};
 pub use redo::{Redo, RedoPlan, redo, redo_on};
 pub use rename::{Rename, RenamePlan, rename, rename_on};
 pub use sandbox::{Action as SandboxAction, OwnerArgs, Sandbox, sandbox};
+pub use service::{Service, ServiceAction, service};
 pub use setup::{HeadEnv, Setup, SetupPlan, model_ready_on, setup, setup_on};
 pub use undo::{Direction, Undo, UndoPlan, undo, undo_on};
 pub use web::{Web, web, web_on};

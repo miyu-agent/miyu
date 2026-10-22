@@ -1,0 +1,12 @@
+Usage: miyu service <command>
+
+Start the core at boot or login: install, remove or check your own service (a systemd user service on Linux, desktop autostart where there is none; launchd on macOS; a logon task on Windows).
+
+Commands:
+  enable   Install it and hand it to the service manager
+  disable  Stop it, take it out and delete the file written
+  status   Whether it is installed and on
+
+The service runs this miyu, with MIYU_HOME if set. Server setups (a dedicated user, /var/lib/miyu) do not go through it: follow packaging/README.md in the repository.
+
+  -h, --help  Print help
