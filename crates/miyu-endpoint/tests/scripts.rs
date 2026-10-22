@@ -56,8 +56,10 @@ impl Builtins for Kit {
         &self,
         head: &miyu_policy::script::ScriptHead,
         file: std::path::PathBuf,
+        source: &str,
     ) -> Result<Arc<dyn Tool>, String> {
-        miyu_basesystem::script(&default_resources(), head, file).map_err(|error| error.to_string())
+        miyu_basesystem::script(&default_resources(), head, file, source)
+            .map_err(|error| error.to_string())
     }
 }
 

@@ -3,6 +3,8 @@
 
 #![allow(dead_code, reason = "三份测试各用其中几样")]
 
+mod scripts;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -297,39 +299,6 @@ impl Site {
     }
 
     /// 在场地里的 `cwd` 这个工作目录里的一次调用，不关进沙盒。
-    /// 把场地里的脚本 `file` 当一件工具（施工 X-12 上），在 `work/` 里调一次，参数是 `args`。
-    pub async fn script(&self, file: &str, args: serde_json::Value) -> Done {
-        self.script_as(file, args, None).await
-    }
-
-    /// 同 [`Site::script`]，带上调用的事实 `caller`（施工 X-43）。
-    pub async fn script_as(
-        &self,
-        file: &str,
-        args: serde_json::Value,
-        caller: Option<miyu_tool::Caller>,
-    ) -> Done {
-        let tool = self.script_tool(file);
-        let call = Call {
-            caller,
-            ..self.call_for("work", args, Seen::new(), Stop::default())
-        };
-        tool.run(call, Progress::new(|_| {})).await
-    }
-
-    /// 场地里的 `file` 这个脚本当工具：照它的开头读。
-    pub fn script_tool(&self, file: &str) -> Arc<dyn miyu_tool::Tool> {
-        let path = self.0.join(file);
-        let text = std::fs::read_to_string(&path).expect("读得出");
-        let name = path
-            .file_name()
-            .expect("有名字")
-            .to_string_lossy()
-            .into_owned();
-        let head = miyu_policy::script::read(&name, &text).expect("开头写对了");
-        miyu_basesystem::script(&resources(), &head, path).expect("资源目录里的字读得出来")
-    }
-
     fn call_for(&self, cwd: &str, args: serde_json::Value, seen: Seen, stop: Stop) -> Call {
         Call {
             args: args.to_string(),

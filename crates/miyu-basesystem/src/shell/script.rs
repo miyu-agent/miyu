@@ -12,6 +12,9 @@
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
 //!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
+//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照会话属主、来处、工具名分，跑之前建好
+//!   （Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根照旧藏着）。建不成的、会话外面的调用（没有属主）不给，照常跑。
+//!   能丢的放缓存目录，要留的（登录态）放这里。
 //! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
@@ -51,6 +54,9 @@ const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
 /// 交图的目录交给脚本的环境变量（施工 X-35）。
 const IMAGES: &str = "MIYU_SCRIPT_IMAGES_DIR";
 
+/// 状态目录交给脚本的环境变量（施工 X-44）。
+const STATE: &str = "MIYU_SCRIPT_STATE_DIR";
+
 /// 调用的场所交给脚本的环境变量（施工 X-43）。
 const CALLER_VENUE: &str = "MIYU_CALLER_VENUE";
 
@@ -64,6 +70,8 @@ pub(crate) struct Script {
     display_name: BTreeMap<String, String>,
     /// 开头写的给哪种会话（`Venues`，施工 X-43）：没写的没有。
     venues: Option<Venues>,
+    /// 来处：包的编号，家目录里放的是 `~home`（施工 X-44：状态目录照它分）。
+    source: String,
     file: PathBuf,
     timeout: u64,
     results: Results,
@@ -82,6 +90,7 @@ impl Script {
         resources: &Path,
         head: &ScriptHead,
         file: PathBuf,
+        source: &str,
     ) -> Result<Script, LoadError> {
         let parameters = serde_json::from_str(&head.parameters).map_err(|error| LoadError {
             file: file.clone(),
@@ -100,6 +109,7 @@ impl Script {
             },
             display_name: head.display_name.clone(),
             venues: head.venues.as_deref().map(Venues::of),
+            source: source.to_string(),
             timeout: head.timeout,
             results: Results::load(resources)?,
             timed_out: text("timed-out", &["seconds"])?,
@@ -118,14 +128,32 @@ impl Script {
         .said(said("shell/failed").with("error", error))
     }
 
-    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，建不成的没有。
+    /// 这一次的状态目录（施工 X-44）：照会话属主、来处、工具名建好（Unix 上 0700），交真实位置。没有属主、数据根的，建不成的
+    /// 没有（建不成的记一行 `WARN`）。
+    fn state(&self, call: &Call) -> Option<PathBuf> {
+        let (root, ids) = (call.data_root.as_deref()?, call.ids.as_ref()?);
+        let dir = miyu_store::scripts::state_dir(root, &ids.owner, &self.source, &self.spec.name);
+        let mut builder = std::fs::DirBuilder::new();
+        builder.recursive(true);
+        #[cfg(unix)]
+        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+        match builder.create(&dir).and_then(|()| dir.canonicalize()) {
+            Ok(real) => Some(real),
+            Err(error) => {
+                tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = %error, "script state not prepared");
+                None
+            }
+        }
+    }
+
+    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，`state` 是状态目录，建不成的没有。
     ///
     /// [`launcher`]: miyu_store::packages::launcher
     fn command(
         &self,
         call: &Call,
         cache: &Path,
-        images: Option<&Path>,
+        (images, state): (Option<&Path>, Option<&Path>),
     ) -> io::Result<std::process::Command> {
         // 是链接的照它指到的真实位置起（施工 X-37）：沙盒只放开那一个文件，链接本身在藏着的数据根里，照它起解释器读不到。
         let file = match std::fs::symlink_metadata(&self.file) {
@@ -142,6 +170,8 @@ impl Script {
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
                 let mut sandboxed = sandboxed.clone();
                 sandboxed.spec.reveal.push(file.clone());
+                // 自己的状态目录能写（施工 X-44）：在藏着的数据根里，越深的越算数。
+                sandboxed.spec.write.extend(state.map(Path::to_path_buf));
                 miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
                     .map(|(helper, args)| (helper.into_os_string(), args))
                     .map_err(io::Error::other)?
@@ -154,6 +184,9 @@ impl Script {
         vars.push((CACHE.into(), cache.as_os_str().to_owned()));
         if let Some(images) = images {
             vars.push((IMAGES.into(), images.as_os_str().to_owned()));
+        }
+        if let Some(state) = state {
+            vars.push((STATE.into(), state.as_os_str().to_owned()));
         }
         if let Some(caller) = &call.caller {
             vars.push((CALLER_VENUE.into(), caller.venue.as_str().into()));
@@ -208,7 +241,9 @@ impl Tool for Script {
                 .join(&self.spec.name);
             let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
             let (command, folder) = match command.and_then(|folder| {
-                let command = self.command(&call, &cache, folder.as_ref().map(Folder::path))?;
+                let state = self.state(&call);
+                let dirs = (folder.as_ref().map(Folder::path), state.as_deref());
+                let command = self.command(&call, &cache, dirs)?;
                 Ok((command, folder))
             }) {
                 Ok(made) => made,

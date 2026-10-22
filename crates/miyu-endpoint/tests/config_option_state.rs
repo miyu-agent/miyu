@@ -34,6 +34,7 @@ impl Builtins for Cooling {
         &self,
         _: &miyu_policy::script::ScriptHead,
         _: std::path::PathBuf,
+        _: &str,
     ) -> Result<Arc<dyn miyu_tool::Tool>, String> {
         Err("no scripts here".to_string())
     }

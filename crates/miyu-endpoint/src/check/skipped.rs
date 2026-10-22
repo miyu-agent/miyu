@@ -3,7 +3,8 @@
 //! （`script_covered`、`skill_covered`，施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）；找到了、却因为撞了别的工具的名字
 //! 没登记上的脚本另报一条。斜杠命令模板同样报（施工 X-14 上补，`slash.md`）：`slash_skipped`、`slash_covered`，和核心内置的
 //! 同名、用不上的 `slash_builtin`。链接指到数据根里不认的地方的（施工 X-37）：`script_link_outside`、`skill_link_outside`、
-//! `slash_link_outside`，说指到了哪一片。
+//! `slash_link_outside`，说指到了哪一片。有脚本状态目录、这一刻登记上的脚本里却没有它的（施工 X-44）：`script_state_left`，带
+//! 这个目录，人自己删。
 
 use std::path::Path;
 
@@ -22,10 +23,12 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         let scripts = miyu_store::scripts::find(&packages, &root, &admin);
         let skills = miyu_store::skills::find(&packages, &root, &admin).1;
         let slash = miyu_store::slash::find(&packages, &root, &admin);
-        (scripts, skills, slash)
+        let states = miyu_store::scripts::states(root.path());
+        (scripts, skills, slash, states)
     })
     .await;
-    let Ok(((scripts, skipped_scripts), skipped_skills, (slash, skipped_slash))) = found else {
+    let Ok(((scripts, skipped_scripts), skipped_skills, (slash, skipped_slash), states)) = found
+    else {
         return Vec::new();
     };
     let warn = |kind: &str, code: &str, path: &Path, detail: &str| {
@@ -62,6 +65,19 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             .iter()
             .filter(|script| !registered.iter().any(|on| on.head.name == script.head.name))
             .map(|script| warn("script", "script_clashed", &script.file, &script.head.name)),
+    );
+    problems.extend(
+        states
+            .iter()
+            .filter(|state| {
+                !registered.iter().any(|on| {
+                    on.head.name == state.tool && crate::scripts::package(on) == state.source
+                })
+            })
+            .map(|state| {
+                let detail = format!("{}/{}", state.source, state.tool);
+                warn("script", "script_state_left", &state.path, &detail)
+            }),
     );
     problems.extend(skipped_skills.iter().map(|skipped| one("skill", skipped)));
     problems.extend(skipped_slash.iter().map(|skipped| one("slash", skipped)));

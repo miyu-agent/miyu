@@ -137,7 +137,7 @@ fn script_tool(home: &Home, file: &str, text: &str) -> Arc<dyn Tool> {
     std::fs::write(&path, text).expect("写得进");
     let head = miyu_policy::script::read(file, text).expect("开头写对了");
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
-    miyu_basesystem::script(&resources, &head, path).expect("资源读得出来")
+    miyu_basesystem::script(&resources, &head, path, "~home").expect("资源读得出来")
 }
 
 #[tokio::test]
