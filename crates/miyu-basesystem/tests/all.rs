@@ -26,6 +26,7 @@ mod session_usage;
 mod sessions;
 mod shell;
 mod shell_sandbox;
+mod shell_seen;
 mod show;
 mod stop;
 mod subagent;

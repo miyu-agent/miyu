@@ -18,6 +18,7 @@ pub(crate) mod script;
 mod section;
 #[cfg(test)]
 mod tests;
+mod touched;
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -327,6 +328,8 @@ impl Tool for Shell {
                 Ok(prepared) => prepared,
                 Err(error) => return self.failed(&error),
             };
+            // 她看过的文件这一刻的样子：跑完了比，命令改了的当她自己改的（施工 E-D 补）。
+            let seen = touched::before(&call.seen);
             let started =
                 match process::start(command, None, move |text| progress.push(text), false) {
                     Ok(started) => started,
@@ -347,7 +350,9 @@ impl Tool for Shell {
             .await;
             guard.disarm();
             match waited {
-                Ok(Waited::Finished(finished)) => self.finished(finished, timeout),
+                Ok(Waited::Finished(finished)) => touched::after(seen)
+                    .into_iter()
+                    .fold(self.finished(finished, timeout), Done::effect),
                 Ok(Waited::Moved(handover)) => {
                     self.moved(&call, handover, args.description, channel)
                 }
