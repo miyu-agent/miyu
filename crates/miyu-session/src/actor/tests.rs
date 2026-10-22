@@ -152,6 +152,7 @@ async fn a_write_that_fails_stops_the_session() {
             owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
             confined: false,
             venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
+            admin: true,
             catalog: miyu_tool::Shelf::default(),
             lettering,
             home: None,

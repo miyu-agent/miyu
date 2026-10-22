@@ -13,6 +13,7 @@
       "net.search.deepseek.key": {"name": "DeepSeek", "description": "検索プロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。"},
       "net.search.tavily.key": {"name": "Tavily", "description": "検索プロバイダーに Tavily を選んだときに必要です。"},
       "net.search.brave.key": {"name": "Brave Search", "description": "検索プロバイダーに Brave を選んだときに必要です。"},
+      "net.internal_domains": {"name": "内部ドメイン", "description": "ほかの人（メンバー、グループの人）に頼まれて AI がウェブを見るときに決して行かないドメインです。サブドメインも含み、どのアドレスに解決されてもプロキシを通すかどうかに関係なく適用されます。管理者は影響を受けません。例：example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG のアドレス", "description": "自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索プロバイダーに SearXNG を選んだときに使います。"},
       "net.search.source": {"name": "検索プロバイダー", "description": "AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させ、その URL も送られます。", "options": {"auto": "自動", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {

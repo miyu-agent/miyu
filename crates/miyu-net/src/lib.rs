@@ -92,6 +92,35 @@ pub fn tools_with(
 /// 运行日志的目标。
 const TARGET: &str = "miyu::net";
 
+/// 谁要她抓网页（施工 MB-2，设计 06 U25 第 2 条「成员上网不碰本机和局域网」，项目主人 2026-10-22 定）：都过同一道闸。别人的
+/// （成员、场所里的人）另有两条：系统配置里的内部域名一律不去；本机解析不出来、要交给代理的，主机名是一个词的、带内网后缀的
+/// （规矩文件的 `internal_suffixes`）不交，代理那头可能解析得出内网的名字，别的照旧交（被墙的境外站照样抓得到）。抓过的照谁要的
+/// 分开记，机器主人抓到的不给别人。链接卡片（`link.preview`）现在只有机器主人调得了（成员的连接在 Y-2 以前被拒），不分。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Asker {
+    /// 机器主人：管理员自己在本机的会话、自己的连接。
+    Owner,
+    /// 别人：成员、场所会话里的人，拿不准的也算。
+    Other {
+        /// 系统配置里的内部域名（`net.internal_domains`）：这些域名和它们的子域名一律不去。
+        internal: Vec<String>,
+    },
+}
+
+impl Asker {
+    /// 替别人抓、主机名 `host` 是内部域名或者它的子域名：不去。机器主人的都不算。大小写、首尾的点不论。
+    pub(crate) fn internal(&self, host: &str) -> bool {
+        let Asker::Other { internal } = self else {
+            return false;
+        };
+        let host = host.trim_end_matches('.').to_ascii_lowercase();
+        internal.iter().any(|domain| {
+            let domain = domain.trim_matches('.').to_ascii_lowercase();
+            !domain.is_empty() && fetch::within(&host, &domain)
+        })
+    }
+}
+
 /// 一张卡片。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Card {

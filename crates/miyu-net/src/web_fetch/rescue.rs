@@ -21,6 +21,7 @@ pub(super) fn worth(own: &Result<Arc<Read>, Miss>, search: &Search) -> bool {
 pub(super) async fn rescue(
     own: Result<Arc<Read>, Miss>,
     url: &str,
+    asker: &crate::Asker,
     (pages, search, using): (&Pages, &Search, &Using),
 ) -> Result<Arc<Read>, Miss> {
     let Ok(fetched) = search.fetch(url.trim(), using).await else {
@@ -33,6 +34,6 @@ pub(super) async fn rescue(
         cut: fetched.cut,
         via: Some(fetched.source),
     });
-    pages.keep(url, Arc::clone(&read));
+    pages.keep(url, asker, Arc::clone(&read));
     Ok(read)
 }

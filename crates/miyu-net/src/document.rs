@@ -14,11 +14,11 @@ use std::time::Instant;
 use reqwest::Url;
 use tokio::sync::Semaphore;
 
-use crate::TARGET;
 use crate::fetch::{Fetcher, Hop, Missed};
 use crate::guard::Guard;
 use crate::proxy::Proxies;
 use crate::rules::{self, Reading};
+use crate::{Asker, TARGET};
 use convert::{Kind, Unconverted};
 
 /// 同时至多几份在换 Markdown。
@@ -111,7 +111,7 @@ impl Pages {
     /// # Errors
     ///
     /// 见 [`Miss`]。
-    pub async fn read(&self, text: &str) -> Result<Arc<Read>, Miss> {
+    pub async fn read(&self, text: &str, asker: &Asker) -> Result<Arc<Read>, Miss> {
         let Ok(url) = Url::parse(text.trim()) else {
             return Err(Miss::NotAUrl);
         };
@@ -119,19 +119,23 @@ impl Pages {
             return Err(Miss::Scheme);
         }
         let ready = self.ready().ok_or(Miss::NotReady)?;
-        let key = url.as_str().to_string();
+        // 内部域名先查，再看记着的：机器主人抓到的不给别人（施工 MB-2）。
+        if asker.internal(url.host_str().unwrap_or_default()) {
+            return Err(Miss::Blocked);
+        }
+        let key = key(asker, &url);
         if let Some(kept) = ready.kept(&key) {
             return Ok(kept);
         }
-        let read = Arc::new(fetch(ready, &url).await?);
+        let read = Arc::new(fetch(ready, &url, asker).await?);
         ready.keep(key, Arc::clone(&read));
         Ok(read)
     }
 
     /// 记下别处读成的一份（施工 N-4：代抓到的），翻页不再去抓。网址读不成、规矩读不懂的不记。
-    pub fn keep(&self, text: &str, read: Arc<Read>) {
+    pub fn keep(&self, text: &str, asker: &Asker, read: Arc<Read>) {
         if let (Ok(url), Some(ready)) = (Url::parse(text.trim()), self.ready()) {
-            ready.keep(url.as_str().to_string(), read);
+            ready.keep(key(asker, &url), read);
         }
     }
 
@@ -166,6 +170,14 @@ impl Pages {
     }
 }
 
+/// 记着的那一份照什么找：同一个地址，替别人抓的另记一份（施工 MB-2：机器主人经代理抓到的不给别人）。
+fn key(asker: &Asker, url: &Url) -> String {
+    match asker {
+        Asker::Owner => url.as_str().to_string(),
+        Asker::Other { .. } => format!("other {url}"),
+    }
+}
+
 impl Ready {
     /// 记着的、没过期的那一份。
     fn kept(&self, key: &str) -> Option<Arc<Read>> {
@@ -186,10 +198,10 @@ impl Ready {
 }
 
 /// 抓、认、解、换。
-async fn fetch(ready: &Ready, url: &Url) -> Result<Read, Miss> {
+async fn fetch(ready: &Ready, url: &Url, asker: &Asker) -> Result<Read, Miss> {
     let fetched = ready
         .fetcher
-        .document(url)
+        .document(url, asker)
         .await
         .map_err(|missed| match missed {
             Missed::Hop(Hop::Blocked) => Miss::Blocked,

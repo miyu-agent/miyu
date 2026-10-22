@@ -30,6 +30,7 @@ struct File {
     api: Budget,
     document: DocumentFile,
     redirects: usize,
+    internal_suffixes: Vec<String>,
     user_agent: String,
     accept_language: String,
     clip: ClipFile,
@@ -141,6 +142,8 @@ pub(crate) struct Rules {
     pub(crate) reading: Reading,
     /// 最多跟几次跳转。
     pub(crate) redirects: usize,
+    /// 内网常用的后缀（施工 MB-2，小写、不带前面的点）：替别人抓时，本机解析不出来、带这些后缀的不交给代理。
+    pub(crate) internal_suffixes: Vec<String>,
     /// 请求头 `User-Agent`：装成浏览器，有的站对不认识的客户端不给 og 标签。
     pub(crate) user_agent: String,
     /// 请求头 `Accept-Language`。
@@ -233,6 +236,11 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
             keep_entries: parsed.document.keep_entries,
         },
         redirects: parsed.redirects,
+        internal_suffixes: parsed
+            .internal_suffixes
+            .iter()
+            .map(|suffix| suffix.trim_matches('.').to_ascii_lowercase())
+            .collect(),
         user_agent: parsed.user_agent,
         accept_language: parsed.accept_language,
         clip: Clip {

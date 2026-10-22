@@ -24,6 +24,8 @@ pub(crate) struct ToolKit {
     pub(crate) confined: bool,
     /// 会话的场所（施工 X-43）：每次调用带上，交给脚本（`MIYU_CALLER_VENUE`）。
     pub(crate) venue: VenueId,
+    /// 会话的属主是管理员（施工 MB-2）：本机的会话只有这样开口的才算机器主人（[`miyu_tool::Caller`]）。
+    pub(crate) admin: bool,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。
     pub(crate) catalog: Shelf,
     /// 替工具写的两句，和权限策略同一份（施工 P-1 三补：换快照时跟着换）。

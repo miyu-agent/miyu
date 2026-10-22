@@ -346,6 +346,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             owner: owner.clone(),
             confined,
             venue: venue.clone(),
+            admin: owner_is_admin,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

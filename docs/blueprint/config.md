@@ -278,6 +278,7 @@ miyu_config::settings! {
 | `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Tavily 时用 |
 | `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Brave 时用 |
 | `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在搜索服务供应商挑了 SearXNG 时用 |
+| `net.internal_domains` | 文字的列表，一个最多 253 个字符：域名，例如 `example-corp.com`（大小写、前面带点都认） | 没有 | 系统 | 不能写 | `next_turn` | MB-2（设计 06 U25 第 2 条，2026-10-22 项目主人定）：别人（成员、群里的人）让她上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理，每一跳都查；管理员不受影响（`tools/web_fetch.md`「怎么走」第 4 条）。设置页「软件包」联网那一组 |
 | `persona.default` | 名字（人格的编号） | 没有 | 系统、个人 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格） |
 | `preset.default` | 名字（预设的编号） | `full` | 系统、个人 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「预设」一组 |
 | `models.chat` | 引用 | 没有：`no_model` | 系统、个人 | 不能写 | `new_session` | 8-6 |
@@ -1112,6 +1113,11 @@ base = "10s"
 # 出错最多冷却多久：这类错的冷却翻倍到这么久为止。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。立即生效。
 max = "5m"
+
+[net]
+# 内部域名：别人（成员、群里的人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；管理员自己不受影响。写法例如 example-corp.com。
+# 能写：最多 253 个字的文字 的列表。只能写在系统配置里。下一轮生效。
+# internal_domains =
 
 [net.search]
 # 搜索服务供应商：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。
@@ -2401,6 +2407,7 @@ currency = "USD"
 | `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
+| `net.internal_domains` 名字（MB-2） | 内部域名 | Internal domains | 内部ドメイン |
 | `sandbox.readonly.enabled` 名字（5-17 下上补） | 受保护的路径 | Protected paths | 保護パス |
 | `sandbox.readonly.add` 名字（5-17 下） | 加的受保护路径 | Added protected paths | 追加した保護パス |
 | `sandbox.readonly.remove` 名字（5-17 下） | 默认受保护路径 | Default protected paths | 既定の保護パス |

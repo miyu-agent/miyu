@@ -58,7 +58,8 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 1. 读参数，读不懂的：参数不对（`bad-args`）。
 2. 读成网址：读不成、不是 `http`/`https` 的，`not-a-url`，不碰网络。
 3. 规矩第一次用时读（`link_preview.json`），读不懂的记一条 `WARN web fetch not ready`，这个核心的生命周期里不再试，每次都回 `not-ready`。
-4. 同一个网址（读成网址以后的写法）在 `keep_seconds`（600）之内抓过的，照记着的那一份分页，不重抓。记满 `keep_entries`（32）份整个清空。一个核心一份，各会话共用。
+4. 同一个网址（读成网址以后的写法）在 `keep_seconds`（600）之内抓过的，照记着的那一份分页，不重抓。记满 `keep_entries`（32）份整个清空。一个核心一份，各会话共用；替机器主人抓的、替别人抓的分开记（施工 MB-2，见下一条）。
+   - 替谁抓（施工 MB-2，设计 06 U25 第 2 条「成员上网不碰本机和局域网」，2026-10-22 项目主人定）：这一轮开口的是机器主人（调用的事实 `Caller::owner`：本机的会话属主是管理员，场所会话照这一轮开口的人）的照这一页；别的（成员、群里的人，拿不准的也算）另有两条：系统配置 `net.internal_domains` 里的域名和它的子域名一律不去，先查它再看记着的，每一跳都查（跳过去的也拒）；本机解析不出来、要交给代理的，主机名是一个词的（`nas`）、带内网后缀的（`link_preview.json` 的 `internal_suffixes`：`.local`、`.lan`、`.internal`、`.intranet`、`.corp`、`.home`、`.home.arpa`、`.localdomain`）不交，别的照旧交（被墙的境外站照样抓得到）。这两条拦下的都是 `blocked`，不请别家代抓（内部的网址不发给第三方）。
 5. 抓（`Fetcher::document`）：每一跳过地址闸（`net.md`「地址闸」），不走代理的钉住解析好的地址，自己跟跳转，最多 5 跳；每一跳时限 `timeout_seconds`（20），读到 `max_bytes`（5 MiB）为止，超了截断、记下 `cut`。请求头照 `user_agent`、`accept_language`，`Accept` 照 `document.accept`。
    - 闸拦下的：`blocked`；连不上、超时：`unreachable`；跳太多：`redirects`。
    - 人机验证页（`net.md` 第 13 条那一套认法，不看状态码）：`challenge`。
@@ -84,6 +85,7 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 |---|---|
 | `crates/miyu-net/src/document/convert/tests.rs` | 认种类、猜种类；字符集照头、照 `<meta>`、退回 UTF-8，GBK；标题收拢、实体；扔掉脚本、导航、表单、页脚；太深的不换（去掉这道检查的变异把测试的栈用光）；只换 `<main>`、一个 `<article>`，两个的换整份；剪掉藏起来的、导航类的 `role`、换语言的列表项；去掉没有字的链接；收拾空行 |
 | `crates/miyu-net/src/web_fetch/tests.rs` | 分页：不超上限、拼回去一字不差、断在换行上、太靠前的换行不用、空的是一页 |
+| `crates/miyu-net/tests/fetch_members.rs`（施工 MB-2） | 别人要抓：本机、内网、`*.local`、`localhost` 都 `blocked`；配了代理、本机解析不出来的，一个词的、带内网后缀的不交给代理（`blocked`），别的经代理照常；机器主人照旧交；机器主人抓到的不给别人；拿不到调用的事实的照最严；内部域名（大小写、带点都认）和子域名、解析成公网的、跳过去的都 `blocked`，只是长得像的不算；机器主人不受清单限制 |
 | `crates/miyu-net/tests/fetch.rs` | 本机的假服务器上整条走通：访问类别 `read`、只有 `url` 必填；网页换成 Markdown、标题给人看；JSON 照原样、GBK 照 `<meta>`、照回应头的 `charset` 解；超了 5 MiB 截断、最后一页说一声、页数照截下来的算；人机验证页说一句；十万字分四页、拼回去一字不差、翻页只抓一次、没有的页；跳转写落到了哪；404、图、换完是空的、`ftp`、解析到内网的各说一句；没开测试的口子时回环上的服务器被闸拦下、一次都没连 |
 | `crates/miyu-net/src/search/pages/tests.rs`（施工 N-4） | 三家的参数；Exa 去掉开头几行、正文里像那样的行留着；Firecrawl、Parallel 读 JSON，Parallel 没结果照 `errors`；读不懂的照原话认限额 |
 | `crates/miyu-net/tests/fetch_rescue.rs`（施工 N-4） | 假服务器上：403 的请 Exa、给人写 `via`、翻页不再抓也不再请；自己的、Exa、Firecrawl 都短得像登录墙的走到 Parallel；挑了 Firecrawl 的先问它；都不成的照自己的 `status`；404 不请别家；空页也请 |

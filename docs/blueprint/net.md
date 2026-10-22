@@ -91,6 +91,7 @@
     "keep_entries": 32
   },
   "redirects": 5,
+  "internal_suffixes": ["local", "lan", "internal", "intranet", "corp", "home", "home.arpa", "localdomain"],
   "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
   "accept_language": "zh-CN,zh;q=0.9,en;q=0.8",
   "clip": {
@@ -150,6 +151,7 @@
    - 这一跳要走代理的：先在本机解析一遍，过第 2 层（有一个不是公网的就不去），再交给代理连，不钉地址。代理那头怎么解析我们管不着，这个口子项目主人认了。
    - 不走代理的（没设，或者在 `NO_PROXY` 里）：照第 2 层钉住解析好的地址。本机解析不出来的：`unreachable`。
    - 本机解析不出来、代理那头解析得出来的（被污染的域名常这样）：照样交给代理，第 1 层、第 3 层照常过。
+   - 替别人抓的（施工 MB-2，2026-10-22 项目主人定；现在只有 `web_fetch` 分，`link.preview` 成员的连接在 Y-2 以前被拒，Y-2 放开时照连接的账号接同一套）：本机解析不出来的，主机名是一个词的、带 `internal_suffixes` 里的后缀的不交给代理，当过不了闸；系统配置 `net.internal_domains` 里的域名和子域名每一跳都不去。见 `tools/web_fetch.md`「怎么走」第 4 条。
    - 测性能的段 `198.18.0.0/15` 当公网：Clash、mihomo、sing-box、Surge 的假地址（fake-ip）默认就在这一段，开着这类代理的机器上每个域名都解析到这里，连上的其实是代理软件，它照域名去连。不放过这一段，这些机器上一张卡片都出不来。
    - 代理本身在哪不过闸：它是人自己设的，常在本机。
 6. 页面：一跳 12 秒（连上、发出、读完都算在里面）；对方回 4xx、5xx 的 `unreachable`（人机验证页除外，第 13 条）；回的不是 HTML（`Content-Type` 里没有 `html`，没写的也算）的 `no_preview`；读到 `</head>` 或者 `<body` 就停（不分大小写，跨在两块之间的也认得），最多 2 MiB（**照解开以后的字节算**，W-7 补）。照 UTF-8 读，读不了的字换成替换符。

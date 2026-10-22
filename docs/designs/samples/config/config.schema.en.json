@@ -309,6 +309,16 @@
     },
     "net": {
       "properties": {
+        "internal_domains": {
+          "description": "Domains the AI never visits on behalf of others (members, people in group chats), subdomains included, whatever they resolve to and whether or not a proxy is used; the admin is not affected. For example example-corp.com. Allowed: a list of text of at most 253 characters. Only in the system config. Takes effect next turn.",
+          "items": {
+            "maxLength": 253,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Internal domains",
+          "type": "array"
+        },
         "search": {
           "properties": {
             "brave": {

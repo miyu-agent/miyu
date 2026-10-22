@@ -264,7 +264,7 @@ impl Tools {
             hooks: kit.hooks,
             running: BTreeMap::new(),
             checked: BTreeMap::new(),
-            callers: caller::Callers::new(kit.venue),
+            callers: caller::Callers::new(kit.venue, kit.admin),
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             backs,

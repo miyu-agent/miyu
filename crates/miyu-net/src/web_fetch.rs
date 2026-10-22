@@ -139,6 +139,22 @@ impl WebFetch {
     }
 }
 
+/// 替谁抓（施工 MB-2）：开口的是机器主人的（[`miyu_tool::Caller::owner`]）照 `net.md` 第 5 条；别的照最严，带上系统配置里的内部域名。
+/// 拿不到调用的事实的也照最严。
+fn asker(call: &Call) -> crate::Asker {
+    if call.caller.as_ref().is_some_and(|caller| caller.owner) {
+        return crate::Asker::Owner;
+    }
+    let internal = call
+        .settings
+        .as_deref()
+        .and_then(|settings| {
+            crate::settings::NetSettings::from(&settings.values()).internal_domains
+        })
+        .unwrap_or_default();
+    crate::Asker::Other { internal }
+}
+
 impl Tool for WebFetch {
     fn spec(&self) -> &Spec {
         &self.spec
@@ -157,7 +173,8 @@ impl Tool for WebFetch {
                     );
                 }
             };
-            let mut read = self.pages.read(&args.url).await;
+            let asker = asker(&call);
+            let mut read = self.pages.read(&args.url, &asker).await;
             if rescue::worth(&read, &self.search) {
                 // 这一轮的配置（施工 N-4）：挑的来源排在前面、Exa 配了 key 的走自己的额度。
                 let using = call
@@ -166,7 +183,7 @@ impl Tool for WebFetch {
                     .map(crate::settings::using)
                     .unwrap_or_default();
                 let with = (&*self.pages, &*self.search, &using);
-                read = rescue::rescue(read, &args.url, with).await;
+                read = rescue::rescue(read, &args.url, &asker, with).await;
             }
             let read = match read {
                 Ok(read) => read,

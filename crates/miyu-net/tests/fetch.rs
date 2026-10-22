@@ -15,7 +15,7 @@ use miyu_tool::{Call, Done, Progress, Tool};
 use crate::support::{PNG, Reply, Site, local, resources};
 
 /// 打开 `testing` 这个口子的 `web_fetch`。
-fn tool(testing: Testing) -> Arc<dyn Tool> {
+pub(crate) fn tool(testing: Testing) -> Arc<dyn Tool> {
     let pages = Pages::new(&resources()).testing(testing);
     // 代抓的几家（施工 N-4）指到回环上没人听的端口：这里的测试不出网，抓不下来的照自己的结果说。
     let nobody = ["exa", "parallel", "firecrawl"]
@@ -66,7 +66,7 @@ pub(crate) fn text(done: &Done) -> String {
 }
 
 /// 给人看的说法的编号，去掉 `software/net/`。
-fn said(done: &Done) -> String {
+pub(crate) fn said(done: &Done) -> String {
     let key = done
         .human
         .as_ref()

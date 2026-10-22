@@ -139,6 +139,7 @@ fn the_registered_list_is_well_formed() {
             "net.search.tavily.key",
             "net.search.brave.key",
             "net.search.searxng.url",
+            "net.internal_domains",
             "packages.source",
             "packages.mirrors",
             "packages.hold",

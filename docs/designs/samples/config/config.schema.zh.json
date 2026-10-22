@@ -309,6 +309,16 @@
     },
     "net": {
       "properties": {
+        "internal_domains": {
+          "description": "别人（成员、群里的人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；管理员自己不受影响。写法例如 example-corp.com。能写：最多 253 个字的文字 的列表。只能写在系统配置里。下一轮生效。",
+          "items": {
+            "maxLength": 253,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "内部域名",
+          "type": "array"
+        },
         "search": {
           "properties": {
             "brave": {

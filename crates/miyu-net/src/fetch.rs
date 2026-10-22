@@ -16,15 +16,17 @@ use reqwest::header::{ACCEPT, ACCEPT_LANGUAGE, CONTENT_TYPE, LOCATION, USER_AGEN
 use reqwest::{Response, Url};
 use tokio::time::Instant;
 
-use crate::Why;
 use crate::body::{self, Until};
 use crate::guard::{Guard, Resolved};
 use crate::proxy::Proxies;
 use crate::rules::{Challenge, Fetching, Rules};
+use crate::{Asker, Why};
 use clients::{Clients, Way};
 
 /// 照规矩抓：闸、代理、复用的客户端、请求头。
 pub(crate) struct Fetcher {
+    /// 内网常用的后缀（施工 MB-2，[`crate::Asker`]）。
+    internal_suffixes: Vec<String>,
     guard: Guard,
     proxies: Proxies,
     clients: Clients,
@@ -83,6 +85,7 @@ impl Fetcher {
     /// 照 `rules` 抓，过 `guard` 这道闸，代理照 `proxies`。
     pub(crate) fn new(rules: &Rules, guard: Guard, proxies: Proxies) -> Fetcher {
         Fetcher {
+            internal_suffixes: rules.internal_suffixes.clone(),
             guard,
             proxies,
             clients: Clients::new(rules.client_ttl, rules.client_keep),
@@ -170,7 +173,7 @@ impl Fetcher {
     ) -> Result<serde_json::Value, Option<u16>> {
         let user_agent = user_agent.unwrap_or(&self.user_agent);
         let (response, _) = self
-            .get_as(url, &self.api, user_agent)
+            .get_as(url, &self.api, user_agent, &Asker::Owner)
             .await
             .map_err(|_| None)?;
         let status = response.status();
@@ -218,8 +221,11 @@ impl Fetcher {
     /// # Errors
     ///
     /// 过不了闸、连不上、跳转太多（[`Missed::Hop`]），人机验证页，2xx 以外的状态码。
-    pub(crate) async fn document(&self, url: &Url) -> Result<Fetched, Missed> {
-        let (response, page) = self.get(url, &self.document).await.map_err(Missed::Hop)?;
+    pub(crate) async fn document(&self, url: &Url, asker: &Asker) -> Result<Fetched, Missed> {
+        let (response, page) = self
+            .get_as(url, &self.document, &self.user_agent, asker)
+            .await
+            .map_err(Missed::Hop)?;
         let kind = response
             .headers()
             .get(CONTENT_TYPE)
@@ -258,7 +264,8 @@ impl Fetcher {
     /// GET 一个地址，自己跟跳转：每一跳过闸、挑怎么连。交回最后那一跳（不是跳转的那一跳）的回应和它的地址；
     /// 状态码由调的一方看。
     async fn get(&self, url: &Url, fetching: &Fetching) -> Result<(Response, Url), Hop> {
-        self.get_as(url, fetching, &self.user_agent).await
+        self.get_as(url, fetching, &self.user_agent, &Asker::Owner)
+            .await
     }
 
     /// 同 [`Fetcher::get`]，`User-Agent` 照 `user_agent`。
@@ -267,10 +274,11 @@ impl Fetcher {
         url: &Url,
         fetching: &Fetching,
         user_agent: &str,
+        asker: &Asker,
     ) -> Result<(Response, Url), Hop> {
         let mut current = url.clone();
         for _ in 0..=self.redirects {
-            let response = self.hop(&current, fetching, user_agent).await?;
+            let response = self.hop(&current, fetching, user_agent, asker).await?;
             let status = response.status();
             if status.is_redirection() {
                 let location = response
@@ -288,14 +296,31 @@ impl Fetcher {
     }
 
     /// 一跳：过闸，挑怎么连，发出去，交回回应（还没读身子）。
-    async fn hop(&self, url: &Url, fetching: &Fetching, user_agent: &str) -> Result<Response, Hop> {
+    async fn hop(
+        &self,
+        url: &Url,
+        fetching: &Fetching,
+        user_agent: &str,
+        asker: &Asker,
+    ) -> Result<Response, Hop> {
         let deadline = Instant::now() + fetching.timeout;
+        let host = url.host_str().unwrap_or_default();
+        // 替别人抓：系统配置里的内部域名每一跳都查，跳过去的也算（施工 MB-2）。
+        if asker.internal(host) {
+            return Err(Hop::Blocked);
+        }
         let resolved = self
             .guard
             .pass(url, fetching.timeout)
             .await
             .map_err(|_| Hop::Blocked)?;
         let way = match (self.proxies.via(url), resolved) {
+            // 代理那头可能解析得出内网的名字：替别人抓的，一个词的、带内网后缀的不交（施工 MB-2）。
+            (Some(_), Resolved::Nowhere)
+                if *asker != Asker::Owner && internal_name(host, &self.internal_suffixes) =>
+            {
+                return Err(Hop::Blocked);
+            }
             (Some(via), _) => Way::Proxy(via),
             (None, Resolved::Addresses(addresses)) => {
                 let host = url.host_str().unwrap_or_default().to_string();
@@ -319,4 +344,18 @@ impl Fetcher {
             .await
             .map_err(|_| Hop::Unreachable)
     }
+}
+
+/// 看着是内网的名字（施工 MB-2）：一个词的（没有点），或者带内网常用的后缀 `suffixes`（`nas`、`gitlab.corp`、`box.home.arpa`）。
+fn internal_name(host: &str, suffixes: &[String]) -> bool {
+    let host = host.trim_end_matches('.').to_ascii_lowercase();
+    !host.contains('.') || suffixes.iter().any(|suffix| within(&host, suffix))
+}
+
+/// `host` 是 `domain` 本身或者它的子域名（都已小写、不带首尾的点）。
+pub(crate) fn within(host: &str, domain: &str) -> bool {
+    host == domain
+        || host
+            .strip_suffix(domain)
+            .is_some_and(|head| head.ends_with('.'))
 }

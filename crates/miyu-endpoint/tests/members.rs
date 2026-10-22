@@ -144,12 +144,14 @@ async fn an_invite_registers_a_member_once() {
     )
     .await;
     assert_eq!(reply["result"]["account"], "bob", "{reply}");
-    // Y-2 以前成员只能管自己的账号。
+    // Y-2 以前成员只能管自己的账号。抓链接卡片也拒（施工 MB-2：她替成员上网不碰本机和局域网，Y-2 放开时照连接的账号
+    // 分机器主人和别人）。
     for method in [
         "session.list",
         "account.invite",
         "account.list",
         "config.get",
+        "link.preview",
     ] {
         let refused = back.call("m", method, json!({})).await;
         assert_eq!(why(&refused), "not_permitted", "{method}: {refused}");
