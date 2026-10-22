@@ -143,6 +143,7 @@ fn the_registered_list_is_well_formed() {
             "packages.source",
             "packages.mirrors",
             "packages.hold",
+            "core.idle_exit",
             "log.level"
         ],
         "照登记的先后"
@@ -431,4 +432,15 @@ fn core_items_on_the_packages_page_say_which_package() {
         };
         assert_eq!(item.ui.package, wanted, "{}", item.key);
     }
+}
+
+/// 核心空闲退不退（施工 Z-1 上，`12-进程形态与分发.md` 第二节）：`core.idle_exit`，分钟，默认 0 是不退，只在系统那一层。
+#[test]
+fn the_core_stays_up_unless_an_idle_limit_is_set() {
+    let item = items()
+        .into_iter()
+        .find(|item| item.key == "core.idle_exit")
+        .expect("登记了 core.idle_exit");
+    assert_eq!(item.default, Some(miyu_config::Value::Int(0)), "默认不退");
+    assert_eq!(item.layers, [miyu_config::Layer::System], "只在系统那一层");
 }

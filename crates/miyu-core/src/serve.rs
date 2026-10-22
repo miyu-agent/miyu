@@ -1,5 +1,6 @@
 //! 一个个接连接，空闲够久了、收到停的信号就停（`docs/designs/12-进程形态与分发.md` 第二节「按需运行」，
-//! 施工 3-9 上）。
+//! 施工 3-9 上）。施工 Z-1 上起默认常驻：空闲退不退照系统配置的 `core.idle_exit`（[`CoreSettings`]，分钟，0 是不退），每次看空闲
+//! 时现取，改了当场算数。
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -8,6 +9,32 @@ use miyu_endpoint::Core;
 use miyu_ipc::Listener;
 
 use crate::TARGET;
+
+miyu_config::settings! {
+    /// 核心进程的配置（施工 Z-1 上）。
+    pub struct CoreSettings in "core" {
+        /// 空闲多少分钟以后退出：没有连接、也没有在跑的回合，连续这么久。0 是不退（默认）。只在系统配置里。
+        idle_exit: i64 = 0 {
+            kind: int [0, 525600],
+            layers: [System],
+            applies: now,
+            ui: { page: "advanced", group: "core", control: number },
+        },
+    }
+}
+
+/// 照核心这一刻的配置交回空闲时限：`core.idle_exit` 是 0 的没有（不退）。
+pub fn idle_limit(core: &Core) -> Option<Duration> {
+    let config = Arc::clone(&core.config_now().borrow());
+    let minutes = CoreSettings::from(&config.resolved().values()).idle_exit;
+    u64::try_from(minutes)
+        .ok()
+        .filter(|minutes| *minutes > 0)
+        .map(|minutes| Duration::from_secs(minutes * 60))
+}
+
+/// 没有空闲时限时多久再看一次配置：时限改了以后最多这么久算上。
+const RELOOK: Duration = Duration::from_secs(30);
 
 /// 为什么停了。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,7 +55,7 @@ impl Stopped {
     }
 }
 
-/// 接连接，直到空闲够久了（没有连接、也没有在跑的回合，连续 `idle` 这么久），或者 `stop` 来了。`stop`
+/// 接连接，直到空闲够久了（没有连接、也没有在跑的回合，连续 `idle()` 交回的这么久；交回没有的不退），或者 `stop` 来了。`stop`
 /// 来了的，先让在跑的会话有计划地停下：跑到一半的回合记成「重启了」，下次载入接着干。停之前请扩展退出（施工 9-4 上）。
 ///
 /// 连着头的时候不定时看空不空闲（施工 V-6 下）：有连接就不算空闲，等连上、断开、来请求的信号（`Activity`）再算。没有连接
@@ -39,13 +66,13 @@ impl Stopped {
 pub async fn serve(
     listener: Listener,
     core: Arc<Core>,
-    idle: Duration,
+    idle: impl Fn() -> Option<Duration>,
     stop: impl Future<Output = ()>,
 ) -> Stopped {
     let running = miyu_endpoint::run(listener, Arc::clone(&core));
     tokio::pin!(running, stop);
     let mut changes = core.activity().subscribe();
-    let every = check(idle);
+    let every = idle().map_or(RELOOK, check);
     // 下一次看的时刻：定死了，有动静不往后推（一直有人来连一下就走的，照样到点看）。
     let mut next = tokio::time::Instant::now() + every;
     let mut quiet: Option<Instant> = None;
@@ -70,7 +97,7 @@ pub async fn serve(
                     continue;
                 }
                 let since = *quiet.get_or_insert_with(Instant::now);
-                if since.elapsed() >= idle {
+                if idle().is_some_and(|idle| since.elapsed() >= idle) {
                     break Stopped::Idle;
                 }
             }

@@ -40,7 +40,7 @@ async fn running_core(
     let running = tokio::spawn(miyu_core::serve(
         opened.listener,
         core,
-        IDLE,
+        || Some(IDLE),
         std::future::pending(),
     ));
     let head = within("连得上", Head::connect(&home.root)).await;

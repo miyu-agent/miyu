@@ -51,6 +51,19 @@
       },
       "type": "object"
     },
+    "core": {
+      "properties": {
+        "idle_exit": {
+          "default": 0,
+          "description": "没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。",
+          "maximum": 525600,
+          "minimum": 0,
+          "title": "核心空闲多久退出",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "external": {
       "properties": {
         "bindings": {

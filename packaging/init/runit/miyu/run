@@ -1,0 +1,5 @@
+#!/bin/sh
+# Miyu 核心的 runit 服务：样例，给自己有服务器的人用（施工 Z-1 上）。整个目录装进 /etc/sv/miyu、chmod +x run，
+# 再链进服务目录（Void 是 /var/service）。数据根、缓存目录先建好、属于 miyu（packaging/README.md）。
+export MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache
+exec chpst -u miyu:miyu /usr/bin/miyu core 2>&1

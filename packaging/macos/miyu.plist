@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Miyu 核心的 launchd 用户代理（施工 Z-1 上）：放进 ~/Library/LaunchAgents/，然后
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.github.miyu-agent.core.plist
+  文件名照 Label 改成 io.github.miyu-agent.core.plist。miyu 不在 Homebrew 的位置的，把第一个 string 换成它的位置。
+  退出码不是 0 的才重起：已经有一个核心在跑的，后起的这一个说 running、退出码 0 就走。
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.github.miyu-agent.core</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/miyu</string>
+    <string>core</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+</dict>
+</plist>

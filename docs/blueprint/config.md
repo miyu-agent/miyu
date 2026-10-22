@@ -45,6 +45,7 @@
 | `crates/miyu-core/src/settings.rs` | 登记各模块的清单（`items`）；8-3 到 8-28 替终端界面声明过 `tui.startup`（`TuiSettings`），8-28 改成各个头共用的 `ui.startup`，挪进端点的 `UiSettings`。起来时读配置（`read`，8-2；连同密钥文件，环境照进程的 `Environment::process`，8-5）、照 `log.level` 换运行日志的级别（`log_level`，8-2）、写 Schema 和参考文件（`generate`，8-1）；运行中跟着配置换（`follow`，8-4）；开始监视由核心的 `lib.rs` 调端点的 `Core::watch_config`（8-4） | 8-1 起 |
 | `crates/miyu-session/src/config.rs`、`actor/` | 会话从哪取配置（`ConfigSource`、`Configs`），回合开始时取一份快照（`TurnConfig`），这一轮的每一次请求都交给端口（`ModelPort::call` 多一格） | 8-4 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅：一个连接至多一个转发任务，照连接这一刻的语言写 `config.changed`，掉队推 `resync`；`config.set` 的回应经它，排在推送后面 | 8-4 |
+| `crates/miyu-core/src/serve.rs` | `core.idle_exit`（`CoreSettings`，分钟，`0` 是不退，只在系统那一层，当场生效：空闲的那一圈每次看都读这一刻的配置） | Z-1 上 |
 | `crates/miyu-core/src/settings/follow.rs` | 运行中配置换了：`log.level` 当场换级别，`ui.language` 变了重写生成的三份 | 8-4 |
 | `crates/miyu-cli/src/config.rs`、`config/` | `miyu config` 的子命令：`get`、`check`、`explain`、`path`（8-2，`config/check.rs`、`render.rs` 印的样子、`paths.rs` 文件在哪），`set`、`unset`（`config/set.rs`）、`edit`（`config/edit.rs`）、`trust`（`config/trust.rs`），人那一头的接口 `Console`（`config/console.rs`：是不是终端、读一行、开编辑器，8-3）。给人看的字在 `language/config.rs`、`language/config_write.rs`（8-3） | 8-2、8-3 |
 | `crates/miyu-cli/src/login.rs`、`login/pick.rs` | `miyu login`、`miyu logout`：选、贴 key 不回显、列出、删（8-5，`cli/login.md`）。读 key 经 `config/console.rs` 的 `Console`（关掉回显读一行用 `rpassword`）；给人看的字在 `language/login.rs` | 8-5 |
@@ -1005,6 +1006,11 @@ $ miyu logout bigmodel-2
 # 提前压好：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。
 # 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
 prepare = true
+
+[core]
+# 核心空闲多久退出：没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。
+# 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
+idle_exit = 0
 
 [external.bindings]
 # 终端管理员的平台账号：通讯平台上的哪个号是哪个本机账号本人。键写平台上的身份（例如 qq:10001），值写本机账号。私聊里，这个号就是那个账号本人。

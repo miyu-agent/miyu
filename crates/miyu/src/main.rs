@@ -229,7 +229,7 @@ fn main() -> ExitCode {
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
         Some(Command::Web(args)) => miyu_cli::web(args, &miyu_core::admin()),
         Some(Command::Core { idle_seconds }) => miyu_core::main(miyu_core::Options {
-            idle: idle_seconds.map_or(miyu_core::IDLE, Duration::from_secs),
+            idle: idle_seconds.map(Duration::from_secs),
         }),
         // 不带子命令（施工 9-3）：在终端里打开 `ui.head` 指的界面；不在终端里（被脚本调、接管道）印帮助、退出码 2。
         None if terminal() => match miyu_cli::head::open(None, &miyu_core::admin(), core) {

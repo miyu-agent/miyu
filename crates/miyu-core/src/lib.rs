@@ -31,7 +31,7 @@ mod settle;
 mod trash;
 
 pub use kit::Kit;
-pub use serve::{Stopped, serve};
+pub use serve::{Stopped, idle_limit, serve};
 
 use std::io::{self, Write};
 use std::path::Path;
@@ -51,17 +51,14 @@ use miyu_tool::Catalog;
 /// 运行日志的目标。
 const TARGET: &str = "miyu::core";
 
-/// 空闲多久退出：没有连接、也没有在跑的回合，连续这么久。以后放进配置。
-pub const IDLE: Duration = Duration::from_secs(600);
-
 /// 核心的运行时开几个线程：接连接、会话、请求都是等 I/O，两个够用，占用也低。
 const WORKERS: usize = 2;
 
 /// `miyu core` 的参数。
 #[derive(Debug, Clone)]
 pub struct Options {
-    /// 空闲多久退出。
-    pub idle: Duration,
+    /// 空闲多久退出：有的盖过系统配置的 `core.idle_exit`（开发、测试用，`miyu core --idle-seconds`）；没有的照配置（施工 Z-1 上）。
+    pub idle: Option<Duration>,
 }
 
 /// 管理员：本机连上来的都是他，账号固定叫 `admin`（`06-多用户与身份.md` U13）。
@@ -458,7 +455,9 @@ async fn run(
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
     let purging = trash::purge(trashed, admin());
-    serve(opened.listener, core, options.idle, serve::signal()).await;
+    let (fixed, configured) = (options.idle, Arc::clone(&core));
+    let idle = move || fixed.or_else(|| serve::idle_limit(&configured));
+    serve(opened.listener, core, idle, serve::signal()).await;
     if let Err(error) = purging.await {
         tracing::error!(target: TARGET, panic = error.is_panic(), "trash purge panicked");
     }

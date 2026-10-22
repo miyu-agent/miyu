@@ -1,0 +1,10 @@
+# Miyu 核心的 dinit 服务：样例，给自己有服务器的人用（施工 Z-1 上）。装进 /etc/dinit.d/miyu，然后：dinitctl enable miyu
+# 数据根、缓存目录先建好、属于 miyu（packaging/README.md）。环境变量照 env-file 读。
+type = process
+command = /usr/bin/miyu core
+run-as = miyu
+env-file = /etc/dinit.d/miyu.env
+restart = on-failure
+# /etc/dinit.d/miyu.env 里写两行：
+#   MIYU_HOME=/var/lib/miyu
+#   XDG_CACHE_HOME=/var/cache

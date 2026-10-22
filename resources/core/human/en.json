@@ -40,6 +40,10 @@
         "name": "Consolidation runs to keep",
         "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends."
       },
+      "core.idle_exit": {
+        "name": "Core idle exit",
+        "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); a head starts the core again when it can't reach it."
+      },
       "log.level": {
         "name": "Runtime log level",
         "description": "How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch.",
@@ -400,6 +404,7 @@
       "preset": "Preset",
       "compaction": "Compaction",
       "memory": "Memory",
+      "core": "Core",
       "log": "Runtime log",
       "sessions": "Sessions",
       "loading": "Tool loading",

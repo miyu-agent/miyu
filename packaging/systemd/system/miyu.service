@@ -1,0 +1,25 @@
+# Miyu 核心的 systemd 系统服务：样例，给自己有服务器的人用（施工 Z-1 上，packaging/README.md「服务器」）。
+# 先建一个专门的系统用户：sudo useradd --system --home-dir /var/lib/miyu --shell /usr/sbin/nologin miyu
+# 装进 /etc/systemd/system/，然后：sudo systemctl enable --now miyu
+# 数据根在 /var/lib/miyu（systemd 照 StateDirectory 建好、属于 miyu），缓存在 /var/cache/miyu。
+# 沙盒要用户命名空间：加固项不要写 RestrictNamespaces=（会拦了 bubblewrap）。
+[Unit]
+Description=Miyu core (server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=miyu
+Group=miyu
+Environment=MIYU_HOME=/var/lib/miyu
+Environment=XDG_CACHE_HOME=/var/cache
+StateDirectory=miyu
+StateDirectoryMode=0700
+CacheDirectory=miyu
+ExecStart=/usr/bin/miyu core
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

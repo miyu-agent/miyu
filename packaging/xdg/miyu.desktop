@@ -1,0 +1,10 @@
+# Miyu 核心的 XDG 自启动（施工 Z-1 上）：没有 systemd 用户会话的桌面用这一份，放进 ~/.config/autostart/。
+# miyu 要在 PATH 里；不在的把 Exec 换成它的位置。
+[Desktop Entry]
+Type=Application
+Name=Miyu
+Comment=Keep the Miyu core running
+Exec=miyu core
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
