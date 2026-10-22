@@ -10,9 +10,14 @@
 //!   有的服务把密钥放在网址的查询串里。
 //! - 要登录（回 `401`，施工 X-42 上）：`WWW-Authenticate` 的原文记下来（[`Opened::challenged`]），看管的一头照它判要不要登录；
 //!   回给客户端的照对方回错一样。
+//! - 登录来的服务（施工 X-42 下，[`Credentials`]）：每个请求现场问一次令牌；回 `401` 的续一次、照新令牌把这一次请求重发一遍，再
+//!   `401` 的、续不成的记下挑战、关掉这一对读写，看管的一头停在 `needs_login`。回 `403`、`error="insufficient_scope"` 的同样记下、
+//!   关掉（规范的 step-up）。写了 `bearer`、`headers` 的服务没有凭据，照旧：回错只了结那一次请求。
 //! - 会话过期（带着会话编号回 `404`）：关掉这一对读写，客户端当服务断了，看管的那一头退避着重连、从认时代重来。
 //! - 服务主动推的只在 SSE 回应里收得到，不另开 GET 那条长连接（工具变了靠新时代的 `ttlMs`、重连时重列）。
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -33,6 +38,18 @@ const HTTP_ERROR: i64 = -32000;
 
 /// 往服务的日志里写一行（核心照服务名写进日志目录里它的一份）。
 pub type Log = Arc<dyn Fn(String) + Send + Sync>;
+
+/// 等一个令牌：没有的是空的。
+pub type Pending<'a> = Pin<Box<dyn Future<Output = Option<String>> + Send + 'a>>;
+
+/// 每个请求现场给的令牌（施工 X-42 下）：登录来的服务由看管的一头给，快过期的先续再给。
+pub trait Credentials: Send + Sync {
+    /// 这一次请求带的令牌：没有的不带 `Authorization`。
+    fn token(&self) -> Pending<'_>;
+
+    /// 带着 `rejected` 被回了 `401`：续一次，交回新的；续不成的没有。几个请求同时撞上的只续一次（续过了的直接交回现在的）。
+    fn renew<'a>(&'a self, rejected: &'a str) -> Pending<'a>;
+}
 
 /// 连上的一个网址：给 [`crate::Client::connect`] 的读、写两头（丢了，转接跟着停），和这条连接断了是不是因为会话过期。
 pub struct Opened {
@@ -71,8 +88,15 @@ impl Expired {
     }
 }
 
-/// 连网址 `url`：`headers` 是每个请求都带的（令牌已经换成 `Authorization` 了），`log` 收对方回错这一类。
-pub fn open(client: Client, url: String, headers: Vec<(String, String)>, log: Log) -> Opened {
+/// 连网址 `url`：`headers` 是每个请求都带的（写了的令牌已经换成 `Authorization` 了），`log` 收对方回错这一类，`credentials` 是登录来的
+/// 服务现场给令牌的（施工 X-42 下），别的没有。
+pub fn open(
+    client: Client,
+    url: String,
+    headers: Vec<(String, String)>,
+    log: Log,
+    credentials: Option<Arc<dyn Credentials>>,
+) -> Opened {
     let (theirs, ours) = tokio::io::duplex(PIPE);
     let (read, write) = tokio::io::split(theirs);
     let expired = Expired::default();
@@ -84,6 +108,7 @@ pub fn open(client: Client, url: String, headers: Vec<(String, String)>, log: Lo
             url,
             headers,
             log,
+            credentials,
             session: Mutex::new(None),
             version: Mutex::new(None),
             expired: expired.clone(),
@@ -104,16 +129,18 @@ struct Remote {
     url: String,
     headers: Vec<(String, String)>,
     log: Log,
+    credentials: Option<Arc<dyn Credentials>>,
     session: Mutex<Option<String>>,
     version: Mutex<Option<String>>,
     expired: Expired,
     challenged: Challenged,
 }
 
-/// 一条 POST 的结局：写回去的几行；会话过期的要关掉这一对读写。
+/// 一条 POST 的结局：写回去的几行；会话过期的、登录不再算数的（施工 X-42 下）要关掉这一对读写。
 enum Answered {
     Lines(Vec<String>),
     Expired,
+    Closed,
 }
 
 /// 读客户端写出的一行行，各发一个 POST；回来的经一个写的任务写回去。读到头（客户端丢了）、会话过期就停，在路上的跟着停。
@@ -175,53 +202,60 @@ impl Remote {
                 .as_str()
                 .map(str::to_string)
         });
-        let mut request = self
-            .client
-            .post(&self.url)
-            .header("Accept", "application/json, text/event-stream")
-            .header("Content-Type", "application/json")
-            .body(line.to_string());
         let session = self
             .session
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        if let Some(session) = &session {
-            request = request.header("Mcp-Session-Id", session);
-        }
         let version = asked.or_else(|| {
             self.version
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner)
                 .clone()
         });
-        if let Some(version) = version {
-            request = request.header("MCP-Protocol-Version", version);
-        }
-        for (name, value) in &self.headers {
-            request = request.header(name, value);
-        }
-        let response = match request.send().await {
-            Ok(response) => response,
-            Err(error) => {
-                return self.failed(
-                    id,
-                    &format!("cannot reach the server: {}", error.without_url()),
-                );
-            }
+        let token = match &self.credentials {
+            Some(credentials) => credentials.token().await,
+            None => None,
         };
+        let sent = (session.as_deref(), version.as_deref());
+        let mut response = match self.send(line, sent, token.as_deref()).await {
+            Ok(response) => response,
+            Err(why) => return self.failed(id, &why),
+        };
+        // 登录来的服务回 `401`：续一次，照新令牌把这一次重发（施工 X-42 下）。
+        if response.status().as_u16() == 401
+            && let (Some(credentials), Some(rejected)) = (&self.credentials, &token)
+            && let Some(renewed) = credentials.renew(rejected).await
+        {
+            response = match self.send(line, sent, Some(&renewed)).await {
+                Ok(response) => response,
+                Err(why) => return self.failed(id, &why),
+            };
+        }
         let status = response.status().as_u16();
-        if status == 401
-            && let Some(header) = response
-                .headers()
-                .get("www-authenticate")
-                .and_then(|value| value.to_str().ok())
+        let header = response
+            .headers()
+            .get("www-authenticate")
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string);
+        let more_scope = status == 403
+            && header
+                .as_deref()
+                .and_then(crate::oauth::challenge)
+                .is_some_and(|challenge| challenge.error.as_deref() == Some("insufficient_scope"));
+        if (status == 401 || more_scope)
+            && let Some(header) = header
         {
             *self
                 .challenged
                 .0
                 .lock()
-                .unwrap_or_else(PoisonError::into_inner) = Some(header.to_string());
+                .unwrap_or_else(PoisonError::into_inner) = Some(header);
+            // 登录来的服务：关掉这一对读写，看管的一头照挑战停在 `needs_login`（施工 X-42 下）。
+            if self.credentials.is_some() {
+                (self.log)(format!("HTTP {status}: the login is no longer accepted"));
+                return Answered::Closed;
+            }
         }
         if status == 404 && session.is_some() {
             (self.log)("session expired".to_string());
@@ -262,6 +296,37 @@ impl Remote {
             self.notice_version(message);
         }
         Answered::Lines(messages)
+    }
+
+    /// 发一次 POST：带上会话编号、协议版本（`sent`）、清单写的请求头，有令牌 `token` 的带 `Authorization`。连不上的交回原因。
+    async fn send(
+        &self,
+        line: &str,
+        (session, version): (Option<&str>, Option<&str>),
+        token: Option<&str>,
+    ) -> Result<miyu_http::Response, String> {
+        let mut request = self
+            .client
+            .post(&self.url)
+            .header("Accept", "application/json, text/event-stream")
+            .header("Content-Type", "application/json")
+            .body(line.to_string());
+        if let Some(session) = session {
+            request = request.header("Mcp-Session-Id", session);
+        }
+        if let Some(version) = version {
+            request = request.header("MCP-Protocol-Version", version);
+        }
+        for (name, value) in &self.headers {
+            request = request.header(name, value);
+        }
+        if let Some(token) = token {
+            request = request.header("Authorization", format!("Bearer {token}"));
+        }
+        request
+            .send()
+            .await
+            .map_err(|error| format!("cannot reach the server: {}", error.without_url()))
     }
 
     /// 对方回错：记一行；有编号的回一条错误，客户端了结这次请求。

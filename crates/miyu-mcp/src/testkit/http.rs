@@ -60,6 +60,10 @@ struct State {
     oversize: AtomicBool,
     /// 要登录的（施工 X-42 上）：授权服务器的 `issuer`，和服务自己的网址。
     protected: Mutex<Option<(String, String)>>,
+    /// 调工具要的范围不够（施工 X-42 下）：有的话，`tools/call` 回 `403 insufficient_scope`、要这个范围。
+    scope_needed: Mutex<Option<String>>,
+    /// 调工具先等几毫秒再答（施工 X-42 下：续期期间在跑的调用）。
+    slow: std::sync::atomic::AtomicU64,
 }
 
 impl HttpServer {
@@ -95,6 +99,8 @@ impl HttpServer {
             expire: AtomicBool::new(false),
             oversize: AtomicBool::new(false),
             protected: Mutex::new(None),
+            scope_needed: Mutex::new(None),
+            slow: std::sync::atomic::AtomicU64::new(0),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -137,6 +143,20 @@ impl HttpServer {
             .protected
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = Some((issuer.to_string(), self.url.clone()));
+    }
+
+    /// 之后调工具回 `403`、`WWW-Authenticate` 写 `error="insufficient_scope"`、要 `scope`（施工 X-42 下）。
+    pub fn need_scope(&self, scope: &str) {
+        *self
+            .state
+            .scope_needed
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(scope.to_string());
+    }
+
+    /// 之后调工具先等 `millis` 毫秒再答（施工 X-42 下）。
+    pub fn slow(&self, millis: u64) {
+        self.state.slow.store(millis, Ordering::Relaxed);
     }
 
     /// 下一个带会话编号的请求回 `404`（会话过期），之后照常。
@@ -198,6 +218,10 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
         .unwrap_or_else(PoisonError::into_inner)
         .push(request.clone());
     let (status, extra, text) = reply(&state, &request);
+    let slow = state.slow.load(Ordering::Relaxed);
+    if slow > 0 && request.body["method"] == "tools/call" {
+        tokio::time::sleep(std::time::Duration::from_millis(slow)).await;
+    }
     let kind = if state.sse {
         "text/event-stream"
     } else {
@@ -254,6 +278,18 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
             None => String::new(),
         };
         return (401, challenge, "bad credentials".to_string());
+    }
+    let needed = state
+        .scope_needed
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
+    if let Some(scope) = needed
+        && request.body["method"] == "tools/call"
+    {
+        let challenge =
+            format!("WWW-Authenticate: Bearer error=\"insufficient_scope\", scope=\"{scope}\"\r\n");
+        return (403, challenge, "more scope needed".to_string());
     }
     let refuse = state.refuse.load(Ordering::Relaxed);
     if refuse != 0 {

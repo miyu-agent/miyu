@@ -119,6 +119,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "mcp.list"
         | "mcp.restart"
         | "mcp.login"
+        | "mcp.login_finish"
+        | "mcp.logout"
         | "mcp.set"
         | "mcp.remove"
         | "skill.remove"

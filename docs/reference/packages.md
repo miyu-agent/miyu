@@ -16,6 +16,7 @@
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 个人设置里的 MCP 服务：列、重启、加或换、删 |
 | [`mcp.login`](#mcplogin) | 网址的 MCP 服务要浏览器登录的：拿授权页 |
+| [`mcp.login_finish`、`mcp.logout`](#mcplogin_finishmcplogout) | 浏览器不在核心那台机器上时把跳到的地址贴回来；登出 |
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
 | [`skill.remove`](#skillremove) | 删管理员自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
@@ -221,6 +222,14 @@
 **回应**：`{"url"}`：授权页的地址，头打开它。核心在本机 `127.0.0.1` 上等回调，最多 10 分钟；同一个服务又登录的，上一次在等的停掉。
 
 **出错**：`unknown_server`：没有这个服务；`bad_params`：不是网址的服务，或者这张表自己写了令牌（`bearer`、`headers` 里的 `Authorization`）；`oauth_unregistered`：没有客户端、授权服务器又不认动态注册，要人去服务那边注册、把 `client_id` 写进这张表；`oauth_failed`：找不到、用不了授权服务器，或者它拒了，`data.why` 说为什么（授权服务器的原话截过）。
+
+登录以后（施工 X-42 下）：令牌快过期的、服务回 `401` 的，核心自己拿 `refresh_token` 续，续期写回密钥不重起服务；续不成的、服务说范围不够（`403 insufficient_scope`）的，服务停在 `needs_login`，再 `mcp.login` 一次（要的范围是以前的加上这一次要的）。
+
+## `mcp.login_finish`、`mcp.logout`
+
+**`mcp.login_finish`**（施工 X-42 下）：浏览器不在核心那台机器上的（网页从别的机器连进来），授权完浏览器跳到打不开的 `http://127.0.0.1:<端口>/callback?…`，把地址栏里那一整段交回来。参数 `service`、`url`。和本机收到的回调同一处判 `state`、`iss`。只给本机的人。**回应**：`{}`：令牌换到、存好了，服务自己连上。**出错**：`not_waiting`：这个服务没有在等的登录，先 `mcp.login`；`oauth_failed`：对不上（那一次登录照旧等着，可以再贴），或者换令牌被拒。
+
+**`mcp.logout`**（施工 X-42 下）：删掉存着的那一份（令牌、客户端、回调的端口），在等的那一次登录一起取消；服务重起、停在 `needs_login`。不吊销授权服务器那边的令牌。参数 `service`。只给本机的人。**回应**：`{}`。**出错**：`not_logged_in`：没登录过。
 
 ## `skill.list`
 

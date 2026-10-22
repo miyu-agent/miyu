@@ -1,11 +1,13 @@
 //! 网址的服务登录（施工 X-42 上）：假的要登录的服务（`HttpServer::protect`）、假授权服务器（`AuthServer`），测试自己当浏览器。
 //! 没令牌回 `401`、照挑战找到授权服务器；动态注册、PKCE、`state`、`iss`、`resource` 一路对上，换来的令牌服务认；只照两个
-//! well-known 也找得到；要精确端口的授权服务器同一个端口第二次照过、换了端口不跳回来；`code_verifier` 不对的换不到令牌。
+//! well-known 也找得到；要精确端口的授权服务器同一个端口第二次照过、换了端口不跳回来；`code_verifier` 不对的换不到令牌。续期
+//! （施工 X-42 下）：换来新的一对、带同一个 `resource`，拒了的照 OAuth 的错误回答报。
 
 use miyu_http::Proxy;
 use miyu_mcp::oauth::{
-    Asked, Callback, Challenge, Exchange, Pkce, Registered, Trouble, authorize_url, canonical,
-    challenge, discover, exchange, iss_ok, listen, random_state, register,
+    Asked, Callback, Challenge, Exchange, Pkce, Refresh, Registered, Tokens, Trouble,
+    authorization_of, authorize_url, canonical, challenge, discover, exchange, iss_ok, listen,
+    random_state, refresh, register,
 };
 use miyu_mcp::testkit::http::HttpServer;
 use miyu_mcp::testkit::oauth::{AuthServer, browse};
@@ -228,5 +230,71 @@ async fn a_wrong_verifier_gets_no_token() {
             error: "invalid_grant".to_string(),
             description: None
         })
+    );
+}
+
+/// 登录一次：发现、注册、授权页、换令牌，交回发现的、客户端和令牌。
+async fn logged_in(server: &HttpServer) -> (miyu_mcp::oauth::Discovered, Registered, Tokens) {
+    let challenge = challenged(server).await;
+    let found = discover(&http(), &server.url, &challenge)
+        .await
+        .expect("找得到");
+    let listener = listen(None).await.expect("听得了");
+    let client = register(&http(), &found.authorization, &listener.redirect_uri())
+        .await
+        .expect("注册得了");
+    let port = listener.port();
+    drop(listener);
+    let pkce = Pkce::new().expect("有随机数");
+    let state = random_state().expect("有随机数");
+    let (got, redirect, _) = authorized(&found, &client, Some(port), &pkce, &state).await;
+    let Some(Callback::Code { code, .. }) = got else {
+        panic!("跳回来了：{got:?}");
+    };
+    let asked = Exchange {
+        code: &code,
+        verifier: &pkce.verifier,
+        redirect_uri: &redirect,
+        resource: &found.resource,
+    };
+    let tokens = exchange(&http(), &found.authorization, &client, &asked)
+        .await
+        .expect("换得到");
+    (found, client, tokens)
+}
+
+#[tokio::test]
+async fn a_refresh_token_gets_a_new_pair_and_a_refused_one_says_why() {
+    let auth = AuthServer::start().await;
+    let server = HttpServer::start(false).await;
+    server.protect(&auth.issuer, "access-1");
+    let (found, client, tokens) = logged_in(&server).await;
+    let authorization = authorization_of(&http(), &found.authorization.issuer)
+        .await
+        .expect("照 issuer 再取得到");
+    assert_eq!(authorization, found.authorization);
+    let asked = Refresh {
+        refresh_token: tokens.refresh_token.as_deref().expect("给了"),
+        resource: &found.resource,
+        scope: tokens.scope.as_deref(),
+    };
+    let renewed = refresh(&http(), &authorization, &client, &asked)
+        .await
+        .expect("续得了");
+    assert_eq!(renewed.access_token, "access-2");
+    assert_eq!(renewed.refresh_token.as_deref(), Some("refresh-2"));
+    assert_eq!(
+        auth.refreshes(),
+        [(
+            found.resource.clone(),
+            "files:read offline_access".to_string()
+        )],
+        "带同一个 resource、原来的 scope"
+    );
+    auth.refuse_refresh();
+    let refused = refresh(&http(), &authorization, &client, &asked).await;
+    assert!(
+        matches!(&refused, Err(Trouble::Refused { error, .. }) if error == "invalid_grant"),
+        "{refused:?}"
     );
 }

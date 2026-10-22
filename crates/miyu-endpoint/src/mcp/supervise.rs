@@ -109,7 +109,7 @@ async fn once(
     known: &mut Option<miyu_mcp::Era>,
 ) -> Ended {
     let service = plan.server.name.as_str();
-    let (mut running, pid, output, input) = match start(plan).await {
+    let (mut running, pid, output, input) = match start(core, plan).await {
         Ok(started) => started,
         Err(ended) => return ended,
     };
@@ -186,6 +186,10 @@ async fn once(
     if running.expired() {
         return Ended::Expired;
     }
+    // 登录不再算数了（施工 X-42 下）：续不成的、要更多范围的，转接记下挑战、关了这一对读写。
+    if let Some(challenge) = super::login::needed(&plan.server, running.challenge()) {
+        return Ended::NeedsLogin(challenge);
+    }
     tracing::warn!(target: TARGET, service, status = status.as_str(), "mcp exited");
     Ended::Failed(Some(ready_at))
 }
@@ -227,7 +231,10 @@ type Reader = Box<dyn tokio::io::AsyncRead + Unpin + Send>;
 type Writer = Box<dyn tokio::io::AsyncWrite + Unpin + Send>;
 
 /// 起一次：拉起进程，或者接上网址（施工 X-32 上）。交回在跑的那一头、进程号（网址的没有）、读写两头；起不来的交回结局。
-async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), Ended> {
+async fn start(
+    core: &Weak<Core>,
+    plan: &Plan,
+) -> Result<(Running, Option<u32>, Reader, Writer), Ended> {
     let service = plan.server.name.as_str();
     match &plan.how {
         How::Spawn { program, .. } => {
@@ -247,7 +254,11 @@ async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), En
                 Box::new(input),
             ))
         }
-        How::Connect { url, headers } => {
+        How::Connect {
+            url,
+            headers,
+            login,
+        } => {
             let log = log_to(plan.log.clone());
             let local = miyu_http::is_loopback_url(url);
             // 令牌不明文发到别的机器上（`mcp.md`「网址的服务怎么说话」）：`http://` 只给本机地址。
@@ -265,7 +276,13 @@ async fn start(plan: &Plan) -> Result<(Running, Option<u32>, Reader, Writer), En
                 tracing::warn!(target: TARGET, service, error = %error, "mcp not started");
                 Ended::Failed(None)
             })?;
-            let opened = miyu_mcp::http::open(client, url.clone(), headers.clone(), log);
+            // 登录来的现场给令牌（施工 X-42 下）：续期也用连它的这个客户端。
+            let credentials = match login {
+                true => super::login::Login::of(core, service, url, client.clone()),
+                false => None,
+            };
+            let opened =
+                miyu_mcp::http::open(client, url.clone(), headers.clone(), log, credentials);
             Ok((
                 Running::Remote(opened.expired, opened.challenged),
                 None,

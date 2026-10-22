@@ -21,7 +21,7 @@ bearer = { secret = "github" }       # 用 miyu login 或设置页存进去；�
 
 存了就生效，不用重启。终端、网页的「软件包」页里看得到它在跑没有；`miyu check` 查写没写错。
 
-只认浏览器授权、发不了个人令牌的服务（Notion、Linear 这类）：只写 `url`，不写 `bearer`。它会停在「要登录」（`needs_login`），打 `miyu mcp login <服务>`，在浏览器里点同意就连上了；令牌存进密钥文件，你不用经手。
+只认浏览器授权、发不了个人令牌的服务（Notion、Linear 这类）：只写 `url`，不写 `bearer`。它会停在「要登录」（`needs_login`），打 `miyu mcp login <服务>`，在浏览器里点同意就连上了；令牌存进密钥文件，你不用经手，快过期时核心自己续。浏览器在别的机器上的，授权完把地址栏里的整段地址贴回命令行。不用了打 `miyu mcp logout <服务>`。
 
 ## 做成一个包
 

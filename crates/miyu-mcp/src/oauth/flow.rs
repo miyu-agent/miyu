@@ -1,5 +1,6 @@
 //! 登录的那几次网络往来（施工 X-42 上）：取受保护资源元数据、授权服务器元数据（规范的 Authorization Server Discovery），动态注册
-//! （RFC 7591，规范标成了旧办法、现在的服务多半还认），授权码换令牌。授权服务器回的错误说明是不可信的字：截到 200 个字符。
+//! （RFC 7591，规范标成了旧办法、现在的服务多半还认），授权码换令牌，续期（施工 X-42 下）。授权服务器回的错误说明是不可信的字：
+//! 截到 200 个字符。
 
 use serde_json::{Value, json};
 
@@ -90,10 +91,7 @@ pub async fn discover(
         .and_then(|servers| servers.iter().find_map(Value::as_str))
         .ok_or(Trouble::NoAuthorizationServer)?
         .to_string();
-    let found = first_json(http, &authorization_metadata_urls(&issuer))
-        .await?
-        .ok_or(Trouble::NoMetadata)?;
-    let authorization = authorization(&found, &issuer).map_err(Trouble::Metadata)?;
+    let authorization = authorization_of(http, &issuer).await?;
     let resource_scopes: Vec<String> = resource["scopes_supported"]
         .as_array()
         .map(|items| {
@@ -118,6 +116,18 @@ pub async fn discover(
         ),
         authorization,
     })
+}
+
+/// 授权服务器 `issuer` 的元数据：照规范的先后找、照 [`authorization`] 查（续期时照存着的 `issuer` 再取一次，施工 X-42 下）。
+///
+/// # Errors
+///
+/// 找不到的 [`Trouble::NoMetadata`]；不能用的 [`Trouble::Metadata`]；连不上的 [`Trouble::Unreachable`]。
+pub async fn authorization_of(http: &Client, issuer: &str) -> Result<Authorization, Trouble> {
+    let found = first_json(http, &authorization_metadata_urls(issuer))
+        .await?
+        .ok_or(Trouble::NoMetadata)?;
+    authorization(&found, issuer).map_err(Trouble::Metadata)
 }
 
 /// 动态注册一个客户端（RFC 7591）：本机的应用（`native`），不带密钥（`none`），回调只有 `redirect_uri` 这一个。
@@ -196,6 +206,15 @@ pub async fn exchange(
         }
         form.finish()
     };
+    tokens(http, authorization, body).await
+}
+
+/// 照表单 `body` 向令牌端点要一对令牌：换令牌、续期共用。
+async fn tokens(
+    http: &Client,
+    authorization: &Authorization,
+    body: String,
+) -> Result<Tokens, Trouble> {
     let answer = send(
         http.post(&authorization.token_endpoint)
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -212,6 +231,47 @@ pub async fn exchange(
         expires_in: answer["expires_in"].as_u64(),
         scope: answer["scope"].as_str().map(str::to_string),
     })
+}
+
+/// 续期一次要的几样（施工 X-42 下）。
+#[derive(Debug, Clone, Copy)]
+pub struct Refresh<'a> {
+    /// 存着的 `refresh_token`。
+    pub refresh_token: &'a str,
+    /// 登录时的 `resource`（RFC 8707：续的时候带同一个）。
+    pub resource: &'a str,
+    /// 登录时给的范围，没有的不写。
+    pub scope: Option<&'a str>,
+}
+
+/// 续期（`grant_type=refresh_token`，施工 X-42 下）：带同一个 `resource`、原来的 `scope`，有密钥的客户端照 `client_secret_post`。
+/// 授权服务器没给新的 `refresh_token` 的，交回的那一格是空的，调的一方留旧的。
+///
+/// # Errors
+///
+/// 拒了的（`invalid_grant` 这类）[`Trouble::Refused`]；别的 [`Trouble::Unreachable`]。
+pub async fn refresh(
+    http: &Client,
+    authorization: &Authorization,
+    client: &Registered,
+    asked: &Refresh<'_>,
+) -> Result<Tokens, Trouble> {
+    // 拼好就丢掉拼的那一个：它不能跨着 await 留着（不是 `Sync`）。
+    let body = {
+        let mut form = url::form_urlencoded::Serializer::new(String::new());
+        form.append_pair("grant_type", "refresh_token")
+            .append_pair("refresh_token", asked.refresh_token)
+            .append_pair("client_id", &client.client_id)
+            .append_pair("resource", asked.resource);
+        if let Some(scope) = asked.scope {
+            form.append_pair("scope", scope);
+        }
+        if let Some(secret) = &client.client_secret {
+            form.append_pair("client_secret", secret);
+        }
+        form.finish()
+    };
+    tokens(http, authorization, body).await
 }
 
 /// 依次 `GET` 几个网址，第一个回 `200`、是 JSON 的交回；都不是的没有。连不上的当场停。

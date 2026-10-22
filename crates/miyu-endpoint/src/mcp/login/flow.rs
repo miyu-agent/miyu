@@ -1,12 +1,14 @@
 //! `mcp.login {service}`（施工 X-42 上）：找服务（个人设置里的先，再找包里带的）、照挑战找授权服务器、拿客户端（存着的、同一个
 //! 授权服务器的照用，没有的动态注册）、绑回调的端口（存着的那一个，绑不上的换一个随机的、动态注册来的照新端口重新注册一次）、拼
 //! 授权页交回；后台等回调（最多 10 分钟）：`state`、`iss` 对上了才换令牌，换到的照 `secret.set` 那一路存进
-//! `mcp-oauth-<服务名>`，密钥变了的那一路重起服务。同一个服务又登录的，上一次在等的那个停掉。
+//! `mcp-oauth-<服务名>`，密钥变了的那一路重起服务。同一个服务又登录的，上一次在等的那个停掉。浏览器不在核心那台机器上的，贴回来
+//! 的地址（`mcp.login_finish`，施工 X-42 下）交给同一个等着的任务，和本机回调同一处判。要的范围是存着的加上这一次要的（施工
+//! X-42 下，规范的 step-up）。
 //!
 //! 授权服务器回的错误说明是不可信的字：截过（`miyu_mcp::oauth`），只进 `data.why`，不进日志、不进给模型的说明。
 
 use std::sync::{Arc, PoisonError, Weak};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -14,12 +16,13 @@ use serde_json::{Value, json};
 use miyu_config::package::{McpServer, Reach};
 use miyu_kernel::id::CommandId;
 use miyu_mcp::oauth::{
-    Asked, Callback, Discovered, Exchange, Listener, Pkce, Registered, Trouble, authorize_url,
-    discover, exchange, iss_ok, listen, random_state, register,
+    Asked, Callback, Discovered, Exchange, Listener, Pkce, Registered, Reply, Trouble,
+    authorize_url, discover, exchange, iss_ok, listen, random_state, register,
 };
 use miyu_store::scripts::HOME_PACKAGE;
+use tokio::sync::{mpsc, oneshot};
 
-use super::{Stored, secret_name, stored};
+use super::{Ongoing, Pasted, Stored, now, secret_name, stored};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -65,16 +68,21 @@ pub(crate) async fn login(
     let found = discover(&http, url, &challenge).await.map_err(refused)?;
     let kept = stored(&core.config(), &server.name)
         .filter(|kept| kept.issuer == found.authorization.issuer);
+    let scope = merged(
+        kept.as_ref().and_then(|kept| kept.scope.as_deref()),
+        found.scope.as_deref(),
+    );
     let (listener, client, registered) = prepared(&http, &found, kept.as_ref()).await?;
     let pkce = Pkce::new().map_err(|_| Refusal::INTERNAL)?;
     let state = random_state().map_err(|_| Refusal::INTERNAL)?;
+    let (sender, receiver) = mpsc::unbounded_channel();
     let redirect_uri = listener.redirect_uri();
     let page = authorize_url(
         &found.authorization,
         &Asked {
             client_id: &client.client_id,
             redirect_uri: &redirect_uri,
-            scope: found.scope.as_deref(),
+            scope: scope.as_deref(),
             resource: &found.resource,
             state: &state,
             challenge: &pkce.challenge,
@@ -93,6 +101,7 @@ pub(crate) async fn login(
         pkce,
         state,
         redirect_uri,
+        pasted: receiver,
     };
     let task = tokio::spawn(waiting.wait(listener));
     if let Some(earlier) = core
@@ -100,9 +109,15 @@ pub(crate) async fn login(
         .logins
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
-        .insert(server.name.clone(), task)
+        .insert(
+            server.name.clone(),
+            Ongoing {
+                task,
+                pasted: sender,
+            },
+        )
     {
-        earlier.abort();
+        earlier.task.abort();
     }
     Ok(json!({ "url": page }))
 }
@@ -196,24 +211,76 @@ struct Waiting {
     pkce: Pkce,
     state: String,
     redirect_uri: String,
+    /// 贴回来的地址（施工 X-42 下，`mcp.login_finish`）。
+    pasted: mpsc::UnboundedReceiver<Pasted>,
+}
+
+/// 回调是从哪来的：浏览器到了本机（回它一页），还是人贴回来的（回 `mcp.login_finish`）。
+enum Answer {
+    Browser(Reply),
+    Pasted(oneshot::Sender<Result<(), Refusal>>),
+}
+
+impl Answer {
+    /// 交回结局：浏览器的回 `page`，贴回来的回成了没成。
+    async fn send(self, ok: bool, page: &str) {
+        match self {
+            Answer::Browser(reply) => reply.send(ok, page).await,
+            Answer::Pasted(answer) => {
+                let told = if ok {
+                    Ok(())
+                } else {
+                    Err(Refusal::OAUTH_FAILED)
+                };
+                if answer.send(told).is_err() {
+                    // 贴的那一头已经不等了。
+                }
+            }
+        }
+    }
+}
+
+/// 下次登录要的范围（施工 X-42 下，规范的 step-up）：存着的加上这一次要的，去重、照先后；都没有的没有。
+fn merged(kept: Option<&str>, asked: Option<&str>) -> Option<String> {
+    let mut all: Vec<&str> = Vec::new();
+    for scope in kept
+        .into_iter()
+        .chain(asked)
+        .flat_map(str::split_whitespace)
+    {
+        if !all.contains(&scope) {
+            all.push(scope);
+        }
+    }
+    (!all.is_empty()).then(|| all.join(" "))
 }
 
 impl Waiting {
     /// 等回调：`state` 对不上的不认、接着等；对上了的照 `iss` 判，换令牌、存。到时没来的记一行就停。
-    async fn wait(self, listener: Listener) {
-        let service = self.service.as_str();
+    async fn wait(mut self, listener: Listener) {
+        let service = self.service.clone();
+        let service = service.as_str();
         let deadline = tokio::time::Instant::now() + WAIT;
         loop {
-            let next = tokio::select! {
-                next = listener.next() => next,
+            let (callback, reply) = tokio::select! {
+                next = listener.next() => match next {
+                    Ok((callback, reply)) => (callback, Answer::Browser(reply)),
+                    Err(_) => {
+                        tracing::warn!(target: TARGET, service, "mcp oauth callback failed");
+                        return;
+                    }
+                },
+                Some(pasted) = self.pasted.recv() => match miyu_mcp::oauth::pasted(&pasted.url) {
+                    Some(callback) => (callback, Answer::Pasted(pasted.answer)),
+                    None => {
+                        Answer::Pasted(pasted.answer).send(false, "").await;
+                        continue;
+                    }
+                },
                 () = tokio::time::sleep_until(deadline) => {
                     tracing::info!(target: TARGET, service, "mcp oauth login timed out");
                     return;
                 }
-            };
-            let Ok((callback, reply)) = next else {
-                tracing::warn!(target: TARGET, service, "mcp oauth callback failed");
-                return;
             };
             let (state, iss) = match &callback {
                 Callback::Code { state, iss, .. } => (Some(state.as_str()), iss.as_deref()),
@@ -256,9 +323,7 @@ impl Waiting {
         };
         match exchange(&self.http, &self.found.authorization, &self.client, &asked).await {
             Ok(tokens) => {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map_or(0, |since| since.as_secs());
+                let now = now();
                 Some(Stored {
                     access_token: tokens.access_token,
                     refresh_token: tokens.refresh_token,
@@ -269,6 +334,7 @@ impl Waiting {
                     client_secret: self.client.client_secret.clone(),
                     port,
                     registered: self.registered,
+                    resource: Some(self.found.resource.clone()),
                 })
             }
             Err(trouble) => {

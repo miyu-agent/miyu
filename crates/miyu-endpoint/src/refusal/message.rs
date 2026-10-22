@@ -34,6 +34,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Register a client with this server first.",
         ),
         "oauth_failed" => ("登录没成。", "Login failed."),
+        "not_logged_in" => ("这个服务没登录过。", "This server is not logged in."),
+        "not_waiting" => (
+            "这个服务没有在等的登录，先发起登录。",
+            "No login is waiting for this server; start one first.",
+        ),
         "server_from_package" => (
             "这个 MCP 服务随软件包提供，不能在这里修改。",
             "This MCP server comes with a package and cannot be changed here.",

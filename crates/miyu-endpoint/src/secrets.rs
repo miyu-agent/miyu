@@ -130,6 +130,30 @@ pub(crate) fn store(
     .map(|_| ())
 }
 
+/// 核心自己改一个密钥（施工 X-42 下：续期换来的令牌写回去）：同 [`store`]，记成核心改的。
+///
+/// # Errors
+///
+/// 同 [`set`]。
+pub(crate) fn keep(core: &Core, name: &str, value: &str) -> Result<(), Refusal> {
+    let value = Secret::new(value).map_err(|_| Refusal::BAD_PARAMS)?;
+    change(core, "en", Who::Core, name, Edit::Set(value)).map(|_| ())
+}
+
+/// 替人删一个密钥（施工 X-42 下：`mcp.logout`）：同 [`delete`]，名字是核心拼的。没有的 `unknown_secret`。
+///
+/// # Errors
+///
+/// 同 [`delete`]。
+pub(crate) fn remove(
+    core: &Core,
+    peer: Peer,
+    cause: &CommandId,
+    name: &str,
+) -> Result<(), Refusal> {
+    change(core, peer.language, Who::Person(cause), name, Edit::Delete).map(|_| ())
+}
+
 /// 核心自己清掉一个密钥（施工 X-42 上：删服务时清登录的令牌）：没有的什么都不做；清不成的记一行。
 pub(crate) fn discard(core: &Core, name: &str) {
     if !core.config().secrets.has(name) {

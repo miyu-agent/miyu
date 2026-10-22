@@ -57,6 +57,8 @@ pub(super) enum How {
         url: String,
         /// 每个请求都带的头，令牌已经换成 `Authorization: Bearer …`、引用的已经取出来了。
         headers: Vec<(String, String)>,
+        /// 登录来的（施工 X-42 下）：这张表自己没写令牌、存着登录的那一份；转接每个请求现场问令牌（`login::Login`），不在这里带。
+        login: bool,
     },
 }
 
@@ -107,18 +109,11 @@ pub(super) fn plan(core: &Core, package: &str, server: &McpServer, dir: &Path) -
             {
                 *token = format!("Bearer {token}");
             }
-            // 登录换来的令牌（施工 X-42 上）：这张表自己没写令牌的照它带。
-            if !super::login::explicit(server)
-                && let Some(stored) = super::login::stored(&config, &server.name)
-            {
-                headers.push((
-                    "Authorization".to_string(),
-                    format!("Bearer {}", stored.access_token),
-                ));
-            }
             How::Connect {
                 url: url.clone(),
                 headers,
+                login: !super::login::explicit(server)
+                    && super::login::stored(&config, &server.name).is_some(),
             }
         }
     };
