@@ -17,6 +17,8 @@
 //!   另照场所分（施工 X-44 补：几个群都归系统账号），跑之前建好（Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根
 //!   照旧藏着）。建不成的、场所写不成目录名的、会话外面的调用（没有属主）不给，照常跑。
 //!   能丢的放缓存目录，要留的（登录态）放这里。
+//! - 本机的会话另给属主家目录的 `pictures/`、`videos/`、`documents/`、`downloads/`（施工 Y-11 补，[`home`]）：`MIYU_PICTURES_DIR`
+//!   这四个，建好交真实位置、放进沙盒的 `write`；场所会话、会话外面的调用不给。
 //! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
@@ -42,6 +44,7 @@ use crate::blocking::blocking;
 use crate::common::said;
 use crate::load::{self, LoadError, say};
 
+mod home;
 mod images;
 mod sweep;
 
@@ -52,6 +55,8 @@ enum Kept {
     State,
     /// 缓存目录（施工 Y-11 上）。
     Cache,
+    /// 家目录那几处（施工 Y-11 补）。
+    Home,
 }
 
 use images::Folder;
@@ -216,13 +221,25 @@ impl Script {
                     Kept::Cache => {
                         tracing::warn!(target: "miyu::shell", tool, error = %error, "script cache not prepared")
                     }
+                    Kept::Home => {
+                        tracing::warn!(target: "miyu::shell", tool, error = %error, "script home folder not prepared")
+                    }
                 }
                 None
             }
         }
     }
 
-    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，`state` 是状态目录，建不成的没有。
+    /// 家目录那几处（施工 Y-11 补，[`home`]）：该给的建好，交环境变量和真实位置；建不成的那一处不给（记一行 `WARN`）。
+    fn homes(&self, call: &Call) -> Vec<(&'static str, PathBuf)> {
+        home::wanted(call)
+            .into_iter()
+            .filter_map(|(var, dir)| Some((var, self.prepared(&dir, Kept::Home)?)))
+            .collect()
+    }
+
+    /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，`state` 是状态目录，建不成的没有；
+    /// `homes` 是家目录那几处（施工 Y-11 补）。
     ///
     /// [`launcher`]: miyu_store::packages::launcher
     fn command(
@@ -230,6 +247,7 @@ impl Script {
         call: &Call,
         (cache, args_json): (&Path, &str),
         (images, state): (Option<&Path>, Option<&Path>),
+        homes: &[(&'static str, PathBuf)],
     ) -> io::Result<std::process::Command> {
         // 是链接的照它指到的真实位置起（施工 X-37）：沙盒只放开那一个文件，链接本身在藏着的数据根里，照它起解释器读不到。
         let file = match std::fs::symlink_metadata(&self.file) {
@@ -251,6 +269,11 @@ impl Script {
                 sandboxed.spec.write.push(cache.to_path_buf());
                 // 交图的目录在缓存那一格旁边（同一个来处下面）：缓存挪进数据根以后它也被藏着，单独放开写（施工 Y-11 上）。
                 sandboxed.spec.write.extend(images.map(Path::to_path_buf));
+                // 家目录那几处（施工 Y-11 补）：已经建好，成员的会话也只到他自己家里。
+                sandboxed
+                    .spec
+                    .write
+                    .extend(homes.iter().map(|(_, dir)| dir.clone()));
                 miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
                     .map(|(helper, args)| (helper.into_os_string(), args))
                     .map_err(io::Error::other)?
@@ -267,6 +290,9 @@ impl Script {
         }
         if let Some(state) = state {
             vars.push((STATE.into(), state.as_os_str().to_owned()));
+        }
+        for (var, dir) in homes {
+            vars.push(((*var).into(), dir.as_os_str().to_owned()));
         }
         if let Some(caller) = &call.caller {
             vars.push((CALLER_VENUE.into(), caller.venue.as_str().into()));
@@ -366,8 +392,9 @@ impl Tool for Script {
             let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
             let (command, folder) = match command.and_then(|folder| {
                 let state = self.state(&call);
+                let homes = self.homes(&call);
                 let dirs = (folder.as_ref().map(Folder::path), state.as_deref());
-                let command = self.command(&call, (&cache, &args_json), dirs)?;
+                let command = self.command(&call, (&cache, &args_json), dirs, &homes)?;
                 Ok((command, folder))
             }) {
                 Ok(made) => made,

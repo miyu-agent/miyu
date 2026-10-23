@@ -157,3 +157,45 @@ async fn a_script_s_cache_is_in_the_owner_s_home() {
         printed(&outside)
     );
 }
+
+/// 印出家目录那四处的脚本（施工 Y-11 补）：没给的印 `unset`。
+const HOMED: &[u8] = b"#!/usr/bin/env python3\n# Description: Homed.\nimport os\nfor name in ('PICTURES', 'VIDEOS', 'DOCUMENTS', 'DOWNLOADS'):\n    print(os.environ.get('MIYU_' + name + '_DIR', 'unset'))\n";
+
+/// 家目录那四处（施工 Y-11 补）：本机的会话交属主家目录的 `pictures/`、`videos/`、`documents/`、`downloads/`，建好交真实位置；
+/// 场所会话（没有一个人的家，给了就是几个群共用一处）、不知道在哪个场所的、会话外面的调用都不给。
+#[tokio::test]
+async fn a_local_script_gets_the_owner_s_home_folders() {
+    let site = Site::new();
+    site.file("scripts/homed.py", HOMED);
+    let lines = |done: &Done| -> Vec<String> { text(done).lines().map(str::to_string).collect() };
+    let local = site
+        .script_at("scripts/homed.py", "kit", "alice", Some("local"))
+        .await;
+    assert!(!local.error, "{}", text(&local));
+    let wanted: Vec<String> = ["pictures", "videos", "documents", "downloads"]
+        .iter()
+        .map(|name| {
+            let folder = site.0.join("data/home/alice").join(name);
+            std::fs::canonicalize(folder)
+                .expect("建好了")
+                .display()
+                .to_string()
+        })
+        .collect();
+    assert_eq!(lines(&local), wanted);
+    let unset = vec!["unset".to_string(); 4];
+    let group = site
+        .script_at("scripts/homed.py", "kit", "bridge", Some("qq:group:1"))
+        .await;
+    assert_eq!(lines(&group), unset, "场所会话不给");
+    assert!(
+        !site.0.join("data/home/bridge/pictures").exists(),
+        "也不替它建"
+    );
+    let unknown = site
+        .script_at("scripts/homed.py", "kit", "alice", None)
+        .await;
+    assert_eq!(lines(&unknown), unset, "不知道在哪个场所的不给");
+    let outside = site.script("scripts/homed.py", json!({})).await;
+    assert_eq!(lines(&outside), unset, "会话外面的不给");
+}

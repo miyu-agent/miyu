@@ -62,3 +62,12 @@
 - `provide/remote.rs`：只给派它的那一轮在本机（`Caller.venue` 是 `local`）的调用；场所会话、不知道在哪个场所的不给，扩展自然退回工作区。和 Y-11 补「场所会话不给那几处」同一个口径。
 - 协议参考、扩展作者文档（中英）写明只给本机的会话、为什么。
 - 测试先红后绿：`remote_tests` 的 `a_venue_session_s_call_carries_no_pictures`（群的、不知道场所的都不带），原来那条改成本机的带。手写变异 3 个全抓住（不看场所、不知道场所的也给、场所判反）。
+
+### 做下来的（Y-11 补）
+
+shorin-03 经验收调查会话转来、主会话 2026-10-23 定：脚本工具像交缓存目录那样，交会话属主家目录的那几处，搜图、抖音这类脚本把给人的文件存进去。
+
+- `miyu-basesystem` 的 `shell/script/home.rs`：`MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`，照 `miyu_store::root::USER_DIRS` 的先后、位置照 `user_dir`。`script.rs` 跑之前建好（同状态目录，Unix 上新建的 0700）、交真实位置、放进脚本的沙盒写名单；建不成的那一处不给，记一行写死的 `WARN`（`script home folder not prepared`）。
+- 只给本机的会话：场所会话（群、陌生人私聊）没有一个人的家，给了就是几个群共用一处（X-44 补刚把状态目录照场所分开），那里照旧用按场所分的缓存目录；不知道在哪个场所的、会话外面的调用也不给，和 Y-11 下修同一个口径。成员的本机会话照给：Y-2 下上让成员的会话只到他自己的几处，这几处都在里面；`Own::existing` 只放开已经在的，所以先建再起沙盒。`shell` 照 Y-11 上的定论不另加。
+- 文档：蓝图 `skills.md`「脚本」第 3 条、作者文档 `scripts-skills` 中英「怎么跑」。给模型看的 `package-creator` 技能那句（只提缓存目录）不动：非必要不加。
+- 测试先红后绿：`script_state.rs` 的 `a_local_script_gets_the_owner_s_home_folders`（本机的四个都给、建好、真实位置；群的、不知道场所的、会话外面的不给，也不替群建）；`sandbox_skills.rs` 的 `a_local_script_in_the_sandbox_writes_into_the_owner_s_pictures`（经真助手跑，写得进 `pictures/`、`downloads/`）。退回成什么都不给时第一条报红。手写变异 6 个全抓住（不放进写名单——只有沙盒那条抓得到、不知道场所的也给、场所判反、变量对错位、不交环境变量、不先建）。
