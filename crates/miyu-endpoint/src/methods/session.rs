@@ -15,7 +15,7 @@ pub(super) async fn create(
     let mut params: CreateParams = params(request)?;
     // 在项目里建的（施工 H-2）：项目要在，没写的人格、预设照项目的。
     let project = match &params.project {
-        Some(id) => Some(crate::projects::sessions::find(core, &caller.account, id).await?),
+        Some(id) => Some(crate::projects::sessions::find(core, caller.acting_for(), id).await?),
         None => None,
     };
     if let Some(project) = &project {
@@ -32,7 +32,7 @@ pub(super) async fn create(
         .map(|text| MemoryScope::parse(&text).ok_or(Refusal::BAD_PARAMS))
         .transpose()?;
     let who = Opening {
-        owner: caller.account.clone(),
+        owner: caller.acting_for().clone(),
         attended: peer.input,
         oneshot: params.oneshot,
         model,
@@ -52,7 +52,7 @@ pub(super) async fn create(
             request.id.clone(),
             params.persona.as_ref().map(Option::as_deref),
             params.cwd.unwrap_or_else(|| {
-                let (_, own) = crate::sessions::roots(core, &caller.account);
+                let (_, own) = crate::sessions::roots(core, caller.acting_for());
                 own.to_string_lossy().into_owned()
             }),
             params.dirs,
@@ -390,7 +390,7 @@ pub(super) async fn set_meta(
     let command = params.command()?;
     let session = session(&params.session)?;
     if let Some(project) = params.project() {
-        crate::projects::sessions::find(core, &caller.account, project).await?;
+        crate::projects::sessions::find(core, caller.acting_for(), project).await?;
     }
     if params.moves() {
         crate::projects::sessions::may_join(core, &session).await?;

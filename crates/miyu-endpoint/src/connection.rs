@@ -207,6 +207,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         let who = checks::Who {
             via: via.as_ref(),
             account: &caller.account,
+            acting_for: caller.acting_for(),
             reach: &reach,
             declared: &declared,
         };

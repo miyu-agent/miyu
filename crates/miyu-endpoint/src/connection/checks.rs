@@ -21,10 +21,13 @@ use crate::refusal::Refusal;
 use crate::wire::Request;
 use miyu_config::package::Capability;
 
-/// 这个连接是谁、从哪来、扩展声明了什么。
+/// 这个连接是谁、替谁干活（施工 Y-5 上）、从哪来、扩展声明了什么。
 pub(super) struct Who<'a> {
     pub(super) via: Option<&'a Via>,
+    /// 身份：成员闸、桥认它。
     pub(super) account: &'a AccountId,
+    /// 替谁干活：会话只给属主认它。
+    pub(super) acting_for: &'a AccountId,
     pub(super) reach: &'a reach::Reach,
     pub(super) declared: &'a [Capability],
 }
@@ -42,13 +45,14 @@ pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -
     {
         return Some(refusal);
     }
-    others_session(core, who.account, request).await
+    others_session(core, (who.account, who.acting_for), request).await
 }
 
-/// 第 4 道：参数里的 `session` 是别人的会话。没写、写法不对、没有这个会话的不在这里拒：方法照它原来的说法答。
+/// 第 4 道：参数里的 `session` 是别人的会话。没写、写法不对、没有这个会话的不在这里拒：方法照它原来的说法答。属主照「替谁」
+/// 比，桥照身份认（施工 Y-5 上）。
 async fn others_session(
     core: &Arc<Core>,
-    account: &AccountId,
+    (account, acting_for): (&AccountId, &AccountId),
     request: &Request,
 ) -> Option<Refusal> {
     if request.method == "blob.get" {
@@ -63,7 +67,7 @@ async fn others_session(
         ),
         None => (core.sessions.owner(core, &id).await?, None),
     };
-    if owner == *account || bridged(core, account, &owner, &id, venue).await {
+    if owner == *acting_for || bridged(core, account, &owner, &id, venue).await {
         return None;
     }
     Some(Refusal::NOT_FOUND)

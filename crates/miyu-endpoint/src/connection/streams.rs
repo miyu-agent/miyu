@@ -89,7 +89,7 @@ pub(super) async fn subscribe(
             (Ok(json!({})), None)
         }
         (Ok(Stream::Sessions), _) => match subscriptions
-            .add_sessions((core, &caller.account), out)
+            .add_sessions((core, caller.acting_for()), out)
             .await
         {
             Ok(result) => (Ok(result), Some(Target::Sessions)),
@@ -104,12 +104,12 @@ pub(super) async fn subscribe(
             (listed, Some(Target::Packages))
         }
         (Ok(Stream::Projects), Some(shook)) => {
-            let account = caller.account.clone();
+            let account = caller.acting_for().clone();
             let listed = subscriptions.add_projects(core, account, shook, out).await;
             (listed, Some(Target::Projects))
         }
         (Ok(Stream::Knowledge), Some(shook)) => {
-            let reply = subscriptions.add_kb(core, caller.account.clone(), shook, out);
+            let reply = subscriptions.add_kb(core, caller.acting_for().clone(), shook, out);
             (Ok(reply), Some(Target::Knowledge))
         }
         (Ok(Stream::Events(session)), _) => {

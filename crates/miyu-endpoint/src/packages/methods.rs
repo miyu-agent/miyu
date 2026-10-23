@@ -54,9 +54,9 @@ pub(crate) async fn call(
         "mcp.logout" => crate::mcp::login::logout(core, peer, &request.id, params(request)?),
         "mcp.set" => crate::mcp::editing::set(core, peer, &request.id, params(request)?),
         "mcp.remove" => crate::mcp::editing::remove(core, peer, &request.id, params(request)?),
-        "skill.list" => crate::skills::list(core, &caller.account, peer).await,
-        "skill.remove" => crate::skills::remove(core, &caller.account, params(request)?).await,
-        "script.list" => Ok(crate::scripts::list::list(core, &caller.account, peer).await),
+        "skill.list" => crate::skills::list(core, caller.acting_for(), peer).await,
+        "skill.remove" => crate::skills::remove(core, caller.acting_for(), params(request)?).await,
+        "script.list" => Ok(crate::scripts::list::list(core, caller.acting_for(), peer).await),
         "tool.set_loading" => {
             crate::toggles::set_loading(core, peer, &request.id, params(request)?)
         }

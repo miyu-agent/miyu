@@ -35,7 +35,7 @@ pub(crate) async fn call_later(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "model.call" => models::call(core, &caller.account, params(request)?).await,
+        "model.call" => models::call(core, caller.acting_for(), params(request)?).await,
         "memory.dream" => memory::dream::call(core, &request.params).await,
         "package.call" => backstage::call(core, caller.package.as_deref(), params(request)?).await,
         "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,

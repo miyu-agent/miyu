@@ -40,7 +40,7 @@ pub(crate) async fn call(
     caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
-    let account = &caller.account;
+    let account = caller.acting_for();
     match request.method.as_str() {
         "project.list" => {
             let read = read(core, account).await?;
