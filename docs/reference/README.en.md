@@ -9,6 +9,7 @@ For programs that talk to the core: "heads" such as the terminal and web UIs, an
 - **Fields**: params are an object. Writing `null` is the same as leaving a field out. Unknown fields are ignored.
 - **Errors**: JSON-RPC's own errors use its standard codes; Miyu's are all `-32010`, with the reason in `error.data.reason` and sometimes a few more fields (listed under each method's "Errors"). `error.message` is a sentence for people in the connection's language; don't branch on it.
 - **Who can call**: each method says whether people (head connections) and extensions (connections of packages the core launched) can call it, and how they differ.
+- **Protocol 1 is frozen** (2026-10-24): its methods are listed in [methods-v1.txt](methods-v1.txt), plus `hello` for the handshake and `subscribe`, `unsubscribe` and `provide`. From now on it is only added to: existing methods are not removed, renamed or given a new meaning, and replies only gain fields. New methods and fields say which core version they arrived in; an older core answers `unknown_method` to a method it doesn't know and ignores fields it doesn't know, so check the core version in the handshake reply before relying on them, or fall back on `unknown_method`. Removing, renaming or changing a method needs protocol 2: the handshake negotiates from the `[lowest, highest]` range you send, and fails with `protocol_mismatch` when there's no overlap.
 
 ## Contents
 

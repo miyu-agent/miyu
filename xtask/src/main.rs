@@ -10,6 +10,7 @@
 mod dev_home;
 mod drawing;
 mod files;
+mod frozen;
 mod heads;
 mod layers;
 mod ledger;
@@ -57,6 +58,16 @@ fn main() -> ExitCode {
                 }
             }
         }
+        Some("methods") => match frozen::add(&root()) {
+            Ok(added) => {
+                println!("登记了 {added} 个新方法进 {}", frozen::PATH);
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                ExitCode::FAILURE
+            }
+        },
         Some("prompts") => match prompts::write(&root()) {
             Ok(()) => {
                 println!("写好了 {}", prompts::PATH);
@@ -69,7 +80,7 @@ fn main() -> ExitCode {
         },
         _ => {
             eprintln!(
-                "用法：cargo xtask check | cargo xtask logs | cargo xtask prompts | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
+                "用法：cargo xtask check | cargo xtask logs | cargo xtask methods | cargo xtask prompts | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
             );
             ExitCode::from(2)
         }
@@ -138,11 +149,12 @@ fn check() -> ExitCode {
     ];
     println!("\n── 文档：登记簿 {} 第十节 ──", ledger::PATH);
     println!(
-        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法；{} 扩展能调什么的表 ──",
+        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法；{} 扩展能调什么的表；{} 协议 1 冻结的方法 ──",
         prompts::PATH,
         heads::PATH,
         reference::PATH,
-        rights::PATH
+        rights::PATH,
+        frozen::PATH
     );
     if let Some(docs) = outcomes.last_mut() {
         docs.problems.extend(ledger::check(&root));
@@ -151,6 +163,7 @@ fn check() -> ExitCode {
         docs.problems.extend(heads::check(&root));
         docs.problems.extend(reference::check(&root));
         docs.problems.extend(rights::check(&root));
+        docs.problems.extend(frozen::check(&root));
     }
     outcomes.extend(gates(&cargo, &root));
     println!(

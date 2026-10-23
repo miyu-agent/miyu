@@ -31,6 +31,8 @@ use crate::refusal::{Locale, Refusal};
 use crate::settings::UiSettings;
 
 /// 核心支持的协议主版本：现在只有 1。
+/// 协议 1 冻结了（施工 Y-5 末下）：方法在 `docs/reference/methods-v1.txt`，只加不改不删，门禁照它查（`xtask/src/frozen.rs`）。
+/// 删、改名、改意思的才升到 2。
 pub(crate) const PROTOCOL: u32 = 1;
 
 /// `hello` 的参数。认识的几格，别的不理（同一个主版本之内只做加法，第八节）。
