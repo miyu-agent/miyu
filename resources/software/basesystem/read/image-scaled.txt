@@ -1,0 +1,1 @@
+"{path}" is {from} pixels, so it was scaled down to {to} to fit the image limit.

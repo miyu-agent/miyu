@@ -1,5 +1,5 @@
-//! `read` 读图片（施工 4-13）：四种格式交回图片、不另写字，扩展名不算数；太大的拦下，照样报读过；量不出宽高的当
-//! 二进制；`offset`、`limit` 不管。
+//! `read` 读图片（施工 4-13）：四种格式交回图片、不另写字，扩展名不算数；太大的缩到上限以内、说一句（施工 I-S），缩不了的
+//! （下面造的假图解不开）拦下，照样报读过；量不出宽高的当二进制；`offset`、`limit` 不管。
 
 use miyu_kernel::id::{ContentHash, MediaType};
 use miyu_tool::{Done, Effect};
@@ -188,4 +188,35 @@ fn the_description_says_images_are_read_too() {
             "Read a text file or an image (PNG, JPEG, GIF, WebP), or list a directory."
         )
     );
+}
+
+/// 超了上限、解得开的图缩到上限以内交回，另写一句原来多大、缩到多大（施工 I-S）；报读过的是原来那一份的哈希。
+#[tokio::test]
+async fn an_oversized_real_image_is_scaled_down_and_said_so() {
+    use std::io::Cursor;
+    let site = Site::new();
+    let mut real = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image::RgbImage::from_pixel(9000, 30, image::Rgb([9, 9, 9])))
+        .write_to(&mut real, image::ImageFormat::Png)
+        .expect("编得了");
+    let real = real.into_inner();
+    site.file("work/real.png", &real);
+    let done = read(&site, "real.png").await;
+    assert!(!done.error, "{:?}", done.blocks);
+    let [picture] = done.images.as_slice() else {
+        panic!("交回一张图");
+    };
+    assert_eq!((picture.width, picture.height), (8000, 26));
+    assert_eq!(picture.media_type, MediaType::parse("image/jpeg").unwrap());
+    assert_eq!(
+        site.call("read", serde_json::json!({"file_path": "real.png"}))
+            .await
+            .1,
+        "\"real.png\" is 9000×30 pixels, so it was scaled down to 8000×26 to fit the image limit.\n"
+    );
+    assert_eq!(
+        done.human.expect("有说法").key,
+        "software/basesystem/read/image-scaled"
+    );
+    assert_eq!(done.effects, [read_effect(&site, "real.png", &real)]);
 }

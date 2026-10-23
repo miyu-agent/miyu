@@ -32,7 +32,7 @@ use miyu_store::root::DataRoot;
 
 use crate::Core;
 use crate::refusal::Refusal;
-use miyu_tool::attachment::{Kind, kind};
+use miyu_tool::attachment::{Kind, fit, kind};
 
 mod grants;
 mod keep;
@@ -386,9 +386,11 @@ fn put_blocking(
     if bytes.len() as u64 > LIMIT {
         return Err(Refusal::ATTACHMENT_TOO_BIG);
     }
-    let found = kind(&bytes, given).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
+    // 超了上限的图存之前缩到上限以内（施工 I-S），缩不了的照旧太大。
+    let fitted = fit(bytes, given).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
+    let found = fitted.kind;
     let blob = Blobs::new(place.root.blobs(&place.admin))
-        .put(&bytes)
+        .put(&fitted.bytes)
         .map_err(|error| {
             tracing::warn!(target: TARGET, error = %error, "attachment not stored");
             Refusal::INTERNAL

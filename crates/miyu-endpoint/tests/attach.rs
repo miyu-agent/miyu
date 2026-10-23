@@ -278,3 +278,29 @@ async fn refusals_are_in_the_heads_language() {
         "Files in the data directory cannot be attached."
     );
 }
+
+/// 超了上限、解得开的图存之前缩到上限以内（施工 I-S）：回的宽高、媒体类型照缩完的，存进去的就是缩完的那一份。
+#[tokio::test]
+async fn an_oversized_real_image_is_stored_scaled_down() {
+    use std::io::Cursor;
+    let home = Home::new();
+    let mut client = client(&home).await;
+    let mut real = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image::RgbImage::from_pixel(9000, 30, image::Rgb([9, 9, 9])))
+        .write_to(&mut real, image::ImageFormat::Png)
+        .expect("编得了");
+    let path = write(&home, "real.png", &real.into_inner());
+    let reply = put(&mut client, "b1", json!({"path": path})).await;
+    let result = &reply["result"];
+    assert_eq!(result["kind"], "image", "{reply}");
+    assert_eq!(
+        (result["width"].clone(), result["height"].clone()),
+        (json!(8000), json!(26))
+    );
+    assert_eq!(result["media_type"], "image/jpeg");
+    let blob = ContentHash::parse(result["blob"].as_str().expect("有编号")).expect("合写法");
+    let stored = Blobs::new(home.root.blobs(&alice()))
+        .get(&blob)
+        .expect("存进去了");
+    assert_eq!(miyu_tool::picture::measure(&stored), Some((8000, 26)));
+}

@@ -111,6 +111,7 @@
     "read/not-a-file": "通常のファイルでもディレクトリでもありません",
     "read/binary": "バイナリファイルなので読んでいません",
     "read/image": "画像 {width}×{height}",
+    "read/image-scaled": "画像 {width}×{height}（縮小済み）",
     "read/image-too-big": "画像が大きすぎるため（{size}）読んでいません",
     "read/image-too-wide": "画像が大きすぎるため（{width}×{height}）読んでいません",
     "common/missing": "そのファイルはありません",

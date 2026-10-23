@@ -4945,6 +4945,19 @@ Make one concrete step of progress now. Never spend a round only reporting that 
 set by the user with `/goal`
 ```
 
+### 工具结果，接在缩好的图前面
+
+#### `software/basesystem/read/image-scaled.txt`
+
+- 什么时候加进来：读的图超了上限、缩到上限以内交回的（施工 I-S）
+- token：约 25（`{path}` 按 `photo.png`、`{from}` 按 `9000×30`、`{to}` 按 `8000×26` 算，按 o200k 估）
+- 为什么加：告诉她看到的是缩过的：原图的细节、尺寸她要拿来做事（量坐标、裁剪）时得知道不是原样
+- 指纹：`34229c0e`
+
+```text
+"{path}" is {from} pixels, so it was scaled down to {to} to fit the image limit.
+```
+
 ### 工具结果（`shell` 的输出）
 
 #### `software/basesystem/shell/call/approval.txt`

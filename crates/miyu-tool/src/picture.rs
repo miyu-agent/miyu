@@ -2,7 +2,8 @@
 //! （`docs/blueprint/tools/read.md`「读图片」，`docs/blueprint/protocol.md` 的 `blob.put`）。
 //!
 //! 看开头的字节认格式，不看扩展名；只认 DeepSeek 收的四种。量宽高只看文件头，不解码。上限取几家接口里最严的：图跟着
-//! 对话每次都发出去，一张被供应商拒掉的图，会让这个会话以后的请求都失败，所以超了的进来时就拦下。
+//! 对话每次都发出去，一张被供应商拒掉的图，会让这个会话以后的请求都失败，所以超了的进来时就处理：施工 I-S 起先缩到上限以内
+//! （[`shrink()`]），缩不了的才拦下。
 
 /// 认格式要看开头几个字节。
 pub const HEAD: usize = 12;
@@ -41,6 +42,10 @@ pub fn measure(bytes: &[u8]) -> Option<(u32, u32)> {
 pub fn fits(bytes: u64, width: u32, height: u32) -> bool {
     bytes <= MAX_BYTES && width <= MAX_SIDE && height <= MAX_SIDE
 }
+
+mod shrink;
+
+pub use shrink::{DECODE_LIMIT, Shrunk, shrink};
 
 #[cfg(test)]
 mod tests;

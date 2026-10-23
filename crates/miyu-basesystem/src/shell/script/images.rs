@@ -4,7 +4,7 @@
 //! - 目录建在缓存目录旁边，随机名，Unix 上 `0700`，之前就在的不用；建好取真实路径：macOS 的临时目录在链接下面
 //!   （`/var` → `/private/var`），交给沙盒规格的、自己读的都用它。
 //! - 只看这一层，至多看 [`MOST_NAMES`] 个名字；照 [`miyu_fs::open_file`] 打开：路上不跟链接、不阻塞、只认普通文件，开了以后
-//!   看大小，超过 [`picture::MAX_BYTES`] 的不读进内存。
+//!   看大小，超过 64 MiB 的不读进内存；超了上限的缩到上限以内（施工 I-S）。
 //! - 照 [`picture`] 认格式、量尺寸、查上限，至多 [`MOST_IMAGES`] 张。别的不交，运行日志记一行 `WARN script image dropped`，
 //!   给写脚本的人查；不给她另写一句（`26-提示词.md` J12）。
 
@@ -99,31 +99,46 @@ impl Drop for Folder {
     }
 }
 
-/// 读一张：不是图、超了上限的交回原因（写死的一句，不带文件名）。
+/// 缩图时最多读进多少字节（施工 I-S）：再大的照旧不交。
+const SHRINK_READ: u64 = 64 * 1024 * 1024;
+
+/// 读一张：不是图的交回原因（写死的一句，不带文件名）。超了上限的先缩到上限以内（施工 I-S，`picture::shrink`），缩不了的、
+/// 大过 [`SHRINK_READ`] 的不交。
 fn read(path: &Path) -> Result<Picture, &'static str> {
     const UNREADABLE: &str = "not readable";
+    const TOO_BIG: &str = "larger than 5 MiB or 8000 pixels a side and could not be scaled down";
     let file = miyu_fs::open_file(path).map_err(|_| UNREADABLE)?;
     let size = file.metadata().map_err(|_| UNREADABLE)?.len();
-    if size > picture::MAX_BYTES {
-        return Err("larger than 5 MiB");
+    if size > SHRINK_READ {
+        return Err(TOO_BIG);
     }
     let mut bytes = Vec::new();
-    // 开了以后还在长的，读到上限多一个字节就停，下面 `fits` 照字节数拦下。
-    file.take(picture::MAX_BYTES + 1)
+    // 开了以后还在长的，读到上限多一个字节就停，下面照字节数拦下。
+    file.take(SHRINK_READ + 1)
         .read_to_end(&mut bytes)
         .map_err(|_| UNREADABLE)?;
     let head = &bytes[..bytes.len().min(picture::HEAD)];
     let kind = picture::kind(head).ok_or("not PNG, JPEG, GIF or WebP")?;
-    let media_type = MediaType::parse(kind).map_err(|_| "not PNG, JPEG, GIF or WebP")?;
     let (width, height) = picture::measure(&bytes).ok_or("its size can't be read")?;
-    if !picture::fits(bytes.len() as u64, width, height) {
-        return Err("larger than 5 MiB or 8000 pixels a side");
+    if picture::fits(bytes.len() as u64, width, height) {
+        let media_type = MediaType::parse(kind).map_err(|_| "not PNG, JPEG, GIF or WebP")?;
+        return Ok(Picture {
+            bytes,
+            media_type,
+            width,
+            height,
+        });
     }
+    if bytes.len() as u64 > SHRINK_READ {
+        return Err(TOO_BIG);
+    }
+    let shrunk = picture::shrink(&bytes).ok_or(TOO_BIG)?;
+    let media_type = MediaType::parse(shrunk.media_type).map_err(|_| TOO_BIG)?;
     Ok(Picture {
-        bytes,
+        bytes: shrunk.bytes,
         media_type,
-        width,
-        height,
+        width: shrunk.width,
+        height: shrunk.height,
     })
 }
 

@@ -14,7 +14,11 @@ use super::Texts;
 use crate::common::said;
 use crate::load::say;
 
-/// 读一张图：`head` 是认格式时读出来的开头，`file` 接着往下读。都报 `file.read`：整份的哈希，没有行的范围。
+/// 缩图时最多读进多少字节（施工 I-S）：再大的照旧说太大，不读进内存。
+const SHRINK_READ: u64 = 64 * 1024 * 1024;
+
+/// 读一张图：`head` 是认格式时读出来的开头，`file` 接着往下读。都报 `file.read`：整份的哈希，没有行的范围。超了上限的
+/// 先缩到上限以内交回、说一句缩过（施工 I-S，2026-10-22 项目主人排）；缩不了的、大过 [`SHRINK_READ`] 的照旧说太大。
 pub(crate) fn read(
     texts: &Texts,
     path: &str,
@@ -25,11 +29,11 @@ pub(crate) fn read(
 ) -> Done {
     let mut bytes = head;
     // 最多多读一个字节：读出来多过上限的，就是太大了，文件在打开以后变大的也拦得住。
-    let room = MAX_BYTES + 1 - bytes.len() as u64;
+    let room = SHRINK_READ + 1 - bytes.len() as u64;
     if let Err(error) = (&mut file).take(room).read_to_end(&mut bytes) {
         return texts.common.failed(path, &error);
     }
-    if bytes.len() as u64 > MAX_BYTES {
+    if bytes.len() as u64 > SHRINK_READ {
         // 不给内容，照样过一遍整份算哈希，和二进制的一样：她读过它，`write` 才盖得了。
         let mut hasher = Hasher::default();
         hasher.update(&bytes);
@@ -37,17 +41,7 @@ pub(crate) fn read(
             Ok(rest) => bytes.len() as u64 + rest,
             Err(error) => return texts.common.failed(path, &error),
         };
-        let size = mib(total);
-        return Done::error(say(
-            &texts.image_too_big,
-            &[("path", path), ("size", &size)],
-        ))
-        .said(
-            said("read/image-too-big")
-                .with("path", path)
-                .with("size", size),
-        )
-        .effect(read_effect(real, hasher.finish()));
+        return too_big(texts, path, total, read_effect(real, hasher.finish()));
     }
     let hash = ContentHash::of(&bytes);
     let Some((width, height)) = picture::measure(&bytes) else {
@@ -56,43 +50,104 @@ pub(crate) fn read(
             .said(said("read/binary").with("path", path))
             .effect(read_effect(real, hash));
     };
-    // 字节数上面拦过了，这里只剩宽高。
-    if !picture::fits(bytes.len() as u64, width, height) {
-        let (w, h) = (width.to_string(), height.to_string());
-        return Done::error(say(
-            &texts.image_too_wide,
-            &[("path", path), ("width", &w), ("height", &h)],
-        ))
-        .said(
-            said("read/image-too-wide")
-                .with("path", path)
-                .with("width", w)
-                .with("height", h),
-        )
-        .effect(read_effect(real, hash));
+    if picture::fits(bytes.len() as u64, width, height) {
+        return shown(texts, path, bytes, media_type, (width, height), None)
+            .effect(read_effect(real, hash));
     }
+    match picture::shrink(&bytes) {
+        Some(shrunk) => {
+            let note = say(
+                &texts.image_scaled,
+                &[
+                    ("path", path),
+                    ("from", &format!("{width}×{height}")),
+                    ("to", &format!("{}×{}", shrunk.width, shrunk.height)),
+                ],
+            );
+            shown(
+                texts,
+                path,
+                shrunk.bytes,
+                shrunk.media_type,
+                (shrunk.width, shrunk.height),
+                Some(note),
+            )
+            .effect(read_effect(real, hash))
+        }
+        None if bytes.len() as u64 > MAX_BYTES => {
+            too_big(texts, path, bytes.len() as u64, read_effect(real, hash))
+        }
+        None => {
+            let (w, h) = (width.to_string(), height.to_string());
+            Done::error(say(
+                &texts.image_too_wide,
+                &[("path", path), ("width", &w), ("height", &h)],
+            ))
+            .said(
+                said("read/image-too-wide")
+                    .with("path", path)
+                    .with("width", w)
+                    .with("height", h),
+            )
+            .effect(read_effect(real, hash))
+        }
+    }
+}
+
+/// 太大、看不了（缩不了的、大过 [`SHRINK_READ`] 的）。
+fn too_big(texts: &Texts, path: &str, total: u64, effect: Effect) -> Done {
+    let size = mib(total);
+    Done::error(say(
+        &texts.image_too_big,
+        &[("path", path), ("size", &size)],
+    ))
+    .said(
+        said("read/image-too-big")
+            .with("path", path)
+            .with("size", size),
+    )
+    .effect(effect)
+}
+
+/// 交回一张图：没缩的只交图，不另写字（驱动在这条结果里写现成的那一句，把图挪到后面一条 user 消息里）；缩过的另写一句
+/// `note`。
+fn shown(
+    texts: &Texts,
+    path: &str,
+    bytes: Vec<u8>,
+    media_type: &str,
+    (width, height): (u32, u32),
+    note: Option<String>,
+) -> Done {
     let Ok(media_type) = MediaType::parse(media_type) else {
         return texts
             .common
             .failed(path, &io::Error::other("unknown media type"));
     };
-    // 只交图，不另写字：驱动在这条结果里写现成的那一句，把图挪到后面一条 user 消息里。
-    Done {
-        blocks: Vec::new(),
-        ..Done::ok("")
-    }
-    .image(Picture {
+    let scaled = note.is_some();
+    let done = match note {
+        Some(note) => Done::ok(note),
+        None => Done {
+            blocks: Vec::new(),
+            ..Done::ok("")
+        },
+    };
+    let key = if scaled {
+        "read/image-scaled"
+    } else {
+        "read/image"
+    };
+    done.image(Picture {
         bytes,
         media_type,
         width,
         height,
     })
     .said(
-        said("read/image")
+        said(key)
             .with("width", width.to_string())
             .with("height", height.to_string()),
     )
-    .effect(read_effect(real, hash))
 }
 
 /// 剩下的字节喂给哈希，交回一共几个字节。

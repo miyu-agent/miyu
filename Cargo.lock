@@ -1821,6 +1821,7 @@ dependencies = [
  "grep-regex",
  "grep-searcher",
  "ignore",
+ "image",
  "miyu-config",
  "miyu-fs",
  "miyu-kernel",
@@ -2305,6 +2306,7 @@ dependencies = [
 name = "miyu-tool"
 version = "0.0.0"
 dependencies = [
+ "image",
  "imagesize",
  "miyu-config",
  "miyu-drivers",

@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{ContentHash, FileName, Hasher, MediaType};
 use miyu_store::blob::Blobs;
-use miyu_tool::attachment::kind;
+use miyu_tool::attachment::fit;
 
 use crate::Core;
 use crate::attach;
@@ -307,7 +307,19 @@ fn finish_inner(
         tracing::warn!(target: TARGET, error = %error, "upload not stored");
         Refusal::INTERNAL
     })?;
-    let found = kind(&bytes, media_type).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
+    let fitted = fit(bytes, media_type).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
+    if fitted.shrunk_from.is_some() {
+        // 缩过的图（施工 I-S）：存缩好的那一份，编号照它的内容；原来的暂存文件作废。
+        let blob = blobs.put(&fitted.bytes).map_err(|error| {
+            tracing::warn!(target: TARGET, error = %error, "upload not stored");
+            Refusal::INTERNAL
+        })?;
+        if let Err(error) = std::fs::remove_file(path) {
+            tracing::warn!(target: TARGET, error = %error, "upload not discarded");
+        }
+        return Ok(attach::reply(&blob, name, fitted.kind));
+    }
+    let found = fitted.kind;
     blobs.finish_upload(path, hash).map_err(|error| {
         tracing::warn!(target: TARGET, error = %error, "upload not stored");
         Refusal::INTERNAL

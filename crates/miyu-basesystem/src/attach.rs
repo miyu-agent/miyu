@@ -9,7 +9,7 @@ use std::path::Path;
 use miyu_fs::{Kind, OpenError, open_file};
 use miyu_kernel::id::{FileName, SourcePath};
 use miyu_kernel::template::Template;
-use miyu_tool::attachment::{Attached, LIMIT, kind};
+use miyu_tool::attachment::{Attached, LIMIT, fit};
 use miyu_tool::{Call, Done, Target};
 
 use crate::blocking::blocking;
@@ -99,7 +99,9 @@ fn one(texts: &Texts, call: &Call, path: &str) -> Result<Attached, Box<Done>> {
     if bytes.len() as u64 > LIMIT {
         return Err(too_big());
     }
-    let kind = kind(&bytes, None).map_err(|_| too_big())?;
+    // 超了上限的图缩到上限以内再带上（施工 I-S）：缩不了的照旧说太大。
+    let fitted = fit(bytes, None).map_err(|_| too_big())?;
+    let (bytes, kind) = (fitted.bytes, fitted.kind);
     let segment = real.file_name().unwrap_or(real.as_os_str());
     let name = FileName::parse(&segment.to_string_lossy()).map_err(|error| failed(&error))?;
     Ok(Attached {

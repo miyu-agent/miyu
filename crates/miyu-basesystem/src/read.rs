@@ -43,6 +43,7 @@ pub(crate) struct Texts {
     binary: Template,
     image_too_big: Template,
     image_too_wide: Template,
+    image_scaled: Template,
 }
 
 /// 她给的参数。名字照 Claude Code 叫 `file_path`；照 pi 写成 `path`、照 opencode 写成 `filePath` 的也认。
@@ -86,6 +87,7 @@ impl Read {
                 binary: text("binary", &["path"])?,
                 image_too_big: text("image-too-big", &["path", "size"])?,
                 image_too_wide: text("image-too-wide", &["path", "width", "height"])?,
+                image_scaled: text("image-scaled", &["path", "from", "to"])?,
             },
         })
     }

@@ -2,7 +2,8 @@
 //! `session.send` 造块之前照同一份代码再认一遍：进到会话里的块，宽高、媒体类型都是核心自己量的。她发给别的会话、交代
 //! 子代理时带的附件（施工 C-9，`docs/blueprint/tools/send_message.md`）也照它认：施工 C-9 从协议端点挪到这里共用。
 //!
-//! - 四种图之一、量得出宽高的是图片，媒体类型照认出的；超了上限的不收（`miyu_tool::picture`，和 `read` 同一套）。
+//! - 四种图之一、量得出宽高的是图片，媒体类型照认出的；超了上限的存之前缩到上限以内（[`fit`]，施工 I-S），缩不了的不收
+//!   （`miyu_tool::picture`，和 `read` 同一套）。
 //! - 别的都是文件。开头是 `%PDF-` 的是 PDF。
 //! - 别的文件，头写了媒体类型的照写的，只是写成 PDF、图片的不算：驱动照媒体类型把 PDF 当 PDF 发、照块的种类把图当图
 //!   发，内容不是却写成了，供应商会拒，这个会话以后的请求都跟着失败。没写、不算的，文本是 `text/plain`（和驱动认
@@ -88,6 +89,46 @@ pub fn kind(bytes: &[u8], given: Option<MediaType>) -> Result<Kind, TooBig> {
         false => media("application/octet-stream"),
     });
     Ok(Kind::File { media_type })
+}
+
+/// 存进去的那一份（[`fit`]）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Fitted {
+    /// 存进去的内容：没缩的是原来的。
+    pub bytes: Vec<u8>,
+    /// 认出来的（缩了的照缩完的）。
+    pub kind: Kind,
+    /// 缩过的：原来的宽、高。
+    pub shrunk_from: Option<(u32, u32)>,
+}
+
+/// 同 [`kind`]，超了上限的图先缩到上限以内（施工 I-S，[`picture::shrink()`]）。存附件的地方（`blob.put`、分块上传、她带的
+/// 附件）用它；已经存好的再认一遍用 [`kind`]。
+///
+/// # Errors
+///
+/// 是图片、超了上限，又缩不了（解不开、缩到最小还超）。
+pub fn fit(bytes: Vec<u8>, given: Option<MediaType>) -> Result<Fitted, TooBig> {
+    match kind(&bytes, given) {
+        Ok(kind) => Ok(Fitted {
+            bytes,
+            kind,
+            shrunk_from: None,
+        }),
+        Err(TooBig) => {
+            let from = picture::measure(&bytes);
+            let shrunk = picture::shrink(&bytes).ok_or(TooBig)?;
+            Ok(Fitted {
+                kind: Kind::Image {
+                    media_type: media(shrunk.media_type),
+                    width: shrunk.width,
+                    height: shrunk.height,
+                },
+                bytes: shrunk.bytes,
+                shrunk_from: from,
+            })
+        }
+    }
 }
 
 /// 代码里写死的几种媒体类型，都合写法。

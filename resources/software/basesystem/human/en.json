@@ -115,6 +115,7 @@
     "read/not-a-file": "not a regular file or directory",
     "read/binary": "binary file, not read",
     "read/image": "image {width}×{height}",
+    "read/image-scaled": "image {width}×{height} (scaled down)",
     "read/image-too-big": "image too large ({size}), not read",
     "read/image-too-wide": "image too large ({width}×{height}), not read",
     "common/missing": "no such file",

@@ -111,6 +111,7 @@
     "read/not-a-file": "不是普通文件，也不是目录",
     "read/binary": "是二进制文件，没读",
     "read/image": "图片 {width}×{height}",
+    "read/image-scaled": "图片 {width}×{height}（缩小过）",
     "read/image-too-big": "图太大（{size}），没读",
     "read/image-too-wide": "图太大（{width}×{height}），没读",
     "common/missing": "没有这个文件",
