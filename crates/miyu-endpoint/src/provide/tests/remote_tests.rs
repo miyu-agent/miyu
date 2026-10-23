@@ -286,3 +286,32 @@ async fn data_is_handed_over_unless_the_call_failed() {
         assert_eq!(done.data, wanted, "error={error}");
     }
 }
+
+/// 调扩展的工具时交会话属主的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
+#[tokio::test]
+async fn a_call_carries_where_the_owner_s_pictures_go() {
+    let data = std::env::temp_dir();
+    let mut call = call_of("bob", None);
+    call.data_root = Some(data.clone());
+    let (remote, peer, mut lines) = remote(Duration::from_secs(60));
+    let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
+    let sent = next(&mut lines).await;
+    peer.answer(Response {
+        id: sent["id"].as_str().unwrap().to_string(),
+        outcome: Ok(json!({"blocks": [{"type": "text", "text": "done"}]})),
+    });
+    running.await.unwrap();
+    let real = std::fs::canonicalize(&data).expect("在");
+    assert_eq!(
+        sent["params"]["pictures"],
+        json!(
+            real.join("home")
+                .join("bob")
+                .join("pictures")
+                .display()
+                .to_string()
+        )
+    );
+    let (without, _) = sent_for(None).await;
+    assert!(without["params"].get("pictures").is_none(), "{without}");
+}
