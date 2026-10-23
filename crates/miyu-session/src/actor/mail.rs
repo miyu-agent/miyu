@@ -75,7 +75,7 @@ impl Actor {
                 Mail::Done
             }
             Message::Context(reply) => {
-                answer(reply, self.context());
+                self.context(reply);
                 Mail::Done
             }
             Message::Unsubscribed => self.watch(false),

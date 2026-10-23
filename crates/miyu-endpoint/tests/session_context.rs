@@ -1,5 +1,6 @@
 //! 这时的上下文一块块的（施工 CX-1 上，`session.context`）：真核心、出厂的基础系统。造好的会话有 system、内置的工具，
-//! 没说过话的没有对话那块；说过一轮的有人说的、她说的；名字照连接的语言；写了别的参数、没有的会话拒。
+//! 没说过话的没有对话那块；说过一轮的有人说的、她说的；名字照连接的语言；system 照拼的先后全拆，各块照用量摊好（CX-1 下）；
+//! 不写会话的照新会话算，和真造出来的一样；会话和人格、预设一起写的、没有的会话拒。
 
 use std::path::Path;
 
@@ -34,8 +35,10 @@ async fn a_session_tells_its_context_part_by_part() {
     let parts = &result["parts"];
     let system = part(parts, "system").unwrap_or_else(|| panic!("有 system：{fresh}"));
     assert!(system["tokens"].as_u64() > Some(0), "{fresh}");
-    let other = part(&system["children"], "system.other").expect("有其余的");
-    assert_ne!(other["label"], "system.other", "名字照语言：{fresh}");
+    assert!(
+        part(&system["children"], "system.other").is_none(),
+        "全拆得开，没有其余的：{fresh}"
+    );
     let tools = part(parts, "tools").unwrap_or_else(|| panic!("有工具：{fresh}"));
     let builtin = part(&tools["children"], "tools.builtin").expect("有内置的");
     assert_eq!(builtin["tokens"], tools["tokens"], "全是内置的：{fresh}");
@@ -46,7 +49,24 @@ async fn a_session_tells_its_context_part_by_part() {
         .iter()
         .map(|part| part["tokens"].as_u64().unwrap())
         .sum();
-    assert_eq!(result["estimated_total"], total, "{fresh}");
+    assert_eq!(result["used"], total, "核心照用量摊好了：{fresh}");
+    assert!(result["estimated_total"].as_u64() > Some(0), "{fresh}");
+    let core =
+        part(&system["children"], "system.core").unwrap_or_else(|| panic!("system 全拆：{fresh}"));
+    assert_ne!(core["label"], "system.core", "名字照语言：{fresh}");
+
+    // 不写会话的照新会话会拿到的算，和真造出来的一样（施工 CX-1 下）。
+    let preview = client.call("x0", "session.context", json!({})).await;
+    assert_eq!(
+        part(&preview["result"]["parts"], "system"),
+        Some(system),
+        "{preview}"
+    );
+    assert_eq!(
+        part(&preview["result"]["parts"], "tools"),
+        Some(tools),
+        "{preview}"
+    );
     assert_eq!(result["basis"], "estimated", "还没答过：{fresh}");
 
     client.say("s1", &session, "你好").await;
@@ -69,7 +89,11 @@ async fn other_params_or_an_unknown_session_are_refused() {
     client.hello().await;
     let session = client.create("c1", &home.work.to_string_lossy()).await;
     for (id, params, expected) in [
-        ("r1", json!({}), "bad_params"),
+        (
+            "r1",
+            json!({"session": session, "persona": null}),
+            "bad_params",
+        ),
         (
             "r2",
             json!({"session": session, "preset": "x"}),

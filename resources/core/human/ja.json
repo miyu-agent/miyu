@@ -814,11 +814,17 @@
     "commands/unavailable/preset-off": "プリセット「{preset}」は記憶がオフです。",
     "commands/workspace-wide": "ワークスペースを {cwd} に切り替えました（範囲の広いディレクトリ）。",
     "context/part/system": "システムプロンプト",
+    "context/part/system.persona": "人格",
+    "context/part/system.venue": "サブエージェントの説明",
+    "context/part/system.group": "グループチャットの説明",
+    "context/part/system.core": "コアの指示",
+    "context/part/system.clicall": "スクリプトでのツール呼び出し",
+    "context/part/system.style_lock": "スタイルロック",
     "context/part/system.skills": "スキル",
     "context/part/system.knowledge": "ナレッジベース",
     "context/part/system.profile": "あなたについて",
     "context/part/system.project": "プロジェクトの指示",
-    "context/part/system.other": "人格とその他の指示",
+    "context/part/system.other": "その他の指示",
     "context/part/tools": "ツールの説明",
     "context/part/tools.builtin": "内蔵ツール",
     "context/part/tools.scripts": "スクリプト",
@@ -833,6 +839,7 @@
     "context/part/messages.memory.resident": "常駐の記憶",
     "context/part/messages.memory.recall": "思い出した記憶",
     "context/part/messages.knowledge": "ナレッジから思い出したこと",
+    "context/part/messages.project_docs": "プロジェクトの指示",
     "context/part/messages.facts": "その他のメモ"
   }
 }

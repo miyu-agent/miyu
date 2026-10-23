@@ -9,7 +9,6 @@ use tokio::sync::{mpsc, oneshot};
 use miyu_kernel::event::SessionCreated;
 use miyu_kernel::session::{Input, Session};
 use miyu_models::provider::chat;
-use miyu_policy::preset::{Chosen, ROLEPLAY};
 use miyu_store::blob::Blobs;
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
 use miyu_store::recall::NO_PERSONA;
@@ -28,18 +27,17 @@ use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
-use crate::knowledge::listing;
 use crate::lettering::Lettering;
 use crate::memory::{self, connect};
 use crate::port::ForSession;
 use crate::report::{Reporter, Upstream};
-use crate::skills;
-use crate::snapshot::{Parts, build};
+use crate::snapshot::build;
 use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
 use crate::usage::Ledger;
 
+mod draft;
 mod error;
 mod face;
 mod fork;
@@ -49,6 +47,7 @@ use place::place;
 mod scan;
 mod setup;
 
+pub use draft::preview_context;
 pub use error::{CreateError, LoadError};
 pub use face::preview;
 pub use fork::{Fork, ForkError, fork};
@@ -65,21 +64,31 @@ pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace}
 /// 人格、子会话的场所说明读不出来，策略造不出来、磁盘上建不成；造会话那一条没落盘。
 pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
+    let mut opened = face::open(&setup, &config.current().resolved.values()).await;
+    let taken = (
+        std::mem::take(&mut opened.face),
+        std::mem::take(&mut opened.listed),
+    );
+    let draft::Drafted {
+        parts,
+        shelves: shelves_open,
+        names: skill_names,
+        watch,
+    } = draft::draft(&setup, &opened, taken).await?;
     let face::Opened {
         preset,
         scope,
         shelves,
-        listed,
-        face,
         edition,
-    } = face::open(&setup, &config.current().resolved.values()).await;
+        ..
+    } = opened;
     let Create {
         root,
         resources,
         id,
         persona,
-        persona_texts,
-        profile,
+        persona_texts: _,
+        profile: _,
         personas,
         memory_account,
         memory_scope: _,
@@ -107,12 +116,12 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         model,
         knowledge: _,
         vectors: _,
-        installed: packages_installed,
+        installed: _,
         memory,
         preset: _,
         no_tools,
         presets,
-        group,
+        group: _,
         owner_is_admin,
         images,
         titles,
@@ -124,41 +133,6 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let reference = model.or_else(|| chat(&config.current().resolved.values()));
     let (resources, name) = (resources.clone(), persona.map(str::to_string));
     let shipped = resources.clone();
-    // 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的）当都装着。
-    let features = presets.as_ref().map(|places| &places.features);
-    let installed = |feature| features.is_none_or(|features| features.installed(feature));
-    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
-    // 只读。
-    let watch = packages_installed.clone().map(|installed| skills::Watch {
-        installed,
-        root: root.clone(),
-        owner: owner.clone(),
-    });
-    let (found, shelves_open, skill_names) = match packages_installed {
-        Some(installed) => {
-            let (root, owner) = (root.clone(), owner.clone());
-            let file = preset.as_ref().map(|chosen| chosen.file.clone());
-            blocking(move || {
-                let found =
-                    skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
-                let shelves = skills::shelves(&found);
-                let names = skills::names(&found);
-                (found, shelves, names)
-            })
-            .await
-        }
-        None => (Vec::new(), Vec::new(), skills::Names::new()),
-    };
-    let pin = preset.as_ref().map(Chosen::pin);
-    let foreground = Agents::foreground(preset.as_ref().map(|chosen| &chosen.file));
-    // 扩展这时说过要放在 system 尾部的（施工 X-20），MCP 服务这时的说明（施工 X-39）。
-    let asked = hooks
-        .as_ref()
-        .map(|port| port.appended(id.as_str()))
-        .unwrap_or_default();
-    let appended =
-        crate::appended::resolve(&edition.catalog, &face, (&Default::default(), &asked), true);
-    let roleplay = installed(ROLEPLAY);
     let preset = preset.map(|chosen| chosen.id);
     let asks = Agents::asks(
         &venue,
@@ -166,13 +140,11 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         attended,
     );
     let goals = Agents::lists_sessions(&venue, lineage.as_ref().map(|lineage| &lineage.parent));
-    let on_face = face.iter().any(|tool| tool.name == miyu_tool::GOAL);
-    let pools = Agents::pools_in(&face);
-    let agents_personas = Agents::personas_in(&face);
-    // 工具面上有知识库那两件的，system 里列出她查得到的库（施工 K-1 补）。
-    let shelved = face.iter().any(|tool| tool.name == miyu_tool::KB_SEARCH);
+    let on_face = parts.face.iter().any(|tool| tool.name == miyu_tool::GOAL);
+    let pools = Agents::pools_in(&parts.face);
+    let agents_personas = Agents::personas_in(&parts.face);
     let child = lineage.is_some();
-    let count = face.len();
+    let count = parts.face.len();
     let dir = root.session_dir(&owner, &id);
     // 会话日志的目录只交给属主是管理员的会话（施工 E-M，U25）。
     let session_log = owner_is_admin.then(|| dir.clone());
@@ -185,31 +157,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
-    let bare = dream.is_some();
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
-        let skilled = skills::listing(&resources, &face, &found).map_err(CreateError::Shipped)?;
-        let parts = Parts {
-            name: name.clone(),
-            texts: persona_texts,
-            attended,
-            face,
-            memory: Some(scope.as_str().to_string()),
-            child,
-            preset: pin,
-            roleplay,
-            group: group.map(|group| (offset.minutes(), group.recent)),
-            foreground,
-            knowledge: shelved
-                .then(|| listing(&resources, &listed))
-                .transpose()
-                .map_err(CreateError::Shipped)?
-                .flatten(),
-            skills: skilled,
-            profile: profile.block(&resources.profile().map_err(CreateError::Shipped)?),
-            project: None,
-            appended,
-            bare,
-        };
         let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         snapshot.no_tools = no_tools;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;

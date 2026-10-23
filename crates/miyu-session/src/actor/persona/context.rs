@@ -1,30 +1,50 @@
 //! 这时的上下文一块块的（施工 CX-1 上，`session.context`）：内核的明细加上照现在的快照拆的 system、标的工具面。只看不换。
+//! 施工 CX-1 下起 system 照快照原来的料重拼一遍、照拼的先后全拆（[`relaid`]），对不上的才照单存的几块拆（[`split`]）。
+
+use tokio::sync::oneshot;
 
 use miyu_kernel::estimate;
-use miyu_policy::Snapshot;
+use miyu_policy::{PersonaTexts, Snapshot};
 
 use super::Actor;
+use crate::blocking::blocking;
+use crate::snapshot::{Layout, Parts, laid, pieces};
 use crate::{Context, SystemPart};
 
 impl Actor {
-    /// 这时的上下文一块块的。没有人格快照的（测试里造的）system 只有其他、工具面是空的。
-    pub(in crate::actor) fn context(&self) -> Context {
+    /// 这时的上下文一块块的：内核的明细当场要，system 照快照原来的料重拼着拆在阻塞线程里做，不挡收件箱。没有人格快照的
+    /// （测试里造的）system 只有其他、工具面是空的。
+    pub(in crate::actor) fn context(&self, reply: oneshot::Sender<Context>) {
         let breakdown = self.session.breakdown();
-        let (system, offered) = match &self.persona {
-            Some(refresh) => (
-                split(&refresh.snapshot, breakdown.system),
-                miyu_policy::offered(
-                    &refresh.snapshot.tools,
-                    refresh.snapshot.core.loading.as_ref(),
-                ),
-            ),
-            None => (vec![(SystemPart::Other, breakdown.system)], Vec::new()),
+        let Some(refresh) = self.persona.clone() else {
+            let system = vec![(SystemPart::Other, breakdown.system)];
+            super::super::answer(
+                reply,
+                Context {
+                    breakdown,
+                    system,
+                    offered: Vec::new(),
+                },
+            );
+            return;
         };
-        Context {
-            breakdown,
-            system,
-            offered,
-        }
+        tokio::spawn(async move {
+            let context = blocking(move || {
+                let snapshot = &refresh.snapshot;
+                let system = match relaid(&refresh) {
+                    Some(layout) => pieces(&layout, breakdown.system),
+                    None => split(snapshot, breakdown.system),
+                };
+                let offered = miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref());
+                Context {
+                    breakdown,
+                    system,
+                    offered,
+                }
+            })
+            .await;
+            super::super::answer(reply, context);
+        });
     }
 }
 
@@ -56,4 +76,48 @@ pub(super) fn split(snapshot: &Snapshot, total: u64) -> Vec<(SystemPart, u64)> {
     }
     parts.push((SystemPart::Other, total.saturating_sub(known)));
     parts
+}
+
+/// 照快照原来的料重拼一遍（人设照这时的文件），和快照的 system 逐字节一样才交一块块在哪；不一样的（人设改过、核心升级了）
+/// 没有，照 [`split`] 拆。读文件，在阻塞线程里调。
+pub(super) fn relaid(refresh: &super::Refresh) -> Option<Layout> {
+    let (new, layout) = laid(&refresh.resources, parts_of(refresh)?).ok()?;
+    (new.system == refresh.snapshot.system)
+        .then_some(layout)
+        .flatten()
+}
+
+/// 快照原来的料：人设照这时的文件（找不到的、裸的没有），别的照快照里记的。
+pub(super) fn parts_of(refresh: &super::Refresh) -> Option<Parts> {
+    let old = &refresh.snapshot;
+    if old.bare {
+        return None;
+    }
+    let texts = match &old.persona {
+        Some(id) => refresh.personas.find(id).ok()?.texts,
+        None => PersonaTexts::default(),
+    };
+    Some(Parts {
+        name: old.persona.clone(),
+        texts,
+        attended: old.attended,
+        face: old.tools.clone(),
+        memory: old.memory.clone(),
+        child: refresh.child,
+        preset: old.preset.clone(),
+        roleplay: old.reminder.is_some(),
+        group: old.group.as_ref().map(|chat| {
+            (
+                chat.offset,
+                chat.recent.as_ref().and_then(|words| words.limit),
+            )
+        }),
+        foreground: old.foreground,
+        knowledge: old.knowledge.clone(),
+        skills: old.skills.clone(),
+        profile: old.profile.clone(),
+        project: old.project.clone(),
+        appended: old.appended.clone(),
+        bare: false,
+    })
 }

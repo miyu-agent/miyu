@@ -171,7 +171,7 @@
 | `session.interrupt` | 打断在进行的回合 |
 | `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
 | `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
-| `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上） |
+| `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上）；不写会话的照新会话会拿到的算（CX-1 下） |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -497,29 +497,31 @@
 2. 没写的：和 `session.create` 照同一份拼（找预设、人格，拼工具面），只拼不造。
 3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
 
-**`session.context`**（施工 CX-1 上，2026-10-23 项目主人要的「上下文明细」，形状和协调会话对过）
+**`session.context`**（施工 CX-1 上、下，2026-10-23 项目主人要的「上下文明细」，形状和协调会话对过）
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
-| `session` | 字符串，必写 | 哪个会话 |
+| `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算（CX-1 下） |
+| `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create` |
+| `preset` | 字符串，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create` |
 
 回应 `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`：
 
 - `window`、`line`：上下文窗口、压缩线，同订阅的 `limits`（`window`、`compaction_line`）；没交过限额的不写。
 - `used`：这时用了多少，口径同终端底栏：有锚的是锚加上锚以后的本地估算，没有的整份估；算不了的不写。`basis` 是 `measured`（照锚起算）或 `estimated`（全是估的：没答过、换了模型）。`anchor` 是 `measured` 时那一下供应商报的（最近一次主请求的四项用量之和）。
-- `parts`：一块一个 `{"part", "label", "tokens", "children"?}`，照下面的先后，是 0 的块不交。`part` 是稳定的编号，给头认；`label` 照连接的语言（`core/human/<语言>.json` 的 `context/part/<编号>`），包、MCP 服务的照原名。各块用同一个本地估算器（和压缩线同一个），交原值；`estimated_total` 是各块加起来的，和 `used` 对不上时头照 `used / estimated_total` 摊。
+- `parts`：一块一个 `{"part", "label", "tokens", "children"?}`，照下面的先后，是 0 的块不交。`part` 是稳定的编号，给头认；`label` 照连接的语言（`core/human/<语言>.json` 的 `context/part/<编号>`），包、MCP 服务的照原名。各块用同一个本地估算器（和压缩线同一个）估，有 `used` 的由核心照它摊好（CX-1 下，2026-10-23 主会话定：估算器中文多估约两成半、英文少估约一成半，`compaction.md` 第一条第 2 条，一份逻辑不让头各写一遍）：叶子照比例摊，取整差的那几个照小数部分从大到小补，加起来正好是 `used`，上一层是下面的和，摊成 0 的不交；`estimated_total` 是摊之前各块估的和。没有 `used` 的交原值。
 
 | `part` | 是什么 |
 |---|---|
-| `system` | system 一整段；下面 `system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.profile`（关于你）、`system.project`（项目说明）、`system.appended:<包>`（扩展追加的，`label` 是包名）、`system.other`（人设、场所说明、核心的几行和其余的）。前几块是快照里单存了原文、在拼好的 system 里找得到的；找不到的（快照和发的对不上）不认，算进其余的 |
+| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样才这样拆。对不上的（人设改过、核心升级了）只拆快照里单存了原文、在拼好的 system 里找得到的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
 | `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`、`tools.deferred`（要先加载、只露名字的） |
 | `demos` | 示范对话 |
 | `summary` | 检查点的摘要 |
-| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.tool_results` |
+| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.project_docs`（仓库里的 AGENTS.md，施工 P-14）、`messages.tool_results` |
 
 1. 只在被问时算：会话照有效历史组装一次请求、各块估一次，只看不动，不碰回合的热路径（`session/actor.md`）。
-2. 新会话预览（不写 `session`）、system 拆全（人设、场所说明、风格锁等各成一块）在 CX-1 下。
-3. 没写 `session`、写了别的参数、`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
+2. 不写 `session` 的（CX-1 下）：和 `session.create` 照同一份拼（找预设、人格，拼工具面、快照，会用的模型的限额），只拼不造、不写盘；没有对话，`basis` 是 `estimated`。
+3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`；新会话拼不出来（人格读不出来）：`internal`。权限同 `session.recap`。
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 

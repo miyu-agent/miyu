@@ -830,11 +830,17 @@
     "commands/unavailable/preset-off": "Preset \"{preset}\" has memory off.",
     "commands/workspace-wide": "Workspace switched to {cwd} (broad directory).",
     "context/part/system": "System prompt",
+    "context/part/system.persona": "Persona",
+    "context/part/system.venue": "Subagent setting",
+    "context/part/system.group": "Group chat notes",
+    "context/part/system.core": "Core instructions",
+    "context/part/system.clicall": "Scripted tool calls",
+    "context/part/system.style_lock": "Style lock",
     "context/part/system.skills": "Skills",
     "context/part/system.knowledge": "Knowledge bases",
     "context/part/system.profile": "About you",
     "context/part/system.project": "Project instructions",
-    "context/part/system.other": "Persona and other instructions",
+    "context/part/system.other": "Other instructions",
     "context/part/tools": "Tool definitions",
     "context/part/tools.builtin": "Built-in tools",
     "context/part/tools.scripts": "Scripts",
@@ -849,6 +855,7 @@
     "context/part/messages.memory.resident": "Resident memory",
     "context/part/messages.memory.recall": "Recalled memory",
     "context/part/messages.knowledge": "Knowledge recalled",
+    "context/part/messages.project_docs": "Project instructions (AGENTS.md)",
     "context/part/messages.facts": "Other notes"
   }
 }

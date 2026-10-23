@@ -69,6 +69,18 @@ async fn preview(
     persona: Option<Option<String>>,
     preset: Option<String>,
 ) -> Result<Vec<Offered>, Refusal> {
+    let mut setup = new_session(core, peer, account, persona, preset).await?;
+    Ok(miyu_session::preview(setup.create(core)).await)
+}
+
+/// 照 `session.create` 那一份备一个新会话（`session.tools`、`session.context` 不写会话的），只备不造。
+pub(crate) async fn new_session(
+    core: &Arc<Core>,
+    peer: Peer,
+    account: &miyu_kernel::id::AccountId,
+    persona: Option<Option<String>>,
+    preset: Option<String>,
+) -> Result<Setup, Refusal> {
     let who = Opening {
         owner: account.clone(),
         attended: peer.input,
@@ -88,15 +100,14 @@ async fn preview(
     let (workspace, _) = opening_cwd(core, &who, &own.to_string_lossy(), &id);
     let command = miyu_kernel::id::CommandId::parse("session-tools-preview")
         .map_err(|_| Refusal::INTERNAL)?;
-    let mut setup = Setup::resolve(
+    Setup::resolve(
         core,
         (id, command),
         persona.as_ref().map(Option::as_deref),
         (workspace, Vec::new()),
         who,
     )
-    .await?;
-    Ok(miyu_session::preview(setup.create(core)).await)
+    .await
 }
 
 /// 一件：名字、来处、说明（有的才写）、只露名字的 `loaded: false`。

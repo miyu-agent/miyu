@@ -22,28 +22,48 @@ use crate::Core;
 use crate::config::methods::words;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
-use crate::session_tools::{package_of, source};
+use crate::session_tools::{new_session, package_of, source};
 
-/// `session.context` 的参数。
+/// `session.context` 的参数：同 `session.tools`。
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Params {
-    session: String,
+    #[serde(default)]
+    session: Option<String>,
+    /// 同 `session.create`：不写的照 `persona.default`，写 `null` 的无人格。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    persona: Option<Option<String>>,
+    #[serde(default)]
+    preset: Option<String>,
 }
 
 /// `session.context`：`{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。
 pub(crate) async fn context(
     core: &Arc<Core>,
     peer: Peer,
+    account: &miyu_kernel::id::AccountId,
     params: Params,
 ) -> Result<Value, Refusal> {
-    let id = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let found = core.sessions.get(core, &id).await?;
-    let context = found
-        .handle
-        .context()
-        .await
-        .map_err(|_| Refusal::INTERNAL)?;
+    let context = match params.session {
+        Some(_) if params.persona.is_some() || params.preset.is_some() => {
+            return Err(Refusal::BAD_PARAMS);
+        }
+        Some(text) => {
+            let id = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
+            let found = core.sessions.get(core, &id).await?;
+            found
+                .handle
+                .context()
+                .await
+                .map_err(|_| Refusal::INTERNAL)?
+        }
+        None => {
+            let mut setup = new_session(core, peer, account, params.persona, params.preset).await?;
+            miyu_session::preview_context(setup.create(core))
+                .await
+                .map_err(|_| Refusal::INTERNAL)?
+        }
+    };
     let language = peer.language.to_string();
     let human = words(core, &language)?;
     let word = |part: &str| {
@@ -113,12 +133,15 @@ impl Part {
     fn json(&self, namer: &Namer) -> Value {
         let label = self.name.clone().unwrap_or_else(|| (namer.word)(&self.id));
         let mut part = json!({"part": self.id, "label": label, "tokens": self.tokens});
-        if !self.children.is_empty() {
-            part["children"] = self
-                .children
-                .iter()
-                .map(|child| child.json(namer))
-                .collect();
+        // 摊完成了 0 的不交。
+        let children: Vec<Value> = self
+            .children
+            .iter()
+            .filter(|child| child.tokens > 0)
+            .map(|child| child.json(namer))
+            .collect();
+        if !children.is_empty() {
+            part["children"] = Value::Array(children);
         }
         part
     }
@@ -132,6 +155,50 @@ fn add(parts: &mut Vec<Part>, id: String, name: Option<String>, tokens: u64) {
     }
 }
 
+/// 照 `used` 摊（施工 CX-1 下，主会话定：一份逻辑，头不各写一遍）：叶子照 `used / 各块的和` 摊，向下取整以后差的那几个
+/// 照小数部分从大到小一个个补（一样大的照先后），加起来正好是 `used`；上一层再照下面的加起来。
+fn scale(parts: &mut [Part], used: u64) {
+    fn leaves<'a>(parts: &'a mut [Part], into: &mut Vec<&'a mut Part>) {
+        for part in parts {
+            if part.children.is_empty() {
+                into.push(part);
+            } else {
+                leaves(&mut part.children, into);
+            }
+        }
+    }
+    fn total(part: &mut Part) -> u64 {
+        if !part.children.is_empty() {
+            part.tokens = part.children.iter_mut().map(total).sum();
+        }
+        part.tokens
+    }
+    let mut all = Vec::new();
+    leaves(parts, &mut all);
+    let sum: u128 = all.iter().map(|part| u128::from(part.tokens)).sum();
+    if sum == 0 {
+        return;
+    }
+    let used = u128::from(used);
+    let mut rests = Vec::with_capacity(all.len());
+    let mut given: u128 = 0;
+    for (at, part) in all.iter_mut().enumerate() {
+        let exact = u128::from(part.tokens) * used;
+        let floor = exact / sum;
+        given += floor;
+        rests.push((exact % sum, at));
+        part.tokens = u64::try_from(floor).unwrap_or(u64::MAX);
+    }
+    rests.sort_by(|one, other| other.0.cmp(&one.0).then(one.1.cmp(&other.1)));
+    let short = usize::try_from(used.saturating_sub(given)).unwrap_or(usize::MAX);
+    for (_, at) in rests.into_iter().take(short) {
+        all[at].tokens = all[at].tokens.saturating_add(1);
+    }
+    for part in parts {
+        total(part);
+    }
+}
+
 /// 协议上的样子。
 pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
     let breakdown = &context.breakdown;
@@ -139,6 +206,12 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
         .system
         .iter()
         .map(|(part, tokens)| match part {
+            SystemPart::Persona => Part::leaf(*tokens, "system.persona", None),
+            SystemPart::Venue => Part::leaf(*tokens, "system.venue", None),
+            SystemPart::Group => Part::leaf(*tokens, "system.group", None),
+            SystemPart::Core => Part::leaf(*tokens, "system.core", None),
+            SystemPart::Clicall => Part::leaf(*tokens, "system.clicall", None),
+            SystemPart::StyleLock => Part::leaf(*tokens, "system.style_lock", None),
             SystemPart::Skills => Part::leaf(*tokens, "system.skills", None),
             SystemPart::Knowledge => Part::leaf(*tokens, "system.knowledge", None),
             SystemPart::Profile => Part::leaf(*tokens, "system.profile", None),
@@ -187,6 +260,8 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
                         continue;
                     }
                     (Some("knowledge"), "recall") => "messages.knowledge",
+                    // 仓库里的 AGENTS.md（施工 P-14）：一份能有 32 KiB，单列。
+                    (Some("project-docs"), _) => "messages.project_docs",
                     _ => "messages.facts",
                 }
             }
@@ -199,13 +274,16 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
         .position(|part| !["messages.user", "messages.assistant"].contains(&part.id.as_str()))
         .unwrap_or(messages.len());
     messages.insert(at, Part::of(memory, "messages.memory"));
-    let parts = [
+    let mut parts = [
         Part::of(system, "system"),
         Part::of(tools, "tools"),
         Part::leaf(breakdown.demos, "demos", None),
         Part::leaf(breakdown.summary, "summary", None),
         Part::of(messages, "messages"),
     ];
+    if let Some(used) = breakdown.used {
+        scale(&mut parts, used);
+    }
     let parts: Vec<Value> = parts
         .iter()
         .filter(|part| part.tokens > 0)

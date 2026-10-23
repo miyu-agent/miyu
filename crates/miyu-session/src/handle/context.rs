@@ -8,9 +8,21 @@ use miyu_policy::Offered;
 
 use super::{Handle, Message, Stopped};
 
-/// system 里的一块：快照里单存了原文的几块，剩下的都是其他。
+/// system 里的一块（施工 CX-1 下起照拼的先后全拆；照现在的料重拼和快照对不上的，只拆快照里单存了原文的几块，剩下的都是其他）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SystemPart {
+    /// 人设。
+    Persona,
+    /// 子会话的场所说明。
+    Venue,
+    /// 群会话的格式说明。
+    Group,
+    /// 核心的几行：权限、本机文件的路径、本机是什么系统、跑的是哪一版。
+    Core,
+    /// 什么时候写成调工具的程序那一段。
+    Clicall,
+    /// 风格锁。
+    StyleLock,
     /// 技能那一块。
     Skills,
     /// 知识库那一块。
