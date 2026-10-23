@@ -424,3 +424,28 @@ fn a_workspace_holding_the_data_root_and_private_dirs_keeps_them() {
         "工作区开在私密目录里：照工作区"
     );
 }
+
+/// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures 这些）：落在数据根里也照工作区算，还没建的也算；数据根别处照旧
+/// 谁都不能碰；往下走目录的工具通得到它。
+#[test]
+fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
+    let site = Site::new();
+    let boundary = Boundary::new(&Places {
+        own: vec![site.at("data/home/admin/pictures")],
+        ..site.places()
+    });
+    let data = std::fs::canonicalize(site.at("data")).expect("在");
+    assert_eq!(
+        boundary.zone(
+            &data
+                .join("home")
+                .join("admin")
+                .join("pictures")
+                .join("cat.png")
+        ),
+        Zone::Writable
+    );
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert!(!boundary.blocks_descent(&data.join("home")), "通得到它");
+    assert!(boundary.blocks_descent(&data.join("run")));
+}

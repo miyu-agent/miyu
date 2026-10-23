@@ -19,6 +19,13 @@ use crate::env::{Env, Platform};
 /// 账号家目录里自己放东西的几处（[`DataRoot::own_places`]）。
 const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
 
+/// 家目录里照 XDG 用户目录给这个人的几处（施工 Y-11 上）：她替人做出来、拿到的东西放这里，用到的时候才建。名字照 XDG 的英文，
+/// 界面上照语言显示。
+pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"];
+
+/// 家目录里的缓存（施工 Y-11 上）：`home/<账号>/cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
+pub const CACHE: &str = "cache";
+
 /// 第一次用时建的四个顶层目录：系统区、家目录、状态区、运行时（`07-存储.md` 第二节）。
 /// 别的用到时再建。
 const SKELETON: [&str; 4] = ["system", "home", "state", "run"];
@@ -122,6 +129,20 @@ impl DataRoot {
     pub fn prepare_home(&self, account: &AccountId) -> io::Result<()> {
         create_dir(&self.account_dir(account))?;
         create_dir(&self.workspace(account))
+    }
+
+    /// 账号 `account` 的 [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。
+    pub fn user_dirs(&self, account: &AccountId) -> Vec<(&'static str, PathBuf)> {
+        let home = self.account_dir(account);
+        USER_DIRS
+            .iter()
+            .map(|name| (*name, home.join(name)))
+            .collect()
+    }
+
+    /// 账号 `account` 的缓存：`home/<账号>/cache/`。不建。
+    pub fn cache(&self, account: &AccountId) -> PathBuf {
+        self.account_dir(account).join(CACHE)
     }
 
     /// 一个账号的工作区：`home/<账号>/workspace/`（`07-存储.md` 第二节）。头报来的工作目录太宽时退回这里

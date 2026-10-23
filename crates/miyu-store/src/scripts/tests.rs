@@ -352,3 +352,30 @@ fn states_under_a_venue_are_listed_and_forgotten_too() {
     let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
     assert_eq!(left, ["x"]);
 }
+
+/// 脚本的缓存目录（施工 Y-11 上）：家目录的 `cache/<来处>/<工具名>/`，场所会话多一层场所；场所写不成目录名的没有。
+#[test]
+fn a_script_s_cache_lives_in_the_home_split_like_its_state() {
+    let root = Path::new("/data");
+    let alice = AccountId::parse("alice").expect("合写法");
+    let bot = AccountId::parse("bridge").expect("合写法");
+    assert_eq!(
+        cache_dir(root, &alice, None, HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/home/alice/cache/~home/dice"))
+    );
+    assert_eq!(
+        cache_dir(root, &alice, Some(&venue("local")), "kit", "live").as_deref(),
+        Some(Path::new("/data/home/alice/cache/kit/live")),
+        "本机的会话不分场所"
+    );
+    assert_eq!(
+        cache_dir(root, &bot, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
+        Some(Path::new(
+            "/data/home/bridge/cache/@qq_3agroup_3a1/kit/live"
+        ))
+    );
+    assert_eq!(
+        cache_dir(root, &bot, Some(&venue(&"Z".repeat(128))), "kit", "live"),
+        None
+    );
+}

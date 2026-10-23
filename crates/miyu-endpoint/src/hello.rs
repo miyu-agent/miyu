@@ -289,15 +289,32 @@ fn system(locale: Option<&str>) -> &'static str {
 /// 握手的回应里的 `host`（施工 W-3，`web-module.md`「四、路径」）：`home` 是核心起来时拿到的系统的家目录，照
 /// 原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是这个账号的工作区，换成真实的位置。不在
 /// 这里建它：管理员、系统账号的工作区核心起来时就建好了（`core.md`，施工 O-4 下），握手不该替每一个连上来的头造目录；换不成
-/// 的（没建出来）照原样交回，工具自己用到时会报错。
+/// 的（没建出来）照原样交回，工具自己用到时会报错。管理员的另带 `dirs`：照 XDG 的那几处，同 `workspace` 的给法（施工 Y-11 上）。
 fn host(core: &Core, account: &AccountId) -> Value {
-    let workspace = core.root.workspace(account);
-    let workspace = std::fs::canonicalize(&workspace).unwrap_or(workspace);
-    json!({
+    // 在的照真实位置，还没建的照原样：握手不替人建目录。
+    let shown = |dir: std::path::PathBuf| {
+        std::fs::canonicalize(&dir)
+            .unwrap_or(dir)
+            .display()
+            .to_string()
+    };
+    let mut host = json!({
         "home": core.home.as_deref().map(|home| home.display().to_string()),
         "platform": std::env::consts::OS,
-        "workspace": workspace.display().to_string(),
-    })
+        "workspace": shown(core.root.workspace(account)),
+    });
+    // 照 XDG 的那几处（施工 Y-11 上）：只给管理员（`06-多用户与身份.md` U25：普通用户看不到运行它的那台电脑，真实路径就是那台
+    // 电脑的东西）；远程的连整个 `host` 都不给（`connection/reach.rs`）。
+    if *account == core.admin {
+        let dirs: serde_json::Map<String, Value> = core
+            .root
+            .user_dirs(account)
+            .into_iter()
+            .map(|(name, dir)| (name.to_string(), json!(shown(dir))))
+            .collect();
+        host["dirs"] = Value::Object(dirs);
+    }
+    host
 }
 
 /// 握手的回应里的 `sandbox`：能用的 `{"usable": true}`，用不了的带原因（施工 5-4 下）。

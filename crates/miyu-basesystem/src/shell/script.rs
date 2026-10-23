@@ -6,8 +6,9 @@
 //!   包里的程序共用 [`miyu_store::packages::launcher`]）。
 //! - 参数是她给的那份 JSON，写进标准输入，不超过 30 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：长的放进环境
 //!   变量起都起不来）。
-//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（系统临时目录下 `miyu-scripts/<工具名>`，
-//!   沙盒的工作区那一级本来就能写临时目录），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
+//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（施工 Y-11 上：会话属主家目录的
+//!   `cache/<来处>/<工具名>/`，场所会话多一层场所，进沙盒的放进规格的 `write`；会话外面的调用照旧在系统临时目录 `miyu-scripts/<工具名>`
+//!   下面；30 天没碰的清掉，跑完清一次，`sweep.rs`），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
@@ -42,6 +43,16 @@ use crate::common::said;
 use crate::load::{self, LoadError, say};
 
 mod images;
+mod sweep;
+
+/// 跑之前建的哪一种目录。
+#[derive(Clone, Copy)]
+enum Kept {
+    /// 状态目录（施工 X-44）。
+    State,
+    /// 缓存目录（施工 Y-11 上）。
+    Cache,
+}
 
 use images::Folder;
 
@@ -159,14 +170,53 @@ impl Script {
             tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = "venue too long", "script state not prepared");
             return None;
         };
+        self.prepared(&dir, Kept::State)
+    }
+
+    /// 这一次的缓存目录（施工 Y-11 上）：会话属主家目录的 `cache/<来处>/<工具名>/`，场所会话多一层场所，建好交真实位置。没有属主、
+    /// 数据根的（会话外面的调用），场所写不成目录名的、建不成的照旧在系统临时目录 `miyu-scripts/<工具名>/` 下面。
+    fn cache(&self, call: &Call) -> PathBuf {
+        let venue = call.caller.as_ref().map(|caller| &caller.venue);
+        let home = call
+            .data_root
+            .as_deref()
+            .zip(call.ids.as_ref())
+            .and_then(|(root, ids)| {
+                miyu_store::scripts::cache_dir(
+                    root,
+                    &ids.owner,
+                    venue,
+                    &self.source,
+                    &self.spec.name,
+                )
+            });
+        home.and_then(|dir| self.prepared(&dir, Kept::Cache))
+            .unwrap_or_else(|| {
+                std::env::temp_dir()
+                    .join("miyu-scripts")
+                    .join(&self.spec.name)
+            })
+    }
+
+    /// 建好目录 `dir`（缺的上级一起建，Unix 上 0700），交真实位置；建不成的照 `kept` 记一行 `WARN`，没有。
+    fn prepared(&self, dir: &Path, kept: Kept) -> Option<PathBuf> {
         let mut builder = std::fs::DirBuilder::new();
         builder.recursive(true);
         #[cfg(unix)]
         std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
-        match builder.create(&dir).and_then(|()| dir.canonicalize()) {
+        match builder.create(dir).and_then(|()| dir.canonicalize()) {
             Ok(real) => Some(real),
             Err(error) => {
-                tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = %error, "script state not prepared");
+                let tool = self.spec.name.as_str();
+                // 两种各一句写死的话（运行日志不插值，LG-1）。
+                match kept {
+                    Kept::State => {
+                        tracing::warn!(target: "miyu::shell", tool, error = %error, "script state not prepared")
+                    }
+                    Kept::Cache => {
+                        tracing::warn!(target: "miyu::shell", tool, error = %error, "script cache not prepared")
+                    }
+                }
                 None
             }
         }
@@ -196,8 +246,11 @@ impl Script {
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
                 let mut sandboxed = sandboxed.clone();
                 sandboxed.spec.reveal.push(file.clone());
-                // 自己的状态目录能写（施工 X-44）：在藏着的数据根里，越深的越算数。
+                // 自己的状态目录能写（施工 X-44）、缓存目录能写（施工 Y-11 上）：在藏着的数据根里，越深的越算数。
                 sandboxed.spec.write.extend(state.map(Path::to_path_buf));
+                sandboxed.spec.write.push(cache.to_path_buf());
+                // 交图的目录在缓存那一格旁边（同一个来处下面）：缓存挪进数据根以后它也被藏着，单独放开写（施工 Y-11 上）。
+                sandboxed.spec.write.extend(images.map(Path::to_path_buf));
                 miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
                     .map(|(helper, args)| (helper.into_os_string(), args))
                     .map_err(io::Error::other)?
@@ -308,9 +361,7 @@ impl Tool for Script {
 
     fn run(&self, call: Call, progress: Progress) -> Running<'_> {
         Box::pin(async move {
-            let cache = std::env::temp_dir()
-                .join("miyu-scripts")
-                .join(&self.spec.name);
+            let cache = self.cache(&call);
             let args_json = self.passed(&call);
             let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
             let (command, folder) = match command.and_then(|folder| {
@@ -345,6 +396,8 @@ impl Tool for Script {
             })
             .await;
             guard.disarm();
+            // 跑完清一次这个人的缓存（施工 Y-11 上）：照时间，一分钟内只清一次，不等它。
+            sweep::after(&call);
             let seconds = self.timeout.to_string();
             match finished {
                 Ok((finished, pictures)) => pictures.into_iter().fold(

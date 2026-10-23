@@ -99,6 +99,7 @@ impl Site {
             shelves: Vec::new(),
             private: Vec::new(),
             readonly: Readonly::shipped(Some(&self.at("home"))),
+            own: Vec::new(),
         }
     }
 

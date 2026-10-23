@@ -142,3 +142,37 @@ async fn read_only_still_refuses_a_write_into_an_added_dir() {
     assert_eq!(result.status, ToolStatus::Denied);
     assert!(kit.edit.calls().is_empty());
 }
+
+/// 这个人自己的几处（施工 Y-11 上，家目录里的 pictures 这些）：落在数据根里也同工作区，写进去不用问人，还没建的也算；数据根
+/// 别处照旧谁都不能碰。
+#[tokio::test]
+async fn a_write_into_the_owner_s_pictures_runs_without_asking() {
+    let home = Home::outside_temp();
+    let kit = Kit::new();
+    let pictures = home
+        .root
+        .account_dir(&alice_account())
+        .join("pictures")
+        .join("cat.png");
+    let elsewhere = home
+        .root
+        .account_dir(&alice_account())
+        .join("index")
+        .join("x.txt");
+    let script = Script::new([
+        one("edit", &pictures.to_string_lossy()),
+        Play::Says("好。"),
+        one("edit", &elsewhere.to_string_lossy()),
+        Play::Says("好。"),
+    ]);
+    let handle = with_dirs(&home, &script, &kit, false, &[]).await;
+    turn(&handle).await;
+    let (result, _) = first_result(&home.log(handle.id()));
+    assert_eq!(result.status, ToolStatus::Ok, "{}", text(&result));
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-2", say("再写一个"))
+        .await
+        .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    assert_eq!(kit.edit.calls().len(), 1, "数据根别处的没放行");
+}

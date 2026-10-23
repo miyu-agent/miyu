@@ -68,7 +68,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `invite`, or `use
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
 | `account` | Who you are: local people are `admin`; an extension of a package that declares a system account is that account (named after the package), other extensions are `admin` too |
-| `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace. Not given to remote connections (Y-1 下) |
+| `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace. For the admin there is also `dirs`: `{"pictures", "videos", "documents", "downloads"}`, this account's XDG-style folders, the real path when it exists and as is otherwise (step Y-11); members get none. Not given to remote connections (Y-1 下) |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
 | `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |

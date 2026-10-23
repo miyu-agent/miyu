@@ -434,3 +434,27 @@ fn the_process_environment_finds_a_root() {
     DataRoot::locate(&env).unwrap();
     cache_root(&env).unwrap();
 }
+
+/// 照 XDG 给这个人的几处、缓存（施工 Y-11 上）：都在家目录里，不建。
+#[test]
+fn the_user_dirs_and_the_cache_are_in_the_home() {
+    let scratch = Scratch::new();
+    let env = Env {
+        miyu_home: Some(scratch.path().join("data").into_os_string()),
+        ..env(Platform::Linux)
+    };
+    let root = DataRoot::locate(&env).unwrap();
+    let alice = AccountId::parse("alice").unwrap();
+    let home = root.account_dir(&alice);
+    assert_eq!(
+        root.user_dirs(&alice),
+        [
+            ("pictures", home.join("pictures")),
+            ("videos", home.join("videos")),
+            ("documents", home.join("documents")),
+            ("downloads", home.join("downloads")),
+        ]
+    );
+    assert_eq!(root.cache(&alice), home.join("cache"));
+    assert!(!home.join("pictures").exists(), "不建");
+}

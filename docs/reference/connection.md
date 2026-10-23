@@ -67,7 +67,7 @@
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
 | `account` | 你是谁：本机的人是 `admin`；声明了系统账号的包的扩展是那个系统账号（账号名同包的编号），别的扩展也是 `admin` |
-| `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。远程的连接没有（施工 Y-1 下） |
+| `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。管理员的另有 `dirs`：`{"pictures", "videos", "documents", "downloads"}`，这个账号照 XDG 的几处，在的给真实位置、还没建的照原样（施工 Y-11 上）；成员的没有。远程的连接整个没有（施工 Y-1 下） |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
 | `view` | 视图投影的版本，现在是 `1`（见 [会话](sessions.md) 的 `view.page`） |
 | `sandbox` | `{"usable": true}`，或者 `{"usable": false, "reason"}`：`helper_missing`、`helper_failed`、`no_mechanism` |

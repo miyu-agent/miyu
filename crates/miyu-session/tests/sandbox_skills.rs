@@ -401,3 +401,28 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
         .join("state/scripts/alice/@qq_3agroup_3a1/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
+
+/// 缓存目录（施工 Y-11 上）：在属主家目录的 `cache/` 里，数据根照旧藏着；经真助手跑的脚本写得进自己那一格，别的脚本的那一格
+/// 读不到。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if probe.mechanisms.is_empty() {
+        return;
+    }
+    let home = Home::outside_temp();
+    let other = home.root.cache(&alice_account()).join("~home/other");
+    std::fs::create_dir_all(&other).expect("建得了");
+    std::fs::write(other.join("secret"), "secret\n").expect("写得进");
+    let text = format!(
+        "#!/bin/sh\n# Description: Keep.\necho cached > \"$MIYU_SCRIPT_CACHE_DIR/n\" && cat \"$MIYU_SCRIPT_CACHE_DIR/n\"\ncat '{}' 2>/dev/null || echo blocked-other\n",
+        other.join("secret").display()
+    );
+    let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
+    assert_eq!(status, ToolStatus::Ok, "{output}");
+    assert_eq!(output, "cached\nblocked-other\n");
+    let kept = home.root.cache(&alice_account()).join("~home/keep/n");
+    assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
+}

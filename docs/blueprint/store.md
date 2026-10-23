@@ -62,6 +62,8 @@
 | `system()`、`homes()`、`state()`、`run()` | `system/`、`home/`、`state/`、`run/` |
 | `account_dir(账号)` | `home/<账号>/` |
 | `workspace(账号)` | `home/<账号>/workspace/` |
+| `user_dirs(账号)` | 照 XDG 给这个人的几处（施工 Y-11 上）：`home/<账号>/pictures/`、`videos/`、`documents/`、`downloads/`，用到才建；文件工具照工作区算（边界表的 `own`，不进沙盒的写名单），握手只给管理员 |
+| `cache(账号)` | `home/<账号>/cache/`（施工 Y-11 上）：脚本的缓存照 `<来处>/<工具名>/` 分，30 天没碰的清掉（`miyu_store::cache`） |
 | `prepare_home(账号)` | 建 `home/<账号>/` 和里面的 `workspace/`，已经有的不动 |
 | `sessions(账号)` | 这个账号的会话编号，从新到旧 |
 | `session_dir(账号, 会话)` | `home/<账号>/sessions/<会话编号>/` |
