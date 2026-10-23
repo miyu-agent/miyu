@@ -63,3 +63,33 @@ name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプ�
 summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
 
 [builtin]
+
+# 环境那几块（施工 C-11，2026-10-23 项目主人定：拆成能开关的功能，群聊里用不上的能关掉）：都没有工具。关了的回合开始不再注入
+# 那一块事实，system 里跟着它的那一行不拼（`miyu_policy::shown`）。
+[features.env-time]
+name = { en = "Time", zh = "时间", ja = "時刻" }
+summary = { en = "Tell the AI the current time and time zone at the start of each turn", zh = "每轮开头告诉 AI 现在的时间和时区", ja = "毎ターンの始めに現在の時刻とタイムゾーンを AI に伝えます" }
+
+[features.env-workdir]
+name = { en = "Working directory", zh = "工作目录", ja = "作業ディレクトリ" }
+summary = { en = "Tell the AI the working directory, and to write local files as absolute paths", zh = "告诉 AI 工作目录，提到本机文件时写绝对路径", ja = "作業ディレクトリを AI に伝え、ローカルのファイルは絶対パスで書かせます" }
+
+[features.env-permission]
+name = { en = "Permission level", zh = "权限级别", ja = "権限レベル" }
+summary = { en = "Tell the AI the permission level and what each level allows", zh = "告诉 AI 现在的权限级别和每一级能做什么", ja = "権限レベルと各レベルでできることを AI に伝えます" }
+
+[features.env-session]
+name = { en = "Session ID", zh = "会话编号", ja = "セッション ID" }
+summary = { en = "Tell the AI this session's ID", zh = "告诉 AI 这个会话的编号", ja = "このセッションの ID を AI に伝えます" }
+
+[features.env-model]
+name = { en = "Model info", zh = "模型信息", ja = "モデル情報" }
+summary = { en = "Tell the AI the provider, model, reasoning effort and preset in use", zh = "告诉 AI 现在用的供应商、模型、思考强度和预设", ja = "使っているプロバイダー、モデル、思考の強さ、プリセットを AI に伝えます" }
+
+[features.env-harness]
+name = { en = "Harness version", zh = "Harness 版本", ja = "ハーネスのバージョン" }
+summary = { en = "Tell the AI which version of miyu-agent it runs in", zh = "告诉 AI 它跑在哪一版 miyu-agent 里", ja = "どのバージョンの miyu-agent で動いているかを AI に伝えます" }
+
+[features.env-machine]
+name = { en = "Operating system", zh = "本机系统", ja = "OS" }
+summary = { en = "Tell the AI which operating system this computer runs", zh = "告诉 AI 这台电脑是什么系统", ja = "このコンピューターの OS を AI に伝えます" }

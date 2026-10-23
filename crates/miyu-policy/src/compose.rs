@@ -14,6 +14,7 @@ use crate::preset::{PresetPin, ROLEPLAY};
 use crate::rebuild::REBUILD;
 use crate::recap::RECAP;
 use crate::shorten::SHORTEN;
+use crate::shown::Shown;
 use crate::snapshot::{
     CompactionNumbers, CoreTexts, LEAD, LINE_PERCENT, MARGIN_PERCENT, Snapshot, TAIL,
 };
@@ -147,17 +148,18 @@ impl Snapshot {
     /// 带上核心的几行（施工 2-7 补）：system 的第三块，接在人设、场所说明后面，所以在 [`Snapshot::with_tools`]、
     /// [`Snapshot::with_venue`] 以后最后调。块里一行一句，先权限、再本机文件的路径、最后本机是什么系统 `os`（施工 2-7 再补）；
     /// 工具面是空的会话用不上权限、系统那两句，不带（26 第十节）。以前造的快照 system 里没有这一块（施工 2-7 再补以前造的
-    /// 没有系统那一句），载入照快照发，前缀一字不变。
+    /// 没有系统那一句），载入照快照发，前缀一字不变。预设关了的那几行不带（施工 C-11，[`Shown`]）：权限那句跟着权限级别，
+    /// 本机文件的路径跟着工作目录。
     #[must_use]
-    pub fn with_core_lines(mut self, lines: &CoreLines, os: &str) -> Snapshot {
+    pub fn with_core_lines(mut self, lines: &CoreLines, os: &str, shown: Shown) -> Snapshot {
         let tooled = !self.tools.is_empty();
         let machine = lines.machine.replace("{os}", os);
-        let block = tooled
+        let block = (tooled && shown.facts.permission)
             .then_some(lines.permission.as_str())
             .into_iter()
-            .chain([lines.local_paths.as_str()])
-            .chain(tooled.then_some(machine.as_str()))
-            .chain([lines.harness.as_str()])
+            .chain(shown.facts.workdir.then_some(lines.local_paths.as_str()))
+            .chain((tooled && shown.machine).then_some(machine.as_str()))
+            .chain(shown.harness.then_some(lines.harness.as_str()))
             .map(str::trim_end)
             .filter(|line| !line.is_empty())
             .collect::<Vec<_>>()

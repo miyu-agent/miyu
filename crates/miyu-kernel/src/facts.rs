@@ -20,7 +20,9 @@
 
 use std::collections::BTreeMap;
 
+mod gates;
 mod model;
+pub use gates::Gates;
 pub use model::Identity;
 
 use crate::event::{Body, ContextInjected, Level, Permission};
@@ -58,6 +60,8 @@ pub struct FactTemplates {
     /// 安静（施工 D-1 上，设计 41：整理会话的请求和原来的一次性请求逐字节一样）：回合开始的环境、权限、会话编号、角色扮演提示
     /// 一块都不注入。
     quiet: bool,
+    /// 预设关了哪几块（施工 C-11，`facts/gates.rs`），和环境拆开以后的两份写法。
+    gated: gates::Gated,
 }
 
 /// 角色扮演提示这一类的名字。组装照它把回合开始时注入的这一块排在触发的那句后面（`08-上下文投影.md` C2 唯一的例外）。
@@ -106,6 +110,7 @@ impl FactTemplates {
             output_limit: None,
             model: None,
             quiet: false,
+            gated: gates::Gated::default(),
         };
         templates.env.render(&env_fields("", "", ""))?;
         templates.permission.render(&permission_fields(""))?;
@@ -134,11 +139,15 @@ impl FactTemplates {
             return Vec::new();
         }
         let fresh = |fact: ContextInjected| unseen(history, &By::Kernel, &fact).then_some(fact);
+        let on = self.gated.gates;
         [
-            fresh(self.env(now, environment)),
-            self.permission_due(history, permission),
-            self.session(session).and_then(fresh),
+            self.env_due(now, environment).and_then(fresh),
+            on.permission
+                .then(|| self.permission_due(history, permission))
+                .flatten(),
+            self.session(session).filter(|_| on.session).and_then(fresh),
             identity
+                .filter(|_| on.model)
                 .and_then(|identity| self.model(identity))
                 .and_then(fresh),
         ]
@@ -235,23 +244,6 @@ impl FactTemplates {
                 .render(&BTreeMap::new())
                 .expect("造的时候试换过，没有字段"),
         })
-    }
-
-    /// 环境那一块：此刻 `now` 到十分钟（施工 1-13 三补，原来到小时），时区，工作目录。
-    ///
-    /// # Panics
-    ///
-    /// 实际不会 panic：造的时候已经拿全部字段试换过；`env` 这个类别名也合写法。
-    pub fn env(&self, now: Timestamp, environment: &Environment) -> ContextInjected {
-        let time = now.local_ten_minutes(environment.offset);
-        let timezone = environment.offset.to_string();
-        let fields = env_fields(&time, &timezone, &environment.cwd);
-        ContextInjected {
-            refs: Vec::new(),
-            after: false,
-            kind: kind("env"),
-            text: self.env.render(&fields).expect("造的时候试换过，字段都有"),
-        }
     }
 
     /// 会话编号那一块：这个会话自己的编号，子会话写它自己的（施工 1-13 再补）。以前造的快照没有这份模板，没有这一块。

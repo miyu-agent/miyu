@@ -35,6 +35,8 @@ pub(crate) fn core() -> CoreTexts {
                 include_str!("../../../resources/core/facts/output-limit.txt").to_string(),
             ),
             model: Some(include_str!("../../../resources/core/facts/model.txt").to_string()),
+            env_time: Some(include_str!("../../../resources/core/facts/env-time.txt").to_string()),
+            env_cwd: Some(include_str!("../../../resources/core/facts/env-cwd.txt").to_string()),
         },
         tool_results: ToolResultTexts {
             unknown: include_str!("../../../resources/core/tool-results/unknown.txt").to_string(),

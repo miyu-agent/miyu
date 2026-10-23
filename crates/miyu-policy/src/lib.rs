@@ -37,6 +37,7 @@ mod rebuild;
 mod recap;
 pub mod script;
 mod shorten;
+pub mod shown;
 pub mod skill;
 pub mod slash;
 mod snapshot;

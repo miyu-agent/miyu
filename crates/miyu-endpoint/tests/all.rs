@@ -173,6 +173,7 @@ mod persona_swap;
 mod persona_swap_upgrade;
 mod personas;
 mod preset_background;
+mod preset_env;
 mod preset_face;
 mod preset_memory;
 mod preset_minimal;

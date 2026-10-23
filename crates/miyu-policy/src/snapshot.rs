@@ -303,7 +303,11 @@ impl Snapshot {
             system: self.system.clone(),
             demos: self.demos.iter().flat_map(Demo::messages).collect(),
         };
-        let facts = core.facts.templates()?.with_reminder(self.reminder.clone());
+        let gates = crate::shown::Shown::of(self.preset.as_ref()).facts;
+        let facts = core
+            .facts
+            .templates(gates)?
+            .with_reminder(self.reminder.clone());
         // 裸的回合开始不注入事实（施工 D-1 上）：请求和原来的一次性请求逐字节一样。
         let facts = if self.bare { facts.quiet() } else { facts };
         Ok(Policy {

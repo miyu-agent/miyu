@@ -230,7 +230,17 @@ fn the_shipped_presets_read_cleanly() {
             .iter()
             .map(|(id, on)| (id.as_str(), *on))
             .collect::<Vec<_>>(),
-        [("commands", true), ("files", true)]
+        [
+            ("commands", true),
+            ("env-harness", true),
+            ("env-machine", true),
+            ("env-model", true),
+            ("env-permission", true),
+            ("env-session", true),
+            ("env-time", true),
+            ("env-workdir", true),
+            ("files", true)
+        ]
     );
     assert_eq!(
         minimal

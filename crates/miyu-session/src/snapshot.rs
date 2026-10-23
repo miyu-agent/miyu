@@ -91,8 +91,9 @@ pub(crate) fn laid(
     });
     let lines = resources.core_lines()?;
     let os = miyu_store::env::os_name();
+    let shown = miyu_policy::shown::Shown::of(parts.preset.as_ref());
     snapshot = ruler.step(SystemPart::Core, snapshot, |it| {
-        it.with_core_lines(&lines, os)
+        it.with_core_lines(&lines, os, shown)
     });
     snapshot = ruler.step(SystemPart::Clicall, snapshot, |it| {
         it.with_clicall(&lines, tells)

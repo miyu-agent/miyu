@@ -12,6 +12,14 @@ unlisted = "off"
 [features]
 files = true
 commands = true
+# 环境那几块（施工 C-11）：极简开发照旧全开，和拆开以前一样。
+env-time = true
+env-workdir = true
+env-permission = true
+env-session = true
+env-model = true
+env-harness = true
+env-machine = true
 
 [tools]
 glob = false

@@ -247,6 +247,8 @@ impl ResourceRoot {
                 permission_changed: Some(fact("permission-changed.txt")?),
                 output_limit: Some(fact("output-limit.txt")?),
                 model: Some(fact("model.txt")?),
+                env_time: Some(fact("env-time.txt")?),
+                env_cwd: Some(fact("env-cwd.txt")?),
             },
             tool_results: ToolResultTexts {
                 unknown: result("unknown.txt")?,

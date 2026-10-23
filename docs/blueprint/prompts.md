@@ -350,6 +350,28 @@ preferred_reply_language: {preferred_reply_language}
 <env time="{time}" timezone="{timezone}" cwd="{cwd}"/>
 ```
 
+#### `core/facts/env-time.txt`
+
+- 什么时候加进来：同 `env.txt`，预设关了工作目录（`env-workdir`）、开着时间时代替它（施工 C-11；以前造的快照没有）
+- token：约 29（`Fri 2026-09-25 16:00–16:10`、`UTC+09:00`，按 o200k 估，带行尾换行；同样的值整块 37）
+- 为什么加：环境那一块拆成能开关的功能（2026-10-23 项目主人定：群聊里用不上工作目录）：只关工作目录时只写时间、时区，类别照旧是 `env`
+- 指纹：`94ce0e10`
+
+```text
+<env time="{time}" timezone="{timezone}"/>
+```
+
+#### `core/facts/env-cwd.txt`
+
+- 什么时候加进来：同 `env.txt`，预设关了时间（`env-time`）、开着工作目录时代替它（施工 C-11；以前造的快照没有）
+- token：约 10（`~/src/miyu`，按 o200k 估，带行尾换行）
+- 为什么加：同上：只关时间时只写工作目录
+- 指纹：`224c1c2b`
+
+```text
+<env cwd="{cwd}"/>
+```
+
 #### `core/facts/permission.txt`
 
 - 什么时候加进来：回合开始；切了级别的下一次请求

@@ -48,7 +48,7 @@ fn the_core_lines_come_after_the_persona_and_the_venue() {
     let persona = crate::test_support::engineer().system;
     let main = crate::test_support::engineer()
         .with_tools(vec![a_tool()])
-        .with_core_lines(&lines(), "Arch Linux");
+        .with_core_lines(&lines(), "Arch Linux", Shown::default());
     assert_eq!(
         main.system,
         format!("{persona}\n\nPermission rule.\nLocal paths rule.\nRuns Arch Linux.")
@@ -56,7 +56,7 @@ fn the_core_lines_come_after_the_persona_and_the_venue() {
     let child = crate::test_support::engineer()
         .with_tools(vec![a_tool()])
         .with_venue("You are a subagent.\n")
-        .with_core_lines(&lines(), "Arch Linux");
+        .with_core_lines(&lines(), "Arch Linux", Shown::default());
     assert_eq!(
         child.system,
         format!(
@@ -68,7 +68,8 @@ fn the_core_lines_come_after_the_persona_and_the_venue() {
 #[test]
 fn a_session_without_tools_has_no_permission_or_machine_line() {
     let persona = crate::test_support::engineer().system;
-    let bare = crate::test_support::engineer().with_core_lines(&lines(), "Arch Linux");
+    let bare =
+        crate::test_support::engineer().with_core_lines(&lines(), "Arch Linux", Shown::default());
     assert_eq!(bare.system, format!("{persona}\n\nLocal paths rule."));
 }
 
@@ -121,7 +122,7 @@ fn the_style_lock_ends_the_system_of_a_persona_with_a_reminder_only() {
     let lock = "<style-lock>Stay.</style-lock>\n";
     let main = reminding("Stay soft.")
         .with_tools(vec![a_tool()])
-        .with_core_lines(&lines(), "Arch Linux")
+        .with_core_lines(&lines(), "Arch Linux", Shown::default())
         .with_style_lock(lock);
     assert!(
         main.system
@@ -129,7 +130,8 @@ fn the_style_lock_ends_the_system_of_a_persona_with_a_reminder_only() {
         "{}",
         main.system
     );
-    let plain = crate::test_support::engineer().with_core_lines(&lines(), "Arch Linux");
+    let plain =
+        crate::test_support::engineer().with_core_lines(&lines(), "Arch Linux", Shown::default());
     assert_eq!(
         plain.clone().with_style_lock(lock).system,
         plain.system,
@@ -160,13 +162,13 @@ fn the_digest_follows_the_three_persona_texts() {
 fn only_the_persona_and_preset_parts_may_differ_for_a_swap() {
     let old = crate::test_support::engineer()
         .with_tools(vec![a_tool()])
-        .with_core_lines(&lines(), "Arch Linux");
+        .with_core_lines(&lines(), "Arch Linux", Shown::default());
     let mut sources = crate::test_support::sources();
     sources.persona.persona = "You are Miyu.\n".to_string();
     sources.persona.reminders = "Stay.".to_string();
     let new = compose(Some("engineer"), sources, true)
         .with_tools(vec![a_tool()])
-        .with_core_lines(&lines(), "Arch Linux")
+        .with_core_lines(&lines(), "Arch Linux", Shown::default())
         .with_style_lock("<lock/>");
     assert!(old.swappable(&new));
     let mut core = new.clone();
@@ -207,7 +209,10 @@ fn without_the_core_lines_the_system_is_as_before() {
         clicall: String::new(),
     };
     assert_eq!(
-        tooled.clone().with_core_lines(&empty, "Arch Linux").system,
+        tooled
+            .clone()
+            .with_core_lines(&empty, "Arch Linux", Shown::default())
+            .system,
         tooled.system,
         "空的几行不留空行"
     );
@@ -244,7 +249,7 @@ fn without_a_persona_the_snapshot_names_none_and_says_no_character() {
 fn the_clicall_line_is_its_own_paragraph_only_when_told() {
     let tooled = crate::test_support::engineer()
         .with_tools(vec![a_tool()])
-        .with_core_lines(&lines(), "Arch Linux");
+        .with_core_lines(&lines(), "Arch Linux", Shown::default());
     let mut with = lines();
     with.clicall = "You can write programs that call tools.\n".to_string();
     assert_eq!(
@@ -259,4 +264,56 @@ fn the_clicall_line_is_its_own_paragraph_only_when_told() {
             tooled.system
         )
     );
+}
+
+use miyu_kernel::facts::Gates;
+
+/// 预设关了的那几行不带（施工 C-11）：权限那句跟着权限级别，本机文件的路径跟着工作目录，系统、harness 各自一个开关。
+#[test]
+fn a_preset_can_leave_out_each_core_line() {
+    let persona = crate::test_support::engineer().system;
+    let with_harness = CoreLines {
+        harness: "Runs in miyu.\n".to_string(),
+        ..lines()
+    };
+    let compose = |shown: Shown| {
+        crate::test_support::engineer()
+            .with_tools(vec![a_tool()])
+            .with_core_lines(&with_harness, "Arch Linux", shown)
+            .system
+    };
+    let all = "Permission rule.\nLocal paths rule.\nRuns Arch Linux.\nRuns in miyu.";
+    assert_eq!(compose(Shown::default()), format!("{persona}\n\n{all}"));
+    let off = Shown {
+        facts: Gates {
+            permission: false,
+            workdir: false,
+            ..Gates::default()
+        },
+        ..Shown::default()
+    };
+    assert_eq!(
+        compose(off),
+        format!("{persona}\n\nRuns Arch Linux.\nRuns in miyu.")
+    );
+    let off = Shown {
+        machine: false,
+        harness: false,
+        ..Shown::default()
+    };
+    assert_eq!(
+        compose(off),
+        format!("{persona}\n\nPermission rule.\nLocal paths rule.")
+    );
+    // 时间、会话编号、模型不管 system。
+    let off = Shown {
+        facts: Gates {
+            time: false,
+            session: false,
+            model: false,
+            ..Gates::default()
+        },
+        ..Shown::default()
+    };
+    assert_eq!(compose(off), format!("{persona}\n\n{all}"));
 }

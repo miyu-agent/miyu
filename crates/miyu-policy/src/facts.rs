@@ -2,7 +2,7 @@
 //! （施工 1-13 再补）、切了级别以后的权限那一份（施工 2-7 补）以前造的快照里没有，读成没有、不写。施工 2-7 补从
 //! `snapshot.rs` 挪出来（行数门禁）。
 
-use miyu_kernel::facts::FactTemplates;
+use miyu_kernel::facts::{FactTemplates, Gates};
 use serde::{Deserialize, Serialize};
 
 use crate::snapshot::BuildError;
@@ -32,15 +32,22 @@ pub struct FactTexts {
     /// 不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
+    /// 环境那一块只有时间、时区的写法（`env-time.txt`，施工 C-11）：预设关了工作目录时用。以前造的快照里没有，读成没有；没有的
+    /// 不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env_time: Option<String>,
+    /// 环境那一块只有工作目录的写法（`env-cwd.txt`，施工 C-11）：预设关了时间时用。同上。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env_cwd: Option<String>,
 }
 
 impl FactTexts {
-    /// 交给内核的样子：造的时候拿全部字段试换一次（`kernel/request.md`「事实」第 7 条）。
+    /// 交给内核的样子：造的时候拿全部字段试换一次（`kernel/request.md`「事实」第 7 条）。`gates` 是预设开着的几块（施工 C-11）。
     ///
     /// # Errors
     ///
     /// 哪一份的写法坏了、要了没有的字段，说是 `fact templates`。
-    pub(crate) fn templates(&self) -> Result<FactTemplates, BuildError> {
+    pub(crate) fn templates(&self, gates: Gates) -> Result<FactTemplates, BuildError> {
         FactTemplates::new(
             &self.env,
             &self.permission,
@@ -50,6 +57,9 @@ impl FactTexts {
         )
         .and_then(|templates| templates.with_output_limit(self.output_limit.as_deref()))
         .and_then(|templates| templates.with_model(self.model.as_deref()))
+        .and_then(|templates| {
+            templates.with_gates(gates, self.env_time.as_deref(), self.env_cwd.as_deref())
+        })
         .map_err(|error| BuildError::Texts {
             which: "fact templates",
             error,
