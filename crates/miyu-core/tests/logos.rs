@@ -66,6 +66,7 @@ fn logos(dir: &Dir, data: &Arc<ModelData>, base: &str, colored: &[&str]) -> Logo
                 .iter()
                 .map(|id| ((*id).to_string(), format!("{id}-color")))
                 .collect::<BTreeMap<_, _>>(),
+            mono: BTreeMap::new(),
         },
     }
 }

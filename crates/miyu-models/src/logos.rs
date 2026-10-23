@@ -1,8 +1,8 @@
 //! 供应商的图标（施工 8-31，`docs/blueprint/models.md`「图标」）：哪一家从哪拉、拉到的收不收。纯逻辑：拉、存、交给头在
 //! `miyu-core` 的 `models/logos.rs`、`miyu-endpoint`。
 //!
-//! - 来源照出厂的 `models/logos.json`：`colored` 里有的照 lobe-icons 的彩色版（照原样画），别的照 models.dev 的单色版（头照
-//!   字色画）。两份都是 MIT，标志是各家的商标。
+//! - 来源照出厂的 `models/logos.json`：`colored` 里有的照 lobe-icons 的彩色版（照原样画），`mono` 里有的照 lobe-icons 的单色版
+//!   （models.dev 没有这一家的，施工 8-31 补），别的照 models.dev 的单色版（单色的头照字色画）。两份都是 MIT，标志是各家的商标。
 //! - models.dev 没有这一家的回一张默认图（200）：照一个不存在的编号拉一次记下，内容一样的当没有。
 //! - 收的：UTF-8、不超过 [`LOGO_MAX`]、是一张 SVG（去掉前面的空白、XML 声明以后 `<svg` 开头，有 `</svg>`）。别的当没有。
 
@@ -35,6 +35,9 @@ pub struct LogoTable {
     pub lobe: String,
     /// 有彩色版的几家：目录里的编号 → lobe 的名字。
     pub colored: BTreeMap<String, String>,
+    /// models.dev 没有、lobe 有单色版的几家（施工 8-31 补）：目录里的编号 → lobe 的名字。
+    #[serde(default)]
+    pub mono: BTreeMap<String, String>,
 }
 
 impl LogoTable {
@@ -51,7 +54,10 @@ impl LogoTable {
     pub fn source(&self, id: &str) -> (String, bool) {
         match self.colored.get(id) {
             Some(name) => (self.lobe.replace("{name}", name), false),
-            None => (self.models_dev.replace("{id}", id), true),
+            None => match self.mono.get(id) {
+                Some(name) => (self.lobe.replace("{name}", name), true),
+                None => (self.models_dev.replace("{id}", id), true),
+            },
         }
     }
 

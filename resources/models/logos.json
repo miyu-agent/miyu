@@ -9,5 +9,8 @@
     "minimax-cn": "minimax-color",
     "openrouter": "openrouter-color",
     "zhipuai": "zhipu-color"
+  },
+  "mono": {
+    "cline-pass": "cline"
   }
 }

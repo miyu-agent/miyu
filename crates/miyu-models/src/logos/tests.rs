@@ -17,6 +17,15 @@ fn the_shipped_table_reads_and_picks_a_source() {
         table.source("anthropic"),
         ("https://models.dev/logos/anthropic.svg".to_string(), true)
     );
+    // models.dev 没有 ClinePass，照 lobe 的单色版（施工 8-31 补）。
+    assert_eq!(
+        table.source("cline-pass"),
+        (
+            "https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@1.95.1/icons/cline.svg"
+                .to_string(),
+            true
+        )
+    );
     assert_eq!(
         table.probe(),
         "https://models.dev/logos/miyu-no-such-provider.svg"

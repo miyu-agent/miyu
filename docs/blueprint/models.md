@@ -345,7 +345,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 **图标**（施工 8-31，2026-10-11 项目主人定：彩色的用 lobe-icons 的彩色版，别的用 models.dev 的单色版；网页的会话转来）：
 
-1. **从哪拉**：资源目录 `models/logos.json`：`models_dev` 是 models.dev 单色图的地址（`{id}` 换成目录里的编号），`lobe` 是 lobe-icons（`@lobehub/icons-static-svg`）钉住版本的地址（`{name}` 换成它的名字），`colored` 是有彩色版的几家（目录编号 → lobe 的名字）；以后加家只改表。两份都是 MIT（「许可证」），标志是各家的商标。
+1. **从哪拉**：资源目录 `models/logos.json`：`models_dev` 是 models.dev 单色图的地址（`{id}` 换成目录里的编号），`lobe` 是 lobe-icons（`@lobehub/icons-static-svg`）钉住版本的地址（`{name}` 换成它的名字），`colored` 是有彩色版的几家（目录编号 → lobe 的名字），`mono` 是 models.dev 没有、lobe 有单色版的几家（同样的写法，照单色画；施工 8-31 补，现在只有 `cline-pass` → `cline`）；以后加家只改表。两份都是 MIT（「许可证」），标志是各家的商标。
 2. **什么时候拉**（`crates/miyu-core/src/models/logos.rs`）：和目录一个节奏（`[models.catalog]` 的 `update`、`every`），另一个任务；`update` 关了的不拉、只读缓存；失败的一小时后再试。核心起来时先把缓存里的换上。头不连外网：目录里每一家的都拉（同时最多 8 张、每张 10 秒），外网看不出用的是哪一家。
 3. **收不收**（`miyu_models::logos::accept`）：UTF-8、不超过 32 KiB、是一张 SVG；models.dev 没有这一家的回一张默认图（200），先照一个不存在的编号拉一次记下，单色的内容一样的当没有。默认图拉不到的这一次不拉。
 4. **存在哪**：`<缓存目录>/models/logos/`，单色的 `<编号>.svg`，彩色的 `<编号>.color.svg`，拉完的时刻写 `fetched`；一次整份换掉，记 `INFO logos refreshed logos=…`，失败的 `WARN logos refresh failed`。
