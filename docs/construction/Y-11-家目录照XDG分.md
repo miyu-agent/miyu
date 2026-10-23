@@ -71,3 +71,11 @@ shorin-03 经验收调查会话转来、主会话 2026-10-23 定：脚本工具�
 - 只给本机的会话：场所会话（群、陌生人私聊）没有一个人的家，给了就是几个群共用一处（X-44 补刚把状态目录照场所分开），那里照旧用按场所分的缓存目录；不知道在哪个场所的、会话外面的调用也不给，和 Y-11 下修同一个口径。成员的本机会话照给：Y-2 下上让成员的会话只到他自己的几处，这几处都在里面；`Own::existing` 只放开已经在的，所以先建再起沙盒。`shell` 照 Y-11 上的定论不另加。
 - 文档：蓝图 `skills.md`「脚本」第 3 条、作者文档 `scripts-skills` 中英「怎么跑」。给模型看的 `package-creator` 技能那句（只提缓存目录）不动：非必要不加。
 - 测试先红后绿：`script_state.rs` 的 `a_local_script_gets_the_owner_s_home_folders`（本机的四个都给、建好、真实位置；群的、不知道场所的、会话外面的不给，也不替群建）；`sandbox_skills.rs` 的 `a_local_script_in_the_sandbox_writes_into_the_owner_s_pictures`（经真助手跑，写得进 `pictures/`、`downloads/`）。退回成什么都不给时第一条报红。手写变异 6 个全抓住（不放进写名单——只有沙盒那条抓得到、不知道场所的也给、场所判反、变量对错位、不交环境变量、不先建）。
+
+### 做下来的（Y-11 补修）
+
+主会话审 Y-11 下、Y-11 补时提的两处，并成一小步：
+
+- `basesystem` 的 `script/home.rs`：环境变量原来和 `USER_DIRS` 靠同一个先后配对，数组长度对得上，顺序错了编译期查不出，有人调了 `USER_DIRS` 的先后就静默配错。改成照名字配（`var`：`pictures` → `MIYU_PICTURES_DIR` 这样），`USER_DIRS` 加了一处这里不补的不交、测试当场报红。
+- `miyu-store` 的 `root.rs`：家目录的布局 `home/<账号>/` 原来写了两份（`DataRoot::account_dir` 和只有数据根路径时用的 `user_dir`）。收成一处 `account_home`，`account_dir`、`user_dir` 都照它；`DataRoot::user_dirs` 照 `user_dir`；`home` 这个名字也只写一次（`HOMES`）。
+- 测试：`home/tests.rs` 的 `every_home_folder_has_its_own_variable`（每一处都有、对得上名字，不认识的没有）；`root/tests.rs` 原来那条加一句「两种拼法同一个位置」。手写变异 3 个全抓住（两处对错、漏一处、`user_dir` 自己另拼）。行为不变：`script_state` 5 条、`root` 18 条照旧过。

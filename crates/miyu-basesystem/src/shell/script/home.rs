@@ -8,13 +8,17 @@ use std::path::PathBuf;
 use miyu_store::root::{USER_DIRS, user_dir};
 use miyu_tool::Call;
 
-/// 每一处交给脚本的环境变量，照 [`USER_DIRS`] 的先后。
-const VARS: [&str; USER_DIRS.len()] = [
-    "MIYU_PICTURES_DIR",
-    "MIYU_VIDEOS_DIR",
-    "MIYU_DOCUMENTS_DIR",
-    "MIYU_DOWNLOADS_DIR",
-];
+/// `name`（[`USER_DIRS`] 里的一处）交给脚本的环境变量：照名字配，不靠先后（施工 Y-11 补修），调了 [`USER_DIRS`] 的先后也
+/// 配不错。不认识的没有：[`USER_DIRS`] 加了一处，这里不补就不交，测试当场报红。
+fn var(name: &str) -> Option<&'static str> {
+    match name {
+        "pictures" => Some("MIYU_PICTURES_DIR"),
+        "videos" => Some("MIYU_VIDEOS_DIR"),
+        "documents" => Some("MIYU_DOCUMENTS_DIR"),
+        "downloads" => Some("MIYU_DOWNLOADS_DIR"),
+        _ => None,
+    }
+}
 
 /// 本机的场所。
 const LOCAL: &str = "local";
@@ -29,8 +33,11 @@ pub(super) fn wanted(call: &Call) -> Vec<(&'static str, PathBuf)> {
     else {
         return Vec::new();
     };
-    VARS.iter()
-        .zip(USER_DIRS)
-        .map(|(var, name)| (*var, user_dir(root, &ids.owner, name)))
+    USER_DIRS
+        .iter()
+        .filter_map(|name| Some((var(name)?, user_dir(root, &ids.owner, name))))
         .collect()
 }
+
+#[cfg(test)]
+mod tests;

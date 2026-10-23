@@ -26,7 +26,16 @@ pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"
 /// 数据根 `data_root` 里账号 `account` 照 XDG 的那一处 `name`（[`USER_DIRS`] 里的一个）：`home/<账号>/<name>/`（施工 Y-11 下）。调的
 /// 一方手里只有数据根的路径时用它（调扩展的工具、脚本工具），和 [`DataRoot::user_dirs`] 同一个位置。不建。
 pub fn user_dir(data_root: &Path, account: &AccountId, name: &str) -> PathBuf {
-    data_root.join("home").join(account.as_str()).join(name)
+    account_home(data_root, account).join(name)
+}
+
+/// 放各个账号家目录的地方，数据根下面的名字。
+const HOMES: &str = "home";
+
+/// 数据根 `data_root` 里账号 `account` 的家目录：`home/<账号>/`。家目录的布局只写在这里（施工 Y-11 补修）：[`DataRoot::account_dir`]
+/// 和只有数据根路径的 [`user_dir`] 都照它。
+fn account_home(data_root: &Path, account: &AccountId) -> PathBuf {
+    data_root.join(HOMES).join(account.as_str())
 }
 
 /// 家目录里的缓存（施工 Y-11 上）：`home/<账号>/cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
@@ -34,7 +43,7 @@ pub const CACHE: &str = "cache";
 
 /// 第一次用时建的四个顶层目录：系统区、家目录、状态区、运行时（`07-存储.md` 第二节）。
 /// 别的用到时再建。
-const SKELETON: [&str; 4] = ["system", "home", "state", "run"];
+const SKELETON: [&str; 4] = ["system", HOMES, "state", "run"];
 
 /// 标记文件：它在，这个目录才是 Miyu 的数据根（`07-存储.md` 第二节「认得出自己的数据根才动它」）。装沙盒时也照它
 /// 认给的数据根（`docs/blueprint/sandbox/windows.md`，施工 5-8）。
@@ -107,12 +116,12 @@ impl DataRoot {
 
     /// 放各个账号家目录的地方：`home/`。
     pub fn homes(&self) -> PathBuf {
-        self.path.join("home")
+        self.path.join(HOMES)
     }
 
     /// 一个账号的家目录：`home/<账号>/`，这个人产生的一切都在里面。
     pub fn account_dir(&self, account: &AccountId) -> PathBuf {
-        self.homes().join(account.as_str())
+        account_home(&self.path, account)
     }
 
     /// 账号 `account` 自己放脚本、技能、命令模板、装包的几处（`scripts`、`skills`、`commands`、`packages`）的真实位置（施工
@@ -152,10 +161,9 @@ impl DataRoot {
 
     /// 账号 `account` 的 [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。
     pub fn user_dirs(&self, account: &AccountId) -> Vec<(&'static str, PathBuf)> {
-        let home = self.account_dir(account);
         USER_DIRS
             .iter()
-            .map(|name| (*name, home.join(name)))
+            .map(|name| (*name, user_dir(&self.path, account, name)))
             .collect()
     }
 

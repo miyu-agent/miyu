@@ -457,4 +457,8 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
     );
     assert_eq!(root.cache(&alice), home.join("cache"));
     assert!(!home.join("pictures").exists(), "不建");
+    // 只有数据根路径的一方（施工 Y-11 下）拼出来的是同一个位置（施工 Y-11 补修：只留一处布局）。
+    for (name, dir) in root.user_dirs(&alice) {
+        assert_eq!(user_dir(root.path(), &alice, name), dir, "{name}");
+    }
 }
