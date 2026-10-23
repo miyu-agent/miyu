@@ -287,12 +287,16 @@ async fn data_is_handed_over_unless_the_call_failed() {
     }
 }
 
-/// 调扩展的工具时交会话属主的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
-#[tokio::test]
-async fn a_call_carries_where_the_owner_s_pictures_go() {
-    let data = std::env::temp_dir();
+/// 有数据根、派它的那一轮在 `venue` 的调用，发出去的参数。
+async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
     let mut call = call_of("bob", None);
-    call.data_root = Some(data.clone());
+    call.data_root = Some(data.to_path_buf());
+    call.caller = venue.map(|venue| miyu_tool::Caller {
+        venue: VenueId::parse(venue).expect("合写法"),
+        owner: true,
+        model: None,
+        log: None,
+    });
     let (remote, peer, mut lines) = remote(Duration::from_secs(60));
     let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
     let sent = next(&mut lines).await;
@@ -301,6 +305,16 @@ async fn a_call_carries_where_the_owner_s_pictures_go() {
         outcome: Ok(json!({"blocks": [{"type": "text", "text": "done"}]})),
     });
     running.await.unwrap();
+    sent
+}
+
+/// 调扩展的工具时交会话属主的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
+/// 只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里，图存到属主（桥的系统账号）家里她就碰不到了，几个群还共用
+/// 一处；不知道在哪个场所的也不给。
+#[tokio::test]
+async fn a_call_carries_where_the_owner_s_pictures_go() {
+    let data = std::env::temp_dir();
+    let sent = sent_with_root(&data, Some("local")).await;
     let real = std::fs::canonicalize(&data).expect("在");
     assert_eq!(
         sent["params"]["pictures"],
@@ -314,4 +328,13 @@ async fn a_call_carries_where_the_owner_s_pictures_go() {
     );
     let (without, _) = sent_for(None).await;
     assert!(without["params"].get("pictures").is_none(), "{without}");
+}
+
+#[tokio::test]
+async fn a_venue_session_s_call_carries_no_pictures() {
+    let data = std::env::temp_dir();
+    let group = sent_with_root(&data, Some("qq:group:1")).await;
+    assert!(group["params"].get("pictures").is_none(), "{group}");
+    let unknown = sent_with_root(&data, None).await;
+    assert!(unknown["params"].get("pictures").is_none(), "{unknown}");
 }

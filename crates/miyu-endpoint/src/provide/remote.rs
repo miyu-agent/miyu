@@ -238,8 +238,13 @@ impl Tool for RemoteTool {
                 params["by"] = json!(by);
             }
             // 会话属主的 pictures（施工 Y-11 下）：画出来的图放这里，照数据根的真实位置接上；不建，扩展写之前自己建。会话外面的
-            // 调用没有数据根，不写。
-            if let (Some(root), Some(ids)) = (call.data_root.as_deref(), ids) {
+            // 调用没有数据根，不写。只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里（施工 5-12），属主是桥的
+            // 系统账号，图存进它家里她就读不到、发不出，几个群还共用一处；扩展照旧存工作区。不知道在哪个场所的也不给。
+            let local = call
+                .caller
+                .as_ref()
+                .is_some_and(|caller| caller.venue.as_str() == crate::list::LOCAL);
+            if let (Some(root), Some(ids), true) = (call.data_root.as_deref(), ids, local) {
                 let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
                 let pictures = miyu_store::root::user_dir(&root, &ids.owner, "pictures");
                 params["pictures"] = json!(pictures.display().to_string());
