@@ -298,6 +298,19 @@ impl Home {
         place: Workplace<'_>,
         sessions: Option<Arc<dyn SessionPort>>,
     ) -> Handle {
+        self.load_owned(session, models, tools, place, (sessions, true))
+            .await
+    }
+
+    /// 同 [`Home::load_placed`]，属主是不是管理员照 `owner_is_admin`（施工 Y-2 下上：成员的会话载入以后照样关着）。
+    pub async fn load_owned(
+        &self,
+        session: &SessionId,
+        models: &dyn Models,
+        tools: &Catalog,
+        place: Workplace<'_>,
+        (sessions, owner_is_admin): (Option<Arc<dyn SessionPort>>, bool),
+    ) -> Handle {
         let tools = &miyu_tool::Shelf::new(tools.clone());
         let loaded = load(Load {
             root: &self.root,
@@ -328,7 +341,7 @@ impl Home {
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
             memory: Some(self.memory()),
             presets: None,
-            owner_is_admin: true,
+            owner_is_admin,
         });
         within("载入", loaded).await.expect("载入得了会话")
     }

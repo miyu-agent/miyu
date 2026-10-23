@@ -1,4 +1,5 @@
-//! 外部身份的会话的沙盒（施工 5-12 下，`11-权限与沙盒.md` 第三节「外部身份」）：读写都只限这一轮的工作区和加进来的目录，
+//! 关起来的会话的沙盒（施工 5-12 下，`11-权限与沙盒.md` 第三节「外部身份」）：读写都只限这一轮的工作区和加进来的目录（成员的会话
+//! 只到他自己的几处，不看这两样，施工 Y-2 下①），
 //! 程序要的系统目录、`/dev`、自己的 `/proc/self` 只读；临时目录用工作区里的 `.tmp`（系统的临时目录里有别的程序的文件）；
 //! 工具链的缓存不给。不看级别：完全放开也照样关进来，只读的照样能读工作区、哪儿都不能写。
 //!
@@ -14,7 +15,7 @@ use miyu_kernel::event::Permission;
 use miyu_sandbox::{Sandboxed, Spec};
 
 use super::{Sandbox, real};
-use crate::guard::{Effective, effective};
+use crate::guard::{Effective, Reach, effective};
 
 /// 程序起来要读、又不在系统目录里的几处（施工 5-12 再补）。macOS：`/bin/sh` 照 `/private/var/select/sh` 挑用哪个 shell，
 /// 时区照 `/etc/localtime` 指到的 `/private/var/db/timezone`，旧版系统的动态库缓存在 `/private/var/db/dyld`。
@@ -30,25 +31,30 @@ const PROGRAM_EXTRAS: &[&str] = &[
 const PROGRAM_EXTRAS: &[&str] = &[];
 
 impl Sandbox {
-    /// 外部身份的会话一次调用的沙盒。
+    /// 关起来的会话一次调用的沙盒：关到 `reach`。
     ///
     /// # Errors
     ///
-    /// 工作区里的 `.tmp` 建不成。
+    /// 工作区里的 `.tmp` 建不成；成员的会话工作目录不在他自己的几处里（权限策略先拒了，到不了这里）。
     pub(super) fn confined_call(
         &self,
+        reach: &Reach,
         permission: &Permission,
-        cwd: &str,
-        dirs: &[String],
+        (cwd, dirs): (&str, &[String]),
     ) -> io::Result<Sandboxed> {
         let home = self.home.as_deref();
         let place =
             |dir: &str| resolve(Path::new(dir), home, dir).unwrap_or_else(|_| PathBuf::from(dir));
         let cwd = place(cwd);
         let temp = cwd.join(".tmp");
+        let mut own: Vec<PathBuf> = match reach {
+            Reach::Workspace => std::iter::once(cwd)
+                .chain(dirs.iter().map(|dir| place(dir)))
+                .collect(),
+            Reach::Own(own) if own.holds(&cwd) => own.existing(),
+            Reach::Own(_) => return Err(io::Error::other("working directory outside own places")),
+        };
         std::fs::create_dir_all(&temp)?;
-        let mut own: Vec<PathBuf> = vec![cwd];
-        own.extend(dirs.iter().map(|dir| place(dir)));
         own.push(temp.clone());
         let mut read = system_dirs();
         read.extend([PathBuf::from("/dev"), PathBuf::from("/proc/self")]);

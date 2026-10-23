@@ -150,7 +150,7 @@ async fn a_write_that_fails_stops_the_session() {
             session: miyu_kernel::id::SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91")
                 .expect("合写法"),
             owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
-            confined: false,
+            confined: None,
             venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
             admin: true,
             session_log: None,

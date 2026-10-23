@@ -17,7 +17,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_sandbox::{Sandboxed, Spec};
 
 use crate::default_workspace::DefaultWorkspace;
-use crate::guard::{Effective, effective};
+use crate::guard::{Effective, Reach, effective};
 
 /// 给调用写沙盒要的：助手在哪、系统的家目录、数据根、沙盒的缓存。一个会话一份，这台机器上的沙盒能用才有。
 #[derive(Debug, Clone)]
@@ -26,8 +26,8 @@ pub(crate) struct Sandbox {
     home: Option<PathBuf>,
     data_root: PathBuf,
     cache: Option<SandboxCache>,
-    /// 外部身份的会话（施工 5-12 下）：读写都只限工作区（`confined.rs`）。
-    confined: bool,
+    /// 关起来的会话（施工 5-12 下、Y-2 下①）：读写都只限工作区，成员的只到他自己的几处（`confined.rs`）。
+    confined: Option<Reach>,
     /// 开着的技能文件夹（施工 X-10 中）：数据根藏着，它们单独放开只读。
     shelves: Vec<PathBuf>,
     /// 这个会话的附件目录（施工 3-9 六补）：同技能文件夹单独放开只读；还没建（没存过附件）的不放：Landlock 认不得
@@ -42,13 +42,13 @@ pub(crate) struct Sandbox {
 }
 
 impl Sandbox {
-    /// 助手是 `helper`，`~` 照 `home` 换，藏的是 `data_root`，工具链的缓存放在 `cache`（没有的不设）；外部身份的会话
-    /// `confined`（施工 5-12 下）。
+    /// 助手是 `helper`，`~` 照 `home` 换，藏的是 `data_root`，工具链的缓存放在 `cache`（没有的不设）；关起来的会话关到
+    /// `confined`（施工 5-12 下、Y-2 下①）。
     pub(crate) fn new(
         helper: PathBuf,
         home: Option<PathBuf>,
         data_root: PathBuf,
-        (cache, confined): (Option<SandboxCache>, bool),
+        (cache, confined): (Option<SandboxCache>, Option<Reach>),
     ) -> Sandbox {
         Sandbox {
             helper,
@@ -119,9 +119,9 @@ impl Sandbox {
         dirs: &[String],
         grants: &[RawJson],
     ) -> io::Result<Option<Sandboxed>> {
-        // 外部身份的会话不看级别，读写都只限工作区（施工 5-12 下）。
-        if self.confined {
-            return self.confined_call(permission, cwd, dirs).map(Some);
+        // 关起来的会话不看级别，读写都只限工作区、成员的只到他自己的几处（施工 5-12 下、Y-2 下①）。
+        if let Some(reach) = &self.confined {
+            return self.confined_call(reach, permission, (cwd, dirs)).map(Some);
         }
         let level = effective(permission);
         if level == Effective::Full {

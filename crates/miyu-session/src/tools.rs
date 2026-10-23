@@ -198,7 +198,7 @@ impl Tools {
                     helper,
                     kit.home.clone(),
                     kit.data_root.clone(),
-                    (kit.sandbox_cache, kit.confined),
+                    (kit.sandbox_cache, kit.confined.clone()),
                 )
                 .with_shelves(kit.shelves.clone())
                 .with_attachments(kit.attachments.clone())

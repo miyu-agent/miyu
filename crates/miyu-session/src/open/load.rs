@@ -22,7 +22,7 @@ use crate::agents::{Agents, job_in};
 use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
-use crate::guard::Guard;
+use crate::guard::{Confined, Guard, Own};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::knowledge::{Shelves, Shelving};
@@ -103,6 +103,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (owner_of, id_of) = (owner.clone(), id.clone());
     let place_resources = shipped.clone();
     let (parents, parent_owner) = (root.clone(), owner.clone());
+    // 属主不是管理员的关起来，成员的本机会话只到他自己的几处（施工 Y-2 下①）。
+    let place_own = (!owner_is_admin).then(|| (root.clone(), owner.clone()));
     let (
         log,
         (loaded, base, scan),
@@ -132,8 +134,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
         let run = snapshot.run_texts().map_err(LoadError::Policy)?;
         let guard = snapshot.guard_texts().map_err(LoadError::Policy)?;
-        let place =
-            place(&created.venue, &place_resources, owner_is_admin).map_err(LoadError::Shipped)?;
+        let own = place_own.map(|(root, owner)| Own::of(&root, &owner));
+        let place = place(&created.venue, &place_resources, own).map_err(LoadError::Shipped)?;
         // 能选的池照快照读回（施工 8-8 补）：造会话时拼的那一份，不重拼。
         let pools = Agents::pools_in(&snapshot.tools);
         // 快照里的范围已经照预设、有没有人格算过（施工 P-2 中、P-4 上），这里只再管子会话；分叉出来的支线照父会话的
@@ -298,7 +300,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (inbox, mailbox) = mpsc::unbounded_channel();
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
-    let confined = place.1.is_some();
+    let confined = place.1.as_ref().map(Confined::reach);
     // 技能的文件夹照这一刻找到的、会话的预设开着的放开只读（施工 X-10 上、X-11 上）；列出来的那一块照快照。
     let watch = installed.clone().map(|installed| skills::Watch {
         installed,

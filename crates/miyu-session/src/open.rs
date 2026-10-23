@@ -23,7 +23,7 @@ use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
 use crate::default_workspace::DefaultWorkspace;
-use crate::guard::Guard;
+use crate::guard::{Confined, Guard, Own};
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
@@ -157,6 +157,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
+    // 属主不是管理员的关起来，成员的本机会话只到他自己的几处（施工 Y-2 下①）。
+    let place_own = (!owner_is_admin).then(|| (root.clone(), owner.clone()));
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
         let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         snapshot.no_tools = no_tools;
@@ -164,8 +166,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         let texts = snapshot.driver_texts().map_err(CreateError::Policy)?;
         let run = snapshot.run_texts().map_err(CreateError::Policy)?;
         let guard = snapshot.guard_texts().map_err(CreateError::Policy)?;
-        let place =
-            place(&place_venue, &place_resources, owner_is_admin).map_err(CreateError::Shipped)?;
+        let own = place_own.map(|(root, owner)| Own::of(&root, &owner));
+        let place = place(&place_venue, &place_resources, own).map_err(CreateError::Shipped)?;
         store.put(&snapshot.to_bytes()).map_err(CreateError::Disk)?;
         let log = SessionLog::create(&dir, SEGMENT_LIMIT).map_err(CreateError::Disk)?;
         let turns = connect(
@@ -264,7 +266,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (inbox, mailbox) = mpsc::unbounded_channel();
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
-    let confined = place.1.is_some();
+    let confined = place.1.as_ref().map(Confined::reach);
     let guard = Guard::new(
         tools.clone(),
         root.path().to_path_buf(),
