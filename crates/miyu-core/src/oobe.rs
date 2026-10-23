@@ -18,6 +18,7 @@ use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 use miyu_tool::Catalog;
 use tokio::task::JoinSet;
+use tokio::time::Instant;
 
 use crate::TARGET;
 
@@ -39,8 +40,8 @@ pub fn owner(root: &DataRoot) -> Option<AccountId> {
         .ok()
 }
 
-/// 设置那一段：在 `listener` 上接连接，交给只能设置的一份核心，直到注册了机主（交回他）或者 `stop` 来了（交回没有）。`token` 是
-/// 这一次的本机令牌。
+/// 设置那一段：在 `listener` 上接连接，交给只能设置的一份核心，直到注册了机主（交回他）、`stop` 来了，或者没有连接满 `idle`
+/// 这么久（同完整的那一份的空闲退出，没有的不退；后两种交回没有，施工 Y-12 中上修）。`token` 是这一次的本机令牌。
 ///
 /// # Errors
 ///
@@ -48,7 +49,7 @@ pub fn owner(root: &DataRoot) -> Option<AccountId> {
 pub async fn setup(
     (env, root, resources): (&Env, &DataRoot, &ResourceRoot),
     (listener, token): (&mut Listener, &str),
-    stop: impl Future<Output = ()>,
+    (stop, idle): (impl Future<Output = ()>, Option<Duration>),
 ) -> Result<Option<AccountId>, String> {
     let routes = crate::models::prepare(resources, Some(root.state().join("models")))?;
     let core = Arc::new(
@@ -71,13 +72,24 @@ pub async fn setup(
     // 回应、各自断开。
     let mut connections = JoinSet::new();
     tokio::pin!(stop);
+    // 从什么时候起一个连接都没有：空闲照它算。
+    let mut quiet = Instant::now();
     loop {
+        let deadline = idle.map(|idle| quiet + idle);
         tokio::select! {
             // 先看停、看注册了没有（`biased`）：注册成了的那个头紧接着就重连，那时接连接、那一响都就绪了，随机挑会让它连进这一份。
             biased;
             () = &mut stop => return Ok(None),
             () = done.notified() => break,
-            Some(_) = connections.join_next() => {}
+            Some(_) = connections.join_next() => {
+                if connections.is_empty() {
+                    quiet = Instant::now();
+                }
+            }
+            () = sleep_until(deadline), if deadline.is_some() && connections.is_empty() => {
+                tracing::info!(target: TARGET, reason = "idle", "stopped");
+                return Ok(None);
+            }
             accepted = listener.accept() => match accepted {
                 Ok(connection) => {
                     connections.spawn(miyu_endpoint::serve(connection, Arc::clone(&core)));
@@ -97,4 +109,12 @@ pub async fn setup(
     let owner = owner(root);
     tracing::info!(target: TARGET, found = owner.is_some(), "setup done");
     Ok(owner)
+}
+
+/// 睡到 `deadline`；没有的永远不醒（`select!` 里另有条件挡着，不会走到）。
+async fn sleep_until(deadline: Option<Instant>) {
+    match deadline {
+        Some(deadline) => tokio::time::sleep_until(deadline).await,
+        None => std::future::pending().await,
+    }
 }

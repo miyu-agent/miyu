@@ -31,7 +31,7 @@ pub(super) async fn start(
             let set = oobe::setup(
                 (&env, &root, &resources),
                 (&mut opened.listener, &opened.token),
-                serve::signal(),
+                (serve::signal(), options.idle),
             )
             .await;
             match set {

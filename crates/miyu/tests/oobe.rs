@@ -4,7 +4,7 @@
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-use crate::support::{Home, within};
+use crate::support::{Home, count, within};
 use miyu_ipc::connect_or_start;
 
 /// 一条连接：一行一条地发、收。
@@ -124,4 +124,21 @@ async fn the_owner_registers_on_first_run_and_the_core_is_theirs_after() {
     assert!(!admin.exists(), "admin 的家目录没建：{inside:?}");
     drop(again);
     home.until_stopped().await;
+}
+
+/// 设置那一段也照空闲时限退（施工 Y-12 中上修）：头拉起它、没注册就走了，核心不一直挂着。
+#[tokio::test]
+async fn an_unattended_setup_core_leaves_when_idle() {
+    let home = Home::bare();
+    let (connection, token) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    let mut line = Line::new(connection);
+    let reply = line.call("h1", "hello", hello(&token)).await;
+    assert_eq!(reply["result"]["setup"], json!(true), "{reply}");
+    drop(line);
+    home.until_stopped().await;
+    let log = home.core_log();
+    assert_eq!(count(&log, "stopped reason=idle"), 1, "空闲了自己走：{log}");
+    assert!(!home.root.account_dir(&miyu_core::admin()).exists());
 }
