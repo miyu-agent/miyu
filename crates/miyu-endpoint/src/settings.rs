@@ -55,7 +55,7 @@ miyu_config::settings! {
             kind: name,
             layers: [System, Personal],
             applies: new_session,
-            ui: { page: "general", group: "persona", control: text },
+            ui: { page: "general", group: "new_session", control: text },
         },
     }
 }
@@ -69,7 +69,7 @@ miyu_config::settings! {
             kind: name,
             layers: [System, Personal],
             applies: new_session,
-            ui: { page: "general", group: "preset", control: text },
+            ui: { page: "general", group: "new_session", control: text },
         },
     }
 }
@@ -111,7 +111,7 @@ miyu_config::settings! {
             layers: [System, Personal, Project],
             tighten: true_only,
             applies: new_session,
-            ui: { page: "general", group: "sessions", control: toggle },
+            ui: { page: "general", group: "new_session", control: toggle },
         },
         /// 新会话开局的权限级别（施工 8-32；设置页挪到「隐私与安全」，施工 5-15 下）：`workspace` 是工作区（执行命令在沙盒里跑），`full` 是完全放开。头的第一次
         /// 引导里「沙盒」那一步写它，开是 `workspace`（2026-10-13 项目主人定：默认开）。只管本机的会话：场所会话照旧从工作区开局。
