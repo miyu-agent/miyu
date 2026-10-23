@@ -62,7 +62,9 @@ fn chromium_s_own_sandbox_failures_get_a_hint_and_nothing_else_does() {
     let results = Results::load(&resources).expect("读得出");
     let hint = say(&results.chromium, &[]);
     assert!(
-        hint.contains("--no-sandbox") && hint.contains("--user-data-dir"),
+        hint.contains("--no-sandbox")
+            && hint.contains("--user-data-dir")
+            && hint.contains("XDG_CONFIG_HOME"),
         "{hint}"
     );
     for said in [
@@ -70,6 +72,10 @@ fn chromium_s_own_sandbox_failures_get_a_hint_and_nothing_else_does() {
         "[365480:365480:1022/231536.651620:FATAL:sandbox/linux/suid/client/setuid_sandbox_host.cc:172] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now.\n",
         "[376647:376647:1022/231643.615465:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:213] Zygote process exited prematurely with exit code 1\n",
         "[1:1:FATAL:zygote_host_impl_linux.cc(127)] No usable sandbox! Update your kernel or see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md\n",
+        // 加了 --no-sandbox --user-data-dir 以后，crashpad 在只读、被藏起来的 ~/.config/chromium 下建不了库（施工 SB-1 修二，
+        // 主人验收撞见）：两种说法都认，后一句随系统语言变的那半不认。
+        "chrome_crashpad_handler: --database is required\n",
+        "[1023/180340.607686:ERROR:third_party/crashpad/crashpad/util/file/filesystem_posix.cc:63] mkdir /home/a/.config/chromium/Crash Reports/new: Permission denied (13)\n[1023/180340.607795:ERROR:third_party/crashpad/crashpad/util/linux/socket.cc:120] recvmsg: Connection reset by peer (104)\n",
     ] {
         let done = results.ended(
             Finished {

@@ -138,11 +138,17 @@ impl Results {
 /// chromium 自己那层沙盒、资料目录在 Miyu 的沙盒里起不来时它自己说的几句（施工 SB-1，2026-10-23 项目主人定，同 Claude Code
 /// 的说法：外层沙盒还在，内层多余）：失败的结果里认出一句，末尾接 `chromium-sandbox.txt`，教她加 `--no-sandbox
 /// --user-data-dir=<临时目录>`。只有撞上才花 token，不进 `shell` 的说明。只认原文里固定的那一截。
-const CHROMIUM_SIGNS: [&str; 4] = [
+///
+/// 施工 SB-1 修二（主人验收撞见）：加了 `--no-sandbox --user-data-dir` 以后，crashpad 照 `XDG_CONFIG_HOME` 在
+/// `~/.config/chromium/Crash Reports` 建库，那里被沙盒藏成只读的空目录，建不了就把主进程一起带崩（SIGTRAP）。认它的两种
+/// 说法（随系统语言变的那半不认），提示多教一个 `XDG_CONFIG_HOME=<临时目录>`。
+const CHROMIUM_SIGNS: [&str; 6] = [
     "Failed to create a unique user data directory",
     "The SUID sandbox helper binary was found, but is not configured correctly",
     "Zygote process exited prematurely",
     "No usable sandbox!",
+    "chrome_crashpad_handler: --database is required",
+    "Crash Reports",
 ];
 
 /// 输出里有没有 chromium 那几句（截了的看头尾两段）。

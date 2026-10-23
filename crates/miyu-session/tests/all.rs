@@ -114,6 +114,7 @@ mod route_turn;
 mod route_vision;
 mod route_zen;
 mod sandbox;
+mod sandbox_browser;
 mod sandbox_confined;
 mod sandbox_private;
 mod sandbox_skills;

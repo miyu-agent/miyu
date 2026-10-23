@@ -1308,13 +1308,13 @@ Stopped after {timeout} ms because the command took too long. If it needs more t
 
 #### `software/basesystem/shell/chromium-sandbox.txt`
 
-- 什么时候加进来：命令失败、输出里有 chromium 自己那层沙盒或资料目录起不来的原话（施工 SB-1，`shell.rs` 的 `CHROMIUM_SIGNS`），接在结果末尾
-- token：约 35（估的）
-- 为什么加：2026-10-23 项目主人定，同 Claude Code：沙盒里 chromium 要 `--no-sandbox --user-data-dir=<临时目录>`，外层沙盒还在、内层多余；只有撞上才花 token，不进 `shell` 的说明（调用之后才用得上的知识写进输出）
-- 指纹：`9c47b0cb`
+- 什么时候加进来：命令失败、输出里有 chromium 自己那层沙盒、资料目录、crash 上报起不来的原话（施工 SB-1、SB-1 修二，`shell/results.rs` 的 `CHROMIUM_SIGNS`），接在结果末尾
+- token：约 50（估的）
+- 为什么加：2026-10-23 项目主人定，同 Claude Code：沙盒里 chromium 要 `--no-sandbox --user-data-dir=<临时目录>`，外层沙盒还在、内层多余；SB-1 修二（主人验收撞见）：`~/.config/chromium` 被沙盒藏成只读的空目录，crashpad 建不了库就把主进程带崩，主会话定只在这一条命令前加 `XDG_CONFIG_HOME=<临时目录>`，不改挂载、不改全局。只有撞上才花 token，不进 `shell` 的说明
+- 指纹：`c20feeb3`
 
 ```text
-Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.
+Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it; run it as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.
 ```
 
 #### `software/basesystem/shell/firefox-screenshot.txt`
