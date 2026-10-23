@@ -9,7 +9,7 @@ use serde::Serialize;
 use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::config_file::{self, WriteError};
-use miyu_store::{accounts, invites, logins};
+use miyu_store::{accounts, groups, invites, logins};
 
 use super::{TARGET, by, login_expires, random_hex};
 use crate::Core;
@@ -97,6 +97,32 @@ pub(super) fn login_accounts(core: &Core) -> Vec<AccountId> {
             }
             all
         })
+}
+
+/// 读 `system/groups.json`（施工 Y-12 中下）：坏了的当空的，记一行 `WARN groups not read`。
+pub(super) fn read_groups(core: &Core) -> groups::Read {
+    let path = core.root.system().join(groups::FILE);
+    groups::read(&path).unwrap_or_else(|error| {
+        tracing::warn!(target: TARGET, error = %error, "groups not read");
+        groups::Read {
+            groups: groups::Groups::default(),
+            version: current(&path),
+        }
+    })
+}
+
+/// 改 `system/groups.json`：同 [`change_accounts`]。
+pub(super) fn change_groups<T>(
+    core: &Core,
+    change: impl FnOnce(&mut groups::Groups) -> Result<T, Refusal>,
+) -> Result<T, Refusal> {
+    let read = read_groups(core);
+    let mut groups = read.groups;
+    let out = change(&mut groups)?;
+    let path = core.root.system().join(groups::FILE);
+    groups::write(&path, &groups, read.version.as_deref())
+        .map_err(|error| not_written("groups not written", &error))?;
+    Ok(out)
 }
 
 /// 读 `system/invites.json`：坏了的当空的。

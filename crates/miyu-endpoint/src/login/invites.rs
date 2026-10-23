@@ -22,7 +22,7 @@ const MOST_DAYS: u64 = 30;
 
 /// 只给管理员：连接的账号 `account` 不是管理员的拒。
 pub(super) fn admin_only(core: &Core, account: &AccountId) -> Result<(), Refusal> {
-    match *account == core.admin {
+    match super::admins::is_admin(core, account) {
         true => Ok(()),
         false => Err(Refusal::NOT_PERMITTED),
     }

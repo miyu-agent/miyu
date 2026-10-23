@@ -97,7 +97,7 @@
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
 | `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
-| `not_permitted` | 成员的连接调了 `human.get`、`account.logout` 以外的方法（现在成员只能管自己的账号，权限一样样放开） |
+| `not_permitted` | 成员的连接调了 `human.get`、`account.logout` 以外的方法（现在成员只能管自己的账号，权限一样样放开）；管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
 
 ## `subscribe`、`unsubscribe`
 
@@ -173,7 +173,7 @@ OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自
 
 一个 Miyu 可以有几个人用：管理员发邀请码，拿到码的人自己注册一个账号（成员）。各自的会话只有自己看得到。
 
-**谁能调**：`account.register` 给用邀请码连上的；别的只给管理员，成员调了回 `not_permitted`。
+**谁能调**：`account.register` 给用邀请码连上的；别的只给管理员（机主，和管理员组里的人），别的成员调了回 `not_permitted`。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
@@ -181,8 +181,9 @@ OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自
 | `account.invites` | 没有 | `{"invites": [{"id", "created", "expires", "used"?}]}`：还能用的、最近用掉的（`used` 是 `{"account", "at"}`） |
 | `account.invite_revoke` | `id` | `{"revoked": true}`：撤掉一个还没用的 |
 | `account.register` | `username`、`password` | `{"account", "username", "login": {"expires", "token"}}`：注册好了，这个连接从此是这个账号 |
-| `account.list` | 没有 | `{"accounts": [{"account", "kind", "username"?, "created"?, "disabled"?}]}`：`kind` 是 `admin`、`member`、`system` |
+| `account.list` | 没有 | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?}]}`：`kind` 是 `admin`（机主）、`member`、`system`；`admin` 是这个人是不是管理员（机主恒是） |
 | `account.disable`、`account.enable` | `account` | `{"account", "disabled"}`：停用的登录全部作废、连着的断开，数据留着 |
+| `account.set_admin` | `account`、`admin`（布尔） | `{}`：把一个成员设成、撤掉管理员；机主恒是管理员、撤不掉。机主、系统、包的账号、没有的账号 `unknown_account`，停用了的成员 `member_disabled` |
 
 用户名就是账号编号：小写字母开头，只用小写字母、数字、`-`，最多 32 个；不能和管理员、已有的账号、系统账号重名，也不能叫 `users`。邀请码一次性；注册没成（比如用户名被占了）码还在。
 
@@ -194,6 +195,7 @@ OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自
 | `username_taken` | 用户名被占了 |
 | `unknown_invite` | 没有这个邀请码，或者已经用了 |
 | `unknown_account` | 没有这个账号，或者它不是成员 |
+| `member_disabled` | `account.set_admin` 的那个成员停用了：先启用 |
 | `not_permitted` | 不是管理员 |
 
 ## `login.ticket`、`login.redeem`

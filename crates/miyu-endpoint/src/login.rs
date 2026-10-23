@@ -14,6 +14,7 @@
 //! 一次性码、密码、登录令牌一个字都不进运行日志。凭据文件的读写在 `miyu-store`（`accounts.rs`、`logins.rs`），这里排着队
 //! 一件件改（[`Identity`] 的锁），argon2 放进阻塞线程。
 
+pub(crate) mod admins;
 mod files;
 pub(crate) mod invites;
 pub(crate) mod members;

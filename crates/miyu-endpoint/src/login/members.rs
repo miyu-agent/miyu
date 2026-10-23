@@ -125,18 +125,21 @@ pub(crate) fn list(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
     admin_only(core, account)?;
     let written = files::read_accounts(core).accounts;
     let mut listed = vec![{
-        let mut admin = json!({"account": core.admin.as_str(), "kind": "admin"});
+        let mut admin = json!({"account": core.admin.as_str(), "kind": "admin", "admin": true});
         if let Some(row) = written.of(core.admin.as_str()) {
             admin["username"] = json!(row.username);
         }
         admin
     }];
+    let admins = files::read_groups(core).groups;
     for row in written
         .accounts
         .iter()
         .filter(|row| row.id != core.admin.as_str())
     {
-        let mut one = json!({"account": row.id, "username": row.username, "kind": "member"});
+        let admin = admins.has(miyu_store::groups::ADMIN, &row.id);
+        let mut one =
+            json!({"account": row.id, "username": row.username, "kind": "member", "admin": admin});
         if let Some(created) = row.created {
             one["created"] = json!(created);
         }
@@ -146,7 +149,7 @@ pub(crate) fn list(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
         listed.push(one);
     }
     for system in core.system_accounts() {
-        listed.push(json!({"account": system.as_str(), "kind": "system"}));
+        listed.push(json!({"account": system.as_str(), "kind": "system", "admin": false}));
     }
     Ok(json!({"accounts": listed}))
 }

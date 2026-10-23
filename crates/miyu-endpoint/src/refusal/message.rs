@@ -257,6 +257,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "username_taken" => ("用户名已被使用。", "Username taken."),
         "not_permitted" => ("没有权限。", "Not permitted."),
         "unknown_account" => ("账号不存在。", "Account not found."),
+        "member_disabled" => (
+            "这个成员已停用，先启用。",
+            "This member is disabled. Enable them first.",
+        ),
         "unknown_invite" => ("邀请码不存在。", "Invite not found."),
         "bad_ticket" => ("交接票已失效。", "Ticket expired."),
         "bad_login" => ("登录已失效，请重新登录。", "Login expired. Sign in again."),

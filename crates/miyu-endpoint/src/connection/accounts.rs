@@ -81,6 +81,7 @@ pub(super) async fn call(
         "account.enable" => {
             Changed::answer(login::members::switch(core, account, params, false).await)
         }
+        "account.set_admin" => Changed::answer(login::admins::set(core, account, params).await),
         _ => Changed::answer(Err(Refusal::UNKNOWN_METHOD)),
     }
 }

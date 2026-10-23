@@ -783,6 +783,7 @@ flowchart LR
 | Y-12 中上 | OOBE 注册机主 | `admin` 是系统、不登录；还没有机主的核心先跑设置那一段（本机令牌握手说要设置，只能注册机主、要一次性码），注册成了在同一个进程、同一个套接字上照机主接着起，头重连进来就是他；核心照机主建家目录、读清单和配置。施工单见 `Y-12中上-OOBE注册机主.md` |
 | Y-12 中上修 | 设置那一段也照空闲时限退 | 没人注册时设置那一段的核心不看空闲时限、一直挂着（测试留下 50 多个不退的核心）：照 `--idle-seconds` 退，记 `stopped reason=idle`。施工单见 `Y-12中上-OOBE注册机主.md` 末节「补」 |
 | Y-12 中上修二 | 量尺的数据根补上机主 | `miyu-perf` 起核心之前写好机主，量尺不再开会话就回 `setup_first`（main 上 perf 从 Y-12 中上起一直红）；量法和预算不变。施工单见 `Y-12中上-OOBE注册机主.md` |
+| Y-12 中下 | 管理员组 | 组表 `system/groups.json`（人和包同一张，`admin` 组、以后的 `ext.<能力>`）；机主恒是管理员、撤不掉；`account.set_admin` 设、撤管理员，`account.list` 带 `admin`；非机主的管理员这一步只多拿到账号管理那几个方法。施工单见 `Y-12中下-管理员组.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |

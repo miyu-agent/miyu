@@ -224,6 +224,7 @@
 | `account.invite`、`account.invites`、`account.invite_revoke` | 管理员发、列、撤邀请码：一次性、默认 7 天，`invites.json` 只存哈希（施工 Y-1 上，设计 06 U15） |
 | `account.register` | 用邀请码握手的连接注册成员：用户名就是账号编号，建家目录、用掉邀请码、换一个登录令牌（施工 Y-1 上） |
 | `account.list`、`account.disable`、`account.enable` | 管理员列账号（管理员、成员、系统账号）、停用启用成员：停用当场作废它的登录、断开它的连接（施工 Y-1 上） |
+| `account.set_admin` | 管理员把成员设成、撤掉管理员（施工 Y-12 中下，组表 `system/groups.json` 的 `admin` 组）；机主恒是管理员、撤不掉；`account.list` 每个人带 `admin` |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
 | `blob.get` | 分块读一个 blob：照连接的账号名下给（施工 Y-2 中下，以前一律照管理员）；写了 `session` 的照那个会话的属主（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。施工 Y-2 上起管理员不再越过属主（U2）：别人名下的会话里的 blob 一律 `unknown_blob`；它不走「会话只给属主」那一道，免得拿两种拒绝的说法探编号 |
 | `fs.list` | 列一层目录：数据根只有账号自己的默认工作区能列（施工 W-2） |

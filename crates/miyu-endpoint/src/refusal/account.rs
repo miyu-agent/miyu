@@ -33,6 +33,12 @@ impl Refusal {
         reason: "unknown_account",
         data: None,
     };
+    /// 设管理员的那个成员停用了（施工 Y-12 中下）：先启用。和握手的 `account_disabled` 不同，不断开。
+    pub(crate) const MEMBER_DISABLED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "member_disabled",
+        data: None,
+    };
     /// 没有这个编号的邀请码，或者它已经用掉了。
     pub(crate) const UNKNOWN_INVITE: Refusal = Refusal {
         code: REFUSED,

@@ -98,7 +98,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `hello_first` | Another method before the handshake (does not close) |
 | `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup`; or, while there is no owner, connected with the local token and called something other than `human.get`, `account.setup` and `account.setup_code` |
 | `register_first` | Connected with an invite code and called something other than `human.get` and `account.register` |
-| `not_permitted` | A member's connection called something other than `human.get` and `account.logout` (for now members can only manage their own account; permissions open up step by step) |
+| `not_permitted` | A member's connection called something other than `human.get` and `account.logout` (for now members can only manage their own account; permissions open up step by step); members in the admin group can also call the account management methods (`account.invite`, `account.invites`, `account.invite_revoke`, `account.list`, `account.disable`, `account.enable`, `account.set_admin`) |
 
 ## `subscribe`, `unsubscribe`
 
@@ -174,7 +174,7 @@ A one-time code works once. Setting the password revokes every earlier browser l
 
 Several people can use one Miyu: the admin hands out invite codes, and whoever has one registers an account of their own (a member). Each person's sessions are visible only to them.
 
-**Who can call**: `account.register` on connections made with an invite code; the rest only the admin, members get `not_permitted`.
+**Who can call**: `account.register` on connections made with an invite code; the rest only admins (the owner, and people in the admin group), other members get `not_permitted`.
 
 | Method | Params | Response |
 |---|---|---|
@@ -182,8 +182,9 @@ Several people can use one Miyu: the admin hands out invite codes, and whoever h
 | `account.invites` | none | `{"invites": [{"id", "created", "expires", "used"?}]}`: usable ones and recently used ones (`used` is `{"account", "at"}`) |
 | `account.invite_revoke` | `id` | `{"revoked": true}`: revokes one not yet used |
 | `account.register` | `username`, `password` | `{"account", "username", "login": {"expires", "token"}}`: registered; this connection is now that account |
-| `account.list` | none | `{"accounts": [{"account", "kind", "username"?, "created"?, "disabled"?}]}`: `kind` is `admin`, `member` or `system` |
+| `account.list` | none | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?}]}`: `kind` is `admin` (the owner), `member` or `system`; `admin` says whether the person is an admin (always true for the owner) |
 | `account.disable`, `account.enable` | `account` | `{"account", "disabled"}`: disabling revokes all its logins and closes its connections; data stays |
+| `account.set_admin` | `account`, `admin` (bool) | `{}`: make a member an admin or stop them being one; the owner is always an admin and can't be removed. The owner, the system, package accounts and unknown accounts get `unknown_account`; a disabled member gets `member_disabled` |
 
 The username is the account id: starts with a lowercase letter, only lowercase letters, digits and `-`, at most 32; it can't be the admin's, an existing account's or a system account's, nor `users`. Invite codes are single-use; if registering fails (say the username is taken) the code stays usable.
 
@@ -195,6 +196,7 @@ The username is the account id: starts with a lowercase letter, only lowercase l
 | `username_taken` | The username is taken |
 | `unknown_invite` | No such invite code, or already used |
 | `unknown_account` | No such account, or it isn't a member |
+| `member_disabled` | The member given to `account.set_admin` is disabled: enable them first |
 | `not_permitted` | Not the admin |
 
 ## `login.ticket`, `login.redeem`
