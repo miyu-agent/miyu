@@ -10,7 +10,7 @@ use miyu_tool::Call;
 
 /// `name`（[`USER_DIRS`] 里的一处）交给脚本的环境变量：照名字配，不靠先后（施工 Y-11 补修），调了 [`USER_DIRS`] 的先后也
 /// 配不错。不认识的没有：[`USER_DIRS`] 加了一处，这里不补就不交，测试当场报红。
-fn var(name: &str) -> Option<&'static str> {
+pub(super) fn var(name: &str) -> Option<&'static str> {
     match name {
         "pictures" => Some("MIYU_PICTURES_DIR"),
         "videos" => Some("MIYU_VIDEOS_DIR"),

@@ -41,9 +41,9 @@ const SET: &[(&str, &str)] = &[
 ];
 
 /// 这一轮的模型、思考强度、会话日志的目录（施工 E-M）：命令、脚本都拿得到，查自己是什么模型、翻自己的日志时用。
-const MODEL: &str = "MIYU_MODEL";
-const EFFORT: &str = "MIYU_EFFORT";
-const SESSION_LOG: &str = "MIYU_SESSION_LOG";
+pub(super) const MODEL: &str = "MIYU_MODEL";
+pub(super) const EFFORT: &str = "MIYU_EFFORT";
+pub(super) const SESSION_LOG: &str = "MIYU_SESSION_LOG";
 
 /// 照调用的事实 `caller` 另外设上的：没有的不设（日志目录只给属主是管理员的会话）。
 pub(super) fn told(caller: Option<&Caller>) -> Vec<(OsString, OsString)> {

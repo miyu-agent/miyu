@@ -441,3 +441,6 @@ impl Tool for Script {
         })
     }
 }
+
+#[cfg(test)]
+mod tests;
