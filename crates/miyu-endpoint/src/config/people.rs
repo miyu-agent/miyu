@@ -133,6 +133,8 @@ impl Config {
         );
         config.environment = Environment::of(&[]);
         config.secrets = self.secrets.clone();
+        let (own, shown) = super::own_secrets_at(root, account);
+        config.own_secrets = super::SecretsFile::read(&own, &shown);
         config.models = self.models.clone();
         config.resolved = config.merged(None);
         config

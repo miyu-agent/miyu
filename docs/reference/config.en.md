@@ -123,13 +123,15 @@ All changes are checked and written together: one bad item refuses the whole req
 
 | Method | Params | Response |
 |---|---|---|
-| `secret.set` | `name`, `value` (both required) | `{"replaced": <whether it existed>}` |
-| `secret.delete` | `name` | `{}` |
-| `secret.list` | none | `{"secrets": [{"name", "set", "used_by"}…]}` |
+| `secret.set` | `name`, `value` (both required), `layer` | `{"replaced": <whether it existed>}` |
+| `secret.delete` | `name`, `layer` | `{}` |
+| `secret.list` | none | `{"secrets": [{"name", "set", "layer", "used_by"}…]}` |
 
 The value is stored with surrounding whitespace removed. `secret.list` never returns values: it lists secrets that are set and those referenced by config but not set; `used_by` is the setting keys that refer to each.
 
-**Errors**: `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
+There are two shelves. `system` is the shared `system/secrets.toml`, and only admins can write it. `personal` is the person's own `home/<account>/secrets.toml`, used only by their own config. Without `layer`, admins write `system` and members write `personal`. A `{ secret = name }` reference looks in the person's own shelf first, then the system one. `secret.list` lists both shelves the person can use; `layer` is `personal`, `system`, or `null` when not set.
+
+**Errors**: `not_permitted` (a non-admin writing the system shelf); `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
 
 ## `model.list`
 

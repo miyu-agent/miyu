@@ -39,11 +39,9 @@ async fn a_member_reaches_only_his_own_things() {
     }
     // 整台机器的事、还没照人分开的：不给。
     for (method, params) in [
-        ("config.set", json!({"layer": "personal", "changes": []})),
         ("package.install", json!({"package": "x"})),
         ("extension.enable", json!({"package": "x"})),
-        ("secret.list", json!({})),
-        ("provider.test", json!({"provider": "x"})),
+        ("provider.detect", json!({})),
         ("model.call", json!({})),
         ("check", json!({})),
         ("mcp.set", json!({})),

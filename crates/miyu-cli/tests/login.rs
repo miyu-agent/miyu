@@ -389,8 +389,8 @@ async fn the_list_never_shows_a_key() {
     assert_eq!(
         listed,
         serde_json::json!({"secrets": [
-            {"name": "bigmodel-2", "set": true, "used_by": []},
-            {"name": "deepseek", "set": true, "used_by": []},
+            {"name": "bigmodel-2", "set": true, "layer": "system", "used_by": []},
+            {"name": "deepseek", "set": true, "layer": "system", "used_by": []},
         ]})
     );
 }

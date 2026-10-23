@@ -123,13 +123,15 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `secret.set` | `name`、`value`（都必写） | `{"replaced": <原来有没有>}` |
-| `secret.delete` | `name` | `{}` |
-| `secret.list` | 没有 | `{"secrets": [{"name", "set", "used_by"}…]}` |
+| `secret.set` | `name`、`value`（都必写）、`layer` | `{"replaced": <原来有没有>}` |
+| `secret.delete` | `name`、`layer` | `{}` |
+| `secret.list` | 没有 | `{"secrets": [{"name", "set", "layer", "used_by"}…]}` |
 
 存的是去掉前后空白的值。`secret.list` 从不交出值：列设了的和配置里引用了、还没设的，`used_by` 是引用它的配置键。
 
-**出错**：`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
+密钥有两份：`system` 是大家共用的 `system/secrets.toml`，只有管理员写得了；`personal` 是这个人自己的 `home/<账号>/secrets.toml`，只给他自己的配置用。`layer` 不写的，管理员是 `system`，成员是 `personal`。引用 `{ secret = 名字 }` 先找自己的再找系统的。`secret.list` 列他用得上的两份，`layer` 是 `personal`、`system`，没设的是 `null`。
+
+**出错**：`not_permitted`（不是管理员写系统那一份）；`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
 
 ## `model.list`
 

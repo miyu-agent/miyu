@@ -61,7 +61,9 @@ impl Core {
         if path == config.places.trust {
             observe_trust(self, &mut config);
         } else if path == config.secrets.path {
-            crate::secrets::observe(self, &mut config);
+            crate::secrets::observe(self, &mut config, crate::secrets::Shelf::System);
+        } else if path == config.own_secrets.path {
+            crate::secrets::observe(self, &mut config, crate::secrets::Shelf::Personal);
         } else if let Some(layer) = config.layer_at(path) {
             observe(self, &mut config, layer);
         }
@@ -76,6 +78,7 @@ impl Config {
             self.personal.path.clone(),
             self.places.trust.clone(),
             self.secrets.path.clone(),
+            self.own_secrets.path.clone(),
         ]
     }
 

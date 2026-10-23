@@ -96,8 +96,10 @@ pub struct Config {
     pub(crate) personal: File,
     /// 信任的记录。
     trust: Vec<trust::Record>,
-    /// 密钥文件（施工 8-5）。
+    /// 密钥文件（施工 8-5）：系统那一份 `system/secrets.toml`，大家共用（施工 Y-2 下下中中起）。
     pub(crate) secrets: SecretsFile,
+    /// 这个人自己的密钥文件 `home/<账号>/secrets.toml`（施工 Y-2 下下中中）：只给他自己的配置用，按名字找时先找它。
+    pub(crate) own_secrets: SecretsFile,
     /// 几份核心自己写的文件在哪（施工 8-3）。
     pub(crate) places: Places,
     /// 不算项目配置的最终值。
@@ -119,6 +121,14 @@ fn layers(root: &DataRoot, account: &AccountId) -> [(Layer, PathBuf, String); 2]
             format!("home/{}/{PERSONAL}", account.as_str()),
         ),
     ]
+}
+
+/// 这个人自己的密钥文件在哪、给人看的写法：`home/<账号>/secrets.toml`（施工 Y-2 下下中中）。
+fn own_secrets_at(root: &DataRoot, account: &AccountId) -> (PathBuf, String) {
+    (
+        root.account_dir(account).join(miyu_store::secrets::FILE),
+        format!("home/{}/{}", account.as_str(), miyu_store::secrets::FILE),
+    )
 }
 
 /// 密钥文件在哪：`system/secrets.toml`。
@@ -211,10 +221,14 @@ impl Config {
         }
         let secrets = SecretsFile::read(&secrets_path(root), &SECRETS.join("/"));
         crate::secrets::told(&secrets);
+        let (own, shown) = own_secrets_at(root, account);
+        let own_secrets = SecretsFile::read(&own, &shown);
+        crate::secrets::told(&own_secrets);
         let mut config =
             Config::assemble(root, account, home, items, env, [system, personal], trust);
         config.environment = environment;
         config.secrets = secrets;
+        config.own_secrets = own_secrets;
         config
     }
 
@@ -254,6 +268,10 @@ impl Config {
             trust,
             environment: Environment::of(&[]),
             secrets: SecretsFile::nothing(&secrets_path(root), &SECRETS.join("/")),
+            own_secrets: {
+                let (own, shown) = own_secrets_at(root, account);
+                SecretsFile::nothing(&own, &shown)
+            },
             places: Places::of(root, account),
             resolved: Resolved::default(),
             models: None,
@@ -285,7 +303,11 @@ impl Config {
             .flat_map(|file| self.missing(&file.parsed, file.layer))
             .filter(|problem| problem.severity() == miyu_config::problem::Severity::Error)
             .count();
-        self.system.counts().0 + self.personal.counts().0 + self.secrets.errors() + dangling
+        self.system.counts().0
+            + self.personal.counts().0
+            + self.secrets.errors()
+            + self.own_secrets.errors()
+            + dangling
     }
 
     /// 一份配置文件读进来以后另查的：引用的密钥、环境变量取不到的（施工 8-5，`unknown_secret`、`env_not_set`，警告）；引用、
@@ -329,7 +351,7 @@ impl Config {
             &self.items,
             parsed,
             layer,
-            &|name| self.secrets.has(name),
+            &|name| self.own_secrets.has(name) || self.secrets.has(name),
             &|name| self.environment.has(name),
         );
         let (providers, pools) = (
@@ -355,16 +377,21 @@ impl Config {
         self.environment.has(name)
     }
 
-    /// 照引用取一个密钥（施工 8-6，路由取 key）：`{ secret }` 照手里的密钥文件，`{ env }` 照核心的环境。没设的、设成空的、
+    /// 照引用取一个密钥（施工 8-6，路由取 key）：`{ secret }` 照手里的两份密钥文件，`{ env }` 照核心的环境。没设的、设成空的、
     /// 有控制字符、太长的是空的。
     pub fn secret(
         &self,
         reference: &miyu_config::secret::Reference,
     ) -> Option<miyu_config::secret::Secret> {
         match reference {
-            miyu_config::secret::Reference::Secret(name) => {
-                self.secrets.stored.entries.get(name).cloned()
-            }
+            // 先找自己的，再找系统那一份（施工 Y-2 下下中中）。
+            miyu_config::secret::Reference::Secret(name) => self
+                .own_secrets
+                .stored
+                .entries
+                .get(name)
+                .or_else(|| self.secrets.stored.entries.get(name))
+                .cloned(),
             miyu_config::secret::Reference::Env(name) => self
                 .environment
                 .get(name)

@@ -216,8 +216,8 @@ async fn the_list_has_names_whether_set_and_who_uses_them() {
     assert_eq!(
         listed["result"],
         json!({"secrets": [
-            {"name": "deepseek", "set": false, "used_by": ["providers.demo", "providers.other"]},
-            {"name": "zeta", "set": true, "used_by": []},
+            {"name": "deepseek", "set": false, "layer": null, "used_by": ["providers.demo", "providers.other"]},
+            {"name": "zeta", "set": true, "layer": "system", "used_by": []},
         ]}),
         "照最终值找引用：个人设置盖掉的不算"
     );
@@ -322,7 +322,7 @@ async fn a_broken_secrets_file_counts_as_errors_and_blocks_writes() {
     let listed = client.call("list-1", "secret.list", json!({})).await;
     assert_eq!(
         listed["result"],
-        json!({"secrets": [{"name": "ok", "set": true, "used_by": []}]})
+        json!({"secrets": [{"name": "ok", "set": true, "layer": "system", "used_by": []}]})
     );
 
     home.write(SECRETS, &format!("deepseek = \"{FAKE}\n"));

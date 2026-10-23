@@ -65,8 +65,13 @@ enum KeyParam {
     Value(String),
 }
 
-/// `provider.test`：`config` 那一步给人看的话照 `peer` 的语言说。
-pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value, Refusal> {
+/// `provider.test`：`config` 那一步给人看的话照 `peer` 的语言说。照这个连接的人那一份配置、他用得上的两份密钥（施工 Y-2
+/// 下下中中）：别人的 key、核心的环境变量他拿不到。
+pub(crate) async fn test(
+    core: &Core,
+    (account, peer): (&miyu_kernel::id::AccountId, Peer),
+    params: Value,
+) -> Result<Value, Refusal> {
     let params: TestParams = serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?;
     if params.model.as_deref() == Some("") {
         return Err(Refusal::BAD_PARAMS);
@@ -82,7 +87,7 @@ pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value
     let model = params.model.as_deref();
     let probed = match (params.provider, params.candidate) {
         (Some(id), None) => {
-            let snapshot = snapshot(core);
+            let snapshot = snapshot(core, account);
             let values = snapshot.resolved.values();
             if !configured(&values).contains(&id) {
                 return Err(Refusal::UNKNOWN_PROVIDER);
@@ -100,7 +105,7 @@ pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value
             probe(&data, tried).await
         }
         (None, Some(written)) => {
-            let (candidate, key) = candidate(core, written);
+            let (candidate, key) = candidate(core, account, written);
             let id = candidate.id();
             let values = candidate.values();
             let reference = candidate.key.clone();
@@ -127,18 +132,23 @@ pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value
 
 /// 候选写成 [`Candidate`]，它的 key 先取好：`{value}` 的就是写的（照 `secret.set` 的规矩去掉前后空白，不收的当取不到），
 /// 别的照这一刻的密钥文件、核心的环境。
-fn candidate(core: &Core, written: CandidateParams) -> (Candidate, Option<Secret>) {
+fn candidate(
+    core: &Core,
+    account: &miyu_kernel::id::AccountId,
+    written: CandidateParams,
+) -> (Candidate, Option<Secret>) {
+    let mine = core.mine(account);
     let (key, value) = match written.key {
         None => (None, None),
         Some(KeyParam::Value(value)) => (Some(value_key()), Secret::new(&value).ok()),
         Some(KeyParam::Secret(name)) => {
             let reference = Reference::Secret(name);
-            let value = core.config().secret(&reference);
+            let value = mine.config().secret(&reference);
             (Some(reference), value)
         }
         Some(KeyParam::Env(name)) => {
             let reference = Reference::Env(name);
-            let value = core.config().secret(&reference);
+            let value = mine.config().secret(&reference);
             (Some(reference), value)
         }
     };

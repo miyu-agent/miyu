@@ -303,16 +303,18 @@ pub(crate) fn call<'a>(
                 params(request)?,
             )
         }),
-        "secret.set" => {
-            answer(move || async move { secrets::set(core, peer, &request.id, params(request)?) })
+        "secret.set" => answer(move || async move {
+            secrets::set(core, (caller, peer), &request.id, params(request)?)
+        }),
+        "secret.delete" => answer(move || async move {
+            secrets::delete(core, (caller, peer), &request.id, params(request)?)
+        }),
+        "secret.list" => {
+            answer(move || async move { Ok(secrets::list(core, caller.acting_for())) })
         }
-        "secret.delete" => {
-            answer(
-                move || async move { secrets::delete(core, peer, &request.id, params(request)?) },
-            )
-        }
-        "secret.list" => answer(move || async move { Ok(secrets::list(core)) }),
-        "model.list" => answer(move || async move { models::list(core, params(request)?).await }),
+        "model.list" => answer(move || async move {
+            models::list(core, caller.acting_for(), params(request)?).await
+        }),
         "provider.detect" => answer(move || async move { providers::detect(core).await }),
         "provider.catalog" => {
             answer(move || async move { providers::catalog(core, peer, params(request)?).await })
@@ -320,9 +322,9 @@ pub(crate) fn call<'a>(
         "provider.rename" => answer(move || async move {
             providers::rename(core, peer, &request.id, params(request)?).await
         }),
-        "provider.test" => {
-            answer(move || async move { providers::test(core, peer, params(request)?).await })
-        }
+        "provider.test" => answer(move || async move {
+            providers::test(core, (caller.acting_for(), peer), params(request)?).await
+        }),
         "usage.query" => {
             answer(move || async move { crate::usage::query(core, caller, params(request)?).await })
         }

@@ -60,9 +60,14 @@ async fn a_member_reads_the_system_layer_and_keeps_his_own_settings() {
         .unwrap_or_default();
     assert!(!owners.contains("skill-notes"), "{owners}");
 
-    // 写配置这一步还不给成员（同密钥照人分开一起放）。
-    let refused = set(&mut bob, "personal", "ui.language", json!("en")).await;
+    // 写配置（施工 Y-2 下下中中）：他的个人设置写得了，碰不到机主的；系统配置写不了。
+    let written = set(&mut bob, "personal", "ui.language", json!("en")).await;
+    assert!(written.get("result").is_some(), "{written}");
+    assert_eq!(value(&mut bob, "ui.language").await, json!("en"));
+    assert_eq!(value(&mut owner, "ui.language").await, json!("ja"));
+    let refused = set(&mut bob, "system", "terminal.idle_new_after", json!(9)).await;
     assert_eq!(reason(&refused), Some("not_permitted"), "{refused}");
+    assert_eq!(value(&mut bob, "terminal.idle_new_after").await, json!(7));
 }
 
 #[tokio::test]

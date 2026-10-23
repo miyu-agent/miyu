@@ -126,7 +126,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let json: serde_json::Value = serde_json::from_slice(&json.stdout).expect("是 JSON");
     assert_eq!(
         json,
-        serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "used_by": []}]})
+        serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "layer": "system", "used_by": []}]})
     );
 
     let out = run(&root, "C", &["logout", "deepseek"], "").await;

@@ -1,4 +1,4 @@
-//! 成员的名单（施工 Y-2 下下上）：名单里的都是分发得到的方法；整台机器的、还没照人分开的不在里面；订阅照流挑。
+//! 成员的名单（施工 Y-2 下下上，写配置、密钥照人分开以后放开见 Y-2 下下中中）：名单里的都是分发得到的方法；整台机器的、还没照人分开的不在里面；订阅照流挑。
 
 use serde_json::json;
 
@@ -12,15 +12,18 @@ fn members_get_their_own_things_and_nothing_machine_wide() {
         "kb.delete",
         "usage.query",
         "preset.set",
+        "config.set",
+        "secret.set",
+        "secret.list",
+        "provider.test",
+        "model.list",
     ] {
         assert!(allowed(method, &json!({})), "{method}");
     }
     for method in [
-        "config.set",
         "package.install",
         "extension.enable",
-        "secret.list",
-        "provider.test",
+        "provider.detect",
         "fs.read",
         "check",
         "mcp.set",

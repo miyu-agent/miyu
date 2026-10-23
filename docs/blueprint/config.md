@@ -60,11 +60,11 @@
 
 **每人一份**（施工 Y-2 下下中上，设计 06 U21；2026-10-24 项目主人定「成员只继承系统层」）：机主的那一份照旧是核心手里的；别人（成员）的各一份（`crates/miyu-endpoint/src/config/people.rs`），用到时照机主那一份造，一直留着。
 
-- 系统配置、共用的密钥文件跟机主那一份；个人设置、信任的记录是他自己的（`home/<账号>/settings.toml`、`trust.toml`）；`{ env = … }` 不认（核心的环境是机主的）。机主个人设置里的东西（包括配在那里的模型、供应商）成员拿不到：要给成员用的写在系统配置里。
+- 系统配置、共用的密钥文件跟机主那一份；个人设置、信任的记录、个人密钥是他自己的（`home/<账号>/settings.toml`、`trust.toml`、`secrets.toml`，第九条第 9 款）；`{ env = … }` 不认（核心的环境是机主的）。机主个人设置里的东西（包括配在那里的模型、供应商）成员拿不到：要给成员用的写在系统配置里。
 - 系统账号、包的账号（平台桥、替机主干活的扩展）照机主那一份：场所会话用的是机主配的模型。
 - 会话照属主的那一份（造会话、载入时交给它）；开局的权限级别、「关于你」、项目配置信不信任、`session.create` 的模型、默认人格和预设、全局开关、脚本的加载方式、终端会话的闲置时长、用量的币种，照会话属主或这个连接的人那一份。
 - 系统配置、共用的密钥文件变了（手改、`config.set` 写系统层、`secret.set`）：已经开着的别人那几份跟着换，系统配置变了的那一次推给订阅着他们配置的连接。别人的个人设置只经核心写，不另外监视。
-- 成员能读自己那一份（`config.get`、`config.check`、`config.schema`、订阅 `config`）、改开关和加载方式（`feature.set`、`tool.set_loading`）、记项目配置信不信任（`config.trust`）。写配置（`config.set`）同密钥照人分开一起放（施工 Y-2 下下中中）；写系统配置只有管理员。
+- 成员能读自己那一份（`config.get`、`config.check`、`config.schema`、订阅 `config`）、改开关和加载方式（`feature.set`、`tool.set_loading`）、记项目配置信不信任（`config.trust`）。施工 Y-2 下下中中起也能写他的个人设置（`config.set` 的 `personal`）、存删列他自己的密钥（`secret.*`）、照他那一份列模型、试供应商（`model.list`、`provider.test`）；写系统配置、系统那一份密钥只有管理员（`not_permitted`）。认供应商（`provider.detect`）、一次性调模型、MCP 照旧只给管理员。
 - 还没照人分的：界面语言（握手记下的连接不带账号，成员这一版照机主那一份算）、MCP 服务（整个核心一份，只给管理员）。
 
 ### 对外的样子
@@ -541,17 +541,18 @@ miyu_config::settings! {
 | `name` | 字符串，必写 | 密钥的名字，照名字的写法 |
 | `value` | 字符串，必写 | 密钥本身 |
 
-回应 `{"replaced": <布尔>}`，落了盘才回：`replaced` 是这个名字原来有没有设。存的是去掉前后空白的值（粘贴时常带着换行）。名字不合写法、`value` 去掉前后空白是空的、有控制字符、超过 16 KiB：`bad_params`。密钥文件现在读不进来（手改坏了）、这个名字在文件里写成了一张表：`config_file_broken`，`problems` 是密钥文件的问题，一个字节不动。写不成、替换前一连三次有人手改：`internal_error`（8-5）。M8 只写系统的 `system/secrets.toml`。成员自己的随多用户，那时加一格 `scope`，只加不改。
+回应 `{"replaced": <布尔>}`，落了盘才回：`replaced` 是这个名字原来有没有设。存的是去掉前后空白的值（粘贴时常带着换行）。名字不合写法、`value` 去掉前后空白是空的、有控制字符、超过 16 KiB：`bad_params`。密钥文件现在读不进来（手改坏了）、这个名字在文件里写成了一张表：`config_file_broken`，`problems` 是密钥文件的问题，一个字节不动。写不成、替换前一连三次有人手改：`internal_error`（8-5）。写哪一份看 `layer`（施工 Y-2 下下中中，只加不改）：`system` 是大家共用的 `system/secrets.toml`，只有管理员写得了（别人 `not_permitted`）；`personal` 是这个人自己的 `home/<账号>/secrets.toml`。不写的，管理员是 `system`（和分开以前一样），成员是 `personal`。
 
-**`secret.delete`**（命令，8-5）：`name`，必写。回应 `{}`。扩展进程调回 `local_only`（施工 T-9）。没有这个密钥：`unknown_secret`。密钥文件读不进来、写不成同 `secret.set`。
+**`secret.delete`**（命令，8-5）：`name`，必写；`layer` 同 `secret.set`。回应 `{}`。扩展进程调回 `local_only`（施工 T-9）。没有这个密钥：`unknown_secret`。密钥文件读不进来、写不成同 `secret.set`。
 
 **`secret.list`**（查询，8-5）：不带参数。只列名字和是否已设置，从不交出值：
 
 ```json
-{"secrets":[{"name":"bigmodel-2","set":false,"used_by":["providers.bigmodel.key"]},{"name":"deepseek","set":true,"used_by":["providers.deepseek.key"]}]}
+{"secrets":[{"name":"bigmodel-2","set":false,"layer":null,"used_by":["providers.bigmodel.key"]},{"name":"deepseek","set":true,"layer":"system","used_by":["providers.deepseek.key"]}]}
 ```
 
-- 列的是设了的，和配置里引用了、还没设的，照名字排。
+- 列的是这个连接的人用得上的两份里设了的，和他的配置里引用了、还没设的，照名字排。
+- `layer`（施工 Y-2 下下中中）：`personal` 他自己那一份有、`system` 只有系统那一份有、`null` 还没设。
 - `used_by`：系统配置、个人设置里哪几项引用了它，照键名排。没有是空数组。
 
 **新的原因码**（`code` 都是 -32010）：
@@ -799,6 +800,7 @@ miyu_config::settings! {
 7. 取出来的密钥是一个单独的类型 `Secret`：`Debug` 只印 `Secret(…)`，没有 `Display`，不能序列化。它不进日志、事件、blob、策略快照、协议的回应、运行日志、报错的话（`07-存储.md` 第九节）。手里那一份密钥文件（`SecretsFile`）、读文件交回的样子（`miyu-store` 的 `Stored`）、核心的环境（`Environment`）的 `Debug` 都不印字。`secret.set` 的参数不进运行日志（端点的 `DEBUG request` 那一行本来只记方法名），参数的类型也不带 `Debug`。
 8. 密钥变了，下一个回合开始时生效，和供应商的配置一样（第八条第 3 条，`models.md`）：密钥文件住在配置服务里，换上就交给会话。
 8. `secret.list` 的 `used_by`：照系统配置、个人设置的最终值，找类型是 `secret`、写的是 `{ secret = 这个名字 }` 的项。上面一层盖掉的引用不算。
+9. 每人一份（施工 Y-2 下下中中，2026-10-24 项目主人定「成员只继承系统层」）：除了系统那一份，每个人还有自己的 `home/<账号>/secrets.toml`，写法、权限、监视、留痕同上。`{ secret = 名字 }` 先找自己的，再找系统那一份；机主自己的成员找不到（查配置报 `unknown_secret`、试供应商停在 `config`）。核心替 MCP 服务存、清的登录令牌照旧在系统那一份。
 
 **十、命令行**（8-2、8-3）
 

@@ -128,15 +128,19 @@ impl Snapshot {
     }
 }
 
-/// `model.list`。
-pub(crate) async fn list(core: &Core, params: Value) -> Result<Value, Refusal> {
+/// `model.list`：照这个连接的人那一份配置列（施工 Y-2 下下中中）。
+pub(crate) async fn list(
+    core: &Core,
+    account: &miyu_kernel::id::AccountId,
+    params: Value,
+) -> Result<Value, Refusal> {
     let params: ListParams = match params {
         Value::Null => ListParams::default(),
         params => serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?,
     };
     let data = Arc::clone(&core.model_data);
     data.wait().await;
-    let snapshot = snapshot(core);
+    let snapshot = snapshot(core, account);
     let values = snapshot.resolved.values();
     let configured = miyu_config::key::names(values.keys(), "providers.<id>", &[]);
     let mut chosen: Vec<String> = match &params.provider {
@@ -280,8 +284,10 @@ pub(crate) fn record(
 
 /// 抄一份这一刻的配置：每个用得到的引用（key，和地址是环境变量的引用时，施工 8-6b）都先取好值，拉列表、`model.list`
 /// 用的是同一份，不会各自再问一次核心的环境。`provider.detect`、`provider.test` 也用（施工 8-11）。
-pub(crate) fn snapshot(core: &Core) -> Snapshot {
-    let config = core.config();
+pub(crate) fn snapshot(core: &Core, account: &miyu_kernel::id::AccountId) -> Snapshot {
+    // 照这个人那一份（施工 Y-2 下下中中）：他的供应商、他用得上的两份密钥。
+    let mine = core.mine(account);
+    let config = mine.config();
     let resolved = config.resolved().clone();
     let values = resolved.values();
     let files = [Layer::System, Layer::Personal]
