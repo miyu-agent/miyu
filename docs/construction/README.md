@@ -709,6 +709,7 @@ flowchart LR
 | P-16 上 | 预设的说明、极简开发 | 出厂的全部功能、常规开发写上三语的说明（原来不写）；新出厂预设 `minimal` 极简开发：`[features]` 只开基础系统的 `files`、`commands`，关 `glob`、`grep`、`trash`，留 `shell`、`read`、`write`、`edit`，没写的照 `unlisted = "off"`，基础系统以后新加的功能在这里也关着。施工单见 `P-16-预设的说明和无工具.md` |
 | P-16 下 | 无工具 | `preset.list` 末尾固定一项编号是 `null` 的「无工具」（三语）；`session.create`、`session.configure` 交 `preset: null` 的一件工具都不给，技能目录、知识库那一块跟着没有；`session.created`、快照记 `no_tools`，内核和会话索引记空的编号，会话信息写 `preset: null`、`no_tools: true`；`preset.default` 不能是它。施工单见 `P-16-预设的说明和无工具.md` |
 | P-16 下补 | 无工具口径对齐 | 视图流的会话状态同会话列表写无工具（`preset: null` 加 `no_tools: true`，不再写空字）；中途换人格、预设马上推 `sessions.changed`，不等下一轮。施工单见 `P-16-预设的说明和无工具.md` |
+| P-17 | 设置页「新会话」一组 | `persona.default`、`preset.default`、`permission.start_read_only` 三项归进通用页新的 `new_session` 组（新会话、New sessions、新しいセッション），去掉只剩空的 `persona`、`preset` 组；终端的 `tui.skip_pick` 自己挪进来，网页照这个组画。施工单见 `P-17-新会话设置组.md` |
 | 9-1 再补 | 配置项多一层组 | 清单 `[settings.<组>.<名字>]`，键 `<包>.<组>.<名字>`（接入通讯平台的 `im.qq.listen`、`im.web.port`）。施工单见 `9-1-软件包清单（再补）.md` |
 | N-4 | 抓不下来的请别家代抓 | `web_fetch` 被挡、空的、太短的照 Exa → Firecrawl → Parallel 代抓，和搜索共用冷却。施工单见 `N-4-抓不下来的请别家代抓.md` |
 | N-5 | 扩展登记搜索来源 | 清单 `[[search]]`、能力 `search`，下拉里多 `<包>/<编号>`，选了的经 `search.query` 先问它。施工单见 `N-5-扩展登记搜索来源.md` |

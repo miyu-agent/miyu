@@ -254,7 +254,7 @@ miyu_config::settings! {
 | `ui.language` | 选项 `auto`、`zh`、`en`、`ja` | `auto`，跟着系统 | 系统、个人 | 不能写 | `now` | 8-1 声明，8-2 用上 |
 | `usage.currency` | 文字，最多 3 个字符 | `USD` | 系统、个人 | 不能写 | `now`：下一次 `usage.query` 照新的排；`session_usage` 照这一轮冻结的 | 8-15（`models.md`「对外的样子」） |
 | `log.level` | 选项 `error`、`warn`、`info`、`debug`、`trace`、`off` | `info` | 系统 | 不能写 | `now`，`MIYU_LOG` 压过 | 8-1 声明，8-2 读，8-4 当场换 |
-| `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2 |
+| `permission.start_read_only` | 开关 | `false` | 系统、个人、项目 | `true_only` | `new_session` | 8-2。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「会话」组挪来） |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统、个人 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
 | `sandbox.readonly.enabled` | 真假 | 真 | 系统、个人 | 不能写 | `next_turn` | 5-17 下上补（项目主人 2026-10-22 验收网页时定）：受保护的路径整个开不开，关了出厂的、人加的都不生效，文件工具改之前不再因为它们问；数据根照旧。「受保护的路径」一组的最上面一行 |
@@ -280,8 +280,8 @@ miyu_config::settings! {
 | `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Brave 时用 |
 | `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在搜索服务供应商挑了 SearXNG 时用 |
 | `net.internal_domains` | 文字的列表，一个最多 253 个字符：域名，例如 `example-corp.com`（大小写、前面带点都认） | 没有 | 系统 | 不能写 | `next_turn` | MB-2（设计 06 U25 第 2 条，2026-10-22 项目主人定）：别人（成员、群里的人）让她上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理，每一跳都查；管理员不受影响（`tools/web_fetch.md`「怎么走」第 4 条）。设置页「软件包」联网那一组 |
-| `persona.default` | 名字（人格的编号） | 没有 | 系统、个人 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格） |
-| `preset.default` | 名字（预设的编号） | `full` | 系统、个人 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「预设」一组 |
+| `persona.default` | 名字（人格的编号） | 没有 | 系统、个人 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「人格」组挪来） |
+| `preset.default` | 名字（预设的编号） | `full` | 系统、个人 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「预设」组挪来） |
 | `models.chat` | 引用 | 没有：`no_model` | 系统、个人 | 不能写 | `new_session` | 8-6 |
 | `models.vision` | 引用 | 没有 | 系统、个人 | 不能写 | `next_turn` | 8-8 |
 | `models.embedding` | 模型或几个字：`local`、`off`、`<供应商>/<模型>` | 没有：照 `local` | 系统、个人 | 不能写 | `next_turn` | R-5 下（R-5 补从选项换成模型或几个字，`recall.md` 第四条第 1、7 款） |
@@ -2495,7 +2495,7 @@ currency = "USD"
 | 页 `user`（P-9 再补） | 用户 | User | ユーザー |
 | 页 `advanced` | 高级 | Advanced | 詳細 |
 | 组 `display`（`general`） | 显示 | Display | 表示 |
-| 组 `persona`（`general`，P-1 上） | 人格 | Persona | ペルソナ |
+| 组 `new_session`（`general`；`persona.default`、`preset.default`、`permission.start_read_only` 三项，终端转来、主人验收时提的，2026-10-23；原来的组 `persona`、`preset` 只有那一项，去掉了） | 新会话 | New sessions | 新しいセッション |
 | 组 `sessions`（`general`，F-4 再补以前在 `permissions`） | 会话 | Sessions | セッション |
 | 页 `models`（8-6，主会话定） | 模型 | Models | モデル |
 | 组 `uses`（`models`） | 用途 | Uses | 用途 |

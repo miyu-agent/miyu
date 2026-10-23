@@ -459,3 +459,30 @@ async fn a_session_opens_at_the_configured_level() {
     assert_eq!(level(&plain), Level::Workspace, "默认是工作区");
     assert_eq!(level(&open), Level::Full, "个人设置写了 full");
 }
+
+/// 「新会话」组（终端转来，主人验收时提的）：默认人格、默认预设、开局只读三项放在通用页的 `new_session` 组里，组名照连接的语言。
+#[tokio::test]
+async fn new_session_settings_share_one_group() {
+    let home = Home::new();
+    let keys = [
+        "persona.default",
+        "preset.default",
+        "permission.start_read_only",
+    ];
+    for (language, name) in [("zh-CN", "新会话"), ("en", "New sessions")] {
+        // 装着端点那几份设置清单的核心（人格、预设、权限都在）。
+        let mut client = Client::connect(crate::scripts::core(&home, &script()));
+        hello(&mut client, Some(language)).await;
+        let reply = client
+            .call("c1", "config.schema", json!({"keys": keys}))
+            .await;
+        assert_eq!(
+            reply["result"]["groups"],
+            json!([{"id": "new_session", "name": name, "page": "general"}]),
+            "{reply}"
+        );
+        for item in reply["result"]["items"].as_array().expect("是一项项") {
+            assert_eq!(item["group"], "new_session", "{item}");
+        }
+    }
+}
