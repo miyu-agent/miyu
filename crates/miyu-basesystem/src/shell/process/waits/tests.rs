@@ -93,21 +93,22 @@ fn a_stray_answer_before_any_question_changes_nothing() {
     assert!(begin.elapsed() < Duration::from_secs(20), "照旧到时就杀");
 }
 
-/// 跑到一半才开始等人：等之前走掉的那一段照算，只是等人的那一段不算。命令睡 1.6 秒、时限 0.6 秒，0.4 秒时开始等、1.2 秒时
-/// 等完：到 1.4 秒就到时了，杀掉；等之前那 0.4 秒要是也不算，就会拖到 1.8 秒、命令先睡完了。
+/// 跑到一半才开始等人：等之前走掉的那一段照算，只是等人的那一段不算。命令睡 4 秒、时限 1.5 秒，1 秒时开始等、3 秒时
+/// 等完：到 3.5 秒就到时了，杀掉；等之前那 1 秒要是也不算，就会拖到 4.5 秒、命令先睡完了。命令睡完的那一刻卡在两者
+/// 正中，两边各留 500 毫秒：CI 的 macOS 机器慢，原来只留 200 毫秒，等人的线程晚醒一点命令就先睡完了（M-7 上补）。
 #[test]
 fn the_time_before_the_question_still_counts() {
-    let started = sleeping("1.6");
+    let started = sleeping("4");
     let wakes = Wakes::new();
     let hold = wakes.hold();
     let asked = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(400));
+        thread::sleep(Duration::from_millis(1000));
         hold(true);
-        thread::sleep(Duration::from_millis(800));
+        thread::sleep(Duration::from_millis(2000));
         hold(false);
     });
     let finished = started
-        .wait(Duration::from_millis(600), wakes)
+        .wait(Duration::from_millis(1500), wakes)
         .expect("等得了");
     asked.join().expect("问得了");
     assert!(
