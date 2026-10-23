@@ -41,3 +41,11 @@
 
 - 改：`oobe::setup` 收 `options.idle`（同完整的那一份：`--idle-seconds`），一个连接都没有满这么久就退，记一行 `INFO stopped reason=idle`，交回没有，进程照常退出；连着头的时候不算空闲。
 - 测：`miyu` 的 `oobe.rs` 多一条，没写机主的数据根起核心、握手以后断开不注册，核心自己走、运行日志有 `stopped reason=idle`、不建 `admin` 的家目录。撤掉这次的改动时这条卡满 60 秒报红，还留下一个不退的核心。
+
+### 补：量尺的数据根补上机主（Y-12 中上修二，2026-10-23）
+
+Y-12 中上以后，没有机主的核心只跑设置那一段：本机令牌握手以后只能 `account.setup`。`miyu-perf` 的沙盒数据根里没有机主，量尺第一项开会话就回 `setup_first`，main 上的 perf 从 Y-12 中上起一直红（主会话起先当成 V-12 那种贴线，扩展线查 Y-5 中的 CI 时认出来）。
+
+- `miyu-perf` 的 `Sandbox::new`：起核心之前写好机主（`owner`，照 `crates/miyu/tests/support/mod.rs` 的 `owner()`：`admin`、占位的密码整串、`owner: true`，写进 `system/accounts.json`）。核心起来就有机主，不用照机主重起。
+- **量法和预算不变，只补机主**：不在握手以后调 `account.setup`（注册成了核心照机主重起，冷启动那几项会量歪）。
+- 验：本机 `cargo xtask perf --idle-wait 0 --gate 1` 不再 `setup_first`、各项照常出数；推 `step/` 过一遍 perf。
