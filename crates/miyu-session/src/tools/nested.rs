@@ -28,6 +28,7 @@ use crate::TARGET;
 use crate::config::TurnConfig;
 use crate::port::Back;
 
+mod asking;
 mod port;
 
 /// 执行器手里的嵌套调用。
@@ -39,8 +40,10 @@ pub(crate) struct Nesting {
     running: BTreeMap<NestedId, Running>,
     /// 记进了日志的后台命令（施工 M-3）：挂在它们下面的才交进内核。
     started: BTreeSet<JobId>,
-    /// 拿了端口、结果还没记进日志的 `shell` 调用（`port.rs`）。
-    ports: BTreeSet<CallId>,
+    /// 拿了端口、结果还没记进日志的 `shell` 调用（`port.rs`），和告诉它「在等人」的口子（施工 M-7 上）。
+    ports: BTreeMap<CallId, port::Holding>,
+    /// 下面有一件在等人确认的 `shell` 调用（施工 M-7 上，`asking.rs`）。
+    asking: asking::Asking,
     /// 拿了端口、结果已经记进日志的：挂在它起的后台任务下面、那个任务又没报的，再也等不到。
     closed: BTreeSet<CallId>,
     /// 挂在还没记进日志的后台命令下面的，等着（`port.rs` 的 `note_jobs`）。

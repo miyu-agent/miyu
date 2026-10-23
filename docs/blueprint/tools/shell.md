@@ -12,6 +12,7 @@
 | `crates/miyu-basesystem/src/shell/program.rs` | 用哪个 shell、怎么起 |
 | `crates/miyu-basesystem/src/shell/env.rs` | 命令拿得到哪些环境变量 |
 | `crates/miyu-basesystem/src/shell/process.rs` | 起命令、读输出、等它结束、整组杀 |
+| `crates/miyu-basesystem/src/shell/process/waits.rs` | 等命令结束（施工 M-7 上挪出来）：进程结束和「在等人」「等完了」进同一根通道，等人的那几段不算时限 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
 | `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/touched.rs` | 前台命令改了她看过的文件：起来之前记修改时刻和大小，跑完变了的重读，交 `file.read`（施工 E-D 补） |
@@ -90,6 +91,7 @@
    - chromium 在沙盒里起不来（施工 SB-1，2026-10-23 项目主人定；SB-1 修二补）：退出码不是 0、被信号杀掉的，输出（截了的看头尾两段）里有 chromium 自己的这几句原话之一——`Failed to create a unique user data directory`、`The SUID sandbox helper binary was found, but is not configured correctly`、`Zygote process exited prematurely`、`No usable sandbox!`、`chrome_crashpad_handler: --database is required`、`Crash Reports`（`shell/results.rs` 的 `CHROMIUM_SIGNS`）——的，末尾再接 `chromium-sandbox.txt`。后两句是 SB-1 修二加的：加了 `--no-sandbox --user-data-dir` 以后，crashpad 照 `XDG_CONFIG_HOME` 在 `~/.config/chromium/Crash Reports` 建库，那里是沙盒藏起来的私密目录（只读的空目录），建不了就把主进程一起带崩（SIGTRAP，退出码 133）；她在这一条命令前加 `XDG_CONFIG_HOME=<临时目录>` 就过，不改挂载、不改全局的 `XDG_CONFIG_HOME`。
    - firefox 截图写了相对路径（施工 SB-1 修，2026-10-23 主人验收撞见）：命令里调了 firefox（某个词的文件名以 `firefox` 开头），`--screenshot` 跟着的路径（`=` 后面或者下一个词，去掉引号）不以 `/`、`$`、`~` 开头，或者没写路径（下一个词是网址、`data:`、别的参数，或者没有了：默认的 `screenshot.png` 也是相对的）的，不管跑成没有，末尾再接 `firefox-screenshot.txt`。firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0；沙盒外也一样。chromium 照工作目录写，不接。
    - 「几行」是换行的个数，最后一段没有换行的也算一行。
+   - 等人确认不算时限（施工 M-7 上）：命令里 `miyu call` 调的工具在等人确认的那几段，从时限里扣掉，到时挪到后台也照这一条；端口告诉它在等、等完了（`NestedPort::hold`），等进程的那条通道一起收，不轮询。人停掉这次调用照旧整组杀；会话被打断，在等的了结、进程照旧被杀。不另设上限：人一直不答就一直等，收尾靠停掉、打断。
    - `{timeout}` 是这一次实际用的毫秒数，`{max}` 是 600000。`seconds` 是它换成秒：整秒的不带小数，不然带一位小数（`300` 毫秒写成 `0.3`）。
 10. 不报效果：改了哪些文件内核看不懂。
 11. 叫停：丢掉这次调用时整组杀掉（Unix 上 `kill(-pgid, SIGKILL)`，Windows 上 `taskkill /T /F /PID`）。
@@ -123,7 +125,7 @@
 6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
 7. 结局写成退出码和字（`channel/reply.rs`）：
    - 跑完成了：0，标准输出是 `data` 的一行 JSON（中文不转义），没有的是工具交回的字，都以换行结尾；丢了图的标准错误写 `images.txt`。
-   - 工具出错：1，工具的原话；被拒：1，拒绝的原话；要问人：4，`approval.txt`；被打断、父级先结束：3，`interrupted.txt`。
+   - 工具出错：1，工具的原话；被拒：1，拒绝的原话；要问人：前台、有人能确认的主会话里停下来等人（施工 M-7 上，`kernel/asking.md`「脚本里调的要人确认」），允许的照常跑、拒绝的 1；后台任务下面的、没人能确认的、子会话里的 4，`approval.txt`；被打断、父级先结束：3，`interrupted.txt`。
    - 没收下：父级不在了 3，`ended.txt`；不认识 2，`unknown.txt`，能调的里面只差一两个字的接上 `guess.txt`；调不了 2，`not-allowed.txt` 列出能调的；参数不是对象 2，`bad-args.txt` 接上这件的 `schema.txt`。
    - `schema.txt` 换进名字、说明、参数格式，说明和参数不转义：是工具面上的原样，她在 tools 数组里看到的也是原样。
 8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`channel::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。

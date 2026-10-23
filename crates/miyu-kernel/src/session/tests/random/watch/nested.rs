@@ -4,6 +4,9 @@
 //! - 每个收下的只了结一次；前台的带回合，后台的不带；`clicall` 没开的当场拒、一条都不记（施工 M-2）；
 //! - 交给链的是收下了、还排着的，一个父级、整个会话同时过链和在跑的不超过上限；派去跑的是链刚放行的；掐掉的是在跑的；
 //! - 推给头的开始了是在跑的；答脚本那头的「了结了」都记过、落了盘。
+//! - 要问人的（施工 M-7 上，`kernel/asking.md`「脚本里调的要人确认」）：请求只在链说要问人时记，写的是链交回的，前台、有人能
+//!   确认的才记；一个父级同时只问一件，有一件在问的父级不再交给链；在问的占名额；人允许了才派；`needs_approval` 只在没人能确认、
+//!   挂在后台任务下面时记。
 
 use super::*;
 use crate::event::{NestedStarted, NestedStatus};
@@ -19,6 +22,10 @@ pub(in super::super) struct Nesting {
     pub(in super::super) guarding: BTreeSet<NestedId>,
     /// 其中在跑的。
     pub(in super::super) running: BTreeSet<NestedId>,
+    /// 其中在等人确认的（施工 M-7 上）：照日志里的请求。
+    pub(in super::super) asking: BTreeSet<NestedId>,
+    /// 链说要问人的，和那个结论：请求要写它交回的。
+    asked: BTreeMap<NestedId, crate::session::Verdict>,
     /// 了结过的（还活着的父级下面的）：再记一次就错了。
     settled: BTreeSet<NestedId>,
     /// 记过、还没答脚本那头的：记在第几条。
@@ -99,6 +106,14 @@ impl Watch {
             {
                 self.nesting.allowed = Some(id.clone());
             }
+            // 要问人的：当场了结、记请求、退回排队三选一，哪一种都不再在过链。
+            NestedInput::Guarded { id, verdict, .. }
+                if self.nesting.guarding.contains(id)
+                    && matches!(verdict, crate::session::Verdict::Ask { .. }) =>
+            {
+                self.nesting.guarding.remove(id);
+                self.nesting.asked.insert(id.clone(), verdict.clone());
+            }
             _ => {}
         }
     }
@@ -119,6 +134,15 @@ impl Watch {
                 );
                 let was_running = self.nesting.running.remove(id);
                 self.nesting.guarding.remove(id);
+                if self.nesting.asking.remove(id) {
+                    self.seen_paths.insert("在问人的嵌套调用了结了");
+                }
+                if nested.status == NestedStatus::NeedsApproval {
+                    assert!(
+                        !self.approvals.attended || matches!(id.parent(), Parent::Job(_)),
+                        "种子 {seed}：{id} 前台、有人能确认，应该停下来问"
+                    );
+                }
                 assert!(self.nesting.settled.insert(id.clone()));
                 self.nesting.unanswered.insert(id.clone(), event.seq);
                 if was_running && nested.status == NestedStatus::Cancelled {
@@ -166,8 +190,18 @@ impl Watch {
                 assert!(
                     self.nesting.queued.contains(&id)
                         && !self.nesting.guarding.contains(&id)
-                        && !self.nesting.running.contains(&id),
+                        && !self.nesting.running.contains(&id)
+                        && !self.nesting.asking.contains(&id),
                     "种子 {seed}：{id} 不是排着的，却交给了链"
+                );
+                assert!(
+                    !self
+                        .nesting
+                        .asking
+                        .iter()
+                        .any(|other| other.parent() == id.parent()),
+                    "种子 {seed}：{} 下面有一件在问人，{id} 却交给了链",
+                    id.parent()
                 );
                 self.nesting.guarding.insert(id.clone());
                 let busy: Vec<&NestedId> = self
@@ -175,6 +209,7 @@ impl Watch {
                     .guarding
                     .iter()
                     .chain(&self.nesting.running)
+                    .chain(&self.nesting.asking)
                     .collect();
                 let mine = busy
                     .iter()
@@ -194,9 +229,9 @@ impl Watch {
                 assert_eq!(
                     self.nesting.allowed.take().as_ref(),
                     Some(&id),
-                    "种子 {seed}：{id} 不是链刚放行的，却派去跑了"
+                    "种子 {seed}：{id} 不是链刚放行的、人刚允许的，却派去跑了"
                 );
-                assert!(self.nesting.guarding.remove(&id));
+                assert!(self.nesting.guarding.remove(&id) || self.nesting.asking.remove(&id));
                 self.nesting.running.insert(id);
             }
             NestedAction::Cancel { id } => {
@@ -236,8 +271,100 @@ impl Watch {
         self.nesting.queued.clear();
         self.nesting.guarding.clear();
         self.nesting.running.clear();
+        self.nesting.asking.clear();
+        self.nesting.asked.clear();
         self.nesting.cut.clear();
         self.nesting.unanswered.clear();
+    }
+
+    /// 脚本里调的那一件的请求（施工 M-7 上）：链说过要问人、写的是它交回的，前台、有人能确认，只读时不是要写入的，这个父级
+    /// 没有别的在问。
+    pub(super) fn nested_requested(
+        &mut self,
+        event: &Event,
+        request: &crate::event::ApprovalRequested,
+        n: u32,
+    ) {
+        let seed = self.seed;
+        let id = NestedId::new(Parent::Call(request.call_id), n).unwrap();
+        let Some(crate::session::Verdict::Ask {
+            module,
+            access,
+            rule,
+            detail,
+        }) = self.nesting.asked.get(&id)
+        else {
+            panic!("种子 {seed}：链没说 {id} 要问人，却记了请求");
+        };
+        assert_eq!(
+            event.by,
+            By::Module(crate::origin::Module { id: module.clone() })
+        );
+        assert_eq!(
+            (&request.access, &request.rule, &request.detail),
+            (access, rule, detail),
+            "种子 {seed}：{id} 的请求写的不是链交回的"
+        );
+        assert!(
+            self.approvals.attended,
+            "种子 {seed}：没人能确认，{id} 不该问"
+        );
+        assert!(
+            !(access.writes() && self.read_only_in_effect()),
+            "种子 {seed}：只读时要写入的 {id}，不该问"
+        );
+        assert!(
+            !self
+                .nesting
+                .asking
+                .iter()
+                .any(|other| other.parent() == id.parent()),
+            "种子 {seed}：{} 下面同时问了两件",
+            id.parent()
+        );
+        assert!(
+            self.nesting.queued.contains(&id),
+            "种子 {seed}：{id} 没收下却问了人"
+        );
+        self.seen_paths.insert("脚本里调的停下来问人");
+        self.nesting.asking.insert(id);
+    }
+
+    /// 脚本里调的那一件的决定：在问的才有；允许的接着就派。
+    pub(super) fn nested_decided(
+        &mut self,
+        event: &Event,
+        decided: &crate::event::ApprovalDecided,
+        n: u32,
+    ) {
+        let seed = self.seed;
+        let id = NestedId::new(Parent::Call(decided.call_id), n).unwrap();
+        assert!(
+            self.nesting.asking.contains(&id),
+            "种子 {seed}：{id} 不在等人，却有了决定"
+        );
+        assert!(
+            matches!(event.by, By::Person(_)),
+            "种子 {seed}：决定是人做的"
+        );
+        if decided.decision == crate::event::Decision::Deny {
+            self.seen_paths.insert("人拒绝了脚本里调的");
+        } else {
+            self.seen_paths.insert("人允许了脚本里调的");
+            self.nesting.allowed = Some(id);
+        }
+    }
+
+    /// 回答脚本里调的：`call_id` 下面正在问的那一件（写了序号的要对上）和它的请求提没提规则。
+    pub(super) fn nested_asking(&self, call_id: CallId, n: Option<u32>) -> Option<bool> {
+        let id =
+            self.nesting.asking.iter().find(|id| {
+                *id.parent() == Parent::Call(call_id) && n.is_none_or(|n| id.n() == n)
+            })?;
+        Some(matches!(
+            self.nesting.asked.get(id),
+            Some(crate::session::Verdict::Ask { rule: Some(_), .. })
+        ))
     }
 
     /// 还在跑的后台命令（看守记着的任务里，不是子代理、没结束的）。

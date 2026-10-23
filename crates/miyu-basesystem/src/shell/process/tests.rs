@@ -15,7 +15,7 @@ fn a_command_that_will_not_die_is_left_behind() {
     // 杀的办法换成什么都不做：它还在跑，等够了就不等了。
     let finished = started
         .wait_or_kill(
-            Duration::from_millis(50),
+            (Duration::from_millis(50), Wakes::new()),
             Duration::from_millis(200),
             |_| {},
         )

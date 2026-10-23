@@ -77,7 +77,7 @@ pub use memory::{
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
 };
-pub use nested::{Calling, Nested, NestedPort, Schema, Settled};
+pub use nested::{Calling, Hold, Nested, NestedPort, Schema, Settled};
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{

@@ -198,6 +198,8 @@ pub enum Answer {
         reason: Option<String>,
         /// 拒绝时附的图、文件（施工 Q-A）；只有拒绝能带。
         attachments: Vec<crate::block::Block>,
+        /// 回答的是脚本里调的哪一件（施工 M-7 上，序号）；没写的，这次调用自己没在等确认就答它下面正在问的那一件。
+        nested: Option<u32>,
     },
     /// 回答一组题：照题目的先后，每道题选了哪几项、自己写了什么。
     Questions(Vec<Response>),

@@ -69,7 +69,7 @@ mod watch;
 
 use std::collections::BTreeSet;
 
-use super::approval::answer;
+use super::approval::answer_nested;
 use super::permission::{read_only, switch};
 use super::question::reply;
 use super::*;
@@ -153,7 +153,8 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
     if !watch.approvals.guarding.is_empty() && rng.below(3) > 0 {
         return some_verdict(rng, watch);
     }
-    if !watch.approvals.asking.is_empty() && rng.below(2) == 0 {
+    if !(watch.approvals.asking.is_empty() && watch.nesting.asking.is_empty()) && rng.below(2) == 0
+    {
         return some_answer(rng, watch, next_id);
     }
     if !watch.questions.asking.is_empty() {

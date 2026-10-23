@@ -281,10 +281,12 @@ pub(super) async fn answer_question(
             decision,
             reason,
             attachments,
+            nested,
         } => miyu_kernel::session::Answer::Approval {
             decision,
             reason,
             attachments: attach::blocks(core, &caller.account, attachments).await?,
+            nested,
         },
         Wanted::Questions(items) => {
             let mut answers = Vec::with_capacity(items.len());

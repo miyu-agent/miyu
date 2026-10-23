@@ -26,6 +26,7 @@ mod send_message;
 mod session_usage;
 mod sessions;
 mod shell;
+mod shell_held;
 mod shell_sandbox;
 mod shell_seen;
 mod show;

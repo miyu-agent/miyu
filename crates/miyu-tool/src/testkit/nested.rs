@@ -4,15 +4,31 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::{Call, Done, Effect, Nested};
 
-/// 一件一件调 `calls`（工具名、参数原文），都了结了回一句成功，一行一件。
+/// 一件一件调 `calls`（工具名、参数原文），都了结了回一句成功，一行一件。像真的 `shell` 那样交「在等人」的口子（施工 M-7
+/// 上），收到过的照先后接一行 `held true,false`；没收到的不接。
 pub(super) async fn calls(call: &Call, calls: Vec<(&'static str, &'static str)>) -> Done {
     let Some(port) = call.nested.clone() else {
         return Done::error("no nested port");
     };
+    let heard = Arc::new(Mutex::new(Vec::new()));
+    let record = Arc::clone(&heard);
+    port.hold(Box::new(move |held| {
+        record
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(held.to_string());
+    }));
     let mut lines = Vec::new();
     for (name, args) in calls {
         let line = line(name, port.call(name.to_string(), args.to_string()).await);
         lines.push(line);
+    }
+    let held = heard
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .join(",");
+    if !held.is_empty() {
+        lines.push(format!("held {held}"));
     }
     Done::ok(lines.join("\n"))
 }

@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 
 use super::Stage;
 use crate::id::{ContentHash, NestedId};
+use crate::raw::RawJson;
 use crate::session::{Input, NestedAction, NestedAnswer, NestedInput, Verdict};
 
 /// 替身手里的嵌套调用。
@@ -14,6 +15,10 @@ pub(super) struct Bench {
     verdicts: VecDeque<Verdict>,
     /// 交给链的，照先后。
     guarded: Vec<NestedId>,
+    /// 交给链时带的本会话放行过的规则，照先后（施工 M-7 上）。
+    grants: Vec<(NestedId, Vec<RawJson>)>,
+    /// 扣着链的结论：交给链的不当场答，等 [`Stage::nested_verdict`]（施工 M-7 上）。
+    holding_guards: bool,
     /// 派去跑、还停着的。
     running: Vec<NestedId>,
     /// 派去跑过的：编号、工具名、参数。
@@ -156,11 +161,37 @@ impl Stage {
         &self.nested.answers
     }
 
+    /// 扣着链的结论（施工 M-7 上）：之后交给链的不当场答，由 [`Self::nested_verdict`] 一件一件交，几件能同时在过链。
+    pub fn hold_nested_guards(&mut self) {
+        self.nested.holding_guards = true;
+    }
+
+    /// 交回链对 `id` 的结论（扣着的时候用）。
+    ///
+    /// # Panics
+    ///
+    /// 编号的写法不对。
+    pub fn nested_verdict(&mut self, id: &str, verdict: Verdict) {
+        let id = NestedId::parse(id).unwrap_or_else(|e| panic!("嵌套调用编号的写法坏了：{e}"));
+        let at = self.tick();
+        self.run(Input::Nested(NestedInput::Guarded { at, id, verdict }));
+    }
+
+    /// 交给链时带的本会话放行过的规则：编号、规则，照先后（施工 M-7 上）。
+    #[must_use]
+    pub fn nested_grants(&self) -> &[(NestedId, Vec<RawJson>)] {
+        &self.nested.grants
+    }
+
     /// 回一个嵌套调用的动作。
     pub(super) fn act_nested(&mut self, action: NestedAction) -> Vec<Input> {
         match action {
-            NestedAction::Guard { id, .. } => {
+            NestedAction::Guard { id, grants, .. } => {
                 self.nested.guarded.push(id.clone());
+                self.nested.grants.push((id.clone(), grants));
+                if self.nested.holding_guards {
+                    return Vec::new();
+                }
                 let verdict = self.nested.verdicts.pop_front().unwrap_or(Verdict::Allow);
                 vec![Input::Nested(NestedInput::Guarded {
                     at: self.tick(),

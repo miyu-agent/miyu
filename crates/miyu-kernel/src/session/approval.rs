@@ -86,6 +86,7 @@ impl Session {
                     access,
                     rule,
                     detail,
+                    nested: None,
                 };
                 Settled::Asked(By::Module(Module { id: module }), request)
             }
@@ -136,30 +137,35 @@ impl Session {
             decision,
             reason,
             attachments,
+            nested,
         } = answer
         else {
             return vec![rejected(id, Reason::NotAsking)];
         };
-        let reason = reason.filter(|reason| !reason.trim().is_empty());
-        let Some(rule) = self.asking(call_id) else {
-            return vec![rejected(id, Reason::NotAsking)];
+        let reply = Reply {
+            decision,
+            reason: reason.filter(|reason| !reason.trim().is_empty()),
+            attachments,
         };
-        let deny = match decision {
-            Decision::Other(_) => return vec![rejected(id, Reason::UnknownDecision)],
-            Decision::Session | Decision::Workspace if !rule => {
-                return vec![rejected(id, Reason::NoRule)];
-            }
-            Decision::Deny => true,
-            _ if reason.is_some() || !attachments.is_empty() => {
-                return vec![rejected(id, Reason::UnexpectedReason)];
-            }
-            _ => false,
+        // 不是这次调用自己在等确认的，看它下面脚本里调的那一件（施工 M-7 上）：写了序号的只看那一件。
+        let Some(rule) = self.asking(call_id).filter(|_| nested.is_none()) else {
+            return self.decide_nested(id, by, at, (call_id, nested), reply);
         };
+        let deny = match reply.judged(rule) {
+            Ok(deny) => deny,
+            Err(reason) => return vec![rejected(id, reason)],
+        };
+        let Reply {
+            decision,
+            reason,
+            attachments,
+        } = reply;
         let body = ApprovalDecided {
             call_id,
             decision,
             reason: reason.clone(),
             attachments: attachments.clone(),
+            nested: None,
         };
         let decided = self.record(
             at,
@@ -225,5 +231,28 @@ impl Session {
             call.state = state;
         }
         step.finished()
+    }
+}
+
+/// 人对一次确认的回答：选项，去掉空白不是空的理由，附件。
+pub(super) struct Reply {
+    pub(super) decision: Decision,
+    pub(super) reason: Option<String>,
+    pub(super) attachments: Vec<Block>,
+}
+
+impl Reply {
+    /// 照请求提没提放行规则 `rule` 查：交回是不是拒绝。选项不认识的、没提规则却选了记住的、允许却带了理由、附件的，交回
+    /// 不收的原因。直接调用、脚本里调的一个查法（施工 M-7 上）。
+    pub(super) fn judged(&self, rule: bool) -> Result<bool, Reason> {
+        match self.decision {
+            Decision::Other(_) => Err(Reason::UnknownDecision),
+            Decision::Session | Decision::Workspace if !rule => Err(Reason::NoRule),
+            Decision::Deny => Ok(true),
+            _ if self.reason.is_some() || !self.attachments.is_empty() => {
+                Err(Reason::UnexpectedReason)
+            }
+            _ => Ok(false),
+        }
     }
 }

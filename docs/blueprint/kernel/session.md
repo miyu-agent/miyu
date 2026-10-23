@@ -27,7 +27,7 @@
 | `crates/miyu-kernel/src/session/limits.rs` | 给头看的限额 `ContextLimits`：窗口、压缩线（施工 6-3 补）；在跑的回合和它的 `cause`（`turn_cause()`，施工 8-9）；还算数的最近一次压缩、清空替代到哪（`compacted_upto()`，施工 R-13 补） |
 | `crates/miyu-kernel/src/session/tools.rs`、`step.rs` | 这一步的调用：先查、派、收结果、补结果；每个调用走到了哪、轮到谁 |
 | `crates/miyu-kernel/src/session/queue.rs`、`supersede.rs`、`interrupt.rs` | 排队的消息、不打断退回一条（施工 Q-W）；一个字都还没回就撤掉重发（施工 4-15）；打断 |
-| `crates/miyu-kernel/src/session/nested.rs`、`nested/types.rs` | 嵌套调用（施工 M-1）：来了先查、排进父级的队、轮到的交给链、派、了结；父级结束时收尾、放进同一批；落了盘答执行器；在跑的给订阅；输入、动作、答脚本那头的几种 |
+| `crates/miyu-kernel/src/session/nested.rs`、`nested/types.rs`、`nested/asking.rs` | 嵌套调用（施工 M-1；要人确认的停下来问，施工 M-7 上）：来了先查、排进父级的队、轮到的交给链、派、了结；父级结束时收尾、放进同一批；落了盘答执行器；在跑的给订阅；输入、动作、答脚本那头的几种 |
 | `crates/miyu-kernel/src/testkit/nested.rs` | 执行器替身扮脚本那头：送 `miyu call`、交链的结论、交跑完了，记下派过的、掐掉的、答过的（施工 M-1） |
 | `crates/miyu-kernel/src/session/jobs.rs` | 回报到了：记下，开一轮、排着还是只记下（施工 7-2，`agents.md` 第三条）；子会话重交的认出来（施工 7-6） |
 | `crates/miyu-kernel/src/session/messages.rs` | 子代理的留言到了：认出是这个会话派的哪个子代理，照回报的规矩记下、开不开一轮；交给执行器的派出去的子代理（施工 7-7，`agents.md` 第六条）；别的 harness 发来的话照同一条路走（施工 7-10） |
@@ -331,17 +331,20 @@
 **嵌套调用**（施工 M-1，设计 `39-脚本调工具.md` 第四节，`nested.rs`）：执行器照 `Session::clicall_tools`（纯查询：`clicall` 开着、类别准的工具和参数格式，施工 M-3）定开不开通道、答 `--schema`。脚本里的一次 `miyu call`，挂在前台那次调用或后台任务下面（`kernel/ids.md` 的 `NestedId`）。不进这一步的调度：父 `shell` 在这一步里独占着，嵌套的要是也排进去，会自己等自己。
 
 1. **来了**（`Nested(Call)`，执行器交）：照这一刻查，前一条不过的不往下查：
-   1. 父级不在了：前台的不是这一步里在跑的调用（派出去了的、问着人的；打断着、停着的不算），后台的不是还没报过结束的后台命令（账本的 `running_commands`）：答 `gone`。
+   1. 父级不在了：前台的不是这一步里在跑的调用（派出去了的、问着人的（`ask_user`）；打断着、停着的不算），后台的不是还没报过结束的后台命令（账本的 `running_commands`）：答 `gone`。
    2. 这个编号来过（排着、在跑、了结过）：不理。
    3. 工具面上没有这个名字：答 `unknown`。访问类别不是 `read`、`network`、`execute` 的，或者这件工具的 `clicall` 不是真的（施工 M-2，`ToolRule.clicall`）：答 `not_allowed`（设计 39 MC2，第一版的嵌套调用不改长期的东西、不在场所里留下后果）。参数修正不了（「调工具」第 2 条）：答 `not_an_object`。这三种是用法不对，执行器给脚本退出码 2。
    4. 1 到 3 什么都不记。实际生效的是只读、工具要写入的：记 `denied`，那一句是 `read-only`（名单以后会变，照样查）。
    5. 别的修正好参数，排进这个父级的队。
-2. **轮到谁**：一个父级一条队，照到的先后：只读（`read`）的，前面没有还没了结的非只读的就轮到；非只读的，前面的都了结了才轮到。另有两道上限（策略的 `nested`）：同一个父级过链、在跑的不超过 `per_parent`，整个会话不超过 `per_session`；到了的排着，不拒，空出来照先后派（父级的先后照编号）。
+2. **轮到谁**：一个父级一条队，照到的先后：只读（`read`）的，前面没有还没了结的非只读的就轮到；非只读的，前面的都了结了才轮到。另有两道上限（策略的 `nested`）：同一个父级过链、在跑的不超过 `per_parent`，整个会话不超过 `per_session`；到了的排着，不拒，空出来照先后派（父级的先后照编号）。在问人的（第 4 条，施工 M-7 上）算在跑的、占名额，在它那个父级的队里算独占：后面的都不派。
 3. **过链**：轮到的出 `Nested(Guard)`，带工作目录和加进来的目录（前台的照这一轮的，后台的照会话现在的环境）、实际生效的那一级、本会话放行过的规则。回合外也照实际生效的那一级：放宽的要等下一次请求才生效，所以回合外只会更严、不会更松。
-4. **结论**（`Nested(Guarded)`）：放行的派去跑（`Nested(Run)`，带的同上），推一条瞬时事件 `tool.nested_started`（`kernel/events.md`）；拒绝的记 `denied`，`reason` 是链的那一句；要问人的不问，记 `needs_approval`（设计 39 MC4）。不是在过链的，不理。
+4. **结论**（`Nested(Guarded)`）：放行的派去跑（`Nested(Run)`，带的同上），推一条瞬时事件 `tool.nested_started`（`kernel/events.md`）；拒绝的记 `denied`，`reason` 是链的那一句。要问人的（施工 M-7 上，设计 39 MC4 重开）：
+   - 父级是前台那次调用、`attended`、是主会话（`session.created` 没有 `parent`，内核的 `asks_from_scripts`）的停下来问：这个父级下面已经有一件在问的，退回排队，等那件答了、了结了再过链；不然记一条 `tool.approval_requested`，`call_id` 是父级那次调用、`nested` 是序号，`access`、`rule`、`detail` 照链交的，`by` 是提问的模块，`cause` 是回合的，这件改成在问人，不派、不推开始。人怎么答见 `asking.md`「脚本里调的要人确认」。
+   - 别的不问，记 `needs_approval`：后台任务下面的、没人能确认的、子会话里的。
+   不是在过链的，不理。
 5. **跑完**（`Nested(Done)`）：只收在跑的，记 `ok` 或 `error`，用时、结果的 blob 和字节数照交的。别的不理。
 6. **记**：`tool.nested` 的 `by` 是内核；前台的带这一轮、`cause` 是回合的，后台的不带回合、没有 `cause`。落了盘才答执行器（`Nested(Answer)`：了结成什么样、拒绝的那一句），执行器这时才把结果交给脚本（「回答落了盘再交」）。
-7. **父级结束**：前台的调用要记结果之前（跑完、被打断、有计划的重启），后台的任务要记 `job.reported` 之前：挂在下面还没了结的都记 `cancelled`，`by` 是内核；在跑的出 `Nested(Cancel)`，排着的、过链的直接了结。同一批，排在父级那一条前面：造事件的那几处（`record`、`record_outside`、回报的 `land`）给父级那一条编序号之前先收，送完这条输入时放进同一批（`Session::handle` 的 `splice_nested`）。之后才到的结论、结果不理。
+7. **父级结束**：前台的调用要记结果之前（跑完、被打断、有计划的重启），后台的任务要记 `job.reported` 之前：挂在下面还没了结的都记 `cancelled`，`by` 是内核；在跑的出 `Nested(Cancel)`，排着的、过链的、在问人的直接了结（在问人的请求随父级的结果了结，账本、等人的计时照旧）。同一批，排在父级那一条前面：造事件的那几处（`record`、`record_outside`、回报的 `land`）给父级那一条编序号之前先收，送完这条输入时放进同一批（`Session::handle` 的 `splice_nested`）。之后才到的结论、结果不理。
    - 每送完一条输入，看一次有没有轮到的（`dispatch_nested`）：父级结束空出来的位子、上限空出来的位子，当场派。
    - 订阅时交给头的在跑的（`nested_running`，`protocol.md` 订阅回应的 `nested`）：`NestedRunning { id, name, args, at }`，`at` 是派去跑的时刻（施工 M-5 上：派的时候记在内存里那一份上，视图流订阅照它补上在跑的、接着计时）。
 8. **崩了**：嵌套调用只在内存里，载入以后没有，不补；脚本那头随父级的进程一起没了。

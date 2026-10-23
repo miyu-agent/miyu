@@ -5,6 +5,9 @@
 //! 这个父级，会当它不在了。actor 每记一批事件看一遍（[`Tools::note_jobs`]），记进了的把等着的重新送回收件箱。
 //!
 //! 说明和参数格式照这个会话的工具面（内核的规则里 `clicall` 开着的、访问类别准的那几件），说明照工具目录。
+//!
+//! 下面脚本里调的在等人确认（施工 M-7 上）：同一处看事件，带序号的请求记下来、告诉 `shell` 在等；那件的决定、了结，或者父级的
+//! 结果记了，告诉它等完了（[`NestedPort::hold`]）。
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -15,7 +18,7 @@ use tokio::sync::{mpsc, oneshot};
 use miyu_kernel::event::{Body, Effect, Event, JobKind, NestedStatus};
 use miyu_kernel::id::{CallId, JobId, NestedId, Parent};
 use miyu_kernel::raw::RawJson;
-use miyu_tool::{Calling, Nested, NestedPort, Schema, Settled};
+use miyu_tool::{Calling, Hold, Nested, NestedPort, Schema, Settled};
 
 use super::NestedBack;
 use crate::port::Back;
@@ -32,6 +35,22 @@ struct Nester {
     /// 脚本里能调的：名字到说明、参数格式。
     face: BTreeMap<String, Schema>,
     backs: mpsc::UnboundedSender<Back>,
+    /// `shell` 交来的「在等人」的口子，执行器那头也拿着一份。
+    holding: Holding,
+}
+
+/// `shell` 交来的「在等人」的口子（施工 M-7 上）：还没交的没有。
+pub(super) type Holding = Arc<Mutex<Option<Hold>>>;
+
+/// 告诉 `shell` 开始等人（`true`）、等完了（`false`）；它没交口子的不管。
+fn tell(holding: &Holding, waiting: bool) {
+    if let Some(tell) = holding
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .as_ref()
+    {
+        tell(waiting);
+    }
 }
 
 /// 没答就了结的：当没跑完。
@@ -78,6 +97,10 @@ impl NestedPort for Nester {
     fn schema(&self, name: &str) -> Option<Schema> {
         self.face.get(name).cloned()
     }
+
+    fn hold(&self, tell: Hold) {
+        *self.holding.lock().unwrap_or_else(PoisonError::into_inner) = Some(tell);
+    }
 }
 
 impl Tools {
@@ -100,13 +123,15 @@ impl Tools {
                 Some((name, schema))
             })
             .collect();
-        self.nested.ports.insert(call_id);
+        let holding = Holding::default();
+        self.nested.ports.insert(call_id, Arc::clone(&holding));
         Arc::new(Nester {
             parent: Mutex::new(Parent::Call(call_id)),
             origin: call_id,
             last: AtomicU32::new(0),
             face,
             backs: self.backs.clone(),
+            holding,
         })
     }
 
@@ -115,10 +140,15 @@ impl Tools {
     /// （`nested.rs` 收下时看 `closed`）。拿了端口的 `shell` 结果记了，记进 `closed`。
     pub(crate) fn note_jobs(&mut self, events: &[Event]) {
         for event in events {
+            if let Some((call_id, waiting)) = self.nested.asking.note(&event.body)
+                && let Some(holding) = self.nested.ports.get(&call_id)
+            {
+                tell(holding, waiting);
+            }
             let Body::ToolResult(result) = &event.body else {
                 continue;
             };
-            if self.nested.ports.remove(&result.call_id) {
+            if self.nested.ports.remove(&result.call_id).is_some() {
                 self.nested.closed.insert(result.call_id);
             }
             for effect in &result.effects {

@@ -20,16 +20,23 @@ pub(super) fn some_nested(rng: &mut Rng, watch: &mut Watch) -> Option<Input> {
         0..=2 => {
             let id = pick(rng, &watch.nesting.guarding)?;
             let module = ModuleId::parse("permissions").unwrap();
+            // 要问人的多给一些（施工 M-7 上）：同一个父级两件都要问、一件退回排队的路才走得到。
             let verdict = match rng.below(6) {
                 0 => Verdict::Deny {
                     module,
                     text: "denied".to_string(),
                     human: None,
                 },
-                1 => Verdict::Ask {
+                1 | 2 => Verdict::Ask {
                     module,
-                    access: Access::Read,
-                    rule: None,
+                    access: if rng.below(2) == 0 {
+                        Access::Read
+                    } else {
+                        Access::Network
+                    },
+                    // 一半提了放行规则：人能选「本会话都允许」（施工 M-7 上）。
+                    rule: (rng.below(2) == 0)
+                        .then(|| serde_json::from_str::<RawJson>("{}").unwrap()),
                     detail: None,
                 },
                 _ => Verdict::Allow,

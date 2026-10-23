@@ -233,6 +233,7 @@
 | `reason` | 字符串 | 拒绝的理由，她看得到；只有拒绝能带 |
 | `attachments` | 数组 | 拒绝时附的图、文件，写法同 `session.send`（`blob.put` 交回的 `blob`、`name`、`media_type`，可带 `path`）；跟着理由给她；只有拒绝能带 |
 | `answers` | 数组 | 回答提问：照题目先后一题一项 `{"picked": [选的选项标题…], "text": <自己写的>, "notes": <备注>, "attachments": [<同上>]}`，几格都可不写；附件跟着那一题给她 |
+| `nested` | 正整数 | 她在命令里经 `miyu call` 调的工具要确认时，请求里带 `nested`（序号）：回答时照写。不写也行，答的就是那次命令下面正在问的那一件 |
 
 `decision`、`answers` 正好写一个。**回应**：`{"events": [序号…]}`。
 

@@ -55,29 +55,36 @@ impl Watch {
                     call_id,
                     answer:
                         Answer::Approval {
-                            decision, reason, ..
+                            decision,
+                            reason,
+                            nested,
+                            ..
                         },
-                } => Some(self.judge(*call_id, decision, reason.as_deref())),
+                } => Some(self.judge((*call_id, *nested), decision, reason.as_deref())),
                 _ => None,
             },
             _ => None,
         }
     }
 
-    /// 看守自己判一次回答：不在等的、选项不认识的、没有规则却选了记住的、允许却带了理由的，拒绝。
+    /// 看守自己判一次回答：不在等的、选项不认识的、没有规则却选了记住的、允许却带了理由的，拒绝。这次调用自己没在等、没写
+    /// 序号的，答它下面脚本里调的正在问的那一件；写了序号的只认那一件（施工 M-7 上）。
     fn judge(
         &self,
-        call_id: CallId,
+        (call_id, nested): (CallId, Option<u32>),
         decision: &Decision,
         reason: Option<&str>,
     ) -> Result<(), Reason> {
-        if !self.approvals.asking.contains(&call_id) {
-            return Err(Reason::NotAsking);
-        }
-        let rule = matches!(
-            self.approvals.verdicts.get(&call_id),
-            Some(Verdict::Ask { rule: Some(_), .. })
-        );
+        let direct = nested.is_none() && self.approvals.asking.contains(&call_id);
+        let rule = match direct {
+            true => matches!(
+                self.approvals.verdicts.get(&call_id),
+                Some(Verdict::Ask { rule: Some(_), .. })
+            ),
+            false => self
+                .nested_asking(call_id, nested)
+                .ok_or(Reason::NotAsking)?,
+        };
         let reason = reason.filter(|reason| !reason.trim().is_empty());
         match decision {
             Decision::Other(_) => Err(Reason::UnknownDecision),
@@ -205,6 +212,12 @@ impl Watch {
         let seed = self.seed;
         let event = &events[k];
         match &event.body {
+            Body::ApprovalRequested(request) if request.nested.is_some() => {
+                self.nested_requested(event, request, request.nested.unwrap_or_default());
+            }
+            Body::ApprovalDecided(decided) if decided.nested.is_some() => {
+                self.nested_decided(event, decided, decided.nested.unwrap_or_default());
+            }
             Body::ApprovalRequested(request) => {
                 self.seen_paths.insert("要问人");
                 let call_id = request.call_id;

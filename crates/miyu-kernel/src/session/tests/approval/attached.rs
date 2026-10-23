@@ -27,6 +27,7 @@ fn with_picture(n: u64, decision: Decision) -> Input {
                 decision,
                 reason: Some("看图".to_string()),
                 attachments: vec![picture()],
+                nested: None,
             },
         },
     })

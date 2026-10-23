@@ -86,6 +86,7 @@ mod memory_uses;
 mod memory_vectors;
 mod messages;
 mod messages_peer;
+mod nested_asking;
 mod nested_calls;
 mod once;
 mod once_pools;

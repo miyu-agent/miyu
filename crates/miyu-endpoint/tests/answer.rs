@@ -164,6 +164,12 @@ async fn params_that_do_not_fit_are_bad_params() {
         json!({"session": session, "call": call, "answers": [], "reason": "x"}),
         json!({"session": session, "call": "call-1", "decision": "once"}),
         json!({"session": "nope", "call": call, "decision": "once"}),
+        // 脚本里调的那一件的序号（施工 M-7 上）：正整数，回答提问不能带。
+        json!({"session": session, "call": call, "decision": "once", "nested": 0}),
+        json!({"session": session, "call": call, "decision": "once", "nested": -1}),
+        json!({"session": session, "call": call, "decision": "once", "nested": "1"}),
+        json!({"session": session, "call": call, "decision": "once", "nested": 1.5}),
+        json!({"session": session, "call": call, "answers": [], "nested": 1}),
     ];
     for (k, params) in cases.into_iter().enumerate() {
         let reply = answer(&mut client, &format!("bad-{k}"), params.clone()).await;
@@ -190,6 +196,10 @@ async fn the_kernel_refusals_come_back_with_their_reasons() {
     let params = json!({"session": session, "call": call, "decision": "once", "reason": "为什么"});
     let reply = answer(&mut client, "answer-1", params).await;
     assert_eq!(reason_of(&reply), &json!("unexpected_reason"), "{reply}");
+    // 写了序号的只认脚本里调的那一件（施工 M-7 上）：这次调用自己在等，它下面没有在问的。
+    let params = json!({"session": session, "call": call, "decision": "once", "nested": 1});
+    let reply = answer(&mut client, "answer-nested", params).await;
+    assert_eq!(reason_of(&reply), &json!("not_asking"), "{reply}");
     let params = json!({"session": session, "call": call, "decision": "once"});
     answer(&mut client, "answer-2", params.clone()).await;
     home.until_turns(&session, 1).await;

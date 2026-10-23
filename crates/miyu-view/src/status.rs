@@ -70,6 +70,9 @@ pub struct Waiting {
     pub entry: EntryId,
     /// 哪一次调用。
     pub call: CallId,
+    /// 脚本里调的那一件的序号（施工 M-7 上）：`call` 是父级那次 `shell`。直接调用的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested: Option<u32>,
 }
 
 /// 等什么。

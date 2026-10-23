@@ -15,7 +15,7 @@
 
 use std::io::{self, Read, Write};
 use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::mpsc::{self, RecvTimeoutError};
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 use std::time::Duration;
@@ -23,8 +23,10 @@ use std::time::Duration;
 use super::output::{Capture, Decoder};
 
 mod group;
+mod waits;
 
 pub(super) use group::{Group, Guard};
+pub(super) use waits::{Exited, Wakes};
 
 /// 命令退出以后，管道最多再读多久。
 const DRAIN: Duration = Duration::from_millis(500);
@@ -251,116 +253,6 @@ impl Started {
     pub(super) fn member(&self) -> Option<Member> {
         member(self.group, &self._watch)
     }
-
-    /// 等它结束，最多等 `timeout`：到时整组杀掉。
-    ///
-    /// # Errors
-    ///
-    /// 等不了：系统报了错。
-    pub(super) fn wait(self, timeout: Duration) -> io::Result<Finished> {
-        self.wait_or_kill(timeout, KILL_WAIT, Group::kill)
-    }
-
-    /// 同 [`Self::wait`]，只是到时不杀：读到的那一段、之后的输出、进程交回去，接着跑（施工 7-12）。
-    ///
-    /// # Errors
-    ///
-    /// 同 [`Self::wait`]。
-    pub(super) fn wait_or_move(self, timeout: Duration) -> io::Result<Waited> {
-        let Started {
-            child,
-            group,
-            output,
-            read,
-            _watch,
-        } = self;
-        let waited = waiting(child);
-        match waited.recv_timeout(timeout) {
-            Ok((status, child)) => {
-                let ending = Ending::Exited(status?);
-                Ok(Waited::Finished(done(
-                    ending,
-                    Some(child),
-                    group,
-                    &output,
-                    &read,
-                )))
-            }
-            Err(RecvTimeoutError::Timeout) => {
-                let (sender, rest) = mpsc::channel();
-                let output = {
-                    let mut sink = lock(&output);
-                    sink.moved = Some(sender);
-                    std::mem::take(&mut sink.capture)
-                };
-                Ok(Waited::Moved(Handover {
-                    output,
-                    rest,
-                    process: super::moved::Moved::new(waited, group, _watch),
-                }))
-            }
-            Err(RecvTimeoutError::Disconnected) => Err(gone()),
-        }
-    }
-
-    /// 同 [`Self::wait`]：到时用 `kill` 整组杀，杀了以后最多再等 `patience`，还不结束的也算超时，不再等它。测试里
-    /// 换成杀不掉的、等得短的。
-    fn wait_or_kill(
-        self,
-        timeout: Duration,
-        patience: Duration,
-        kill: impl FnOnce(Group),
-    ) -> io::Result<Finished> {
-        let Started {
-            child,
-            group,
-            output,
-            read,
-            _watch,
-        } = self;
-        let waited = waiting(child);
-        let (ending, child) = match waited.recv_timeout(timeout) {
-            Ok((status, child)) => (Ending::Exited(status?), Some(child)),
-            Err(RecvTimeoutError::Timeout) => {
-                kill(group);
-                match waited.recv_timeout(patience) {
-                    Ok((status, child)) => {
-                        status?;
-                        (Ending::TimedOut, Some(child))
-                    }
-                    Err(RecvTimeoutError::Timeout) => {
-                        tracing::warn!(target: TARGET, "command still running after kill");
-                        (Ending::TimedOut, None)
-                    }
-                    Err(RecvTimeoutError::Disconnected) => return Err(gone()),
-                }
-            }
-            Err(RecvTimeoutError::Disconnected) => return Err(gone()),
-        };
-        Ok(done(ending, child, group, &output, &read))
-    }
-}
-
-/// 等它结束交回来：另起一个线程等，结局连同进程的句柄送回来。句柄跟着送：Windows 上它还开着，编号就不会被别的进程拿去。
-pub(super) type Exited = mpsc::Receiver<(io::Result<ExitStatus>, Child)>;
-
-/// 另起一个线程等 `child` 结束。
-fn waiting(mut child: Child) -> Exited {
-    let (exited, waited) = mpsc::channel();
-    thread::spawn(move || {
-        let status = child.wait();
-        #[expect(
-            clippy::let_underscore_must_use,
-            reason = "等的那一头走了，结局就没人要了"
-        )]
-        let _ = exited.send((status, child));
-    });
-    waited
-}
-
-/// 等的线程没了。
-fn gone() -> io::Error {
-    io::Error::other("the thread waiting for the command stopped")
 }
 
 /// 结束了：组里剩下的杀掉，放下句柄，管道最多再读 [`DRAIN`]，交回读到的。

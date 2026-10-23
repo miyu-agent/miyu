@@ -27,7 +27,16 @@ pub trait NestedPort: Send + Sync {
 
     /// `miyu call --schema`：这件工具的说明和参数格式，照这个会话的工具面；脚本里调不了的没有。
     fn schema(&self, name: &str) -> Option<Schema>;
+
+    /// 这条命令下面脚本里调的开始等人确认（`true`）、等完了（`false`）时叫 `tell`（施工 M-7 上）：前台的 `shell` 照它把等人的
+    /// 那几段从时限里扣掉。一条命令交一次，后交的换掉先交的。默认不叫：没有人能确认的端口。
+    fn hold(&self, tell: Hold) {
+        drop(tell);
+    }
 }
+
+/// 「在等人」的口子（[`NestedPort::hold`]）：`true` 开始等人确认，`false` 等完了。
+pub type Hold = Box<dyn Fn(bool) + Send + Sync>;
 
 /// 一件工具给脚本看的样子。
 #[derive(Debug, Clone, PartialEq, Eq)]

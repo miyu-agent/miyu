@@ -127,6 +127,9 @@ pub struct ApprovalRequested {
     /// 给头看的：为什么要问。写法由提问的模块定，内核原样记。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub detail: Option<RawJson>,
+    /// 脚本里调的（施工 M-7 上）：`call_id` 是父级那次调用，这是嵌套调用的序号。直接调用的、以前的日志没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested: Option<u32>,
 }
 
 /// `tool.approval_decided`：人对一个请求的决定。`by` 是回答的人。
@@ -142,6 +145,9 @@ pub struct ApprovalDecided {
     /// 拒绝时附的图、文件（施工 Q-A）：接在理由后面进给她看的结果。只跟着拒绝，以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub attachments: Vec<Block>,
+    /// 决定的是脚本里调的那一件（施工 M-7 上），同请求的。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested: Option<u32>,
 }
 
 text_enum!(

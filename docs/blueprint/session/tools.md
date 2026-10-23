@@ -11,7 +11,7 @@
 | `crates/miyu-session/src/tools.rs` | 执行工具的端口：找、派、量用时、叫停、收回报 |
 | `crates/miyu-session/src/sandbox.rs` | 照这一刻实际生效的级别给一次调用写沙盒的规格（施工 5-4 上） |
 | `crates/miyu-session/src/tools/checked.rs` | 权限策略判过的真实位置：照调用编号记下、派的时候取走、回合结束扔掉没派出去的（施工 5-18，第 1 条第 3 款） |
-| `crates/miyu-session/src/tools/nested.rs`、`tools/nested/port.rs`、`actor/nested.rs`、`actor/run.rs` | 脚本调工具（施工 M-2、M-3）：直接调的 `shell` 的端口、收下来送进内核、判、跑、掐、落了盘答回去（「1g. 脚本调工具」） |
+| `crates/miyu-session/src/tools/nested.rs`、`tools/nested/port.rs`、`tools/nested/asking.rs`、`actor/nested.rs`、`actor/run.rs` | 脚本调工具（施工 M-2、M-3）：直接调的 `shell` 的端口、收下来送进内核、判、跑、掐、落了盘答回去；下面的在等人确认时告诉那次 `shell`（施工 M-7 上）（「1g. 脚本调工具」） |
 | `crates/miyu-session/src/tools/sandboxed.rs` | 给一次调用写上沙盒（施工 M-2 从 `tools.rs` 挪来）：直接调用、嵌套调用都经它 |
 | `crates/miyu-session/src/agents.rs` | 派子代理：一个会话一份要照抄的，每一次调用一个端口（施工 7-5）；子会话用哪个模型（`Inherit`，施工 8-8）；造会话时定的工具面（施工 7-7 从 `open.rs` 挪来），`subagent` 的 `pool` 那一格照那时的配置拼、列着的池照快照读回（施工 8-8 补） |
 | `crates/miyu-session/src/messages.rs` | 父子之间留言：每一次调用照内核交的派出去的子代理造一个端口（施工 7-7） |
@@ -166,6 +166,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 
 1. 每一次直接调的 `shell` 给一个端口（`Call::nested`，`tools/nested/port.rs`），挂在这次调用下面：这个会话的工具面上有 `clicall` 开着、类别准的工具才给（内核的 `Session::clicall_tools`，施工 M-3；一件都没有的不开通道，预设关了「脚本调工具」的就是一件都没有，施工 M-6，`presets.md`「怎么走」第 5 条）。`shell` 交给通道的那一头（`tools/shell.md`「脚本调工具」）。端口在父级下面从 1 编号，一次调用经回传的通道送回 actor（`Back::Nested`，带一个回信的口子和派它的那次调用），记下口子，交给内核 `Nested(Call)`。会话停了、没答就丢了的，端口那一头拿到「已取消」。
    - 命令放到后台、到时挪到后台（施工 M-3）：`shell` 交上任务以后叫端口 `adopt(任务)`，之后的调用挂到那个任务下面，编号接着编。挂在任务下面的，等那个任务的 `job.started` 记进日志再交进内核（actor 每记一批事件叫一次 `Tools::note_jobs`，记进了的把等着的重新送回收件箱）：任务是 `shell` 的结果报的，结果落下之前内核认不出这个父级。派它的那次 `shell` 的结果记了、却没报这个任务的（调用被打断、任务没交上），等着的当场答「父级不在了」，脚本那头退出码 3，不一直等（内核那边审时提的）。
+   - 等人确认（施工 M-7 上）：`shell` 起命令前交一个「在等人」的口子（`NestedPort::hold`）。actor 每记一批事件看一遍（`tools/nested/asking.rs`，和 `note_jobs` 同一处）：带 `nested` 的请求，告诉那次 `shell` 在等；那一件的决定、`tool.nested`，或者那次 `shell` 的结果，告诉它等完了。照序号认：同一个父级下面别的那件跑完了不算。
    - 端口还答通道的两样，不进内核：能调的名单（报错里列出来），`--schema` 要的说明和参数格式（参数格式照内核的规则、说明照工具目录）。
 2. 内核出 `Nested(Guard)`：照直接调用的链在阻塞线程里判，不先看一眼（嵌套调用不问人），交回 `Nested(Guarded)`。判过的真实位置记在等着的那一份上（施工 5-18），跑的时候放进 `Call.checked`，没记下的按一个都没判过算；答了、掐了跟着扔掉。
 3. 内核出 `Nested(Run)`：照直接调用跑，但 `Call` 里没有任务、子代理、留言、用量、提问、目标、软件包的端口，不再给端口；列会话、读别的会话的端口照直接调用的给（施工 C-10：只读，给不给照同一个判法，只有本机的主会话有；以前没给，脚本里的 `history` 读别的会话一律回「这个会话读不了别的会话」）；记忆、知识库、设置照这一轮的，工具要的调用编号、记忆的出处是派它的那次调用。沙盒照这一刻的级别写（`tools/sandboxed.rs`）。跑完的报了效果、发出去的、结束回合的记一行 `ERROR`、丢掉；图不交给脚本，记下丢了。交给脚本的那一份（有 `data` 的是它的一行 JSON，没有的是字）存成 blob，交回 `Nested(Done)`（出没出错、用时、哈希、字节数）；崩了的照「崩了」那一句。目录里没有的当场照出错交回。

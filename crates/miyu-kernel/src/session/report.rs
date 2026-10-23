@@ -56,6 +56,11 @@ pub(super) struct Duty {
 }
 
 impl Duty {
+    /// 是子会话：`session.created` 有 `parent`（施工 M-7 上，脚本里调的不问人）。
+    pub(super) fn child(&self) -> bool {
+        self.parent.is_some()
+    }
+
     /// 记下追加的一条。
     pub(super) fn note(&mut self, event: &Event) {
         match &event.body {

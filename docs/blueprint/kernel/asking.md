@@ -11,6 +11,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-kernel/src/session/approval.rs` | 链的结论；人的确认 |
+| `crates/miyu-kernel/src/session/nested/asking.rs` | 脚本里调的要人确认：问不问、一父一问、人的回答（施工 M-7 上） |
 | `crates/miyu-kernel/src/session/grants.rs` | 本会话放行过的规则：每追加一条记一次，交给链（施工 D-1） |
 | `crates/miyu-kernel/src/session/question.rs` | 在跑的调用问人；人的回答；来了一句话，在等人的作废 |
 | `crates/miyu-kernel/src/session/step.rs` | 每个调用走到了哪 |
@@ -93,6 +94,15 @@
 5. 拒绝（`deny`）：再记一条 `denied` 的结果，`by` 是拒绝的人，`cause` 是这个命令；写了理由的用 `denied-with-reason`，理由照模板转义换进去，没写的用 `denied`。这一步照常往下走，她看到结果接着干；这一步因此齐了的，往下走。
 6. 回应附上这一次追加的全部；然后派后面轮到的。
 7. 不设超时：人不回就一直等，打断随时进得来。
+
+**脚本里调的要人确认**（施工 M-7 上，设计 `39-脚本调工具.md` MC4，`session.md`「嵌套调用」第 4 条）：请求记在父级那次调用上，多一格 `nested`（序号）；一个父级同时只问一件。
+
+1. `Answer` 多一格 `nested`。带了的：父级下面正在问的是这一件才收，不然 `not_asking`。没带的：这次调用自己在等确认的，照上面「人确认」；不然它下面有一件正在问的，答那一件（旧的头不认 `nested` 也答得到）；都没有的 `not_asking`。
+2. 选项、规则、理由照上面第 2 条的 2 到 4 查；记一条 `tool.approval_decided`，带 `nested`。
+3. 允许：那件派去跑（`Nested(Run)`），推开始；`session` 的照第 7 条记下规则（`grants.rs` 照 `call_id` 认，一父一问认不错）。
+4. 拒绝：那件了结成 `denied`，那一句照第 5 条（`denied`、`denied-with-reason`），交给脚本、退出码 1。附件照记在决定里，脚本收不到。
+5. 回应附上这一次追加的全部；然后派后面轮到的。
+6. 父级有了结果（跑完、被打断、被停、有计划的重启），在问的随之记 `cancelled`；之后到的回答 `not_asking`。
 
 **在跑的调用问人**（`ToolAsks`）：
 

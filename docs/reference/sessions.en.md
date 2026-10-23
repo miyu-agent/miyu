@@ -233,6 +233,7 @@ When she does something that needs approval she stops and asks (pushed as `tool.
 | `reason` | string | Why it was denied, shown to her; only with deny |
 | `attachments` | array | Images or files attached to a denial, same shape as in `session.send` (`blob`, `name`, `media_type` from `blob.put`, optional `path`); she gets them with the reason; denials only |
 | `answers` | array | Answer questions: one item per question in order, `{"picked": [chosen option labels…], "text": <written answer>, "notes": <note>, "attachments": [<as above>]}`, all optional; attachments go to her with that question |
+| `nested` | positive integer | When a tool she calls with `miyu call` inside a command needs approval, the request carries `nested` (its number): send it back. Leaving it out also works and answers the one waiting under that command |
 
 Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers…]}`.
 

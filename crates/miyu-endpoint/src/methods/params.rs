@@ -170,6 +170,9 @@ pub(super) struct AnswerParams {
     attachments: Option<Vec<Attachment>>,
     #[serde(default)]
     answers: Option<Vec<AnswerItem>>,
+    /// 回答的是脚本里调的那一件（施工 M-7 上）：序号，从 1 起，0 和不是整数的读不成、参数不对。
+    #[serde(default)]
+    nested: Option<std::num::NonZeroU32>,
 }
 
 /// 一道题的回答：同内核的 [`Response`]，附件是 `blob.put` 交回的那几格（施工 Q-A）。
@@ -191,21 +194,25 @@ pub(super) enum Wanted {
         decision: Decision,
         reason: Option<String>,
         attachments: Vec<Attachment>,
+        nested: Option<u32>,
     },
     Questions(Vec<(Response, Vec<Attachment>)>),
 }
 
 impl AnswerParams {
-    /// 交给内核的回答，附件另放。`decision`、`answers` 两样都写、都不写，回答提问却带了 `reason`、外面的 `attachments`：
-    /// 参数不对。
+    /// 交给内核的回答，附件另放。`decision`、`answers` 两样都写、都不写，回答提问却带了 `reason`、外面的 `attachments`、
+    /// `nested`：参数不对。
     pub(super) fn wanted(self) -> Result<Wanted, Refusal> {
         match (self.decision, self.answers) {
             (Some(decision), None) => Ok(Wanted::Approval {
                 decision: decision.into(),
                 reason: self.reason,
                 attachments: self.attachments.unwrap_or_default(),
+                nested: self.nested.map(std::num::NonZeroU32::get),
             }),
-            (None, Some(answers)) if self.reason.is_none() && self.attachments.is_none() => {
+            (None, Some(answers))
+                if self.reason.is_none() && self.attachments.is_none() && self.nested.is_none() =>
+            {
                 Ok(Wanted::Questions(
                     answers
                         .into_iter()

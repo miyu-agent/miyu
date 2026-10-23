@@ -388,6 +388,9 @@ pub struct Approval {
         skip_serializing_if = "Option::is_none"
     )]
     pub by: Option<By>,
+    /// 脚本里调的那一件的序号（施工 M-7 上）：记在父 `shell` 那一步上，`detail` 的 `tool` 是那件工具的名字。直接调用的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested: Option<u32>,
 }
 
 /// 一轮的收尾。

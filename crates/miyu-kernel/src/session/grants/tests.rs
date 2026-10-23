@@ -35,6 +35,7 @@ fn asked(n: u64, rule: Option<&str>) -> Event {
             access: Access::Write,
             rule: rule.map(raw),
             detail: None,
+            nested: None,
         }),
     )
 }
@@ -47,6 +48,7 @@ fn decided(n: u64, asked: u64, decision: Decision) -> Event {
             decision,
             reason: None,
             attachments: Vec::new(),
+            nested: None,
         }),
     )
 }

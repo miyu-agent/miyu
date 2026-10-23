@@ -330,6 +330,11 @@ impl Tool for Shell {
             };
             // 她看过的文件这一刻的样子：跑完了比，命令改了的当她自己改的（施工 E-D 补）。
             let seen = touched::before(&call.seen);
+            // 命令里调的工具等人确认的那几段不算时限（施工 M-7 上）：口子在命令起来之前交给端口。
+            let wakes = process::Wakes::new();
+            if let Some(port) = &call.nested {
+                port.hold(wakes.hold());
+            }
             let started =
                 match process::start(command, None, move |text| progress.push(text), false) {
                     Ok(started) => started,
@@ -344,8 +349,8 @@ impl Tool for Shell {
             // 后台运行开着的，到时不杀、挪到后台（施工 7-12）；开头是 `sleep` 的照旧杀：等着本来就是它要做的。
             let movable = call.jobs.is_some() && !sleeps(&args.command);
             let waited = blocking(call.stop.clone(), move |_| match movable {
-                true => started.wait_or_move(wait),
-                false => started.wait(wait).map(Waited::Finished),
+                true => started.wait_or_move(wait, wakes),
+                false => started.wait(wait, wakes).map(Waited::Finished),
             })
             .await;
             guard.disarm();

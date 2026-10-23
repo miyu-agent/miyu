@@ -2,7 +2,10 @@
 //! 占着位置；人允许、人拒绝，拒绝以后她接着干；回答被拒的几种；没人能确认的会话；收紧成只读；
 //! 打断、急着插话；过时的结论。
 
+mod answering;
 mod attached;
+
+pub(super) use answering::{answer, answer_nested};
 
 use super::executor::*;
 use super::*;
@@ -13,23 +16,6 @@ use crate::id::{CallId, ModuleId};
 use crate::origin::Module;
 use crate::raw::RawJson;
 use crate::tool::Access;
-
-/// 编号是 `n` 的命令：alice 回答 `call_id` 的确认。
-pub(super) fn answer(n: u64, call_id: CallId, decision: Decision, reason: Option<&str>) -> Input {
-    Input::Command(Received {
-        id: id(n),
-        by: alice(),
-        at: at(n % 60),
-        command: Command::Answer {
-            call_id,
-            answer: Answer::Approval {
-                decision,
-                reason: reason.map(str::to_string),
-                attachments: Vec::new(),
-            },
-        },
-    })
-}
 
 /// 替身的权限策略。
 pub(super) fn permissions() -> ModuleId {

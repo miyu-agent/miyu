@@ -362,6 +362,7 @@ impl Projector {
             decision: None,
             reason: None,
             by: None,
+            nested: requested.nested,
         };
         self.touch(&id, |entry| {
             if let Body::Tool(tool) = &mut entry.body {

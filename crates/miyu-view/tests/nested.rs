@@ -274,3 +274,38 @@ fn a_page_learns_nested_calls_from_before_its_cut() {
         .expect("有那一行");
     assert_eq!(row.nested.map(|nested| nested.count), Some(1));
 }
+
+/// 脚本里调的要人确认（施工 M-7 上）：卡片记在父 `shell` 那一步上、带序号，`detail` 原样；会话在等它，等的那一件也带序号；
+/// 还没开始跑的不进 `nested` 的列表。允许了不再等，照常开始跑。
+#[test]
+fn a_question_from_a_script_sits_on_the_shell_step() {
+    let mut stage = stage();
+    let shell = running_shell(&mut stage);
+    stage.nested_guards([Verdict::Ask {
+        module: ModuleId::parse("permissions").unwrap(),
+        access: miyu_kernel::tool::Access::Network,
+        rule: None,
+        detail: Some(serde_json::from_str(r#"{"tool":"web_fetch"}"#).unwrap()),
+    }]);
+    stage.nested_call(
+        &format!("{shell}#1"),
+        "web_fetch",
+        r#"{"url":"https://a.example"}"#,
+    );
+    let (entries, _) = live(&stage);
+    let step = json(of_kind(&entries, "tool")[0]);
+    assert_eq!(step["approval"]["nested"], 1, "{step}");
+    assert_eq!(step["approval"]["detail"]["tool"], "web_fetch");
+    assert!(step["approval"].get("decision").is_none(), "还在等");
+    assert!(step.get("nested").is_none(), "还没开始跑的不进列表：{step}");
+    let waiting = status_of(&stage).waiting;
+    assert_eq!(waiting.len(), 1);
+    assert_eq!(waiting[0].nested, Some(1));
+    assert_eq!(waiting[0].call.to_string(), shell);
+    stage.decide(waiting[0].call, miyu_kernel::event::Decision::Once, None);
+    let (entries, _) = live(&stage);
+    let step = json(of_kind(&entries, "tool")[0]);
+    assert_eq!(step["approval"]["decision"], "once", "{step}");
+    assert_eq!(step["nested"]["last"]["state"], "running");
+    assert!(status_of(&stage).waiting.is_empty(), "答了不再等");
+}

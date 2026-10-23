@@ -412,7 +412,7 @@ impl Tool for Script {
             let name = self.spec.name.clone();
             // 收图也在阻塞线程里：读文件、删目录。到时被杀的不看，目录照样删（丢掉时）。
             let finished = blocking(call.stop.clone(), move |_| {
-                let finished = started.wait(wait)?;
+                let finished = started.wait(wait, process::Wakes::new())?;
                 let pictures = match folder {
                     Some(folder) if !matches!(finished.ending, Ending::TimedOut) => {
                         folder.collect(&name)

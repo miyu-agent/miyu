@@ -45,13 +45,32 @@ pub(super) fn some_verdict(rng: &mut Rng, watch: &Watch) -> Input {
     }
 }
 
-/// 一个回答：多半回答在等的那几个，偶尔是对不上的；选项多半认识，拒绝的有时带理由，也有空的理由。
+/// 一个回答：多半回答在等的那几个，偶尔是对不上的；选项多半认识，拒绝的有时带理由，也有空的理由。脚本里调的在等的（施工
+/// M-7 上）照父级那次调用答，一半写上序号、偶尔写错。
 pub(super) fn some_answer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Input {
-    let asking: Vec<CallId> = watch.approvals.asking.iter().copied().collect();
-    let call_id = if rng.below(8) > 0 {
+    let mut asking: Vec<(CallId, Option<u32>)> = watch
+        .approvals
+        .asking
+        .iter()
+        .map(|call_id| (*call_id, None))
+        .collect();
+    for id in &watch.nesting.asking {
+        if let crate::id::Parent::Call(call_id) = id.parent() {
+            let n = match rng.below(6) {
+                0..=2 => None,
+                3 => Some(id.n() + 1),
+                _ => Some(id.n()),
+            };
+            asking.push((*call_id, n));
+        }
+    }
+    let asked = if rng.below(8) > 0 && !asking.is_empty() {
         asking[rng.below(asking.len() as u64) as usize]
     } else {
-        CallId::new(seq(1 + rng.below(watch.last())), 1).unwrap()
+        (
+            CallId::new(seq(1 + rng.below(watch.last())), 1).unwrap(),
+            None,
+        )
     };
     let decision = match rng.below(12) {
         0..=3 => Decision::Once,
@@ -65,7 +84,7 @@ pub(super) fn some_answer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> In
         1 => Some("  "),
         _ => None,
     };
-    answer(next_command(next_id), call_id, decision, reason)
+    answer_nested(next_command(next_id), asked, decision, reason)
 }
 
 /// 在跑的一个调用问人：一两道题，每道两个选项，一半能多选。

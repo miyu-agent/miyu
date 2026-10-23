@@ -65,9 +65,12 @@ impl Projector {
     pub(super) fn track(&mut self, event: &Event) {
         match &event.body {
             EventBody::ApprovalRequested(requested) => {
-                self.wait(Wait::Approve, requested.call_id, event.at);
+                let what = (Wait::Approve, requested.nested);
+                self.wait(what, requested.call_id, event.at);
             }
-            EventBody::QuestionAsked(asked) => self.wait(Wait::Ask, asked.call_id, event.at),
+            EventBody::QuestionAsked(asked) => {
+                self.wait((Wait::Ask, None), asked.call_id, event.at)
+            }
             EventBody::ApprovalDecided(decided) => self.settled(decided.call_id, event.at),
             EventBody::QuestionAnswered(answered) => self.settled(answered.call_id, event.at),
             EventBody::ToolResult(result) => {
@@ -176,13 +179,18 @@ impl Projector {
         }
     }
 
-    /// 等人的一件：那一步的条目还在才记。原来没在等的，起一段等人。
-    fn wait(&mut self, what: Wait, call: CallId, at: Timestamp) {
+    /// 等人的一件：那一步的条目还在才记，`nested` 是脚本里调的那一件的序号（施工 M-7 上）。原来没在等的，起一段等人。
+    fn wait(&mut self, (what, nested): (Wait, Option<u32>), call: CallId, at: Timestamp) {
         if let Some(entry) = self.calls.get(&call).cloned()
             && !self.tracking.waiting.iter().any(|w| w.call == call)
         {
             self.tracking.waits.wait(&call, at);
-            self.tracking.waiting.push(Waiting { what, entry, call });
+            self.tracking.waiting.push(Waiting {
+                what,
+                entry,
+                call,
+                nested,
+            });
         }
     }
 

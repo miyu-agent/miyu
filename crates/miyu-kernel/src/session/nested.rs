@@ -2,7 +2,7 @@
 //! 前台那次调用或后台任务下面。
 //!
 //! 一个嵌套调用的一生：来了先查（父级在不在、工具能不能调、参数修不修得了），排进父级的队；轮到了过执行前的链；放行的派去跑，
-//! 拒绝的、要问人的当场了结；跑完了结。了结记一条 `tool.nested`，落了盘才答执行器，执行器这时才把结果交给脚本。
+//! 拒绝的当场了结，要问人的照 [`asking`] 停下来问或者当场了结；跑完了结。了结记一条 `tool.nested`，落了盘才答执行器，执行器这时才把结果交给脚本。
 //!
 //! 不进这一步的调度（[`super::step::Step::ready`]）：父 `shell` 在这一步里独占着，嵌套的排进去会自己等自己。父级要记结果、
 //! 报告之前，挂在下面还没了结的都记「已取消」，排在父级那一条前面（[`Session::close_nested`]，由造事件的那几处调）。
@@ -10,6 +10,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+mod asking;
 mod types;
 
 pub use types::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};
@@ -53,6 +54,8 @@ struct Call {
     phase: Phase,
     /// 派去跑的时刻（施工 M-5 上）；还没派的没有。
     started: Option<Timestamp>,
+    /// 在问人的：请求提了放行规则（施工 M-7 上），能选「本会话都允许」。
+    rule: bool,
 }
 
 /// 走到了哪。
@@ -62,6 +65,8 @@ enum Phase {
     Waiting,
     /// 在过链。
     Guarding,
+    /// 在等人确认（施工 M-7 上）：算在跑的、占名额，同一个父级后面的都不派。
+    Asking,
     /// 在跑。
     Running,
 }
@@ -167,67 +172,71 @@ impl Session {
                     access,
                     phase: Phase::Waiting,
                     started: None,
+                    rule: false,
                 });
                 Vec::new()
             }
         }
     }
 
-    /// 链的结论：放行的派去跑，推一条开始了；拒绝的、要问人的当场了结。不是在过链的不理。
+    /// 链的结论：放行的派去跑，推一条开始了；拒绝的当场了结；要问人的交给 [`Self::nested_ask`]。不是在过链的不理。
     fn nested_guarded(&mut self, at: Timestamp, id: &NestedId, verdict: Verdict) -> Vec<Action> {
         match verdict {
-            Verdict::Allow => {
-                let (cwd, dirs) = self.place(id.parent());
-                let permission = self.effective.clone();
-                let turn = self.turn_of(id.parent());
-                let Some(call) = self
-                    .nested
-                    .calls
-                    .iter_mut()
-                    .find(|call| call.id == *id && call.phase == Phase::Guarding)
-                else {
-                    return Vec::new();
-                };
-                call.phase = Phase::Running;
-                call.started = Some(at);
-                vec![
-                    Action::Nested(NestedAction::Run {
-                        id: call.id.clone(),
-                        name: call.name.clone(),
-                        args: call.args.clone(),
-                        cwd,
-                        dirs,
-                        permission,
-                    }),
-                    Action::PushTransient(Transient {
-                        at,
-                        turn: turn.as_ref().map(|(turn, _)| *turn),
-                        by: By::Kernel,
-                        cause: turn.and_then(|(_, cause)| cause),
-                        body: TransientBody::NestedStarted(NestedStarted {
-                            id: call.id.clone(),
-                            name: call.name.clone(),
-                        }),
-                    }),
-                ]
-            }
+            Verdict::Allow => self.launch(at, id, Phase::Guarding),
             Verdict::Deny { text, .. } => match self.take_nested(id, Phase::Guarding) {
                 Some(call) => {
                     self.settle_nested(at, call.id, call.name, call.args, Outcome::denied(text))
                 }
                 None => Vec::new(),
             },
-            Verdict::Ask { .. } => match self.take_nested(id, Phase::Guarding) {
-                Some(call) => {
-                    let outcome = Outcome::kernel(NestedStatus::NeedsApproval);
-                    self.settle_nested(at, call.id, call.name, call.args, outcome)
-                }
-                None => Vec::new(),
-            },
+            Verdict::Ask {
+                module,
+                access,
+                rule,
+                detail,
+            } => self.nested_ask(at, id, (module, access), rule, detail),
         }
     }
 
-    /// 轮到的交给链（「嵌套调用」第 2、3 条）：一个父级一条队，读的一起、别的一个一个；两道上限。每次送进一条输入以后看一次。
+    /// 派 `id` 去跑，推一条开始了：它要正在 `phase`（过完链的、人允许了的），不是的不动。
+    fn launch(&mut self, at: Timestamp, id: &NestedId, phase: Phase) -> Vec<Action> {
+        let (cwd, dirs) = self.place(id.parent());
+        let permission = self.effective.clone();
+        let turn = self.turn_of(id.parent());
+        let Some(call) = self
+            .nested
+            .calls
+            .iter_mut()
+            .find(|call| call.id == *id && call.phase == phase)
+        else {
+            return Vec::new();
+        };
+        call.phase = Phase::Running;
+        call.started = Some(at);
+        vec![
+            Action::Nested(NestedAction::Run {
+                id: call.id.clone(),
+                name: call.name.clone(),
+                args: call.args.clone(),
+                cwd,
+                dirs,
+                permission,
+            }),
+            Action::PushTransient(Transient {
+                at,
+                turn: turn.as_ref().map(|(turn, _)| *turn),
+                by: By::Kernel,
+                cause: turn.and_then(|(_, cause)| cause),
+                body: TransientBody::NestedStarted(NestedStarted {
+                    id: call.id.clone(),
+                    name: call.name.clone(),
+                }),
+            }),
+        ]
+    }
+
+    /// 轮到的交给链（「嵌套调用」第 2、3 条）：一个父级一条队，读的一起、别的一个一个；两道上限，在问人的也占；有一件在问人的
+    /// 父级不派。每次送进一条输入以后看一次。
     pub(super) fn dispatch_nested(&mut self) -> Vec<Action> {
         let limits = self.policy.nested;
         let busy = |phase: Phase| phase != Phase::Waiting;
@@ -249,11 +258,22 @@ impl Session {
                 .parent()
                 .cmp(self.nested.calls[b].id.parent())
         });
+        // 有一件在问人的父级整条队都停着（施工 M-7 上）：退回排队的那一件可能排在它前面，不停会马上再过链、再退回。
+        let asking: BTreeSet<Parent> = self
+            .nested
+            .calls
+            .iter()
+            .filter(|call| call.phase == Phase::Asking)
+            .map(|call| call.id.parent().clone())
+            .collect();
         let mut ready = Vec::new();
         let mut earlier: BTreeMap<Parent, (bool, bool)> = BTreeMap::new();
         for k in order {
             let call = &self.nested.calls[k];
             let parent = call.id.parent().clone();
+            if asking.contains(&parent) {
+                continue;
+            }
             let (pending, exclusive) = earlier.get(&parent).copied().unwrap_or_default();
             let mine = call.access != Access::Read;
             let free = if mine { !pending } else { !exclusive };

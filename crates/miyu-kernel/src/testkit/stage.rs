@@ -5,14 +5,13 @@ use std::collections::VecDeque;
 
 use super::script::{Line, Play};
 use crate::block::{Block, Text};
-use crate::event::{Body, Decision, Event, Level, ModelCalled, Response, Transient};
+use crate::event::{Body, Event, Level, ModelCalled, Transient};
 use crate::facts::{Environment, Present};
 use crate::id::{CallId, CommandId, ContentHash, HarnessName, Seq, SessionId, TurnId};
 use crate::origin::{By, Harness};
 use crate::request::Request;
 use crate::session::{
-    Action, Answer, Command, Injection, Input, Limits, Outcome, Policy, Queued, Received, Session,
-    Verdict,
+    Action, Command, Injection, Input, Limits, Outcome, Policy, Queued, Received, Session, Verdict,
 };
 use crate::time::Timestamp;
 
@@ -169,31 +168,6 @@ impl Stage {
     /// 打断，排着队的照 `queued` 办。
     pub fn interrupt(&mut self, queued: Queued) -> CommandId {
         self.command(Command::Interrupt { queued })
-    }
-
-    /// 回答调用 `call_id` 的确认。
-    pub fn decide(
-        &mut self,
-        call_id: CallId,
-        decision: Decision,
-        reason: Option<&str>,
-    ) -> CommandId {
-        self.command(Command::Answer {
-            call_id,
-            answer: Answer::Approval {
-                decision,
-                reason: reason.map(str::to_string),
-                attachments: Vec::new(),
-            },
-        })
-    }
-
-    /// 回答调用 `call_id` 问的那组题。
-    pub fn reply(&mut self, call_id: CallId, answers: Vec<Response>) -> CommandId {
-        self.command(Command::Answer {
-            call_id,
-            answer: Answer::Questions(answers),
-        })
     }
 
     /// 切权限级别：改哪样写哪样。

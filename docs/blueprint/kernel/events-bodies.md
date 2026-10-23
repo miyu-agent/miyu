@@ -325,6 +325,7 @@
 | `access` | 访问类别 | 必有 | 要的是哪一类访问（`kernel/tools.md`）。收紧成只读时，要写入的当场拦下 |
 | `rule` | 原样的 JSON | 可以没有 | 提的放行规则：选本会话都允许、这个工作区以后都允许时，放行的就是它。没提的，只能选允许这一次或者拒绝 |
 | `detail` | 原样的 JSON | 可以没有 | 给头看的：为什么要问 |
+| `nested` | 正整数 | 可以没有 | 脚本里调的（施工 M-7 上）：`call_id` 是父级那次调用，这是嵌套调用的序号，拼起来是 `tool.nested` 的编号；直接调用的没有，以前的日志没有 |
 
 `rule`、`detail` 的写法由提问的模块定，内核原样记，不看里面（权限策略写的样子见 `session/guard.md` 第五条）。例如越过沙盒跑一条命令（施工 D-4）：`{"call_id":"…","access":"execute","detail":{"command":"touch ~/Downloads/x.txt","sandbox":false,"title":"Create a file","tool":"shell"}}`，没有 `rule`：只能选允许这一次或者拒绝。装包（施工 F-10 下，`tools/package.md`）：`{"call_id":"…","access":"install","detail":{"install":"/home/me/work/notes","preview":{"package":"notes","skills":["take-notes"],"scripts":["dice"],"files":3,"size":713},"tool":"package"}}`：`preview` 是装之前看一眼的那一份（同 `package.install` 带 `preview` 的回应；卸的是 `package.remove` 带 `preview` 的），头照命令行 `miyu pkg install` 那样列；也没有 `rule`。
 
@@ -334,6 +335,7 @@
 |---|---|---|---|
 | `call_id` | 调用编号 | 必有 | 决定的是哪一次调用的请求 |
 | `decision` | 取值 | 必有 | `once` 允许这一次；`session` 本会话都允许；`workspace` 这个工作区以后都允许；`deny` 拒绝，拒绝以后她接着干 |
+| `nested` | 正整数 | 可以没有 | 决定的是脚本里调的那一件（施工 M-7 上），同请求的 |
 | `reason` | 字符串 | 可以没有 | 拒绝的理由，会写进给她看的结果。只跟着拒绝 |
 | `attachments` | 块的列表 | 空的不写 | 拒绝时附的图、文件（施工 Q-A），接在理由后面进结果。只跟着拒绝；以前的日志没有 |
 

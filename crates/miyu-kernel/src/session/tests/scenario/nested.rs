@@ -8,9 +8,9 @@ use crate::id::{CallId, NestedId, TurnId};
 use crate::session::{NestedAnswer, Verdict};
 
 /// 那次 `shell` 的调用编号：第一轮的回复是 6 号，第一个调用。
-const SHELL: &str = "call_6_1";
+pub(super) const SHELL: &str = "call_6_1";
 
-fn nested(id: &str) -> NestedId {
+pub(super) fn nested(id: &str) -> NestedId {
     NestedId::parse(id).unwrap()
 }
 
@@ -28,7 +28,7 @@ fn stage_with(per_parent: usize, per_session: usize) -> Stage {
 }
 
 /// 她跑一个脚本：第一轮调 `shell`，`shell` 停在跑着；结果回来以后说「好了」。
-fn running_shell(stage: &mut Stage) {
+pub(super) fn running_shell(stage: &mut Stage) {
     stage.model([
         Line::calls(
             "我写个脚本。",
@@ -41,7 +41,7 @@ fn running_shell(stage: &mut Stage) {
 }
 
 /// 嵌套调用了结的几条：编号和结局，照日志的先后。
-fn settled(stage: &Stage) -> Vec<String> {
+pub(super) fn settled(stage: &Stage) -> Vec<String> {
     stage
         .log()
         .iter()
@@ -53,7 +53,7 @@ fn settled(stage: &Stage) -> Vec<String> {
 }
 
 /// 答脚本那头的：编号和结局。
-fn answered(stage: &Stage) -> Vec<String> {
+pub(super) fn answered(stage: &Stage) -> Vec<String> {
     stage
         .nested_answers()
         .iter()
@@ -160,9 +160,15 @@ fn a_shell_that_ends_first_cancels_what_hangs_under_it() {
     assert_eq!(answered(&stage).last().unwrap(), "call_6_1#3 refused Gone");
 }
 
+/// 没人能确认的会话（施工 M-7 上起：有人能确认的前台调用要问人时停下来问，`nested_asking.rs`）：链拒的、要问人的当场了结。
 #[test]
 fn the_chain_and_the_checks_settle_or_refuse_on_the_spot() {
-    let mut stage = stage();
+    let unattended = || {
+        let mut made = policy();
+        made.attended = false;
+        made
+    };
+    let mut stage = Stage::new(unattended, environment("~/src/miyu"), at(0));
     running_shell(&mut stage);
     stage.nested_guards([
         Verdict::Deny {
@@ -245,6 +251,28 @@ fn running_job(stage: &mut Stage) {
     ]);
     stage.tools([Play::starts_command(1, "数一下")]);
     stage.say("后台数一下");
+}
+
+/// 后台任务下面的要问人照旧不问（施工 M-7 上，项目主人 10-23 定）：没人等着答，当场 `needs_approval`。
+#[test]
+fn under_a_job_a_question_is_still_not_asked() {
+    let mut stage = stage();
+    running_job(&mut stage);
+    stage.nested_guards([Verdict::Ask {
+        module: crate::id::ModuleId::parse("permissions").unwrap(),
+        access: crate::tool::Access::Network,
+        rule: None,
+        detail: None,
+    }]);
+    stage.nested_call("j1#1", "read", "{}");
+    assert_eq!(settled(&stage), ["j1#1 needs_approval"]);
+    assert!(
+        !stage
+            .log()
+            .iter()
+            .any(|event| matches!(event.body, Body::ApprovalRequested(_))),
+        "不记请求"
+    );
 }
 
 #[test]
