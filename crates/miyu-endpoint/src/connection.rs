@@ -115,10 +115,6 @@ async fn read_all<R: AsyncRead + Unpin>(
     let from_core = spawned.is_some();
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
     let package = spawned.as_ref().map(|(_, package)| package.clone());
-    // 它声明了哪些能力（施工 X-30）：升级会重新拉起，一个连接算一次就够。
-    let declared = package
-        .as_deref()
-        .map_or_else(Vec::new, |package| rights::declared(&core, package));
     // 这个连接是谁（施工 O-4 下、Y-5 中上）：核心拉起的带进程的包是它自己的账号，别的是管理员；没声明系统账号的包替机主干活。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
@@ -129,6 +125,10 @@ async fn read_all<R: AsyncRead + Unpin>(
         account,
         package: package.clone(),
     };
+    // 它手里有哪些能力（施工 X-30；Y-5 下上起照组表）：批、升级都会重新拉起，一个连接算一次就够。
+    let declared = package.as_deref().map_or_else(Vec::new, |package| {
+        rights::declared(&core, package, caller.serving.as_ref())
+    });
     let mut handing: Option<Handing> = None;
     let mut reader = BufReader::new(read);
     let mut shaken: Option<Shaken> = None;

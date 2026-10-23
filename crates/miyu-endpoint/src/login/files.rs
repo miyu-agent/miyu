@@ -100,7 +100,7 @@ pub(super) fn login_accounts(core: &Core) -> Vec<AccountId> {
 }
 
 /// 读 `system/groups.json`（施工 Y-12 中下）：坏了的当空的，记一行 `WARN groups not read`。
-pub(super) fn read_groups(core: &Core) -> groups::Read {
+pub(crate) fn read_groups(core: &Core) -> groups::Read {
     let path = core.root.system().join(groups::FILE);
     groups::read(&path).unwrap_or_else(|error| {
         tracing::warn!(target: TARGET, error = %error, "groups not read");

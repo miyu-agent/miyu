@@ -96,13 +96,7 @@ async fn an_extension_calls_only_what_another_exports() {
         &steps(&[&step, "hello", &pause, &ask("memes", "add"), "wait"]),
         &[],
     );
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        "{\"version\":1,\"on\":{},\"approved\":{\"bridge\":[\"packages.call\"]}}\n",
-    )
-    .expect("写得进");
+    approve(&home, "bridge", &["packages.call"]);
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),

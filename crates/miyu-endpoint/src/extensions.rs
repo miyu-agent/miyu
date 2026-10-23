@@ -11,7 +11,7 @@ pub(crate) mod methods;
 pub(crate) mod stderr;
 mod supervise;
 
-pub(crate) use approval::{described, forget as forget_switch};
+pub(crate) use approval::{described, forget as forget_switch, held};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
 pub use supervise::Timing;
 pub(crate) use supervise::backoff;
@@ -357,7 +357,7 @@ impl Core {
             self.extensions.hold(id, Reason::NotInstalled);
             return;
         }
-        match approval::unapproved(self, id, manifest, switches).is_empty() {
+        match approval::unapproved(self, id, manifest).is_empty() {
             true => {
                 crate::provide::restore(self, id);
                 self.extensions.launch(self, id, manifest);

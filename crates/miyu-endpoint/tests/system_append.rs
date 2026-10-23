@@ -67,7 +67,6 @@ async fn extensions_append_to_the_system_prompt_and_change_it_next_turn() {
     ];
     let programs: Vec<Program> = packages.iter().map(|_| Program::new()).collect();
     let mut records = Vec::new();
-    let mut approved = serde_json::Map::new();
     for ((id, declares, venue, after), program) in packages.iter().zip(&programs) {
         let (path, step) = record(&home, id);
         let capabilities: &[&str] = if *declares {
@@ -88,19 +87,9 @@ async fn extensions_append_to_the_system_prompt_and_change_it_next_turn() {
             &steps(&all),
             capabilities,
         );
-        approved.insert(id.to_string(), json!(capabilities));
+        approve(&home, id, capabilities);
         records.push(path);
     }
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        format!(
-            "{}\n",
-            json!({"version": 1, "on": {}, "approved": approved})
-        ),
-    )
-    .expect("写得进");
     let script = Script::new([Play::Says("一。"), Play::Says("二。"), Play::Says("三。")])
         .titles([Play::Says("测试")]);
     let core = Arc::new(

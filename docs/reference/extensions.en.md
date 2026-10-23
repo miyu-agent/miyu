@@ -29,7 +29,7 @@ Other methods go through one table: those for people only (answering for the per
 
 ## Capabilities
 
-The manifest's `[process] capabilities` declares what it needs. Packages the admin installed need a person's approval (`extension.enable` with `approve`); built-in ones count as approved. A package with unapproved capabilities isn't started.
+The manifest's `[process] capabilities` declares what it needs. Packages the admin installed need a person's approval (`extension.enable` with `approve`); built-in ones count as approved. A package with unapproved capabilities isn't started. Approvals live in the group table `system/groups.json` as `ext.<capability>` groups with the package's account as a member, and are removed when the package is removed; after a core upgrade, capabilities approved before have to be approved again.
 
 | Capability | Allows |
 |---|---|

@@ -103,7 +103,6 @@ async fn extensions_add_blocks_before_what_was_said() {
     let home = Home::new();
     let programs: Vec<Program> = EXTS.iter().map(|_| Program::new()).collect();
     let mut records = Vec::new();
-    let mut approved = serde_json::Map::new();
     for (ext, program) in EXTS.iter().zip(&programs) {
         let (path, step) = record(&home, ext.id);
         let capabilities: &[&str] = if ext.declares {
@@ -125,19 +124,9 @@ async fn extensions_add_blocks_before_what_was_said() {
             ]),
             capabilities,
         );
-        approved.insert(ext.id.to_string(), json!(capabilities));
+        approve(&home, ext.id, capabilities);
         records.push(path);
     }
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        format!(
-            "{}\n",
-            json!({"version": 1, "on": {}, "approved": approved})
-        ),
-    )
-    .expect("写得进");
     let script = Script::new([Play::Says("好。")]).titles([Play::Says("测试")]);
     let core = Arc::new(
         home.core_full(&script, Catalog::default(), None, TOKEN)

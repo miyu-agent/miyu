@@ -79,7 +79,7 @@ pub(crate) async fn turn_on(
     }
     let _one_at_a_time = core.extensions.ops.lock().await;
     let (mut switches, version) = read_switches(core);
-    approval::approve(core, id, manifest, &mut switches, approve)?;
+    approval::approve(core, id, manifest, approve).await?;
     switches.on.insert(id.to_string(), true);
     write(core, id, &switches, version.as_deref())?;
     crate::provide::restore(core, id);
@@ -136,7 +136,7 @@ pub(crate) async fn restart_process(
     if !on(&switches, id, manifest) {
         return Err(Refusal::EXTENSION_OFF);
     }
-    let left = approval::unapproved(core, id, manifest, &switches);
+    let left = approval::unapproved(core, id, manifest);
     if !left.is_empty() {
         return Err(needs_approval(&left));
     }
@@ -196,7 +196,7 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
         "failures": status.failures,
     });
     details(&mut item, status.state, &stderr::path(core, id));
-    if let Some((listed, left)) = approval::shown(core, id, manifest, switches, peer.language) {
+    if let Some((listed, left)) = approval::shown(core, id, manifest, peer.language) {
         item["capabilities"] = listed;
         if let Some(left) = left {
             item["unapproved"] = left;

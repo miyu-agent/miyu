@@ -27,6 +27,11 @@ fn switches(home: &Home) -> String {
     read(&home.root.system().join("extensions.json"))
 }
 
+/// 组表（施工 Y-5 下上：批过的能力记在 `ext.<能力>` 组里）。
+fn groups(home: &Home) -> String {
+    read(&home.root.system().join("groups.json"))
+}
+
 #[tokio::test]
 async fn an_installed_extension_asks_for_its_capabilities_when_enabled() {
     let home = Home::new();
@@ -79,9 +84,11 @@ async fn an_installed_extension_asks_for_its_capabilities_when_enabled() {
     assert_eq!(approved["result"]["on"], true, "{approved}");
     assert!(approved["result"].get("unapproved").is_none(), "{approved}");
     until_state(&mut client, "echo", |one| one["state"] == "running").await;
+    assert_eq!(switches(&home), "{\"version\":1,\"on\":{\"echo\":true}}\n");
     assert_eq!(
-        switches(&home),
-        "{\"version\":1,\"on\":{\"echo\":true},\"approved\":{\"echo\":[\"events.read\",\"network\"]}}\n"
+        groups(&home),
+        "{\"version\":1,\"groups\":{\"ext.events.read\":[\"echo\"],\"ext.network\":[\"echo\"]}}\n",
+        "批了就是把包加进那几个能力的组"
     );
     let disabled = call(&mut client, "extension.disable", "echo").await;
     assert_eq!(disabled["result"]["state"], "off");
@@ -171,10 +178,10 @@ async fn more_capabilities_after_an_upgrade_ask_only_for_the_new_ones() {
     let approved = enable(&mut client, "echo", Some(&["sessions.drive"])).await;
     assert_eq!(approved["result"]["on"], true, "只批多的那个：{approved}");
     until_state(&mut client, "echo", |one| one["state"] == "running").await;
-    assert!(
-        switches(&home).contains("\"approved\":{\"echo\":[\"sessions.drive\",\"network\"]}"),
-        "记下这时声明的全部，照能力表的先后：{}",
-        switches(&home)
+    assert_eq!(
+        groups(&home),
+        "{\"version\":1,\"groups\":{\"ext.network\":[\"echo\"],\"ext.sessions.drive\":[\"echo\"]}}\n",
+        "这时声明的全部都进了组"
     );
     second.stop_extensions().await;
 }
@@ -210,4 +217,41 @@ async fn a_shipped_extension_counts_as_approved() {
         ]
     );
     assert!(bridge.get("unapproved").is_none(), "出厂的不用批：{bridge}");
+}
+
+/// 以前的开关文件（施工 Y-5 下上）：`approved` 认得、扔掉，开关照旧（开着）；没进组表的能力当没批，不拉起，人重新批一次就起来。
+#[tokio::test]
+async fn an_old_approval_must_be_given_again_but_the_switch_stays() {
+    let home = Home::new();
+    let program = Program::new();
+    install_asking(
+        &home,
+        "auto",
+        &program.name(),
+        "manual",
+        &steps(&["hello", "wait"]),
+        &["network"],
+    );
+    home.write(
+        "system/extensions.json",
+        "{\"version\":1,\"on\":{\"auto\":true},\"approved\":{\"auto\":[\"network\"]}}\n",
+    );
+    let core = core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let waiting = status(&mut client, "auto").await;
+    assert_eq!(
+        (&waiting["on"], &waiting["reason"], &waiting["unapproved"]),
+        (&json!(true), &json!("needs_approval"), &json!(["network"])),
+        "开关照旧、要重新批：{waiting}"
+    );
+    let approved = enable(&mut client, "auto", Some(&["network"])).await;
+    assert_eq!(approved["result"]["on"], true, "{approved}");
+    until_state(&mut client, "auto", |one| one["state"] == "running").await;
+    assert!(
+        !switches(&home).contains("approved"),
+        "写回时不再写：{}",
+        switches(&home)
+    );
+    core.stop_extensions().await;
 }

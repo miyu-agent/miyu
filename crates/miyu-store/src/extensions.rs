@@ -29,10 +29,21 @@ pub struct Switches {
     pub version: u32,
     /// 包的编号到开没开：人明着开、关过的才有。
     pub on: BTreeMap<String, bool>,
-    /// 包的编号到批过的扩展能力（施工 9-4 下上，`extensions.md`「能力」）：批的时候它声明的全部，照能力表的先后。一个都没
-    /// 批过的不写这一格，以前的文件读进来是空的。
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub approved: BTreeMap<String, Vec<String>>,
+    /// 以前记批过的扩展能力的那一格（施工 9-4 下上）：Y-5 下上起批过的能力记在组表 `groups.json` 的 `ext.<能力>` 组里，这一格
+    /// 读的时候认得、直接扔掉，写回时不写（整份读不进的话开关会一起丢）。换核心以后要重新批一次。等不再有带它的文件（0.1.0
+    /// 以后）就删掉。
+    #[serde(default, rename = "approved", skip_serializing)]
+    pub retired: Retired,
+}
+
+/// 扔掉的一格：什么都认、什么都不留。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Retired;
+
+impl<'de> Deserialize<'de> for Retired {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Retired, D::Error> {
+        serde::de::IgnoredAny::deserialize(deserializer).map(|_| Retired)
+    }
 }
 
 impl Default for Switches {
@@ -40,7 +51,7 @@ impl Default for Switches {
         Switches {
             version: VERSION,
             on: BTreeMap::new(),
-            approved: BTreeMap::new(),
+            retired: Retired,
         }
     }
 }

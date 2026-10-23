@@ -63,18 +63,17 @@ fn install(
     path
 }
 
-/// 起核心：`approved` 是各包批过的能力。
+/// 起核心：`approved` 是各包批过的能力（施工 Y-5 下上起记进组表）。
 fn core(home: &Home, script: &Script, approved: Value) -> Arc<miyu_endpoint::Core> {
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        format!(
-            "{}\n",
-            json!({"version": 1, "on": {}, "approved": approved})
-        ),
-    )
-    .expect("写得进");
+    for (id, capabilities) in approved.as_object().expect("包到能力") {
+        let names: Vec<&str> = capabilities
+            .as_array()
+            .expect("能力的数组")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        crate::support::extensions::approve(home, id, &names);
+    }
     let core = Arc::new(
         home.core_full(script, Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),

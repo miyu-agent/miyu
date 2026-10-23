@@ -77,7 +77,6 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
     let programs: Vec<Program> = packages.iter().map(|_| Program::new()).collect();
     let capabilities = ["tools", "context.inject", "context.system"];
     let mut records = Vec::new();
-    let mut approved = serde_json::Map::new();
     for ((id, needs), program) in packages.iter().zip(&programs) {
         let (path, step) = record(&home, id);
         let append = format!(r#"ask:system.append:{{"content":"<{id}>X</{id}>"}}"#);
@@ -104,19 +103,9 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
                 &text.replacen("[package]\n", "[package]\nneeds = [\"images\"]\n", 1),
             );
         }
-        approved.insert(id.to_string(), json!(capabilities));
+        approve(&home, id, &capabilities);
         records.push(path);
     }
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        format!(
-            "{}\n",
-            json!({"version": 1, "on": {}, "approved": approved})
-        ),
-    )
-    .expect("写得进");
     let script = Script::new([Play::Says("一。"), Play::Says("二。"), Play::Says("三。")])
         // 两个会话各起一次标题：没排上的，假模型不回，会话一直有事、退不下。
         .titles([Play::Says("测试"), Play::Says("测试")]);

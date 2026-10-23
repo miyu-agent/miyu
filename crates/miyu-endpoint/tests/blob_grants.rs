@@ -131,13 +131,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
         ]),
         &["packages.call"],
     );
-    let system = home.root.system();
-    std::fs::create_dir_all(&system).expect("建得了");
-    std::fs::write(
-        system.join("extensions.json"),
-        "{\"version\":1,\"on\":{},\"approved\":{\"bridge\":[\"packages.call\"]}}\n",
-    )
-    .expect("写得进");
+    approve(&home, "bridge", &["packages.call"]);
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),

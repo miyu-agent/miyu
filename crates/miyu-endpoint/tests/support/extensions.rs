@@ -104,17 +104,33 @@ pub const BRIDGE: [&str; 5] = [
     "events.write",
 ];
 
-/// 记下包 `id` 批过了 `capabilities`，并进 `system/extensions.json`（施工 X-30：管理员装的包声明了能力的，批过才拉起）。
+/// 记下包 `id` 批过了 `capabilities`（施工 X-30：管理员装的包声明了能力的，批过才拉起）：施工 Y-5 下上起批过的是组表
+/// `system/groups.json` 里 `ext.<能力>` 组的成员。
 pub fn approve(home: &Home, id: &str, capabilities: &[&str]) {
     let system = home.root.system();
     std::fs::create_dir_all(&system).expect("建得了");
-    let path = system.join("extensions.json");
-    let mut switches: Value = std::fs::read_to_string(&path)
+    let path = system.join("groups.json");
+    let mut groups: Value = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_else(|| json!({"version": 1, "on": {}}));
-    switches["approved"][id] = json!(capabilities);
-    std::fs::write(&path, format!("{switches}\n")).expect("写得进");
+        .unwrap_or_else(|| json!({"version": 1, "groups": {}}));
+    for capability in capabilities {
+        let group = format!("ext.{capability}");
+        let members = groups["groups"][group.as_str()]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        let mut members: Vec<String> = members
+            .iter()
+            .filter_map(|one| one.as_str().map(str::to_string))
+            .collect();
+        if !members.iter().any(|one| one == id) {
+            members.push(id.to_string());
+            members.sort();
+        }
+        groups["groups"][group.as_str()] = json!(members);
+    }
+    std::fs::write(&path, format!("{groups}\n")).expect("写得进");
 }
 
 /// 同 [`install`]，登记工具的扩展照实声明 `tools`，算批过（施工 X-30）。

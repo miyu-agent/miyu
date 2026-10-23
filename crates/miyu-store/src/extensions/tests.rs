@@ -25,33 +25,25 @@ fn a_missing_file_has_no_switches_and_a_written_one_reads_back() {
     );
 }
 
-/// 批过的能力（施工 9-4 下上）：一个都没批过的不写这一格，文件和以前一字不差；写了的读回来一样；以前的文件当一个都没批过。
+/// 批过的能力挪进组表以后（施工 Y-5 下上）：以前的文件里的 `approved` 认得、扔掉，开关照旧；写回时不再写这一格。
 #[test]
-fn approvals_are_kept_beside_the_switches() {
+fn an_old_approved_field_is_read_and_dropped() {
     let temp = Scratch::new();
+    std::fs::create_dir_all(temp.path()).expect("建得了");
     let path = temp.path().join(FILE);
-    let mut switches = Switches::default();
-    switches.on.insert("echo".to_string(), true);
-    write(&path, &switches, None).expect("写得进");
+    fs::write(
+        &path,
+        "{\"version\":1,\"on\":{\"echo\":true},\"approved\":{\"echo\":[\"events.read\",\"network\"]}}\n",
+    )
+    .expect("写得进");
+    let read_back = read(&path).expect("以前的文件读得进");
+    assert_eq!(read_back.switches.on.get("echo"), Some(&true), "开关照旧");
+    write(&path, &read_back.switches, read_back.version.as_deref()).expect("写得进");
     assert_eq!(
         fs::read_to_string(&path).expect("在"),
-        "{\"version\":1,\"on\":{\"echo\":true}}\n"
+        "{\"version\":1,\"on\":{\"echo\":true}}\n",
+        "写回时不再写 approved"
     );
-    let read_back = read(&path).expect("读得回");
-    assert!(
-        read_back.switches.approved.is_empty(),
-        "以前的写法：一个都没批过"
-    );
-    switches.approved.insert(
-        "echo".to_string(),
-        vec!["events.read".to_string(), "network".to_string()],
-    );
-    write(&path, &switches, read_back.version.as_deref()).expect("写得进");
-    assert_eq!(
-        fs::read_to_string(&path).expect("在"),
-        "{\"version\":1,\"on\":{\"echo\":true},\"approved\":{\"echo\":[\"events.read\",\"network\"]}}\n"
-    );
-    assert_eq!(read(&path).expect("读得回").switches, switches);
 }
 
 #[test]
@@ -62,7 +54,6 @@ fn a_broken_or_unknown_file_is_reported() {
     for text in [
         "not json",
         "{\"version\":1}",
-        "{\"version\":1,\"on\":{},\"approved\":{\"x\":\"network\"}}",
         "{\"version\":1,\"on\":{},\"later\":{}}",
         "{\"version\":1,\"on\":{\"onebot\":\"yes\"}}",
     ] {

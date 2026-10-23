@@ -1,6 +1,7 @@
 //! 核心拉起的扩展能调什么（施工 X-30，`docs/blueprint/extensions.md`「谁能调」，`05-内核接口.md` 第三节、I5）：每个方法照这张表
-//! 挡，三种：只给人的回 `local_only`；要某项能力的，清单没声明就回 `needs_approval`，`data.capabilities` 是缺的那一项；都能调的
-//! 照常。批过的就是声明的：还有没批的扩展不拉起（`extensions.md`「能力」第 4 条），所以照清单的 `[process] capabilities` 算。
+//! 挡，三种：只给人的回 `local_only`；要某项能力的，包手里没有就回 `needs_approval`，`data.capabilities` 是缺的那一项；都能调的
+//! 照常。包手里有的照组表算（施工 Y-5 下上，「能力即组」：`ext.<能力>` 组里有包的账号，出厂的包算全有；替人干活的再和那个人
+//! 取交集，设计 06 U17），见 `extensions::held`。
 //!
 //! 表里没有的方法当只给人：新方法默认不对扩展开，加方法的人要在这里写明谁能调。门禁的「文档」一项查代码里分发的方法都在这张表里
 //! （`xtask/src/rights.rs`）。头的连接不经这里。
@@ -161,15 +162,13 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
     }
 }
 
-/// 包 `package` 清单里声明的能力（批过的就是这些，见模块的说明）；读不成的、不是扩展的没有。
-pub(super) fn declared(core: &Core, package: &str) -> Vec<Capability> {
-    core.packages()
-        .iter()
-        .find(|found| found.id == package)
-        .and_then(|found| found.read.as_ref().ok())
-        .and_then(|manifest| manifest.process.as_ref())
-        .map(|process| process.capabilities.clone())
-        .unwrap_or_default()
+/// 包 `package` 的连接手里有的能力（施工 Y-5 下上）：照组表算，替 `serving` 干活的再和那个人取交集；读不成的、不是扩展的没有。
+pub(super) fn declared(
+    core: &Core,
+    package: &str,
+    serving: Option<&miyu_kernel::id::AccountId>,
+) -> Vec<Capability> {
+    crate::extensions::held(core, package, serving)
 }
 
 /// 扩展的这一条请求被挡的话，挡的那一句；放行的没有。
