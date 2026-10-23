@@ -23,6 +23,7 @@ use std::time::Duration;
 
 use crate::support::{Head, Home, resources, within};
 use miyu_endpoint::queries::Queries;
+use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::blob::Blobs;
 use serde_json::json;
@@ -314,10 +315,17 @@ async fn startup_clears_leftover_upload_temp_files_but_leaves_blobs_alone() {
     blobs.create_upload("leftover").unwrap();
     // 一份真的 blob，不该被这一步碰到。
     let kept = blobs.put(b"kept across a restart").unwrap();
-    miyu_core::packages::clear_uploads(&home.root, &admin);
+    // 别的账号的上传存在它自己名下（施工 Y-2中下）：它留下的也清。
+    let other = Blobs::new(home.root.blobs(&AccountId::parse("bob").unwrap()));
+    other.create_upload("theirs").unwrap();
+    miyu_core::packages::clear_uploads(&home.root);
     assert!(
         !blobs.upload_path("leftover").exists(),
         "崩溃留下的暂存清掉了"
+    );
+    assert!(
+        !other.upload_path("theirs").exists(),
+        "别的账号崩溃留下的暂存也清掉了"
     );
     assert_eq!(blobs.get(&kept).unwrap(), b"kept across a restart");
 }
@@ -326,6 +334,6 @@ async fn startup_clears_leftover_upload_temp_files_but_leaves_blobs_alone() {
 async fn clearing_uploads_is_fine_when_the_account_never_stored_anything() {
     let home = Home::new();
     // 这个账号的 blobs/ 目录都还没建过：起来时清暂存不该因为「没有」就出错、也不该把它建出来。
-    miyu_core::packages::clear_uploads(&home.root, &miyu_core::admin());
+    miyu_core::packages::clear_uploads(&home.root);
     assert!(!home.root.blobs(&miyu_core::admin()).exists());
 }

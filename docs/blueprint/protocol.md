@@ -224,7 +224,7 @@
 | `account.register` | 用邀请码握手的连接注册成员：用户名就是账号编号，建家目录、用掉邀请码、换一个登录令牌（施工 Y-1 上） |
 | `account.list`、`account.disable`、`account.enable` | 管理员列账号（管理员、成员、系统账号）、停用启用成员：停用当场作废它的登录、断开它的连接（施工 Y-1 上） |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
-| `blob.get` | 分块读一个 blob：照管理员名下给；写了 `session` 的照那个会话的属主（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。施工 Y-2 上起管理员不再越过属主（U2）：别人名下的会话里的 blob 一律 `unknown_blob`；它不走「会话只给属主」那一道，免得拿两种拒绝的说法探编号 |
+| `blob.get` | 分块读一个 blob：照连接的账号名下给（施工 Y-2 中下，以前一律照管理员）；写了 `session` 的照那个会话的属主（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。施工 Y-2 上起管理员不再越过属主（U2）：别人名下的会话里的 blob 一律 `unknown_blob`；它不走「会话只给属主」那一道，免得拿两种拒绝的说法探编号 |
 | `fs.list` | 列一层目录：数据根只有账号自己的默认工作区能列（施工 W-2） |
 | `fs.find` | 在一个目录里模糊找文件：数据根只有账号自己的默认工作区能找（施工 W-2）；带 `wait` 等清单建完再答（施工 V-6 上） |
 | `fs.realpath` | 一个路径换成真实的位置：不查边界，落在数据根里的照样换（施工 W-3） |
@@ -333,7 +333,7 @@
 2. 开的那一轮，`turn.started` 的 `cause` 是这一条的 `id`：头照它认出自己的那一轮。
 3. `text` 是空的、又没有附件、也没带场所的东西（`venue.media`）：`empty_message`。先找会话，找不到的回的是找不到。只有附件、`text` 是空的，也是一句话；只有 `venue.media` 的场所消息也是（施工 O-13 补：群里只发一张图、一个表情）。`venue.forwards` 不算内容：带合并转发的消息正文里要有占位（桥写 `[forward]`），只有转发、`text` 是空的照旧 `empty_message`（施工 O-34，核心审时定）。`venue.media` 里交了原图的那几样（`shown`）也不算：原图要当附件交进来，全是交了原图的、`text` 又是空的、没有附件的 `empty_message`（施工 O-35）。
 4. 附件变成内容块，照先后接在文字那一块后面（施工 3-9 三补）：核心照 blob 的内容照 `blob.put` 第 4 条再认一遍，同一份代码。图片是图片块，宽、高、媒体类型照这一次量的，头交回来的 `kind`、`width`、`height` 不算，`name` 照交回来的（施工 3-9 四补：一句话附了几张图，她分得清哪张是哪个文件）；文件是文件块，`name` 照交回来的，媒体类型照交回来的再过一遍第 4 条（内容是 PDF 的写 `application/pdf`，交回来写成 PDF、图片而内容不是的照内容认）。
-5. 附件先查，再找会话：一项缺了格、格不合写法（`kernel/ids.md`）：`bad_params`；blob 不在管理员的 blob 里：`unknown_attachment`；读不出来（坏了、读不了）：`internal_error`，记一条运行日志；是超了上限的图（不是 `blob.put` 传的 blob 才会有）：`attachment_too_big`。拒了的，会话里什么都不送。
+5. 附件先查，再找会话：一项缺了格、格不合写法（`kernel/ids.md`）：`bad_params`；blob 不在这个连接的账号的 blob 里（施工 Y-2 中下，以前照管理员的）：`unknown_attachment`；读不出来（坏了、读不了）：`internal_error`，记一条运行日志；是超了上限的图（不是 `blob.put` 传的 blob 才会有）：`attachment_too_big`。拒了的，会话里什么都不送。
 6. `from`（施工 7-10）：写了的，这条 `message.user` 的 `by` 记成 `{"kind":"harness","name":<名字>}`；不写的、写 `null` 的照旧记成本人。名字照短名字的规矩收（`kernel/ids.md`）：先去掉控制字符（Unicode 的 Cc 类），再截到 128 字节以内，不截断一个字；剩下是空的，`bad_params`。不是字符串的（数字、数组……）也是 `bad_params`。名字不核对，照它报的记；给模型看之前照不可信的文本转义（`kernel/request.md`「别的 harness 发来的话」）。它先查，查在附件前面：拒了的什么都不送。
 7. 带 `from` 的这一句是别处来的，内核照「别的 harness 发来的话」收（`kernel/session.md`，和子代理的留言一样）：她闲着开一轮，`turn.started` 的 `cause` 是这一条的 `id`；正忙的，下一步看到；不带回合编号，打断时不撤回，不作废在等本人答的题。`urgent` 不看。附件照收，和本人附的一样。
 8. 只有 `session.send` 收 `from`：`session.create`、`session.redo` 写了也不理（「请求」最后一条）。会话照旧是本人造的；重做的撤销记成发重做的人，重发的只有人说的话（`by` 照原来的），别的 harness 发来的话开的那一轮重做不了（`session.redo` 第 3 条）。
@@ -360,7 +360,7 @@
    1. 开头是四种图之一（PNG、JPEG、GIF、WebP）、量得出宽高的：图片，媒体类型照认出的，`media_type` 写了也不算。超过 5 MiB、哪一边超过 8000 像素的存之前缩到上限以内（施工 I-S，同 `read`），回应的宽高、媒体类型照缩完的；缩不了的（解不开、缩到最小还超）`attachment_too_big`，正好在线上的收。分块上传的照同样缩，缩过的照缩完的内容另存、编号照它，原来的暂存文件作废。认法和上限和 `read` 读图片是同一份代码（`crates/miyu-tool/src/picture.rs`，`tools/read.md`「读图片」）：图跟着对话每次都发，被供应商拒掉的图会让这个会话以后的请求都失败。
    2. 别的都是文件。开头是 `%PDF-` 的，媒体类型是 `application/pdf`，`media_type` 写了也不算。
    3. 别的：`media_type` 写了的照写的，只是写成 `application/pdf`、`image/…` 的不算（驱动照它们把内容当 PDF、当图发，内容不是，供应商会拒）；没写、不算的，整份是 UTF-8、没有 NUL 字节的是 `text/plain`（和驱动认文本文件是同一条，`drivers/openai-chat.md` 第 9 条），别的 `application/octet-stream`。扩展名不认：头知道得更准的（例如浏览器给的类型）自己写 `media_type`（施工 3-9 三补定：扩展名的表是一份写死的名单，驱动给模型看的只有文件名和内容，用不上它）。
-5. 存成管理员的 blob（`store.md` 第九条），落了盘才回应；同一份内容再传，还是那一个 blob。存不下来：`internal_error`，记一条运行日志。
+5. 存成这个连接的账号的 blob（`store.md` 第九条；施工 Y-2 中下起照连接的账号，以前一律存进管理员名下，声明了系统账号的桥传的也是），落了盘才回应；同一份内容再传，还是那一个 blob。存不下来：`internal_error`，记一条运行日志。
 6. 不碰会话，没有命令编号的去重：内容一样，存几次都是同一个。传了没发的留在 blob 里，随存储的回收那一步清。
 
 **`blob.open`、`blob.write`、`blob.close`**（施工 W-5，`web-module.md`「六、分块上传」）：分块传一个附件，最后存成 blob，回应和 `blob.put` 一样。
@@ -371,12 +371,12 @@
 | `blob.write` | `upload`、`offset`（非负整数，从 0 数）、`data`（base64，一块最多 512 KiB） | `{"received": <一共收到几个字节>}` |
 | `blob.close` | `upload` | 照 `blob.put` 的回应：`blob`、`name`、`media_type`、`kind`，图片另有 `width`、`height` |
 
-1. `blob.open`：`name`、`media_type` 照 `blob.put` 第 1 条的写法查；`size` 超过 20 MiB（20,971,520 字节）当场 `attachment_too_big`。这个连接同时开着 4 个的：`too_many_uploads`。成了交回上传编号（16 位小写十六进制），在这个账号的 `blobs/tmp/` 里建暂存文件 `upload-<编号>`。
+1. `blob.open`：`name`、`media_type` 照 `blob.put` 第 1 条的写法查；`size` 超过 20 MiB（20,971,520 字节）当场 `attachment_too_big`。这个连接同时开着 4 个的：`too_many_uploads`。成了交回上传编号（16 位小写十六进制），在这个连接的账号的 `blobs/tmp/` 里建暂存文件 `upload-<编号>`。
 2. `blob.write`：`offset` 要正好等于已经收到的字节数，不对回 `upload_offset`，`data.received` 写已经收到几个，头从那里接着传。`data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`：`bad_params`。写进暂存文件，边写边算 SHA-256。
 3. `blob.close`：收到的不够 `size`：`upload_incomplete`（`data.received`）。够了：照 `blob.put` 第 4 条认是什么、查图片的上限，照第 5 条存：暂存文件改名进位置，同一份内容已经有了的，删掉暂存的，还是那一个 blob。
 4. 上传跟着连接走：编号只认开它的那个连接，别的连接拿来用回 `upload_unknown`。连接断了，它开的上传全部作废、删掉暂存文件。60 秒没有 `blob.write` 的，也作废。`close` 以后编号作废。
 5. 同一个连接上的请求本来就一条条办（「一个连接」第 1 条），一个上传不会同时写两块。一个附件拆成 40 块左右，一块一个来回。
-6. 核心起来时清掉 `blobs/tmp/` 里的 `upload-*`：崩了、被杀留下的。
+6. 核心起来时清掉每个账号的 `blobs/tmp/` 里的 `upload-*`：崩了、被杀留下的（施工 Y-2 中下起不止管理员的）。
 7. 不碰会话，不进会话的日志，和 `blob.put` 第 6 条一样。附件的大小上限和 `blob.put` 同一个数，一处定义（`crates/miyu-endpoint/src/attach.rs` 的 `LIMIT`）。
 
 **`fs.list`**（施工 W-2，`web-module.md`「三、列文件、找文件」）
@@ -445,8 +445,8 @@
 {"id":"g1","jsonrpc":"2.0","result":{"data":"MzQ1Ng==","size":10}}
 ```
 
-1. 不写 `session` 的照管理员名下给：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `package.call` 调别的包、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。记在核心的内存里，核心重起从空的开始（再存一次就有了：同样的内容是同一个哈希），包卸了它那一份扔掉。人的连接照旧。
-   写了 `session` 的照那个会话的属主名下给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：会话的属主、管理员；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions` 列给它的：会话归它，或者归对应表里这个平台的身份对着的管理员）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读管理员私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接照账号放行的那一条（属主、管理员）不放它（施工 W-6 三补）：没声明系统账号的包的扩展就是管理员，以前写上管理员随便一个会话就读得到管理员名下任何一个 blob；现在它要的 blob 也得是那个会话结构里引用过的。
+1. 不写 `session` 的照连接的账号名下给（施工 Y-2 中下，以前照管理员）：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `package.call` 调别的包、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。记在核心的内存里，核心重起从空的开始（再存一次就有了：同样的内容是同一个哈希），包卸了它那一份扔掉。人的连接照旧。
+   写了 `session` 的照那个会话的属主名下给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：会话的属主（施工 Y-2 上起管理员不再越过属主，U2）；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions` 列给它的：会话归它，或者归对应表里这个平台的身份对着的管理员）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读管理员私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接照账号放行的那一条（属主）不放它（施工 W-6 三补）：没声明系统账号的包的扩展就是管理员，以前写上管理员随便一个会话就读得到管理员名下任何一个 blob；现在它要的 blob 也得是那个会话结构里引用过的。
 2. 从 `offset` 起读 `length` 个字节，读到结尾就停；`offset` 过了结尾的，`data` 是空的。`size` 是打开那一刻的大小。`length` 写 0 只回 `size`，`data` 是空的。`length` 超过 512 KiB：`bad_params`。
 3. 不重新核对整份内容的哈希：核对在核心自己用整份内容的时候（`store.md` 第十条）。
 4. 在阻塞线程里读。
@@ -1662,6 +1662,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
+| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下） | 声明了系统账号的桥一次传、分块传的都存在它名下，管理员名下没有；不写 `session` 的 `blob.get`、`model.call` 的图照它自己名下找；它往主人的私聊里发的附件拷进主人名下；声明了系统账号的包工具交回的图从它名下拷；核心起来时别的账号留下的分块暂存也清 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
 | `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |
 | `crates/miyu-endpoint/tests/tools.rs` | 造会话、载入时用核心的工具目录；核心的沙盒造会话、载入时都交给会话，沙盒用不了的核心上执行命令没人能确认就拒（施工 5-4 上） |

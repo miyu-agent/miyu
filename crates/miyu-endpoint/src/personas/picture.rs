@@ -10,7 +10,7 @@ use base64::engine::general_purpose::STANDARD;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::ContentHash;
+use miyu_kernel::id::{AccountId, ContentHash};
 use miyu_store::personas::{AVATARS, BACKGROUNDS, Found, Personas, avatar_in, background_in};
 
 use crate::Core;
@@ -114,16 +114,18 @@ pub(crate) struct Checked {
     expect: Option<Option<String>>,
 }
 
-/// 查 `picture` 那一格：blob 读出来照内容认，合规矩的才收。拒了的什么都不写（`persona.set` 先查它，再写别的）。
+/// 查 `picture` 那一格：blob 照连接的账号 `account` 读出来（施工 Y-2中下）、照内容认，合规矩的才收。拒了的什么都不写
+/// （`persona.set` 先查它，再写别的）。
 pub(crate) async fn check(
     core: &Core,
+    account: &AccountId,
     picture: Picture,
     params: PictureParams,
 ) -> Result<Checked, Refusal> {
     let bytes = match (params.blob, params.unset) {
         (Some(blob), None) => {
             let hash = ContentHash::parse(&blob).map_err(|_| Refusal::BAD_PARAMS)?;
-            let (bytes, image) = crate::attach::picture(core, hash).await?;
+            let (bytes, image) = crate::attach::picture(core, account, hash).await?;
             let Some((media_type, width, height)) = image else {
                 return Err(picture.not_image());
             };

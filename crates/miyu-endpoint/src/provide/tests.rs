@@ -111,11 +111,11 @@ fn texts() -> Texts {
     }
 }
 
-/// 扩展传上来的 blob 放在一个临时数据根里，管理员是 `admin`（施工 O-2 三补）。交回目录，测完删。
+/// 扩展传上来的 blob 放在一个临时数据根里，提供者的账号是 `admin`（施工 O-2 三补）。交回目录，测完删。
 fn stores() -> (Stores, std::path::PathBuf) {
     let (root, dir) = crate::test_support::temp_root("provide");
-    let admin = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
-    (Stores { root, admin }, dir)
+    let provider = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
+    (Stores { root, provider }, dir)
 }
 
 /// 时限（施工 O-2 下）：不写是一分钟；一秒到十分钟，出了这个范围的拒，`problem` 是 `timeout`。

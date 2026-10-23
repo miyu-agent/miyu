@@ -20,7 +20,7 @@ use crate::support::venues::BINDINGS;
 use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `system_account.rs`）。
-fn served_core(home: &Home, script: &Script) -> Arc<Core> {
+pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
     home.write("system/config.toml", BINDINGS);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
@@ -49,8 +49,22 @@ fn served_core(home: &Home, script: &Script) -> Arc<Core> {
     core
 }
 
+/// 装好的包 `bot` 是接 QQ 的桥（`[connection] platform`）。
+pub(crate) fn on_qq(home: &Home) {
+    let manifest = home
+        .root
+        .path()
+        .join("home/alice/packages/bot/package.toml");
+    let text = std::fs::read_to_string(&manifest).expect("装好了");
+    std::fs::write(
+        &manifest,
+        format!("{text}\n[connection]\nplatform = \"qq\"\n"),
+    )
+    .expect("写得进");
+}
+
 /// 等到记下的回应有 `n` 行（`cwd:` 那一行不算），交回它们。
-async fn replies(path: &Path, n: usize) -> Vec<Value> {
+pub(crate) async fn replies(path: &Path, n: usize) -> Vec<Value> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         let got: Vec<Value> = read(path)
@@ -69,7 +83,7 @@ async fn replies(path: &Path, n: usize) -> Vec<Value> {
 }
 
 /// 读成的内容；拒了的是拒绝的原因。
-fn got(reply: &Value) -> Result<Vec<u8>, String> {
+pub(crate) fn got(reply: &Value) -> Result<Vec<u8>, String> {
     match reply["result"]["data"].as_str() {
         Some(data) => Ok(STANDARD.decode(data).expect("是 base64")),
         None => Err(reply["error"]["data"]["reason"]
@@ -150,24 +164,12 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         true,
     );
     // 接 QQ 的桥：`venue.sessions` 照它列谁的会话，这里照它判读不读得到。
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/bot/package.toml");
-    let text = std::fs::read_to_string(&manifest).expect("装好了");
-    std::fs::write(
-        &manifest,
-        format!("{text}\n[connection]\nplatform = \"qq\"\n"),
-    )
-    .expect("写得进");
+    on_qq(&home);
     let script = Script::new([Play::Says("嗯。"), Play::Says("在。")]);
     let core = served_core(&home, &script);
     let mut client = Client::connect(core);
     client.hello().await;
-    for (n, bytes) in [&group_pic[..], &private_pic[..], &secret[..]]
-        .iter()
-        .enumerate()
-    {
+    for (n, bytes) in [&private_pic[..], &secret[..]].iter().enumerate() {
         put(&mut client, &format!("p{n}"), bytes).await;
     }
 
@@ -178,10 +180,13 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         .to_string();
     let sent = replies(&path, 4).await;
     assert!(sent[3].get("error").is_none(), "桥发进它的群：{sent:?}");
-    // 管理员名下那一份删掉：读得到就是照会话的属主（bot）读的。
+    // 桥自己传的存在它名下（施工 Y-2中下），管理员名下没有：读得到就是照会话的属主（bot）读的。
     let hash = ContentHash::parse(&g).expect("合写法");
-    std::fs::remove_file(miyu_store::blob::Blobs::new(home.root.blobs(&alice())).path(&hash))
-        .expect("管理员名下有过");
+    assert!(
+        !miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+            .path(&hash)
+            .is_file()
+    );
     std::fs::write(&group_ready, "").expect("写得进");
     let read = replies(&path, 7).await;
     assert_eq!(
@@ -267,16 +272,7 @@ async fn the_bridge_cannot_read_the_owners_own_sessions() {
         "always",
         true,
     );
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/bot/package.toml");
-    let text = std::fs::read_to_string(&manifest).expect("装好了");
-    std::fs::write(
-        &manifest,
-        format!("{text}\n[connection]\nplatform = \"qq\"\n"),
-    )
-    .expect("写得进");
+    on_qq(&home);
     let core = served_core(&home, &Script::new([]));
     let read = replies(&path, 2).await;
     assert_eq!(got(&read[1]), Err("unknown_blob".to_string()), "{read:?}");

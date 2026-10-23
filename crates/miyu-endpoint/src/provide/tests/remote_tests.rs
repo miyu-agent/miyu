@@ -216,7 +216,7 @@ fn forget(dir: std::path::PathBuf) {
 #[tokio::test]
 async fn an_answered_image_is_handed_over_to_the_sessions_owner() {
     let (place, dir) = stores();
-    let admin = miyu_store::blob::Blobs::new(place.root.blobs(&place.admin));
+    let admin = miyu_store::blob::Blobs::new(place.root.blobs(&place.provider));
     let blob = admin.put(b"not really a png").expect("存得进");
     let owner = AccountId::parse("onebot").expect("合写法");
     let theirs = miyu_store::blob::Blobs::new(place.root.blobs(&owner));
@@ -228,11 +228,11 @@ async fn an_answered_image_is_handed_over_to_the_sessions_owner() {
     forget(dir);
 }
 
-/// 管理员名下也没有的 blob：照暂时不可用，不把读不到的图交给她；属主就是管理员的也查在不在。
+/// 提供者名下也没有的 blob：照暂时不可用，不把读不到的图交给她；属主就是提供者的也查在不在。
 #[tokio::test]
 async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
     let (elsewhere, first) = stores();
-    let missing = miyu_store::blob::Blobs::new(elsewhere.root.blobs(&elsewhere.admin))
+    let missing = miyu_store::blob::Blobs::new(elsewhere.root.blobs(&elsewhere.provider))
         .put(b"x")
         .expect("存得进");
     for owner in ["onebot", "admin"] {

@@ -99,3 +99,68 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
     );
     core.stop_extensions().await;
 }
+
+/// 声明了系统账号的包（施工 Y-2中下）：它传的图在它自己名下，交回来的照它名下拷进会话属主名下，不照管理员的找。
+#[tokio::test]
+async fn a_system_accounts_image_is_handed_over_from_its_own_blobs() {
+    let home = Home::new();
+    let memes = miyu_kernel::id::AccountId::parse("memes").expect("合写法");
+    let blob = Blobs::new(home.root.blobs(&memes))
+        .put(b"\x89PNG fake sticker")
+        .expect("存得进");
+    let program = Program::new();
+    let (path, step) = record(&home, "memes");
+    install_providing(
+        &home,
+        "memes",
+        &program.name(),
+        "always",
+        &steps(&[
+            &step,
+            "hello",
+            &format!("ask:provide:{}", tools()),
+            &format!("sent:{}", blob.as_str()),
+            "serve",
+        ]),
+    );
+    let manifest = home
+        .root
+        .path()
+        .join("home/alice/packages/memes/package.toml");
+    let text = std::fs::read_to_string(&manifest).expect("装好了");
+    std::fs::write(&manifest, format!("{text}system_account = true\n")).expect("写得进");
+    let script = Script::new([Play::calls(&[("sticker", "{}")]), Play::Says("好。")])
+        .titles([Play::Says("测试")]);
+    let core = crate::blob_session::served_core(&home, &script);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while read(&path).lines().count() < 3 {
+        assert!(tokio::time::Instant::now() < deadline, "等不到登记");
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    assert!(
+        read(&path).contains(r#""account":"memes""#),
+        "{}",
+        read(&path)
+    );
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "来一张").await;
+    home.until_turns(&session, 1).await;
+
+    let sent: Vec<_> = home
+        .log(&session)
+        .into_iter()
+        .filter_map(|event| match event.body {
+            Body::ToolResult(result) => Some(result.sent),
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    assert_eq!(sent.len(), 1, "{sent:?}");
+    assert!(
+        Blobs::new(home.root.blobs(&alice())).path(&blob).is_file(),
+        "从它名下拷进了属主名下"
+    );
+    core.stop_extensions().await;
+}

@@ -23,7 +23,7 @@ pub(crate) async fn keep(
     if !blocks.iter().any(pathless) {
         return Ok(());
     }
-    let place = place(core);
+    let place = place(core, owner);
     let dir = attachments::dir(&place.root, owner, session);
     let blobs = Blobs::new(place.root.blobs(owner));
     let taken = std::mem::take(blocks);

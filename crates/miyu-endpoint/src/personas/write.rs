@@ -16,6 +16,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::{Value as Json, json};
 
 use miyu_config::Words;
+use miyu_kernel::id::AccountId;
 use miyu_policy::persona::{self, Demo};
 use miyu_store::config_file::{self, ConfigText, WriteError};
 use miyu_store::human::Human;
@@ -117,7 +118,11 @@ struct Pending {
 
 /// `persona.set`：改家目录那一层，交回改完叠好的样子（同 `persona.get`）。不写 `persona` 的是新建（施工 P-3 补）：编号由
 /// 核心起，至少要写一样东西。
-pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
+pub(crate) async fn set(
+    core: &Core,
+    (peer, account): (Peer, &AccountId),
+    params: SetParams,
+) -> Result<Json, Refusal> {
     let empty = params.changes.is_empty()
         && params.prompts.is_empty()
         && params.avatar.is_none()
@@ -151,7 +156,7 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         (Picture::Background, params.background),
     ] {
         if let Some(params) = params {
-            pictures.push(super::picture::check(core, picture, params).await?);
+            pictures.push(super::picture::check(core, account, picture, params).await?);
         }
     }
     let personas = personas(core);

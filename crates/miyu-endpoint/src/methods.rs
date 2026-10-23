@@ -126,9 +126,9 @@ pub(crate) fn call<'a>(
         "persona.get" => {
             answer(move || async move { personas::get(core, peer, params(request)?).await })
         }
-        "persona.set" => {
-            answer(move || async move { personas::write::set(core, peer, params(request)?).await })
-        }
+        "persona.set" => answer(move || async move {
+            personas::write::set(core, (peer, &caller.account), params(request)?).await
+        }),
         "persona.read" => answer(move || async move {
             personas::write::read_prompt(core, peer, params(request)?).await
         }),
@@ -215,12 +215,12 @@ pub(crate) fn call<'a>(
         "command.catalog" => {
             answer(move || async move { commands::catalog(core, &peer, params(request)?).await })
         }
-        "session.redo" => answer(move || session::redo(core, request)),
+        "session.redo" => answer(move || session::redo(core, caller, request)),
         "session.compact" => answer(move || session::compact(core, request)),
         "session.set_permission_level" => {
             answer(move || session::set_permission_level(core, request))
         }
-        "session.answer" => answer(move || session::answer_question(core, request)),
+        "session.answer" => answer(move || session::answer_question(core, caller, request)),
         "session.clear" => answer(move || session::clear(core, request)),
         "session.recap" => answer(move || session::recap(core, request)),
         "session.tools" => answer(move || async move {
@@ -283,13 +283,14 @@ pub(crate) fn call<'a>(
             answer(move || async move { crate::usage::query(core, params(request)?).await })
         }
         "blob.put" => answer(move || async move {
-            attach::put(core, caller.package.as_deref(), params(request)?).await
+            let by = (&caller.account, caller.package.as_deref());
+            attach::put(core, by, params(request)?).await
         }),
-        "blob.open" => {
-            answer(move || async move { uploads::open(core, uploads, params(request)?).await })
-        }
+        "blob.open" => answer(move || async move {
+            uploads::open(core, (uploads, &caller.account), params(request)?).await
+        }),
         "blob.write" => {
-            answer(move || async move { uploads::write(core, uploads, params(request)?).await })
+            answer(move || async move { uploads::write(uploads, params(request)?).await })
         }
         "blob.close" => answer(move || async move {
             uploads::close(core, (uploads, caller.package.as_deref()), params(request)?).await

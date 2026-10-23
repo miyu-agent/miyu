@@ -5,7 +5,7 @@ use std::sync::Arc;
 use serde_json::Value;
 
 use super::params;
-use crate::hello::Peer;
+use crate::hello::{Caller, Peer};
 use crate::refusal::Refusal;
 use crate::wire::Request;
 use crate::{Core, backstage, commands, files, job_output, memory, models};
@@ -25,18 +25,19 @@ pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     }
 }
 
-/// 在后台办一条 [`answered_later`] 认的请求，连接的这一头是 `peer`（`command.run` 的回执照它的语言写）；`from` 是核心拉起的
-/// 扩展的包（施工 X-18：`package.call` 照它查能调哪几个），人的连接没有。
+/// 在后台办一条 [`answered_later`] 认的请求，连接的这一头是 `peer`（`command.run` 的回执照它的语言写），连接是谁是 `caller`：
+/// 它的包是核心拉起的扩展的（施工 X-18：`package.call` 照它查能调哪几个，人的连接没有），`model.call` 的图照它的账号找
+/// （施工 Y-2中下）。
 pub(crate) async fn call_later(
     core: &Arc<Core>,
     peer: Peer,
-    from: Option<&str>,
+    caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "model.call" => models::call(core, params(request)?).await,
+        "model.call" => models::call(core, &caller.account, params(request)?).await,
         "memory.dream" => memory::dream::call(core, &request.params).await,
-        "package.call" => backstage::call(core, from, params(request)?).await,
+        "package.call" => backstage::call(core, caller.package.as_deref(), params(request)?).await,
         "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
         "fs.find" => files::find(core, params(request)?).await,
         "job.output" => job_output::read(core, params(request)?).await,

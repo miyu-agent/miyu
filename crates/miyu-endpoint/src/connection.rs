@@ -235,7 +235,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             background.spawn(call_later(
                 Arc::clone(&core),
                 peer,
-                caller.package.clone(),
+                caller.clone(),
                 request,
                 later,
                 out.clone(),
@@ -348,7 +348,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 连接断了：在后台答的一起停（施工 W-7）；它开着的上传全部作废，删暂存文件（`web-module.md`「怎么走」第六条
     // 第 4 款）。
     background.abort_all();
-    uploads.discard_all(&core).await;
+    uploads.discard_all().await;
     // 在等它回的反向调用都了结；它提供的工具从此暂时不可用（施工 O-2 上）：提供者表里留着的这一头一叫就了结，重新登记的换掉它。
     reverse.close();
     if shaken.is_some() {
@@ -391,12 +391,12 @@ async fn answer_later(
 async fn call_later(
     core: Arc<Core>,
     peer: crate::hello::Peer,
-    from: Option<String>,
+    caller: Caller,
     request: Request,
     later: Later,
     out: mpsc::Sender<String>,
 ) {
-    let result = methods::call_later(&core, peer, from.as_deref(), &request).await;
+    let result = methods::call_later(&core, peer, &caller, &request).await;
     let line = answer(&request, result, peer.locale);
     later.reply(target(&request).as_ref(), line, &out).await;
 }

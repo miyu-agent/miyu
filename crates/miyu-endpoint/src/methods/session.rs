@@ -110,10 +110,10 @@ pub(super) async fn send(
     }
     // 附件先查，再找会话：不对的，会话里什么都不送（施工 3-9 三补）。头报的 `cwd`、`dirs` 不再换工作区（施工 9-7 上）。
     let attachments = params.attachments.unwrap_or_default();
-    blocks.extend(attach::blocks(core, attachments).await?);
+    blocks.extend(attach::blocks(core, &caller.account, attachments).await?);
     let mut found = core.sessions.get(core, &session).await?;
     // 附件照连接的账号读，她照会话的属主读：不是一个账号的拷一份过去（施工 O-4 下）。
-    attach::hand_over(core, found.handle.owner(), &blocks).await?;
+    attach::hand_over(core, (&caller.account, found.handle.owner()), &blocks).await?;
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
     attach::keep(core, found.handle.owner(), &session, &mut blocks).await?;
     let command = Command::Send {
@@ -204,17 +204,21 @@ pub(super) async fn unrevert(core: &Arc<Core>, request: &Request) -> Result<Valu
 }
 
 /// `session.redo`：重做。
-pub(super) async fn redo(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn redo(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: RedoParams = params(request)?;
     let session = session(&params.session)?;
     // 附件照 `session.send` 先查，再找会话。
     let mut attachments = match params.attachments {
-        Some(attachments) => Some(attach::blocks(core, attachments).await?),
+        Some(attachments) => Some(attach::blocks(core, &caller.account, attachments).await?),
         None => None,
     };
     let found = core.sessions.get(core, &session).await?;
     if let Some(blocks) = &mut attachments {
-        attach::hand_over(core, found.handle.owner(), blocks).await?;
+        attach::hand_over(core, (&caller.account, found.handle.owner()), blocks).await?;
         attach::keep(core, found.handle.owner(), &session, blocks).await?;
     }
     let command = Command::Redo {
@@ -261,7 +265,11 @@ pub(super) async fn set_permission_level(
 }
 
 /// `session.answer`：回答提问。
-pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn answer_question(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     // 先查参数，再找会话（施工 D-1）。
     let params: AnswerParams = params(request)?;
     let call_id = CallId::parse(&params.call).map_err(|_| Refusal::BAD_PARAMS)?;
@@ -276,12 +284,12 @@ pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Resu
         } => miyu_kernel::session::Answer::Approval {
             decision,
             reason,
-            attachments: attach::blocks(core, attachments).await?,
+            attachments: attach::blocks(core, &caller.account, attachments).await?,
         },
         Wanted::Questions(items) => {
             let mut answers = Vec::with_capacity(items.len());
             for (mut response, attachments) in items {
-                response.attachments = attach::blocks(core, attachments).await?;
+                response.attachments = attach::blocks(core, &caller.account, attachments).await?;
                 answers.push(response);
             }
             miyu_kernel::session::Answer::Questions(answers)
@@ -297,7 +305,7 @@ pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Resu
             .collect(),
     };
     for blocks in lists {
-        attach::hand_over(core, owner, blocks).await?;
+        attach::hand_over(core, (&caller.account, owner), blocks).await?;
         attach::keep(core, owner, &session, blocks).await?;
     }
     let command = Command::Answer { call_id, answer };

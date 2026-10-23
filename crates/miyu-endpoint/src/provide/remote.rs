@@ -3,8 +3,8 @@
 //! 错误的、写法不对的，算出错，原话写进结果；等着时连接断了，也是暂时不可用。到了登记时写的时限没回的，交回「没在 N 秒内答完」；
 //! 超时、叫它停、掐掉（这个 future 被丢掉）时发一次 `tool.cancel {session, call_id}`，回应先到的不发（施工 O-2 下）。
 //!
-//! 交回的图、文件引用的 blob 是扩展经 `blob.put` 传进管理员名下的，她照会话的属主读：回应到了先拷一份进属主名下，块原样不动；
-//! 拷不成的（管理员名下也没有这个 blob、存不下）照暂时不可用（施工 O-2 三补，同 `session.send` 的附件，`attach::copy_over`）。
+//! 交回的图、文件引用的 blob 是扩展经 `blob.put` 传进它连接的账号名下的（施工 Y-2中下），她照会话的属主读：回应到了先拷一份进属主名下，块原样不动；
+//! 拷不成的（提供者名下也没有这个 blob、存不下）照暂时不可用（施工 O-2 三补，同 `session.send` 的附件，`attach::copy_over`）。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -35,11 +35,11 @@ pub(super) struct Texts {
     pub(super) timed_out: String,
 }
 
-/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根和管理员，`blob.put` 都存在管理员名下。
+/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根和提供者的账号，`blob.put` 存在连接的账号名下（施工 Y-2中下）。
 #[derive(Clone)]
 pub(crate) struct Stores {
     pub(crate) root: DataRoot,
-    pub(crate) admin: AccountId,
+    pub(crate) provider: AccountId,
 }
 
 /// 提供者的一件工具。
@@ -185,7 +185,7 @@ impl RemoteTool {
         };
         let stores = self.stores.clone();
         let copied = tokio::task::spawn_blocking(move || {
-            crate::attach::copy_over(&stores.root, &stores.admin, &owner, &hashes)
+            crate::attach::copy_over(&stores.root, &stores.provider, &owner, &hashes)
         })
         .await;
         match copied {

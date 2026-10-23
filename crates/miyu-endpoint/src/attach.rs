@@ -1,8 +1,8 @@
 //! 附件（施工 3-9 三补，`docs/blueprint/protocol.md` 的 `blob.put`、`session.send`；`04-核心协议.md` 第九节）：人说话时
 //! 附上的图片、文件。
 //!
-//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成管理员的 blob，回应
-//!   给头看的几样。
+//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成这个连接的账号的
+//!   blob（施工 Y-2中下），回应给头看的几样。
 //! - [`blocks`]：`session.send` 的 `attachments` 变成内容块：blob 要在，照内容再认一遍，块里的宽高、媒体类型都是核心
 //!   自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。
 //! - [`images`]：`model.call` 的图照哈希变成图片块（施工 8-20）：blob 要在这个账号里，照内容认，不是图的参数不对；不带
@@ -99,19 +99,19 @@ enum Source {
     Data(Vec<u8>, FileName),
 }
 
-/// 读、存要的几样：数据根、管理员、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
+/// 读、存要的几样：数据根、连接的账号（施工 Y-2中下）、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
 struct Place {
     root: DataRoot,
-    admin: AccountId,
+    account: AccountId,
     home: Option<PathBuf>,
     own: Option<PathBuf>,
 }
 
-/// `blob.put`：读、认、存，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。`package` 是存的扩展的包
-/// （人的连接没有）：存好了它拿得到这个 blob（施工 W-6 三补，[`Grants`]）。
+/// `blob.put`：读、认、存进连接的账号 `account` 名下，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。
+/// `package` 是存的扩展的包（人的连接没有）：存好了它拿得到这个 blob（施工 W-6 三补，[`Grants`]）。
 pub(crate) async fn put(
     core: &Core,
-    package: Option<&str>,
+    (account, package): (&AccountId, Option<&str>),
     params: PutParams,
 ) -> Result<Value, Refusal> {
     let name = params.name.as_deref().map(file_name).transpose()?;
@@ -126,7 +126,7 @@ pub(crate) async fn put(
         ),
         _ => return Err(Refusal::BAD_PARAMS),
     };
-    let mut place = place(core);
+    let mut place = place(core, account);
     place.own = package.and_then(|package| own_folder(core, package));
     let (blob, reply) = blocking(move || put_blocking(&place, source, given)).await?;
     if let Some(package) = package {
@@ -135,9 +135,10 @@ pub(crate) async fn put(
     Ok(reply)
 }
 
-/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后。
+/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后：blob 照连接的账号 `account` 找。
 pub(crate) async fn blocks(
     core: &Core,
+    account: &AccountId,
     attachments: Vec<Attachment>,
 ) -> Result<Vec<Block>, Refusal> {
     let mut wanted = Vec::with_capacity(attachments.len());
@@ -159,9 +160,9 @@ pub(crate) async fn blocks(
     if wanted.is_empty() {
         return Ok(Vec::new());
     }
-    let place = place(core);
+    let place = place(core, account);
     blocking(move || {
-        let blobs = Blobs::new(place.root.blobs(&place.admin));
+        let blobs = Blobs::new(place.root.blobs(&place.account));
         wanted
             .into_iter()
             .map(|(blob, name, given, path)| block(&blobs, blob, name, given, path))
@@ -170,20 +171,20 @@ pub(crate) async fn blocks(
     .await
 }
 
-/// 附件存在连接的账号（现在都是管理员）名下，她照会话的属主 `owner` 读（施工 O-4 下）：不是一个账号的，把块里的 blob 拷一份
+/// 附件存在连接的账号 `from` 名下，她照会话的属主 `owner` 读（施工 O-4 下）：不是一个账号的，把块里的 blob 拷一份
 /// 进属主的，属主那里已经有的不再拷。读不了、存不下的记一行、`internal_error`。
 pub(crate) async fn hand_over(
     core: &Core,
-    owner: &AccountId,
+    (from, owner): (&AccountId, &AccountId),
     blocks: &[Block],
 ) -> Result<(), Refusal> {
     let hashes = blobs_of(blocks);
-    if *owner == core.admin || hashes.is_empty() {
+    if owner == from || hashes.is_empty() {
         return Ok(());
     }
-    let place = place(core);
+    let place = place(core, from);
     let owner = owner.clone();
-    blocking(move || copy_over(&place.root, &place.admin, &owner, &hashes)).await
+    blocking(move || copy_over(&place.root, &place.account, &owner, &hashes)).await
 }
 
 /// 块里引用的 blob：图片、文件的，照先后。
@@ -198,15 +199,15 @@ pub(crate) fn blobs_of(blocks: &[Block]) -> Vec<ContentHash> {
         .collect()
 }
 
-/// 把 `hashes` 从管理员 `admin` 名下拷进 `owner` 名下（施工 O-4 下；扩展工具交回的图也走它，施工 O-2 三补）：属主那里已经有的
-/// 不再拷，所以属主就是管理员的只看在不在。管理员名下也没有的 `unknown_attachment`；读不了、存不下的记一行、`internal_error`。
+/// 把 `hashes` 从账号 `from` 名下拷进 `owner` 名下（施工 O-4 下；扩展工具交回的图也走它，施工 O-2 三补）：属主那里已经有的
+/// 不再拷，所以属主就是 `from` 的只看在不在。`from` 名下也没有的 `unknown_attachment`；读不了、存不下的记一行、`internal_error`。
 pub(crate) fn copy_over(
     root: &DataRoot,
-    admin: &AccountId,
+    from: &AccountId,
     owner: &AccountId,
     hashes: &[ContentHash],
 ) -> Result<(), Refusal> {
-    let from = Blobs::new(root.blobs(admin));
+    let from = Blobs::new(root.blobs(from));
     let to = Blobs::new(root.blobs(owner));
     for hash in hashes {
         if to.path(hash).is_file() {
@@ -221,15 +222,19 @@ pub(crate) fn copy_over(
     Ok(())
 }
 
-/// `model.call` 的图（施工 8-20）：每个哈希一块图片，照先后。blob 这个账号没有的 `unknown_attachment`，不是图的
+/// `model.call` 的图（施工 8-20）：每个哈希一块图片，照先后。blob 连接的账号 `account` 没有的 `unknown_attachment`，不是图的
 /// `bad_params`，太大的 `attachment_too_big`。
-pub(crate) async fn images(core: &Core, hashes: Vec<ContentHash>) -> Result<Vec<Block>, Refusal> {
+pub(crate) async fn images(
+    core: &Core,
+    account: &AccountId,
+    hashes: Vec<ContentHash>,
+) -> Result<Vec<Block>, Refusal> {
     if hashes.is_empty() {
         return Ok(Vec::new());
     }
-    let place = place(core);
+    let place = place(core, account);
     blocking(move || {
-        let blobs = Blobs::new(place.root.blobs(&place.admin));
+        let blobs = Blobs::new(place.root.blobs(&place.account));
         hashes
             .into_iter()
             .map(|blob| {
@@ -255,15 +260,16 @@ pub(crate) async fn images(core: &Core, hashes: Vec<ContentHash>) -> Result<Vec<
     .await
 }
 
-/// 管理员的一个 blob 读出来、照内容认（施工 P-5：人格的头像）：交回字节和认出来的图；不是图、超了图的上限的交回 `None` 的图。
-/// blob 没有的 `unknown_attachment`。
+/// 连接的账号 `account` 的一个 blob 读出来、照内容认（施工 P-5：人格的头像）：交回字节和认出来的图；不是图、超了图的上限的
+/// 交回 `None` 的图。blob 没有的 `unknown_attachment`。
 pub(crate) async fn picture(
     core: &Core,
+    account: &AccountId,
     blob: ContentHash,
 ) -> Result<(Vec<u8>, Option<(MediaType, u32, u32)>), Refusal> {
-    let place = place(core);
+    let place = place(core, account);
     blocking(move || {
-        let bytes = read_blob(&Blobs::new(place.root.blobs(&place.admin)), &blob)?;
+        let bytes = read_blob(&Blobs::new(place.root.blobs(&place.account)), &blob)?;
         let image = match kind(&bytes, None) {
             Ok(Kind::Image {
                 media_type,
@@ -288,7 +294,8 @@ pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Re
     })
 }
 
-/// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照管理员名下，写了的照
+/// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照连接的账号名下（施工
+/// Y-2中下），写了的照
 /// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接的账号，`package` 是扩展的包（人的连接没有）。扩展不写
 /// `session` 的只读得到它拿得到的（施工 W-6 三补，[`Grants`]）。没有这个 blob、读不到：`unknown_blob`；`length` 超过
 /// [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
@@ -306,7 +313,7 @@ pub(crate) async fn get(
         None if package.is_some_and(|package| !core.blob_grants.holds(package, &hash)) => {
             return Err(Refusal::UNKNOWN_BLOB);
         }
-        None => core.admin.clone(),
+        None => caller.clone(),
     };
     let root = core.root.clone();
     blocking(move || get_blocking(&root, &account, &hash, params.offset, params.length)).await
@@ -389,7 +396,7 @@ fn put_blocking(
     // 超了上限的图存之前缩到上限以内（施工 I-S），缩不了的照旧太大。
     let fitted = fit(bytes, given).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
     let found = fitted.kind;
-    let blob = Blobs::new(place.root.blobs(&place.admin))
+    let blob = Blobs::new(place.root.blobs(&place.account))
         .put(&fitted.bytes)
         .map_err(|error| {
             tracing::warn!(target: TARGET, error = %error, "attachment not stored");
@@ -426,13 +433,13 @@ fn own_folder(core: &Core, package: &str) -> Option<PathBuf> {
     std::fs::canonicalize(found.files_dir()).ok()
 }
 
-/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（管理员的工作区以外）的不给，调的扩展自己的包目录
+/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（这个账号的工作区以外）的不给，调的扩展自己的包目录
 /// 里的除外（真实位置在里面才算：包里的链接指到外面的照旧不给）；路上一层链接都不跟地打开，最多读到上限多一个字节。
 fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
     let real = resolve(Path::new("/"), place.home.as_deref(), path)
         .map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;
     let places = Places::here(
-        place.root.workspace(&place.admin),
+        place.root.workspace(&place.account),
         place.root.path().to_path_buf(),
         place.home.as_deref(),
     );
@@ -467,10 +474,10 @@ pub(crate) fn media_type(text: &str) -> Result<MediaType, Refusal> {
     MediaType::parse(text).map_err(|_| Refusal::BAD_PARAMS)
 }
 
-fn place(core: &Core) -> Place {
+fn place(core: &Core, account: &AccountId) -> Place {
     Place {
         root: core.root.clone(),
-        admin: core.admin.clone(),
+        account: account.clone(),
         home: core.home.clone(),
         own: None,
     }

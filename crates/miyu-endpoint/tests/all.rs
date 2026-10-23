@@ -34,6 +34,7 @@ mod audit_extension_core_key;
 mod audit_login_race;
 mod backstage;
 mod blind_venue;
+mod blob_account;
 mod blob_grants;
 mod blob_own_package;
 mod blob_session;

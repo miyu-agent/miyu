@@ -4,7 +4,7 @@
 //!
 //! 现在有 `mermaid`（施工 W-4）、`net`（施工 W-7，`net.md`，`packages/net.rs`），发行版都默认打开。
 //!
-//! [`clear_uploads`]：核心起来时清掉管理员分块上传留下的暂存（施工 W-5，`web-module.md`「怎么走」第六条第 6
+//! [`clear_uploads`]：核心起来时清掉每个账号分块上传留下的暂存（施工 W-5，`web-module.md`「怎么走」第六条第 6
 //! 款）。和可选软件包无关，放在这里是因为两件事都是「核心起来时做一次的登记、收拾」。
 
 use miyu_endpoint::queries::Queries;
@@ -29,18 +29,26 @@ pub fn register(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) ->
     queries
 }
 
-/// 核心起来时清掉账号 `admin` 的 `blobs/tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工
-/// W-5）。在能接连接之前做：新开的上传不会被这一步误删（崩溃留下的名字和现造的编号撞不上，但晚了做就是
-/// 在和真实流量抢时间，没必要）。
-pub fn clear_uploads(root: &DataRoot, admin: &AccountId) {
-    let blobs = Blobs::new(root.blobs(admin));
-    match blobs.clear_uploads() {
-        Ok(0) => {}
-        Ok(removed) => {
-            tracing::info!(target: crate::TARGET, removed, "upload tmp cleared");
-        }
+/// 核心起来时清掉每个账号的 `blobs/tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工
+/// W-5；上传存在连接的账号名下，施工 Y-2中下）。在能接连接之前做：新开的上传不会被这一步误删（崩溃留下的名字和现造的
+/// 编号撞不上，但晚了做就是在和真实流量抢时间，没必要）。
+pub fn clear_uploads(root: &DataRoot) {
+    let accounts = match root.accounts() {
+        Ok(accounts) => accounts,
         Err(error) => {
             tracing::warn!(target: crate::TARGET, error = %error, "upload tmp not cleared");
+            return;
+        }
+    };
+    for account in accounts {
+        match Blobs::new(root.blobs(&account)).clear_uploads() {
+            Ok(0) => {}
+            Ok(removed) => {
+                tracing::info!(target: crate::TARGET, account = account.as_str(), removed, "upload tmp cleared");
+            }
+            Err(error) => {
+                tracing::warn!(target: crate::TARGET, account = account.as_str(), error = %error, "upload tmp not cleared");
+            }
         }
     }
 }

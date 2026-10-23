@@ -394,7 +394,7 @@ async fn run(
     #[cfg(feature = "net")]
     let searching = kit.clone();
     let builtins = builtin_tools_in(&resources, &env, kit);
-    packages::clear_uploads(&root, &admin());
+    packages::clear_uploads(&root);
     let mut core = Core::new(
         root,
         resources,

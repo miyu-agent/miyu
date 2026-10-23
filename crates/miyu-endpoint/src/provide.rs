@@ -157,7 +157,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
             texts.clone(),
             Stores {
                 root: core.root.clone(),
-                admin: core.admin.clone(),
+                provider: core.account_of(Some(package)),
             },
         )));
     }

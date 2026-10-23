@@ -10,7 +10,8 @@
 //! - `hello`：发握手（不带凭据），读一行回应记下；
 //! - `call:<方法>`：发一条不带参数的请求，读一行回应记下；
 //! - `ask:<方法>:<JSON 参数>`：发一条带参数的请求，读一行回应记下；参数里的 `{session}` 换成最近一条带 `"session"` 的回应里
-//!   的会话编号（施工 O-4 下：造了场所会话接着对它说话）。等回应时先来的 `widget.watch` 照 `serve` 答、接着等，`widget.set`
+//!   的会话编号（施工 O-4 下：造了场所会话接着对它说话），`{upload}` 换成最近一条带 `"upload"` 的回应里的上传编号（施工 Y-2中下：
+//!   分块上传接着写）。等回应时先来的 `widget.watch` 照 `serve` 答、接着等，`widget.set`
 //!   的回应记下接着等（施工 X-15 中：握了手核心就会说谁在看）；
 //! - `wait`：读标准输入直到读到头；
 //! - `listen`：读标准输入直到读到头，读到的每一行都记下（施工 9-4 下下：核心推来的 `extension.config`）；
@@ -43,6 +44,8 @@ fn main() {
     let mut record: Option<File> = None;
     // 最近一条带会话编号的回应里的那个编号：`ask` 的参数照它换。
     let mut session = String::new();
+    // 最近一次 `blob.open` 回的上传编号（施工 Y-2中下）。
+    let mut upload = String::new();
     // `serve` 怎么答 `user.append`（施工 X-16）。
     let mut inject = String::from("silent");
     // `serve` 答工具 `sticker` 时发出去的那张图的 blob（施工 X-19）。
@@ -86,7 +89,9 @@ fn main() {
             keep(&mut record, &read(&mut input));
         } else if let Some(rest) = step.strip_prefix("ask:") {
             let (method, params) = rest.split_once(':').expect("写成 ask:<方法>:<JSON 参数>");
-            let params = params.replace("{session}", &session);
+            let params = params
+                .replace("{session}", &session)
+                .replace("{upload}", &upload);
             send(&format!(
                 r#"{{"jsonrpc":"2.0","id":"s{n}","method":"{method}","params":{params}}}"#
             ));
@@ -106,6 +111,9 @@ fn main() {
             }
             if let Some(id) = session_in(&reply) {
                 session = id;
+            }
+            if let Some(id) = field(&reply, "upload") {
+                upload = id;
             }
             keep(&mut record, &reply);
         } else if let Some(blob) = step.strip_prefix("sent:") {

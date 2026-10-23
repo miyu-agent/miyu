@@ -17,7 +17,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::ContentHash;
+use miyu_kernel::id::{AccountId, ContentHash};
 use miyu_kernel::request::Message;
 use miyu_models::provider::NOT_CONFIGURED;
 use miyu_models::settings::UseSettings;
@@ -81,8 +81,12 @@ struct Line {
     images: Vec<ContentHash>,
 }
 
-/// `model.call`。
-pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refusal> {
+/// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）。
+pub(crate) async fn call(
+    core: &Core,
+    account: &AccountId,
+    params: CallParams,
+) -> Result<Value, Refusal> {
     if !purpose_ok(&params.purpose)
         || params.model.as_deref() == Some("")
         || (params.model.is_some() && params.uses.is_some())
@@ -101,7 +105,7 @@ pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refus
         if !line.text.is_empty() {
             blocks.push(Block::Text(Text { text: line.text }));
         }
-        blocks.extend(attach::images(core, line.images).await?);
+        blocks.extend(attach::images(core, account, line.images).await?);
         // system 已经单拿出来了，后面只有 user、assistant。
         messages.push(match line.role {
             Role::Assistant => Message::Assistant { blocks },
@@ -122,14 +126,14 @@ pub(crate) async fn call(core: &Core, params: CallParams) -> Result<Value, Refus
     };
     let source: Arc<dyn ConfigSource> = config;
     let turn = Arc::new(Turn::new(resolved, source));
-    let blobs = Blobs::new(core.root.blobs(&core.admin));
+    let blobs = Blobs::new(core.root.blobs(account));
     let ask = Ask {
         model,
         purpose: params.purpose,
         system,
         messages,
         max_tokens,
-        // M8 只有管理员：本机连上来的都是他（施工 8-15：用量记在他的账上）。
+        // 用量还记在管理员的账上（施工 8-15）；按人记随「按人用量」那一步。
         owner: core.admin.clone(),
     };
     match one_shot.call(&turn, &blobs, ask).await {

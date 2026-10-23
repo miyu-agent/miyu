@@ -15,7 +15,7 @@ use base64::engine::general_purpose::STANDARD;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{ContentHash, FileName, Hasher, MediaType};
+use miyu_kernel::id::{AccountId, ContentHash, FileName, Hasher, MediaType};
 use miyu_store::blob::Blobs;
 use miyu_tool::attachment::fit;
 
@@ -64,6 +64,8 @@ pub(crate) struct Uploads {
 
 /// 一个开着的上传。
 struct Entry {
+    /// 开它的账号的 blob（施工 Y-2中下）：暂存、收齐了的都在它名下。
+    blobs: Blobs,
     /// 暂存文件在哪：`blobs/tmp/upload-<编号>`。
     path: PathBuf,
     name: FileName,
@@ -80,10 +82,10 @@ struct Entry {
 
 /// 这个连接上查 `upload` 的结果。
 enum Claim {
-    /// 还在、没过期：暂存文件在哪，已经收到几个，总共要收几个。
-    Live(PathBuf, u64, u64),
+    /// 还在、没过期：存在哪个账号名下，暂存文件在哪，已经收到几个，总共要收几个。
+    Live(Blobs, PathBuf, u64, u64),
     /// 刚发现过期了，已经从表里摘掉：暂存文件还在磁盘上，调用方删。
-    Expired(PathBuf),
+    Expired(Blobs, PathBuf),
     /// 没有这个上传：编号不对、作废了、不是这个连接开的。
     Missing,
 }
@@ -98,13 +100,13 @@ impl Uploads {
     }
 
     /// 清掉超过 `idle` 没再写的：从表里摘掉，交回它们的暂存文件（调用方删，这里不碰磁盘）。
-    fn sweep(&mut self) -> Vec<PathBuf> {
+    fn sweep(&mut self) -> Vec<(Blobs, PathBuf)> {
         let idle = self.idle;
         let mut gone = Vec::new();
         self.open.retain(|_, entry| {
             let alive = entry.touched.elapsed() < idle;
             if !alive {
-                gone.push(entry.path.clone());
+                gone.push((entry.blobs.clone(), entry.path.clone()));
             }
             alive
         });
@@ -117,27 +119,31 @@ impl Uploads {
         let expired =
             matches!(self.open.get(upload), Some(entry) if entry.touched.elapsed() >= idle);
         if expired {
-            let path = self.open.remove(upload).expect("刚看到它还在").path;
-            return Claim::Expired(path);
+            let entry = self.open.remove(upload).expect("刚看到它还在");
+            return Claim::Expired(entry.blobs, entry.path);
         }
         match self.open.get(upload) {
-            Some(entry) => Claim::Live(entry.path.clone(), entry.received, entry.size),
+            Some(entry) => Claim::Live(
+                entry.blobs.clone(),
+                entry.path.clone(),
+                entry.received,
+                entry.size,
+            ),
             None => Claim::Missing,
         }
     }
 
     /// 连接要断了：这个连接开着的上传全部作废，删暂存文件（`web-module.md`「怎么走」第六条第 4 款）。
-    pub(crate) async fn discard_all(&mut self, core: &Core) {
-        let paths: Vec<PathBuf> = std::mem::take(&mut self.open)
+    pub(crate) async fn discard_all(&mut self) {
+        let gone: Vec<(Blobs, PathBuf)> = std::mem::take(&mut self.open)
             .into_values()
-            .map(|entry| entry.path)
+            .map(|entry| (entry.blobs, entry.path))
             .collect();
-        if paths.is_empty() {
+        if gone.is_empty() {
             return;
         }
-        let blobs = blobs_of(core);
         let outcome = tokio::task::spawn_blocking(move || {
-            for path in paths {
+            for (blobs, path) in gone {
                 blobs.discard_upload(&path);
             }
         })
@@ -148,10 +154,10 @@ impl Uploads {
     }
 }
 
-/// `blob.open`：建一个新的暂存文件，交回上传编号。
+/// `blob.open`：在连接的账号 `account` 名下建一个新的暂存文件，交回上传编号。
 pub(crate) async fn open(
     core: &Core,
-    uploads: &mut Uploads,
+    (uploads, account): (&mut Uploads, &AccountId),
     params: OpenParams,
 ) -> Result<Value, Refusal> {
     let name = attach::file_name(&params.name)?;
@@ -163,15 +169,16 @@ pub(crate) async fn open(
     if params.size > attach::LIMIT {
         return Err(Refusal::ATTACHMENT_TOO_BIG);
     }
-    for path in uploads.sweep() {
-        discard(core, path).await;
+    for (blobs, path) in uploads.sweep() {
+        discard(blobs, path).await;
     }
     if uploads.open.len() >= MAX_OPEN {
         return Err(Refusal::TOO_MANY_UPLOADS);
     }
     let id = upload_id()?;
-    let blobs = blobs_of(core);
+    let blobs = Blobs::new(core.root.blobs(account));
     let created = id.clone();
+    let stored = blobs.clone();
     let path = blocking(move || {
         blobs.create_upload(&created).map_err(|error| {
             tracing::warn!(target: TARGET, error = %error, "upload not stored");
@@ -182,6 +189,7 @@ pub(crate) async fn open(
     uploads.open.insert(
         id.clone(),
         Entry {
+            blobs: stored,
             path,
             name,
             media_type,
@@ -195,21 +203,17 @@ pub(crate) async fn open(
 }
 
 /// `blob.write`：写一块进暂存文件，交回一共收到几个字节。
-pub(crate) async fn write(
-    core: &Core,
-    uploads: &mut Uploads,
-    params: WriteParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn write(uploads: &mut Uploads, params: WriteParams) -> Result<Value, Refusal> {
     let data = STANDARD
         .decode(&params.data)
         .map_err(|_| Refusal::BAD_PARAMS)?;
     if data.len() > CHUNK {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (path, received, size) = match uploads.claim(&params.upload) {
-        Claim::Live(path, received, size) => (path, received, size),
-        Claim::Expired(path) => {
-            discard(core, path).await;
+    let (blobs, path, received, size) = match uploads.claim(&params.upload) {
+        Claim::Live(blobs, path, received, size) => (blobs, path, received, size),
+        Claim::Expired(blobs, path) => {
+            discard(blobs, path).await;
             return Err(Refusal::UPLOAD_UNKNOWN);
         }
         Claim::Missing => return Err(Refusal::UPLOAD_UNKNOWN),
@@ -221,7 +225,6 @@ pub(crate) async fn write(
     if received.saturating_add(added) > size {
         return Err(Refusal::BAD_PARAMS);
     }
-    let blobs = blobs_of(core);
     let chunk_path = path.clone();
     let chunk_data = data.clone();
     let offset = params.offset;
@@ -253,11 +256,11 @@ pub(crate) async fn close(
 ) -> Result<Value, Refusal> {
     match uploads.claim(&params.upload) {
         Claim::Missing => Err(Refusal::UPLOAD_UNKNOWN),
-        Claim::Expired(path) => {
-            discard(core, path).await;
+        Claim::Expired(blobs, path) => {
+            discard(blobs, path).await;
             Err(Refusal::UPLOAD_UNKNOWN)
         }
-        Claim::Live(path, received, size) => {
+        Claim::Live(blobs, path, received, size) => {
             if received < size {
                 return Err(Refusal::upload_incomplete(received));
             }
@@ -266,7 +269,6 @@ pub(crate) async fn close(
                 .remove(&params.upload)
                 .expect("claim 刚确认过在");
             let hash = entry.hasher.finish();
-            let blobs = blobs_of(core);
             let stored = hash.clone();
             let reply = blocking(move || {
                 finish_blocking(&blobs, &path, &hash, &entry.name, entry.media_type)
@@ -328,17 +330,11 @@ fn finish_inner(
 }
 
 /// 作废一个上传：删它的暂存文件（删不掉留给核心起来时再清，[`Blobs::clear_uploads`]）。
-async fn discard(core: &Core, path: PathBuf) {
-    let blobs = blobs_of(core);
+async fn discard(blobs: Blobs, path: PathBuf) {
     let outcome = tokio::task::spawn_blocking(move || blobs.discard_upload(&path)).await;
     if outcome.is_err() {
         tracing::error!(target: TARGET, "upload cleanup panicked");
     }
-}
-
-/// 这个账号的 blob 存取。
-fn blobs_of(core: &Core) -> Blobs {
-    Blobs::new(core.root.blobs(&core.admin))
 }
 
 /// 一个新的上传编号：16 位小写十六进制，8 个随机字节（`web-module.md`「怎么走」第六条第 1 款）。
