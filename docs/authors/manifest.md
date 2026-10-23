@@ -61,6 +61,10 @@ id = "status"
 place = "status"
 ```
 
+
+## 格式是冻结的
+
+这一页列的表和格是稳定的（2026-10-23 冻结）：以后只加不改不删，已经写好的清单换了新版本的 Miyu 照样读。新加的格、表会写明从哪一版起有；用到了的，在 `[package] miyu` 写上要的最低版本，旧版本的 Miyu 读到会说清要更新。不认识的表、格一律报错，所以别写这一页以外的。
 ## `[package]`
 
 | 格 | 说明 |
@@ -74,11 +78,12 @@ place = "status"
 | `icon` | Lucide 的图标名。界面不一定认得 Lucide 的全部名字：终端界面只认它对照表里的那些，认不出的画通用的工具图标（扳手） |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
 | `miyu` | 最低要哪一版 Miyu：三段数字，例如 `"0.2.0"`。用了新加的格、新的方法时写上；旧版本的 Miyu 读到会说清要更新，不会报看不懂的键 |
+| `required` | 只给出厂的包：`true` 的卸不掉。别的包写了报错 |
 | `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |
 
 ## `[command]`
 
-扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。
+扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。`args`：可以不写，转交时加在人敲的参数前面。
 
 所以你的程序除了 `serve` 这类给核心用的参数，也该认人敲的那些。
 
@@ -130,6 +135,12 @@ place = "status"
 
 预设里一个开关管一组工具。不写的整个包算一个功能；写了几个的，你登记的每一件工具都要列在某个功能下面，不然登记不进来。
 
+| 格 | 说明 |
+|---|---|
+| `name` | 必写，给人看的名字 |
+| `summary` | 一句说明 |
+| `tools` | 这个功能管的工具名 |
+
 ```toml
 [features.greet]
 name = { en = "Greeting", zh = "打招呼" }
@@ -141,7 +152,7 @@ tools = ["hello_greet"]
 
 ## `[check]`
 
-`miyu check` 时跑 `<程序> <args…>`。你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有；`line`、`column` 是正整数，`code`、`key`、`rule`、`source` 是字，可以有；别的格不收），只有警告时退出码 0，有错误 1。最多跑 30 秒。要有 `[command]`。
+`args`：`miyu check` 时跑 `<程序> <args…>`。你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有；`line`、`column` 是正整数，`code`、`key`、`rule`、`source` 是字，可以有；别的格不收），只有警告时退出码 0，有错误 1。最多跑 30 秒。要有 `[command]`。
 
 ## `[page]`
 
@@ -149,7 +160,20 @@ tools = ["hello_greet"]
 
 ## `[[mcp]]`
 
-带 MCP 服务，一段一个，见 [接 MCP 服务](mcp.md)。
+带 MCP 服务，一段一个，细节见 [接 MCP 服务](mcp.md)。
+
+| 格 | 说明 |
+|---|---|
+| `name` | 服务名（个人设置里是表名），小写字母、数字、`-`，1 到 32 个；全局不重 |
+| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
+| `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
+| `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
+| `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |
+| `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu login` 或设置页存进去），别把值写在清单里 |
+| `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
+| `timeout_ms` | 一次调用最多等多久 |
+| `need_load` | 不写是先加载：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数，工具多的服务省钱。`false`：一直给完整的参数，工具少、天天用的服务写上 |
+| `clicall` | AI 在命令里写脚本时能不能用 `miyu call` 调这个服务的工具，不写是能。服务会写东西、发东西的，写 `false` |
 
 ## `[[slash]]`
 
@@ -203,7 +227,7 @@ tools = ["hello_greet"]
 
 ## `[depends]`、`[recommends]`
 
-`packages`：依赖的、推荐的包的编号。依赖的缺了装不上、装着的不起；推荐的缺了照装、照起，少一部分本事。
+`packages`：依赖的、推荐的包的编号（以前的写法 `workers` 照认，读进同一份）。依赖的缺了装不上、装着的不起；推荐的缺了照装、照起，少一部分本事。
 
 ## `[mascot]`
 

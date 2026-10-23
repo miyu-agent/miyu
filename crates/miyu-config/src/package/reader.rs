@@ -87,14 +87,7 @@ impl Reader<'_> {
         at: &Item,
         kind: PackageKind,
     ) -> Result<Head, Problem> {
-        self.only(
-            table,
-            "package",
-            &[
-                "version", "protocol", "name", "summary", "required", "icon", "needs", "targets",
-                "author", "upstream", "miyu",
-            ],
-        )?;
+        self.only(table, "package", super::fields::PACKAGE)?;
         if let Some(item) = table.get("miyu") {
             super::version::checked(self, item)?;
         }
@@ -178,11 +171,7 @@ impl Reader<'_> {
 
     /// `[process]`。
     pub(super) fn process(&self, table: &dyn TableLike) -> Result<Process, Problem> {
-        self.only(
-            table,
-            "process",
-            &["args", "start", "capabilities", "system_account"],
-        )?;
+        self.only(table, "process", super::fields::PROCESS)?;
         let start = match table.get("start") {
             None => Start::Manual,
             Some(item) => match item.as_str() {
@@ -246,7 +235,7 @@ impl Reader<'_> {
 
     /// `[ui]`。
     pub(super) fn pages(&self, table: &dyn TableLike) -> Result<Pages, Problem> {
-        self.only(table, "ui", &["opens", "pages_dir"])?;
+        self.only(table, "ui", super::fields::UI)?;
         let opens = match table.get("opens") {
             None => Vec::new(),
             Some(item) => {

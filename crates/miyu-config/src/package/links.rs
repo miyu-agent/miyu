@@ -29,7 +29,7 @@ pub(super) fn connection(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<Connection, Problem> {
-    reader.only(table, "connection", &["platform"])?;
+    reader.only(table, "connection", super::fields::CONNECTION)?;
     let item = reader.required(table, at, "connection", "platform")?;
     let platform = item.as_str().filter(|name| valid_name(name)).ok_or_else(|| {
         reader.problem(
@@ -51,7 +51,7 @@ pub(super) fn dependencies(
     table: &dyn TableLike,
     name: &str,
 ) -> Result<Vec<String>, Problem> {
-    reader.only(table, name, &["packages", "workers"])?;
+    reader.only(table, name, super::fields::LINKS)?;
     let mut listed: Vec<String> = Vec::new();
     for key in ["packages", "workers"] {
         for id in reader.texts(table, name, key)? {
@@ -77,7 +77,7 @@ pub(super) fn dependencies(
 /// `[export]`（施工 X-18）：`methods` 是给别的软件经 `package.call` 调的方法名，写法同后台页的方法（小写字母开头，小写字母、
 /// 数字、`_`、`.`、`-`，1 到 64 个），不重复；没写的是空的。
 pub(super) fn export(reader: &Reader<'_>, table: &dyn TableLike) -> Result<Vec<String>, Problem> {
-    reader.only(table, "export", &["methods"])?;
+    reader.only(table, "export", super::fields::EXPORT)?;
     let methods = reader.texts(table, "export", "methods")?;
     for (index, name) in methods.iter().enumerate() {
         let why = if !method_name(name) {
@@ -112,7 +112,7 @@ pub(super) fn worker(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<Worker, Problem> {
-    reader.only(table, "worker", &["program", "args"])?;
+    reader.only(table, "worker", super::fields::WORKER)?;
     let item = reader.required(table, at, "worker", "program")?;
     let program = item
         .as_str()
