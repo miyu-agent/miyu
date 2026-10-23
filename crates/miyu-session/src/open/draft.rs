@@ -98,6 +98,7 @@ pub(super) async fn draft(
         project: None,
         appended,
         bare: setup.dream.is_some(),
+        plugin_tools: Vec::new(),
     };
     let parts = blocking(move || -> Result<Parts, CreateError> {
         let skills =

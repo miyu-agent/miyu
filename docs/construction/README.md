@@ -517,6 +517,7 @@ flowchart LR
 | O-41 | 判官看得到引用的那一条 | `venue.records` 的 `current` 引用了别的，编号后面写那条的发的人和内容，照日志那一行的写法；日志里没有的只写编号，`records`、她看到的一行不变。施工单见 `O-41-判官看引用.md` |
 | O-42 | `history` 在场所会话里写发言人 | 带 `venue` 的 `message.user`，「谁」照群里那一行写发的人：名字或平台身份、`show_ids` 的 `id=`、`owner`、`manager`，转义成一行；按 `user` 筛照样算。施工单见 `O-42-history带发言人.md` |
 | O-43 | 造会话时说不自动起标题 | `venue.session`、`session.create` 的 `titles: false` 记进 `session.created`，这个会话从此不自动起标题，分叉照父会话的；起的不写、字节不变。施工单见 `O-43-起标题开关.md` |
+| O-60 | 场所插件 | `provide` 的工具可以标 `plugin`：场所会话里只有那个场所开着它才给，没说过的不给；桥用 `venue.plugins {venue, on}` 整份替换，只在内存里记，下一轮重筛工具面，这一轮里刚关掉的再调回暂时不可用；本机会话不看。施工单见 `O-60-场所插件.md` |
 | test-pid 补 | 测试认新桥不靠进程号 | Windows 回收进程号快，新桥和停掉的同号、状态文件内容也一样，`bridge_up` 等不到（CI run 1840）；换桥以前先清掉状态文件，认新桥看「核心说在跑、状态文件在且进程号是它的」。施工单见 `test-pid-补.md` |
 | test-ext 三补 | 测试扩展整行写 | 记忆的会话报的 Windows 偶发红（run 1873）：测试扩展的 `err:` 用 `eprintln!` 分两次写，退避杀进程落在中间少一个换行；改成整行一次写。施工单见 `test-ext三补-整行写.md` |
 

@@ -121,6 +121,9 @@ pub struct Spec {
     /// `{"hits":[{"kb","path","snippet"}]}`，给她看、`miyu call --schema` 印。只有交结构化结果的写；内置工具的说明文件、扩展
     /// `provide` 写，MCP、脚本工具没有。
     pub result: Option<String>,
+    /// 场所插件（施工 O-60，`venues.md`「场所插件」）：带了的，场所会话里只有那个场所开着它才给，本机会话照旧。只有扩展
+    /// `provide` 写；内置工具、脚本工具、MCP 没有。
+    pub plugin: Option<String>,
 }
 
 /// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。

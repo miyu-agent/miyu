@@ -70,11 +70,13 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         std::mem::take(&mut opened.listed),
     );
     let draft::Drafted {
-        parts,
+        mut parts,
         shelves: shelves_open,
         names: skill_names,
         watch,
     } = draft::draft(&setup, &opened, taken).await?;
+    // 给了的场所插件工具记进快照（施工 O-60）。
+    parts.plugin_tools = std::mem::take(&mut opened.plugin_tools);
     let face::Opened {
         preset,
         scope,
@@ -117,6 +119,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         knowledge: _,
         vectors: _,
         installed: _,
+        plugins,
         memory,
         preset: _,
         no_tools,
@@ -296,6 +299,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         )),
         model,
         ToolKit {
+            plugins: plugins.clone(),
             session: id.clone(),
             owner: owner.clone(),
             confined,
@@ -353,6 +357,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         images,
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
         room: room.clone(),
+        plugins,
     });
     let busy = actor.busy();
     let watched = actor.watched();

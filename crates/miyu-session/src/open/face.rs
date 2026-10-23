@@ -29,6 +29,8 @@ pub(super) struct Opened {
     /// 工具面，和照的那一代目录。
     pub(super) face: Vec<ToolEntry>,
     pub(super) edition: Edition,
+    /// 给了的场所插件工具（施工 O-60）。
+    pub(super) plugin_tools: Vec<String>,
 }
 
 /// 照 `setup` 和这时的配置 `values` 拼工具面。
@@ -74,7 +76,7 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
     // 照架子上现在的那一代拼；记下第几代，回合开头看换没换（施工 O-2 中）。
     let edition = setup.tools.edition();
     // 明着选了无工具的（施工 P-16 下）一件都不给。
-    let face = match setup.no_tools {
+    let mut face = match setup.no_tools {
         true => Vec::new(),
         false => Agents::face(
             &edition.catalog,
@@ -92,6 +94,9 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
             preset.as_ref().map(|chosen| (&chosen.file, features)),
         ),
     };
+    // 场所插件（施工 O-60）：这个场所没开的拿掉，记下给了的。
+    let plugin_tools =
+        crate::plugins::sift(&mut face, &edition.catalog, (&setup.plugins, &setup.venue));
     Opened {
         preset,
         scope,
@@ -99,6 +104,7 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
         listed,
         face,
         edition,
+        plugin_tools,
     }
 }
 

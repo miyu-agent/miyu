@@ -135,6 +135,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         project: None,
         appended: Default::default(),
         bare: false,
+        plugin_tools: Vec::new(),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {
@@ -156,6 +157,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         images: true,
         projects: std::path::PathBuf::from("no-such-projects.json"),
         room: Default::default(),
+        plugins: Default::default(),
     };
     (scratch, root, refresh)
 }

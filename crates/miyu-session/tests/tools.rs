@@ -122,6 +122,7 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             need_load: false,
             clicall: false,
             result: None,
+            plugin: None,
         },
         Act::Echo,
     );
@@ -150,6 +151,7 @@ async fn a_tool_that_needs_loading_shows_a_shell_and_load_tools_gives_its_contra
             need_load: true,
             clicall: false,
             result: None,
+            plugin: None,
         },
         Act::Echo,
     );

@@ -21,6 +21,9 @@
 | `crates/miyu-store/src/index.rs`、`index/row.rs` | 索引一行多 `venue`，版本 3 |
 | `crates/miyu-endpoint/src/venues.rs` | `venue.session`：照场所加属主找回或者造；`as` 怎么认、记成谁（照会话的属主比，施工 O-4 下）；`venue.binding`：问一个平台身份在对应表里对着谁（施工 O-31 前） |
 | `crates/miyu-endpoint/src/venues/sessions.rs`（施工 O-32 前） | `venue.sessions`：列出系统账号名下的场所会话和终端管理员在这个平台的私聊，每个场所一个 |
+| `crates/miyu-endpoint/src/venues/plugins.rs`（施工 O-60） | `venue.plugins`：桥说一个场所开着哪些场所插件，整份替换，只管自己平台的场所 |
+| `crates/miyu-session/src/plugins.rs`（施工 O-60） | `VenuePlugins`：每个场所开着的场所插件（内存里），工具面、快照怎么照它筛，回合里调到刚关掉的怎么判 |
+| `crates/miyu-session/tests/venue_plugins.rs`、`crates/miyu-endpoint/tests/venue_plugins.rs`（施工 O-60） | 没说过的不给、开了下一轮给、关了下一轮没有、这一轮里刚关掉的再调回暂时不可用；没写 `plugin` 的照旧；本机会话不看；`plugin` 写错的 `bad_tool`；别的平台的、名字写错的 `bad_params`；本机的头 `no_system_account` |
 | `crates/miyu-endpoint/src/venues/message.rs`、`crates/miyu-kernel/src/event/venue.rs` | `session.send` 的 `venue` 怎么查、记成什么（施工 O-13 上）；合并转发 `forwards` 的写法和上限（施工 O-34） |
 | `crates/miyu-endpoint/src/appending.rs` | `events.append`：种类、大小、格怎么查，记成谁（施工 O-13 上） |
 | `crates/miyu-endpoint/tests/venue_binding.rs`（施工 O-31 前） | `venue.binding`：系统账号的扩展问对着管理员的、没写的、对着不存在的账号的；写错的、多写格的、一次问几个的 `bad_params`；本机的头 `no_system_account`；只读 |
@@ -157,6 +160,14 @@
 2. `venue.recalled`：`{msg, by}`，被撤的平台编号、谁撤的平台身份。
 3. `venue.delivered`：`{line, turn, to, msg, text, images?}`，哪条线的会话编号、哪一轮的回合编号、回的人（平台身份的列表）、平台编号、正文、图的内容哈希。
 4. 第 2、3 条只收场所会话的；格多了、少了、写法不对的，和第 1 条不合的，都 `bad_params`，什么都不记。O-13 下照它们渲染撤回的标记和 `[you]` 行。
+
+**场所插件**（施工 O-60，2026-10-24 项目主人定、核心主会话转来：禁言、踢人这类管理工具只在群主开了的群里给）：`provide` 的工具可以写 `plugin: <名字>`（`extensions.md`「`provide`」），名字写法同包的编号。
+
+1. 场所会话（场所不是 `local` 的）里，写了 `plugin` 的工具只有那个场所开着这个插件才进工具面；没说过的场所一件都不给，核心、桥重启以后也是。本机会话不看这个标记。同一个包里没写 `plugin` 的照旧。
+2. 桥说哪些开着：`venue.plugins {"venue": <场所>, "on": [<名字>, …]}`，回应 `{}`。整份替换，空的（或不写 `on`）是全不给。只在核心的内存里记，不落盘：桥连上以后对每个场所发一次。
+3. 下一个回合开始照它重筛工具面，开、关都破一次前缀缓存。快照的 `plugin_tools` 记下给了的那几件（`policy.md`）。
+4. 这一轮里刚关掉的，模型再调回「暂时不可用」（`unavailable`），工具不跑；下一轮工具面上已经没有它，再调是内核的「不在工具面上」。
+5. 只给系统账号的连接（桥），别的回 `no_system_account`。场所编号的平台前缀要是这个包清单 `[connection] platform` 写的，别的平台的、清单没写平台的回 `bad_params`（`field` 是 `venue`）；名字写法不对的 `bad_params`（`field` 是 `on`）；场所编号写错的、多写格的 `bad_params`。
 
 **斜杠命令**（施工 O-6，`protocol.md` 的 `command.run`）：桥把人打的原文连同 `as` 交过来，核心认、判谁能用、执行，回执那一句也由核心照语言写好，桥原样发出去。
 

@@ -88,6 +88,10 @@ struct ToolParams {
     /// 不写的没有。别的写法、空白的 `bad_tool`，`problem` 是 `result`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     result: Option<Value>,
+    /// 场所插件（施工 O-60，`venues.md`「场所插件」）：写了的，场所会话里只有那个场所开着它才给（`venue.plugins`），本机会话
+    /// 照旧。1 到 64 个字，写法同包的编号（小写字母开头，小写字母、数字、`-`）；别的写法 `bad_tool`，`problem` 是 `plugin`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    plugin: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -258,6 +262,11 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         Some(Value::String(shape)) if !shape.trim().is_empty() => Some(shape.clone()),
         Some(_) => return Err(bad_tool(&tool.name, "result")),
     };
+    let plugin = match &tool.plugin {
+        None => None,
+        Some(Value::String(name)) if plugin_name(name) => Some(name.clone()),
+        Some(_) => return Err(bad_tool(&tool.name, "plugin")),
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -267,12 +276,21 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             need_load,
             clicall,
             result,
+            plugin,
         },
         venues,
         timeout: Duration::from_millis(timeout),
         display_name: tool.display_name,
         subject: tool.subject,
     })
+}
+
+/// 场所插件的名字（施工 O-60）：同包的编号的写法，小写字母开头，小写字母、数字、`-`，1 到 64 个字。
+pub(crate) fn plugin_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    name.len() <= 64
+        && chars.next().is_some_and(|first| first.is_ascii_lowercase())
+        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 /// 目录查出来的那一条，写成协议上的字。

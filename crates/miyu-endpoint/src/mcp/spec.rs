@@ -101,6 +101,7 @@ pub(super) fn register(
                 need_load: server.need_load,
                 clicall: server.clicall,
                 result: None,
+                plugin: None,
             },
             what: What::Tool(tool.name.clone()),
             title: tool

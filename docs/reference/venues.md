@@ -7,13 +7,14 @@
 | [`venue.session`](#venuesession) | 找回或者造一个场所的主线会话 |
 | [`venue.sessions`](#venuesessions) | 列出这个桥的全部场所会话 |
 | [`venue.binding`](#venuebinding) | 问一个平台身份对着哪个本机账号 |
+| [`venue.plugins`](#venueplugins) | 说一个场所开着哪些场所插件 |
 | [`session.send` 的 `as`、`venue`](#sessionsend-的-asvenue) | 代表平台上的人说话 |
 | [`session.respond`](#sessionrespond) | 照旁听记下的几条开一轮 |
 | [`session.note`](#sessionnote) | 只记几块事实，不开回合 |
 | [`venue.records`](#venuerecords) | 判官看的群聊记录 |
 | [`events.append` 的 `venue.*`](#eventsappend-的-venue) | 记撤回、记她发出去的话 |
 
-**谁能调**：`venue.session`、`venue.sessions`、`venue.binding` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
+**谁能调**：`venue.session`、`venue.sessions`、`venue.binding`、`venue.plugins` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
 
 **场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
 
@@ -58,6 +59,12 @@
 ## `venue.binding`
 
 **参数**：`id`：平台身份。**回应**：`{"account": <本机账号>}`，不在对应表里的是 `null`。照这一刻的配置答。桥挡「只给主人」的动作时用：动谁之前先认目标。
+
+## `venue.plugins`
+
+**参数**：`venue`：场所；`on`：开着的场所插件的名字（同 `provide` 的 `plugin`），不写或空的是全不给。**回应**：`{}`。
+
+整份替换。写了 `plugin` 的工具在这个场所的会话里只有开着才给，下一轮生效；这一轮里刚关掉的再调回「暂时不可用」。核心只在内存里记，重启以后哪个场所都不给：桥连上以后对每个场所发一次。只管自己平台的场所（照清单 `[connection] platform`），别的平台的 `bad_params`（`data.field` 是 `venue`），名字写法不对的 `bad_params`（`data.field` 是 `on`）。
 
 ## `session.send` 的 `as`、`venue`
 

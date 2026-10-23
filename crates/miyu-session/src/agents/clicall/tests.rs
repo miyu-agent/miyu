@@ -36,6 +36,7 @@ fn spec(name: &str, access: Access, result: Option<&str>) -> Spec {
         need_load: false,
         clicall: true,
         result: result.map(str::to_string),
+        plugin: None,
     }
 }
 

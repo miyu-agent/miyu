@@ -40,6 +40,8 @@ pub(crate) struct Parts {
     pub(crate) appended: std::collections::BTreeMap<String, String>,
     /// 裸的（施工 D-1 上，整理会话，`miyu_policy::Snapshot::bare`）：拼好以后去掉 system、工具和几样开关。
     pub(crate) bare: bool,
+    /// 给了的场所插件工具（施工 O-60，`miyu_policy::Snapshot::plugin_tools`）。
+    pub(crate) plugin_tools: Vec<String>,
 }
 
 /// 照 `parts` 拼一份快照，随核心附带的字从 `resources` 读这一刻的。
@@ -68,6 +70,7 @@ pub(crate) fn laid(
     ruler.mark(SystemPart::Persona, "", &snapshot.system);
     snapshot.memory = parts.memory;
     snapshot.foreground = parts.foreground;
+    snapshot.plugin_tools = parts.plugin_tools;
     if !parts.roleplay {
         snapshot.reminder = None;
     }

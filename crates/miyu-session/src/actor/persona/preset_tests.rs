@@ -122,6 +122,7 @@ fn without_a_persona_a_changed_preset_still_swaps() {
         project: None,
         appended: Default::default(),
         bare: false,
+        plugin_tools: Vec::new(),
     };
     refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert_eq!(

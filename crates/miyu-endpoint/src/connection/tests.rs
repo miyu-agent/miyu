@@ -74,6 +74,7 @@ fn capabilities_gate_what_they_name() {
         ("view.page", Capability::EventsRead),
         ("events.append", Capability::EventsWrite),
         ("session.note", Capability::ActForExternal),
+        ("venue.plugins", Capability::ActForExternal),
         ("venue.session", Capability::ActForExternal),
         ("memory.remember", Capability::MemoryWrite),
         ("kb.add", Capability::MemoryWrite),

@@ -7,13 +7,14 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 | [`venue.session`](#venuesession) | Find or create a venue's main session |
 | [`venue.sessions`](#venuesessions) | List all of this bridge's venue sessions |
 | [`venue.binding`](#venuebinding) | Ask which local account a platform identity belongs to |
+| [`venue.plugins`](#venueplugins) | Say which venue plugins a venue has on |
 | [`as` and `venue` in `session.send`](#as-and-venue-in-sessionsend) | Speak for a person on the platform |
 | [`session.respond`](#sessionrespond) | Start a turn from messages recorded while listening |
 | [`session.note`](#sessionnote) | Record a few facts without starting a turn |
 | [`venue.records`](#venuerecords) | Group chat records for the judge |
 | [`venue.*` in `events.append`](#venue-in-eventsappend) | Record recalls and messages she delivered |
 
-**Who can call**: `venue.session`, `venue.sessions` and `venue.binding` are for system account connections only (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
+**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections only (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 
@@ -58,6 +59,12 @@ Nobody can approve anything in venue sessions: everything needing approval is re
 ## `venue.binding`
 
 **Params**: `id`: a platform identity. **Response**: `{"account": <local account>}`, `null` when not bound. Answered from the config at that moment. Bridges use it when guarding owner-only actions: check the target before acting on it.
+
+## `venue.plugins`
+
+**Params**: `venue`: the venue; `on`: the names of the venue plugins it has on (as in `provide`'s `plugin`); unset or empty means none. **Response**: `{}`.
+
+Replaces the whole list. Tools with a `plugin` are only given in this venue's sessions while it is on, from the next turn; a call this turn to one just turned off gets "not available right now". The core keeps this in memory only, so after a restart no venue has any: send it once per venue after connecting. Only for venues on your own platform (from the manifest's `[connection] platform`): other platforms get `bad_params` (`data.field` is `venue`), badly written names get `bad_params` (`data.field` is `on`).
 
 ## `as` and `venue` in `session.send`
 

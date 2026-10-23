@@ -121,6 +121,9 @@ pub struct Snapshot {
     /// 一样。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub bare: bool,
+    /// 给了的场所插件工具（施工 O-60）：工具面上带 `plugin` 的那几件的名字，照名字排。没有的不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub plugin_tools: Vec<String>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。

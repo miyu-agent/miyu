@@ -198,7 +198,11 @@ impl Tools {
             tracing::error!(target: TARGET, nested = id.to_string().as_str(), "nested call run before it came");
             return None;
         };
-        let Some(tool) = self.catalog.get(&name) else {
+        let tool = self.catalog.get(&name).filter(|tool| {
+            self.plugins
+                .allows(&self.venue, tool.spec().plugin.as_deref())
+        });
+        let Some(tool) = tool else {
             let worded = self.lettering.run().unavailable(&name);
             if let Some(waiting) = self.nested.waiting.get_mut(&id) {
                 waiting.result = Some(Settled {

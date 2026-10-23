@@ -165,6 +165,7 @@ usage.query
 user.append
 venue.binding
 venue.delivered
+venue.plugins
 venue.recalled
 venue.records
 venue.session

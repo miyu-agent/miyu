@@ -140,6 +140,7 @@ impl Script {
                 need_load: head.need_load,
                 clicall: head.clicall,
                 result: None,
+                plugin: None,
             },
             display_name: head.display_name.clone(),
             venues: head.venues.as_deref().map(Venues::of),

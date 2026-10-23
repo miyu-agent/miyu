@@ -19,7 +19,7 @@ use tracing::Instrument;
 use crate::lettering::Lettering;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Permission;
-use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId};
+use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Input, Reread, Subagent};
@@ -64,6 +64,9 @@ use sandboxed::confine;
 pub(crate) struct Tools {
     /// 这个会话（施工 O-2 上）。
     session: SessionId,
+    /// 场所和每个场所开着的场所插件（施工 O-60）：派调用时这一刻没开的当目录里没有，回「暂时不可用」。
+    venue: VenueId,
+    plugins: crate::VenuePlugins,
     /// 会话的属主（施工 O-2 三补）。
     owner: AccountId,
     catalog: Shelf,
@@ -233,6 +236,8 @@ impl Tools {
             hooks: kit.hooks,
             running: BTreeMap::new(),
             checked: BTreeMap::new(),
+            venue: kit.venue.clone(),
+            plugins: kit.plugins,
             callers: caller::Callers::new(kit.venue, kit.admin, kit.session_log),
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
@@ -351,7 +356,12 @@ impl Tools {
             caller: Some(self.callers.of(turn)),
         };
         let call_text = call_id.to_string();
-        let Some(tool) = self.catalog.get(&name) else {
+        // 场所插件这一刻没开的（施工 O-60）：桥一说关就当场停，当目录里没有。
+        let tool = self.catalog.get(&name).filter(|tool| {
+            self.plugins
+                .allows(&self.venue, tool.spec().plugin.as_deref())
+        });
+        let Some(tool) = tool else {
             tracing::warn!(target: TARGET, call = call_text.as_str(), tool = name.as_str(), "unavailable");
             // 随包卸掉了的说「已卸载」（施工 F-5 中，设计 30 第九节）。
             let worded = match self.catalog.gone(&name) {

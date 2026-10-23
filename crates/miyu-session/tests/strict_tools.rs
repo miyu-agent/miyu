@@ -29,6 +29,7 @@ fn catalog() -> Catalog {
             need_load: true,
             clicall: false,
             result: None,
+            plugin: None,
         },
         Act::Echo,
     );

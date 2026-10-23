@@ -92,6 +92,11 @@ pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
 }
 
 impl Owners {
+    /// 场所 `venue` 是不是这个桥的平台的（施工 O-60）：平台前缀是它包清单 `[connection] platform` 写的；没写平台的都不是。
+    pub(crate) fn platform_is(&self, venue: &str) -> bool {
+        self.platform.is_some() && platform_of(venue) == self.platform.as_deref()
+    }
+
     /// 场所 `venue` 最新的会话属主是 `owner`、不是调用的系统账号的，列不列：平台对得上、属主是对应表里这个平台的身份对着的。
     pub(crate) fn take(&self, venue: &str, owner: &AccountId) -> bool {
         self.platform.is_some()

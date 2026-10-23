@@ -76,6 +76,8 @@ pub struct Home {
     pub logs: Arc<MemoryLogs>,
     /// 核心一份的知识库（施工 K-1 下）：造的、载入的会话都照它查，和核心里一样。
     pub knowledge: Arc<miyu_store::knowledge::Knowledge>,
+    /// 每个场所开着的场所插件（施工 O-60）：造的、载入的会话都照它，测试照它开关。
+    pub plugins: miyu_session::VenuePlugins,
 }
 
 impl Home {
@@ -131,6 +133,7 @@ impl Home {
             jobs: Arc::new(Jobs::new()),
             index: Arc::new(index),
             configs: miyu_session::fixed(Default::default()),
+            plugins: miyu_session::VenuePlugins::default(),
             resources: ResourceRoot::at(
                 Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"),
             ),
@@ -210,6 +213,7 @@ impl Home {
             knowledge: Some(Arc::clone(&self.knowledge)),
             vectors: self.memory.vectors().cloned(),
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
+            plugins: self.plugins.clone(),
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
             no_tools: false,
@@ -339,6 +343,7 @@ impl Home {
             knowledge: Some(Arc::clone(&self.knowledge)),
             vectors: self.memory.vectors().cloned(),
             installed: Some(Arc::new(|| Arc::new(Vec::new()))),
+            plugins: self.plugins.clone(),
             memory: Some(self.memory()),
             presets: None,
             owner_is_admin,

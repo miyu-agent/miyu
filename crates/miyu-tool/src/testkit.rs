@@ -101,6 +101,7 @@ impl Fake {
                 need_load: false,
                 clicall: false,
                 result: None,
+                plugin: None,
             },
             act,
         )

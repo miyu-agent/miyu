@@ -62,6 +62,7 @@ fn provided_tools_join_change_and_leave_the_face() {
         need_load: false,
         clicall: false,
         result: None,
+        plugin: None,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     let snapshot = swap(&mut refresh);
@@ -222,6 +223,7 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         project: None,
         appended: Default::default(),
         bare: false,
+        plugin_tools: Vec::new(),
     };
     refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert!(matches!(look_now(&refresh), Seen::Same), "没换代的不换");
@@ -266,6 +268,7 @@ fn a_changed_preset_takes_provided_tools_as_registered_now() {
         need_load: false,
         clicall: false,
         result: None,
+        plugin: None,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     super::test_support::write_preset(&root, "[tools]\nshell = false\n");

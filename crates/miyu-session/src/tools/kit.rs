@@ -23,6 +23,8 @@ pub(crate) struct ToolKit {
     /// 关起来的会话（施工 5-12 下、Y-2 下①）：命令的沙盒读写都只限工作区，成员的只到他自己的几处。
     pub(crate) confined: Option<crate::guard::Reach>,
     /// 会话的场所（施工 X-43）：每次调用带上，交给脚本（`MIYU_CALLER_VENUE`）。
+    /// 每个场所开着的场所插件（施工 O-60）：派调用时这一刻没开的当目录里没有。
+    pub(crate) plugins: crate::VenuePlugins,
     pub(crate) venue: VenueId,
     /// 会话的属主是管理员（施工 MB-2）：本机的会话只有这样开口的才算机器主人（[`miyu_tool::Caller`]）。
     pub(crate) admin: bool,

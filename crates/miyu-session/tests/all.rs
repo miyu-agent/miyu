@@ -135,6 +135,7 @@ mod turn_config;
 mod undo_compaction;
 mod undo_files;
 mod unsandboxed;
+mod venue_plugins;
 mod watch;
 mod watched;
 mod workplace;

@@ -102,6 +102,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         project: None,
         appended: BTreeMap::new(),
         bare: false,
+        plugin_tools: Vec::new(),
     }
 }
 

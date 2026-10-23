@@ -84,6 +84,7 @@ pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError
         need_load: parsed.need_load,
         clicall: parsed.clicall,
         result: parsed.result,
+        plugin: None,
     })
 }
 

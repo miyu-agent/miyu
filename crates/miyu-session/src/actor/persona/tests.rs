@@ -62,6 +62,7 @@ fn setup_with(
         project: None,
         appended: Default::default(),
         bare: false,
+        plugin_tools: Vec::new(),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {
@@ -80,6 +81,7 @@ fn setup_with(
         images: true,
         projects: std::path::PathBuf::from("no-such-projects.json"),
         room: Default::default(),
+        plugins: Default::default(),
     };
     (scratch, root, refresh)
 }

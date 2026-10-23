@@ -176,5 +176,6 @@ fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
         project: old.project.clone(),
         appended: old.appended.clone(),
         bare: false,
+        plugin_tools: old.plugin_tools.clone(),
     })
 }

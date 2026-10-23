@@ -86,6 +86,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         knowledge,
         vectors,
         installed,
+        plugins,
         memory,
         presets,
         owner_is_admin,
@@ -367,6 +368,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         }),
         model,
         ToolKit {
+            plugins: plugins.clone(),
             session: id.clone(),
             owner: owner.clone(),
             confined,
@@ -428,6 +430,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         images,
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
         room: room.clone(),
+        plugins,
     });
     span.in_scope(|| {
         tracing::info!(

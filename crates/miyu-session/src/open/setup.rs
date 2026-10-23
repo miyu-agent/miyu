@@ -134,6 +134,8 @@ pub struct Create<'a> {
     /// 装了的软件包（施工 X-10 上，`skills.md`「技能」第 2、3 条）：照它和属主家目录里的找技能，列进 system，文件夹放开只读。
     /// 每次取的都是这一刻的（施工 X-11 下：回合开始照它再找一遍，装卸以后跟得上）。没交的（测试里自己造的）不找技能。
     pub installed: Option<Installed>,
+    /// 每个场所开着的场所插件（施工 O-60，[`crate::VenuePlugins`]）：一个核心一份。工具面照它筛，回合开始照它重筛，派调用时照它拒。
+    pub plugins: crate::VenuePlugins,
     /// 核心一份的记忆（施工 R-2 上、R-3 中，`memory.md`）：主会话每落一批，把结束了的人开的回合放进这个人格的回合库；三件
     /// 工具的端口照它造。没有的（测试里自己造的）不放、三件工具说记忆没开。
     pub memory: Option<Arc<crate::Memory>>,
@@ -229,6 +231,8 @@ pub struct Load<'a> {
     pub vectors: Option<Arc<crate::Vectors>>,
     /// 同 [`Create::installed`]：载入时只照它放开技能的文件夹，列出来的那一块照快照。
     pub installed: Option<Installed>,
+    /// 同 [`Create::plugins`]：载入以后回合开始照它重筛，派调用时照它拒。
+    pub plugins: crate::VenuePlugins,
     /// 同 [`Create::memory`]：载入时照整份事件补上回合库落下的。
     pub memory: Option<Arc<crate::Memory>>,
     /// 同 [`Create::presets`]。

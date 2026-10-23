@@ -61,6 +61,7 @@ pub(super) fn tools(
                 need_load: server.need_load,
                 clicall: server.clicall,
                 result: None,
+                plugin: None,
             },
             what,
             title: None,

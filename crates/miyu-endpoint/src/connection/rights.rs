@@ -76,7 +76,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "events.append" => Needs(EventsWrite),
         // 代表平台上的人、场所的原语（`venue.delivered`、`venue.recalled` 是 `events.append` 里只给桥的两种事件）。
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"
-        | "venue.records" | "venue.session" | "venue.sessions" => Needs(ActForExternal),
+        | "venue.records" | "venue.plugins" | "venue.session" | "venue.sessions" => {
+            Needs(ActForExternal)
+        }
         "memory.remember" | "memory.update" | "memory.forget" | "memory.restore"
         | "memory.dream" | "memory.dream_stop" | "memory.card_update" | "memory.card_forget"
         | "kb.add" | "kb.create" | "kb.update" | "kb.mount" | "kb.remove" | "kb.delete"

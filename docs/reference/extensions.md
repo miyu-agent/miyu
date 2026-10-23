@@ -65,6 +65,7 @@
 | `input_schema` | `{"type": "object", …}` |
 | `access` | 会碰什么：`read`（只看、不出 Miyu）、`write`、`execute`、`network`、`outbound`（往外发东西）、`venue`（在聊天平台上做动作：撤回、禁言）、`install` |
 | `venues` | 给哪种会话：`local`、`private`、`group` 里的一个或几个 |
+| `plugin` | 场所插件的名字，写法同包的编号：群、私聊里只有那个场所开着它（[`venue.plugins`](venues.md#venueplugins)）才给，本机会话照旧。不写是一直给 |
 | `timeout_ms` | 1000 到 600000，默认 60000 |
 | `need_load` | `true`：要先加载，工具列表里只给名字和说明 |
 | `clicall` | `true`：AI 在命令里用 `miyu call` 也能调它（只读、联网、执行类的才调得成），不写是不能。有结构化结果的写进回应的 `data`，脚本拿到一行 JSON |
@@ -74,7 +75,7 @@
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`need_load`、`clicall`、`result`、`display_name`、`subject`、`feature`。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`need_load`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`。
 
 ## `tool.call`、`tool.cancel`
 

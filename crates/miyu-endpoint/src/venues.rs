@@ -18,11 +18,13 @@ use crate::refusal::Refusal;
 use crate::sessions::Opening;
 
 mod message;
+mod plugins;
 mod records;
 mod sessions;
 pub(crate) use sessions::{bridged, owners};
 
 pub(crate) use message::{VenueMessageParams, platform_id};
+pub(crate) use plugins::plugins;
 pub(crate) use records::records;
 pub(crate) use sessions::{SessionsParams, sessions};
 

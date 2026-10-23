@@ -60,6 +60,8 @@ pub(crate) struct Refresh {
     pub(crate) projects: std::path::PathBuf,
     /// 记忆放在哪一间（施工 P-13）：和 [`crate::Handle`] 共用，换人格时跟着换。
     pub(crate) room: crate::memory::RoomCell,
+    /// 每个场所开着的场所插件（施工 O-60）：回合开始照这一刻的重筛工具面。
+    pub(crate) plugins: crate::VenuePlugins,
 }
 
 /// 看了一遍的结果。
@@ -223,6 +225,12 @@ fn look(
     let flipped = shelved
         .as_ref()
         .is_some_and(|fresh| shelf_tools(fresh) != shelf_tools(&old.tools));
+    // 场所插件（施工 O-60）：照这一刻的目录、预设，这个场所该给的和工具面上现在的不一样，这一轮要换。预设找不回来的照旧。
+    let plugs = (&refresh.plugins, &refresh.venue);
+    let replugged = shelved.as_ref().is_some_and(|fresh| {
+        let wanted = crate::plugins::replug(Vec::new(), fresh, catalog, plugs);
+        crate::plugins::present(&wanted, catalog) != crate::plugins::present(&old.tools, catalog)
+    });
     // system 里列出来的那一块照这一刻该有的两件、查得到的库拼（施工 K-1 补）：和快照里的不一样才算改了（建了库、改了名字、
     // 说明）。预设找不回来的照旧。
     let listing = match &shelved {
@@ -239,6 +247,7 @@ fn look(
     if same
         && !moved
         && !flipped
+        && !replugged
         && !relisted
         && !said
         && !reprojected
@@ -266,9 +275,10 @@ fn look(
         _ => (old.tools.clone(), old.preset.clone()),
     };
     let face = match &shelved {
-        Some(fresh) => reshelved(face, fresh),
+        Some(fresh) => crate::plugins::replug(reshelved(face, fresh), fresh, catalog, plugs),
         None => face,
     };
+    let plugin_tools = crate::plugins::present(&face, catalog);
     let refaced = face.len() != old.tools.len()
         || face
             .iter()
@@ -308,6 +318,7 @@ fn look(
         project: projected,
         appended,
         bare: false,
+        plugin_tools,
     };
     let mut new = match build(&refresh.resources, parts) {
         Ok(new) => new,

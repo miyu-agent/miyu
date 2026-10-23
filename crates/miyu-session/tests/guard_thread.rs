@@ -89,6 +89,7 @@ async fn the_async_thread_is_free_while_the_guard_judges() {
             need_load: false,
             clicall: false,
             result: None,
+            plugin: None,
         },
         entered: entered_tx,
         release: Mutex::new(release_rx),

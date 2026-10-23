@@ -64,6 +64,7 @@ impl Open {
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),
+            plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
             presets: Some(crate::presets::places(core, &owner)),
             owner_is_admin: owner == core.admin,

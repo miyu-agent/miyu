@@ -221,6 +221,11 @@ pub(crate) fn call<'a>(
                 move || async move { venues::binding(core, caller.acting_for(), params(request)?) },
             )
         }
+        "venue.plugins" => {
+            answer(
+                move || async move { venues::plugins(core, caller.acting_for(), params(request)?) },
+            )
+        }
         "venue.session" => answer(move || async move {
             venues::session(
                 core,

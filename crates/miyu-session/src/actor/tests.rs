@@ -147,6 +147,7 @@ async fn a_write_that_fails_stops_the_session() {
         Box::new(Failing { left: 2 }),
         Arc::new(Holding(model)),
         crate::tools::ToolKit {
+            plugins: crate::VenuePlugins::default(),
             session: miyu_kernel::id::SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91")
                 .expect("合写法"),
             owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),

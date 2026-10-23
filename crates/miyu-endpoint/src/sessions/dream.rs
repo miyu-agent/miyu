@@ -66,6 +66,7 @@ impl Sessions {
             knowledge: None,
             vectors: None,
             installed: None,
+            plugins: core.plugins.clone(),
             memory: None,
             configs: core.configs_of(&owner),
             owner_is_admin: owner == core.admin,

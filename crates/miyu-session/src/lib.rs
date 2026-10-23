@@ -49,6 +49,7 @@ mod open;
 mod path_text;
 mod peers;
 mod pictures;
+mod plugins;
 mod port;
 mod project_docs;
 mod report;
@@ -89,6 +90,7 @@ pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError, PresetPlaces,
     Workplace, create, fork, load, load_placed, preview, preview_context,
 };
+pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{
     Answer, Ask, IDLE, LOCAL_WAIT, Missing, ModelData, Observed, OneShot, Probe, Probed,
