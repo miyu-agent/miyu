@@ -107,7 +107,7 @@ impl Setup {
             sandbox_cache: core.sandbox_cache_of(&who.owner),
             lineage: None,
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core)),
+            packages: Some(crate::packages::port::port(core, &who.owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             index: Some(core.index_for(&who.owner)),

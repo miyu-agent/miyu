@@ -85,6 +85,7 @@
 | `path_unreadable` | 读不了那个文件夹 |
 | `package_invalid` | 清单写错了，`data.problem`、`data.line`；要更新的 Miyu 才能用的，`data.problem` 是 `needs_newer_miyu` |
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令 |
+| `not_permitted` | 不是管理员的成员装、升级、卸、装回包，启用扩展：这一版成员都不行（不带进程的包以后能装进他自己的家目录、只对自己生效）；会话里的 `package` 工具照会话的属主算，列、看、搜照旧给 |
 | `package_exists` | 和出厂的同编号 |
 | `package_file_bad` | 包文件解不开 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |

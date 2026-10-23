@@ -25,6 +25,7 @@ mod folder;
 pub(crate) mod left;
 pub(crate) mod local;
 pub(crate) mod manage;
+mod may_manage;
 pub(crate) mod methods;
 pub(crate) mod port;
 pub(crate) mod preview;

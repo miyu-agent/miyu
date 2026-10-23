@@ -183,7 +183,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             Ok(Read::Closed) | Err(_) => break,
         };
         // 每说一句都照这时的 `ui.language` 重算这个连接的语言（施工 8-4）。
-        let peer = shaken.map(|shaken| shaken.now(&core));
+        let peer = shaken.map(|shaken| shaken.now_as(&core, caller.acting_for()));
         let locale = peer.map_or(Locale::En, |peer| peer.locale);
         let request = match wire::parse(&line) {
             Incoming::Request(request) => request,

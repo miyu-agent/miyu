@@ -25,7 +25,7 @@ pub(crate) async fn installing(
     path: &Path,
 ) -> Result<Value, Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
-    clear_of_conflicts(core, &id, manifest.clone(), folder.clone()).await?;
+    clear_of_conflicts((core, peer), &id, manifest.clone(), folder.clone()).await?;
     let (files, content) =
         tokio::task::spawn_blocking(move || (local::scan(&folder), Content::of(&folder)))
             .await
@@ -47,7 +47,7 @@ pub(crate) async fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<
     if !packages(core).removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
-    shipped_clear_of_conflicts(core, id).await?;
+    shipped_clear_of_conflicts((core, peer), id).await?;
     let shipped = Packages::shipped(&core.resources).read();
     let one = shipped
         .iter()

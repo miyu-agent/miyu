@@ -93,13 +93,22 @@ pub(crate) struct Shaken {
 }
 
 impl Shaken {
-    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。
+    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。只拿语言、不装包的地方用它，`admin` 是假的；处理请求用 [`Shaken::now_as`]。
     pub(crate) fn now(self, core: &Core) -> Peer {
         let language = language_of(&core.config(), self.system);
         Peer {
             locale: Locale::of(Some(language)),
             language,
             input: self.input,
+            admin: false,
+        }
+    }
+
+    /// 同 [`Shaken::now`]，`admin` 照这一刻替 `acting_for` 干活的人是不是管理员算（施工 Y-5 下下）：机主只比账号，不读组表。
+    pub(crate) fn now_as(self, core: &Core, acting_for: &AccountId) -> Peer {
+        Peer {
+            admin: crate::login::admins::is_admin(core, acting_for),
+            ..self.now(core)
         }
     }
 
@@ -151,6 +160,8 @@ pub(crate) struct Peer {
     pub(crate) language: &'static str,
     /// 能让人输入：它造的会话有人确认。
     pub(crate) input: bool,
+    /// 这一刻是不是管理员（施工 Y-5 下下）：成员不能装包、卸包、启用扩展（`packages/may_manage.rs`）。
+    pub(crate) admin: bool,
 }
 
 /// 握手：交回这个连接记下的、它是怎么认出来的（施工 W-8）和回应。拒绝的，交回拒绝和要不要断开。`spawned` 的是核心亲手拉起的

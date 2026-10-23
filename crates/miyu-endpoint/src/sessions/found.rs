@@ -56,7 +56,7 @@ impl Open {
             sandbox: core.sandbox.helper(),
             sandbox_cache: core.sandbox_cache_of(&owner),
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core)),
+            packages: Some(crate::packages::port::port(core, &owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             index: Some(core.index_for(&owner)),

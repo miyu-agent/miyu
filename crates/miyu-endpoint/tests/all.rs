@@ -149,6 +149,7 @@ mod package_settings;
 mod package_switch;
 mod package_theme;
 mod package_tool;
+mod package_tool_member;
 mod package_tool_open;
 mod packages;
 mod packages_archive;
