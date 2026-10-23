@@ -1,5 +1,5 @@
 //! `miyu check` 报脚本、技能、斜杠模板（施工 X-12 下）：跳过的脚本、技能，撞名没登记上的脚本；链接指到数据根里不认的地方的
-//! （施工 X-37）；有状态目录却没有这个脚本的（施工 X-44）。
+//! （施工 X-37）；有状态目录却没有这个脚本的（施工 X-44）；没登记上的分清撞名、造不成工具、核心还没读到（施工 X-46）。
 
 use super::*;
 
@@ -144,4 +144,42 @@ async fn check_reports_state_left_by_scripts_that_are_gone() {
     assert!(left[0].1.contains("kit/live"), "{reply}");
     assert_eq!(left[1].0, "state/scripts/alice/kit/weather");
     assert_eq!(left[2].0, "state/scripts/alice/~home/gone");
+}
+
+/// 没登记上的脚本分三种（施工 X-46）：撞了别的工具名字的 `script_clashed`，造不成工具的 `script_not_made`（带为什么），核心
+/// 起来以后才放进去、还没读到的 `script_not_loaded`（这个核心不跟着家目录）。
+#[tokio::test]
+async fn unregistered_scripts_say_why() {
+    let home = Home::new();
+    home.write("home/alice/scripts/read.py", &echo("read"));
+    home.write(&format!("home/alice/scripts/{UNMADE}.py"), &echo(UNMADE));
+    let core = core(&home, &Script::new([]));
+    home.write("home/alice/scripts/later.py", &echo("later"));
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let reply = client.call("k1", "check", json!({})).await;
+    let problems: Vec<(String, String, String)> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .map(|one| {
+            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
+            (text("file"), text("code"), text("message"))
+        })
+        .collect();
+    let code = |file: &str| {
+        problems
+            .iter()
+            .find(|(at, _, _)| at == file)
+            .map(|(_, code, message)| (code.as_str(), message.as_str()))
+            .unwrap_or_else(|| panic!("{file} 没报：{reply}"))
+    };
+    assert_eq!(code("home/alice/scripts/read.py").0, "script_clashed");
+    let (unmade, why) = code(&format!("home/alice/scripts/{UNMADE}.py"));
+    assert_eq!(unmade, "script_not_made");
+    assert!(why.contains(&format!("Cannot make {UNMADE}.")), "{why}");
+    let (later, said) = code("home/alice/scripts/later.py");
+    assert_eq!(later, "script_not_loaded");
+    assert!(said.contains("later"), "{said}");
+    assert_eq!(problems.len(), 3, "{reply}");
 }

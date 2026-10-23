@@ -8,7 +8,7 @@ None of these need a long-running program; one file is enough. Chinese version: 
 | **Skill** | A `SKILL.md`; a way of doing something | Normally sees only its name and one line; reads the body when it needs it |
 | **Command template** | A `<name>.md`; a slash command | When a person types `/<name>`, the body is sent to the AI as that person's message |
 
-Where: in a package, under the package folder's `scripts/`, `skills/`, `commands/`, with a manifest of just `[package]`; just for you, straight into `~/.miyu/home/admin/scripts/`, `skills/`, `commands/` (same names there win). The next session sees them; each script, skill and template is switched separately in presets. Broken ones aren't registered, and `miyu check` says which and why.
+Where: in a package, under the package folder's `scripts/`, `skills/`, `commands/`, with a manifest of just `[package]`; just for you, straight into `~/.miyu/home/admin/scripts/`, `skills/`, `commands/` (same names there win). The next session sees them; each script, skill and template is switched separately in presets. Broken ones, and scripts with the same name as another tool, aren't registered, and `miyu check` says which and why; if it says the core hasn't picked a new one up yet, check again shortly.
 
 Links work too, pointing at files or folders elsewhere (say, kept together in a repository of your own): what the link points at counts, and the AI sees the real path; broken links are skipped. Links into other parts of Miyu's data folder (`system/`, other accounts) don't count, and `miyu check` says where they point.
 

@@ -666,6 +666,8 @@
     "package-problems/script_link_outside": "This script is a link to {detail} inside the data root, outside this account's own folders; skipped",
     "package-problems/script_state_left": "There is a state folder for the script {detail}, but no such script now; delete the folder yourself if it is no longer needed",
     "package-problems/script_clashed": "Script {detail} has the same name as another tool and was not registered",
+    "package-problems/script_not_made": "This script was not registered: {detail}",
+    "package-problems/script_not_loaded": "The core has not picked up script {detail} yet; check again shortly, or restart the core if it stays",
     "package-problems/mcp_tool_skipped": "Some tools or prompts listed by an MCP server were not registered: {detail} (prompts are written /name). name_taken: the name is taken (it clashed after shortening or cleaning, or another tool already has it); name: the name is not allowed; parameters: the parameters are malformed",
     "package-problems/sandbox_tool_missing": "sandbox.tools.{name} grants a tool that doesn't exist now; not granted",
     "package-problems/sandbox_tool_moved": "sandbox.tools.{name} says it comes from {wrote}, but the tool now comes from {now}; not granted. If that's right, change it to {now}",

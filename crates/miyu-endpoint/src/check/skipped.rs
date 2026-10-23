@@ -1,7 +1,8 @@
 //! 跳过的脚本、技能（施工 X-12 下，`docs/blueprint/skills.md`「脚本」第 2 条）：照这一刻装了的包和管理员家目录再找一遍，
 //! 开头写错的、读不了的各一条警告，`message` 带上为什么（英文一句：给作者看的，同编译器的报错）；同名被盖住的说被谁盖住
 //! （`script_covered`、`skill_covered`，施工 X-13 中，设计 `31-软件包.md` 第五节第 3 条）；找到了、却因为撞了别的工具的名字
-//! 没登记上的脚本另报一条。斜杠命令模板同样报（施工 X-14 上补，`slash.md`）：`slash_skipped`、`slash_covered`，和核心内置的
+//! 没登记上的脚本另报一条，照核心上一次再找时记下的分清撞名（`script_clashed`）、造不成工具（`script_not_made`）
+//! 和核心还没读到（`script_not_loaded`，施工 X-46）。斜杠命令模板同样报（施工 X-14 上补，`slash.md`）：`slash_skipped`、`slash_covered`，和核心内置的
 //! 同名、用不上的 `slash_builtin`。链接指到数据根里不认的地方的（施工 X-37）：`script_link_outside`、`skill_link_outside`、
 //! `slash_link_outside`，说指到了哪一片。有脚本状态目录、这一刻登记上的脚本里却没有它的（施工 X-44）：`script_state_left`，带
 //! 这个目录，人自己删。
@@ -15,6 +16,7 @@ use miyu_store::skills::Skipped;
 
 use super::shown;
 use crate::Core;
+use crate::scripts::{Missed, Why};
 
 /// 几条警告：`kind` 是 `script`、`skill`、`slash`、`persona`、`preset`。
 pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
@@ -55,7 +57,7 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             &skipped.why,
         ),
     };
-    let registered = core.scripts();
+    let (registered, missed) = (core.scripts(), core.missed_scripts());
     let mut problems: Vec<Value> = skipped_scripts
         .iter()
         .map(|skipped| one("script", skipped))
@@ -64,7 +66,23 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         scripts
             .iter()
             .filter(|script| !registered.iter().any(|on| on.head.name == script.head.name))
-            .map(|script| warn("script", "script_clashed", &script.file, &script.head.name)),
+            .map(
+                |script| match missed.iter().find(|one| one.file == script.file) {
+                    Some(Missed {
+                        why: Why::Clashed, ..
+                    }) => warn("script", "script_clashed", &script.file, &script.head.name),
+                    Some(Missed {
+                        why: Why::NotMade(why),
+                        ..
+                    }) => warn("script", "script_not_made", &script.file, why),
+                    None => warn(
+                        "script",
+                        "script_not_loaded",
+                        &script.file,
+                        &script.head.name,
+                    ),
+                },
+            ),
     );
     problems.extend(
         states

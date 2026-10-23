@@ -6,7 +6,10 @@
 //! 家目录里自己放的不归哪个包，登记时挂在 [`miyu_store::scripts::HOME_PACKAGE`] 下。核心跟着管理员家目录里的 `scripts/`
 //! （[`Core::watch_scripts`]，施工 X-12 补，2026-10-13 项目主人照推荐定）：新放的、改了的、删了的当场再找一遍，下一轮的工具面
 //! 跟着变，和个人设置里的 MCP 服务一样。不每轮重找：没动的时候工具面一字不变。列给头看的 `script.list` 在 `list.rs`（施工 X-27）。
+//!
+//! 找到了却没登记上的记下为什么（[`Missed`]，施工 X-46）：`miyu check` 照它分清撞名、造不成工具和核心还没读到。
 
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use miyu_policy::features::{Feature, Features};
@@ -21,11 +24,36 @@ pub(crate) mod list;
 /// 运行日志的来处。
 const TARGET: &str = "scripts";
 
-/// 核心手里这一刻登记上的脚本；再找一遍的一次一个（起来时、装卸包、家目录变了可能同时来）。
+/// 核心手里这一刻登记上的脚本和上一次没登记上的；再找一遍的一次一个（起来时、装卸包、家目录变了可能同时来）。
 #[derive(Default)]
 pub(crate) struct Scripts {
-    now: RwLock<Arc<Vec<Script>>>,
+    now: RwLock<Followed>,
     following: Mutex<()>,
+}
+
+/// 上一次再找一遍的结果：登记上的、没登记上的。
+#[derive(Default)]
+struct Followed {
+    on: Arc<Vec<Script>>,
+    missed: Arc<Vec<Missed>>,
+}
+
+/// 上一次再找一遍时找到了、没登记上的一个脚本（施工 X-46）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Missed {
+    /// 脚本文件。
+    pub file: PathBuf,
+    /// 为什么。
+    pub why: Why,
+}
+
+/// 没登记上的原因。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Why {
+    /// 撞了别的工具的名字。
+    Clashed,
+    /// 造不成工具：内置包端口交回的那句英文。
+    NotMade(String),
 }
 
 impl Core {
@@ -36,7 +64,20 @@ impl Core {
                 .scripts
                 .now
                 .read()
-                .unwrap_or_else(PoisonError::into_inner),
+                .unwrap_or_else(PoisonError::into_inner)
+                .on,
+        )
+    }
+
+    /// 上一次再找一遍时没登记上的脚本和为什么（施工 X-46）。
+    pub(crate) fn missed_scripts(&self) -> Arc<Vec<Missed>> {
+        Arc::clone(
+            &self
+                .scripts
+                .now
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .missed,
         )
     }
 
@@ -85,11 +126,15 @@ impl Core {
                 .scripts
                 .now
                 .write()
-                .unwrap_or_else(PoisonError::into_inner) = Arc::new(found);
+                .unwrap_or_else(PoisonError::into_inner) = Followed {
+                on: Arc::new(found),
+                missed: Arc::default(),
+            };
             return;
         };
         let mut tools = Vec::new();
         let mut made = Vec::new();
+        let mut missed = Vec::new();
         for script in found {
             match builtins.script(&script.head, script.file.clone(), package(&script)) {
                 Ok(tool) => {
@@ -98,6 +143,10 @@ impl Core {
                 }
                 Err(error) => {
                     tracing::warn!(target: TARGET, path = %script.file.display(), error = error.as_str(), "script not made");
+                    missed.push(Missed {
+                        file: script.file,
+                        why: Why::NotMade(error),
+                    });
                 }
             }
         }
@@ -113,12 +162,24 @@ impl Core {
         for error in &clashed {
             tracing::warn!(target: TARGET, error = %error, "script not registered");
         }
-        made.retain(|script| !clashed.iter().any(|error| error.tool == script.head.name));
+        made.retain(|script| {
+            let kept = !clashed.iter().any(|error| error.tool == script.head.name);
+            if !kept {
+                missed.push(Missed {
+                    file: script.file.clone(),
+                    why: Why::Clashed,
+                });
+            }
+            kept
+        });
         *self
             .scripts
             .now
             .write()
-            .unwrap_or_else(PoisonError::into_inner) = Arc::new(made);
+            .unwrap_or_else(PoisonError::into_inner) = Followed {
+            on: Arc::new(made),
+            missed: Arc::new(missed),
+        };
     }
 }
 

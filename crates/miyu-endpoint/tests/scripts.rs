@@ -25,6 +25,9 @@ mod clicall;
 mod follow;
 mod loading;
 
+/// 造不成工具的脚本名：[`Kit`] 遇到它交回错（施工 X-46）。
+const UNMADE: &str = "unmade";
+
 /// 只会造脚本工具的端口：内置包的工具不动。
 struct Kit;
 
@@ -58,6 +61,9 @@ impl Builtins for Kit {
         file: std::path::PathBuf,
         source: &str,
     ) -> Result<Arc<dyn Tool>, String> {
+        if head.name == UNMADE {
+            return Err(format!("Cannot make {UNMADE}."));
+        }
         miyu_basesystem::script(&default_resources(), head, file, source)
             .map_err(|error| error.to_string())
     }
