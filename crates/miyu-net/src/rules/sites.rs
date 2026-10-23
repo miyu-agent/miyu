@@ -1,7 +1,9 @@
 //! `link_preview.json` 里认得的站和人机验证页那两段（`net.md`「怎么走」第 12、13 条，W-7 再补）：认哪些主机、
-//! MediaWiki 的接口在哪、B 站「视频没了」的页面、人机验证页长什么样。代码里只有「怎么取」，这些都是数据。
+//! MediaWiki 的接口在哪、B 站「视频没了」的页面、抖音和 TikTok 怎么取（施工 N-6）、人机验证页长什么样。代码里只有「怎么
+//! 取」，这些都是数据。
 
 use std::collections::BTreeMap;
+use std::time::Duration;
 
 use reqwest::Url;
 use serde::Deserialize;
@@ -13,6 +15,54 @@ pub(super) struct SitesFile {
     bilibili: BilibiliFile,
     youtube: YoutubeFile,
     mediawiki: MediawikiFile,
+    douyin: DouyinFile,
+    tiktok: TiktokFile,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DouyinFile {
+    hosts: Vec<String>,
+    short_hosts: Vec<String>,
+    site: String,
+    canonical_host: String,
+    register: RegisterFile,
+    share: ShareFile,
+    fallback: FallbackFile,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RegisterFile {
+    host: String,
+    path: String,
+    user_agent: String,
+    body: serde_json::Value,
+    keep_hours: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShareFile {
+    host: String,
+    user_agent: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FallbackFile {
+    user_agent: String,
+    title_suffix: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TiktokFile {
+    hosts: Vec<String>,
+    short_hosts: Vec<String>,
+    site: String,
+    user_agent: String,
+    accept_language: String,
 }
 
 #[derive(Deserialize)]
@@ -109,6 +159,45 @@ impl Mediawiki {
     }
 }
 
+/// 抖音的规矩（施工 N-6）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Douyin {
+    /// 视频页在哪些主机上（网页版、手机分享页）。
+    pub(crate) hosts: Hosts,
+    /// 短链的主机：先跟完跳转再认。
+    pub(crate) short_hosts: Hosts,
+    /// 站名。
+    pub(crate) site: String,
+    /// 卡片的地址、兜底页、图标照这个主机（`www.douyin.com`）。
+    pub(crate) canonical_host: String,
+    /// 拿匿名 `ttwid` 的地方、`User-Agent`、请求体（JSON 原文），拿到的记多久。
+    pub(crate) register_host: String,
+    pub(crate) register_path: String,
+    pub(crate) register_user_agent: String,
+    pub(crate) register_body: String,
+    pub(crate) keep: Duration,
+    /// 手机分享页的主机、`User-Agent`。
+    pub(crate) share_host: String,
+    pub(crate) share_user_agent: String,
+    /// 兜底读网页版的 `User-Agent`（搜索引擎的爬虫拿得到整页），标题末尾去掉的那一截。
+    pub(crate) fallback_user_agent: String,
+    pub(crate) title_suffix: String,
+}
+
+/// TikTok 的规矩（施工 N-6）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Tiktok {
+    /// 视频页在哪些主机上。
+    pub(crate) hosts: Hosts,
+    /// 短链的主机：先跟完跳转再认。
+    pub(crate) short_hosts: Hosts,
+    /// 站名。
+    pub(crate) site: String,
+    /// 读页面的 `User-Agent`、`Accept-Language`。
+    pub(crate) user_agent: String,
+    pub(crate) accept_language: String,
+}
+
 /// 认得的站。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Sites {
@@ -118,6 +207,10 @@ pub(crate) struct Sites {
     pub(crate) youtube: Hosts,
     /// MediaWiki 站。
     pub(crate) mediawiki: Mediawiki,
+    /// 抖音（施工 N-6）。
+    pub(crate) douyin: Douyin,
+    /// TikTok（施工 N-6）。
+    pub(crate) tiktok: Tiktok,
 }
 
 /// 人机验证、挡爬虫的页面怎么认（第 13 条）。
@@ -136,6 +229,11 @@ pub(super) fn sites(file: SitesFile) -> Result<Sites, String> {
     if file.mediawiki.thumbnail == 0 {
         return Err("sites.mediawiki.thumbnail 不能是 0".to_string());
     }
+    if file.douyin.register.keep_hours == 0 {
+        return Err("sites.douyin.register.keep_hours 不能是 0".to_string());
+    }
+    let douyin = file.douyin;
+    let tiktok = file.tiktok;
     Ok(Sites {
         bilibili: Bilibili {
             hosts: hosts(file.bilibili.hosts),
@@ -155,6 +253,28 @@ pub(super) fn sites(file: SitesFile) -> Result<Sites, String> {
                 .map(|(host, path)| (host.to_ascii_lowercase(), path))
                 .collect(),
             thumbnail: file.mediawiki.thumbnail,
+        },
+        douyin: Douyin {
+            hosts: hosts(douyin.hosts),
+            short_hosts: hosts(douyin.short_hosts),
+            site: douyin.site,
+            canonical_host: douyin.canonical_host.to_ascii_lowercase(),
+            register_host: douyin.register.host.to_ascii_lowercase(),
+            register_path: douyin.register.path,
+            register_user_agent: douyin.register.user_agent,
+            register_body: douyin.register.body.to_string(),
+            keep: Duration::from_secs(douyin.register.keep_hours.saturating_mul(3600)),
+            share_host: douyin.share.host.to_ascii_lowercase(),
+            share_user_agent: douyin.share.user_agent,
+            fallback_user_agent: douyin.fallback.user_agent,
+            title_suffix: douyin.fallback.title_suffix,
+        },
+        tiktok: Tiktok {
+            hosts: hosts(tiktok.hosts),
+            short_hosts: hosts(tiktok.short_hosts),
+            site: tiktok.site,
+            user_agent: tiktok.user_agent,
+            accept_language: tiktok.accept_language,
         },
     })
 }

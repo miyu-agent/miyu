@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 mod sites;
 
-pub(crate) use sites::{Bilibili, Challenge, Mediawiki, Sites};
+pub(crate) use sites::{Bilibili, Challenge, Douyin, Mediawiki, Sites, Tiktok};
 
 /// 在资源目录里的位置。
 fn file(resources: &Path) -> PathBuf {

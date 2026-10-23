@@ -222,6 +222,8 @@ pub struct NotReady;
 struct Ready {
     fetcher: Fetcher,
     sites: Sites,
+    /// 抖音的匿名 `ttwid`（施工 N-6）：记一天，一个核心共用一份。
+    ttwid: sites::Ttwid,
     challenge_titles: Vec<String>,
     clip: Clip,
     remember: Remember,
@@ -291,8 +293,13 @@ impl LinkPreview {
 
     /// 抓一页做成卡片（认得的站照它的办法）：一张卡至少要有个标题，不然不如留着原来的链接。
     async fn fetch(&self, ready: &Ready, url: &Url) -> Result<Card, Why> {
-        let (page, draft) =
-            sites::draft(&ready.fetcher, &ready.sites, &ready.challenge_titles, url).await?;
+        let (page, draft) = sites::draft(
+            &ready.fetcher,
+            (&ready.sites, &ready.ttwid),
+            &ready.challenge_titles,
+            url,
+        )
+        .await?;
         let texts = sites::finish(&draft, &page, &ready.clip)?;
         // 两张图互不相干，一起抓
         let (image, icon) = tokio::join!(
@@ -357,6 +364,7 @@ impl LinkPreview {
                     Ok(Ready {
                         fetcher: Fetcher::new(&rules, guard, proxies),
                         sites: rules.sites.clone(),
+                        ttwid: sites::Ttwid::default(),
                         challenge_titles: rules.challenge.titles.clone(),
                         clip: rules.clip,
                         remember: Remember::new(Keep {

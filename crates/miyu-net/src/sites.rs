@@ -3,14 +3,20 @@
 //! - B 站（`bilibili.rs`）：认出视频页，先调视频接口（施工 W-7 四补），没成的整页读完，照页面脚本里的视频数据取。
 //! - YouTube（`youtube.rs`）：读页面读过 `</head>`，多挖时长、频道名。
 //! - MediaWiki 站（`mediawiki.rs`）：先读页面认站，再调 `api.php` 补简介、图、站名。
+//! - 抖音（`douyin.rs`）、TikTok（`tiktok.rs`，施工 N-6）：认出视频页，抖音带匿名 `ttwid` 读分享页、兜底读网页版的
+//!   JSON-LD，TikTok 读页面脚本里的视频数据；没取到的照落到的那一页读普通网页。
 //! - 人机验证页：头和状态码在 `fetch.rs` 读页面时认，标题在这里认；认出来的都是 `no_preview`。
 //!
 //! 站的请求都经 `fetch.rs`：同一道闸、同一套代理、复用的客户端。这里交回原样的字，收拢、截断、退到主机名在
 //! [`finish`]，接口取到的字和页面挖到的走同一道。
 
 mod bilibili;
+mod douyin;
 mod mediawiki;
+mod tiktok;
 mod youtube;
+
+pub(crate) use douyin::Ttwid;
 
 use reqwest::Url;
 
@@ -59,10 +65,15 @@ pub(crate) struct Texts {
 /// （[`Why::Unreachable`]：B 站拦下的请求也给这一页，视频还在，过会儿再要常常就有了）。
 pub(crate) async fn draft(
     fetcher: &Fetcher,
-    sites: &Sites,
+    (sites, ttwid): (&Sites, &Ttwid),
     challenge_titles: &[String],
     url: &Url,
 ) -> Result<(Url, Draft), Why> {
+    // 抖音、TikTok（施工 N-6）：认出来、取到的直接交；删了的不可达；没认出、没取到的照落到的那一页往下读。
+    let url = &match video_sites(fetcher, (sites, ttwid), url).await? {
+        Sited::Card(page, draft) => return Ok((page, *draft)),
+        Sited::Plain(page) => page,
+    };
     let bilibili = bilibili::video_page(fetcher, &sites.bilibili, url).await?;
     if let Some(page) = &bilibili {
         match bilibili::from_api(fetcher, &sites.bilibili, page).await {
@@ -102,6 +113,51 @@ pub(crate) async fn draft(
         mediawiki::fill(fetcher, &sites.mediawiki, &page, &text, &mut draft).await;
     }
     Ok((page, draft))
+}
+
+/// 抖音、TikTok 认出来的样子。
+enum Sited {
+    /// 取到的卡片和它的地址。
+    Card(Url, Box<Draft>),
+    /// 不是这两家的视频，或者没取到：照这一页（短链跟完以后的）读普通网页。
+    Plain(Url),
+}
+
+/// 抖音、TikTok 的视频页照它们的办法取（施工 N-6）。
+///
+/// # Errors
+///
+/// 短链跟跳转出了错；抖音删了的、TikTok 取不到的：[`Why::Unreachable`]。
+async fn video_sites(
+    fetcher: &Fetcher,
+    (sites, ttwid): (&Sites, &Ttwid),
+    url: &Url,
+) -> Result<Sited, Why> {
+    if sites.douyin.hosts.matches(url) {
+        return Ok(match douyin::work(fetcher, &sites.douyin, url).await? {
+            Ok(work) => match douyin::read(fetcher, &sites.douyin, ttwid, &work).await {
+                douyin::Read::Found(page, draft) => Sited::Card(page, draft),
+                douyin::Read::Gone => return Err(Why::Unreachable),
+                douyin::Read::Missed => {
+                    fell_back("douyin");
+                    Sited::Plain(work.page)
+                }
+            },
+            Err(page) => Sited::Plain(page),
+        });
+    }
+    if sites.tiktok.hosts.matches(url) {
+        return Ok(
+            match tiktok::video_page(fetcher, &sites.tiktok, url).await? {
+                Ok(page) => {
+                    let draft = tiktok::read(fetcher, &sites.tiktok, &page).await?;
+                    Sited::Card(page, Box::new(draft))
+                }
+                Err(page) => Sited::Plain(page),
+            },
+        );
+    }
+    Ok(Sited::Plain(url.clone()))
 }
 
 /// 合成卡片上的字（第 7、14 条）：每一格去掉没填的模板、收拢、截断；站名先照 `og:site_name`，再照退路，最后是

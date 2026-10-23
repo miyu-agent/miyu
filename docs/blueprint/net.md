@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。三件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`）、`web_search`（施工 N-2 上，`tools/web_search.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
+核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。三件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`）、`web_search`（施工 N-2 上，`tools/web_search.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站、抖音、TikTok）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
 
 地址闸是安全边界：网址是模型写的、别人发来的，核心照它去连，等于把 SSRF 的靶子摆在核心上。闸只有这一份，网页软件不另做图片代理（`web-module.md`「起草时定的」第 14 条）。
 
@@ -24,6 +24,9 @@
 | `crates/miyu-net/src/sites/bilibili.rs` | B 站：认 BV、av、短链；读页面脚本里的视频数据 |
 | `crates/miyu-net/src/sites/mediawiki.rs` | MediaWiki 站：认站、页面名、`api.php` 在哪、读回应、第一段 |
 | `crates/miyu-net/src/sites/youtube.rs` | YouTube：ISO 8601 的时长换成秒 |
+| `crates/miyu-net/src/sites/douyin.rs` | 抖音（施工 N-6）：认作品页、短链；匿名 `ttwid`（记一天）、分享页的 `_ROUTER_DATA`；兜底读网页版的 JSON-LD |
+| `crates/miyu-net/src/sites/tiktok.rs` | TikTok（施工 N-6）：认视频页、短链；页面脚本 `__UNIVERSAL_DATA_FOR_REHYDRATION__` 里的视频数据 |
+| `crates/miyu-net/src/fetch/asked.rs` | 站要的另外几样请求（施工 N-6）：`POST` 一次、交回回应头里某个 cookie 的值 |
 | `crates/miyu-net/src/rules/sites.rs` | 读 `link_preview.json` 的 `api`、`sites`、`challenge` 三段 |
 | `crates/miyu-net/src/remember.rs` | 抓过的记多久、满了整个清空 |
 | `crates/miyu-net/src/testkit.rs` | 测试用的口子：回环当公网、只照一张表解析、代理照给的值。`testkit` 开关打开才编进去 |
@@ -52,8 +55,8 @@
 
 - `card.url` 是跟完跳转、最后落到的那一页。`description` 没有的是空字。
 - `image`、`icon` 可以是 `null`。图是这个账号的 blob，头照 `blob.get` 读，网页照 `/media` 给（W-10）。
-- `kind` 一定有：`video`（B 站的视频、YouTube 上读到了时长的页）、`article`（MediaWiki 站上的页）、`page`（别的）。
-- `duration`（视频多少秒，正整数）、`author`（B 站的 UP 主、YouTube 的频道名）没有的不写（W-7 再补，「怎么走」第 12 条）。
+- `kind` 一定有：`video`（B 站的视频、YouTube 上读到了时长的页、抖音和 TikTok 的视频，施工 N-6）、`article`（MediaWiki 站上的页）、`page`（别的）。
+- `duration`（视频多少秒，正整数）、`author`（B 站的 UP 主、YouTube 的频道名、抖音和 TikTok 的作者昵称）没有的不写（W-7 再补，「怎么走」第 12 条）。
 - `why`：`not_a_url`（读不成地址）、`unsupported_scheme`（不是 http、https）、`no_preview`（不是网页、没有标题、地址过不了闸、跳转太多，下次也一样）、`unreachable`（超时、连不上、对方回 4xx、5xx，过会儿可能就好了）。做不出卡片是正常的结果之一，不是出错。
 - 在后台答：这个连接上后面的请求不等它，回应照 `id` 对上（「怎么走」第 11 条）。
 
@@ -123,6 +126,34 @@
         "wiki.archlinux.org": "/api.php"
       },
       "thumbnail": 640
+    },
+    "douyin": {
+      "hosts": ["douyin.com", "iesdouyin.com"],
+      "short_hosts": ["v.douyin.com"],
+      "site": "抖音",
+      "canonical_host": "www.douyin.com",
+      "register": {
+        "host": "ttwid.bytedance.com",
+        "path": "/ttwid/union/register/",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+        "body": {"region": "cn", "aid": 1768, "needFid": false, "service": "www.ixigua.com", "migrate_info": {"ticket": "", "source": "node"}, "cbUrlProtocol": "https", "union": true},
+        "keep_hours": 24
+      },
+      "share": {
+        "host": "www.iesdouyin.com",
+        "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+      },
+      "fallback": {
+        "user_agent": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+        "title_suffix": " - 抖音"
+      }
+    },
+    "tiktok": {
+      "hosts": ["tiktok.com"],
+      "short_hosts": ["vm.tiktok.com", "vt.tiktok.com"],
+      "site": "TikTok",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+      "accept_language": "en-US,en;q=0.9"
     }
   },
   "challenge": {
@@ -187,6 +218,19 @@
        5. 回应里没有 `extract` 的（站上没装 TextExtracts，ArchWiki 就是）：再调 `api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text&section=0&page=<页面名>`，简介照 `parse.text` 里第一段去掉标签以后不空的 `<p>`：只认正文最外层的段落（`mw-parser-output` 那一层，没有它包着的是整段的最外层），框、表格、列表里的不算（ArchWiki 顶上「Related articles」框里的 `<p>`，2026-10-03 项目主人实测）；`<sup>`、`<style>`、`<script>` 连里面的字一起去掉，实体解开，空白收拢。
        6. 合成卡片：接口给了的照接口，接口没给的那几格照页面（第 7 条）。站名先照 `og:site_name`，再照接口的 `sitename`，再照页面标题「 - 」后面那一截，最后才是主机名。用的是页面的标题的：最后一个「 - 」连后面那一截去掉（`Rust - 维基百科，自由的百科全书` 变成 `Rust`）。`kind` 是 `article`。
        7. 接口没成：照页面合成卡片（上一条），`kind` 还是 `article`。
+    4. **抖音**（`sites.douyin`，施工 N-6，2026-10-23 项目主人定；办法照终端 2026-10-24 实测；不用 yt-dlp、不调外部程序）：
+       1. 认：主机是 `hosts` 里的（`douyin.com`、`iesdouyin.com`），路径是 `/video/<id>`、`/note/<id>`（图文）、`/share/video/<id>/`、`/share/note/<id>/`，`<id>` 是数字。主机是 `short_hosts` 里的（`v.douyin.com`）：先照第 4 条跟完跳转再认；落到的不是作品页（跳到首页 `iesdouyin.com/?schema_type=…`、`www.douyin.com`）的，照第 6、7 条读那一页。
+       2. 匿名 `ttwid`：照 `register` `POST` 到 `host`、`path`（协议、端口照认出来的那一页），`User-Agent`、请求体（JSON）照写的，要回应头 `Set-Cookie` 里 `ttwid=` 的值（原样，到 `;` 为止）。它的 `Domain` 是 `bytedance.com`，所以手拼 `Cookie` 头。拿到的记 `keep_hours`（24 小时），一个核心共用一份；拿不到的这一次直接走兜底，下一次再拿。照 `api` 的时限，不跟跳转。
+       3. 主路：照 `share` 的主机、`User-Agent`（手机 Safari），只带 `Cookie: ttwid=<值>`，`GET /share/video/<id>/`（图文 `/share/note/<id>/`），整页读完。页面脚本里 `window._ROUTER_DATA = ` 后面的第一个完整 JSON 值：遍历 `loaderData` 的值，找带 `videoInfoRes.item_list` 的那个（不写死键名，作品页的是 `video_(id)/page`）。`item_list[0]`：`desc` 当标题，`author.nickname` 作者，`video.duration`（毫秒，四舍五入成秒），`video.cover.url_list[0]` 封面。`item_list` 空、`filter_list` 不空（删了、只自己可见，`filter_reason` 是 `status_self_see` 这些）：`unreachable`。都空、没有 `videoInfoRes`（没带上 `ttwid` 是这样）、页面拿不到：走兜底。
+       4. 兜底：照 `fallback` 的 `User-Agent`（Bingbot；浏览器、社交平台的爬虫拿到的是 72 KB 的空壳），`GET` 网页版 `canonical_host` 的 `/video/<id>`，整页读完。回的不是 2xx（删了的回 404）、连不上：`unreachable`。页面里 `type="application/ld+json"` 的几段挑 `@type` 是 `VideoObject` 的：`name` 去掉末尾的 `title_suffix`（「 - 抖音」）当标题，`thumbnailUrl` 第一个（是字的也认）封面，`duration`（ISO 8601）换成秒，`creator.name` 作者；`description` 是套话、`uploadDate`、`width`、`height` 不用。没有 `VideoObject` 的（改版、拦了）：照第 6、7 条读用户给的那一页（普通网页卡片），不报错。
+       5. 卡片：地址写网页版 `canonical_host` 的 `/video/<id>`（`/note/<id>`），站名照 `site`（「抖音」），图标照它的 `/favicon.ico`。`desc` 是空的照作者名当标题，两样都没有的当没取到。`kind` 是 `video`。
+       6. 网页版的详情接口 `/aweme/v1/web/aweme/detail/` 带着 `ttwid` 也一律 403（终端实测 3 条各 6 次），不用。
+    5. **TikTok**（`sites.tiktok`，施工 N-6）：
+       1. 认：主机是 `hosts` 里的，路径是 `/@<用户>/video/<数字>`，用户名可以是空的（短链跳过去就是 `@/video/<id>`）。主机是 `short_hosts` 里的（`vm.tiktok.com`、`vt.tiktok.com`）：先跟完跳转再认，落到的不是视频页的照普通网页读。
+       2. 照 `user_agent`（桌面 Chrome）、`accept_language`（`en-US,en;q=0.9`），`GET` 视频页，整页读完（约 430 KB，在 2 MiB 以内）。页面没有 `og:`、没有 JSON-LD。
+       3. `<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" …>` 到它的 `</script>` 那段 JSON：`__DEFAULT_SCOPE__["webapp.video-detail"]` 的 `statusCode` 是 0、有 `itemInfo.itemStruct` 的：`desc` 当标题（空的照作者名），`author.nickname` 作者，`video.duration`（秒），`video.cover` 封面。
+       4. `statusCode` 不是 0（`10204` 不存在）、没有这段脚本、没有 `itemStruct`（多半是被 WAF 拦了）、读不到页面：`unreachable`。
+       5. 卡片：地址是视频页去掉查询、片段，站名照 `site`（「TikTok」），图标照它的 `/favicon.ico`，`kind` 是 `video`。
 13. 人机验证、挡爬虫的页面（W-7 再补，2026-10-02 项目主人提，认法主会话定）：认出来的不出卡片，`no_preview`，照第 9 条记 15 分钟，运行日志照第 1 条记 `link preview failed`。认法在 `link_preview.json` 的 `challenge`，以后加不用改代码：
     1. 页面的回应带着 `headers` 里的哪一个头、值也对上（名字不分大小写，值去掉两头空白、不分大小写）；
     2. 页面回的状态码在 `statuses` 里（403、503），`Content-Type` 里又有 `html`；
@@ -203,7 +247,7 @@
 | 级别 | 行 | 什么时候 |
 |---|---|---|
 | `WARN` | `link preview failed why=…` | 抓了、没做成卡片（`no_preview`、`unreachable`）：网址是会话里来的，主机名也不写（施工 LG-1 上）。记着的、读不成地址的、不是 http 的不记 |
-| `WARN` | `link site fallback api=…` | 认得的站，接口没成、退回读页面（第 12 条）：现在只有 `api=mediawiki`。网址、主机名都不写（施工 LG-1 上） |
+| `WARN` | `link site fallback api=…` | 认得的站，接口没成、退回读页面（第 12 条）：`api=mediawiki`；抖音分享页没取到、走兜底的 `api=douyin share`，兜底也没取到、照普通网页的 `api=douyin`（施工 N-6）。网址、主机名都不写（施工 LG-1 上） |
 | `WARN` | `link image not stored error=…` | 抓到的图存不进 blob：那一格交 `null`；存的任务崩了的写 `panic=…`，不写原话 |
 | `WARN` | `not ready error=…` | `link_preview.json` 读不懂。只记第一次 |
 
@@ -224,6 +268,7 @@
 | `crates/miyu-net/tests/preview.rs` | 本机的假服务器上整条走通：钉住的地址（系统解析不了的名字照样到了）、元数据、图存成 blob、`blob` 没了交 `null`、记着的不再抓；跳转每一跳过闸（内网、`localhost`、`ftp`、云的元数据地址）、最多 5 跳、没写 `Location`；不是 HTML、没写类型、没有标题、4xx、5xx；读到 `</head>`、`<body` 就停，最多 2 MiB；图只收五种、不收 SVG、最多 3 MiB（报了长度的、没报的）；`link_preview.json` 读不了。gzip、br 压过的页面不带 `Accept-Encoding` 也解得开（W-7 补）；一个压得很小解开很大的包照上限停，标题在上限前面的找得到、后面的找不到；`og:title` 挪到 `</head>` 后面的找得到，挪到上限以后的找不到；`og:title` 排在 `<head>` 里靠前、别的字段排在后面隔着一截填料的，不会因为先找到 `og:title` 就提前收手丢了后面的字段 |
 | `crates/miyu-net/src/sites/*/tests.rs`、`crates/miyu-net/src/rules/tests.rs` | 认主机（一样的、子域名、像而不是的 `notbilibili.com`）；BV、av 的样子；B 站页面脚本里的 `videoData`（读不成的照页面的 `<meta name="author">`）、接口的地址和封面换 `https:`（施工 W-7 四补）；ISO 8601 的时长；`wgPageName` 的 JSON 字符串（转义、中文）；`EditURI`；第一段 `<p>`（空的、`<sup>` 去掉，框、表格里的不算）；接口回应读出来的几格；`sites`、`challenge` 多一格少一格读不了 |
 | `crates/miyu-net/tests/sites.rs` | 本机的假服务器当 B 站、YouTube、维基百科、别的 MediaWiki 站：B 站 BV、av、短链跟跳转都认，页面脚本里有视频数据的卡片带封面、UP 主、时长、`kind: video`，没有的照页面的 og 和 `<meta name="author">`、还是 `kind: video`；每张卡先调一回接口（施工 W-7 四补，这里的假服务器没有它，回 404，照页面合成），「视频没了」那一页 `no_preview`、同样的标题不在 B 站视频页上的照常、模板那一格当没有；MediaWiki 照列着的主机、照 `generator` 都认，`api.php` 的简介、缩略图、站名，没有 TextExtracts 退回第一段，标题去尾巴，`kind: article`，接口没成照页面；YouTube 读过 `</head>`、时长换成秒、频道名、读不到时长的是 `page`；人机验证的标题、头、403 和 503 的 HTML 都 `no_preview`，403 不是 HTML 的照旧 `unreachable`；不认得的站照旧 `kind: page`、不调接口；MediaWiki 站的 `EditURI` 指到内网的被闸拦住、照页面合成卡片 |
+| `crates/miyu-net/tests/sites_video.rs`、`src/sites/douyin/tests.rs`、`src/sites/tiktok/tests.rs`（施工 N-6） | 照终端 2026-10-24 录下的片段（`tests/fixtures/`），本机假服务器：抖音注册拿到 `ttwid`（`POST`）、分享页只带它、手机 UA，卡片的地址换成网页版，`ttwid` 记着不再注册；注册不成、分享页都空的走兜底（Bingbot UA，去「 - 抖音」，ISO 时长）；`filter_list` 不空的、兜底 404 的 `unreachable`；兜底没有 `VideoObject` 的照普通网页；短链跟完再认、落到首页的照普通网页；认地址、毫秒四舍五入、没有标题照作者名。TikTok 照 `itemStruct`、英文的 `Accept-Language`，短链去掉查询，`statusCode` 10204、没有脚本的 `unreachable` |
 | `crates/miyu-net/tests/sites_api.rs`（施工 W-7 四补） | B 站先调接口：`User-Agent` 是 `Miyu`、主机 `api.bilibili.com`、`bvid`、`aid` 照路径，取到了照接口做卡片、不读页面；HTTP 412、`code` 是 `-352` 的 `unreachable`、不读页面；别的 `code`（`-404`，带着 `data` 也不用）退回读页面 |
 | `crates/miyu-net/tests/live.rs`（`#[ignore]`，还要设 `MIYU_NET_LIVE=1` 才连外网：CI 的长跑用 `--ignored` 跑所有标了的测试） | 真网络：B 站视频、YouTube 视频、中英维基、ArchWiki、一个普通网页各出像样的卡片（`kind` 对、有简介），卡片印出来给人看（W-7 再补，施工单验收第 3 条） |
 | `crates/miyu-net/tests/proxy.rs` | 代理（照测试的口子给的值）：页面和图都经假代理、请求行写着整个地址；本机解析不出来的照样交给代理；解析出内网的、写的就是内网和回环的一律不交；`NO_PROXY` 里的直连、钉地址；不走代理、解析不出来的 `unreachable`；没开测试的口子时，回环上真在听的服务器也不去 |

@@ -61,6 +61,34 @@
         "wiki.archlinux.org": "/api.php"
       },
       "thumbnail": 640
+    },
+    "douyin": {
+      "hosts": ["douyin.com", "iesdouyin.com"],
+      "short_hosts": ["v.douyin.com"],
+      "site": "抖音",
+      "canonical_host": "www.douyin.com",
+      "register": {
+        "host": "ttwid.bytedance.com",
+        "path": "/ttwid/union/register/",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+        "body": {"region": "cn", "aid": 1768, "needFid": false, "service": "www.ixigua.com", "migrate_info": {"ticket": "", "source": "node"}, "cbUrlProtocol": "https", "union": true},
+        "keep_hours": 24
+      },
+      "share": {
+        "host": "www.iesdouyin.com",
+        "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+      },
+      "fallback": {
+        "user_agent": "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+        "title_suffix": " - 抖音"
+      }
+    },
+    "tiktok": {
+      "hosts": ["tiktok.com"],
+      "short_hosts": ["vm.tiktok.com", "vt.tiktok.com"],
+      "site": "TikTok",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+      "accept_language": "en-US,en;q=0.9"
     }
   },
   "challenge": {

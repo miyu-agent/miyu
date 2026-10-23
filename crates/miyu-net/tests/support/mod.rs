@@ -134,6 +134,10 @@ pub struct Seen {
     /// `Authorization`、`X-Subscription-Token`（施工 N-3 上：要 key 的几家带对了没有）。
     pub authorization: String,
     pub token: String,
+    /// 请求方法、`Cookie`、`Accept-Language`（施工 N-6：抖音拿 `ttwid` 是 `POST`、分享页要带上它，TikTok 要英文）。
+    pub method: String,
+    pub cookie: String,
+    pub accept_language: String,
 }
 
 /// 跑着的假服务器：照请求行里的地址回，没有的回 404；路由以 `*` 结尾的照前缀对（W-7 再补：接口的查询参数长）。
@@ -213,9 +217,15 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
         }
     }
     let mut lines = head.split("\r\n");
-    let target = lines
+    let request_line = lines.next().unwrap_or_default();
+    let method = request_line
+        .split(' ')
         .next()
-        .and_then(|line| line.split(' ').nth(1))
+        .unwrap_or_default()
+        .to_string();
+    let target = request_line
+        .split(' ')
+        .nth(1)
         .unwrap_or_default()
         .to_string();
     let header = |name: &str| {
@@ -235,6 +245,9 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
             accept: header("accept"),
             authorization: header("authorization"),
             token: header("x-subscription-token"),
+            method,
+            cookie: header("cookie"),
+            accept_language: header("accept-language"),
         });
     let reply = routes
         .iter()

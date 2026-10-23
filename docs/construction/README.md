@@ -717,6 +717,7 @@ flowchart LR
 | 9-1 再补 | 配置项多一层组 | 清单 `[settings.<组>.<名字>]`，键 `<包>.<组>.<名字>`（接入通讯平台的 `im.qq.listen`、`im.web.port`）。施工单见 `9-1-软件包清单（再补）.md` |
 | N-4 | 抓不下来的请别家代抓 | `web_fetch` 被挡、空的、太短的照 Exa → Firecrawl → Parallel 代抓，和搜索共用冷却。施工单见 `N-4-抓不下来的请别家代抓.md` |
 | N-5 | 扩展登记搜索来源 | 清单 `[[search]]`、能力 `search`，下拉里多 `<包>/<编号>`，选了的经 `search.query` 先问它。施工单见 `N-5-扩展登记搜索来源.md` |
+| N-6 | 链接卡片认抖音、TikTok 的视频 | `link.preview` 给抖音、TikTok 出 `kind=video` 的卡片：抖音带匿名 `ttwid`（`POST` 注册、记一天）读手机分享页的 `_ROUTER_DATA`，取不到的照 Bingbot 读网页版的 JSON-LD，删了的不可达、都没有的照普通网页；TikTok 读页面脚本 `__UNIVERSAL_DATA_FOR_REHYDRATION__` 的 `itemStruct`，拿不到的不可达；两家的短链先跟完再认。只用 `miyu-net` 自己的 HTTP；`fetch.rs` 能带 `Cookie`、换 `Accept-Language`、`POST` 拿 cookie。施工单见 `N-6-抖音TikTok视频卡片.md` |
 | V-10 | 读日志认标签走快路 | 块、`by`、效果的种类在开头的直接认，不解整表：重启后打开大会话回到闸门以内。施工单见 `V-10-读日志认标签走快路.md` |
 | F-12 | 包的作者、上游和从哪来 | 清单 `author`、`upstream`，`package.list`、`package.info` 交出去，另交 `from`。施工单见 `F-12-包的作者上游和来源.md` |
 | V-11 | 事件一遍读完 | 读到 `body` 时已经知道种类的直接照那一种读；量尺印出载入分段。施工单见 `V-11-事件一遍读完.md` |

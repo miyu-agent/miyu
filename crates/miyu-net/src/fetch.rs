@@ -8,11 +8,12 @@
 //! - 站的接口（[`Fetcher::json`]）、短链跟跳转（[`Fetcher::locate`]）走同一条路：同一道闸、同一套代理、复用的客户端
 //!   （W-7 再补，第 12 条）。人机验证页的头和状态码在读页面时认（[`Fetcher::page`]，第 13 条）。
 
+mod asked;
 pub(crate) mod clients;
 
 use std::time::Duration;
 
-use reqwest::header::{ACCEPT, ACCEPT_LANGUAGE, CONTENT_TYPE, LOCATION, USER_AGENT};
+use reqwest::header::{ACCEPT, ACCEPT_LANGUAGE, CONTENT_TYPE, COOKIE, LOCATION, USER_AGENT};
 use reqwest::{Response, Url};
 use tokio::time::Instant;
 
@@ -58,6 +59,13 @@ impl From<Hop> for Why {
             Hop::Unreachable => Why::Unreachable,
         }
     }
+}
+
+/// 一跳另外带的头（施工 N-6，抖音的分享页要 `Cookie`，TikTok 要英文的 `Accept-Language`）：没写的照规矩里的、不带。
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct Extra<'a> {
+    pub(crate) cookie: Option<&'a str>,
+    pub(crate) language: Option<&'a str>,
 }
 
 /// `web_fetch` 抓到的一份（施工 N-1）：最后落到的地址、媒体类型（小写、去掉参数）、`charset`（写了的）、读到的字节，超了
@@ -108,7 +116,26 @@ impl Fetcher {
     /// 过不了闸、跳转太多、不是 HTML、人机验证页（头、状态码，第 13 条）：[`Why::NoPreview`]；超时、连不上、
     /// 别的 4xx、5xx、读到一半断了：[`Why::Unreachable`]。
     pub(crate) async fn page(&self, url: &Url, until: Until) -> Result<(Url, String), Why> {
-        let (response, page) = self.get(url, &self.page).await.map_err(Why::from)?;
+        self.page_with(url, until, &self.user_agent, Extra::default())
+            .await
+    }
+
+    /// 同 [`Fetcher::page`]，`User-Agent` 照 `user_agent`，另带 `extra` 里的头（施工 N-6）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Fetcher::page`]。
+    pub(crate) async fn page_with(
+        &self,
+        url: &Url,
+        until: Until,
+        user_agent: &str,
+        extra: Extra<'_>,
+    ) -> Result<(Url, String), Why> {
+        let (response, page) = self
+            .get_with(url, &self.page, (user_agent, extra), &Asker::Owner)
+            .await
+            .map_err(Why::from)?;
         let kind = response
             .headers()
             .get(CONTENT_TYPE)
@@ -276,9 +303,23 @@ impl Fetcher {
         user_agent: &str,
         asker: &Asker,
     ) -> Result<(Response, Url), Hop> {
+        self.get_with(url, fetching, (user_agent, Extra::default()), asker)
+            .await
+    }
+
+    /// 同 [`Fetcher::get_as`]，每一跳另带 `extra` 里的头（施工 N-6）。
+    async fn get_with(
+        &self,
+        url: &Url,
+        fetching: &Fetching,
+        (user_agent, extra): (&str, Extra<'_>),
+        asker: &Asker,
+    ) -> Result<(Response, Url), Hop> {
         let mut current = url.clone();
         for _ in 0..=self.redirects {
-            let response = self.hop(&current, fetching, user_agent, asker).await?;
+            let response = self
+                .hop(&current, fetching, (user_agent, extra), asker)
+                .await?;
             let status = response.status();
             if status.is_redirection() {
                 let location = response
@@ -300,9 +341,32 @@ impl Fetcher {
         &self,
         url: &Url,
         fetching: &Fetching,
-        user_agent: &str,
+        (user_agent, extra): (&str, Extra<'_>),
         asker: &Asker,
     ) -> Result<Response, Hop> {
+        let (client, left) = self.client_for(url, fetching, asker).await?;
+        let mut request = client
+            .get(url.clone())
+            .timeout(left)
+            .header(USER_AGENT, user_agent)
+            .header(ACCEPT, &fetching.accept)
+            .header(
+                ACCEPT_LANGUAGE,
+                extra.language.unwrap_or(&self.accept_language),
+            );
+        if let Some(cookie) = extra.cookie {
+            request = request.header(COOKIE, cookie);
+        }
+        request.send().await.map_err(|_| Hop::Unreachable)
+    }
+
+    /// 过闸，挑怎么连：交回复用的客户端和这一跳还剩多少时间（从过闸算起，`fetching` 的时限）。
+    async fn client_for(
+        &self,
+        url: &Url,
+        fetching: &Fetching,
+        asker: &Asker,
+    ) -> Result<(reqwest::Client, Duration), Hop> {
         let deadline = Instant::now() + fetching.timeout;
         let host = url.host_str().unwrap_or_default();
         // 替别人抓：系统配置里的内部域名每一跳都查，跳过去的也算（施工 MB-2）。
@@ -334,15 +398,7 @@ impl Fetcher {
         if left == Duration::ZERO {
             return Err(Hop::Unreachable);
         }
-        client
-            .get(url.clone())
-            .timeout(left)
-            .header(USER_AGENT, user_agent)
-            .header(ACCEPT, &fetching.accept)
-            .header(ACCEPT_LANGUAGE, &self.accept_language)
-            .send()
-            .await
-            .map_err(|_| Hop::Unreachable)
+        Ok((client, left))
     }
 }
 

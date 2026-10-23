@@ -17,3 +17,4 @@ mod search_extensions;
 mod search_keys;
 mod sites;
 mod sites_api;
+mod sites_video;
