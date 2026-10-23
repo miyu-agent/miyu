@@ -1,5 +1,5 @@
-//! 会话列表的索引记的运行日志（施工 3-8 七补，`protocol.md`「运行日志」）：新建的记 `INFO session index created`；起来时读不懂
-//! 的删掉重建，记 `WARN session index rebuilt`；列会话时读出坏了的，记 `WARN session index not read`，删掉重建，这一次照样
+//! 会话列表的索引记的运行日志（施工 3-8 七补，`protocol.md`「运行日志」）：新建的记 `INFO session index created`；开的时候读不懂
+//! （施工 Y-12 中上起用到时才开）的删掉重建，记 `WARN session index rebuilt`；列会话时读出坏了的，记 `WARN session index not read`，删掉重建，这一次照样
 //! 列得对。
 //!
 //! 全局装一个写进内存的订阅者：列会话在阻塞线程里。全局的一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。
@@ -25,8 +25,11 @@ async fn created_rebuilt_and_found_broken_are_logged() {
     .expect("这个测试程序只装这一次");
     let has = |what: &str| memory.lines().iter().any(|line| line.contains(what));
 
+    // 索引用到时才开（施工 Y-12 中上）：列一次会话。
     let fresh = Home::new();
-    drop(fresh.core(&Script::new([])));
+    let mut client = Client::connect(fresh.core(&Script::new([])));
+    client.hello().await;
+    client.call("l0", "session.list", json!({})).await;
     assert!(
         has("INFO  endpoint session index created"),
         "{:?}",
@@ -38,12 +41,13 @@ async fn created_rebuilt_and_found_broken_are_logged() {
     std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
     std::fs::write(&path, vec![b'x'; 4096]).expect("写得进");
     let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    client.call("l0", "session.list", json!({})).await;
     assert!(
         has("WARN  endpoint session index rebuilt reason="),
         "{:?}",
         memory.lines()
     );
-    client.hello().await;
     let work = home.work.to_string_lossy().into_owned();
     client.create("c1", &work).await;
     client.create("c2", &work).await;

@@ -149,10 +149,9 @@ pub struct Core {
     token: String,
     /// 会话表。
     sessions: Sessions,
-    /// 管理员的会话列表的索引（施工 3-8 七补）：起来时开一次，一直开着；会话落盘时更新、删会话时删行、列会话时读。
-    index: Arc<SessionIndex>,
-    /// 别的账号各自的会话列表的索引：在它们自己的家目录下。系统账号的拉起扩展前开（施工 O-4 下，`system_accounts::prepare`；
-    /// 装上新的跟着开，卸掉的留着、装回来接着用，施工 F-5 下）；别人的用到时才开（施工 Y-12 上），开了一直开着。
+    /// 各个账号的会话列表的索引（施工 3-8 七补）：在它们自己的家目录下，开了一直开着；会话落盘时更新、删会话时删行、列会话时读。
+    /// 系统账号的拉起扩展前开（施工 O-4 下，`system_accounts::prepare`；装上新的跟着开，卸掉的留着、装回来接着用，施工 F-5 下）；
+    /// 别人的（机主的也是，施工 Y-12 中上：设置那一段的核心不该替还没有的人建家目录）用到时才开（施工 Y-12 上）。
     indexes: std::sync::Mutex<std::collections::BTreeMap<AccountId, Arc<SessionIndex>>>,
     /// 用量汇总（施工 8-15，`state/usage.db`）：起来时开一次，一直开着；会话落盘时写、一次性入口记账（交给模型资料）、
     /// `usage.query` 和 `session_usage` 查之前补。
@@ -255,7 +254,6 @@ impl Core {
         let mut config = Config::defaults(&root, &admin, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
-        let index = Arc::new(list::open_index(&root, &admin));
         let found = packages::load(&resources, &root, &admin);
         let usage = Arc::new(usage::open(&root));
         model_data.keep_ledger(Arc::clone(&usage));
@@ -276,7 +274,6 @@ impl Core {
             knowledge,
             kb_progress,
             memory,
-            index,
             indexes: std::sync::Mutex::default(),
             usage,
             hub: Hub::new(&config),
@@ -436,12 +433,9 @@ impl Core {
             })
     }
 
-    /// 账号 `owner` 的会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：管理员的那一份起来时就开着；别的账号
-    /// 在它自己的家目录下，还没开的这时开（施工 Y-12 上：以前只有管理员、系统账号的有，成员的会话不进索引、不进列表）。
+    /// 账号 `owner` 的会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：在他自己的家目录下，还没开的这时开
+    /// （施工 Y-12 上：以前只有管理员、系统账号的有，成员的会话不进索引、不进列表）。
     pub(crate) fn index_for(&self, owner: &AccountId) -> Arc<SessionIndex> {
-        if *owner == self.admin {
-            return Arc::clone(&self.index);
-        }
         let mut indexes = self
             .indexes
             .lock()

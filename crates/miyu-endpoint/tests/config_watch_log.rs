@@ -54,8 +54,8 @@ async fn a_hand_edit_and_an_unavailable_watch_are_logged() {
     if cfg!(target_os = "linux") {
         let home = Home::new();
         let core = home.core_configured(&Script::new([]), None, &[]);
-        // 家目录拿掉（会话列表的索引在里面，开着的照样开着）：看不了它，inotify 拒绝。
-        std::fs::remove_dir_all(home.root.account_dir(&alice())).expect("删得掉");
+        // 没有家目录（会话列表的索引用到时才开，施工 Y-12 中上：核心起来不替谁建它）：看不了它，inotify 拒绝。
+        assert!(!home.root.account_dir(&alice()).exists());
         let watching = core.watch_config().expect("退回轮询，照样监视");
         assert!(watching.unavailable().is_some());
         assert!(

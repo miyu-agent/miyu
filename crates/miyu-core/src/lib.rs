@@ -24,11 +24,13 @@ pub mod embed;
 mod kit;
 pub mod memlog;
 pub mod models;
+pub mod oobe;
 pub mod packages;
 mod sandbox;
 mod serve;
 pub mod settings;
 mod settle;
+mod start;
 mod trash;
 
 pub use kit::Kit;
@@ -41,7 +43,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_endpoint::Core;
-use miyu_ipc::{Dirs, Lock, OpenError, Ready};
+use miyu_ipc::{Lock, OpenError, Ready};
 use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
 use miyu_store::packages::Found;
@@ -62,7 +64,8 @@ pub struct Options {
     pub idle: Option<Duration>,
 }
 
-/// 管理员：本机连上来的都是他，账号固定叫 `admin`（`06-多用户与身份.md` U13）。
+/// 系统的账号名 `admin`（`06-多用户与身份.md` U22，施工 Y-12 中上起）：系统、不登录；装 Miyu 的那个人是机主
+/// （[`oobe::owner`]），核心照他起。还没有机主时设置那一段的核心照它占着位置。
 pub fn admin() -> AccountId {
     AccountId::parse("admin").unwrap_or_else(|e| unreachable!("「admin」合账号的写法：{e}"))
 }
@@ -114,9 +117,6 @@ pub fn main(options: Options) -> ExitCode {
     if let Err(error) = miyu_sandbox::lifeline::bind_children() {
         tracing::warn!(target: TARGET, error = %error, "children not bound");
     }
-    if let Err(error) = root.prepare_home(&admin()) {
-        return failed("home", error.to_string());
-    }
     let resources = match ResourceRoot::locate(&env) {
         Ok(resources) => resources,
         Err(error) => return failed("resources", error.to_string()),
@@ -133,24 +133,6 @@ pub fn main(options: Options) -> ExitCode {
         models::cache(&env),
         env.exe.clone(),
     );
-    let mut found = load_packages(&resources, &root);
-    let packaged = settings::Packaged::of(&mut found);
-    let config = settings::read(&root, &admin(), env.home.as_deref(), &packaged);
-    settings::log_level(&config, &level, &log);
-    let locale = miyu_store::env::locale();
-    settings::generate(
-        &root,
-        &resources,
-        locale.as_deref(),
-        &config.resolved().values(),
-        config.items(),
-        &packaged.manifests,
-    );
-    let live = Live {
-        levels: log.levels(),
-        locale,
-        found,
-    };
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(WORKERS)
         .enable_all()
@@ -159,11 +141,11 @@ pub fn main(options: Options) -> ExitCode {
         Ok(runtime) => runtime,
         Err(error) => return failed("runtime", error.to_string()),
     };
-    let outcome = runtime.block_on(run(
+    let outcome = runtime.block_on(start::start(
         env,
         (root, resources, lock),
         options,
-        (config, live),
+        (&level, &log),
         catalog,
     ));
     drop(log);
@@ -336,8 +318,8 @@ fn manifests_of(core: &Arc<Core>) -> settings::Manifests {
 }
 
 /// 读两层清单（施工 9-1 上），再标出这一份核心没编进来的内置包（施工 F-2）。必需的基础系统没装，记一行 `WARN`，照样起来。
-fn load_packages(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
-    let mut found = miyu_endpoint::packages::load(resources, root, &admin());
+fn load_packages(resources: &ResourceRoot, root: &DataRoot, owner: &AccountId) -> Vec<Found> {
+    let mut found = miyu_endpoint::packages::load(resources, root, owner);
     miyu_endpoint::packages::compiled(&mut found, &built_in());
     if !miyu_endpoint::packages::is_installed(&found, miyu_tool::BASESYSTEM) {
         tracing::warn!(target: TARGET, package = miyu_tool::BASESYSTEM, "required package missing");
@@ -357,15 +339,11 @@ struct Live {
 /// 起来时读的配置和当场生效要的。开始监视配置文件、跟着配置换级别和重写生成的文件（施工 8-4）在说「好了」之前。
 async fn run(
     env: Env,
-    (root, resources, lock): (DataRoot, ResourceRoot, Lock),
+    (root, resources, opened): (DataRoot, ResourceRoot, miyu_ipc::Opened),
     options: Options,
     (config, live): (miyu_endpoint::config::Config, Live),
-    catalog: models::Early,
+    (catalog, owner, said): (models::Early, AccountId, bool),
 ) -> ExitCode {
-    let opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
-        Ok(opened) => opened,
-        Err(error) => return failed("socket", error.to_string()),
-    };
     let routes = match models::prepare(&resources, Some(root.state().join("models"))) {
         Ok(routes) => routes,
         Err(error) => return failed("models", error),
@@ -390,7 +368,7 @@ async fn run(
     let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
-    let queries = packages::register(&resources, &root, &admin());
+    let queries = packages::register(&resources, &root, &owner);
     #[cfg(feature = "net")]
     let searching = kit.clone();
     let builtins = builtin_tools_in(&resources, &env, kit);
@@ -401,7 +379,7 @@ async fn run(
         Arc::new(routes),
         tools,
         env.home,
-        admin(),
+        owner.clone(),
         opened.token,
     )
     .with_sandbox(sandbox)
@@ -431,7 +409,10 @@ async fn run(
     models::follow_cooldown(core.config_now(), Arc::clone(&model_data));
     // 监视配置文件（第七条）：拿着它一直到停，丢掉就不看了。
     let _watching = core.watch_config();
-    say(&Ready::Ready);
+    // 设置那一段已经说过了（施工 Y-12 中上）：拉起它的头那时就连上来了。
+    if !said {
+        say(&Ready::Ready);
+    }
     // 照开关拉起开着的扩展（施工 9-4 上）：写了 `ready` 以后，拉起它的头不等它们。
     core.start_extensions();
     // 个人设置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了个人设置，当场起停。
@@ -455,7 +436,7 @@ async fn run(
     );
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
-    let purging = trash::purge(trashed, admin());
+    let purging = trash::purge(trashed, owner);
     // 清一次每个账号的缓存（施工 Y-11 上）：同回收处，走之前等它清完。
     let sweeping = cache::sweep(cached);
     let (fixed, configured) = (options.idle, Arc::clone(&core));

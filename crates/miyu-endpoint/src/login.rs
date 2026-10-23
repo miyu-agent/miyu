@@ -17,6 +17,7 @@
 mod files;
 pub(crate) mod invites;
 pub(crate) mod members;
+mod oobe;
 pub(crate) mod ticket;
 
 use std::collections::BTreeMap;
@@ -107,6 +108,8 @@ impl Via {
 pub(crate) enum Revoked {
     /// 这个账号全部的（施工 Y-1 上起带账号：只断这个账号的连接）。
     All(AccountId),
+    /// 设置那一段注册了机主（施工 Y-12 中上）：设置那一段的连接全部断开，头重连进照机主起的那一份。
+    Everyone,
     /// 哈希是它的那一个。
     One(String),
 }
@@ -126,6 +129,8 @@ pub(crate) struct Identity {
     code_ttl: Duration,
     /// 交接票（`ticket.rs`）。
     tickets: ticket::Tickets,
+    /// 设置那一段（施工 Y-12 中上，`oobe.rs`）：还没有机主时有，注册了机主时响一下。
+    setup: Option<Arc<tokio::sync::Notify>>,
 }
 
 impl Identity {
@@ -138,6 +143,7 @@ impl Identity {
             files: tokio::sync::Mutex::new(()),
             code_ttl,
             tickets: ticket::Tickets::default(),
+            setup: None,
         }
     }
 
@@ -195,13 +201,15 @@ struct SetupParams {
     password: String,
 }
 
-/// `account.setup`：用一次性码连上的设用户名、密码。交回回应和这个连接以后怎么算。
+/// `account.setup`：用一次性码连上的设用户名、密码；设置那一段本机令牌的连接也能，注册的是机主（施工 Y-12 中上，`oobe.rs`）。
+/// 交回回应和这个连接以后怎么算。
 pub(crate) async fn setup(
     core: &Arc<Core>,
     via: &Via,
     params: Value,
 ) -> Result<(Value, Via), Refusal> {
-    if *via != Via::Code {
+    let setting_up = core.setting_up();
+    if !(*via == Via::Code || setting_up && *via == Via::Token) {
         return Err(Refusal::BAD_PARAMS);
     }
     let params: SetupParams = serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?;
@@ -216,6 +224,9 @@ pub(crate) async fn setup(
             tracing::warn!(target: TARGET, error = %error, "password not hashed");
             Refusal::INTERNAL
         })?;
+    if setting_up {
+        return oobe::owner(core, &params.username, hashed).await;
+    }
     let _queue = core.identity.files.lock().await;
     let now = crate::sessions::now();
     let first = files::put_account(core, &params.username, hashed, now)?;

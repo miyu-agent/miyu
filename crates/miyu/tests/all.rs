@@ -22,6 +22,7 @@ mod login_ticket;
 mod login_tty;
 mod memory;
 mod no_proxy;
+mod oobe;
 mod packages;
 mod packages_live;
 mod pkg;

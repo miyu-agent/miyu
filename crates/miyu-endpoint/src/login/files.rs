@@ -48,14 +48,16 @@ pub(super) fn put_account(
 ) -> Result<bool, Refusal> {
     let read = read_accounts(core);
     let mut accounts = read.accounts;
-    let first = accounts.of(core.admin.as_str()).is_none();
+    let was = accounts.of(core.admin.as_str());
+    let (first, created) = (was.is_none(), was.and_then(|was| was.created));
     accounts.put(accounts::Account {
         id: core.admin.as_str().to_string(),
         username: username.to_string(),
         password: hashed,
         changed: now,
-        created: None,
+        created,
         disabled: false,
+        owner: true,
     });
     let path = core.root.system().join(accounts::FILE);
     accounts::write(&path, &accounts, read.version.as_deref())

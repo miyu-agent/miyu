@@ -18,6 +18,9 @@ use crate::refusal::Refusal;
 /// 组名：所有账号默认在这个组里（设计 06 U11），不能拿来当用户名。
 const USERS: &str = "users";
 
+/// 系统的账号名（施工 Y-12 中上，设计 06 U22）：`admin` 是系统、不登录，谁都注册不成它。
+const SYSTEM: &str = "admin";
+
 /// 系统日志里注册成了的那一条。
 const CREATED: &str = "account.created";
 
@@ -73,6 +76,7 @@ pub(crate) async fn register(
             changed: now,
             created: Some(now),
             disabled: false,
+            owner: false,
         });
         Ok(())
     })?;
@@ -93,12 +97,13 @@ pub(crate) async fn register(
     Ok((reply, Via::Login(hash, account)))
 }
 
-/// 用户名 `account` 能不能注册：管理员、管理员登录用的用户名、已有的账号（`accounts.json` 里的、家目录已经在的）、系统账号、
-/// `users` 都占着。
-fn taken(core: &Core, account: &AccountId) -> bool {
+/// 用户名 `account` 能不能注册：机主、`admin`（系统，施工 Y-12 中上）、登录用的用户名、已有的账号（`accounts.json` 里的、家目录
+/// 已经在的）、系统账号、`users` 都占着。
+pub(super) fn taken(core: &Core, account: &AccountId) -> bool {
     let name = account.as_str();
     let written = files::read_accounts(core).accounts;
     *account == core.admin
+        || name == SYSTEM
         || name == USERS
         || core.is_system(account)
         || written.find(name).is_some()

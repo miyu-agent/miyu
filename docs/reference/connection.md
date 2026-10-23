@@ -95,7 +95,7 @@
 | `bad_invite` | 邀请码不对、过期了、用过了、撤掉了（断开） |
 | `login_throttled` | 密码错太多次，先等一会儿（断开） |
 | `hello_first` | 握手以前调了别的方法（不断开） |
-| `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法 |
+| `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
 | `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
 | `not_permitted` | 成员的连接调了 `human.get`、`account.logout` 以外的方法（现在成员只能管自己的账号，权限一样样放开） |
 
@@ -151,14 +151,14 @@
 
 ## `account.setup_code`、`account.setup`、`account.logout`
 
-网页登录。只有一个账号 `admin`，网页第一次进来给它设登录用的用户名和密码；以后用它们登录，浏览器记住 30 天。
+OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自己的账号：核心还没有机主时，本机令牌握手的回应写 `"setup": true`、`"account": null`，这时只能调 `account.setup`（注册机主）、`account.setup_code`（给远程的网页一次性码，网页拿码注册）。注册成了，这个连接答完就断，核心照机主重起，头重连进来就是他。`admin` 是系统，不能注册、不能登录。以后用用户名、密码在网页登录，浏览器记住 30 天。
 
-**谁能调**：人。`account.setup_code` 只给出示本机令牌连上的；`account.setup` 给用一次性码连上的；`account.logout` 都能调。
+**谁能调**：人。`account.setup_code` 只给出示本机令牌连上的；`account.setup` 给用一次性码连上的，还没有机主时本机令牌连上的也能调；`account.logout` 都能调。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
 | `account.setup_code` | 没有 | `{"code", "expires", "first"}`：一次性码、到什么时候作废、是不是还没设过密码 |
-| `account.setup` | `username`、`password` | `{"username", "login": {"expires", "token"}}`：设好了，换一个登录令牌 |
+| `account.setup` | `username`、`password` | `{"username", "login": {"expires", "token"}}`：设好了，换一个登录令牌；注册机主的多 `account`，答完连接就断 |
 | `account.logout` | `all`（布尔，默认 `false`） | `{"revoked": <作废了几个>}`：作废这一个登录令牌，`all` 的作废全部 |
 
 一次性码用过就作废。设好密码以后，以前的浏览器登录全部作废。

@@ -98,6 +98,8 @@ async fn an_invite_registers_a_member_once() {
     assert_eq!(why(&refused), "register_first", "{refused}");
     for (username, reason) in [
         ("alice", "username_taken"),
+        // `admin` 是系统（施工 Y-12 中上）：机主是别人的时候照样注册不成。
+        ("admin", "username_taken"),
         ("users", "username_taken"),
         ("Bob", "bad_params"),
     ] {

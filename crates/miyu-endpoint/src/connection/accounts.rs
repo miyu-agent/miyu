@@ -45,9 +45,10 @@ pub(super) async fn call(
     match request.method.as_str() {
         "account.setup_code" => Changed::answer(login::setup_code(core, &now)),
         "account.setup" => match login::setup(core, &now, params).await {
+            // 设置那一段注册了机主（施工 Y-12 中上）：答完就断，头重连进照机主起的那一份。
             Ok((result, by)) => Changed {
                 result: Ok(result),
-                close: false,
+                close: core.setting_up(),
                 via: Some(by),
             },
             Err(refusal) => Changed::answer(Err(refusal)),

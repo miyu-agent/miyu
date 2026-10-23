@@ -200,8 +200,12 @@ pub(crate) async fn hello(
     if errors > 0 {
         result["config_errors"] = json!(errors);
     }
-    if via == Via::Code {
+    if via == Via::Code || core.setting_up() {
         result["setup"] = json!(true);
+    }
+    if core.setting_up() && via == Via::Token {
+        // 还没有机主（施工 Y-12 中上）：注册成了才是谁，同邀请码。
+        result["account"] = Value::Null;
     }
     if matches!(via, Via::Invite(_)) {
         // 还没注册，不是谁（施工 Y-1 上）：注册成了回应里才有账号。

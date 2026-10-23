@@ -14,6 +14,7 @@ fn admin(username: &str, password: &str) -> Account {
         changed: Timestamp::parse("2026-10-04T06:00:00.000Z").expect("合写法"),
         created: None,
         disabled: false,
+        owner: false,
     }
 }
 
@@ -132,4 +133,28 @@ fn a_member_keeps_when_it_was_created_and_whether_it_is_disabled() {
         read(&path).expect("读得回").accounts.of("alice"),
         Some(&member)
     );
+}
+
+/// 机主（施工 Y-12 中上）：标了 `owner`、没停用的那一个；没标的、停用了的不算；写回读出来照样标着，没标的不写这一格。
+#[test]
+fn the_owner_is_the_marked_account_that_is_not_disabled() {
+    let mut accounts = Accounts::default();
+    assert!(accounts.owner().is_none(), "还没 OOBE");
+    let mut member = admin("bob", "correct horse battery");
+    member.id = "bob".to_string();
+    accounts.put(member);
+    assert!(accounts.owner().is_none(), "成员不是机主");
+    let mut owner = admin("alice", "correct horse battery");
+    owner.id = "alice".to_string();
+    owner.owner = true;
+    accounts.put(owner.clone());
+    assert_eq!(
+        accounts.owner().map(|found| found.id.as_str()),
+        Some("alice")
+    );
+    let text = serde_json::to_string(&accounts).expect("写得出");
+    assert_eq!(text.matches("\"owner\"").count(), 1, "没标的不写：{text}");
+    owner.disabled = true;
+    accounts.put(owner);
+    assert!(accounts.owner().is_none(), "停用了的不算");
 }

@@ -132,7 +132,9 @@ async fn read_all<R: AsyncRead + Unpin>(
     let mut shaken: Option<Shaken> = None;
     // 这个连接是怎么认出来的（施工 W-8）：用登录令牌、密码连上的另收作废的广播。
     let mut via: Option<Via> = None;
-    let mut revoked: Option<tokio::sync::broadcast::Receiver<Revoked>> = None;
+    // 设置那一段（施工 Y-12 中上）谁都收：注册了机主就一起断开。
+    let mut revoked: Option<tokio::sync::broadcast::Receiver<Revoked>> =
+        core.setting_up().then(|| core.identity.revoked());
     let mut subscriptions = Subscriptions::default();
     // 这个连接上的分块上传（施工 W-5）：和请求一条条办，不用锁。
     let mut uploads = Uploads::new(core.upload_idle);
@@ -259,7 +261,8 @@ async fn read_all<R: AsyncRead + Unpin>(
                             handing = Some(given);
                         }
                         shaken = Some(shook);
-                        revoked = by.login().map(|_| core.identity.revoked());
+                        revoked = (by.login().is_some() || core.setting_up())
+                            .then(|| core.identity.revoked());
                         // 凭据认出来的账号就是这个连接（施工 Y-1 上）。
                         if let Some(account) = by.account() {
                             caller.account = account.clone();

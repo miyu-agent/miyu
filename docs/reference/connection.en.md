@@ -96,7 +96,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `bad_invite` | Wrong, expired, used or revoked invite code (closes) |
 | `login_throttled` | Too many wrong passwords; wait a while (closes) |
 | `hello_first` | Another method before the handshake (does not close) |
-| `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup` |
+| `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup`; or, while there is no owner, connected with the local token and called something other than `human.get`, `account.setup` and `account.setup_code` |
 | `register_first` | Connected with an invite code and called something other than `human.get` and `account.register` |
 | `not_permitted` | A member's connection called something other than `human.get` and `account.logout` (for now members can only manage their own account; permissions open up step by step) |
 
@@ -152,14 +152,14 @@ What each stream pushes is in [Pushes](pushes.en.md).
 
 ## `account.setup_code`, `account.setup`, `account.logout`
 
-Web login. There is one account, `admin`; the first time the web app opens, it sets a username and password for it, and from then on the browser logs in with them and stays logged in for 30 days.
+First-run setup and web login. The person who installed Miyu (the owner) registers their own account on first use: while the core has no owner, the hello response on the local token says `"setup": true` and `"account": null`, and only `account.setup` (register the owner) and `account.setup_code` (a one-time code for a remote web page, which then registers) work. Once registered, that connection closes after the reply, the core restarts as the owner, and a head that reconnects is the owner. `admin` is the system: it can't be registered and can't log in. From then on the browser logs in with the username and password and stays logged in for 30 days.
 
-**Who can call**: people. `account.setup_code` only on connections that showed the local token; `account.setup` on connections that used a one-time code; `account.logout` on any.
+**Who can call**: people. `account.setup_code` only on connections that showed the local token; `account.setup` on connections that used a one-time code, and on local-token connections while there is no owner yet; `account.logout` on any.
 
 | Method | Params | Response |
 |---|---|---|
 | `account.setup_code` | none | `{"code", "expires", "first"}`: the one-time code, when it expires, whether no password has been set yet |
-| `account.setup` | `username`, `password` | `{"username", "login": {"expires", "token"}}`: set, and a login token in exchange |
+| `account.setup` | `username`, `password` | `{"username", "login": {"expires", "token"}}`: set, and a login token in exchange; registering the owner adds `account` and closes the connection after the reply |
 | `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this login token, or all of them |
 
 A one-time code works once. Setting the password revokes every earlier browser login.
