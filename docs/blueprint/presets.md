@@ -118,7 +118,7 @@ shell = false
 
 ### 改（施工 P-3 中）
 
-- `preset.set {"preset", "changes"}`、`preset.delete {"preset"}`（`protocol.md`）：只写管理员家目录那一层的 `<编号>.toml`。不写编号的是新建，编号由核心起 `preset-<n>`（施工 P-3 补，2026-10-08 项目主人定：新建不填编号；新建的什么开关都不写就是全开），改出厂的、系统区的就是建同名覆盖、只写改了的项（16 第四节 Y3）。删掉家目录那一层，下面几层还有的回到它们的样子。
+- `preset.set {"preset", "changes"}`、`preset.delete {"preset"}`（`protocol.md`）：只写调用者自己家目录那一层的 `<编号>.toml`（施工 Y-2 中上，原来是管理员的；读照连接的账号：出厂、包、系统区、它自己的家目录）。不写编号的是新建，编号由核心起 `preset-<n>`（施工 P-3 补，2026-10-08 项目主人定：新建不填编号；新建的什么开关都不写就是全开），改出厂的、系统区的就是建同名覆盖、只写改了的项（16 第四节 Y3）。删掉家目录那一层，下面几层还有的回到它们的样子。
 - 一项项在原来的字上改（`miyu_config::edit::apply`），注释、顺序照原样，P-3 上写进去的 `[preset] base` 顺手去掉（施工 P-3 再补：读的时候认出来当没写）；新开的一组在文件末尾另起一张表（`[preset.name]`）。`expect` 照 `miyu_config::plain::json_at` 读的你那一层现在的值比。
 - 写之前查：改完的一份照规矩读一遍，再照它叠一遍（`Presets::find_with`：家目录那一层照改完的字算，不读盘），写错的整条不收，拒绝里带照连接语言的一句（`data.message`，施工 P-3 补）。
 - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换、替换之前再读一次本体，撞上手改的从头再来，三次还不行的 `preset_conflict`。写成了记一行运行日志 `INFO preset saved`，删了 `INFO preset deleted`；不进配置的留痕日志。

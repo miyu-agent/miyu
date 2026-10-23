@@ -18,8 +18,8 @@ use crate::Core;
 /// 碰磁盘，调的一方放在阻塞线程里调它交回的那一个。
 pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer> + Send + 'static {
     let (personas, presets) = (
-        crate::personas::personas(core),
-        crate::presets::presets(core),
+        crate::personas::personas(core, &core.admin),
+        crate::presets::presets(core, &core.admin),
     );
     let state = packages(core).state_root().to_path_buf();
     let mine = core
@@ -50,8 +50,8 @@ pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer>
 /// 卸成了再 [`Left::keep`]。
 pub(super) fn noting(core: &Core, id: &str, dir: &Path) -> impl FnOnce() -> Left + Send + 'static {
     let (personas, presets) = (
-        crate::personas::personas(core),
-        crate::presets::presets(core),
+        crate::personas::personas(core, &core.admin),
+        crate::presets::presets(core, &core.admin),
     );
     let state = packages(core).state_root().to_path_buf();
     let (id, dir) = (id.to_string(), dir.to_path_buf());
@@ -120,8 +120,8 @@ pub(super) fn back(core: &Core, id: &str) -> impl FnOnce() + Send + 'static {
 /// `preset_left`，`file` 是那一份改动在哪（家目录的先于系统区）。
 pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
     let (personas, presets) = (
-        crate::personas::personas(core),
-        crate::presets::presets(core),
+        crate::personas::personas(core, &core.admin),
+        crate::presets::presets(core, &core.admin),
     );
     let state = packages(core).state_root().to_path_buf();
     let installed: Vec<String> = core.packages().iter().map(|one| one.id.clone()).collect();

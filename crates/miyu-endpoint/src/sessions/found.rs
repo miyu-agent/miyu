@@ -42,7 +42,7 @@ impl Open {
         });
         let loaded = load_placed(Load {
             root: &core.root,
-            personas: crate::personas::personas(core),
+            personas: crate::personas::personas(core, &owner),
             resources: &core.resources,
             owner: owner.clone(),
             id: id.clone(),
@@ -65,7 +65,7 @@ impl Open {
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),
             memory: core.memory_for(&owner),
-            presets: Some(crate::presets::places(core)),
+            presets: Some(crate::presets::places(core, &owner)),
             owner_is_admin: owner == core.admin,
             configs: core.hub.configs(),
         })

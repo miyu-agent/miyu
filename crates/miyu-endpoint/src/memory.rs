@@ -272,7 +272,7 @@ async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
         }
         (persona, None, None) => {
             // 无人格不是人格（施工 P-12）：不写、默认人格也没设的，照人格找没有哪一间；无人格那一间照会话找。
-            let found = personas::resolve(core, persona.as_deref().map(Some))
+            let found = personas::resolve(core, &core.admin, persona.as_deref().map(Some))
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
             let account = personas::memory_account(Some(&found), &core.admin);

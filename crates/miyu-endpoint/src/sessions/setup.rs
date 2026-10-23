@@ -54,9 +54,10 @@ impl Setup {
         // 空的编号是明着无工具（施工 P-16 下，`presets::opening`）：不找预设。
         let preset = match who.preset.as_deref() {
             Some("") => None,
-            wanted => Some(presets::resolve(core, wanted).await?),
+            // 照新会话的属主找（施工 Y-2 中上）。
+            wanted => Some(presets::resolve(core, &who.owner, wanted).await?),
         };
-        let persona = personas::resolve(core, persona).await?;
+        let persona = personas::resolve(core, &who.owner, persona).await?;
         Ok(Setup {
             id,
             command,
@@ -84,7 +85,7 @@ impl Setup {
             persona: persona.map(|found| found.id.as_str()),
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),
             profile: self.profile.clone(),
-            personas: personas::personas(core),
+            personas: personas::personas(core, &who.owner),
             memory_account: personas::memory_account(persona, &core.memory_owner(&who.owner)),
             memory_scope: who
                 .memory
@@ -118,7 +119,7 @@ impl Setup {
             model: who.model.clone(),
             preset: self.preset.take().map(|found| presets::chosen(core, found)),
             no_tools: who.preset.as_deref() == Some(""),
-            presets: Some(presets::places(core)),
+            presets: Some(presets::places(core, &who.owner)),
             group: who.group,
             owner_is_admin: who.owner == core.admin,
             images: who.images,

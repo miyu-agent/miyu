@@ -13,6 +13,7 @@
 
 mod remove;
 
+use miyu_kernel::id::AccountId;
 use serde_json::{Value, json};
 
 use miyu_policy::skill::feature_id;
@@ -27,13 +28,14 @@ use crate::personas::pick;
 use crate::refusal::Refusal;
 pub(crate) use remove::remove;
 
-/// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是管理员自己放技能的文件夹（施工 X-27 补）。
+/// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是调用者 `account` 自己放技能的文件夹（施工 X-27 补；施工 Y-2 中上
+/// 起照连接的账号：自己的、系统区的、包里的，原来是管理员的）。
 ///
 /// # Errors
 ///
 /// 找的线程崩了：内部出错。
-pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
-    let (packages, root, admin) = (core.packages(), core.root.clone(), core.admin.clone());
+pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
+    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
     let found = tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &admin).0;
         (found, packages)
@@ -50,7 +52,7 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             one
         })
         .collect();
-    let dir = miyu_store::skills::own_dir(&core.root, &core.admin);
+    let dir = miyu_store::skills::own_dir(&core.root, account);
     Ok(json!({ "skills": skills, "dir": shown(&dir, core.home.as_deref()) }))
 }
 

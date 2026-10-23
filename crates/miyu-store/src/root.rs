@@ -126,6 +126,19 @@ impl DataRoot {
         OWN_PLACES.iter().map(|dir| home.join(dir)).collect()
     }
 
+    /// 系统区放技能、脚本的两处（`system/skills`、`system/scripts`）的真实位置（施工 Y-2 中上）：找的时候所有账号都认链接指到
+    /// 这两处下面的（列目录的围栏）。不算进 [`DataRoot::own_places`]：管理员放行出沙盒的文件得落在自己的地方。同
+    /// `own_places` 照数据根的真实位置接上相对路径。碰磁盘。
+    pub fn system_places(&self) -> Vec<PathBuf> {
+        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
+        let system = self.system();
+        let system = base.join(system.strip_prefix(&self.path).unwrap_or(&system));
+        ["skills", "scripts"]
+            .iter()
+            .map(|dir| system.join(dir))
+            .collect()
+    }
+
     /// 建一个账号的家目录和里面的工作区，已经有的不动：核心起来时给管理员建（施工 3-9 上；工作区施工 4-3 下）。
     /// Unix 上新建的权限 0700。
     ///

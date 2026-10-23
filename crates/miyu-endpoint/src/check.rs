@@ -74,12 +74,12 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                 problems.extend(check_config(core, &words, file)?);
             }
             problems.extend(secrets);
-            let personas = personas(core);
+            let personas = personas(core, &core.admin);
             let checked = tokio::task::spawn_blocking(move || personas.check())
                 .await
                 .map_err(|_| Refusal::INTERNAL)?;
             problems.extend(checked.iter().map(|one| persona_problem(core, &words, one)));
-            let presets = presets(core);
+            let presets = presets(core, &core.admin);
             let checked = tokio::task::spawn_blocking(move || presets.check())
                 .await
                 .map_err(|_| Refusal::INTERNAL)?;
@@ -126,7 +126,7 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             } else if let Some(found) = check_preset(core, &words, &path).await? {
                 problems.extend(found);
             } else {
-                let personas = personas(core);
+                let personas = personas(core, &core.admin);
                 let wanted = path.clone();
                 let checked = tokio::task::spawn_blocking(move || personas.check_file(&wanted))
                     .await
@@ -357,7 +357,7 @@ async fn check_preset(
     words: &Human,
     path: &Path,
 ) -> Result<Option<Vec<Value>>, Refusal> {
-    let presets = presets(core);
+    let presets = presets(core, &core.admin);
     let wanted = path.to_path_buf();
     let checked = tokio::task::spawn_blocking(move || presets.check_file(&wanted))
         .await

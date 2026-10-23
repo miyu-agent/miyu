@@ -249,20 +249,22 @@ impl Sessions {
             id: child.lineage.parent.clone(),
         });
         // 没挑人格的子代理无人格（施工 P-4 上），不照默认人格。
-        let persona = personas::resolve(core, Some(child.persona.as_deref()))
+        // 子会话照它的属主找人格、预设（施工 Y-2 中上）。
+        let persona = personas::resolve(core, &child.owner, Some(child.persona.as_deref()))
             .await
             .map_err(|refusal| format!("persona {:?}: {}", child.persona, refusal.reason))?;
         // 子会话照父会话的预设（施工 P-2 中）：照它的编号重新找；找不到、写错了的不造，同人格。
         let preset = match &child.preset {
             Some(id) => Some(presets::chosen(
                 core,
-                presets::resolve(core, Some(id))
+                presets::resolve(core, &child.owner, Some(id))
                     .await
                     .map_err(|refusal| format!("preset {id}: {}", refusal.reason))?,
             )),
             None => None,
         };
         let owner_is_admin = child.owner == core.admin;
+        let presets_of = presets::places(core, &child.owner);
         let handle = create(Create {
             root: &core.root,
             resources: &core.resources,
@@ -273,7 +275,7 @@ impl Sessions {
                 .map(|found| found.texts.clone())
                 .unwrap_or_default(),
             profile: Profile::default(),
-            personas: personas::personas(core),
+            personas: personas::personas(core, &child.owner),
             memory_account: personas::memory_account(
                 persona.as_ref(),
                 &core.memory_owner(&child.owner),
@@ -307,7 +309,7 @@ impl Sessions {
             model: child.model,
             preset,
             no_tools: false,
-            presets: Some(presets::places(core)),
+            presets: Some(presets_of),
             group: None,
             owner_is_admin,
             images: child.images,

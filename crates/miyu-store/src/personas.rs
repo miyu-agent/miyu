@@ -106,17 +106,20 @@ impl fmt::Display for PersonaError {
 
 impl std::error::Error for PersonaError {}
 
-/// 人格的几层：出厂、系统区、管理员的家目录。
+/// 人格的几层：出厂、系统区、一个账号的家目录（施工 Y-2 中上起是谁的照调用的一方给，原来一律是管理员的）。
 #[derive(Debug, Clone)]
 pub struct Personas {
     dirs: Vec<(Layer, PathBuf)>,
+    /// 家目录那一层是谁的。
     admin: AccountId,
     /// 系统账号（施工 O-4 下）：属主是它们的会话，出厂、系统区的人格的记忆归管理员。
     system: Vec<AccountId>,
+    /// 系统账号的会话的记忆归谁（施工 Y-2 中上：家目录那一层不一定是管理员的了，管理员另记）。
+    keeper: Option<AccountId>,
 }
 
 impl Personas {
-    /// 照资源目录 `resources`、数据根 `root`、管理员 `admin` 定几层的位置。
+    /// 照资源目录 `resources`、数据根 `root`、家目录那一层的账号 `admin` 定几层的位置。
     pub fn new(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Personas {
         Personas {
             dirs: vec![
@@ -126,6 +129,7 @@ impl Personas {
             ],
             admin: admin.clone(),
             system: Vec::new(),
+            keeper: None,
         }
     }
 
@@ -133,6 +137,13 @@ impl Personas {
     #[must_use]
     pub fn with_system_accounts(mut self, system: Vec<AccountId>) -> Personas {
         self.system = system;
+        self
+    }
+
+    /// 同一份，系统账号的会话的记忆归 `keeper`（施工 Y-2 中上：管理员；家目录那一层是别的账号时照它，不照家目录的主人）。
+    #[must_use]
+    pub fn with_keeper(mut self, keeper: AccountId) -> Personas {
+        self.keeper = Some(keeper);
         self
     }
 
@@ -301,7 +312,7 @@ impl Personas {
     pub fn memory_account(&self, id: &str, owner: &AccountId) -> AccountId {
         self.home_of(id)
             .unwrap_or_else(|| match self.system.contains(owner) {
-                true => self.admin.clone(),
+                true => self.keeper.clone().unwrap_or_else(|| self.admin.clone()),
                 false => owner.clone(),
             })
     }

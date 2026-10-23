@@ -8,6 +8,7 @@
 //!   回 `persona_conflict`，头重读再来（重来时前面那几份已经是改完的样子，不再写）。
 //! - 删：整个目录挪进回收处（`miyu_store::trash::personas`），留 7 天。
 
+use miyu_kernel::id::AccountId;
 use std::collections::BTreeMap;
 use std::io;
 use std::path::PathBuf;
@@ -16,7 +17,6 @@ use serde::{Deserialize, Deserializer};
 use serde_json::{Value as Json, json};
 
 use miyu_config::Words;
-use miyu_kernel::id::AccountId;
 use miyu_policy::persona::{self, Demo};
 use miyu_store::config_file::{self, ConfigText, WriteError};
 use miyu_store::human::Human;
@@ -120,7 +120,8 @@ struct Pending {
 /// 核心起，至少要写一样东西。
 pub(crate) async fn set(
     core: &Core,
-    (peer, account): (Peer, &AccountId),
+    account: &AccountId,
+    peer: Peer,
     params: SetParams,
 ) -> Result<Json, Refusal> {
     let empty = params.changes.is_empty()
@@ -159,7 +160,7 @@ pub(crate) async fn set(
             pictures.push(super::picture::check(core, account, picture, params).await?);
         }
     }
-    let personas = personas(core);
+    let personas = personas(core, account);
     let language = peer.language;
     let state = core.root.state();
     tokio::task::spawn_blocking(move || {
@@ -398,12 +399,13 @@ pub(crate) struct ReadParams {
 /// 一对一对的 `pairs`（施工 P-3 补，界面照它编）。来自哪一层不往外给。
 pub(crate) async fn read_prompt(
     core: &Core,
+    account: &AccountId,
     peer: Peer,
     params: ReadParams,
 ) -> Result<Json, Refusal> {
     let file = prompt_file(&params.prompt).ok_or(Refusal::BAD_PARAMS)?;
     let said = words(core, peer.language).ok();
-    let personas = personas(core);
+    let personas = personas(core, account);
     let id = params.persona;
     tokio::task::spawn_blocking(move || {
         let found = personas
@@ -443,12 +445,16 @@ pub(crate) struct DeleteParams {
 
 /// `persona.delete`：家目录那一层这个人格的目录挪进回收处，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
 /// `nothing_to_delete`。
-pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
+pub(crate) async fn delete(
+    core: &Core,
+    account: &AccountId,
+    params: DeleteParams,
+) -> Result<Json, Refusal> {
     if !valid(&params.persona) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let personas = personas(core);
-    let (root, account, at) = (core.root.clone(), core.admin.clone(), now());
+    let personas = personas(core, account);
+    let (root, account, at) = (core.root.clone(), account.clone(), now());
     let id = params.persona;
     tokio::task::spawn_blocking(move || {
         let dir = personas.home_dir(&id);

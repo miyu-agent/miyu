@@ -1,6 +1,6 @@
 //! 人经协议查知识库（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：列、搜、读。怎么补
-//! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。照管理员的
-//! 账号（和 `memory.*` 一样）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
+//! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。照连接的
+//! 账号（施工 Y-2 中上；原来照管理员的）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
 
 mod manage;
 pub(crate) mod progress;
@@ -12,6 +12,7 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
+use miyu_kernel::id::AccountId;
 use miyu_recall::associate::Thresholds;
 use miyu_store::knowledge::{Base, Document, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
@@ -142,13 +143,19 @@ struct Read {
     page: Option<usize>,
 }
 
-/// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。
-pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Result<Value, Refusal> {
-    if let Some(managed) = manage::call(core, method, params).await {
+/// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。照连接的账号 `caller` 读写它
+/// 自己的库（施工 Y-2 中上，`scope.rs`）。
+pub(crate) async fn call(
+    core: &Arc<Core>,
+    caller: &AccountId,
+    method: &str,
+    params: &Value,
+) -> Result<Value, Refusal> {
+    let account = crate::scope::scope(core, caller).user;
+    if let Some(managed) = manage::call(core, &account, method, params).await {
         return managed;
     }
     let knowledge = Arc::clone(&core.knowledge);
-    let account = core.admin.clone();
     match method {
         "kb.list" => {
             let (bases, skipped) = blocking(move || knowledge.list(&account)).await?;
@@ -173,6 +180,7 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                 None => None,
             };
             let searching = Arc::clone(&knowledge);
+            let owner = account.clone();
             let (hits, skipped, searched) = blocking(move || {
                 let only = search.kb.map(|kb| vec![kb]);
                 let meaning = near.as_ref().map(|near| Meaning {
@@ -180,10 +188,10 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                     vector: &near.vector,
                 });
                 let (hits, skipped) =
-                    searching.search(&account, &search.query, only.as_deref(), limit, meaning)?;
+                    searching.search(&owner, &search.query, only.as_deref(), limit, meaning)?;
                 let searched = match only {
                     Some(only) => only,
-                    None => searching.ids(&account)?,
+                    None => searching.ids(&owner)?,
                 };
                 Ok((hits, skipped, searched))
             })
@@ -191,8 +199,8 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             report(&skipped);
             if let Some(vectors) = vectors {
                 for id in searched {
-                    let index = knowledge.index_of(&core.admin, &id);
-                    vectors.fill_knowledge(&using, format!("kb {} {id}", core.admin), index);
+                    let index = knowledge.index_of(&account, &id);
+                    vectors.fill_knowledge(&using, format!("kb {account} {id}"), index);
                 }
             }
             Ok(json!({ "hits": hits.iter().map(shown).collect::<Vec<Value>>() }))

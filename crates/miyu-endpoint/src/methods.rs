@@ -72,14 +72,22 @@ pub(crate) fn call<'a>(
         "check" => {
             answer(move || async move { crate::check::check(core, peer, params(request)?).await })
         }
-        "persona.list" => answer(move || async move { personas::list(core, peer).await }),
+        "persona.list" => {
+            answer(move || async move { personas::list(core, &caller.account, peer).await })
+        }
         "persona.avatar" => answer(move || async move {
-            personas::picture::read(core, personas::picture::Picture::Avatar, params(request)?)
-                .await
+            personas::picture::read(
+                core,
+                &caller.account,
+                personas::picture::Picture::Avatar,
+                params(request)?,
+            )
+            .await
         }),
         "persona.background" => answer(move || async move {
             personas::picture::read(
                 core,
+                &caller.account,
                 personas::picture::Picture::Background,
                 params(request)?,
             )
@@ -123,35 +131,33 @@ pub(crate) fn call<'a>(
                 move || async move { crate::extensions::restart(core, peer, params(request)?).await },
             )
         }
-        "persona.get" => {
-            answer(move || async move { personas::get(core, peer, params(request)?).await })
-        }
+        "persona.get" => answer(move || async move {
+            personas::get(core, &caller.account, peer, params(request)?).await
+        }),
         "persona.set" => answer(move || async move {
-            personas::write::set(core, (peer, &caller.account), params(request)?).await
+            personas::write::set(core, &caller.account, peer, params(request)?).await
         }),
         "persona.read" => answer(move || async move {
-            personas::write::read_prompt(core, peer, params(request)?).await
+            personas::write::read_prompt(core, &caller.account, peer, params(request)?).await
         }),
-        "persona.delete" => {
-            answer(move || async move { personas::write::delete(core, params(request)?).await })
+        "persona.delete" => answer(move || async move {
+            personas::write::delete(core, &caller.account, params(request)?).await
+        }),
+        "preset.list" => {
+            answer(move || async move { crate::presets::list(core, &caller.account, peer).await })
         }
-        "preset.list" => answer(move || async move { crate::presets::list(core, peer).await }),
-        "preset.get" => {
-            answer(move || async move { crate::presets::get(core, peer, params(request)?).await })
-        }
-        "preset.set" => {
-            answer(
-                move || async move { crate::presets::write::set(core, peer, params(request)?).await },
-            )
-        }
-        "preset.delete" => {
-            answer(
-                move || async move { crate::presets::write::delete(core, params(request)?).await },
-            )
-        }
-        kb if kb.starts_with("kb.") => {
-            answer(move || async move { crate::knowledge::call(core, kb, &request.params).await })
-        }
+        "preset.get" => answer(move || async move {
+            crate::presets::get(core, &caller.account, peer, params(request)?).await
+        }),
+        "preset.set" => answer(move || async move {
+            crate::presets::write::set(core, &caller.account, peer, params(request)?).await
+        }),
+        "preset.delete" => answer(move || async move {
+            crate::presets::write::delete(core, &caller.account, params(request)?).await
+        }),
+        kb if kb.starts_with("kb.") => answer(move || async move {
+            crate::knowledge::call(core, &caller.account, kb, &request.params).await
+        }),
         method if memory::METHODS.contains(&method) => answer(move || async move {
             memory::call(core, &request.method, &request.id, &request.params).await
         }),

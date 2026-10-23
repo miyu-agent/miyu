@@ -70,7 +70,8 @@ pub(super) async fn opened_by(
     else {
         return Ok(());
     };
-    let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
+    // 照会话的属主找（施工 Y-2 中上）。
+    let Ok(found) = crate::presets::resolve(core, handle.owner(), Some(&preset)).await else {
         return Ok(());
     };
     if found.file.opens_in(feature, package) {

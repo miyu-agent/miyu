@@ -207,10 +207,11 @@ pub(crate) struct ReadParams {
 /// `persona.avatar`、`persona.background`：`{"<avatar|background>": <版本>, "media_type", "data"}`；没有的回 `null`。
 pub(crate) async fn read(
     core: &Core,
+    account: &AccountId,
     picture: Picture,
     params: ReadParams,
 ) -> Result<Value, Refusal> {
-    let personas = super::personas(core);
+    let personas = super::personas(core, account);
     tokio::task::spawn_blocking(move || {
         let found = personas
             .find(&params.persona)

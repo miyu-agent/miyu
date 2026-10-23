@@ -22,7 +22,7 @@ use crate::support::venues::{BINDINGS, snapshot};
 use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展。
-fn served_core(home: &Home, script: &Script) -> Arc<Core> {
+pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
     home.write("system/config.toml", BINDINGS);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
@@ -52,7 +52,7 @@ fn served_core(home: &Home, script: &Script) -> Arc<Core> {
 }
 
 /// 等到记下的回应有 `n` 行（`cwd:` 那一行不算），交回它们。
-async fn replies(path: &Path, n: usize) -> Vec<Value> {
+pub(crate) async fn replies(path: &Path, n: usize) -> Vec<Value> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         let got: Vec<Value> = read(path)

@@ -56,7 +56,7 @@ impl Sessions {
             persona: None,
             persona_texts: Default::default(),
             profile: Profile::default(),
-            personas: personas::personas(core),
+            personas: personas::personas(core, &owner),
             memory_account: personas::memory_account(None, &core.memory_owner(&owner)),
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,

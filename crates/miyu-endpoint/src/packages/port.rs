@@ -223,7 +223,7 @@ impl PackagesPort for Port {
 /// 在会话用的预设 `preset` 里打开她装的包 `package`（施工 F-10 下下，16 第三节）：预设不开没列出来的软件、也没写这个包的，往
 /// 家目录那一层的同名覆盖里写 `software.<编号> = true`；开着的、写过的（人关过的照人的）不动。写不成的记一行，装照样算成。
 async fn open_in(core: &Arc<Core>, preset: &str, package: &str) {
-    let Ok(found) = crate::presets::presets(core).find(preset) else {
+    let Ok(found) = crate::presets::presets(core, &core.admin).find(preset) else {
         return;
     };
     if found.file.unlisted() == Unlisted::On || found.file.software.contains_key(package) {
@@ -233,7 +233,7 @@ async fn open_in(core: &Arc<Core>, preset: &str, package: &str) {
     let Ok(params) = serde_json::from_value(change) else {
         return;
     };
-    if let Err(refusal) = crate::presets::write::set(core, english(), params).await {
+    if let Err(refusal) = crate::presets::write::set(core, &core.admin, english(), params).await {
         tracing::warn!(target: TARGET, preset, package, reason = refusal.reason, "package not opened in the preset");
     }
 }

@@ -5,6 +5,7 @@
 //! 删了包里的那一份重新露出来。几个名字先全查一遍，有一个不行就一个都不删；查过了才挪，挪到一半挪不动的，前面挪了的
 //! 已经在回收站里，拒绝 `trash_failed`。技能文件夹是链接的（施工 X-37）只挪链接本身，不碰它指到的文件夹。
 
+use miyu_kernel::id::AccountId;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -27,13 +28,18 @@ pub(crate) struct RemoveParams {
 ///
 /// 一个名字都没写、写了重复的：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`（两种都带
 /// `data.name`）。挪不进回收站：`trash_failed`。找、挪的线程崩了：内部出错。
-pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, Refusal> {
+pub(crate) async fn remove(
+    core: &Core,
+    account: &AccountId,
+    params: RemoveParams,
+) -> Result<Value, Refusal> {
     let names = params.names;
     let mut seen = std::collections::BTreeSet::new();
     if names.is_empty() || !names.iter().all(|name| seen.insert(name.as_str())) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (packages, root, admin) = (core.packages(), core.root.clone(), core.admin.clone());
+    // 只删调用者自己放的（施工 Y-2 中上）：系统区的、包里的照「随包来的」拒。
+    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
     let home = core.home.clone();
     tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &admin).0;

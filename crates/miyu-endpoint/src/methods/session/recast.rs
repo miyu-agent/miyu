@@ -22,12 +22,18 @@ pub(super) async fn checked(
     if persona.is_none() && preset.is_none() {
         return Ok(None);
     }
+    // 照会话的属主找（施工 Y-2 中上）。
+    let owner = core
+        .sessions
+        .owner(core, session)
+        .await
+        .ok_or(Refusal::NOT_FOUND)?;
     if let Some(Some(id)) = persona {
-        crate::personas::resolve(core, Some(Some(id))).await?;
+        crate::personas::resolve(core, &owner, Some(Some(id))).await?;
     }
     // 空的是换成无工具（施工 P-16 下）：不用找。
     if let Some(id) = preset.filter(|id| !id.is_empty()) {
-        crate::presets::resolve(core, Some(id)).await?;
+        crate::presets::resolve(core, &owner, Some(id)).await?;
     }
     if subagent(core, session).await? {
         let field = if persona.is_some() {

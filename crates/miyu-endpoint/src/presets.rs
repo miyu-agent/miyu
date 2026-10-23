@@ -1,6 +1,7 @@
 //! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、个人设置、系统配置」找预设、几层叠好；
 //! `preset.list`、`preset.get`。找哪几层、怎么叠在 `miyu_store::presets`。
 
+use miyu_kernel::id::AccountId;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -24,20 +25,26 @@ pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 这个核心的几层预设：出厂、装着的软件包带的（施工 P-11 上）、系统区、管理员的家目录。
-pub(crate) fn presets(core: &Core) -> Presets {
-    Presets::new(&core.resources, &core.root, &core.admin)
+/// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、系统区、它自己的家目录（施工 Y-2 中上，
+/// `scope.rs`；原来一律是管理员的家目录）。
+pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
+    let scope = crate::scope::scope(core, account);
+    Presets::new(&core.resources, &core.root, &scope.user)
         .with_packages(&crate::packages::folders(core))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（个人设置压着系统配置，都没写的是出厂的 `full`）。指着没有
 /// 的不悄悄换成别的（Y12）。在阻塞线程里读盘。
-pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, Refusal> {
+pub(crate) async fn resolve(
+    core: &Core,
+    account: &AccountId,
+    wanted: Option<&str>,
+) -> Result<Found, Refusal> {
     let id = match wanted {
         Some(id) => id.to_string(),
         None => PresetSettings::from(&core.config().resolved().values()).default,
     };
-    let presets = presets(core);
+    let presets = presets(core, account);
     let found = tokio::task::spawn_blocking(move || presets.find(&id)).await;
     match found {
         Ok(Ok(found)) => Ok(found),
@@ -46,10 +53,11 @@ pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, 
     }
 }
 
-/// 交给会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能）：改了预设的文件，开着的会话下一个回合换上。
-pub(crate) fn places(core: &Core) -> PresetPlaces {
+/// 交给属主是 `owner` 的会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能；施工 Y-2 中上起照属主）：改了预设的
+/// 文件，开着的会话下一个回合换上。
+pub(crate) fn places(core: &Core, owner: &AccountId) -> PresetPlaces {
     PresetPlaces {
-        presets: presets(core),
+        presets: presets(core, owner),
         features: crate::scripts::features(core),
     }
 }
@@ -113,9 +121,9 @@ fn listed_problem(id: &str, error: &PresetError, words: Option<&Human>) -> Value
 
 /// `preset.list`：几层里所有的预设，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
 /// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。
-pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
+pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let presets = presets(core);
+    let presets = presets(core, account);
     let read = tokio::task::spawn_blocking(move || {
         presets
             .ids()
@@ -193,18 +201,24 @@ pub(crate) struct GetParams {
 /// `preset.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；`unlisted` 是叠好以后的（几层都没写的
 /// 是 `on`）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
 /// 不往外给。
-pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
+pub(crate) async fn get(
+    core: &Core,
+    account: &AccountId,
+    peer: Peer,
+    params: GetParams,
+) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let presets = presets(core);
+    let presets = presets(core, account);
     let found = tokio::task::spawn_blocking(move || presets.find(&params.preset))
         .await
         .map_err(|_| Refusal::INTERNAL)?
         .map_err(|error| told(&error, said.as_ref()))?;
-    let carried = carried(core).await;
+    let carried = carried(core, account).await;
     Ok(describe(core, &found, peer.language, &carried))
 }
 
-/// 管理员用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能。
+/// 一个账号用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能（施工 Y-2 中上起照调用者，原来是
+/// 管理员的）。
 pub(super) struct Carried {
     pub(super) skills: Vec<Skill>,
     pub(super) commands: Vec<Template>,
@@ -213,15 +227,15 @@ pub(super) struct Carried {
 }
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
-pub(super) async fn carried(core: &Core) -> Carried {
-    let (packages, root, admin) = (core.packages(), core.root.clone(), core.admin.clone());
+pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
+    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
     let skills =
         tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &admin).0)
             .await
             .unwrap_or_default();
     Carried {
         skills,
-        commands: crate::commands::template_commands(core, &core.admin).await,
+        commands: crate::commands::template_commands(core, account).await,
         declared: crate::commands::declared_commands(core),
     }
 }

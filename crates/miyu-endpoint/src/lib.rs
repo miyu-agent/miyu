@@ -65,6 +65,7 @@ pub mod queries;
 mod refusal;
 mod responding;
 mod reverse;
+mod scope;
 mod scripts;
 pub mod search_sources;
 mod secrets;

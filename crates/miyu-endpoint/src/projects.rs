@@ -105,7 +105,7 @@ async fn create(core: &Arc<Core>, account: &AccountId, fields: Fields) -> Result
         created: now,
     };
     apply(&mut project, fields);
-    known(core, &project).await?;
+    known(core, account, &project).await?;
     let id = project.project.clone();
     change(core, account, &id, move |projects| {
         projects.projects.push(project);
@@ -137,7 +137,7 @@ async fn update(
     for field in &params.unset {
         clear(&mut project, field);
     }
-    known(core, &project).await?;
+    known(core, account, &project).await?;
     let id = params.project;
     change(core, account, &id, move |projects| {
         let slot = projects
@@ -227,15 +227,15 @@ fn clear(project: &mut Project, field: &str) {
 }
 
 /// 各格的写法对、写了的人格和预设在：人格、预设照造会话那一套找（设计第二节第 5 条：造项目时就查）。
-async fn known(core: &Core, project: &Project) -> Result<(), Refusal> {
+async fn known(core: &Core, account: &AccountId, project: &Project) -> Result<(), Refusal> {
     project
         .check()
         .map_err(|wrong| Refusal::bad_field(wrong.field()))?;
     if let Some(Some(persona)) = &project.persona {
-        crate::personas::resolve(core, Some(Some(persona.as_str()))).await?;
+        crate::personas::resolve(core, account, Some(Some(persona.as_str()))).await?;
     }
     if let Some(preset) = &project.preset {
-        crate::presets::resolve(core, Some(preset.as_str())).await?;
+        crate::presets::resolve(core, account, Some(preset.as_str())).await?;
     }
     Ok(())
 }

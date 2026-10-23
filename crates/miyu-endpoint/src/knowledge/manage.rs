@@ -2,6 +2,7 @@
 //! 挂目录、加文档、删文档、重建索引。怎么做在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应。照管理员的账号。
 //! 加的文档照附件上传好的 blob（2026-10-13 项目主人定）。
 
+use miyu_kernel::id::AccountId;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -62,23 +63,25 @@ struct Removal {
 /// 照方法名办一条管理的 `kb.*`；不是这几个的交回 `None`，由调的一方接着认。
 pub(super) async fn call(
     core: &Arc<Core>,
+    account: &AccountId,
     method: &str,
     params: &Value,
 ) -> Option<Result<Value, Refusal>> {
     let knowledge = Arc::clone(&core.knowledge);
+    let account = account.clone();
     Some(match method {
-        "kb.create" | "kb.update" | "kb.mount" => named(core, knowledge, method, params).await,
-        "kb.delete" | "kb.reindex" => whole(core, knowledge, method, params).await,
-        "kb.add" => document(core, knowledge, params).await,
-        "kb.remove" => remove(core, knowledge, params).await,
+        "kb.create" | "kb.update" | "kb.mount" => named(knowledge, account, method, params).await,
+        "kb.delete" | "kb.reindex" => whole(core, knowledge, account, method, params).await,
+        "kb.add" => document(core, knowledge, account, params).await,
+        "kb.remove" => remove(core, knowledge, account, params).await,
         _ => return None,
     })
 }
 
 /// 建库、改名字说明、挂目录：交回那个库。
 async fn named(
-    core: &Core,
     knowledge: Arc<Knowledge>,
+    account: AccountId,
     method: &str,
     params: &Value,
 ) -> Result<Value, Refusal> {
@@ -91,7 +94,6 @@ async fn named(
     {
         return Err(Refusal::BAD_PARAMS);
     }
-    let account = core.admin.clone();
     let (base, skipped) = blocking(move || {
         let fields = BaseFields {
             name: named.name.as_deref(),
@@ -113,6 +115,7 @@ async fn named(
 async fn whole(
     core: &Core,
     knowledge: Arc<Knowledge>,
+    account: AccountId,
     method: &str,
     params: &Value,
 ) -> Result<Value, Refusal> {
@@ -120,7 +123,7 @@ async fn whole(
     if !valid(&kb) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (account, home) = (core.admin.clone(), core.home.clone());
+    let home = core.home.clone();
     if method == "kb.delete" {
         let trash = blocking(move || knowledge.delete(&account, &kb, home.as_deref())).await?;
         return Ok(json!({ "trash": trash }));
@@ -134,16 +137,16 @@ async fn whole(
 async fn document(
     core: &Core,
     knowledge: Arc<Knowledge>,
+    account: AccountId,
     params: &Value,
 ) -> Result<Value, Refusal> {
     let document: Document = read(params)?;
     if !valid(&document.kb) || !Knowledge::document(&document.path) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let account = core.admin.clone();
     let blob = document.blob.as_str();
     let blob = ContentHash::parse(blob).map_err(|_| Refusal::BAD_PARAMS)?;
-    let blobs = Blobs::new(core.root.blobs(&core.admin));
+    let blobs = Blobs::new(core.root.blobs(&account));
     let bytes = tokio::task::spawn_blocking(move || crate::attach::read_blob(&blobs, &blob))
         .await
         .map_err(|_| Refusal::INTERNAL)??;
@@ -163,7 +166,12 @@ async fn document(
 /// 删（施工 W-14 起收文件夹、收几样）：`path` 的回 `{"trash": "<回收站里的位置>"}`，同以前删一篇；`paths` 的回
 /// `{"trash": [...]}`，照先后。先全查一遍，有一样不在就一样都不删。写法不对、两样都写或都没写、几样重了或者一样在另一样
 /// 里面：`bad_params`。
-async fn remove(core: &Core, knowledge: Arc<Knowledge>, params: &Value) -> Result<Value, Refusal> {
+async fn remove(
+    core: &Core,
+    knowledge: Arc<Knowledge>,
+    account: AccountId,
+    params: &Value,
+) -> Result<Value, Refusal> {
     let Removal { kb, path, paths } = read(params)?;
     let (single, paths) = match (path, paths) {
         (Some(path), None) => (true, vec![path]),
@@ -173,7 +181,7 @@ async fn remove(core: &Core, knowledge: Arc<Knowledge>, params: &Value) -> Resul
     if !valid(&kb) || !paths.iter().all(|path| Knowledge::shaped(path)) || overlapping(&paths) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (account, home) = (core.admin.clone(), core.home.clone());
+    let home = core.home.clone();
     let trash =
         blocking(move || knowledge.trash_all(&account, &kb, &paths, home.as_deref())).await?;
     Ok(match single {

@@ -2,7 +2,7 @@
 
 ### 是什么
 
-人格管「她是谁」：人设、示范对话、角色扮演提示，以后还有声音、记忆的默认范围、能查的知识库（`16-人格与预设.md`）。一个人格是一个目录，四层叠起来：出厂的、装着的软件包带的（施工 P-11 上，设计 `31-软件包.md` 第十节）、系统区的、管理员家目录里的。造会话时照这一刻的文件拼进策略快照，之后钉在会话上（Y5）。
+人格管「她是谁」：人设、示范对话、角色扮演提示，以后还有声音、记忆的默认范围、能查的知识库（`16-人格与预设.md`）。一个人格是一个目录，四层叠起来：出厂的、装着的软件包带的（施工 P-11 上，设计 `31-软件包.md` 第十节）、系统区的、一个账号家目录里的（施工 Y-2 中上起是连接的账号、会话的属主自己的，原来一律是管理员的；系统区是 `root.system()`，所有账号都读得到，不是管理员的家目录，`scope.rs`）。造会话时照这一刻的文件拼进策略快照，之后钉在会话上（Y5）。
 
 - 出厂只带软件工程师那一句（Y6）。Miyu 是项目主人自己的人格，放在他的家目录里，不进仓库（Y10）。
 - 核心不读场所规则：场所会话用哪个人格，由通讯平台的桥照场所规则算好，经 `venue.session` 交来（`18-通讯平台.md` Q1、第四节）。
@@ -104,7 +104,7 @@ assistant: 8640
 
 ### 改（施工 P-3 下、P-3 补）
 
-- `persona.set`、`persona.read`、`persona.delete`（`protocol.md`）：只写管理员家目录那一层的人格目录。不写编号的是新建，编号由核心起 `persona-<n>`（2026-10-08 项目主人定：新建不填编号），一次带上名字、人设、示范对话、角色扮演提示；改出厂的、系统区的就是建同名覆盖、只写改了的（16 第四节 Y3）。
+- `persona.set`、`persona.read`、`persona.delete`（`protocol.md`）：只写调用者自己家目录那一层的人格目录（施工 Y-2 中上，原来是管理员的）。不写编号的是新建，编号由核心起 `persona-<n>`（2026-10-08 项目主人定：新建不填编号），一次带上名字、人设、示范对话、角色扮演提示；改出厂的、系统区的就是建同名覆盖、只写改了的（16 第四节 Y3）。
 - 只给人要看的（2026-10-08 项目主人：「什么来自、基于，都是毫无意义的设计，你设计的时候必须考虑用户需要什么」）：名字、说明一句字，人设、角色扮演提示有没有字，示范对话几轮、一对一对的原文，删了会怎样（`remove`）。来自哪一层、以谁为底都不往协议上露；层只留在核心里，`miyu check` 照旧分层报。
 - `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设）；提示词整份换，`unset` 删你那一层的，空的字就是这一段是空的；示范对话另收一对一对的（`persona::write_examples` 写成文件的写法，写了读不回原样的拒绝）。写之前照改完的叠一遍（`Personas::find_with`：家目录那一层的几份照改完的算，删掉的当没有，没改的读盘），写错的什么都不写，拒绝里带照连接语言的一句（`data.message`）。
 - 提示词防覆盖（终端的会话要的）：`persona.read` 给原文和你那一层这一份的版本，`persona.set` 带回来当 `expect`。写盘照配置文件的规矩，一份一份写，只试一次：几份里写到一半撞上手改的，前面写了的不撤、回 `persona_conflict`（重来时前面那几份已经是改完的样子，不再写）。
@@ -117,7 +117,7 @@ assistant: 8640
 1. **在哪**：人格目录里的 `avatar.png`、`avatar.jpg`、`avatar.webp` 之一，和 `persona.toml` 放在一起。照人格的层叠走：哪一层有就用最上面那一层的，同一层有好几张的照 `png`、`jpg`、`webp` 的先后挑一张，记一条警告。
 2. **什么样的图**：PNG、JPEG、WebP，照内容认（同 `blob.put` 第 4 条），不照扩展名；最大 1 MiB，宽、高都不超过 1024。头传之前自己缩到 512 以内。SVG 不收：它能带脚本。
 3. **换**：`persona.set` 多一格 `avatar`：
-   - `{"blob": "<内容哈希>"}`：先 `blob.put` 传上来，再交它的哈希。核心照内容再认一遍，合规矩的写进管理员家目录那一层，名字照类型起，那一层原来的头像删掉。
+   - `{"blob": "<内容哈希>"}`：先 `blob.put` 传上来，再交它的哈希。核心照内容再认一遍，合规矩的写进调用者自己家目录那一层，名字照类型起，那一层原来的头像删掉。
    - `{"unset": true}`：删掉家目录那一层的，回到下面那一层的；下面没有的就是没有头像。
    - 可以带 `"expect": "<版本>" | null`，同提示词的：对不上 `persona_conflict`。
    - 只改头像的 `persona.set` 可以不写 `changes`、`prompts`。
@@ -129,11 +129,11 @@ assistant: 8640
 ### 主题色、背景图（Y15，施工 P-6，2026-10-10；网页对过）
 
 1. **主题色**：`persona.toml` 的 `[appearance] seed`，一个 `#rrggbb`，大小写都认，读出来一律小写。照 `persona.toml` 逐项盖的规矩叠。核心不算配色，头照它算；没写的，头用头像的候选主色 `seeds` 的第一个（第 4 条，施工 P-6 补；以前是头自己从头像取色）。
-   - `persona.set` 多一格 `seed`：`"#rrggbb"` 写进管理员家目录那一层，`{"unset": true}` 删掉那一层的，回到下面那一层的。只改主题色的可以不写 `changes`、`prompts`，新建时也可以只写它。写错的、`changes` 里同时改 `appearance.seed` 的 `bad_params`。`changes` 照样能改 `appearance.seed`，值写错的照文件写错算 `persona_invalid`。
+   - `persona.set` 多一格 `seed`：`"#rrggbb"` 写进调用者自己家目录那一层，`{"unset": true}` 删掉那一层的，回到下面那一层的。只改主题色的可以不写 `changes`、`prompts`，新建时也可以只写它。写错的、`changes` 里同时改 `appearance.seed` 的 `bad_params`。`changes` 照样能改 `appearance.seed`，值写错的照文件写错算 `persona_invalid`。
    - 文件里写错（不是 `#rrggbb`）是 `persona_invalid`，`problem` 的 `code` 是 `bad_seed`；`[appearance]` 里多了别的键是 `unknown_key`。
    - `persona.list` 的每一格、`persona.get` 多一格 `seed`，没有的是 `null`。
 2. **背景图露出多少、焦点**（施工 P-7，2026-10-11 项目主人定、网页转来）：`[appearance] background_opacity` 是 0 到 100 的整数（百分比，背景图露出多少），`background_focus` 是 `[x, y]` 两个 0 到 100 的整数（百分比，同 CSS 的 `background-position`：背景图不裁，窗口变宽变窄都尽量露着这一处）。一个人格各一份，照逐项盖的规矩叠。没写的是没有，头照自己的默认画（网页露 20、焦点居中），核心不填默认值。
-   - `persona.set` 多两格 `background_opacity`、`background_focus`：值写进管理员家目录那一层，`{"unset": true}` 删掉那一层的。只改它们的可以不写 `changes`、`prompts`，新建时也可以只写它们。写错的（不是 0 到 100 的整数、焦点不是两个数）、`changes` 里同时改了同一项的 `bad_params`。`changes` 也能改 `appearance.background_opacity`、`appearance.background_focus`（焦点照两个数的数组写）。
+   - `persona.set` 多两格 `background_opacity`、`background_focus`：值写进调用者自己家目录那一层，`{"unset": true}` 删掉那一层的。只改它们的可以不写 `changes`、`prompts`，新建时也可以只写它们。写错的（不是 0 到 100 的整数、焦点不是两个数）、`changes` 里同时改了同一项的 `bad_params`。`changes` 也能改 `appearance.background_opacity`、`appearance.background_focus`（焦点照两个数的数组写）。
    - 文件里写错是 `persona_invalid`，`problem` 的 `code` 是 `bad_background_opacity`、`bad_background_focus`。
    - **模糊多少**（施工 P-7 补，2026-10-19 网页的会话要的）：`[appearance] background_blur` 是 1 到 100 的整数，模糊的程度由头换算；没写的是不模糊（0 不收：不模糊就是不写）。叠法、`persona.set` 的写法、`changes`、`persona.get`、`persona.list` 都同上两项；写错的代码 `bad_background_blur`。
    - `persona.list` 的每一格、`persona.get` 多这两格，没有的是 `null`。
