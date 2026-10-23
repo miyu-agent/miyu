@@ -247,3 +247,33 @@ async fn nothing_older_than_the_reply_comes_after_it() {
     }
     renaming.await.expect("改名的任务没 panic");
 }
+
+/// 中途换预设、人格也推一项（施工 P-16 下补，网页实测：原来要等下一轮才跟上）：换成无工具的那一项是 `preset: null` 加
+/// `no_tools: true`。
+#[tokio::test]
+async fn switching_the_preset_pushes_the_entry() {
+    let home = Home::new();
+    let script = Script::new([]);
+    let (mut watcher, mut actor, _) = watching(&home, &script).await;
+    let created = actor
+        .call("c1", "session.create", json!({"cwd": "~"}))
+        .await;
+    let session = created["result"]["session"]
+        .as_str()
+        .expect("造出来了")
+        .to_string();
+    until_entry(&mut watcher, &session, |_| true).await;
+    let switched = actor
+        .call(
+            "k1",
+            "session.configure",
+            json!({"session": session, "preset": null}),
+        )
+        .await;
+    assert!(switched.get("error").is_none(), "{switched}");
+    let item = until_entry(&mut watcher, &session, |item| {
+        item["no_tools"] == json!(true)
+    })
+    .await;
+    assert_eq!(item["preset"], Value::Null, "{item}");
+}

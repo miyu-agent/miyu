@@ -1,5 +1,6 @@
 //! 推送和会话列表的那一项（施工 9-5，`docs/blueprint/session/actor.md`「推送和订阅」第 7 条，`protocol.md`「会话列表的推送」）：
-//! 推给订阅了的头的时候顺手看一眼，推过 `session.created`、`session.meta_changed`、`turn.started`、`turn.ended` 的记下；
+//! 推给订阅了的头的时候顺手看一眼，推过 `session.created`、`session.meta_changed`、`turn.started`、`turn.ended`、换人格或预设的
+//! `session.policy_changed`（施工 P-16 下补）的记下；
 //! 每批送完写「有没有在跑的回合」时，记下的、忙不忙变了的，经会话表的端口报一声。只报「变了」，那一项由会话表照索引算。
 //! 推过派出、了结的（任务表变了），另报一声给会话树重量（施工 9-8 补下修）：孙代理开轮那一声可能先于子代理记下它的任务，
 //! 只靠开轮、空下来重量，会话树会少数一个。
@@ -30,15 +31,17 @@ impl Actor {
     pub(super) fn push(&mut self, pushed: Pushed) {
         if let Pushed::Events(events) = &pushed {
             self.marks.moved |= events.iter().any(changes_jobs);
-            self.marks.listed |= events.iter().any(|event| {
-                matches!(
-                    event.body,
-                    Body::SessionCreated(_)
-                        | Body::MetaChanged(_)
-                        | Body::WorkspaceChanged(_)
-                        | Body::TurnStarted(_)
-                        | Body::TurnEnded(_)
-                )
+            self.marks.listed |= events.iter().any(|event| match &event.body {
+                Body::SessionCreated(_)
+                | Body::MetaChanged(_)
+                | Body::WorkspaceChanged(_)
+                | Body::TurnStarted(_)
+                | Body::TurnEnded(_) => true,
+                // 中途换人格、预设（施工 P-16 下补）：列表那一项照索引写着它们，人换了就报，不等下一轮。
+                Body::PolicyChanged(changed) => {
+                    changed.persona.is_some() || changed.preset.is_some()
+                }
+                _ => false,
             });
         }
         let _ = self.pushes.send(Arc::new(pushed));

@@ -15,6 +15,8 @@ use crate::Core;
 pub(crate) struct Fixed {
     pub(crate) persona: Option<Value>,
     pub(crate) preset: Option<Value>,
+    /// 订阅时会话是明着无工具的（施工 P-16 下补）：`preset` 那时是 null。
+    pub(crate) no_tools: bool,
 }
 
 /// 整份会话状态。`current` 是向会话 actor 要的那一份（拿不到的不写那几格）。
@@ -57,22 +59,24 @@ pub(crate) fn whole(
         }
     }
     // 中途换了的照向会话要的那一份（施工 P-13）；拿不到的照订阅时定下的。
-    let (persona, preset) = match current {
-        Some(current) => (
-            current.persona.as_ref().map(|persona| json!(persona)),
-            current
-                .preset
-                .as_ref()
-                .map(|preset| json!(preset))
-                .or_else(|| fixed.preset.clone()),
-        ),
-        None => (fixed.persona.clone(), fixed.preset.clone()),
+    let persona = match current {
+        Some(current) => current.persona.as_ref().map(|persona| json!(persona)),
+        None => fixed.persona.clone(),
     };
     if let Some(persona) = persona {
         status["persona"] = persona;
     }
-    if let Some(preset) = preset {
-        status["preset"] = preset;
+    // 预设同会话列表的写法（施工 P-16 下补）：无工具的（内部是空的编号）写 null 加 `no_tools: true`。
+    match current.and_then(|current| current.preset.as_deref()) {
+        Some(preset) => crate::presets::shown(&mut status, preset),
+        None => {
+            if let Some(preset) = &fixed.preset {
+                status["preset"] = preset.clone();
+            }
+            if fixed.no_tools {
+                status["no_tools"] = json!(true);
+            }
+        }
     }
     status
 }

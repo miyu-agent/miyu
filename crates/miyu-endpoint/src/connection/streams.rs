@@ -233,6 +233,7 @@ async fn view(
     let fixed = Fixed {
         persona: reply.get("persona").cloned(),
         preset: reply.get("preset").cloned(),
+        no_tools: reply.get("no_tools") == Some(&json!(true)),
     };
     let view = View::start(
         Arc::clone(core),

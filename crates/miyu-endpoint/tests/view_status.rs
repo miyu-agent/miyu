@@ -186,3 +186,41 @@ async fn a_list_cleared_by_finishing_keeps_what_was_done() {
     assert_eq!(last["todos"], again, "{last}");
     assert!(last.get("todos_done").is_none(), "{last}");
 }
+
+/// 无工具的会话（施工 P-16 下补，网页实测）：会话状态同会话列表，`preset` 是 null、带 `no_tools: true`，不写空字；开的时候就是的、
+/// 中途换成的都一样。
+#[tokio::test]
+async fn a_no_tools_session_says_so_like_the_list() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let opened = client
+        .call("c1", "session.create", json!({"cwd": "~", "preset": null}))
+        .await;
+    let session = opened["result"]["session"]
+        .as_str()
+        .expect("造出来了")
+        .to_string();
+    let reply = subscribe_view(&mut client, &session).await;
+    let status = &reply["result"]["status"];
+    assert_eq!(
+        (&status["preset"], &status["no_tools"]),
+        (&Value::Null, &json!(true)),
+        "{status}"
+    );
+    let other = client.create("c2", "~").await;
+    client
+        .call(
+            "k1",
+            "session.configure",
+            json!({"session": other, "preset": null}),
+        )
+        .await;
+    let reply = subscribe_view(&mut client, &other).await;
+    let status = &reply["result"]["status"];
+    assert_eq!(
+        (&status["preset"], &status["no_tools"]),
+        (&Value::Null, &json!(true)),
+        "{status}"
+    );
+}

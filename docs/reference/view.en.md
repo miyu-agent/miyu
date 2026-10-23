@@ -72,7 +72,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `cooling_until` | When every candidate is cooling down, the earliest recovery time |
 | `preparing` | Compacting ahead in the background: `{seen, since}` |
 | `usage` | This session's total usage |
-| `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed |
+| `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed. A no-tools session has `preset: null` plus `no_tools: true`, as in the session list (step P-16) |
 | `todos_done` | When the to-do list was cleared because everything was done, the list before clearing (heads tick everything, pause, then collapse) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, `state` being `running`, `paused`, `completed`, `blocked`, `waiting` |
 | `jobs` | Jobs this session started directly (running ones and the last 20 finished): `{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested}` (`nested` as on `tool`, only for a command whose script called tools), `state` being `running`, `done`, `failed`, `stopped`, `aborted` |

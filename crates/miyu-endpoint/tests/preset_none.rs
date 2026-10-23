@@ -163,3 +163,40 @@ async fn an_empty_preset_is_still_refused() {
         .await;
     assert_eq!(reply["error"]["data"]["reason"], "bad_params", "{reply}");
 }
+
+/// 换了预设马上看（施工 P-16 下补，网页实测）：不等下一轮，会话列表就照换成的写；换回来的不再带 `no_tools`。
+#[tokio::test]
+async fn the_list_follows_a_switch_right_away() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("一。")]);
+    let mut client = connected(configured(&home, &script)).await;
+    let session = create(&mut client, json!({"cwd": "~"})).await;
+    client.say("s1", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    client
+        .call(
+            "k1",
+            "session.configure",
+            json!({"session": session, "preset": null}),
+        )
+        .await;
+    let item = listed(&mut client, &session).await;
+    assert_eq!(
+        (&item["preset"], &item["no_tools"]),
+        (&Value::Null, &json!(true)),
+        "{item}"
+    );
+    client
+        .call(
+            "k2",
+            "session.configure",
+            json!({"session": session, "preset": "dev"}),
+        )
+        .await;
+    let item = listed(&mut client, &session).await;
+    assert_eq!(
+        (&item["preset"], item.get("no_tools")),
+        (&json!("dev"), None),
+        "{item}"
+    );
+}
