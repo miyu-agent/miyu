@@ -30,12 +30,12 @@
 
 ```json
 {
-  "description": "Execute a command with {shell} and return its output. Use it for builds, tests, git and other programs, not to read, search or edit files. Every call starts in the working directory, so cd does not carry over to the next call.",
+  "description": "Execute a command with {shell} and return its output. Use it for builds, tests, git and other programs. Every call starts in the working directory, so cd does not carry over to the next call.",
   "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title of what the command does, in a few words."},"timeout":{"type":"integer","description":"Milliseconds before the command is stopped, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"Run it in the background with no timeout and return a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. When the sandbox blocks a command, retry with this right away instead of asking first, because setting it is what asks the user."}},"required":["command","description"]}
 }
 ```
 
-- 说明是一段模板：核心起来时找一次用哪个 shell，把 `{shell}` 换成它的名字（`bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`），核心跑着时不变；造会话时连同工具面存进快照。例如 Linux 上：`Execute a command with bash and return its output. Use it for builds, tests, git and other programs, not to read, search or edit files. Every call starts in the working directory, so cd does not carry over to the next call.`
+- 说明是一段模板：核心起来时找一次用哪个 shell，把 `{shell}` 换成它的名字（`bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`），核心跑着时不变；造会话时连同工具面存进快照。例如 Linux 上：`Execute a command with bash and return its output. Use it for builds, tests, git and other programs. Every call starts in the working directory, so cd does not carry over to the next call.`
 - 别的工具的说明不当模板读，里面的花括号是字面的。
 
 | 参数 | 必填 | 怎么认 |
