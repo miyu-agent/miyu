@@ -119,3 +119,41 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
         "本机的照旧"
     );
 }
+
+/// 印出缓存目录的脚本（施工 Y-11 上）。
+const CACHED: &[u8] = b"#!/usr/bin/env python3\n# Description: Cached.\nimport os\nprint(os.environ.get('MIYU_SCRIPT_CACHE_DIR', 'unset'))\n";
+
+/// 缓存目录（施工 Y-11 上）：在家目录的 `cache/<来处>/<工具名>/`，建好交真实位置；场所会话多一层场所；会话外面的调用（没有属主）
+/// 照旧在系统临时目录下。
+#[tokio::test]
+async fn a_script_s_cache_is_in_the_owner_s_home() {
+    let site = Site::new();
+    site.file("scripts/cached.py", CACHED);
+    let home = |relative: &str| {
+        let folder = site.0.join("data/home").join(relative);
+        std::fs::canonicalize(folder).expect("建好了")
+    };
+    let printed = |done: &Done| text(done).trim_end().to_string();
+    let local = site.script_by("scripts/cached.py", "kit", "alice").await;
+    assert!(!local.error, "{}", text(&local));
+    assert_eq!(
+        printed(&local),
+        home("alice/cache/kit/cached").display().to_string()
+    );
+    let group = site
+        .script_at("scripts/cached.py", "kit", "bridge", Some("qq:group:1"))
+        .await;
+    assert_eq!(
+        printed(&group),
+        home("bridge/cache/@qq_3agroup_3a1/kit/cached")
+            .display()
+            .to_string()
+    );
+    let outside = site.script("scripts/cached.py", json!({})).await;
+    let data = std::fs::canonicalize(site.0.join("data")).expect("在");
+    assert!(
+        !std::path::Path::new(&printed(&outside)).starts_with(&data),
+        "会话外面的照旧在临时目录：{}",
+        printed(&outside)
+    );
+}

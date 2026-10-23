@@ -46,6 +46,9 @@ pub struct Places {
     pub private: Vec<PathBuf>,
     /// 只禁写的名单（施工 5-17 下）。
     pub readonly: Readonly,
+    /// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures、videos、documents、downloads）：照工作区算，落在数据根里也是；
+    /// 还没建的也算。只给文件工具，不进沙盒的写名单（那是调的一方拼的）。
+    pub own: Vec<PathBuf>,
 }
 
 /// 系统目录的第一版清单（11 第四节）。
@@ -96,6 +99,7 @@ impl Places {
             shelves: Vec::new(),
             private: home.map(crate::private_dirs).unwrap_or_default(),
             readonly: Readonly::shipped(home),
+            own: Vec::new(),
         }
     }
 }
@@ -131,6 +135,8 @@ pub struct Boundary {
     inside: Vec<Vec<String>>,
     /// 只禁写名单里家目录下的、绝对路径的，换成真实的位置：还不存在的照最近的、已经存在的上级换（[`crate::resolve()`]）。
     readonly: Vec<PathBuf>,
+    /// 这个人自己的几处（施工 Y-11 上），换法同 `readonly`：还没建的照最近的、已经存在的上级换。
+    own: Vec<PathBuf>,
 }
 
 impl Boundary {
@@ -154,6 +160,11 @@ impl Boundary {
             readonly: places
                 .readonly
                 .paths
+                .iter()
+                .filter_map(|path| crate::resolve(path, None, &path.to_string_lossy()).ok())
+                .collect(),
+            own: places
+                .own
                 .iter()
                 .filter_map(|path| crate::resolve(path, None, &path.to_string_lossy()).ok())
                 .collect(),
@@ -184,14 +195,21 @@ impl Boundary {
             .workspace
             .as_deref()
             .and_then(|root| Some((root, path.strip_prefix(root).ok()?)));
-        // 数据根：只有工作区落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样谁都不能碰。
+        // 这个人自己的几处（施工 Y-11 上）：在数据根里也照工作区算。
+        let own = self
+            .own
+            .iter()
+            .find_map(|root| Some((root.as_path(), path.strip_prefix(root).ok()?)));
+        // 数据根：只有工作区、自己的几处落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样
+        // 谁都不能碰。
         if let Some(data_root) = &self.data_root
             && within(path, data_root)
             && !workspace.is_some_and(|(root, _)| within(root, data_root))
+            && own.is_none()
         {
             return Zone::Forbidden;
         }
-        let held = workspace.or_else(|| {
+        let held = workspace.or(own).or_else(|| {
             self.dirs
                 .iter()
                 .find_map(|root| Some((root.as_path(), path.strip_prefix(root).ok()?)))
@@ -232,7 +250,8 @@ impl Boundary {
             .workspace
             .as_ref()
             .is_some_and(|workspace| workspace.starts_with(dir))
-            || self.dirs.iter().any(|d| d.starts_with(dir));
+            || self.dirs.iter().any(|d| d.starts_with(dir))
+            || self.own.iter().any(|d| d.starts_with(dir));
         !leads_somewhere_writable
     }
 }

@@ -246,3 +246,47 @@ async fn disabling_cuts_a_member_off_and_enabling_lets_them_back() {
     let listed = admin.call("s", "session.list", json!({})).await;
     assert!(listed.get("result").is_some(), "{listed}");
 }
+
+/// 握手的 `host.dirs`（施工 Y-11 上）：管理员的有 pictures、videos、documents、downloads 四处，照原样给、不建；成员的没有
+/// （`06-多用户与身份.md` U25：普通用户看不到运行它的那台电脑，真实路径就是那台电脑的东西）。
+#[tokio::test]
+async fn only_the_admin_is_told_where_the_user_dirs_are() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut admin = Client::connect(Arc::clone(&core));
+    let reply = admin.hello().await;
+    let dirs = &reply["result"]["host"]["dirs"];
+    let at = |name: &str| {
+        home.root
+            .account_dir(&alice())
+            .join(name)
+            .display()
+            .to_string()
+    };
+    assert_eq!(
+        dirs,
+        &json!({
+            "pictures": at("pictures"),
+            "videos": at("videos"),
+            "documents": at("documents"),
+            "downloads": at("downloads"),
+        }),
+        "{reply}"
+    );
+    assert!(
+        !home.root.account_dir(&alice()).join("pictures").exists(),
+        "握手不建"
+    );
+    let code = invite(&core).await["code"]
+        .as_str()
+        .expect("有码")
+        .to_string();
+    let token = register(&core, &code, "bob").await;
+    let mut member = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut member, json!({"login": token})).await;
+    assert_eq!(reply["result"]["account"], "bob", "{reply}");
+    assert!(
+        reply["result"]["host"].get("dirs").is_none(),
+        "成员的没有：{reply}"
+    );
+}

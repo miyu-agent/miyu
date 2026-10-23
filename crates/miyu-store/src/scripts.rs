@@ -115,6 +115,27 @@ pub fn state_dir(
     Some(dir.join(source).join(tool))
 }
 
+/// 账号 `account` 在场所 `venue` 跑来处是 `source`、工具名是 `tool` 的脚本时给它的缓存目录（施工 Y-11 上，
+/// `MIYU_SCRIPT_CACHE_DIR`）：`home/<账号>/cache/<来处>/<工具名>/`，场所会话多一层场所（同 [`state_dir`]）。场所写不成目录名的
+/// 没有。不建：跑之前脚本工具建。
+pub fn cache_dir(
+    data_root: &Path,
+    account: &AccountId,
+    venue: Option<&VenueId>,
+    source: &str,
+    tool: &str,
+) -> Option<PathBuf> {
+    // 同 `DataRoot::cache`：调的一方手里只有数据根的路径。
+    let mut dir = data_root
+        .join("home")
+        .join(account.as_str())
+        .join(crate::root::CACHE);
+    if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
+        dir.push(venue_dir(venue)?);
+    }
+    Some(dir.join(source).join(tool))
+}
+
 /// 一格状态目录（施工 X-44）：`state/scripts/<账号>/<来处>/<工具名>/`，场所会话的多一层场所（施工 X-44 补）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {

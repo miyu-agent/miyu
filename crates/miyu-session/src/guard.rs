@@ -141,7 +141,7 @@ impl Guard {
     }
 
     /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），管理员管得住的地方（[`Confines`]：
-    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`）。
+    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
     #[must_use]
     pub(crate) fn for_session(
         mut self,
@@ -150,6 +150,12 @@ impl Guard {
         resources: &Path,
     ) -> Guard {
         self.confines = Confines::of(root, owner, resources);
+        // 会话属主自己的几处（施工 Y-11 上，家目录里照 XDG 的 pictures 这些）：边界表照工作区算，只给文件工具。
+        self.places.own = root
+            .user_dirs(owner)
+            .into_iter()
+            .map(|(_, dir)| dir)
+            .collect();
         self.with_attachments(miyu_store::attachments::dir(root, owner, id))
     }
 

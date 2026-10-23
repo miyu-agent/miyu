@@ -19,6 +19,7 @@
 //! 之后 [`serve()`] 一个个接连接：没有连接、也没有在跑的回合，空闲够久了就退出；收到停的信号，先让在跑的
 //! 会话有计划地停下再退出。起不来的，把原因写成那一行（`error …`）交给头。
 
+mod cache;
 pub mod embed;
 mod kit;
 pub mod memlog;
@@ -386,7 +387,7 @@ async fn run(
         Ok(tools) => tools,
         Err(error) => return failed("tools", error),
     };
-    let trashed = root.clone();
+    let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
     let queries = packages::register(&resources, &root, &admin());
@@ -455,11 +456,16 @@ async fn run(
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
     let purging = trash::purge(trashed, admin());
+    // 清一次每个账号的缓存（施工 Y-11 上）：同回收处，走之前等它清完。
+    let sweeping = cache::sweep(cached);
     let (fixed, configured) = (options.idle, Arc::clone(&core));
     let idle = move || fixed.or_else(|| serve::idle_limit(&configured));
     serve(opened.listener, core, idle, serve::signal()).await;
     if let Err(error) = purging.await {
         tracing::error!(target: TARGET, panic = error.is_panic(), "trash purge panicked");
+    }
+    if let Err(error) = sweeping.await {
+        tracing::error!(target: TARGET, panic = error.is_panic(), "cache sweep panicked");
     }
     ExitCode::SUCCESS
 }
