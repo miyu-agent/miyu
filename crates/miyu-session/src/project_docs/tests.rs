@@ -98,7 +98,10 @@ fn told_once_replaced_when_changed_and_per_repo() {
     let first = tail(&texts(), Some(&found), &[]).expect("没交过的交");
     assert_eq!(
         first.fact.text,
-        format!("<p path=\"{}\">\nv1\n</p>\n", path.display())
+        format!(
+            "<p path=\"{}\">\nv1\n</p>\n",
+            crate::path_text::path_text(&path)
+        )
     );
     assert_eq!(first.module.as_str(), "project-docs");
     let seen = [present(&first)];
@@ -107,10 +110,10 @@ fn told_once_replaced_when_changed_and_per_repo() {
     let changed = find(&dir.0).unwrap();
     let second = tail(&texts(), Some(&changed), &seen).expect("变了的交");
     assert!(
-        second
-            .fact
-            .text
-            .starts_with(&format!("Replaces {}.\n", dir.0.display())),
+        second.fact.text.starts_with(&format!(
+            "Replaces {}.\n",
+            crate::path_text::path_text(&dir.0)
+        )),
         "{}",
         second.fact.text
     );

@@ -5,7 +5,7 @@
 //! 回合尾巴，施工 X-11）；放开只读的文件夹造会话、载入时各找一次。碰磁盘的在阻塞线程里做。
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use miyu_kernel::id::AccountId;
 use miyu_kernel::template::Template;
@@ -19,6 +19,7 @@ use miyu_store::skills::{self, Skill};
 use miyu_tool::load::say;
 
 use crate::TARGET;
+use crate::path_text::path_text;
 
 /// 读技能用的那件工具（基本系统的 `read`）：工具面上没有它的，列出来她也读不了，不列。
 const READ: &str = "read";
@@ -80,7 +81,7 @@ pub(crate) fn listing(
     })?;
     let mut lines = vec![texts.open.trim_end().to_string()];
     for skill in skills {
-        let path = shown(&skill.file);
+        let path = path_text(&skill.file);
         lines.push(
             say(
                 &line,
@@ -124,23 +125,6 @@ pub(crate) fn names(skills: &[Skill]) -> Names {
         .filter(|skill| !skill.head.display_name.is_empty())
         .map(|skill| (skill.head.name.clone(), skill.head.display_name.clone()))
         .collect()
-}
-
-/// 路径写给她看的样子：Windows 上反斜杠换成 `/`（转义会把反斜杠写成两个，她照抄就对不上；`/` 在 Windows 上一样认）。换真实
-/// 位置时加上的 `\\?\` 去掉（施工 X-37：链接成的技能照真实的位置记）：`\\?\C:\x` 写成 `C:/x`，`\\?\UNC\host\share` 写成
-/// `//host/share`；别的平台上没有这个前缀。
-fn shown(path: &Path) -> String {
-    let text = path.to_string_lossy();
-    let text = match (text.strip_prefix(r"\\?\UNC\"), text.strip_prefix(r"\\?\")) {
-        (Some(rest), _) => format!(r"\\{rest}"),
-        (None, Some(rest)) => rest.to_string(),
-        (None, None) => text.into_owned(),
-    };
-    if cfg!(windows) {
-        text.replace('\\', "/")
-    } else {
-        text
-    }
 }
 
 mod watch;

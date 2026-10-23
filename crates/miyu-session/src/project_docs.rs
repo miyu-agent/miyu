@@ -92,7 +92,7 @@ pub(crate) fn tail(
     present: &[Present],
 ) -> Option<Injection> {
     let found = found?;
-    let root = found.root.display().to_string();
+    let root = crate::path_text::path_text(&found.root);
     let body = render(texts, found);
     let digest = ContentHash::of(body.as_bytes()).as_str().to_string();
     let last = present
@@ -141,7 +141,11 @@ pub(crate) fn check(texts: &ProjectDocTexts) -> Result<(), String> {
 fn render(texts: &ProjectDocTexts, found: &Found) -> String {
     let mut body = String::new();
     for (path, text) in &found.docs {
-        body.push_str(&fill(&texts.open, "path", &path.display().to_string()));
+        body.push_str(&fill(
+            &texts.open,
+            "path",
+            &crate::path_text::path_text(path),
+        ));
         body.push_str(text);
         if !text.ends_with('\n') {
             body.push('\n');

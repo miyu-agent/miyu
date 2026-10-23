@@ -46,7 +46,7 @@ fn each_skill_is_one_line_with_its_file() {
     ];
     let block = listing(&resources(), &[tool("shell"), tool(READ)], &skills).expect("读得出");
     let file = |name: &str| {
-        shown(
+        path_text(
             &Path::new("/data/home/admin/skills")
                 .join(name)
                 .join("SKILL.md"),
@@ -106,12 +106,12 @@ fn a_verbatim_prefix_is_not_shown() {
         false => text.to_string(),
     };
     assert_eq!(
-        shown(Path::new(r"\\?\C:\skills\notes\SKILL.md")),
+        path_text(Path::new(r"\\?\C:\skills\notes\SKILL.md")),
         windows(r"C:\skills\notes\SKILL.md")
     );
     assert_eq!(
-        shown(Path::new(r"\\?\UNC\host\share\notes\SKILL.md")),
+        path_text(Path::new(r"\\?\UNC\host\share\notes\SKILL.md")),
         windows(r"\\host\share\notes\SKILL.md")
     );
-    assert_eq!(shown(Path::new("/data/notes")), "/data/notes");
+    assert_eq!(path_text(Path::new("/data/notes")), "/data/notes");
 }
