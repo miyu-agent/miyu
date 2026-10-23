@@ -45,6 +45,9 @@ pub(crate) struct RunParams {
     /// 头所在的目录：只用来接 `/workspace` 后面相对的路径（施工 9-7 下）。
     #[serde(default)]
     cwd: Option<String>,
+    /// 本机会话里说命令的人（施工 Y-2 下下上）：照连接的人，不从参数读。没填的（不经 [`run`] 的）照旧是管理员。
+    #[serde(skip)]
+    person: Option<By>,
 }
 
 /// 这一条 `command.run` 在后台答不答（施工 R-7 补，`methods::answered_later` 问它）：照原文认出的命令问
@@ -109,10 +112,11 @@ impl Said {
 /// （[`templates::run`]）。
 pub(crate) async fn run(
     core: &Arc<Core>,
-    peer: &Peer,
+    (caller, peer): (&crate::hello::Caller, &Peer),
     id: &CommandId,
-    params: RunParams,
+    mut params: RunParams,
 ) -> Result<Value, Refusal> {
+    params.person = Some(crate::sessions::person(core, caller));
     let (name, rest) = split(&params.text)?;
     if params
         .cwd
@@ -135,7 +139,7 @@ pub(crate) async fn run(
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
     let handle = found.handle.clone();
-    let by = speaker(core, &handle, params.as_external)?;
+    let by = speaker(core, &handle, params.person.as_ref(), params.as_external)?;
     if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
         if access(core, slash.name(), None) == Access::Off {
             return Err(turned_off(core, peer, slash.name()).await);
@@ -165,10 +169,16 @@ pub(crate) async fn run(
     Ok(json!({"command": slash.name(), "events": events, "said": said}))
 }
 
-/// 说命令的是谁：本机的会话是管理员本人（不收 `as`），场所会话照 `as` 认出平台上的人（不带的 `venue_session`）。
-fn speaker(core: &Core, handle: &Handle, speaking: Option<AsParams>) -> Result<By, Refusal> {
+/// 说命令的是谁：本机的会话是连上来的那个人 `person`（施工 Y-2 下下上，原来一律是管理员；不收 `as`），场所会话照 `as` 认出
+/// 平台上的人（不带的 `venue_session`）。
+fn speaker(
+    core: &Core,
+    handle: &Handle,
+    person: Option<&By>,
+    speaking: Option<AsParams>,
+) -> Result<By, Refusal> {
     match (handle.venue().as_str() == LOCAL, speaking) {
-        (true, None) => Ok(admin(core)),
+        (true, None) => Ok(person.cloned().unwrap_or_else(|| admin(core))),
         (true, Some(_)) => Err(Refusal::BAD_PARAMS),
         (false, None) => Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => venues::speaker(core, handle.venue(), handle.owner(), speaking),

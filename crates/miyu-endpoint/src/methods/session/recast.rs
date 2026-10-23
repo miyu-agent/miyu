@@ -70,6 +70,7 @@ async fn subagent(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
 /// 发换人格、预设的命令：拒绝的是内核的原因码；会话停了的从表里拿掉。
 pub(super) async fn send(
     core: &Core,
+    caller: &crate::hello::Caller,
     request: &Request,
     session: &SessionId,
     handle: &Handle,
@@ -78,7 +79,7 @@ pub(super) async fn send(
     let id = CommandId::parse(&format!("{}/recast", request.id.as_str()))
         .map_err(|_| Refusal::BAD_PARAMS)?;
     match handle
-        .command(id, crate::sessions::admin(core), command)
+        .command(id, crate::sessions::person(core, caller), command)
         .await
     {
         Ok(Outcome::Rejected { reason, about }) => Err(Refusal::kernel_about(reason, &about)),

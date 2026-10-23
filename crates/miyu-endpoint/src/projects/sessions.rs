@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use miyu_kernel::event::Body;
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::origin::By;
 use miyu_kernel::session::Command;
 use miyu_store::projects::Project;
 use miyu_tool::Stop;
@@ -64,7 +65,7 @@ pub(crate) async fn move_out(
             pinned: None,
             project: Some(String::new()),
         };
-        let by = crate::sessions::admin(core);
+        let by = crate::sessions::owner_by(core, account);
         if found
             .handle
             .command(command_id.clone(), by, command)
@@ -106,6 +107,7 @@ async fn members(core: &Core, account: &AccountId, id: &str) -> Result<Vec<Sessi
 /// 序号。命令编号照这条请求的接 `/project`：建会话的那一条已经用了原来的。
 pub(crate) async fn join(
     core: &Arc<Core>,
+    by: By,
     request: &Request,
     session: &SessionId,
     project: String,
@@ -118,7 +120,6 @@ pub(crate) async fn join(
         pinned: None,
         project: Some(project),
     };
-    let by = crate::sessions::admin(core);
     match found.handle.command(command_id, by, command).await {
         Ok(miyu_kernel::session::Outcome::Accepted { events }) => {
             Ok(events.iter().map(|seq| seq.get()).collect())

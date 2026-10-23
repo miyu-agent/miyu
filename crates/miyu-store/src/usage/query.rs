@@ -100,6 +100,8 @@ pub struct Query {
     pub group: Vec<Group>,
     /// 只算这个会话；`true` 的连它派的子会话一起。没有的全算。
     pub session: Option<(SessionId, bool)>,
+    /// 只算这个账号名下的（施工 Y-2 下下上：成员只看得到自己的）；没有的全算。
+    pub account: Option<String>,
     /// 分天照哪个时区。
     pub offset: UtcOffset,
 }
@@ -290,6 +292,10 @@ fn filter(query: &Query, sessions: Option<&BTreeSet<String>>) -> (String, Vec<Va
     if let Some(until) = query.until {
         values.push(Value::Integer(until.unix_millis()));
         parts.push(format!("at < ?{}", values.len()));
+    }
+    if let Some(account) = &query.account {
+        values.push(Value::Text(account.clone()));
+        parts.push(format!("owner = ?{}", values.len()));
     }
     if let Some(sessions) = sessions {
         let mut marks = Vec::new();

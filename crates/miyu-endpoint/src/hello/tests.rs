@@ -6,13 +6,15 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 /// 用到 `caller.account` 的文件和次数（相对 `src/`）。
-const IDENTITY: [(&str, usize); 3] = [
+const IDENTITY: [(&str, usize); 4] = [
     // 吊销、身份那一格、握手、握手认出来的、登录凭据、账号方法两处。
     ("connection.rs", 7),
     // `blob.put`、`blob.open`、`blob.get`：上传的东西归谁交的。
     ("methods.rs", 3),
     // 附件照谁交的找、交给会话属主（`attach::blocks`、`attach::hand_over`）。
     ("methods/session.rs", 7),
+    // 会话里的话、命令是谁说的（`sessions::person`，施工 Y-2 下下上）：记的是说话的人，身份。
+    ("sessions.rs", 1),
 ];
 
 /// `dir` 下每个 `.rs`（测试文件不算）里 `caller.account` 出现几次。

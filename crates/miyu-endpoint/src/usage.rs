@@ -63,9 +63,17 @@ pub(crate) struct QueryParams {
     offset: Option<String>,
 }
 
-/// `usage.query`：见模块的说明。
-pub(crate) async fn query(core: &Arc<Core>, params: QueryParams) -> Result<Value, Refusal> {
-    let query = read(params, crate::sessions::offset)?;
+/// `usage.query`：见模块的说明。不是管理员的人只算自己名下的（施工 Y-2 下下上）。
+pub(crate) async fn query(
+    core: &Arc<Core>,
+    caller: &crate::hello::Caller,
+    params: QueryParams,
+) -> Result<Value, Refusal> {
+    let mut query = read(params, crate::sessions::offset)?;
+    let whose = caller.acting_for();
+    if !crate::login::admins::is_admin(core, whose) {
+        query.account = Some(whose.as_str().to_string());
+    }
     let currency = UsageSettings::from(&core.config().resolved().values()).currency;
     let usage = Arc::clone(&core.usage);
     // 系统账号的算进总数，照 `account` 能分开看（施工 O-4 下）。
@@ -132,6 +140,7 @@ fn read(params: QueryParams, now_offset: fn() -> UtcOffset) -> Result<Query, Ref
         until: time(params.until)?,
         group,
         session,
+        account: None,
         offset,
     })
 }
@@ -216,6 +225,7 @@ pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
         until: None,
         group: Vec::new(),
         session: Some((session.clone(), true)),
+        account: None,
         offset: crate::sessions::offset(),
     };
     let totals = tokio::task::spawn_blocking(move || caught_up(&usage, &accounts, &query))

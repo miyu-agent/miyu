@@ -62,7 +62,14 @@ pub(super) async fn create(
     let mut events = vec![1];
     if let Some(project) = project {
         events.extend(
-            crate::projects::sessions::join(core, request, &created.id, project.project).await?,
+            crate::projects::sessions::join(
+                core,
+                crate::sessions::person(core, caller),
+                request,
+                &created.id,
+                project.project,
+            )
+            .await?,
         );
     }
     let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": created.cwd});
@@ -92,7 +99,7 @@ pub(super) async fn send(
         (Some(_), Some(_)) => return Err(Refusal::BAD_PARAMS),
         (Some(name), None) => from::harness(name)?,
         (None, Some(package)) => from::harness(package)?,
-        (None, None) => admin(core),
+        (None, None) => crate::sessions::person(core, caller),
     };
     let mut blocks = said(params.text);
     let session = session(&params.session)?;
@@ -134,7 +141,7 @@ pub(super) async fn send(
     // 先换目录再说（施工 9-7 再补）：这一句开的那一轮照新目录跑。
     let wide = match params.cwd.as_deref() {
         Some(cwd) if local => {
-            crate::workspace::follow(core, request, &session, &mut found, cwd).await?
+            crate::workspace::follow(core, caller, request, &session, &mut found, cwd).await?
         }
         _ => false,
     };
@@ -151,7 +158,11 @@ pub(super) async fn send(
 }
 
 /// `session.interrupt`：打断。
-pub(super) async fn interrupt(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn interrupt(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: InterruptParams = params(request)?;
     let queued = match params.queued {
         QueuedParam::Send => Queued::Send,
@@ -161,12 +172,16 @@ pub(super) async fn interrupt(core: &Arc<Core>, request: &Request) -> Result<Val
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Interrupt { queued };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))
 }
 
 /// `session.withdraw`：不打断，退回一条排着队、她还没听到的消息（施工 Q-W）。
-pub(super) async fn withdraw(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn withdraw(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: WithdrawParams = params(request)?;
     let message = params
         .message
@@ -175,12 +190,16 @@ pub(super) async fn withdraw(core: &Arc<Core>, request: &Request) -> Result<Valu
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Withdraw { message };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))
 }
 
 /// `session.revert`：撤销。
-pub(super) async fn revert(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn revert(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: RevertParams = params(request)?;
     let turn = params
         .turn
@@ -189,17 +208,21 @@ pub(super) async fn revert(core: &Arc<Core>, request: &Request) -> Result<Value,
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Revert { turn };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(undo::reply(core, &session, &found.cwd, events).await)
 }
 
 /// `session.unrevert`：恢复。
-pub(super) async fn unrevert(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn unrevert(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: UnrevertParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Unrevert;
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(undo::reply(core, &session, &found.cwd, events).await)
 }
 
@@ -225,25 +248,30 @@ pub(super) async fn redo(
         text: params.text.map(said),
         attachments,
     };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(undo::reply(core, &session, &found.cwd, events).await)
 }
 
 /// `session.compact`：手动压缩。
-pub(super) async fn compact(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn compact(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: CompactParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Compact {
         instructions: params.instructions,
     };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))
 }
 
 /// `session.set_permission_level`：切权限级别。
 pub(super) async fn set_permission_level(
     core: &Arc<Core>,
+    caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
     let params: PermissionParams = params(request)?;
@@ -254,13 +282,17 @@ pub(super) async fn set_permission_level(
         LevelParam::Workspace => Level::Workspace,
         LevelParam::Full => Level::Full,
     });
+    // 完全放开只给管理员（施工 Y-2 下下上，2026-10-23 项目主人定：成员最高到工作区）：完全放开的命令不进沙盒，等于碰得到这台电脑。
+    if level == Some(Level::Full) && !crate::login::admins::is_admin(core, caller.acting_for()) {
+        return Err(Refusal::NOT_PERMITTED);
+    }
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::SetPermission {
         level,
         read_only: params.read_only,
     };
-    command_to(core, request, &session, &found.handle, command).await?;
+    command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({}))
 }
 
@@ -311,25 +343,41 @@ pub(super) async fn answer_question(
         attach::keep(core, owner, &session, blocks).await?;
     }
     let command = Command::Answer { call_id, answer };
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({ "events": events }))
 }
 
 /// `session.clear`：清空上下文。
-pub(super) async fn clear(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn clear(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: ClearParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
-    let events = command_to(core, request, &session, &found.handle, Command::Clear).await?;
+    let events = command_to(
+        core,
+        caller,
+        request,
+        &session,
+        &found.handle,
+        Command::Clear,
+    )
+    .await?;
     Ok(json!({ "events": events }))
 }
 
 /// `session.recap`：回顾。
-pub(super) async fn recap(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn recap(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: RecapParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
-    let by = admin(core);
+    let by = crate::sessions::person(core, caller);
     match outcome(core, request, &session, &found.handle, by, Command::Recap).await? {
         Outcome::Recapped { text, upto, cached } => {
             Ok(json!({"text": text, "upto": upto.get(), "cached": cached}))
@@ -339,14 +387,22 @@ pub(super) async fn recap(core: &Arc<Core>, request: &Request) -> Result<Value, 
 }
 
 /// `job.stop`：停掉一个任务。
-pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn stop_job(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: JobStopParams = params(request)?;
     let session = session(&params.session)?;
     let job = JobId::parse(&params.job).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
     match found
         .handle
-        .stop_job(job, admin(core), request.id.clone())
+        .stop_job(
+            job,
+            crate::sessions::person(core, caller),
+            request.id.clone(),
+        )
         .await
     {
         Ok(Ok(())) => Ok(json!({})),
@@ -360,7 +416,11 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
 
 /// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换人格、预设（施工 P-13）在
 /// `recast.rs`：先查完，模型先换，再换人格、预设。
-pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+pub(super) async fn configure(
+    core: &Arc<Core>,
+    caller: &Caller,
+    request: &Request,
+) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
     let session = session(&params.session)?;
@@ -374,10 +434,10 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     };
     if let Some(model) = model {
         let command = Command::Configure { model };
-        command_to(core, request, &session, &found.handle, command).await?;
+        command_to(core, caller, request, &session, &found.handle, command).await?;
     }
     if let Some(command) = recast {
-        recast::send(core, request, &session, &found.handle, command).await?;
+        recast::send(core, caller, request, &session, &found.handle, command).await?;
     }
     Ok(json!({}))
 }
@@ -398,7 +458,7 @@ pub(super) async fn set_meta(
         crate::projects::sessions::may_join(core, &session).await?;
     }
     let found = core.sessions.get(core, &session).await?;
-    command_to(core, request, &session, &found.handle, command).await?;
+    command_to(core, caller, request, &session, &found.handle, command).await?;
     Ok(json!({}))
 }
 

@@ -219,6 +219,7 @@ pub fn query(group: &[Group]) -> Query {
         until: None,
         group: group.to_vec(),
         session: None,
+        account: None,
         offset: UtcOffset::UTC,
     }
 }

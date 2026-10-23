@@ -124,6 +124,7 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
         until: None,
         group: Vec::new(),
         session: Some((handle.id().clone(), false)),
+        account: None,
         offset: miyu_kernel::time::UtcOffset::UTC,
     };
     // 汇总是会话在 `model.called` 落了盘以后、另起阻塞线程写的：看完结果的那一次可能还没写进去，等它写完再比

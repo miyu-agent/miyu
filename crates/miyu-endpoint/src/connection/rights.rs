@@ -153,7 +153,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "project.list"
         | "project.create"
         | "project.update"
-        | "project.delete" => People,
+        | "project.delete"
+        // 整个核心的检查（施工 Y-2 下下上补进表：原来照「表里没有的当只给人」落到这里）。
+        | "check" => People,
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。
         "tool.call" | "tool.cancel" | "command.call" | "method.call" | "search.query"
         | "user.append" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"

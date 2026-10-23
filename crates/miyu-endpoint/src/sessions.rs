@@ -363,6 +363,24 @@ pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
 }
 
+/// 账号 `owner` 名下的会话里，核心替他做的事记成谁（施工 Y-2 下下上）：系统账号（平台桥）的照旧记成管理员，人记他自己。
+pub(crate) fn owner_by(core: &Core, owner: &AccountId) -> By {
+    if core.is_system(owner) {
+        admin(core)
+    } else {
+        By::Person(Person::new(owner.clone()))
+    }
+}
+
+/// 照连接记成谁（施工 Y-2 下下上）：人记他自己（成员发的命令记在成员名下）；核心拉起的扩展照旧记成管理员。机主自己连上来的
+/// 和以前一字不差。
+pub(crate) fn person(core: &Core, caller: &crate::hello::Caller) -> By {
+    match caller.package {
+        Some(_) => admin(core),
+        None => By::Person(Person::new(caller.account.clone())),
+    }
+}
+
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话，`session.created` 的 `cause` 就是
 /// 造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧到新。
 async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {

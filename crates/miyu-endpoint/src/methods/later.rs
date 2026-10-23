@@ -38,7 +38,7 @@ pub(crate) async fn call_later(
         "model.call" => models::call(core, caller.acting_for(), params(request)?).await,
         "memory.dream" => memory::dream::call(core, caller.acting_for(), &request.params).await,
         "package.call" => backstage::call(core, caller.package.as_deref(), params(request)?).await,
-        "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
+        "command.run" => commands::run(core, (caller, &peer), &request.id, params(request)?).await,
         "fs.find" => files::find(core, params(request)?).await,
         "job.output" => job_output::read(core, params(request)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),

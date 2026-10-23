@@ -103,3 +103,28 @@ pub async fn is_closed(client: &mut Client) -> bool {
         Ok(Ok(0) | Err(_))
     )
 }
+
+/// 机主发一个邀请码，用它注册 `username`，交回这个人登录进来的连接。
+pub async fn member(core: &Arc<Core>, username: &str) -> Client {
+    let mut owner = local(core).await;
+    let code = owner.call("i", "account.invite", json!({})).await["result"]["code"]
+        .as_str()
+        .expect("有码")
+        .to_string();
+    let mut client = Client::connect(Arc::clone(core));
+    hello_with(&mut client, json!({"invite": code})).await;
+    let made = client
+        .call(
+            "r",
+            "account.register",
+            json!({"username": username, "password": "correct horse"}),
+        )
+        .await;
+    let token = made["result"]["login"]["token"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{made}"))
+        .to_string();
+    let mut back = Client::connect(Arc::clone(core));
+    hello_with(&mut back, json!({"login": token})).await;
+    back
+}

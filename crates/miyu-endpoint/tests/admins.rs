@@ -2,40 +2,12 @@
 //! 列账号、停用启用、设别人），撤了就不能；不是管理员的调 `account.set_admin` 拒；对机主、系统、包的账号、没有的账号回
 //! `unknown_account`，停用的成员回 `member_disabled`；`account.list` 每个人带 `admin`。
 
-use std::sync::Arc;
-
 use serde_json::{Value, json};
 
-use miyu_endpoint::Core;
 use miyu_session::testkit::Script;
 
 use crate::support::login::*;
 use crate::support::*;
-
-/// 机主发一个邀请码，用它注册 `username`，交回这个人登录进来的连接。
-async fn member(core: &Arc<Core>, username: &str) -> Client {
-    let mut owner = local(core).await;
-    let code = owner.call("i", "account.invite", json!({})).await["result"]["code"]
-        .as_str()
-        .expect("有码")
-        .to_string();
-    let mut client = Client::connect(Arc::clone(core));
-    hello_with(&mut client, json!({"invite": code})).await;
-    let made = client
-        .call(
-            "r",
-            "account.register",
-            json!({"username": username, "password": "correct horse"}),
-        )
-        .await;
-    let token = made["result"]["login"]["token"]
-        .as_str()
-        .unwrap_or_else(|| panic!("{made}"))
-        .to_string();
-    let mut back = Client::connect(Arc::clone(core));
-    hello_with(&mut back, json!({"login": token})).await;
-    back
-}
 
 /// `account.list` 里 `account` 那一行的 `admin`。
 async fn listed_admin(client: &mut Client, account: &str) -> Value {

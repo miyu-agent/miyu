@@ -34,7 +34,12 @@ pub(super) struct Who<'a> {
 
 /// 照先后过几道，第一个拒的交回拒绝；都过了的没有。
 pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -> Option<Refusal> {
-    if let Some(refusal) = gate::refuse(core, who.via, who.account, &request.method) {
+    if let Some(refusal) = gate::refuse(
+        core,
+        who.via,
+        who.account,
+        (&request.method, &request.params),
+    ) {
         return Some(refusal);
     }
     if let Some(refusal) = reach::refuse(who.reach, request) {

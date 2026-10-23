@@ -7,6 +7,7 @@ mod content;
 mod goal_command;
 mod goal_heads;
 mod list_account;
+mod member_gate;
 mod model_embed;
 mod oobe;
 mod package_call_ext;

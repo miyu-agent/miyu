@@ -23,7 +23,6 @@ use crate::hello::Caller;
 use crate::list;
 use crate::methods::command_by;
 use crate::refusal::Refusal;
-use crate::sessions::admin;
 use crate::venues::platform_id;
 use crate::wire::Request;
 
@@ -80,13 +79,13 @@ pub(crate) async fn append(
     Ok(json!({ "seq": seq }))
 }
 
-/// 记成谁：核心拉起的扩展是那个包（模块），别的是管理员（`session.respond` 同，施工 O-14 上）。
+/// 记成谁：核心拉起的扩展是那个包（模块），人是他自己（施工 Y-2 下下上，原来一律是管理员；`session.respond` 同，施工 O-14 上）。
 pub(crate) fn recorder(core: &Core, caller: &Caller) -> Result<By, Refusal> {
     Ok(match &caller.package {
         Some(package) => By::Module(Module {
             id: ModuleId::parse(package).map_err(|_| Refusal::INTERNAL)?,
         }),
-        None => admin(core),
+        None => crate::sessions::person(core, caller),
     })
 }
 

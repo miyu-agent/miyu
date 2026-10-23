@@ -46,7 +46,7 @@ use crate::personas;
 use crate::providers;
 use crate::refusal::Refusal;
 use crate::secrets;
-use crate::sessions::{Opening, admin};
+use crate::sessions::Opening;
 use crate::undo;
 use crate::uploads::{self, Uploads};
 use crate::venues;
@@ -235,24 +235,24 @@ pub(crate) fn call<'a>(
             venues::sessions(core, caller.acting_for(), params).await
         }),
         "session.send" => answer(move || session::send(core, caller, request)),
-        "session.interrupt" => answer(move || session::interrupt(core, request)),
-        "session.withdraw" => answer(move || session::withdraw(core, request)),
-        "session.revert" => answer(move || session::revert(core, request)),
-        "session.unrevert" => answer(move || session::unrevert(core, request)),
+        "session.interrupt" => answer(move || session::interrupt(core, caller, request)),
+        "session.withdraw" => answer(move || session::withdraw(core, caller, request)),
+        "session.revert" => answer(move || session::revert(core, caller, request)),
+        "session.unrevert" => answer(move || session::unrevert(core, caller, request)),
         "command.run" => answer(move || async move {
-            commands::run(core, &peer, &request.id, params(request)?).await
+            commands::run(core, (caller, &peer), &request.id, params(request)?).await
         }),
-        "command.catalog" => {
-            answer(move || async move { commands::catalog(core, &peer, params(request)?).await })
-        }
+        "command.catalog" => answer(move || async move {
+            commands::catalog(core, (caller, &peer), params(request)?).await
+        }),
         "session.redo" => answer(move || session::redo(core, caller, request)),
-        "session.compact" => answer(move || session::compact(core, request)),
+        "session.compact" => answer(move || session::compact(core, caller, request)),
         "session.set_permission_level" => {
-            answer(move || session::set_permission_level(core, request))
+            answer(move || session::set_permission_level(core, caller, request))
         }
         "session.answer" => answer(move || session::answer_question(core, caller, request)),
-        "session.clear" => answer(move || session::clear(core, request)),
-        "session.recap" => answer(move || session::recap(core, request)),
+        "session.clear" => answer(move || session::clear(core, caller, request)),
+        "session.recap" => answer(move || session::recap(core, caller, request)),
         "session.tools" => answer(move || async move {
             crate::session_tools::tools(core, peer, caller.acting_for(), params(request)?).await
         }),
@@ -262,7 +262,7 @@ pub(crate) fn call<'a>(
         "session.context" => answer(move || async move {
             crate::session_context::context(core, peer, caller.acting_for(), params(request)?).await
         }),
-        "job.stop" => answer(move || session::stop_job(core, request)),
+        "job.stop" => answer(move || session::stop_job(core, caller, request)),
         "job.output" => {
             answer(move || async move { job_output::read(core, params(request)?).await })
         }
@@ -313,7 +313,7 @@ pub(crate) fn call<'a>(
             answer(move || async move { providers::test(core, peer, params(request)?).await })
         }
         "usage.query" => {
-            answer(move || async move { crate::usage::query(core, params(request)?).await })
+            answer(move || async move { crate::usage::query(core, caller, params(request)?).await })
         }
         "blob.put" => answer(move || async move {
             let by = (&caller.account, caller.package.as_deref());
@@ -340,18 +340,16 @@ pub(crate) fn call<'a>(
             )
             .await
         }),
-        "session.configure" => answer(move || session::configure(core, request)),
+        "session.configure" => answer(move || session::configure(core, caller, request)),
         "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
         "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),
         "fs.realpath" => {
             answer(move || async move { files::realpath(core, params(request)?).await })
         }
         "fs.read" => answer(move || async move { files::read(core, params(request)?).await }),
-        "session.set_workspace" => {
-            answer(
-                move || async move { crate::workspace::set(core, request, params(request)?).await },
-            )
-        }
+        "session.set_workspace" => answer(move || async move {
+            crate::workspace::set(core, caller, request, params(request)?).await
+        }),
         "session.set_meta" => answer(move || session::set_meta(core, caller, request)),
         "session.terminal" => answer(move || async move {
             crate::terminal::get(core, peer, caller.acting_for(), request, params(request)?).await
@@ -386,16 +384,18 @@ where
     Box::pin(make())
 }
 
-/// 把命令交给会话 `session`（把手是 `handle`），记成管理员发的，等它的回应：接受的交回它产生的事件的序号。会话停了的
-/// 从表里拿掉。
+/// 把命令交给会话 `session`（把手是 `handle`），记成连接 `caller` 那个人发的（[`crate::sessions::person`]，施工 Y-2 下下上），
+/// 等它的回应：接受的交回它产生的事件的序号。会话停了的从表里拿掉。
 pub(crate) async fn command_to(
     core: &Core,
+    caller: &Caller,
     request: &Request,
     session: &SessionId,
     handle: &Handle,
     command: Command,
 ) -> Result<Vec<u64>, Refusal> {
-    command_by(core, request, session, handle, admin(core), command).await
+    let by = crate::sessions::person(core, caller);
+    command_by(core, request, session, handle, by, command).await
 }
 
 /// 同 [`command_to`]，记成 `by` 发的：别的 harness 发来的话（施工 7-10）。

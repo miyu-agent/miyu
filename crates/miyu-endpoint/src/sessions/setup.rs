@@ -11,7 +11,7 @@ use miyu_session::Create;
 use miyu_session::settings::ProfileSettings;
 
 use super::opening::{Opening, opening_level, profile_for};
-use super::{admin, environment, local};
+use super::{environment, local};
 use crate::Core;
 use crate::personas;
 use crate::presets;
@@ -98,7 +98,7 @@ impl Setup {
             oneshot: who.oneshot,
             environment: environment(self.workspace.clone(), self.dirs.clone()),
             command: self.command.clone(),
-            by: admin(core),
+            by: super::owner_by(core, &who.owner),
             models: &*core.models,
             tools: &core.tools,
             home: core.home.as_deref(),

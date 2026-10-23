@@ -22,7 +22,6 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
-use crate::sessions::admin;
 
 /// 照会话挑出来的：核心登记的、模板、扩展声明的，和会话（不写会话的没有，MCP 的提示词照它看预设，施工 X-39）。
 type Found<'a> = (
@@ -43,7 +42,7 @@ pub(crate) struct CatalogParams {
 /// `command.catalog`：交回 `{"commands": [{name, aliases, summary, argument?}]}`，照名字排。
 pub(crate) async fn catalog(
     core: &Arc<Core>,
-    peer: &Peer,
+    (caller, peer): (&crate::hello::Caller, &Peer),
     params: CatalogParams,
 ) -> Result<Value, Refusal> {
     let all = core.commands.all();
@@ -51,7 +50,7 @@ pub(crate) async fn catalog(
     let (listed, templates, declared, handle): Found<'_> = match params.session {
         None => (
             all.collect(),
-            templates::found(core, &core.admin).await,
+            templates::found(core, caller.acting_for()).await,
             declared,
             None,
         ),
@@ -62,7 +61,7 @@ pub(crate) async fn catalog(
             if handle.venue().as_str() != LOCAL {
                 return Err(Refusal::VENUE_SESSION);
             }
-            let by = admin(core);
+            let by = crate::sessions::person(core, caller);
             let listed = all
                 .filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
                 .collect();
