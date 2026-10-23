@@ -22,6 +22,8 @@ pub enum Said {
     Assistant,
     /// 工具的结果。
     ToolResult,
+    /// 子代理、后台命令交回的回报（施工 CX-2）。
+    Report,
     /// 事实：哪个模块注入的（内核自己的没有）、什么类别。记忆模块的 `memory` 是常驻的、`recall` 是召回的。
     Fact {
         /// 模块。
@@ -128,6 +130,7 @@ impl Session {
                 Body::MessageUser(_) => Said::User,
                 Body::MessageAssistant(_) => Said::Assistant,
                 Body::ToolResult(_) => Said::ToolResult,
+                Body::ChildReported(_) | Body::JobReported(_) => Said::Report,
                 Body::ContextInjected(fact) => Said::Fact {
                     module: match &event.by {
                         By::Module(module) => Some(module.id.clone()),

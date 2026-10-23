@@ -385,3 +385,31 @@ fn reported(job: u64, reason: JobReason) -> JobReported {
         tail: None,
     }
 }
+
+/// 回报在上下文明细里单成一类（施工 CX-2）：子代理的回报照它的正文估，不再是 0、也不混进别的。
+#[test]
+fn reports_are_their_own_part_of_the_context() {
+    let mut s = dispatched(stage());
+    let before = s.breakdown();
+    assert!(
+        !before
+            .said
+            .iter()
+            .any(|(said, _)| *said == crate::session::Said::Report)
+    );
+    s.model([Line::says("看到了。")]);
+    let text = "CI 红在 macOS，原因是签名过期。".repeat(8);
+    s.child_reports(1, CHILD, ChildReason::Done, &text);
+    let after = s.breakdown();
+    let report = after
+        .said
+        .iter()
+        .find(|(said, _)| *said == crate::session::Said::Report)
+        .map(|(_, tokens)| *tokens);
+    assert_eq!(
+        report,
+        Some(crate::estimate::text(&text)),
+        "{:?}",
+        after.said
+    );
+}

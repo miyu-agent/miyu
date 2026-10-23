@@ -178,7 +178,7 @@
 
 她下一次请求会拿到的工具。
 
-**参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`，同 `session.create`。
+**参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`（`null` 是无工具），同 `session.create`。
 
 **回应**：`{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`，照发给模型的先后（名字的字节序）。`kind` 是 `builtin`、`package`、`mcp`、`script`；`source.name` 照连接的语言挑。`summary` 只有脚本有。要先加载、只露名字的写 `loaded: false`，这时还有一件 `load_tools`。
 
@@ -192,11 +192,11 @@
 
 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少。只在调用时算，不影响会话。
 
-**参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`，同 `session.create`。
+**参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`（`null` 是无工具），同 `session.create`。
 
 **回应**：`{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。`window`、`line` 是上下文窗口和压缩线（没交过限额的不写）；`used` 是这时用了多少，口径同底栏；`basis` 是 `measured`（照最近一次请求供应商报的 `anchor` 起算）或 `estimated`（全是本地估的）。`parts` 每块 `{"part", "label", "tokens", "children"?}`，`part` 是稳定的编号，`label` 照连接的语言，是 0 的块不交。有 `used` 的各块已经照它摊好，加起来正好是 `used`（摊成 0 的不交）；`estimated_total` 是摊之前本地估的和。
 
-块的编号：`system`（下面照拼的先后 `system.persona`、`system.venue`、`system.group`、`system.profile`、`system.project`、`system.core`、`system.clicall`、`system.skills`、`system.knowledge`、`system.style_lock`、`system.appended:<包>`；会话的快照和这时的文件对不上时只拆出技能、知识库、关于你、项目说明、扩展追加的几块，其余的是 `system.other`）、`tools`（下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`、`tools.scripts`、`tools.deferred`）、`demos`、`summary`、`messages`（下面 `messages.user`、`messages.assistant`、`messages.memory`（下面 `messages.memory.resident`、`messages.memory.recall`）、`messages.knowledge`、`messages.facts`、`messages.project_docs`（仓库里的 AGENTS.md）、`messages.tool_results`）。包、服务的 `label` 是原名。
+块的编号：`system`（下面照拼的先后 `system.persona`、`system.venue`、`system.group`、`system.profile`、`system.project`、`system.core`、`system.clicall`、`system.skills`、`system.knowledge`、`system.style_lock`、`system.appended:<包>`；老会话里和这时的字对不上的那几截并成 `system.other`）、`tools`（下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`、`tools.scripts`、`tools.deferred`）、`demos`、`summary`、`messages`（下面 `messages.user`、`messages.assistant`、`messages.memory`（下面 `messages.memory.resident`、`messages.memory.recall`）、`messages.knowledge`、`messages.facts`、`messages.project_docs`（仓库里的 AGENTS.md）、`messages.reports`（子代理、后台命令的回报）、`messages.tool_results`）。包、服务的 `label` 是原名。
 
 ```json
 {"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"系统提示","tokens":6100,"children":[{"part":"system.persona","label":"人设","tokens":4300},{"part":"system.core","label":"核心说明","tokens":900},{"part":"system.skills","label":"技能目录","tokens":900}]},{"part":"messages","label":"对话","tokens":37700,"children":[{"part":"messages.user","label":"你说的","tokens":4200},{"part":"messages.assistant","label":"AI 说的","tokens":33500}]}]}

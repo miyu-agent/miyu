@@ -178,7 +178,7 @@ Takes back one queued message she hasn't heard yet, without interrupting the tur
 
 The tools her next request will carry.
 
-**Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset`, as in `session.create`.
+**Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset` (`null` for no tools), as in `session.create`.
 
 **Response**: `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`, in the order sent to the model (byte order of names). `kind` is `builtin`, `package`, `mcp` or `script`; `source.name` follows the connection's language. Only scripts have `summary`. Tools that must be loaded first and show only their name have `loaded: false`, and then `load_tools` is listed too.
 
@@ -192,11 +192,11 @@ The tools her next request will carry.
 
 What this session's context is made of right now: how much the system prompt, tool definitions, example dialogue, checkpoint summary and conversation each take. Computed only when called; it doesn't affect the session.
 
-**Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset`, as in `session.create`.
+**Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset` (`null` for no tools), as in `session.create`.
 
 **Response**: `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`. `window` and `line` are the context window and the compaction line (absent before limits are known); `used` is how much is in use, as in the status bar; `basis` is `measured` (counted from the provider-reported `anchor` of the latest request) or `estimated` (all local estimates). Each of `parts` is `{"part", "label", "tokens", "children"?}`: `part` is a stable id, `label` follows the connection's language, and parts of 0 are left out. With `used`, the parts are already scaled to add up to exactly `used` (parts scaled to 0 are left out); `estimated_total` is the sum of the local estimates before scaling.
 
-Part ids: `system` (in composing order: `system.persona`, `system.venue`, `system.group`, `system.profile`, `system.project`, `system.core`, `system.clicall`, `system.skills`, `system.knowledge`, `system.style_lock`, `system.appended:<package>`; when a session's snapshot no longer matches the current files, only skills, knowledge, profile, project and appended are split out and the rest is `system.other`), `tools` (with `tools.builtin`, `tools.package:<package>`, `tools.mcp:<service>`, `tools.scripts`, `tools.deferred`), `demos`, `summary`, `messages` (with `messages.user`, `messages.assistant`, `messages.memory` (with `messages.memory.resident`, `messages.memory.recall`), `messages.knowledge`, `messages.facts`, `messages.project_docs` (the repository's AGENTS.md), `messages.tool_results`). Packages and services are labelled by name.
+Part ids: `system` (in composing order: `system.persona`, `system.venue`, `system.group`, `system.profile`, `system.project`, `system.core`, `system.clicall`, `system.skills`, `system.knowledge`, `system.style_lock`, `system.appended:<package>`; in older sessions, stretches that no longer match the current text go into `system.other`), `tools` (with `tools.builtin`, `tools.package:<package>`, `tools.mcp:<service>`, `tools.scripts`, `tools.deferred`), `demos`, `summary`, `messages` (with `messages.user`, `messages.assistant`, `messages.memory` (with `messages.memory.resident`, `messages.memory.recall`), `messages.knowledge`, `messages.facts`, `messages.project_docs` (the repository's AGENTS.md), `messages.reports` (reports from subagents and background commands), `messages.tool_results`). Packages and services are labelled by name.
 
 ```json
 {"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"System prompt","tokens":6100,"children":[{"part":"system.persona","label":"Persona","tokens":4300},{"part":"system.core","label":"Core instructions","tokens":900},{"part":"system.skills","label":"Skills","tokens":900}]},{"part":"messages","label":"Conversation","tokens":37700,"children":[{"part":"messages.user","label":"Your messages","tokens":4200},{"part":"messages.assistant","label":"AI replies","tokens":33500}]}]}

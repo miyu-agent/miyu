@@ -78,13 +78,49 @@ pub(super) fn split(snapshot: &Snapshot, total: u64) -> Vec<(SystemPart, u64)> {
     parts
 }
 
-/// 照快照原来的料重拼一遍（人设照这时的文件），和快照的 system 逐字节一样才交一块块在哪；不一样的（人设改过、核心升级了）
-/// 没有，照 [`split`] 拆。读文件，在阻塞线程里调。
+/// 照快照原来的料重拼一遍（人设照这时的文件），和快照的 system 逐字节一样的照它；不一样的（旧核心造的会话、人设改过，施工
+/// CX-2）逐块到快照的 system 里照先后找原文（[`matched`]）。拼不出来的（人设文件没了、
+/// 裸的）没有，照 [`split`] 拆。读文件，在阻塞线程里调。
 pub(super) fn relaid(refresh: &super::Refresh) -> Option<Layout> {
     let (new, layout) = laid(&refresh.resources, parts_of(refresh)?).ok()?;
-    (new.system == refresh.snapshot.system)
-        .then_some(layout)
-        .flatten()
+    let layout = layout?;
+    let old = &refresh.snapshot.system;
+    if new.system == *old {
+        return Some(layout);
+    }
+    Some(matched(old, &new.system, &layout))
+}
+
+/// 照 `fresh` 的一块块（`layout`）到 `old` 里照先后找：每块去掉前面的空行找原文，找到的从上一块的末尾算起（连着它前面的
+/// 空行）。块的先后是定的，夹在两块中间跳过的那一截，是没找到的那几块的旧字（旧核心的说明、改过的人设），归给其中第一块；
+/// 没有块该在那儿的（以前多拼的一段），归其余。
+pub(super) fn matched(old: &str, fresh: &str, layout: &Layout) -> Layout {
+    let mut found: Layout = Vec::new();
+    let mut at = 0;
+    let mut missing: Option<SystemPart> = None;
+    for (part, range) in layout {
+        let text = fresh[range.clone()].trim_start_matches('\n');
+        if text.is_empty() {
+            continue;
+        }
+        let Some(offset) = old[at..].find(text) else {
+            missing.get_or_insert_with(|| part.clone());
+            continue;
+        };
+        let start = at + offset;
+        let lead = old[at..start].trim_end_matches('\n').len() + at;
+        if lead > at {
+            let owner = missing.take().unwrap_or(SystemPart::Other);
+            found.push((owner, at..lead));
+        }
+        missing = None;
+        found.push((part.clone(), lead..start + text.len()));
+        at = start + text.len();
+    }
+    if at < old.len() {
+        found.push((missing.unwrap_or(SystemPart::Other), at..old.len()));
+    }
+    found
 }
 
 /// 快照原来的料：人设照这时的文件（找不到的、裸的没有），别的照快照里记的。

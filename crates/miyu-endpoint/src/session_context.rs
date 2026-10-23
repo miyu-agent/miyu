@@ -33,8 +33,9 @@ pub(crate) struct Params {
     /// 同 `session.create`：不写的照 `persona.default`，写 `null` 的无人格。
     #[serde(default, deserialize_with = "crate::personas::written")]
     persona: Option<Option<String>>,
-    #[serde(default)]
-    preset: Option<String>,
+    /// 同 `session.create`：不写的照 `preset.default`，写 `null` 的是无工具（施工 P-16 下；CX-2 补：原来当成没写）。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    preset: Option<Option<String>>,
 }
 
 /// `session.context`：`{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。
@@ -58,7 +59,8 @@ pub(crate) async fn context(
                 .map_err(|_| Refusal::INTERNAL)?
         }
         None => {
-            let mut setup = new_session(core, peer, account, params.persona, params.preset).await?;
+            let preset = crate::presets::opening(params.preset)?;
+            let mut setup = new_session(core, peer, account, params.persona, preset).await?;
             miyu_session::preview_context(setup.create(core))
                 .await
                 .map_err(|_| Refusal::INTERNAL)?
@@ -243,6 +245,7 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
             Said::User => "messages.user",
             Said::Assistant => "messages.assistant",
             Said::ToolResult => "messages.tool_results",
+            Said::Report => "messages.reports",
             Said::Fact { module, kind } => {
                 let module = module.as_ref().map(|module| module.as_str());
                 match (module, kind.as_str()) {

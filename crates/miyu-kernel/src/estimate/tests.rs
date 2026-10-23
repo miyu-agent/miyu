@@ -438,3 +438,44 @@ fn a_driver_image_price_replaces_the_flat_one_for_images_only() {
     let unpriced = WithImages { images: None, flat };
     assert_eq!((unpriced.image(3, 4), unpriced.file()), (7, 9));
 }
+
+/// 回报进请求（施工 CX-2，真会话里撞见的：子代理的回报整块没算）：子代理的照它的正文，后台命令的照带回来的最后一段，
+/// 外面的开头、收尾不算；没带最后一段的后台命令是 0。
+#[test]
+fn reports_count_by_the_text_they_carry() {
+    let report = "子代理查完了：CI 红在 macOS。".repeat(10);
+    let child = event(
+        5,
+        None,
+        KERNEL,
+        "child.reported",
+        &format!(
+            r#"{{"job":"j1","session":"01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91","reason":"done","text":"{report}"}}"#
+        ),
+    );
+    assert_eq!(
+        super::event(&child, &Flat { image: 0, file: 0 }),
+        tokens(report.len())
+    );
+    let tail = "test result: ok. 12 passed\\n".repeat(4);
+    let command = event(
+        6,
+        None,
+        KERNEL,
+        "job.reported",
+        &format!(r#"{{"job":"j2","reason":"done","exit_code":0,"chars":104,"tail":"{tail}"}}"#),
+    );
+    let shown = tail.replace("\\n", "\n");
+    assert_eq!(
+        super::event(&command, &Flat { image: 0, file: 0 }),
+        tokens(shown.len())
+    );
+    let bare = event(
+        7,
+        None,
+        KERNEL,
+        "job.reported",
+        r#"{"job":"j3","reason":"done","exit_code":0}"#,
+    );
+    assert_eq!(super::event(&bare, &Flat { image: 0, file: 0 }), 0);
+}

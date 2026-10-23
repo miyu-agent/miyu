@@ -13,6 +13,11 @@ use crate::origin::{By, Session};
 use crate::session::{Command, Input, Received, Subagent, Upward};
 
 impl Stage {
+    /// 这时的上下文一块块的（施工 CX-2，`Session::breakdown`）：看回报算进明细没有。
+    pub fn breakdown(&self) -> crate::session::Breakdown {
+        self.session.breakdown()
+    }
+
     /// 子会话 `session` 交来子代理 `j<job>` 的回报：原因 `reason`，正文 `text`，截没截过、人插没插过话照写。返回这个命令的
     /// 编号。
     ///

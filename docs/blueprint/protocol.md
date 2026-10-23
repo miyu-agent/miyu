@@ -489,7 +489,7 @@
 |---|---|---|
 | `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算 |
 | `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create`（`null` 是无人格，不写的照 `persona.default`） |
-| `preset` | 字符串，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create` |
+| `preset` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create`（`null` 是无工具，CX-2 补） |
 
 回应 `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`，照发给模型的先后（名字的字节序）。`source.kind` 是 `builtin`（内置的包）、`package`、`mcp`、`script`；`source.name` 是包名、服务名、脚本的显示名，照连接的语言挑。`summary` 只有脚本有（脚本的 `# 描述：` 那一槽）。要先加载、只露名字的写 `loaded: false`，这时多一件 `load_tools`。
 
@@ -503,7 +503,7 @@
 |---|---|---|
 | `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算（CX-1 下） |
 | `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create` |
-| `preset` | 字符串，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create` |
+| `preset` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create`（`null` 是无工具，CX-2 补） |
 
 回应 `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`：
 
@@ -513,11 +513,11 @@
 
 | `part` | 是什么 |
 |---|---|
-| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样才这样拆。对不上的（人设改过、核心升级了）只拆快照里单存了原文、在拼好的 system 里找得到的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
+| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样的照它拆；对不上的（旧核心造的、人设改过，CX-2）逐块到快照的 system 里照先后找原文，找得到的各成一块，找不到的、改过的那几截并成 `system.other`。人设文件没了拼不出来的，只拆快照里单存了原文的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
 | `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`、`tools.deferred`（要先加载、只露名字的） |
 | `demos` | 示范对话 |
 | `summary` | 检查点的摘要 |
-| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.project_docs`（仓库里的 AGENTS.md，施工 P-14）、`messages.tool_results` |
+| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.project_docs`（仓库里的 AGENTS.md，施工 P-14）、`messages.reports`（子代理、后台命令交回的回报，CX-2）、`messages.tool_results` |
 
 1. 只在被问时算：会话照有效历史组装一次请求、各块估一次，只看不动，不碰回合的热路径（`session/actor.md`）。
 2. 不写 `session` 的（CX-1 下）：和 `session.create` 照同一份拼（找预设、人格，拼工具面、快照，会用的模型的限额），只拼不造、不写盘；没有对话，`basis` 是 `estimated`。

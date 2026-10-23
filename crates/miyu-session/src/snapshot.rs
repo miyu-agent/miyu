@@ -182,10 +182,15 @@ impl Ruler {
 /// 照一块块在哪拆（施工 CX-1 下）：每块照它那一截的字节估，逐块取整的零头（和整段估的差）并进最大的那块，加起来正好是
 /// `total`；是 0 的不列。没有「其余」：全拆得开。
 pub(crate) fn pieces(layout: &Layout, total: u64) -> Vec<(SystemPart, u64)> {
-    let mut parts: Vec<(SystemPart, u64)> = layout
-        .iter()
-        .map(|(part, range)| (part.clone(), (range.len() / 4) as u64))
-        .collect();
+    // 同一类的几截（逐块认剩下的其余，施工 CX-2）并成一块，照第一次出现的先后。
+    let mut parts: Vec<(SystemPart, u64)> = Vec::new();
+    for (part, range) in layout {
+        let tokens = (range.len() / 4) as u64;
+        match parts.iter_mut().find(|(known, _)| known == part) {
+            Some((_, sum)) => *sum = sum.saturating_add(tokens),
+            None => parts.push((part.clone(), tokens)),
+        }
+    }
     let known: u64 = parts.iter().map(|(_, tokens)| tokens).sum();
     if let Some(largest) = parts.iter_mut().max_by_key(|(_, tokens)| *tokens) {
         largest.1 = largest.1.saturating_add(total.saturating_sub(known));

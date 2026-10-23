@@ -110,3 +110,26 @@ async fn other_params_or_an_unknown_session_are_refused() {
         assert_eq!(reason(&reply), Some(expected), "{reply}");
     }
 }
+
+/// 预览写 `preset: null` 的是无工具（施工 CX-2，终端验收撞见：当成了默认预设），同 `session.create`、`session.tools`：
+/// 没有工具那块，`session.tools` 一件都没有。
+#[tokio::test]
+async fn a_preview_with_a_null_preset_has_no_tools() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core_with_tools(&Script::new([]), tools(), TOKEN));
+    client.hello().await;
+    let plain = client.call("p1", "session.context", json!({})).await;
+    assert!(
+        part(&plain["result"]["parts"], "tools").is_some(),
+        "{plain}"
+    );
+    let bare = client
+        .call("p2", "session.context", json!({"preset": null}))
+        .await;
+    assert!(bare["result"]["parts"].is_array(), "{bare}");
+    assert!(part(&bare["result"]["parts"], "tools").is_none(), "{bare}");
+    let listed = client
+        .call("p3", "session.tools", json!({"preset": null}))
+        .await;
+    assert_eq!(listed["result"]["tools"], json!([]), "{listed}");
+}

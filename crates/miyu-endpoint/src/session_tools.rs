@@ -31,8 +31,9 @@ pub(crate) struct Params {
     /// 同 `session.create`：不写的照 `persona.default`，写 `null` 的无人格。
     #[serde(default, deserialize_with = "crate::personas::written")]
     persona: Option<Option<String>>,
-    #[serde(default)]
-    preset: Option<String>,
+    /// 同 `session.create`：不写的照 `preset.default`，写 `null` 的是无工具（施工 P-16 下；CX-2 补：原来当成没写）。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    preset: Option<Option<String>>,
 }
 
 /// `session.tools`：`{"tools": [...]}`。
@@ -51,7 +52,10 @@ pub(crate) async fn tools(
             let found = core.sessions.get(core, &id).await?;
             found.handle.tools().await.map_err(|_| Refusal::INTERNAL)?
         }
-        None => preview(core, peer, account, params.persona, params.preset).await?,
+        None => {
+            let preset = crate::presets::opening(params.preset)?;
+            preview(core, peer, account, params.persona, preset).await?
+        }
     };
     let language = peer.language.to_string();
     let tools: Vec<Value> = offered

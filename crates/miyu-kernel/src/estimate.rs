@@ -184,6 +184,9 @@ pub fn event(event: &Event, price: &dyn Price) -> u64 {
         Body::MessageAssistant(reply) => blocks_of(&reply.blocks, price),
         Body::ToolResult(result) => blocks_of(&result.blocks, price),
         Body::ContextInjected(fact) => tokens(fact.text.len()),
+        // 回报（施工 CX-2）：组装时子代理的正文、后台命令带回来的最后一段原样放进请求，外面的开头、收尾不算。
+        Body::ChildReported(reported) => tokens(reported.text.len()),
+        Body::JobReported(reported) => tokens(reported.tail.as_ref().map_or(0, String::len)),
         _ => 0,
     }
 }
