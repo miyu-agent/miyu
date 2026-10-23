@@ -99,6 +99,8 @@ pub(crate) struct NestedRun {
     /// 还算数的最近一次压缩到哪：搜以前的对话跳过这以后的。
     pub(crate) compacted: Option<Seq>,
     pub(crate) config: TurnConfig,
+    /// 派的是 `session_usage` 的：那一刻内核算的上下文、用时（施工 M-8：照直接调用，账照这个会话算）。
+    pub(crate) usage: Option<crate::usage::Asked>,
 }
 
 impl Tools {
@@ -182,6 +184,7 @@ impl Tools {
             turn,
             compacted,
             config,
+            usage,
         } = run;
         // 内核只派收下了的：收下时一定记了派它的那次调用。没有的是 bug，不跑；父级结束时照「已取消」收掉。判过的真实位置
         // 没记下的（不该有）按一个都没判过算，工具换出来的一律不碰（施工 5-18）。
@@ -228,14 +231,16 @@ impl Tools {
             jobs: None,
             // 列会话、读别的会话照直接调用的给（施工 C-10）：只读，以前没交，脚本里的 `history` 读不了别的会话。
             sessions: self.agents.as_ref().and_then(crate::sessions::for_call),
-            usage: None,
+            // 用量、软件包照直接调用给（施工 M-8）：两件都在脚本里能调的名单里（施工 M-2 补），原来没给端口，`packages`
+            // 回「这里看不了」，`session_usage` 报 0。装卸的 `package` 脚本里调不了（内核拦），给这个端口不多开写的口子。
+            usage: crate::usage::for_call(self.ledger.as_ref(), usage),
             questions: None,
             memory: self
                 .memory
                 .as_ref()
                 .map(|memory| memory.port(turn, compacted, origin, at, &config)),
             knowledge: crate::knowledge::port(self.knowledge.as_ref(), &config),
-            packages: None,
+            packages: self.packages.clone(),
             goals: None,
             nested: None,
             ids: Some(CallIds {

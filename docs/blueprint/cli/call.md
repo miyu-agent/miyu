@@ -13,7 +13,7 @@ Unix 上端点是套接字，Windows 上是命名管道（施工 M-3 下），�
 | `crates/miyu/src/main.rs` | 第一个词是 `call` 的，不读清单、不经 clap，当场交给 `miyu_cli::call` |
 | `crates/miyu-cli/src/call.rs` | 写法、发请求、照回答印和退出 |
 | `crates/miyu-cli/src/help/{zh,en}/call.txt` | 帮助页 |
-| `resources/software/basesystem/shell/call/{outside,ended,usage,bad-json}.txt` | 命令行这头说的几句，编进程序；和端点那头的放在一起、一起登记（`26-提示词.md` 第十节） |
+| `resources/software/basesystem/shell/call/{outside,ended,usage,bad-json,quotes}.txt` | 命令行这头说的几句，编进程序；和端点那头的放在一起、一起登记（`26-提示词.md` 第十节） |
 
 ### 对外的样子
 
@@ -40,7 +40,7 @@ miyu call <工具> --schema
 
 ### 怎么走
 
-1. 写法照上面拆成一个或几个请求；写错的印 `usage.txt`、退出码 2，`--json` 不是对象的印 `bad-json.txt`。
+1. 写法照上面拆成一个或几个请求；写错的印 `usage.txt`、退出码 2，`--json` 不是对象的印 `bad-json.txt`；直接写在命令行上的、有花括号没有双引号的（Windows PowerShell 5.1 交给程序的参数不转义里面的双引号，命令行解析把它们吃掉），后面空一格接 `quotes.txt`：改用管道交、`--json -` 从标准输入读（施工 M-8）。不放宽解析。
 2. 读 `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN`：没有的照 `outside.txt` 退出码 2。
 3. 连端点：Unix 上连套接字，Windows 上把管道当文件开（几个实例都忙着的等一会儿再试，最多两秒）。不在、没人听的是端点关了，照 `ended.txt` 退出码 3；别的连不上照 `outside.txt` 退出码 2。
 4. 一次连接一个请求：4 字节大端长度加 JSON（`{v, op, tool, args, token}`，`op` 是 `call` 或 `schema`，`args` 是参数对象的原文）；收回 `{code, stdout, stderr}`，照原样印、照 `code` 退出。读写断了的照 `ended.txt` 退出码 3。
@@ -49,7 +49,7 @@ miyu call <工具> --schema
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/src/call/tests.rs` | 具名参数是字、写几次成数组；`--json` 要对象、具名的盖过它；`--schema` 两种写法、一次几件；写错的说怎么写；没有那两个变量的退出码 2 |
+| `crates/miyu-cli/src/call/tests.rs` | 具名参数是字、写几次成数组；`--json` 要对象、具名的盖过它；引号被吃掉的接一句改用管道（施工 M-8）；`--schema` 两种写法、一次几件；写错的说怎么写；没有那两个变量的退出码 2 |
 | `crates/miyu/tests/call.rs` | 真核心、真 `shell` 里调（见 `tools/shell.md`「守着它的」） |
 
 ### 出处

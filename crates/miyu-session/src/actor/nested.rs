@@ -42,6 +42,12 @@ impl Actor {
                 dirs,
                 permission,
             } => {
+                let usage = crate::usage::asked(
+                    &name,
+                    &self.session,
+                    self.config.current(),
+                    self.clock.now(),
+                );
                 let run = NestedRun {
                     id,
                     name,
@@ -52,6 +58,7 @@ impl Actor {
                     turn: self.session.turn_cause().map(|(turn, _)| turn),
                     compacted: self.session.compacted_upto(),
                     config: Arc::clone(self.config.current()),
+                    usage,
                 };
                 self.tools.run_nested(self.clock.now(), run)
             }

@@ -92,3 +92,23 @@ fn outside_a_command_miyu_runs_it_exits_two() {
     let request = one(&["web_search", "--query", "x"]);
     assert_eq!(send(&request).unwrap_err(), (USAGE, OUTSIDE.to_string()));
 }
+
+/// Windows PowerShell 5.1 吃掉了双引号（施工 M-8）：直接写在命令行上的、有花括号没双引号的，报错接一句改用标准输入；别的读
+/// 不懂的照旧只说那一句。
+#[test]
+fn json_that_lost_its_quotes_says_to_pipe_it() {
+    let lost = parse(&args(&["web_search", "--json", "{query:niri}"])).unwrap_err();
+    assert!(lost.starts_with(BAD_JSON.trim_end()), "{lost}");
+    assert!(lost.ends_with(QUOTES), "{lost}");
+    assert!(lost.contains("--json -"), "{lost}");
+    assert_eq!(
+        parse(&args(&["web_search", "--json", r#"{"query":}"#])).unwrap_err(),
+        BAD_JSON,
+        "有双引号的照旧"
+    );
+    assert_eq!(
+        parse(&args(&["web_search", "--json", "niri"])).unwrap_err(),
+        BAD_JSON,
+        "没花括号的照旧"
+    );
+}

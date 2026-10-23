@@ -141,3 +141,40 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
     assert_eq!(totals[0].requests, 3);
     assert_eq!(totals[0].unpriced, 0);
 }
+
+/// 脚本里调的 `session_usage`（施工 M-8）：账照调它的这个会话算，和直接调的一样有数。原来嵌套调用不给用量的端口，报 0。
+#[tokio::test]
+async fn a_script_reads_this_sessions_usage_too() {
+    use miyu_kernel::tool::Access;
+    use miyu_tool::Tool;
+    use miyu_tool::testkit::{Act, Fake};
+    let home = Home::new();
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::calls(&[("shell", "{}")]),
+        Play::Says("看完了。"),
+    ])
+    .window(100_000)
+    .priced(tariff());
+    let shell = Fake::new(
+        "shell",
+        Access::Read,
+        Act::Calls(vec![("session_usage", "{}")]),
+    );
+    let mut tools: Vec<std::sync::Arc<dyn Tool>> = miyu_basesystem::tools(home.resources.path())
+        .expect("读得出")
+        .into_iter()
+        .filter(|tool| tool.spec().name != "shell")
+        .collect();
+    tools.push(shell);
+    let handle = home
+        .create_with(&script, &Catalog::new(tools).expect("合写法"))
+        .await;
+    one_turn(&home, &handle, 1).await;
+    let log = one_turn(&home, &handle, 2).await;
+    let text = last_result(&log);
+    assert!(
+        text.starts_with("session_usage ok text=Usage so far: 2 requests, 200 input tokens"),
+        "照这个会话的账，和直接调的同一个说法：{text}"
+    );
+}

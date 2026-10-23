@@ -5004,6 +5004,19 @@ set by the user with `/goal`
 This call needs approval, which a script cannot ask for. Call {name} directly.
 ```
 
+### 同上，接在 `bad-json.txt` 后面一行（空一格）
+
+#### `software/basesystem/shell/call/quotes.txt`
+
+- 什么时候加进来：直接写在命令行上的 `--json` 读不懂、又像双引号被吃掉（有花括号、没有双引号）（退出码 2，命令行那头编进程序）（施工 M-8）
+- token：37（2026-10-24 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：Windows PowerShell 5.1 交给程序的参数不转义里面的双引号，命令行解析把它们吃掉；主人在虚拟机里实测她换了几种引号写法都过不去，只有走标准输入能过（2026-10-23 shellhook 转来）。只在出错时出现，不进前缀
+- 指纹：`21681908`
+
+```text
+Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' | miyu call <tool> --json -
+```
+
 ### tools 数组，`shell` 说明的末尾
 
 #### `software/basesystem/shell/call/describe.txt`

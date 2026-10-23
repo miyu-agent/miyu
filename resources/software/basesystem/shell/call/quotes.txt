@@ -1,0 +1,1 @@
+Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' | miyu call <tool> --json -

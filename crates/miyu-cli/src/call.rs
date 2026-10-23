@@ -48,6 +48,10 @@ const HOW: &str = include_str!("../../../resources/software/basesystem/shell/cal
 const BAD_JSON: &str =
     include_str!("../../../resources/software/basesystem/shell/call/bad-json.txt");
 
+/// 直接跟在 `--json` 后面的读不懂、又像双引号被吃掉（有花括号、没有双引号）时接在 [`BAD_JSON`] 后面（施工 M-8）：Windows
+/// PowerShell 5.1 把参数交给程序时不转义里面的双引号，命令行解析把它们吃掉了，只有标准输入过得去。
+const QUOTES: &str = include_str!("../../../resources/software/basesystem/shell/call/quotes.txt");
+
 /// `miyu call` 后面的参数 `args`；`-h`、`--help` 印 `language` 的帮助页。
 pub fn call(args: &[OsString], language: Language) -> ExitCode {
     let args: Vec<String> = args
@@ -129,6 +133,8 @@ fn parse(args: &[String]) -> Result<Vec<Value>, String> {
     }
     let mut named = Map::new();
     let mut json: Option<String> = None;
+    // `--json` 的值是直接写在命令行上的（不是 `-`）：读不懂时看像不像双引号被吃掉（施工 M-8）。
+    let mut inline = false;
     let mut rest = args[1..].iter();
     while let Some(arg) = rest.next() {
         let Some(flag) = arg.strip_prefix("--") else {
@@ -150,7 +156,10 @@ fn parse(args: &[String]) -> Result<Vec<Value>, String> {
                         .map_err(|_| BAD_JSON.to_string())?;
                     text
                 }
-                _ => value,
+                _ => {
+                    inline = true;
+                    value
+                }
             });
             continue;
         }
@@ -170,6 +179,9 @@ fn parse(args: &[String]) -> Result<Vec<Value>, String> {
         None => Map::new(),
         Some(text) => match serde_json::from_str::<Value>(&text) {
             Ok(Value::Object(object)) => object,
+            _ if inline && text.contains('{') && !text.contains('"') => {
+                return Err(format!("{} {QUOTES}", BAD_JSON.trim_end()));
+            }
             _ => return Err(BAD_JSON.to_string()),
         },
     };

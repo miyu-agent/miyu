@@ -117,3 +117,41 @@ async fn a_session_looks_at_packages_through_the_core() {
         "{last:?}"
     );
 }
+
+/// 脚本里调的 `packages`（施工 M-8）：和直接调的看到的是同一份。原来嵌套调用不给软件包的端口，回「这里看不了」。
+#[tokio::test]
+async fn a_script_sees_the_same_packages_as_a_direct_call() {
+    use miyu_kernel::tool::Access;
+    use miyu_tool::Tool;
+    use miyu_tool::testkit::{Act, Fake};
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[("packages", "{}")]),
+        Play::calls(&[("shell", "{}")]),
+        Play::Says("看完了。"),
+    ]);
+    // 假的 `shell`：经端口调一次 `packages`，交回的写成一行 `packages ok text=…`。
+    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("packages", "{}")]));
+    let mut tools: Vec<Arc<dyn Tool>> = miyu_basesystem::tools(&default_resources())
+        .expect("出厂的工具")
+        .into_iter()
+        .filter(|tool| tool.spec().name != "shell")
+        .collect();
+    tools.push(shell);
+    let core = Arc::new(home.core_full(&script, Catalog::new(tools).expect("合写法"), None, TOKEN));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "看看装了什么").await;
+    home.until_turns(&session, 1).await;
+    let results = home_results(&home, &session);
+    assert_eq!(results.len(), 2, "{results:?}");
+    let direct = &results[0];
+    assert!(direct.contains("basesystem: Base system."), "{direct}");
+    let scripted = &results[1];
+    assert!(scripted.starts_with("packages ok "), "{scripted}");
+    assert!(
+        scripted.contains("basesystem: Base system."),
+        "脚本里看到的和直接调的一样：{scripted}"
+    );
+}
