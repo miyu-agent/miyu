@@ -146,14 +146,14 @@ async fn an_invite_registers_a_member_once() {
     )
     .await;
     assert_eq!(reply["result"]["account"], "bob", "{reply}");
-    // 成员照名单放（施工 Y-2 下下上）：自己的会话列得出来，账号管理、配置不给。抓链接卡片也拒（施工 MB-2：她替成员上网不碰
+    // 成员照名单放（施工 Y-2 下下上）：自己的会话列得出来，账号管理、写配置不给（读配置施工 Y-2 下下中上起读他自己那一份）。抓链接卡片也拒（施工 MB-2：她替成员上网不碰
     // 本机和局域网，放开时照连接的账号分机器主人和别人）。
     let own = back.call("m", "session.list", json!({})).await;
     assert!(own["result"]["sessions"].is_array(), "{own}");
     for method in [
         "account.invite",
         "account.list",
-        "config.get",
+        "config.set",
         "link.preview",
     ] {
         let refused = back.call("m", method, json!({})).await;

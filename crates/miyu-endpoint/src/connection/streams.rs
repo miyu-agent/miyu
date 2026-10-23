@@ -85,7 +85,7 @@ pub(super) async fn subscribe(
     match (stream_of(request), shaken) {
         (Ok(Stream::Config), _) => {
             let system = shaken.map_or("en", Shaken::system);
-            subscriptions.add_config(core, system, out);
+            subscriptions.add_config((core, caller.acting_for()), system, out);
             (Ok(json!({})), None)
         }
         (Ok(Stream::Sessions), _) => match subscriptions

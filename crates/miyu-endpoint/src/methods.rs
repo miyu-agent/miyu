@@ -269,28 +269,39 @@ pub(crate) fn call<'a>(
         "human.get" => {
             answer(move || async move { human::get(core, peer, params(request)?).await })
         }
-        "config.schema" => {
-            answer(move || async move { config::methods::schema(core, peer, params(request)?) })
-        }
-        "config.get" => {
-            answer(move || async move { config::methods::get(core, peer, params(request)?) })
-        }
-        "config.check" => {
-            answer(move || async move { config::methods::check(core, peer, params(request)?) })
-        }
+        "config.schema" => answer(move || async move {
+            config::methods::schema(core, (caller.acting_for(), peer), params(request)?)
+        }),
+        "config.get" => answer(move || async move {
+            config::methods::get(core, (caller.acting_for(), peer), params(request)?)
+        }),
+        "config.check" => answer(move || async move {
+            config::checking::check(core, (caller.acting_for(), peer), params(request)?)
+        }),
         "config.set" => answer(move || async move {
             let params = params(request)?;
             match &caller.package {
                 // 核心拉起的扩展只能改自己的几项（施工 T-9 补），记成这个包。
                 Some(package) => {
                     let by = crate::appending::recorder(core, caller)?;
-                    config::set::set_from_package(core, peer, &request.id, params, (package, by))
+                    config::from_package::set_from_package(
+                        core,
+                        peer,
+                        &request.id,
+                        params,
+                        (package, by),
+                    )
                 }
-                None => config::set::set(core, peer, &request.id, params),
+                None => config::set::set(core, (caller, peer), &request.id, params),
             }
         }),
         "config.trust" => answer(move || async move {
-            config::trusting::trust(core, peer, &request.id, params(request)?)
+            config::trusting::trust(
+                core,
+                (caller.acting_for(), peer),
+                &request.id,
+                params(request)?,
+            )
         }),
         "secret.set" => {
             answer(move || async move { secrets::set(core, peer, &request.id, params(request)?) })

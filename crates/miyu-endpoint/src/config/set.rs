@@ -43,13 +43,13 @@ pub(super) const TRIES: usize = 3;
 #[derive(Debug, Deserialize)]
 pub(crate) struct SetParams {
     /// 改哪一层。项目配置只手改，不收。
-    layer: WriteLayer,
+    pub(super) layer: WriteLayer,
     /// 改几项。
     #[serde(default)]
-    changes: Option<Vec<ChangeParam>>,
+    pub(super) changes: Option<Vec<ChangeParam>>,
     /// 整份换成这段字。
     #[serde(default)]
-    text: Option<String>,
+    pub(super) text: Option<String>,
     /// 读到的这份文件的版本，`null` 是那时还没有：写了 `text` 的必写，所以分得出没写和 `null`。
     #[serde(default, deserialize_with = "present")]
     version: Option<Option<String>>,
@@ -78,22 +78,22 @@ impl SetParams {
 /// 能改的两层。
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum WriteLayer {
+pub(super) enum WriteLayer {
     System,
     Personal,
 }
 
 /// `changes` 的一项。
 #[derive(Debug, Deserialize)]
-struct ChangeParam {
+pub(super) struct ChangeParam {
     /// 哪一项。
-    key: String,
+    pub(super) key: String,
     /// 改成它，JSON 的写法。写成 `null` 的也算写了（类型不对）。
     #[serde(default, deserialize_with = "present")]
-    value: Option<Json>,
+    pub(super) value: Option<Json>,
     /// 人敲的字，照这一项的类型读。
     #[serde(default)]
-    input: Option<String>,
+    pub(super) input: Option<String>,
     /// `true`：从这一层删掉。
     #[serde(default)]
     unset: Option<bool>,
@@ -123,66 +123,38 @@ struct Wanted {
     expect: Option<Option<Json>>,
 }
 
-/// `config.set`：改好了交回改了的几项和新的版本。`cause` 是这条命令的编号，记进日志。改的人是这个连接的账号。
+/// `config.set`：改好了交回改了的几项和新的版本。`cause` 是这条命令的编号，记进日志。改的人是这个连接的账号，改的是他那一份
+/// （施工 Y-2 下下中上）；系统配置只有管理员改得了。
 pub(crate) fn set(
     core: &Core,
-    peer: Peer,
+    (caller, peer): (&crate::hello::Caller, Peer),
     cause: &CommandId,
     params: SetParams,
 ) -> Result<Json, Refusal> {
-    let by = By::Person(Person::new(core.config().places.account.clone()));
-    set_by(core, peer, cause, params, by)
-}
-
-/// 核心拉起的扩展改配置（施工 T-9 补，接入QQ 的会话 2026-10-17 要的、项目主人定）：只收系统配置里、键以自己的包编号
-/// `package` 开头、是这个包清单里声明的几项（施工 5-19），逐项改（不收整份换）；密钥类的项、写成引用（`{ secret = … }`、`{ env = … }`）的值不收：不然能把
-/// 自己的项指到别人的密钥、环境里的 key 再读回去。不合的照旧 `local_only`。改的人记成这个包（`by`）。
-pub(crate) fn set_from_package(
-    core: &Core,
-    peer: Peer,
-    cause: &CommandId,
-    params: SetParams,
-    (package, by): (&str, By),
-) -> Result<Json, Refusal> {
-    let config = core.config();
-    let prefix = format!("{package}.");
-    // 键以包编号开头还不够：包编号和核心模块同名的包（叫 `ui`、`sandbox` 的）没声明配置项也装得上，`ui.*` 却是核心自己的项
-    // （施工 5-19）。只认这个包清单里声明的项（`ui.package` 是它）。
-    let own = |change: &ChangeParam| {
-        change.key.starts_with(&prefix)
-            && miyu_config::key::item_of(config.items(), &change.key)
-                .is_some_and(|item| item.ui.package == Some(package) && !holds_secret(&item.kind))
-            && !change.value.as_ref().is_some_and(Json::is_object)
-            && !change
-                .input
-                .as_deref()
-                .is_some_and(|input| input.trim_start().starts_with('{'))
-    };
-    let allowed = matches!(params.layer, WriteLayer::System)
-        && params.text.is_none()
-        && params
-            .changes
-            .as_ref()
-            .is_some_and(|changes| !changes.is_empty() && changes.iter().all(own));
-    drop(config);
-    if !allowed {
-        return Err(Refusal::LOCAL_ONLY);
+    let account = caller.acting_for();
+    if matches!(params.layer, WriteLayer::System) && !crate::login::admins::is_admin(core, account)
+    {
+        return Err(Refusal::NOT_PERMITTED);
     }
-    set_by(core, peer, cause, params, by)
+    let by = By::Person(Person::new(account.clone()));
+    set_in(core, &core.mine(account), peer, cause, params, by)
 }
 
-/// 这一类的值是不是密钥：密钥本身，或者密钥的列表。
-fn holds_secret(kind: &miyu_config::Kind) -> bool {
-    match kind {
-        miyu_config::Kind::Secret => true,
-        miyu_config::Kind::List(inner) => holds_secret(inner),
-        _ => false,
-    }
-}
-
-/// 同 [`set`]，改的人是 `by`：核心自己改的（施工 8-23：下架的模型移出池）记成内核。
+/// 同 [`set`]，改机主那一份，改的人是 `by`：核心自己改的（施工 8-23：下架的模型移出池）记成内核。
 pub(crate) fn set_by(
     core: &Core,
+    peer: Peer,
+    cause: &CommandId,
+    params: SetParams,
+    by: By,
+) -> Result<Json, Refusal> {
+    set_in(core, &core.mine(&core.admin), peer, cause, params, by)
+}
+
+/// 改 `mine` 那一份（施工 Y-2 下下中上），改的人是 `by`。
+fn set_in(
+    core: &Core,
+    mine: &super::people::Mine<'_>,
     peer: Peer,
     cause: &CommandId,
     params: SetParams,
@@ -193,7 +165,7 @@ pub(crate) fn set_by(
         WriteLayer::System => Layer::System,
         WriteLayer::Personal => Layer::Personal,
     };
-    let mut config = core.config();
+    let mut config = mine.config();
     let plan = plan(&config, layer, params, &words, core.home.as_deref())?;
     let via = match &plan {
         Plan::Changes(_) => Via::Set,
@@ -463,7 +435,8 @@ pub(super) fn done(
     record(config, layer, via, by.clone(), cause, &changes);
     let keys: Vec<String> = changes.iter().map(|(key, _, _)| key.clone()).collect();
     let listed = push::keys(config, layer, &keys);
-    core.hub.publish(
+    crate::config::people::publish(
+        core,
         config,
         Some(Pushing {
             layer,

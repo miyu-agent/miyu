@@ -40,7 +40,6 @@ async fn a_member_reaches_only_his_own_things() {
     // 整台机器的事、还没照人分开的：不给。
     for (method, params) in [
         ("config.set", json!({"layer": "personal", "changes": []})),
-        ("config.get", json!({"keys": ["models.chat"]})),
         ("package.install", json!({"package": "x"})),
         ("extension.enable", json!({"package": "x"})),
         ("secret.list", json!({})),
@@ -49,7 +48,6 @@ async fn a_member_reaches_only_his_own_things() {
         ("check", json!({})),
         ("mcp.set", json!({})),
         ("account.invite", json!({})),
-        ("subscribe", json!({"stream": "config"})),
         ("subscribe", json!({"stream": "packages"})),
     ] {
         let reply = bob.call("x", method, params).await;

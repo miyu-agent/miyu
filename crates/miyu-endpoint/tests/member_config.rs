@@ -1,0 +1,141 @@
+//! 每人一份配置（施工 Y-2 下下中上，设计 06 U21；2026-10-24 项目主人定「成员只继承系统层」）：成员读得到系统配置、读不到机主的
+//! 个人设置；机主改了系统配置，已经开着的成员那一份跟着换；成员改开关写进他自己的个人设置，碰不到机主的；握手说是不是管理员。
+
+use serde_json::{Value, json};
+
+use miyu_session::testkit::Script;
+
+use crate::support::login::*;
+use crate::support::*;
+
+/// `config.get` 交回的一项的值。
+async fn value(client: &mut Client, key: &str) -> Value {
+    let reply = client.call("g", "config.get", json!({"keys": [key]})).await;
+    reply["result"]["items"][key]["value"].clone()
+}
+
+async fn set(client: &mut Client, layer: &str, key: &str, value: Value) -> Value {
+    client
+        .call(
+            "s",
+            "config.set",
+            json!({"layer": layer, "changes": [{"key": key, "value": value}]}),
+        )
+        .await
+}
+
+#[tokio::test]
+async fn a_member_reads_the_system_layer_and_keeps_his_own_settings() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut owner = local(&core).await;
+    let mut bob = member(&core, "bob").await;
+
+    // 机主的个人设置成员读不到。
+    let mine = set(&mut owner, "personal", "ui.language", json!("ja")).await;
+    assert!(mine.get("result").is_some(), "{mine}");
+    assert_eq!(value(&mut owner, "ui.language").await, json!("ja"));
+    assert_ne!(value(&mut bob, "ui.language").await, json!("ja"));
+
+    // 系统配置成员读得到；改了以后，已经开着的那一份跟着换。
+    let before = value(&mut bob, "terminal.idle_new_after").await;
+    let system = set(&mut owner, "system", "terminal.idle_new_after", json!(7)).await;
+    assert!(system.get("result").is_some(), "{system}");
+    assert_ne!(before, json!(7));
+    assert_eq!(value(&mut bob, "terminal.idle_new_after").await, json!(7));
+
+    // 成员改开关写进他自己的个人设置。
+    let switched = bob
+        .call(
+            "f",
+            "feature.set",
+            json!({"feature": "skill-notes", "on": false}),
+        )
+        .await;
+    assert_eq!(switched["result"], json!({}), "{switched}");
+    let his = std::fs::read_to_string(home.root.account_dir(&account("bob")).join("settings.toml"))
+        .expect("写进了他的个人设置");
+    assert!(his.contains("skill-notes"), "{his}");
+    let owners = std::fs::read_to_string(home.root.account_dir(&alice()).join("settings.toml"))
+        .unwrap_or_default();
+    assert!(!owners.contains("skill-notes"), "{owners}");
+
+    // 写配置这一步还不给成员（同密钥照人分开一起放）。
+    let refused = set(&mut bob, "personal", "ui.language", json!("en")).await;
+    assert_eq!(reason(&refused), Some("not_permitted"), "{refused}");
+}
+
+#[tokio::test]
+async fn the_handshake_says_who_is_an_admin() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut owner = Client::connect(std::sync::Arc::clone(&core));
+    let said = owner.hello().await;
+    assert_eq!(said["result"]["admin"], json!(true), "{said}");
+    // 成员登录进来的那一次握手（[`member`] 里）说不是；这里另开一个连接照他的用户名密码再握一次手看。
+    let _bob = member(&core, "bob").await;
+    let mut again = Client::connect(std::sync::Arc::clone(&core));
+    let said = hello_with(
+        &mut again,
+        json!({"user": "bob", "password": "correct horse"}),
+    )
+    .await;
+    assert_eq!(said["result"]["admin"], json!(false), "{said}");
+}
+
+fn account(name: &str) -> miyu_kernel::id::AccountId {
+    miyu_kernel::id::AccountId::parse(name).expect("合写法")
+}
+
+/// 成员的会话照他那一份配置（施工 Y-2 下下中上）：他把 `read` 改成按需加载，他开的会话工具面上是 `load_tools` 加占位；机主的
+/// 会话照旧全量。
+#[tokio::test]
+async fn a_members_session_runs_on_his_own_settings() {
+    use miyu_session::testkit::Play;
+    let home = Home::new();
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let core = crate::scripts::core(&home, &script);
+    let mut owner = local(&core).await;
+    let mut bob = member(&core, "bob").await;
+    let set = bob
+        .call(
+            "t",
+            "tool.set_loading",
+            json!({"tool": "read", "need_load": true}),
+        )
+        .await;
+    assert_eq!(set["result"], json!({}), "{set}");
+    let names = |n: usize| -> Vec<String> {
+        script.requests()[n]
+            .1
+            .tools
+            .iter()
+            .map(|tool| tool.name.clone())
+            .collect()
+    };
+    let his = bob
+        .call("c", "session.create", json!({"preset": "full"}))
+        .await["result"]["session"]
+        .as_str()
+        .expect("造得出")
+        .to_string();
+    bob.say("s", &his, "hi").await;
+    until("他的那一轮发出去", || !script.requests().is_empty()).await;
+    assert!(
+        names(0).iter().any(|name| name == "load_tools"),
+        "{:?}",
+        names(0)
+    );
+    let cwd = home.work.to_string_lossy().into_owned();
+    let mine = owner.create("o", &cwd).await;
+    owner.say("o2", &mine, "hi").await;
+    until("机主的那一轮发出去", || {
+        script.requests().len() > 1
+    })
+    .await;
+    assert!(
+        !names(1).iter().any(|name| name == "load_tools"),
+        "{:?}",
+        names(1)
+    );
+}

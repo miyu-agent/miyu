@@ -17,7 +17,6 @@ fn members_get_their_own_things_and_nothing_machine_wide() {
     }
     for method in [
         "config.set",
-        "config.get",
         "package.install",
         "extension.enable",
         "secret.list",
@@ -33,7 +32,8 @@ fn members_get_their_own_things_and_nothing_machine_wide() {
     }
     assert!(allowed("subscribe", &json!({"stream": "view"})));
     assert!(allowed("subscribe", &json!({"stream": "memory"})));
-    assert!(!allowed("subscribe", &json!({"stream": "config"})));
+    assert!(allowed("subscribe", &json!({"stream": "config"})));
+    assert!(allowed("config.get", &json!({})));
     assert!(!allowed("subscribe", &json!({"stream": "packages"})));
     assert!(!allowed("subscribe", &json!({})));
 }

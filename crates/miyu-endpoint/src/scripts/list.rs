@@ -26,7 +26,7 @@ use crate::personas::pick;
 /// 连接的账号，原来是管理员的）。主人列的是登记进工具目录的那一份（照旧）；别的账号照它自己的家目录、系统区、包现找：工具目录
 /// 照属主叠自己的脚本另排一步（Y-2 中-脚本目录）。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value {
-    let values = core.config_now().borrow().resolved().values();
+    let values = core.mine(account).config().resolved().values();
     let loading = Loading::of(&values);
     let switches = miyu_session::switches::of(&values);
     let packages = core.packages();

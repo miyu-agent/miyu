@@ -33,7 +33,10 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     let catalog = core.tools();
     let found_packages = core.packages();
     let table = crate::scripts::features(core);
-    let file = &found.file.clone().following(super::switches(core));
+    let file = &found
+        .file
+        .clone()
+        .following(super::switches(core, &carried.account));
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
     // 程序不在的扩展当没装（施工 F-6 上）：它的功能照「写了没装」列。

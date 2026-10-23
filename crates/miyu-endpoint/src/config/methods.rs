@@ -7,9 +7,9 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use miyu_config::merge::{Layers, Trust, below, explain, merge};
-use miyu_config::parse::parse;
 use miyu_config::problem::{Code, Problem, Told, Using, nearest, tell};
 use miyu_config::{Item, Kind, Layer, Words};
+use miyu_kernel::id::AccountId;
 use miyu_store::human::{FALLBACK, Human};
 
 use super::file::File;
@@ -41,38 +41,15 @@ pub(crate) struct GetParams {
     all: bool,
 }
 
-/// `config.check` 的参数。
-#[derive(Debug, Deserialize)]
-pub(crate) struct CheckParams {
-    /// 当成哪一层的文件查。
-    layer: LayerParam,
-    /// 要查的字。
-    text: String,
-}
-
-/// 能查的三层。
-#[derive(Debug, Clone, Copy, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum LayerParam {
-    System,
-    Personal,
-    Project,
-}
-
-impl LayerParam {
-    fn layer(self) -> Layer {
-        match self {
-            LayerParam::System => Layer::System,
-            LayerParam::Personal => Layer::Personal,
-            LayerParam::Project => Layer::Project,
-        }
-    }
-}
-
-/// `config.schema`：配置清单，名字和说明照这个连接的语言。
-pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Value, Refusal> {
+/// `config.schema`：配置清单，名字和说明照这个连接的语言。读的是这个连接的人那一份（施工 Y-2 下下中上）。
+pub(crate) fn schema(
+    core: &Core,
+    (account, peer): (&AccountId, Peer),
+    params: SchemaParams,
+) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let config = &*core.config();
+    let mine = core.mine(account);
+    let config = &*mine.config();
     let mut items: Vec<&Item> = Vec::new();
     for (item, _) in selected(config, params.keys.as_deref(), &words)? {
         if !items.iter().any(|seen| seen.key == item.key) {
@@ -219,10 +196,16 @@ fn config_name(words: &Human, english: Option<&Human>, what: &str, id: &str) -> 
         .unwrap_or_else(|| id.to_string())
 }
 
-/// `config.get`：最终值，每个值附上来源；每一份文件的位置、版本；这几份文件现在的全部问题。
-pub(crate) fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
+/// `config.get`：最终值，每个值附上来源；每一份文件的位置、版本；这几份文件现在的全部问题。读的是这个连接的人那一份
+/// （施工 Y-2 下下中上）：成员看得到系统配置和他自己的个人设置。
+pub(crate) fn get(
+    core: &Core,
+    (account, peer): (&AccountId, Peer),
+    params: GetParams,
+) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let config = &*core.config();
+    let mine = core.mine(account);
+    let config = &*mine.config();
     let project = params.cwd.as_deref().and_then(|cwd| config.project(cwd));
     let layers = config.layers(project.as_ref());
     let resolved = merge(config.items(), &layers, &|name| {
@@ -309,49 +292,6 @@ fn files(config: &Config, project: Option<&Project>) -> Value {
         );
     }
     Value::Object(files)
-}
-
-/// `config.check`：把 `text` 当成一层的文件查，不生效。项目配置照「收紧」和另外几层合出来的比，不看信没信任。
-pub(crate) fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
-    let words = words(core, peer.language)?;
-    let problems = check_text(core, &words, params.layer.layer(), &params.text)?;
-    Ok(json!({ "problems": problems }))
-}
-
-/// 把 `text` 当成 `layer` 那一层的文件查，交回给人看的问题（`config.check`；施工 8-30 起 `check` 也用它）。
-pub(crate) fn check_text(
-    core: &Core,
-    words: &Human,
-    layer: Layer,
-    text: &str,
-) -> Result<Vec<Value>, Refusal> {
-    let config = &*core.config();
-    let parsed = match parse(config.items(), layer, text) {
-        Ok(parsed) => parsed,
-        Err(problem) => {
-            let layers = config.layers(None);
-            return Ok(vec![said(config, &layers, &problem, None, words)?]);
-        }
-    };
-    let mut layers = config.layers(None);
-    let missing = config.missing_if(&parsed, layer);
-    let mut found: Vec<&Problem> = parsed.problems.iter().chain(&missing).collect();
-    let tightening;
-    if layer == Layer::Project {
-        layers.project = Some((&parsed, Trust::Trusted));
-        let merged = merge(config.items(), &layers, &|_| None);
-        tightening = merged
-            .problems
-            .into_iter()
-            .filter(|problem| problem.code == Code::NotTightening)
-            .collect::<Vec<_>>();
-        found.extend(tightening.iter());
-    }
-    let mut problems = Vec::new();
-    for problem in found {
-        problems.push(said(config, &layers, problem, None, words)?);
-    }
-    Ok(problems)
 }
 
 /// 一条问题写成协议上的样子，话照 `words`。现在照什么用着：一项的问题照这一项在它那一层下面几层合出来的；整份的问题

@@ -178,6 +178,8 @@ pub struct Core {
     config: std::sync::Mutex<Config>,
     /// 配置换了交给谁（施工 8-4）：会话、核心取当前的一份，订阅着配置的连接收推送。
     hub: Hub,
+    /// 别人各自的配置（施工 Y-2 下下中上，`config/people.rs`）：用到时造。
+    people: config::people::People,
     /// 核心一份的模型资料（施工 8-7）：`model.list` 照它列。路由手里是同一份。
     model_data: Arc<ModelData>,
     /// 找文件的清单记几份（施工 W-2，`files.rs`）：各个连接共用。
@@ -278,6 +280,7 @@ impl Core {
             usage,
             hub: Hub::new(&config),
             config: std::sync::Mutex::new(config),
+            people: config::people::People::default(),
             root,
             resources,
             models,

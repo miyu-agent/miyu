@@ -67,7 +67,7 @@ impl Sessions {
             vectors: None,
             installed: None,
             memory: None,
-            configs: core.hub.configs(),
+            configs: core.configs_of(&owner),
             owner_is_admin: owner == core.admin,
             owner,
             permission: Permission {

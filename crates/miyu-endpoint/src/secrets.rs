@@ -253,7 +253,7 @@ fn change(
                     Who::Core => (By::Kernel, None),
                 };
                 record(&config, name, action, "set", by, cause);
-                core.hub.publish(&config, None);
+                crate::config::people::publish(core, &config, None);
                 return Ok(action);
             }
             Err(WriteError::Changed) => {}
@@ -303,7 +303,7 @@ pub(crate) fn observe(core: &Core, config: &mut Config) {
     for (name, action) in &changes {
         record(config, name, action, "file", By::Kernel, None);
     }
-    core.hub.publish(config, None);
+    crate::config::people::publish(core, config, None);
 }
 
 /// 读到的密钥文件组、别人读得到：记一条 `WARN secrets readable by others`，照用，不去改它（第九条第 2 条）。

@@ -67,7 +67,7 @@ impl Open {
             memory: Some(Arc::clone(&core.memory)),
             presets: Some(crate::presets::places(core, &owner)),
             owner_is_admin: owner == core.admin,
-            configs: core.hub.configs(),
+            configs: core.configs_of(&owner),
         })
         .await;
         let (handle, placed) = match loaded {

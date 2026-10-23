@@ -156,7 +156,7 @@ impl Sessions {
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-        let (_, project) = core.config().with_project(&workspace);
+        let (_, project) = core.mine(&who.owner).config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
         if let Some(id) = earlier {
             return Ok(Created {
@@ -257,6 +257,7 @@ impl Sessions {
         let preset = match &child.preset {
             Some(id) => Some(presets::chosen(
                 core,
+                &child.owner,
                 presets::resolve(core, &child.owner, Some(id))
                     .await
                     .map_err(|refusal| format!("preset {id}: {}", refusal.reason))?,
@@ -286,7 +287,7 @@ impl Sessions {
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),
             memory: Some(Arc::clone(&core.memory)),
-            configs: core.hub.configs(),
+            configs: core.configs_of(&child.owner),
             owner: child.owner,
             permission: child.permission,
             attended: child.attended,

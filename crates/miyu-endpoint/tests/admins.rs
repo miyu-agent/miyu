@@ -53,7 +53,7 @@ async fn the_owner_makes_and_unmakes_admins() {
     let invited = bob.call("i", "account.invite", json!({})).await;
     assert!(invited.get("error").is_none(), "设了的能发邀请：{invited}");
     assert_eq!(listed_admin(&mut bob, "bob").await, true, "设了的能列账号");
-    let refused = bob.call("c", "config.get", json!({})).await;
+    let refused = bob.call("c", "secret.list", json!({})).await;
     assert_eq!(
         why(&refused),
         "not_permitted",

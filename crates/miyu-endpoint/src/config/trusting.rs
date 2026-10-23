@@ -43,10 +43,11 @@ pub(crate) struct TrustParams {
     trust: bool,
 }
 
-/// `config.trust`：记下了交回 `{"file", "trusted"}`。`cause` 是这条命令的编号，记进日志。
+/// `config.trust`：记下了交回 `{"file", "trusted"}`。`cause` 是这条命令的编号，记进日志。记在这个连接的人自己的信任记录里
+/// （施工 Y-2 下下中上）。
 pub(crate) fn trust(
     core: &Core,
-    peer: Peer,
+    (account, peer): (&miyu_kernel::id::AccountId, Peer),
     cause: &CommandId,
     params: TrustParams,
 ) -> Result<Value, Refusal> {
@@ -55,7 +56,8 @@ pub(crate) fn trust(
         tracing::warn!(target: TARGET, error = "no words for config/trust-header", "config words missing");
         return Err(Refusal::INTERNAL);
     };
-    let mut config = core.config();
+    let mine = core.mine(account);
+    let mut config = mine.config();
     let Some(project) = config.project(&params.cwd) else {
         return Err(Refusal::NO_PROJECT_CONFIG);
     };
@@ -76,7 +78,7 @@ pub(crate) fn trust(
                 config.trust = records;
                 done(&config, cause, &answer);
                 // 不推，只交给会话：下一个回合照新的信任读项目配置（施工 8-4）。
-                core.hub.publish(&config, None);
+                crate::config::people::publish(core, &config, None);
                 return Ok(json!({"file": project.file.shown, "trusted": params.trust}));
             }
             Err(WriteError::Changed) => {}

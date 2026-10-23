@@ -25,7 +25,7 @@ pub(super) async fn create(
     // 解析不出的什么都不造（施工 8-8）。
     let model = params
         .model
-        .map(|text| models::record(core, &text))
+        .map(|text| models::record(core, caller.acting_for(), &text))
         .transpose()?;
     let memory = params
         .memory
@@ -150,7 +150,10 @@ pub(super) async fn send(
     if wide {
         reply["wide"] = json!(true);
     }
-    let untrusted = core.config().untrusted(&found.cwd);
+    let untrusted = core
+        .mine(found.handle.owner())
+        .config()
+        .untrusted(&found.cwd);
     if let Some(file) = untrusted {
         reply["untrusted_project"] = json!(file);
     }
@@ -428,7 +431,7 @@ pub(super) async fn configure(
     let found = core.sessions.get(core, &session).await?;
     // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
     let model = match text {
-        Some(Some(text)) => Some(models::record(core, text)?),
+        Some(Some(text)) => Some(models::record(core, found.handle.owner(), text)?),
         Some(None) => Some(String::new()),
         None => None,
     };

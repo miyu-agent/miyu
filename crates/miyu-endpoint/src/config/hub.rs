@@ -97,7 +97,7 @@ impl Hub {
 }
 
 /// 要推的一次：哪一层、怎么改的、谁改的、变了的项。
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Pushing {
     /// 哪一层。
     pub(crate) layer: miyu_config::Layer,

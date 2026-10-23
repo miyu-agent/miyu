@@ -200,14 +200,15 @@ impl Subscriptions {
     /// 时用的语言。
     pub(crate) fn add_config(
         &mut self,
-        core: &Arc<Core>,
+        (core, account): (&Arc<Core>, &miyu_kernel::id::AccountId),
         system: &'static str,
         out: &mpsc::Sender<String>,
     ) {
         if self.config.as_ref().is_some_and(ConfigForwarder::pushing) {
             return;
         }
-        let pushes = core.hub.subscribe();
+        // 订的是这个连接的人那一份（施工 Y-2 下下中上）。
+        let pushes = core.mine(account).hub().subscribe();
         self.config = Some(ConfigForwarder::start(
             Arc::clone(core),
             pushes,

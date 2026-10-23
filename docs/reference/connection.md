@@ -67,6 +67,7 @@
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
 | `account` | 你是谁：本机的人是 `admin`；声明了系统账号的包的扩展是那个系统账号（账号名同包的编号），别的扩展也是 `admin` |
+| `admin` | 布尔：这个账号是不是管理员（机主，和管理员组里的人；施工 Y-2 下下中上）。头照它决定给不给设置页里管整台机器的那些、账号管理。还没注册、还没有机主的是 `false` |
 | `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。管理员的另有 `dirs`：`{"pictures", "videos", "documents", "downloads"}`，这个账号照 XDG 的几处，在的给真实位置、还没建的照原样（施工 Y-11 上）；成员的没有。远程的连接整个没有（施工 Y-1 下） |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
 | `view` | 视图投影的版本，现在是 `1`（见 [会话](sessions.md) 的 `view.page`） |
@@ -97,7 +98,7 @@
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
 | `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
-| `not_permitted` | 成员的连接调了名单以外的方法（施工 Y-2 下下上，`connection/gate/members.rs`）：成员调得了只碰自己东西的那些——自己的会话（说话、打断、撤销、压缩、换模型、改标题、回答、回顾、工作区、权限级别、工具、上下文、终端会话、视图、后台任务）、斜杠命令、附件、人格、预设、技能、脚本、项目、知识库、记忆、用量（只算自己名下的）、`provider.catalog`、`mermaid.render`，订阅 `events`、`view`、`sessions`、`projects`、`kb`、`memory`、`widgets` 几种流；配置、开关、MCP、模型列表、一次性调模型、链接预览、订阅配置、整台机器的事（装包、扩展、密钥、供应商、读本机文件、`check`）不给。成员切权限级别到 `full` 也回它（2026-10-23 项目主人定：成员最高到工作区）。管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
+| `not_permitted` | 成员的连接调了名单以外的方法（施工 Y-2 下下上，`connection/gate/members.rs`）：成员调得了只碰自己东西的那些——自己的会话（说话、打断、撤销、压缩、换模型、改标题、回答、回顾、工作区、权限级别、工具、上下文、终端会话、视图、后台任务）、斜杠命令、附件、人格、预设、技能、脚本、项目、知识库、记忆、用量（只算自己名下的）、`provider.catalog`、`mermaid.render`，订阅 `events`、`view`、`sessions`、`projects`、`kb`、`memory`、`widgets` 几种流；施工 Y-2 下下中上起还有他自己那一份配置：读、查、清单（`config.get`、`config.check`、`config.schema`）、开关和加载方式（`feature.set`、`tool.set_loading`）、项目配置信不信任（`config.trust`）、订阅 `config`；写配置（`config.set`）、MCP、模型列表、一次性调模型、链接预览、整台机器的事（装包、扩展、密钥、供应商、读本机文件、`check`）不给。成员切权限级别到 `full` 也回它（2026-10-23 项目主人定：成员最高到工作区）。管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
 
 ## `subscribe`、`unsubscribe`
 

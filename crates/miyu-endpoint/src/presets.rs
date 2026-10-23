@@ -42,7 +42,7 @@ pub(crate) async fn resolve(
 ) -> Result<Found, Refusal> {
     let id = match wanted {
         Some(id) => id.to_string(),
-        None => PresetSettings::from(&core.config().resolved().values()).default,
+        None => PresetSettings::from(&core.mine(account).config().resolved().values()).default,
     };
     let presets = presets(core, account);
     let found = tokio::task::spawn_blocking(move || presets.find(&id)).await;
@@ -63,14 +63,19 @@ pub(crate) fn places(core: &Core, owner: &AccountId) -> PresetPlaces {
 }
 
 /// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
-pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
-    let file = found.file.following(switches(core));
+pub(crate) fn chosen(core: &Core, owner: &AccountId, found: Found) -> Chosen {
+    let file = found.file.following(switches(core, owner));
     Chosen::new(found.id, file, &crate::scripts::features(core))
 }
 
-/// 这时配置里写了的全局开关（施工 X-27，`miyu_session::switches`）：照配置服务最近换上的那一份读，不拿配置服务的锁。
-pub(crate) fn switches(core: &Core) -> std::collections::BTreeMap<String, bool> {
-    miyu_session::switches::of(&core.config_now().borrow().resolved().values())
+/// 这时 `account` 的配置里写了的全局开关（施工 X-27，`miyu_session::switches`；施工 Y-2 下下中上起照人）：照配置服务最近换上的
+/// 那一份读，不拿配置服务的锁。
+pub(crate) fn switches(
+    core: &Core,
+    account: &AccountId,
+) -> std::collections::BTreeMap<String, bool> {
+    let now = core.mine(account).hub().current();
+    miyu_session::switches::of(&now.borrow().resolved().values())
 }
 
 /// 找预设出的错照协议说：编号不合写法的参数不对，哪一层都没有的 `unknown_preset`，写错了的 `preset_invalid`（`data.problem`
@@ -220,6 +225,8 @@ pub(crate) async fn get(
 /// 一个账号用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能（施工 Y-2 中上起照调用者，原来是
 /// 管理员的）。
 pub(super) struct Carried {
+    /// 谁的（施工 Y-2 下下中上：功能表的全局开关照他）。
+    pub(super) account: AccountId,
     pub(super) skills: Vec<Skill>,
     pub(super) commands: Vec<Template>,
     /// 扩展声明的命令（施工 X-14 下）。
@@ -234,6 +241,7 @@ pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
             .await
             .unwrap_or_default();
     Carried {
+        account: account.clone(),
         skills,
         commands: crate::commands::template_commands(core, account).await,
         declared: crate::commands::declared_commands(core),

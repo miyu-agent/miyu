@@ -204,6 +204,8 @@ pub(crate) async fn hello(
         "protocol": PROTOCOL,
         "core": {"version": env!("CARGO_PKG_VERSION")},
         "account": account.as_str(),
+        // 是不是管理员（施工 Y-2 下下中上）：头照它决定给不给设置页、账号管理这些，不用拿请求去试。
+        "admin": crate::login::admins::is_admin(core, account),
         "host": host(core, account),
         "sandbox": sandbox(&core.sandbox),
         "language": language,
@@ -220,8 +222,10 @@ pub(crate) async fn hello(
     if core.setting_up() && via == Via::Token {
         // 还没有机主（施工 Y-12 中上）：注册成了才是谁，同邀请码。
         result["account"] = Value::Null;
+        result["admin"] = json!(false);
     }
     if matches!(via, Via::Invite(_)) {
+        result["admin"] = json!(false);
         // 还没注册，不是谁（施工 Y-1 上）：注册成了回应里才有账号。
         result["account"] = Value::Null;
         result["register"] = json!(true);

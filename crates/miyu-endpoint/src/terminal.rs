@@ -78,7 +78,7 @@ pub(crate) async fn get(
     let path = core.root.account_dir(account).join(terminal::FILE);
     let (mut pointers, version) = read(&path)?;
     let pointer = current(&pointers, key.as_deref());
-    let settings = TerminalSettings::from(&core.config().resolved().values());
+    let settings = TerminalSettings::from(&core.mine(account).config().resolved().values());
     let pointed = pointer
         .session
         .as_deref()

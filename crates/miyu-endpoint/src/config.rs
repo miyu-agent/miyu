@@ -21,15 +21,18 @@
 //! 施工 8-18：模型默认的思考强度不在档位里的也在 `Config::missing` 里报（`config/effort.rs`）：档位要核心一份的模型资料，
 //! 核心起来时交进来（`Core::with_model_data`）。
 
+pub(crate) mod checking;
 mod effort;
 mod environment;
 pub(crate) mod file;
 pub(crate) mod forget;
+pub(crate) mod from_package;
 pub(crate) mod hub;
 pub(crate) mod journal;
 pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
+pub(crate) mod people;
 mod private;
 pub(crate) mod project;
 pub(crate) mod push;

@@ -32,7 +32,8 @@ mod mcp;
 mod run;
 mod skipped;
 mod unsandboxed;
-use crate::config::methods::{check_text, said_at, words};
+use crate::config::checking::check_text;
+use crate::config::methods::{said_at, words};
 use crate::hello::Peer;
 use crate::personas::personas;
 use crate::presets::presets;
@@ -187,7 +188,7 @@ fn check_config(core: &Core, words: &Human, file: &ConfigFile) -> Result<Vec<Val
         Ok(None) => return Ok(Vec::new()),
         Err(error) => return Ok(vec![unreadable(words, &file.shown, "config", &error)]),
     };
-    let mut problems = check_text(core, words, file.layer, &text)?;
+    let mut problems = check_text(&core.config(), words, file.layer, &text)?;
     for problem in &mut problems {
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");

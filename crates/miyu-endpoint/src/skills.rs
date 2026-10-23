@@ -43,7 +43,7 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result
     .await
     .map_err(|_| Refusal::INTERNAL)?;
     let (found, packages) = found;
-    let switches = crate::presets::switches(core);
+    let switches = crate::presets::switches(core, account);
     let skills: Vec<Value> = found
         .iter()
         .map(|skill| {

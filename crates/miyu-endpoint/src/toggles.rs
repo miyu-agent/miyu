@@ -53,7 +53,7 @@ fn present<'de, D: Deserializer<'de>>(d: D) -> Result<Option<bool>, D::Error> {
 /// `tool`、`server` 不是正好一个，名字写不进键（工具名照 `<name>`、服务名照 `<id>`）的 `bad_params`；别的同 `config.set`。
 pub(crate) fn set_loading(
     core: &Core,
-    peer: Peer,
+    (caller, peer): (&crate::hello::Caller, Peer),
     cause: &CommandId,
     params: LoadingParams,
 ) -> Result<Value, Refusal> {
@@ -66,7 +66,7 @@ pub(crate) fn set_loading(
         }
         _ => return Err(Refusal::BAD_PARAMS),
     };
-    written(core, peer, cause, real, params.need_load)
+    written(core, (caller, peer), cause, real, params.need_load)
 }
 
 /// `feature.set`：改个人设置的 `features.<功能编号>`，回应 `{}`。
@@ -76,7 +76,7 @@ pub(crate) fn set_loading(
 /// 不是技能、脚本、MCP 服务的功能编号，写不进键（照 `<name>`）的 `bad_params`；别的同 `config.set`。
 pub(crate) fn set_feature(
     core: &Core,
-    peer: Peer,
+    (caller, peer): (&crate::hello::Caller, Peer),
     cause: &CommandId,
     params: FeatureParams,
 ) -> Result<Value, Refusal> {
@@ -84,17 +84,22 @@ pub(crate) fn set_feature(
         return Err(Refusal::BAD_PARAMS);
     }
     let real = key::fill(miyu_session::switches::FEATURE, &[&params.feature]);
-    written(core, peer, cause, real, params.on)
+    written(core, (caller, peer), cause, real, params.on)
 }
 
 /// 照 `config.set` 改个人设置里的一项 `real`：`value` 是 `None` 的删掉。
 fn written(
     core: &Core,
-    peer: Peer,
+    (caller, peer): (&crate::hello::Caller, Peer),
     cause: &CommandId,
     real: String,
     value: Option<bool>,
 ) -> Result<Value, Refusal> {
-    set(core, peer, cause, SetParams::personal(real, value))?;
+    set(
+        core,
+        (caller, peer),
+        cause,
+        SetParams::personal(real, value),
+    )?;
     Ok(json!({}))
 }

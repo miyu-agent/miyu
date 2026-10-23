@@ -42,7 +42,8 @@ impl Setup {
         (workspace, dirs): (String, Vec<String>),
         who: Opening,
     ) -> Result<Setup, Refusal> {
-        let (resolved, _) = core.config().with_project(&workspace);
+        // 照属主那一份（施工 Y-2 下下中上）。
+        let (resolved, _) = core.mine(&who.owner).config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
         let level = opening_level(&permission, who.venue.as_ref());
         let profile = profile_for(
@@ -115,9 +116,12 @@ impl Setup {
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),
             memory: Some(Arc::clone(&core.memory)),
-            configs: core.hub.configs(),
+            configs: core.configs_of(&who.owner),
             model: who.model.clone(),
-            preset: self.preset.take().map(|found| presets::chosen(core, found)),
+            preset: self
+                .preset
+                .take()
+                .map(|found| presets::chosen(core, &who.owner, found)),
             no_tools: who.preset.as_deref() == Some(""),
             presets: Some(presets::places(core, &who.owner)),
             group: who.group,

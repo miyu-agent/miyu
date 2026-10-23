@@ -56,10 +56,10 @@ pub(crate) fn refit(core: &Core, items: Vec<Item>) {
             by: None,
             keys,
         };
-        core.hub.publish(&config, Some(pushing));
+        crate::config::people::publish(core, &config, Some(pushing));
         pushed = true;
     }
     if !pushed {
-        core.hub.publish(&config, None);
+        crate::config::people::publish(core, &config, None);
     }
 }

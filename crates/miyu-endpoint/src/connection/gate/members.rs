@@ -2,8 +2,9 @@
 //! `not_permitted`。名单里的都只碰得到他自己的：会话照属主挡（`checks.rs` 的第 4 道），人格、预设、知识库、技能、脚本、项目、
 //! 附件、记忆照「替谁干活」找（施工 Y-2、Y-7），会话里的命令记在他名下（[`crate::sessions::person`]）。
 //!
-//! 不在名单里的，等它们也照人分开再放：配置、开关、MCP、模型列表、一次性调模型（Y-2 下下中：每人一份个人配置和密钥）；整台
-//! 机器的事（装包、扩展、密钥、供应商、读本机文件、诊断）只给管理员。`link.preview` 从核心往外连，先不给（成员上网的规矩见 MB-2）。
+//! 配置照人分开以后（施工 Y-2 下下中上）放读配置、查、配置清单、开关、加载方式、信任和订阅配置：都是他自己那一份。不在名单里
+//! 的：写配置（`config.set`，同密钥照人分开一起放，Y-2 下下中中）、MCP、模型列表、一次性调模型；整台机器的事（装包、扩展、
+//! 密钥、供应商、读本机文件、诊断）只给管理员。`link.preview` 从核心往外连，先不给（成员上网的规矩见 MB-2）。
 
 use serde_json::Value;
 
@@ -96,14 +97,21 @@ const METHODS: &[&str] = &[
     "memory.card_update",
     "memory.card_forget",
     "usage.query",
+    // 他自己的配置（施工 Y-2 下下中上）：读、查、清单、功能开关、加载方式、项目配置信不信任。
+    "config.get",
+    "config.check",
+    "config.schema",
+    "feature.set",
+    "tool.set_loading",
+    "config.trust",
     // 不碰谁的：供应商的出厂目录、画图。
     "provider.catalog",
     "mermaid.render",
 ];
 
-/// 成员订得了的流：自己的会话、事件、视图、项目、知识库、记忆、界面块。配置（现在是管理员那一份）、扩展、软件包的不给。
+/// 成员订得了的流：自己的会话、事件、视图、项目、知识库、记忆、界面块、他自己的配置（施工 Y-2 下下中上）。扩展、软件包的不给。
 const STREAMS: &[&str] = &[
-    "events", "view", "sessions", "projects", "kb", "memory", "widgets",
+    "events", "view", "sessions", "projects", "kb", "memory", "widgets", "config",
 ];
 
 /// 成员能不能调 `method`（参数 `params`）。

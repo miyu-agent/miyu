@@ -74,7 +74,7 @@ pub(crate) async fn query(
     if !crate::login::admins::is_admin(core, whose) {
         query.account = Some(whose.as_str().to_string());
     }
-    let currency = UsageSettings::from(&core.config().resolved().values()).currency;
+    let currency = UsageSettings::from(&core.mine(whose).config().resolved().values()).currency;
     let usage = Arc::clone(&core.usage);
     // 系统账号的算进总数，照 `account` 能分开看（施工 O-4 下）。
     let accounts = core.accounts();
