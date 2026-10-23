@@ -293,7 +293,7 @@ pub(super) async fn from_path(
     file: Option<&Path>,
 ) -> Result<Value, Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
-    clear_of_conflicts(core, &id, manifest, folder.clone()).await?;
+    clear_of_conflicts((core, peer), &id, manifest, folder.clone()).await?;
     let words = words(core, peer.language)?;
     let places = packages(core);
     let home = home(core)?;
@@ -370,7 +370,7 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     if !places.removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
-    shipped_clear_of_conflicts(core, id).await?;
+    shipped_clear_of_conflicts((core, peer), id).await?;
     let home = home(core)?;
     let target = id.to_string();
     let before = core.packages();
@@ -398,11 +398,12 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
 /// （施工 F-8 六补，`packages.md`「冲突」）：
 /// `package_conflict`，什么都不动。读包文件夹在阻塞线程里。
 pub(super) async fn clear_of_conflicts(
-    core: &Arc<Core>,
+    (core, peer): (&Arc<Core>, Peer),
     id: &str,
     manifest: package::Manifest,
     dir: PathBuf,
 ) -> Result<(), Refusal> {
+    super::may_manage::may_manage(peer.admin)?;
     let installed = core.packages();
     // 包的编号就是它的账号名（施工 Y-5 中下）：和人占着的名字撞了不装；升级（已经装着的同一个）不算。
     if !installed.iter().any(|one| one.id == id) && crate::login::members::person_holds(core, id) {
@@ -431,7 +432,10 @@ pub(super) async fn clear_of_conflicts(
 }
 
 /// 把卸掉的出厂的包 `id` 装回来之前也查（同 [`clear_of_conflicts`]）：卸掉以后家目录里装了同名的。
-pub(super) async fn shipped_clear_of_conflicts(core: &Arc<Core>, id: &str) -> Result<(), Refusal> {
+pub(super) async fn shipped_clear_of_conflicts(
+    (core, peer): (&Arc<Core>, Peer),
+    id: &str,
+) -> Result<(), Refusal> {
     let shipped = Packages::shipped(&core.resources).read();
     let Some((manifest, dir)) = shipped
         .iter()
@@ -440,7 +444,7 @@ pub(super) async fn shipped_clear_of_conflicts(core: &Arc<Core>, id: &str) -> Re
     else {
         return Ok(());
     };
-    clear_of_conflicts(core, id, manifest, dir).await
+    clear_of_conflicts((core, peer), id, manifest, dir).await
 }
 
 /// 管理员家目录那一层。

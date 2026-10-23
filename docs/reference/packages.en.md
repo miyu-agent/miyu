@@ -85,6 +85,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `path_unreadable` | The folder can't be read |
 | `package_invalid` | The manifest is wrong, `data.problem`, `data.line`; for a package that needs a newer Miyu, `data.problem` is `needs_newer_miyu` |
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
+| `not_permitted` | A member who isn't an admin installing, upgrading, removing or restoring a package, or enabling an extension: for now members can't do any of these (later, packages without a process will install into their own home and only affect them); the `package` tool in a session goes by the session's owner, and listing, looking and searching still work |
 | `package_exists` | Same id as a built-in package |
 | `package_file_bad` | The package file can't be unpacked |
 | `download_failed` | Installing from the package source, the file couldn't be downloaded anywhere (a size or hash mismatch counts); `data.why` lists each place's reason |

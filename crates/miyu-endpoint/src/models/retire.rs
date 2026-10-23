@@ -82,6 +82,8 @@ fn retire(core: &Core, reference: &str) {
         locale: Locale::En,
         language: "en",
         input: false,
+        // 改配置，不装包。
+        admin: false,
     };
     for (layer, changes) in by_layer {
         let written =
