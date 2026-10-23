@@ -26,7 +26,7 @@
 
 ```json
 {
-  "description": "Show a file to the user: an image, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
+  "description": "Show a file to the user: an image, video, audio, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
   "parameters": {"type":"object","properties":{"path":{"type":"string","description":"The file to show."},"title":{"type":"string","description":"A short title. Default: the file name."}},"required":["path"]}
 }
 ```
@@ -47,10 +47,12 @@
 4. 认种类（`show/kind.rs`），照先后：
    1. 图片（`miyu_tool::picture` 认得出、量得出宽高的四种）：媒体类型照认出的，带宽高。只给人看，不照给模型的图的上限（5 MiB、8000 像素）挡。
    2. 开头是 `%PDF-` 的：`application/pdf`。
-   3. 后缀 `.svg`：`image/svg+xml`，不带宽高。
-   4. 后缀 `.html`、`.htm`：`text/html`；`.md`、`.markdown`：`text/markdown`。
-   5. 是 UTF-8 的：`text/plain`；后缀认得出语言的（下面的表）带 `language`。
-   6. 别的：`application/octet-stream`。
+   3. 音视频（施工 D-5 补，网页报、项目主人 2026-10-23 指出展示的 mp4、mp3 只能下载；`show/kind/media.rs`）：照前 64 字节的文件头认浏览器放得了的七种。`ftyp` 的是 `video/mp4`，牌子是 `M4A `、`M4B ` 的是 `audio/mp4`，QuickTime（`qt  `）不认；EBML 头、文档类型写 `webm` 的是 `video/webm`，Matroska 不认；`ID3` 开头或者 MPEG 第三层帧同步的是 `audio/mpeg`（AAC 的 ADTS 不算）；`fLaC` 是 `audio/flac`；`RIFF`…`WAVE` 是 `audio/wav`；`OggS` 是 `audio/ogg`。
+   4. 后缀 `.svg`：`image/svg+xml`，不带宽高。
+   5. 后缀 `.html`、`.htm`：`text/html`；`.md`、`.markdown`：`text/markdown`。
+   6. 是 UTF-8 的：`text/plain`；后缀认得出语言的（下面的表）带 `language`。
+   7. 别的二进制照后缀认音视频（施工 D-5 补）：`.mp4` `video/mp4`、`.webm` `video/webm`、`.mp3` `audio/mpeg`、`.flac` `audio/flac`、`.wav` `audio/wav`、`.m4a` `audio/mp4`、`.ogg` `.oga` `.opus` `audio/ogg`；`.mov`、`.mkv` 浏览器多半放不了，不认。
+   8. 再别的：`application/octet-stream`。
 5. 成了：结果 `Shown to the user.`（`show/shown.txt`），报 `file.shown`（下面）。不读回内容、不给图块。
 6. 叫停：读在阻塞线程里做，读之前看一眼旗，举了就不读，交回 `stopped`。
 

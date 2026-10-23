@@ -4532,13 +4532,13 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/show.json`
 
 - 什么时候加进来：会话的工具面里有 `show`（每次请求都带；预设关了功能「展示」的不带）
-- token：121（2026-10-17 主会话照开发端点整张重量的边际份量，十八件合计 3073）
-- 为什么加：`show` 的说明和参数（施工 D-5，设计 35，2026-10-17 项目主人定）：三句，是什么、她拿不回内容、同一个路径再展示换掉那一张；参数 `path`、`title` 各一句。不加的话她给人看图、页面只能贴路径让人自己开
-- 指纹：`d0e05cf3`
+- token：约 125（2026-10-17 主会话照开发端点整张重量的边际份量 121，十八件合计 3073；施工 D-5 补第一句多 `video, audio`，按 o200k 估多 4）
+- 为什么加：`show` 的说明和参数（施工 D-5，设计 35，2026-10-17 项目主人定）：三句，是什么、她拿不回内容、同一个路径再展示换掉那一张；参数 `path`、`title` 各一句。不加的话她给人看图、页面只能贴路径让人自己开。施工 D-5 补（2026-10-23 项目主人照推荐定：先改说明再实测，她不主动用再在 system 加一句）：头认得音视频以后第一句写上视频、音频
+- 指纹：`02f4c3cd`
 
 ```json
 {
-  "description": "Show a file to the user: an image, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
+  "description": "Show a file to the user: an image, video, audio, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
   "parameters": {"type":"object","properties":{"path":{"type":"string","description":"The file to show."},"title":{"type":"string","description":"A short title. Default: the file name."}},"required":["path"]}
 }
 ```

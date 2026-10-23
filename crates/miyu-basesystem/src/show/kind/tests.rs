@@ -65,3 +65,66 @@ fn text_carries_its_language_and_other_bytes_are_a_file() {
         "不是 UTF-8 的不带语言"
     );
 }
+
+/// 音视频（施工 D-5 补）：照文件头认七种，QuickTime、Matroska、AAC 的 ADTS 不认；认不出的二进制照后缀；文本照旧是文本。
+#[test]
+fn audio_and_video_are_told_by_their_heads_then_their_extensions() {
+    let mp4 = b"\0\0\0\x20ftypisom\0\0\x02\0isomiso2";
+    assert_eq!(of("a.bin", mp4).media_type, "video/mp4");
+    assert_eq!(
+        of("a.bin", b"\0\0\0\x20ftypM4A \0\0\0\0").media_type,
+        "audio/mp4"
+    );
+    assert_eq!(
+        of("a.mov", b"\0\0\0\x14ftypqt  \0\0\0\0\xFF").media_type,
+        "application/octet-stream"
+    );
+    let mut webm = vec![
+        0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x86, 0x81, 0x01, 0x42, 0x82, 0x84,
+    ];
+    webm.extend_from_slice(b"webm\x42\x87\x81\x04");
+    assert_eq!(of("a.bin", &webm).media_type, "video/webm");
+    let mut mkv = vec![0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x82, 0x88];
+    mkv.extend_from_slice(b"matroska");
+    assert_eq!(of("a.mkv", &mkv).media_type, "application/octet-stream");
+    assert_eq!(of("a.bin", b"ID3\x04\0\0\0\0\0\0").media_type, "audio/mpeg");
+    assert_eq!(
+        of("a.bin", &[0xFF, 0xFB, 0x90, 0x64, 0x00]).media_type,
+        "audio/mpeg"
+    );
+    assert_eq!(
+        of("a.aac", &[0xFF, 0xF1, 0x50, 0x80, 0x00]).media_type,
+        "application/octet-stream",
+        "ADTS 的层是 00，不是 MP3"
+    );
+    assert_eq!(of("a.bin", b"fLaC\0\0\0\x22").media_type, "audio/flac");
+    assert_eq!(
+        of("a.bin", b"RIFF\x24\0\0\0WAVEfmt ").media_type,
+        "audio/wav"
+    );
+    assert_eq!(of("a.bin", b"OggS\0\x02\0\0").media_type, "audio/ogg");
+    assert_eq!(
+        of("a.avi", b"RIFF\x24\0\0\0AVI LIST\xFF").media_type,
+        "application/octet-stream",
+        "RIFF 里不是 WAVE 的不认"
+    );
+    // 文件头认不出的二进制照后缀。
+    let odd = [0x00, 0xFE, 0x81, 0x99];
+    for (name, media_type) in [
+        ("a.mp4", "video/mp4"),
+        ("a.webm", "video/webm"),
+        ("a.MP3", "audio/mpeg"),
+        ("a.flac", "audio/flac"),
+        ("a.wav", "audio/wav"),
+        ("a.m4a", "audio/mp4"),
+        ("a.opus", "audio/ogg"),
+        ("a.mkv", "application/octet-stream"),
+    ] {
+        assert_eq!(of(name, &odd).media_type, media_type, "{name}");
+    }
+    assert_eq!(
+        of("notes.mp3", b"just text").media_type,
+        "text/plain",
+        "文本照旧"
+    );
+}

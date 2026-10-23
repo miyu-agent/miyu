@@ -1,5 +1,6 @@
-//! `show` 认种类（施工 D-5，`docs/blueprint/tools/show.md`「怎么走」第 4 条）：图片、PDF 照内容，svg、HTML、Markdown 照后缀，
-//! 别的 UTF-8 是文本（认得出语言的带上），再别的是文件。只给头选显示法，不给模型看。
+//! `show` 认种类（施工 D-5，`docs/blueprint/tools/show.md`「怎么走」第 4 条）：图片、PDF、音视频照内容，svg、HTML、Markdown
+//! 照后缀，别的 UTF-8 是文本（认得出语言的带上），认不出的二进制再照后缀认音视频（施工 D-5 补），再别的是文件。只给头选显示法，
+//! 不给模型看。
 
 use std::path::Path;
 
@@ -37,6 +38,9 @@ pub(crate) fn kind(path: &Path, bytes: &[u8]) -> Kind {
     if bytes.starts_with(b"%PDF-") {
         return Kind::of("application/pdf");
     }
+    if let Some(media_type) = media::by_content(&bytes[..bytes.len().min(media::HEAD)]) {
+        return Kind::of(media_type);
+    }
     let extension = path
         .extension()
         .map(|extension| extension.to_string_lossy().to_ascii_lowercase());
@@ -47,7 +51,9 @@ pub(crate) fn kind(path: &Path, bytes: &[u8]) -> Kind {
         _ => {}
     }
     if std::str::from_utf8(bytes).is_err() {
-        return Kind::of("application/octet-stream");
+        return Kind::of(
+            media::by_extension(extension.as_deref()).unwrap_or("application/octet-stream"),
+        );
     }
     let name = path.file_name().map(|name| name.to_string_lossy());
     Kind {
@@ -99,6 +105,8 @@ fn language(extension: Option<&str>, name: Option<&str>) -> Option<&'static str>
         _ => return None,
     })
 }
+
+mod media;
 
 #[cfg(test)]
 mod tests;
