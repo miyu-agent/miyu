@@ -20,8 +20,12 @@ pub enum Change {
     Update {
         /// 换成的样子。
         entry: Entry,
-        /// 位置变了的：排在哪一条后面（里面的 `None` 是最前）；没变的没有。
-        #[serde(skip_serializing_if = "Option::is_none")]
+        /// 位置变了的：排在哪一条后面（里面的 `None` 是最前，写成 `null`）；没变的没有。
+        #[serde(
+            default,
+            deserialize_with = "crate::relay::present",
+            skip_serializing_if = "Option::is_none"
+        )]
         after: Option<Option<EntryId>>,
     },
     /// 正在写的字接在后面：正文、思考的 `text`，正在写参数的工具的 `args`。
@@ -43,4 +47,19 @@ pub enum Change {
         /// 哪一条。
         id: EntryId,
     },
+}
+
+impl Change {
+    /// 视图流在线上的一条推送读回来（施工 V-D 修，终端要的）：`method` 是 `view.add`、`view.update` 这样，`params` 是推送的
+    /// 参数（带的 `session` 不管）。
+    ///
+    /// # Errors
+    ///
+    /// 不是视图流的推送、参数读不懂的，交回 serde 的错。
+    pub fn read(method: &str, mut params: serde_json::Value) -> Result<Change, serde_json::Error> {
+        if let (Some(op), Some(fields)) = (method.strip_prefix("view."), params.as_object_mut()) {
+            fields.insert("op".to_string(), serde_json::Value::String(op.to_string()));
+        }
+        serde_json::from_value(params)
+    }
 }

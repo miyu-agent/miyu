@@ -139,3 +139,37 @@ fn without_a_source_there_is_no_via() {
     let tool = json(of_kind(&entries, "tool")[0]);
     assert!(tool["title"].get("via").is_none(), "{tool}");
 }
+
+/// 挪到最前的推送（施工 V-D 修，终端报的）：`after` 是 `null`，读回来是「挪到最前」，不是「没挪」；没挪的不带 `after`。
+#[test]
+fn an_update_moved_to_the_front_reads_back_as_moved() {
+    let entry = r#"{"id":"m2","kind":"user","text":"hi","at":"2026-09-25T07:00:01.000Z"}"#;
+    let moved = miyu_view::Change::read(
+        "view.update",
+        serde_json::from_str(&format!(
+            r#"{{"session":"s","entry":{entry},"after":null}}"#
+        ))
+        .expect("JSON"),
+    )
+    .expect("读得懂");
+    assert!(
+        matches!(
+            moved,
+            miyu_view::Change::Update {
+                after: Some(None),
+                ..
+            }
+        ),
+        "{moved:?}"
+    );
+    let stayed = miyu_view::Change::read(
+        "view.update",
+        serde_json::from_str(&format!(r#"{{"session":"s","entry":{entry}}}"#)).expect("JSON"),
+    )
+    .expect("读得懂");
+    assert!(
+        matches!(stayed, miyu_view::Change::Update { after: None, .. }),
+        "{stayed:?}"
+    );
+    on_the_wire(&moved);
+}

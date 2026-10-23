@@ -121,6 +121,7 @@ pub fn same(stage: &Stage) -> Vec<Entry> {
     // 头照门面把推送、条目读回来（施工 V-D）：每一条写成 JSON 再读回来一样。
     for change in &changes {
         round_trip(change);
+        on_the_wire(change);
     }
     for entry in &paged {
         round_trip(entry);
@@ -146,4 +147,19 @@ pub fn json(entry: &Entry) -> serde_json::Value {
 /// 种类是 `kind` 的条目，照先后。
 pub fn of_kind<'a>(entries: &'a [Entry], kind: &str) -> Vec<&'a Entry> {
     entries.iter().filter(|e| json(e)["kind"] == kind).collect()
+}
+
+/// 照视图流在线上的写法（`view.<op>` 加参数，带 `session`，没有 `op`）写一条推送，再照 [`Change::read`] 读回来，和原来的一样
+/// （施工 V-D 修）。
+pub fn on_the_wire(change: &Change) {
+    let mut params = serde_json::to_value(change).expect("写得成 JSON");
+    let op = params
+        .as_object_mut()
+        .and_then(|fields| fields.remove("op"))
+        .and_then(|op| op.as_str().map(str::to_string))
+        .expect("有 op");
+    params["session"] = serde_json::json!("01a10000-0000-7000-8000-000000000001");
+    let back = Change::read(&format!("view.{op}"), params.clone())
+        .unwrap_or_else(|e| panic!("读不回来：{e}\n{params}"));
+    assert_eq!(&back, change, "照线上的写法读回来不一样：{params}");
 }

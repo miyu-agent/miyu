@@ -27,7 +27,7 @@
 | `tooltext`（施工 S-6 上；feature `tool`，默认不开） | `load`（`spec`、`text`，包文件夹自己带字的照 `spec_in`、`text_in`；`say`、`LoadError`）、`Spec`、`Access` | `miyu-tool`、`miyu-kernel` 的 `tool` |
 | `settings`（施工 S-6 上） | `Kind`、`Secret`、`parse::{read, why}`、`problem::{At, Code, Severity, got, nearest, tell}` | `miyu-config` |
 | `http`（施工 S-6 上；feature `http`，默认不开） | `get`、`fetcher`、`Get`、`Got`、`Proxy`、`is_loopback_url` | `miyu-http` |
-| `view`（施工 V-D；feature `view`，默认不开，终端换成照视图流画要的） | `Entry`、`EntryId`、`Body` 和各种条目（`User`、`Reply`、`Group`、`Thought`、`Tool`、`End`、`Media`……）、`Notice` 和各种旁白、`Change`、`Status` 和它的几格（`Doing`、`JobRow`、`Waiting`……）、`NestedItem`、`VERSION`：都能读回来（`Deserialize`），可以没有的格缺着照没有，不认识的格不管（核心加格子，旧的头照样读得懂） | `miyu-view` |
+| `view`（施工 V-D；feature `view`，默认不开，终端换成照视图流画要的） | `Entry`、`EntryId`、`Body` 和各种条目（`User`、`Reply`、`Group`、`Thought`、`Tool`、`End`、`Media`……）、`Notice` 和各种旁白、`Change`、`Status` 和它的几格（`Doing`、`JobRow`、`Waiting`……）、`NestedItem`、`VERSION`：都能读回来（`Deserialize`；视图流的推送照 `Change::read(method, params)` 读，施工 V-D 修），可以没有的格缺着照没有，不认识的格不管（核心加格子，旧的头照样读得懂） | `miyu-view` |
 | `seeds` | `from_image`、`from_rgba`、`Seed`、`MAX`：从一张图挑主题色的候选，头算壁纸的用它，和核心算人格头像的（`persona.list` 的 `seeds`）同一份（施工 P-6 补，`personas.md`「主题色、背景图」第 4 条） | `miyu-seeds` |
 | `heap` | `tune`、`trim`、`stats`、`Stats`、`usage`、`resident`、`Usage`：进程的堆，和核心的同一份；头起来时、还没起别的线程时调一次 `tune`（施工 S-1 补，终端画图量出来的；`docs/designs/23-性能预算.md` F3） | `miyu-heap` |
 | 根 | `CoreCommand`；`testkit` 打开时 `WORKSPACE_ROOT`（钉住的那份检出的仓库根，测试照它读 `resources/`、`docs/designs/samples/`） | 本 crate |

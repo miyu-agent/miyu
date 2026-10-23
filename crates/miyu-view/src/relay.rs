@@ -29,3 +29,13 @@ where
         None => Ok(None),
     }
 }
+
+/// 可以没有、也可以是 `null` 的一格（施工 V-D 修，终端报的）：没有的是 `None`，`null` 是 `Some(None)`。serde 自己读两层的
+/// `Option` 时把 `null` 也当成没有。
+pub(crate) fn present<'de, D, T>(d: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(d).map(Some)
+}

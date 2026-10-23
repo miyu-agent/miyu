@@ -40,7 +40,8 @@
 1. 可以没有的格缺着照没有（空的列表、`false`、0 也是）；不认识的格不管：核心加格子，旧的头照样读得懂。
 2. 只认文字的几格原来写成 `&'static str`（附件的 `kind`、换模型的 `why`、任务的 `why`），改成 `String`，写出去的一个字节不变。
 3. 内核里「先整块读原文、再照 `kind` 分派」的 `By`、`RawJson`，在照 `kind` 分派、`flatten` 的条目里读不成（serde 先把内容攒成中间的样子，它们只认原文）：那几格先读成 `serde_json::Value` 再交给它们（`relay.rs`）。只在读的时候用。
-4. 测试：`tests/support/mod.rs` 的 `same` 把每个测试、三百份随机剧本里投影交出的每一条条目、每一个推送写成 JSON 再读回来，和原来的一样；会话状态同样（`tests/status.rs`）。
+4. 推送的 `view.update` 的 `after`：没有是位置没变，`null` 是挪到最前（施工 V-D 修，终端报的：serde 读两层的 `Option` 把 `null` 也当没有，那一格经 `relay::present` 读）。线上的推送是 `view.<op>` 加参数、不带 `op`，`Change::read(method, params)` 照它读回来（带的 `session` 不管）。
+5. 测试：`tests/support/mod.rs` 的 `same` 把每个测试、三百份随机剧本里投影交出的每一条条目、每一个推送写成 JSON 再读回来、照线上的写法写一条推送再用 `Change::read` 读回来（`on_the_wire`），都和原来的一样；会话状态同样（`tests/status.rs`）；挪到最前的那一种另有一条（`tests/web.rs`）。
 
 **条目**：一条一个 JSON 对象，共有的格：
 

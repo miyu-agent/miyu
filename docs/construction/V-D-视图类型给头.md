@@ -16,3 +16,9 @@
 - `miyu-view` 的测试帮手 `same` 把投影交出的每一条条目、每一个推送写成 JSON 再读回来，和原来的一样；会话状态同样。所有测试、三百份随机剧本都走一遍。
 - 门面 `tests.rs`：转出的每一样钉住；一段真推送读回来再写一字不差；带不认识的格、缺着可以没有的格的条目、状态读得懂。
 - `cargo xtask check` 全过；合了告诉终端提交编号。
+
+### 修（2026-10-23，终端报的）
+
+- `Change::Update` 的 `after` 是两层的 `Option`：`null`（挪到最前）读回来成了「没挪」。serde 读两层的 `Option` 把 `null` 也当没有；那一格改照 `relay::present` 读（没有是 `None`、`null` 是 `Some(None)`）。三百份随机剧本里没出过挪到最前，往返测试没抓到。
+- 线上的推送是 `view.<op>` 加参数、不带 `op`，终端原来自己换；加 `Change::read(method, params)` 照线上的写法读回来。
+- 测试：`same` 里每个推送另照线上的写法写一遍、用 `Change::read` 读回来比相等；`tests/web.rs` 一条专测挪到最前和没挪。
