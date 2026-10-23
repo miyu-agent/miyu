@@ -778,6 +778,7 @@ flowchart LR
 | Z-1 下补 | miyu service 出机读格式 | `--format json`：三个命令都回一行 JSON，成了的是 `installed`、`on`、`file`、`manager`，没成的是 `error`、`step`、`said`，字段名不随语言变，终端照它画「开机启动」开关。施工单见 `Z-1-进程形态.md` |
 | Y-11 上 | 家目录照 XDG 分 | 家目录多 `pictures`、`videos`、`documents`、`downloads`（文件工具照工作区算，握手只告诉管理员）和 `cache`；脚本的缓存挪进 `cache/<来处>/<工具名>/`，场所会话多一层，沙盒里只放开自己那一格；30 天没碰的整格删，核心起来时清所有账号的、场所没了的整层删，脚本跑完清那个账号的。施工单见 `Y-11-家目录照XDG分.md` |
 | Y-11 下 | 扩展拿到放图的地方 | `tool.call` 多一格 `pictures`：会话属主家目录的 `pictures/`（真实位置，不建），扩展画出来、生成的图存这里；会话外面的调用没有。`miyu-render` 的 `render_image` 照它存，在它自己的仓库随后。施工单见 `Y-11-家目录照XDG分.md` |
+| Y-11 下修 | 场所会话不给 pictures | `tool.call` 的 `pictures` 只给本机的会话：场所会话关在自己的工作区里，图存进桥的家目录她就读不到、发不出，几个群还共用一处；扩展照旧存工作区。施工单见 `Y-11-家目录照XDG分.md` |
 | M-1 | 嵌套调用（内核） | 脚本里调的工具挂在父调用或后台任务下面，编号 `<父级>#<n>`；`tool.nested`（不进上下文）、瞬时 `tool.nested_started`；每个父级、整个会话的上限 `jobs.nested_per_parent`、`nested_per_session`；父级结束前收尾记已取消。施工单见 `M-1-嵌套调用.md` |
 | M-2 | 脚本能调哪些工具、交回什么 | 工具的 `clicall`（说明文件、扩展、MCP、脚本开头，个人设置 `clicall.tools.<name>`、`clicall.mcp.<id>`），出厂开五件；`Done.data`；执行器接上嵌套调用。施工单见 `M-2-字段和结果.md` |
 | M-3 上 | 通道和 miyu call（Linux、macOS） | `shell` 起命令前开只给这条命令的端点（Unix 套接字、令牌、进程组），`miyu call` 经它调这个会话的工具；放到后台、到时挪到后台的跟着走；沙盒只放行这一个套接字。施工单见 `M-3-通道和命令.md` |
