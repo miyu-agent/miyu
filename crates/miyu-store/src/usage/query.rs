@@ -120,6 +120,20 @@ pub struct Total {
 }
 
 impl UsageIndex {
+    /// 会话 `root` 和它派的子会话，一层层往下（施工 CX-3，`session.usage_parts` 的 `tree`；同 `query` 的 `tree`）。用不了的
+    /// 只有它自己。调的一方先补。
+    ///
+    /// # Errors
+    ///
+    /// 读不了。
+    pub fn tree(&self, root: &str) -> Result<BTreeSet<String>, UsageError> {
+        let db = self.lock();
+        match db.as_ref() {
+            Some(db) => tree(db, root),
+            None => Ok(BTreeSet::from([root.to_string()])),
+        }
+    }
+
     /// 照 `query` 加起来，一组一行，照分组的几格排。用不了的（打不开）一行都没有。调的一方先补（[`UsageIndex::catch_up`]）。
     ///
     /// # Errors

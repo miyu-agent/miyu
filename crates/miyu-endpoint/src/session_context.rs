@@ -8,6 +8,8 @@
 //!   只露名字的归 `tools.deferred`；对话照谁放进去的拆，记忆的常驻、召回和知识库想起的单列。
 //! - 新会话预览、system 拆全在 CX-1 下：现在只收 `session`。
 
+use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -16,7 +18,7 @@ use serde_json::{Value, json};
 use miyu_config::Words;
 use miyu_kernel::id::SessionId;
 use miyu_kernel::session::Said;
-use miyu_session::{Context, SystemPart};
+use miyu_session::{Context, Spent, SystemPart};
 
 use crate::Core;
 use crate::config::methods::words;
@@ -66,31 +68,81 @@ pub(crate) async fn context(
                 .map_err(|_| Refusal::INTERNAL)?
         }
     };
+    named(core, peer, |namer| shape(&context, namer))
+}
+
+/// `session.usage_parts` 的参数（施工 CX-3）。
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SpentParams {
+    session: String,
+    /// 连它派的子会话一起算，同 `usage.query` 的 `tree`。
+    #[serde(default)]
+    tree: bool,
+}
+
+/// `session.usage_parts`（施工 CX-3）：`{"requests", "input", "output", "parts": [...]}`，见 [`spent_shape`]。
+pub(crate) async fn usage_parts(
+    core: &Arc<Core>,
+    peer: Peer,
+    params: SpentParams,
+) -> Result<Value, Refusal> {
+    let id = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+    // 没有这个会话的照 `session_not_found`，再找它派的子会话。
+    let found = core.sessions.get(core, &id).await?;
+    let mut spent = vec![
+        found
+            .handle
+            .usage_parts()
+            .await
+            .map_err(|_| Refusal::INTERNAL)?,
+    ];
+    if params.tree {
+        for child in crate::usage::tree(core, &id).await {
+            if child == id {
+                continue;
+            }
+            // 读不出来的子会话（删了、坏了）不算，总数照读得出的。
+            if let Ok(found) = core.sessions.get(core, &child).await
+                && let Ok(one) = found.handle.usage_parts().await
+            {
+                spent.push(one);
+            }
+        }
+    }
+    named(core, peer, |namer| spent_shape(&spent, namer))
+}
+
+/// 照连接的语言备好起名字的几样，交给 `f`：块的那句话、工具归哪块（问过的记下）、扩展包的名字。
+fn named(core: &Arc<Core>, peer: Peer, f: impl FnOnce(&Namer) -> Value) -> Result<Value, Refusal> {
     let language = peer.language.to_string();
     let human = words(core, &language)?;
     let word = |part: &str| {
         Words::sentence(&human, &format!("context/part/{part}"), &[])
             .unwrap_or_else(|| part.to_string())
     };
+    let known: RefCell<BTreeMap<String, (String, Option<String>)>> = RefCell::default();
     let tool = |name: &str| {
+        if let Some(found) = known.borrow().get(name) {
+            return found.clone();
+        }
         let (source, _) = source(core, &language, name);
         let text = |key: &str| source[key].as_str().unwrap_or_default().to_string();
-        match text("kind").as_str() {
+        let found = match text("kind").as_str() {
             "mcp" => (format!("tools.mcp:{}", text("id")), Some(text("name"))),
             "package" => (format!("tools.package:{}", text("id")), Some(text("name"))),
             "script" => ("tools.scripts".to_string(), None),
             _ => ("tools.builtin".to_string(), None),
-        }
+        };
+        known.borrow_mut().insert(name.to_string(), found.clone());
+        found
     };
     let appended = |package: &str| package_of(core, &language, package).1;
-    Ok(shape(
-        &context,
-        &Namer {
-            word: &word,
-            tool: &tool,
-            appended: &appended,
-        },
-    ))
+    Ok(f(&Namer {
+        word: &word,
+        tool: &tool,
+        appended: &appended,
+    }))
 }
 
 /// 起名字的几样：编号的那句话、一件工具归哪块（编号、原名）、扩展包的名字。
@@ -201,8 +253,8 @@ fn scale(parts: &mut [Part], used: u64) {
     }
 }
 
-/// 协议上的样子。
-pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
+/// 一块块的，没摊（施工 CX-3 从 [`shape`] 分出来，累计用量也照它）。
+fn tree(context: &Context, namer: &Namer) -> Vec<Part> {
     let breakdown = &context.breakdown;
     let system = context
         .system
@@ -277,13 +329,19 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
         .position(|part| !["messages.user", "messages.assistant"].contains(&part.id.as_str()))
         .unwrap_or(messages.len());
     messages.insert(at, Part::of(memory, "messages.memory"));
-    let mut parts = [
+    vec![
         Part::of(system, "system"),
         Part::of(tools, "tools"),
         Part::leaf(breakdown.demos, "demos", None),
         Part::leaf(breakdown.summary, "summary", None),
         Part::of(messages, "messages"),
-    ];
+    ]
+}
+
+/// 协议上的样子。
+pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
+    let breakdown = &context.breakdown;
+    let mut parts = tree(context, namer);
     if let Some(used) = breakdown.used {
         scale(&mut parts, used);
     }
@@ -309,6 +367,44 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
         }
     }
     answer
+}
+
+/// 累计用量照上下文的块摊（施工 CX-3，`session.usage_parts`）：每次主请求的块照它报的输入摊（叶子照比例、余数照小数
+/// 部分补，同 [`shape`]），照编号加起来；输出单成最后一块 `output`。`{"requests", "input", "output", "parts"}`，块的写法同
+/// `session.context`，加起来是 `input + output`。
+pub(crate) fn spent_shape(spent: &[Spent], namer: &Namer) -> Value {
+    let mut total: Vec<Part> = Vec::new();
+    let (mut requests, mut input, mut output) = (0u64, 0u64, 0u64);
+    for one in spent {
+        requests = requests.saturating_add(one.requests);
+        output = output.saturating_add(one.output);
+        for charged in &one.charged {
+            input = input.saturating_add(charged.input);
+            let mut parts = tree(&charged.context, namer);
+            scale(&mut parts, charged.input);
+            merge(&mut total, parts);
+        }
+    }
+    total.push(Part::leaf(output, "output", None));
+    let parts: Vec<Value> = total
+        .iter()
+        .filter(|part| part.tokens > 0)
+        .map(|part| part.json(namer))
+        .collect();
+    json!({"requests": requests, "input": input, "output": output, "parts": parts})
+}
+
+/// 照编号加进 `into`：有的加上、下面的接着并；没有的照先后接在后面。
+fn merge(into: &mut Vec<Part>, parts: Vec<Part>) {
+    for part in parts {
+        match into.iter_mut().find(|known| known.id == part.id) {
+            Some(known) => {
+                known.tokens = known.tokens.saturating_add(part.tokens);
+                merge(&mut known.children, part.children);
+            }
+            None => into.push(part),
+        }
+    }
 }
 
 #[cfg(test)]

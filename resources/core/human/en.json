@@ -852,6 +852,7 @@
     "context/part/messages.user": "Your messages",
     "context/part/messages.assistant": "AI replies",
     "context/part/messages.reports": "Subagent and background reports",
+    "context/part/output": "AI output",
     "context/part/messages.tool_results": "Tool results",
     "context/part/messages.memory": "Memory",
     "context/part/messages.memory.resident": "Resident memory",

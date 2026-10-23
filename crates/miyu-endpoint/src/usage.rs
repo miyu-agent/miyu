@@ -182,6 +182,32 @@ fn row(group: &[Group], total: Total, first: &str) -> Value {
 /// 订阅的回应里这个会话累计的（施工 9-6 上，`protocol.md` 的 `subscribe`）：和 `usage.query {"session": <它>}` 那一行同一个
 /// 写法、同一个口径（金额照这一刻的 `usage.currency` 排），另加只算主请求的用量（`main`，施工 9-6 上补）、压缩过几次、缓存断了几次。
 /// 会话 `session` 那一支（连它派的子会话）一共用了多少（施工 9-8 补下）：先补再查，在阻塞线程里。读不了的是空的。
+/// 会话 `session` 和它派的子会话（施工 CX-3，`session.usage_parts` 的 `tree`）：先补再查，同 `usage.query` 的 `tree`。读不了的
+/// 记一行、只有它自己。
+pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
+    let usage = Arc::clone(&core.usage);
+    let accounts = core.accounts();
+    let root = session.as_str().to_string();
+    let found = tokio::task::spawn_blocking(move || {
+        for problem in usage.catch_up(&accounts)? {
+            tracing::warn!(target: TARGET, session = problem.source.as_str(), error = problem.error.as_str(), "usage not indexed");
+        }
+        usage.tree(&root)
+    })
+    .await;
+    match found {
+        Ok(Ok(found)) => found
+            .iter()
+            .filter_map(|id| SessionId::parse(id).ok())
+            .collect(),
+        Ok(Err(error)) => {
+            tracing::warn!(target: TARGET, error = %error, "usage not read");
+            vec![session.clone()]
+        }
+        Err(_) => vec![session.clone()],
+    }
+}
+
 pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
     let usage = Arc::clone(&core.usage);
     let accounts = core.accounts();

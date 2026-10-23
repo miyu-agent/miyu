@@ -11,6 +11,7 @@
 | [`session.withdraw`](#sessionwithdraw) | 不打断，退回一条排着队的话 |
 | [`session.tools`](#sessiontools) | 她下一轮能用的工具 |
 | [`session.context`](#sessioncontext) | 上下文一块块各占多少 |
+| [`session.usage_parts`](#sessionusage_parts) | 累计用量照上下文的块分开 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -32,7 +33,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它的账号能看到的会话调，另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -203,6 +204,20 @@
 ```
 
 **出错**：`bad_params`（写了 `session` 又写了 `persona`、`preset`）；找会话的那几种；新会话拼不出来的 `internal`。
+
+## `session.usage_parts`
+
+这个会话累计用了多少，照上下文的块分开（和 `session.context` 同一套块），外加一块 AI 输出。只算主请求；压缩、子代理、回顾这些照用途用 `usage.query` 查。
+
+**参数**：`session`（必写）；`tree`（布尔，可以不写）连它派的子会话一起算。
+
+**回应**：`{"requests", "input", "output", "parts": [...]}`。`requests` 主请求几次，`input` 报的输入（没命中、命中、写缓存）加起来，`output` 输出加起来。`parts` 的块和 `session.context` 一样，最后多一块 `output`；加起来正好是 `input + output`。每次请求的输入照那一刻各块的比例摊开再加起来；命中、没命中不分开摊，所以命中会有一部分算到新内容头上。
+
+```json
+{"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"系统提示","tokens":220000},{"part":"tools","label":"工具说明","tokens":1900000},{"part":"messages","label":"对话","tokens":77880000},{"part":"output","label":"AI 输出","tokens":203822}]}
+```
+
+**出错**：`bad_params`；找会话的那几种。
 
 ## `session.answer`
 

@@ -253,3 +253,41 @@ fn the_breakdown_splits_the_context_by_who_put_it_there() {
         "换了模型：锚是别的模型报的，不算"
     );
 }
+
+/// 回放日志时照一份策略、一段有效历史算各块（施工 CX-3，`session.usage_parts`）：和会话自己的明细是同一个口径，限额、锚、
+/// 用量不算。
+#[test]
+fn a_frame_and_a_history_give_the_same_parts_as_the_session() {
+    let mut session = compacting();
+    hand(&mut session, Some(1_000_000), None);
+    session.handle(send(1, "hi"));
+    session.handle(stored(5));
+    session.handle(hooks_done(
+        turn3(),
+        vec![fact("memory", "memory", "常驻的几条记忆")],
+    ));
+    super::executor::answer(&mut session, 7, "好");
+    let mine = session.breakdown();
+    let frame = crate::session::Frame::of(&session.policy);
+    let replayed = crate::session::breakdown_in(&frame, &session.history, &frame.price);
+    assert_eq!(
+        (replayed.used, replayed.anchor, replayed.limits),
+        (None, None, limits(None, None))
+    );
+    assert_eq!(
+        (
+            replayed.system,
+            &replayed.tools,
+            replayed.demos,
+            replayed.summary,
+            &replayed.said
+        ),
+        (
+            mine.system,
+            &mine.tools,
+            mine.demos,
+            mine.summary,
+            &mine.said
+        )
+    );
+}

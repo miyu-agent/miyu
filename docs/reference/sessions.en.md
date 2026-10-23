@@ -11,6 +11,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.withdraw`](#sessionwithdraw) | Take back one queued message without interrupting |
 | [`session.tools`](#sessiontools) | The tools she can use next turn |
 | [`session.context`](#sessioncontext) | What the context is made of |
+| [`session.usage_parts`](#sessionusage_parts) | Cumulative usage split by context part |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -32,7 +33,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -203,6 +204,20 @@ Part ids: `system` (in composing order: `system.persona`, `system.venue`, `syste
 ```
 
 **Errors**: `bad_params` (`session` together with `persona` or `preset`); the session lookup errors; `internal` when a new session can't be composed.
+
+## `session.usage_parts`
+
+How much this session has used so far, split into the same parts as `session.context`, plus a part for AI output. Main requests only; compaction, subagents, recaps and the like are in `usage.query` by use.
+
+**Params**: `session` (required); `tree` (boolean, optional) to include the subagent sessions it dispatched.
+
+**Response**: `{"requests", "input", "output", "parts": [...]}`. `requests` is how many main requests, `input` the reported input (uncached, cache read, cache write) added up, `output` the output added up. `parts` are as in `session.context` with a final `output` part; they add up to exactly `input + output`. Each request's input is split by its parts' shares at that moment and then summed; cached and uncached input are not split separately, so some cached input lands on newer content.
+
+```json
+{"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"System prompt","tokens":220000},{"part":"tools","label":"Tool definitions","tokens":1900000},{"part":"messages","label":"Conversation","tokens":77880000},{"part":"output","label":"AI output","tokens":203822}]}
+```
+
+**Errors**: `bad_params`; the session lookup errors.
 
 ## `session.answer`
 

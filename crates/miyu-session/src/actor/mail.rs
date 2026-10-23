@@ -74,8 +74,12 @@ impl Actor {
                 self.next_tools(reply);
                 Mail::Done
             }
-            Message::Context(reply) => {
+            Message::Context(crate::handle::context::Asked::Now(reply)) => {
                 self.context(reply);
+                Mail::Done
+            }
+            Message::Context(crate::handle::context::Asked::Spent(reply)) => {
+                self.usage_parts(reply);
                 Mail::Done
             }
             Message::Unsubscribed => self.watch(false),

@@ -1,14 +1,17 @@
 //! 这时的上下文一块块的（施工 CX-1 上，`protocol.md` 的 `session.context`）：照有效历史组装一次请求，system、每件工具、示范
 //! 对话、检查点摘要各估一次，对话里的每条照是谁放进去的归（人说的、她说的、工具的结果，事实照模块和类别），用和压缩线同一个
-//! 本地估算器（`estimate.rs`）；用量、锚同 [`Session::context_used`]。只在头问的时候算，只读，不出动作。
+//! 本地估算器（`estimate.rs`）；用量、锚同 [`Session::context_used`]。只在头问的时候算，只读，不出动作。施工 CX-3 起回放日志
+//! 也照同一套算（[`Frame`]、[`breakdown_in`]）：累计用量照每次主请求那一刻的各块摊。
 
 use super::ContextLimits;
 use crate::estimate::{self, Flat, Price};
 use crate::event::Body;
+use crate::history::History;
 use crate::id::{FactKind, ModuleId};
 use crate::origin::By;
+use crate::request::Request;
 use crate::request::json;
-use crate::session::Session;
+use crate::session::{Policy, Session};
 
 /// 没有压缩的策略（算不出图、文件的价钱）时，图、文件照这个算：不算，只看字（头也只拿它看个大概）。
 const NO_PRICE: Flat = Flat { image: 0, file: 0 };
@@ -67,28 +70,35 @@ impl Breakdown {
     }
 }
 
-impl Session {
-    /// 这时的上下文一块块的（施工 CX-1 上）：会话 actor 收到头问的时候向内核要一份。
-    pub fn breakdown(&self) -> Breakdown {
-        let request = self.policy.assembler.assemble(&self.history);
-        let priced = self.price();
-        let price: &dyn Price = match &priced {
-            Some(price) => price,
-            None => &NO_PRICE,
-        };
-        let demos = request.messages[..request.stable]
-            .iter()
-            .map(|message| estimate::message(message, price))
-            .sum();
-        let anchor = self.limits.as_ref().and_then(|limits| {
-            estimate::anchor(&self.history)
-                .filter(|anchor| anchor.model == limits.model)
-                .map(|anchor| anchor.reported)
-        });
-        Breakdown {
-            limits: self.context_limits(),
-            used: self.used(&request),
-            anchor,
+/// 一份策略里不随对话变的几块（施工 CX-3）：system、每件工具、示范对话，照组装一段空的历史估；图、文件照策略里压缩的价钱，
+/// 没有压缩的不算图、文件的价钱。回放日志时一份快照算一次。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Frame {
+    /// system 一整段。
+    pub system: u64,
+    /// 每件工具，照工具面的先后。
+    pub tools: Vec<(String, u64)>,
+    /// 示范对话。
+    pub demos: u64,
+    /// 图、文件的价钱。
+    pub price: Flat,
+}
+
+impl Frame {
+    /// 照策略 `policy` 算。
+    pub fn of(policy: &Policy) -> Frame {
+        let price = policy
+            .compaction
+            .as_ref()
+            .map_or(NO_PRICE, |compaction| compaction.price);
+        Frame {
+            price,
+            ..Frame::from_request(&policy.assembler.assemble(&History::default()), &price)
+        }
+    }
+
+    fn from_request(request: &Request, price: &dyn Price) -> Frame {
+        Frame {
             system: estimate::text(&request.system),
             tools: request
                 .tools
@@ -98,54 +108,96 @@ impl Session {
                     (tool.name.clone(), estimate::text(&spec))
                 })
                 .collect(),
-            demos,
-            summary: self.summary_tokens(),
-            said: self.spoken(price),
+            demos: request.messages[..request.stable]
+                .iter()
+                .map(|message| estimate::message(message, price))
+                .sum(),
+            price: NO_PRICE,
         }
     }
+}
 
-    /// 检查点的摘要：清空的检查点什么都不出（同组装）。
-    fn summary_tokens(&self) -> u64 {
-        match self.history.checkpoint().map(|checkpoint| &checkpoint.body) {
-            Some(Body::ContextCompacted(compacted))
-                if compacted.trigger != Some(crate::event::CompactTrigger::Clear) =>
+/// 照 `frame` 和一段有效历史 `history` 算各块（施工 CX-3，回放日志用）：限额、锚、用量不算。
+pub fn breakdown_in(frame: &Frame, history: &History, price: &dyn Price) -> Breakdown {
+    Breakdown {
+        limits: ContextLimits {
+            window: None,
+            compaction_line: None,
+        },
+        used: None,
+        anchor: None,
+        system: frame.system,
+        tools: frame.tools.clone(),
+        demos: frame.demos,
+        summary: summary_tokens(history),
+        said: spoken(history, price),
+    }
+}
+
+impl Session {
+    /// 这时的上下文一块块的（施工 CX-1 上）：会话 actor 收到头问的时候向内核要一份。
+    pub fn breakdown(&self) -> Breakdown {
+        let request = self.policy.assembler.assemble(&self.history);
+        let priced = self.price();
+        let price: &dyn Price = match &priced {
+            Some(price) => price,
+            None => &NO_PRICE,
+        };
+        let anchor = self.limits.as_ref().and_then(|limits| {
+            estimate::anchor(&self.history)
+                .filter(|anchor| anchor.model == limits.model)
+                .map(|anchor| anchor.reported)
+        });
+        Breakdown {
+            limits: self.context_limits(),
+            used: self.used(&request),
+            anchor,
+            ..breakdown_in(&Frame::from_request(&request, price), &self.history, price)
+        }
+    }
+}
+
+/// 检查点的摘要：清空的检查点什么都不出（同组装）。
+fn summary_tokens(history: &History) -> u64 {
+    match history.checkpoint().map(|checkpoint| &checkpoint.body) {
+        Some(Body::ContextCompacted(compacted))
+            if compacted.trigger != Some(crate::event::CompactTrigger::Clear) =>
+        {
+            estimate::text(&compacted.summary)
+        }
+        _ => 0,
+    }
+}
+
+/// 有效历史里的每条照谁放进去的加起来。
+fn spoken(history: &History, price: &dyn Price) -> Vec<(Said, u64)> {
+    let mut said: Vec<(Said, u64)> = Vec::new();
+    for event in history.ordered() {
+        let which = match &event.body {
+            // 旁听的场所消息不进上下文（同组装）。
+            Body::MessageUser(message)
+                if message.venue.as_ref().is_some_and(|venue| venue.ambient) =>
             {
-                estimate::text(&compacted.summary)
+                continue;
             }
-            _ => 0,
-        }
-    }
-
-    /// 有效历史里的每条照谁放进去的加起来。
-    fn spoken(&self, price: &dyn Price) -> Vec<(Said, u64)> {
-        let mut said: Vec<(Said, u64)> = Vec::new();
-        for event in self.history.ordered() {
-            let which = match &event.body {
-                // 旁听的场所消息不进上下文（同组装）。
-                Body::MessageUser(message)
-                    if message.venue.as_ref().is_some_and(|venue| venue.ambient) =>
-                {
-                    continue;
-                }
-                Body::MessageUser(_) => Said::User,
-                Body::MessageAssistant(_) => Said::Assistant,
-                Body::ToolResult(_) => Said::ToolResult,
-                Body::ChildReported(_) | Body::JobReported(_) => Said::Report,
-                Body::ContextInjected(fact) => Said::Fact {
-                    module: match &event.by {
-                        By::Module(module) => Some(module.id.clone()),
-                        _ => None,
-                    },
-                    kind: fact.kind.clone(),
+            Body::MessageUser(_) => Said::User,
+            Body::MessageAssistant(_) => Said::Assistant,
+            Body::ToolResult(_) => Said::ToolResult,
+            Body::ChildReported(_) | Body::JobReported(_) => Said::Report,
+            Body::ContextInjected(fact) => Said::Fact {
+                module: match &event.by {
+                    By::Module(module) => Some(module.id.clone()),
+                    _ => None,
                 },
-                _ => continue,
-            };
-            let tokens = estimate::event(event, price);
-            match said.iter_mut().find(|(known, _)| *known == which) {
-                Some((_, sum)) => *sum = sum.saturating_add(tokens),
-                None => said.push((which, tokens)),
-            }
+                kind: fact.kind.clone(),
+            },
+            _ => continue,
+        };
+        let tokens = estimate::event(event, price);
+        match said.iter_mut().find(|(known, _)| *known == which) {
+            Some((_, sum)) => *sum = sum.saturating_add(tokens),
+            None => said.push((which, tokens)),
         }
-        said
     }
+    said
 }

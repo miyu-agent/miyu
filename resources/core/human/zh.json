@@ -836,6 +836,7 @@
     "context/part/messages.user": "你说的",
     "context/part/messages.assistant": "AI 说的",
     "context/part/messages.reports": "子代理和后台命令的回报",
+    "context/part/output": "AI 输出",
     "context/part/messages.tool_results": "工具结果",
     "context/part/messages.memory": "记忆",
     "context/part/messages.memory.resident": "常驻记忆",

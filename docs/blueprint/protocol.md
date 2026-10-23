@@ -172,6 +172,7 @@
 | `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
 | `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
 | `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上）；不写会话的照新会话会拿到的算（CX-1 下） |
+| `session.usage_parts` | 这个会话（可连子代理）累计用了多少，照上下文的块分开：每次主请求的输入照那一刻各块的比例摊，输出单成一块（施工 CX-3） |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -524,6 +525,21 @@
 1. 只在被问时算：会话照有效历史组装一次请求、各块估一次，只看不动，不碰回合的热路径（`session/actor.md`）。
 2. 不写 `session` 的（CX-1 下）：和 `session.create` 照同一份拼（找预设、人格，拼工具面、快照，会用的模型的限额），只拼不造、不写盘；没有对话，`basis` 是 `estimated`。
 3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`；新会话拼不出来（人格读不出来）：`internal`。权限同 `session.recap`。
+
+**`session.usage_parts`**（施工 CX-3，2026-10-23 项目主人要「本会话累计包含上下文明细里所有项目」，口径主会话定）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `tree` | 布尔，不写是 `false` | 连它派的子会话一起算，同 `usage.query` 的 `tree` |
+
+回应 `{"requests", "input", "output", "parts": [...]}`：`requests` 是主请求有几次，`input` 是报的输入（没命中、命中、写缓存）加起来，`output` 是输出加起来；`parts` 的块、编号、`label` 同 `session.context`，最后多一块 `output`（AI 输出）。`parts` 加起来正好是 `input + output`，上一层是下面的和，是 0 的块不交。
+
+1. 只算主请求：同 `usage.query` 分组 `use` 的 `main`，连子会话的是 `subagent`；压缩、回顾、起标题、记忆这些照用途查 `usage.query`，不进块。报没报用量都算一次，没报的（被打断的）不摊。三处核得上：`requests`、`input`、`output` 和 `usage.query` 同一个会话（连子会话的照 `tree`）主请求那几行一样；只有一次请求的会话，`input + output` 就是 `session.context` 的 `anchor`。
+2. 怎么摊：照日志回放有效历史，每次主请求在它看到的那一条（`model.called` 的 `seen`）算那一刻各块的估值（同 `session.context`：system、工具、示范对话照那一刻用的快照，换了策略的到下一个回合开始才换；对话照谁放进去的），把它报的输入照比例摊开（叶子照比例、余数照小数部分补），再照编号加起来。
+3. v1 命中、没命中不分开摊，只摊输入总数（主会话定）：命中多半是前缀（system、工具、老对话），照比例摊会把一部分命中算到新内容（最近的对话、工具结果）头上，新内容的块偏大、前缀的块偏小；总数不受影响。估算器在各块上的偏差（中文、代码、看不到的思考）照 `session.context` 一样带着。
+4. 只在被问时读盘算，不碰回合：会话在阻塞线程里读自己的日志回放，一份快照只备一次。读不出来的子会话（删了、坏了）不算。
+5. `session` 写法不对、有别的参数：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 

@@ -64,8 +64,14 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉自己名下的，属主照 `checks.rs` 查。
         "session.delete" => Needs(SessionsDrive),
         // 读会话里的东西。
-        "session.list" | "session.recap" | "session.tools" | "session.context" | "view.page"
-        | "view.detail" | "job.output" => Needs(EventsRead),
+        "session.list"
+        | "session.recap"
+        | "session.tools"
+        | "session.context"
+        | "session.usage_parts"
+        | "view.page"
+        | "view.detail"
+        | "job.output" => Needs(EventsRead),
         "events.append" => Needs(EventsWrite),
         // 代表平台上的人、场所的原语（`venue.delivered`、`venue.recalled` 是 `events.append` 里只给桥的两种事件）。
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"

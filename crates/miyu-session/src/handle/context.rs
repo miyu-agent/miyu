@@ -48,7 +48,48 @@ pub struct Context {
     pub offered: Vec<Offered>,
 }
 
+/// 头问的是哪一样（施工 CX-3：两样走同一条消息）。
+#[derive(Debug)]
+pub(crate) enum Asked {
+    /// 这时的上下文一块块的。
+    Now(oneshot::Sender<Context>),
+    /// 累计用量照上下文的块摊（`session.usage_parts`）。
+    Spent(oneshot::Sender<Spent>),
+}
+
+/// 一次主请求（施工 CX-3）：发出去那一刻的上下文一块块的，和供应商报的输入（没命中、命中、写缓存加起来）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Charged {
+    /// 那一刻的明细：限额、锚、用量不算。
+    pub context: Context,
+    /// 报的输入。
+    pub input: u64,
+}
+
+/// 这个会话的累计用量照上下文的块摊（施工 CX-3，`session.usage_parts`）：只算主请求（同 `usage.query` 的 `use` 是
+/// `main`、子会话的是 `subagent`），照日志一条条回放。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Spent {
+    /// 主请求有几次（报没报用量都算，同 `usage.query` 的 `requests`）。
+    pub requests: u64,
+    /// 报了用量的那几次，每次一份。
+    pub charged: Vec<Charged>,
+    /// 输出加起来。
+    pub output: u64,
+}
+
 impl Handle {
+    /// 累计用量照上下文的块摊（施工 CX-3）。
+    ///
+    /// # Errors
+    ///
+    /// 会话停了。
+    pub async fn usage_parts(&self) -> Result<Spent, Stopped> {
+        let (reply, answer) = oneshot::channel();
+        self.send(Message::Context(Asked::Spent(reply)))?;
+        answer.await.map_err(|_| Stopped)
+    }
+
     /// 这时的上下文一块块的。
     ///
     /// # Errors
@@ -56,7 +97,7 @@ impl Handle {
     /// 会话停了。
     pub async fn context(&self) -> Result<Context, Stopped> {
         let (reply, answer) = oneshot::channel();
-        self.send(Message::Context(reply))?;
+        self.send(Message::Context(Asked::Now(reply)))?;
         answer.await.map_err(|_| Stopped)
     }
 }

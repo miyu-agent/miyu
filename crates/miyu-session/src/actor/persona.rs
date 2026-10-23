@@ -437,6 +437,7 @@ mod recast;
 mod recast_tests;
 #[cfg(test)]
 mod shelf_tests;
+mod spent;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

@@ -249,6 +249,9 @@ pub(crate) fn call<'a>(
         "session.tools" => answer(move || async move {
             crate::session_tools::tools(core, peer, caller.acting_for(), params(request)?).await
         }),
+        "session.usage_parts" => answer(move || async move {
+            crate::session_context::usage_parts(core, peer, params(request)?).await
+        }),
         "session.context" => answer(move || async move {
             crate::session_context::context(core, peer, caller.acting_for(), params(request)?).await
         }),

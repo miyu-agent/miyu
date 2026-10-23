@@ -1,5 +1,5 @@
 //! 这时的上下文一块块的（施工 CX-1 上，`session.context`）：内核的明细加上照现在的快照拆的 system、标的工具面。只看不换。
-//! 施工 CX-1 下起 system 照快照原来的料重拼一遍、照拼的先后全拆（[`relaid`]），对不上的才照单存的几块拆（[`split`]）。
+//! 施工 CX-1 下起 system 照快照原来的料重拼一遍、照拼的先后全拆，对不上的才照单存的几块拆（[`system_of`]）。
 
 use tokio::sync::oneshot;
 
@@ -31,10 +31,7 @@ impl Actor {
         tokio::spawn(async move {
             let context = blocking(move || {
                 let snapshot = &refresh.snapshot;
-                let system = match relaid(&refresh) {
-                    Some(layout) => pieces(&layout, breakdown.system),
-                    None => split(snapshot, breakdown.system),
-                };
+                let system = system_of(&refresh, snapshot, breakdown.system);
                 let offered = miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref());
                 Context {
                     breakdown,
@@ -45,6 +42,19 @@ impl Actor {
             .await;
             super::super::answer(reply, context);
         });
+    }
+}
+
+/// 快照 `snapshot` 的 system 拆开，加起来是 `total`：照原来的料重拼着认得出的照它（[`relaid_for`]），认不出的照单存的几块
+/// （[`split`]）。读文件，在阻塞线程里调。
+pub(super) fn system_of(
+    refresh: &super::Refresh,
+    snapshot: &Snapshot,
+    total: u64,
+) -> Vec<(SystemPart, u64)> {
+    match relaid_for(refresh, snapshot) {
+        Some(layout) => pieces(&layout, total),
+        None => split(snapshot, total),
     }
 }
 
@@ -81,10 +91,16 @@ pub(super) fn split(snapshot: &Snapshot, total: u64) -> Vec<(SystemPart, u64)> {
 /// 照快照原来的料重拼一遍（人设照这时的文件），和快照的 system 逐字节一样的照它；不一样的（旧核心造的会话、人设改过，施工
 /// CX-2）逐块到快照的 system 里照先后找原文（[`matched`]）。拼不出来的（人设文件没了、
 /// 裸的）没有，照 [`split`] 拆。读文件，在阻塞线程里调。
+#[cfg(test)]
 pub(super) fn relaid(refresh: &super::Refresh) -> Option<Layout> {
-    let (new, layout) = laid(&refresh.resources, parts_of(refresh)?).ok()?;
+    relaid_for(refresh, &refresh.snapshot)
+}
+
+/// 照快照 `snapshot` 原来的料重拼着认 system 一块块在哪（回放日志时也对着旧快照，施工 CX-3），规矩同 `relaid`。
+pub(super) fn relaid_for(refresh: &super::Refresh, snapshot: &Snapshot) -> Option<Layout> {
+    let (new, layout) = laid(&refresh.resources, parts_for(refresh, snapshot)?).ok()?;
     let layout = layout?;
-    let old = &refresh.snapshot.system;
+    let old = &snapshot.system;
     if new.system == *old {
         return Some(layout);
     }
@@ -124,8 +140,13 @@ pub(super) fn matched(old: &str, fresh: &str, layout: &Layout) -> Layout {
 }
 
 /// 快照原来的料：人设照这时的文件（找不到的、裸的没有），别的照快照里记的。
+#[cfg(test)]
 pub(super) fn parts_of(refresh: &super::Refresh) -> Option<Parts> {
-    let old = &refresh.snapshot;
+    parts_for(refresh, &refresh.snapshot)
+}
+
+/// 快照 `old` 原来的料：人设照这时的文件（找不到的、裸的没有），别的照快照里记的。
+fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
     if old.bare {
         return None;
     }

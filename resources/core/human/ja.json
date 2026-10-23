@@ -836,6 +836,7 @@
     "context/part/messages.user": "あなたの発言",
     "context/part/messages.assistant": "AIの返事",
     "context/part/messages.reports": "サブエージェントとバックグラウンドの報告",
+    "context/part/output": "AIの出力",
     "context/part/messages.tool_results": "ツールの結果",
     "context/part/messages.memory": "記憶",
     "context/part/messages.memory.resident": "常駐の記憶",

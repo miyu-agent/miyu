@@ -77,7 +77,7 @@ pub(crate) enum Message {
     /// 下一次请求会发的工具（施工 S-T，`handle/tools.rs`）。
     Tools(oneshot::Sender<Vec<miyu_policy::Offered>>),
     /// 这时的上下文一块块的（施工 CX-1 上，`handle/context.rs`）。
-    Context(oneshot::Sender<context::Context>),
+    Context(context::Asked),
     /// 放下了一个订阅（施工 7-9）：订阅被丢掉时由它自己送来，连同要订阅、没等到回答就不等了的。
     Unsubscribed,
     /// 有计划地停下：它的事件都落了盘，actor 退出以前交回一声。
