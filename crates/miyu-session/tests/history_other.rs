@@ -1,6 +1,6 @@
 //! `history` 读别的会话，执行器这一头（施工 C-4，`docs/blueprint/cross-session.md` 第二条、第九条）：真的会话
 //! actor，`session` 参数认出来的另一个会话，读的是它磁盘上真实的日志，不载入它、在跑的也读得到；子会话没有列会话的
-//! 端口，写了 `session` 直接拒。
+//! 端口，写了 `session` 直接拒。脚本里经 `miyu call` 调的照样读得到（施工 C-10）。
 
 use std::sync::Arc;
 
@@ -232,4 +232,60 @@ async fn a_group_session_cannot_use_the_session_parameter() {
         last_result(&log),
         "This session cannot read other sessions.\n"
     );
+}
+
+/// 脚本里经 `miyu call` 调的 `history` 也读得到别的会话（施工 C-10）：以前嵌套调用没交列会话的端口，写了 `session` 一律回
+/// 「This session cannot read other sessions.」，她只好直接去解析日志文件。
+#[tokio::test]
+async fn a_script_reads_another_session_through_history() {
+    let home = Home::new();
+    let script_b = Script::new([Play::Says("按会话分区，别再用一张大表了。")]);
+    let b = home
+        .create_full(
+            &script_b,
+            &basesystem(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    one_turn(&home, &b, 1).await;
+    let b_id = b.id().clone();
+
+    // A：真的基础系统，`shell` 换成在脚本里调 `history` 读 B 的假的。
+    let args: &'static str =
+        Box::leak(format!(r#"{{"session":"{}"}}"#, b_id.short()).into_boxed_str());
+    let shell = miyu_tool::testkit::Fake::new(
+        "shell",
+        miyu_kernel::tool::Access::Read,
+        miyu_tool::testkit::Act::Calls(vec![("history", args)]),
+    );
+    let tools = miyu_basesystem::tools(home.resources.path())
+        .expect("读得出")
+        .into_iter()
+        .filter(|tool| tool.spec().name != "shell")
+        .chain([shell as Arc<dyn miyu_tool::Tool>]);
+    let table = Arc::new(Table {
+        root: home.root.clone(),
+        listed: vec![main(&b_id)],
+    });
+    let script_a = Script::new([
+        Play::calls(&[("shell", r#"{"command":"python3 read.py"}"#)]),
+        Play::Says("看到了。"),
+    ]);
+    let lines = Lines {
+        sessions: Some(Arc::clone(&table) as Arc<dyn SessionPort>),
+        ..Lines::default()
+    };
+    let a = home
+        .create_full(
+            &script_a,
+            &Catalog::new(tools).expect("合写法"),
+            Opening::default(),
+            lines,
+        )
+        .await;
+    let log = one_turn(&home, &a, 1).await;
+    let said = last_result(&log);
+    assert!(said.starts_with("history ok"), "{said}");
+    assert!(said.contains("按会话分区，别再用一张大表了。"), "{said}");
 }

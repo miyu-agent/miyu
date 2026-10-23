@@ -223,7 +223,8 @@ impl Tools {
             agents: None,
             messages: None,
             jobs: None,
-            sessions: None,
+            // 列会话、读别的会话照直接调用的给（施工 C-10）：只读，以前没交，脚本里的 `history` 读不了别的会话。
+            sessions: self.agents.as_ref().and_then(crate::sessions::for_call),
             usage: None,
             questions: None,
             memory: self

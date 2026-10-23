@@ -469,7 +469,7 @@ No notice came within 12 hours, so the request was dropped.
 | `crates/miyu-basesystem/tests/sessions.rs` | 输出一字不差、第一行是自己、新的在前、一样的照编号、未命名的、字段转义、时区、分页、过了结尾、没有别的、撞了放长、参数不对不问端口、没有端口、列不出来、叫停。每种说法中文、英文、日文都换得出字 | C-3 |
 | `crates/miyu-tool/src/sessions/tests.rs` | 认会话编号：整个编号、8 位和 12 位的后缀对上，别的写法对不上，撞了是不止一个 | C-3 |
 | `crates/miyu-session/tests/sessions.rs` | 执行器照这个会话的属主要、拿掉她自己，没有会话表的照没有别的，载入的主会话照样列。工具面：本机主会话有 `sessions`，子会话、群没有，别的一件不少；子会话调它照没有的工具拒 | C-3 |
-| `crates/miyu-basesystem/src/history/tests/other.rs`、`crates/miyu-session/tests/history_other.rs` | 读别的会话：只读、不载入、在跑的也读、时区照自己的。找不到、撞了、子会话和群拒 | C-4 |
+| `crates/miyu-basesystem/src/history/tests/other.rs`、`crates/miyu-session/tests/history_other.rs` | 读别的会话：只读、不载入、在跑的也读、时区照自己的。找不到、撞了、子会话和群拒；脚本里经 `miyu call` 调的也读得到（C-10） | C-4、C-10 |
 | `crates/miyu-basesystem/tests/send_message.rs` | `to` 的认法和先后。长度上限（父子之间也管）。每种拒绝、`held`、`duplicate` 的说法。子会话写会话编号拒。说明里那几句在 | C-5 |
 | `crates/miyu-basesystem/tests/send_message/watch.rs` | `notify_when_idle`：只订不发、端口一次不问、效果里是整个编号；带话的先发，送到了（`sent`、`held`、一模一样的）才订，被拒、太长的整次不订；订子代理、父会话整次拒、留言也不发；订自己拒；两样都没有的参数不对；不能找别的会话的照旧拒；说法两种语言都换得出字 | C-6 |
 | `crates/miyu-session/tests/messages_peer.rs` | 执行器：命令编号、`by`、没载入的先载入、没人看着的一次性会话交回 `held`、三种拒绝对上三句、运行日志不带话的字 | C-5 |
