@@ -35,17 +35,18 @@ pub(crate) fn local(row: &Row) -> bool {
     row.venue == LOCAL
 }
 
-/// 管理员的会话，从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。`dream`
+/// 账号 `account` 的会话（施工 Y-12 上，以前一律是管理员的），从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。`dream`
 /// 写了的照它挑整理会话（施工 D-1 下）：`true` 只要整理会话，`false` 不要。
 pub(crate) async fn list(
     core: &Core,
+    account: &AccountId,
     oneshot: bool,
     dream: Option<bool>,
     limit: Option<usize>,
 ) -> Result<Vec<Value>, Refusal> {
     let root = core.root.clone();
-    let admin = core.admin.clone();
-    let index = core.index.clone();
+    let account = account.clone();
+    let index = core.index_for(&account);
     let busy = core.sessions.busy_ids().await;
     let window = windows(core);
     let pick = move |row: &Row| {
@@ -56,7 +57,7 @@ pub(crate) async fn list(
     let scanned = tokio::task::spawn_blocking(move || {
         let mut listed = scan(
             &root,
-            &admin,
+            &account,
             Some(&index),
             &busy,
             pick,
@@ -65,7 +66,7 @@ pub(crate) async fn list(
         )?;
         tokens::fill(&mut listed, &index);
         context::fill(&mut listed, &window);
-        defaults::fill(&mut listed, &index, &root, &admin);
+        defaults::fill(&mut listed, &index, &root, &account);
         Ok::<_, std::io::Error>(listed)
     })
     .await;

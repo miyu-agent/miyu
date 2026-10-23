@@ -298,6 +298,8 @@
 | `dream` | 布尔，可以不写 | 整理会话（施工 D-1 下，设计 41 DS7）：`true` 只要它们，`false` 不要它们，不写都列 |
 | `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
 
+只列属主是这个连接的账号的本机会话（施工 Y-12 上；以前一律列管理员的，声明了系统账号的桥列出来的也是管理员的）。
+
 回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上；只在空会话里 `/goal` 开的照目标原文的第一行，施工 X-8 补修：第一句是续轮消息，以前露出 `<goal_round>` 标签），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。`default_workspace` 是这个会话的默认工作区（施工 5-14 中）：主会话是它自己的 `<数据根>/home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的顺着 `parent` 一路追到主会话的那一个（同 `session.created` 的 `workspace_from`），绝对路径；头拿 `cwd` 和它比，一样的写「默认工作区」（`list/defaults.rs`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写。整理会话（施工 D-1 下，设计 41）多 `kind: "dream"` 和 `dream`（`session.created` 的那一格原样：`persona`、`session`、`manual`、`from`），别的会话不写；她的 `sessions` 工具不列它们。会话列表的推送 `sessions.changed` 的一项同样带这些： 终端集成开的会话多一格 `origin: "terminal"`（施工 8-33 四补，`session.created` 的 `origin`），别的没有。
 
 ```json
@@ -1182,7 +1184,7 @@
 3. 什么时候推：造了会话（主会话、子会话、一次性的）；改名、置顶（人改的、内核起的标题都算）；一轮开始（`busy`、`cwd`、`last_active` 跟着变）；一轮结束、会话空下来（`busy` 去掉，`last_active` 跟着变）；删了。`last_active` 只在这几个时刻跟着走，不是每条事件都推。「未读」由头自己拿 `last_active` 和自己看过的比。
 4. 先后：一项一项照核心里一个排队的任务算，一个接一个；订阅的回应里的列表也由它算。所以回应里的列表包含回应之前的每一次变化，之后推的每一条都比它新，旧的一项盖不住新的。推送和别的命令（例如 `session.create`）的回应之间不保证先后：推的是整项，晚到的照样对。
 5. 读得太慢、掉了队：推 `resync`（`{"stream": "sessions"}`），这个订阅停了，头重新订阅。
-6. 场所会话以后也不进这个流（`18-通讯平台.md` 第十一节）。
+6. 场所会话以后也不进这个流（`18-通讯平台.md` 第十一节）。只有属主是这个连接的账号的会话（施工 Y-12 上）：回应里的列表照他的会话列表的索引算，推送记着那个会话的属主，转发时只给属主的连接；别人的会话变了、删了，他收不到。
 7. 怎么知道变了（`session/actor.md`「推送和订阅」第 7 条）：会话每送完一批，照这一批推过的事件（`session.created`、`session.meta_changed`、`turn.started`、`turn.ended`）和忙不忙变没变，经会话表的端口报一声「这个会话的那一项变了」（`SessionPort::listing`）；端点照会话列表的索引只算这一个会话的一项（和 `session.list` 同一个函数）。造会话、删会话由会话表自己报。不靠订阅每个会话的事件流：订阅着就算有头在看着它（`subscribe` 第 8 条）。
 
 **软件包列表的推送**（施工 F-8 三补，0.0.1 差距清单「别的头装卸软件包时推」，主会话定的形状：照会话列表、扩展的状态的推送）
@@ -1663,6 +1665,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
 | `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下） | 声明了系统账号的桥一次传、分块传的都存在它名下，管理员名下没有；不写 `session` 的 `blob.get`、`model.call` 的图照它自己名下找；它往主人的私聊里发的附件拷进主人名下；声明了系统账号的包工具交回的图从它名下拷；核心起来时别的账号留下的分块暂存也清 |
+| `crates/miyu-endpoint/tests/list_account.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 会话列表照连接的账号：桥列会话、订阅会话列表只有它自己的，管理员列不到桥的；会话列表的推送只转属主是这个连接的账号的 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
 | `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |
 | `crates/miyu-endpoint/tests/tools.rs` | 造会话、载入时用核心的工具目录；核心的沙盒造会话、载入时都交给会话，沙盒用不了的核心上执行命令没人能确认就拒（施工 5-4 上） |

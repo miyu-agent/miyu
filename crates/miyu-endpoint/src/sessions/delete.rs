@@ -80,15 +80,13 @@ impl Sessions {
                 trash::discard(&root, &account, &session, at)
                     .map_err(|error| (session.clone(), error))?;
                 // 挪走了才删那一行（施工 3-8 七补）：半路崩了，还在原处的照旧列得出来。
-                if let Some(index) = &index {
-                    forget(index, &session);
-                }
+                forget(&index, &session);
                 // 回合库里它的也拿掉（施工 R-2 上，`memory.md` 第一条第 7 款）：派生的，拿不掉只记一行，不挡删会话。
                 if let Err(error) = recall.forget_session(&remembered, &session) {
                     tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "memory index not updated");
                 }
                 // 会话列表的推送（施工 9-5）：挪走一个报一个。
-                listing.listing.removed(&listing, session);
+                listing.listing.removed(&listing, session, account.clone());
                 Ok(())
             })
         })

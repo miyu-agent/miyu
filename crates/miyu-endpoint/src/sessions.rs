@@ -281,7 +281,7 @@ impl Sessions {
             memory_scope: MemoryScope::Off,
             venue: child.venue,
             sandbox_cache: core.sandbox_cache_of(&child.owner),
-            index: core.index_for(&child.owner),
+            index: Some(core.index_for(&child.owner)),
             usage: core.usage_for(&child.owner),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),

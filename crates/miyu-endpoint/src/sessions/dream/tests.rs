@@ -225,7 +225,7 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
     let (core, _root, admin) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
-    let all = crate::list::list(&core, false, None, None)
+    let all = crate::list::list(&core, &admin, false, None, None)
         .await
         .expect("列得出");
     let item = all
@@ -235,11 +235,11 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
     assert_eq!(item["kind"], "dream");
     assert_eq!(item["dream"]["persona"], "engineer");
     assert_eq!(item["dream"]["manual"], true);
-    let only = crate::list::list(&core, false, Some(true), None)
+    let only = crate::list::list(&core, &admin, false, Some(true), None)
         .await
         .expect("列得出");
     assert_eq!(only.len(), 1, "只要整理会话：{only:?}");
-    let none = crate::list::list(&core, false, Some(false), None)
+    let none = crate::list::list(&core, &admin, false, Some(false), None)
         .await
         .expect("列得出");
     assert!(

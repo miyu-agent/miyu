@@ -1,12 +1,15 @@
 //! 会话列表的订阅（施工 9-5，`docs/blueprint/protocol.md`「会话列表的推送」）：一个连接至多一个，一个转发任务。订阅的回应
 //! 也交给它，它先写回应、再转推送：号不大于回应里那份列表的推送丢掉，之后的照先后写成 `sessions.changed`。读得慢、掉了队，
-//! 推一条 `resync`（`{"stream":"sessions"}`），这个订阅就停了，头重新订阅。再订阅总是换一个新的。
+//! 推一条 `resync`（`{"stream":"sessions"}`），这个订阅就停了，头重新订阅。再订阅总是换一个新的。只转属主是这个连接的账号的
+//! （施工 Y-12 上）。
 
 use std::sync::Arc;
 
 use tokio::sync::broadcast::{self, error::RecvError};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
+
+use miyu_kernel::id::AccountId;
 
 use crate::listing::Change;
 
@@ -20,14 +23,14 @@ pub(super) struct SessionsForwarder {
 }
 
 impl SessionsForwarder {
-    /// 起一个：先等订阅的回应、写出去，再从 `pushes` 转号大于 `after` 的，写进 `out`。
+    /// 起一个：先等订阅的回应、写出去，再从 `pushes` 转号大于 `after`、属主是 `account` 的，写进 `out`。
     pub(super) fn start(
         pushes: broadcast::Receiver<Arc<Change>>,
-        after: u64,
+        (after, account): (u64, AccountId),
         out: mpsc::Sender<String>,
     ) -> SessionsForwarder {
         let (reply, answer) = oneshot::channel();
-        let task = tokio::spawn(forward(pushes, after, answer, out));
+        let task = tokio::spawn(forward(pushes, (after, account), answer, out));
         SessionsForwarder {
             reply: Some(reply),
             task,
@@ -52,7 +55,7 @@ impl Drop for SessionsForwarder {
 /// 转发：回应先写，再照先后写推送；掉了队推 `resync` 停下。
 async fn forward(
     mut pushes: broadcast::Receiver<Arc<Change>>,
-    after: u64,
+    (after, account): (u64, AccountId),
     answer: oneshot::Receiver<String>,
     out: mpsc::Sender<String>,
 ) {
@@ -64,7 +67,7 @@ async fn forward(
     }
     loop {
         match pushes.recv().await {
-            Ok(change) if change.number <= after => {}
+            Ok(change) if change.number <= after || change.owner != account => {}
             Ok(change) => {
                 if out.send(change.line.clone()).await.is_err() {
                     break;

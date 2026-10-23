@@ -161,7 +161,7 @@ impl SessionPort for Table {
                 |row: &Row| row.parent.is_none() && crate::list::local(row) && row.dream.is_none();
             let projects = root.account_dir(&owner).join(miyu_store::projects::FILE);
             let (listed, projects) = tokio::task::spawn_blocking(move || {
-                let listed = scan(&root, &owner, index.as_deref(), &busy, main, None, &stop);
+                let listed = scan(&root, &owner, Some(&*index), &busy, main, None, &stop);
                 // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，人人互相看得到（照以前的样子）。
                 let projects = miyu_store::projects::read(&projects)
                     .map(|read| read.projects)

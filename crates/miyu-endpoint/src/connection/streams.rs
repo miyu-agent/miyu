@@ -88,7 +88,10 @@ pub(super) async fn subscribe(
             subscriptions.add_config(core, system, out);
             (Ok(json!({})), None)
         }
-        (Ok(Stream::Sessions), _) => match subscriptions.add_sessions(core, out).await {
+        (Ok(Stream::Sessions), _) => match subscriptions
+            .add_sessions((core, &caller.account), out)
+            .await
+        {
             Ok(result) => (Ok(result), Some(Target::Sessions)),
             Err(refusal) => (Err(refusal), None),
         },

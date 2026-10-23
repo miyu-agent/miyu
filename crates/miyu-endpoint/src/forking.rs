@@ -55,7 +55,7 @@ pub(crate) async fn fork(
         cause,
         by,
         at,
-        index: Some(Arc::clone(&core.index)),
+        index: Some(core.index_for(&owner)),
         seal_after: params.seal_after,
     })
     .await

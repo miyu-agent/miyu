@@ -61,7 +61,7 @@ impl Sessions {
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,
             sandbox_cache: core.sandbox_cache_of(&owner),
-            index: core.index_for(&owner),
+            index: Some(core.index_for(&owner)),
             usage: core.usage_for(&owner),
             knowledge: None,
             vectors: None,

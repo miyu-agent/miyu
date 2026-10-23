@@ -1,4 +1,4 @@
-//! 装卸以后再建系统账号（施工 F-5 下）：开过索引的账号不再开，手里的还是同一份。
+//! 装卸以后再建系统账号（施工 F-5 下）：开过索引的账号不再开，手里的还是同一份；别人的索引用到时才开（施工 Y-12 上）。
 
 use std::sync::Arc;
 
@@ -33,10 +33,42 @@ async fn an_opened_index_is_kept_when_prepared_again() {
     );
     let courier = AccountId::parse("courier").expect("合写法");
     super::prepare(&core);
-    let first = core.index_for(&courier).expect("装着的包有系统账号");
+    let first = core.index_for(&courier);
     super::prepare(&core);
-    let again = core.index_for(&courier).expect("还在");
+    let again = core.index_for(&courier);
     assert!(Arc::ptr_eq(&first, &again), "开过的不再开");
+    drop(core);
+    if let Err(error) = std::fs::remove_dir_all(&dir) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}
+
+/// 别人（不是管理员、不是系统账号）的索引用到时才开（施工 Y-12 上）：开在他自己的家目录下，开过的不再开，不是管理员那一份。
+#[tokio::test]
+async fn someone_elses_index_opens_in_their_own_home() {
+    let (root, dir) = temp_root("indexes");
+    let (alice, bob) = (
+        AccountId::parse("alice").expect("合写法"),
+        AccountId::parse("bob").expect("合写法"),
+    );
+    let bobs = root.index(&bob).join(miyu_store::index::FILE);
+    let core = Core::new(
+        root,
+        ResourceRoot::at(resources()),
+        Arc::new(Script::new([])),
+        Catalog::default(),
+        None,
+        alice.clone(),
+        "token".to_string(),
+    );
+    assert!(!bobs.exists(), "用到以前没有");
+    let first = core.index_for(&bob);
+    assert!(bobs.is_file(), "开在他自己的家目录下");
+    assert!(Arc::ptr_eq(&first, &core.index_for(&bob)), "开过的不再开");
+    assert!(
+        !Arc::ptr_eq(&first, &core.index_for(&alice)),
+        "不是管理员那一份"
+    );
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

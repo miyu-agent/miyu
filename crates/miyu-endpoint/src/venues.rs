@@ -234,7 +234,7 @@ async fn mains(
         scan(
             &root,
             &owner,
-            index.as_deref(),
+            Some(&*index),
             &Default::default(),
             pick,
             limit,

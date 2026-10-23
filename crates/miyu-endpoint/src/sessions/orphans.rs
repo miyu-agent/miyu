@@ -69,9 +69,7 @@ impl Open {
             for orphan in orphans {
                 match trash::discard(&root, &account, &orphan, at) {
                     Ok(()) => {
-                        if let Some(index) = &index {
-                            forget(index, &orphan);
-                        }
+                        forget(&index, &orphan);
                         tracing::info!(target: "miyu::endpoint", session = orphan.as_str(), parent = parent.as_str(), "orphan subagent removed");
                     }
                     Err(error) => {

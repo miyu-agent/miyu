@@ -55,7 +55,7 @@ impl Core {
 /// 起来时调一次，装卸以后再调（施工 F-5 下）：只管还没开索引的，开过的什么都不做。
 pub(crate) fn prepare(core: &Core) {
     let mut indexes = core
-        .system_indexes
+        .indexes
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     for account in core.system_accounts() {

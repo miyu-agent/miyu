@@ -108,7 +108,7 @@ impl Setup {
             packages: Some(crate::packages::port::port(core)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
-            index: core.index_for(&who.owner),
+            index: Some(core.index_for(&who.owner)),
             usage: core.usage_for(&who.owner),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),

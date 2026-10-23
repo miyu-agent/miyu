@@ -225,14 +225,14 @@ impl Subscriptions {
     /// 的；交回订阅的回应 `{"sessions": […]}`，它经 [`Target::Sessions`] 交给新的转发任务写出去。
     pub(crate) async fn add_sessions(
         &mut self,
-        core: &Arc<Core>,
+        (core, account): (&Arc<Core>, &miyu_kernel::id::AccountId),
         out: &mpsc::Sender<String>,
     ) -> Result<serde_json::Value, crate::refusal::Refusal> {
         let pushes = core.listing.subscribe();
-        let snapshot = core.listing.snapshot(core).await?;
+        let snapshot = core.listing.snapshot(core, account).await?;
         self.sessions = Some(SessionsForwarder::start(
             pushes,
-            snapshot.number,
+            (snapshot.number, account.clone()),
             out.clone(),
         ));
         Ok(serde_json::json!({"sessions": snapshot.sessions}))

@@ -24,7 +24,7 @@ pub(super) async fn prune(core: &Arc<Core>, session: &SessionId, keep: usize) ->
         scan(
             &root,
             &owner,
-            index.as_deref(),
+            Some(&*index),
             &busy,
             dreams,
             None,

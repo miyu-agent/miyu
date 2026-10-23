@@ -6,6 +6,7 @@
 mod content;
 mod goal_command;
 mod goal_heads;
+mod list_account;
 mod model_embed;
 mod package_call_ext;
 mod page_extras;

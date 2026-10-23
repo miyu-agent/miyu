@@ -33,11 +33,15 @@ fn session(n: u8) -> SessionId {
 async fn the_list_covers_what_came_before_it() {
     let core = core();
     let mut pushes = core.listing.subscribe();
-    core.listing.removed(&core, session(1));
-    core.listing.removed(&core, session(2));
-    let snapshot = core.listing.snapshot(&core).await.expect("列得出来");
+    core.listing.removed(&core, session(1), core.admin.clone());
+    core.listing.removed(&core, session(2), core.admin.clone());
+    let snapshot = core
+        .listing
+        .snapshot(&core, &core.admin)
+        .await
+        .expect("列得出来");
     assert!(snapshot.sessions.is_empty());
-    core.listing.removed(&core, session(3));
+    core.listing.removed(&core, session(3), core.admin.clone());
     let numbers: Vec<u64> = [
         pushes.recv().await.expect("推了"),
         pushes.recv().await.expect("推了"),

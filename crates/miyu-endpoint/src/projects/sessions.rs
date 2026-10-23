@@ -78,17 +78,17 @@ pub(crate) async fn move_out(
     Ok(members.len())
 }
 
-/// `account` 在项目 `id` 里的本机会话：照会话列表的那一套扫（管理员的照索引）。
+/// `account` 在项目 `id` 里的本机会话：照会话列表的那一套扫，照他自己的索引。
 async fn members(core: &Core, account: &AccountId, id: &str) -> Result<Vec<SessionId>, Refusal> {
     let root = core.root.clone();
     let account = account.clone();
-    let index = (account == core.admin).then(|| core.index.clone());
+    let index = core.index_for(&account);
     let id = id.to_string();
     let scanned = tokio::task::spawn_blocking(move || {
         scan(
             &root,
             &account,
-            index.as_deref(),
+            Some(&*index),
             &Default::default(),
             |row| row.venue == LOCAL && row.project.as_deref() == Some(id.as_str()),
             None,

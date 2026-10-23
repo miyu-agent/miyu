@@ -150,9 +150,9 @@ pub struct Core {
     sessions: Sessions,
     /// 管理员的会话列表的索引（施工 3-8 七补）：起来时开一次，一直开着；会话落盘时更新、删会话时删行、列会话时读。
     index: Arc<SessionIndex>,
-    /// 系统账号各自的会话列表的索引（施工 O-4 下）：在它们自己的家目录下，拉起扩展前开（`system_accounts::prepare`）；
-    /// 装上新的跟着开，卸掉的留着、装回来接着用（施工 F-5 下）。
-    system_indexes: std::sync::Mutex<std::collections::BTreeMap<AccountId, Arc<SessionIndex>>>,
+    /// 别的账号各自的会话列表的索引：在它们自己的家目录下。系统账号的拉起扩展前开（施工 O-4 下，`system_accounts::prepare`；
+    /// 装上新的跟着开，卸掉的留着、装回来接着用，施工 F-5 下）；别人的用到时才开（施工 Y-12 上），开了一直开着。
+    indexes: std::sync::Mutex<std::collections::BTreeMap<AccountId, Arc<SessionIndex>>>,
     /// 用量汇总（施工 8-15，`state/usage.db`）：起来时开一次，一直开着；会话落盘时写、一次性入口记账（交给模型资料）、
     /// `usage.query` 和 `session_usage` 查之前补。
     usage: Arc<UsageIndex>,
@@ -276,7 +276,7 @@ impl Core {
             kb_progress,
             memory,
             index,
-            system_indexes: std::sync::Mutex::default(),
+            indexes: std::sync::Mutex::default(),
             usage,
             hub: Hub::new(&config),
             config: std::sync::Mutex::new(config),
@@ -435,17 +435,21 @@ impl Core {
             })
     }
 
-    /// 账号 `owner` 的会话列表的索引，交给造的、载入的会话（施工 3-8 七补）：管理员的，和系统账号各自的（施工 O-4 下，在它
-    /// 自己的家目录下）；别的账号的、还没开的没有，列会话时照目录读。
-    pub(crate) fn index_for(&self, owner: &AccountId) -> Option<Arc<SessionIndex>> {
+    /// 账号 `owner` 的会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：管理员的那一份起来时就开着；别的账号
+    /// 在它自己的家目录下，还没开的这时开（施工 Y-12 上：以前只有管理员、系统账号的有，成员的会话不进索引、不进列表）。
+    pub(crate) fn index_for(&self, owner: &AccountId) -> Arc<SessionIndex> {
         if *owner == self.admin {
-            return Some(Arc::clone(&self.index));
+            return Arc::clone(&self.index);
         }
-        self.system_indexes
+        let mut indexes = self
+            .indexes
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(owner)
-            .map(Arc::clone)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Arc::clone(
+            indexes
+                .entry(owner.clone())
+                .or_insert_with(|| Arc::new(crate::list::open_index(&self.root, owner))),
+        )
     }
 
     /// 账号 `owner` 的会话写哪份用量汇总（施工 8-15）：核心一份、行里带属主，管理员和系统账号的会话写（施工 O-4 下）。

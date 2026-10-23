@@ -164,7 +164,7 @@ fn read(path: &std::path::Path) -> Result<(Pointer, Option<String>), Refusal> {
 /// 会话列表里 `id` 那一行，是 `account` 自己的、本机的、主会话（不是子会话、不是一次性的）才算：删了的、别人的、场所会话、
 /// 子会话都没有。
 fn row(core: &Core, account: &AccountId, id: &SessionId) -> Option<Row> {
-    let rows = core.index_for(account)?.rows().ok()?;
+    let rows = core.index_for(account).rows().ok()?;
     rows.get(id).cloned().filter(|row| {
         row.owner == *account && row.venue == LOCAL && row.parent.is_none() && !row.oneshot
     })
