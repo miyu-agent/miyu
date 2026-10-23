@@ -278,7 +278,7 @@ impl Projector {
             row.ended = Some(at);
             row.exit_code = reported.exit_code;
             row.signal = reported.signal;
-            row.why = why;
+            row.why = why.map(str::to_string);
         }
         self.trim_rows();
     }
@@ -295,7 +295,7 @@ impl Projector {
         if let Some(row) = self.row(&reported.job) {
             row.state = state;
             row.ended = Some(at);
-            row.why = why;
+            row.why = why.map(str::to_string);
         }
         self.trim_rows();
     }

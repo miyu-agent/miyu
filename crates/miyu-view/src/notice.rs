@@ -1,6 +1,6 @@
 //! 旁白（`docs/blueprint/view.md`「`notice` 的 `what`」）：只给结构，字由头写；出错说明照连接的语言给。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use miyu_kernel::event::{CallError, CompactTrigger, PauseReason, Usage};
 use miyu_kernel::id::{JobId, Seq, TurnId};
@@ -8,7 +8,7 @@ use miyu_kernel::id::{JobId, Seq, TurnId};
 use crate::entry::{Answered, JobDone, ModelSwap, Peer, Recast, is_false};
 
 /// 一条旁白。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "what", rename_all = "snake_case")]
 pub enum Notice {
     /// 压缩。
@@ -34,7 +34,7 @@ pub enum Notice {
         #[serde(skip_serializing_if = "Option::is_none")]
         said: Option<String>,
         /// 停掉的后台任务。
-        #[serde(skip_serializing_if = "Vec::is_empty")]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         jobs: Vec<JobId>,
     },
     /// 一件后台任务了结了。
@@ -66,7 +66,7 @@ pub enum Notice {
 }
 
 /// 压缩那一条。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Compaction {
     /// 自动的还是手动的。
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -86,7 +86,7 @@ pub struct Compaction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub seen: Option<u64>,
     /// 换上的是提前压好的：不出进度。
-    #[serde(skip_serializing_if = "is_false")]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub prepared: bool,
     /// 压之前的用量。
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -109,7 +109,7 @@ pub struct Compaction {
 }
 
 /// 压缩到哪了。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CompactionState {
     /// 在压。

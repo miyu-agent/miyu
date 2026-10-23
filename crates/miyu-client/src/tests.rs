@@ -37,6 +37,16 @@ use crate::{
 use crate::http::{Get, Got, Proxy, fetcher, get, is_loopback_url};
 
 #[cfg(feature = "tool")]
+#[cfg(feature = "view")]
+#[expect(unused_imports, reason = "只为钉住门面：拿掉了哪一样，这里当场编不过")]
+use crate::view::{
+    Answered, Approval, Attachment, Body as ViewBody, Change, Compaction, CompactionState, Diff,
+    Doing, End, Entry, EntryId, Group, JobDone, JobEnd, JobRow, JobState, Mark, Media, ModelSwap,
+    Nested, NestedCall, NestedItem, Notice, Output, Part, Peer, Picture, Preparing, Recast, Reply,
+    SkillUsed, Speed, State, Status, Stored, Swapped, Thought, Title, Tone, Tool, ToolState,
+    TouchKind, Touched, User, VERSION, Wait, Waiting, Was,
+};
+
 #[cfg(feature = "wallpaper")]
 #[expect(unused_imports, reason = "只为钉住门面：拿掉了哪一样，这里当场编不过")]
 use crate::wallpaper::{
@@ -57,7 +67,7 @@ use crate::tooltext::{
 fn the_heavy_groups_are_off_by_default() {
     let manifest: toml_edit::DocumentMut =
         include_str!("../Cargo.toml").parse().expect("清单读得懂");
-    for dep in ["miyu-http", "miyu-tool", "miyu-wallpaper"] {
+    for dep in ["miyu-http", "miyu-tool", "miyu-wallpaper", "miyu-view"] {
         assert_eq!(
             manifest["dependencies"][dep]["optional"].as_bool(),
             Some(true),
@@ -113,4 +123,26 @@ fn a_refusal_keeps_its_reason_message_and_wait() {
         (bare.reason.as_str(), bare.retry_after_ms),
         ("refused", None)
     );
+}
+
+/// 视图流读回来（施工 V-D）：核心写出去的推送照原样读回来，写回去一字不差；核心以后加的格（这里的 `future`）不管，可以没有的格
+/// 缺着照没有。各种条目、旁白、会话状态读回来一样，由 `miyu-view` 的测试照真会话的每一条钉（`tests/support/mod.rs` 的
+/// `round_trip`）。
+#[cfg(feature = "view")]
+#[test]
+fn the_view_stream_reads_back_and_ignores_fields_it_does_not_know() {
+    use crate::view::{Body, Change, Notice, State, Status};
+    let pushed = r#"{"op":"update","entry":{"id":"b5.0","kind":"tool","group":"g5.0","call":"call_6_1","name":"write","title":{"name":"Write","object":"a"},"state":"running","args":"{\"file_path\":\"a\"}","approval":{"access":"write","decision":"once","by":{"kind":"person","account":"alice"}},"turn":3,"at":"2026-09-25T07:00:04.000Z"}}"#;
+    let change: Change = serde_json::from_str(pushed).expect("读得懂");
+    assert_eq!(serde_json::to_string(&change).expect("写得出"), pushed);
+    let later = r#"{"op":"add","entry":{"id":"e9","kind":"notice","what":"answered","questions":[],"answers":[],"by":{"kind":"kernel"},"future":{"x":1},"at":"2026-09-25T07:00:10.000Z"},"after":null}"#;
+    let Change::Add { entry, .. } = serde_json::from_str(later).expect("不认识的格不管")
+    else {
+        panic!("是加一条");
+    };
+    assert!(matches!(entry.body, Body::Notice(Notice::Answered(_))));
+    assert!(!entry.hidden, "没写的照没有");
+    let status: Status = serde_json::from_str(r#"{"state":"idle","jobs":[],"future":true}"#)
+        .expect("可以没有的格缺着");
+    assert_eq!((status.state, status.waited_ms), (State::Idle, 0));
 }

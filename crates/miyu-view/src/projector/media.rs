@@ -23,7 +23,7 @@ impl Projector {
                 id: EntryId::sent(event.seq, n),
                 body: Body::Media(Media {
                     image: Attachment {
-                        kind: "image",
+                        kind: "image".to_string(),
                         name: image.name.as_ref().map(ToString::to_string),
                         media_type: image.media_type.as_str().to_string(),
                         blob: image.blob.clone(),

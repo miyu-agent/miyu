@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use miyu_kernel::event::{Body as EventBody, Event};
@@ -16,7 +16,7 @@ use crate::title;
 use crate::words::Texts;
 
 /// 列表里的一项。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NestedItem {
     /// 序号。
     pub n: u32,
@@ -43,7 +43,7 @@ pub struct NestedItem {
 }
 
 /// 一份存下来的结果。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Stored {
     /// 内容哈希。
     pub blob: ContentHash,

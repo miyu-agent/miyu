@@ -24,7 +24,10 @@ fn statuses(stage: &Stage) -> Vec<Status> {
             Streamed::Event(event) => drop(projector.event(event)),
             Streamed::Transient(transient) => drop(projector.transient(transient)),
         }
-        seen.push(projector.status());
+        let status = projector.status();
+        // 头照门面读回来（施工 V-D）。
+        round_trip(&status);
+        seen.push(status);
     }
     seen
 }
@@ -224,7 +227,7 @@ fn a_stopped_job_says_why() {
     stage.job_ends(1, JobReason::Undone, By::Kernel, None);
     let row = &paged(&stage).jobs[0];
     assert_eq!(row.state, JobState::Stopped);
-    assert_eq!(row.why, Some("undone"));
+    assert_eq!(row.why.as_deref(), Some("undone"));
 }
 
 /// 到了上限停掉的（施工 7-12 下）：停了，说是哪一种上限。
@@ -251,7 +254,7 @@ fn a_job_stopped_at_its_limit_says_which() {
         stage.job_ends(1, reason, By::Kernel, None);
         let row = &paged(&stage).jobs[0];
         assert_eq!(row.state, JobState::Stopped);
-        assert_eq!(row.why, Some(why));
+        assert_eq!(row.why.as_deref(), Some(why));
     }
 }
 

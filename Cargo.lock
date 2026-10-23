@@ -1882,6 +1882,7 @@ dependencies = [
  "miyu-seeds",
  "miyu-store",
  "miyu-tool",
+ "miyu-view",
  "miyu-wallpaper",
  "serde_json",
  "tokio",

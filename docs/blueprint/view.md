@@ -15,7 +15,9 @@
 | 文件 | 干什么 |
 |---|---|
 | `crates/miyu-view/src/projector.rs`、`projector/`（新） | 投影这台小机器：喂一条事件交出它引起的变化（`Change`）；`users.rs` 消息和排着的话，`turns.rs` 开轮、收尾、每次请求，`blocks.rs` 回复的一块块和起止，`tools.rs` 调工具的一步、确认、提问，`notices.rs` 旁白，`undo.rs` 撤销恢复 |
-| `crates/miyu-view/src/entry.rs`、`notice.rs`、`change.rs`、`id.rs` | 条目、旁白、变化、编号的格 |
+| `crates/miyu-view/src/entry.rs`、`notice.rs`、`change.rs`、`id.rs` | 条目、旁白、变化、编号的格；都能读回来（施工 V-D） |
+| `crates/miyu-view/src/entry/job.rs` | 任务了结那一条旁白的几格（施工 V-D 从 `entry.rs` 挪出来） |
+| `crates/miyu-view/src/relay.rs` | 读回来时 `By`、`RawJson` 那几格经通用的 JSON 转一道（施工 V-D） |
 | `crates/miyu-view/src/projector/nested.rs`、`entry/nested.rs`、`nested.rs` | 脚本里调的工具（施工 M-5 上）：`tool.nested_started`、`tool.nested` 照编号认父级，那一步、那一行任务、任务了结的旁白带 `nested`；订阅时补上在跑的（`Projector::nested_running`）；点开时的整份（`listed`） |
 | `crates/miyu-view/tests/nested.rs`（施工 M-5 上） | 前台 `shell` 下面调三次（成、拒、出错）个数和最近一个跟着变，在跑的带开始时刻；没调过的没有；后台命令那一行、了结的旁白带上；订阅时补上在跑的 |
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
@@ -33,6 +35,12 @@
 ### 对外的样子
 
 **握手**（9-8 中）：`hello` 的回应多 `view: 1`（视图投影的版本）。没有这一格的是旧核心，头照旧自己算。
+
+**头读回来**（施工 V-D，终端换成照视图流画要的）：条目、旁白、推送（`Change`）、会话状态（`Status`）、`view.detail` 的嵌套调用（`NestedItem`）都能照写出去的 JSON 读回来（`Deserialize`），经门面 `miyu_client::view`（feature `view`）给头。
+1. 可以没有的格缺着照没有（空的列表、`false`、0 也是）；不认识的格不管：核心加格子，旧的头照样读得懂。
+2. 只认文字的几格原来写成 `&'static str`（附件的 `kind`、换模型的 `why`、任务的 `why`），改成 `String`，写出去的一个字节不变。
+3. 内核里「先整块读原文、再照 `kind` 分派」的 `By`、`RawJson`，在照 `kind` 分派、`flatten` 的条目里读不成（serde 先把内容攒成中间的样子，它们只认原文）：那几格先读成 `serde_json::Value` 再交给它们（`relay.rs`）。只在读的时候用。
+4. 测试：`tests/support/mod.rs` 的 `same` 把每个测试、三百份随机剧本里投影交出的每一条条目、每一个推送写成 JSON 再读回来，和原来的一样；会话状态同样（`tests/status.rs`）。
 
 **条目**：一条一个 JSON 对象，共有的格：
 

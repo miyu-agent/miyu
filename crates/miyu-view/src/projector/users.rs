@@ -135,7 +135,7 @@ fn content(blocks: &[Block]) -> (String, Vec<Attachment>) {
         match block {
             Block::Text(piece) => text.push_str(&piece.text),
             Block::Image(image) => attachments.push(Attachment {
-                kind: "image",
+                kind: "image".to_string(),
                 name: image.name.as_ref().map(|n| n.as_str().to_string()),
                 media_type: image.media_type.as_str().to_string(),
                 blob: image.blob.clone(),
@@ -144,7 +144,7 @@ fn content(blocks: &[Block]) -> (String, Vec<Attachment>) {
                 path: image.path.as_ref().map(|p| p.as_str().to_string()),
             }),
             Block::File(file) => attachments.push(Attachment {
-                kind: "file",
+                kind: "file".to_string(),
                 name: Some(file.name.as_str().to_string()),
                 media_type: file.media_type.as_str().to_string(),
                 blob: file.blob.clone(),

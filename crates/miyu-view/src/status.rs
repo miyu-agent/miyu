@@ -1,7 +1,7 @@
 //! 会话状态里投影算得出的那一半（施工 9-8 补上，`docs/blueprint/view.md`「会话状态」）：在跑没跑、在等什么、正在做什么、
 //! 上下文用了多少、最近一次的速度、都在冷却到几时、派出去的任务。用量、模型、权限这些要向会话要，由端点拼上。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use miyu_kernel::event::{CompactTrigger, ErrorClass, JobKind};
 use miyu_kernel::id::{CallId, JobId, SessionId};
@@ -13,19 +13,19 @@ use crate::entry::EntryId;
 pub const FINISHED_KEPT: usize = 20;
 
 /// 投影算得出的会话状态。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Status {
     /// 在跑没跑、在等人。
     pub state: State,
     /// 没了结的确认、提问，照先后。
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub waiting: Vec<Waiting>,
     /// 这一轮开始的时刻；没在跑的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub since: Option<Timestamp>,
     /// 这一轮等人等完了的那几段一共多少毫秒（施工 9-8 十四补，项目主人 2026-10-23 定等人不算用时）：确认、提问都算，同时等
     /// 几件的不重复算；还在等的那一段不在里面，看 `waiting_since`。没等过的不写。
-    #[serde(skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_zero")]
     pub waited_ms: u64,
     /// 正在等人的这一段从什么时候起；没在等的不写。头照「现在 − since − waited_ms − (现在 − waiting_since)」算用时。
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,7 +50,7 @@ pub struct Status {
 }
 
 /// 在跑没跑。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum State {
     /// 闲着。
@@ -62,7 +62,7 @@ pub enum State {
 }
 
 /// 一件在等人的事。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Waiting {
     /// 等什么。
     pub what: Wait,
@@ -73,7 +73,7 @@ pub struct Waiting {
 }
 
 /// 等什么。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Wait {
     /// 等人确认。
@@ -83,7 +83,7 @@ pub enum Wait {
 }
 
 /// 正在做什么。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "what", rename_all = "snake_case")]
 pub enum Doing {
     /// 在想：那一块思考。
@@ -117,7 +117,7 @@ pub enum Doing {
         #[serde(skip_serializing_if = "Option::is_none")]
         status: Option<u16>,
         /// 换了端点再来。
-        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         failover: bool,
     },
     /// 在压缩：写到哪了。
@@ -134,7 +134,7 @@ pub enum Doing {
 }
 
 /// 后台在提前压的那一次（施工 6-11 三补，`compaction.started`）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Preparing {
     /// 它替代到哪一条：换上时压缩那一条是 `c<它>`。
     pub seen: u64,
@@ -143,7 +143,7 @@ pub struct Preparing {
 }
 
 /// 一次主请求的速度：输出多少 token、首字到结束多少毫秒，每秒多少由头算。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Speed {
     /// 输出的 token。
     pub output: u64,
@@ -152,7 +152,7 @@ pub struct Speed {
 }
 
 /// 任务表的一行。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct JobRow {
     /// 任务编号。
     pub job: JobId,
@@ -181,14 +181,14 @@ pub struct JobRow {
     pub signal: Option<u32>,
     /// 停了的为什么：`stopped`（人停或她自己停的）、`undone`（撤销时停的）、`restarted`（有计划的重启停的）。
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub why: Option<&'static str>,
+    pub why: Option<String>,
     /// 后台命令下面脚本里调过的工具（施工 M-5 上）：个数和最近一个。没调过的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nested: Option<crate::entry::Nested>,
 }
 
 /// 任务的状态。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum JobState {
     /// 在跑。

@@ -1,14 +1,14 @@
 //! 脚本里调的工具（施工 M-5 上，设计 39 第七节第 4 条）：前台那次 `shell`、后台任务下面的嵌套调用。条目和会话状态里只带
 //! 个数和最近一个，头照它在那一行后面接 `· #序号 显示名`；整份列表点开时照 `view.detail` 要。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use miyu_kernel::time::Timestamp;
 
 use super::Title;
 
 /// 一次 `shell`、一个任务下面调过的。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Nested {
     /// 到这一刻有几个：了结的加在跑的。
     pub count: u32,
@@ -17,7 +17,7 @@ pub struct Nested {
 }
 
 /// 一次嵌套调用。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NestedCall {
     /// 序号：编号 `#` 后面那个数。
     pub n: u32,

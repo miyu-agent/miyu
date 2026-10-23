@@ -127,6 +127,20 @@ pub mod wallpaper {
     pub use miyu_wallpaper::{MAX_BYTES, TIMEOUT, Wallpaper, find, matugen, watch};
 }
 
+/// 视图流读回来的类型（施工 V-D；feature `view`，默认不开）：`view.page {view: true}` 的条目、视图流的推送（`Change`）、会话
+/// 状态（`Status`）、`view.detail` 的嵌套调用（`NestedItem`），和核心写出去的是同一份（`docs/blueprint/view.md`）。读的时候
+/// 可以没有的格照没有，不认识的格不管：核心加格子，旧的头照样读得懂。
+#[cfg(feature = "view")]
+pub mod view {
+    pub use miyu_view::{
+        Answered, Approval, Attachment, Body, Change, Compaction, CompactionState, Diff, Doing,
+        End, Entry, EntryId, Group, JobDone, JobEnd, JobRow, JobState, Mark, Media, ModelSwap,
+        Nested, NestedCall, NestedItem, Notice, Output, Part, Peer, Picture, Preparing, Recast,
+        Reply, SkillUsed, Speed, State, Status, Stored, Swapped, Thought, Title, Tone, Tool,
+        ToolState, TouchKind, Touched, User, VERSION, Wait, Waiting, Was,
+    };
+}
+
 /// 读自己的软件包清单、清单里的值。
 pub mod manifest {
     pub use miyu_config::Value;

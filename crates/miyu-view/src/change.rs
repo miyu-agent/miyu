@@ -1,12 +1,12 @@
 //! 喂一条事件引起的变化（`docs/blueprint/view.md`「视图流」）：视图流照它推 `view.add`、`view.update`、`view.append`、
 //! `view.hidden`、`view.remove`。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::entry::{Entry, EntryId};
 
 /// 一样变化。
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Change {
     /// 新的一条，排在 `after` 那一条后面（`None` 是最前）。

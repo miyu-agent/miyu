@@ -56,7 +56,7 @@ impl Projector {
                     endpoint: None,
                     model: replaced.clone(),
                 }),
-                why: "replaced",
+                why: "replaced".to_string(),
                 class: None,
             }),
         );
@@ -107,7 +107,7 @@ impl Projector {
                 endpoint: changed.endpoint.as_ref().map(|e| e.as_str().to_string()),
                 model: model.as_str().to_string(),
                 from,
-                why: "failover",
+                why: "failover".to_string(),
                 class,
             }),
         );

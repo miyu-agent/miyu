@@ -16,6 +16,8 @@ tool = ["dep:miyu-tool"]
 http = ["dep:miyu-http"]
 # 找桌面壁纸、换了跟着变（施工 X-29，「跟随壁纸」的主题用）：只有头要，默认不开。
 wallpaper = ["dep:miyu-wallpaper"]
+# 视图流的条目、推送、会话状态读回来的类型（施工 V-D，终端换成照视图流画要的）：只有头要，默认不开。
+view = ["dep:miyu-view"]
 
 [dependencies]
 # 下面这几个都是转出去的：界面只经这里拿，代码留在原处（设计 32 第二节第 1 条）。
@@ -31,6 +33,8 @@ miyu-tool = { path = "../miyu-tool", optional = true }
 miyu-http = { path = "../miyu-http", optional = true }
 # 找桌面壁纸（施工 X-29，从网页仓库搬来）。
 miyu-wallpaper = { path = "../miyu-wallpaper", optional = true }
+# 视图投影的类型（施工 V-D）。
+miyu-view = { path = "../miyu-view", optional = true }
 # `open`：照终端的样子连核心、一问一答（从 miyu-webserve 挪来，施工 S-1）。
 serde_json = "1.0"
 tokio = { version = "1", features = ["io-util", "time"] }
@@ -40,7 +44,7 @@ tokio = { version = "1", features = ["io-util", "time"] }
 toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
 # 测试、clippy 照打开两组重的编：核心仓库里没有别的 crate 打开它们了（接入QQ 施工 S-6 下搬走），不这样它们在核心的门禁、
 # CI 里一次都不编、不测。只管测试的那一份，界面照旧默认不开。
-miyu-client = { path = ".", features = ["tool", "http", "wallpaper"] }
+miyu-client = { path = ".", features = ["tool", "http", "wallpaper", "view"] }
 
 [lints]
 workspace = true

@@ -118,7 +118,24 @@ pub fn same(stage: &Stage) -> Vec<Entry> {
         streamed,
         "照推送拼出来的和投影手里的一样"
     );
+    // 头照门面把推送、条目读回来（施工 V-D）：每一条写成 JSON 再读回来一样。
+    for change in &changes {
+        round_trip(change);
+    }
+    for entry in &paged {
+        round_trip(entry);
+    }
     paged
+}
+
+/// 写成 JSON 再读回来，和原来的一样（施工 V-D：终端照门面读视图流）。
+pub fn round_trip<T>(value: &T)
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + std::fmt::Debug,
+{
+    let text = serde_json::to_string(value).expect("写得成 JSON");
+    let back: T = serde_json::from_str(&text).unwrap_or_else(|e| panic!("读不回来：{e}\n{text}"));
+    assert_eq!(&back, value, "读回来不一样：{text}");
 }
 
 /// 条目写成 JSON，比较字段用。
