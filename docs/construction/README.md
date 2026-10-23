@@ -785,6 +785,7 @@ flowchart LR
 | Y-11 下修 | 场所会话不给 pictures | `tool.call` 的 `pictures` 只给本机的会话：场所会话关在自己的工作区里，图存进桥的家目录她就读不到、发不出，几个群还共用一处；扩展照旧存工作区。施工单见 `Y-11-家目录照XDG分.md` |
 | Y-11 补 | 脚本拿到家目录那几处 | 脚本工具交会话属主的 `MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`：跑之前建好、交真实位置、放进沙盒写名单；只给本机的会话，场所会话、会话外面的不给；`shell` 不另加。施工单见 `Y-11-家目录照XDG分.md` |
 | Y-11 补修 | 家目录那几处只留一处真相源 | 脚本的四个环境变量照目录名配，不再靠和 `USER_DIRS` 同一个先后；`root.rs` 的家目录布局 `home/<账号>/` 收成一处，`account_dir`、`user_dir` 都照它。行为不变。施工单见 `Y-11-家目录照XDG分.md` |
+| Y-5 末上 | 冻结清单格式 | 清单认的表和格收进 `miyu-config` 的 `package/fields.rs` 一处，读的各处照它挡；测试拿中英作者文档对它，缺的补齐（40 处），文档写明格式冻结、以后只加不改不删、新格写 `[package] miyu`。Y-5 的施工单定稿同在 `Y-5-包的账号能力即组冻结清单格式.md` |
 | M-1 | 嵌套调用（内核） | 脚本里调的工具挂在父调用或后台任务下面，编号 `<父级>#<n>`；`tool.nested`（不进上下文）、瞬时 `tool.nested_started`；每个父级、整个会话的上限 `jobs.nested_per_parent`、`nested_per_session`；父级结束前收尾记已取消。施工单见 `M-1-嵌套调用.md` |
 | M-2 | 脚本能调哪些工具、交回什么 | 工具的 `clicall`（说明文件、扩展、MCP、脚本开头，个人设置 `clicall.tools.<name>`、`clicall.mcp.<id>`），出厂开五件；`Done.data`；执行器接上嵌套调用。施工单见 `M-2-字段和结果.md` |
 | M-3 上 | 通道和 miyu call（Linux、macOS） | `shell` 起命令前开只给这条命令的端点（Unix 套接字、令牌、进程组），`miyu call` 经它调这个会话的工具；放到后台、到时挪到后台的跟着走；沙盒只放行这一个套接字。施工单见 `M-3-通道和命令.md` |

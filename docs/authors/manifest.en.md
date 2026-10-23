@@ -61,6 +61,10 @@ id = "status"
 place = "status"
 ```
 
+
+## The format is frozen
+
+The tables and fields on this page are stable (frozen on 2026-10-23): from now on they are only added to, never renamed, changed or removed, so a manifest you've written keeps working with newer Miyu versions. New fields and tables say which version they arrived in; if you use one, put the lowest version you need in `[package] miyu`, and an older Miyu will say it needs updating. Unknown tables and fields are always errors, so write nothing that isn't on this page.
 ## `[package]`
 
 | Field | Notes |
@@ -74,11 +78,12 @@ place = "status"
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"0.2.0"`. Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
+| `required` | Only for packages that ship with Miyu: `true` means it can't be removed. Other packages get an error |
 | `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |
 
 ## `[command]`
 
-For extensions and UIs. `name`: when a person types `miyu <name> …` in a terminal, the core hands the rest of the arguments to your program as-is and uses your exit code (`miyu help <name>` becomes `--help`); it starts with a lowercase letter, uses only lowercase letters, digits and `-`, at most 32 characters; built-in subcommands (`ask`, `config`, `pkg`, `web`…) win a clash. `program`: the program name under `bin/`; on Windows the core looks for `<name>.exe`. `about`: a one-line description.
+For extensions and UIs. `name`: when a person types `miyu <name> …` in a terminal, the core hands the rest of the arguments to your program as-is and uses your exit code (`miyu help <name>` becomes `--help`); it starts with a lowercase letter, uses only lowercase letters, digits and `-`, at most 32 characters; built-in subcommands (`ask`, `config`, `pkg`, `web`…) win a clash. `program`: the program name under `bin/`; on Windows the core looks for `<name>.exe`. `about`: a one-line description. `args`: optional, put before what the person typed when the arguments are handed over.
 
 So besides arguments meant for the core, like `serve`, your program should handle what people type.
 
@@ -130,6 +135,12 @@ One table per setting; the key is `<package id>.<name>`. To group many settings,
 
 One preset switch controls a group of tools. Without any, the whole package is one feature; with several, every tool you register must be listed under some feature or it won't register.
 
+| Field | Notes |
+|---|---|
+| `name` | Required, the name people see |
+| `summary` | One line about it |
+| `tools` | The tool names this feature switches |
+
 ```toml
 [features.greet]
 name = { en = "Greeting", zh = "打招呼" }
@@ -141,7 +152,7 @@ Feature ids are global; prefixing them with the package id helps.
 
 ## `[check]`
 
-`miyu check` runs `<program> <args…>`. Report problems on stdout, one JSON per line (`kind`, `file`, `level`, `message` required; optional `line` and `column` as positive integers and `code`, `key`, `rule`, `source` as strings; other fields are dropped); exit 0 with only warnings, 1 with errors. At most 30 seconds. Needs `[command]`.
+`args`: `miyu check` runs `<program> <args…>`. Report problems on stdout, one JSON per line (`kind`, `file`, `level`, `message` required; optional `line` and `column` as positive integers and `code`, `key`, `rule`, `source` as strings; other fields are dropped); exit 0 with only warnings, 1 with errors. At most 30 seconds. Needs `[command]`.
 
 ## `[page]`
 
@@ -150,6 +161,19 @@ Feature ids are global; prefixing them with the package id helps.
 ## `[[mcp]]`
 
 MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
+
+| Field | Notes |
+|---|---|
+| `name` | Server name (the table name in personal settings): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
+| `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
+| `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
+| `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
+| `headers` | With `url`: other request headers, like `{ X-Api-Key = { secret = "key" } }`, written like `env` |
+| `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu login` or the settings screen); don't put values in the manifest |
+| `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms |
+| `timeout_ms` | How long one call may take |
+| `need_load` | Loaded on demand unless written: the AI normally sees only each tool's name and one line, and loads the full parameters when it needs them, which saves money for servers with many tools. `false`: always send the full parameters; write it for small servers used every day |
+| `clicall` | Whether the AI can call this server's tools with `miyu call` from a script it runs; unset means it can. Write `false` for servers that write or send things |
 
 ## `[[slash]]`
 
@@ -203,7 +227,7 @@ Bring a folder of content for another package (sticker content packs work this w
 
 ## `[depends]`, `[recommends]`
 
-`packages`: ids of packages it depends on or recommends. A missing dependency blocks installing and starting; a missing recommendation doesn't, it just loses some abilities.
+`packages`: ids of packages it depends on or recommends. A missing dependency blocks installing and starting; a missing recommendation doesn't, it just loses some abilities. The older spelling `workers` is still read, into the same list.
 
 ## `[mascot]`
 

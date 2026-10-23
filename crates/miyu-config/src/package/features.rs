@@ -115,7 +115,7 @@ fn one(
     at: &Item,
 ) -> Result<Feature, Problem> {
     let path = format!("features.{id}");
-    reader.only(fields, &path, &["name", "summary", "tools"])?;
+    reader.only(fields, &path, super::fields::FEATURE)?;
     let name = reader.phrases(
         reader.required(fields, at, &path, "name")?,
         &format!("{path}.name"),

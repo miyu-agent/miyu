@@ -68,7 +68,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<SlashCommand>
     let mut commands: Vec<SlashCommand> = Vec::new();
     for table in array.iter() {
         let line = table.span().map(|span| line_of(reader.text, span.start));
-        reader.only(table, "slash", &["name", "summary", "argument", "access"])?;
+        reader.only(table, "slash", super::fields::SLASH)?;
         let name = match table.get("name").and_then(Item::as_str) {
             Some(name) if command_name(name) => name.to_string(),
             Some(name) => {

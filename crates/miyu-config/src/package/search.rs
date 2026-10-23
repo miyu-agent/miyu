@@ -43,7 +43,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<SearchSource>
     let mut sources: Vec<SearchSource> = Vec::new();
     for table in array.iter() {
         let line = table.span().map(|span| line_of(reader.text, span.start));
-        reader.only(table, "search", &["id", "name"])?;
+        reader.only(table, "search", super::fields::SEARCH)?;
         let id = match table.get("id").and_then(Item::as_str) {
             Some(id) if command_name(id) => id.to_string(),
             Some(id) => {

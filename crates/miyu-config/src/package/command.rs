@@ -37,7 +37,7 @@ pub(super) fn read(reader: &Reader<'_>, item: Option<&Item>) -> Result<Vec<Comma
 
 /// 一个：`name`、`program`、`about` 必写，`args` 可以不写。
 fn one(reader: &Reader<'_>, table: &dyn TableLike, at: &Item) -> Result<Command, Problem> {
-    reader.only(table, "command", &["name", "program", "about", "args"])?;
+    reader.only(table, "command", super::fields::COMMAND)?;
     let item = reader.required(table, at, "command", "name")?;
     let line = item.span().map(|span| line_of(reader.text, span.start));
     let name = item

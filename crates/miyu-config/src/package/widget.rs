@@ -96,11 +96,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<Widget>, Prob
                 format!("a package declares at most {MOST} widgets"),
             ));
         }
-        reader.only(
-            table,
-            "widget",
-            &["id", "place", "title", "scope", "command"],
-        )?;
+        reader.only(table, "widget", super::fields::WIDGET)?;
         let id = match table.get("id").and_then(Item::as_str) {
             Some(id) if command_name(id) => id.to_string(),
             Some(id) => {

@@ -46,7 +46,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<Content>, Pro
             ));
         };
         let name = format!("content.{target}");
-        reader.only(inner, &name, &["dir"])?;
+        reader.only(inner, &name, super::fields::CONTENT)?;
         let dir = reader.required(inner, item, &name, "dir")?;
         let Some(dir) = dir.as_str().filter(|dir| relative_dir(dir)) else {
             return Err(bad(

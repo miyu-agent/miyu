@@ -118,14 +118,7 @@ fn one(
     table: &toml_edit::Table,
     line: Option<usize>,
 ) -> Result<McpServer, Problem> {
-    reader.only(
-        table,
-        "mcp",
-        &[
-            "name", FIELDS[0], FIELDS[1], FIELDS[2], FIELDS[3], FIELDS[4], FIELDS[5], FIELDS[6],
-            FIELDS[7], FIELDS[8],
-        ],
-    )?;
+    reader.only(table, "mcp", &super::fields::MCP)?;
     let name = match table.get("name").and_then(Item::as_str) {
         Some(name) if valid_name(name) => name.to_string(),
         Some(name) => {
@@ -148,18 +141,8 @@ fn one(
     fields(table, name, line)
 }
 
-/// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）。
-const FIELDS: [&str; 9] = [
-    "command",
-    "env",
-    "url",
-    "bearer",
-    "headers",
-    "venues",
-    "timeout_ms",
-    "need_load",
-    "clicall",
-];
+/// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）：清单格式的真相源在 `fields`（施工 Y-5 末上）。
+use super::fields::MCP_SERVER as FIELDS;
 
 /// 叫 `name` 的服务的几格，表是 `table`，写在第 `line` 行。
 fn fields(

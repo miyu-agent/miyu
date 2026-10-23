@@ -259,17 +259,17 @@ fn kind(
         })?;
         (kind, extra, false)
     };
-    let common = [
-        "type",
-        "default",
-        "layers",
-        "applies",
-        "name",
-        "description",
-        "hidden",
-    ];
-    let element: &[&str] = if list { &["element"] } else { &[] };
-    let known: Vec<&str> = common.iter().chain(extra).chain(element).copied().collect();
+    let element: &[&str] = if list {
+        super::fields::SETTING_LIST
+    } else {
+        &[]
+    };
+    let known: Vec<&str> = super::fields::SETTING
+        .iter()
+        .chain(extra)
+        .chain(element)
+        .copied()
+        .collect();
     reader.only(fields, at, &known)?;
     Ok(kind)
 }
@@ -305,7 +305,7 @@ fn scalar(
                     format!("{at}.min must not be above {at}.max"),
                 ));
             }
-            (SettingKind::Int { min, max }, &["min", "max"])
+            (SettingKind::Int { min, max }, super::fields::SETTING_INT)
         }
         "option" => {
             let bad = |item: Option<&Node>| {
@@ -332,7 +332,7 @@ fn scalar(
             if distinct.len() < 2 || distinct.len() != choices.len() {
                 return Err(bad(fields.get("choices")));
             }
-            (SettingKind::Option(choices), &["choices"])
+            (SettingKind::Option(choices), super::fields::SETTING_OPTION)
         }
         "text" => {
             let max = match fields.get("max") {
@@ -350,7 +350,7 @@ fn scalar(
                         )
                     })?,
             };
-            (SettingKind::Text { max }, &["max"])
+            (SettingKind::Text { max }, super::fields::SETTING_TEXT)
         }
         "name" => (SettingKind::Name, &[]),
         "url" => (SettingKind::Url, &[]),

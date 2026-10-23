@@ -31,7 +31,7 @@ pub(super) fn page(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<String, Problem> {
-    reader.only(table, "page", &["dir"])?;
+    reader.only(table, "page", super::fields::PAGE)?;
     let item = reader.required(table, at, "page", "dir")?;
     item.as_str()
         .filter(|dir| relative_dir(dir))
@@ -52,7 +52,7 @@ pub(super) fn mascot(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<super::Mascot, Problem> {
-    reader.only(table, "mascot", &["model"])?;
+    reader.only(table, "mascot", super::fields::MASCOT)?;
     let item = reader.required(table, at, "mascot", "model")?;
     item.as_str()
         .filter(|model| relative_dir(model))
@@ -75,7 +75,7 @@ pub(super) fn theme(
     table: &dyn TableLike,
     at: &Item,
 ) -> Result<super::Theme, Problem> {
-    reader.only(table, "theme", &["file"])?;
+    reader.only(table, "theme", super::fields::THEME)?;
     let item = reader.required(table, at, "theme", "file")?;
     item.as_str()
         .filter(|file| relative_dir(file))

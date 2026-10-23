@@ -14,6 +14,7 @@ mod command;
 mod content;
 mod credits;
 mod features;
+mod fields;
 mod kinds;
 mod links;
 mod look;
@@ -249,31 +250,6 @@ impl fmt::Display for Problem {
     }
 }
 
-/// 清单里认得的表；哪种包能写哪几张见 `kinds::tables`。
-const TABLES: [&str; 21] = [
-    "package",
-    "builtin",
-    "command",
-    "process",
-    "ui",
-    "check",
-    "settings",
-    "features",
-    "connection",
-    "depends",
-    "recommends",
-    "worker",
-    "page",
-    "mascot",
-    "theme",
-    "mcp",
-    "slash",
-    "search",
-    "widget",
-    "export",
-    "content",
-];
-
 /// 照正在跑的这一版 Miyu `running` 读一份清单（施工 X-31）：清单 `[package] miyu` 要更新的 Miyu 的，先报 `needs_newer_miyu`，
 /// 不再往下读（不然新版本加的格在这里都是不认识的键）；给得了的照 [`read`]。装包、读装了的包用它；打包、软件源收录不比，用
 /// [`read`]。
@@ -301,7 +277,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     let reader = Reader { text };
     let root = document.as_table();
     for (key, item) in root.iter() {
-        if !TABLES.contains(&key) {
+        if !fields::known_table(key) {
             return Err(reader.problem(
                 Some(item),
                 Code::UnknownTable,
@@ -352,7 +328,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     let check = match root.get("check").and_then(Item::as_table_like) {
         Some(table) => {
             reader.needs_command(command, "check", &root["check"])?;
-            reader.only(table, "check", &["args"])?;
+            reader.only(table, "check", fields::CHECK)?;
             Some(Check {
                 args: reader.texts(table, "check", "args")?,
             })
