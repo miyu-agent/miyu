@@ -215,6 +215,7 @@ mod subscribe;
 mod subscribe_now;
 mod system_account;
 mod system_account_personas;
+mod terminal_keys;
 mod terminal_session;
 mod title;
 mod todos;

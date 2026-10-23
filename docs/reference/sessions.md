@@ -338,17 +338,17 @@
 
 ## `session.terminal`、`session.set_terminal`
 
-终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用，设计 `22-命令行.md` 第七节）。每个账号一个，哪个算、什么时候换新的由核心定。
+终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用，设计 `22-命令行.md` 第七节）。每个账号一个，带了 `terminal` 键的每个终端各一个（施工 T-22）；哪个算、什么时候换新的由核心定。
 
-**`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区；`fresh`（可以不写，默认假）：真的不管指着谁，照下面第 3 条开一个新的、指过去（`/new`）。回应 `{"session"}`：
+**`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区；`fresh`（可以不写，默认假）：真的不管指着谁，照下面第 3 条开一个新的、指过去（`/new`）；`terminal`（可以不写）：哪个终端，头生成的键，1 到 128 个字、没有控制字符，不合的拒 `bad_params`，带了的照这个键各记一个指针，不带的用账号原来那一个；`create`（可以不写，默认真）：假的只问不开，下面第 2、3 条的情形回 `{"session": null}`，不新开、不挪指针（终端刚开、还没说话时问一下在哪个会话），和 `fresh: true` 一起写的拒 `bad_params`。回应 `{"session"}`：
 
 1. 指着的会话还在、是这个账号自己的本机主会话（不是子会话、场所会话、一次性的），就是它。
 2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。指过去（`session.set_terminal`、新开的）的那一刻也算一次动静：主动切到一个很久没说话的会话，闲置从切过去时算起。
 3. 没指过、指着的删了、不算数的：开一个新的，回应多 `created: true`。
 
-新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要，只开一个。
+新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要（同一个键），只开一个。键各记最后一次用到的时刻，7 天没用的写指针时顺手清掉，最多留 64 个（最久没用的先清）；清掉的键再来当没指过。
 
-**`session.set_terminal`**：参数 `session`：把终端会话指到它（`/sessions` 选中的）。只收这个账号自己的本机主会话，别的拒 `session_not_found`。回应 `{"session"}`。
+**`session.set_terminal`**：参数 `session`：把终端会话指到它（`/sessions` 选中的）；`terminal`（可以不写）：改哪个终端的指针，写法同上。只收这个账号自己的本机主会话，别的拒 `session_not_found`。回应 `{"session"}`。
 
 ## `session.set_meta`
 

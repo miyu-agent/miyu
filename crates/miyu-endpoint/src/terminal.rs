@@ -10,6 +10,10 @@
 //! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收这个账号自己的本机主会话。
 //! - 指过去（`set_terminal`、新开的）的那一刻记在指针上，算这个终端会话的一次动静：闲置照会话的最后一次动静和它里晚的那个算
 //!   （施工 8-33 三补，2026-10-21 项目主人定：主动切过去的不该再被闲置规则换掉）。
+//! - 按终端分开（施工 T-22，2026-10-23 项目主人定：不同终端不同会话，真的对话了才开新的）：两个方法都多收 `terminal`（头生成的
+//!   键，1 到 128 个字、没有控制字符），带了的照「账号 + 键」各记一个指针，不带的照旧用原来那一个。`session.terminal` 多收
+//!   `create`（不写是真）：假的只问不开，没有、指着的不在了、闲置超时的回 `{"session": null}`，不新开、不挪指针；和 `fresh`
+//!   一起写的 `bad_params`。键各记最后一次用到的时刻，写的时候顺手清掉 7 天没用的，最多留 64 个（`miyu_store::terminal`）。
 
 use std::sync::Arc;
 
@@ -19,7 +23,7 @@ use serde_json::{Value, json};
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_store::index::Row;
-use miyu_store::terminal::{self, Pointer};
+use miyu_store::terminal::{self, Keyed, Pointer, Pointers};
 
 use crate::Core;
 use crate::hello::Peer;
@@ -39,6 +43,12 @@ pub(crate) struct TerminalParams {
     /// 不管指着谁，开一个新的指过去（施工 8-33 再补）。
     #[serde(default)]
     fresh: bool,
+    /// 哪个终端（施工 T-22）：不写的用原来那一个指针。
+    #[serde(default)]
+    terminal: Option<String>,
+    /// 假的只问不开（施工 T-22）：不写是真。
+    #[serde(default)]
+    create: Option<bool>,
 }
 
 /// `session.set_terminal` 的参数。
@@ -46,6 +56,9 @@ pub(crate) struct TerminalParams {
 #[serde(deny_unknown_fields)]
 pub(crate) struct SetParams {
     session: String,
+    /// 哪个终端（施工 T-22）：不写的改原来那一个指针。
+    #[serde(default)]
+    terminal: Option<String>,
 }
 
 /// `session.terminal`：见模块的说明。
@@ -56,9 +69,15 @@ pub(crate) async fn get(
     request: &Request,
     params: TerminalParams,
 ) -> Result<Value, Refusal> {
+    let key = key(params.terminal)?;
+    let create = params.create.unwrap_or(true);
+    if params.fresh && !create {
+        return Err(Refusal::BAD_PARAMS);
+    }
     let _one = core.terminal.lock().await;
     let path = core.root.account_dir(account).join(terminal::FILE);
-    let (pointer, version) = read(&path)?;
+    let (mut pointers, version) = read(&path)?;
+    let pointer = current(&pointers, key.as_deref());
     let settings = TerminalSettings::from(&core.config().resolved().values());
     let pointed = pointer
         .session
@@ -68,11 +87,19 @@ pub(crate) async fn get(
     let renewed = match &pointed {
         _ if params.fresh => None,
         Some(row) if !idle(touched(row, &pointer), settings.idle_new_after, now()) => {
+            // 按键的记一下这一次用到了：清久没用的照它。
+            if let Some(key) = &key {
+                store(&mut pointers, Some(key), pointer.clone());
+                save(&path, &pointers, version.as_deref())?;
+            }
             return Ok(json!({"session": row.id.as_str()}));
         }
         Some(row) => Some(row.last_active),
         None => None,
     };
+    if !create {
+        return Ok(json!({"session": null}));
+    }
     let who = Opening {
         owner: account.clone(),
         attended: peer.input,
@@ -98,10 +125,8 @@ pub(crate) async fn get(
         session: Some(created.id.as_str().to_string()),
         at: Some(now()),
     };
-    terminal::write(&path, &pointer, version.as_deref()).map_err(|error| {
-        tracing::warn!(target: "miyu::endpoint", error = %error, "terminal session not recorded");
-        Refusal::INTERNAL
-    })?;
+    store(&mut pointers, key.as_deref(), pointer);
+    save(&path, &pointers, version.as_deref())?;
     let mut reply = json!({"session": created.id.as_str()});
     match renewed {
         Some(last) => reply["renewed"] = json!({ "last": last }),
@@ -117,21 +142,67 @@ pub(crate) async fn set(
     params: SetParams,
 ) -> Result<Value, Refusal> {
     let id = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+    let key = key(params.terminal)?;
     if row(core, account, &id).is_none() {
         return Err(Refusal::NOT_FOUND);
     }
     let _one = core.terminal.lock().await;
     let path = core.root.account_dir(account).join(terminal::FILE);
-    let (_, version) = read(&path)?;
+    let (mut pointers, version) = read(&path)?;
     let pointer = Pointer {
         session: Some(id.as_str().to_string()),
         at: Some(now()),
     };
-    terminal::write(&path, &pointer, version.as_deref()).map_err(|error| {
+    store(&mut pointers, key.as_deref(), pointer);
+    save(&path, &pointers, version.as_deref())?;
+    Ok(json!({"session": id.as_str()}))
+}
+
+/// 终端的键（施工 T-22）：1 到 128 个字、没有控制字符；不合的 `bad_params`。不写的没有。
+fn key(terminal: Option<String>) -> Result<Option<String>, Refusal> {
+    match terminal {
+        None => Ok(None),
+        Some(key)
+            if (1..=128).contains(&key.chars().count()) && !key.chars().any(char::is_control) =>
+        {
+            Ok(Some(key))
+        }
+        Some(_) => Err(Refusal::BAD_PARAMS),
+    }
+}
+
+/// 这个键（没有的是原来那一个）现在的指针；还没记过的是空的。
+fn current(pointers: &Pointers, key: Option<&str>) -> Pointer {
+    match key {
+        None => pointers.main.clone(),
+        Some(key) => pointers
+            .terminals
+            .get(key)
+            .map(|keyed| keyed.pointer.clone())
+            .unwrap_or_default(),
+    }
+}
+
+/// 把这个键（没有的是原来那一个）的指针换成 `pointer`；按键的记下这一刻用到了，顺手清久没用的。
+fn store(pointers: &mut Pointers, key: Option<&str>, pointer: Pointer) {
+    match key {
+        None => pointers.main = pointer,
+        Some(key) => {
+            let used = now();
+            pointers
+                .terminals
+                .insert(key.to_string(), Keyed { pointer, used });
+            pointers.prune(used);
+        }
+    }
+}
+
+/// 写回：写不成的记一行，`internal_error`。
+fn save(path: &std::path::Path, pointers: &Pointers, version: Option<&str>) -> Result<(), Refusal> {
+    terminal::write(path, pointers, version).map_err(|error| {
         tracing::warn!(target: "miyu::endpoint", error = %error, "terminal session not recorded");
         Refusal::INTERNAL
-    })?;
-    Ok(json!({"session": id.as_str()}))
+    })
 }
 
 /// 终端会话最后一次动静：会话自己的，和指过去的那一刻里晚的那个。
@@ -143,7 +214,7 @@ fn touched(row: &Row, pointer: &Pointer) -> Timestamp {
 }
 
 /// 读指针：读不成的（手改坏了）当没指过，记一行，下一回写成好的。
-fn read(path: &std::path::Path) -> Result<(Pointer, Option<String>), Refusal> {
+fn read(path: &std::path::Path) -> Result<(Pointers, Option<String>), Refusal> {
     match terminal::read(path) {
         Ok(read) => Ok(read),
         Err(terminal::BadFile::Shape(why)) => {
@@ -152,7 +223,7 @@ fn read(path: &std::path::Path) -> Result<(Pointer, Option<String>), Refusal> {
                 .ok()
                 .flatten()
                 .map(|text| text.version);
-            Ok((Pointer::default(), version))
+            Ok((Pointers::default(), version))
         }
         Err(terminal::BadFile::Read(error)) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "terminal session pointer unreadable");

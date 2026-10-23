@@ -337,17 +337,17 @@ A `cwd` that is the account workspace itself (the handshake's `host.workspace`) 
 
 ## `session.terminal`, `session.set_terminal`
 
-The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One per account; the core decides which one it is and when a new one starts.
+The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One per account, and one per terminal for calls that carry a `terminal` key (construction T-22); the core decides which one it is and when a new one starts.
 
-**`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). Response `{"session"}`:
+**`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). `terminal` (optional): which terminal, a key the head makes up, 1 to 128 characters with no control characters (otherwise `bad_params`); with it the pointer is kept per key, without it the account's original pointer is used. `create` (optional, default true): when false, only ask: in cases 2 and 3 below the response is `{"session": null}`, nothing starts and the pointer doesn't move (to show which session a freshly opened terminal is in before anything is said); together with `fresh: true` it's `bad_params`. Response `{"session"}`:
 
 1. The session pointed at still exists and is this account's own local main session (not a child, venue or one-shot session): it's that one.
 2. It has been idle longer than `terminal.idle_new_after` minutes (0 never replaces): a new one starts, the pointer moves, and the response adds `renewed: {"last"}` (when the old one last had an event); the old one is left alone. Being pointed at (`session.set_terminal`, or being started) counts as activity: switching to a session that has been quiet for hours starts the idle time from the switch.
 3. Nothing pointed at yet, or it was deleted or doesn't count: a new one starts and the response adds `created: true`.
 
-A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.default` and `preset.default`). Several connections asking at once get one session.
+A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.default` and `preset.default`). Several connections asking at once (with the same key) get one session. Each key remembers when it was last used; keys unused for 7 days are dropped when a pointer is written, and at most 64 are kept (least recently used go first). A dropped key starts over as if never pointed.
 
-**`session.set_terminal`**: param `session`: point the terminal session at it (what `/sessions` picked). Only this account's own local main sessions; anything else is refused with `session_not_found`. Response `{"session"}`.
+**`session.set_terminal`**: param `session`: point the terminal session at it (what `/sessions` picked). `terminal` (optional): whose pointer to change, as above. Only this account's own local main sessions; anything else is refused with `session_not_found`. Response `{"session"}`.
 
 ## `session.set_meta`
 
