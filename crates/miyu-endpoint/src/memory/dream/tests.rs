@@ -42,11 +42,11 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
     let at = json!({"persona": NO_PERSONA});
     let remember = json!({"persona": NO_PERSONA, "class": "user", "text": "用户养了一只猫"});
     let id = CommandId::parse("c1").expect("合写法");
-    super::super::call(&core, "memory.remember", &id, &remember)
+    super::super::call(&core, &admin, "memory.remember", &id, &remember)
         .await
         .expect("记得下");
 
-    let answer = super::call(&core, &at).await.expect("整理了");
+    let answer = super::call(&core, &admin, &at).await.expect("整理了");
     let session =
         SessionId::parse(answer["session"].as_str().expect("回应带会话")).expect("合写法");
     assert_eq!(answer["summary"], json!(true), "{answer}");
@@ -83,7 +83,7 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
     let keeper = Keeper::new(
         &core.memory,
         Room::persona(&admin, NO_PERSONA),
-        Listener::Owner(crate::memory::admin(&core)),
+        Listener::Owner(crate::sessions::admin(&core)),
     );
     let merging = keeper
         .follow(Some(0), 64)

@@ -3,10 +3,12 @@
 //! 读参数、写回应。现在就整理（`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`，搜以前的对话（`memory.turns`，
 //! 施工 R-12 下）在 `memory/turns.rs`。
 //!
-//! - 哪一间：`persona` 是这个人格那一间（记忆账号照 `personas.md` 第 5 条，属主是这个连接的账号）；`session` 是那个会话用的
-//!   那一间（照会话交出来的 [`Handle::memory_room`]）；都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，施工 P-12）；
-//!   `persona` 写 `_none`（[`NO_PERSONA`]）的是无人格那一间（施工 R-12 再补：网页的记忆页没有会话可借）。
-//! - 听众是这个连接的人：本机的令牌、网页登录都是管理员。代表外部的人（`as`）不收，随 O 线。
+//! - 哪一间（施工 Y-7，设计 06 U21：记忆跟着用户走）：照这个连接替谁干活（`Caller::acting_for`）的账号找，人的连接是他自己，
+//!   替机主干活的扩展是机主，平台桥照 [`Core::memory_owner`] 归机主。`persona` 是这个账号、这个人格那一间（人格照这个账号看得到
+//!   的几层找）；`session` 是那个会话用的那一间（照会话交出来的 [`Handle::memory_room`]，会话只给属主，`connection/checks.rs`）；
+//!   都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，施工 P-12）；`persona` 写 `_none`（[`NO_PERSONA`]）的是这个账号
+//!   无人格那一间（施工 R-12 再补：网页的记忆页没有会话可借）。
+//! - 听众、记下的是谁：同上，替谁干活的那个账号。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
 mod cards;
@@ -26,11 +28,11 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
-use miyu_kernel::origin::By;
+use miyu_kernel::origin::{By, Person};
 use miyu_recall::MemoryId;
 use miyu_session::{
-    ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Memory, Stamp, Turn,
-    Using, Vectors,
+    ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Stamp, Turn, Using,
+    Vectors,
 };
 use miyu_store::recall::{NO_PERSONA, Room};
 use miyu_tool::{Refused, Remember};
@@ -39,7 +41,7 @@ use crate::Core;
 use crate::list::LOCAL;
 use crate::personas;
 use crate::refusal::Refusal;
-use crate::sessions::{admin, now};
+use crate::sessions::now;
 
 use checks::{checked, limit};
 use params::{Forget, List, Restore, Search, Where};
@@ -55,12 +57,6 @@ impl Core {
         let vectors = Vectors::new(local.map(Embedder::new), Arc::clone(&self.model_data));
         self.memory.give_vectors(Arc::new(vectors));
         self
-    }
-
-    /// 账号 `owner` 的会话用的记忆的登记，交给造的、载入的会话（施工 R-2 上、R-3 中）：管理员和系统账号的会话有（施工 O-4
-    /// 下）；记忆归哪个账号另照 [`Core::memory_owner`] 算，系统账号的归管理员。
-    pub(crate) fn memory_for(&self, owner: &AccountId) -> Option<Arc<Memory>> {
-        self.knows(owner).then(|| Arc::clone(&self.memory))
     }
 }
 
@@ -84,9 +80,11 @@ pub(crate) const METHODS: [&str; 11] = [
     "memory.card_forget",
 ];
 
-/// 照方法名办一条 `memory.*`，命令编号是 `id`；不是 [`METHODS`] 里的没有这个方法。
+/// 照方法名办一条 `memory.*`，替 `who` 干活（这个连接的 `Caller::acting_for`，施工 Y-7），命令编号是 `id`；不是 [`METHODS`]
+/// 里的没有这个方法。
 pub(crate) async fn call(
     core: &Arc<Core>,
+    who: &AccountId,
     method: &str,
     id: &CommandId,
     params: &Value,
@@ -95,17 +93,17 @@ pub(crate) async fn call(
         return Err(Refusal::MEMORY_NOT_INSTALLED);
     }
     match method {
-        "memory.list" => list(core, read(params)?).await,
-        "memory.search" => search(core, read(params)?).await,
-        "memory.turns" => turns::turns(core, read(params)?).await,
-        "memory.remember" => write::remember(core, stamp(core, id), read(params)?).await,
-        "memory.update" => write::update(core, stamp(core, id), read(params)?).await,
-        "memory.forget" => forget(core, stamp(core, id), read(params)?).await,
-        "memory.restore" => restore(core, stamp(core, id), read(params)?).await,
-        "memory.dream_stop" => dream::stop(core, params).await,
-        "memory.cards" => cards::cards(core, read(params)?).await,
-        "memory.card_update" => cards::update(core, stamp(core, id), read(params)?).await,
-        "memory.card_forget" => cards::forget(core, stamp(core, id), read(params)?).await,
+        "memory.list" => list(core, who, read(params)?).await,
+        "memory.search" => search(core, who, read(params)?).await,
+        "memory.turns" => turns::turns(core, who, read(params)?).await,
+        "memory.remember" => write::remember(core, who, stamp(who, id), read(params)?).await,
+        "memory.update" => write::update(core, who, stamp(who, id), read(params)?).await,
+        "memory.forget" => forget(core, who, stamp(who, id), read(params)?).await,
+        "memory.restore" => restore(core, who, stamp(who, id), read(params)?).await,
+        "memory.dream_stop" => dream::stop(core, who, params).await,
+        "memory.cards" => cards::cards(core, who, read(params)?).await,
+        "memory.card_update" => cards::update(core, who, stamp(who, id), read(params)?).await,
+        "memory.card_forget" => cards::forget(core, who, stamp(who, id), read(params)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -169,14 +167,14 @@ pub(crate) async fn clear_in(
     blocking(move || keeper.clear(stamp, session)).await
 }
 
-async fn list(core: &Arc<Core>, params: List) -> Result<Value, Refusal> {
+async fn list(core: &Arc<Core>, who: &AccountId, params: List) -> Result<Value, Refusal> {
     let filter = Filter {
         class: params.class,
         from: params.from.as_deref().map(session_id).transpose()?,
         forgotten: params.forgotten,
         limit: limit(params.limit, LIST)?,
     };
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, who, params.at).await?;
     let (found, used) = blocking(move || {
         let found = keeper.list(&filter).map_err(Refused::Failed)?;
         Ok((found, keeper.used().map_err(Refused::Failed)?))
@@ -185,16 +183,16 @@ async fn list(core: &Arc<Core>, params: List) -> Result<Value, Refusal> {
     Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
-async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
+async fn search(core: &Arc<Core>, who: &AccountId, params: Search) -> Result<Value, Refusal> {
     if params.query.trim().is_empty() {
         return Err(Refusal::BAD_PARAMS);
     }
     let limit = limit(params.limit, SEARCH)?;
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, who, params.at).await?;
     let (query, forgotten) = (params.query, params.forgotten);
     // 照意思找（施工 R-5 下）照这时的配置：先算问句的向量（`off` 的、等不到的只走关键词），搜完在后台补这一间缺的。远程的
-    // 用量记在管理员名下（M8 只有他，和 `model.call` 一样）。
-    let using = using(core);
+    // 用量照这一间的账号记（施工 Y-7）。
+    let using = using_for(core, &keeper);
     let near = match keeper.vectors() {
         Some(vectors) => vectors.query(&using, &query).await,
         None => None,
@@ -217,12 +215,17 @@ async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
     Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
-async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value, Refusal> {
+async fn forget(
+    core: &Arc<Core>,
+    who: &AccountId,
+    stamp: Stamp,
+    params: Forget,
+) -> Result<Value, Refusal> {
     match (params.id, params.clear.as_deref()) {
         (Some(id), None) => {
             let id = memory_id(&id)?;
             let why = params.why.unwrap_or_default();
-            let keeper = find(core, params.at).await?;
+            let keeper = find(core, who, params.at).await?;
             blocking(move || keeper.retire(stamp, id, why)).await?;
             Ok(json!({}))
         }
@@ -234,7 +237,7 @@ async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value,
                 )?),
                 _ => None,
             };
-            let keeper = find(core, params.at).await?;
+            let keeper = find(core, who, params.at).await?;
             let session = session.filter(|_| matches!(keeper.room(), Room::Persona { .. }));
             let cleared = blocking(move || keeper.clear(stamp, session)).await?;
             Ok(json!({"cleared": cleared}))
@@ -244,39 +247,49 @@ async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value,
 }
 
 /// 恢复作废的一条（施工 R-12 下）：本来就算数的什么都不写，也回 `{}`。
-async fn restore(core: &Arc<Core>, stamp: Stamp, params: Restore) -> Result<Value, Refusal> {
+async fn restore(
+    core: &Arc<Core>,
+    who: &AccountId,
+    stamp: Stamp,
+    params: Restore,
+) -> Result<Value, Refusal> {
     let id = memory_id(&params.id)?;
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, who, params.at).await?;
     blocking(move || keeper.restore(stamp, id)).await?;
     Ok(json!({}))
 }
 
-/// 人经协议写的：此刻、管理员、这条命令的编号。
-fn stamp(core: &Core, id: &CommandId) -> Stamp {
+/// 人经协议写的：此刻、替谁干活的那个账号（施工 Y-7）、这条命令的编号。
+fn stamp(who: &AccountId, id: &CommandId) -> Stamp {
     Stamp {
         at: now(),
-        by: admin(core),
+        by: person(who),
         cause: Some(id.clone()),
     }
 }
 
-/// 照参数找哪一间，听众是这个连接的人（管理员）。
-async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
-    let hearer = admin(core);
+/// 账号 `who` 这个人。
+fn person(who: &AccountId) -> By {
+    By::Person(Person::new(who.clone()))
+}
+
+/// 替 `who` 干活，照参数找哪一间，听众是他（施工 Y-7）：人格那一间、无人格那一间的账号照 [`Core::memory_owner`]（平台桥的归
+/// 机主），人格照 `who` 看得到的几层找。
+async fn find(core: &Arc<Core>, who: &AccountId, at: Where) -> Result<Keeper, Refusal> {
+    let hearer = person(who);
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
         (Some(persona), None, None) if persona == NO_PERSONA => {
-            // 无人格那一间（施工 R-12 再补）：记忆账号是这个连接的账号，同无人格的会话照属主。
-            let room = Room::persona(&core.admin, NO_PERSONA);
+            // 无人格那一间（施工 R-12 再补）：记忆账号是替谁干活的那个账号，同无人格的会话照属主。
+            let room = Room::persona(&core.memory_owner(who), NO_PERSONA);
             Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
         (persona, None, None) => {
             // 无人格不是人格（施工 P-12）：不写、默认人格也没设的，照人格找没有哪一间；无人格那一间照会话找。
-            let found = personas::resolve(core, &core.admin, persona.as_deref().map(Some))
+            let found = personas::resolve(core, who, persona.as_deref().map(Some))
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
-            let account = personas::memory_account(Some(&found), &core.admin);
-            let room = Room::persona(&account, &found.id);
+            let room = Room::persona(&core.memory_owner(who), &found.id);
             Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
         (None, Some(session), None) => {
@@ -291,13 +304,15 @@ async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
 /// 记忆一轮至多追加几条，梦一次几十条；头的写队列（256 行）堵着才攒得起来，攒满了掉队，带 `after` 重新订阅补回来。
 const FOLLOWING: usize = 64;
 
-/// 跟着看 `at` 那一间的记忆日志（施工 R-12 上，流 `memory`）：找哪一间同 `memory.*`，听众是这个连接的人；`after` 以后的补。
+/// 替 `who` 跟着看 `at` 那一间的记忆日志（施工 R-12 上，流 `memory`）：找哪一间同 `memory.*`（施工 Y-7：照替谁干活）；`after`
+/// 以后的补。
 ///
 /// # Errors
 ///
 /// 人格记忆没装：`memory_not_installed`；找不到、写错了的同 `memory.*`；记忆日志读不了：`internal_error`，记一行。
 pub(crate) async fn follow(
     core: &Arc<Core>,
+    who: &AccountId,
     at: &crate::subscriptions::MemoryAt,
     after: Option<u64>,
 ) -> Result<miyu_session::Following, Refusal> {
@@ -306,6 +321,7 @@ pub(crate) async fn follow(
     }
     let keeper = find(
         core,
+        who,
         Where {
             persona: at.persona.clone(),
             session: at.session.clone(),
@@ -336,12 +352,22 @@ fn room(handle: &Handle) -> Option<Room> {
 
 /// 照意思找的那一路照这时的配置（施工 R-5 下）：远程的用量记在管理员名下（M8 只有他，和 `model.call` 一样）。
 pub(crate) fn using(core: &Core) -> Using {
+    using_as(core, &core.admin)
+}
+
+/// 同 [`using`]，碰的是 `keeper` 那一间（施工 Y-7）：远程的用量照那一间的账号记。
+fn using_for(core: &Core, keeper: &Keeper) -> Using {
+    using_as(core, keeper.room().account())
+}
+
+/// 照这时的配置，远程的用量记在 `owner` 名下。
+fn using_as(core: &Core, owner: &AccountId) -> Using {
     let config = core.config_now().borrow().clone();
     let resolved = config.resolved().clone();
     let source: Arc<dyn ConfigSource> = config;
     Using {
         config: Arc::new(Turn::new(resolved, source)),
-        owner: core.admin.clone(),
+        owner: owner.clone(),
     }
 }
 
@@ -350,7 +376,7 @@ async fn fill(core: &Core, keeper: Keeper) {
     if keeper.vectors().is_none() {
         return;
     }
-    let using = using(core);
+    let using = using_for(core, &keeper);
     // 记下已经成了，回应照常：补不成的 `blocking` 记了 `WARN memory failed`，补本身的出错 `Keeper::fill` 自己记。
     let _filled: Result<(), Refusal> = blocking(move || {
         keeper.fill(&using);
@@ -359,16 +385,14 @@ async fn fill(core: &Core, keeper: Keeper) {
     .await;
 }
 
-/// 人格记忆这个软件包这时装着没有（施工 R-10）：核心照清单设在记忆上（`Memory::set_installed`）。没有记忆的核心照装着算，
-/// 由后面的检查说这里没有记忆。
+/// 人格记忆这个软件包这时装着没有（施工 R-10）：核心照清单设在记忆上（`Memory::set_installed`）。
 pub(crate) fn installed(core: &Core) -> bool {
-    core.memory_for(&core.admin)
-        .is_none_or(|memory| memory.installed())
+    core.memory.installed()
 }
 
-/// 核心一份的记忆：管理员的才有（多用户以后照账号）。人格记忆没装的当没有（施工 R-10）。
+/// 核心一份的记忆（各账号的房间都在这一份登记里，用到哪一间才开，施工 Y-7）。人格记忆没装的当没有（施工 R-10）。
 fn memory(core: &Core) -> Result<Arc<miyu_session::Memory>, Refusal> {
-    core.memory_for(&core.admin)
+    Some(Arc::clone(&core.memory))
         .filter(|memory| memory.installed())
         .ok_or(Refusal::MEMORY_UNAVAILABLE)
 }

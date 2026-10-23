@@ -1,7 +1,7 @@
 //! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
 //! 列出来的那一块（施工 K-1 补，「列出来的那一块」）；她写知识库在 `knowledge/write.rs`（施工 K-3，第七条）。
 //!
-//! 查记忆的账号下的全部库（`memory_account`：人格住在谁家，无人格的照属主，系统账号的照管理员），人格的 `persona.toml` 写了
+//! 查记忆的账号下的全部库（`memory_account`：会话的属主，系统账号的照管理员，施工 Y-7），人格的 `persona.toml` 写了
 //! `[knowledge] bases` 的只要列着的、在的那几个（19 N11）。照这一刻的目录和人格文件算：建了库、改了人格，下一次就照新的。
 //! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::listed`] 再判一次。碰磁盘的在阻塞
 //! 线程里做。搜的时候照意思找（施工 K-2，`knowledge.md`「怎么走」第四条）：同记忆，问句照这一轮的配置算向量，搜完在后台补
@@ -96,11 +96,9 @@ impl Shelves {
         }
     }
 
-    /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 住在谁家查、照它收窄。碰磁盘，在阻塞线程里调。
+    /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 收窄（查的账号照旧是属主的，施工 Y-7）。碰磁盘，在阻塞线程里调。
     pub(crate) fn recast(&self, persona: Option<String>) -> Shelves {
-        let account = self
-            .personas
-            .memory_account(persona.as_deref().unwrap_or_default(), &self.owner);
+        let account = self.personas.memory_account(&self.owner);
         Shelves {
             knowledge: Arc::clone(&self.knowledge),
             account,
@@ -113,11 +111,10 @@ impl Shelves {
         }
     }
 
-    /// 载入的会话的知识库：记忆的账号照人格住在谁家算（`Personas::memory_account`，碰磁盘，在阻塞线程里）。
+    /// 载入的会话的知识库：记忆的账号照属主算（`Personas::memory_account`，施工 Y-7），人格照它收窄（碰磁盘，在阻塞线程里）。
     pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
         blocking(move || {
-            let persona = shelving.persona.as_deref().unwrap_or_default();
-            let account = shelving.personas.memory_account(persona, &shelving.owner);
+            let account = shelving.personas.memory_account(&shelving.owner);
             Arc::new(Shelves::new(shelving, account))
         })
         .await

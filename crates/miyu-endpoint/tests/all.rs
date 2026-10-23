@@ -103,6 +103,7 @@ mod mcp_status;
 mod mcp_url;
 mod members;
 mod memory;
+mod memory_accounts;
 mod memory_api;
 mod memory_cards;
 mod memory_clear;

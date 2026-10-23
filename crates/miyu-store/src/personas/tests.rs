@@ -213,14 +213,13 @@ fn ids_come_from_every_layer_once_in_order() {
     assert_eq!(places.personas.ids(), ["engineer", "miyu"]);
 }
 
-/// 记忆归哪个账号（施工 P-1 上，`personas.md`「怎么走」第 5 条）：住在家目录里的归那个账号，出厂、系统区的归会话的属主；
-/// 只看目录，文件写错了也照算。
+/// 记忆归哪个账号（施工 P-1 上、Y-7，`personas.md`「怎么走」第 5 条）：一律归会话的属主，人格住在谁的家目录不算；属主是系统账号的
+/// 归管理员。`home_of` 照旧只看目录。
 #[test]
-fn memory_goes_to_the_home_the_persona_lives_in() {
+fn memory_goes_to_the_owner_whoever_s_home_the_persona_lives_in() {
     let places = Places::new();
     let owner = AccountId::parse("bob").unwrap();
     places.write(Layer::Shipped, "engineer", "prompts/persona.md", "x\n");
-    places.write(Layer::System, "shared", "prompts/persona.md", "y\n");
     places.write(
         Layer::Home,
         "miyu",
@@ -228,24 +227,10 @@ fn memory_goes_to_the_home_the_persona_lives_in() {
         "user: a\nuser: b\n",
     );
     let personas = &places.personas;
-    assert_eq!(personas.memory_account("engineer", &owner), owner);
-    assert_eq!(personas.memory_account("shared", &owner), owner);
-    assert_eq!(personas.memory_account("miyu", &owner).as_str(), "admin");
-    assert_eq!(
-        personas.memory_account("gone", &owner),
-        owner,
-        "删掉了的归属主"
-    );
-    assert_eq!(
-        personas.memory_account("../admin", &owner),
-        owner,
-        "不合写法的不找"
-    );
-    // 属主是系统账号的（施工 O-4 下）：出厂、系统区的人格归管理员，家目录里的照旧归那个账号。
+    assert_eq!(personas.memory_account(&owner), owner);
+    // 属主是系统账号的（施工 O-4 下）：归管理员。
     let system = personas.clone().with_system_accounts(vec![owner.clone()]);
-    assert_eq!(system.memory_account("engineer", &owner).as_str(), "admin");
-    assert_eq!(system.memory_account("shared", &owner).as_str(), "admin");
-    assert_eq!(system.memory_account("miyu", &owner).as_str(), "admin");
+    assert_eq!(system.memory_account(&owner).as_str(), "admin");
     assert_eq!(
         personas
             .home_of("miyu")

@@ -147,7 +147,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let turns = connect(
             memory.as_ref(),
             scope,
-            &personas.memory_account(persona, &owner_of),
+            &personas.memory_account(&owner_of),
             &owner_of,
             persona,
             &id_of,

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_session::Handle;
 
 use crate::Core;
@@ -122,10 +122,12 @@ pub(super) async fn subscribe(
             let reply = subscriptions.add_widgets(core, looking, shook, out);
             (Ok(reply), Some(Target::Widgets))
         }
-        (Ok(Stream::Memory(at)), _) => match memory(core, subscriptions, request, at, out).await {
-            Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
-            Err(refusal) => (Err(refusal), None),
-        },
+        (Ok(Stream::Memory(at)), _) => {
+            match memory((core, caller.acting_for()), subscriptions, request, at, out).await {
+                Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
+                Err(refusal) => (Err(refusal), None),
+            }
+        }
         (
             Ok(
                 Stream::Extensions
@@ -344,17 +346,17 @@ async fn subscribe_after(
     Ok((upto, current))
 }
 
-/// 订阅一间的记忆日志（施工 R-12 上）：找哪一间、补什么、之后的照 `crate::memory::follow`；回应 `{"upto"}` 交给新的转发任务，
-/// 排在补的后面。
+/// 替 `who` 订阅一间的记忆日志（施工 R-12 上、Y-7）：找哪一间、补什么、之后的照 `crate::memory::follow`；回应 `{"upto"}` 交给
+/// 新的转发任务，排在补的后面。
 async fn memory(
-    core: &Arc<Core>,
+    (core, who): (&Arc<Core>, &AccountId),
     subscriptions: &mut Subscriptions,
     request: &Request,
     at: MemoryAt,
     out: &mpsc::Sender<String>,
 ) -> Result<(Value, MemoryAt), Refusal> {
     let after = after_of(request)?;
-    let following = crate::memory::follow(core, &at, after).await?;
+    let following = crate::memory::follow(core, who, &at, after).await?;
     let upto = following.upto;
     subscriptions.add_memory(at.clone(), following, out);
     Ok((json!({ "upto": upto }), at))

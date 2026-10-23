@@ -6,6 +6,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_kernel::id::AccountId;
 use miyu_recall::merge::CARD_CHARS;
 use miyu_recall::{Card, PersonCard};
 use miyu_session::{CardRefused, Stamp};
@@ -47,8 +48,12 @@ pub(super) struct CardForget {
 }
 
 /// 列这一间的人卡。
-pub(super) async fn cards(core: &Arc<Core>, params: Cards) -> Result<Value, Refusal> {
-    let keeper = find(core, params.at).await?;
+pub(super) async fn cards(
+    core: &Arc<Core>,
+    account: &AccountId,
+    params: Cards,
+) -> Result<Value, Refusal> {
+    let keeper = find(core, account, params.at).await?;
     let forgotten = params.forgotten;
     let found = tokio::task::spawn_blocking(move || keeper.cards(forgotten))
         .await
@@ -63,6 +68,7 @@ pub(super) async fn cards(core: &Arc<Core>, params: Cards) -> Result<Value, Refu
 /// 人写一张卡：正文超过 [`CARD_CHARS`] 字的太长，别的不合规矩的参数不对。
 pub(super) async fn update(
     core: &Arc<Core>,
+    account: &AccountId,
     stamp: Stamp,
     params: CardUpdate,
 ) -> Result<Value, Refusal> {
@@ -70,7 +76,7 @@ pub(super) async fn update(
     if chars > CARD_CHARS {
         return Err(Refusal::memory_too_long(chars, CARD_CHARS, "text"));
     }
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, account, params.at).await?;
     let card = Card {
         who: params.who,
         text: params.text,
@@ -83,10 +89,11 @@ pub(super) async fn update(
 /// 人作废一张卡：没有这个人的卡 `unknown_memory`。
 pub(super) async fn forget(
     core: &Arc<Core>,
+    account: &AccountId,
     stamp: Stamp,
     params: CardForget,
 ) -> Result<Value, Refusal> {
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, account, params.at).await?;
     let (who, why) = (params.who, params.why.unwrap_or_default());
     run(move || keeper.retire_card(stamp, who.trim(), why)).await?;
     Ok(json!({}))

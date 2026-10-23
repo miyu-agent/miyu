@@ -70,7 +70,7 @@ pub struct Found {
     pub examples_from: Option<Layer>,
     /// 角色扮演提示来自哪一层，没有的是没有（施工 P-1 补）。
     pub reminders_from: Option<Layer>,
-    /// 它住在谁的家目录里：有家目录那一层的是那个账号，只有出厂、系统区的没有（记忆归哪个账号照它，`personas.md`）。
+    /// 它住在谁的家目录里：有家目录那一层的是那个账号，只有出厂、系统区的没有（记忆归哪个账号不照它，照会话的属主，施工 Y-7）。
     pub home: Option<AccountId>,
     /// 头像（施工 P-5，`personas.md`「头像」）：有头像的最上面那一层里的那一张；没有的是没有。
     pub avatar: Option<PathBuf>,
@@ -112,7 +112,7 @@ pub struct Personas {
     dirs: Vec<(Layer, PathBuf)>,
     /// 家目录那一层是谁的。
     admin: AccountId,
-    /// 系统账号（施工 O-4 下）：属主是它们的会话，出厂、系统区的人格的记忆归管理员。
+    /// 系统账号（施工 O-4 下）：属主是它们的会话，记忆归管理员。
     system: Vec<AccountId>,
     /// 系统账号的会话的记忆归谁（施工 Y-2 中上：家目录那一层不一定是管理员的了，管理员另记）。
     keeper: Option<AccountId>,
@@ -307,14 +307,14 @@ impl Personas {
         Some(inside(&dir.join(id), relative))
     }
 
-    /// 用人格 `id`、属主是 `owner` 的会话，记忆归哪个账号（和记忆的会话对过，`17-记忆.md` L16，`personas.md`「怎么走」第 5 条）：
-    /// 人格住在谁的家目录就归谁；出厂、系统区的人格归会话的属主，属主是系统账号的归管理员（施工 O-4 下）。造会话、载入都照它。
-    pub fn memory_account(&self, id: &str, owner: &AccountId) -> AccountId {
-        self.home_of(id)
-            .unwrap_or_else(|| match self.system.contains(owner) {
-                true => self.keeper.clone().unwrap_or_else(|| self.admin.clone()),
-                false => owner.clone(),
-            })
+    /// 属主是 `owner` 的会话，记忆归哪个账号（`personas.md`「怎么走」第 5 条）：一律归会话的属主，用哪个人格、人格住在谁家都
+    /// 不管（施工 Y-7，设计 06 U21：记忆跟着用户走，用别人分享的人格记在用的人那里）；属主是系统账号的归管理员（施工 O-4 下）。
+    /// 造会话、载入、换人格都照它。
+    pub fn memory_account(&self, owner: &AccountId) -> AccountId {
+        match self.system.contains(owner) {
+            true => self.keeper.clone().unwrap_or_else(|| self.admin.clone()),
+            false => owner.clone(),
+        }
     }
 
     /// 几层里所有人格的编号，照编号排好，不重复。目录名不合写法的不算；读不了的一层当没有。

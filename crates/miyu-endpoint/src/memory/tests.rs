@@ -110,3 +110,5 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
         "整理完了：9 件を確認、2 件を修正。所要時間 1m 05s。"
     );
 }
+
+mod accounts;

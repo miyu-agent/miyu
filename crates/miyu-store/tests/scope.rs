@@ -224,13 +224,9 @@ fn a_system_account_s_memory_still_goes_to_the_keeper() {
         .with_system_accounts(vec![robot.clone()])
         .with_keeper(admin());
     assert_eq!(
-        personas.memory_account("nobody", &robot),
+        personas.memory_account(&robot),
         admin(),
         "系统账号的归管理员"
     );
-    assert_eq!(
-        personas.memory_account("nobody", &bob()),
-        bob(),
-        "别的照属主"
-    );
+    assert_eq!(personas.memory_account(&bob()), bob(), "别的照属主");
 }

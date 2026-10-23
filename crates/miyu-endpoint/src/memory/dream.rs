@@ -7,18 +7,22 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_session::{Dreamed, Handle, NotDreamed};
 
 use super::params::Where;
-use super::{find, installed, read, remembers, session_id, using};
+use super::{find, installed, read, remembers, session_id, using_for};
 use crate::Core;
 use crate::refusal::Refusal;
 use crate::sessions::offset;
 
-/// `memory.dream`：照参数找哪一间（同 `memory.*`），现在就整理，交回 `{"given", "revised", "retired", "summary"}`；会话的
+/// `memory.dream`：替 `who` 照参数找哪一间（同 `memory.*`，施工 Y-7），现在就整理，交回 `{"given", "revised", "retired", "summary"}`；会话的
 /// `/stop` 叫停了的多一个 `"stopped": true`（施工 R-22），前面几样是叫停以前合完了的；跑在整理会话里的多 `"session"`（施工 D-2）。
-pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
+pub(crate) async fn call(
+    core: &Arc<Core>,
+    who: &AccountId,
+    params: &Value,
+) -> Result<Value, Refusal> {
     if !installed(core) {
         return Err(Refusal::MEMORY_NOT_INSTALLED);
     }
@@ -31,9 +35,9 @@ pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refu
         }
         // 别的组合（写错的也在里面）照 `find` 判。
         _ => {
-            let keeper = find(core, at).await?;
-            // 合并的请求照这时的配置发，记在管理员名下（M8 只有他，和 `model.call` 一样）。
-            let using = using(core);
+            let keeper = find(core, who, at).await?;
+            // 合并的请求照这时的配置发，记在这一间的账号名下（施工 Y-7）。
+            let using = using_for(core, &keeper);
             answered(keeper.dream(using.config, using.owner, offset()).await)?
         }
     };
@@ -84,15 +88,19 @@ fn answered(dreamed: Result<Dreamed, NotDreamed>) -> Result<Dreamed, Refusal> {
     })
 }
 
-/// `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这时人叫的整理，不管是
+/// `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：替 `who` 照参数找哪一间（同 `memory.*`），叫停这时人叫的整理，不管是
 /// 哪一路叫的（会话里的 `/dream`、`memory.dream`），定时的不停。交回 `{"stopped": true}`；被叫停的那条照样回应，带
 /// `"stopped": true`。
 ///
 /// # Errors
 ///
 /// 这一间这时没有人叫的整理：`not_dreaming`；找哪一间的拒绝同 `memory.*`。
-pub(crate) async fn stop(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
-    let keeper = find(core, read(params)?).await?;
+pub(crate) async fn stop(
+    core: &Arc<Core>,
+    who: &AccountId,
+    params: &Value,
+) -> Result<Value, Refusal> {
+    let keeper = find(core, who, read(params)?).await?;
     match keeper.stop_dream() {
         true => Ok(json!({"stopped": true})),
         false => Err(Refusal::NOT_DREAMING),

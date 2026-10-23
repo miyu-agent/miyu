@@ -73,7 +73,7 @@ impl Calls {
         venue: &miyu_kernel::id::VenueId,
         (source, own): (super::Source, Vec<miyu_kernel::event::Event>),
     ) -> (Option<super::TurnLane>, Option<Calls>) {
-        let account = personas.memory_account(persona, &self.owner);
+        let account = personas.memory_account(&self.owner);
         super::connect(
             Some(&self.keeper.memory),
             miyu_policy::memory::MemoryScope::Persona,

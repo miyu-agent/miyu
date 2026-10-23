@@ -5,23 +5,28 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
+use miyu_kernel::id::AccountId;
 use miyu_tool::Refused;
 
 use super::params::Turns;
-use super::{SEARCH, blocking, find, limit, using};
+use super::{SEARCH, blocking, find, limit, using_for};
 use crate::Core;
 use crate::refusal::Refusal;
 
 /// `memory.turns`：照关键词找，有照意思那一路的再照意思找（问句的向量照这时的配置算，搜完在后台补这一间缺的，同
 /// `memory.search`），最相关的在前。
-pub(super) async fn turns(core: &Arc<Core>, params: Turns) -> Result<Value, Refusal> {
+pub(super) async fn turns(
+    core: &Arc<Core>,
+    account: &AccountId,
+    params: Turns,
+) -> Result<Value, Refusal> {
     if params.query.trim().is_empty() {
         return Err(Refusal::BAD_PARAMS);
     }
     let limit = limit(params.limit, SEARCH)?;
-    let keeper = find(core, params.at).await?;
+    let keeper = find(core, account, params.at).await?;
     let query = params.query;
-    let using = using(core);
+    let using = using_for(core, &keeper);
     let near = match keeper.vectors() {
         Some(vectors) => vectors.query(&using, &query).await,
         None => None,

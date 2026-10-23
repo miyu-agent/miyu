@@ -68,6 +68,13 @@ impl Room {
         }
     }
 
+    /// 记忆归哪个账号（施工 Y-7）：跟着人格的是那个账号，会话那一间是会话的属主。
+    pub fn account(&self) -> &AccountId {
+        match self {
+            Room::Persona { account, .. } | Room::Session { account, .. } => account,
+        }
+    }
+
     /// 回合库在哪。
     pub(crate) fn turns(&self, root: &DataRoot) -> PathBuf {
         match self {

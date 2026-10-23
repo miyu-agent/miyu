@@ -16,7 +16,7 @@
 | `crates/miyu-policy/src/persona.rs` | 两份字怎么读：`persona.toml` 的名字、说明、记忆的默认范围（R-3 下），`prompts/examples.md` 的示范对话；写错的写明哪个文件第几行（纯逻辑） |
 | `crates/miyu-policy/src/compose.rs`、`snapshot.rs` | 人设进 system 第一块，示范对话进快照的 `demos`，组装时排在 system 后面、历史前面；角色扮演提示拼成快照的 `reminder`，有它的 system 最后带风格锁（施工 P-1 补） |
 | `crates/miyu-store/src/personas.rs` | 四层在哪、怎么叠、列出编号、包里被盖住的（施工 P-11 上）；记忆归哪个账号（认得系统账号，施工 O-4 下） |
-| `crates/miyu-endpoint/src/personas.rs` | 造会话时照默认找人格、记忆归哪个账号、`persona.list`、`persona.get` |
+| `crates/miyu-endpoint/src/personas.rs` | 造会话时照默认找人格、`persona.list`、`persona.get`（记忆归哪个账号施工 Y-7 起照 `Core::memory_owner`） |
 | `crates/miyu-endpoint/src/personas/glance.rs`（施工 V-16） | 图的版本、头像的候选主色记在 `state/personas/pictures.json`：照位置、大小、修改时刻认，对得上的不读图，换了图重算；坏了、删了照空的算 |
 | `crates/miyu-endpoint/src/settings.rs` | 配置项 `persona.default`（`config.md`） |
 
@@ -95,7 +95,7 @@ assistant: 8640
 2. **找**：在三层里照编号找、叠好。编号不合写法：`bad_params`；哪一层都没有：`unknown_persona`，指着没有的默认人格也一样，不悄悄换成别的；文件写错：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（例如 `home prompts/examples.md:2: user and assistant must take turns`）；读不了：内部出错，记一行运行日志。找好了才造会话，什么都没找成的什么都不造。
 3. **拼快照**：人设原样进 system 第一块，后面接场所说明、核心的几行（`26-提示词.md` 第四节）；示范对话进快照的 `demos`。没有示范对话的快照里不写这一格，以前造的会话、软件工程师的快照字节和以前一样。角色扮演提示拼成快照的 `reminder`（包装的开头、原文、收尾，`policy.md`「拼」第 4 条），有它的 system 最后空一行接上风格锁；内核回合开始时第 1、4、7……轮注入它，组装排在触发的那句后面（`kernel/request.md`「事实」，施工 P-1 补）。没有它的快照不写这一格，system 一字不变。会话的预设没开 `roleplay` 的（开发预设就没开，施工 P-2 中，`presets.md`），角色扮演提示不进快照，也就没有风格锁；人格的指纹照旧算原来的字。
 4. **子会话**照她派的时候挑的人格一样找、叠；没挑的无人格（施工 P-4 上，原来是软件工程师）。
-5. **记忆归哪个账号**（和记忆的会话对过，`17-记忆.md` L16；规则在 `Personas::memory_account`，造会话时端点照叠好的人格算好交进 `Create.memory_account`，载入时 `Load.personas` 照快照里的人格再算一遍）：人格住在谁的家目录（有家目录那一层），记忆就归谁；出厂、系统区的人格归会话的属主；属主是系统账号的归管理员（施工 O-4 下：端点照 `Core::memory_owner` 算好交进来，载入时 `Personas::with_system_accounts` 认得哪些是系统账号）。群里的她和终端里的她因此用同一份记忆，隐私靠每一条的听众过滤。系统账号永远没有自己的记忆。
+5. **记忆归哪个账号**（和记忆的会话对过，`17-记忆.md` L16；规则在 `Personas::memory_account`，造会话时端点照 `Core::memory_owner` 算好交进 `Create.memory_account`，载入、换人格时照它再算一遍）：一律归会话的属主，用哪个人格、人格住在谁的家目录都不管（施工 Y-7，设计 06 U21，2026-10-22 项目主人定：记忆跟着用户走，用别人分享的、系统区的人格，记在用的人那里；原来 P-1 上是「人格住在谁家就归谁」）；属主是系统账号的归管理员（机主，施工 O-4 下：载入时 `Personas::with_system_accounts` 认得哪些是系统账号）。群里的她和终端里的她因此用同一份记忆，隐私靠每一条的听众过滤。系统账号永远没有自己的记忆。
 6. **钉在会话上**：`session.created` 记下人格的编号（施工 P-1 下），会话列表、`subscribe` 的回应照它写 `persona`，头显示用的是谁；拼好的快照存成 blob，载入照快照，不再读人格目录。文件改了，以后造的会话用新的；已经开着的会话下一个回合换上（施工 P-1 再补，K3，`kernel/session.md`「换策略快照」）：每个回合开始，执行器照人格的编号把几层重新找一遍，人设、示范对话、角色扮演提示的指纹和快照里的不一样，就照新的重拼、换上，日志里一条内核记的带 `policy` 的 `session.policy_changed`，前缀在这一轮断一次。名字、说明不进快照，记忆的范围钉在会话上，都不跟着换。人格写错了的照旧用原来的，记一行运行日志；人格的文件没了的（以前钉着出厂人格、后来撤掉了的）照快照里的接着用，不报（施工 P-4 上）；P-1 再补以前造的快照没有指纹、程序升级过核心的字的会话，也照旧（新开的会话照新的）。
    - **人中途换人格**（施工 P-13，设计 16 Y5）：`session.configure` 的 `persona`，先压缩一轮，下一个回合照新人格重拼快照；会话列表、`subscribe` 的回应照换成的写。记忆、知识库照新人格（`memory.md`「换了人格」），细节见 `protocol.md` 的 `session.configure` 第 6 条。
 7. **`persona.list`**：几层里所有的编号（目录名不合写法的、不是目录的不算），照编号排，一个一个找；名字、说明照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
@@ -179,7 +179,7 @@ assistant: 8640
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
 | `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和系统区中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；只有出厂、系统区的不住在谁家，空目录也算住在家里；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |
-| `crates/miyu-endpoint/src/personas/tests.rs` | 记忆归哪个账号；名字照语言挑、退回的先后 |
+| `crates/miyu-endpoint/src/personas/tests.rs` | 名字照语言挑、退回的先后 |
 | `crates/miyu-endpoint/src/personas/glance/tests.rs`（施工 V-16） | 看一次记在盘上、换个进程照记下的给（图读不了也给）；大小变了、大小没变修改时刻变了都重算；先只要版本、后来要候选主色的补算；图不在的没有 |
 | `crates/miyu-endpoint/tests/personas.rs` | 家目录里的人格进 system、示范对话排在前面；不写人格照默认、个人设置压着系统配置；没有的、编号不对的、写错的拒绝，默认人格指着没有的也拒，什么都不造；场所会话带人格造、找回时不看、新场所指着没有的不造；`persona.list`、`persona.get`；角色扮演提示排在人说的那句后面、第二轮不再注入、system 带风格锁，软件工程师都没有（施工 P-1 补） |
 | `crates/miyu-policy/src/compose.rs` 的测试 | 角色扮演提示拼成一块、存得回来、造出的策略注入它；空白的算没有、软件工程师的快照不写这一格；风格锁只接在有提示的 system 最后（施工 P-1 补） |

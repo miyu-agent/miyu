@@ -1,9 +1,9 @@
 //! 系统账号（施工 O-4 下，`docs/construction/O-4-系统账号（下）.md`，`06-多用户与身份.md` U14）：声明了系统账号的包各一个，
 //! 账号名就是包的编号。照核心手里这时的清单算（装卸当场换，施工 F-5 下），不落盘：`home/<编号>/` 就是它在磁盘上的样子。
-//! 核心拉起的这个包的扩展以它的身份连进来；它的东西管理员能看能管，它没有自己的记忆。
+//! 核心拉起的这个包的扩展以它的身份连进来；它的东西管理员能看能管，它没有自己的记忆（归机主，[`Core::memory_owner`]）。
 //!
 //! 施工 Y-5 中上（设计 06 U16）：每个带进程的包都是自己的账号（[`Core::package_accounts`]），起来时一样建家目录；声明了系统账号
-//! 的（平台桥）替平台上的外人干活，别的替机主干活（[`Core::serving`]）。会话、记忆、用量照旧只认机主和平台桥（[`Core::knows`]）：
+//! 的（平台桥）替平台上的外人干活，别的替机主干活（[`Core::serving`]）。用量照旧只认机主和平台桥（[`Core::knows`]），记忆人人各一份（施工 Y-7）：
 //! 别的包开的会话归机主。
 
 use std::sync::Arc;
@@ -26,7 +26,7 @@ impl Core {
         self.system_accounts().contains(account)
     }
 
-    /// 核心认的账号：管理员、系统账号。会话列表的索引、用量、记忆只给它们的会话（别的账号随多用户）。
+    /// 核心认的账号：管理员、系统账号。用量只给它们的会话（别的账号随多用户；记忆施工 Y-7 起人人有，照 [`Core::memory_owner`]）。
     pub(crate) fn knows(&self, account: &AccountId) -> bool {
         *account == self.admin || self.is_system(account)
     }
@@ -58,7 +58,8 @@ impl Core {
             .then(|| self.admin.clone())
     }
 
-    /// 属主是 `owner` 的会话，出厂、系统区的人格的记忆照谁算（`personas.md`「怎么走」第 5 条）：系统账号的归管理员。
+    /// 属主是 `owner` 的会话，记忆归谁（`personas.md`「怎么走」第 5 条，施工 Y-7 起不看人格住在谁家）：系统账号的归管理员（机主），
+    /// 别的归属主自己。
     pub(crate) fn memory_owner(&self, owner: &AccountId) -> AccountId {
         match self.is_system(owner) {
             true => self.admin.clone(),

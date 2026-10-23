@@ -139,14 +139,6 @@ pub(crate) fn remove(layers: &[Layer]) -> Option<&'static str> {
     }
 }
 
-/// 造会话时记忆归哪个账号：和载入时的 [`Personas::memory_account`] 同一条规则（`personas.md`「怎么走」第 5 条），叠好的人格
-/// 已经知道它住在谁家，不再看一遍目录。无人格的归属主（记忆本来就不生效，施工 P-4 上）。属主是系统账号的归管理员，随 O-4。
-pub(crate) fn memory_account(found: Option<&Found>, owner: &AccountId) -> AccountId {
-    found
-        .and_then(|found| found.home.clone())
-        .unwrap_or_else(|| owner.clone())
-}
-
 /// `persona.list`：几层里所有的人格，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
 /// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补：人看的是名字）。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {

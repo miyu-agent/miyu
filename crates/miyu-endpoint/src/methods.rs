@@ -161,7 +161,14 @@ pub(crate) fn call<'a>(
             crate::knowledge::call(core, caller.acting_for(), kb, &request.params).await
         }),
         method if memory::METHODS.contains(&method) => answer(move || async move {
-            memory::call(core, &request.method, &request.id, &request.params).await
+            memory::call(
+                core,
+                caller.acting_for(),
+                &request.method,
+                &request.id,
+                &request.params,
+            )
+            .await
         }),
         "session.list" => answer(move || async move {
             let params: ListParams = params(request)?;

@@ -1,35 +1,6 @@
-//! 记忆归哪个账号、照语言挑名字（施工 P-1 上）。
+//! 照语言挑名字（施工 P-1 上）。
 
 use super::*;
-
-fn found(home: Option<&str>) -> Found {
-    Found {
-        id: "miyu".to_string(),
-        file: Default::default(),
-        texts: Default::default(),
-        layers: vec![miyu_store::personas::Layer::Shipped],
-        persona_from: None,
-        examples_from: None,
-        reminders_from: None,
-        home: home.map(|account| AccountId::parse(account).unwrap()),
-        avatar: None,
-        background: None,
-    }
-}
-
-#[test]
-fn memory_follows_the_home_the_persona_lives_in() {
-    let owner = AccountId::parse("alice").unwrap();
-    assert_eq!(
-        memory_account(Some(&found(Some("admin"))), &owner).as_str(),
-        "admin"
-    );
-    assert_eq!(
-        memory_account(Some(&found(None)), &owner).as_str(),
-        "alice",
-        "出厂、系统区的归属主"
-    );
-}
 
 #[test]
 fn names_are_picked_by_language_then_english_chinese_japanese() {

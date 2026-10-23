@@ -86,7 +86,7 @@ impl Setup {
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),
             profile: self.profile.clone(),
             personas: personas::personas(core, &who.owner),
-            memory_account: personas::memory_account(persona, &core.memory_owner(&who.owner)),
+            memory_account: core.memory_owner(&who.owner),
             memory_scope: who
                 .memory
                 .or(persona.and_then(|found| found.file.memory))
@@ -114,7 +114,7 @@ impl Setup {
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),
-            memory: core.memory_for(&who.owner),
+            memory: Some(Arc::clone(&core.memory)),
             configs: core.hub.configs(),
             model: who.model.clone(),
             preset: self.preset.take().map(|found| presets::chosen(core, found)),
