@@ -1,6 +1,7 @@
 //! 会话认自己的属主（施工 O-4 上，`docs/construction/O-4-系统账号（上）.md`）：没在跑的会话照数据根里哪个账号的
-//! `home/<账号>/sessions/<编号>/` 在找，载入、读页、接着说话、删掉都在那个账号的家目录下，管理员的家目录一个字不动。
-//! 造会话还只能是管理员（连进来的人），所以把造好的会话的目录挪到另一个账号下，换一个核心再找。
+//! `home/<账号>/sessions/<编号>/` 在找。施工 Y-2 上起只有属主碰得到（U2：管理员也看不到别人的会话）：把管理员造好的会话的
+//! 目录挪到另一个账号下，换一个核心，管理员读页、订阅、说话、删掉一律当没有这个会话，那个账号的家目录一个字不动。系统账号
+//! 照属主找、载入它自己家目录下的会话，见 `system_account.rs`。
 
 use std::path::PathBuf;
 
@@ -56,51 +57,74 @@ async fn a_session_under_another_account_is_found_loaded_and_deleted_there() {
     let second = home.core(&script);
     let mut client = Client::connect(second.clone());
     client.hello().await;
+    let not_found =
+        |reply: &serde_json::Value| reply["error"]["data"]["reason"] == json!("session_not_found");
     let page = client
         .call("p1", "view.page", json!({"session": session, "turns": 1}))
         .await;
-    assert!(
-        page["result"]["events"]
-            .as_array()
-            .is_some_and(|events| !events.is_empty()),
-        "照属主找得到它的日志：{page}"
-    );
-    // 订阅另开一个连接：推送不跟后面的回应搅在一起。
+    assert!(not_found(&page), "别人的会话读不了页：{page}");
     let mut watcher = Client::connect(second.clone());
     watcher.hello().await;
     let subscribed = watcher.subscribe("x1", &session).await;
-    assert!(
-        subscribed["result"]["preset"].is_string(),
-        "订阅的回应照属主的日志读 session.created：{subscribed}"
-    );
+    assert!(not_found(&subscribed), "订阅不了：{subscribed}");
     drop(watcher);
     let said = client.say("s2", &session, "b").await;
-    assert!(said.get("error").is_none(), "照属主载入：{said}");
-    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
-    while turns_in(&bobs) < 2 {
-        assert!(
-            tokio::time::Instant::now() < deadline,
-            "第二轮写在 bob 的家目录下"
-        );
-        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-    }
-    assert!(!alices.exists(), "管理员的家目录一个字没动");
-
+    assert!(not_found(&said), "说不了话：{said}");
     let deleted = client
         .call("d1", "session.delete", json!({"session": session}))
         .await;
-    assert_eq!(deleted["result"], json!({}), "{deleted}");
-    let trash = |account: &str| {
-        home.root
-            .path()
-            .join("home")
-            .join(account)
-            .join("trash/sessions")
-            .join(&session)
-    };
-    assert!(trash("bob").is_dir(), "进 bob 的回收处");
-    assert!(!trash("alice").exists());
-    assert!(!bobs.exists());
+    assert!(not_found(&deleted), "删不掉：{deleted}");
+    // 每一个带会话编号的方法都一样（施工 Y-2 上：办之前那一道统一查，参数都不看）。`blob.get` 另有一套、拒的说法不同，
+    // 见 `blob_session.rs`。
+    let methods = [
+        "command.catalog",
+        "command.run",
+        "events.append",
+        "job.output",
+        "job.stop",
+        "session.answer",
+        "session.clear",
+        "session.compact",
+        "session.configure",
+        "session.context",
+        "session.fork",
+        "session.interrupt",
+        "session.note",
+        "session.recap",
+        "session.redo",
+        "session.respond",
+        "session.revert",
+        "session.set_meta",
+        "session.set_permission_level",
+        "session.set_terminal",
+        "session.set_workspace",
+        "session.terminal",
+        "session.tools",
+        "session.unrevert",
+        "session.withdraw",
+        "usage.query",
+        "venue.records",
+        "view.detail",
+        "view.page",
+    ];
+    for (n, method) in methods.iter().enumerate() {
+        let reply = client
+            .call(&format!("m{n}"), method, json!({"session": session}))
+            .await;
+        assert!(not_found(&reply), "{method}：{reply}");
+    }
+    for (n, stream) in ["events", "view"].iter().enumerate() {
+        let reply = client
+            .call(
+                &format!("w{n}"),
+                "subscribe",
+                json!({"stream": stream, "session": session}),
+            )
+            .await;
+        assert!(not_found(&reply), "subscribe {stream}：{reply}");
+    }
+    assert_eq!(turns_in(&bobs), 1, "bob 的会话一个字没动");
+    assert!(!alices.exists());
 }
 
 /// 把 `from` 整棵拷到 `to`。

@@ -88,13 +88,13 @@ async fn extensions_only_reach_what_they_declared() {
     let home = Home::new();
     let program = Program::new();
     let asks = [
-        // 只给人的：替人回答确认、改权限级别、删会话、表里没有的。
+        // 只给人的：替人回答确认、改权限级别、改工作目录、表里没有的。
         r#"ask:session.answer:{"session":"x","call":"c","decision":"once"}"#,
         r#"ask:session.set_permission_level:{"session":"x","level":"full"}"#,
-        r#"ask:session.delete:{"session":"x"}"#,
         r#"ask:session.set_workspace:{"session":"x","cwd":"~"}"#,
         "call:no.such_method",
-        // 要能力的：参数没查之前就挡下。
+        // 要能力的：参数没查之前就挡下。删会话施工 Y-2 上起给有 `sessions.drive` 的扩展（只删得掉自己名下的，平台的后台删场所会话）。
+        r#"ask:session.delete:{"session":"x"}"#,
         r#"ask:session.create:{"cwd":"~"}"#,
         r#"ask:session.send:{"session":"x","text":"hi"}"#,
         r#"ask:session.send:{"session":"x","text":"hi","as":{"platform":"qq","id":"1","name":"a"}}"#,
@@ -110,10 +110,11 @@ async fn extensions_only_reach_what_they_declared() {
     let _core = core(&home, &Script::new([]), json!({"plain": ["tools"]}));
     let replies = lines(&path, 2 + asks.len()).await;
     let replies = &replies[1..];
-    for (n, ask) in asks.iter().enumerate().take(5) {
+    for (n, ask) in asks.iter().enumerate().take(4) {
         assert_eq!(reason(&replies[n]), "local_only", "{ask}：{}", replies[n]);
     }
     let needs = [
+        "sessions.drive",
         "sessions.drive",
         "sessions.drive",
         "act_for_external",
@@ -124,16 +125,16 @@ async fn extensions_only_reach_what_they_declared() {
         "fs.read",
     ];
     for (n, capability) in needs.iter().enumerate() {
-        let reply = &replies[5 + n];
-        assert_eq!(reason(reply), "needs_approval", "{}：{reply}", asks[5 + n]);
+        let reply = &replies[4 + n];
+        assert_eq!(reason(reply), "needs_approval", "{}：{reply}", asks[4 + n]);
         assert_eq!(
             reply["error"]["data"]["capabilities"],
             json!([capability]),
             "{}：{reply}",
-            asks[5 + n]
+            asks[4 + n]
         );
     }
-    let open = &replies[5 + needs.len()];
+    let open = &replies[4 + needs.len()];
     assert!(open.get("result").is_some(), "读模型目录不挡：{open}");
 }
 

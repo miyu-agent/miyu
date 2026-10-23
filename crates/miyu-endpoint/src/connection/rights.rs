@@ -61,6 +61,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.revert" | "session.unrevert" | "session.redo" | "session.compact"
         | "session.clear" | "session.configure" | "session.fork" | "session.set_meta"
         | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
+        // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉自己名下的，属主照 `checks.rs` 查。
+        "session.delete" => Needs(SessionsDrive),
         // 读会话里的东西。
         "session.list" | "session.recap" | "session.tools" | "session.context" | "view.page"
         | "view.detail" | "job.output" => Needs(EventsRead),
@@ -90,13 +92,12 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
         }
-        // 只给人：替人回答、改权限和工作目录、删会话、终端会话、账号和登录、改人格预设、装卸软件包、改配置和密钥、项目。
+        // 只给人：替人回答、改权限和工作目录、终端会话、账号和登录、改人格预设、装卸软件包、改配置和密钥、项目。
         "session.answer"
         | "session.set_permission_level"
         | "session.set_workspace"
         | "session.terminal"
         | "session.set_terminal"
-        | "session.delete"
         | "account.disable"
         | "account.enable"
         | "account.invite"

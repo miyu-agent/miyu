@@ -20,7 +20,7 @@ use crate::sessions::Opening;
 mod message;
 mod records;
 mod sessions;
-pub(crate) use sessions::owners;
+pub(crate) use sessions::{bridged, owners};
 
 pub(crate) use message::{VenueMessageParams, platform_id};
 pub(crate) use records::records;

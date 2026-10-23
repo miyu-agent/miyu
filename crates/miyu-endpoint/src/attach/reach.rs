@@ -1,13 +1,13 @@
 //! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话的属主找 blob，不照连接的账号。
 //! 接入QQ 的会话 2026-10-17 要的：群会话归系统账号，`show` 存的 blob 在它名下；以前一律照管理员找，桥读不到。
 //!
-//! 谁读得到：会话的属主、管理员（头看的都是这台机器上的会话）；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions`
+//! 谁读得到：会话的属主（施工 Y-2 上起管理员不再算：U2，管理员也看不到成员的会话；场所会话只在平台的后台看）；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions`
 //! 列谁的会话，`venues::owners`）里引用过的 blob：消息、工具结果的图片块、文件块，`file.shown` 的 blob，她经工具发出去的图
 //! （`tool.result.sent`，施工 W-6 再补：接入QQ 发表情包要读管理员私聊里的）（[`references`]）。只认
 //! 结构里的引用，不在原文里搜：桥能以外部身份往主人的私聊里发字，照原文搜它就能写一句带着哈希的话、读走主人别的 blob。
 //! 不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
 //!
-//! 扩展的连接（施工 W-6 三补）：照账号放行的那一条（属主、管理员）不放它，它要的 blob 也得是那个会话引用过的。没声明系统账号
+//! 扩展的连接（施工 W-6 三补）：照账号放行的那一条（属主）不放它，它要的 blob 也得是那个会话引用过的。没声明系统账号
 //! 的包的扩展是管理员，以前写上管理员随便一个会话，就读得到管理员名下任何一个 blob。
 
 use miyu_kernel::event::{Body, Effect, Event};
@@ -31,7 +31,7 @@ pub(super) async fn owner(
         .owner(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;
-    let own = *caller == owner || *caller == core.admin;
+    let own = *caller == owner;
     if own && !extension {
         return Ok(owner);
     }

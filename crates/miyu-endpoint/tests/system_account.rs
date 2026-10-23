@@ -14,7 +14,6 @@ use miyu_kernel::event::Body;
 use miyu_kernel::id::AccountId;
 use miyu_kernel::origin::By;
 use miyu_session::testkit::{Play, Script};
-use miyu_store::blob::Blobs;
 use miyu_store::log::read_events;
 use miyu_tool::Catalog;
 
@@ -80,6 +79,7 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bot");
+    let checked = home.work.join("group-checked");
     let group = r#"{"venue":"qq:group:1","kind":"group","persona":"engineer"}"#;
     install_serving(
         &home,
@@ -92,6 +92,9 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
             &format!("ask:venue.session:{group}"),
             r#"ask:session.send:{"session":"{session}","text":"我的显卡是 N 卡","as":{"external":"qq:20001"}}"#,
             r#"ask:session.send:{"session":"{session}","text":"我也在","as":{"external":"qq:10001"}}"#,
+            // 群会话归它：删也是它删（施工 Y-2 上起人的头碰不到场所会话，项目主人 10-23 定删放在 im 后台）。
+            &format!("pause:{}", checked.display()),
+            r#"ask:session.delete:{"session":"{session}"}"#,
             r#"ask:venue.session:{"venue":"qq:private:10001","kind":"private","peer":"qq:10001"}"#,
             r#"ask:session.send:{"session":"{session}","text":"在吗","as":{"external":"qq:10001"}}"#,
             "wait",
@@ -107,7 +110,7 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
         Play::Says("嗯。"),
     ]);
     let core = served_core(&home, &script);
-    let got = replies(&path, 7).await;
+    let got = replies(&path, 5).await;
 
     assert_eq!(
         got[0]["result"]["account"], "bot",
@@ -158,21 +161,6 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
         "{owner_said:?}"
     );
 
-    let private = &got[5]["result"];
-    assert_eq!(
-        private["account"], "alice",
-        "对应表里的主人的私聊照旧归主人：{got:?}"
-    );
-    let mine = private["session"].as_str().expect("有编号").to_string();
-    assert!(dir(&home, &alice(), &mine).is_dir());
-    let made = snapshot(&home, &alice(), &dir(&home, &alice(), &mine));
-    assert_eq!(made.group, None, "私聊不是群会话");
-    assert!(!made.system.contains(note.trim_end()));
-    assert!(
-        got[6].get("error").is_none(),
-        "系统账号的连接照样能对主人的会话说话：{got:?}"
-    );
-
     until_turns_in(&groups, 1).await;
     // 会话落盘时就写：索引在它自己的家目录下、行里属主是它；用量记在它名下（查之前，不靠 `usage.query` 补）。
     let index = home.root.index(&bot()).join("sessions.db");
@@ -191,32 +179,6 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
     .await;
     let mut client = Client::connect(core.clone());
     client.hello().await;
-    // 附件存在连接的账号名下，她照会话的属主读：拷一份进系统账号的 blob。
-    let put = client
-        .call(
-            "b1",
-            "blob.put",
-            json!({"data": "aGVsbG8=", "name": "a.txt"}),
-        )
-        .await;
-    let blob = put["result"]["blob"]
-        .as_str()
-        .unwrap_or_else(|| panic!("{put}"))
-        .to_string();
-    let attached = client
-        .call(
-            "b2",
-            "session.send",
-            json!({"session": session, "text": "看这个", "as": {"external": "qq:20002"},
-                   "attachments": [{"blob": blob, "name": "a.txt", "media_type": put["result"]["media_type"]}]}),
-        )
-        .await;
-    assert!(attached.get("error").is_none(), "{attached}");
-    let hash = miyu_kernel::id::ContentHash::parse(&blob).expect("合写法");
-    assert!(
-        Blobs::new(home.root.blobs(&bot())).path(&hash).is_file(),
-        "附件拷进了会话的属主名下"
-    );
     let usage = client
         .call("u1", "usage.query", json!({"group": ["account"]}))
         .await;
@@ -246,29 +208,11 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
     }
     assert!(!turns(&bot()).exists(), "系统账号没有自己的回合库");
     assert!(turns(&alice()).exists(), "群里的回合进管理员的回合库");
-    // 删掉群会话：管理员的回合库里给它埋墓碑，记忆的出处在它里面的都算死了。
-    // 带附件的那一句排出的那一轮可能还在跑：跑着的删不掉（`turn_running`），等它说完再删。
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    let mut n = 0;
-    let deleted = loop {
-        n += 1;
-        let deleted = client
-            .call(
-                &format!("d{n}"),
-                "session.delete",
-                json!({"session": session}),
-            )
-            .await;
-        if reason(&deleted) != Some("turn_running") {
-            break deleted;
-        }
-        assert!(
-            tokio::time::Instant::now() < deadline,
-            "一直在跑：{deleted}"
-        );
-        tokio::time::sleep(Duration::from_millis(20)).await;
-    };
-    assert_eq!(deleted["result"], json!({}), "{deleted}");
+    // 删掉群会话（桥删）：管理员的回合库里给它埋墓碑，记忆的出处在它里面的都算死了。等它空下来再放桥删：跑着的删不掉。
+    until_idle(&groups).await;
+    std::fs::write(&checked, "").expect("写得进");
+    let got = replies(&path, 8).await;
+    assert_eq!(got[5]["result"], json!({}), "桥删得掉它自己的群：{got:?}");
     let db = rusqlite::Connection::open_with_flags(
         turns(&alice()),
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
@@ -293,7 +237,54 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
             })
             .expect("索引在");
     assert_eq!(left, 0, "它自己的索引里那一行拿掉了");
+
+    let private = &got[6]["result"];
+    assert_eq!(
+        private["account"], "alice",
+        "对应表里的主人的私聊照旧归主人：{got:?}"
+    );
+    let mine = private["session"].as_str().expect("有编号").to_string();
+    assert!(dir(&home, &alice(), &mine).is_dir());
+    let made = snapshot(&home, &alice(), &dir(&home, &alice(), &mine));
+    assert_eq!(made.group, None, "私聊不是群会话");
+    assert!(!made.system.contains(note.trim_end()));
+    assert!(
+        got[7].get("error").is_none(),
+        "系统账号的连接照样能对主人的会话说话：{got:?}"
+    );
+
     core.stop_extensions().await;
+}
+
+/// 等会话目录 `dir` 里的人话都排完、最后一轮结束了。
+async fn until_idle(dir: &Path) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        let events = read_events(dir).unwrap_or_default();
+        let last_said = events
+            .iter()
+            .filter(|event| matches!(event.body, Body::MessageUser(_)))
+            .map(|event| event.seq)
+            .max();
+        let last_ended = events
+            .iter()
+            .filter(|event| matches!(event.body, Body::TurnEnded(_)))
+            .map(|event| event.seq)
+            .max();
+        let started = events
+            .iter()
+            .filter(|event| matches!(event.body, Body::TurnStarted(_)))
+            .count();
+        let ended = events
+            .iter()
+            .filter(|event| matches!(event.body, Body::TurnEnded(_)))
+            .count();
+        if started == ended && last_ended > last_said {
+            return;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "一直没空下来");
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
 }
 
 /// 起来以后才装上的包（施工 F-5 下）：当场建它的家目录、工作区，开它的会话列表索引，扩展以它的身份连进来。

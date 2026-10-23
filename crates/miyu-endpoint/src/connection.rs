@@ -26,6 +26,7 @@ use tokio::task::JoinSet;
 use miyu_kernel::id::SessionId;
 
 mod accounts;
+mod checks;
 mod gate;
 mod reach;
 mod rights;
@@ -200,36 +201,16 @@ async fn read_all<R: AsyncRead + Unpin>(
         tracing::debug!(target: "miyu::endpoint", method = request.method.as_str(), "request");
         core.activity.touch();
         reap(&mut background);
-        // 凭据决定的闸（施工 W-8、Y-1 上）：一次性码先设密码，邀请码先注册，成员暂时只能管自己的账号。
-        if let Some(refusal) = gate::refuse(&core, via.as_ref(), &caller.account, &request.method) {
-            let refused = wire::error(
-                Value::String(request.id.as_str().to_string()),
-                refusal,
-                locale,
-            );
-            if !send(&out, refused).await {
-                break;
-            }
-            continue;
-        }
-        // 本机才能用的（施工 Y-1 下，`reach.rs`）：远程、本机的另一个人来的当场拒，参数都不看。
-        if let Some(refusal) = reach::refuse(&reach, &request) {
+        // 办之前过的几道：凭据、本机才能用的、扩展的能力、会话只给属主（施工 Y-2 上，`checks.rs`）。
+        let who = checks::Who {
+            via: via.as_ref(),
+            account: &caller.account,
+            reach: &reach,
+            declared: &declared,
+        };
+        if let Some(refusal) = checks::refuse(&core, &who, &request).await {
             let id = Value::String(request.id.as_str().to_string());
             if !send(&out, wire::error(id, refusal, locale)).await {
-                break;
-            }
-            continue;
-        }
-        // 扩展照它声明的能力挡（施工 X-30，`rights.rs`）：只给人的、缺能力的当场拒，参数都不看。
-        if via == Some(Via::Spawned)
-            && let Some(refusal) = rights::refuse(&request, &declared)
-        {
-            let refused = wire::error(
-                Value::String(request.id.as_str().to_string()),
-                refusal,
-                locale,
-            );
-            if !send(&out, refused).await {
                 break;
             }
             continue;

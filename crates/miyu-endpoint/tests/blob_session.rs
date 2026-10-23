@@ -128,6 +128,14 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
             &step,
             "hello",
             r#"ask:venue.session:{"venue":"qq:group:1","kind":"group","persona":"engineer"}"#,
+            // 群会话归桥（施工 Y-2 上起人的连接碰不到场所会话）：图由桥自己传、自己以外部身份发进群里。
+            &format!(
+                r#"ask:blob.put:{{"data":"{}","name":"a.txt"}}"#,
+                STANDARD.encode(group_pic)
+            ),
+            &format!(
+                r#"ask:session.send:{{"session":"{{session}}","text":"看这个 {s}","as":{{"external":"qq:20001"}},"attachments":[{{"blob":"{g}","name":"a.txt","media_type":"text/plain"}}]}}"#
+            ),
             &format!("pause:{}", group_ready.display()),
             &ask(&g),
             &ask(&s),
@@ -168,56 +176,58 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         .as_str()
         .unwrap_or_else(|| panic!("{made:?}"))
         .to_string();
-    send(&mut client, "s1", &group, "qq:20001", &g, &s).await;
+    let sent = replies(&path, 4).await;
+    assert!(sent[3].get("error").is_none(), "桥发进它的群：{sent:?}");
     // 管理员名下那一份删掉：读得到就是照会话的属主（bot）读的。
     let hash = ContentHash::parse(&g).expect("合写法");
     std::fs::remove_file(miyu_store::blob::Blobs::new(home.root.blobs(&alice())).path(&hash))
         .expect("管理员名下有过");
     std::fs::write(&group_ready, "").expect("写得进");
-    let read = replies(&path, 5).await;
+    let read = replies(&path, 7).await;
     assert_eq!(
-        got(&read[2]),
+        got(&read[4]),
         Ok(group_pic.to_vec()),
         "群会话归它，引用过的读得到"
     );
     assert_eq!(
-        got(&read[3]),
+        got(&read[5]),
         Err("unknown_blob".to_string()),
         "只在正文里写着的读不到"
     );
 
-    let private = read[4]["result"]["session"]
+    let private = read[6]["result"]["session"]
         .as_str()
         .unwrap_or_else(|| panic!("{read:?}"))
         .to_string();
-    assert_eq!(read[4]["result"]["account"], "alice", "主人的私聊归管理员");
+    assert_eq!(read[6]["result"]["account"], "alice", "主人的私聊归管理员");
     send(&mut client, "s2", &private, "qq:10001", &p, &s).await;
     std::fs::write(&private_ready, "").expect("写得进");
-    let read = replies(&path, 8).await;
+    let read = replies(&path, 10).await;
     assert_eq!(
-        got(&read[5]),
+        got(&read[7]),
         Ok(private_pic.to_vec()),
         "主人的私聊里引用过的读得到"
     );
     assert_eq!(
-        got(&read[6]),
+        got(&read[8]),
         Err("unknown_blob".to_string()),
         "主人名下有、只在正文里写着哈希的读不到"
     );
-    assert_eq!(got(&read[7]), Err("bad_params".to_string()), "哈希不合写法");
+    assert_eq!(got(&read[9]), Err("bad_params".to_string()), "哈希不合写法");
 
-    // 管理员的连接：照会话的属主读，群里的也读得到；不合写法的会话编号 `bad_params`。
+    // 管理员的连接读不到群里的（施工 Y-2 上：场所会话只在平台的后台看，人的头碰不到；U2 管理员不越过属主）；不合写法的
+    // 会话编号 `bad_params`。
     let reply = client
         .call("g1", "blob.get", json!({"blob": g, "session": group}))
         .await;
-    assert_eq!(got(&reply), Ok(group_pic.to_vec()), "{reply}");
+    assert_eq!(got(&reply), Err("unknown_blob".to_string()), "{reply}");
     let reply = client
         .call("g2", "blob.get", json!({"blob": g, "session": "nope"}))
         .await;
     assert_eq!(got(&reply), Err("bad_params".to_string()), "{reply}");
 }
 
-/// 别的平台的会话、主人自己的本机会话，桥读不到：引用过的也不行（同 `venue.sessions` 不列给它）。管理员照样读得到。
+/// 别的平台的会话、主人自己的本机会话，桥读不到：引用过的也不行（同 `venue.sessions` 不列给它）。主人自己照样读得到。
 #[tokio::test]
 async fn the_bridge_cannot_read_the_owners_own_sessions() {
     let home = Home::new();

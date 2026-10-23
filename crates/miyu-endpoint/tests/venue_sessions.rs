@@ -94,8 +94,7 @@ fn install_bridge(home: &Home, program: &str, args: &[String]) {
     approve(home, "bot", &BRIDGE);
 }
 
-/// 一份核心起来、系统配置写成 `config`，扩展照 `steps`（前面补上记下和握手）做完，交回记下的回应（`n` 行），核心停下。给了 `gate` 的：
-/// 扩展造完第一个会话停在 `pause` 上，这里以人的身份删掉它，再放它往下走（删会话是人的事，施工 X-30）。
+/// 一份核心起来、系统配置写成 `config`，扩展照 `steps`（前面补上记下和握手）做完，交回记下的回应（`n` 行），核心停下。
 async fn phase(
     home: &Home,
     program: &Program,
@@ -103,7 +102,6 @@ async fn phase(
     config: &str,
     steps: &[&str],
     n: usize,
-    gate: Option<&Path>,
 ) -> Vec<Value> {
     let (path, step) = record(home, name);
     let all: Vec<String> = [step.as_str(), "hello"]
@@ -114,16 +112,6 @@ async fn phase(
         .collect();
     install_bridge(home, &program.name(), &all);
     let core = served_core(home, config);
-    if let Some(gate) = gate {
-        let first = replies(&path, 2).await;
-        let mut client = Client::connect(Arc::clone(&core));
-        client.hello().await;
-        let deleted = client
-            .call("d1", "session.delete", json!({"session": made(&first[1])}))
-            .await;
-        assert!(deleted.get("error").is_none(), "人删得掉：{deleted}");
-        std::fs::write(gate, "").expect("写得进");
-    }
     let got = replies(&path, n).await;
     assert_eq!(got[0]["result"]["account"], "bot", "这个连接是系统账号");
     if name == "first" {
@@ -163,8 +151,6 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
     let home = Home::new();
     let program = Program::new();
     let config = format!("{BINDINGS}\"tg:30001\" = \"alice\"\n");
-    let gate = home.work.join("deleted");
-    let pause = format!("pause:{}", gate.display());
     let got = phase(
         &home,
         &program,
@@ -172,7 +158,8 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         &config,
         &[
             &open("qq:group:1"),
-            &pause,
+            // 群会话归它：删也是它删（施工 Y-2 上起人的头碰不到场所会话，项目主人 10-23 定删放在平台的后台）。
+            r#"ask:session.delete:{"session":"{session}"}"#,
             &open("qq:group:1"),
             &open("qq:group:2"),
             &open("qq:private:20001"),
@@ -182,19 +169,19 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
             "call:venue.sessions",
             r#"ask:venue.sessions:{"more":1}"#,
         ],
-        10,
-        Some(&gate),
+        11,
     )
     .await;
     let deleted = made(&got[1]);
-    assert_eq!(got[2]["result"]["created"], true, "删了的找不回来，另造");
+    assert_eq!(got[2]["result"], json!({}), "桥删得掉它自己的群：{got:?}");
+    assert_eq!(got[3]["result"]["created"], true, "删了的找不回来，另造");
     let (first, second, stranger, admins) =
-        (made(&got[2]), made(&got[3]), made(&got[4]), made(&got[5]));
-    assert_eq!(got[5]["result"]["account"], "alice", "终端管理员的私聊归他");
-    assert_eq!(got[6]["result"]["account"], "alice", "别的平台的私聊也归他");
-    made(&got[7]);
+        (made(&got[3]), made(&got[4]), made(&got[5]), made(&got[6]));
+    assert_eq!(got[6]["result"]["account"], "alice", "终端管理员的私聊归他");
+    assert_eq!(got[7]["result"]["account"], "alice", "别的平台的私聊也归他");
+    made(&got[8]);
     assert_eq!(
-        got[8]["result"],
+        got[9]["result"],
         listed(&[
             (&admins, "qq:private:10001"),
             (&stranger, "qq:private:20001"),
@@ -203,7 +190,7 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         ]),
         "从新到旧；终端管理员这个平台的私聊列；删了的、别的平台的、系统账号自己造的本机会话不列：{got:?}"
     );
-    assert_eq!(reason(&got[9]), Some("bad_params"), "{}", got[9]);
+    assert_eq!(reason(&got[10]), Some("bad_params"), "{}", got[10]);
 
     // 删了的那一个从回收处拿回来：同一个群有两个，只列新的。陌生人后来写进了对应表、私聊又来了一句：这个私聊最新的会话归管理员，
     // 列那一个，系统账号名下旧的不列。
@@ -223,7 +210,6 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         &rebound,
         &[&open("qq:private:20001"), "call:venue.sessions"],
         3,
-        None,
     )
     .await;
     assert_eq!(got[1]["result"]["account"], "alice", "属主换了：{got:?}");
@@ -249,7 +235,6 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         "[external.bindings]\n\"tg:30001\" = \"alice\"\n",
         &["call:venue.sessions"],
         2,
-        None,
     )
     .await;
     assert_eq!(

@@ -100,6 +100,25 @@ impl Owners {
     }
 }
 
+/// 系统账号 `caller` 的桥碰不碰得到场所 `venue`、属主是 `owner` 的会话（施工 Y-2 上，`connection/checks.rs` 照它放行）：会话不在
+/// 本机；平台照桥清单 `[connection] platform` 写的，没写的照场所编号自己的前缀；属主是对应表里这个平台的某个身份对着的本机账号
+/// （`venue.session` 照同一张表把主人的私聊归主人）。
+pub(crate) fn bridged(core: &Core, caller: &AccountId, venue: &str, owner: &AccountId) -> bool {
+    if venue == LOCAL {
+        return false;
+    }
+    let Some(platform) = owners(core, caller)
+        .platform
+        .or_else(|| platform_of(venue).map(str::to_string))
+    else {
+        return false;
+    };
+    platform_of(venue) == Some(platform.as_str())
+        && super::written(core).into_iter().any(|(id, account)| {
+            platform_of(&id) == Some(platform.as_str()) && account == owner.as_str()
+        })
+}
+
 /// 场所编号、平台身份的平台前缀：第一个 `:` 前面那一段；没有 `:` 的是空的。
 fn platform_of(text: &str) -> Option<&str> {
     text.split_once(':').map(|(prefix, _)| prefix)

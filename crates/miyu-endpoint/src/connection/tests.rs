@@ -46,13 +46,12 @@ fn people_only_stays_people_only() {
         "project.create",
         "project.update",
         "project.delete",
-        // 施工 X-30：替人回答、改权限级别和工作目录、删会话、终端会话、账号和登录。
+        // 施工 X-30：替人回答、改权限级别和工作目录、终端会话、账号和登录（删会话施工 Y-2 上起要 `sessions.drive`）。
         "session.answer",
         "session.set_permission_level",
         "session.set_workspace",
         "session.terminal",
         "session.set_terminal",
-        "session.delete",
         "account.setup_code",
         "login.ticket",
         // 表里没有的。
@@ -67,6 +66,7 @@ fn people_only_stays_people_only() {
 fn capabilities_gate_what_they_name() {
     for (method, capability) in [
         ("session.create", Capability::SessionsDrive),
+        ("session.delete", Capability::SessionsDrive),
         ("session.send", Capability::SessionsDrive),
         ("session.respond", Capability::SessionsDrive),
         ("command.run", Capability::SessionsDrive),
