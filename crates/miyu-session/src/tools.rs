@@ -14,19 +14,18 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use tokio::sync::mpsc;
-use tokio::task::AbortHandle;
 use tracing::Instrument;
 
 use crate::lettering::Lettering;
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Effect, Permission, Question, Response};
+use miyu_kernel::event::Permission;
 use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Input, Reread, Subagent};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_store::blob::Blobs;
-use miyu_tool::{Call, CallIds, Done, JobPort, Log, Progress, Seen, Shelf, Stop};
+use miyu_tool::{Call, CallIds, JobPort, Log, Progress, Seen, Shelf, Stop};
 
 use crate::TARGET;
 use crate::agents::{Agents, Inherit};
@@ -44,6 +43,7 @@ use crate::usage::{Asked, Ledger};
 mod back;
 mod caller;
 mod checked;
+mod docs;
 mod goals;
 mod halt;
 mod kit;
@@ -52,6 +52,9 @@ mod preview;
 mod questions;
 mod sandboxed;
 
+use back::Running;
+pub(crate) use back::ToolBack;
+pub(crate) use docs::Look;
 pub(crate) use goals::GoalBack;
 pub(crate) use kit::ToolKit;
 pub(crate) use nested::{NestedBack, NestedRun};
@@ -109,43 +112,9 @@ pub(crate) struct Tools {
     nested: nested::Nesting,
     /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
     unsandboxed: crate::unsandboxed::Unsandboxed,
+    /// 子目录的项目指令（施工 P-14 下，`docs.rs`）。
+    docs: docs::Docs,
     backs: mpsc::UnboundedSender<Back>,
-}
-
-/// 一次在跑的调用。
-struct Running {
-    task: AbortHandle,
-    /// 交给工具的那面旗。
-    stop: Stop,
-    /// 叫它停过：还没交回来就被掐掉的，改动可能不留效果，记一行 `WARN`。
-    stopping: bool,
-    started: Instant,
-    name: String,
-    /// 派它那一刻这件工具给人看的名字（施工 9-8 六补）：送回来时随结果记进日志。
-    display_name: BTreeMap<String, String>,
-    /// 它交了题、在等回答（施工 D-2）：回答落了盘从这里送回去。叫停、掐掉、了结时跟着丢，工具当没答收场。
-    answer: Option<tokio::sync::oneshot::Sender<Vec<Response>>>,
-}
-
-/// 跑工具的任务送回来的。
-#[derive(Debug)]
-pub(crate) enum ToolBack {
-    /// 交了一组题，回答落了盘从 `reply` 送回去（施工 D-2，`questions.rs`）。
-    Asks {
-        call_id: CallId,
-        questions: Vec<Question>,
-        reply: tokio::sync::oneshot::Sender<Vec<Response>>,
-    },
-    /// 执行中的一段输出。
-    Progress { call_id: CallId, text: String },
-    /// 跑完了：工具交回的，和它报的效果（改前改后已经存成了 blob）。
-    Done {
-        call_id: CallId,
-        done: Box<Done>,
-        effects: Vec<Effect>,
-    },
-    /// 工具自己崩了（panic）。
-    Crashed { call_id: CallId },
 }
 
 /// 派一次调用要的：内核的「执行一次工具调用」动作里的几样（`docs/blueprint/kernel/session.md`）。
@@ -267,6 +236,7 @@ impl Tools {
             callers: caller::Callers::new(kit.venue, kit.admin, kit.session_log),
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
+            docs: docs::Docs::default(),
             backs,
         }
     }
@@ -277,6 +247,16 @@ impl Tools {
     }
 
     /// 她看过的文件换成 `seen`：撤销、恢复以后照日志重算的（施工 4-7 上）。在跑的调用拿着的是原来那一份。
+    /// 回合开始照会话定下这一轮找不找子目录的项目指令（施工 P-14 下）。
+    pub(crate) fn look_docs(&mut self, look: Option<Look>) {
+        self.docs.look(look);
+    }
+
+    /// 落了盘的一批：压缩、撤销、恢复了的，交过的子目录项目指令清掉重来。
+    pub(crate) fn note_docs(&mut self, events: &[miyu_kernel::event::Event]) {
+        self.docs.note(events);
+    }
+
     pub(crate) fn see(&mut self, seen: Seen) {
         self.seen = Arc::new(seen);
     }
@@ -416,6 +396,7 @@ impl Tools {
         let task = inner.abort_handle();
         let backs = self.backs.clone();
         let blobs = self.blobs.clone();
+        let look = self.docs.for_call();
         // 看着它的任务、存 blob 的阻塞线程也带着会话的 span：存不进去的那一行有会话编号（施工 4-9 再补四上）。
         let watching = span.clone();
         tokio::spawn(
@@ -428,12 +409,15 @@ impl Tools {
                         let stored = tokio::task::spawn_blocking(move || {
                             span.in_scope(|| {
                                 let effects = effects::store(&blobs, reported);
-                                pictures::store(&blobs, images).map(|images| (effects, images))
+                                // 碰了的文件上面子目录的项目指令（施工 P-14 下）。
+                                let below = docs::below(look.as_ref(), &effects);
+                                pictures::store(&blobs, images)
+                                    .map(|images| (effects, images, below))
                             })
                         })
                         .await;
                         match stored {
-                            Ok(Some((effects, images))) => {
+                            Ok(Some((effects, images, docs))) => {
                                 done.blocks.extend(images);
                                 send(
                                     &backs,
@@ -441,6 +425,7 @@ impl Tools {
                                         call_id,
                                         done: Box::new(done),
                                         effects,
+                                        docs,
                                     },
                                 );
                             }

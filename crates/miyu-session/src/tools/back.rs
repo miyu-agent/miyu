@@ -1,14 +1,20 @@
 //! 跑工具的任务送回来的，写成内核的输入（从 `tools.rs` 挪来，施工 D-2：那边要放提问的端口，过了 500 行）。
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 
-use miyu_kernel::event::Effect;
+use tokio::task::AbortHandle;
+
+use miyu_kernel::event::{Effect, Question, Response};
+use miyu_kernel::id::CallId;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Input;
 use miyu_kernel::time::Timestamp;
+use miyu_tool::{Done, Stop};
 
-use super::{ToolBack, Tools, text};
+use super::{Tools, text};
 use crate::TARGET;
 use crate::effects;
 use crate::lines::millis;
@@ -23,6 +29,44 @@ pub(crate) enum Wrap {
     /// 管理员放行了的、带文件的工具：文件（真实的位置）落在这一次沙盒的规格写得了的地方（`write`）的照旧套，不在的不套。权限
     /// 策略照它的边界表判过同一条（`guard/unsandboxed.rs`）。
     BareUnlessWritable(PathBuf),
+}
+
+/// 一次在跑的调用。
+pub(super) struct Running {
+    pub(super) task: AbortHandle,
+    /// 交给工具的那面旗。
+    pub(super) stop: Stop,
+    /// 叫它停过：还没交回来就被掐掉的，改动可能不留效果，记一行 `WARN`。
+    pub(super) stopping: bool,
+    pub(super) started: Instant,
+    pub(super) name: String,
+    /// 派它那一刻这件工具给人看的名字（施工 9-8 六补）：送回来时随结果记进日志。
+    pub(super) display_name: BTreeMap<String, String>,
+    /// 它交了题、在等回答（施工 D-2）：回答落了盘从这里送回去。叫停、掐掉、了结时跟着丢，工具当没答收场。
+    pub(super) answer: Option<tokio::sync::oneshot::Sender<Vec<Response>>>,
+}
+
+/// 跑工具的任务送回来的。
+#[derive(Debug)]
+pub(crate) enum ToolBack {
+    /// 交了一组题，回答落了盘从 `reply` 送回去（施工 D-2，`questions.rs`）。
+    Asks {
+        call_id: CallId,
+        questions: Vec<Question>,
+        reply: tokio::sync::oneshot::Sender<Vec<Response>>,
+    },
+    /// 执行中的一段输出。
+    Progress { call_id: CallId, text: String },
+    /// 跑完了：工具交回的，和它报的效果（改前改后已经存成了 blob）。
+    Done {
+        call_id: CallId,
+        done: Box<Done>,
+        effects: Vec<Effect>,
+        /// 碰了的文件上面子目录的项目指令，找到了的（施工 P-14 下）。
+        docs: Option<super::docs::Below>,
+    },
+    /// 工具自己崩了（panic）。
+    Crashed { call_id: CallId },
 }
 
 impl Wrap {
@@ -113,6 +157,7 @@ impl Tools {
                 call_id,
                 done,
                 effects,
+                docs,
             } => {
                 let Some(running) = self.running.remove(&call_id) else {
                     self.unclaimed(&effects);
@@ -133,7 +178,12 @@ impl Tools {
                     at,
                     call_id,
                     error: done.error,
-                    blocks: done.blocks,
+                    // 没交过的子目录项目指令接在结果后面（施工 P-14 下）。
+                    blocks: done
+                        .blocks
+                        .into_iter()
+                        .chain(self.docs.tell(docs))
+                        .collect(),
                     duration_ms: Some(took_ms),
                     human: done.human,
                     effects,

@@ -134,3 +134,32 @@ fn the_shipped_texts_fill_in() {
     let texts = root.project_doc_texts().expect("出厂的字都在");
     check(&texts).expect("字段都对");
 }
+
+/// 子目录的（施工 P-14 下）：工作目录下面、到文件所在目录为止的每一层，先 `AGENTS.md` 后 `CLAUDE.md`，从外到里；工作目录
+/// 那一层和以上不算；不在工作目录下面的没有。
+#[test]
+fn below_takes_the_layers_under_the_cwd_down_to_the_file() {
+    let dir = Dir::new("below");
+    dir.write("AGENTS.md", "cwd\n");
+    dir.write("sub/CLAUDE.md", "sub claude\n");
+    dir.write("sub/deep/AGENTS.md", "deep agents\n");
+    dir.write("sub/deep/CLAUDE.md", "deep claude\n");
+    let file = dir.write("sub/deep/a.txt", "x\n");
+    let texts: Vec<String> = below(&dir.0, &file)
+        .into_iter()
+        .map(|(_, text)| text)
+        .collect();
+    assert_eq!(texts, ["sub claude\n", "deep agents\n"]);
+    let here = dir.write("b.txt", "x\n");
+    assert!(
+        below(&dir.0, &here).is_empty(),
+        "工作目录那一层回合开始交过"
+    );
+    let outside = Dir::new("below-out");
+    let elsewhere = outside.write("x/a.txt", "x\n");
+    outside.write("x/AGENTS.md", "no\n");
+    assert!(
+        below(&dir.0, &elsewhere).is_empty(),
+        "不在工作目录下面的没有"
+    );
+}

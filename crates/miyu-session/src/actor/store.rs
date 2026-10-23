@@ -86,6 +86,8 @@ impl Actor {
         self.jobs.note(&events);
         // 挂在刚报了开始的后台命令下面、等着的脚本调用，这时交进内核（施工 M-3，`tools/nested/port.rs`）。
         self.tools.note_jobs(&events);
+        // 压缩、撤销、恢复了的，交过的子目录项目指令清掉重来（施工 P-14 下）。
+        self.tools.note_docs(&events);
         // 累计的也是（施工 9-6 上）：写完、内核记下「落了盘」之前收件箱不动，订阅插不进来，和它拿到的落盘到哪一条对得上。
         {
             let mut counted = self.counted();

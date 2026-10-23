@@ -41,6 +41,14 @@ impl Actor {
         }
     }
 
+    /// 这一轮执行器找不找子目录的项目指令（施工 P-14 下，`tools/docs.rs`）：同回合开始的口径。
+    pub(super) fn project_docs_look(&mut self) {
+        let look = self
+            .project_docs_ask()
+            .map(|(cwd, resources)| crate::tools::Look { cwd, resources });
+        self.tools.look_docs(look);
+    }
+
     /// 这一轮要不要找、照哪个目录找：本机的会话、预设没关的、认得出工作目录的。
     fn project_docs_ask(&self) -> Option<(PathBuf, ResourceRoot)> {
         let refresh = self.persona.as_ref()?;

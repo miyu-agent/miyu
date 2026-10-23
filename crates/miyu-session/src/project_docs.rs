@@ -65,6 +65,20 @@ pub(crate) fn find(cwd: &Path) -> Option<Found> {
     (!docs.is_empty()).then_some(Found { root, docs, cut })
 }
 
+/// 她碰了文件 `file`（真实的路径）时，工作目录 `cwd` 下面、到它所在目录为止的每一层的项目指令（施工 P-14 下）：每层先
+/// `AGENTS.md`、没有再 `CLAUDE.md`，从外到里。工作目录那一层和以上的回合开始交过，不算；不在工作目录下面的没有。碰磁盘。
+pub(crate) fn below(cwd: &Path, file: &Path) -> Vec<(PathBuf, String)> {
+    let Some(parent) = file.parent().filter(|dir| dir.starts_with(cwd)) else {
+        return Vec::new();
+    };
+    let mut layers: Vec<&Path> = parent.ancestors().take_while(|dir| *dir != cwd).collect();
+    layers.reverse();
+    layers
+        .into_iter()
+        .filter_map(|dir| NAMES.iter().find_map(|name| read(&dir.join(name))))
+        .collect()
+}
+
 /// 一份普通文件的字；不在、读不了、不是 UTF-8 的没有。
 fn read(path: &Path) -> Option<(PathBuf, String)> {
     let text = std::fs::read_to_string(path).ok()?;
@@ -72,7 +86,7 @@ fn read(path: &Path) -> Option<(PathBuf, String)> {
 }
 
 /// `text` 截到最多 `limit` 字节，不切开一个字。
-fn cut_at(text: &str, limit: usize) -> &str {
+pub(crate) fn cut_at(text: &str, limit: usize) -> &str {
     let mut end = limit.min(text.len());
     while !text.is_char_boundary(end) {
         end -= 1;
@@ -138,7 +152,7 @@ pub(crate) fn check(texts: &ProjectDocTexts) -> Result<(), String> {
 }
 
 /// 几份文件各包一层外壳，截了的末尾说一句。
-fn render(texts: &ProjectDocTexts, found: &Found) -> String {
+pub(crate) fn render(texts: &ProjectDocTexts, found: &Found) -> String {
     let mut body = String::new();
     for (path, text) in &found.docs {
         body.push_str(&fill(
