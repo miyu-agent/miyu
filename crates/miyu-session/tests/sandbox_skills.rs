@@ -426,3 +426,24 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
     let kept = home.root.cache(&alice_account()).join("~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
 }
+
+/// 家目录那四处（施工 Y-11 补）：经真助手跑，本机会话的脚本写得进属主的 `pictures/`、`downloads/`（数据根照旧藏着，先建好再起
+/// 沙盒）。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_local_script_in_the_sandbox_writes_into_the_owner_s_pictures() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
+    if probe.mechanisms.is_empty() {
+        return;
+    }
+    let home = Home::outside_temp();
+    let text = "#!/bin/sh\n# Description: Keep.\necho drawn > \"$MIYU_PICTURES_DIR/a.txt\" && echo got > \"$MIYU_DOWNLOADS_DIR/b.txt\" && echo saved\n";
+    let (status, output) = keep(&home, &helper, text, ("local", true)).await;
+    assert_eq!(status, ToolStatus::Ok, "{output}");
+    assert_eq!(output, "saved\n");
+    let account = home.root.account_dir(&alice_account());
+    let read = |path: &str| std::fs::read_to_string(account.join(path)).expect("写进去了");
+    assert_eq!(read("pictures/a.txt"), "drawn\n");
+    assert_eq!(read("downloads/b.txt"), "got\n");
+}
