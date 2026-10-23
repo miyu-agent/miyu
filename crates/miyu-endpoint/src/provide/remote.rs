@@ -237,6 +237,13 @@ impl Tool for RemoteTool {
             if let Some(by) = asked {
                 params["by"] = json!(by);
             }
+            // 会话属主的 pictures（施工 Y-11 下）：画出来的图放这里，照数据根的真实位置接上；不建，扩展写之前自己建。会话外面的
+            // 调用没有数据根，不写。
+            if let (Some(root), Some(ids)) = (call.data_root.as_deref(), ids) {
+                let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+                let pictures = miyu_store::root::user_dir(&root, &ids.owner, "pictures");
+                params["pictures"] = json!(pictures.display().to_string());
+            }
             let mut cancel = Cancel {
                 peer: peer.clone(),
                 params: json!({"session": session, "call_id": call_id}),

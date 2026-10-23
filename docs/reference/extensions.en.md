@@ -87,6 +87,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `tool` | Tool name |
 | `args` | Arguments |
 | `cwd` | This turn's working directory |
+| `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home, step Y-11): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there |
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
 

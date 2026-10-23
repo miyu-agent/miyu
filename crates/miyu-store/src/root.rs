@@ -23,6 +23,12 @@ const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
 /// 界面上照语言显示。
 pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"];
 
+/// 数据根 `data_root` 里账号 `account` 照 XDG 的那一处 `name`（[`USER_DIRS`] 里的一个）：`home/<账号>/<name>/`（施工 Y-11 下）。调的
+/// 一方手里只有数据根的路径时用它（调扩展的工具、脚本工具），和 [`DataRoot::user_dirs`] 同一个位置。不建。
+pub fn user_dir(data_root: &Path, account: &AccountId, name: &str) -> PathBuf {
+    data_root.join("home").join(account.as_str()).join(name)
+}
+
 /// 家目录里的缓存（施工 Y-11 上）：`home/<账号>/cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
 pub const CACHE: &str = "cache";
 
