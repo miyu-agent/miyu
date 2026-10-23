@@ -57,4 +57,9 @@ tools = ["show"]
 [features.project-docs]
 name = { en = "Project instructions", zh = "项目指令", ja = "プロジェクトの指示" }
 
+# 脚本调工具（施工 M-6，项目主人 2026-10-23 定）：没有工具，开着的会话里命令能经 `miyu call` 调脚本里能调的工具。
+[features.clicall]
+name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプトからツール" }
+summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
+
 [builtin]

@@ -70,7 +70,7 @@ shell = false
 |---|---|---|
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
 | `dev` | 常规开发 | `unlisted = "off"`，开 `basesystem`、`net`、`goal`、`memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
-| `minimal` | 极简开发 | `unlisted = "off"`，不写 `[software]`，`[features]` 只开基础系统的 `files`、`commands`，`[tools]` 关 `glob`、`grep`、`trash`：留 `shell`、`read`、`write`、`edit`。基础系统以后新加的功能照 `unlisted` 关着；往 `files`、`commands` 里加的新工具会冒出来 |
+| `minimal` | 极简开发 | `unlisted = "off"`，不写 `[software]`，`[features]` 只开基础系统的 `files`、`commands`，`[tools]` 关 `glob`、`grep`、`trash`：留 `shell`、`read`、`write`、`edit`。基础系统以后新加的功能照 `unlisted` 关着（「脚本调工具」`clicall` 就是，施工 M-6）；往 `files`、`commands` 里加的新工具会冒出来 |
 
 - 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発。图标 `boxes`、`box`、`square-terminal`。编号照旧 `full`、`dev`、`minimal`，只在核心和配置 `preset.default` 里用，界面上不露。
 - 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。」。给人看的，不发给模型。
@@ -102,6 +102,7 @@ shell = false
    - 装了的功能（施工 F-3 上）：读成了的内置包、扩展包带的功能（`miyu_endpoint::packages::features`，没写功能的包整个算一个），加上每个登记上的脚本一个（施工 X-12 中，`script-<工具名>`，端点的 `scripts::features`），随预设的几层交给会话。工具归哪个功能：MCP 服务的、脚本的照它们自己的功能，清单写明了的照写的，包只有一个功能的归它，都不是的照它的包的编号（`Features::of_tool`）。施工 F-3 上以前是：工具目录里有工具的包、`roleplay`、清单装的 `process` 包。
    - 一个功能开着：照「格式」第 4 条的先后（`PresetFile::opens_in`），全局开关照这一刻的配置（施工 X-27）。
    - 工具面：归的功能开着的工具，减去 `[tools]` 关掉的（`PresetFile::keeps`），再照原来的几道筛（场所、子会话、能不能确认）。关了「后台运行」（`basesystem` 的 `background`）的：快照记 `foreground`，`shell` 拿掉 `run_in_background`（`ToolEntry::without`，别的字节不动），执行器不给任务端口（施工 T-1 上，设计 30 第三节第 7 条）；换预设时照新的预设定，以前就有的 `shell` 照旧快照里的原样，调到放到后台的照「这里不能放到后台」说。
+   - 脚本调工具（`basesystem` 的 `clicall`，施工 M-6，2026-10-23 项目主人定，设计 `39-脚本调工具.md` MC15）：关着的会话里工具面上每一件的 `clicall` 都当假（`agents/clicall.rs` 的 `on`），`shell` 的说明不接怎么用的那一段、system 没有那一句，和一件都不能在脚本里调的会话一字不差；内核不开通道，`miyu call` 退出码 2。出厂的全部功能、常规开发开着（整个基础系统开着），极简开发关着（没写、`unlisted` 关）。换预设时以前就有的工具照旧原样，只有 `clicall` 照新的预设（这一格不发给模型，工具说明一字不变）：关了的内核当场不开通道，以前接上的那一段照旧留着；打开的要新会话才接上那一段。
    - 记忆：人格记忆 `memory` 没开的、没装的（施工 F-3 上），范围一律 `off`，不管 `session.create` 的 `memory`（走查 E2：开不开归预设，范围归开会话时）。
    - 人设遵循提醒：`roleplay` 没开的、没装的（施工 F-3 上），快照里没有提醒短语、system 没有风格锁。
    - 装了没开的那一行：2026-10-23 删掉（设计 16 Y8，施工 P-OFF）。新会话的 system 不提预设关掉的软件；以前造的快照里拼好的照旧发。快照里的 `preset.off` 照旧记全部没开的功能（`preset.get`、设置页照它）。以前造的快照记的是包的编号，换快照时照现在的功能读（是装了的包、又不是功能编号的换成它的全部功能），一样的算没改，不换（`PresetPin::means_the_same`）。
@@ -172,6 +173,7 @@ shell = false
 | `crates/miyu-policy/src/preset/switches/tests.rs`、`crates/miyu-session/src/switches/tests.rs`（施工 X-27） | 预设明写的（`[features]`、`[software]` 的包）先，全局开关其次，`unlisted` 最后；`unlisted = "off"` 的预设不照全局开关；只认三类功能；不进指纹；配置项只读三类 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_leaves_an_off_preset_alone`（施工 X-27） | 真核心：全局开关打开的在 `unlisted = "off"` 的预设里照旧没有、`by` 是 `default`；默认开的预设里全局关掉的没有 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_rules_where_the_preset_says_nothing`（施工 X-27） | 真核心：`feature.set` 关掉以后 `preset.get` 的 `by` 从 `default` 变 `global`、明写的照旧 `preset`；开着的会话下一个回合没有那件，新会话没有、明写开的预设照样有；删掉以后回到默认；`skill.list`、`script.list` 的 `on` 跟着变 |
+| `crates/miyu-session/src/agents/tests.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 M-6） | 「脚本调工具」：没有预设的、整个基础系统开着的、`unlisted` 开着的能调，极简开发那样没写的、明着关的一件都不能调、工具照旧在；关了的工具面和一件都不能调的目录拼出来的一字不差、没有 system 那一句；换成关着的预设以前就有的说明原样、一件都不能调，改回来又能调 |
 | `crates/miyu-endpoint/tests/preset_swap.rs`（施工 P-2 下） | 真核心：改了预设下一轮的工具面变、日志一条内核记的换快照；没改的不换；写错了的不换；重启以后照换上的那一份，载入的会话改了也换 |
 
 ### 起草时定的

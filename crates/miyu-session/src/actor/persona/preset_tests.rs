@@ -1,7 +1,7 @@
 //! 改了预设，下一个回合换上（施工 P-2 下）：工具面照新的预设重新筛，以前就有的照旧快照里的原样；记忆照开会话时的；装了没开
 //! 的那一行跟着变；写错了的照旧；P-2（中）造的没有指纹的不换。
 
-use super::test_support::{look_now, names, setup, write_preset};
+use super::test_support::{look_now, names, setup, setup_in, write_preset};
 use super::*;
 use miyu_kernel::tool::Access;
 use miyu_policy::features::{Feature, Features};
@@ -263,6 +263,50 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
         panic!("改回来也换");
     };
     assert!(!snapshot.foreground, "开着的不记");
+}
+
+/// 换成关了「脚本调工具」的预设（施工 M-6）：以前就有的照旧原样，只有脚本里能不能调照新的预设，内核就不开通道；改回来又能调。
+#[test]
+fn a_preset_turning_tools_from_scripts_off_takes_them_back() {
+    let fetch = Fake::new("web_fetch", Access::Network, Act::Echo);
+    let fetch = Fake::from_spec(
+        miyu_tool::Spec {
+            clicall: true,
+            ..fetch.spec().clone()
+        },
+        Act::Echo,
+    );
+    let shell: Arc<dyn Tool> = Fake::new("shell", Access::Execute, Act::Echo);
+    let tools = Catalog::in_packages([("basesystem", vec![shell, fetch])]).expect("合写法");
+    let (_scratch, root, mut refresh) = setup_in("preset-clicall", "", tools);
+    let before = refresh.snapshot.tools.clone();
+    let scriptable = |snapshot: &miyu_policy::Snapshot| -> Vec<String> {
+        snapshot
+            .tools
+            .iter()
+            .filter(|entry| entry.clicall)
+            .map(|entry| entry.name.clone())
+            .collect()
+    };
+    assert_eq!(scriptable(&refresh.snapshot), ["web_fetch"]);
+    write_preset(&root, "[features]\nclicall = false\n");
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
+        panic!("改了要换");
+    };
+    assert!(scriptable(&snapshot).is_empty(), "关了的一件都不能调");
+    for (now, was) in snapshot.tools.iter().zip(&before) {
+        assert_eq!(
+            (&now.name, &now.description),
+            (&was.name, &was.description),
+            "说明原样"
+        );
+    }
+    refresh.snapshot = *snapshot;
+    write_preset(&root, "");
+    let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
+        panic!("改回来也换");
+    };
+    assert_eq!(scriptable(&snapshot), ["web_fetch"], "改回来又能调");
 }
 
 /// 明着无工具的（施工 P-16 下）：目录换了代、新装上一个内置包也照旧一件不给，不当成以前没记预设的（那种会把新装的包的工具

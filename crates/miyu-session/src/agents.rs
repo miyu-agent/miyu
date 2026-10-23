@@ -191,7 +191,8 @@ impl Agents {
     /// 看她的清单。有预设的照它筛（施工 P-2 中；施工 F-3 上起照功能）：工具归的功能没开的、单件关掉的不给
     /// （[`PresetFile::keeps`]）；归哪个功能照预设旁边交来的装了的功能认，认不出的照它的包；目录里没记包的当基础系统。
     /// 后台运行关着的（[`Agents::foreground`]，施工 T-1 上）`shell` 拿掉放到后台那一项，`subagent` 换前台的说明（施工 T-1 下）。
-    /// 有脚本里能调的工具的，`shell` 的说明末尾接上怎么用的那一段（施工 M-4，[`clicall::describe`]）。
+    /// 有脚本里能调的工具的，`shell` 的说明末尾接上怎么用的那一段（施工 M-4，[`clicall::describe`]）；预设关了「脚本调工具」的
+    /// 每件都当不能调（施工 M-6，[`clicall::on`]）。
     pub(crate) fn face(
         tools: &Catalog,
         site: Site<'_>,
@@ -207,6 +208,8 @@ impl Agents {
         let asks = Agents::asks(venue, lineage.map(|lineage| &lineage.parent), attended);
         let lists = Agents::lists_sessions(venue, lineage.map(|lineage| &lineage.parent));
         let foreground = Agents::foreground(preset.map(|(file, _)| file));
+        // 「脚本调工具」关着的预设（施工 M-6）：每件都当不能在脚本里调。
+        let scripted = clicall::on(preset.map(|(file, _)| file));
         let mut face = tools
             .specs()
             .filter(|spec| spawns || spec.name != SUBAGENT)
@@ -266,7 +269,7 @@ impl Agents {
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
                     need_load: offers.loading.need_load(&spec.name, spec.need_load),
-                    clicall: offers.clicall.clicall(&spec.name, spec.clicall),
+                    clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {

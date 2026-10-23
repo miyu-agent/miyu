@@ -83,6 +83,11 @@ pub(super) fn installed() -> Features {
 
 /// 一个会话：人格 Miyu，预设是家目录里的 `p.toml`（内容 `text`），照它筛好的工具面、算好的范围拼的快照。
 pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
+    setup_in(name, text, catalog())
+}
+
+/// 同 [`setup`]，工具目录是 `tools`。
+pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, DataRoot, Refresh) {
     let (scratch, root) = scratch_root(name, "You are Miyu.\n");
     write_preset(&root, text);
     let alice = AccountId::parse("alice").expect("账号合写法");
@@ -97,7 +102,6 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
     } else {
         MemoryScope::Off
     };
-    let tools = catalog();
     let face = Agents::face(
         &tools,
         crate::agents::Site {

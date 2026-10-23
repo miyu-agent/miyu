@@ -3497,13 +3497,13 @@ miyu call does not work for {name}; call it directly. Tools that work with miyu 
 
 #### `software/basesystem/shell/call/outside.txt`
 
-- 什么时候加进来：不在 Miyu 跑的命令里调（没有那两个变量、连不上；退出码 2，命令行那头编进程序）（施工 M-3）
-- token：13（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
-- 为什么加：设计 39 第五节第 8 条（MC11）：不退回协议，说清只能在哪用
-- 指纹：`98c2d69f`
+- 什么时候加进来：不在 Miyu 跑的命令里调，或者这个会话一件都不能在脚本里调（预设关了「脚本调工具」，施工 M-6）：没有那两个变量、连不上；退出码 2，命令行那头编进程序（施工 M-3）
+- token：22（2026-10-23 照开发端点量，接在 `hi` 和一个换行后面；原来 13）
+- 为什么加：设计 39 第五节第 8 条（MC11）：不退回协议，说清只能在哪用；施工 M-6 补上「会话得开着」：关了的会话里她照旧说明去调，只说「在 Miyu 跑的命令里」她会以为是自己用错了地方
+- 指纹：`137572f3`
 
 ```text
-miyu call only works inside a command Miyu runs.
+miyu call only works inside a command Miyu runs, in a session where scripts can call tools.
 ```
 
 #### `software/basesystem/shell/call/schema.txt`

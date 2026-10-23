@@ -4,8 +4,9 @@ Usage: miyu call <tool> --<param> <value>...
        miyu call --schema <tool>...
 
 Call one of this session's tools from a command the AI runs, so a script
-can use tools like functions. It only works inside a command Miyu runs:
-from your own terminal it exits with 2.
+can use tools like functions. It only works inside a command Miyu runs,
+in a session whose preset has Tools from scripts on: from your own
+terminal, or with it off, it exits with 2.
 
 Each --<param> value is sent as text and fixed up to the tool's types;
 give a param more than once for a list. --json takes a JSON object, or

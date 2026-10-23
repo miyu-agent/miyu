@@ -1,12 +1,24 @@
 //! 给她看的「脚本调工具」（施工 M-4，设计 `39-脚本调工具.md` 第九节）：工具面上有脚本里能调的工具时，`shell` 的说明末尾接上
 //! 怎么用的那一段（字归 `shell`，`Tool::clicall_section`），system 里带上什么时候用的那一句（`core/clicall.txt`）。能调的照内核的口径：
 //! `clicall` 开着、访问类别准的（`Access::scriptable`），而且工具面上有 `shell`：通道只开在它跑的命令里。
+//!
+//! 施工 M-6（项目主人 2026-10-23 定）：「脚本调工具」是基础系统的一个功能，预设能关（[`on`]）；关着的会话每件工具都当不能在脚本里
+//! 调，于是不开通道、`shell` 的说明和 system 都回到没有它时的样子。
 
 use std::collections::BTreeSet;
 
 use miyu_policy::ToolEntry;
+use miyu_policy::preset::PresetFile;
 use miyu_tool::Catalog;
-use miyu_tool::SHELL;
+use miyu_tool::{BASESYSTEM, SHELL};
+
+/// 「脚本调工具」这个功能的编号（施工 M-6）：基础系统里的，没有工具。
+pub(crate) const FEATURE: &str = "clicall";
+
+/// 预设 `preset` 开着「脚本调工具」没有：出厂的常规开发（整个基础系统）、全部功能开着，极简开发关着。没有预设的照开着。
+pub(crate) fn on(preset: Option<&PresetFile>) -> bool {
+    preset.is_none_or(|file| file.opens_in(FEATURE, BASESYSTEM))
+}
 
 /// MCP 工具名的开头：`mcp__<服务>__<工具>`。
 const MCP: &str = "mcp__";

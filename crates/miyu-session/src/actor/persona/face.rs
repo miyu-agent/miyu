@@ -60,7 +60,8 @@ pub(super) fn reshelved(face: Vec<ToolEntry>, fresh: &[ToolEntry]) -> Vec<ToolEn
 }
 
 /// 预设改了，照新的预设 `file` 重新筛工具面（施工 P-2 下）：以前就有的那几件照旧快照里的原样（描述、`subagent` 能选的池都
-/// 不跟着变，改过名的照旧叫以前的名字），新打开的照现在的目录拿；提供者的工具照现在的登记（施工 O-2 中）。
+/// 不跟着变，改过名的照旧叫以前的名字），新打开的照现在的目录拿；提供者的工具照现在的登记（施工 O-2 中）。脚本里能不能调
+/// 照新的预设（施工 M-6）：这一格不发给模型，工具说明一字不变，关了的内核就不开通道。
 pub(super) fn refaced(
     refresh: &Refresh,
     values: &Values,
@@ -82,7 +83,10 @@ pub(super) fn refaced(
                         .get(&kept.name)
                         .is_some_and(|tool| tool.spec().name == entry.name)
                 })
-                .cloned()
+                .map(|kept| ToolEntry {
+                    clicall: entry.clicall,
+                    ..kept.clone()
+                })
                 .unwrap_or(entry)
         })
         .collect()

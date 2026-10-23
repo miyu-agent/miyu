@@ -1,1 +1,1 @@
-miyu call only works inside a command Miyu runs.
+miyu call only works inside a command Miyu runs, in a session where scripts can call tools.

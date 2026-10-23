@@ -164,7 +164,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 
 **1g. 脚本调工具**（`crates/miyu-session/src/tools/nested.rs`、`actor/nested.rs`，施工 M-2；设计 `39-脚本调工具.md` 第四节，`kernel/session.md`「嵌套调用」）
 
-1. 每一次直接调的 `shell` 给一个端口（`Call::nested`，`tools/nested/port.rs`），挂在这次调用下面：这个会话的工具面上有 `clicall` 开着、类别准的工具才给（内核的 `Session::clicall_tools`，施工 M-3；一件都没有的不开通道）。`shell` 交给通道的那一头（`tools/shell.md`「脚本调工具」）。端口在父级下面从 1 编号，一次调用经回传的通道送回 actor（`Back::Nested`，带一个回信的口子和派它的那次调用），记下口子，交给内核 `Nested(Call)`。会话停了、没答就丢了的，端口那一头拿到「已取消」。
+1. 每一次直接调的 `shell` 给一个端口（`Call::nested`，`tools/nested/port.rs`），挂在这次调用下面：这个会话的工具面上有 `clicall` 开着、类别准的工具才给（内核的 `Session::clicall_tools`，施工 M-3；一件都没有的不开通道，预设关了「脚本调工具」的就是一件都没有，施工 M-6，`presets.md`「怎么走」第 5 条）。`shell` 交给通道的那一头（`tools/shell.md`「脚本调工具」）。端口在父级下面从 1 编号，一次调用经回传的通道送回 actor（`Back::Nested`，带一个回信的口子和派它的那次调用），记下口子，交给内核 `Nested(Call)`。会话停了、没答就丢了的，端口那一头拿到「已取消」。
    - 命令放到后台、到时挪到后台（施工 M-3）：`shell` 交上任务以后叫端口 `adopt(任务)`，之后的调用挂到那个任务下面，编号接着编。挂在任务下面的，等那个任务的 `job.started` 记进日志再交进内核（actor 每记一批事件叫一次 `Tools::note_jobs`，记进了的把等着的重新送回收件箱）：任务是 `shell` 的结果报的，结果落下之前内核认不出这个父级。派它的那次 `shell` 的结果记了、却没报这个任务的（调用被打断、任务没交上），等着的当场答「父级不在了」，脚本那头退出码 3，不一直等（内核那边审时提的）。
    - 端口还答通道的两样，不进内核：能调的名单（报错里列出来），`--schema` 要的说明和参数格式（参数格式照内核的规则、说明照工具目录）。
 2. 内核出 `Nested(Guard)`：照直接调用的链在阻塞线程里判，不先看一眼（嵌套调用不问人），交回 `Nested(Guarded)`。判过的真实位置记在等着的那一份上（施工 5-18），跑的时候放进 `Call.checked`，没记下的按一个都没判过算；答了、掐了跟着扔掉。
