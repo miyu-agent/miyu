@@ -49,6 +49,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "这个技能随软件包提供，不能删除。",
             "This skill comes with a package and cannot be deleted.",
         ),
+        "package_id_taken" => (
+            "编号和已有的账号重名，无法安装。",
+            "Id is already taken by an account, cannot install.",
+        ),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",

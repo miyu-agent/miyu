@@ -1,6 +1,10 @@
 //! 系统账号（施工 O-4 下，`docs/construction/O-4-系统账号（下）.md`，`06-多用户与身份.md` U14）：声明了系统账号的包各一个，
 //! 账号名就是包的编号。照核心手里这时的清单算（装卸当场换，施工 F-5 下），不落盘：`home/<编号>/` 就是它在磁盘上的样子。
 //! 核心拉起的这个包的扩展以它的身份连进来；它的东西管理员能看能管，它没有自己的记忆。
+//!
+//! 施工 Y-5 中上（设计 06 U16）：每个带进程的包都是自己的账号（[`Core::package_accounts`]），起来时一样建家目录；声明了系统账号
+//! 的（平台桥）替平台上的外人干活，别的替机主干活（[`Core::serving`]）。会话、记忆、用量照旧只认机主和平台桥（[`Core::knows`]）：
+//! 别的包开的会话归机主。
 
 use std::sync::Arc;
 
@@ -34,12 +38,24 @@ impl Core {
             .collect()
     }
 
-    /// 连接是谁：核心拉起的包 `package` 声明了系统账号的是它，别的是管理员（本机连上来的都是他）。
+    /// 这次起来认的带进程的包的账号（施工 Y-5 中上），照编号排：平台桥在里面。
+    pub(crate) fn package_accounts(&self) -> Vec<AccountId> {
+        miyu_store::packages::package_accounts(&self.packages())
+    }
+
+    /// 连接是谁：核心拉起的带进程的包 `package` 是它自己的账号（施工 Y-5 中上），别的是管理员（本机连上来的都是他）。
     pub(crate) fn account_of(&self, package: Option<&str>) -> AccountId {
         package
             .and_then(|package| AccountId::parse(package).ok())
-            .filter(|account| self.is_system(account))
+            .filter(|account| self.package_accounts().contains(account))
             .unwrap_or_else(|| self.admin.clone())
+    }
+
+    /// 包的账号 `account` 替谁干活（施工 Y-5 中上，设计 06 U17）：没声明系统账号的包替机主，交机主；平台桥替自己、桥对着的
+    /// 外人，和别的连接一样没有（照身份）。
+    pub(crate) fn serving(&self, account: &AccountId) -> Option<AccountId> {
+        (self.package_accounts().contains(account) && !self.is_system(account))
+            .then(|| self.admin.clone())
     }
 
     /// 属主是 `owner` 的会话，出厂、系统区的人格的记忆照谁算（`personas.md`「怎么走」第 5 条）：系统账号的归管理员。
@@ -51,14 +67,14 @@ impl Core {
     }
 }
 
-/// 建系统账号的家目录和工作区（已经有的不动），开它们各自的会话列表的索引。建不成的记一行，账号照样算有：用到时再报。
+/// 建带进程的包的账号的家目录和工作区（已经有的不动；施工 Y-5 中上起不只平台桥），开它们各自的会话列表的索引。建不成的记一行，账号照样算有：用到时再报。
 /// 起来时调一次，装卸以后再调（施工 F-5 下）：只管还没开索引的，开过的什么都不做。
 pub(crate) fn prepare(core: &Core) {
     let mut indexes = core
         .indexes
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    for account in core.system_accounts() {
+    for account in core.package_accounts() {
         if indexes.contains_key(&account) {
             continue;
         }

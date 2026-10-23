@@ -9,6 +9,8 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_kernel::id::ContentHash;
+
 use crate::Core;
 use crate::hello::Caller;
 use crate::refusal::Refusal;
@@ -140,7 +142,8 @@ pub(crate) async fn call(
         Ok(Err(Gone)) => Err(Refusal::NOT_RUNNING),
         Ok(Ok(Ok(result))) => {
             if let Some(from) = from {
-                core.blob_grants.pass(&params.package, from, &result);
+                let passed = core.blob_grants.pass(&params.package, from, &result);
+                hand_over(core, (&params.package, from), passed).await;
             }
             Ok(result)
         }
@@ -151,6 +154,25 @@ pub(crate) async fn call(
                 .map_or_else(|| error.to_string(), str::to_string),
             error.get("code").cloned(),
         )),
+    }
+}
+
+/// 答的包 `answered` 转给调的包 `asked` 的 blob（施工 Y-5 中上）：两个包各是自己的账号、各有自己的附件库，从答的那边拷进调的
+/// 那边，调的包才读得到。拷不成的记一行，许可照样给：读的时候照 `unknown_blob` 答。
+async fn hand_over(core: &Core, (answered, asked): (&str, &str), passed: Vec<ContentHash>) {
+    if passed.is_empty() {
+        return;
+    }
+    let (from, to) = (
+        core.account_of(Some(answered)),
+        core.account_of(Some(asked)),
+    );
+    let root = core.root.clone();
+    let copied =
+        tokio::task::spawn_blocking(move || crate::attach::copy_over(&root, &from, &to, &passed))
+            .await;
+    if !matches!(copied, Ok(Ok(()))) {
+        tracing::warn!(target: "miyu::endpoint", "passed blobs not copied");
     }
 }
 

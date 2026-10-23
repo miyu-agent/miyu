@@ -757,7 +757,7 @@
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
 - `package.remove {"package"}`：家目录那一层的删掉；出厂的在家目录记一笔。回应 `{"package", "removed": true}`。
 - 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置、个人设置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
-- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；卸必需的 `package_required`；没装的、没卸过的 `unknown_package`。扩展自己调回 `local_only`。
+- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；编号和人占着的名字撞了的 `package_id_taken`（施工 Y-5 中下：用户名、`admin`、`users`；升级同一个包不算）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；卸必需的 `package_required`；没装的、没卸过的 `unknown_package`。扩展自己调回 `local_only`。
 
 **`package.sync`**（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条、第五节）
 
@@ -1346,7 +1346,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
-| `package_invalid`、`package_conflict`、`package_exists`、`package_required` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号；卸必需的（施工 F-5 上，`packages.md`「装卸」） |
+| `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken`、`package_required` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号；编号和人占着的名字撞了（施工 Y-5 中下）；卸必需的（施工 F-5 上，`packages.md`「装卸」） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（必需的照旧回 `package_required`）（施工 F-6 上，`package-pages.md`） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
 | `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：管理员个人设置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
@@ -1520,6 +1520,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_directory` | 不是目录。 | Not a directory. |
 | `unknown_package` | 软件包不存在。 | Package not found. |
 | `package_exists` | 编号与内置软件包重复。 | Id conflicts with a built-in package. |
+| `package_id_taken` | 编号和已有的账号重名，无法安装。 | Id is already taken by an account, cannot install. |
 | `package_required` | 必需的软件包，无法卸载。 | Required package, cannot be removed. |
 | `package_invalid` | 清单有误，无法安装。 | Invalid manifest, cannot install. |
 | `package_conflict` | 名称已被占用，无法安装。 | Names already in use, cannot install. |

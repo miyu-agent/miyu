@@ -223,6 +223,21 @@ pub fn system_accounts(found: &[Found]) -> Vec<AccountId> {
         .collect()
 }
 
+/// 带进程的包各自的账号（施工 Y-5 中上，设计 06 U16）：读成了、有 `[process]` 的，账号名就是包的编号。声明了系统账号的（平台桥，
+/// [`system_accounts`]）在里面。
+pub fn package_accounts(found: &[Found]) -> Vec<AccountId> {
+    found
+        .iter()
+        .filter(|found| {
+            found
+                .read
+                .as_ref()
+                .is_ok_and(|manifest| manifest.process.is_some())
+        })
+        .filter_map(|found| AccountId::parse(&found.id).ok())
+        .collect()
+}
+
 /// 读成了、声明了系统账号。
 fn declares_account(found: &Found) -> bool {
     found.read.as_ref().is_ok_and(|manifest| {

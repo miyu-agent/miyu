@@ -25,6 +25,12 @@ impl Refusal {
         reason: "wrong_target",
         data: None,
     };
+    /// 包的编号和人占着的名字撞了（施工 Y-5 中下）：用户名、`admin`、`users`；包的编号就是它的账号名。
+    pub(crate) const PACKAGE_ID_TAKEN: Refusal = Refusal {
+        code: REFUSED,
+        reason: "package_id_taken",
+        data: None,
+    };
     /// 卸必需的包（施工 F-5 上）：基础系统。
     pub(crate) const PACKAGE_REQUIRED: Refusal = Refusal {
         code: REFUSED,

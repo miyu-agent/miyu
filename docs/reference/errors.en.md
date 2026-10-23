@@ -111,7 +111,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_package` | No such package | |
 | `package_invalid` | The manifest is wrong | `problem`, `line` |
-| `package_conflict`, `package_exists`, `package_required` | A name it brings clashes; same id as a built-in; removing a required one | |
+| `package_conflict`, `package_exists`, `package_id_taken`, `package_required` | A name it brings clashes; same id as a built-in; id already taken by an account; removing a required one | |
 | `package_file_bad`, `wrong_target` | The package file can't be unpacked; the manifest lists `targets` and this system isn't one of them | |
 | `download_failed`, `source_unreachable` | Installing from a source: the package file couldn't be downloaded from anywhere; no source could be reached and there is no local index | `why` |
 | `depends_missing`, `package_depended` | A dependency is missing; another package depends on it | `missing`, `by` |

@@ -8,7 +8,7 @@
 //! 不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
 //!
 //! 扩展的连接（施工 W-6 三补）：照账号放行的那一条（属主）不放它，它要的 blob 也得是那个会话引用过的。没声明系统账号
-//! 的包的扩展是管理员，以前写上管理员随便一个会话，就读得到管理员名下任何一个 blob。
+//! 的包的扩展替管理员干活（施工 Y-5 中上起身份是包自己的账号），以前写上管理员随便一个会话，就读得到管理员名下任何一个 blob。
 
 use miyu_kernel::event::{Body, Effect, Event};
 use miyu_kernel::id::{AccountId, ContentHash, SessionId};
@@ -17,11 +17,12 @@ use super::blocking;
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 照会话 `session` 找 blob `hash` 时，去哪个账号名下读；`caller` 是连接的账号，`extension` 是不是扩展的连接。会话编号不合
+/// 照会话 `session` 找 blob `hash` 时，去哪个账号名下读；`caller` 是连接的账号（身份：桥认它），`serving` 是它替谁干活（属主照它
+/// 比，施工 Y-5 中上），`extension` 是不是扩展的连接。会话编号不合
 /// 写法的 `bad_params`。
 pub(super) async fn owner(
     core: &Core,
-    (caller, extension): (&AccountId, bool),
+    (caller, serving, extension): (&AccountId, &AccountId, bool),
     session: &str,
     hash: &ContentHash,
 ) -> Result<AccountId, Refusal> {
@@ -31,7 +32,7 @@ pub(super) async fn owner(
         .owner(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;
-    let own = *caller == owner;
+    let own = *serving == owner;
     if own && !extension {
         return Ok(owner);
     }

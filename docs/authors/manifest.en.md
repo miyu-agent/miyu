@@ -29,7 +29,7 @@ about = { en = "Hello extension", zh = "打招呼扩展" }
 args = ["serve"]                                    # arguments the core starts it with
 start = "manual"                                    # manual: started when switched on (default); always: started with the core
 capabilities = ["tools", "widgets"]                 # what it needs, see "Capabilities"
-system_account = false                              # its own system account (only chat platform bridges need one), default no
+system_account = false                              # whether it's a chat platform bridge (only bridges need it), default no
 
 [check]
 args = ["check"]                                    # `miyu check` runs <program> check
@@ -96,7 +96,7 @@ Makes it an extension; needs `[command]`.
 | `args` | Arguments the core starts it with |
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
-| `system_account` | `true`: it has its own system account, named after the package. Only chat platform bridges need it: group sessions belong to this account |
+| `system_account` | Every package with a process has its own account, named after the package: what you upload is stored under it, and normally it works for the person who installed Miyu. `true`: it's a chat platform bridge that works for people on the platform, and group sessions belong to this account |
 
 **Capabilities**: only these seventeen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 

@@ -1,7 +1,7 @@
 //! 系统账号（施工 O-4 下，`docs/construction/O-4-系统账号（下）.md`）：声明了系统账号的包，核心起来时建它的家目录和工作区；
 //! 核心拉起的这个包的扩展以它的身份连进来：握手回应的 `account` 是它，群的场所会话归它（目录、工作目录、回应的 `account`），
-//! 说完一轮用量记在它名下、记忆归管理员；主人的私聊照旧归主人，这个连接照样能对它说话；没声明系统账号的扩展照旧回
-//! `no_system_account`。
+//! 说完一轮用量记在它名下、记忆归管理员；主人的私聊照旧归主人，这个连接照样能对它说话；没声明系统账号的扩展也是自己的账号、
+//! 替机主干活（施工 Y-5 中上），照旧回 `no_system_account`。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -357,8 +357,9 @@ async fn a_shipped_package_brought_back_gets_its_system_account_at_once() {
     core.stop_extensions().await;
 }
 
+/// 没声明系统账号的扩展也是自己的账号、替机主干活（施工 Y-5 中上，U16）：开的会话归机主，照旧拿不到群会话。
 #[tokio::test]
-async fn an_extension_without_a_system_account_still_gets_no_group() {
+async fn an_extension_without_a_system_account_is_its_own_account_working_for_the_owner() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "plain");
@@ -370,6 +371,7 @@ async fn an_extension_without_a_system_account_still_gets_no_group() {
             &step,
             "hello",
             r#"ask:venue.session:{"venue":"qq:group:1","kind":"group"}"#,
+            r#"ask:session.create:{}"#,
             "wait",
         ]),
         "always",
@@ -380,16 +382,23 @@ async fn an_extension_without_a_system_account_still_gets_no_group() {
     let core = served_core(&home, &Script::new([]));
     let quiet = AccountId::parse("quiet").expect("合写法");
     assert!(home.root.workspace(&quiet).is_dir(), "起来时建了它的工作区");
-    let got = replies(&path, 2).await;
-    assert_eq!(got[0]["result"]["account"], "alice", "没声明的照旧是管理员");
-    assert_eq!(reason(&got[1]), Some("no_system_account"), "{got:?}");
-    assert!(
-        !home
-            .root
-            .account_dir(&AccountId::parse("plain").expect("合写法"))
-            .exists(),
-        "没声明的不建账号"
+    let plain = AccountId::parse("plain").expect("合写法");
+    let got = replies(&path, 3).await;
+    assert_eq!(
+        got[0]["result"]["account"], "plain",
+        "握手：这个连接是包自己的账号"
     );
+    assert_eq!(reason(&got[1]), Some("no_system_account"), "{got:?}");
+    assert!(home.root.workspace(&plain).is_dir(), "建了家目录");
+    let session = got[2]["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("{got:?}"))
+        .to_string();
+    let made = read_events(&dir(&home, &alice(), &session)).expect("在机主名下");
+    let Body::SessionCreated(created) = &made[0].body else {
+        panic!("第一条是 session.created");
+    };
+    assert_eq!(created.owner, alice(), "替机主干活：会话属主是机主");
     core.stop_extensions().await;
 }
 

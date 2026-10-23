@@ -237,14 +237,15 @@ async fn required_and_unknown_packages_cannot_be_removed() {
 #[tokio::test]
 async fn a_failed_upgrade_keeps_the_old_one() {
     let home = Home::new();
+    // 编号和机主同名的包，装是装不上的（施工 Y-5 中下，`package_id_taken`）；这里要的是「早就装着、升级才撞」：旧的直接放进家目录
+    // 那一层，再起核心。
+    std::fs::create_dir_all(mine(&home, "alice")).expect("建得了");
+    std::fs::write(mine(&home, "alice/package.toml"), manifest("旧的", "alice")).expect("写得进");
+    std::fs::write(mine(&home, "alice/v.txt"), "1").expect("写得进");
     let mut client = connected(&home).await;
-    let path = source(&home, "alice", &manifest("旧的", "alice"));
-    std::fs::create_dir_all(home.work.join("alice")).expect("建得了");
-    std::fs::write(home.work.join("alice/v.txt"), "1").expect("写得进");
-    let reply = client
-        .call("i1", "package.install", json!({"path": path}))
-        .await;
-    assert_eq!(reply["result"]["name"], "旧的", "{reply}");
+    let packages = list(&mut client).await;
+    assert_eq!(find(&packages, "alice").expect("装着")["name"], "旧的");
+    source(&home, "alice", &manifest("新的", "alice"));
     std::fs::write(home.work.join("alice/v.txt"), "2").expect("写得进");
     // 拷进去重读以后才认得出来的：声明了系统账号，编号却是管理员的账号（`account_taken`）。撤回，原来的放回去。撞名的装之前
     // 就拦了（施工 F-8 六补）。

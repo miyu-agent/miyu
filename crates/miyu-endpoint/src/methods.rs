@@ -324,7 +324,11 @@ pub(crate) fn call<'a>(
         "blob.get" => answer(move || async move {
             attach::get(
                 core,
-                (&caller.account, caller.package.as_deref()),
+                (
+                    &caller.account,
+                    caller.acting_for(),
+                    caller.package.as_deref(),
+                ),
                 params(request)?,
             )
             .await

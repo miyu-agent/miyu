@@ -1,7 +1,7 @@
 //! 成员（施工 Y-1 上，设计 06 第二节、第六节）：凭邀请码注册、管理员列出、停用、启用。
 //!
-//! 用户名就是账号编号（家目录的名字），照账号编号的写法；管理员（`admin`）、管理员登录用的用户名、已有的账号、这次起来认的
-//! 系统账号、组名 `users` 都不行。注册时建家目录和工作区、写 `accounts.json`、用掉邀请码、造登录令牌，都在改凭据文件的那把
+//! 用户名就是账号编号（家目录的名字），照账号编号的写法；管理员（`admin`）、管理员登录用的用户名、已有的账号、装着的包和本机
+//! 那份官方索引里的包的编号（施工 Y-5 中下：带进程的包各是自己的账号）、组名 `users` 都不行。注册时建家目录和工作区、写 `accounts.json`、用掉邀请码、造登录令牌，都在改凭据文件的那把
 //! 锁里一件件来；用户名占了的不用掉邀请码。
 
 use serde::Deserialize;
@@ -97,18 +97,27 @@ pub(crate) async fn register(
     Ok((reply, Via::Login(hash, account)))
 }
 
-/// 用户名 `account` 能不能注册：机主、`admin`（系统，施工 Y-12 中上）、登录用的用户名、已有的账号（`accounts.json` 里的、家目录
-/// 已经在的）、系统账号、`users` 都占着。
+/// 用户名 `account` 能不能注册：人占着的（[`person_holds`]）、家目录已经在的、装着的包的编号、本机那份官方索引里的包的编号
+/// （施工 Y-5 中下，两头互相占位）都占着。
 pub(super) fn taken(core: &Core, account: &AccountId) -> bool {
     let name = account.as_str();
+    person_holds(core, name)
+        || core.root.account_dir(account).exists()
+        || core.packages().iter().any(|one| one.id == name)
+        || crate::packages::source::sync::indexed_ids(core)
+            .iter()
+            .any(|id| id == name)
+}
+
+/// 名字 `name` 是不是人这边占着的：机主、`admin`（系统，施工 Y-12 中上）、`users`、`accounts.json` 里的账号和登录用的用户名。
+/// 装包时照它挡（施工 Y-5 中下）：包的编号就是它的账号名，不能和人撞。
+pub(crate) fn person_holds(core: &Core, name: &str) -> bool {
     let written = files::read_accounts(core).accounts;
-    *account == core.admin
+    core.admin.as_str() == name
         || name == SYSTEM
         || name == USERS
-        || core.is_system(account)
         || written.find(name).is_some()
         || written.of(name).is_some()
-        || core.root.account_dir(account).exists()
 }
 
 /// `account.list`：管理员列出账号：管理员、成员、系统账号。

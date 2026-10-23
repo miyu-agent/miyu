@@ -57,6 +57,7 @@ fn caller_account_is_only_used_for_identity() {
         .collect();
     assert_eq!(
         found, wanted,
-        "caller.account 只给身份那几处用；资源归谁、会话属主用 caller.acting_for()（施工 Y-5 上）"
+        "caller.account 只给身份那几处用（施工 Y-5 上）。多出来的那一处是身份（凭据、吊销、成员闸、桥、上传和附件谁交的）就把 \
+         IDENTITY 里那个文件的数加上；是替谁干活（资源归谁、会话属主）就改读 caller.acting_for()"
     );
 }
