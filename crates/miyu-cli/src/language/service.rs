@@ -18,15 +18,20 @@ impl Language {
                     false => format!("Installed: {}; {when}.", shown(file)),
                 }
             }
-            Said::Disabled(file) => match chinese {
+            Said::Disabled(_, file) => match chinese {
                 true => format!("卸掉了：停了核心的服务，删了 {}。", shown(file)),
                 false => format!("Removed: the core's service is stopped and {} deleted.", shown(file)),
             },
-            Said::NotEnabled => match chinese {
+            Said::NotEnabled(..) => match chinese {
                 true => "没装：miyu service enable 装上。".to_string(),
                 false => "Not installed: miyu service enable installs it.".to_string(),
             },
-            Said::Status { file, installed, on } => self.service_status(&shown(file), *installed, *on),
+            Said::Status {
+                file,
+                installed,
+                on,
+                ..
+            } => self.service_status(&shown(file), *installed, *on),
             Said::Cannot(Problem::DataRootOnWindows) => match chinese {
                 true => "装不了：Windows 的任务计划带不了 MIYU_HOME，不设它再装。".to_string(),
                 false => "Cannot install: a Windows scheduled task cannot carry MIYU_HOME; unset it and try again.".to_string(),

@@ -10,6 +10,7 @@
 mod flow;
 mod machine;
 mod plan;
+mod shape;
 #[cfg(test)]
 mod tests;
 
@@ -19,7 +20,7 @@ use std::process::ExitCode;
 
 use clap::{Args, Subcommand};
 
-use crate::ask::exit;
+use crate::ask::{Format, exit};
 use crate::language::{self, Language};
 
 pub(crate) use plan::{Manager, Problem};
@@ -31,6 +32,9 @@ pub struct Service {
     /// 装、卸还是看。
     #[command(subcommand)]
     pub action: ServiceAction,
+    /// `text` 给人看（默认），`json` 给头、脚本（施工 Z-1 下补，`cli/service.md`「机读格式」）。
+    #[arg(long, global = true, value_enum, default_value_t = Format::Text)]
+    pub format: Format,
 }
 
 /// 装、卸还是看。
@@ -49,12 +53,14 @@ pub enum ServiceAction {
 pub(crate) enum Said {
     /// 装好了：哪种管理器、写在哪。
     Enabled(Manager, PathBuf),
-    /// 卸掉了：删了哪个文件。
-    Disabled(PathBuf),
-    /// 本来就没装。
-    NotEnabled,
+    /// 卸掉了：哪种管理器，删了哪个文件。
+    Disabled(Manager, PathBuf),
+    /// 本来就没装：哪种管理器，该写在哪。
+    NotEnabled(Manager, PathBuf),
     /// 装没装、开没开：`on` 是服务管理器那边开着没有，问不了的没有。
     Status {
+        /// 哪种管理器。
+        manager: Manager,
         /// 写的文件在哪。
         file: PathBuf,
         /// 文件在不在。
@@ -74,7 +80,7 @@ impl Said {
     /// 退出码：成了（连同本来没装、看）是 0，别的是 1（`cli/main.md`「退出码」）。
     pub(crate) fn code(&self) -> u8 {
         match self {
-            Said::Enabled(..) | Said::Disabled(_) | Said::NotEnabled | Said::Status { .. } => {
+            Said::Enabled(..) | Said::Disabled(..) | Said::NotEnabled(..) | Said::Status { .. } => {
                 exit::OK
             }
             Said::Cannot(_) | Said::NoHome | Said::Failed(..) => exit::ERROR,
@@ -86,7 +92,15 @@ impl Said {
 pub fn service(args: Service) -> ExitCode {
     let language = language::current();
     let said = flow::run(&machine::Real, args.action);
-    say(language, &said);
+    match args.format {
+        Format::Text => say(language, &said),
+        // 机读的成没成都印在标准输出上：头只读一处（施工 Z-1 下补）。
+        Format::Json => {
+            if writeln!(io::stdout(), "{}", shape::shaped(&said)).is_err() {
+                // 输出关了：没有别处可说。
+            }
+        }
+    }
     ExitCode::from(said.code())
 }
 

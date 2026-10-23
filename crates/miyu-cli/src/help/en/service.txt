@@ -9,4 +9,5 @@ Commands:
 
 The service runs this miyu, with MIYU_HOME if set. Server setups (a dedicated user, /var/lib/miyu) do not go through it: follow packaging/README.md in the repository.
 
-  -h, --help  Print help
+      --format text|json  text for people (default), json for heads and scripts: field names stay the same in every language
+  -h, --help              Print help

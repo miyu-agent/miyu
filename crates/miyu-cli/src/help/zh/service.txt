@@ -9,4 +9,5 @@
 
 服务跑的是现在这个 miyu，设了 MIYU_HOME 的照它。服务器上（专门的用户、/var/lib/miyu）的不经它，照仓库 packaging/README.md 手装。
 
-  -h, --help  印帮助
+      --format text|json  text 给人看（默认），json 给头、脚本：字段名不随语言变
+  -h, --help              印帮助

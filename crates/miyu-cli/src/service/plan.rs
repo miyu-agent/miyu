@@ -17,6 +17,18 @@ pub(crate) enum Manager {
     Task,
 }
 
+impl Manager {
+    /// 机读格式里的写法（`cli/service.md`「机读格式」）。
+    pub(crate) fn code(self) -> &'static str {
+        match self {
+            Manager::Systemd => "systemd",
+            Manager::Autostart => "autostart",
+            Manager::Launchd => "launchd",
+            Manager::Task => "task",
+        }
+    }
+}
+
 /// 这个人的几个目录和身份：文件放哪、命令带什么。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Place {

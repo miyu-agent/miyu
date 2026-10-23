@@ -48,11 +48,12 @@ fn enable(machine: &dyn Machine, manager: Manager, place: &Place) -> Said {
 
 /// 停掉、拿掉、删文件。没装的说没装。
 fn disable(machine: &dyn Machine, manager: Manager, place: &Place) -> Said {
-    let Some(file) = file_of(machine, manager, place) else {
-        return Said::NotEnabled;
+    let file = match file_of(machine, manager, place) {
+        Ok(file) => file,
+        Err(said) => return said,
     };
     if !machine.exists(&file) {
-        return Said::NotEnabled;
+        return Said::NotEnabled(manager, file);
     }
     for command in plan::disable(manager, place) {
         let ran = machine.run(&command);
@@ -61,15 +62,16 @@ fn disable(machine: &dyn Machine, manager: Manager, place: &Place) -> Said {
         }
     }
     match machine.remove(&file) {
-        Ok(()) => Said::Disabled(file),
+        Ok(()) => Said::Disabled(manager, file),
         Err(error) => Said::Failed(file.display().to_string(), error.to_string()),
     }
 }
 
 /// 装没装、开没开。
 fn status(machine: &dyn Machine, manager: Manager, place: &Place) -> Said {
-    let Some(file) = file_of(machine, manager, place) else {
-        return Said::NotEnabled;
+    let file = match file_of(machine, manager, place) {
+        Ok(file) => file,
+        Err(said) => return said,
     };
     let installed = machine.exists(&file);
     let on = match installed {
@@ -77,16 +79,23 @@ fn status(machine: &dyn Machine, manager: Manager, place: &Place) -> Said {
         false => None,
     };
     Said::Status {
+        manager,
         file,
         installed,
         on,
     }
 }
 
-/// 写的那一个文件在哪：照现在的位置算（数据根不影响位置）。
-fn file_of(machine: &dyn Machine, manager: Manager, place: &Place) -> Option<std::path::PathBuf> {
-    let exe = machine.exe().ok()?;
+/// 写的那一个文件在哪：照现在的位置算（数据根不影响位置）。不知道 `miyu` 在哪的说没成。
+fn file_of(
+    machine: &dyn Machine,
+    manager: Manager,
+    place: &Place,
+) -> Result<std::path::PathBuf, Said> {
+    let exe = machine
+        .exe()
+        .map_err(|error| Said::Failed("current_exe".to_string(), error.to_string()))?;
     plan::unit(manager, &exe, None, place)
-        .ok()
         .map(|unit| unit.file)
+        .map_err(Said::Cannot)
 }

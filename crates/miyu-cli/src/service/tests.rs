@@ -110,6 +110,7 @@ fn enabling_writes_the_unit_then_hands_it_to_systemd() {
     assert_eq!(
         status,
         Said::Status {
+            manager: Manager::Systemd,
             file: PathBuf::from(UNIT),
             installed: true,
             on: Some(true)
@@ -139,7 +140,7 @@ fn disabling_stops_it_then_deletes_the_file_and_twice_says_not_installed() {
     let fake = Fake::new(Manager::Systemd);
     assert_eq!(
         flow::run(&fake, ServiceAction::Disable),
-        Said::NotEnabled,
+        Said::NotEnabled(Manager::Systemd, PathBuf::from(UNIT)),
         "没装的不跑命令"
     );
     assert!(fake.ran().is_empty());
@@ -147,13 +148,14 @@ fn disabling_stops_it_then_deletes_the_file_and_twice_says_not_installed() {
     fake.ran.borrow_mut().clear();
     assert_eq!(
         flow::run(&fake, ServiceAction::Disable),
-        Said::Disabled(PathBuf::from(UNIT))
+        Said::Disabled(Manager::Systemd, PathBuf::from(UNIT))
     );
     assert_eq!(fake.ran(), ["systemctl --user disable --now miyu.service"]);
     assert!(fake.files.borrow().is_empty(), "删了");
     assert_eq!(
         flow::run(&fake, ServiceAction::Status),
         Said::Status {
+            manager: Manager::Systemd,
             file: PathBuf::from(UNIT),
             installed: false,
             on: None
