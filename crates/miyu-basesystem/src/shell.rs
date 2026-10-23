@@ -350,9 +350,11 @@ impl Tool for Shell {
             .await;
             guard.disarm();
             match waited {
-                Ok(Waited::Finished(finished)) => touched::after(seen)
-                    .into_iter()
-                    .fold(self.finished(finished, timeout), Done::effect),
+                Ok(Waited::Finished(finished)) => {
+                    let done = self.finished(finished, timeout);
+                    let done = self.texts.results.screenshot(&args.command, done);
+                    touched::after(seen).into_iter().fold(done, Done::effect)
+                }
                 Ok(Waited::Moved(handover)) => {
                     self.moved(&call, handover, args.description, channel)
                 }

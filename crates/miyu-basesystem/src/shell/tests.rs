@@ -112,3 +112,68 @@ fn text_of(done: &Done) -> String {
         })
         .collect()
 }
+
+/// firefox 截图写相对路径（施工 SB-1 修，主人验收撞见）：firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0。命令里
+/// 是 firefox、`--screenshot` 的路径是相对的（没写路径的默认 `screenshot.png` 也是）就在末尾接一句；绝对路径、`$PWD/`、`~/`
+/// 开头的、chromium 的（它照工作目录写）不接。
+#[test]
+fn firefox_s_relative_screenshot_paths_get_a_hint() {
+    let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let results = Results::load(&resources).expect("读得出");
+    let hint = say(&results.screenshot, &[]);
+    assert!(hint.contains("absolute"), "{hint}");
+    let page = "https://example.com";
+    for (command, wanted) in [
+        (
+            format!("firefox --headless --screenshot out.png {page}"),
+            true,
+        ),
+        (
+            format!("firefox --headless --screenshot=shots/out.png {page}"),
+            true,
+        ),
+        (
+            format!("firefox --headless --screenshot './out.png' {page}"),
+            true,
+        ),
+        (
+            format!("/usr/lib/firefox/firefox --headless --screenshot {page}"),
+            true,
+        ),
+        (
+            format!("cd /tmp && firefox-esr --screenshot out.png {page}"),
+            true,
+        ),
+        (
+            format!("firefox --headless --screenshot \"$PWD/out.png\" {page}"),
+            false,
+        ),
+        (
+            format!("firefox --headless --screenshot /tmp/out.png {page}"),
+            false,
+        ),
+        (
+            format!("firefox --headless --screenshot=~/out.png {page}"),
+            false,
+        ),
+        (
+            format!("chromium --headless --screenshot=out.png {page}"),
+            false,
+        ),
+        (format!("firefox --headless {page}"), false),
+    ] {
+        let done = results.ended(
+            Finished {
+                ending: exited(0),
+                output: captured("*** You are running in headless mode.\n"),
+            },
+            || unreachable!("没到时"),
+        );
+        let text = text_of(&results.screenshot(&command, done));
+        assert_eq!(
+            text.trim_end().ends_with(hint.trim_end()),
+            wanted,
+            "{command}\n{text}"
+        );
+    }
+}

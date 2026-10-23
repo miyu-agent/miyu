@@ -88,6 +88,7 @@
    | 到时了 | 输出，接 `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` | 是 | `shell/timed-out`，字段 `seconds` |
 
    - chromium 在沙盒里起不来（施工 SB-1，2026-10-23 项目主人定）：退出码不是 0、被信号杀掉的，输出（截了的看头尾两段）里有 chromium 自己的这几句原话之一——`Failed to create a unique user data directory`、`The SUID sandbox helper binary was found, but is not configured correctly`、`Zygote process exited prematurely`、`No usable sandbox!`（`shell.rs` 的 `CHROMIUM_SIGNS`）——的，末尾再接 `chromium-sandbox.txt`：`Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.`。脚本工具共用这一套。只有撞上才花 token，不进说明。
+   - firefox 截图写了相对路径（施工 SB-1 修，2026-10-23 主人验收撞见）：命令里调了 firefox（某个词的文件名以 `firefox` 开头），`--screenshot` 跟着的路径（`=` 后面或者下一个词，去掉引号）不以 `/`、`$`、`~` 开头，或者没写路径（下一个词是网址、`data:`、别的参数，或者没有了：默认的 `screenshot.png` 也是相对的）的，不管跑成没有，末尾再接 `firefox-screenshot.txt`。firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0；沙盒外也一样。chromium 照工作目录写，不接。
    - 「几行」是换行的个数，最后一段没有换行的也算一行。
    - `{timeout}` 是这一次实际用的毫秒数，`{max}` 是 600000。`seconds` 是它换成秒：整秒的不带小数，不然带一位小数（`300` 毫秒写成 `0.3`）。
 10. 不报效果：改了哪些文件内核看不懂。
@@ -203,6 +204,7 @@ Exit code 2
 | 退出码不是 0 | `exit.txt` | `Exit code {code}` |
 | 被信号杀掉 | `signal.txt` | `Killed by signal {signal}` |
 | chromium 在沙盒里起不来（施工 SB-1） | `chromium-sandbox.txt` | `Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.` |
+| firefox 截图写了相对路径（施工 SB-1 修） | `firefox-screenshot.txt` | `Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error; give it an absolute path, such as "$PWD/shot.png".` |
 | 到时了 | `timed-out.txt` | `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` |
 | 放到后台了 | `started.txt` | `Started {job} in the background. You will be told when it ends. Read its output with jobs output.` |
 | 截在中间 | `omitted.txt` | `[... {count} characters omitted ...]` |

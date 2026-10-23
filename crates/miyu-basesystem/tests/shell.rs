@@ -422,3 +422,32 @@ async fn a_tilde_working_directory_means_home() {
     assert!(!done.error, "{}", text(&done));
     assert!(text(&done).contains("marker.txt"), "{}", text(&done));
 }
+
+/// firefox 截图写相对路径（施工 SB-1 修）：真跑一次 `shell`，命令名以 firefox 开头（这里是个不存在的程序，不真起浏览器）、
+/// `--screenshot` 写相对路径的，结果末尾有教她写绝对路径的那一句；绝对路径的没有。
+#[tokio::test]
+async fn a_relative_firefox_screenshot_gets_told_to_use_an_absolute_path() {
+    let site = Site::new();
+    let relative = run(
+        &site,
+        "firefox-miyu-missing --headless --screenshot out.png https://example.com",
+    )
+    .await;
+    assert!(
+        text(&relative)
+            .trim_end()
+            .ends_with("such as \"$PWD/shot.png\"."),
+        "{}",
+        text(&relative)
+    );
+    let absolute = run(
+        &site,
+        "firefox-miyu-missing --headless --screenshot \"$PWD/out.png\" https://example.com",
+    )
+    .await;
+    assert!(
+        !text(&absolute).contains("absolute path"),
+        "{}",
+        text(&absolute)
+    );
+}

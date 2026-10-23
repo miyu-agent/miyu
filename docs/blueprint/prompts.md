@@ -1317,6 +1317,17 @@ Stopped after {timeout} ms because the command took too long. If it needs more t
 Chromium can't start its own sandbox or create a profile inside this sandbox; this sandbox already contains it, so add --no-sandbox --user-data-dir=<a temp folder>.
 ```
 
+#### `software/basesystem/shell/firefox-screenshot.txt`
+
+- 什么时候加进来：命令里调了 firefox、`--screenshot` 写的是相对路径（或者没写路径）（施工 SB-1 修，`shell/results.rs` 的 `relative_screenshot`），接在结果末尾，跑成没跑成都接
+- token：约 35（估的）
+- 为什么加：2026-10-23 项目主人验收撞见：firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0，比报错还糟；沙盒外一样，修不了 firefox，只能告诉她写绝对路径。只有撞上才花 token
+- 指纹：`7c5d6079`
+
+```text
+Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error; give it an absolute path, such as "$PWD/shot.png".
+```
+
 #### `software/basesystem/shell/omitted.txt`
 
 - 什么时候加进来：输出超过 30000 个字，截在中间的那一行

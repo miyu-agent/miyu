@@ -3,6 +3,7 @@
 
 use std::path::Path;
 
+use miyu_kernel::block::{Block, Text};
 use miyu_kernel::template::Template;
 use miyu_tool::Done;
 
@@ -22,6 +23,8 @@ pub(super) struct Results {
     pub(super) truncated: Template,
     /// chromium 自己那层沙盒、资料目录起不来时接的一句（施工 SB-1）。
     pub(super) chromium: Template,
+    /// firefox 截图写了相对路径时接的一句（施工 SB-1 修）。
+    pub(super) screenshot: Template,
 }
 
 impl Results {
@@ -35,6 +38,7 @@ impl Results {
             omitted: text("omitted", &["count"])?,
             truncated: text("truncated", &["total"])?,
             chromium: text("chromium-sandbox", &[])?,
+            screenshot: text("firefox-screenshot", &[])?,
         })
     }
 
@@ -80,6 +84,23 @@ impl Results {
                 }
             },
         }
+    }
+
+    /// 命令里是 firefox 截图、写的是相对路径的，末尾接 `firefox-screenshot.txt`（施工 SB-1 修）：firefox 起来先切到 `/`，
+    /// 相对路径悄悄写不出来、退出码照样 0。不管跑成没有都接：相对路径一定写不出来。
+    pub(super) fn screenshot(&self, command: &str, mut done: Done) -> Done {
+        if !relative_screenshot(command) {
+            return done;
+        }
+        let hint = say(&self.screenshot, &[]);
+        match done.blocks.iter_mut().rev().find_map(|block| match block {
+            Block::Text(text) => Some(text),
+            _ => None,
+        }) {
+            Some(text) => text.text.push_str(&hint),
+            None => done.blocks.push(Block::Text(Text { text: hint })),
+        }
+        done
     }
 
     /// 挪到后台那一刻读到的，写进任务的输出（施工 7-12）：太长的照给她看的截成头尾两段，中间说省了多少；不说怎么看全，
@@ -131,4 +152,31 @@ fn chromium(output: &Capture) -> bool {
         Shown::Whole(text) => says(&text),
         Shown::Cut { head, tail, .. } => says(&head) || says(&tail),
     }
+}
+
+/// 命令里调了 firefox、`--screenshot` 写的是相对路径（施工 SB-1 修）：路径跟在 `=` 后面或者是下一个词，去掉引号以后不以
+/// `/`、`$`、`~` 开头的算相对。没写路径的（下一个词是网址、别的参数，或者没有了）是默认的 `screenshot.png`，也是相对的：
+/// 下一个词不管是什么，照同一条规矩判就对了。
+fn relative_screenshot(command: &str) -> bool {
+    let words: Vec<&str> = command.split_whitespace().collect();
+    let firefox = words.iter().any(|word| {
+        let name = word.rsplit('/').next().unwrap_or(word);
+        name.starts_with("firefox")
+    });
+    if !firefox {
+        return false;
+    }
+    let path =
+        words
+            .iter()
+            .enumerate()
+            .find_map(|(at, word)| match word.strip_prefix("--screenshot=") {
+                Some(path) => Some(path),
+                None => (*word == "--screenshot")
+                    .then(|| words.get(at + 1).copied().unwrap_or_default()),
+            });
+    path.is_some_and(|path| {
+        let path = path.trim_start_matches(['"', '\'']);
+        !(path.starts_with('/') || path.starts_with('$') || path.starts_with('~'))
+    })
 }
