@@ -101,6 +101,7 @@ impl Projector {
             output_cut: false,
             questions: Vec::new(),
             nested: None,
+            progress: None,
         };
         if let Some(call) = call {
             self.calls.insert(call, id.clone());
@@ -327,8 +328,11 @@ impl Projector {
                     tool.diff = Some(real);
                 }
                 tool.took_ms = Some(took);
+                tool.progress = None;
             }
         });
+        // 结果到了，进度去掉（施工 X-45 补）：攒着的半行、压着的值一起扔掉。
+        self.progress_over(result.call_id);
         self.refresh_groups_of(vec![id]);
     }
 

@@ -12,11 +12,13 @@
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use serde_json::json;
 use tokio::sync::{broadcast, mpsc};
 
 use miyu_kernel::id::{JobId, SessionId};
+use miyu_kernel::time::Timestamp;
 use miyu_session::{Current, Ended, Handle, Pushed, Subscription};
 use miyu_view::{Change, JobState, Projector};
 
@@ -275,6 +277,8 @@ async fn relay(
     out: &mpsc::Sender<String>,
 ) {
     loop {
+        // 压着的工具进度最早什么时候到点（施工 X-45 补）：每一轮重算，别的先醒了也不误。
+        let due = view.projector.due();
         tokio::select! {
             biased;
             reply = replies.recv() => {
@@ -307,8 +311,27 @@ async fn relay(
                     return;
                 }
             }
+            () = until(due) => {
+                let mut changes = view.projector.tick(crate::sessions::now());
+                let mut lines = Vec::new();
+                flush(session, &mut changes, &mut lines);
+                for line in lines {
+                    if out.send(line).await.is_err() {
+                        return;
+                    }
+                }
+            }
         }
     }
+}
+
+/// 等到 `due`；没有的一直等（这一支不醒）。
+async fn until(due: Option<Timestamp>) {
+    let Some(due) = due else {
+        return std::future::pending().await;
+    };
+    let left = due.unix_millis() - crate::sessions::now().unix_millis();
+    tokio::time::sleep(Duration::from_millis(u64::try_from(left).unwrap_or(0))).await;
 }
 
 /// 把 `first` 和已经到了的推送（最多 [`BATCH`] 份）一起喂进去、写出去。这个订阅不再往下了（掉了队、会话停了、连接断了），

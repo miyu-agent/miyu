@@ -8,6 +8,8 @@ mod blocks;
 mod media;
 mod nested;
 mod notices;
+mod parts;
+mod progress;
 mod status;
 mod tools;
 mod turns;
@@ -17,7 +19,7 @@ mod users;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use miyu_kernel::event::{Body as EventBody, CallError, Event, Transient, TransientBody, Usage};
+use miyu_kernel::event::{Body as EventBody, Event, Transient, TransientBody, Usage};
 use miyu_kernel::id::{CallId, ContentHash, JobId, ModelName, ProviderId, Seq, TurnId};
 use miyu_kernel::time::Timestamp;
 
@@ -25,6 +27,7 @@ use crate::change::Change;
 use crate::entry::{Body, Entry, EntryId, Group, Notice};
 use crate::summary;
 use crate::words::Texts;
+use parts::{Block, Job, Running};
 
 /// 改了的文件加减了几行：投影是纯逻辑、不读 blob，由外面交进来（端点照两个 blob 算，同 `view.detail`）。
 pub trait Lines: Send + Sync {
@@ -88,38 +91,8 @@ pub struct Projector {
     now: Timestamp,
     /// 会话状态里投影算得出的那一半（施工 9-8 补上）。
     tracking: status::Tracking,
-}
-
-/// 在跑的这一轮。
-struct Running {
-    id: TurnId,
-    started: Timestamp,
-    usage: Option<Usage>,
-    level: Option<String>,
-    failure: Option<CallError>,
-    /// 没有触发的那一轮：手动压缩、清空，不另起收尾。
-    manual: bool,
-    /// 这一轮她出过字、做过事。
-    spoke: bool,
-}
-
-/// 这次请求的一块。
-#[derive(Debug, Clone)]
-enum Block {
-    /// 正文：出了字才有条目。
-    Text(Option<EntryId>),
-    /// 思考：出了字才有条目。
-    Thought(Option<EntryId>),
-    /// 调工具：开始就有条目。
-    Tool(EntryId),
-}
-
-/// 一件后台任务派出去时的样子。
-#[derive(Debug, Clone)]
-struct Job {
-    what: miyu_kernel::event::JobKind,
-    title: String,
-    command: Option<String>,
+    /// 在跑的工具的进度行（施工 X-45 补）。
+    progress: progress::Progress,
 }
 
 /// 这一批动过的。
@@ -166,6 +139,7 @@ impl Projector {
             turns: Vec::new(),
             now: Timestamp::from_unix_millis(0).unwrap_or_else(|| unreachable!("0 是合法的时刻")),
             tracking: status::Tracking::default(),
+            progress: progress::Progress::default(),
         }
     }
 
@@ -219,6 +193,7 @@ impl Projector {
             TransientBody::CompactionProgress(progress) => self.progress(transient.at, progress),
             TransientBody::CompactionDone(done) => self.compaction_done(done),
             TransientBody::ModelChanged(changed) => self.model_changed(transient.at, changed),
+            TransientBody::ToolProgress(progress) => self.tool_progress(transient.at, progress),
             _ => {}
         }
         self.track_transient(transient);

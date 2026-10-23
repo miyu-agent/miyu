@@ -31,7 +31,7 @@
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |
-| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有）、`nested`（脚本里调过工具的 `shell`：`{count, last}`，`last` 是序号最大的那一个 `{n, name, title, state, started?}`；头在那一行后面写 `· #n 显示名`，整份用 `view.detail` 取） |
+| `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有）、`nested`（脚本里调过工具的 `shell`：`{count, last}`，`last` 是序号最大的那一个 `{n, name, title, state, started?}`；头在那一行后面写 `· #n 显示名`，整份用 `view.detail` 取）、`progress`（在跑时最新的一行进度：工具输出里 `miyu-progress: ` 开头的那一行，去了前缀，最长 200 个字；同一步最多每 0.5 秒推一次；结果到了去掉，翻页、重新订阅没有） |
 | `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`，出错的 `error`、`explain` |
 | `notice` | 旁白：`what` 见下 |
 

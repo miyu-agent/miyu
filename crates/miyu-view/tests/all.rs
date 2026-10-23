@@ -8,6 +8,7 @@ mod nested;
 mod notices;
 mod outputs;
 mod preparing;
+mod progress;
 mod queue;
 mod random;
 mod remembered;

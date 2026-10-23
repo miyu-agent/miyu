@@ -242,6 +242,7 @@ mod venues;
 mod view_detail;
 mod view_entries;
 mod view_page;
+mod view_progress;
 mod view_skill;
 mod view_status;
 mod view_stream;

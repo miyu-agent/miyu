@@ -258,6 +258,22 @@ impl Stage {
         self.held_tools.iter().map(|(call, _)| *call).collect()
     }
 
+    /// 停住的调用 `call_id` 过了 `after_ms` 毫秒输出一段 `text`（施工 X-45 补）：只推给头的进度。
+    ///
+    /// # Panics
+    ///
+    /// 走出了时间的范围。
+    pub fn tool_progress(&mut self, call_id: CallId, text: &str, after_ms: i64) {
+        self.now = Timestamp::from_unix_millis(self.now.unix_millis() + after_ms)
+            .unwrap_or_else(|| panic!("走出了时间的范围"));
+        let at = self.now;
+        self.run(Input::ToolProgress {
+            at,
+            call_id,
+            text: text.to_string(),
+        });
+    }
+
     /// 放行停住的调用 `call_id`：照它排好的回。
     ///
     /// # Panics

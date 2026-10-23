@@ -264,6 +264,10 @@ pub struct Tool {
     /// 脚本里调过的工具（施工 M-5 上）：前台那次 `shell` 下面的。没调过的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nested: Option<Nested>,
+    /// 在跑时最新的一行进度（施工 X-45 补）：工具输出里 `miyu-progress: ` 开头的那一行，去了前缀和首尾空白，最长 200 个字。
+    /// 只在视图流里有，结果到了去掉；翻页、订阅的回应没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progress: Option<String>,
 }
 
 /// 标题那一句，照连接的语言。
