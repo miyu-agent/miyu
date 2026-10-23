@@ -238,6 +238,25 @@ impl Boundary {
         Zone::Outside
     }
 
+    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：`<数据根>/home/<账号>/kb/<库>/` 下面的。拒绝时照它换一句，
+    /// 指她去用知识库的工具。
+    #[must_use]
+    pub fn knowledge(&self, path: &Path) -> bool {
+        let Some(inside) = self
+            .data_root
+            .as_ref()
+            .and_then(|root| path.strip_prefix(root).ok())
+        else {
+            return false;
+        };
+        let parts: Vec<Component<'_>> = inside.components().collect();
+        matches!(
+            parts.as_slice(),
+            [Component::Normal(home), Component::Normal(_), Component::Normal(kb), Component::Normal(_), Component::Normal(_), ..]
+                if *home == "home" && *kb == "kb"
+        )
+    }
+
     /// 走目录的工具（`fs.find`，施工 W-2）要不要挡住往下走进 `dir`：`dir` 落进「谁都不能碰」那一片、又没有
     /// 工作区、加进来的目录藏在它底下——工作区常常就在数据根里面（默认的会话就在那里干活），得穿过数据根才能
     /// 走到它，但数据根自己、旁的子目录不许进（施工 W-2）。

@@ -271,6 +271,7 @@ impl ResourceRoot {
             permissions: PermissionTexts {
                 forbidden: core(&["permissions", "forbidden.txt"])?,
                 unresolvable: core(&["permissions", "unresolvable.txt"])?,
+                knowledge: Some(core(&["permissions", "forbidden-kb.txt"])?),
             },
             drivers: DriverPlaceholders {
                 image_omitted: driver("image-omitted.txt")?,

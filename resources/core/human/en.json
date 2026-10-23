@@ -443,6 +443,7 @@
     "tool-results/timed-out": "Timed out ({seconds} s)",
     "tool-results/crashed": "Internal error, may be partly done",
     "permissions/forbidden": "Miyu's own data, off limits",
+    "permissions/forbidden-kb": "a knowledge base document, use the knowledge base tools",
     "permissions/unresolvable": "can't tell where it points: {reason}",
     "permissions/not-in-venue": "Only works in a group or private chat",
     "permissions/outside-workspace": "Outside the workspace, not run",

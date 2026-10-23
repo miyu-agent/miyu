@@ -443,6 +443,7 @@
     "tool-results/timed-out": "超时（{seconds} 秒）",
     "tool-results/crashed": "内部错误，可能已部分执行",
     "permissions/forbidden": "这是 Miyu 自己的数据，谁都不能碰",
+    "permissions/forbidden-kb": "这是知识库里的文档，要用知识库的工具",
     "permissions/unresolvable": "说不清它指向哪里：{reason}",
     "permissions/not-in-venue": "只能在群聊、私聊里用",
     "permissions/outside-workspace": "工作区外，未执行",

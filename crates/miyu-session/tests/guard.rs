@@ -18,6 +18,10 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
+/// 知识库里的文档换一句（施工 K-3 补）。
+#[path = "guard/knowledge.rs"]
+mod knowledge;
+
 /// 会报路径的三件假工具：读（`read`）、写（`edit`）、执行命令（`run`，不报路径）。
 struct Kit {
     read: Arc<Fake>,

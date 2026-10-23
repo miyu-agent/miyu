@@ -37,6 +37,9 @@ pub struct PermissionTexts {
     pub forbidden: String,
     /// 路径换不成真实的位置（`unresolvable.txt`）。
     pub unresolvable: String,
+    /// 碰到的是知识库里的文档（`forbidden-kb.txt`，施工 K-3 补）。以前造的快照里没有，读成没有：照 `forbidden` 那一句。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub knowledge: Option<String>,
 }
 
 /// 回合没走完的几句，照原因。

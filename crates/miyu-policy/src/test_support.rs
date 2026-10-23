@@ -85,6 +85,9 @@ pub(crate) fn core() -> CoreTexts {
                 .to_string(),
             unresolvable: include_str!("../../../resources/core/permissions/unresolvable.txt")
                 .to_string(),
+            knowledge: Some(
+                include_str!("../../../resources/core/permissions/forbidden-kb.txt").to_string(),
+            ),
         },
         drivers: DriverPlaceholders {
             image_omitted: include_str!("../../../resources/core/drivers/image-omitted.txt")

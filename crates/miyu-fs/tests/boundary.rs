@@ -449,3 +449,17 @@ fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
     assert!(!boundary.blocks_descent(&data.join("home")), "通得到它");
     assert!(boundary.blocks_descent(&data.join("run")));
 }
+
+/// 数据根里知识库的文档（施工 K-3 补）：`home/<账号>/kb/<库>/` 下面的才算；库目录本身、别的账号目录、数据根以外的都不算。
+#[test]
+fn a_knowledge_base_document_is_told_apart_inside_the_data_root() {
+    let site = Site::new();
+    let boundary = site.boundary();
+    let doc = site.real("data").join("home/alice/kb/notes/todo.md");
+    assert!(boundary.knowledge(&doc));
+    assert!(boundary.knowledge(&site.real("data").join("home/alice/kb/notes/sub/a.md")));
+    assert!(!boundary.knowledge(&site.real("data").join("home/alice/kb/notes")));
+    assert!(!boundary.knowledge(&site.real("data").join("home/alice/settings.toml")));
+    assert!(!boundary.knowledge(&site.real("data").join("state/kb/notes/a.md")));
+    assert!(!boundary.knowledge(&site.real("work").join("kb/notes/a.md")));
+}

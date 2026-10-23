@@ -789,6 +789,17 @@ The tool "{name}" did not answer within {seconds} seconds. It may have been part
 "{path}" is inside Miyu's own data, which no tool can read or change.
 ```
 
+#### `core/permissions/forbidden-kb.txt`
+
+- 什么时候加进来：权限策略拒绝：要碰的路径是数据根里某个知识库的文档（`home/<账号>/kb/<库>/` 下面），以前造的快照没有、照 `forbidden.txt`（施工 K-3 补）
+- token：约 45（路径按 `~/.local/share/miyu/home/alice/kb/notes/todo.md`，o200k 估；同一条路径 `forbidden.txt` 是 36）
+- 为什么加：项目主人在 Windows 虚拟机里实测（2026-10-23）：她要删自己建的知识库文档，去调了 `trash`，被「Miyu 自己的数据」拒了，没想到工具面上就有 `kb_delete`，只好让人手动清。只在被拒时出现，不进前缀
+- 指纹：`bad10ac7`
+
+```text
+"{path}" is a knowledge base document. Read and change it with the knowledge base tools: kb_read, kb_edit, kb_delete.
+```
+
 #### `core/permissions/unresolvable.txt`
 
 - 什么时候加进来：权限策略拒绝：路径换不成真实的位置（指向不存在处的链接这类）

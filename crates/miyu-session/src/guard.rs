@@ -412,6 +412,9 @@ impl Guard {
             match mark(level, zone, target.write) {
                 Mark::Allow => {}
                 Mark::Ask => asked.push(Asked::new(real, target.write, zone, &boundary)),
+                Mark::Forbidden if boundary.knowledge(&real) => {
+                    return deny(self.lettering.guard().forbidden_kb(&target.path));
+                }
                 Mark::Forbidden => return deny(self.lettering.guard().forbidden(&target.path)),
                 Mark::ReadOnly => return deny(self.lettering.guard().read_only()),
             }

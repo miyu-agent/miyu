@@ -13,6 +13,8 @@ use crate::snapshot::{BuildError, Snapshot};
 #[derive(Debug, Clone)]
 pub struct GuardTexts {
     forbidden: Template,
+    /// 知识库里的文档（施工 K-3 补）：以前的快照没有，照 `forbidden`。
+    knowledge: Option<Template>,
     unresolvable: Template,
     read_only: Template,
 }
@@ -25,6 +27,15 @@ impl GuardTexts {
             "core/permissions/forbidden",
             &[("path", path)],
         )
+    }
+
+    /// `path` 是数据根里知识库的文档（施工 K-3 补）：指她去用知识库的工具。说法是 `core/permissions/forbidden-kb`；以前的快照
+    /// 没有这一句的照 [`GuardTexts::forbidden`]。
+    pub fn forbidden_kb(&self, path: &str) -> Worded {
+        match &self.knowledge {
+            Some(template) => word(template, "core/permissions/forbidden-kb", &[("path", path)]),
+            None => self.forbidden(path),
+        }
     }
 
     /// `path` 换不成真实的位置，因为 `reason`。说法是 `core/permissions/unresolvable`。
@@ -54,6 +65,11 @@ impl Snapshot {
         let build = || -> Result<GuardTexts, TemplateError> {
             Ok(GuardTexts {
                 forbidden: parse(&texts.forbidden, &[("path", "")])?,
+                knowledge: texts
+                    .knowledge
+                    .as_deref()
+                    .map(|text| parse(text, &[("path", "")]))
+                    .transpose()?,
                 unresolvable: parse(&texts.unresolvable, &[("path", ""), ("reason", "")])?,
                 read_only: parse(read_only, &[])?,
             })
