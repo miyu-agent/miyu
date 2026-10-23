@@ -143,6 +143,11 @@ async fn work(
             return;
         };
         match job {
+            // 没人订阅着的不算那一项、只往上加号（施工 V-12：每轮好几次，回合的热路径旁边白占 CPU）。之后订阅的先要一份
+            // 列表（排在这后面算），里面已经是最新的。
+            Job::Changed(_) if pushes.receiver_count() == 0 => {
+                number.fetch_add(1, Ordering::Relaxed);
+            }
             // 一个会话变了，父会话、祖先的 `tokens` 跟着变（连同子孙算的）：一层层往上推。
             Job::Changed(session) => {
                 let mut next = Some(session);

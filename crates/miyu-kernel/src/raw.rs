@@ -36,6 +36,13 @@ impl PartialEq for RawJson {
 
 impl Eq for RawJson {}
 
+/// 照原文算（同 [`PartialEq`]）：请求的指纹照它比（施工 V-12）。
+impl std::hash::Hash for RawJson {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.get().hash(state);
+    }
+}
+
 impl Serialize for RawJson {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         self.0.serialize(s)

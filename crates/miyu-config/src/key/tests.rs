@@ -205,3 +205,31 @@ fn a_name_is_long_text_without_dots() {
         }
     );
 }
+
+/// 拆键的快路（施工 V-12：每次请求、每次列表推送都要拆配置里的每个键，原来每个都交给 TOML 解析，占了投影的一大截）：
+/// 全是裸段的直接照点拆，别的照旧交给 TOML。各种写法拆出来都和 TOML 读的一样。
+#[test]
+fn the_fast_split_agrees_with_toml() {
+    for key in [
+        "providers.deepseek.key",
+        "models.chat",
+        "a",
+        "a-b.c_d.9",
+        "providers.\"my.host\".key",
+        "providers.'raw'.key",
+        "a . b",
+        " a.b",
+        "a.b ",
+        "a..b",
+        ".a",
+        "a.",
+        "",
+        "a.\"\"",
+        "中文.b",
+        "a.b = 1",
+        "a.\"b\".c",
+        "a.\"b\\\".c\"",
+    ] {
+        assert_eq!(split(key), by_toml(key), "{key:?}");
+    }
+}

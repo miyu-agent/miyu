@@ -8,7 +8,7 @@ use crate::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, SourcePa
 use crate::raw::{self, RawJson};
 
 /// 一块内容。JSON 里用 `type` 分开五种；读到不认识的，整块原样留着，投影跳过它。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Block {
     /// 文本。
@@ -41,14 +41,14 @@ pub fn words(blocks: &[Block]) -> String {
 }
 
 /// 文本。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Text {
     /// 文字。
     pub text: String,
 }
 
 /// 模型的思考。投影保留全部思考块，发哪些由驱动按供应商的要求决定（`08-上下文投影.md` 第四节）。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Reasoning {
     /// 思考的文字。
     pub text: String,
@@ -58,7 +58,7 @@ pub struct Reasoning {
 }
 
 /// 图片。宽和高在进来的时候就量好了；量不出尺寸的不当图片，当文件。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Image {
     /// 图片本身存成的 blob。
     pub blob: ContentHash,
@@ -80,7 +80,7 @@ pub struct Image {
 }
 
 /// 文件。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct File {
     /// 文件本身存成的 blob。
     pub blob: ContentHash,
@@ -95,7 +95,7 @@ pub struct File {
 
 /// 一次工具调用。工具名和参数不检查：模型说了什么就记什么，
 /// 名字不对、参数坏了，是执行时报给模型的错。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ToolCall {
     /// 内核分配的调用编号；供应商自己的编号在 `private` 里。
     pub call_id: CallId,
@@ -110,7 +110,7 @@ pub struct ToolCall {
 
 /// 驱动私有的原样数据。内核不解读，同一类驱动发请求时原样带上，别的驱动不理它
 /// （`docs/designs/03-事件模型.md` 第九节）。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Private {
     /// 哪一类驱动的数据。同一类驱动发请求时原样带上，别的驱动不理它。
     pub driver: DriverFamily,

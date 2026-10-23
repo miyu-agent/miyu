@@ -117,19 +117,20 @@ pub fn recognize(
             how: How::Config,
         });
     }
-    let similar = squeezed(id);
-    found(How::Id, &|other, _| other.eq_ignore_ascii_case(id))
-        .or_else(|| found(How::SimilarId, &|other, _| squeezed(other) == similar))
-        .or_else(|| {
-            let address = address(base_url?);
-            found(How::Url, &|_, api| {
-                api.is_some_and(|api| self::address(api) == address)
-            })
+    // 规整过的编号、地址目录里存着（施工 V-12），照编号的字节排，同上一层一样取头一家。
+    let known = |how: How, id: Option<&crate::catalog::Text>| {
+        id.map(|id| Recognized {
+            provider: id.to_string(),
+            how,
         })
+    };
+    found(How::Id, &|other, _| other.eq_ignore_ascii_case(id))
+        .or_else(|| known(How::SimilarId, catalog.similar(&squeezed(id))))
+        .or_else(|| known(How::Url, catalog.at_address(&address(base_url?))))
 }
 
 /// 去掉 `-`、`_`、`.`、空格，转成小写。
-fn squeezed(id: &str) -> String {
+pub(crate) fn squeezed(id: &str) -> String {
     id.chars()
         .filter(|c| !matches!(c, '-' | '_' | '.' | ' '))
         .flat_map(char::to_lowercase)
@@ -137,7 +138,7 @@ fn squeezed(id: &str) -> String {
 }
 
 /// 地址比较的写法：去掉末尾的 `/`，再去掉末尾的 `/v1`，协议和主机名转成小写。
-fn address(url: &str) -> String {
+pub(crate) fn address(url: &str) -> String {
     let url = url.trim_end_matches('/');
     let url = url.strip_suffix("/v1").unwrap_or(url);
     let (scheme, rest) = url.split_once("://").unwrap_or(("", url));

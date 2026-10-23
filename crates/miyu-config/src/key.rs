@@ -166,7 +166,19 @@ pub fn join<S: AsRef<str>>(segments: &[S]) -> String {
 }
 
 /// 真的键拆成一段段：照 TOML 点号连着的键读（裸的、带双引号的、带单引号的，`.` 两边可以有空格）。读不成的是空的。
+///
+/// 全是裸段的（点隔开、每段都能裸着写，没有引号、空格）直接照点拆，和 TOML 读出来的一样；别的交给 TOML（施工 V-12：
+/// 列名字时配置里每个键都要拆，原来每个都解析一份 TOML 文档，回合的热路径上占了一大截）。
 pub fn split(key: &str) -> Option<Vec<String>> {
+    let segments: Vec<&str> = key.split('.').collect();
+    if segments.iter().all(|segment| bare(segment)) {
+        return Some(segments.into_iter().map(str::to_string).collect());
+    }
+    by_toml(key)
+}
+
+/// 照 TOML 读（[`split`] 的慢路）。
+fn by_toml(key: &str) -> Option<Vec<String>> {
     let document = toml_edit::Document::parse(format!("{key} = 0")).ok()?;
     let mut segments = Vec::new();
     let mut node = document.as_item();

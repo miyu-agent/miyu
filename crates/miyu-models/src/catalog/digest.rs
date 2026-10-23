@@ -157,6 +157,7 @@ impl Catalog {
         }
         catalog.named = index_of(&texts, read.named)?;
         catalog.normalized = index_of(&texts, read.normalized)?;
+        catalog.index_providers();
         Some(catalog)
     }
 }

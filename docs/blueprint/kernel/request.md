@@ -63,7 +63,7 @@
 
 **规范的字节**：`canonical_bytes()` 写成紧凑的 JSON，字段照结构体的先后，参数格式原样照抄。`hash()` 是这串字节的 SHA-256，写成 `sha256:` 加 64 位小写十六进制。
 
-**指纹** `fingerprint()`：三样各算一个 SHA-256。工具面：`tools` 数组的 JSON；system：它写成的 JSON 字符串，带引号；每条消息：那一条的 JSON，另记它的角色。`stable`、`continuation`、`described`、`full_parameters`、`output_cap` 不算进指纹（`described` 为什么不算见 `models.md`「施工时定的」8-17）。上一次的请求本身不留。
+**指纹** `fingerprint()`：三样各照结构算一个 64 位的哈希（施工 V-17 上起；原来是各写成 JSON 再算 SHA-256，一万条事件的请求是回合热路径上最大的一截）。工具面：`tools` 数组；system；每条消息，另记它的角色。写进 JSON 的都在结构里（工具的参数格式、驱动的私有数据照原文），比得出的一样。指纹只在内存里比上一次请求，不落盘、不跨重启，用不着密码学哈希。`stable`、`continuation`、`described`、`full_parameters`、`output_cap` 不算进指纹（`described` 为什么不算见 `models.md`「施工时定的」8-17）。上一次的请求本身不留。
 
 **第一处不同** `first_difference(上一次的指纹)`：交回 `Tools`、`System`、`Message { index, role }`（`index` 从 0 数起），或者没有。
 

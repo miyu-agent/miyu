@@ -46,6 +46,8 @@ pub struct Catalog {
     named: Index,
     /// 规整以后的模型名 → 同上。
     normalized: Index,
+    /// 每一家规整过的编号、规整过的地址（施工 V-12：认供应商时每次都要比一遍，原来每次每家现规整），照编号的字节排。
+    recognized: Vec<(String, Option<String>, Text)>,
 }
 
 /// 目录里的一个条目：供应商的编号、模型名，和表里的键是同一份。
@@ -287,6 +289,35 @@ impl Catalog {
         }
         self.named = Index::of(named);
         self.normalized = Index::of(normalized);
+        self.index_providers();
+    }
+
+    /// 每一家规整过的编号、地址（施工 V-12）：建目录、从整理好的那一份读回来都照它建。
+    fn index_providers(&mut self) {
+        self.recognized = self
+            .providers
+            .iter()
+            .map(|(id, entry)| {
+                let api = entry.api.as_deref().map(crate::matching::address);
+                (crate::matching::squeezed(id), api, Arc::clone(id))
+            })
+            .collect();
+    }
+
+    /// 规整过的编号是 `squeezed` 的头一家（照编号的字节排，施工 V-12）。
+    pub(crate) fn similar(&self, squeezed: &str) -> Option<&Text> {
+        self.recognized
+            .iter()
+            .find(|(similar, _, _)| similar == squeezed)
+            .map(|(_, _, id)| id)
+    }
+
+    /// 规整过的地址是 `address` 的头一家（照编号的字节排，施工 V-12）。
+    pub(crate) fn at_address(&self, address: &str) -> Option<&Text> {
+        self.recognized
+            .iter()
+            .find(|(_, api, _)| api.as_deref() == Some(address))
+            .map(|(_, _, id)| id)
     }
 
     /// 编号是 `id` 的那一家。

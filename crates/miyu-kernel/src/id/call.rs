@@ -11,7 +11,7 @@ use crate::format_error::FormatError;
 
 /// 调用编号：`call_<助手消息的序号>_<这条消息里的第几个调用>`，从 1 数起，由内核分配。
 /// 带着序号，一个会话里不会重复；供应商自己的编号放在驱动私有数据里。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CallId {
     message: Seq,
     index: u32,

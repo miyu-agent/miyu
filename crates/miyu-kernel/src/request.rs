@@ -7,7 +7,6 @@
 use std::collections::BTreeMap;
 
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 use crate::block::Block;
 use crate::id::{CallId, ContentHash};
@@ -52,7 +51,7 @@ pub struct Request {
 
 /// 工具面上的一件工具：名字、说明、参数格式。存根也是这三样，只是说明短、参数宽松
 /// （`25-工具加载.md`）。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Hash)]
 pub struct ToolSpec {
     /// 工具名，英文，稳定不变（`05-内核接口.md` 第六节）。
     pub name: String,
@@ -63,7 +62,7 @@ pub struct ToolSpec {
 }
 
 /// 请求里的一条消息。JSON 里用 `role` 分开三种。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[serde(tag = "role", rename_all = "snake_case")]
 pub enum Message {
     /// 模型以外的一方说的：人的消息、事实块、压缩的检查点、子代理的回报。
@@ -134,29 +133,29 @@ impl Request {
         ContentHash::of(&self.canonical_bytes())
     }
 
-    /// 这份请求的指纹：工具面、system、每条消息，各算一个 SHA-256。
+    /// 这份请求的指纹：工具面、system、每条消息，各照结构算一个哈希（施工 V-12 起不再是 SHA-256）。
     pub fn fingerprint(&self) -> Fingerprint {
         Fingerprint {
-            tools: digest(&json(&self.tools)),
-            system: digest(&json(&self.system)),
+            tools: hashed(&self.tools),
+            system: hashed(&self.system),
             messages: self
                 .messages
                 .iter()
-                .map(|message| (message.role(), digest(&json(message))))
+                .map(|message| (message.role(), hashed(message)))
                 .collect(),
         }
     }
 }
 
-/// 一份请求的指纹：工具面、system、每条消息各一个 SHA-256。
+/// 一份请求的指纹：工具面、system、每条消息各一个照结构算的哈希。
 ///
 /// 和上一次请求的指纹一比，就知道第一处不同在哪（08 第七节）。只留这些哈希，
-/// 每条消息 32 个字节，不留上一次的请求本身。
+/// 每条消息 8 个字节，不留上一次的请求本身；只在内存里比，不落盘。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fingerprint {
-    tools: [u8; 32],
-    system: [u8; 32],
-    messages: Vec<(Role, [u8; 32])>,
+    tools: u64,
+    system: u64,
+    messages: Vec<(Role, u64)>,
 }
 
 /// 和上一次请求比，第一处不同在哪。
@@ -210,9 +209,11 @@ pub(crate) fn json(value: &impl Serialize) -> Vec<u8> {
     serde_json::to_vec(value).expect("请求里没有写不成 JSON 的东西")
 }
 
-/// 一串字节的 SHA-256。
-fn digest(bytes: &[u8]) -> [u8; 32] {
-    Sha256::digest(bytes).into()
+/// 照结构算的哈希（施工 V-12）：指纹只在内存里比上一次请求，不落盘、不跨重启，用不着 SHA-256，也用不着先写成 JSON（原来
+/// 每条消息写一遍 JSON 再算，一万条事件的请求是回合热路径上最大的一截）。写进 JSON 的都在结构里，比得出的一样。
+fn hashed(value: &impl std::hash::Hash) -> u64 {
+    use std::hash::{BuildHasher, BuildHasherDefault, DefaultHasher};
+    BuildHasherDefault::<DefaultHasher>::default().hash_one(value)
 }
 
 #[cfg(test)]

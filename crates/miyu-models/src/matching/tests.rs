@@ -152,6 +152,11 @@ fn a_provider_is_recognized_in_order() {
         None
     );
     assert_eq!(how("relay", None, None), None);
+    assert_eq!(
+        how("relay", Some("https://api.302.ai"), None),
+        at("302ai", How::Url),
+        "目录那一边也照同样的写法比（它的地址带 /v1）"
+    );
     assert_eq!(How::SimilarId.as_str(), "similar_id");
 }
 

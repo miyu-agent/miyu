@@ -32,7 +32,7 @@ pub use nested::{NestedId, Parent};
 macro_rules! text_id {
     ($(#[$doc:meta])* $name:ident, $what:literal, $check:path) => {
         $(#[$doc])*
-        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name(String);
 
         impl $name {
@@ -412,7 +412,7 @@ fn check_event_kind(text: &str) -> Result<(), &'static str> {
 ///
 /// 序号由内核在追加事件时分配，一个会话里不重复、不跳号（`02-内核.md` 不变量 1）。
 /// 回合编号、调用编号都从它推出来。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Seq(u64);
 
 impl Seq {

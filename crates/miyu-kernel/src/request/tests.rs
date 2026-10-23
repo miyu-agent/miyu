@@ -196,3 +196,47 @@ fn full_parameters_are_written_last_only_when_there_are_some() {
         "完整格式不算进指纹"
     );
 }
+
+/// 指纹照结构算（施工 V-12：一万条事件的请求，原来每条消息写成 JSON 再算 SHA-256，是回合热路径上最大的一截）：原来写进
+/// JSON 的都照样比得出来——工具的参数格式、调用里驱动的私有数据。
+#[test]
+fn the_fingerprint_still_sees_what_the_bytes_carried() {
+    let before = request().fingerprint();
+    let mut schema = request();
+    schema.tools[0].parameters =
+        serde_json::from_str(r#"{"type":"object","required":[]}"#).unwrap();
+    assert_eq!(
+        schema.fingerprint().first_difference(&before),
+        Some(Difference::Tools)
+    );
+    let mut private = request();
+    let Message::Assistant { blocks } = &mut private.messages[1] else {
+        panic!("第二条是回复");
+    };
+    let Block::ToolCall(call) = &mut blocks[0] else {
+        panic!("回复里是调用");
+    };
+    call.private = Some(crate::block::Private {
+        driver: crate::id::DriverFamily::parse("anthropic").unwrap(),
+        data: serde_json::from_str(r#"{"signature":"abc"}"#).unwrap(),
+    });
+    assert_eq!(
+        private.fingerprint().first_difference(&before),
+        Some(Difference::Message {
+            index: 1,
+            role: Role::Assistant
+        })
+    );
+    let mut error = request();
+    let Message::Tool { error: failed, .. } = &mut error.messages[2] else {
+        panic!("第三条是结果");
+    };
+    *failed = true;
+    assert_eq!(
+        error.fingerprint().first_difference(&before),
+        Some(Difference::Message {
+            index: 2,
+            role: Role::Tool
+        })
+    );
+}
