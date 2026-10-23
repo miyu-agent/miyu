@@ -24,6 +24,7 @@ mod provide_features;
 mod provide_later;
 mod provide_venue;
 mod sent_media;
+mod subagent_model_fact;
 mod support;
 mod system_append;
 mod ticket_extension;

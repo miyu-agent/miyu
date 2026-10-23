@@ -180,6 +180,14 @@ impl Ruler {
     }
 }
 
+/// 限额里模型那一块补上快照的预设（施工 E-M、E-M 修）：路由不知道预设，交给内核之前补上，不用预设的 `none`。造会话、载入
+/// 时第一次交的那一份也要补：子代理一造好就开第一轮，没补的话第一块模型事实写成空的预设，等 actor 补上以后又注入一块。
+pub(crate) fn stamp_preset(limits: &mut miyu_kernel::session::Limits, pin: Option<&PresetPin>) {
+    if let Some(identity) = limits.identity.as_mut() {
+        identity.preset = pin.map_or_else(|| "none".to_string(), |pin| pin.id.clone());
+    }
+}
+
 /// 照一块块在哪拆（施工 CX-1 下）：每块照它那一截的字节估，逐块取整的零头（和整段估的差）并进最大的那块，加起来正好是
 /// `total`；是 0 的不列。没有「其余」：全拆得开。
 pub(crate) fn pieces(layout: &Layout, total: u64) -> Vec<(SystemPart, u64)> {

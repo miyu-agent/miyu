@@ -174,7 +174,9 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         policy,
         setup.environment.clone(),
     );
-    session.handle(Input::Limits(model.limits()));
+    let mut limits = model.limits();
+    crate::snapshot::stamp_preset(&mut limits, snapshot.preset.as_ref());
+    session.handle(Input::Limits(limits));
     let breakdown = session.breakdown();
     let system = match layout {
         Some(layout) => crate::snapshot::pieces(&layout, breakdown.system),

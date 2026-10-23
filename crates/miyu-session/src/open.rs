@@ -249,7 +249,9 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     );
     // 模型的限额在别的输入之前交（施工 6-3 上）：什么动作都不出。给头看的那一份由 actor 当场要，`Handle` 和它共用（施工
     // 6-3 补；施工 8-9 起会变）。
-    session.handle(Input::Limits(model.limits()));
+    let mut limits = model.limits();
+    crate::snapshot::stamp_preset(&mut limits, snapshot.preset.as_ref());
+    session.handle(Input::Limits(limits));
     // 子会话领的号带上它在父会话里的编号，照造它的命令读回（施工 7-1 补）。
     let prefix = lineage
         .as_ref()
