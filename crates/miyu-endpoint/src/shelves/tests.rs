@@ -37,7 +37,7 @@ fn the_owner_s_side_shares_the_core_shelf_and_others_get_one_without_home() {
         ("~home", vec![tool("weather")]),
     ])
     .expect("合写法");
-    let core = Core::new(
+    let core = Arc::new(Core::new(
         root,
         ResourceRoot::at(resources()),
         Arc::new(Script::new([])),
@@ -45,7 +45,7 @@ fn the_owner_s_side_shares_the_core_shelf_and_others_get_one_without_home() {
         None,
         AccountId::parse("alice").expect("合写法"),
         "token".to_string(),
-    );
+    ));
     let shelf = |name: &str| core.shelf_of(&AccountId::parse(name).expect("合写法"));
     assert_eq!(
         names(&shelf("alice").current()),

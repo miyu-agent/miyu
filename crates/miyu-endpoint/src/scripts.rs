@@ -182,6 +182,8 @@ impl Core {
             on: Arc::new(made),
             missed: Arc::new(missed),
         };
+        // 各人那一层跟着重找（施工 U23 中下：装卸包会让他那一层的包变）。
+        self.refresh_own_shelves();
     }
 }
 
@@ -195,21 +197,15 @@ pub(crate) fn package(script: &Script) -> &str {
 /// 工具：那个服务不起，目录里没有挂在那个包下的工具。
 ///
 /// 挂在 [`HOME_PACKAGE`] 下的（机主家目录里放的脚本、个人设置里的 MCP 服务）是机主私人的（施工 U23 中上）：只给机主这一侧的
-/// 会话（[`Core::machine_side`]：机主的、包的账号的，场所会话是机主配的）；别人的会话不列它们，整包扣下。
+/// 会话（[`Core::machine_side`]：机主的、包的账号的，场所会话是机主配的）；别人的会话不列它们，列他自己那一层的（施工 U23 中下，
+/// [`Core::scripts_for`]：他的工具目录架子里机主的 `~home` 已经拿掉、放进了他的）。
 pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     let packaged = crate::packages::features(&core.system_packages());
     let images = packaged.image_packages().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
+    list.extend(core.scripts_for(owner).iter().map(script_feature));
     if !core.machine_side(owner) {
-        list.extend(
-            core.scripts()
-                .iter()
-                .filter(|script| package(script) != HOME_PACKAGE)
-                .map(script_feature),
-        );
-        return Features::new(list)
-            .needing_images(images)
-            .withholding([HOME_PACKAGE.to_string()]);
+        return Features::new(list).needing_images(images);
     }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
@@ -218,7 +214,6 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
         service: Some(server.name.clone()),
         script: None,
     }));
-    list.extend(core.scripts().iter().map(script_feature));
     Features::new(list).needing_images(images)
 }
 

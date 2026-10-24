@@ -1,12 +1,11 @@
 //! 机主私人的脚本（施工 U23 中上）：挂在 `~home` 下的功能只给机主这一侧的会话：机主的、包的账号的（平台桥，场所会话归它，是机主
-//! 配的）照旧有、不扣下；成员的不列、整包扣下。
+//! 配的）照旧有；成员的不列。
 
 use std::sync::Arc;
 
 use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
-use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::Catalog;
 
 use crate::Core;
@@ -39,19 +38,15 @@ fn the_owner_s_own_scripts_are_for_the_owner_s_side_only() {
     );
     core.follow_scripts();
     let has_weather = |account: &str| {
-        let features = super::features(&core, &AccountId::parse(account).expect("合写法"));
-        (
-            features.installed("script-weather"),
-            features.withheld().contains(HOME_PACKAGE),
-        )
+        super::features(&core, &AccountId::parse(account).expect("合写法"))
+            .installed("script-weather")
     };
-    assert_eq!(has_weather("alice"), (true, false), "机主的照旧");
-    assert_eq!(
-        has_weather("courier"),
-        (true, false),
-        "场所会话的属主（平台桥）照旧"
+    assert!(has_weather("alice"), "机主的照旧");
+    assert!(has_weather("courier"), "场所会话的属主（平台桥）照旧");
+    assert!(
+        !has_weather("bob"),
+        "成员的不列（他的架子里没有机主的 ~home）"
     );
-    assert_eq!(has_weather("bob"), (false, true), "成员的不列、整包扣下");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

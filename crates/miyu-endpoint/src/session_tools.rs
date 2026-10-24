@@ -12,7 +12,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::PackageKind;
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_policy::Offered;
 use miyu_session::new_id;
 
@@ -43,24 +43,26 @@ pub(crate) async fn tools(
     account: &miyu_kernel::id::AccountId,
     params: Params,
 ) -> Result<Value, Refusal> {
-    let offered = match params.session {
+    let (offered, owner) = match params.session {
         Some(_) if params.persona.is_some() || params.preset.is_some() => {
             return Err(Refusal::BAD_PARAMS);
         }
         Some(text) => {
             let id = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
             let found = core.sessions.get(core, &id).await?;
-            found.handle.tools().await.map_err(|_| Refusal::INTERNAL)?
+            let offered = found.handle.tools().await.map_err(|_| Refusal::INTERNAL)?;
+            (offered, found.handle.owner().clone())
         }
         None => {
             let preset = crate::presets::opening(params.preset)?;
-            preview(core, peer, account, params.persona, preset).await?
+            let offered = preview(core, peer, account, params.persona, preset).await?;
+            (offered, account.clone())
         }
     };
     let language = peer.language.to_string();
     let tools: Vec<Value> = offered
         .iter()
-        .map(|offered| entry(core, &language, offered))
+        .map(|offered| entry(core, (&owner, &language), offered))
         .collect();
     Ok(json!({ "tools": tools }))
 }
@@ -115,8 +117,8 @@ pub(crate) async fn new_session(
 }
 
 /// 一件：名字、来处、说明（有的才写）、只露名字的 `loaded: false`。
-fn entry(core: &Core, language: &str, offered: &Offered) -> Value {
-    let (source, summary) = source(core, language, &offered.name);
+fn entry(core: &Core, (owner, language): (&AccountId, &str), offered: &Offered) -> Value {
+    let (source, summary) = source(core, (owner, language), &offered.name);
     let mut entry = json!({ "name": offered.name, "source": source });
     if let Some(summary) = summary {
         entry["summary"] = json!(summary);
@@ -128,11 +130,16 @@ fn entry(core: &Core, language: &str, offered: &Offered) -> Value {
 }
 
 /// 来处，和给人看的一句说明。
-pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
+pub(crate) fn source(
+    core: &Core,
+    (owner, language): (&AccountId, &str),
+    name: &str,
+) -> (Value, Option<String>) {
     if let Some(service) = miyu_tool::mcp_service(name) {
         return (json!({"kind": "mcp", "id": service, "name": service}), None);
     }
-    let scripts = core.scripts();
+    // 照会话属主看得到的（施工 U23 中下：成员的是他自己那一层的，和机主的同名也照他的）。
+    let scripts = core.scripts_for(owner);
     if let Some(script) = scripts.iter().find(|script| script.head.name == name) {
         let shown = pick(&script.head.display_name, language).unwrap_or_else(|| name.to_string());
         let summary = pick(&script.head.summary, language);
@@ -142,7 +149,7 @@ pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<
         );
     }
     let package = core
-        .tools()
+        .catalog_of(owner)
         .package_of(name)
         .map_or_else(|| miyu_tool::BASESYSTEM.to_string(), str::to_string);
     let (kind, shown) = package_of(core, language, &package);

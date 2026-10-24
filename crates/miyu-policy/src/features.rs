@@ -24,9 +24,6 @@ pub struct Features {
     list: Vec<Feature>,
     /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::blind`]）。
     images: BTreeSet<String>,
-    /// 这份表交给的会话里一律扣下的包（施工 U23 中上）：机主家目录里放的脚本、个人设置里的 MCP 服务只给机主的会话，别人的会话
-    /// 整包当没开（[`crate::preset::Chosen::new`]）。
-    withheld: BTreeSet<String>,
 }
 
 impl Features {
@@ -35,20 +32,7 @@ impl Features {
         Features {
             list,
             images: BTreeSet::new(),
-            withheld: BTreeSet::new(),
         }
-    }
-
-    /// 记下这份表交给的会话里一律扣下哪几个包（施工 U23 中上）。
-    #[must_use]
-    pub fn withholding(mut self, packages: impl IntoIterator<Item = String>) -> Features {
-        self.withheld = packages.into_iter().collect();
-        self
-    }
-
-    /// 一律扣下的包（施工 U23 中上），照编号排。
-    pub fn withheld(&self) -> &BTreeSet<String> {
-        &self.withheld
     }
 
     /// 记下哪几个包要这个地方显示得了图片（施工 X-25，清单的 `[package] needs`）。

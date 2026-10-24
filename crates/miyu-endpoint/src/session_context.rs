@@ -47,28 +47,30 @@ pub(crate) async fn context(
     account: &miyu_kernel::id::AccountId,
     params: Params,
 ) -> Result<Value, Refusal> {
-    let context = match params.session {
+    let (context, owner) = match params.session {
         Some(_) if params.persona.is_some() || params.preset.is_some() => {
             return Err(Refusal::BAD_PARAMS);
         }
         Some(text) => {
             let id = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
             let found = core.sessions.get(core, &id).await?;
-            found
+            let context = found
                 .handle
                 .context()
                 .await
-                .map_err(|_| Refusal::INTERNAL)?
+                .map_err(|_| Refusal::INTERNAL)?;
+            (context, found.handle.owner().clone())
         }
         None => {
             let preset = crate::presets::opening(params.preset)?;
             let mut setup = new_session(core, peer, account, params.persona, preset).await?;
-            miyu_session::preview_context(setup.create(core))
+            let context = miyu_session::preview_context(setup.create(core))
                 .await
-                .map_err(|_| Refusal::INTERNAL)?
+                .map_err(|_| Refusal::INTERNAL)?;
+            (context, account.clone())
         }
     };
-    named(core, peer, |namer| shape(&context, namer))
+    named(core, (&owner, peer), |namer| shape(&context, namer))
 }
 
 /// `session.usage_parts` 的参数（施工 CX-3）。
@@ -110,11 +112,17 @@ pub(crate) async fn usage_parts(
             }
         }
     }
-    named(core, peer, |namer| spent_shape(&spent, namer))
+    let owner = found.handle.owner().clone();
+    named(core, (&owner, peer), |namer| spent_shape(&spent, namer))
 }
 
 /// 照连接的语言备好起名字的几样，交给 `f`：块的那句话、工具归哪块（问过的记下）、扩展包的名字。
-fn named(core: &Arc<Core>, peer: Peer, f: impl FnOnce(&Namer) -> Value) -> Result<Value, Refusal> {
+/// 工具归哪块照会话属主 `owner` 看得到的认（施工 U23 中下）。
+fn named(
+    core: &Arc<Core>,
+    (owner, peer): (&miyu_kernel::id::AccountId, Peer),
+    f: impl FnOnce(&Namer) -> Value,
+) -> Result<Value, Refusal> {
     let language = peer.language.to_string();
     let human = words(core, &language)?;
     let word = |part: &str| {
@@ -126,7 +134,7 @@ fn named(core: &Arc<Core>, peer: Peer, f: impl FnOnce(&Namer) -> Value) -> Resul
         if let Some(found) = known.borrow().get(name) {
             return found.clone();
         }
-        let (source, _) = source(core, &language, name);
+        let (source, _) = source(core, (owner, &language), name);
         let text = |key: &str| source[key].as_str().unwrap_or_default().to_string();
         let found = match text("kind").as_str() {
             "mcp" => (format!("tools.mcp:{}", text("id")), Some(text("name"))),

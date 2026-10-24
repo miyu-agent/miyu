@@ -66,9 +66,8 @@ pub struct PresetFile {
     pub tools_off: BTreeSet<String>,
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
-    /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开；功能表一律扣下的（施工 U23 中上：机主私人的
-    /// 脚本、MCP 服务不给别人的会话）。不是文件里写的：会话照场所、属主算好放进来（[`Chosen::blind`]、[`Chosen::new`]），不进
-    /// [`PresetFile::digest`]、不叠层。
+    /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
+    /// （[`Chosen::blind`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
     /// 人设的全局开关（施工 X-27，`switches.rs`）：功能编号到开不开，只认技能、脚本、MCP 三类。不是文件里写的：核心照这一轮的
     /// 配置放进来（[`PresetFile::following`]），不进 [`PresetFile::digest`]、不叠层。
@@ -177,9 +176,8 @@ pub struct Chosen {
 }
 
 impl Chosen {
-    /// 照装了的功能 `features` 算好没开的那几个；`features` 一律扣下的包（施工 U23 中上）扣下。
-    pub fn new(id: String, mut file: PresetFile, features: &Features) -> Chosen {
-        file.withheld.extend(features.withheld().iter().cloned());
+    /// 照装了的功能 `features` 算好没开的那几个。
+    pub fn new(id: String, file: PresetFile, features: &Features) -> Chosen {
         let digest = file.digest();
         let off = off(&file, features);
         Chosen {
@@ -202,9 +200,7 @@ impl Chosen {
     /// 换个预设就有，这里换了也没有）。指纹不变。
     #[must_use]
     pub fn blind(mut self, features: &Features) -> Chosen {
-        self.file
-            .withheld
-            .extend(features.image_packages().iter().cloned());
+        self.file.withheld = features.image_packages().clone();
         self.off = off(&self.file, features);
         self
     }
