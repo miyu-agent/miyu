@@ -97,6 +97,8 @@
 | `crates/miyu-store/src/log/tests.rs` 的 `a_log_can_start_after_one` | 从第 N 条开始的日志：第一段的名字、打开、只读地读、没写进去就收拾 |
 | `crates/miyu-assemble/src/group/recent/tests.rs` 的 `in_a_fork_the_parent_line_is_her_own_line_too` | 分叉来源的话不是 `[you]` 行，别的线的照旧是 |
 | `crates/miyu-endpoint/tests/fork.rs` | 真核心：主线说完一轮分叉，两边接着说同一句请求前缀逐字节一样，重启以后支线照样载入；主线在跑一轮时分叉在它之前，支线照继承来的旁听开一轮、带桥的事实；主线记过她发出去的话以后两边回同一条前缀一样；再分叉、没有的、写法不对的拒；跑完一轮推来 `session.sealed`，再发、再照记下的开一轮拒 `session_sealed`，`seal_after` 写 0 的拒（C-8 下） |
+| `crates/miyu-kernel/src/session/tests/fork_within.rs`（施工 A-F 上） | fork 子代理的分叉点是派它的那条回复；头几条是占位结果、`forked` 收住；接着说的请求底子同父会话、兄弟一字不差；载入的和活着的一样；停错地方、走错入口、回复看到的早于派它的那条都拒 |
+| `crates/miyu-endpoint/tests/fork_subagent.rs`（施工 A-F 下） | 真核心：一步里派两个 fork 子代理，快照同主会话、回合开始不换，头一次请求的 system、工具面同主会话，消息除了交代两个兄弟一字不差、开头同主会话；各自报回来；头订得上视图流、按页读得到交代和回答；重启以后照样载入 |
 | `crates/miyu-kernel/src/session/tests/scenario/seal.rs`、`respond/sealing.rs`（C-8 下） | 跑完一轮封存；两轮的等第二轮；不写的不封；跑的时候发来的、重启以后接着干的算同一轮，照记下的几条开的、清空单开的不算；崩了载入时收尾的、重启太多次不再接着干的那一轮也封；载入接着数；封存以后拒发、改标题照常、后台命令结束只记下 |
 | `crates/miyu-kernel/src/ledger/tests/seal.rs`（C-8 下） | 封存只在两轮之间、只记一次；封存以后不再开一轮 |
 | `crates/miyu-session/tests/retire.rs` 的 `a_sealed_branch_retires_without_waiting_to_be_idle_long_enough`（C-8 下） | 封存了的支线没事了就退下 |

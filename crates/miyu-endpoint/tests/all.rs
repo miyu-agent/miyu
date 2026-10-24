@@ -75,6 +75,7 @@ mod extension_stream;
 mod extensions;
 mod files;
 mod fork;
+mod fork_subagent;
 mod from;
 mod hello;
 mod home_private;

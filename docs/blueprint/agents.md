@@ -164,6 +164,7 @@
 6. 记忆照子代理：不召回、不记回合（`memory::subagent` 认 `forked.within`）。工具面上照父会话有记忆的几件，调了也记不下。
 7. 不问人：同子代理，提问走父会话。
 8. 谁能 fork：主会话、没到深度上限的普通子代理。fork 出来的再写 `fork` 的，调用时拒（`agent/no-fork.txt`：工具面照父会话的，`subagent` 还在）；它派普通子代理照深度上限，到了上限的派不了（工具面上有 `subagent`，派的时候挡，照「派不了」）。
+9. 实测（施工 A-F 下，2026-10-24 项目主人给的端点、`deepseek-v4.1-flash`）：父会话读了一份 14 KB 的文件再同一步派两个 fork 子代理，两个兄弟头一次请求各命中缓存 8064（输入约 9600），和父会话自己接着请求的那一次一样；同样的事派普通子代理，头一次请求只命中 168（输入约 4200），还得自己再读一遍文件。数在施工单 `A-F下-fork子代理实测.md`。
 
 **二、子会话怎么回报**（施工 7-6 做好了，细则见 `kernel/session.md`「向上回报」，执行器见 `session/actor.md`「向上回报」）
 
@@ -298,6 +299,8 @@
 | `crates/miyu-kernel/src/event/effect/tests.rs`、`event/job/tests.rs`、`event/session/tests.rs`、`id/tests.rs`、`origin/tests.rs` | 三种新东西、两格新字段、任务编号、`harness` 读写一字不差，不认识的取值原样留着（施工 7-1） |
 | `crates/miyu-kernel/src/ledger/tests/jobs.rs`、`jobs/reports.rs` | 账本的任务规矩（施工 7-1） |
 | `crates/miyu-kernel/tests/samples.rs` | 样本读写一字不差，子代理的几条对得上（施工 7-1） |
+| `crates/miyu-session/tests/fork_subagent.rs`、`fork_subagent/limits.rs`（施工 A-F 中） | fork 子代理（「一补」）：分叉点、外壳、请求前缀同父会话、快照不换、向上回报；写了人格的、再 fork 的拒；记忆记不下；到了深度上限派不了普通子代理、会话层不许从它再分 |
+| `crates/miyu-endpoint/tests/fork_subagent.rs`（施工 A-F 下） | 真核心：一步两个 fork 子代理，前缀同主会话、兄弟只差交代，各自报回来，头看得到，重启照样载入（`session/fork.md`「守着它的」） |
 | `crates/miyu-kernel/src/session/tests/scenario/reports.rs`、`reports_undo.rs` | 回报到了开一轮、排着、只记下、接着开，撤销、恢复、载入、读回日志的时候到的（施工 7-2，`kernel/session.md`「守着它的」） |
 | `crates/miyu-kernel/src/session/tests/random/watch/reports.rs`、`random/reporting.rs` | 随机输入里的回报（施工 7-2） |
 | `crates/miyu-kernel/src/history/tests/jobs.rs` | 有效历史记着的派出去过的任务；由回报接着开的一轮撤掉时拿走什么（施工 7-2） |
