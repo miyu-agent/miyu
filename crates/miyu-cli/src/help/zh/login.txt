@@ -7,4 +7,5 @@
 选项：
       --list              列出哪几家设了 key，不给看 key 本身
       --format text|json  --list 的输出：json 给脚本
+      --system            存进大家共用的那一份，以管理员身份；不写存自己的
   -h, --help              印帮助

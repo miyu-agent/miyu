@@ -59,7 +59,7 @@ pub use config::{
     Check, Config, ConfigCommand, ConfigPlan, Console, Terminal, check, config, config_on,
 };
 pub use kb::{Kb, KbCommand, KbPlan, kb, kb_on};
-pub use login::{KeyCommand, Login, LoginPlan, Logout, login, login_on};
+pub use login::{KeyArgs, KeyCommand, Login, LoginPlan, Logout, login, login_on};
 pub use mcp::{Mcp, McpCommand, mcp};
 pub use memory::{Clear as MemoryClear, Memory, MemoryCommand, MemoryPlan, memory, memory_on};
 pub use misuse::misuse;

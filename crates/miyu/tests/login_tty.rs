@@ -166,7 +166,7 @@ async fn core() -> Home {
 /// 在真的伪终端上跑一次 `miyu login deepseek`：标准输入、输出、错误都是从端。
 fn spawn(root: &std::path::Path, slave: &str) -> std::process::Child {
     Command::new(MIYU)
-        .args(["login", "deepseek"])
+        .args(["login", "deepseek", "--system"])
         .env("MIYU_HOME", root)
         .envs(offline(root))
         .env("MIYU_RESOURCES", resources())

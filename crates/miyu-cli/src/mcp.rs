@@ -37,6 +37,9 @@ pub struct Mcp {
     /// 子命令。
     #[command(subcommand)]
     pub command: McpCommand,
+    /// 以管理员身份（施工 Y-12 下下）：MCP 服务是全机的，登录、登出都要。
+    #[arg(long, global = true)]
+    pub system: bool,
 }
 
 /// `miyu mcp` 的子命令。
@@ -86,7 +89,7 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
         Ok(connected) => connected,
         Err(error) => return failed(&error.to_string()),
     };
-    let mut rpc = Rpc::new(connection, "mcp");
+    let mut rpc = Rpc::new(connection, "mcp").in_admin_mode(args.system);
     let err = &mut io::stderr();
     let language = match link::hello(&mut rpc, &token, &language, false, err).await {
         Ok(hello) => link::spoken(&hello, language),

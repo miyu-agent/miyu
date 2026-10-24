@@ -96,3 +96,15 @@ fn written(item: &Value, layer: &str) -> Value {
 fn gray(talk: &mut Talk<'_>, said: String) {
     write(talk.err, &Line::gray(said).paint(talk.plan.gray));
 }
+
+impl super::ConfigCommand {
+    /// 改系统配置的（`set`、`unset`、`edit` 写了 `--system`）：在管理员模式里发（施工 Y-12 下下）。
+    pub(super) fn writes_system(&self) -> bool {
+        matches!(
+            self,
+            super::ConfigCommand::Set { system: true, .. }
+                | super::ConfigCommand::Unset { system: true, .. }
+                | super::ConfigCommand::Edit { system: true, .. }
+        )
+    }
+}

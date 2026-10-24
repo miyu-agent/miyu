@@ -27,7 +27,8 @@ pub(crate) async fn hello(
         "protocol": [1, 1],
         "head": {"kind": "cli", "version": env!("CARGO_PKG_VERSION")},
         "locale": language.locale(),
-        "caps": {"input": input},
+        // 认识管理员模式（施工 Y-12 下下）：改系统那一层的命令写 `--system` 才带 `scope`。
+        "caps": {"input": input, "scope": true},
         "token": token,
     });
     request(rpc, "hello", hello, language, err).await
@@ -131,7 +132,13 @@ pub(crate) async fn answer(
     match rpc.call(method, params).await {
         Ok(Some(reply)) => Ok(match reply.get("error") {
             None => Ok(reply["result"].clone()),
-            Some(error) => Err(error.clone()),
+            Some(error) => {
+                // 改系统那一层没写 `--system`（施工 Y-12 下下）：先说怎么办，原因照常由调的一方说。
+                if error["data"]["reason"] == "admin_mode_required" {
+                    say(err, &language.needs_system());
+                }
+                Err(error.clone())
+            }
         }),
         Ok(None) => {
             say(err, &language.disconnected());

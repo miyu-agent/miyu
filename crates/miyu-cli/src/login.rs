@@ -48,6 +48,9 @@ pub struct Login {
     /// `--list` 的输出格式。
     #[arg(long, value_enum, default_value = "text", requires = "list")]
     pub format: Format,
+    /// 存进大家共用的那一份，以管理员身份（施工 Y-12 下下）；不写存自己的。
+    #[arg(long, conflicts_with = "list")]
+    pub system: bool,
 }
 
 /// `miyu logout` 的参数。
@@ -56,6 +59,36 @@ pub struct Logout {
     /// 删哪一个；不写的在终端里从设过的里面选。
     #[arg(value_name = "NAME")]
     pub name: Option<String>,
+    /// 从大家共用的那一份删，以管理员身份（施工 Y-12 下下）；不写删自己的。
+    #[arg(long)]
+    pub system: bool,
+}
+
+/// 这一次做什么，在不在管理员模式里（施工 Y-12 下下）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyArgs {
+    /// 做什么。
+    pub command: KeyCommand,
+    /// 写了 `--system`。
+    pub system: bool,
+}
+
+impl From<Login> for KeyArgs {
+    fn from(login: Login) -> KeyArgs {
+        KeyArgs {
+            system: login.system,
+            command: login.into(),
+        }
+    }
+}
+
+impl From<Logout> for KeyArgs {
+    fn from(logout: Logout) -> KeyArgs {
+        KeyArgs {
+            system: logout.system,
+            command: logout.into(),
+        }
+    }
 }
 
 /// 这一次做什么。
@@ -95,10 +128,12 @@ pub struct LoginPlan {
     pub color: bool,
     /// 标准错误上的灰字上不上色。
     pub gray: bool,
+    /// 在管理员模式里存、删大家共用的那一份（`--system`，施工 Y-12 下下）。
+    pub system: bool,
 }
 
 /// 跑一次 `miyu login` 或 `miyu logout`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
-pub fn login(command: KeyCommand, start: impl FnOnce() -> Command) -> ExitCode {
+pub fn login(args: KeyArgs, start: impl FnOnce() -> Command) -> ExitCode {
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -109,11 +144,11 @@ pub fn login(command: KeyCommand, start: impl FnOnce() -> Command) -> ExitCode {
             return ExitCode::from(exit::ERROR);
         }
     };
-    ExitCode::from(runtime.block_on(run(command, start)))
+    ExitCode::from(runtime.block_on(run(args, start)))
 }
 
 /// 在运行时里：先查参数，找数据根、连上核心，照命令办。
-async fn run(command: KeyCommand, start: impl FnOnce() -> Command) -> u8 {
+async fn run(KeyArgs { command, system }: KeyArgs, start: impl FnOnce() -> Command) -> u8 {
     let language = language::current();
     let mut console = crate::config::Terminal::current();
     if let Some(code) = early(&command, language, &console, &mut io::stderr()) {
@@ -140,6 +175,7 @@ async fn run(command: KeyCommand, start: impl FnOnce() -> Command) -> u8 {
         language,
         color: shown::colored(io::stdout().is_terminal(), no_color.as_deref()),
         gray: shown::colored(io::stderr().is_terminal(), no_color.as_deref()),
+        system,
     };
     login_on(
         connection,
@@ -164,7 +200,7 @@ pub async fn login_on(
     if let Some(code) = early(&plan.command, plan.language, console, err) {
         return code;
     }
-    let mut rpc = Rpc::new(connection, "login");
+    let mut rpc = Rpc::new(connection, "login").in_admin_mode(plan.system);
     let plan = match link::hello(&mut rpc, token, &plan.language, false, err).await {
         Ok(hello) => LoginPlan {
             language: link::spoken(&hello, plan.language),

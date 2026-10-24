@@ -25,7 +25,8 @@ miyu mcp logout <服务>
 3. 试着打开浏览器：Linux 这类 `xdg-open`，macOS `open`，Windows `rundll32 url.dll,FileProtocolHandler`（`cmd /c start` 会把网址里的 `&` 当分隔符）。打不开的在标准错误上说一句，人自己复制地址。
 4. 等连上：个人设置里的服务每秒照 `mcp.list` 看一次，`running` 了印「登录好了」、退出码 0；10 分钟还没连上的说一句、退出码 1。包里带的服务不在 `mcp.list` 里：印一句「登录好以后服务会自己连上」，退出码 0。
 5. 贴回来的（施工 X-42 下）：标准输入是终端的，印地址以后多一句「浏览器在别的机器上的，授权完把地址栏里的整段地址贴到这里，回车」，等的同时读标准输入；读到的一行去掉两头的空白、不是空的，发 `mcp.login_finish {service, url}`。对不上的核心那一句照原话印在标准错误上，接着等，可以再贴；读到头的不再读。标准输入不是终端的不读（不吃掉别人管道里的字）。
-6. `miyu mcp logout <服务>`：发 `mcp.logout {service}`，印「<服务> 登出了，下次要用得重新登录」、退出码 0；核心拒了的（`not_logged_in`）照原话印在标准错误上，退出码 1。
+6. MCP 服务是全机的：`login`、`logout` 都要写 `--system`（施工 Y-12 下下），以管理员身份发；没写的核心回 `admin_mode_required`，先印一句「这一步改的是全机的东西：加 --system 以管理员身份做」，再照原话印，退出码 1。
+7. `miyu mcp logout <服务>`：发 `mcp.logout {service}`，印「<服务> 登出了，下次要用得重新登录」、退出码 0；核心拒了的（`not_logged_in`）照原话印在标准错误上，退出码 1。
 
 ### 守着它的
 

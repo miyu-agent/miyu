@@ -9,4 +9,5 @@ login：登录一个只认浏览器授权的网址 MCP 服务（个人设置里�
 logout：删掉存着的登录，下次要用得重新登录。
 
 选项：
+      --system  以管理员身份做：MCP 服务是全机的，login、logout 都要写
   -h, --help  印帮助

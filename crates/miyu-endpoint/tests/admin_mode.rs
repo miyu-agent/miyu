@@ -195,3 +195,24 @@ async fn another_admin_writes_the_shared_system_layer() {
         "机主那一份看得到：{listed}"
     );
 }
+
+/// 在管理员模式里的头重连，握手那一条也带着 `scope`：照常握手。
+#[tokio::test]
+async fn a_hello_with_scope_still_shakes_hands() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut client = Client::connect(core);
+    let reply = call_system(
+        &mut client,
+        "h",
+        "hello",
+        json!({
+            "protocol": [1, 1],
+            "head": {"kind": "test", "version": "0.0.0"},
+            "caps": {"scope": true},
+            "token": TOKEN,
+        }),
+    )
+    .await;
+    assert!(reply.get("result").is_some(), "{reply}");
+}

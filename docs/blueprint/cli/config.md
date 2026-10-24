@@ -34,7 +34,7 @@
 | `edit` | 用编辑器打开，存盘时先检查（施工 8-3） | `--system`、`--project` |
 | `trust` | 看当前目录的项目配置会改什么，信任或者不信任它（施工 8-3） | `--yes`、`--no`（只能写一个） |
 
-- `--system`、`--project` 只能写一个。子命令不认的选项、少了子命令、`explain` 没写键：参数不对，退出码 2（`cli/main.md`「参数写错时」）。
+- `--system`、`--project` 只能写一个。`set`、`unset`、`edit` 写了 `--system` 的以管理员身份发（施工 Y-12 下下，`protocol.md`「管理员模式」）。子命令不认的选项、少了子命令、`explain` 没写键：参数不对，退出码 2（`cli/main.md`「参数写错时」）。
 - 用到的环境变量：`MIYU_HOME`、`NO_COLOR`，`edit` 还有 `VISUAL`、`EDITOR`；界面语言照 `cli/main.md`。
 
 ### 怎么走

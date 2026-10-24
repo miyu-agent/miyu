@@ -308,10 +308,16 @@ async fn a_base_from_a_package_from_the_shell() {
         enum PkgTop {
             Pkg(miyu_cli::Pkg),
         }
-        let PkgTop::Pkg(args) =
-            PkgLine::try_parse_from(["miyu", "pkg", "install", "./world-pack", "--yes"])
-                .expect("读得懂")
-                .command;
+        let PkgTop::Pkg(args) = PkgLine::try_parse_from([
+            "miyu",
+            "pkg",
+            "install",
+            "./world-pack",
+            "--yes",
+            "--system",
+        ])
+        .expect("读得懂")
+        .command;
         let plan = miyu_cli::PkgPlan {
             args,
             language: Language::Chinese,

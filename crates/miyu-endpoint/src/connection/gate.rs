@@ -43,7 +43,9 @@ pub(super) fn refuse(
         Some(Via::Invite(_)) => (!matches!(method, "hello" | "human.get" | "account.register"))
             .then_some(Refusal::REGISTER_FIRST),
         // 核心拉起的扩展照它的能力挡（`rights.rs`）；管理员模式只给人（施工 Y-12 下）。
-        Some(Via::Spawned) | None => system.then_some(Refusal::NOT_PERMITTED),
+        Some(Via::Spawned) => system.then_some(Refusal::NOT_PERMITTED),
+        // 还没握手的：握手照常，带的 `scope` 不看（头在管理员模式里重连，第一条也带着）。
+        None => None,
         Some(_) if is_admin(core, account) => {
             let touches = system::touches_system(method, params);
             if scoped && touches && !system {

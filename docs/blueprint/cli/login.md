@@ -27,6 +27,7 @@
 | `miyu login --list [--format text\|json]` | 列出哪几个设了、谁在用，不给看 key |
 | `miyu logout [名字]` | 删掉一个。不写名字的在终端里从设过的里面选 |
 
+- `--system`（施工 Y-12 下下，`protocol.md`「管理员模式」）：存进、删掉大家共用的那一份，以管理员身份发；不写的存、删自己的（`home/<账号>/secrets.toml`）。和 `--list` 只能写一个。
 - `--list` 和名字只能写一个；`--format` 只给 `--list`。别的写错：参数不对，退出码 2（`cli/main.md`「参数写错时」）。
 - 用到的环境变量：`MIYU_HOME`、`NO_COLOR`；界面语言照 `cli/main.md`。
 
@@ -64,6 +65,7 @@ deepseek    已设置
 选项：
       --list              列出哪几家设了 key，不给看 key 本身
       --format text|json  --list 的输出：json 给脚本
+      --system            存进大家共用的那一份，以管理员身份；不写存自己的
   -h, --help              印帮助
 ```
 
@@ -80,6 +82,7 @@ echo "$KEY" | miyu login deepseek
 Options:
       --list              List which providers have a key, never the key
       --format text|json  Output of --list: json for scripts
+      --system            Store it for everyone, as an admin; omit for your own
   -h, --help              Print help
 ```
 
@@ -91,6 +94,7 @@ Options:
 删掉一个供应商的 key。不写名字的，从设了的里面选。
 
 选项：
+      --system  从大家共用的那一份删，以管理员身份；不写删自己的
   -h, --help  印帮助
 ```
 
@@ -102,6 +106,7 @@ Usage: miyu logout [name]
 Delete a provider's key. Without a name, pick one of those that are set.
 
 Options:
+      --system  Delete it from everyone's, as an admin; omit for your own
   -h, --help  Print help
 ```
 

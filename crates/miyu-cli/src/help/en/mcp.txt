@@ -11,4 +11,5 @@ Waits up to 10 minutes. The core renews the token itself before it expires.
 logout: delete the stored login; log in again to use the server.
 
 Options:
+      --system  As an admin: MCP servers belong to the whole machine
   -h, --help  Print help

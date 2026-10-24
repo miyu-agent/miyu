@@ -80,7 +80,7 @@
 - **管理员模式**（施工 Y-12 下，设计 06 八再补第 2 条；2026-10-24 项目主人定本机也要切、账号管理也在管理员模式下）：请求外壳可以多一格 `"scope": "system"`（和 `method`、`params` 同级）。
   - 只对握手时 `caps.scope` 是 `true` 的连接要求（协议 1 冻结：没声明的老头照以前的意思，管理员改系统那一层不用带）。
   - 改系统那一层的要带，不带的管理员回 `admin_mode_required`：账号管理（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`），软件包的写（`package.install`、`remove`、`upgrade`、`enable`、`disable`、`clean`、`sync`、`restart`），`extension.enable`、`disable`、`restart`，MCP 的写（`mcp.set`、`remove`、`login`、`login_finish`、`logout`、`restart`），`provider.rename`，`config.set` 写 `system` 层，`secret.set`、`secret.delete` 写系统那一份。`secret.set`、`secret.delete` 不写 `layer` 的，管理员模式里是系统那一份，平时是个人的（老头的管理员照旧是系统那一份）。
-  - 不是管理员的人带了，什么方法都回 `not_permitted`；核心拉起的扩展带了也是。读的、改自己那一份的带不带一样。
+  - 不是管理员的人带了，什么方法都回 `not_permitted`；核心拉起的扩展带了也是。握手那一条带了不看（头在管理员模式里重连，第一条也带着，施工 Y-12 下下）。读的、改自己那一份的带不带一样。
   - 管理员组里机主以外的人平时照成员的名单（`connection/gate/members.rs`），加上读这台电脑的几样（`fs.*`、`link.preview`、`model.call`、`provider.detect`、软件包、扩展、MCP 的读）和改系统那一层的（`connection/gate/system.rs`）。
   - 系统配置、系统那一份密钥大家共用：组里谁改的都照机主那一份写，再发给别人那几份。每个带 `scope` 的请求记一行 `INFO admin mode`。
 - 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。

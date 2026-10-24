@@ -27,6 +27,8 @@ pub(crate) struct Rpc {
     prefix: String,
     /// 下一条请求的序号。
     next: u64,
+    /// 这一次的请求都在管理员模式里发（`--system`，施工 Y-12 下下）：外壳带 `"scope": "system"`。
+    system: bool,
     /// 读的任务：它拿着连接读的那一半，放下 `Rpc` 时掐掉它，连接当场关上（施工 7-9）。不掐的话它一直等核心说下一句，
     /// 连接不关，核心当这个头还订阅着：在同一个进程里跑完一次 `miyu ask` 的测试，回报会叫醒已经没人看的会话。
     reading: JoinHandle<()>,
@@ -45,8 +47,16 @@ impl Rpc {
             held: VecDeque::new(),
             prefix: format!("{head}-{}", prefix()),
             next: 0,
+            system: false,
             reading,
         }
+    }
+
+    /// 这一次的请求都在管理员模式里发（施工 Y-12 下下）。
+    #[must_use]
+    pub(crate) fn in_admin_mode(mut self, system: bool) -> Rpc {
+        self.system = system;
+        self
     }
 
     /// 发一条请求，交回它的编号，也就是这条命令的编号。
@@ -57,7 +67,10 @@ impl Rpc {
     pub(crate) async fn send(&mut self, method: &str, params: Value) -> io::Result<String> {
         self.next += 1;
         let id = format!("{}-{}", self.prefix, self.next);
-        let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
+        let mut request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
+        if self.system && method != "hello" {
+            request["scope"] = json!("system");
+        }
         self.writer
             .write_all(format!("{request}\n").as_bytes())
             .await?;

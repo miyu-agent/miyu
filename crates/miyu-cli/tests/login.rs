@@ -99,13 +99,23 @@ fn home() -> Home {
     Home::new(Arc::new(Script::new([])))
 }
 
-/// 办一次，屏幕上没有 key。
+/// 办一次，屏幕上没有 key：以管理员身份存进大家共用的那一份（`--system`）。
 async fn run(home: &Home, language: Language, command: KeyCommand, console: &mut Fake) -> Asked {
+    run_as(home, (language, command, true), console).await
+}
+
+/// 同 [`run`]，`system` 是写不写 `--system`（施工 Y-12 下下）。
+async fn run_as(
+    home: &Home,
+    (language, command, system): (Language, KeyCommand, bool),
+    console: &mut Fake,
+) -> Asked {
     let plan = LoginPlan {
         command,
         language,
         color: false,
         gray: false,
+        system,
     };
     let asked = home.login(&plan, console).await;
     for key in [FAKE, FAKE_2, "sk-FAKE"] {
@@ -455,4 +465,32 @@ async fn logout_deletes_by_name_or_pick() {
         "设过的 key：\n  1  deepseek  已设置\n选一个编号：· 删掉了 deepseek 的 key\n"
     );
     assert!(!secrets(&home).contains("sk-FAKE"));
+}
+
+/// 不写 `--system` 的存进自己那一份（施工 Y-12 下下）：大家共用的那一份不动；删也只删自己的。
+#[tokio::test]
+async fn without_system_the_key_is_your_own() {
+    let home = home();
+    let mut console = piping(&format!("{FAKE}\n"));
+    let asked = run_as(
+        &home,
+        (Language::Chinese, login("deepseek"), false),
+        &mut console,
+    )
+    .await;
+    assert_eq!(asked.code, 0, "{}", asked.screen);
+    let own = std::fs::read_to_string(home.root.path().join("home/admin/secrets.toml"))
+        .unwrap_or_default();
+    assert!(own.contains("deepseek"), "{own}");
+    assert!(!secrets(&home).contains("deepseek"), "共用的那一份没动");
+    let asked = run_as(
+        &home,
+        (Language::Chinese, logout("deepseek"), false),
+        &mut piping(""),
+    )
+    .await;
+    assert_eq!(asked.code, 0, "{}", asked.screen);
+    let own = std::fs::read_to_string(home.root.path().join("home/admin/secrets.toml"))
+        .unwrap_or_default();
+    assert!(!own.contains("deepseek"), "{own}");
 }

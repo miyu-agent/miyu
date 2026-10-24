@@ -81,7 +81,13 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         .await
         .expect("拉得起");
 
-    let saved = run(&root, "C", &["login", "deepseek"], &format!("{FAKE}\n")).await;
+    let saved = run(
+        &root,
+        "C",
+        &["login", "deepseek", "--system"],
+        &format!("{FAKE}\n"),
+    )
+    .await;
     assert_eq!(
         seen(&saved),
         (
@@ -90,7 +96,13 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
             "· Saved the key for deepseek\n".to_string()
         )
     );
-    let replaced = run(&root, "zh_CN.UTF-8", &["login", "deepseek"], FAKE_2).await;
+    let replaced = run(
+        &root,
+        "zh_CN.UTF-8",
+        &["login", "deepseek", "--system"],
+        FAKE_2,
+    )
+    .await;
     assert_eq!(
         seen(&replaced),
         (
@@ -111,7 +123,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         let mode = std::fs::metadata(&secrets).unwrap().permissions().mode();
         assert_eq!(mode & 0o777, 0o600);
     }
-    let empty = run(&root, "C", &["login", "other"], "  \n").await;
+    let empty = run(&root, "C", &["login", "other", "--system"], "  \n").await;
     assert_eq!(
         seen(&empty),
         (Some(1), String::new(), "No key was given\n".to_string())
@@ -129,7 +141,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "layer": "system", "used_by": []}]})
     );
 
-    let out = run(&root, "C", &["logout", "deepseek"], "").await;
+    let out = run(&root, "C", &["logout", "deepseek", "--system"], "").await;
     assert_eq!(
         seen(&out),
         (
@@ -138,7 +150,13 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
             "· Deleted the key for deepseek\n".to_string()
         )
     );
-    let again = run(&root, "zh_CN.UTF-8", &["logout", "deepseek"], "").await;
+    let again = run(
+        &root,
+        "zh_CN.UTF-8",
+        &["logout", "deepseek", "--system"],
+        "",
+    )
+    .await;
     assert_eq!(
         seen(&again),
         (
@@ -204,7 +222,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     // 核心没在跑的拉起来（施工 8-6 起一律拉起，原来没设 DEEPSEEK_API_KEY 的退出码 5）。
     let mut command = Command::new(MIYU);
     command
-        .args(["login", "deepseek"])
+        .args(["login", "deepseek", "--system"])
         .env("MIYU_HOME", &root)
         .envs(crate::support::offline(&root))
         .env("MIYU_RESOURCES", crate::support::resources())

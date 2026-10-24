@@ -39,6 +39,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 | 选项 | 做什么 |
 |---|---|
 | `--format text\|json` | `list`、`info`、`files`、`owns`、`check`：`json` 原样印核心回的（`list` 印那一串，别的印整个回应），给脚本 |
+| `--system` | 装、卸、升级、开关、清缓存、拿索引：以管理员身份发（施工 Y-12 下下，`protocol.md`「管理员模式」）。没写的核心回 `admin_mode_required`，先印「这一步改的是全机的东西：加 --system 以管理员身份做」，再照原话印，退出码 1 |
 | `--yes`、`--noconfirm` | `install`、`remove`：不问，直接做（施工 F-8 下补，`--noconfirm` 是 pacman 的写法），给脚本 |
 | `--target <系统>`、`-o, --out <目录>` | `pack`：打给哪一种系统、写到哪个目录（施工 G-1） |
 

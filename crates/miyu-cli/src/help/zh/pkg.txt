@@ -29,6 +29,7 @@ pacman 的写法也认：
 选项：
       --format text|json  list、info、files、owns、check：json 给脚本
       --yes, --noconfirm  install、remove：不问，直接做
+      --system            装、卸、升级、清缓存、拿索引：以管理员身份做
       --target <系统>     pack：清单写了 targets 的挑一种
   -o, --out <目录>        pack：写到哪个目录
   -h, --help              印帮助

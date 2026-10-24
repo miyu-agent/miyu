@@ -78,6 +78,11 @@ async fn pkg(home: &Home, words: &[&str]) -> (u8, String, String) {
 
 /// 同 [`pkg`]，问的那一句照 `input` 答。
 async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String, String) {
+    pkg_with(home, words, input, true).await
+}
+
+/// 同 [`pkg_answering`]，`system` 是写不写 `--system`（施工 Y-12 下下）。
+async fn pkg_with(home: &Home, words: &[&str], input: &[u8], system: bool) -> (u8, String, String) {
     #[derive(Parser)]
     struct Line {
         #[command(subcommand)]
@@ -89,6 +94,10 @@ async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String
     }
     let mut all = vec!["miyu", "pkg"];
     all.extend(words);
+    // 装、升级、同步改的是全机的软件包（施工 Y-12 下下）。
+    if system {
+        all.push("--system");
+    }
     let Top::Pkg(args) = Line::try_parse_from(all).expect("读得懂").command;
     let plan = miyu_cli::PkgPlan {
         args,
@@ -374,4 +383,24 @@ async fn upgrade_shows_what_changes_and_asks() {
     if let Err(error) = std::fs::remove_dir_all(&scratch) {
         eprintln!("临时目录没删掉：{error}");
     }
+}
+
+/// 改全机的软件包没写 `--system`（施工 Y-12 下下）：先说加上它，再照核心的原话说，什么都不动。
+#[tokio::test]
+async fn changing_packages_without_system_says_to_add_it() {
+    let (_, trusted) = keys();
+    let (other, _) = keys();
+    let server = Server::start(serving("2026-10-19T03:00:00Z", 1, &other)).await;
+    let home = home(&server.base_url, trusted);
+    let refused = pkg_with(&home, &["update"], b"", false).await;
+    assert_eq!(
+        refused,
+        (
+            1,
+            String::new(),
+            "这一步改的是全机的东西：加 --system 以管理员身份做\n要先进入管理员模式。\n"
+                .to_string()
+        )
+    );
+    assert!(server.received().is_empty(), "没去拿索引");
 }
