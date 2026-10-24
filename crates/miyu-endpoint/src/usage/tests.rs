@@ -75,3 +75,41 @@ fn the_parameters_are_read_and_checked() {
         assert!(matches!(read, Err(Refusal::BAD_PARAMS)), "{bad}");
     }
 }
+
+/// 金额哪个币种排最前照会话属主那一份配置（施工 Y-2 下下中下）：机主照出厂的 USD，成员 bob 自己设了 CNY 的照 CNY。
+#[test]
+fn amounts_lead_with_the_owners_currency() {
+    let (root, dir) = crate::test_support::temp_root("usage-currency");
+    let alice = AccountId::parse("alice").expect("合写法");
+    let bob = AccountId::parse("bob").expect("合写法");
+    let settings = root.account_dir(&bob).join("settings.toml");
+    std::fs::create_dir_all(settings.parent().expect("有上一层")).expect("建得出");
+    std::fs::write(&settings, "[usage]\ncurrency = \"CNY\"\n").expect("写得进");
+    let config = crate::config::Config::load(
+        &root,
+        &alice,
+        None,
+        miyu_models::settings::UsageSettings::ITEMS.to_vec(),
+        crate::config::Environment::of(&[]),
+    );
+    let core = Core::new(
+        root,
+        miyu_store::resources::ResourceRoot::at(crate::test_support::resources()),
+        Arc::new(miyu_session::testkit::Script::new([])),
+        miyu_tool::Catalog::default(),
+        None,
+        alice.clone(),
+        "token".to_string(),
+    )
+    .with_config(config);
+    let mut tally = miyu_session::Tally::default();
+    tally.amounts.insert("CNY".to_string(), 1.0);
+    tally.amounts.insert("USD".to_string(), 2.0);
+    let first = |shown: Value| shown["amounts"][0]["currency"].clone();
+    assert_eq!(currency(&core, &alice), "USD");
+    assert_eq!(currency(&core, &bob), "CNY");
+    assert_eq!(first(tallied(&core, &alice, &tally)), json!("USD"));
+    assert_eq!(first(tallied(&core, &bob, &tally)), json!("CNY"));
+    assert_eq!(first(total_row(&core, &bob, own(&tally))), json!("CNY"));
+    drop(dir);
+}

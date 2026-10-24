@@ -115,7 +115,8 @@ pub(crate) async fn call(
     let Some(one_shot) = core.models.one_shot() else {
         return Err(Refusal::no_model(NOT_CONFIGURED.to_string()));
     };
-    let config = core.config_now().borrow().clone();
+    // 照这个连接的人那一份配置（施工 Y-2 下下中下）。
+    let config = core.mine(account).hub().current().borrow().clone();
     let resolved = config.resolved().clone();
     let model = match params.uses {
         Some(Use::Vision) => match UseSettings::from(&resolved.values()).vision {
@@ -133,8 +134,8 @@ pub(crate) async fn call(
         system,
         messages,
         max_tokens,
-        // 用量还记在管理员的账上（施工 8-15）；按人记随「按人用量」那一步。
-        owner: core.admin.clone(),
+        // 用量记在这个连接的人名下（施工 Y-2 下下中下）。
+        owner: account.clone(),
     };
     match one_shot.call(&turn, &blobs, ask).await {
         Ok(answer) => Ok(answered(answer)),

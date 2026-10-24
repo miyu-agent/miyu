@@ -350,7 +350,7 @@ fn room(handle: &Handle) -> Option<Room> {
         .filter(|_| handle.venue().as_str() == LOCAL)
 }
 
-/// 照意思找的那一路照这时的配置（施工 R-5 下）：远程的用量记在管理员名下（M8 只有他，和 `model.call` 一样）。
+/// 照意思找的那一路照机主这时的配置（施工 R-5 下）：远程的用量记在机主名下。`model.embed`、`miyu check` 用。
 pub(crate) fn using(core: &Core) -> Using {
     using_as(core, &core.admin)
 }
@@ -360,9 +360,9 @@ fn using_for(core: &Core, keeper: &Keeper) -> Using {
     using_as(core, keeper.room().account())
 }
 
-/// 照这时的配置，远程的用量记在 `owner` 名下。
-fn using_as(core: &Core, owner: &AccountId) -> Using {
-    let config = core.config_now().borrow().clone();
+/// 照 `owner` 这时的那一份配置（施工 Y-2 下下中下：成员的照他自己的，用不上机主自己的 key），远程的用量记在他名下。
+pub(crate) fn using_as(core: &Core, owner: &AccountId) -> Using {
+    let config = core.mine(owner).hub().current().borrow().clone();
     let resolved = config.resolved().clone();
     let source: Arc<dyn ConfigSource> = config;
     Using {

@@ -240,7 +240,7 @@
 | `session` | 字符串 | 只算这个会话；`tree: true` 连它派的子会话 |
 | `offset` | 时区，例如 `+09:00` | 分天照哪个时区，不写是核心所在机器的 |
 
-**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，不换算）、`unpriced`（有用量、算不出金额的次数）。
+**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，不换算）、`unpriced`（有用量、算不出金额的次数）。人人的会话都记账；不是管理员的只查得到自己名下的。金额照 `usage.currency` 排：查的人自己那一份配置的。
 
 ```json
 {"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}

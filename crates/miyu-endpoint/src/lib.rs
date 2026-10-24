@@ -453,9 +453,9 @@ impl Core {
         )
     }
 
-    /// 账号 `owner` 的会话写哪份用量汇总（施工 8-15）：核心一份、行里带属主，管理员和系统账号的会话写（施工 O-4 下）。
-    pub(crate) fn usage_for(&self, owner: &AccountId) -> Option<Arc<UsageIndex>> {
-        self.knows(owner).then(|| Arc::clone(&self.usage))
+    /// 会话写哪份用量汇总（施工 8-15）：核心一份、行里带属主。施工 Y-2 下下中下起人人的会话都写（以前只有管理员和系统账号的）。
+    pub(crate) fn ledger(&self) -> Option<Arc<UsageIndex>> {
+        Some(Arc::clone(&self.usage))
     }
 
     /// 来请求了的信号（施工 V-5 中）。

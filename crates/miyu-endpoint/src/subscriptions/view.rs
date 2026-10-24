@@ -113,7 +113,13 @@ impl View {
             .current
             .as_ref()
             .map(|current| crate::usage::own(&current.tally));
-        tree::merge(&self.core, &mut status, &self.tree, own);
+        tree::merge(
+            &self.core,
+            self.handle.owner(),
+            &mut status,
+            &self.tree,
+            own,
+        );
         status
     }
 

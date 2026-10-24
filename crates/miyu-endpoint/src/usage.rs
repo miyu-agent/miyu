@@ -15,7 +15,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use miyu_kernel::event::Real;
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_models::price::ordered;
 use miyu_models::settings::UsageSettings;
@@ -74,10 +74,10 @@ pub(crate) async fn query(
     if !crate::login::admins::is_admin(core, whose) {
         query.account = Some(whose.as_str().to_string());
     }
-    let currency = UsageSettings::from(&core.mine(whose).config().resolved().values()).currency;
+    let currency = currency(core, whose);
     let usage = Arc::clone(&core.usage);
-    // 系统账号的算进总数，照 `account` 能分开看（施工 O-4 下）。
-    let accounts = core.accounts();
+    // 系统账号、成员的算进总数，照 `account` 能分开看（施工 O-4 下、Y-2 下下中下）。
+    let accounts = core.usage_accounts();
     let group = query.group.clone();
     let totals = tokio::task::spawn_blocking(move || match caught_up(&usage, &accounts, &query) {
         Ok(totals) => Ok(totals),
@@ -195,7 +195,7 @@ fn row(group: &[Group], total: Total, first: &str) -> Value {
 /// 记一行、只有它自己。
 pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
     let usage = Arc::clone(&core.usage);
-    let accounts = core.accounts();
+    let accounts = core.usage_accounts();
     let root = session.as_str().to_string();
     let found = tokio::task::spawn_blocking(move || {
         for problem in usage.catch_up(&accounts)? {
@@ -219,7 +219,7 @@ pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
 
 pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
     let usage = Arc::clone(&core.usage);
-    let accounts = core.accounts();
+    let accounts = core.usage_accounts();
     let query = Query {
         from: None,
         until: None,
@@ -257,10 +257,14 @@ fn empty() -> Total {
     }
 }
 
-/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照这一刻的配置排。
-pub(crate) fn total_row(core: &Core, total: Total) -> Value {
-    let currency = UsageSettings::from(&core.config().resolved().values()).currency;
-    row(&[], total, &currency)
+/// 账号 `account` 的金额哪个币种排最前：照他这一刻的那一份配置（施工 Y-2 下下中下）。
+pub(crate) fn currency(core: &Core, account: &AccountId) -> String {
+    UsageSettings::from(&core.mine(account).config().resolved().values()).currency
+}
+
+/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照会话属主 `owner` 这一刻的配置排。
+pub(crate) fn total_row(core: &Core, owner: &AccountId, total: Total) -> Value {
+    row(&[], total, &currency(core, owner))
 }
 
 /// 两份加起来：请求数、四项、金额（同一币种相加）、没价格的次数。
@@ -293,8 +297,9 @@ pub(crate) fn own(tally: &miyu_session::Tally) -> Total {
     }
 }
 
-pub(crate) fn tallied(core: &Core, tally: &miyu_session::Tally) -> Value {
-    let currency = UsageSettings::from(&core.config().resolved().values()).currency;
+/// 会话自己累计的写成协议上的一行，币种照会话属主 `owner` 这一刻的配置排（施工 Y-2 下下中下）。
+pub(crate) fn tallied(core: &Core, owner: &AccountId, tally: &miyu_session::Tally) -> Value {
+    let currency = currency(core, owner);
     let total = Total {
         keys: Vec::new(),
         requests: tally.requests,

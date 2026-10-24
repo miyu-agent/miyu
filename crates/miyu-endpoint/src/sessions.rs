@@ -282,7 +282,7 @@ impl Sessions {
             venue: child.venue,
             sandbox_cache: core.sandbox_cache_of(&child.owner),
             index: Some(core.index_for(&child.owner)),
-            usage: core.usage_for(&child.owner),
+            usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),

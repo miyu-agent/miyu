@@ -160,7 +160,7 @@ async fn events(
         let (upto, current) =
             subscribe_after(core, subscriptions, &handle, &session, after, out).await?;
         reply["upto"] = json!(upto);
-        now(core, &mut reply, current.as_ref());
+        now(core, handle.owner(), &mut reply, current.as_ref());
         return Ok((reply, Some(session)));
     }
     let current = match subscriptions.has(&session) {
@@ -174,11 +174,12 @@ async fn events(
                 return Err(Refusal::STOPPED);
             };
             let current = subscription.current().cloned();
-            subscriptions.add(core, session, subscription, Vec::new(), out.clone());
+            let whose = (session, handle.owner().clone());
+            subscriptions.add(core, whose, subscription, Vec::new(), out.clone());
             current
         }
     };
-    now(core, &mut reply, current.as_ref());
+    now(core, handle.owner(), &mut reply, current.as_ref());
     Ok((reply, None))
 }
 
@@ -233,7 +234,7 @@ async fn view(
         page.remove("jobs");
         reply.extend(page);
     }
-    now(core, &mut reply, current.as_ref());
+    now(core, handle.owner(), &mut reply, current.as_ref());
     // 会话状态（施工 9-8 补上）：人格、预设照回应里已经读出来的。
     let fixed = Fixed {
         persona: reply.get("persona").cloned(),
@@ -285,11 +286,11 @@ async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
 /// 回应里「当前的」三格（施工 9-6 上）：这个会话累计的用量和计数（`usage`，写法同 `usage.query` 的一行），人设的权限
 /// （`permission`），还在跑的后台命令和子代理（`jobs`，照 `job.started` 的写法）。和订阅在会话 actor 的同一步里拿；会话停了、
 /// 拿不到的不写。
-fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) {
+fn now(core: &Core, owner: &AccountId, reply: &mut Value, current: Option<&miyu_session::Current>) {
     let Some(current) = current else {
         return;
     };
-    reply["usage"] = crate::usage::tallied(core, &current.tally);
+    reply["usage"] = crate::usage::tallied(core, owner, &current.tally);
     reply["permission"] = json!(current.permission);
     reply["jobs"] = json!(current.jobs);
     // 在跑的嵌套调用（施工 M-1）：没有的不写，以前的回应字节不变。
@@ -300,7 +301,7 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     reply["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
     // 长期目标（施工 X-8 补）：同会话状态的 `goal`，没有的不写；之后照推过来的 `goal.changed` 换。
     if let Some(goal) = &current.goal {
-        reply["goal"] = crate::view::status::goal_of(core, goal);
+        reply["goal"] = crate::view::status::goal_of(core, owner, goal);
     }
     // 中途换了人格、预设的（施工 P-13）：照换成的写，换成无人格的不写 `persona`。
     if let Some(reply) = reply.as_object_mut() {
@@ -342,7 +343,8 @@ async fn subscribe_after(
         Refusal::BROKEN
     })?;
     let current = subscription.current().cloned();
-    subscriptions.add(core, session.clone(), subscription, backlog, out.clone());
+    let whose = (session.clone(), handle.owner().clone());
+    subscriptions.add(core, whose, subscription, backlog, out.clone());
     Ok((upto, current))
 }
 

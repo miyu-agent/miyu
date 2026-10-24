@@ -3,8 +3,8 @@
 //! 核心拉起的这个包的扩展以它的身份连进来；它的东西管理员能看能管，它没有自己的记忆（归机主，[`Core::memory_owner`]）。
 //!
 //! 施工 Y-5 中上（设计 06 U16）：每个带进程的包都是自己的账号（[`Core::package_accounts`]），起来时一样建家目录；声明了系统账号
-//! 的（平台桥）替平台上的外人干活，别的替机主干活（[`Core::serving`]）。用量照旧只认机主和平台桥（[`Core::knows`]），记忆人人各一份（施工 Y-7）：
-//! 别的包开的会话归机主。
+//! 的（平台桥）替平台上的外人干活，别的替机主干活（[`Core::serving`]）。记忆人人各一份（施工 Y-7）：
+//! 别的包开的会话归机主。施工 Y-2 下下中下起用量人人都记（[`Core::usage_accounts`]）。
 
 use std::sync::Arc;
 
@@ -26,16 +26,22 @@ impl Core {
         self.system_accounts().contains(account)
     }
 
-    /// 核心认的账号：管理员、系统账号。用量只给它们的会话（别的账号随多用户；记忆施工 Y-7 起人人有，照 [`Core::memory_owner`]）。
-    pub(crate) fn knows(&self, account: &AccountId) -> bool {
-        *account == self.admin || self.is_system(account)
-    }
-
-    /// 管理员和系统账号：用量照它们补。
+    /// 管理员和系统账号：场所会话只会在它们名下。
     pub(crate) fn accounts(&self) -> Vec<AccountId> {
         std::iter::once(self.admin.clone())
             .chain(self.system_accounts())
             .collect()
+    }
+
+    /// 用量照哪几个账号补（施工 Y-2 下下中下）：管理员、系统账号，和登记过的人（停用了的也算：用过的照旧算数）。
+    pub(crate) fn usage_accounts(&self) -> Vec<AccountId> {
+        let mut accounts = self.accounts();
+        for person in crate::login::members::people(self) {
+            if !accounts.contains(&person) {
+                accounts.push(person);
+            }
+        }
+        accounts
     }
 
     /// 这次起来认的带进程的包的账号（施工 Y-5 中上），照编号排：平台桥在里面。

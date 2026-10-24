@@ -39,7 +39,7 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_session::{Ended, Pushed, Subscription};
 
 use crate::Core;
@@ -123,12 +123,12 @@ impl Subscriptions {
             .is_some_and(|forwarder| !forwarder.view && forwarder.pushing.load(Ordering::Acquire))
     }
 
-    /// 订阅会话 `session`：起一个转发任务，先把补发的 `backlog` 照先后写进 `out`（不补的是空的），再写推送。原来有一个的，
+    /// 订阅会话 `session`（属主 `owner`：推送里的金额照他的币种排）：起一个转发任务，先把补发的 `backlog` 照先后写进 `out`（不补的是空的），再写推送。原来有一个的，
     /// 换掉：旧的放完已经交给它的回应再退。
     pub(crate) fn add(
         &mut self,
         core: &Arc<Core>,
-        session: SessionId,
+        (session, owner): (SessionId, AccountId),
         subscription: Subscription,
         backlog: Vec<Event>,
         out: mpsc::Sender<String>,
@@ -137,7 +137,7 @@ impl Subscriptions {
         let pushing = Arc::new(AtomicBool::new(true));
         let task = tokio::spawn(forward(
             Arc::clone(core),
-            session.clone(),
+            (session.clone(), owner),
             subscription,
             backlog,
             waiting,
@@ -366,7 +366,7 @@ impl Drop for Subscriptions {
 /// 交回订阅。
 async fn forward(
     core: Arc<Core>,
-    session: SessionId,
+    (session, owner): (SessionId, AccountId),
     mut subscription: Subscription,
     backlog: Vec<Event>,
     mut replies: mpsc::UnboundedReceiver<String>,
@@ -374,7 +374,14 @@ async fn forward(
     pushing: Arc<AtomicBool>,
 ) -> Subscription {
     if replay(&session, backlog, &out).await {
-        relay(&core, &session, &mut subscription, &mut replies, &out).await;
+        relay(
+            &core,
+            (&session, &owner),
+            &mut subscription,
+            &mut replies,
+            &out,
+        )
+        .await;
     }
     pushing.store(false, Ordering::Release);
     while let Some(reply) = replies.recv().await {
@@ -402,7 +409,7 @@ async fn replay(session: &SessionId, backlog: Vec<Event>, out: &mpsc::Sender<Str
 /// 转发的主循环：交回来的时候，这个订阅不再推了（连接不要它了的，也交回来）。
 async fn relay(
     core: &Core,
-    session: &SessionId,
+    whose: (&SessionId, &AccountId),
     subscription: &mut Subscription,
     replies: &mut mpsc::UnboundedReceiver<String>,
     out: &mpsc::Sender<String>,
@@ -417,7 +424,7 @@ async fn relay(
                 // 先放已经到了的推送；放着放着掉了队，这条回应也照样放出去再停。
                 let mut alive = true;
                 while let Some(next) = subscription.try_next() {
-                    if !deliver(core, session, next, out).await {
+                    if !deliver(core, whose, next, out).await {
                         alive = false;
                         break;
                     }
@@ -427,7 +434,7 @@ async fn relay(
                 }
             }
             next = subscription.next() => {
-                if !deliver(core, session, next, out).await {
+                if !deliver(core, whose, next, out).await {
                     return;
                 }
             }
@@ -439,13 +446,13 @@ async fn relay(
 /// `resync`。
 async fn deliver(
     core: &Core,
-    session: &SessionId,
+    (session, owner): (&SessionId, &AccountId),
     next: Result<Arc<Pushed>, Ended>,
     out: &mpsc::Sender<String>,
 ) -> bool {
     match next {
         Ok(pushed) => {
-            for line in lines(core, session, &pushed) {
+            for line in lines(core, (session, owner), &pushed) {
                 if out.send(line).await.is_err() {
                     return false;
                 }

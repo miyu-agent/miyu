@@ -39,7 +39,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
         by_you: false,
         spent,
     };
-    let shown = goal_of(&core, &goal);
+    let shown = goal_of(&core, &core.admin, &goal);
     assert_eq!(
         (
             &shown["text"],
@@ -62,7 +62,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
     goal.state = GoalState::Blocked;
     goal.reason = Some("要人给 key".to_string());
     goal.limit = NonZeroU32::new(20);
-    let shown = goal_of(&core, &goal);
+    let shown = goal_of(&core, &core.admin, &goal);
     assert_eq!(
         (&shown["state"], &shown["reason"], &shown["limit"]),
         (

@@ -3,7 +3,7 @@
 
 use serde_json::json;
 
-use miyu_kernel::id::SessionId;
+use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_session::{Goal, Pushed};
 
@@ -11,7 +11,12 @@ use crate::Core;
 
 /// 一份推送写成 `event` 通知：一条事件一个，落了盘的、瞬时的都照 `03-事件模型.md` 的写法原样放进去；长期目标变了的写成瞬时
 /// 事件 `goal.changed`（施工 X-8 补，[`goal_changed`]）。
-pub(super) fn lines(core: &Core, session: &SessionId, pushed: &Pushed) -> Vec<String> {
+/// 金额照会话属主 `owner` 的币种排。
+pub(super) fn lines(
+    core: &Core,
+    (session, owner): (&SessionId, &AccountId),
+    pushed: &Pushed,
+) -> Vec<String> {
     match pushed {
         Pushed::Events(events) => events
             .iter()
@@ -21,7 +26,7 @@ pub(super) fn lines(core: &Core, session: &SessionId, pushed: &Pushed) -> Vec<St
         Pushed::Goal { at, goal } => {
             vec![notification(
                 session,
-                &goal_changed(core, *at, goal.as_ref()),
+                &goal_changed(core, owner, *at, goal.as_ref()),
             )]
         }
     }
@@ -29,8 +34,8 @@ pub(super) fn lines(core: &Core, session: &SessionId, pushed: &Pushed) -> Vec<St
 
 /// `goal.changed`（施工 X-8 补，`protocol.md`「订阅」）：瞬时事件的写法，`by` 是长期目标这个模块，`body.goal` 同会话状态的
 /// `goal`（`view/status.rs`），没有目标的是 `null`。
-fn goal_changed(core: &Core, at: Timestamp, goal: Option<&Goal>) -> String {
-    let goal = goal.map(|goal| crate::view::status::goal_of(core, goal));
+fn goal_changed(core: &Core, owner: &AccountId, at: Timestamp, goal: Option<&Goal>) -> String {
+    let goal = goal.map(|goal| crate::view::status::goal_of(core, owner, goal));
     json!({
         "at": at,
         "kind": "goal.changed",

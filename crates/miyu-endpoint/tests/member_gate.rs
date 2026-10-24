@@ -84,14 +84,37 @@ async fn a_member_reaches_only_his_own_things() {
         )
         .await;
     assert_eq!(work["result"], json!({}), "{work}");
-    // 用量：机主也说一句；成员看不到机主的那一次（成员自己的会话这一步还不记账，Y-2 下下中按人记）。
+    // 用量按人记（施工 Y-2 下下中下）：机主也说一句；机主看得到两个人的、能照账号分开，成员只看得到他自己那一次。
     owner.say("o2", &mine, "hi").await;
     home.until_turns(&mine, 1).await;
+    until_logged(&home, &his, |body| matches!(body, Body::TurnEnded(_))).await;
     let requests = |reply: &serde_json::Value| reply["result"]["rows"][0]["requests"].clone();
     let all_usage = owner.call("u", "usage.query", json!({})).await;
-    assert_eq!(requests(&all_usage), json!(1), "{all_usage}");
+    assert_eq!(requests(&all_usage), json!(2), "{all_usage}");
+    let split = owner
+        .call("u", "usage.query", json!({"group": ["account"]}))
+        .await;
+    let rows: Vec<(serde_json::Value, serde_json::Value)> = split["result"]["rows"]
+        .as_array()
+        .expect("{split}")
+        .iter()
+        .map(|row| (row["account"].clone(), row["requests"].clone()))
+        .collect();
+    assert_eq!(
+        rows,
+        [(json!("alice"), json!(1)), (json!("bob"), json!(1))],
+        "{split}"
+    );
     let his_usage = bob.call("u", "usage.query", json!({})).await;
-    assert_eq!(requests(&his_usage), json!(0), "{his_usage}");
+    assert_eq!(requests(&his_usage), json!(1), "{his_usage}");
+    let his_split = bob
+        .call("u", "usage.query", json!({"group": ["account"]}))
+        .await;
+    assert_eq!(
+        his_split["result"]["rows"].as_array().map(Vec::len),
+        Some(1),
+        "成员照账号分也只有他自己：{his_split}"
+    );
     // 订自己的视图照常。
     let view = bob
         .call("v", "subscribe", json!({"stream": "view", "session": his}))
@@ -101,19 +124,57 @@ async fn a_member_reaches_only_his_own_things() {
 
 /// 等 bob 的会话 `session` 记下他说的那一句，交回日志。
 async fn said(home: &Home, session: &str) -> Vec<Event> {
+    until_logged(home, session, |body| matches!(body, Body::MessageUser(_))).await
+}
+
+/// 等 bob 的会话 `session` 的日志里有一条 `wanted` 的，交回日志。
+async fn until_logged(home: &Home, session: &str, wanted: fn(&Body) -> bool) -> Vec<Event> {
     let bob = AccountId::parse("bob").expect("合写法");
     let id = SessionId::parse(session).expect("会话编号合写法");
     let dir = home.root.session_dir(&bob, &id);
     let read = || read_events(&dir).unwrap_or_default();
     let waited = tokio::time::timeout(Duration::from_secs(60), async {
-        while !read()
-            .iter()
-            .any(|event| matches!(event.body, Body::MessageUser(_)))
-        {
+        while !read().iter().any(|event| wanted(&event.body)) {
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     })
     .await;
-    assert!(waited.is_ok(), "六十秒内没记下他说的话");
+    assert!(waited.is_ok(), "六十秒内没等到");
     read()
+}
+
+/// 用量汇总是派生的（施工 8-15）：删掉重起照日志补回来，成员的会话也补（施工 Y-2 下下中下）。
+#[tokio::test]
+async fn a_rebuilt_ledger_still_counts_the_members_turns() {
+    let home = Home::new();
+    let core = home.core(&Script::new([Play::Says("嗯。")]));
+    let mut bob = member(&core, "bob").await;
+    let his = bob.call("c", "session.create", json!({})).await["result"]["session"]
+        .as_str()
+        .expect("造得出自己的会话")
+        .to_string();
+    bob.say("s", &his, "hi").await;
+    until_logged(&home, &his, |body| matches!(body, Body::TurnEnded(_))).await;
+    drop(bob);
+    drop(core);
+    let ledger = home.root.path().join("state").join(miyu_store::usage::FILE);
+    assert!(ledger.exists(), "先记过：{}", ledger.display());
+    for suffix in ["", "-wal", "-shm"] {
+        let path = std::path::PathBuf::from(format!("{}{suffix}", ledger.display()));
+        if path.exists() {
+            std::fs::remove_file(&path).expect("删得掉");
+        }
+    }
+    let core = home.core(&Script::new([]));
+    let mut owner = local(&core).await;
+    let split = owner
+        .call("u", "usage.query", json!({"group": ["account"]}))
+        .await;
+    let rows: Vec<(serde_json::Value, serde_json::Value)> = split["result"]["rows"]
+        .as_array()
+        .expect("{split}")
+        .iter()
+        .map(|row| (row["account"].clone(), row["requests"].clone()))
+        .collect();
+    assert_eq!(rows, [(json!("bob"), json!(1))], "{split}");
 }

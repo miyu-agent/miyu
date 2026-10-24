@@ -240,7 +240,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | `session` | string | Only this session; `tree: true` includes the child sessions it spawned |
 | `offset` | time zone, e.g. `+09:00` | Which time zone splits days; the core machine's when omitted |
 
-**Response**: `{"rows": [...]}`. A row: the grouped fields, `requests`, `usage` (the four counts added up), `amounts` (per currency, not converted), `unpriced` (requests with usage but no known price).
+**Response**: `{"rows": [...]}`. A row: the grouped fields, `requests`, `usage` (the four counts added up), `amounts` (per currency, not converted), `unpriced` (requests with usage but no known price). Everyone's sessions are counted; non-admins only see their own. Amounts are ordered by `usage.currency` from the caller's own configuration.
 
 ```json
 {"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}

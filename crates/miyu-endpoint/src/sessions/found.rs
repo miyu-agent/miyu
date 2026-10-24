@@ -60,7 +60,7 @@ impl Open {
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             index: Some(core.index_for(&owner)),
-            usage: core.usage_for(&owner),
+            usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
             installed: Some(crate::packages::installed(core)),

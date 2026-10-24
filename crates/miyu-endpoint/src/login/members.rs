@@ -120,6 +120,16 @@ pub(crate) fn person_holds(core: &Core, name: &str) -> bool {
         || written.of(name).is_some()
 }
 
+/// 登记过的人（`accounts.json` 里的，停用了的也在）：用量照他们补（施工 Y-2 下下中下）。
+pub(crate) fn people(core: &Core) -> Vec<AccountId> {
+    files::read_accounts(core)
+        .accounts
+        .accounts
+        .iter()
+        .filter_map(|row| AccountId::parse(&row.id).ok())
+        .collect()
+}
+
 /// `account.list`：管理员列出账号：管理员、成员、系统账号。
 pub(crate) fn list(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
     admin_only(core, account)?;

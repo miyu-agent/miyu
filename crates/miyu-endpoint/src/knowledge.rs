@@ -173,7 +173,7 @@ pub(crate) async fn call(
                 return Err(Refusal::BAD_PARAMS);
             }
             // 照意思找（施工 K-2）：问句照这时的配置算向量，搜完在后台补搜过的几个库缺的向量；同她的 `kb_search`。
-            let using = crate::memory::using(core);
+            let using = crate::memory::using_as(core, &account);
             let vectors = core.memory.vectors();
             let near = match &vectors {
                 Some(vectors) => vectors.query(&using, &search.query).await,
