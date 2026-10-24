@@ -170,6 +170,7 @@ fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
             )
         }),
         foreground: old.foreground,
+        show_hint: !old.no_show_hint,
         knowledge: old.knowledge.clone(),
         skills: old.skills.clone(),
         profile: old.profile.clone(),

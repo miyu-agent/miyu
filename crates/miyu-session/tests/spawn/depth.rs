@@ -22,19 +22,26 @@ async fn only_local_sessions_below_the_depth_limit_can_spawn() {
     let lines = core_lines();
     let lines = lines.trim_end();
     // 主会话：有 `subagent`、没有以前的名字 `agent`（施工 7-5 再补），system 是人设和核心的几行（施工 2-7 补）；出厂的工具面有
-    // `shell` 和脚本里能调的，再跟一段什么时候写成程序（施工 M-4）。
+    // `shell` 和脚本里能调的，再跟一段什么时候写成程序（施工 M-4）；有 `show`，再跟 show 的那一句（施工 D-5 补二）。
     let table = Arc::new(Table::default());
     let (request, _) = first_request(Lines::default(), &table).await;
     assert!(names(&request).contains(&"subagent"));
     assert!(!names(&request).contains(&"agent"), "{:?}", names(&request));
     let clicall = clicall_line();
-    assert_eq!(request.system, format!("{persona}\n\n{lines}\n\n{clicall}"));
+    let show = include_str!("../../../../resources/software/basesystem/show/system.txt").trim_end();
+    assert_eq!(
+        request.system,
+        format!("{persona}\n\n{lines}\n\n{clicall}\n\n{show}")
+    );
     // 第 1 层：还能派孙代理；场所说明接在人设后面，核心的几行在最后。
     let (request, _) = first_request(child_at(1), &table).await;
     assert!(names(&request).contains(&"subagent"));
     assert_eq!(
         request.system,
-        format!("{persona}\n\n{}\n\n{lines}\n\n{clicall}", VENUE.trim_end())
+        format!(
+            "{persona}\n\n{}\n\n{lines}\n\n{clicall}\n\n{show}",
+            VENUE.trim_end()
+        )
     );
     assert_eq!(table.made().len(), 2);
     assert_eq!(table.made()[1].lineage.depth, 2, "孙代理是第 2 层");

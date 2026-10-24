@@ -97,6 +97,10 @@ pub struct Snapshot {
     /// 定；开着的、以前造的不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub foreground: bool,
+    /// show 的那一句关着（施工 D-5 补二，配置 `basesystem.show.system_hint`）：造会话时钉下，换人格、换预设重拼也照它，会话
+    /// 中途改了配置 system 不变。开着的、以前造的不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub no_show_hint: bool,
     /// 她查得到的知识库那一块拼好的原文（施工 K-1 补，`compose.rs`）：system 第 4 块；回合开始时照它比，变了换快照。没有库、
     /// 没有知识库那两件工具的没有：不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]

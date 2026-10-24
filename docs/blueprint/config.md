@@ -282,6 +282,7 @@ miyu_config::settings! {
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统、个人 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
+| `basesystem.show.system_hint` | 开关 | `true` | 系统、个人 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替基础系统声明（`OWNED`），设置页在「软件包」那一页、基础系统那一组 |
 | `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
 | `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「搜索服务供应商」分开画） |
 | `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
@@ -998,6 +999,11 @@ $ miyu logout bigmodel-2
 # Miyu 的全部配置项和默认值。这份是生成的，改它没有用。
 # 系统配置写在 system/config.toml，个人设置写在 home/<账号>/settings.toml。
 
+[basesystem.show]
+# 提醒 AI 用展示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+system_hint = true
+
 [clicall.mcp]
 # 脚本里能调这个 MCP 服务的工具：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。
 # 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
@@ -1402,6 +1408,22 @@ currency = "USD"
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
+    "basesystem": {
+      "properties": {
+        "show": {
+          "properties": {
+            "system_hint": {
+              "default": true,
+              "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。",
+              "title": "提醒 AI 用展示",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "clicall": {
       "properties": {
         "mcp": {

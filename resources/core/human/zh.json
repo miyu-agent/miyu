@@ -5,6 +5,7 @@
         "name": "后台命令最长运行时间",
         "description": "AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。"
       },
+      "basesystem.show.system_hint": {"name": "提醒 AI 用展示", "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。"},
       "compaction.prepare": {
         "name": "提前压好",
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
@@ -822,6 +823,7 @@
     "context/part/system.group": "群聊说明",
     "context/part/system.core": "核心说明",
     "context/part/system.clicall": "脚本调用说明",
+    "context/part/system.show": "show 说明",
     "context/part/system.style_lock": "风格锁",
     "context/part/system.skills": "技能目录",
     "context/part/system.knowledge": "知识库",

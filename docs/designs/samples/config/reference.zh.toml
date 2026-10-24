@@ -1,6 +1,11 @@
 # Miyu 的全部配置项和默认值。这份是生成的，改它没有用。
 # 系统配置写在 system/config.toml，个人设置写在 home/<账号>/settings.toml。
 
+[basesystem.show]
+# 提醒 AI 用展示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+system_hint = true
+
 [clicall.mcp]
 # 脚本里能调这个 MCP 服务的工具：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。
 # 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。

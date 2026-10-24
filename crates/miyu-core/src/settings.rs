@@ -25,7 +25,9 @@ use miyu_models::settings::{
     AuthCooldown, CatalogSettings, CompatSettings, ModelSettings, PoolSettings, PriceSettings,
     ProviderSettings, RateLimitedCooldown, RetryableCooldown, UsageSettings, UseSettings,
 };
-use miyu_session::settings::{CompactionSettings, JobSettings, MemorySettings, ProfileSettings};
+use miyu_session::settings::{
+    CompactionSettings, JobSettings, MemorySettings, ProfileSettings, ShowSettings,
+};
 use miyu_store::generated;
 use miyu_store::human::Human;
 use miyu_store::packages::Found;
@@ -40,7 +42,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 38] = [
+const MODULES: [&[Item]; 39] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -71,6 +73,7 @@ const MODULES: [&[Item]; 38] = [
     CompactionSettings::ITEMS,
     JobSettings::ITEMS,
     MemorySettings::ITEMS,
+    ShowSettings::ITEMS,
     NET[0],
     NET[1],
     NET[2],
@@ -92,8 +95,9 @@ const NET: [&[Item]; 7] = [&[]; 7];
 
 /// 核心替内置包声明的配置项（施工 F-4，设计 `30-插件框架.md` 第七节）：包的编号和它的几项。它们照样在 [`MODULES`] 里（包没装
 /// 的也照样认，写了不报不认识），包没装的设置页不画（[`Packaged::all`]）。
-const OWNED: [(&str, &[Item]); 8] = [
+const OWNED: [(&str, &[Item]); 9] = [
     (miyu_memory::PACKAGE, MemorySettings::ITEMS),
+    (miyu_tool::BASESYSTEM, ShowSettings::ITEMS),
     ("net", NET[0]),
     ("net", NET[1]),
     ("net", NET[2]),

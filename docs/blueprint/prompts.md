@@ -58,6 +58,19 @@ Carry on from where the summary leaves off, without redoing work it records as d
 You can write programs that call tools. When a task takes many tool calls or real logic around them (branches, loops, one tool's results feeding another, tool results mixed with local files or programs) and you only need the outcome, write it as one script with miyu call (see the shell tool) and print only the answer. For one or two calls, or when you need to read the results yourself, call the tools directly.
 ```
 
+### system，调工具的程序那一段后面单成一段
+
+#### `software/basesystem/show/system.txt`
+
+- 什么时候加进来：工具面上有 `show`、开关 `basesystem.show.system_hint` 开着（默认开，造会话时钉下）的会话，每次请求（施工 D-5 补二起；没有的、关着的、以前造的快照不带，一个字节不变）
+- token：45（2026-10-24 照 o200k 数）
+- 为什么加：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看，不只给一个路径（施工 D-5 补二，项目主人 2026-10-24 定留：改后说明不带这一句 8/12 主动用，带 12/12）；常量字节，前缀稳定
+- 指纹：`5dd51cfe`
+
+```text
+When you make or fetch something meant to be looked at — an image, a web page, a document, video or audio — handing it over with show lets the user see it right away, rather than just a path.
+```
+
 ### 摘要请求的最后一块，人这边：摘要指令的正文
 
 #### `core/compaction/summarize-task.txt`

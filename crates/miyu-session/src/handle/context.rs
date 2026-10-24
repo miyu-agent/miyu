@@ -21,6 +21,8 @@ pub enum SystemPart {
     Core,
     /// 什么时候写成调工具的程序那一段。
     Clicall,
+    /// show 的那一句（施工 D-5 补二）。
+    Show,
     /// 风格锁。
     StyleLock,
     /// 技能那一块。

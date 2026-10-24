@@ -209,6 +209,7 @@ impl ResourceRoot {
                 .replace("{version}", env!("CARGO_PKG_VERSION")),
             style_lock: self.read(&["core", "style-lock.txt"])?,
             clicall: self.read(&["core", "clicall.txt"])?,
+            show: self.read(&["software", "basesystem", "show", "system.txt"])?,
         })
     }
 

@@ -31,6 +31,8 @@ pub(super) struct Opened {
     pub(super) edition: Edition,
     /// 给了的场所插件工具（施工 O-60）。
     pub(super) plugin_tools: Vec<String>,
+    /// show 的那一句开着（施工 D-5 补二）：照这时的配置。
+    pub(super) show_hint: bool,
 }
 
 /// 照 `setup` 和这时的配置 `values` 拼工具面。
@@ -105,6 +107,7 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
         face,
         edition,
         plugin_tools,
+        show_hint: crate::settings::ShowSettings::from(values).system_hint,
     }
 }
 

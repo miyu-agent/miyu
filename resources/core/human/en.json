@@ -5,6 +5,7 @@
         "name": "Longest background command",
         "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours."
       },
+      "basesystem.show.system_hint": {"name": "Remind the AI to use Show", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
       "compaction.prepare": {
         "name": "Prepare compaction early",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."
@@ -838,6 +839,7 @@
     "context/part/system.group": "Group chat notes",
     "context/part/system.core": "Core instructions",
     "context/part/system.clicall": "Scripted tool calls",
+    "context/part/system.show": "Using show",
     "context/part/system.style_lock": "Style lock",
     "context/part/system.skills": "Skills",
     "context/part/system.knowledge": "Knowledge bases",

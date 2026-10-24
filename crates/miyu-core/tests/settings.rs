@@ -133,6 +133,7 @@ fn the_registered_list_is_well_formed() {
             "memory.merge_every",
             "memory.merge_sessions",
             "memory.dream_keep",
+            "basesystem.show.system_hint",
             "net.search.source",
             "net.search.exa.key",
             "net.search.deepseek.key",
@@ -413,8 +414,8 @@ fn builtin_package_settings_follow_their_package() {
     );
 }
 
-/// 「软件包」那一页上核心替包登记的配置项写明归哪个包（施工 F-14）：联网搜索的几项归 `net`（组是 `net`、`net_keys`），软件源
-/// 那一组不归哪个包；头照它把配置挪进包的信息页，不再拿组名当包名。
+/// 「软件包」那一页上核心替包登记的配置项写明归哪个包（施工 F-14）：联网搜索的几项归 `net`（组是 `net`、`net_keys`），展示的
+/// 那一句归 `basesystem`（施工 D-5 补二），软件源那一组不归哪个包；头照它把配置挪进包的信息页，不再拿组名当包名。
 #[test]
 fn core_items_on_the_packages_page_say_which_package() {
     for item in shipped().all() {
@@ -425,6 +426,8 @@ fn core_items_on_the_packages_page_say_which_package() {
             Some("net")
         } else if item.key.starts_with("memory.") {
             Some("memory")
+        } else if item.key.starts_with("basesystem.") {
+            Some("basesystem")
         } else if item.key.starts_with("packages.") {
             None
         } else {

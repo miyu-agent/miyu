@@ -128,6 +128,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         roleplay: true,
         group: None,
         foreground: false,
+        show_hint: true,
 
         knowledge: None,
         skills: None,

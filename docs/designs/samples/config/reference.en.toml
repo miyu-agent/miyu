@@ -1,6 +1,11 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
 # Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.
 
+[basesystem.show]
+# Remind the AI to use Show: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
+# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+system_hint = true
+
 [clicall.mcp]
 # Callable from scripts: this MCP server's tools: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.
 # Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.

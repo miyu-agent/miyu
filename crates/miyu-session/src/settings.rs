@@ -9,8 +9,24 @@
 //! 配置读称呼，写人。
 //! 核心替人格记忆这个内置包声明（施工 F-4，设计 `30-插件框架.md` 第七节）：挂在「软件包」那一页、`memory` 那一组；包没装的照样
 //! 认，设置页不画（`miyu-core` 的 `settings::Packaged`）。
+//! 展示的一项（施工 D-5 补二）：system 里带不带 show 的那一句，同样核心替基础系统声明，造会话时读。
 
 use std::time::Duration;
+
+miyu_config::settings! {
+    /// 展示（施工 D-5 补二，项目主人 2026-10-24 定）：核心替基础系统声明，挂在「软件包」那一页、`basesystem` 那一组。造会话时
+    /// 读一次钉进快照（`miyu_policy::Snapshot::no_show_hint`），新会话生效：会话中途改了 system 不变，前缀稳定。
+    pub struct ShowSettings in "basesystem.show" {
+        /// system 里带 show 的那一句（`show/system.txt`）：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看。工具面上
+        /// 有 `show` 的才带。
+        system_hint: bool = true {
+            kind: bool,
+            layers: [System, Personal],
+            applies: new_session,
+            ui: { page: "packages", group: "basesystem", package: "basesystem", control: toggle },
+        },
+    }
+}
 
 miyu_config::settings! {
     /// 压缩的配置。

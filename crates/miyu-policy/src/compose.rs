@@ -96,6 +96,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         no_tools: false,
         group: None,
         foreground: false,
+        no_show_hint: false,
         knowledge: None,
         skills: None,
         profile: None,
@@ -143,6 +144,9 @@ pub struct CoreLines {
     /// 什么时候写成调工具的程序（`core/clicall.txt`，施工 M-4，设计 39 第九节）：工具面上有脚本里能调的工具才带
     /// （[`Snapshot::with_clicall`]）。
     pub clicall: String,
+    /// 做出来、拿到的东西用 show 交给人看（show 包的 `system.txt`，施工 D-5 补二）：工具面上有 show 才带
+    /// （[`Snapshot::with_show`]）。
+    pub show: String,
 }
 
 impl Snapshot {
@@ -175,6 +179,16 @@ impl Snapshot {
     pub fn with_clicall(mut self, lines: &CoreLines, tells: bool) -> Snapshot {
         if tells {
             self.system = system(&[&self.system, lines.clicall.trim_end()]);
+        }
+        self
+    }
+
+    /// 带上 show 的那一句（施工 D-5 补二）：`shows` 是工具面上有 show（会话那一层看工具面交来）。接在调工具的程序那一段
+    /// 后面单成一段，常量字节、前缀稳定；没有的不带，system 一字不变。
+    #[must_use]
+    pub fn with_show(mut self, lines: &CoreLines, shows: bool) -> Snapshot {
+        if shows {
+            self.system = system(&[&self.system, lines.show.trim_end()]);
         }
         self
     }

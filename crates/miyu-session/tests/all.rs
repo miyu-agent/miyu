@@ -124,6 +124,7 @@ mod search;
 mod session_fact;
 mod session_usage;
 mod sessions;
+mod show_line;
 mod skills;
 mod skills_changed;
 mod spawn;

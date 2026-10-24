@@ -5,6 +5,7 @@
         "name": "バックグラウンドコマンドの最長実行時間",
         "description": "AI がバックグラウンドで実行するコマンドは、この時間が経つと停止し、AI に伝えます。最長 2 時間。"
       },
+      "basesystem.show.system_hint": {"name": "AI に「表示」を使うよう促す", "description": "AI が作ったり取ってきたりした画像、ウェブページ、文書、動画や音声を、パスだけでなく「表示」でそのまま見せるようにします。"},
       "compaction.prepare": {
         "name": "事前に圧縮しておく",
         "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、従来どおり上限に達してから圧縮します。"
@@ -822,6 +823,7 @@
     "context/part/system.group": "グループチャットの説明",
     "context/part/system.core": "コアの指示",
     "context/part/system.clicall": "スクリプトでのツール呼び出し",
+    "context/part/system.show": "show の案内",
     "context/part/system.style_lock": "スタイルロック",
     "context/part/system.skills": "スキル",
     "context/part/system.knowledge": "ナレッジベース",

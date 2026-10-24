@@ -525,7 +525,7 @@
 
 | `part` | 是什么 |
 |---|---|
-| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样的照它拆；对不上的（旧核心造的、人设改过，CX-2）逐块到快照的 system 里照先后找原文，找得到的各成一块，找不到的、改过的那几截并成 `system.other`。人设文件没了拼不出来的，只拆快照里单存了原文的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
+| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.show`（show 的那一句）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样的照它拆；对不上的（旧核心造的、人设改过，CX-2）逐块到快照的 system 里照先后找原文，找得到的各成一块，找不到的、改过的那几截并成 `system.other`。人设文件没了拼不出来的，只拆快照里单存了原文的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
 | `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`、`tools.deferred`（要先加载、只露名字的） |
 | `demos` | 示范对话 |
 | `summary` | 检查点的摘要 |

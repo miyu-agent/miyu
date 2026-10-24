@@ -307,6 +307,8 @@ fn look(
             Preset::Changed(chosen) => Agents::foreground(Some(&chosen.file)),
             _ => old.foreground,
         },
+        // show 的那一句照造会话时钉下的（施工 D-5 补二）：会话中途改了配置不跟。
+        show_hint: !old.no_show_hint,
         knowledge: listing,
         // 无工具的没有技能那一块（施工 P-16 下）：没有 `read`，列出来也读不了。
         skills: match &preset {

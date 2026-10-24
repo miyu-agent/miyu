@@ -28,6 +28,8 @@ pub(crate) struct Parts {
     pub(crate) group: Option<(i32, Option<u64>)>,
     /// 后台运行关着（施工 T-1 上，[`crate::agents::Agents::foreground`]）。
     pub(crate) foreground: bool,
+    /// show 的那一句开着（施工 D-5 补二，配置 `basesystem.show.system_hint`）：造会话时照配置，重拼照旧快照钉下的。
+    pub(crate) show_hint: bool,
     /// 她查得到的知识库那一块（施工 K-1 补，[`crate::knowledge::listing`]）：工具面上有知识库那两件的才有。
     pub(crate) knowledge: Option<String>,
     /// 她用得上的技能那一块（施工 X-10 上，[`crate::skills::listing`]）：工具面上有 `read` 的才有；换人格时照旧快照的。
@@ -64,12 +66,14 @@ pub(crate) fn laid(
 ) -> Result<(Snapshot, Option<Layout>), SourceError> {
     let sources = resources.sources_with(parts.texts)?;
     let tells = crate::agents::clicall::tells(&parts.face);
+    let shows = parts.show_hint && parts.face.iter().any(|tool| tool.name == "show");
     let mut ruler = Ruler::default();
     let mut snapshot =
         compose(parts.name.as_deref(), sources, parts.attended).with_tools(parts.face);
     ruler.mark(SystemPart::Persona, "", &snapshot.system);
     snapshot.memory = parts.memory;
     snapshot.foreground = parts.foreground;
+    snapshot.no_show_hint = !parts.show_hint;
     snapshot.plugin_tools = parts.plugin_tools;
     if !parts.roleplay {
         snapshot.reminder = None;
@@ -101,6 +105,7 @@ pub(crate) fn laid(
     snapshot = ruler.step(SystemPart::Clicall, snapshot, |it| {
         it.with_clicall(&lines, tells)
     });
+    snapshot = ruler.step(SystemPart::Show, snapshot, |it| it.with_show(&lines, shows));
     snapshot = ruler.step(SystemPart::Skills, snapshot, |it| {
         it.with_skills(parts.skills)
     });

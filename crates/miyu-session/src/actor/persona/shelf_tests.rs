@@ -216,6 +216,7 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         roleplay: true,
         group: None,
         foreground: false,
+        show_hint: true,
 
         knowledge: None,
         skills: None,

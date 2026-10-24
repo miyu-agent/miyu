@@ -32,6 +32,7 @@ fn lines() -> CoreLines {
         harness: String::new(),
         style_lock: String::new(),
         clicall: String::new(),
+        show: String::new(),
     }
 }
 
@@ -207,6 +208,7 @@ fn without_the_core_lines_the_system_is_as_before() {
         harness: String::new(),
         style_lock: String::new(),
         clicall: String::new(),
+        show: String::new(),
     };
     assert_eq!(
         tooled
@@ -263,6 +265,25 @@ fn the_clicall_line_is_its_own_paragraph_only_when_told() {
             "{}\n\nYou can write programs that call tools.",
             tooled.system
         )
+    );
+}
+
+/// show 的那一句（施工 D-5 补二，项目主人 10-24 要试）：工具面上有 show 的才带，接在后面单成一段；没有的 system 一字不变。
+#[test]
+fn the_show_line_is_its_own_paragraph_only_with_show() {
+    let tooled = crate::test_support::engineer()
+        .with_tools(vec![a_tool()])
+        .with_core_lines(&lines(), "Arch Linux", Shown::default());
+    let mut with = lines();
+    with.show = "Show what you make.\n".to_string();
+    assert_eq!(
+        tooled.clone().with_show(&with, false).system,
+        tooled.system,
+        "没有 show 的不带"
+    );
+    assert_eq!(
+        tooled.clone().with_show(&with, true).system,
+        format!("{}\n\nShow what you make.", tooled.system)
     );
 }
 

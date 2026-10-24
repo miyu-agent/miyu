@@ -92,6 +92,7 @@ pub(super) async fn draft(
             .as_ref()
             .map(|group| (setup.environment.offset.minutes(), group.recent)),
         foreground: Agents::foreground(preset.map(|chosen| &chosen.file)),
+        show_hint: opened.show_hint,
         knowledge: None,
         skills: None,
         profile: None,

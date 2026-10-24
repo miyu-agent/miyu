@@ -265,6 +265,7 @@ fn tree(context: &Context, namer: &Namer) -> Vec<Part> {
             SystemPart::Group => Part::leaf(*tokens, "system.group", None),
             SystemPart::Core => Part::leaf(*tokens, "system.core", None),
             SystemPart::Clicall => Part::leaf(*tokens, "system.clicall", None),
+            SystemPart::Show => Part::leaf(*tokens, "system.show", None),
             SystemPart::StyleLock => Part::leaf(*tokens, "system.style_lock", None),
             SystemPart::Skills => Part::leaf(*tokens, "system.skills", None),
             SystemPart::Knowledge => Part::leaf(*tokens, "system.knowledge", None),

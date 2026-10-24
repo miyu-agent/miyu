@@ -115,6 +115,7 @@ fn without_a_persona_a_changed_preset_still_swaps() {
         roleplay: true,
         group: None,
         foreground: false,
+        show_hint: true,
 
         knowledge: None,
         skills: None,
@@ -334,5 +335,37 @@ fn a_no_tools_session_stays_empty_when_a_package_is_installed() {
             assert!(snapshot.no_tools, "照旧记着无工具");
         }
         _ => panic!("看得成"),
+    }
+}
+
+/// show 的那一句照造会话时钉下的（施工 D-5 补二）：关着造的会话换了预设重拼，配置这时开着（默认）也不带；开着造的照带。
+#[test]
+fn a_rebuilt_snapshot_keeps_the_show_line_as_pinned() {
+    let line =
+        include_str!("../../../../../resources/software/basesystem/show/system.txt").trim_end();
+    let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
+    let tools = Catalog::in_packages([(
+        "basesystem",
+        vec![fake("read"), fake("shell"), fake("show")],
+    )])
+    .expect("合写法");
+    for pinned_off in [true, false] {
+        let (_scratch, root, mut refresh) = setup_in("preset-show", "", tools.clone());
+        assert!(refresh.snapshot.system.contains(line), "开着造的带");
+        if pinned_off {
+            refresh.snapshot.no_show_hint = true;
+            refresh.snapshot.system = refresh.snapshot.system.replace(&format!("\n\n{line}"), "");
+        }
+        write_preset(&root, "[tools]\nshell = false\n");
+        let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
+            panic!("改了要换");
+        };
+        assert_eq!(snapshot.no_show_hint, pinned_off);
+        assert_eq!(
+            snapshot.system.contains(line),
+            !pinned_off,
+            "{}",
+            snapshot.system
+        );
     }
 }

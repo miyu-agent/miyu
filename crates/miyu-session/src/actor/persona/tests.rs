@@ -55,6 +55,7 @@ fn setup_with(
         roleplay: true,
         group: group.map(|offset| (offset, None)),
         foreground: false,
+        show_hint: true,
 
         knowledge: None,
         skills: None,

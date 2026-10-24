@@ -1,6 +1,22 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
+    "basesystem": {
+      "properties": {
+        "show": {
+          "properties": {
+            "system_hint": {
+              "default": true,
+              "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。",
+              "title": "提醒 AI 用展示",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "clicall": {
       "properties": {
         "mcp": {

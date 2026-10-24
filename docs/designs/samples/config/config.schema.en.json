@@ -1,6 +1,22 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
+    "basesystem": {
+      "properties": {
+        "show": {
+          "properties": {
+            "system_hint": {
+              "default": true,
+              "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.",
+              "title": "Remind the AI to use Show",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "clicall": {
       "properties": {
         "mcp": {
