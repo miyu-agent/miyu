@@ -61,7 +61,7 @@ impl Listed {
     }
 
     /// 包 `id` 变了推的那一行。扩展的状态里没有这个包的不推；软件包列表里没有了的推 `entry: null`。
-    fn line(&self, core: &Core, id: &str, shaken: Shaken) -> Option<String> {
+    fn line(&self, core: &Core, id: &str, shaken: &Shaken) -> Option<String> {
         let line = match self {
             // 进度那一行广播时就写好了（施工 W-15）：只挑自己账号的。
             Listed::Knowledge(account) => {
@@ -159,7 +159,7 @@ async fn forward(
         };
         match got {
             Ok(id) => {
-                let Some(line) = listed.line(&core, &id, shaken) else {
+                let Some(line) = listed.line(&core, &id, &shaken) else {
                     continue;
                 };
                 if out.send(line).await.is_err() {
@@ -206,7 +206,7 @@ impl Subscriptions {
         *slot = Some(ListedForwarder::start(
             Arc::clone(core),
             listed.clone(),
-            shaken,
+            shaken.clone(),
             out.clone(),
         ));
         match listed {

@@ -194,6 +194,11 @@ async fn another_admin_writes_the_shared_system_layer() {
         listed.to_string().contains("shared"),
         "机主那一份看得到：{listed}"
     );
+    // 组里的管理员订得了软件包、扩展的流（列得出就该看得到它变）。
+    for stream in ["packages", "extensions"] {
+        let subscribed = bob.call("s", "subscribe", json!({"stream": stream})).await;
+        assert!(subscribed.get("result").is_some(), "{stream}: {subscribed}");
+    }
 }
 
 /// 在管理员模式里的头重连，握手那一条也带着 `scope`：照常握手。

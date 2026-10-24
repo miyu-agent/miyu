@@ -145,7 +145,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 握手的期限（施工 4-9 再补三上）：连上以后这么久还没握手成的，断开。
     let deadline = tokio::time::Instant::now() + core.hello_wait;
     loop {
-        let read = match (shaken, revoked.as_mut()) {
+        let read = match (shaken.as_ref(), revoked.as_mut()) {
             (Some(_), Some(revoked)) => {
                 let mine = via
                     .as_ref()
@@ -174,7 +174,9 @@ async fn read_all<R: AsyncRead + Unpin>(
         let line = match read {
             Ok(Read::Line(line)) => line,
             Ok(Read::TooLong) => {
-                let locale = shaken.map_or(Locale::En, |shaken| shaken.now(&core).locale);
+                let locale = shaken
+                    .as_ref()
+                    .map_or(Locale::En, |shaken| shaken.now(&core).locale);
                 // 超长的读不完，行界也找不回来了：回一句读不懂，断开。
                 tracing::warn!(target: "miyu::endpoint", "line too long, closed");
                 send(&out, wire::error(Value::Null, Refusal::PARSE, locale)).await;
@@ -183,7 +185,9 @@ async fn read_all<R: AsyncRead + Unpin>(
             Ok(Read::Closed) | Err(_) => break,
         };
         // 每说一句都照这时的 `ui.language` 重算这个连接的语言（施工 8-4）。
-        let peer = shaken.map(|shaken| shaken.now_as(&core, caller.acting_for()));
+        let peer = shaken
+            .as_ref()
+            .map(|shaken| shaken.now_as(&core, caller.acting_for()));
         let locale = peer.map_or(Locale::En, |peer| peer.locale);
         let request = match wire::parse(&line) {
             Incoming::Request(request) => request,
@@ -212,7 +216,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             acting_for: caller.acting_for(),
             reach: &reach,
             declared: &declared,
-            scoped: shaken.is_some_and(crate::hello::Shaken::scoped),
+            scoped: shaken.as_ref().is_some_and(crate::hello::Shaken::scoped),
         };
         if let Some(refusal) = checks::refuse(&core, &who, &request).await {
             let id = Value::String(request.id.as_str().to_string());
@@ -287,7 +291,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                     &core,
                     &mut subscriptions,
                     &request,
-                    (shaken, &caller),
+                    (shaken.clone(), &caller),
                     &out,
                 )
                 .await;

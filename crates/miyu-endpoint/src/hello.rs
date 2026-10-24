@@ -85,8 +85,8 @@ struct Caps {
     scope: bool,
 }
 
-/// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入，替谁干活。
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Shaken {
     /// `ui.language` 是 `auto` 时用哪一种：头报的 `locale` 照 [`UiSettings::language_for`] 算的。
     system: &'static str,
@@ -94,12 +94,14 @@ pub(crate) struct Shaken {
     input: bool,
     /// 认识管理员模式（施工 Y-12 下）。
     scope: bool,
+    /// 握手时替谁干活：给人看的字照他那一份配置的 `ui.language`（施工 Y-2 下下末，以前一律照机主的）。
+    whose: AccountId,
 }
 
 impl Shaken {
     /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。只拿语言、不装包的地方用它，`admin` 是假的；处理请求用 [`Shaken::now_as`]。
-    pub(crate) fn now(self, core: &Core) -> Peer {
-        let language = language_of(&core.config(), self.system);
+    pub(crate) fn now(&self, core: &Core) -> Peer {
+        let language = language_of(&core.mine(&self.whose).config(), self.system);
         Peer {
             locale: Locale::of(Some(language)),
             language,
@@ -110,7 +112,7 @@ impl Shaken {
     }
 
     /// 同 [`Shaken::now`]，`admin` 照这一刻替 `acting_for` 干活的人是不是管理员算（施工 Y-5 下下）：机主只比账号，不读组表。
-    pub(crate) fn now_as(self, core: &Core, acting_for: &AccountId) -> Peer {
+    pub(crate) fn now_as(&self, core: &Core, acting_for: &AccountId) -> Peer {
         Peer {
             admin: crate::login::admins::is_admin(core, acting_for),
             ..self.now(core)
@@ -118,12 +120,12 @@ impl Shaken {
     }
 
     /// `ui.language` 是 `auto` 时用哪一种。
-    pub(crate) fn system(self) -> &'static str {
+    pub(crate) fn system(&self) -> &'static str {
         self.system
     }
 
     /// 握手时声明了认识管理员模式（施工 Y-12 下）。
-    pub(crate) fn scoped(self) -> bool {
+    pub(crate) fn scoped(&self) -> bool {
         self.scope
     }
 }
@@ -224,14 +226,15 @@ pub(crate) async fn hello(
         via = via.label(),
         "connected"
     );
+    // 凭据认出来的账号（施工 Y-1 上）：登录令牌、密码连上的是那个账号；本机令牌、扩展的照连接原来的。
+    let account = via.account().unwrap_or(account);
     let shaken = Shaken {
         system: system(params.locale.as_deref()),
         input: params.caps.input,
         scope: params.caps.scope,
+        whose: account.clone(),
     };
     let language = shaken.now(core).language;
-    // 凭据认出来的账号（施工 Y-1 上）：登录令牌、密码连上的是那个账号；本机令牌、扩展的照连接原来的。
-    let account = via.account().unwrap_or(account);
     let mut result = json!({
         "protocol": PROTOCOL,
         "core": {"version": env!("CARGO_PKG_VERSION")},

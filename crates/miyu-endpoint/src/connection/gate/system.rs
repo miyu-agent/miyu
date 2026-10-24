@@ -67,7 +67,12 @@ pub(super) fn touches_system(method: &str, params: &Value) -> bool {
         || (matches!(method, "config.set" | "secret.set" | "secret.delete") && layer_is_system())
 }
 
-/// 机主以外的管理员平时多读得到的。
-pub(super) fn reads(method: &str) -> bool {
+/// 机主以外的管理员平时多读得到的：上面那几个，和订阅软件包、扩展的流（列得出就该看得到它变）。
+pub(super) fn reads(method: &str, params: &Value) -> bool {
     READS.contains(&method)
+        || (method == "subscribe"
+            && matches!(
+                params.get("stream").and_then(Value::as_str),
+                Some("packages" | "extensions")
+            ))
 }

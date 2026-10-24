@@ -54,7 +54,7 @@ pub(super) fn refuse(
             // 机主什么都调得了（扩展那一侧的方法也是）；组里别的人照成员的名单，加上读这台电脑的、改系统那一层的。
             let allowed = *account == core.admin
                 || touches
-                || system::reads(method)
+                || system::reads(method, params)
                 || members::allowed(method, params);
             (!allowed).then_some(Refusal::NOT_PERMITTED)
         }

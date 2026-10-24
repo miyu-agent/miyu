@@ -83,8 +83,8 @@ pub(super) async fn subscribe(
         Err(refusal) => (Err(refusal), None),
     };
     match (stream_of(request), shaken) {
-        (Ok(Stream::Config), _) => {
-            let system = shaken.map_or("en", Shaken::system);
+        (Ok(Stream::Config), shook) => {
+            let system = shook.as_ref().map_or("en", Shaken::system);
             subscriptions.add_config((core, caller.acting_for()), system, out);
             (Ok(json!({})), None)
         }

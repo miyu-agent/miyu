@@ -144,3 +144,30 @@ async fn a_members_session_runs_on_his_own_settings() {
         names(1)
     );
 }
+
+/// 给人看的字照这个人那一份的 `ui.language`（施工 Y-2 下下末）：bob 设成英文，他的连接说英文；机主照旧中文。
+#[tokio::test]
+async fn each_person_hears_his_own_language() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut owner = local(&core).await;
+    let mut bob = member(&core, "bob").await;
+    let set = set(&mut bob, "personal", "ui.language", json!("en")).await;
+    assert!(set.get("result").is_some(), "{set}");
+    let refused = bob.call("r", "fs.read", json!({"path": "/"})).await;
+    assert_eq!(refused["error"]["message"], "Not permitted.", "{refused}");
+    let refused = owner
+        .call("r", "account.disable", json!({"account": "nobody"}))
+        .await;
+    assert!(
+        refused["error"]["message"]
+            .as_str()
+            .is_some_and(|message| !message.is_ascii()),
+        "机主照旧中文：{refused}"
+    );
+    let mut again = member(&core, "carol").await;
+    let hello = again
+        .call("g", "config.get", json!({"keys": ["ui.language"]}))
+        .await;
+    assert!(hello.get("result").is_some(), "{hello}");
+}
