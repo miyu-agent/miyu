@@ -28,8 +28,8 @@
 
 ```json
 {
-  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. It sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
+  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. Without fork it sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}
 }
 ```
 
@@ -39,6 +39,7 @@
 | `prompt` | 是 | 整段交代：原样送进子会话，不加包装 |
 | `attachments` | 否 | 附件：同 `send_message` 的 `attachments`，记进交给子会话的那一句（施工 C-9） |
 | `persona` | 否 | 人格的编号（施工 P-2 补，走查 C5）：只能是这个会话列着的（端口的 `personas()`，同 `pool`：开会话时照这台机器上几层里写了 `[persona] subagent = true` 的人格填进 `enum`（施工 P-10 补，一个都没有的拿掉这个参数），进快照；说明后面一个人格一行 `<编号>: <名字> — <简单描述>`，名字、简单描述是 `persona.toml` 的 `name`、`summary`，挑英文的，缺一样给另一样，都没有的只有编号，施工 P-10）。交给端口，子会话照它造；不写、写 `null` 的是软件工程师 `engineer`。写错的同 `pool`，照参数不对列出能写的几个 |
+| `fork` | 否 | 布尔（施工 A-F 中，`agents.md`「fork 子代理」）：`true` 的，子会话从这一轮派它的那一步分叉，看得到这一轮之前的一切，模型、人格、快照照父会话；写了 `pool`、`persona` 的参数不对。不写、`false` 的照旧造一个空白的子会话 |
 | `pool` | 否 | 池的名字，不带 `@`：只能是这个会话列着的（施工 8-8 补，端口的 `pools()`）。交给端口，子会话记 `@<池>`；不写、写 `null` 的，子会话用父会话这时用的（`models.md`「怎么走」第三条第 4 条）。这个会话一个池都没列的，参数格式里没有它 |
 
 - 别的参数不认，也不报错。以前的会话快照里冻着 `tier`（施工 8-8 造的），她照旧写的不报错、不理它，照不写办。没有 `preset`：子会话一律照父会话的预设，写了也不理（2026-10-08 项目主人定：子代理只看得到池和人格）。
@@ -98,6 +99,7 @@ Started subagent j1: "查导出".
 |---|---|---|
 | 参数不对 | `common/bad-args.txt` | `common/bad-args`，字段 `error` |
 | 没有端口、端口说派不了 | `agent/not-started.txt` | `agent/not-started` |
+| fork 出来的又写了 `fork`（施工 A-F 中） | `agent/no-fork.txt`：`A fork cannot fork again. Do the work yourself.` | `agent/no-fork` |
 
 ### 给人看的字
 
@@ -107,6 +109,7 @@ Started subagent j1: "查导出".
 |---|---|---|
 | `agent/started`（`job`、`title`） | `派出去了：{job}` | `Started {job}` |
 | `agent/not-started` | 派不出去 | Could not start |
+| `agent/no-fork` | 分叉出来的不能再分叉 | A fork cannot fork |
 | `common/bad-args` | 见 `tools/read.md` | |
 
 ### 守着它的

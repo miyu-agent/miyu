@@ -181,6 +181,7 @@
     "history/not-here": "这里不能读别的会话",
     "agent/started": "派出去了：{job}",
     "agent/not-started": "派不出去",
+    "agent/no-fork": "分叉出来的不能再分叉",
     "jobs/listed": "列出 {count} 个任务",
     "jobs/none": "没有任务",
     "jobs/output": "读了 {job} 的输出",

@@ -17,7 +17,7 @@ use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_kernel::time::Timestamp;
-use miyu_session::{Child, NotWatched, Peek, Pending, SessionPort, peek};
+use miyu_session::{Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
 use miyu_store::index::Row;
 use miyu_store::log::{read_events, read_segments};
 use miyu_tool::{Log, MainSession, ReadLog, Stop};
@@ -60,6 +60,13 @@ impl SessionPort for Table {
         Box::pin(async move {
             let core = self.core()?;
             core.sessions.spawn(&core, child).await
+        })
+    }
+
+    fn fork(&self, child: ForkChild) -> Pending<'_, Result<SessionId, String>> {
+        Box::pin(async move {
+            let core = self.core()?;
+            core.sessions.fork_child(&core, child).await
         })
     }
 

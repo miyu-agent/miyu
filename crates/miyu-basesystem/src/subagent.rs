@@ -8,7 +8,8 @@
 //! 端口，子会话记 `@<池>`，不写的用父会话这时用的。以前的会话写 `tier` 不报错、不理它（[`Args`] 不认别的参数）。施工 P-2 补
 //! 加人格 `persona`，同池：只认这个会话列着的人格（端口的 `personas()`），没写的是软件工程师。预设不给她挑，子会话一律照父
 //! 会话的（2026-10-08 项目主人定）。施工 C-9 加附件 `attachments`：同 `send_message` 的（[`crate::attach`]），接在交代后面送进
-//! 子会话；有一个读不成、太大的，不派。
+//! 子会话；有一个读不成、太大的，不派。施工 A-F 中加 `fork`：子会话从这一轮派它的那一步分叉（`agents.md`「fork 子代理」），
+//! 写了池、人格的照参数不对，fork 出来的再 fork 照 `agent/no-fork.txt` 拒。
 
 use std::path::Path;
 
@@ -44,6 +45,8 @@ struct Texts {
     common: Common,
     started: Template,
     not_started: Template,
+    /// fork 出来的再 fork（施工 A-F 中，`agent/no-fork.txt`）。
+    no_fork: Template,
     attachments: attach::Texts,
 }
 
@@ -61,6 +64,9 @@ struct Args {
     /// 附件（施工 C-9）：她读得到的文件路径。
     #[serde(default)]
     attachments: Option<Vec<String>>,
+    /// fork（施工 A-F 中）：不写、写 `null`、`false` 的是不 fork。
+    #[serde(default)]
+    fork: Option<bool>,
 }
 
 /// 写了列表里没有的池（施工 P-2 补起人格也是）：原话照 `serde` 的 `unknown_variant`，列出能写的几个（`models.md`
@@ -88,6 +94,7 @@ impl Subagent {
                 common,
                 started: text("started", &["job", "title"])?,
                 not_started: text("not-started", &[])?,
+                no_fork: text("no-fork", &[])?,
             },
             foreground: say(&text("foreground", &[])?, &[]).trim_end().to_string(),
         })
@@ -128,6 +135,16 @@ impl Tool for Subagent {
             let Some(port) = call.agents.clone() else {
                 return not_started();
             };
+            // fork（施工 A-F 中）：模型、人格照父会话，写了池、人格的照参数不对；fork 出来的不能再 fork。
+            let fork = args.fork.unwrap_or(false);
+            if fork && (args.pool.is_some() || args.persona.is_some()) {
+                return texts.common.bad_args(
+                    &"`fork` keeps your model and persona, so leave out `pool` and `persona`",
+                );
+            }
+            if fork && port.forked() {
+                return Done::error(say(&texts.no_fork, &[])).said(said("agent/no-fork"));
+            }
             let pool = args.pool.as_deref();
             if let Some(pool) =
                 pool.filter(|pool| !port.pools().iter().any(|listed| listed == pool))
@@ -152,6 +169,7 @@ impl Tool for Subagent {
                 pool,
                 persona,
                 attached,
+                fork,
             };
             let Ok(spawned) = port.spawn(order).await else {
                 return not_started();

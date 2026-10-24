@@ -133,8 +133,17 @@ fn it_declares_a_title_the_task_and_a_pool() {
         .collect();
     assert_eq!(
         names,
-        ["attachments", "description", "persona", "pool", "prompt"]
+        [
+            "attachments",
+            "description",
+            "fork",
+            "persona",
+            "pool",
+            "prompt"
+        ]
     );
+    // fork（施工 A-F 中）：布尔，不进 `required`。
+    assert_eq!(parameters["properties"]["fork"]["type"], "boolean");
     assert_eq!(parameters["required"], json!(["description", "prompt"]));
     assert_eq!(
         parameters["properties"]["pool"],
@@ -152,8 +161,8 @@ fn it_declares_a_title_the_task_and_a_pool() {
     );
     assert!(
         spec.description
-            .contains("It sees nothing of this conversation"),
-        "交代要自己说得清那一句留着：{}",
+            .contains("Without fork it sees nothing of this conversation"),
+        "交代要自己说得清那一句留着，只对不 fork 的（施工 A-F 中）：{}",
         spec.description
     );
 }

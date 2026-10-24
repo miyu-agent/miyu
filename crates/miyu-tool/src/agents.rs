@@ -44,6 +44,9 @@ pub struct Order<'a> {
     pub persona: Option<&'a str>,
     /// 附件（施工 C-9）。
     pub attached: Vec<Attached>,
+    /// fork（施工 A-F 中，`agents.md`「fork 子代理」）：子会话从这一轮派它的那一步分叉，看得到这一轮之前的一切；`pool`、
+    /// `persona` 这时没有（工具已经查过），模型、人格照父会话。
+    pub fork: bool,
 }
 
 /// 派子代理：交 [`Order`]，拿回任务编号和子会话的编号。
@@ -58,6 +61,11 @@ pub trait AgentPort: Send + Sync {
     /// 这个会话能选的人格（施工 P-2 补）：同 [`AgentPort::pools`]，会话开局时拼进工具面的 `persona` 的 `enum`，照快照读回，
     /// 整个会话不变。
     fn personas(&self) -> &[String];
+
+    /// 这个会话自己是 fork 出来的（施工 A-F 中）：它不能再 fork（工具照它拒）。
+    fn forked(&self) -> bool {
+        false
+    }
 }
 
 /// 派出去一个子代理的 future。

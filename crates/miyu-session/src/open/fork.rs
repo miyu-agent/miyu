@@ -1,6 +1,7 @@
 //! 分叉（施工 C-8 上，`docs/blueprint/session/fork.md`）：照父会话落了盘的日志算分叉点和那一刻的权限、模型、快照，写好子会话
 //! 的第一条（带 `forked` 的 `session.created`，序号接着分叉点），交回分叉点。之后由调的一方照常载入它（载入认得 `forked`，
-//! 照它读父会话的日志当底子）。
+//! 照它读父会话的日志当底子）。fork 子代理（施工 A-F 中，[`Within`]）从父会话这一轮派它的那一步分叉，头几条多记那一步的
+//! 占位结果、收住那一轮。
 
 use std::fmt;
 use std::io;
@@ -9,9 +10,9 @@ use std::sync::Arc;
 
 use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, CommandId, Seq, SessionId};
+use miyu_kernel::id::{AccountId, CallId, CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Action, LoadError as Broken, Session, fork_plan};
+use miyu_kernel::session::{Action, LoadError as Broken, Session, fork_plan, fork_plan_at};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::{BuildError, Snapshot, SnapshotError};
 use miyu_store::blob::{BlobError, Blobs};
@@ -43,6 +44,18 @@ pub struct Fork<'a> {
     pub index: Option<Arc<SessionIndex>>,
     /// 跑完几轮封存（施工 C-8 下）：写进 `forked`。不封存的没有。
     pub seal_after: Option<NonZeroU32>,
+    /// fork 子代理（施工 A-F 中）：从派它的那次调用那一步分叉。普通分叉没有。
+    pub within: Option<Within>,
+}
+
+/// fork 子代理的分叉（施工 A-F 中）：派它的那次调用、子会话第几层、占位结果的字。
+pub struct Within {
+    /// 派它的那次调用：还在等结果的。
+    pub call: CallId,
+    /// 子会话第几层：父会话的加一。
+    pub depth: u32,
+    /// 那一步每个调用的占位结果（`core/tool-results/forked.txt`）。
+    pub placeholder: String,
 }
 
 /// 分叉不成。
@@ -50,7 +63,8 @@ pub struct Fork<'a> {
 pub enum ForkError {
     /// 父会话的日志打不开：没有这个会话，或者日志坏了。
     Log(OpenError),
-    /// 父会话自己是子会话或者分叉出来的：只能从主会话分叉。
+    /// 父会话自己是子会话或者分叉出来的：只能从主会话分叉。fork 子代理（施工 A-F 中）也能从普通子代理分叉，不能从 fork
+    /// 子代理、支线分叉。
     NotMain,
     /// 父会话的日志过不了账本、分叉点算不出来。
     Kernel(Broken),
@@ -96,6 +110,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         at,
         index,
         seal_after,
+        within,
     } = setup;
     let parent_dir = root.session_dir(owner, parent);
     let child_dir = root.session_dir(owner, &id);
@@ -107,11 +122,19 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             Some(Body::SessionCreated(created)) => created.clone(),
             _ => return Err(ForkError::Kernel(Broken::Empty)),
         };
-        // 子代理、分叉出来的都有父会话。
-        if created.parent.is_some() {
+        // 子代理、分叉出来的都有父会话。fork 子代理只看是不是分叉出来的：普通子代理也能派它。
+        let refused = match within {
+            Some(_) => created.forked.is_some(),
+            None => created.parent.is_some(),
+        };
+        if refused {
             return Err(ForkError::NotMain);
         }
-        let plan = fork_plan(&parent, &events).map_err(ForkError::Kernel)?;
+        let plan = match &within {
+            Some(within) => fork_plan_at(&parent, &events, within.call),
+            None => fork_plan(&parent, &events),
+        }
+        .map_err(ForkError::Kernel)?;
         let base: Vec<Event> = events
             .into_iter()
             .take_while(|event| event.seq <= plan.upto)
@@ -128,7 +151,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             oneshot: false,
             cwd: cwd.clone().or(created.cwd),
             parent: Some(parent.clone()),
-            depth: Some(1),
+            depth: Some(within.as_ref().map_or(1, |within| within.depth)),
             workspace_from: created.workspace_from.or_else(|| Some(parent.clone())),
             model: plan.model,
             persona: plan.persona,
@@ -144,7 +167,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
                 from: parent,
                 upto: plan.upto,
                 seal_after,
-                within: None,
+                within: plan.within,
             }),
         };
         // 这一份内核会话只用来查底子、写第一条：环境照记下的，时区不进第一条。
@@ -154,8 +177,21 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             dirs,
         };
         let first_id = id.clone();
-        let (_, actions) = Session::fork(id, &base, cause, by, at, child, policy, environment)
-            .map_err(ForkError::Kernel)?;
+        let (_, actions) = match &within {
+            Some(within) => Session::fork_within(
+                id,
+                &base,
+                &within.placeholder,
+                cause,
+                by,
+                at,
+                child,
+                policy,
+                environment,
+            ),
+            None => Session::fork(id, &base, cause, by, at, child, policy, environment),
+        }
+        .map_err(ForkError::Kernel)?;
         let first: Vec<Event> = actions
             .into_iter()
             .filter_map(|action| match action {

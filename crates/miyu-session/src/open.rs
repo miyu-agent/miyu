@@ -50,7 +50,7 @@ mod setup;
 pub use draft::preview_context;
 pub use error::{CreateError, LoadError};
 pub use face::preview;
-pub use fork::{Fork, ForkError, fork};
+pub use fork::{Fork, ForkError, Within, fork};
 pub use load::{load, load_placed};
 pub(crate) use scan::current_policy;
 pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace};
@@ -224,6 +224,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             preset: preset.clone(),
             images,
             personas: agents_personas,
+            resources: shipped.clone(),
+            forked: false,
         })
     });
     let preset_id = preset.clone();
@@ -358,6 +360,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
         room: room.clone(),
         plugins,
+        frozen: false,
     });
     let busy = actor.busy();
     let watched = actor.watched();

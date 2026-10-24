@@ -181,6 +181,7 @@
     "history/not-here": "ここでは他のセッションを読めません",
     "agent/started": "起動しました：{job}",
     "agent/not-started": "起動できません",
+    "agent/no-fork": "フォークからはフォークできません",
     "jobs/listed": "{count} 件のタスク",
     "jobs/none": "タスクはありません",
     "jobs/output": "{job} の出力を読みました",

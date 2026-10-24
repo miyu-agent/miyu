@@ -88,7 +88,7 @@ pub use memory::{
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError, PresetPlaces,
-    Workplace, create, fork, load, load_placed, preview, preview_context,
+    Within, Workplace, create, fork, load, load_placed, preview, preview_context,
 };
 pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
@@ -99,7 +99,7 @@ pub use route::{
 };
 pub use sandbox::SandboxCache;
 pub use shown::{Next, Shown};
-pub use spawn::{Child, Lineage, NotWatched, Pending, SessionPort};
+pub use spawn::{Child, ForkChild, Lineage, NotWatched, Pending, SessionPort};
 
 /// 运行日志的来源：`session`（`28-运行日志.md` 第二节）。
 const TARGET: &str = "miyu::session";

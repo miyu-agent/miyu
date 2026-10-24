@@ -62,6 +62,8 @@ pub(crate) struct Refresh {
     pub(crate) room: crate::memory::RoomCell,
     /// 每个场所开着的场所插件（施工 O-60）：回合开始照这一刻的重筛工具面。
     pub(crate) plugins: crate::VenuePlugins,
+    /// 快照冻住了（fork 子代理，施工 A-F 中）：一直用父会话那一份，请求前缀才和父会话、兄弟的一样，回合开始不换。
+    pub(crate) frozen: bool,
 }
 
 /// 看了一遍的结果。
@@ -92,11 +94,11 @@ impl Actor {
     /// 回合开始：看人格、预设的文件改了没有，工具目录换没换代。改了、换得了的，新策略交给内核放着，交回新快照的哈希。
     /// `values` 是这一轮冻结的配置：新打开的 `subagent` 照它填能选的池。
     pub(super) async fn refresh_persona(&mut self, values: Values) -> Option<ContentHash> {
-        // 裸的（整理会话，施工 D-1 上）不换：换了就拼回 system 和工具。
+        // 裸的（整理会话，施工 D-1 上）不换：换了就拼回 system 和工具。fork 子代理的（施工 A-F 中）也不换。
         let refresh = self
             .persona
             .clone()
-            .filter(|refresh| !refresh.snapshot.bare)?;
+            .filter(|refresh| !refresh.snapshot.bare && !refresh.frozen)?;
         let persona = refresh.snapshot.persona.clone();
         let now = refresh.tools.edition();
         let seen = now.clone();

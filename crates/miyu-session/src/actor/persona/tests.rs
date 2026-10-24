@@ -83,6 +83,7 @@ fn setup_with(
         projects: std::path::PathBuf::from("no-such-projects.json"),
         room: Default::default(),
         plugins: Default::default(),
+        frozen: false,
     };
     (scratch, root, refresh)
 }

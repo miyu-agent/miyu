@@ -16,7 +16,7 @@ use std::sync::Arc;
 use miyu_config::Values;
 use miyu_config::phrases::Label;
 use miyu_kernel::event::{Effect, JobKind, JobStarted, Permission};
-use miyu_kernel::id::{AccountId, CommandId, JobId, SessionId, VenueId};
+use miyu_kernel::id::{AccountId, CallId, CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Session};
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
@@ -103,6 +103,10 @@ pub(crate) struct Agents {
     pub(crate) images: bool,
     /// 派子代理能选的人格（施工 P-2 补）：同 `pools`，快照里 `subagent` 的 `persona` 的 `enum`（[`Agents::personas_in`]）。
     pub(crate) personas: Vec<String>,
+    /// 资源目录（施工 A-F 中）：派 fork 子代理时读占位那一句、交代前面的外壳。
+    pub(crate) resources: miyu_store::resources::ResourceRoot,
+    /// 这个会话自己是 fork 出来的（施工 A-F 中）：不能再 fork。
+    pub(crate) forked: bool,
 }
 
 /// 工具面上 `subagent` 那两个参数能选的（施工 8-8 补、P-2 补）：池照这时的配置，人格照这台机器上这时有的。
@@ -323,9 +327,12 @@ impl Agents {
     }
 
     /// 交给一次调用的端口：编号从 `ids` 领，子会话在这一轮的工作目录 `cwd`、加进来的目录 `dirs` 里，权限照派出去那一刻
-    /// 实际的 `permission`，模型照 `inherit`（施工 8-8），交代带的附件存进 `blobs`（这个会话的，施工 C-9）。
+    /// 实际的 `permission`，模型照 `inherit`（施工 8-8），交代带的附件存进 `blobs`（这个会话的，施工 C-9）。fork 子代理从
+    /// 这次调用 `call` 那一步分叉（施工 A-F 中）。
+    #[allow(clippy::too_many_arguments, reason = "一次调用的几样，各管各的")]
     pub(crate) fn for_call(
         self: &Arc<Agents>,
+        call: CallId,
         ids: Arc<JobIds>,
         (cwd, dirs): (String, Vec<String>),
         permission: Permission,
@@ -334,6 +341,7 @@ impl Agents {
     ) -> Arc<dyn AgentPort> {
         Arc::new(Spawner {
             agents: Arc::clone(self),
+            call,
             ids,
             cwd,
             dirs,

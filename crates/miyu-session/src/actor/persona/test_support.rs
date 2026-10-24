@@ -159,6 +159,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         projects: std::path::PathBuf::from("no-such-projects.json"),
         room: Default::default(),
         plugins: Default::default(),
+        frozen: false,
     };
     (scratch, root, refresh)
 }

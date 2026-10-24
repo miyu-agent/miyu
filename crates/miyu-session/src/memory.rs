@@ -259,10 +259,19 @@ pub(crate) fn scope(child: bool, opened: bool, given: MemoryScope) -> MemoryScop
     }
 }
 
-/// 会话是不是派出去的子代理：有父会话、不是分叉出来的（施工 R-13 三补）。分叉出来的支线（群里第二个人 @ 她时分的，C-8）照
-/// 父会话的记忆范围：群里她也照样记、照样想起（2026-10-11 项目主人定），支线也是。
+/// 会话是不是派出去的子代理：有父会话、不是分叉出来的支线（施工 R-13 三补）。分叉出来的支线（群里第二个人 @ 她时分的，C-8）
+/// 照父会话的记忆范围：群里她也照样记、照样想起（2026-10-11 项目主人定），支线也是。fork 子代理（施工 A-F 中）也是分叉
+/// 出来的，可它是派出去的子代理：照子代理不召回、不记。
 pub(crate) fn subagent(created: &SessionCreated) -> bool {
-    created.parent.is_some() && created.forked.is_none()
+    created.parent.is_some() && (created.forked.is_none() || fork_child(created))
+}
+
+/// 会话是不是 fork 子代理（施工 A-F 中）：分叉点在父会话的一轮当中（`forked.within`）。
+pub(crate) fn fork_child(created: &SessionCreated) -> bool {
+    created
+        .forked
+        .as_ref()
+        .is_some_and(|forked| forked.within.is_some())
 }
 
 /// 一个会话的回合索引：它的回合库（用到才开）、增量的 `TurnFeed`。

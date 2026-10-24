@@ -197,6 +197,7 @@
     "history/not-here": "Cannot read other sessions here",
     "agent/started": "Started {job}",
     "agent/not-started": "Could not start",
+    "agent/no-fork": "A fork cannot fork",
     "jobs/listed": "Listed {count} jobs",
     "jobs/listed/one": "Listed {count} job",
     "jobs/none": "No jobs",

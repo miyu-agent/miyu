@@ -193,8 +193,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let preset_id = created.preset.clone();
     let images = created.images;
     let room = crate::memory::room_cell(calls.as_ref());
-    // 分叉出来的不是任务，不交回报（施工 C-8 上）。
-    let upstream = match created.forked {
+    // fork 子代理（施工 A-F 中）：是派出去的子代理，照子代理回报、不问人、不召回不记；快照一直是父会话那一份，不重筛。
+    let fork_child = crate::memory::fork_child(&created);
+    // 分叉出来的支线不是任务，不交回报（施工 C-8 上）；fork 子代理是。
+    let upstream = match created.forked.as_ref().filter(|_| !fork_child) {
         Some(_) => None,
         None => Upstream::of(
             sessions.as_ref(),
@@ -208,7 +210,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let venue = created.venue.clone();
     // 分叉出来的有父会话，可它不是派出去做事的（施工 C-8 上）：子代理那一套（换快照时接的子代理说明、派子代理的层数、问不
     // 问人）照主会话办，快照和父会话的一样，请求的前缀才对得上。
-    let tasked = created.parent.clone().filter(|_| created.forked.is_none());
+    let tasked = created
+        .parent
+        .clone()
+        .filter(|_| crate::memory::subagent(&created));
     // 换预设时重新筛工具面要的（施工 P-2 下）：场所、父会话和第几层，照 `session.created`。
     let refresh_venue = created.venue.clone();
     let refresh_lineage = tasked.clone().map(|parent| Lineage {
@@ -243,6 +248,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             preset: created.preset.clone(),
             images,
             personas: agents_personas,
+            resources: resources.clone(),
+            forked: fork_child,
         })
     });
     let kept = blobs.clone();
@@ -431,6 +438,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
         room: room.clone(),
         plugins,
+        frozen: fork_child,
     });
     span.in_scope(|| {
         tracing::info!(

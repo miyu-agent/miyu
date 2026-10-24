@@ -283,7 +283,7 @@ async fn without_pools_to_offer_there_is_no_pool_parameter() {
     one_turn(&home, &handle, 1).await;
     assert_eq!(
         subagent_parameters(&script.requests()[0].1),
-        r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Persona for the subagent. Default: no persona.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"}},"required":["description","prompt"]}"#,
+        r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Persona for the subagent. Default: no persona.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}"#,
         "没有池的拿掉 pool；人格照这台机器上的填，带名字和简单描述（施工 P-2 补、P-10）"
     );
 }

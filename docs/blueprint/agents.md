@@ -30,6 +30,7 @@
 | `crates/miyu-session/src/jobs.rs`、`jobs/` | 执行器的任务表：后台进程活过那一次调用，输出落盘，结束了告诉会话，有计划地停下先记 `restarted` 再整组杀（施工 7-3）；派出去的任务照日志记着（`roster.rs`），列出、读、停（`query.rs`、`stop.rs`），子代理在做什么照它的日志看（`peek.rs`）（施工 7-4） |
 | `crates/miyu-session/src/actor/halt.rs` | 人用 `job.stop` 停一个、父会话停下这个会话时连它派的全停（施工 7-4）；撤销停掉那几轮派出去的（`undo_jobs`）、人删了的子代理当场记回报（`Halt::Deleted`）（施工 7-8） |
 | `crates/miyu-session/src/spawn.rs` | 造子会话、给别的会话发命令的端口（`SessionPort`），会话表造会话、载入时交进来（施工 7-5）；停下子会话、看它在做什么（施工 7-4） |
+| `crates/miyu-session/src/agents/spawner.rs`、`crates/miyu-endpoint/src/sessions/forked.rs`、`crates/miyu-store/src/resources/fork.rs`（施工 A-F 中） | fork 子代理：执行器读外壳、占位那一句，经会话表的端口 `SessionPort::fork` 分叉；会话表照父会话落了盘的日志写头几条、载入 |
 | `crates/miyu-session/src/agents.rs` | 执行器派子代理：照父会话填好子会话，经 `SessionPort` 造出来、送交代（施工 7-5，`session/tools.md`「派子代理」） |
 | `crates/miyu-session/src/report.rs` | 执行器交回报：补上任务编号、子会话，经 `SessionPort` 交给父会话；父会话载入以后叫起还没回报的子会话（施工 7-6） |
 | `crates/miyu-session/src/job_ids.rs` | 领任务编号：一个会话一份，照日志里用过的往下数，后台命令和子代理共用（施工 7-5、7-3） |
@@ -152,6 +153,17 @@
 7. 造不成、交代送不进去、核心正在停：这一次调用交回派不了，原因记进运行日志（`session/actor.md`「运行日志」），别的会话照常。领了的编号不回收；子会话造好了、交代没送进去的，留着一个空的子会话。
 8. 派到一半的空子会话（施工 7-8）：交代没送进去的（第 7 条），和父会话没来得及记下 `job.started` 就崩了的，父会话都认不得它。父会话载入以后在后台收掉（施工 V-2 三补：原来挡在载入的路上）：会话表里 `session.created` 的 `parent` 是它、它的日志里又没有这个子会话的 `job.started` 的，连同它们派的，在跑的停下，目录挪进回收处，最深的在前（照删会话，第七条第 5 条），一个记一行 `INFO orphan subagent removed`。只在父会话的日志里有没派成的 `subagent` 调用（以前造的会话里叫 `agent`，也算；结果里没有 `job.started`，或者还没有结果）时才去认：认要把会话表里每个会话的第一条都读一遍，平常的载入不为它慢下来（`protocol.md`「会话表」第 8 条）。
 9. 派到一半被打断的（施工 7-5 补，2026-10-11）：派子代理那次调用被掐掉（打断、来了一句话、收紧成只读），子会话已经造好、交代还没送进去、调用还没交回的，执行器停掉它（`Unclaimed` 守着，丢掉时停，交回了解除）；派完了、结果送回来时调用已经被掐掉的（内核不要这个结果，`job.started` 没记下），照结果里的 `job.started` 停掉它（`tools/back.rs`）。停的命令编号是 `<父会话>/<任务编号>/stop`，`by` 是父会话，记一行 `INFO unclaimed subagent stopped`。子会话留在会话表里，父会话下次载入时照第 8 条收掉。
+
+**一补、fork 子代理**（施工 A-F 中起，2026-10-24 项目主人要子代理能「从当前上下文分出去」，核心主会话定六点；内核见 `session/fork.md`「fork 子代理」）
+
+1. 她调 `subagent` 写 `fork: true`：子会话不是空白造的，是从父会话这一轮派它的那一步分叉（照 Claude Code 的 fork）。她这一轮读过、查到的它都看得到，交代可以短。
+2. 快照、工具面、模型、人格、预设全照父会话那一刻的（同一个快照哈希），请求前缀才和父会话一样：写了 `pool`、`persona` 的参数不对。子会话的场所说明拼不进 system，它是谁、交代谁写的、回报怎么走由交代前面的外壳说（`core/jobs/fork-directive.txt`，空一行接她写的交代，作为父会话发来的 `message.user` 送进去）。
+3. 执行器经会话表的端口（`SessionPort::fork`）分叉：会话表照父会话落了盘的日志（派它那一刻，那条带调用的回复一定已经落了盘：执行器照先后做动作，追加写完才跑工具），从这次调用那一步分叉，子会话头几条是那一步每个调用一条占位结果（`core/tool-results/forked.txt`，几个兄弟一字不差）、收住那一轮。父会话已经不在会话表里的不再造（同造子会话）。
+4. 它是子代理：`parent`、`depth`、`cause`（`<父会话>/<编号>`）、`job.started`、`child.reported`、`jobs`、`send_message`、撤销停、删父会话连带删都照子代理；不封存，报完父会话照样能留言让它接着干。
+5. 回合开始不重筛（`Refresh::frozen`）：快照一直是父会话那一份，人格、预设、工具目录后来改了也不换，前缀才不变。
+6. 记忆照子代理：不召回、不记回合（`memory::subagent` 认 `forked.within`）。工具面上照父会话有记忆的几件，调了也记不下。
+7. 不问人：同子代理，提问走父会话。
+8. 谁能 fork：主会话、没到深度上限的普通子代理。fork 出来的再写 `fork` 的，调用时拒（`agent/no-fork.txt`：工具面照父会话的，`subagent` 还在）；它派普通子代理照深度上限，到了上限的派不了（工具面上有 `subagent`，派的时候挡，照「派不了」）。
 
 **二、子会话怎么回报**（施工 7-6 做好了，细则见 `kernel/session.md`「向上回报」，执行器见 `session/actor.md`「向上回报」）
 

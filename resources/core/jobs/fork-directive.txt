@@ -1,0 +1,3 @@
+<fork>
+You are a fork of the agent above. It wrote the task below, not the person. Your final answer is your report and goes back to it on its own.
+</fork>

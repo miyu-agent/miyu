@@ -12,7 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use miyu_kernel::event::Permission;
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{AccountId, CallId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -32,6 +32,12 @@ pub trait SessionPort: Send + Sync {
 
     /// 照 `child` 造一个子会话：`session.created` 落了盘、会话表里有了它才交回编号。
     fn create(&self, child: Child) -> Pending<'_, Result<SessionId, String>>;
+
+    /// 照 `child` 造一个 fork 子代理（施工 A-F 中，`agents.md`「fork 子代理」）：照父会话落了盘的日志，从派它的那次调用那一步
+    /// 分叉，头几条落了盘、会话表里有了它才交回编号。默认造不了。
+    fn fork(&self, _child: ForkChild) -> Pending<'_, Result<SessionId, String>> {
+        Box::pin(async { Err("this core cannot fork a subagent".to_string()) })
+    }
 
     /// 叫起会话 `session`（施工 7-6）：没在跑的照会话表的规矩载入，在跑的什么都不做。父会话载入以后叫起还没回报的子会话：
     /// 崩了的由它们自己补报、重启打断的接着干（`agents.md` 第八条）。
@@ -150,4 +156,19 @@ pub struct Child {
     pub preset: Option<String>,
     /// 场所显示得了图片吗（施工 X-25）：父会话的。
     pub images: bool,
+}
+
+/// 造一个 fork 子代理要的（施工 A-F 中）：属主、场所、权限、快照、模型、人格都照父会话落了盘的日志，只交这几样。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForkChild {
+    /// 父会话和第几层。
+    pub lineage: Lineage,
+    /// 造它的命令编号：`session.created` 的 `cause`（`<父会话>/<编号>`），`by` 是父会话。
+    pub command: CommandId,
+    /// 属主：父会话的。
+    pub owner: AccountId,
+    /// 派它的那次调用：分叉点是那一步的 `message.assistant`。
+    pub call: CallId,
+    /// 那一步每个调用的占位结果（`core/tool-results/forked.txt`）。
+    pub placeholder: String,
 }

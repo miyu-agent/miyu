@@ -481,6 +481,7 @@ impl ResourceRoot {
     }
 }
 
+mod fork;
 mod goal;
 mod loading;
 mod mcp_tools;

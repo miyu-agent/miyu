@@ -1649,6 +1649,17 @@ Started subagent {job}: "{title}".
 The subagent could not be started.
 ```
 
+#### `software/basesystem/agent/no-fork.txt`
+
+- 什么时候加进来：fork 出来的子代理又调 `subagent` 写了 `fork`（施工 A-F 中）
+- token：12（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`not-started` 那一句同样量是 9）
+- 为什么加：fork 出来的工具面照父会话的，`subagent` 还在（前缀要一样），再 fork 只能调用时拒；说清不能再 fork、自己做（核心主会话 2026-10-24 定 fork 出来的不能再 fork）
+- 指纹：`bcbc27b1`
+
+```text
+A fork cannot fork again. Do the work yourself.
+```
+
 #### `software/basesystem/jobs/listed.txt`
 
 - 什么时候加进来：`list`：一个任务一行
@@ -4073,6 +4084,21 @@ Output, the last {shown} of {chars} characters (read all of it with jobs output)
 You are a subagent, started by another session to do one task. That parent session wrote the task, not a person. Your final answer is your report and goes back to the parent on its own. When the task is done, give that answer and stop, without checking back or waiting.
 ```
 
+### 消息，fork 子代理：交代前面，空一行接交代
+
+#### `core/jobs/fork-directive.txt`
+
+- 什么时候加进来：她调 `subagent` 写了 `fork`：作为父会话发来的 `message.user` 送进子会话，开它的第一轮（施工 A-F 中）
+- token：41（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面）
+- 为什么加：fork 子代理的快照就是父会话那一份（前缀要一样），子会话的场所说明（`subagent-venue.txt`）拼不进 system，它是谁、交代谁写的、回报怎么走改由交代前面这一段说：你是上面那个 agent 的 fork，交代是它写的、不是人，最后的回答就是回报、自己会送回去。照 Claude Code 的 fork 外壳（`<fork-boilerplate>`）的用意，只留这三样；那边的十条规矩（不闲聊、先提交再报……）不照搬
+- 指纹：`143c2b81`
+
+```text
+<fork>
+You are a fork of the agent above. It wrote the task below, not the person. Your final answer is your report and goes back to it on its own.
+</fork>
+```
+
 ### 人这边：子代理发来的留言（一块带标签的事实）
 
 #### `core/jobs/subagent-message-open.txt`
@@ -4595,14 +4621,14 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/subagent.json`
 
 - 什么时候加进来：会话的工具面里有 `subagent`：本机、没到深度上限的会话（每次请求都带）；`pool` 那一格会话开局时照配置拼，一个池都没列的没有它
-- token：141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）
-- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。
-- 指纹：`900cb319`
+- token：141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）；施工 A-F 中加 `fork`、说明第二句前面加 `Without fork`，2026-10-24 照项目主人给的端点、只带这一件量 441 → 473，多 32
+- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。
+- 指纹：`67333217`
 
 ```json
 {
-  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. It sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."}},"required":["description","prompt"]}
+  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. Without fork it sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}
 }
 ```
 

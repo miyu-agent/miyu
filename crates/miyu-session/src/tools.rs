@@ -304,6 +304,7 @@ impl Tools {
         let agents = self.agents.as_ref().map(|agents| {
             let ids = Arc::clone(&self.job_ids);
             agents.for_call(
+                call_id,
                 ids,
                 (cwd.clone(), dirs.clone()),
                 permission.clone(),
