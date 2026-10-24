@@ -186,30 +186,36 @@ async fn a_rebuilt_ledger_still_counts_the_members_turns() {
     assert_eq!(rows, [(json!("bob"), json!(1))], "{split}");
 }
 
-/// 把数据根 `from` 拷进 `to`，`from` 下面的 `state/` 不拷。
+/// 把数据根 `from` 拷进 `to`，`from` 下面的 `state/` 不拷。第一份核心的后台可能正在写临时文件（写完就改名）：列出来、拷的时候
+/// 已经没了的跳过（Windows CI 上撞到过）。
 fn copy_without_state(from: &std::path::Path, to: &std::path::Path) {
-    fn copy(from: &std::path::Path, to: &std::path::Path) {
+    fn gone(error: &std::io::Error) -> bool {
+        error.kind() == std::io::ErrorKind::NotFound
+    }
+    fn copy(from: &std::path::Path, to: &std::path::Path, top: bool) {
         std::fs::create_dir_all(to).expect("建得出");
-        for entry in std::fs::read_dir(from).expect("读得出") {
+        let entries = match std::fs::read_dir(from) {
+            Ok(entries) => entries,
+            Err(error) if gone(&error) => return,
+            Err(error) => panic!("读不出 {}：{error}", from.display()),
+        };
+        for entry in entries {
             let entry = entry.expect("读得出");
+            if top && entry.file_name() == "state" {
+                continue;
+            }
             let target = to.join(entry.file_name());
-            if entry.file_type().expect("看得出").is_dir() {
-                copy(&entry.path(), &target);
-            } else {
-                std::fs::copy(entry.path(), &target).expect("拷得了");
+            match entry.file_type() {
+                Ok(kind) if kind.is_dir() => copy(&entry.path(), &target, false),
+                Ok(_) => match std::fs::copy(entry.path(), &target) {
+                    Ok(_) => {}
+                    Err(error) if gone(&error) => {}
+                    Err(error) => panic!("拷不了 {}：{error}", entry.path().display()),
+                },
+                Err(error) if gone(&error) => {}
+                Err(error) => panic!("看不出 {}：{error}", entry.path().display()),
             }
         }
     }
-    for entry in std::fs::read_dir(from).expect("读得出") {
-        let entry = entry.expect("读得出");
-        if entry.file_name() == "state" {
-            continue;
-        }
-        let target = to.join(entry.file_name());
-        if entry.file_type().expect("看得出").is_dir() {
-            copy(&entry.path(), &target);
-        } else {
-            std::fs::copy(entry.path(), &target).expect("拷得了");
-        }
-    }
+    copy(from, to, true);
 }
