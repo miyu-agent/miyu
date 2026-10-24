@@ -121,7 +121,7 @@ pub(crate) async fn upgrade(
 async fn survey_core(core: &Arc<Core>, index: &Index) -> Result<Survey, Refusal> {
     let places = packages(core);
     let found: Vec<(String, Option<String>)> = core
-        .packages()
+        .system_packages()
         .iter()
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());

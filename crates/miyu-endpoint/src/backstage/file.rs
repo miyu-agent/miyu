@@ -41,7 +41,7 @@ pub(crate) async fn read(core: &Core, params: FileParams) -> Result<Value, Refus
 /// F-7），别的路径 `file_not_found`。没有这个包、没装的 `unknown_package`；两样都没有的 `no_page`；路径写错的 `bad_params`。
 fn located(core: &Core, id: &str, path: &str) -> Result<(PathBuf, Vec<String>), Refusal> {
     let segments = segments(path).ok_or(Refusal::BAD_PARAMS)?;
-    let packages = core.packages();
+    let packages = core.system_packages();
     let found = packages
         .iter()
         .find(|found| found.id == id)

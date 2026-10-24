@@ -41,7 +41,7 @@ pub(crate) struct EnableParams {
 /// `extension.status`：起来时读到的 `process` 包，照编号排。订阅扩展的推送时的回应也是它（施工 9-4 补）。
 pub(crate) fn status(core: &Core, peer: Peer) -> Value {
     let (switches, _) = read_switches(core);
-    let packages = core.packages();
+    let packages = core.system_packages();
     let listed: Vec<Value> = processes(&packages)
         .map(|(id, manifest)| one(core, id, manifest, &switches, peer))
         .collect();
@@ -148,7 +148,7 @@ pub(crate) async fn restart_process(
 /// 编号是 `id` 的 `process` 包的清单：没有、读不成的 `unknown_package`，是界面的 `not_an_extension`。
 fn extension(core: &Core, id: &str) -> Result<Manifest, Refusal> {
     let manifest = core
-        .packages()
+        .system_packages()
         .iter()
         .find(|found| found.id == id)
         .and_then(|found| found.read.as_ref().ok())

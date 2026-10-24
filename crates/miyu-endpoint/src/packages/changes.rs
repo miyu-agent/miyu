@@ -48,7 +48,7 @@ pub(super) fn snapshot(core: &Core) -> BTreeMap<String, Value> {
     };
     let places = packages(core);
     let mut items: BTreeMap<String, Value> = core
-        .packages()
+        .system_packages()
         .iter()
         .map(|found| {
             let item = listed(core, found, &places, &words, "en", false);

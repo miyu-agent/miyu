@@ -144,7 +144,7 @@ impl Core {
 
     /// 个人设置里删掉了 `service`：包里带同名服务的，开着（`bundle` 照开关，扩展照它在跑）的起回来。
     fn uncover(self: &Arc<Self>, service: &str) {
-        for found in self.packages().iter() {
+        for found in self.system_packages().iter() {
             let Ok(manifest) = &found.read else {
                 continue;
             };
@@ -183,7 +183,7 @@ pub(crate) fn server_of(key: &str) -> Option<&str> {
 
 /// 带叫 `service` 的服务的包的编号。
 pub(super) fn carrying(core: &Core, service: &str) -> Vec<String> {
-    core.packages()
+    core.system_packages()
         .iter()
         .filter(|found| {
             found

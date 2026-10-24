@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{Body, Effect, Event};
-use miyu_kernel::id::{CallId, JobId, Parent, SessionId};
+use miyu_kernel::id::{AccountId, CallId, JobId, Parent, SessionId};
 use miyu_store::blob::Blobs;
 use miyu_view::NestedItem;
 
@@ -54,8 +54,16 @@ pub(crate) async fn detail(
         }
         (None, Some(job), None) => {
             let job = JobId::parse(&job).map_err(|_| Refusal::BAD_PARAMS)?;
-            let (_, events) = super::events_of(core, &session).await?;
-            let nested = nested(core, peer, &session, &events, Parent::Job(job), after).await?;
+            let (owner, events) = super::events_of(core, &session).await?;
+            let nested = nested(
+                core,
+                peer,
+                (&session, &owner),
+                &events,
+                Parent::Job(job),
+                after,
+            )
+            .await?;
             Ok(json!({ "nested": nested }))
         }
         (None, None, Some(upto)) => compaction(core, &session, upto).await,
@@ -72,7 +80,15 @@ async fn call_detail(
     after: Option<u32>,
 ) -> Result<Value, Refusal> {
     let (owner, events) = super::events_of(core, session).await?;
-    let nested = nested(core, peer, session, &events, Parent::Call(call), after).await?;
+    let nested = nested(
+        core,
+        peer,
+        (session, &owner),
+        &events,
+        Parent::Call(call),
+        after,
+    )
+    .await?;
     let result = events.into_iter().rev().find_map(|event| match event.body {
         Body::ToolResult(result) if result.call_id == call => Some(result),
         _ => None,
@@ -101,12 +117,12 @@ async fn call_detail(
     Ok(reply)
 }
 
-/// 挂在 `parent` 下面的嵌套调用（施工 M-5 上）：日志里了结的加上会话这一刻在跑的（载入着才有），标题照连接的语言。一个都没有
-/// 的不读字。
+/// 挂在 `parent` 下面的嵌套调用（施工 M-5 上）：日志里了结的加上会话这一刻在跑的（载入着才有），标题照连接的语言、技能的名字
+/// 照会话属主 `owner` 看得到的（施工 U23 上下）。一个都没有的不读字。
 async fn nested(
     core: &Core,
     peer: Peer,
-    session: &SessionId,
+    (session, owner): (&SessionId, &AccountId),
     events: &[Event],
     parent: Parent,
     after: Option<u32>,
@@ -129,7 +145,7 @@ async fn nested(
     // 读字碰磁盘，同 `view.page` 拿到阻塞线程里。
     let (resources, titles, language) = (
         core.resources.clone(),
-        super::Titles::of(core),
+        super::Titles::of(core, owner),
         peer.language,
     );
     let texts = tokio::task::spawn_blocking(move || super::texts(&resources, language, &titles))

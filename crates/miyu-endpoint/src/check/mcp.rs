@@ -26,7 +26,7 @@ pub(super) fn personal(core: &Core, words: &Human, file: &str, text: &str) -> Ve
             said
         })
         .collect();
-    for found in core.packages().iter() {
+    for found in core.system_packages().iter() {
         let Ok(manifest) = &found.read else {
             continue;
         };
@@ -75,7 +75,7 @@ pub(super) fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         .iter()
         .filter_map(|server| warn(mine.clone(), &server.name, HOME_PACKAGE))
         .collect();
-    for found in core.packages().iter() {
+    for found in core.system_packages().iter() {
         let Ok(manifest) = &found.read else {
             continue;
         };

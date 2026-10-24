@@ -72,7 +72,7 @@ pub(crate) struct Owners {
 
 /// 照这时的清单、配置算 [`Owners`]。
 pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
-    let packages = core.packages();
+    let packages = core.system_packages();
     let platform = packages
         .iter()
         .find(|found| found.id == caller.as_str())

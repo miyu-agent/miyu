@@ -72,7 +72,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     // 要条目的：投影要的字照这个连接的语言读，改了多少行照属主的 blob 算。
     let view = match params.view {
         true => Some((
-            (core.resources.clone(), Titles::of(core)),
+            (core.resources.clone(), Titles::of(core, &owner)),
             peer.language,
             Blobs::new(core.root.blobs(&owner)),
         )),
@@ -120,13 +120,14 @@ pub(crate) fn texts(
     Ok(texts)
 }
 
-/// 投影兜底用的给人看的名字从哪来：找技能的地方（施工 9-8 四补：这一刻装了的包、数据根、管理员，拿到阻塞线程里再找），工具
+/// 投影兜底用的给人看的名字从哪来：找技能的地方（施工 9-8 四补：会话属主看得到的包、数据根、属主，施工 U23 上下；拿到阻塞线程里再找），工具
 /// 目录里这一刻的工具交的显示名（施工 9-8 六补：脚本、MCP 的、扩展的工具，照语言）。
 #[derive(Clone)]
 pub(crate) struct Titles {
     packages: Arc<Vec<Found>>,
     root: DataRoot,
-    admin: AccountId,
+    /// 会话属主（施工 U23 上下：原来一律是管理员，成员自己的技能没有显示名）。
+    owner: AccountId,
     tools: BTreeMap<String, BTreeMap<String, String>>,
     /// 工具目录里这一刻的工具自己说的标题后面跟哪个参数（施工 9-8 十一补，网页报的：扩展登记的 `subject` 没进标题）。
     subjects: BTreeMap<String, String>,
@@ -135,7 +136,8 @@ pub(crate) struct Titles {
 }
 
 impl Titles {
-    pub(crate) fn of(core: &Core) -> Titles {
+    /// 会话属主 `owner` 看得到的（施工 U23 上下，[`Core::packages_of`]）。
+    pub(crate) fn of(core: &Core, owner: &AccountId) -> Titles {
         let catalog = core.tools();
         let tools = catalog
             .specs()
@@ -157,9 +159,9 @@ impl Titles {
             .collect();
         Titles {
             packages_of,
-            packages: core.packages(),
+            packages: core.packages_of(owner),
             root: core.root.clone(),
-            admin: core.admin.clone(),
+            owner: owner.clone(),
             tools,
             subjects,
         }
@@ -167,7 +169,7 @@ impl Titles {
 
     /// 技能的名字到给人看的名字，照语言 `language` 挑，没写的照名字。碰磁盘。
     fn skills(&self, language: &str) -> BTreeMap<String, String> {
-        miyu_store::skills::find(&self.packages, &self.root, &self.admin)
+        miyu_store::skills::find(&self.packages, &self.root, &self.owner)
             .0
             .into_iter()
             .map(|skill| {

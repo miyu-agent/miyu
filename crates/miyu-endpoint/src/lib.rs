@@ -204,6 +204,8 @@ pub struct Core {
     plugins: miyu_session::VenuePlugins,
     /// 软件包清单（施工 9-1 上，`packages.rs`）：起来时读一次；装、卸以后当场换成重读的一份（施工 F-5 上）。
     packages: std::sync::RwLock<Arc<Vec<miyu_store::packages::Found>>>,
+    /// 每人一份装着的包（施工 U23 上下，`packages/own.rs`）：系统那一份接上他自己那一层，用到时造、装卸以后清掉。
+    own_packages: packages::own::Own,
     /// 登记上的脚本（施工 X-12 中，`scripts.rs`）。
     scripts: scripts::Scripts,
     /// 这一份核心编进来的内置包（施工 F-2、F-5 上）：装卸以后重读清单时照它标没编进来的。没设的不标（测试里造的核心）。
@@ -312,6 +314,7 @@ impl Core {
             venues: tokio::sync::Mutex::new(()),
             plugins: miyu_session::VenuePlugins::default(),
             packages: std::sync::RwLock::new(Arc::new(found)),
+            own_packages: packages::own::Own::default(),
             scripts: scripts::Scripts::default(),
             built_in: None,
             packaging: tokio::sync::Mutex::new(()),
@@ -379,16 +382,6 @@ impl Core {
     pub fn with_builtins(mut self, builtins: Arc<dyn builtins::Builtins>) -> Core {
         self.builtins = Some(builtins);
         self
-    }
-
-    /// 这时的软件包清单（施工 F-5 上：装卸以后当场换）。
-    pub fn packages(&self) -> Arc<Vec<miyu_store::packages::Found>> {
-        Arc::clone(
-            &self
-                .packages
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
     }
 
     /// 同一份家底，配置照 `config`（施工 8-2）：核心起来时读好交进来。没设的全是默认值，只认端点自己的两项。

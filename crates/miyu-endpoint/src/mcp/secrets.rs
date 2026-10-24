@@ -91,7 +91,7 @@ impl Core {
             tracing::info!(target: TARGET, package = HOME_PACKAGE, service = server.name.as_str(), why = "secret changed", secret, "mcp restarted");
             self.restart_home_mcp(&server.name).await;
         }
-        for found in self.packages().iter() {
+        for found in self.system_packages().iter() {
             let Ok(manifest) = &found.read else {
                 continue;
             };

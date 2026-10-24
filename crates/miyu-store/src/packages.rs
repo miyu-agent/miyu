@@ -43,8 +43,10 @@ pub const BIN: &str = "bin";
 pub enum Layer {
     /// 随发行附带的，只读。
     Shipped,
-    /// 管理员自己装的。
+    /// 系统那一层：管理员装的（施工 U23 上上起在 `system/packages/`，协议上照旧叫 `home`）。
     Home,
+    /// 这个账号自己装的（施工 U23 上下，设计 06 U23「每人自己装」）：`home/<账号>/packages/`，只对他自己生效。
+    User,
 }
 
 impl Layer {
@@ -53,12 +55,13 @@ impl Layer {
         match self {
             Layer::Shipped => "shipped",
             Layer::Home => "home",
+            Layer::User => "user",
         }
     }
 }
 
 /// 读到的一份清单。
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Found {
     /// 编号：包文件夹的名字。
     pub id: String,
@@ -94,6 +97,18 @@ pub enum Issue {
     Unreadable(io::Error),
 }
 
+/// 拷一份（施工 U23 上下：每人一份装着的包照系统那一份接上他自己那一层）：读不了的照种类和原话另造一个，别的照抄。
+impl Clone for Issue {
+    fn clone(&self) -> Issue {
+        match self {
+            Issue::Wrong(problem) => Issue::Wrong(problem.clone()),
+            Issue::Unreadable(error) => {
+                Issue::Unreadable(io::Error::new(error.kind(), error.to_string()))
+            }
+        }
+    }
+}
+
 /// 软件包清单的两层。
 #[derive(Debug, Clone)]
 pub struct Packages {
@@ -117,6 +132,41 @@ impl Packages {
         }
     }
 
+    /// 账号 `account` 看得到的三层（施工 U23 上下）：[`Packages::new`] 的两层，加他自己装的那一层 `home/<账号>/packages/`
+    /// （[`Layer::User`]）。他那一层和系统那一层是同一个目录的（挪不成那一次，[`migrate::system_layer`]）不另读。装、卸照旧只动
+    /// 系统那一层（[`Packages::home_dir`]）。
+    pub fn of_account(
+        resources: &ResourceRoot,
+        root: &DataRoot,
+        admin: &AccountId,
+        account: &AccountId,
+    ) -> Packages {
+        let mut packages = Packages::new(resources, root, admin);
+        let own = root.account_dir(account).join("packages");
+        if packages.home_dir() != Some(own.as_path()) {
+            packages.dirs.push((Layer::User, own));
+        }
+        packages
+    }
+
+    /// 系统那一份 `system`（核心手里核对过的，[`Packages::read`] 读的）接上账号自己那一层（[`Packages::of_account`]），照
+    /// [`Packages::read`] 的规矩认撞没撞：他那一层读在最后，同编号、子命令名、功能编号撞了的报在他那份上（施工 U23 上下：先到
+    /// 先得，「自己的盖过系统的」等 U23 下），系统那几份原样不动。没有他那一层的交回系统那一份。
+    pub fn read_over(&self, system: &[Found]) -> Vec<Found> {
+        let mut found = system.to_vec();
+        found.extend(
+            self.dirs
+                .iter()
+                .filter(|(layer, _)| *layer == Layer::User)
+                .flat_map(|(layer, dir)| {
+                    files(dir)
+                        .into_iter()
+                        .map(move |(id, path)| read_one(*layer, id, path))
+                }),
+        );
+        self.checked(found)
+    }
+
     /// 只有出厂那一层（施工 9-1 下）：生成配置的样本照出厂带的包，和数据根无关。状态目录没有意义，是空的。
     pub fn shipped(resources: &ResourceRoot) -> Packages {
         Packages {
@@ -131,7 +181,7 @@ impl Packages {
     /// 卸掉的出厂的包（施工 F-5 上，家目录记了一笔的）不在里面。
     pub fn read(&self) -> Vec<Found> {
         let removed = self.removed();
-        let mut found: Vec<Found> = self
+        let found: Vec<Found> = self
             .dirs
             .iter()
             .flat_map(|(layer, dir)| {
@@ -140,15 +190,13 @@ impl Packages {
                     .map(move |(id, path)| (*layer, id, path))
             })
             .filter(|(layer, id, _)| !(*layer == Layer::Shipped && removed.contains(id)))
-            .map(|(layer, id, path)| Found {
-                read: std::fs::read_to_string(&path)
-                    .map_err(Issue::Unreadable)
-                    .and_then(|text| package::read_for(&text, RUNNING).map_err(Issue::Wrong)),
-                id,
-                layer,
-                path,
-            })
+            .map(|(layer, id, path)| read_one(layer, id, path))
             .collect();
+        self.checked(found)
+    }
+
+    /// 照编号排（同一个编号先读的层在前），认撞没撞（[`Packages::read`]）。
+    fn checked(&self, mut found: Vec<Found>) -> Vec<Found> {
         found.sort_by(|one, other| (&one.id, one.layer).cmp(&(&other.id, other.layer)));
         duplicates(&mut found);
         taken(&mut found);
@@ -392,6 +440,18 @@ fn features_taken(found: &mut [Found]) {
     }
 }
 
+/// 读一份：层 `layer`、编号 `id`、清单在 `path`。
+fn read_one(layer: Layer, id: String, path: PathBuf) -> Found {
+    Found {
+        read: std::fs::read_to_string(&path)
+            .map_err(Issue::Unreadable)
+            .and_then(|text| package::read_for(&text, RUNNING).map_err(Issue::Wrong)),
+        id,
+        layer,
+        path,
+    }
+}
+
 /// 声明了系统账号、编号和管理员的账号一样的：报 `account_taken`，整份不收（施工 O-4 下）。
 fn accounts_taken(found: &mut [Found], admin: &AccountId) {
     for one in found.iter_mut() {
@@ -406,5 +466,7 @@ fn accounts_taken(found: &mut [Found], admin: &AccountId) {
     }
 }
 
+#[cfg(test)]
+mod own_tests;
 #[cfg(test)]
 mod tests;

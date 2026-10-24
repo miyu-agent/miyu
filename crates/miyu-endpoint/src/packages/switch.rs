@@ -58,7 +58,7 @@ pub(crate) fn switchable(core: &Core, id: &str) -> Result<(Manifest, PathBuf), R
 
 /// 包 `id` 现在的清单、是不是卸掉了的出厂包；没有的 `unknown_package`。
 fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, PathBuf, bool), Refusal> {
-    if let Some(found) = core.packages().iter().find(|found| found.id == id) {
+    if let Some(found) = core.system_packages().iter().find(|found| found.id == id) {
         let manifest = found
             .read
             .as_ref()
@@ -170,7 +170,7 @@ pub(crate) async fn restart(
 fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
-    if let Some(found) = core.packages().iter().find(|found| found.id == id) {
+    if let Some(found) = core.system_packages().iter().find(|found| found.id == id) {
         return Ok(listed(core, found, &places, &words, peer.language, false));
     }
     let removed = places.read_removed();

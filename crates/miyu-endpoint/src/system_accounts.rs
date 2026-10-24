@@ -18,7 +18,7 @@ const TARGET: &str = "miyu::endpoint";
 impl Core {
     /// 这次起来认的系统账号，照编号排。
     pub(crate) fn system_accounts(&self) -> Vec<AccountId> {
-        miyu_store::packages::system_accounts(&self.packages())
+        miyu_store::packages::system_accounts(&self.system_packages())
     }
 
     /// `account` 是不是这次起来认的系统账号。
@@ -46,7 +46,7 @@ impl Core {
 
     /// 这次起来认的带进程的包的账号（施工 Y-5 中上），照编号排：平台桥在里面。
     pub(crate) fn package_accounts(&self) -> Vec<AccountId> {
-        miyu_store::packages::package_accounts(&self.packages())
+        miyu_store::packages::package_accounts(&self.system_packages())
     }
 
     /// 连接是谁：核心拉起的带进程的包 `package` 是它自己的账号（施工 Y-5 中上），别的是管理员（本机连上来的都是他）。

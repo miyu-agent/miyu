@@ -98,7 +98,7 @@ pub(crate) async fn install(
     }
     let synced = super::sync::sync(core, false).await?;
     let installed: BTreeSet<String> = core
-        .packages()
+        .system_packages()
         .iter()
         .map(|found| found.id.clone())
         .collect();
@@ -241,7 +241,7 @@ fn preview(steps: &[Step<'_>], core: &Core) -> Value {
             _ => answer[kind.as_str()] = json!(names),
         }
     }
-    let now = core.packages();
+    let now = core.system_packages();
     if let Some(old) = now.iter().find(|one| one.id == entry.id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
         answer["replaces"] = json!({ "version": version });

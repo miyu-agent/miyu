@@ -31,7 +31,7 @@ const TARGET: &str = "miyu::endpoint";
 pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
     let scope = crate::scope::scope(core, account);
     Personas::new(&core.resources, &core.root, &scope.user)
-        .with_packages(&crate::packages::folders(core))
+        .with_packages(&crate::packages::folders(core, account))
         .with_system_accounts(core.system_accounts())
         .with_keeper(core.admin.clone())
 }

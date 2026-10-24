@@ -55,7 +55,7 @@ pub(crate) async fn owns(core: &Arc<Core>, params: OwnsParams) -> Result<Value, 
     if !wanted.is_absolute() {
         return Err(Refusal::BAD_PARAMS);
     }
-    let now = core.packages();
+    let now = core.system_packages();
     let folders: Vec<(String, Layer, PathBuf)> = now
         .iter()
         .map(|one: &Found| (one.id.clone(), one.layer, one.files_dir()))
@@ -107,7 +107,7 @@ pub(crate) fn drift(root: &Path, id: &str, folder: &Path) -> Option<Drift> {
 
 /// 家目录里本地库记了的包，照编号排：编号、包目录。只要 `only` 的那一个（写了的话）。
 pub(crate) fn recorded(core: &Core, only: Option<&str>) -> Vec<(String, PathBuf)> {
-    let now = core.packages();
+    let now = core.system_packages();
     let mut all: Vec<(String, PathBuf)> = now
         .iter()
         .filter(|one| one.layer == Layer::Home)
@@ -122,7 +122,7 @@ pub(crate) fn recorded(core: &Core, only: Option<&str>) -> Vec<(String, PathBuf)
 /// `package` 的只查它，没装的 `unknown_package`。
 pub(crate) async fn check(core: &Arc<Core>, params: CheckParams) -> Result<Value, Refusal> {
     if let Some(id) = &params.package
-        && !core.packages().iter().any(|one| &one.id == id)
+        && !core.system_packages().iter().any(|one| &one.id == id)
     {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }

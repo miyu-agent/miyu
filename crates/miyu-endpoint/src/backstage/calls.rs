@@ -105,7 +105,7 @@ pub(crate) async fn call(
     from: Option<&str>,
     params: CallParams,
 ) -> Result<Value, Refusal> {
-    let packages = core.packages();
+    let packages = core.system_packages();
     let manifest = |id: &str| {
         packages
             .iter()

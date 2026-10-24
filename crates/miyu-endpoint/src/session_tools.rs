@@ -151,7 +151,7 @@ pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<
 
 /// 包是内置的（`builtin`）还是装的（`package`），和照连接的语言的名字；清单读不出的算内置、名字照编号。
 pub(crate) fn package_of(core: &Core, language: &str, package: &str) -> (&'static str, String) {
-    let packages = core.packages();
+    let packages = core.system_packages();
     let manifest = packages
         .iter()
         .find(|found| found.id == package)

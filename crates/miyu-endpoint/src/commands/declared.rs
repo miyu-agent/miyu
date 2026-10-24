@@ -31,7 +31,7 @@ pub(crate) struct Declared {
 /// 装着的扩展声明的全部命令（清单读成了的），照名字排；和登记表撞名的不算。只看核心手里的清单，不碰磁盘。
 pub(crate) fn found(core: &Core) -> Vec<Declared> {
     let mut all: Vec<Declared> = core
-        .packages()
+        .system_packages()
         .iter()
         .filter_map(|one| Some((one.id.clone(), one.read.as_ref().ok()?)))
         .flat_map(|(package, manifest)| {

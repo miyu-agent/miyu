@@ -16,7 +16,7 @@ use crate::refusal::Refusal;
 pub(crate) async fn clean(core: &Arc<Core>) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
     let keep: BTreeSet<String> = core
-        .packages()
+        .system_packages()
         .iter()
         .filter_map(|found| {
             let version = found.read.as_ref().ok()?.version.clone()?;

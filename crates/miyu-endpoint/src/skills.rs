@@ -35,7 +35,11 @@ pub(crate) use remove::remove;
 ///
 /// 找的线程崩了：内部出错。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
-    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
+    let (packages, root, admin) = (
+        core.packages_of(account),
+        core.root.clone(),
+        account.clone(),
+    );
     let found = tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &admin).0;
         (found, packages)

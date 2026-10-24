@@ -312,7 +312,7 @@ fn manifests_of(core: &Arc<Core>) -> settings::Manifests {
     let core = Arc::downgrade(core);
     Box::new(move || {
         core.upgrade()
-            .map(|core| settings::manifests(&core.packages()))
+            .map(|core| settings::manifests(&core.system_packages()))
             .unwrap_or_default()
     })
 }

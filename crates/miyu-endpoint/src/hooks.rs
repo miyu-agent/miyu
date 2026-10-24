@@ -82,7 +82,7 @@ impl HooksPort for Hooks {
 fn asked(core: &Core, tools: &[String]) -> Vec<(String, Peer)> {
     let catalog = core.tools();
     let mut asked: Vec<(String, Peer)> = core
-        .packages()
+        .system_packages()
         .iter()
         .filter(|found| {
             found.read.as_ref().is_ok_and(|manifest| {

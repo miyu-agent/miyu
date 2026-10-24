@@ -174,7 +174,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
 /// 包 `package` 的工具归得上的：清单写了 `[features]`、又不是只有一个功能的，是它列的工具名（施工 T-2，归法同
 /// `miyu_policy::features::Features::of_tool`）。没写的整个包算一个功能、只写了一个功能的都归它、清单读不成的，没有：不查。
 fn listed(core: &Core, package: &str) -> Option<BTreeSet<String>> {
-    let packages = core.packages();
+    let packages = core.system_packages();
     let manifest = packages
         .iter()
         .find(|one| one.id == package)?

@@ -33,7 +33,7 @@ pub async fn query(
     let (package, id) = source
         .split_once('/')
         .ok_or_else(|| Asked::Failed("not an extension source".to_string()))?;
-    let packages = core.packages();
+    let packages = core.system_packages();
     let declared = packages
         .iter()
         .filter(|found| found.id == package)

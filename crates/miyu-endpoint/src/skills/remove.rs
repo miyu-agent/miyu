@@ -39,7 +39,11 @@ pub(crate) async fn remove(
         return Err(Refusal::BAD_PARAMS);
     }
     // 只删调用者自己放的（施工 Y-2 中上）：系统区的、包里的照「随包来的」拒。
-    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
+    let (packages, root, admin) = (
+        core.packages_of(account),
+        core.root.clone(),
+        account.clone(),
+    );
     let home = core.home.clone();
     tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &admin).0;

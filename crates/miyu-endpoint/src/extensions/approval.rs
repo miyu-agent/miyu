@@ -25,7 +25,7 @@ fn declared(manifest: &Manifest) -> &[Capability] {
 
 /// 包 `id` 是不是出厂的。
 fn shipped(core: &Core, id: &str) -> bool {
-    core.packages()
+    core.system_packages()
         .iter()
         .any(|found| found.id == id && found.layer == Layer::Shipped)
 }
@@ -62,7 +62,7 @@ pub(crate) fn held(core: &Core, package: &str, serving: Option<&AccountId>) -> V
     if serving.is_some_and(|person| !crate::login::admins::is_admin(core, person)) {
         return Vec::new();
     }
-    let packages = core.packages();
+    let packages = core.system_packages();
     let Some(manifest) = packages
         .iter()
         .find(|found| found.id == package)

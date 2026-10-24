@@ -32,7 +32,7 @@ pub(crate) async fn installing(
             .map_err(|_| Refusal::INTERNAL)?;
     let files = files.map_err(|_| Refusal::PATH_UNREADABLE)?;
     let mut answer = carries(core, peer, &id, &manifest, &content);
-    let now = core.packages();
+    let now = core.system_packages();
     if let Some(old) = now.iter().find(|one| one.id == id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
         answer.insert("replaces".into(), json!({ "version": version }));
@@ -74,7 +74,7 @@ pub(crate) fn enabling(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, 
 
 /// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（系统配置、个人设置里写了的键）、有没有状态目录。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
-    let found = core.packages();
+    let found = core.system_packages();
     let one = removable(&found, id)?;
     let mut answer = Map::new();
     answer.insert("package".into(), json!(id));

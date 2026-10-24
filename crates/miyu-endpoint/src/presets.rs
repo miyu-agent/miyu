@@ -30,7 +30,7 @@ const TARGET: &str = "miyu::endpoint";
 pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
     let scope = crate::scope::scope(core, account);
     Presets::new(&core.resources, &core.root, &scope.user)
-        .with_packages(&crate::packages::folders(core))
+        .with_packages(&crate::packages::folders(core, account))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（个人设置压着系统配置，都没写的是出厂的 `full`）。指着没有
@@ -235,7 +235,11 @@ pub(super) struct Carried {
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
 pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
-    let (packages, root, admin) = (core.packages(), core.root.clone(), account.clone());
+    let (packages, root, admin) = (
+        core.packages_of(account),
+        core.root.clone(),
+        account.clone(),
+    );
     let skills =
         tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &admin).0)
             .await

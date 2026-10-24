@@ -211,7 +211,7 @@ fn configured(core: &Core, service: &str) -> bool {
         .now()
         .iter()
         .any(|server| server.name == service)
-        || core.packages().iter().any(|found| {
+        || core.system_packages().iter().any(|found| {
             found
                 .read
                 .as_ref()

@@ -431,7 +431,7 @@ pub(crate) fn reply(blob: &ContentHash, name: &FileName, found: Kind) -> Value {
 /// 扩展 `package` 自己的包目录的真实位置（施工 W-6 四补，终端报的）：它带的图在那里，扩展本来就读得到，经 `path` 存它不用
 /// 再绕 base64。找不到这个包、换不成真实位置的没有。
 fn own_folder(core: &Core, package: &str) -> Option<PathBuf> {
-    let packages = core.packages();
+    let packages = core.system_packages();
     let found = packages.iter().find(|found| found.id == package)?;
     std::fs::canonicalize(found.files_dir()).ok()
 }

@@ -418,7 +418,7 @@ impl Core {
 
     /// 起开着的 `bundle` 包带的服务（施工 X-3 上）：核心起来时在 [`Core::start_extensions`] 里调。扩展包带的随扩展拉起。
     pub(crate) fn start_mcp(self: &Arc<Self>) {
-        let packages = self.packages();
+        let packages = self.system_packages();
         for found in packages.iter() {
             if let Some(manifest) = bundle(found)
                 && crate::extensions::switched_on(self, &found.id, manifest)

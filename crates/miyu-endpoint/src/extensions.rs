@@ -335,7 +335,7 @@ impl Core {
         // 个人设置里的 MCP 服务（施工 F-9 下）：起包里带的以前先定下谁盖住谁。
         self.note_home_mcp();
         let (switches, _) = read_switches(self);
-        let packages = self.packages();
+        let packages = self.system_packages();
         // 依赖的包缺了的不起（施工 F-11）：`package.list` 的状态写明缺谁。
         let all: Vec<&Found> = packages.iter().collect();
         for (id, manifest) in processes_of(&all) {

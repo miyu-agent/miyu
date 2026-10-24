@@ -53,7 +53,7 @@ pub(super) async fn why(core: &Core, peer: &Peer, handle: &Handle, refused: &Ref
 
 /// 长期目标为什么用不了（施工 X-8 下）：没装的、本机的主会话预设没开的；别的（群里、私聊、子代理，说不准的）是 `None`。
 async fn goal(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
-    if !crate::packages::is_installed(&core.packages(), GOAL_PACKAGE) {
+    if !crate::packages::is_installed(&core.system_packages(), GOAL_PACKAGE) {
         return Some(Said::plain("commands/unavailable/goal-not-installed"));
     }
     let listed = listed(core, handle).await?;

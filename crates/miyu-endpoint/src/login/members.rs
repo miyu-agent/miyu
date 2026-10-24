@@ -103,7 +103,7 @@ pub(super) fn taken(core: &Core, account: &AccountId) -> bool {
     let name = account.as_str();
     person_holds(core, name)
         || core.root.account_dir(account).exists()
-        || core.packages().iter().any(|one| one.id == name)
+        || core.system_packages().iter().any(|one| one.id == name)
         || crate::packages::source::sync::indexed_ids(core)
             .iter()
             .any(|id| id == name)

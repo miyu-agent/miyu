@@ -28,6 +28,7 @@ pub(crate) mod local;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
+pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
 mod services;
@@ -43,7 +44,7 @@ pub use status::absent;
 /// 编号 `id` 的包文件夹：核心手里这时的清单里的（`Found::files_dir`）。没有的交回空路径，照它找不到包自己带的程序（施工
 /// F-8 上再补：程序先找包文件夹的 `bin/`）。
 pub(crate) fn dir_of(core: &Core, id: &str) -> std::path::PathBuf {
-    core.packages()
+    core.system_packages()
         .iter()
         .find(|one| one.id == id)
         .map_or_else(std::path::PathBuf::new, Found::files_dir)
@@ -132,7 +133,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
     let mut items: Vec<Value> = core
-        .packages()
+        .system_packages()
         .iter()
         .map(|found| listed(core, found, &places, &words, peer.language, false))
         .collect();
@@ -149,7 +150,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
 pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     let words = words(core, peer.language).ok()?;
     let places = packages(core);
-    if let Some(found) = core.packages().iter().find(|found| found.id == id) {
+    if let Some(found) = core.system_packages().iter().find(|found| found.id == id) {
         return Some(listed(core, found, &places, &words, peer.language, false));
     }
     let removed = places.read_removed();
@@ -178,7 +179,7 @@ fn listed(
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
             // 依赖的包缺了（施工 F-11）：不起，写明缺谁。
-            let installed = core.packages();
+            let installed = core.system_packages();
             let missing = depends::missing(&installed.iter().collect::<Vec<_>>(), manifest);
             if !removed && !missing.is_empty() {
                 item["status"] = json!("depends_missing");
@@ -327,21 +328,24 @@ pub fn is_installed(found: &[Found], id: &str) -> bool {
     })
 }
 
-/// 带人格、预设的那一层的几个包文件夹（施工 P-11 上，设计 31 第十节）：读成了的装着的包，出厂的在前、同一层照编号。
-pub(crate) fn folders(core: &Core) -> Vec<std::path::PathBuf> {
-    let found = core.packages();
+/// 带人格、预设的那一层的几个包文件夹（施工 P-11 上，设计 31 第十节）：账号 `account` 看得到的（施工 U23 上下，
+/// [`Core::packages_of`]）读成了的装着的包，出厂的在前、同一层照编号。
+pub(crate) fn folders(core: &Core, account: &AccountId) -> Vec<std::path::PathBuf> {
+    let found = core.packages_of(account);
     let mut read: Vec<&Found> = found.iter().filter(|one| one.read.is_ok()).collect();
     read.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
     read.iter().map(|one| one.files_dir()).collect()
 }
 
-/// 交给会话的「这一刻装了的软件包」（施工 X-11 下，`miyu_session::Installed`）：拿着核心的弱引用，会话活在核心里面，拿强的
-/// 会绕成环；核心没了的交空的。
-pub(crate) fn installed(core: &std::sync::Arc<Core>) -> miyu_session::Installed {
-    let core = std::sync::Arc::downgrade(core);
+/// 交给会话的「这一刻装了的软件包」（施工 X-11 下，`miyu_session::Installed`）：会话属主 `owner` 看得到的（施工 U23 上下，
+/// [`Core::packages_of`]）。拿着核心的弱引用，会话活在核心里面，拿强的会绕成环；核心没了的交空的。
+pub(crate) fn installed(core: &std::sync::Arc<Core>, owner: &AccountId) -> miyu_session::Installed {
+    let (core, owner) = (std::sync::Arc::downgrade(core), owner.clone());
     std::sync::Arc::new(move || {
-        core.upgrade()
-            .map_or_else(|| std::sync::Arc::new(Vec::new()), |core| core.packages())
+        core.upgrade().map_or_else(
+            || std::sync::Arc::new(Vec::new()),
+            |core| core.packages_of(&owner),
+        )
     })
 }
 

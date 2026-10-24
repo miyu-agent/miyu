@@ -132,7 +132,7 @@ fn find(core: &Core, name: &str) -> Option<(String, McpServer)> {
     {
         return Some((HOME_PACKAGE.to_string(), server.clone()));
     }
-    let packages = core.packages();
+    let packages = core.system_packages();
     crate::packages::manifests(&packages).find_map(|(id, manifest)| {
         manifest
             .mcp

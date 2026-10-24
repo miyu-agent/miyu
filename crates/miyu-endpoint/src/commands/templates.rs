@@ -31,7 +31,7 @@ use crate::refusal::Refusal;
 
 /// 账号 `owner` 用得上的模板命令：家目录的、装了的包的，同名的先找到的赢，和登记表撞名的不算。照名字排。
 pub(crate) async fn found(core: &Core, owner: &AccountId) -> Vec<Template> {
-    let (packages, root, owner) = (core.packages(), core.root.clone(), owner.clone());
+    let (packages, root, owner) = (core.packages_of(owner), core.root.clone(), owner.clone());
     let found = tokio::task::spawn_blocking(move || slash::find(&packages, &root, &owner).0)
         .await
         .unwrap_or_default();

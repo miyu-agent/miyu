@@ -213,7 +213,7 @@ async fn view(
     let current = subscription.current().cloned();
     let language = shaken.now(core).language;
     let resources = core.resources.clone();
-    let skills = crate::view::Titles::of(core);
+    let skills = crate::view::Titles::of(core, &owner);
     let blobs = miyu_store::blob::Blobs::new(core.root.blobs(&owner));
     let (mut page, mut projector) = tokio::task::spawn_blocking(move || {
         crate::view::texts(&resources, language, &skills)

@@ -42,7 +42,7 @@ pub(crate) async fn search(
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
     let installed: BTreeMap<String, Option<String>> = core
-        .packages()
+        .system_packages()
         .iter()
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());

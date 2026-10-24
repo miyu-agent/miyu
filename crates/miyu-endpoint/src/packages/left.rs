@@ -23,7 +23,7 @@ pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer>
     );
     let state = packages(core).state_root().to_path_buf();
     let mine = core
-        .packages()
+        .system_packages()
         .iter()
         .find(|one| one.id == id)
         .map(|one| one.files_dir());
@@ -124,7 +124,11 @@ pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
         crate::presets::presets(core, &core.admin),
     );
     let state = packages(core).state_root().to_path_buf();
-    let installed: Vec<String> = core.packages().iter().map(|one| one.id.clone()).collect();
+    let installed: Vec<String> = core
+        .system_packages()
+        .iter()
+        .map(|one| one.id.clone())
+        .collect();
     let dirs = [
         (Layer::Home, core.root.account_dir(&core.admin)),
         (Layer::System, core.root.system()),

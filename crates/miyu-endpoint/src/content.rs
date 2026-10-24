@@ -55,7 +55,7 @@ pub(crate) struct ReadParams {
 /// 给包 `target` 带了内容的包，照编号排：编号、版本、内容在哪个目录。它自己给自己带的照样算（就是它自己的目录）。
 fn providers(core: &Core, target: &str) -> Vec<(String, Option<String>, PathBuf)> {
     let mut found: Vec<_> = core
-        .packages()
+        .system_packages()
         .iter()
         .filter_map(|found| {
             let manifest = found.read.as_ref().ok()?;

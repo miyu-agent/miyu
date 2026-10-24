@@ -71,7 +71,7 @@ fn locate(
     let Some(package) = caller.package.as_deref() else {
         return Err(Refusal::NOT_AN_EXTENSION);
     };
-    let packages = core.packages();
+    let packages = core.system_packages();
     let manifest: Option<&Manifest> = packages
         .iter()
         .find(|found| found.id == package)

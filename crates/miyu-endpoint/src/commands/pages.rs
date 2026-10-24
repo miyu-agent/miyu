@@ -18,7 +18,7 @@ pub(crate) struct Page {
 
 /// 这一刻认的：装着、开着的扩展的整页里写了命令名的（清单只许整页写），照包的编号、清单里的先后。
 pub(crate) fn found(core: &Core) -> Vec<Page> {
-    let packages = core.packages();
+    let packages = core.system_packages();
     crate::extensions::processes(&packages)
         .filter(|(id, manifest)| crate::extensions::switched_on(core, id, manifest))
         .flat_map(|(id, manifest)| {

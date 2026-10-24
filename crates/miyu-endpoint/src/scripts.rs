@@ -117,7 +117,8 @@ impl Core {
             .following
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let (found, skipped) = miyu_store::scripts::find(&self.packages(), &self.root, &self.admin);
+        let (found, skipped) =
+            miyu_store::scripts::find(&self.system_packages(), &self.root, &self.admin);
         for one in &skipped {
             tracing::warn!(target: TARGET, path = %one.path.display(), why = one.why.as_str(), "script skipped");
         }
@@ -192,7 +193,7 @@ pub(crate) fn package(script: &Script) -> &str {
 /// 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到工具：那个服务不起，
 /// 目录里没有挂在那个包下的工具。
 pub(crate) fn features(core: &Core) -> Features {
-    let packaged = crate::packages::features(&core.packages());
+    let packaged = crate::packages::features(&core.system_packages());
     let images = packaged.image_packages().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.home_mcp.now().iter().map(|server| Feature {

@@ -168,7 +168,7 @@ impl View {
             return;
         }
         let resources = self.core.resources.clone();
-        let skills = crate::view::Titles::of(&self.core);
+        let skills = crate::view::Titles::of(&self.core, self.handle.owner());
         let loaded =
             tokio::task::spawn_blocking(move || crate::view::texts(&resources, language, &skills))
                 .await;

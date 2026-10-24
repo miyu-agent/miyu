@@ -39,7 +39,7 @@ impl Item {
 
 /// 这一刻头看得到的块：装着、开着的扩展声明的；只要包 `only` 的就写上它。
 pub(super) fn declared(core: &Core, only: Option<&str>) -> Vec<Item> {
-    let packages = core.packages();
+    let packages = core.system_packages();
     crate::extensions::processes(&packages)
         .filter(|(id, _)| only.is_none_or(|only| only == *id))
         .filter(|(id, manifest)| crate::extensions::switched_on(core, id, manifest))

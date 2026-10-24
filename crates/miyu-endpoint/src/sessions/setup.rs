@@ -114,7 +114,7 @@ impl Setup {
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
-            installed: Some(crate::packages::installed(core)),
+            installed: Some(crate::packages::installed(core, &who.owner)),
             plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
             configs: core.configs_of(&who.owner),

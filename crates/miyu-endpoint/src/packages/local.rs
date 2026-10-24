@@ -88,7 +88,7 @@ pub(super) struct Looked {
 
 /// 一个包这时的记录：家目录里的照本地库（没记的现算），出厂的现算。
 pub(super) async fn entry(core: &Arc<Core>, id: &str) -> Result<Looked, Refusal> {
-    let now = core.packages();
+    let now = core.system_packages();
     let found: &Found = now
         .iter()
         .find(|one| one.id == id)
@@ -149,7 +149,7 @@ pub(crate) async fn info(core: &Arc<Core>, params: InfoParams) -> Result<Value, 
         answer["version"] = json!(version);
     }
     // 作者、上游、从哪来（施工 F-12）：同 `package.list` 的那几格。
-    let now = core.packages();
+    let now = core.system_packages();
     if let Some(found) = now.iter().find(|one| one.id == params.package) {
         let places = packages(core);
         answer["from"] = json!(super::fill::from(found, &places).as_str());

@@ -29,12 +29,16 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value 
     let values = core.mine(account).config().resolved().values();
     let loading = Loading::of(&values);
     let switches = miyu_session::switches::of(&values);
-    let packages = core.packages();
+    let packages = core.packages_of(account);
     // 登记上的脚本本来照工具名排（`Core::scripts`）；现找的 `find` 也照工具名排。
     let scripts: Vec<Script> = match *account == core.admin {
         true => core.scripts().to_vec(),
         false => {
-            let (packages, root, account) = (core.packages(), core.root.clone(), account.clone());
+            let (packages, root, account) = (
+                core.packages_of(account),
+                core.root.clone(),
+                account.clone(),
+            );
             tokio::task::spawn_blocking(move || {
                 miyu_store::scripts::find(&packages, &root, &account).0
             })

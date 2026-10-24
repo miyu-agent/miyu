@@ -68,6 +68,8 @@ impl Core {
             .packages
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
+        // 每人那几份照新的系统那一份重造（施工 U23 上下）：用到时再造。
+        self.own_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
         if let Some(items) = items {
@@ -142,7 +144,7 @@ impl Core {
     pub(crate) fn serves(&self, method: &str) -> bool {
         self.queries
             .package_of(method)
-            .is_none_or(|package| super::is_installed(&self.packages(), package))
+            .is_none_or(|package| super::is_installed(&self.system_packages(), package))
     }
 }
 
@@ -211,7 +213,7 @@ pub(super) fn setting_keys(one: &Found) -> Vec<String> {
 /// 卸包 `id`（`package.remove`，施工 F-6 上起 `package.disable` 关出厂的内置包也走这里）。
 pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
-    let found = core.packages();
+    let found = core.system_packages();
     let one = removable(&found, &id)?;
     let home = home(core)?;
     let local_root = packages(core).local_root();
@@ -246,6 +248,8 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
                 id
             }),
             Layer::Shipped => install::mark_removed(&home, &id).map(|()| id),
+            // 卸的是系统那一份里的（施工 U23 上下）：自己那一层的不在里面，卸自己那层的等 U23 下。
+            Layer::User => Err(std::io::Error::other("a package in an account's own layer")),
         };
         if removed.is_ok() {
             left.keep();
@@ -261,7 +265,7 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
         }
     };
     core.reload_packages();
-    let now = core.packages();
+    let now = core.system_packages();
     core.switch_packages(&without, &refs(&now)).await;
     crate::config::forget::forget(core, &keys);
     // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
@@ -300,7 +304,7 @@ pub(super) async fn from_path(
     let source = folder.clone();
     let target = id.clone();
     // 升级的先停下原来的那一个再换文件（施工 F-5 补）：Windows 上开着的文件挪不走。换不成的照原来的清单换回来。
-    let before = core.packages();
+    let before = core.system_packages();
     let all = refs(&before);
     let without = leaving(&all, &id);
     core.switch_packages(&all, &without).await;
@@ -313,7 +317,7 @@ pub(super) async fn from_path(
         }
     };
     core.reload_packages();
-    let now = core.packages();
+    let now = core.system_packages();
     let mine = now.iter().find(|one| one.id == id);
     if let Some(Found {
         read: Err(Issue::Wrong(problem)),
@@ -325,7 +329,7 @@ pub(super) async fn from_path(
             tracing::warn!(target: TARGET, package = id.as_str(), error = %error, "package install not undone");
         }
         core.reload_packages();
-        let back = core.packages();
+        let back = core.system_packages();
         core.switch_packages(&without, &refs(&back)).await;
         return Err(refusal);
     }
@@ -373,7 +377,7 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     shipped_clear_of_conflicts((core, peer), id).await?;
     let home = home(core)?;
     let target = id.to_string();
-    let before = core.packages();
+    let before = core.system_packages();
     let back = super::left::back(core, id);
     blocking(move || {
         install::unmark_removed(&home, &target)?;
@@ -382,11 +386,11 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     })
     .await?;
     core.reload_packages();
-    let now = core.packages();
+    let now = core.system_packages();
     core.switch_packages(&refs(&before), &refs(&now)).await;
     tracing::info!(target: TARGET, package = id, "package restored");
     let words = words(core, peer.language)?;
-    let now = core.packages();
+    let now = core.system_packages();
     let back = now
         .iter()
         .find(|one| one.id == id)
@@ -404,7 +408,7 @@ pub(super) async fn clear_of_conflicts(
     dir: PathBuf,
 ) -> Result<(), Refusal> {
     super::may_manage::may_manage(peer.admin)?;
-    let installed = core.packages();
+    let installed = core.system_packages();
     // 包的编号就是它的账号名（施工 Y-5 中下）：和人占着的名字撞了不装；升级（已经装着的同一个）不算。
     if !installed.iter().any(|one| one.id == id) && crate::login::members::person_holds(core, id) {
         return Err(Refusal::PACKAGE_ID_TAKEN);

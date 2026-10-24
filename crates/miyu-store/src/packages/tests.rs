@@ -39,6 +39,7 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/packages",
             Layer::Home => "data/system/packages",
+            Layer::User => "data/home/admin/packages",
         };
         let path = self.scratch.path().join(base).join(file);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
