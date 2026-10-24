@@ -30,7 +30,7 @@ use crate::personas::pick;
 ///   已经列了）。
 pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
     let words = words(core, language).ok();
-    let catalog = core.shelf_of(&carried.account).current();
+    let catalog = core.catalog_of(&carried.account);
     let found_packages = core.packages_of(&carried.account);
     let table = crate::scripts::features(core, &carried.account);
     let file = &found
@@ -75,16 +75,13 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             listed.push(one);
         }
     }
-    // 机主私人的（挂在 `~home` 下的脚本、个人设置里的 MCP 服务，施工 U23 中上）只列给机主这一侧，同会话的工具面
-    // （`scripts::features`）。
+    // 机主私人的（挂在 `~home` 下的脚本、个人设置里的 MCP 服务，施工 U23 中上）只列给机主这一侧，别人的列他自己那一层的（施工
+    // U23 中下），同会话的工具面（`scripts::features`）。
     let private = core.machine_side(&carried.account);
+    let scripts = core.scripts_for(&carried.account);
     // 脚本各算一个功能（施工 X-12 中）：名字、说明照脚本写给人看的几格挑这个连接的语言，没写名字的照工具名；它自己那件工具
     // 带着同一个名字，开不开照功能和 `[tools]`。
-    for script in core
-        .scripts()
-        .iter()
-        .filter(|script| private || crate::scripts::package(script) != HOME_PACKAGE)
-    {
+    for script in &scripts {
         let id = script_feature(&script.head.name);
         let (on, by) = file.decided(&id, crate::scripts::package(script));
         let name =

@@ -9,6 +9,7 @@ mod goal_heads;
 mod list_account;
 mod member_config;
 mod member_gate;
+mod member_scripts;
 mod member_secrets;
 mod model_embed;
 mod oobe;

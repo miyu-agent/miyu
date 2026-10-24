@@ -138,7 +138,7 @@ pub(crate) struct Titles {
 impl Titles {
     /// 会话属主 `owner` 看得到的（施工 U23 上下，[`Core::packages_of`]）。
     pub(crate) fn of(core: &Core, owner: &AccountId) -> Titles {
-        let catalog = core.shelf_of(owner).current();
+        let catalog = core.catalog_of(owner);
         let tools = catalog
             .specs()
             .filter_map(|spec| {

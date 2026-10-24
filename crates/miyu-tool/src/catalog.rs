@@ -158,6 +158,16 @@ impl Catalog {
             catalog.tools.remove(&name);
             catalog.packages.remove(&name);
         }
+        catalog.with_scripts(scripts)
+    }
+
+    /// 加上这几个脚本（施工 U23 中下：成员自己那一层的叠在底下那一份上），原来登记的脚本不动；查法、交回的同
+    /// [`Catalog::replacing_scripts`]：撞了名字的那一件不登记。
+    pub fn with_scripts(
+        &self,
+        scripts: Vec<(String, Arc<dyn Tool>)>,
+    ) -> (Catalog, Vec<CatalogError>) {
+        let mut catalog = self.clone();
         let mut skipped = Vec::new();
         for (package, tool) in scripts {
             let name = tool.spec().name.clone();

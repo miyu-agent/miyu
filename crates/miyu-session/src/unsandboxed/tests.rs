@@ -184,8 +184,8 @@ fn personal_settings_cannot_grant() {
     assert!(system.problems.is_empty(), "{:?}", system.problems);
 }
 
-/// 管理员管得住的地方（施工 U23 上上）：系统那一层装上的包（`system/packages/`）里的文件只对机主算（照挪之前：那一层在他家目录里），
-/// 成员的照沙盒跑；别人家目录的谁都不算。
+/// 管理员管得住的地方（施工 U23 上上、中下）：系统那一层装上的包（`system/packages/`）、自己家目录里的文件只对机主算；成员的
+/// 照沙盒跑，他自己家目录里的也不算（他那一层的脚本放行出沙盒一律不算）；出厂的包谁都算；别人家目录的谁都不算。
 #[test]
 fn installed_packages_in_the_system_layer_are_controlled_only_for_the_owner() {
     let site = Scratch::new("system");
@@ -223,10 +223,56 @@ fn installed_packages_in_the_system_layer_are_controlled_only_for_the_owner() {
     let bob = AccountId::parse("bob").expect("合写法");
     let member = Confines::of(&root, (&bob, false), &site.0.join("own"));
     assert_eq!(member.hold(&system), None, "成员的不算，照沙盒跑");
+    assert_eq!(
+        member.hold(&site.0.join("data/home/bob/scripts/run.py")),
+        None,
+        "他自己的也不算（施工 U23 中下：他那一层的脚本照他的沙盒跑）"
+    );
     assert!(
-        member
-            .hold(&site.0.join("data/home/bob/scripts/run.py"))
-            .is_some(),
-        "他自己的照旧算"
+        member.hold(&site.0.join("own/run.py")).is_some(),
+        "出厂的包照旧算"
+    );
+}
+
+/// 放行出沙盒对成员自己那一层的一律不算（施工 U23 中下）：系统配置放行了 `weather`、来处是 `~home`，机主自己的 `weather` 照旧
+/// 放行；成员 bob 自己的同名脚本（他的架子上也挂 `~home`）照他的会话的沙盒跑。
+#[test]
+fn a_member_s_own_script_is_never_let_out_of_the_sandbox() {
+    let site = Scratch::new("member-own");
+    let env = miyu_store::env::Env {
+        platform: miyu_store::env::Platform::current(),
+        miyu_home: Some(site.0.join("data").into_os_string()),
+        home: None,
+        xdg_cache_home: None,
+        local_app_data: None,
+        miyu_resources: None,
+        exe: None,
+    };
+    let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
+    let script = |account: &str| {
+        let path = site
+            .0
+            .join(format!("data/home/{account}/scripts/weather.py"));
+        std::fs::create_dir_all(path.parent().expect("有上级")).unwrap();
+        std::fs::write(&path, "x").unwrap();
+        let tool = Fake::with_file("weather", Access::Execute, path, Act::Echo) as Arc<dyn Tool>;
+        Shelf::new(Catalog::in_packages([("~home", vec![tool])]).expect("合写法"))
+    };
+    let granted = || Unsandboxed::of(&values(&[("sandbox.tools.weather", "~home")]));
+    let (alice, bob) = (
+        AccountId::parse("alice").expect("合写法"),
+        AccountId::parse("bob").expect("合写法"),
+    );
+    let owner = granted().within(Confines::of(&root, (&alice, true), &site.0.join("own")));
+    assert_eq!(
+        owner.grant("weather", &script("alice")),
+        Grant::File(site.real("data/home/alice/scripts/weather.py")),
+        "机主自己的照旧放行"
+    );
+    let member = granted().within(Confines::of(&root, (&bob, false), &site.0.join("own")));
+    assert_eq!(
+        member.grant("weather", &script("bob")),
+        Grant::No,
+        "成员自己的不放行，照他的沙盒跑"
     );
 }

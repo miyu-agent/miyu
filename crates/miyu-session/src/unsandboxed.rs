@@ -60,12 +60,13 @@ impl Confines {
         Confines(places)
     }
 
-    /// 数据根 `root` 里账号 `account` 自己放东西的几处，加资源目录 `resources`（出厂的包），都换成真实的位置；`account` 是机主的
-    /// （`owner`）再加系统那一层装上的包（施工 U23 上上：照挪之前，成员的系统装的脚本照沙盒跑；组里别的管理员算不算等 U23 下）。
-    /// 碰磁盘。
+    /// 资源目录 `resources`（出厂的包）换成真实的位置；`account` 是机主的（`owner`）再加数据根 `root` 里他自己放东西的几处、
+    /// 系统那一层装上的包（施工 U23 上上：照挪之前）。别人的（成员、组里别的管理员）自己的地方不算（施工 U23 中下：他自己那一层的
+    /// 脚本照他的沙盒跑，放行出沙盒对他一律不算；组里别的管理员算不算等 U23 下）。碰磁盘。
     pub fn of(root: &DataRoot, (account, owner): (&AccountId, bool), resources: &Path) -> Confines {
-        let mut places = root.own_places(account);
+        let mut places = Vec::new();
         if owner {
+            places = root.own_places(account);
             places.push(root.real_system_packages());
         }
         places.push(std::fs::canonicalize(resources).unwrap_or_else(|_| resources.to_path_buf()));

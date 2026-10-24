@@ -426,3 +426,23 @@ fn without_a_package_takes_out_all_of_its_tools() {
     assert!(gone.gone("weather"), "随包卸掉的有记录");
     assert!(!gone.without("~home").gone("weather"), "拿掉以后同没有过");
 }
+
+/// 加上几个脚本（施工 U23 中下）：原来的脚本不动，撞了名字的那一件不登记、交回来。
+#[test]
+fn with_scripts_adds_and_keeps_the_old_ones() {
+    let (catalog, _) = Catalog::new([object("read")])
+        .unwrap()
+        .replacing_scripts(vec![("kit".to_string(), object("dice"))]);
+    let (mine, skipped) = catalog.with_scripts(vec![
+        ("~home".to_string(), object("notes")),
+        ("~home".to_string(), object("read")),
+    ]);
+    assert_eq!(names(&mine), ["dice", "notes", "read"]);
+    assert_eq!(mine.package_of("notes"), Some("~home"));
+    assert_eq!(skipped.len(), 1, "撞了 read 的不登记");
+    assert_eq!(skipped[0].tool, "read");
+    assert!(
+        mine.provided("notes"),
+        "算经提供者登记的：会话下一个回合换上"
+    );
+}
