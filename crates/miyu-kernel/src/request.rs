@@ -212,8 +212,49 @@ pub(crate) fn json(value: &impl Serialize) -> Vec<u8> {
 /// 照结构算的哈希（施工 V-12）：指纹只在内存里比上一次请求，不落盘、不跨重启，用不着 SHA-256，也用不着先写成 JSON（原来
 /// 每条消息写一遍 JSON 再算，一万条事件的请求是回合热路径上最大的一截）。写进 JSON 的都在结构里，比得出的一样。
 fn hashed(value: &impl std::hash::Hash) -> u64 {
-    use std::hash::{BuildHasher, BuildHasherDefault, DefaultHasher};
-    BuildHasherDefault::<DefaultHasher>::default().hash_one(value)
+    use std::hash::{BuildHasher, BuildHasherDefault};
+    BuildHasherDefault::<Quick>::default().hash_one(value)
+}
+
+/// 指纹用的哈希（施工 V-17 下）：只在内存里和上一次请求比、不落盘、不用抗碰撞，照 FxHash 的做法一次吃 8 个字节，比标准库的
+/// SipHash 快几倍（每次请求要过一遍整段历史的每一块）。不满 8 个字节的尾巴最高一个字节放尾巴的长度，只差末尾补零的分得开。
+#[derive(Default)]
+struct Quick(u64);
+
+impl Quick {
+    fn add(&mut self, word: u64) {
+        self.0 = (self.0.rotate_left(5) ^ word).wrapping_mul(0x517c_c1b7_2722_0a95);
+    }
+}
+
+impl std::hash::Hasher for Quick {
+    fn write(&mut self, bytes: &[u8]) {
+        let mut chunks = bytes.chunks_exact(8);
+        for chunk in &mut chunks {
+            let mut word = [0; 8];
+            word.copy_from_slice(chunk);
+            self.add(u64::from_le_bytes(word));
+        }
+        let tail = chunks.remainder();
+        if !tail.is_empty() {
+            let mut word = [0; 8];
+            word[..tail.len()].copy_from_slice(tail);
+            word[7] = tail.len() as u8;
+            self.add(u64::from_le_bytes(word));
+        }
+    }
+
+    fn write_u64(&mut self, value: u64) {
+        self.add(value);
+    }
+
+    fn write_usize(&mut self, value: usize) {
+        self.add(value as u64);
+    }
+
+    fn finish(&self) -> u64 {
+        self.0
+    }
 }
 
 #[cfg(test)]

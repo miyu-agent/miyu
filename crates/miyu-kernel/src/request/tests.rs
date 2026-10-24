@@ -240,3 +240,38 @@ fn the_fingerprint_still_sees_what_the_bytes_carried() {
         })
     );
 }
+
+/// 指纹换成一次吃 8 个字节的快哈希以后（施工 V-17 下）：只差末尾补零、只差长度、凑满 8 字节前后的几条照样分得出。
+#[test]
+fn near_identical_texts_still_differ() {
+    let texts = [
+        "ab",
+        "ab\0",
+        "ab\0\0",
+        "abcdefgh",
+        "abcdefgh\0",
+        "abcdefg",
+        "",
+        "\0",
+    ];
+    for (i, one) in texts.iter().enumerate() {
+        for other in &texts[i + 1..] {
+            let mut before = request();
+            before.messages[0] = Message::User {
+                blocks: vec![text(one)],
+            };
+            let mut after = request();
+            after.messages[0] = Message::User {
+                blocks: vec![text(other)],
+            };
+            assert_eq!(
+                after.fingerprint().first_difference(&before.fingerprint()),
+                Some(Difference::Message {
+                    index: 0,
+                    role: Role::User
+                }),
+                "{one:?} 和 {other:?}"
+            );
+        }
+    }
+}

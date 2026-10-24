@@ -26,7 +26,14 @@ mod opening;
 use opening::{Opened, opening};
 
 /// 渲染有效历史：检查点和历史，照先后排好的消息。稳定区不在这里。
+#[cfg(test)]
 pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
+    render_in(history, &history.ordered(), texts)
+}
+
+/// 渲染有效历史，照排好的先后 `ordered`（[`History::ordered`]）：检查点和历史，照先后排好的消息，稳定区不在这里。组装时排一次，
+/// 渲染和看接不接着写共用（施工 V-17 下）。
+pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) -> Vec<Message> {
     let mut transcript = Transcript::default();
     let opened = Opened::of(history);
     // 清空的检查点什么都不出（施工 6-8 补）：她看到的上下文从这里起是空的。
@@ -40,7 +47,7 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
             vec![text_block(checkpoint_block(history, compacted, texts))],
         );
     }
-    for event in history.ordered() {
+    for &event in ordered {
         match &event.body {
             // 旁听的场所消息这一步先不进上下文，O-13 下渲染成群聊近况（施工 O-13 上）。
             Body::MessageUser(message) if message.venue.as_ref().is_some_and(|venue| venue.ambient) => {}
@@ -337,6 +344,12 @@ impl Transcript {
             return;
         }
         let pending = std::mem::take(&mut self.pending);
+        // 这一段里没有回合开始的地方：什么都不挪，照攒进来的先后（施工 V-17 下：回合中途的大多是这样，不用建下面几张表）。
+        if starts.is_empty() {
+            let blocks = pending.into_iter().map(|piece| piece.block).collect();
+            self.messages.push(Message::User { blocks });
+            return;
+        }
         let here: BTreeSet<Seq> = pending.iter().map(|piece| piece.seq).collect();
         // 触发在这一段里的，才挪。
         let starts: Vec<(usize, Seq)> = starts
@@ -421,9 +434,9 @@ impl Group {
 /// 五补：上一轮起的标题可能在这一轮中途回来，改标题也不进上下文）、`image.described`（施工 8-17：图的转述不渲染，打断以前发出去的
 /// 转述可能这时才回来）、`tool.nested`（施工 M-1：后台任务的嵌套调用回合外也会落盘）。这时渲染出来的最后一条 user 消息里只有被打断的那一句，前面那条 assistant 是
 /// 半截。那一句之后又来了别的（人的消息、切了级别以后的事实），不算：最后那条 user 里不只有那一句，
-/// 去不掉。
-pub(crate) fn continues(history: &History) -> bool {
-    let mut tail = history.ordered().into_iter().rev().filter(|event| {
+/// 去不掉。`ordered` 是排好的有效历史（[`History::ordered`]，组装时和渲染共用那一份）。
+pub(crate) fn continues(ordered: &[&Event]) -> bool {
+    let mut tail = ordered.iter().rev().filter(|event| {
         !matches!(
             event.body,
             Body::ModelCalled(_)
@@ -453,11 +466,14 @@ fn text_block(text: String) -> Block {
 
 /// 认识的内容块，照先后。不认识的块原样存在日志里，投影跳过它（`03-事件模型.md` 第八节）。
 fn known(blocks: &[Block]) -> Vec<Block> {
-    blocks
-        .iter()
-        .filter(|block| !matches!(block, Block::Unknown(_)))
-        .cloned()
-        .collect()
+    let mut known = Vec::with_capacity(blocks.len());
+    known.extend(
+        blocks
+            .iter()
+            .filter(|block| !matches!(block, Block::Unknown(_)))
+            .cloned(),
+    );
+    known
 }
 
 #[cfg(test)]

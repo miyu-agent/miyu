@@ -75,14 +75,18 @@ impl DefaultAssembler {
 
 impl Assembler for DefaultAssembler {
     fn assemble(&self, history: &History) -> Request {
-        let mut messages = self.stable.demos.clone();
-        messages.extend(render::render(history, &self.texts));
+        // 照请求排一次，渲染和看接不接着写共用（施工 V-17 下：每次请求都要排，原来排两遍）。
+        let ordered = history.ordered();
+        let rendered = render::render_in(history, &ordered, &self.texts);
+        let mut messages = Vec::with_capacity(self.stable.demos.len() + rendered.len());
+        messages.extend_from_slice(&self.stable.demos);
+        messages.extend(rendered);
         Request {
             tools: self.stable.tools.clone(),
             system: self.stable.system.clone(),
             messages,
             stable: self.stable.demos.len(),
-            continuation: render::continues(history),
+            continuation: render::continues(&ordered),
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,

@@ -212,13 +212,29 @@ impl History {
                 _ => None,
             })
             .collect();
-        // 段 0 是第一条回复看到的那些；段 k 从第 k 条回复看到的之后开始。
-        let mut segments: Vec<Vec<&Event>> = vec![Vec::new(); seen.len() + 1];
-        for event in &self.events {
-            let segment = seen.partition_point(|&boundary| boundary < event.seq);
-            segments[segment].push(event);
+        let segment = |event: &Event| seen.partition_point(|&boundary| boundary < event.seq);
+        let mut ordered = Vec::with_capacity(self.events.len());
+        // 事件照序号排着（日志的先后）的，一段就是连着的一截，直接照段写进去（施工 V-17 下：每次请求都要排一遍，不再先
+        // 分段再拼）；不是的照段分开再拼。段 0 是第一条回复看到的那些；段 k 从第 k 条回复看到的之后开始。
+        if self.events.windows(2).all(|pair| pair[0].seq < pair[1].seq) {
+            let mut rest = self.events.as_slice();
+            while let Some(first) = rest.first() {
+                let at = segment(first);
+                let end = rest.partition_point(|event| segment(event) == at);
+                let (run, after) = rest.split_at(end);
+                reply_first(run.iter(), &mut ordered);
+                rest = after;
+            }
+        } else {
+            let mut segments: Vec<Vec<&Event>> = vec![Vec::new(); seen.len() + 1];
+            for event in &self.events {
+                segments[segment(event)].push(event);
+            }
+            for run in segments {
+                reply_first(run.into_iter(), &mut ordered);
+            }
         }
-        segments.into_iter().flat_map(reply_first).collect()
+        ordered
     }
 
     /// 第 `after` 条以后调过的工具名（施工 R-6 上，抽取照它判这一段她自己记过没有）：照 [`History::ordered`] 的那些，
@@ -304,15 +320,15 @@ impl History {
     }
 }
 
-/// 一段里的先后：这一段开头的那条回复，它的工具结果（按调用的先后），然后别的事件
-/// （照日志的先后）。段 0 没有开头的回复，照日志的先后。
-fn reply_first(segment: Vec<&Event>) -> Vec<&Event> {
+/// 一段里的先后，接在 `out` 后面：这一段开头的那条回复，它的工具结果（按调用的先后），然后别的事件（照日志的先后）。段 0
+/// 没有开头的回复，照日志的先后。
+fn reply_first<'a>(segment: impl Iterator<Item = &'a Event> + Clone, out: &mut Vec<&'a Event>) {
     let Some(reply) = segment
-        .iter()
-        .copied()
+        .clone()
         .find(|event| matches!(event.body, Body::MessageAssistant(_)))
     else {
-        return segment;
+        out.extend(segment);
+        return;
     };
     let result_of_reply = |event: &Event| match &event.body {
         Body::ToolResult(result) if result.call_id.message() == reply.seq => {
@@ -320,17 +336,15 @@ fn reply_first(segment: Vec<&Event>) -> Vec<&Event> {
         }
         _ => None,
     };
-    let mut results: Vec<&Event> = segment
-        .iter()
-        .copied()
-        .filter(|event| result_of_reply(event).is_some())
-        .collect();
-    results.sort_by_key(|event| result_of_reply(event));
-    let rest = segment
-        .iter()
-        .copied()
-        .filter(|event| event.seq != reply.seq && result_of_reply(event).is_none());
-    std::iter::once(reply).chain(results).chain(rest).collect()
+    out.push(reply);
+    let from = out.len();
+    out.extend(
+        segment
+            .clone()
+            .filter(|event| result_of_reply(event).is_some()),
+    );
+    out[from..].sort_by_key(|event| result_of_reply(event));
+    out.extend(segment.filter(|event| event.seq != reply.seq && result_of_reply(event).is_none()));
 }
 
 #[cfg(test)]
