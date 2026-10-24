@@ -159,12 +159,19 @@ async fn a_rebuilt_ledger_still_counts_the_members_turns() {
     drop(core);
     let ledger = home.root.path().join("state").join(miyu_store::usage::FILE);
     assert!(ledger.exists(), "先记过：{}", ledger.display());
-    for suffix in ["", "-wal", "-shm"] {
-        let path = std::path::PathBuf::from(format!("{}{suffix}", ledger.display()));
-        if path.exists() {
-            std::fs::remove_file(&path).expect("删得掉");
-        }
-    }
+    // 第一份核心的后台还开着用量汇总，Windows 上删不掉开着的文件：把数据根拷一份、不带 `state/`（汇总、索引都是派生的），
+    // 第二份核心在拷出来的那份上起。
+    let fresh = Home::new();
+    copy_without_state(home.root.path(), fresh.root.path());
+    assert!(
+        !fresh
+            .root
+            .path()
+            .join("state")
+            .join(miyu_store::usage::FILE)
+            .exists()
+    );
+    let home = fresh;
     let core = home.core(&Script::new([]));
     let mut owner = local(&core).await;
     let split = owner
@@ -177,4 +184,32 @@ async fn a_rebuilt_ledger_still_counts_the_members_turns() {
         .map(|row| (row["account"].clone(), row["requests"].clone()))
         .collect();
     assert_eq!(rows, [(json!("bob"), json!(1))], "{split}");
+}
+
+/// 把数据根 `from` 拷进 `to`，`from` 下面的 `state/` 不拷。
+fn copy_without_state(from: &std::path::Path, to: &std::path::Path) {
+    fn copy(from: &std::path::Path, to: &std::path::Path) {
+        std::fs::create_dir_all(to).expect("建得出");
+        for entry in std::fs::read_dir(from).expect("读得出") {
+            let entry = entry.expect("读得出");
+            let target = to.join(entry.file_name());
+            if entry.file_type().expect("看得出").is_dir() {
+                copy(&entry.path(), &target);
+            } else {
+                std::fs::copy(entry.path(), &target).expect("拷得了");
+            }
+        }
+    }
+    for entry in std::fs::read_dir(from).expect("读得出") {
+        let entry = entry.expect("读得出");
+        if entry.file_name() == "state" {
+            continue;
+        }
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("看得出").is_dir() {
+            copy(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), &target).expect("拷得了");
+        }
+    }
 }
