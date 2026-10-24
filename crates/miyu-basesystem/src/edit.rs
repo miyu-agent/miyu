@@ -183,7 +183,7 @@ fn edit(texts: &Texts, call: &Call, path: &str, changes: &[Change], stop: &Stop)
         Err(OpenError::NotAFile(_)) => return texts.common.not_regular(path),
         Err(OpenError::Io(error)) => return texts.common.failed(path, &error),
     };
-    if let Some(refused) = texts.common.unseen(call, path, &real, &old) {
+    if let Some(refused) = texts.common.stale(call, path, &real, &old) {
         return refused;
     }
     let style = Style::of(&old);

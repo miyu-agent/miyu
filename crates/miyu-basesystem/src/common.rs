@@ -93,6 +93,17 @@ impl Common {
         Some(Done::error(say(template, &[("path", path)])).said(said(key)))
     }
 
+    /// 同 [`Common::unseen`]，只是没看过的不拦（`edit` 用，施工 ED-1）：`old_string` 要和原文对得上、唯一才改，
+    /// 没读过也改不到别处去；看过、可现在的内容和她看到的不一样的，照旧不改，免得她照着旧的内容盖掉别人刚做的改动。
+    pub(crate) fn stale(&self, call: &Call, path: &str, real: &Path, old: &[u8]) -> Option<Done> {
+        match call.seen.get(real) {
+            Some(hash) if *hash != ContentHash::of(old) => {
+                Some(Done::error(say(&self.stale, &[("path", path)])).said(said("common/stale")))
+            }
+            _ => None,
+        }
+    }
+
     /// 没有这个文件或目录：她给的是 `path`，换成的真实位置是 `real`。同一个目录里有相近的名字，一个一行列在后面，
     /// 照 `shown` 写；给人看的只带第一个。
     pub(crate) fn missing(&self, path: &str, real: &Path, shown: &Shown) -> Done {

@@ -2,7 +2,7 @@
 
 ### 是什么
 
-在一个已经在了的文本文件里做精确替换，一次可以改几处。每一处都对照原文件找，要唯一、不重叠；有一处出错，一处都不改。改之前和 `write` 一样核对她看过的。对上的那一段换成 `new_string`（换行照文件的），别的地方一个字节不动，编码、BOM 照原来的。报 `file.changed`。
+在一个已经在了的文本文件里做精确替换，一次可以改几处。每一处都对照原文件找，要唯一、不重叠；有一处出错，一处都不改。没读过的也能改；读过、之后文件又被改了的不改（施工 ED-1，2026-10-24 项目主人定）。对上的那一段换成 `new_string`（换行照文件的），别的地方一个字节不动，编码、BOM 照原来的。报 `file.changed`。
 
 ### 在哪
 
@@ -25,7 +25,7 @@
 
 ```json
 {
-  "description": "Make exact text replacements in a file, one or more at a time. The file must have been read first. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
+  "description": "Make exact text replacements in a file, one or more at a time. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
   "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean","description":"Replace every match. Default false."}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
 }
 ```
@@ -51,7 +51,7 @@
 2. 一处要改的都没有（`edits` 是空的，或者什么都没给）：说一句怎么写 `edits`，出错。这一条在看文件之前。
 3. 换成真实的位置（`fs.md` 第二节），换不成：读的时候出错了。
 4. 照「安全地打开」开它（`fs.md` 第四节，不跟最后一层的链接、不阻塞，施工 4-9 再补二），看它现在是什么：没有：没有这个文件，带上相近的名字（`tools/read.md` 第 9 条）；打不开：读的时候出错了；是目录、不是普通文件：各说一句，FIFO 没人写也不卡住；是普通文件：整份读进来，读不了：读的时候出错了。
-5. 核对她看过的，和 `write` 一样（`tools/write.md` 第 4 条）：没看过的、看过以后又被改了的，不改。
+5. 核对她看过的（`tools/write.md` 第 4 条）：看过以后又被改了的，不改；没看过的照改，不像 `write` 那样拦（施工 ED-1）：`old_string` 要和原文对得上、唯一才改，没读过也改不到别处去。
 6. 认写法，和 `write` 一样（`tools/write.md` 第 5 条），再严格地解成字：UTF-8 的要合写法；带 BOM 的 UTF-16 要是整数个两字节、没有落单的代理项；BOM 不算在字里。解不开的：不是文本，不改，要整份写的用 `write`。
 7. 照先后一处一处找，出错的那一处就停，后面的不找：
    1. `old_string` 是空的：出错，新建文件要用 `write`。
@@ -146,7 +146,6 @@ The closest text is at lines 2-2:
 | 没有 | `common/missing.txt`，加上相近的名字 | `common/missing` 或 `common/missing-similar` |
 | 是目录 | `common/directory.txt` | `common/directory` |
 | 不是普通文件 | `common/not-a-regular-file.txt` | `common/not-a-regular-file` |
-| 没读过 | `common/not-read.txt` | `common/not-read` |
 | 读过以后又改过了 | `common/stale.txt` | `common/stale` |
 | 不是 UTF-8、也不是带 BOM 的 UTF-16 | `edit/not-text.txt` | `edit/not-text` |
 | 某一处的 `old_string` 是空的 | `edit/empty.txt` | `edit/empty`，字段 `index` |
@@ -177,7 +176,7 @@ The closest text is at lines 2-2:
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/edit.rs` | 空白兜底（施工 E-D）：只差缩进的 CRLF 文件改得成、新的那段照文件的缩进和换行、结果多一句；报要写的路径；几处一起改、对照原文件、前面变长不影响后面；顶层一处的写法、`edits` 写成对象、`path` 和驼峰的字段名、没给要改的；重叠的、有一处没对上的一处都不改；CRLF、BOM、UTF-16 照原来的，新加的行照 CRLF；宽松对上只换那一段；最接近的几行、不唯一的行号、`replace_all`；没读过、改过了、没有、目录、不是文本、空的、一样的 |
+| `crates/miyu-basesystem/tests/edit.rs` | 空白兜底（施工 E-D）：只差缩进的 CRLF 文件改得成、新的那段照文件的缩进和换行、结果多一句；报要写的路径；几处一起改、对照原文件、前面变长不影响后面；顶层一处的写法、`edits` 写成对象、`path` 和驼峰的字段名、没给要改的；重叠的、有一处没对上的一处都不改；CRLF、BOM、UTF-16 照原来的，新加的行照 CRLF；宽松对上只换那一段；最接近的几行、不唯一的行号、`replace_all`；没读过的照改（施工 ED-1）；改过了、没有、目录、不是文本、空的、一样的 |
 | `crates/miyu-basesystem/tests/write.rs` | FIFO 说不是普通文件、不卡住（和 `write` 一起测） |
 | `crates/miyu-basesystem/src/edit/find/tests.rs` | 精确的位置；LF 对 CRLF 连着 `\r`；宽松的几种；宽松多出来的不算进去；精确的不唯一不往宽松找、重叠的也算不唯一；`replace_all` 不重叠；最多 10 个行号；最接近的几行、开头空行、没有像的、全是空白；Dice 系数；空白兜底（施工 E-D）：从一行头一个字对上、制表符的，两处、不从行首、`replace_all`、第一行空的不算，缩进照级换算 |
 | `crates/miyu-basesystem/src/text/tests.rs` | 严格地解：解不开的、落单的字节、落单的代理项 |

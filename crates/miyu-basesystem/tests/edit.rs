@@ -288,14 +288,35 @@ async fn a_miss_shows_the_closest_lines_and_many_matches_show_where() {
     assert_eq!(done.human, Some(said("edit/edited").with("count", "2")));
 }
 
+/// 没读过的也照改（施工 ED-1）：`old_string` 对得上就行，对不上的照旧报没找到。
+#[tokio::test]
+async fn edits_what_she_has_not_read() {
+    let site = Site::new();
+    site.file("work/a.txt", b"a\n");
+    let done = edit(
+        &site,
+        json!({"file_path": "a.txt", "old_string": "a", "new_string": "b"}),
+        Seen::new(),
+    )
+    .await;
+    assert!(!done.error, "{}", text(&done));
+    assert_eq!(bytes(&site, "a.txt"), b"b\n");
+    let done = edit(
+        &site,
+        json!({"file_path": "a.txt", "old_string": "zzz", "new_string": "c"}),
+        Seen::new(),
+    )
+    .await;
+    assert!(done.error);
+    assert_eq!(bytes(&site, "a.txt"), b"b\n");
+}
+
 #[tokio::test]
 async fn what_is_not_edited() {
     let site = Site::new();
-    // 没读过、读过以后被改了。
+    // 读过以后被改了的不改（没读过的照改，见 edits_what_she_has_not_read）。
     site.file("work/a.txt", b"a\n");
     let args = json!({"file_path": "a.txt", "old_string": "a", "new_string": "b"});
-    let done = edit(&site, args.clone(), Seen::new()).await;
-    assert_eq!(done.human, Some(said("common/not-read")));
     let stale = Seen::from([(site.real("work/a.txt"), ContentHash::of(b"older\n"))]);
     let done = edit(&site, args, stale).await;
     assert_eq!(done.human, Some(said("common/stale")));

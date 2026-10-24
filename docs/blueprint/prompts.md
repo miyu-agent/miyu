@@ -3311,7 +3311,7 @@ No results for {query}.
 
 #### `software/basesystem/common/not-read.txt`
 
-- 什么时候加进来：`write`、`edit` 要改的文件已经在了、她这个会话里没看过
+- 什么时候加进来：`write` 要改的文件已经在了、她这个会话里没看过（`edit` 施工 ED-1 起不拦）
 - token：约 15（估的）
 - 为什么加：改之前核对（照 Claude Code，`10-自带软件.md` 第五节「她看过的」）：告诉她先读。施工 4-6 中从 `write/` 挪来，两件共用，字节没改
 - 指纹：`09ba3a44`
@@ -4551,13 +4551,13 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/edit.json`
 
 - 什么时候加进来：会话的工具面里有 `edit`（每次请求都带）
-- token：209
-- 为什么加：`edit` 的说明和参数，字段名照 Claude Code，一次改几处（B6）：`edits` 里每一项 `old_string`、`new_string`、`replace_all`；说明三句：精确替换、一次几处，要先读过，最容易踩的坑是缩进和读出来的行号那一截（施工 4-6 中）
-- 指纹：`8f2fcce3`
+- token：约 202（原来 209 减去去掉的那一句，估的）
+- 为什么加：`edit` 的说明和参数，字段名照 Claude Code，一次改几处（B6）：`edits` 里每一项 `old_string`、`new_string`、`replace_all`；说明两句：精确替换、一次几处，最容易踩的坑是缩进和读出来的行号那一截（施工 4-6 中）。「要先读过」那一句随施工 ED-1 去掉：没读过的也能改（2026-10-24 项目主人定）
+- 指纹：`0e14dee1`
 
 ```json
 {
-  "description": "Make exact text replacements in a file, one or more at a time. The file must have been read first. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
+  "description": "Make exact text replacements in a file, one or more at a time. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
   "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean","description":"Replace every match. Default false."}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
 }
 ```
