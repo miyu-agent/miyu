@@ -48,7 +48,8 @@ pub struct Unsandboxed {
 }
 
 /// 管理员管得住的地方（施工 X-37 补）：放行出沙盒的工具，它的文件判那一刻的真实位置落在这几处下面的才算。这个账号家目录自己
-/// 放东西的几处（`DataRoot::own_places`）、资源目录（出厂的包），都是真实的位置。会话开的时候定下，回合开始随放行表交出去。
+/// 放东西的几处（`DataRoot::own_places`）、资源目录（出厂的包），机主的再加系统那一层装上的包（`DataRoot::real_system_packages`，
+/// 施工 U23 上上：以前那一层在机主家目录里，只有机主的算），都是真实的位置。会话开的时候定下，回合开始随放行表交出去。
 /// 空的（没给的）哪里都不算：带文件的工具一律不放行。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Confines(Vec<PathBuf>);
@@ -59,9 +60,14 @@ impl Confines {
         Confines(places)
     }
 
-    /// 数据根 `root` 里账号 `account` 自己放东西的几处，加资源目录 `resources`（出厂的包），都换成真实的位置。碰磁盘。
-    pub fn of(root: &DataRoot, account: &AccountId, resources: &Path) -> Confines {
+    /// 数据根 `root` 里账号 `account` 自己放东西的几处，加资源目录 `resources`（出厂的包），都换成真实的位置；`account` 是机主的
+    /// （`owner`）再加系统那一层装上的包（施工 U23 上上：照挪之前，成员的系统装的脚本照沙盒跑；组里别的管理员算不算等 U23 下）。
+    /// 碰磁盘。
+    pub fn of(root: &DataRoot, (account, owner): (&AccountId, bool), resources: &Path) -> Confines {
         let mut places = root.own_places(account);
+        if owner {
+            places.push(root.real_system_packages());
+        }
         places.push(std::fs::canonicalize(resources).unwrap_or_else(|_| resources.to_path_buf()));
         Confines(places)
     }

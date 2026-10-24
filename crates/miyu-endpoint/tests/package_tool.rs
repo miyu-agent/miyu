@@ -81,11 +81,7 @@ fn requests(home: &Home, session: &str) -> Vec<Value> {
 }
 
 fn installed(home: &Home, id: &str) -> bool {
-    home.root
-        .path()
-        .join("home/alice/packages")
-        .join(id)
-        .exists()
+    home.root.path().join("system/packages").join(id).exists()
 }
 
 #[tokio::test]
@@ -189,11 +185,11 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
 async fn a_name_clash_tells_her_what_and_where() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/zkit/package.toml",
+        "system/packages/zkit/package.toml",
         "[package]\nname = { en = \"Z\" }\n",
     );
     home.write(
-        "home/alice/packages/zkit/skills/notes/SKILL.md",
+        "system/packages/zkit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let folder = kit(&home, "akit");

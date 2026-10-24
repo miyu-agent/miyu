@@ -87,11 +87,7 @@ async fn listed(client: &mut Client, id: &str) -> Option<Value> {
 
 /// 管理员家目录那一层里的这个包。
 fn placed(home: &Home, id: &str) -> bool {
-    home.root
-        .path()
-        .join("home/alice/packages")
-        .join(id)
-        .exists()
+    home.root.path().join("system/packages").join(id).exists()
 }
 
 #[tokio::test]

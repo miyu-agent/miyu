@@ -105,14 +105,14 @@ async fn a_package_with_missing_depends_is_refused_and_a_depended_one_stays() {
 async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_read() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/addon/package.toml",
+        "system/packages/addon/package.toml",
         &manifest(
             "Addon",
             "\n[depends]\nworkers = [\"base\"]\n\n[recommends]\npackages = [\"nice\"]\n",
         ),
     );
     home.write(
-        "home/alice/packages/relay/package.toml",
+        "system/packages/relay/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[export]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
     );
     let mut client = connected(&home).await;
@@ -140,10 +140,7 @@ async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_
         .filter(|problem| problem["code"] == "depends_missing")
         .collect();
     assert_eq!(problems.len(), 1, "{reply}");
-    assert_eq!(
-        problems[0]["file"],
-        "home/alice/packages/addon/package.toml"
-    );
+    assert_eq!(problems[0]["file"], "system/packages/addon/package.toml");
     assert_eq!(problems[0]["message"], "缺少依赖的软件包：base");
 }
 
@@ -156,10 +153,7 @@ async fn an_extension_missing_its_depends_is_not_started() {
     let args: Vec<String> = ["hello", "serve"].iter().map(ToString::to_string).collect();
     install(&home, "ctrl", &program.name(), "always", &args);
     install(&home, "relay", &program.name(), "always", &args);
-    let relay = home
-        .root
-        .path()
-        .join("home/alice/packages/relay/package.toml");
+    let relay = home.root.path().join("system/packages/relay/package.toml");
     let text = std::fs::read_to_string(&relay).expect("装好了");
     std::fs::write(
         &relay,

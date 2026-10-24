@@ -183,3 +183,50 @@ fn personal_settings_cannot_grant() {
     let system = miyu_config::parse::parse(ITEMS, Layer::System, source).expect("写法对");
     assert!(system.problems.is_empty(), "{:?}", system.problems);
 }
+
+/// 管理员管得住的地方（施工 U23 上上）：系统那一层装上的包（`system/packages/`）里的文件只对机主算（照挪之前：那一层在他家目录里），
+/// 成员的照沙盒跑；别人家目录的谁都不算。
+#[test]
+fn installed_packages_in_the_system_layer_are_controlled_only_for_the_owner() {
+    let site = Scratch::new("system");
+    let env = miyu_store::env::Env {
+        platform: miyu_store::env::Platform::current(),
+        miyu_home: Some(site.0.join("data").into_os_string()),
+        home: None,
+        xdg_cache_home: None,
+        local_app_data: None,
+        miyu_resources: None,
+        exe: None,
+    };
+    let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
+    for file in [
+        "data/system/packages/kit/scripts/run.py",
+        "data/home/bob/scripts/run.py",
+    ] {
+        let path = site.0.join(file);
+        std::fs::create_dir_all(path.parent().expect("有上级")).unwrap();
+        std::fs::write(&path, "x").unwrap();
+    }
+    let system = site.0.join("data/system/packages/kit/scripts/run.py");
+    let alice = AccountId::parse("alice").expect("合写法");
+    let owner = Confines::of(&root, (&alice, true), &site.0.join("own"));
+    assert_eq!(
+        owner.hold(&system),
+        Some(site.real("data/system/packages/kit/scripts/run.py")),
+        "机主的算"
+    );
+    assert_eq!(
+        owner.hold(&site.0.join("data/home/bob/scripts/run.py")),
+        None,
+        "别人家目录的不算"
+    );
+    let bob = AccountId::parse("bob").expect("合写法");
+    let member = Confines::of(&root, (&bob, false), &site.0.join("own"));
+    assert_eq!(member.hold(&system), None, "成员的不算，照沙盒跑");
+    assert!(
+        member
+            .hold(&site.0.join("data/home/bob/scripts/run.py"))
+            .is_some(),
+        "他自己的照旧算"
+    );
+}

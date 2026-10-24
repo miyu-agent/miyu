@@ -79,7 +79,7 @@ async fn a_member_s_session_cannot_install_a_package_with_a_process() {
     assert_eq!(said.len(), 1, "{said:?}");
     assert!(said[0].contains("not_permitted"), "{said:?}");
     assert!(!home.root.path().join("home/bob/packages/ext").exists());
-    assert!(!home.root.path().join("home/alice/packages/ext").exists());
+    assert!(!home.root.path().join("system/packages/ext").exists());
 }
 
 #[tokio::test]
@@ -102,7 +102,7 @@ async fn the_owner_s_session_still_installs_it() {
     client.say("s1", &session, "装上它").await;
     home.until_turns(&session, 1).await;
     assert!(
-        home.root.path().join("home/alice/packages/ext").exists(),
+        home.root.path().join("system/packages/ext").exists(),
         "{:?}",
         results(&home, &alice(), &session)
     );
@@ -140,7 +140,7 @@ async fn a_member_s_session_cannot_install_a_package_without_a_process_either() 
     assert_eq!(said.len(), 1, "{said:?}");
     assert!(said[0].contains("not_permitted"), "{said:?}");
     assert!(!home.root.path().join("home/bob/packages/kit").exists());
-    assert!(!home.root.path().join("home/alice/packages/kit").exists());
+    assert!(!home.root.path().join("system/packages/kit").exists());
 }
 
 /// 成员会话里她调 `package` 卸机主装的包、启用机主装的扩展（施工 Y-5 下下，主会话 2026-10-24 审出的另两半）：都拒
@@ -149,14 +149,14 @@ async fn a_member_s_session_cannot_install_a_package_without_a_process_either() 
 async fn a_member_s_session_cannot_remove_or_enable_either() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
     home.write(
-        "home/alice/packages/kit/skills/notes/SKILL.md",
+        "system/packages/kit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
-    let ext = extension(&home.root.path().join("home/alice/packages"), "ext");
+    let ext = extension(&home.root.path().join("system/packages"), "ext");
     std::fs::write(
         ext.join("package.toml"),
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ext\" }\n\n[command]\nname = \"ext\"\nprogram = \"miyu-ext\"\nabout = { en = \"X\" }\n\n[process]\ncapabilities = [\"network\"]\n",
@@ -181,7 +181,7 @@ async fn a_member_s_session_cannot_remove_or_enable_either() {
         "{said:?}"
     );
     assert!(
-        home.root.path().join("home/alice/packages/kit").exists(),
+        home.root.path().join("system/packages/kit").exists(),
         "包还在"
     );
     let switches =

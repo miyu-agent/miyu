@@ -74,10 +74,10 @@ fn written(home: &Home, language: &str) {
         "#!/usr/bin/env python3\n# Description: Plain.\nprint('plain')\n",
     );
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
-    home.write("home/alice/packages/kit/scripts/dice.py", &echo("dice"));
+    home.write("system/packages/kit/scripts/dice.py", &echo("dice"));
 }
 
 #[tokio::test]

@@ -146,11 +146,11 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
         &script("Shipped."),
     );
     places.write(
-        "data/home/admin/packages/a-kit/package.toml",
+        "data/system/packages/a-kit/package.toml",
         &manifest("a-kit"),
     );
     places.write(
-        "data/home/admin/packages/a-kit/scripts/weather.sh",
+        "data/system/packages/a-kit/scripts/weather.sh",
         &script("Installed."),
     );
     let (scripts, skipped) = places.found();
@@ -160,7 +160,7 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     assert!(
         skipped[0]
             .path
-            .ends_with("home/admin/packages/a-kit/scripts/weather.sh")
+            .ends_with("system/packages/a-kit/scripts/weather.sh")
     );
 }
 

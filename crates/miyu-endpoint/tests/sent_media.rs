@@ -134,10 +134,7 @@ async fn handed_over_from_its_own_blobs(system_account: bool) {
             "serve",
         ]),
     );
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/memes/package.toml");
+    let manifest = home.root.path().join("system/packages/memes/package.toml");
     let text = std::fs::read_to_string(&manifest).expect("装好了");
     if system_account {
         std::fs::write(&manifest, format!("{text}system_account = true\n")).expect("写得进");

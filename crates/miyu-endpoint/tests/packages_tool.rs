@@ -93,7 +93,7 @@ async fn a_session_looks_at_packages_through_the_core() {
         (json!("pane"), json!("2"), json!("ui"))
     );
     assert!(
-        !home.root.path().join("home/alice/packages/pane").exists(),
+        !home.root.path().join("system/packages/pane").exists(),
         "看一眼不装"
     );
     drop(client);

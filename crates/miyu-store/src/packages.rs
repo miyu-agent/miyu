@@ -104,12 +104,13 @@ pub struct Packages {
 }
 
 impl Packages {
-    /// 照资源目录 `resources`、数据根 `root`、管理员 `admin` 定两层的位置。
+    /// 照资源目录 `resources`、数据根 `root`、管理员 `admin` 定两层的位置：出厂的、系统那一层装上的（`system/packages/`，施工
+    /// U23 上上；以前在机主家目录，协议上这一层照旧叫 `home`）。旧位置没挪成的照旧位置读（[`migrate::system_layer`]）。
     pub fn new(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Packages {
         Packages {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("packages")),
-                (Layer::Home, root.account_dir(admin).join("packages")),
+                (Layer::Home, migrate::system_layer(root, admin)),
             ],
             state: root.state().join("packages"),
             admin: Some(admin.clone()),

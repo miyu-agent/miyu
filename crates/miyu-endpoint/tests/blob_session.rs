@@ -51,10 +51,7 @@ pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
 
 /// 装好的包 `bot` 是接 QQ 的桥（`[connection] platform`）。
 pub(crate) fn on_qq(home: &Home) {
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/bot/package.toml");
+    let manifest = home.root.path().join("system/packages/bot/package.toml");
     let text = std::fs::read_to_string(&manifest).expect("装好了");
     std::fs::write(
         &manifest,

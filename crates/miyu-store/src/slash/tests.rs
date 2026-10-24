@@ -116,12 +116,9 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     let places = Places::new();
     places.write("res/packages/z-tools/package.toml", &package("z-tools"));
     places.write("res/packages/z-tools/commands/review.md", "Shipped.\n");
+    places.write("data/system/packages/a-kit/package.toml", &package("a-kit"));
     places.write(
-        "data/home/admin/packages/a-kit/package.toml",
-        &package("a-kit"),
-    );
-    places.write(
-        "data/home/admin/packages/a-kit/commands/review.md",
+        "data/system/packages/a-kit/commands/review.md",
         "Installed.\n",
     );
     let (commands, skipped) = places.found();
@@ -133,7 +130,7 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     assert!(
         skipped[0]
             .path
-            .ends_with("home/admin/packages/a-kit/commands/review.md")
+            .ends_with("system/packages/a-kit/commands/review.md")
     );
 }
 

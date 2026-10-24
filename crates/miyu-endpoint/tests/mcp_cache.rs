@@ -126,10 +126,7 @@ async fn an_extension_carries_its_services_on_and_off() {
         "always",
         &steps(&["hello", "wait"]),
     );
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/relay/package.toml");
+    let manifest = home.root.path().join("system/packages/relay/package.toml");
     let mut text = std::fs::read_to_string(&manifest).unwrap();
     text.push_str(&format!(
         "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\nneed_load = false\n"

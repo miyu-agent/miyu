@@ -204,7 +204,7 @@ async fn a_server_follows_the_secret_it_uses() {
         ),
     );
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         &format!(
             "[package]\nname = {{ en = \"kit\" }}\n\n[[mcp]]\nname = \"kitted\"\nurl = \"{}\"\nbearer = {{ secret = \"t\" }}\n",
             packaged.url

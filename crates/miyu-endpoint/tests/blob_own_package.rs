@@ -68,7 +68,7 @@ fn link_out(_packages: &Path, _other: &Path) -> Option<String> {
 #[tokio::test]
 async fn an_extension_stores_files_from_its_own_package_folder_only() {
     let home = Home::new();
-    let packages = home.root.path().join("home/alice/packages");
+    let packages = home.root.path().join("system/packages");
     let own = packages.join("memes/files/cat.png");
     let other = packages.join("other/files/secret.txt");
     std::fs::create_dir_all(own.parent().expect("有上一层")).expect("建得了");

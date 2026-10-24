@@ -310,7 +310,7 @@ async fn a_package_installed_later_gets_its_system_account_at_once() {
         true,
     );
     let source = home.work.join("bot");
-    std::fs::rename(home.root.path().join("home/alice/packages/bot"), &source).expect("挪得动");
+    std::fs::rename(home.root.path().join("system/packages/bot"), &source).expect("挪得动");
     let mut client = Client::connect(core.clone());
     client.hello().await;
     let reply = client
@@ -339,7 +339,7 @@ async fn a_package_installed_later_gets_its_system_account_at_once() {
 async fn a_shipped_package_brought_back_gets_its_system_account_at_once() {
     // 出厂的扩展用测试自己放的夹具（施工 S-6 下：接入QQ 搬出了核心仓库）。
     let home = Home::new();
-    home.write("home/alice/packages/courier.removed", "");
+    home.write("system/packages/courier.removed", "");
     let resources = shipped::resources(&home);
     let core = Arc::new(shipped::core(&home, &resources, &Script::new([])));
     let courier = AccountId::parse(shipped::ID).expect("合写法");

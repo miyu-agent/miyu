@@ -38,7 +38,7 @@ impl Places {
     fn write(&self, layer: Layer, file: &str, text: &str) {
         let base = match layer {
             Layer::Shipped => "res/packages",
-            Layer::Home => "data/home/admin/packages",
+            Layer::Home => "data/system/packages",
         };
         let path = self.scratch.path().join(base).join(file);
         fs::create_dir_all(path.parent().unwrap()).unwrap();

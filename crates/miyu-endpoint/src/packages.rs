@@ -11,7 +11,8 @@ use miyu_config::{Item, Words};
 use miyu_kernel::id::AccountId;
 use miyu_policy::features::{Feature, Features};
 use miyu_store::human::Human;
-use miyu_store::packages::{Found, Issue, Packages, migrate};
+use miyu_store::packages::migrate::{self, ToSystem};
+use miyu_store::packages::{Found, Issue, Packages};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -66,8 +67,10 @@ pub(crate) fn packages(core: &Core) -> Packages {
 
 /// 核心起来时读一次：写错的、撞了的各记一行 `WARN package invalid`，读不了的 `WARN package unreadable`。读之前把家目录里
 /// 以前的写法挪成新的（施工 F-8 上），挪了的记一行 `INFO package moved`，挪不了的 `WARN package not moved`；写了 `kind` 的
-/// 改成照表认的（施工 F-8 上补），`INFO package rewritten`、`WARN package not rewritten`。
+/// 改成照表认的（施工 F-8 上补），`INFO package rewritten`、`WARN package not rewritten`。再之前把系统那一层从机主家目录挪到
+/// `system/packages/`（施工 U23 上上，`to_system`）。
 pub fn load(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Vec<Found> {
+    to_system(root, admin);
     let packages = Packages::new(resources, root, admin);
     if let Some(home) = packages.home_dir() {
         for moved in migrate::old_layout(home) {
@@ -106,6 +109,21 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Vec
         }
     }
     found
+}
+
+/// 系统那一层从机主 `admin` 家目录挪到 `system/packages/`（施工 U23 上上）：挪了记 `INFO packages moved to system`；两边都有的
+/// 旧的不动、照新位置用，记 `WARN packages left in home`；挪不动的照旧位置读这一次（[`Packages::new`]），记
+/// `WARN packages not moved to system`。
+fn to_system(root: &DataRoot, admin: &AccountId) {
+    let old = migrate::old_system_layer(root, admin);
+    match migrate::to_system_layer(&old, &root.system_packages()) {
+        ToSystem::Nothing => {}
+        ToSystem::Moved => tracing::info!(target: TARGET, "packages moved to system"),
+        ToSystem::Both => tracing::warn!(target: TARGET, "packages left in home"),
+        ToSystem::Failed(error) => {
+            tracing::warn!(target: TARGET, error = %error, "packages not moved to system");
+        }
+    }
 }
 
 /// `package.list`：核心这时认的（起来时读的，装卸以后当场换，施工 F-5 上），照编号排；卸掉的出厂的接在后面，带

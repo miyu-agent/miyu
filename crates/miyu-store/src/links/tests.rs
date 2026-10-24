@@ -123,11 +123,13 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
     let site = Site::new();
     let place = site.dir("data/home/admin/scripts");
     let own = site.file("data/home/admin/packages/kit/scripts/run.py");
+    let system = site.file("data/system/packages/kit/scripts/sys.py");
     let secret = site.file("data/system/secrets.toml");
     let theirs = site.file("data/home/bob/scripts/theirs.py");
     let free = site.file("elsewhere/free.py");
     for (target, name) in [
         (&own, "own.py"),
+        (&system, "sys.py"),
         (&secret, "secret.py"),
         (&theirs, "theirs.py"),
         (&free, "free.py"),
@@ -139,8 +141,8 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
     let (found, skipped) = list(&place, Kind::File, &site.fence(), |_| true);
     assert_eq!(
         names(&found),
-        ["free.py", "own.py"],
-        "数据根外面的、自己的包里的认"
+        ["free.py", "own.py", "sys.py"],
+        "数据根外面的、自己的包里的、系统那一层的包里的认（施工 U23 上上）"
     );
     let outside: Vec<(PathBuf, Option<PathBuf>)> = skipped
         .iter()
@@ -155,7 +157,7 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
         "system/、别的账号的不认，带真实位置"
     );
     let (found, skipped) = list(&place, Kind::File, &Fence::anywhere(), |_| true);
-    assert_eq!(found.len(), 4, "不碰数据根的哪里都认：{found:?}");
+    assert_eq!(found.len(), 5, "不碰数据根的哪里都认：{found:?}");
     assert!(skipped.is_empty(), "{skipped:?}");
 }
 

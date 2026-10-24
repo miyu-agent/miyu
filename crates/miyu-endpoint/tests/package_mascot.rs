@@ -41,12 +41,12 @@ fn mascot_problems(reply: &Value) -> Vec<(String, String)> {
 #[tokio::test]
 async fn a_mascot_is_listed_and_its_model_is_read() {
     let home = Home::new();
-    home.write("home/alice/packages/pudding/package.toml", PUDDING);
+    home.write("system/packages/pudding/package.toml", PUDDING);
     home.write(
-        "home/alice/packages/pudding/art/mascot.json",
+        "system/packages/pudding/art/mascot.json",
         "{\"frames\": []}",
     );
-    home.write("home/alice/packages/pudding/notes.txt", "not the model");
+    home.write("system/packages/pudding/notes.txt", "not the model");
     let mut client = connected(&home).await;
     let listed = client.call("l", "package.list", json!({})).await;
     let pudding = listed["result"]["packages"]
@@ -101,9 +101,9 @@ async fn a_mascot_is_listed_and_its_model_is_read() {
 #[tokio::test]
 async fn check_says_when_the_model_is_missing_too_big_or_not_an_object() {
     let home = Home::new();
-    home.write("home/alice/packages/pudding/package.toml", PUDDING);
+    home.write("system/packages/pudding/package.toml", PUDDING);
     let mut client = connected(&home).await;
-    let model = "home/alice/packages/pudding/art/mascot.json";
+    let model = "system/packages/pudding/art/mascot.json";
     let reply = client.call("c1", "check", json!({})).await;
     assert_eq!(
         mascot_problems(&reply),
@@ -140,19 +140,19 @@ async fn check_says_when_the_model_is_missing_too_big_or_not_an_object() {
 async fn a_mascot_takes_no_protocol_and_no_other_tables() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/a/package.toml",
+        "system/packages/a/package.toml",
         &PUDDING.replace("[package]\n", "[package]\nprotocol = [1, 1]\n"),
     );
     home.write(
-        "home/alice/packages/b/package.toml",
+        "system/packages/b/package.toml",
         &format!("{PUDDING}\n[command]\nname = \"b\"\nprogram = \"b\"\n"),
     );
     home.write(
-        "home/alice/packages/c/package.toml",
+        "system/packages/c/package.toml",
         &PUDDING.replace("art/mascot.json", "../mascot.json"),
     );
     home.write(
-        "home/alice/packages/d/package.toml",
+        "system/packages/d/package.toml",
         "[package]\nname = { en = \"D\" }\n\n[mascot]\n",
     );
     let mut client = connected(&home).await;
@@ -173,19 +173,19 @@ async fn a_mascot_takes_no_protocol_and_no_other_tables() {
         codes,
         [
             (
-                "home/alice/packages/a/package.toml".to_string(),
+                "system/packages/a/package.toml".to_string(),
                 "wrong_kind".to_string()
             ),
             (
-                "home/alice/packages/b/package.toml".to_string(),
+                "system/packages/b/package.toml".to_string(),
                 "wrong_kind".to_string()
             ),
             (
-                "home/alice/packages/c/package.toml".to_string(),
+                "system/packages/c/package.toml".to_string(),
                 "bad_mascot_model".to_string()
             ),
             (
-                "home/alice/packages/d/package.toml".to_string(),
+                "system/packages/d/package.toml".to_string(),
                 "missing_key".to_string()
             ),
         ],

@@ -248,11 +248,11 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
 async fn on_windows_a_cmd_wrapper_starts_the_service() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/wrapped/package.toml",
+        "system/packages/wrapped/package.toml",
         "[package]\nname = { en = \"wrapped\" }\n\n[[mcp]]\nname = \"wrapped\"\ncommand = [\"probe\"]\n",
     );
     home.write(
-        "home/alice/packages/wrapped/bin/probe.cmd",
+        "system/packages/wrapped/bin/probe.cmd",
         &format!("@\"{SERVER}\" %*\r\n"),
     );
     let core = core(&home, quick());

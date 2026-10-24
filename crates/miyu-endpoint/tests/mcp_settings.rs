@@ -62,7 +62,7 @@ fn row(
 #[tokio::test]
 async fn check_reports_wrong_servers_and_covered_package_servers() {
     let home = Home::new();
-    home.write("home/alice/packages/kit/package.toml", KIT);
+    home.write("system/packages/kit/package.toml", KIT);
     home.write("home/alice/settings.toml", SETTINGS);
     let mut client = connected(&home).await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -76,7 +76,7 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
         [
             row("home/alice/settings.toml", "bad_mcp", "error", 7),
             row(
-                "home/alice/packages/kit/package.toml",
+                "system/packages/kit/package.toml",
                 "mcp_covered",
                 "warning",
                 4
@@ -276,10 +276,7 @@ fn relay(home: &Home, program: &Program, start: &str, record: &str) {
         start,
         &steps(&["hello", "wait"]),
     );
-    let manifest = home
-        .root
-        .path()
-        .join("home/alice/packages/relay/package.toml");
+    let manifest = home.root.path().join("system/packages/relay/package.toml");
     let mut text = std::fs::read_to_string(&manifest).expect("读得了清单");
     text.push_str(&format!(
         "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\n"

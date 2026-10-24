@@ -135,12 +135,9 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
         "res/packages/z-tools/skills/pdf/SKILL.md",
         &skill("pdf", "Shipped."),
     );
+    places.write("data/system/packages/a-kit/package.toml", &package("a-kit"));
     places.write(
-        "data/home/admin/packages/a-kit/package.toml",
-        &package("a-kit"),
-    );
-    places.write(
-        "data/home/admin/packages/a-kit/skills/pdf/SKILL.md",
+        "data/system/packages/a-kit/skills/pdf/SKILL.md",
         &skill("pdf", "Installed."),
     );
     let (skills, skipped) = places.found();
@@ -150,7 +147,7 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     assert!(
         skipped[0]
             .path
-            .ends_with("home/admin/packages/a-kit/skills/pdf")
+            .ends_with("system/packages/a-kit/skills/pdf")
     );
 }
 

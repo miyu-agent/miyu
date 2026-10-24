@@ -114,6 +114,12 @@ impl DataRoot {
         self.path.join("system")
     }
 
+    /// 系统那一层装上的软件包（施工 U23 上上，设计 06 U23「系统装」）：`system/packages/`。以前在机主家目录的 `packages/`，核心
+    /// 起来时挪一次（`packages::migrate::to_system_layer`）。
+    pub fn system_packages(&self) -> PathBuf {
+        self.system().join("packages")
+    }
+
     /// 放各个账号家目录的地方：`home/`。
     pub fn homes(&self) -> PathBuf {
         self.path.join(HOMES)
@@ -135,17 +141,29 @@ impl DataRoot {
         OWN_PLACES.iter().map(|dir| home.join(dir)).collect()
     }
 
-    /// 系统区放技能、脚本的两处（`system/skills`、`system/scripts`）的真实位置（施工 Y-2 中上）：找的时候所有账号都认链接指到
-    /// 这两处下面的（列目录的围栏）。不算进 [`DataRoot::own_places`]：管理员放行出沙盒的文件得落在自己的地方。同
-    /// `own_places` 照数据根的真实位置接上相对路径。碰磁盘。
+    /// 系统区放技能、脚本、装上的包的三处（`system/skills`、`system/scripts`，施工 Y-2 中上；`system/packages`，施工 U23 上上）
+    /// 的真实位置：找的时候所有账号都认链接指到这几处下面的（列目录的围栏）。不算进 [`DataRoot::own_places`]：管理员放行出沙盒的
+    /// 文件得落在自己的地方（装上的包另算，[`DataRoot::real_system_packages`]）。同 `own_places` 照数据根的真实位置接上相对路径。
+    /// 碰磁盘。
     pub fn system_places(&self) -> Vec<PathBuf> {
-        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
-        let system = self.system();
-        let system = base.join(system.strip_prefix(&self.path).unwrap_or(&system));
-        ["skills", "scripts"]
+        let system = self.real_system();
+        ["skills", "scripts", "packages"]
             .iter()
             .map(|dir| system.join(dir))
             .collect()
+    }
+
+    /// 系统那一层装上的包（[`DataRoot::system_packages`]）的真实位置（施工 U23 上上）：管理员装的，放行出沙盒的文件落在这下面的
+    /// 也算管理员管得住（同出厂的包）。碰磁盘。
+    pub fn real_system_packages(&self) -> PathBuf {
+        self.real_system().join("packages")
+    }
+
+    /// 系统区的真实位置：数据根的真实位置接上 `system`（还没有的也对）。碰磁盘。
+    fn real_system(&self) -> PathBuf {
+        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
+        let system = self.system();
+        base.join(system.strip_prefix(&self.path).unwrap_or(&system))
     }
 
     /// 建一个账号的家目录和里面的工作区，已经有的不动：核心起来时给管理员建（施工 3-9 上；工作区施工 4-3 下）。

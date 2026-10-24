@@ -124,6 +124,10 @@ name = "login_log"
 path = "tests/login_log.rs"
 
 [[test]]
+name = "packages_log"
+path = "tests/packages_log.rs"
+
+[[test]]
 name = "model_call_log"
 path = "tests/model_call_log.rs"
 

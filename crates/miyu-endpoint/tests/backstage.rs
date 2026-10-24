@@ -19,7 +19,7 @@ fn with_page(home: &Home, id: &str) {
     let path = home
         .root
         .path()
-        .join(format!("home/alice/packages/{id}/package.toml"));
+        .join(format!("system/packages/{id}/package.toml"));
     let text = std::fs::read_to_string(&path).expect("装好了");
     std::fs::write(&path, format!("{text}\n[page]\ndir = \"page\"\n")).expect("写得进");
 }
@@ -50,11 +50,11 @@ async fn page_files_are_read_inside_the_page_only() {
     let program = Program::new();
     install(&home, "relay", &program.name(), "manual", &[]);
     with_page(&home, "relay");
-    home.write("home/alice/packages/relay/page/index.html", "<p>relay</p>");
-    home.write("home/alice/packages/relay/page/assets/app.js", "go()");
-    home.write("home/alice/packages/relay/secret.txt", "not for the page");
+    home.write("system/packages/relay/page/index.html", "<p>relay</p>");
+    home.write("system/packages/relay/page/assets/app.js", "go()");
+    home.write("system/packages/relay/secret.txt", "not for the page");
     let big = "x".repeat(600 * 1024);
-    home.write("home/alice/packages/relay/page/big.txt", &big);
+    home.write("system/packages/relay/page/big.txt", &big);
     install(&home, "bare", &program.name(), "manual", &[]);
     let core = core(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
@@ -110,9 +110,9 @@ async fn a_link_out_of_the_page_is_not_followed() {
     let program = Program::new();
     install(&home, "relay", &program.name(), "manual", &[]);
     with_page(&home, "relay");
-    home.write("home/alice/packages/relay/page/index.html", "<p>relay</p>");
-    home.write("home/alice/packages/relay/secret.txt", "not for the page");
-    let dir = home.root.path().join("home/alice/packages/relay");
+    home.write("system/packages/relay/page/index.html", "<p>relay</p>");
+    home.write("system/packages/relay/secret.txt", "not for the page");
+    let dir = home.root.path().join("system/packages/relay");
     std::os::unix::fs::symlink(dir.join("secret.txt"), dir.join("page/leak.txt"))
         .expect("建得了链接");
     let core = core(&home, quick());

@@ -53,7 +53,7 @@ async fn running_core(
 #[tokio::test]
 async fn a_query_of_a_package_not_installed_is_unknown_method() {
     let home = Home::new();
-    let mine = home.root.account_dir(&miyu_core::admin()).join("packages");
+    let mine = home.root.system_packages();
     std::fs::create_dir_all(&mine).expect("建得了");
     for removed in ["mermaid.removed", "net.removed"] {
         std::fs::write(mine.join(removed), "").expect("写得进");
@@ -87,7 +87,7 @@ async fn a_query_of_a_package_not_installed_is_unknown_method() {
 #[tokio::test]
 async fn memory_removed_before_start_says_not_installed() {
     let home = Home::new();
-    let mine = home.root.account_dir(&miyu_core::admin()).join("packages");
+    let mine = home.root.system_packages();
     std::fs::create_dir_all(&mine).expect("建得了");
     std::fs::write(mine.join("memory.removed"), "").expect("写得进");
     let (running, mut head) = running_core(&home, Queries::new()).await;

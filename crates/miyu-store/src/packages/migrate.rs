@@ -4,9 +4,11 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::MANIFEST;
+use crate::root::DataRoot;
+use miyu_kernel::id::AccountId;
 
 /// 挪了的一个包。
 #[derive(Debug)]
@@ -24,6 +26,56 @@ pub enum Unmoved {
     Both,
     /// 挪不动。
     Io(io::Error),
+}
+
+/// 装上的包挪没挪到系统那一层（[`to_system_layer`]）。
+#[derive(Debug)]
+pub enum ToSystem {
+    /// 旧位置没有：什么都不用做。
+    Nothing,
+    /// 整个挪过去了。
+    Moved,
+    /// 两边都有：旧的不动，照新位置用。
+    Both,
+    /// 挪不动（权限、跨盘）：旧的不动，这一次照旧位置读（[`super::Packages::new`]）。
+    Failed(io::Error),
+}
+
+/// 以前系统那一层在哪：机主 `admin` 家目录的 `packages/`（施工 U23 上上以前）。
+pub fn old_system_layer(root: &DataRoot, admin: &AccountId) -> PathBuf {
+    root.account_dir(admin).join("packages")
+}
+
+/// 系统那一层这时在哪（施工 U23 上上）：`system/packages/`；只有它还没有、旧位置还在（核心起来时挪不动，[`ToSystem::Failed`]）
+/// 的照旧位置，下次挪成了就不再走这条。
+pub fn system_layer(root: &DataRoot, admin: &AccountId) -> PathBuf {
+    let new = root.system_packages();
+    let old = old_system_layer(root, admin);
+    if fs::symlink_metadata(&new).is_err() && old.is_dir() {
+        old
+    } else {
+        new
+    }
+}
+
+/// 装上的包挪到系统那一层（施工 U23 上上，设计 06 U23）：以前装上的包放在机主家目录的 `packages/`（`old`），系统那一层挪到
+/// `system/packages/`（`new`）。`old` 是目录、`new` 还没有的，整个改名挪过去一次（缺的上级建上）；两边都有的不动；挪不动的
+/// 原样留着，下次起来再挪。
+pub fn to_system_layer(old: &Path, new: &Path) -> ToSystem {
+    if !old.is_dir() {
+        return ToSystem::Nothing;
+    }
+    if fs::symlink_metadata(new).is_ok() {
+        return ToSystem::Both;
+    }
+    let moved = match new.parent() {
+        Some(parent) => fs::create_dir_all(parent).and_then(|()| fs::rename(old, new)),
+        None => fs::rename(old, new),
+    };
+    match moved {
+        Ok(()) => ToSystem::Moved,
+        Err(error) => ToSystem::Failed(error),
+    }
 }
 
 /// 把家目录这一层 `home`（`home/<管理员>/packages/`）里以前的写法挪成新的：`<编号>.toml` 挪进同名文件夹、改名

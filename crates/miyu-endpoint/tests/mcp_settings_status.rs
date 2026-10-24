@@ -19,7 +19,7 @@ async fn covered_services_are_marked_and_settings_servers_are_listed_and_restart
     bundle(&home, "kit", "probe", &[&record]);
     // 带两个服务、只被盖住一个的包：包那一项不带 `covered`。
     home.write(
-        "home/alice/packages/pair/package.toml",
+        "system/packages/pair/package.toml",
         &format!(
             "[package]\nname = {{ en = \"pair\" }}\n\n[[mcp]]\nname = \"lone\"\ncommand = ['{SERVER}']\n\n[[mcp]]\nname = \"spare\"\ncommand = ['{SERVER}']\n"
         ),

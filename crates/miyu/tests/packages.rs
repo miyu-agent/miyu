@@ -14,7 +14,7 @@ fn manifest(name: &str, program: &str, about: &str) -> String {
 }
 
 fn install(home: &Home, id: &str, text: &str) {
-    let dir = home.root.path().join("home/admin/packages").join(id);
+    let dir = home.root.path().join("system/packages").join(id);
     std::fs::create_dir_all(&dir).expect("建得了目录");
     std::fs::write(dir.join("package.toml"), text).expect("写得进");
 }
@@ -73,7 +73,7 @@ fn a_package_command_runs_the_program_in_its_bin() {
     let home = Home::new();
     let program = format!("miyu-own-{}", std::process::id());
     install(&home, "own", &manifest("own", &program, "Own it"));
-    let bin = home.root.path().join("home/admin/packages/own/bin");
+    let bin = home.root.path().join("system/packages/own/bin");
     std::fs::create_dir_all(&bin).expect("建得了目录");
     let target = bin.join(format!("{program}{}", std::env::consts::EXE_SUFFIX));
     #[cfg(unix)]
@@ -97,7 +97,7 @@ fn a_package_command_is_told_its_package_folder() {
     let home = Home::new();
     let program = format!("miyu-printenv-{}", std::process::id());
     install(&home, "own", &manifest("own", &program, "Own it"));
-    let dir = home.root.path().join("home/admin/packages/own");
+    let dir = home.root.path().join("system/packages/own");
     std::fs::create_dir_all(dir.join("bin")).expect("建得了目录");
     std::os::unix::fs::symlink("/usr/bin/printenv", dir.join("bin").join(&program))
         .expect("链得上");

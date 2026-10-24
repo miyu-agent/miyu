@@ -336,7 +336,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, (&owner, &id), shipped.path())
+    .for_session(root, (&owner, &id, owner_is_admin), shipped.path())
     .with_workplace(default_workspace.clone());
     let ledger = crate::usage::Ledger::of(usage.as_ref(), &id, &owner);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。

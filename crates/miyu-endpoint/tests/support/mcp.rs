@@ -27,7 +27,7 @@ pub fn bundle(home: &Home, id: &str, service: &str, args: &[&str]) {
         .map(|part| format!("'{part}'"))
         .collect();
     home.write(
-        &format!("home/alice/packages/{id}/package.toml"),
+        &format!("system/packages/{id}/package.toml"),
         &format!(
             "[package]\nname = {{ en = \"{id}\" }}\n\n[[mcp]]\nname = \"{service}\"\ncommand = [{}]\nenv = {{ MIYU_MCP_PROBE = \"set\" }}\ntimeout_ms = 1000\nneed_load = false\n",
             command.join(", ")

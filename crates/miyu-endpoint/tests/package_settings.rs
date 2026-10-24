@@ -57,7 +57,7 @@ fn item<'a>(schema: &'a Value, key: &str) -> &'a Value {
 #[tokio::test]
 async fn package_settings_join_the_schema_on_the_packages_page() {
     let home = Home::new();
-    home.write("home/alice/packages/clock/package.toml", CLOCK);
+    home.write("system/packages/clock/package.toml", CLOCK);
     let mut client = connected(&home).await;
     let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();
     let port = item(&schema, "clock.port");
@@ -111,7 +111,7 @@ async fn package_settings_join_the_schema_on_the_packages_page() {
 #[tokio::test]
 async fn package_settings_have_final_values_and_wrong_ones_are_checked() {
     let home = Home::new();
-    home.write("home/alice/packages/clock/package.toml", CLOCK);
+    home.write("system/packages/clock/package.toml", CLOCK);
     home.write("system/config.toml", "[clock]\nport = 9000\n");
     let mut client = connected(&home).await;
     let got = client
@@ -168,7 +168,7 @@ async fn package_settings_have_final_values_and_wrong_ones_are_checked() {
 async fn a_package_named_like_a_core_module_declares_no_settings() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/ui/package.toml",
+        "system/packages/ui/package.toml",
         &CLOCK.replace("Clock", "Ui"),
     );
     let mut client = connected(&home).await;
@@ -202,7 +202,7 @@ async fn a_connection_package_has_its_settings_on_the_packages_page() {
         "[package]\nprotocol = [1, 1]\nname = {{ en = \"Relay\", zh = \"中转\" }}\n\n[command]\nname = \"relay\"\nprogram = \"{}\"\nabout = {{ en = \"Relay\" }}\n\n[process]\n\n[connection]\nplatform = \"relay\"\n\n[settings.port]\ntype = \"int\"\nlayers = [\"system\"]\nname = {{ en = \"Port\", zh = \"端口\" }}\n",
         program.name()
     );
-    home.write("home/alice/packages/relay/package.toml", &relay);
+    home.write("system/packages/relay/package.toml", &relay);
     let mut client = connected(&home).await;
     let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();
     let port = item(&schema, "relay.port");
@@ -227,7 +227,7 @@ async fn a_connection_package_has_its_settings_on_the_packages_page() {
 async fn a_grouped_setting_is_one_level_deeper() {
     let home = Home::new();
     let grouped = "[package]\nprotocol = [1, 1]\nname = { en = \"Chat\" }\n\n[settings.qq.port]\ntype = \"int\"\nmin = 1\nmax = 65535\ndefault = 8302\nlayers = [\"system\"]\nname = { en = \"Port\", zh = \"端口\" }\n\n[settings.web.port]\ntype = \"int\"\nmin = 1\nmax = 65535\ndefault = 8303\nlayers = [\"system\"]\nname = { en = \"Page port\" }\n\n[ui]\n";
-    home.write("home/alice/packages/chat/package.toml", grouped);
+    home.write("system/packages/chat/package.toml", grouped);
     home.write("system/config.toml", "[chat.qq]\nport = 9000\n");
     let mut client = connected(&home).await;
     let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();

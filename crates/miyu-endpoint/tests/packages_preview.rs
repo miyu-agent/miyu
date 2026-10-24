@@ -32,11 +32,7 @@ async fn call(client: &mut Client, method: &str, params: Value) -> Value {
 }
 
 fn installed(home: &Home, id: &str) -> bool {
-    home.root
-        .path()
-        .join("home/alice/packages")
-        .join(id)
-        .exists()
+    home.root.path().join("system/packages").join(id).exists()
 }
 
 async fn preview(client: &mut Client, path: &Path) -> Value {
@@ -111,7 +107,7 @@ async fn installing_shows_what_comes_and_changes_nothing() {
 #[tokio::test]
 async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     let home = Home::new();
-    home.write("home/alice/packages/pane/package.toml", &pane("1"));
+    home.write("system/packages/pane/package.toml", &pane("1"));
     home.write("system/config.toml", "[pane]\nport = 9\n");
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
@@ -164,7 +160,7 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
 #[tokio::test]
 async fn restoring_a_shipped_package_shows_it() {
     let home = Home::new();
-    home.write("home/alice/packages/net.removed", "");
+    home.write("system/packages/net.removed", "");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let shown = call(
@@ -181,7 +177,7 @@ async fn restoring_a_shipped_package_shows_it() {
         (json!(true), json!("builtin")),
         "{shown}"
     );
-    let removed = home.root.path().join("home/alice/packages/net.removed");
+    let removed = home.root.path().join("system/packages/net.removed");
     assert!(removed.exists(), "什么都不动");
     let unknown = call(
         &mut client,

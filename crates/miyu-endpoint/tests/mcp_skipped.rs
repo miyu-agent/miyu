@@ -78,15 +78,15 @@ async fn tools_left_out_are_listed_and_checked() {
     said.sort();
     assert_eq!(said.len(), 2, "一个服务一条：{checked}");
     assert_eq!(
-        said[0].0, "home/alice/packages/odd/package.toml",
-        "包带的报在清单上：{said:?}"
-    );
-    assert!(said[0].1.contains("odd: "), "{said:?}");
-    assert_eq!(
-        said[1].0, "home/alice/settings.toml",
+        said[0].0, "home/alice/settings.toml",
         "个人设置里的报在个人设置上：{said:?}"
     );
-    assert!(said[1].1.contains("probe: "), "{said:?}");
+    assert!(said[0].1.contains("probe: "), "{said:?}");
+    assert_eq!(
+        said[1].0, "system/packages/odd/package.toml",
+        "包带的报在清单上：{said:?}"
+    );
+    assert!(said[1].1.contains("odd: "), "{said:?}");
     core.stop_extensions().await;
 }
 

@@ -119,8 +119,7 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
             "MIYU_PACKAGE_DIR={}",
             home.root
                 .path()
-                .join("home")
-                .join("alice")
+                .join("system")
                 .join("packages")
                 .join("echo")
                 .display()
@@ -365,14 +364,14 @@ async fn what_cannot_start_says_why_and_wrong_packages_are_refused() {
         &[],
     );
     home.write(
-        "home/alice/packages/future/package.toml",
+        "system/packages/future/package.toml",
         &format!(
             "[package]\nprotocol = [2, 3]\nname = {{ en = \"F\" }}\n\n[command]\nname = \"future\"\nprogram = \"{}\"\nabout = {{ en = \"F\" }}\n\n[process]\n",
             program.name()
         ),
     );
     home.write(
-        "home/alice/packages/face/package.toml",
+        "system/packages/face/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Face\" }\n\n[ui]\n",
     );
     let core = core(&home, quick());

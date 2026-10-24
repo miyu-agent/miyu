@@ -24,11 +24,11 @@ fn written(home: &Home) {
         &skill("package-creator", &["  display_name: My packages"]),
     );
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
     home.write(
-        "home/alice/packages/kit/skills/kit-notes/SKILL.md",
+        "system/packages/kit/skills/kit-notes/SKILL.md",
         &skill(
             "kit-notes",
             &[
@@ -121,7 +121,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
             "package": "kit",
             "display_name": "キットメモ",
             "summary": "只有中文的说明",
-            "path": "~/home/alice/packages/kit/skills/kit-notes/SKILL.md",
+            "path": "~/system/packages/kit/skills/kit-notes/SKILL.md",
             "on": true,
         }),
         "装的包带的：照日文挑，没写日文、英文的说明照中文"

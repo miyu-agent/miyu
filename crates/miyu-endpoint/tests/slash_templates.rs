@@ -86,15 +86,12 @@ async fn a_template_is_said_as_one_line_and_shown_as_typed() {
 async fn ones_own_covers_a_packages_and_a_builtin_name_stays_builtin() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
+    home.write("system/packages/kit/commands/review.md", "From the kit.\n");
     home.write(
-        "home/alice/packages/kit/commands/review.md",
-        "From the kit.\n",
-    );
-    home.write(
-        "home/alice/packages/kit/commands/lint.md",
+        "system/packages/kit/commands/lint.md",
         "Lint $ARGUMENTS[0].\n",
     );
     home.write("home/alice/commands/review.md", "My own review.\n");
@@ -255,10 +252,10 @@ async fn in_a_venue_the_same_people_as_for_builtins_may_run_one() {
     // 放在包里：场所会话的属主不一定是管理员，包里的谁都找得到。
     let home = Home::new();
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("home/alice/packages/kit/commands/review.md", REVIEW);
+    home.write("system/packages/kit/commands/review.md", REVIEW);
     let script = Script::new([Play::Says("在。")]);
     let mut client = Client::connect(bound_core(&home, &script, Catalog::default()));
     client.hello().await;
@@ -304,10 +301,10 @@ async fn check_says_which_templates_are_not_used() {
     home.write("home/alice/commands/stop.md", "Not the builtin.\n");
     home.write("home/alice/commands/Bad.md", "x\n");
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("home/alice/packages/kit/commands/review.md", "Theirs.\n");
+    home.write("system/packages/kit/commands/review.md", "Theirs.\n");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;

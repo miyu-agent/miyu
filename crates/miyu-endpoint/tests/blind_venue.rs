@@ -96,7 +96,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
             &capabilities,
         );
         if *needs {
-            let manifest = format!("home/alice/packages/{id}/package.toml");
+            let manifest = format!("system/packages/{id}/package.toml");
             let text = read(&home.root.path().join(&manifest));
             home.write(
                 &manifest,

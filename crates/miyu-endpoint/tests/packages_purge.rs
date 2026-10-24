@@ -25,7 +25,7 @@ fn read(home: &Home, relative: &str) -> String {
 #[tokio::test]
 async fn removing_a_package_forgets_its_settings_and_state() {
     let home = Home::new();
-    home.write("home/alice/packages/xcfg/package.toml", XCFG);
+    home.write("system/packages/xcfg/package.toml", XCFG);
     home.write(
         "system/config.toml",
         "# 留着\nlog.level = \"debug\"\n\n[xcfg]\nport = 9000\n",
@@ -105,9 +105,7 @@ async fn removing_an_extension_forgets_its_switch_and_approvals() {
     let source = home.work.join("again").join("echo");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::copy(
-        home.root
-            .path()
-            .join("home/alice/packages/echo/package.toml"),
+        home.root.path().join("system/packages/echo/package.toml"),
         source.join("package.toml"),
     )
     .expect("拷得了");

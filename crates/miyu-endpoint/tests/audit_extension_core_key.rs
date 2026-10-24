@@ -45,7 +45,7 @@ async fn a_package_named_like_a_core_module_cannot_set_core_settings() {
     );
     let plan: Vec<&str> = vec![&keep, "hello", &ask, "listen"];
     home.write(
-        "home/alice/packages/ui/package.toml",
+        "system/packages/ui/package.toml",
         &manifest(&program.name(), &steps(&plan)),
     );
     let core = core_with_settings(&home, quick());

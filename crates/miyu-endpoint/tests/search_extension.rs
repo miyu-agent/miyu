@@ -43,7 +43,7 @@ async fn the_extension_is_asked_and_its_answers_are_read() {
     let (path, step) = record(&home, "finder");
     let steps = steps(&[&step, "hello", "ask:provide:{\"tools\":[]}", "serve"]);
     home.write(
-        "home/alice/packages/finder/package.toml",
+        "system/packages/finder/package.toml",
         &manifest(&program.name(), &steps),
     );
     let core = Arc::new(

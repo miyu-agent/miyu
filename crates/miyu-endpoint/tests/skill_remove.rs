@@ -20,11 +20,11 @@ async fn connected(home: &Home) -> Client {
         &skill("package-creator"),
     );
     home.write(
-        "home/alice/packages/kit/package.toml",
+        "system/packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
     home.write(
-        "home/alice/packages/kit/skills/kit-notes/SKILL.md",
+        "system/packages/kit/skills/kit-notes/SKILL.md",
         &skill("kit-notes"),
     );
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);

@@ -69,7 +69,7 @@ async fn opening_an_extension_asks_with_its_capabilities() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "home/alice/packages/relay/package.toml",
+        "system/packages/relay/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Relay\" }}\n\n[command]\nname = \"relay\"\nprogram = \"{}\"\nabout = {{ en = \"Relay\" }}\n\n[process]\nargs = [\"hello\", \"wait\"]\nstart = \"manual\"\ncapabilities = [\"tools\"]\n",
             program.name()
@@ -100,7 +100,7 @@ async fn opening_an_extension_asks_with_its_capabilities() {
 async fn a_package_whose_program_is_missing_is_refused_without_asking() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/ghost/package.toml",
+        "system/packages/ghost/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ghost\" }\n\n[command]\nname = \"ghost\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"G\" }\n\n[process]\n",
     );
     let plays = vec![
@@ -139,11 +139,7 @@ async fn installing_in_a_preset_that_keeps_unlisted_off_opens_it_there() {
         allow(&mut client, &home, &session, 1).await;
         home.until_turns(&session, 1).await;
         assert!(
-            home.root
-                .path()
-                .join("home/alice/packages")
-                .join(&id)
-                .exists(),
+            home.root.path().join("system/packages").join(&id).exists(),
             "装上了 {id}"
         );
         let file = home

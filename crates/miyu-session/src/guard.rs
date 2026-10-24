@@ -141,15 +141,15 @@ impl Guard {
     }
 
     /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），管理员管得住的地方（[`Confines`]：
-    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
+    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`，属主是机主的（`machine_owner`）加系统那一层装上的包），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
     #[must_use]
     pub(crate) fn for_session(
         mut self,
         root: &DataRoot,
-        (owner, id): (&AccountId, &SessionId),
+        (owner, id, machine_owner): (&AccountId, &SessionId, bool),
         resources: &Path,
     ) -> Guard {
-        self.confines = Confines::of(root, owner, resources);
+        self.confines = Confines::of(root, (owner, machine_owner), resources);
         // 会话属主自己的几处（施工 Y-11 上，家目录里照 XDG 的 pictures 这些）：边界表照工作区算，只给文件工具。成员的会话另算
         // 上他的工作区（施工 Y-2 下①）：他报的工作目录不在里面时，数据根照旧禁着，他自己的工作区不能跟着被禁。
         self.places.own = root

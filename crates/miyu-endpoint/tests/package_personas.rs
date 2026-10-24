@@ -120,11 +120,11 @@ async fn a_package_brings_personas_and_presets_and_leaves_your_edits_behind() {
 async fn a_package_preset_named_like_a_shipped_one_is_covered() {
     let home = Home::new();
     home.write(
-        "home/alice/packages/kitty/package.toml",
+        "system/packages/kitty/package.toml",
         "[package]\nname = { en = \"Kitty\" }\n",
     );
     home.write(
-        "home/alice/packages/kitty/presets/full.toml",
+        "system/packages/kitty/presets/full.toml",
         "[preset]\nname = \"Not full\"\n",
     );
     let mut client = connected(&home).await;
@@ -143,7 +143,7 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
     assert_eq!(problems[0]["kind"], "preset");
     assert_eq!(
         problems[0]["file"],
-        "home/alice/packages/kitty/presets/full.toml"
+        "system/packages/kitty/presets/full.toml"
     );
     assert_eq!(problems[0]["level"], "warning");
 }

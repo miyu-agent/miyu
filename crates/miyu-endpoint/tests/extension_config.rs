@@ -77,7 +77,7 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
     let program = Program::new();
     let (path, keep) = record(&home, "echo");
     home.write(
-        "home/alice/packages/echo/package.toml",
+        "system/packages/echo/package.toml",
         &manifest(&program.name(), &steps(&[&keep, "hello", "listen"])),
     );
     home.write(
@@ -192,7 +192,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
     plan.extend(asks.iter().map(String::as_str));
     plan.push("listen");
     home.write(
-        "home/alice/packages/echo/package.toml",
+        "system/packages/echo/package.toml",
         &manifest(&program.name(), &steps(&plan)),
     );
     let core = core_with_settings(&home, quick());

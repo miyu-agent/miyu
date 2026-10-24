@@ -37,7 +37,7 @@ async fn started(home: &Home, program: &Program) -> (Arc<miyu_endpoint::Core>, C
     let (path, step) = record(home, "wx");
     let steps = steps(&[&step, "hello", "ask:provide:{\"tools\":[]}", "serve"]);
     home.write(
-        "home/alice/packages/wx/package.toml",
+        "system/packages/wx/package.toml",
         &manifest(&program.name(), &steps),
     );
     let core = Arc::new(
@@ -134,7 +134,7 @@ async fn not_running_is_unavailable() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "home/alice/packages/wx/package.toml",
+        "system/packages/wx/package.toml",
         &manifest(&program.name(), &steps(&["hello", "wait"])),
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -225,7 +225,7 @@ async fn a_shipped_access_off_turns_the_command_off() {
         "argument = { zh = \"<城市>\" }\naccess = \"off\"\n",
     );
     assert!(manifest.contains("access = \"off\""), "{manifest}");
-    home.write("home/alice/packages/wx/package.toml", &manifest);
+    home.write("system/packages/wx/package.toml", &manifest);
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),
