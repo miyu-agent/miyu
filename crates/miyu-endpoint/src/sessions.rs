@@ -298,7 +298,7 @@ impl Sessions {
             command: child.command,
             by: parent,
             models: &*core.models,
-            tools: &core.tools,
+            tools: core.shelf_of(&child.owner),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
             lineage: Some(child.lineage),

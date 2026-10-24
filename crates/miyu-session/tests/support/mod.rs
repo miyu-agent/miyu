@@ -197,7 +197,7 @@ impl Home {
             command: lines.command.unwrap_or_else(|| id("cmd-0")),
             by: alice(),
             models,
-            tools,
+            tools: tools.clone(),
             home: Some(&self.home),
             sandbox: opening.sandbox.as_deref(),
             sandbox_cache: opening.sandbox_cache,
@@ -328,7 +328,7 @@ impl Home {
             id: session.clone(),
             place,
             models,
-            tools,
+            tools: tools.clone(),
             home: Some(&self.home),
             // 载入以后的测试不执行命令：沙盒用不了。
             sandbox: None,

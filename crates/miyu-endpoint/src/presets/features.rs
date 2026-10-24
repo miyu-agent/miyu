@@ -30,7 +30,7 @@ use crate::personas::pick;
 ///   已经列了）。
 pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
     let words = words(core, language).ok();
-    let catalog = core.tools();
+    let catalog = core.shelf_of(&carried.account).current();
     let found_packages = core.packages_of(&carried.account);
     let table = crate::scripts::features(core, &carried.account);
     let file = &found

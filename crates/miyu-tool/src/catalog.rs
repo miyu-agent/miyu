@@ -234,6 +234,16 @@ impl Catalog {
         self.formerly.retain(|_, now| !names.contains(now));
     }
 
+    /// 拿掉包 `package` 的每一件（施工 U23 中中：成员的架子拿掉机主私人的 `~home`）：脚本、MCP 服务的、提供者登记的都拿掉；随包
+    /// 卸掉的记录也拿掉（用过它的会话调到时不报「已卸载」，同没有过：不透露那个包里有过什么）。
+    #[must_use]
+    pub fn without(&self, package: &str) -> Catalog {
+        let mut catalog = self.clone();
+        catalog.take_out_where(package, |_| true);
+        catalog.gone.retain(|_, owner| owner != package);
+        catalog
+    }
+
     /// 登记一件：查过了放进目录，记下它的包。
     fn add(&mut self, package: &str, tool: Arc<dyn Tool>) -> Result<(), CatalogError> {
         let spec = tool.spec();

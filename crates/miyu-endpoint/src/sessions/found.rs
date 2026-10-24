@@ -51,7 +51,7 @@ impl Open {
                 pick,
             },
             models: &*core.models,
-            tools: &core.tools,
+            tools: core.shelf_of(&owner),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
             sandbox_cache: core.sandbox_cache_of(&owner),

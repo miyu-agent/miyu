@@ -404,3 +404,25 @@ fn scripts_are_replaced_as_a_whole_and_clashes_are_skipped() {
     let names: Vec<&str> = second.specs().map(|spec| spec.name.as_str()).collect();
     assert_eq!(names, ["notes", "read"], "原来的脚本整份拿掉了");
 }
+
+/// 拿掉一个包的每一件（施工 U23 中中）：脚本、MCP 服务的都拿掉，别的包的不动；随包卸掉的记录也拿掉。原来那份不动。
+#[test]
+fn without_a_package_takes_out_all_of_its_tools() {
+    let catalog = Catalog::new([object("read")]).unwrap();
+    let (catalog, _) = catalog.replacing_scripts(vec![
+        ("~home".to_string(), object("weather")),
+        ("kit".to_string(), object("dice")),
+    ]);
+    let (catalog, _) =
+        catalog.replacing_service("~home", "probe", vec![object("mcp__probe__ping")]);
+    let without = catalog.without("~home");
+    assert_eq!(names(&without), ["dice", "read"]);
+    assert_eq!(
+        names(&catalog),
+        ["dice", "mcp__probe__ping", "read", "weather"],
+        "原来的不动"
+    );
+    let gone = catalog.removing("~home");
+    assert!(gone.gone("weather"), "随包卸掉的有记录");
+    assert!(!gone.without("~home").gone("weather"), "拿掉以后同没有过");
+}

@@ -48,6 +48,7 @@ impl Sessions {
             DreamRoom::Session(session) => (None, Some(session)),
         };
         let owner = spec.owner;
+        let shelf = core.shelf_of(&owner);
         let workspace = "~".to_string();
         let handle = create(Create {
             root: &core.root,
@@ -81,7 +82,7 @@ impl Sessions {
             command,
             by,
             models: &*core.models,
-            tools: &core.tools,
+            tools: shelf,
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
             lineage: None,
