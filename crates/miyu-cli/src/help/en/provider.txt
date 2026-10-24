@@ -1,0 +1,19 @@
+Usage: miyu provider login [name]
+       miyu provider list [--format text|json]
+       miyu provider logout [name]
+
+A provider's key: save, list, delete.
+
+login: Save a provider's key. Without a name, pick one the config uses. The key
+does not show as you paste it, and it can come from a pipe:
+echo "$KEY" | miyu provider login deepseek
+
+list: List which providers have a key, never the key.
+
+logout: Delete a provider's key. Without a name, pick one of those that are set.
+
+Options:
+      --format text|json  Output of list: json for scripts
+      --system            login, logout: change everyone's, as an admin; omit
+                          for your own
+  -h, --help              Print help

@@ -253,7 +253,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
    - 授权服务器有 `registration_endpoint` 的动态注册（RFC 7591）：`application_type: "native"`、`token_endpoint_auth_method: "none"`、`grant_types` 带 `refresh_token`、`redirect_uris` 写 `http://127.0.0.1/callback`；拿到的照授权服务器的 `issuer` 记，授权服务器换了重新注册；
    - 都没有的，`mcp.login` 回 `oauth_unregistered`，说请人去服务那边注册、把 `client_id` 写进这张表。
    - 规范更推荐的「客户端元数据文档」（CIMD：一个固定的 https 网址放 Miyu 的客户端信息）**这一步不做**：要先定网址、开项目的 GitHub Pages，是对外发布的事，项目主人定了再单开一步。规范把动态注册标成了旧办法，但现在的服务多半还认它。
-4. **令牌存哪**。推荐：存进密钥文件（`system/secrets.toml`，0600，同 `miyu login` 存的），名字 `mcp-oauth-<服务名>`，值是一段 JSON：`access_token`、`refresh_token`、`expires_at`、`scope`、`issuer`、`client_id`、`client_secret`（动态注册给了的）。服务表里不用写引用，核心照名字找。日志、事件、协议的回应里都不出现令牌、授权码、`code_verifier`；`secret.list` 照旧只列名字，扩展读不到值。
+4. **令牌存哪**。推荐：存进密钥文件（`system/secrets.toml`，0600，同 `miyu provider login` 存的），名字 `mcp-oauth-<服务名>`，值是一段 JSON：`access_token`、`refresh_token`、`expires_at`、`scope`、`issuer`、`client_id`、`client_secret`（动态注册给了的）。服务表里不用写引用，核心照名字找。日志、事件、协议的回应里都不出现令牌、授权码、`code_verifier`；`secret.list` 照旧只列名字，扩展读不到值。
 5. **续期**。推荐：`access_token` 到期前 60 秒、或者服务回 401 时，拿 `refresh_token` 换新的（同一个 `resource`、`scope`），成了存回、重发那一次请求。没有 `refresh_token` 或换不成的（`invalid_grant` 这类），服务记成 `needs_login`，推 `mcp.changed`，日志写一行 `WARN mcp oauth refresh failed service=… error=<OAuth 的 error 码>`，不写令牌。
 6. **权限范围不够**（服务回 `403`、`error="insufficient_scope"`）。推荐：记成 `needs_login`，下次登录要的 `scope` 是以前要的加上这次要的（规范的 step-up），不自动弹浏览器：核心不能替人点同意。第一次登录的 `scope` 照规范：`WWW-Authenticate` 里写了的照它，没写的照受保护资源元数据的 `scopes_supported`，都没有的不写。授权服务器的 `scopes_supported` 里有 `offline_access` 的加上（要 `refresh_token`）。
 7. **安全**。推荐全照规范，不降级：

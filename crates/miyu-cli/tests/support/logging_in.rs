@@ -1,4 +1,4 @@
-//! 在进程里的核心上办一次 `miyu login`、`miyu logout`（施工 8-5）：人那一头照测试给的剧本回。
+//! 在进程里的核心上办一次 `miyu provider login`、`list`、`logout`（施工 8-5）：人那一头照测试给的剧本回。
 
 use miyu_cli::{Console, LoginPlan, login_on};
 

@@ -1,4 +1,4 @@
-//! 帮助页（施工 4-11，`docs/blueprint/cli/main.md`「帮助页」）：自己写的，一种语言十五页（施工 3-8 四补加了 `recap`，五补加了 `rename`，施工 8-2 加了 `config`，施工 8-5 加了 `login`、`logout`，施工 8-11 加了 `setup`，施工 W-9 加了 `web`，施工 8-30 加了 `check`，施工 R-3 再补加了 `memory`，施工 K-7 下加了 `kb`），编进程序，资源目录找不到
+//! 帮助页（施工 4-11，`docs/blueprint/cli/main.md`「帮助页」）：自己写的，一种语言十五页（施工 3-8 四补加了 `recap`，五补加了 `rename`，施工 8-2 加了 `config`，施工 8-5 加了 `login`、`logout`（Y-13 上并成 `provider`），施工 8-11 加了 `setup`，施工 W-9 加了 `web`，施工 8-30 加了 `check`，施工 R-3 再补加了 `memory`，施工 K-7 下加了 `kb`），编进程序，资源目录找不到
 //! 也印得出。主程序把它们交给 clap 的 `override_help`：`-h`、`--help`、`miyu help <子命令>` 印的都是这几页。
 
 use crate::language::Language;
@@ -24,10 +24,8 @@ pub enum Page {
     Rename,
     /// `miyu config -h`，`miyu config get -h` 这几个子命令也印它（施工 8-2）。
     Config,
-    /// `miyu login -h`（施工 8-5）。
-    Login,
-    /// `miyu logout -h`（施工 8-5）。
-    Logout,
+    /// `miyu provider -h`，三个子命令的 `-h` 也印它（施工 8-5，Y-13 上从 `login`、`logout` 两页并成一页）。
+    Provider,
     /// `miyu sandbox -h`，`miyu sandbox setup -h`、`miyu sandbox remove -h` 也印它（施工 5-8）。
     Sandbox,
     /// `miyu service -h`，三个命令的 `-h` 也印它（施工 Z-1 下）。
@@ -57,6 +55,7 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
         "kb" => Some(Page::Kb),
         "pkg" => Some(Page::Pkg),
         "config" => Some(Page::Config),
+        "provider" => Some(Page::Provider),
         "sandbox" => Some(Page::Sandbox),
         "service" => Some(Page::Service),
         _ => None,
@@ -86,10 +85,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::Chinese, Page::Check) => include_str!("help/zh/check.txt"),
         (Language::English, Page::Config) => include_str!("help/en/config.txt"),
         (Language::English, Page::Check) => include_str!("help/en/check.txt"),
-        (Language::Chinese, Page::Login) => include_str!("help/zh/login.txt"),
-        (Language::English, Page::Login) => include_str!("help/en/login.txt"),
-        (Language::Chinese, Page::Logout) => include_str!("help/zh/logout.txt"),
-        (Language::English, Page::Logout) => include_str!("help/en/logout.txt"),
+        (Language::Chinese, Page::Provider) => include_str!("help/zh/provider.txt"),
+        (Language::English, Page::Provider) => include_str!("help/en/provider.txt"),
         (Language::Chinese, Page::Sandbox) => include_str!("help/zh/sandbox.txt"),
         (Language::Chinese, Page::Service) => include_str!("help/zh/service.txt"),
         (Language::English, Page::Service) => include_str!("help/en/service.txt"),

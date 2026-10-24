@@ -6,9 +6,9 @@
 
 密钥单独放在一份文件里，配置里只写它的名字，或者环境变量的名字。密钥只能写入、替换、删除，不能读回。
 
-这一页写配置的通用机制和密钥：清单、分层、项目配置和它的信任、校验和报错、写盘、留痕、监视和生效、密钥、协议上的 `config.*`、`secret.*`，命令行的 `miyu config`、`miyu login`、`miyu logout`。模型、供应商那一块有哪些键、各是什么意思，归 `models.md`，这一页只给它们留好位置。
+这一页写配置的通用机制和密钥：清单、分层、项目配置和它的信任、校验和报错、写盘、留痕、监视和生效、密钥、协议上的 `config.*`、`secret.*`，命令行的 `miyu config`、`miyu provider`。模型、供应商那一块有哪些键、各是什么意思，归 `models.md`，这一页只给它们留好位置。
 
-状态：图纸，定稿（2026-10-01 起草，主会话审过，项目主人同一天批准）。M8 的 8-1 到 8-5 照它施工（施工方案第三节 M8 那张表），每一节标着由哪一步做。做完一步，这一页照做好的样子改写那几节，页末「要跟着改的别的页」列的几页跟着改。8-1 到 8-5 都做完了（2026-10-01）：标着 8-1 到 8-5 的几节照做好的样子写，施工时定的记在「施工时定的」。8-6（`models.md`）用上了模型这一块的几项，类型、生效时机、控件、人起的名字那一段跟着加了，也记在那里；8-7 加了模型资料、目录更新的十六项，类型多小数、文字、时长，`MIYU_CATALOG_UPDATE`，也记在那里。8-6b（2026-10-01）：网址类型多认 `{ env = … }`，类型表那一行、第九条一带、施工时定的跟着改，也记在那里。8-8 补（2026-10-01）：挡位四项拿掉，池多 `subagent`、`description` 两项，类型多「给模型看的字」，清单、类型表、样本、给人看的字、施工时定的跟着改。命令行 `miyu config` 的样子和走法另有一页 `cli/config.md`，`miyu login`、`miyu logout` 另有一页 `cli/login.md`。
+状态：图纸，定稿（2026-10-01 起草，主会话审过，项目主人同一天批准）。M8 的 8-1 到 8-5 照它施工（施工方案第三节 M8 那张表），每一节标着由哪一步做。做完一步，这一页照做好的样子改写那几节，页末「要跟着改的别的页」列的几页跟着改。8-1 到 8-5 都做完了（2026-10-01）：标着 8-1 到 8-5 的几节照做好的样子写，施工时定的记在「施工时定的」。8-6（`models.md`）用上了模型这一块的几项，类型、生效时机、控件、人起的名字那一段跟着加了，也记在那里；8-7 加了模型资料、目录更新的十六项，类型多小数、文字、时长，`MIYU_CATALOG_UPDATE`，也记在那里。8-6b（2026-10-01）：网址类型多认 `{ env = … }`，类型表那一行、第九条一带、施工时定的跟着改，也记在那里。8-8 补（2026-10-01）：挡位四项拿掉，池多 `subagent`、`description` 两项，类型多「给模型看的字」，清单、类型表、样本、给人看的字、施工时定的跟着改。命令行 `miyu config` 的样子和走法另有一页 `cli/config.md`，`miyu provider login`、`miyu provider logout` 另有一页 `cli/login.md`。
 
 ### 在哪
 
@@ -48,8 +48,8 @@
 | `crates/miyu-core/src/serve.rs` | `core.idle_exit`（`CoreSettings`，分钟，`0` 是不退，只在系统那一层，当场生效：空闲的那一圈每次看都读这一刻的配置） | Z-1 上 |
 | `crates/miyu-core/src/settings/follow.rs` | 运行中配置换了：`log.level` 当场换级别，`ui.language` 变了重写生成的三份 | 8-4 |
 | `crates/miyu-cli/src/config.rs`、`config/` | `miyu config` 的子命令：`get`、`check`、`explain`、`path`（8-2，`config/check.rs`、`render.rs` 印的样子、`paths.rs` 文件在哪），`set`、`unset`（`config/set.rs`）、`edit`（`config/edit.rs`）、`trust`（`config/trust.rs`），人那一头的接口 `Console`（`config/console.rs`：是不是终端、读一行、开编辑器，8-3）。给人看的字在 `language/config.rs`、`language/config_write.rs`（8-3） | 8-2、8-3 |
-| `crates/miyu-cli/src/login.rs`、`login/pick.rs` | `miyu login`、`miyu logout`：选、贴 key 不回显、列出、删（8-5，`cli/login.md`）。读 key 经 `config/console.rs` 的 `Console`（关掉回显读一行用 `rpassword`）；给人看的字在 `language/login.rs` | 8-5 |
-| `crates/miyu-cli/src/help/{zh,en}/config.txt`、`login.txt`、`logout.txt` | 帮助页：`config.txt`（8-2，`miyu config` 和四个子命令印的都是它）、`login.txt`、`logout.txt`（8-5）；主帮助页多一行 `config` | 8-2、8-5 |
+| `crates/miyu-cli/src/login.rs`、`login/pick.rs` | `miyu provider login`、`list`、`logout`：选、贴 key 不回显、列出、删（8-5，`cli/login.md`）。读 key 经 `config/console.rs` 的 `Console`（关掉回显读一行用 `rpassword`）；给人看的字在 `language/login.rs` | 8-5 |
+| `crates/miyu-cli/src/help/{zh,en}/config.txt`、`provider.txt` | 帮助页：`config.txt`（8-2，`miyu config` 和四个子命令印的都是它）、`provider.txt`（8-5 原来是 `login.txt`、`logout.txt`，Y-13 上并成一页，`miyu provider` 和三个子命令印的都是它）；主帮助页多一行 `config` | 8-2、8-5 |
 | `resources/core/human/{zh,en,ja}.json` | 多一格 `config`：每一项的名字、说明、选项名，页和组的名字。`said` 里多 `config/*`：报错的话、参考文件里的几句 | 8-1、8-2 |
 | `docs/designs/samples/config/` | 样本：两份 JSON Schema、参考文件、命令行印的几样 | 8-1 起 |
 | `docs/designs/samples/journal/` | 样本：`config.changed.jsonl`、`trust.changed.jsonl`（8-3），`secret.changed.jsonl`（8-5） | 8-3、8-5 |
@@ -633,20 +633,20 @@ miyu_config::settings! {
 - 用到的环境变量：`MIYU_HOME`、`NO_COLOR`，`edit` 还有 `VISUAL`、`EDITOR`。
 - `trust` 是这一页加的第八个子命令：`22-命令行.md` 第五节只列了七个，没有界面的时候，第一次遇到项目配置得有地方问（「要跟着改的别的页」）。
 
-#### 命令行 `miyu login`、`miyu logout`（8-5）
+#### 命令行 `miyu provider`（8-5，Y-13 上从 `miyu login`、`miyu logout` 挪来）
 
-管密钥的命令（2026-10-01 项目主人定，照 opencode 的 `auth login`、`auth list`、`auth logout` 和 codex 的 `login`、`logout`）。它们调的是 `secret.set`、`secret.delete`、`secret.list`，协议不变。以后借订阅的登录（Claude Code、Codex）也走 `miyu login`（「还没有的」）。
+管密钥的命令（2026-10-01 项目主人定，照 opencode 的 `auth login`、`auth list`、`auth logout`；Y-13 上起叫 `miyu provider login`、`list`、`logout`，`miyu login`、`miyu logout` 留给登录账号，`06-多用户与身份.md`）。它们调的是 `secret.set`、`secret.delete`、`secret.list`，协议不变。以后借订阅的登录（Claude Code、Codex）也走 `miyu provider login`（「还没有的」）。
 
 | 命令 | 做什么 |
 |---|---|
-| `miyu login [名字]` | 选一个供应商，贴它的 key，不回显。写了名字的直接贴这一个 |
-| `miyu login --list` | 列出哪几家设了 key，不给看 key 本身 |
-| `miyu logout [名字]` | 删掉这一家的 key。不写名字的，从设了的里面选 |
+| `miyu provider login [名字]` | 选一个供应商，贴它的 key，不回显。写了名字的直接贴这一个 |
+| `miyu provider list` | 列出哪几家设了 key，不给看 key 本身 |
+| `miyu provider logout [名字]` | 删掉这一家的 key。不写名字的，从设了的里面选 |
 
 | 选项 | 做什么 |
 |---|---|
-| `--list` | 只给 `login` |
-| `--format text\|json` | 只给 `login --list` |
+| `--system` | 只给 `login`、`logout` |
+| `--format text\|json` | 只给 `list` |
 
 - 名字就是密钥的名字，配置里写 `{ secret = "<名字>" }` 引用它（第九条）。一家配了几个 key 的，每个 key 一个名字，例如 `bigmodel`、`bigmodel-2`。
 - key 从不写在命令行上：会进 shell 的历史。
@@ -834,16 +834,16 @@ miyu_config::settings! {
     4. 写了 `--yes`、`--no` 的，照它 `config.trust`，不问。都没写：标准输入、标准错误不是终端的，说「要在终端里回答，或者写 --yes、--no」，退出码 2。是终端的，问「项目配置只能让限制更严。信任这一份吗？[y/N]」：`y`、`yes`（不分大小写）是信任，别的、直接回车是不信任，都记下。
     5. `config.trust` 带第 1 步读到的 `version`。`config_conflict`：说「你看的时候它又被改过了，再跑一次」，退出码 1。成了：印一行灰字，退出码 0。
 
-**十一、`miyu login`、`miyu logout`**（8-5，2026-10-01 项目主人定）
+**十一、`miyu provider login`、`list`、`logout`**（8-5，2026-10-01 项目主人定）
 
 1. 连核心、握手：照第十条第 1、2 条。
 2. `login` 写了名字：照名字的写法查，不合的说「<名字> 不能当 key 的名字：……」，参数不对，退出码 2，连核心以前就说。
-3. `login` 没写名字：标准输入、标准错误都是终端的，`secret.list`，列出配置里用到的、设过的每一个密钥：编号、名字、谁在用（`used_by`）、设没设。输入编号选一个，也可以直接敲一个新名字。一个都没有：说「配置里还没有用到密钥的供应商：写 miyu login <名字>」，退出码 2。不是终端的：说「要在终端里选，或者写 miyu login <名字>」，参数不对，退出码 2，连核心以前就说。8-11 以后这里还列出目录里的供应商，选了连配置一起写（`models.md`）。
-   - 编号表、问的话在标准错误上，标准输出留给 `--list`。敲的不是列出的编号、也不合名字的写法：说第 2 条那一句，退出码 2；直接回车、读到头：说「没选」，退出码 1（2026-10-01 主会话定）。
-4. 读 key：标准输入是终端的，在标准错误上问「粘贴 <名字> 的 key（不显示）：」，关掉回显读一行（`rpassword`）。标准输入是管道的，整份读进来（`echo "$KEY" | miyu login deepseek`）。去掉前后空白是空的：说「没收到 key」，退出码 1。
+3. `login` 没写名字：标准输入、标准错误都是终端的，`secret.list`，列出配置里用到的、设过的每一个密钥：编号、名字、谁在用（`used_by`）、设没设。输入编号选一个，也可以直接敲一个新名字。一个都没有：说「配置里还没有用到密钥的供应商：写 miyu provider login <名字>」，退出码 2。不是终端的：说「要在终端里选，或者写 miyu provider login <名字>」，参数不对，退出码 2，连核心以前就说。8-11 以后这里还列出目录里的供应商，选了连配置一起写（`models.md`）。
+   - 编号表、问的话在标准错误上，标准输出留给 `list`。敲的不是列出的编号、也不合名字的写法：说第 2 条那一句，退出码 2；直接回车、读到头：说「没选」，退出码 1（2026-10-01 主会话定）。
+4. 读 key：标准输入是终端的，在标准错误上问「粘贴 <名字> 的 key（不显示）：」，关掉回显读一行（`rpassword`）。标准输入是管道的，整份读进来（`echo "$KEY" | miyu provider login deepseek`）。去掉前后空白是空的：说「没收到 key」，退出码 1。
 5. `secret.set`：成了，标准错误上印一行灰字，照回应的 `replaced` 说「存好了」或者「换掉了」。key 不印，也不印它的前几位。被拒绝的印核心的原话，退出码 1。
-6. `login --list`：`secret.list`，标准输出上一个一行：名字、已设置或未设置、谁在用。设了的在前，配置里用到、还没设的在后，灰字。一个都没有：印「还没有设过 key」。`--format json`：回应原样。
-7. `logout` 写了名字：`secret.delete`，成了印一行灰字「删掉了」。`unknown_secret`：说「<名字> 没有设过 key」，退出码 1。没写名字：终端里从设了的里面选（照第 3 条，头一行「设过的 key：」，问「选一个编号：」）；一个都没设过：说「还没有设过 key」，退出码 1。不是终端的，说「要在终端里选，或者写 miyu logout <名字>」，参数不对。
+6. `list`：`secret.list`，标准输出上一个一行：名字、已设置或未设置、谁在用。设了的在前，配置里用到、还没设的在后，灰字。一个都没有：印「还没有设过 key」。`--format json`：回应原样。
+7. `logout` 写了名字：`secret.delete`，成了印一行灰字「删掉了」。`unknown_secret`：说「<名字> 没有设过 key」，退出码 1。没写名字：终端里从设了的里面选（照第 3 条，头一行「设过的 key：」，问「选一个编号：」）；一个都没设过：说「还没有设过 key」，退出码 1。不是终端的，说「要在终端里选，或者写 miyu provider logout <名字>」，参数不对。
 8. 退出码：0 成了。1 核心拒绝了、没收到 key、没选、要删的没设过、连不上核心。2 参数不对。5 同第十条第 1 条（8-6 以前）。
 
 
@@ -972,20 +972,20 @@ A project config can only make limits stricter. Trust this one? [y/N] y
 · 这里的项目配置 ~/src/app/.miyu/config.toml 还没信任，这次没用它：miyu config trust 看一眼再定
 ```
 
-**`miyu login`、`miyu logout`**：
+**`miyu provider login`、`list`、`logout`**：
 
 ```text
-$ miyu login
+$ miyu provider login
 配置里用到的密钥：
   1  deepseek    providers.deepseek.key  已设置
   2  bigmodel-2  providers.bigmodel.key  未设置
 选一个编号，或者敲一个新名字：2
 粘贴 bigmodel-2 的 key（不显示）：
 · bigmodel-2 的 key 存好了
-$ miyu login --list
+$ miyu provider list
 deepseek    已设置  providers.deepseek.key
 bigmodel-2  已设置  providers.bigmodel.key
-$ miyu logout bigmodel-2
+$ miyu provider logout bigmodel-2
 · 删掉了 bigmodel-2 的 key
 ```
 
@@ -1251,7 +1251,7 @@ default = "full"
 # 能写：openai-chat、anthropic 或 openai-responses。只能写在系统配置或个人设置里。下一轮生效。
 # driver =
 
-# key：写 { secret = "名字" }（用 miyu login 存）或 { env = "环境变量" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。
+# key：写 { secret = "名字" }（用 miyu provider login 存）或 { env = "环境变量" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置或个人设置里。下一轮生效。
 # key =
 
@@ -2044,7 +2044,7 @@ currency = "USD"
             "type": "string"
           },
           "key": {
-            "description": "写 { secret = \"名字\" }（用 miyu login 存）或 { env = \"环境变量\" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
+            "description": "写 { secret = \"名字\" }（用 miyu provider login 存）或 { env = \"环境变量\" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置或个人设置里。下一轮生效。",
             "oneOf": [
               {
                 "additionalProperties": false,
@@ -2391,7 +2391,7 @@ currency = "USD"
 | 监视起不来 | 退回轮询，记 `WARN` |
 | 生成的文件写不成、要用的字缺了或者读不懂 | 那一份不写，记 `WARN`，照样起来（第一条第 8 条） |
 
-`miyu config` 的退出码（`miyu login`、`logout` 的见第十一条第 8 条）：
+`miyu config` 的退出码（`miyu provider login`、`list`、`logout` 的见第十一条第 8 条）：
 
 | 码 | 什么时候 |
 |---|---|
@@ -2469,7 +2469,7 @@ currency = "USD"
 | `providers.<id>.base_url` 名字（8-6） | 地址 | Address | アドレス |
 | 说明 | 这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。 | The address of this provider's API; the driver adds the path. Known providers can leave it out. | このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら書かなくてもかまいません。 |
 | `providers.<id>.key` 名字（8-6，8-25 从 `keys` 改） | key | Key | キー |
-| 说明 | 写 { secret = "名字" }（用 miyu login 存）或 { env = "环境变量" }，一个会话钉在其中一个上。空的不带认证头。 | Write { secret = "name" } (saved with miyu login) or { env = "VARIABLE" }. Each session sticks to one of them. Empty means no auth header. | { secret = "名前" }（miyu login で保存）か { env = "環境変数" } を書きます。セッションはそのうちの一つを使い続けます。空なら認証ヘッダーを付けません。 |
+| 说明 | 写 { secret = "名字" }（用 miyu provider login 存）或 { env = "环境变量" }，一个会话钉在其中一个上。空的不带认证头。 | Write { secret = "name" } (saved with miyu provider login) or { env = "VARIABLE" }. Each session sticks to one of them. Empty means no auth header. | { secret = "名前" }（miyu provider login で保存）か { env = "環境変数" } を書きます。セッションはそのうちの一つを使い続けます。空なら認証ヘッダーを付けません。 |
 | `providers.<id>.catalog` 名字（8-6） | 对应的供应商 | Catalog provider | 対応するプロバイダー |
 | 说明 | 这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。 | Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. | モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。 |
 | `providers.<id>.models.<model>.window` 名字（8-6） | 上下文窗口 | Context window | コンテキストウィンドウ |
@@ -2658,21 +2658,21 @@ currency = "USD"
 | `trust` 不信任 | · 不信任，这一份不会用。内容变了会再问 | · Not trusted. It will not be used. You will be asked again if it changes |
 | `login` 列出 | 配置里用到的密钥： | Keys the config uses: |
 | `login` 选 | 选一个编号，或者敲一个新名字： | Pick a number, or type a new name: |
-| `login` 一个都没有 | 配置里还没有用到密钥的供应商：写 miyu login <名字> | No provider in the config uses a key yet: run miyu login <name> |
+| `login` 一个都没有 | 配置里还没有用到密钥的供应商：写 miyu provider login <名字> | No provider in the config uses a key yet: run miyu provider login <name> |
 | `login` 问 key | 粘贴 <名字> 的 key（不显示）： | Paste the key for <name> (it will not show): |
 | `login` 没收到 | 没收到 key | No key was given |
 | `login` 存好了 | · <名字> 的 key 存好了 | · Saved the key for <name> |
 | `login` 换掉了 | · 换掉了 <名字> 的 key | · Replaced the key for <name> |
-| `login --list` 已设置、未设置 | 已设置、未设置 | set、not set |
-| `login --list` 一个都没有 | 还没有设过 key | No keys yet |
+| `list` 已设置、未设置 | 已设置、未设置 | set、not set |
+| `list` 一个都没有 | 还没有设过 key | No keys yet |
 | `logout` 删掉了 | · 删掉了 <名字> 的 key | · Deleted the key for <name> |
 | `logout` 没有 | <名字> 没有设过 key | <name> has no key |
 | `logout` 选的头一行（8-5，主会话定） | 设过的 key： | Keys that are set: |
 | `logout` 选（8-5，主会话定） | 选一个编号： | Pick a number: |
 | 选的时候直接回车、读到头（8-5，主会话定） | 没选 | Nothing picked |
 | 名字不合写法（写的、敲的，8-5，主会话定） | <名字> 不能当 key 的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符 | <name> cannot name a key: start with a lowercase letter and use only lowercase letters, digits, - and _, up to 64 characters |
-| 不写名字又不在终端里（8-5，主会话定） | 要在终端里选，或者写 miyu login <名字>（`logout` 写 miyu logout <名字>） | Pick in a terminal, or run miyu login <name> |
-| `--list` 谁在用连起来 | 几项用「、」连 | joined with「, 」 |
+| 不写名字又不在终端里（8-5，主会话定） | 要在终端里选，或者写 miyu provider login <名字>（`logout` 写 miyu provider logout <名字>） | Pick in a terminal, or run miyu provider login <name> |
+| `list` 谁在用连起来 | 几项用「、」连 | joined with「, 」 |
 
 **帮助页** `crates/miyu-cli/src/help/zh/config.txt`（8-2 施工时照 `cli/main.md`「帮助页」的规矩定稿，最宽 80 列；8-3 加了 `set`、`unset`、`edit`、`trust` 和 `--yes`、`--no`，样本在 `cli/config.md`）：
 
@@ -2729,53 +2729,51 @@ Options:
   -h, --help              Print help
 ```
 
-`crates/miyu-cli/src/help/zh/login.txt`、`logout.txt`（例子，8-5 定稿）：
+`crates/miyu-cli/src/help/zh/provider.txt`（例子，8-5 定稿，Y-13 上从 `login.txt`、`logout.txt` 并成一页）：
 
 ```text
-用法：miyu login [名字]
-      miyu login --list [--format text|json]
+用法：miyu provider login [名字]
+      miyu provider list [--format text|json]
+      miyu provider logout [名字]
 
-存一个供应商的 key。不写名字的，从配置里用到的里面选。贴的时候不显示，
-也可以从管道进来：echo "$KEY" | miyu login deepseek
+供应商的 key：存、列、删。
+
+login：存一个供应商的 key。不写名字的，从配置里用到的里面选。贴的时候不显示，
+也可以从管道进来：echo "$KEY" | miyu provider login deepseek
+
+list：列出哪几家设了 key，不给看 key 本身。
+
+logout：删掉一个供应商的 key。不写名字的，从设了的里面选。
 
 选项：
-      --list              列出哪几家设了 key，不给看 key 本身
-      --format text|json  --list 的输出：json 给脚本
+      --format text|json  list 的输出：json 给脚本
+      --system            login、logout：存、删大家共用的那一份，以管理员身份；
+                          不写是自己的
   -h, --help              印帮助
 ```
 
-```text
-用法：miyu logout [名字]
-
-删掉一个供应商的 key。不写名字的，从设了的里面选。
-
-选项：
-  -h, --help  印帮助
-```
-
-`crates/miyu-cli/src/help/en/login.txt`、`logout.txt`：
+`crates/miyu-cli/src/help/en/provider.txt`：
 
 ```text
-Usage: miyu login [name]
-       miyu login --list [--format text|json]
+Usage: miyu provider login [name]
+       miyu provider list [--format text|json]
+       miyu provider logout [name]
 
-Save a provider's key. Without a name, pick one the config uses. The key
+A provider's key: save, list, delete.
+
+login: Save a provider's key. Without a name, pick one the config uses. The key
 does not show as you paste it, and it can come from a pipe:
-echo "$KEY" | miyu login deepseek
+echo "$KEY" | miyu provider login deepseek
+
+list: List which providers have a key, never the key.
+
+logout: Delete a provider's key. Without a name, pick one of those that are set.
 
 Options:
-      --list              List which providers have a key, never the key
-      --format text|json  Output of --list: json for scripts
+      --format text|json  Output of list: json for scripts
+      --system            login, logout: change everyone's, as an admin; omit
+                          for your own
   -h, --help              Print help
-```
-
-```text
-Usage: miyu logout [name]
-
-Delete a provider's key. Without a name, pick one of those that are set.
-
-Options:
-  -h, --help  Print help
 ```
 
 ### 守着它的
@@ -2825,7 +2823,7 @@ Options:
 | `crates/miyu-endpoint/tests/secrets.rs`、`src/secrets/tests.rs` | 写、换、删、列（`used_by` 照最终值、没设的也列）；参数不对的九种；0600；回应、拒绝、系统日志里没有值，日志一条一条照样本、只记名字；引用取不到的报警告、设了就不报，`{ env }` 照核心的环境；密钥文件写错的算进 `config_errors`、写不了（`config_file_broken`，照上一次读好的用）；写之前的手改先记；监视看到手改（新设、换掉、删掉） | 8-5 |
 | `crates/miyu-endpoint/tests/secrets_log.rs` | 运行日志照 `TRACE` 记，走遍写、换、删、列、查、写错的参数、手改、改坏了再写：每一次改都有 `INFO secret changed`，组、别人读得到的有 `WARN secrets readable by others`，整份运行日志、系统日志里搜不到 key | 8-5 |
 | `crates/miyu-cli/src/config/tests.rs`、`link/tests.rs`、`crates/miyu/tests/config.rs` | 8-2：`get` 的值、报错一行（级别上色）、`check` 的合计、`explain` 的几行照宽度对齐（和「样子」一样，两种语言）、环境变量和不算的那一行；文件换成真的位置、`~/…`；还没有项目配置时该在哪；握手以后照回应的语言。真核心带三层起来：日志的级别和 `config problems`，`get`（一个键、全部、`--format json` 的来源）、`explain`、`check`（现在的几份、写了文件、`--system`、`--format json`）、`path`（个人、`--system`、`--project` 没有的）印的对，照 `ui.language` 说话，不认识的键退出码 1；`miyu ask` 起头说配置有错（照系统配置的英文说）；帮助页两种语言；参数不对退出码 2；没有 key、核心没在跑的退出码 5。8-3：`config/tests.rs` 照图纸对 `set`、`unset`、`edit`、`trust` 印的字（两种语言）、编辑器照 `VISUAL`、`EDITOR` 挑、经 shell 跑。`crates/miyu-cli/tests/config.rs` 在进程里起核心、人那一头照剧本回：`set`、`unset` 每一种说法（上面一层压着、本来就是、本来就没写、握手以后换语言），`edit` 用假编辑器（改错再改好、改的还在、副本在旁边、只有警告的照存、不改、放弃、读到头、编辑器出错、冲突留着副本、不在终端里、项目配置由命令行写），`trust` 没有项目配置、列出、问、`--yes`、`--no`、直接回车、不在终端里、本来就信任着、有问题的印在后面、看的时候又变了。`crates/miyu/tests/config.rs` 真核心：`set`、`unset`、`trust` 写进文件、运行日志，`set --project`、不在终端里的 `edit` 连核心以前退出码 2，`miyu ask` 起头没信任那一行 | 8-2、8-3 |
-| `crates/miyu-cli/tests/login.rs`、`login/pick/tests.rs`、`crates/miyu/tests/login.rs` | `login` 写名字、选、管道进来的 key、假终端里走关掉回显的那一条，`--list` 不带值（输出里搜不到 key），`logout`，两种语言，退出码；真核心上整份运行日志（`trace`）、系统日志里搜不到 key；`miyu config check` 印出密钥文件写错的那一行（`cli/login.md`「守着它的」） | 8-5 |
+| `crates/miyu-cli/tests/login.rs`、`login/pick/tests.rs`、`crates/miyu/tests/login.rs` | `login` 写名字、选、管道进来的 key、假终端里走关掉回显的那一条，`list` 不带值（输出里搜不到 key），`logout`，两种语言，退出码；真核心上整份运行日志（`trace`）、系统日志里搜不到 key；`miyu config check` 印出密钥文件写错的那一行（`cli/login.md`「守着它的」） | 8-5 |
 | `crates/miyu-core/tests/config_words.rs` | 8-5 的四种原因码、密钥文件开头的注释三种语言都说得出来 | 8-5 |
 | `crates/miyu-config/src/dangling/tests.rs` | `bad_reference`：供应商、池没配的一处一条、带名字、指到值那一行，列表里一个一条，配了的、不算数的那一层不报，说成话；类型「模型」只收 `<供应商>/<模型>`，池的成员写了池是 `bad_format` | 8-8 |
 | `crates/miyu-config/src/rename/tests.rs` | 供应商改名：表头、子表、点号连着的键、行内表跟着换名，别处一字不差；引用、列表里指着旧编号的换 | 8-34 |
@@ -2835,7 +2833,7 @@ Options:
 | `crates/miyu-config/src/value/tests.rs` | 有默认值的网址读写死的、引用的（8-8，`models.catalog.url`） | 8-8 |
 | `crates/miyu-config/src/item/kind/tests.rs`（8-8 补那几条） | 给模型看的字：一行、最多几个字、没有控制字符、CJK 的字占一半以上的 `bad_format`，从 TOML 和协议读、Schema、期望说要英文、宏的写法 | 8-8 补 |
 | `crates/miyu-core/tests/settings.rs`（8-8 补那一条） | `models.tiers.*` 照不认识的键警告、原样留着；池的两项读得进、写错的报 | 8-8 补 |
-| `crates/miyu-cli/src/help/tests.rs` | `config`（八个子命令的选项合在一起，8-2、8-3）、`login`、`logout`（8-5）三页列的选项和程序真有的对得上，最宽 80 列，照文件名读的是自己那一页 | 8-2、8-3、8-5 |
+| `crates/miyu-cli/src/help/tests.rs` | `config`（八个子命令的选项合在一起，8-2、8-3）、`provider`（8-5，三个子命令的选项合在一起）两页列的选项和程序真有的对得上，最宽 80 列，照文件名读的是自己那一页 | 8-2、8-3、8-5 |
 
 变异测试照施工的规矩跑（每一步的施工单写）。
 
@@ -2860,7 +2858,7 @@ Options:
 - 会话里临时改的那一层：8-10 的 `session.configure` 只换模型，记在会话的日志里（`models.md`「怎么走」第六条），不是配置的一层；别的临时开关加进来时再定（`04-核心协议.md` 第九节）。
 - 锁：管理员锁住某些项，上层写了也不算，界面显示只读（`14-配置.md` 第三节）：随多用户。
 - 谁能改按管理能力细分，清单的那一格，拒绝的原因码：随多用户（`06-多用户与身份.md` 第四节）。
-- 成员自己的密钥 `home/<账号>/secrets.toml`、成员自己的供应商，个人设置里的引用先找自己的，`miyu login` 存到自己的家目录：随多用户（`15-模型与供应商.md` M6）。
+- 成员自己的密钥 `home/<账号>/secrets.toml`、成员自己的供应商，个人设置里的引用先找自己的，`miyu provider login` 存到自己的家目录：随多用户（`15-模型与供应商.md` M6）。
 - 每个账号照自己的语言生成 Schema、参考文件（现在照管理员的）：随多用户。
 - 改了名的键：旧名字继续有效、提示新名字（`14-配置.md` 第六节）：第一次改名时加。
 - 扩展的配置项：扩展清单的 `[settings]`、`ext.<扩展>` 下的键、握手时交给扩展它那一块、推送给它（`05-内核接口.md` 第二节）：随扩展。
@@ -2871,7 +2869,7 @@ Options:
 - 项目配置的 Schema：发布到网上的地址，或者照编辑器的 Taplo 配置按路径认。
 - 网络文件系统上收不到变动：可以加一项「总是轮询」，真有人撞上再做。
 - 密钥推送：两个头同时看着「已设置、未设置」时要推，随界面（M9）。
-- 借订阅的登录（Claude Code、Codex）走 `miyu login`：随借订阅那一步（`15-模型与供应商.md` 第二节）。`miyu login` 不写名字时从目录里选供应商：随 8-11（`models.md`）。
+- 借订阅的登录（Claude Code、Codex）走 `miyu provider login`：随借订阅那一步（`15-模型与供应商.md` 第二节）。`miyu provider login` 不写名字时从目录里选供应商：随 8-11（`models.md`）。
 - 系统钥匙串：可选的密钥存法（`07-存储.md` S8）。
 - 终端界面、网页的设置页：照 `config.schema` 画，随 M9（`14-配置.md` 第九节）。直接敲 `miyu config`、不带子命令、在终端里时打开设置页，不在终端里照旧印帮助（2026-10-01 项目主人定）。
 - `miyu doctor` 报配置的错误、密钥文件的权限（`22-命令行.md` 第六节）。
@@ -2909,9 +2907,9 @@ Options:
 | 手改被看到的也记进日志（`via: file`，`by` 是内核） | 日志回答得了「这一项什么时候变成这样的」 | 只记经核心改的：手改的变化查不到 |
 | 系统的密钥改动记进系统日志 | 07 第三节只写了账号日志记 `secret.changed`，没说系统的密钥 | 记进管理员的账号日志：系统的东西散到个人那里 |
 | 密钥文件平铺 `名字 = "值"`。Unix 0600。Windows 照数据根继承的访问控制 | 最简单。用户目录在 Windows 上本来只有本人、系统、管理员组能进 | 每个密钥一张表（能加元数据）：用不上。Windows 上另设访问控制列表：多一段要 `unsafe` 的代码 |
-| `miyu login` 的名字就是密钥的名字 | 一家配了几个 key 时各有名字，和配置里的 `{ secret }` 对得上 | 按供应商的名字：一家只能存一个 key |
+| `miyu provider login` 的名字就是密钥的名字 | 一家配了几个 key 时各有名字，和配置里的 `{ secret }` 对得上 | 按供应商的名字：一家只能存一个 key |
 | 贴 key 不回显用 `rpassword`（Apache-2.0） | 三个平台都能关回显 | 自己写：Windows 上要调控制台的接口 |
-| `secret.set` 回应带 `replaced` | `miyu login` 要说「存好了」还是「换掉了」，不用先多问一次 | 回应 `{}`：先 `secret.list` 再设，多一个来回 |
+| `secret.set` 回应带 `replaced` | `miyu provider login` 要说「存好了」还是「换掉了」，不用先多问一次 | 回应 `{}`：先 `secret.list` 再设，多一个来回 |
 | `input`（人敲的字）由核心照类型读 | 各个头不用各带一份类型表。扩展的配置项也认得 | 头先要 `config.schema` 再自己转：多一个来回，每个头写一遍 |
 | 键名拼错：编辑距离不超过 3、也不超过键长的三分之一 | 短键上差 3 个字已经是另一个词了 | 固定不超过 2：长键上的拼错给不出 |
 | `MIYU_LOG` 读不懂的当没设，照配置 | 有了配置以后，退到配置比退到 `INFO` 更对 | 照原来退到 `INFO` |
@@ -2923,7 +2921,7 @@ Options:
 
 1. **项目配置照 `14-配置.md` G3 原样**：只认清单里标明能写的项，只能收紧。第一次遇到先问信不信任，按仓库在哪和内容的哈希记住，内容变了再问。`trust.toml`、`config.trust` 留着，G3 不改。M8 里项目配置能写的只有「新会话开局只读」`permission.start_read_only` 这一项。写进了第三条、「M8 的配置项」、`config.trust`。
 2. **没设界面语言时是 `auto`，跟着系统**：终端照系统的语言，网页照浏览器。写进了第二条第 8 条。
-3. **管密钥的命令叫 `miyu login`、`miyu logout`、`miyu login --list`**，照 opencode 的 `auth login`、`auth list`、`auth logout` 和 codex 的 `login`、`logout`：`login` 选供应商、贴 key 不回显，`logout` 删掉，`--list` 只列哪几家设了、不给看 key 本身。以后借订阅的登录也走它。协议照旧是 `secret.set`、`secret.delete`、`secret.list`。写进了「命令行 `miyu login`、`miyu logout`」、第十一条。
+3. **管密钥的命令叫 `miyu provider login`、`miyu provider logout`、`miyu provider list`**（Y-13 上起，原来是 `miyu login`、`miyu logout`、`miyu login --list`），照 opencode 的 `auth login`、`auth list`、`auth logout`：`login` 选供应商、贴 key 不回显，`logout` 删掉，`list` 只列哪几家设了、不给看 key 本身。以后借订阅的登录也走它。协议照旧是 `secret.set`、`secret.delete`、`secret.list`。写进了「命令行 `miyu provider`」、第十一条。
 4. **写错一项只丢这一项**：照下面几层或默认值，其余照常生效，所有的头都显示这条错。整份 TOML 读不懂的，才整份照上一份好的。写进了第二条第 4 条，`14-配置.md` 的 G8 在这个分支上补了一句。
 
 主会话照推荐定的几条（报错的开头、`edit` 有错时怎么办、只挪真要调的数）写在「起草时定的」。
@@ -3057,10 +3055,10 @@ Options:
 | `secret.set` 的参数类型不带 `Debug`；手里的密钥文件、读文件交回的、环境的 `Debug` 不印字 | 谁顺手 `{:?}` 一下都不会漏 | 只靠不去印：守不住 |
 | 手写进密钥文件的值只去掉前后空白、不是空的就收，不查控制字符、长短 | 手改的人自己负责；只有 `secret.set` 要防头传错 | 一样查：手改的一行多一种报错 |
 | `secret.list` 的 `used_by` 照不算项目配置的最终值 | 项目配置不能放供应商的 key（第三条）；「谁在用」是管理员配的 | 带上当前目录的项目配置：命令行得报目录 |
-| 命令行的 `Console` 多三样：标准输入是不是终端、关掉回显读一行（`rpassword` 7.5，Apache-2.0）、整份读管道；`miyu config` 和 `miyu login` 共用 | 测试换成照剧本回的假终端，记着走的是哪一条；关不关回显照标准输入，不照标准错误 | 起伪终端测：要加依赖，三个平台各一套 |
-| 交互选的编号表、问的话在标准错误上；直接回车、读到头说「没选」退出码 1；敲的不合写法退出码 2；`logout` 一个都没设过退出码 1；不写名字又不在终端里退出码 2（主会话定） | 标准输出留给 `--list`；没选不是用错了；敲错的和命令行上写错的同一句 | 再问一次：管道里会一直问 |
-| `--list`、编号表里整列都空的不占位置 | M8 里谁都没在用，空一列难看 | 留着空的一列 |
-| `--format` 只能和 `--list` 一起写，名字和 `--list` 只能写一个（clap 拦，退出码 2） | 帮助页就是这么写的 | 忽略：写了没用也不说 |
+| 命令行的 `Console` 多三样：标准输入是不是终端、关掉回显读一行（`rpassword` 7.5，Apache-2.0）、整份读管道；`miyu config` 和 `miyu provider login` 共用 | 测试换成照剧本回的假终端，记着走的是哪一条；关不关回显照标准输入，不照标准错误 | 起伪终端测：要加依赖，三个平台各一套 |
+| 交互选的编号表、问的话在标准错误上；直接回车、读到头说「没选」退出码 1；敲的不合写法退出码 2；`logout` 一个都没设过退出码 1；不写名字又不在终端里退出码 2（主会话定） | 标准输出留给 `list`；没选不是用错了；敲错的和命令行上写错的同一句 | 再问一次：管道里会一直问 |
+| `list`、编号表里整列都空的不占位置 | M8 里谁都没在用，空一列难看 | 留着空的一列 |
+| `--format` 只属于 `list`，`--system` 只属于 `login`、`logout`（clap 拦，退出码 2） | 帮助页就是这么写的 | 忽略：写了没用也不说 |
 
 8-6 施工时照推荐定的配置这一半（2026-10-01，施工员定，写进了正文；模型那一半在 `models.md`「施工时定的」）：
 
@@ -3159,8 +3157,8 @@ R-5 补施工时照推荐定的配置这一半（2026-10-09 核心的主会话�
 - `01-架构.md` 第九节：登记 `miyu-config` 在第 2 层。白名单加 `toml_edit`。8-1 改了：登记在第 2 层；8-1 不用 `toml_edit`，白名单随 8-2 加。 8-2 改了：白名单加 `toml_edit`。
 - `licenses.md`：新依赖 `toml_edit`（MIT OR Apache-2.0）、`notify`（CC0-1.0）、`sys-locale`（MIT OR Apache-2.0）、`rpassword`（Apache-2.0），都在能用的名单里。8-1 没有新依赖。 8-2 加了 `toml_edit`（和它带进来的 `toml_parser`、`toml_datetime`、`winnow`）、`sys-locale`，门禁过了。 8-4 加了 `notify`（和它带进来的 `notify-types`、`inotify`、`inotify-sys`、`fsevent-sys`、`walkdir`、`same-file`、`mio`），门禁过了。 8-5 加了 `rpassword`（和它带进来的 `rtoolbox`），门禁过了。
 - `14-配置.md`：G3 不改。G7 的表加「以后开的会话」。G8 补了一句只丢写错的那一项（这个分支上已经改了）。第九节「命令行」那一行加 `trust`。8-1 改了：状态那一行记一句做到哪了。 8-2 改了：状态那一行记一句做到哪了。 8-3 改了：状态那一行；G7 的表加「以后开的会话」「头下次启动」；第九节「命令行」那一行加 `trust`。 8-4 改了：状态那一行记一句做到哪了。 8-5 改了：状态那一行记一句做到哪了。
-- `07-存储.md`：第二节加 `state/config/`。第三节系统日志加 `secret.changed`（系统的密钥），账号日志的 `trust.*` 写成 `trust.changed`。 8-3 改了：第三节这两处。 8-5 改了：第九节写明密钥文件 0600、`miyu login`。
-- `22-命令行.md` 第五节：`miyu config` 加 `trust`。加 `miyu login`、`miyu logout`（`miyu login --list`）。 8-3 改了：`miyu config` 加 `trust`。 8-5 改了：加 `miyu login`、`miyu logout`。
-- `models.md`（另一个分身在画）：供应商、模型、池的键用这一页的清单声明。8-6 改了：清单登记了 `models.chat`、`providers.<id>.driver`、`base_url`、`keys`、`catalog`、`providers.<id>.models.<model>.window`；类型加了整数、网址、名字、引用、密钥的列表，生效时机加了 `next_turn`，控件加了 `text`、`number`、`list`，键里加了人起的名字那一段；没有默认值的项写 `none`；`DEEPSEEK_API_KEY` 的特判、`MIYU_DEV_*`、没 key 不拉起的规矩删了，第十条第 1 条改成一律拉起；跨项的 `bad_reference` 挪到 8-8。8-8 改了：清单登记了 `models.vision`、四个挡位、`pools.<id>.models`、`strategy`、`providers.<id>.cache`，类型加了「模型」，`bad_reference` 做了，`models.catalog.url` 照引用取。要的类型（整数、小数、网址、名字、引用、列表、表、密钥）和「人起的名字那一段」在它用上的那一步加。`models.chat` 这类的生效时机是 `new_session`。引用类的项「没有默认值」怎么算（G1 的测试要每一项有默认值），由它定，这一页的门禁照着改。取密钥经这一页的 `{ secret }`、`{ env }`。回合开始冻结的配置由它用上。`miyu login` 不写名字时列出目录里的供应商、借订阅的登录，由它接上。`DEEPSEEK_API_KEY` 的特判、`MIYU_DEV_*`、没 key 不拉起的规矩由它删，删的同一步把第十条第 1 条改成一律拉起。
+- `07-存储.md`：第二节加 `state/config/`。第三节系统日志加 `secret.changed`（系统的密钥），账号日志的 `trust.*` 写成 `trust.changed`。 8-3 改了：第三节这两处。 8-5 改了：第九节写明密钥文件 0600、`miyu provider login`。
+- `22-命令行.md` 第五节：`miyu config` 加 `trust`。加 `miyu provider login`、`miyu provider logout`（`miyu provider list`）。 8-3 改了：`miyu config` 加 `trust`。 8-5 改了：加 `miyu provider login`、`miyu provider logout`。
+- `models.md`（另一个分身在画）：供应商、模型、池的键用这一页的清单声明。8-6 改了：清单登记了 `models.chat`、`providers.<id>.driver`、`base_url`、`keys`、`catalog`、`providers.<id>.models.<model>.window`；类型加了整数、网址、名字、引用、密钥的列表，生效时机加了 `next_turn`，控件加了 `text`、`number`、`list`，键里加了人起的名字那一段；没有默认值的项写 `none`；`DEEPSEEK_API_KEY` 的特判、`MIYU_DEV_*`、没 key 不拉起的规矩删了，第十条第 1 条改成一律拉起；跨项的 `bad_reference` 挪到 8-8。8-8 改了：清单登记了 `models.vision`、四个挡位、`pools.<id>.models`、`strategy`、`providers.<id>.cache`，类型加了「模型」，`bad_reference` 做了，`models.catalog.url` 照引用取。要的类型（整数、小数、网址、名字、引用、列表、表、密钥）和「人起的名字那一段」在它用上的那一步加。`models.chat` 这类的生效时机是 `new_session`。引用类的项「没有默认值」怎么算（G1 的测试要每一项有默认值），由它定，这一页的门禁照着改。取密钥经这一页的 `{ secret }`、`{ env }`。回合开始冻结的配置由它用上。`miyu provider login` 不写名字时列出目录里的供应商、借订阅的登录，由它接上。`DEEPSEEK_API_KEY` 的特判、`MIYU_DEV_*`、没 key 不拉起的规矩由它删，删的同一步把第十条第 1 条改成一律拉起。
 - `26-提示词.md` 第十节：不用改，配置这一块没有给模型看的字。
 - 跨会话的图纸（另一个分身在画）：没有交叉。

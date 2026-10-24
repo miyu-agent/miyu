@@ -1,7 +1,7 @@
 //! 主程序 `miyu`（`docs/designs/12-进程形态与分发.md` 第三节，施工 3-9）：一个程序，像 busybox 那样按子命令
 //! 分发。`miyu ask` 是最薄的头（施工 3-9 下）；`miyu undo`（`miyu rewind`）、`miyu restore` 撤掉最后一轮、恢复（施工 4-7 下，改名施工 4-7 补）；
 //! `miyu redo` 重做最后一轮（施工 4-7 再补）；
-//! `miyu compact` 手动压缩（施工 6-8）；`miyu recap` 一句话回顾（施工 3-8 四补）；`miyu rename` 给会话起名（施工 3-8 五补）；`miyu config` 看配置（施工 8-2）；`miyu login`、`miyu logout` 管 key（施工 8-5）；`miyu setup` 接上第一个模型（施工 8-11）；`miyu sandbox setup`、`remove` 在 Windows 上装好、撤掉沙盒用户（施工 5-8）；`miyu core` 是核心进程，由头拉起，
+//! `miyu compact` 手动压缩（施工 6-8）；`miyu recap` 一句话回顾（施工 3-8 四补）；`miyu rename` 给会话起名（施工 3-8 五补）；`miyu config` 看配置（施工 8-2）；`miyu provider` 管供应商的 key（施工 8-5）；`miyu setup` 接上第一个模型（施工 8-11）；`miyu sandbox setup`、`remove` 在 Windows 上装好、撤掉沙盒用户（施工 5-8）；`miyu core` 是核心进程，由头拉起，
 //! 不写进帮助。
 //!
 //! 不认识的子命令就报错，退出码 2，绝不当成对话发给核心（R4，`22-命令行.md` 第二节）。帮助页、参数写错时说的
@@ -65,10 +65,8 @@ enum Command {
     Pkg(miyu_cli::Pkg),
     /// 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下）。
     Kb(miyu_cli::Kb),
-    /// 存一个供应商的 key，`--list` 列出哪几个设了（施工 8-5）。
-    Login(miyu_cli::Login),
-    /// 删掉一个供应商的 key（施工 8-5）。
-    Logout(miyu_cli::Logout),
+    /// 供应商的 key：存、列、删（施工 8-5，施工 Y-13 上从 `login`、`logout` 挪来）。
+    Provider(miyu_cli::Provider),
     /// 第一次接入模型（施工 8-11）。
     Setup(miyu_cli::Setup),
     /// 打开网页界面：找主程序旁边的网页软件，参数交给它（施工 W-9）。
@@ -129,11 +127,13 @@ fn main() -> ExitCode {
         .mut_subcommand("rename", |rename| {
             rename.override_help(page(language, Page::Rename))
         })
-        .mut_subcommand("login", |login| {
-            login.override_help(page(language, Page::Login))
-        })
-        .mut_subcommand("logout", |logout| {
-            logout.override_help(page(language, Page::Logout))
+        .mut_subcommand("provider", |provider| {
+            let help = page(language, Page::Provider);
+            ["login", "list", "logout"]
+                .into_iter()
+                .fold(provider.override_help(help), |provider, name| {
+                    provider.mut_subcommand(name, |sub| sub.override_help(help))
+                })
         })
         .mut_subcommand("setup", |setup| {
             setup.override_help(page(language, Page::Setup))
@@ -235,8 +235,7 @@ fn main() -> ExitCode {
         Some(Command::Memory(args)) => miyu_cli::memory(args, core),
         Some(Command::Pkg(args)) => miyu_cli::pkg(args, core),
         Some(Command::Kb(args)) => miyu_cli::kb(args, core),
-        Some(Command::Login(args)) => miyu_cli::login(args.into(), core),
-        Some(Command::Logout(args)) => miyu_cli::login(args.into(), core),
+        Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
         Some(Command::Web(args)) => miyu_cli::web(args, &miyu_core::admin()),
         Some(Command::Core { idle_seconds }) => miyu_core::main(miyu_core::Options {

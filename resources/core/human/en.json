@@ -248,7 +248,7 @@
       },
       "providers.<id>.key": {
         "name": "Key",
-        "description": "Write { secret = \"name\" } (saved with miyu login) or { env = \"VARIABLE\" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent."
+        "description": "Write { secret = \"name\" } (saved with miyu provider login) or { env = \"VARIABLE\" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent."
       },
       "providers.<id>.name": {
         "name": "Display name",

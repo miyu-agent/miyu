@@ -1,6 +1,6 @@
-//! 真核心上的 `miyu login`、`miyu logout`（施工 8-5，`docs/blueprint/config.md`「守着它的」）：管道进来的 key 存进
-//! `system/secrets.toml`，`--list` 两种格式里没有 key，`logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
-//! `--format` 不带 `--list` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
+//! 真核心上的 `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「守着它的」）：管道进来的 key 存进
+//! `system/secrets.toml`，`list` 两种格式里没有 key，`provider logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
+//! `--format` 不在 `list` 上、`--system` 不在 `list` 上、老写法 `miyu login` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
 //! 系统日志、屏幕上都搜不到 key。
 
 use std::io::Write;
@@ -84,7 +84,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let saved = run(
         &root,
         "C",
-        &["login", "deepseek", "--system"],
+        &["provider", "login", "deepseek", "--system"],
         &format!("{FAKE}\n"),
     )
     .await;
@@ -99,7 +99,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let replaced = run(
         &root,
         "zh_CN.UTF-8",
-        &["login", "deepseek", "--system"],
+        &["provider", "login", "deepseek", "--system"],
         FAKE_2,
     )
     .await;
@@ -123,25 +123,37 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         let mode = std::fs::metadata(&secrets).unwrap().permissions().mode();
         assert_eq!(mode & 0o777, 0o600);
     }
-    let empty = run(&root, "C", &["login", "other", "--system"], "  \n").await;
+    let empty = run(
+        &root,
+        "C",
+        &["provider", "login", "other", "--system"],
+        "  \n",
+    )
+    .await;
     assert_eq!(
         seen(&empty),
         (Some(1), String::new(), "No key was given\n".to_string())
     );
 
-    let listed = run(&root, "C", &["login", "--list"], "").await;
+    let listed = run(&root, "C", &["provider", "list"], "").await;
     assert_eq!(
         seen(&listed),
         (Some(0), "deepseek  set\n".to_string(), String::new())
     );
-    let json = run(&root, "C", &["login", "--list", "--format", "json"], "").await;
+    let json = run(&root, "C", &["provider", "list", "--format", "json"], "").await;
     let json: serde_json::Value = serde_json::from_slice(&json.stdout).expect("是 JSON");
     assert_eq!(
         json,
         serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "layer": "system", "used_by": []}]})
     );
 
-    let out = run(&root, "C", &["logout", "deepseek", "--system"], "").await;
+    let out = run(
+        &root,
+        "C",
+        &["provider", "logout", "deepseek", "--system"],
+        "",
+    )
+    .await;
     assert_eq!(
         seen(&out),
         (
@@ -153,7 +165,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let again = run(
         &root,
         "zh_CN.UTF-8",
-        &["logout", "deepseek", "--system"],
+        &["provider", "logout", "deepseek", "--system"],
         "",
     )
     .await;
@@ -165,7 +177,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
             "deepseek 没有设过 key\n".to_string()
         )
     );
-    let none = run(&root, "C", &["login", "--list"], "").await;
+    let none = run(&root, "C", &["provider", "list"], "").await;
     assert_eq!(text(&none.stdout), "No keys yet\n");
 
     drop(held);
@@ -200,29 +212,34 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
 async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    let bad = run(&root, "C", &["login", "Deep Seek"], FAKE).await;
+    let bad = run(&root, "C", &["provider", "login", "Deep Seek"], FAKE).await;
     assert_eq!(bad.status.code(), Some(2));
     assert!(
         text(&bad.stderr).starts_with("Deep Seek cannot name a key"),
         "{bad:?}"
     );
-    let unpicked = run(&root, "zh_CN.UTF-8", &["login"], FAKE).await;
+    let unpicked = run(&root, "zh_CN.UTF-8", &["provider", "login"], FAKE).await;
     assert_eq!(
         seen(&unpicked),
         (
             Some(2),
             String::new(),
-            "要在终端里选，或者写 miyu login <名字>\n".to_string()
+            "要在终端里选，或者写 miyu provider login <名字>\n".to_string()
         )
     );
-    let format = run(&root, "C", &["login", "--format", "json"], "").await;
-    assert_eq!(format.status.code(), Some(2), "--format 只给 --list");
-    let both = run(&root, "C", &["login", "deepseek", "--list"], "").await;
-    assert_eq!(both.status.code(), Some(2));
+    let format = run(&root, "C", &["provider", "login", "--format", "json"], "").await;
+    assert_eq!(format.status.code(), Some(2), "--format 只给 list");
+    let system = run(&root, "C", &["provider", "list", "--system"], "").await;
+    assert_eq!(system.status.code(), Some(2), "--system 只给 login、logout");
+    // 老写法不留：`miyu login`、`miyu logout` 现在是不认识的子命令（`login` 留给登录账号）。
+    for old in [&["login", "deepseek"][..], &["logout", "deepseek"][..]] {
+        let gone = run(&root, "C", old, FAKE).await;
+        assert_eq!(gone.status.code(), Some(2), "{old:?}");
+    }
     // 核心没在跑的拉起来（施工 8-6 起一律拉起，原来没设 DEEPSEEK_API_KEY 的退出码 5）。
     let mut command = Command::new(MIYU);
     command
-        .args(["login", "deepseek", "--system"])
+        .args(["provider", "login", "deepseek", "--system"])
         .env("MIYU_HOME", &root)
         .envs(crate::support::offline(&root))
         .env("MIYU_RESOURCES", crate::support::resources())
@@ -239,10 +256,19 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     assert!(root.join("system").join("secrets.toml").exists());
     home.kill_core().await;
     for (lang, language) in [("zh_CN.UTF-8", Language::Chinese), ("C", Language::English)] {
-        let help = run(&root, lang, &["login", "-h"], "").await;
-        assert_eq!(text(&help.stdout), page(language, Page::Login));
-        let help = run(&root, lang, &["logout", "--help"], "").await;
-        assert_eq!(text(&help.stdout), page(language, Page::Logout));
+        for args in [
+            &["provider", "-h"][..],
+            &["provider", "login", "-h"][..],
+            &["provider", "list", "--help"][..],
+            &["provider", "logout", "--help"][..],
+        ] {
+            let help = run(&root, lang, args, "").await;
+            assert_eq!(
+                text(&help.stdout),
+                page(language, Page::Provider),
+                "{args:?}"
+            );
+        }
     }
 }
 

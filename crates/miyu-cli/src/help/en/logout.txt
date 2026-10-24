@@ -1,7 +1,0 @@
-Usage: miyu logout [name]
-
-Delete a provider's key. Without a name, pick one of those that are set.
-
-Options:
-      --system  Delete it from everyone's, as an admin; omit for your own
-  -h, --help  Print help

@@ -1,5 +1,5 @@
 //! `miyu setup` 给人看的字（施工 8-11，`docs/blueprint/cli/setup.md`「给人看的字」）。key 从不出现在这里的任何一句里。
-//! 「没选」「没收到 key」「存好了」和贴 key 那一句照 `miyu login` 的（`language/login.rs`）。
+//! 「没选」「没收到 key」「存好了」和贴 key 那一句照 `miyu provider login` 的（`language/login.rs`）。
 
 use super::Language;
 

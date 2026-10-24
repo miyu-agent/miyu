@@ -309,7 +309,7 @@ impl<'a> Flow<'a> {
         }
     }
 
-    /// 贴的 key 试通了：存成密钥，名字是这一家在配置里的编号（和 `miyu login` 同一个方法）。
+    /// 贴的 key 试通了：存成密钥，名字是这一家在配置里的编号（和 `miyu provider login` 同一个方法）。
     async fn store(&mut self, id: &str, key: String) -> Result<(), u8> {
         let name = config_id(id);
         let stored = self

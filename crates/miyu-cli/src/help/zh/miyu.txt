@@ -15,8 +15,7 @@
   mcp logout <服务>     登出网址 MCP 服务
   config <命令>         看配置、改配置、信任项目配置
   check [文件]          查手写的文件有没有写错：配置、密钥、人格、预设、清单
-  login [名字]          存一个供应商的 key；--list 列出哪几家设了
-  logout [名字]         删掉一个供应商的 key
+  provider <命令>       存、列、删供应商的 key：login、list、logout
   setup                 接上第一个模型：选一家、贴 key，试通了写进配置
   web                   打开网页界面
   service <命令>        让核心开机、登录就起：enable、disable、status

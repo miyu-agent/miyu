@@ -169,7 +169,7 @@ MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
 | `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
 | `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
 | `headers` | With `url`: other request headers, like `{ X-Api-Key = { secret = "key" } }`, written like `env` |
-| `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu login` or the settings screen); don't put values in the manifest |
+| `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu provider login` or the settings screen); don't put values in the manifest |
 | `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms |
 | `timeout_ms` | How long one call may take |
 | `need_load` | Loaded on demand unless written: the AI normally sees only each tool's name and one line, and loads the full parameters when it needs them, which saves money for servers with many tools. `false`: always send the full parameters; write it for small servers used every day |

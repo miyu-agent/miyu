@@ -1,8 +1,8 @@
-//! `miyu login`、`miyu logout`（施工 8-5，`docs/blueprint/config.md`「怎么走」第十一条、「样子」）：在进程里起一个核心，
+//! `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「怎么走」第十一条、「样子」）：在进程里起一个核心，
 //! 在真的套接字上走一遍。人那一头是照剧本回的假终端：在不在终端里、敲什么、贴的 key。
 //!
 //! 写了名字的直接贴、不写的选（编号、新名字、直接回车、写错的、一个都没有），贴 key 走关掉回显的那一条（假终端记着
-//! 走的是哪条）、管道进来的整份读、空的不收；`--list` 两种格式；`logout` 写名字、选、没设过的；两种语言；退出码。屏幕上
+//! 走的是哪条）、管道进来的整份读、空的不收；`list` 两种格式；`logout` 写名字、选、没设过的；两种语言；退出码。屏幕上
 //! 从头到尾没有 key。
 
 use std::collections::VecDeque;
@@ -252,7 +252,7 @@ async fn misuse_is_refused_before_anything() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (2, "要在终端里选，或者写 miyu login <名字>\n")
+        (2, "要在终端里选，或者写 miyu provider login <名字>\n")
     );
     let asked = run(
         &home,
@@ -261,9 +261,10 @@ async fn misuse_is_refused_before_anything() {
         &mut piping(""),
     )
     .await;
+    assert_eq!(asked.code, 2);
     assert_eq!(
-        (asked.code, asked.err.as_str()),
-        (2, "Pick in a terminal, or run miyu logout <name>\n")
+        asked.err,
+        "Pick in a terminal, or run miyu provider logout <name>\n"
     );
     assert_eq!(secrets(&home), "", "什么都没写");
 }
@@ -278,9 +279,10 @@ async fn picking_takes_a_number_or_a_new_name() {
         &mut typing(&[], FAKE),
     )
     .await;
+    assert_eq!(asked.code, 2);
     assert_eq!(
-        (asked.code, asked.err.as_str()),
-        (2, "配置里还没有用到密钥的供应商：写 miyu login <名字>\n")
+        asked.err,
+        "配置里还没有用到密钥的供应商：写 miyu provider login <名字>\n"
     );
     run(
         &home,

@@ -169,7 +169,7 @@ tools = ["hello_greet"]
 | `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
 | `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
 | `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |
-| `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu login` 或设置页存进去），别把值写在清单里 |
+| `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu provider login` 或设置页存进去），别把值写在清单里 |
 | `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
 | `timeout_ms` | 一次调用最多等多久 |
 | `need_load` | 不写是先加载：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数，工具多的服务省钱。`false`：一直给完整的参数，工具少、天天用的服务写上 |

@@ -498,7 +498,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 #### 命令行
 
-- `miyu setup`（8-11，`cli/setup.md`）：第一次接入，走 `provider.detect`、`provider.catalog`、`provider.test`、`secret.set`、`config.set`（第七条第 5 条）。存 key 和 `miyu login` 走的是同一个方法（`config.md`）。怎么问人 2026-10-01 项目主人看过、定了（一步步问、敲数字；全屏的引导做在各个头里，「定的」第 7 条），细节照 `cli/setup.md`。`miyu ask` 没有模型时，在终端里先走它（第七条第 6 条）。
+- `miyu setup`（8-11，`cli/setup.md`）：第一次接入，走 `provider.detect`、`provider.catalog`、`provider.test`、`secret.set`、`config.set`（第七条第 5 条）。存 key 和 `miyu provider login` 走的是同一个方法（`config.md`）。怎么问人 2026-10-01 项目主人看过、定了（一步步问、敲数字；全屏的引导做在各个头里，「定的」第 7 条），细节照 `cli/setup.md`。`miyu ask` 没有模型时，在终端里先走它（第七条第 6 条）。
 - `miyu ask --model <引用>`（8-10）：开新会话的，照它造（`session.create` 的 `model`）。接着已有会话的，先 `session.configure` 再说：永久换，以后都用它（「定的」第 2 条）。`22-命令行.md` 第三节早有这一项。
 - 退出码 5「没有可用的模型」（`22-命令行.md` 第二节）认这一轮最后一条 `model.called` 的 `no_model`、`cooling`。
 
@@ -546,7 +546,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 2. **驱动、地址从哪来**。先看手写的。没写的看档案（`profiles.toml` 的 `[providers.<目录里的编号>]`：写了 `catalog` 的照它，没写的照这一家的编号）。档案也没有的，看它对上的目录里那一家（第二条第 4 条第 2 层）的 `api` 和 `npm`，`npm` 照档案的 `[npm]` 表换成驱动（8-7）。都没有地址的，这一家用不了：请求它的当场 `no_model`，原话 `provider "<编号>" needs base_url: it matches nothing in the catalog`，别的照常。有地址、推不出驱动的（局域网、自建的中转，目录对不上），用 `openai-chat`（施工 8-26，2026-10-07 项目主人定：这类中转多半说它；原来这一家用不了）；配置里照旧不写 `driver`，以后档案、目录推得出了照它们的。驱动从哪来记在 `Provider::driver_from`（`config`、`profile`、`catalog`、`default`），`model.list` 照它交。8-6 还没有目录，对档案只认编号一样的（档案里 DeepSeek 那一段带着驱动和地址，`deepseek` 只写 key 就能用）。三种驱动 8-13 都有了；档案里写了别的驱动的：`driver "<它>" of provider "<编号>" is not available yet`（目录的 `npm` 换不出驱动的照「推不出」算）。驱动照这一家的 `driver` 造（`Provider::build`）：列模型、探本机的服务照它。真发给一个模型时照这个模型的（8-14，`Provider::for_model`）：供应商的 `driver` 是手写的照它；不然第 1、2 层对上的模型写了自己的 `provider.npm` 的照它换（「模型的资料」`driver` 那一格），换不出现在有的驱动的，这个模型当场 `no_model`，原话 `model "<供应商>/<模型>" needs driver "<它>", which is not available yet`（「它」是 `[npm]` 换出来的名字，表里没有的是包名），同一家的别的照常；会话、一次性入口、`provider.test` 发的那一句都照它。手写的地址可能是一个环境变量的引用（`{ env = … }`，施工 8-6b）：对目录、认不认本机的服务这两处要字面地址的，是引用时当没有这一格（不强行解出来）；真要连供应商时才照第 5 条一样的办法解出来（`miyu_models::provider::resolve_base_url`），解不出来（没设、设成空的）这一家没有地址，`provider "<编号>" has no usable base_url`。
 3. **开关**：档案的，档案没有的用驱动的默认。DeepSeek 的那一套（思考每条都带、`/beta` 接着写）从代码里的 `Compat::deepseek()` 挪进了档案的 `[providers.deepseek]`（8-6），出厂只给实测过的开（`05-内核接口.md` 第七节）。手写的 `compat` 一格格盖在档案上面，随用到它的那一步。档案另带两格（8-6 加）：能收哪些输入（`inputs`，DeepSeek 收图不收 PDF）、一张图怎么算（`image_tokens = "deepseek"`），8-7 有了目录、手写的资料以后照资料。
 4. **另配的头**：档案的（8-14，`[providers.<编号>]` 的 `headers`），值里只认 `{session_digest}`（第八条第 1 条），别的 `{…}` 读档案时就报错。挑候选时照「谁在挑」的种子换好挂到端点上（`route/choice.rs`）。手写的 `headers` 随用到它的那一步。
-5. **key**：照写的先后。`{ secret }` 取密钥（人用 `miyu login` 存），`{ env }` 取核心的环境变量（怎么取是 `config.md` 的事），都照这一轮冻结的配置取（`TurnConfig::secret`）。取不到值的 key 不当候选。一个都取不到的，请求当场 `no_model`（`provider "<编号>" has no usable key`），8-7 起 `model.list` 里这家的模型状态是 `no_key`。没写 key 的不带认证头（本机的服务）。
+5. **key**：照写的先后。`{ secret }` 取密钥（人用 `miyu provider login` 存），`{ env }` 取核心的环境变量（怎么取是 `config.md` 的事），都照这一轮冻结的配置取（`TurnConfig::secret`）。取不到值的 key 不当候选。一个都取不到的，请求当场 `no_model`（`provider "<编号>" has no usable key`），8-7 起 `model.list` 里这家的模型状态是 `no_key`。没写 key 的不带认证头（本机的服务）。
 6. **一家一个 key**（施工 8-25，`15-模型与供应商.md` M10）：取不到值的这一家是 `no_model`（`provider "<编号>" has no usable key`），没写的不带认证头。几份额度一起用的配成几家、放进池里。8-6 到 8-24 是一家几个 key、照会话编号钉一个、出错换下一个，8-25 删了。
 7. **没有模型**：端口每次请求都当场说完，分类 `no_model`，不发，原话说清是哪一种：`models.chat` 没配的 `no model configured: set models.chat`；引用读不成、指的供应商、池没有的照「出错」那张表（`"<它>" is not a model or a pool`、`no provider "<编号>"`、`no pool "<名字>"`）；那一家用不了、key 一个都取不到的照第 2、5 条。内核不再来。会话造的时候记下它的引用（8-8 起写进 `session.created.model`，第三条）；记下的解析不出的（供应商、池删了，池空了），退回这一轮的 `models.chat`，退得回去的以后钉在它上面：回合开始时退的，内核记一条带 `replaced` 的 `session.policy_changed`（8-10，第六条第 3 条）；会话没记下引用的（以前的日志），只在内存里。
 8. **取代开发用的**：`DEEPSEEK_API_KEY` 的特判、`MIYU_DEV_BASE_URL`、`MIYU_DEV_MODEL`、`MIYU_DEV_WINDOW` 从核心里删掉了，`core.md` 的环境变量表跟着删了；头不再照 `DEEPSEEK_API_KEY` 决定拉不拉起核心，一律拉起（`config.md` 第十条第 1 条）。`DEEPSEEK_API_KEY` 以后只是「找现成的」会找到的一个变量（第七条第 1 条）。开发怎么测见第十条。
@@ -715,7 +715,7 @@ flowchart TB
    2. `provider.detect`、`provider.catalog {"featured": true}`：列常用的几家（找到了 key 的、已经配好的标出来）、本机的服务、「自定义」，人选一个（8-11 再补，2026-10-08 项目主人定；之前是先列找到的、再搜整份目录）。自定义的问地址、接口协议，key 可以空。
    3. 选的是目录里的一家、要贴 key 的：人贴进来（不回显）。环境变量里的 key 直接引用 `{ env = … }`，不复制（`15-模型与供应商.md` M8）。本机的服务不要 key。
    4. `provider.test`：贴的 key 照 `{value}` 交，先试；没成的说清为什么，回到上一步。列不出模型的（`stage` 是 `list`），问模型名、带 `model` 再试（8-11 再补）。
-   5. 贴的 key 试通了，`secret.set` 存成密钥（和 `miyu login` 同一个方法），名字是供应商的编号（「施工时定的」8-11：试不通的 key 不存，也不盖掉原来的同名密钥）。
+   5. 贴的 key 试通了，`secret.set` 存成密钥（和 `miyu provider login` 同一个方法），名字是供应商的编号（「施工时定的」8-11：试不通的 key 不存，也不盖掉原来的同名密钥）。
    6. 选主对话的模型：照 `provider.test` 列出的，推荐的（试的那一个）排前面。
    7. `config.set` 写系统配置的 `[providers.<编号>]`（只写 `key`：驱动、地址推得出的不写；不要 key 的本机服务写 `local = true`，这一家因此算配好了，8-25 起，原来写空的 `keys = []`）和 `models.chat`，经核心写（`14-配置.md` G4）。选的是已经配好的那一家的，只写 `models.chat`。配置里一个池都没有的（写之前问一次 `config.get`，不带 `cwd`：`items` 里没有 `pools.` 开头的键），同一次 `config.set` 一起写三个预设的池 `[pools.lite]`、`[pools.standard]`、`[pools.flagship]`：`models = []`、`subagent = true`，不带说明（8-8 补，2026-10-01 项目主人定）。看图的模型不问（`15-模型与供应商.md` 第七节）。
 6. **`miyu ask` 没有模型时**：没写 `--model` 的，连上核心以后先问 `config.get` 的 `models.chat`（不带 `cwd`，和 `model.list` 的 `uses.chat` 是同一个值；`model.list` 会顺手在后台拉供应商的列表，「施工时定的」8-11），没有值就是没有模型。标准输入、标准错误都是终端的，先走一遍 `miyu setup`（同一条连接），写好了再连一次、照常发这条消息；setup 没走完的照它的退出码退出。不是终端的，说没有模型那一句，退出码 5，不造会话（`22-命令行.md` 第三节）。不再照 `DEEPSEEK_API_KEY` 认。
@@ -783,7 +783,7 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
      MIYU_DEV_BASE_URL=https://relay.example.invalid/v1 MIYU_DEV_API_KEY=… MIYU_HOME=~/miyu-dev miyu ask "在吗"
      ```
 
-     核心在拉起它的终端里取 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`：已经在跑的核心看不到后来设的，先让它退出（空闲十分钟自己走）。也可以 `MIYU_HOME=~/miyu-dev miyu login dev` 存一个密钥、把配置里的 `{ env = "MIYU_DEV_API_KEY" }` 改成 `{ secret = "dev" }`（地址没有这条路：`{ secret = … }` 对网址不是合法的写法，地址一直要靠环境变量）。
+     核心在拉起它的终端里取 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`：已经在跑的核心看不到后来设的，先让它退出（空闲十分钟自己走）。也可以 `MIYU_HOME=~/miyu-dev miyu provider login dev` 存一个密钥、把配置里的 `{ env = "MIYU_DEV_API_KEY" }` 改成 `{ secret = "dev" }`（地址没有这条路：`{ secret = … }` 对网址不是合法的写法，地址一直要靠环境变量）。
 3. 合进 main 以后告诉终端界面、网页两个演示：开发端点改成这样接，协议多了哪几个方法（改了协议要告诉两个头）。
 
 **十一、思考强度**（8-18；8-18（补）去掉会话那一层，只剩配置的默认。2026-10-02 项目主人定，「定的」第 12 条）
@@ -1249,7 +1249,7 @@ mimo = ["xiaomi"]
 | 5 | 替看不了图的模型看图 | 8-8 只加 `models.vision` 这一格，替看图在 M8 里另开一步（施工方案另加一行） | 主会话 |
 | 6 | 子代理不写挡位用哪个模型 | 用父会话这时用的模型。8-8 补以后是不写池，照旧 | 主会话 |
 | 7 | `miyu setup` 看不到终端里的环境变量，和它怎么问人 | 说清看不到哪个、给出让核心看到的办法、不复制 key（第七条第 2 条）。怎么问人照推荐写（交互式一步步选，参数能跳过对应的一步）；2026-10-01 项目主人看过、定了，全屏的引导做在各个头里 | 主会话 |
-| 8 | 管密钥的命令 | `miyu login`、`miyu logout`、`miyu login --list`，由 `config.md` 写。这一页用到存 key 的地方照这个名字引用 | 照 `config.md` |
+| 8 | 管密钥的命令 | `miyu provider login`、`miyu provider logout`、`miyu provider list`，由 `config.md` 写。这一页用到存 key 的地方照这个名字引用 | 照 `config.md` |
 | 9 | 工具的名字 | 派子代理的工具改名 `subagent`（另开小单正在做），这一页的 `tier` 照新名字写（8-8 补换成 `pool`）。父子留言的工具以后改名 `send_message`，随跨会话 | 主会话 |
 | 10 | 和施工方案不一样的两处、三处技术细节 | 出错换 key 挪到 8-9。Zen 做成供应商档案、占位补在统一的请求上。路由放执行器。回合开始重新解析。第 2 层认出的那家先于原厂。都认（「起草时定的」第 1、4、5、6、26 条） | 主会话 |
 | 11 | 挡位还要不要（8-8 合进去以后重开） | 不要了：配置 `models.tiers.*`、`model.list` 的 `tiers`、`subagent` 的 `tier`、写法里的挡位名都去掉，`cheap` 不要了。模型只照池的名字分：池多一个开关（在不在子代理的选项里）、一句给模型看的说明，子代理能选的池在会话开局时拼进工具面、整个会话不变。一开始就有 `lite`、`standard`、`flagship` 三个池，成员是空的，填了才能选（没选「填上当时选的主对话模型」）；它们是普通的池，能删、能改名。模型本身没有「给不给子代理选」的开关，要选一个模型就建一个只有它的池。为什么：挡位和池是两层同样的东西，配一个挡位先要想它指哪个模型或池（`15-模型与供应商.md` M3）；子代理要的只是「挑哪一组模型」，池的名字加一句说明就说得清 | 项目主人（2026-10-01，终端界面的会话转来、项目主人确认；技术细节主会话定） |
@@ -1580,7 +1580,7 @@ mimo = ["xiaomi"]
 
 | 页 | 改什么 | 哪一步 |
 |---|---|---|
-| `config.md`（另一个分身起草） | 清单里登记这一页的每个键，连同 `providers.*.local`、`usage.currency`（类型、默认、范围、生效时机、谁能改、项目配置不能写）。`miyu login` 存的 key 就是 `{ secret }` 取的那些。`{ secret }`、`{ env }` 怎么解开、核心的环境。`config.set` 写整张表（供应商、池）。每个值的文件、行（`model.list` 的来源要它）。回合开始冻结的快照交给路由。账号日志（`usage.purged` 要写它）。8-15 改了：配置项表加 `usage.currency`，登记的先后、文字那一行，账号日志多用量的两种和锁，两份样本块跟着生成的样本 | 8-1 到 8-5、8-15 |
+| `config.md`（另一个分身起草） | 清单里登记这一页的每个键，连同 `providers.*.local`、`usage.currency`（类型、默认、范围、生效时机、谁能改、项目配置不能写）。`miyu provider login` 存的 key 就是 `{ secret }` 取的那些。`{ secret }`、`{ env }` 怎么解开、核心的环境。`config.set` 写整张表（供应商、池）。每个值的文件、行（`model.list` 的来源要它）。回合开始冻结的快照交给路由。账号日志（`usage.purged` 要写它）。8-15 改了：配置项表加 `usage.currency`，登记的先后、文字那一行，账号日志多用量的两种和锁，两份样本块跟着生成的样本 | 8-1 到 8-5、8-15 |
 | `protocol.md` | `session.create` 的 `model`。`session.configure`、`model.list`、`provider.detect`、`provider.catalog`、`provider.test`、`usage.query`。`subscribe` 回应的 `model`、限额会变（第 5、7 条改）。`model.changed`。`status` 的 `failover`。两个原因码。「还没有的」删掉换模型那条。8-11 改了：方法表加 `provider.detect`、`provider.catalog`、`provider.test`，`unknown_provider` 也是 `provider.test` 的，「在哪」「守着它的」加 `providers.rs`。8-10 改了：方法表、`session.configure` 一节，`subscribe` 回应的 `model`（例子换了）、第 5 条，「在哪」「守着它的」，「还没有的」删掉换模型、`session.configure` 两处。8-7 改了：方法表加 `model.list`，原因码、给人看的字加 `unknown_provider`，「在哪」「守着它的」加 `models.rs`。8-8 改了：`session.create` 的 `model`，原因码、给人看的字加 `unknown_model`，守着它的加 `models_pools.rs`。8-9 改了：`subscribe` 第 5、7 条（限额会变、照 `model.changed` 换），推送那一段加 `model.changed`、`status` 的 `failover`，`model.list` 的冷却，「还没有的」换模型那条改成只剩 `turn` 那一半8-15 改了：方法表加 `usage.query`，新的一节，`bad_params` 多一种，「在哪」加 `usage.rs`，`model.call` 记账一句。 | 8-7 到 8-11、8-15 |
 | `kernel/events.md`、`kernel/events-bodies.md` | `session.created.model`、`session.policy_changed.model`、`replaced`（账本查只和 `model` 一起）、`model.called.cost`、分类 `cooling`、`no_model`。瞬时的 `model.changed`。样本。8-8 改了：`events-bodies.md` 的 `session.created` 多 `model`，样本两条都带它。8-9 改了：`events-bodies.md` 的分类加 `cooling`；`events.md` 瞬时事件加 `model.changed`、`status` 的 `failover`，样本 `status.jsonl` 多一条、新的 `model.changed.jsonl`。8-10 改了：`events-bodies.md` 的 `session.policy_changed` 多 `model`、`replaced`，样本多 139、144 号两条；`events.md` 的表、`model.changed` 的 `why` 多 `turn`、推的时机第 20 条，样本 `model.changed.jsonl` 多一条；`kernel/history.md` 账本查的规矩多一行8-15 改了：`events-bodies.md` 的 `model.called` 多 `cost` 和金额那张表；`events.md` 样本说明里 46 号带金额。 | 8-8、8-9、8-10、8-15 |
 | `kernel/session.md` | `Configure`。`RunTurnStartHooks` 带 `model`。`TurnStartHooksDone` 带 `replaced`。`ModelEnded` 带 `cost`、`failover`。「出错再来」认 `failover`、`cooling`。「载入」算引用。`Session::context_used()`。8-6 改了：「出错再来」写明 `no_model` 不再来，「守着它的」加 `scenario/models.rs`。8-9 改了：`ModelEnded` 带 `failover`，「出错再来」认 `failover`、`cooling`（换了端点没说等多久的等 0 毫秒、状态带 `failover`），多一个只读的 `turn_cause()`，「守着它的」`scenario/models.rs`、随机测试那两行。8-10 改了：命令 `Configure`、新的一节「换模型」，`RunTurnStartHooks` 带 `model`，`TurnStartHooksDone` 带 `replaced`，只读的 `reference()`，「载入和崩溃」第 2 条算引用，「在哪」加 `configure.rs`、`send.rs`，「守着它的」`tests/configure.rs`、`scenario/models.rs`、`breaker.rs`、`manual.rs`、随机测试8-15 改了：`ModelEnded`、`AsideEnded` 带 `cost`，`model.called` 的 `cost` 那一行，只读的 `context_used()`。 | 8-6、8-9、8-10、8-15 |

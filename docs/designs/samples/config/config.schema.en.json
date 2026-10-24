@@ -748,7 +748,7 @@
             "type": "string"
           },
           "key": {
-            "description": "Write { secret = \"name\" } (saved with miyu login) or { env = \"VARIABLE\" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
+            "description": "Write { secret = \"name\" } (saved with miyu provider login) or { env = \"VARIABLE\" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config or personal settings. Takes effect next turn.",
             "oneOf": [
               {
                 "additionalProperties": false,

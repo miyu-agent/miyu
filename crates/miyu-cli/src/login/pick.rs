@@ -1,4 +1,4 @@
-//! `miyu login --list` 的表、交互着选的编号表、敲的字认成哪一个（`config.md`「样子」的 `miyu login`，施工 8-5）。几列照
+//! `miyu provider list` 的表、交互着选的编号表、敲的字认成哪一个（`config.md`「样子」的 `miyu provider login`，施工 8-5）。几列照
 //! 显示的宽度对齐。
 
 use serde_json::Value;
@@ -55,7 +55,7 @@ pub(crate) fn widths(rows: &[Vec<String>]) -> Vec<usize> {
         .collect()
 }
 
-/// `--list`：一个一行，名字、已设置或未设置、谁在用；设了的在前（原色），没设的在后（灰字），各自照名字的先后。
+/// `list`：一个一行，名字、已设置或未设置、谁在用；设了的在前（原色），没设的在后（灰字），各自照名字的先后。
 pub(super) fn table(secrets: &[Value], language: Language) -> Vec<Line> {
     let mut listed: Vec<(String, bool, String)> = secrets
         .iter()

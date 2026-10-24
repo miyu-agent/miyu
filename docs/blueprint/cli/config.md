@@ -15,7 +15,7 @@
 | `crates/miyu-cli/src/config/set.rs` | `set`、`unset`：`config.set`，照回应说一行（施工 8-3） |
 | `crates/miyu-cli/src/config/edit.rs` | `edit`：副本、开编辑器、查、问、存（施工 8-3） |
 | `crates/miyu-cli/src/config/trust.rs` | `trust`：列出会改哪几项、问、`config.trust`（施工 8-3） |
-| `crates/miyu-cli/src/config/console.rs` | 人那一头：`Console`（是不是终端、读一行、开编辑器；施工 8-5 给 `miyu login` 加了标准输入是不是终端、关掉回显读一行、整份读管道），真的一份 `Terminal`，编辑器照 `VISUAL`、`EDITOR` 挑、经 `sh -c` 或 `cmd /c` 跑（施工 8-3） |
+| `crates/miyu-cli/src/config/console.rs` | 人那一头：`Console`（是不是终端、读一行、开编辑器；施工 8-5 给 `miyu provider login` 加了标准输入是不是终端、关掉回显读一行、整份读管道），真的一份 `Terminal`，编辑器照 `VISUAL`、`EDITOR` 挑、经 `sh -c` 或 `cmd /c` 跑（施工 8-3） |
 | `crates/miyu-cli/src/config/check.rs` | `miyu check`（施工 8-30 从 `miyu config check` 挪出来，页在 `cli/check.md`）：问核心的 `check`、印、合计、退出码 |
 | `crates/miyu-cli/src/config/render.rs` | 印的样子：值照 TOML 写、报错一行、`explain` 的几行照显示的宽度对齐 |
 | `crates/miyu-cli/src/config/paths.rs` | 核心报的文件换成真的位置、家目录下的写成 `~/…`；还没有项目配置时它该在哪 |

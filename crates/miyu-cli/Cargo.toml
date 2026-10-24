@@ -28,7 +28,7 @@ miyu-store = { path = "../miyu-store" }
 miyu-source = { path = "../miyu-source" }
 # `miyu sandbox setup`、`remove`：Windows 上装好、撤掉沙盒用户（施工 5-8）。
 miyu-sandbox = { path = "../miyu-sandbox" }
-# `miyu login`、`miyu setup` 贴 key 时自己管终端的设置（施工 8-5 补，`config.md` 第十一条第 4 条）：Unix 上关
+# `miyu provider login`、`miyu setup` 贴 key 时自己管终端的设置（施工 8-5 补，`config.md` 第十一条第 4 条）：Unix 上关
 # ECHO、ISIG、ICANON 读 termios；工作区里本来就有（`miyu-basesystem`、`miyu-fs`、`miyu-ipc` 用过别的功能）。
 rustix = { version = "1", features = ["termios"] }
 # 协议是 JSON-RPC 2.0，一行一条（04-核心协议.md P1）。

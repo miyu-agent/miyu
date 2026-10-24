@@ -1,11 +1,12 @@
-//! `miyu login`、`miyu logout`（`docs/blueprint/cli/login.md`，`config.md`「怎么走」第十一条，施工 8-5）：管密钥的命令，
-//! 照 opencode 的 `auth login`、`auth list`、`auth logout` 和 codex 的 `login`、`logout`（2026-10-01 项目主人定）。它们只是
+//! `miyu provider login`、`list`、`logout`（`docs/blueprint/cli/login.md`，`config.md`「怎么走」第十一条，施工 8-5；施工 Y-13 上
+//! 从 `miyu login`、`miyu logout` 挪到 `provider` 下面，`miyu login` 留给登录账号）：管密钥的命令，
+//! 照 opencode 的 `auth login`、`auth list`、`auth logout`（2026-10-01 项目主人定）。它们只是
 //! 协议的客户端：`secret.list`、`secret.set`、`secret.delete`。
 //!
-//! - `miyu login [名字]`：不写名字的在终端里从配置里用到的、设过的里面选，也可以敲一个新名字；贴 key 不回显，管道进来的
+//! - `miyu provider login [名字]`：不写名字的在终端里从配置里用到的、设过的里面选，也可以敲一个新名字；贴 key 不回显，管道进来的
 //!   整份读。key 从不写在命令行上（会进 shell 的历史），也从不印出来，前几位也不印。
-//! - `miyu login --list [--format text|json]`：哪几个设了、谁在用，不给看 key。
-//! - `miyu logout [名字]`：删掉一个；不写名字的在终端里从设过的里面选。
+//! - `miyu provider list [--format text|json]`：哪几个设了、谁在用，不给看 key。
+//! - `miyu provider logout [名字]`：删掉一个；不写名字的在终端里从设过的里面选。
 //!
 //! 名字不合写法、不写名字又不在终端里：连核心以前就说，退出码 2。连核心照 `miyu config`（没在跑的拉起）。要问人的经
 //! [`Console`]：测试换成照剧本回的。
@@ -17,7 +18,7 @@ pub(crate) mod pick;
 use std::io::{self, IsTerminal, Write};
 use std::process::{Command, ExitCode};
 
-use clap::Args;
+use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 
 use miyu_config::secret::valid_name;
@@ -36,24 +37,46 @@ use crate::shown::{self, Line, say, write};
 /// 参数不对（`cli/main.md`「参数写错时」）。
 const MISUSE: u8 = 2;
 
-/// `miyu login` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
+/// `miyu provider` 的参数（原来的 `miyu login`、`miyu logout`、`miyu login --list`，施工 Y-13 上）。给人看的说明在帮助页里
+/// （[`crate::help`]），这里的注释只给读代码的人看。
+#[derive(Debug, Clone, Args)]
+pub struct Provider {
+    /// 子命令。
+    #[command(subcommand)]
+    pub command: ProviderCommand,
+}
+
+/// `miyu provider` 的子命令。
+#[derive(Debug, Clone, Subcommand)]
+pub enum ProviderCommand {
+    /// 存一个供应商的 key。
+    Login(Login),
+    /// 列出哪几个设了。
+    List(ProviderList),
+    /// 删掉一个供应商的 key。
+    Logout(Logout),
+}
+
+/// `miyu provider login` 的参数。
 #[derive(Debug, Clone, Args)]
 pub struct Login {
     /// 存哪一个；不写的在终端里选。
-    #[arg(value_name = "NAME", conflicts_with = "list")]
+    #[arg(value_name = "NAME")]
     pub name: Option<String>,
-    /// 只列出哪几个设了。
-    #[arg(long)]
-    pub list: bool,
-    /// `--list` 的输出格式。
-    #[arg(long, value_enum, default_value = "text", requires = "list")]
-    pub format: Format,
     /// 存进大家共用的那一份，以管理员身份（施工 Y-12 下下）；不写存自己的。
-    #[arg(long, conflicts_with = "list")]
+    #[arg(long)]
     pub system: bool,
 }
 
-/// `miyu logout` 的参数。
+/// `miyu provider list` 的参数。
+#[derive(Debug, Clone, Args)]
+pub struct ProviderList {
+    /// 输出格式。
+    #[arg(long, value_enum, default_value = "text")]
+    pub format: Format,
+}
+
+/// `miyu provider logout` 的参数。
 #[derive(Debug, Clone, Args)]
 pub struct Logout {
     /// 删哪一个；不写的在终端里从设过的里面选。
@@ -73,20 +96,21 @@ pub struct KeyArgs {
     pub system: bool,
 }
 
-impl From<Login> for KeyArgs {
-    fn from(login: Login) -> KeyArgs {
-        KeyArgs {
-            system: login.system,
-            command: login.into(),
-        }
-    }
-}
-
-impl From<Logout> for KeyArgs {
-    fn from(logout: Logout) -> KeyArgs {
-        KeyArgs {
-            system: logout.system,
-            command: logout.into(),
+impl From<Provider> for KeyArgs {
+    fn from(provider: Provider) -> KeyArgs {
+        match provider.command {
+            ProviderCommand::Login(Login { name, system }) => KeyArgs {
+                command: KeyCommand::Login(name),
+                system,
+            },
+            ProviderCommand::List(ProviderList { format }) => KeyArgs {
+                command: KeyCommand::List(format),
+                system: false,
+            },
+            ProviderCommand::Logout(Logout { name, system }) => KeyArgs {
+                command: KeyCommand::Logout(name),
+                system,
+            },
         }
     }
 }
@@ -102,21 +126,6 @@ pub enum KeyCommand {
     Logout(Option<String>),
 }
 
-impl From<Login> for KeyCommand {
-    fn from(login: Login) -> KeyCommand {
-        match login.list {
-            true => KeyCommand::List(login.format),
-            false => KeyCommand::Login(login.name),
-        }
-    }
-}
-
-impl From<Logout> for KeyCommand {
-    fn from(logout: Logout) -> KeyCommand {
-        KeyCommand::Logout(logout.name)
-    }
-}
-
 /// 这一次做什么、怎么印。
 #[derive(Debug, Clone)]
 pub struct LoginPlan {
@@ -124,7 +133,7 @@ pub struct LoginPlan {
     pub command: KeyCommand,
     /// 界面语言：握手以后换成回应的。
     pub language: Language,
-    /// 标准输出上不上色（`--list` 里没设的那几行是灰的）。
+    /// 标准输出上不上色（`list` 里没设的那几行是灰的）。
     pub color: bool,
     /// 标准错误上的灰字上不上色。
     pub gray: bool,
@@ -132,7 +141,7 @@ pub struct LoginPlan {
     pub system: bool,
 }
 
-/// 跑一次 `miyu login` 或 `miyu logout`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
+/// 跑一次 `miyu provider` 下面的一个命令，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
 pub fn login(args: KeyArgs, start: impl FnOnce() -> Command) -> ExitCode {
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -229,8 +238,8 @@ fn early(
     err: &mut dyn Write,
 ) -> Option<u8> {
     let (name, which) = match command {
-        KeyCommand::Login(name) => (name, "login"),
-        KeyCommand::Logout(name) => (name, "logout"),
+        KeyCommand::Login(name) => (name, "provider login"),
+        KeyCommand::Logout(name) => (name, "provider logout"),
         KeyCommand::List(_) => return None,
     };
     match name {
@@ -294,7 +303,7 @@ impl Keys<'_> {
         write(self.err, &Line::gray(text).paint(self.plan.gray));
     }
 
-    /// `login --list`：设了的在前，配置里用到、还没设的在后（灰字）；`--format json` 印回应原样。
+    /// `provider list`：设了的在前，配置里用到、还没设的在后（灰字）；`--format json` 印回应原样。
     async fn list(&mut self, format: Format, out: &mut dyn Write) -> u8 {
         let secrets = match self.listed().await {
             Ok(secrets) => secrets,
@@ -389,7 +398,7 @@ impl Keys<'_> {
         }
     }
 
-    /// 在终端里选一个（第十一条第 3 条）：`logout` 只列设过的。编号表、问的话都在标准错误上，标准输出留给 `--list`。
+    /// 在终端里选一个（第十一条第 3 条）：`logout` 只列设过的。编号表、问的话都在标准错误上，标准输出留给 `list`。
     async fn pick(&mut self, logout: bool) -> Result<String, u8> {
         let language = self.plan.language;
         let mut secrets = self.listed().await?;

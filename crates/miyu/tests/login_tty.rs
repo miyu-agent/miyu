@@ -1,4 +1,4 @@
-//! `miyu login` 在真的伪终端里（施工 8-5 补，`docs/blueprint/cli/login.md`「怎么走」第 4 条）：贴 key 的时候按
+//! `miyu provider login` 在真的伪终端里（施工 8-5 补，`docs/blueprint/cli/login.md`「怎么走」第 4 条）：贴 key 的时候按
 //! `Ctrl+C`，进程以 130 退出、印了取消那一句，结束后终端设置和开始前一样（回显开着）；送正常的 key 加回车，读到的对，
 //! 终端设置也照原样。只在 Unix 上跑：Windows 没有伪终端，`Guard`、控制台模式的读写写在一个单元测试里，在
 //! `crates/miyu-cli/src/config/console/windows.rs`。
@@ -45,7 +45,7 @@ fn secondary(path: &str) -> Stdio {
     Stdio::from(file)
 }
 
-/// 这一对现在的回显、信号键、行缓冲是不是都开着（伪终端刚建好、谁都没按过 `miyu login` 之前的样子）。照从端的路径
+/// 这一对现在的回显、信号键、行缓冲是不是都开着（伪终端刚建好、谁都没按过 `miyu provider login` 之前的样子）。照从端的路径
 /// 另开一份短命的文件描述符来问：Linux 上主端、从端的 termios 是同一份，问哪一头都一样；macOS（BSD 的 pty）主端不认
 /// `tcgetattr` 这个 ioctl（`ENOTTY`，CI 的 macOS 上跑出来的，2026-10-02），只有从端认。
 fn echoing(slave: &str) -> bool {
@@ -166,7 +166,7 @@ async fn core() -> Home {
 /// 在真的伪终端上跑一次 `miyu login deepseek`：标准输入、输出、错误都是从端。
 fn spawn(root: &std::path::Path, slave: &str) -> std::process::Child {
     Command::new(MIYU)
-        .args(["login", "deepseek", "--system"])
+        .args(["provider", "login", "deepseek", "--system"])
         .env("MIYU_HOME", root)
         .envs(offline(root))
         .env("MIYU_RESOURCES", resources())

@@ -18,7 +18,7 @@
 | `crates/miyu-cli/src/setup/custom.rs` | 自定义的一家：问地址、接口协议，照主机名起配置里的编号（施工 8-11 再补）；试通了问编号，直接回车用起好的（施工 8-11 六补） |
 | `crates/miyu-cli/src/setup/model.rs` | 选主对话的模型 |
 | `crates/miyu-cli/tests/support/onboarding.rs` | 测试用：带模型资料的核心、照剧本回的假终端 |
-| `crates/miyu-cli/src/config/console.rs` | 人那一头 `Console`（和 `miyu config`、`miyu login` 共用） |
+| `crates/miyu-cli/src/config/console.rs` | 人那一头 `Console`（和 `miyu config`、`miyu provider login` 共用） |
 | `crates/miyu-cli/src/language/setup.rs` | 给人看的字 |
 | `crates/miyu-cli/src/help/{zh,en}/setup.txt` | 帮助页 |
 
@@ -51,12 +51,12 @@
    - 选的是本机的服务、搜到的地址在本机的一家（`provider.catalog` 的 `local`）：不要 key。
    - 选的是已经配好的那一家：照配置，不问。
    - 自定义的：问「Key（不显示，可以空）：」，读法同下一条；去掉前后空白是空的是不要 key（本机的服务、不要 key 的中转）。
-   - 别的：标准输入是终端的，问「粘贴 <编号> 的 key（不显示）：」，关掉回显读一行（和 `miyu login` 同一条：自己管终端的设置，按了 `Ctrl+C`、或者还没贴一个字时按了 `Ctrl+D`，说「没存，取消了」，退出码 130，整个 `miyu setup` 照取消办，配置一个字都不写，施工 8-5 补）；不是终端的，整份读标准输入，没有取消这一条。去掉前后空白是空的：说「没收到 key」，退出码 1。
+   - 别的：标准输入是终端的，问「粘贴 <编号> 的 key（不显示）：」，关掉回显读一行（和 `miyu provider login` 同一条：自己管终端的设置，按了 `Ctrl+C`、或者还没贴一个字时按了 `Ctrl+D`，说「没存，取消了」，退出码 130，整个 `miyu setup` 照取消办，配置一个字都不写，施工 8-5 补）；不是终端的，整份读标准输入，没有取消这一条。去掉前后空白是空的：说「没收到 key」，退出码 1。
 7. **试**：说「试一下 <名字>……」，`provider.test`：配好了的带 `provider`；自定义的带 `candidate`，`driver`、`base_url` 是填的；别的带 `candidate`，`catalog` 是这一家的编号；`key` 照上一步（贴的照 `{value}` 交，空的不带）；写了 `--model` 的带 `model`。
    - 核心说要模型名（`need_model`，列不出模型、又不是认证错）、没写 `--model`、在终端里的（施工 8-11 再补、五补）：说「未获取到模型列表」，问「模型名：」，拿它（去掉前后空白）带 `model` 再试一次。直接回车、读到头：「没选」，退出码 1。
    - 成了：只列了模型的（`checked` 是 `list`，施工 8-11 五补）灰字「· 通了：列出 <n> 个模型。」；发了一句的灰字「· 通了：试的 <模型>，<n> 毫秒收到第一个字。」；`listed` 是 `catalog` 的再一行灰字「· 供应商列不出模型，下面照 models.dev 的目录列。」。
    - 没成：说「不通（<哪一步>）：<分类>：<原话>」（没有原话的不写第二个冒号以后；HTTP 状态在原话里，驱动写的 `HTTP 401: …`，和 `miyu ask` 出错那一行一样）。哪一步：`config` 是「配置」，`list` 是「列模型」，`request` 是「发请求」；分类照 `cli/ask.md` 出错那一行的说法。在终端里的先问「仍然保存？[y/N]」（施工 8-11 五补，2026-10-13 项目主人定：测不通也能接着走，不卡死）：`y`、`yes`（不分大小写）照填的往下走：还没有模型的先问「模型名：」（直接回车、读到头：「没选」，退出码 1），贴的 key 照样存（第 8 条），选模型那一步就用它。别的、直接回车回到上一步：贴的 key（自定义的也是）回到贴 key，别的回到第 3 条选一家（写了 `--provider` 的没有上一步，退出码 1）。不在终端里的不问，退出码 1。
-8. **存 key**（贴的 key 试通了，或者人说仍然保存）：`secret.set`，`name` 是这一家在配置里的编号（第 10 条）。成了：灰字照 `miyu login` 说「· <编号> 的 key 存好了」或「· 换掉了 <编号> 的 key」。被拒绝的：印核心的原话，退出码 1。
+8. **存 key**（贴的 key 试通了，或者人说仍然保存）：`secret.set`，`name` 是这一家在配置里的编号（第 10 条）。成了：灰字照 `miyu provider login` 说「· <编号> 的 key 存好了」或「· 换掉了 <编号> 的 key」。被拒绝的：印核心的原话，退出码 1。
 9. **选模型**（没写 `--model`、没在第 7 条填模型名）：`provider.test` 列出的模型，试的那一个排第一、后面接「（推荐）」，别的照列出的先后。标准错误上一行头「选主对话的模型：」，一个一行 `  编号  模型`，最多列 20 个；多的再说一句「还有 <n> 个，敲名字也行。」。问「选一个编号，直接回车用推荐的：」。敲的是编号、列出来的模型名（列了的、没列的都算）：就是它；直接回车：推荐的；读到头：「没选」，退出码 1；别的：说「<敲的> 不在列表里」，再问。不在终端里的不问，用推荐的。
 10. **写**：`config.set` 写个人设置（施工 T-11，2026-10-10 主会话定：原来写系统配置，个人设置里已经有 `models.chat` 的会盖住它，屏幕上说写好了却不生效；改成和设置页、网页的第一次引导一样写个人设置）：`providers.<编号>.key`（施工 8-25：一家一个；找到的、`--env` 的是 `{ env }`，贴的是 `{ secret = "<编号>" }`；本机的服务不要 key，写 `providers.<编号>.local = true`，这一家因此算配好了）和 `models.chat` 是 `<编号>/<模型>`；自定义的另写 `driver`、`base_url`，贴了 key 的写 `key = { secret = "<编号>" }`、没贴的不写；已经配好的那一家只写 `models.chat`（编号照配置里的）。配置里一个池都没有的，同一次一起写三个预设的池（施工 8-8 补，`models.md` 第七条第 5 条第 7 款）：写之前问一次 `config.get`（不带 `cwd`、`keys`），`items` 里没有 `pools.` 开头的键才写；`pools.lite`、`pools.standard`、`pools.flagship` 各写 `models = []`、`subagent = true`，不带说明。屏幕上照旧只说 `models.chat` 那一行。配置里的编号就是目录里的编号；目录里的编号不合「路径里的名字」写法的（`302ai`、`wafer.ai`），别的字换成 `-`、不是字母开头的前面加 `p-`（`p-302ai`、`wafer-ai`），另写 `catalog = "<目录里的编号>"`。成了：说「写好了：models.chat = <编号>/<模型>」，退出码 0。被拒绝的：印核心的原话，退出码 1。
 11. **核心断开**：说「核心断开了」，退出码 1。
@@ -248,7 +248,7 @@ Outside a terminal, give --provider and pipe the key in:
 | 写好了 | 写好了：models.chat = {ref} | Done: models.chat = {ref} |
 | `miyu ask` 先走 setup | 还没有模型，先接上一个。 | No model is set up yet. Let's connect one first. |
 
-「没选」「没收到 key」「没存，取消了」「· {名字} 的 key 存好了」「· 换掉了 {名字} 的 key」「粘贴 {名字} 的 key（不显示）：」照 `miyu login` 的（`config.md`「给人看的字」；「没存，取消了」施工 8-5 补）。灰字的几行开头是「· 」，和 `miyu ask`、`miyu login` 的灰字一样。
+「没选」「没收到 key」「没存，取消了」「· {名字} 的 key 存好了」「· 换掉了 {名字} 的 key」「粘贴 {名字} 的 key（不显示）：」照 `miyu provider login` 的（`config.md`「给人看的字」；「没存，取消了」施工 8-5 补）。灰字的几行开头是「· 」，和 `miyu ask`、`miyu provider login` 的灰字一样。
 
 ### 守着它的
 
@@ -280,7 +280,7 @@ Outside a terminal, give --provider and pipe the key in:
 
 | 定了什么 | 为什么 | 别的选法 |
 |---|---|---|
-| 参数三个：`--provider`、`--env`、`--model`；key 不上命令行（会进 shell 的历史），不在终端里的照 `miyu login` 从管道读 | 图纸「参数能跳过对应的一步」；`miyu login` 的规矩 | `--key <值>`：进 shell 的历史 |
+| 参数三个：`--provider`、`--env`、`--model`；key 不上命令行（会进 shell 的历史），不在终端里的照 `miyu provider login` 从管道读 | 图纸「参数能跳过对应的一步」；`miyu provider login` 的规矩 | `--key <值>`：进 shell 的历史 |
 | 不在终端里不问：没写 `--provider` 的退出码 2；模型用推荐的（等于直接回车）；试不通退出码 1 | 脚本能一行写完；能默认的不报错 | 不在终端里一律退出码 2：`--model` 不写也得写 |
 | 试不通回到上一步：贴的 key 回到贴 key，别的回到选一家；写了 `--provider` 的、不在终端里的没有上一步，退出码 1。直接回车、读到头是出口（「没选」「没收到 key」） | 图纸「回到上一步」；不能卡在一个问题上出不来 | 一律退出：贴错一次要从头来 |
 | 编号表最多列 20 个模型，多的说一句；模型也能敲名字 | 一家几百个模型的（中转站）一屏放不下 | 全列：几百行 |

@@ -20,7 +20,7 @@
 //!   （施工 5-8）；
 //! - [`Config`]：`miyu config` 的参数；[`config()`]：看配置一次，交回退出码；[`config_on`]：在连上了的连接上办一次，
 //!   测试照它在进程里走一遍（施工 8-2）；
-//! - [`Login`]、[`Logout`]：`miyu login`、`miyu logout` 的参数；[`login()`]：存、列、删一次 key，交回退出码；[`login_on`]：
+//! - [`Provider`]（子命令 [`Login`]、[`ProviderList`]、[`Logout`]）：`miyu provider login`、`list`、`logout` 的参数；[`login()`]：存、列、删一次 key，交回退出码；[`login_on`]：
 //!   在连上了的连接上办一次，测试照它在进程里走一遍（施工 8-5）；
 //! - [`Setup`]：`miyu setup` 的参数；[`setup()`]：第一次接入模型，交回退出码；[`setup_on`]：在连上了的连接上走一遍；
 //!   [`model_ready_on`]：`miyu ask` 说话之前看有没有模型、没有就先走一遍（施工 8-11）；
@@ -59,7 +59,10 @@ pub use config::{
     Check, Config, ConfigCommand, ConfigPlan, Console, Terminal, check, config, config_on,
 };
 pub use kb::{Kb, KbCommand, KbPlan, kb, kb_on};
-pub use login::{KeyArgs, KeyCommand, Login, LoginPlan, Logout, login, login_on};
+pub use login::{
+    KeyArgs, KeyCommand, Login, LoginPlan, Logout, Provider, ProviderCommand, ProviderList, login,
+    login_on,
+};
 pub use mcp::{Mcp, McpCommand, mcp};
 pub use memory::{Clear as MemoryClear, Memory, MemoryCommand, MemoryPlan, memory, memory_on};
 pub use misuse::misuse;

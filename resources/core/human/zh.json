@@ -248,7 +248,7 @@
       },
       "providers.<id>.key": {
         "name": "key",
-        "description": "写 { secret = \"名字\" }（用 miyu login 存）或 { env = \"环境变量\" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。"
+        "description": "写 { secret = \"名字\" }（用 miyu provider login 存）或 { env = \"环境变量\" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。"
       },
       "providers.<id>.name": {
         "name": "显示名",

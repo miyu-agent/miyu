@@ -7,7 +7,7 @@ use clap::{Args, Command};
 
 use super::{Page, page};
 use crate::language::Language;
-use crate::{Ask, Compact, Config, Login, Logout, Recap, Redo, Rename, Sandbox, Setup, Undo};
+use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Sandbox, Setup, Undo};
 
 /// 一个选项：几种写法（`-c`、`--continue`），和后面写的值（没有的是空的）。
 type Listed = BTreeSet<(Vec<String>, String)>;
@@ -208,18 +208,19 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&kb, id),
             "{language:?} kb"
         );
-        // `login`、`logout` 两页（施工 8-5）：名字是位置参数，不算选项。
-        let login = Login::augment_args(Command::new("login"));
+        // `provider` 那一页（施工 8-5，Y-13 上并成一页）：`provider`、`login`、`list`、`logout` 印的都是它。名字是位置参数，不算
+        // 选项；选项分在子命令上（`--system` 在 `login`、`logout`，`--format` 在 `list`），页上列的是它们加起来的。
+        let provider = Provider::augment_args(Command::new("provider"));
+        let mut expected = real(&provider, id);
+        let subs: Vec<_> = provider.get_subcommands().cloned().collect();
+        assert_eq!(subs.len(), 3, "login、list、logout 三个子命令");
+        for sub in &subs {
+            expected.extend(real(sub, id));
+        }
         assert_eq!(
-            listed(page(language, Page::Login)),
-            real(&login, id),
-            "{language:?} login"
-        );
-        let logout = Logout::augment_args(Command::new("logout"));
-        assert_eq!(
-            listed(page(language, Page::Logout)),
-            real(&logout, id),
-            "{language:?} logout"
+            listed(page(language, Page::Provider)),
+            expected,
+            "{language:?} provider"
         );
         // `setup` 那一页（施工 8-11）：三个跳过一步的选项。
         let setup = Setup::augment_args(Command::new("setup"));
@@ -261,8 +262,7 @@ fn each_page_is_its_own_file() {
             (Page::Sandbox, "sandbox"),
             (Page::Config, "config"),
             (Page::Check, "check"),
-            (Page::Login, "login"),
-            (Page::Logout, "logout"),
+            (Page::Provider, "provider"),
             (Page::Setup, "setup"),
             (Page::Web, "web"),
             (Page::Memory, "memory"),
@@ -306,8 +306,7 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Sandbox,
             Page::Config,
             Page::Check,
-            Page::Login,
-            Page::Logout,
+            Page::Provider,
             Page::Setup,
             Page::Web,
             Page::Memory,

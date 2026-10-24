@@ -1,4 +1,4 @@
-//! `miyu login`、`miyu logout` 给人看的字（施工 8-5，`docs/blueprint/config.md`「给人看的字」的「命令行」那张表、「样子」；
+//! `miyu provider login`、`list`、`logout` 给人看的字（施工 8-5，`docs/blueprint/config.md`「给人看的字」的「命令行」那张表、「样子」；
 //! 图纸没写到的几句 2026-10-01 主会话照施工员的推荐定）。key 从不出现在这里的任何一句里。
 
 use super::Language;
@@ -35,8 +35,10 @@ impl Language {
     /// `login` 不写名字，一个能选的都没有。
     pub(crate) fn no_keys_used(&self) -> &'static str {
         match self {
-            Language::Chinese => "配置里还没有用到密钥的供应商：写 miyu login <名字>",
-            Language::English => "No provider in the config uses a key yet: run miyu login <name>",
+            Language::Chinese => "配置里还没有用到密钥的供应商：写 miyu provider login <名字>",
+            Language::English => {
+                "No provider in the config uses a key yet: run miyu provider login <name>"
+            }
         }
     }
 
@@ -52,7 +54,7 @@ impl Language {
         }
     }
 
-    /// 不写名字又不在终端里：`command` 是 `login` 或 `logout`。
+    /// 不写名字又不在终端里：`command` 是 `provider login` 或 `provider logout`。
     pub(crate) fn pick_needs_terminal(&self, command: &str) -> String {
         match self {
             Language::Chinese => format!("要在终端里选，或者写 miyu {command} <名字>"),

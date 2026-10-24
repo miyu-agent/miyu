@@ -1,5 +1,5 @@
 //! `miyu setup` 的编号表、敲的字认成什么（施工 8-11，`docs/blueprint/cli/setup.md`「怎么走」第 3、4、9 条、「样子」）。
-//! 几列照显示的宽度对齐（和 `miyu login` 的表同一套，`login/pick.rs`）。
+//! 几列照显示的宽度对齐（和 `miyu provider login` 的表同一套，`login/pick.rs`）。
 
 use crate::login::pick::{row, widths};
 use crate::shown::{Ink, Line};
