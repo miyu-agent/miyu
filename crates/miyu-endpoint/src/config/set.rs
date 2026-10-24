@@ -137,7 +137,12 @@ pub(crate) fn set(
         return Err(Refusal::NOT_PERMITTED);
     }
     let by = By::Person(Person::new(account.clone()));
-    set_in(core, &core.mine(account), peer, cause, params, by)
+    // 系统配置大家共用一份：照机主那一份写，写好了照它发给别人那几份（施工 Y-12 下：管理员组里别的人改的也是这一份）。
+    let whose = match params.layer {
+        WriteLayer::System => &core.admin,
+        WriteLayer::Personal => account,
+    };
+    set_in(core, &core.mine(whose), peer, cause, params, by)
 }
 
 /// 同 [`set`]，改机主那一份，改的人是 `by`：核心自己改的（施工 8-23：下架的模型移出池）记成内核。

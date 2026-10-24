@@ -212,6 +212,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             acting_for: caller.acting_for(),
             reach: &reach,
             declared: &declared,
+            scoped: shaken.is_some_and(crate::hello::Shaken::scoped),
         };
         if let Some(refusal) = checks::refuse(&core, &who, &request).await {
             let id = Value::String(request.id.as_str().to_string());

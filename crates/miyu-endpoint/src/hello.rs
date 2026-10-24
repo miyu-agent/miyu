@@ -75,12 +75,14 @@ struct Head {
     version: String,
 }
 
-/// 头能做什么：现在只看它能不能让人输入。
+/// 头能做什么：能不能让人输入，认不认识管理员模式。
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 struct Caps {
     /// 能让人输入：确认、提问有人答。
     input: bool,
+    /// 认识管理员模式（施工 Y-12 下）：改系统那一层的请求带 `"scope": "system"`。没声明的老头照以前的意思。
+    scope: bool,
 }
 
 /// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入。
@@ -90,6 +92,8 @@ pub(crate) struct Shaken {
     system: &'static str,
     /// 能让人输入。
     input: bool,
+    /// 认识管理员模式（施工 Y-12 下）。
+    scope: bool,
 }
 
 impl Shaken {
@@ -101,6 +105,7 @@ impl Shaken {
             language,
             input: self.input,
             admin: false,
+            scoped: self.scope,
         }
     }
 
@@ -115,6 +120,11 @@ impl Shaken {
     /// `ui.language` 是 `auto` 时用哪一种。
     pub(crate) fn system(self) -> &'static str {
         self.system
+    }
+
+    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
+    pub(crate) fn scoped(self) -> bool {
+        self.scope
     }
 }
 
@@ -162,6 +172,16 @@ pub(crate) struct Peer {
     pub(crate) input: bool,
     /// 这一刻是不是管理员（施工 Y-5 下下）：成员不能装包、卸包、启用扩展（`packages/may_manage.rs`）。
     pub(crate) admin: bool,
+    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
+    pub(crate) scoped: bool,
+}
+
+impl Peer {
+    /// 这一个请求 `request` 是不是在管理员模式里（施工 Y-12 下）：管理员带了 `"scope": "system"` 的；没声明认识管理员模式的
+    /// 老头，管理员的请求照以前的意思都算。成员的一律不算。
+    pub(crate) fn admin_mode(self, request: &crate::wire::Request) -> bool {
+        self.admin && (request.system || !self.scoped)
+    }
 }
 
 /// 握手：交回这个连接记下的、它是怎么认出来的（施工 W-8）和回应。拒绝的，交回拒绝和要不要断开。`spawned` 的是核心亲手拉起的
@@ -207,6 +227,7 @@ pub(crate) async fn hello(
     let shaken = Shaken {
         system: system(params.locale.as_deref()),
         input: params.caps.input,
+        scope: params.caps.scope,
     };
     let language = shaken.now(core).language;
     // 凭据认出来的账号（施工 Y-1 上）：登录令牌、密码连上的是那个账号；本机令牌、扩展的照连接原来的。

@@ -308,11 +308,13 @@ pub(crate) fn call<'a>(
                 params(request)?,
             )
         }),
-        "secret.set" => answer(move || async move {
-            secrets::set(core, (caller, peer), &request.id, params(request)?)
-        }),
+        "secret.set" => {
+            answer(
+                move || async move { secrets::set(core, (caller, peer), request, params(request)?) },
+            )
+        }
         "secret.delete" => answer(move || async move {
-            secrets::delete(core, (caller, peer), &request.id, params(request)?)
+            secrets::delete(core, (caller, peer), request, params(request)?)
         }),
         "secret.list" => {
             answer(move || async move { Ok(secrets::list(core, caller.acting_for())) })

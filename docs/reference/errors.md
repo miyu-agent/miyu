@@ -30,7 +30,7 @@
 
 ## 连接与登录
 
-`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`account_disabled`、`bad_invite`、`login_throttled`（都回完就断开）、`setup_first`、`register_first`、`not_permitted`；成员那几个方法的 `username_taken`、`unknown_invite`、`unknown_account`、`member_disabled`（设管理员的那个成员停用了，施工 Y-12 中下）；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
+`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`account_disabled`、`bad_invite`、`login_throttled`（都回完就断开）、`setup_first`、`register_first`、`not_permitted`、`admin_mode_required`（管理员改系统那一层没带 `"scope": "system"`，施工 Y-12 下）；成员那几个方法的 `username_taken`、`unknown_invite`、`unknown_account`、`member_disabled`（设管理员的那个成员停用了，施工 Y-12 中下）；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
 
 ## 会话
 

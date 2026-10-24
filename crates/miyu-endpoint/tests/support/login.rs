@@ -35,6 +35,14 @@ pub async fn hello_with(client: &mut Client, credentials: Value) -> Value {
     client.call("h", "hello", params).await
 }
 
+/// 同 [`Client::call`]，在管理员模式里发（外壳带 `"scope": "system"`，施工 Y-12 下）。
+pub async fn call_system(client: &mut Client, id: &str, method: &str, params: Value) -> Value {
+    let request =
+        json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params, "scope": "system"});
+    client.line(&request.to_string()).await;
+    client.next().await.expect("有回应")
+}
+
 /// 出示本机令牌连上的一个客户端。
 pub async fn local(core: &Arc<Core>) -> Client {
     let mut client = Client::connect(Arc::clone(core));

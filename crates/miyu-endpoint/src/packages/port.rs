@@ -66,6 +66,7 @@ impl Port {
             language: "en",
             input: false,
             admin: crate::login::admins::is_admin(core, &self.owner),
+            scoped: false,
         }
     }
 }

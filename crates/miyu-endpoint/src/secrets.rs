@@ -17,8 +17,8 @@
 //!
 //! 两份（施工 Y-2 下下中中，2026-10-24 项目主人定「成员只继承系统层」）：系统那一份 `system/secrets.toml` 大家共用，系统配置里
 //! 引用的 key 写在这里；每个人自己的 `home/<账号>/secrets.toml` 只给他自己的配置用，按名字找时先找它（[`Config::secret`]）。
-//! `secret.set`、`secret.delete` 多收 `layer`（`system`、`personal`），写系统那一份只有管理员；不写的，管理员是系统那一份
-//! （和分开以前一样：他配的供应商、MCP、扩展大家都用得上），成员是他自己的；
+//! `secret.set`、`secret.delete` 多收 `layer`（`system`、`personal`），写系统那一份只有管理员；不写的，管理员模式里是系统
+//! 那一份（施工 Y-12 下；没声明认识管理员模式的老头，管理员的照旧算在管理员模式里），平时、成员是他自己的；
 //! `secret.list` 列这个连接的人用得上的两份，每个名字带 `layer`。核心自己替 MCP 服务存、清的登录令牌照旧在系统那一份。
 
 mod file;
@@ -93,23 +93,27 @@ pub(crate) struct DeleteParams {
     layer: Option<Shelf>,
 }
 
-/// 这个连接的人改谁的哪一份（施工 Y-2 下下中中）：系统那一份只给管理员；没写 `layer` 的，管理员是系统那一份，成员是他自己的。
+/// 这个连接的人改谁的哪一份（施工 Y-2 下下中中）：系统那一份只给管理员；没写 `layer` 的，管理员模式里（`admin_mode`，施工
+/// Y-12 下）是系统那一份，平时、成员是他自己的。系统那一份照机主那一份写：大家共用的只有一份，写好了照它发给别人那几份。
 fn whose<'a>(
     core: &'a Core,
     caller: &crate::hello::Caller,
     layer: Option<Shelf>,
+    admin_mode: bool,
 ) -> Result<(crate::config::people::Mine<'a>, Shelf), Refusal> {
     let account = caller.acting_for();
-    let admin = crate::login::admins::is_admin(core, account);
-    let layer = layer.unwrap_or(if admin {
+    let layer = layer.unwrap_or(if admin_mode {
         Shelf::System
     } else {
         Shelf::Personal
     });
-    if layer == Shelf::System && !admin {
-        return Err(Refusal::NOT_PERMITTED);
+    match layer {
+        Shelf::System if !crate::login::admins::is_admin(core, account) => {
+            Err(Refusal::NOT_PERMITTED)
+        }
+        Shelf::System => Ok((core.mine(&core.admin), layer)),
+        Shelf::Personal => Ok((core.mine(account), layer)),
     }
-    Ok((core.mine(account), layer))
 }
 
 /// `secret.changed` 的 `body`：名字、做了什么、怎么改的。只记名字，从不记值。
@@ -144,14 +148,15 @@ enum Edit {
 pub(crate) fn set(
     core: &Core,
     (caller, peer): (&crate::hello::Caller, Peer),
-    cause: &CommandId,
+    request: &crate::wire::Request,
     params: SetParams,
 ) -> Result<Value, Refusal> {
     if !secret::valid_name(&params.name) {
         return Err(Refusal::BAD_PARAMS);
     }
     let value = Secret::new(&params.value).map_err(|_| Refusal::BAD_PARAMS)?;
-    let (mine, layer) = whose(core, caller, params.layer)?;
+    let (mine, layer) = whose(core, caller, params.layer, peer.admin_mode(request))?;
+    let cause = &request.id;
     let action = change(
         (core, &mine, layer),
         peer.language,
@@ -251,10 +256,11 @@ pub(crate) fn discard(core: &Core, name: &str) {
 pub(crate) fn delete(
     core: &Core,
     (caller, peer): (&crate::hello::Caller, Peer),
-    cause: &CommandId,
+    request: &crate::wire::Request,
     params: DeleteParams,
 ) -> Result<Value, Refusal> {
-    let (mine, layer) = whose(core, caller, params.layer)?;
+    let (mine, layer) = whose(core, caller, params.layer, peer.admin_mode(request))?;
+    let cause = &request.id;
     change(
         (core, &mine, layer),
         peer.language,

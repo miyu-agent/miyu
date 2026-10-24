@@ -9,6 +9,12 @@ impl Refusal {
         reason: "not_permitted",
         data: None,
     };
+    /// 管理员改系统那一层没进管理员模式（施工 Y-12 下）：握手声明了认识管理员模式的头，这一个请求没带 `"scope": "system"`。
+    pub(crate) const ADMIN_MODE_REQUIRED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "admin_mode_required",
+        data: None,
+    };
     /// 用户名、密码都对，账号停用了（施工 Y-1 上补）：回完断开。密码不对的照旧 `bad_password`。
     pub(crate) const ACCOUNT_DISABLED: Refusal = Refusal {
         code: REFUSED,

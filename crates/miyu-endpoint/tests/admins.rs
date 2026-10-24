@@ -53,13 +53,14 @@ async fn the_owner_makes_and_unmakes_admins() {
     let invited = bob.call("i", "account.invite", json!({})).await;
     assert!(invited.get("error").is_none(), "设了的能发邀请：{invited}");
     assert_eq!(listed_admin(&mut bob, "bob").await, true, "设了的能列账号");
+    // 组里的人平时照成员的名单，加上读这台电脑的、改系统那一层的（施工 Y-12 下）；扩展那一侧的方法照旧不放。
     let refused = bob
-        .call("c", "package.install", json!({"package": "x"}))
+        .call("c", "system.append", json!({"content": "x"}))
         .await;
     assert_eq!(
         why(&refused),
         "not_permitted",
-        "账号管理以外的照旧不放（Y-2 下下）：{refused}"
+        "扩展那一侧的照旧不放：{refused}"
     );
 
     assert_eq!(set(&mut owner, "bob", false).await["result"], json!({}));

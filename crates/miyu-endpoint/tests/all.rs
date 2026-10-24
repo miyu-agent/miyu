@@ -33,6 +33,7 @@ mod system_append;
 mod ticket_extension;
 mod turn_inject;
 
+mod admin_mode;
 mod admins;
 mod answer;
 mod attach;

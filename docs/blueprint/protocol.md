@@ -68,6 +68,7 @@
 | `method` 没有，或者不是字符串 | `invalid_request` |
 | `jsonrpc` 不是 `"2.0"` | `invalid_request` |
 | `params` 写了，不是对象也不是数组 | `invalid_request` |
+| `scope` 写了，不是 `"system"` | `invalid_request` |
 | 没有 `id` | 通知：不回应；只认握手之前的 `connection.remote`（下面「本机和远程」），别的不理 |
 | `id` 不是字符串（数字、`null`……） | `invalid_request` |
 | `id` 不合命令编号的写法：1 到 128 字节，不含控制字符 | `invalid_request` |
@@ -76,6 +77,12 @@
 - 认不成请求的，回应里的 `id`：这一行的 `id` 是字符串或数字的照原样带回，别的（没有、`null`、对象……）写 `null`。
 - 头发来的通知只认一种：握手之前的 `connection.remote`（施工 Y-1 下）。
 - `params` 是数组的：`bad_params`（施工 4-9 再补三上）。方法都照名字取参数；照位置读的话，回应找不到该交给哪个订阅，破了「先见结果，后见回应」。
+- **管理员模式**（施工 Y-12 下，设计 06 八再补第 2 条；2026-10-24 项目主人定本机也要切、账号管理也在管理员模式下）：请求外壳可以多一格 `"scope": "system"`（和 `method`、`params` 同级）。
+  - 只对握手时 `caps.scope` 是 `true` 的连接要求（协议 1 冻结：没声明的老头照以前的意思，管理员改系统那一层不用带）。
+  - 改系统那一层的要带，不带的管理员回 `admin_mode_required`：账号管理（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`），软件包的写（`package.install`、`remove`、`upgrade`、`enable`、`disable`、`clean`、`sync`、`restart`），`extension.enable`、`disable`、`restart`，MCP 的写（`mcp.set`、`remove`、`login`、`login_finish`、`logout`、`restart`），`provider.rename`，`config.set` 写 `system` 层，`secret.set`、`secret.delete` 写系统那一份。`secret.set`、`secret.delete` 不写 `layer` 的，管理员模式里是系统那一份，平时是个人的（老头的管理员照旧是系统那一份）。
+  - 不是管理员的人带了，什么方法都回 `not_permitted`；核心拉起的扩展带了也是。读的、改自己那一份的带不带一样。
+  - 管理员组里机主以外的人平时照成员的名单（`connection/gate/members.rs`），加上读这台电脑的几样（`fs.*`、`link.preview`、`model.call`、`provider.detect`、软件包、扩展、MCP 的读）和改系统那一层的（`connection/gate/system.rs`）。
+  - 系统配置、系统那一份密钥大家共用：组里谁改的都照机主那一份写，再发给别人那几份。每个带 `scope` 的请求记一行 `INFO admin mode`。
 - 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。
 
 #### 回应
@@ -118,7 +125,7 @@
 | `protocol` | 两个非负整数 `[最低, 最高]` | 头支持的主版本范围，必写 |
 | `head` | `{"kind": 字符串, "version": 字符串}` | 头的种类和版本，必写，只记进运行日志 |
 | `locale` | 字符串，可以不写 | 头所在系统的语言（BCP 47 或者 `LANG` 的写法都行）。`ui.language` 是 `auto` 时照它定这个连接的语言：`zh` 开头的（区分大小写）是 `zh`，`ja` 开头的是 `ja`，别的、没写的是 `en`（施工 8-2） |
-| `caps` | 对象，不写是 `{}` | 现在只看 `input`（布尔，不写是 `false`）：这个头能不能让人输入。别的格不理 |
+| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`scope`（布尔，不写是 `false`，施工 Y-12 下）：认识管理员模式，改系统那一层的请求会带 `"scope": "system"`（上面「请求」）。别的格不理 |
 | `token` | 字符串，可以不写 | 本机令牌（`ipc.md`）；本机的头出示它 |
 | `code` | 字符串，可以不写 | 一次性码：64 位小写十六进制（施工 W-8，`web-module.md`「怎么走」第一条） |
 | `login` | 字符串，可以不写 | 登录令牌：64 位小写十六进制（施工 W-8） |
@@ -1443,6 +1450,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 |---|---|---|
 | `DEBUG` | `connected` | 接上一个连接 |
 | `INFO` | `connected head=… version=… protocol=1 via=…` | 握手过了；`via` 是 `token`、`code`、`login`、`password`（施工 W-8） |
+| `INFO` | `admin mode account=… method=…` | 一个带 `"scope": "system"` 的请求过了闸门：谁以管理员身份做了什么（施工 Y-12 下） |
 | `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`login throttled head=…` | 握手被拒、断开 |
 | `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
 | `DEBUG` | `request method=…` | 每一条请求 |

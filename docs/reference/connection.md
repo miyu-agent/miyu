@@ -23,6 +23,8 @@
 
 **请求**是 JSON-RPC 2.0：`jsonrpc` 写 `"2.0"`，`method` 是方法名，`params` 是对象（不写当 `{}`，写成数组回 `bad_params`），`id` 是 1 到 128 字节、不含控制字符的字符串。没有 `id` 的是通知，核心不理，只认握手之前的 `connection.remote`（上面「网页」）。参数里不认识的格不理；写 `null` 等于没写。
 
+**管理员模式**：管理员组的人改系统那一层（系统配置、系统那一份密钥、系统装的包和扩展、MCP、账号管理、`provider.rename`），请求外壳多写一格 `"scope": "system"`（和 `method` 同级），不带的回 `admin_mode_required`。只对握手时 `caps.scope: true` 的连接这样要求，没声明的照以前。`secret.set`、`secret.delete` 不写 `layer` 的，管理员模式里存系统那一份，平时存自己的。不是管理员的人带了一律 `not_permitted`；`scope` 写别的值是 `invalid_request`。
+
 **回应**：成了的在 `result`；拒了的在 `error`：`code` 是错误码，`message` 是给人看的一句（照这个连接的语言），`data.reason` 是给程序看的原因码，有的另带几格。
 
 ```json
@@ -51,7 +53,7 @@
 | `protocol` | `[最低, 最高]`，必写 | 你支持的协议主版本范围；核心只有 `1` |
 | `head` | `{"kind", "version"}`，必写 | 你是什么、哪一版，只记进运行日志 |
 | `locale` | 字符串 | 你所在系统的语言（`zh-CN`、`en_US.UTF-8` 都行）。配置 `ui.language` 是 `auto` 时照它定这个连接的语言 |
-| `caps` | 对象 | 现在只看 `input`（布尔）：你能不能让人输入 |
+| `caps` | 对象 | `input`（布尔）：你能不能让人输入。`scope`（布尔）：你认识管理员模式（上面「管理员模式」） |
 | `token` | 字符串 | 本机令牌 |
 | `code` | 字符串 | 一次性码（网页第一次设密码、重设密码） |
 | `login` | 字符串 | 登录令牌（网页记住的登录） |

@@ -1,6 +1,6 @@
 //! 一个请求进来、办之前过的几道（施工 Y-2 上把它们收到一处，设计 06 八再又补第 1 条「每一条路都过同一道检查」）：
 //!
-//! 1. 凭据决定的闸（施工 W-8、Y-1 上，`gate.rs`）。
+//! 1. 凭据决定的闸（施工 W-8、Y-1 上，`gate.rs`），管理员模式（施工 Y-12 下）。
 //! 2. 本机才能用的（施工 Y-1 下，`reach.rs`）。
 //! 3. 扩展照它声明的能力挡（施工 X-30，`rights.rs`）：只对核心拉起的扩展。
 //! 4. 会话只给属主（施工 Y-2 上，2026-10-23 项目主人定场所会话只读、不从头上交互）：参数里写了 `session` 的，那个会话的
@@ -30,17 +30,24 @@ pub(super) struct Who<'a> {
     pub(super) acting_for: &'a AccountId,
     pub(super) reach: &'a reach::Reach,
     pub(super) declared: &'a [Capability],
+    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
+    pub(super) scoped: bool,
 }
 
 /// 照先后过几道，第一个拒的交回拒绝；都过了的没有。
 pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -> Option<Refusal> {
-    if let Some(refusal) = gate::refuse(
-        core,
-        who.via,
-        who.account,
-        (&request.method, &request.params),
-    ) {
+    let asked = gate::Asked {
+        method: &request.method,
+        params: &request.params,
+        system: request.system,
+        scoped: who.scoped,
+    };
+    if let Some(refusal) = gate::refuse(core, who.via, who.account, &asked) {
         return Some(refusal);
+    }
+    // 管理员模式里做的，每一个记一行谁、什么方法（设计 06 八再补第 2 条：日志记「谁以管理员身份做了什么」）。
+    if request.system {
+        tracing::info!(target: "miyu::endpoint", account = who.account.as_str(), method = request.method.as_str(), "admin mode");
     }
     if let Some(refusal) = reach::refuse(who.reach, request) {
         return Some(refusal);

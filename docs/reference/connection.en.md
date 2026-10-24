@@ -23,6 +23,8 @@ Chinese version: [connection.md](connection.md).
 
 **Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.
 
+**Admin mode**: when people in the admin group change the system layer (system settings, the system secrets, system-installed packages and extensions, MCP, account management, `provider.rename`), the request envelope carries `"scope": "system"` (next to `method`); without it the answer is `admin_mode_required`. This applies only to connections that sent `caps.scope: true` in the hello; others keep the old meaning. `secret.set` and `secret.delete` without `layer` use the system shelf in admin mode and the person's own otherwise. Non-admins sending it always get `not_permitted`; any other `scope` value is `invalid_request`.
+
 **Responses**: success in `result`; refusal in `error`: `code` is the error code, `message` a sentence for people (in the connection's language), `data.reason` the reason code for programs, sometimes with more fields.
 
 ```json
@@ -51,7 +53,7 @@ The handshake. It must be the first message; before it every other method gets `
 | `protocol` | `[lowest, highest]`, required | The protocol major versions you support; the core only has `1` |
 | `head` | `{"kind", "version"}`, required | What you are and which version; only logged |
 | `locale` | string | Your system's language (`zh-CN`, `en_US.UTF-8` both work). Sets the connection's language when the `ui.language` setting is `auto` |
-| `caps` | object | Only `input` (boolean) is read: whether you can let a person type |
+| `caps` | object | `input` (boolean): whether you can let a person type. `scope` (boolean): you know admin mode (see **Admin mode** above) |
 | `token` | string | The local token |
 | `code` | string | A one-time code (first web password, password reset) |
 | `login` | string | A login token (a remembered web login) |
