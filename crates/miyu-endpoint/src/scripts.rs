@@ -12,6 +12,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
+use miyu_kernel::id::AccountId;
 use miyu_policy::features::{Feature, Features};
 use miyu_policy::script::feature_id;
 use miyu_store::scripts::{HOME_PACKAGE, Script};
@@ -189,13 +190,27 @@ pub(crate) fn package(script: &Script) -> &str {
     script.package.as_deref().unwrap_or(HOME_PACKAGE)
 }
 
-/// 装了的功能，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的工具名；个人设置里的 MCP
-/// 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到工具：那个服务不起，
-/// 目录里没有挂在那个包下的工具。
-pub(crate) fn features(core: &Core) -> Features {
+/// 交给属主是 `owner` 的会话的功能：装了的，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的
+/// 工具名；个人设置里的 MCP 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到
+/// 工具：那个服务不起，目录里没有挂在那个包下的工具。
+///
+/// 挂在 [`HOME_PACKAGE`] 下的（机主家目录里放的脚本、个人设置里的 MCP 服务）是机主私人的（施工 U23 中上）：只给机主这一侧的
+/// 会话（[`Core::machine_side`]：机主的、包的账号的，场所会话是机主配的）；别人的会话不列它们，整包扣下。
+pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     let packaged = crate::packages::features(&core.system_packages());
     let images = packaged.image_packages().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
+    if !core.machine_side(owner) {
+        list.extend(
+            core.scripts()
+                .iter()
+                .filter(|script| package(script) != HOME_PACKAGE)
+                .map(script_feature),
+        );
+        return Features::new(list)
+            .needing_images(images)
+            .withholding([HOME_PACKAGE.to_string()]);
+    }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
         package: HOME_PACKAGE.to_string(),
@@ -203,12 +218,20 @@ pub(crate) fn features(core: &Core) -> Features {
         service: Some(server.name.clone()),
         script: None,
     }));
-    list.extend(core.scripts().iter().map(|script| Feature {
+    list.extend(core.scripts().iter().map(script_feature));
+    Features::new(list).needing_images(images)
+}
+
+/// 一个登记上的脚本的功能。
+fn script_feature(script: &Script) -> Feature {
+    Feature {
         id: feature_id(&script.head.name),
         package: package(script).to_string(),
         tools: Vec::new(),
         service: None,
         script: Some(script.head.name.clone()),
-    }));
-    Features::new(list).needing_images(images)
+    }
 }
+
+#[cfg(test)]
+mod tests;

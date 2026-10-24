@@ -351,3 +351,27 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
     assert_eq!(blind.digest, seeing.digest, "指纹不变");
     assert_eq!(blind.pin(), seeing.pin(), "快照记的一样");
 }
+
+/// 功能表一律扣下的包（施工 U23 中上：机主私人的脚本、MCP 服务不给别人的会话）：开会话时就扣下，场所显示不了图片再扣下要图的
+/// 包也不丢；指纹照旧。
+#[test]
+fn packages_withheld_by_the_features_stay_withheld_when_blind() {
+    let features = installed()
+        .needing_images(["onebot".to_string()])
+        .withholding(["basesystem".to_string()]);
+    let file = read("[features]\nmemory = false\n").unwrap();
+    let plain = Chosen::new("full".to_string(), file.clone(), &installed());
+    let chosen = Chosen::new("full".to_string(), file, &features);
+    assert!(
+        !chosen.file.opens_in("files", "basesystem"),
+        "开会话时就扣下"
+    );
+    assert!(chosen.file.opens_in("qq", "onebot"), "看得了图的照旧");
+    let blind = chosen.blind(&features);
+    assert!(
+        !blind.file.opens_in("files", "basesystem"),
+        "再扣要图的也不丢"
+    );
+    assert!(!blind.file.opens_in("qq", "onebot"));
+    assert_eq!(blind.digest, plain.digest, "指纹不变");
+}

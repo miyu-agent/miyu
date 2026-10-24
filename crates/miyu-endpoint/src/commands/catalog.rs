@@ -124,8 +124,9 @@ pub(crate) async fn catalog(
             .filter(|one| !templates.iter().any(|t| t.name == one.command.name))
             .map(|one| declared::listed(one, peer.language)),
     );
-    // MCP 服务的提示词（施工 X-39）：在跑的服务登记的，排在模板后面；写了会话的只列预设开着这个服务的。
-    for entry in prompts::usable(core) {
+    // MCP 服务的提示词（施工 X-39）：在跑的服务登记的、这个人用得上的（施工 U23 中上），排在模板后面；写了会话的只列预设开着
+    // 这个服务的。
+    for entry in prompts::usable(core, caller.acting_for()) {
         let opened = match &handle {
             None => true,
             Some(handle) => {

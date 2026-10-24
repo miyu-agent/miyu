@@ -38,7 +38,8 @@ pub struct PresetPlaces {
 
 impl PresetPlaces {
     /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。显示不了图片的（`images` 是假）要图的包
-    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）。
+    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）。功能表一律扣下的（`~home`，施工 U23 中上）这里不用：
+    /// 那个包下面只有脚本和 MCP 服务，没有技能。
     pub(crate) fn file(
         &self,
         id: &str,

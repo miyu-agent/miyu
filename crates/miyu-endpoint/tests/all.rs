@@ -77,6 +77,7 @@ mod files;
 mod fork;
 mod from;
 mod hello;
+mod home_private;
 mod human;
 mod idle;
 mod index;

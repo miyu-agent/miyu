@@ -11,11 +11,12 @@ use serde_json::{Value, json};
 use miyu_config::package::Access;
 use miyu_kernel::block::{Block, Image, Text};
 use miyu_kernel::event::TypedCommand;
-use miyu_kernel::id::{CommandId, SessionId};
+use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::session::Command;
 use miyu_mcp::{Argument, Client};
 use miyu_policy::slash::{next_word, rest_word};
 use miyu_store::blob::Blobs;
+use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::Picture;
 
 use super::{RunParams, accepted, access, command, passes, speaker, templates, turned_off};
@@ -43,12 +44,15 @@ impl Usable {
     }
 }
 
-/// 这一刻在跑、列过了的服务登记的提示词，照命令名排。
-pub(super) fn usable(core: &Core) -> Vec<Usable> {
+/// 这一刻在跑、列过了的服务登记的提示词，`account` 用得上的，照命令名排。个人设置里的服务（挂在 `~home` 下）是机主私人的，
+/// 只给机主这一侧（施工 U23 中上，[`Core::machine_side`]）：别人的菜单里不列，敲了也当没有。
+pub(super) fn usable(core: &Core, account: &AccountId) -> Vec<Usable> {
+    let private = core.machine_side(account);
     let mut usable: Vec<Usable> = core
         .mcp
         .prompts()
         .into_iter()
+        .filter(|prompts| private || prompts.package != HOME_PACKAGE)
         .flat_map(|prompts| {
             let (package, service, client) = (prompts.package, prompts.service, prompts.client);
             prompts.offered.into_iter().map(move |offered| Usable {
@@ -145,12 +149,12 @@ pub(super) async fn run(
         params.person.as_ref(),
         params.as_external.clone(),
     )?;
-    let Some(entry) = usable(core)
+    let Some(entry) = usable(core, handle.owner())
         .into_iter()
         .find(|entry| entry.offered.command == name)
     else {
         let service = name.split_once(':').map_or(name, |(service, _)| service);
-        return Err(match configured(core, service) {
+        return Err(match configured(core, service, handle.owner()) {
             true => Refusal::COMMAND_UNAVAILABLE,
             false => Refusal::UNKNOWN_COMMAND,
         });
@@ -205,12 +209,15 @@ pub(super) async fn run(
     Ok(json!({"command": name, "events": events, "said": ""}))
 }
 
-/// 有这个服务：个人设置里写了的、装了的包带的（没在跑的也算）。
-fn configured(core: &Core, service: &str) -> bool {
-    core.home_mcp
-        .now()
-        .iter()
-        .any(|server| server.name == service)
+/// `account` 看来有这个服务：个人设置里写了的（机主私人的，只算给机主这一侧，施工 U23 中上：别人敲了当没有，不透露机主配了
+/// 什么）、装了的包带的（没在跑的也算）。
+fn configured(core: &Core, service: &str, account: &AccountId) -> bool {
+    (core.machine_side(account)
+        && core
+            .home_mcp
+            .now()
+            .iter()
+            .any(|server| server.name == service))
         || core.system_packages().iter().any(|found| {
             found
                 .read

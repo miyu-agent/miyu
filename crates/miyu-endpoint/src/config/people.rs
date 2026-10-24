@@ -59,10 +59,16 @@ impl Mine<'_> {
 }
 
 impl Core {
+    /// `account` 在机主这一侧（施工 U23 中上，从 [`Core::mine`] 抽出来）：机主本人，或者包的账号（平台桥、替机主干活的扩展，
+    /// 施工 Y-5 中：场所会话归它们，是机主配的）。用机主的配置、看得到机主私人的脚本和 MCP 服务。
+    pub(crate) fn machine_side(&self, account: &AccountId) -> bool {
+        *account == self.admin || self.package_accounts().contains(account)
+    }
+
     /// `account` 的配置：机主的是核心手里那一份，别人的用到时造一份留着。系统账号、包的账号（平台桥、替机主干活的扩展，
     /// 施工 Y-5 中）照机主那一份：场所会话用的是机主配的模型，同它们的记忆归机主。
     pub(crate) fn mine(&self, account: &AccountId) -> Mine<'_> {
-        if *account == self.admin || self.package_accounts().contains(account) {
+        if self.machine_side(account) {
             return Mine::Owner(self);
         }
         if let Some(own) = lock(&self.people.0).get(account) {
