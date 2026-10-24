@@ -428,6 +428,7 @@
     "tool-results/unknown": "工具不存在",
     "tool-results/not-an-object": "参数格式错误",
     "tool-results/cancelled-before": "已取消",
+    "tool-results/forked": "已分叉",
     "tool-results/cancelled-running": "已中断",
     "tool-results/skipped": "已跳过",
     "tool-results/read-only": "只读模式，未执行",

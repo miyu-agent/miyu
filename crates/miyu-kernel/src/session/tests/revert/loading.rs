@@ -60,6 +60,7 @@ fn a_fork_of_a_compacted_parent_loads_from_its_checkpoint() {
         from: session_id(),
         upto: base.last().unwrap().seq,
         seal_after: None,
+        within: None,
     });
     let child = SessionId::parse(crate::testkit::CHILD_SESSION).unwrap();
     let (_, actions) = Session::fork(

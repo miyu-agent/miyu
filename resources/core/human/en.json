@@ -428,6 +428,7 @@
     "tool-results/unknown": "Tool not found",
     "tool-results/not-an-object": "Invalid arguments",
     "tool-results/cancelled-before": "Cancelled",
+    "tool-results/forked": "Forked",
     "tool-results/cancelled-running": "Interrupted",
     "tool-results/skipped": "Skipped",
     "tool-results/read-only": "Read-only mode, not run",

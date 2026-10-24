@@ -139,6 +139,7 @@ impl Stage {
                     from: parent.clone(),
                     upto,
                     seal_after,
+                    within: None,
                 });
                 created.parent = Some(parent);
                 created.depth = Some(1);

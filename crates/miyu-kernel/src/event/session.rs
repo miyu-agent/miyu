@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
 
-use crate::id::{AccountId, ContentHash, Seq, SessionId, VenueId};
+use crate::id::{AccountId, ContentHash, Seq, SessionId, TurnId, VenueId};
 use crate::text_enum::text_enum;
 
 /// `session.created`：会话创建。
@@ -113,6 +113,10 @@ pub struct Forked {
     /// 跑完几轮封存（施工 C-8 下）：接着开的一轮不另算。不封存的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub seal_after: Option<NonZeroU32>,
+    /// 分叉点在这一轮当中（fork 子代理，施工 A-F 上）：底子停在这一轮派它的那条 `message.assistant` 上，子会话头几条给那一步的
+    /// 每个调用记占位结果、以 `forked` 收住这一轮。普通分叉不写：分叉点在一轮之外。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub within: Option<TurnId>,
 }
 
 /// `session.sealed`：分叉出来的会话跑满了 `seal_after` 轮，封存了（施工 C-8 下）。之后不再开轮，改对话的命令都拒。

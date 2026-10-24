@@ -39,6 +39,14 @@
 
 **封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（接入QQ 仓库的 `chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；日志留在磁盘上，再用到照常载入，载入的认得封存。
 
+**fork 子代理**（施工 A-F 上起，2026-10-24 项目主人定「从当前上下文分出去」、核心主会话定形状，`agents.md`「fork 子代理」）：她调 `subagent` 写 `fork` 的，子会话从父会话这一轮派它的那一步分叉，不退到这一轮开始之前：她这一轮读过、查到的，子代理都看得到。
+
+1. 分叉点由内核照那次调用定（`fork_plan_at`）：派它的那条 `message.assistant`；那次调用得是正在进行的那一轮里还在等结果的。`forked` 多 `within`，写那一轮的编号。权限、模型、快照照到那一条为止的。
+2. 子会话的头几条同一批记：`session.created`（带 `forked.within`）；那一步每个调用一条占位结果（照调用的先后，字一样，`core/tool-results/forked.txt`，`status` 是 `ok`，`by` 是内核，`turn` 是父会话那一轮）；`turn.ended`（`forked`）。之后交代作为父会话发来的 `message.user` 另开它自己的一轮（施工 A-F 中）。
+3. 请求前缀：父会话和子会话一直相同到派它的那条回复；同一步派出去的几个兄弟连占位结果也一字不差，只差交代。
+4. 接过来的那一轮不进子会话能撤的几轮：它是父会话开的。
+5. 普通分叉（`session.fork`、`Session::fork`）照旧：分叉点在一轮之外，写了 `within` 的拒。
+
 **推送**：子会话是普通会话，订阅它的连接照常收到它的事件（桥照它发群消息、记 `venue.delivered`）。
 
 **主线怎么看到支线说的话**：桥把支线发出去的那几句照旧记成 `venue.delivered`，记在**主线**会话的日志里（`events.append`，`line` 写支线的会话编号）。主线下一轮的群聊近况照日志渲染：`line` 不是自己的，渲染成 `[you]` 行（`18` 第八节「要守的三条」第 1 条：只放这条线历史里没有的）。不跨会话取，主线的投影只读自己的日志。
@@ -49,6 +57,7 @@
 
 | 代码 | 管什么 |
 |---|---|
+| `crates/miyu-kernel/src/session/fork/within.rs`、`ledger/forked.rs`（施工 A-F 上） | fork 子代理：照派它的那次调用算分叉点（`fork_plan_at`）；底子停在一步刚派出去的调用上；账本接着那一轮；占位结果、`forked` 收住那一轮（`Session::fork_within`） |
 | `crates/miyu-kernel/src/session/fork.rs` | 分叉要照的几样（`fork_plan`：分叉点、权限、模型、快照）；底子（父会话到分叉点为止的事件过一遍父会话的账本，停不在一轮当中）；`Session::fork` 写第一条 |
 | `crates/miyu-kernel/src/session/load.rs` 的 `load_forked` | 载入分叉出来的：底子只进有效历史，账本从 `upto + 1` 起、继承旁听 |
 | `crates/miyu-kernel/src/ledger.rs` 的 `starting_at`、`ledger/triggers.rs` 的 `heard_from` | 账本的第一条可以不是第 1 条（要写着分叉点）；继承父会话旁听记下的、当过触发的 |

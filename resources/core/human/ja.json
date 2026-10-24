@@ -428,6 +428,7 @@
     "tool-results/unknown": "ツールが存在しません",
     "tool-results/not-an-object": "引数の形式が正しくありません",
     "tool-results/cancelled-before": "キャンセルしました",
+    "tool-results/forked": "フォークしました",
     "tool-results/cancelled-running": "中断しました",
     "tool-results/skipped": "スキップしました",
     "tool-results/read-only": "読み取り専用モードのため未実行",

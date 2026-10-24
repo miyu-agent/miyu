@@ -196,7 +196,7 @@ impl TurnEndedTexts {
             EndReason::StepLimit => Some(&self.step_limit),
             EndReason::Aborted => Some(&self.aborted),
             EndReason::Restarted => Some(&self.restarted),
-            EndReason::Completed | EndReason::Other(_) => None,
+            EndReason::Completed | EndReason::Forked | EndReason::Other(_) => None,
         }
     }
 }
@@ -278,3 +278,6 @@ pub struct IdleTexts {
     /// 收尾（`idle-close.txt`）。
     pub close: String,
 }
+
+#[cfg(test)]
+mod tests;

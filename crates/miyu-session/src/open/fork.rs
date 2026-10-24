@@ -144,6 +144,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
                 from: parent,
                 upto: plan.upto,
                 seal_after,
+                within: None,
             }),
         };
         // 这一份内核会话只用来查底子、写第一条：环境照记下的，时区不进第一条。

@@ -172,6 +172,7 @@
 | `core/tool-results/denied` | 已拒绝 | Denied |
 | `core/tool-results/denied-with-reason` | 你拒绝了：{reason} | you said no: {reason} |
 | `core/tool-results/cancelled-before` | 已取消 | Cancelled |
+| `core/tool-results/forked` | 已分叉 | Forked |
 | `core/tool-results/cancelled-running` | 已中断 | Interrupted |
 | `core/tool-results/question-interrupted` | 已中断，未回答 | Interrupted, not answered |
 | `core/tool-results/skipped` | 已跳过 | Skipped |

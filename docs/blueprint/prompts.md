@@ -723,6 +723,17 @@ The call was cancelled: Miyu restarted before it finished. It may have been part
 The tool "{name}" is not available right now.
 ```
 
+#### `core/tool-results/forked.txt`
+
+- 什么时候加进来：fork 子代理的头几条：父会话派它的那一步，每个调用一条，几个兄弟一字不差（施工 A-F 上，`session/fork.md`「fork 子代理」）
+- token：11（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`unavailable` 那一句同样量是 12）
+- 为什么加：每次调用都要有结果；那一步的调用真正的结果在父会话那边，子会话只知道它们交给父会话了（照 Claude Code 的 fork 占位结果，一句英文）
+- 指纹：`08dad253`
+
+```text
+Forked; the parent handles this call.
+```
+
 #### `core/tool-results/uninstalled.txt`
 
 - 什么时候加进来：快照里有、随包卸掉了的工具：她照样调了（施工 F-5 中）

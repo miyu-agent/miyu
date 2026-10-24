@@ -20,6 +20,7 @@ fn branch(after: u32) -> Logged {
         from: session_id(),
         upto: seq(upto),
         seal_after: NonZeroU32::new(after),
+        within: None,
     });
     let child = SessionId::parse(CHILD_SESSION).unwrap();
     let env = environment("~/src/miyu");

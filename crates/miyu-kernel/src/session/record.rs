@@ -41,7 +41,7 @@ impl Session {
     }
 
     /// 造好序号是 `seq`、回合编号是 `turn` 的一条，交给账本、记下。
-    fn stamped(
+    pub(super) fn stamped(
         &mut self,
         seq: Seq,
         at: Timestamp,

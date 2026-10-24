@@ -14,7 +14,7 @@ use crate::id::{Seq, SessionId};
 use crate::ledger::Ledger;
 use crate::session::Session;
 use crate::session::configure::Reference;
-use crate::session::fork::{Base, forked_of};
+use crate::session::fork::{Base, continued, forked_of};
 use crate::session::grants::Grants;
 use crate::session::jobs;
 use crate::session::policy::{Policy, Reports};
@@ -67,7 +67,7 @@ impl Session {
         let (parent, base) = match base {
             Some(base) => {
                 let of = Base::of(&base, forked_of(first)?)?;
-                ledger = ledger.heard_from(&of.ledger);
+                ledger = continued(ledger.heard_from(&of.ledger), &of);
                 (Some((of.parent, of.from)), base)
             }
             None => (None, Vec::new()),
