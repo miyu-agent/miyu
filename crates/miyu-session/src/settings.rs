@@ -36,7 +36,7 @@ miyu_config::settings! {
             kind: bool,
             layers: [System, Personal],
             applies: next_turn,
-            ui: { page: "general", group: "compaction", control: toggle },
+            ui: { page: "advanced", group: "compaction", control: toggle },
         },
     }
 }
