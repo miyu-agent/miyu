@@ -2,7 +2,8 @@
 //!
 //! - 分组照 [`Group`]：属主、场所、`供应商/模型`、那个时区的日期、会话、用途。没有的格（一次性调用的会话、场所，主请求的
 //!   用途）是空的。一行照分组的几格的先后排，空的在前。
-//! - 金额照币种各加各的，不换算、不相加；照币种代码的字母先后，谁排最前由调的一方照 `usage.currency` 再排。
+//! - 金额照币种各加各的；照币种代码的字母先后，谁排最前由调的一方照 `usage.currency` 再排。要换算的（[`Query::daily`]，
+//!   施工 UC-1）另交每一组按 UTC 日子、币种分开的金额（[`Total::daily`]），调的一方照它换算（[`UsageIndex::convert`]）。
 //! - 分天：时刻加上时区换成那个时区的日期；删掉的会话按小时存，照那一小时的开头归到哪天。
 //! - 只算一个会话的，写了 `tree` 的连它派的子会话（照 `marks` 里记的父会话一层层往下找）。
 
@@ -15,6 +16,7 @@ use miyu_kernel::event::Usage;
 use miyu_kernel::id::SessionId;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
+use super::rates::Day;
 use super::{UsageError, UsageIndex};
 
 /// 一天，毫秒。
@@ -104,6 +106,8 @@ pub struct Query {
     pub account: Option<String>,
     /// 分天照哪个时区。
     pub offset: UtcOffset,
+    /// 要换算（施工 UC-1）：另交每一组按 UTC 日子、币种分开的金额（[`Total::daily`]）。
+    pub daily: bool,
 }
 
 /// 一组加起来的。
@@ -119,6 +123,8 @@ pub struct Total {
     pub amounts: Vec<(String, f64)>,
     /// 有用量、没金额的几次。
     pub unpriced: u64,
+    /// 按 UTC 日子、币种分开的金额（施工 UC-1）：换算照它；没要的（[`Query::daily`]）是空的。
+    pub daily: Vec<(Day, String, f64)>,
 }
 
 impl UsageIndex {
@@ -146,94 +152,118 @@ impl UsageIndex {
         let Some(db) = db.as_ref() else {
             return Ok(Vec::new());
         };
-        let sessions = match &query.session {
-            None => None,
-            Some((root, false)) => Some(BTreeSet::from([root.as_str().to_string()])),
-            Some((root, true)) => Some(tree(db, root.as_str())?),
-        };
-        let keys: Vec<&str> = query.group.iter().map(|group| group.column()).collect();
-        let (filter, values) = filter(query, sessions.as_ref());
-        let listed = |extra: &str| {
-            let mut all = keys.join(", ");
-            if !extra.is_empty() {
-                if !all.is_empty() {
-                    all.push_str(", ");
-                }
-                all.push_str(extra);
-            }
-            all
-        };
-        let group_by = |extra: &str| {
-            let all = listed(extra);
-            match all.is_empty() {
-                true => String::new(),
-                false => format!(" GROUP BY {all} ORDER BY {all}"),
-            }
-        };
-        let select = |what: &str| match keys.is_empty() {
-            true => what.to_string(),
-            false => format!("{}, {what}", keys.join(", ")),
-        };
-        let sums = format!(
-            "SELECT {} FROM spent WHERE {filter}{}",
-            select(
-                "SUM(requests), SUM(uncached), SUM(cache_read), SUM(cache_write), SUM(output), SUM(unpriced)"
-            ),
-            group_by("")
-        );
-        let amounts = format!(
-            "SELECT {} FROM spent WHERE {filter} AND currency IS NOT NULL{}",
-            select("currency, SUM(amount)"),
-            group_by("currency")
-        );
-        let width = keys.len();
-        let mut totals: BTreeMap<Vec<Key>, Total> = BTreeMap::new();
-        let mut order = Vec::new();
-        let mut select = db.prepare(&sums)?;
-        let mut rows = select.query(params_from_iter(values.iter()))?;
-        while let Some(row) = rows.next()? {
-            let keys = read_keys(row, &query.group)?;
-            let count = |k: usize| -> Result<u64, UsageError> {
-                let n: Option<i64> = row.get(width + k)?;
-                Ok(u64::try_from(n.unwrap_or(0)).unwrap_or(0))
-            };
-            let requests = count(0)?;
-            if requests == 0 && !query.group.is_empty() {
-                // 只有金额那几行的一组（删掉的会话几种币种的那几行）：照理总跟着请求数那一行，不单算一组。不分组的总有一行，
-                // 一次请求都没有的是 0。
-                continue;
-            }
-            let total = Total {
-                keys: keys.iter().map(Key::shown).collect(),
-                requests,
-                usage: Usage {
-                    uncached: count(1)?,
-                    cache_read: count(2)?,
-                    cache_write: count(3)?,
-                    output: count(4)?,
-                    reasoning: None,
-                },
-                amounts: Vec::new(),
-                unpriced: count(5)?,
-            };
-            order.push(keys.clone());
-            totals.insert(keys, total);
-        }
-        let mut select = db.prepare(&amounts)?;
-        let mut rows = select.query(params_from_iter(values.iter()))?;
-        while let Some(row) = rows.next()? {
-            let keys = read_keys(row, &query.group)?;
-            let currency: String = row.get(width)?;
-            let amount: f64 = row.get(width + 1)?;
-            if let Some(total) = totals.get_mut(&keys) {
-                total.amounts.push((currency, amount));
-            }
-        }
-        Ok(order
-            .into_iter()
-            .filter_map(|keys| totals.remove(&keys))
-            .collect())
+        sum(db, query)
     }
+}
+
+/// 照 `query` 加起来：一组一行；要换算的另带按 UTC 日子、币种分开的金额。
+fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
+    let sessions = match &query.session {
+        None => None,
+        Some((root, false)) => Some(BTreeSet::from([root.as_str().to_string()])),
+        Some((root, true)) => Some(tree(db, root.as_str())?),
+    };
+    let keys: Vec<&str> = query.group.iter().map(|group| group.column()).collect();
+    let (filter, values) = filter(query, sessions.as_ref());
+    let listed = |extra: &str| {
+        let mut all = keys.join(", ");
+        if !extra.is_empty() {
+            if !all.is_empty() {
+                all.push_str(", ");
+            }
+            all.push_str(extra);
+        }
+        all
+    };
+    let group_by = |extra: &str| {
+        let all = listed(extra);
+        match all.is_empty() {
+            true => String::new(),
+            false => format!(" GROUP BY {all} ORDER BY {all}"),
+        }
+    };
+    let select = |what: &str| match keys.is_empty() {
+        true => what.to_string(),
+        false => format!("{}, {what}", keys.join(", ")),
+    };
+    let sums = format!(
+        "SELECT {} FROM spent WHERE {filter}{}",
+        select(
+            "SUM(requests), SUM(uncached), SUM(cache_read), SUM(cache_write), SUM(output), SUM(unpriced)"
+        ),
+        group_by("")
+    );
+    let amounts = format!(
+        "SELECT {} FROM spent WHERE {filter} AND currency IS NOT NULL{}",
+        select("currency, SUM(amount)"),
+        group_by("currency")
+    );
+    let width = keys.len();
+    let mut totals: BTreeMap<Vec<Key>, Total> = BTreeMap::new();
+    let mut order = Vec::new();
+    let mut statement = db.prepare(&sums)?;
+    let mut rows = statement.query(params_from_iter(values.iter()))?;
+    while let Some(row) = rows.next()? {
+        let keys = read_keys(row, &query.group)?;
+        let count = |k: usize| -> Result<u64, UsageError> {
+            let n: Option<i64> = row.get(width + k)?;
+            Ok(u64::try_from(n.unwrap_or(0)).unwrap_or(0))
+        };
+        let requests = count(0)?;
+        if requests == 0 && !query.group.is_empty() {
+            // 只有金额那几行的一组（删掉的会话几种币种的那几行）：照理总跟着请求数那一行，不单算一组。不分组的总有一行，
+            // 一次请求都没有的是 0。
+            continue;
+        }
+        let total = Total {
+            keys: keys.iter().map(Key::shown).collect(),
+            requests,
+            usage: Usage {
+                uncached: count(1)?,
+                cache_read: count(2)?,
+                cache_write: count(3)?,
+                output: count(4)?,
+                reasoning: None,
+            },
+            amounts: Vec::new(),
+            unpriced: count(5)?,
+            daily: Vec::new(),
+        };
+        order.push(keys.clone());
+        totals.insert(keys, total);
+    }
+    let mut statement = db.prepare(&amounts)?;
+    let mut rows = statement.query(params_from_iter(values.iter()))?;
+    while let Some(row) = rows.next()? {
+        let keys = read_keys(row, &query.group)?;
+        let currency: String = row.get(width)?;
+        let amount: f64 = row.get(width + 1)?;
+        if let Some(total) = totals.get_mut(&keys) {
+            total.amounts.push((currency, amount));
+        }
+    }
+    if query.daily {
+        let by_day = format!(
+            "SELECT {} FROM spent WHERE {filter} AND currency IS NOT NULL{}",
+            select("at / 86400000, currency, SUM(amount)"),
+            group_by("at / 86400000, currency")
+        );
+        let mut statement = db.prepare(&by_day)?;
+        let mut rows = statement.query(params_from_iter(values.iter()))?;
+        while let Some(row) = rows.next()? {
+            let keys = read_keys(row, &query.group)?;
+            let day: i64 = row.get(width)?;
+            let currency: String = row.get(width + 1)?;
+            let amount: f64 = row.get(width + 2)?;
+            if let Some(total) = totals.get_mut(&keys) {
+                total.daily.push((day, currency, amount));
+            }
+        }
+    }
+    Ok(order
+        .iter()
+        .filter_map(|keys| totals.remove(keys))
+        .collect())
 }
 
 /// 一格分组的值：日子读出来是天数。

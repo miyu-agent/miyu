@@ -4,7 +4,8 @@
 //! - 上下文：派出去那一刻向内核要一份（`Session::context_used()`，和压缩线同一个算法），连同窗口、压缩线（[`asked`]）。工具在
 //!   别的任务里跑，拿不到内核；派出去和跑起来之间内核不变。
 //! - 用量、金额：照用量汇总，先补这个会话（日志里多出来的那一截），再只算这个会话、不带子会话：和头经 `usage.query` 读的是
-//!   同一份。金额照这一轮配置的 `usage.currency` 排先后。补的时候读不完的记一行 `WARN usage not indexed`，照读到的算。
+//!   同一份。金额照这一轮配置的 `usage.currency` 换算（施工 UC-1：照每一笔那天的汇率，缺的当场取、最多等两秒），没换成
+//!   的照币种接在后面、照它排先后。补的时候读不完的记一行 `WARN usage not indexed`，照读到的算。
 
 use std::sync::Arc;
 
@@ -13,6 +14,7 @@ use miyu_kernel::session::Session;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_models::price::ordered;
 use miyu_models::settings::UsageSettings;
+use miyu_store::usage::rates::WAIT;
 use miyu_store::usage::{Query, UsageIndex};
 use miyu_tool::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};
 
@@ -53,6 +55,8 @@ pub(crate) struct Asked {
     currency: String,
     /// 到派出去那一刻她干活的毫秒数，等人不算（施工 E-M 下，`Session::busy_ms`）。
     busy_ms: u64,
+    /// 派出去的时刻：换算照它找汇率（施工 UC-1）。
+    at: Timestamp,
 }
 
 /// 派出去的是 `session_usage` 的，照内核这一刻的 `session`、这一轮的配置 `config`、派出去的时刻 `at` 抄一份；别的工具没有（不白算
@@ -77,6 +81,7 @@ pub(crate) fn asked(
         context,
         currency,
         busy_ms: session.busy_ms(at),
+        at,
     })
 }
 
@@ -109,14 +114,14 @@ impl UsagePort for Port {
 
     fn spent(&self) -> Spending<'_> {
         let ledger = self.ledger.clone();
-        let currency = self.asked.currency.clone();
-        Box::pin(blocking(move || ledger.spent(&currency)))
+        let (currency, at) = (self.asked.currency.clone(), self.asked.at);
+        Box::pin(blocking(move || ledger.spent(&currency, at)))
     }
 }
 
 impl Ledger {
-    /// 先补这个会话，再只算它：金额 `first` 排最前。在阻塞线程里调。
-    fn spent(&self, first: &str) -> Result<Spent, String> {
+    /// 先补这个会话，再只算它：金额换成 `first`（施工 UC-1，照 `at` 那一刻找汇率），没换成的照币种接在后面。在阻塞线程里调。
+    fn spent(&self, first: &str, at: Timestamp) -> Result<Spent, String> {
         let problems = self
             .index
             .catch_up_session(&self.owner, &self.session)
@@ -131,6 +136,7 @@ impl Ledger {
             session: Some((self.session.clone(), false)),
             account: None,
             offset: UtcOffset::UTC,
+            daily: true,
         };
         let total = self
             .index
@@ -141,7 +147,13 @@ impl Ledger {
         let Some(total) = total else {
             return Ok(nothing());
         };
-        let mut amounts = total.amounts;
+        let converted = self.index.convert(&total.daily, first, at, WAIT);
+        let mut amounts = match converted {
+            Some(converted) => std::iter::once((converted.currency, converted.amount))
+                .chain(converted.rest)
+                .collect(),
+            None => total.amounts,
+        };
         ordered(&mut amounts, first);
         let usage = total.usage;
         Ok(Spent {

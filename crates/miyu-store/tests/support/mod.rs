@@ -221,6 +221,7 @@ pub fn query(group: &[Group]) -> Query {
         session: None,
         account: None,
         offset: UtcOffset::UTC,
+        daily: false,
     }
 }
 

@@ -126,6 +126,7 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
         session: Some((handle.id().clone(), false)),
         account: None,
         offset: miyu_kernel::time::UtcOffset::UTC,
+        daily: false,
     };
     // 汇总是会话在 `model.called` 落了盘以后、另起阻塞线程写的：看完结果的那一次可能还没写进去，等它写完再比
     // （慢的 CI 机器上撞过，2026-10-02）。最多等一分钟，断言结果不断言耗时。
@@ -177,5 +178,60 @@ async fn a_script_reads_this_sessions_usage_too() {
     assert!(
         text.starts_with("session_usage ok text=Usage so far: 2 requests, 200 input tokens"),
         "照这个会话的账，和直接调的同一个说法：{text}"
+    );
+}
+
+/// 汇率端口的替身（施工 UC-1）：哪一天都答 1 美元换 7 人民币。
+struct Seven;
+
+impl miyu_store::usage::rates::RateSource for Seven {
+    fn start(
+        &self,
+        wanted: Vec<(miyu_store::usage::rates::Day, String)>,
+        _today: miyu_store::usage::rates::Day,
+        done: Box<dyn FnOnce(Vec<miyu_store::usage::rates::Fetched>) + Send>,
+    ) {
+        done(
+            wanted
+                .into_iter()
+                .map(|(day, currency)| miyu_store::usage::rates::Fetched {
+                    day,
+                    rate: (currency == "CNY").then_some(7.0),
+                    currency,
+                    source: miyu_store::usage::rates::Source::Frankfurter,
+                    settled: true,
+                })
+                .collect(),
+        );
+    }
+}
+
+/// 价格是人民币、`usage.currency` 照默认的美元（施工 UC-1）：她看到的金额照汇率换成了美元，一个数。
+#[tokio::test]
+async fn she_reads_the_cost_converted_to_the_usage_currency() {
+    let home = Home::new();
+    home.usage.rates().install(std::sync::Arc::new(Seven));
+    let mut cny = tariff();
+    cny.price = Price::of(
+        Rates {
+            input: Some(7.0),
+            output: Some(14.0),
+            cache_read: Some(3.5),
+            cache_write: None,
+        },
+        "CNY",
+    );
+    let script = Script::new([
+        Play::calls(&[("session_usage", "{}")]),
+        Play::Says("看完了。"),
+    ])
+    .window(100_000)
+    .priced(cny);
+    let handle = home.create_with(&script, &basesystem(&home)).await;
+    let log = one_turn(&home, &handle, 1).await;
+    let text = last_result(&log);
+    assert!(
+        text.lines().any(|line| line == "Cost: 0.0001 USD."),
+        "人民币 0.0007 照 7 换成美元 0.0001：{text}"
     );
 }

@@ -240,7 +240,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | `session` | string | Only this session; `tree: true` includes the child sessions it spawned |
 | `offset` | time zone, e.g. `+09:00` | Which time zone splits days; the core machine's when omitted |
 
-**Response**: `{"rows": [...]}`. A row: the grouped fields, `requests`, `usage` (the four counts added up), `amounts` (per currency, not converted), `unpriced` (requests with usage but no known price). Everyone's sessions are counted; non-admins only see their own. Amounts are ordered by `usage.currency` from the caller's own configuration.
+**Response**: `{"rows": [...]}`. A row: the grouped fields, `requests`, `usage` (the four counts added up), `amounts` (per currency, as recorded), `unpriced` (requests with usage but no known price), `converted` (one amount in `usage.currency`: each charge converted at its own day's rate, `{"currency","amount"}`; charges without a rate go in its `rest`, written like `amounts`; left out when nothing could be converted). Everyone's sessions are counted; non-admins only see their own. Amounts are ordered by and converted to `usage.currency` from the caller's own configuration. When rates from open.er-api.com were used, the reply also carries `rates` (source and link), and the UI must credit it.
 
 ```json
 {"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}

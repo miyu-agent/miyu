@@ -394,6 +394,14 @@ async fn run(
     }
     core = core.with_vectors(embedder);
     let core = Arc::new(core);
+    // 金额换算要的汇率（施工 UC-1）：照环境的代理上网取，同拉目录。造不出客户端的不换算，照分币种显示。
+    match miyu_http::fetcher(miyu_http::Proxy::FromEnvironment) {
+        Ok(client) => core.install_rates(Arc::new(miyu_session::rates::HttpRates::new(
+            client,
+            tokio::runtime::Handle::current(),
+        ))),
+        Err(error) => tracing::warn!(target: TARGET, error = %error, "rates client not made"),
+    }
     // 整理记忆跑在整理会话里（施工 D-1 上）：会话表接上记忆。
     core.give_dream_sessions();
     #[cfg(feature = "net")]

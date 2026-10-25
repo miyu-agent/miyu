@@ -111,5 +111,35 @@ fn amounts_lead_with_the_owners_currency() {
     assert_eq!(first(tallied(&core, &alice, &tally)), json!("USD"));
     assert_eq!(first(tallied(&core, &bob, &tally)), json!("CNY"));
     assert_eq!(first(total_row(&core, &bob, own(&tally))), json!("CNY"));
+    // 换算也照属主的币种（施工 UC-1）：没装取汇率的，只换得了它自己那个币种的那一笔，别的在 `rest`。
+    tally.daily.insert((20_000, "CNY".to_string()), 1.0);
+    tally.daily.insert((20_000, "USD".to_string()), 2.0);
+    assert_eq!(
+        tallied(&core, &alice, &tally)["converted"],
+        json!({"currency": "USD", "amount": 2, "rest": [{"currency": "CNY", "amount": 1}]})
+    );
+    assert_eq!(
+        tallied(&core, &bob, &tally)["converted"],
+        json!({"currency": "CNY", "amount": 1, "rest": [{"currency": "USD", "amount": 2}]})
+    );
     drop(dir);
+}
+
+/// 两份加起来（会话树里子会话的、会话自己的，施工 UC-1）：按天分的金额跟着加，换算照加起来的算。
+#[test]
+fn adding_two_totals_keeps_the_amounts_by_day() {
+    let mut one = empty();
+    one.amounts = vec![("USD".to_string(), 1.0)];
+    one.daily = vec![(20_000, "USD".to_string(), 1.0)];
+    let mut other = empty();
+    other.amounts = vec![("CNY".to_string(), 3.0)];
+    other.daily = vec![(20_001, "CNY".to_string(), 3.0)];
+    let sum = plus(one, &other);
+    assert_eq!(
+        sum.daily,
+        vec![
+            (20_000, "USD".to_string(), 1.0),
+            (20_001, "CNY".to_string(), 3.0)
+        ]
+    );
 }

@@ -12,19 +12,27 @@
 //!   读多出来的一截，没记过的、对不上的整份读。空的表照这样补满，就是重建。
 //! - 一次性调用（[`UsageIndex::one_shot`]）：先往调的那个账号的 `journal.jsonl` 追加一条 `usage.oneshot`，再写一行。
 //! - 删掉的会话（[`purged`]）：回收处清它之前写进账号日志的 `usage.purged`，补的时候换掉它的单次行。
-//! - 查（[`UsageIndex::query`]）：照分组加起来，金额照币种各加各的，不换算（`query.rs`）。
+//! - 查（[`UsageIndex::query`]）：照分组加起来，金额照币种各加各的（`query.rs`）；换算（施工 UC-1，[`UsageIndex::convert`]）
+//!   照每一笔那天的汇率换成一个币种（`convert.rs`），汇率在 `state/rates.db`（[`rates`]）。
 
 mod catch_up;
+mod convert;
 pub mod purged;
 mod query;
+pub mod rates;
 pub mod spent;
 
 pub use catch_up::Problem;
+pub use convert::Converted;
 pub use query::{Group, Query, Total};
 pub use spent::{OneShotCall, Who};
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Duration;
+
+use miyu_kernel::time::Timestamp;
 
 use rusqlite::Connection;
 
@@ -95,6 +103,8 @@ pub struct UsageIndex {
     path: PathBuf,
     /// 开着的连接：用不了的（删了重建也打不开）是空的，这时查出来没有一行、写什么都不写。
     db: Mutex<Option<Connection>>,
+    /// 汇率（施工 UC-1）：换算照它找，取汇率的端口由核心起来时装上（[`UsageIndex::rates`]）。
+    rates: Arc<rates::RateBook>,
 }
 
 impl UsageIndex {
@@ -103,10 +113,12 @@ impl UsageIndex {
     pub fn open(root: &DataRoot) -> (UsageIndex, Opened) {
         let path = root.state().join(FILE);
         let (db, opened) = sqlite::open(&path, SCHEMA, VERSION);
+        let rates = Arc::new(rates::RateBook::open(&root.state().join(rates::FILE)));
         let index = UsageIndex {
             root: root.clone(),
             path,
             db: Mutex::new(db),
+            rates,
         };
         (index, opened)
     }
@@ -122,6 +134,48 @@ impl UsageIndex {
         remove(&self.path)?;
         *db = Some(connect(&self.path, SCHEMA, VERSION)?.0);
         Ok(())
+    }
+
+    /// 找汇率的（施工 UC-1）：核心起来时给它装上取汇率的端口（[`rates::RateBook::install`]）。
+    pub fn rates(&self) -> &rates::RateBook {
+        &self.rates
+    }
+
+    /// 把 `daily`（按 UTC 日子、币种分开的金额）换成 `currency`（施工 UC-1）：照 `now` 找汇率，缺的当场去取、最多等 `wait`
+    /// （写 0 的不等：只用缓存，缺的在后面取）。一笔都没换成的没有。
+    pub fn convert(
+        &self,
+        daily: &[(rates::Day, String, f64)],
+        currency: &str,
+        now: Timestamp,
+        wait: Duration,
+    ) -> Option<Converted> {
+        self.convert_all(&[daily], currency, now, wait)
+            .pop()
+            .flatten()
+    }
+
+    /// 同 [`UsageIndex::convert`]，几组一起：汇率只找一次（缺的并成一次去取、只等一回），照给的先后交回。
+    pub fn convert_all(
+        &self,
+        groups: &[&[(rates::Day, String, f64)]],
+        currency: &str,
+        now: Timestamp,
+        wait: Duration,
+    ) -> Vec<Option<Converted>> {
+        let wanted: BTreeSet<(rates::Day, String)> = groups
+            .iter()
+            .flat_map(|daily| daily.iter())
+            .flat_map(|(day, from, _)| [(*day, from.clone()), (*day, currency.to_string())])
+            .collect();
+        let found = match wanted.is_empty() {
+            true => BTreeMap::new(),
+            false => self.rates.rates(&wanted, now.unix_millis(), wait),
+        };
+        groups
+            .iter()
+            .map(|daily| convert::convert(daily, currency, &found))
+            .collect()
     }
 
     /// 库文件在哪。

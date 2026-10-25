@@ -48,6 +48,8 @@ pub struct Tally {
     pub main: Usage,
     /// 金额，照币种各加各的。
     pub amounts: BTreeMap<String, f64>,
+    /// 金额按 UTC 日子、币种分开（施工 UC-1）：换成 `usage.currency` 照每一笔那天的汇率，照它换。
+    pub daily: BTreeMap<(miyu_store::usage::rates::Day, String), f64>,
     /// 有用量、没金额的几次。
     pub unpriced: u64,
     /// 压缩的检查点（`context.compacted`）有几个。
@@ -79,6 +81,7 @@ impl Default for Tally {
             usage: NOTHING,
             main: NOTHING,
             amounts: BTreeMap::new(),
+            daily: BTreeMap::new(),
             unpriced: 0,
             compactions: 0,
             cache_breaks: 0,
@@ -118,6 +121,9 @@ impl Tally {
                     match called.cost.as_deref() {
                         Some(cost) => {
                             *self.amounts.entry(cost.currency.clone()).or_default() +=
+                                cost.amount.get();
+                            let day = miyu_store::usage::rates::day_of(event.at.unix_millis());
+                            *self.daily.entry((day, cost.currency.clone())).or_default() +=
                                 cost.amount.get();
                         }
                         None if called.usage.is_some() => self.unpriced += 1,

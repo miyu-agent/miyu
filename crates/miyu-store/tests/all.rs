@@ -31,4 +31,5 @@ mod recall_vectors;
 mod scope;
 mod snapshot;
 mod usage;
+mod usage_convert;
 mod usage_purged;

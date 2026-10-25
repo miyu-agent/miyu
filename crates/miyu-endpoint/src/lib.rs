@@ -455,6 +455,12 @@ impl Core {
         Some(Arc::clone(&self.usage))
     }
 
+    /// 给用量汇总装上取汇率的（施工 UC-1）：核心起来时装 HTTP 的那一个（`miyu_session::rates::HttpRates`），测试里装对着假服务器
+    /// 的。没装的只用缓存里的汇率。
+    pub fn install_rates(&self, source: Arc<dyn miyu_store::usage::rates::RateSource>) {
+        self.usage.rates().install(source);
+    }
+
     /// 来请求了的信号（施工 V-5 中）。
     pub fn activity(&self) -> Arc<Activity> {
         Arc::clone(&self.activity)

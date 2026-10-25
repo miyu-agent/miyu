@@ -52,6 +52,7 @@ mod pictures;
 mod plugins;
 mod port;
 mod project_docs;
+pub mod rates;
 mod report;
 mod reread;
 mod route;

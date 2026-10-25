@@ -6,10 +6,13 @@
 //!   的）。不认识的分组、写法不对的时刻、时区、会话编号是 `bad_params`；不认识的格不理，「可以不写」的写 `null` 等于没写。
 //! - 补：管理员的账号日志、会话、回收处里的会话；读不完的记一行 `WARN usage not indexed`，照读到的算。
 //! - 回应 `rows`：分组的几格（没有的是 `null`），`requests`、`usage` 四项、`amounts`（照币种各加各的，`usage.currency` 排
-//!   最前，别的照币种代码的字母先后，取的是这一刻的配置：当场生效）、`unpriced`。
+//!   最前，别的照币种代码的字母先后，取的是这一刻的配置：当场生效）、`unpriced`；`converted`（施工 UC-1）：照每一笔那天的
+//!   汇率换成 `usage.currency` 的一个数，没换成的那几笔在它的 `rest`，一笔都没换成的不写。用到了兜底源的汇率，回应顶上
+//!   写 `rates`（来源，头照它注明）。缺的汇率当场去取，最多等两秒；会话状态这些常推的几处不等，只用缓存。
 //! - 读出坏了的：记一行 `WARN usage not read`，删掉重建再补一次；还不行的回 `internal`。
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
@@ -21,7 +24,8 @@ use miyu_models::price::ordered;
 use miyu_models::settings::UsageSettings;
 use miyu_store::root::DataRoot;
 use miyu_store::sqlite::Opened;
-use miyu_store::usage::{Group, Query, Total, UsageError, UsageIndex};
+use miyu_store::usage::rates::{Source, WAIT};
+use miyu_store::usage::{Converted, Group, Query, Total, UsageError, UsageIndex};
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -79,27 +83,47 @@ pub(crate) async fn query(
     // 系统账号、成员的算进总数，照 `account` 能分开看（施工 O-4 下、Y-2 下下中下）。
     let accounts = core.usage_accounts();
     let group = query.group.clone();
-    let totals = tokio::task::spawn_blocking(move || match caught_up(&usage, &accounts, &query) {
-        Ok(totals) => Ok(totals),
-        Err(error) => {
-            tracing::warn!(target: TARGET, error = %error, "usage not read");
-            if let Err(error) = usage.reset() {
-                tracing::warn!(target: TARGET, error = %error, "usage index unusable");
+    let wanted = currency.clone();
+    let found = tokio::task::spawn_blocking(move || {
+        let totals = match caught_up(&usage, &accounts, &query) {
+            Ok(totals) => Ok(totals),
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "usage not read");
+                if let Err(error) = usage.reset() {
+                    tracing::warn!(target: TARGET, error = %error, "usage index unusable");
+                }
+                caught_up(&usage, &accounts, &query)
             }
-            caught_up(&usage, &accounts, &query)
-        }
+        }?;
+        let daily: Vec<&[_]> = totals.iter().map(|total| total.daily.as_slice()).collect();
+        let converted = usage.convert_all(&daily, &wanted, crate::sessions::now(), WAIT);
+        Ok::<_, UsageError>((totals, converted))
     })
     .await
-    .map_err(|_| Refusal::INTERNAL)?
-    .map_err(|error| {
+    .map_err(|_| Refusal::INTERNAL)?;
+    let (totals, converted) = found.map_err(|error| {
         tracing::warn!(target: TARGET, error = %error, "usage not read");
         Refusal::INTERNAL
     })?;
+    let fallback = converted
+        .iter()
+        .flatten()
+        .any(|converted| converted.fallback);
     let rows: Vec<Value> = totals
         .into_iter()
-        .map(|total| row(&group, total, &currency))
+        .zip(converted)
+        .map(|(total, converted)| row(&group, total, &currency, converted))
         .collect();
-    Ok(json!({"rows": rows}))
+    let mut reply = json!({"rows": rows});
+    if fallback {
+        reply["rates"] = credit();
+    }
+    Ok(reply)
+}
+
+/// 用到了兜底源的汇率时回应里的 `rates`：来源和它要的署名链接（open.er-api.com 的免费条款）。
+fn credit() -> Value {
+    json!([{"source": Source::Fallback.as_str(), "url": "https://www.exchangerate-api.com"}])
 }
 
 /// 先补再查。
@@ -142,6 +166,7 @@ fn read(params: QueryParams, now_offset: fn() -> UtcOffset) -> Result<Query, Ref
         session,
         account: None,
         offset,
+        daily: true,
     })
 }
 
@@ -169,8 +194,9 @@ fn offset(text: &str) -> Option<UtcOffset> {
     UtcOffset::from_minutes(sign * (hours * 60 + minutes))
 }
 
-/// 一行写成协议上的样子：分组的几格照 `group` 的先后，再是请求数、用量、金额（`first` 排最前）、没金额的次数。
-fn row(group: &[Group], total: Total, first: &str) -> Value {
+/// 一行写成协议上的样子：分组的几格照 `group` 的先后，再是请求数、用量、金额（`first` 排最前）、没金额的次数，换算好的
+/// （施工 UC-1，没有的不写）。
+fn row(group: &[Group], total: Total, first: &str, converted: Option<Converted>) -> Value {
     let mut map = Map::new();
     for (group, key) in group.iter().zip(total.keys) {
         map.insert(group.name().to_string(), json!(key));
@@ -185,7 +211,27 @@ fn row(group: &[Group], total: Total, first: &str) -> Value {
     map.insert("usage".to_string(), json!(total.usage));
     map.insert("amounts".to_string(), Value::Array(amounts));
     map.insert("unpriced".to_string(), json!(total.unpriced));
+    if let Some(converted) = converted {
+        map.insert("converted".to_string(), converted_value(converted));
+    }
     Value::Object(map)
+}
+
+/// 换算好的写成协议上的样子：`{currency, amount}`，没换成的另带 `rest`（写法同 `amounts`）。
+fn converted_value(converted: Converted) -> Value {
+    let mut value = json!({"currency": converted.currency, "amount": Real::new(converted.amount)});
+    if !converted.rest.is_empty() {
+        let rest: Vec<Value> = converted
+            .rest
+            .into_iter()
+            .map(|(currency, amount)| json!({"currency": currency, "amount": Real::new(amount)}))
+            .collect();
+        value["rest"] = Value::Array(rest);
+    }
+    if converted.fallback {
+        value["rates"] = credit();
+    }
+    value
 }
 
 /// 订阅的回应里这个会话累计的（施工 9-6 上，`protocol.md` 的 `subscribe`）：和 `usage.query {"session": <它>}` 那一行同一个
@@ -227,6 +273,7 @@ pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
         session: Some((session.clone(), true)),
         account: None,
         offset: crate::sessions::offset(),
+        daily: true,
     };
     let totals = tokio::task::spawn_blocking(move || caught_up(&usage, &accounts, &query))
         .await
@@ -254,6 +301,7 @@ fn empty() -> Total {
         },
         amounts: Vec::new(),
         unpriced: 0,
+        daily: Vec::new(),
     }
 }
 
@@ -262,9 +310,17 @@ pub(crate) fn currency(core: &Core, account: &AccountId) -> String {
     UsageSettings::from(&core.mine(account).config().resolved().values()).currency
 }
 
-/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照会话属主 `owner` 这一刻的配置排。
+/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照会话属主 `owner` 这一刻的配置排、换算（施工 UC-1，常推的
+/// 一处：不等，只用缓存里的汇率，缺的在后面取）。
 pub(crate) fn total_row(core: &Core, owner: &AccountId, total: Total) -> Value {
-    row(&[], total, &currency(core, owner))
+    let currency = currency(core, owner);
+    let converted = core.usage.convert(
+        &total.daily,
+        &currency,
+        crate::sessions::now(),
+        Duration::ZERO,
+    );
+    row(&[], total, &currency, converted)
 }
 
 /// 两份加起来：请求数、四项、金额（同一币种相加）、没价格的次数。
@@ -279,6 +335,7 @@ pub(crate) fn plus(mut one: Total, other: &Total) -> Total {
         }
     }
     one.amounts.sort_by(|a, b| a.0.cmp(&b.0));
+    one.daily.extend(other.daily.iter().cloned());
     one
 }
 
@@ -294,24 +351,22 @@ pub(crate) fn own(tally: &miyu_session::Tally) -> Total {
             .map(|(currency, amount)| (currency.clone(), *amount))
             .collect(),
         unpriced: tally.unpriced,
+        daily: daily(tally),
     }
+}
+
+/// 会话自己累计的按 UTC 日子、币种分开的金额（施工 UC-1）。
+fn daily(tally: &miyu_session::Tally) -> Vec<(miyu_store::usage::rates::Day, String, f64)> {
+    tally
+        .daily
+        .iter()
+        .map(|((day, currency), amount)| (*day, currency.clone(), *amount))
+        .collect()
 }
 
 /// 会话自己累计的写成协议上的一行，币种照会话属主 `owner` 这一刻的配置排（施工 Y-2 下下中下）。
 pub(crate) fn tallied(core: &Core, owner: &AccountId, tally: &miyu_session::Tally) -> Value {
-    let currency = currency(core, owner);
-    let total = Total {
-        keys: Vec::new(),
-        requests: tally.requests,
-        usage: tally.usage,
-        amounts: tally
-            .amounts
-            .iter()
-            .map(|(currency, amount)| (currency.clone(), *amount))
-            .collect(),
-        unpriced: tally.unpriced,
-    };
-    let mut value = row(&[], total, &currency);
+    let mut value = total_row(core, owner, own(tally));
     value["main"] = json!(tally.main);
     value["compactions"] = json!(tally.compactions);
     value["cache_breaks"] = json!(tally.cache_breaks);
