@@ -3,15 +3,6 @@
 /// 还没改完的（施工 LG-1 下清空）：文件、格名，照为什么分组。照「写什么、不写什么」那张表都要改，LG-1 上先改要紧的（路径、
 /// 会话里来的网址、外部身份、工具的结果、panic 的原话、会话日志的错误）。
 pub const PENDING: &[(&str, &str)] = &[
-    // 人起的名字：记忆的 `room`（`persona <账号>/<人格>`）改成种类加短号。
-    ("crates/miyu-session/src/memory.rs", "room"),
-    ("crates/miyu-session/src/memory/backfill.rs", "room"),
-    ("crates/miyu-session/src/memory/keeper.rs", "room"),
-    ("crates/miyu-session/src/memory/merge.rs", "room"),
-    ("crates/miyu-session/src/memory/merge/ask.rs", "room"),
-    ("crates/miyu-session/src/memory/merge/compose.rs", "room"),
-    ("crates/miyu-session/src/memory/merge/land.rs", "room"),
-    ("crates/miyu-session/src/memory/tag.rs", "room"),
     // 人起的名字：人格、预设、知识库、密钥（写成短编号或者不写）。
     ("crates/miyu-endpoint/src/personas.rs", "persona"),
     ("crates/miyu-endpoint/src/personas/picture.rs", "persona"),

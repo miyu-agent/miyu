@@ -27,11 +27,17 @@ use super::{Turns, scope, subagent};
 pub(crate) struct Backfills(Mutex<Vec<JoinHandle<()>>>);
 
 impl Backfills {
-    /// 起一个后台线程补 `room`；起不来的记一行。
-    pub(crate) fn spawn(&self, recall: Arc<RecallIndexes>, root: DataRoot, room: Room) {
+    /// 起一个后台线程补 `room`（运行日志里的短号是 `room_id`，施工 LG-1 下）；起不来的记一行。
+    pub(crate) fn spawn(
+        &self,
+        recall: Arc<RecallIndexes>,
+        root: DataRoot,
+        room: Room,
+        room_id: String,
+    ) {
         let spawned = std::thread::Builder::new()
             .name("memory-backfill".to_string())
-            .spawn(move || backfill(&recall, &root, &room));
+            .spawn(move || backfill(&recall, &root, &room, &room_id));
         match spawned {
             Ok(handle) => self.lock().push(handle),
             Err(error) => {
@@ -55,16 +61,17 @@ impl Backfills {
     }
 }
 
-/// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。
-pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room) {
+/// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。运行日志里
+/// 这一间写种类和短号 `room_id`（施工 LG-1 下）。
+pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room, room_id: &str) {
     let Room::Persona { account, persona } = room else {
         return;
     };
-    let room_name = room.to_string();
+    let room_kind = room.kind();
     let sessions = match root.sessions(account) {
         Ok(sessions) => sessions,
         Err(error) => {
-            tracing::warn!(target: TARGET, room = room_name.as_str(), error = %error, "memory index not backfilled");
+            tracing::warn!(target: TARGET, room_kind, room_id, error = %error, "memory index not backfilled");
             return;
         }
     };
@@ -79,7 +86,7 @@ pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room
             }
         }
     }
-    tracing::info!(target: TARGET, room = room_name.as_str(), sessions = filled, "memory index backfilled");
+    tracing::info!(target: TARGET, room_kind, room_id, sessions = filled, "memory index backfilled");
 }
 
 /// 补一个会话：照载入时的判法该进这一间的，照载入时那一套补，交回 `true`；不该进的 `false`。

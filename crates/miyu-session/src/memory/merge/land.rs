@@ -276,7 +276,7 @@ impl Keeper {
             cause: None,
         };
         if let Err(refused) = self.append(log, stamp, &MemoryEvent::MergeFailed(failed)) {
-            tracing::warn!(target: crate::TARGET, room = %self.room(), error = ?refused, "memory merge not recorded");
+            tracing::warn!(target: crate::TARGET, room_kind = self.room().kind(), room_id = self.room_id().as_str(), error = ?refused, "memory merge not recorded");
         }
     }
 }

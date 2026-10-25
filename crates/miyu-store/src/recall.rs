@@ -24,12 +24,14 @@ use crate::sqlite::integer;
 pub use crate::sqlite::{DbError, Opened};
 pub use indexes::{Opener, RecallIndexes};
 pub use room::{NO_PERSONA, Room};
+pub use salt::LogSalt;
 
 mod conn;
 mod indexes;
 mod meta;
 mod places;
 mod room;
+mod salt;
 mod stamps;
 mod uses;
 mod vectors;

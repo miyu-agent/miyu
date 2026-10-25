@@ -41,7 +41,8 @@ pub enum Room {
     },
 }
 
-/// 写进运行日志的样子：`persona <账号>/<人格>`、`session <账号>/<会话>`。
+/// 整串的样子：`persona <账号>/<人格>`、`session <账号>/<会话>`。带账号、人格名，不写进运行日志（施工 LG-1 下：日志照
+/// [`Room::kind`] 和 [`super::LogSalt::room_id`]）；短号照它算。
 impl fmt::Display for Room {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -65,6 +66,15 @@ impl Room {
         Room::Session {
             account: account.clone(),
             session: session.clone(),
+        }
+    }
+
+    /// 运行日志里写的种类（施工 LG-1 下）：`persona`、`session`。账号、人格名、会话编号不写，照 [`super::LogSalt::room_id`]
+    /// 写短号。
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Room::Persona { .. } => "persona",
+            Room::Session { .. } => "session",
         }
     }
 

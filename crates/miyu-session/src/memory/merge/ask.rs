@@ -51,10 +51,10 @@ impl MergeJob {
         n: u32,
     ) -> Result<Dreamed, String> {
         let started = Instant::now();
-        let room = self.keeper.room().to_string();
+        let (room_kind, room_id) = (self.keeper.room().kind(), self.keeper.room_id());
         let secrets = secrets(&self.config);
         let shapes = &self.extraction.shapes;
-        tracing::info!(target: TARGET, room = room.as_str(), given = asked.given.len(), fresh = asked.fresh, "memory merge started");
+        tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), given = asked.given.len(), fresh = asked.fresh, "memory merge started");
         let text = redact(&asked.text, &secrets, shapes);
         let asking = match trip {
             Some(trip) => self.in_session(asked, trip, n, text).await?,
@@ -105,7 +105,7 @@ impl MergeJob {
                     Ok((revised, retired)) => {
                         let took_ms =
                             u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
-                        tracing::info!(target: TARGET, room = room.as_str(), revised, retired, took_ms, "memory merged");
+                        tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), revised, retired, took_ms, "memory merged");
                         // 顺带补这一间还没有关键词的（施工 R-15 下，项目主人定旧的整理时慢慢补）：这一次交进去的在前。
                         let tagged = tokio::select! {
                             tagged = self.tag(&asked.given) => tagged,
@@ -129,14 +129,14 @@ impl MergeJob {
                         })
                     }
                     Err(refused) => {
-                        tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
+                        tracing::warn!(target: TARGET, room_kind, room_id = room_id.as_str(), error = ?refused, "memory merge not recorded");
                         Err(format!("{refused:?}"))
                     }
                 }
             }
             Err(why) => {
                 let tries = merges.record(self.keeper.room(), false);
-                tracing::warn!(target: TARGET, room = room.as_str(), tries, error = why.as_str(), "memory merge failed");
+                tracing::warn!(target: TARGET, room_kind, room_id = room_id.as_str(), tries, error = why.as_str(), "memory merge failed");
                 // 每一次没成都记一行（施工 R-17），连着第三次的另记跳过这一批。
                 let (keeper, upto) = (self.keeper.clone(), asked.upto);
                 let said = redact(&why, &secrets, shapes);
@@ -152,7 +152,7 @@ impl MergeJob {
                 })
                 .await;
                 if let Err(refused) = failed {
-                    tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory merge not recorded");
+                    tracing::warn!(target: TARGET, room_kind, room_id = room_id.as_str(), error = ?refused, "memory merge not recorded");
                 }
                 Err(why)
             }
@@ -212,7 +212,7 @@ impl MergeJob {
                 let stop = CommandId::parse(&format!("{}/dream/{n}/stop", trip.session))
                     .map_err(|error| error.to_string())?;
                 if let Err(why) = trip.sessions.stop(trip.session.clone(), stop).await {
-                    tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session not stopped");
+                    tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session not stopped");
                 }
                 // 等那一轮收尾：下一趟不会和它撞上。答了的也不要：叫停了。
                 drop(batching.await);
@@ -224,7 +224,7 @@ impl MergeJob {
             Ok(DreamBatch::Failed(why)) => Ok(Asking::Failed(why)),
             Ok(DreamBatch::Stopped) => Ok(Asking::Stopped),
             Err(why) => {
-                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session gone");
+                tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session gone");
                 Err(why)
             }
         }
@@ -256,7 +256,7 @@ impl MergeJob {
         let keeper = self.keeper.clone();
         if let Err(refused) = blocking(move || keeper.record_merge_stopped(wall_now(), upto)).await
         {
-            tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory merge not recorded");
+            tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = ?refused, "memory merge not recorded");
         }
         Ok(Dreamed {
             stopped: true,

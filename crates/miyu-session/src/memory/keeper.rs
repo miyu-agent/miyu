@@ -81,6 +81,11 @@ impl Keeper {
         self.memory.her(&self.room)
     }
 
+    /// 运行日志里这一间的短号（施工 LG-1 下）：和 [`Room::kind`] 一起写，不写账号、人格名、会话编号。
+    pub(crate) fn room_id(&self) -> String {
+        self.memory.room_id(&self.room)
+    }
+
     /// 记一条：出处 `sources`，听众是这次的听众。写了 `replaces` 的是改那一条：它得现在算数、听众合。交回新的编号；这条命令
     /// 做过的交回那一次的（记忆日志认编号）。认识的人那一类、说的是她自己的（`who` 是这一间她的名字，施工 E-1 修）改记成
     /// `episode`、不写是谁。
@@ -348,7 +353,7 @@ impl Keeper {
             .open(&self.room)
             .map_err(|error| Refused::Failed(error.to_string()))?;
         if let Some(report) = report {
-            log_report(&self.room, &report);
+            log_report(&self.room, &self.room_id(), &report);
             self.close_interrupted(&log, crate::clock::wall_now());
         }
         Ok(log)
@@ -420,27 +425,28 @@ pub(super) fn failed(refused: Refused) -> String {
     }
 }
 
-/// 记忆日志这一回第一次开：派生的那些是什么情形，照会话列表的索引的说法记。
-fn log_report(room: &Room, report: &Report) {
-    let room = room.to_string();
-    let room = room.as_str();
+/// 记忆日志这一回第一次开：派生的那些是什么情形，照会话列表的索引的说法记。哪一间写种类和短号（施工 LG-1 下）。
+fn log_report(room: &Room, room_id: &str, report: &Report) {
+    let room_kind = room.kind();
     match &report.index {
         Opened::Kept => {}
-        Opened::Created => tracing::info!(target: TARGET, room, "memory log index created"),
+        Opened::Created => {
+            tracing::info!(target: TARGET, room_kind, room_id, "memory log index created")
+        }
         Opened::Rebuilt(why) => {
-            tracing::warn!(target: TARGET, room, reason = %why, "memory log index rebuilt")
+            tracing::warn!(target: TARGET, room_kind, room_id, reason = %why, "memory log index rebuilt")
         }
         Opened::Unusable(error) => {
-            tracing::warn!(target: TARGET, room, error = %error, "memory log index unusable")
+            tracing::warn!(target: TARGET, room_kind, room_id, error = %error, "memory log index unusable")
         }
     }
     if let Some(error) = &report.caught_up {
-        tracing::warn!(target: TARGET, room, error = %error, "memory log index not caught up");
+        tracing::warn!(target: TARGET, room_kind, room_id, error = %error, "memory log index not caught up");
     }
     for (seq, why) in &report.unreadable {
-        tracing::warn!(target: TARGET, room, seq = seq.get(), why = why.as_str(), "memory event unreadable");
+        tracing::warn!(target: TARGET, room_kind, room_id, seq = seq.get(), why = why.as_str(), "memory event unreadable");
     }
     if report.filled > 0 {
-        tracing::info!(target: TARGET, room, filled = report.filled, "memory log index caught up");
+        tracing::info!(target: TARGET, room_kind, room_id, filled = report.filled, "memory log index caught up");
     }
 }

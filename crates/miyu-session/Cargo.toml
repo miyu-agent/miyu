@@ -118,6 +118,10 @@ name = "index_log"
 path = "tests/index_log.rs"
 
 [[test]]
+name = "memory_log"
+path = "tests/memory_log.rs"
+
+[[test]]
 name = "log"
 path = "tests/log.rs"
 

@@ -28,6 +28,7 @@
 | `crates/miyu-store/src/resources.rs`、`human.rs` | 资源目录、给人看的字（`store/resources.md`） |
 | `crates/miyu-store/src/index.rs`、`index/` | 会话列表的索引（`store/index.md`，施工 3-8 七补） |
 | `crates/miyu-store/src/usage.rs`、`usage/` | 用量汇总 `state/usage.db`（施工 8-15，`models.md`「怎么走」第九条第 4、5 条） |
+| `crates/miyu-store/src/recall/salt.rs` | 运行日志里写记忆的一间：数据根的盐 `state/log-salt`（读、没有就造）、照盐算的短号（施工 LG-1 下，`log.md`「怎么走」第 7 条第 6 款） |
 | `crates/miyu-store/src/sqlite.rs` | 派生数据的 SQLite 库怎么开、坏了怎么删掉重建（施工 8-15 从 `index.rs` 挪出来，索引和用量汇总共用） |
 
 ### 对外的样子
@@ -111,7 +112,8 @@
 ├── state/
 │   ├── logs/core.log、core.log.1 …     运行日志（log.md）
 │   ├── config/                         核心起来时生成：config.schema.json、settings.schema.json、reference.toml（config.md，施工 8-1）
-│   └── usage.db、usage.db-wal、usage.db-shm  用量汇总，派生的（models.md 第九条，施工 8-15）
+│   ├── usage.db、usage.db-wal、usage.db-shm  用量汇总，派生的（models.md 第九条，施工 8-15）
+│   └── log-salt                        运行日志里写记忆的一间时的盐，32 个随机字节、0600（log.md，施工 LG-1 下）
 └── run/                                core.lock、spawn.lock、token、socket；没有能用的 XDG_RUNTIME_DIR 的 Linux、macOS 上还有套接字 core.sock（ipc.md）；网页软件的 web.lock、web（地址，web-ui.md，施工 W-9）
 ```
 

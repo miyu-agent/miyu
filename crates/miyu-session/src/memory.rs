@@ -60,7 +60,7 @@ use miyu_recall::uses::{Use, UseFeed};
 use miyu_recall::{Change, TurnFeed, key, replay};
 use miyu_store::memory::MemoryLogs;
 use miyu_store::personas::Personas;
-use miyu_store::recall::{Edit, NO_PERSONA, Opened, RecallIndex, RecallIndexes, Room};
+use miyu_store::recall::{Edit, LogSalt, NO_PERSONA, Opened, RecallIndex, RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use crate::TARGET;
@@ -74,6 +74,8 @@ pub struct Memory {
     pub turns: Arc<RecallIndexes>,
     /// 数据根（施工 E-1 下）：整理合人卡时读出处那几轮的会话日志，认出她记的名字是谁。
     root: DataRoot,
+    /// 运行日志里写哪一间的盐（施工 LG-1 下）：数据根的 `state/log-salt`，读不出、写不成的这次起来另造一份只在内存里的。
+    salt: LogSalt,
     /// 记忆日志的登记（施工 R-3 上）。
     pub logs: Arc<MemoryLogs>,
     /// 常驻的摘要那一块的字（施工 R-4 上）：读不出来的（安装坏了）这个核心不交摘要。
@@ -106,12 +108,18 @@ impl Memory {
     /// R-4 上），没有的不交摘要。
     pub fn new(root: &DataRoot, summary: Option<SummaryTexts>) -> Arc<Memory> {
         let turns = Arc::new(RecallIndexes::new(root));
+        let salt = LogSalt::load(root).unwrap_or_else(|error| {
+            tracing::warn!(target: TARGET, error = %error.kind(), "memory log salt not kept");
+            LogSalt::fresh()
+        });
+        let opening = salt.clone();
         let recall = Arc::downgrade(&turns);
         let at = root.clone();
         let backfills = Arc::new(backfill::Backfills::default());
         let filling = Arc::clone(&backfills);
         let registered = turns.when_opened(Box::new(move |room, opened| {
-            log_opened(room, opened);
+            let id = opening.room_id(room);
+            log_opened(room, &id, opened);
             let fresh = matches!(opened, Opened::Created | Opened::Rebuilt(_));
             if !fresh || !matches!(room, Room::Persona { .. }) {
                 return;
@@ -120,12 +128,13 @@ impl Memory {
             let Some(recall) = recall.upgrade() else {
                 return;
             };
-            filling.spawn(recall, at.clone(), room.clone());
+            filling.spawn(recall, at.clone(), room.clone(), id);
         }));
         debug_assert!(registered, "一份新的登记只登记这一次");
         Arc::new(Memory {
             turns,
             root: root.clone(),
+            salt,
             logs: Arc::new(MemoryLogs::new(root)),
             summary,
             vectors: OnceLock::new(),
@@ -143,6 +152,12 @@ impl Memory {
 }
 
 impl Memory {
+    /// 运行日志里这一间的短号（施工 LG-1 下）：照这个数据根的盐算，同一间每次一样；和 [`Room::kind`] 一起写，不写账号、
+    /// 人格名、会话编号。
+    pub(crate) fn room_id(&self, room: &Room) -> String {
+        self.salt.room_id(room)
+    }
+
     /// 等回合索引的后台把这时交过的都写完（施工 V-9），连同这时在补齐旧会话的（施工 R-2 下、R-28）：搜回合库、删会话以前，
     /// 测试照它再看回合库。不等补齐的，删掉的会话会被补回来，载入时也会当成已经补过、不再补。先等那一条道：回合库是那边
     /// 头一次写的时候才开的，补齐也是那时才起。
@@ -459,19 +474,20 @@ impl Turns {
     }
 }
 
-/// 回合库这一回第一次开：新建的记 `INFO`，重建的、用不了的记 `WARN`（照会话列表的索引的说法）。哪一间写成
-/// `persona <账号>/<人格>`、`session <账号>/<会话>`（施工 R-2 下：开库的四处都从登记过，原来只有会话写回合那一处记）。
-fn log_opened(room: &Room, opened: &Opened) {
-    let room = room.to_string();
-    let room = room.as_str();
+/// 回合库这一回第一次开：新建的记 `INFO`，重建的、用不了的记 `WARN`（照会话列表的索引的说法）。哪一间写种类和短号
+/// `room_id`（施工 LG-1 下：不写账号、人格名、会话编号；R-2 下：开库的四处都从登记过，原来只有会话写回合那一处记）。
+fn log_opened(room: &Room, room_id: &str, opened: &Opened) {
+    let room_kind = room.kind();
     match opened {
         Opened::Kept => {}
-        Opened::Created => tracing::info!(target: TARGET, room, "memory index created"),
+        Opened::Created => {
+            tracing::info!(target: TARGET, room_kind, room_id, "memory index created")
+        }
         Opened::Rebuilt(why) => {
-            tracing::warn!(target: TARGET, room, reason = %why, "memory index rebuilt");
+            tracing::warn!(target: TARGET, room_kind, room_id, reason = %why, "memory index rebuilt");
         }
         Opened::Unusable(error) => {
-            tracing::warn!(target: TARGET, room, error = %error, "memory index unusable");
+            tracing::warn!(target: TARGET, room_kind, room_id, error = %error, "memory index unusable");
         }
     }
 }

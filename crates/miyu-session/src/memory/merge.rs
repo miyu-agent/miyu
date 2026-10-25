@@ -253,7 +253,7 @@ impl MergeJob {
             let sessions = usize::try_from(settings.merge_sessions).unwrap_or(usize::MAX);
             // 出错的当场记了 `WARN`：真相没动，下次抽完再来。
             if let Err(why) = self.run(Some((settings.merge_every, sessions))).await {
-                tracing::debug!(target: TARGET, room = %room, error = why.as_str(), "memory merge stopped");
+                tracing::debug!(target: TARGET, room_kind = room.kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "memory merge stopped");
             }
         });
     }
@@ -308,13 +308,13 @@ impl MergeJob {
         // 轮到的旧记忆（施工 R-19）：一趟开头照底账挑一次，头一个放得下的批带上；新记的塞满了的照这一份往后挪，不重挑（重挑会把
         // 这一趟刚合完的算成旧的）。
         let mut sweep = Sweep::Pick;
-        let room = self.keeper.room().to_string();
+        let (room_kind, room_id) = (self.keeper.room().kind(), self.keeper.room_id());
         let mut done = Dreamed::default();
         // 这一趟的整理会话（设计 41）：真有要合的批时才开，一趟一个；没接会话表的走一次性入口。
         loop {
             if self.hush.heard() {
                 done.stopped = true;
-                tracing::info!(target: TARGET, room = room.as_str(), batches, "memory merging stopped");
+                tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), batches, "memory merging stopped");
                 return Ok(done);
             }
             let keeper = self.keeper.clone();
@@ -332,19 +332,19 @@ impl MergeJob {
                             retired,
                             ..
                         } = &done;
-                        tracing::info!(target: TARGET, room = room.as_str(), batches, given, revised, retired, took_ms, "memory merging ended");
+                        tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), batches, given, revised, retired, took_ms, "memory merging ended");
                     }
                     return Ok(done);
                 }
                 Err(refused) => {
-                    tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory merge failed");
+                    tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = ?refused, "memory merge failed");
                     return Err(format!("{refused:?}"));
                 }
             };
             check = None;
             let left = u32::try_from(batch.fresh.len()).unwrap_or(u32::MAX);
             if batches == 0 {
-                tracing::info!(target: TARGET, room = room.as_str(), left, manual, "memory merging started");
+                tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), left, manual, "memory merging started");
             }
             batches += 1;
             let carried = batch.sweep.clone();
@@ -380,7 +380,7 @@ impl MergeJob {
             if round.stopped {
                 // 放弃了这一批（人叫停、整理会话自己停了）：这一趟到此为止，下次从它接着合。
                 done.stopped = true;
-                tracing::info!(target: TARGET, room = room.as_str(), batches, "memory merging stopped");
+                tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), batches, "memory merging stopped");
                 return Ok(done);
             }
         }
@@ -416,7 +416,7 @@ impl MergeJob {
                 session,
             })),
             Err(why) => {
-                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session not opened");
+                tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session not opened");
                 Err(why)
             }
         }
@@ -428,7 +428,7 @@ impl MergeJob {
         let keep = MemorySettings::from(&self.config.resolved.values()).dream_keep;
         let keep = usize::try_from(keep).unwrap_or(0);
         if let Err(why) = trip.sessions.close(trip.session, keep).await {
-            tracing::warn!(target: TARGET, room = %self.keeper.room(), error = why.as_str(), "dream session not closed");
+            tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session not closed");
         }
     }
 }

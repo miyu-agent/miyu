@@ -185,7 +185,7 @@ impl MergeJob {
                 .take(RELATED)
                 .collect(),
             Err(error) => {
-                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = error.as_str(), "memory merge search failed");
+                tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = error.as_str(), "memory merge search failed");
                 Vec::new()
             }
         }

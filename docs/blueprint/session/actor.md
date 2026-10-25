@@ -326,10 +326,10 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | WARN | `session index not updated` | `error` | 落了盘，会话列表的索引更新失败（第 5 条第 7 点，施工 3-8 七补） |
 | WARN | `memory index not updated` | `error`（场所会话的另带 `session`） | 落了盘，回合索引更新失败、恢复时读不回日志（第 5 条第 8 点，施工 R-2 上）；载入场所会话时拿不掉它以前进了库的（施工 R-2 再补，`memory.md` 第一条第 1 款） |
 | WARN | `memory index not read` | `error` | 接上回合索引时读不出照到了哪：当作没照过，整份补（施工 R-2 上） |
-| INFO | `memory index created` | `room` | 这一间的回合库这一回新建（施工 R-2 上；R-2 下起由登记记，开库的四处都算，`room` 写法见 `memory.md` 第一条第 8 款） |
-| WARN | `memory index rebuilt`、`memory index unusable` | `room`、`reason` 或 `error` | 回合库坏了、版本不对删掉重建，或者删了也打不开（施工 R-2 上） |
-| INFO | `memory index backfilled` | `room`、`sessions` | 人格那一间新建、重建以后后台补齐了几个旧会话（施工 R-2 下，`memory.md` 第一条第 9 款） |
-| WARN | `memory index not backfilled` | `session` 或 `room`，`error` | 补齐时一个会话读不了、快照取不出（跳过它），或者列不出会话（施工 R-2 下） |
+| INFO | `memory index created` | `room_kind`、`room_id` | 这一间的回合库这一回新建（施工 R-2 上；R-2 下起由登记记，开库的四处都算；种类和短号的写法见 `memory.md` 第一条第 8 款，施工 LG-1 下） |
+| WARN | `memory index rebuilt`、`memory index unusable` | `room_kind`、`room_id`、`reason` 或 `error` | 回合库坏了、版本不对删掉重建，或者删了也打不开（施工 R-2 上） |
+| INFO | `memory index backfilled` | `room_kind`、`room_id`、`sessions` | 人格那一间新建、重建以后后台补齐了几个旧会话（施工 R-2 下，`memory.md` 第一条第 9 款） |
+| WARN | `memory index not backfilled` | `session` 或 `room_kind`、`room_id`，`error` | 补齐时一个会话读不了、快照取不出（跳过它），或者列不出会话（施工 R-2 下） |
 | DEBUG | `turn start hook timed out` | `module`（`memory`、`knowledge`，施工 K-6 下）、`part`（`summary`、`recall`，施工 R-8） | 回合开始的挂接点的那一件过了 300 毫秒没交回，这一轮当它没交（施工 R-4 上，`memory.md` 第三条第 4 款、第四条第 6 款） |
 | WARN | `memory summary not read` | `error` | 回合开始列不出这一间的记忆，这一轮不交摘要（施工 R-4 上） |
 | INFO | `memory vectors filled` | `index`、`count`、`took_ms` | 搜的时候起的后台补了这一份库缺的几条向量（施工 R-5 下，`recall.md` 第三条第 5 款） |

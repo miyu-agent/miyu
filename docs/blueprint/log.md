@@ -120,7 +120,7 @@
 3. 供应商出错的原话：不写，只写分类（`class`）。原话里可能回显请求里的字。
 4. HTTP：只写主机名、字节数、状态码、分类、供应商说要等多久、用时；地址的路径和参数不写。
 5. 这几条靠发日志的地方只交编号、长度、状态：接口上没有写内容的口子。由测试查（「守着它的」）。
-6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
+6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。记忆的一间（施工 LG-1 下）不写账号、人格名、会话编号，写种类 `room_kind`（`persona`、`session`）和短号 `room_id`：8 位十六进制，数据根的盐（`state/log-salt`，32 个随机字节，0600，没有就在核心起来时造；读不出、写不成的记一行 `WARN memory log salt not kept`，这次起来另用一份只在内存里的）接上这一间算 SHA-256 取前 4 个字节。同一间每次一样，同机人格名少也一个个试不回去，日志拿到别的机器上对不上；盐不进日志、不进任何回应。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
 
 **8. 每一行**
 
@@ -159,11 +159,11 @@
 | `session` | WARN | `memory extraction failed` | `session`、`tries`（同一段第几次；读日志不成的没有）、`error` | 抽取没成：一次性入口没答成的原因码、交回读不成的为什么、日志读不了的原话；第三次的这一段放过（施工 R-6 上） |
 | `session` | WARN | `memory extraction not recorded` | `session`、`error` | 记忆日志写不进：这一段不往前挪，下次重抽（施工 R-6 上） |
 | `endpoint` | WARN | `memory extraction unavailable` | `error` | 核心起来时抽取的字（R-7 上起连同合并的字）、key 的写法读不出来：这个核心不抽、不合，别的照常（施工 R-6 上） |
-| `session` | INFO | `memory merge started` | `room`、`given` | 合并发出去了一次（`memory.md` 第七条，施工 R-7 上）：交进去几条（新记的加相关的） |
-| `session` | INFO | `memory merged` | `room`、`revised`、`retired`、`took_ms` | 合并记下了：改了几条、作废几条、从发出到记完多少毫秒 |
-| `session` | WARN | `memory merge failed` | `room`、`tries`（从同一处起第几次；读底账不成的没有）、`error` | 合并没成：一次性入口没答成的原因码、交回读不成的为什么；第三次的这一批跳过 |
-| `session` | WARN | `memory merge search failed` | `room`、`error` | 搜一条新记的相关旧记忆时记忆库读不了：这一条不带相关的，照合 |
-| `session` | WARN | `memory merge not recorded` | `room`、`error` | 记忆日志写不进：不动真相，下次再来 |
+| `session` | INFO | `memory merge started` | `room_kind`、`room_id`、`given` | 合并发出去了一次（`memory.md` 第七条，施工 R-7 上）：交进去几条（新记的加相关的） |
+| `session` | INFO | `memory merged` | `room_kind`、`room_id`、`revised`、`retired`、`took_ms` | 合并记下了：改了几条、作废几条、从发出到记完多少毫秒 |
+| `session` | WARN | `memory merge failed` | `room_kind`、`room_id`、`tries`（从同一处起第几次；读底账不成的没有）、`error` | 合并没成：一次性入口没答成的原因码、交回读不成的为什么；第三次的这一批跳过 |
+| `session` | WARN | `memory merge search failed` | `room_kind`、`room_id`、`error` | 搜一条新记的相关旧记忆时记忆库读不了：这一条不带相关的，照合 |
+| `session` | WARN | `memory merge not recorded` | `room_kind`、`room_id`、`error` | 记忆日志写不进：不动真相，下次再来 |
 | `session` | WARN | `memory recall not read` | `error` | 联想照意思找的时候记忆日志、记忆库读不了：这一轮不带（`memory.md` 第四条，施工 R-8）。带会话编号 |
 | `session` | WARN | `knowledge recall not read` | `error` | 自动想起的时候知识库的目录、索引读不了：这一轮不带（`knowledge.md` 第九条，施工 K-6 下）。带会话编号 |
 | `session` | DEBUG | `knowledge recall by meaning timed out` | | 自动想起开始以后 200 毫秒内照意思那一路没等到（本机模型冷启动、那一家回得慢、读段读得慢）：这一轮只走标题名（`knowledge.md` 第九条第 5 款，施工 K-6 下）。带会话编号 |

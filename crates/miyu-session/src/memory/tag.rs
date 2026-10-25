@@ -86,7 +86,7 @@ impl Tagging {
             return 0;
         }
         let started = Instant::now();
-        let room = self.keeper.room().to_string();
+        let (room_kind, room_id) = (self.keeper.room().kind(), self.keeper.room_id());
         let rows: Vec<String> = entries
             .iter()
             .map(|entry| {
@@ -134,7 +134,7 @@ impl Tagging {
         let found = match answered {
             Ok(found) => found,
             Err(why) => {
-                tracing::warn!(target: TARGET, room = room.as_str(), given = given.len(), error = why.as_str(), "memory tagging failed");
+                tracing::warn!(target: TARGET, room_kind, room_id = room_id.as_str(), given = given.len(), error = why.as_str(), "memory tagging failed");
                 return 0;
             }
         };
@@ -146,12 +146,12 @@ impl Tagging {
         let count = match blocking(move || keeper.record_tags(wall_now(), found)).await {
             Ok(count) => count,
             Err(refused) => {
-                tracing::warn!(target: TARGET, room = room.as_str(), error = ?refused, "memory tagging not recorded");
+                tracing::warn!(target: TARGET, room_kind, room_id = room_id.as_str(), error = ?refused, "memory tagging not recorded");
                 return 0;
             }
         };
         let took_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
-        tracing::info!(target: TARGET, room = room.as_str(), count, took_ms, "memory tagged");
+        tracing::info!(target: TARGET, room_kind, room_id = room_id.as_str(), count, took_ms, "memory tagged");
         count
     }
 }
@@ -164,7 +164,7 @@ impl MergeJob {
         let entries = match blocking(move || keeper.untagged(&first, BATCH)).await {
             Ok(entries) => entries,
             Err(refused) => {
-                tracing::warn!(target: TARGET, room = %self.keeper.room(), error = ?refused, "memory tagging not read");
+                tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = ?refused, "memory tagging not read");
                 return 0;
             }
         };
