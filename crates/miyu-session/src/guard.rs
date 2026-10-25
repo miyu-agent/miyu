@@ -282,10 +282,11 @@ impl Guard {
             return in_venue(&self.place);
         }
         // 只碰得到自己工作区的会话：命令只在把读也关进工作区的沙盒里跑（施工 5-12 下），关不住读的平台、沙盒用不了的
-        // 机器上一律拒；成员的会话工作目录不在他自己的几处里的也拒（施工 Y-2 下①）。
+        // 机器上一律拒；成员的会话工作目录不在他自己的几处里的也拒（施工 Y-2 下①）；系统服务的 Unix 套接字管不住的机器上
+        // 也拒（施工 MB-1，[`miyu_sandbox::confines_others`]）。
         if let Some(confined) = &self.confined
             && access == Access::Execute
-            && (!(self.sandboxed && miyu_sandbox::CONFINES_READS) || self.astray(confined, &cwd))
+            && (!(self.sandboxed && miyu_sandbox::confines_others()) || self.astray(confined, &cwd))
         {
             return deny(confined.no_commands());
         }

@@ -29,6 +29,8 @@ testkit = []
 # Linux 上管文件（施工 5-2）：内核 Landlock 的安全封装，建规则集、加规则、收紧自己都不用自己写 unsafe。
 # MIT OR Apache-2.0。
 landlock = "0.4"
+# 老内核上关起来的会话照 seccomp 不准新建 Unix 域套接字（施工 MB-1）：装过滤要调 `prctl`。MIT OR Apache-2.0，工作区里本来就有。
+libc = "0.2"
 
 [target.'cfg(windows)'.dependencies]
 # Windows 上装沙盒要调的系统接口（施工 5-8）：建、藏、删用户，查是不是管理员，自提升，DPAPI，建只给本人的文件；核心进

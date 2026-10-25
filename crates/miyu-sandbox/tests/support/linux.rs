@@ -21,8 +21,14 @@ pub fn spec(write: &[&Path], hidden: &[&Path]) -> Spec {
 
 /// 经助手跑 `sh -c <script>`。报错照英文说（`LC_ALL=C`），不跟着跑测试的机器的语言。
 pub fn run(spec: &Spec, script: &str) -> Output {
+    run_with(spec, script, &[])
+}
+
+/// 同 [`run`]，助手多带几个环境变量 `env`（例如强制走 seccomp 的 `MIYU_SANDBOX_SECCOMP=force`，施工 MB-1）。
+pub fn run_with(spec: &Spec, script: &str, env: &[(&str, &str)]) -> Output {
     Command::new(HELPER)
         .env("LC_ALL", "C")
+        .envs(env.iter().copied())
         .args([
             "run",
             "--spec",
@@ -39,9 +45,14 @@ pub fn run(spec: &Spec, script: &str) -> Output {
 
 /// 这台机器的内核有没有能用的 Landlock：问助手自己。
 pub fn landlock() -> bool {
+    mechanisms().iter().any(|name| name == "landlock")
+}
+
+/// 助手探到的手段。
+pub fn mechanisms() -> Vec<String> {
     let out = Command::new(HELPER).arg("probe").output().expect("起得来");
     let probe: Probe = serde_json::from_slice(&out.stdout).expect("读得懂");
-    probe.mechanisms.iter().any(|name| name == "landlock")
+    probe.mechanisms
 }
 
 /// 没有 Landlock 的机器上：拒绝执行，交回 `true`，这个测试到此为止。

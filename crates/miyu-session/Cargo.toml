@@ -146,6 +146,10 @@ name = "sandbox_log"
 path = "tests/sandbox_log.rs"
 
 [[test]]
+name = "sockets_off"
+path = "tests/sockets_off.rs"
+
+[[test]]
 name = "spawn_log"
 path = "tests/spawn_log.rs"
 

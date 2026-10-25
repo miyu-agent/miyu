@@ -137,7 +137,7 @@ fn a_helper_of_another_build_is_logged_with_how_to_rebuild() {
 #[test]
 fn a_helper_with_mechanisms_is_handed_on() {
     let dir = Dir::new();
-    fake_helper(&dir, &said(&["landlock"]));
+    fake_helper(&dir, &said(&["landlock", "landlock-sockets"]));
     let (found, lines) = probed(Some(&dir.exe()));
     assert_eq!(
         found,
@@ -146,7 +146,34 @@ fn a_helper_with_mechanisms_is_handed_on() {
     );
     assert_eq!(lines.len(), 1, "{lines:?}");
     assert!(
-        lines[0].contains(" INFO ") && lines[0].ends_with(" mechanisms=landlock"),
+        lines[0].contains(" INFO ") && lines[0].ends_with(" mechanisms=landlock,landlock-sockets"),
+        "{lines:?}"
+    );
+    assert!(miyu_sandbox::confines_others(), "管得住套接字");
+}
+
+/// 沙盒能用、关起来的会话的 Unix 套接字却管不住的（施工 MB-1：内核的 Landlock 太老、又没有 seccomp）：照样能用（管理员本人的
+/// 会话照跑），成员的、场所的会话不跑命令，记一行 `WARN`，好查谁的成员为什么跑不了。
+#[cfg(target_os = "linux")]
+#[test]
+fn a_sandbox_that_cannot_confine_sockets_is_logged_and_keeps_others_off() {
+    let dir = Dir::new();
+    fake_helper(&dir, &said(&["landlock"]));
+    let (found, lines) = probed(Some(&dir.exe()));
+    let others = miyu_sandbox::confines_others();
+    miyu_sandbox::set_confines_sockets(true);
+    assert_eq!(
+        found,
+        Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
+    );
+    assert!(!others, "成员、场所的会话不跑命令");
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    assert!(
+        lines[1].contains(" WARN ")
+            && lines[1].contains(
+                " sandbox cannot confine unix sockets: members and venue sessions run no commands"
+            )
+            && lines[1].ends_with(" mechanisms=landlock"),
         "{lines:?}"
     );
 }
@@ -266,7 +293,7 @@ fn slow_helper(dir: &Dir, line: &str, secs: &str) {
 fn a_remembered_probe_is_used_without_waiting_and_refreshed_behind() {
     let dir = Dir::new();
     let state = dir.0.join("state");
-    slow_helper(&dir, &said(&["landlock"]), "1");
+    slow_helper(&dir, &said(&["landlock", "landlock-sockets"]), "1");
     let started = std::time::Instant::now();
     let (found, lines) = probed_in(&dir.exe(), &state);
     assert!(
@@ -286,7 +313,7 @@ fn a_remembered_probe_is_used_without_waiting_and_refreshed_behind() {
     remembered::remember(
         &state,
         &key,
-        &miyu_sandbox::Probe::new(vec!["landlock".to_string()]),
+        &miyu_sandbox::Probe::new(vec!["landlock".to_string(), "landlock-sockets".to_string()]),
     );
     let started = std::time::Instant::now();
     let (found, lines) = probed_in(&dir.exe(), &state);

@@ -1,6 +1,6 @@
 //! Linux 上真跑助手（`docs/blueprint/sandbox/linux.md`，施工 5-2、5-3）：整盘能读，只管写；一条能写的都没有时只有
 //! `/dev/null` 写得进；藏起来的读写都不行，名字看得到；能写的落在藏起来的里面照样能写；藏起来的落在能写的里面
-//! 不挖洞（施工 5-14 改，照 dsh；施工 5-15 到 5-14 改之间一级级绕开）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；系统服务的套接字连不上；探测报 `landlock`。
+//! 不挖洞（施工 5-14 改，照 dsh；施工 5-15 到 5-14 改之间一级级绕开）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；探测报 `landlock`。系统服务的套接字在 `linux_sockets.rs`（施工 MB-1 拆出去）。
 //! 内核没有 Landlock 的机器上，只测拒绝执行。
 
 #![cfg(target_os = "linux")]
@@ -10,7 +10,7 @@ mod support;
 use std::path::Path;
 
 use miyu_sandbox::Spec;
-use support::linux::{bwrap, denied, landlock, refused_without_landlock, run, spec, text};
+use support::linux::{denied, landlock, refused_without_landlock, run, spec, text};
 use support::{Dir, serial};
 
 #[test]
@@ -248,150 +248,6 @@ fn the_command_runs_with_no_new_privs() {
         text(&out.stdout).split_whitespace().collect::<Vec<_>>(),
         ["NoNewPrivs:", "1"]
     );
-}
-
-/// 这台机器的内核版本：`7.2.3-zen1` 这样的写法取前两段。
-fn kernel() -> (u32, u32) {
-    let release = std::fs::read_to_string("/proc/sys/kernel/osrelease").expect("读得出");
-    let mut parts = release
-        .trim()
-        .split(['.', '-'])
-        .map(|part| part.parse().unwrap_or(0));
-    (parts.next().unwrap_or(0), parts.next().unwrap_or(0))
-}
-
-/// 在沙盒里用 `python3` 连一个 Unix 套接字，`address` 以 `@` 开头的是抽象的。交回连得上连不上；机器上没有 `python3`
-/// 的交回空的。
-fn connects(spec: &Spec, address: &str) -> Option<bool> {
-    let script = format!(
-        "command -v python3 >/dev/null || exit 77; python3 -c 'import socket, sys; a = sys.argv[1]; s = socket.socket(socket.AF_UNIX); s.connect(\"\\0\" + a[1:] if a.startswith(\"@\") else a)' '{address}'"
-    );
-    let out = run(spec, &script);
-    match out.status.code() {
-        Some(77) => None,
-        Some(0) => Some(true),
-        _ => {
-            let stderr = text(&out.stderr);
-            assert!(
-                stderr.contains("PermissionError")
-                    || stderr.contains("Operation not permitted")
-                    || stderr.contains("Permission denied"),
-                "连不上的原因不是被拦：{stderr}"
-            );
-            Some(false)
-        }
-    }
-}
-
-/// 能替命令在沙盒外读写的系统服务照样挡（2026-09-29 项目主人定）：规格外路径上的 Unix 套接字连不上（内核 7.1 起），
-/// 沙盒外建的抽象套接字连不上（6.12 起）；更老的内核拦不住，照连得上测。能写的地方的套接字照样连得上。
-#[test]
-fn system_service_sockets_outside_the_spec_cannot_be_connected() {
-    use std::os::linux::net::SocketAddrExt;
-    use std::os::unix::net::{SocketAddr, UnixListener};
-    let _serial = serial();
-    let work = Dir::new();
-    let other = Dir::new();
-    let spec = spec(&[work.path()], &[]);
-    if refused_without_landlock(&spec) {
-        return;
-    }
-    let outside = other.path().join("bus");
-    let _outside = UnixListener::bind(&outside).expect("听得了");
-    let inside = work.path().join("mine.sock");
-    let _inside = UnixListener::bind(&inside).expect("听得了");
-    let name = format!("miyu-sandbox-test-{}", std::process::id());
-    let _abstract = UnixListener::bind_addr(
-        &SocketAddr::from_abstract_name(name.as_bytes()).expect("名字合法"),
-    )
-    .expect("听得了");
-    let version = kernel();
-    let Some(outside_ok) = connects(&spec, &outside.to_string_lossy()) else {
-        return;
-    };
-    assert_eq!(
-        outside_ok,
-        version < (7, 1),
-        "规格外路径上的套接字，内核 {version:?}"
-    );
-    assert_eq!(
-        connects(&spec, &inside.to_string_lossy()),
-        Some(true),
-        "能写的地方的照样连得上"
-    );
-    assert_eq!(
-        connects(&spec, &format!("@{name}")),
-        Some(version < (6, 12)),
-        "沙盒外建的抽象套接字，内核 {version:?}"
-    );
-    // 用挂载收紧的照样拦（施工 5-16：挂好以后里面那一次照旧是 Landlock）。
-    if bwrap() {
-        let mounted = Spec {
-            mount: true,
-            sockets: Vec::new(),
-            ..spec.clone()
-        };
-        assert_eq!(
-            connects(&mounted, &outside.to_string_lossy()),
-            Some(version < (7, 1)),
-            "挂载时规格外路径上的套接字"
-        );
-        assert_eq!(
-            connects(&mounted, &format!("@{name}")),
-            Some(version < (6, 12)),
-            "挂载时沙盒外建的抽象套接字"
-        );
-    }
-}
-
-/// 脚本调工具的通道（施工 M-3）：规格的 `sockets` 写了的那一个，不在能写的地方、落在藏起来的里面，照样连得上；旁边别的照旧
-/// 拦（内核 7.1 起）。用挂载收紧的同样。
-#[test]
-fn a_socket_named_in_the_spec_can_be_connected() {
-    use std::os::unix::net::UnixListener;
-    let _serial = serial();
-    let work = Dir::new();
-    let other = Dir::new();
-    let hidden = Dir::new();
-    let named = other.path().join("call.sock");
-    let _named = UnixListener::bind(&named).expect("听得了");
-    let beside = other.path().join("beside.sock");
-    let _beside = UnixListener::bind(&beside).expect("听得了");
-    let secret = hidden.path().join("call.sock");
-    let _secret = UnixListener::bind(&secret).expect("听得了");
-    let spec = Spec {
-        sockets: vec![named.clone(), secret.clone()],
-        ..spec(&[work.path()], &[hidden.path()])
-    };
-    if refused_without_landlock(&spec) {
-        return;
-    }
-    let Some(named_ok) = connects(&spec, &named.to_string_lossy()) else {
-        return;
-    };
-    assert!(named_ok, "写了的连得上");
-    assert_eq!(
-        connects(&spec, &beside.to_string_lossy()),
-        Some(kernel() < (7, 1)),
-        "旁边的照旧拦"
-    );
-    assert_eq!(
-        connects(&spec, &secret.to_string_lossy()),
-        Some(true),
-        "藏起来的里面写了的也连得上"
-    );
-    if bwrap() {
-        let mounted = Spec {
-            mount: true,
-            ..spec.clone()
-        };
-        assert_eq!(connects(&mounted, &named.to_string_lossy()), Some(true));
-        assert_eq!(
-            connects(&mounted, &secret.to_string_lossy()),
-            Some(true),
-            "挂回来了"
-        );
-    }
 }
 
 /// CI 上一定要真跑 Landlock：没有的话，上面几条只测了拒绝执行，Linux 的沙盒等于没测到。GitHub 的机器设了 `CI`。

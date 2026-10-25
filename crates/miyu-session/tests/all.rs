@@ -118,6 +118,7 @@ mod route_zen;
 mod sandbox;
 mod sandbox_browser;
 mod sandbox_confined;
+mod sandbox_member;
 mod sandbox_private;
 mod sandbox_skills;
 mod sandbox_workspace;

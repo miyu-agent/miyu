@@ -79,9 +79,20 @@ fn log(helper: &Path, probe: &miyu_sandbox::Probe, remembered: bool) {
 }
 
 /// 探到了手段的能用，带着助手；手段是空的用不了。报了 `bwrap` 的，这个进程里的命令用挂载收紧（施工 5-16，
-/// [`miyu_sandbox::set_mounts`]）。
+/// [`miyu_sandbox::set_mounts`]）。关起来的会话的 Unix 套接字照探到的设（施工 MB-1，[`miyu_sandbox::set_confines_sockets`]）：
+/// 沙盒能用、套接字却管不住的（内核的 Landlock 太老、又没有 seccomp），成员的、场所的会话不跑命令，记一行
+/// `WARN sandbox cannot confine unix sockets`，好查谁的成员为什么跑不了。
 fn availability(helper: PathBuf, probe: &miyu_sandbox::Probe) -> Availability {
     miyu_sandbox::set_mounts(probe.mechanisms.iter().any(|name| name == "bwrap"));
+    let sockets = miyu_sandbox::sockets_confined_by(&probe.mechanisms);
+    miyu_sandbox::set_confines_sockets(sockets);
+    if !sockets && !probe.mechanisms.is_empty() {
+        tracing::warn!(
+            target: TARGET,
+            mechanisms = %probe.mechanisms_text(),
+            "sandbox cannot confine unix sockets: members and venue sessions run no commands"
+        );
+    }
     if probe.mechanisms.is_empty() {
         Availability::Unusable(Unusable::NoMechanism)
     } else {

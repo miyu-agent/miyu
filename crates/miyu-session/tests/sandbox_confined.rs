@@ -91,9 +91,13 @@ async fn a_confined_command_reads_and_writes_only_its_workspace() {
                 "家目录不在名单里"
             );
         }
+        // 家目录照工作区（施工 MB-1）：不给跑核心的那个用户的，git 这类读 `~/.gitconfig` 的在 macOS 上被拒就起不来，也透出机主。
         assert_eq!(
             sandboxed.env,
-            [(OsString::from("TMPDIR"), temp.clone().into_os_string())]
+            [
+                (OsString::from("TMPDIR"), temp.clone().into_os_string()),
+                (OsString::from("HOME"), work.clone().into_os_string()),
+            ]
         );
         assert_eq!(
             sandboxed.spec.hidden,

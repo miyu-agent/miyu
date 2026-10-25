@@ -53,9 +53,39 @@ pub fn mounts() -> bool {
 /// Windows 的沙盒还没有（施工 5-9 停着），助手收到写了 `read` 的规格不跑，核心照它决定外部身份的会话能不能跑命令。
 pub const CONFINES_READS: bool = cfg!(any(target_os = "linux", target_os = "macos"));
 
+/// 这台机器上关起来的会话的命令连不连得到 Unix 套接字（施工 MB-1）：进程里一份，核心起来时照探测设
+/// （[`sockets_confined_by`]）。没设过的算管得住：只有探成了、沙盒能用的会话才跑命令，探成时一定设过。
+static SOCKETS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// 设这台机器上关起来的会话的 Unix 套接字管不管得住（施工 MB-1）。
+pub fn set_confines_sockets(on: bool) {
+    SOCKETS.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// 关起来的会话（成员的、场所的）能不能跑命令（施工 MB-1）：读关得住（[`CONFINES_READS`]），能替命令在沙盒外读写的系统服务的
+/// 套接字也连不上（[`set_confines_sockets`]）。
+pub fn confines_others() -> bool {
+    CONFINES_READS && SOCKETS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// 照探到的手段 `mechanisms`，关起来的会话的 Unix 套接字管不管得住（施工 MB-1）：Linux 上要 `landlock-sockets`（Landlock 自己管）
+/// 或者 `seccomp`（不准新建 Unix 域套接字）；macOS 的 Seatbelt 只放行连能写的地方的，本来就管得住；别的平台读都关不住，这里不管。
+pub fn sockets_confined_by(mechanisms: &[String]) -> bool {
+    if cfg!(target_os = "linux") {
+        mechanisms
+            .iter()
+            .any(|name| name == "landlock-sockets" || name == "seccomp")
+    } else {
+        true
+    }
+}
+
 /// 助手的退出码：它自己出了错（参数、规格写坏了，收紧失败）。照 `env`、`timeout` 的约定。
 pub const EXIT_HELPER: u8 = 125;
 /// 助手的退出码：找到了命令，执行不了。
 pub const EXIT_CANNOT_RUN: u8 = 126;
 /// 助手的退出码：找不到命令。
 pub const EXIT_NOT_FOUND: u8 = 127;
+
+#[cfg(test)]
+mod tests;

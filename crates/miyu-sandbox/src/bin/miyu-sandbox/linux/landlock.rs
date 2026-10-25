@@ -28,6 +28,17 @@ pub(super) fn available() -> Result<(), String> {
     ruleset().map(drop)
 }
 
+/// 内核的 Landlock 管不管得住连 Unix 套接字（施工 MB-1）：连路径上的（第 9 版，`ResolveUnix`）和沙盒外建的抽象套接字（第 6 版）
+/// 两样都要管得住。建一个硬要这两样的规则集，建得成就管得住；只建不收紧。
+pub(super) fn confines_sockets() -> bool {
+    Ruleset::default()
+        .set_compatibility(CompatLevel::HardRequirement)
+        .handle_access(AccessFs::ResolveUnix)
+        .and_then(|ruleset| ruleset.scope(Scope::AbstractUnixSocket))
+        .and_then(Ruleset::create)
+        .is_ok()
+}
+
 /// 照规格收紧自己：根目录往下都能列目录、执行；读照 [`plan`] 一级级放，绕开藏起来的；`write` 整个放行全部，里面不挖洞
 /// （施工 5-14 改，照 dsh：藏不住的会话那边不写进 `hidden`）；`/dev/null` 放行全部。写了 `read` 的（施工 5-12 下）：只有它列的能读、列目录、执行，根目录不再整个放，`hidden` 不另算。规格里的路径不在
 /// 的跳过。
