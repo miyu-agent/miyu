@@ -20,10 +20,10 @@ fn foreground(command: &str, timeout: u64) -> String {
 async fn a_slow_foreground_command_moves_to_the_background() {
     let home = Home::outside_temp();
     let command = if cfg!(windows) {
-        "Write-Output before; Start-Sleep -Milliseconds 2000; Write-Output after; exit 3"
+        "Write-Output before; Start-Sleep -Milliseconds 1900; Write-Output after; exit 3"
     } else {
         // 挪过去以后的 `\r\n` 照后台命令的规矩换成 `\n`。
-        "echo before; sleep 2; printf 'after\\r\\n'; exit 3"
+        "echo before; sleep 1.9; printf 'after\\r\\n'; exit 3"
     };
     let args = foreground(command, 500);
     let script = Script::new([
@@ -64,8 +64,8 @@ async fn a_slow_foreground_command_moves_to_the_background() {
 #[tokio::test]
 async fn a_sleep_is_still_stopped() {
     let home = Home::outside_temp();
-    // PowerShell 里 `sleep` 是 `Start-Sleep` 的别名：同一句三个平台都能跑。
-    let args = foreground("sleep 5", 300);
+    // PowerShell 里 `sleep` 是 `Start-Sleep` 的别名：同一句三个平台都能跑。两秒以内的短停照跑（更长的前台干等不跑，2026-10-26）。
+    let args = foreground("sleep 1.5", 300);
     let script = Script::new([
         Play::calls(&[("shell", args.as_str())]),
         Play::Says("停了。"),
@@ -87,9 +87,9 @@ async fn a_sleep_is_still_stopped() {
 async fn a_moved_command_can_be_stopped() {
     let home = Home::outside_temp();
     let command = if cfg!(windows) {
-        "Write-Output started; Start-Sleep -Seconds 30"
+        "Write-Output started; & { Start-Sleep -Seconds 30 }"
     } else {
-        "echo started; sleep 30"
+        "echo started; sh -c 'sleep 30'"
     };
     let args = foreground(command, 300);
     let script = Script::new([

@@ -172,7 +172,7 @@ async fn a_command_past_its_timeout_is_stopped() {
     let done = site
         .done(
             "shell",
-            json!({ "command": script("sleep 20", "Start-Sleep -Seconds 20"), "description": "Test", "timeout": 300 }),
+            json!({ "command": script("sh -c 'sleep 20'", "& { Start-Sleep -Seconds 20 }"), "description": "Test", "timeout": 300 }),
         )
         .await;
     assert!(started.elapsed() < Duration::from_secs(10), "没有等满");

@@ -250,10 +250,21 @@ async fn every_shell_outcome_says_something_people_can_read() {
         human(run(command("exit 4")).await),
         said("shell/exited").with("code", "4"),
     );
-    let sleep = if windows {
+    // 前台干等不跑（2026-10-26）；测超时的那条套一层，不算干等。
+    let waits = if windows {
         "Start-Sleep -Seconds 20"
     } else {
         "sleep 20"
+    };
+    check(
+        &mut checked,
+        human(run(serde_json::json!({ "command": waits, "description": "Test" })).await),
+        said("shell/no-sleep"),
+    );
+    let sleep = if windows {
+        "& { Start-Sleep -Seconds 20 }"
+    } else {
+        "sh -c 'sleep 20'"
     };
     check(
         &mut checked,

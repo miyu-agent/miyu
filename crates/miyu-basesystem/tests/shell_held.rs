@@ -45,9 +45,9 @@ impl NestedPort for Asking {
 async fn time_spent_waiting_for_someone_is_not_counted_against_the_limit() {
     let site = Site::new();
     let command = if cfg!(windows) {
-        "Start-Sleep -Seconds 2; Write-Output slept"
+        "& { Start-Sleep -Seconds 2 }; Write-Output slept"
     } else {
-        "sleep 2; echo slept"
+        "sh -c 'sleep 2'; echo slept"
     };
     let call = Call {
         args: json!({ "command": command, "description": "Test", "timeout": 1000 }).to_string(),

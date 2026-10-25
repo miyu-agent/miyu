@@ -84,9 +84,9 @@ fn child() -> &'static str {
 /// 等三秒。
 fn pause() -> &'static str {
     if cfg!(windows) {
-        "Start-Sleep -Seconds 3\n"
+        "& { Start-Sleep -Seconds 3 }\n"
     } else {
-        "sleep 3\n"
+        "sh -c 'sleep 3'\n"
     }
 }
 

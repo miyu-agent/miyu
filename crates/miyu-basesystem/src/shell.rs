@@ -19,6 +19,7 @@ mod section;
 #[cfg(test)]
 mod tests;
 mod touched;
+mod waiting;
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -67,6 +68,8 @@ struct Texts {
     timed_out: Template,
     failed: Template,
     no_background: Template,
+    /// 前台干等的不跑时写给她的一句（2026-10-26）。
+    no_sleep: Template,
     started: Template,
     /// 认出灭顶的高危、直接拒时写给她的一句（施工 5-17），字段 `reason`。
     hazard: Template,
@@ -108,6 +111,7 @@ impl Shell {
                 timed_out: text("timed-out", &["timeout", "max"])?,
                 failed: text("failed", &["shell", "error"])?,
                 no_background: text("no-background", &[])?,
+                no_sleep: text("no-sleep", &[])?,
                 started: text("started", &["job"])?,
                 hazard: text("hazard", &["reason"])?,
                 reasons: Kind::ALL
@@ -322,6 +326,10 @@ impl Tool for Shell {
             };
             if args.run_in_background {
                 return self.background(&call, args);
+            }
+            // 前台干等的不跑（2026-10-26）：后台任务办完会自己回报。
+            if waiting::waits(&args.command) {
+                return Done::error(say(&self.texts.no_sleep, &[])).said(said("shell/no-sleep"));
             }
             let timeout = limit(args.timeout);
             let (command, channel) = match self.prepare(&call, &args.command) {

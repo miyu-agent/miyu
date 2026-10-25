@@ -1451,6 +1451,17 @@ Could not run {name}: {error}.
 Running in the background is not available here. Run the command in the foreground, with a larger timeout if it is slow.
 ```
 
+#### `software/basesystem/shell/no-sleep.txt`
+
+- 什么时候加进来：前台的 `shell` 命令顶层有一段就是 `sleep`（`Start-Sleep`）不短于 2 秒，整条不跑（`shell/waiting.rs`，2026-10-26 项目主人定）
+- token：14（2026-10-26 照 o200k 数）
+- 为什么加：后台任务办完会自己回报，前台干等白占这一轮；照终端转来的项目主人原意写英文
+- 指纹：`a8f4a20f`
+
+```text
+Foreground sleep is not allowed. Background jobs report back when they finish.
+```
+
 #### `software/basesystem/shell/hazard.txt`
 
 - 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面七份之一，第七份施工 5-17 三补）
