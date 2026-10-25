@@ -15,7 +15,8 @@ use crate::{Core, backstage, commands, files, job_output, memory, models};
 /// 对上。`command.run` 的照命令表问（[`commands::answered_later`]），别的命令照旧按顺序答。
 pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     match request.method.as_str() {
-        "model.call" | "memory.dream" | "package.call" => true,
+        // 停子代理要等它停下、回报落了盘（连它派的一起，几秒），一下子停上百个的不能排成一队（施工 7-4 修，网页 10-26 报）。
+        "model.call" | "memory.dream" | "package.call" | "job.stop" => true,
         "command.run" => commands::answered_later(core, request),
         // 要等的在后台答（施工 V-6 上）：清单建完、输出长了才回，不挡这个连接别的请求。
         "fs.find" | "job.output" => {
@@ -41,6 +42,10 @@ pub(crate) async fn call_later(
         "command.run" => commands::run(core, (caller, &peer), &request.id, params(request)?).await,
         "fs.find" => files::find(core, params(request)?).await,
         "job.output" => job_output::read(core, params(request)?).await,
+        "job.stop" => super::session::stop_job(core, caller, request).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
+
+#[cfg(test)]
+mod tests;

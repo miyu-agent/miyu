@@ -36,7 +36,7 @@ Chinese version: [connection.md](connection.md).
 
 **Ordering**:
 
-1. Requests on one connection are handled one at a time: the next line is read after the previous one is answered. A few slow ones are answered in the background without blocking later requests, matched by `id`: `model.call`, `memory.dream`, `link.preview`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
+1. Requests on one connection are handled one at a time: the next line is read after the previous one is answered. A few slow ones are answered in the background without blocking later requests, matched by `id`: `model.call`, `memory.dream`, `link.preview`, `job.stop`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
 2. Results before responses: the pushes a command causes always arrive before its response.
 3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again.
 

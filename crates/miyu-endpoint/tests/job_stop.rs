@@ -143,3 +143,43 @@ async fn what_is_not_there_is_refused() {
     assert_eq!(reason(&reply), Some("session_not_found"), "{reply}");
     assert_eq!(home.log(&session).len(), 1, "拒绝的什么都不写");
 }
+
+/// 一下子停好几个（施工 7-4 修，网页 10-26 报：「全部停止」一次发上百个 job.stop，大半不回）：同一条连接上不等回应连着发，
+/// 每一个都回、每个子代理都停下；`job.stop` 在后台答，停一个要等它停完，不挡这条连接后面的请求。
+#[tokio::test]
+async fn many_stops_at_once_are_all_answered() {
+    const N: usize = 6;
+    let home = Home::new();
+    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).unwrap()).unwrap();
+    let args = json!({"description": "查 crate", "prompt": "Read Cargo.toml."}).to_string();
+    let calls: Vec<(&str, &str)> = (0..N).map(|_| ("subagent", args.as_str())).collect();
+    let mut plays = vec![Play::calls(&calls)];
+    plays.extend((0..=N).map(|_| Play::Holds));
+    let script = Script::new(plays);
+    let mut client = Client::connect(home.core_with_tools(&script, tools, TOKEN));
+    client.hello().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let parent = client.create("c1", &work).await;
+    client.say("c2", &parent, "派几个去查").await;
+    until("都停住", || script.requests().len() == N + 2).await;
+    for n in 1..=N {
+        let request = json!({"jsonrpc": "2.0", "id": format!("s{n}"), "method": "job.stop",
+            "params": {"session": parent, "job": format!("j{n}")}});
+        client.line(&request.to_string()).await;
+    }
+    let mut answered = std::collections::BTreeSet::new();
+    while answered.len() < N {
+        let line = client.next().await.expect("有回应");
+        let Some(id) = line["id"].as_str() else {
+            continue;
+        };
+        assert_eq!(line["result"], json!({}), "{line}");
+        answered.insert(id.to_string());
+    }
+    let reported = home
+        .log(&parent)
+        .iter()
+        .filter(|event| matches!(&event.body, Body::ChildReported(reported) if reported.reason == ChildReason::Stopped))
+        .count();
+    assert_eq!(reported, N, "每个都停下、记了回报");
+}

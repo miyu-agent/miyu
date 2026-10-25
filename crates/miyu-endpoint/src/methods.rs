@@ -267,7 +267,6 @@ pub(crate) fn call<'a>(
         "session.context" => answer(move || async move {
             crate::session_context::context(core, peer, caller.acting_for(), params(request)?).await
         }),
-        "job.stop" => answer(move || session::stop_job(core, caller, request)),
         "job.output" => {
             answer(move || async move { job_output::read(core, params(request)?).await })
         }

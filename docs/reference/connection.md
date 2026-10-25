@@ -36,7 +36,7 @@
 
 **先后**：
 
-1. 一个连接上的请求一条条办：上一条回了才读下一条。少数要等很久的在后台答，不挡后面的请求，回应照 `id` 对上：`model.call`、`memory.dream`、`link.preview`、带 `wait` 的 `fs.find`、`job.output`，和 `command.run` 里要等的几条（例如 `/dream`）。
+1. 一个连接上的请求一条条办：上一条回了才读下一条。少数要等很久的在后台答，不挡后面的请求，回应照 `id` 对上：`model.call`、`memory.dream`、`link.preview`、`job.stop`、带 `wait` 的 `fs.find`、`job.output`，和 `command.run` 里要等的几条（例如 `/dream`）。
 2. 先见结果，后见回应：一个命令引起的推送，一定比它的回应先到。
 3. 同一个 `id` 再发一次（同一个会话最近 1024 个之内）：照上一次的回应答，不再做一遍。被拒的不记，再发重新判。
 
