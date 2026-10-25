@@ -87,3 +87,23 @@ fn a_shelf_over_another_follows_both_and_counts_up() {
         "自己放着的不叠"
     );
 }
+
+/// 跟着架子活的（施工 U23 中下补）：拿着架子的都丢了，挂在上面的一起丢掉，弱引用取不回来。
+#[test]
+fn what_a_shelf_keeps_goes_with_its_last_holder() {
+    let base = Shelf::new(Catalog::new([object("read")]).unwrap());
+    let kept = Arc::new(());
+    let mine = Shelf::over_keeping(
+        &base,
+        Arc::new(|catalog: &Catalog| catalog.clone()),
+        Some(Box::new(Arc::clone(&kept))),
+    );
+    let weak = mine.downgrade();
+    let held = weak.upgrade().expect("还拿着");
+    assert_eq!(Arc::strong_count(&kept), 2, "挂在架子上");
+    drop(mine);
+    assert!(weak.upgrade().is_some(), "还有一个拿着");
+    drop(held);
+    assert!(weak.upgrade().is_none(), "都丢了取不回来");
+    assert_eq!(Arc::strong_count(&kept), 1, "挂着的一起丢掉");
+}

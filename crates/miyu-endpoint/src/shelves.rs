@@ -5,7 +5,9 @@
 //!
 //! 核心那一个换代了（装卸包、扩展登记、机主的脚本改了），叠在上面的读的时候跟着重拼；核心重找脚本时（`follow_scripts`）各人那一层
 //! 也重找；他的 `scripts/` 变了，重找他那一层。执行器、权限策略、放行出沙盒认来处、回合开头换快照都照会话手里这一个。他那一层的
-//! 脚本照他的会话的沙盒跑（MB-1），放行出沙盒对他一律不算（`miyu_session::Confines::of`）。
+//! 脚本照他的会话的沙盒跑（MB-1），放行出沙盒对他一律不算（`miyu_session::Confines::of`）。核心只记他的架子的弱引用：看着他
+//! `scripts/` 的监视挂在架子上（`Shelf::over_keeping`），他的会话都卸了、没人拿着架子了，监视跟着放掉，人多了句柄不攒着（施工
+//! U23 中下补）；再开会话时现造一个。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -14,7 +16,7 @@ use miyu_kernel::id::AccountId;
 use miyu_store::packages::Layer;
 use miyu_store::scripts::{HOME_PACKAGE, Script};
 use miyu_store::watch::{Watch, watch_dir};
-use miyu_tool::{Catalog, Compose, Shelf, Tool};
+use miyu_tool::{Catalog, Compose, Shelf, Tool, WeakShelf};
 
 use crate::Core;
 use crate::scripts::package;
@@ -26,11 +28,11 @@ const TARGET: &str = "scripts";
 #[derive(Default)]
 pub(crate) struct Shelves(Mutex<BTreeMap<AccountId, Mine>>);
 
-/// 一个人的：架子、他那一层登记上的脚本、看着他 `scripts/` 的（丢掉就停）。
+/// 一个人的：他的架子（只记弱引用：看着他 `scripts/` 的监视挂在架子上，他的会话都卸了、没人拿着架子了，监视跟着放掉，施工 U23
+/// 中下补）、他那一层登记上的脚本。
 struct Mine {
-    shelf: Shelf,
+    shelf: WeakShelf,
     scripts: Arc<Vec<Script>>,
-    _watch: Option<Watch>,
 }
 
 impl std::fmt::Debug for Shelves {
@@ -44,26 +46,39 @@ impl std::fmt::Debug for Shelves {
 type OwnLayer = (Vec<Script>, Vec<(String, Arc<dyn Tool>)>);
 
 impl Core {
-    /// 属主是 `account` 的会话拿的工具目录架子：机主这一侧的是核心那一个；别人的是叠在上面的，第一次造时找他那一层、看着他的
-    /// `scripts/`（造过的照旧那一个）。碰磁盘。
+    /// 属主是 `account` 的会话拿的工具目录架子：机主这一侧的是核心那一个；别人的是叠在上面的：还有会话拿着的照旧那一个，没有的
+    /// 现造（找他那一层、看着他的 `scripts/`）。碰磁盘。
     pub(crate) fn shelf_of(self: &Arc<Self>, account: &AccountId) -> Shelf {
         if self.machine_side(account) {
             return self.tools.clone();
         }
-        if let Some(mine) = self.people().get(account) {
-            return mine.shelf.clone();
+        if let Some(shelf) = self.live(account) {
+            return shelf;
         }
         let (scripts, tools) = self.own_layer(account);
-        let made = Mine {
-            shelf: Shelf::over(&self.tools, compose(tools)),
-            scripts: Arc::new(scripts),
-            _watch: self.watch_own(account),
-        };
-        self.people()
-            .entry(account.clone())
-            .or_insert(made)
-            .shelf
-            .clone()
+        let watch = self.watch_own(account);
+        let shelf = Shelf::over_keeping(
+            &self.tools,
+            compose(tools),
+            watch.map(|watch| Box::new(Mutex::new(watch)) as Box<dyn std::any::Any + Send + Sync>),
+        );
+        let mut people = self.people();
+        if let Some(alive) = people.get(account).and_then(|mine| mine.shelf.upgrade()) {
+            return alive;
+        }
+        people.insert(
+            account.clone(),
+            Mine {
+                shelf: shelf.downgrade(),
+                scripts: Arc::new(scripts),
+            },
+        );
+        shelf
+    }
+
+    /// `account` 还有会话拿着的那个架子。
+    fn live(&self, account: &AccountId) -> Option<Shelf> {
+        self.people().get(account)?.shelf.upgrade()
     }
 
     /// 只看一眼 `account` 的工具目录（手里没有核心的 `Arc` 的：显示名、预设页）：机主这一侧的是核心那一份；造过架子的照他的；还没造
@@ -72,24 +87,25 @@ impl Core {
         if self.machine_side(account) {
             return self.tools.current();
         }
-        match self.people().get(account) {
-            Some(mine) => mine.shelf.current(),
+        match self.live(account) {
+            Some(shelf) => shelf.current(),
             None => self.tools.current().without(HOME_PACKAGE),
         }
     }
 
     /// `account` 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：机主这一侧的是核心登记的全部；别人的是核心登记的
-    /// 里不挂 `~home` 的（包带的），加他自己那一层的（还没造架子的没有）。
+    /// 里不挂 `~home` 的（包带的），加他自己那一层的（有会话拿着他的架子的照那一份，没有的现找）。碰磁盘。
     pub(crate) fn scripts_for(&self, account: &AccountId) -> Vec<Script> {
         let all = self.scripts();
         if self.machine_side(account) {
             return all.to_vec();
         }
-        let own = self
+        let kept = self
             .people()
             .get(account)
-            .map(|mine| Arc::clone(&mine.scripts))
-            .unwrap_or_default();
+            .filter(|mine| mine.shelf.upgrade().is_some())
+            .map(|mine| Arc::clone(&mine.scripts));
+        let own = kept.unwrap_or_else(|| Arc::new(self.own_layer(account).0));
         all.iter()
             .filter(|script| package(script) != HOME_PACKAGE)
             .chain(own.iter())
@@ -97,22 +113,29 @@ impl Core {
             .collect()
     }
 
-    /// 造过架子的每个人那一层都重找一遍（核心重找脚本以后，`follow_scripts`：装卸包会让他那一层的包变）。碰磁盘。
+    /// 还有会话拿着架子的每个人那一层都重找一遍（核心重找脚本以后，`follow_scripts`：装卸包会让他那一层的包变）；没人拿着的
+    /// 记录拿掉。碰磁盘。
     pub(crate) fn refresh_own_shelves(&self) {
+        self.people()
+            .retain(|_, mine| mine.shelf.upgrade().is_some());
         let people: Vec<AccountId> = self.people().keys().cloned().collect();
         for account in people {
             self.refresh_own(&account);
         }
     }
 
-    /// 重找 `account` 那一层，换进他的架子。没造过的什么都不做。碰磁盘。
+    /// 重找 `account` 那一层，换进他的架子。没有会话拿着他的架子的什么都不做。碰磁盘。
     fn refresh_own(&self, account: &AccountId) {
-        if !self.people().contains_key(account) {
+        if self.live(account).is_none() {
             return;
         }
         let (scripts, tools) = self.own_layer(account);
-        if let Some(mine) = self.people().get_mut(account) {
-            mine.shelf.recompose(compose(tools));
+        let mut people = self.people();
+        let Some(mine) = people.get_mut(account) else {
+            return;
+        };
+        if let Some(shelf) = mine.shelf.upgrade() {
+            shelf.recompose(compose(tools));
             mine.scripts = Arc::new(scripts);
         }
     }

@@ -88,7 +88,7 @@ pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,
 };
 pub use settings::SettingsPort;
-pub use shelf::{Compose, Edition, Shelf};
+pub use shelf::{Compose, Edition, Shelf, WeakShelf};
 pub use stop::Stop;
 pub use todos::TODOWRITE;
 pub use usage::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};
