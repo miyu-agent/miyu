@@ -60,11 +60,14 @@ pub(crate) struct Sessions {
 struct Open {
     /// 在跑的会话，和它现在的工作目录。
     running: BTreeMap<SessionId, Running>,
-    /// 最近造会话的命令编号，和它造出的会话，照从旧到新。
-    created: VecDeque<(CommandId, SessionId)>,
+    /// 最近造会话的命令编号（连同属主：施工 BUG-1，两个账号碰巧用了同一个编号各造各的），和它造出的会话，照从旧到新。
+    created: VecDeque<(Made, SessionId)>,
     /// 这次运行里补回过去重的编号没有：第一次造会话时补一次。
     recalled: bool,
 }
+
+/// 一次造会话认谁：属主和命令编号。
+type Made = (AccountId, CommandId);
 
 #[derive(Debug)]
 struct Running {
@@ -126,7 +129,8 @@ pub(crate) struct Found {
 impl Sessions {
     /// 造一个会话：属主照 `who.owner`（施工 O-4 下：连接是谁，场所会话照对应表、系统账号定的）；有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
     /// 没写的照默认预设，施工 P-2 上，`presets.rs`），再找人格：`persona` 照 [`personas::resolve`]，预设不再参与（施工 P-4
-    /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找。
+    /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个属主同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找；
+    /// 别的账号碰巧用了同一个编号的照造新的（施工 BUG-1：以前只比编号，交回了别人的会话）。
     pub(crate) async fn create(
         &self,
         core: &Arc<Core>,
@@ -148,11 +152,12 @@ impl Sessions {
                 open.created.pop_front();
             }
         }
-        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
+        // 同一个属主同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
+        let made: Made = (who.owner.clone(), command.clone());
         let earlier = open
             .created
             .iter()
-            .find(|(id, _)| *id == command)
+            .find(|(seen, _)| *seen == made)
             .map(|(_, session)| session.clone());
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
@@ -192,7 +197,7 @@ impl Sessions {
                 dirs,
             },
         );
-        open.created.push_back((command, id.clone()));
+        open.created.push_back((made, id.clone()));
         if open.created.len() > REMEMBERED {
             open.created.pop_front();
         }
@@ -384,22 +389,33 @@ pub(crate) fn person(core: &Core, caller: &crate::hello::Caller) -> By {
     }
 }
 
-/// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话，`session.created` 的 `cause` 就是
-/// 造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧到新。
-async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {
+/// 核心重启以后补回去重的编号（施工 4-9 再补三上）：每个账号的会话合起来最新的 [`REMEMBERED`] 个（施工 BUG-1：以前只读机主的，
+/// 成员、系统账号的会话重启以后认不出重发），`session.created` 的 `cause` 就是造会话的命令编号，属主是会话所在的账号。读不了的
+/// 跳过。在阻塞线程里读，交回的照从旧到新。
+async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
     let root = core.root.clone();
-    let admin = core.admin.clone();
     tokio::task::spawn_blocking(move || {
-        let Ok(ids) = root.sessions(&admin) else {
-            return Vec::new();
-        };
-        let mut found: Vec<(CommandId, SessionId)> = ids
+        let mut ids: Vec<(SessionId, AccountId)> = root
+            .accounts()
+            .unwrap_or_default()
+            .into_iter()
+            .flat_map(|account| {
+                root.sessions(&account)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .take(REMEMBERED)
+                    .map(move |id| (id, account.clone()))
+            })
+            .collect();
+        // 会话编号是 UUIDv7：照编号倒着排就是从新到旧。
+        ids.sort_by(|(a, _), (b, _)| b.as_str().cmp(a.as_str()));
+        let mut found: Vec<(Made, SessionId)> = ids
             .into_iter()
             .take(REMEMBERED)
-            .filter_map(|id| {
-                let event = first_event(&root.session_dir(&admin, &id)).ok()?;
+            .filter_map(|(id, account)| {
+                let event = first_event(&root.session_dir(&account, &id)).ok()?;
                 match (&event.body, event.cause) {
-                    (Body::SessionCreated(_), Some(cause)) => Some((cause, id)),
+                    (Body::SessionCreated(_), Some(cause)) => Some(((account, cause), id)),
                     _ => None,
                 }
             })

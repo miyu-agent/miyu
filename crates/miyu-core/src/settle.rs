@@ -33,15 +33,31 @@ pub fn spawn(
                 return;
             }
             while let Ok(Ok(())) = tokio::time::timeout(quiet, changes.changed()).await {}
-            match tokio::task::spawn_blocking(release).await {
-                Ok(released) => tracing::debug!(target: TARGET, released, "heap settled"),
-                Err(error) => {
-                    tracing::error!(target: TARGET, panic = error.is_panic(), "heap settle panicked")
-                }
+            if !settled(tokio::task::spawn_blocking(release).await) {
+                return;
             }
             then().await;
         }
     })
+}
+
+/// 还了一次以后怎么收，交回要不要接着盯。还了的记一行 `DEBUG`；崩了的记 `ERROR heap settle panicked`，接着盯；被取消的是运行时
+/// 在收尾（停核心时阻塞任务排不上，施工 BUG-1：以前也当成崩了打 `ERROR`），记一行 `DEBUG`，不再盯。
+fn settled(result: Result<bool, tokio::task::JoinError>) -> bool {
+    match result {
+        Ok(released) => {
+            tracing::debug!(target: TARGET, released, "heap settled");
+            true
+        }
+        Err(error) if error.is_panic() => {
+            tracing::error!(target: TARGET, panic = true, "heap settle panicked");
+            true
+        }
+        Err(_) => {
+            tracing::debug!(target: TARGET, "heap settle cancelled");
+            false
+        }
+    }
 }
 
 #[cfg(test)]

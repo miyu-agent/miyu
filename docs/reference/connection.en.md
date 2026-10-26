@@ -38,7 +38,7 @@ Chinese version: [connection.md](connection.md).
 
 1. Requests on one connection are handled one at a time: the next line is read after the previous one is answered. A few slow ones are answered in the background without blocking later requests, matched by `id`: `model.call`, `memory.dream`, `link.preview`, `job.stop`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
 2. Results before responses: the pushes a command causes always arrive before its response.
-3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again.
+3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again. This is for resending after a dropped connection, and it **does not depend on the connection**: a new connection that reuses an `id` used before is treated as a resend, gets the earlier response, and nothing happens (for example `session.send` answers, but the message never reaches the session). So every connection's `id`s must differ from all earlier ones; the simplest way is a random prefix per connection followed by an increasing number. `session.create` also recognizes resends by `id`: the same account creating again with the same `id` gets back the session made the first time, even after the core restarts; different accounts that happen to use the same `id` each get their own session.
 
 ## `hello`
 

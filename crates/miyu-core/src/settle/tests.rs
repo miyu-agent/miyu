@@ -53,3 +53,36 @@ async fn a_burst_of_requests_is_settled_once_and_quiet_stays_asleep() {
     assert!(released(2).await, "下一阵过去再还一次");
     task.abort();
 }
+
+/// 还内存的那一次被取消了（施工 BUG-1：停核心时运行时在收尾，阻塞任务排不上）：不当成崩了打 `ERROR`，不再接着盯；真 panic 的才
+/// 打 `ERROR heap settle panicked`，接着盯。
+#[tokio::test]
+async fn a_cancelled_settle_at_shutdown_is_not_reported_as_a_panic() {
+    use miyu_log::{LevelFilter, Memory};
+    let cancelled = {
+        let task = tokio::spawn(std::future::pending::<bool>());
+        task.abort();
+        task.await.expect_err("叫停了")
+    };
+    let panicked = tokio::spawn(async { panic!("boom") })
+        .await
+        .map(|()| true)
+        .expect_err("崩了");
+    let memory = Memory::new();
+    let (after_cancel, after_panic) = tracing::subscriber::with_default(
+        miyu_log::subscriber(memory.clone(), LevelFilter::DEBUG, None),
+        || (settled(Err(cancelled)), settled(Err(panicked))),
+    );
+    assert!(!after_cancel, "取消的不再盯");
+    assert!(after_panic, "崩了的接着盯");
+    let lines = memory.lines();
+    let errors: Vec<&String> = lines
+        .iter()
+        .filter(|line| line.contains(" ERROR "))
+        .collect();
+    assert_eq!(errors.len(), 1, "{lines:?}");
+    assert!(
+        errors[0].contains("heap settle panicked panic=true"),
+        "{lines:?}"
+    );
+}

@@ -114,6 +114,11 @@ pub async fn is_closed(client: &mut Client) -> bool {
 
 /// 机主发一个邀请码，用它注册 `username`，交回这个人登录进来的连接。
 pub async fn member(core: &Arc<Core>, username: &str) -> Client {
+    member_with_token(core, username).await.0
+}
+
+/// 同 [`member`]，连同登录令牌：重启以后（同一个数据根上换一份核心）照它再登录。
+pub async fn member_with_token(core: &Arc<Core>, username: &str) -> (Client, String) {
     let mut owner = local(core).await;
     let code = owner.call("i", "account.invite", json!({})).await["result"]["code"]
         .as_str()
@@ -134,5 +139,5 @@ pub async fn member(core: &Arc<Core>, username: &str) -> Client {
         .to_string();
     let mut back = Client::connect(Arc::clone(core));
     hello_with(&mut back, json!({"login": token})).await;
-    back
+    (back, token)
 }
