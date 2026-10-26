@@ -94,6 +94,7 @@ mod nested_asking;
 mod nested_calls;
 mod once;
 mod once_pools;
+mod once_probe;
 mod once_shared;
 mod once_side;
 mod outside_sandbox;

@@ -705,6 +705,7 @@ flowchart TB
 6. **全在冷却**（第四条第 2 条）：`model.called` 没有端点，分类 `cooling`，原话写每个候选为什么、到什么时候，照候选的先后，英文，例如 `all candidates cooling: deepseek/deepseek-flash key 1 rate_limited until 2026-10-01T08:12:30.412Z, bigmodel/glm-5.3-flash key 1 auth until 2026-10-01T08:20:00.077Z`（没写 key 的不写 `key <第几个>`）。`wait_ms` 是最早恢复的还要多久。内核照「出错再来」：不超过 2 分钟的等着再来，超过的这一轮以出错结束。头照 `model.list` 的 `state` 说清哪个模型为什么不能用、多久以后恢复。`miyu ask` 以退出码 5 结束。
 7. **换了模型出通知**：每次请求说完（主请求、辅助请求都算），actor 比端口的 `limits()` 和上一次交给内核的：变了的交 `Input::Limits`，`Handle` 的限额跟着换。限额里的模型变了（钉住的池换了成员、成了以后），推 `model.changed`（`why` 是 `failover`）。轮换的池限额里的模型总是 `none`，不推（`session/actor.md` 第 7 条第 8 款）。
 8. 出错收场时，还有别的候选这时就能用的，记一行 `INFO failover from=<供应商/模型> to=<供应商/模型> class=…`，带会话编号（`to` 是照第四条这一刻会挑到的下一个；8-25 起一家一个 key，没有只换 key 的那一种）。别的候选都在冷却、只剩等的不记。
+9. **全冷却只探一个**（施工 Q-4 下，设计 43 第三节第 5 条第 4 款，照 magpie 的半开探测）：冷却到期、失败次数还没清零的是半开（`Cooldowns::recovered`）。不止一个候选、没有一个健康的（每个不是在冷却、就是半开）时，这一次只挑半开里最早恢复的那一个，不留别的候选：它失败了不再往下换，冷却照记，下一次请求再探下一个；它成了，失败次数清零，池就回来了。有健康的候选时照旧照先后挑、出错换下一个。说到一半断了的那一个照旧先发它（第四条第 3 条）。不另发探测请求，用的是真请求。
 
 **六、会话里换模型**（8-10）
 
@@ -1162,6 +1163,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/tests/route.rs`、`route_pools.rs` | 假服务器：收到这一家的 key、重启还是它、老的 `keys` 报不认识（8-25；8-6 那几条照会话编号挑 key 的删了），连同几种 `no_model` 不发、没写 key 不带认证头、开着的会话钉着造它时的模型、钉着的那一家没了退回这一轮的 `models.chat` 以后钉在它上面、造的时候没配的配好以后用上、窗口照配置）；池（8-8，`route_pools.rs`）：钉住的一个会话一直发给一个成员、新会话照指针分开、认不出的成员跳过，载入照日志认回钉着的、指针写进 `pools.json` 重启读回来，轮换的一次一个，这时用不了的跳过、钉到下一个，池没了退回 `chat` 以后钉在它上面，限额照钉着的、轮换的取小的，`session.created` 记下会话的引用；429 换池里的下一个、当场再来，说到一半断了还发给它，全在冷却交 `cooling`，只有一个候选照发，限额变了交内核、推 `model.changed`（8-9，放在 `route_failover.rs`：另有轮换的池跳过冷却的、不推，换端点数进 5 次，请求本身有错的不换不记；`failover_log.rs`：两行运行日志） | 8-6、8-8、8-9 |
 | `crates/miyu-session/tests/route_ordered.rs`（Q-4 上） | 照先后的池：两个会话每次都发给第一个、限额照它；第一个出错换到第二个，冷却过了回到第一个。窗口放不下的不换过去：钉住的池主力出错时，约四万 token 的请求不发给窗口 32000 的成员 |
 | `crates/miyu-session/tests/route_non_api.rs`、`quota_log.rs`、`once_side.rs` 的 `an_out_of_quota_normal_pool_falls_back_too`（Q-4 中） | 池里第一家回 200 的 HTML 页、空的响应体、不是应答的 JSON，三家驱动都报可重试、换到下一个；402 额度用完换到别的成员，冷却照供应商说的两小时，记 `WARN provider out of quota` 带供应商、模型、冷却到的时刻；一次性旁路请求遇到额度用完照样退到会话的模型 |
+| `crates/miyu-session/tests/once_probe.rs`（Q-4 下） | 两个成员都失败过、都冷却过了还没成功过：只探最早恢复的那一个，它又失败就到此为止、不换到另一个；下一次探另一个，成了。有健康的成员时照旧，出错换下一个 |
 | `crates/miyu-kernel/src/session/tests/scenario/models.rs`、`session/tests/configure.rs`、`scenario/breaker.rs`、`scenario/manual.rs` | `Configure`：一样的不记、落了盘才回应、回合进行中的下一轮生效、撤掉的回合里的也算、载入照日志算，回合开始交引用，`replaced` 记在注入前面、对不上的不理，`models.chat` 也没有的不记，`failover` 不管分类当场再来、数进 5 次，`cooling`、`no_model`，换模型解除压缩的暂停、失败从 0 数（`breaker.rs`），手动压缩、清空那一轮不交引用（`manual.rs`） | 8-6、8-9、8-10 |
 | `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行 | 8-10 |
 | `crates/miyu-session/tests/route_turn.rs`（8-34 那一条） | 供应商改了名：钉着旧编号的下一轮照新编号发，内核记一条（`replaced` 是旧的），不退回 `models.chat` | 8-34 |

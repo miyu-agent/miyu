@@ -91,12 +91,17 @@ impl Routes {
         if let Some(used) = seat.used {
             choices = self.fitting(config, choices, used)?;
         }
-        let at = choice::pick(&choices, seat.sticky, &self.data, wall_now())?;
+        let (at, probing) = choice::pick(&choices, seat.sticky, &self.data, wall_now())?;
         let choice = choices.remove(at);
+        // 探的那一个不留别的候选（施工 Q-4 下）：失败了不再往下换。
+        let others = match probing {
+            true => Vec::new(),
+            false => choices.into_iter().map(Choice::who).collect(),
+        };
         let picked = Picked {
             routes: self.clone(),
             choice,
-            others: choices.into_iter().map(Choice::who).collect(),
+            others,
             pool: matches!(resolved, Resolved::Pool(_)),
         };
         Ok((picked, pins))

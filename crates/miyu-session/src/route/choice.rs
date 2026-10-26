@@ -6,6 +6,8 @@
 //! - 挑（[`pick`]）：上一次主请求说到一半断了的，还发给它，不管它冷不冷；不然取排在最前、没在冷却的（这一家整个在冷却、这一家
 //!   的这个模型在冷却都算）；都在冷却的，只有一个候选的照样发它，不止一个的不发，交 `cooling`：原话写每个候选为什么、
 //!   到什么时候，要等的是最早恢复的那一个还要多久（第五条第 6 条）。
+//! - 半开探测（施工 Q-4 下）：不止一个候选、没有一个健康的（每个不是在冷却、就是冷却刚过还没成功过），只挑最早恢复的那一个，
+//!   这一次不留别的候选：它失败了不再往下换，下一次请求再探下一个；它成了，失败次数清零。
 
 use miyu_http::Endpoint;
 use miyu_kernel::time::Timestamp;
@@ -89,28 +91,50 @@ impl Routes {
     }
 }
 
-/// 挑第几个（见模块的说明）：`sticky` 是上一次主请求说到一半断了的那一个（主请求才交），`now` 是这一刻。
+/// 挑第几个（见模块的说明）：`sticky` 是上一次主请求说到一半断了的那一个（主请求才交），`now` 是这一刻。交回挑中的第几个，和
+/// 这一次是不是探（施工 Q-4 下：探的那一个失败了不再往下换）。
 pub(super) fn pick(
     choices: &[Choice],
     sticky: Option<&Candidate>,
     data: &ModelData,
     now: Timestamp,
-) -> Result<usize, Unsent> {
+) -> Result<(usize, bool), Unsent> {
     if let Some(at) = sticky.and_then(|sticky| choices.iter().position(|each| each.who == *sticky))
     {
-        return Ok(at);
+        return Ok((at, false));
     }
-    let cooling: Vec<Option<Cooling>> = data.cooldown(|table, _| {
-        choices
+    let (cooling, recovered): (Vec<Option<Cooling>>, Vec<Option<Timestamp>>) =
+        data.cooldown(|table, _| {
+            choices
+                .iter()
+                .map(|each| {
+                    (
+                        table.cooling(&each.who, now),
+                        table.recovered(&each.who, now),
+                    )
+                })
+                .unzip()
+        });
+    // 没有一个健康的（不是在冷却、就是冷却刚过还没成功过），只探最早恢复的那一个（施工 Q-4 下，半开探测）。
+    let healthy = cooling
+        .iter()
+        .zip(&recovered)
+        .any(|(cooling, recovered)| cooling.is_none() && recovered.is_none());
+    if choices.len() > 1
+        && !healthy
+        && let Some((at, _)) = recovered
             .iter()
-            .map(|each| table.cooling(&each.who, now))
-            .collect()
-    });
+            .enumerate()
+            .filter_map(|(at, until)| until.map(|until| (at, until)))
+            .min_by_key(|(_, until)| *until)
+    {
+        return Ok((at, true));
+    }
     if let Some(at) = cooling.iter().position(Option::is_none) {
-        return Ok(at);
+        return Ok((at, false));
     }
     if choices.len() == 1 {
-        return Ok(0);
+        return Ok((0, false));
     }
     let all: Vec<(&Choice, Cooling)> = choices.iter().zip(cooling.into_iter().flatten()).collect();
     let earliest = all

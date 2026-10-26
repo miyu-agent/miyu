@@ -190,6 +190,15 @@ impl Cooldowns {
         self.units.remove(candidate);
     }
 
+    /// 候选 `candidate` 在 `now` 这一刻是不是半开（施工 Q-4 下）：冷却到期了、失败次数还没清零（成功过一次才清零）。是的话交回
+    /// 它冷却到的那一刻：照它挑最早恢复的那一个。
+    pub fn recovered(&self, candidate: &Candidate, now: Timestamp) -> Option<Timestamp> {
+        self.units
+            .get(candidate)
+            .filter(|entry| entry.until <= now)
+            .map(|entry| entry.until)
+    }
+
     /// 候选 `candidate` 在 `now` 这一刻在不在冷却：在的话到什么时候、为什么。
     pub fn cooling(&self, candidate: &Candidate, now: Timestamp) -> Option<Cooling> {
         self.units
