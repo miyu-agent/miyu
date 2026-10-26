@@ -250,3 +250,18 @@ fn a_session_working_elsewhere_is_said_once() {
     );
     assert_eq!(screen.matches("这个会话在").count(), 1, "{screen}");
 }
+
+#[test]
+fn a_reply_that_comes_after_the_turn_is_still_waited_for() {
+    // 回应等核心同步完才交（施工 V-19）：这一轮先结束了，不收尾，等回应到了说完它要说的再收。
+    let used = under(&["home", "src", "proj"]);
+    let plan = Plan {
+        cwd: under(&["home"]).to_string_lossy().into_owned(),
+        ..plan(Format::Text, Language::Chinese)
+    };
+    let mut messages = a_turn("completed");
+    messages.push(accepted(&used));
+    let Fed { step, screen, .. } = feed(&plan, false, &messages);
+    assert_eq!(step, Step::Done(exit::OK), "{screen}");
+    assert_eq!(screen.matches("这个会话在").count(), 1, "{screen}");
+}

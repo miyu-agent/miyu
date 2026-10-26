@@ -134,6 +134,17 @@ fn feed(language: Language, live: bool, messages: &[Value]) -> Fed {
             break;
         }
     }
+    // 这一串里没有回应的：回应总会到（可能晚于推送，施工 V-19），补一条什么都不说的接受。
+    if step == Step::Going
+        && !messages
+            .iter()
+            .any(|message| message["id"] == json!("compact-1"))
+    {
+        step = follow.take(
+            &json!({"jsonrpc": "2.0", "id": "compact-1", "result": {"events": [9]}}),
+            &mut screen,
+        );
+    }
     Fed {
         step,
         out: out.text(),

@@ -36,7 +36,25 @@ impl Follow<'_> {
             self.wait_line(screen);
             return Step::Going;
         }
+        self.wrap_up(screen)
+    }
+
+    /// 收尾（施工 V-19，`cli/ask.md`）：自己那条命令的回应到了的当场收；还没到的先记下，等它到了再收（`wrap_up_late`）。回应要
+    /// 等核心同步完才交，一轮可能比它先结束：先收尾就丢了回应里要说的话（会话在哪干活、不受信的项目）。
+    pub(super) fn wrap_up(&mut self, screen: &mut Screen<'_>) -> Step {
+        if !self.replied {
+            self.concluding = true;
+            return Step::Going;
+        }
         Step::Done(self.conclude(screen))
+    }
+
+    /// 回应到了：之前该收尾、在等它的，这时收。
+    pub(super) fn wrap_up_late(&mut self, screen: &mut Screen<'_>) -> Step {
+        match self.concluding {
+            true => Step::Done(self.conclude(screen)),
+            false => Step::Going,
+        }
     }
 
     /// 收好这一轮的屏幕：只想了、没回答的（例如被打断了），思考那一行收个尾；回答末尾补上换行；最后是一块、一段思考的，

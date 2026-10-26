@@ -75,7 +75,7 @@ impl Follow<'_> {
             return Step::Going;
         }
         if self.agents.settled() {
-            return Step::Done(self.conclude(screen));
+            return self.wrap_up(screen);
         }
         self.wait_line(screen);
         Step::Going

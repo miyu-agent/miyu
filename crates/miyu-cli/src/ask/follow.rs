@@ -105,6 +105,10 @@ pub(crate) struct Follow<'p> {
     waits: bool,
     /// 第一轮结束过了：之后等着的时候开的每一轮都跟。
     ended_first: bool,
+    /// 自己发的那条命令的回应到了（施工 V-19）：回应要等核心同步完才交，可能晚于这一轮的推送。
+    replied: bool,
+    /// 该收尾了、回应还没到：等回应到了再收（施工 V-19）。
+    concluding: bool,
     /// 最近结束的那一轮为什么结束：收尾照它说（施工 7-9）。
     reason: String,
     /// 结束了的每一轮，照先后：`--format json` 的 `turns`（施工 7-9）。
@@ -147,6 +151,8 @@ impl<'p> Follow<'p> {
             redo: None,
             waits: false,
             ended_first: false,
+            replied: false,
+            concluding: false,
             reason: String::new(),
             turns: Vec::new(),
             total: Sum::default(),
@@ -192,6 +198,7 @@ impl<'p> Follow<'p> {
         // 自己发的那条命令的回应：被拒绝的（没有这个会话、会话停了……）说清楚就走；接受了的，说会话实际在
         // 哪个目录里干活。
         if message["id"] == json!(self.sent) {
+            self.replied = true;
             if let Some(error) = message.get("error") {
                 let reason = error["message"].as_str().unwrap_or_default();
                 say(screen.err, &self.plan.language.refused(reason));
@@ -205,10 +212,10 @@ impl<'p> Follow<'p> {
                         return step;
                     }
                 }
-                return Step::Going;
+                return self.wrap_up_late(screen);
             }
             self.opened(&message["result"], screen);
-            return Step::Going;
+            return self.wrap_up_late(screen);
         }
         if message["params"]["session"] != json!(self.session) {
             return Step::Going;
