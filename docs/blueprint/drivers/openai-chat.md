@@ -52,7 +52,7 @@
 | 格 | 取值 | 默认 | DeepSeek（档案的 `[providers.deepseek]`） |
 |---|---|---|---|
 | `output_limit` | `MaxTokens` 写 `max_tokens`；`MaxCompletionTokens` 写 `max_completion_tokens` | `MaxTokens` | 同默认 |
-| `reasoning` | `Drop` 不回传；`Replay { field, always }`：`field` 是 `ReasoningContent`（`reasoning_content`）或 `Reasoning`（`reasoning`），`always` 是没有思考时也写空串 | `Drop` | `Replay { ReasoningContent, always: true }` |
+| `reasoning` | `Drop` 不回传；`Echo` 照来路回传（施工 RP-1，见「编码」第 4 条）；`Replay { field, always }`：`field` 是 `ReasoningContent`（`reasoning_content`）或 `Reasoning`（`reasoning`），`always` 是没有思考时也写空串 | `Echo` | `Replay { ReasoningContent, always: true }` |
 | `stream_usage` | 发不发 `stream_options.include_usage` | 发 | 同默认 |
 | `continuation` | `None` 不会接着写；`Prefix { field, path }`：`field` 是 `Prefix`（`prefix`）或 `Partial`（`partial`） | `None` | `Prefix { Prefix, "/beta/chat/completions" }` |
 | `toggle` | 开关思考的字段（施工 8-18）：`Toggle { field, on, off }`，`on`、`off` 照原样的 JSON 发；没有的是没有。装在 `Box` 里 | 没有 | `thinking`：`{"type":"enabled"}`、`{"type":"disabled"}` |
@@ -73,6 +73,7 @@
 4. **assistant**：
    - 正文各块直接接上，不补换行，写进 `content`。没有正文、有工具调用的，`content` 写 `null`；两样都没有的，写空串。
    - 思考各块直接接上。开关是 `Drop` 的不写；`Replay` 的写进 `reasoning_content` 或 `reasoning`，没有思考的，`always` 才写空串。思考的私有数据（签名这类）不发。
+   - `Echo`（施工 RP-1，默认）：这条 assistant 里第一块私有数据是这个驱动的、记着来路的思考，来路是 `reasoning_content` 的写进 `reasoning_content`，是 `reasoning` 的写进 `reasoning`；各块照样直接接上，接起来是空的不写。没有这样的思考块的（没思考、别的驱动的思考、以前的日志没记来路、来路是 `reasoning_text`）不写。为什么：模型回了思考，就是会思考，照它来的那一格交回去，接上上一步的思路（2026-10-26 项目主人定；不回传时同一个任务的思考 token 多约六成，`docs/construction/RP-1-思考照来路回传.md`）。
    - 工具调用写进 `tool_calls`，见第 5 条；没有的不写这一格。图片、文件、不认识的块不写。
    - 一格的先后：`role`、`content`、`reasoning_content`、`reasoning`、`tool_calls`、`prefix`、`partial`。
 5. **工具调用**：`{"id":…,"type":"function","function":{"name":…,"arguments":…}}`。
@@ -126,7 +127,7 @@
 6. 顶层的 `usage`，有 `prompt_tokens` 的记下（见下表），以后来的盖掉以前的。
 7. 只看 `choices[0]`，没有就完了。它里面的 `usage`（Moonshot）照第 6 条。
 8. `delta` 里照这个先后：
-   - 思考：`reasoning_content`、`reasoning`、`reasoning_text` 里第一个不是空串的；
+   - 思考：`reasoning_content`、`reasoning`、`reasoning_text` 里第一个不是空串的。这一次响应里思考头一次来时，接着给这一块交私有数据 `{"driver":"openai-chat","data":{"field":<来自哪一格>}}`（施工 RP-1，「编码」第 4 条的 `Echo` 照它）；
    - 正文：`content`，不是空串的；
    - 工具调用：`tool_calls` 里的每一片，见下。
 9. 思考、正文一次响应各最多一块：第一次来时 `Start`，以后都是这一块的 `Text`。块照第一次出现的先后编号，从 0 数起，和工具调用共用一套编号。
@@ -324,7 +325,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
    - 三种驱动接同一个地址，各发各的路径（`/chat/completions`、`/messages`、`/responses`），key 一样，认证头照各自的驱动。
    - 列模型照供应商的驱动：这一页的 `GET /models`。
 3. **开关**：照默认（没实测过的不开）：`max_tokens`、发 `stream_options`、不接着写、没有思考的开关、不是约束解码（目录写着 `toggle` 的模型不多 `off`）。思考回传照第 4 条。
-4. **思考回传照目录的 `interleaved`**（对所有走这一页的供应商都成立，不只 Zen）：
+4. **思考回传照目录的 `interleaved`**（对所有走这一页的供应商都成立，不只 Zen；目录没写的照默认 `Echo`，施工 RP-1）：
    - 目录给交错思考的模型写了 `interleaved`。`{"field":"reasoning_content"}` 的，`reasoning` 开关当 `Replay { ReasoningContent, always: true }`；`{"field":"reasoning"}` 的当 `Replay { Reasoning, always: true }`；别的写法（`true`、`{"field":"reasoning_details"}`）不认，照档案。
    - 只认第 1、2 层对上的（手写指定的、供应商对上了的）：字段名是供应商接口的写法，不是模型的性质，按名字对上的中转不借。
    - 档案写了 `reasoning` 的照档案（DeepSeek 官方）；只管走这一页的模型。

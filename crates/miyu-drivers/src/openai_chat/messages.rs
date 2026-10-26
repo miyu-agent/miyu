@@ -139,6 +139,14 @@ impl Writer<'_> {
         let content = (!content.is_empty() || tool_calls.is_empty()).then_some(content);
         let (reasoning_content, reasoning) = match self.compat.reasoning {
             ReasoningReplay::Drop => (None, None),
+            ReasoningReplay::Echo => {
+                let thought = (!reasoning.is_empty()).then_some(reasoning);
+                match came_from(blocks) {
+                    Some(ReasoningField::ReasoningContent) => (thought, None),
+                    Some(ReasoningField::Reasoning) => (None, thought),
+                    None => (None, None),
+                }
+            }
             ReasoningReplay::Replay { field, always } => {
                 let thought = (!reasoning.is_empty() || always).then_some(reasoning);
                 match field {
@@ -324,6 +332,30 @@ fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
         }
     }
     ids
+}
+
+/// 一条 assistant 里的思考来自哪一格（施工 RP-1）：第一块私有数据是这个驱动的、记着来路的思考说了算。来路是
+/// `reasoning_text` 的、没记的、别的驱动的，交回空的：不知道上游收不收。
+fn came_from(blocks: &[Block]) -> Option<ReasoningField> {
+    #[derive(Deserialize)]
+    struct Field {
+        field: String,
+    }
+    let field = blocks.iter().find_map(|block| {
+        let Block::Reasoning(thought) = block else {
+            return None;
+        };
+        let private = thought
+            .private
+            .as_ref()
+            .filter(|private| private.driver.as_str() == FAMILY)?;
+        serde_json::from_str::<Field>(private.data.get()).ok()
+    })?;
+    match field.field.as_str() {
+        "reasoning_content" => Some(ReasoningField::ReasoningContent),
+        "reasoning" => Some(ReasoningField::Reasoning),
+        _ => None,
+    }
 }
 
 /// 私有数据里供应商自己的调用编号：`{"id":"…"}`。

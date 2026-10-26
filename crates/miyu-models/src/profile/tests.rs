@@ -32,6 +32,8 @@ fn each_switch_lays_over_the_default() {
             .compat()
     };
     assert_eq!(compat(json!({})), Compat::default());
+    // 没写思考回传的照默认：照来路回传（施工 RP-1）。
+    assert_eq!(compat(json!({})).reasoning, ReasoningReplay::Echo);
     assert_eq!(
         compat(json!({"output_limit": "max_completion_tokens", "stream_usage": false})),
         Compat {
@@ -40,9 +42,13 @@ fn each_switch_lays_over_the_default() {
             ..Compat::default()
         }
     );
+    // 写了 drop 的不回传（施工 RP-1 起和默认不一样了）。
     assert_eq!(
         compat(json!({"reasoning": "drop", "continuation": "none"})),
-        Compat::default()
+        Compat {
+            reasoning: ReasoningReplay::Drop,
+            ..Compat::default()
+        }
     );
     // 开关思考的字段（施工 8-18）：值照原样的 JSON，什么形状都收。
     assert_eq!(

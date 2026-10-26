@@ -1,6 +1,6 @@
 //! OpenAI 兼容对话接口的解码（`docs/designs/05-内核接口.md` 第七节「怎么解码」）：流的样本在
 //! `docs/designs/samples/drivers/openai-chat/streams/`，`.sse` 是进去的字节（照各家文档和调研手写），
-//! `.txt` 是解出来的，一行一条，逐字节比对。还查：从哪里切开喂都一样；内核的累积器一条都不拒；
+//! `.txt` 是解出来的，一行一条，逐字节比对；思考头一次来时挂上来路（施工 RP-1）。还查：从哪里切开喂都一样；内核的累积器一条都不拒；
 //! 解出来的回复编码回去，用的是供应商的编号；驱动的接口走一遍。
 
 use std::collections::BTreeMap;
@@ -92,6 +92,25 @@ fn render((deltas, ending): &(Vec<Delta>, Ending)) -> String {
         None => "ok".to_string(),
     });
     lines.join("\n") + "\n"
+}
+
+/// 思考的来路照头一次来的那一格记，只记一次（施工 RP-1）：后来换了格的也不再记。
+#[test]
+fn reasoning_remembers_the_field_it_came_from() {
+    let sse = concat!(
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"reasoning_text\":\"想\"}}]}\n\n",
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"再想\"}}]}\n\n",
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"好\"},\"finish_reason\":\"stop\"}]}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let got = render(&decode(&[sse.as_bytes()]));
+    assert!(
+        got.starts_with(
+            "start 0 reasoning\nprivate 0 openai-chat {\"field\":\"reasoning_text\"}\ntext 0 \"想\"\ntext 0 \"再想\"\n"
+        ),
+        "{got}"
+    );
+    assert_eq!(got.matches("private").count(), 1, "{got}");
 }
 
 #[test]

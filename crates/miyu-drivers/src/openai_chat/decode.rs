@@ -199,15 +199,25 @@ impl Decoder {
         }
         if let Some(delta) = choice.delta {
             let reasoning = [
-                delta.reasoning_content,
-                delta.reasoning,
-                delta.reasoning_text,
+                ("reasoning_content", delta.reasoning_content),
+                ("reasoning", delta.reasoning),
+                ("reasoning_text", delta.reasoning_text),
             ]
             .into_iter()
-            .flatten()
-            .find(|text| !text.is_empty());
-            if let Some(text) = reasoning {
+            .find_map(|(field, text)| {
+                text.filter(|text| !text.is_empty())
+                    .map(|text| (field, text))
+            });
+            if let Some((field, text)) = reasoning {
+                let first = self.reasoning.is_none();
                 let index = open(&mut self.reasoning, &mut self.next, Kind::Reasoning, out);
+                // 头一次来时记下来路（施工 RP-1）：照来路回传照它写回那一格。
+                if first {
+                    out.push(Delta::Private {
+                        index,
+                        private: private_field(field),
+                    });
+                }
                 out.push(Delta::Text { index, text });
             }
             if let Some(text) = delta.content.filter(|text| !text.is_empty()) {
@@ -310,6 +320,20 @@ fn private_id(id: &str) -> Private {
         driver: DriverFamily::parse(FAMILY).expect("驱动家族合写法"),
         data: serde_json::from_str::<RawJson>(&data).expect("刚写出来的是 JSON"),
     }
+}
+
+/// 私有数据 `{"field":"…"}`（施工 RP-1）：思考来自哪一格，照来路回传时照它写回去。
+fn private_field(field: &str) -> Private {
+    let data = serde_json::to_string(&FieldOnly { field }).expect("一个字符串写得成 JSON");
+    Private {
+        driver: DriverFamily::parse(FAMILY).expect("驱动家族合写法"),
+        data: serde_json::from_str::<RawJson>(&data).expect("刚写出来的是 JSON"),
+    }
+}
+
+#[derive(serde::Serialize)]
+struct FieldOnly<'a> {
+    field: &'a str,
 }
 
 #[derive(serde::Serialize)]

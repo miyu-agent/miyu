@@ -1,4 +1,5 @@
 start 0 reasoning
+private 0 openai-chat {"field":"reasoning_content"}
 text 0 "用户想看"
 text 0 "目录。"
 start 1 text

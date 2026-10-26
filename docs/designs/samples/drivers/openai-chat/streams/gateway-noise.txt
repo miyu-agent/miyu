@@ -1,4 +1,5 @@
 start 0 reasoning
+private 0 openai-chat {"field":"reasoning"}
 text 0 "想一想"
 start 1 text
 text 1 "好了"

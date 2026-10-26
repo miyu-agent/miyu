@@ -380,7 +380,7 @@ fn each_model_speaks_through_its_own_driver() {
 }
 
 /// 交错思考（施工 8-14）：走 openai-chat 的照目录的字段回传、`always` 是真的；档案写了 `reasoning` 的照档案；认不出的字段、
-/// 不走 openai-chat 的不管。
+/// 不走 openai-chat 的不管，照驱动的默认（施工 RP-1 起是照来路回传）。
 #[test]
 fn interleaved_thinking_is_replayed_unless_the_profile_says_otherwise() {
     let held = go_held(false);
@@ -411,10 +411,11 @@ fn interleaved_thinking_is_replayed_unless_the_profile_says_otherwise() {
             always: true
         }
     );
+    // 认不出的字段、目录没写的照驱动的默认：照来路回传（施工 RP-1）。
     for odd in [Some("reasoning_details"), None] {
         assert_eq!(
             reasoning(&go, wire(None, odd)),
-            ReasoningReplay::Drop,
+            ReasoningReplay::Echo,
             "{odd:?}"
         );
     }
@@ -451,8 +452,8 @@ fn interleaved_thinking_is_replayed_unless_the_profile_says_otherwise() {
         .expect("有");
     assert_eq!(
         claude.compat.reasoning,
-        ReasoningReplay::Drop,
-        "不走 openai-chat 的不管"
+        Compat::default().reasoning,
+        "不走 openai-chat 的不管：开关照默认，不被目录盖"
     );
 }
 

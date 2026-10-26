@@ -54,11 +54,11 @@ pub struct Compat {
 }
 
 impl Default for Compat {
-    /// `max_tokens`，不回传思考，报用量，不会接着写，没有思考的开关，不是约束解码。
+    /// `max_tokens`，思考照来路回传（施工 RP-1），报用量，不会接着写，没有思考的开关，不是约束解码。
     fn default() -> Compat {
         Compat {
             output_limit: OutputLimit::MaxTokens,
-            reasoning: ReasoningReplay::Drop,
+            reasoning: ReasoningReplay::Echo,
             stream_usage: true,
             continuation: Continuation::None,
             toggle: None,
@@ -151,6 +151,10 @@ impl OutputLimit {
 pub enum ReasoningReplay {
     /// 不回传。
     Drop,
+    /// 照来路回传（施工 RP-1，`docs/blueprint/drivers/openai-chat.md`「编码」第 4 条）：解码时记下思考来自
+    /// `reasoning_content` 还是 `reasoning`，照原样写回那一格；没记来路的、别的驱动的不写。模型回了思考就是会思考，交回去
+    /// 才接得上上一步的思路。
+    Echo,
     /// 写进 `field`；`always` 的，没有思考时也写，写空串（DeepSeek 要每条 assistant 都带）。
     Replay {
         /// 写进哪个字段。

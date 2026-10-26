@@ -1,10 +1,11 @@
 //! OpenAI 兼容对话接口的编码，图片、文件和思考：能收的写成 data URL，不能收的换成占位；工具结果里的
-//! 图片、PDF 挪到后面；思考照开关回传。
+//! 图片、PDF 挪到后面；思考照开关回传，默认照来路回传（施工 RP-1）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::support::{
-    call, deepseek, file, id, image, read_tool, sample, sees_all, text, texts, thought, tool_call,
+    call, deepseek, file, id, image, private_thought, read_tool, sample, sees_all, text, texts,
+    thought, tool_call,
 };
 use miyu_drivers::Inputs;
 use miyu_drivers::openai_chat::{
@@ -151,10 +152,92 @@ fn thinking() -> Request {
 }
 
 #[test]
-fn reasoning_is_dropped_by_default() {
+fn reasoning_can_be_dropped() {
+    let compat = Compat {
+        reasoning: ReasoningReplay::Drop,
+        ..Compat::default()
+    };
     sample(
         "reasoning-dropped",
-        &body(&thinking(), Inputs::default(), &Compat::default()),
+        &body(&thinking(), Inputs::default(), &compat),
+    );
+}
+
+/// 默认照来路回传（施工 RP-1）：几条 assistant，思考各有各的来路。
+fn echoed() -> Request {
+    let reply = |blocks| Message::Assistant { blocks };
+    let ask = || Message::User {
+        blocks: vec![text("接着")],
+    };
+    request(vec![
+        ask(),
+        // 来自 reasoning_content：各块接上，写回 reasoning_content；后面没挂私有数据的那块也接上。
+        reply(vec![
+            private_thought("先想想", "openai-chat", r#"{"field":"reasoning_content"}"#),
+            text("答案是"),
+            thought("，再想想"),
+        ]),
+        ask(),
+        // 来自 reasoning：写回 reasoning。
+        reply(vec![
+            private_thought("换个字段", "openai-chat", r#"{"field":"reasoning"}"#),
+            text("好"),
+        ]),
+        ask(),
+        // 以前的日志：没记来路，不写。
+        reply(vec![thought("老的"), text("嗯")]),
+        ask(),
+        // 别的驱动的思考（换过模型）：不写，数据里碰巧也写着 field 的照样不认。
+        reply(vec![
+            private_thought(
+                "别家的",
+                "openai-responses",
+                r#"{"field":"reasoning_content"}"#,
+            ),
+            text("哦"),
+        ]),
+        ask(),
+        // 来自 reasoning_text：没实测过哪家收，不写。
+        reply(vec![
+            private_thought("没见过的", "openai-chat", r#"{"field":"reasoning_text"}"#),
+            text("行"),
+        ]),
+        ask(),
+        // 没有思考：不写。
+        reply(vec![text("直接答")]),
+    ])
+}
+
+#[test]
+fn reasoning_goes_back_where_it_came_from_by_default() {
+    assert_eq!(Compat::default().reasoning, ReasoningReplay::Echo);
+    let body = body(&echoed(), Inputs::default(), &Compat::default());
+    let value: serde_json::Value = serde_json::from_slice(&body).expect("是 JSON");
+    let replies: Vec<&serde_json::Value> = value["messages"]
+        .as_array()
+        .expect("有消息")
+        .iter()
+        .filter(|message| message["role"] == "assistant")
+        .collect();
+    let fields = |message: &serde_json::Value| {
+        (
+            message.get("reasoning_content").cloned(),
+            message.get("reasoning").cloned(),
+        )
+    };
+    let some = |text: &str| Some(serde_json::Value::from(text));
+    assert_eq!(fields(replies[0]), (some("先想想，再想想"), None));
+    assert_eq!(fields(replies[1]), (None, some("换个字段")));
+    for (i, reply) in replies.iter().enumerate().skip(2) {
+        assert_eq!(fields(reply), (None, None), "第 {} 条不该带思考", i + 1);
+    }
+    // 先后照旧：content 后面是思考。
+    let text = String::from_utf8(body).expect("UTF-8");
+    assert!(
+        text.contains(
+            r#"{"role":"assistant","content":"答案是","reasoning_content":"先想想，再想想"}"#
+        ),
+        "{text}"
     );
 }
 
