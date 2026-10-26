@@ -17,6 +17,7 @@ fn entry(name: &str, need_load: bool) -> ToolEntry {
         need_load,
         clicall: false,
         runs_commands: false,
+        command_only: false,
     }
 }
 

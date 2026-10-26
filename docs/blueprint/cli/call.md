@@ -43,7 +43,7 @@ miyu call <工具> --schema
 1. 写法照上面拆成一个或几个请求；写错的印 `usage.txt`、退出码 2，`--json` 不是对象的印 `bad-json.txt`；直接写在命令行上的、有花括号没有双引号的（Windows PowerShell 5.1 交给程序的参数不转义里面的双引号，命令行解析把它们吃掉），后面空一格接 `quotes.txt`：改用管道交、`--json -` 从标准输入读（施工 M-8）。不放宽解析。
 2. 读 `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN`：没有的照 `outside.txt` 退出码 2。
 3. 连端点：Unix 上连套接字，Windows 上把管道当文件开（几个实例都忙着的等一会儿再试，最多两秒）。不在、没人听的是端点关了，照 `ended.txt` 退出码 3；别的连不上照 `outside.txt` 退出码 2。
-4. 一次连接一个请求：4 字节大端长度加 JSON（`{v, op, tool, args, token}`，`op` 是 `call` 或 `schema`，`args` 是参数对象的原文）；收回 `{code, stdout, stderr}`，照原样印、照 `code` 退出。读写断了的照 `ended.txt` 退出码 3。
+4. 一次连接一个请求：4 字节大端长度加 JSON（`{v, op, tool, args, token}`，`op` 是 `call` 或 `schema`，会话里的 `miyu pkg` 是 `pkg`（施工 BS-1 中：只调得了不上工具面的 `packages`、`package`，会话没有它们的答退出码 2、`pkg-off.txt`），`args` 是参数对象的原文）；收回 `{code, stdout, stderr}`，照原样印、照 `code` 退出。读写断了的照 `ended.txt` 退出码 3。
 
 ### 守着它的
 

@@ -20,6 +20,7 @@ fn tool(name: &str) -> ToolEntry {
         need_load: false,
         clicall: false,
         runs_commands: false,
+        command_only: false,
     }
 }
 

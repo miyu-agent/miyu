@@ -142,7 +142,7 @@ impl<C: Send + Sync> Process for Kept<C> {
     }
 }
 
-/// 一次请求：协议版本、做什么（`call`、`schema`）、工具名、参数原文、令牌。
+/// 一次请求：协议版本、做什么（`call`、`schema`，会话里的 `miyu pkg` 是 `pkg`，施工 BS-1 中）、工具名、参数原文、令牌。
 #[derive(Deserialize)]
 struct Request {
     v: u32,
@@ -183,6 +183,7 @@ pub(super) async fn answer<S, F>(
         Ok(request) if request.v != VERSION => refused(&texts.version),
         Ok(request) => match request.op.as_str() {
             "call" => reply::call(&*port, &texts, request.tool, request.args).await,
+            "pkg" => reply::command(&*port, &texts, request.tool, request.args).await,
             "schema" => reply::schema(&*port, &texts, &request.tool),
             _ => refused(&texts.bad_request),
         },

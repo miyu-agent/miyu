@@ -185,3 +185,59 @@ fn schema_prints_the_description_and_parameters() {
             .starts_with("miyu call does not work for chat_send")
     );
 }
+
+/// 会话里的 `miyu pkg` 调的端口（施工 BS-1 中）：`command` 交回给定的结局，`call` 调不到这里。
+struct Commands(Nested);
+
+impl NestedPort for Commands {
+    fn call(&self, _name: String, _args: String) -> Calling<'_> {
+        unreachable!("miyu pkg 只走 command")
+    }
+
+    fn command(&self, _name: String, _args: String) -> Calling<'_> {
+        let nested = self.0.clone();
+        Box::pin(async move { nested })
+    }
+
+    fn adopt(&self, _job: JobId) {}
+
+    fn callable(&self) -> Vec<String> {
+        vec!["web_search".to_string()]
+    }
+
+    fn schema(&self, _name: &str) -> Option<Schema> {
+        None
+    }
+}
+
+/// 没有 `packages` 包的会话（内核答不认识、不准）说这里用不了，不列 `miyu call` 能调的；收下了的照平常的结局写。
+#[tokio::test]
+async fn miyu_pkg_says_it_does_not_work_where_packages_is_off() {
+    let texts = texts();
+    for refusal in [NestedRefusal::Unknown, NestedRefusal::NotAllowed] {
+        let port = Commands(Nested::Refused(refusal));
+        let reply = command(&port, &texts, "package".to_string(), "{}".to_string()).await;
+        assert_eq!(
+            reply,
+            Reply::said(
+                USAGE,
+                "miyu pkg does not work in this session.\n".to_string()
+            )
+        );
+    }
+    let ok = Settled {
+        text: "Installed a.".to_string(),
+        ..settled(NestedStatus::Ok)
+    };
+    let reply = command(
+        &Commands(Nested::Settled(ok)),
+        &texts,
+        "package".to_string(),
+        "{}".to_string(),
+    )
+    .await;
+    assert_eq!((reply.code, reply.stdout.as_str()), (0, "Installed a.\n"));
+    let asked = Commands(Nested::Settled(settled(NestedStatus::NeedsApproval)));
+    let reply = command(&asked, &texts, "package".to_string(), "{}".to_string()).await;
+    assert_eq!(reply.code, 4);
+}

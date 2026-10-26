@@ -58,8 +58,9 @@ fn cancelled() -> Nested {
     Nested::Settled(Settled::without_result(NestedStatus::Cancelled, None))
 }
 
-impl NestedPort for Nester {
-    fn call(&self, name: String, args: String) -> Calling<'_> {
+impl Nester {
+    /// 送一次进收件箱，等内核答：`command` 的是核心自带的命令调的（施工 BS-1 中）。
+    fn send(&self, name: String, args: String, command: bool) -> Calling<'_> {
         Box::pin(async move {
             let n = self.last.fetch_add(1, Ordering::AcqRel) + 1;
             let parent = self
@@ -76,6 +77,7 @@ impl NestedPort for Nester {
                 origin: self.origin,
                 name,
                 args,
+                command,
                 reply,
             };
             if self.backs.send(Back::Nested(back)).is_err() {
@@ -84,6 +86,16 @@ impl NestedPort for Nester {
             // 会话停了、没答就丢了。
             answer.await.unwrap_or_else(|_| cancelled())
         })
+    }
+}
+
+impl NestedPort for Nester {
+    fn call(&self, name: String, args: String) -> Calling<'_> {
+        self.send(name, args, false)
+    }
+
+    fn command(&self, name: String, args: String) -> Calling<'_> {
+        self.send(name, args, true)
     }
 
     fn adopt(&self, job: JobId) {
@@ -104,6 +116,22 @@ impl NestedPort for Nester {
 }
 
 impl Tools {
+    /// 直接调的工具 `name` 第 `call_id` 次调用开不开通道、开的交端口：只开给跑命令的工具（施工 BS-1 上，原来照名字认 `shell`），
+    /// 脚本里能调的（`clicall`）、核心自带的命令能调的（`commands`，施工 BS-1 中）有一样就开。
+    pub(crate) fn channel(
+        &mut self,
+        call_id: CallId,
+        name: &str,
+        clicall: Vec<(String, RawJson)>,
+        commands: bool,
+    ) -> Option<Arc<dyn NestedPort>> {
+        let runs = self
+            .catalog
+            .get(name)
+            .is_some_and(|tool| tool.runs_commands());
+        ((!clicall.is_empty() || commands) && runs).then(|| self.nested_port(call_id, clicall))
+    }
+
     /// 直接调的 `shell` 第 `call_id` 次调用的端口：挂在这次调用下面。`clicall` 是这个会话脚本里能调的工具和参数格式（内核的
     /// `Session::clicall_tools`），说明照工具目录；目录里没有的不列。
     pub(crate) fn nested_port(

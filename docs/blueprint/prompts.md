@@ -3585,6 +3585,17 @@ miyu call does not work for {name}; call it directly. Tools that work with miyu 
 miyu call only works inside a command Miyu runs, in a session where scripts can call tools.
 ```
 
+#### `software/basesystem/shell/call/pkg-off.txt`
+
+- 什么时候加进来：会话里的 `miyu pkg` 走通道，这个会话没有只给它调的工具（`packages` 包关着）（退出码 2）（施工 BS-1 中）
+- token：约 9（估的，按 o200k）
+- 为什么加：设计 44 第三节第 4 条：装卸包不是她的工具，会话里只能经 `miyu pkg`；关了的会话说清楚用不了，不列 `miyu call` 能调的（那份名单和 `miyu pkg` 无关）
+- 指纹：`7607a1c3`
+
+```text
+miyu pkg does not work in this session.
+```
+
 #### `software/basesystem/shell/call/schema.txt`
 
 - 什么时候加进来：`miyu call --schema` 印的样子：名字、说明、参数格式（施工 M-3）
@@ -4698,35 +4709,6 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 }
 ```
 
-#### `software/basesystem/tools/packages.json`
-
-- 什么时候加进来：会话的工具面里有 `packages`：功能「软件包」开着的（基础系统，每次请求都带）
-- token：111（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 多 26）
-- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`c44288cd`
-
-```json
-{
-  "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}},
-  "clicall": true
-}
-```
-
-#### `software/basesystem/tools/package.json`
-
-- 什么时候加进来：会话的工具面里有 `package`：功能「软件包」开着的（基础系统，每次请求都带）
-- token：150（2026-10-19 照开发端点、`deepseek-v4.1-flash` 量：施工 G-6 `install` 认编号、加 `upgrade` 多 34；之前 116，F-10 下上是 86，下下加 `enable` 多 30）
-- 为什么加：她装、卸软件包，打开装着的，从软件源装、升级（施工 F-10 下、G-6，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
-- 指纹：`ce0f5e5a`
-
-```json
-{
-  "description": "Install a Miyu package from a folder or the package source, upgrade, remove, or turn one on. Check with packages first.",
-  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder, or a package id from the package source."},"upgrade":{"type":"string","description":"Package id to upgrade from the package source, or all."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
-}
-```
-
 #### `software/basesystem/tools/ask_user.json`
 
 - 什么时候加进来：会话的工具面里有 `ask_user`：能问人的会话，有人能回答的本机主会话（每次请求都带）
@@ -5048,6 +5030,38 @@ Make one concrete step of progress now. Never spend a round only reporting that 
 
 ```text
 set by the user with `/goal`
+```
+
+### 不发给模型（施工 BS-1 中起不上工具面，只给会话里的 `miyu pkg` 经通道调；以前造的会话照旧在 tools 数组里）
+
+#### `software/basesystem/tools/packages.json`
+
+- 什么时候加进来：包 `packages` 开着的会话登记它，不进请求
+- token：0（施工 BS-1 中以前 111：2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 多 26）
+- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有；2026-10-21 施工 M-2 再补加 `"clicall": true`，施工 BS-1 中去掉（`miyu call` 调不了它，会话里改用 `miyu pkg`）
+- 指纹：`88459d8f`
+
+```json
+{
+  "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
+}
+```
+
+### 不发给模型（同上，施工 BS-1 中）
+
+#### `software/basesystem/tools/package.json`
+
+- 什么时候加进来：同上
+- token：0（施工 BS-1 中以前 150：2026-10-19 照开发端点、`deepseek-v4.1-flash` 量：施工 G-6 `install` 认编号、加 `upgrade` 多 34；之前 116，F-10 下上是 86，下下加 `enable` 多 30）
+- 为什么加：她装、卸软件包，打开装着的，从软件源装、升级（施工 F-10 下、G-6，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
+- 指纹：`ce0f5e5a`
+
+```json
+{
+  "description": "Install a Miyu package from a folder or the package source, upgrade, remove, or turn one on. Check with packages first.",
+  "parameters": {"type":"object","properties":{"install":{"type":"string","description":"Absolute path of a package folder, or a package id from the package source."},"upgrade":{"type":"string","description":"Package id to upgrade from the package source, or all."},"remove":{"type":"string","description":"Package id to remove."},"enable":{"type":"string","description":"Package id to turn on: an extension or MCP servers."}}}
+}
 ```
 
 ### 工具结果，接在缩好的图前面

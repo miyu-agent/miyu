@@ -57,6 +57,7 @@
 | `clicall_section(tools, shapes)` | 说明末尾讲脚本调工具的那一段（施工 M-4，`tools/shell.md`「脚本调工具」第 10 条）：组工具面时，有脚本里能调的工具才照它接上，`tools` 是能调的名单、`shapes` 是结果的样子；跑命令的工具有，默认没有 |
 | `runs_commands()` | 跑命令的工具（施工 BS-1 上，设计 44 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道、说明后面接 `clicall_section`、管理员放行它时 `miyu check` 提醒 `sandbox_shell`。核心照这一条认，不看名字；出厂的 `shell` 是，默认不是 |
 | `background_parameter()` | 只在会话有后台时才给的参数（施工 BS-1 上）：后台运行关着的会话，组工具面时去掉它。出厂的 `shell` 是 `run_in_background`，默认没有 |
+| `command_only()` | 不上工具面（施工 BS-1 中，设计 44 第三节第 4 条）：不写进 tools 数组，她直接调、`miyu call` 调都当不认识，只给核心自带的命令（会话里的 `miyu pkg`）经通道调（`op: "pkg"`），照常过链、问人。出厂的 `packages`、`package` 是，默认不是 |
 
 **一次调用交给工具的** `Call`：
 

@@ -74,6 +74,7 @@ fn policy() -> Policy {
                 access: Access::Read,
                 parameters: serde_json::from_str(r#"{"type":"object"}"#).unwrap(),
                 clicall: false,
+                command_only: false,
             },
         )]),
         step_limit: None,

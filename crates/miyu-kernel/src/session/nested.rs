@@ -11,6 +11,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 mod asking;
+mod query;
 mod types;
 
 pub use types::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};
@@ -25,7 +26,6 @@ use crate::event::{
 };
 use crate::id::{CommandId, ContentHash, NestedId, Parent, Seq};
 use crate::origin::By;
-use crate::raw::RawJson;
 use crate::time::Timestamp;
 use crate::tool::{Access, repair};
 
@@ -72,40 +72,16 @@ enum Phase {
 }
 
 impl Session {
-    /// 脚本里能调的工具：访问类别准、`clicall` 开着的，照名字，带参数格式（施工 M-3）。执行器照它定开不开通道、答
-    /// `miyu call --schema`。纯查询。
-    pub fn clicall_tools(&self) -> Vec<(String, RawJson)> {
-        self.policy
-            .tools
-            .iter()
-            .filter(|(_, rule)| rule.clicall && rule.access.scriptable())
-            .map(|(name, rule)| (name.clone(), rule.parameters.clone()))
-            .collect()
-    }
-
-    /// 在跑的嵌套调用，照编号（施工 M-1，`docs/blueprint/protocol.md` 的订阅）：头断了重连时照它接着画 `#序号 显示名`。纯查询。
-    pub fn nested_running(&self) -> Vec<NestedRunning> {
-        let mut running: Vec<NestedRunning> = self
-            .nested
-            .calls
-            .iter()
-            .filter_map(|call| {
-                Some(NestedRunning {
-                    id: call.id.clone(),
-                    name: call.name.clone(),
-                    args: call.args.clone(),
-                    at: call.started.filter(|_| call.phase == Phase::Running)?,
-                })
-            })
-            .collect();
-        running.sort_by(|a, b| a.id.cmp(&b.id));
-        running
-    }
-
     /// 执行器交来的一种回报。
     pub(super) fn nested(&mut self, input: NestedInput) -> Vec<Action> {
         match input {
-            NestedInput::Call { at, id, name, args } => self.nested_call(at, id, name, args),
+            NestedInput::Call {
+                at,
+                id,
+                name,
+                args,
+                command,
+            } => self.nested_call(at, id, (name, args), command),
             NestedInput::Guarded { at, id, verdict } => self.nested_guarded(at, &id, verdict),
             NestedInput::Done {
                 at,
@@ -138,8 +114,8 @@ impl Session {
         &mut self,
         at: Timestamp,
         id: NestedId,
-        name: String,
-        args: String,
+        (name, args): (String, String),
+        command: bool,
     ) -> Vec<Action> {
         if !self.parent_alive(id.parent()) {
             return vec![answer(id, NestedAnswer::Refused(NestedRefusal::Gone))];
@@ -149,8 +125,11 @@ impl Session {
         }
         let checked = match self.policy.tools.get(&name) {
             None => Err(NestedRefusal::Unknown),
+            // 不上工具面的只认核心自带的命令，`miyu call` 当它不存在；核心自带的命令也只调得了它们（施工 BS-1 中）。
+            Some(rule) if rule.command_only && !command => Err(NestedRefusal::Unknown),
+            Some(rule) if command && !rule.command_only => Err(NestedRefusal::NotAllowed),
             // 两道都过才行（设计 39 第三节第 1 条）：类别是硬规矩，`clicall` 是登记的一方、人说的（施工 M-2）。
-            Some(rule) if !rule.access.scriptable() || !rule.clicall => {
+            Some(rule) if !command && (!rule.access.scriptable() || !rule.clicall) => {
                 Err(NestedRefusal::NotAllowed)
             }
             Some(rule) => repair(&rule.parameters, &args)

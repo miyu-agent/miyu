@@ -60,6 +60,8 @@ pub(super) struct Texts {
     images: Template,
     schema: Template,
     result: Template,
+    /// 会话里的 `miyu pkg` 用不了（施工 BS-1 中）。
+    pkg_off: Template,
 }
 
 impl Texts {
@@ -82,6 +84,7 @@ impl Texts {
             images: text("images", &[])?,
             schema: text("schema", &["name", "description", "parameters"])?,
             result: text("result", &["result"])?,
+            pkg_off: text("pkg-off", &[])?,
         }))
     }
 }

@@ -303,10 +303,11 @@ fn the_builtin_port_sets_up_the_local_model_from_the_list() {
     assert_eq!(setup.manifest, embed.files_dir().join("model.toml"));
 }
 
-/// 出厂的工具里，脚本里能调的正好这九件（施工 M-2；`history` 是 M-2 补，`sessions`、`session_usage`、`packages` 是 M-2 再补，
-/// 2026-10-21 项目主人定的通则；设计 39 第三节第 2 条），别的都不能；能调的都是读、联网的。
+/// 出厂的工具里，脚本里能调的正好这八件（施工 M-2；`history` 是 M-2 补，`sessions`、`session_usage` 是 M-2 再补，
+/// 2026-10-21 项目主人定的通则；设计 39 第三节第 2 条；`packages` 施工 BS-1 中起不上工具面，改由 `miyu pkg` 调），别的都不能；
+/// 能调的都是读、联网的。
 #[test]
-fn exactly_nine_shipped_tools_are_callable_from_scripts() {
+fn exactly_eight_shipped_tools_are_callable_from_scripts() {
     let resources = shipped_resources();
     let catalog =
         miyu_core::tools(&resources, &installed(&resources, &[])).expect("出厂的资源读得出来");
@@ -322,7 +323,6 @@ fn exactly_nine_shipped_tools_are_callable_from_scripts() {
             "kb_read",
             "kb_search",
             "memory_search",
-            "packages",
             "session_usage",
             "sessions",
             "web_fetch",

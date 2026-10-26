@@ -57,6 +57,9 @@ pub enum Act {
     /// 经脚本调工具的端口一件一件调（施工 M-2）：都了结了回一句成功，一行一件，写成 `<工具> <结局>`；跑完的再写字和
     /// `data`，丢了图的写 `images dropped`，拒绝的写原因。没有端口的回一句出错。
     Calls(Vec<(&'static str, &'static str)>),
+    /// 照 [`Act::Calls`]，但走核心自带的命令那条路（会话里的 `miyu pkg`，施工 BS-1 中，[`crate::NestedPort::command`]）；调哪几次
+    /// 照这一次调用的参数 `{"commands": [[<工具>, <参数原文>], …]}`，参数不对的回一句出错。
+    Commands,
     /// 照 [`Act::Background`] 放到后台，端口挂到那个任务下面，当场在旁边调一次这件工具（施工 M-3）：不等它答就交回结果，
     /// 所以调用到的时候任务的 `job.started` 还没记进日志。答回来的照 [`Act::Calls`] 的写法记进第三格。第四格是假的，结果里
     /// 不报这个任务（像调用被打断、任务没交上）：等着的那一次再也等不到。最后一格是在旁边调之前先等几毫秒：等得够久，调用
@@ -378,7 +381,17 @@ impl Tool for Fake {
                 Act::Gives(text, data) => {
                     Done::ok(text).data(serde_json::from_str(data).expect("data 是 JSON"))
                 }
-                Act::Calls(calls) => nested::calls(&call, calls).await,
+                Act::Calls(calls) => {
+                    let calls = calls
+                        .into_iter()
+                        .map(|(name, args)| (name.to_string(), args.to_string()))
+                        .collect();
+                    nested::calls(&call, calls, false).await
+                }
+                Act::Commands => match nested::commands(&call.args) {
+                    Some(calls) => nested::calls(&call, calls, true).await,
+                    None => Done::error("bad commands"),
+                },
                 Act::BackgroundCalls(held, name, heard, report, wait) => {
                     let mut done = background(&call, &held);
                     nested::aside(&call, &done, name, heard, wait);

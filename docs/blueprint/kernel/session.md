@@ -83,7 +83,7 @@
 | `Woke { at, seen }` | 为哪一次请求等的；等停着的，是那一步回复的序号 | 「出错再来」「打断」第 7 条 |
 | `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped, end_turn, display_name }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的；要结束这一轮的（施工 4-14）；这件工具给人看的名字，派它那一刻取的（施工 9-8 六补） | 「调工具」「打断」第 7 条 |
 | `ToolProgress { at, call_id, text }` | 一段输出 | 「调工具」 |
-| `Nested(NestedInput)`：`Call { at, id, name, args }`、`Guarded { at, id, verdict }`、`Done { at, id, error, duration_ms, result, bytes }` | 脚本里的一次 `miyu call`：编号、工具名、参数原文；链的结论；跑完了：出没出错、用时、交给脚本的那份结果的 blob 和字节数（施工 M-1，归成一种输入，`nested/types.rs`） | 「嵌套调用」 |
+| `Nested(NestedInput)`：`Call { at, id, name, args, command }`、`Guarded { at, id, verdict }`、`Done { at, id, error, duration_ms, result, bytes }` | 脚本里的一次 `miyu call`：编号、工具名、参数原文，`command` 是核心自带的命令（会话里的 `miyu pkg`，施工 BS-1 中）调的：只认不上工具面的工具（`ToolRule::command_only`），不查类别硬规矩和 `clicall`，`miyu call` 调的不认它们；链的结论；跑完了：出没出错、用时、交给脚本的那份结果的 blob 和字节数（施工 M-1，归成一种输入，`nested/types.rs`） | 「嵌套调用」 |
 | `ToolGuarded { at, call_id, verdict }`、`ToolAsks { at, call_id, questions }` | 链的结论；一组题 | `asking.md` |
 | `ReadBack { at, from, events }` | 从第 `from` 条读回的日志，连到最后一条（施工 6-9） | 对得上正在读回的那一次，才记撤销（`history.md`「撤掉压缩」）；对不上的不理 |
 | `Reread { at, seen, files }` | 哪一次摘要请求；压完要重读的文件，一个一项，照交出去的先后：读到了（`blob`、原文）、太大、读不到（施工 6-5） | 记在那次摘要请求上，什么都不出（`compaction.md` 第九条） |

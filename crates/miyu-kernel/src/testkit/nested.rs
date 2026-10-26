@@ -43,6 +43,19 @@ impl Stage {
     ///
     /// 编号的写法不对。
     pub fn nested_call(&mut self, id: &str, name: &str, args: &str) {
+        self.nested_from(id, name, args, false);
+    }
+
+    /// 核心自带的命令（会话里的 `miyu pkg`）经通道调了一次（施工 BS-1 中）：编号写法同 [`Self::nested_call`]。
+    ///
+    /// # Panics
+    ///
+    /// 编号的写法不对。
+    pub fn nested_command(&mut self, id: &str, name: &str, args: &str) {
+        self.nested_from(id, name, args, true);
+    }
+
+    fn nested_from(&mut self, id: &str, name: &str, args: &str, command: bool) {
         let id = NestedId::parse(id).unwrap_or_else(|e| panic!("嵌套调用编号的写法坏了：{e}"));
         let at = self.tick();
         self.run(Input::Nested(NestedInput::Call {
@@ -50,6 +63,7 @@ impl Stage {
             id,
             name: name.to_string(),
             args: args.to_string(),
+            command,
         }));
     }
 

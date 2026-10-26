@@ -92,6 +92,7 @@ fn the_face_is_sifted_and_replugged() {
                 need_load: false,
                 clicall: false,
                 runs_commands: false,
+                command_only: false,
             })
             .collect()
     };

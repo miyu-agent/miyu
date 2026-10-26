@@ -75,6 +75,8 @@ pub(crate) enum NestedBack {
         origin: CallId,
         name: String,
         args: String,
+        /// 核心自带的命令调的（施工 BS-1 中）。
+        command: bool,
         reply: oneshot::Sender<Nested>,
     },
     /// 跑完了：交给脚本的那一份，出没出错，存成的 blob 和字节数（存不下来的没有）。
@@ -112,6 +114,7 @@ impl Tools {
                 origin,
                 name,
                 args,
+                command,
                 reply,
             } => {
                 // 后台任务下面的，等那个任务的 `job.started` 记进日志再交（`port.rs`）：不然内核认不出这个父级。
@@ -128,6 +131,7 @@ impl Tools {
                         origin,
                         name,
                         args,
+                        command,
                         reply,
                     };
                     self.nested.held.push(held);
@@ -140,7 +144,13 @@ impl Tools {
                     checked: None,
                 };
                 self.nested.waiting.insert(id.clone(), waiting);
-                Some(Input::Nested(NestedInput::Call { at, id, name, args }))
+                Some(Input::Nested(NestedInput::Call {
+                    at,
+                    id,
+                    name,
+                    args,
+                    command,
+                }))
             }
             NestedBack::Done {
                 id,

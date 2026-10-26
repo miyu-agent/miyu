@@ -276,6 +276,7 @@ impl Agents {
                     need_load: offers.loading.need_load(&spec.name, spec.need_load),
                     clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
+                    command_only: tool.is_some_and(|tool| tool.command_only()),
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {

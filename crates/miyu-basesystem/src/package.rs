@@ -189,6 +189,10 @@ impl Texts {
 }
 
 impl Tool for Package {
+    fn command_only(&self) -> bool {
+        true
+    }
+
     fn spec(&self) -> &Spec {
         &self.spec
     }

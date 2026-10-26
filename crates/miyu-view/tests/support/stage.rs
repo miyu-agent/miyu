@@ -72,6 +72,7 @@ pub fn policy() -> Policy {
         access,
         parameters: serde_json::from_str(r#"{"type":"object"}"#).expect("参数格式是 JSON"),
         clicall: false,
+        command_only: false,
     };
     Policy {
         nested: miyu_kernel::session::NestedLimits {
@@ -104,6 +105,7 @@ pub fn policy() -> Policy {
                 "web_fetch".to_string(),
                 ToolRule {
                     clicall: true,
+                    command_only: false,
                     ..rule(Access::Read)
                 },
             ),

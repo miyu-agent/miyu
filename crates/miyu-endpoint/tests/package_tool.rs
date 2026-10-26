@@ -1,4 +1,5 @@
-//! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`。
+//! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
+//! 施工 BS-1 中起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`），确认请求带着那一次的序号。
 //! 工作区那一级每次问人，确认请求的说明里带着看一眼的那一份（装的同 `package.install` 带 `preview`，卸的同 `package.remove`
 //! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。
 
@@ -10,7 +11,6 @@ use serde_json::{Value, json};
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::{Play, Script};
-use miyu_tool::Catalog;
 
 use crate::support::*;
 
@@ -31,11 +31,18 @@ fn kit(home: &Home, id: &str) -> PathBuf {
     folder
 }
 
-/// 真核心，工具目录是基础系统；在工作区里造会话，`full` 的切到完全放开，说一句。
-async fn started(home: &Home, plays: Vec<Play>, full: bool) -> (Client, String) {
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
-    let core = Arc::new(home.core_full(&Script::new(plays), tools, None, TOKEN));
+/// 真核心，工具目录是基础系统；在工作区里造会话，`full` 的切到完全放开，说一句。她跑一条命令，里面的 `miyu pkg` 照先后调
+/// `commands`（`package` 的参数原文），然后说「好了」。
+async fn started(home: &Home, commands: Vec<String>, full: bool) -> (Client, String) {
+    let commands: Vec<(&str, &str)> = commands
+        .iter()
+        .map(|args| ("package", args.as_str()))
+        .collect();
+    let plays = vec![
+        Play::calls(&[("shell", &pkg::run(&commands))]),
+        Play::Says("好了。"),
+    ];
+    let core = Arc::new(home.core_full(&Script::new(plays), pkg::catalog(), None, TOKEN));
     let mut client = Client::connect(core);
     client.hello().await;
     let cwd = home.work.to_string_lossy().into_owned();
@@ -88,12 +95,11 @@ fn installed(home: &Home, id: &str) -> bool {
 async fn at_the_workspace_level_each_change_asks_with_the_preview() {
     let home = Home::new();
     let folder = kit(&home, "kit");
-    let plays = vec![
-        Play::calls(&[("package", &json!({"install": folder}).to_string())]),
-        Play::calls(&[("package", r#"{"remove":"kit"}"#)]),
-        Play::Says("好了。"),
+    let commands = vec![
+        json!({"install": folder}).to_string(),
+        r#"{"remove":"kit"}"#.to_string(),
     ];
-    let (mut client, session) = started(&home, plays, false).await;
+    let (mut client, session) = started(&home, commands, false).await;
     until("装的确认请求", || {
         requests(&home, &session).len() == 1
     })
@@ -101,6 +107,7 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
     let asked = requests(&home, &session).remove(0);
     assert_eq!(asked["access"], "install", "{asked}");
     assert!(asked.get("rule").is_none(), "不提规则：{asked}");
+    assert_eq!(asked["nested"], 1, "命令里的第一次：{asked}");
     let preview = &asked["detail"]["preview"];
     assert_eq!(
         (preview["package"].clone(), preview["skills"].clone()),
@@ -113,7 +120,7 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
         .call(
             "a1",
             "session.answer",
-            json!({"session": session, "call": call, "decision": "once"}),
+            json!({"session": session, "call": call, "decision": "once", "nested": 1}),
         )
         .await;
     assert!(reply["result"].is_object(), "{reply}");
@@ -130,7 +137,7 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
         .call(
             "a2",
             "session.answer",
-            json!({"session": session, "call": call, "decision": "once"}),
+            json!({"session": session, "call": call, "decision": "once", "nested": 2}),
         )
         .await;
     home.until_turns(&session, 1).await;
@@ -138,8 +145,7 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
     assert_eq!(
         results(&home, &session),
         [
-            "Installed kit. Its tools and skills come in on the next turn.\n",
-            "Removed kit.\n"
+            "package ok text=Installed kit. Its tools and skills come in on the next turn.\n\npackage ok text=Removed kit.\n\nheld true,false,true,false"
         ]
     );
 }
@@ -148,11 +154,8 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
 async fn full_access_installs_without_asking() {
     let home = Home::new();
     let folder = kit(&home, "kit");
-    let plays = vec![
-        Play::calls(&[("package", &json!({"install": folder}).to_string())]),
-        Play::Says("好了。"),
-    ];
-    let (_client, session) = started(&home, plays, true).await;
+    let commands = vec![json!({"install": folder}).to_string()];
+    let (_client, session) = started(&home, commands, true).await;
     home.until_turns(&session, 1).await;
     assert!(requests(&home, &session).is_empty(), "不问");
     assert!(installed(&home, "kit"));
@@ -164,11 +167,8 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
     let folder = home.work.join("broken");
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(folder.join("package.toml"), "[package\n").expect("写得进");
-    let plays = vec![
-        Play::calls(&[("package", &json!({"install": folder}).to_string())]),
-        Play::Says("写错了。"),
-    ];
-    let (_client, session) = started(&home, plays, false).await;
+    let commands = vec![json!({"install": folder}).to_string()];
+    let (_client, session) = started(&home, commands, false).await;
     home.until_turns(&session, 1).await;
     assert!(requests(&home, &session).is_empty(), "看不了的不问");
     let said = results(&home, &session);
@@ -193,11 +193,8 @@ async fn a_name_clash_tells_her_what_and_where() {
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let folder = kit(&home, "akit");
-    let plays = vec![
-        Play::calls(&[("package", &json!({"install": folder}).to_string())]),
-        Play::Says("撞了。"),
-    ];
-    let (_client, session) = started(&home, plays, true).await;
+    let commands = vec![json!({"install": folder}).to_string()];
+    let (_client, session) = started(&home, commands, true).await;
     home.until_turns(&session, 1).await;
     let said = results(&home, &session);
     assert_eq!(said.len(), 1, "{said:?}");

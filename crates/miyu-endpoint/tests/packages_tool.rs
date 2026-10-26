@@ -1,5 +1,6 @@
 //! 她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：真核心的会话调 `packages`，经协议端点交给会话的端口看：列出、看一个、
-//! 看一个包文件夹，和协议的 `package.list`、`package.info`、装之前看一眼是同一份，名字照英文；看文件夹什么都不装。
+//! 看一个包文件夹，和协议的 `package.list`、`package.info`、装之前看一眼是同一份，名字照英文；看文件夹什么都不装。施工 BS-1 中
+//! 起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`）；`miyu call` 调不到它。
 
 use std::sync::Arc;
 
@@ -41,21 +42,26 @@ async fn a_session_looks_at_packages_through_the_core() {
     let folder = home.work.join("pane");
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(folder.join("package.toml"), PANE).expect("写得进");
+    let path = json!({"path": folder}).to_string();
     let script = Script::new([
-        Play::calls(&[("packages", "{}")]),
-        Play::calls(&[("packages", r#"{"package":"shell"}"#)]),
-        Play::calls(&[("packages", &json!({"path": folder}).to_string())]),
+        Play::calls(&[("shell", &pkg::run(&[("packages", "{}")]))]),
+        Play::calls(&[(
+            "shell",
+            &pkg::run(&[("packages", r#"{"package":"shell"}"#)]),
+        )]),
+        Play::calls(&[("shell", &pkg::run(&[("packages", &path)]))]),
         Play::Says("看完了。"),
     ]);
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
-    let core = Arc::new(home.core_full(&script, tools, None, TOKEN));
+    let core = Arc::new(home.core_full(&script, pkg::catalog(), None, TOKEN));
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let session = client.create("c1", "~").await;
     client.say("s1", &session, "看看装了什么").await;
     home.until_turns(&session, 1).await;
-    let results = home_results(&home, &session);
+    let results: Vec<String> = home_results(&home, &session)
+        .iter()
+        .map(|line| pkg::text(line).to_string())
+        .collect();
     assert_eq!(results.len(), 3, "{results:?}");
     assert!(
         results[0]
@@ -101,12 +107,15 @@ async fn a_session_looks_at_packages_through_the_core() {
 
     // 核心重启过，载入的会话照样看得到（端口在载入时交进来）。
     let again = Script::new([
-        Play::calls(&[("packages", r#"{"package":"net"}"#)]),
+        Play::calls(&[("shell", &pkg::run(&[("packages", r#"{"package":"net"}"#)]))]),
         Play::Says("嗯。"),
     ]);
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
-    let mut client = Client::connect(Arc::new(home.core_full(&again, tools, None, TOKEN)));
+    let mut client = Client::connect(Arc::new(home.core_full(
+        &again,
+        pkg::catalog(),
+        None,
+        TOKEN,
+    )));
     client.hello().await;
     client.say("s2", &session, "再看一个").await;
     home.until_turns(&session, 2).await;
@@ -118,19 +127,14 @@ async fn a_session_looks_at_packages_through_the_core() {
     );
 }
 
-/// 脚本里调的 `packages`（施工 M-8）：和直接调的看到的是同一份。原来嵌套调用不给软件包的端口，回「这里看不了」。
+/// 脚本里的 `miyu call` 调不到 `packages`（施工 BS-1 中）：它不上工具面，当不认识；会话里改用 `miyu pkg`。
 #[tokio::test]
-async fn a_script_sees_the_same_packages_as_a_direct_call() {
+async fn a_script_cannot_reach_packages_with_miyu_call() {
     use miyu_kernel::tool::Access;
     use miyu_tool::Tool;
     use miyu_tool::testkit::{Act, Fake};
     let home = Home::new();
-    let script = Script::new([
-        Play::calls(&[("packages", "{}")]),
-        Play::calls(&[("shell", "{}")]),
-        Play::Says("看完了。"),
-    ]);
-    // 假的 `shell`：经端口调一次 `packages`，交回的写成一行 `packages ok text=…`。
+    let script = Script::new([Play::calls(&[("shell", "{}")]), Play::Says("调不到。")]);
     let shell = Fake::commanding(
         "shell",
         Access::Read,
@@ -149,14 +153,36 @@ async fn a_script_sees_the_same_packages_as_a_direct_call() {
     let session = client.create("c1", "~").await;
     client.say("s1", &session, "看看装了什么").await;
     home.until_turns(&session, 1).await;
+    assert_eq!(home_results(&home, &session), ["packages refused Unknown"]);
+}
+
+/// 关了「脚本调工具」、开着 `packages` 的会话（施工 BS-1 中）：脚本里一件能调的都没有，通道照样开给 `miyu pkg`。
+#[tokio::test]
+async fn miyu_pkg_works_where_scripts_cannot_call_tools() {
+    let home = Home::new();
+    home.write(
+        "home/alice/presets/pkg.toml",
+        "[preset]\nname = { en = \"Pkg\" }\nunlisted = \"off\"\n\n[software]\nshell = true\npackages = true\n",
+    );
+    let script = Script::new([
+        Play::calls(&[(
+            "shell",
+            &pkg::run(&[("packages", r#"{"package":"shell"}"#)]),
+        )]),
+        Play::Says("看完了。"),
+    ]);
+    let core = Arc::new(home.core_full(&script, pkg::catalog(), None, TOKEN));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client
+        .create_with("c1", json!({"cwd": "~", "preset": "pkg"}))
+        .await;
+    client.say("s1", &session, "看看 shell 包").await;
+    home.until_turns(&session, 1).await;
     let results = home_results(&home, &session);
-    assert_eq!(results.len(), 2, "{results:?}");
-    let direct = &results[0];
-    assert!(direct.contains("shell: Commands."), "{direct}");
-    let scripted = &results[1];
-    assert!(scripted.starts_with("packages ok "), "{scripted}");
+    assert_eq!(results.len(), 1, "{results:?}");
     assert!(
-        scripted.contains("shell: Commands."),
-        "脚本里看到的和直接调的一样：{scripted}"
+        pkg::text(&results[0]).contains(r#""package":"shell""#),
+        "{results:?}"
     );
 }

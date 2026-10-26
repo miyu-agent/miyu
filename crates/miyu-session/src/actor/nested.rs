@@ -1,5 +1,6 @@
-//! 内核的嵌套调用动作（施工 M-2，蓝图 `kernel/session.md`「嵌套调用」）：判照直接调用的那条链、在阻塞线程里判，不先看一眼
-//! （嵌套调用不问人）；跑、掐、答交给执行工具的端口（`tools/nested.rs`）。
+//! 内核的嵌套调用动作（施工 M-2，蓝图 `kernel/session.md`「嵌套调用」）：判照直接调用的那条链、在阻塞线程里判；要问人、工具要
+//! 看一眼的照直接调用先看（施工 BS-1 中：会话里的 `miyu pkg` 装包，卡片照看一眼的那一份）；跑、掐、答交给执行工具的端口
+//! （`tools/nested.rs`）。
 
 use std::sync::Arc;
 
@@ -23,11 +24,16 @@ impl Actor {
                 grants,
             } => {
                 let guard = Arc::clone(&self.guard);
+                let (asked, looked) = ((name.clone(), args.clone()), cwd.clone());
                 let (verdict, checked) =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
                 // 判过的真实位置跑的时候交给工具（施工 5-18）。
                 self.tools.checked_nested(&id, checked);
+                let verdict = self
+                    .tools
+                    .previewed(&asked.0, asked.1, looked, verdict)
+                    .await;
                 Some(Input::Nested(NestedInput::Guarded {
                     at: self.clock.now(),
                     id,

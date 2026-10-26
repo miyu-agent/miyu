@@ -4,6 +4,11 @@
 
 她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节第 1 条「查」）：列出装了的、看一个、装之前看一个包文件夹装上会是什么样。只看，哪一级都不问人。包目录在数据根里，文件工具碰不到（`11-权限与沙盒.md`）：不给这件，她不知道装了什么、自己照包的样子写好的文件夹写对没有。装、卸、打开她装的扩展是 F-10 下的另一件（`package`，访问类别要照级别问人），不在这一件里：访问类别是一件工具定死的（内核只读时照它拦、派的时候照它排），看和改分两件，名字一看就分得开（主会话定）。
 
+
+### 谁能调（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）
+
+不上工具面（`Tool::command_only`）：tools 数组里没有，她直接调、脚本里的 `miyu call` 调都当不认识。会话里她跑 `miyu pkg`，经 `miyu call` 的通道（`op: "pkg"`）带着会话身份调这一件，照下面的权限问人，卡片照看一眼的那一份；`packages` 包开着的会话才开这条路。以前造的会话照旧在 tools 数组里，字节不变。
+
 ### 在哪
 
 | 代码 | 管什么 |
@@ -30,8 +35,7 @@
 ```json
 {
   "description": "List installed Miyu packages, show one by id, check a package folder before installing it, or search the package source.",
-  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}},
-  "clicall": true
+  "parameters": {"type":"object","properties":{"package":{"type":"string","description":"Package id to show."},"path":{"type":"string","description":"Absolute path of a package folder to check."},"search":{"type":"string","description":"Words to search the package source for."}}}
 }
 ```
 

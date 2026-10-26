@@ -22,6 +22,7 @@ fn loading_policy() -> Policy {
             )
             .unwrap(),
             clicall: false,
+            command_only: false,
         },
     );
     let contracts = BTreeMap::from([(

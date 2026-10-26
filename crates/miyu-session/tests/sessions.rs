@@ -245,8 +245,15 @@ async fn without_a_table_she_hears_there_are_no_others() {
 #[tokio::test]
 async fn only_a_local_main_session_has_it() {
     let home = Home::new();
-    let all: Vec<String> = basesystem(&home)
+    // 不上工具面的（`package`、`packages`，施工 BS-1 中）哪种会话都没有。
+    let catalog = basesystem(&home);
+    let all: Vec<String> = catalog
         .specs()
+        .filter(|spec| {
+            catalog
+                .get(&spec.name)
+                .is_some_and(|tool| !tool.command_only())
+        })
         .map(|spec| spec.name.clone())
         .collect();
     let parent = SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d99").expect("合写法");

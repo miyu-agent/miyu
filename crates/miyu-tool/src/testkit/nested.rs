@@ -6,7 +6,7 @@ use crate::{Call, Done, Effect, Nested};
 
 /// 一件一件调 `calls`（工具名、参数原文），都了结了回一句成功，一行一件。像真的 `shell` 那样交「在等人」的口子（施工 M-7
 /// 上），收到过的照先后接一行 `held true,false`；没收到的不接。
-pub(super) async fn calls(call: &Call, calls: Vec<(&'static str, &'static str)>) -> Done {
+pub(super) async fn calls(call: &Call, calls: Vec<(String, String)>, command: bool) -> Done {
     let Some(port) = call.nested.clone() else {
         return Done::error("no nested port");
     };
@@ -20,7 +20,11 @@ pub(super) async fn calls(call: &Call, calls: Vec<(&'static str, &'static str)>)
     }));
     let mut lines = Vec::new();
     for (name, args) in calls {
-        let line = line(name, port.call(name.to_string(), args.to_string()).await);
+        let nested = match command {
+            true => port.command(name.clone(), args).await,
+            false => port.call(name.clone(), args).await,
+        };
+        let line = line(&name, nested);
         lines.push(line);
     }
     let held = heard
@@ -31,6 +35,23 @@ pub(super) async fn calls(call: &Call, calls: Vec<(&'static str, &'static str)>)
         lines.push(format!("held {held}"));
     }
     Done::ok(lines.join("\n"))
+}
+
+/// [`crate::testkit::Act::Commands`] 这一次调哪几次：参数 `{"commands": [[<工具>, <参数原文>], …]}`；不是这样的没有。
+pub(super) fn commands(args: &str) -> Option<Vec<(String, String)>> {
+    let value: serde_json::Value = serde_json::from_str(args).ok()?;
+    value
+        .get("commands")?
+        .as_array()?
+        .iter()
+        .map(|pair| {
+            let pair = pair.as_array()?;
+            Some((
+                pair.first()?.as_str()?.to_string(),
+                pair.get(1)?.as_str()?.to_string(),
+            ))
+        })
+        .collect()
 }
 
 /// 一次调用的结局写成一行：`<工具> <结局>`，跑完的再写字和 `data`，丢了图的写 `images dropped`，拒绝的写原因。

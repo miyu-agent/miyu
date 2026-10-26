@@ -248,4 +248,10 @@ pub trait Tool: Send + Sync {
     fn background_parameter(&self) -> Option<&'static str> {
         None
     }
+
+    /// 不上工具面（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）：她看不见、直接调不了，`miyu call` 也调不了，只给核心
+    /// 自带的命令（会话里的 `miyu pkg`）经通道调，照常过权限链、照常问人。`packages`、`package` 是。默认不是。
+    fn command_only(&self) -> bool {
+        false
+    }
 }

@@ -53,6 +53,8 @@ impl Actor {
                 config: Arc::clone(self.config.current()),
                 // 脚本里能调的（施工 M-3）：一件都没有的不开通道。
                 clicall: self.session.clicall_tools(),
+                // 会话里的 `miyu pkg`（施工 BS-1 中）：`packages` 包开着就开通道。
+                commands: self.session.has_command_tools(),
             },
         )
     }

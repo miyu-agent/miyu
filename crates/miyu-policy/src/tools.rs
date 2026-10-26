@@ -42,6 +42,10 @@ pub struct ToolEntry {
     /// 没有的不写，以前造的快照读成不是：以前的快照不再重拼 system，字节不受影响。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub runs_commands: bool,
+    /// 不上工具面（施工 BS-1 中，`miyu_tool::Tool::command_only`）：不写进 tools 数组，内核照它只让核心自带的命令经通道调。没有的
+    /// 不写，以前造的快照读成上工具面：以前的会话照旧带着这几件，字节不变。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub command_only: bool,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时
@@ -128,9 +132,13 @@ pub(crate) fn split(
             access: tool.access.clone(),
             parameters: tool.parameters.clone(),
             clicall: tool.clicall,
+            command_only: tool.command_only,
         };
         if rules.insert(tool.name.clone(), rule).is_some() {
             return Err(BuildError::DuplicateTool(tool.name.clone()));
+        }
+        if tool.command_only {
+            continue;
         }
         face.push(ToolSpec {
             name: tool.name.clone(),

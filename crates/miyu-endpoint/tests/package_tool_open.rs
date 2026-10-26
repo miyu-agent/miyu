@@ -1,5 +1,5 @@
 //! 她打开装着的包、装上的包在会话的预设里打开（施工 F-10 下下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节、
-//! 16 第三节）：真核心的会话调 `package`。打开扩展问人一次，卡片里有它要的能力，允许了就打开、能力一并批；程序不在的不问、当场
+//! 16 第三节）：真核心的会话调 `package`（施工 BS-1 中起经命令里的 `miyu pkg`，`support::pkg`）。打开扩展问人一次，卡片里有它要的能力，允许了就打开、能力一并批；程序不在的不问、当场
 //! 拒。不开没列出来的软件的预设里装的包，往那一份预设的同名覆盖里写上打开；开着没列出来的预设不写。
 
 use std::sync::Arc;
@@ -7,16 +7,18 @@ use std::sync::Arc;
 use serde_json::{Value, json};
 
 use miyu_session::testkit::{Play, Script};
-use miyu_tool::Catalog;
 
 use crate::support::extensions::Program;
 use crate::support::*;
 
-/// 真核心，工具目录是基础系统；在工作区里造预设是 `preset` 的会话，说一句。
-async fn started(home: &Home, plays: Vec<Play>, preset: &str) -> (Client, String) {
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
-    let core = Arc::new(home.core_full(&Script::new(plays), tools, None, TOKEN));
+/// 真核心，工具目录是基础系统；在工作区里造预设是 `preset` 的会话，说一句。她跑一条命令，里面的 `miyu pkg` 调一次 `package`，
+/// 参数是 `args`。
+async fn started(home: &Home, args: String, preset: &str) -> (Client, String) {
+    let plays = vec![
+        Play::calls(&[("shell", &pkg::run(&[("package", &args)]))]),
+        Play::Says("好了。"),
+    ];
+    let core = Arc::new(home.core_full(&Script::new(plays), pkg::catalog(), None, TOKEN));
     let mut client = Client::connect(core);
     client.hello().await;
     let cwd = home.work.to_string_lossy().into_owned();
@@ -45,7 +47,7 @@ async fn allow(client: &mut Client, home: &Home, session: &str, n: usize) -> Val
         .call(
             "a",
             "session.answer",
-            json!({"session": session, "call": call, "decision": "once"}),
+            json!({"session": session, "call": call, "decision": "once", "nested": asked["nested"]}),
         )
         .await;
     assert!(reply["result"].is_object(), "{reply}");
@@ -75,11 +77,7 @@ async fn opening_an_extension_asks_with_its_capabilities() {
             program.name()
         ),
     );
-    let plays = vec![
-        Play::calls(&[("package", r#"{"enable":"relay"}"#)]),
-        Play::Says("开了。"),
-    ];
-    let (mut client, session) = started(&home, plays, "full").await;
+    let (mut client, session) = started(&home, r#"{"enable":"relay"}"#.to_string(), "full").await;
     let asked = allow(&mut client, &home, &session, 1).await;
     assert_eq!(asked["access"], "install", "{asked}");
     let preview = &asked["detail"]["preview"];
@@ -103,11 +101,7 @@ async fn a_package_whose_program_is_missing_is_refused_without_asking() {
         "system/packages/ghost/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ghost\" }\n\n[command]\nname = \"ghost\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"G\" }\n\n[process]\n",
     );
-    let plays = vec![
-        Play::calls(&[("package", r#"{"enable":"ghost"}"#)]),
-        Play::Says("打不开。"),
-    ];
-    let (_client, session) = started(&home, plays, "full").await;
+    let (_client, session) = started(&home, r#"{"enable":"ghost"}"#.to_string(), "full").await;
     home.until_turns(&session, 1).await;
     assert!(requests(&home, &session).is_empty(), "看不了的不问");
 }
@@ -131,11 +125,7 @@ async fn installing_in_a_preset_that_keeps_unlisted_off_opens_it_there() {
         )
         .expect("写得进");
         let install = json!({"install": folder}).to_string();
-        let plays = vec![
-            Play::calls(&[("package", &install)]),
-            Play::Says("装好了。"),
-        ];
-        let (mut client, session) = started(&home, plays, preset).await;
+        let (mut client, session) = started(&home, install, preset).await;
         allow(&mut client, &home, &session, 1).await;
         home.until_turns(&session, 1).await;
         assert!(

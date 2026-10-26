@@ -41,6 +41,22 @@ pub(super) async fn call(
     settle(port, texts, &name, nested)
 }
 
+/// 会话里的 `miyu pkg` 调一次（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）：只调得了不上工具面的那几件；这个会话
+/// 没有它们（`packages` 包关着）的说这里用不了，不列 `miyu call` 能调的。
+pub(super) async fn command(
+    port: &dyn NestedPort,
+    texts: &Texts,
+    name: String,
+    args: String,
+) -> Reply {
+    match port.command(name.clone(), args).await {
+        Nested::Refused(NestedRefusal::Unknown | NestedRefusal::NotAllowed) => {
+            Reply::said(USAGE, say(&texts.pkg_off, &[]))
+        }
+        nested => settle(port, texts, &name, nested),
+    }
+}
+
 /// 结局写成答回去的。
 pub(super) fn settle(port: &dyn NestedPort, texts: &Texts, name: &str, nested: Nested) -> Reply {
     match nested {

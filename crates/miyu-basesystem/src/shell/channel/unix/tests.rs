@@ -41,6 +41,17 @@ impl NestedPort for Port {
         })
     }
 
+    /// 会话里的 `miyu pkg`（施工 BS-1 中）：记成 `pkg:<名字>`，交回 `pkg ok`。
+    fn command(&self, name: String, _args: String) -> Calling<'_> {
+        self.calls.lock().unwrap().push(format!("pkg:{name}"));
+        Box::pin(async move {
+            Nested::Settled(Settled {
+                text: "pkg ok".to_string(),
+                ..Settled::without_result(NestedStatus::Ok, None)
+            })
+        })
+    }
+
     fn adopt(&self, _job: JobId) {}
 
     fn callable(&self) -> Vec<String> {
@@ -91,6 +102,20 @@ async fn the_right_token_from_this_group_is_answered() {
         .expect("答了");
     assert_eq!(reply, json!({"code": 0, "stdout": "ok\n", "stderr": ""}));
     assert_eq!(*port.calls.lock().unwrap(), ["web_search"]);
+}
+
+/// `op: "pkg"`（施工 BS-1 中）：走端口的 `command`，不走 `call`。
+#[tokio::test]
+async fn miyu_pkg_goes_the_command_way() {
+    let port = Arc::new(Port::default());
+    let channel = open(Arc::clone(&port));
+    let pkg = json!({"v": VERSION, "op": "pkg", "tool": "packages", "args": "{}", "token": channel.token});
+    let reply = ask(&channel.path, &pkg).await.expect("答了");
+    assert_eq!(
+        reply,
+        json!({"code": 0, "stdout": "pkg ok\n", "stderr": ""})
+    );
+    assert_eq!(*port.calls.lock().unwrap(), ["pkg:packages"]);
 }
 
 #[tokio::test]

@@ -17,6 +17,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         need_load: false,
         clicall: false,
         runs_commands: false,
+        command_only: false,
     }
 }
 
@@ -116,6 +117,36 @@ fn clicall_is_written_only_when_on_and_old_snapshots_keep_their_bytes() {
     let policy = on.policy().unwrap();
     assert!(policy.tools["read"].clicall);
     assert!(!policy.tools["edit"].clicall);
+}
+
+/// 不上工具面的（施工 BS-1 中）：规则交给内核、带着 `command_only`，tools 数组里没有；写 `"command_only":true`，以前的快照
+/// 没有这一格，读成上工具面、写回去一字不差。
+#[test]
+fn a_tool_off_the_face_is_ruled_but_not_sent() {
+    let old = engineer().with_tools(two());
+    let bytes = old.to_bytes();
+    assert!(
+        !String::from_utf8(bytes.clone())
+            .unwrap()
+            .contains("command_only")
+    );
+    assert_eq!(Snapshot::from_bytes(&bytes).unwrap().to_bytes(), bytes);
+
+    let mut tools = two();
+    tools.push(entry("package", Access::Install, r#"{"type":"object"}"#));
+    tools[2].command_only = true;
+    let off = engineer().with_tools(tools);
+    let text = String::from_utf8(off.to_bytes()).unwrap();
+    assert!(text.contains(r#""command_only":true"#), "{text}");
+    assert_eq!(Snapshot::from_bytes(&off.to_bytes()).unwrap(), off);
+    let policy = off.policy().unwrap();
+    assert!(policy.tools["package"].command_only);
+    assert!(!policy.tools["read"].command_only);
+    let request = policy.assembler.assemble(&History::default());
+    assert_eq!(
+        names(request.tools.iter().map(|tool| &tool.name)),
+        ["edit", "read"]
+    );
 }
 
 #[test]

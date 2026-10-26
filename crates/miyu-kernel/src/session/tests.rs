@@ -218,6 +218,7 @@ fn policy() -> Policy {
         parameters: serde_json::from_str(parameters).unwrap(),
         // 嵌套调用的场景（施工 M-1、M-2）照类别判；`clicall` 关的单拿一件测（`scenario/nested.rs`）。
         clicall: true,
+        command_only: false,
     };
     Policy {
         nested: NestedLimits {

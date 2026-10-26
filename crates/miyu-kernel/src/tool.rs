@@ -63,6 +63,9 @@ pub struct ToolRule {
     pub parameters: RawJson,
     /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：嵌套调用在访问类别之外再查它，不是 `true` 的当场拒。
     pub clicall: bool,
+    /// 不上工具面（施工 BS-1 中，`miyu_tool::Tool::command_only`）：她直接调的当不认识，`miyu call` 调的也当不认识；只有核心自带的命令
+    /// 经通道调（嵌套调用的 [`crate::session::NestedInput::Call`] 带 `command`）才认，访问类别那道硬规矩、`clicall` 都不查。
+    pub command_only: bool,
 }
 
 /// 参数不是一个 JSON 对象，修正不了。

@@ -89,6 +89,7 @@ fn face(catalog: &Catalog, names: &[&str], on: bool) -> Vec<ToolEntry> {
                 need_load: false,
                 clicall: on && *name != SHELL,
                 runs_commands: false,
+                command_only: false,
             }
         })
         .collect();
@@ -154,6 +155,21 @@ fn tools_scripts_cannot_call_are_left_out() {
         shell_description(&face),
         "shell does things.\n\n[web_fetch|]",
         "写入的开了 clicall 也调不成，不列"
+    );
+}
+
+/// 不上工具面的（施工 BS-1 中）：`clicall` 写着开也不列，`miyu call` 调不到它。
+#[test]
+fn tools_off_the_face_are_left_out() {
+    let catalog = catalog();
+    let mut face = face(&catalog, &[SHELL, "web_fetch", "web_search"], true);
+    face.iter_mut()
+        .filter(|entry| entry.name == "web_search")
+        .for_each(|entry| entry.command_only = true);
+    describe(&catalog, &mut face);
+    assert_eq!(
+        shell_description(&face),
+        "shell does things.\n\n[web_fetch|]"
     );
 }
 

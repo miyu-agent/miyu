@@ -69,6 +69,7 @@ pub(crate) fn stub(
             access: Access::Read,
             parameters: texts.parameters.clone(),
             clicall: false,
+            command_only: false,
         },
     );
     face.push(ToolSpec {

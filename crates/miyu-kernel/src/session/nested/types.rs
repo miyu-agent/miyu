@@ -22,6 +22,9 @@ pub enum NestedInput {
         name: String,
         /// 参数原文。
         args: String,
+        /// 核心自带的命令（会话里的 `miyu pkg`）经通道调的（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）：只认不上工具面的
+        /// 工具（[`crate::tool::ToolRule::command_only`]），`miyu call` 调的（`false`）不认它们。
+        command: bool,
     },
     /// 执行前的链判完了。
     Guarded {

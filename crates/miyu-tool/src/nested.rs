@@ -19,6 +19,13 @@ pub trait NestedPort: Send + Sync {
     /// [`Nested::Settled`] 的 `cancelled`。
     fn call(&self, name: String, args: String) -> Calling<'_>;
 
+    /// 核心自带的命令（会话里的 `miyu pkg`，施工 BS-1 中）调工具 `name`：只调得了不上工具面的那几件（[`crate::Tool::command_only`]），
+    /// 照常过权限链、问人。默认当不认识：没有这条路的端口。
+    fn command(&self, name: String, args: String) -> Calling<'_> {
+        drop((name, args));
+        Box::pin(async { Nested::Refused(miyu_kernel::session::NestedRefusal::Unknown) })
+    }
+
     /// 这条命令放到了后台、成了任务 `job`（一起来就放到后台的，到时挪到后台的，施工 M-3）：之后的调用挂到这个任务下面。
     fn adopt(&self, job: JobId);
 

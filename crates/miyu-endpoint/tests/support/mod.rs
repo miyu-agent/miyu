@@ -9,6 +9,7 @@ pub mod login;
 pub mod mcp;
 pub mod memories;
 pub mod packaged;
+pub mod pkg;
 pub mod providers;
 mod pushes;
 pub mod shipped;

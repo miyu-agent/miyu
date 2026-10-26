@@ -26,8 +26,9 @@ const MCP: &str = "mcp__";
 /// 工具面 `face` 上脚本里能调的那几件；没有跑命令的工具的一件都没有。
 fn scriptable(face: &[ToolEntry]) -> impl Iterator<Item = &ToolEntry> {
     let runs = face.iter().any(|entry| entry.runs_commands);
-    face.iter()
-        .filter(move |entry| runs && entry.clicall && entry.access.scriptable())
+    face.iter().filter(move |entry| {
+        runs && entry.clicall && entry.access.scriptable() && !entry.command_only
+    })
 }
 
 /// 照工具目录给工具面 `face` 的每一件标上是不是跑命令的（`runs` 照名字查目录里的那一件，施工 BS-1 上）。以前造的快照里没有这一格，

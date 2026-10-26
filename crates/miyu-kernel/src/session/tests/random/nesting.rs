@@ -83,6 +83,7 @@ pub(super) fn some_nested(rng: &mut Rng, watch: &mut Watch) -> Option<Input> {
                 id: NestedId::new(parent, n).unwrap(),
                 name: name.to_string(),
                 args: args.to_string(),
+                command: false,
             }
         }
         _ => return None,

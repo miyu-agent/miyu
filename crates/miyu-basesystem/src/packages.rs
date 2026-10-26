@@ -84,6 +84,10 @@ impl Packages {
 }
 
 impl Tool for Packages {
+    fn command_only(&self) -> bool {
+        true
+    }
+
     fn spec(&self) -> &Spec {
         &self.spec
     }

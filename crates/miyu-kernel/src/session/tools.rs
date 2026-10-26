@@ -97,8 +97,10 @@ impl Session {
                 ));
                 continue;
             }
+            // 不上工具面的她看不见，直接调的当不认识（施工 BS-1 中）。
             let checked = match self.policy.tools.get(&call.name) {
                 None => Err(self.policy.tool_texts.unknown(&call.name)),
+                Some(rule) if rule.command_only => Err(self.policy.tool_texts.unknown(&call.name)),
                 Some(rule) => repair(&rule.parameters, &call.args)
                     .map(|args| (args, rule.access.clone()))
                     .map_err(|_| self.policy.tool_texts.not_an_object(&call.name)),
