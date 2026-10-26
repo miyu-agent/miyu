@@ -10,6 +10,7 @@ mod install;
 mod open;
 mod pack;
 mod query;
+mod session;
 mod shown;
 mod source;
 mod upgrade;
@@ -210,6 +211,10 @@ async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
             &mut io::stderr() as &mut dyn Write,
         );
         return pack::pack(&wanted, &cwd, &language::current(), json, streams);
+    }
+    // 会话里的（施工 BS-1 中下）：经通道，不连核心的协议。
+    if std::env::var_os(crate::call::SOCK).is_some() {
+        return session::run(&args, &cwd);
     }
     let env = Env::current();
     let root = match DataRoot::locate(&env) {

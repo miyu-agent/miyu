@@ -45,27 +45,32 @@ fn replies(args: &Value) -> Vec<Reply> {
 
 /// 进工作目录 `work`：工作目录在数据根里，会话照 5-14 换成它自己的工作区，命令里自己进。
 #[cfg(unix)]
-fn enter(work: &Path) -> String {
+pub(super) fn enter(work: &Path) -> String {
     format!("cd '{}' || exit 1\n", work.display())
 }
 
 /// 同上，PowerShell。
 #[cfg(windows)]
-fn enter(work: &Path) -> String {
+pub(super) fn enter(work: &Path) -> String {
     format!("Set-Location -LiteralPath '{}'\n", work.display())
 }
 
 /// 一次 `miyu call`：参数是 `args`，结果写进 `<name>.out`、`<name>.err`、`<name>.code`。
-#[cfg(unix)]
 fn step(name: &str, args: &str) -> String {
-    format!("miyu call {args} > {name}.out 2> {name}.err; echo $? > {name}.code\n")
+    miyu(name, &format!("call {args}"))
+}
+
+/// 一次 `miyu <args>`（会话里的 `miyu pkg` 也用，`pkg_session.rs`），结果写法同 [`step`]。
+#[cfg(unix)]
+pub(super) fn miyu(name: &str, args: &str) -> String {
+    format!("miyu {args} > {name}.out 2> {name}.err; echo $? > {name}.code\n")
 }
 
 /// 同上，PowerShell：输出原样接进文件，退出码自己写。
 #[cfg(windows)]
-fn step(name: &str, args: &str) -> String {
+pub(super) fn miyu(name: &str, args: &str) -> String {
     format!(
-        "$p = Start-Process -FilePath (Get-Command miyu).Source -ArgumentList 'call {args}' -NoNewWindow -Wait -PassThru -RedirectStandardOutput {name}.out -RedirectStandardError {name}.err; [IO.File]::WriteAllText(\"$PWD\\{name}.code\", \"$($p.ExitCode)\")\n"
+        "$p = Start-Process -FilePath (Get-Command miyu).Source -ArgumentList '{args}' -NoNewWindow -Wait -PassThru -RedirectStandardOutput {name}.out -RedirectStandardError {name}.err; [IO.File]::WriteAllText(\"$PWD\\{name}.code\", \"$($p.ExitCode)\")\n"
     )
 }
 
@@ -92,13 +97,13 @@ fn pause() -> &'static str {
 
 /// 收尾：端点的两个变量记进 `endpoint.txt`（命令结束以后测试自己连），写一个结束的记号。
 #[cfg(unix)]
-fn finish() -> &'static str {
+pub(super) fn finish() -> &'static str {
     "printf '%s\\n%s\\n' \"$MIYU_CALL_SOCK\" \"$MIYU_CALL_TOKEN\" > endpoint.txt\necho done > done.flag\n"
 }
 
 /// 同上，PowerShell。
 #[cfg(windows)]
-fn finish() -> &'static str {
+pub(super) fn finish() -> &'static str {
     "[IO.File]::WriteAllText(\"$PWD\\endpoint.txt\", \"$env:MIYU_CALL_SOCK`n$env:MIYU_CALL_TOKEN\")\n[IO.File]::WriteAllText(\"$PWD\\done.flag\", 'done')\n"
 }
 
@@ -170,7 +175,7 @@ fn start(home: &Home, server: &Server) -> Child {
 }
 
 /// 工作目录里的一个文件，去掉末尾的换行。
-fn read(work: &Path, name: &str) -> String {
+pub(super) fn read(work: &Path, name: &str) -> String {
     std::fs::read_to_string(work.join(name))
         .unwrap_or_else(|error| panic!("{name}：{error}"))
         .trim_end()
@@ -178,7 +183,7 @@ fn read(work: &Path, name: &str) -> String {
 }
 
 /// 会话日志里的事件，照先后。
-fn log(home: &Home, session: &str) -> Vec<Value> {
+pub(super) fn log(home: &Home, session: &str) -> Vec<Value> {
     let dir = home.root.path().join("home");
     let mut events = Vec::new();
     for owner in std::fs::read_dir(&dir).expect("有家目录").flatten() {
@@ -203,7 +208,7 @@ fn log(home: &Home, session: &str) -> Vec<Value> {
 
 /// 拉起核心、开一个会话（权限全开：这里测通道，沙盒在 `miyu-sandbox` 测）、说一句；模型照 `args` 调 `shell`。交回核心、会话
 /// 编号，和留着的假模型（丢掉就停了）。
-async fn run(home: &Home, work: &Path, args: &Value) -> (Child, String, Server) {
+pub(super) async fn run(home: &Home, work: &Path, args: &Value) -> (Child, String, Server) {
     let server = Server::start(replies(args)).await;
     let core = start(home, &server);
     let mut rpc = connect(home).await;
@@ -247,7 +252,7 @@ async fn connect(home: &Home) -> Rpc {
 }
 
 /// 等到工作目录里有了 `done.flag`，最多一分钟；没等到的说 `shell` 交回了什么。
-async fn until_done(home: &Home, session: &str, work: &Path) {
+pub(super) async fn until_done(home: &Home, session: &str, work: &Path) {
     let started = Instant::now();
     while !work.join("done.flag").exists() && started.elapsed() < Duration::from_secs(60) {
         tokio::time::sleep(Duration::from_millis(50)).await;

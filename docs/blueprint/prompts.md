@@ -3596,6 +3596,17 @@ miyu call only works inside a command Miyu runs, in a session where scripts can 
 miyu pkg does not work in this session.
 ```
 
+#### `software/basesystem/shell/call/pkg-unavailable.txt`
+
+- 什么时候加进来：会话里的 `miyu pkg` 用了只在本机做的子命令（`files`、`owns`、`check`、`update`、`clean`、只有 `-y`、`-c` 的 `-S`）（退出码 2，命令行那头编进程序）（施工 BS-1 中下）
+- token：约 13，`{command}` 按 `files` 填（估的，按 o200k）
+- 为什么加：设计 44 第三节第 4 条：会话里只换得成 `packages`、`package` 两件的调用，别的说清用不了、不退回协议
+- 指纹：`ff7c8db2`
+
+```text
+miyu pkg {command} does not work inside a Miyu session.
+```
+
 #### `software/basesystem/shell/call/schema.txt`
 
 - 什么时候加进来：`miyu call --schema` 印的样子：名字、说明、参数格式（施工 M-3）
@@ -3721,9 +3732,9 @@ would give a container full access to this machine's devices
 #### `packages/authoring/skills/package-creator/SKILL.md`
 
 - 什么时候加进来：同上，`skill-package-creator`
-- token：那一行 68；正文 741（2026-10-12 量）
+- token：那一行 68；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10）
 - 为什么加：同上：脚本的开头怎么写、参数和输出、沙盒，MCP 服务的写法，检查和装
-- 指纹：`951a813d`
+- 指纹：`156f0a32`
 
 ````text
 ---
@@ -3795,8 +3806,10 @@ A package with MCP servers is installed off; the person turns it on in the packa
 
 ## Check and install
 
-1. `packages` with `path` set to the folder: lists the scripts it will add; anything under `skipped` will not load, fix it first.
-2. `package` with `install` set to the same folder. The person is asked first. New tools appear from the next turn.
+Run these in a shell command:
+
+1. `miyu pkg info <folder>`: lists the scripts it will add; anything under `skipped` will not load, fix it first.
+2. `miyu pkg install <folder>`. The person is asked first. New tools appear from the next turn.
 3. To change it, edit the files and install the folder again.
 ````
 
@@ -5670,9 +5683,9 @@ No skills are available now.
 #### `packages/authoring/skills/skill-creator/SKILL.md`
 
 - 什么时候加进来：出厂包 `authoring` 装着、预设开着 `skill-skill-creator`、工具面上有 `read` 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
-- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算）；正文 667（2026-10-12 量）
+- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5）
 - 为什么加：出厂带两个技能（`skills.md`「定了的」第 5 条）：她自己写技能照包的样子写在工作区、`packages` 检查、`package` 装（设计 31 第六节第 2 条）；说明加引号那一条是 F-10 下上真模型写技能时撞上的
-- 指纹：`0b14cd5f`
+- 指纹：`e158a45e`
 
 ````text
 ---
@@ -5736,8 +5749,8 @@ metadata:
 
 ## Check and install
 
-1. `packages` with `path` set to the package folder: it says whether it installs and lists the skills; anything under `skipped` will not load, fix it first.
-2. `package` with `install` set to the same folder. The person is asked before it is installed. The skill shows up from the next turn.
+1. `miyu pkg info <folder>` in a shell command: it says whether it installs and lists the skills; anything under `skipped` will not load, fix it first.
+2. `miyu pkg install <folder>` the same way. The person is asked before it is installed. The skill shows up from the next turn.
 3. To change it later, edit the files in the workspace and install the folder again: the same id replaces the old one.
 ````
 

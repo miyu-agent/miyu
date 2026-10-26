@@ -21,23 +21,18 @@ use crate::language::Language;
 const USAGE: u8 = 2;
 
 /// 所属的命令已经结束、被打断。
-#[cfg_attr(
-    not(any(unix, windows)),
-    expect(dead_code, reason = "别的系统没有通道")
-)]
 const ENDED: u8 = 3;
 
+/// 告诉命令端点在哪的环境变量：有它的是跑在 Miyu 的会话里、开了通道的命令（会话里的 `miyu pkg` 照它认，施工 BS-1 中下）。
+pub(crate) const SOCK: &str = "MIYU_CALL_SOCK";
+
 /// 协议版本，和核心那一头一样。
-const VERSION: u32 = 1;
+pub(crate) const VERSION: u32 = 1;
 
 /// 不在 Miyu 跑的命令里。
 const OUTSIDE: &str = include_str!("../../../resources/software/basesystem/shell/call/outside.txt");
 
 /// 所属的命令已经结束。
-#[cfg_attr(
-    not(any(unix, windows)),
-    expect(dead_code, reason = "别的系统没有通道")
-)]
 const ENDED_TEXT: &str =
     include_str!("../../../resources/software/basesystem/shell/call/ended.txt");
 
@@ -102,7 +97,7 @@ pub fn call(args: &[OsString], language: Language) -> ExitCode {
     clippy::let_underscore_must_use,
     reason = "管道那头关了：脚本不读了，印不出来也没人要"
 )]
-fn print_out(stdout: &str, stderr: &str) {
+pub(crate) fn print_out(stdout: &str, stderr: &str) {
     let _ = std::io::stdout().write_all(stdout.as_bytes());
     let _ = std::io::stderr().write_all(stderr.as_bytes());
 }
@@ -193,31 +188,51 @@ fn parse(args: &[String]) -> Result<Vec<Value>, String> {
     ])
 }
 
-/// 连上环境变量里的端点，带上令牌发请求、收回答：4 字节大端长度加 JSON，一次连接一个。端点不在了、没人听的是所属的命令
-/// 结束了（退出码 3）；没有那两个变量、别的连不上的不在 Miyu 跑的命令里（退出码 2）。
-#[cfg(any(unix, windows))]
+/// 发请求，没收到回答时照为什么说（`miyu call` 照 [`send`] 写成退出码和一句；会话里的 `miyu pkg` 另说，施工 BS-1 中下）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Lost {
+    /// 没有那两个变量、连不上：不在 Miyu 跑的命令里。
+    Outside,
+    /// 端点不在了、没人听、读写断了：所属的命令结束了。
+    Ended,
+    /// 请求大过一帧能写的长度。
+    TooLong,
+}
+
+/// 发请求、收回答，没收到的照 [`Lost`] 写成退出码和一句。
 fn send(request: &Value) -> Result<Map<String, Value>, (u8, String)> {
-    let outside = || (USAGE, OUTSIDE.to_string());
-    let ended = || (ENDED, ENDED_TEXT.to_string());
-    let endpoint = std::env::var_os("MIYU_CALL_SOCK").ok_or_else(outside)?;
-    let token = std::env::var("MIYU_CALL_TOKEN").map_err(|_| outside())?;
+    exchange(request).map_err(|lost| match lost {
+        Lost::Outside => (USAGE, OUTSIDE.to_string()),
+        Lost::Ended => (ENDED, ENDED_TEXT.to_string()),
+        Lost::TooLong => (USAGE, BAD_JSON.to_string()),
+    })
+}
+
+/// 连上环境变量里的端点，带上令牌发请求、收回答：4 字节大端长度加 JSON，一次连接一个。端点不在了、没人听的是所属的命令
+/// 结束了；没有那两个变量、别的连不上的不在 Miyu 跑的命令里。
+#[cfg(any(unix, windows))]
+pub(crate) fn exchange(request: &Value) -> Result<Map<String, Value>, Lost> {
+    let endpoint = std::env::var_os(SOCK).ok_or(Lost::Outside)?;
+    let token = std::env::var("MIYU_CALL_TOKEN").map_err(|_| Lost::Outside)?;
     let mut stream = connect(&endpoint).map_err(|error| match error.kind() {
-        std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused => ended(),
-        _ => outside(),
+        std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused => Lost::Ended,
+        _ => Lost::Outside,
     })?;
     let mut request = request.clone();
     request["token"] = Value::String(token);
     let body = request.to_string();
-    let len = u32::try_from(body.len()).map_err(|_| (USAGE, BAD_JSON.to_string()))?;
-    stream.write_all(&len.to_be_bytes()).map_err(|_| ended())?;
-    stream.write_all(body.as_bytes()).map_err(|_| ended())?;
+    let len = u32::try_from(body.len()).map_err(|_| Lost::TooLong)?;
+    stream
+        .write_all(&len.to_be_bytes())
+        .map_err(|_| Lost::Ended)?;
+    stream.write_all(body.as_bytes()).map_err(|_| Lost::Ended)?;
     let mut head = [0u8; 4];
-    stream.read_exact(&mut head).map_err(|_| ended())?;
+    stream.read_exact(&mut head).map_err(|_| Lost::Ended)?;
     let mut reply = vec![0u8; u32::from_be_bytes(head) as usize];
-    stream.read_exact(&mut reply).map_err(|_| ended())?;
+    stream.read_exact(&mut reply).map_err(|_| Lost::Ended)?;
     match serde_json::from_slice::<Value>(&reply) {
         Ok(Value::Object(reply)) => Ok(reply),
-        _ => Err(ended()),
+        _ => Err(Lost::Ended),
     }
 }
 
@@ -252,8 +267,8 @@ fn connect(endpoint: &std::ffi::OsStr) -> std::io::Result<std::fs::File> {
 
 /// 别的系统没有通道：照不在 Miyu 跑的命令里说。
 #[cfg(not(any(unix, windows)))]
-fn send(_request: &Value) -> Result<Map<String, Value>, (u8, String)> {
-    Err((USAGE, OUTSIDE.to_string()))
+pub(crate) fn exchange(_request: &Value) -> Result<Map<String, Value>, Lost> {
+    Err(Lost::Outside)
 }
 
 #[cfg(test)]

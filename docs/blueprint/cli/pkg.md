@@ -10,6 +10,7 @@
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令 `pkg`；换上帮助页 |
 | `crates/miyu-cli/src/pkg.rs` | 参数、找数据根、连核心、握手、照子命令发请求、退出码 |
+| `crates/miyu-cli/src/pkg/session.rs` | 会话里的 `miyu pkg`（施工 BS-1 中下）：经 `miyu call` 的通道，子命令换成调 `packages`、`package` |
 | `crates/miyu-cli/src/pkg/shown.rs` | 一个软件包印成一行（纯的，测试里照它算） |
 | `crates/miyu-cli/src/pkg/query.rs` | `info`、`files`、`owns`、`check` 印成几行，字节数写成给人看的（纯的，施工 F-8 下） |
 | `crates/miyu-cli/src/pkg/confirm.rs` | 装、卸之前印的那一份、问的那一句、读答（施工 F-8 下补） |
@@ -44,6 +45,24 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 | `--target <系统>`、`-o, --out <目录>` | `pack`：打给哪一种系统、写到哪个目录（施工 G-1） |
 
 界面语言照 `cli/main.md`。用到的环境变量：`MIYU_HOME`。
+
+
+#### 会话里（施工 BS-1 中下，设计 `44-基础系统拆包.md` 第三节第 4 条）
+
+看见 `MIYU_CALL_SOCK`（这条命令跑在 Miyu 的会话里、开了通道）的，一律经 `miyu call` 的通道带着这条命令的令牌发 `op: "pkg"`（`cli/call.md`），不读本机令牌、不连核心的协议；印核心答回来的（就是 `packages`、`package` 两件工具的输出，英文），照它退出。通道连不上的说 `pkg-off.txt`、退出码 2，不退回去走协议（同 MC11）。
+
+| 子命令 | 换成 |
+|---|---|
+| `list`、`-Q` | `packages {}` |
+| `info <编号>`、`-Qi` | `packages {"package"}`；写的是路径（同 `install` 认路径的写法）的 `packages {"path"}`：看那个包文件夹 |
+| `search <词…>`、`-Ss` | `packages {"search"}`，几个词照空格连起来 |
+| `install <路径\|编号>`、`-U`、`-S <编号…>` | `package {"install"}`，一个一次；路径照现在的目录换成绝对的、`.`、`..` 照字面去掉，写到 `package.toml` 的取它所在的文件夹 |
+| `remove <编号>`、`-R` | `package {"remove"}` |
+| `upgrade`、`-Su`、`-Syu` | `package {"upgrade": "all"}`（`-y` 在会话里不另拿索引） |
+| `pack` | 照旧在本机打 |
+| `files`、`owns`、`check`、`update`、`clean`、只有 `-y` 或 `-c` 的 `-S` | 说 `pkg-unavailable.txt`（「miyu pkg files does not work inside a Miyu session.」），退出码 2 |
+
+`--yes` 不认：问不问由权限策略判（工作区那一级每次问人，卡片照看一眼的那一份），她跳不过；`--system` 不认，装进哪一层由核心照会话判；`--format` 不管，印的就是工具的输出。几次调用挨着做，有一次不成的照它的退出码退出、后面的不做。`packages` 包关着、通道没开的会话里没有 `MIYU_CALL_SOCK`，`miyu pkg` 照旧走协议、借本人的身份：同设计 39 MC10、MC11 记着的那一条，设计 44 不加新口子。
 
 ### 怎么走
 

@@ -48,6 +48,16 @@ impl SyncFlags {
     pub(super) fn refresh(&self) -> bool {
         self.refresh
     }
+
+    /// 带了 `-s` 的搜的词（照空格连起来）；没带的没有（会话里的 `miyu pkg`，施工 BS-1 中下）。
+    pub(super) fn searched(&self) -> Option<String> {
+        self.search.then(|| self.words.join(" "))
+    }
+
+    /// 带了 `-c`。
+    pub(super) fn cleans(&self) -> bool {
+        self.clean
+    }
 }
 
 /// pacman 的 `-S…`：照几个字母做。

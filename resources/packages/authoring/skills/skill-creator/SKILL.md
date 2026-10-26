@@ -59,6 +59,6 @@ metadata:
 
 ## Check and install
 
-1. `packages` with `path` set to the package folder: it says whether it installs and lists the skills; anything under `skipped` will not load, fix it first.
-2. `package` with `install` set to the same folder. The person is asked before it is installed. The skill shows up from the next turn.
+1. `miyu pkg info <folder>` in a shell command: it says whether it installs and lists the skills; anything under `skipped` will not load, fix it first.
+2. `miyu pkg install <folder>` the same way. The person is asked before it is installed. The skill shows up from the next turn.
 3. To change it later, edit the files in the workspace and install the folder again: the same id replaces the old one.
