@@ -47,7 +47,8 @@ mod stream;
 ///
 /// 日志打不开或者坏了、快照取不出来或者读不懂、内核载入不了。
 pub async fn load(setup: Load<'_>) -> Result<Handle, LoadError> {
-    load_placed(setup).await.map(|(handle, _)| handle)
+    // 装箱再等，同 `create`：载入这一段的 future 有近二十 KB。
+    Box::pin(load_placed(setup)).await.map(|(handle, _)| handle)
 }
 
 /// 同 [`load`]，另交回会话这时在哪干活（施工 V-2 三补）：照日志里最后一次记下的挑的，会话表照它记，不用再问 actor。

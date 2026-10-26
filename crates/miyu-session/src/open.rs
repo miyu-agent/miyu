@@ -63,6 +63,13 @@ pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace}
 ///
 /// 人格、子会话的场所说明读不出来，策略造不出来、磁盘上建不成；造会话那一条没落盘。
 pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
+    // 装箱再等：造会话这一段的 future 有三十多 KB，不装箱的话每个调用方的 future 都跟着大，调试构建在 Windows 较深的调用链上
+    // 会栈溢出（施工 J-1 上的 CI 在 `route_learned` 上撞到过）。
+    Box::pin(created(setup)).await
+}
+
+/// [`create`] 干活的那一段。
+async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
     let mut opened = face::open(&setup, &config.current().resolved.values()).await;
     let taken = (
