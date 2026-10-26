@@ -25,6 +25,7 @@
 | [配置、密钥、模型](config.md) | `config.*`、`secret.*`、`provider.*`、`model.*`、`usage.query` |
 | [人格与预设](personas.md) | `persona.*`、`preset.*` |
 | [项目](projects.md) | `project.*` |
+| [定时任务](schedules.md) | `schedule.*` |
 | [软件包与命令](packages.md) | `package.*`、`extension.*`、`mcp.*`、`command.*`、`check` |
 | [扩展](extensions.md) | 拉起、能力、`provide`、`tool.call`、`user.append`、`system.append`、界面块、`content.*`、`events.append` |
 | [场所](venues.md) | `venue.*`、`session.respond`、`session.note`、代表平台上的人说话 |

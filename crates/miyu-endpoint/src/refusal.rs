@@ -13,6 +13,7 @@ mod memory;
 mod message;
 mod package;
 mod project;
+mod schedule;
 mod widgets;
 
 /// 一次拒绝：JSON-RPC 的错误码，和原因码。

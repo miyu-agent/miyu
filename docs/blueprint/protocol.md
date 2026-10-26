@@ -113,7 +113,7 @@
 | 远程（`Remote { from }`） | 网页软件替远程的人开的连接：握手之前先写一行通知 `connection.remote {from}`（来自哪个地址），再原样转浏览器的字节 | 拒 |
 
 1. `connection.remote` 只在握手之前收、只能往下标：本机的标成远程，标了就变不回本机；远程的再说一次照旧是第一次说的地址；握手以后说的不理。标了记一行运行日志 `connection marked remote`（不记地址）。
-2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`。`mcp.login` 远程也能调（施工 X-42 下补，主会话 2026-10-22 定）：回调照旧听核心的 `127.0.0.1`，远程的头在它自己那边打开授权页，跳到打不开的地址以后照 `mcp.login_finish` 贴回来。
+2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`，`schedule.add` 的 `target.new` 带 `cwd`（施工 J-1 下）。`mcp.login` 远程也能调（施工 X-42 下补，主会话 2026-10-22 定）：回调照旧听核心的 `127.0.0.1`，远程的头在它自己那边打开授权页，跳到打不开的地址以后照 `mcp.login_finish` 贴回来。
 3. 不是本机来的调这些：回 `local_machine_only`（「只能在核心所在的机器上用。」），什么都不做，参数都不看。闸在分发的最前面那一段（`connection.rs`，扩展的能力闸旁边），后台答的（`fs.find` 带 `wait`）、`login.*`、`account.*`、`subscribe` 都过它。
 4. 握手回应：不是本机来的不给 `host`。
 5. 只在回应里带本机路径的（`session.list` 的 `cwd`、`skill.list` 的 `dir`、`config.get` 的 `files` 这些）这一步不动：路径本身不是能力，看得到哪些归 Y-2 照属主过滤。
@@ -191,6 +191,7 @@
 | `persona.list`、`persona.get` | 列出人格、读一个人格叠好的样子（施工 P-1 上，`personas.md`） |
 | `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
 | `preset.set`、`preset.delete` | 新建、改一个预设（只写你家目录那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
+| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume` | 定时任务：建、列、删、停、续，照这个连接替谁干活的账号的唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
 | `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你家目录那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）（施工 P-3 下，`personas.md`「改」） |
 | `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |
 | `persona.background` | 读一个人格的背景图：`{"background", "media_type", "data"}`，没有的 `null`（施工 P-6，`personas.md`「主题色、背景图」） |
@@ -1253,8 +1254,9 @@
 | 方法 | `params` | 什么时候 |
 |---|---|---|
 | `event` | `{"session": <编号>, "event": <事件>}` | 订阅着的会话的每一条事件，一条一个；补发的也是它（施工 3-8 六补） |
-| `resync` | `{"session": <编号>, "stream": "events"}`；配置的是 `{"stream": "config"}`（施工 8-4），会话列表的是 `{"stream": "sessions"}`（施工 9-5），记忆日志的是 `{"stream": "memory"}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上），界面块的是 `{"stream": "widgets"}`（施工 X-15 中） | 读得太慢，掉了队：这个订阅停了 |
+| `resync` | `{"session": <编号>, "stream": "events"}`；配置的是 `{"stream": "config"}`（施工 8-4），会话列表的是 `{"stream": "sessions"}`（施工 9-5），记忆日志的是 `{"stream": "memory"}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上），界面块的是 `{"stream": "widgets"}`（施工 X-15 中），定时任务的是 `{"stream": "schedules"}`（施工 J-1 下） | 读得太慢，掉了队：这个订阅停了 |
 | `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
+| `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：这个账号的一个任务建了、停了、续了、删了、到点交过了 |
 | `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置、个人设置每变一次 |
 | `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |
 | `memory.dreaming` | `{"upto": <这一批，同它的 merging>, "kind": "revised", "id", "text"}`；`{"upto", "kind": "retired", "id", "retire": "outdated" \| "repeat" \| "worthless", "kept"?, "why"}`；`{"upto", "kind": "summary", "chars", "done"}`；都加订阅时写的 `persona` 或 `session`（施工 R-21） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 7 条，整理时她每写完一条（摘要每多 20 个字、写完）一条 |

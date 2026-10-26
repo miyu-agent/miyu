@@ -103,6 +103,7 @@
 
 | `reason` | 什么时候 | `data` |
 |---|---|---|
+| `unknown_schedule` | 这个账号没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`（施工 J-1 下） | |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 
 ## 软件包、扩展、命令

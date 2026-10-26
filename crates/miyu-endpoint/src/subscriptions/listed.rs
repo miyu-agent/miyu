@@ -26,6 +26,8 @@ pub(super) enum Listed {
     Packages,
     /// 这个账号的项目：推 `projects.changed`，别的账号的不推。
     Projects(AccountId),
+    /// 这个账号的定时任务（施工 J-1 下）：推 `schedules.changed`，别的账号的不推。
+    Schedules(AccountId),
     /// 这个账号的知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`，别的账号的不推。
     Knowledge(AccountId),
 }
@@ -37,6 +39,7 @@ impl Listed {
             Listed::Extensions => "extensions",
             Listed::Packages => "packages",
             Listed::Projects(_) => "projects",
+            Listed::Schedules(_) => "schedules",
             Listed::Knowledge(_) => "kb",
         }
     }
@@ -56,6 +59,7 @@ impl Listed {
                 Some(core.extensions.subscribe()),
             ),
             Listed::Projects(_) => (core.project_changes.subscribe(), None),
+            Listed::Schedules(_) => (core.schedules().subscribe(), None),
             Listed::Knowledge(_) => (core.kb_progress.subscribe(), None),
         }
     }
@@ -71,6 +75,11 @@ impl Listed {
                 let project = crate::projects::changes::mine(id, account)?;
                 let params = crate::projects::item(core, account, project)?;
                 json!({"jsonrpc": "2.0", "method": "projects.changed", "params": params})
+            }
+            Listed::Schedules(account) => {
+                let id = crate::schedules::changes::mine(id, account)?;
+                let params = crate::schedules::methods::changed(core, account, id)?;
+                json!({"jsonrpc": "2.0", "method": "schedules.changed", "params": params})
             }
             Listed::Extensions => {
                 let entry = crate::extensions::entry(core, id, shaken.now(core))?;
@@ -244,6 +253,28 @@ impl Subscriptions {
     /// 取消订阅项目的推送。
     pub(crate) fn remove_projects(&mut self) {
         self.projects = None;
+    }
+
+    /// 订阅 `account` 的定时任务（施工 J-1 下）：同 [`Subscriptions::add_projects`]，回应 `{"schedules": […]}`。
+    pub(crate) fn add_schedules(
+        &mut self,
+        core: &Arc<Core>,
+        account: AccountId,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> Result<serde_json::Value, crate::refusal::Refusal> {
+        self.schedules = Some(ListedForwarder::start(
+            Arc::clone(core),
+            Listed::Schedules(account.clone()),
+            shaken,
+            out.clone(),
+        ));
+        crate::schedules::methods::listed(core, &account)
+    }
+
+    /// 取消订阅定时任务的推送。
+    pub(crate) fn remove_schedules(&mut self) {
+        self.schedules = None;
     }
 
     /// 订阅这个账号 `account` 的知识库建索引的进度（施工 W-15）：回应是空的，这一刻的样子照 `kb.list`（`indexing`、`indexed_at`）。

@@ -107,6 +107,11 @@ pub(crate) fn call<'a>(
         "project.list" | "project.create" | "project.update" | "project.delete" => {
             answer(move || async move { crate::projects::call(core, caller, request).await })
         }
+        name if name.starts_with("schedule.") => {
+            answer(
+                move || async move { crate::schedules::methods::call(core, caller, request).await },
+            )
+        }
         "view.page" => {
             answer(move || async move { crate::view::page(core, peer, params(request)?).await })
         }

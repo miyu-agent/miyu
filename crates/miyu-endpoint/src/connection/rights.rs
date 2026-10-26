@@ -54,7 +54,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         }
         "subscribe" => match params.get("stream").and_then(Value::as_str) {
             Some("events" | "view" | "sessions") => Needs(EventsRead),
-            Some("projects") => People,
+            Some("projects" | "schedules") => People,
             _ => Anyone,
         },
         // 驱动会话。
@@ -156,6 +156,12 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "project.create"
         | "project.update"
         | "project.delete"
+        // 定时任务（施工 J-1 下）：只碰自己账号的唤醒表。
+        | "schedule.add"
+        | "schedule.list"
+        | "schedule.cancel"
+        | "schedule.pause"
+        | "schedule.resume"
         // 整个核心的检查（施工 Y-2 下下上补进表：原来照「表里没有的当只给人」落到这里）。
         | "check" => People,
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。

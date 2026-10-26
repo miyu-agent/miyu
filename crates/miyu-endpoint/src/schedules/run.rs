@@ -128,6 +128,7 @@ async fn fire(
         }
     }
     core.schedules.changed();
+    core.schedules.notify(account, &schedule.id);
 }
 
 /// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，别的照现在算下一次；记一行。

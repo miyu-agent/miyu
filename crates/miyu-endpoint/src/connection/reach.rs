@@ -83,7 +83,8 @@ pub(super) fn strip(reach: &Reach, result: &mut Value) {
 /// - 读、找核心那台机器的文件，开终端会话，OAuth 回调听核心的 `127.0.0.1`，首次设置码；
 /// - 交本机路径的：`blob.put` 的 `path`、`package.install` 的 `path`、`kb.mount` 的 `folder`、`mcp.set` 的 `command`（在核心那台
 ///   机器上起程序）、`check` 的 `file`、`cwd`、`config.trust`、`config.get` 的 `cwd`；
-/// - 选核心那台机器上的目录：会话的 `cwd`、`dirs`，附件的 `path`，`/workspace <路径>`，项目的 `workspace`。远程来的会话用它
+/// - 选核心那台机器上的目录：会话的 `cwd`、`dirs`，附件的 `path`，`/workspace <路径>`，项目的 `workspace`，定时任务每次新开的
+///   `cwd`（施工 J-1 下）。远程来的会话用它
 ///   自己的默认工作区（`session.create` 不写 `cwd`）。
 pub(crate) fn local_machine_only(method: &str, params: &Value) -> bool {
     let has = |key: &str| params.get(key).is_some_and(|value| !value.is_null());
@@ -117,6 +118,10 @@ pub(crate) fn local_machine_only(method: &str, params: &Value) -> bool {
         "session.redo" => attached_path(),
         "command.run" => has("cwd") || moves(params),
         "project.create" | "project.update" => has("workspace"),
+        // 每次新开的定时任务的工作目录（施工 J-1 下）。
+        "schedule.add" => params
+            .pointer("/target/new/cwd")
+            .is_some_and(|cwd| !cwd.is_null()),
         _ => false,
     }
 }

@@ -100,13 +100,13 @@
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
 | `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
-| `not_permitted` | 成员的连接调了名单以外的方法（施工 Y-2 下下上，`connection/gate/members.rs`）：成员调得了只碰自己东西的那些——自己的会话（说话、打断、撤销、压缩、换模型、改标题、回答、回顾、工作区、权限级别、工具、上下文、终端会话、视图、后台任务）、斜杠命令、附件、人格、预设、技能、脚本、项目、知识库、记忆、用量（只算自己名下的）、`provider.catalog`、`mermaid.render`，订阅 `events`、`view`、`sessions`、`projects`、`kb`、`memory`、`widgets` 几种流；施工 Y-2 下下中上起还有他自己那一份配置：读、查、清单（`config.get`、`config.check`、`config.schema`）、开关和加载方式（`feature.set`、`tool.set_loading`）、项目配置信不信任（`config.trust`）、订阅 `config`；施工 Y-2 下下中中起还有写他的个人设置（`config.set` 的 `personal`）、他自己那一份密钥（`secret.set`、`secret.delete`、`secret.list`）、照他那一份配置列模型、试供应商（`model.list`、`provider.test`）。写系统配置、系统那一份密钥、MCP、一次性调模型、认供应商（`provider.detect`）、链接预览、整台机器的事（装包、扩展、读本机文件、`check`）不给。成员切权限级别到 `full` 也回它（2026-10-23 项目主人定：成员最高到工作区）。管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
+| `not_permitted` | 成员的连接调了名单以外的方法（施工 Y-2 下下上，`connection/gate/members.rs`）：成员调得了只碰自己东西的那些——自己的会话（说话、打断、撤销、压缩、换模型、改标题、回答、回顾、工作区、权限级别、工具、上下文、终端会话、视图、后台任务）、斜杠命令、附件、人格、预设、技能、脚本、项目、定时任务、知识库、记忆、用量（只算自己名下的）、`provider.catalog`、`mermaid.render`，订阅 `events`、`view`、`sessions`、`projects`、`schedules`、`kb`、`memory`、`widgets` 几种流；施工 Y-2 下下中上起还有他自己那一份配置：读、查、清单（`config.get`、`config.check`、`config.schema`）、开关和加载方式（`feature.set`、`tool.set_loading`）、项目配置信不信任（`config.trust`）、订阅 `config`；施工 Y-2 下下中中起还有写他的个人设置（`config.set` 的 `personal`）、他自己那一份密钥（`secret.set`、`secret.delete`、`secret.list`）、照他那一份配置列模型、试供应商（`model.list`、`provider.test`）。写系统配置、系统那一份密钥、MCP、一次性调模型、认供应商（`provider.detect`）、链接预览、整台机器的事（装包、扩展、读本机文件、`check`）不给。成员切权限级别到 `full` 也回它（2026-10-23 项目主人定：成员最高到工作区）。管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
 
 ## `subscribe`、`unsubscribe`
 
 订阅一条推送流：从这一刻起，这条流的推送都转给这个连接。
 
-**谁能调**：人、扩展；扩展订阅 `events`、`view`、`sessions` 流要能力 `events.read`，`projects` 流只给人（`local_only`）。
+**谁能调**：人、扩展；扩展订阅 `events`、`view`、`sessions` 流要能力 `events.read`，`projects`、`schedules` 流只给人（`local_only`）。
 
 **参数**
 
@@ -126,13 +126,14 @@
 | `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
 | `packages` | 软件包列表的一项变了 | `{"packages": […]}` |
 | `projects` | 这个账号的一个项目变了（施工 H-1） | `{"projects": […]}`，全部 |
+| `schedules` | 这个账号的一个定时任务变了、到点交过了（施工 J-1 下） | `{"schedules": […]}`，全部 |
 | `kb` | 这个账号的知识库建索引的进度（施工 W-15）：`kb.indexing`、`kb.indexed` | `{}`：这一刻的样子照 `kb.list` |
 | `memory` | 一间记忆的日志 | `{"upto": <那一刻最后一条的序号>}` |
 | `widgets` | 界面块 | 见 [软件包与扩展](packages.md) |
 
 各条流的推送长什么样见 [推送](pushes.md)。
 
-1. 一个连接对一个会话只有一个订阅（`events` 和 `view` 也算同一个）；再订阅换一个新的。`sessions`、`config`、`extensions`、`packages`、`projects`、`kb`、`widgets` 一个连接各一个。
+1. 一个连接对一个会话只有一个订阅（`events` 和 `view` 也算同一个）；再订阅换一个新的。`sessions`、`config`、`extensions`、`packages`、`projects`、`schedules`、`kb`、`widgets` 一个连接各一个。
 2. **补发**：写了 `after` 的，先把日志里序号大于它、订阅那一刻已经落了盘的事件一条条推过来，再回应（带 `upto`），之后从 `upto + 1` 接着推，不丢不重。会话正有一次模型请求在流的，补完以后另推一遍这次请求到目前为止的增量（`model.delta`），接得上后面实时推的。不带序号的瞬时事件不补。
 3. **掉队**：你读得太慢，会话给一个订阅最多攒 1024 份（配置 16 份、记忆 64 条），再多就推一条 `resync`，这个订阅停了。会话停了也推 `resync`。重新订阅，带上最后看到的序号（`after`）就能补回来。
 4. 订阅着一个会话，就算你在看着它：没人看着的会话，子代理报回来只记下、不叫醒她。

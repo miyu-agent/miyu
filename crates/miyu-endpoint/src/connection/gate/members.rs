@@ -73,6 +73,12 @@ const METHODS: &[&str] = &[
     "project.create",
     "project.update",
     "project.delete",
+    // 自己的定时任务（施工 J-1 下）。
+    "schedule.add",
+    "schedule.list",
+    "schedule.cancel",
+    "schedule.pause",
+    "schedule.resume",
     // 自己的知识库、记忆（施工 Y-7）、用量。
     "kb.list",
     "kb.search",
@@ -119,9 +125,17 @@ const METHODS: &[&str] = &[
     "mermaid.render",
 ];
 
-/// 成员订得了的流：自己的会话、事件、视图、项目、知识库、记忆、界面块、他自己的配置（施工 Y-2 下下中上）。扩展、软件包的不给。
+/// 成员订得了的流：自己的会话、事件、视图、项目、定时任务（施工 J-1 下）、知识库、记忆、界面块、他自己的配置（施工 Y-2 下下中上）。扩展、软件包的不给。
 const STREAMS: &[&str] = &[
-    "events", "view", "sessions", "projects", "kb", "memory", "widgets", "config",
+    "events",
+    "view",
+    "sessions",
+    "projects",
+    "schedules",
+    "kb",
+    "memory",
+    "widgets",
+    "config",
 ];
 
 /// 成员能不能调 `method`（参数 `params`）。

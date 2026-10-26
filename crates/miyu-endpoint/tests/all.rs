@@ -217,6 +217,7 @@ mod respond;
 mod restart;
 mod retire;
 mod revert;
+mod schedule_methods;
 mod schedule_tools;
 mod schedules;
 mod script_pages;

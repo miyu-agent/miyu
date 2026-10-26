@@ -49,6 +49,18 @@ fn some_methods_are_local_only_by_what_they_carry() {
         "别的命令"
     );
     assert!(!local_machine_only("session.list", &json!({})));
+    assert!(
+        local_machine_only("schedule.add", &json!({"target": {"new": {"cwd": "/a"}}})),
+        "定时任务每次新开的工作目录（施工 J-1 下）"
+    );
+    assert!(!local_machine_only(
+        "schedule.add",
+        &json!({"target": {"new": {"preset": "full"}}})
+    ));
+    assert!(!local_machine_only(
+        "schedule.add",
+        &json!({"target": {"session": "s"}})
+    ));
 }
 
 #[test]

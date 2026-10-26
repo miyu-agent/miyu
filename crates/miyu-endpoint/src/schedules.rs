@@ -6,9 +6,11 @@
 //! - 表改了叫醒睡着的那个（`Schedules::changed`），重算最早的一次；不轮询。
 //! - 错过的不补：核心起来时已经过了的跳过（`Schedules::recall`），照现在算下一次。
 
+pub(crate) mod changes;
 mod clock;
 mod fire;
 mod hold;
+pub(crate) mod methods;
 mod next;
 pub(crate) mod port;
 mod run;
@@ -74,6 +76,8 @@ pub struct Schedules {
     wake: Arc<Notify>,
     /// 写不进下一次的先放一放（`hold.rs`）。
     holds: hold::Holds,
+    /// 哪个任务变了（`changes.rs`，施工 J-1 下）。
+    changes: tokio::sync::broadcast::Sender<String>,
 }
 
 impl crate::Core {
@@ -99,6 +103,7 @@ impl Schedules {
             tables: Mutex::new(BTreeMap::new()),
             wake: Arc::new(Notify::new()),
             holds: hold::Holds::default(),
+            changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
         }
     }
 
@@ -136,6 +141,7 @@ impl Schedules {
         let added = self.table(account, true)?.add(new, now)?;
         tracing::info!(target: TARGET, account = %account, schedule = %added.id, "schedule added");
         self.changed();
+        self.notify(account, &added.id);
         Ok(added)
     }
 
@@ -174,6 +180,7 @@ impl Schedules {
         }
         tracing::info!(target: TARGET, account = %account, schedule = %id, "schedule cancelled");
         self.changed();
+        self.notify(account, id);
         Ok(())
     }
 
@@ -239,6 +246,7 @@ impl Schedules {
             return Err(ScheduleError::Unknown);
         }
         self.changed();
+        self.notify(account, id);
         Ok(schedule)
     }
 

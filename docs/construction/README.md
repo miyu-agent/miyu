@@ -742,6 +742,7 @@ flowchart LR
 | J-2 | 她的定时工具和 `/loop` | `miyu-schedule`：`cron_create`、`cron_delete`、`cron_list`（包 `schedule`），`schedule_wakeup`（包 `loop`）；端口 `SchedulePort` 端点照属主接唤醒表；`/loop` 固定、动态、`off`，一个会话一个循环；标签的字；两个包在基础系统组里 | `J-2-定时工具和循环.md` |
 | J-1 上修 | 写不进下一次的不再空转 | 唤醒表写不进（盘满、只读、锁住）时，到点的那一个在内存里记「不早于」，1 秒起翻倍、最多 5 分钟，写进了清掉；表的连接锁住了不等；睡到点的那个每一轮让一下线程。原来马上又醒、又写不进，吃满一个核、警告刷屏（主会话审出来的）。施工单见 `J-1上-唤醒表和到点.md` |
 | J-1 上修二 | 开会话不再吃满栈 | 造会话、载入的 future 有几十 KB（`open::create` 三十多 KB、`open::load` 近二十 KB），没装箱时每个调用方的 future 跟着大，调试构建在 Windows 较深的调用链上栈溢出（J-1 上的 CI 在 `route_learned` 上撞到）。两处在里面装箱再等，签名不变；`route_learned` 要的栈从将近 2 MB 降到 768 KB 以内。`tests/stack.rs` 在 1 MB 栈的线程上开会话、说一轮守着。施工单见 `J-1上-唤醒表和到点.md` |
+| J-1 下 | 定时任务的协议 | `schedule.add`、`list`、`cancel`、`pause`、`resume`，照调用者替谁干活的账号；写错的回 `bad_params` 带 `data.problem`，没有的编号 `unknown_schedule`；每次新开的照这时的默认定下人格、预设、工作目录；订阅 `schedules` 流，改了的、到点交过的推 `schedules.changed`。带工作目录的只给本机。施工单见 `J-1下-定时任务的协议.md` |
 | 9-1 再补 | 配置项多一层组 | 清单 `[settings.<组>.<名字>]`，键 `<包>.<组>.<名字>`（接入通讯平台的 `im.qq.listen`、`im.web.port`）。施工单见 `9-1-软件包清单（再补）.md` |
 | N-4 | 抓不下来的请别家代抓 | `web_fetch` 被挡、空的、太短的照 Exa → Firecrawl → Parallel 代抓，和搜索共用冷却。施工单见 `N-4-抓不下来的请别家代抓.md` |
 | N-5 | 扩展登记搜索来源 | 清单 `[[search]]`、能力 `search`，下拉里多 `<包>/<编号>`，选了的经 `search.query` 先问它。施工单见 `N-5-扩展登记搜索来源.md` |

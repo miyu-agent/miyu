@@ -2,7 +2,7 @@
 
 设计 `45-定时和循环.md`。核心里只有一样东西：到点把一句话交给一个会话跑一轮的「唤醒」，记在一张表里，核心重启不丢。定时任务、固定间隔的循环、她自己定节奏的循环都是它。
 
-状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26）。协议 `schedule.*` 是 J-1 下；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；场所会话的循环是 J-4。
+状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26），J-1 下做完（协议 `schedule.*`、`schedules` 流）；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；场所会话的循环是 J-4。
 
 ### 一、唤醒表
 
@@ -62,17 +62,18 @@
 | `resume(account, id)` | 续：照现在重算下一次，错过的不补；一次的已经过了的报 `NoNext` |
 | `set_next(account, id, next, prompt)` | 改下一次，`prompt` 写了的换掉那句话（她自己定节奏的循环每轮定一次，施工 J-2）；`next` 没有的停着等 |
 
-协议 `schedule.*` 和推送是 J-1 下，照第五节的形状。
+协议 `schedule.*` 和推送照第五节（施工 J-1 下）。
 
-### 五、协议（J-1 下，形状 2026-10-26 主会话审过）
+### 五、协议（施工 J-1 下，形状 2026-10-26 主会话审过；协议参考 `docs/reference/schedules.md`）
 
 都照调用者的账号那一份表，别人的编号一律 `unknown_schedule`。
 
-1. `schedule.add {when: {"cron", "recurring"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来，`cwd` 不写照家目录。回 `{"schedule": <一项>}`。cron 写错、`at` 已经过去、`every` 小于 60、会话不是他的：`bad_params`，带 `data.reason`。
+1. `schedule.add {when: {"cron", "recurring"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来（`personas::resolve`、`presets::resolve`，找不到的照开会话回 `unknown_persona`、`unknown_preset`），`cwd` 不写照家目录。回 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 是 `when`（三种没写对一种、时刻写法不对）、`cron`、`past`、`short`、`prompt`（空的）、`session`（没有、不是他的）、`target`（两种都写了）。时刻照核心的写法（带毫秒）。带 `target.new.cwd` 的只给本机的连接（`reach.rs`，同项目的 `workspace`）。
 2. `schedule.list {session?}`：写了 `session` 的只列跑在它上面的，回 `{"schedules": [<一项>…]}`。
 3. `schedule.cancel {id}` 回 `{}`；`schedule.pause {id}`、`schedule.resume {id}` 回 `{"schedule": <一项>}`。
 4. 一项：`{"id","when","prompt","target","by","recurring","paused","loop"?,"next"?,"last"?: {"at","result","session"?},"created"}`。
-5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。
+5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。建、停、续、删、改下一次、到点交过都推（`schedules/changes.rs`，一条是「账号、换行、编号」，同项目的）；只推自己账号的。
+6. 谁能调：只给人，成员也能（`connection/gate/members.rs`），扩展回 `local_only`（`connection/rights.rs`）；`schedules` 流同样。
 
 ### 六、标签
 
@@ -84,6 +85,7 @@
 |---|---|
 | `crates/miyu-store/src/schedules.rs`、`schedules/{open,row}.rs` | 表：建、读、改、删、最早的、到点的；开、坏了改名、比这一版新的不动 |
 | `crates/miyu-endpoint/src/schedules.rs` | 入口、核心起来时开表和跳过错过的 |
+| `crates/miyu-endpoint/src/schedules/{methods,changes}.rs`、`crates/miyu-endpoint/src/refusal/schedule.rs` | 协议 `schedule.*`、一项的写法、推送的广播、拒绝（施工 J-1 下） |
 | `crates/miyu-endpoint/src/schedules/{clock,next,run,fire,hold}.rs` | 钟、下一次、睡到点、交进会话、写不进的先放一放 |
 | `crates/miyu-kernel/src/origin.rs` | `by` 的 `schedule` |
 | `crates/miyu-assemble/src/schedule.rs`、`crates/miyu-policy/src/schedule.rs`、`crates/miyu-store/src/resources/schedules.rs` | 标签：组装、快照、读资源 |
@@ -94,5 +96,6 @@
 | `crates/miyu-endpoint/src/schedules/next/tests.rs` | cron 只认五段、照时区算、不含现在；每隔一阵的错过的跳过；一次的晚于现在才有 |
 | `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删 |
 | `crates/miyu-endpoint/src/schedules/hold/tests.rs`、`crates/miyu-endpoint/tests/schedules_log.rs` | 写不进的放 1 秒起翻倍、最多 5 分钟、写进了清掉；表被锁住时拨过十秒只试几次、一次都不交，放开以后照常交 |
+| `crates/miyu-endpoint/tests/schedule_methods.rs`（施工 J-1 下） | 建、列（照会话筛）、停、续、删，一项的写法；写错的照哪一样拒、没有的 `unknown_schedule`；每次新开照这时的默认定下人格、预设、工作目录；订阅的回应是整张表，改了的、到点交过的推 `schedules.changed`，删了的 `removed` |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 两种标签照 `loop` 挑、带任务编号；没有字的原样；`by` 的 JSON 写法、读得回 |
 | `crates/miyu-store/src/resources/tests.rs` 的 `schedule_texts_need_all_four_files` | 四份都在才读得出 |
