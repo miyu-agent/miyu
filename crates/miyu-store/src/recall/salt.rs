@@ -48,7 +48,7 @@ impl LogSalt {
         getrandom::fill(&mut bytes).map_err(io::Error::other)?;
         durable::create_dir(&state)?;
         let (temp, mut file) =
-            durable::create_temp_with(&state, || durable::temp_name(FILE), true)?;
+            durable::create_temp_with(&state, || durable::temp_name(FILE), Some(0o600))?;
         let written = file.write_all(&bytes).and_then(|()| file.sync_all());
         drop(file);
         if let Err(error) = written {

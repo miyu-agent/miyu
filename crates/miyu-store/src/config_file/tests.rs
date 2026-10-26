@@ -1,4 +1,4 @@
-//! 读配置文件：没有的是空的；BOM 去掉、版本照整份字节；太大的不读；不是 UTF-8 的、读不了的报错；顺着链接读。
+//! 读配置文件：没有的是空的；BOM 去掉、版本照整份字节；太大的不读；不是 UTF-8 的、读不了的报错；顺着链接读。写的临时文件不比原来的宽（施工 SEC-3）。
 
 use std::fs;
 use std::io;
@@ -265,4 +265,62 @@ fn a_file_held_open_by_another_program_is_retried() {
     write(&path, b"a = 2\n", Some(&version(b"a = 1\n"))).unwrap();
     release.join().unwrap();
     assert_eq!(fs::read(&path).unwrap(), b"a = 2\n");
+}
+
+/// 写的时候盯着目录 `dir`：名字带 `marker` 的临时文件一出现就看它的权限位，交回看到的。写 `write` 一次没逮到的再写，
+/// 最多 20 次（写得大，窗口有几十毫秒，一般头一次就逮到）。
+#[cfg(unix)]
+fn caught(dir: &std::path::Path, marker: &str, mut write: impl FnMut()) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicBool;
+    for _ in 0..20 {
+        let done = Arc::new(AtomicBool::new(false));
+        let watcher = {
+            let (dir, marker, done) = (dir.to_path_buf(), marker.to_string(), Arc::clone(&done));
+            std::thread::spawn(move || {
+                while !done.load(std::sync::atomic::Ordering::Relaxed) {
+                    let Ok(entries) = fs::read_dir(&dir) else {
+                        continue;
+                    };
+                    for entry in entries.flatten() {
+                        if entry.file_name().to_string_lossy().contains(&marker)
+                            && let Ok(metadata) = entry.metadata()
+                        {
+                            return Some(metadata.permissions().mode() & 0o777);
+                        }
+                    }
+                }
+                None
+            })
+        };
+        write();
+        done.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(mode) = watcher.join().unwrap() {
+            return mode;
+        }
+    }
+    panic!("写了 20 次都没逮到临时文件");
+}
+
+/// 写的过程中临时文件不比原来的宽（施工 SEC-3，外部审计 L-2）：原来只有本人读得到的配置文件，临时文件建出来就是。
+#[cfg(unix)]
+#[test]
+fn the_temporary_file_is_never_more_open_than_the_original() {
+    use std::os::unix::fs::PermissionsExt;
+    let temp = Scratch::new();
+    fs::create_dir_all(temp.path()).unwrap();
+    let path = temp.path().join("config.toml");
+    fs::write(&path, "a = 1\n").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+    let big = vec![b'#'; 64 << 20];
+    let seen = caught(temp.path(), ".config.toml.", || {
+        let now = version(&fs::read(&path).unwrap());
+        write(&path, &big, Some(&now)).unwrap();
+    });
+    assert_eq!(seen & 0o077, 0, "临时文件建出来别人就读得到：{seen:o}");
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
 }

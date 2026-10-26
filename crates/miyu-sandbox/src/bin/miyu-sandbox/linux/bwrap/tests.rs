@@ -83,3 +83,27 @@ fn the_inner_spec_keeps_only_what_landlock_still_does() {
     assert_eq!(inner.write, outer.write);
     assert!(inner.hidden.is_empty() && inner.reveal.is_empty() && !inner.mount);
 }
+
+/// 藏起来的另挂在别处的（施工 SEC-3，外部审计 M-1）：别名那一处同样盖 tmpfs、最后设成只读。
+#[test]
+fn an_alias_of_a_hidden_path_is_covered_too() {
+    let base = std::env::temp_dir().join(format!("miyu-bwrap-alias-{}", std::process::id()));
+    let data = base.join("home/.miyu");
+    let alias = base.join("alias/.miyu");
+    for dir in [&data, &alias] {
+        fs::create_dir_all(dir).expect("建得了");
+    }
+    let args = texts(&mounts_with(
+        &spec(&[], &[&data], &[]),
+        &[data.clone(), alias.clone()],
+    ));
+    let at = alias.display().to_string();
+    let covered = args
+        .windows(2)
+        .any(|pair| pair[0] == "--tmpfs" && pair[1] == at);
+    let frozen = args
+        .windows(2)
+        .any(|pair| pair[0] == "--remount-ro" && pair[1] == at);
+    assert!(covered && frozen, "{args:?}");
+    fs::remove_dir_all(&base).expect("删得掉");
+}

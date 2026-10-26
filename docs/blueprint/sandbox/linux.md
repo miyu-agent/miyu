@@ -11,6 +11,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs` | `mechanisms`、`run`：照规格收紧（写着 `mount` 的换成 bubblewrap），再换成命令 |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/aliases.rs` | 藏起来的另挂在别处的（挂载别名，施工 SEC-3）：照 `/proc/self/mountinfo` 找出来，读放行、bubblewrap 的盖法都算上 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/bwrap.rs` | 用 bubblewrap 的挂载收紧（施工 5-16）：找可信的 bwrap、真起一次验、照规格拼挂载、挂好以后在里面再跑一次助手 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/landlock.rs` | 建 Landlock 的规则集、加规则、收紧自己 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的 |
@@ -33,6 +34,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 - 规格以外的都能读，写不了、删不了、改不了名，命令起的子进程一样。收紧以前已经打开的（标准输入、输出、错误）照旧能用。
 - 规格里写的路径不在的，跳过。
 - 一级级放行时，那几级目录里的链接跳过，不跟过去：跟过去就可能放行到藏起来的里面。
+- 藏起来的另挂在别处的（挂载别名，施工 SEC-3，外部审计 M-1）：同一片文件 bind 到了另一处、btrfs 的顶层子卷另挂一处，Landlock 的规则跟着目录本身走、不认路径，一级级放行把别名那一处整个放了，藏起来的从原路径也读得到；bubblewrap 的 tmpfs 只盖原路径也一样。照 `/proc/self/mountinfo` 找出每一条藏起来的在同一个文件系统的别的挂载里的位置（包着它的那一片换算过去；它里面的一块挂到了别处的，那个挂载点整个算），和原来的是同一个文件（设备号、inode 号都对上）的一起藏：读放行一级级绕开，挂载时一样盖 tmpfs。读不了挂载表的照原样。
 - 藏起来的落在某一条 `write` 里（施工 5-14 改，2026-10-22 项目主人定，照 dsh）：不挖洞，那一条 `write` 整个放读写。会话那边藏不住的不写进 `hidden`（`session/tools.md`）（开会话时不提示，2026-10-22 项目主人定）。施工 5-15 到 5-14 改之间写也照读的走法一级级绕开（`around`）：通向藏起来的那几层目录本身不能新建、删除、改名，在家目录里干活的命令处处撞墙，改掉了。能写的落在藏起来的里面（工作区在数据根里）：照样能写，它有自己的一条规则。
 - 收紧的时候设 `no_new_privs`：沙盒里的 setuid 程序（例如 `sudo`）拿不到更高的权限。
 - 连系统服务的套接字拦下（2026-09-29 项目主人定：能替命令在沙盒外读写的系统服务照样挡）：Landlock 第 9 版（内核 7.1）起，`write` 以外路径上的 Unix 套接字连不上（D-Bus、Docker 都是）；第 6 版（6.12）起，沙盒外建的抽象套接字也连不上。更老的内核拦不住。沙盒里要 ssh-agent 的 `git push`、桌面通知这类会失败。
@@ -68,6 +70,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp/tests.rs` | 过滤的每一条跳都落在里面，交回的只有放行和 `EACCES` |
 | `crates/miyu-sandbox/tests/linux_mounts.rs`（施工 5-16）、`linux/bwrap/tests.rs` | 有 bwrap 的机器上挂载收紧：那一层新建、删除都行，藏起来的列出来是空的、读不到、写不进、挪不走；没有的规格要挂载就拒绝执行。挂载的先后、文件拿 `/dev/null` 盖、不在的跳过、里面的规格只留 `write`；助手落在藏起来的里面照样跑命令，藏起来的照旧看不到（施工 5-15 下再修） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/tests.rs` | 查规格：本身、下面、旁边（`/a/bc` 和 `/a/b`）、上一级各算不算落在里面 |
+| `crates/miyu-sandbox/tests/linux_aliases.rs`、`linux/aliases/tests.rs`、`linux/bwrap/tests.rs` 的 `an_alias_of_a_hidden_path_is_covered_too`（施工 SEC-3） | 在 `unshare -rm` 的命名空间里把家目录 bind 到别处再跑助手：藏起来的从原路径、别名都读不到，别名里别的照旧读得到（不让普通用户建命名空间的机器上跳过）；挂载表的转义、读不懂的行；bind 过来的家目录、btrfs 顶层另挂、藏起来的里面一块挂到别处、叠着挂认最后挂的；挂载表说是别名、其实不是同一个文件的不藏；挂载时别名一样盖住 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
 
 ### 出处

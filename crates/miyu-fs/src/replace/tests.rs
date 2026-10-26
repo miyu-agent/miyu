@@ -1,4 +1,4 @@
-//! 整体换成新的内容：新建、覆盖；只读的不写；盖不上去的，临时文件删掉，原来的没动。
+//! 整体换成新的内容：新建、覆盖；只读的不写；盖不上去的，临时文件删掉，原来的没动；临时文件不比原来的宽（施工 SEC-3）。
 
 use std::fs;
 use std::io;
@@ -102,4 +102,59 @@ fn a_link_on_the_way_is_not_written_through() {
         "链接指的地方什么都没写"
     );
     assert_eq!(scratch.names(), ["elsewhere", "swapped"], "也没留临时文件");
+}
+
+/// 写的时候盯着目录 `dir`：名字带 `marker` 的临时文件一出现就看它的权限位，交回看到的。写 `write` 一次没逮到的再写，
+/// 最多 20 次（写得大，窗口有几十毫秒，一般头一次就逮到）。
+#[cfg(unix)]
+fn caught(dir: &std::path::Path, marker: &str, mut write: impl FnMut()) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicBool;
+    for _ in 0..20 {
+        let done = Arc::new(AtomicBool::new(false));
+        let watcher = {
+            let (dir, marker, done) = (dir.to_path_buf(), marker.to_string(), Arc::clone(&done));
+            std::thread::spawn(move || {
+                while !done.load(std::sync::atomic::Ordering::Relaxed) {
+                    let Ok(entries) = fs::read_dir(&dir) else {
+                        continue;
+                    };
+                    for entry in entries.flatten() {
+                        if entry.file_name().to_string_lossy().contains(&marker)
+                            && let Ok(metadata) = entry.metadata()
+                        {
+                            return Some(metadata.permissions().mode() & 0o777);
+                        }
+                    }
+                }
+                None
+            })
+        };
+        write();
+        done.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(mode) = watcher.join().unwrap() {
+            return mode;
+        }
+    }
+    panic!("写了 20 次都没逮到临时文件");
+}
+
+/// 写的过程中临时文件不比原来的宽（施工 SEC-3，外部审计 L-2）：原来只有本人读得到的，临时文件建出来就是，不先照系统默认
+/// 建成别人也读得到、写完才收回。
+#[cfg(unix)]
+#[test]
+fn the_temporary_file_is_never_more_open_than_the_original() {
+    use std::os::unix::fs::PermissionsExt;
+    let scratch = Scratch::new();
+    let file = scratch.0.join("private.txt");
+    fs::write(&file, "old").unwrap();
+    fs::set_permissions(&file, fs::Permissions::from_mode(0o600)).unwrap();
+    let big = vec![b'x'; 64 << 20];
+    let seen = caught(&scratch.0, ".miyu-tmp", || replace(&file, &big).unwrap());
+    assert_eq!(seen & 0o077, 0, "临时文件建出来别人就读得到：{seen:o}");
+    assert_eq!(
+        fs::metadata(&file).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
 }

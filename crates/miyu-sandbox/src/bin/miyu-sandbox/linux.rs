@@ -5,6 +5,7 @@
 //! 整个放，不在里面挖洞（施工 5-14 改，照 dsh：藏不住的会话那边不写进 `hidden`；施工 5-15 到 5-14 改之间一级级绕开过，
 //! 冻住了路上那几层）。有能用的 bubblewrap 时规格写着 `mount`，用挂载盖住（[`bwrap`]，施工 5-16）。
 
+mod aliases;
 mod bwrap;
 mod landlock;
 mod reads;

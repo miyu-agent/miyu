@@ -70,11 +70,12 @@ pub(crate) fn sync_dir(_dir: &Path) -> io::Result<()> {
 ///
 /// 建不了；一连 64 个名字都被占了。
 pub(crate) fn create_temp(dir: &Path, name: impl FnMut() -> String) -> io::Result<(PathBuf, File)> {
-    create_temp_with(dir, name, false)
+    create_temp_with(dir, name, None)
 }
 
-/// 同 [`create_temp`]；`private` 的 Unix 上建的时候就是 0600，只有本人能读写（施工 8-5：密钥文件的临时文件，
-/// 不能有一瞬间是别人读得到的）。Windows 上靠目录继承的访问控制，照常建。
+/// 同 [`create_temp`]；给了 `mode` 的 Unix 上建的时候就是这几个权限位（再照 umask 收）：密钥文件的是 0600，只有本人能读写
+/// （施工 8-5：不能有一瞬间是别人读得到的）；替换一份配置文件的照原来的（施工 SEC-3，外部审计 L-2：写完以前不比原来的宽）。
+/// Windows 上靠目录继承的访问控制，照常建。
 ///
 /// # Errors
 ///
@@ -82,17 +83,17 @@ pub(crate) fn create_temp(dir: &Path, name: impl FnMut() -> String) -> io::Resul
 pub(crate) fn create_temp_with(
     dir: &Path,
     mut name: impl FnMut() -> String,
-    private: bool,
+    mode: Option<u32>,
 ) -> io::Result<(PathBuf, File)> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
-    if private {
+    if let Some(mode) = mode {
         use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
+        options.mode(mode);
     }
     #[cfg(not(unix))]
-    let _ = private;
+    let _ = mode;
     for _ in 0..TEMP_TRIES {
         let path = dir.join(name());
         match options.open(&path) {

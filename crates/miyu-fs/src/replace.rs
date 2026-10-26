@@ -112,7 +112,7 @@ mod at {
     use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
 
-    use rustix::fs::{AtFlags, Mode, OFlags, openat, renameat, statat, unlinkat};
+    use rustix::fs::{AtFlags, Mode, OFlags, RawMode, openat, renameat, statat, unlinkat};
     use rustix::io::Errno;
 
     use super::{TRIES, temp_name};
@@ -136,7 +136,13 @@ mod at {
             Err(Errno::NOENT) => None,
             Err(error) => return Err(error.into()),
         };
-        let (temp, fd) = temp_in(&dir, name)?;
+        // 临时文件建出来就不比原来的宽（施工 SEC-3，外部审计 L-2）：写完以前别人读不到原来就读不到的；新文件照系统默认。
+        let bits = u16::try_from(mode.map_or(0o666, |mode| mode & 0o777)).unwrap_or(0o600);
+        #[allow(
+            clippy::useless_conversion,
+            reason = "mode_t 在 Linux 上是 u32，在 macOS 上是 u16"
+        )]
+        let (temp, fd) = temp_in(&dir, name, RawMode::from(bits))?;
         let mut file = File::from(fd);
         let written = file
             .write_all(bytes)
@@ -156,14 +162,14 @@ mod at {
         Ok(())
     }
 
-    /// 在打开了的目录 `dir` 里只许新建、不跟链接地建一个临时文件，名字照 `name` 起，撞上了就换。
-    fn temp_in(dir: &OwnedFd, name: &OsStr) -> io::Result<(String, OwnedFd)> {
+    /// 在打开了的目录 `dir` 里只许新建、不跟链接地建一个临时文件，权限位是 `mode`（再照 umask 收），名字照 `name` 起，撞上了就换。
+    fn temp_in(dir: &OwnedFd, name: &OsStr, mode: RawMode) -> io::Result<(String, OwnedFd)> {
         let flags =
             OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC;
         let mut last: io::Error = Errno::EXIST.into();
         for _ in 0..TRIES {
             let temp = temp_name(name);
-            match openat(dir, temp.as_str(), flags, Mode::from_raw_mode(0o666)) {
+            match openat(dir, temp.as_str(), flags, Mode::from_raw_mode(mode)) {
                 Ok(fd) => return Ok((temp, fd)),
                 Err(Errno::EXIST) => last = Errno::EXIST.into(),
                 Err(error) => return Err(error.into()),

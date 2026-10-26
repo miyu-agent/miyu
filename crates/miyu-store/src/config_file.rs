@@ -172,6 +172,28 @@ pub(crate) enum Mode {
     Private,
 }
 
+impl Mode {
+    /// 临时文件建的时候的权限位（Unix）：密钥文件 0600；配置文件照原来的（施工 SEC-3，外部审计 L-2：写完以前不比原来的
+    /// 宽），原来没有的照系统默认。
+    fn bits(self, target: &Path) -> Option<u32> {
+        match self {
+            Mode::Private => Some(0o600),
+            #[cfg(unix)]
+            Mode::Keep => {
+                use std::os::unix::fs::PermissionsExt;
+                fs::metadata(target)
+                    .ok()
+                    .map(|metadata| metadata.permissions().mode() & 0o777)
+            }
+            #[cfg(not(unix))]
+            Mode::Keep => {
+                let _ = target;
+                None
+            }
+        }
+    }
+}
+
 /// 同 [`write()`]，权限照 `mode`；改名之前先叫一声 `before_rename`（交给它临时文件在哪）：测试照它在那一瞬间手改文件、
 /// 装作崩了。
 pub(crate) fn write_with(
@@ -190,7 +212,7 @@ pub(crate) fn write_with(
     };
     create_dir(dir)?;
     let name = name.to_string_lossy();
-    let (temp, file) = create_temp_with(dir, || temp_name(&name), mode == Mode::Private)?;
+    let (temp, file) = create_temp_with(dir, || temp_name(&name), mode.bits(&target))?;
     let written = replace(file, content, &temp, &target, read, mode, before_rename);
     if written.is_err() {
         discard(&temp);

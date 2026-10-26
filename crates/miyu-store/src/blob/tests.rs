@@ -1,6 +1,6 @@
 //! blob 的测试：存了再取；放在哪；同一份存两遍；崩溃留下的临时文件；撞名；改名时目标已经有了；
 //! 读出来不对；两个账号各存各的；分块上传的暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；
-//! 读一段（施工 W-6）。
+//! 读一段（施工 W-6），不跟 blob 目录里的链接（施工 SEC-3）。
 
 use std::time::Duration;
 
@@ -315,6 +315,34 @@ fn read_range_of_an_unknown_blob_is_missing() {
         blobs.read_range(&hash, 0, 4),
         Err(BlobError::Missing(missing)) if missing == hash
     ));
+}
+
+/// 读一段不跟 blob 目录里的链接（施工 SEC-3，外部审计 L-3）：blob 换成了指到别处的链接，读一段照没有它办，不交出那里的内容
+/// （整份取的 [`Blobs::get`] 核对哈希，本来就交不出）；数据根的路上经过一层链接的照旧读得到。
+#[cfg(unix)]
+#[test]
+fn read_range_does_not_follow_a_link_planted_in_the_blob_store() {
+    let scratch = Scratch::new();
+    let blobs = blobs_in(&scratch);
+    let hash = blobs.put(b"stored").unwrap();
+    let secret = scratch.path().join("secret.txt");
+    fs::write(&secret, b"not a blob").unwrap();
+    fs::remove_file(blobs.path(&hash)).unwrap();
+    std::os::unix::fs::symlink(&secret, blobs.path(&hash)).unwrap();
+    let read = blobs.read_range(&hash, 0, 100);
+    assert!(
+        !matches!(&read, Ok((data, _)) if data == b"not a blob"),
+        "交出了链接指到的内容：{read:?}"
+    );
+    assert!(matches!(blobs.get(&hash), Err(BlobError::Corrupt(_))));
+    let via = scratch.path().join("via");
+    std::os::unix::fs::symlink(scratch.path().join("blobs"), &via).unwrap();
+    let kept = blobs.put(b"kept").unwrap();
+    assert_eq!(
+        Blobs::new(via).read_range(&kept, 0, 100).unwrap(),
+        (b"kept".to_vec(), 4),
+        "数据根的路上有链接照旧读得到"
+    );
 }
 
 /// 照文件存（施工 7-12 下）：和整份存的是同一个 blob，读到的每一段都交出来；已经有的照旧不重写。

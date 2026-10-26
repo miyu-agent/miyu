@@ -5,7 +5,8 @@
 //! 一级级绕开过，冻住了路上那一层。
 //!
 //! 链接跳过、不跟过去：跟过去就可能放行到藏起来的里面。读链接时照它指到的真实位置判，那里有没有放行照那里的规则。
-//! 藏起来的路径先换成真实的位置：规格说好了给真实的位置，这里再换一次，免得一段链接让这条路对不上、藏不住。
+//! 藏起来的路径先换成真实的位置：规格说好了给真实的位置，这里再换一次，免得一段链接让这条路对不上、藏不住。同一片文件另挂
+//! 在别处的（挂载别名，施工 SEC-3），别名那一处也照藏起来的绕开（[`super::aliases`]）。
 
 use std::fs;
 use std::io;
@@ -18,7 +19,7 @@ use std::path::{Path, PathBuf};
 ///
 /// 通向藏起来的那条路上的目录读不了：说是哪一个、系统的原话。
 pub(super) fn plan(hidden: &[PathBuf]) -> Result<Vec<PathBuf>, String> {
-    let real = reals(hidden)?;
+    let real = super::aliases::with_aliases(&reals(hidden)?);
     let root = Path::new("/");
     if real.is_empty() {
         return Ok(vec![root.to_path_buf()]);
