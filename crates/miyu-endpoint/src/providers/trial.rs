@@ -207,7 +207,7 @@ fn answer(probed: Probed, words: &Human) -> Value {
 /// 配置里引用了、却取不到的那一样，照 `miyu check` 的那一句说（`config/unknown-secret`、`config/env-not-set`）。
 fn told(words: &Human, missing: &Missing) -> Option<String> {
     let (key, name) = match &missing.reference {
-        Reference::Secret(name) => ("config/unknown-secret", name),
+        Reference::Secret(name) | Reference::SystemSecret(name) => ("config/unknown-secret", name),
         Reference::Env(name) => ("config/env-not-set", name),
     };
     words.sentence(key, &[("key", &missing.key), ("name", name)])

@@ -141,7 +141,7 @@
 
 | 名字 | 说明 |
 |---|---|
-| `providers` | 配好的供应商，照编号排。每家：`id`、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
+| `providers` | 配好的供应商，照编号排。每家：`id`、`layer`（`personal`：个人设置里配的，自用；`system`：只有系统配置里配的，共用）、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
 | `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能用工具、思考、价格、名字……每格 `value` 和来源）、`state`（`ok`、`cooling` 带 `until`/`class`、`no_key`），能出向量的带 `embedding: true` |
 | `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description` |
 | `uses` | `chat`、`vision` 各配的引用，没配的是 `null` |
@@ -200,7 +200,7 @@
 |---|---|---|
 | `purpose` | 字符串，必写 | 用途，1 到 32 个小写字母、数字、`-`，例如 `vision` |
 | `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希 |
-| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
+| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat`。同一家系统配置、个人设置都配了的，`<编号>/<模型>` 是自用那份，`<编号>@system/<模型>` 是共用那份（用共用的 key） |
 | `use` | `chat` 或 `vision` | 不知道人配了哪个模型时用：照 `models.chat` 或 `models.vision`；和 `model` 至多写一个 |
 | `max_tokens` | 正整数 | 最多输出多少 token |
 

@@ -141,7 +141,7 @@ There are two shelves. `system` is the shared `system/secrets.toml`, and only ad
 
 | Name | Notes |
 |---|---|
-| `providers` | Configured providers by id. Each: `id`, `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
+| `providers` | Configured providers by id. Each: `id`, `layer` (`personal`: configured in the person's own settings; `system`: only in the system settings, shared), `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
 | each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
 | `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description` |
 | `uses` | The references set for `chat` and `vision`, `null` when not set |
@@ -200,7 +200,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 |---|---|---|
 | `purpose` | string, required | What it's for: 1 to 32 lowercase letters, digits, `-`, e.g. `vision` |
 | `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
+| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat`. When the same provider is configured in both the system and the personal settings, `<id>/<model>` is the person's own copy and `<id>@system/<model>` is the shared one (with the shared key) |
 | `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
 | `max_tokens` | positive integer | Most output tokens |
 

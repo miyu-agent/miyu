@@ -392,6 +392,10 @@ impl Config {
                 .get(name)
                 .or_else(|| self.secrets.stored.entries.get(name))
                 .cloned(),
+            // 系统那一份供应商的原样只用系统那一份密钥（施工 PL-1）：自己存了同名的也不顶掉它。
+            miyu_config::secret::Reference::SystemSecret(name) => {
+                self.secrets.stored.entries.get(name).cloned()
+            }
             miyu_config::secret::Reference::Env(name) => self
                 .environment
                 .get(name)

@@ -243,7 +243,7 @@ pub(crate) fn pointed(text: &str) -> Option<Pointed<'_>> {
         return key::valid(ID, pool).then_some(Pointed::Pool(pool));
     }
     match text.split_once('/') {
-        Some((provider, model)) if key::valid(ID, provider) && key::valid(MODEL, model) => {
+        Some((provider, model)) if key::valid_provider(provider) && key::valid(MODEL, model) => {
             Some(Pointed::Provider(provider))
         }
         _ => None,

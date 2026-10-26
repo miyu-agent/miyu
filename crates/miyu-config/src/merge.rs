@@ -150,6 +150,7 @@ pub fn merge(items: &[Item], layers: &Layers, env: &dyn Fn(&str) -> Option<Strin
             resolved.entries.insert(key, top);
         }
     }
+    system_copy::add(items, layers, env, &mut resolved);
     resolved
 }
 
@@ -270,6 +271,8 @@ pub fn explain(item: &Item, key: &str, layers: &Layers, resolved: &Resolved) -> 
     }
     written
 }
+
+mod system_copy;
 
 #[cfg(test)]
 mod tests;

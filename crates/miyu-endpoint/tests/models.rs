@@ -132,7 +132,7 @@ async fn the_list_has_providers_models_facts_and_states() {
     // 推不出来的一家：说清为什么，没有模型。
     assert_eq!(
         providers[0],
-        json!({"id": "broken", "name": {"value": "broken", "from": "id", "key": "providers.broken.name"},
+        json!({"id": "broken", "layer": "system", "name": {"value": "broken", "from": "id", "key": "providers.broken.name"},
                "driver": null, "base_url": null, "models": [], "logo": null,
                "problem": "provider \"broken\" needs base_url: it matches nothing in the catalog"})
     );

@@ -88,7 +88,9 @@ impl Reference {
             };
         }
         match text.split_once('/') {
-            Some((provider, model)) if key::valid(ID, provider) && key::valid(MODEL, model) => {
+            Some((provider, model))
+                if key::valid_provider(provider) && key::valid(MODEL, model) =>
+            {
                 Ok(Reference::Model {
                     provider: provider.to_string(),
                     model: model.to_string(),

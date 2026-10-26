@@ -40,6 +40,26 @@ pub fn is_pattern(pattern: &str) -> bool {
     pattern.split('.').any(is_placeholder)
 }
 
+/// 系统那一份的原样的编号后缀（施工 PL-1）：同一个编号的供应商系统配置、个人设置都配了时，`<编号>` 是个人设置逐格盖过系统
+/// 配置的那一份（自用），另外多一份 `<编号>@system` 是系统配置的原样（共用），冷却、用量、模型列表各记各的。`@` 不在编号的
+/// 写法里，用户起的编号撞不上。
+pub const SYSTEM_COPY: &str = "@system";
+
+/// 编号 `id` 的系统那一份的原样的编号。
+pub fn system_copy(id: &str) -> String {
+    format!("{id}{SYSTEM_COPY}")
+}
+
+/// 编号是不是系统那一份的原样（[`system_copy`]），是的话交回原来的编号。
+pub fn of_system_copy(id: &str) -> Option<&str> {
+    id.strip_suffix(SYSTEM_COPY).filter(|base| valid(ID, base))
+}
+
+/// 写在引用里的供应商编号认不认：照编号的写法，或者是 [`system_copy`] 那样的（施工 PL-1）。
+pub fn valid_provider(id: &str) -> bool {
+    valid(ID, id) || of_system_copy(id).is_some()
+}
+
 /// 名字 `name` 合不合占位 `placeholder` 的写法。不是占位的不合。
 pub fn valid(placeholder: &str, name: &str) -> bool {
     match placeholder {

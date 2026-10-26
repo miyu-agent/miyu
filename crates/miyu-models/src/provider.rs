@@ -233,7 +233,7 @@ pub fn configured(values: &Values) -> Vec<String> {
 /// key 的名字：引用的写法 `secret:<名字>`、`env:<变量>`。`model.list` 的 `ref` 用它（施工 8-9 起；8-25 从 `keys` 挪来）。
 pub fn key_name(reference: &KeyRef) -> String {
     match reference {
-        KeyRef::Secret(name) => format!("secret:{name}"),
+        KeyRef::Secret(name) | KeyRef::SystemSecret(name) => format!("secret:{name}"),
         KeyRef::Env(name) => format!("env:{name}"),
     }
 }
