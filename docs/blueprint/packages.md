@@ -13,8 +13,9 @@
 | `crates/miyu-config/src/package.rs`、`package/reader.rs` | 一份清单读成样子：每一格的写法，写错的报第一处，带代码、第几行（纯逻辑）；`reader.rs` 一张表一张表地读 |
 | `crates/miyu-config/src/package/settings.rs` | `[settings]` 的读法；拼成配置清单的项（施工 9-1 下） |
 | `crates/miyu-config/src/package/features.rs` | `[features]` 的读法；没写的照包算一个（`Manifest::features_of`，施工 F-1） |
-| `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 21 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/authors/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
+| `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 22 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/authors/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
 | `crates/miyu-config/src/package/links.rs` | `[connection]`、`[depends]`、`[recommends]`、`[worker]` 的读法（施工 F-1） |
+| `crates/miyu-config/src/package/side.rs` | `[[side]]` 的读法：扩展登记的旁路请求（施工 Q-3），档位只认三个固定池名（`SIDE_TIERS`） |
 | `crates/miyu-config/src/package/code.rs` | 读不成时的代码（施工 F-1 从 `package.rs` 挪出来） |
 | `crates/miyu-config/src/phrases.rs` | 「语言到一句话」那一格的读法，和人格的名字、说明共用 |
 | `crates/miyu-store/src/packages.rs` | 两层在哪（加每人自己那一层，`of_account`、`read_over`，施工 U23 上下）、读出所有清单、同编号、子命令名撞了、功能的编号撞了（施工 F-1）、系统账号撞了管理员（施工 O-4 下）；声明了的系统账号（`system_accounts`）；包放状态的目录；包目录（`Found::files_dir`，施工 R-5 三补） |
@@ -102,6 +103,12 @@ tools = ["read", "write", "edit"]                    # 下面的工具，可以�
 [connection]                     # 平台接入：只有扩展包能写
 platform = "qq"                  # 写法同包的编号
 
+[[side]]                         # 旁路请求（施工 Q-3，设计 43）：只有扩展包能写，一段一条，不另要能力
+id = "judge"                     # 包里不重，写法同命令名；model.call 写 side = "judge"，model.list 里是 <包>/judge
+tier = "lite"                    # 要哪一档：lite、normal、flagship（三个固定池）
+name = { en = "Reply judge", zh = "判断要不要回" }
+summary = { en = "Decides whether to reply in a group.", zh = "群里有人说话时判断要不要回" }
+
 [depends]                        # 依赖的包：缺了装不上、装着的不起；包编号，什么种类都行，不重复（施工 F-11）
 packages = ["onebot"]            # 以前只写小程序，叫 workers，照样认
 
@@ -132,7 +139,7 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）（施工 X-2） |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
@@ -349,6 +356,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_miyu` | `[package] miyu` 不是三段数字的版本（施工 X-31） |
 | `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法 |
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
+| `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
 | `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |
 | `bad_upstream` | `[package] upstream` 不是 `https://` 开头、不带空白、至多 300 个字的网址（施工 F-12） |
 | `depends_missing` | 装着的包依赖的包缺了（施工 F-11，`miyu check` 是错误）：`detail` 是缺的那几个，逗号分开 |
@@ -364,6 +372,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-store/src/packages/tests.rs` | 两层照编号排、不是 `.toml` 的和编号不合写法的不算；空的；同编号认出厂的；子命令名先到先得、报在那一行；写错的照样列出；状态目录；系统账号照编号、没声明的和写错的不算、撞了管理员的报 `account_taken`（施工 O-4 下）；功能的编号先到先得、照包算的那一个也算（施工 F-1） |
 | `crates/miyu-config/src/package/features/tests.rs`（施工 F-1） | 功能照写的先后读对、编号在第几行；没写的照包算一个；空表一个都没有；界面、小程序没有；编号、表、名字、工具的每一种写错；只有内置包、扩展包能写 |
 | `crates/miyu-config/src/package/links/tests.rs`（施工 F-1） | 小程序的程序和参数；依赖、推荐；平台接入；组只给内置包、写法不对和重复的报 `bad_group`、`required` 不认了（施工 BS-1 上中）；每种包只能写自己的表；种类四选一 |
+| `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/settings/tests.rs` | 每一种类型、默认值、几层、什么时候生效、隐藏；每一种写错；拼成配置项的键、类型、界面提示（施工 9-1 下）；列表的每一种元素、默认值一个个查、写错（施工 9-1 补） |
 | `crates/miyu-endpoint/tests/package_settings.rs` | 包的配置项进 `config.schema`（「软件包」那一页、这个包那一组、名字说明照语言、隐藏的带标记）；最终值；写错的、写错层的 `check` 报；撞了核心的模块整份不收（施工 9-1 下）；列表进 Schema、读得到、写错 `check` 报（施工 9-1 补） |
 | `crates/miyu-cli/src/packages/tests.rs`（施工 9-2） | 只有包的子命令转交（内置的、选项、`help`、不认识的不转）；没装的程序说哪份清单；帮助页多的那一节、接在「命令」后面、照语言；跑包的程序时环境多 `MIYU_PACKAGE_DIR`（施工 S-6 上）、`MIYU_PACKAGE_STATE`（施工 F-15） |

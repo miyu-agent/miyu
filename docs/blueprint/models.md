@@ -30,7 +30,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-models/src/profile.rs` | 档案的样子：驱动、地址、`compat`（8-18 多 `toggle`：开关思考的字段）、能收哪些输入、一张图怎么算，核心读成 JSON 交进来 | 8-6 起 |
 | `crates/miyu-models/src/provider.rs` | 一家供应商这一轮的样子（手写的、档案的合起来），一个引用这一轮发给谁，窗口手写的压过模型资料，没有模型时的原话 | 8-6 起 |
 | `crates/miyu-models/src/pools.rs` | 池：认得出的成员、不写分法时怎么分、钉住的照发过的认回来、候选怎么绕、指针（`Pointers`，`pools.json` 的字）怎么往前走（8-8）；派子代理能选哪几个（`offered`，8-8 补，`Offer`） | 8-8 |
-| `crates/miyu-models/src/side.rs` | 旁路请求登记（Q-2，设计 43）：档位 `Tier`（照三个固定池）、一条登记 `Side`（编号、档位），出厂的 `SHIPPED`（`core/title` 是 `lite`、`memory/organize` 是 `normal`），这一刻会落到哪（`resolved`） | Q-2 |
+| `crates/miyu-models/src/side.rs` | 旁路请求登记（Q-2，设计 43）：档位 `Tier`（照三个固定池，Q-3 起照池名认得回来）、一条登记 `Side`（编号、档位；Q-3 起编号借字，扩展的照清单），出厂的 `SHIPPED`（`core/title` 是 `lite`、`memory/organize` 是 `normal`），这一刻会落到哪（`resolved`） | Q-2 |
 | `crates/miyu-models/src/cooldown.rs` | 冷却：按分类、翻倍、封顶、成功清零 | 8-9 |
 | `crates/miyu-models/src/price.rs` | 金额（`Tariff`）：照资料造（价格、倍率、出处），挑哪一档价格、乘倍率、缺一项不算；几种币种排先后（`ordered`）。`usage.currency` 在 `settings.rs` 的 `UsageSettings` | 8-15 |
 | `crates/miyu-session/src/route.rs`、`route/` | 每个会话的路由：实现 `ModelPort`，挑候选、钉 key、出错换、记冷却、交限额。取代 `http.rs` 里的 `HttpModels`（8-6：`route.rs` 挑、`route/send.rs` 发；8-8：`route/pool.rs` 池里挑成员、池的限额；8-9：`route/choice.rs` 排候选、挑没在冷却的，`route/ended.rs` 说完了记冷却、换端点、成了才钉；8-18：`route/effort.rs` 给头看的那一档从配置的哪一层来、空闲超时跟着放大，8-18（补）去掉会话那一层以后不再有会话给每个模型记的一格）。8-20 起它是模型调用口的会话入口（第十二条）：解析引用、退回 `models.chat`、钉 key、钉成员、说到一半断了、交限额留在 `route.rs`、`route/send.rs`（会话的发、说完了记会话的那几样 `Tried`），挑、发、记冷却调底子 | 8-6、8-8、8-9、8-18、8-20 |
@@ -161,7 +161,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 4. 会话的模型本身就是这个池的：不再退，照池的规矩报（免得来回退）。
 5. 回顾、压缩摘要不登记：复用会话前缀的缓存，换个模型要整段原价重算（设计 43 第六节第 2 条）。识图、向量是「用途」，照旧单配。
 6. 整理记忆原来的 `memory.organizer` 去掉了（还没发版，写了的照不认识的键警告）。
-7. 扩展的登记（清单的 `[[side]]`、`model.call` 的 `side`）是 Q-3。
+7. 扩展的登记（施工 Q-3）：清单的 `[[side]]`（`packages.md`），编号写成 `<包>/<编号>`，和出厂的一起列进 `model.list` 的 `side`（名字、说明照它清单里写的），包卸了跟着没了；扩展调 `model.call` 写 `side`（只认自己包里的编号）走这条链，写了 `session` 的照那个会话这一刻的引用退，没写的照 `models.chat`（`crates/miyu-endpoint/src/models/side.rs`、`models/call.rs`）。
 
 **`[models.catalog]`**：目录怎么更新（8-7），当场生效。
 
@@ -339,7 +339,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `providers` | 配好的供应商，照编号排。每一家：`id`、`name`（显示名，施工 8-21：`{"value", "from", "key"}`，`from` 是 `config`（写了的，另带 `file`、`line`、`layer`，照资料那一格的写法）、`catalog`（目录里对上的那一家的名字）、`id`（都没有，照编号）；`key` 是完整的配置键名 `providers.<编号>.name`，头照抄它发 `config.set`；用不了的那一家也有）、`driver`、`base_url`（照配置写的样子交：写死的是地址本身，是 `{ env = … }` 的交 `{"env": "…"}`，不解出地址，施工 8-6b）、`key`（8-25：这一家的 key，`ref` 是 `secret:<名字>` 或 `env:<变量>`，`set` 有没有值，`state`；没写 key 的没有这一格）、`catalog`（对上了目录里的哪一家，`how` 是怎么对上的：`config` 手写、`id` 编号一样、`similar_id` 去掉分隔以后一样、`url` 地址一样，没对上的不写）、`models`；`driver_from`：驱动从哪来，`config`（手写的）、`profile`（档案的）、`catalog`（目录那一家的 `npm` 换的）、`default`（都推不出，用 `openai-chat`），施工 8-26；`strict_tools`：约束解码的这一家（档案的、手写的）是 `true`，不是的没有这一格（施工 L-2）。这一家用不了的（推不出地址，驱动还没有）：`driver`、`base_url` 照手写的，没写的是 `null`，没有 `driver_from`，多一格 `problem`（`no_model` 的那一句原话），`models` 是空的（8-7） |
 | `models` 里的每一个 | `model` 模型名、`ref` 写成引用的样子、`listed` 从哪几处列出来的（`config`、`provider`、`catalog`，照这个先后）、`facts` 每一格的 `value` 和来源（上面「模型的资料」，十二格都在：`window`、`max_output`、`inputs`、`tools`、`reasoning`、`effort`（8-18：配置的默认；没写的、写的不在档位里的是 `{"value":null,"from":"default"}`；多一格 `key`，8-18（补）：这一项完整的配置键名，模型名带点的加好引号，例如 `providers.dev.models."deepseek-v4.1-flash".effort`，头照抄它发 `config.set`（个人设置），选「默认」就发 `unset: true`）、`takes_temperature`（8-22：目录说的能不能调，`true`、`false`，没说的是 `null`、`default`；头照它决定温度那一格能不能改）、`temperature`（8-22：配置的默认，这个模型用不了的、没写的是 `{"value":null,"from":"default"}`；和 `effort` 一样多一格 `key`，头照抄它发 `config.set`，选「默认」发 `unset: true`）、`price`、`multiplier`、`name`、`status`）、`state`。手写指定的目录条目不存在的，多一格 `catalog_missing`：写的那个条目（8-7）。照名字认得出能出向量的，多一格 `embedding: true`，不是的不写（R-5 再补，下面「能出向量的」） |
 | `pools` | 每个池，照名字排：`name`、`strategy`（生效的分法：写了的照写的，没写的照成员定，一个成员都认不出的照写的或 `pin`）、`models`（照配置写的原样，认不出的也在）（8-8）；`usable`（成员不是空的；下架的模型拿空了的池留着，标成假，8-23）；`subagent`（开关，没写的是 `false`）、`description`（没写的是 `null`）（8-8 补）。8-8 的 `tiers` 8-8 补去掉了；`fixed`（三个固定池之一，Q-1：永远在、配置里没写也列出来，头不给删、不给改名；它们的 `subagent` 没写的是 `true`） |
-| `side` | 旁路请求登记（Q-2），照编号排：`id`、`tier`（池名）、`name`、`summary`（照连接的语言，`core/human` 的 `model/side/<编号>`、`model/side/<编号>/summary`）、`resolved`（这一刻会落到哪：档位池解析得出的是池名，空的是 `session`） |
+| `side` | 旁路请求登记（Q-2），照编号排：`id`、`tier`（池名）、`name`、`summary`（照连接的语言，`core/human` 的 `model/side/<编号>`、`model/side/<编号>/summary`；扩展登记的照它清单里写的，施工 Q-3）、`resolved`（这一刻会落到哪：档位池解析得出的是池名，空的是 `session`）。扩展的编号是 `<包>/<编号>` |
 | `uses` | `chat`、`vision` 各配的引用，没配的是 `null`（8-7 只有 `chat`，8-8 加 `vision`） |
 | `catalog` | 在用的目录：`source`（`snapshot` 或 `cache`）、`fetched`；两份都读不了的是 `null` |
 
@@ -424,9 +424,11 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `messages` | 数组，必写 | 几条消息：`{"role": "system" 或 "user" 或 "assistant", "text": <字>, "images": [<blob 的哈希>, …]}` |
 | `max_tokens` | 正整数，可以不写 | 最多输出多少 token，最大 4294967295；不写的照供应商的默认 |
 | `use` | `"chat"` 或 `"vision"`，可以不写 | 用哪个用途的模型（施工 X-23）：照这一刻的 `models.chat`、`models.vision`；和 `model` 至多写一个。扩展不知道人配了哪个模型时用（表情包「让 AI 写」描述照 `vision`） |
+| `side` | 字符串，可以不写 | 旁路请求的登记编号（施工 Q-3）：这个扩展自己包里清单 `[[side]]` 的 `id`，不带包名；照登记的档位走「旁路请求」那条链。和 `model`、`use` 不能同写 |
+| `session` | 会话编号，可以不写 | 只跟着 `side`（施工 Q-3）：档位池用不上时退到这个会话这一刻的引用；不写的照 `models.chat`。不是自己的会话在连接那一道当作没有（`session_not_found`） |
 
 1. `messages`：`system` 最多一条，只能在最前面；后面至少一条，最后一条是 `user`。`text` 必写：`system`、`assistant` 的不能是空的，`user` 的字、图至少有一样。`images` 只有 `user` 能写，是这个账号的 blob（先用 `blob.put` 传）：一条消息里先字后图，和 `session.send` 一样。不认识的格不理。
-2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 这个账号没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。`model`、`use` 一起写的、`use` 不是那两个的：`bad_params`。`use` 是 `vision`、`models.vision` 没配的：`no_model`，原话 `no vision model configured: set models.vision`（同第十三条替看图）。
+2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 这个账号没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。`model`、`use` 一起写的、`use` 不是那两个的：`bad_params`。`use` 是 `vision`、`models.vision` 没配的：`no_model`，原话 `no vision model configured: set models.vision`（同第十三条替看图）。`side` 和 `model`、`use` 同写的，`session` 不跟着 `side` 的，`side` 不是这个扩展自己包里登记过的（人的连接没有包，一律不认；记一行 `DEBUG unknown side request`），`session` 不合写法的：`bad_params`（施工 Q-3）。
 3. 请求出错的照第十二条第 5 条：`no_model`（`data.message`）、`cooling`（`data.message`、`data.wait_ms`）、`model_failed`（`data.class`、`data.status`（有状态码的才写）、`data.message`，和 `model.called` 的 `error` 一样）。
 4. 不进任何会话的日志，不推送。
 
@@ -1128,7 +1130,8 @@ mimo = ["xiaomi"]
 
 | 测试 | 守哪几条 | 哪一步 |
 |---|---|---|
-| `crates/miyu-models/src/side/tests.rs`（Q-2） | 档位对上三个固定池，出厂的照编号排；池是空的落到会话的模型，有成员的落到池 |
+| `crates/miyu-models/src/side/tests.rs`（Q-2） | 档位对上三个固定池，出厂的照编号排；池是空的落到会话的模型，有成员的落到池；清单认的档位就是三个固定池、照池名认得回来（Q-3） |
+| `crates/miyu-endpoint/tests/model_call_side.rs`（Q-3） | 扩展经真的路由调 `model.call`：登记了的 `side` 照档位从 `lite` 池取；没登记的、和 `model`、`use` 同写的、`session` 不跟着 `side` 的、人的连接写 `side` 的 `bad_params`，都没发；池是空的，写了会话的照会话的模型、没写的照 `models.chat`；`model.list` 的 `side` 列出 `<包>/<编号>`、名字说明照清单、`resolved` 跟着池 |
 | `crates/miyu-session/tests/route_side.rs`（Q-2） | 起标题照 `lite` 池、主请求照会话的模型；池是空的用会话的模型、不算退；池里出错退回会话的模型、记 `fell_back`；会话钉在 `lite` 池上的不再往下退 |
 | `crates/miyu-session/tests/once_side.rs`（Q-2） | 一次性入口照登记：发给 `normal` 池；池是空的照后备（会话的、`models.chat`）；池里出错、成员取不到 key 退一次；后备就是这个池的不再退 |
 | `crates/miyu-models/src/reference/tests.rs` | 两种写法的先后、切在第一个 `/`、哪里能写哪几种、报的原话、配置收的和 `models.chat` 那一处认的一样（8-6）；池的成员配置收的和 `PoolMember` 那一处认的一样，造会话记下的引用和解析不出的几种，一个引用这一轮指到模型还是池、池的认不出的成员跳过（8-8；一个引用发给谁 8-8 从 `provider/tests.rs` 挪来）；以前的挡位名哪里都不认、点名的模型不算挡位（8-8 补） | 8-6、8-8 |

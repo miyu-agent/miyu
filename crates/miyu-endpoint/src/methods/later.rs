@@ -41,6 +41,7 @@ pub(crate) async fn call_later(
             models::call(
                 core,
                 (&caller.account, caller.acting_for()),
+                caller.package.as_deref(),
                 params(request)?,
             )
             .await

@@ -78,6 +78,26 @@ pub fn routed(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Co
     assembled(home, env, data, Arc::new(routes))
 }
 
+/// 同 [`routed`]，装着的包照家目录读进来、拉起扩展（施工 Q-3：扩展经真的路由调模型）。
+pub fn routed_serving(home: &Home, data: Arc<ModelData>) -> Arc<Core> {
+    let routes = Routes {
+        client: client(Proxy::Off).expect("造得出客户端"),
+        direct: client(Proxy::Off).expect("造得出客户端"),
+        data: Arc::clone(&data),
+        idle: Duration::from_secs(60),
+    };
+    let resources = ResourceRoot::at(default_resources());
+    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let core = Arc::new(
+        Arc::into_inner(assembled(home, &[], data, Arc::new(routes)))
+            .expect("刚造的，只有这一份")
+            .with_extension_timing(super::extensions::quick())
+            .with_packages(found),
+    );
+    core.start_extensions();
+    core
+}
+
 /// 同 [`core`]，请求模型照剧本 `script`（施工 8-15：剧本带价格，会话的请求记金额）。
 pub fn scripted(home: &Home, data: Arc<ModelData>, script: Script) -> Arc<Core> {
     assembled(home, &[], data, Arc::new(script))

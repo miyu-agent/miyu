@@ -34,7 +34,7 @@ pub(super) enum Picked {
 }
 
 /// 辅助请求的用途是哪一条登记；没登记的（回顾、提前压的摘要：复用会话前缀的缓存）照会话的模型。
-pub(super) fn registered(purpose: Option<&Purpose>) -> Option<&'static Side> {
+pub(super) fn registered(purpose: Option<&Purpose>) -> Option<&'static Side<'static>> {
     match purpose {
         Some(Purpose::Title) => Some(&side::TITLE),
         _ => None,
@@ -43,7 +43,7 @@ pub(super) fn registered(purpose: Option<&Purpose>) -> Option<&'static Side> {
 
 impl Route {
     /// 照登记 `side` 的档位，从固定池里挑一个成员，照这一轮的配置 `config`。种子是会话编号，不看钉着的、不粘。
-    pub(super) fn side(&self, config: &TurnConfig, side: &Side) -> Picked {
+    pub(super) fn side(&self, config: &TurnConfig, side: &Side<'_>) -> Picked {
         let values = config.resolved.values();
         let routes = &self.shared;
         let Ok(resolved) = routes.resolve(&values, &side::reference(side)) else {
@@ -82,7 +82,7 @@ impl Route {
     }
 
     /// 会话钉着的引用就是登记 `side` 的那个池：退不出去。
-    pub(super) fn rides(&self, side: &Side) -> bool {
+    pub(super) fn rides(&self, side: &Side<'_>) -> bool {
         self.lock().reference.as_deref() == Some(side::reference(side).as_str())
     }
 }
@@ -90,7 +90,7 @@ impl Route {
 /// 在派出去的任务里照登记 `side` 发这一次辅助请求，带着当前的 span。
 pub(super) fn spawn(
     route: Arc<Route>,
-    side: &'static Side,
+    side: &'static Side<'static>,
     config: &TurnConfig,
     request: Request,
     reports: Reports,
@@ -105,7 +105,7 @@ pub(super) fn spawn(
 /// 照档位池换着发；池是空的用会话的模型，池里都不行退到会话的模型（见模块的说明）。
 async fn ask(
     route: Arc<Route>,
-    side: &'static Side,
+    side: &'static Side<'static>,
     config: TurnConfig,
     request: Request,
     mut reports: Reports,

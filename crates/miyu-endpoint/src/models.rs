@@ -16,6 +16,7 @@
 mod call;
 mod entry;
 mod retire;
+mod side;
 
 pub(crate) use call::call;
 
@@ -183,7 +184,7 @@ pub(crate) async fn list(
     Ok(json!({
         "providers": providers,
         "pools": pools_json(&values),
-        "side": side_json(&values, &crate::config::methods::words(core, language)?),
+        "side": side::listed(core, &values, (&crate::config::methods::words(core, language)?, language)),
         "uses": {"chat": uses.chat, "vision": uses.vision},
         "catalog": catalog,
     }))
@@ -240,25 +241,6 @@ fn pools_json(values: &Values) -> Vec<Value> {
                 "description": settings.description,
                 "fixed": pools::FIXED.contains(&name.as_str()),
             }))
-        })
-        .collect()
-}
-
-/// 旁路请求登记（施工 Q-2，设计 43 第三节第 4 条，`miyu_models::side`）：每一条的编号、档位、照连接的语言的名字和说明
-/// （`core/human` 的 `model/side/<编号>`、`model/side/<编号>/summary`）、这一刻会落到哪（档位池解析得出的是池名，空的是
-/// `session`：用会话的模型）。照编号排。
-fn side_json(values: &Values, human: &miyu_store::human::Human) -> Vec<Value> {
-    miyu_models::side::SHIPPED
-        .iter()
-        .map(|side| {
-            let said = |key: String| miyu_config::Words::sentence(human, &key, &[]);
-            json!({
-                "id": side.id,
-                "tier": side.tier.pool(),
-                "name": said(format!("model/side/{}", side.id)),
-                "summary": said(format!("model/side/{}/summary", side.id)),
-                "resolved": miyu_models::side::resolved(values, side).unwrap_or("session"),
-            })
         })
         .collect()
 }

@@ -134,6 +134,7 @@ mod memory_venue;
 mod messages;
 mod meta;
 mod model_call;
+mod model_call_side;
 mod models;
 mod models_effort;
 mod models_embedding;

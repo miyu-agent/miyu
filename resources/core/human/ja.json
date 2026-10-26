@@ -660,6 +660,7 @@
     "package-problems/bad_mcp": "MCP サーバーの書き方が正しくありません: {detail}",
     "package-problems/bad_slash": "スラッシュコマンドの書き方が正しくありません: {detail}",
     "package-problems/bad_search": "検索ソースの書き方が正しくありません: {detail}",
+    "package-problems/bad_side": "サイドリクエストの書き方が正しくありません: {detail}",
     "package-problems/bad_author": "作者の書き方が正しくありません: {detail}",
     "package-problems/bad_upstream": "上流リポジトリのアドレスが正しくありません: {detail}",
     "package-problems/bad_widget": "ウィジェットの書き方が正しくありません: {detail}",

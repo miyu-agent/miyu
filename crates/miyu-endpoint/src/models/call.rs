@@ -10,6 +10,10 @@
 //!    后图。
 //! 3. 照核心这一刻的配置（不算项目配置的最终值）冻结一份，交给一次性入口（`Models::one_shot()`；照剧本回的端口没有，答
 //!    `no_model`）。没答成的照它的四种写成拒绝。
+//! 4. 写了 `side` 的（施工 Q-3，设计 `43-旁路请求和档位池.md` 第三节第 3 条）：只认这个扩展自己包里清单 `[[side]]` 登记的编号
+//!    （人的连接没有包，一律不认），和 `model`、`use` 不能同写，不对的 `bad_params`。照登记的档位从固定池取；池是空的、池里
+//!    都在冷却或者都出了错，退到会话的模型：写了 `session` 的照那个会话这一刻的引用（`session` 只跟着 `side`；不是自己的会话
+//!    在连接那一道当作没有），没写的照 `models.chat`。
 
 use std::sync::Arc;
 
@@ -17,13 +21,15 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, ContentHash};
+use miyu_kernel::id::{AccountId, ContentHash, SessionId};
 use miyu_kernel::request::Message;
 use miyu_models::provider::NOT_CONFIGURED;
 use miyu_models::settings::UseSettings;
+use miyu_models::side::Side;
 use miyu_session::{Answer, Ask, ConfigSource, Turn, Unanswered};
 use miyu_store::blob::Blobs;
 
+use super::side;
 use crate::Core;
 use crate::attach;
 use crate::refusal::Refusal;
@@ -43,6 +49,12 @@ pub(crate) struct CallParams {
     /// 用哪个用途的模型（施工 X-23）：和 `model` 至多写一个。
     #[serde(default, rename = "use")]
     uses: Option<Use>,
+    /// 旁路请求的登记编号（施工 Q-3）：这个扩展自己包里 `[[side]]` 的 `id`；和 `model`、`use` 至多写一个。
+    #[serde(default)]
+    side: Option<String>,
+    /// 旁路请求所属的会话（施工 Q-3）：档位池用不上时照它这一刻的模型；只跟着 `side`。
+    #[serde(default)]
+    session: Option<String>,
 }
 
 /// 用途：配置 `models.*` 里的哪一个。
@@ -81,18 +93,40 @@ struct Line {
     images: Vec<ContentHash>,
 }
 
-/// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）。
+/// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）；`package` 是扩展的连接的包（施工 Q-3：`side` 只认它登记的）。
 pub(crate) async fn call(
-    core: &Core,
+    core: &Arc<Core>,
     (own, account): (&AccountId, &AccountId),
+    package: Option<&str>,
     params: CallParams,
 ) -> Result<Value, Refusal> {
     if !purpose_ok(&params.purpose)
         || params.model.as_deref() == Some("")
         || (params.model.is_some() && params.uses.is_some())
+        || (params.side.is_some() && (params.model.is_some() || params.uses.is_some()))
+        || (params.session.is_some() && params.side.is_none())
     {
         return Err(Refusal::BAD_PARAMS);
     }
+    let side = match &params.side {
+        None => None,
+        Some(id) => {
+            match package.and_then(|package| Some((package, side::own(core, package, id)?))) {
+                Some((package, request)) => Some((request.full_id(package), side::tier(&request))),
+                None => {
+                    tracing::debug!(target: "miyu::endpoint", side = %id, "unknown side request");
+                    return Err(Refusal::BAD_PARAMS);
+                }
+            }
+        }
+    };
+    let fallback = match &params.session {
+        None => None,
+        Some(id) => {
+            let id = SessionId::parse(id).map_err(|_| Refusal::BAD_PARAMS)?;
+            core.sessions.get(core, &id).await?.handle.next().reference
+        }
+    };
     let max_tokens = match params.max_tokens {
         None => None,
         Some(0) => return Err(Refusal::BAD_PARAMS),
@@ -137,7 +171,16 @@ pub(crate) async fn call(
         // 用量记在这个连接的人名下（施工 Y-2 下下中下）。
         owner: account.clone(),
     };
-    match one_shot.call(&turn, &blobs, ask).await {
+    let replied = match &side {
+        Some((id, tier)) => {
+            let side = Side { id, tier: *tier };
+            one_shot
+                .call_side(&turn, &blobs, ask, &side, fallback)
+                .await
+        }
+        None => one_shot.call(&turn, &blobs, ask).await,
+    };
+    match replied {
         Ok(answer) => Ok(answered(answer)),
         Err(Unanswered::UnknownModel(why)) => {
             tracing::debug!(target: "miyu::endpoint", why = %why, "unknown model");

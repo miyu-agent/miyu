@@ -23,7 +23,7 @@ impl OneShot {
         config: &TurnConfig,
         blobs: &Blobs,
         ask: Ask,
-        side: &Side,
+        side: &Side<'_>,
         fallback: Option<String>,
     ) -> Result<Answer, Unanswered> {
         self.call_side_watching(config, blobs, ask, (side, fallback), &mut |_| {})
@@ -41,7 +41,7 @@ impl OneShot {
         config: &TurnConfig,
         blobs: &Blobs,
         mut ask: Ask,
-        (side, fallback): (&Side, Option<String>),
+        (side, fallback): (&Side<'_>, Option<String>),
         watch: &mut (dyn FnMut(Watched<'_>) + Send),
     ) -> Result<Answer, Unanswered> {
         let pool = side::reference(side);

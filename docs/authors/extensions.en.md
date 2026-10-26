@@ -221,7 +221,7 @@ Each needs the matching capability declared in the manifest (see [The manifest](
 
 **Searching by meaning**: call `model.embed {"texts": [...]}` for vectors (using the embedding model the person chose in settings). Without one configured you get `embedding_off`; fall back to keyword search. No extra capability needed.
 
-**Calling a model once**: `model.call` (e.g. having the AI describe an image with `"use": "vision"`). It spends the person's budget, so use it sparingly.
+**Calling a model once**: `model.call` (e.g. having the AI describe an image with `"use": "vision"`). It spends the person's budget, so use it sparingly. For calls made outside the conversation and over and over (deciding whether to reply, scoring), register them in your manifest with `[[side]]` and call with `"side": "<id>"`: they use whatever models the person put in the `lite`, `normal` or `flagship` pool for that tier, so the person doesn't configure anything for you (see [Manifest](manifest.en.md)).
 
 **Methods for your page and widgets**: register with `package.methods {"methods": [{"name": "status"}]}`; when the page or a button calls one, the core sends `method.call {"method", "params"}` and your answer is what the caller gets. Answer unknown methods with JSON-RPC `-32601`.
 

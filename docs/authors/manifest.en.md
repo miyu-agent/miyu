@@ -199,6 +199,27 @@ Registers your program as a search provider, one per entry; `capabilities` must 
 
 The settings screen's "Search provider" dropdown gets one more entry, valued `<package id>/<id>`. It's used only when a person picks it and never joins the "Auto" order, so your program never receives search terms without the person knowing. When the AI searches, the core calls your program with `search.query`; when you can't answer (an error, a rate limit), the shipped providers take over. See [Writing an extension](extensions.en.md).
 
+## `[[side]]`
+
+Registers the model requests your program makes outside the conversation (side requests), one per entry, each declaring which tier of model it wants. No capability is needed.
+
+| Field | Notes |
+|---|---|
+| `id` | Id, written like `[command] name`; unique within the package |
+| `tier` | Which tier: `lite` (cheap and fast, for high-volume judgements), `normal` (has to understand a stretch of conversation), `flagship` (the best) |
+| `name` | Shown to people |
+| `summary` | One sentence: when it is called and what it does |
+
+```toml
+[[side]]
+id = "judge"
+tier = "lite"
+name = { en = "Reply judge", zh = "判断要不要回" }
+summary = { en = "Decides whether to reply in a group.", zh = "群里有人说话时判断要不要回" }
+```
+
+Call `model.call` with `"side": "judge"` (only an id registered in your own package, without the package name) and without `model` or `use`: the core takes a model from the pool named after the tier (`lite`, `normal`, `flagship`; people put models into them in settings). When that pool is empty, or every model in it is cooling down or failed, it uses the session's model — the session you pass as `session`, or `models.chat` if you pass none. People don't configure a model for your request. An id you didn't register gets `bad_params`. `model.list` lists yours under `side` (as `<package id>/<id>`) with where each one lands right now. See [Writing an extension](extensions.en.md).
+
 ## `[[widget]]`
 
 A block of your own content in the terminal and web UIs; `capabilities` must include `widgets`. At most 16 per package.

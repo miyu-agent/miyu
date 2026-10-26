@@ -221,7 +221,7 @@ core.close()
 
 **按意思搜**：调 `model.embed {"texts": [...]}` 拿向量（用人在设置里选的语义模型）。没配的回 `embedding_off`，退回关键词搜就好。不用另批能力。
 
-**叫一次模型**：调 `model.call`（例如让 AI 给一张图写描述，`"use": "vision"`）。会花人的额度，别滥用。
+**叫一次模型**：调 `model.call`（例如让 AI 给一张图写描述，`"use": "vision"`）。会花人的额度，别滥用。在对话以外、会反复调的（判断要不要回、打分），在清单里用 `[[side]]` 登记、调的时候写 `"side": "<编号>"`：照登记的档位用人放进 `lite`、`normal`、`flagship` 池的模型，人不用为你另配（见 [清单](manifest.md)）。
 
 **后台页和界面块的方法**：发 `package.methods {"methods": [{"name": "status"}]}` 登记；页面、按钮调到时核心发 `method.call {"method", "params"}`，你回什么对面就拿到什么，不认识的方法回 JSON-RPC 的 `-32601`。
 

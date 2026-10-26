@@ -144,7 +144,7 @@ There are two shelves. `system` is the shared `system/secrets.toml`, and only ad
 | `providers` | Configured providers by id. Each: `id`, `layer` (`personal`: configured in the person's own settings; `system`: only in the system settings, shared), `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
 | each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
 | `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description`, `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
-| `side` | Side requests (model requests outside the conversation), one entry each: `id` (`core/title` for titles, `memory/organize` for memory organizing), `tier` (which tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), and `resolved` (where it would go right now: the pool name when that tier's pool has members, `session` when it is empty and the session's model is used). When every member of the pool is cooling down or has failed, the request also falls back to the session's model |
+| `side` | Side requests (model requests outside the conversation), one entry each: `id` (`core/title` for titles, `memory/organize` for memory organizing), `tier` (which tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), and `resolved` (where it would go right now: the pool name when that tier's pool has members, `session` when it is empty and the session's model is used). When every member of the pool is cooling down or has failed, the request also falls back to the session's model. Side requests extensions register in their manifest's `[[side]]` are listed here too, with `id` as `<package>/<id>` and the name and summary from their manifest |
 | `uses` | The references set for `chat` and `vision`, `null` when not set |
 | `catalog` | The catalog in use: `source`, `fetched`; `null` when none can be read |
 
@@ -203,6 +203,8 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes: looked up first under this connection's own account, where `blob.put` stores them, then under the account it works for; missing from both gives `unknown_attachment`) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat`. When the same provider is configured in both the system and the personal settings, `<id>/<model>` is the person's own copy and `<id>@system/<model>` is the shared one (with the shared key) |
 | `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
+| `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or failed, the session's model is used. Can't be combined with `model` or `use`; from a person's connection, or with an unregistered id, it's `bad_params` |
+| `session` | session id | Only with `side`: when the tier's pool can't be used, follow this session's current model; without it, `models.chat`. Someone else's session is `session_not_found` |
 | `max_tokens` | positive integer | Most output tokens |
 
 **Response**: `{"text", "provider", "model", "usage"}`. `usage` has `uncached`, `cache_read`, `cache_write`, `output`, plus `reasoning` when reported; unreported ones are `null`. Answered in the background, so other requests on the connection aren't blocked.
@@ -215,7 +217,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Malformed params; an image blob that isn't an image |
+| `bad_params` (`-32602`) | Malformed params; an image blob that isn't an image; a `side` this extension didn't register |
 | `unknown_attachment` | An image blob this account doesn't have |
 | `unknown_model` | `model` can't be resolved |
 | `no_model` | No usable model (not configured, key unavailable), `data.message` |

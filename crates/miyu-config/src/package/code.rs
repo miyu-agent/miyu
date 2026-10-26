@@ -97,6 +97,8 @@ pub enum Code {
     BadSlash,
     /// `[[search]]` 写错了（施工 N-5）：编号、名字，同一个包里重了，没声明 `search` 能力。
     BadSearch,
+    /// `[[side]]` 写错了（施工 Q-3）：编号、档位、名字、说明，同一个包里重了。
+    BadSide,
     /// `[package] author` 不是一行 1 到 100 个字（施工 F-12）。
     BadAuthor,
     /// `[package] upstream` 不是 `https://` 开头的网址（施工 F-12）。
@@ -168,6 +170,7 @@ impl Code {
             Code::BadMcp => "bad_mcp",
             Code::BadSlash => "bad_slash",
             Code::BadSearch => "bad_search",
+            Code::BadSide => "bad_side",
             Code::BadAuthor => "bad_author",
             Code::BadUpstream => "bad_upstream",
             Code::BadWidget => "bad_widget",
@@ -181,7 +184,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 54] = [
+    pub const ALL: [Code; 55] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -229,6 +232,7 @@ impl Code {
         Code::BadMcp,
         Code::BadSlash,
         Code::BadSearch,
+        Code::BadSide,
         Code::BadAuthor,
         Code::BadUpstream,
         Code::BadWidget,

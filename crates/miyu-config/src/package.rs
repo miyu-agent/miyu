@@ -24,6 +24,7 @@ mod need;
 mod reader;
 mod search;
 pub mod settings;
+mod side;
 mod slash;
 mod target;
 mod upgrade;
@@ -42,6 +43,7 @@ pub use mcp::{
 pub use need::Need;
 pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Setting, SettingKind};
+pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;
 pub use upgrade::without_kind;
@@ -98,6 +100,8 @@ pub struct Manifest {
     pub mcp: Vec<McpServer>,
     /// 声明的斜杠命令（施工 X-14 下，`[[slash]]`）：交给包的程序办；照写的先后，没有的是空的。只有扩展包能写。
     pub slash: Vec<SlashCommand>,
+    /// 登记的旁路请求（施工 Q-3，`[[side]]`）：照写的先后，没有的是空的。只有扩展包能写。
+    pub side: Vec<SideRequest>,
     /// 声明的搜索来源（施工 N-5，`[[search]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub search: Vec<SearchSource>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
@@ -287,11 +291,13 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        // `[[mcp]]`、`[[slash]]`、`[[widget]]` 是一串表（施工 X-2、X-14 下、X-15 上）：写成别的样子的由各自的模块报。`command`
-        // 一张、一串都行（施工 F-13）。
+        // `[[mcp]]`、`[[slash]]`、`[[widget]]`、`[[side]]` 是一串表（施工 X-2、X-14 下、X-15 上、Q-3）：写成别的样子的由各自的模块
+        // 报。`command` 一张、一串都行（施工 F-13）。
         if !item.is_table_like()
-            && !(matches!(key, "mcp" | "slash" | "search" | "widget" | "command")
-                && item.is_array_of_tables())
+            && !(matches!(
+                key,
+                "mcp" | "slash" | "search" | "widget" | "side" | "command"
+            ) && item.is_array_of_tables())
         {
             return Err(reader.problem(
                 Some(item),
@@ -383,6 +389,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(node) => slash::read(&reader, node)?,
         None => Vec::new(),
     };
+    let side = match root.get("side") {
+        Some(node) => side::read(&reader, node)?,
+        None => Vec::new(),
+    };
     let capabilities = process
         .as_ref()
         .map_or(&[][..], |process| process.capabilities.as_slice());
@@ -428,6 +438,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         theme,
         mcp,
         slash,
+        side,
         search,
         widgets,
         export,

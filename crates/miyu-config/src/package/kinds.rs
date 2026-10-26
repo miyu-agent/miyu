@@ -78,6 +78,7 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
             "mascot",
             "mcp",
             "slash",
+            "side",
             "search",
             "widget",
             "export",

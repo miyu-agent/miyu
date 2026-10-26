@@ -660,6 +660,7 @@
     "package-problems/bad_mcp": "MCP 服务的写法不对：{detail}",
     "package-problems/bad_slash": "斜杠命令的写法不对：{detail}",
     "package-problems/bad_search": "搜索来源的写法不对：{detail}",
+    "package-problems/bad_side": "旁路请求的写法不对：{detail}",
     "package-problems/bad_author": "作者的写法不对：{detail}",
     "package-problems/bad_upstream": "上游仓库的网址不对：{detail}",
     "package-problems/bad_widget": "界面块的写法不对：{detail}",

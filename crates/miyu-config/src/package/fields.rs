@@ -112,6 +112,9 @@ pub(super) const MCP: [&str; 10] = [
 /// `[[slash]]`。
 pub(super) const SLASH: &[&str] = &["name", "summary", "argument", "access"];
 
+/// `[[side]]`（施工 Q-3）。
+pub(super) const SIDE: &[&str] = &["id", "tier", "name", "summary"];
+
 /// `[[search]]`。
 pub(super) const SEARCH: &[&str] = &["id", "name"];
 
@@ -125,7 +128,7 @@ pub(super) const EXPORT: &[&str] = &["methods"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 21] = [
+pub(super) const TABLES: [Table; 22] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -164,6 +167,7 @@ pub(super) const TABLES: [Table; 21] = [
     table("theme", &[THEME]),
     table("mcp", &[&MCP]),
     table("slash", &[SLASH]),
+    table("side", &[SIDE]),
     table("search", &[SEARCH]),
     table("widget", &[WIDGET]),
     table("export", &[EXPORT]),

@@ -199,6 +199,27 @@ tools = ["hello_greet"]
 
 设置页「搜索服务供应商」的下拉里多一项，值是 `<包的编号>/<编号>`。人选了它才用，不进「自动」的顺序：你的程序不会在人不知道的时候拿到搜索词。AI 搜网页时核心调你的程序 `search.query`，你用不了的（出错、限额），照出厂的几家兜底。见 [写扩展](extensions.md)。
 
+## `[[side]]`
+
+登记你的程序在对话以外调模型的请求（旁路请求），一段一条，声明它要哪一档的模型。不用另声明能力。
+
+| 格 | 说明 |
+|---|---|
+| `id` | 编号，写法同 `[command] name`，一个包里不重 |
+| `tier` | 要哪一档：`lite`（便宜、快，量大的判断）、`normal`（要读懂一段对话的）、`flagship`（最好的） |
+| `name` | 给人看的名字 |
+| `summary` | 一句说明：什么时候调、做什么 |
+
+```toml
+[[side]]
+id = "judge"
+tier = "lite"
+name = { en = "Reply judge", zh = "判断要不要回" }
+summary = { en = "Decides whether to reply in a group.", zh = "群里有人说话时判断要不要回" }
+```
+
+调 `model.call` 时写 `"side": "judge"`（只写你自己包里的编号，不带包名），不写 `model`、`use`：核心照档位从同名的模型池（`lite`、`normal`、`flagship`，人在设置里往里放模型）取；池是空的、或者池里的模型都在冷却、都出了错，用会话的模型——你同时写了 `session` 的照那个会话，没写的照 `models.chat`。人不用为你的请求另配模型。写了你没登记的编号，回 `bad_params`。`model.list` 的 `side` 里列得出你登记的（编号是 `<包的编号>/<编号>`）和这一刻会落到哪。见 [写扩展](extensions.md)。
+
 ## `[[widget]]`
 
 往终端、网页上放自己的一块内容；`capabilities` 里要有 `widgets`。一个包最多 16 块。
