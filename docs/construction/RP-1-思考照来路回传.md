@@ -1,6 +1,6 @@
 ## 施工单 RP-1：思考照来路回传
 
-状态：做了，等验收（2026-10-26）。图纸 `docs/blueprint/drivers/openai-chat.md`「开关」表的 `reasoning`、「编码」第 4 条、「解码」第 8、9 条、「接 opencode Zen」第 4 条。
+状态：已完成（2026-10-26，项目主人定：自测过就合，不另验收）。图纸 `docs/blueprint/drivers/openai-chat.md`「开关」表的 `reasoning`、「编码」第 4 条、「解码」第 8、9 条、「接 opencode Zen」第 4 条。
 
 ### 根因（量过）
 
