@@ -58,3 +58,31 @@ async fn a_member_lists_packages_without_the_machine_details() {
         "{subscribed}"
     );
 }
+
+/// 不是管理员组的账号也有扩展（接入QQ 的 `im`，施工 U23-R修）：照 `export`、`connection` 找挂在自己身上的包，成员拿到的列表里
+/// 照样有；程序、参数、状态目录照样不给。
+#[tokio::test]
+async fn a_member_still_sees_what_extensions_export() {
+    let home = Home::new();
+    home.write(
+        "system/packages/relay/package.toml",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[connection]\nplatform = \"qq\"\n\n[export]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
+    );
+    let core = packaged::core(&home);
+    let mut bob = member(&core, "bob").await;
+    let listed = bob.call("l", "package.list", json!({})).await;
+    let relay = listed["result"]["packages"]
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["package"] == "relay"))
+        .cloned()
+        .unwrap_or_else(|| panic!("{listed}"));
+    assert_eq!(
+        relay["export"],
+        json!({"methods": ["qq.inbound", "qq.groups"]}),
+        "{relay}"
+    );
+    assert_eq!(relay["connection"], json!({"platform": "qq"}), "{relay}");
+    for hidden in ["state", "command", "commands", "process"] {
+        assert!(relay.get(hidden).is_none(), "成员看不到 {hidden}：{relay}");
+    }
+}

@@ -755,7 +755,7 @@
 
 回应顶上多一格 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表 `resources/packages/groups.toml` 里的每个组 `{"id", "name", "summary"?}`，名字、说明照连接的语言挑；每一项多一格 `groups`（清单写的组，只有出厂的内置包有），头照它把组里的包收在一起。
 
-成员（不是管理员组的人）调得了 `package.list`（施工 U23-R：软件包页照包开关他自己的），每一项只给 `package`、`layer`、`removed`、`kind`、`name`、`groups`、`version`、`summary`、`icon`、`from`、`author`、`upstream`、`features`、`contents`、`status`、`enabled`、`page`、`code`、`missing` 这几格；这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）只给管理员。他对自己关没关一个包照他的配置读（`config.get`），列表里不写。软件包的流（`subscribe {"stream": "packages"}`）成员订不了：那里还推 MCP 服务。
+成员（不是管理员组的人）调得了 `package.list`（施工 U23-R：软件包页照包开关他自己的），每一项去掉只给管理员的那几格（施工 U23-R修起照黑名单：U23-R 照白名单删，把扩展要的 `export`、`connection` 也删了，接入QQ 的 `im` 账号不在管理员组、找不到挂在自己身上的包）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）只给管理员。他对自己关没关一个包照他的配置读（`config.get`），列表里不写。软件包的流（`subscribe {"stream": "packages"}`）成员订不了：那里还推 MCP 服务。
 
 **`package.info`、`package.files`**（施工 F-8 中上，`packages.md`「本地库」）：参数都是 `{"package"}`，多写的格 `bad_params`，没装的（或者卸掉了的出厂包）`unknown_package`。
 

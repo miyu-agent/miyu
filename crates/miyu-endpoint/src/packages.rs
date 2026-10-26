@@ -186,18 +186,27 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     Some(listed(core, found, &places, &words, peer.language, true))
 }
 
-/// 成员看得到的那几格（施工 U23-R，U23 末上、末下：成员在软件包页照包开关）：名字、说明、种类、状态、开没开这些；这台机器上
-/// 的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法（可能带
-/// 环境变量、请求头）、读坏了的原话（`problem`、`line`）只给管理员。
-const FOR_MEMBERS: &[&str] = &[
-    "package", "layer", "removed", "kind", "name", "groups", "version", "summary", "icon", "from",
-    "author", "upstream", "features", "contents", "status", "enabled", "page", "code", "missing",
+/// 只给管理员的那几格（施工 U23-R，U23 末上、末下：成员在软件包页照包开关）：这台机器上的路径（`state`、`pages_dir`）、程序
+/// 和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法（可能带环境变量、请求头）、读坏了的原话
+/// （`problem`、`line`）。别的照给：不是管理员组的账号也有扩展（接入QQ 的 `im`）照 `export`、`connection` 这些找挂在自己身上的
+/// 包（施工 U23-R修，U23-R 起照白名单删掉了它们）。
+const ADMINS_ONLY: &[&str] = &[
+    "state",
+    "pages_dir",
+    "command",
+    "commands",
+    "process",
+    "worker",
+    "check",
+    "mcp",
+    "problem",
+    "line",
 ];
 
-/// 把一项删到 [`FOR_MEMBERS`] 那几格。
+/// 把一项里 [`ADMINS_ONLY`] 那几格去掉。
 fn for_members(item: &mut Value) {
     if let Some(fields) = item.as_object_mut() {
-        fields.retain(|key, _| FOR_MEMBERS.contains(&key.as_str()));
+        fields.retain(|key, _| !ADMINS_ONLY.contains(&key.as_str()));
     }
 }
 
