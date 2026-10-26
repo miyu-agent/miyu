@@ -15,6 +15,9 @@ use miyu_recall::{EPISODE, PERSON};
 /// - 名字对不上谁的，是这一段里恰好一个人的名字的开头（群名片后面带着一串说明，模型只写了前半截）就认成他（[`place`]）。
 /// - 发生过的事（`episode`）涉及谁照同一个认法换成平台编号：她自己、主人不算，对不上的照名字留；别的类没有。
 /// - 关于主人（`user`）的一条说的是她自己的（照名字起头，`her::about_her`）改记成 `episode`。
+///
+/// 施工 E-1 修五：认之前先清洗（[`clean`]）——看不见的控制字符、双向格式字符去掉，模型在名字后面加的括号注释（「（QQ 群昵称）」）
+/// 去掉；群名片同样清洗后比。清洗后对不上的照原样认、照名字留（只去看不见的那几个字）。
 pub(crate) fn place_people(
     found: &mut [Candidate],
     names: &BTreeMap<String, Option<String>>,
@@ -45,7 +48,7 @@ pub(crate) fn place_people(
                 candidate.class = USER.to_string();
                 candidate.who = None;
             }
-            None => {}
+            None => candidate.who = candidate.who.as_deref().map(visible),
         }
     }
 }
@@ -64,13 +67,49 @@ fn place<'a>(
     if let Some(found) = names.get(who) {
         return Some(found);
     }
+    // 施工 E-1 修五：照清洗过的几种写法依次认，先认上的算。
+    clean(who)
+        .iter()
+        .find_map(|one| exactly(one, names, me).or_else(|| by_head(one, names, me)))
+}
+
+/// 清洗过的 `who` 和这一段里一个人清洗过的名字一样的照他（施工 E-1 修五）；平台编号本身、她的名字不算，对上几个不同的人不认。
+fn exactly<'a>(
+    who: &str,
+    names: &'a BTreeMap<String, Option<String>>,
+    me: &BTreeSet<String>,
+) -> Option<&'a Option<String>> {
+    let want = crate::memory::her::fold(who);
+    let mut hit: Option<&Option<String>> = None;
+    for (name, target) in names {
+        let id = target.as_deref() == Some(name.as_str());
+        if id
+            || crate::memory::her::is_her(me, name)
+            || crate::memory::her::fold(&visible(name)) != want
+        {
+            continue;
+        }
+        match hit {
+            Some(seen) if seen != target => return None,
+            _ => hit = Some(target),
+        }
+    }
+    hit
+}
+
+/// 照前半截认（施工 E-1 修四）：`who` 已经清洗过，名字也照清洗过的比。
+fn by_head<'a>(
+    who: &str,
+    names: &'a BTreeMap<String, Option<String>>,
+    me: &BTreeSet<String>,
+) -> Option<&'a Option<String>> {
     let head = crate::memory::her::fold(who);
     if head.chars().count() < PREFIX || me.iter().any(|name| name.starts_with(&head)) {
         return None;
     }
     let mut hit: Option<&Option<String>> = None;
     for (name, target) in names {
-        let folded = crate::memory::her::fold(name);
+        let folded = crate::memory::her::fold(&visible(name));
         let id = target.as_deref() == Some(name.as_str());
         if id
             || folded == head
@@ -101,13 +140,60 @@ fn involved(
         let one = match place(name, names, me) {
             Some(Some(id)) => id.clone(),
             Some(None) => continue,
-            None => name.clone(),
+            None => visible(name),
         };
+        if one.is_empty() {
+            continue;
+        }
         if !placed.contains(&one) {
             placed.push(one);
         }
     }
     placed
+}
+
+/// 名字 `who` 清洗过的几种写法（施工 E-1 修五），依次认：只去看不见的字的；再去掉末尾的省略号（模型照前半截写、后面接了
+/// 「…」）、从最后一个左括号起整段去掉的（模型在名字后面加了注释「/败（QQ 群昵称）」，或者括号没写完「xnijsns ("…」）。空的、
+/// 和前一种一样的不算。
+fn clean(who: &str) -> Vec<String> {
+    let seen = visible(who);
+    let mut ways = vec![seen.clone()];
+    let mut cut = without_dots(&seen);
+    if let Some(at) = cut.rfind(['(', '（']) {
+        cut.truncate(at);
+    }
+    let cut = cut.trim().to_string();
+    if !cut.is_empty() && !ways.contains(&cut) {
+        ways.push(cut);
+    }
+    ways.retain(|one| !one.is_empty());
+    ways
+}
+
+/// 去掉看不见的字（施工 E-1 修五）：控制字符、双向格式字符、零宽字符；前后空白去掉。
+fn visible(name: &str) -> String {
+    name.chars()
+        .filter(|c| !c.is_control() && !invisible(*c))
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+/// 双向格式字符、零宽字符：名字里看不见、模型照抄下来就对不上的那几个。
+fn invisible(c: char) -> bool {
+    matches!(c, '\u{061C}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2060}'..='\u{2069}' | '\u{FEFF}')
+}
+
+/// 去掉末尾的省略号（施工 E-1 修五）：「名字…」「名字...」。
+fn without_dots(name: &str) -> String {
+    let mut name = name.trim();
+    while let Some(rest) = ["…", "...", "⋯"]
+        .iter()
+        .find_map(|tail| name.strip_suffix(tail))
+    {
+        name = rest.trim_end();
+    }
+    name.to_string()
 }
 
 /// 关于主人的那一类。

@@ -151,3 +151,55 @@ fn a_user_memory_about_her_becomes_an_episode() {
     place_people(&mut nameless, &names, &BTreeSet::new());
     assert_eq!(nameless[0].class, "user", "不知道她叫什么的照旧");
 }
+
+/// 施工 E-1 修五：模型写的是谁带着看不见的双向格式字符、在名字后面加了括号注释、写了半截又接省略号、括号没写完的，清洗以后
+/// 认成说话的人；群名片自己带着这些字的也照清洗过的比。
+#[test]
+fn a_name_with_invisible_marks_or_a_note_is_placed() {
+    let names = names(&[
+        ("/败", Some("qq:9")),
+        ("xnijsns (\"\u{2067}\u{2067}彩虹", Some("qq:8")),
+        ("阿岩\u{200F}", Some("qq:7")),
+        ("长名片后面一长串说明", Some("qq:3")),
+        ("Owner", None),
+    ]);
+    let mut found = vec![
+        one("person", Some("/败（QQ 群昵称）")),
+        one("person", Some("xnijsns (\"\u{2067}\u{2067} …")),
+        one("person", Some("阿岩")),
+        one("person", Some("\u{202E}小林\u{202C}")),
+        one("person", Some("长名片…")),
+    ];
+    place_people(&mut found, &names, &me());
+    assert_eq!(
+        placed(&found),
+        [
+            ("person", Some("qq:9")),
+            ("person", Some("qq:8")),
+            ("person", Some("qq:7")),
+            ("person", Some("小林")),
+            ("person", Some("qq:3")),
+        ],
+        "认得出的换成编号，认不出的照名字留、只去看不见的字"
+    );
+}
+
+/// 施工 E-1 修五：括号是名字自己的一部分时照原样认；清洗以后对不上谁的照原样留（只去看不见的字）。
+#[test]
+fn cleaning_does_not_spoil_a_plain_name() {
+    let names = names(&[("猫(Cat)", Some("qq:4")), ("猫", Some("qq:6"))]);
+    let mut found = vec![
+        one("person", Some("猫(Cat)")),
+        one("person", Some("猫")),
+        one("person", Some("狗（备注）")),
+    ];
+    place_people(&mut found, &names, &me());
+    assert_eq!(
+        placed(&found),
+        [
+            ("person", Some("qq:4")),
+            ("person", Some("qq:6")),
+            ("person", Some("狗（备注）")),
+        ]
+    );
+}

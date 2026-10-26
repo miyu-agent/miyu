@@ -244,3 +244,80 @@ async fn a_dream_cards_the_people_an_episode_involves() {
         "交回的叫法写在涉及他的那条正文里的算见过，编的不要"
     );
 }
+
+/// 群里的一个会话：qq:2 以「小林」、qq:5 以「老周」各说了一句（第 2 轮）。交回那一轮。
+fn two_speaking(home: &Home) -> Source {
+    let session = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").expect("合写法");
+    let dir = home.root.session_dir(&alice_account(), &session);
+    let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
+    let lines = [
+        r#"{"seq":1,"at":"2026-10-22T03:00:00.000Z","kind":"message.user","by":{"kind":"external","venue":"qq:group:5","id":"qq:2"},"body":{"blocks":[{"type":"text","text":"帮我看看老周说的那个框架"}],"venue":{"msg":"9","name":"小林"}}}"#,
+        r#"{"seq":2,"at":"2026-10-22T03:00:01.000Z","kind":"message.user","by":{"kind":"external","venue":"qq:group:5","id":"qq:5"},"body":{"blocks":[{"type":"text","text":"就是那个 nui"}],"venue":{"msg":"10","name":"老周"}}}"#,
+    ];
+    let said: Vec<Event> = lines
+        .iter()
+        .map(|line| Event::from_line(line).expect("合写法"))
+        .collect();
+    log.append(&said).expect("写得进");
+    Source {
+        session,
+        turn: TurnId::new(miyu_kernel::id::Seq::new(2).expect("从 1 起")),
+    }
+}
+
+/// 整理（施工 E-1 修五）：模型把正文里提到的别人的名字也交进了卡的叫法。带着两个人的发生过的事，正文不拿来认叫法（小林那张
+/// 不收「阿杰」，阿杰那张也不收）；只涉及一个人的照旧认，但别人在出处里用过的名片不算（老周那张不收「小林」）。
+#[tokio::test]
+async fn names_of_two_people_in_one_episode_do_not_cross() {
+    let answer = r#"{"cards": [
+        {"who": "qq:2", "text": "小林让你看过一个框架。", "names": ["小林", "阿杰"]},
+        {"who": "qq:5", "text": "老周嫌别人代码乱。", "names": ["老周", "小林"]},
+        {"who": "qq:7", "text": "阿杰提过一个框架。", "names": ["阿杰"]}
+    ]}"#;
+    let server = Server::start(vec![stream(answer)]).await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "");
+    let source = two_speaking(&home);
+    episode(
+        &home,
+        alice(),
+        "应小林要求，她看了阿杰提的 nui 框架",
+        &["qq:2", "qq:7"],
+        Some(source.clone()),
+    );
+    episode(
+        &home,
+        alice(),
+        "老周嫌小林的代码太乱",
+        &["qq:5"],
+        Some(source),
+    );
+    let source = Arc::clone(&*home.configs.borrow());
+    let config = Arc::new(Turn::new(source.with_project("~"), source));
+    keeper(&home)
+        .dream(
+            config,
+            alice_account(),
+            UtcOffset::from_minutes(540).expect("合写法"),
+        )
+        .await
+        .expect("整理了");
+    let written = cards(&home);
+    let who: Vec<&str> = written.iter().map(|card| card.who.as_str()).collect();
+    assert_eq!(who, ["qq:2", "qq:5", "qq:7"], "三个人都合卡");
+    assert_eq!(
+        written[0].names,
+        ["小林"],
+        "带着两个人的那条正文里的阿杰不进小林的卡"
+    );
+    assert_eq!(
+        written[1].names,
+        ["老周"],
+        "小林在出处里用过的名片不进老周的卡"
+    );
+    assert!(
+        written[2].names.is_empty(),
+        "带着两个人的那条正文不拿来认阿杰的叫法：{:?}",
+        written[2].names
+    );
+}

@@ -38,7 +38,9 @@ pub(super) struct People {
     me: BTreeSet<String>,
     /// 平台编号到他在出处里真用过的名字，最近用的在前（施工 E-1 修二）。
     used: BTreeMap<String, Vec<String>>,
-    /// 是谁（认过的）到这一批里他那几条记忆的正文（施工 E-1 修二）：交回的叫法写在里面的也算见过。
+    /// 是谁（认过的）到这一批里说的就是他的那几条记忆的正文（施工 E-1 修二）：交回的叫法写在里面的也算见过。认识的人那一类照
+    /// 是谁；发生过的事只算只涉及他一个人的（施工 E-1 修五：一条带着两个人，正文里写着两个人的名字，算进去两人的名字就互串进
+    /// 对方的卡）。
     said: BTreeMap<String, Vec<String>>,
 }
 
@@ -102,21 +104,35 @@ impl People {
         names
     }
 
-    /// 交回的叫法 `name` 出处里见过没有（施工 E-1 修二）：`who` 在出处里用过的、她记的名字认出是他的、他那几条记忆的正文里
-    /// 写着的。
+    /// 交回的叫法 `name` 出处里见过没有（施工 E-1 修二）：`who` 在出处里用过的、她记的名字认出是他的、说的就是他的那几条记忆
+    /// 的正文里写着的（见 `said`）。别人在出处里用过的名字不算（施工 E-1 修五）：正文里提到别人，不能把别人的名片认进他的卡。
     pub(super) fn seen(&self, who: &str, name: &str) -> bool {
-        self.names_of(who).iter().any(|known| known == name)
-            || self
+        if self.names_of(who).iter().any(|known| known == name) {
+            return true;
+        }
+        // 她记的名字认出是谁也是照出处里用过的名字认的（`known` 都在 `used` 里），只查 `used` 就够。
+        let someone_else = self
+            .used
+            .iter()
+            .filter(|(id, _)| id.as_str() != who)
+            .any(|(_, names)| names.iter().any(|known| known == name));
+        !someone_else
+            && self
                 .said
                 .get(who)
                 .is_some_and(|texts| texts.iter().any(|text| text.contains(name)))
     }
 
-    /// 记下这一批里每个人那几条记忆的正文（施工 E-1 修二）：照认过的是谁；发生过的事记在涉及的每个人名下（施工 E-1 修四）。
+    /// 记下这一批里每个人那几条记忆的正文（施工 E-1 修二）：认识的人那一类照认过的是谁；发生过的事只记只涉及一个人的（施工 E-1
+    /// 修五：带着几个人的那条正文里写着别人的名字，拿来认叫法会把一个人的名片认进另一个人的卡）。
     pub(super) fn note(&mut self, entries: &[Entry]) {
         for entry in entries {
-            for who in self.about(entry) {
-                self.said.entry(who).or_default().push(entry.text.clone());
+            let about = self.about(entry);
+            if let [who] = about.as_slice() {
+                self.said
+                    .entry(who.clone())
+                    .or_default()
+                    .push(entry.text.clone());
             }
         }
     }
