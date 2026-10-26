@@ -121,6 +121,26 @@ struct Fed {
     screen: String,
 }
 
+/// 这一串里没有回应的：回应总会到（可能晚于推送，施工 V-19），最后补一条什么都不说的接受。
+fn late_reply(
+    follow: &mut Follow<'_>,
+    step: Step,
+    messages: &[Value],
+    screen: &mut Screen<'_>,
+) -> Step {
+    if step != Step::Going
+        || messages
+            .iter()
+            .any(|message| message["id"] == json!("ask-4"))
+    {
+        return step;
+    }
+    follow.take(
+        &json!({"jsonrpc": "2.0", "id": "ask-4", "result": {"events": [5]}}),
+        screen,
+    )
+}
+
 /// 一条条喂给跟着第 3 轮的。
 fn feed(plan: &Plan, gray: bool, messages: &[Value]) -> Fed {
     feed_after(plan, gray, None, None, messages)
@@ -166,16 +186,7 @@ fn feed_after(
             break;
         }
     }
-    // 这一串里没有回应的：回应总会到（只是可能晚于推送，施工 V-19），最后补一条什么都不说的接受。
-    let replied = messages
-        .iter()
-        .any(|message| message["id"] == json!("ask-4"));
-    if step == Step::Going && !replied {
-        step = follow.take(
-            &json!({"jsonrpc": "2.0", "id": "ask-4", "result": {"events": [5]}}),
-            &mut screen,
-        );
-    }
+    step = late_reply(&mut follow, step, messages, &mut screen);
     Fed {
         step,
         out: tape.text(|err| !err),

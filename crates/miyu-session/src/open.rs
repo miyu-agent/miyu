@@ -375,7 +375,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let watched = actor.watched();
     let shown = actor.shown();
     let (reply, answer) = oneshot::channel();
-    actor.wait_for(command, reply);
+    actor.wait_for(command, reply, false);
     span.in_scope(|| {
         tracing::info!(target: TARGET, persona, venue = venue.as_str(), tools = count, "created");
     });

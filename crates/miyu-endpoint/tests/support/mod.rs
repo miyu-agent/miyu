@@ -13,6 +13,7 @@ pub mod packaged;
 pub mod pkg;
 pub mod providers;
 mod pushes;
+mod reading;
 pub mod shipped;
 pub mod source;
 pub mod venues;
@@ -26,7 +27,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde_json::{Value, json};
-use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
 
 use miyu_endpoint::{Core, serve};
 use miyu_kernel::event::{Body, Event};
@@ -314,6 +315,8 @@ pub type Writer = Box<dyn AsyncWrite + Unpin + Send>;
 pub struct Client {
     reader: BufReader<Box<dyn AsyncRead + Unpin + Send>>,
     writer: Option<Writer>,
+    /// 等回应时读到的别的消息（施工 V-19，`reading.rs`）：先存着，`next` 照先后先交它们。
+    held: std::collections::VecDeque<Value>,
 }
 
 impl Client {
@@ -330,6 +333,7 @@ impl Client {
         Client {
             reader: BufReader::new(Box::new(read)),
             writer: Some(Box::new(write)),
+            held: std::collections::VecDeque::new(),
         }
     }
 
@@ -346,25 +350,6 @@ impl Client {
             .write_all(format!("{line}\n").as_bytes())
             .await
             .expect("写得进");
-    }
-
-    /// 读下一行，认成 JSON；对方关了的是 `None`。最多等六十秒（原来十秒，机器忙时会超过，2026-10-07）。
-    pub async fn next(&mut self) -> Option<Value> {
-        let mut line = String::new();
-        let read = tokio::time::timeout(Duration::from_secs(60), self.reader.read_line(&mut line))
-            .await
-            .expect("六十秒内有回应")
-            .expect("读得了");
-        (read > 0).then(|| serde_json::from_str(&line).expect("回应是 JSON"))
-    }
-
-    /// 读下一行，最多等 `wait`：等不到的是 `None`（对方关了的也是）。
-    pub async fn next_within(&mut self, wait: Duration) -> Option<Value> {
-        let mut line = String::new();
-        match tokio::time::timeout(wait, self.reader.read_line(&mut line)).await {
-            Ok(Ok(read)) if read > 0 => Some(serde_json::from_str(&line).expect("是 JSON")),
-            _ => None,
-        }
     }
 
     /// 订阅会话 `session` 的事件流，交回回应。
@@ -414,13 +399,6 @@ impl Client {
                 return pushed;
             }
         }
-    }
-
-    /// 发一条请求，读它的回应。
-    pub async fn call(&mut self, id: &str, method: &str, params: Value) -> Value {
-        let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
-        self.line(&request.to_string()).await;
-        self.next().await.expect("有回应")
     }
 
     /// 握手：令牌对，中文，能输入。

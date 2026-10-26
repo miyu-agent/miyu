@@ -197,7 +197,7 @@ async fn a_write_that_fails_stops_the_session() {
         crate::config::Turning::start(crate::fixed(Default::default()), String::new()).await,
     );
     let (reply, created) = oneshot::channel();
-    actor.wait_for(id("cmd-0"), reply);
+    actor.wait_for(id("cmd-0"), reply, false);
     let busy = actor.busy();
     let watched = actor.watched();
     let shown = actor.shown();

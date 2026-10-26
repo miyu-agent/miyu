@@ -61,7 +61,7 @@ impl Actor {
         // 编号照调用编号派生：内核照编号只生效一次，重跑的同一次调用不会改两遍。
         let id = CommandId::parse(&format!("goal-{call_id}")).ok()?;
         let (waiting, outcome) = oneshot::channel();
-        self.wait_for(id.clone(), waiting);
+        self.wait_for(id.clone(), waiting, false);
         answer(reply, GoalBack::Waiting { seen, outcome });
         Some(Input::Command(Received {
             id,

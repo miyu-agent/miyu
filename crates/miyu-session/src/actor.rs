@@ -72,14 +72,14 @@ pub(crate) struct Actor {
     /// 交给执行器、往 `back` 里送的那一头。actor 自己拿着一份，`back` 不会自己关。
     backs: mpsc::UnboundedSender<Back>,
     pushes: broadcast::Sender<Arc<Pushed>>,
-    /// 等着回应的命令：同一个编号来了几次，照先后排着。
-    replies: BTreeMap<CommandId, VecDeque<oneshot::Sender<Outcome>>>,
-    /// 后台同步的账、句柄、扣着的回应（施工 V-19，`actor/durable.rs`）。
-    sync: Syncing,
-    /// 后台同步做完报回来的：同步到哪一条、成没成。actor 自己拿着送的那一头，通道不会自己关。
-    synced: mpsc::UnboundedReceiver<(Seq, io::Result<()>)>,
+    /// 等着回应的命令：同一个编号来了几次，照先后排着；每一个记着回应要不要扣着等同步（施工 V-19，`durable::outside`）。
+    replies: BTreeMap<CommandId, VecDeque<(oneshot::Sender<Outcome>, bool)>>,
+    /// 后台同步的账、句柄、扣着的回应（施工 V-19，`actor/durable.rs`）：和后台同步的阻塞线程共用，那边一同步完就放回应。
+    sync: Arc<Mutex<Syncing>>,
+    /// 一串后台同步做完、出错报回来的。actor 自己拿着送的那一头，通道不会自己关。
+    synced: mpsc::UnboundedReceiver<Synced>,
     /// 交给后台同步、往 `synced` 里送的那一头。
-    syncs: mpsc::UnboundedSender<(Seq, io::Result<()>)>,
+    syncs: mpsc::UnboundedSender<Synced>,
     /// 还没说完的请求：叫停它的那一头，和交给端口的那一刻（算用时）。
     calls: BTreeMap<Seq, (oneshot::Sender<()>, Instant)>,
     /// 还没说完的辅助请求（施工 3-8 四补的回顾、五补的起标题，`model.rs`）：用途、照到第几条、叫停它的那一头（拿着不用：
@@ -174,7 +174,7 @@ impl Actor {
             backs,
             pushes,
             replies: BTreeMap::new(),
-            sync: Syncing::new(),
+            sync: Arc::new(Mutex::new(Syncing::new())),
             synced,
             syncs,
             calls: BTreeMap::new(),
@@ -222,8 +222,8 @@ impl Actor {
     }
 
     /// 命令 `id` 在等回应：造会话的那一个，在 actor 跑起来之前就在等。
-    pub(crate) fn wait_for(&mut self, id: CommandId, reply: oneshot::Sender<Outcome>) {
-        self.replies.entry(id).or_default().push_back(reply);
+    pub(crate) fn wait_for(&mut self, id: CommandId, reply: oneshot::Sender<Outcome>, hold: bool) {
+        self.replies.entry(id).or_default().push_back((reply, hold));
     }
 
     /// 跑：先回造会话、载入吐出来的动作，再一封封收。执行器的回报先收，读流不断。
@@ -249,7 +249,7 @@ impl Actor {
                     None => continue,
                 },
                 // 后台同步做完了（施工 V-19）：放出等到了的回应，接着派下一次；出错的停下。
-                Some((upto, result)) = self.synced.recv() => match self.synced(upto, result) {
+                Some((_, result)) = self.synced.recv() => match self.synced(result) {
                     Ok(()) => continue,
                     Err(Stop) => return,
                 },
@@ -464,25 +464,10 @@ impl Actor {
             }
         })
     }
-
-    /// 回应命令 `id`：交给等着它的最早的那一头。
-    fn reply(&mut self, id: CommandId, outcome: Outcome) {
-        let Some(waiting) = self.replies.get_mut(&id) else {
-            return;
-        };
-        let first = waiting.pop_front();
-        if waiting.is_empty() {
-            self.replies.remove(&id);
-        }
-        let Some(reply) = first else {
-            return;
-        };
-        // 接受了、带着事件的，事件都同步了才交（施工 V-19，`session/actor.md` 第 5 条第 10 款）；别的当场交。
-        if let Some(upto) = durable::route(&mut self.sync.durable, reply, outcome) {
-            self.dispatch(upto);
-        }
-    }
 }
+
+/// 一串后台同步做完、出错报回来的：同步到哪一条、成没成（施工 V-19，`actor/store.rs` 的 `dispatch`）。
+type Synced = (Seq, io::Result<()>);
 
 /// 交回一声。等的那一头不等了，就没人收。
 #[expect(

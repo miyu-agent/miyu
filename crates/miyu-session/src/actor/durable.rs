@@ -10,6 +10,7 @@ use std::sync::Arc;
 use tokio::sync::oneshot;
 
 use miyu_kernel::id::Seq;
+use miyu_kernel::origin::By;
 use miyu_kernel::session::Outcome;
 
 use super::answer;
@@ -183,6 +184,21 @@ pub(crate) fn route(
             None
         }
         Held::Waiting(upto) => upto,
+    }
+}
+
+/// 发命令的是外面的（人、桥、别的 harness），回应才扣着等同步（第 10 款）：交到它们手里的是断电也在的承诺。别的会话、定时、内核、
+/// 模块、工具发的当场交：两头都在这个核心里、同一块盘上，扣着保不住什么，只会打乱会话之间的先后（带话又订的那一边要等
+/// 回应才记下在等，对方先忙完了就再也等不到）。
+pub(crate) fn outside(by: &By) -> bool {
+    match by {
+        By::Person(_) | By::External(_) | By::Harness(_) | By::Unknown(_) => true,
+        By::Model(_)
+        | By::Tool(_)
+        | By::Module(_)
+        | By::Session(_)
+        | By::Schedule(_)
+        | By::Kernel => false,
     }
 }
 

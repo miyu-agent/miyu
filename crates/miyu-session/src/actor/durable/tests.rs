@@ -285,3 +285,20 @@ fn leaving_after_a_failed_sync_answers_nothing() {
         "也不再同步"
     );
 }
+
+#[test]
+fn only_replies_to_the_outside_are_held() {
+    use miyu_kernel::id::{AccountId, CallId, SessionId};
+    use miyu_kernel::origin::{Person, Session, Tool};
+    let person = By::Person(Person::new(AccountId::parse("alice").expect("合写法")));
+    assert!(outside(&person), "人发的扣着");
+    let session = By::Session(Session {
+        id: SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91").expect("合写法"),
+    });
+    assert!(!outside(&session), "别的会话发的当场交");
+    assert!(!outside(&By::Kernel));
+    let tool = By::Tool(Tool {
+        call_id: CallId::parse("call_1_1").expect("合写法"),
+    });
+    assert!(!outside(&tool));
+}

@@ -4,16 +4,20 @@
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, CompactableChanged, Event, Transient, TransientBody};
-use miyu_kernel::id::Seq;
+use miyu_kernel::id::{CommandId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Input, Outcome};
 
 use std::io;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+
+use tokio::sync::mpsc;
 
 use tokio::sync::oneshot;
 
-use super::{Actor, Stop, answer};
+use super::Synced;
+use super::durable::Syncing;
+use super::{Actor, Stop, answer, durable};
 use crate::TARGET;
 use crate::current::{Current, Tally};
 use crate::effects;
@@ -191,83 +195,149 @@ impl Actor {
     /// 写进去了一批（施工 V-19，`session/actor.md` 第 5 条第 9 款）：有句柄的记下，要同步的交给后台；没有句柄的（不做后台
     /// 同步的）写的时候已经同步过，当场算同步到了这一条。
     fn written(&mut self, upto: Seq, sync: bool, handle: Option<Arc<dyn Flush>>) {
+        let mut shared = lock(&self.sync);
         match handle {
             Some(handle) => {
-                self.sync.flush = Some(handle);
-                if let Some(upto) = self.sync.durable.written(upto, sync) {
+                shared.flush = Some(handle);
+                let start = shared.durable.written(upto, sync);
+                drop(shared);
+                if let Some(upto) = start {
                     self.dispatch(upto);
                 }
             }
             None => {
-                self.sync.durable.written(upto, false);
-                let (released, _) = self.sync.durable.done(upto);
+                shared.durable.written(upto, false);
+                let (released, _) = shared.durable.done(upto);
+                drop(shared);
                 release(released);
             }
         }
     }
 
-    /// 派一次后台同步，同步到 `upto`：在阻塞线程里对最新的句柄做，做完报回 actor（`synced`）。没有句柄的（还没写过、不做
-    /// 后台同步的）当场算同步到了。
-    pub(super) fn dispatch(&mut self, upto: Seq) {
-        let Some(flush) = self.sync.flush.clone() else {
-            let (released, _) = self.sync.durable.done(upto);
-            return release(released);
+    /// 回应命令 `id`：交给等着它的最早的那一头。
+    pub(super) fn reply(&mut self, id: CommandId, outcome: Outcome) {
+        let Some(waiting) = self.replies.get_mut(&id) else {
+            return;
         };
-        let done = self.syncs.clone();
-        let span = tracing::Span::current();
-        tokio::task::spawn_blocking(move || {
-            let result = span.in_scope(|| flush.flush());
-            // actor 已经退出了：没人收，丢掉。
-            drop(done.send((upto, result)));
-        });
+        let first = waiting.pop_front();
+        if waiting.is_empty() {
+            self.replies.remove(&id);
+        }
+        let Some((reply, hold)) = first else {
+            return;
+        };
+        // 外面来的、接受了、带着事件的，事件都同步了才交（施工 V-19，`session/actor.md` 第 5 条第 10 款）；别的当场交。
+        if !hold {
+            return answer(reply, outcome);
+        }
+        let start = {
+            let mut shared = self
+                .sync
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            durable::route(&mut shared.durable, reply, outcome)
+        };
+        if let Some(upto) = start {
+            self.dispatch(upto);
+        }
     }
 
-    /// 一次后台同步做完了：放出等到了的回应，该接着做的接着派。同步不了的和写不进去一样，记一行，会话停下。
-    pub(super) fn synced(&mut self, upto: Seq, result: io::Result<()>) -> Result<(), Stop> {
-        if let Err(error) = result {
-            tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
-            self.sync.failed = true;
-            return Err(Stop);
+    /// 派一次后台同步，同步到 `upto`（`dispatch`）。
+    pub(super) fn dispatch(&self, upto: Seq) {
+        dispatch(Arc::clone(&self.sync), self.syncs.clone(), upto);
+    }
+
+    /// 一串后台同步做完了报回来的：出错的和写不进去一样，记一行，会话停下（扣着的回应不再交，`Syncing` 记着出过错）。
+    pub(super) fn synced(&mut self, result: io::Result<()>) -> Result<(), Stop> {
+        match result {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
+                Err(Stop)
+            }
         }
-        let (released, next) = self.sync.durable.done(upto);
-        release(released);
-        if let Some(next) = next {
-            self.dispatch(next);
-        }
-        Ok(())
     }
 
     /// 停下以前（第 11 款）：等路上的同步做完，把写了还没同步的同步完，交扣着的回应，放下句柄（Windows 上开着的句柄挡着挪
     /// 目录）。同步不了的记一行，扣着的回应不交：等的那一头收到会话停了。
     pub(super) async fn settle_sync(&mut self) {
-        while self.sync.durable.busy() {
-            let Some((upto, result)) = self.synced.recv().await else {
-                break;
-            };
-            if self.synced(upto, result).is_err() {
-                self.sync.flush = None;
-                return;
+        while lock(&self.sync).durable.busy() {
+            match self.synced.recv().await {
+                Some((_, Ok(()))) => {}
+                Some((_, Err(error))) => {
+                    tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
+                    return;
+                }
+                None => break,
             }
         }
-        if let (Some(upto), Some(flush)) = (self.sync.durable.pending(), self.sync.flush.clone()) {
+        let (pending, flush) = {
+            let shared = lock(&self.sync);
+            (shared.durable.pending(), shared.flush.clone())
+        };
+        if let (Some(upto), Some(flush)) = (pending, flush) {
             match tokio::task::spawn_blocking(move || flush.flush()).await {
-                Ok(Ok(())) => release(self.sync.durable.done(upto).0),
+                Ok(Ok(())) => {
+                    let released = lock(&self.sync).durable.done(upto).0;
+                    release(released);
+                }
                 Ok(Err(error)) => {
                     tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
-                    self.sync.failed = true;
-                    self.sync.flush = None;
+                    lock(&self.sync).failed = true;
                     return;
                 }
                 Err(_) => {
                     tracing::error!(target: TARGET, "panicked, stopped");
-                    self.sync.flush = None;
+                    lock(&self.sync).failed = true;
                     return;
                 }
             }
         }
-        release(self.sync.durable.release_all());
-        self.sync.flush = None;
+        let mut shared = lock(&self.sync);
+        let rest = shared.durable.release_all();
+        shared.flush = None;
+        drop(shared);
+        release(rest);
     }
+}
+
+/// 派一串后台同步，从同步到 `upto` 起（施工 V-19）：在阻塞线程里对最新的句柄做，做完当场放出等到了的回应，账上还要再做的
+/// 接着做，都做完了、或者出了错，报回 actor（`synced`）。放回应不经过 actor：它正等着别的（权限策略在判）时，回应照样一落盘
+/// 就交出去。
+fn dispatch(shared: Arc<Mutex<Syncing>>, done: mpsc::UnboundedSender<Synced>, mut upto: Seq) {
+    let span = tracing::Span::current();
+    tokio::task::spawn_blocking(move || {
+        let _entered = span.enter();
+        loop {
+            let flush = lock(&shared).flush.clone();
+            let result = flush.map_or(Ok(()), |flush| flush.flush());
+            let mut syncing = lock(&shared);
+            if let Err(error) = result {
+                syncing.failed = true;
+                drop(syncing);
+                // actor 已经退出了：没人收，丢掉。
+                drop(done.send((upto, Err(error))));
+                return;
+            }
+            let (released, next) = syncing.durable.done(upto);
+            drop(syncing);
+            release(released);
+            match next {
+                Some(next) => upto = next,
+                None => {
+                    drop(done.send((upto, Ok(()))));
+                    return;
+                }
+            }
+        }
+    });
+}
+
+/// 拿着账的锁：拿锁的那一方 panic 过的照样用（账上的都是完整的一步一步记的）。
+fn lock(shared: &Mutex<Syncing>) -> std::sync::MutexGuard<'_, Syncing> {
+    shared
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// 交出放出来的回应。

@@ -104,7 +104,8 @@ impl Actor {
             return Ok(Err(JobError::Unknown));
         };
         let (reply, mut outcome) = oneshot::channel();
-        self.wait_for(id.clone(), reply);
+        // actor 自己等、这一批里就取：不扣（施工 V-19）。
+        self.wait_for(id.clone(), reply, false);
         let at = self.clock.now();
         let input = Input::Command(Received {
             id,

@@ -44,7 +44,7 @@ impl Actor {
                 command,
                 reply,
             } => {
-                self.wait_for(id.clone(), reply);
+                self.wait_for(id.clone(), reply, super::durable::outside(&by));
                 let at = self.clock.now();
                 Mail::Input(Input::Command(Received {
                     id,

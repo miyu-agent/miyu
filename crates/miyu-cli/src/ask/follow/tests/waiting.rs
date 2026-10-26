@@ -152,17 +152,7 @@ fn waiting(
             break;
         }
     }
-    // 这一串里没有回应的：回应总会到（可能晚于推送，施工 V-19），补一条什么都不说的接受。
-    if step == Step::Going
-        && !messages
-            .iter()
-            .any(|message| message["id"] == json!("ask-4"))
-    {
-        step = follow.take(
-            &json!({"jsonrpc": "2.0", "id": "ask-4", "result": {"events": [5]}}),
-            &mut screen,
-        );
-    }
+    step = super::late_reply(&mut follow, step, messages, &mut screen);
     let left = then(&mut follow, &mut screen);
     (step, tape.text(|_| true), left)
 }
