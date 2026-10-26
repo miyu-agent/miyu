@@ -591,8 +591,6 @@
     "persona-problems/last_line": "The last line must be the assistant's",
     "persona-problems/empty_line": "This line is empty",
     "persona-problems/pair_clash": "Pair {pair} has a line that starts with user: or assistant:, so it cannot be saved",
-    "preset-none/name": "No tools",
-    "preset-none/summary": "No tools at all.",
     "preset-problems/syntax": "Not valid TOML: {detail}",
     "preset-problems/unknown_table": "Unknown table [{detail}]: a preset only takes [preset], [features], [software] and [tools]",
     "preset-problems/not_a_table": "{detail} must be a table [{detail}]",

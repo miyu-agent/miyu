@@ -252,10 +252,15 @@ fn the_shipped_presets_read_cleanly() {
             .collect::<Vec<_>>(),
         ["glob", "grep", "trash"]
     );
+    // 无功能（施工 P-17）：什么都不写，照 unlisted 全关，以后新装的也关。
+    let none = presets.find("none").unwrap();
+    assert_eq!(none.file.unlisted(), Unlisted::Off);
+    assert!(none.file.software.is_empty() && none.file.features.is_empty());
+    assert!(none.file.tools_off.is_empty());
     // 出厂的名字、说明都写三种语言：界面照连接的语言显示（施工 P-3 补）。说明原来不写（施工 P-4 下），项目主人 2026-10-23
     // 定写上（施工 P-16 上）。
     let speaks = |label: &Option<miyu_config::phrases::Label>, language: &str| matches!(label, Some(miyu_config::phrases::Label::Each(phrases)) if phrases.contains_key(language));
-    for found in [&full, &dev, &minimal] {
+    for found in [&full, &dev, &minimal, &none] {
         for language in ["zh", "en", "ja"] {
             assert!(
                 speaks(&found.file.name, language),

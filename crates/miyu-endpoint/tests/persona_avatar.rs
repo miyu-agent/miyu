@@ -238,8 +238,8 @@ async fn presets_carry_their_icons_and_one_can_be_changed() {
             ("dev".to_string(), json!("box")),
             ("full".to_string(), json!("boxes")),
             ("minimal".to_string(), json!("square-terminal")),
-            // 末尾固定的无工具（施工 P-16 下）：编号是 null。
-            (String::new(), json!("circle-off"))
+            // 无功能（施工 P-17）：出厂的一份真预设，原来末尾拼出来的无工具换成它。
+            ("none".to_string(), json!("circle-off"))
         ]
     );
     let changed = client

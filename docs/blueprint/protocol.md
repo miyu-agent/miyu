@@ -691,7 +691,7 @@
 
 **`preset.list`**（施工 P-2 上，`presets.md`「协议」）
 
-没有参数。回应 `{"presets": [...]}`，照编号排，一个预设一格：`preset` 编号，`icon` 图标（Lucide 名字，没写的 `null`，施工 P-5），`name`、`summary` 一句字（挑法同 `persona.list`）。文件写错的只有 `preset`、`problem` 和知道第几行的 `line`，写法同 `persona.list`（施工 P-3 再补）。
+没有参数。回应 `{"presets": [...]}`，照编号排，一个预设一格：`preset` 编号，`icon` 图标（Lucide 名字，没写的 `null`，施工 P-5），`name`、`summary` 一句字（挑法同 `persona.list`）。文件写错的只有 `preset`、`problem` 和知道第几行的 `line`，写法同 `persona.list`（施工 P-3 再补）。出厂的「无功能」`none` 照编号列（施工 P-17）；原来末尾拼的编号是 `null` 的「无工具」不再列。
 
 **`preset.get`**（施工 P-2 上，`presets.md`「协议」）
 

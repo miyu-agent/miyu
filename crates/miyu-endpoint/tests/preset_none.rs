@@ -1,6 +1,6 @@
-//! 无工具（施工 P-16 下，`docs/blueprint/presets.md`「无工具」）：真核心走一遍。`preset.list` 末尾固定一项编号是 `null` 的
-//! 「无工具」；开会话交 `preset: null` 的一件工具都不给，会话信息写 `preset: null`、`no_tools: true`；中途换成它、再换回来；
-//! 交空字的照旧拒。
+//! 无工具（施工 P-16 下，`docs/blueprint/presets.md`「无工具」）：真核心走一遍。开会话交 `preset: null` 的一件工具都不给，会话
+//! 信息写 `preset: null`、`no_tools: true`；中途换成它、再换回来；交空字的照旧拒。`preset.list` 不再拼它（施工 P-17：换成出厂
+//! 的「无功能」`none`），协议照旧认，以前的会话不变。
 
 use std::sync::Arc;
 
@@ -44,18 +44,21 @@ async fn listed(client: &mut Client, session: &str) -> Value {
         .unwrap_or_else(|| panic!("列表里没有：{reply}"))
 }
 
+/// 列表里不再拼编号是 `null` 的一项（施工 P-17）：「无功能」是出厂的真预设 `none`，照编号排在最后。
 #[tokio::test]
-async fn the_list_ends_with_no_tools_in_the_connection_s_language() {
+async fn the_list_has_nothing_on_instead_of_a_null_item() {
     let home = Home::new();
     let mut client = connected(configured(&home, &Script::new([]))).await;
     let reply = client.call("p1", "preset.list", json!({})).await;
-    let last = reply["result"]["presets"]
+    let all = reply["result"]["presets"]
         .as_array()
-        .and_then(|all| all.last().cloned())
         .unwrap_or_else(|| panic!("{reply}"));
+    assert!(all.iter().all(|one| !one["preset"].is_null()), "{reply}");
     assert_eq!(
-        last,
-        json!({"preset": null, "name": "无工具", "summary": "不提供任何工具。", "icon": "circle-off"})
+        all.last(),
+        Some(
+            &json!({"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off"})
+        )
     );
 }
 

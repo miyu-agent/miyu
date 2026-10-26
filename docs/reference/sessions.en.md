@@ -54,7 +54,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 |---|---|---|
 | `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it (Y-1 下) |
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
-| `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16) |
+| `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16; the old way to say it, still accepted. New sessions pick "Nothing", `none`, step P-17) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
 | `memory` | `persona`, `session`, `off` | Memory follows the persona, stays in this session, or is off; omitted follows the persona's setting |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |

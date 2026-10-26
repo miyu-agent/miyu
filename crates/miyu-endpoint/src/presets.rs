@@ -157,25 +157,8 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result
             }),
             Err(error) => listed_problem(&id, &error, said.as_ref()),
         })
-        .chain([none(said.as_ref())])
         .collect();
     Ok(json!({"presets": listed}))
-}
-
-/// 列表末尾固定的一项「无工具」（施工 P-16 下）：编号是 `null`（预设的编号是文件名，写成字会和人自己写的撞），选它的会话一件工具
-/// 都不给。名字、说明照连接的语言；读不了字的照英文。
-fn none(words: Option<&Human>) -> Value {
-    let said = |key: &str, english: &str| {
-        words
-            .and_then(|words| Words::sentence(words, key, &[]))
-            .unwrap_or_else(|| english.to_string())
-    };
-    json!({
-        "preset": null,
-        "name": said("preset-none/name", "No tools"),
-        "summary": said("preset-none/summary", "No tools at all."),
-        "icon": "circle-off",
-    })
 }
 
 /// 开会话的 `preset`（施工 P-16 下）：没写的照默认（没有），写 `null` 的是无工具，内部记成空的编号（同换预设时内核记的）。
