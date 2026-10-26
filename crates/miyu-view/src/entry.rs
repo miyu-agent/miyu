@@ -11,6 +11,8 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 
+use crate::status::Speed;
+
 mod job;
 mod nested;
 mod swap;
@@ -413,6 +415,9 @@ pub struct End {
     /// 这一轮每次主请求的用量加起来；一次都没调成的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub usage: Option<Usage>,
+    /// 这一轮的出字速度：每次主请求的输出 token、首字到结束的毫秒各自加起来；一次都没记下用时的没有（施工 SP-1）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speed: Option<Speed>,
     /// 这一轮开始时的权限级别。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub level: Option<String>,

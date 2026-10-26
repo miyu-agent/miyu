@@ -1,5 +1,5 @@
 //! 一轮开始、结束，每次请求记下的（终端蓝图 `tui.md`「正文」第 4 条、「时间线」第 13 条）：开轮时开它的几条归到这一轮；
-//! 结束时没结果的步记成打断了，写收尾那一条（手动压缩、清空那一轮不写）；每次主请求的用量加到这一轮上。
+//! 结束时没结果的步记成打断了，写收尾那一条（手动压缩、清空那一轮不写）；每次主请求的用量、速度加到这一轮上。
 
 use miyu_kernel::event::{
     EndReason, Event, ModelCalled, Purpose, TurnEnded, TurnJoined, TurnStarted, Usage,
@@ -9,6 +9,7 @@ use miyu_kernel::id::TurnId;
 use super::{Projector, Running};
 use crate::entry::{Body, End, Entry, EntryId, ToolState};
 use crate::explain::explain;
+use crate::status::Speed;
 
 impl Projector {
     /// 一轮开始了。
@@ -19,6 +20,7 @@ impl Projector {
             id,
             started: event.at,
             usage: None,
+            speed: None,
             level: self.level.clone(),
             failure: None,
             // 手动压缩、清空那一轮没有触发（施工 6-8）。
@@ -71,6 +73,7 @@ impl Projector {
             model: self.model.1.clone(),
             took_ms: took,
             usage: running.usage,
+            speed: running.speed,
             level: running.level,
             explain: error
                 .as_ref()
@@ -139,6 +142,10 @@ impl Projector {
         if let Some(running) = self.turn.as_mut() {
             if let Some(usage) = &called.usage {
                 running.usage = Some(add(running.usage.take(), usage));
+            }
+            // 出字速度照会话状态的口径一次次加起来（施工 SP-1）：调工具、等人不在请求里，自然不算。
+            if let Some(speed) = Speed::of(called) {
+                running.speed = Some(running.speed.map_or(speed, |total| total.plus(speed)));
             }
             // 后来又成了：前面报过的错不算。
             running.failure = called.error.clone();

@@ -214,13 +214,9 @@ impl Projector {
         if let Some(usage) = &called.usage {
             // 输入加输出（施工 9-8 十四补）：她回的下一次请求要带上。
             self.tracking.used = Some(usage.input().saturating_add(usage.output));
-            if let Some(duration) = called.duration_ms {
-                let ms = duration.saturating_sub(called.first_token_ms.unwrap_or(0));
-                self.tracking.speed = Some(Speed {
-                    output: usage.output,
-                    ms,
-                });
-            }
+        }
+        if let Some(speed) = Speed::of(called) {
+            self.tracking.speed = Some(speed);
         }
         if called.result == CallResult::Ok {
             self.tracking.cooling_until = None;

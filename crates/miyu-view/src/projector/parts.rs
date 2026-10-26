@@ -5,12 +5,15 @@ use miyu_kernel::id::TurnId;
 use miyu_kernel::time::Timestamp;
 
 use crate::entry::EntryId;
+use crate::status::Speed;
 
 /// 在跑的这一轮。
 pub(super) struct Running {
     pub(super) id: TurnId,
     pub(super) started: Timestamp,
     pub(super) usage: Option<Usage>,
+    /// 这一轮每次主请求的速度加起来（施工 SP-1）。
+    pub(super) speed: Option<Speed>,
     pub(super) level: Option<String>,
     pub(super) failure: Option<CallError>,
     /// 没有触发的那一轮：手动压缩、清空，不另起收尾。

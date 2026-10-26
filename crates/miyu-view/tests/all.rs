@@ -12,6 +12,7 @@ mod progress;
 mod queue;
 mod random;
 mod remembered;
+mod speed;
 mod status;
 mod steps;
 mod turns;

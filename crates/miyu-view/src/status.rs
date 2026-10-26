@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use miyu_kernel::event::{CompactTrigger, ErrorClass, JobKind};
+use miyu_kernel::event::{CompactTrigger, ErrorClass, JobKind, ModelCalled};
 use miyu_kernel::id::{CallId, JobId, SessionId};
 use miyu_kernel::time::Timestamp;
 
@@ -152,6 +152,26 @@ pub struct Speed {
     pub output: u64,
     /// 首字到结束的毫秒数；没报首字的照整次。
     pub ms: u64,
+}
+
+impl Speed {
+    /// 一次请求的速度：用量、用时都记下了才有（会话状态的 `speed`、一轮收尾的 `speed` 都照它，施工 SP-1）。
+    pub(crate) fn of(called: &ModelCalled) -> Option<Self> {
+        let output = called.usage.as_ref()?.output;
+        let duration = called.duration_ms?;
+        Some(Self {
+            output,
+            ms: duration.saturating_sub(called.first_token_ms.unwrap_or(0)),
+        })
+    }
+
+    /// 两份加起来，封顶不溢出。
+    pub(crate) fn plus(self, more: Self) -> Self {
+        Self {
+            output: self.output.saturating_add(more.output),
+            ms: self.ms.saturating_add(more.ms),
+        }
+    }
 }
 
 /// 任务表的一行。
