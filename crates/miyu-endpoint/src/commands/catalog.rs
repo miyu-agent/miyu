@@ -82,6 +82,16 @@ pub(crate) async fn catalog(
             (listed, opened, usable, Some(handle.clone()))
         }
     };
+    // 照会话属主（不写会话的照替谁干活的人）：他关了的包声明的命令、整页、提示词都不列（施工 U23 末下）。
+    let owner = handle.as_ref().map_or_else(
+        || caller.acting_for().clone(),
+        |handle| handle.owner().clone(),
+    );
+    let off = core.packages_off(&owner);
+    let declared: Vec<Declared> = declared
+        .into_iter()
+        .filter(|one| !off.contains(&one.package))
+        .collect();
     let mut commands = Vec::with_capacity(listed.len() + templates.len());
     for slash in listed {
         let summary = words(core, peer, &Said::plain(slash.summary())).await;
@@ -126,7 +136,7 @@ pub(crate) async fn catalog(
     );
     // MCP 服务的提示词（施工 X-39）：在跑的服务登记的、这个人用得上的（施工 U23 中上），排在模板后面；写了会话的只列预设开着
     // 这个服务的。
-    for entry in prompts::usable(core, caller.acting_for()) {
+    for entry in prompts::usable(core, &owner) {
         let opened = match &handle {
             None => true,
             Some(handle) => {
@@ -148,6 +158,7 @@ pub(crate) async fn catalog(
     commands.extend(
         pages::found(core)
             .iter()
+            .filter(|page| !off.contains(page.package()))
             .filter(|page| {
                 !templates
                     .iter()

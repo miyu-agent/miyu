@@ -48,11 +48,14 @@ impl Usable {
 /// 只给机主这一侧（施工 U23 中上，[`Core::machine_side`]）：别人的菜单里不列，敲了也当没有。
 pub(super) fn usable(core: &Core, account: &AccountId) -> Vec<Usable> {
     let private = core.machine_side(account);
+    // 他关了的包带的服务（施工 U23 末下）不列、敲了当没有。
+    let off = core.packages_off(account);
     let mut usable: Vec<Usable> = core
         .mcp
         .prompts()
         .into_iter()
         .filter(|prompts| private || prompts.package != HOME_PACKAGE)
+        .filter(|prompts| !off.contains(&prompts.package))
         .flat_map(|prompts| {
             let (package, service, client) = (prompts.package, prompts.service, prompts.client);
             prompts.offered.into_iter().map(move |offered| Usable {

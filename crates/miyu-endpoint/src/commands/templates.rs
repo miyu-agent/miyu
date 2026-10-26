@@ -108,10 +108,12 @@ pub(super) async fn run(
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
     let template = found_named(core, handle.owner(), name).await;
     let own = matches!(&template, Some(own) if own.package.is_none());
+    // 会话属主关了的包（施工 U23 末下）：它声明的命令、整页当没有。
+    let off = core.packages_off(handle.owner());
     // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
     if !own
         && handle.venue().as_str() == LOCAL
-        && let Some(page) = pages::named(core, name)
+        && let Some(page) = pages::named(core, name).filter(|page| !off.contains(page.package()))
     {
         // 停用了的不开（施工 O-6 六补）；整页只在本机开，身份那一关本来就是本人。
         if access(core, name, None) == Access::Off {
@@ -121,7 +123,7 @@ pub(super) async fn run(
     }
     let declared = match &template {
         Some(own) if own.package.is_none() => None,
-        _ => declared::named(core, name),
+        _ => declared::named(core, name).filter(|one| !off.contains(&one.package)),
     };
     if template.is_none() && declared.is_none() {
         return Err(Refusal::UNKNOWN_COMMAND);

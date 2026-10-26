@@ -34,6 +34,13 @@ pub(crate) fn found(core: &Core) -> Vec<Page> {
         .collect()
 }
 
+impl Page {
+    /// 哪个包的整页（施工 U23 末下：会话属主关了的包不列、不开）。
+    pub(crate) fn package(&self) -> &str {
+        &self.package
+    }
+}
+
 /// 叫 `name` 的那一条。
 pub(crate) fn named(core: &Core, name: &str) -> Option<Page> {
     found(core).into_iter().find(|page| page.name == name)
