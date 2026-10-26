@@ -147,6 +147,7 @@ mod orphans;
 mod owner;
 mod package_check;
 mod package_depends;
+mod package_list_member;
 mod package_mascot;
 mod package_names;
 mod package_off;

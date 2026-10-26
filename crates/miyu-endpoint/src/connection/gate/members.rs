@@ -112,6 +112,8 @@ const METHODS: &[&str] = &[
     "secret.list",
     "model.list",
     "provider.test",
+    // 装了哪些软件包（施工 U23-R：照包开关他自己的，只给 `packages.rs` 的那几格；订阅软件包的流不给，那里还推 MCP 服务）。
+    "package.list",
     // 不碰谁的：供应商的出厂目录、画图。
     "provider.catalog",
     "mermaid.render",

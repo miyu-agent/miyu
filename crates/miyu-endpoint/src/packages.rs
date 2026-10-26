@@ -144,6 +144,9 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             .iter()
             .map(|found| listed(core, found, &places, &words, peer.language, true)),
     );
+    if !peer.admin {
+        items.iter_mut().for_each(for_members);
+    }
     Ok(json!({ "packages": items }))
 }
 
@@ -157,6 +160,21 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     let removed = places.read_removed();
     let found = removed.iter().find(|found| found.id == id)?;
     Some(listed(core, found, &places, &words, peer.language, true))
+}
+
+/// 成员看得到的那几格（施工 U23-R，U23 末上、末下：成员在软件包页照包开关）：名字、说明、种类、状态、开没开这些；这台机器上
+/// 的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法（可能带
+/// 环境变量、请求头）、读坏了的原话（`problem`、`line`）只给管理员。
+const FOR_MEMBERS: &[&str] = &[
+    "package", "layer", "removed", "kind", "name", "version", "summary", "icon", "from",
+    "features", "contents", "status", "enabled", "page", "code", "missing",
+];
+
+/// 把一项删到 [`FOR_MEMBERS`] 那几格。
+fn for_members(item: &mut Value) {
+    if let Some(fields) = item.as_object_mut() {
+        fields.retain(|key, _| FOR_MEMBERS.contains(&key.as_str()));
+    }
 }
 
 /// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。
