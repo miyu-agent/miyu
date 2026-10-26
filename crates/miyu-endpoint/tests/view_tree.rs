@@ -111,8 +111,10 @@ async fn a_grandchild_counts_in_the_tree() {
     }
 }
 
-/// 连子代理一起的用量（施工 9-8 补下）：父会话说了两次、子代理说了一次，谁先到都一样，一共三次请求。子代理报回来时父会话
-/// 那一轮已经结束的，回报另开一轮、多一次请求（机器忙时会这样，施工 9-8 补下修）：剧本多备一句，量到三次就断言。
+/// 连子代理一起的用量（施工 9-8 补下）：父会话说了两次、子代理说了一次，谁先到都一样。子代理报回来时父会话那一轮已经结束的，
+/// 回报另开一轮、父会话多说一次（机器忙时会这样，施工 9-8 补下修）：剧本多备一句。等的是「子代理那一次算进树里了」（树上比
+/// 自己的多一次），不等树上恰好是哪个数：子代理说完和回报那一轮挨得近时，两样变化并进一次推送，三那个中间数推不出来，等它
+/// 的就一直等到超时（施工 BUG-4，满载时约十八遍红一遍）。
 #[tokio::test]
 async fn the_tree_usage_adds_the_children() {
     let home = Home::new();
@@ -139,12 +141,14 @@ async fn the_tree_usage_adds_the_children() {
     let request = json!({"jsonrpc": "2.0", "id": "s1", "method": "session.send",
         "params": {"session": parent, "text": "派"}});
     client.line(&request.to_string()).await;
+    let requests = |status: &Value, of: &str| status[of]["requests"].as_u64().unwrap_or_default();
     let status = status_until(&mut client, |status| {
-        status["usage_tree"]["requests"] == json!(3)
+        let own = requests(status, "usage");
+        own >= 2 && requests(status, "usage_tree") == own + 1
     })
     .await;
     assert!(
-        status["usage"]["requests"].as_u64() < Some(3),
-        "自己的不算子代理的：{status}"
+        matches!(requests(&status, "usage_tree"), 3 | 4),
+        "父会话两次或三次、子代理一次：{status}"
     );
 }
