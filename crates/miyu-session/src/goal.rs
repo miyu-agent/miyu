@@ -23,6 +23,8 @@ pub struct Goal {
     pub reason: Option<String>,
     /// 设下以后开过几轮：停着时开的不算。
     pub round: u32,
+    /// 停过以后又接着跑了几次（施工 GOAL-1）：照 `goal.resumed` 数，人续上的、改停着的顺带续上的、核心重启载入记成停着以后续上的都算。
+    pub resumes: u32,
     /// 设下的时刻。
     pub since: Timestamp,
     /// 她自己用 `goal` 工具设的（施工 X-8 上，`by` 是一次工具调用）：续轮消息照它说是谁设的。
@@ -95,6 +97,7 @@ impl Goals {
                 state: GoalState::Running,
                 reason: None,
                 round: 0,
+                resumes: 0,
                 since: event.at,
                 by_you: matches!(event.by, By::Tool(_)),
                 spent: Tally::default(),
@@ -114,6 +117,7 @@ impl Goals {
             Body::GoalResumed(_) => {
                 goal.state = GoalState::Running;
                 goal.reason = None;
+                goal.resumes += 1;
             }
             Body::GoalEnded(ended) => match &ended.outcome {
                 GoalOutcome::Completed => goal.state = GoalState::Completed,

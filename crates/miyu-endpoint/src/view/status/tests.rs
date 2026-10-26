@@ -35,6 +35,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
         state: GoalState::Running,
         reason: None,
         round: 3,
+        resumes: 2,
         since: Timestamp::parse("2026-10-12T01:00:04.000Z").expect("合写法"),
         by_you: false,
         spent,
@@ -45,12 +46,14 @@ fn a_goal_is_shown_with_its_round_and_spending() {
             &shown["text"],
             &shown["state"],
             &shown["round"],
+            &shown["resumes"],
             &shown["since"]
         ),
         (
             &serde_json::json!("修绿"),
             &serde_json::json!("running"),
             &serde_json::json!(3),
+            &serde_json::json!(2),
             &serde_json::json!("2026-10-12T01:00:04.000Z")
         )
     );

@@ -116,13 +116,15 @@ async fn heads_see_the_goal_without_working_it_out() {
             &goal["text"],
             &goal["state"],
             &goal["round"],
-            &goal["limit"]
+            &goal["limit"],
+            &goal["resumes"]
         ),
         (
             &json!("把测试修绿"),
             &json!("waiting"),
             &json!(1),
-            &json!(3)
+            &json!(3),
+            &json!(0)
         ),
         "{again}"
     );

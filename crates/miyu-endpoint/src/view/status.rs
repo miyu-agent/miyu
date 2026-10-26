@@ -83,12 +83,14 @@ pub(crate) fn whole(
 }
 
 /// 会话状态的 `goal` 那一格（施工 X-6，`docs/blueprint/view.md`「会话状态」）：原文、上限（不限的不写）、状态、卡在哪（卡住的
-/// 才有）、第几轮、设下的时刻、花了多少（写法同会话状态的 `usage`，币种照会话属主 `owner` 的）。
+/// 才有）、第几轮、停过又接着跑了几次（施工 GOAL-1，0 也写）、设下的时刻、花了多少（写法同会话状态的 `usage`，币种照会话属主
+/// `owner` 的）。
 pub(crate) fn goal_of(core: &Core, owner: &AccountId, goal: &Goal) -> Value {
     let mut shown = json!({
         "text": goal.text,
         "state": goal.state.as_str(),
         "round": goal.round,
+        "resumes": goal.resumes,
         "since": goal.since,
         "usage": crate::usage::tallied(core, owner, &goal.spent),
     });

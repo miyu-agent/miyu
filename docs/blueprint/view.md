@@ -160,7 +160,7 @@
 | `permission`、`todos`、`workspace` | 同订阅回应的那几格 |
 | `todos_done` | 因为全部做完而清空了待办（`todos` 是空的）时，清空前那一份，同事件流 `todos.changed` 的 `done`；头照它全打勾停一下再收（施工 9-8 九补，网页的会话要的）。别的时候不写，再写一份没做完的就没了 |
 | `persona`、`preset` | 同订阅回应的那几格；中途换了的（P-13）照会话这一刻的跟着推（施工 9-8 十四补对齐蓝图，代码 P-13 起就是这样） |
-| `goal` | 长期目标（施工 X-6，`goal.md`）：`{text, limit?, state, reason?, round, since, usage}`。`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting`（跑着、在等人开口：续轮开的一轮没调工具，施工 X-7；核心重启以后载入的目标记成停着，是 `paused`）；`reason` 卡住的才有；`round` 是设下以后开过几轮（停着时开的不算）；`since` 设下的时刻；`usage` 是这个目标花了多少，写法同 `usage`（跑着时的请求）。没设过、清掉了的不写；结束了的照最后的样子留着，再设一个时换掉。向会话要（会话层照整份日志算），不由投影算 |
+| `goal` | 长期目标（施工 X-6，`goal.md`）：`{text, limit?, state, reason?, round, resumes, since, usage}`。`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting`（跑着、在等人开口：续轮开的一轮没调工具，施工 X-7；核心重启以后载入的目标记成停着，是 `paused`）；`reason` 卡住的才有；`round` 是设下以后开过几轮（停着时开的不算）；`resumes` 是停过以后又接着跑了几次（施工 GOAL-1：照 `goal.resumed` 数，人续上的、改停着的顺带续上的、核心重启载入记成停着以后续上的都算，0 也写）；`since` 设下的时刻；`usage` 是这个目标花了多少，写法同 `usage`（跑着时的请求）。没设过、清掉了的不写；结束了的照最后的样子留着，再设一个时换掉。向会话要（会话层照整份日志算），不由投影算 |
 | `jobs` | 这个会话直接派出去的任务：在跑的和最近做完的 20 个，照派出的先后。一项 `{job, what, title, state, started, ended?, session?, command?, exit_code?, signal?, why?, nested?, fork?}`（`fork` 施工 A-F 补：fork 子代理写 `true`，照 `job.started`；别的不写）（`nested` 是后台命令下面脚本里调过的工具，「脚本里调的工具」，施工 M-5 上）：`what` 是 `command`、`agent`；`state` 是 `running`、`done`（命令退出码 0；子代理那一轮结束了，还能留言叫醒，叫醒了回到 `running`）、`failed`（退出码不是 0、被信号杀了）、`stopped`（`why` 是 `stopped` 人停或她自己停的、`undone` 撤销时停的、`restarted` 有计划重启时停的、`timed_out` 跑到最长时间停的、`too_large` 输出太多停的，施工 7-12 下）、`aborted`（核心崩了，断了）。翻页、订阅时切点前派出、了结的照日志补上 |
 
 | `running_deep` | 这个会话在跑的任务一共几个，连子孙的（施工 9-8 补下） |

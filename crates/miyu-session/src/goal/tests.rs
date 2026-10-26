@@ -69,6 +69,7 @@ fn a_goal_follows_the_log_from_set_to_blocked() {
     assert_eq!(goal.state, GoalState::Blocked);
     assert_eq!(goal.reason.as_deref(), Some("要人给 key"));
     assert_eq!(goal.round, 3, "设下以前的、停着时的、结束以后的都不算");
+    assert_eq!(goal.resumes, 1, "停过一次又接着跑");
     assert_eq!(goal.spent.usage.output, 7 + 8 + 9, "只算跑着时的请求");
     assert_eq!(goal.since.to_string(), "2026-10-12T01:00:04.000Z");
 }
@@ -89,8 +90,8 @@ fn clearing_forgets_the_goal_and_a_new_one_starts_afresh() {
     let goals = Goals::of(&events);
     let goal = goals.now().expect("新设的");
     assert_eq!(
-        (goal.text.as_str(), goal.round, goal.state),
-        ("下一个", 0, GoalState::Running)
+        (goal.text.as_str(), goal.round, goal.resumes, goal.state),
+        ("下一个", 0, 0, GoalState::Running)
     );
     assert_eq!(goal.spent.usage.output, 0, "从头数");
     events.push(event(20, "goal.ended", r#"{"outcome":"cleared"}"#));
@@ -107,7 +108,7 @@ fn a_blocked_goal_resumes_without_its_reason() {
     let goals = Goals::of(&events);
     let goal = goals.now().expect("接着跑");
     assert_eq!(
-        (goal.state, goal.reason.as_deref(), goal.round),
-        (GoalState::Running, None, 4)
+        (goal.state, goal.reason.as_deref(), goal.round, goal.resumes),
+        (GoalState::Running, None, 4, 2)
     );
 }
