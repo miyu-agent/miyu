@@ -76,8 +76,14 @@ impl Keeper {
         &self.room
     }
 
+    /// 这一间里她叫什么（施工 E-1 修，`her.rs`）：照 `fold` 过的，没交过的是空的。
+    pub(crate) fn her(&self) -> std::collections::BTreeSet<String> {
+        self.memory.her(&self.room)
+    }
+
     /// 记一条：出处 `sources`，听众是这次的听众。写了 `replaces` 的是改那一条：它得现在算数、听众合。交回新的编号；这条命令
-    /// 做过的交回那一次的（记忆日志认编号）。
+    /// 做过的交回那一次的（记忆日志认编号）。认识的人那一类、说的是她自己的（`who` 是这一间她的名字，施工 E-1 修）改记成
+    /// `episode`、不写是谁。
     ///
     /// # Errors
     ///
@@ -100,9 +106,16 @@ impl Keeper {
         let who = (remember.class == PERSON)
             .then(|| remember.who.filter(|who| !who.is_empty()).or(carried_who))
             .flatten();
+        // 记的认识的人是她自己的（施工 E-1 修）：改记成关于她自己的事，不写是谁。
+        let (class, who) = match &who {
+            Some(name) if super::her::is_her(&self.her(), name) => {
+                (super::her::SELF_CLASS.to_string(), None)
+            }
+            _ => (remember.class, who),
+        };
         let (audience, venue) = self.listener.heard();
         let saved = Saved {
-            class: remember.class,
+            class,
             text: remember.text,
             sources,
             audience,

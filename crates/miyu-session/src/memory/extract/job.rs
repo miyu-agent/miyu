@@ -179,7 +179,7 @@ impl Job {
             .and_then(|answer| candidates(&answer.text, &turns, TEXT_CHARS));
         match answered {
             Ok(mut found) => {
-                super::place_people(&mut found, names);
+                super::place_people(&mut found, names, &self.keeper.her());
                 for candidate in &mut found {
                     candidate.text = redact(&candidate.text, &secrets, &shapes);
                 }

@@ -370,10 +370,20 @@ pub(crate) fn plan(
 
 /// 抽出来的认识的人说的是谁（施工 E-1 上，设计 42 PN2）：模型照这一段写的名字，说话的人里有他的换成平台编号（`names`，
 /// [`Plan::Ask`] 的那一格）；说的是主人的改记成 `user`、不写是谁；对不上的照名字留着。别的类不带是谁。
-pub(crate) fn place_people(found: &mut [Candidate], names: &BTreeMap<String, Option<String>>) {
+///
+/// 说的是她自己的（`who` 是她的名字 `me`，施工 E-1 修）先挑出来改记成 `episode`、不写是谁：不照名字认，群友的群名片和她同名
+/// 的也不会把她的事记到这个人头上。
+pub(crate) fn place_people(
+    found: &mut [Candidate],
+    names: &BTreeMap<String, Option<String>>,
+    me: &BTreeSet<String>,
+) {
     for candidate in found {
         if candidate.class != PERSON {
             candidate.who = None;
+            continue;
+        }
+        if super::her::unperson(candidate, me) {
             continue;
         }
         match candidate.who.as_deref().and_then(|who| names.get(who)) {

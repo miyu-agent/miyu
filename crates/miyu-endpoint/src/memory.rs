@@ -290,7 +290,10 @@ async fn find(core: &Arc<Core>, who: &AccountId, at: Where) -> Result<Keeper, Re
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
             let room = Room::persona(&core.memory_owner(who), &found.id);
-            Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
+            // 这一间里她叫什么（施工 E-1 修）：经协议记的、现在就整理的也不把她当认识的人。
+            let memory = memory(core)?;
+            memory.name_her(&room, found.file.name.as_ref());
+            Ok(Keeper::new(&memory, room, Listener::Owner(hearer)))
         }
         (None, Some(session), None) => {
             let session = session_id(&session)?;

@@ -150,7 +150,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             scope,
             &personas.memory_account(&owner_of),
             &owner_of,
-            persona,
+            (persona, &personas),
             &id_of,
             &created.venue,
             (

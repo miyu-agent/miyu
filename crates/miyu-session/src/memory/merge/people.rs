@@ -3,6 +3,9 @@
 //! 编号），这一批里的、交回来的卡都照平台编号算；对不上的照名字留着。抽取记的本来就是平台编号（施工 E-1 上），不用认。
 //!
 //! 只认不改：记下的那几条照旧是她写的名字（日志只追加），认出来的名字记进他那张卡的叫法里。
+//!
+//! 她自己不是认识的人（施工 E-1 修，`her.rs`）：`who` 是这一间她的名字的不算谁（不合卡、不认成同名群友的编号），她的名字也
+//! 不拿来认人、不进谁的叫法。以前记下的这种照旧留着，只是不再合进卡。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -21,6 +24,8 @@ use crate::memory::extract::Voices;
 pub(super) struct People {
     /// 名字到平台编号。
     known: BTreeMap<String, String>,
+    /// 这一间她叫什么（照 `fold` 过的）。
+    me: BTreeSet<String>,
 }
 
 impl People {
@@ -30,6 +35,9 @@ impl People {
             return None;
         }
         let who = entry.who.as_deref()?;
+        if crate::memory::her::is_her(&self.me, who) {
+            return None;
+        }
         Some(
             self.known
                 .get(who)
@@ -57,6 +65,7 @@ impl Keeper {
             .filter(|entry| entry.class == PERSON && matches!(entry.by, By::Tool(_)))
             .flat_map(|entry| entry.sources.iter().map(|source| &source.session))
             .collect();
+        let me = self.her();
         let mut known = BTreeMap::new();
         for session in sessions {
             let Some(dir) = self.session_dir(session) else {
@@ -67,6 +76,7 @@ impl Keeper {
                     for (name, id) in Voices::of(&events, None).names {
                         if let Some(id) = id
                             && id != name
+                            && !crate::memory::her::is_her(&me, &name)
                         {
                             known.insert(name, id);
                         }
@@ -77,7 +87,7 @@ impl Keeper {
                 }
             }
         }
-        People { known }
+        People { known, me }
     }
 
     /// `people` 这几个人现在的卡（没作废的），照是谁排：合他们的卡时接着写。记忆日志开不了的没有。

@@ -160,6 +160,8 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
+    // 那一间里她叫什么照人格的名字记（施工 E-1 修）。
+    let persona_book = personas.clone();
     // 属主不是管理员的关起来，成员的本机会话只到他自己的几处（施工 Y-2 下①）。
     let place_own = (!owner_is_admin).then(|| (root.clone(), owner.clone()));
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
@@ -178,7 +180,7 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
             scope,
             &memory_account,
             &owner_of,
-            name.as_deref().unwrap_or(NO_PERSONA),
+            (name.as_deref().unwrap_or(NO_PERSONA), &persona_book),
             &id_of,
             &venue_of,
             (memory::Laid::Empty, memory::Source::of(&log, None)),

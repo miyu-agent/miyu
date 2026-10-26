@@ -475,7 +475,7 @@ fn people_are_placed_by_who_spoke() {
         one("person", Some("老王")),
         one("user", Some("小林")),
     ];
-    place_people(&mut found, &names);
+    place_people(&mut found, &names, &BTreeSet::new());
     let placed: Vec<(&str, Option<&str>)> = found
         .iter()
         .map(|one| (one.class.as_str(), one.who.as_deref()))

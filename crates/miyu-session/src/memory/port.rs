@@ -79,7 +79,7 @@ impl Calls {
             miyu_policy::memory::MemoryScope::Persona,
             &account,
             &self.owner,
-            persona,
+            (persona, personas),
             &self.session,
             venue,
             (super::Laid::Given(own), source),

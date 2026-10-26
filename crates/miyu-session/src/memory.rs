@@ -10,6 +10,7 @@ mod cards;
 mod dreaming;
 mod extract;
 mod follow;
+mod her;
 mod keeper;
 mod known;
 mod lane;
@@ -58,7 +59,8 @@ use miyu_policy::memory::MemoryScope;
 use miyu_recall::uses::{Use, UseFeed};
 use miyu_recall::{Change, TurnFeed, key, replay};
 use miyu_store::memory::MemoryLogs;
-use miyu_store::recall::{Edit, Opened, RecallIndex, RecallIndexes, Room};
+use miyu_store::personas::Personas;
+use miyu_store::recall::{Edit, NO_PERSONA, Opened, RecallIndex, RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use crate::TARGET;
@@ -94,6 +96,8 @@ pub struct Memory {
     dreams: dreaming::Dreams,
     /// 整理会话（施工 D-1 上）：核心起来时装上会话表（[`Memory::give_dream_sessions`]），没装的照旧走一次性入口。
     dream_sessions: OnceLock<Arc<dyn DreamSessions>>,
+    /// 每一间她叫什么（施工 E-1 修）：认识的人不记她自己。
+    selves: her::Selves,
 }
 
 impl Memory {
@@ -133,6 +137,7 @@ impl Memory {
             lanes: lane::Lanes::default(),
             backfills,
             dreams: dreaming::Dreams::default(),
+            selves: her::Selves::default(),
         })
     }
 }
@@ -209,6 +214,7 @@ impl Memory {
 /// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）；哪儿都搜得到全部（施工
 /// R-29，第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
 /// 回合索引照 `laid` 铺、照 `source` 读回日志：底子（分叉出来的支线才有，施工 R-13 三补）接在会话自己的前面。
+/// 那一间里她叫什么照 `personas` 里这个人格的名字记下（施工 E-1 修，`her.rs`）。
 #[expect(
     clippy::too_many_arguments,
     reason = "接上记忆要的几样各是一样，拼成一个结构体只为过这一条"
@@ -218,7 +224,7 @@ pub(crate) fn connect(
     scope: MemoryScope,
     account: &AccountId,
     owner: &AccountId,
-    persona: &str,
+    (persona, personas): (&str, &Personas),
     session: &SessionId,
     venue: &VenueId,
     (laid, source): (Laid<'_>, Source),
@@ -231,6 +237,13 @@ pub(crate) fn connect(
     let Some(memory) = memory else {
         return (None, None);
     };
+    let found = (persona != NO_PERSONA)
+        .then(|| personas.find(persona).ok())
+        .flatten();
+    memory.name_her(
+        &room,
+        found.as_ref().and_then(|found| found.file.name.as_ref()),
+    );
     let floor = match scope {
         MemoryScope::Persona => recast::floor(laid.own(), persona),
         _ => None,

@@ -332,3 +332,28 @@ fn copy(from: &std::path::Path, to: &std::path::Path) {
         }
     }
 }
+
+/// 经协议记一个认识的人、`who` 是她自己的名字（施工 E-1 修）：照人格找那一间时记下她叫什么，这一条记成关于她自己的事。
+#[tokio::test]
+async fn remembering_her_as_a_person_by_protocol_keeps_it_as_an_episode() {
+    let core = core("self-person", &Script::new([]).once(Vec::<&str>::new()));
+    call(
+        &core,
+        &alice(),
+        "p1",
+        "memory.remember",
+        json!({"persona": SAMPLE_PERSONA, "class": "person", "who": "software engineer", "text": "她英语不好"}),
+    )
+    .await;
+    let listed = call(
+        &core,
+        &alice(),
+        "p2",
+        "memory.list",
+        json!({"persona": SAMPLE_PERSONA}),
+    )
+    .await;
+    let memory = &listed["memories"][0];
+    assert_eq!(memory["class"], "episode", "{listed}");
+    assert!(memory.get("who").is_none_or(Value::is_null), "{listed}");
+}

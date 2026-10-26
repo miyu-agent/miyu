@@ -78,6 +78,7 @@ mod memory_remote;
 mod memory_restore;
 mod memory_scope;
 mod memory_search_floor;
+mod memory_self;
 mod memory_summary;
 mod memory_sweep;
 mod memory_tagging;
