@@ -36,9 +36,11 @@ use miyu_tool::attachment::{Kind, fit, kind};
 
 mod grants;
 mod keep;
+mod look;
 mod reach;
 pub(crate) use grants::Grants;
 pub(crate) use keep::keep;
+pub(crate) use look::{images, picture};
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
 pub(crate) use miyu_tool::attachment::LIMIT;
@@ -220,67 +222,6 @@ pub(crate) fn copy_over(
         })?;
     }
     Ok(())
-}
-
-/// `model.call` 的图（施工 8-20）：每个哈希一块图片，照先后。blob 连接的账号 `account` 没有的 `unknown_attachment`，不是图的
-/// `bad_params`，太大的 `attachment_too_big`。
-pub(crate) async fn images(
-    core: &Core,
-    account: &AccountId,
-    hashes: Vec<ContentHash>,
-) -> Result<Vec<Block>, Refusal> {
-    if hashes.is_empty() {
-        return Ok(Vec::new());
-    }
-    let place = place(core, account);
-    blocking(move || {
-        let blobs = Blobs::new(place.root.blobs(&place.account));
-        hashes
-            .into_iter()
-            .map(|blob| {
-                let bytes = read_blob(&blobs, &blob)?;
-                match kind(&bytes, None).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)? {
-                    Kind::Image {
-                        media_type,
-                        width,
-                        height,
-                    } => Ok(Block::Image(Image {
-                        blob,
-                        name: None,
-                        media_type,
-                        width,
-                        height,
-                        path: None,
-                    })),
-                    Kind::File { .. } => Err(Refusal::BAD_PARAMS),
-                }
-            })
-            .collect()
-    })
-    .await
-}
-
-/// 连接的账号 `account` 的一个 blob 读出来、照内容认（施工 P-5：人格的头像）：交回字节和认出来的图；不是图、超了图的上限的
-/// 交回 `None` 的图。blob 没有的 `unknown_attachment`。
-pub(crate) async fn picture(
-    core: &Core,
-    account: &AccountId,
-    blob: ContentHash,
-) -> Result<(Vec<u8>, Option<(MediaType, u32, u32)>), Refusal> {
-    let place = place(core, account);
-    blocking(move || {
-        let bytes = read_blob(&Blobs::new(place.root.blobs(&place.account)), &blob)?;
-        let image = match kind(&bytes, None) {
-            Ok(Kind::Image {
-                media_type,
-                width,
-                height,
-            }) => Some((media_type, width, height)),
-            Ok(Kind::File { .. }) | Err(_) => None,
-        };
-        Ok((bytes, image))
-    })
-    .await
 }
 
 /// 取一个 blob：没有的 `unknown_attachment`，读不了的记一行、`internal_error`。

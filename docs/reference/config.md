@@ -200,7 +200,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `purpose` | 字符串，必写 | 用途，1 到 32 个小写字母、数字、`-`，例如 `vision` |
-| `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希 |
+| `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希：先照这个连接自己的账号找（`blob.put` 存在那里），找不到再照它替谁干活的那个人找；都没有的 `unknown_attachment` |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat`。同一家系统配置、个人设置都配了的，`<编号>/<模型>` 是自用那份，`<编号>@system/<模型>` 是共用那份（用共用的 key） |
 | `use` | `chat` 或 `vision` | 不知道人配了哪个模型时用：照 `models.chat` 或 `models.vision`；和 `model` 至多写一个 |
 | `max_tokens` | 正整数 | 最多输出多少 token |

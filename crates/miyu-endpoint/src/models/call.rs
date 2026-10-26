@@ -84,7 +84,7 @@ struct Line {
 /// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）。
 pub(crate) async fn call(
     core: &Core,
-    account: &AccountId,
+    (own, account): (&AccountId, &AccountId),
     params: CallParams,
 ) -> Result<Value, Refusal> {
     if !purpose_ok(&params.purpose)
@@ -105,7 +105,7 @@ pub(crate) async fn call(
         if !line.text.is_empty() {
             blocks.push(Block::Text(Text { text: line.text }));
         }
-        blocks.extend(attach::images(core, account, line.images).await?);
+        blocks.extend(attach::images(core, (own, account), line.images).await?);
         // system 已经单拿出来了，后面只有 user、assistant。
         messages.push(match line.role {
             Role::Assistant => Message::Assistant { blocks },

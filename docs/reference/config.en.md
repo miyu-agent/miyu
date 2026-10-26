@@ -200,7 +200,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | Name | Type | Notes |
 |---|---|---|
 | `purpose` | string, required | What it's for: 1 to 32 lowercase letters, digits, `-`, e.g. `vision` |
-| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes) |
+| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes: looked up first under this connection's own account, where `blob.put` stores them, then under the account it works for; missing from both gives `unknown_attachment`) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat`. When the same provider is configured in both the system and the personal settings, `<id>/<model>` is the person's own copy and `<id>@system/<model>` is the shared one (with the shared key) |
 | `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
 | `max_tokens` | positive integer | Most output tokens |

@@ -36,7 +36,15 @@ pub(crate) async fn call_later(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "model.call" => models::call(core, caller.acting_for(), params(request)?).await,
+        // 图先照连接自己的账号找（`blob.put` 存在那里），找不到再照替谁干活的（施工 BUG-2）。
+        "model.call" => {
+            models::call(
+                core,
+                (&caller.account, caller.acting_for()),
+                params(request)?,
+            )
+            .await
+        }
         "memory.dream" => memory::dream::call(core, caller.acting_for(), &request.params).await,
         "package.call" => backstage::call(core, caller.package.as_deref(), params(request)?).await,
         "command.run" => commands::run(core, (caller, &peer), &request.id, params(request)?).await,

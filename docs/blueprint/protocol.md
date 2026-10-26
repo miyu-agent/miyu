@@ -36,7 +36,7 @@
 | `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）、`kb.documents`（施工 K-10）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
 | `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`、整理时的 `memory.dreaming`（施工 R-21），掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
-| `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`images`，施工 8-20） |
+| `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`attach/look.rs` 的 `images`，施工 8-20；人格头像的 `picture` 也在那里）：先照连接自己的账号找（`blob.put` 存在那里），找不到再照它替谁干活的；在自己名下找到、两个不是同一个账号的，拷一份进替谁干活的那个人名下（一次性入口从他名下取图，施工 BUG-2） |
 | `crates/miyu-tool/src/attachment.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型（施工 C-9 从 `miyu-endpoint/src/attach/kind.rs` 挪来，她发话、派子代理带的附件共用） |
 | `crates/miyu-endpoint/src/uploads.rs` | `blob.open`、`blob.write`、`blob.close`：跟着连接走的上传表，60 秒不写、连接断了都作废（施工 W-5） |
 | `crates/miyu-endpoint/src/refusal.rs`、`refusal/` | 拒绝：错误码、原因码、中英文的话；改人格、预设的两种在 `refusal/edits.rs`，人碰记忆的几种在 `refusal/memory.rs`（施工 R-3 补；R-7 补多了整理的两种），知识库的两种在 `refusal/knowledge.rs`（施工 K-1 上） |
@@ -1693,7 +1693,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
-| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下） | 声明了系统账号的桥一次传、分块传的都存在它名下，管理员名下没有；不写 `session` 的 `blob.get`、`model.call` 的图照它自己名下找；它往主人的私聊里发的附件拷进主人名下；声明了系统账号的包工具交回的图从它名下拷；核心起来时别的账号留下的分块暂存也清 |
+| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下） | 声明了系统账号的桥一次传、分块传的都存在它名下，管理员名下没有；不写 `session` 的 `blob.get`、`model.call` 的图照它自己名下找；替机主干活的扩展（不是平台桥）`blob.put` 存在自己名下，`model.call` 带这张图找得到、拷进机主名下，只在别的账号名下的图照旧 `unknown_attachment`（施工 BUG-2）；它往主人的私聊里发的附件拷进主人名下；声明了系统账号的包工具交回的图从它名下拷；核心起来时别的账号留下的分块暂存也清 |
 | `crates/miyu-endpoint/tests/list_account.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 会话列表照连接的账号：桥列会话、订阅会话列表只有它自己的，管理员列不到桥的；会话列表的推送只转属主是这个连接的账号的 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
 | `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |
