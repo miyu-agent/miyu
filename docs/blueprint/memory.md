@@ -370,7 +370,7 @@
 | `crates/miyu-memory/tests/budget.rs` | 记忆这个软件包的工具面预算：三份说明不超过 1100 字节 |
 | `crates/miyu-session/tests/memory_lanes.rs`（R-13 三补） | 分叉出来的支线：工具面上有记忆的三件、记得下，请求前缀和主线逐字节相同；支线自己的那一轮照支线的编号进回合库，父会话的那一轮不在支线名下再记；照分叉点以前旁听记下的一句开的那一轮带着那句人话，回合库重建以后补齐时也一样（这一条不在 Windows 上跑：同一个进程里开着的库删不掉） |
 | `crates/miyu-session/tests/memory_tools.rs` | 真会话、真记忆日志：记忆开着的主会话工具面上有三件，本机的、场所的都有（R-13 下），子会话、`off` 的没有；记下的出处是这一轮、`by` 是那次调用、听众是属主；别的会话搜得到记下的和那一轮对话（自己的不算）；撤销那一轮看不见、恢复看得见；作废的只在 `forgotten` 时出来；这个会话清空以前的几轮搜得到、清空以后的不算，撤销了清空又不算（R-13 补） |
-| `crates/miyu-endpoint/tests/memory.rs` | 真核心：说过的一轮进软件工程师的回合库；删会话以后拿掉，整个会话埋了墓碑。第三条第 5 款（R-4 上）：核心读好摘要的字，人经协议记了一条，新会话第一轮的请求里有那一块 |
+| `crates/miyu-endpoint/tests/memory.rs` | 真核心：说过的一轮进软件工程师的回合库（经 `memory.turns` 搜，它先等回合索引的后台写完；不另开连接在核心建表时读库，R-33）；删会话以后拿掉，整个会话埋了墓碑。第三条第 5 款（R-4 上）：核心读好摘要的字，人经协议记了一条，新会话第一轮的请求里有那一块 |
 | `crates/miyu-policy/src/memory/tests.rs` | 「范围」：三种写进快照读回一字不差、排在最后；以前造的没有这一格，字节不变、照 `persona`；认不出的照 `off`；三种的写法 |
 | `crates/miyu-session/tests/memory_scope.rs` | 「范围」：`off` 的工具面上没有三件、说过的不进回合库，载入以后照旧；`session` 的记在会话目录里（记忆日志、回合库），人格那一间没有，别的会话搜不到，载入以后接着记在那里；子会话交了 `persona` 快照也写 `off`，主会话写明 |
 | `crates/miyu-endpoint/tests/memory_scope.rs` | 「范围」：`session.create` 的 `memory` 三种和 `null` 照写的记、写错的三种 `bad_params` 不造；不写的照人格的 `persona.toml`，写了的压着它 |

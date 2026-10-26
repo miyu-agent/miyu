@@ -7,30 +7,23 @@ use miyu_session::testkit::{Play, Script};
 
 use crate::support::*;
 
-/// 另开一个只读的连接，在软件工程师的回合库里搜 `words`，交回键。回合库是核心用到才建的：还没有的是什么都没找到。不能
-/// 用 `RecallIndex::open` 去开：它会建库、碰到核心正在建的那一半当成坏了删掉重建（一个库只该有一个连接写）。
-fn found(home: &Home, words: &str) -> Vec<String> {
-    let path = home
-        .root
-        .index(&alice())
-        .join("recall")
-        .join("turns-engineer.db");
-    let Ok(db) =
-        rusqlite::Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
-    else {
-        return Vec::new();
-    };
-    let query = miyu_recall::query(words).expect("切得出词");
-    let Ok(mut select) = db.prepare(
-        "SELECT items.key FROM terms JOIN items ON items.id = terms.rowid WHERE terms MATCH ?1",
-    ) else {
-        return Vec::new();
-    };
-    select
-        .query_map([query], |row| row.get::<_, String>(0))
-        .expect("查得了")
-        .collect::<Result<_, _>>()
-        .expect("读得出")
+/// 经 `memory.turns` 在软件工程师的回合库里搜 `words`，交回找到的那几轮是哪个会话的（施工 R-33）。核心搜以前先等回合索引的
+/// 后台写完（`Memory::settle`）：不另开连接直接读库——核心头一次开库时在一张张建表，另开的连接这时查会撞上 `SchemaChanged`
+/// （main 的 CI 红过两次）。
+async fn found(client: &mut Client, id: &str, words: &str) -> Vec<String> {
+    let reply = client
+        .call(
+            id,
+            "memory.turns",
+            json!({"persona": "engineer", "query": words}),
+        )
+        .await;
+    reply["result"]["turns"]
+        .as_array()
+        .unwrap_or_else(|| panic!("有 turns：{reply}"))
+        .iter()
+        .map(|turn| turn["session"].as_str().expect("有会话").to_string())
+        .collect()
 }
 
 #[tokio::test]
@@ -42,23 +35,27 @@ async fn a_turn_said_through_the_core_is_indexed_and_goes_with_the_session() {
     let session = client.create_as("c1", &work, "engineer").await;
     client.say("c2", &session, "我的显卡是 N 卡").await;
     home.until_turns(&session, 1).await;
-    // 回合库在日志落了盘以后才更新：等它出现，最多六十秒（机器忙时慢，只在出错时等满）。
-    let mut keys = found(&home, "显卡");
-    for _ in 0..1200 {
-        if !keys.is_empty() {
+    // 日志先落盘、这一轮后交给回合索引的后台：看到这一轮结束时可能还没交过去，交过去以后 `memory.turns` 等它写完再搜。最多
+    // 六十秒（机器忙时慢，只在出错时等满）。
+    let mut sessions = found(&mut client, "t0", "显卡").await;
+    for n in 1..1200 {
+        if !sessions.is_empty() {
             break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        keys = found(&home, "显卡");
+        sessions = found(&mut client, &format!("t{n}"), "显卡").await;
     }
-    assert_eq!(keys.len(), 1, "{keys:?}");
-    assert!(keys[0].starts_with(&format!("{session}/")), "{keys:?}");
+    assert_eq!(sessions, vec![session.clone()]);
 
     let reply = client
         .call("c3", "session.delete", json!({"session": session}))
         .await;
     assert_eq!(reply["result"], json!({}), "{reply}");
-    assert!(found(&home, "显卡").is_empty(), "删会话拿掉");
+    assert!(
+        found(&mut client, "c4", "显卡").await.is_empty(),
+        "删会话拿掉"
+    );
+    // 上面那一次搜等过回合索引的后台写完：库早建好了，这时另开只读的连接看墓碑。
     let path = home
         .root
         .index(&alice())

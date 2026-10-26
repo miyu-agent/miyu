@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>839</b><span>/ 856 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>840</b><span>/ 857 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">ENV-1</b><span>最近一步（ENV-1 注入环境信息单独一个包）</span></li>
+    <li><b class="mono">R-33</b><span>最近一步（R-33 测回合库不撞建表）</span></li>
   </ul>
 </header>
 
@@ -914,6 +914,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sR-30"><span class="n">R-30</span>没人等的整理照样合完<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-31"><span class="n">R-31</span>抽取前闲 30 分钟<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-32"><span class="n">R-32</span>撤销了马上看不见<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sR-33"><span class="n">R-33</span>测回合库不撞建表<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1上"><span class="n">E-1 上</span>认识的人的类和 who<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1下"><span class="n">E-1 下</span>人卡<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-1补"><span class="n">E-1 补</span>认出来<span class="st">✓</span></a></li>
@@ -29387,6 +29388,55 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li><code>docs/construction/R-31-抽取前闲 30 分钟.md</code>；蓝图 <code>memory.md</code> 第六条第 1 款、<code>config.md</code> 的 <code>memory.extract_idle</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sR-33" aria-labelledby="h-sR33">
+  <div class="sheet-head"><h2 id="h-sR33"><span class="no">R-33</span>测回合库不撞建表</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">测「说过的一轮进回合库」的那条测试原来另开连接轮询回合库，撞上核心头一次开库时在建表，main 的 CI 红过两次。改经协议搜，核心先等回合索引写完。只改测试。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · tests/memory.rs</span><span class="dir-note">R-33</span></div>
+            <ol class="pipe" aria-label="测回合库">
+              <li>原来：另开只读连接查回合库，核心建表到一半时读，<code>SchemaChanged</code></li>
+              <li>现在：经 <code>memory.turns</code> 搜，核心先等回合索引的后台写完</li>
+              <li>删会话以后搜过一次，再另开连接看墓碑</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步改的</p>
+          <div class="tile new"><span class="nm">found</span><span class="rl">经协议搜，不直接读库</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">R-33</dd></div>
+        <div><dt>名称</dt><dd>测回合库不撞建表</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-26</dd></div>
+        <div><dt>提交</dt><dd class="mono">R-33</dd></div>
+        <div><dt>验收</dt><dd>单核循环、门禁、CI · 协调者审</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>单核循环 2000 次、磁盘临时目录 8 路并发 2000 次：修以后 0 红（修以前本机也 0 红，复现不出，原因照报错和建表先后读出）</span></li>
+        <li><span class="ok">✓</span><span>门禁九项全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/R-33-测回合库不撞建表.md</code>；蓝图 <code>memory.md</code>（测试那一行）。</li>
       </ul>
     </div>
   </div>
