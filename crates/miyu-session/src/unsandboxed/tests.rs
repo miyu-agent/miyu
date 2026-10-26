@@ -263,15 +263,18 @@ fn a_member_s_own_script_is_never_let_out_of_the_sandbox() {
         AccountId::parse("alice").expect("合写法"),
         AccountId::parse("bob").expect("合写法"),
     );
+    // 文件先放好、数据根先有了再定管得住的地方：同开会话时（数据根早就在），`Confines::of` 照数据根的真实位置接（macOS 的临时
+    // 目录在 `/var` 这条链接下面，Windows 的有短名），数据根还没有的取不到真实位置。
+    let (mine, theirs) = (script("alice"), script("bob"));
     let owner = granted().within(Confines::of(&root, (&alice, true), &site.0.join("own")));
     assert_eq!(
-        owner.grant("weather", &script("alice")),
+        owner.grant("weather", &mine),
         Grant::File(site.real("data/home/alice/scripts/weather.py")),
         "机主自己的照旧放行"
     );
     let member = granted().within(Confines::of(&root, (&bob, false), &site.0.join("own")));
     assert_eq!(
-        member.grant("weather", &script("bob")),
+        member.grant("weather", &theirs),
         Grant::No,
         "成员自己的不放行，照他的沙盒跑"
     );
