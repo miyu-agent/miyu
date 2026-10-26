@@ -286,15 +286,14 @@ async fn extraction_counts_her_name_in_the_group_as_her() {
         until_turn_ends(&mut pushes).await;
     }
     requested(&server, 1).await;
-    let mut found = Vec::new();
+    // 候选一条条写进记忆日志，抽到了哪的记号最后写：等记号出现再读，读到不空不等于写完了。
     for _ in 0..200 {
-        found = extracted(&home);
-        if !found.is_empty() {
+        if mark(&home, handle.id()).is_some() {
             break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     }
-    let mut placed: Vec<(String, String, Option<String>)> = found
+    let mut placed: Vec<(String, String, Option<String>)> = extracted(&home)
         .into_iter()
         .map(|entry| (entry.text, entry.class, entry.who))
         .collect();
