@@ -187,7 +187,8 @@ async fn a_rebuilt_ledger_still_counts_the_members_turns() {
 }
 
 /// 把数据根 `from` 拷进 `to`，`from` 下面的 `state/` 不拷。第一份核心的后台可能正在写临时文件（写完就改名）：列出来、拷的时候
-/// 已经没了的跳过（Windows CI 上撞到过）。
+/// 已经没了的跳过（Windows CI 上撞到过）。SQLite 的 `-shm` 不拷：它是共享内存的索引，Windows 上开着的库把它锁着一段（os error
+/// 33），打开时照 `-wal` 重建。
 fn copy_without_state(from: &std::path::Path, to: &std::path::Path) {
     fn gone(error: &std::io::Error) -> bool {
         error.kind() == std::io::ErrorKind::NotFound
@@ -202,6 +203,9 @@ fn copy_without_state(from: &std::path::Path, to: &std::path::Path) {
         for entry in entries {
             let entry = entry.expect("读得出");
             if top && entry.file_name() == "state" {
+                continue;
+            }
+            if entry.file_name().to_string_lossy().ends_with("-shm") {
                 continue;
             }
             let target = to.join(entry.file_name());
