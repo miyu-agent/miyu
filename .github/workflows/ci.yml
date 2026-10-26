@@ -101,7 +101,7 @@ jobs:
         env:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
-        run: cargo test --release -p miyu-kernel -p miyu-assemble -- --ignored for_longer
+        run: cargo test --release --no-fail-fast -p miyu-kernel -p miyu-assemble -- --ignored for_longer
 
   # 量尺（施工 V-3，23 F4）：照 23 第二节的预算量核心这一边，表贴进这一次跑的摘要和日志。只在 Linux 上：预算照 Linux 定的。
   # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间、内存超过预算本身就红（施工 V-5 下，以前时间放到 1.5 倍）

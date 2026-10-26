@@ -188,7 +188,8 @@ fn check() -> ExitCode {
             &cargo,
             &root,
             "测试",
-            &["test", "--workspace", "--quiet"],
+            // 一条红不停（主会话 2026-10-26）：照旧跑完后面的 crate，别让一处盖掉别处的红。
+            &["test", "--workspace", "--quiet", "--no-fail-fast"],
             &[],
             false,
         );
