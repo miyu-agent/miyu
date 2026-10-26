@@ -14,6 +14,15 @@ struct Cli {
     pkg: Pkg,
 }
 
+/// 工作目录 `/w` 下的 `rest` 写成的样子：照系统的写法一段段拼（Windows 上 `/w` 拼成 `\\w`），同 `folder`。
+fn at(rest: &str) -> String {
+    let mut path: std::path::PathBuf = Path::new("/w").components().collect();
+    if !rest.is_empty() {
+        path.push(rest);
+    }
+    path.to_string_lossy().into_owned()
+}
+
 /// 照命令行 `miyu pkg <args>` 换，工作目录是 `/w`。
 fn mapped(args: &[&str]) -> Result<Vec<(&'static str, Value)>, String> {
     let cli = Cli::try_parse_from(std::iter::once("pkg").chain(args.iter().copied()))
@@ -34,7 +43,7 @@ fn reading_goes_to_packages() {
         mapped(&["-Qi", "shell"]),
         Ok(vec![("packages", json!({"package": "shell"}))])
     );
-    let folder = Path::new("/w").join("kit").to_string_lossy().into_owned();
+    let folder = at("kit");
     assert_eq!(
         mapped(&["info", "./kit"]),
         Ok(vec![("packages", json!({"path": folder}))]),
@@ -52,7 +61,7 @@ fn reading_goes_to_packages() {
 
 #[test]
 fn changing_goes_to_package_and_paths_become_folders() {
-    let folder = Path::new("/w").join("kit").to_string_lossy().into_owned();
+    let folder = at("kit");
     assert_eq!(
         mapped(&["install", "kit/package.toml"]),
         Ok(vec![("package", json!({"install": folder}))]),
@@ -60,16 +69,10 @@ fn changing_goes_to_package_and_paths_become_folders() {
     );
     assert_eq!(
         mapped(&["install", "."]),
-        Ok(vec![(
-            "package",
-            json!({"install": Path::new("/w").to_string_lossy()})
-        )]),
+        Ok(vec![("package", json!({"install": at("")}))]),
         "`.` 是现在的目录"
     );
-    let file = Path::new("/w")
-        .join("kit-1.miyu")
-        .to_string_lossy()
-        .into_owned();
+    let file = at("kit-1.miyu");
     assert_eq!(
         mapped(&["install", "sub/../kit-1.miyu"]),
         Ok(vec![("package", json!({"install": file}))]),
