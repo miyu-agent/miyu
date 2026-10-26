@@ -181,6 +181,10 @@
         "name": "No sandbox: this tool",
         "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only."
       },
+      "packages.<id>.off": {
+        "name": "Turn this package off for me",
+        "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off."
+      },
       "features.<name>": {
         "name": "Turn this skill, script or MCP server on",
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."

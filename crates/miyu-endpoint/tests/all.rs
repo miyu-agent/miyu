@@ -148,6 +148,7 @@ mod package_check;
 mod package_depends;
 mod package_mascot;
 mod package_names;
+mod package_off;
 mod package_personas;
 mod package_settings;
 mod package_switch;

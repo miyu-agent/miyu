@@ -28,6 +28,7 @@ pub(crate) mod local;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
+pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
@@ -257,6 +258,10 @@ pub fn settle_with(
         let Ok(manifest) = &one.read else {
             continue;
         };
+        // 每个人能把它对自己整个关掉（施工 U23 末上）：「软件包」页这个包那一组底下一个开关，必需的没有。
+        if !manifest.required {
+            items.push(miyu_session::packages_off::item_for(&one.id));
+        }
         if manifest.settings.is_empty() {
             continue;
         }

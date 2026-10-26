@@ -351,3 +351,26 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
     assert_eq!(blind.digest, seeing.digest, "指纹不变");
     assert_eq!(blind.pin(), seeing.pin(), "快照记的一样");
 }
+
+/// 每个人关掉的包（施工 U23 末上）：它的功能、工具都不开，功能算进没开的那几个（快照记的不一样，开着的会话下一轮换上）；
+/// 场所显示不了图片再扣也不冲掉；必需的关不了；指纹不变。
+#[test]
+fn packages_switched_off_are_withheld_but_never_the_required_ones() {
+    let features = installed().requiring(["basesystem".to_string()]);
+    let file = read("[features]\nmemory = false\n").unwrap();
+    let plain = Chosen::new("full".to_string(), file.clone(), &features);
+    let off = file.switching_off(["onebot".to_string(), "basesystem".to_string()], &features);
+    let chosen = Chosen::new("full".to_string(), off, &features);
+    assert!(!chosen.file.opens_in("qq", "onebot"), "关了的不开");
+    assert!(!chosen.file.keeps("qq", "onebot", "send"), "工具不留");
+    assert!(chosen.file.opens_in("files", "basesystem"), "必需的关不了");
+    assert_eq!(chosen.digest, plain.digest, "指纹不变");
+    assert!(
+        chosen.off.contains(&"qq".to_string()),
+        "算进没开的：{:?}",
+        chosen.off
+    );
+    assert_ne!(chosen.pin(), plain.pin(), "快照记的不一样");
+    let blind = chosen.blind(&features);
+    assert!(!blind.file.opens_in("qq", "onebot"), "再扣要图的不冲掉");
+}

@@ -6,7 +6,7 @@
 //! 造一份留着，连同造它时的系统那一份：取的时候系统那一份换了（装卸，[`Core::reload_packages`]）的当场重造，正读着的时候换了也
 //! 不会留下旧的；装卸以后另外整个清掉，省得不再用的人那几份一直占着。他那一层是空的就是系统那一份本身。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use miyu_kernel::id::AccountId;
@@ -24,6 +24,8 @@ pub(crate) struct Own(Mutex<BTreeMap<AccountId, Made>>);
 struct Made {
     /// 造它时的系统那一份：和这时的不是同一份的作废。
     system: Arc<Vec<Found>>,
+    /// 造它时他关了的包（施工 U23 末上）：和这时的不一样的作废。
+    off: BTreeSet<String>,
     /// 他看得到的包。
     found: Arc<Vec<Found>>,
 }
@@ -45,24 +47,25 @@ impl Core {
         Arc::clone(&self.packages.read().unwrap_or_else(PoisonError::into_inner))
     }
 
-    /// 账号 `account` 看得到的软件包（施工 U23 上下）：系统那一份接上他自己装的那一层。包的账号（平台桥、替机主干活的扩展）
-    /// 照系统那一份。
+    /// 账号 `account` 看得到的软件包（施工 U23 上下）：系统那一份接上他自己装的那一层，去掉他关了的（施工 U23 末上，
+    /// `Core::packages_off`）。包的账号（平台桥、替机主干活的扩展）照系统那一份。
     pub fn packages_of(&self, account: &AccountId) -> Arc<Vec<Found>> {
         let system = self.system_packages();
         if self.package_accounts().contains(account) {
             return system;
         }
+        let off = self.packages_off(account);
         if let Some(made) = self
             .own_packages
             .0
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(account)
-            .filter(|made| Arc::ptr_eq(&made.system, &system))
+            .filter(|made| Arc::ptr_eq(&made.system, &system) && made.off == off)
         {
             return Arc::clone(&made.found);
         }
-        let found = self.read_own(account, &system);
+        let found = self.read_own(account, &system, &off);
         self.own_packages
             .0
             .lock()
@@ -71,6 +74,7 @@ impl Core {
                 account.clone(),
                 Made {
                     system,
+                    off,
                     found: Arc::clone(&found),
                 },
             );
@@ -78,14 +82,21 @@ impl Core {
     }
 
     /// 读一份：系统那一份 `system` 接上 `account` 那一层（[`Packages::read_over`]），他那一层再照核心这边认一遍（没编进来的内置包、
-    /// 配置项和核心模块撞名）。他那一层什么都没有的交回系统那一份。碰磁盘。
-    fn read_own(&self, account: &AccountId, system: &Arc<Vec<Found>>) -> Arc<Vec<Found>> {
+    /// 配置项和核心模块撞名），去掉他关了的 `off`。他那一层什么都没有、什么都没关的交回系统那一份。碰磁盘。
+    fn read_own(
+        &self,
+        account: &AccountId,
+        system: &Arc<Vec<Found>>,
+        off: &BTreeSet<String>,
+    ) -> Arc<Vec<Found>> {
         let places = Packages::of_account(&self.resources, &self.root, &self.admin, account);
         let (mut own, mut found): (Vec<Found>, Vec<Found>) = places
             .read_over(system)
             .into_iter()
             .partition(|one| one.layer == Layer::User);
-        if own.is_empty() {
+        found.retain(|one| !off.contains(&one.id));
+        own.retain(|one| !off.contains(&one.id));
+        if own.is_empty() && off.is_empty() {
             return Arc::clone(system);
         }
         if let Some(built_in) = &self.built_in {

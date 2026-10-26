@@ -12,6 +12,7 @@
 use std::collections::BTreeMap;
 
 use super::{PresetFile, Unlisted};
+use crate::features::Features;
 
 /// 三类功能编号的开头：技能 `skill-<名字>`、脚本 `script-<工具名>`、MCP 服务 `mcp-<服务名>`。
 const SWITCHABLE: [&str; 3] = ["skill-", "script-", "mcp-"];
@@ -44,6 +45,21 @@ impl By {
 }
 
 impl PresetFile {
+    /// 放进这一轮这个人关了的包 `off`（施工 U23 末上，个人设置 `packages.<编号>.off`）：整份换掉原来的，`features` 记下的必需的
+    /// 不算（[`PresetFile::switched_off`]）。改了从下一个回合开始生效。
+    #[must_use]
+    pub fn switching_off(
+        mut self,
+        off: impl IntoIterator<Item = String>,
+        features: &Features,
+    ) -> PresetFile {
+        self.switched_off = off
+            .into_iter()
+            .filter(|id| !features.required().contains(id))
+            .collect();
+        self
+    }
+
     /// 放进这一轮的全局开关 `global`（功能编号到开不开，照 `features.<功能编号>` 读的）：整份换掉原来的。
     #[must_use]
     pub fn following(mut self, global: BTreeMap<String, bool>) -> PresetFile {

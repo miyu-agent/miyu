@@ -470,6 +470,19 @@
       },
       "type": "object"
     },
+    "packages": {
+      "additionalProperties": {
+        "properties": {
+          "off": {
+            "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off. Allowed: true or false. Only in personal settings. Takes effect next turn.",
+            "title": "Turn this package off for me",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {

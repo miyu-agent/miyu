@@ -1,0 +1,167 @@
+//! 每个人把某个包对自己整个关掉（施工 U23 末上）：机主关了 `kit`，她新开的会话、开着的会话下一轮都没有它的脚本工具，技能列表、
+//! 预设页也不列；成员照旧有。必需的包关不了（`config_invalid`），系统配置里写不进；设置页上每个包那一组有这一项，必需的没有。
+
+use std::sync::Arc;
+
+use serde_json::{Value, json};
+
+use miyu_session::testkit::{Play, Script};
+
+use crate::scripts::{core, echo};
+use crate::support::login::member;
+use crate::support::*;
+
+/// 新会话会拿到的工具名（`session.tools` 不写会话）。
+async fn face(client: &mut Client) -> Vec<String> {
+    let reply = client.call("t", "session.tools", json!({})).await;
+    names(&reply["result"]["tools"])
+}
+
+/// 一串里每一项的 `name`。
+fn names(list: &Value) -> Vec<String> {
+    list.as_array()
+        .unwrap_or_else(|| panic!("{list}"))
+        .iter()
+        .filter_map(|one| one["name"].as_str().map(str::to_string))
+        .collect()
+}
+
+/// 把个人设置里的 `key` 写成 `value`。
+async fn set(client: &mut Client, n: u8, layer: &str, key: &str, value: bool) -> Value {
+    client
+        .call(
+            &format!("config-9f2c4e1a7b3d5f60-{n}"),
+            "config.set",
+            json!({"layer": layer, "changes": [{"key": key, "value": value}]}),
+        )
+        .await
+}
+
+/// 第 `n` 次请求发给模型的工具名。
+fn sent(script: &Script, n: usize) -> Vec<String> {
+    script.requests()[n]
+        .1
+        .tools
+        .iter()
+        .map(|tool| tool.name.clone())
+        .collect()
+}
+
+#[tokio::test]
+async fn a_package_switched_off_is_gone_for_that_person_only() {
+    let home = Home::new();
+    home.write(
+        "system/packages/kit/package.toml",
+        "[package]\nname = { en = \"Kit\" }\n",
+    );
+    home.write("system/packages/kit/scripts/dice.py", &echo("dice"));
+    home.write(
+        "system/packages/kit/skills/kit-notes/SKILL.md",
+        "---\nname: kit-notes\ndescription: Take notes.\n---\n\nBody.\n",
+    );
+    let script = Arc::new(Script::new([Play::Says("一。"), Play::Says("二。")]));
+    let core = core(&home, &script);
+    let mut alice = Client::connect(Arc::clone(&core));
+    alice.hello().await;
+    let cwd = home.work.to_string_lossy().into_owned();
+    let session = alice.create("c1", &cwd).await;
+    alice.say("s1", &session, "一").await;
+    home.until_turns(&session, 1).await;
+    assert!(sent(&script, 0).contains(&"dice".to_string()), "关之前有");
+    assert!(face(&mut alice).await.contains(&"dice".to_string()));
+
+    let reply = set(&mut alice, 1, "personal", "packages.kit.off", true).await;
+    assert!(reply["result"].is_object(), "{reply}");
+    alice.say("s2", &session, "二").await;
+    home.until_turns(&session, 2).await;
+    assert!(
+        !sent(&script, 1).contains(&"dice".to_string()),
+        "开着的会话下一轮就没有"
+    );
+    assert!(
+        !face(&mut alice).await.contains(&"dice".to_string()),
+        "新会话没有"
+    );
+    let skills = alice.call("k", "skill.list", json!({})).await;
+    assert!(
+        !names(&skills["result"]["skills"]).contains(&"kit-notes".to_string()),
+        "技能列表不列：{skills}"
+    );
+    let preset = alice
+        .call("p", "preset.get", json!({"preset": "full"}))
+        .await;
+    assert!(
+        !preset["result"]["features"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{preset}"))
+            .iter()
+            .any(|one| one["id"] == "script-dice" || one["id"] == "kit"),
+        "预设页不列：{preset}"
+    );
+    let mut bob = member(&core, "bob").await;
+    assert!(
+        face(&mut bob).await.contains(&"dice".to_string()),
+        "别人照旧有"
+    );
+
+    // 必需的关不了；系统配置里写不进。
+    let required = set(&mut alice, 2, "personal", "packages.basesystem.off", true).await;
+    assert_eq!(
+        required["error"]["data"]["reason"], "config_invalid",
+        "{required}"
+    );
+    let system = set(&mut alice, 3, "system", "packages.kit.off", true).await;
+    assert!(system["error"].is_object(), "系统层写不进：{system}");
+
+    // 设置页：每个包那一组有这一项，必需的没有（测试的核心照重读清单那一次拼包的项：装一个别的包）。
+    let folder = home.work.join("other");
+    std::fs::create_dir_all(&folder).expect("建得了");
+    std::fs::write(
+        folder.join("package.toml"),
+        "[package]\nname = { en = \"Other\" }\n",
+    )
+    .expect("写得进");
+    let installed = alice
+        .call("i", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "other", "{installed}");
+    let schema = alice
+        .call("s", "config.schema", json!({"keys": ["packages.kit.off"]}))
+        .await;
+    let item = &schema["result"]["items"][0];
+    assert_eq!(
+        (item["page"].clone(), item["group"].clone()),
+        (json!("packages"), json!("kit")),
+        "{schema}"
+    );
+    let all = alice.call("a", "config.schema", json!({})).await;
+    let keys: Vec<&str> = all["result"]["items"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{all}"))
+        .iter()
+        .filter_map(|one| one["key"].as_str())
+        .collect();
+    assert!(keys.contains(&"packages.kit.off"), "{keys:?}");
+    assert!(
+        !keys.contains(&"packages.basesystem.off"),
+        "必需的没有：{keys:?}"
+    );
+}
+
+/// 手改个人设置把必需的包写成关着的（`config.set` 拦不住手改）：当没写，它的工具照旧在。
+#[tokio::test]
+async fn a_required_package_written_off_by_hand_stays_on() {
+    let home = Home::new();
+    home.write(
+        "home/alice/settings.toml",
+        "[packages.basesystem]\noff = true\n",
+    );
+    let script = Arc::new(Script::new([]));
+    let core = core(&home, &script);
+    let mut alice = Client::connect(Arc::clone(&core));
+    alice.hello().await;
+    assert!(
+        face(&mut alice).await.contains(&"read".to_string()),
+        "必需的照旧开着"
+    );
+}

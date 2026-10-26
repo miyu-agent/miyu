@@ -30,6 +30,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use miyu_config::package::Manifest;
+use miyu_config::package::settings::OFF;
 use miyu_config::phrases::Phrases;
 use miyu_config::{ConfigWords, ItemWords, Words};
 use miyu_kernel::event::Said;
@@ -245,9 +246,16 @@ impl Human {
                 .iter()
                 .find_map(|language| phrases.get(*language).cloned())
         };
+        // 每个人关掉某个包的那一项（施工 U23 末上）：每个不是必需的包一份，字照带占位的那一项。
+        let off = self.config.items.get(OFF).cloned();
         for (id, manifest) in packages {
             if let Some(name) = pick(&manifest.name) {
                 self.config.groups.insert(id.to_string(), name);
+            }
+            if let Some(words) = off.as_ref().filter(|_| !manifest.required) {
+                self.config
+                    .items
+                    .insert(miyu_config::key::fill(OFF, &[id]), words.clone());
             }
             for setting in &manifest.settings {
                 let key = format!("{id}.{}", setting.name);

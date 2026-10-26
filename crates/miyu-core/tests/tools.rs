@@ -227,7 +227,27 @@ fn the_builtin_port_gives_the_settings_startup_reads() {
         "装着的画"
     );
     let without = port.settings(&mut installed(&resources, &["memory"]));
-    assert_eq!(without.len(), all.len(), "没装的照样认");
+    // 每个装着的包那一项关包的开关（施工 U23 末上）跟着装没装：不算进「照样认」的那几项。
+    let off = |items: &[miyu_config::Item]| -> Vec<&str> {
+        items
+            .iter()
+            .filter(|item| item.key.starts_with("packages.") && item.key.ends_with(".off"))
+            .map(|item| item.key)
+            .collect()
+    };
+    assert_eq!(
+        without.len() - off(&without).len(),
+        all.len() - off(&all).len(),
+        "没装的照样认"
+    );
+    assert!(
+        off(&all).contains(&"packages.memory.off"),
+        "装着的有它那一项开关"
+    );
+    assert!(
+        !off(&without).contains(&"packages.memory.off"),
+        "没装的没有"
+    );
     assert!(
         hidden(&without)
             .iter()

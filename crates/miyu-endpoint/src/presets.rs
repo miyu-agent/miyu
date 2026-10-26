@@ -64,8 +64,13 @@ pub(crate) fn places(core: &Core, owner: &AccountId) -> PresetPlaces {
 
 /// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
 pub(crate) fn chosen(core: &Core, owner: &AccountId, found: Found) -> Chosen {
-    let file = found.file.following(switches(core, owner));
-    Chosen::new(found.id, file, &crate::scripts::features(core, owner))
+    let features = crate::scripts::features(core, owner);
+    // 这个人关了的包扣下（施工 U23 末上）。
+    let file = found
+        .file
+        .following(switches(core, owner))
+        .switching_off(core.packages_off(owner), &features);
+    Chosen::new(found.id, file, &features)
 }
 
 /// 这时 `account` 的配置里写了的全局开关（施工 X-27，`miyu_session::switches`；施工 Y-2 下下中上起照人）：照配置服务最近换上的

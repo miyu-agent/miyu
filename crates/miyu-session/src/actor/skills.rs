@@ -25,17 +25,21 @@ impl Actor {
         let face = refresh.snapshot.tools.clone();
         let pinned = refresh.snapshot.skills.clone();
         let wanted = refresh.snapshot.preset.as_ref().map(|pin| pin.id.clone());
-        let presets = refresh
-            .presets
-            .as_ref()
-            .map(|places| places.presets.clone());
+        let places = refresh.presets.clone();
         let present = present.to_vec();
         let switches = crate::switches::of(values);
+        // 这个人关了的包（施工 U23 末上）：它带的技能下一个回合就不列。
+        let off = crate::packages_off::of(values);
         let looked = blocking(move || {
-            let file = wanted
-                .zip(presets)
-                .and_then(|(id, presets)| presets.find(&id).ok())
-                .map(|found| found.file.following(switches));
+            let file = wanted.zip(places).and_then(|(id, places)| {
+                let found = places.presets.find(&id).ok()?;
+                Some(
+                    found
+                        .file
+                        .following(switches)
+                        .switching_off(off, &places.features),
+                )
+            });
             let looked = watch.look(&resources, &face, file.as_ref())?;
             let tail = skills::tail(
                 &resources,

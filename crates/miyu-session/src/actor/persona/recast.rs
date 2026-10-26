@@ -72,7 +72,11 @@ pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Cho
     let found = places.presets.find(id).map_err(|error| error.to_string())?;
     let features = &places.features;
     let memory = refresh.snapshot.memory_scope() != MemoryScope::Off;
-    let file = found.file.following(crate::switches::of(values));
+    // 这个人关了的包（施工 U23 末上）照这一轮的配置扣下：开着的会话下一个回合就没有它的东西。
+    let file = found
+        .file
+        .following(crate::switches::of(values))
+        .switching_off(crate::packages_off::of(values), features);
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     Ok(match refresh.images {
         true => chosen,

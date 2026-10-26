@@ -470,6 +470,19 @@
       },
       "type": "object"
     },
+    "packages": {
+      "additionalProperties": {
+        "properties": {
+          "off": {
+            "description": "只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。必需的包关不了。能写：true 或 false。只能写在个人设置里。下一轮生效。",
+            "title": "把这个包关掉",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    },
     "permission": {
       "properties": {
         "level": {

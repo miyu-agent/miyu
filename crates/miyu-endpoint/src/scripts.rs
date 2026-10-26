@@ -200,12 +200,16 @@ pub(crate) fn package(script: &Script) -> &str {
 /// 会话（[`Core::machine_side`]：机主的、包的账号的，场所会话是机主配的）；别人的会话不列它们，列他自己那一层的（施工 U23 中下，
 /// [`Core::scripts_for`]：他的工具目录架子里机主的 `~home` 已经拿掉、放进了他的）。
 pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
-    let packaged = crate::packages::features(&core.system_packages());
+    // 照他看得到的包（施工 U23 末上：关了的不在），记下必需的（关包关不了它们）。
+    let packaged = crate::packages::features(&core.packages_of(owner));
     let images = packaged.image_packages().clone();
+    let required = crate::packages::off::required(&core.system_packages());
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.scripts_for(owner).iter().map(script_feature));
     if !core.machine_side(owner) {
-        return Features::new(list).needing_images(images);
+        return Features::new(list)
+            .needing_images(images)
+            .requiring(required);
     }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
@@ -214,7 +218,9 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
         service: Some(server.name.clone()),
         script: None,
     }));
-    Features::new(list).needing_images(images)
+    Features::new(list)
+        .needing_images(images)
+        .requiring(required)
 }
 
 /// 一个登记上的脚本的功能。

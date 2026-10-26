@@ -1,6 +1,6 @@
 //! 造会话、载入要交进来的几样（施工 8-8 从 `open.rs` 挪来：那一页长过了行数的上限）。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -38,14 +38,20 @@ pub struct PresetPlaces {
 
 impl PresetPlaces {
     /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。显示不了图片的（`images` 是假）要图的包
-    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）。
+    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）、这个人关了的包 `off`（施工 U23 末上）。
     pub(crate) fn file(
         &self,
         id: &str,
         images: bool,
-        switches: BTreeMap<String, bool>,
+        (switches, off): (BTreeMap<String, bool>, BTreeSet<String>),
     ) -> Option<PresetFile> {
-        let mut file = self.presets.find(id).ok()?.file.following(switches);
+        let mut file = self
+            .presets
+            .find(id)
+            .ok()?
+            .file
+            .following(switches)
+            .switching_off(off, &self.features);
         if !images {
             file.withheld = self.features.image_packages().clone();
         }

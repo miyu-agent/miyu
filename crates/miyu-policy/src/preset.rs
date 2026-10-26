@@ -69,6 +69,10 @@ pub struct PresetFile {
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
     /// （[`Chosen::blind`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
+    /// 这个人关了的包（施工 U23 末上，个人设置 `packages.<编号>.off`，[`PresetFile::switching_off`]）：同扣下的包都不开；和扣下的
+    /// 不一样的是它的功能算进没开的那几个，改了快照记的不一样，开着的会话下一个回合换上工具面。不是文件里写的，不进
+    /// [`PresetFile::digest`]、不叠层。
+    pub switched_off: BTreeSet<String>,
     /// 人设的全局开关（施工 X-27，`switches.rs`）：功能编号到开不开，只认技能、脚本、MCP 三类。不是文件里写的：核心照这一轮的
     /// 配置放进来（[`PresetFile::following`]），不进 [`PresetFile::digest`]、不叠层。
     pub global: BTreeMap<String, bool>,
@@ -98,7 +102,7 @@ impl PresetFile {
     /// `[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能的编号、再认包的编号；都没写的照人设的全局开关（施工
     /// X-27）；再没有的照 `unlisted`。
     pub fn opens_in(&self, feature: &str, package: &str) -> bool {
-        if self.withheld.contains(package) {
+        if self.withheld.contains(package) || self.switched_off.contains(package) {
             return false;
         }
         self.decided(feature, package).0

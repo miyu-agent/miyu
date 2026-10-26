@@ -94,21 +94,25 @@ impl Core {
     }
 
     /// `account` 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：机主这一侧的是核心登记的全部；别人的是核心登记的
-    /// 里不挂 `~home` 的（包带的），加他自己那一层的（有会话拿着他的架子的照那一份，没有的现找）。碰磁盘。
+    /// 里不挂 `~home` 的（包带的），加他自己那一层的（有会话拿着他的架子的照那一份，没有的现找）；他关了的包带的都不算。碰磁盘。
     pub(crate) fn scripts_for(&self, account: &AccountId) -> Vec<Script> {
         let all = self.scripts();
+        // 他关了的包带的不算（施工 U23 末上）。
+        let off = self.packages_off(account);
+        let kept = |script: &&Script| !off.contains(package(script));
         if self.machine_side(account) {
-            return all.to_vec();
+            return all.iter().filter(kept).cloned().collect();
         }
-        let kept = self
+        let mine = self
             .people()
             .get(account)
             .filter(|mine| mine.shelf.upgrade().is_some())
             .map(|mine| Arc::clone(&mine.scripts));
-        let own = kept.unwrap_or_else(|| Arc::new(self.own_layer(account).0));
+        let own = mine.unwrap_or_else(|| Arc::new(self.own_layer(account).0));
         all.iter()
             .filter(|script| package(script) != HOME_PACKAGE)
             .chain(own.iter())
+            .filter(kept)
             .cloned()
             .collect()
     }

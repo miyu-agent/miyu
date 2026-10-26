@@ -71,6 +71,7 @@ fn the_registered_list_is_well_formed() {
             "clicall.tools.<name>",
             "clicall.mcp.<id>",
             "features.<name>",
+            "packages.<id>.off",
             "commands.<id>.access",
             "profile.preferred_reply_language",
             "profile.name",
@@ -428,6 +429,13 @@ fn core_items_on_the_packages_page_say_which_package() {
             Some("memory")
         } else if item.key.starts_with("basesystem.") {
             Some("basesystem")
+        } else if let Some(id) = item
+            .key
+            .strip_prefix("packages.")
+            .and_then(|rest| rest.strip_suffix(".off"))
+        {
+            // 每个人关掉某个包的那一项（施工 U23 末上）：归那个包，挂在它那一组。
+            Some(id)
         } else if item.key.starts_with("packages.") {
             None
         } else {

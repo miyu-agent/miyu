@@ -46,6 +46,7 @@ pub mod loading;
 mod memory;
 mod messages;
 mod open;
+pub mod packages_off;
 mod path_text;
 mod peers;
 mod pictures;

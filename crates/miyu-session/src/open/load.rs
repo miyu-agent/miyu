@@ -322,11 +322,15 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             let (root, owner) = (root.clone(), owner.clone());
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
             let places = presets.clone();
-            let switches = crate::switches::of(&config.current().resolved.values());
+            let values = config.current().resolved.values();
+            let looked = (
+                crate::switches::of(&values),
+                crate::packages_off::of(&values),
+            );
             blocking(move || {
                 let file = wanted
                     .zip(places)
-                    .and_then(|(id, places)| places.file(&id, images, switches));
+                    .and_then(|(id, places)| places.file(&id, images, looked));
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 (skills::shelves(&found), skills::names(&found))

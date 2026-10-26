@@ -18,6 +18,9 @@ use crate::value::Value;
 /// 每一项的 `package` 把它们画在那个软件的信息页上。
 pub const PAGE: &str = "packages";
 
+/// 每个人把某个包对自己整个关掉的那一项的样子（施工 U23 末上，`miyu_session::packages_off`）：中间一段是包的编号。
+pub const OFF: &str = "packages.<id>.off";
+
 /// 文字不写 `max` 的，最多几个字符。
 const TEXT_MAX: usize = 200;
 

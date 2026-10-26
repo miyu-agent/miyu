@@ -217,6 +217,7 @@ pub(crate) fn core_items() -> Vec<miyu_config::Item> {
         TerminalSettings::ITEMS,
         miyu_session::loading::ITEMS,
         miyu_session::switches::ITEMS,
+        miyu_session::packages_off::ITEMS,
         miyu_session::unsandboxed::ITEMS,
         miyu_session::settings::ProfileSettings::ITEMS,
         EXTERNAL_BINDINGS,

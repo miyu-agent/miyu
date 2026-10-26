@@ -24,6 +24,8 @@ pub struct Features {
     list: Vec<Feature>,
     /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::blind`]）。
     images: BTreeSet<String>,
+    /// 必需的包（施工 U23 末上，清单的 `[package] required`）：每个人关包关不了它们（[`crate::preset::PresetFile::switching_off`]）。
+    required: BTreeSet<String>,
 }
 
 impl Features {
@@ -32,7 +34,20 @@ impl Features {
         Features {
             list,
             images: BTreeSet::new(),
+            required: BTreeSet::new(),
         }
+    }
+
+    /// 记下哪几个包是必需的（施工 U23 末上）。
+    #[must_use]
+    pub fn requiring(mut self, packages: impl IntoIterator<Item = String>) -> Features {
+        self.required = packages.into_iter().collect();
+        self
+    }
+
+    /// 必需的包（施工 U23 末上），照编号排。
+    pub fn required(&self) -> &BTreeSet<String> {
+        &self.required
     }
 
     /// 记下哪几个包要这个地方显示得了图片（施工 X-25，清单的 `[package] needs`）。
