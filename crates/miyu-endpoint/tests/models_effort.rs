@@ -60,6 +60,7 @@ fn core(home: &Home, routed: bool) -> Arc<Core> {
         miyu_endpoint::settings::UiSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
+        miyu_models::settings::FIXED_POOL_ITEMS,
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,

@@ -29,6 +29,7 @@ pub fn items() -> Vec<Item> {
         CompatSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
+        miyu_models::settings::FIXED_POOL_ITEMS,
         miyu_session::settings::CompactionSettings::ITEMS,
         miyu_session::settings::JobSettings::ITEMS,
         miyu_session::settings::MemorySettings::ITEMS,

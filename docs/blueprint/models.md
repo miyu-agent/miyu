@@ -144,7 +144,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 - `description`：给模型看的一句，`subagent` 的参数里接在池名后面。给模型看的字一律英文（`26-提示词.md` J3）：CJK 的字占一半以上的是 `bad_format`，原话说要写英文。
 - 这两项会话开局时拼进工具面，整个会话不变，所以是 `new_session`；池的成员、分法照旧 `next_turn`：会话里已经列着的池换了成员，下一轮生效（2026-10-01 项目主人定）。
 - 模型本身没有「能不能给子代理选」的开关：想让子代理挑某一个模型，建一个只有它的池（同上）。
-- 一开始就有三个池 `lite`、`standard`、`flagship`：`miyu setup` 写配置时一起写进系统配置（第七条第 5 条第 7 款），成员是空的，开关开着，不带说明（名字就说得清）。除了是预先建好的，它们是普通的池：能删、能改名；填了成员才出现在子代理的选项里（同上）。
+- 三个固定池 `lite`、`normal`、`flagship`（施工 Q-1，设计 43 第三节第 1 条，`pools.rs` 的 `FIXED`）：永远在，不能删、不能改名，可以是空的；配置里没写的照空的算，`miyu setup` 不写。它们的 `subagent` 是写死的键 `pools.lite.subagent` 这样（`settings.rs` 的 `FIXED_POOL_ITEMS`），默认开着，人关得掉：写死的键先于 `pools.<id>` 认，合配置时总有默认值，所以把写的都删了也还在。成员、分法、说明照旧是 `pools.<id>` 的；填了成员才出现在子代理的选项里。旁路请求照声明的档位从这三个池里取（设计 43，Q-2）。人自己建的池照旧能建、能删，`subagent` 默认关着。原来 `miyu setup` 预写的 `standard` 改叫 `normal`；配置里还写着 `[pools.standard]` 的就是一个人自己建的普通池，不另外报（施工 Q-1 定：人建的池名字随意，为一个词开特例不值）。
 
 **`[models.catalog]`**：目录怎么更新（8-7），当场生效。
 
@@ -318,7 +318,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 |---|---|
 | `providers` | 配好的供应商，照编号排。每一家：`id`、`name`（显示名，施工 8-21：`{"value", "from", "key"}`，`from` 是 `config`（写了的，另带 `file`、`line`、`layer`，照资料那一格的写法）、`catalog`（目录里对上的那一家的名字）、`id`（都没有，照编号）；`key` 是完整的配置键名 `providers.<编号>.name`，头照抄它发 `config.set`；用不了的那一家也有）、`driver`、`base_url`（照配置写的样子交：写死的是地址本身，是 `{ env = … }` 的交 `{"env": "…"}`，不解出地址，施工 8-6b）、`key`（8-25：这一家的 key，`ref` 是 `secret:<名字>` 或 `env:<变量>`，`set` 有没有值，`state`；没写 key 的没有这一格）、`catalog`（对上了目录里的哪一家，`how` 是怎么对上的：`config` 手写、`id` 编号一样、`similar_id` 去掉分隔以后一样、`url` 地址一样，没对上的不写）、`models`；`driver_from`：驱动从哪来，`config`（手写的）、`profile`（档案的）、`catalog`（目录那一家的 `npm` 换的）、`default`（都推不出，用 `openai-chat`），施工 8-26；`strict_tools`：约束解码的这一家（档案的、手写的）是 `true`，不是的没有这一格（施工 L-2）。这一家用不了的（推不出地址，驱动还没有）：`driver`、`base_url` 照手写的，没写的是 `null`，没有 `driver_from`，多一格 `problem`（`no_model` 的那一句原话），`models` 是空的（8-7） |
 | `models` 里的每一个 | `model` 模型名、`ref` 写成引用的样子、`listed` 从哪几处列出来的（`config`、`provider`、`catalog`，照这个先后）、`facts` 每一格的 `value` 和来源（上面「模型的资料」，十二格都在：`window`、`max_output`、`inputs`、`tools`、`reasoning`、`effort`（8-18：配置的默认；没写的、写的不在档位里的是 `{"value":null,"from":"default"}`；多一格 `key`，8-18（补）：这一项完整的配置键名，模型名带点的加好引号，例如 `providers.dev.models."deepseek-v4.1-flash".effort`，头照抄它发 `config.set`（个人设置），选「默认」就发 `unset: true`）、`takes_temperature`（8-22：目录说的能不能调，`true`、`false`，没说的是 `null`、`default`；头照它决定温度那一格能不能改）、`temperature`（8-22：配置的默认，这个模型用不了的、没写的是 `{"value":null,"from":"default"}`；和 `effort` 一样多一格 `key`，头照抄它发 `config.set`，选「默认」发 `unset: true`）、`price`、`multiplier`、`name`、`status`）、`state`。手写指定的目录条目不存在的，多一格 `catalog_missing`：写的那个条目（8-7）。照名字认得出能出向量的，多一格 `embedding: true`，不是的不写（R-5 再补，下面「能出向量的」） |
-| `pools` | 每个池，照名字排：`name`、`strategy`（生效的分法：写了的照写的，没写的照成员定，一个成员都认不出的照写的或 `pin`）、`models`（照配置写的原样，认不出的也在）（8-8）；`usable`（成员不是空的；下架的模型拿空了的池留着，标成假，8-23）；`subagent`（开关，没写的是 `false`）、`description`（没写的是 `null`）（8-8 补）。8-8 的 `tiers` 8-8 补去掉了 |
+| `pools` | 每个池，照名字排：`name`、`strategy`（生效的分法：写了的照写的，没写的照成员定，一个成员都认不出的照写的或 `pin`）、`models`（照配置写的原样，认不出的也在）（8-8）；`usable`（成员不是空的；下架的模型拿空了的池留着，标成假，8-23）；`subagent`（开关，没写的是 `false`）、`description`（没写的是 `null`）（8-8 补）。8-8 的 `tiers` 8-8 补去掉了；`fixed`（三个固定池之一，Q-1：永远在、配置里没写也列出来，头不给删、不给改名；它们的 `subagent` 没写的是 `true`） |
 | `uses` | `chat`、`vision` 各配的引用，没配的是 `null`（8-7 只有 `chat`，8-8 加 `vision`） |
 | `catalog` | 在用的目录：`source`（`snapshot` 或 `cache`）、`fetched`；两份都读不了的是 `null` |
 

@@ -298,6 +298,7 @@ miyu_config::settings! {
 | `pools.<id>.models` | 模型的列表，可以是空的 | 没有：这个池解析不出 | 系统、个人 | 不能写 | `next_turn` | 8-8 |
 | `pools.<id>.strategy` | 选项 `pin`、`rotate` | 没有：照成员的缓存类别定 | 系统、个人 | 不能写 | `next_turn` | 8-8 |
 | `pools.<id>.subagent` | 开关 | `false`：不在派子代理的选项里 | 系统、个人 | 不能写 | `new_session` | 8-8 补 |
+| `pools.lite.subagent`、`pools.normal.subagent`、`pools.flagship.subagent` | 开关 | `true`：三个固定池默认在派子代理的选项里 | 系统、个人 | 不能写 | `new_session` | Q-1：写死的键，先于 `pools.<id>.subagent` 认；合配置时总有默认值，所以这三个池永远在（`models.md`「池」） |
 | `pools.<id>.description` | 给模型看的字，最多 60 个字符 | 没有：只列池名 | 系统、个人 | 不能写 | `new_session` | 8-8 补 |
 | `providers.<id>.name` | 文字，最多 64 个字符 | 没有：照目录里那一家的名字，再没有的照编号 | 系统、个人 | 不能写 | `now`（只给界面看，不进请求） | 8-21 |
 | `providers.<id>.driver` | 选项 `openai-chat`、`anthropic`、`openai-responses` | 没有：照档案推 | 系统、个人 | 不能写 | `next_turn` | 8-6 |
@@ -1255,6 +1256,21 @@ start_read_only = false
 # 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
 # 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
 subagent = false
+
+[pools.flagship]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
+
+[pools.lite]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
+
+[pools.normal]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
 
 [preset]
 # 默认预设：新会话默认用哪个预设。

@@ -233,6 +233,18 @@
         "name": "子代理能选",
         "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
       },
+      "pools.lite.subagent": {
+        "name": "子代理能选",
+        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+      },
+      "pools.normal.subagent": {
+        "name": "子代理能选",
+        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+      },
+      "pools.flagship.subagent": {
+        "name": "子代理能选",
+        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+      },
       "pools.<id>.description": {
         "name": "给模型看的说明",
         "description": "AI 派子代理时看到的一句，接在池名后面。用英文写，一行。"

@@ -73,7 +73,11 @@ fn unknown_members_are_skipped_and_an_empty_pool_does_not_resolve() {
         pool(&config(r#""a/y""#, ""), "q"),
         Err(NoModel(r#"no pool "q""#.to_string()))
     );
-    assert_eq!(names(&config(r#""a/y""#, "")), ["p"]);
+    assert_eq!(
+        names(&config(r#""a/y""#, "")),
+        ["flagship", "lite", "normal", "p"],
+        "三个固定池总在（施工 Q-1）"
+    );
 }
 
 /// 钉住的从日志读回：最近一条发出去了的是这个池的成员，钉着它；不是的没有。
@@ -140,4 +144,34 @@ fn offered_names_sort_by_bytes() {
         .map(|offer| offer.name)
         .collect();
     assert_eq!(names, ["a-1", "a_1", "b"]);
+}
+
+/// 三个固定池（施工 Q-1，设计 43 第三节第 1 条）：配置里一个池都没写也在，是空的、解析不出；默认在派子代理的选项里（填了成员
+/// 就列），人关得掉；把写的全删了（照默认值）照样在。人自己建的池照旧。
+#[test]
+fn the_three_fixed_pools_are_always_there() {
+    let empty = values("");
+    assert_eq!(names(&empty), ["flagship", "lite", "normal"]);
+    for name in FIXED {
+        assert_eq!(
+            pool(&empty, name),
+            Err(NoModel(format!("pool {name:?} has no models"))),
+            "空的解析不出"
+        );
+        assert!(listed(&empty, name).is_some(), "{name} 列得出");
+    }
+    let filled = values(
+        "[providers.a]\nlocal = false\n\n[pools.lite]\nmodels = [\"a/x\"]\n\n\
+         [pools.flagship]\nmodels = [\"a/y\"]\nsubagent = false\n\n[pools.mine]\nmodels = [\"a/z\"]\n",
+    );
+    let offered: Vec<String> = offered(&filled)
+        .into_iter()
+        .map(|offer| offer.name)
+        .collect();
+    assert_eq!(
+        offered,
+        ["lite"],
+        "固定池默认能选、关了的不列；人建的池默认不列"
+    );
+    assert_eq!(names(&filled), ["flagship", "lite", "mine", "normal"]);
 }

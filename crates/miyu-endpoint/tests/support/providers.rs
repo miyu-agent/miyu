@@ -125,6 +125,7 @@ fn assembled(
         CompatSettings::ITEMS,
         CatalogSettings::ITEMS,
         PoolSettings::ITEMS,
+        miyu_models::settings::FIXED_POOL_ITEMS,
         UsageSettings::ITEMS,
     ]
     .concat();

@@ -143,7 +143,7 @@ There are two shelves. `system` is the shared `system/secrets.toml`, and only ad
 |---|---|
 | `providers` | Configured providers by id. Each: `id`, `layer` (`personal`: configured in the person's own settings; `system`: only in the system settings, shared), `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
 | each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
-| `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description` |
+| `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description`, `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
 | `uses` | The references set for `chat` and `vision`, `null` when not set |
 | `catalog` | The catalog in use: `source`, `fetched`; `null` when none can be read |
 

@@ -258,6 +258,21 @@ start_read_only = false
 # 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
 subagent = false
 
+[pools.flagship]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
+
+[pools.lite]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
+
+[pools.normal]
+# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 能写：true 或 false。只能写在系统配置或个人设置里。新会话生效。
+subagent = true
+
 [preset]
 # 默认预设：新会话默认用哪个预设。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。新会话生效。

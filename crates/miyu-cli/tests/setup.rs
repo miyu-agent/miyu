@@ -340,35 +340,29 @@ async fn ask_without_a_model_goes_through_setup_first_at_a_terminal() {
     assert_eq!(untouched.lines, 0);
 }
 
-/// 三个预设的池（施工 8-8 补，`cli/setup.md` 第 10 条）：配置里一个池都没有的，和 `models.chat` 一起写进个人设置（施工 T-11），成员是空的、
-/// 开关开着、不带说明；已经有池的（连同只写了开关的）不写。屏幕上照旧只说 `models.chat`。
+/// 不再预写池（施工 Q-1，设计 43 第三节第 1 条）：三个固定池 `lite`、`normal`、`flagship` 本来就在（空的），`miyu setup`
+/// 只写 `models.chat`，一个池都不写。屏幕上照旧只说 `models.chat`。
 #[tokio::test]
-async fn three_preset_pools_go_in_only_when_there_are_no_pools() {
-    let presets = "[pools.lite]\nmodels = []\nsubagent = true\n\n\
-                   [pools.standard]\nmodels = []\nsubagent = true\n\n\
-                   [pools.flagship]\nmodels = []\nsubagent = true\n";
-    for (config, wanted) in [("", true), ("[pools.mine]\nsubagent = true\n", false)] {
-        let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
-        let home = Home::onboarding(config, &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
-        let mut typist = Typist::at_terminal(&["3", ""], &[]);
-        let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
-        assert_eq!(asked.code, 0, "{}", asked.screen);
-        assert!(
-            asked
-                .screen
-                .ends_with("写好了：models.chat = deepseek/deepseek-flash\n"),
-            "{}",
-            asked.screen
-        );
-        let written = home.personal_settings();
-        assert_eq!(written.contains(presets), wanted, "{config:?}：{written}");
-        assert_eq!(
-            home.system_config(),
-            config,
-            "系统配置一个字没动（施工 T-11 起写个人设置）"
-        );
-        assert!(!written.contains("description"), "不带说明：{written}");
-    }
+async fn setup_writes_no_pools() {
+    let server = Server::start(vec![listing(&["deepseek-flash"])]).await;
+    let home = Home::onboarding("", &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
+    let mut typist = Typist::at_terminal(&["3", ""], &[]);
+    let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
+    assert_eq!(asked.code, 0, "{}", asked.screen);
+    assert!(
+        asked
+            .screen
+            .ends_with("写好了：models.chat = deepseek/deepseek-flash\n"),
+        "{}",
+        asked.screen
+    );
+    let written = home.personal_settings();
+    assert!(!written.contains("[pools."), "一个池都不写：{written}");
+    assert_eq!(
+        home.system_config(),
+        "",
+        "系统配置一个字没动（施工 T-11 起写个人设置）"
+    );
 }
 
 /// 个人设置里已经有 `models.chat` 的（施工 T-11，网页的第一次引导先碰上的）：写进个人设置，换上的就是新选的，不被原来那一项

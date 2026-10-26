@@ -285,8 +285,8 @@ miyu_config::settings! {
     /// 一个池（`models.md`「对外的样子」`[pools.<名字>]`，「怎么走」第三条第 6 条，施工 8-8）：几个模型编成一组。名字是键里
     /// `<id>` 那一段，「路径里的名字」的写法。
     pub struct PoolSettings in "pools.<id>" {
-        /// 成员：模型的列表，只能是 `<供应商>/<模型>`，照写的先后。可以是空的（`miyu setup` 预先建的三个池），一个都没有的池
-        /// 解析不出。
+        /// 成员：模型的列表，只能是 `<供应商>/<模型>`，照写的先后。可以是空的（三个固定池没写的就是空的，施工 Q-1），一个都
+        /// 没有的池解析不出。
         models: Option<Vec<String>> = none {
             kind: models,
             layers: [System, Personal],
@@ -314,6 +314,36 @@ miyu_config::settings! {
             layers: [System, Personal],
             applies: new_session,
             ui: { page: "models", group: "pools", control: text },
+        },
+    }
+}
+
+/// 三个固定池的「在不在派子代理的选项里」（施工 Q-1，设计 43 第三节第 1 条，[`crate::pools::FIXED`]）：写死的键，默认开着
+/// （人自己建的池默认关着，[`PoolSettings`] 的 `subagent`）。写死的键先于 `pools.<id>` 认，合配置时总有默认值，所以这三个池
+/// 配置里一个字都没写也在、删不掉（把写的都删了照默认值）。成员、分法、说明照旧是 `pools.<id>` 的。
+pub const FIXED_POOL_ITEMS: &[miyu_config::Item] = &[
+    fixed_subagent("pools.lite.subagent"),
+    fixed_subagent("pools.normal.subagent"),
+    fixed_subagent("pools.flagship.subagent"),
+];
+
+/// 一个固定池的 `subagent`：除了键、默认值，和 [`PoolSettings`] 的那一项一样。
+const fn fixed_subagent(key: &'static str) -> miyu_config::Item {
+    miyu_config::Item {
+        key,
+        kind: miyu_config::Kind::Bool,
+        default: Some(miyu_config::Value::Bool(true)),
+        layers: &[miyu_config::Layer::System, miyu_config::Layer::Personal],
+        tighten: None,
+        env: None,
+        applies: miyu_config::Applies::NewSession,
+        ui: miyu_config::Ui {
+            page: "models",
+            group: "pools",
+            package: None,
+            common: false,
+            control: miyu_config::Control::Toggle,
+            hidden: false,
         },
     }
 }

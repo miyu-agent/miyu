@@ -258,6 +258,21 @@ start_read_only = false
 # Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
 subagent = false
 
+[pools.flagship]
+# Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
+# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+subagent = true
+
+[pools.lite]
+# Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
+# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+subagent = true
+
+[pools.normal]
+# Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
+# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+subagent = true
+
 [preset]
 # Default preset: The preset new sessions use.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.

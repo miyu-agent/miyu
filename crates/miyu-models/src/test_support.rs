@@ -89,6 +89,7 @@ pub(crate) fn items() -> Vec<Item> {
         CompatSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
+        crate::settings::FIXED_POOL_ITEMS,
         CatalogSettings::ITEMS,
         RateLimitedCooldown::ITEMS,
         RetryableCooldown::ITEMS,

@@ -233,6 +233,18 @@
         "name": "Subagents can pick it",
         "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
       },
+      "pools.lite.subagent": {
+        "name": "Subagents can pick it",
+        "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
+      },
+      "pools.normal.subagent": {
+        "name": "Subagents can pick it",
+        "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
+      },
+      "pools.flagship.subagent": {
+        "name": "Subagents can pick it",
+        "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
+      },
       "pools.<id>.description": {
         "name": "Description for the model",
         "description": "One line the AI sees after the pool name when it starts a subagent. Write it in English."

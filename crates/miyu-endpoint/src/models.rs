@@ -220,8 +220,8 @@ fn embedding_names(core: &Core) -> EmbeddingNames {
     })
 }
 
-/// 每个池：名字、怎么分（没写的照成员定）、写的成员（照写的原样），派子代理能不能选（没写的是 `false`）、给模型看的说明
-/// （没写的是 `null`，施工 8-8 补）。照名字排。
+/// 每个池：名字、怎么分（没写的照成员定）、写的成员（照写的原样），派子代理能不能选（没写的是 `false`，三个固定池是 `true`）、
+/// 给模型看的说明（没写的是 `null`，施工 8-8 补）、是不是三个固定池之一（`fixed`，施工 Q-1：头照它不给删、不给改名）。照名字排。
 fn pools_json(values: &Values) -> Vec<Value> {
     pools::names(values)
         .into_iter()
@@ -237,6 +237,7 @@ fn pools_json(values: &Values) -> Vec<Value> {
                 "usable": usable,
                 "subagent": settings.subagent,
                 "description": settings.description,
+                "fixed": pools::FIXED.contains(&name.as_str()),
             }))
         })
         .collect()

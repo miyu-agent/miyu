@@ -143,7 +143,7 @@
 |---|---|
 | `providers` | 配好的供应商，照编号排。每家：`id`、`layer`（`personal`：个人设置里配的，自用；`system`：只有系统配置里配的，共用）、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
 | `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能用工具、思考、价格、名字……每格 `value` 和来源）、`state`（`ok`、`cooling` 带 `until`/`class`、`no_key`），能出向量的带 `embedding: true` |
-| `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description` |
+| `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description`、`fixed`（`lite`、`normal`、`flagship` 三个固定池是 `true`：永远在，配置里没写也列出来，不能删、不能改名，`subagent` 默认 `true`） |
 | `uses` | `chat`、`vision` 各配的引用，没配的是 `null` |
 | `catalog` | 在用的目录：`source`、`fetched`，读不了是 `null` |
 

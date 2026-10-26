@@ -75,6 +75,7 @@ fn built(
         miyu_endpoint::settings::UiSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
+        miyu_models::settings::FIXED_POOL_ITEMS,
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
@@ -126,21 +127,30 @@ async fn model_list_has_pools_and_both_uses() {
     assert_eq!(
         result["pools"],
         json!([
-            {"name": "empty", "strategy": "pin", "models": ["gone/y"], "usable": true, "subagent": true, "description": null},
-            {"name": "fast", "strategy": "rotate", "models": ["b/z"], "usable": true, "subagent": false, "description": null},
-            {"name": "free", "strategy": "pin", "models": ["a/x", "gone/y", "b/z"], "usable": true, "subagent": true, "description": "Free models."},
+            {"name": "empty", "strategy": "pin", "models": ["gone/y"], "usable": true, "subagent": true, "description": null, "fixed": false},
+            {"name": "fast", "strategy": "rotate", "models": ["b/z"], "usable": true, "subagent": false, "description": null, "fixed": false},
+            {"name": "flagship", "strategy": "pin", "models": [], "usable": false, "subagent": true, "description": null, "fixed": true},
+            {"name": "free", "strategy": "pin", "models": ["a/x", "gone/y", "b/z"], "usable": true, "subagent": true, "description": "Free models.", "fixed": false},
+            {"name": "lite", "strategy": "pin", "models": [], "usable": false, "subagent": true, "description": null, "fixed": true},
+            {"name": "normal", "strategy": "pin", "models": [], "usable": false, "subagent": true, "description": null, "fixed": true},
         ]),
-        "照名字排，成员照写的原样，分法没写的照成员定，开关没写的是 false，说明没写的是 null"
+        "照名字排，成员照写的原样，分法没写的照成员定，开关没写的是 false（三个固定池是 true），说明没写的是 null；三个固定池没写也在、标 fixed（施工 Q-1）"
     );
     assert_eq!(result.get("tiers"), None, "施工 8-8 补去掉了挡位");
     assert_eq!(result["uses"], json!({"chat": "a/m", "vision": "b/v"}));
     assert_eq!(models(result, "a"), ["m", "x"], "用途、池里点名的");
     assert_eq!(models(result, "b"), ["v", "z"], "用途、池里点名的");
-    // 什么都没配的：池是空的，用途都是 null。
+    // 什么都没配的：只有三个空的固定池，用途都是 null。
     let bare = Home::new();
     let (mut client, _) = connect(&bare).await;
     let reply = client.call("l2", "model.list", json!({})).await;
-    assert_eq!(reply["result"]["pools"], json!([]));
+    let names: Vec<&str> = reply["result"]["pools"]
+        .as_array()
+        .expect("是列表")
+        .iter()
+        .map(|pool| pool["name"].as_str().expect("有名字"))
+        .collect();
+    assert_eq!(names, ["flagship", "lite", "normal"]);
     assert_eq!(
         reply["result"]["uses"],
         json!({"chat": null, "vision": null})
