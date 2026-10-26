@@ -25,10 +25,6 @@
         "name": "Turns before organizing",
         "description": "The AI organizes only after at least this many turns since the last time."
       },
-      "memory.organizer": {
-        "name": "Memory organizer model",
-        "description": "The model used to organize memories, billed by usage. If none is chosen, the chat model is used."
-      },
       "memory.merge_every": {
         "name": "How often to consolidate memories",
         "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you."
@@ -854,6 +850,10 @@
     "context/part/system.venue": "Subagent setting",
     "context/part/system.group": "Group chat notes",
     "context/part/system.core": "Core instructions",
+    "model/side/core/title": "Titles",
+    "model/side/core/title/summary": "Gives a session a short title after its first exchange.",
+    "model/side/memory/organize": "Memory organizing",
+    "model/side/memory/organize/summary": "Extracts, merges and tidies memories; needs to follow a whole conversation.",
     "context/part/system.clicall": "Scripted tool calls",
     "context/part/system.show": "Using show",
     "context/part/system.style_lock": "Style lock",

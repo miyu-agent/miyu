@@ -91,7 +91,7 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
         return false;
     };
     let source = format!(
-        "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_DEV_API_KEY\" }}\n\n[memory]\norganizer = \"dev/{model}\"\n"
+        "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_DEV_API_KEY\" }}\n\n[pools.normal]\nmodels = [\"dev/{model}\"]\n"
     );
     home.configs = configs_with(
         &source,
@@ -127,7 +127,7 @@ fn organizer_with(
     tagging: bool,
 ) {
     let source = format!(
-        "[providers.org]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"ORG_KEY\" }}\n\n[memory]\norganizer = \"org/m\"\n{extra}",
+        "[providers.org]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"ORG_KEY\" }}\n\n[pools.normal]\nmodels = [\"org/m\"]\n\n[memory]\n{extra}",
         server.base_url
     );
     home.configs = configs_with(

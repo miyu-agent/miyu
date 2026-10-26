@@ -6,6 +6,7 @@
 //! - 她正在写什么（施工 R-21）：两路都边收边推，经同一个 [`MergeJob::watcher`]（整理会话那一路的正文增量 D-1 下起由 `batch`
 //!   交）。
 
+use miyu_models::side::ORGANIZE;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -23,7 +24,6 @@ use crate::clock::wall_now;
 use crate::memory::extract::secrets;
 use crate::memory::{DreamBatch, DreamSessions, Dreaming, Using};
 use crate::route::{Ask, Watched};
-use crate::settings::MemorySettings;
 
 /// 这一趟的整理会话（设计 41）：会话表、会话编号。
 pub(super) struct Trip {
@@ -165,9 +165,8 @@ impl MergeJob {
 
     /// 经一次性入口问（没接会话表的核心）：边收边推她正在写什么；人叫停了这一批放弃，请求跟着丢掉（施工 R-22）。
     async fn at_once(&self, asked: &Asked, text: String) -> Asking {
-        let organizer = MemorySettings::from(&self.config.resolved.values()).organizer;
         let ask = Ask {
-            model: organizer,
+            model: None,
             purpose: PURPOSE.to_string(),
             system: String::new(),
             messages: vec![Message::User {
@@ -177,10 +176,13 @@ impl MergeJob {
             owner: self.owner.clone(),
         };
         let mut tell = self.watcher(asked);
-        let calling =
-            self.extraction
-                .ask
-                .call_watching(&self.config, &self.extraction.blobs, ask, &mut tell);
+        let calling = self.extraction.ask.call_side_watching(
+            &self.config,
+            &self.extraction.blobs,
+            ask,
+            (&ORGANIZE, None),
+            &mut tell,
+        );
         tokio::select! {
             answered = calling => match answered {
                 Ok(answer) => Asking::Answered(answer.text),

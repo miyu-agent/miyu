@@ -49,6 +49,7 @@ mod probe;
 mod retire;
 mod send;
 pub(crate) mod shared;
+mod side;
 mod sight;
 mod turn;
 
@@ -64,7 +65,7 @@ pub use shared::{ModelData, Observed, read_observed};
 
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, Weak};
 use std::time::Duration;
 
 use miyu_drivers::{DeepSeekImages, DriverTexts};
@@ -129,7 +130,8 @@ impl Models for Routes {
             Some(Resolved::Pool(pool)) => self.pool_start(config, &pool, session.sent.as_ref()),
             None => (None, nothing()),
         };
-        Arc::new(Route {
+        Arc::new_cyclic(|me| Route {
+            me: me.clone(),
             shared: self.clone(),
             session: session.id,
             owner: session.owner,
@@ -183,6 +185,8 @@ impl Routes {
 
 /// 一个会话的路由。
 struct Route {
+    /// 自己（施工 Q-2）：旁路请求在派出去的任务里换人、退会话的模型，要带着整个路由走。
+    me: Weak<Route>,
     shared: Routes,
     session: SessionId,
     /// 会话的属主（施工 8-15）：替它看图的一次性调用记在他的账上。
@@ -255,21 +259,35 @@ impl ModelPort for Route {
         reports: Reports,
         cancel: Cancel,
     ) {
+        // 登记过的辅助请求照档位用池，在派出去的任务里换人、退会话的模型（施工 Q-2，`route/side.rs`）。
+        if let Some(registered) = side::registered(reports.purpose())
+            && let Some(me) = self.me.upgrade()
+        {
+            side::spawn(me, registered, config, request, reports, cancel);
+            return;
+        }
         let main = reports.purpose().is_none();
         match self.choose(config, main) {
             Ok(chosen) => send::spawn(chosen, request, reports, cancel),
-            Err(Unsent::NoModel(NoModel(message))) => {
-                tracing::warn!(target: TARGET, why = %message, "no model");
-                reports.ended(None, Some(unsent(ErrorClass::NoModel, message)), None, None);
-            }
-            Err(Unsent::Cooling { message, wait_ms }) => {
-                // 最早恢复的那一个还要多久也记进出错，给头说什么时候回来（施工 3-5 四补）。
-                let error = CallError {
-                    retry_after_ms: Some(wait_ms),
-                    ..unsent(ErrorClass::Cooling, message)
-                };
-                reports.ended(None, Some(error), Some(wait_ms), None);
-            }
+            Err(error) => refused(reports, error),
+        }
+    }
+}
+
+/// 挑不出能发的：没有模型的记一行 `WARN no model`，全在冷却的带上最早恢复的那一个还要多久；照出错报说完了。
+fn refused(reports: Reports, error: Unsent) {
+    match error {
+        Unsent::NoModel(NoModel(message)) => {
+            tracing::warn!(target: TARGET, why = %message, "no model");
+            reports.ended(None, Some(unsent(ErrorClass::NoModel, message)), None, None);
+        }
+        Unsent::Cooling { message, wait_ms } => {
+            // 最早恢复的那一个还要多久也记进出错，给头说什么时候回来（施工 3-5 四补）。
+            let error = CallError {
+                retry_after_ms: Some(wait_ms),
+                ..unsent(ErrorClass::Cooling, message)
+            };
+            reports.ended(None, Some(error), Some(wait_ms), None);
         }
     }
 }

@@ -210,6 +210,8 @@ pub enum Input {
         model: Model,
         /// 驱动编码以后的请求字节的哈希。
         request: ContentHash,
+        /// 旁路请求退到了会话的模型（施工 Q-2，设计 43 第三节第 3 条）：登记的档位池全在冷却、都出错了。
+        fell_back: bool,
     },
     /// 辅助请求的一段增量。不推给头：辅助请求只用说完了的那一句。
     AsideDelta {

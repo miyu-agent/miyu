@@ -1,6 +1,7 @@
 //! 派出去抽的那一件活（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 6 到 8 款；施工 R-7 补从 `extract.rs` 挪出来）：照
 //! 定好的办法跳过、发、读、遮、记，记下以后看一眼够不够合并。
 
+use miyu_models::side::ORGANIZE;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::time::Instant;
@@ -38,6 +39,8 @@ pub(crate) struct Job {
     pub(crate) owner: AccountId,
     /// 哪个会话。
     pub(crate) session: SessionId,
+    /// 这个会话这一刻的引用（施工 Q-2）：整理记忆的档位池空了、用不了时退到它；没有的照 `models.chat`。
+    pub(crate) fallback: Option<String>,
     /// 从第几条以后抽（上次抽到的；没抽过的是 0 那种，照 `Seq` 最小的）。
     pub(crate) after: Seq,
     /// 这一回的状态：走完了清掉。
@@ -155,11 +158,9 @@ impl Job {
         let started = Instant::now();
         let secrets = secrets(&self.config);
         let shapes = self.extraction.shapes.clone();
-        let organizer =
-            crate::settings::MemorySettings::from(&self.config.resolved.values()).organizer;
         tracing::info!(target: TARGET, session = %self.session, turns = turns.len(), "memory extraction started");
         let ask = Ask {
-            model: organizer,
+            model: None,
             purpose: PURPOSE.to_string(),
             system: String::new(),
             messages: vec![Message::User {
@@ -173,7 +174,13 @@ impl Job {
         let answered = self
             .extraction
             .ask
-            .call(&self.config, &self.extraction.blobs, ask)
+            .call_side(
+                &self.config,
+                &self.extraction.blobs,
+                ask,
+                &ORGANIZE,
+                self.fallback.clone(),
+            )
             .await
             .map_err(|unanswered| unanswered.reason().to_string())
             .and_then(|answer| candidates(&answer.text, &turns, TEXT_CHARS));

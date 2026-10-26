@@ -319,7 +319,7 @@ pub(crate) fn call<'a>(
             answer(move || async move { Ok(secrets::list(core, caller.acting_for())) })
         }
         "model.list" => answer(move || async move {
-            models::list(core, caller.acting_for(), params(request)?).await
+            models::list(core, (caller.acting_for(), peer.language), params(request)?).await
         }),
         "provider.detect" => answer(move || async move { providers::detect(core).await }),
         "provider.catalog" => {

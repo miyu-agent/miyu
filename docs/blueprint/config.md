@@ -276,9 +276,8 @@ miyu_config::settings! {
 | `ui.welcomed` | 布尔 | `false` | 个人 | 不能写 | `now` | 8-11 四补（2026-10-08 终端、网页两个头要的，`cli/setup.md` 以外的第一次引导）：这个账号走完了第一次引导。头走完写 `true`（`config.set` 个人设置），以后不再进引导，缺什么去配置页补；进不进只看它，不看有没有模型。核心不读它。设置页不画（`hidden`） |
 | `compaction.prepare` | 开关 | `true` | 系统、个人 | 不能写 | `next_turn` | 6-11 上（`compaction.md` 第十五条）：提前压好，会话 actor 回合开始时读、交给内核。设置页在「高级」那一页的「压缩」一组，排在「运行日志」前面 |
 | `jobs.max_running` | 时长，60 秒到 2 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | 7-12 下（`agents.md`「后台命令」第 7 条，照 Claude Code）：后台命令最多跑多久，派活时照这一轮的配置读。设置页在「通用」那一页的「会话」一组 |
-| `memory.extract_idle` | 时长，60 秒到 1 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | R-6 上（`memory.md` 第六条第 1 款）：会话闲了多久才抽新的一段；设置页在「软件包」那一页、人格记忆那一组（施工 F-4 从「高级」那一页挪过来），记忆包没装的不画 |
+| `memory.extract_idle` | 时长，60 秒到 1 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | R-6 上（`memory.md` 第六条第 1 款）：会话闲了多久才抽新的一段；`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画。整理用哪个模型原来是 `memory.organizer`，施工 Q-2 去掉了：照登记的档位走 `normal` 池（`models.md`「旁路请求」），写了的照不认识的键警告；设置页在「软件包」那一页、人格记忆那一组（施工 F-4 从「高级」那一页挪过来），记忆包没装的不画 |
 | `memory.extract_turns` | 整数 1 到 100 | `2` | 系统、个人 | 不能写 | `next_turn` | R-6 上：上次抽到以后至少有几轮她答了话才抽 |
-| `memory.organizer` | 引用 | 没有：照 `models.chat` | 系统、个人 | 不能写 | `next_turn` | R-6 上：抽取、合并（R-7 上）照哪个模型发，经一次性入口、用途 `memory` 记账。`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统、个人 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
@@ -1081,10 +1080,6 @@ merge_every = "24h"
 # 能写：1 到 100 之间的整数。只能写在系统配置或个人设置里。下一轮生效。
 merge_sessions = 5
 
-# 整理记忆的模型：整理记忆时用的模型，照用量算钱。没选的用主对话的模型。
-# 能写：<供应商>/<模型> 或 @<池>。只能写在系统配置或个人设置里。下一轮生效。
-# organizer =
-
 [models]
 # 主对话的模型：新会话默认用的模型，写成 供应商/模型，例如 deepseek/deepseek-flash；也能写 @池。
 # 能写：<供应商>/<模型> 或 @<池>。只能写在系统配置或个人设置里。新会话生效。
@@ -1597,11 +1592,6 @@ currency = "USD"
           "minimum": 1,
           "title": "攒几次聊天再归纳",
           "type": "integer"
-        },
-        "organizer": {
-          "description": "整理记忆时用的模型，照用量算钱。没选的用主对话的模型。能写：<供应商>/<模型> 或 @<池>。只能写在系统配置或个人设置里。下一轮生效。",
-          "title": "整理记忆的模型",
-          "type": "string"
         }
       },
       "type": "object"
@@ -2557,7 +2547,6 @@ currency = "USD"
 | 说明 | 聊完闲了这么久，她把新聊的内容里值得记的整理成记忆。 | Once the conversation has been quiet this long, she turns what is worth keeping from the new part into memories. | 会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。 |
 | `memory.extract_turns` 名字（R-6 上） | 攒几轮再整理 | Turns before organizing | 整理までのターン数 |
 | 说明 | 上次整理以后至少聊了这么多轮才整理。 | She organizes only after at least this many turns since the last time. | 前回の整理からこのターン数以上話したときだけ整理します。 |
-| `memory.organizer` 名字（R-6 上） | 整理记忆的模型 | Memory organizer model | 記憶を整理するモデル |
 | 说明 | 整理记忆时用的模型，照用量算钱。没选的用主对话的模型。 | The model used to organize memories, billed by usage. If none is chosen, the chat model is used. | 記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。 |
 | `memory.merge_every` 名字（R-7 上） | 多久归纳一次记忆 | How often to consolidate memories | 記憶をまとめる間隔 |
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |

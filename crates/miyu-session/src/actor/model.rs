@@ -289,12 +289,17 @@ impl Actor {
         report: Report,
     ) -> Input {
         match report {
-            Report::Sent { model, request } => Input::AsideSent {
+            Report::Sent {
+                model,
+                request,
+                fell_back,
+            } => Input::AsideSent {
                 at,
                 purpose,
                 upto,
                 model,
                 request,
+                fell_back,
             },
             Report::Delta(delta) => Input::AsideDelta {
                 at,

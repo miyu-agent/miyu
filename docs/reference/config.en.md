@@ -144,6 +144,7 @@ There are two shelves. `system` is the shared `system/secrets.toml`, and only ad
 | `providers` | Configured providers by id. Each: `id`, `layer` (`personal`: configured in the person's own settings; `system`: only in the system settings, shared), `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
 | each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
 | `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description`, `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
+| `side` | Side requests (model requests outside the conversation), one entry each: `id` (`core/title` for titles, `memory/organize` for memory organizing), `tier` (which tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), and `resolved` (where it would go right now: the pool name when that tier's pool has members, `session` when it is empty and the session's model is used). When every member of the pool is cooling down or has failed, the request also falls back to the session's model |
 | `uses` | The references set for `chat` and `vision`, `null` when not set |
 | `catalog` | The catalog in use: `source`, `fetched`; `null` when none can be read |
 
@@ -182,7 +183,7 @@ Being able to list models counts as working, with no request sent; only when lis
 
 ## `provider.rename`
 
-Changes a provider's ID in one go: in both config layers the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding`, `memory.organizer` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
+Changes a provider's ID in one go: in both config layers the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
 
 **Params**: `from`, `to`. `to` follows the ID rule: starts with a lowercase letter; lowercase letters, digits, `-`, `_`; at most 32.
 

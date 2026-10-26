@@ -35,6 +35,8 @@ pub(super) struct Aside {
     broken: Option<CallError>,
     /// 收到的正文字数（施工 6-11 下：等提前压的那一次时照它推进度）。
     written: Written,
+    /// 旁路请求退到了会话的模型（施工 Q-2）：照发出去了那一报记，写进 `model.called` 的 `fell_back`。
+    fell_back: bool,
 }
 
 /// 说完了的一次辅助请求：记账的那条 `model.called`（还没编序号），和写成了的正文或者没写成的错。
@@ -56,6 +58,7 @@ impl Aside {
             accumulator: Accumulator::default(),
             broken: None,
             written: Written::default(),
+            fell_back: false,
         }
     }
 
@@ -64,9 +67,16 @@ impl Aside {
         self.written.chars()
     }
 
-    /// 发出去了：记下什么时候、发给了谁。报两次的，只认第一次。
-    fn sent(&mut self, at: Timestamp, model: Model, request: ContentHash) {
-        self.sent.get_or_insert((at, model, request));
+    /// 发出去了：记下什么时候、发给了谁、是不是退到了会话的模型（施工 Q-2）。还没收到增量就又报的，发给谁、请求的哈希、退过
+    /// 没有照后一次：旁路请求在池里换了人、退到了会话的模型（端口在出字以前换，`route/side.rs`），真发给的是后一个；时刻照
+    /// 第一次（换人那一段也是这一次花的）。收到增量以后再报的不理。
+    fn sent(&mut self, at: Timestamp, model: Model, request: ContentHash, fell_back: bool) {
+        if self.first_token.is_some() {
+            return;
+        }
+        let asked = self.sent.as_ref().map_or(at, |(asked, _, _)| *asked);
+        self.sent = Some((asked, model, request));
+        self.fell_back = fell_back;
     }
 
     /// 一段增量：交给累积器。对不上的记下错，说完了照出错收。收下了一段正文的字交回真（施工 6-11 下）。
@@ -163,6 +173,7 @@ impl Aside {
             compaction: None,
             purpose: Some(purpose),
             truncated: false,
+            fell_back: self.fell_back,
         };
         let blocks = match error {
             Some(error) => Err(error),
@@ -188,17 +199,17 @@ impl Session {
         aside.filter(|aside| aside.upto == upto)
     }
 
-    /// 辅助请求发出去了：记下什么时候、发给了谁。不是在路上的那一次的不理。
+    /// 辅助请求发出去了：记下什么时候、发给了谁、退过没有（施工 Q-2）。不是在路上的那一次的不理。
     pub(super) fn aside_sent(
         &mut self,
         at: Timestamp,
         purpose: &Purpose,
         upto: Seq,
-        model: Model,
-        request: ContentHash,
+        (model, request): (Model, ContentHash),
+        fell_back: bool,
     ) -> Vec<Action> {
         if let Some(aside) = self.aside(purpose, upto) {
-            aside.sent(at, model, request);
+            aside.sent(at, model, request, fell_back);
         }
         Vec::new()
     }

@@ -25,10 +25,6 @@
         "name": "整理までのターン数",
         "description": "前回の整理からこのターン数以上話したときだけ整理します。"
       },
-      "memory.organizer": {
-        "name": "記憶を整理するモデル",
-        "description": "記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。"
-      },
       "memory.merge_every": {
         "name": "記憶をまとめる間隔",
         "description": "この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。"
@@ -838,6 +834,10 @@
     "context/part/system.venue": "サブエージェントの説明",
     "context/part/system.group": "グループチャットの説明",
     "context/part/system.core": "コアの指示",
+    "model/side/core/title": "タイトル付け",
+    "model/side/core/title/summary": "セッションの最初のやり取りのあとに短いタイトルを付けます。",
+    "model/side/memory/organize": "記憶の整理",
+    "model/side/memory/organize/summary": "記憶の抽出、統合、整理。会話全体を読み取る必要があります。",
     "context/part/system.clicall": "スクリプトでのツール呼び出し",
     "context/part/system.show": "show の案内",
     "context/part/system.style_lock": "スタイルロック",

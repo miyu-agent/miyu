@@ -192,11 +192,6 @@
           "minimum": 1,
           "title": "攒几次聊天再归纳",
           "type": "integer"
-        },
-        "organizer": {
-          "description": "整理记忆时用的模型，照用量算钱。没选的用主对话的模型。能写：<供应商>/<模型> 或 @<池>。只能写在系统配置或个人设置里。下一轮生效。",
-          "title": "整理记忆的模型",
-          "type": "string"
         }
       },
       "type": "object"

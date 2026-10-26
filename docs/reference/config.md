@@ -144,6 +144,7 @@
 | `providers` | 配好的供应商，照编号排。每家：`id`、`layer`（`personal`：个人设置里配的，自用；`system`：只有系统配置里配的，共用）、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
 | `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能用工具、思考、价格、名字……每格 `value` 和来源）、`state`（`ok`、`cooling` 带 `until`/`class`、`no_key`），能出向量的带 `embedding: true` |
 | `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description`、`fixed`（`lite`、`normal`、`flagship` 三个固定池是 `true`：永远在，配置里没写也列出来，不能删、不能改名，`subagent` 默认 `true`） |
+| `side` | 旁路请求（不在对话里的那些模型请求）的登记，每条：`id`（`core/title` 起标题、`memory/organize` 整理记忆）、`tier`（要哪一档：`lite`、`normal`、`flagship`）、`name`、`summary`（照连接的语言）、`resolved`（这一刻会落到哪：档位池有成员的是池名，空的是 `session`，用会话的模型）。池里全在冷却、都出错了的，也退到会话的模型 |
 | `uses` | `chat`、`vision` 各配的引用，没配的是 `null` |
 | `catalog` | 在用的目录：`source`、`fetched`，读不了是 `null` |
 
@@ -182,7 +183,7 @@
 
 ## `provider.rename`
 
-改一家供应商的编号，一次改完：两层配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、`memory.organizer`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
+改一家供应商的编号，一次改完：两层配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
 
 **参数**：`from`、`to`。`to` 照编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 32 个。
 

@@ -82,10 +82,6 @@ merge_every = "24h"
 # Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.
 merge_sessions = 5
 
-# Memory organizer model: The model used to organize memories, billed by usage. If none is chosen, the chat model is used.
-# Allowed: <provider>/<model> or @<pool>. Only in the system config or personal settings. Takes effect next turn.
-# organizer =
-
 [models]
 # Chat model: The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool.
 # Allowed: <provider>/<model> or @<pool>. Only in the system config or personal settings. Applies to new sessions.

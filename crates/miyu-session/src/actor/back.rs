@@ -82,7 +82,7 @@ impl Actor {
                 Input::Described { at, blob, seen }
             }
             Back::Report { seen, report } => match report {
-                Report::Sent { model, request } => Input::RequestSent {
+                Report::Sent { model, request, .. } => Input::RequestSent {
                     at,
                     seen,
                     model,

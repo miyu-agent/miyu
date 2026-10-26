@@ -219,8 +219,8 @@ async fn a_dream_runs_its_batches_in_one_dream_session() {
     assert_eq!(opened[0].from, None, "不经会话的没有");
     assert_eq!(
         opened[0].model.as_deref(),
-        Some("org/m"),
-        "照 memory.organizer"
+        Some("@normal"),
+        "整理记忆登记的档位池（施工 Q-2）"
     );
     let batches = lock(&fake.batches).clone();
     assert_eq!(batches.len(), 1);

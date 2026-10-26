@@ -28,6 +28,7 @@ pub(super) fn some_prepare(rng: &mut Rng, watch: &Watch) -> Option<Input> {
                 model: ModelName::parse("deepseek-v4").unwrap(),
             },
             request: ContentHash::of(b"prepare"),
+            fell_back: false,
         }),
         4 if !slow => Some(ended(
             upto,

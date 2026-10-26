@@ -145,6 +145,8 @@ pub struct Reports {
     purpose: Option<Purpose>,
     /// 这一次真发给的模型的价格（施工 8-15，[`Reports::billed`]）：说完了照用量算金额。没有的不算。
     tariff: Option<Tariff>,
+    /// 旁路请求退到了会话的模型（施工 Q-2，[`Reports::fell_back`]）：随发出去了报给内核。
+    fell_back: bool,
     back: mpsc::UnboundedSender<Back>,
 }
 
@@ -154,6 +156,7 @@ impl Reports {
             seen,
             purpose: None,
             tariff: None,
+            fell_back: false,
             back,
         }
     }
@@ -164,6 +167,7 @@ impl Reports {
             seen: upto,
             purpose: Some(purpose),
             tariff: None,
+            fell_back: false,
             back,
         }
     }
@@ -176,6 +180,14 @@ impl Reports {
         self
     }
 
+    /// 这一次是旁路请求退到了会话的模型（施工 Q-2，设计 43 第三节第 3 条）：登记的档位池全在冷却、都出错了。端口挑定了
+    /// 以后交，`model.called` 写 `fell_back`。
+    #[must_use]
+    pub fn fell_back(mut self) -> Reports {
+        self.fell_back = true;
+        self
+    }
+
     /// 是哪一种辅助请求；主请求没有（施工 3-8 五补）。端口照请求发，用不着它；测试的端口照它分剧本。
     pub fn purpose(&self) -> Option<&Purpose> {
         self.purpose.as_ref()
@@ -183,7 +195,11 @@ impl Reports {
 
     /// 发出去了：发给了哪个模型，请求字节的哈希。
     pub fn sent(&self, model: Model, request: ContentHash) {
-        self.send(Report::Sent { model, request });
+        self.send(Report::Sent {
+            model,
+            request,
+            fell_back: self.fell_back,
+        });
     }
 
     /// 一段增量。
@@ -308,7 +324,12 @@ impl Cancel {
 #[derive(Debug)]
 pub(crate) enum Report {
     /// 发出去了。
-    Sent { model: Model, request: ContentHash },
+    Sent {
+        model: Model,
+        request: ContentHash,
+        /// 旁路请求退到了会话的模型（施工 Q-2）。
+        fell_back: bool,
+    },
     /// 一段增量。
     Delta(Delta),
     /// 说完了。`failover`：出错以后端口换了端点（施工 8-9）。

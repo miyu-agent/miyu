@@ -8,6 +8,8 @@
 //! - 出错：收到过增量才出错的，主请求记下它，下一次主请求还发给它；别的放开。
 //! - 被叫停：什么都不记，主请求的「说到一半断了」放开。
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use tracing::Instrument;
@@ -87,35 +89,64 @@ pub(super) fn spawn(chosen: Chosen, request: Request, reports: Reports, cancel: 
     tokio::spawn(ask(chosen, request, reports, cancel).instrument(tracing::Span::current()));
 }
 
-/// 请求一次：经底子发，把回报交回 actor。被叫停的什么都不再报。说完了照这个模型的价格算金额（施工 8-15）。
+/// 叫停：等到被叫停的那一个，钉住了好在几次尝试之间借用（施工 Q-2：旁路请求在池里换人）。
+pub(super) type Stop = Pin<Box<dyn Future<Output = ()> + Send>>;
+
+/// 试一次以后：回报都交了（说完了、被叫停了、出了错交给内核），或者还没收到增量就出了会冷却的错、回报还在手里（只有
+/// `retry` 的才会，旁路请求照它换下一个、退会话的模型，施工 Q-2）。
+pub(super) enum Attempt {
+    /// 回报都交了。
+    Reported,
+    /// 回报还在手里：可以换一个再发。
+    Retry(Box<Reports>),
+}
+
+/// 请求一次：经底子发，把回报交回 actor。被叫停的什么都不再报。
 async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel) {
+    let mut stop: Stop = Box::pin(cancel.wait());
+    attempt(chosen, &request, reports, &mut stop, false).await;
+}
+
+/// 试一次：经底子发，说完了照这个模型的价格算金额（施工 8-15）。`retry`：还没收到增量就出了会冷却的错的，不报，交回
+/// [`Attempt::Retry`]。
+pub(super) async fn attempt(
+    chosen: Chosen,
+    request: &Request,
+    reports: Reports,
+    stop: &mut Stop,
+    retry: bool,
+) -> Attempt {
     let ready = &chosen.ready;
     let reports = reports.billed(ready.tariff.clone());
     let mut received = false;
-    let exchanged =
-        exchange(
-            ready,
-            &request,
-            &chosen.blobs,
-            cancel.wait(),
-            |progress| match progress {
-                Progress::Sent { request } => reports.sent(ready.model.clone(), request),
-                Progress::Delta(delta) => {
-                    received = true;
-                    reports.delta(delta);
-                }
-            },
-        )
-        .await;
+    let exchanged = exchange(
+        ready,
+        request,
+        &chosen.blobs,
+        stop,
+        |progress| match progress {
+            Progress::Sent { request } => reports.sent(ready.model.clone(), request),
+            Progress::Delta(delta) => {
+                received = true;
+                reports.delta(delta);
+            }
+        },
+    )
+    .await;
     let (usage, classified) = match exchanged {
         Exchanged::Missing(error) => {
             chosen.tried.failed(&error.class, None, false);
-            return reports.ended(None, Some(error), None, None);
+            reports.ended(None, Some(error), None, None);
+            return Attempt::Reported;
         }
-        Exchanged::Cancelled => return chosen.tried.cancelled(),
+        Exchanged::Cancelled => {
+            chosen.tried.cancelled();
+            return Attempt::Reported;
+        }
         Exchanged::Ended { usage, error: None } => {
             chosen.tried.succeeded();
-            return reports.ended(usage, None, None, None);
+            reports.ended(usage, None, None, None);
+            return Attempt::Reported;
         }
         Exchanged::Ended {
             usage,
@@ -131,6 +162,9 @@ async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel)
     let switch = chosen
         .tried
         .failed(class, classified.error.retry_after_ms, received);
+    if retry && switch.cooled && !received {
+        return Attempt::Retry(Box::new(reports));
+    }
     match switch.failover {
         true => reports.failed_over(usage, classified.error, switch.wait_ms),
         false => reports.ended(
@@ -140,4 +174,5 @@ async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel)
             classified.excess,
         ),
     }
+    Attempt::Reported
 }

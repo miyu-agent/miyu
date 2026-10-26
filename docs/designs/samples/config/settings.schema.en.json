@@ -129,11 +129,6 @@
           "minimum": 1,
           "title": "Chats before consolidating",
           "type": "integer"
-        },
-        "organizer": {
-          "description": "The model used to organize memories, billed by usage. If none is chosen, the chat model is used. Allowed: <provider>/<model> or @<pool>. Only in the system config or personal settings. Takes effect next turn.",
-          "title": "Memory organizer model",
-          "type": "string"
         }
       },
       "type": "object"

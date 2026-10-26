@@ -22,6 +22,7 @@ fn called(compaction: Option<CompactTrigger>, result: CallResult) -> ModelCalled
         compaction,
         purpose: None,
         truncated: false,
+        fell_back: false,
     }
 }
 

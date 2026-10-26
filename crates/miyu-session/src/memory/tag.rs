@@ -6,6 +6,7 @@
 //! - 落的时候那一条还算数、听众合、还没有关键词的才写（人改过的、她当场给了的不盖）；换了字的向量由调的一方接着补。
 //! - 发不出去、交回读不成的记一行 `WARN memory tagging failed`，不重试：整理时还挑得到。
 
+use miyu_models::side::ORGANIZE;
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -29,7 +30,6 @@ use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
 use crate::route::Ask;
-use crate::settings::MemorySettings;
 
 /// 整理时一次最多补几条：真数据上 20 条一批照样条条写上（2026-10-19 量），一次多花几千个 token。
 pub(crate) const BATCH: usize = 20;
@@ -113,7 +113,7 @@ impl Tagging {
             rows.join("\n")
         );
         let ask = Ask {
-            model: MemorySettings::from(&self.config.resolved.values()).organizer,
+            model: None,
             purpose: PURPOSE.to_string(),
             system: String::new(),
             messages: vec![Message::User {
@@ -127,7 +127,7 @@ impl Tagging {
         let answered = self
             .extraction
             .ask
-            .call(&self.config, &self.extraction.blobs, ask)
+            .call_side(&self.config, &self.extraction.blobs, ask, &ORGANIZE, None)
             .await
             .map_err(|unanswered| unanswered.reason().to_string())
             .and_then(|answer| keywords(&answer.text, &given));

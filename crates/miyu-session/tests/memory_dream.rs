@@ -23,7 +23,7 @@ fn says(n: usize) -> Script {
 /// 这一间的整理记忆的一方：照场地这时的配置、属主 alice、东九区。
 async fn dream(home: &Home) -> Result<Dreamed, NotDreamed> {
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
-    // 场地的配置是不变的那一种：最终值照它合出来的（带着 `memory.organizer`）。
+    // 场地的配置是不变的那一种：最终值照它合出来的（`normal` 池里放着整理记忆用的那一个）。
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     keeper

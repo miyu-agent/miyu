@@ -33,6 +33,7 @@ fn aside_sent(purpose: Purpose, upto: u64) -> Input {
         upto: seq(upto),
         model: deepseek(),
         request: ContentHash::of(b"title"),
+        fell_back: false,
     }
 }
 
@@ -233,4 +234,44 @@ fn the_title_request_keeps_its_cost() {
         })
         .expect("记了 model.called");
     assert_eq!(called.cost.as_deref(), Some(&cost));
+}
+
+/// 旁路请求在池里换了人、退到了会话的模型（施工 Q-2）：还没收到增量就报了两次发出去了，记后一次（真发给的那一个）和它退
+/// 过没有；收到增量以后再报的不理。
+#[test]
+fn a_resend_before_any_delta_is_the_one_recorded() {
+    use crate::id::{ModelName, ProviderId};
+    use crate::origin::Model;
+    let mut session = answered();
+    session.handle(stored(8));
+    session.handle(aside_sent(Purpose::Title, 6));
+    let fallback = Model {
+        endpoint: ProviderId::parse("a").expect("合写法"),
+        model: ModelName::parse("m").expect("合写法"),
+    };
+    let resent = |model: Model, fell_back: bool| Input::AsideSent {
+        at: at(42),
+        purpose: Purpose::Title,
+        upto: seq(6),
+        model,
+        request: ContentHash::of(b"title"),
+        fell_back,
+    };
+    session.handle(resent(fallback.clone(), true));
+    for input in aside_said(&Purpose::Title, 6, "打招呼") {
+        session.handle(input);
+    }
+    session.handle(resent(deepseek(), false));
+    let done = session.handle(aside_ended(Purpose::Title, 6));
+    let called = appended_events(&done)
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ModelCalled(called) => Some(called),
+            _ => None,
+        })
+        .expect("记了 model.called");
+    assert_eq!(
+        (called.endpoint, called.model, called.fell_back),
+        (Some(fallback.endpoint), Some(fallback.model), true)
+    );
 }

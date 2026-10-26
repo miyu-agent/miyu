@@ -173,6 +173,7 @@ impl Actor {
             config,
             owner: owner.clone(),
             session: session.clone(),
+            fallback: self.model.reference(),
             after,
             extractor: Arc::clone(extractor),
             again: {
@@ -288,6 +289,7 @@ impl Actor {
             config,
             owner: owner.clone(),
             session: session.clone(),
+            fallback: self.model.reference(),
             after,
             extractor: Arc::clone(extractor),
             again: Box::new(|| {}),

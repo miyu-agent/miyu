@@ -17,6 +17,7 @@
 //!    `WARN usage not indexed purpose=… error=…`，照样交回答。
 
 mod reply;
+mod side;
 
 use std::collections::BTreeSet;
 

@@ -344,7 +344,8 @@ impl Session {
                 upto,
                 model,
                 request,
-            } => self.aside_sent(at, &purpose, upto, model, request),
+                fell_back,
+            } => self.aside_sent(at, &purpose, upto, (model, request), fell_back),
             Input::AsideDelta {
                 at,
                 purpose,

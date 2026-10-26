@@ -25,10 +25,6 @@
         "name": "攒几轮再整理",
         "description": "上次整理以后至少聊了这么多轮才整理。"
       },
-      "memory.organizer": {
-        "name": "整理记忆的模型",
-        "description": "整理记忆时用的模型，照用量算钱。没选的用主对话的模型。"
-      },
       "memory.merge_every": {
         "name": "多久归纳一次记忆",
         "description": "隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。"
@@ -838,6 +834,10 @@
     "context/part/system.venue": "子代理的场所说明",
     "context/part/system.group": "群聊说明",
     "context/part/system.core": "核心说明",
+    "model/side/core/title": "起标题",
+    "model/side/core/title/summary": "会话说完第一轮以后起一个短标题。",
+    "model/side/memory/organize": "整理记忆",
+    "model/side/memory/organize/summary": "抽取、合并、整理记忆，要读懂一整段对话。",
     "context/part/system.clicall": "脚本调用说明",
     "context/part/system.show": "show 说明",
     "context/part/system.style_lock": "风格锁",

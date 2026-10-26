@@ -137,6 +137,14 @@ async fn model_list_has_pools_and_both_uses() {
         "照名字排，成员照写的原样，分法没写的照成员定，开关没写的是 false（三个固定池是 true），说明没写的是 null；三个固定池没写也在、标 fixed（施工 Q-1）"
     );
     assert_eq!(result.get("tiers"), None, "施工 8-8 补去掉了挡位");
+    // 旁路请求登记（施工 Q-2）：编号、档位、照连接的语言的名字和说明、这一刻落到哪（池空的是 `session`）。
+    assert_eq!(
+        result["side"],
+        json!([
+            {"id": "core/title", "tier": "lite", "name": "起标题", "summary": "会话说完第一轮以后起一个短标题。", "resolved": "session"},
+            {"id": "memory/organize", "tier": "normal", "name": "整理记忆", "summary": "抽取、合并、整理记忆，要读懂一整段对话。", "resolved": "session"},
+        ])
+    );
     assert_eq!(result["uses"], json!({"chat": "a/m", "vision": "b/v"}));
     assert_eq!(models(result, "a"), ["m", "x"], "用途、池里点名的");
     assert_eq!(models(result, "b"), ["v", "z"], "用途、池里点名的");

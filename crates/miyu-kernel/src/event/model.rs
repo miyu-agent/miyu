@@ -64,6 +64,10 @@ pub struct ModelCalled {
     /// 回复写到了输出上限、没写完（施工 3-10）：驱动报的，照写；没有的不写，以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub truncated: bool,
+    /// 旁路请求退过（施工 Q-2，设计 43 第三节第 3 条）：登记的档位池的成员全在冷却或者都出错了，这一次退到了会话的模型。
+    /// 没退的不写，以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fell_back: bool,
 }
 
 impl ModelCalled {

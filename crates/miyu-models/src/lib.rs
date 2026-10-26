@@ -36,6 +36,7 @@ pub mod profile;
 pub mod provider;
 pub mod reference;
 pub mod settings;
+pub mod side;
 pub mod temperature;
 
 pub use knowledge::Knowledge;

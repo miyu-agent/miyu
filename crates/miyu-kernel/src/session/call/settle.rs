@@ -221,6 +221,7 @@ impl Session {
             // 整理会话的主请求记成记忆的用途（施工 D-1 上）：照会话记用量时分得出。
             purpose: self.dream.then_some(Purpose::Memory),
             truncated: limited,
+            fell_back: false,
         };
         let summary = summary
             .zip(compaction.as_ref())

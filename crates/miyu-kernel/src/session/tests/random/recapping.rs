@@ -26,6 +26,7 @@ pub(super) fn some_recap(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opt
             upto,
             model: model(),
             request: ContentHash::of(b"recap"),
+            fell_back: false,
         }),
         4 => Some(delta(upto, Delta::End { index: 9 })),
         5 => Some(ended(
@@ -56,6 +57,7 @@ pub(super) fn finish_recap(watch: &Watch) -> Vec<Input> {
             upto: flight.upto,
             model: model(),
             request: ContentHash::of(b"recap"),
+            fell_back: false,
         });
     }
     inputs.push(ended(flight.upto, None));

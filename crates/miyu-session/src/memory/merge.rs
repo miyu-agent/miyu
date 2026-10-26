@@ -15,6 +15,7 @@
 //! - **出错**：不动真相，下次抽完再来；同一间连着 [`TRIES`] 次不成的，记一条失败的记号、跳过这一批（成了一次、跳过一次都重新
 //!   数：这一批从哪起只在这两种时候变）。
 
+use miyu_models::side::{self, ORGANIZE};
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -408,7 +409,9 @@ impl MergeJob {
             room,
             manual,
             from: if manual { self.from.clone() } else { None },
-            model: MemorySettings::from(&self.config.resolved.values()).organizer,
+            // 整理会话钉登记的档位池（施工 Q-2）：池是空的照 `models.chat`；全在冷却照主请求报。
+            model: side::resolved(&self.config.resolved.values(), &ORGANIZE)
+                .map(|_| side::reference(&ORGANIZE)),
         };
         match sessions.open(spec).await {
             Ok(session) => Ok(Some(ask::Trip {

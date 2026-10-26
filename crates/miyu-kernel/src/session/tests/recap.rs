@@ -53,6 +53,7 @@ fn sent(upto: u64, second: u64) -> Input {
         upto: seq(upto),
         model: deepseek(),
         request: ContentHash::of(b"recap"),
+        fell_back: false,
     }
 }
 

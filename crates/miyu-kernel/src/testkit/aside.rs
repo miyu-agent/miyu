@@ -113,6 +113,7 @@ impl Stage {
             upto,
             model: model(),
             request: hash,
+            fell_back: false,
         }];
         if let (true, Some(chars)) = (line.hold, line.partway) {
             for delta in partway(&line, chars, true) {

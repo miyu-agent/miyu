@@ -38,6 +38,8 @@ pub(in crate::route) struct Switch {
     pub(in crate::route) failover: bool,
     /// 要等多久，毫秒；没有的不写。
     pub(in crate::route) wait_ms: Option<u64>,
+    /// 记了冷却（池里的，限速、可重试、认证失败三类）：旁路请求照它换下一个、退会话的模型（施工 Q-2）。
+    pub(in crate::route) cooled: bool,
 }
 
 impl Picked {
@@ -73,9 +75,11 @@ impl Picked {
                 "endpoint cooling"
             );
         }
+        let cooled = recorded.is_some();
         let stay = Switch {
             failover: false,
             wait_ms: said_ms,
+            cooled,
         };
         if cut || recorded.is_none() || self.others.is_empty() {
             return stay;
@@ -100,11 +104,13 @@ impl Picked {
                 Switch {
                     failover: true,
                     wait_ms: None,
+                    cooled,
                 }
             }
             None => Switch {
                 failover: true,
                 wait_ms: Some(wait(now, earliest, said_ms)),
+                cooled,
             },
         }
     }
