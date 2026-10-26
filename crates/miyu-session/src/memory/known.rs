@@ -4,7 +4,7 @@
 //! - 一轮最多一张；这一段上下文里这个人的卡带过的不再带（照 `present` 里模块 `memory`、类别 `card` 的 `refs`），压缩以后
 //!   重新算。主人不带（他的事在常驻摘要里），没有卡的、卡作废了的不带。
 //! - 一块 `context.injected`，模块 `memory`、类别 `card`，`refs` 是他的平台编号；排在常驻摘要后面、联想前面，在这一轮的话
-//!   前面，以前的不动（缓存不断）。卡最多 300 字（整理、人改的时候已经截了）。
+//!   前面，以前的不动（缓存不断）。卡最多 400 字（整理、人改的时候已经截了；设计 42 PN4）。
 
 use miyu_kernel::event::ContextInjected;
 use miyu_kernel::facts::{Present, Speaker};

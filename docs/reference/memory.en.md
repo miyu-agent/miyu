@@ -89,12 +89,12 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 
 ## Person cards: `memory.cards`, `memory.card_update`, `memory.card_forget`
 
-She keeps one card per person she knows: who they are, how they met, what they like, how they are doing lately, birthday and contacts, at most 300 characters. Organizing memory writes it from the memories about them in that batch (`class` `person`); people can change it too. A card:
+She keeps one card per person she knows: her impression of them (who they are, what they are like, how they are with her, with their interests and how they are doing summed up), plus birthday and contacts, at most 400 characters. Organizing memory writes it from the memories about them in that batch (`class` `person`); people can change it too. A card:
 
 | Name | Meaning |
 |---|---|
 | `who` | Who it is: a platform id (`qq:10086`) or a name, as a memory's `who` |
-| `text` | The card, at most 300 characters |
+| `text` | The card, at most 400 characters |
 | `names` | What they are called (group nicknames, aliases), at most 8; searchable, never used to tell people apart |
 | `at` | When it was written |
 | `by` | `module` (written by organizing) or `person` (changed by a person) |
@@ -113,7 +113,7 @@ Clearing the whole room (`memory.forget` with `clear: me`) removes the cards too
 | `data.reason` | When |
 |---|---|
 | `bad_params` (`-32602`) | `who` or `text` is empty; a name is empty, over 40 characters, or there are more than 8 |
-| `memory_too_long` | The text is over 300 characters; `data.chars`, `data.limit`, `data.field` is `text` |
+| `memory_too_long` | The text is over 400 characters; `data.chars`, `data.limit`, `data.field` is `text` |
 | `unknown_memory` | `memory.card_forget`: this person has no card |
 
 ## `memory.dream`

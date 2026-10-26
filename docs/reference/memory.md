@@ -89,12 +89,12 @@
 
 ## 人卡：`memory.cards`、`memory.card_update`、`memory.card_forget`
 
-她认识的人一人一张卡：他是谁、怎么认识的、喜好、近况、生日、联系方式，最多 300 个字。整理记忆时照这一批里关于他的记忆（`class` 是 `person` 的）合，人也能改。一张卡：
+她认识的人一人一张卡：她对这个人的印象（他是谁、是什么样的人、对她怎么样，兴趣和近况概括着写），再加生日、联系方式，最多 400 个字。整理记忆时照这一批里关于他的记忆（`class` 是 `person` 的）合，人也能改。一张卡：
 
 | 名字 | 说明 |
 |---|---|
 | `who` | 是谁：平台编号（`qq:10086`）或名字，同一条记忆的 `who` |
-| `text` | 卡的正文，最多 300 个字 |
+| `text` | 卡的正文，最多 400 个字 |
 | `names` | 他的几个叫法（群名片、外号），最多 8 个；搜得到，不拿来认人 |
 | `at` | 写下的时刻 |
 | `by` | `module`（整理写的）或 `person`（人改的） |
@@ -113,7 +113,7 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `bad_params`（`-32602`） | `who`、`text` 是空的；叫法有空的、超过 40 个字的、超过 8 个 |
-| `memory_too_long` | 正文超过 300 个字，`data.chars`、`data.limit`，`data.field` 是 `text` |
+| `memory_too_long` | 正文超过 400 个字，`data.chars`、`data.limit`，`data.field` 是 `text` |
 | `unknown_memory` | `memory.card_forget` 的这个人没有卡 |
 
 ## `memory.dream`

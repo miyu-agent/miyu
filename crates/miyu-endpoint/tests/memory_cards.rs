@@ -23,7 +23,8 @@ async fn cards_are_written_listed_and_retired() {
     let mut client = connected(&home, &Script::new([])).await;
     assert!(cards(&mut client, "l0", json!({})).await.is_empty());
 
-    let too_long = "长".repeat(301);
+    // 一张最多 400 字（设计 42 PN4，2026-10-26 改，施工 E-2）：401 字的太长（400 字的收见下一条）。
+    let too_long = "长".repeat(401);
     let reply = client
         .call(
             "w0",
@@ -94,4 +95,22 @@ async fn cards_are_written_listed_and_retired() {
     );
     let all = cards(&mut client, "l3", json!({"forgotten": true})).await;
     assert_eq!(all[0]["retired"], json!("认错了"));
+}
+
+#[tokio::test]
+async fn a_card_of_four_hundred_characters_is_taken_whole() {
+    // 设计 42 PN4（2026-10-26 项目主人改成 400，施工 E-2）：熟人的印象写到 400 字，人写的也整张收。
+    let home = Home::new();
+    let mut client = connected(&home, &Script::new([])).await;
+    let full = "满".repeat(400);
+    let reply = client
+        .call(
+            "w0",
+            "memory.card_update",
+            json!({"who": "qq:2", "text": full}),
+        )
+        .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let listed = cards(&mut client, "l0", json!({})).await;
+    assert_eq!(listed[0]["text"], json!(full));
 }

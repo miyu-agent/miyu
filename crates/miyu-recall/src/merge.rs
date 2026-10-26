@@ -18,7 +18,7 @@ mod cards;
 mod tests;
 mod watch;
 
-pub use cards::{CARD_CHARS, Drafted, NAME_CHARS, NAMES, cards, kept_names, names, without_ids};
+pub use cards::{CARD_CHARS, Drafted, NAME_CHARS, NAMES, cards, kept_names, names, without_id};
 pub use watch::{SUMMARY_STEP, Seen, Watch};
 
 use std::collections::BTreeSet;

@@ -28,6 +28,17 @@ fn only_cards_of_people_in_this_batch_are_taken() {
 }
 
 #[test]
+fn a_card_holds_four_hundred_characters() {
+    // 设计 42 PN4（2026-10-26 项目主人改成 400）：熟人的印象 200～400 字，400 字的整张收，第 401 个字截掉。
+    let card = |text: String| {
+        let answer = serde_json::json!({"cards": [{"who": "小林", "text": text}]}).to_string();
+        cards(&answer, &people()).expect("读得成")[0].text.clone()
+    };
+    assert_eq!(card("印".repeat(400)), "印".repeat(400));
+    assert_eq!(card("印".repeat(401)), "印".repeat(400));
+}
+
+#[test]
 fn a_long_card_is_cut_at_a_sentence_and_names_are_capped() {
     let long = format!("{}。{}", "认".repeat(CARD_CHARS - 10), "多".repeat(40));
     let many: Vec<String> = (0..NAMES + 3).map(|n| format!("名{n}")).collect();
@@ -86,17 +97,27 @@ fn a_name_with_a_prefix_is_still_that_person() {
 }
 
 #[test]
-fn platform_ids_in_the_text_are_taken_out() {
-    // 施工 E-1 修二：实测卡的正文里写进了「qq:号」，卡是给她看的印象，编号在「是谁」那一格。
-    let answer = r#"{"cards": [{"who": "qq:10086", "text": "qq:10086 说过想去大阪（qq:10086），和 wx:42 (qq:7) 是朋友。"}]}"#;
+fn only_their_own_id_is_taken_out_of_the_text() {
+    // 施工 E-1 修二：实测卡的正文里又写了一遍他自己的「qq:号」，编号在「是谁」那一格，正文里是重复。施工 E-2：只去他自己的，
+    // 他的小号、别人的编号、手机号是联系方式，照留（项目主人 2026-10-26 问过为什么卡里不写 QQ 号）。
+    let answer = r#"{"cards": [{"who": "qq:10086", "text": "qq:10086 说过想去大阪（qq:10086），小号 qq:2233，和 wx:42 (qq:7) 是朋友，手机 13800001234。"}]}"#;
     let read = cards(answer, &people()).expect("读得成");
-    assert_eq!(read[0].text, "说过想去大阪，和 是朋友。");
+    assert_eq!(
+        read[0].text,
+        "说过想去大阪，小号 qq:2233，和 wx:42 (qq:7) 是朋友，手机 13800001234。"
+    );
+    // 前面、后面紧挨着别的字母数字的不是他的编号：qq:100861、xqq:10086 照留。
+    assert_eq!(
+        without_id("qq:100861 和 xqq:10086", "qq:10086"),
+        "qq:100861 和 xqq:10086"
+    );
     // 不是编号的照留：数字开头的、大写开头的、后面紧挨着字母的。
     assert_eq!(
-        without_ids("时间 10:30，QQ:1 和 a:1x"),
+        without_id("时间 10:30，QQ:1 和 a:1x", "a:1"),
         "时间 10:30，QQ:1 和 a:1x"
     );
-    assert_eq!(without_ids("型号 X1:2000"), "型号 X1:2000");
+    // 只有名字的人没有编号，什么都不去。
+    assert_eq!(without_id("老王 qq:10086", "老王"), "老王 qq:10086");
 }
 
 #[test]

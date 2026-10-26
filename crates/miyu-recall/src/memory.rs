@@ -333,7 +333,7 @@ pub struct Swept {
 pub struct Card {
     /// 是谁：同 [`Saved::who`]，平台上的人是平台编号，没有平台号的是名字。
     pub who: String,
-    /// 正文：他是谁、怎么认识的、喜好、近况、生日、联系方式，最多 300 字（设计 42 PN4）。
+    /// 正文：对他的印象（是谁、是什么样的人、和她怎么样，兴趣近况概括着写，生日、联系方式），最多 400 字（设计 42 PN4）。
     pub text: String,
     /// 他的几个叫法（群名片、外号）：搜得到，不拿来认人（PN2）；没有的不写。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

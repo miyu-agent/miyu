@@ -5,9 +5,10 @@
 //!   `person:老王` 这样前面多一截的也认（2026-10-23 协调者定：hy3 这样写了三回，不认的话这个人永远合不成卡）。
 //! - 照规矩取：从第一个 `{` 到最后一个 `}`；读不成对象的、`cards` 写了却不是列表的整次算失败（同 [`super::decisions`]）；没写的
 //!   当空的。
-//! - 一张不合的丢掉、别的照收：是谁不在这一批里、正文空的；同一个人写了两张的照头一张。正文去掉前后空白、去掉写进去的平台编号
-//!   （`qq:10086` 这样的，连同包着它的括号；施工 E-1 修二：卡是给她看的印象，编号在「是谁」那一格），超过字数的截在最后一个
-//!   句子的结尾上（同摘要）。叫法去掉前后空白，空的、太长的、重复的不要，最多 [`NAMES`] 个。
+//! - 一张不合的丢掉、别的照收：是谁不在这一批里、正文空的；同一个人写了两张的照头一张。正文去掉前后空白、去掉写进去的他自己的
+//!   平台编号（是谁是 `qq:10086` 的，正文里的 `qq:10086` 连同包着它的括号；施工 E-1 修二起去，E-2 收窄成只去他自己的：编号在
+//!   「是谁」那一格，正文里再写一遍是重复；他的小号、别人的编号是联系方式，照留），超过字数的截在最后一个句子的结尾上（同
+//!   摘要）。叫法去掉前后空白，空的、太长的、重复的不要，最多 [`NAMES`] 个。
 //! - 叫法核心认（施工 E-1 修二，[`kept_names`]）：交回的叫法只留出处里见过的，前面接上这个人在出处里真用过的名字。
 
 use std::collections::BTreeSet;
@@ -16,8 +17,9 @@ use serde_json::Value;
 
 use super::cut;
 
-/// 一张卡最多几个字（设计 42 PN4，2026-10-21 项目主人定）：让她知道对面是谁、怎么相处，不是全部档案。
-pub const CARD_CHARS: usize = 300;
+/// 一张卡最多几个字（设计 42 PN4：2026-10-21 项目主人定 300，2026-10-26 改成 400，卡写成印象，熟人 200～400 字合适）：让她
+/// 知道对面是谁、是什么样的人、怎么相处，不是全部档案。
+pub const CARD_CHARS: usize = 400;
 
 /// 一张卡最多记几个叫法。
 pub const NAMES: usize = 8;
@@ -69,7 +71,7 @@ pub fn cards(answer: &str, people: &BTreeSet<String>) -> Result<Vec<Drafted>, St
 /// 一张：不合的是 `None`。
 fn card(item: &Value, people: &BTreeSet<String>) -> Option<Drafted> {
     let who = placed(item["who"].as_str()?.trim(), people)?;
-    let text = cut(&without_ids(item["text"].as_str()?.trim()), CARD_CHARS);
+    let text = cut(&without_id(item["text"].as_str()?.trim(), who), CARD_CHARS);
     if text.is_empty() {
         return None;
     }
@@ -104,17 +106,20 @@ fn placed<'a>(who: &'a str, people: &BTreeSet<String>) -> Option<&'a str> {
     (!name.contains(':') && people.contains(name)).then_some(name)
 }
 
-/// 去掉正文里写进去的平台编号（施工 E-1 修二）：`<平台>:<数字>`（平台是小写字母开头的字母、数字、`_`、`-`，冒号后面是数字），
-/// 连同紧包着它的一对括号（`(qq:10086)`、`（qq:10086）`）；去掉以后两边多出来的空白收成一个，前后的去掉。
+/// 去掉正文里重复写的他自己的平台编号 `who`（施工 E-1 修二，E-2 收窄）：正文里一个 `<平台>:<数字>`（平台是小写字母开头的字母、
+/// 数字、`_`、`-`，冒号后面是数字）正好是 `who` 的，连同紧包着它的一对括号（`(qq:10086)`、`（qq:10086）`）去掉；别的编号（他的
+/// 小号、别人的）是联系方式，照留。去掉以后两边多出来的空白收成一个，前后的去掉。只有名字的人（`who` 不是编号）什么都不去。
 #[must_use]
-pub fn without_ids(text: &str) -> String {
+pub fn without_id(text: &str, who: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut at = 0;
     while at < chars.len() {
         let open = matches!(chars[at], '(' | '（');
         let start = if open { at + 1 } else { at };
-        match id_at(&chars, start) {
+        let own =
+            id_at(&chars, start).filter(|&end| chars[start..end].iter().copied().eq(who.chars()));
+        match own {
             Some(end) if !open => at = end,
             Some(end) if end < chars.len() && matches!(chars[end], ')' | '）') => at = end + 1,
             _ => {

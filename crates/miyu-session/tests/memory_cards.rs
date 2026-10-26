@@ -200,6 +200,19 @@ async fn a_card_s_names_are_the_ones_used_and_its_text_has_no_ids() {
         asked.contains("replaces only part of an earlier one"),
         "只推翻一部分的改写、不整条作废：{asked}"
     );
+    // 施工 E-2（设计 42 PN4、PN6，2026-10-26 项目主人定）：卡写成印象、熟人 200～400 字、最多 400 字；正文只不重复他自己的编号。
+    assert!(
+        asked.contains("a short portrait, the way you would describe someone you know to a friend"),
+        "卡写成印象：{asked}"
+    );
+    assert!(
+        asked.contains("at most 400 characters"),
+        "最多 400 字：{asked}"
+    );
+    assert!(
+        asked.contains("never repeats their own id") && !asked.contains("never writes an id"),
+        "只不重复他自己的编号，别的联系方式照写：{asked}"
+    );
     let written = cards(&home);
     assert_eq!(written.len(), 1);
     assert_eq!(
