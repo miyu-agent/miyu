@@ -137,6 +137,8 @@ fn stopping_comes_before_restoring_files() {
                 path: "/w/a.txt".to_string(),
                 before: Some(ContentHash::of(b"A")),
                 after: ContentHash::of(b"B"),
+                before_text: None,
+                after_text: None,
             }),
             Effect::JobStarted(JobStarted {
                 foreground: false,

@@ -26,6 +26,8 @@ pub(super) fn changed(call_id: CallId) -> Input {
             path: "/w/a.txt".to_string(),
             before: Some(hash("A")),
             after: hash("B"),
+            before_text: None,
+            after_text: None,
         })],
         stopped: false,
         end_turn: false,

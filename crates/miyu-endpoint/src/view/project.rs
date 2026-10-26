@@ -3,8 +3,7 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::event::{Event, Said};
-use miyu_kernel::id::ContentHash;
+use miyu_kernel::event::{Event, FileChanged, Said};
 use miyu_store::blob::Blobs;
 use miyu_store::human::Human;
 use miyu_store::resources::ResourceRoot;
@@ -35,13 +34,12 @@ impl Words for HumanWords {
     }
 }
 
-/// 改了多少行：照属主的 blob 算，和 `view.detail` 的差异同一个算法。
+/// 改了多少行：照效果里的原文、属主的 blob 算，和 `view.detail` 的差异同一个算法。
 struct BlobLines(Blobs);
 
 impl Lines for BlobLines {
-    fn count(&self, before: Option<&ContentHash>, after: &ContentHash) -> Option<(u64, u64)> {
-        let then = diffs::side(&self.0, before).ok()?;
-        let now = diffs::side(&self.0, Some(after)).ok()?;
+    fn count(&self, changed: &FileChanged) -> Option<(u64, u64)> {
+        let (then, now) = diffs::sides(&self.0, changed).ok()?;
         let whole = diffs::unified(&then, &now).ok()?;
         Some((
             u64::try_from(whole.added).ok()?,

@@ -300,6 +300,7 @@
 | `file.changed` | `path`，必有 | 改了一个文件（新建、覆盖、编辑） |
 | | `before` | 改前的内容的哈希。新建的写 `null`；没有这一格的，也当新建读 |
 | | `after`，必有 | 改后的内容的哈希 |
+| | `before_text`、`after_text`，可以没有 | 改前、改后的原文（施工 V-18，`03-事件模型.md` E4）：那一边是 UTF-8、不长过 32 KiB（32,768 字节）的才写，这时它不另存 blob；新建的改前、大的、不是 UTF-8 的不写，照哈希取 blob。读的一方先用它，它的哈希和 `before`、`after` 对不上的当没写（`protocol.md` 的 `view.detail`）。有效历史不留（`kernel/history.md`「有效历史收事件」第 9 条）。以前的日志没有 |
 | `file.trashed` | `path`，必有 | 移进了回收站：移走之前的位置 |
 | | `trash`，必有 | 回收站里的位置，各平台自己的写法：撤销时照它移回来 |
 | `job.started` | `job`，必有 | 任务编号（`kernel/ids.md`）：派出去的那次调用报一条，这就是任务开始的记录，不另记事件（`agents.md`，施工 7-1） |
@@ -313,7 +314,7 @@
 | `todo.written` | `todos`，必有：照先后的每一项 `{"content": 一句话, "status": "pending"、"in_progress"、"completed"}`，不认识的状态原样留着 | `todowrite` 换上的整份待办（施工 D-3，`tools/todowrite.md`）：全部做完、清空的是空列表。`done`，可以没有（施工 D-3 补）：因为全部做完而清空的，清空前那一份，写法同 `todos`；空的不写。有效历史另记一张表，当前的清单是最近一份没撤掉的（`kernel/session.md`「待办」）；不发给模型 |
 | `file.shown` | `path`、`blob`、`name`、`media_type`、`size`，必有；`title`、`language`、`width`、`height`，可以没有 | `show` 给人看了一个文件（施工 D-5，`tools/show.md`）：内容存成了 blob，头照这几格选怎么显示，同一个 `path` 再来一条换掉那一张；不发给模型，内核不读 |
 
-- 改前改后的内容由执行器存成 blob，效果里是它们的哈希（`session/actor.md`）。
+- 改前改后的内容：小的由执行器照原文写进 `before_text`、`after_text`，别的存成 blob；效果里都有它们的哈希（`session/tools.md` 第 2 条）。
 - 缺了 `kind`、认识的种类缺了必有的格、哈希或者任务编号不合写法的，读不进来。
 - 不认识的种类，例如第三方的工具报来的，整块原样留着，内核不解读。
 - 她看过的文件照效果记（`session/actor.md`）。施工 U-1 起撤销不再照效果改回文件。`job.started`、`job.messaged`、`peer.watch`、`todo.written`、`file.shown` 不改回什么，撤销时也不算改过文件。
@@ -594,7 +595,7 @@
 | `crates/miyu-kernel/src/event/restore/tests.rs` | `files.restored` 的每一格读写一字不差；新的 `action`、`outcome` 原样留着 |
 | `crates/miyu-kernel/src/event/message/tests.rs` | `message.assistant` 图纸上的写法、`seen` 必有、`interrupted` 只在是真时写；`message.withdrawn` 的写法和序号从 1 起 |
 | `crates/miyu-kernel/src/event/tool/tests.rs` | `tool.result` 的五种状态、不认识的原样留着、没真执行过的没有用时、说法怎么记；确认的两种：每种决定、没写规则、说明、理由的不写这几格；坏的说是哪一种 |
-| `crates/miyu-kernel/src/event/effect/tests.rs` | 四种效果读写一字不差；没显示行的不写 `lines`；新建的 `before` 写成 `null`、没写的当新建；不认识的原样留着；`job.started` 不认识的 `what` 原样留着、命令不写 `session`；`job.messaged` 读写一字不差（施工 7-7）；`peer.watch` 读写一字不差（`a_watch_on_another_session_round_trips`，施工 C-1）；坏的读不进来 |
+| `crates/miyu-kernel/src/event/effect/tests.rs` | 四种效果读写一字不差；没显示行的不写 `lines`；新建的 `before` 写成 `null`、没写的当新建；不认识的原样留着；`job.started` 不认识的 `what` 原样留着、命令不写 `session`；`job.messaged` 读写一字不差（施工 7-7）；`peer.watch` 读写一字不差（`a_watch_on_another_session_round_trips`，施工 C-1）；`file.changed` 的 `before_text`、`after_text` 写了的读写一字不差、排在哈希后面，没写的不写（`small_contents_ride_along_and_are_left_out_when_absent`，施工 V-18）；坏的读不进来 |
 | `crates/miyu-kernel/src/event/job/tests.rs` | 两种回报（施工 7-1）：图纸上的写法读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、不写是假的几格是假时不写、没有的格不写、负的退出码、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/image/tests.rs`（施工 8-17） | `image.described`：图纸上的一行读写一字不差、四格都要写、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/peer/tests.rs`（施工 C-1） | `peer.idle`：图纸上的两行读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、`status` 写成 `null` 的不写、坏的说是哪一种 |

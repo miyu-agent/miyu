@@ -18,7 +18,7 @@
 | `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；账号的目录；缓存目录在哪 |
 | `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用） |
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条） |
-| `crates/miyu-store/src/log.rs` | 会话日志：新建、追加、换段 |
+| `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15） |
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6） |
 | `crates/miyu-store/src/jobs.rs` | 会话目录下后台命令的输出：`jobs/<编号>.out`（施工 7-3） |
@@ -159,12 +159,13 @@
 1. 一个会话一个目录，一段一个文件，名字是这一段第一条的序号补零到 12 位，加 `.jsonl`：`000000000001.jsonl`。
 2. 一行一条事件：事件写成的一行（`Event::to_line`，紧凑的 JSON，`kernel/events.md`）加 `\n`。UTF-8，三个平台都不写 `\r`。
 3. 新建（`create`）：建目录，只许新建地建第一段 `000000000001.jsonl`，同步目录。第一段已经有了的报错，不覆盖。
-4. 追加（`append`）一批：
+4. 写一批（`write`，施工 V-18）：
    1. 空的一批，什么都不做。
    2. 序号要从下一条起一条接一条；有一条接不上，报错（`InvalidInput`），一个字节都不写。这是调用的一方的 bug。
    3. 整批拼成一块。
-   4. 这一段已经写过、而且已经到了上限：先开下一段，名字照这一批的第一条，只许新建，建好同步目录。一批不拆到两段里，所以一段可以比上限大。
-   5. 一次写入，再 `sync_data` 一次。返回时这一批都落了盘。
+   4. 这一段已经写过、而且已经到了上限：先 `sync_data` 这一段，再开下一段，名字照这一批的第一条，只许新建，建好同步目录。一批不拆到两段里，所以一段可以比上限大。断电时不会有后一段、前一段却缺了一截。
+   5. 一次写入，不同步。返回时这一批交给了系统：程序崩了照样在，断电要等下一次同步。
+   6. 同步（`sync`）：`sync_data` 正在写的那一段，之前写的都落了盘。追加（`append`）是写一批再同步，返回时这一批都落了盘。
 5. 一个会话只有一个写者，就是它的 actor（`session/actor.md`），不加锁。
 
 **6. 会话日志：打开、自检**（`SessionLog::open`）
@@ -226,7 +227,7 @@
    4. 删不掉的：留着，报出来，下次起来再清。回收处本身读不了：报错。
 3. blob 不动：删会话以后没人引用的 blob 随存储的回收那一步（第五节，「还没有的」）。找回删了的会话以后再做：回收处里的文件留着，挪回去就是。
 
-**谁存、谁取**：造会话时存策略快照，载入时照 `session.created` 的哈希取（`session/actor.md`）；人附的文件，`blob.put` 存成管理员的 blob，`session.send` 造块之前取出来再认一遍（施工 3-9 三补，`protocol.md`）；工具效果里改前改后的内容存成 blob，撤销时取回来写回（`session/tools.md`），撤销的回应里比出改了什么时也取（`protocol.md`）；编码请求时取图片、文件（`session/actor.md`、`drivers/openai-chat.md`；文件每一个都取，施工 3-9 三补）。
+**谁存、谁取**：造会话时存策略快照，载入时照 `session.created` 的哈希取（`session/actor.md`）；人附的文件，`blob.put` 存成管理员的 blob，`session.send` 造块之前取出来再认一遍（施工 3-9 三补，`protocol.md`）；工具效果里改前改后的内容，大的、不是 UTF-8 的存成 blob，小的照原文写在效果里、不存（施工 V-18，`session/tools.md` 第 2 条），看一次调用的差异、算条目改了几行时取（`protocol.md` 的 `view.detail`）；编码请求时取图片、文件（`session/actor.md`、`drivers/openai-chat.md`；文件每一个都取，施工 3-9 三补）。
 
 **13. 会话的附件落成文件**（`attachments.rs`，施工 3-9 六补；`keep(目录, 名字, 媒体类型, 字节)`）：剪贴板贴的、截图、远程的头传内容的附件没有本机路径，拷成会话目录 `attachments/` 下的一个文件。
 

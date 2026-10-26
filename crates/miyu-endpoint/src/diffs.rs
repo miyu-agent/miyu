@@ -1,9 +1,11 @@
 //! 两份内容之间的差异（施工 4-7 再补，`docs/blueprint/protocol/undo.md` 第 8 条；施工 9-6 三补从 `undo.rs` 抽出来，
 //! `view.detail` 共用）：统一格式，上下文 3 行，每段 `@@ … @@` 那一行起头，接着是 ` `、`-`、`+` 开头的行；不带 `---`、`+++`
 //! 那两行，文件结尾没有换行的也不加「没有换行」那一句。一边超过 1 MiB、不是 UTF-8、取不出来的算不出，说是哪一种。
+//! 改了的文件两边的内容先用效果里写着的原文，没写、哈希对不上的再取 blob（施工 V-18，`protocol.md` 的 `view.detail` 第 1 条）。
 
 use similar::TextDiff;
 
+use miyu_kernel::event::FileChanged;
 use miyu_kernel::id::ContentHash;
 use miyu_store::blob::Blobs;
 
@@ -30,6 +32,25 @@ impl Skipped {
             Skipped::Missing => "missing",
         }
     }
+}
+
+/// 改了的文件改前、改后的内容：照 [`side`] 取，效果里写着、哈希对得上的原文先用。
+///
+/// # Errors
+///
+/// 一边取不出来、超过 [`MOST_BYTES`]。
+pub(crate) fn sides(blobs: &Blobs, changed: &FileChanged) -> Result<(Vec<u8>, Vec<u8>), Skipped> {
+    let then = match (&changed.before, &changed.before_text) {
+        (Some(hash), Some(text)) if ContentHash::of(text.as_bytes()) == *hash => {
+            text.as_bytes().to_vec()
+        }
+        (hash, _) => side(blobs, hash.as_ref())?,
+    };
+    let now = match &changed.after_text {
+        Some(text) if ContentHash::of(text.as_bytes()) == changed.after => text.as_bytes().to_vec(),
+        _ => side(blobs, Some(&changed.after))?,
+    };
+    Ok((then, now))
 }
 
 /// 整份差异：几行，照整份数的新增、删掉的行数。两边一样的 `lines` 是空的。

@@ -481,6 +481,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV-16"><span class="n">V-16</span>冷启动先回人格<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV17a"><span class="n">V-17 上</span>投影提速<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV17b"><span class="n">V-17 下</span>组装少做重复的活<span class="st">✓</span></a></li>
+        <li><a class="step" href="#sV18"><span class="n">V-18</span>少落盘<span class="st">…</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -10063,6 +10064,42 @@ a.step:hover{border-color:var(--primary)}
       </ul>
     </div>
   </div>
+</section>
+<section class="sheet" id="sV18" aria-labelledby="h-sV18">
+  <div class="sheet-head"><h2 id="h-sV18"><span class="no">V-18</span>少落盘</h2><span class="pill">等验收</span></div>
+  <p class="purpose">五家对比里写盘最多：会话日志每一批都同步，btrfs 上块写是写进去的二三十倍。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">少落盘</span><span class="dir-note">V-18</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>会话日志拆开写和同步</li>
+              <li>会碰外面的一批才同步：人、别的会话交来的，要派工具的回复，回合收尾</li>
+              <li>一轮中间模型和工具写的只交给系统</li>
+              <li>改了的文件的小内容写进效果，不再建 blob；有效历史不留</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">S4</span><span class="rl">碰外面的才同步</span></div>
+          <div class="tile new"><span class="nm">断电</span><span class="rl">丢的照崩在回合里收尾</span></div>
+          <div class="tile new"><span class="nm">E4</span><span class="rl">UTF-8、≤32 KiB 的原文写进事件</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-18</dd></div>
+        <div><dt>名称</dt><dd>少落盘</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-26</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-18</dd></div>
+        <div><dt>验收</dt><dd>真任务 strace：落盘调用 71 → 28，块写中位数约 4.6 → 1.5 MiB；本地门禁；手写变异 29 个都红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
 </section>
 
 <section class="sheet" id="sX-27" aria-labelledby="h-sX27">

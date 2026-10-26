@@ -19,8 +19,8 @@ mod users;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use miyu_kernel::event::{Body as EventBody, Event, Transient, TransientBody, Usage};
-use miyu_kernel::id::{CallId, ContentHash, JobId, ModelName, ProviderId, Seq, TurnId};
+use miyu_kernel::event::{Body as EventBody, Event, FileChanged, Transient, TransientBody, Usage};
+use miyu_kernel::id::{CallId, JobId, ModelName, ProviderId, Seq, TurnId};
 use miyu_kernel::time::Timestamp;
 
 use crate::change::Change;
@@ -31,8 +31,8 @@ use parts::{Block, Job, Running};
 
 /// 改了的文件加减了几行：投影是纯逻辑、不读 blob，由外面交进来（端点照两个 blob 算，同 `view.detail`）。
 pub trait Lines: Send + Sync {
-    /// 改前是 `before`（新建的没有）、改后是 `after` 的那一个文件，加了几行、删了几行；算不出的是 `None`。
-    fn count(&self, before: Option<&ContentHash>, after: &ContentHash) -> Option<(u64, u64)>;
+    /// 改了的那一个文件（改前、改后的哈希，写着的原文，施工 V-18），加了几行、删了几行；算不出的是 `None`。
+    fn count(&self, changed: &FileChanged) -> Option<(u64, u64)>;
 }
 
 /// 投影。

@@ -45,6 +45,8 @@ fn the_three_kinds_round_trip() {
             path: "/home/me/src/lib.rs".to_string(),
             before: Some(hash(A)),
             after: hash(EMPTY),
+            before_text: None,
+            after_text: None,
         })
     );
     let trashed = r#"{"kind":"file.trashed","path":"/home/me/notes.md","trash":"/home/me/.local/share/Trash/files/notes.md"}"#;
@@ -74,6 +76,8 @@ fn nothing_shown_has_no_lines_and_a_new_file_has_a_null_before() {
         path: "/n".to_string(),
         before: None,
         after: hash(A),
+        before_text: None,
+        after_text: None,
     });
     assert_eq!(
         serde_json::to_string(&created).unwrap(),
@@ -85,6 +89,34 @@ fn nothing_shown_has_no_lines_and_a_new_file_has_a_null_before() {
     ))
     .unwrap();
     assert_eq!(without, created);
+}
+
+/// 改了的文件的小内容（施工 V-18）：写了的读写一字不差，排在哈希后面；没写的不写这两格，字节和以前一样。
+#[test]
+fn small_contents_ride_along_and_are_left_out_when_absent() {
+    let with = format!(
+        r#"{{"kind":"file.changed","path":"/n","before":null,"after":"{A}","after_text":"a"}}"#
+    );
+    assert_eq!(
+        round_trip(&with),
+        Effect::FileChanged(FileChanged {
+            path: "/n".to_string(),
+            before: None,
+            after: hash(A),
+            before_text: None,
+            after_text: Some("a".to_string()),
+        })
+    );
+    let both = format!(
+        r#"{{"kind":"file.changed","path":"/m","before":"{EMPTY}","after":"{A}","before_text":"","after_text":"a"}}"#
+    );
+    match round_trip(&both) {
+        Effect::FileChanged(changed) => {
+            assert_eq!(changed.before_text.as_deref(), Some(""));
+            assert_eq!(changed.after_text.as_deref(), Some("a"));
+        }
+        other => panic!("{other:?}"),
+    }
 }
 
 /// 图纸上的两条（`agents.md`「对外的样子」）：一个子代理带着会话，一个后台命令没有。

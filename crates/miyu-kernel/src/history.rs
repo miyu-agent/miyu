@@ -288,9 +288,13 @@ impl History {
     /// （`history/undo.rs`）；下一轮开始、压缩了，放在一边的就丢掉。撤回：丢掉撤回的消息。`turn.reverted`、
     /// `turn.unreverted`、`message.withdrawn` 本身用过就丢，它们不进上下文。其余的照先后留着。放回来的里面有压缩的（撤掉
     /// 压缩的那一次撤销放在一边的），再落到检查点上（[`History::settle`]）。每一条都先记派出去的任务（[`History::note`]）。
-    pub fn append(&mut self, event: Event) {
+    /// 工具结果里改了的文件的原文去掉，只留哈希（施工 V-18）；留着一切的那一份照留。
+    pub fn append(&mut self, mut event: Event) {
         self.jobs.note(&event);
         self.todos.note(&event);
+        if !self.whole {
+            forget_texts(&mut event);
+        }
         match &event.body {
             Body::ContextCompacted(_) if self.whole => {
                 self.events.push(event);
@@ -345,6 +349,19 @@ fn reply_first<'a>(segment: impl Iterator<Item = &'a Event> + Clone, out: &mut V
     );
     out[from..].sort_by_key(|event| result_of_reply(event));
     out.extend(segment.filter(|event| event.seq != reply.seq && result_of_reply(event).is_none()));
+}
+
+/// 去掉工具结果里改了的文件的原文（施工 V-18，`kernel/history.md`「有效历史收事件」第 9 条）：内核不读、不发给模型，留着
+/// 就是内存随改动的次数涨。哈希照留。
+fn forget_texts(event: &mut Event) {
+    if let Body::ToolResult(result) = &mut event.body {
+        for effect in &mut result.effects {
+            if let crate::event::Effect::FileChanged(changed) = effect {
+                changed.before_text = None;
+                changed.after_text = None;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

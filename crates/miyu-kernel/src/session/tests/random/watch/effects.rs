@@ -23,6 +23,8 @@ impl Watch {
                 path: "/w/a.txt".to_string(),
                 before,
                 after: ContentHash::of(b"after"),
+                before_text: None,
+                after_text: None,
             })
         };
         let mut effects = match n % 3 {

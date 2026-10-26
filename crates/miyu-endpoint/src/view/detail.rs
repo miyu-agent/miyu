@@ -187,10 +187,8 @@ fn file(blobs: &Blobs, effect: &Effect) -> Option<Value> {
     match effect {
         Effect::FileChanged(changed) => {
             let mut item = json!({"path": changed.path, "action": "write"});
-            let whole = diffs::side(blobs, changed.before.as_ref()).and_then(|then| {
-                let now = diffs::side(blobs, Some(&changed.after))?;
-                diffs::unified(&then, &now)
-            });
+            let whole =
+                diffs::sides(blobs, changed).and_then(|(then, now)| diffs::unified(&then, &now));
             match whole {
                 Ok(whole) => {
                     item["diff"] = json!(whole.lines);

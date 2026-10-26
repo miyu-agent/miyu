@@ -2,7 +2,8 @@
 //! 更早的日志（`docs/blueprint/session/actor.md` 第 4 条）。写不进去、读不回来，会话都停下：内存里的会话和磁盘对不上了，
 //! 从磁盘重新载入最清楚（`07-存储.md` 第四节「写不进去」）。
 
-use miyu_kernel::event::{CompactableChanged, Event, Transient, TransientBody};
+use miyu_kernel::block::Block;
+use miyu_kernel::event::{Body, CompactableChanged, Event, Transient, TransientBody};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::Input;
@@ -97,9 +98,10 @@ impl Actor {
         self.goal_run.note(&events);
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
+        let sync = must_sync(&events);
         let written = tokio::task::spawn_blocking(move || {
             span.in_scope(|| {
-                let result = store.append(&events);
+                let result = store.write(&events, sync);
                 let seen = (reseen && result.is_ok())
                     .then(|| store.events().map(|all| effects::seen_in(&all)));
                 (store, result, seen)
@@ -165,3 +167,33 @@ impl Actor {
         }
     }
 }
+
+/// 这一批要不要同步到磁盘（施工 V-18，`session/actor.md` 第 5 条第 1 款）。要的是「之后会碰外面」的几种：
+///
+/// - 人、别的会话、桥交来的（`by` 不是模型、工具、内核）：回应到了对方手里，断电以后就不能没了。
+/// - 带工具调用的回复：落了盘才派工具，工具会改文件、跑命令；断电以后日志里要看得到它派过。
+/// - 回合结束、会话造好、撤销和恢复：一轮收尾的地方。
+///
+/// 剩下的（模型的纯文字回复、工具的结果、`model.called`、注入的上下文……）只交给系统：程序崩了照样在，断电丢了的
+/// 那一截载入时照「崩在回合里」收尾（`aborted`），和只差一两条的崩溃是同一条路。工具结果里引用的 blob 是先落盘的，
+/// 丢了结果只是少了引用。
+fn must_sync(events: &[Event]) -> bool {
+    events.iter().any(|event| {
+        let outside = !matches!(event.by, By::Model(_) | By::Tool(_) | By::Kernel);
+        outside
+            || match &event.body {
+                Body::MessageAssistant(reply) => reply
+                    .blocks
+                    .iter()
+                    .any(|block| matches!(block, Block::ToolCall(_))),
+                Body::SessionCreated(_)
+                | Body::TurnEnded(_)
+                | Body::TurnReverted(_)
+                | Body::TurnUnreverted(_) => true,
+                _ => false,
+            }
+    })
+}
+
+#[cfg(test)]
+mod tests;

@@ -21,10 +21,17 @@ use miyu_tool::ReadLog;
 use crate::TARGET;
 use crate::memory::{Calls, Source, TurnLane};
 
-/// 一次写一批，返回时这一批都落了盘。在阻塞线程里用，所以要能挪到别的线程上。
+/// 一次写一批。在阻塞线程里用，所以要能挪到别的线程上。
 pub(crate) trait Store: Send + 'static {
-    /// 追加一批。
+    /// 追加一批，返回时这一批都落了盘。
     fn append(&mut self, events: &[Event]) -> io::Result<()>;
+
+    /// 追加一批（施工 V-18，`session/actor.md` 第 5 条第 1 款）：`sync` 是真的同 [`Store::append`]；假的只交给系统、不同步，
+    /// 程序崩了照样在，断电要等下一次同步的一批才保得住。不分这两种的（测试里的）一律照 `append`。
+    fn write(&mut self, events: &[Event], sync: bool) -> io::Result<()> {
+        let _ = sync;
+        self.append(events)
+    }
 
     /// 只读地读回整份日志。
     fn events(&self) -> Result<Vec<Event>, String>;
@@ -55,6 +62,14 @@ pub(crate) type Rewire =
 impl Store for SessionLog {
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
         SessionLog::append(self, events)
+    }
+
+    fn write(&mut self, events: &[Event], sync: bool) -> io::Result<()> {
+        SessionLog::write(self, events)?;
+        if sync {
+            SessionLog::sync(self)?;
+        }
+        Ok(())
     }
 
     fn events(&self) -> Result<Vec<Event>, String> {
@@ -131,12 +146,18 @@ impl Indexed {
 }
 
 impl Store for Indexed {
-    /// 先落盘，再更新索引、写用量汇总、更新回合索引。更新失败只记一行 `session index not updated`、`usage not indexed`、
-    /// `memory index not updated`，照样算写成了：三样都是派生的，停在上一次照到的地方，下次照日志补上。回合索引在后台写，
-    /// 这一批里有撤销、恢复的等它写完再回（施工 R-32）：回来以后记下的照出处判活不活马上算数。
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
+        self.write(events, true)
+    }
+
+    /// 先写进日志（`sync` 的连同同步），再更新索引、写用量汇总、更新回合索引。更新失败只记一行
+    /// `session index not updated`、`usage not indexed`、`memory index not updated`，照样算写成了：三样都是派生的，停在
+    /// 上一次照到的地方，下次照日志补上。断电丢了没同步的一截、日志比它们记的短了的，照各自对不上的办法整份重读
+    /// （`store/index.md`「怎么走」第 3 条第 3 款，施工 V-18 核对过）。回合索引在后台写，这一批里有撤销、恢复的等它写完
+    /// 再回（施工 R-32）：回来以后记下的照出处判活不活马上算数。
+    fn write(&mut self, events: &[Event], sync: bool) -> io::Result<()> {
         let before = self.log.mark();
-        self.log.append(events)?;
+        Store::write(&mut self.log, events, sync)?;
         if events.is_empty() {
             return Ok(());
         }

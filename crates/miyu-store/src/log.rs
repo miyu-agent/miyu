@@ -96,13 +96,34 @@ impl SessionLog {
         }
     }
 
-    /// 追加一批：拼成一块，一次写入，再同步（`sync_data`：数据和读得出数据要的文件长度）。返回时
-    /// 这一批都落了盘。写之前这一段已经到了上限，先开下一段；一批不拆到两段里。
+    /// 追加一批，再同步：[`SessionLog::write`] 加 [`SessionLog::sync`]。返回时这一批都落了盘。
     ///
     /// # Errors
     ///
     /// 序号接不上（调用的一方的 bug，不写进去）；写不进、同步不了。
     pub fn append(&mut self, events: &[Event]) -> io::Result<()> {
+        self.write(events)?;
+        self.sync()
+    }
+
+    /// 同步正在写的那一段（`sync_data`：数据和读得出数据要的文件长度，施工 V-18）。之前 [`SessionLog::write`] 的
+    /// 都落了盘：换段时前一段在那一刻已经同步过，新的一段只许新建地建、建好同步了目录。
+    ///
+    /// # Errors
+    ///
+    /// 同步不了。
+    pub fn sync(&mut self) -> io::Result<()> {
+        self.file.sync_data()
+    }
+
+    /// 追加一批，不同步（施工 V-18，`store.md` 第 5 条第 4 款）：拼成一块，一次写入。返回时这一批交给了系统：
+    /// 程序崩了照样在，断电要等下一次 [`SessionLog::sync`] 才保得住。写之前这一段已经到了上限，先同步这一段、
+    /// 再开下一段；一批不拆到两段里。
+    ///
+    /// # Errors
+    ///
+    /// 序号接不上（调用的一方的 bug，不写进去）；写不进；换段时同步不了。
+    pub fn write(&mut self, events: &[Event]) -> io::Result<()> {
         let Some(first) = events.first() else {
             return Ok(());
         };
@@ -123,12 +144,13 @@ impl SessionLog {
             expected = expected.next();
         }
         if self.size > 0 && self.size >= self.limit {
+            // 前一段不再写了：先落盘，断电时不会有后一段、前一段却缺了一截。
+            self.file.sync_data()?;
             self.file = new_segment(&self.dir, first.seq)?;
             self.segment = first.seq.get();
             self.size = 0;
         }
         self.file.write_all(&bytes)?;
-        self.file.sync_data()?;
         self.size += bytes.len() as u64;
         self.next = expected;
         Ok(())

@@ -1135,7 +1135,7 @@
 {"id":"d1","jsonrpc":"2.0","result":{"files":[{"action":"write","added":1,"diff":["@@ -1,3 +1,3 @@"," a","-b","+B"," c"],"path":"/home/me/proj/a.txt","removed":1}],"output":"Updated \"/home/me/proj/a.txt\"."}}
 ```
 
-1. 只读地读会话的日志（和 `view.page` 一样，不为它载入会话），找这次调用的工具结果；改前、改后都从属主的 blob 取，不读磁盘：之后又被改过的照样是那一次的。改前是 `null`（新建的文件）的当空的算：`diff` 只有 `+` 行，头一行 `@@ -0,0 +1,N @@`。
+1. 只读地读会话的日志（和 `view.page` 一样，不为它载入会话），找这次调用的工具结果；改前、改后先用效果里写着的原文（`before_text`、`after_text`，施工 V-18：它的哈希要和 `before`、`after` 对得上，对不上的当没写），没写的从属主的 blob 取，不读磁盘：之后又被改过的照样是那一次的。视图条目 `diff` 的真数（`view.md`）照同一个办法取两边。改前是 `null`（新建的文件）的当空的算：`diff` 只有 `+` 行，头一行 `@@ -0,0 +1,N @@`。
 2. 读文件、派任务这些效果不算；这次调用没改文件的，`files` 是空的。同一次调用的结果不会变，头照 `call` 记着、问一次就够。
 3. 压缩的回应 `{"summary"}`：替代到这个序号的检查点的摘要原文（`context.compacted` 的 `summary`；清空上下文的是空的）。
 4. 会话编号、调用编号写错、`call` 和 `compaction` 都写或都不写、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志里没有这次调用的结果（编号对不上、还没回）、没有替代到这个序号的压缩：`unknown_call`。日志读不了：`session_broken`，记一行 `WARN log not read`。

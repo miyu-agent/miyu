@@ -183,14 +183,14 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | 工具报的 | 记进 `tool.result` 的 `effects` |
 |---|---|
 | 读了：路径、第几行到第几行、整份文件的内容哈希 | `file.read`：照原样 |
-| 改了：路径、改前的内容（新建的没有）、改后的内容 | `file.changed`：改前、改后各存成属主的 blob，换成哈希；新建的改前是空的 |
+| 改了：路径、改前的内容（新建的没有）、改后的内容 | `file.changed`：改前、改后各算出哈希；一边是 UTF-8、不长过 `INLINE_MOST`（32 KiB）的照原文写进 `before_text`、`after_text`，不存 blob（施工 V-18）；别的存成属主的 blob。新建的改前是空的 |
 | 移进了回收站：路径、回收站里的位置 | `file.trashed`：照原样 |
 | 派出去一个任务（施工 7-5） | `job.started`：照原样 |
 | 给子代理留了言（施工 7-7） | `job.messaged`：照原样 |
 
 - 路径都是换成真实位置以后的，写成字；不是 UTF-8 的地方换成 `�`。
-- 存不成的（磁盘满了之类）：照样算出哈希记下，记一行 `WARN` `effect content not stored`（`error`）。撤销时发现 blob 没有，这一步记 `unsaved`（第 4 条）。
-- 先落 blob，再写引用它的事件（`store.md`）。
+- 存不成的（磁盘满了之类）：照样算出哈希记下，记一行 `WARN` `effect content not stored`（`error`）。看差异时取不出来，说 `missing`（`protocol.md` 的 `view.detail`）。
+- 先落 blob，再写引用它的事件（`store.md`）。写进事件的那两格跟着工具结果落盘，不单独同步（`session/actor.md` 第 5 条第 1 款）：一次真任务存的十来个 blob 几乎都是这种，每个要同步两三次（施工 V-18 量的）。32 KiB 照常见的源文件定：一次改动最多给日志多写两份。
 - 工具交回的图片（施工 4-13）：同一个阻塞线程里存成属主的 blob，换成图片块（`blob`、`media_type`、`width`、`height`；不带名字，`kernel/blocks.md` 第 14 条），照先后接在内容块后面。存不成的：这次调用照崩了算（第 7 条），记一行 `ERROR` `image not stored`（`error`）：少了字节的图，以后每次请求都发不出去。
 
 **3. 她看过的**
@@ -205,7 +205,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | 不认识的 | 不动 |
 
 1. 会话里：工具跑完送回来，交进内核之前记下。
-2. 载入时：从日志里重建（`session/actor.md` 第 2 条）。先照先后过一遍全部事件，找出现在还撤着的回合：`turn.reverted` 撤掉的加进来，`turn.unreverted` 放回的拿出去；再照先后过每一条 `tool.result` 的效果，属于还撤着的回合的不算。
+2. 载入时：从日志里重建（`session/actor.md` 第 2 条）。先照先后过一遍全部事件，找出现在还撤着的回合：`turn.reverted` 撤掉的加进来，`turn.unreverted` 放回的拿出去；再照先后过每一条 `tool.result` 的效果，属于还撤着的回合的不算。过的时候效果只留哈希，`before_text`、`after_text` 不留（施工 V-18）：长会话载入时不把改过的原文全攒在内存里。
 3. 撤销、恢复落了盘：照日志重算一遍，用的是载入时的同一个函数（`session/actor.md` 第 5 条）。撤掉的那几轮里她读过、改过的不再算，恢复以后又算。
 
 **4. 改回文件**：施工 U-1 拿掉了（撤销不再改回文件）。
@@ -253,9 +253,9 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | `crates/miyu-session/tests/nested_calls.rs`（施工 M-2） | 假 `shell` 经端口调：落了盘才答；拒了的不记；编号照调的先后；有 `data` 的存它的一行 JSON；出错的带字；图丢掉；结束回合不算；都记在 `shell` 的结果前面。打断：在跑的掐掉、记「已取消」；嵌套调用里跑的没有任务、子代理、提问、目标、端口 |
 | `crates/miyu-session/tests/tool_log.rs` | 开始跑、跑完、出错、叫停、崩了、目录里没有各一行；停在改之前的带 `stopped=true`；叫它停过又掐掉的多一行 `WARN`；参数、工具交回的字不进日志 |
 | `crates/miyu-session/tests/stop.rs` | 打断时在跑的写：叫它停只举旗、不掐，停在改之前的记「已取消」；叫它停的时候已经改完的照记；不停的，又打断一次就掐掉 |
-| `crates/miyu-session/src/effects/tests.rs` | 改前改后存成 blob、别的照原样过去；存不成的照样有哈希；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |
+| `crates/miyu-session/src/effects/tests.rs` | 改前改后小的写进效果、不建 blob 目录，正好 32 KiB 的写、多一个字节的存成 blob，不是 UTF-8 的存成 blob（施工 V-18）、别的照原样过去；存不成的照样有哈希；载入时重建看过的不留原文（施工 V-18）；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |
 | `crates/miyu-session/src/pictures/tests.rs` | 交回的图片存成 blob，块里是哈希、媒体类型、宽高，照先后；存不下来的交回空的（施工 4-13） |
-| `crates/miyu-session/tests/write.rs` | 先读后写，日志里两次结果的效果对得上、blob 里存着改前改后；重新载入以后读过的照样算；改完一次接着改不用重读；删了的不再算看过；执行的命令（完全放开）记进日志、退出码在说法里 |
+| `crates/miyu-session/tests/write.rs` | 先读后写，日志里两次结果的效果对得上、效果里写着改前改后、没另存 blob（施工 V-18）；重新载入以后读过的照样算；改完一次接着改不用重读；删了的不再算看过；执行的命令（完全放开）记进日志、退出码在说法里 |
 | `crates/miyu-session/tests/read.rs`、`search.rs` | 真的 `read`、`glob`、`grep` 在会话里跑：工作区里的读得到、搜得到；边界以外的也读得到、搜得到，没人能确认也不用问（施工 5-4 上）；数据根里的读被拒；从上面往下搜不进数据根 |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的沙盒（施工 5-4 上）：工具链的缓存只在工作区这一级放、设五个变量、建出来只给本人、cargo 配置的链接（有的建、指错了的换、没有的不建）、没交进来缓存的不设（施工 5-4 下）；工作区能写工作目录、临时目录，藏数据根；只读（连同不认识的级别）哪儿都不能写；完全放开不带；数据根在临时目录里的用 `<数据根>-sandbox-tmp`、`TMPDIR` 指过去，建出来是 0700，有了照用；别人进得去的不用，这次调用不跑、照崩了交回；Unix 上有收紧手段的，真的经助手跑 `shell`：工作区里写得进，外面写不进、读得到，数据根读不到，只读时写不进；加进来的目录在工作区这一级能写、排在工作目录后面、`~` 接家目录，只读的哪儿都写不了（施工 5-10 上） |
 | `crates/miyu-session/tests/sandbox_private.rs`、`src/sandbox/tests.rs`（施工 5-13） | 藏私密目录：这台机器上有的才写、排在数据根后面、照清单的先后，工作区、只读两级都藏；工作目录是家目录的照藏（能写的是会话的默认工作区，施工 5-14），工作区开在 `~/.config` 时里面的 `gh` 不藏、加进来的目录就是它的不藏；数据根就是 `~/.miyu` 的只写一次；Unix 上有收紧手段的真跑：私密目录里的读不到，家目录别处照读 |

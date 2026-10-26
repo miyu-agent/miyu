@@ -1,5 +1,5 @@
-//! 阻塞线程里发的行带会话编号（施工 4-9 再补四上，`log.md` 第 5 条）：工具跑完，在阻塞线程里把效果存成 blob，存不
-//! 进去的记一行 `WARN`；这一行原来没有会话编号。
+//! 阻塞线程里发的行带会话编号（施工 4-9 再补四上，`log.md` 第 5 条）：工具跑完，在阻塞线程里把效果存成 blob（大的才存，
+//! 施工 V-18），存不进去的记一行 `WARN`；这一行原来没有会话编号。
 //!
 //! 全局装一个写进内存的订阅者：阻塞线程不是测试的线程，只装在测试线程上的接不到它发的行。全局的一个进程只能装一次，
 //! 所以这个文件单独一个测试程序，只有一个测试。
@@ -30,10 +30,12 @@ async fn a_line_from_the_thread_that_stores_effects_carries_the_session() {
     ))
     .expect("这个测试程序只装这一次");
     let home = Home::outside_temp();
-    let script = Script::new([
-        Play::calls(&[("write", r#"{"file_path":"b.txt","content":"b\n"}"#)]),
-        Play::Says("好。"),
-    ]);
+    // 超过写进效果的上限（32 KiB，施工 V-18）：改后的内容要存成 blob。
+    let args = format!(
+        r#"{{"file_path":"b.txt","content":"{}"}}"#,
+        "b".repeat(33 * 1024)
+    );
+    let script = Script::new([Play::calls(&[("write", args.as_str())]), Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
             level: Level::Workspace,

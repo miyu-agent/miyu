@@ -330,6 +330,8 @@ fn a_running_write_is_asked_to_stop_and_the_turn_waits_ten_seconds() {
         path: "/home/me/src/miyu/a".to_string(),
         before: None,
         after: ContentHash::of(b"a"),
+        before_text: None,
+        after_text: None,
     })];
     let mut wrote = done(call(6, 1), "wrote");
     if let Input::ToolDone { effects: given, .. } = &mut wrote {

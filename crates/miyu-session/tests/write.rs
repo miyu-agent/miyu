@@ -1,5 +1,5 @@
-//! 真的 `write`（施工 4-6 上）、`edit`（施工 4-6 中）、`trash`（施工 4-6 下）：会话里她先读后写，日志里两次结果的效果对得上，blob 里存着改前
-//! 改后的内容；新建的不用先读；没读过就写的被拒，读过以后可以写，会话重新载入以后她读过的照样算数；改完一次接着改，
+//! 真的 `write`（施工 4-6 上）、`edit`（施工 4-6 中）、`trash`（施工 4-6 下）：会话里她先读后写，日志里两次结果的效果对得上，效果里写着改前
+//! 改后的内容（施工 V-18：小的不另存 blob）；新建的不用先读；没读过就写的被拒，读过以后可以写，会话重新载入以后她读过的照样算数；改完一次接着改，
 //! 不用重读。真的 `shell`（施工 4-8）：她执行的命令记进日志，退出码在给人看的说法里。
 
 use std::path::Path;
@@ -88,16 +88,19 @@ async fn she_reads_then_writes_and_the_log_keeps_both_contents() {
             path: real,
             before: Some(ContentHash::of(b"old\n")),
             after: ContentHash::of(b"new\n"),
+            before_text: Some("old\n".to_string()),
+            after_text: Some("new\n".to_string()),
         })]
     );
+    // 小的内容写在效果里，不另存 blob（施工 V-18）。
     let blobs = Blobs::new(home.root.blobs(&alice_account()));
-    assert_eq!(
-        blobs.get(&ContentHash::of(b"old\n")).expect("存了改前的"),
-        b"old\n"
+    assert!(
+        blobs.get(&ContentHash::of(b"old\n")).is_err(),
+        "改前的没存 blob"
     );
-    assert_eq!(
-        blobs.get(&ContentHash::of(b"new\n")).expect("存了改后的"),
-        b"new\n"
+    assert!(
+        blobs.get(&ContentHash::of(b"new\n")).is_err(),
+        "改后的没存 blob"
     );
     // 新建的不用先读，改前是空的。
     match &results[2].effects[..] {
@@ -181,6 +184,8 @@ async fn she_reads_then_edits_twice_without_reading_again() {
             path: real.clone(),
             before: Some(ContentHash::of(before)),
             after: ContentHash::of(after),
+            before_text: Some(String::from_utf8(before.to_vec()).expect("是文字")),
+            after_text: Some(String::from_utf8(after.to_vec()).expect("是文字")),
         })
     };
     assert_eq!(results[1].effects, [changed(b"one\ntwo\n", b"one\n2\n")]);
@@ -190,9 +195,9 @@ async fn she_reads_then_edits_twice_without_reading_again() {
         "第一次改完，她看过的就是改后的：第二次不用重读"
     );
     let blobs = Blobs::new(home.root.blobs(&alice_account()));
-    assert_eq!(
-        blobs.get(&ContentHash::of(b"1\n2\n")).expect("存了改后的"),
-        b"1\n2\n"
+    assert!(
+        blobs.get(&ContentHash::of(b"1\n2\n")).is_err(),
+        "改后的写在效果里，没存 blob"
     );
 }
 

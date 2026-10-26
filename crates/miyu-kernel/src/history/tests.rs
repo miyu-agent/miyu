@@ -9,6 +9,7 @@ mod jobs;
 mod ordered;
 mod recall;
 mod settle;
+mod texts;
 mod undo;
 mod whole;
 

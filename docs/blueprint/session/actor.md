@@ -19,7 +19,7 @@
 | `crates/miyu-session/src/actor/model.rs` | 请求模型：交给端口、叫停、说完了记一行；回顾的请求也在这里（施工 3-8 四补）；替它看图交给端口（施工 8-17） |
 | `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条） |
 | `crates/miyu-session/src/actor/stop.rs` | 有计划地停下：要重启了、后台命令记 `restarted`、落了盘再整组杀（施工 7-3） |
-| `crates/miyu-session/src/actor/store.rs` | 写盘；撤掉压缩时读回日志（施工 6-9） |
+| `crates/miyu-session/src/actor/store.rs` | 写盘，哪一批要同步（`must_sync`，施工 V-18）；撤掉压缩时读回日志（施工 6-9） |
 | `crates/miyu-session/src/handle.rs` | `Handle`：发命令、订阅、停下；推送 |
 | `crates/miyu-session/src/handle/retire.rs` | 问退不退：除了这一个没有别的把手（`alone`）、闲够了没有（`retire`，等一秒不答的叫它别答了，施工 V-2 再补） |
 | `crates/miyu-session/src/handle/subscription.rs` | 订阅：掉了队、会话停了就断；放下时告诉 actor（施工 7-9；施工 R-3 补从 `handle.rs` 挪出来：那边放不下了） |
@@ -199,7 +199,12 @@
 
 **5. 落盘、推送、回应**
 
-1. 追加的一批在阻塞线程里写进会话日志、同步到磁盘（`store.md`）。写完才往下走。空的一批：什么都不做，也不送「落盘了」。
+1. 追加的一批在阻塞线程里写进会话日志（`store.md` 第 5 条）。写完才往下走。空的一批：什么都不做，也不送「落盘了」。会碰外面的一批连同同步到磁盘（施工 V-18，`actor/store.rs` 的 `must_sync`）：
+   - 有一条不是模型、工具、内核记的（人、别的会话、桥交来的）：回应到了对方手里，断电以后不能没了。
+   - 有一条带工具调用的回复：落了盘才派工具，工具会改文件、跑命令；断电以后日志里要看得到派过。
+   - 有 `session.created`、`turn.ended`、`turn.reverted`、`turn.unreverted`：会话造好、一轮收尾、撤销恢复的地方。
+
+   别的（纯文字的回复、工具结果、`model.called`、注入的上下文……）只交给系统，不同步：程序崩了照样在；断电丢了的是上一次同步以后、没碰过外面的那一截，载入时照「崩在回合里」收尾（`kernel/session.md`「载入和崩溃」），和崩的时候少写了一两条是同一条路。工具结果引用的 blob 先落盘（`store.md` 第 9 条），丢了结果只是少了引用；改了的文件的小内容写在结果里（施工 V-18，`session/tools.md` 第 2 条），跟着结果在下一次同步时一起落盘，不单独同步。会话列表的索引、用量汇总记得比日志长了的，照各自对不上的办法整份重读（`store/index.md`「怎么走」第 3 条第 3 款、`models.md`「怎么走」第九条第 4 条）；回合库记的照到哪更靠后的，下一次照那里以后的补（`memory.md`）。一次真任务（修 4 个 bug、加一个子命令，Linux btrfs）会话日志的同步从 34 次降到 14 次，整个核心落盘的块写从约 3.4 MiB 降到约 2.6 MiB（2026-10-25 主会话量，`docs/construction/V-18-少落盘.md`）。
 2. 写完送「落盘了」进内核。内核这才先推送这些事件，再回应事件都落了盘的命令，再跑结束了的回合的挂接点，然后回合往下走（`kernel/session.md`）。所以头见过的事件，崩了以后一定还在；回应到的时候，它产生的事件已经在推送里了。
 3. 拒绝的命令没有事件，内核当场回应。
 4. 这一批里有 `turn.reverted`、`turn.unreverted` 的：写完，在同一个阻塞线程里只读地读一遍整份日志，重算她看过的（`session/tools.md`）。读不了的记一行 `seen files not rebuilt`，照旧用原来的那一份。
@@ -390,6 +395,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/actor.rs` | 造会话先存快照、第一条是 `session.created`；一轮先落盘、再推送、再回应，增量在回复落盘之前推过来；能重试的错到点才再请求、原样重发；打断叫停路上的请求；停下再载入接着干；同一个命令两次回两次、只生效一次；停在一轮中间的，落了盘、载入后接着干；载入的会话时刻不往回走；没人拿着了叫停路上的请求；换了工作目录下一轮才看到 |
 | `crates/miyu-session/tests/session_fact.rs`（施工 1-13 再补） | 会话编号交给内核：第一轮注入的就是这个会话的编号，排在人那一句前面；停下再载入，编号一样、不重发；子会话注入它自己的编号，不是父会话的 |
 | `crates/miyu-session/tests/limits.rs` | 造会话、载入以后先交限额，到线就压，没有窗口的不压（施工 6-3 上）；`Handle` 带着端口交的窗口和内核算的压缩线，载入的也一样，没报窗口的两格都没有（施工 6-3 补） |
+| `crates/miyu-session/src/actor/store/tests.rs`（施工 V-18） | 一轮中间模型、工具写的（纯文字回复、工具结果、请求记账、注入）不同步，空的一批不同步；带工具调用的回复同步（调用不是第一块也算），和不用同步的同一批整批同步；人、别的会话交来的同步；回合结束、撤销同步 |
 | `crates/miyu-session/src/actor/tests.rs` | 写不进去就停下：等着的命令收到「会话停了」、记一行 `WARN`、不再算在跑、订阅不了、日志里没有对话的字 |
 | `crates/miyu-session/tests/read_back_log.rs`（施工 6-9） | 撤掉压缩时日志读不回来：会话停下，撤销收到「会话停了」，记一行 `read back failed, stopped` |
 | `crates/miyu-session/tests/undo_compaction.rs`（施工 6-9） | 真的会话：撤掉压缩所在的那一轮再恢复，不请求模型，检查点回来、重读的原文照 blob 取回；撤掉以后停了再载入，请求回到压缩前，那次压缩不算了 |

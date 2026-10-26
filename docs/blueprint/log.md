@@ -260,7 +260,7 @@
 | `crates/miyu-log/tests/install.rs` | 装上写进 `<名字>.log`，照给的级别记；换了级别照新的（施工 8-2）；一个进程只能装一次 |
 | `crates/miyu-session/tests/log.rs` | 会话的每一行、`DEBUG` 的输入和动作、增量在 `TRACE`；日志里没有人说的、她说的、供应商出错的原话 |
 | `crates/miyu-session/tests/tool_log.rs` | 调工具的几行；参数、工具交回的字、工作目录都不在日志里 |
-| `crates/miyu-session/tests/blocking_log.rs` | 存效果的 blob 存不进去那一行在阻塞线程里发，带会话编号（Unix） |
+| `crates/miyu-session/tests/blocking_log.rs` | 存效果的 blob（超过 32 KiB 的才存，施工 V-18）存不进去那一行在阻塞线程里发，带会话编号（Unix） |
 | `crates/miyu-basesystem/tests/log.rs` | `shell` 的行来源是 `shell`；命令退出了输出还没关那一行在阻塞线程里发，带会话编号（Linux） |
 | `crates/miyu-session/tests/recap_log.rs` | 回顾的请求的几行前面带 `recap`（施工 3-8 四补）；不写对话的字 |
 | `crates/miyu-session/tests/vision_log.rs`（施工 8-17） | 替它看图没成的一行 `image not described`（会话编号、图、为什么）；成了的不另记，一次性入口那一行 `model call purpose=vision` 带会话编号 |

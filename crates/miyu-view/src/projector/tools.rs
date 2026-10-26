@@ -342,7 +342,7 @@ impl Projector {
         let mut total: Option<(u64, u64)> = None;
         for effect in &result.effects {
             if let Effect::FileChanged(changed) = effect {
-                let (added, removed) = lines.count(changed.before.as_ref(), &changed.after)?;
+                let (added, removed) = lines.count(changed)?;
                 let (a, r) = total.unwrap_or((0, 0));
                 total = Some((a + added, r + removed));
             }

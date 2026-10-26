@@ -65,7 +65,8 @@ pub struct FileRead {
     pub display_name: std::collections::BTreeMap<String, String>,
 }
 
-/// `file.changed`：改了一个文件。改前改后的内容都存成了 blob，这里是它们的哈希。
+/// `file.changed`：改了一个文件。这里是改前改后的内容的哈希；小的另把原文写在 `before_text`、`after_text` 里，
+/// 别的存成了 blob（施工 V-18，`03-事件模型.md` E4）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileChanged {
     /// 换成真实位置以后的绝对路径。
@@ -75,6 +76,13 @@ pub struct FileChanged {
     pub before: Option<ContentHash>,
     /// 改后的内容。
     pub after: ContentHash,
+    /// 改前的原文（施工 V-18）：UTF-8、不长过执行器的上限的才写，这时它没存 blob。内核不读它，有效历史收下时去掉
+    /// （[`crate::history::History::append`]）；读的一方要先核对它的哈希。没写的不写这一格，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before_text: Option<String>,
+    /// 改后的原文，同 [`FileChanged::before_text`]。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_text: Option<String>,
 }
 
 /// `file.trashed`：把一个文件移进了回收站（施工 4-6 下才有工具报它）。

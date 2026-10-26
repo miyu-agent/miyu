@@ -1,5 +1,5 @@
-//! 效果（`docs/designs/10-自带软件.md` 第五节，施工 4-6 上）：工具报的效果带着改前改后的内容，这里存成 blob、
-//! 换成哈希，写成内核的效果；照内核的效果记下她看过的文件，会话里记、载入时从日志里重建，走的是同一个函数。
+//! 效果（`docs/designs/10-自带软件.md` 第五节，施工 4-6 上）：工具报的效果带着改前改后的内容，这里换成哈希，小的照原文
+//! 写在效果里、别的存成 blob（施工 V-18，`docs/blueprint/session/tools.md` 第 2 条），写成内核的效果；照内核的效果记下她看过的文件，会话里记、载入时从日志里重建，走的是同一个函数。
 //! 撤掉的那几轮里看过的、改过的不算（施工 4-7 上）：撤销、恢复落了盘，照日志重算一遍。
 
 use std::collections::BTreeSet;
@@ -12,8 +12,9 @@ use miyu_tool::Seen;
 
 use crate::TARGET;
 
-/// 工具报的效果写成内核的：改前改后的内容存成 blob，换成它们的哈希；派出去的任务照原样。存不下来的（磁盘满了之类）照样记下哈希，
-/// 写一条运行日志：撤销时发现 blob 没了，说改前的内容没存下来。碰磁盘，在阻塞线程里调。
+/// 工具报的效果写成内核的：改前改后的内容换成它们的哈希，UTF-8、不长过 [`INLINE_MOST`] 的那一边照原文写进
+/// `before_text`、`after_text`，别的存成 blob（施工 V-18）；派出去的任务照原样。存不下来的（磁盘满了之类）照样记下哈希，
+/// 写一条运行日志：看差异时说取不出来。碰磁盘，在阻塞线程里调。
 pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effect> {
     effects
         .into_iter()
@@ -29,11 +30,20 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
                 path,
                 before,
                 after,
-            } => Effect::FileChanged(FileChanged {
-                path: text(&path),
-                before: before.map(|content| put(blobs, &content)),
-                after: put(blobs, &after),
-            }),
+            } => {
+                let (before, before_text) = before.map_or((None, None), |content| {
+                    let (hash, text) = keep(blobs, content);
+                    (Some(hash), text)
+                });
+                let (after, after_text) = keep(blobs, after);
+                Effect::FileChanged(FileChanged {
+                    path: text(&path),
+                    before,
+                    after,
+                    before_text,
+                    after_text,
+                })
+            }
             miyu_tool::Effect::Trashed { path, trash } => Effect::FileTrashed(FileTrashed {
                 path: text(&path),
                 trash,
@@ -152,7 +162,9 @@ impl SeenScan {
                 }
             }
             Body::ToolResult(result) if !result.effects.is_empty() => {
-                self.results.push((event.turn, result.effects.clone()));
+                // 只留哈希（施工 V-18）：长会话载入时不把改过的原文全攒在内存里。
+                let effects = result.effects.iter().cloned().map(hashes_only).collect();
+                self.results.push((event.turn, effects));
             }
             _ => {}
         }
@@ -175,6 +187,33 @@ pub(crate) fn reverts(events: &[Event]) -> bool {
     events
         .iter()
         .any(|event| matches!(event.body, Body::TurnReverted(_) | Body::TurnUnreverted(_)))
+}
+
+/// 改前、改后的内容最多多长照原文写进效果（施工 V-18，`docs/blueprint/session/tools.md` 第 2 条）：32 KiB，照常见的源文件
+/// 定。写进去的跟着工具结果落盘、不单独同步；一次改动最多给日志多写两份。
+pub(crate) const INLINE_MOST: usize = 32 * 1024;
+
+/// 改了的文件的一边：UTF-8、不长过 [`INLINE_MOST`] 的交回哈希和原文，不存 blob；别的存成 blob，只交回哈希。
+fn keep(blobs: &Blobs, content: Vec<u8>) -> (ContentHash, Option<String>) {
+    if content.len() <= INLINE_MOST {
+        match String::from_utf8(content) {
+            Ok(text) => return (ContentHash::of(text.as_bytes()), Some(text)),
+            Err(error) => return (put(blobs, error.as_bytes()), None),
+        }
+    }
+    (put(blobs, &content), None)
+}
+
+/// 去掉改了的文件的原文，只留哈希（施工 V-18）。别的效果照原样。
+fn hashes_only(effect: Effect) -> Effect {
+    match effect {
+        Effect::FileChanged(changed) => Effect::FileChanged(FileChanged {
+            before_text: None,
+            after_text: None,
+            ..changed
+        }),
+        other => other,
+    }
 }
 
 /// 存一份内容，交回它的哈希。存不下来的照样算出哈希交回。
