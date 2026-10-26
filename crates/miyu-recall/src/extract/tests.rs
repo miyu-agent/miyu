@@ -17,6 +17,7 @@ fn the_object_is_found_inside_extra_words_and_fences() {
             turn: 5,
             about: Some("2026-10-09".into()),
             who: None,
+            people: Vec::new(),
         }]
     );
     assert_eq!(
@@ -96,4 +97,26 @@ fn a_person_says_who_and_other_classes_do_not() {
             ("user".to_string(), None),
         ]
     );
+}
+
+/// 发生过的事带涉及谁（施工 E-1 修四）：字的列表，去掉前后空白、空的和不是字的不要、去重、最多 [`PEOPLE`] 个；不是列表的当没写；
+/// 别的类写了也不收。
+#[test]
+fn an_episode_says_who_it_involves_and_other_classes_do_not() {
+    let many: Vec<String> = (0..12).map(|n| format!("\"人{n}\"")).collect();
+    let answer = format!(
+        r#"{{"memories": [
+            {{"class": "episode", "text": "小林把她 P 成了猪", "turn": 5, "people": [" 小林 ", "", 3, "小林", "阿杰"]}},
+            {{"class": "episode", "text": "不是列表", "turn": 5, "people": "小林"}},
+            {{"class": "episode", "text": "很多人", "turn": 5, "people": [{}]}},
+            {{"class": "person", "text": "小林用 RX 7800 XT", "turn": 9, "who": "小林", "people": ["阿杰"]}}
+        ]}}"#,
+        many.join(", ")
+    );
+    let read = candidates(&answer, &turns(), 120).expect("读得成");
+    assert_eq!(read[0].people, ["小林", "阿杰"]);
+    assert!(read[1].people.is_empty(), "不是列表的当没写");
+    assert_eq!(read[2].people.len(), PEOPLE);
+    assert_eq!(read[2].people[0], "人0");
+    assert!(read[3].people.is_empty(), "别的类不收涉及谁");
 }

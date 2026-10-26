@@ -13,7 +13,8 @@ use miyu_kernel::origin::{By, Module, Person};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::extract::Candidate;
 use miyu_recall::{
-    Cleared, Entry, Extracted, MemoryEvent, MemoryId, PERSON, Retired, Saved, Skipped, Source,
+    Cleared, EPISODE, Entry, Extracted, MemoryEvent, MemoryId, PERSON, Retired, Saved, Skipped,
+    Source,
 };
 use miyu_store::memory::{MemoryLog, Report};
 use miyu_store::recall::{Opened, Room};
@@ -132,13 +133,14 @@ impl Keeper {
         sources: Vec<Source>,
     ) -> Result<MemoryId, Refused> {
         let log = self.log()?;
-        // 改一条没给关键词、是谁的，带上旧的（施工 R-15 上、E-1 上）：说的还是那件事、那个人。
-        let (carried, carried_who) = match remember.replaces {
+        // 改一条没给关键词、是谁的，带上旧的（施工 R-15 上、E-1 上）：说的还是那件事、那个人；发生过的事涉及谁照旧带上（施工
+        // E-1 修四：她的工具不收涉及谁）。
+        let (carried, carried_who, carried_people) = match remember.replaces {
             Some(old) => {
                 let old = self.current(&log, old)?;
-                (old.keywords, old.who)
+                (old.keywords, old.who, old.people)
             }
-            None => (None, None),
+            None => (None, None, Vec::new()),
         };
         let who = (remember.class == PERSON)
             .then(|| remember.who.filter(|who| !who.is_empty()).or(carried_who))
@@ -149,6 +151,10 @@ impl Keeper {
                 (super::her::SELF_CLASS.to_string(), None)
             }
             _ => (remember.class, who),
+        };
+        let people = match class == EPISODE {
+            true => carried_people,
+            false => Vec::new(),
         };
         let (audience, venue) = self.listener.heard();
         let saved = Saved {
@@ -165,6 +171,7 @@ impl Keeper {
                 None => carried,
             },
             who,
+            people,
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -227,6 +234,7 @@ impl Keeper {
                 venue,
                 keywords: None,
                 who: candidate.who,
+                people: candidate.people,
             };
             let stamp = Stamp {
                 at,

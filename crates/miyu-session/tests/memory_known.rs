@@ -60,6 +60,7 @@ fn remembered(home: &Home) {
         venue: None,
         keywords: None,
         who: None,
+        people: Vec::new(),
     };
     write(home, &MemoryEvent::Saved(saved));
 }

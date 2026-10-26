@@ -29,6 +29,7 @@ fn save(home: &Home, text: &str, replaces: Option<MemoryId>) -> MemoryId {
         venue: None,
         keywords: None,
         who: None,
+        people: Vec::new(),
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")

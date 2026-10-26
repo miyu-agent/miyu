@@ -21,6 +21,7 @@ fn one(class: &str, who: Option<&str>) -> Candidate {
         turn: 5,
         about: None,
         who: who.map(str::to_string),
+        people: Vec::new(),
     }
 }
 

@@ -52,6 +52,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 | `venue` | Which venue it was said in, `null` for local |
 | `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters), `null` if none: searches and recall match them, she never sees this line |
 | `who` | Who a `person` memory is about: a platform id (`qq:10086`) or a name; `null` for other classes |
+| `people` | Who an `episode` involves: a list of platform ids or names (never her or the owner); empty when there are none and for other classes |
 
 ## `memory.list`, `memory.search`
 

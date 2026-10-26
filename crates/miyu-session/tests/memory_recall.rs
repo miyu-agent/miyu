@@ -300,6 +300,7 @@ async fn keywords_find_it_but_are_not_shown() {
             venue: None,
             keywords: Some("苹果,香蕉".into()),
             who: None,
+            people: Vec::new(),
         };
         log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
             .expect("记得下");

@@ -51,6 +51,23 @@ fn a_person_shows_who() {
     );
 }
 
+/// 发生过的事正文前面写涉及谁（施工 E-1 修四）；空列表的照旧。
+#[test]
+fn an_episode_shows_who_it_involves() {
+    let mut episode = memory("m5", "2026-10-21T03:00:00.000Z", "小林把她 P 成了猪", None);
+    episode["class"] = json!("episode");
+    episode["people"] = json!(["qq:2", "小雨"]);
+    let mut alone = memory("m6", "2026-10-21T03:00:00.000Z", "群里停电了", None);
+    alone["people"] = json!([]);
+    assert_eq!(
+        listed(&[episode, alone], UtcOffset::UTC, &Language::Chinese),
+        [
+            "m5  2026-10-21  [qq:2, 小雨] 小林把她 P 成了猪",
+            "m6  2026-10-21  群里停电了"
+        ]
+    );
+}
+
 /// 人卡一张一行（施工 E-1 下）：是谁后面括号里接叫法，照最长的对齐；作废的带原因。
 #[test]
 fn a_card_shows_who_and_names() {

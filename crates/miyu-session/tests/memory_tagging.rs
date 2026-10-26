@@ -108,6 +108,7 @@ fn save_tagged(home: &Home, text: &str, keywords: &str) {
         venue: None,
         keywords: Some(keywords.into()),
         who: None,
+        people: Vec::new(),
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

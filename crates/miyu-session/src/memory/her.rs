@@ -107,6 +107,21 @@ pub(crate) fn is_her(me: &BTreeSet<String>, who: &str) -> bool {
     !me.is_empty() && me.contains(&fold(who))
 }
 
+/// 一句话说的是不是她自己（施工 E-1 修四）：照她的名字起头（「Miyu 没有禁言权」），或者「我是她的名字」「I am …」起头（模型
+/// 照 `You` 写成了第一人称）。只看起头，不猜别的写法：她自己的事写成别的样子的靠抽取的指令。
+pub(crate) fn about_her(text: &str, me: &BTreeSet<String>) -> bool {
+    let text = fold(text);
+    let rest = ["我是", "i am ", "i'm "]
+        .iter()
+        .find_map(|lead| text.strip_prefix(lead))
+        .unwrap_or(&text)
+        .trim_start();
+    me.iter().any(|name| {
+        rest.strip_prefix(name.as_str())
+            .is_some_and(|after| !after.starts_with(|next: char| next.is_ascii_alphanumeric()))
+    })
+}
+
 /// 抽出来、她记的一条认识的人说的是她自己的：改记成 [`SELF_CLASS`]、不写是谁。交回改了没有。
 pub(crate) fn unperson(candidate: &mut Candidate, me: &BTreeSet<String>) -> bool {
     let her = candidate.class == miyu_recall::PERSON

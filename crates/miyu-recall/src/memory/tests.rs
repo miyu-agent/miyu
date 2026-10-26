@@ -50,6 +50,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         venue: None,
         keywords: None,
         who: None,
+        people: Vec::new(),
     }
 }
 

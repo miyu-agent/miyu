@@ -20,18 +20,12 @@ impl MergeJob {
     /// 人的（施工 E-1 下），认出她记的名字是谁，最后接上合他们的卡的那一段和他们现在的卡。
     pub(super) async fn compose(&self, batch: Batch) -> Asked {
         let texts = &self.extraction.merge;
-        let row = |entry: &Entry, who: Option<String>| {
+        let row = |entry: &Entry, about: &[String]| {
             say(
                 &texts.line,
                 &[
                     ("id", &entry.id.to_string()),
-                    (
-                        "class",
-                        &miyu_recall::shown_class(
-                            &entry.class,
-                            who.as_deref().or(entry.who.as_deref()),
-                        ),
-                    ),
+                    ("class", &marked(entry, about)),
                     ("date", &entry.at.local_date(self.offset)),
                     ("text", &entry.text.replace('\n', " ")),
                 ],
@@ -63,7 +57,7 @@ impl MergeJob {
             let related = self.related(entry, &fresh_ids, &given).await;
             let added: usize = std::iter::once(entry)
                 .chain(&related)
-                .map(|one| row(one, None).len() + 1)
+                .map(|one| row(one, &[]).len() + 1)
                 .sum();
             if upto.is_some() && bytes + added > ROOM {
                 break;
@@ -86,7 +80,7 @@ impl MergeJob {
                 swept = Some(entry.id.seq());
                 continue;
             }
-            let added = row(entry, None).len() + 1;
+            let added = row(entry, &[]).len() + 1;
             // 只重看的一批至少交一条，同新记的。
             if bytes + added > ROOM && !(news.is_empty() && sweeps.is_empty()) {
                 break;
@@ -96,14 +90,14 @@ impl MergeJob {
             given.insert(entry.id);
             swept = Some(entry.id.seq());
         }
-        // 认识的人（施工 E-1 下）：认出她记的名字是谁，照平台编号列；再拿他们现在的卡。
+        // 认识的人（施工 E-1 下）：认出她记的名字是谁，照平台编号列；发生过的事涉及的人也算（施工 E-1 修四）。再拿他们现在的卡。
         let all: Vec<Entry> = news.iter().chain(&olds).chain(&sweeps).cloned().collect();
         let keeper = self.keeper.clone();
         let (known, people, cards) = blocking(move || {
             let mut known = keeper.people(&all.iter().collect::<Vec<_>>());
             known.note(&all);
             let people: BTreeSet<String> =
-                all.iter().filter_map(|entry| known.who(entry)).collect();
+                all.iter().flat_map(|entry| known.about(entry)).collect();
             let cards = keeper.cards_of(&people);
             (known, people, cards)
         })
@@ -119,7 +113,7 @@ impl MergeJob {
             if !entries.is_empty() {
                 let rows: Vec<String> = entries
                     .iter()
-                    .map(|entry| row(entry, known.who(entry)))
+                    .map(|entry| row(entry, &known.about(entry)))
                     .collect();
                 text.push_str(&format!("\n\n{title}\n{}", rows.join("\n")));
             }
@@ -190,5 +184,15 @@ impl MergeJob {
                 Vec::new()
             }
         }
+    }
+}
+
+/// 一条在合并的请求里的类：认识的人那一类后面接是谁（同 [`miyu_recall::shown_class`]，`about` 是认过的，空的照记下的），发生过的
+/// 事涉及谁的后面接 `with` 和那几个人（施工 E-1 修四：合卡时看得出这件事是谁的），别的照类。
+fn marked(entry: &Entry, about: &[String]) -> String {
+    match (entry.class.as_str(), about) {
+        (miyu_recall::EPISODE, [_, ..]) => format!("{} with {}", entry.class, about.join(", ")),
+        (_, [who, ..]) => miyu_recall::shown_class(&entry.class, Some(who)),
+        _ => miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
     }
 }

@@ -455,40 +455,18 @@ fn names_are_read_from_the_log() {
     assert_eq!(id("别人"), None);
 }
 
-/// 抽出来的认识的人照说话的人换成平台编号（施工 E-1 上）：对上的换、说的是主人的改记成 `user`、对不上的照名字、别的类不带。
+/// 抽取的指令写着这几条（施工 E-1 修四，主人旧主群的真数据实测查出）：名字里的说明不是说的事、关于某个认识的人的事不记成
+/// `reference`、她自己的事记 `episode`、不记琐事、发生过的事交回涉及谁。
 #[test]
-fn people_are_placed_by_who_spoke() {
-    let names = [
-        ("小林".to_string(), Some("qq:2".to_string())),
-        ("Owner".to_string(), None),
-    ]
-    .into_iter()
-    .collect();
-    let one = |class: &str, who: Option<&str>| Candidate {
-        class: class.into(),
-        text: "一件事".into(),
-        turn: 5,
-        about: None,
-        who: who.map(str::to_string),
-    };
-    let mut found = vec![
-        one("person", Some("小林")),
-        one("person", Some("Owner")),
-        one("person", Some("老王")),
-        one("user", Some("小林")),
-    ];
-    place_people(&mut found, &names, &BTreeSet::new());
-    let placed: Vec<(&str, Option<&str>)> = found
-        .iter()
-        .map(|one| (one.class.as_str(), one.who.as_deref()))
-        .collect();
-    assert_eq!(
-        placed,
-        [
-            ("person", Some("qq:2")),
-            ("user", None),
-            ("person", Some("老王")),
-            ("user", None),
-        ]
-    );
+fn the_instruction_keeps_names_hers_and_trivia_apart() {
+    let instruction = instruction();
+    for said in [
+        "A tagline in a name is part of the name, not something said.",
+        "a fact about one of them is person, not reference.",
+        "Facts about you are episode, never user or person.",
+        "Do not keep trivia",
+        r#"An episode also has "people": the names of those involved, not you or your owner."#,
+    ] {
+        assert!(instruction.contains(said), "指令里该有：{said}");
+    }
 }

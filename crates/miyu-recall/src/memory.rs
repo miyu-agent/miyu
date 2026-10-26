@@ -85,6 +85,9 @@ pub fn indexed(text: &str, keywords: Option<&str>) -> String {
 /// 她经工具记的照这张名单查（R-3 中）。
 pub const CLASSES: [&str; 5] = ["user", "feedback", "episode", "reference", "person"];
 
+/// 发生过的事那一类（施工 E-1 修四）：带着涉及谁（[`Saved::people`]）。
+pub const EPISODE: &str = "episode";
+
 /// 认识的人那一类（施工 E-1 上，设计 42）：一条记一件关于某个人的事，带着是谁（[`Saved::who`]）。主人的事照旧是 `user`。
 pub const PERSON: &str = "person";
 
@@ -179,6 +182,10 @@ pub struct Saved {
     /// 类、以前记的没有，不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub who: Option<String>,
+    /// 涉及谁（施工 E-1 修四）：[`EPISODE`] 那一类写，认法同 [`Saved::who`]（平台编号或名字；不写她自己、主人）；别的类、没有
+    /// 的、以前记的是空的，不写。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub people: Vec<String>,
 }
 
 /// `ext.memory.tagged` 的 `body`：只换一条的关键词，编号不变（施工 R-15 上）。空的是去掉。

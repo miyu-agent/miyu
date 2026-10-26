@@ -1,5 +1,5 @@
 //! 一条记忆在 `memory.list`、`memory.search` 的回应里的样子（施工 R-3 补，`docs/blueprint/protocol.md` 的 `memory.*` 第 1 条）：
-//! 用到几次、最近一次（施工 R-4 下），在哪个场所说的（施工 R-13 上）。
+//! 用到几次、最近一次（施工 R-4 下），在哪个场所说的（施工 R-13 上），发生过的事涉及谁（施工 E-1 修四，没有的是空列表）。
 
 use std::collections::BTreeMap;
 
@@ -39,5 +39,6 @@ fn shown(entry: &Entry) -> Value {
         "venue": entry.venue,
         "keywords": entry.keywords,
         "who": entry.who,
+        "people": entry.people,
     })
 }

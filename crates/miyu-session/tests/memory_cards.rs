@@ -49,6 +49,7 @@ fn person(home: &Home, by: By, who: &str, text: &str, source: Option<Source>) {
         venue: None,
         keywords: None,
         who: Some(who.into()),
+        people: Vec::new(),
     };
     log.append(now(), by, None, &MemoryEvent::Saved(saved))
         .expect("记得下");

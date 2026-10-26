@@ -74,6 +74,7 @@ mod memory_merge_trace;
 mod memory_my_name;
 mod memory_near_floor;
 mod memory_owner;
+mod memory_people;
 mod memory_recall;
 mod memory_remote;
 mod memory_restore;

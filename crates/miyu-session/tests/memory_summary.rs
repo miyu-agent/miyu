@@ -45,6 +45,7 @@ fn save(
         venue: None,
         keywords: None,
         who: None,
+        people: Vec::new(),
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))
         .expect("记得下")

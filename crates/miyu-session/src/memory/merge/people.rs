@@ -8,6 +8,9 @@
 //! 认出每个平台编号在场所里真用过的名字（`venue.name`），最近用的在前，接在卡的叫法前面；模型交回的叫法只留出处里见过的
 //! （真用过的、他那几条记忆的正文里写着的），编的不要（实测交回过源消息里从没出现过的名字，有的又空着、少了改名以前的）。
 //!
+//! 相处的事也算（施工 E-1 修四）：发生过的事（`episode`）带着涉及谁（`Entry::people`，抽取照说话人认过的平台编号或名字），这
+//! 一批里有他的那几条也合进他的卡；认法同上（她记的名字照出处认、她自己不算），叫法照它们的出处一起认。
+//!
 //! 她自己不是认识的人（施工 E-1 修，`her.rs`）：`who` 是这一间她的名字的不算谁（不合卡、不认成同名群友的编号），她的名字也
 //! 不拿来认人、不进谁的叫法。以前记下的这种照旧留着，只是不再合进卡。她的名字除了人格的，还有出处那几轮的会话日志里她在场所
 //! 里被叫过的（`venue.my_name`，施工 E-1 修三）。
@@ -18,7 +21,7 @@ use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
-use miyu_recall::{Entry, PERSON};
+use miyu_recall::{EPISODE, Entry, PERSON};
 use miyu_store::log::read_events;
 use miyu_store::recall::Room;
 
@@ -57,6 +60,36 @@ impl People {
         )
     }
 
+    /// `entry` 涉及的认识的人（施工 E-1 修四）：发生过的事那一类的 `people`，认法同 [`People::who`]，去重；别的类没有。
+    pub(super) fn involved(&self, entry: &Entry) -> Vec<String> {
+        if entry.class != EPISODE {
+            return Vec::new();
+        }
+        let mut found: Vec<String> = Vec::new();
+        for name in &entry.people {
+            if crate::memory::her::is_her(&self.me, name) {
+                continue;
+            }
+            let one = self
+                .known
+                .get(name)
+                .cloned()
+                .unwrap_or_else(|| name.clone());
+            if !found.contains(&one) {
+                found.push(one);
+            }
+        }
+        found
+    }
+
+    /// `entry` 说的是谁、涉及谁（施工 E-1 修四）：认识的人那一类的是谁，发生过的事涉及的几个人。
+    pub(super) fn about(&self, entry: &Entry) -> Vec<String> {
+        match self.who(entry) {
+            Some(who) => vec![who],
+            None => self.involved(entry),
+        }
+    }
+
     /// 平台编号 `id` 在这一批里被认出来的那几个名字：出处里真用过的（最近用的在前），再接她记的名字认出是他的。记进他的卡当
     /// 叫法。
     pub(super) fn names_of(&self, id: &str) -> Vec<String> {
@@ -79,10 +112,10 @@ impl People {
                 .is_some_and(|texts| texts.iter().any(|text| text.contains(name)))
     }
 
-    /// 记下这一批里每个人那几条记忆的正文（施工 E-1 修二）：照认过的是谁。
+    /// 记下这一批里每个人那几条记忆的正文（施工 E-1 修二）：照认过的是谁；发生过的事记在涉及的每个人名下（施工 E-1 修四）。
     pub(super) fn note(&mut self, entries: &[Entry]) {
         for entry in entries {
-            if let Some(who) = self.who(entry) {
+            for who in self.about(entry) {
                 self.said.entry(who).or_default().push(entry.text.clone());
             }
         }
@@ -96,7 +129,12 @@ impl Keeper {
         let sessions_of = |tool: bool| -> BTreeSet<&SessionId> {
             entries
                 .iter()
-                .filter(|entry| entry.class == PERSON && (!tool || matches!(entry.by, By::Tool(_))))
+                .filter(|entry| {
+                    // 发生过的事带着涉及谁的也读（施工 E-1 修四）：它们的出处里也有这些人用过的名字。
+                    let about = entry.class == PERSON
+                        || (entry.class == EPISODE && !entry.people.is_empty());
+                    about && (!tool || matches!(entry.by, By::Tool(_)))
+                })
                 .flat_map(|entry| entry.sources.iter().map(|source| &source.session))
                 .collect()
         };
