@@ -362,7 +362,8 @@ impl Config {
             &self.items,
             parsed,
             layer,
-            &|name| providers.iter().any(|id| id == name),
+            // 只有系统配置写了的那一家写成 `<编号>@system` 的也算（施工 PL-1 修）。
+            &|name| providers.iter().any(|id| id == name) || resolved.aliases.contains_key(name),
             &|name| pools.iter().any(|pool| pool == name),
         ));
         if let Some(data) = &self.models {

@@ -108,3 +108,17 @@ pub(crate) fn resolved(source: &str) -> Resolved {
     };
     merge(&items(), &layers, &|_| None)
 }
+
+/// 系统配置 `system`、个人设置 `personal` 两层一起合（施工 PL-1 修）：同一家两层都写了的，派生出共用那份 `<编号>@system`。
+pub(crate) fn resolved_two(system: &str, personal: &str) -> Resolved {
+    let system = parse(&items(), Layer::System, system).expect("写法对");
+    let personal = parse(&items(), Layer::Personal, personal).expect("写法对");
+    assert!(system.problems.is_empty(), "{:?}", system.problems);
+    assert!(personal.problems.is_empty(), "{:?}", personal.problems);
+    let layers = Layers {
+        system: Some(&system),
+        personal: Some(&personal),
+        ..Layers::default()
+    };
+    merge(&items(), &layers, &|_| None)
+}

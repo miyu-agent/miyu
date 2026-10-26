@@ -9,6 +9,7 @@ use crate::matching::How;
 use crate::test_support::{Held, resolved};
 use miyu_drivers::openai_chat::{ReasoningField, ReasoningReplay};
 
+mod shared_copy;
 mod strict;
 
 fn values(source: &str) -> Values {

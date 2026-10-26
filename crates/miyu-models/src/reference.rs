@@ -121,7 +121,13 @@ impl Reference {
 ///
 /// 读不成（以前的挡位名也算）；引用的供应商、池没有；池是空的（协议上都是 `unknown_model`）。
 pub fn record(values: &Values, text: &str) -> Result<String, NoModel> {
-    let reference = Reference::parse_at(text, Place::Use).map_err(bad)?;
+    let mut reference = Reference::parse_at(text, Place::Use).map_err(bad)?;
+    if let Reference::Model { provider: id, .. } = &mut reference
+        && let Some(itself) = values.alias(id)
+    {
+        // 记下它本身的编号（施工 PL-1 修）：只有系统配置写了的那一家，`<编号>@system` 就是它。
+        *id = itself.to_string();
+    }
     match &reference {
         Reference::Model { provider: id, .. } => {
             if !provider::configured(values).contains(id) {

@@ -72,6 +72,9 @@ pub struct Resolved {
     entries: BTreeMap<String, (Value, Origin)>,
     /// 合的时候发现的问题：项目配置的 `not_tightening`、`untrusted_project`。
     pub problems: Vec<Problem>,
+    /// 只有系统配置写了的供应商，`<编号>@system` 到 `<编号>`（施工 PL-1 修，`system_copy::unfold`）：最终值里的引用已经换过，
+    /// 查文件里写的引用在不在时照它认。
+    pub aliases: BTreeMap<String, String>,
     /// 读不懂、当没设的环境变量：名字和原值。
     pub ignored_env: Vec<(&'static str, String)>,
 }
@@ -88,6 +91,7 @@ impl Resolved {
         for (key, (value, _)) in &self.entries {
             values.set(key, value.clone());
         }
+        values.set_aliases(self.aliases.clone());
         values
     }
 
@@ -151,6 +155,7 @@ pub fn merge(items: &[Item], layers: &Layers, env: &dyn Fn(&str) -> Option<Strin
         }
     }
     system_copy::add(items, layers, env, &mut resolved);
+    system_copy::unfold(items, layers, &mut resolved);
     resolved
 }
 

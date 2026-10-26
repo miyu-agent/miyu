@@ -72,9 +72,59 @@ async fn mine_and_shared_copies_each_use_their_own_key() {
         "{listed}"
     );
 
+    let names: Vec<&Value> = listed["result"]["providers"]
+        .as_array()
+        .expect("{listed}")
+        .iter()
+        .map(|row| &row["name"]["value"])
+        .collect();
+    assert_eq!(
+        names,
+        [&json!("relay"), &json!("relay")],
+        "共用那份照原编号叫"
+    );
+
     let got = client.call("g", "config.get", json!({})).await;
     assert!(
         !got.to_string().contains("@system"),
         "派生的那份不进配置：{got}"
     );
+}
+
+/// 选过共用那份以后自用那份删掉了（施工 PL-1 修，网页 2026-10-26 实测）：只有系统配置写了 `relay`，`relay@system/m` 指的就是它，
+/// 不报 `bad_reference`，照样用共用的 key；最终值里写成 `relay/m`。
+#[tokio::test]
+async fn a_shared_reference_still_works_after_my_copy_is_gone() {
+    let server = Server::start(vec![said("共用。")]).await;
+    let home = Home::new();
+    home.write(
+        "system/config.toml",
+        &format!(
+            "[providers.relay]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ secret = \"relay\" }}\n",
+            server.base_url
+        ),
+    );
+    home.write("system/secrets.toml", &format!("relay = \"{SHARED}\"\n"));
+    home.write(
+        "home/alice/settings.toml",
+        "[models]\nchat = \"relay@system/m\"\n",
+    );
+    let mut client = Client::connect(routed(&home, &[], data(profiles(json!({})))));
+    let hello = client.hello().await;
+    assert!(
+        hello["result"].get("config_errors").is_none(),
+        "不算 bad_reference：{hello}"
+    );
+    let reply = client
+        .call(
+            "c",
+            "model.call",
+            json!({"purpose": "platform", "model": "relay@system/m",
+                "messages": [{"role": "user", "text": "hi"}]}),
+        )
+        .await;
+    assert!(reply.get("result").is_some(), "{reply}");
+    assert_eq!(bearer(&server, 0), Some(format!("Bearer {SHARED}")));
+    let listed = client.call("l", "model.list", json!({})).await;
+    assert_eq!(listed["result"]["uses"]["chat"], "relay/m", "{listed}");
 }

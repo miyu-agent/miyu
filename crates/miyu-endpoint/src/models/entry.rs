@@ -183,7 +183,7 @@ pub(crate) fn provider(
     )
 }
 
-/// 这一家给人看的名字：写了的（去掉两头空白不是空的）、目录里那一家的、编号，照这个先后（施工 8-21）。
+/// 这一家给人看的名字：写了的（去掉两头空白不是空的）、目录里那一家的、编号（共用那份是原编号），照这个先后（施工 8-21）。
 fn name(snapshot: &Snapshot, id: &str, catalog: Option<&str>) -> Value {
     let key = config_key::fill(NAME, &[id]);
     let written = snapshot
@@ -197,7 +197,8 @@ fn name(snapshot: &Snapshot, id: &str, catalog: Option<&str>) -> Value {
         });
     let mut name = written.unwrap_or_else(|| match catalog {
         Some(name) => json!({"value": name, "from": "catalog"}),
-        None => json!({"value": id, "from": "id"}),
+        // 共用那份照原编号叫（施工 PL-1 修）：哪一份由 `layer` 说。
+        None => json!({"value": miyu_config::key::of_system_copy(id).unwrap_or(id), "from": "id"}),
     });
     name["key"] = json!(key);
     name
