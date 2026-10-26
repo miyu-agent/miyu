@@ -8,6 +8,7 @@
 
 mod clock;
 mod fire;
+mod hold;
 mod next;
 mod run;
 
@@ -70,6 +71,8 @@ pub struct Schedules {
     clock: Arc<dyn Clock>,
     tables: Mutex<BTreeMap<AccountId, Option<Arc<Table>>>>,
     wake: Arc<Notify>,
+    /// 写不进下一次的先放一放（`hold.rs`）。
+    holds: hold::Holds,
 }
 
 impl crate::Core {
@@ -94,6 +97,7 @@ impl Schedules {
             clock: Arc::new(SystemClock),
             tables: Mutex::new(BTreeMap::new()),
             wake: Arc::new(Notify::new()),
+            holds: hold::Holds::default(),
         }
     }
 
@@ -298,11 +302,21 @@ impl Schedules {
         }
     }
 
-    /// 最早的下一次，各账号里挑。
+    /// 最早的下一次，各账号里挑；写不进下一次、放着的照「不早于」往后挪（`hold.rs`）。
     fn earliest(&self) -> Option<Timestamp> {
         self.opened()
             .into_iter()
-            .filter_map(|(_, table)| table.earliest().ok().flatten())
+            .flat_map(|(account, table)| {
+                let listed = table.list().unwrap_or_default();
+                listed
+                    .into_iter()
+                    .filter(|schedule| !schedule.paused)
+                    .filter_map(|schedule| {
+                        let next = schedule.next?;
+                        Some(self.holds.later(&account, &schedule.id, next))
+                    })
+                    .collect::<Vec<_>>()
+            })
             .min()
     }
 }

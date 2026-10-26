@@ -3,7 +3,7 @@
 //! - 读不了、坏了、版本比这一版旧又认不出的：连同 `-wal`、`-shm` 改名成 `schedules.db.broken-<毫秒>` 留着，开一份空的
 //!   （[`Opened::SetAside`]）。人的定时没了，要告诉他（施工 J-3 接上系统通知，先记日志）。
 //! - 版本比这一版新（新的程序写过、又换回旧的）：不动它，这一回不用（[`Opened::Newer`]），回到新的程序照样在。
-//! - 写盘 `synchronous = FULL`：答应了的改动断电也在。
+//! - 写盘 `synchronous = FULL`：答应了的改动断电也在。锁住了不等，当场报错。
 
 use std::fs;
 use std::io;
@@ -87,6 +87,9 @@ pub(super) fn open(path: &Path) -> (Option<Connection>, Opened) {
 fn connected(path: &Path) -> Result<(Connection, bool), DbError> {
     let (db, created) = sqlite::connect(path, SCHEMA, VERSION)?;
     db.pragma_update(None, "synchronous", "FULL")?;
+    // 锁住了不等：一个账号这个进程只有一个连接，别的进程开不了这个数据根（核心只有一个）；真锁住了（别人开着写）当场报错，
+    // 由到点的那一边退避再试（端点 `schedules/hold.rs`），不在这里卡住后台任务。
+    db.busy_timeout(std::time::Duration::ZERO)?;
     Ok((db, created))
 }
 

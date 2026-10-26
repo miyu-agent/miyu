@@ -64,10 +64,18 @@ async fn run(core: Weak<Core>) {
                     continue;
                 }
             };
-            for schedule in due {
+            let holds = &core.schedules.holds;
+            for schedule in due.into_iter().filter(|schedule| {
+                schedule
+                    .next
+                    .is_some_and(|next| holds.later(&account, &schedule.id, next) <= now)
+            }) {
                 fire(&core, &account, &table, schedule, now).await;
             }
         }
+        drop(core);
+        // 每一轮让一下：钟、表都不让等的时候（写不进、钟停在过去）也不霸着线程。
+        tokio::task::yield_now().await;
     }
 }
 
@@ -95,10 +103,12 @@ async fn fire(
         table.put(&ahead).map(|_| ())
     };
     if let Err(error) = written {
-        // 写不进下一次的不交：交了又记不住，下一次醒来会再交一遍。
+        // 写不进下一次的不交：交了又记不住，下一次醒来会再交一遍。先放一放再试，不然马上又醒、又写不进，空转（`hold.rs`）。
+        core.schedules.holds.failed(account, &schedule.id, now);
         tracing::warn!(target: TARGET, account = %account, schedule = %schedule.id, error = %error, "schedule not advanced");
         return;
     }
+    core.schedules.holds.cleared(account, &schedule.id);
     let delivered = super::fire::deliver(core, account, &schedule, due).await;
     tracing::info!(
         target: TARGET,

@@ -41,11 +41,12 @@
 
 1. 核心起来时（`Core::start_schedules`）开上已有的表、跳过错过的，然后一个后台任务只睡到各账号里最早的那一次。表一改（建、停、续、删、改下一次）就叫醒它重算；不轮询。真的钟一次最多睡一小时再看一眼：改了系统时间、机器睡过一觉，最多晚这么久发现。测试换手拨的钟（`Clock`，`Core::with_clock`）。
 2. 到点的一个：先把下一次写进表（一次的删掉，她自己定节奏的清掉下一次），再交进会话，最后只记上一次那几格。顺序不能反：她在那一轮里定下一次（`schedule_wakeup`，施工 J-2）不会被这里盖掉。写不进下一次的不交，记 `WARN schedule not advanced`：交了又记不住，下一次醒来会再交一遍。
-3. **跑在已有的会话**：交一条 `Send`，`by` 是 `{"kind":"schedule","schedule":"t3","account":"alice","loop"?:"fixed"|"dynamic"}`（`kernel/ids.md`「谁」）。照「别处来的话」的规矩收（`kernel/session.md`「定时交进来的话」）：闲着开一轮，正在跑一轮的排在这一轮后面。`last_result` 照交的那一刻会话忙不忙记 `queued` 或 `ran`。命令编号 `schedule/<任务>/<这一次的毫秒>/say`：核心重启后再交一遍，会话认得是重发。
-4. **每次新开**：照建时定下的人格、预设、工作目录开一个会话（命令编号 `…/open`），没人在场（要问人的照规矩拒），再照第 3 条交。`last_session` 记开出来的那个。开不成的记 `skipped:not_opened`。跑完给人发系统通知是 J-3。
-5. **会话没了**、不是这个账号的：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
-6. **她建的照预设**（项目主人 2026-10-26 定）：`by` 是 `model` 的，到点时看那个会话现在的预设，关了建它的那个包的这一次不跑，记 `skipped:preset_off`，下一次照算。定时任务看 `schedule` 包，循环（`loop` 是 `fixed`、`dynamic`）看 `loop` 包；包的功能里装着、没被关掉的有一个就算开（`presets::package_on`）。没装的包算关；没有预设的老会话都开着；无工具（空的编号）算关。人建的、包建的不看预设。
-7. 每一次记 `INFO schedule fired`，带账号、任务编号、结果；不记那句话。
+3. **写不进的先放一放**（2026-10-26 主会话审出来的）：表里还是过去那个时刻，不放的话马上又醒、又写不进，空转吃满一个核。只在内存里给它记一个「不早于」（`schedules/hold.rs`）：头一次 1 秒，再写不进翻倍，最多 5 分钟；算最早一次、挑到点的都照它往后挪，写进了就清掉。不碰表，核心重启就忘。表的连接锁住了不等（`busy_timeout = 0`），当场报错交给这里退避；睡到点的那个每一轮让一下线程，不霸着。
+4. **跑在已有的会话**：交一条 `Send`，`by` 是 `{"kind":"schedule","schedule":"t3","account":"alice","loop"?:"fixed"|"dynamic"}`（`kernel/ids.md`「谁」）。照「别处来的话」的规矩收（`kernel/session.md`「定时交进来的话」）：闲着开一轮，正在跑一轮的排在这一轮后面。`last_result` 照交的那一刻会话忙不忙记 `queued` 或 `ran`。命令编号 `schedule/<任务>/<这一次的毫秒>/say`：核心重启后再交一遍，会话认得是重发。
+5. **每次新开**：照建时定下的人格、预设、工作目录开一个会话（命令编号 `…/open`），没人在场（要问人的照规矩拒），再照第 3 条交。`last_session` 记开出来的那个。开不成的记 `skipped:not_opened`。跑完给人发系统通知是 J-3。
+6. **会话没了**、不是这个账号的：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
+7. **她建的照预设**（项目主人 2026-10-26 定）：`by` 是 `model` 的，到点时看那个会话现在的预设，关了建它的那个包的这一次不跑，记 `skipped:preset_off`，下一次照算。定时任务看 `schedule` 包，循环（`loop` 是 `fixed`、`dynamic`）看 `loop` 包；包的功能里装着、没被关掉的有一个就算开（`presets::package_on`）。没装的包算关；没有预设的老会话都开着；无工具（空的编号）算关。人建的、包建的不看预设。
+8. 每一次记 `INFO schedule fired`，带账号、任务编号、结果；不记那句话。
 
 ### 四、核心的入口
 
@@ -83,7 +84,7 @@
 |---|---|
 | `crates/miyu-store/src/schedules.rs`、`schedules/{open,row}.rs` | 表：建、读、改、删、最早的、到点的；开、坏了改名、比这一版新的不动 |
 | `crates/miyu-endpoint/src/schedules.rs` | 入口、核心起来时开表和跳过错过的 |
-| `crates/miyu-endpoint/src/schedules/{clock,next,run,fire}.rs` | 钟、下一次、睡到点、交进会话 |
+| `crates/miyu-endpoint/src/schedules/{clock,next,run,fire,hold}.rs` | 钟、下一次、睡到点、交进会话、写不进的先放一放 |
 | `crates/miyu-kernel/src/origin.rs` | `by` 的 `schedule` |
 | `crates/miyu-assemble/src/schedule.rs`、`crates/miyu-policy/src/schedule.rs`、`crates/miyu-store/src/resources/schedules.rs` | 标签：组装、快照、读资源 |
 
@@ -92,5 +93,6 @@
 | `crates/miyu-store/src/schedules/tests.rs` | 建、读、改、删，编号不复用；到点的、最早的照时刻，停着的不算；列表的先后；重开读得回原样；坏了的改名留着开空的，比这一版新的不动 |
 | `crates/miyu-endpoint/src/schedules/next/tests.rs` | cron 只认五段、照时区算、不含现在；每隔一阵的错过的跳过；一次的晚于现在才有 |
 | `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删 |
+| `crates/miyu-endpoint/src/schedules/hold/tests.rs`、`crates/miyu-endpoint/tests/schedules_log.rs` | 写不进的放 1 秒起翻倍、最多 5 分钟、写进了清掉；表被锁住时拨过十秒只试几次、一次都不交，放开以后照常交 |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 两种标签照 `loop` 挑、带任务编号；没有字的原样；`by` 的 JSON 写法、读得回 |
 | `crates/miyu-store/src/resources/tests.rs` 的 `schedule_texts_need_all_four_files` | 四份都在才读得出 |
