@@ -70,13 +70,13 @@ shell = false
 | 编号 | 名字 | 内容 |
 |---|---|---|
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
-| `dev` | 常规开发 | `unlisted = "off"`，开 `basesystem`、`net`、`goal`、`memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
-| `minimal` | 极简开发 | `unlisted = "off"`，不写 `[software]`，`[features]` 只开基础系统的 `files`、`commands`，`[tools]` 关 `glob`、`grep`、`trash`：留 `shell`、`read`、`write`、`edit`。基础系统以后新加的功能照 `unlisted` 关着（「脚本调工具」`clicall` 就是，施工 M-6）；往 `files`、`commands` 里加的新工具会冒出来。环境那七个（施工 C-11，下面「环境那几块」）照旧开着，`[features]` 写明了 |
+| `dev` | 常规开发 | `unlisted = "off"`，开 `basesystem`、`env`（注入环境信息，施工 ENV-1）、`net`、`goal`、`memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
+| `minimal` | 极简开发 | `unlisted = "off"`，不写 `[software]`，`[features]` 只开基础系统的 `files`、`commands`，`[tools]` 关 `glob`、`grep`、`trash`：留 `shell`、`read`、`write`、`edit`。基础系统以后新加的功能照 `unlisted` 关着（「脚本调工具」`clicall` 就是，施工 M-6）；往 `files`、`commands` 里加的新工具会冒出来。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
 
 - 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発。图标 `boxes`、`box`、`square-terminal`。编号照旧 `full`、`dev`、`minimal`，只在核心和配置 `preset.default` 里用，界面上不露。
 - 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。」。给人看的，不发给模型。
 
-**环境那几块**（施工 C-11，2026-10-23 项目主人定：拆成能开关的功能，群聊里用不上的能关掉；设计 30 第三节第 6 条）：基础系统的七个功能，都没有工具，照功能的规矩开关（`unlisted = "off"`、又没写它们的预设里是关的）。关了的回合开始不再注入那一块事实，system 里跟着它的那一行不拼（`miyu_policy::shown`）：
+**环境那几块**（施工 C-11，2026-10-23 项目主人定：拆成能开关的功能，群聊里用不上的能关掉；设计 30 第三节第 6 条）：七个功能，都没有工具，照功能的规矩开关（`unlisted = "off"`、又没写它们的预设里是关的）。关了的回合开始不再注入那一块事实，system 里跟着它的那一行不拼（`miyu_policy::shown`）：
 
 | 功能 | 回合开始的事实 | system 里那一行 |
 |---|---|---|
@@ -87,10 +87,16 @@ shell = false
 | `env-model` 模型信息 | 模型 | |
 | `env-harness` Harness 版本 | | 跑在哪一版 miyu-agent 里 |
 | `env-machine` 本机系统 | | 本机是什么系统 |
+| `env-profile` 用户身份 | | 「关于你」那一块（称呼、更多描述、回复语言，造会话时钉下） |
+
+- 包（施工 ENV-1，2026-10-26 项目主人定）：这八个是内置包「注入环境信息」（`env`；Environment info、環境情報）的功能，前七个原来在基础系统里，编号不改，预设、个人设置里写的 `env-*` 照认。这个包不是必需的：整包关掉（`package.disable env`、个人关掉 `packages.env.off`）就是一点环境信息都不注入，请求和八个都关一字不差。
+- 开不开照「装着、并且没被关」：快照记两样，预设没开的（`off`）和没装的（`absent`，只记这八个里没装的，空的不写）；两样里都没有才算开。
+- 自己写的预设（施工 ENV-1）：`unlisted = "off"`、`[software]` 只写了 `basesystem = true` 的，环境那几块原来跟着基础系统开，挪包以后要另写 `env = true` 才开。没发版，不做迁移。
+- 「用户身份」只在造会话时看：关着的快照里就没有「关于你」，会话中途改预设不补、不撤（同改称呼）。
 
 - 环境那一块只关一样的换成拆开的写法（`core/facts/env-time.txt`、`env-cwd.txt`），类别照旧是 `env`；两样都关的不注入。
 - 关了的只是之后不再注入，已经注入过的留在历史里。改了预设的开着的会话下一个回合换快照（第 6 条）：只关事实的 system 不变；关了 system 那几行的断一次缓存。
-- 以前造的快照里记的没开的功能没有它们：都开着，前缀一字不变。
+- 以前造的快照里记的没开的功能没有它们、也没有 `absent`：都开着，前缀一字不变。
 
 **无工具**（施工 P-16 下，2026-10-23 项目主人列的四种之一，主会话审过形状）：不是一份预设文件，是核心给的一项。
 
@@ -174,6 +180,7 @@ shell = false
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
+| `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
 | `crates/miyu-endpoint/tests/presets.rs` | 不写预设照默认、个人设置压着系统配置、指定的压着默认；找人格的先后；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |
 | `crates/miyu-endpoint/tests/preset_face.rs`（施工 P-2 中） | 功能全开的工具面全有、没有那一行；开发预设没有记忆三件、范围 `off`（要了也没用）、那一行只写 `memory`；单件关掉的没有、不写那一行；整包关掉的工具全没、写进那一行；角色扮演开着的有提示和风格锁、那一行在风格锁前面，关着的都没有；`preset.get` 的 `software`：装了的、写了没装的，内置的照固定的先后（施工 P-3 补）；没有工具的 `process` 包关着：快照记它、那一行不列，有工具的照列（施工 O-18） |

@@ -190,6 +190,7 @@ async fn each_script_is_a_feature_the_preset_switches() {
             "id": "script-weather",
             "name": "回声",
             "summary": "原样印出参数。",
+            "package": "~home",
             "on": true,
             "by": "default",
             "installed": true,

@@ -32,8 +32,24 @@ async fn a_preset_without_memory_drops_it() {
     );
     let pin = snapshot.preset.expect("记了预设");
     assert_eq!(pin.id, "quiet");
-    // 记的是功能的编号（施工 F-3 上），装了没开的照记，见下一条；知识库（施工 K-1 下）在它里面关着。
-    assert_eq!(pin.off, ["knowledge", "memory", "roleplay"]);
+    // 记的是功能的编号（施工 F-3 上），装了没开的照记，见下一条；知识库（施工 K-1 下）在它里面关着；环境那几块（施工 ENV-1 起在
+    // env 包里）这个预设没开。
+    assert_eq!(
+        pin.off,
+        [
+            "env-harness",
+            "env-machine",
+            "env-model",
+            "env-permission",
+            "env-profile",
+            "env-session",
+            "env-time",
+            "env-workdir",
+            "knowledge",
+            "memory",
+            "roleplay"
+        ]
+    );
     // 开会话时要了记忆也没用：开不开归预设。
     let (session, _) = first_request(
         &home,

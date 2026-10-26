@@ -65,18 +65,25 @@ pub(super) fn catalog() -> Catalog {
     .expect("合写法")
 }
 
-/// 装了的功能（施工 F-3 上）：基础系统、人格记忆、人设遵循提醒各算一个，编号和包一样。
+/// 装了的功能（施工 F-3 上）：基础系统、人格记忆、人设遵循提醒各算一个，编号和包一样；出厂默认装着的 `env` 包的几个环境功能
+/// （施工 ENV-1）。
 pub(super) fn installed() -> Features {
+    let feature = |id: &str, package: &str| Feature {
+        id: id.to_string(),
+        package: package.to_string(),
+        tools: Vec::new(),
+        service: None,
+        script: None,
+    };
     Features::new(
         ["basesystem", "memory", "roleplay"]
             .into_iter()
-            .map(|id| Feature {
-                id: id.to_string(),
-                package: id.to_string(),
-                tools: Vec::new(),
-                service: None,
-                script: None,
-            })
+            .map(|id| feature(id, id))
+            .chain(
+                miyu_policy::shown::ALL
+                    .into_iter()
+                    .map(|id| feature(id, miyu_policy::shown::PACKAGE)),
+            )
             .collect(),
     )
 }

@@ -215,7 +215,7 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["authoring", "basesystem", "goal", "memory", "net"]
+        ["authoring", "basesystem", "env", "goal", "memory", "net"]
     );
     let minimal = presets.find("minimal").unwrap();
     assert_eq!(minimal.file.unlisted(), Unlisted::Off);
@@ -236,6 +236,7 @@ fn the_shipped_presets_read_cleanly() {
             ("env-machine", true),
             ("env-model", true),
             ("env-permission", true),
+            ("env-profile", true),
             ("env-session", true),
             ("env-time", true),
             ("env-workdir", true),

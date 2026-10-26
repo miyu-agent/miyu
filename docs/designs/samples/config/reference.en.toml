@@ -197,6 +197,11 @@ source = "https://miyu-agent.github.io/packages/"
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
+[packages.env]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
 [packages.goal]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.

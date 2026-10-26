@@ -246,6 +246,11 @@ fn an_old_pin_with_package_ids_means_the_same() {
     let mut moved = new.clone();
     moved.digest = None;
     assert!(!moved.means_the_same(&new, &installed()), "指纹不一样");
+    // 这里装着的功能里没有环境那几块：`new` 记着八个都没装；装回来的不一样（施工 ENV-1），开着的会话下一轮跟着换。
+    assert_eq!(new.absent, crate::shown::ALL.map(String::from));
+    let mut back = new.clone();
+    back.absent.clear();
+    assert!(!back.means_the_same(&new, &installed()), "装没装不一样");
 }
 
 /// 写了 `[features]` 的指纹把它算进去；没写的照以前的几格算（施工 F-3 上）。

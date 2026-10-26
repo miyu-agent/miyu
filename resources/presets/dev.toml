@@ -9,6 +9,8 @@ unlisted = "off"
 
 [software]
 basesystem = true
+# 注入环境信息（施工 ENV-1）：环境那几块和「关于你」原来跟着基础系统开，挪进 env 包以后照旧开着。
+env = true
 net = true
 goal = true
 # 人格记忆（施工 P-15，2026-10-20 项目主人定）。

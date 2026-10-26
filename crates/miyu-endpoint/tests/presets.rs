@@ -378,6 +378,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("env-model", "模型信息", true, true),
             ("env-harness", "Harness 版本", true, true),
             ("env-machine", "本机系统", true, true),
+            ("env-profile", "用户身份", true, true),
             ("goal", "长期目标", true, true),
             ("knowledge", "知识库", false, true),
             ("memory", "人格记忆", true, true),

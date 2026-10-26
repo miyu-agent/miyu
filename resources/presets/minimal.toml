@@ -12,7 +12,8 @@ unlisted = "off"
 [features]
 files = true
 commands = true
-# 环境那几块（施工 C-11）：极简开发照旧全开，和拆开以前一样。
+# 环境那几块（施工 C-11；施工 ENV-1 起在内置包 env 里，编号不变）：极简开发照旧全开，和拆开以前一样；「用户身份」是原来的「关于你」，
+# 原来就拼。
 env-time = true
 env-workdir = true
 env-permission = true
@@ -20,6 +21,7 @@ env-session = true
 env-model = true
 env-harness = true
 env-machine = true
+env-profile = true
 
 [tools]
 glob = false

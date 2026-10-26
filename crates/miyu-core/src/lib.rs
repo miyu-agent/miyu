@@ -162,6 +162,7 @@ pub fn built_in() -> Vec<&'static str> {
         Some(miyu_goal::PACKAGE),
         Some(miyu_knowledge::PACKAGE),
         Some(ROLEPLAY),
+        Some(miyu_policy::shown::PACKAGE),
         cfg!(feature = "mermaid").then_some("mermaid"),
         cfg!(feature = "net").then_some("net"),
     ]

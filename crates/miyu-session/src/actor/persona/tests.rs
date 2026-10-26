@@ -215,6 +215,7 @@ fn roleplay_stays_off_across_a_swap() {
         id: "dev".to_string(),
         off: vec!["memory".to_string(), "roleplay".to_string()],
         digest: None,
+        absent: Vec::new(),
     };
     let (_scratch, root, mut refresh) =
         setup_with("roleplay", "You are Miyu.\n", Some(pin.clone()), None);

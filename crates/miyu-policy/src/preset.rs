@@ -154,6 +154,10 @@ pub struct PresetPin {
     /// 叠好的文件的指纹（施工 P-2 下，[`PresetFile::digest`]）：回合开始时照它认出预设改了。P-2（中）造的没有：不换。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub digest: Option<ContentHash>,
+    /// 环境那几块的功能里这时没装的（施工 ENV-1，[`crate::shown`]）：`env` 包整个关掉、卸掉的时候是全部。没装的不会记进 `off`，
+    /// 不另记就分不出「没开」和「以前的快照里还没有这几个功能」。都装着的不写，以前的快照读成都装着。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub absent: Vec<String>,
 }
 
 impl PresetPin {
@@ -162,6 +166,7 @@ impl PresetPin {
     pub fn means_the_same(&self, other: &PresetPin, features: &Features) -> bool {
         self.id == other.id
             && self.digest == other.digest
+            && self.absent == other.absent
             && features.read_legacy(&self.off) == features.read_legacy(&other.off)
     }
 }
@@ -177,6 +182,8 @@ pub struct Chosen {
     pub off: Vec<String>,
     /// 文件的指纹（施工 P-2 下）：照找到的那一份算，[`Chosen::keeping_memory`] 改了记忆那一格也不变。
     pub digest: ContentHash,
+    /// 环境那几块的功能里没装的（施工 ENV-1，[`PresetPin::absent`]）。
+    pub absent: Vec<String>,
 }
 
 impl Chosen {
@@ -189,6 +196,7 @@ impl Chosen {
             file,
             off,
             digest,
+            absent: crate::shown::absent(features),
         }
     }
 
@@ -215,6 +223,7 @@ impl Chosen {
             id: self.id.clone(),
             off: self.off.clone(),
             digest: Some(self.digest.clone()),
+            absent: self.absent.clone(),
         }
     }
 }

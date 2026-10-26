@@ -109,7 +109,11 @@ pub(super) async fn draft(
             .transpose()
             .map_err(CreateError::Shipped)?
             .flatten();
-        let profile = profile.block(&resources.profile().map_err(CreateError::Shipped)?);
+        // 「用户身份」（施工 ENV-1，`env-profile`）关了、`env` 包没装的不拼「关于你」那一块。
+        let profile = match miyu_policy::shown::Shown::of(parts.preset.as_ref()).profile {
+            true => profile.block(&resources.profile().map_err(CreateError::Shipped)?),
+            false => None,
+        };
         Ok(Parts {
             skills,
             knowledge,

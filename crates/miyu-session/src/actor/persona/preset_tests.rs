@@ -172,12 +172,22 @@ fn an_old_pin_written_with_package_ids_is_not_a_change() {
         service: None,
         script: None,
     };
-    let features = Features::new(vec![
-        feature("basesystem", "basesystem"),
-        feature("memory", "memory"),
-        feature("roleplay", "roleplay"),
-        feature("qq", "onebot"),
-    ]);
+    // 出厂默认装着的 `env` 包的几个环境功能（施工 ENV-1）照旧装着。
+    let features = Features::new(
+        [
+            feature("basesystem", "basesystem"),
+            feature("memory", "memory"),
+            feature("roleplay", "roleplay"),
+            feature("qq", "onebot"),
+        ]
+        .into_iter()
+        .chain(
+            miyu_policy::shown::ALL
+                .into_iter()
+                .map(|id| feature(id, miyu_policy::shown::PACKAGE)),
+        )
+        .collect(),
+    );
     refresh.presets.as_mut().expect("有预设的几层").features = features;
     let pin = refresh.snapshot.preset.as_mut().expect("有预设");
     pin.off = vec!["onebot".to_string()];

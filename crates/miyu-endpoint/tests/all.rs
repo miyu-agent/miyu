@@ -69,6 +69,7 @@ mod delete_children;
 mod dirs;
 mod edges;
 mod endpoint;
+mod env_package;
 mod extension_approval;
 mod extension_config;
 mod extension_rights;

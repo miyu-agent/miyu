@@ -181,6 +181,7 @@ fn only_the_persona_and_preset_parts_may_differ_for_a_swap() {
         id: "dev".to_string(),
         off: vec!["basesystem".to_string()],
         digest: None,
+        absent: Vec::new(),
     });
     assert!(
         old.swappable(&tools),

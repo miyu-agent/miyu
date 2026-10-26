@@ -20,11 +20,12 @@ use crate::config::methods::words;
 use crate::personas::pick;
 
 /// 一个个功能：
-/// - 装了的：`{"id", "name", "summary", "on", "by", "installed": true, "tools"}`，名字、说明照它的清单、照语言挑，没说明的没有
+/// - 装了的：`{"id", "name", "summary", "package", "on", "by", "installed": true, "tools"}`，名字、说明照它的清单、照语言挑，没说明的没有
 ///   `summary`；`on` 是叠好以后开不开，`by` 是谁定的（施工 X-27）：`preset` 预设里写了，`global` 照技能、脚本、MCP 三页的
 ///   全局开关，`default` 都没写、照 `unlisted`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件
 ///   `{"name", "label", "on"}`：`label` 照给人看的字里这件工具的显示名，没有的照工具名；功能关着的都是关着，开着的照
-///   `[tools]` 关没关。
+///   `[tools]` 关没关。`package` 是它归哪个包（施工 ENV-1：头照它按包分组，包名照 `package.list` 查），同预设 `[software]`
+///   认的那个编号：机主私人的脚本、MCP 服务、自己放的模板命令是 `~home`；不归包的技能没有这一格。
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "by", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
@@ -64,6 +65,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             let mut one = json!({
                 "id": feature.id,
                 "name": pick(&feature.name, language),
+                "package": package,
                 "on": on,
                 "by": by.as_str(),
                 "installed": true,
@@ -83,12 +85,14 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     // 带着同一个名字，开不开照功能和 `[tools]`。
     for script in &scripts {
         let id = script_feature(&script.head.name);
-        let (on, by) = file.decided(&id, crate::scripts::package(script));
+        let package = crate::scripts::package(script);
+        let (on, by) = file.decided(&id, package);
         let name =
             pick(&script.head.display_name, language).unwrap_or_else(|| script.head.name.clone());
         let mut one = json!({
             "id": id,
             "name": name,
+            "package": package,
             "on": on,
             "by": by.as_str(),
             "installed": true,
@@ -117,6 +121,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         listed.push(json!({
             "id": id,
             "name": server.name,
+            "package": HOME_PACKAGE,
             "on": on,
             "by": by.as_str(),
             "installed": true,
@@ -128,7 +133,8 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     let mut carried_ids = BTreeSet::new();
     for skill in &carried.skills {
         let id = feature_id(&skill.head.name);
-        let (on, by) = file.decided(&id, skill.package.as_deref().unwrap_or_default());
+        let package = skill.package.as_deref().unwrap_or_default();
+        let (on, by) = file.decided(&id, package);
         let mut one = json!({
             "id": id,
             "name": pick(&skill.head.display_name, language).unwrap_or_else(|| skill.head.name.clone()),
@@ -139,6 +145,9 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         });
         if let Some(summary) = pick(&skill.head.summary, language) {
             one["summary"] = json!(summary);
+        }
+        if !package.is_empty() {
+            one["package"] = json!(package);
         }
         listed.push(one);
         carried_ids.insert(id);
@@ -152,6 +161,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         let mut one = json!({
             "id": id,
             "name": format!("/{}", command.name),
+            "package": package,
             "on": on,
             "by": by.as_str(),
             "installed": true,
@@ -175,6 +185,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         let mut item = json!({
             "id": id,
             "name": format!("/{}", one.command.name),
+            "package": one.package,
             "on": on,
             "by": by.as_str(),
             "installed": true,
