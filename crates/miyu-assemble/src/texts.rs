@@ -43,6 +43,9 @@ pub struct Texts {
     pub harness: Option<HarnessTexts>,
     /// 别的会话发来的话的标签（`core/peers/`，施工 C-2）。以前造的快照里没有，是没有：那种话照人的话原样渲染。
     pub peers: Option<PeerTexts>,
+    /// 到点的定时任务、循环交进来的话的标签（`software/schedule/`、`software/loop/`，施工 J-1 上）。以前造的快照里没有、这一版
+    /// 还没写字的，是没有：那种话照人的话原样渲染。
+    pub schedule: Option<ScheduleTexts>,
     /// 回顾的请求要用的（`core/recap/`，施工 3-8 四补）。以前造的快照里没有，是没有：那些会话不做回顾。
     pub recap: Option<Recap>,
     /// 起标题的请求要用的（`core/title/`，施工 3-8 五补）：对话记录的标签和截断的记号借回顾的，两样都有才起标题。以前造的
@@ -248,6 +251,20 @@ pub struct HarnessTexts {
     pub open: Template,
     /// 收尾（`message-close.txt`）。
     pub close: String,
+}
+
+/// 到点的定时任务、循环交进来的话的标签（施工 J-1 上，`docs/blueprint/schedules.md`）：一块带标签的事实，写法照别的 harness
+/// 发来的话。每一份以一个换行结尾。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScheduleTexts {
+    /// 定时任务、固定间隔的循环的标签（`schedule/common/message-open.txt`）：字段 `id`，任务编号。
+    pub schedule_open: Template,
+    /// 它的收尾（`schedule/common/message-close.txt`）。
+    pub schedule_close: String,
+    /// 她自己定节奏的循环的标签（`loop/common/message-open.txt`）：字段 `id`。
+    pub loop_open: Template,
+    /// 它的收尾（`loop/common/message-close.txt`）。
+    pub loop_close: String,
 }
 
 /// 别的会话发来的话的标签（施工 C-2，`docs/blueprint/kernel/request.md`「别的会话发来的话」）：一块带标签的事实，写法照

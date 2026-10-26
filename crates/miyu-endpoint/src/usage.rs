@@ -33,6 +33,14 @@ use crate::refusal::Refusal;
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";
 
+impl Core {
+    /// 给用量汇总装上取汇率的（施工 UC-1）：核心起来时装 HTTP 的那一个（`miyu_session::rates::HttpRates`），测试里装对着假服务器
+    /// 的。没装的只用缓存里的汇率。（施工 J-1 上从 `lib.rs` 挪来：那一份到了 500 行。）
+    pub fn install_rates(&self, source: Arc<dyn miyu_store::usage::rates::RateSource>) {
+        self.usage.rates().install(source);
+    }
+}
+
 /// 打开数据根 `root` 的用量汇总，记一行是什么情形：新建的 `INFO usage index created`，读不了、坏了、版本不对的删掉重建
 /// `WARN usage index rebuilt reason=…`，重建也打不开的 `WARN usage index unusable error=…`（这一回不记账，查出来是空的）。
 pub(crate) fn open(root: &DataRoot) -> UsageIndex {

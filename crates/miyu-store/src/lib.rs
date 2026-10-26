@@ -50,6 +50,7 @@ pub mod projects;
 pub mod recall;
 pub mod resources;
 pub mod root;
+pub mod schedules;
 pub mod scripts;
 pub mod secrets;
 pub mod skills;

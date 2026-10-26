@@ -1,0 +1,96 @@
+## 定时和循环
+
+设计 `45-定时和循环.md`。核心里只有一样东西：到点把一句话交给一个会话跑一轮的「唤醒」，记在一张表里，核心重启不丢。定时任务、固定间隔的循环、她自己定节奏的循环都是它。
+
+状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26）。协议 `schedule.*` 是 J-1 下；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；场所会话的循环是 J-4。
+
+### 一、唤醒表
+
+一个账号一份 `home/<账号>/state/schedules.db`（SQLite，`miyu_store::schedules`）。它是真相，不是派生的，和会话列表的索引、用量汇总不一样：
+
+1. **开**：没有就建，`user_version` 是 1。只加表、加索引的改动不升版本。
+2. **坏了**：读不了、坏了的连同 `-wal`、`-shm` 改名成 `schedules.db.broken-<毫秒>` 留着，开一份空的，记 `WARN schedules set aside`。人的定时没了要告诉他：施工 J-3 接上系统通知，先只记日志。
+3. **比这一版新**：新的程序写过、又换回旧的，不动它，这一回不用，记 `WARN schedules newer`。回到新的程序照样在。
+4. **写盘**：`synchronous = FULL`，答应了的改动断电也在。一个账号一个连接，开了一直开着。
+5. **用到时开**：人、她建第一个任务时建；核心起来时只开数据根里已经有表的账号。
+
+一行一个任务：
+
+| 格 | 是什么 |
+|---|---|
+| `id` | `t<n>`，账号里递增，删了的号不再用（`counter` 表） |
+| `created_at` | 建的时刻，毫秒 |
+| `by` | 谁建的，JSON：`{"kind":"person","account"}`（人：命令行、协议）、`{"kind":"model","session"}`（她：在这个会话里用工具建的，施工 J-2）、`{"kind":"package","package"}`（包，施工 J-4） |
+| `when_json` | 什么时候跑，JSON：`{"cron":{"cron":"0 8 * * *","recurring":true}}`、`{"at":{"at":"<时刻>"}}`、`{"every":{"every":600}}` |
+| `prompt` | 交进会话的那句话，原样存；标签组装时包，不在这里 |
+| `target` | 跑在哪，JSON：`{"session":{"session":"<编号>"}}`，或 `{"new":{"persona"?,"preset","cwd"}}`（每次新开，人格、预设、工作目录建的时候就定下来） |
+| `target_session` | 跑在哪个已有会话，好查；每次新开的没有 |
+| `loop` | `fixed`、`dynamic`，没有的是定时任务（施工 J-2 的 `/loop`、`schedule_wakeup`） |
+| `paused` | 停着：不到点 |
+| `next_at` | 下一次；停着的、她自己定节奏的循环这一轮还没定的没有 |
+| `last_at`、`last_result`、`last_session` | 上一次：时刻、`ran` \| `queued` \| `skipped:<原因>`、交给了哪个会话 |
+
+### 二、什么时候跑
+
+1. **cron**：只认标准五段（分、时、日、月、星期），不认秒和年，照本机时区算（读不出时区的当 UTC）。日、星期两段照 Vixie cron 的「或」。夏令时照 OCPS 规范：跳过的那一小时里的时点挪到跳过以后，重复的那一小时只算一次。库是 croner 4.0.1（`jiff` 特性，不带 chrono）。`recurring` 是假的跑一次就删。
+2. **某个时刻一次**：建的时候已经过了的不收（核心的入口另有 `first`，见第四节）。跑过就删。
+3. **每隔一阵**：最短 60 秒。下一次照上一次往后数整数个间隔，错过的几个跳过，正好是现在这一刻的也算过去了。
+4. **错过的不补**（同旧版定时消息）：核心起来时已经过了的一律跳过，记 `INFO schedule missed`。一次的删掉，她自己定节奏的停着等，别的照现在往后找下一次。核心开着时醒晚了的（机器睡过一觉）照常跑一次。
+
+### 三、到点
+
+1. 核心起来时（`Core::start_schedules`）开上已有的表、跳过错过的，然后一个后台任务只睡到各账号里最早的那一次。表一改（建、停、续、删、改下一次）就叫醒它重算；不轮询。真的钟一次最多睡一小时再看一眼：改了系统时间、机器睡过一觉，最多晚这么久发现。测试换手拨的钟（`Clock`，`Core::with_clock`）。
+2. 到点的一个：先把下一次写进表（一次的删掉，她自己定节奏的清掉下一次），再交进会话，最后只记上一次那几格。顺序不能反：她在那一轮里定下一次（`schedule_wakeup`，施工 J-2）不会被这里盖掉。写不进下一次的不交，记 `WARN schedule not advanced`：交了又记不住，下一次醒来会再交一遍。
+3. **跑在已有的会话**：交一条 `Send`，`by` 是 `{"kind":"schedule","schedule":"t3","account":"alice","loop"?:"fixed"|"dynamic"}`（`kernel/ids.md`「谁」）。照「别处来的话」的规矩收（`kernel/session.md`「定时交进来的话」）：闲着开一轮，正在跑一轮的排在这一轮后面。`last_result` 照交的那一刻会话忙不忙记 `queued` 或 `ran`。命令编号 `schedule/<任务>/<这一次的毫秒>/say`：核心重启后再交一遍，会话认得是重发。
+4. **每次新开**：照建时定下的人格、预设、工作目录开一个会话（命令编号 `…/open`），没人在场（要问人的照规矩拒），再照第 3 条交。`last_session` 记开出来的那个。开不成的记 `skipped:not_opened`。跑完给人发系统通知是 J-3。
+5. **会话没了**、不是这个账号的：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
+6. **她建的照预设**（项目主人 2026-10-26 定）：`by` 是 `model` 的，到点时看那个会话现在的预设，关了建它的那个包的这一次不跑，记 `skipped:preset_off`，下一次照算。定时任务看 `schedule` 包，循环（`loop` 是 `fixed`、`dynamic`）看 `loop` 包；包的功能里装着、没被关掉的有一个就算开（`presets::package_on`）。没装的包算关；没有预设的老会话都开着；无工具（空的编号）算关。人建的、包建的不看预设。
+7. 每一次记 `INFO schedule fired`，带账号、任务编号、结果；不记那句话。
+
+### 四、核心的入口
+
+`Core::schedules()` 交回 `Schedules`，都照账号：
+
+| 入口 | 做什么 |
+|---|---|
+| `add(account, Wanted)` | 建一个：cron 读不成、算不出第一次、隔得少于 60 秒的不收，什么都不建。`Wanted.first` 写了的照它（`/loop` 马上先跑一次写现在，施工 J-2），不写的照 `when` 从现在往后算 |
+| `list(account)` | 全部：有下一次的照时刻在前，停着的、没定下一次的在后，照编号；还没有表的是空的 |
+| `get(account, id)` | 一个；没有的是 `Unknown` |
+| `cancel(account, id)` | 删掉 |
+| `pause(account, id)` | 停：清掉下一次 |
+| `resume(account, id)` | 续：照现在重算下一次，错过的不补；一次的已经过了的报 `NoNext` |
+| `set_next(account, id, next, prompt)` | 改下一次，`prompt` 写了的换掉那句话（她自己定节奏的循环每轮定一次，施工 J-2）；`next` 没有的停着等 |
+
+协议 `schedule.*` 和推送是 J-1 下，照第五节的形状。
+
+### 五、协议（J-1 下，形状 2026-10-26 主会话审过）
+
+都照调用者的账号那一份表，别人的编号一律 `unknown_schedule`。
+
+1. `schedule.add {when: {"cron", "recurring"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来，`cwd` 不写照家目录。回 `{"schedule": <一项>}`。cron 写错、`at` 已经过去、`every` 小于 60、会话不是他的：`bad_params`，带 `data.reason`。
+2. `schedule.list {session?}`：写了 `session` 的只列跑在它上面的，回 `{"schedules": [<一项>…]}`。
+3. `schedule.cancel {id}` 回 `{}`；`schedule.pause {id}`、`schedule.resume {id}` 回 `{"schedule": <一项>}`。
+4. 一项：`{"id","when","prompt","target","by","recurring","paused","loop"?,"next"?,"last"?: {"at","result","session"?},"created"}`。
+5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。
+
+### 六、标签
+
+交进会话的那句话进请求时包一层标签（`miyu-assemble` 的 `schedule.rs`，写法照「别的 harness 发来的话」）：她分得清这是到点在叫她，不是人说的。定时任务、固定间隔的循环用 `software/schedule/common/` 的一对，她自己定节奏的循环用 `software/loop/common/` 的一对，标签里的 `{id}` 是任务编号。字在造会话时冻结进快照（`core.schedule`），四份缺一份的当没有，那种话照人的话原样渲染：以前造的快照、这一版还没写字的都是这样。字由施工 J-2 写、登记（设计 26）。
+
+### 七、代码和测试
+
+| 代码 | 管什么 |
+|---|---|
+| `crates/miyu-store/src/schedules.rs`、`schedules/{open,row}.rs` | 表：建、读、改、删、最早的、到点的；开、坏了改名、比这一版新的不动 |
+| `crates/miyu-endpoint/src/schedules.rs` | 入口、核心起来时开表和跳过错过的 |
+| `crates/miyu-endpoint/src/schedules/{clock,next,run,fire}.rs` | 钟、下一次、睡到点、交进会话 |
+| `crates/miyu-kernel/src/origin.rs` | `by` 的 `schedule` |
+| `crates/miyu-assemble/src/schedule.rs`、`crates/miyu-policy/src/schedule.rs`、`crates/miyu-store/src/resources/schedules.rs` | 标签：组装、快照、读资源 |
+
+| 测试 | 守什么 |
+|---|---|
+| `crates/miyu-store/src/schedules/tests.rs` | 建、读、改、删，编号不复用；到点的、最早的照时刻，停着的不算；列表的先后；重开读得回原样；坏了的改名留着开空的，比这一版新的不动 |
+| `crates/miyu-endpoint/src/schedules/next/tests.rs` | cron 只认五段、照时区算、不含现在；每隔一阵的错过的跳过；一次的晚于现在才有 |
+| `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删 |
+| `crates/miyu-assemble/src/schedule/tests.rs` | 两种标签照 `loop` 挑、带任务编号；没有字的原样；`by` 的 JSON 写法、读得回 |
+| `crates/miyu-store/src/resources/tests.rs` 的 `schedule_texts_need_all_four_files` | 四份都在才读得出 |

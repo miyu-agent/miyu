@@ -25,6 +25,8 @@ doc = false
 [dependencies]
 # 时区：核心所在的机器现在的偏移，写进会话的环境。
 jiff = "0.2"
+# 定时任务的 cron（施工 J-1 上）：标准五段写法，照本机时区算下一次，夏令时照 OCPS 规范；直接认 jiff 的时刻，不带 chrono。
+croner = { version = "4.0.1", default-features = false, features = ["jiff"] }
 # 本机的监听器：一个个接连接（施工 3-8 下）。
 miyu-ipc = { path = "../miyu-ipc" }
 # 编号、命令、拒绝的原因。

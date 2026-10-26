@@ -2,6 +2,7 @@
 
 #![allow(dead_code, reason = "几个测试各用其中一部分")]
 mod checks;
+pub mod clock;
 pub mod deleting;
 pub mod embedding;
 pub mod extensions;

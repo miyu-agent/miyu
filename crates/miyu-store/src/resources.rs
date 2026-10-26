@@ -346,6 +346,7 @@ impl ResourceRoot {
                 message_open: core(&["harness", "message-open.txt"])?,
                 message_close: core(&["harness", "message-close.txt"])?,
             }),
+            schedule: self.schedule_texts(),
             peers: Some(PeerTexts {
                 message_open: core(&["peers", "message-open.txt"])?,
                 message_close: core(&["peers", "message-close.txt"])?,
@@ -391,37 +392,6 @@ impl ResourceRoot {
     /// 读不出来：写明是哪个文件。
     pub fn probe(&self) -> Result<String, SourceError> {
         self.read(&["core", "models", "probe.txt"])
-    }
-
-    /// 常见的 key 写法的原文（`core/memory/secrets.toml`，施工 R-6 上）：抽取发出去以前、记下以前照它遮 key。怎么读由
-    /// `miyu_recall::redact` 定。
-    ///
-    /// # Errors
-    ///
-    /// 读不出来：写明是哪个文件。
-    pub fn memory_secrets(&self) -> Result<String, SourceError> {
-        self.read(&["core", "memory", "secrets.toml"])
-    }
-
-    /// 联想的门槛表的原文（`core/memory/recall.toml`，施工 R-8）：照模型，相似度不到门槛的不带。怎么读由
-    /// `miyu_recall::associate` 定。
-    ///
-    /// # Errors
-    ///
-    /// 读不出来：写明是哪个文件。
-    pub fn memory_recall(&self) -> Result<String, SourceError> {
-        self.read(&["core", "memory", "recall.toml"])
-    }
-
-    /// 记忆的一张下限表的原文（`core/memory/<name>.toml`）：`search` 是主动搜时只有关键词找到的那几条的下限（施工 R-14），
-    /// `turns` 是搜以前的对话时只照意思找到的那几段的（施工 R-20），`near` 是搜记下的时只照意思找到的那几条的（施工 R-24）；
-    /// 写法同 [`ResourceRoot::memory_recall`]。
-    ///
-    /// # Errors
-    ///
-    /// 读不出来：写明是哪个文件。
-    pub fn memory_table(&self, name: &str) -> Result<String, SourceError> {
-        self.read(&["core", "memory", &format!("{name}.toml")])
     }
 
     /// 知识库的一张门槛表的原文（`core/knowledge/<name>.toml`）：`recall` 是自动想起的门槛（施工 K-6 下），`search` 是搜的时候
@@ -485,7 +455,9 @@ mod fork;
 mod goal;
 mod loading;
 mod mcp_tools;
+mod memory;
 mod project_docs;
+mod schedules;
 mod skills;
 mod tool_texts;
 mod venues;

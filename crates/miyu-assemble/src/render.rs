@@ -214,6 +214,9 @@ pub(crate) fn spoken(
 fn said(history: &History, by: &By, blocks: Vec<Block>, texts: &Texts) -> Vec<Block> {
     match by {
         By::Harness(from) => harness::message(from, blocks, texts.harness.as_ref()),
+        By::Schedule(schedule) => {
+            crate::schedule::message(schedule, blocks, texts.schedule.as_ref())
+        }
         By::Session(session) if history.is_peer(&session.id) => {
             peers::message(&session.id, blocks, texts.peers.as_ref())
         }

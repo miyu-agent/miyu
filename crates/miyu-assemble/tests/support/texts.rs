@@ -61,6 +61,7 @@ pub(super) fn texts() -> Texts {
         summarize_instructions: compaction!("summarize-instructions.txt"),
         summarize_end: compaction!("summarize-end.txt"),
         jobs: Some(job_texts()),
+        schedule: None,
         harness: Some(HarnessTexts {
             open: Template::parse(include_str!(
                 "../../../../resources/core/harness/message-open.txt"

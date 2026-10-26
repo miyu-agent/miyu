@@ -198,6 +198,7 @@ pub(crate) fn core() -> CoreTexts {
             }),
         }),
         jobs: Some(jobs()),
+        schedule: None,
         harness: Some(crate::HarnessTexts {
             message_open: include_str!("../../../resources/core/harness/message-open.txt")
                 .to_string(),

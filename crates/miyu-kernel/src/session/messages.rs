@@ -93,7 +93,7 @@ impl Session {
 }
 
 /// `by` 是别处：这个会话派的子代理（它的子会话），交回它的任务，被停掉的、撤掉的回合里派的也认；别的 harness（施工 7-10）；
-/// 别的会话，既不是父会话、也不是派的子代理（施工 C-2）。别的（人、父会话……）没有：照「发一条消息」。
+/// 别的会话，既不是父会话、也不是派的子代理（施工 C-2）；到点的定时任务（施工 J-1 上）。别的（人、父会话……）没有：照「发一条消息」。
 pub(super) fn sent_by(ledger: &Ledger, by: &By) -> Option<Waker> {
     match by {
         By::Session(session) => match ledger.subagent_in(&session.id) {
@@ -101,6 +101,7 @@ pub(super) fn sent_by(ledger: &Ledger, by: &By) -> Option<Waker> {
             None => ledger.is_peer(&session.id).then_some(Waker::Peer),
         },
         By::Harness(_) => Some(Waker::Harness),
+        By::Schedule(_) => Some(Waker::Schedule),
         _ => None,
     }
 }

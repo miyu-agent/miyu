@@ -35,6 +35,7 @@ mod profile;
 mod project;
 mod rebuild;
 mod recap;
+mod schedule;
 pub mod script;
 mod shorten;
 pub mod shown;
@@ -70,6 +71,7 @@ pub use profile::{ABOUT_MAX, NAME_MAX, Profile};
 pub use project::block as project_block;
 pub use rebuild::{REBUILD, RebuildNumbers, RebuildTexts, SkillNumbers};
 pub use recap::{RECAP, RecapNumbers, RecapTexts};
+pub use schedule::ScheduleTexts;
 pub use shorten::{SHORTEN, ShortenNumbers, ShortenTexts};
 pub use snapshot::{
     BuildError, CompactionNumbers, CompactionTexts, CoreTexts, PermissionTexts, Snapshot,

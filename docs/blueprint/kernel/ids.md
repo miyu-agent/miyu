@@ -121,6 +121,7 @@
 | `module` | 模块，包括扩展 | `id`：模块 | `{"kind":"module","id":"memory"}` |
 | `session` | 另一个会话：照它和这个会话的关系分三种（下面） | `id`：会话编号 | `{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}` |
 | `harness` | 别的 harness：经 `miyu ask --from` 发来的话（`agents.md` 第十一条，施工 7-1） | `name`：它自己报的名字 | `{"kind":"harness","name":"claude-code"}` |
+| `schedule` | 到点的定时任务、循环交进来的话（施工 J-1 上，`schedules.md`） | `schedule`：任务编号；`account`：唤醒表是谁的；`loop`，可以没有：`fixed`、`dynamic`，循环的才写，组装照它挑标签 | `{"kind":"schedule","schedule":"t3","account":"alice"}` |
 | `kernel` | 内核自己 | 没有 | `{"kind":"kernel"}` |
 
 `by` 是 `session` 的，照它和这个会话的关系分三种，不另加种类（施工 C-1，`cross-session.md`「谁」）：

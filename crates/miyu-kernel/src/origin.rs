@@ -10,7 +10,7 @@ use crate::id::{
 };
 use crate::raw::{self, RawJson};
 
-/// 这件事由谁引起。JSON 里用 `kind` 分开八种；读到不认识的，整块原样留着。
+/// 这件事由谁引起。JSON 里用 `kind` 分开九种；读到不认识的，整块原样留着。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum By {
@@ -30,6 +30,8 @@ pub enum By {
     Kernel,
     /// 别的 harness：经 `miyu ask --from` 发来的话（施工 7-1，`agents.md` 第十一条）。
     Harness(Harness),
+    /// 到点的定时任务、循环交进来的话（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 2 条）。
+    Schedule(Schedule),
     /// 不认识的种类，新版本才有的：整块原样留着，写出去还是原样。
     #[serde(untagged)]
     Unknown(RawJson),
@@ -116,6 +118,28 @@ pub struct Harness {
     pub name: HarnessName,
 }
 
+/// 到点的一个任务。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Schedule {
+    /// 任务的编号（`t<n>`），在这个账号的唤醒表里。
+    pub schedule: String,
+    /// 唤醒表是谁的。
+    pub account: AccountId,
+    /// 是循环的话，哪一种：组装照它挑标签（施工 J-2）。定时任务没有。
+    #[serde(rename = "loop", default, skip_serializing_if = "Option::is_none")]
+    pub looping: Option<ScheduleLoop>,
+}
+
+/// 循环的种类。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScheduleLoop {
+    /// 固定间隔。
+    Fixed,
+    /// 她每轮结束自己定下一次。
+    Dynamic,
+}
+
 impl By {
     /// 是人（施工 R-8 从回合索引挪进内核，两处共用）：有账号的人（`Person`）、通讯平台上的人（`External`）。别的会话、子代理、
     /// 别的 harness、工具、模块、内核都不是。回合索引收哪几轮（`memory.md` 第一条第 1 款）、联想拿哪句话（第四条第 1 款）
@@ -152,6 +176,7 @@ impl<'de> Deserialize<'de> for By {
                     "session" => raw::parse(json).map(By::Session),
                     "kernel" => Ok(By::Kernel),
                     "harness" => raw::parse(json).map(By::Harness),
+                    "schedule" => raw::parse(json).map(By::Schedule),
                     _ => return None,
                 })
             },

@@ -23,6 +23,7 @@ mod peers;
 mod private;
 mod recap;
 mod render;
+mod schedule;
 mod size;
 mod summary;
 mod tag;
@@ -35,7 +36,7 @@ mod test_support;
 
 pub use texts::{
     ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts,
-    PrivateMedia, Recap, RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
+    PrivateMedia, Recap, RestoredWrap, ScheduleTexts, Texts, Title, TurnEndedTexts, Vision,
 };
 
 use miyu_kernel::assemble::{Assembler, Spoken};

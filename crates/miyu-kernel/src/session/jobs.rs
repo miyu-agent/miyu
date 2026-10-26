@@ -36,6 +36,8 @@ pub(super) enum Waker {
     Harness,
     /// 别的会话发来的话（施工 C-2，`peers.rs`）、等的会话空下来了的通知（施工 C-6）：和别的 harness 发来的话一样，一律叫醒。
     Peer,
+    /// 到点的定时任务、循环交进来的话（施工 J-1 上）：同别的 harness 发来的话，一律叫醒；正在跑一轮的，排在这一轮后面。
+    Schedule,
     /// 照记下的几条并进正在跑的这一轮（施工 O-14 下，`turn.joined`）：照回报排，下一步听到，没听到就接着开。
     Joined,
 }
@@ -286,7 +288,7 @@ impl Session {
                 .history
                 .dispatched(job)
                 .is_none_or(|dispatched| dispatched.undone),
-            Waker::Harness | Waker::Peer | Waker::Joined => false,
+            Waker::Harness | Waker::Peer | Waker::Schedule | Waker::Joined => false,
         }
     }
 }

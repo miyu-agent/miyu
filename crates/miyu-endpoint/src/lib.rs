@@ -65,6 +65,7 @@ pub mod queries;
 mod refusal;
 mod responding;
 mod reverse;
+pub mod schedules;
 mod scope;
 mod scripts;
 pub mod search_sources;
@@ -236,6 +237,8 @@ pub struct Core {
     appends: appends::Appends,
     /// 重读清单的次数（施工 X-22，`content.rs`）：给别的包带的内容变没变照它查。
     content_rereads: content::Rereads,
+    /// 唤醒表（施工 J-1 上，`schedules.rs`）。
+    schedules: schedules::Schedules,
 }
 
 /// 连上以后最多等多久握手。
@@ -280,6 +283,7 @@ impl Core {
         }
         let (knowledge, kb_progress) = knowledge::of_core(&root, home.clone(), &resources, &found);
         Core {
+            schedules: schedules::Schedules::system(root.clone()),
             knowledge,
             kb_progress,
             memory,
@@ -453,12 +457,6 @@ impl Core {
     /// 会话写哪份用量汇总（施工 8-15）：核心一份、行里带属主。施工 Y-2 下下中下起人人的会话都写（以前只有管理员和系统账号的）。
     pub(crate) fn ledger(&self) -> Option<Arc<UsageIndex>> {
         Some(Arc::clone(&self.usage))
-    }
-
-    /// 给用量汇总装上取汇率的（施工 UC-1）：核心起来时装 HTTP 的那一个（`miyu_session::rates::HttpRates`），测试里装对着假服务器
-    /// 的。没装的只用缓存里的汇率。
-    pub fn install_rates(&self, source: Arc<dyn miyu_store::usage::rates::RateSource>) {
-        self.usage.rates().install(source);
     }
 
     /// 来请求了的信号（施工 V-5 中）。

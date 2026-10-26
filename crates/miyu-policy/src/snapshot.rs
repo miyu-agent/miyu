@@ -167,6 +167,10 @@ pub struct CoreTexts {
     /// 别的会话发来的话的标签（`peers/`，施工 C-2）。以前造的快照里没有，读成没有：那种话照人的话原样渲染；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peers: Option<PeerTexts>,
+    /// 到点交进来的话的标签（`software/schedule/`、`software/loop/`，施工 J-1 上）。以前造的快照里没有、还没写字的读成没有：
+    /// 那种话照人的话原样渲染；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<crate::ScheduleTexts>,
     /// 回顾的字（`recap/`，施工 3-8 四补）。以前造的快照里没有，读成没有：不做回顾；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recap: Option<RecapTexts>,
@@ -291,6 +295,11 @@ impl Snapshot {
                 .map(HarnessTexts::rendered)
                 .transpose()?,
             peers: self.peer_texts()?,
+            schedule: core
+                .schedule
+                .as_ref()
+                .map(crate::ScheduleTexts::rendered)
+                .transpose()?,
             recap: self.recap(),
             title: self.title(),
             vision: self.vision(),

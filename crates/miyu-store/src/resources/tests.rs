@@ -415,3 +415,37 @@ fn the_core_lines_are_their_own_files() {
         }
     }
 }
+
+/// 到点交进来的话的标签（施工 J-1 上）：四份都在才读得出，原样；缺一份的当没有。
+#[test]
+fn schedule_texts_need_all_four_files() {
+    let scratch = Scratch::new();
+    let root = ResourceRoot::at(scratch.path());
+    assert_eq!(root.schedule_texts(), None, "一份都没有");
+    for (package, name, text) in [
+        ("schedule", "message-open.txt", "<task {id}>\n"),
+        ("schedule", "message-close.txt", "</task>\n"),
+        ("loop", "message-open.txt", "<wakeup {id}>\n"),
+    ] {
+        let dir = scratch.path().join("software").join(package).join("common");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join(name), text).unwrap();
+    }
+    assert_eq!(root.schedule_texts(), None, "缺一份");
+    fs::write(
+        scratch
+            .path()
+            .join("software/loop/common/message-close.txt"),
+        "again?\n</wakeup>\n",
+    )
+    .unwrap();
+    assert_eq!(
+        root.schedule_texts(),
+        Some(miyu_policy::ScheduleTexts {
+            schedule_open: "<task {id}>\n".to_string(),
+            schedule_close: "</task>\n".to_string(),
+            loop_open: "<wakeup {id}>\n".to_string(),
+            loop_close: "again?\n</wakeup>\n".to_string(),
+        })
+    );
+}

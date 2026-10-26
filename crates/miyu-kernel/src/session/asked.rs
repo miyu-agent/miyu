@@ -30,7 +30,7 @@ impl Session {
             .filter_map(|arrived| match arrived.waker {
                 Waker::Job(_) => None,
                 Waker::Joined => self.joined_last(arrived.seq),
-                Waker::Harness | Waker::Peer => Some(arrived.seq),
+                Waker::Harness | Waker::Peer | Waker::Schedule => Some(arrived.seq),
             });
         queued.chain(arrived).max().and_then(|seq| self.asker(seq))
     }

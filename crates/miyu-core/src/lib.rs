@@ -432,6 +432,8 @@ async fn run(
     let _home_scripts = core.watch_scripts();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
+    // 唤醒表（施工 J-1 上）：开上已有的、跳过核心停着时错过的，睡到点、到点交进会话。
+    let _schedules = core.start_schedules();
     // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。
     let sampling = memlog::spawn(&core, &logs, memlog::Timing::default());
     // 一阵请求过去、安静下来以后把堆里空着的还给系统（施工 V-5 中，[`settle`]），再看内存涨得快不快（施工 V-6 下）：没请求时

@@ -11,7 +11,7 @@ use miyu_kernel::template::Template;
 
 use crate::texts::{
     ForwardTexts, GroupChat, GroupRecent, HarnessTexts, IdleTexts, JobTexts, PeerTexts,
-    PrivateMedia, Recap, RestoredWrap, Texts, Title, TurnEndedTexts, Vision,
+    PrivateMedia, Recap, RestoredWrap, ScheduleTexts, Texts, Title, TurnEndedTexts, Vision,
 };
 
 pub(crate) const KERNEL: &str = r#"{"kind":"kernel"}"#;
@@ -45,6 +45,12 @@ pub(crate) fn texts() -> Texts {
         harness: Some(HarnessTexts {
             open: Template::parse("<agent {name}>\n").expect("模板合写法"),
             close: "</agent>\n".to_string(),
+        }),
+        schedule: Some(ScheduleTexts {
+            schedule_open: Template::parse("<task {id}>\n").expect("模板合写法"),
+            schedule_close: "</task>\n".to_string(),
+            loop_open: Template::parse("<wakeup {id}>\n").expect("模板合写法"),
+            loop_close: "again?\n</wakeup>\n".to_string(),
         }),
         peers: Some(PeerTexts {
             open: Template::parse("<peer {id}>\n").expect("模板合写法"),

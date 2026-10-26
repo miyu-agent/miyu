@@ -734,6 +734,7 @@ flowchart LR
 | P-16 下 | 无工具 | `preset.list` 末尾固定一项编号是 `null` 的「无工具」（三语）；`session.create`、`session.configure` 交 `preset: null` 的一件工具都不给，技能目录、知识库那一块跟着没有；`session.created`、快照记 `no_tools`，内核和会话索引记空的编号，会话信息写 `preset: null`、`no_tools: true`；`preset.default` 不能是它。施工单见 `P-16-预设的说明和无工具.md` |
 | P-16 下补 | 无工具口径对齐 | 视图流的会话状态同会话列表写无工具（`preset: null` 加 `no_tools: true`，不再写空字）；中途换人格、预设马上推 `sessions.changed`，不等下一轮。施工单见 `P-16-预设的说明和无工具.md` |
 | P-17 | 设置页「新会话」一组 | `persona.default`、`preset.default`、`permission.start_read_only` 三项归进通用页新的 `new_session` 组（新会话、New sessions、新しいセッション），去掉只剩空的 `persona`、`preset` 组；终端的 `tui.skip_pick` 自己挪进来，网页照这个组画。施工单见 `P-17-新会话设置组.md` |
+| J-1 上 | 唤醒表和到点 | 一个账号一份 `home/<账号>/state/schedules.db`（是真相：坏了改名留着、比这一版新的不动）；cron 照标准五段、本机时区（croner），某个时刻一次、每隔一阵；核心起来时错过的跳过；到点交进已有的会话或照建时定下的开一个新的，记成 `by: schedule`，正忙的排在这一轮后面；会话没了停掉；她建的照会话现在的预设判。核心的入口给 J-2 用，协议是 J-1 下。施工单见 `J-1上-唤醒表和到点.md` |
 | 9-1 再补 | 配置项多一层组 | 清单 `[settings.<组>.<名字>]`，键 `<包>.<组>.<名字>`（接入通讯平台的 `im.qq.listen`、`im.web.port`）。施工单见 `9-1-软件包清单（再补）.md` |
 | N-4 | 抓不下来的请别家代抓 | `web_fetch` 被挡、空的、太短的照 Exa → Firecrawl → Parallel 代抓，和搜索共用冷却。施工单见 `N-4-抓不下来的请别家代抓.md` |
 | N-5 | 扩展登记搜索来源 | 清单 `[[search]]`、能力 `search`，下拉里多 `<包>/<编号>`，选了的经 `search.query` 先问它。施工单见 `N-5-扩展登记搜索来源.md` |

@@ -74,6 +74,27 @@ pub(crate) fn chosen(core: &Core, owner: &AccountId, found: Found) -> Chosen {
     Chosen::new(found.id, file, &features)
 }
 
+/// 预设 `preset` 在属主 `owner` 这里开没开包 `package`（施工 J-1 上：她建的定时任务到点时照会话现在的预设判）：包的功能里装着、
+/// 没被关掉的有一个就算开。没有预设的（以前的会话）都开着；无工具（空的编号）、找不到的预设、没装的包算关。
+pub(crate) fn package_on(
+    core: &Core,
+    owner: &AccountId,
+    preset: Option<&str>,
+    package: &str,
+) -> bool {
+    let Some(preset) = preset else {
+        return true;
+    };
+    let Ok(found) = presets(core, owner).find(preset) else {
+        return false;
+    };
+    let chosen = chosen(core, owner, found);
+    crate::scripts::features(core, owner)
+        .iter()
+        .filter(|feature| feature.package == package)
+        .any(|feature| !chosen.off.contains(&feature.id))
+}
+
 /// 这时 `account` 的配置里写了的全局开关（施工 X-27，`miyu_session::switches`；施工 Y-2 下下中上起照人）：照配置服务最近换上的
 /// 那一份读，不拿配置服务的锁。
 pub(crate) fn switches(
