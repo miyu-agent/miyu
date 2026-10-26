@@ -2,7 +2,8 @@
 //! 一块，两个入口共用，会话自己记的那几样在 `route/send.rs` 的 `Tried`）。
 //!
 //! - 成了：这个候选的失败次数清零，这一家整个的认证失败次数也清零。
-//! - 出错：引用是池的，限速、可重试、认证失败三类照分类记冷却（认证失败也只记这个模型），记一行 `INFO endpoint cooling`；
+//! - 出错：引用是池的，限速、可重试、认证失败、额度用完四类照分类记冷却（认证失败、额度用完也只记这个模型），记一行
+//!   `INFO endpoint cooling`；额度用完另记一行 `WARN provider out of quota`，写明哪一家、哪个模型、冷却到几点（施工 Q-4 中）；
 //!   单个模型的不记（项目主人 2026-10-19 定：冷却只为池里换人用）。别的分类不记、不换。
 //!   - 收到过增量才出错的（说到一半断了，挑的一方说了算）：不换。
 //!   - 只有这一个候选的：不换，照旧交供应商说的要等多久。
@@ -74,6 +75,16 @@ impl Picked {
                 failures = recorded.failures,
                 "endpoint cooling"
             );
+            // 额度用完是账号级的事（施工 Q-4 中，主会话要求）：另记一行 `WARN`，人一看就知道不是网断了是没钱了、几点恢复。
+            if *class == ErrorClass::Quota {
+                tracing::warn!(
+                    target: TARGET,
+                    provider = picked.who.provider.as_str(),
+                    model = picked.who.model.as_str(),
+                    until = %recorded.until,
+                    "provider out of quota"
+                );
+            }
         }
         let cooled = recorded.is_some();
         let stay = Switch {

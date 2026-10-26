@@ -104,13 +104,22 @@ update = true
 url = "https://models.dev/api.json"
 
 [models.cooldown.auth]
-# Auth failure pause: How long a whole provider rests the first time it fails to authenticate or runs out of quota. It doubles each time in a row.
+# Auth failure pause: How long a pool model rests the first time it fails to authenticate. It doubles each time in a row.
 # Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
 base = "10m"
 
-# Auth failure pause cap: The pause for a whole provider stops doubling here.
+# Auth failure pause cap: The auth failure pause stops doubling here.
 # Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
 max = "2h"
+
+[models.cooldown.quota]
+# Out-of-quota pause: How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+base = "30m"
+
+# Out-of-quota pause cap: Without a stated reset time, the pause doubles each time in a row up to this.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+max = "30m"
 
 [models.cooldown.rate_limited]
 # Rate limit cooldown: How long an endpoint rests the first time it is rate limited. It doubles each time in a row.

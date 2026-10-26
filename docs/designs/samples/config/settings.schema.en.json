@@ -171,16 +171,35 @@
               "properties": {
                 "base": {
                   "default": "10m",
-                  "description": "How long a whole provider rests the first time it fails to authenticate or runs out of quota. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
+                  "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Auth failure pause",
                   "type": "string"
                 },
                 "max": {
                   "default": "2h",
-                  "description": "The pause for a whole provider stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
+                  "description": "The auth failure pause stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Auth failure pause cap",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "quota": {
+              "properties": {
+                "base": {
+                  "default": "30m",
+                  "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
+                  "pattern": "^[0-9]+[smh]?$",
+                  "title": "Out-of-quota pause",
+                  "type": "string"
+                },
+                "max": {
+                  "default": "30m",
+                  "description": "Without a stated reset time, the pause doubles each time in a row up to this. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.",
+                  "pattern": "^[0-9]+[smh]?$",
+                  "title": "Out-of-quota pause cap",
                   "type": "string"
                 }
               },

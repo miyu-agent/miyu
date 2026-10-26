@@ -107,3 +107,21 @@ async fn a_pool_member_without_a_key_falls_back_too() {
     assert_eq!(organize(&text, Some("a/m")).await, Ok("a/m".to_string()));
     assert!(pool.received().is_empty(), "取不到 key 的没发");
 }
+
+/// 池里额度用完（402，施工 Q-4 中）也算会换人的错：照样退到后备。
+#[tokio::test]
+async fn an_out_of_quota_normal_pool_falls_back_too() {
+    let session = Server::start(hellos(1)).await;
+    let pool = Server::start(vec![
+        Reply::error(
+            402,
+            &[],
+            r#"{"error":{"message":"Insufficient Balance"}}"#
+        );
+        4
+    ])
+    .await;
+    let answered = organize(&config(&session, &pool, r#""b/y""#), Some("a/m")).await;
+    assert_eq!(answered, Ok("a/m".to_string()), "额度用完，退到会话的模型");
+    assert!(!pool.received().is_empty(), "先试过池里的");
+}

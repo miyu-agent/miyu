@@ -391,7 +391,28 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
-    /// 认证失败（额度用完的也在这一类）的冷却（施工 8-9）：停整家供应商（施工 8-25：一家一个 key），算法同 [`RateLimitedCooldown`]。
+    /// 额度、余额用完的冷却（施工 Q-4 中，设计 43 第三节第 5 条第 3 款）：供应商说了什么时候重置的照它（最多一天，不看 `max`）；
+    /// 没说的照这里算，默认 30 分钟、连着也是 30 分钟。
+    pub struct QuotaCooldown in "models.cooldown.quota" {
+        /// 供应商没说什么时候重置时，第一次冷却多久。
+        base: Duration = "30m" {
+            kind: duration [1, 86400],
+            layers: [System, Personal],
+            applies: now,
+            ui: { page: "models", group: "cooldown", control: text },
+        },
+        /// 供应商没说什么时候重置时，最多冷却多久。
+        max: Duration = "30m" {
+            kind: duration [1, 86400],
+            layers: [System, Personal],
+            applies: now,
+            ui: { page: "models", group: "cooldown", control: text },
+        },
+    }
+}
+
+miyu_config::settings! {
+    /// 认证失败的冷却（施工 8-9；额度用完的施工 Q-4 中起另算，[`QuotaCooldown`]）：只停这个模型（施工 8-25），算法同 [`RateLimitedCooldown`]。
     pub struct AuthCooldown in "models.cooldown.auth" {
         /// 第一次冷却多久。
         base: Duration = "10m" {

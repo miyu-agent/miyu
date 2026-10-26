@@ -194,7 +194,8 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | 400 `invalid_request_error`，`… exceed context limit: …` | `context_too_long`（超了多少、上限不解析） | 新加的那一句 |
 | 400 `invalid_request_error`，`Output blocked by content filtering policy` | `content_policy` | 内容策略的说法 |
 | 400 别的 | `other` | |
-| 401 `authentication_error`、402 `billing_error`、403 `permission_error` | `auth` | 401、402、403 |
+| 401 `authentication_error`、403 `permission_error` | `auth` | 401、403 |
+| 402 `billing_error` | `quota`（施工 Q-4 中从 `auth` 里分出来） | 402 |
 | 404 `not_found_error` | `other` | |
 | 413 `request_too_large` | `context_too_long` | 413 |
 | 429 `rate_limit_error` | `rate_limited`，要等多久照 `retry-after` | 429 |

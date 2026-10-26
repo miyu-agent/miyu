@@ -388,11 +388,19 @@
       },
       "models.cooldown.auth.base": {
         "name": "Auth failure pause",
-        "description": "How long a whole provider rests the first time it fails to authenticate or runs out of quota. It doubles each time in a row."
+        "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row."
       },
       "models.cooldown.auth.max": {
         "name": "Auth failure pause cap",
-        "description": "The pause for a whole provider stops doubling here."
+        "description": "The auth failure pause stops doubling here."
+      },
+      "models.cooldown.quota.base": {
+        "name": "Out-of-quota pause",
+        "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day."
+      },
+      "models.cooldown.quota.max": {
+        "name": "Out-of-quota pause cap",
+        "description": "Without a stated reset time, the pause doubles each time in a row up to this."
       },
       "external.bindings.<external>": {
         "name": "Terminal admin's platform accounts",
@@ -836,6 +844,7 @@
     "view/error/class/rate_limited": "Rate limited",
     "view/error/class/context_too_long": "Context too long",
     "view/error/class/auth": "Authentication failed",
+    "view/error/class/quota": "Out of quota",
     "view/error/class/no_model": "No usable model",
     "view/error/class/cooling": "All models are cooling down",
     "view/error/class/content_policy": "Blocked by content policy",

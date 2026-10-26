@@ -180,7 +180,7 @@ async fn used_up_quota_ends_at_once_and_records_when_it_comes_back() {
     let log = home.log(handle.id());
     let calls = called(&log);
     let error = calls[0].error.as_ref().expect("出错了");
-    assert_eq!(error.class, ErrorClass::Auth);
+    assert_eq!(error.class, ErrorClass::Quota, "施工 Q-4 中起单独一类");
     assert_eq!(error.retry_after_ms, Some(59_321_000));
 }
 

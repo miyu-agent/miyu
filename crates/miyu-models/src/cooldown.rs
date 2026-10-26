@@ -1,6 +1,7 @@
 //! 冷却（`docs/blueprint/models.md`「怎么走」第五条第 2 条，施工 8-9）：一个端点出错以后多久不再挑它。
 //!
-//! - 只有三类记冷却：限速 `rate_limited`、可重试 `retryable`、认证失败 `auth`（额度用完的也在这一类）。别的分类（超长、
+//! - 四类记冷却：限速 `rate_limited`、可重试 `retryable`、认证失败 `auth`、额度用完 `quota`（施工 Q-4 中从认证失败里分出来：
+//!   供应商说了什么时候重置的照说的，最多一天；没说的照 `[models.cooldown.quota]`，默认 30 分钟）。别的分类（超长、
 //!   内容策略、请求本身有错）换了端点也一样，不记（`15-模型与供应商.md` 第五节那张表）。
 //! - 单位：这一家的这个模型，认证失败也一样（施工 8-25：一家一个 key，冷却只管模型；项目主人 2026-10-19 报的：中转站把一个
 //!   上游的 401 透传过来，原来停整家会连累别的上游，整家的那一种去掉了）。只有经池调用的才记（会话那一层判，单个模型出错不记）。
@@ -17,7 +18,7 @@ use miyu_config::Values;
 use miyu_kernel::event::ErrorClass;
 use miyu_kernel::time::Timestamp;
 
-use crate::settings::{AuthCooldown, RateLimitedCooldown, RetryableCooldown};
+use crate::settings::{AuthCooldown, QuotaCooldown, RateLimitedCooldown, RetryableCooldown};
 
 /// 一类错冷却多久：第一次多久、最多多久。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +38,12 @@ pub struct Rules {
     pub retryable: Rule,
     /// 认证失败：停整家供应商。
     pub auth: Rule,
+    /// 额度、余额用完（施工 Q-4 中）：供应商没说什么时候重置时照它；说了的照说的，最多 [`QUOTA_SAID_MOST`]。
+    pub quota: Rule,
 }
+
+/// 额度用完、供应商说了什么时候重置的，最多照它冷却多久：一天（施工 Q-4 中，主会话定的封顶）。
+pub const QUOTA_SAID_MOST: Duration = Duration::from_secs(86_400);
 
 impl Rules {
     /// 照配置的最终值：没写的照默认。
@@ -45,6 +51,7 @@ impl Rules {
         let rate_limited = RateLimitedCooldown::from(values);
         let retryable = RetryableCooldown::from(values);
         let auth = AuthCooldown::from(values);
+        let quota = QuotaCooldown::from(values);
         Rules {
             rate_limited: Rule {
                 base: rate_limited.base,
@@ -58,6 +65,10 @@ impl Rules {
                 base: auth.base,
                 max: auth.max,
             },
+            quota: Rule {
+                base: quota.base,
+                max: quota.max,
+            },
         }
     }
 
@@ -67,6 +78,7 @@ impl Rules {
             ErrorClass::RateLimited => Some(self.rate_limited),
             ErrorClass::Retryable => Some(self.retryable),
             ErrorClass::Auth => Some(self.auth),
+            ErrorClass::Quota => Some(self.quota),
             _ => None,
         }
     }
@@ -152,7 +164,11 @@ impl Cooldowns {
         let doubled = 1u64
             .checked_shl(failures - 1)
             .map_or(u64::MAX, |times| millis(rule.base).saturating_mul(times));
-        let for_ms = doubled.max(said_ms.unwrap_or(0)).min(max);
+        let for_ms = match (class, said_ms) {
+            // 额度用完、说了什么时候重置的（施工 Q-4 中）：照说的，短的也照，最多一天。
+            (ErrorClass::Quota, Some(said)) => said.min(millis(QUOTA_SAID_MOST)),
+            _ => doubled.max(said_ms.unwrap_or(0)).min(max),
+        };
         let until = later(now, for_ms);
         self.units.insert(
             candidate.clone(),

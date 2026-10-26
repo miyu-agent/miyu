@@ -178,6 +178,9 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `rate_limited` | `30s` | `10m` |
 | `retryable` | `10s` | `5m` |
 | `auth` | `10m` | `2h` |
+| `quota`（施工 Q-4 中） | `30m` | `30m` |
+
+额度用完（`quota`）的 `base` 能写到 1 天；这两个数只管供应商没说什么时候重置的，说了的照说的，最多 1 天（第五条第 2 条）。
 
 **`usage.currency`**：显示用的币种（8-15），默认 `USD`，当场生效，能写进个人设置。现在不换算：它只定汇总里几种币种的先后，它排最前，别的照币种代码的字母先后。以后要换算另说（2026-10-01 项目主人定）。
 
@@ -685,13 +688,14 @@ flowchart TB
 
 **五、出错换端点、冷却**（8-9；8-20 起在底子里，两个入口共用，第十二条）
 
-1. **哪些错换**：驱动分的 `rate_limited`、`retryable`、`auth`（额度用完的也在这一类）。`context_too_long` 走压缩，`content_policy` 如实说，`other` 是请求本身有错：都不换，不记冷却（`15-模型与供应商.md` 第五节那张表）。内核自己查出的 `bad_stream`、`empty_reply`、`output_limit`（施工 3-10）不经端口，照旧在同一个端点再来。
+1. **哪些错换**：驱动分的 `rate_limited`、`retryable`、`auth`、`quota`（额度、余额用完，施工 Q-4 中从 `auth` 里分出来）。2xx 但驱动拿不到一个可解析的应答（一页 HTML、空的响应体、不是应答的 JSON：中转站、网关的登录页、维护页）报 `retryable`，照样换（施工 Q-4 中补了三家驱动的测试，原来就是这样）；流里已经给出过内容再断的照第 4 条，不换。`context_too_long` 走压缩，`content_policy` 如实说，`other` 是请求本身有错：都不换，不记冷却（`15-模型与供应商.md` 第五节那张表）。内核自己查出的 `bad_stream`、`empty_reply`、`output_limit`（施工 3-10）不经端口，照旧在同一个端点再来。
 2. **冷却多久**：这个单位连着失败的第 n 次，冷却 = min(`base` × 2^(n−1), `max`)。供应商说了要等多久、比它长的，用供应商说的，也不超过 `max`。`base`、`max` 照分类取 `[models.cooldown]` 的。
    - 单位：这一家的这个模型，`auth` 也一样（8-9 修，项目主人 2026-10-19 报的：中转站把一个上游的 401「key 过期」透传过来，原来停整家，连累了同一家底下别的上游的模型）。
    - 只有经池调用的才记（8-9 修，项目主人 2026-10-19 定：冷却只为池里换人用）：引用是单个模型的出错不记，下一轮照发它，人手动选的也不会被冷却挡；等多久照供应商说的、内核照「出错再来」的规矩等。
    - 冷却到了就能用，失败次数不清零：再失败，照 n+1 算，翻倍。真成功一次才清零（第四条第 5 条）。旧版实测：固定的冷却让一直挂着的端点每两分钟被重新信任一次。
    - 冷却表核心一份，只在内存里：重启从头来。
-   - 记一行 `INFO endpoint cooling provider=… key=<第几个> model=… class=… for_ms=… failures=…`。key 只写第几个，从 1 数。
+   - 额度用完（`quota`，施工 Q-4 中）：供应商说了什么时候重置的（`retry-after` 这些，第十二条第 5 条）照说的，短的也照，最多 1 天；没说的照 `[models.cooldown.quota]`，默认 30 分钟。单位照旧是这个模型（同 `auth`：中转站透传上游的额度错，整家停会连累别的上游）。
+   - 记一行 `INFO endpoint cooling provider=… key=<第几个> model=… class=… for_ms=… failures=…`。key 只写第几个，从 1 数。额度用完另记一行 `WARN provider out of quota provider=… model=… until=<时刻>`：账号级的事，人一看就知道不是网断了是没钱了、几点恢复（施工 Q-4 中，主会话要求）。
 3. **换**：出错的这一次，端口在「说完了」里交：
    - 还有别的候选这时就能用：`failover` 是真，不带要等多久。内核不管分类当场再来（第 5 条），下一次照第四条挑到别的。
    - 别的候选都在冷却、只剩等：`failover` 是真，要等多久 = 最早恢复的那一个还要多久（和供应商说的取长的）。
@@ -1064,6 +1068,7 @@ mimo = ["xiaomi"]
 | `WARN` | `provider list failed provider=… error=…` | 拉供应商的列表失败 |
 | `INFO` | `learned window provider=… model=… window=…` | 用出来的窗口 |
 | `INFO` | `endpoint cooling provider=… key=… model=… class=… for_ms=… failures=…` | 记冷却（没写 key 的没有 `key`） |
+| `WARN` | `provider out of quota provider=… model=… until=…` | 额度用完记了冷却（施工 Q-4 中）：冷却到几点 |
 | `INFO` | `failover from=… to=… class=…`（8-25 起没有只换 key 的那一种） | 换端点 |
 | `INFO` | `model gone provider=… model=…`、`model retired model=… pools=…` | 池的成员下架了：路由确认了、端点从池里拿掉了（8-23） |
 | `WARN` | `model not retired model=… layer=… reason=…` | 下架的模型写不回配置（8-23） |
@@ -1149,13 +1154,14 @@ mimo = ["xiaomi"]
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs`、`classify/tests.rs`、`classify/excess/tests.rs`，`crates/miyu-http/tests/get.rs` | 列模型的读法；超长交出上限；一次 GET | 8-7 |
 | `crates/miyu-session/tests/route_facts.rs`、`route_learned.rs`、`http.rs` | 目录读完以前造会话等着、窗口照目录、读不了照样造、换上的新目录新会话用；用出来的窗口记下、写盘、记一行、新会话用上、大的不记、手写的盖过；能收什么照手写的资料 | 8-7 |
 | `crates/miyu-models/src/pools/tests.rs` | 钉住从发过的认回（`find`）、候选绕一圈、轮换指针、成员变了取余、指针的字读写、默认的分法（全是按次计费的才轮换）、认不出的成员跳过、没写成员和一个都不剩的解析不出（8-8）；派子代理能选的：开关开着、有认得出的成员的才列，照名字的字节序排，说明照写的（8-8 补） | 8-8 |
-| `crates/miyu-models/src/cooldown/tests.rs` | 翻倍、封顶、连着很多次不溢出，供应商说的更长、更短，成功清零，到期先试、次数不清零，认证失败也只停那个模型（8-9 修），只有三类记冷却，规矩照配置、`base` 比 `max` 大的照 `max` | 8-9 |
+| `crates/miyu-models/src/cooldown/tests.rs` | 翻倍、封顶、连着很多次不溢出，供应商说的更长、更短，成功清零，到期先试、次数不清零，认证失败也只停那个模型（8-9 修），只有四类记冷却（Q-4 中多额度用完；额度用完照供应商说的重置时刻，短的也照，最多一天，没说的 30 分钟、连着也是），规矩照配置、`base` 比 `max` 大的照 `max` | 8-9 |
 | `crates/miyu-models/src/price/tests.rs` | 金额的算式、分档（严格大于、门槛一样取先写的、档里没写的用底价）、缺项不算、思考价不同不算、倍率照资料、用量是 0 的项不要价、币种照价格、本机的是 0、出处的写法、几种币种排先后 | 8-15 |
 | `crates/miyu-kernel/src/event/cost/tests.rs`、`event/model/tests.rs`、`session/tests/cost.rs`、`session/tests/title.rs`（那一条）、`session/tests/limits.rs`（那一条） | `cost` 读写一字不差、整数写成整数、照位比相等、写坏的读不进；`model.called` 的 `cost` 排在 `usage` 后面、以前的日志照读；交来的原样记下、出错的照记、没交的不写、被打断的没有，辅助请求也记；`context_used()` 没限额、没压缩的没有，照压缩线的算法 | 8-15 |
 | `crates/miyu-kernel/src/session/tests/random/watch/model.rs` | 随机测试：说完了的 `model.called` 带的就是最近一次喂进去的金额，被打断的没有（新路「记下金额」） | 8-15 |
 | `crates/miyu-session/tests/route_cost.rs`、`session_usage.rs`、`route_vision.rs`（那一条） | 路由照真发的模型手写的价格、倍率算金额，出处写层和行，缺项不写；剧本带价格的会话记金额、落盘写进汇总，她调 `session_usage` 看到用量、金额、上下文和压缩线；替看图记在属主的账号日志上、不进会话 | 8-15 |
 | `crates/miyu-session/tests/route.rs`、`route_pools.rs` | 假服务器：收到这一家的 key、重启还是它、老的 `keys` 报不认识（8-25；8-6 那几条照会话编号挑 key 的删了），连同几种 `no_model` 不发、没写 key 不带认证头、开着的会话钉着造它时的模型、钉着的那一家没了退回这一轮的 `models.chat` 以后钉在它上面、造的时候没配的配好以后用上、窗口照配置）；池（8-8，`route_pools.rs`）：钉住的一个会话一直发给一个成员、新会话照指针分开、认不出的成员跳过，载入照日志认回钉着的、指针写进 `pools.json` 重启读回来，轮换的一次一个，这时用不了的跳过、钉到下一个，池没了退回 `chat` 以后钉在它上面，限额照钉着的、轮换的取小的，`session.created` 记下会话的引用；429 换池里的下一个、当场再来，说到一半断了还发给它，全在冷却交 `cooling`，只有一个候选照发，限额变了交内核、推 `model.changed`（8-9，放在 `route_failover.rs`：另有轮换的池跳过冷却的、不推，换端点数进 5 次，请求本身有错的不换不记；`failover_log.rs`：两行运行日志） | 8-6、8-8、8-9 |
 | `crates/miyu-session/tests/route_ordered.rs`（Q-4 上） | 照先后的池：两个会话每次都发给第一个、限额照它；第一个出错换到第二个，冷却过了回到第一个。窗口放不下的不换过去：钉住的池主力出错时，约四万 token 的请求不发给窗口 32000 的成员 |
+| `crates/miyu-session/tests/route_non_api.rs`、`quota_log.rs`、`once_side.rs` 的 `an_out_of_quota_normal_pool_falls_back_too`（Q-4 中） | 池里第一家回 200 的 HTML 页、空的响应体、不是应答的 JSON，三家驱动都报可重试、换到下一个；402 额度用完换到别的成员，冷却照供应商说的两小时，记 `WARN provider out of quota` 带供应商、模型、冷却到的时刻；一次性旁路请求遇到额度用完照样退到会话的模型 |
 | `crates/miyu-kernel/src/session/tests/scenario/models.rs`、`session/tests/configure.rs`、`scenario/breaker.rs`、`scenario/manual.rs` | `Configure`：一样的不记、落了盘才回应、回合进行中的下一轮生效、撤掉的回合里的也算、载入照日志算，回合开始交引用，`replaced` 记在注入前面、对不上的不理，`models.chat` 也没有的不记，`failover` 不管分类当场再来、数进 5 次，`cooling`、`no_model`，换模型解除压缩的暂停、失败从 0 数（`breaker.rs`），手动压缩、清空那一轮不交引用（`manual.rs`） | 8-6、8-9、8-10 |
 | `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行 | 8-10 |
 | `crates/miyu-session/tests/route_turn.rs`（8-34 那一条） | 供应商改了名：钉着旧编号的下一轮照新编号发，内核记一条（`replaced` 是旧的），不退回 `models.chat` | 8-34 |

@@ -388,11 +388,19 @@
       },
       "models.cooldown.auth.base": {
         "name": "认证失败先停用多久",
-        "description": "认证失败、额度用完时，整家供应商第一次停用这么久，连着再失败就翻倍。"
+        "description": "池里的一个模型认证失败时，第一次停用这么久，连着再失败就翻倍。"
       },
       "models.cooldown.auth.max": {
         "name": "认证失败最多停用多久",
-        "description": "整家供应商的停用翻倍到这么久为止。"
+        "description": "认证失败的停用翻倍到这么久为止。"
+      },
+      "models.cooldown.quota.base": {
+        "name": "额度用完先停用多久",
+        "description": "池里的一个模型额度、余额用完，供应商又没说什么时候恢复时，第一次停用这么久。说了的照它说的，最多一天。"
+      },
+      "models.cooldown.quota.max": {
+        "name": "额度用完最多停用多久",
+        "description": "没说什么时候恢复的，连着再用完就翻倍，到这么久为止。"
       },
       "external.bindings.<external>": {
         "name": "终端管理员的平台账号",
@@ -820,6 +828,7 @@
     "view/error/class/rate_limited": "请求受限",
     "view/error/class/context_too_long": "上下文太长",
     "view/error/class/auth": "认证失败",
+    "view/error/class/quota": "额度用完",
     "view/error/class/no_model": "没有可用的模型",
     "view/error/class/cooling": "模型都在冷却",
     "view/error/class/content_policy": "内容被拦截",

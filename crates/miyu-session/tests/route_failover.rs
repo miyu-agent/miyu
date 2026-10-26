@@ -45,12 +45,13 @@ fn limited() -> Reply {
     Reply::error(429, &[], r#"{"error":{"message":"Rate limit reached"}}"#)
 }
 
-/// 冷却的规矩：三类都照 `rule`。
+/// 冷却的规矩：四类都照 `rule`。
 fn rules(rule: Rule) -> Rules {
     Rules {
         rate_limited: rule,
         retryable: rule,
         auth: rule,
+        quota: rule,
     }
 }
 

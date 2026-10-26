@@ -1,5 +1,5 @@
 //! 冷却的测试（`docs/blueprint/models.md`「守着它的」`cooldown/tests.rs`，施工 8-9）：翻倍、封顶、供应商说的更长、成功清零、
-//! 到期先试、认证失败停整家供应商（施工 8-25），只有三类记冷却，规矩照配置。
+//! 到期先试、认证失败停整家供应商（施工 8-25），只有四类记冷却（施工 Q-4 中多额度用完），规矩照配置；额度用完照说的重置时刻。
 
 use std::time::Duration;
 
@@ -141,7 +141,7 @@ fn an_auth_failure_cools_only_that_model() {
 }
 
 #[test]
-fn only_three_classes_cool_anything() {
+fn only_four_classes_cool_anything() {
     let mut table = Cooldowns::default();
     for class in [
         ErrorClass::ContextTooLong,
@@ -196,4 +196,49 @@ fn the_rules_come_from_the_settings() {
     assert_eq!(recorded.for_ms, 1_200_000, "base 比 max 大的照 max");
     assert_eq!(recorded.failures, 1);
     assert_eq!(recorded.until, at(1200));
+}
+
+/// 额度用完（施工 Q-4 中，设计 43 第三节第 5 条第 3 款）：供应商说了什么时候重置的照它，短的也照它，最多一天；没说的 30 分钟，
+/// 连着几次也是 30 分钟（默认的上限就是 30 分钟）。规矩照 `[models.cooldown.quota]`。
+#[test]
+fn out_of_quota_cools_until_the_said_reset_up_to_a_day_or_thirty_minutes() {
+    let quota = ErrorClass::Quota;
+    let mut table = Cooldowns::default();
+    assert_eq!(fail(&mut table, "a", &quota, None, at(0)), Some(30 * 60));
+    assert_eq!(
+        fail(&mut table, "a", &quota, None, at(1)),
+        Some(30 * 60),
+        "连着也是 30 分钟"
+    );
+    assert_eq!(
+        fail(&mut table, "b", &quota, Some(5 * 3600 * 1000), at(0)),
+        Some(5 * 3600),
+        "说了五小时后重置，照它"
+    );
+    assert_eq!(
+        fail(&mut table, "c", &quota, Some(60_000), at(0)),
+        Some(60),
+        "说得短的也照它：到点就重置了"
+    );
+    assert_eq!(
+        fail(&mut table, "d", &quota, Some(3 * 86_400 * 1000), at(0)),
+        Some(86_400),
+        "最多一天"
+    );
+    assert_eq!(
+        table
+            .cooling(&Candidate::new("p", "b"), at(0))
+            .map(|cooling| cooling.class),
+        Some(ErrorClass::Quota)
+    );
+    let rules = Rules::from_values(
+        &resolved("[models.cooldown.quota]\nbase = \"1h\"\nmax = \"4h\"\n").values(),
+    );
+    assert_eq!(
+        rules.quota,
+        Rule {
+            base: Duration::from_secs(3600),
+            max: Duration::from_secs(4 * 3600)
+        }
+    );
 }

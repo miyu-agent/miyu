@@ -1,8 +1,8 @@
 //! 出错分类（`docs/designs/05-内核接口.md` 第七节「出错怎么分」）：HTTP 状态、响应头、响应体，分成
 //! 内核的六类，附带要等多久和原话。
 //!
-//! 照 opencode 的先后，先对上的算：上下文超长、被内容策略拦截、认证失败（额度用完也算）、限速、
-//! 可重试、其他。说法的清单用 opencode、pi 收集的并集，全部小写以后找子串：纯逻辑层没有正则。
+//! 照 opencode 的先后，先对上的算：上下文超长、被内容策略拦截、额度用完（施工 Q-4 中从认证失败里分出来）、认证失败、
+//! 限速、可重试、其他。说法的清单用 opencode、pi 收集的并集，全部小写以后找子串：纯逻辑层没有正则。
 
 use miyu_kernel::event::{CallError, ErrorClass};
 use serde_json::Value;
@@ -146,7 +146,9 @@ pub fn classify(failure: &Failure<'_>) -> Classified {
         ErrorClass::ContextTooLong
     } else if client_side && (is_code(&POLICY_CODES) || says(&POLICY_PHRASES)) {
         ErrorClass::ContentPolicy
-    } else if status == Some(402) || says(&QUOTA_PHRASES) || matches!(status, Some(401 | 403)) {
+    } else if status == Some(402) || says(&QUOTA_PHRASES) {
+        ErrorClass::Quota
+    } else if matches!(status, Some(401 | 403)) {
         ErrorClass::Auth
     } else if status == Some(429) || (client_side && status.is_some() && says(&RATE_PHRASES)) {
         ErrorClass::RateLimited

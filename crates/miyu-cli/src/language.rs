@@ -193,6 +193,7 @@ impl Language {
             "rate_limited" => ("请求受限", "rate limited"),
             "context_too_long" => ("上下文太长", "context too long"),
             "auth" => ("认证失败", "authentication failed"),
+            "quota" => ("额度用完", "out of quota"),
             "content_policy" => ("内容被拦截", "blocked by content policy"),
             "bad_stream" => ("响应流异常", "malformed response stream"),
             "empty_reply" => ("响应为空", "empty response"),

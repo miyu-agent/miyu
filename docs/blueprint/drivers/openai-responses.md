@@ -154,7 +154,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | 400，`content_filter`、`content_policy_violation` 这些 | `content_policy` |
 | 400 别的 | `other` |
 | 401、403 | `auth` |
-| 429 `insufficient_quota` | `auth`（额度用完） |
+| 429 `insufficient_quota` | `quota`（额度用完，施工 Q-4 中从 `auth` 里分出来） |
 | 429 别的 | `rate_limited`，要等多久照头、照 `try again in …` |
 | 500 起 | `retryable` |
 | 流里的错、`response.failed`（没有状态），例如 `server_error`、`rate_limit_exceeded` | 大多 `retryable` |

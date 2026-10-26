@@ -158,13 +158,15 @@ fn auth_and_quota() {
     let bad_key = r#"{"error":{"message":"Authentication Fails (no such user)","type":"authentication_error","param":null,"code":"invalid_request_error"}}"#;
     assert_eq!(class(Some(401), &[], bad_key).0, ErrorClass::Auth);
     assert_eq!(class(Some(403), &[], "Forbidden").0, ErrorClass::Auth);
-    // 额度用完：402，或者 429 带着额度的说法。重试没用。
+    // 额度用完：402，或者 429 带着额度的说法。重试没用；施工 Q-4 中起单独一类 `quota`（以前归在 `auth`）。
     let balance = r#"{"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}"#;
-    assert_eq!(class(Some(402), &[], balance).0, ErrorClass::Auth);
+    assert_eq!(class(Some(402), &[], balance).0, ErrorClass::Quota);
     let quota = r#"{"error":{"message":"You exceeded your current quota, please check your plan and billing details.","type":"insufficient_quota","code":"insufficient_quota"}}"#;
-    assert_eq!(class(Some(429), &[], quota).0, ErrorClass::Auth);
+    assert_eq!(class(Some(429), &[], quota).0, ErrorClass::Quota);
     let zen = r#"{"error":{"type":"FreeUsageLimitError","message":"Free usage limit reached."}}"#;
-    assert_eq!(class(Some(429), &[], zen).0, ErrorClass::Auth);
+    assert_eq!(class(Some(429), &[], zen).0, ErrorClass::Quota);
+    // 401、403 带着额度说法的也算额度用完：钥匙是对的，钱没了。
+    assert_eq!(class(Some(403), &[], quota).0, ErrorClass::Quota);
 }
 
 /// OpenCode Zen 免费档用完了（2026-10-22 实测的原样：429，`retry-after` 是到 UTC 零点还有多少秒，`type` 包在
@@ -174,7 +176,7 @@ fn zen_s_free_tier_used_up_is_out_of_quota_and_says_when_it_comes_back() {
     let body = r#"{"type":"error","error":{"type":"FreeUsageLimitError","message":"Free usage limit reached. Subscribe to OpenCode Go to keep going."}}"#;
     assert_eq!(
         class(Some(429), &[("retry-after", "59321")], body),
-        (ErrorClass::Auth, Some(59_321_000))
+        (ErrorClass::Quota, Some(59_321_000))
     );
 }
 
@@ -283,13 +285,13 @@ fn the_message_is_the_providers_words() {
 }
 
 /// HTTP 状态码另记一格（施工 3-5 三补）：每一类的状态码都带上，原话开头的 `HTTP <状态>: ` 照留；分类照旧（404 是
-/// `other`，402 是 `auth`）。连不上的、流里报的没有，流里的 `code` 只拿来分类。
+/// `other`，402 是 `quota`，施工 Q-4 中）。连不上的、流里报的没有，流里的 `code` 只拿来分类。
 #[test]
 fn the_http_status_is_kept_in_its_own_field() {
     for (status, class) in [
         (400, ErrorClass::Unclassified),
         (401, ErrorClass::Auth),
-        (402, ErrorClass::Auth),
+        (402, ErrorClass::Quota),
         (403, ErrorClass::Auth),
         (404, ErrorClass::Unclassified),
         (408, ErrorClass::Retryable),
@@ -370,7 +372,7 @@ fn anthropic_error_bodies() {
         (
             402,
             body("billing_error", "Your credit balance is too low"),
-            ErrorClass::Auth,
+            ErrorClass::Quota,
         ),
         (
             403,

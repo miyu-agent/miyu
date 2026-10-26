@@ -182,7 +182,8 @@
 |---|---|
 | `context_too_long` | 413；或者 4xx、没有限速的说法，又是超长的错误码或者有超长的说法 |
 | `content_policy` | 4xx，又是内容策略的错误码或者有内容策略的说法 |
-| `auth` | 401、402、403；或者有额度的说法（额度用完也算这一类） |
+| `quota` | 402；或者有额度的说法（施工 Q-4 中从 `auth` 里分出来） |
+| `auth` | 401、403 |
 | `rate_limited` | 429；或者有状态、是 4xx、有限速的说法 |
 | `retryable` / `other` | 有 `x-should-retry` 头的，值是 `true`（不分大小写）就 `retryable`，别的 `other` |
 | `retryable` | 没有状态；408、409；500 起 |
@@ -294,7 +295,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/tests/robust_streams.rs`（鲁棒性 B-3） | 三家的解码器喂一行一直不换行的、一条一直不空行的，都停下、收尾带错 |
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs` | 列模型：名字和报了的窗口、三种窗口的写法先后、坏的跳过；回应坏了说是模型列表（施工 8-7） |
 | `crates/miyu-drivers/src/classify/excess/tests.rs` | 超了多少的几种写法；报了的上限单独读，后半段说不出也交、0 不交（施工 8-7） |
-| `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度算认证失败（OpenCode Zen 免费档用完的 `FreeUsageLimitError` 照 2026-10-22 实测的原样，要等多久照头记，施工 3-5 四补）；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |
+| `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度用完算 `quota`（施工 Q-4 中起，原来算认证失败；401、403 带额度说法的也算它；OpenCode Zen 免费档用完的 `FreeUsageLimitError` 照 2026-10-22 实测的原样，要等多久照头记，施工 3-5 四补）；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |
 | `crates/miyu-drivers/src/texts/tests.rs` | 文件名换进去、转义；以前的 `file-omitted` 没有大小照样换得出；文本文件带文件名、补换行、空的、截过的写明、文件名转义内容原样；没有那三句的交回空的；带名字的图片的标签、占位带名字、转义，不带名字的照旧，没有那三句的照不带名字的写（施工 3-9 四补）；不该有的字段报错 |
 | `crates/miyu-drivers/src/base64/tests.rs` | RFC 4648 的测试值，`+`、`/` |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比） |

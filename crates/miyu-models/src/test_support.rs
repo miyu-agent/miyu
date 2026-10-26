@@ -16,7 +16,7 @@ use crate::observed::{Learned, ProviderList};
 use crate::profile::Profiles;
 use crate::settings::{
     AuthCooldown, CatalogSettings, CompatSettings, ModelSettings, PoolSettings, PriceSettings,
-    ProviderSettings, RateLimitedCooldown, RetryableCooldown, UseSettings,
+    ProviderSettings, QuotaCooldown, RateLimitedCooldown, RetryableCooldown, UseSettings,
 };
 
 /// 裁出来的目录的原文。
@@ -94,6 +94,7 @@ pub(crate) fn items() -> Vec<Item> {
         RateLimitedCooldown::ITEMS,
         RetryableCooldown::ITEMS,
         AuthCooldown::ITEMS,
+        QuotaCooldown::ITEMS,
     ]
     .concat()
 }

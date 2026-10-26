@@ -106,6 +106,10 @@ name = "failover_log"
 path = "tests/failover_log.rs"
 
 [[test]]
+name = "quota_log"
+path = "tests/quota_log.rs"
+
+[[test]]
 name = "fallback_log"
 path = "tests/fallback_log.rs"
 

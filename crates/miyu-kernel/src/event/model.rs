@@ -252,6 +252,9 @@ text_enum!(
         ContextTooLong = "context_too_long",
         /// 认证失败。
         Auth = "auth",
+        /// 额度、余额用完（施工 Q-4 中，设计 43 第三节第 5 条第 3 款）：402、各家余额码。账号级的事，重试没用；池里冷却照供应商
+        /// 说的重置时刻，换别的成员。以前归在 `auth` 里。
+        Quota = "quota",
         /// 被内容策略拦截。
         ContentPolicy = "content_policy",
         /// 其他：驱动分不进上面五种的。变体不叫 `Other`，那个名字留给读到的不认识的分类。

@@ -80,13 +80,13 @@ impl OneShot {
 }
 
 /// 旁路请求换遍了档位池还没答成、可以退到会话的模型的（施工 Q-2）：全在冷却、没有能用的成员，或者出的是池里会换人的错
-/// （限速、可重试、认证失败）。写错了引用的、别的错不退。
+/// （限速、可重试、认证失败、额度用完）。写错了引用的、别的错不退。
 fn falls_back(unanswered: &Unanswered) -> bool {
     match unanswered {
         Unanswered::Cooling { .. } | Unanswered::NoModel(_) => true,
         Unanswered::Failed(error) => matches!(
             error.class,
-            ErrorClass::RateLimited | ErrorClass::Retryable | ErrorClass::Auth
+            ErrorClass::RateLimited | ErrorClass::Retryable | ErrorClass::Auth | ErrorClass::Quota
         ),
         Unanswered::UnknownModel(_) => false,
     }

@@ -187,6 +187,7 @@ fn each_error_class_reads_into_its_own_variant() {
         ("rate_limited", ErrorClass::RateLimited),
         ("context_too_long", ErrorClass::ContextTooLong),
         ("auth", ErrorClass::Auth),
+        ("quota", ErrorClass::Quota),
         ("content_policy", ErrorClass::ContentPolicy),
         ("other", ErrorClass::Unclassified),
         ("bad_stream", ErrorClass::BadStream),

@@ -388,11 +388,19 @@
       },
       "models.cooldown.auth.base": {
         "name": "認証失敗後の停止",
-        "description": "認証に失敗したり利用枠を使い切ったりしたとき、プロバイダー全体を最初に止める時間。続けて失敗すると倍になります。"
+        "description": "プールのモデルが認証に失敗したとき、最初に止める時間。続けて失敗すると倍になります。"
       },
       "models.cooldown.auth.max": {
         "name": "認証失敗の停止の上限",
-        "description": "プロバイダー全体の停止はここまでで倍にするのをやめます。"
+        "description": "認証失敗の停止はここまでで倍にするのをやめます。"
+      },
+      "models.cooldown.quota.base": {
+        "name": "利用枠切れ後の停止",
+        "description": "プールのモデルが利用枠や残高を使い切り、プロバイダーがいつ戻るかを言わなかったとき、最初に止める時間。言った場合はその時刻まで（最長一日）。"
+      },
+      "models.cooldown.quota.max": {
+        "name": "利用枠切れの停止の上限",
+        "description": "戻る時刻が言われないとき、続けて使い切ると倍にし、ここまでで止めます。"
       },
       "external.bindings.<external>": {
         "name": "端末管理者のプラットフォームのアカウント",
@@ -820,6 +828,7 @@
     "view/error/class/rate_limited": "レート制限",
     "view/error/class/context_too_long": "コンテキストが長すぎます",
     "view/error/class/auth": "認証エラー",
+    "view/error/class/quota": "利用枠切れ",
     "view/error/class/no_model": "使えるモデルがありません",
     "view/error/class/cooling": "すべてのモデルがクールダウン中",
     "view/error/class/content_policy": "コンテンツポリシーによりブロック",

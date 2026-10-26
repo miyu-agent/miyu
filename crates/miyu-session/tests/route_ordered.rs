@@ -25,7 +25,7 @@ fn down() -> Reply {
     Reply::error(503, &[], r#"{"error":{"message":"Service unavailable"}}"#)
 }
 
-/// 三类冷却都是 `millis` 毫秒：出错了这一次换人（内核当场再来时它还在冷却），过了这么久恢复。
+/// 四类冷却都是 `millis` 毫秒：出错了这一次换人（内核当场再来时它还在冷却），过了这么久恢复。
 fn cooling_for(millis: u64) -> Rules {
     let rule = Rule {
         base: Duration::from_millis(millis),
@@ -35,6 +35,7 @@ fn cooling_for(millis: u64) -> Rules {
         rate_limited: rule,
         retryable: rule,
         auth: rule,
+        quota: rule,
     }
 }
 
