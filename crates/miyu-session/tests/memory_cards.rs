@@ -130,14 +130,86 @@ async fn a_dream_writes_a_card_for_the_people_in_the_batch() {
     assert_eq!(written[1].text, "小林是群友，喜欢拍照。");
     assert_eq!(
         written[1].names,
-        vec!["林林".to_string(), "小林".to_string(), "阿林".to_string()],
-        "交回的在前，再接认出来的名字、旧卡上的"
+        vec!["小林".to_string(), "阿林".to_string()],
+        "出处里真用过的在前，交回的「林林」出处里没见过、不要（施工 E-1 修二），再接旧卡上的"
     );
 
     // 又记了一条，整理交回同样的卡：不再记一张。
     person(&home, alice(), "qq:2", "小林下周去大阪", None);
     dream(&home).await.expect("整理了");
     assert_eq!(cards(&home).len(), 2, "和现在那一张一样的不记");
+}
+
+/// 群里的另一个会话：qq:3 先以「大周」、后以「小周」说话（施工 E-1 修二；照字排是「大周」在前，照最近用的是「小周」）。交回那一轮。
+fn renamed_source(home: &Home) -> Source {
+    let session = SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").expect("合写法");
+    let dir = home.root.session_dir(&alice_account(), &session);
+    let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
+    let line = |seq: u32, at: &str, name: &str, text: &str| {
+        Event::from_line(&format!(
+            r#"{{"seq":{seq},"at":"{at}","kind":"message.user","by":{{"kind":"external","venue":"qq:group:5","id":"qq:3"}},"body":{{"blocks":[{{"type":"text","text":"{text}"}}],"venue":{{"msg":"{seq}","name":"{name}"}}}}}}"#
+        ))
+        .expect("合写法")
+    };
+    log.append(&[
+        line(1, "2026-10-20T03:00:00.000Z", "大周", "我在跑半马"),
+        line(2, "2026-10-22T03:00:00.000Z", "小周", "下周去青岛"),
+    ])
+    .expect("写得进");
+    Source {
+        session,
+        turn: TurnId::new(miyu_kernel::id::Seq::new(2).expect("从 1 起")),
+    }
+}
+
+/// 记忆模块：抽取记下的 `by`。
+fn module() -> By {
+    serde_json::from_str(r#"{"kind":"module","id":"memory"}"#).expect("合写法")
+}
+
+#[tokio::test]
+async fn a_card_s_names_are_the_ones_used_and_its_text_has_no_ids() {
+    // 施工 E-1 修二：实测交回的叫法有空着的、少了改名以前的、源消息里从没出现过的（编的），正文里写进了「qq:号」。
+    let answer = r#"{"cards": [
+        {"who": "qq:3", "text": "小周（qq:3）在跑半马，下周去青岛。", "names": ["小周花", "跑马的"]}
+    ]}"#;
+    let server = Server::start(vec![stream(answer)]).await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "");
+    let source = renamed_source(&home);
+    person(
+        &home,
+        module(),
+        "qq:3",
+        "小周在跑半马，是群里跑马的",
+        Some(source),
+    );
+
+    dream(&home).await.expect("整理了");
+    let asked = asked(&server, 0);
+    assert!(
+        asked.contains("A card takes only the lines marked with that person"),
+        "照条目的是谁归人：{asked}"
+    );
+    assert!(
+        asked.contains("Leave these people out of the summary"),
+        "认识的人不进摘要：{asked}"
+    );
+    assert!(
+        asked.contains("replaces only part of an earlier one"),
+        "只推翻一部分的改写、不整条作废：{asked}"
+    );
+    let written = cards(&home);
+    assert_eq!(written.len(), 1);
+    assert_eq!(
+        written[0].text, "小周在跑半马，下周去青岛。",
+        "正文里的编号去掉"
+    );
+    assert_eq!(
+        written[0].names,
+        vec!["小周".to_string(), "大周".to_string(), "跑马的".to_string()],
+        "他在出处里用过的名字照最近用的在前；交回的只留见过的（「跑马的」在他的记忆里写着，「小周花」编的不要）"
+    );
 }
 
 #[tokio::test]

@@ -84,3 +84,38 @@ fn a_name_with_a_prefix_is_still_that_person() {
         vec!["老王"]
     );
 }
+
+#[test]
+fn platform_ids_in_the_text_are_taken_out() {
+    // 施工 E-1 修二：实测卡的正文里写进了「qq:号」，卡是给她看的印象，编号在「是谁」那一格。
+    let answer = r#"{"cards": [{"who": "qq:10086", "text": "qq:10086 说过想去大阪（qq:10086），和 wx:42 (qq:7) 是朋友。"}]}"#;
+    let read = cards(answer, &people()).expect("读得成");
+    assert_eq!(read[0].text, "说过想去大阪，和 是朋友。");
+    // 不是编号的照留：数字开头的、大写开头的、后面紧挨着字母的。
+    assert_eq!(
+        without_ids("时间 10:30，QQ:1 和 a:1x"),
+        "时间 10:30，QQ:1 和 a:1x"
+    );
+    assert_eq!(without_ids("型号 X1:2000"), "型号 X1:2000");
+}
+
+#[test]
+fn only_names_seen_in_the_sources_are_kept_and_the_used_ones_come_first() {
+    // 施工 E-1 修二：实测交回的叫法里有源消息里从没出现过的（编的），有的又空着、少了改名以前的。
+    let used = vec!["林林子".to_string(), "小林".to_string()];
+    let drafted = vec![
+        "小林花".to_string(),
+        "林林".to_string(),
+        "小林".to_string(),
+        "qq:10086".to_string(),
+    ];
+    let seen = |name: &str| "大家都叫他林林".contains(name);
+    assert_eq!(
+        kept_names("qq:10086", &used, &drafted, seen),
+        vec!["林林子".to_string(), "小林".to_string(), "林林".to_string()]
+    );
+    assert_eq!(
+        kept_names("qq:10086", &used, &[], |_| false),
+        vec!["林林子".to_string(), "小林".to_string()]
+    );
+}

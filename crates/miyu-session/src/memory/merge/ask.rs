@@ -12,7 +12,7 @@ use std::time::Instant;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{CommandId, Seq, SessionId};
 use miyu_kernel::request::Message;
-use miyu_recall::merge::{Seen, Watch, cards, decisions, names};
+use miyu_recall::merge::{Seen, Watch, cards, decisions, kept_names};
 use miyu_recall::redact::{KeyShapes, redact};
 use miyu_tool::TEXT_CHARS;
 
@@ -79,14 +79,18 @@ impl MergeJob {
                 if let Some(summary) = &mut decided.summary {
                     *summary = redact(summary, &secrets, shapes);
                 }
-                // 人卡（施工 E-1 下）：遮过 key；这一批里认出来的名字接在交回的叫法后面。
+                // 人卡（施工 E-1 下）：遮过 key。叫法核心认（施工 E-1 修二）：他在出处里真用过的、认出来的在前，交回的只留出处
+                // 里见过的。
                 for card in &mut drafted {
                     card.text = redact(&card.text, &secrets, shapes);
                     let known = asked.known.names_of(&card.who);
-                    card.names = names(&card.who, &card.names, &known)
-                        .iter()
-                        .map(|name| redact(name, &secrets, shapes))
-                        .collect();
+                    let people = &asked.known;
+                    card.names = kept_names(&card.who, &known, &card.names, |name| {
+                        people.seen(&card.who, name)
+                    })
+                    .iter()
+                    .map(|name| redact(name, &secrets, shapes))
+                    .collect();
                 }
                 let summary = decided.summary.is_some();
                 let (keeper, upto, swept) = (self.keeper.clone(), asked.upto, asked.swept.clone());

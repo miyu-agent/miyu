@@ -100,7 +100,8 @@ impl MergeJob {
         let all: Vec<Entry> = news.iter().chain(&olds).chain(&sweeps).cloned().collect();
         let keeper = self.keeper.clone();
         let (known, people, cards) = blocking(move || {
-            let known = keeper.people(&all.iter().collect::<Vec<_>>());
+            let mut known = keeper.people(&all.iter().collect::<Vec<_>>());
+            known.note(&all);
             let people: BTreeSet<String> =
                 all.iter().filter_map(|entry| known.who(entry)).collect();
             let cards = keeper.cards_of(&people);

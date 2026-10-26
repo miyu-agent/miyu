@@ -4,13 +4,19 @@
 //!
 //! 只认不改：记下的那几条照旧是她写的名字（日志只追加），认出来的名字记进他那张卡的叫法里。
 //!
+//! 叫法核心认（施工 E-1 修二，第七条第 15 款）：这一批里认识的人那几条（抽取记的、她当场记的都算）的出处所在的会话，照日志
+//! 认出每个平台编号在场所里真用过的名字（`venue.name`），最近用的在前，接在卡的叫法前面；模型交回的叫法只留出处里见过的
+//! （真用过的、他那几条记忆的正文里写着的），编的不要（实测交回过源消息里从没出现过的名字，有的又空着、少了改名以前的）。
+//!
 //! 她自己不是认识的人（施工 E-1 修，`her.rs`）：`who` 是这一间她的名字的不算谁（不合卡、不认成同名群友的编号），她的名字也
 //! 不拿来认人、不进谁的叫法。以前记下的这种照旧留着，只是不再合进卡。
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
+use miyu_kernel::time::Timestamp;
 use miyu_recall::{Entry, PERSON};
 use miyu_store::log::read_events;
 use miyu_store::recall::Room;
@@ -26,6 +32,10 @@ pub(super) struct People {
     known: BTreeMap<String, String>,
     /// 这一间她叫什么（照 `fold` 过的）。
     me: BTreeSet<String>,
+    /// 平台编号到他在出处里真用过的名字，最近用的在前（施工 E-1 修二）。
+    used: BTreeMap<String, Vec<String>>,
+    /// 是谁（认过的）到这一批里他那几条记忆的正文（施工 E-1 修二）：交回的叫法写在里面的也算见过。
+    said: BTreeMap<String, Vec<String>>,
 }
 
 impl People {
@@ -46,33 +56,63 @@ impl People {
         )
     }
 
-    /// 平台编号 `id` 在这一批里被认出来的那几个名字：记进他的卡当叫法。
+    /// 平台编号 `id` 在这一批里被认出来的那几个名字：出处里真用过的（最近用的在前），再接她记的名字认出是他的。记进他的卡当
+    /// 叫法。
     pub(super) fn names_of(&self, id: &str) -> Vec<String> {
-        self.known
-            .iter()
-            .filter(|(_, known)| known.as_str() == id)
-            .map(|(name, _)| name.clone())
-            .collect()
+        let mut names = self.used.get(id).cloned().unwrap_or_default();
+        for (name, known) in &self.known {
+            if known.as_str() == id && !names.contains(name) {
+                names.push(name.clone());
+            }
+        }
+        names
+    }
+
+    /// 交回的叫法 `name` 出处里见过没有（施工 E-1 修二）：`who` 在出处里用过的、她记的名字认出是他的、他那几条记忆的正文里
+    /// 写着的。
+    pub(super) fn seen(&self, who: &str, name: &str) -> bool {
+        self.names_of(who).iter().any(|known| known == name)
+            || self
+                .said
+                .get(who)
+                .is_some_and(|texts| texts.iter().any(|text| text.contains(name)))
+    }
+
+    /// 记下这一批里每个人那几条记忆的正文（施工 E-1 修二）：照认过的是谁。
+    pub(super) fn note(&mut self, entries: &[Entry]) {
+        for entry in entries {
+            if let Some(who) = self.who(entry) {
+                self.said.entry(who).or_default().push(entry.text.clone());
+            }
+        }
     }
 }
 
 impl Keeper {
-    /// 认 `entries` 里的人（模块文档）：只读她当场记的（`by` 是工具）那几条的出处所在的会话，一个会话读一次；读不了的跳过、记
-    /// 一行。在阻塞线程里调。
+    /// 认 `entries` 里的人（模块文档）：认识的人那几条的出处所在的会话，一个会话读一次；读不了的跳过、记一行。她记的名字只照
+    /// 她当场记的（`by` 是工具）那几条的会话认，真用过的名字照全部那几条的会话认。在阻塞线程里调。
     pub(super) fn people(&self, entries: &[&Entry]) -> People {
-        let sessions: BTreeSet<&SessionId> = entries
-            .iter()
-            .filter(|entry| entry.class == PERSON && matches!(entry.by, By::Tool(_)))
-            .flat_map(|entry| entry.sources.iter().map(|source| &source.session))
-            .collect();
+        let sessions_of = |tool: bool| -> BTreeSet<&SessionId> {
+            entries
+                .iter()
+                .filter(|entry| entry.class == PERSON && (!tool || matches!(entry.by, By::Tool(_))))
+                .flat_map(|entry| entry.sources.iter().map(|source| &source.session))
+                .collect()
+        };
+        let by_her = sessions_of(true);
         let me = self.her();
         let mut known = BTreeMap::new();
-        for session in sessions {
+        let mut last: BTreeMap<String, BTreeMap<String, Timestamp>> = BTreeMap::new();
+        for session in sessions_of(false) {
             let Some(dir) = self.session_dir(session) else {
                 continue;
             };
             match read_events(&dir) {
                 Ok(events) => {
+                    used_in(&events, &me, &mut last);
+                    if !by_her.contains(session) {
+                        continue;
+                    }
                     for (name, id) in Voices::of(&events, None).names {
                         if let Some(id) = id
                             && id != name
@@ -87,7 +127,20 @@ impl Keeper {
                 }
             }
         }
-        People { known, me }
+        let used = last
+            .into_iter()
+            .map(|(id, names)| {
+                let mut names: Vec<(String, Timestamp)> = names.into_iter().collect();
+                names.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+                (id, names.into_iter().map(|(name, _)| name).collect())
+            })
+            .collect();
+        People {
+            known,
+            me,
+            used,
+            said: BTreeMap::new(),
+        }
     }
 
     /// `people` 这几个人现在的卡（没作废的），照是谁排：合他们的卡时接着写。记忆日志开不了的没有。
@@ -117,5 +170,38 @@ impl Keeper {
         }
         let owner = root.owner_of(session).ok().flatten()?;
         Some(root.session_dir(&owner, session))
+    }
+}
+
+/// 会话日志 `events` 里平台上的人在场所里用过的名字（`venue.name`），记每个名字最后一次用的时刻（施工 E-1 修二）。是她的名字的、
+/// 和编号一样的不算。
+fn used_in(
+    events: &[Event],
+    me: &BTreeSet<String>,
+    last: &mut BTreeMap<String, BTreeMap<String, Timestamp>>,
+) {
+    for event in events {
+        let (Body::MessageUser(message), By::External(external)) = (&event.body, &event.by) else {
+            continue;
+        };
+        let Some(name) = message
+            .venue
+            .as_ref()
+            .and_then(|venue| venue.name.as_deref())
+        else {
+            continue;
+        };
+        let (id, name) = (external.id.as_str(), name.trim());
+        if name.is_empty() || name == id || crate::memory::her::is_her(me, name) {
+            continue;
+        }
+        let at = last
+            .entry(id.to_string())
+            .or_default()
+            .entry(name.to_string())
+            .or_insert(event.at);
+        if event.at > *at {
+            *at = event.at;
+        }
     }
 }
