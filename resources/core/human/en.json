@@ -190,16 +190,16 @@
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."
       },
       "terminal.persona": {
-        "name": "Terminal session persona",
-        "description": "The persona for a new terminal session. Unset follows the default persona. A terminal session in use keeps its own."
+        "name": "Shell integration session persona",
+        "description": "The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own."
       },
       "terminal.preset": {
-        "name": "Terminal session preset",
-        "description": "The preset for a new terminal session. Unset follows the default preset."
+        "name": "Shell integration session preset",
+        "description": "The preset for a new shell integration session. Unset follows the default preset."
       },
       "terminal.idle_new_after": {
         "name": "New session after idle",
-        "description": "After this many minutes without a message, the next one starts a new terminal session; the old one is kept. 0 never starts a new one."
+        "description": "After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one."
       },
       "models.chat": {
         "name": "Chat model",
@@ -426,7 +426,7 @@
       "loading": "Tool loading",
       "clicall": "Calling tools from scripts",
       "features": "Feature switches",
-      "terminal": "Terminal session",
+      "terminal": "Shell integration session",
       "profile": "About you",
       "uses": "Uses",
       "pools": "Pools",
